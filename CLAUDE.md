@@ -11,8 +11,9 @@ One repository for the Calc-U emulators, released as separate products
 - Do not write or change code, in this repository or in the product
   repositories. Reading them is fine.
 - Product baselines: Calc-U-59 at `/Users/me/Development/public/Calc-U-59`
-  (current dev branch), Calc-U-1600 at `/Users/me/Development/sharp/Calc-U-1600`
-  (branch `dev-0.8.0`).
+  (tag `v2.3.0`), Calc-U-1600 at `/Users/me/Development/sharp/Calc-U-1600`
+  (tag `v0.8.0`, same tree as branch `dev-0.8.0`). Pins and history:
+  `docs/Process.md`, phase 1.
 - Don't reopen anything listed in `Briefing.md` §3 (decisions already made).
 - Don't invent missing facts (sizes, behaviour, limits). Ask, or record them
   as open questions in the document you are writing.

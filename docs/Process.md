@@ -32,17 +32,28 @@ the table below.
   later phase are moved to briefing §7 with the phase named.
 
 ### Phase 1 — Inventory
-- Baselines are pinned to a commit SHA, recorded in each inventory's header:
-  - Calc-U-59: `dev-2.3.0` @ `5074f87`.
-  - Calc-U-1600: `dev-0.8.0` @ `a7a9f0a`. Re-pinned to the `v0.8.0` tag
-    once it is released, with the delta recorded.
-  - Every later change in an old repository (hotfix, briefing §3) is
+- Baselines are pinned to the release tags, recorded in each inventory's
+  header. A release tag is a squashed commit on `main`; its tree is
+  identical to the tip of the dev branch, which holds the history.
+  - Calc-U-59: `v2.3.0` @ `231792c` (= `dev-2.3.0` @ `915a2b5`).
+  - Calc-U-1600: `v0.8.0` @ `d976d3f` (= `dev-0.8.0` @ `70c3258`).
+  - Earlier draft pins were `5074f87` (Calc-U-59, 8 commits / 12 files
+    behind the tag) and `a7a9f0a` (Calc-U-1600, 9 commits / 53 files
+    behind). Inventory written against them is checked against the delta.
+  - The patch branches `dev-2.3.1` and `dev-0.8.1` hold only the version
+    bump. Every later change in an old repository (hotfix, briefing §3) is
     recorded as a delta against the pin.
 - `docs/inventory/calc-u-59.md`, `docs/inventory/calc-u-1600.md`: per
   capability (keyboard, presets, debugger, settings, media/files, audio,
   pacing, threading, display, web shell, release tooling, tests/headless,
   help-site material, …) how the product does it, where it lives, how mature
   it is.
+- Modelling depth per machine (briefing §1.9): which chips or blocks are
+  modelled separately, which are folded together, which interfaces between
+  parts and devices are explicit and which are implicit, and where
+  functional emulation is used. For the TI-59 this includes the printer
+  connector, the module slot, and why `examples/assembly/Decoder.asm` does
+  not run.
 - Test harnesses and headless emulators are listed with the capabilities
   each one provides (briefing §9).
 - `docs/inventory/calc-u-site.md`: site structure, material per product,
@@ -84,8 +95,11 @@ the table below.
     jobs), with the Swift/iOS frontend in mind.
   - The core seam: one machine interface for all products, or a small
     kit-level machine interface plus product-level extensions
-    (briefing §4).
+    (briefing §7).
   - Devices keyed by connector type or by machine.
+  - Modelling depth and explicit interfaces (briefing §1.9): how a machine
+    moves along the chip-level ↔ single-core spectrum, and whether the
+    TI-59 printer connector and module slot become explicit.
   - Swift bridge boundary.
   - Preset format, versioning and the Calc-U-59 read-old/write-new upgrade.
   - Repository layout, CMake structure, CI.
@@ -102,7 +116,7 @@ the table below.
 - Each contract states responsibilities, explicit non-responsibilities and
   invariants, and contains a **fit table**: how TI-59, PC-1500, PC-1600 and
   an SC61860 machine (PC-1403 for a character LCD, PC-1350 for a graphic LCD)
-  map onto it.
+  map onto it, and at which modelling depth (briefing §1.9).
 - Design against three very different machine families, implement two. The
   SC61860 machines are paper machines; the TI-59 (TMC0501, PC-100C cradle,
   card reader) is the main stress test for anything Sharp-shaped.
@@ -118,7 +132,9 @@ the table below.
 ### Phase 5 — Validation on paper
 - Scenarios played against the contracts, for example: add a PC-1403; add a
   CE-126P; TI-59 App Store build without DAP or PTY; add a Swift frontend to
-  Calc-U-1600; the PC-1600 using the PC-1500 tape codec; ship without ROMs.
+  Calc-U-1600; the PC-1600 using the PC-1500 tape codec; ship without ROMs;
+  refine the TI-59 to individual chips so `Decoder.asm` runs; attach the PC-100C printer and a Solid State Software module through
+  explicit connectors.
 - A scenario that needs a change to the shared layer means the abstraction
   is wrong; fix the contract, not the scenario.
 - Reviewed by a fresh agent that sees only the contracts, not the reasoning

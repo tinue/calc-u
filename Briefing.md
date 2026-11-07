@@ -84,6 +84,33 @@ the features the products have in common.
   first part (one project), not for the second: they ship one product, Calc-U
   ships several.
 
+### 1.9 Modelling depth and explicit interfaces
+- **A spectrum of abstraction.** At one extreme every chip and its wiring
+  is modelled; at the other the whole machine is one "core" block. The
+  products sit somewhere in between, and the level differs per machine. The
+  architecture must allow moving a machine along this spectrum without
+  restructuring the shared layer or the other machines.
+  - Example: Calc-U-59 does not model the TI-59's chips individually, which
+    is why the assembler program `examples/assembly/Decoder.asm` does not
+    run. Refining the model so that it runs must be possible. Making it run
+    is not a goal of this project (§2). What exactly it depends on: open
+    (§7).
+- **Guideline:** the model must be able to reproduce the observable
+  behaviour of the machine correctly. In every case the machine's original
+  ROM runs.
+  - Functional emulation is allowed where it makes sense. Example: a
+    printer emulates its output, not its mechanics.
+- **Explicit interfaces.** As soon as several parts or devices are plugged
+  together, the interface between them is modelled explicitly.
+  - Consequence for Calc-U-59: today neither the printer interface to the
+    PC-100C nor the 8-pin slot for the Solid State Software module is
+    modelled. This may change. It is an internal restructuring: the
+    user-visible behaviour stays (§1.1). Whether and when it happens is
+    decided in phase 3 (§7).
+  - Printer interface: the PC-100C has 12 contact springs, one of them
+    unconnected; the calculator has 11 pads that mate with the 11 connected
+    springs. Sources therefore call it an 11-pin or a 12-pin interface.
+
 ## 2. Non-goals
 
 - Frequent releases of Calc-U-59 or Calc-U-1600 during this project.
@@ -121,7 +148,8 @@ the features the products have in common.
 - **History:** the full history of both repositories must be archived (the
   mechanism is open, §7).
 - **Calc-U-1600 baseline:** all imports, inventory and decisions use the
-  branch `dev-0.8.0`.
+  branch `dev-0.8.0`. (It was released unchanged as `v0.8.0`; the phase 1
+  pin is that tag, `docs/Process.md`.)
 - **Working language is English**, for specs, design documents, code,
   research documents and skills. Original source material (PDFs, manuals) may
   be in other languages.
@@ -148,7 +176,7 @@ Moved to §7.
 | | Calc-U-59 | Calc-U-1600 |
 |---|---|---|
 | Repository | `/Users/me/Development/public/Calc-U-59` (`tinue/Calc-U-59`) | `/Users/me/Development/sharp/Calc-U-1600` (`tinue/Calc-U-1600`) |
-| State | Released; nothing substantial on the current dev branch | `dev-0.8.0` close to release; to be released before full work on Calc-U starts |
+| State | 2.3.0 released (2026-11-07); `dev-2.3.1` holds only the version bump | 0.8.0 released (2026-11-07); `dev-0.8.1` holds only the version bump |
 | Core / shared layer | C++17, CMake | C++20, CMake |
 | Release tooling | ReleaseIt: Swift macOS app built and notarised locally, everything else from GitHub Actions (`build.yml`, dispatched) | ReleaseIt: everything from GitHub Actions (`build.yml`, dispatched); nothing built locally |
 
@@ -259,6 +287,13 @@ Each point names the phase that settles it (`docs/Process.md`).
 - How calc-u-site shares common material across products. → Phase 3/4.
 - Where releases are published after the move (new repository or the old
   ones), and what happens to the old repositories. → Phase 3.
+- Modelling depth per machine and which interfaces become explicit, for
+  example the TI-59 printer connector and module slot (§1.9). Closely tied
+  to the core seam above. → Phase 3, contracts in phase 4.
+- What exactly `Calc-U-59/examples/assembly/Decoder.asm` depends on that
+  fails because the TI-59 chips are not modelled individually (§1.9).
+  → Phase 1.
+
 ## 8. Success criteria
 
 - One release each of Calc-U-59 and Calc-U-1600 is live, built from the new

@@ -18,6 +18,9 @@ Load .ti59 and .ti58(c) state files to instantly configure the machine with a pr
 SOLID STATE MODULES
 Select a Solid State Module and run programs from there.
 
+QUIRKS
+The calculator reproduces every quirk you've heard of: Fast mode, printer interrupt, display corruption — you name it.
+
 Whether you're bringing an old program back to life, running the Master Library modules, or exploring how these machines actually worked under the hood, Calc-U-59 gives you a faithful TI-59 in your pocket.
 
 Calc-U-59 is free software under the GPLv3; the source code is on GitHub.

@@ -13,12 +13,28 @@ the features the products have in common.
   - Each emulator keeps the same familiar GUI with the same functionality.
 - Each product keeps its own release cycle and its supported platforms (§5.2).
 - Each product keeps its own release material, such as App Store screenshots.
+- "The same GUI" means the same layout, assets, controls and behaviour,
+  judged by the developer in side-by-side use. It does not mean
+  pixel-identical. Screenshots are retaken only where something visible
+  changed.
 
 ### 1.2 Supporting files (presets, cards, floppies, state files, …)
+- These rules apply to Calc-U's **own** formats: presets, state files,
+  settings and its own card/floppy containers. **External** formats (from
+  the real machines or outside tools: tape WAV, ROM dumps, SDE exchange
+  formats, raw BASIC/binary images) must never break, in either product.
+  The inventory tags every format as own or external.
 - **Calc-U-59 stays backwards compatible.** Anything it reads may be in the
   old format. Anything it writes uses the new format. Writing an item that
   was just read therefore upgrades it.
-- **Calc-U-1600 needs no backwards compatibility.**
+  - "Old format" means every format the latest *released* Calc-U-59 reads,
+    including legacy formats it already accepts, the files bundled in the
+    app and the files hosted on calc-u.org.
+  - No forward compatibility: an upgraded file need not open in an older
+    Calc-U-59.
+- **Calc-U-1600 needs no backwards compatibility.** Files saved by 0.8.0 may
+  not load in the first release from this repository. A release-note
+  warning is enough; no converter.
 
 ### 1.3 One source of truth for shared features
 - Features that both products have (for example presets or keyboard support)
@@ -47,6 +63,9 @@ the features the products have in common.
 ### 1.5 Coherent for end users
 - Vocabulary is the same across all emulators: a preset means the same thing
   everywhere.
+  - A glossary term may rename a visible label, menu item or help text in a
+    product. This counts as "same functionality" (§1.1). Every rename is
+    listed in the phase 2 mapping table.
 - The help sites are coherent. Common material is shared, not duplicated.
 
 ### 1.6 SC61860 preparation
@@ -73,6 +92,9 @@ the features the products have in common.
   keep their knowledge bases and skills (§6).
 - Integration of SDE (SharpDataExchange). It stays a separate project and is
   pulled in where needed.
+- Integration of ReleaseIt. It stays a separate project, but it is an
+  upstream dependency like SDE: it may be extended in its own repository
+  where releasing several products from one repository needs it.
 - Adding or removing build targets. Every existing target stays, including
   the Calc-U-1600 web client. The design must allow new targets later
   (§1.4), but this project adds none.
@@ -92,6 +114,10 @@ the features the products have in common.
 - **Hotfixes:** until development in this repository starts, urgent fixes
   may still be released from the existing repositories. Once development
   starts, no more hotfixes are allowed.
+  - "Development starts" means the first commit in this repository that
+    imports product code (phase 6, step 1).
+  - Until then, every hotfix in an old repository is carried into the
+    inventory as a delta against its pinned baseline.
 - **History:** the full history of both repositories must be archived (the
   mechanism is open, §7).
 - **Calc-U-1600 baseline:** all imports, inventory and decisions use the
@@ -102,9 +128,7 @@ the features the products have in common.
 
 ## 4. Discussed, but not yet decided
 
-- "The machine is the only core seam; composition instead of family cores."
-  The discussion was not deep enough yet and needs more thought.
-- Skills: one set of skills per product, plus a shared skill. Structure open.
+Moved to §7.
 
 ## 5. Starting point
 
@@ -139,7 +163,11 @@ the features the products have in common.
 | Calc-U-1600 | Qt6 | macOS arm64 | macOS 15.8 (see note) | DMG on GitHub (Developer ID, signed in CI) | Released |
 | Calc-U-1600 | Qt6 (6.8.2 in CI) | Windows x86_64 / arm64 | — | Installer on GitHub (unsigned) | Released |
 | Calc-U-1600 | Qt6 | Linux x86_64 / aarch64 | — | AppImage on GitHub | Released |
-| Calc-U-1600 | Web (WASM) | Browser | — | Zip on GitHub | Pre-release only |
+| Calc-U-1600 | Web (WASM) | Browser | — | Zip on GitHub | Released, not yet published (see below) |
+
+The Calc-U-1600 web client is built as a zip and attached to each release.
+It is not published on calc-u.org yet, because the Calc-U-1600 help site
+does not exist yet (§5.3).
 
 Note: macOS 15.8 is set consistently in CMake (`CMAKE_OSX_DEPLOYMENT_TARGET`),
 in SDE (`.cargo/config.toml`, checked by its release workflow) and by the CI
@@ -147,7 +175,7 @@ runner (`macos-15`). Finding for the inventory: the vendored `libsharpdx.a`
 on `dev-0.8.0` was built locally, so its prebuilt Rust `std` objects carry
 `minos 27.0`. They link with warnings only, but make 15.8 untested in
 practice. The fix is to vendor the library from an SDE release (rustup std,
-macOS 11).
+macOS 11). It ships with Calc-U-1600 0.8.0, from the old repository.
 
 Calc-U-1600 also pulls SDE (SharpDataExchange) release artifacts into its CI
 builds.
@@ -157,6 +185,14 @@ builds.
   https://calc-u.org (documentation; it also embeds the web clients).
 - The site must always reflect a released product, so it is in scope, but it
   stays a separate repository (§3).
+- `/59/` is the full Calc-U-59 site and its only source. calcu59.ch serves
+  only a redirect and will keep doing so for some time; the old `gh-pages`
+  branch of Calc-U-59 is deactivated and deleted. (The calc-u-site README
+  still describes the old setup.)
+- `/1600/` is a placeholder. Building the Calc-U-1600 help site is in scope:
+  it starts from Calc-U-1600's `docs/`, uses the shared-material structure,
+  and publishes the Calc-U-1600 web client. This is new documentation, not a
+  new product feature (§2).
 
 ### 5.4 Backlogs
 
@@ -210,26 +246,35 @@ builds.
 
 ## 7. Open points (for grilling and the spec phase)
 
+Each point names the phase that settles it (`docs/Process.md`).
+
 - SC61860: part of Calc-U-1600 or a third product; the name of the Sharp
-  product.
-- How the full history of both repositories is archived.
-- The core seam and the skill structure (§4).
-- How calc-u-site shares common material across products.
+  product. → Phase 3.
+- How the full history of both repositories is archived. → Phase 3.
+- The core seam: "The machine is the only core seam; composition instead of
+  family cores." The discussion was not deep enough yet and needs more
+  thought. → Phase 3.
+- Skills: one set of skills per product, plus a shared skill. Structure
+  open. → Phase 3.
+- How calc-u-site shares common material across products. → Phase 3/4.
 - Where releases are published after the move (new repository or the old
-  ones), and what happens to the old repositories.
+  ones), and what happens to the old repositories. → Phase 3.
+- The GitHub repository's name and when it is created. → Phase 6.
 
 ## 8. Success criteria
 
 - One release each of Calc-U-59 and Calc-U-1600 is live, built from the new
   repository. Calc-U-59 is also live in the App Store.
-- Each product looks the same as before and supports at least its current
-  set of features.
+- Each product looks the same as before (§1.1) and supports at least its
+  current set of features.
 - Each product uses the new shared layer for every feature listed as shared.
+  The list is `features/INDEX.md` (the KIT-n entries).
   A product that still has its own implementation of a shared feature does
   not meet this criterion.
 - Calc-U-59 reads all of its existing files and writes the new format (§1.2).
 - calc-u.org reflects both releases and shares common material between the
-  products instead of duplicating it.
+  products instead of duplicating it. This includes the new Calc-U-1600 help
+  site with the published web client (§5.3).
 - A design for SC61860 support exists and has been validated against the
   abstractions: adding it needs no changes to the shared layer.
 - Every item of both TODO files (§5.4) is accounted for: it is part of the
@@ -247,12 +292,17 @@ builds.
   - The design must allow removing the ROMs, with the user adding them after
     downloading the product. Design only; do not implement.
 - Keep the existing language versions (C++, Swift, Xcode, Qt). Always
-  consider whether they can be upgraded to stay current.
+  consider whether they can be upgraded to stay current. Versions may be
+  raised, never lowered; every raise is an ADR (for example Calc-U-59 from
+  C++17 to C++20). The minimum OS versions below stay fixed.
 - Swift app: iOS 18 and macOS 15 or later; keep this for now.
 - Qt6 macOS app (Calc-U-1600): macOS 15.8 or later; keep this for now (see
   §5.2 note).
-- Builds stay on GitHub Actions; no cross-compile scaffolding in this
-  repository.
+- Each artifact keeps its current build location: the Calc-U-59 Swift macOS
+  app is built and notarised locally, everything else on GitHub Actions. No
+  cross-compile scaffolding in this repository.
 - A local build must always be possible, for rapid iteration.
 - The test harnesses and headless emulators must keep working, for rapid
-  iteration by an AI agent.
+  iteration by an AI agent. Their capabilities must stay (headless run,
+  scripted input, state dump, golden tests, …); their interfaces may change
+  if the skills and docs that use them change in the same step.

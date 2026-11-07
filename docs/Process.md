@@ -17,7 +17,7 @@ the table below.
 
 | # | Phase | Output | Settles | Status |
 |---|---|---|---|---|
-| 0 | Charter | `Briefing.md`, `CLAUDE.md` | Goals, non-goals, products, constraints, decisions already made, open points | In progress (grilling) |
+| 0 | Charter | `Briefing.md`, `CLAUDE.md` | Goals, non-goals, products, constraints, decisions already made, open points | Grilled; awaiting review gate |
 | 1 | Inventory | `docs/inventory/` | Facts only, no decisions | Planned |
 | 2 | Domain model | `docs/GLOSSARY.md` | One meaning per term | Planned |
 | 3 | Architecture decisions | `docs/adr/NNNN-*.md` | The forks | Planned |
@@ -32,24 +32,44 @@ the table below.
   later phase are moved to briefing §7 with the phase named.
 
 ### Phase 1 — Inventory
-- Baselines: Calc-U-59 current dev branch, Calc-U-1600 `dev-0.8.0`.
+- Baselines are pinned to a commit SHA, recorded in each inventory's header:
+  - Calc-U-59: `dev-2.3.0` @ `5074f87`.
+  - Calc-U-1600: `dev-0.8.0` @ `a7a9f0a`. Re-pinned to the `v0.8.0` tag
+    once it is released, with the delta recorded.
+  - Every later change in an old repository (hotfix, briefing §3) is
+    recorded as a delta against the pin.
 - `docs/inventory/calc-u-59.md`, `docs/inventory/calc-u-1600.md`: per
   capability (keyboard, presets, debugger, settings, media/files, audio,
   pacing, threading, display, web shell, release tooling, tests/headless,
   help-site material, …) how the product does it, where it lives, how mature
   it is.
+- Test harnesses and headless emulators are listed with the capabilities
+  each one provides (briefing §9).
+- `docs/inventory/calc-u-site.md`: site structure, material per product,
+  duplications, how the web clients are embedded. Findings include the
+  stale README (it still describes the `gh-pages`/calcu59.ch setup).
+- `docs/inventory/release-tooling.md`: ReleaseIt's single-product
+  assumptions (one root `release.yaml`, `vX.Y.Z`/`-pre` tags, `dev-x.y.z`
+  branches, one CHANGELOG), both `release.yaml` and `build.yml` files, the
+  SDE artifact pull, the App Store pipeline.
 - `docs/inventory/divergence-matrix.md`: capability × product, with the
   contradictions and a *suggested* base side (the decision comes in phase 3).
 - `docs/inventory/backlog.md`: every item of both `TODO.md` files and of
   `Calc-U-59/ideas/`, each with a target: design input, shared backlog,
   product backlog, done, or dropped (with reason). Briefing §1.7, §8.
+  - One row per bullet or sub-bullet that is its own idea; headings and
+    pure context lines get no row.
+  - Each row has a stable ID (`B59-n`, `B1600-n`) and a source reference
+    (file:line at the pinned SHA).
 - Harvest both projects' "deliberate oddities" (Calc-U-1600
   `docs/background/Decisions.md`, Calc-U-59 `reference/`) so they survive the
   merge.
-- Compatibility surface for Calc-U-59 (briefing §1.2): every file format it
-  reads today.
-- Method: one background agent per repository; the matrix is written from
-  their reports, not from file dumps.
+- Compatibility surface for Calc-U-59 (briefing §1.2): every file format the
+  latest release reads, including bundled files and files hosted on
+  calc-u.org. Every format of both products is tagged own or external.
+- Method: one background agent per product repository, plus one for
+  calc-u-site and release tooling; the matrix is written from their
+  reports, not from file dumps.
 
 ### Phase 2 — Domain model
 - `docs/GLOSSARY.md`: Product, Kit/shared layer, Machine, Model, Variant,

@@ -136,14 +136,18 @@ the features the products have in common.
 | Calc-U-59 | Qt6 (6.8.2 in CI) | Linux x86_64 / aarch64 | — | AppImage on GitHub | Released |
 | Calc-U-59 | Qt6 | macOS | macOS 15.6 (CMake) | Not shipped; local builds only | Local only |
 | Calc-U-59 | Web (React + WASM) | Browser | — | Zip on GitHub, embedded by calc-u.org | Released |
-| Calc-U-1600 | Qt6 | macOS arm64 | macOS 26 (see note) | DMG on GitHub (Developer ID, signed in CI) | Released |
+| Calc-U-1600 | Qt6 | macOS arm64 | macOS 15.8 (see note) | DMG on GitHub (Developer ID, signed in CI) | Released |
 | Calc-U-1600 | Qt6 (6.8.2 in CI) | Windows x86_64 / arm64 | — | Installer on GitHub (unsigned) | Released |
 | Calc-U-1600 | Qt6 | Linux x86_64 / aarch64 | — | AppImage on GitHub | Released |
 | Calc-U-1600 | Web (WASM) | Browser | — | Zip on GitHub | Pre-release only |
 
-Note: the Calc-U-1600 CMake files set `CMAKE_OSX_DEPLOYMENT_TARGET` to 15.8,
-while this briefing states macOS 26 as the requirement. To be checked during
-the inventory.
+Note: macOS 15.8 is set consistently in CMake (`CMAKE_OSX_DEPLOYMENT_TARGET`),
+in SDE (`.cargo/config.toml`, checked by its release workflow) and by the CI
+runner (`macos-15`). Finding for the inventory: the vendored `libsharpdx.a`
+on `dev-0.8.0` was built locally, so its prebuilt Rust `std` objects carry
+`minos 27.0`. They link with warnings only, but make 15.8 untested in
+practice. The fix is to vendor the library from an SDE release (rustup std,
+macOS 11).
 
 Calc-U-1600 also pulls SDE (SharpDataExchange) release artifacts into its CI
 builds.
@@ -171,7 +175,7 @@ builds.
 | `PC1500` | PC-1500/1500A/1600 hardware, firmware, ROM disassemblies, BASIC | `Sharp1500-1600-Ref`, `SharpBasicReference`, `pc1600`, `PC-1600-ROM`, `pc1500`, `PC-1500-ROM` |
 | `pc1500-build` | Assembling LH5801 sources to `.bin` | `sdcc-pc1500` |
 | `SC61860` | SC61860 machines: CPU, models, 11-pin port, tape and BASIC formats, ROMs | `SC61860` |
-| (none yet) | TI-58/59: TMC0501, ROM, PC-100C | `ti59-research`; plus `rom/` and `reference/` inside Calc-U-59 |
+| (no research router) | TI-58/59: TMC0501, ROM, PC-100C | `ti59-research`; plus `rom/` and `reference/` inside Calc-U-59. TI knowledge is spread over several smaller skills; a router to the PDFs (like `PC1500`/`SC61860`) does not exist. Accepted as is. |
 
 ### 6.2 Product skills (to be restructured, §4)
 
@@ -213,7 +217,6 @@ builds.
 - How calc-u-site shares common material across products.
 - Where releases are published after the move (new repository or the old
   ones), and what happens to the old repositories.
-- macOS minimum for Calc-U-1600 (15.8 in CMake vs 26, §5.2).
 
 ## 8. Success criteria
 
@@ -246,7 +249,8 @@ builds.
 - Keep the existing language versions (C++, Swift, Xcode, Qt). Always
   consider whether they can be upgraded to stay current.
 - Swift app: iOS 18 and macOS 15 or later; keep this for now.
-- Qt6 macOS app (Calc-U-1600): macOS 26; keep this for now (see §5.2 note).
+- Qt6 macOS app (Calc-U-1600): macOS 15.8 or later; keep this for now (see
+  §5.2 note).
 - Builds stay on GitHub Actions; no cross-compile scaffolding in this
   repository.
 - A local build must always be possible, for rapid iteration.

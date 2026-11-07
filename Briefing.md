@@ -105,8 +105,8 @@ the features the products have in common.
 
 ## 3. Decisions already made (not to be reopened)
 
-- **One repository**, initialised in this directory. It will also be created
-  on GitHub, initially private.
+- **One repository**, initialised in this directory. On GitHub it is
+  `tinue/calc-u`, initially private.
 - **Products:** two products as they are today, Calc-U-59 and Calc-U-1600.
   The design must allow adding a third product (for example for SC61860
   machines) without restructuring.
@@ -259,8 +259,6 @@ Each point names the phase that settles it (`docs/Process.md`).
 - How calc-u-site shares common material across products. → Phase 3/4.
 - Where releases are published after the move (new repository or the old
   ones), and what happens to the old repositories. → Phase 3.
-- The GitHub repository's name and when it is created. → Phase 6.
-
 ## 8. Success criteria
 
 - One release each of Calc-U-59 and Calc-U-1600 is live, built from the new

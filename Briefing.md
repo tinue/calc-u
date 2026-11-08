@@ -10,13 +10,11 @@ the features the products have in common.
 ### 1.1 Products keep working
 - Calc-U-59 and Calc-U-1600 continue to be released, without breaking any
   user-visible feature.
-  - Each emulator keeps the same familiar GUI with the same functionality.
-- Each product keeps its own release cycle and its supported platforms (§5.2).
+  - Each emulator keeps its functionality. Its GUI changes where family
+    coherence (§1.5) or shared GUI concepts (§1.3) need it.
+- Each product keeps its own release cycle and its supported platforms (§4.2).
 - Each product keeps its own release material, such as App Store screenshots.
-- "The same GUI" means the same layout, assets, controls and behaviour,
-  judged by the developer in side-by-side use. It does not mean
-  pixel-identical. Screenshots are retaken only where something visible
-  changed.
+  Screenshots are retaken only where something visible changed.
 
 ### 1.2 Supporting files (presets, cards, floppies, state files, …)
 - These rules apply to Calc-U's **own** formats: presets, state files,
@@ -27,14 +25,19 @@ the features the products have in common.
 - **Calc-U-59 stays backwards compatible.** Anything it reads may be in the
   old format. Anything it writes uses the new format. Writing an item that
   was just read therefore upgrades it.
-  - "Old format" means every format the latest *released* Calc-U-59 reads,
-    including legacy formats it already accepts, the files bundled in the
-    app and the files hosted on calc-u.org.
+  - "Old format" means every explicitly versioned format the latest
+    *released* Calc-U-59 reads. This includes the files bundled in the app
+    and the files hosted on calc-u.org, as far as they are in such a format.
+  - Remnants from before versioning started are dropped: unversioned legacy
+    formats are no longer read.
   - No forward compatibility: an upgraded file need not open in an older
     Calc-U-59.
 - **Calc-U-1600 needs no backwards compatibility.** Files saved by 0.8.0 may
   not load in the first release from this repository. A release-note
   warning is enough; no converter.
+  - Version numbers have started to appear in its formats, in preparation
+    for 1.0.0. Existing version numbers stay as they are, even where a
+    format changes.
 
 ### 1.3 One source of truth for shared features
 - Features that both products have (for example presets or keyboard support)
@@ -42,8 +45,17 @@ the features the products have in common.
 - **What stays per product:**
   - The calculator core.
   - Product material: faceplates, icons, the keyboard hit map and similar.
-  - The GUIs themselves. Code duplicated between them moves to the shared
-    layer (for example the preset loader).
+  - The GUIs themselves, as far as they really differ. Code duplicated
+    between them moves to the shared layer (for example the preset loader).
+- **GUI concepts are shared as far as possible.** The GUIs have much in
+  common: a calculator, a printer, a debugger, a preset loader, and a loader
+  for the machine's removable items (cards on the TI-59; memory modules,
+  floppies and others on the PC-1600). Both load and save files, and both
+  come with a collection of bundled material. How much of this can be shared
+  beyond duplicated code (concepts, structure, components) is to be
+  explored, not assumed (§6).
+  - The products already drift apart: TI-59 Solid State Software modules
+    are loaded via the settings, PC-1600 memory modules via a drop-down.
 - **Shared layer vs. product scope.** A product uses the shared layer for a
   feature, but it only exposes as much of that feature as it supports today.
   Example: keyboard support has a shared mechanism plus a per-product
@@ -61,6 +73,9 @@ the features the products have in common.
 - Designing for these is a goal. Building them is not (§2).
 
 ### 1.5 Coherent for end users
+- **One family.** All Calc-U products are recognisable as members of the
+  same family. Learning to operate one immediately helps with operating the
+  others. This changes the existing GUIs (§1.1).
 - Vocabulary is the same across all emulators: a preset means the same thing
   everywhere.
   - A glossary term may rename a visible label, menu item or help text in a
@@ -70,10 +85,10 @@ the features the products have in common.
 
 ### 1.6 SC61860 preparation
 - Prepare for later support of SC61860-based machines such as the PC-1403H.
-  Whether they become part of Calc-U-1600 or a third product is open (§7).
+  Whether they become part of Calc-U-1600 or a third product is open (§6).
 
 ### 1.7 Existing backlogs are carried over
-- Both TODO files (§5.4) are reviewed item by item. Items relevant to the
+- Both TODO files (§4.4) are reviewed item by item. Items relevant to the
   shared layer or the abstractions become part of the design.
 - No idea gets lost. Every idea listed there is kept, either in the shared
   backlog or in the backlog of one product, even if this project doesn't
@@ -94,7 +109,7 @@ the features the products have in common.
     is why the assembler program `examples/assembly/Decoder.asm` does not
     run. Refining the model so that it runs must be possible. Making it run
     is not a goal of this project (§2). What exactly it depends on: open
-    (§7).
+    (§6).
 - **Guideline:** the model must be able to reproduce the observable
   behaviour of the machine correctly. In every case the machine's original
   ROM runs.
@@ -106,17 +121,41 @@ the features the products have in common.
     PC-100C nor the 8-pin slot for the Solid State Software module is
     modelled. This may change. It is an internal restructuring: the
     user-visible behaviour stays (§1.1). Whether and when it happens is
-    decided in phase 3 (§7).
+    decided in phase 3 (§6).
   - Printer interface: the PC-100C has 12 contact springs, one of them
     unconnected; the calculator has 11 pads that mate with the 11 connected
     springs. Sources therefore call it an 11-pin or a 12-pin interface.
+
+### 1.10 One testing concept
+- Calc-U has a single testing concept that covers both products.
+- The calculator cores and the shared layer have unit tests.
+- Tests that involve a GUI need their own strategy. It must take into
+  account that there are three GUIs (Qt6, Swift, Web) and that testing
+  happens on macOS and on iOS (in the simulator). The strategy is open (§6).
+- Ideally there are also installation and smoke tests for Windows and
+  Linux, for example in Parallels virtual machines or on a remotely running
+  Raspberry Pi. Whether and how: open (§6).
+- Tests are grouped by how often they run:
+  - **Frequent:** run often, so they must be very fast and have a short
+    elapsed time; they run in parallel where that is needed to stay fast.
+  - **Longer:** tests that need more time, such as some GUI tests.
+  - **Checkpoint:** tests that run only at dedicated checkpoints, such as
+    before a release. Examples: producing screenshots, the installation test
+    on Windows.
+
+### 1.11 Agent knowledge follows the glossary
+- Once the glossary (`docs/GLOSSARY.md`) is defined, every skill and every
+  other element of agent memory and guidance (`CLAUDE.md` files, memory
+  files, developer docs written for agents) is updated to use its terms.
+  This includes the research skills (§5.1).
 
 ## 2. Non-goals
 
 - Frequent releases of Calc-U-59 or Calc-U-1600 during this project.
 - One single emulator product.
 - Redesign or rework of the research projects. TI, PC-1500/1600 and SC61860
-  keep their knowledge bases and skills (§6).
+  keep their knowledge bases and skills (§5). Their skills are only updated
+  to the glossary terms (§1.11).
 - Integration of SDE (SharpDataExchange). It stays a separate project and is
   pulled in where needed.
 - Integration of ReleaseIt. It stays a separate project, but it is an
@@ -146,21 +185,17 @@ the features the products have in common.
   - Until then, every hotfix in an old repository is carried into the
     inventory as a delta against its pinned baseline.
 - **History:** the full history of both repositories must be archived (the
-  mechanism is open, §7).
-- **Calc-U-1600 baseline:** all imports, inventory and decisions use the
-  branch `dev-0.8.0`. (It was released unchanged as `v0.8.0`; the phase 1
-  pin is that tag, `docs/Process.md`.)
+  mechanism is open, §6).
+- **Baselines:** all imports, inventory and decisions use the release tags
+  Calc-U-59 `v2.3.0` and Calc-U-1600 `v0.8.0`. Pins: `docs/Process.md`,
+  phase 1.
 - **Working language is English**, for specs, design documents, code,
   research documents and skills. Original source material (PDFs, manuals) may
   be in other languages.
 
-## 4. Discussed, but not yet decided
+## 4. Starting point
 
-Moved to §7.
-
-## 5. Starting point
-
-### 5.1 Both repositories
+### 4.1 Both repositories
 - `main` is squashed. The full history only exists in the various
   `dev-x.y.z` branches.
 - Few users: fewer than 1000, possibly fewer than 100. A niche product for
@@ -171,7 +206,7 @@ Moved to §7.
 - Both are released with ReleaseIt (`/Users/me/Development/public/ReleaseIt`);
   see `release.yaml` in each repository.
 
-### 5.2 Products and platforms
+### 4.2 Products and platforms
 
 | | Calc-U-59 | Calc-U-1600 |
 |---|---|---|
@@ -188,41 +223,33 @@ Moved to §7.
 | Calc-U-59 | Qt6 (6.8.2 in CI) | Linux x86_64 / aarch64 | — | AppImage on GitHub | Released |
 | Calc-U-59 | Qt6 | macOS | macOS 15.6 (CMake) | Not shipped; local builds only | Local only |
 | Calc-U-59 | Web (React + WASM) | Browser | — | Zip on GitHub, embedded by calc-u.org | Released |
-| Calc-U-1600 | Qt6 | macOS arm64 | macOS 15.8 (see note) | DMG on GitHub (Developer ID, signed in CI) | Released |
+| Calc-U-1600 | Qt6 | macOS arm64 | macOS 15.8 | DMG on GitHub (Developer ID, signed in CI) | Released |
 | Calc-U-1600 | Qt6 (6.8.2 in CI) | Windows x86_64 / arm64 | — | Installer on GitHub (unsigned) | Released |
 | Calc-U-1600 | Qt6 | Linux x86_64 / aarch64 | — | AppImage on GitHub | Released |
 | Calc-U-1600 | Web (WASM) | Browser | — | Zip on GitHub | Released, not yet published (see below) |
 
 The Calc-U-1600 web client is built as a zip and attached to each release.
 It is not published on calc-u.org yet, because the Calc-U-1600 help site
-does not exist yet (§5.3).
-
-Note: macOS 15.8 is set consistently in CMake (`CMAKE_OSX_DEPLOYMENT_TARGET`),
-in SDE (`.cargo/config.toml`, checked by its release workflow) and by the CI
-runner (`macos-15`). Finding for the inventory: the vendored `libsharpdx.a`
-on `dev-0.8.0` was built locally, so its prebuilt Rust `std` objects carry
-`minos 27.0`. They link with warnings only, but make 15.8 untested in
-practice. The fix is to vendor the library from an SDE release (rustup std,
-macOS 11). It ships with Calc-U-1600 0.8.0, from the old repository.
+does not exist yet (§4.3).
 
 Calc-U-1600 also pulls SDE (SharpDataExchange) release artifacts into its CI
 builds.
 
-### 5.3 calc-u-site
+### 4.3 calc-u-site
 - Repository: `/Users/me/Development/public/calc-u-site`. Builds
   https://calc-u.org (documentation; it also embeds the web clients).
 - The site must always reflect a released product, so it is in scope, but it
   stays a separate repository (§3).
 - `/59/` is the full Calc-U-59 site and its only source. calcu59.ch serves
-  only a redirect and will keep doing so for some time; the old `gh-pages`
-  branch of Calc-U-59 is deactivated and deleted. (The calc-u-site README
-  still describes the old setup.)
+  only a redirect to it, for some time to come. Calc-U-59 has no `gh-pages`
+  branch. The calc-u-site README is stale: it still describes a
+  `gh-pages`/calcu59.ch setup.
 - `/1600/` is a placeholder. Building the Calc-U-1600 help site is in scope:
   it starts from Calc-U-1600's `docs/`, uses the shared-material structure,
   and publishes the Calc-U-1600 web client. This is new documentation, not a
   new product feature (§2).
 
-### 5.4 Backlogs
+### 4.4 Backlogs
 
 | Source | Size | Content |
 |---|---|---|
@@ -230,25 +257,25 @@ builds.
 | `Calc-U-59/ideas/` | 5 documents | `CardRecovery`, `CardSound`, `KeypressLatch`, `Pico`, `PresetConvergence` |
 | `Calc-U-1600/TODO.md` (`dev-0.8.0`) | 728 lines | Known issues, LH5803/SC7852 interface, serial port, loading, expansion connectors ("one model on both machines"), cassette tape, 1.0 announcement, shared layer and web GUI, feature ideas, code cleanup backlog |
 
-## 6. Research base (unchanged by this project)
+## 5. Research base (unchanged by this project, except glossary terms in skills, §1.11)
 
-### 6.1 Global research skills
+### 5.1 Global research skills
 
 | Skill | Covers | Points to |
 |---|---|---|
 | `PC1500` | PC-1500/1500A/1600 hardware, firmware, ROM disassemblies, BASIC | `Sharp1500-1600-Ref`, `SharpBasicReference`, `pc1600`, `PC-1600-ROM`, `pc1500`, `PC-1500-ROM` |
 | `pc1500-build` | Assembling LH5801 sources to `.bin` | `sdcc-pc1500` |
 | `SC61860` | SC61860 machines: CPU, models, 11-pin port, tape and BASIC formats, ROMs | `SC61860` |
-| (no research router) | TI-58/59: TMC0501, ROM, PC-100C | `ti59-research`; plus `rom/` and `reference/` inside Calc-U-59. TI knowledge is spread over several smaller skills; a router to the PDFs (like `PC1500`/`SC61860`) does not exist. Accepted as is. |
+| (no research router) | TI-58/59: TMC0501, ROM, PC-100C | `ti59-research`; plus `rom/` and `reference/` inside Calc-U-59. TI knowledge is spread over several smaller skills; a router to the PDFs (like `PC1500`/`SC61860`) does not exist, and none is planned. |
 
-### 6.2 Product skills (to be restructured, §4)
+### 5.2 Product skills (to be restructured, §6)
 
 | Product | Skills |
 |---|---|
 | Calc-U-59 (`.claude/skills/`) | `calc-u-59-core`, `-shared`, `-swift`, `-qt`, `-web`, `-docs`, `-statefiles`, `-uitesting`, `pre-release-cleanup` |
 | Calc-U-1600 | None as skills; guidance lives in `CLAUDE.md` and `docs/developer/` |
 
-### 6.3 Repositories (all under `~/Development/`)
+### 5.3 Repositories (all under `~/Development/`)
 
 | Path | GitHub | Content |
 |---|---|---|
@@ -263,7 +290,7 @@ builds.
 | `sharp/sdcc-pc1500` | `pchambre/sdcc-pc1500` (third party) | sdas/sdld toolchain for the LH5801 |
 | `sharp/SharpDataExchange` | `tinue/SharpDataExchange` | SDE: data exchange with real hardware (stand-alone, §2) |
 
-### 6.4 NAS directories (`~/SynologyDrive/Dokumente/PDF/Vintage/`)
+### 5.4 NAS directories (`~/SynologyDrive/Dokumente/PDF/Vintage/`)
 
 | Directory | Content |
 |---|---|
@@ -272,16 +299,20 @@ builds.
 | `Sharp/SC61860/` | SC61860 documents (about 230 files, 1.4 GB; indexed in `SC61860/research/`) |
 | `Sharp/` (other) | Newsletters, magazines, textbooks, general Sharp material |
 
-## 7. Open points (for grilling and the spec phase)
+## 6. Open points
 
 Each point names the phase that settles it (`docs/Process.md`).
 
 - SC61860: part of Calc-U-1600 or a third product; the name of the Sharp
   product. → Phase 3.
 - How the full history of both repositories is archived. → Phase 3.
-- The core seam: "The machine is the only core seam; composition instead of
-  family cores." The discussion was not deep enough yet and needs more
-  thought. → Phase 3.
+- The core seam: whether the machine is the only core seam, with
+  composition instead of family cores. → Phase 3.
+- The testing concept (§1.10): the strategy for tests that involve a GUI
+  across Qt6, Swift and Web, on macOS and in the iOS simulator; the time
+  budget of each test group and where each group runs; whether and how
+  installation and smoke tests run on Windows and Linux (Parallels, a
+  remote Raspberry Pi). → Phase 1 (existing tests), phase 3 (decision).
 - Skills: one set of skills per product, plus a shared skill. Structure
   open. → Phase 3.
 - How calc-u-site shares common material across products. → Phase 3/4.
@@ -290,32 +321,45 @@ Each point names the phase that settles it (`docs/Process.md`).
 - Modelling depth per machine and which interfaces become explicit, for
   example the TI-59 printer connector and module slot (§1.9). Closely tied
   to the core seam above. → Phase 3, contracts in phase 4.
+- How far GUI sharing goes across products and frontends (concepts,
+  structure, components), and which existing GUI differences are aligned
+  for family coherence, for example how modules are loaded (§1.3, §1.5).
+  → Phase 1 (facts), phase 3 (decision).
+- Whether any file bundled in Calc-U-59 or hosted on calc-u.org is in an
+  unversioned legacy format, and if so how it is carried over (§1.2).
+  → Phase 1 (facts), phase 3 (decision).
 - What exactly `Calc-U-59/examples/assembly/Decoder.asm` depends on that
   fails because the TI-59 chips are not modelled individually (§1.9).
   → Phase 1.
 
-## 8. Success criteria
+## 7. Success criteria
 
 - One release each of Calc-U-59 and Calc-U-1600 is live, built from the new
   repository. Calc-U-59 is also live in the App Store.
-- Each product looks the same as before (§1.1) and supports at least its
-  current set of features.
+- Each product supports at least its current set of features (§1.1). Its
+  GUI changes only where §1.3 or §1.5 need it.
 - Each product uses the new shared layer for every feature listed as shared.
   The list is `features/INDEX.md` (the KIT-n entries).
   A product that still has its own implementation of a shared feature does
   not meet this criterion.
-- Calc-U-59 reads all of its existing files and writes the new format (§1.2).
+- Calc-U-59 reads all of its existing files in a versioned format and
+  writes the new format (§1.2).
 - calc-u.org reflects both releases and shares common material between the
   products instead of duplicating it. This includes the new Calc-U-1600 help
-  site with the published web client (§5.3).
+  site with the published web client (§4.3).
 - A design for SC61860 support exists and has been validated against the
   abstractions: adding it needs no changes to the shared layer.
-- Every item of both TODO files (§5.4) is accounted for: it is part of the
+- Every item of both TODO files (§4.4) is accounted for: it is part of the
   design, or it is in the shared backlog or a product backlog, or it is
   recorded as done or dropped, with a reason.
+- The testing concept exists and covers both products (§1.10). The
+  calculator cores and the shared layer have unit tests, and every test is
+  assigned to the frequent, longer or checkpoint group.
+- Every skill and every other element of agent guidance and memory uses the
+  glossary terms (§1.11).
 - New product features are not required (§1.3, §2).
 
-## 9. Constraints
+## 8. Constraints
 
 - One developer, working with heavy Claude Code support.
 - No time constraints.
@@ -329,8 +373,7 @@ Each point names the phase that settles it (`docs/Process.md`).
   raised, never lowered; every raise is an ADR (for example Calc-U-59 from
   C++17 to C++20). The minimum OS versions below stay fixed.
 - Swift app: iOS 18 and macOS 15 or later; keep this for now.
-- Qt6 macOS app (Calc-U-1600): macOS 15.8 or later; keep this for now (see
-  §5.2 note).
+- Qt6 macOS app (Calc-U-1600): macOS 15.8 or later; keep this for now.
 - Each artifact keeps its current build location: the Calc-U-59 Swift macOS
   app is built and notarised locally, everything else on GitHub Actions. No
   cross-compile scaffolding in this repository.

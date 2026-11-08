@@ -37,5 +37,5 @@ One repository for the Calc-U emulators, released as separate products
 ## Research
 
 Hardware and firmware facts come from the research skills and repositories
-listed in `Briefing.md` §6 (`PC1500`, `SC61860`, `pc1500-build`,
+listed in `Briefing.md` §5 (`PC1500`, `SC61860`, `pc1500-build`,
 `ti59-research`). Don't restate them here; link to them.

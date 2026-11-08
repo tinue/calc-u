@@ -29,7 +29,7 @@ the table below.
 ### Phase 0 — Charter
 - `Briefing.md` is grilled until no open question is left that blocks
   phase 1. Answers go back into the briefing; questions that belong to a
-  later phase are moved to briefing §7 with the phase named.
+  later phase are moved to briefing §6 with the phase named.
 
 ### Phase 1 — Inventory
 - Baselines are pinned to the release tags, recorded in each inventory's
@@ -37,9 +37,6 @@ the table below.
   identical to the tip of the dev branch, which holds the history.
   - Calc-U-59: `v2.3.0` @ `231792c` (= `dev-2.3.0` @ `915a2b5`).
   - Calc-U-1600: `v0.8.0` @ `d976d3f` (= `dev-0.8.0` @ `70c3258`).
-  - Earlier draft pins were `5074f87` (Calc-U-59, 8 commits / 12 files
-    behind the tag) and `a7a9f0a` (Calc-U-1600, 9 commits / 53 files
-    behind). Inventory written against them is checked against the delta.
   - The patch branches `dev-2.3.1` and `dev-0.8.1` hold only the version
     bump. Every later change in an old repository (hotfix, briefing §3) is
     recorded as a delta against the pin.
@@ -55,7 +52,13 @@ the table below.
   connector, the module slot, and why `examples/assembly/Decoder.asm` does
   not run.
 - Test harnesses and headless emulators are listed with the capabilities
-  each one provides (briefing §9).
+  each one provides (briefing §8).
+- Existing tests per product and frontend (briefing §1.10): kind (unit, GUI,
+  golden, …), platform (macOS, iOS simulator, Windows, Linux, browser), where
+  they run (locally, GitHub Actions), and elapsed time.
+- Agent knowledge to update after phase 2 (briefing §1.11): every skill,
+  `CLAUDE.md`, memory file and agent-facing developer doc of both products
+  and of the research skills.
 - `docs/inventory/calc-u-site.md`: site structure, material per product,
   duplications, how the web clients are embedded. Findings include the
   stale README (it still describes the `gh-pages`/calcu59.ch setup).
@@ -67,7 +70,7 @@ the table below.
   contradictions and a *suggested* base side (the decision comes in phase 3).
 - `docs/inventory/backlog.md`: every item of both `TODO.md` files and of
   `Calc-U-59/ideas/`, each with a target: design input, shared backlog,
-  product backlog, done, or dropped (with reason). Briefing §1.7, §8.
+  product backlog, done, or dropped (with reason). Briefing §1.7, §7.
   - One row per bullet or sub-bullet that is its own idea; headings and
     pure context lines get no row.
   - Each row has a stable ID (`B59-n`, `B1600-n`) and a source reference
@@ -75,9 +78,16 @@ the table below.
 - Harvest both projects' "deliberate oddities" (Calc-U-1600
   `docs/background/Decisions.md`, Calc-U-59 `reference/`) so they survive the
   merge.
-- Compatibility surface for Calc-U-59 (briefing §1.2): every file format the
-  latest release reads, including bundled files and files hosted on
-  calc-u.org. Every format of both products is tagged own or external.
+- Compatibility surface for Calc-U-59 (briefing §1.2): every explicitly
+  versioned file format the latest release reads, including bundled files
+  and files hosted on calc-u.org. Unversioned legacy formats it still
+  accepts are listed as dropped, with every bundled or hosted file that
+  uses one. For Calc-U-1600: which formats already carry a version number.
+  Every format of both products is tagged own or external.
+- GUI concepts per product and frontend (briefing §1.3, §1.5): calculator,
+  printer, debugger, preset loader, card/module/floppy loaders, file load
+  and save, bundled material. For each: where it sits in the GUI, how it is
+  reached, and where the products already drift apart.
 - Method: one background agent per product repository, plus one for
   calc-u-site and release tooling; the matrix is written from their
   reports, not from file dumps.
@@ -88,6 +98,8 @@ the table below.
   Frontend, Platform, and the user-facing terms (briefing §1.5).
 - Every later document uses only these terms. Conflicting names in the two
   codebases (for example `EmulatorSession` vs `MachineSession`) are mapped.
+- Once the glossary is approved, the agent knowledge listed in phase 1 is
+  updated to its terms (briefing §1.11).
 
 ### Phase 3 — Architecture decisions
 - One ADR per fork: context, options, decision, consequences. Candidates:
@@ -95,17 +107,23 @@ the table below.
     jobs), with the Swift/iOS frontend in mind.
   - The core seam: one machine interface for all products, or a small
     kit-level machine interface plus product-level extensions
-    (briefing §7).
+    (briefing §6).
   - Devices keyed by connector type or by machine.
   - Modelling depth and explicit interfaces (briefing §1.9): how a machine
     moves along the chip-level ↔ single-core spectrum, and whether the
     TI-59 printer connector and module slot become explicit.
   - Swift bridge boundary.
   - Preset format, versioning and the Calc-U-59 read-old/write-new upgrade.
+  - GUI sharing and family coherence: which GUI concepts, structure and
+    components are shared across products and frontends (briefing §1.3,
+    §1.5).
   - Repository layout, CMake structure, CI.
   - Versioning, tags, branch model (replacing `dev-x.y.z`), release location.
   - History archive, product naming, ROM removability (design only).
   - Skill structure (per product plus shared).
+  - Testing concept (briefing §1.10): test groups and their time budgets,
+    GUI test strategy across Qt6, Swift and Web, installation and smoke
+    tests on Windows and Linux.
 - Each existing "deliberate oddity" either becomes an ADR or stays in a
   product-level decisions file.
 

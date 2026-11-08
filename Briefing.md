@@ -27,17 +27,22 @@ the features the products have in common.
   was just read therefore upgrades it.
   - "Old format" means every explicitly versioned format the latest
     *released* Calc-U-59 reads. This includes the files bundled in the app
-    and the files hosted on calc-u.org, as far as they are in such a format.
-  - Remnants from before versioning started are dropped: unversioned legacy
-    formats are no longer read.
+    and the files hosted on calc-u.org.
+  - The preset format (`.ti59`, `.ti58`, `.ti58c`) and `ti58c.mem` carry no
+    version in 2.3.0. Exactly as 2.3.0 reads them, they are **version 1**.
+    From now on these formats require a version tag. A file without one is
+    read as version 1 and written back unchanged, except for the added
+    version 1 tag.
+  - Remnants from before versioning started are dropped: any other
+    unversioned legacy format is no longer read.
   - No forward compatibility: an upgraded file need not open in an older
     Calc-U-59.
 - **Calc-U-1600 needs no backwards compatibility.** Files saved by 0.8.0 may
   not load in the first release from this repository. A release-note
   warning is enough; no converter.
-  - Version numbers have started to appear in its formats, in preparation
-    for 1.0.0. Existing version numbers stay as they are, even where a
-    format changes.
+  - In preparation for 1.0.0, its preset, card and floppy formats already
+    carry `format-version: 1`. Existing version numbers stay as they are,
+    even where a format changes.
 
 ### 1.3 One source of truth for shared features
 - Features that both products have (for example presets or keyboard support)
@@ -105,11 +110,12 @@ the features the products have in common.
   products sit somewhere in between, and the level differs per machine. The
   architecture must allow moving a machine along this spectrum without
   restructuring the shared layer or the other machines.
-  - Example: Calc-U-59 does not model the TI-59's chips individually, which
-    is why the assembler program `examples/assembly/Decoder.asm` does not
-    run. Refining the model so that it runs must be possible. Making it run
-    is not a goal of this project (§2). What exactly it depends on: open
-    (§6).
+  - Example: Calc-U-59 does not model the TI-59's chips individually. This
+    is the main reason why the assembler program
+    `examples/assembly/Decoder.asm` does not run; a further cause is in the
+    shared seven-segment decoder (`docs/inventory/calc-u-59.md`). Refining
+    the model so that it runs must be possible. Making it run is not a goal
+    of this project (§2).
 - **Guideline:** the model must be able to reproduce the observable
   behaviour of the machine correctly. In every case the machine's original
   ROM runs.
@@ -153,9 +159,13 @@ the features the products have in common.
 
 - Frequent releases of Calc-U-59 or Calc-U-1600 during this project.
 - One single emulator product.
-- Redesign or rework of the research projects. TI, PC-1500/1600 and SC61860
-  keep their knowledge bases and skills (§5). Their skills are only updated
-  to the glossary terms (§1.11).
+- Redesign or rework of the research repositories. TI, PC-1500/1600 and
+  SC61860 keep their repositories, knowledge bases and skills (§5). Their
+  content may change as the project progresses: new findings, corrections,
+  glossary terms (§1.11).
+- Where a research note and a product disagree on a fact, the product code
+  is authoritative. The discrepancy is recorded and the research note is
+  corrected.
 - Integration of SDE (SharpDataExchange). It stays a separate project and is
   pulled in where needed.
 - Integration of ReleaseIt. It stays a separate project, but it is an
@@ -213,27 +223,29 @@ the features the products have in common.
 | Repository | `/Users/me/Development/public/Calc-U-59` (`tinue/Calc-U-59`) | `/Users/me/Development/sharp/Calc-U-1600` (`tinue/Calc-U-1600`) |
 | State | 2.3.0 released (2026-11-07); `dev-2.3.1` holds only the version bump | 0.8.0 released (2026-11-07); `dev-0.8.1` holds only the version bump |
 | Core / shared layer | C++17, CMake | C++20, CMake |
-| Release tooling | ReleaseIt: Swift macOS app built and notarised locally, everything else from GitHub Actions (`build.yml`, dispatched) | ReleaseIt: everything from GitHub Actions (`build.yml`, dispatched); nothing built locally |
+| Release tooling | ReleaseIt: Swift apps built locally (macOS: built and notarised; iOS: archived and uploaded to TestFlight), everything else from GitHub Actions (`build.yml`, dispatched) | ReleaseIt: everything from GitHub Actions (`build.yml`, dispatched); nothing built locally |
 
 | Product | Frontend | Platform | Minimum version | Distribution | Status |
 |---|---|---|---|---|---|
 | Calc-U-59 | Swift / SwiftUI | iPhone, iPad | iOS 18 | App Store (`ch.erzberger.calcu59`), TestFlight | Released |
 | Calc-U-59 | Swift / SwiftUI | macOS | macOS 15.6 | DMG on GitHub (Developer ID, notarised) | Released |
 | Calc-U-59 | Qt6 (6.8.2 in CI) | Windows x86_64 / arm64 | — | Installer on GitHub (unsigned) | Released |
-| Calc-U-59 | Qt6 (6.8.2 in CI) | Linux x86_64 / aarch64 | — | AppImage on GitHub | Released |
+| Calc-U-59 | Qt6 (Ubuntu 24.04 package, 6.4.2 in CI) | Linux x86_64 / aarch64 | — | AppImage on GitHub | Released |
 | Calc-U-59 | Qt6 | macOS | macOS 15.6 (CMake) | Not shipped; local builds only | Local only |
 | Calc-U-59 | Web (React + WASM) | Browser | — | Zip on GitHub, embedded by calc-u.org | Released |
 | Calc-U-1600 | Qt6 | macOS arm64 | macOS 15.8 | DMG on GitHub (Developer ID, signed in CI) | Released |
 | Calc-U-1600 | Qt6 (6.8.2 in CI) | Windows x86_64 / arm64 | — | Installer on GitHub (unsigned) | Released |
 | Calc-U-1600 | Qt6 | Linux x86_64 / aarch64 | — | AppImage on GitHub | Released |
-| Calc-U-1600 | Web (WASM) | Browser | — | Zip on GitHub | Released, not yet published (see below) |
+| Calc-U-1600 | Web (React + WASM) | Browser | — | Zip on GitHub; preview at tinue.github.io/1600 | Released, not on calc-u.org yet (see below) |
 
 The Calc-U-1600 web client is built as a zip and attached to each release.
 It is not published on calc-u.org yet, because the Calc-U-1600 help site
-does not exist yet (§4.3).
+does not exist yet (§4.3). A preview runs at https://tinue.github.io/1600/
+(private repository `tinue/tinue.github.io`), built from `dev-0.8.0`, not
+from the `v0.8.0` tree.
 
-Calc-U-1600 also pulls SDE (SharpDataExchange) release artifacts into its CI
-builds.
+Calc-U-1600 downloads SDE (SharpDataExchange) release assets in its Linux
+and Windows CI builds. The macOS and WASM libraries are committed binaries.
 
 ### 4.3 calc-u-site
 - Repository: `/Users/me/Development/public/calc-u-site`. Builds
@@ -243,7 +255,8 @@ builds.
 - `/59/` is the full Calc-U-59 site and its only source. calcu59.ch serves
   only a redirect to it, for some time to come. Calc-U-59 has no `gh-pages`
   branch. The calc-u-site README is stale: it still describes a
-  `gh-pages`/calcu59.ch setup.
+  `gh-pages`/calcu59.ch setup. `/59/` still embeds the 2.2.0 web client;
+  2.3.0 is only on the `/59/beta/` preview.
 - `/1600/` is a placeholder. Building the Calc-U-1600 help site is in scope:
   it starts from Calc-U-1600's `docs/`, uses the shared-material structure,
   and publishes the Calc-U-1600 web client. This is new documentation, not a
@@ -255,9 +268,9 @@ builds.
 |---|---|---|
 | `Calc-U-59/TODO.md` | 35 lines | Core emulation, settings, UI, CPU and calculator debugger, various, "far out" ideas |
 | `Calc-U-59/ideas/` | 5 documents | `CardRecovery`, `CardSound`, `KeypressLatch`, `Pico`, `PresetConvergence` |
-| `Calc-U-1600/TODO.md` (`dev-0.8.0`) | 728 lines | Known issues, LH5803/SC7852 interface, serial port, loading, expansion connectors ("one model on both machines"), cassette tape, 1.0 announcement, shared layer and web GUI, feature ideas, code cleanup backlog |
+| `Calc-U-1600/TODO.md` (`v0.8.0`) | 732 lines | Known issues, LH5803/SC7852 interface, serial port, loading, expansion connectors ("one model on both machines"), cassette tape, 1.0 announcement, shared layer and web GUI, feature ideas, code cleanup backlog |
 
-## 5. Research base (unchanged by this project, except glossary terms in skills, §1.11)
+## 5. Research base (repositories unchanged; content evolves, §2)
 
 ### 5.1 Global research skills
 
@@ -266,7 +279,7 @@ builds.
 | `PC1500` | PC-1500/1500A/1600 hardware, firmware, ROM disassemblies, BASIC | `Sharp1500-1600-Ref`, `SharpBasicReference`, `pc1600`, `PC-1600-ROM`, `pc1500`, `PC-1500-ROM` |
 | `pc1500-build` | Assembling LH5801 sources to `.bin` | `sdcc-pc1500` |
 | `SC61860` | SC61860 machines: CPU, models, 11-pin port, tape and BASIC formats, ROMs | `SC61860` |
-| (no research router) | TI-58/59: TMC0501, ROM, PC-100C | `ti59-research`; plus `rom/` and `reference/` inside Calc-U-59. TI knowledge is spread over several smaller skills; a router to the PDFs (like `PC1500`/`SC61860`) does not exist, and none is planned. |
+| (no research router) | TI-58/59: TMC0501, ROM, PC-100C | `ti59-research`; plus `rom/` and `reference/` inside Calc-U-59. There is no TI research skill: TI knowledge lives in the Calc-U-59 product skills (mainly `calc-u-59-core`, `calc-u-59-statefiles`). A router to the PDFs (like `PC1500`/`SC61860`) does not exist, and none is planned. |
 
 ### 5.2 Product skills (to be restructured, §6)
 
@@ -325,12 +338,14 @@ Each point names the phase that settles it (`docs/Process.md`).
   structure, components), and which existing GUI differences are aligned
   for family coherence, for example how modules are loaded (§1.3, §1.5).
   → Phase 1 (facts), phase 3 (decision).
-- Whether any file bundled in Calc-U-59 or hosted on calc-u.org is in an
-  unversioned legacy format, and if so how it is carried over (§1.2).
-  → Phase 1 (facts), phase 3 (decision).
-- What exactly `Calc-U-59/examples/assembly/Decoder.asm` depends on that
-  fails because the TI-59 chips are not modelled individually (§1.9).
-  → Phase 1.
+- Calc-U-59 formats not settled by §1.2: the settings stores and the
+  `.asm` overlay files are unversioned; version 1 cards are written back as
+  version 1 today. Whether `.asm` overlays and Calc-U-1600's `.floppy.yaml`
+  (also read and written by SDE) count as own or external. → Phase 3.
+- PC-100C printer connector: the service manual in `ti59-research` calls it
+  "14-contact" (two for power) and does not say which contact is
+  unconnected (§1.9). The pin-out of the module slot was not found.
+  → Phase 3.
 
 ## 7. Success criteria
 
@@ -342,8 +357,8 @@ Each point names the phase that settles it (`docs/Process.md`).
   The list is `features/INDEX.md` (the KIT-n entries).
   A product that still has its own implementation of a shared feature does
   not meet this criterion.
-- Calc-U-59 reads all of its existing files in a versioned format and
-  writes the new format (§1.2).
+- Calc-U-59 reads all of its existing files (§1.2) and writes the new
+  format.
 - calc-u.org reflects both releases and shares common material between the
   products instead of duplicating it. This includes the new Calc-U-1600 help
   site with the published web client (§4.3).
@@ -374,8 +389,9 @@ Each point names the phase that settles it (`docs/Process.md`).
   C++17 to C++20). The minimum OS versions below stay fixed.
 - Swift app: iOS 18 and macOS 15 or later; keep this for now.
 - Qt6 macOS app (Calc-U-1600): macOS 15.8 or later; keep this for now.
-- Each artifact keeps its current build location: the Calc-U-59 Swift macOS
-  app is built and notarised locally, everything else on GitHub Actions. No
+- Each artifact keeps its current build location: the Calc-U-59 Swift apps
+  are built locally (macOS notarised, iOS uploaded to TestFlight),
+  everything else on GitHub Actions. No
   cross-compile scaffolding in this repository.
 - A local build must always be possible, for rapid iteration.
 - The test harnesses and headless emulators must keep working, for rapid

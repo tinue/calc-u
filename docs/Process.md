@@ -17,8 +17,8 @@ the table below.
 
 | # | Phase | Output | Settles | Status |
 |---|---|---|---|---|
-| 0 | Charter | `Briefing.md`, `CLAUDE.md` | Goals, non-goals, products, constraints, decisions already made, open points | Grilled; awaiting review gate |
-| 1 | Inventory | `docs/inventory/` | Facts only, no decisions | Planned |
+| 0 | Charter | `Briefing.md`, `CLAUDE.md` | Goals, non-goals, products, constraints, decisions already made, open points | Done |
+| 1 | Inventory | `docs/inventory/` | Facts only, no decisions | Drafted; awaiting review gate |
 | 2 | Domain model | `docs/GLOSSARY.md` | One meaning per term | Planned |
 | 3 | Architecture decisions | `docs/adr/NNNN-*.md` | The forks | Planned |
 | 4 | Contracts | `docs/contracts/*.md` | The abstractions, as interface specs | Planned |
@@ -56,9 +56,9 @@ the table below.
 - Existing tests per product and frontend (briefing §1.10): kind (unit, GUI,
   golden, …), platform (macOS, iOS simulator, Windows, Linux, browser), where
   they run (locally, GitHub Actions), and elapsed time.
-- Agent knowledge to update after phase 2 (briefing §1.11): every skill,
-  `CLAUDE.md`, memory file and agent-facing developer doc of both products
-  and of the research skills.
+- `docs/inventory/agent-knowledge.md`: agent knowledge to update after
+  phase 2 (briefing §1.11): every skill, `CLAUDE.md`, memory file and
+  agent-facing developer doc of both products and of the research skills.
 - `docs/inventory/calc-u-site.md`: site structure, material per product,
   duplications, how the web clients are embedded. Findings include the
   stale README (it still describes the `gh-pages`/calcu59.ch setup).
@@ -89,15 +89,17 @@ the table below.
   and save, bundled material. For each: where it sits in the GUI, how it is
   reached, and where the products already drift apart.
 - Method: one background agent per product repository, plus one for
-  calc-u-site and release tooling; the matrix is written from their
-  reports, not from file dumps.
+  calc-u-site, release tooling and agent knowledge; the matrix and the
+  merged backlog are written from their reports, not from file dumps.
+  Prompt: `prompts/phase-1.md`.
 
 ### Phase 2 — Domain model
 - `docs/GLOSSARY.md`: Product, Kit/shared layer, Machine, Model, Variant,
   Family, Component, Connector/Port, Device, Card, Media, Preset, Session,
   Frontend, Platform, and the user-facing terms (briefing §1.5).
 - Every later document uses only these terms. Conflicting names in the two
-  codebases (for example `EmulatorSession` vs `MachineSession`) are mapped.
+  codebases (for example `SessionController` vs `AppSession`,
+  `EmulatorSession` vs `MachineSession`) are mapped.
 - Once the glossary is approved, the agent knowledge listed in phase 1 is
   updated to its terms (briefing §1.11).
 

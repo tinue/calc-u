@@ -104,7 +104,8 @@ the features the products have in common.
 
 ### 1.6 SC61860 preparation
 - Prepare for later support of SC61860-based models such as the PC-1403H.
-  Whether they become part of Calc-U-1600 or a third product is open (§6).
+  They will become a third product; the Sharp product stays Calc-U-1600
+  (`docs/adr/0001-one-product-per-model-family.md`).
 
 ### 1.7 Existing backlogs are carried over
 - Both TODO files (§4.4) are reviewed item by item. Items relevant to the
@@ -358,8 +359,6 @@ and Windows CI builds. The macOS and WASM libraries are committed binaries.
 
 Each point names the phase that settles it (`docs/Process.md`).
 
-- SC61860: part of Calc-U-1600 or a third product; the name of the Sharp
-  product. → Phase 3.
 - How the full history of both repositories is archived. → Phase 3.
 - The core seam: whether the machine is the only core seam, with
   composition instead of one core per model family. → Phase 3.

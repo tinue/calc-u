@@ -20,7 +20,7 @@ the table below.
 | 0 | Charter | `Briefing.md`, `CLAUDE.md` | Goals, non-goals, products, constraints, decisions already made, open points | Done |
 | 1 | Inventory | `docs/inventory/` | Facts only, no decisions | Done (approved 2026-11-09) |
 | 2 | Domain model | `docs/GLOSSARY.md` | One meaning per term | Done (glossary approved 2026-11-09) |
-| 3 | Architecture decisions | `docs/adr/NNNN-*.md` | The forks | Planned |
+| 3 | Architecture decisions | `docs/adr/NNNN-*.md` | The forks | In progress |
 | 4 | Contracts | `docs/contracts/*.md` | The abstractions, as interface specs | Planned |
 | 4b | Capability specs | `features/INDEX.md`, `features/<ID>-*/spec.md` | What each shared capability does, per product | Planned |
 | 5 | Validation on paper | `docs/walkthroughs/*.md`, optional throwaway spikes | Whether the abstractions hold | Planned |

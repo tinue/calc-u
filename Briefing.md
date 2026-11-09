@@ -164,10 +164,11 @@ the features the products have in common.
 - The cores and the library have unit tests.
 - Tests that involve a GUI need their own strategy. It must take into
   account that there are three frontends (Qt6, Swift, Web) and that testing
-  happens on macOS and on iOS (in the simulator). The strategy is open (§6).
-- Ideally there are also installation and smoke tests for Windows and
-  Linux, for example in Parallels virtual machines or on a remotely running
-  Raspberry Pi. Whether and how: open (§6).
+  happens on macOS and on iOS (in the simulator). The strategy: ADR 0031-0033
+  (`docs/adr/`).
+- Installation and smoke tests for Windows and Linux are not part of this
+  project (decided 2026-11-09); harness attach (ADR 0033) keeps them cheap
+  to add later.
 - Tests are grouped by how often they run:
   - **Frequent:** run often, so they must be very fast and have a short
     elapsed time; they run in parallel where that is needed to stay fast.
@@ -361,11 +362,6 @@ and Windows CI builds. The macOS and WASM libraries are committed binaries.
 
 Each point names the phase that settles it (`docs/Process.md`).
 
-- The testing concept (§1.10): the strategy for tests that involve a GUI
-  across Qt6, Swift and Web, on macOS and in the iOS simulator; the time
-  budget of each test group and where each group runs; whether and how
-  installation and smoke tests run on Windows and Linux (Parallels, a
-  remote Raspberry Pi). → Phase 1 (existing tests), phase 3 (decision).
 - Skills: one set of skills per product, plus a shared skill. Structure
   open. → Phase 3.
 - How calc-u-site shares common material across products. → Phase 3/4.

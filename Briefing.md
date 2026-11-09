@@ -38,8 +38,8 @@ the features the products have in common.
     them hosted on calc-u.org): as 2.3.0 reads them they are version 1.
   - **Settings become a file format.** Today both products keep settings in
     the platform stores (UserDefaults, QSettings, `localStorage`). They are
-    replaced by one documented settings file per product (for example
-    `Calc-U-59.ini`, as MAME and similar programs do), read and written by
+    replaced by one documented settings file per product, an INI file
+    (`Calc-U-59.ini`, as MAME does; `docs/adr/0022-settings-files-are-ini.md`), read and written by
     one shared implementation; an exporter follows later. The first start
     of the new release converts the existing platform store into the file.
     A lookup hierarchy (dot directory, home, …) may follow later. Details
@@ -386,8 +386,6 @@ Each point names the phase that settles it (`docs/Process.md`).
   structure, components), and which existing GUI differences are aligned
   for family coherence, for example how modules are loaded (§1.3, §1.5).
   → Phase 1 (facts), phase 3 (decision).
-- Calc-U-59 version 1 magnetic cards are written back as version 1 today, not in
-  the new format (§1.2). → Phase 3.
 - PC-100C printer connector: which of the 12 springs is unconnected is not
   recorded (§1.9). → Phase 3.
 

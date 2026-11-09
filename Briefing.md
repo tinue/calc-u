@@ -142,8 +142,9 @@ the features the products have in common.
   - Consequence for Calc-U-59: today neither the printer connector of the
     PC-100C nor the 8-pin module slot for the Solid State ROM module is
     modelled. This may change. It is an internal restructuring: the
-    user-visible behaviour stays (§1.1). Whether and when it happens is
-    decided in phase 3 (§6).
+    user-visible behaviour stays (§1.1). Both become functional connectors
+    in the migration (`docs/adr/0011-…`); component boundaries follow
+    observable behaviour (`docs/adr/0012-…`).
   - Printer connector: the PC-100C has 12 contact springs, one of them
     unconnected; the calculator has 11 pads that mate with the 11 connected
     springs. Sources therefore call it an 11-pin or a 12-pin connector.
@@ -379,9 +380,8 @@ Each point names the phase that settles it (`docs/Process.md`).
   ReleaseIt gets per-product subdirectories (`release -C <product dir>`,
   own `release.yaml`, CHANGELOG and version file); CI stays dispatched by
   ReleaseIt, no build on tag push. → Phase 3.
-- Modelling depth per machine and which connectors become explicit, for
-  example the TI-59 printer connector and module slot (§1.9). Closely tied
-  to the core seam above. → Phase 3, contracts in phase 4.
+- The modelling depth of each machine, recorded in its machine
+  descriptor (rules: ADR 0010-0012). → Phase 4.
 - How far GUI sharing goes across products and frontends (concepts,
   structure, components), and which existing GUI differences are aligned
   for family coherence, for example how modules are loaded (§1.3, §1.5).

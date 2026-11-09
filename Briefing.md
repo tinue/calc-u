@@ -374,7 +374,8 @@ Each point names the phase that settles it (`docs/Process.md`).
 - The modelling depth of each machine, recorded in its machine
   descriptor (rules: ADR 0010-0012). → Phase 4.
 - PC-100C printer connector: which of the 12 springs is unconnected is not
-  recorded (§1.9). → Phase 3.
+  recorded (§1.9). → When the printer is modelled at contact level
+  (ADR 0011).
 
 ## 7. Success criteria
 

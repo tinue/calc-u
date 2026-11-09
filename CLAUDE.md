@@ -26,7 +26,8 @@ One repository for the Calc-U emulators, released as separate products
 - **Terms:** once `docs/GLOSSARY.md` exists, use only its terms.
 - **Acceptance criteria and edge cases:** "Given [precondition], when
   [action], then [outcome]", with stable IDs (AC-1, EC-1, …).
-- **Feature files** (`features/KIT-n-<name>/`):
+- **Feature files** (`features/<ID>-<name>/`; IDs `LIB-n` for library
+  features, `C59-n` / `C1600-n` for product features):
   - `spec.md` is the stable contract and describes WHAT.
   - `design.md` describes HOW.
   - `qa-report.md` reports results per AC ID.

@@ -396,8 +396,8 @@ Each point names the phase that settles it (`docs/Process.md`).
   repository. Calc-U-59 is also live in the App Store.
 - Each product supports at least its current set of features (§1.1). Its
   GUI changes only where §1.3 or §1.5 need it.
-- Each product uses the new shared layer for every feature listed as shared.
-  The list is `features/INDEX.md` (the KIT-n entries).
+- Each product uses the library for every feature listed as a library
+  feature. The list is `features/INDEX.md` (the `LIB-n` entries).
   A product that still has its own implementation of a shared feature does
   not meet this criterion.
 - Calc-U-59 reads all of its existing files (§1.2) and writes the new
@@ -441,3 +441,9 @@ Each point names the phase that settles it (`docs/Process.md`).
   iteration by an AI agent. Their capabilities must stay (headless run,
   scripted input, state dump, golden tests, …); their interfaces may change
   if the skills and docs that use them change in the same step.
+  - The target is one documented **harness** for the family, with
+    product-specific commands where the hardware differs, made for agents:
+    development, test scenarios, ROM tracing. Parts that served a
+    user-facing CLI or scripting API (the original idea, not the agents'
+    interface) are dropped. Which existing tools fall on which side →
+    phase 3.

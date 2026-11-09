@@ -22,9 +22,9 @@ the table below.
 | 2 | Domain model | `docs/GLOSSARY.md` | One meaning per term | In progress |
 | 3 | Architecture decisions | `docs/adr/NNNN-*.md` | The forks | Planned |
 | 4 | Contracts | `docs/contracts/*.md` | The abstractions, as interface specs | Planned |
-| 4b | Capability specs | `features/INDEX.md`, `features/KIT-n-*/spec.md` | What each shared capability does, per product | Planned |
+| 4b | Capability specs | `features/INDEX.md`, `features/<ID>-*/spec.md` | What each shared capability does, per product | Planned |
 | 5 | Validation on paper | `docs/walkthroughs/*.md`, optional throwaway spikes | Whether the abstractions hold | Planned |
-| 6 | Migration plan, then code | `docs/migration-plan.md`, `features/KIT-n-*/design.md`, `qa-report.md` | Order of steps, each leaving every product green | Planned |
+| 6 | Migration plan, then code | `docs/migration-plan.md`, `features/<ID>-*/design.md`, `qa-report.md` | Order of steps, each leaving every product green | Planned |
 
 ### Phase 0 — Charter
 - `Briefing.md` is grilled until no open question is left that blocks
@@ -98,7 +98,7 @@ the table below.
   Prompt: `prompts/phase-1.md`.
 
 ### Phase 2 — Domain model
-- `docs/GLOSSARY.md`: Product, Kit/shared layer, Machine, Model, Variant,
+- `docs/GLOSSARY.md`: Product, Library, Machine, Model, Variant,
   Family, Component, Connector/Port, Device, Card, Media, Preset, Session,
   Frontend, Platform, and the user-facing terms (briefing §1.5).
 - Every later document uses only these terms. Conflicting names in the two
@@ -112,7 +112,7 @@ the table below.
   - Threading model (Calc-U-59 threaded runner vs Calc-U-1600 coroutine
     jobs), with the Swift/iOS frontend in mind.
   - The core seam: one machine interface for all products, or a small
-    kit-level machine interface plus product-level extensions
+    library-level machine interface plus product-level extensions
     (briefing §6).
   - Devices keyed by connector type or by machine.
   - Modelling depth and explicit interfaces (briefing §1.9): how a machine
@@ -148,7 +148,8 @@ the table below.
 ### Phase 4b — Capability specs
 - Kaldris template (`spec.md`: dependencies, user stories, out of scope,
   acceptance criteria, edge cases, open questions, decision log). IDs
-  `KIT-1`, `KIT-2`, …; status only in `features/INDEX.md`.
+  `LIB-n` for library features, `C59-n` and `C1600-n` for product
+  features; status only in `features/INDEX.md`.
 - Acceptance criteria are written per product and frontend, which makes them
   the parity checklist. They describe today's behaviour of each product
   (briefing §1.3: no new product features).
@@ -170,7 +171,7 @@ the table below.
 - Steps, each leaving every product building, testing and releasable:
   repository merge with history archived, CI for all products, golden tests
   as the safety net, then one capability extraction at a time.
-- Each extraction is a `KIT-n` feature with `design.md` and `qa-report.md`
+- Each extraction is a `LIB-n` feature with `design.md` and `qa-report.md`
   (chain: AC → task → test).
 - Refactoring inside either product (for example a machine interface in
   Calc-U-1600) happens here, after the contracts, not before.

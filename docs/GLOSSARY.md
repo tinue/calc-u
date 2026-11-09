@@ -125,6 +125,27 @@ TMC0540 family of Solid State ROMs.
 One concrete part, a member of a chip family or a single design, such as
 the TMC0541 (Master Library ROM) or the LH5801.
 
+**Floppy disk**:
+A disk for the PC-1600's CE-1600F drive, with two **sides**, A and B, used
+one at a time.
+_Avoid_: disk image, floppy (bare)
+
+**Cassette tape**:
+A tape for the cassette interface of a CE-150 or CE-1600P, stored as sound.
+_Avoid_: tape image, WAV (for this)
+
+**Host drive**:
+A PC-1600 drive (S3:) that the emulator backs with a folder on the
+computer. It has no real counterpart.
+_Avoid_: mounted directory, virtual drive
+
+**Constant memory**:
+The TI-58C's RAM that keeps its contents while the calculator is off.
+_Avoid_: continuous memory, permanent memory
+
+**Partition**:
+The TI-58/59's split of its RAM between program steps and data registers.
+
 ## Code structure
 
 **Library**:
@@ -184,6 +205,15 @@ _Avoid_: state file, snapshot, setup file
 **Preset format**:
 The file format of presets.
 _Avoid_: state file format
+
+**Example**:
+A preset bundled with a product to show what it can do.
+_Avoid_: sample, demo, bundled preset
+
+**Startup preset**:
+The preset a machine is built from when the product starts or the model is
+switched.
+_Avoid_: default preset
 
 ## Running
 
@@ -256,6 +286,10 @@ Placing a TI-59 magnetic card in the window above the top row of keys
 after it was read, where it labels the keys.
 _Avoid_: insert (for this)
 
+**Save folder**:
+The folder where a product keeps its instances and other user files.
+_Avoid_: battery-card saves, save directory, storage
+
 ## Input
 
 **Key**:
@@ -274,6 +308,16 @@ _Avoid_: key map, host key map
 Feeding text into a machine as a sequence of key presses, as when pasting
 text or from a preset.
 _Avoid_: keystroke file, input injection
+
+**Program**:
+User instructions stored in a machine's memory. The kinds are the
+**keystroke program** (TI-58/59), the **BASIC program** (Sharp) and the
+**machine-code program**.
+_Avoid_: code, listing (for this)
+
+**Program step**:
+One memory cell of a keystroke program.
+_Avoid_: step (bare), instruction (for this)
 
 ## Debugging
 

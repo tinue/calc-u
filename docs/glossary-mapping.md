@@ -17,12 +17,15 @@ product inventories, and the products' code at the pins.
 | Cold boot | "Clean" (Reset with ⌘ held) | "Reset All" (Machine menu, ⇧⌘R) |
 | Pause / Resume | "FREEZE", "RESUME" (debug panel) | "Paused (debugger)" (title bar): unchanged |
 | Debug panel | CALCULATOR / CPU / LOG tabs: unchanged | "Inspector" (panel, User Guide §9.2) |
-| Memory module | — | "memory card", "card" in the User Guide and in "Battery-card saves" (Settings ▸ Storage) |
+| Memory module | — | "memory card", "card" in the User Guide |
 | Module definition | — | "custom memory cards", `Memory-Card-Definition-*.md` |
 | Solid State ROM module | "Solid State Module" (Settings, all frontends) | — |
 | Full speed | "full speed": unchanged | "full speed" in the User Guide: unchanged ("turbo" is code only) |
 | Medium, media | — | "media" (e.g. "Saved Media…"): unchanged |
 | Name & Save | — (cards written in place) | "Name & Save": unchanged |
+| Startup preset | — | "Default presets" (Settings, Qt and web) |
+| Save folder | — | "Battery-card saves" (Settings ▸ Storage) |
+| Host drive | — | "Mount Directory…", "Host drive folder": unchanged |
 | Fit / Insert / Eject | "Fit Card", "Fit Fresh Card", "Eject Card": unchanged | module picker, floppy insert/eject: unchanged |
 
 ## Code names

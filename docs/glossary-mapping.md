@@ -10,6 +10,18 @@ Sources: the naming-conflicts table in
 [`inventory/divergence-matrix.md`](inventory/divergence-matrix.md), the
 product inventories, and the products' code at the pins.
 
+## Naming code before the renames
+
+Until migration (phase 6) renames the code, every document, skill, memory
+file and comment uses the glossary term. Where it names code, it adds the
+current code name after the term:
+
+- "memory module (code: `SoftwareDefinedCard`)"
+- "app session (code: `SessionController`)"
+
+The code names come from the tables below. When a rename lands, the
+parenthesis is removed with it.
+
 ## Visible renames
 
 | Glossary term | Calc-U-59 today | Calc-U-1600 today |

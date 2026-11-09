@@ -115,8 +115,11 @@ two sides.
 _Avoid_: card (bare)
 
 **Cue card**:
-The printed card that labels the TI-58/TI-58C's user-defined keys for a
-program.
+The card in the window above the top row of keys that labels the
+TI-58/58C/59's user-defined keys for a program. Three types exist: the
+magnetic card (TI-59 only), the blank non-magnetic card (all three models)
+and the pre-printed card delivered with a Solid State ROM module, such as
+the Master Library's (all three models).
 
 **Chip family**:
 A group of chips of one design that differ in content, such as the
@@ -283,8 +286,8 @@ Putting a medium into its place on a machine; **Eject** takes it out.
 _Avoid_: mount, load, attach (for this)
 
 **Fit**:
-Placing a TI-59 magnetic card in the window above the top row of keys
-after it was read, where it labels the keys.
+Placing a cue card in the window above the top row of keys, where it
+labels them; a TI-59 magnetic card is fitted after it was read.
 _Avoid_: insert (for this)
 
 **Save folder**:

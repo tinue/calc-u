@@ -432,7 +432,8 @@ Each point names the phase that settles it (`docs/Process.md`).
 - Keep the existing language versions (C++, Swift, Xcode, Qt). Always
   consider whether they can be upgraded to stay current. Versions may be
   raised, never lowered; every raise is an ADR (for example Calc-U-59 from
-  C++17 to C++20). The minimum OS versions below stay fixed.
+  C++17 to C++20, done in `docs/adr/0005-cpp20-everywhere.md`). The
+  minimum OS versions below stay fixed.
 - Swift app: iOS 18 and macOS 15 or later; keep this for now.
 - Qt6 macOS app (Calc-U-1600): macOS 15.8 or later; keep this for now.
 - Each artifact keeps its current build location: the Calc-U-59 Swift apps

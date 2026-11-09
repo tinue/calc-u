@@ -364,12 +364,19 @@ _Avoid_: default model
 ## Repositories and releases
 
 **Source repository**:
-The repository that holds the source of every product.
+The repository that holds the source of every product and publishes their
+releases: tinue/calc-u.
 _Avoid_: monorepo
 
-**Release repository**:
-The repository where a product's releases are published.
-_Avoid_: old repository
+**Release tag**:
+The tag of one release, with the product as prefix, such as
+`calc-u-59-v2.4.0`.
+_Avoid_: version tag (for this)
+
+**Archived repository**:
+A product's former repository, read-only, which keeps its history and its
+earlier releases: tinue/Calc-U-59, tinue/Calc-U-1600.
+_Avoid_: old repository, release repository
 
 **Release**:
 One published version of one product, with its assets.

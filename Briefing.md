@@ -236,8 +236,9 @@ the features the products have in common.
     imports product code (phase 6, step 1).
   - Until then, every hotfix in an old repository is carried into the
     inventory as a delta against its pinned baseline.
-- **History:** the full history of both repositories must be archived (the
-  mechanism is open, §6).
+- **History:** the full history of both repositories must be archived; it
+  stays in the archived old repositories
+  (`docs/adr/0030-old-repositories-are-archived-and-keep-the-history.md`).
 - **Baselines:** all imports, inventory and decisions use the release tags
   Calc-U-59 `v2.3.0` and Calc-U-1600 `v0.8.1`. 0.8.1 is assumed to be
   released; until it is tagged, the pin is the tip of `dev-0.8.1`. Pins:
@@ -360,7 +361,6 @@ and Windows CI builds. The macOS and WASM libraries are committed binaries.
 
 Each point names the phase that settles it (`docs/Process.md`).
 
-- How the full history of both repositories is archived. → Phase 3.
 - The testing concept (§1.10): the strategy for tests that involve a GUI
   across Qt6, Swift and Web, on macOS and in the iOS simulator; the time
   budget of each test group and where each group runs; whether and how
@@ -369,17 +369,6 @@ Each point names the phase that settles it (`docs/Process.md`).
 - Skills: one set of skills per product, plus a shared skill. Structure
   open. → Phase 3.
 - How calc-u-site shares common material across products. → Phase 3/4.
-- Versioning and releases. Source repository and release repository are
-  distinct: `tinue/calc-u` holds the source of both products and becomes
-  public once the migration is done. Each product must be releasable on its
-  own: work on one product and release it for a while without touching the
-  other. Open: which versions exist (library, Calc-U-59,
-  Calc-U-1600?), and where releases are published; most likely the old
-  repositories stay as pure release repositories (each has one "latest"
-  release, which calc-u-site relies on). Needs analysis and research.
-  ReleaseIt gets per-product subdirectories (`release -C <product dir>`,
-  own `release.yaml`, CHANGELOG and version file); CI stays dispatched by
-  ReleaseIt, no build on tag push. → Phase 3.
 - The modelling depth of each machine, recorded in its machine
   descriptor (rules: ADR 0010-0012). → Phase 4.
 - PC-100C printer connector: which of the 12 springs is unconnected is not

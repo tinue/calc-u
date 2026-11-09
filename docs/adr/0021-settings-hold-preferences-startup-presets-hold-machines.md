@@ -16,6 +16,8 @@ Calc-U-59 today keeps the Solid State ROM module in its settings.
   start of the new release, a Calc-U-59 user's stored module choice is
   converted into a startup preset, so their setup survives (Briefing
   §1.2, settings conversion).
-- Choosing another Solid State ROM module while running rebuilds the
-  machine with it (as a module change does in Calc-U-1600); to keep it
-  across restarts, the user saves a startup preset.
+- A module chosen while running lasts until the product quits; to keep it
+  across restarts, the user saves a startup preset. Whether a module change
+  keeps the RAM (Calc-U-59 today: a reset that keeps memory) or cold boots
+  (Calc-U-1600 today: the machine restarts) is open for the peripheral and
+  connector contract (phase 4).

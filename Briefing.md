@@ -143,8 +143,8 @@ the features the products have in common.
     PC-100C nor the 8-pin module slot for the Solid State ROM module is
     modelled. This may change. It is an internal restructuring: the
     user-visible behaviour stays (§1.1). Both become functional connectors
-    in the migration (`docs/adr/0011-…`); component boundaries follow
-    observable behaviour (`docs/adr/0012-…`).
+    in the migration (`docs/adr/0011-ti59-printer-and-module-slot-as-functional-connectors.md`); component boundaries follow
+    observable behaviour (`docs/adr/0012-component-boundaries-follow-observable-behaviour.md`).
   - Printer connector: the PC-100C has 12 contact springs, one of them
     unconnected; the calculator has 11 pads that mate with the 11 connected
     springs. Sources therefore call it an 11-pin or a 12-pin connector.

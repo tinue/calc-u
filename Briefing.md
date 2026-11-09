@@ -362,8 +362,13 @@ and Windows CI builds. The macOS and WASM libraries are committed binaries.
 
 Each point names the phase that settles it (`docs/Process.md`).
 
-- Skills: one set of skills per product, plus a shared skill. Structure
-  open. → Phase 3.
+- Skills: how the skill collection is cut is decided after the migration
+  is complete (user, 2026-11-09), not in phase 3. It must cover the
+  purposes agents work on, for example: extend an emulator, add a feature
+  or fix an issue; write a preset; develop a program (keystroke, BASIC,
+  Z-80 or LH5801/LH5803 machine code); analyse ROMs and run traces (also
+  when fixing issues). One big skill overloads the context, too many tiny
+  ones miss results; the cut balances both. → After phase 6.
 - How calc-u-site shares common material across products. → Phase 3/4.
 - The modelling depth of each machine, recorded in its machine
   descriptor (rules: ADR 0010-0012). → Phase 4.

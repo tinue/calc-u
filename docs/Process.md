@@ -128,7 +128,7 @@ the table below.
   - Repository layout, CMake structure, CI.
   - Versioning, tags, branch model (replacing `dev-x.y.z`), release location.
   - History archive, product naming, ROM removability (design only).
-  - Skill structure (per product plus shared).
+  - Skill structure: deferred until after the migration (Briefing §6).
   - Testing concept (briefing §1.10): test groups and their time budgets,
     GUI test strategy across Qt6, Swift and Web, installation and smoke
     tests on Windows and Linux.

@@ -115,7 +115,8 @@ two sides.
 _Avoid_: card (bare)
 
 **Cue card**:
-The printed card that labels the TI-59's user-defined keys for a program.
+The printed card that labels the TI-58/TI-58C's user-defined keys for a
+program.
 
 **Chip family**:
 A group of chips of one design that differ in content, such as the

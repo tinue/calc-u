@@ -382,10 +382,6 @@ Each point names the phase that settles it (`docs/Process.md`).
   ReleaseIt, no build on tag push. → Phase 3.
 - The modelling depth of each machine, recorded in its machine
   descriptor (rules: ADR 0010-0012). → Phase 4.
-- How far GUI sharing goes across products and frontends (concepts,
-  structure, components), and which existing GUI differences are aligned
-  for family coherence, for example how modules are loaded (§1.3, §1.5).
-  → Phase 1 (facts), phase 3 (decision).
 - PC-100C printer connector: which of the 12 springs is unconnected is not
   recorded (§1.9). → Phase 3.
 
@@ -443,7 +439,6 @@ Each point names the phase that settles it (`docs/Process.md`).
   if the skills and docs that use them change in the same step.
   - The target is one documented **harness** for the family, with
     product-specific commands where the hardware differs, made for agents:
-    development, test scenarios, ROM tracing. Parts that served a
-    user-facing CLI or scripting API (the original idea, not the agents'
-    interface) are dropped. Which existing tools fall on which side →
-    phase 3.
+    development, test scenarios, ROM tracing. A check of the agent
+    guidance found every existing tool in agent use, so the harness keeps
+    all their capabilities (`docs/adr/0026-harness-is-one-cli-with-a-session-server.md`).

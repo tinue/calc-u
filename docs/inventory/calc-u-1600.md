@@ -694,11 +694,11 @@ chosen, in both frontends (`Decisions.md:439-442`).
 
 | Harness / suite | Kind | Platform | Where it runs | Elapsed | Capabilities | Source |
 |---|---|---|---|---|---|---|
-| `CoreTests` (Core + Shared, 50 Core and 9 Shared test `.cpp` files, ~792 test functions, one `main()` in `lh5801_tests.cpp`) | unit + integration (real ROMs, presets, loaders, job equivalence) | macOS, Linux (CI) | locally (`tools/run_tests.sh`, `-O1`), CI `core-tests` (ubuntu-24.04, RelWithDebInfo, CTest) | CI "Run tests" step 1 min 47 s (job 6 min 40 s incl. build) | headless run, scripted input via presets, LCD text/PNG checks, memory checks | `CMakeLists.txt:153-169`, `Core/tests/lh5801_tests.cpp:1558`, `tools/run_tests.sh`, `build.yml:46-83` |
+| `CoreTests` (Core + Shared, 50 Core and 9 Shared test `.cpp` files, ~792 test functions, one `main()` in `lh5801_tests.cpp`) | unit + integration (real ROMs, presets, loaders, job equivalence) | macOS, Linux (CI) | locally (`tools/run_tests.sh`, `-O1`), CI `core-tests` (ubuntu-24.04, RelWithDebInfo, CTest) | CI "Run tests" step 1 min 47 s (job 6 min 40 s incl. build); local: M4 Pro, macOS 27.2, 2026-11-09: cold Debug build 14.6 s, tests 37 s (58 groups, 11 985 checks, all passed) | headless run, scripted input via presets, LCD text/PNG checks, memory checks | `CMakeLists.txt:153-169`, `Core/tests/lh5801_tests.cpp:1558`, `tools/run_tests.sh`, `build.yml:46-83` |
 | WASM smoke `tools/wasm_smoke.cpp` via `tools/build_wasm_check.sh` | smoke | node (Emscripten) | locally, CI `web` | 44 s step incl. build | both models boot through `AppSession`, three presets sliced from `tick()`, typed input | `Shared-Architecture.md:122-131`, `build.yml:116-118` |
 | Playwright `Web/tests/*.spec.js` (play, offline, prerender; 22 `test(` calls) | GUI/e2e | Chromium (root, sub-path), WebKit (offline) | locally (`Web/run-tests.sh`), CI `web` | 31 s step | page boot, keyboard, touch, panels, Name & Save persistence, multi-tab, offline PWA, SSR prerender | `Web/playwright.config.js:13-19`, `build.yml:130-132` |
-| `tools/dap_smoke.py` | protocol smoke | macOS (app required) | locally only | unknown | drives VS Code's DAP requests, `calcu1600/screen`, quit | `tools/dap_smoke.py:1-13` |
-| Screenshot scenarios `--shots` (`docs/developer/screenshots/guide/*.shots.yaml`, 9 files) | GUI smoke + checkpoint (image generation) | Qt app; images taken on macOS | locally only (`tools/make_screenshots.sh`) | unknown | frozen emulation, isolated settings, byte-identical Qt images, exit codes 0/1/2 | `docs/developer/screenshots/README.md:1-46`, `User-Guide.md:24-25` |
+| `tools/dap_smoke.py` | protocol smoke | macOS (app required) | locally only | local: M4 Pro, macOS 27.2, 2026-11-09: 25 s, 51 checks, all passed | drives VS Code's DAP requests, `calcu1600/screen`, quit | `tools/dap_smoke.py:1-13` |
+| Screenshot scenarios `--shots` (`docs/developer/screenshots/guide/*.shots.yaml`, 9 files) | GUI smoke + checkpoint (image generation) | Qt app; images taken on macOS | locally only (`tools/make_screenshots.sh`) | local: M4 Pro, macOS 27.2, 2026-11-09: Qt Release build 14.8 s (cold), all 9 scenarios 35 s (2–8 s each); 23 images written, 3 native-menu shots failed for lack of the Accessibility permission (environment, not the app) | frozen emulation, isolated settings, byte-identical Qt images, exit codes 0/1/2 | `docs/developer/screenshots/README.md:1-46`, `User-Guide.md:24-25` |
 | `tools/check_presets.sh` (`pc1600_cli --check-preset`) | parse check | local | locally only | unknown | parses every preset in the repo | `tools/check_presets.sh` |
 | Headless CLIs `pc1500_cli`, `pc1600_cli` | harness | local | locally | n/a | `--preset`, `--dump-basic`, `--dump-mem`, `--inspect <view>`, `--lcd-png`, `--lcd-text`, `--wav`, `--tape-in/-out`, `--ce158-pty/-rx/-rx-hold/-tx`, `--run-after`, `--rom`, `--ce1600p-rom`, `--save-dir`, `--modules-dir` | `tools/pc1600_cli.cpp:1-57`, `tools/Ce158CliPeer.hpp` |
 | Probes `pc1600_plotter_probe`, `pc1600_power_probe`, `pc1600_uart_probe` | hardware diagnostics | local | locally | n/a | e.g. `PC1600_SERIAL=1` PTY | `Building.md:170-176`, `tools/pc1600_uart_probe.cpp:75-85` |
@@ -800,8 +800,9 @@ notes per CPU and device; each entry is backed by a code comment
   `v0.8.0` and at `b4ea8c8` (`wc -l`). The briefing now says 732.
 - ~~VS Code extension tests~~: none exist (no test files under `vscode/`, no
   `scripts` in `package.json`; checked 2026-11-09).
-- Local elapsed time of `tools/run_tests.sh`, the screenshot scenarios and
-  `dap_smoke.py`: unknown (not built or run here).
+- ~~Local elapsed time of `tools/run_tests.sh`, the screenshot scenarios and
+  `dap_smoke.py`~~: measured 2026-11-09 (see Tests). The menu screenshots
+  need the Accessibility and Automation permissions for the launching process.
 - ~~Qt version in CI~~: from the logs of run `42369839986` (2026-11-07):
   Linux x86_64 and aarch64 6.4.2 (Ubuntu `libqt6core6t64 6.4.2+dfsg-21.1build5`),
   macOS Homebrew `qt` 6.12.0 (`qtbase 6.12.0_2`, unpinned, so it moves with

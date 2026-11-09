@@ -270,9 +270,11 @@ Collected from all inventories and deduplicated. Tags: `[59]`, `[1600]`,
   research notes and code are corrected against it (Briefing §1.9).
 
 ### Tests and CI
-- XCUITest and goldens-generation elapsed times: unknown. `[59]`
-- Local elapsed time of `tools/run_tests.sh`, the screenshot scenarios and
-  `dap_smoke.py`: unknown. `[1600]`
+- ~~XCUITest and goldens-generation elapsed times~~: measured 2026-11-09
+  (59 §Tests): XCUITests 140 s on one iOS simulator, goldens ~4 s; the macOS
+  XCUITest run was not measured. `[59]`
+- ~~Local elapsed times~~: measured 2026-11-09 (1600 §Tests): `run_tests.sh`
+  ~51 s cold, screenshot scenarios 35 s, `dap_smoke.py` 25 s. `[1600]`
 - ~~Qt version in Calc-U-1600 CI (F8)~~: Linux 6.4.2, macOS Homebrew 6.12.0
   (unpinned), Windows 6.8.2 (run `42369839986` logs; Briefing §4.2). `[1600]`
 - Do the Calc-U-1600 screenshot scenarios run on Linux/Windows? *unverified*. `[1600]`

@@ -1,11 +1,65 @@
 # Inventory: Calc-U-1600
 
-Pinned: `v0.8.0` @ `d976d3f` (= `dev-0.8.0` @ `70c3258`). Read on 2026-11-08.
-Read with `git archive v0.8.0` into a scratch directory (identical to
-`git show v0.8.0:<path>`); the working tree was not touched. All `path:line`
-references are at that tag. Research facts from `Sharp1500-1600-Ref` @
+Pinned: `v0.8.1`, assumed released; until it is tagged, `dev-0.8.1` @
+`b4ea8c8` (tree `947b850`). Read on 2026-11-08 at `v0.8.0` @ `d976d3f`
+(= `dev-0.8.0` @ `70c3258`) with `git archive v0.8.0` into a scratch
+directory; the working tree was not touched. Re-pinned on 2026-11-09: the
+11 commits `v0.8.0..b4ea8c8` were read as a diff and folded in (section
+"Changes from 0.8.0 to 0.8.1"), and every `path:line` reference into a
+changed file was moved to its line at `b4ea8c8`. All `path:line`
+references are at the new pin. Research facts from `Sharp1500-1600-Ref` @
 `43743ed` (cited as `Ref/<path>`). CI timings from GitHub Actions run
-`42369839986` (2026-11-07, head SHA `70c3258`, the pinned tree).
+`42369839986` (2026-11-07, head SHA `70c3258`, the `v0.8.0` tree); no CI
+run exists for `dev-0.8.1` yet.
+
+## Changes from 0.8.0 to 0.8.1
+
+`git diff --stat v0.8.0 b4ea8c8`: 42 files, +939 / −94. CHANGELOG entry
+`[0.8.1] - work in progress` (`CHANGELOG.md`).
+
+- **CE-161 write-protect switch** (`ff103df`, `7d89f78`; plan
+  `docs/background/plans/RAM-Write-Protect-Plan.md`, status implemented
+  2026-11-09). The CE-161 is battery-backed (`battery: true`) and has the
+  "Exclusive Readout Area Set Switch" in its RAMs' R/W line
+  (`Qt6/resources/cards/ce161.card.yaml`). While protected, every write is
+  refused, also debugger pokes and the program loaders' direct writes; the
+  debugger shows the region as `Rom`. A prepared, protected CE-161 is a
+  program module on the PC-1500, as in its manual (`User-Guide.md:404-444`,
+  `docs/background/CE-161-Program-Module.md`, 225 lines, new).
+  - Interface: `ExpansionCard::hasWriteProtectSwitch()`, `writeProtected()`,
+    `setWriteProtected()` (default: no switch); implemented by
+    `SoftwareDefinedCard`. The live switch is flipped through
+    `MachineSession::setSlotWriteProtected()`, because `ModuleBay` holds
+    only a const card.
+  - GUI: a "Write-protect" checkbox in the Name & Save dialog (Qt and web),
+    shown only for cards with a switch (`User-Guide.md:508-516`). Name &
+    Save stays templates-only. A card saved protected stays protected;
+    there is no UI to switch it back.
+  - Presets: `saveas: live protected slot-<n>:<name>` saves with the switch
+    on and turns it on in the live card. Refused for a disk ("a disk has
+    no write-protect switch") or a card without a switch.
+  - Card format: `write-protect:` on `regular` content changes from a map
+    `{ default, persisted }` (unused by every bundled card) to the switch
+    position `protected | unprotected`; the old map form is rejected. The
+    format stays `format-version: 1` (`docs/Memory-Card-Definition-Format.md`).
+  - Decision: a write-protected RAM module refuses host pokes too
+    (`docs/background/Decisions.md:251-258`).
+- **libsharpdx 0.3.5 release build** (`c17100b`): `libsharpdx.a` re-vendored
+  (11 475 944 → 22 259 280 bytes); `tools/refresh_sharpdx.sh` refuses a
+  library whose objects claim a newer macOS than the deployment target
+  (`check_minos`).
+- **Docs on Sharp's program-module layout** (`402136e`, `afaa7c9`,
+  `0502e47`, `b4ea8c8`): header, reserve area, program, FF fill, END at
+  65279; where BASIC, variables and reserve keys go next to a program
+  module. The CE-161 note records one open point of its own: an
+  unlabelled second input on the 2 KB-chip schematic.
+- `TODO.md`: the CE-161 decoder note now says G2B is a power-up lock (RC
+  from VCC) instead of "unreadable" (`TODO.md:212-213`). Still 732 lines.
+- Version 0.8.1 in `Qt6/CMakeLists.txt:39` (`644dc75`).
+- Tests: +4 test functions in `Core/tests/ce161_tests.cpp`,
+  `memory_card_tests.cpp`, `battery_card_instance_tests.cpp`,
+  `Shared/tests/shared_app_session_tests.cpp` (and extended
+  `preset_tests.cpp`); +1 Playwright test (`Web/tests/play.spec.js`).
 
 ## Summary
 
@@ -18,17 +72,17 @@ references are at that tag. Research facts from `Sharp1500-1600-Ref` @
   coroutine jobs (`Core/Job.hpp`).
 - There is no common machine base class: `shared::MachineSession` owns a
   `std::unique_ptr<PC1500Machine>` and a `std::unique_ptr<PC1600Machine>`
-  side by side (`Shared/MachineSession.hpp:379-380`) and branches per
+  side by side (`Shared/MachineSession.hpp:382-383`) and branches per
   machine (89 references in `Shared/MachineSession.cpp`).
 - Peripherals are modelled as cards on explicit, pin-numbered connectors:
   40-pin memory slot (`PinState`), 60-pin system bus (`SystemBusPins`)
-  (`TODO.md:185-192`, `docs/background/Decisions.md:497-522`).
+  (`TODO.md:185-192`, `docs/background/Decisions.md:505-530`).
 - Own formats (preset, card, floppy) all carry a required
   `format-version: 1`; the trace file carries binary version 3. Settings,
   `bundled.yaml` and screenshot scenarios are unversioned.
 - No machine state file (save state) exists; persistence is per medium
   (card, floppy, tape WAV) plus settings.
-- Tests: one `CoreTests` binary (Core + Shared, hand-rolled runner, ~788
+- Tests: one `CoreTests` binary (Core + Shared, hand-rolled runner, ~792
   test functions), Playwright tests for the web client, a WASM smoke test,
   a DAP smoke script, scripted Qt screenshot scenarios, two dev-only
   matrices. CI runs CoreTests, WASM smoke and Playwright; not the Qt GUI.
@@ -78,7 +132,7 @@ references are at that tag. Research facts from `Sharp1500-1600-Ref` @
 | `PC1500TraceFile` (one trace format, both CPUs' frames) | both | `Core/PC1500/PC1500TraceFile.hpp:7-27`, `PC1600Machine.hpp:550` |
 | Debugger: `DebugTarget`, `MachineDebugTarget<Machine>` template | both | `Core/Debug/MachineDebugTargets.hpp:21-48` |
 | Preset parser `PresetFile`; per-machine loaders `PC1500PresetLoader`, `PC1600PresetLoader` | parser shared, loaders per machine | `Core/Preset/`, `Core/PC1500/`, `Core/PC1600/` |
-| `MachineSession` | both, via two typed pointers, no interface | `Shared/MachineSession.hpp:379-380` |
+| `MachineSession` | both, via two typed pointers, no interface | `Shared/MachineSession.hpp:382-383` |
 
 ## Capabilities
 
@@ -89,59 +143,60 @@ references are at that tag. Research facts from `Sharp1500-1600-Ref` @
   `MachineSession::hostKeyDown()`'s decision: PC-1600 accents through the
   live queue (KBII sequences), shifted keys as Shift sequences, physical
   keys as real presses; PC-1500 cursor keys real presses, the rest through
-  the keystroke queue (`Decisions.md:571-576`). Every key held at least 2
-  emulated frames (`Decisions.md:577-587`). Faceplate hit regions per model
+  the keystroke queue (`Decisions.md:579-584`). Every key held at least 2
+  emulated frames (`Decisions.md:585-595`). Faceplate hit regions per model
   in `Shared/KeyLayout/` (`PC1500KeyLayout`, `PC1600KeyLayout`,
   `FaceplateLayout`). Paste Text types the first clipboard line, never
-  ENTER (`Decisions.md:597-599`, `docs/User-Guide.md:155-158`). Host
+  ENTER (`Decisions.md:605-607`, `docs/User-Guide.md:155-158`). Host
   characters outside ASCII type nothing except PC-1600 KBII accents
-  (`Decisions.md:748-749`).
+  (`Decisions.md:756-757`).
 - Where it lives: `Shared/HostKeyMap.*`, `Shared/KeyLayout/`,
   `Core/KeyPaste.*`, `Core/SharpShiftedSymbols.hpp`, `Core/PC1500/PC1500TypedInput.hpp`,
   `Core/PC1600/PC1600TypedInput.hpp`; Qt adapter `Qt6/app/PC1500KeyboardMap.*`
   (name is historic: serves all models, `Qt6/app/PC1500KeyboardMap.hpp:8-10`).
-- Frontends: Qt6 (key events, IME for dead keys, `Decisions.md:617-621`);
+- Frontends: Qt6 (key events, IME for dead keys, `Decisions.md:625-629`);
   Web (`KeyboardEvent.code/.key`, bare Shift tap within 400 ms = SHIFT,
   touch takes nearest key within 24 px; `Web-Client.md:117-124`,
-  `Decisions.md:593-596`). The web keeps no hold of its own
-  (`Decisions.md:808-812`).
+  `Decisions.md:601-604`). The web keeps no hold of its own
+  (`Decisions.md:816-820`).
 - Maturity: complete for the documented keys; PC-1600 keys `ctrl`, `kbii`,
-  `bs` cannot be pressed from a preset (`User-Guide.md:851-852`). Full table
+  `bs` cannot be pressed from a preset (`User-Guide.md:903-904`). Full table
   `docs/Keyboard-Mapping.md` (137 lines).
 - Product-specific names: `HostKey`, `hostKeyDown`, `KeyPasteFeeder`, "Paste Text", KBII.
 
 ### Presets
 - How it works today: a preset is a script that builds a machine from a
   cold boot (model, ROM, modules, peripherals) then runs `keys:` and
-  `program:` blocks (`User-Guide.md:625-645`). "YAML-shaped, not YAML": a
+  `program:` blocks (`User-Guide.md:676-696`). "YAML-shaped, not YAML": a
   hand-written parser; only `debug:` and `bus-rom:` are YAML proper
-  (`Decisions.md:381-386`). Required `format-version: 1` and `model:`
-  (`User-Guide.md:659-661`, `Core/Preset/PresetFile.hpp:265`). Steps:
+  (`Decisions.md:389-394`). Required `format-version: 1` and `model:`
+  (`User-Guide.md:710-712`, `Core/Preset/PresetFile.hpp:271`). Steps:
   `key:`, `type:`, `wait:`, `expect:`, `saveas:`, `screenshot:`,
-  `syncclock:`, `trace:` (`User-Guide.md:841`). Extension matches model
+  `syncclock:`, `trace:` (`User-Guide.md:893`). Extension matches model
   (`.pc1500`, `.pc1500a`, `.pc1600`) but parser goes by `model:`
-  (`Decisions.md:409-411`). Bundled presets listed in
+  (`Decisions.md:417-419`). Bundled presets listed in
   `examples/bundled.yaml` in two lists, `defaults` (Settings ▸ Default
   presets) and `examples` (File ▸ Examples) (`examples/bundled.yaml:1-10`,
-  `Decisions.md:425-427`). Settings stores a bundled preset as
-  `examples:<file>` (`Decisions.md:428-430`). Default preset per model
+  `Decisions.md:433-435`). Settings stores a bundled preset as
+  `examples:<file>` (`Decisions.md:436-438`). Default preset per model
   applies on app start and model switch, not on reset or ROM change
-  (`User-Guide.md:788-802`).
+  (`User-Guide.md:840-854`).
 - Where it lives: `Core/Preset/` (`PresetFile`, `PresetRunner`,
   `PresetMedia`, `PresetBusRomLoader`, `PresetDebugBlock`),
   `Core/PC1500/PC1500PresetLoader.*`, `Core/PC1600/PC1600PresetLoader.*`,
   `Shared/PresetCatalog.*`.
 - Frontends: Qt6 (File ▸ Load Preset…, File ▸ Examples submenu grouped,
-  `Qt6/app/MainWindow.cpp:843-857`; double-click/Open With on macOS,
+  `Qt6/app/MainWindow.cpp:862-876`; double-click/Open With on macOS,
   `User-Guide.md:185-188`); Web (File ▸ Load Preset submenu with groups +
-  "Upload Preset…", `Web/src/CalcU1600.jsx:240-251,263`; `?preset=` URL
+  "Upload Preset…", `Web/src/CalcU1600.jsx:244-255,267`; `?preset=` URL
   parameter, `README.md:46-48`); CLIs (`--preset`, `--check-preset`,
   `tools/pc1600_cli.cpp:7-10`). CLIs build their own preset environment,
   not `AppSession` (`Shared-Architecture.md:137-138`).
 - Maturity: complete.
 - Product-specific names: preset ("builds a machine from a cold boot" — a
   script, not a stored state), `preset-name:`, `defaults` / `examples`,
-  `saveas: live|template`, project preset (debugger).
+  `saveas: live|template` (plus `protected` for a card with a write-protect
+  switch), project preset (debugger).
 
 ### Debugger (including DAP)
 - How it works today: DAP server on 127.0.0.1 (default port 32168, one
@@ -151,14 +206,14 @@ references are at that tag. Research facts from `Sharp1500-1600-Ref` @
   (SC7852) and LH5803 on the PC-1600); frames 1–20 are history; breakpoints
   with conditions/hit counts/log messages, data breakpoints, listings
   (sdas `.lst`/`.rst`, zasm `.lst`, `.SYMBOLS:`), bank qualifiers
-  (`docs/Debugger.md:316-358`). Snapshots are pre-execution everywhere
-  (`Decisions.md:858-863`). Custom requests `calcu1600/screen`,
+  (`docs/Debugger.md:318-360`). Snapshots are pre-execution everywhere
+  (`Decisions.md:866-871`). Custom requests `calcu1600/screen`,
   `calcu1600/quit` (`tools/dap_smoke.py:1-13`, `Debugger-Internals.md:70-71`).
   VS Code extension carries configurations, builds (zasm / sdas) and
-  default presets (`Decisions.md:828-831`). Project settings live in the
-  preset's `debug:` block (`Decisions.md:832-836`). Separate from the DAP
+  default presets (`Decisions.md:836-839`). Project settings live in the
+  preset's `debug:` block (`Decisions.md:840-844`). Separate from the DAP
   debugger: the INSPECTOR panel (views built in Core,
-  `Decisions.md:628-634`; `User-Guide.md:889-941`).
+  `Decisions.md:636-642`; `User-Guide.md:941-993`).
 - Where it lives: `Core/CPU/` (history, breakpoints, watches),
   `Core/Debug/` (`DebugTarget`, `CpuViews`, `RunControl`, `SourceMap`,
   `Listing/`, `Disasm/`, `Inspect/`, `ProgramLoader`), `Qt6/app/debug/`
@@ -169,7 +224,7 @@ references are at that tag. Research facts from `Sharp1500-1600-Ref` @
 - Maturity: complete for VS Code (automated side passes; manual checks
   open, `TODO.md:446-456`). No BASIC-level debugger (`TODO.md:457-461`).
   Limitations: no backward stepping, no TASM listings, vertical banks not a
-  qualifier (`Debugger.md:390-397`).
+  qualifier (`Debugger.md:392-399`).
 - Product-specific names: `DebugTarget`, `DebugController`, `runSlice()`,
   INSPECTOR, project preset, `boot: debug`, Build & Load.
 
@@ -182,17 +237,17 @@ references are at that tag. Research facts from `Sharp1500-1600-Ref` @
   `debug/dapPort`, `serial/linkDirectory`, `window/width|height`,
   `startup/modelPreference`, `startup/lastUsedModel`
   (`Shared/Settings.hpp:34-121`). Values stored as strings
-  (`Decisions.md:767-768`). Hardware picks (model, modules) are on the
+  (`Decisions.md:775-776`). Hardware picks (model, modules) are on the
   control bar and not saved; Settings holds app preferences only
-  (`Decisions.md:642-644`). Dialog has only Close; changes apply
-  immediately (`User-Guide.md:864-886`).
+  (`Decisions.md:650-652`). Dialog has only Close; changes apply
+  immediately (`User-Guide.md:916-938`).
 - Where it lives: `Shared/Settings.*`, `Shared/AppPaths.*`; Qt store
   `Qt6/app/AppSettings.hpp:25-46` (QSettings, org and app "Calc-U-1600";
   an isolated INI for screenshot runs); dialog `Qt6/app/SettingsDialog.cpp`.
 - Frontends: Qt6 (Calc-U-1600 ▸ Settings… on macOS, Edit ▸ Settings…
-  elsewhere, `User-Guide.md:864-865`); Web (`localStorage`, keys prefixed
+  elsewhere, `User-Guide.md:916-917`); Web (`localStorage`, keys prefixed
   `calcu1600/`, `Web-Client.md:93-94`; Edit ▸ Settings…,
-  `Web/src/CalcU1600.jsx:276`; no folder settings, `Web-Client.md:113`).
+  `Web/src/CalcU1600.jsx:280`; no folder settings, `Web-Client.md:113`).
 - Maturity: complete.
 - Product-specific names: "Battery-card saves" (save folder), "Startup device".
 
@@ -201,42 +256,45 @@ Overview: removable media are handled by bays in Shared — `ModuleBay`,
 `FloppyBay`, `TapeBay` — with catalogues, attach, Name & Save, preset
 `saveas:` and debounced autosave (`Shared-Architecture.md:57`). Bundled
 items are templates, never written; Name & Save makes an instance that
-autosaves about 0.5 s after a change (`User-Guide.md:442-471`). Cards and
-floppies resolve bundled-first, then the save folder (`Decisions.md:680-681`).
+autosaves about 0.5 s after a change (`User-Guide.md:484-522`). Cards and
+floppies resolve bundled-first, then the save folder (`Decisions.md:688-689`).
 Media pickers cache by file stamps (`Shared/DirectoryScanCache.hpp`,
-`Decisions.md:786-789`). `shared::MediaLibrary` lists/exports/imports/deletes
+`Decisions.md:794-797`). `shared::MediaLibrary` lists/exports/imports/deletes
 the save folder's cards, disks, tapes (web "Saved Media…",
 `Shared-Architecture.md:64`).
 
 #### Memory modules (cards)
 - How it works today: every module is a `.card.yaml` (software-defined
   card: pins that enable it, memory regions, banking, optional
-  `initial-content`) (`User-Guide.md:943-950`,
+  `initial-content`) (`User-Guide.md:995-1002`,
   `docs/Memory-Card-Definition-Spec.md`, `docs/Memory-Card-Definition-Format.md`).
   Bundled: CE-151, CE-155, CE-161, CE-1638, CE-163F, CE-502B, CE-1600M,
   CE-1601M, superRAM (`User-Guide.md:392-402`, `Qt6/resources/cards/`).
+  The CE-161 is battery-backed and has a write-protect switch; protected,
+  it is a program module on the PC-1500 (`User-Guide.md:404-444`; section
+  "Changes from 0.8.0 to 0.8.1").
   PC-1500/1500A one slot, PC-1600 two slots (`User-Guide.md:378-379`).
   Choosing a module restarts the machine (`User-Guide.md:389-390`). A card
-  never points at another file (`Decisions.md:841-846`). v1 scope:
+  never points at another file (`Decisions.md:849-854`). v1 scope:
   Regular/Flash/ROM content, unbanked or trigger-banked latches;
   `line-based` latches rejected (`PC1600-Core-Limitations.md:381-384`).
-- Where it lives: `Core/Connector/MemoryCardDefinition.hpp` (1449 lines),
+- Where it lives: `Core/Connector/MemoryCardDefinition.hpp` (1441 lines),
   `SoftwareDefinedCard.hpp`, `BatteryCardInstance.hpp`, `MemoryCardCatalog.hpp`,
   `MediaSave.hpp`, `NamedFileCatalog.hpp`; `Shared/ModuleBay.*`,
   `Shared/CardYamlDump.*`.
 - Frontends: Qt6 control-bar picker per slot (`Qt6/app/ControlBar.hpp:12,75`,
   `Qt6/app/MemoryModuleManager.*`, `NamedComboBox`); Web control bar
-  (`Web/src/ControlBar.jsx`, own `NamedCombo`, `Decisions.md:431-434`).
+  (`Web/src/ControlBar.jsx`, own `NamedCombo`, `Decisions.md:439-442`).
 - Maturity: complete within v1 scope.
 - Product-specific names: card, module, slot, template, instance, "Name &
   Save", "Battery-card saves", `module-name:`.
 
 #### Floppy (CE-1600F)
 - How it works today: attaches together with the CE-1600P (union, no own
-  attach) (`User-Guide.md:406-407`, `PC1600-Core-Limitations.md:425-427`).
+  attach) (`User-Guide.md:448-449`, `PC1600-Core-Limitations.md:425-427`).
   Disk picker: –empty–, Blank, Formatted, saved disks; A/B flips; lamp
-  (`User-Guide.md:411-416`). Image format `.floppy.yaml` only
-  (`Decisions.md:678-679`), documented in `docs/developer/Floppy-Image-Format.md`.
+  (`User-Guide.md:453-458`). Image format `.floppy.yaml` only
+  (`Decisions.md:686-687`), documented in `docs/developer/Floppy-Image-Format.md`.
   No GCR, no per-track format state, no write-protect
   (`PC1600-Core-Limitations.md:428-435`). Outside edits while inserted
   are overwritten ("eject first", `TODO.md:470-474`).
@@ -249,16 +307,16 @@ the save folder's cards, disks, tapes (web "Saved Media…",
 #### Host drive (S3:, PC-1600)
 - How it works today: File ▸ Mount Directory… makes a host folder drive
   `S3:` (also `Y:` without a CE-1600F) through an own ROM in page-1 bank 7
-  and an own protocol over ports 90H/91H (`User-Guide.md:418-440`,
-  `Decisions.md:542-569`). Only 8.3 names, bytes unchanged
-  (`Decisions.md:687-688`); `INIT "S3:"` refused (`Decisions.md:682-683`).
-  Not saved across launches (`Decisions.md:650-651`). Preset key
-  `host-drive:` (`User-Guide.md:832`).
+  and an own protocol over ports 90H/91H (`User-Guide.md:460-482`,
+  `Decisions.md:550-577`). Only 8.3 names, bytes unchanged
+  (`Decisions.md:695-696`); `INIT "S3:"` refused (`Decisions.md:690-691`).
+  Not saved across launches (`Decisions.md:658-659`). Preset key
+  `host-drive:` (`User-Guide.md:884`).
 - Where it lives: `Core/Connector/HostDirectoryDrive.hpp` (697 lines),
   `PC1600HostDriveCard.hpp`, `firmware/pc1600-hostdrive/`;
   `docs/PC1600-Host-Drive.md`, `docs/developer/PC1600-Host-Drive-Internals.md`.
 - Frontends: Qt6 only (`Web-Client.md:111`).
-- Maturity: complete; a superset of the MEP interface (`Decisions.md:555-557`).
+- Maturity: complete; a superset of the MEP interface (`Decisions.md:563-565`).
 - Product-specific names: host drive, `S3:`, Mount Directory.
 
 #### Cassette tape
@@ -270,13 +328,13 @@ the save folder's cards, disks, tapes (web "Saved Media…",
   (`Decisions.md:91-100`). Tape folder default `~/Calc-U-1600/Tapes`
   (`User-Guide.md:317`). (2) Fast-load: a WAV is decoded by libsharpdx and
   its file written into memory like a `.bbin`/`.bin`; several files → the
-  GUI asks (`User-Guide.md:298-311`, `Decisions.md:463-469`). The two
-  never share code (`Decisions.md:466-467`).
+  GUI asks (`User-Guide.md:298-311`, `Decisions.md:471-477`). The two
+  never share code (`Decisions.md:474-475`).
 - Where it lives: `Core/Tape/TapeDeck.hpp`, `Core/CPU/LH5811Serial.hpp`,
   `Core/ProgramFile.*`, `Shared/TapeBay.*`, `Shared/MachineCodeLoad.*`,
   `Qt6/app/TapeManager.*`.
 - Frontends: Qt6 and Web (web: import WAV via Import Card, Disk or Tape…,
-  `Web/tests/play.spec.js:248`). CLIs `--tape-in`/`--tape-out`
+  `Web/tests/play.spec.js:268`). CLIs `--tape-in`/`--tape-out`
   (`tools/pc1600_cli.cpp:49-54`).
 - Maturity: partial. Not supported: PC-1600 MODE 1 reading PC-1500 tapes
   via CE-1600P, CE-150 on a PC-1600 (`User-Guide.md:367-370`,
@@ -287,13 +345,13 @@ the save folder's cards, disks, tapes (web "Saved Media…",
 - How it works today: PC-1600 RS-232C (TC8576F) and CE-158 RS-232C appear
   as host pseudo-terminals with stable symlinks `calcu1600-rs232c.serial`,
   `calcu1600-ce158.serial` in the serial link directory (default
-  `~/Calc-U-1600`) (`User-Guide.md:534-559`, `Decisions.md:689-695`).
-  macOS and Linux only; Windows not yet (`User-Guide.md:559`). Line timing
+  `~/Calc-U-1600`) (`User-Guide.md:585-610`, `Decisions.md:697-703`).
+  macOS and Linux only; Windows not yet (`User-Guide.md:610`). Line timing
   per character, no modem lines on raw PTY
   (`PC1600-Core-Limitations.md:118-136`). RS-232C/SIO mux not modelled
   (`PC1600-Core-Limitations.md:115-117`). SharpDataExchange's
   `pc1600emul` device appends the RS-232C file name itself
-  (`Decisions.md:694-695`).
+  (`Decisions.md:702-703`).
 - Where it lives: `Core/Serial/` (`SerialLink`, `PtySerialLink`,
   `LazySerialLink`), `Core/PC1600/TC8576F.*`, `Core/Connector/Ce158Card.hpp`,
   `Ce158Port.hpp`; doc `docs/developer/PC1600-Serial-Port.md`.
@@ -307,10 +365,10 @@ the save folder's cards, disks, tapes (web "Saved Media…",
   and Load Machine Code… (`.bin` with PC-1600 16-byte or CE-158 27-byte
   header, headerless with address dialog, WAV) write straight into memory;
   they follow MODE and `TITLE` and never change them
-  (`User-Guide.md:237-296,475-531`, `Decisions.md:440-443`). File content
-  picks the loader via libsharpdx `sde_file_info` (`Decisions.md:457-462`).
+  (`User-Guide.md:237-296,526-582`, `Decisions.md:448-451`). File content
+  picks the loader via libsharpdx `sde_file_info` (`Decisions.md:465-470`).
   Drag and drop routed by `Core/DropFile` classification
-  (`Decisions.md:470-476`, `User-Guide.md:167-188`). No export of programs
+  (`Decisions.md:478-484`, `User-Guide.md:167-188`). No export of programs
   (`User-Guide.md:292-296`).
 - Where it lives: `Core/ProgramFile.*`, `Core/MachineCodeFile.*`,
   `Core/DropFile.*`, `Core/Basic/`, `Core/PC1500/PC1500BasicLoader.*`,
@@ -326,18 +384,20 @@ the save folder's cards, disks, tapes (web "Saved Media…",
   used calls: `sde_file_info`, `sde_tokenize`, `sde_wav_count`,
   `sde_wav_decode`, `sde_last_error`, `sde_buf_free`
   (`Core/Basic/vendor/sharpdx/README.md:1-17`). Built without `serial`
-  and `audio` features. macOS arm64 `libsharpdx.a` and
+  and `audio` features. macOS arm64 `libsharpdx.a` (release build since
+  0.8.1) and
   `libsharpdx-wasm.a` are committed (`README.md:21-22,46-51` there);
   Linux/Windows download it at build time from a SharpDataExchange
   **GitHub release** (`tools/fetch_sharpdx.sh`, default tag `v0.3.5`, URL
   `https://github.com/tinue/SharpDataExchange/releases/download/...`, via
   `curl`), not committed. CI runs `tools/fetch_sharpdx.sh` in the
   `core-tests`, Linux and Windows jobs (`build.yml:69-71,163-169,314-316,566-568,646-650`).
-  `tools/refresh_sharpdx.sh` rebuilds from a sibling checkout with cargo.
+  `tools/refresh_sharpdx.sh` rebuilds from a sibling checkout with cargo and
+  refuses objects built for a newer macOS than the deployment target.
   Linked through target `calcu_sharpdx` (`cmake/CalcU.cmake`).
 - Interface contracts with SDE beyond the library: `.bbin` = what
   `sde convert` writes (`User-Guide.md:240-241`); serial file name
-  appended by SDE's `pc1600emul` device (`Decisions.md:694-695`);
+  appended by SDE's `pc1600emul` device (`Decisions.md:702-703`);
   `.floppy.yaml` read/written by `sde` (`TODO.md:498-499`,
   `Floppy-Image-Format.md` §8). libsharpdx has `sde_disk_list`/`sde_disk_get`,
   unused (`TODO.md:442-444`).
@@ -358,19 +418,19 @@ the save folder's cards, disks, tapes (web "Saved Media…",
   (`User-Guide.md:222-233`; `Qt6/app/PlotterPaperWidget.*`,
   `Shared/PlotterPaper.*`; macOS clipboard image `Qt6/app/MacClipboardImage.mm`).
 - CE-158 printer port output panel: Save… writes the bytes exactly as sent,
-  Clear starts a new sheet (`User-Guide.md:602-604`,
+  Clear starts a new sheet (`User-Guide.md:653-655`,
   `Qt6/app/Ce158PrinterWidget.cpp:53`).
 - Frontends: Qt6 and Web (web has paper and printer panels,
   `Web-Client.md:12-17`, `Web/tests/play.spec.js:208`).
 - Known accepted limitation: pen colour drift after OFF/ON
-  (`Decisions.md:297-312`).
+  (`Decisions.md:305-320`).
 
 ### Audio
 - How it works today: `PiezoSampler` follows the buzzer drive line the ROM
   toggles through each machine's gate; no synthesized tones
   (`Decisions.md:82-89`); 48 kHz default (`Core/Audio/PiezoSampler.hpp:38`).
   `shared::AudioPump` delivers PCM to a frontend `AudioSink`; turbo and
-  operation audio are thrown away (`Decisions.md:759-761`). PC-1600
+  operation audio are thrown away (`Decisions.md:767-769`). PC-1600
   sub-CPU F-pin tones (key click, alarm) not generated
   (`PC1600-Core-Limitations.md:164-166`).
 - Frontends: Qt6 `QAudioSink` (`Qt6/app/AudioOutput.*`); Web AudioWorklet
@@ -385,9 +445,9 @@ the save folder's cards, disks, tapes (web "Saved Media…",
   `Decisions.md:212-217`). Clock rates: PC-1500 1.3 MHz
   (`Core/PC1500/PC1500Clocks.hpp:9`), PC-1600 3.58 MHz T-states
   (`Core/PC1600/PC1600Clocks.hpp:8`). RTC advances at emulated rate, seeded
-  once from host clock (`Decisions.md:314-320`).
+  once from host clock (`Decisions.md:322-328`).
 - Frontends: Qt6 `EmulationPacer` (QTimer), turbo via `LcdWidget`
-  (`Qt6/app/MainWindow.cpp:230-231`); Web worker 60 Hz `tick()` and "holding
+  (`Qt6/app/MainWindow.cpp:249-250`); Web worker 60 Hz `tick()` and "holding
   the LCD runs turbo" (`Web-Client.md:117-118`).
 - Maturity: complete. Open: PC-1600 BASIC ~0.4-0.65 % fast (`TODO.md:8`).
 
@@ -397,15 +457,15 @@ the save folder's cards, disks, tapes (web "Saved Media…",
   `job::Task<T>` coroutine (`co_await job::run(machine, n)`), run sliced
   (`step(cycles)`) or to completion; a run request is never split
   (`Shared-Architecture.md:103-120`, `Core/Job.hpp:16-30`,
-  `Decisions.md:726-743`). No threaded mode, unlike Calc-U-59
-  (`Decisions.md:726-730`). Core's machine mutexes stay, uncontended
-  (`Decisions.md:731`). Busy state is `AppSession::busy()` alone
-  (`Decisions.md:752-758`).
+  `Decisions.md:734-751`). No threaded mode, unlike Calc-U-59
+  (`Decisions.md:734-738`). Core's machine mutexes stay, uncontended
+  (`Decisions.md:739`). Busy state is `AppSession::busy()` alone
+  (`Decisions.md:760-766`).
 - Frontends: Qt `SyncOperations` uses `runNow()` (10 ms slices, pumps Qt
   event loop, "Loading…" popup); Web worker uses `start(op, done)`
   (`Shared-Architecture.md:91-101`). CLIs/tests use the blocking names that
   run jobs to completion; the yield hook stays for the CLIs
-  (`Decisions.md:740-743`).
+  (`Decisions.md:748-751`).
 - Maturity: complete; `job_tests.cpp` checks sliced vs straight equivalence
   on five presets (`Shared-Architecture.md:112-115`).
 - Product-specific names: job, `Task`, `runNow`, `tick`.
@@ -419,12 +479,12 @@ the save folder's cards, disks, tapes (web "Saved Media…",
   model-agnostic frame (`Shared-Architecture.md:67`); `LcdLayout` gives
   geometry/colours/indicators. LCD text readout (`Core/Display/LcdText`,
   `docs/developer/LCD-Text.md`); Copy Screen gives image + plain Unicode,
-  `--lcd-text` an escaped form (`Decisions.md:655-661`). Faceplates
+  `--lcd-text` an escaped form (`Decisions.md:663-669`). Faceplates
   `Qt6/resources/faceplates/{pc1500,pc1500A,pc1600}.png`.
 - Frontends: Qt6 `LcdWidget`, `FaceplateWidget`; Web canvas painters in
-  the page (`Web/src/painters.js`, `Decisions.md:813-815`). Web keeps the
+  the page (`Web/src/painters.js`, `Decisions.md:821-823`). Web keeps the
   faceplate full-width and shows panels only if ≥ 220 px remain
-  (`Web-Client.md:12-17`, `Decisions.md:818-822`).
+  (`Web-Client.md:12-17`, `Decisions.md:826-830`).
 - Maturity: complete; kana not parsed in LCD text (`TODO.md:403-411`).
 
 ### Web shell
@@ -433,14 +493,15 @@ the save folder's cards, disks, tapes (web "Saved Media…",
   `workerUrl`) and an installable offline PWA (`dist/app/`)
   (`Web-Client.md:1-90`). Engine in one Web Worker, no threads; IDBFS with
   `autoPersist`; Web Lock `calcu1600-storage` lets one tab write
-  (`Decisions.md:792-803`, `Web/calc-engine-worker.js:36,116`). ROMs ship
-  in `dist/` (`Decisions.md:804-805`). React vendored, JSX compiled at
-  build time with vendored Babel, "as in Calc-U-59" (`Decisions.md:816-817`).
+  (`Decisions.md:800-811`, `Web/calc-engine-worker.js:36,116`). ROMs ship
+  in `dist/` (`Decisions.md:812-813`). React vendored, JSX compiled at
+  build time with vendored Babel, "as in Calc-U-59" (`Decisions.md:824-825`).
   Release attaches `Calc-U-1600-web.zip` (`Web-Client.md:58-60`).
 - Left out on the web: DAP, serial ports, host drive, TRACE/LOG, Quit,
   window size, folder settings (`Web-Client.md:105-113`).
-- Published: as a preview at `https://tinue.github.io/1600`
-  (`README.md:5-6,34-50`); calc-u.org/1600 play page is open work
+- Published: not yet. The developer's preview at `https://tinue.github.io/1600`
+  (`README.md:5-6,34-50`) stays but is not part of this project; the web
+  client ends up at calc-u.org/1600, whose play page is open work
   (`TODO.md:384-388`).
 - Maturity: complete as a preview; real-iPad check open (`TODO.md:389-390`).
 
@@ -448,19 +509,20 @@ the save folder's cards, disks, tapes (web "Saved Media…",
 See section "Tests" below.
 
 ### Help-site material (`docs/`)
-- User docs: `docs/User-Guide.md` (967 lines, screenshots generated),
+- User docs: `docs/User-Guide.md` (1019 lines, screenshots generated),
   `docs/Keyboard-Mapping.md`, `docs/PC1600-Host-Drive.md`,
-  `docs/Debugger.md` (397), `docs/PC1500-Keyword-Modules.md`,
-  `docs/Memory-Card-Definition-Spec.md` (624), `docs/Memory-Card-Definition-Format.md`
-  (441), `examples/README.md`, `vscode/calcu1600-debug/README.md`
+  `docs/Debugger.md` (399), `docs/PC1500-Keyword-Modules.md`,
+  `docs/Memory-Card-Definition-Spec.md` (621), `docs/Memory-Card-Definition-Format.md`
+  (442), `examples/README.md`, `vscode/calcu1600-debug/README.md`
   (`README.md:52-80`). Images in `docs/images/guide/` (generated,
   `docs/developer/screenshots/README.md:1-9`).
 - Developer docs: `docs/developer/` (11 files: README, Building,
   Shared-Architecture, Web-Client, PC1600-Core-Limitations, PC1600-Serial-Port,
   PC1600-Host-Drive-Internals, Debugger-Internals, LCD-Text,
   Floppy-Image-Format, Cloud-Sessions) (`docs/developer/README.md:9-85`).
-- Background: `docs/background/Decisions.md` (883 lines), 24 plans in
-  `docs/background/plans/`.
+- Background: `docs/background/Decisions.md` (891 lines), 25 plans in
+  `docs/background/plans/`, hardware notes such as
+  `docs/background/CE-161-Program-Module.md`.
 - `CHANGELOG.md` per release; README "Web version (preview)" section.
 - Content is Markdown with Mermaid diagrams (`User-Guide.md:41-57` and others).
 - No Calc-U-1600 page on calc-u.org yet (`TODO.md:384-388`).
@@ -471,17 +533,17 @@ See section "Tests" below.
   `roms/README.md`). A model switch gives a fresh machine without
   peripherals (`User-Guide.md:73-76`). Reset and Reset All
   (`User-Guide.md:95-106`). A CE-1600P ROM switch swaps the box without a
-  reset (`Decisions.md:533-540`). Startup boots straight into BASIC, no
+  reset (`Decisions.md:541-548`). Startup boots straight into BASIC, no
   power-on step (`User-Guide.md:63-64`). No APO control or OFF/ON UI
   (`PC1600-Core-Limitations.md:200-202`).
 - Rules about which control a model offers live in `shared::ControlState`
-  (`Decisions.md:770-781`).
+  (`Decisions.md:778-789`).
 
 ### ROMs
 - 21 ROM files fetched by `tools/fetch_roms.sh` and md5-verified; not in
   the repository (`roms/README.md:1-8`). Without them the build succeeds but
   nothing boots (`Building.md:64-66`, `build.yml:3-7`). Released packages
-  bundle them (`Web` `dist/` too, `Decisions.md:804-805`). Plus the own
+  bundle them (`Web` `dist/` too, `Decisions.md:812-813`). Plus the own
   host-drive ROM (`firmware/pc1600-hostdrive/PC1600-P1-B7-HOSTDRIVE.bin`).
 
 ### Other capabilities
@@ -495,7 +557,7 @@ See section "Tests" below.
 - 3D-printed memory-slot cover `3d-print/memory-slot-cover.scad`.
 - Source artwork `source-material/` (faceplate SVG/TIF, icon script).
 - `examples/` shipped as `Calc-U-1600-examples.zip`; user-facing only
-  (`Decisions.md:698-703`, `README.md:10-13`).
+  (`Decisions.md:706-711`, `README.md:10-13`).
 
 ## Modelling depth (Briefing §1.9)
 
@@ -530,19 +592,19 @@ SC882G display chips, RAMs, system ROM
 | Part | Modelled as | Source |
 |---|---|---|
 | SC7852 Z-80 core | Separate `SC7852` behind `SC7852Bus`; one wait per M1; MEMPTR and some undocumented effects not modelled | `Core/CPU/SC7852/SC7852.hpp:21,70`, `PC1600-Core-Limitations.md:45-63` |
-| SC7852 on-chip blocks (memory select, interrupt control, LH-5810-style I/O 10H-1FH, LH-5803 interface) | Folded into `PC1600Memory` (ports, INT level, keyboard strobes, buzzer modulator) and `PC1600Bank` (Port 31H/28H/3DH/3CH) | `Core/PC1600/PC1600Memory.hpp:441-561`, `Core/PC1600/PC1600Bank.hpp` |
+| SC7852 on-chip blocks (memory select, interrupt control, LH-5810-style I/O 10H-1FH, LH-5803 interface) | Folded into `PC1600Memory` (ports, INT level, keyboard strobes, buzzer modulator) and `PC1600Bank` (Port 31H/28H/3DH/3CH) | `Core/PC1600/PC1600Memory.hpp:442-562`, `Core/PC1600/PC1600Bank.hpp` |
 | LH5803 | Separate `LH5803` (subclass of `LH5801`) with `LH5803SharedMemory` (shared RAM, ME0/ME1 routing, display mirror) | `Core/CPU/LH5803/`, `PC1600-Core-Limitations.md:65-104` |
 | CPU handover | Separate `PC1600BusArbiter`; only one CPU executes at a time | `Core/PC1600/PC1600Machine.hpp:538`, `PC1500TraceFile.hpp:22-27` |
 | LR38041 gate array | Not a separate model; its functions are spread over `PC1600Memory`, `PC1600Bank`, `MemorySlotConnector`, `PC1600BusDrive`; the display mirror of LH5803 writes is attributed to it | `PC1600-Core-Limitations.md:295-317` |
 | LU-57813P sub-CPU | Separate `PC1600SubCpu`, high-level (functional) model of the command set rebuilt from the Z-80 ROM; no datasheet, ROM undumped; one fitted response time | `Core/PC1600/PC1600SubCpu.hpp:9-25`, `PC1600-Core-Limitations.md:143-173` |
 | TC8576F | Separate `TC8576F` register model per datasheet; per-character line timing | `Core/PC1600/TC8576F.*`, `PC1600-Core-Limitations.md:108-139` |
 | HD61203 + 2× HD61102 | One `PC1600Display` following the datasheet (stale first read, busy) with fitted busy clocks | `Decisions.md:224-236` |
-| Keyboard | Separate `PC1600Keyboard` | `PC1600Memory.hpp:546` |
-| ROM/RAM | Arrays in `PC1600Memory`; CS24 8 KB sub-banking not separate | `PC1600Memory.hpp:551-556`, `PC1600-Core-Limitations.md:237-239` |
-| 40-pin memory slots ×2 | Explicit `MemorySlotConnector` each; S1-S3 order remapped per Port 3CH b6; K0-K2 and PVIN (pin 2) not asserted | `PC1600Memory.hpp:434-437`, `Decisions.md:238-249`, `PC1600-Core-Limitations.md:385-391` |
-| 60-pin system bus | One explicit `SystemBus`, driven by both CPUs through `PC1600BusDrive`; cards decode their own CPU family's contacts | `Decisions.md:505-522` |
+| Keyboard | Separate `PC1600Keyboard` | `PC1600Memory.hpp:547` |
+| ROM/RAM | Arrays in `PC1600Memory`; CS24 8 KB sub-banking not separate | `PC1600Memory.hpp:552-557`, `PC1600-Core-Limitations.md:237-239` |
+| 40-pin memory slots ×2 | Explicit `MemorySlotConnector` each; S1-S3 order remapped per Port 3CH b6; K0-K2 and PVIN (pin 2) not asserted | `PC1600Memory.hpp:435-438`, `Decisions.md:238-249`, `PC1600-Core-Limitations.md:385-391` |
+| 60-pin system bus | One explicit `SystemBus`, driven by both CPUs through `PC1600BusDrive`; cards decode their own CPU family's contacts | `Decisions.md:513-530` |
 | CE-1600P / CE-1600F | `CE1600PCard` and `CE1600FCard` on the system bus; CE-1600F register protocol, sectors stored decoded (functional for GCR) | `PC1600-Core-Limitations.md:417-435` |
-| Host drive | `PC1600HostDriveCard` + `HostDirectoryDrive`, own protocol (functional, not the MEP's) | `Decisions.md:546-549` |
+| Host drive | `PC1600HostDriveCard` + `HostDirectoryDrive`, own protocol (functional, not the MEP's) | `Decisions.md:554-557` |
 | Buzzer | `PiezoSampler` with a PC-1600 transducer model; F-register modulator idle case | `PC1600-Core-Limitations.md:409-415` |
 | BX7269W, RS-232C/SIO mux | Not modelled; one `SerialLink` for both connectors | `PC1600-Core-Limitations.md:115-117` |
 
@@ -567,37 +629,37 @@ Interfaces explicit vs implicit:
 
 | Format | Own / external | Read | Written | Version | Source |
 |---|---|---|---|---|---|
-| Preset `.pc1500` / `.pc1500a` / `.pc1600` | own | app, CLIs, web | not by the app; scaffolded by the VS Code extension templates; `examples/` maintained by hand | `format-version: 1` required, exact match (`kPresetFormatVersion = 1`) | `Core/Preset/PresetFile.hpp:265`, `PresetFile.cpp:629-655`, `Decisions.md:672-673` |
-| Memory card `.card.yaml` | own | app, CLIs, web | Name & Save, autosave, `saveas:` | `format-version: 1` required (`kCardFormatVersion`) | `Core/Connector/MemoryCardDefinition.hpp:24-25,1361` |
+| Preset `.pc1500` / `.pc1500a` / `.pc1600` | own | app, CLIs, web | not by the app; scaffolded by the VS Code extension templates; `examples/` maintained by hand | `format-version: 1` required, exact match (`kPresetFormatVersion = 1`) | `Core/Preset/PresetFile.hpp:271`, `PresetFile.cpp:644-670`, `Decisions.md:680-681` |
+| Memory card `.card.yaml` | own | app, CLIs, web | Name & Save, autosave, `saveas:` | `format-version: 1` required (`kCardFormatVersion`); the `write-protect:` key changed shape in 0.8.1 without a version change | `Core/Connector/MemoryCardDefinition.hpp:24-25,1353` |
 | Floppy `.floppy.yaml` | own (also read/written by SDE) | app, web, SDE | autosave, Name & Save, `saveas:`, SDE | `format-version: 1` required (`kFloppyFormatVersion`), plus a `format:` key | `Core/Connector/FloppyImageFile.hpp:45,77-78,115`, `docs/developer/Floppy-Image-Format.md` |
-| `.floppy.img` | own (legacy) | no longer read | — | — | `Decisions.md:678-679` |
+| `.floppy.img` | own (legacy) | no longer read | — | — | `Decisions.md:686-687` |
 | `TRACE.bin` | own | `tools/read_trace.py` | app (INSPECTOR TRACE), preset `trace:` | binary magic `PC15`, version 3 | `Core/PC1500/PC1500TraceFile.cpp:9-11` |
-| Settings | own | app | app | none (QSettings native store, org/app "Calc-U-1600"; web `localStorage` `calcu1600/…`); values as strings | `Qt6/app/AppSettings.hpp:25-27`, `Web-Client.md:93-94`, `Decisions.md:767-768` |
+| Settings | own | app | app | none (QSettings native store, org/app "Calc-U-1600"; web `localStorage` `calcu1600/…`); values as strings | `Qt6/app/AppSettings.hpp:25-27`, `Web-Client.md:93-94`, `Decisions.md:775-776` |
 | `examples/bundled.yaml` | own (internal) | `Shared/PresetCatalog` | by hand | none | `examples/bundled.yaml:1-10` |
 | Screenshot scenario `*.shots.yaml` | own (dev) | Qt app `--shots` | by hand | none found | `docs/developer/screenshots/README.md:47-60` |
-| Debug `debug:` block / VS Code `launch.json` configuration | own | app (DAP), extension | extension scaffold | none | `docs/Debugger.md:361-388` |
-| Card YAML dump (INSPECTOR) | own (fragment of card format) | — | INSPECTOR | n/a | `Shared/CardYamlDump.*`, `User-Guide.md:931-932` |
-| LCD text form (`--lcd-text`, `expect:`, `calcu1600/screen`) | own | tests, DAP clients | CLIs, DAP | none | `Decisions.md:655-661`, `docs/developer/LCD-Text.md` |
+| Debug `debug:` block / VS Code `launch.json` configuration | own | app (DAP), extension | extension scaffold | none | `docs/Debugger.md:363-390` |
+| Card YAML dump (INSPECTOR) | own (fragment of card format) | — | INSPECTOR | n/a | `Shared/CardYamlDump.*`, `User-Guide.md:983-984` |
+| LCD text form (`--lcd-text`, `expect:`, `calcu1600/screen`) | own | tests, DAP clients | CLIs, DAP | none | `Decisions.md:663-669`, `docs/developer/LCD-Text.md` |
 | Web `dist/` contract, `files.json`, `MANIFEST.json` | own | embedding pages | `Web/build.js` | none | `Web-Client.md:54-90` |
-| Host-drive ROM + I/O protocol (ports 90H/91H) | own | — | — | none | `Decisions.md:546-554` |
-| Serial port file names `calcu1600-*.serial` | own (contract with SDE) | — | — | n/a | `Decisions.md:689-695` |
+| Host-drive ROM + I/O protocol (ports 90H/91H) | own | — | — | none | `Decisions.md:554-562` |
+| Serial port file names `calcu1600-*.serial` | own (contract with SDE) | — | — | n/a | `Decisions.md:697-703` |
 | ROM images (`roms/*`) | external | app, CLIs, tests | — | — (md5 list in `tools/fetch_roms.sh`) | `roms/README.md` |
 | Cassette WAV | external | any PCM WAV 8-32 bit, mono/stereo (bay and fast-load) | 48 kHz 16-bit (bay) | — | `User-Guide.md:355-358` |
 | BASIC listing `.bas` | external | yes (tokenized by libsharpdx / typed) | no | — | `User-Guide.md:239-243` |
 | Tokenized BASIC `.bbin` (CE-158 or PC-1600 header) | external (SDE exchange) | yes | no | — | `User-Guide.md:240-241,279-281` |
-| Machine code `.bin` with PC-1600 16-byte or CE-158 27-byte header; headerless `.bin`/`.rom` | external | yes | no (machine `SAVE`/`CSAVE` only) | — | `User-Guide.md:483-497` |
-| Assembler listings sdas `.lst`/`.rst`, zasm `.lst`, `.SYMBOLS:` tables | external | debugger | no | — | `docs/Debugger.md:348-353` |
-| Host-drive files | external (PC-1600 file bytes, 8.3 names) | yes | yes, byte for byte | — | `Decisions.md:687-688` |
-| CE-158 printer output | external (raw bytes as sent) | — | Save… | — | `User-Guide.md:602-604` |
-| PNG (Copy Screen, `screenshot:`, `--lcd-png`) | external | — | yes | — | `User-Guide.md:773`, `Core/Display/PngWriter.hpp` |
+| Machine code `.bin` with PC-1600 16-byte or CE-158 27-byte header; headerless `.bin`/`.rom` | external | yes | no (machine `SAVE`/`CSAVE` only) | — | `User-Guide.md:534-548` |
+| Assembler listings sdas `.lst`/`.rst`, zasm `.lst`, `.SYMBOLS:` tables | external | debugger | no | — | `docs/Debugger.md:350-355` |
+| Host-drive files | external (PC-1600 file bytes, 8.3 names) | yes | yes, byte for byte | — | `Decisions.md:695-696` |
+| CE-158 printer output | external (raw bytes as sent) | — | Save… | — | `User-Guide.md:653-655` |
+| PNG (Copy Screen, `screenshot:`, `--lcd-png`) | external | — | yes | — | `User-Guide.md:825`, `Core/Display/PngWriter.hpp` |
 | DAP (JSON over TCP) | external protocol | yes | yes | — | `Debugger-Internals.md:10-17` |
 
 Version policy at the pin: every file format the app reads carries a
 required `format-version`; a missing or unknown version is refused; before
 1.0 old forms just fail; from 1.0 the previous version keeps working and
 app-written files are upgraded at their next save
-(`Decisions.md:663-677`). Bundled files are updated in the repository with
-each format change (`Decisions.md:674-677`). Pending pre-1.0 change:
+(`Decisions.md:671-685`). Bundled files are updated in the repository with
+each format change (`Decisions.md:682-685`). Pending pre-1.0 change:
 optional `dirty` key in `.floppy.yaml`, `format-version` stays 1
 (`TODO.md:470-483`).
 
@@ -605,36 +667,36 @@ optional `dirty` key in `.floppy.yaml`, `format-version` stays 1
 
 Window layout (Qt6 and Web): calculator (faceplate + LCD) on top, control
 bar below, panels at the bottom (INSPECTOR, plotter paper or CE-158
-printer) (`User-Guide.md:33-37`, `Qt6/app/MainWindow.cpp:89-93`). The web
+printer) (`User-Guide.md:33-37`, `Qt6/app/MainWindow.cpp:93-97`). The web
 mirrors the Qt window's faceplate, menus, control bar and panels
 (`README.md:34-36`).
 
 | Concept | Qt6 desktop (macOS, Windows, Linux) | Web (browser, PWA) |
 |---|---|---|
 | Calculator | Faceplate + LCD, click keys, hold LCD for turbo | Same; touch nearest key within 24 px, multi-pointer |
-| Printer / plotter | Paper panel (Copy, Cut); CE-158 printer panel (Save…, Clear); attach via control-bar buttons (model's own peripherals) or Machine ▸ Peripherals (all) (`Decisions.md:645-649`) | Same panels; Machine ▸ Peripherals (`Web/src/CalcU1600.jsx:284`) |
+| Printer / plotter | Paper panel (Copy, Cut); CE-158 printer panel (Save…, Clear); attach via control-bar buttons (model's own peripherals) or Machine ▸ Peripherals (all) (`Decisions.md:653-657`) | Same panels; Machine ▸ Peripherals (`Web/src/CalcU1600.jsx:288`) |
 | Debugger | DAP via Settings ▸ Debugger (VS Code); INSPECTOR panel with Pointers, Memory ▾, Dump ▾, Card YAML, Clear, TRACE, LOG (placeholder) | INSPECTOR without TRACE/LOG; no DAP |
 | Preset loader | File ▸ Load Preset…, File ▸ Examples ▸ <group>; Settings ▸ Default presets (+ Choose…) | File ▸ Load Preset ▸ <group> items + Upload Preset…; Settings; `?preset=` |
 | Removable-media loader | Control bar: slot picker(s) with save icon; disk row (picker, A/B, save, lamp) while CE-1600P attached; cassette bay (tape picker, save, counter) while CE-150/CE-1600P attached; File ▸ Mount Directory… / Unmount Directory | Control bar same; File ▸ Import Card, Disk or Tape…; File ▸ Saved Media… (download/delete) |
 | File load / save | File ▸ Load BASIC Program…, Load Machine Code…; drag and drop; save only of media (cards, disks, tapes) and CE-158 printout | Load BASIC/Machine Code via file picker; drop (1 MB); Saved Media downloads |
-| Machine | Machine ▸ Model, ROM Revision / ROM Version / CE-1600P ROM, Peripherals, Reset, Reset All; model combo on control bar duplicates Machine ▸ Model (`TODO.md:522-523`) | Same menu structure (`Web/src/CalcU1600.jsx:279-288`) |
+| Machine | Machine ▸ Model, ROM Revision / ROM Version / CE-1600P ROM, Peripherals, Reset, Reset All; model combo on control bar duplicates Machine ▸ Model (`TODO.md:522-523`) | Same menu structure (`Web/src/CalcU1600.jsx:283-292`) |
 | Bundled material | Presets (`examples/bundled.yaml`), bundled cards and disks (`Qt6/resources/cards/`), examples zip separate | Bundled presets copied into `dist/presets/` by `build.js`; ROMs in `dist/` |
 | Settings | Settings dialog (Close only) | Settings dialog (no folders) |
 | Help | Help ▸ About Calc-U-1600… | Help ▸ About |
 
-Qt menu sources: `Qt6/app/MainWindow.cpp:842-997`. Drift already within
+Qt menu sources: `Qt6/app/MainWindow.cpp:861-1016`. Drift already within
 the product: hardware pickers on the control bar, not Settings; ROM
-versions only in the Machine menu (`Decisions.md:642-649`); Mount Directory
-in File menu (`Decisions.md:650-651`). Long names in lists, short name once
-chosen, in both frontends (`Decisions.md:431-434`).
+versions only in the Machine menu (`Decisions.md:650-657`); Mount Directory
+in File menu (`Decisions.md:658-659`). Long names in lists, short name once
+chosen, in both frontends (`Decisions.md:439-442`).
 
 ## Tests (Briefing §1.10, §8)
 
 | Harness / suite | Kind | Platform | Where it runs | Elapsed | Capabilities | Source |
 |---|---|---|---|---|---|---|
-| `CoreTests` (Core + Shared, 50 Core and 9 Shared test `.cpp` files, ~788 test functions, one `main()` in `lh5801_tests.cpp`) | unit + integration (real ROMs, presets, loaders, job equivalence) | macOS, Linux (CI) | locally (`tools/run_tests.sh`, `-O1`), CI `core-tests` (ubuntu-24.04, RelWithDebInfo, CTest) | CI "Run tests" step 1 min 47 s (job 6 min 40 s incl. build) | headless run, scripted input via presets, LCD text/PNG checks, memory checks | `CMakeLists.txt:153-169`, `Core/tests/lh5801_tests.cpp:1558`, `tools/run_tests.sh`, `build.yml:46-83` |
+| `CoreTests` (Core + Shared, 50 Core and 9 Shared test `.cpp` files, ~792 test functions, one `main()` in `lh5801_tests.cpp`) | unit + integration (real ROMs, presets, loaders, job equivalence) | macOS, Linux (CI) | locally (`tools/run_tests.sh`, `-O1`), CI `core-tests` (ubuntu-24.04, RelWithDebInfo, CTest) | CI "Run tests" step 1 min 47 s (job 6 min 40 s incl. build) | headless run, scripted input via presets, LCD text/PNG checks, memory checks | `CMakeLists.txt:153-169`, `Core/tests/lh5801_tests.cpp:1558`, `tools/run_tests.sh`, `build.yml:46-83` |
 | WASM smoke `tools/wasm_smoke.cpp` via `tools/build_wasm_check.sh` | smoke | node (Emscripten) | locally, CI `web` | 44 s step incl. build | both models boot through `AppSession`, three presets sliced from `tick()`, typed input | `Shared-Architecture.md:122-131`, `build.yml:116-118` |
-| Playwright `Web/tests/*.spec.js` (play, offline, prerender; 21 `test(` calls) | GUI/e2e | Chromium (root, sub-path), WebKit (offline) | locally (`Web/run-tests.sh`), CI `web` | 31 s step | page boot, keyboard, touch, panels, Name & Save persistence, multi-tab, offline PWA, SSR prerender | `Web/playwright.config.js:13-19`, `build.yml:130-132` |
+| Playwright `Web/tests/*.spec.js` (play, offline, prerender; 22 `test(` calls) | GUI/e2e | Chromium (root, sub-path), WebKit (offline) | locally (`Web/run-tests.sh`), CI `web` | 31 s step | page boot, keyboard, touch, panels, Name & Save persistence, multi-tab, offline PWA, SSR prerender | `Web/playwright.config.js:13-19`, `build.yml:130-132` |
 | `tools/dap_smoke.py` | protocol smoke | macOS (app required) | locally only | unknown | drives VS Code's DAP requests, `calcu1600/screen`, quit | `tools/dap_smoke.py:1-13` |
 | Screenshot scenarios `--shots` (`docs/developer/screenshots/guide/*.shots.yaml`, 9 files) | GUI smoke + checkpoint (image generation) | Qt app; images taken on macOS | locally only (`tools/make_screenshots.sh`) | unknown | frozen emulation, isolated settings, byte-identical Qt images, exit codes 0/1/2 | `docs/developer/screenshots/README.md:1-46`, `User-Guide.md:24-25` |
 | `tools/check_presets.sh` (`pc1600_cli --check-preset`) | parse check | local | locally only | unknown | parses every preset in the repo | `tools/check_presets.sh` |
@@ -642,7 +704,7 @@ chosen, in both frontends (`Decisions.md:431-434`).
 | Probes `pc1600_plotter_probe`, `pc1600_power_probe`, `pc1600_uart_probe` | hardware diagnostics | local | locally | n/a | e.g. `PC1600_SERIAL=1` PTY | `Building.md:170-176`, `tools/pc1600_uart_probe.cpp:75-85` |
 | `dev/loader-matrix/` | one-time verification (ROM load vs fast loader, 80 + 250 cells) | local | manual | unknown | memory comparison | `dev/loader-matrix/README.md:1-12` |
 | `dev/tape-matrix/` | one-time check vs Pocket Tools | local | manual | ~1 min (PC-1600), ~15 s (PC-1500) per its README | `--tape-in/-out` per cell | `dev/tape-matrix/README.md:1-12` |
-| `dev/hardware-checks/` | programs to run on real hardware | real units | manual | n/a | — | `Decisions.md:701-703` |
+| `dev/hardware-checks/` | programs to run on real hardware | real units | manual | n/a | — | `Decisions.md:709-711` |
 
 Facts:
 - CI is dispatched manually only (`workflow_dispatch`, `build.yml:33-36`);
@@ -650,14 +712,14 @@ Facts:
   scenarios or `dap_smoke.py` (no match in `build.yml`).
 - No golden image files in `Core/tests/fixtures/` (only `.bas`, `.bbin`,
   listings, presets, tape fixtures); assertions are in code. `expect:`
-  steps in presets act as in-preset assertions (`User-Guide.md:772`).
-- Tests use fixture copies, never `examples/` (`Decisions.md:704-707`);
-  `LegacyExpression.hpp` is a test oracle (`Decisions.md:720-723`).
+  steps in presets act as in-preset assertions (`User-Guide.md:824`).
+- Tests use fixture copies, never `examples/` (`Decisions.md:712-715`);
+  `LegacyExpression.hpp` is a test oracle (`Decisions.md:728-731`).
 - iOS, Windows, Linux GUI tests: none.
 
 ## Deliberate oddities
 
-Source: `docs/background/Decisions.md` (883 lines; read before any cleanup,
+Source: `docs/background/Decisions.md` (891 lines; read before any cleanup,
 `CLAUDE.md:3`) and `docs/developer/PC1600-Core-Limitations.md` (444 lines).
 Grouped list; the file is the authority and must survive the merge as a
 whole.
@@ -686,16 +748,16 @@ Emulation fidelity, keep as is (`Decisions.md:10-249`):
 - PC-1600 LCD stale first read, fitted `kBusyClocks = 4` (`:224-236`).
 - Slot 1 S1-S3 reversed order per Port 3CH b6 (`:238-249`).
 
-Authentic ROM behaviour, not bugs (`Decisions.md:251-293`): CE-1600P Y clip
+Authentic ROM behaviour, not bugs (`Decisions.md:259-301`): CE-1600P Y clip
 ~1000 units; `NEW "S1:"` ERROR 24; virgin CE-1601M INIT; RAM-disk cap 256 KB;
 F89B = 160 after boot; INIT can wipe S0; short `bin2wav` leaders fail;
 `CLOAD -1` in MODE 0; F127H/F88EH values; `MEM` ignores `TITLE`; CE-158
 TERMINAL drops a pre-arrived byte.
 
-Accepted limitations (`Decisions.md:295-320`): plotter pen colour drift
+Accepted limitations (`Decisions.md:303-328`): plotter pen colour drift
 after OFF/ON; TIME advances at emulated rate.
 
-Design choices (`Decisions.md:322-863`), among them: fix the loader not the
+Design choices (`Decisions.md:330-871`), among them: fix the loader not the
 preset; preset owns `NEW0` and mode; hardcoded PC-1600 idle PC; idle
 detection by share of 32 samples; loaders write modules through slot pins;
 no line straddles module banks; `saveas:` needs `template`/`live`; preset is
@@ -734,8 +796,8 @@ notes per CPU and device; each entry is backed by a code comment
 
 ## Open questions
 
-- Briefing and prompt give `TODO.md` as 728 lines; at `v0.8.0` it has 732
-  lines (`wc -l`). Which count is meant (possibly a different revision)?
+- Briefing and prompt gave `TODO.md` as 728 lines; it has 732 lines at
+  `v0.8.0` and at `b4ea8c8` (`wc -l`). The briefing now says 732.
 - VS Code extension tests: `tools/check_presets.sh` says templates "are
   checked by the extension's own tests", but `vscode/calcu1600-debug/package.json`
   has no test script; whether such tests exist is unverified.

@@ -131,6 +131,9 @@ the features the products have in common.
   - Printer interface: the PC-100C has 12 contact springs, one of them
     unconnected; the calculator has 11 pads that mate with the 11 connected
     springs. Sources therefore call it an 11-pin or a 12-pin interface.
+    These counts were made by hand on the devices. The "14-contact" in the
+    PC-100A service manual (`ti59-research/PC100C/service_manual.txt:2`) is
+    a typo.
 
 ### 1.10 One testing concept
 - Calc-U has a single testing concept that covers both products.
@@ -154,6 +157,9 @@ the features the products have in common.
   other element of agent memory and guidance (`CLAUDE.md` files, memory
   files, developer docs written for agents) is updated to use its terms.
   This includes the research skills (§5.1).
+- Out of scope, for now: Calc-U-16 (`tinue/Calc-U-16`, a separate
+  programmer-calculator project) and the SC61860 prototype
+  `calc-u-1403h-ui`, including their memory directories.
 
 ## 2. Non-goals
 
@@ -197,8 +203,9 @@ the features the products have in common.
 - **History:** the full history of both repositories must be archived (the
   mechanism is open, §6).
 - **Baselines:** all imports, inventory and decisions use the release tags
-  Calc-U-59 `v2.3.0` and Calc-U-1600 `v0.8.0`. Pins: `docs/Process.md`,
-  phase 1.
+  Calc-U-59 `v2.3.0` and Calc-U-1600 `v0.8.1`. 0.8.1 is assumed to be
+  released; until it is tagged, the pin is the tip of `dev-0.8.1`. Pins:
+  `docs/Process.md`, phase 1.
 - **Working language is English**, for specs, design documents, code,
   research documents and skills. Original source material (PDFs, manuals) may
   be in other languages.
@@ -221,7 +228,7 @@ the features the products have in common.
 | | Calc-U-59 | Calc-U-1600 |
 |---|---|---|
 | Repository | `/Users/me/Development/public/Calc-U-59` (`tinue/Calc-U-59`) | `/Users/me/Development/sharp/Calc-U-1600` (`tinue/Calc-U-1600`) |
-| State | 2.3.0 released (2026-11-07); `dev-2.3.1` holds only the version bump | 0.8.0 released (2026-11-07); `dev-0.8.1` holds only the version bump |
+| State | 2.3.0 released (2026-11-07); `dev-2.3.1` holds only the version bump | 0.8.0 released (2026-11-07); 0.8.1 (CE-161 write-protect switch) on `dev-0.8.1`, assumed released |
 | Core / shared layer | C++17, CMake | C++20, CMake |
 | Release tooling | ReleaseIt: Swift apps built locally (macOS: built and notarised; iOS: archived and uploaded to TestFlight), everything else from GitHub Actions (`build.yml`, dispatched) | ReleaseIt: everything from GitHub Actions (`build.yml`, dispatched); nothing built locally |
 
@@ -236,13 +243,13 @@ the features the products have in common.
 | Calc-U-1600 | Qt6 | macOS arm64 | macOS 15.8 | DMG on GitHub (Developer ID, signed in CI) | Released |
 | Calc-U-1600 | Qt6 (6.8.2 in CI) | Windows x86_64 / arm64 | — | Installer on GitHub (unsigned) | Released |
 | Calc-U-1600 | Qt6 | Linux x86_64 / aarch64 | — | AppImage on GitHub | Released |
-| Calc-U-1600 | Web (React + WASM) | Browser | — | Zip on GitHub; preview at tinue.github.io/1600 | Released, not on calc-u.org yet (see below) |
+| Calc-U-1600 | Web (React + WASM) | Browser | — | Zip on GitHub | Released, not on calc-u.org yet (see below) |
 
 The Calc-U-1600 web client is built as a zip and attached to each release.
 It is not published on calc-u.org yet, because the Calc-U-1600 help site
-does not exist yet (§4.3). A preview runs at https://tinue.github.io/1600/
-(private repository `tinue/tinue.github.io`), built from `dev-0.8.0`, not
-from the `v0.8.0` tree.
+does not exist yet (§4.3); it will end up at calc-u.org/1600. The preview
+at https://tinue.github.io/1600/ (private repository `tinue/tinue.github.io`)
+stays, but it is not part of this project.
 
 Calc-U-1600 downloads SDE (SharpDataExchange) release assets in its Linux
 and Windows CI builds. The macOS and WASM libraries are committed binaries.
@@ -268,7 +275,7 @@ and Windows CI builds. The macOS and WASM libraries are committed binaries.
 |---|---|---|
 | `Calc-U-59/TODO.md` | 35 lines | Core emulation, settings, UI, CPU and calculator debugger, various, "far out" ideas |
 | `Calc-U-59/ideas/` | 5 documents | `CardRecovery`, `CardSound`, `KeypressLatch`, `Pico`, `PresetConvergence` |
-| `Calc-U-1600/TODO.md` (`v0.8.0`) | 732 lines | Known issues, LH5803/SC7852 interface, serial port, loading, expansion connectors ("one model on both machines"), cassette tape, 1.0 announcement, shared layer and web GUI, feature ideas, code cleanup backlog |
+| `Calc-U-1600/TODO.md` (`v0.8.1`) | 732 lines | Known issues, LH5803/SC7852 interface, serial port, loading, expansion connectors ("one model on both machines"), cassette tape, 1.0 announcement, shared layer and web GUI, feature ideas, code cleanup backlog |
 
 ## 5. Research base (repositories unchanged; content evolves, §2)
 
@@ -342,9 +349,8 @@ Each point names the phase that settles it (`docs/Process.md`).
   `.asm` overlay files are unversioned; version 1 cards are written back as
   version 1 today. Whether `.asm` overlays and Calc-U-1600's `.floppy.yaml`
   (also read and written by SDE) count as own or external. → Phase 3.
-- PC-100C printer connector: the service manual in `ti59-research` calls it
-  "14-contact" (two for power) and does not say which contact is
-  unconnected (§1.9). The pin-out of the module slot was not found.
+- PC-100C printer connector: which of the 12 springs is unconnected is not
+  recorded (§1.9). The pin-out of the module slot was not found.
   → Phase 3.
 
 ## 7. Success criteria

@@ -1,7 +1,7 @@
 # Inventory: agent knowledge
 
-Pinned: Calc-U-59 `v2.3.0` @ `231792c`; Calc-U-1600 `v0.8.0` @ `d976d3f`
-(= `dev-0.8.0` tree); calc-u-site `59/2.3.0` @ `a383fbc`; global skills,
+Pinned: Calc-U-59 `v2.3.0` @ `231792c`; Calc-U-1600 `v0.8.1` (until tagged,
+`dev-0.8.1` @ `b4ea8c8`; read at `v0.8.0` @ `d976d3f`); calc-u-site `59/2.3.0` @ `a383fbc`; global skills,
 research repositories and `~/.claude/projects/*/memory/` as on disk.
 Research repository HEADs: `ti59-research` `bf423f9`,
 `sharp/Sharp1500-1600-Ref` `43743ed`, `sharp/SC61860` `96977db`. Read on
@@ -137,7 +137,7 @@ once `docs/GLOSSARY.md` exists.
 | `~/.claude/projects/-Users-me-Development-public-Calc-U-59/memory/` | memory dir | Calc-U-59 | 96679 | printer 78, card 46, debugger 24, preset 19, core 18, state file 17 |
 | `~/.claude/projects/-Users-me-Development-claude-ti59-emul/memory/` | memory dir | Calc-U-59 (former path `~/Development/claude/ti59-emul`, *unverified*) | 1863 | state file 3, core 2, machine 1 |
 | `~/.claude/projects/-Users-me-Development-sharp-Calc-U-1600/memory/` | memory dir | Calc-U-1600 | 147386 | preset 73, card 62, debugger 58, floppy 53, loader 47, model 45 |
-| `~/.claude/projects/-Users-me-Development-Calc-U-16/memory/` | memory dir | Calc-U-16 (separate repository `tinue/Calc-U-16`, not an emulator) | 2385 | device 5 |
+| `~/.claude/projects/-Users-me-Development-Calc-U-16/memory/` | memory dir | Calc-U-16 (separate repository `tinue/Calc-U-16`, not an emulator); out of scope (Briefing §1.11) | 2385 | device 5 |
 | `~/.claude/projects/-Users-me-Development-sharp-Calc-U-1600-Binary/memory/` | memory dir | Calc-U-1600 (*unverified*; directory `sharp/Calc-U-1600-Binary` no longer exists) | 1086 |  |
 | `~/.claude/projects/-Users-me-Development-public-calc-u-site/memory/` | memory dir | calc-u-site | 1607 | preset 1, port 1, memory card 1, keyboard 1, debugger 1, card 1 |
 | `~/.claude/projects/-Users-me-Development-ti59-research/memory/` | memory dir | research | 7857 | keyboard 18, printer 10, session 1 |
@@ -167,7 +167,7 @@ case-insensitive `git grep -c` sums over the files listed):
 
 | Concept | Calc-U-59 guidance (`CLAUDE.md`, `.claude/`, `reference/`, `prompt/`, `memory/*.md`, `tools/agentic/README.md`) | Calc-U-1600 guidance (`CLAUDE.md`, `docs/developer/`, `docs/background/`) |
 |---|---|---|
-| Running machine plus app logic | `SessionController` (63), `EmulatorSession` (18), for example `reference/DebugAPI.md:12`, `:62` | `AppSession` (39), `MachineSession` (29), for example `docs/background/Decisions.md:537`, `:571` |
+| Running machine plus app logic | `SessionController` (63), `EmulatorSession` (18), for example `reference/DebugAPI.md:12`, `:62` | `AppSession` (39), `MachineSession` (29), for example `docs/background/Decisions.md:545`, `:579` |
 | File that sets up the machine | "preset" (60) for the user-facing term, "state file" (18) for the format; both deliberately distinct (memory file `state_vs_preset_terminology.md`) | "preset" |
 | Removable item | "module" (94), "Solid State" (7), "card" / "magnetic card" | "slot" (142), "bay" (37), "media" (38), "memory module" (5), "memory card" (3) |
 
@@ -203,9 +203,8 @@ project's scope (names only, not read): `-Users-me-Development-sharp`,
 `-Users-me-SynologyDrive-Dokumente-PDF-Vintage-TI-ppc-notes-ppc`.
 
 ## Open questions
-- Is `~/.claude/projects/-Users-me-Development-sharp-SC61860-calc-u-1403h-ui`
-  an SC61860 product prototype (Briefing §1.6) whose agent knowledge
-  belongs in scope? Not read.
+- ~~Is `calc-u-1403h-ui` in scope?~~ Answered 2026-11-09: no, out of scope
+  for now, as is Calc-U-16 (Briefing §1.11).
 - Should `Sharp1500-1600-Ref/skills/sharp-pc1500-1600/SKILL.md` (not
   installed) be treated as a research skill to update, or is it superseded
   by `~/.claude/skills/PC1500`?

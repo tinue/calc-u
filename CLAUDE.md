@@ -12,7 +12,7 @@ One repository for the Calc-U emulators, released as separate products
   repositories. Reading them is fine.
 - Product baselines: Calc-U-59 at `/Users/me/Development/public/Calc-U-59`
   (tag `v2.3.0`), Calc-U-1600 at `/Users/me/Development/sharp/Calc-U-1600`
-  (tag `v0.8.0`, same tree as branch `dev-0.8.0`). Pins and history:
+  (`v0.8.1`; until it is tagged, branch `dev-0.8.1` @ `b4ea8c8`). Pins and history:
   `docs/Process.md`, phase 1.
 - Don't reopen anything listed in `Briefing.md` §3 (decisions already made).
 - Don't invent missing facts (sizes, behaviour, limits). Ask, or record them

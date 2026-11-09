@@ -89,7 +89,8 @@ in the Reason column.
 ## Calc-U-1600
 
 Source: `TODO.md` at `v0.8.0` @ `d976d3f` (= `dev-0.8.0` @ `70c3258`),
-732 lines. Read on 2026-11-08. One row per bullet or sub-bullet that is its
+732 lines. Read on 2026-11-08. Unchanged in line numbers at the new pin
+`b4ea8c8`; only the CE-161 note at `TODO.md:212-213` was reworded. One row per bullet or sub-bullet that is its
 own idea; headings, context paragraphs and measurement/evidence bullets
 ("Ruled out", plan steps of one item) get no row. `Suggested target` is a
 suggestion only; the decision is made when the merged backlog is written.

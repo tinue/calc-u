@@ -450,11 +450,11 @@ Behaviour that looks wrong or arbitrary but is intended, with the stated reason.
   written uses the new format. Recorded as fact; decision belongs to phase 3.
 - **Settings** keys carry no version; whether they count as an "own format" for §1.2.
 - **Module slot pin-out**: not found in `ti59-research` or the product. Source needed for an explicit slot interface.
-- **Printer connector contact count**: the service manual text says "14-contact"
-  (two for power) and lists 12 signal contacts including `I/A`
-  (`ti59-research/PC100C/service_manual.txt:2-45`); Briefing §1.9 says 12 springs,
-  one unconnected, 11 pads. Which contact is unconnected is not stated in the
-  sources read.
+- **Printer connector contact count**: answered 2026-11-09. 12 springs, one
+  unconnected, and 11 pads were counted by hand on the devices; the service
+  manual's "14-contact" (`ti59-research/PC100C/service_manual.txt:2`) is a
+  typo (Briefing §1.9). Still open: which spring is unconnected; the
+  manual lists 12 signal contacts including `I/A` (`:33-45`).
 - **Research sources disagree** on the TI-59 chip set: `ti59-research/docs/architecture.md:47-58`
   names TMC0599 RAM, TMC0571 as "SCOM chip" and a 240 kHz clock; the product
   names TMC0598 RAM, TMC0571B as a ROM chip and 455 kHz (`reference/CoreArchitecture.md:34-37`, `:59-62`).

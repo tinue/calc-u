@@ -5,8 +5,11 @@ Pinned:
   `02c41c6918c4977af4115445d1c75c29d891d9cd` (2026-11-07), working tree
   clean.
 - Calc-U-59: `v2.3.0` @ `231792c`.
-- Calc-U-1600: `v0.8.0` @ `d976d3f` (same tree `bf9f277` as `dev-0.8.0` @
-  `70c3258`).
+- Calc-U-1600: `v0.8.1`, assumed released; until it is tagged, `dev-0.8.1`
+  @ `b4ea8c8` (tree `947b850`). Read at `v0.8.0` @ `d976d3f` (tree
+  `bf9f277`); between the two, `release.yaml`, `build.yml` and
+  `tools/fetch_sharpdx.sh` are unchanged, `Qt6/CMakeLists.txt`,
+  `tools/refresh_sharpdx.sh` and `libsharpdx.a` changed (below).
 
 Read on 2026-11-08. ReleaseIt paths are relative to its root; product paths
 are prefixed `59:` or `1600:` and read at the pinned tag. Run times come from
@@ -262,11 +265,11 @@ repository, the item names what is fixed today.
   `59:bin/simulators`, `59:bin/simulators.yaml` (contents not read here;
   agent A covers release material).
 
-## Calc-U-1600 at `v0.8.0`
+## Calc-U-1600 at `v0.8.1`
 
 ### `release.yaml` (`1600:release.yaml`)
 - `name: Calc-U-1600`; version preset `cmake`, file `Qt6/CMakeLists.txt`
-  (`:9-13`), which has `set(APP_VERSION "0.8.0")`
+  (`:9-13`), which has `set(APP_VERSION "0.8.1")`
   (`1600:Qt6/CMakeLists.txt:39`).
 - `notes_suffix`: Linux `chmod +x` (`:19-23`).
 - `extra_assets`: `examples/` zipped as `Calc-U-1600-examples.zip`
@@ -315,7 +318,8 @@ repository, the item names what is fixed today.
 
 ### SDE artifact pull
 - `libsharpdx` is vendored under `Core/Basic/vendor/sharpdx/`.
-  Committed at `v0.8.0`: `libsharpdx.a` (macOS, 11 475 944 bytes),
+  Committed at `b4ea8c8`: `libsharpdx.a` (macOS, release build, 22 259 280
+  bytes; 11 475 944 at `v0.8.0`),
   `libsharpdx-wasm.a` (4 400 388 bytes), `sharpdx.h`, `README.md`
   (`git ls-tree -l`).
 - Linux and Windows CI jobs run `tools/fetch_sharpdx.sh`, which downloads
@@ -326,7 +330,8 @@ repository, the item names what is fixed today.
   on macOS, which uses the committed binary (`:78-80`). The fetched files
   are not committed (`:12-14`).
 - The macOS binary is refreshed from a local SDE checkout with
-  `tools/refresh_sharpdx.sh`; the WASM one with
+  `tools/refresh_sharpdx.sh`, which since 0.8.1 refuses objects built for a
+  newer macOS than `MACOSX_DEPLOYMENT_TARGET` (`check_minos`); the WASM one with
   `tools/build_sharpdx_wasm.sh` (`1600:tools/fetch_sharpdx.sh:8-11`;
   `1600:.github/workflows/build.yml:90-93`).
 - It is a release-asset download, not a GitHub Actions artifact pull.

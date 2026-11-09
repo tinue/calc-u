@@ -36,10 +36,14 @@ the table below.
   header. A release tag is a squashed commit on `main`; its tree is
   identical to the tip of the dev branch, which holds the history.
   - Calc-U-59: `v2.3.0` @ `231792c` (= `dev-2.3.0` @ `915a2b5`).
-  - Calc-U-1600: `v0.8.0` @ `d976d3f` (= `dev-0.8.0` @ `70c3258`).
-  - The patch branches `dev-2.3.1` and `dev-0.8.1` hold only the version
-    bump. Every later change in an old repository (hotfix, briefing §3) is
-    recorded as a delta against the pin.
+  - Calc-U-1600: `v0.8.1`, assumed released. Until it is tagged, the pin
+    is `dev-0.8.1` @ `b4ea8c8` (tree `947b850`), the release candidate.
+    Re-pinned on 2026-11-09 from `v0.8.0` @ `d976d3f` (tree `bf9f277`).
+    When `v0.8.1` is tagged, check that its tree is `947b850`; if not,
+    record the difference as a delta.
+  - The patch branch `dev-2.3.1` holds only the version bump. Every later
+    change in an old repository (hotfix, briefing §3) is recorded as a
+    delta against the pin.
 - `docs/inventory/calc-u-59.md`, `docs/inventory/calc-u-1600.md`: per
   capability (keyboard, presets, debugger, settings, media/files, audio,
   pacing, threading, display, web shell, release tooling, tests/headless,

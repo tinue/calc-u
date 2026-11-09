@@ -203,16 +203,16 @@ Between calc-u-site and Calc-U-59 (`v2.3.0`):
 Between the Calc-U-59 site and Calc-U-1600 user documentation (topics only;
 Calc-U-1600 has no site yet):
 
-| Topic | Calc-U-59 site | Calc-U-1600 at `v0.8.0` |
+| Topic | Calc-U-59 site | Calc-U-1600 at `b4ea8c8` (0.8.1) |
 |---|---|---|
-| Presets: what a preset is, smallest preset, step-by-step tutorial | `/presets/`, `/presets/tutorial/` (`Pages.jsx:673`, `:970`) | `docs/User-Guide.md:623-858` (§8 "Presets", 8.1 "What a preset is", 8.2 "The smallest preset") |
+| Presets: what a preset is, smallest preset, step-by-step tutorial | `/presets/`, `/presets/tutorial/` (`Pages.jsx:673`, `:970`) | `docs/User-Guide.md:674-910` (§8 "Presets", 8.1 "What a preset is", 8.2 "The smallest preset") |
 | Debugger | `/debugger/` (`Pages.jsx:1375`) | `docs/Debugger.md` |
 | Install on Windows / Linux: unsigned installer, `chmod +x` the AppImage | `/install/windows-linux/` (`Pages.jsx:577-597`) | `release.yaml:19-23` notes suffix (same wording as Calc-U-59 `release.yaml:31-35`) |
 | Dropping files onto the window | `Pages.jsx:614` | `docs/User-Guide.md:167` ("Dropping files") |
 | Installing the web client as an app (PWA) | `/install/android/` (`Pages.jsx:625-652`) | `README.md:32-38` |
 | Keyboard | `/reference/`, `/faq/` | `docs/Keyboard-Mapping.md` |
-| Settings | `/reference/` | `docs/User-Guide.md:862` (§9.1) |
-| Removable items | `/modules/` (Solid State Software modules) | `docs/User-Guide.md:374-475` (§5 "Memory modules and floppy disks") |
+| Settings | `/reference/` | `docs/User-Guide.md:914` (§9.1) |
+| Removable items | `/modules/` (Solid State Software modules) | `docs/User-Guide.md:374-526` (§5 "Memory modules and floppy disks") |
 
 ## Redirect from calcu59.ch
 - *Live*: `https://calcu59.ch` → `301` → `https://calc-u.org/59`;
@@ -294,10 +294,9 @@ client.
   embedded client is 2.2.0 while 2.3.0 is released; the skill's "After a
   Calc-U-59 release" steps (`.claude/skills/site-59/SKILL.md:97-106`) have
   not been applied to `web-client.json`.
-- Is `https://tinue.github.io/1600/` (private repository
-  `tinue/tinue.github.io`) part of Calc-U-1600's release material, and does
-  it move to calc-u.org/1600? It runs a `dev-0.8.0` build, not the `v0.8.0`
-  tree.
+- ~~Is `https://tinue.github.io/1600/` part of Calc-U-1600's release
+  material?~~ Answered 2026-11-09: the developer keeps it, but it is not part
+  of this project; the web client eventually goes to calc-u.org/1600.
 - Is the `/1600/` content outline in `~/.claude/plans/rustling-napping-pelican.md`
   still valid, given its "no web client" assumption?
 - Actual number of `check.js` assertions (400-odd vs 1100+).

@@ -56,7 +56,7 @@ product material per Briefing §1.3).
 | M14 | Key injection and hold | `KeySequencer`: ≥ 100 ms hold (real time), tap waits for the scan loop, one key at a time, auto-repeat ignored, focus loss releases (ODD59-4) [59 §Keyboard] | Every key held ≥ 2 emulated frames (`Decisions.md:585-595`); web keeps no hold of its own (`:808-812`) [1600 §Keyboard] | Hold measured in wall time vs emulated frames; sequencer in Shared vs session | **neither**: keyboard/typing contract (Process.md phase 4); both hold rules are documented oddities |
 | M15 | Paste text / typed input | None found [59 §Keyboard] | Paste Text types the first clipboard line, never ENTER (`Decisions.md:605-607`); `KeyPasteFeeder` [1600 §Keyboard] | 1600 only | **per product** (1600) |
 | M16 | On-screen keys / hit map | `Shared/KeyboardLayout` widened rects, `PointerTracker`; coordinates `reference/SharedArchitecture.md:191-202` [59 §Keyboard] | `Shared/KeyLayout/` per model, `FaceplateLayout`; web: nearest key within 24 px, multi-pointer (`Web-Client.md:117-124`) [1600 §Keyboard] | Hit maps are product material; hit-test strategy differs | **per product** for the maps; hit-test mechanism **merge** |
-| M17 | Background behaviour | Swift (`scenePhase`) and web (`visibilitychange`) pause; Qt keeps running (ODD59-25) [59 §Threading] | Not recorded in the inventory | Unknown on 1600 side | open (see Open questions) |
+| M17 | Background behaviour | Swift (`scenePhase`) and web (`visibilitychange`) pause; Qt keeps running (ODD59-25) [59 §Threading] | Web pauses when the tab is hidden (`visibilitychange` → worker `pause`/`resume`, `Web/src/engine.js:180-181`); Qt keeps running, and only releases held keys when the window loses focus (`Qt6/app/MainWindow.cpp:733-736`); checked 2026-11-09 | Same split (web pauses, Qt runs); 59 Swift pauses too | **59** (pause where the platform expects it) |
 
 ### Presets, settings, formats
 
@@ -65,7 +65,7 @@ product material per Briefing §1.3).
 | M18 | Preset meaning | Applied to a *running* calculator: reset, power-on, RAM written, then KEYSTROKES played; keeps the current module and printer when absent (ODD59-8) (`reference/StateFileFormat.md:585-599`) [59 §Presets] | A script that *builds* a machine from a cold boot (model, ROM, modules, peripherals), then runs `keys:` / `program:` (`User-Guide.md:676-696`) [1600 §Presets] | Same word, different semantics (Briefing §1.5: "a preset means the same thing everywhere") | **neither**: preset ADR and glossary (phase 2) |
 | M19 | Preset syntax | Text sections `MODEL:`, `PARTITION:`, `PROGRAM:`, `REGISTERS:`, `KEYSTROKES:`, `CUECARD:`, `CARD:`…`END-CARD`, `SOLID-STATE-MODULE:`, `PRINTER:`; `#` comments anywhere (`reference/StateFileFormat.md:17-45`, ODD59-9) [59 §Presets] | "YAML-shaped, not YAML", hand-written parser; only `debug:` and `bus-rom:` are YAML proper (`Decisions.md:389-394`); steps `key:`, `type:`, `wait:`, `expect:`, `saveas:`, `screenshot:`, `syncclock:`, `trace:` (`User-Guide.md:893`) [1600 §Presets] | Two unrelated grammars, both hand-parsed | **neither**: preset ADR |
 | M20 | Preset versioning | None; parser checks extension and content (`Shared/StateFile.hpp:117-119`) [59 §Compatibility] | `format-version: 1` required, exact match (`Core/Preset/PresetFile.hpp:271`, `PresetFile.cpp:644-670`) [1600 §Formats] | Unversioned vs required version | **1600** (versioned envelope); 59 upgrade path is the preset ADR |
-| M21 | Preset error handling | Bad lines reported, load continues (ODD59-7, `reference/StateFileFormat.md:43-45`) | All-or-nothing (per 59's `ideas/PresetConvergence.md:34`, cited in ODD59-7; not stated in the 1600 inventory) | Tolerant vs strict | **neither**: preset ADR |
+| M21 | Preset error handling | Bad lines reported, load continues (ODD59-7, `reference/StateFileFormat.md:43-45`) | All-or-nothing: a bad preset fails to parse before the machine starts (`Core/Preset/PresetFile.hpp:265-269`, checked 2026-11-09) | Tolerant vs strict | **neither**: preset ADR |
 | M22 | Preset model selection | Extension `.ti59` / `.ti58` / `.ti58c` and `MODEL:` (`reference/StateFileFormat.md:17-45`) | Extension `.pc1500` / `.pc1500a` / `.pc1600`, but the parser goes by `model:` (`Decisions.md:417-419`) | Same extension-per-model convention; 1600 ignores the extension | **merge** |
 | M23 | Preset scripting of GUI and runtime | Directives `Wait:`, `FullSpeed:`/`RegularSpeed:`, `Trace:`, `ZeroElapseTime:`/`ReportElapseTime:`, `ArmCard:`/`InsertCard:`, GUI controls `PrinterTrace:`, `CutPaper:`, `DebugPanel:`, `Freeze:`, `FreezeOnStart:`, `Step:`, `Resume:` (`reference/StateFileFormat.md:273-350`); reload stages (`:354-392`) [59 §Presets] | `wait:`, `trace:`, assertions `expect:`, `screenshot:`, `saveas: live\|template`, `syncclock:`; project settings in a `debug:` block (`Decisions.md:840-844`) [1600 §Presets, §Debugger] | Overlap only in wait and trace; 59 drives GUI panels, 1600 asserts and saves media | **merge**: common step engine, per-product step sets |
 | M24 | Preset writer | None; presets are read only (`Shared/SessionController.hpp:65-67`) [59 §Presets] | Not written by the app; VS Code extension scaffolds templates; `examples/` by hand (`Decisions.md:680-681`) [1600 §Formats] | Neither product writes presets | **merge** (same fact) |
@@ -84,7 +84,7 @@ product material per Briefing §1.3).
 |---|---|---|---|---|---|
 | M33 | Removable-media framework | No framework; card flow in `SessionController`, files in `Shared/CardFile` [59 §Cards] | Bays in Shared: `ModuleBay`, `FloppyBay`, `TapeBay` with catalogues, attach, Name & Save, `saveas:`, debounced autosave; `MediaLibrary` (list/export/import/delete); picker cache `DirectoryScanCache` (`Shared-Architecture.md:57,64`) [1600 §Media] | Ad-hoc vs generic bays | **1600**, to be checked against the TI-59 card reader in the phase 4 fit table |
 | M34 | Template vs instance | Card files are written back in place; a fresh card with an existing name asks first (ODD59-29) [59 §Cards] | Bundled items are templates, never written; Name & Save makes an instance that autosaves ~0.5 s after a change; bundled-first resolution (`User-Guide.md:484-522`, `Decisions.md:688-689`) [1600 §Media] | Different save model; both debounce ~0.5 s (59 `ti58c.mem`, 1600 instances) | **1600** model; 59 scope unchanged |
-| M35 | Module loader (Solid State module vs memory module) | 14 module ROMs; one always inserted (default `ML`), no "no module"; chosen in Settings in every GUI; change = soft reset (`Shared/SettingsKeys.hpp:24,40-42`, `App/Views/SettingsView.swift:74`, `Qt6/app/SettingsDialog.cpp:37-41`) [59 §Solid State] | `.card.yaml` software-defined cards; one slot (PC-1500/1500A) or two (PC-1600); control-bar picker per slot with save icon; choice restarts the machine (`User-Guide.md:378-402`, `Qt6/app/ControlBar.hpp:12,75`) [1600 §Memory modules] | Settings vs control-bar drop-down (Briefing §1.3); soft reset vs restart; ROM module vs memory definition | **neither**: GUI-sharing ADR (family coherence) |
+| M35 | Module loader (Solid State module vs memory module) | 14 module ROMs; one always inserted (default `ML`), no "no module"; chosen in Settings in every GUI; change = soft reset (`Shared/SettingsKeys.hpp:24,40-42`, `App/Views/SettingsView.swift:74`, `Qt6/app/SettingsDialog.cpp:37-41`) [59 §Solid State] | `.card.yaml` software-defined cards; one slot (PC-1500/1500A) or two (PC-1600); control-bar picker per slot with save icon, first entry "–empty–" (`User-Guide.md:381`, `Qt6/app/ControlBar.cpp:48`); choice restarts the machine (`User-Guide.md:378-402`, `Qt6/app/ControlBar.hpp:12,75`) [1600 §Memory modules] | Settings vs control-bar drop-down (Briefing §1.3); soft reset vs restart; ROM module vs memory definition | **neither**: GUI-sharing ADR (family coherence) |
 | M36 | Module content format | Datamath ROM text `roms/solid-state/TMC05xx.txt` + own catalog `cuecards.txt` (unversioned) [59 §Solid State, §Compatibility] | Own `.card.yaml`, `format-version: 1` (`Core/Connector/MemoryCardDefinition.hpp:24-25,1353`) [1600 §Formats] | External ROM + own catalog vs own definition file | **per product** |
 | M37 | Magnetic cards | TI-59 only; text card v2.0 (two sides), fit/feed by corner press, auto-eject, write-back merge; pickers list `.u59`/`.bin` (`reference/SharedArchitecture.md:282-319`, `Shared/CardFile.hpp:95-100`) [59 §Cards] | — | 59 only | **per product** (59), but on the shared media framework (M33) |
 | M38 | Cue cards | Three templates, layout and draw list in `Shared/CueCard.cpp` [59 §Cue cards] | — | 59 only | **per product** |
@@ -105,7 +105,7 @@ product material per Briefing §1.3).
 | M48 | In-app debugger / inspector | CALCULATOR, CPU, LOG tabs, ASM overlay; FREEZE, FREEZE ON START, STEP, RESUME; all three GUIs (web wide layout only; iPhone off by default) (`reference/FrontendParity.md:61-76`, `reference/DebugAPI.md:7-19`) [59 §Debugger] | INSPECTOR panel: Pointers, Memory ▾, Dump ▾, Card YAML, Clear, TRACE, LOG (placeholder); views built in Core (`Decisions.md:636-642`, `User-Guide.md:941-993`); web without TRACE/LOG [1600 §Debugger, §GUI concepts] | Interactive stepping debugger in the GUI vs read-only inspector panel | **neither**: GUI-sharing ADR; debugger contract (phase 4) |
 | M49 | Breakpoints, DAP | Core PC breakpoints for headless tools only; session ignores them (ODD59-27); no DAP [59 §Debugger] | DAP server on 127.0.0.1:32168 (Qt only), conditions, hit counts, data breakpoints, listings, bank qualifiers; VS Code extension 0.2.0; DAP code written against QJson, not in Shared (`Debugger-Internals.md:10-12`, `Shared-Architecture.md:133-140`) [1600 §Debugger] | 1600 only; Calc-U-59 need not gain it (Briefing §1.3) | **1600** (only implementation); move out of Qt is design input |
 | M50 | Debug model in code | `Shared/DebugModel`, `DebugSnapshots`, `DebugText`, `DebugLog`, `RomHeatmap`, `FreezeController`; `CpuFrame` [59 §Debugger] | `Core/Debug/` (`DebugTarget`, `CpuViews`, `RunControl`, `SourceMap`, `Listing/`, `Disasm/`, `Inspect/`); pre-execution snapshots (`Decisions.md:866-871`) [1600 §Debugger] | Debug model in Shared (59) vs Core (1600) | **neither**: debugger contract (phase 4) |
-| M51 | CPU trace file | Binary v2, magic `TI59`, 125-byte `CpuFrame` records; manual and `Trace:` scripted; size limit setting; reader `tools/read_trace.py` (v1, v2) (`reference/DebugAPI.md:417-456`) [59 §Traces] | `TRACE.bin`, magic `PC15`, version 3, frames of both CPUs; INSPECTOR TRACE or preset `trace:`; rolls over at `trace/maxFileSizeMB` (default 50); reader `tools/read_trace.py` (`Core/PC1500/PC1500TraceFile.cpp:9-11`) [1600 §Other, §Formats] | Same idea (versioned binary, size limit, Python reader of the same name); frame layout per CPU | **merge**: one envelope, per-CPU frame |
+| M51 | CPU trace file | Binary v2, magic `TI59`, 125-byte `CpuFrame` records; manual and `Trace:` scripted; size limit setting `traceMaxFileSizeMB` (default 50, `Shared/SettingsKeys.hpp:21,36-37`); reader `tools/read_trace.py` (v1, v2) (`reference/DebugAPI.md:417-456`) [59 §Traces] | `TRACE.bin`, magic `PC15`, version 3, frames of both CPUs; INSPECTOR TRACE or preset `trace:`; rolls over at `trace/maxFileSizeMB` (default 50); reader `tools/read_trace.py` (`Core/PC1500/PC1500TraceFile.cpp:9-11`) [1600 §Other, §Formats] | Same idea (versioned binary, size limit, Python reader of the same name); frame layout per CPU | **merge**: one envelope, per-CPU frame |
 | M52 | Display | LED 7-segment: per-strobe glyph and duty, `DisplayPov` brightness, `SevenSegment.hpp`, "Modernized"/"Classic" (`reference/CoreArchitecture.md:491-531`) [59 §Display] | Dot-matrix LCD: `PC1500Display` decode, `PC1600Display` HD61203/HD61102 model; `shared::DisplayFrame`, `LcdLayout`, `StatusLine`, `LcdText` (`Decisions.md:224-236`, `Shared-Architecture.md:67`) [1600 §Display] | Machine-specific technology | **per product**; frame hand-off to frontends is design input |
 | M53 | Screen copy / text readout | Printer copy only [59 §Printer] | Copy Screen (image + Unicode text), `--lcd-text`, `calcu1600/screen` (`Decisions.md:663-669`) [1600 §Display] | 1600 only | **per product** |
 | M54 | Audio | "Keyboard Feedback" 0/1/2 (off, haptic, click): iOS haptics + system sound 1104, web WebAudio click (portrait/PWA), Qt none; no emulated sound (`Shared/SettingsKeys.hpp:18`, `App/Views/KeyboardView.swift:51-73`) [59 §Audio] | `PiezoSampler` follows the ROM's buzzer line, 48 kHz; `shared::AudioPump` → frontend `AudioSink`; Qt `QAudioSink`, web AudioWorklet; turbo audio dropped (`Decisions.md:82-89,767-769`) [1600 §Audio] | Host key feedback vs machine sound; no overlap today | **1600** for an audio pipeline; 59 key feedback stays product scope |
@@ -183,7 +183,7 @@ candidate from `docs/Process.md` phase 3 that it feeds.
 | C4 | Module loading | Settings, persisted (`solidStateModuleID`), always one module (M35, M28) | Control-bar drop-down per slot, never saved (`Decisions.md:650-652`) | GUI sharing and family coherence |
 | C5 | Format versioning | Presets, `ti58c.mem`, ASM overlay, settings unversioned; v1 cards written back as v1 (M31) | Every read format has a required `format-version`; upgrade on save from 1.0 (`Decisions.md:671-685`) | Preset format, versioning and the Calc-U-59 read-old/write-new upgrade |
 | C6 | What a preset is | Applied to a running calculator; absent module/printer kept (M18) | Builds a machine from a cold boot (M18) | Preset format, versioning and upgrade (plus glossary, phase 2) |
-| C7 | Preset error policy | Tolerant: bad line reported, load continues (ODD59-7) | All-or-nothing (as cited by `ideas/PresetConvergence.md:34` in the 59 inventory) (M21) | Preset format, versioning and upgrade |
+| C7 | Preset error policy | Tolerant: bad line reported, load continues (ODD59-7) | All-or-nothing at parse time (`Core/Preset/PresetFile.hpp:265-269`) (M21) | Preset format, versioning and upgrade |
 | C8 | Window layout | Columns side by side (M55) | Vertical stack with control bar and bottom panels (M55); partly hardware-driven and lasting: the TI-59 is a portrait calculator, the PC-1600 landscape (user, 2026-11-09) | GUI sharing and family coherence |
 | C9 | Debugger concept | In-app stepping debugger in every GUI; breakpoints only headless (M48, M49) | External DAP debugger (VS Code) plus read-only INSPECTOR (M48, M49) | GUI sharing and family coherence (debugger contract in phase 4) |
 | C10 | Settings scope | Settings hold hardware choices (M28) | Settings hold app preferences only (M28) | GUI sharing and family coherence |
@@ -273,11 +273,12 @@ Collected from all inventories and deduplicated. Tags: `[59]`, `[1600]`,
 - XCUITest and goldens-generation elapsed times: unknown. `[59]`
 - Local elapsed time of `tools/run_tests.sh`, the screenshot scenarios and
   `dap_smoke.py`: unknown. `[1600]`
-- Qt version used by Calc-U-1600's Linux (apt) and macOS (Homebrew) CI
-  jobs: *unverified* (F8). `[1600]`
+- ~~Qt version in Calc-U-1600 CI (F8)~~: Linux 6.4.2, macOS Homebrew 6.12.0
+  (unpinned), Windows 6.8.2 (run `42369839986` logs; Briefing §4.2). `[1600]`
 - Do the Calc-U-1600 screenshot scenarios run on Linux/Windows? *unverified*. `[1600]`
-- Do VS Code extension tests exist (`tools/check_presets.sh` claims so;
-  `package.json` has no test script)? `[1600]`
+- ~~Do VS Code extension tests exist?~~ No: no test files under `vscode/`,
+  no `scripts` in `package.json`; `check_presets.sh:8-9` says templates are
+  checked "once filled in" (checked at `b4ea8c8`). `[1600]`
 - ~~Build on tag push?~~ No; CI stays dispatched by ReleaseIt. `[RT]`
 
 ### Release and repository
@@ -299,7 +300,9 @@ Collected from all inventories and deduplicated. Tags: `[59]`, `[1600]`,
   the web client goes to calc-u.org/1600. `[Site]`
 - ~~`/1600/` content outline (`rustling-napping-pelican.md`)~~: superseded,
   discarded (answered 2026-11-09). `[Site]`
-- Actual number of `check.js` assertions (400-odd vs 1100+). `[Site]`
+- ~~Number of `check.js` assertions~~: 1302 checks, all passing, at
+  `acd629c` (run 2026-11-09, node 26.13.0); both "400-odd" and "1100+" are
+  stale. `[Site]`
 
 ### Agent knowledge
 - ~~Is `calc-u-1403h-ui` in scope?~~ Answered 2026-11-09: no, out of scope
@@ -308,23 +311,18 @@ Collected from all inventories and deduplicated. Tags: `[59]`, `[1600]`,
   (Briefing §1.11): the repo skill is a stand-alone subset, both it and
   `PC1500` are updated; plans keep their wording; stale directories are
   merged and deleted. `[AK]`
-- Do the `MEMORY.md` indexes (Calc-U-1600: 64 lines, 15 260 bytes) exceed
-  what Claude Code loads at session start? `[AK]`
+- ~~Do the `MEMORY.md` indexes exceed the load limit?~~ No: Claude Code
+  loads the first 200 lines or 25 KB (https://code.claude.com/docs/en/memory);
+  the largest index, Calc-U-1600's, has 64 lines and 15 260 bytes (2026-11-09).
 
 ### Raised by this matrix
-- Calc-U-1600 background behaviour (pause when hidden / minimised): not in
-  the inventory (M17). `[matrix]`
-- Calc-U-1600 preset error policy: the 1600 inventory does not state it; the
-  "all-or-nothing" description comes only from Calc-U-59's
-  `ideas/PresetConvergence.md:34` (M21, C7). `[matrix]`
-- Calc-U-59 default for `traceMaxFileSizeMB`: not in the inventory (M51). `[matrix]`
-- Whether Calc-U-1600 memory slots offer an empty choice (Calc-U-59 has no
-  "no module" option): not stated in the 1600 inventory (M35). `[matrix]`
-- Inconsistencies inside single inventories, not resolved here:
-  `agent-knowledge.md` gives the Calc-U-1600 memory directory as 68 files
-  (Summary) and as 59 files (per-directory list); `calc-u-site.md` Summary
-  says "51 downloadable program files (`.ti59`, `.ti58`, `.ti58c`, `.asm`)",
-  while its own list gives 49 program files plus 2 `.md`. `[matrix]`
+- ~~1600 background behaviour (M17), preset error policy (M21, C7), 59
+  `traceMaxFileSizeMB` default (M51), 1600 empty slot (M35)~~: checked in
+  the code 2026-11-09, see the rows. `[matrix]`
+- ~~Inconsistencies inside single inventories~~: recounted 2026-11-09 and
+  corrected: the Calc-U-1600 memory directory has 59 files; calc-u-site hosts
+  49 program files (43 in `59/software-files/`, 6 in `59/tutorial-files/`)
+  plus 2 `.md`. `[matrix]`
 - Other drift between the products' own docs and ReleaseIt examples
   (`examples/Calc-U-59.yaml`, `examples/Calc-U-1600.yaml` older than the
   real `release.yaml` files) is recorded in `RT`; they are rewritten when

@@ -798,14 +798,14 @@ notes per CPU and device; each entry is backed by a code comment
 
 - Briefing and prompt gave `TODO.md` as 728 lines; it has 732 lines at
   `v0.8.0` and at `b4ea8c8` (`wc -l`). The briefing now says 732.
-- VS Code extension tests: `tools/check_presets.sh` says templates "are
-  checked by the extension's own tests", but `vscode/calcu1600-debug/package.json`
-  has no test script; whether such tests exist is unverified.
+- ~~VS Code extension tests~~: none exist (no test files under `vscode/`, no
+  `scripts` in `package.json`; checked 2026-11-09).
 - Local elapsed time of `tools/run_tests.sh`, the screenshot scenarios and
   `dap_smoke.py`: unknown (not built or run here).
-- Qt version actually used by the Linux CI jobs (Ubuntu 24.04 apt package)
-  and the macOS job (Homebrew, unpinned): not recorded in the workflow;
-  *unverified*.
+- ~~Qt version in CI~~: from the logs of run `42369839986` (2026-11-07):
+  Linux x86_64 and aarch64 6.4.2 (Ubuntu `libqt6core6t64 6.4.2+dfsg-21.1build5`),
+  macOS Homebrew `qt` 6.12.0 (`qtbase 6.12.0_2`, unpinned, so it moves with
+  Homebrew), Windows 6.8.2 (`aqt install-qt windows desktop 6.8.2`).
 - Whether the screenshot scenarios run on Linux/Windows: the doc names
   macOS screenshots and three macOS-only `.mm` helpers exist; other
   platforms *unverified*.

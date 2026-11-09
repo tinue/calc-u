@@ -33,7 +33,7 @@ once `docs/GLOSSARY.md` exists.
 - `Sharp1500-1600-Ref` holds a second PC-1500/1600 skill,
   `skills/sharp-pc1500-1600/SKILL.md` (8597 bytes), not installed in
   `~/.claude/skills/`.
-- The largest memory directories are Calc-U-1600's (68 files) and
+- The largest memory directories are Calc-U-1600's (59 files) and
   Calc-U-59's (34 files). This repository's own memory directory and
   ReleaseIt's are empty.
 

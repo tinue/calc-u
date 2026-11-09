@@ -270,9 +270,9 @@ the features the products have in common.
 | Calc-U-59 | Qt6 (Ubuntu 24.04 package, 6.4.2 in CI) | Linux x86_64 / aarch64 | — | AppImage on GitHub | Released |
 | Calc-U-59 | Qt6 | macOS | macOS 15.6 (CMake) | Not shipped; local builds only | Local only |
 | Calc-U-59 | Web (React + WASM) | Browser | — | Zip on GitHub, embedded by calc-u.org | Released |
-| Calc-U-1600 | Qt6 | macOS arm64 | macOS 15.8 | DMG on GitHub (Developer ID, signed in CI) | Released |
+| Calc-U-1600 | Qt6 (Homebrew, unpinned; 6.12.0 in CI) | macOS arm64 | macOS 15.8 | DMG on GitHub (Developer ID, signed in CI) | Released |
 | Calc-U-1600 | Qt6 (6.8.2 in CI) | Windows x86_64 / arm64 | — | Installer on GitHub (unsigned) | Released |
-| Calc-U-1600 | Qt6 | Linux x86_64 / aarch64 | — | AppImage on GitHub | Released |
+| Calc-U-1600 | Qt6 (Ubuntu 24.04 package, 6.4.2 in CI) | Linux x86_64 / aarch64 | — | AppImage on GitHub | Released |
 | Calc-U-1600 | Web (React + WASM) | Browser | — | Zip on GitHub | Released, not on calc-u.org yet (see below) |
 
 The Calc-U-1600 web client is built as a zip and attached to each release.

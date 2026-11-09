@@ -45,7 +45,8 @@ unless marked *live* (checked over HTTP on 2026-11-08).
   here.
 - The root `README.md` is stale: it still describes a `gh-pages` copy serving
   calcu59.ch. Several files under `59/` carry stale paths and statements too.
-- 51 downloadable program files (`.ti59`, `.ti58`, `.ti58c`, `.asm`) and 3
+- 49 downloadable program files (`.ti59`, `.ti58`, `.ti58c`, `.asm`), 2 `.md`
+  files in `59/software-files/`, and 3
   Markdown/PDF article sets are hosted; none of the `.ti5x` files has a
   version line.
 
@@ -254,7 +255,7 @@ Calc-U-1600 has no site yet):
 | `59/README.md:3` | User guide for an app "available on Mac, iPhone, and iPad" | Calc-U-59 also ships for Windows, Linux and the web (Briefing §4.2; `/install/windows-linux/`, `/play/`). |
 | `59/README.md:26` | GitHub repository "not reachable from the sandbox; visuals are reconstructed from the screenshot" | Written for a sandboxed design tool; the repository is local and public. |
 | `59/README.md:82` | Self-hosting fonts "recommended for the `.ch` domain" | The site is served from calc-u.org. |
-| `59/.seo/README.md:188` vs `.claude/skills/site-59/SKILL.md:24` | 400-odd vs 1100+ `check.js` assertions | Not counted. |
+| `59/.seo/README.md:188` vs `.claude/skills/site-59/SKILL.md:24` | 400-odd vs 1100+ `check.js` assertions | Both stale: 1302 checks at `acd629c` (run 2026-11-09). |
 
 ## Downloadable files hosted on the site
 
@@ -312,4 +313,5 @@ client.
   of this project; the web client eventually goes to calc-u.org/1600.
 - Is the `/1600/` content outline in `~/.claude/plans/rustling-napping-pelican.md`
   still valid, given its "no web client" assumption?
-- Actual number of `check.js` assertions (400-odd vs 1100+).
+- ~~Actual number of `check.js` assertions~~: 1302 at `acd629c` (run
+  2026-11-09).

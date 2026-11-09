@@ -19,7 +19,7 @@ the table below.
 |---|---|---|---|---|
 | 0 | Charter | `Briefing.md`, `CLAUDE.md` | Goals, non-goals, products, constraints, decisions already made, open points | Done |
 | 1 | Inventory | `docs/inventory/` | Facts only, no decisions | Done (approved 2026-11-09) |
-| 2 | Domain model | `docs/GLOSSARY.md` | One meaning per term | Glossary approved 2026-11-09; agent knowledge update in progress |
+| 2 | Domain model | `docs/GLOSSARY.md` | One meaning per term | Done (glossary approved 2026-11-09) |
 | 3 | Architecture decisions | `docs/adr/NNNN-*.md` | The forks | Planned |
 | 4 | Contracts | `docs/contracts/*.md` | The abstractions, as interface specs | Planned |
 | 4b | Capability specs | `features/INDEX.md`, `features/<ID>-*/spec.md` | What each shared capability does, per product | Planned |
@@ -106,8 +106,8 @@ the table below.
 - Every later document uses only these terms. Conflicting names in the two
   codebases (for example `SessionController` vs `AppSession`,
   `EmulatorSession` vs `MachineSession`) are mapped.
-- Once the glossary is approved, the agent knowledge listed in phase 1 is
-  updated to its terms (briefing §1.11).
+- The agent knowledge listed in phase 1 is updated to the glossary terms
+  in phase 6, together with the code renames (briefing §1.11).
 
 ### Phase 3 — Architecture decisions
 - One ADR per fork: context, options, decision, consequences. Candidates:
@@ -174,6 +174,9 @@ the table below.
 - Steps, each leaving every product building, testing and releasable:
   repository merge with history archived, CI for all products, golden tests
   as the safety net, then one capability extraction at a time.
+- Agent knowledge (briefing §1.11) is updated to the glossary terms in the
+  same steps as the code renames it describes, following
+  `docs/glossary-mapping.md`.
 - Each extraction is a `LIB-n` feature with `design.md` and `qa-report.md`
   (chain: AC → task → test).
 - Refactoring inside either product (for example a machine interface in

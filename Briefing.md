@@ -178,7 +178,9 @@ the features the products have in common.
 - Once the glossary (`docs/GLOSSARY.md`) is defined, every skill and every
   other element of agent memory and guidance (`CLAUDE.md` files, memory
   files, developer docs written for agents) is updated to use its terms.
-  This includes the research skills (§5.1).
+  This includes the research skills (§5.1). The update happens during
+  migration (phase 6), together with the code renames, so guidance and
+  code change in the same step.
 - Plans and other historical records (for example Calc-U-1600
   `docs/background/plans/`) keep their wording; only living guidance gets
   the new terms.

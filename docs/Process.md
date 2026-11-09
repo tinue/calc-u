@@ -19,7 +19,7 @@ the table below.
 |---|---|---|---|---|
 | 0 | Charter | `Briefing.md`, `CLAUDE.md` | Goals, non-goals, products, constraints, decisions already made, open points | Done |
 | 1 | Inventory | `docs/inventory/` | Facts only, no decisions | Done (approved 2026-11-09) |
-| 2 | Domain model | `docs/GLOSSARY.md` | One meaning per term | Done (approved 2026-11-09) |
+| 2 | Domain model | `docs/GLOSSARY.md` | One meaning per term | Glossary approved 2026-11-09; agent knowledge update in progress |
 | 3 | Architecture decisions | `docs/adr/NNNN-*.md` | The forks | Planned |
 | 4 | Contracts | `docs/contracts/*.md` | The abstractions, as interface specs | Planned |
 | 4b | Capability specs | `features/INDEX.md`, `features/<ID>-*/spec.md` | What each shared capability does, per product | Planned |
@@ -50,12 +50,12 @@ the table below.
   help-site material, …) how the product does it, where it lives, how mature
   it is.
 - Modelling depth per machine (briefing §1.9): which chips or blocks are
-  modelled separately, which are folded together, which interfaces between
-  parts and devices are explicit and which are implicit, and where
+  modelled separately, which are folded together, which connectors between
+  components and peripherals are explicit and which are implicit, and where
   functional emulation is used. For the TI-59 this includes the printer
   connector, the module slot, and why `examples/assembly/Decoder.asm` does
   not run.
-- Test harnesses and headless emulators are listed with the capabilities
+- Test harnesses and headless tools are listed with the capabilities
   each one provides (briefing §8).
 - Existing tests per product and frontend (briefing §1.10): kind (unit, GUI,
   golden, …), platform (macOS, iOS simulator, Windows, Linux, browser), where
@@ -89,7 +89,8 @@ the table below.
   uses one. For Calc-U-1600: which formats already carry a version number.
   Every format of both products is tagged own or external.
 - GUI concepts per product and frontend (briefing §1.3, §1.5): calculator,
-  printer, debugger, preset loader, card/module/floppy loaders, file load
+  printer, debugger, preset loader, magnetic card, module and floppy disk
+  loaders, file load
   and save, bundled material. For each: where it sits in the GUI, how it is
   reached, and where the products already drift apart.
 - Method: one background agent per product repository, plus one for
@@ -99,8 +100,9 @@ the table below.
 
 ### Phase 2 — Domain model
 - `docs/GLOSSARY.md`: Product, Library, Machine, Model, Variant,
-  Family, Component, Connector/Port, Device, Card, Media, Preset, Session,
-  Frontend, Platform, and the user-facing terms (briefing §1.5).
+  Family, Component, Connector, Peripheral, Module, Medium, Preset, Machine
+  session, App session, Frontend, Platform, and the user-facing terms
+  (briefing §1.5). Renames: `docs/glossary-mapping.md`.
 - Every later document uses only these terms. Conflicting names in the two
   codebases (for example `SessionController` vs `AppSession`,
   `EmulatorSession` vs `MachineSession`) are mapped.
@@ -114,8 +116,8 @@ the table below.
   - The core seam: one machine interface for all products, or a small
     library-level machine interface plus product-level extensions
     (briefing §6).
-  - Devices keyed by connector type or by machine.
-  - Modelling depth and explicit interfaces (briefing §1.9): how a machine
+  - Peripherals keyed by connector or by machine.
+  - Modelling depth and explicit connectors (briefing §1.9): how a machine
     moves along the chip-level ↔ single-core spectrum, and whether the
     TI-59 printer connector and module slot become explicit.
   - Swift bridge boundary.
@@ -134,16 +136,17 @@ the table below.
   product-level decisions file.
 
 ### Phase 4 — Contracts
-- One document per seam: machine interface and descriptor, frontend platform
-  interface, device/port model, typing strategy (keyboard), preset engine and
-  format, debugger (debug target and DAP), settings and paths, media library.
+- One document per seam: machine interface and descriptor, frontend
+  interface, peripheral and connector model, typing strategy (keyboard),
+  preset engine and format, debugger (debug target and DAP), settings and
+  paths, media and save folder.
 - Each contract states responsibilities, explicit non-responsibilities and
   invariants, and contains a **fit table**: how TI-59, PC-1500, PC-1600 and
-  an SC61860 machine (PC-1403 for a character LCD, PC-1350 for a graphic LCD)
+  an SC61860 model (PC-1403 for a character LCD, PC-1350 for a graphic LCD)
   map onto it, and at which modelling depth (briefing §1.9).
-- Design against three very different machine families, implement two. The
+- Design against three very different model families, implement two. The
   SC61860 machines are paper machines; the TI-59 (TMC0501, PC-100C cradle,
-  card reader) is the main stress test for anything Sharp-shaped.
+  magnetic card reader) is the main stress test for anything Sharp-shaped.
 
 ### Phase 4b — Capability specs
 - Kaldris template (`spec.md`: dependencies, user stories, out of scope,
@@ -158,9 +161,9 @@ the table below.
 - Scenarios played against the contracts, for example: add a PC-1403; add a
   CE-126P; TI-59 App Store build without DAP or PTY; add a Swift frontend to
   Calc-U-1600; the PC-1600 using the PC-1500 tape codec; ship without ROMs;
-  refine the TI-59 to individual chips so `Decoder.asm` runs; attach the PC-100C printer and a Solid State Software module through
+  refine the TI-59 to individual chips so `Decoder.asm` runs; attach the PC-100C printer and a Solid State ROM module through
   explicit connectors.
-- A scenario that needs a change to the shared layer means the abstraction
+- A scenario that needs a change to the library means the abstraction
   is wrong; fix the contract, not the scenario.
 - Reviewed by a fresh agent that sees only the contracts, not the reasoning
   behind them.

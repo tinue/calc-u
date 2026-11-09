@@ -1,7 +1,7 @@
 # Calc-U
 
-One repository for the Calc-U emulators, released as separate products
-(Calc-U-59, Calc-U-1600, possibly a third for SC61860 machines later).
+One repository for the Calc-U products, released separately
+(Calc-U-59, Calc-U-1600, possibly a third for SC61860 models later).
 
 - Scope, decisions and constraints: `Briefing.md`
 - How we get from the briefing to code, and the current phase: `docs/Process.md`

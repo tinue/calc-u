@@ -46,7 +46,7 @@ Outcomes:
 | ODD59-25 | Qt keeps running in the background; Swift and web pause | Stays (same split as Calc-U-1600, M17) |
 | ODD59-26 | iPhone: debug page off by default | Stays |
 | ODD59-27 | The session ignores core breakpoints | Phase 4: debugger contract |
-| ODD59-28 | A dropped card file's security scope stays open while fitted | Superseded by ADR 0019 (files are imported) |
+| ODD59-28 | A dropped card file's security scope stays open while fitted | Superseded by ADR 0019 (no card files outside the save folder, except through a preset) |
 | ODD59-29 | A fresh card with an existing name asks first | Superseded by ADR 0019 (Name & Save) |
 
 ## Calc-U-1600 (`docs/background/Decisions.md`)

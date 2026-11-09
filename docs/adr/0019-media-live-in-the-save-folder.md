@@ -21,5 +21,9 @@ load from anywhere and are never written back. Calc-U-59 today opens
 
 ## Consequences
 
-- How a medium that a preset names by path is saved (written back, or
-  saved as an instance) is part of the media contract (phase 4).
+- A medium that a preset names by path is treated like a template: it is
+  never written. Its first write (for example `1 2nd Write` with that
+  magnetic card fitted) makes a copy in the save folder, an instance, which
+  takes the write and every later one; the original file stays unchanged.
+- What the copy is called, and what happens when an instance of that name
+  already exists, is part of the media contract (phase 4).

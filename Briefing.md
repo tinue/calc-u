@@ -360,8 +360,6 @@ and Windows CI builds. The macOS and WASM libraries are committed binaries.
 Each point names the phase that settles it (`docs/Process.md`).
 
 - How the full history of both repositories is archived. → Phase 3.
-- The core seam: whether the machine is the only core seam, with
-  composition instead of one core per model family. → Phase 3.
 - The testing concept (§1.10): the strategy for tests that involve a GUI
   across Qt6, Swift and Web, on macOS and in the iOS simulator; the time
   budget of each test group and where each group runs; whether and how

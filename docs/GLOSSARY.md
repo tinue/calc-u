@@ -152,6 +152,12 @@ The TI-58/59's split of its RAM between program steps and data registers.
 
 ## Code structure
 
+**Capability**:
+A generic kind of function that a component or peripheral offers through
+the machine, handled the same way for every product: media, real-time
+clock, serial port, printer output, …
+_Avoid_: extension, feature (for this), device interface
+
 **Library**:
 The code and material used by more than one product. It has an internal
 structure of its own, which may again contain parts used across that

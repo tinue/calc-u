@@ -136,10 +136,14 @@ the table below.
   product-level decisions file.
 
 ### Phase 4 — Contracts
-- One document per seam: machine interface and descriptor, frontend
-  interface, peripheral and connector model, typing strategy (keyboard),
-  preset engine and format, debugger (debug target and DAP), settings and
-  paths, media and save folder.
+- One document per seam: machine interface and descriptor (with the
+  capabilities, ADR 0007), frontend interface, peripheral and connector
+  model, typing strategy (keyboard), preset engine and format, debugger
+  (debug target and DAP), settings and paths, media and save folder,
+  harness protocol (ADR 0026, 0033), ROM lookup (ADR 0035), help structure
+  (ADR 0036). The open points each contract inherits from phase 3 are
+  listed in `docs/oddities-triage.md` ("Phase 4") and in the ADRs'
+  consequences.
 - Each contract states responsibilities, explicit non-responsibilities and
   invariants, and contains a **fit table**: how TI-59, PC-1500, PC-1600 and
   an SC61860 model (PC-1403 for a character LCD, PC-1350 for a graphic LCD)

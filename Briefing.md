@@ -33,6 +33,16 @@ the features the products have in common.
     From now on these formats require a version tag. A file without one is
     read as version 1 and written back unchanged, except for the added
     version 1 tag.
+  - The same applies to the ASM overlay files (`.asm`, own format, 4 of
+    them hosted on calc-u.org): as 2.3.0 reads them they are version 1.
+  - **Settings become a file format.** Today both products keep settings in
+    the platform stores (UserDefaults, QSettings, `localStorage`). They are
+    replaced by one documented settings file per product (for example
+    `Calc-U-59.ini`, as MAME and similar programs do), read and written by
+    one shared implementation; an exporter follows later. The first start
+    of the new release converts the existing platform store into the file.
+    A lookup hierarchy (dot directory, home, …) may follow later. Details
+    (file syntax, location per platform, the web) → phase 3/4.
   - Remnants from before versioning started are dropped: any other
     unversioned legacy format is no longer read.
   - No forward compatibility: an upgraded file need not open in an older
@@ -43,6 +53,9 @@ the features the products have in common.
   - In preparation for 1.0.0, its preset, card and floppy formats already
     carry `format-version: 1`. Existing version numbers stay as they are,
     even where a format changes.
+  - `.floppy.yaml` is an own format, although SharpDataExchange (SDE) also
+    reads and writes it: Calc-U owns the spec, and SDE follows a change.
+  - The legacy `.floppy.img` is dropped; no converter.
 
 ### 1.3 One source of truth for shared features
 - Features that both products have (for example presets or keyboard support)
@@ -134,6 +147,13 @@ the features the products have in common.
     These counts were made by hand on the devices. The "14-contact" in the
     PC-100A service manual (`ti59-research/PC100C/service_manual.txt:2`) is
     a typo.
+  - Sources: the TMS0500 chip set as a whole is outlined at
+    https://www.datamath.org/Chips/TMS0500-CS.htm; research notes and code
+    are corrected against it where they disagree (chip names, clock,
+    display decode). Chip names come as a family and its instances, for
+    example family TMC0540 (Solid State Software ROMs) and instance TMC0541
+    (Master Library). The module slot pin-out is at
+    https://www.datamath.org/Chips/TMC0540.htm.
 
 ### 1.10 One testing concept
 - Calc-U has a single testing concept that covers both products.
@@ -157,6 +177,16 @@ the features the products have in common.
   other element of agent memory and guidance (`CLAUDE.md` files, memory
   files, developer docs written for agents) is updated to use its terms.
   This includes the research skills (§5.1).
+- Plans and other historical records (for example Calc-U-1600
+  `docs/background/plans/`) keep their wording; only living guidance gets
+  the new terms.
+- A skill that lives in a research repository (for example
+  `Sharp1500-1600-Ref/skills/sharp-pc1500-1600/`) must work stand-alone,
+  with only that repository checked out. The personal router skills (for
+  example `PC1500`) are a superset that also point to it. Both are updated.
+- Memory directories of paths that no longer exist (`claude/ti59-emul`,
+  `sharp/Calc-U-1600-Binary`): what is still valid moves into the live
+  memory, then they are deleted.
 - Out of scope, for now: Calc-U-16 (`tinue/Calc-U-16`, a separate
   programmer-calculator project) and the SC61860 prototype
   `calc-u-1403h-ui`, including their memory directories.
@@ -259,11 +289,12 @@ and Windows CI builds. The macOS and WASM libraries are committed binaries.
   https://calc-u.org (documentation; it also embeds the web clients).
 - The site must always reflect a released product, so it is in scope, but it
   stays a separate repository (§3).
-- `/59/` is the full Calc-U-59 site and its only source. calcu59.ch serves
-  only a redirect to it, for some time to come. Calc-U-59 has no `gh-pages`
-  branch. The calc-u-site README is stale: it still describes a
-  `gh-pages`/calcu59.ch setup. `/59/` still embeds the 2.2.0 web client;
-  2.3.0 is only on the `/59/beta/` preview.
+- `/59/` is the full Calc-U-59 site and its only source. calcu59.ch is only a
+  passive redirect to it, run at a hosting provider for as long as the
+  domain is paid for; the new project never uses or mentions the old domain.
+  Calc-U-59 has no `gh-pages` branch. The calc-u-site README is stale: it
+  still describes a `gh-pages`/calcu59.ch setup. `/59/` embeds the 2.3.0
+  web client (calc-u-site `acd629c`).
 - `/1600/` is a placeholder. Building the Calc-U-1600 help site is in scope:
   it starts from Calc-U-1600's `docs/`, uses the shared-material structure,
   and publishes the Calc-U-1600 web client. This is new documentation, not a
@@ -336,8 +367,17 @@ Each point names the phase that settles it (`docs/Process.md`).
 - Skills: one set of skills per product, plus a shared skill. Structure
   open. → Phase 3.
 - How calc-u-site shares common material across products. → Phase 3/4.
-- Where releases are published after the move (new repository or the old
-  ones), and what happens to the old repositories. → Phase 3.
+- Versioning and releases. Source repository and release repository are
+  distinct: `tinue/calc-u` holds the source of both products and becomes
+  public once the migration is done. Each product must be releasable on its
+  own: work on one product and release it for a while without touching the
+  other. Open: which versions exist (shared layer, Calc-U-59,
+  Calc-U-1600?), and where releases are published; most likely the old
+  repositories stay as pure release repositories (each has one "latest"
+  release, which calc-u-site relies on). Needs analysis and research.
+  ReleaseIt gets per-product subdirectories (`release -C <product dir>`,
+  own `release.yaml`, CHANGELOG and version file); CI stays dispatched by
+  ReleaseIt, no build on tag push. → Phase 3.
 - Modelling depth per machine and which interfaces become explicit, for
   example the TI-59 printer connector and module slot (§1.9). Closely tied
   to the core seam above. → Phase 3, contracts in phase 4.
@@ -345,13 +385,10 @@ Each point names the phase that settles it (`docs/Process.md`).
   structure, components), and which existing GUI differences are aligned
   for family coherence, for example how modules are loaded (§1.3, §1.5).
   → Phase 1 (facts), phase 3 (decision).
-- Calc-U-59 formats not settled by §1.2: the settings stores and the
-  `.asm` overlay files are unversioned; version 1 cards are written back as
-  version 1 today. Whether `.asm` overlays and Calc-U-1600's `.floppy.yaml`
-  (also read and written by SDE) count as own or external. → Phase 3.
+- Calc-U-59 version 1 cards are written back as version 1 today, not in
+  the new format (§1.2). → Phase 3.
 - PC-100C printer connector: which of the 12 springs is unconnected is not
-  recorded (§1.9). The pin-out of the module slot was not found.
-  → Phase 3.
+  recorded (§1.9). → Phase 3.
 
 ## 7. Success criteria
 

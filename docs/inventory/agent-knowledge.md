@@ -1,7 +1,7 @@
 # Inventory: agent knowledge
 
 Pinned: Calc-U-59 `v2.3.0` @ `231792c`; Calc-U-1600 `v0.8.1` (until tagged,
-`dev-0.8.1` @ `b4ea8c8`; read at `v0.8.0` @ `d976d3f`); calc-u-site `59/2.3.0` @ `a383fbc`; global skills,
+`dev-0.8.1` @ `b4ea8c8`; read at `v0.8.0` @ `d976d3f`); calc-u-site `59/2.3.0` @ `a383fbc` (now pinned at `acd629c`; no agent files changed); global skills,
 research repositories and `~/.claude/projects/*/memory/` as on disk.
 Research repository HEADs: `ti59-research` `bf423f9`,
 `sharp/Sharp1500-1600-Ref` `43743ed`, `sharp/SC61860` `96977db`. Read on

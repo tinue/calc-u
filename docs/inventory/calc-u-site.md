@@ -1,15 +1,31 @@
 # Inventory: calc-u-site
 
-Pinned: branch `59/2.3.0` @ `a383fbca563005d87ee373cd3d6bd467ad14074a`
-(2026-11-07). `main` (= `origin/main`, the published site) is
-`7d70834a2fcdbb40ccc769b3fba43156cf5e8bac`; `59/2.3.0` is 2 commits ahead of
+Pinned: `main` @ `acd629c` (2026-11-08, the published site; re-pinned
+2026-11-09, see "Changes from `a383fbc` to `acd629c`"). Read on 2026-11-08
+at branch `59/2.3.0` @ `a383fbca563005d87ee373cd3d6bd467ad14074a`
+(2026-11-07); statements about `59/beta/` and the 2.2.0 client below
+describe that read. At that time `main` (= `origin/main`) was
+`7d70834a2fcdbb40ccc769b3fba43156cf5e8bac`; `59/2.3.0` was 2 commits ahead of
 and 1 merge commit behind `main`, differing in 7 files under `59/` (page text
-and `sitemap.xml` only). Working tree clean. Read on 2026-11-08.
+and `sitemap.xml` only). Working tree clean.
 Repository: `/Users/me/Development/public/calc-u-site`, GitHub
 `tinue/calc-u-site`.
 
 Paths below are relative to the repository root and read at the pinned SHA,
 unless marked *live* (checked over HTTP on 2026-11-08).
+
+## Changes from `a383fbc` to `acd629c`
+
+- `72ebd62` "Calc-U-59 2.3.0 is released: pin its web client, remove the
+  2.3.0 preview", merged into `main` as `acd629c`.
+- `59/web-client.json` pins
+  `https://github.com/tinue/Calc-U-59/releases/download/v2.3.0/Calc-U-59-web.zip`,
+  version 2.3.0, commit `915a2b5…`; `59/calc/` is that client (*live*
+  `calc/MANIFEST.json` reports 2.3.0, checked 2026-11-09).
+- `59/beta/` (60 files) and `59/beta-client.json` are removed; the "Try the
+  2.3.0 preview" link on `/play/` is gone (was `59/Pages.jsx:2148`).
+- Other `Pages.jsx` citations below are unchanged (they precede the
+  removed lines).
 
 ## Summary
 - Static site for https://calc-u.org, served by GitHub Pages straight from
@@ -287,13 +303,10 @@ and `manifest.json` (file name and title per preset). ROM text files
 client.
 
 ## Open questions
-- Where is the calcu59.ch redirect configured (nginx host at
-  `185.3.235.176`), who maintains it, and until when ("for some time to
-  come", Briefing §4.3)?
-- Is pinning `59/calc/` to 2.3.0 pending? At the pinned SHA and live, the
-  embedded client is 2.2.0 while 2.3.0 is released; the skill's "After a
-  Calc-U-59 release" steps (`.claude/skills/site-59/SKILL.md:97-106`) have
-  not been applied to `web-client.json`.
+- ~~calcu59.ch redirect~~: answered 2026-11-09. It runs at a hosting
+  provider for as long as the domain is paid for; the new project never
+  uses or mentions the old domain (Briefing §4.3).
+- ~~Is pinning `59/calc/` to 2.3.0 pending?~~ Done in `acd629c`.
 - ~~Is `https://tinue.github.io/1600/` part of Calc-U-1600's release
   material?~~ Answered 2026-11-09: the developer keeps it, but it is not part
   of this project; the web client eventually goes to calc-u.org/1600.

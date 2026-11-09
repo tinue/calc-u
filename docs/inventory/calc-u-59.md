@@ -1,7 +1,8 @@
 # Inventory: Calc-U-59
 
 Pinned: `v2.3.0` @ `231792c` (= `dev-2.3.0` @ `915a2b5`). Read on 2026-11-08.
-Other repositories read: `calc-u-site` @ `a383fbc` (branch `59/2.3.0`),
+Other repositories read: `calc-u-site` @ `a383fbc` (branch `59/2.3.0`; now
+pinned at `acd629c`, which removes `59/beta/`, see `calc-u-site.md`),
 `ti59-research` @ `bf423f9`, Calc-U-59 branch `appstore` @ `3e23fd2` (local;
 `origin/appstore` @ `ffd1cd2`).
 
@@ -315,7 +316,7 @@ files is byte-identical to the file of the same name in `examples/` at the tag
 - `59/tutorial-files/` (preset format, not in `examples/`):
   `tutorial-1-setup.ti59` … `tutorial-5-registers.ti59`, `tutorial.ti59`.
 - `59/calc/presets/` and `59/beta/presets/`: the same 10 presets as the web
-  bundle.
+  bundle (`59/beta/` is removed at `acd629c`).
 - No card files (`.u59`, `.bin`) and no `ti58c.mem` are hosted.
 - None of these files (repository or site) uses `SKIP-RESET:`,
   `WaitFullSpeed:` (grep over `examples/`, `tests/fixtures/`, `work/`,
@@ -440,16 +441,22 @@ Behaviour that looks wrong or arbitrary but is intended, with the stated reason.
   "unversioned". Is the v2.3.0
   preset syntax meant to count as the versioned "old format" (for example as
   an implicit version), or is a version to be introduced? `ideas/PresetConvergence.md:55-58`
-  proposes an optional `FORMAT-VERSION: 2`.
+  proposes an optional `FORMAT-VERSION: 2`. *Answered 2026-11-08:* the
+  format as 2.3.0 reads it is version 1 (Briefing §1.2).
 - **`ti58c.mem` is unversioned** and lives on users' devices (iCloud, `~/Calc-U-59`,
   `localStorage`). Dropping it loses TI-58C memory contents on upgrade. Intended?
+  *Answered 2026-11-08:* version 1, not dropped (Briefing §1.2).
 - **ASM overlay files** (`.asm`, 4 hosted on calc-u.org) are unversioned. Own or external
   (the listings come from Sladký's guide, the `PROGRAM:`/`HEX:` wrapper is Calc-U's)?
+  *Answered 2026-11-09:* own, version 1 as 2.3.0 reads them (Briefing §1.2).
 - **Card version 1 write-back.** Today a v1 card (text 1.0 or binary) is written
   back as text 1.0 (`Shared/CardFile.cpp:293-294`); Briefing §1.2 says anything
   written uses the new format. Recorded as fact; decision belongs to phase 3.
 - **Settings** keys carry no version; whether they count as an "own format" for §1.2.
-- **Module slot pin-out**: not found in `ti59-research` or the product. Source needed for an explicit slot interface.
+  *Answered 2026-11-09:* settings become a documented settings file, converted
+  from the platform store on first start (Briefing §1.2).
+- **Module slot pin-out**: not found in `ti59-research` or the product. Source needed for an explicit slot interface. *Answered 2026-11-09:*
+  https://www.datamath.org/Chips/TMC0540.htm (Briefing §1.9).
 - **Printer connector contact count**: answered 2026-11-09. 12 springs, one
   unconnected, and 11 pads were counted by hand on the devices; the service
   manual's "14-contact" (`ti59-research/PC100C/service_manual.txt:2`) is a

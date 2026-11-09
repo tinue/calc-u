@@ -11,10 +11,10 @@ product repositories:
 
 | Tag | File | Pins it records |
 |---|---|---|
-| `59` | `docs/inventory/calc-u-59.md` | Calc-U-59 `v2.3.0` @ `231792c` (= `dev-2.3.0` @ `915a2b5`); calc-u-site @ `a383fbc`; `ti59-research` @ `bf423f9` |
+| `59` | `docs/inventory/calc-u-59.md` | Calc-U-59 `v2.3.0` @ `231792c` (= `dev-2.3.0` @ `915a2b5`); calc-u-site @ `a383fbc` (site now `acd629c`); `ti59-research` @ `bf423f9` |
 | `1600` | `docs/inventory/calc-u-1600.md` | Calc-U-1600 `v0.8.1` (until tagged, `dev-0.8.1` @ `b4ea8c8`; read at `v0.8.0` @ `d976d3f`, delta folded in); `Sharp1500-1600-Ref` @ `43743ed`; CI run `42369839986` |
 | `RT` | `docs/inventory/release-tooling.md` | ReleaseIt `main` @ `02c41c6`; both product pins |
-| `Site` | `docs/inventory/calc-u-site.md` | calc-u-site `59/2.3.0` @ `a383fbc` (`main` @ `7d70834`) |
+| `Site` | `docs/inventory/calc-u-site.md` | calc-u-site `main` @ `acd629c` (read at `59/2.3.0` @ `a383fbc`, delta folded in) |
 | `AK` | `docs/inventory/agent-knowledge.md` | used for naming conflicts only |
 
 Citation style: `path:line` is in the product named by the column, at its
@@ -124,7 +124,7 @@ product material per Briefing §1.3).
 | M62 | Web build and runtime | Vendored React 18 + Babel, no npm deps (`Web/build.sh`, `Web/build.js`); engine in a Web Worker, `Threading::Cooperative`; PWA precaches ROMs, modules, presets [59 §Architecture, §Web shell] | Vendored React 18 + Babel, "as in Calc-U-59" (`Decisions.md:824-825`); engine in one Web Worker; PWA `dist/app/` [1600 §Web shell] | Already copied from 59 | **merge** (59 is the origin) |
 | M63 | Web persistence | `localStorage` (`calcu59/`), cards in an in-memory folder for the page session, download to keep (ODD59-23) [59 §Cards, §Settings] | IDBFS with `autoPersist`; Web Lock `calcu1600-storage`, one writing tab; "Saved Media…" (`Decisions.md:800-811`) [1600 §Web shell] | Session-only vs persistent | **1600** mechanism; 59 web scope stays (ODD59-23) |
 | M64 | Web feature subset | Classic LED only; debugger only in wide layout (`reference/WebClient.md:21-27`) | No DAP, serial, host drive, TRACE/LOG, Quit, window size, folder settings (`Web-Client.md:105-113`) | Product-specific gaps | **per product** |
-| M65 | Web publication | `calc-u.org/59/calc/` (2.2.0 at the pin and live) and `/59/beta/` (2.3.0-pre) [Site §Embedding] | Nothing on calc-u.org; the developer's preview at `https://tinue.github.io/1600/` is outside this project [1600 §Web shell, Site §Embedding] | Hosted on calc-u.org vs elsewhere | **59** (site pin mechanism `web-client.json`) |
+| M65 | Web publication | `calc-u.org/59/calc/` (2.3.0 at `acd629c` and live; `/59/beta/` removed) [Site §Embedding] | Nothing on calc-u.org; the developer's preview at `https://tinue.github.io/1600/` is outside this project [1600 §Web shell, Site §Embedding] | Hosted on calc-u.org vs elsewhere | **59** (site pin mechanism `web-client.json`) |
 
 ### ROMs, tests, docs, release, CI
 
@@ -184,7 +184,7 @@ candidate from `docs/Process.md` phase 3 that it feeds.
 | C5 | Format versioning | Presets, `ti58c.mem`, ASM overlay, settings unversioned; v1 cards written back as v1 (M31) | Every read format has a required `format-version`; upgrade on save from 1.0 (`Decisions.md:671-685`) | Preset format, versioning and the Calc-U-59 read-old/write-new upgrade |
 | C6 | What a preset is | Applied to a running calculator; absent module/printer kept (M18) | Builds a machine from a cold boot (M18) | Preset format, versioning and upgrade (plus glossary, phase 2) |
 | C7 | Preset error policy | Tolerant: bad line reported, load continues (ODD59-7) | All-or-nothing (as cited by `ideas/PresetConvergence.md:34` in the 59 inventory) (M21) | Preset format, versioning and upgrade |
-| C8 | Window layout | Columns side by side (M55) | Vertical stack with control bar and bottom panels (M55) | GUI sharing and family coherence |
+| C8 | Window layout | Columns side by side (M55) | Vertical stack with control bar and bottom panels (M55); partly hardware-driven and lasting: the TI-59 is a portrait calculator, the PC-1600 landscape (user, 2026-11-09) | GUI sharing and family coherence |
 | C9 | Debugger concept | In-app stepping debugger in every GUI; breakpoints only headless (M48, M49) | External DAP debugger (VS Code) plus read-only INSPECTOR (M48, M49) | GUI sharing and family coherence (debugger contract in phase 4) |
 | C10 | Settings scope | Settings hold hardware choices (M28) | Settings hold app preferences only (M28) | GUI sharing and family coherence |
 | C11 | Key hold unit | ≥ 100 ms wall time (ODD59-4) | ≥ 2 emulated frames (`Decisions.md:585-595`) (M14) | none listed; keyboard / typing-strategy contract (phase 4) |
@@ -230,23 +230,23 @@ briefing or to the user.
 
 | # | Briefing | What the briefing says | What the inventory found | Source |
 |---|---|---|---|---|
-| F1 | §1.2, §6, §7 | "Old format" = every explicitly versioned format the released Calc-U-59 reads; unversioned legacy formats are dropped; success criterion: Calc-U-59 reads all existing files in a versioned format | The preset format has no version marker; every bundled preset (10 web presets) and every hosted preset (39 in `59/software-files/`, 6 in `59/tutorial-files/`, plus two 10-file copies in `59/calc/presets/` and `59/beta/presets/`) is unversioned. Applied literally, §1.2 drops all of them. `ideas/PresetConvergence.md:55-58` proposes an optional `FORMAT-VERSION: 2` | 59 §Compatibility, §Open questions; Site §Downloadable files |
-| F2 | §1.2 | "Anything it writes uses the new format" | A version 1 card (text 1.0 or binary) is written back as text 1.0 (`Shared/CardFile.cpp:293-294`, ODD59-12) | 59 §Compatibility |
-| F3 | §1.2 | Unversioned legacy formats are no longer read | `ti58c.mem` is unversioned and lives on users' devices (iCloud, `~/Calc-U-59`, `localStorage`); dropping it loses TI-58C memory on upgrade. Settings stores and ASM overlay files are also unversioned | 59 §Compatibility, §Open questions |
-| F4 | §1.2 | Formats tagged own or external; "SDE exchange formats" are external | `.floppy.yaml` is tagged own but is also read and written by SDE; ASM overlay files wrap third-party listings (Sladký) in an own wrapper. The own/external line is ambiguous for both | 1600 §Formats; 59 §Open questions |
-| F5 | §1.9 | `Decoder.asm` does not run because the TI-59 chips are not modelled individually | Two of three causes are chip modelling (single digit counter, keyboard rows on the same counter); the third is in the shared layer: `Shared/SevenSegment.hpp:43` maps hex digits A–F to 0–5 | 59 §Why Decoder.asm does not run |
+| F1 | §1.2, §6, §7 | "Old format" = every explicitly versioned format the released Calc-U-59 reads; unversioned legacy formats are dropped; success criterion: Calc-U-59 reads all existing files in a versioned format | The preset format has no version marker; every bundled preset (10 web presets) and every hosted preset (39 in `59/software-files/`, 6 in `59/tutorial-files/`, plus two 10-file copies in `59/calc/presets/` and `59/beta/presets/`) is unversioned. Applied literally, §1.2 drops all of them. `ideas/PresetConvergence.md:55-58` proposes an optional `FORMAT-VERSION: 2`. **Resolved 2026-11-08:** presets as 2.3.0 reads them are version 1 (Briefing §1.2) | 59 §Compatibility, §Open questions; Site §Downloadable files |
+| F2 | §1.2 | "Anything it writes uses the new format" | A version 1 card (text 1.0 or binary) is written back as text 1.0 (`Shared/CardFile.cpp:293-294`, ODD59-12). **Open, phase 3** (Briefing §6) | 59 §Compatibility |
+| F3 | §1.2 | Unversioned legacy formats are no longer read | `ti58c.mem` is unversioned and lives on users' devices (iCloud, `~/Calc-U-59`, `localStorage`); dropping it loses TI-58C memory on upgrade. Settings stores and ASM overlay files are also unversioned. **Resolved 2026-11-08/09:** `ti58c.mem` and ASM overlays are version 1; settings become a settings file (Briefing §1.2) | 59 §Compatibility, §Open questions |
+| F4 | §1.2 | Formats tagged own or external; "SDE exchange formats" are external | `.floppy.yaml` is tagged own but is also read and written by SDE; ASM overlay files wrap third-party listings (Sladký) in an own wrapper. The own/external line is ambiguous for both. **Resolved 2026-11-09:** both own; `.floppy.yaml` spec owned by Calc-U, SDE follows; ASM overlays version 1 (Briefing §1.2) | 1600 §Formats; 59 §Open questions |
+| F5 | §1.9 | `Decoder.asm` does not run because the TI-59 chips are not modelled individually | Two of three causes are chip modelling (single digit counter, keyboard rows on the same counter); the third is in the shared layer: `Shared/SevenSegment.hpp:43` maps hex digits A–F to 0–5. **Resolved 2026-11-08:** Briefing §1.9 names the further cause | 59 §Why Decoder.asm does not run |
 | F6 | §1.9 | PC-100C: 12 contact springs, one unconnected; calculator 11 pads | The PC-100A service manual calls the connector "14-contact" (two power) and lists 12 signal contacts incl. `I/A` (`ti59-research/PC100C/service_manual.txt:2-45`); which contact is unconnected is not stated. **Resolved 2026-11-09:** the briefing is right (counted by hand on the devices); "14-contact" is a typo in the manual | 59 §Interfaces, §Open questions |
-| F7 | §1.9 | 8-pin slot for the Solid State Software module | The slot pin-out was not found in `ti59-research` or the product | 59 §Interfaces, §Open questions |
-| F8 | §4.2 (table) | Calc-U-59 Qt6 Linux: "Qt6 (6.8.2 in CI)" | Linux CI uses Ubuntu 24.04 packages, which installed Qt 6.4.2 (CI run `42388503215`); only Windows uses 6.8.2. Calc-U-1600 Linux uses the same apt route and macOS an unpinned Homebrew Qt (*unverified* version) | 59 §Tests; 1600 §Architecture, §Open questions; RT |
-| F9 | §4.2, §8 | Calc-U-59: Swift macOS app built locally, "everything else from GitHub Actions"; §8 "everything else on GitHub Actions" | The iOS/iPadOS app is also built locally (`release ios`: archive, export, upload to TestFlight) | RT §App Store, §What is built where |
+| F7 | §1.9 | 8-pin slot for the Solid State Software module | The slot pin-out was not found in `ti59-research` or the product. **Resolved 2026-11-09:** source https://www.datamath.org/Chips/TMC0540.htm (Briefing §1.9) | 59 §Interfaces, §Open questions |
+| F8 | §4.2 (table) | Calc-U-59 Qt6 Linux: "Qt6 (6.8.2 in CI)" | Linux CI uses Ubuntu 24.04 packages, which installed Qt 6.4.2 (CI run `42388503215`); only Windows uses 6.8.2. Calc-U-1600 Linux uses the same apt route and macOS an unpinned Homebrew Qt (*unverified* version). **Resolved 2026-11-08:** Briefing §4.2 gives 6.4.2 for Linux | 59 §Tests; 1600 §Architecture, §Open questions; RT |
+| F9 | §4.2, §8 | Calc-U-59: Swift macOS app built locally, "everything else from GitHub Actions"; §8 "everything else on GitHub Actions" | The iOS/iPadOS app is also built locally (`release ios`: archive, export, upload to TestFlight). **Resolved 2026-11-08:** Briefing §4.2 and §8 name the local iOS build | RT §App Store, §What is built where |
 | F10 | §4.2 | Calc-U-1600 web client: "Released, not yet published" | Published as a preview at `https://tinue.github.io/1600/` (private repository `tinue/tinue.github.io`), from a `dev-0.8.0` build (tree `88f45ff`), not the `v0.8.0` tree. **Resolved 2026-11-09:** the preview is kept outside this project; briefing §4.2 updated | 1600 §Web shell; Site §Calc-U-1600 |
-| F11 | §4.2, §4.3, §7 | Calc-U-59 web client "embedded by calc-u.org"; the site must reflect a released product | `59/calc/` embeds 2.2.0 (pin and live), although 2.3.0 is released; 2.3.0 exists only as the `-pre` preview in `59/beta/` | Site §Summary, §Embedding |
-| F12 | §4.2 | Calc-U-1600 frontend "Web (WASM)" vs Calc-U-59 "Web (React + WASM)" | Calc-U-1600's web client is React + WASM too (vendored React 18) | 1600 §Web shell |
-| F13 | §4.2 | Calc-U-1600 "pulls SDE release artifacts into its CI builds" | True for Linux and Windows only; the macOS and WASM libraries are committed binaries; it is a release-asset download, not an Actions artifact pull | RT §SDE artifact pull |
+| F11 | §4.2, §4.3, §7 | Calc-U-59 web client "embedded by calc-u.org"; the site must reflect a released product | `59/calc/` embeds 2.2.0 (pin and live), although 2.3.0 is released; 2.3.0 exists only as the `-pre` preview in `59/beta/`. **Resolved 2026-11-09:** calc-u-site `acd629c` pins 2.3.0, `/59/beta/` removed | Site §Summary, §Embedding |
+| F12 | §4.2 | Calc-U-1600 frontend "Web (WASM)" vs Calc-U-59 "Web (React + WASM)" | Calc-U-1600's web client is React + WASM too (vendored React 18). **Resolved 2026-11-08:** Briefing §4.2 says React + WASM | 1600 §Web shell |
+| F13 | §4.2 | Calc-U-1600 "pulls SDE release artifacts into its CI builds" | True for Linux and Windows only; the macOS and WASM libraries are committed binaries; it is a release-asset download, not an Actions artifact pull. **Resolved 2026-11-08:** Briefing §4.2 states it | RT §SDE artifact pull |
 | F14 | §4.4 | `Calc-U-1600/TODO.md` (`dev-0.8.0`): 728 lines | 732 lines at `v0.8.0` and `b4ea8c8`. **Resolved:** the briefing says 732 | 1600 §Open questions |
-| F15 | §5.1 | TI knowledge "spread over several smaller skills" | No TI research skill exists outside Calc-U-59; the "smaller skills" are the Calc-U-59 product skills (chiefly `calc-u-59-core`, `calc-u-59-statefiles`) | AK §Summary |
-| F16 | §1.3 | "Code duplicated between [the GUIs] moves to the shared layer (for example the preset loader)" | In both products the preset parser already lives in one place (59 `Shared/StateFile.*`; 1600 `Core/Preset/`); the duplicate found is 59's Python parser in `tools/agentic/ti59file.py`. Between the products the two preset formats share no code | 59 §Presets, §Headless; 1600 §Presets |
-| F17 | Process.md phase 2 | Example conflict `EmulatorSession` vs `MachineSession` | The pairs are `SessionController` ↔ `AppSession` and `EmulatorSession` ↔ `MachineSession` | AK §Product-specific names |
+| F15 | §5.1 | TI knowledge "spread over several smaller skills" | No TI research skill exists outside Calc-U-59; the "smaller skills" are the Calc-U-59 product skills (chiefly `calc-u-59-core`, `calc-u-59-statefiles`). **Resolved 2026-11-08:** Briefing §5.1 states it | AK §Summary |
+| F16 | §1.3 | "Code duplicated between [the GUIs] moves to the shared layer (for example the preset loader)" | In both products the preset parser already lives in one place (59 `Shared/StateFile.*`; 1600 `Core/Preset/`); the duplicate found is 59's Python parser in `tools/agentic/ti59file.py`. Between the products the two preset formats share no code. **Resolved 2026-11-09:** the example stands; it means one preset loader for both products instead of one per product | 59 §Presets, §Headless; 1600 §Presets |
+| F17 | Process.md phase 2 | Example conflict `EmulatorSession` vs `MachineSession` | The pairs are `SessionController` ↔ `AppSession` and `EmulatorSession` ↔ `MachineSession`. **Resolved 2026-11-08:** `docs/Process.md` phase 2 names both pairs | AK §Product-specific names |
 
 ## Open questions
 
@@ -254,21 +254,20 @@ Collected from all inventories and deduplicated. Tags: `[59]`, `[1600]`,
 `[RT]`, `[Site]`, `[AK]`, `[matrix]` (raised while writing this file).
 
 ### Formats and compatibility
-- Is the v2.3.0 preset syntax meant to count as the versioned "old format"
-  (an implicit version), or is a version to be introduced (F1)? `[59]`
-- Is dropping `ti58c.mem` (unversioned user data) on upgrade intended (F3)? `[59]`
-- Are ASM overlay files own or external (F4)? `[59]`
-- Do settings stores count as an "own format" for Briefing §1.2? `[59]`
+- ~~Preset syntax (F1), `ti58c.mem` (F3), ASM overlays (F4), settings~~:
+  answered 2026-11-08/09, Briefing §1.2. `[59]`
 - Card v1 write-back as 1.0 vs "write new" (F2): recorded as fact, decision in phase 3. `[59]`
-- Do `.floppy.img` files (no longer read) still exist anywhere users might have them? `[1600]`
-- Is `.floppy.yaml` own or external, given that SDE reads and writes it (F4)? `[matrix]`
+- ~~`.floppy.img` still around?~~ No; dropped, no converter. ~~`.floppy.yaml`
+  own or external?~~ Own, SDE follows (Briefing §1.2). `[1600]`
 
 ### Hardware facts
-- Module slot pin-out of the TI-59: source needed (F7). `[59]`
+- ~~Module slot pin-out source (F7)~~: https://www.datamath.org/Chips/TMC0540.htm. `[59]`
 - Which PC-100C spring is unconnected (F6; the count is settled). `[59]`
 - Research sources disagree on the TI-59 chip set (TMC0599 vs TMC0598 RAM,
   TMC0571 as SCOM vs ROM, 240 kHz vs 455 kHz) and on the display decode
   table; which is authoritative for the phase 4 fit tables? `[59]`
+  Answered 2026-11-09: https://www.datamath.org/Chips/TMS0500-CS.htm;
+  research notes and code are corrected against it (Briefing §1.9).
 
 ### Tests and CI
 - XCUITest and goldens-generation elapsed times: unknown. `[59]`
@@ -279,35 +278,36 @@ Collected from all inventories and deduplicated. Tags: `[59]`, `[1600]`,
 - Do the Calc-U-1600 screenshot scenarios run on Linux/Windows? *unverified*. `[1600]`
 - Do VS Code extension tests exist (`tools/check_presets.sh` claims so;
   `package.json` has no test script)? `[1600]`
-- Is the Calc-U-1600 plan to trigger `build.yml` on tag push still current? `[RT]`
+- ~~Build on tag push?~~ No; CI stays dispatched by ReleaseIt. `[RT]`
 
 ### Release and repository
-- Which GitHub repository is the release location after the move? `[RT]`
-- Is `release -C <subdir>` meant to work for a product inside a monorepo
-  (today it resolves to the repository root, S1)? `[RT]`
+- Release location and versioning model: open, phase 3 (Briefing §6:
+  source vs release repository, independent product releases). `[RT]`
+- ~~`release -C <subdir>` in a monorepo?~~ Yes: per-product subdirectories
+  (Briefing §6). `[RT]`
 - Role of `bin/run-screenshots` / `bin/simulators` in the App Store
   pipeline: covered in `59` §Tests and §Release material, not in `RT`;
   no conflict. `[RT]` (answered by `[59]`)
 - ~~`TODO.md` 728 vs 732 lines (F14)~~: the briefing now says 732. `[1600]`
 
 ### Site
-- Where is the calcu59.ch nginx redirect configured, who maintains it, until when? `[Site]`
-- Is pinning `59/calc/` to 2.3.0 pending (F11)? `[Site]`
+- ~~calcu59.ch redirect~~: hosting provider, kept while the domain is paid;
+  never used or mentioned in the new project (Briefing §4.3). `[Site]`
+- ~~`59/calc/` pin (F11)~~: done in calc-u-site `acd629c`. `[Site]`
 - ~~Is `https://tinue.github.io/1600/` part of the release material (F10)?~~
   Answered 2026-11-09: kept by the developer, not part of this project;
   the web client goes to calc-u.org/1600. `[Site]`
-- Is the `/1600/` content outline in `~/.claude/plans/rustling-napping-pelican.md`
-  still valid, given its "no web client" assumption? `[Site]`
+- ~~`/1600/` content outline (`rustling-napping-pelican.md`)~~: superseded,
+  discarded (answered 2026-11-09). `[Site]`
 - Actual number of `check.js` assertions (400-odd vs 1100+). `[Site]`
 
 ### Agent knowledge
 - ~~Is `calc-u-1403h-ui` in scope?~~ Answered 2026-11-09: no, out of scope
   for now, as is Calc-U-16 (Briefing §1.11). `[AK]`
-- Is `Sharp1500-1600-Ref/skills/sharp-pc1500-1600/SKILL.md` (not installed)
-  to be updated, or superseded by `~/.claude/skills/PC1500`? `[AK]`
-- Are Calc-U-1600 `docs/background/plans/*.md` in scope for the terminology update? `[AK]`
-- Update or leave the stale memory directories (`claude/ti59-emul`,
-  `sharp/Calc-U-1600-Binary`)? `[AK]`
+- ~~Repo skill, plans, stale memory directories~~: answered 2026-11-09
+  (Briefing §1.11): the repo skill is a stand-alone subset, both it and
+  `PC1500` are updated; plans keep their wording; stale directories are
+  merged and deleted. `[AK]`
 - Do the `MEMORY.md` indexes (Calc-U-1600: 64 lines, 15 260 bytes) exceed
   what Claude Code loads at session start? `[AK]`
 
@@ -327,5 +327,5 @@ Collected from all inventories and deduplicated. Tags: `[59]`, `[1600]`,
   while its own list gives 49 program files plus 2 `.md`. `[matrix]`
 - Other drift between the products' own docs and ReleaseIt examples
   (`examples/Calc-U-59.yaml`, `examples/Calc-U-1600.yaml` older than the
-  real `release.yaml` files) is recorded in `RT`; whether they are to be
-  updated is open. `[RT]`
+  real `release.yaml` files) is recorded in `RT`; they are rewritten when
+  ReleaseIt gets per-product subdirectories (answered 2026-11-09). `[RT]`

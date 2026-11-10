@@ -28,9 +28,15 @@ the same as the machine stores it, in a file with a header; a
 **header** is the first bytes of a program file that say what it is,
 how long it is and where it goes; **headerless** code is a file of
 machine code without one; the **program area** is the part of memory
-BASIC keeps the program in, on the PC-1600 the one TITLE has selected
-(S0, S1 or S2); **program mode** is the mode in which typed lines are
-stored (PRO).
+BASIC keeps the program in, on the PC-1600 the one that is selected
+with the BASIC command TITLE: S0, or S1 or S2, which lie in the memory
+module of slot 1 or 2; **program mode** is the mode in which typed lines
+are stored (PRO); **MODE 0** and **MODE 1** are the two modes of the
+PC-1600, its own and the one in which it behaves as a PC-1500; a
+**plan** is the loader's answer to where a machine-code file would go,
+made before anything is written; the **starting command** is the BASIC
+command that starts loaded code (`CALL` and its forms); the **work
+area** is the memory the system keeps its own variables in.
 
 ## User Stories
 - As a user, I want to put a BASIC program from a file into the machine
@@ -62,9 +68,11 @@ What a file is
   be one of: empty; a BASIC listing; tokenized BASIC for the PC-1500
   (CE-158 header) or for the PC-1600; machine code with a CE-158 header
   or with a PC-1600 header; headerless; or something else, with a few
-  words that say what (a reserve area, variables, plain text). The
-  content decides, never the file name, and the rules are
-  SharpDataExchange's, unchanged (`Core/ProgramFile.cpp:17-105`).
+  words that say what (a reserve area, variables, plain text). For
+  headerless bytes it also says whether they look like code of the
+  LH5801 or of the Z-80. The content decides, never the file name, and
+  the rules are SharpDataExchange's, unchanged
+  (`Core/ProgramFile.cpp:17-105`).
 - [ ] **AC-2** — Given a file with a header, then the loaders read from
   it: from a CE-158 header (27 bytes) the name, the load address, the
   length and the address to start at; from a PC-1600 header (16 bytes)
@@ -98,9 +106,10 @@ BASIC
   `Core/PC1500/PC1500BasicLoader.cpp:39-40`).
 - [ ] **AC-6** — Given a PC-1500 or PC-1500A, then the program goes to
   where BASIC's program starts; given a PC-1600, then into the program
-  area that is selected: S0, across the memory modules that are part of
-  it and the built-in RAM, no line cut in two between them, or the
-  program module of S1 or S2. Given the pointers of BASIC are not those
+  area that is selected: S0, which can reach over memory modules and the
+  built-in RAM, filled in the order BASIC's own table of that area gives
+  its parts, a line that does not fit into the rest of one part starting
+  the next; or the program area S1 or S2 in a memory module. Given the pointers of BASIC are not those
   of a machine that was set up (after NEW), the program does not fit,
   or the selected slot holds no program module, then the load is refused
   with a reason that names the pointer or the room, and nothing is
@@ -109,9 +118,12 @@ BASIC
   `Core/PC1600/PC1600ProgramPlacement.cpp:270-286`).
 - [ ] **AC-7** — Given the command to type a listing in, then its lines
   are typed through the ROM's editor, each followed by ENTER, by the
-  typing engine (LIB-5 AC-16, AC-28); an empty line is left out; after
-  each line the loader waits until the machine is idle and the end of
-  the program no longer moves. A line is stored when the end of the
+  typing engine (LIB-5 AC-16, AC-28); an empty line is left out, and a
+  character without a key refuses the command before anything is typed.
+  After each line the loader waits until the machine reports prompt
+  readiness, for at most 12 seconds of emulated time, and then until the
+  end of the program has not moved for 30 frames, for at most 6
+  seconds. A line is stored when the end of the
   program or that line's own record changed; on the PC-1600 a line of
   more than 79 characters is not typed and counts as not stored. Given
   no line was stored, or some were not, then the command fails and names
@@ -129,9 +141,10 @@ Machine code
 
   | Case | Refused with |
   |---|---|
-  | the file is not machine code, or its header is damaged, or it holds fewer bytes than its header says | what the file is; a length given by hand overrides the last |
+  | the file is not machine code (a BASIC file: with the hint to load it as BASIC), or its header is damaged | what the file is |
+  | the file holds fewer or more bytes than its header says, and no length was given by hand | both numbers |
   | a CE-158 file on a PC-1600 that is not in MODE 1; a PC-1600 file on a PC-1500 | which machine or mode takes it |
-  | there is no code | so |
+  | no byte follows the header, or the length given by hand is 0 | that there is no code |
   | headerless, and no address was given | the address is needed; on a PC-1600 the start of the selected program area is proposed |
   | the length given by hand is more than the file holds | both numbers |
   | a PC-1600 header names a bank other than 0 to 3, or the code does not lie in &8000 to &BFFF there, or there is no RAM in that bank | the bank and the range |
@@ -139,6 +152,14 @@ Machine code
   | code for the LH5803 that does not lie in &0000 to &7FFF | the range |
   | on a PC-1600 the address is ROM, or lies in a module that is not part of the selected program area | where machine code can go instead |
 
+- [ ] **AC-23** — Given a plan that holds, then the code goes: to the
+  address given by hand, else to the header's load address, and
+  headerless code needs the one given by hand; with the length given by
+  hand, else the number of bytes after the header. On a PC-1600 the bank
+  is the one in the header's address, when no address was given by hand,
+  and otherwise the one that follows from the selected program area and
+  the address; headerless code cannot name a bank
+  (`Core/MachineCodeFile.cpp:259-294`).
 - [ ] **AC-9** — Given a PC-1600, then the processor the code is for is:
   the Z-80 for a file with a PC-1600 header, the LH5803 for one with a
   CE-158 header, and for headerless code the one the caller names, or
@@ -151,29 +172,48 @@ Machine code
   RAM. Today the PC-1500 writes the other bytes and then reports the
   failure (`Core/PC1500/PC1500MachineCodeLoader.cpp:9-29`,
   `Core/PC1600/PC1600MachineCodeLoader.cpp:8-54`; OQ-2).
-- [ ] **AC-11** — Given code was loaded, then the reply holds: where it
-  went (the range, and on the PC-1600 the program area and the bank);
-  the NEW command that keeps BASIC from overwriting it, where one is
-  needed, with a note; and the command that starts it (`CALL`, on the
-  PC-1600 `XCALL` for LH5801 code and `CALL #bank,` for another bank),
-  with a note that says whether the address is from the header or is the
-  first byte. The rules for both commands are today's
+- [ ] **AC-11** — Given code was loaded, then the reply has these parts:
+  the range it went to, and on the PC-1600 the program area and the
+  bank; a NEW command with a note, or only a note where no NEW helps;
+  the starting command with a note; and warnings, if any (AC-12). The
+  starting command calls the header's address to start at, else the
+  first byte, and the note says which: `CALL &X` on a PC-1500 and for
+  Z-80 code in bank 0, `CALL #b,&X` for Z-80 code in another bank,
+  `XCALL &X` for LH5801 code on a PC-1600. The NEW command is, as today:
+
+  | Where the code lies | NEW |
+  |---|---|
+  | PC-1500, and PC-1600 in MODE 1 with S0: inside BASIC's memory | `NEW &e`, e the first address after the code |
+  | PC-1500: outside BASIC's memory | none; the note says that none is needed |
+  | PC-1600: in the program area S1 or S2 that is selected | `NEW "Sn:",&size` |
+  | PC-1600, MODE 0: in the first part of S0 | `NEW "S0:",&size`, with a note on the bytes below the code that BASIC loses |
+  | PC-1600: in a later part of S0, or above the program area in the built-in RAM | none; a warning that BASIC or its variables can overwrite it |
+  | PC-1600: elsewhere | none; the note says that BASIC does not use this memory |
+
   (`Core/MachineCodeFile.cpp:350-505`,
-  `Core/tests/machine_code_file_tests.cpp:349, 367`).
+  `Core/tests/machine_code_file_tests.cpp:349, 367`.)
 - [ ] **AC-12** — Given code that lies in the system's work area of a
   PC-1600 (&F000 to &FFFF), then it is loaded and the reply carries a
   warning that names what is there (`Core/MachineCodeFile.cpp:166-185`).
 - [ ] **AC-13** — Given the command to load code and start it, and a
   header with an address to start at, then after the load the starting
   command is typed with ENTER and the command waits until the machine is
-  idle, for at most an hour of emulated time. Without such an address
-  nothing is started (`Core/Preset/PresetRunner.cpp:243-257`).
+  idle; after an hour of emulated time it is done all the same, and a
+  line of the log says so. Without such an address nothing is started
+  (`Core/Preset/PresetRunner.cpp:243-257`).
+- [ ] **AC-24** — Given the commands of this feature, then loading BASIC
+  and loading machine code are carried out at once and are no
+  operations; typing a program in, and loading with a start, are
+  operations (LIB-3 AC-14). Each is refused while another operation
+  runs, unless that operation itself calls it: a preset's `program:`
+  section is part of the preset's operation (LIB-3 AC-17).
 
 The product kind
 - [ ] **AC-14** — Given a Sharp machine, then it lists the product kind
-  for the loaders' memory access (C1600-1 AC-19), which this feature
-  defines: reading memory as the processor sees it, without an effect on
-  the machine; writing bytes into the built-in RAM and into the RAM of a
+  "loader memory access" (C1600-1 AC-19), owned by the machine itself,
+  which this feature defines: reading memory as a named processor sees
+  it, without an effect on the machine; on a PC-1600 the mode (MODE 0 or
+  1) and the selected program area; writing bytes into the built-in RAM and into the RAM of a
   module in a slot, whichever bank is switched in; whether a range of a
   slot is RAM; the size and the banks of the module in a slot; a write
   that is not stored says so (today
@@ -181,7 +221,8 @@ The product kind
 
 In the frontends
 - [ ] **AC-15** — Given the Qt6 and the Web frontend, then the File menu
-  has "Load BASIC Program…" and "Load Machine Code…" (LIB-14 AC-34); the
+  has "Load BASIC Program…" and "Load Machine Code…" (LIB-14 AC-34 for
+  Qt6, AC-35 for Web); the
   file dialog offers `.bas`, `.bbin` and `.wav`, or `.bin`, `.rom` and
   `.wav`, and all files; in Qt6 it starts in the folder set for BASIC or
   for assembly, or the one last used (LIB-9 AC-29)
@@ -209,9 +250,10 @@ In the frontends
   user starts the code (`Qt6/app/MainWindow.cpp:468-487`,
   `Web/src/Dialogs.jsx:134-150`). The menu never starts code by itself.
 - [ ] **AC-20** — Given the GUI test of the Qt6 and of the Web frontend,
-  then each has two scenarios under these IDs: for AC-18 and AC-19,
-  headerless code is loaded, the address is asked, and NEW and CALL are
-  shown; for AC-16, a WAV with several programs asks which one (today
+  then each has two scenarios: under the ID C1600-2 AC-18, headerless
+  code is loaded, the address is asked, and NEW and CALL are shown;
+  under the ID C1600-2 AC-16, a WAV with several programs asks which one
+  (today
   `Web/tests/play.spec.js:278, 298`; ADR 0032).
 
 Commands
@@ -239,17 +281,18 @@ Commands
   loader; today the machine-code loader takes it as headerless and
   refuses it later (`Core/MachineCodeFile.cpp:62-69, 316`).
 - **EC-2** — Given a file that starts like a header and has no complete
-  header of a known kind, then it is refused with those words.
+  header of a known kind, then it is refused, and the reason says just
+  that (OQ-4).
 - **EC-3** — Given a load while no program area is set up (the machine
   shows `NEW0? :CHECK`), then a BASIC load is refused with the hint to
   run NEW first (AC-6).
 - **EC-4** — Given a preset names a WAV, then the first file on it is
   taken, as today (`Core/ProgramFile.cpp:69-74`).
-- **EC-5** — Given a BASIC file is given to the machine-code loader, or
-  machine code to the BASIC loader, then it is refused with the hint to
-  use the other.
-- **EC-6** — Given a load while an operation runs, then it is refused
-  like any command that would start one (LIB-3 AC-16).
+- **EC-5** — Given machine code is given to the BASIC loader, then it is
+  refused with the hint to load it as machine code (the other way round:
+  AC-8).
+- **EC-6** — Given a load from the menu or the harness while an
+  operation runs, then it is refused (AC-24).
 
 ## Technical Requirements (optional)
 - One classifier and one plan for the menu, the drop, the preset and the
@@ -270,7 +313,8 @@ Commands
   6), and I need to know where its source lives.
 - [ ] **OQ-2** — AC-10: a PC-1500 load that meets a byte that is not RAM
   writes the rest today and then fails. *Recommendation:* nothing is
-  written, as on the PC-1600; too small for a row.
+  written, as on the PC-1600. This, OQ-3 and EC-1 are small visible
+  changes; one row in `docs/behaviour-changes.md` names the three.
 - [ ] **OQ-3** — `.rom` in the file dialog of Load Machine Code…
   (AC-15). A drop and the macOS document types take it; the dialog's
   filter does not. *Recommendation:* add it.
@@ -279,8 +323,11 @@ Commands
   preset. *Recommendation:* one sentence for each case, the menu's of
   today; a preset puts its line number before it.
 - [ ] **OQ-5** — "BASIC listing", "tokenized BASIC", "header",
-  "headerless", "program area" and "program mode" for the glossary, as
-  defined above (C1600-4 uses them too).
+  "headerless", "program area", "program mode", "plan" and "starting
+  command" for the glossary, as defined above (C1600-4 uses some too).
+  The glossary's Program module, "cannot be written", does not fit the
+  PC-1600's S1 and S2, which this spec calls program areas in a memory
+  module.
 
 ## Decision Log
 

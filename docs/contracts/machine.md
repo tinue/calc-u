@@ -266,8 +266,14 @@ PC-1350 machine overviews, `Shared/11-Pin-Port.md`, `Shared/Peripherals.md`).
 
 - Q-1: The ROM version of the PC-1350 dump and how many PC-1403 versions
   a product would offer as variants (only version 3 is dumped).
-- Q-2: Whether the TI-59's constant ROM (SCOM constants) and the
-  instruction ROM count as one ROM or several for the ROM lookup.
+- Q-2 (answered from the facts, 2026-11-10): the TI-59/58's constants
+  are a section of the two SCOM ROM chips, not chips of their own;
+  Calc-U-59 keeps them in separate files per chip
+  (`roms/calculator/files.txt`: TMC0582, TMC0583, TMC0571B plus
+  `TMC0582-CONST-K`, `TMC0583-CONST-K`; TI-58C likewise with CD2400,
+  CD2401, TMC0573). The descriptor lists the ROM images a variant needs;
+  whether the ROM lookup names images per chip or per file is for the ROM
+  lookup contract (9).
 
 ## Decision log
 

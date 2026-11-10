@@ -18,17 +18,21 @@
   to I-4, Q-1, Q-5), `docs/contracts/presets.md` (PR-8, PR-11),
   `docs/contracts/capabilities.md` (the media kind, Q-2),
   `docs/contracts/machine.md` (M-8, media places); ADR 0019, 0020, 0025,
-  0037; `docs/behaviour-changes.md` rows 59-6, 59-7, 1600-1, 1600-5,
-  1600-6, 1600-7.
+  0037; `docs/behaviour-changes.md` rows 59-6, 59-7, 59-9, 59-11,
+  1600-1, 1600-4 to 1600-7.
 - Facts: Calc-U-59 at `v2.3.0`, Calc-U-1600 at `b4ea8c8`; every
   `path:line` below is at those pins.
 
 Glossary terms used: Medium, Template, Instance, Name & Save, Insert,
 Fit, Arm, Save folder, Media place (pass-through, holding), Outdated,
 Module, Memory module. A **kind** of medium is what one sort of media
-place takes (a magnetic card, a floppy disk, a memory module with a
-battery, a cassette tape); each kind has its file suffix and its format,
-which its product supplies (OQ-6).
+place takes (a magnetic card, a floppy disk, a battery-backed module, a
+cassette tape); each kind has its file suffix and its format, which its
+product supplies (AC-46). A **user template** is a template the user
+made, a file in the save folder that says it is one; the glossary's
+Template names only the bundled ones (OQ-7). The **saved media** are
+the media in the save folder and the tape folder, and the list of them
+that a Web frontend shows.
 
 What the three status columns mean for this feature:
 - **Library:** the media model, the save rules, autosave, the media
@@ -36,7 +40,8 @@ What the three status columns mean for this feature:
   and commands exist and are shown to work with a machine and a kind of
   medium built for the tests.
 - **Calc-U-59:** magnetic cards are media of this model in every
-  frontend; the card reader, the card format and `fit` are C59-7.
+  frontend; the card reader, the card format and `fit` are C59-7, and
+  this column is complete only together with it.
 - **Calc-U-1600:** memory modules, floppy disks and cassette tapes are
   media of this model in both frontends.
 
@@ -76,16 +81,17 @@ What the three status columns mean for this feature:
 The model
 - [ ] **AC-1** — Given a medium, then it is a template or an instance. A
   template is bundled with the product, or is a file in the save folder
-  that says it is one; an instance is a file in the save folder. A
-  template and a bundled file are never written (`media.md` I-1; ADR
-  0019).
+  that says it is one (a user template); an instance is a file in the
+  save folder. A bundled file is never written, and a user template only
+  by a save as a template (AC-17) (`media.md` I-1; ADR 0019).
 - [ ] **AC-2** — Given a medium file, then it carries the medium's name
   inside; the file name counts only for a file that carries none
   (`media.md` MD-2, MD-5).
 - [ ] **AC-3** — Given a name for a medium, then spaces around it are
   dropped and runs of spaces become one, and it is refused when it is
   empty or holds a character a file name cannot hold: `/ \ : * ? " < > |`
-  or a control character (`media.md` MD-3; behaviour change 1600-5;
+  or a control character. Two names that differ only in upper and lower
+  case are the same name (`media.md` MD-3; behaviour change 1600-5;
   OQ-2).
 - [ ] **AC-4** — Given a medium is written under a name, then its file
   is the name with the suffix of its kind, in the save folder; given a
@@ -93,12 +99,14 @@ The model
   the new file gets the first free numbered name (`foo-1`) (`media.md`
   MD-5).
 - [ ] **AC-5** — Given a medium is looked up by its name and kind, then
-  the bundled ones are searched first and the save folder second; a file
-  in the save folder that carries the name of a bundled medium is not
-  listed and never found (Calc-U-1600
-  `Core/Connector/NamedFileCatalog.hpp:124-170`, `Shared/ModuleBay.cpp:54-55`).
-  Two files of the save folder with one name are both listed (`media.md`
-  MD-5; OQ-1).
+  the bundled ones are searched first and the save folder second
+  (Calc-U-1600 `Core/Connector/NamedFileCatalog.hpp:124-170`). An
+  instance can carry the name of a bundled template only by AC-25; it is
+  listed among the instances, and a lookup by name finds the template
+  (OQ-8). Two files of the save folder with one name are both listed
+  (`media.md` MD-5; OQ-1). In a module slot the modules that are not
+  media (LIB-4 AC-1) and the media of the slot's kind are one list of
+  names.
 - [ ] **AC-6** — Given a media place of a machine, then its capability
   states its kind, whether it is pass-through or holding, and its sides,
   and gives: inserting and ejecting a medium, which medium is in and
@@ -109,8 +117,18 @@ The model
 - [ ] **AC-7** — Given an app session, then a state topic lists the
   media of the product: for each kind the templates and the instances,
   each with its name, its description, whether it is outdated, and the
-  place it is in now, if any; it is sent again when the save folder
-  changes (LIB-4 OQ-3 as decided).
+  place it is in now, if any; and for each media place whether it
+  holds a medium and whether the machine waits for one. The folders are
+  read again whenever the product wrote to them and whenever a picker or
+  the saved media list is opened; they are not watched for changes from
+  outside (LIB-4 OQ-3 as decided).
+- [ ] **AC-46** — Given a kind of medium, then its product supplies the
+  reading and the writing of its files, and this is all the library
+  knows of a file: its name, its description, whether it is a template,
+  its format version and whether that is outdated, with the words of the
+  hint (AC-9), whether it is write-protected, and its content, which the
+  library hands to the media place and takes back from it without
+  looking into it (`capabilities.md` Q-2).
 
 Pickers
 - [ ] **AC-8** — Given the picker of a module slot or of a holding media
@@ -128,14 +146,17 @@ Pickers
 - [ ] **AC-10** — Given an entry is chosen, then what the old medium
   still has to save is written first (AC-13); in a holding media place
   the new medium is in at once, without a power cycle; in a module slot
-  it is a replace of the module (LIB-2 AC-35, LIB-18 AC-29). Given the
+  it is a replace of the module (LIB-2 AC-35; what follows: LIB-18 AC-21
+  for the TI models, AC-29 for the Sharp ones). Given the
   medium cannot be read, then the place is empty and a notice says why.
 
 Autosave
 - [ ] **AC-11** — Given an instance in a holding place whose content
   changes, then its file holds the new content at the latest half a
   second after the change, counted in the wall time the host passes
-  (LIB-3 AC-2), and is not written while nothing changes (Calc-U-1600
+  (LIB-3 AC-2), and is not written while nothing changes; in the
+  harness, which has no wall clock, it is written at the end of each
+  command (Calc-U-1600
   `Shared/ModuleBay.cpp:233-274`, `Shared/FloppyBay.cpp:168-188`).
 - [ ] **AC-12** — Given an instance in a pass-through place, then its
   file is written when the medium is given back, if the machine wrote to
@@ -145,15 +166,17 @@ Autosave
   starts, before the machine is replaced, when the session is suspended
   (LIB-3 AC-24), and when the product quits (Calc-U-1600
   `Shared/AppSession.cpp:59-84`, `Qt6/app/MainWindow.cpp:323-329`).
-- [ ] **AC-14** — Given a file is written, then it holds either the old
-  or the new content, never a part. Given the write fails, then a notice
-  says so once for that medium, and the next change tries again; today
-  both products fail without a word (Calc-U-1600
+- [ ] **AC-14** — Given a write of an instance fails, then a notice
+  says so, once for that medium until a write of it succeeds, and the
+  next change tries again; today both products fail without a word (Calc-U-1600
   `Shared/ModuleBay.cpp:245-247`; OQ-5).
-- [ ] **AC-15** — Given a medium in a place that is not an instance (a
-  template, a medium a preset names by file or defines itself), then
-  nothing is written for it until Name & Save, `saveas` or AC-25 makes
-  it one; its content lives as long as it is in its place.
+- [ ] **AC-15** — Given a template the user chose in a picker, when the
+  machine writes to it, then the template is not written, and what was
+  written lives in the place until Name & Save makes it an instance or
+  the medium leaves the place, as today (Calc-U-1600
+  `Shared/ModuleBay.cpp:425`). `media.md` I-2 reads otherwise (OQ-8).
+  Given a medium a preset defines itself (`mem:`), then nothing is ever
+  written for it.
 
 Name & Save
 - [ ] **AC-16** — Given a place that holds a medium which is not an
@@ -165,14 +188,19 @@ Name & Save
   or by the harness, then these rules hold in this order (`media.md`
   MD-3, I-3, I-4; Calc-U-1600 `Core/Connector/MediaSave.hpp:73-95`):
 
-  | Rule | Name & Save | `saveas: live` | `saveas: template` | the `file:` form |
-  |---|---|---|---|---|
-  | the name is refused by AC-3 | refused | refused | refused | the name is the file name without its suffix |
-  | there is no save folder | refused | refused | refused | — |
-  | the name is that of a bundled medium of the same kind | refused | refused | refused | — |
-  | the name is that of a user's template of the same kind | refused | refused | replaces it | — |
-  | the file it would write is a template | refused | refused | replaces a user's, never a bundled one | writes exactly that file |
-  | an instance of that name exists | asks before replacing | replaces | — | — |
+  | Case, always among media of the same kind | Name & Save | `saveas: live` | `saveas: template` |
+  |---|---|---|---|
+  | the name is refused by AC-3 | refused | refused | refused |
+  | the name is that of a bundled medium | refused | refused | refused |
+  | the name is that of a user template | refused | refused | replaces it |
+  | the name is that of an instance that is in another place now | refused | refused | refused |
+  | the name is that of an instance | asks before replacing | replaces | refused |
+  | the file the name gives exists and cannot be read or is outdated | a numbered file (AC-4) | a numbered file | a numbered file |
+
+  The harness command `saveas` follows the two `saveas` columns. The
+  `file:` form writes exactly the file it names, with the file name
+  without its suffix as the medium's name; it is refused for a bundled
+  file, and for a user template unless it saves a template.
 
 - [ ] **AC-18** — Given a save succeeded, then the place holds the saved
   medium under its new name without a power cycle; saved as an instance
@@ -191,30 +219,39 @@ Name & Save
   `Qt6/app/MainWindow.cpp:381-393`).
 
 Media in presets
-- [ ] **AC-21** — Given a preset, then a medium is named in it by its
-  name (in quotes when it holds a space), by `file:` and a path (LIB-6
-  AC-1), or by `mem:` and the name of a `medium:` section of the same
-  preset; the header key of a module slot and of a holding media place
-  takes such a name, followed by a side where the place has sides
-  (`slot-1: "My programs"`, `floppy: file:disks/work.floppy.yaml B`)
+- [ ] **AC-21** — Given a preset, then the header key of a module slot
+  and of a holding media place other than the cassette, and the steps of
+  AC-26, take a raw value (LIB-6 AC-1) made of words that spaces part: a
+  medium, and after it a side where the place has sides, which is the
+  last word only when it is one of them. A medium is written as its
+  name, in double quotes when it holds a space; as `file:` and a path,
+  the path in double quotes when it holds a space; or as `mem:` and the
+  name of a `medium:` section of the same preset, wherever that section
+  stands (`slot-1: "My programs"`, `floppy: file:disks/work.floppy.yaml B`)
   (`presets.md` PR-8, PR-11; OQ-3).
 - [ ] **AC-22** — Given a `medium:` section, then it defines a medium
   inside the preset, with `name:`, `kind:` and the content fields of
-  that kind, which the kind's owner reads; it may repeat; such a medium
-  is never saved by itself (`presets.md` PR-8; Calc-U-59
+  that kind, which the kind's owner reads; it may repeat; every such
+  section is read before the machine is built, and it is not carried out
+  in its place like other sections; such a medium is never saved by
+  itself (`presets.md` PR-8; Calc-U-59
   `Shared/StateFile.cpp:397-448`).
 - [ ] **AC-23** — Given a preset names a medium that does not exist, is
   outdated or cannot be read, or a `mem:` name without its section, then
   the preset is refused when it is read, for an outdated file with the
-  hint of AC-9 (LIB-6 AC-7; `media.md` MD-4).
+  hint of AC-9 (LIB-6 AC-7; `media.md` MD-4). A name that no medium has
+  is not refused where the kind starts a new, empty medium under a name
+  (AC-20: a magnetic card, AC-35).
 - [ ] **AC-24** — Given a preset names an instance by its name, then the
   machine is built with that instance, and it is autosaved as always.
 - [ ] **AC-25** — Given a preset names a medium by file, or a template
   by name, when the machine first writes to it, then an instance with
   the medium's name is made in the save folder, replacing an instance of
   that name, the write goes there, and the log says which file was
-  written; the file the preset named is never written (`media.md` MD-1,
-  I-2; ADR 0019; behaviour changes 59-7, 1600-7).
+  written; the file the preset named is never written. A preset that is
+  run again thus starts from the same medium and replaces what the last
+  run left (`media.md` MD-1, I-2; ADR 0019; behaviour changes 59-7,
+  1600-7).
 
 Steps and commands
 - [ ] **AC-26** — Given a preset, then these steps exist, and the
@@ -222,10 +259,10 @@ Steps and commands
 
   | Step | Value | What it does | Emulated time (LIB-6 AC-19) |
   |---|---|---|---|
-  | `insert:` | a place, a medium (AC-21), a side where the place has sides | in a holding place the medium is in at once and stays; through a pass-through place it is passed, and the step ends when it is back | pass-through: needs it |
+  | `insert:` | a place, a medium (AC-21), a side where the place has sides; for a pass-through place the medium can be left out, which means the one that is fitted (C59-7) | in a holding place the medium is in at once and stays; through a pass-through place it is passed, and the step ends when it is back, or after the time the place's owner states when the machine does not take it | pass-through: needs it |
   | `eject:` | a place | takes the medium out (AC-13 first) | none |
   | `arm:` | a place, a medium, a side | lays the medium ready; it is passed through when the machine says it waits for one (AC-6); the step does not wait | none |
-  | `saveas:` | `live` or `template`, optionally `protected`, then the place, a colon and a name, or the place, `:file:` and a path | AC-17 to AC-19; a failure fails the preset | none |
+  | `saveas:` | `live` or `template`, optionally `protected`, then the place, a colon and the name, which is the rest of the line, or the place, `:file:` and a path, which is the rest of the line | AC-17 to AC-19; a failure fails the preset | none |
 
   (Calc-U-1600 `Core/Preset/PresetFile.cpp:295-367`; Calc-U-59
   `Shared/StateFile.cpp:168-201`, `Shared/KeySequencer.cpp:214-219`.)
@@ -236,7 +273,7 @@ Steps and commands
   topic of AC-7), `media import <file>` (AC-30), `media export <kind>
   <name> <path>` and `media delete <kind> <name>` (AC-31). A run of the
   harness has an empty save folder of its own unless it is given one
-  (LIB-11 AC-8).
+  (LIB-11 AC-8); the bundled media are always there.
 
 Getting media in and out
 - [ ] **AC-29** — Given a Web frontend, then its File menu has the items
@@ -245,9 +282,10 @@ Getting media in and out
 - [ ] **AC-30** — Given a file is imported, then it must be a medium of
   a kind the product has, in the current version; it is written into the
   save folder under the file name its inner name gives (AC-4), as the
-  template or instance it says it is; given a medium of that kind
-  already has the name, then the import is refused (Calc-U-1600
-  `Shared/MediaLibrary.cpp:59-107`).
+  template or instance it says it is. An import is not a save under
+  AC-17: it is refused when a medium of that kind, bundled or saved,
+  already has the name, and when the file is outdated or cannot be read
+  (Calc-U-1600 `Shared/MediaLibrary.cpp:59-107`).
 - [ ] **AC-31** — Given the saved media, then the list shows the media
   of the save folder by kind and name, marks a template and a medium
   that is in a place now, hands a medium's file to the user (LIB-15
@@ -261,13 +299,15 @@ Getting media in and out
   magnetic card, with the suffix `.u59`, and its one media place is the
   card reader of the TI-59, which is pass-through with the sides 1 and 2
   (C59-7; LIB-4 AC-12). There are no bundled cards.
-- [ ] **AC-33** — Given the Swift, Qt6 and Web frontends, then magnetic
-  cards are instances in the save folder of that frontend (LIB-9 AC-13
-  to AC-15), under the name inside the file. Today the Web frontend
-  keeps cards for one page only, a card is known by its file name, and a
-  card file from any folder is written back where it lies
-  (`Web/bindings.cpp:225-257`, `Shared/SessionController.hpp:192-196`;
-  behaviour change 59-6).
+- [ ] **AC-47** — Given any TI model, then the picker of `slot-1` is
+  that of AC-8 with one group: the empty slot and the 14 Solid State ROM
+  modules, which are not media (LIB-4 AC-11; C59-6); choosing one
+  replaces the module, and a power cycle follows (LIB-18 AC-21;
+  behaviour changes 59-9, 59-11).
+- [ ] **AC-33** — Given the Swift, Qt6 and Web frontends, then AC-1 to
+  AC-5 hold for magnetic cards in the save folder of each (LIB-9 AC-13
+  to AC-15); what that changes for the user, and the card file itself,
+  is C59-7's (behaviour change 59-6).
 - [ ] **AC-34** — Given a card that is read and written through the
   reader, then its instance is written when it is given back (AC-12);
   what that write keeps of the other side is C59-7's.
@@ -285,7 +325,7 @@ Getting media in and out
 ### Calc-U-1600
 
 - [ ] **AC-37** — Given Calc-U-1600, then its kinds of media are the
-  memory module with a battery (`.card.yaml`), the floppy disk
+  battery-backed module (`.card.yaml`), the floppy disk
   (`.floppy.yaml`) and the cassette tape (`.wav`); the two YAML formats
   stay at `format-version: 1` and are read and written as today, the
   name being `module-name:` or `disk-name:` and a template saying
@@ -317,7 +357,11 @@ Getting media in and out
   (`Core/Connector/BatteryCardInstance.hpp:233-249, 329`,
   `Shared/FloppyBay.cpp:154`).
 - [ ] **AC-42** — Given cassette tapes, then they keep their own rules
-  (`media.md` Q-1): the tape picker lists the WAV files of the tape
+  (`media.md` Q-1). A tape is a WAV file in the tape folder; its name is
+  its file name, by the rule of AC-3; there are no tape templates, no
+  autosave by AC-11 and no Name & Save; the cassette has no header key
+  in a preset, and `insert:` and `eject:` work for it with a tape to
+  play; the topic of AC-7 lists the tapes. The tape picker lists the WAV files of the tape
   folder by name; a tape chosen there only plays, from its start; a new
   tape is named first (AC-20) and only records; a recording is written
   whole, as mono 16-bit WAV at 48000 Hz, each time the motor stops and
@@ -340,10 +384,10 @@ Getting media in and out
   `Core/tests/battery_card_instance_tests.cpp:232-513`,
   `Core/tests/tape_deck_tests.cpp:91-342`, `Web/tests/play.spec.js:216-329`).
 - [ ] **AC-45** — Given the GUI test of the Qt6 and of the Web frontend,
-  then each has these scenarios under these IDs: for AC-16, a module
-  template is saved under a name and is an instance afterwards; for
-  AC-8, the picker of a slot lists it (today
-  `Web/tests/play.spec.js:236-266`; ADR 0032).
+  then each has two scenarios: under the ID LIB-7 AC-16, a module
+  template is saved under a name and is an instance afterwards; under
+  the ID LIB-7 AC-8, the picker of that slot then lists it among the
+  instances (today `Web/tests/play.spec.js:236-266`; ADR 0032).
 
 ## Edge Cases
 - **EC-1** — Given the save folder does not exist when a medium is first
@@ -380,7 +424,10 @@ Getting media in and out
   (`media.md` I-1, I-2); it replaces an instance only when the user or a
   preset asks (`media.md` I-3).
 - The library reads and writes no medium format itself: each kind's
-  reader and writer is supplied by its product, behind one seam (OQ-6).
+  reader and writer is supplied by its product, behind one seam (AC-46;
+  OQ-6).
+- A file that is written holds either the old or the new content, never
+  a part.
 
 ## Open Questions
 - [ ] **OQ-1** — Two instances with one name (`media.md` Q-5): which one
@@ -402,10 +449,15 @@ Getting media in and out
   not ask. *Recommendation:* in the Web frontend of both products,
   because a browser has no folder the user can reach; a delete asks
   first; the Qt6 and Swift frontends leave it to the file manager.
-- [ ] **OQ-5** — A failed autosave is silent in both products today
-  (AC-14); so is a file that cannot be read (EC-3). *Recommendation:* a
-  notice for the first, a line of the log for the second, and one row in
-  `docs/behaviour-changes.md` for each product.
+- [ ] **OQ-5** — Changes this spec makes to what a user sees, which
+  have no row in `docs/behaviour-changes.md` yet: a notice for a failed
+  autosave (AC-14) and a line of the log for a file that cannot be read
+  (EC-3), both silent today; every change written when the session is
+  suspended (EC-8); a module change that leaves the other slot and the
+  disk alone (AC-38); Name & Save asking before it replaces an instance,
+  where Calc-U-1600 refuses the name today (AC-40; `media.md` MD-3);
+  deleting saved media asking first (AC-31). *Recommendation:* all of
+  them, with one row for each product.
 - [ ] **OQ-6** — Where the readers and writers of the media formats sit
   (`capabilities.md` Q-2; the open point "Sharp media formats" of
   `features/INDEX.md`). *Recommendation:* product code behind one seam
@@ -413,7 +465,22 @@ Getting media in and out
   `.floppy.yaml` and the tape's WAV with the Calc-U-1600 column of this
   feature, moved under the seam unchanged. No product row is added for
   them.
-- [ ] **OQ-7** — "Kind" (of medium) for the glossary, as defined above.
+- [ ] **OQ-7** — "Kind" (of medium), "user template" and "saved media"
+  for the glossary, as defined above; the glossary's Template then says
+  "bundled with a product or made by the user".
+- [ ] **OQ-8** — A write to a template (AC-15, AC-5). `media.md` I-2
+  says "a write to a template or to a preset-named file goes to an
+  instance". For a preset that is settled (AC-25). For a template the
+  user chose in a picker, Calc-U-1600 keeps the written content in the
+  place and loses it when the medium leaves, unless the user used Name &
+  Save; an instance made by itself would need a name nobody gave, and
+  the save folder would fill with copies. *Recommendation:* keep today's
+  way and word I-2 for preset-named media; the Name & Save button shows
+  that a medium is not saved. Second part: an instance that AC-25 makes
+  from a bundled template carries the template's name, which no other
+  instance may. *Recommendation:* allow it for AC-25 only, as AC-5
+  says, so that a preset finds the template again and replaces its own
+  results.
 
 ## Decision Log
 

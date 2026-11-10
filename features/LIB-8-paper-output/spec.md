@@ -19,8 +19,15 @@
   `path:line` below is at those pins.
 
 Glossary terms used: Printer, Paper panel, Mark, text layer. "The
-paper" is all marks a printer has put down since its paper was last
-empty. Words of other specs: "topic" shapes (LIB-3 AC-5 to AC-8),
+paper" is everything a printer has put down and fed since its paper was
+last empty; it is **empty** when nothing was put down or fed. A
+**position** on the paper is a pair of numbers in the printer's unit: x
+across the paper from its left edge, y along it in the direction the
+paper is fed, counted from where the paper stood when it was last
+empty; y can be less than zero where a plotter feeds back. The
+**owner's name** of a paper is the name of its printer as its
+descriptor gives it, without the variant (`PC-100C`, `CE-150`,
+`CE-1600P`). Words of other specs: "topic" shapes (LIB-3 AC-5 to AC-8),
 "notice" (LIB-3 AC-10), "controls" (LIB-2 AC-14).
 
 What the three status columns mean for this feature:
@@ -50,8 +57,9 @@ What the three status columns mean for this feature:
 - The CE-158's printer port and its panel: a product kind of Calc-U-1600
   that stays as it is (`capabilities.md` C-2).
 - A text layer for the plotters (a backlog idea, `capabilities.md` C-2).
-- Saving the paper to a file from a frontend, vector formats, and a
-  limit on the length of the paper (new functions; none today).
+- Saving the paper to a file from a frontend, other than the Web
+  frontend's way out of AC-21; vector formats; a limit on the length of
+  the paper (new functions; none today).
 - The Swift frontend's paper panel (owner: C59-8).
 
 ## Acceptance Criteria
@@ -60,54 +68,72 @@ What the three status columns mean for this feature:
 
 The kind
 - [ ] **AC-1** — Given a printer, then it has one paper output
-  capability, which states: the width of its paper and the unit of its
-  places, both in millimetres; whether its marks are dots or pen
-  strokes; and whether it has a text layer (`capabilities.md` C-2).
+  capability, which states: its unit in millimetres; the width of its
+  paper and the part of it that can be printed on, in units; whether its
+  marks are dots or pen strokes; how a mark is drawn (the size of a dot
+  and the grey of each darkness, or the width of a stroke); the
+  resolution of a copied picture; and whether it has a text layer
+  (`capabilities.md` C-2).
 - [ ] **AC-2** — Given a printer prints, then its marks are appended to
   the paper in the order in which they were made and are never changed
-  afterwards: a dot with its place and its darkness, or a pen stroke
-  with its colour and the places it passes through.
+  afterwards: a dot with its position and its darkness, or a pen stroke
+  with its colour and the positions it passes through.
 - [ ] **AC-3** — Given a printer with a text layer, then each line it
   prints is appended to the text layer with its characters, as Unicode
-  text, and its place on the paper; a line the printer feeds without
-  printing is an empty line of the text layer.
-- [ ] **AC-4** — Given a paper, then its length is the farthest place a
-  mark reaches or the paper was fed to, whichever is more; it has no
-  limit (both products today).
+  text, and its position; a line the printer feeds without printing is
+  an empty line of the text layer.
+- [ ] **AC-4** — Given a paper, then the capability gives how far it
+  reaches: from the least to the greatest y that a mark has or that the
+  paper was fed to. A feed without a mark thus makes the paper longer,
+  and the panel shows it as blank paper. The paper has no limit (both
+  products today).
 - [ ] **AC-5** — Given the paper is cut through the capability, then it
   is empty: no marks, no text, length zero; what the printer prints next
   starts a new paper.
 
 The topic
-- [ ] **AC-6** — Given a machine with a paper output capability, then
-  the app session has a paper topic for it, a stream topic (LIB-3 AC-7):
-  a message carries the marks and text lines appended since the last
-  one, or says that the paper was emptied. A frontend that starts to
-  listen is sent the whole paper first (LIB-3 OQ-5).
+- [ ] **AC-6** — Given a machine with paper output capabilities, then
+  the app session has one stream topic for each (LIB-3 AC-7), named
+  `paper` with the owner's name (`paper PC-100C`): a message carries the
+  marks and text lines appended since the last one and how far the paper
+  reaches now (AC-4), or says that the paper was emptied. A frontend
+  that starts to listen is sent the whole paper first (LIB-3 OQ-5, open
+  there).
 - [ ] **AC-7** — Given the same commands at the same tick counts in two
   runs, then the paper holds the same marks in the same order (LIB-11
   AC-6).
 
 What the paper lives through
-- [ ] **AC-8** — Given a Reset, a Cold boot or a power cycle, then the
-  paper stays (both products today: Calc-U-59
-  `Shared/SessionController.cpp:93-207`; Calc-U-1600
-  `Core/tests/ce150_tests.cpp:204-222`).
-- [ ] **AC-9** — Given a machine is built by a model switch or a variant
-  switch (LIB-18 AC-6, AC-7), and the new machine has a printer of the
-  same type in the same place as the one before, then the paper is
-  carried over to it; otherwise it is gone (LIB-18 OQ-6 as decided).
-- [ ] **AC-10** — Given a machine is built by a preset, then every paper
-  is empty at the start (LIB-6 AC-41; both products today).
-- [ ] **AC-11** — Given a printer is detached, or replaced by a printer
-  of another type, then its paper is gone; given it is replaced by
-  another variant of itself, then the paper stays (OQ-1).
+- [ ] **AC-8** — Given what happens to a machine or to its printer, then
+  the paper is afterwards as this table says; where two rows apply, the
+  one about what is plugged in decides, and a power cycle that follows
+  changes nothing:
+
+  | What happens | The paper |
+  |---|---|
+  | Reset, Cold boot, a power cycle (LIB-18 AC-13, AC-29, AC-30) | stays |
+  | a printer is attached (LIB-18 AC-10) | starts empty |
+  | the printer is detached, by itself or with the peripheral it is plugged into (LIB-18 AC-10, EC-5) | gone (OQ-1) |
+  | the printer is replaced in one step by a printer of another type | gone; the new one starts empty |
+  | the printer is replaced in one step by another variant of itself (LIB-18 AC-31) | stays |
+  | a new machine is built by a model switch or a variant switch, with or without a startup preset (LIB-18 AC-6, AC-7, EC-1), and has a printer of the same type in the same place | carried over (LIB-18 OQ-6 as decided; OQ-5) |
+  | the same, and the new machine has no such printer | gone |
+  | the user loads a preset (LIB-6 AC-10) | empty at the start (LIB-6 AC-41) |
+  | a preset is refused before the build (LIB-6 AC-6) | stays |
+  | Cut, `cut-paper` | empty |
+
+  (Calc-U-59 `Shared/SessionController.cpp:93-207, 655`; Calc-U-1600
+  `Core/tests/ce150_tests.cpp:204-222`.)
+- [ ] **AC-9** — Given a paper is carried over, then a frontend that
+  listens is sent nothing for it: neither that the paper was emptied nor
+  the paper again.
 
 The paper panel
 - [ ] **AC-12** — Given the control state lists a paper panel (LIB-4
-  AC-13), then the panel shows, under the name of its owner, the whole
-  width of the paper scaled to the width of the panel, with every mark
-  at its place: dots in black, pen strokes in their colour.
+  AC-1), then the panel shows, under the owner's name, the whole width
+  of the paper scaled to the width of the panel, with every mark at its
+  position: a dot in the grey of its darkness, a pen stroke in its
+  colour.
 - [ ] **AC-13** — Given the paper grows while the view is at its end or
   no more than 64 points from it, then the view follows the newest
   marks; given the user has scrolled further back, then it stays where
@@ -125,48 +151,59 @@ The paper panel
   (Calc-U-59 `Qt6/app/PrinterWidget.cpp:177-184`).
 
 Copy and Cut
-- [ ] **AC-16** — Given Copy, then the clipboard gets a picture of the
-  whole paper, black and colours on white, at its physical size and at
-  the resolution the printer states, and with it the text of the text
-  layer, its lines joined by line ends, when there is one
-  (`capabilities.md` C-2).
+- [ ] **AC-16** — Given the command to copy a paper, which the panel's
+  Copy sends, then the session hands the clipboard (LIB-3 AC-26, AC-27)
+  a picture of the whole paper and, when there is a text layer, its text
+  with the lines joined by line ends. The picture shows the full width
+  of the paper and all it reaches (AC-4), marks on white, each drawn as
+  the capability says (AC-1), at the paper's physical size and the
+  resolution the capability states (`capabilities.md` C-2).
 - [ ] **AC-17** — Given a paper so long that the picture would have a
   side of more than 16000 pixels or more than 64 million pixels in all,
-  then the resolution is lowered until it fits; the paper is never
-  cropped (Calc-U-1600 `Shared/PlotterPaper.cpp:8-50`; Calc-U-59
+  then the picture has the highest resolution at which neither is the
+  case; the paper is never cropped (Calc-U-1600 `Shared/PlotterPaper.cpp:8-50`; Calc-U-59
   `Shared/PrinterFont.hpp:101-107`).
-- [ ] **AC-18** — Given Cut, then the paper is copied as by Copy and
-  then cut (AC-5), also when the copy did not succeed (all frontends
-  today).
+- [ ] **AC-18** — Given the command to cut a paper, which the panel's
+  Cut sends, then the paper is copied as in AC-16 and then cut (AC-5),
+  also when the copy did not succeed (all frontends today).
 - [ ] **AC-19** — Given the paper is empty, then Copy and Cut cannot be
   used.
-- [ ] **AC-20** — Given a Copy or a Cut, then a short message "Copied
-  to clipboard" is shown for about two seconds, or "Copy failed" when
-  the clipboard took nothing (Calc-U-59 `Qt6/app/PrinterWidget.cpp:262-267`,
+- [ ] **AC-20** — Given a Copy or a Cut in a frontend, then the panel
+  itself shows "Copied to clipboard" for 1.8 seconds, or "Copy failed"
+  when the clipboard took nothing; it is not a notice (Calc-U-59 `Qt6/app/PrinterWidget.cpp:262-267`,
   `Web/src/Printer.jsx:120-121`).
 - [ ] **AC-21** — Given a Web frontend whose browser refuses a picture
   on the clipboard, then with a text layer the text alone is copied, and
-  without one the picture is offered as a download named after the
-  printer (Calc-U-59 `Web/src/Printer.jsx:68-87`; Calc-U-1600
+  without one the picture is offered as a download named with the
+  owner's name and `.png` (Calc-U-59 `Web/src/Printer.jsx:68-87`; Calc-U-1600
   `Web/src/painters.js:158-185`).
 
 Step and commands
-- [ ] **AC-22** — Given the step `- cut-paper:`, which takes no value,
-  then every paper of the machine is cut (AC-5), without a copy; the
-  step needs no emulated time (LIB-6 AC-19) (`presets.md` PR-7).
+- [ ] **AC-22** — Given the step `- cut-paper:`, without a value or
+  with an owner's name, then every paper of the machine, or that one, is
+  cut (AC-5), without a copy; the step needs no emulated time (LIB-6
+  AC-19) (`presets.md` PR-7).
 - [ ] **AC-23** — Given the harness, then these commands exist at the
-  top level; where a machine has more than one paper, each takes the
-  owner's name first:
+  top level; each takes an owner's name as its last value, which can be
+  left out while the machine has one paper:
 
   | Command | Reply |
   |---|---|
-  | `cut-paper` | done |
-  | `paper text` | the lines of the text layer of the whole paper; refused without a text layer |
-  | `paper marks` | every mark of the whole paper as one line of text each, in the order made: for a dot its place and darkness, for a pen stroke its colour and its places |
-  | `paper png <path>` | the picture of AC-16 and AC-17 written to that file |
+  | `cut-paper` | done; without a name every paper is cut |
+  | `paper text` | the text layer of the whole paper, one line of the reply for each of its lines; refused without a text layer |
+  | `paper marks` | first `reach <from> <to>` (AC-4), then every mark in the order made, one line each: `dot <x> <y> <darkness>`, or `stroke <colour>` followed by its positions as `<x>,<y>` |
+  | `paper png <path>` | the picture of AC-16 and AC-17 written to that file; refused for an empty paper |
+  | `paper copy`, `paper cut` | the commands of AC-16 and AC-18; refused for an empty paper |
 
-  The paper topic itself is read with `state` (LIB-11 AC-9), which gives
-  what was appended since it was last read.
+  Numbers are written as the capability gives them, a whole number
+  without a point. The paper topic itself is read with `state` (LIB-11
+  AC-9), which gives what was appended since it was last read.
+- [ ] **AC-39** — Given the printouts that C59-2 AC-11 and C1600-4 AC-16
+  compare, then the comparison is over the replies of `paper text` and
+  `paper marks`, and they must be equal. What the old releases give (the
+  text and dot lines of 2.3.0, the plot points of `b4ea8c8`) is turned
+  into these replies once, when the reference runs are recorded, by the
+  rules of AC-25, AC-26 and AC-33.
 
 ### Calc-U-59
 
@@ -195,7 +232,7 @@ Step and commands
   (AC-14). In the Web frontend that control shows today the view it
   would switch to (`Web/src/Printer.jsx:132-133`).
 - [ ] **AC-29** — Given the PC-100C is detached, then its paper is gone
-  (AC-11). Today the paper stays through a disconnect and through every
+  (AC-8). Today the paper stays through a disconnect and through every
   model switch (`Shared/SessionController.cpp:368-371`,
   `tests/shared_controller_tests.cpp:119-132`; OQ-1).
 - [ ] **AC-30** — Given what the tests of Calc-U-59 check today about
@@ -226,10 +263,10 @@ Step and commands
   point wide with round ends, in black, blue (0, 0, 255), dark green
   (0, 128, 0) or red (255, 0, 0) (`Shared/PlotterPaper.hpp:89-92`).
 - [ ] **AC-35** — Given Copy on a plotter's paper, then the picture is
-  at 1200 dots per inch unless AC-17 lowers it; an empty CE-1600P paper
+  at 1200 dots per inch unless AC-17 lowers it; a short CE-1600P paper
   gives 9921 pixels of width (`Shared/tests/shared_geometry_tests.cpp:56-68`).
 - [ ] **AC-36** — Given the ROM of the model, or of the CE-1600P, is
-  switched, then the paper stays (AC-9, AC-11). Today it is lost, as it
+  switched, then the paper stays (AC-8). Today it is lost, as it
   is when a module is chosen (`Shared/MachineSession.cpp:86-142, 732-739`);
   a module change is a power cycle now (LIB-18 AC-29), so the paper
   stays there too (OQ-2).
@@ -250,7 +287,12 @@ Step and commands
   made after the cut are on the new paper.
 - **EC-2** — Given a machine without a printer, then there is no paper
   topic, `cut-paper` is done and changes nothing, and the `paper`
-  commands are refused.
+  commands are refused. Given an empty paper, then `paper text` and
+  `paper marks` reply with no lines but `reach 0 0`.
+- **EC-7** — Given the printer is detached in the middle of a line, then
+  the rest of the line is not printed, and the paper is gone like any
+  other (AC-8; C59-6 EC-2 says today that the printed rows stay, which
+  OQ-1 settles).
 - **EC-3** — Given a frontend starts to listen while the paper is long,
   then it is sent the whole paper once and from then on only what is
   appended (AC-6).
@@ -267,32 +309,40 @@ Step and commands
   its marks; it names no printer (`capabilities.md` C-2, I-1; ADR 0023).
 - The picture of Copy and of `paper png` is made below the frontend, so
   that every frontend and the harness get the same pixels for the same
-  paper; what the platform adds (the resolution written into the
-  picture, the form of the clipboard entry) is the frontend's.
+  paper; a reference picture for each printer in the tests fixes them.
+  What the platform adds (the resolution written into the picture, the
+  form of the clipboard entry) is the frontend's.
 - Paper output crosses the machine as marks; the machine draws nothing.
 
 ## Open Questions
 - [ ] **OQ-1** — What becomes of the paper when its printer is detached
-  (AC-11, AC-29). Today Calc-U-59 keeps it through a disconnect and
+  (AC-8, AC-29). Today Calc-U-59 keeps it through a disconnect and
   shows it again on reconnect; Calc-U-1600 loses it. LIB-18 OQ-6 decided
   for the model switch that the paper goes when the new machine has no
   PC-100C. *Recommendation:* the same rule for a detach: the paper
   belongs to the printer and goes with it. This is a visible change for
-  Calc-U-59 and gets a row in `docs/behaviour-changes.md`.
+  Calc-U-59 and gets a row in `docs/behaviour-changes.md`; C59-6 EC-2 is
+  then reworded (EC-7).
 - [ ] **OQ-2** — AC-36 keeps a plotter's paper where Calc-U-1600 loses
   it today (a ROM switch, a module change). *Recommendation:* keep it,
-  as AC-9 and AC-11 say; it follows from one rule for both products, and
+  as AC-8 says; it follows from one rule for both products, and
   the row of OQ-1 names it.
 - [ ] **OQ-3** — The message of AC-20 is new in Calc-U-1600, and
   following the paper only near its end (AC-13) is new in Calc-U-59's
   Qt6 frontend, which jumps to the end on every line today
   (`Qt6/app/PrinterWidget.cpp:228-232`). *Recommendation:* both, as
   written; too small for a row.
-- [ ] **OQ-4** — The form of a line of `paper marks` (AC-23).
-  *Recommendation:* fixed in the design and then kept stable, because
-  C1600-4 AC-16 and the golden runs compare printouts with it; places in
-  the unit of AC-1 as whole numbers where the printer gives whole
-  numbers.
+- [ ] **OQ-4** — The replies of `paper text` and `paper marks` (AC-23)
+  are what the reference runs of the examples are compared with (AC-39),
+  so they must not change once those runs are recorded.
+  *Recommendation:* as written in AC-23.
+- [ ] **OQ-5** — A model switch with a startup preset (AC-8). LIB-18
+  OQ-6 decided that the paper stays at a model switch while the new
+  machine has a PC-100C; LIB-6 AC-41 says a preset starts with empty
+  paper, and each startup preset of Calc-U-59 connects the PC-100C
+  (C59-2 AC-13). *Recommendation:* the model switch decides: the paper
+  stays, with or without a startup preset; only a preset the user loads
+  empties it. LIB-6 AC-41 is worded accordingly.
 
 ## Decision Log
 
@@ -309,3 +359,5 @@ Step and commands
 | Proposed in this spec, for the gate: the control of AC-14 shows the view that is on (Qt6 and Swift today; the Web frontend shows the other) | One rule for the family | 2026-11-10 |
 | Proposed in this spec, for the gate: the commands of AC-23 and their names; `cut-paper` without a copy | They make the criteria checkable; LIB-11 AC-14 | 2026-11-10 |
 | Proposed in this spec, for the gate: a dot has a darkness (AC-2) | The PC-100C's cut-short lines print lighter dots today | 2026-11-10 |
+| Proposed in this spec, for the gate: Copy and Cut are commands of the session that use the clipboard host service (AC-16, AC-18) | It makes them checkable without a window, and gives every frontend the same picture | 2026-11-10 |
+| Proposed in this spec, for the gate: a paper's topic and commands name it by its printer's name (AC-6, AC-22, AC-23) | A machine may have more than one paper | 2026-11-10 |

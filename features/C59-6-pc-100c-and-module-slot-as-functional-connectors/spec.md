@@ -133,8 +133,9 @@ The module slot
 - **EC-1** — Given a module whose ROM file is not handed in, when it is
   attached, then the attach is refused and the file is named (LIB-2
   EC-4; `roms.md` R-3: "a peripheral whose ROM is missing cannot be
-  attached"). Today the machine starts without the module's data; in a
-  release every ROM is bundled, so a user does not meet this.
+  attached"). Today the machine starts without the module's data. With
+  the full ROM set required at the start (LIB-12 AC-5), a running
+  product does not meet this.
 - **EC-2** — Given the PC-100C is detached while it prints a line, then
   the rows already printed stay on the paper, the rest of the line is
   not printed, and the power cycle that follows a detach runs.

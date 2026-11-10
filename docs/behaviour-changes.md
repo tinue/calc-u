@@ -22,8 +22,8 @@ step. Label and menu renames are not repeated here; they are in
 | 59-5 | A preset's steps run at full speed unless a speed step asks for regular speed; user keys are dropped while it runs. | `contracts/presets.md`, PR-4; `contracts/typing.md`, T-4 |
 | 59-6 | Magnetic cards live in the save folder. A card file elsewhere is no longer opened and written back in place; a card gets a name inside its file. | ADR 0019; `contracts/media.md`, MD-2, MD-5 |
 | 59-7 | The first write to a card a preset names makes an instance in the save folder and replaces an instance of that name. | `contracts/media.md`, MD-1 |
-| 59-8 | On the web, magnetic cards persist across page loads. | `contracts/settings.md`, ST-3 |
-| 59-9 | The Solid State ROM module is chosen in the control bar, not in the settings, and the choice is not remembered across starts; a startup preset sets it. | ADR 0021, 0025 |
+| 59-8 | On the web, magnetic cards persist across page loads. When the product is open twice in one browser, only the first copy keeps what is saved; the second says so. | `contracts/settings.md`, ST-3; `features/LIB-15-web-client-shell/spec.md` |
+| 59-9 | The Solid State ROM module is chosen in the control bar, not in the settings, and the choice is not remembered across starts; a startup preset sets it. The picker also offers an empty slot. | ADR 0021, 0025; `contracts/presets.md`, PR-9 |
 | 59-10 | Without a startup preset the product starts with a TI-59, the Master Library module and no printer (today: printer connected). | ADR 0021 |
 | 59-11 | Changing the module, or connecting or disconnecting the PC-100C, power-cycles the machine: the TI-58 and TI-59 lose program and data registers; the TI-58C keeps its constant memory. | `contracts/peripherals.md`, P-1 |
 | 59-12 | The TI-58C keeps its constant memory across starts only while no startup preset is set for it; a startup preset cold boots it. | `contracts/capabilities.md`, C-3 |

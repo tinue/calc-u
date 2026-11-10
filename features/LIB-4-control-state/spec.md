@@ -9,7 +9,7 @@
 ## Dependencies
 - Features: LIB-2 (places, what fits them, whether an attach would
   succeed and why not), LIB-3 (state topics, busy, product entries, host
-  services), LIB-12 (which ROMs are missing).
+  services).
 - Contracts and decisions: `docs/contracts/frontend.md` (FE-2, FE-6, Q-1,
   fit table), `docs/contracts/machine.md` (M-4, M-8),
   `docs/contracts/presets.md` (PR-9); ADR 0024, 0025;
@@ -51,8 +51,6 @@ What the three status columns mean for this feature:
 - The busy topic itself (owner: LIB-3).
 - Run state and the debugger's controls (owner: LIB-10); what the
   Calc-U-59 debug panel offers and when (owner: C59-4).
-- Finding ROMs (owner: LIB-12); this feature shows a missing ROM as "not
-  available now" with the reason LIB-12 gives.
 - Settings and what the settings dialog offers (LIB-9, LIB-14).
 
 ## Acceptance Criteria
@@ -72,19 +70,21 @@ What the three status columns mean for this feature:
   its sides;
   the panels the machine offers now: one paper panel per paper output
   capability, with its owner;
+  the actions that start an operation and are not a choice among
+  entries: Reset, Cold boot, and loading a preset or opening a file,
+  each available now or not, with the reason;
   and the product's own entries (`frontend.md` FE-2, FE-6).
 - [ ] **AC-2** — Given a model, a variant, or a peripheral or variant
   for a place, then its entry says whether it is available now, and if
   not, gives one reason: the first that applies of
   an operation runs (AC-3);
-  a ROM it needs is missing (LIB-12);
   the product's app layer says so, with its reason (AC-7);
   the machine answers no when asked whether it can be attached there
   now, with the machine's reason (LIB-2 AC-6).
 - [ ] **AC-3** — Given an operation runs, then every entry whose choice
   would start an operation is not available now, with the reason that an
   operation runs; when the operation has ended, the control state is
-  computed again from the machine as it now is (OQ-1).
+  computed again from the machine as it now is.
 - [ ] **AC-4** — Given the end of any call of the host and of any
   command, then the control state is computed, and sent if it differs
   from what was last sent (LIB-3 AC-5).
@@ -92,9 +92,8 @@ What the three status columns mean for this feature:
   panel, then the control state has no entry for it; nothing says "not
   on this model" (ADR 0024: "items a product lacks simply don't
   appear").
-- [ ] **AC-6** — Given no machine runs (the startup model's ROMs are
-  missing), then the control state lists the models with their
-  availability and reasons, and no variant, place, media place or panel.
+- [ ] **AC-6** — Given the product could not start because a ROM file
+  is missing (LIB-12 AC-5), then no control state is sent.
 - [ ] **AC-7** — Given a product's app layer, then it can add entries of
   its own to the control state, and can make a generic entry not
   available with a reason of its own; both are computed below the
@@ -181,9 +180,6 @@ What the three status columns mean for this feature:
 ## Edge Cases
 - **EC-1** — Given a place that holds a peripheral, then the entry of
   that peripheral says it is plugged in.
-- **EC-2** — Given a peripheral whose ROM file is missing, then its
-  entry is not available now, with the reason the ROM lookup gives
-  (AC-2).
 - **EC-3** — Given a module definition is read after the catalogue was
   built (LIB-2 AC-2), then the places it fits list it the next time the
   control state is computed (AC-4).
@@ -204,7 +200,7 @@ What the three status columns mean for this feature:
   the descriptors' terms.
 
 ## Open Questions
-- [ ] **OQ-1** — How far the control state reaches while an operation
+- [x] **OQ-1** — *Decided as recommended (user, 2026-11-10, batch 3 gate).* How far the control state reaches while an operation
   runs. `frontend.md` Q-1 refuses every command that would start an
   operation: also Reset, Cold boot, loading a preset and inserting a
   medium, which are menu items and media controls, not entries of the
@@ -215,7 +211,7 @@ What the three status columns mean for this feature:
   the frontends share. *Recommendation:* list the actions too; it is the
   point on which the two Calc-U-1600 frontends disagree today. This
   widens what FE-2 lists as the control state's content.
-- [ ] **OQ-2** — Where a peripheral's control sits. Today a rule by
+- [x] **OQ-2** — *Decided as recommended (user, 2026-11-10, batch 3 gate).* Where a peripheral's control sits. Today a rule by
   model decides whether the CE-150, CE-158 and CE-1600P have a control
   on the bar or only in the menu (`Shared/ControlState.cpp:22-30`). ADR
   0024 puts on the bar "the model first, then one picker per module slot
@@ -223,7 +219,7 @@ What the three status columns mean for this feature:
   `interface`. AC-17 keeps today's rule as a product entry.
   *Recommendation:* decide a family rule in the LIB-14 spec; the product
   entry then goes.
-- [ ] **OQ-3** — What a module slot's entry lists, and what the control
+- [x] **OQ-3** — *Decided as recommended (user, 2026-11-10, batch 3 gate).* What a module slot's entry lists, and what the control
   state says about media. A Sharp slot picker shows module kinds,
   bundled templates and the user's saved instances together today
   (`Web/bindings.cpp:736-748`). AC-1 lists the peripherals that fit, one
@@ -231,17 +227,17 @@ What the three status columns mean for this feature:
   LIB-7's topic. *Recommendation:* as in AC-1; the picker joins the two
   topics, and how is settled in the LIB-7 spec. A card passing through
   the TI-59's reader then does not resend the control state.
-- [ ] **OQ-4** — The debug panel of Calc-U-59 (AC-14): are the
+- [x] **OQ-4** — *Decided as recommended (user, 2026-11-10, batch 3 gate).* The debug panel of Calc-U-59 (AC-14): are the
   conditions of its controls product entries of the control state, or
   part of the run state topic of LIB-10, whose pause, step and resume
   controls are generic? *Recommendation:* the generic three follow
   LIB-10; what only the Calc-U-59 panel has is a product entry,
   specified in C59-4.
-- [ ] **OQ-5** — The empty module slot in the Calc-U-59 picker (AC-11).
+- [x] **OQ-5** — *Decided as recommended (user, 2026-11-10, batch 3 gate).* The empty module slot in the Calc-U-59 picker (AC-11).
   `presets.md` PR-9 allows a TI machine without a module and notes that
   no frontend offers it today; row 59-9 does not mention it.
   *Recommendation:* the picker offers it, and row 59-9 says so.
-- [ ] **OQ-6** — The reason of AC-18. Today the test is whether the
+- [x] **OQ-6** — *Decided as recommended (user, 2026-11-10, batch 3 gate).* The reason of AC-18. Today the test is whether the
   frontend "can mount a host directory"; LIB-3 AC-26 lists a folder
   picker among the host services, which a browser may have without being
   able to give the session a folder to work in. *Recommendation:* keep
@@ -258,3 +254,6 @@ What the three status columns mean for this feature:
 | One menu and control-bar structure; items a product lacks do not appear | ADR 0024 | 2026-11-09 |
 | A module is chosen with a picker for its slot | ADR 0025; behaviour change 59-9 | 2026-11-09 |
 | Proposed in this spec, for the gate: every model, variant and peripheral entry carries "available now" with one reason, in the order of AC-2; a product's app layer can make a generic entry not available (AC-7); while an operation runs, the entries that would start one are not available (AC-3) | FE-6 names "available now and a reason" for places only; no contract says where the rule for a running operation lives, and the Calc-U-1600 frontends differ today | 2026-11-10 |
+| The control state also lists the actions that start an operation (Reset, Cold boot, loading a preset or opening a file), so that every frontend disables them by one rule | user, 2026-11-10, batch 3 gate; widens `frontend.md` FE-2 | 2026-11-10 |
+| The Calc-U-59 module picker offers the empty slot | user, 2026-11-10, batch 3 gate; ledger row 59-9 extended | 2026-11-10 |
+| With the full ROM set required at the start (LIB-12), no entry is ever unavailable for a missing ROM | user, 2026-11-10, batch 3 gate | 2026-11-10 |

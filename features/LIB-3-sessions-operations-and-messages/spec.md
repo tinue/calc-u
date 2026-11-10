@@ -290,7 +290,7 @@ Host services
 
   | Callback today | Arrives as | Owner |
   |---|---|---|
-  | `romMissing` | "ROMs missing" state topic | LIB-12 |
+  | `romMissing` | the message of a product that cannot start (LIB-12 AC-5) | LIB-12 |
   | `notice`, `bayError`, `attachFailed` | notice, or the reply to the command | this feature |
   | `machineReplaced`, `modelSwitched`, `moduleChanged` | control state | LIB-4, LIB-18 |
   | `tapesChanged` | media state | LIB-7 |

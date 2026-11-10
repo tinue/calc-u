@@ -176,30 +176,30 @@ build, and in the phase 5 walkthroughs:
   (`App/MachineModel.swift:16-33`) go with LIB-4 and C59-8, not here.
 
 ## Open Questions
-- [ ] **OQ-1** — How `calcu` finds the app's port (AC-10): a fixed port,
+- [x] **OQ-1** — *Decided as recommended (user, 2026-11-10, batch 3 gate).* How `calcu` finds the app's port (AC-10): a fixed port,
   a port given as a launch argument, or a port the app writes somewhere.
   Several simulators can run at once. *Recommendation:* a launch
   argument names the port, with a fixed default; decide after the
   phase 5 spike.
-- [ ] **OQ-2** — What makes a build a development build (AC-10, AC-13):
+- [x] **OQ-2** — *Decided as recommended (user, 2026-11-10, batch 3 gate).* What makes a build a development build (AC-10, AC-13):
   the Debug configuration, or a setting of its own? The sandboxed Mac
   app needs the entitlement for incoming connections to listen at all.
   *Recommendation:* the Debug configuration only, with its own
   entitlements file; Release has none.
-- [ ] **OQ-3** — Attach while the app is suspended (EC-3).
+- [x] **OQ-3** — *Decided as recommended (user, 2026-11-10, batch 3 gate).* Attach while the app is suspended (EC-3).
   *Recommendation:* as in EC-3; a test that needs the app keeps it in
   the foreground.
-- [ ] **OQ-4** — Does the attached harness replace the launch arguments
+- [x] **OQ-4** — *Decided as recommended (user, 2026-11-10, batch 3 gate).* Does the attached harness replace the launch arguments
   and the hidden controls the UI tests use today (`--UITesting`, a
   hidden R/S button, an accessibility element for the state of a
   preset, `App/Views/CalculatorView.swift:84-147`)?
   *Recommendation:* yes, once attach works; they are removed with C59-8.
-- [ ] **OQ-5** — AC-8 and AC-9 on the Mac: the app holds off App Nap for
+- [x] **OQ-5** — *Decided as recommended (user, 2026-11-10, batch 3 gate).* AC-8 and AC-9 on the Mac: the app holds off App Nap for
   as long as it runs today, while it also suspends when the scene goes
   to the background. Whether macOS ever reports the background for a
   window that is merely covered is not verified. *Recommendation:*
   verify on 2.3.0, then word AC-8 and AC-9 exactly.
-- [ ] **OQ-6** — One app session for the Mac app, or one per window.
+- [x] **OQ-6** — *Decided as recommended (user, 2026-11-10, batch 3 gate).* One app session for the Mac app, or one per window.
   Today all windows of the Mac app share one session
   (`App/Calc-U-59App.swift:8-16`); the glossary and LIB-3 AC-1 speak of
   one app session per window. *Recommendation:* keep today's behaviour,
@@ -216,3 +216,4 @@ build, and in the phase 5 walkthroughs:
 | In development and test builds a frontend can open its app session to the serve protocol; release builds leave it out; real iPhones and iPads are not a target | ADR 0033; `harness.md` I-3 | 2026-11-09 |
 | Attach is built for the Swift frontend (iOS simulator and macOS) in the migration; localhost TCP, line-based text | `harness.md` H-3, H-4 | 2026-11-10 |
 | Proposed in this spec, for the gate: an attached harness is a second listener, works with the app's own settings and save folder, and does not take the session off the wall clock (AC-11, AC-12, AC-14); `quit` ends the attach; one harness at a time (EC-4); the host services of AC-7 | `harness.md` says virtual time holds "without attach" and leaves the attached case open; `frontend.md` Q-2 lists the host services without saying which frontend has which | 2026-11-10 |
+| The Mac app keeps one app session for all its windows; attach exists in the Debug configuration only; an attached harness works with the app's own settings and save folder | user, 2026-11-10, batch 3 gate | 2026-11-10 |

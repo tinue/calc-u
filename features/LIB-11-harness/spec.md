@@ -98,8 +98,8 @@ How it runs
   the save folder is an empty one made for the run and removed at its
   end, whose path appears in no reply; bundled ROMs, bundled media and
   bundled presets are found as a frontend finds them (LIB-12, LIB-7,
-  LIB-6); no ROM folder is searched. Options name a settings file, a
-  save folder and a ROM folder to use instead (LIB-9 AC-18).
+  LIB-6). Options name a settings file and a save folder to use instead
+  (LIB-9 AC-18).
 
 The first commands
 - [ ] **AC-9** — Given a product behind the machine interface, then
@@ -214,11 +214,9 @@ The first commands
   M73).
 
 ## Edge Cases
-- **EC-1** — Given the machine a run starts with cannot be built because
-  a ROM is missing, then `calcu` ends with an error that names the
-  files; given a later command in `serve` asks for a model, variant or
-  peripheral whose ROM is missing, then that command is refused with the
-  files named, and `serve` goes on (LIB-12 AC-10).
+- **EC-1** — Given a file of the product's full ROM set is missing or
+  bad, then `calcu` ends at its start with an error that names the files
+  (LIB-12 AC-7).
 - **EC-2** — Given `wait` with a duration without a unit, then it is
   refused.
 - **EC-3** — Given the standard input of `serve` ends without `quit`,
@@ -249,34 +247,34 @@ The first commands
   same name and meaning in both, and is specified once.
 
 ## Open Questions
-- [ ] **OQ-1** — The names of the first commands (AC-9). `harness.md`
+- [x] **OQ-1** — *Decided as recommended (user, 2026-11-10, batch 3 gate).* The names of the first commands (AC-9). `harness.md`
   H-1 names `lcd`, `state` and `quit`; `wait` is a preset step with the
   same meaning. `key-down`, `key-up`, `capabilities`, `ticks` and
   `audio` are proposed here. *Recommendation:* as in AC-9.
-- [ ] **OQ-2** — How a run names its product. H-2 says `--product`
+- [x] **OQ-2** — *Decided as recommended (user, 2026-11-10, batch 3 gate).* How a run names its product. H-2 says `--product`
   selects it for one-shot runs. *Recommendation:* `--product` in both
   forms, the product's name as written or a short form (`59`, `1600`),
   matched without regard to case.
-- [ ] **OQ-3** — What `--json` looks like. C59-5 builds attach on it, so
+- [x] **OQ-3** — *Decided as recommended (user, 2026-11-10, batch 3 gate).* What `--json` looks like. C59-5 builds attach on it, so
   it must be fixed before that feature starts. *Recommendation:* one
   object per reply with the same three keys for every command: whether
   it was done, the result, and the reason of a refusal.
-- [ ] **OQ-4** — The product commands. AC-14 and AC-18 name functions
+- [x] **OQ-4** — *Decided as recommended (user, 2026-11-10, batch 3 gate).* The product commands. AC-14 and AC-18 name functions
   that only one product has and that no row of the index owns
   (coverage, timings and keycode tools of Calc-U-59; BASIC dump, tape
   files, serial peer and INSPECTOR views of Calc-U-1600).
   *Recommendation:* one row per product, "Harness product commands",
   depending on this feature (the open point in `features/INDEX.md`).
-- [ ] **OQ-5** — The three probes of Calc-U-1600 and the calendar
+- [x] **OQ-5** — *Decided as recommended (user, 2026-11-10, batch 3 gate).* The three probes of Calc-U-1600 and the calendar
   scripts of Calc-U-59 (`tools/agentic/calendar/`) were written for one
   investigation each. `harness.md` lists the probes among the functions
   to keep. *Recommendation:* they stay as scripts that use
   `calcu serve`, not as commands.
-- [ ] **OQ-6** — The indicator C in `lcd` for a TI machine (AC-16).
+- [x] **OQ-6** — *Decided as recommended (user, 2026-11-10, batch 3 gate).* The indicator C in `lcd` for a TI machine (AC-16).
   Today's tool does not report it. *Recommendation:* report it, on a
   line of its own like the Sharp indicators; brightness only with
   `--json`.
-- [ ] **OQ-7** — How a one-shot run writes several commands (AC-2).
+- [x] **OQ-7** — *Decided as recommended (user, 2026-11-10, batch 3 gate).* How a one-shot run writes several commands (AC-2).
   Today one call of a Sharp tool combines a preset, a run, the display
   and a WAV file. *Recommendation:* the commands follow each other on
   the command line, separated by a word of their own; decide the word in
@@ -295,3 +293,4 @@ The first commands
 | Every command gets a reply | LIB-3 decision log (user) | 2026-11-10 |
 | `dump` belongs to LIB-10 with `peek` and `poke`; the index row of this feature no longer lists it | Memory and registers are read through debug targets | 2026-11-10 |
 | Proposed in this spec, for the gate: a run touches no settings file and no save folder of the user unless options say so (AC-8); the first commands and their names (AC-9); a one-shot run can carry several commands (AC-2); `audio` takes all sound output, also that of an operation (AC-9) | LIB-9 left the default to this spec; H-1 names only some commands; today's tools combine several functions in one call and record the buzzer of a whole run | 2026-11-10 |
+| Product commands get one row per product in the index (C59-9, C1600-5); the Calc-U-1600 probes and the Calc-U-59 calendar scripts stay scripts that use `calcu serve` | user, 2026-11-10, batch 3 gate; amends the table of functions to keep in `harness.md` | 2026-11-10 |

@@ -238,32 +238,32 @@ Embedding interface
   come from the library, the same for every product.
 
 ## Open Questions
-- [ ] **OQ-1** — The value of the `model` prop (AC-16). Calc-U-1600
+- [x] **OQ-1** — *Decided as recommended (user, 2026-11-10, batch 3 gate).* The value of the `model` prop (AC-16). Calc-U-1600
   takes a number, 0, 1 or 2, today. *Recommendation:* the model's name
   as the glossary writes it (`TI-58C`, `PC-1600`), as in presets and
   settings; calc-u-site changes its embed code once.
-- [ ] **OQ-2** — The prop `module` of `PlayCalculator`. Today a host
+- [x] **OQ-2** — *Decided as recommended (user, 2026-11-10, batch 3 gate).* The prop `module` of `PlayCalculator`. Today a host
   page can name the Solid State ROM module to start with. Settings no
   longer hold hardware (behaviour change 59-9), and a machine's hardware
   comes from a preset or from the built-in default machine.
   *Recommendation:* drop the prop; a host page that wants another module
   names a preset. Check with calc-u-site whether any page uses it.
-- [ ] **OQ-3** — Defaults that differ today. `keyboard` is off in
+- [x] **OQ-3** — *Decided as recommended (user, 2026-11-10, batch 3 gate).* Defaults that differ today. `keyboard` is off in
   Calc-U-59 and on in Calc-U-1600. Without `height`, Calc-U-59 takes it
   from the width, and Calc-U-1600 takes its parent's size.
   *Recommendation:* `keyboard` on in both; without `width` and `height`
   the component fills its parent, and a product whose faceplate has a
   fixed shape keeps that shape inside it.
-- [ ] **OQ-4** — The media a user saved in the Calc-U-1600 Web frontend
+- [x] **OQ-4** — *Decided as recommended (user, 2026-11-10, batch 3 gate).* The media a user saved in the Calc-U-1600 Web frontend
   of 0.8.x (AC-25). Calc-U-1600 needs no backwards compatibility
   (`Briefing.md` §1.2), and module definitions and floppy disks stay
   readable while their formats do not change (behaviour change 1600-1).
   *Recommendation:* keep the same store and the same place in it, so
   that those media are still there; the settings start afresh.
-- [ ] **OQ-5** — The one-writer rule for Calc-U-59 (AC-21) is new there.
+- [x] **OQ-5** — *Decided as recommended (user, 2026-11-10, batch 3 gate).* The one-writer rule for Calc-U-59 (AC-21) is new there.
   It follows from keeping the cards in the browser. *Recommendation:*
   add it to row 59-8 of `docs/behaviour-changes.md`.
-- [ ] **OQ-6** — `files.json`. Calc-U-1600's `dist/` lists its bundled
+- [x] **OQ-6** — *Decided as recommended (user, 2026-11-10, batch 3 gate).* `files.json`. Calc-U-1600's `dist/` lists its bundled
   ROMs and presets in a second file that its worker reads; Calc-U-59
   fetches by name. *Recommendation:* neither is part of the embedding
   interface, because no host page reads it; the design picks one way
@@ -279,3 +279,4 @@ Embedding interface
 | The Web frontend always bundles its ROMs | `roms.md` R-3 | 2026-11-10 |
 | Suspending in the background stays per frontend as today: the Web frontends suspend when hidden | `frontend.md`, rules from decisions already taken | 2026-11-10 |
 | Proposed in this spec, for the gate: the one-writer rule of Calc-U-1600 becomes the rule for every Web frontend, per product, with no later takeover (AC-7, AC-8); a change is kept within one second (AC-6); a Web frontend that cannot start says so itself (AC-3); an unreadable persistent file system is not written over (EC-2); `workerUrl` is part of the embedding interface (AC-16); an unknown `model` or `preset` gives a notice (EC-4) | Persistent storage opened twice needs a rule; today a failed start of Calc-U-59 leaves "Starting the emulator…" for ever; both products have `workerUrl` today although FE-7 does not list it; no source gives EC-2 and EC-4 | 2026-11-10 |
+| `model` takes the model's name; `keyboard` is on by default in both products; without `width` and `height` the component fills its parent; the prop `module` of `PlayCalculator` goes; media saved with the Calc-U-1600 Web frontend of 0.8.x stay; the one-writer rule is added to ledger row 59-8 | user, 2026-11-10, batch 3 gate | 2026-11-10 |

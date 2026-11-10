@@ -135,3 +135,4 @@ Options:
 | 2026-11-10 | H-2 | Common commands at the top level; product-only commands under the product's name; `--product` for one-shot runs. |
 | 2026-11-10 | H-4 | Any frontend may offer attach; the migration builds it for the Swift frontend only, Qt6 and the web follow when needed. |
 | 2026-11-10 | H-3 | Line-based text (`--json` on request) over stdin/stdout, localhost TCP for apps, a WebSocket from the page in development builds; localhost only; never in release builds. |
+| 2026-11-10 | Functions to keep (amended, user, phase 4b, batch 3 gate) | The Calc-U-1600 probes and the Calc-U-59 calendar scripts stay scripts that use `calcu serve`; they do not become commands. Product commands are the index rows C59-9 and C1600-5. |

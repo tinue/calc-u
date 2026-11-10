@@ -7,9 +7,13 @@
      features/INDEX.md. -->
 
 ## Dependencies
-- Features: C59-1 (the TI machines, the product kind for program memory,
-  the golden runs), LIB-6 (the preset loader: the grammar, the place for
-  a product's sections, the product's part of a load, the preset list).
+- Features: C59-1 (the TI machines), C59-6 (the module slot and the
+  PC-100C, which the upgraded presets name), LIB-6 (the preset loader:
+  the grammar, the place for a product's sections, the product's part of
+  a load, the preset list), LIB-8 (the paper, for comparing what was
+  printed), LIB-10 (reading memory through the harness; the debugger
+  steps of four examples). The four examples with magnetic cards are
+  upgraded and compared with C59-7 (AC-10).
 - Contracts and decisions: `docs/contracts/presets.md` (PR-3, PR-5,
   PR-6, PR-9, PR-11, I-1 to I-3), `docs/contracts/frontend.md` (FE-6,
   product topics); ADR 0016, 0018, 0021 as amended, 0037;
@@ -19,7 +23,12 @@
 Words of other specs used here: "header key", "section", "step",
 "block scalar", "preset list", "idle" (LIB-6), "notice" (LIB-3 AC-10).
 A "stage" is today's word for the sections between two key sequences of
-a 2.3.0 preset; it is used here only to describe today.
+a 2.3.0 preset, and a "reload" for a stage after the first; both are
+used here only to describe today. A **keycode** is the two-digit code of
+one program step (glossary, Program step); it is not a key ID. A **data
+register** is one of the numbered registers a keystroke program stores
+values in. A **reference run** is a record of what a 2.3.0 preset leaves
+behind, made with 2.3.0 (AC-11).
 
 ## User Stories
 - As a user of a TI machine, I want a preset to put a keystroke program,
@@ -58,12 +67,17 @@ The sections
   | `partition:` | a value on the same line | sets the partition |
   | `program:` | a block with the one field `steps: \|` | writes the program steps it lists; every other step stays |
   | `registers: \|` | a block scalar | writes the registers it lists; every other register stays |
-  | `cue-card: \|` | a block scalar | makes this the blank cue card with its labels, in place of the one before |
+  | `cue-card: \|` | a block scalar | fits a cue card with this content (glossary, Fit), in place of the one fitted before |
 
-  They write through the product kind for program memory (C59-1). A
+  They write through the product kind for program memory (AC-17). A
   machine that a preset has built is empty before its first section
   (ADR 0016), so the first `program:` and `registers:` give what today's
   first stage gives (`Shared/StateApplier.cpp:59-87`).
+- [ ] **AC-17** — Given a TI machine, then it lists a product kind
+  "program memory", which this feature defines (C59-1, out of scope
+  there): through it a program step, a data register and, on the TI-58C,
+  one of the registers H00 to H03 can be read and written, and the
+  partition can be read and set; what was written reads back.
 - [ ] **AC-2** — Given `partition:`, then its value is the number of the
   last program step, optionally followed by a point and digits that are
   not read (`479`, `479.59`); given none, then the machine keeps the
@@ -72,14 +86,20 @@ The sections
   479 on the TI-58 and TI-58C), refuses the preset when it is read
   (`Shared/StateFile.cpp:156-164`, `Shared/MachineModelInfo.hpp:80`;
   OQ-1).
-- [ ] **AC-3** — Given `steps: |`, then each of its lines is one of:
-  keycodes, each two digits, written from step 000 on or from where the
-  line before ended; a step number of three digits or more, then one
-  keycode, then any text, which is not read; or `...` alone, which
-  stands for steps that are left out. A ` #` starts a comment. A step
-  number beyond the last step of the model, a keycode that is not two
-  digits, and any other word on a line of keycodes refuse the preset
-  when it is read (`Shared/StateFile.cpp:26-51`; OQ-2).
+- [ ] **AC-3** — Given `steps: |`, then each of its lines is one of
+  three, and a ` #` starts a comment in any of them:
+  a line of keycodes, each any two digits from 00 to 99, which are
+  written to the steps that follow the last step written, the first such
+  line of a block starting at step 000;
+  a line that starts with a step number of three or more digits (`012`,
+  `0123`), then one keycode, which is written to that step, then any
+  text, which is not read;
+  or `...` alone, which stands for steps that are left out, and after
+  which the next line must carry a step number.
+  A step number beyond the last step of the model, a keycode that is not
+  two digits, any other word on a line of keycodes, and a line of
+  keycodes after `...` refuse the preset when it is read
+  (`Shared/StateFile.cpp:26-51`; OQ-2).
 - [ ] **AC-4** — Given `registers: |`, then each of its lines is
   `NN = value` for the data register NN, or on the TI-58C `HNN = value`
   for one of the registers H00 to H03; the value is a decimal number
@@ -97,11 +117,18 @@ The sections
   (`black`, `pencil` or `sharpie`), `Banks`, and the labels `A` to `E`
   and `A'` to `E'`; their meaning and their defaults are today's
   (`Shared/CueCard.cpp:111-229`, `reference/StateFileFormat.md:551-581`).
-  A key that is none of these refuses the preset when it is read (OQ-2).
-- [ ] **AC-6** — Given a `cue-card:` section was carried out, then a
-  product topic says which cue card is to be shown, with its content,
-  and every frontend shows it; given a preset without one, then the
-  machine it builds has no blank cue card with labels
+  `Template` chooses the look of the card among the three kinds of cue
+  card (glossary); it does not make it a magnetic card or a module's
+  card (C59-7). A key that is none of these refuses the preset when it
+  is read (OQ-2).
+- [ ] **AC-6** — Given a `cue-card:` section was carried out, then the
+  product topic `cue-card` says which cue card is fitted, with the
+  content of AC-5, and the Qt6 and Web frontends draw it in the window
+  above the top row of keys (Swift: C59-8 AC-20); a later `- fit:`
+  replaces it (C59-7). Given a preset without the section, then the
+  machine it builds has no such cue card. The GUI test of the Qt6 and of
+  the Web frontend has one scenario under this ID: a preset with a
+  `cue-card:` is loaded and its title shows
   (`frontend.md` FE-6; `Shared/SessionController.cpp:174-180`).
 - [ ] **AC-7** — Given sections after a step list, then they are what
   2.3.0 calls a reload: they are carried out when the keys before them
@@ -122,12 +149,15 @@ Commands
 - [ ] **AC-9** — Given the harness with Calc-U-59, then these commands
   do what the sections do: `ti59 partition <value>`,
   `ti59 program [<step>] <keycode>…` and `ti59 registers <NN>=<value>…`;
-  each is refused where the section would refuse the preset (LIB-11
-  AC-13, AC-14; today `tools/headless/ti59.py:265-266`).
+  each is refused where the section would refuse the preset. Without a
+  value they read: `ti59 partition` gives the partition, `ti59 program
+  <step> [<count>]` the keycodes, `ti59 registers <NN>…` the registers
+  (LIB-11 AC-13, AC-14; today `tools/headless/ti59.py:265-266`).
 
 The shipped and hosted presets
-- [ ] **AC-10** — Given the 57 presets under `examples/` and the presets
-  of the tests, then each is in version 2 (ADR 0037; behaviour change
+- [ ] **AC-10** — Given the 57 presets under `examples/`, and those
+  presets under `tests/fixtures/` that the new tests still load, then
+  each is in version 2 (ADR 0037; behaviour change
   59-1), written from its 2.3.0 file by these rules:
 
   | 2.3.0 | Version 2 |
@@ -137,8 +167,11 @@ The shipped and hosted presets
   | `SOLID-STATE-MODULE: XX`; none | `slot-1: XX`; `slot-1: ML` |
   | `PRINTER: on`; none; `PRINTER: off` | `printer: PC-100C`; `printer: PC-100C`; no key |
   | `PARTITION:`, `PROGRAM:`, `REGISTERS:`, `CUECARD:` | the sections of AC-1, in the order partition, program, registers, cue card within what was one stage |
-  | `KEYSTROKES:` with matrix codes | `keys:` with `- key:` steps that name the same keys (LIB-5 AC-26); words between the codes become comments |
-  | the first `KEYSTROKES:` not starting with `FullSpeed:` | its step list starts with `- speed: regular` |
+  | section names in any case | the lower-case keys of version 2 |
+  | `#` anywhere in a line | a `#` line, or ` #` after the value |
+  | words between the keycodes of `PROGRAM:` | a comment after ` #` on that line |
+  | `KEYSTROKES:` with matrix codes | `keys:` with one `- key:` step for each 2.3.0 line, naming the same keys in the same order by key ID, a second function by its name (LIB-5 AC-26); the words of the line become a comment after the step |
+  | the first `KEYSTROKES:` not starting with `FullSpeed:` | its step list starts with `- speed: regular`, which holds until a `- speed: full` (LIB-6 AC-22) |
   | `FullSpeed:`, `RegularSpeed:`, `Wait:`, `ZeroElapseTime:`, `ReportElapseTime:` | `- speed:`, `- wait:`, `- elapsed:` (LIB-6) |
   | `PrinterTrace:`, `CutPaper:`, `Trace:`, the debugger directives | `- switch: PC-100C TRACE …` (LIB-6), `- cut-paper:` (LIB-8), the steps of LIB-10 |
   | `CARD:` blocks, `ArmCard:`, `InsertCard:` | as LIB-7 and C59-7 write them |
@@ -146,16 +179,25 @@ The shipped and hosted presets
   The module and the printer that a 2.3.0 preset did not name were those
   of the running calculator; the rules write what a fresh 2.3.0 had: the
   Master Library module and the printer connected (behaviour change
-  59-4).
-- [ ] **AC-11** — Given each of the 57 examples, when its version 2 file
-  is loaded through the harness to its end, then the display, the
-  program steps, the registers, the partition and the printout are what
-  its 2.3.0 file gives in a fresh 2.3.0, recorded there as a golden run
-  before the files are upgraded (C59-1, golden runs; LIB-8 AC-23).
+  59-4). The four examples with magnetic cards (`globe-print`,
+  `historic/characters-fastmode`, `historic/pdcm-card-tricks`,
+  `historic/pdcm-make-cards`) are upgraded and compared when C59-7 is
+  built; every other example with this feature.
+- [ ] **AC-11** — Given each example, when its version 2 file is loaded
+  through the harness and the machine is then idle, or an hour of
+  emulated time has passed (LIB-6 AC-21), then the display (`lcd`), the
+  program steps, the registers and the partition (AC-9) and the paper
+  (`paper text`, `paper marks`; LIB-8 AC-39) are those of its reference
+  run. A reference run is recorded before the files are upgraded, with
+  the tools of 2.3.0 (`tools/agentic/ti59file.py`, `tools/headless/`),
+  from the 2.3.0 file, with the model of AC-10, the Master Library
+  module, the printer connected and no `ti58c.mem`, up to the same
+  moment.
 - [ ] **AC-12** — Given the copies of the examples that calc-u.org hosts
   under `59/software-files/`, then they are the version 2 files of
-  AC-10; the presets under `59/calc/presets/` come with the Web
-  frontend's release (LIB-6 AC-43).
+  AC-10, copied there with the site's own tools; the presets under
+  `59/calc/presets/` are those of the preset list, which come with the
+  Web frontend's release (LIB-6 AC-43).
 - [ ] **AC-13** — Given the preset list of Calc-U-59 (LIB-6 AC-31), then
   it has three startup presets, one for each model, each with the Master
   Library module in `slot-1` and the PC-100C in `printer` and nothing
@@ -163,8 +205,9 @@ The shipped and hosted presets
   frontend bundles today, in today's order, with today's title as their
   `description` (`Web/presets.json:1-12`; their names and groups: OQ-3).
 - [ ] **AC-14** — Given the Swift, Qt6 and Web frontends, then each
-  bundles the preset list and its files; today only the Web frontend
-  bundles presets (`Web/build.js:73-79`; behaviour change 59-14).
+  bundles the preset list and its files, so that the scenario of LIB-6
+  AC-42 can load an example in each; today only the Web frontend bundles
+  presets (`Web/build.js:73-79`; the Examples menu: LIB-14 AC-26).
 - [ ] **AC-15** — Given the preset list, then the test suite fails
   unless every preset in it has a `preset-name` of at most 18 characters
   and a `description`, is listed once, and shares its name with no other
@@ -204,8 +247,8 @@ The shipped and hosted presets
   loader itself knows none of them.
 - The readers of the 2.3.0 format and the `STATE` records of
   `tests/golden/formats.txt` are not carried over (LIB-6).
-- The golden runs of AC-11 are recorded with 2.3.0 before any core code
-  is touched (C59-1).
+- The reference runs of AC-11 are recorded with 2.3.0 before any core
+  code is touched, together with the golden runs of C59-1.
 
 ## Open Questions
 - [ ] **OQ-1** — Which values `partition:` takes (AC-2). Today any value
@@ -245,5 +288,8 @@ The shipped and hosted presets
 | The picture of a TI display for `screenshot:` is supplied by the product, in the classic segment style | LIB-6 OQ-3 (user, batch 5 gate) | 2026-11-10 |
 | Proposed in this spec, for the gate: `partition:` is a section that is only a value | `presets.md` PR-3 lists it with the sections; a partition can change in a reload today | 2026-11-10 |
 | Proposed in this spec, for the gate: an upgraded example names the Master Library module and the PC-100C where its 2.3.0 file named none, and starts its keys with `- speed: regular` | It keeps what the example does in a fresh 2.3.0 | 2026-11-10 |
-| Proposed in this spec, for the gate: the comparison of AC-11 as the proof that the upgrade changed nothing | ADR 0037 asks for the upgrade, nothing says how it is checked | 2026-11-10 |
+| Proposed in this spec, for the gate: the comparison of AC-11 with reference runs as the proof that the upgrade changed nothing | ADR 0037 asks for the upgrade, nothing says how it is checked | 2026-11-10 |
+| Proposed in this spec, for the gate: this feature defines the product kind for program memory (AC-17) | C59-1 leaves it to this feature | 2026-11-10 |
+| Proposed in this spec, for the gate: `cue-card:` fits a cue card; `Template` chooses only its look (AC-1, AC-5) | Today's three templates are artwork | 2026-11-10 |
+| Proposed in this spec, for the gate: the check of the preset list is the one of C1600-4 AC-18, the 18 characters included (AC-15) | One rule for both products' lists | 2026-11-10 |
 | Proposed in this spec, for the gate: the commands of AC-9 | LIB-11 AC-14 assigns "write a program" to this feature | 2026-11-10 |

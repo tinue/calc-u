@@ -97,7 +97,7 @@ Values: Planned, Specified, In progress, Done.
 | ID | Name | Description | Contracts, ADRs | Depends on | Status |
 |---|---|---|---|---|---|
 | C59-1 | TI machines on the machine interface | TI-58/58C/59 behind the machine interface: advancing in ticks, reset, power cycle and cold boot, key down and up by key ID, segment display output (the descriptors' content: LIB-1) | machine; ADR 0006, 0012 | LIB-1 | Planned |
-| C59-2 | TI preset content | Product sections (partition, program steps, registers, cue card) on the keystroke program memory product kind; the 57 examples and the hosted copies upgraded; three startup presets | presets PR-3; ADR 0021 | C59-1, LIB-6 | Planned |
+| C59-2 | TI preset content | Product sections (partition, program steps, registers, cue card) on the keystroke program memory product kind; the 57 examples and the hosted copies upgraded; three startup presets | presets PR-3; ADR 0021 | C59-1, C59-6, LIB-6, LIB-8, LIB-10 | Planned |
 | C59-3 | TI-58C constant memory | `ti58c.mem` mirrors the running TI-58C; restored on a start without a startup preset | capabilities C-3 | C59-1, LIB-9, LIB-18 | Planned |
 | C59-4 | Calc-U-59 debug panel | CALCULATOR, CPU and LOG tabs, FREEZE and FREEZE ON START, the ROM heatmap, on the library's run control; the ASM overlay: product kind, product file kind of "open file", its format with a version | debugger DB-6; frontend SP-3 | C59-1, LIB-10, LIB-13 | Planned |
 | C59-5 | Swift frontend hosting | XCFramework built by CMake, session on a background thread, the bridge as a message boundary, harness attach (localhost TCP) | harness H-3, H-4; ADR 0013-0015, 0033 | LIB-3, LIB-11 | Planned |

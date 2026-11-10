@@ -7,7 +7,7 @@
      features/INDEX.md. -->
 
 ## Dependencies
-- Features: LIB-1 (the ROM entries of the descriptors; a machine is
+- Features: LIB-1 (the descriptors list the ROM entries; a machine is
   handed its images), LIB-3 (state topics, notices, the log).
 - Contracts and decisions: `docs/contracts/roms.md` (R-1 to R-4, I-1 to
   I-3, Q-1); `docs/contracts/machine.md` (I-5); ADR 0034, 0035;
@@ -22,6 +22,10 @@ What the three status columns mean for this feature:
   harness get every ROM image through this lookup; the product's own
   loading and its own error handling are gone.
 
+This spec owns the form of a ROM entry (AC-1) and the lists of the
+products' ROM files (AC-13, AC-16); LIB-1 says that descriptors carry
+such entries and points here.
+
 ## User Stories
 - As a user, I want the product to start with the ROMs that come with
   it, without doing anything.
@@ -34,16 +38,20 @@ What the three status columns mean for this feature:
   in the harness, so that they cannot differ.
 
 ## Out of Scope
-- Fetching the ROM files at build time and bundling them into each
-  frontend (ADR 0034; a step of the migration plan).
+- Fetching the ROM files at build time, renaming or joining them, and
+  bundling them into each frontend (ADR 0034; a step of the migration
+  plan).
 - What a ROM image means: decoding a text dump, mapping files to chips
   (the product's core, C59-1, C1600-1; `roms.md` R-1).
-- The descriptors' ROM lists (owner: LIB-1). This feature gives the form
-  of an entry (AC-1) and the Sharp table (AC-16).
 - Drawing the "ROMs missing" state (owners: LIB-14, C59-8).
 - What the start of a product does when the startup model's ROMs are
-  missing (owner: LIB-18); "not available now" for a model, variant or
+  missing, and building a machine after "Check again" found its ROMs
+  (owner: LIB-18); "not available now" for a model, variant or
   peripheral in the control state (LIB-4).
+- What the harness does when a ROM is missing (owner: LIB-11, EC-1
+  there).
+- A bundled file that a Web frontend cannot fetch: that is a failed
+  start (owner: LIB-15, AC-3 there).
 - The host drive's own ROM: it is built with Calc-U-1600 and always
   bundled; the lookup is not involved (`roms.md` Q-1).
 - The catalogue of the Solid State ROM modules, `cuecards.txt`: it is
@@ -56,82 +64,86 @@ What the three status columns mean for this feature:
 
 Entries
 - [ ] **AC-1** — Given a ROM entry of a descriptor, then it states: the
-  name of the file as it comes from the ROM repository, with its
-  extension; the size of its decoded content and whether that size
-  counts bytes or words; and the md5 of the known dump of the file
-  (`roms.md` R-1, R-4).
+  name the file has in the bundle, with its extension, which is also the
+  name it must have in the ROM folder; whether the file is binary or is
+  read by a text reader its product supplies, and which; the amount of
+  its decoded content, with its unit (bytes, words or rows); and the md5
+  of the known dump of the file (`roms.md` R-1, R-4).
 
 Finding
-- [ ] **AC-2** — Given a ROM entry, when its image is looked up, then
-  the bundled files are searched first and the user's ROM folder second,
-  for a file of exactly that name; the first one found is taken
-  (ADR 0035).
-- [ ] **AC-3** — Given a machine or a peripheral is built, then every
-  image it is handed came from this lookup; nothing else in a product
-  reads a ROM file (`roms.md` I-2; `machine.md` I-5).
-- [ ] **AC-4** — Given the same bundled files and the same ROM folder,
-  then every frontend of a product and the harness find the same images.
+- [ ] **AC-2** — Given a ROM entry, when its image is looked up, then a
+  file of exactly that name is looked for among the bundled files first
+  and in the user's ROM folder second, without its subfolders; the first
+  file that passes the check of AC-4 to AC-7 is taken (ADR 0035).
+- [ ] **AC-3** — Given the same bundled files and the same ROM folder,
+  then the "ROMs missing" topic is the same in every frontend of a
+  product and in the harness.
 
 Checking
-- [ ] **AC-5** — Given a file that is binary, then it is checked by its
-  size in bytes; given a file that is text, then it is decoded by the
-  reader its product supplies and checked by the number of words that
-  gives (`roms.md` R-4).
-- [ ] **AC-6** — Given a file with the right amount of content and the
+- [ ] **AC-4** — Given a file that its entry calls binary, then it is
+  checked by its size in bytes; given a file that its entry gives to a
+  text reader, then it is decoded by that reader and checked by the
+  amount of content that gives, in the entry's unit (`roms.md` R-4).
+- [ ] **AC-5** — Given a file with the right amount of content and the
   md5 of the known dump, then it is used without a word.
-- [ ] **AC-7** — Given a file with the right amount of content and
+- [ ] **AC-6** — Given a file with the right amount of content and
   another md5, then it is used, and a line of the log says that it is
   not the known dump (`roms.md` R-2).
-- [ ] **AC-8** — Given a file with the wrong amount of content, or a
-  text file that cannot be decoded, then it is not used, a message says
-  why, and the entry counts as missing.
+- [ ] **AC-7** — Given a file with the wrong amount of content, or a
+  text file that cannot be decoded, then it is not used and a notice
+  says why; the lookup goes on to the next place, and if no file passes,
+  the entry counts as missing.
 
 Missing ROMs
-- [ ] **AC-9** — Given at least one ROM entry of the product's
+- [ ] **AC-8** — Given at least one ROM entry of the product's
   catalogue has no usable file, then the "ROMs missing" state topic
-  lists each such file with its name, size, md5 and the models, variants
-  and peripherals that need it, and gives the path of the ROM folder;
-  given none is missing, then the topic says so (`roms.md` R-3).
-- [ ] **AC-10** — Given ROMs are missing, then the product still starts;
+  lists each such file with its name, amount of content, md5 and the
+  models, variants and peripherals that need it, and, where the frontend
+  has a ROM folder, gives its path; given none is missing, then the
+  topic says so (`roms.md` R-3).
+- [ ] **AC-9** — Given ROMs are missing, then the product still starts;
   a model or variant whose ROMs are all there can be built and runs; a
   model, variant or peripheral that lacks one cannot be built or
   attached, and the reason names the file.
-- [ ] **AC-11** — Given the "Check again" command, when files were put
-  into the ROM folder in the meantime, then the lookup runs again and
-  the topic and what can be built follow.
-- [ ] **AC-12** — Given the harness and a machine it is asked to build
-  lacks a ROM, then it ends with an error that names the files
-  (`roms.md` R-3).
-- [ ] **AC-13** — Given a Web frontend, then its ROMs are always
-  bundled; it has no ROM folder and offers none (`roms.md` R-3).
+- [ ] **AC-10** — Given the lookup has run at the start, then it runs
+  again on the "Check again" command and not otherwise; files put into
+  the ROM folder in the meantime are found then, and the topic follows.
+- [ ] **AC-11** — Given a Web frontend, then its ROMs are always
+  bundled: it has no ROM folder, the topic gives no path, and "Check
+  again" is not offered (`roms.md` R-3).
 
 ### Calc-U-59
-- [ ] **AC-14** — Given Calc-U-59, then its ROM files are text dumps in
+- [ ] **AC-12** — Given Calc-U-59, then its ROM files are text dumps in
   the Datamath form, an external format, read by the reader Calc-U-59
-  supplies: for the TI-59 and TI-58 `TMC0582.txt`, `TMC0583.txt`,
-  `TMC0571B.txt` and two constant files; for the TI-58C `CD2400.txt`,
-  `CD2401.txt`, `TMC0573.txt` and two constant files; and one file per
-  Solid State ROM module, `TMC0541.txt` to `TMC0551.txt` and
-  `TMC0553.txt` to `TMC0555.txt`
+  supplies (`Shared/RomLoader.cpp:9-97`).
+- [ ] **AC-13** — Given Calc-U-59, then its ROM entries are these files
   (`roms/calculator/`, `roms/solid-state/`,
-  `Shared/MachineModelInfo.hpp:86-105`, `Shared/RomLoader.cpp:9-97`).
-- [ ] **AC-15** — Given those files, then the amounts of content are as
-  the product checks them today: 6144 words for the three instruction
-  files of a model together, 64 rows for its two constant files
-  together, up to 5000 bytes for a module (`Shared/RomLoader.cpp:63-150`;
-  how these map to one size per file: OQ-2).
-- [ ] **AC-17** — Given a ROM file is missing or bad in Calc-U-59, then
-  AC-8 to AC-10 hold in every frontend. Today a bad machine ROM gives an
+  `Shared/MachineModelInfo.hpp:86-105`):
+
+  | Needed by | Files |
+  |---|---|
+  | TI-59, TI-58 | `TMC0582.txt`, `TMC0583.txt`, `TMC0571B.txt` (instruction words); `TMC0582-CONST-K.txt`, `TMC0583-CONST-K.txt` (constant rows) |
+  | TI-58C | `CD2400.txt`, `CD2401.txt`, `TMC0573.txt` (instruction words); `CD2400-CONST-K.txt`, `CD2401-CONST-K.txt` (constant rows) |
+  | each Solid State ROM module | one of `TMC0541.txt` to `TMC0551.txt`, `TMC0553.txt` to `TMC0555.txt` (bytes) |
+
+  The amount of content and the md5 of each: OQ-2.
+- [ ] **AC-14** — Given a ROM file is missing or bad in Calc-U-59, then
+  AC-7 to AC-9 hold in every frontend. Today a bad machine ROM gives an
   alert while the previous machine keeps running, a module that fails at
   the start is only a line of the log, and in the Web frontend a failed
-  fetch leaves the engine unstarted
+  fetch means that no machine is ever built
   (`Shared/SessionController.cpp:105-111, 129-130, 220-226`,
   `Web/calc-engine-worker.js:124-150`).
 
 ### Calc-U-1600
-- [ ] **AC-16** — Given Calc-U-1600, then its ROM files are these binary
-  dumps, with the md5 values its build checks today
-  (`tools/fetch_roms.sh:93-137`, `Core/Resources/BundledRomCatalog.hpp`):
+- [ ] **AC-15** — Given Calc-U-1600, then its ROM files are binary
+  dumps, an external format.
+- [ ] **AC-16** — Given Calc-U-1600, then its ROM entries are these
+  files, under the names its build gives them, with the md5 values its
+  build checks today (`tools/fetch_roms.sh:93-137`,
+  `Core/Resources/BundledRomCatalog.hpp`). `CE-158.ROM` is joined from
+  two files of the ROM repository, and the files of the PC-1600 get
+  their `-new` and `-old` endings at the fetch.
 
   | File | Bytes | md5 | Needed by |
   |---|---|---|---|
@@ -157,44 +169,42 @@ Missing ROMs
   | `PC1600-P1-B4-CE1600P-old.bin` | 16384 | `df41b050acbc29c83214cbaaf29bee91` | CE-1600P, variant Old |
   | `PC1600-P1-B5-CE1600P-OR-F-old.bin` | 16384 | `33f3ef7207eac06587cc4c6d70c6cbd0` | CE-1600P Old, and its CE-1600F |
 
-- [ ] **AC-18** — Given a ROM file is missing or bad in Calc-U-1600,
-  then AC-8 to AC-10 hold in both frontends and in the harness. Today a
-  missing PC-1500 file or a missing file of the PC-1600's New set ends
-  the Qt6 frontend with a message, also in the middle of a session; a
-  missing Old set of the PC-1600 or of the CE-1600P is replaced by the
-  New one with a notice; and the command-line tools look in a `roms`
-  folder next to where they are run
-  (`Shared/MachineSession.cpp:77-79, 146-158, 706-722`,
+- [ ] **AC-17** — Given a ROM file is missing or bad in Calc-U-1600,
+  then AC-7 to AC-9 hold in both frontends. Today a missing PC-1500 file
+  or a missing file of the PC-1600's New set ends the Qt6 frontend with
+  a message, also in the middle of a session; a missing Old set of the
+  PC-1600 or of the CE-1600P is replaced by the New one, with a notice;
+  and the command-line tools look in a `roms` folder next to where they
+  are run (`Shared/MachineSession.cpp:77-79, 146-158, 706-722`,
   `Qt6/app/MachineController.cpp:37-48`, `tools/pc1600_cli.cpp:110-141`).
-- [ ] **AC-19** — Given a variant whose ROMs are missing while another
-  variant of the model has its own, then the missing one cannot be
-  chosen, with the reason, and no other variant is taken in its place
-  without the user choosing it.
 
 ## Edge Cases
-- **EC-1** — Given the same file name in the bundle and in the ROM
-  folder, then the bundled one is used.
-- **EC-2** — Given a file in the ROM folder whose name differs from the
-  entry only in upper and lower case, then it is found on a file system
-  that tells the two apart as well as on one that does not (today the
-  Sharp build removes such duplicates, `tools/fetch_roms.sh:60-62`).
-- **EC-3** — Given one file that two entries need (the CE-1600P's second
+- **EC-1** — Given a usable file of the same name in the bundle and in
+  the ROM folder, then the bundled one is used; given the bundled one
+  fails its check and the one in the ROM folder passes, then that one is
+  used.
+- **EC-2** — Given one file that two entries need (the CE-1600P's second
   file is also the CE-1600F's), then it is listed once in the "ROMs
   missing" topic, with both.
-- **EC-4** — Given the ROM folder does not exist, then nothing is found
+- **EC-3** — Given the ROM folder does not exist, then nothing is found
   there and nothing fails; the topic still gives its path.
-- **EC-5** — Given a text ROM file with other line endings or another
+- **EC-4** — Given a text ROM file with other line endings or another
   header than the known dump, then it is decoded and checked by its
-  words all the same (`roms.md` R-4).
+  content all the same (`roms.md` R-4).
+- **EC-5** — Given a bundled file whose md5 is not the known one, then
+  AC-6 holds for it as for a user's file.
 
 ## Technical Requirements (optional)
+- Every ROM image a machine or a peripheral is handed came from this
+  lookup; nothing else in a product reads a ROM file (`roms.md` I-2;
+  `machine.md` I-5).
 - No ROM data is in a core or in the source repository (`roms.md` I-1;
   ADR 0034, 0035). Calc-U-59's ROM files are committed today; they move
   to a ROM repository with the migration.
 - ROM files are external formats; ADR 0037 does not apply to them
   (`roms.md` I-3).
 - A build of each product without any ROM file is part of the tests of
-  this feature (AC-9, AC-10), although no release ships that way.
+  this feature (AC-8, AC-9), although no release ships that way.
 
 ## Open Questions
 - [ ] **OQ-1** — Where the user's ROM folder is. ADR 0035 says "a ROM
@@ -204,23 +214,32 @@ Missing ROMs
   by default, because the save folder of the Swift frontend is in
   iCloud; a key `[roms] folder` in the settings file for another place.
   This adds a key to LIB-9.
-- [ ] **OQ-2** — The TI entries (AC-15). Today Calc-U-59 checks the
-  instruction files of a model as a whole (6144 words), its constant
-  files as a whole (64 rows) and a module only for having data; R-1 and
-  R-4 ask for a size per file. And there are no md5 values yet, because
+- [ ] **OQ-2** — The TI entries (AC-13). Today Calc-U-59 checks the
+  three instruction files of a model as a whole (6144 words), its two
+  constant files as a whole (64 rows) and a module only for having data,
+  cutting it at 5000 bytes (`Shared/RomLoader.cpp:63-150`); R-1 and R-4
+  ask for an amount per file. And there are no md5 values yet, because
   the TI ROM repository does not exist (ADR 0034). *Recommendation:*
-  take the word count of each file from the files of 2.3.0 when the TI
-  ROM repository is made, and their md5 values with them; until then
-  this column cannot be done.
-- [ ] **OQ-3** — The checks Calc-U-59 has today beyond size: the first
-  and last word of the TI-59's instruction ROM
-  (`Shared/RomLoader.cpp:116-150`). With an md5 of the known dump and a
-  size they add nothing for the known files, and they would refuse a
+  take the amount of each file from the files of 2.3.0 when the TI ROM
+  repository is made, and their md5 values with them; until then the
+  Calc-U-59 column cannot be done.
+- [ ] **OQ-3** — The checks Calc-U-59 has today beyond the amount: the
+  first and last word of the TI-59's instruction ROM
+  (`Shared/RomLoader.cpp:116-150`). With an md5 of the known dump and an
+  amount they add nothing for the known files, and they would refuse a
   user's dump of another ROM version. *Recommendation:* drop them.
-- [ ] **OQ-4** — When the lookup runs: once at the start and on "Check
-  again" (AC-11), or every time a machine is built? *Recommendation:* at
-  the start and on "Check again"; a file removed while the product runs
-  is noticed at the next start.
+- [ ] **OQ-4** — A variant whose ROMs are missing while another variant
+  of the model has its own. Today Calc-U-1600 takes the New ROMs in
+  place of missing Old ones, for the PC-1600 and for the CE-1600P, and
+  tells the user in a notice (AC-17). R-3 says only that "models whose
+  ROMs are present work". *Recommendation:* no replacement: the missing
+  variant cannot be chosen, with the reason, and a preset that names it
+  is refused. A user who has all ROMs, as in every release, sees no
+  difference.
+- [ ] **OQ-5** — Do AC-14 and AC-17 need rows in
+  `docs/behaviour-changes.md`? They change what happens when a ROM file
+  is missing or bad, which no release can show, because every release
+  bundles its ROMs. *Recommendation:* no rows.
 
 ## Decision Log
 
@@ -228,9 +247,9 @@ Missing ROMs
 |----------|-----------|------|
 | ROMs live in ROM repositories, are fetched at build time and bundled in release packages | ADR 0034 | 2026-11-09 |
 | One lookup for every ROM: bundled first, then the user's ROM folder; a build without ROMs starts and says what is missing | ADR 0035 | 2026-11-09 |
-| The unit of the lookup is the file as fetched | `roms.md` R-1 | 2026-11-10 |
+| The unit of the lookup is the file | `roms.md` R-1 | 2026-11-10 |
 | A user's dump with the right amount of content is used even with an unknown md5, with a line in the log | `roms.md` R-2 | 2026-11-10 |
 | A build without ROMs shows a "ROMs missing" state with "Check again"; the Web frontend always bundles its ROMs | `roms.md` R-3 | 2026-11-10 |
-| An entry states the size of the decoded content; a text file is checked by its words | `roms.md` R-4 | 2026-11-10 |
+| An entry states the size of the decoded content; a text file is checked by what its reader yields | `roms.md` R-4 | 2026-11-10 |
 | The host drive's ROM is always bundled and not looked up | `roms.md` Q-1 | 2026-11-10 |
-| Proposed in this spec, for the gate: a ROM entry names the file with its extension (AC-1); a missing variant is never replaced by another without the user (AC-19), which ends today's quiet use of the New ROMs in Calc-U-1600 | LIB-1 left the form of an entry to this spec; R-3 says a model whose ROMs are present works and says nothing about taking another variant | 2026-11-10 |
+| Proposed in this spec, for the gate: an entry names the file as it is bundled, not as the ROM repository names it, and gives its unit and whether it is binary or text (AC-1); a file that fails its check does not stop the lookup (AC-7, EC-1); the lookup runs at the start and on "Check again" only (AC-10) | R-1 says "as fetched", but the Sharp build renames and joins files at the fetch (`tools/fetch_roms.sh:93-137`); the TI files decode to words, rows or bytes; no contract states the other two | 2026-11-10 |

@@ -286,9 +286,8 @@ Connectors and capabilities
   is built (`capabilities.md`, fit table; `machine.md`, fit table,
   "Depth today").
 - [ ] **AC-38** — Given any of the three models and each variant, then
-  its descriptor lists the ROM files that variant needs, as fetched
-  today by Calc-U-1600 `tools/fetch_roms.sh` with their md5 values
-  (`roms.md`, facts).
+  its descriptor lists the ROM entries that variant needs; the list of
+  files with their md5 values is LIB-12 AC-16.
 - [ ] **AC-39** — Given the Calc-U-1600 catalogue, then it holds a
   peripheral descriptor for every peripheral the product offers today:
   the nine bundled memory modules (AC-41); the CE-150, with its paper

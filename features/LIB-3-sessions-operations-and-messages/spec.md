@@ -118,6 +118,11 @@ Topics
 - [ ] **AC-8** — Given a request, then it gets exactly one reply, with
   the thing asked for or with why it cannot be given (`frontend.md`
   FE-5).
+- [ ] **AC-39** — Given the requests of this feature, then they are:
+  the machine's emulated time (its tick count, and the same in
+  seconds); and what the machine offers now (its capabilities with kind,
+  ID and owner, its places and what is plugged in). The harness uses
+  them (LIB-11 AC-9).
 - [ ] **AC-9** — Given the library's own topics of this feature, then
   they are: the display (state topic: the machine's display output),
   busy (state topic), notices (stream topic) and the log (stream topic).
@@ -178,7 +183,9 @@ Sound
   sink is told the sample rate of the machine's sound output, and the
   sound output at regular speed is handed to it; the sound of a stretch
   at full speed and of an operation is thrown away. Without a sink the
-  sound output is thrown away (`frontend.md`, responsibilities; today
+  sound output is thrown away. A host that records instead of playing
+  (the harness, LIB-11) is handed all of the sound output, whatever the
+  speed (`frontend.md`, responsibilities; today
   Calc-U-1600 produces 48,000 samples per second and starts the sink
   with that rate, `Shared/AudioPump.cpp:41-80`).
 

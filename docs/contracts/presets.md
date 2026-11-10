@@ -340,3 +340,5 @@ at every speed. The oddity and its rule go.
 | 2026-11-10 | PR-10 | ODD59-13 resolved by T-1 (emulated-time holds); no rule needed. |
 | 2026-11-10 | PR-11 | `printer:` in every product, `plotter:` goes; a preset's hardware keys are the places and media places of the model's descriptor. Amends PR-9. |
 | 2026-11-10 | PR-4 | Building runs at full speed; steps run at full speed by default, a speed step makes the following steps paced and visible. The whole preset is one operation (busy, user keys dropped); "Loading…" only while at full speed. |
+| 2026-11-10 | PR-11 (amended in phase 4b, user) | The host drive is a peripheral on the 60-pin connector, as in the code; `host-drive:` names its place on the PC-1600. The folder it shows stays a Calc-U-1600 product kind. |
+| 2026-11-10 | PR-5 (amended in phase 4b, user) | The machine takes exact key IDs. In a preset, a TI second-function name (`Pgm`) stands for 2nd and its key; a `2nd` written before it is not pressed twice. |

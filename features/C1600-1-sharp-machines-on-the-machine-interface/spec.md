@@ -51,8 +51,8 @@
 - Loading BASIC and machine code into memory (owner: C1600-2).
 - Which operation follows the user's Reset, Cold boot, a model or
   variant switch or an attach, running the machine to the prompt, and
-  what the user sees on the PC-1500 after a module change (owner:
-  LIB-18; behaviour change 1600-4; OQ-6).
+  what the user sees after a module change (owner: LIB-18; behaviour
+  change 1600-4: the ROM asks `NEW0? :CHECK`, as on the real device).
 - Drawing the display and the indicators (the frontends).
 - The known deviation of the PC-1600's BASIC speed (`TODO.md:8`).
 
@@ -92,7 +92,7 @@ Behaviour unchanged
 
 Reset, power cycle, cold boot
 - [ ] **AC-6** — Given a Sharp machine, then the three operations leave
-  it as follows once its start-up is over (OQ-1):
+  it as follows once it reports key readiness again (LIB-1 AC-11):
 
   | | PC-1500, PC-1500A | PC-1600 |
   |---|---|---|
@@ -134,6 +134,16 @@ Keys
 - [ ] **AC-12** — Given two keys of the matrix held down together, then
   both are in the key matrix (LIB-1 AC-13).
 
+Key readiness
+- [ ] **AC-21** — Given a PC-1600, then it reports key readiness (LIB-1
+  AC-42) whenever its ROM is ready to accept a key press, as it is found
+  today from the ROM reading the key matrix
+  (`Core/PC1600/PC1600BasicTyper.cpp:159-182`). Given a PC-1500 or
+  PC-1500A, then it reports key readiness when its ROM waits at the
+  BASIC prompt or at a prompt that takes a key, such as `NEW0? :CHECK`,
+  until its key handling has been researched (`typing.md` Q-3; today
+  `Core/PC1500/PC1500TypedInput.hpp:51`).
+
 Display and sound
 - [ ] **AC-13** — Given a PC-1500 or PC-1500A, then its display output
   is 156 × 7 dots and these 14 indicators: `BUSY` `SHIFT` `SMALL`
@@ -171,7 +181,8 @@ Peripherals and product kinds
   memory access for the BASIC and machine-code loaders (every model;
   specified in C1600-2); the INSPECTOR views (every model); the bytes
   sent to the CE-158's printer port (the CE-158); the folder of the host
-  drive (the host drive on the PC-1600; OQ-7). What each offers is what
+  drive (the host drive, a peripheral in the place `host-drive` of the
+  PC-1600). What each offers is what
   the app layer calls today (`Core/PC1500/PC1500Machine.hpp:151-256`,
   `Core/PC1600/PC1600Machine.hpp:241-254, 383-426, 484`).
 
@@ -243,16 +254,6 @@ One seam
   fit table, "Depth today").
 
 ## Open Questions
-- [ ] **OQ-1** — When a reset, a power cycle or a cold boot is over
-  (LIB-1 OQ-1). Today a power cycle is played through the ROM: OFF held,
-  the machine waited for until it is off, the change made, ON held, then
-  the machine run to the prompt (`Shared/MachineSession.cpp:244-275`); a
-  reset is followed by a run to the prompt as well. *Recommendation:* as
-  for the TI machines (C59-1 OQ-1): the call returns at once, the
-  machine reports "starting up" until its start-up is over, and the
-  operation that asked (LIB-18) waits for that. Whether a power cycle
-  goes through the ROM's own OFF and ON as today is the core's to
-  decide, as long as AC-6 holds.
 - [ ] **OQ-2** — The power state at the interface (AC-3, AC-7, AC-20;
   LIB-1 OQ-2). Today the display frame carries "powered on" and the
   frontends leave the LCD blank when it is not
@@ -281,31 +282,6 @@ One seam
   key IDs of AC-9 and AC-10. Presets and the harness match them without
   regard to case and accept `break` as another name of `on`; `ent` goes.
   That is specified in LIB-6, with the list in C1600-4.
-- [ ] **OQ-6** — The PC-1500 after a module change. With behaviour
-  change 1600-4, choosing a module power-cycles the machine and keeps
-  its memory. But the ROM of the PC-1500 checks its memory at power-on
-  when the memory layout changed, and stops at `NEW0? :CHECK`
-  (`Core/PC1500/PC1500PresetLoader.cpp:156-162`); the User Guide already
-  says that plugging a module in or out "costs the built-in RAM" on the
-  real device (`docs/User-Guide.md:436-440`). So on the PC-1500 the
-  program survives the power cycle only until the user answers that
-  prompt. The same may hold for a newly attached CE-150. Row 1600-4 says
-  "keeps all memory" without this. *Recommendation:* keep the power
-  cycle, because it is what the real device does; correct row 1600-4 to
-  say what the PC-1500's ROM does next; and LIB-18's operation ends when
-  the machine shows that prompt, as well as at the BASIC prompt. Verify
-  on 0.8.1 what the PC-1600 does.
-- [ ] **OQ-7** — The host drive. In the code it is a peripheral on the
-  60-pin connector with a ROM of its own
-  (`Core/PC1600/PC1600HostDriveCard.hpp:11-40`); `presets.md` PR-11, a
-  decided fork, keeps `host-drive:` as a product key and not as a place,
-  and the index lists the host drive as carried over. Either it becomes
-  a peripheral in a place named `host-drive`, which changes the wording
-  of PR-11 and needs the user, or it stays outside the places as a
-  product kind of the PC-1600 that the product attaches by a product
-  command. *Recommendation:* a peripheral in a place of its own, because
-  that is what the code already is; the folder it shows stays a product
-  kind (AC-19).
 
 ## Decision Log
 
@@ -321,3 +297,6 @@ One seam
 | The key IDs and indicator names are written in this spec, not left to phase 6 | LIB-1 decision log | 2026-11-10 |
 | The PC-1600 has 18 indicators in the code, not 16 as the fit table of `machine.md` says; the code counts | `Briefing.md` §2: where a note and a product disagree, the product code is authoritative | 2026-11-10 |
 | Proposed in this spec, for the gate: `on` is a key ID like the others (AC-11); changing the CE-1600P's ROM variant is a detach and an attach (AC-18); what a golden run is and what the runs cover | `machine.md` M-3 lists the ON key's own call as a fact, not a decision; no contract defines the others | 2026-11-10 |
+| A Reset, power cycle or cold boot is over when the machine is ready to accept a key press | user, 2026-11-10, batch 2 gate | 2026-11-10 |
+| After a module change and its power cycle the PC-1500 and PC-1600 find the changed memory and ask the user to set BASIC up again; this is what the hardware does and what today's restart leads to | user, 2026-11-10, batch 2 gate; ledger row 1600-4 corrected | 2026-11-10 |
+| The host drive is a peripheral on the 60-pin connector in the place `host-drive`; its folder is a product kind | user, 2026-11-10, batch 2 gate; amends `presets.md` PR-11 | 2026-11-10 |

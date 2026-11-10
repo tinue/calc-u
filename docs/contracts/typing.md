@@ -192,3 +192,4 @@ Options:
 | 2026-11-10 | T-2 | Readiness for both products through an optional typing support capability (key readiness, prompt readiness, latch states). The queue holds presses, not taps; held keys stay down until key-up; host auto-repeat is ignored; readiness gates only the start of the next queued press. PC-1500 keeps its fixed cadence until a key-readiness signal is found. |
 | 2026-11-10 | T-3 | Keys held together are fed to the matrix as they are; the ROM decides. The engine never creates an overlap. |
 | 2026-11-10 | T-4 | User keys arriving while an operation runs are dropped. |
+| 2026-11-10 | T-2 (amended in phase 4b, user) | Key readiness is part of the machine interface, not only of typing support: every machine reports whether it is ready to accept a key press. It is worded so, not as a "scan loop": the TI models have several such loops, depending on the model and on a printer. Typing support keeps prompt readiness and the latch states. |

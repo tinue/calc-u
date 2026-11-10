@@ -306,13 +306,6 @@ Invariants checked in review and in the phase 5 walkthroughs:
   as it is and write it into the Calc-U-1600 criteria once it has been
   read from the code (`Core/` serial link, `Shared/PtySerialLink`); the
   capability reports what the machine set and the host link ignores it.
-- [ ] **OQ-3** — The real-time clock is set from the host at the end of
-  every operation (AC-23). Calc-U-1600's own notes say it is "seeded
-  once … never re-synced" (`docs/background/Decisions.md:322-328`); the
-  code does it after every operation, which also hides that a reset of
-  the PC-1500 puts its clock back to 1 January 2000
-  (`Core/PC1500/PC1500Memory.cpp:56`). *Recommendation:* keep what the
-  code does and correct the note in phase 6.
 - [ ] **OQ-4** — The write-protect switch of the CE-161 (AC-32): does
   the ROM see a change at once, or at its next power-on? The glossary
   says a CE-161 "becomes" a program module with the switch set. Today
@@ -342,3 +335,4 @@ Invariants checked in review and in the phase 5 walkthroughs:
 | The power cycle after an attach is run by the app session as an operation, so it is specified in LIB-18 | Glossary, Operation; rule 1 of the cut | 2026-11-10 |
 | Peripherals stay plugged in through reset, power cycle and cold boot | Both products today (AC-10) | 2026-11-10 |
 | Proposed in this spec, for the gate: a place presents one pin-out and fit follows from it (AC-2); the machine can be asked whether an attach would succeed (AC-6); a detach takes the peripherals plugged into the detached one with it (EC-3); replacing a peripheral is one step with one power cycle (AC-35); a serial port file outlives the machine or peripheral it serves (AC-20, today's behaviour made a rule) | The control state needs "available now" with a reason (`frontend.md` FE-6); no contract states the others | 2026-11-10 |
+| The real-time clock is set from the host when a machine is built and at the end of every operation; Calc-U-1600's note "seeded once" is out of date and is corrected in phase 6 | user, 2026-11-10, batch 2 gate: the clock runs on emulated time, so every stretch at full speed moves it ahead; later changes re-seed it more often | 2026-11-10 |

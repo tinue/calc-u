@@ -136,11 +136,17 @@ Emulated time
 
 Reset, power cycle, cold boot
 - [ ] **AC-11** — Given any machine, then it offers reset, power cycle
-  and cold boot, and after each of them it still reports the same model
-  and variant and can be advanced. What each does to the machine's
+  and cold boot; each call returns at once, the ROM's start-up runs with
+  the advances that follow, and the operation is over when the machine
+  reports key readiness again (AC-42). After each of them the machine
+  still reports the same model and variant. What each does to the machine's
   memory is stated per model in C59-1 and C1600-1.
 
 Keys
+- [ ] **AC-42** — Given any machine, then it reports key readiness:
+  whether its ROM is ready to accept a key press now. A machine that has
+  just been built, reset, power-cycled or cold booted reports it only
+  when its start-up is over.
 - [ ] **AC-12** — Given a machine and a key ID from its descriptor, when
   key down and later key up are called with it, then the machine sees
   that key pressed and released at those tick counts; the caller never
@@ -269,8 +275,8 @@ Connectors and capabilities
   taking a chain, with the places `printer` and `interface`; and the
   debug target LH5801. Given the PC-1600, then two 40-pin connectors
   with the pin-outs Slot 1 and Slot 2 and the places `slot-1` and
-  `slot-2`; the 60-pin connector with `printer` and `interface`; the
-  RS-232C connector; and the debug targets SC7852 and LH5803. All
+  `slot-2`; the 60-pin connector with `printer`, `interface` and
+  `host-drive`; the RS-232C connector; and the debug targets SC7852 and LH5803. All
   pin-outs of the 40-pin and 60-pin connectors are contact level
   (`machine.md` and `peripherals.md`, fit tables, P-6).
 - [ ] **AC-37** — Given any of the three models, then its descriptor
@@ -291,9 +297,9 @@ Connectors and capabilities
   today, the CE-1600F with a holding media place for floppy disks with
   the sides A and B. Each lists its ROM files and the pin-outs it fits;
   the CE-161 lists its write-protect switch as a control
-  (`peripherals.md` and `capabilities.md`, fit tables; P-3). Whether the
-  host drive is a peripheral with a descriptor is an open question of
-  C1600-1.
+  (`peripherals.md` and `capabilities.md`, fit tables; P-3). The host
+  drive is a peripheral of the PC-1600 in the place `host-drive`, with
+  its ROM always bundled (`roms.md` Q-1).
 - [ ] **AC-40** — Given a running machine of any of the three models
   and variants, when it is compared with its descriptor, then its model,
   variant, tick rate, display kind and geometry, key IDs, places and
@@ -352,16 +358,6 @@ checked in review and in the phase 5 walkthroughs:
   shows the build side of this.
 
 ## Open Questions
-- [ ] **OQ-1** — Do reset, power cycle and cold boot finish at the call
-  (AC-11), or does the ROM's start-up run with the advances that follow?
-  Today the Calc-U-59 session runs 300,000 instructions after a reset,
-  and Calc-U-1600 plays a power cycle through the ROM's own OFF and ON
-  and then runs the machine to its prompt (C59-1 OQ-1, C1600-1 OQ-1).
-  On the TI-59 and TI-58 the ROM's start-up clears the memory, so a
-  Reset that keeps it needs the machine to put it back afterwards.
-  *Recommendation:* the call returns at once; the start-up runs with the
-  following advances; every machine reports "starting up" until it is
-  over, and the operation that asked for it (LIB-18) waits for that.
 - [ ] **OQ-2** — The power state. Both Sharp machines can be off, and
   their display can be off while they run; the frontends need both on
   the first day (C1600-1 OQ-2). `capabilities.md` Q-1 leaves this to a
@@ -369,9 +365,8 @@ checked in review and in the phase 5 walkthroughs:
   on" is part of display output for every display kind, and "the
   machine is off" is a state every machine reports.
 
-Settled in other specs: the lists of key IDs and indicator names, the
-host drive as a peripheral, and whether the TI display shows C and the
-minus sign together (C59-1, C1600-1); the form of a ROM entry (LIB-12).
+Settled in other specs: the lists of key IDs and indicator names
+(C59-1, C1600-1); the form of a ROM entry (LIB-12).
 
 ## Decision Log
 
@@ -397,3 +392,5 @@ minus sign together (C59-1, C1600-1); the form of a ROM entry (LIB-12).
 | The catalogue holds the descriptors of the bundled module definitions; one read later has the same form | Recommendation applied; the user raised no objection at the batch 1 gate | 2026-11-10 |
 | Brightness is the duty the core measures, from 0 to 1 | Recommendation applied; the user raised no objection at the batch 1 gate | 2026-11-10 |
 | The lists of key IDs and indicator names are written in the C59-1 and C1600-1 specs, not left to phase 6 | Recommendation applied; the user raised no objection at the batch 1 gate; replaces the assignment of `presets.md` Q-3 | 2026-11-10 |
+| Reset, power cycle and cold boot return at once and are over when the machine is ready to accept a key press; key readiness is part of the machine interface | user, 2026-11-10, batch 2 gate; amends `typing.md` T-2 | 2026-11-10 |
+| The host drive is a peripheral on the 60-pin connector in a place of its own | user, 2026-11-10, batch 2 gate; amends `presets.md` PR-11 | 2026-11-10 |

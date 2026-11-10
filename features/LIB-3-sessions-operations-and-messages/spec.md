@@ -139,7 +139,7 @@ Topics
 
 Commands
 - [ ] **AC-13** — Given a command, then it gets one reply: done, or
-  refused with the reason (assumes OQ-1). A command the session does not
+  refused with the reason. A command the session does not
   know is refused, and a refused command changes nothing.
 
 Operations and busy
@@ -187,8 +187,9 @@ Speed and pacing
   go), then the machine runs so from the next call of the host.
 - [ ] **AC-22** — Given a pacing profile whose full speed is paced while
   the machine waits for input, then the machine session tells the pacer
-  whether that holds, for each slice (LIB-17 AC-12; where the condition
-  comes from: LIB-17 OQ-3).
+  whether that holds, for each slice (LIB-17 AC-12): the machine reports
+  key readiness (LIB-1 AC-42), or one of its media places waits for a
+  medium (LIB-7).
 - [ ] **AC-23** — Given a session is created, is continued after a
   suspend, ends an operation or gets a new machine, then it tells the
   pacer to start afresh, in the last case with the new machine and its
@@ -326,13 +327,6 @@ Invariants checked in review and in the phase 5 walkthroughs:
   (`frontend.md` FE-2).
 
 ## Open Questions
-- [ ] **OQ-1** — Does every command get a reply (AC-13, AC-18)?
-  `frontend.md` FE-5 knows state topics, stream topics and requests;
-  Calc-U-1600 returns "not started" to its caller today. The other ways
-  would be a notice for every refusal, or silence because the controls
-  are disabled while busy. *Recommendation:* every command gets a short
-  reply, done or refused with the reason; a frontend may ignore it, the
-  harness prints it. This spec is written that way.
 - [ ] **OQ-2** — How long one part of an operation may take in host
   time (AC-14). Calc-U-1600 uses 10 ms in its Qt6 frontend today
   (`frontend.md` SP-2, facts). It is the same kind of value as the
@@ -383,3 +377,4 @@ Invariants checked in review and in the phase 5 walkthroughs:
 | Stopping in the background stays per frontend as today; the session decides nothing about the host | `frontend.md`, rules from decisions already taken; ODD59-25 | 2026-11-10 |
 | The app session owns the busy state and the audio policy | `frontend.md`, responsibilities (adopted from Calc-U-1600) | 2026-11-10 |
 | Proposed in this spec, for the gate: a frontend that starts to listen is sent every state topic once (AC-6) and states its host services (AC-26); a suspend and a debugger pause do not end each other (AC-25); a host service is asked with one message and answered with one, without making the session busy (AC-27) | AC-6 follows from FE-1 ("never asks back"); the others make the seam checkable and no contract states them | 2026-11-10 |
+| Every command gets a short reply: done, or refused with the reason | user, 2026-11-10, batch 2 gate | 2026-11-10 |

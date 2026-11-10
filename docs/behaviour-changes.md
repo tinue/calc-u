@@ -37,7 +37,7 @@ step. Label and menu renames are not repeated here; they are in
 | 1600-1 | Presets with `format-version: 1` are refused with a hint; the format is version 2. Module definitions and floppy disks stay readable as long as their formats do not change in the migration. | ADR 0037; `contracts/presets.md`, PR-2 |
 | 1600-2 | Settings start at their defaults (INI file). | `contracts/settings.md`, ST-1 |
 | 1600-3 | Preset syntax: `- key:` takes several key IDs, `- wait:` needs a unit, the hardware key `plotter:` becomes `printer:`; debugger, paper and switch steps are new. | `contracts/presets.md`, PR-5, PR-7, PR-11 |
-| 1600-4 | Choosing a module power-cycles the machine and keeps all memory (today: a restart like a model switch). | `contracts/peripherals.md`, P-1 |
+| 1600-4 | Choosing a module power-cycles the machine (today: a restart like a model switch). The memory is kept through the power cycle; the ROM then finds the changed memory and asks the user to set BASIC up again (`NEW0? :CHECK`), as on the real device and as after today's restart. | `contracts/peripherals.md`, P-1 |
 | 1600-5 | A media name with a character a file name cannot hold is refused (today: `/` and `:` silently become `-`). | `contracts/media.md`, MD-3 |
 | 1600-6 | An outdated file shows in its picker as a disabled entry with a hint (today: left out silently). | `contracts/media.md`, MD-4 |
 | 1600-7 | The first write to a medium a preset names replaces an instance of that name. | `contracts/media.md`, MD-1 |

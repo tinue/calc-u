@@ -303,7 +303,7 @@ Options:
 | | TI-59 (58, 58C) | PC-1500 (1500A) | PC-1600 | PC-1403 (paper) | PC-1350 (paper) |
 |---|---|---|---|---|---|
 | Frontends | Swift (iOS, macOS), Qt6, Web | Qt6, Web | Qt6, Web | — | — |
-| Display topic (M-2) | segment frame, brightness per position, C indicator | dot frame + status-line indicators | dot frame + 16 indicators | dot frame in 24 cells + status segments | dot frame |
+| Display topic (M-2) | segment frame, brightness per position, C indicator | dot frame + 14 indicators | dot frame + 18 indicators | dot frame in 24 cells + status segments | dot frame |
 | Control state (FE-2) | model; module slot picker (ADR 0025); printer connect; card reader place (TI-59) | model, ROM variant; one slot picker; CE-150, CE-158 | model, ROM variant; two slot pickers; CE-1600P (+ disk picker, CE-1600P ROM variant), CE-150, CE-158 (MODE 1); host drive | model; 11-pin peripheral | model; RAM card picker; 11-pin and 15-pin peripherals |
 | Panels | printer paper (PC-100C), debug panel | paper (CE-150), CE-158 printer, debug panel | paper (CE-1600P), CE-158 printer, debug panel | paper (CE-126P) | paper (CE-126P, CE-515P) |
 | Sound out | none emulated (key click is a frontend feature) | buzzer PCM | buzzer PCM | buzzer | buzzer |
@@ -354,3 +354,4 @@ Options:
 | 2026-11-10 | SP-2 | Operations always run sliced, one slice per host tick, in every frontend; `runNow` goes. The session keeps sending updates while an operation runs (I-5). |
 | 2026-11-10 | SP-3 | One "open file" command on the app session for drop, Open With and generic pickers; the library classifies presets and media, a product adds its own file kinds. |
 | 2026-11-10 | FE-6 | A product's app layer may define topics, commands and control-state entries of its own, on the same message path; only that product's frontends read them. Generic messages stay free of model-specific types (I-4). Refines FE-2. |
+| 2026-11-10 | SP-1 (amended in phase 4b, user) | Full speed is paced on the TI machines while the machine is ready to accept a key press or needs a card now (a media place waits for a medium), not only "while the machine reports key readiness". |

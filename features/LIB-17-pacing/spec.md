@@ -42,9 +42,10 @@ What the three status columns mean for this feature:
 - The gesture "hold the display", the `speed` step and the "elapsed"
   steps (owners: LIB-14 and C59-8 for the gesture; LIB-6 for the steps).
   This feature takes "regular speed" or "full speed" as an input.
-- What "the machine waits for input" means on a model, and key readiness
-  (owners: LIB-5, C59-1; see OQ-3). This feature takes the condition as
-  an input from the machine session.
+- When a machine is ready to accept a key press (key readiness: LIB-1,
+  C59-1) and when it needs a card (a media place that waits for a
+  medium: LIB-7, C59-7). This feature takes "the machine waits for
+  input" as an input from the machine session.
 - Runs without a wall clock: the harness and tests in virtual time
   advance a machine directly and do not pace (owner: LIB-11).
 - The tick rate and the weighting of instructions inside a core (LIB-1,
@@ -133,10 +134,13 @@ Starting afresh
   `Shared/Pacing.hpp:9-33`; `frontend.md`, fit table).
 - [ ] **AC-16** — Given a TI machine at full speed, when it waits for
   input, then it runs at the pace of regular speed; when it computes, it
-  runs at full speed. Today "waits for input" is: the ROM is in its key
-  scan and key detect range, or the slice retried a keyboard scan or a
-  card-switch poll; a wait for the printer does not count
-  (`Shared/Pacing.cpp:26-29`, `Shared/Pacing.hpp:51-58`).
+  runs at full speed. It waits for input when it is ready to accept a
+  key press, or, on the TI-59, when it needs a card now; a wait for the
+  printer does not count. Today this is found from ROM address ranges
+  that differ per model and with a printer present, and from retried
+  polls of the keyboard and the card switch
+  (`Shared/Pacing.cpp:26-29`, `Shared/Pacing.hpp:51-58`,
+  `Shared/MachineModelInfo.hpp:59-105`).
 - [ ] **AC-17** — Given the TI-58 showing a blinking error at regular
   speed, when the machine's program counter is read at 50 slice ends in
   a row, then it takes more than one value (`Shared/Pacing.hpp:25-30`).
@@ -213,19 +217,6 @@ Starting afresh
   the slightly lower top speed of the Calc-U-59 apps accepted?
   *Recommendation:* one value in the library, 14 ms; accepted without a
   row in `docs/behaviour-changes.md`, because no user will see it.
-- [ ] **OQ-3** — How the pacer learns that a TI machine "waits for
-  input" (AC-12, AC-16). `frontend.md` SP-1 says the pacer reads key
-  readiness from typing support. Two things do not fit. First, today's
-  condition is wider than key readiness: it includes a retried
-  card-switch poll (AC-16), without which a program waiting for a card
-  at full speed would spin unpaced. Second, typing support is specified
-  with LIB-5, which depends on LIB-3, which depends on this feature; the
-  Calc-U-59 column here would wait for a feature that depends on it.
-  *Recommendation:* the TI machines report one condition, "waits for
-  input" (key scan or card switch), as part of C59-1; the machine
-  session passes it to the pacer, and the typing engine uses the same
-  report for key readiness. This amends the wording of SP-1 and T-2, so
-  it needs the user.
 - [ ] **OQ-4** — What a call does when the lag is over the limit
   (AC-4). The products differ: Calc-U-59 drops the whole lag
   (`Shared/EmulationRunner.cpp:13-15, 120`); Calc-U-1600 runs 0.1
@@ -234,16 +225,6 @@ Starting afresh
   *Recommendation:* drop the whole lag. The difference is one burst of
   0.1 seconds after each stall in Calc-U-1600, which nobody sees; it
   needs no row in `docs/behaviour-changes.md`.
-- [ ] **OQ-5** — The overshoot in Calc-U-1600. AC-3 says overshoots do
-  not add up. Calc-U-59 carries each overshoot into the next slice
-  today; Calc-U-1600 throws it away
-  (`Shared/MachineSession.cpp:452`), so every call runs a few ticks more
-  than were due and the machine runs very slightly fast. With AC-3 the
-  new pacer is more exact than Calc-U-1600's old one, and the
-  before-and-after test of AC-21 will show that difference.
-  *Recommendation:* keep AC-3; measure the old drift first and state it
-  in AC-21 as the expected difference. It is far smaller than the known
-  0.4 to 0.65 % of the PC-1600's BASIC and is not its cause.
 
 ## Decision Log
 
@@ -259,3 +240,5 @@ Starting afresh
 | Proposed in this spec, for the gate: the numbers of AC-17 (50 slice ends) and AC-19, AC-22 (one minute) | They make the criteria checkable; no source gives them | 2026-11-10 |
 | The long-run test is two tests per product: a scripted clock (frequent group) and ten minutes on the real clock (checkpoint group) | Recommendation applied; the user raised no objection at the batch 1 gate | 2026-11-10 |
 | "Slice" and "lag" are glossary terms | Recommendation applied; the user raised no objection at the batch 1 gate | 2026-11-10 |
+| Full speed is paced while a TI machine is ready to accept a key press or needs a card now; the wording is not "key scan loop", because the TI models have several such loops, depending on the model and on a printer | user, 2026-11-10, batch 2 gate; amends `frontend.md` SP-1 | 2026-11-10 |
+| The new pacer carries the overshoot of every advance (AC-3). Calc-U-1600 drops it today, so the before-and-after test of AC-21 states the measured old drift as the expected difference | user, 2026-11-10, batch 2 gate | 2026-11-10 |

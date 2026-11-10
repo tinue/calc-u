@@ -85,8 +85,9 @@ Behaviour unchanged
 
 Reset, power cycle, cold boot
 - [ ] **AC-6** — Given a TI machine, then the three operations leave it
-  as follows once its start-up is over (OQ-1; today a fixed run of
-  300,000 instructions, `Shared/StateApplier.cpp:12-18`):
+  as follows once it reports key readiness again (LIB-1 AC-11; today the
+  session runs a fixed 300,000 instructions instead,
+  `Shared/StateApplier.cpp:12-18`):
 
   | | TI-59, TI-58 | TI-58C |
   |---|---|---|
@@ -104,8 +105,8 @@ Reset, power cycle, cold boot
   after a cold boot, unless it was handed content at its build (the
   constant memory of a TI-58C, C59-3).
 - [ ] **AC-8** — Given a TI machine after any of the three operations,
-  then no key is down, and once its start-up is over the display output
-  is that of a machine just switched on.
+  then no key is down, and once it reports key readiness the display
+  output is that of a machine just switched on.
 
 Keys
 - [ ] **AC-9** — Given a TI machine, then its 45 keys have these key
@@ -148,11 +149,25 @@ Display
   today's rules: a digit; the signs for degree, minus, quote and
   apostrophe; or blank, with zero suppression as today
   (`Shared/SevenSegment.hpp:15-52`, `Core/TMC0501.cpp:1428-1465`).
-- [ ] **AC-15** — Given a running program, then the positions are dark
-  and the indicator C is on with a brightness of its own; given the
+- [ ] **AC-15** — Given the indicator C and the leftmost position, then
+  the display output gives each its own state and brightness, so that C
+  and a minus sign can be lit together, each as bright as the hardware
+  drives it. Given a running program, then the positions are dark
+  and the indicator C is on; given the
   machine waits for a key, then the positions show the number
   (`reference/CoreArchitecture.md:504`, `Core/TMC0501.cpp:296-305`).
 - [ ] **AC-16** — Given a TI machine, then it has no sound output.
+
+Key readiness
+- [ ] **AC-18** — Given a TI machine, then it reports key readiness
+  (LIB-1 AC-42) whenever its ROM is ready to accept a key press, on
+  every model and with or without a PC-100C. Today this is found from
+  ROM address ranges that differ per model and with a printer present
+  (`Shared/MachineModelInfo.hpp:59-105`); the spec does not name them,
+  because there are several such loops.
+- [ ] **AC-19** — Given a Reset on the TI-59 or TI-58, whose ROM clears
+  the memory in its start-up, then the machine itself puts the content
+  of the RAM back before it reports key readiness (AC-6).
 
 One seam
 - [ ] **AC-17** — Given Calc-U-59 after this feature, then its app layer
@@ -192,7 +207,7 @@ One seam
   | `insertCard`, `cardEject`, `isCardPresent`, `isWaitingForCard` | C59-7 |
   | RAM, registers, program steps, partition | C59-2; the constant memory: C59-3 |
   | `stepUntilNextKeycode`, `beginNextStep`, `snapshotCPU`, `disassemble`, breakpoints, trace, debug overlay | LIB-10, C59-4 |
-  | the scan-loop and key-detect ranges, "polled hardware" | LIB-5; LIB-17 OQ-3 |
+  | the scan-loop and key-detect ranges, "polled hardware" | key readiness (AC-18); needing a card: C59-7 |
 
   When this row and those rows are done, nothing above the core uses a
   core type (`machine.md` I-1). The core types used outside `Core/`
@@ -211,32 +226,6 @@ One seam
   component after this feature and after C59-6 (ADR 0012).
 
 ## Open Questions
-- [ ] **OQ-1** — When a reset, a power cycle or a cold boot is over
-  (LIB-1 OQ-1). Today the session runs 300,000 instructions after a
-  reset, about 21 seconds of emulated time, and for a Reset on the TI-59
-  and TI-58 it puts the RAM back afterwards, because the ROM's start-up
-  clears it. So the machine itself must know when its start-up has
-  passed that point. *Recommendation:* the call returns at once; the
-  machine reports "starting up" until its start-up is over, and for a
-  Reset it puts the memory back itself at the right moment; the
-  operation that asked (LIB-18) waits for the report to end. The
-  alternative is that the call runs the whole start-up before it
-  returns.
-- [ ] **OQ-2** — The spelling of the key IDs (AC-9), and the second
-  functions. `presets.md` PR-5 shows `- key: 2nd Pgm 0 1 SBR =`: "Pgm"
-  is the second function printed above LRN, not a key, so by EC-3 the
-  machine would refuse it. *Recommendation:* the machine takes exactly
-  the 45 IDs of AC-9. Presets and the harness also accept the 43
-  second-function names of `reference/StateFileFormat.md:179-220` as
-  other names of their keys and match all names without regard to case;
-  that is specified in LIB-6, with the list in C59-2, so that `2nd Pgm`
-  reads as on the calculator.
-- [ ] **OQ-3** — The indicator C together with the minus sign in the
-  leftmost position. On the real calculator both show; today one glyph
-  shows per position (`Shared/SevenSegment.hpp:54-67`,
-  `reference/CoreArchitecture.md:526-531`). The display kinds allow
-  both. *Recommendation:* show both, as the hardware does, and add a row
-  to `docs/behaviour-changes.md`.
 - [ ] **OQ-4** — Where the persistence of vision lives. The machine
   gives the duty per position (AC-13). Today Calc-U-59 turns it into
   what the eye sees, with hold, fade and a perceptual curve, in its app
@@ -274,3 +263,6 @@ One seam
 | Component boundaries follow observable behaviour; depth is recorded in the descriptor | ADR 0012 | 2026-11-09 |
 | The key IDs are written in this spec, not left to phase 6 | LIB-1 decision log | 2026-11-10 |
 | Proposed in this spec, for the gate: a newly built machine is in the state after a cold boot (AC-7); the key IDs of AC-9; what a golden run is and what the runs cover | Today a new machine and a reset one differ in one CPU flag (`Shared/EmulatorSession.cpp:16-35`); no contract lists the IDs or defines the golden runs | 2026-11-10 |
+| Key readiness is reported by the machine; a Reset, power cycle or cold boot is over when it is reported again | user, 2026-11-10, batch 2 gate | 2026-11-10 |
+| The machine takes the 45 key IDs of AC-9 exactly. In presets and in the harness a second-function name (`Pgm`) stands for 2nd and its key, and a `2nd` written before it is not pressed twice; names are matched without regard to case (specified in LIB-6, the list in C59-2) | user, 2026-11-10, batch 2 gate | 2026-11-10 |
+| C and the minus sign can be lit together, each with its own brightness as on the hardware; the frontends show at least what they show today | user, 2026-11-10, batch 2 gate: today both show, but not with independent brightness | 2026-11-10 |

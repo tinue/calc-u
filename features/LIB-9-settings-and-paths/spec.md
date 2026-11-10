@@ -88,18 +88,21 @@ The settings file
   or section is still in the file with its value, and so are the
   comments, the blank lines and the order of the file.
 - [ ] **AC-5** — Given no settings file, when the product starts, then
-  every setting has its default and the product works; no file is
-  written until a setting is changed, and the file then holds only the
-  keys that have been set. A key that was set stays in the file, also
-  when it is set back to its default.
+  every setting has its default, and the product writes the settings
+  file at that moment, with its format version and every key at its
+  default.
 - [ ] **AC-6** — Given a setting is changed in a frontend, when that
   frontend is quit and started again, then the setting has the new
   value. The file is read when the product starts and not again while
   it runs.
 - [ ] **AC-7** — Given a settings file, then it states its format
-  version, and a file in another version is treated as ADR 0037 says
-  (where the version sits and what "refused" means for a settings file:
-  OQ-2).
+  version in a `format-version` key, which the product writes itself
+  (AC-5). No settings file exists before the first release from this
+  repository, so no older version can turn up in that release; from the
+  next release on, the regular rule of ADR 0037 holds (the previous
+  version is read and converted). A file whose version line was removed
+  by hand is treated as ADR 0037 says for a file without a version: it
+  is not read, the product starts with the defaults and says so.
 - [ ] **AC-8** — Given any product, then no setting chooses or remembers
   which modules, peripherals or media a machine has (`settings.md` I-1;
   ADR 0021).
@@ -266,18 +269,6 @@ Paths
 - The settings file is an own format (ADR 0037).
 
 ## Open Questions
-- [ ] **OQ-2** — The version of the settings file. ADR 0037 names
-  settings files among the own formats: a file in an older version, or
-  without a version, is refused with a hint. Two things are open. Where
-  the version sits in an INI file. And what "refused" means here, since
-  the product must still start: I-3 and AC-3 to AC-5 make the file
-  tolerant, and a user may write one by hand from the help.
-  *Recommendation:* a `format-version` key at the top of the file. A
-  file with an older or no version is not read: the product starts with
-  the defaults, says so once with the hint, and keeps the old file
-  beside the new one under another name when it first writes. No such
-  file exists before the first release from this repository, so this
-  matters only later and for hand-written files.
 - [ ] **OQ-5** — The app-written keys. ST-4 names the sections
   `[window]` and `[folders]` but no keys. Needed: the last used model
   (both products keep `lastUsedModel` today; *recommendation:*
@@ -305,9 +296,10 @@ Paths
 | Sections from Calc-U-1600's groups, kebab-case names, glossary values; app-written state in `[window]` and `[folders]`; on the web the INI is a file | `settings.md` ST-4 | 2026-11-10 |
 | A missing key has its default; an unknown key is kept on write | `settings.md` I-3 | 2026-11-10 |
 | Proposed in this spec, for the gate: the trace size rule of AC-11 holds for both products (Calc-U-1600 reads a non-number as 0 today) | One reader, one rule (`settings.md` I-2) | 2026-11-10 |
-| A key is written only once it has been set; the file is read at the start only; comments, blank lines and order survive a write | Recommendation applied; the user raised no objection at the batch 1 gate | 2026-11-10 |
+| The file is read at the start only; comments, blank lines and order survive a write | Recommendation applied; the user raised no objection at the batch 1 gate | 2026-11-10 |
 | A bad value counts as missing; an unreadable file is left untouched; a write never leaves half a file | Recommendation applied; the user raised no objection at the batch 1 gate | 2026-11-10 |
 | The INI grammar of AC-33 | ADR 0022 fixes only sections and `key = value`; recommendation applied; the user raised no objection at the batch 1 gate | 2026-11-10 |
 | The settings folders carry the product's name as written, on every platform | Recommendation applied; the user raised no objection at the batch 1 gate | 2026-11-10 |
 | The macOS bookmark of a custom trace folder stays in the platform store; Qt6 window state is plain numbers in `[window]` | A bookmark is a grant by macOS, not a preference; recommendation applied; the user raised no objection at the batch 1 gate | 2026-11-10 |
 | A missing save folder is created at the first write; an override that cannot be used is reported and never replaced silently | Recommendation applied; the user raised no objection at the batch 1 gate | 2026-11-10 |
+| At the first start the product ignores the old platform stores, starts with the defaults and writes its first settings file at that moment, with every key; so no older version of the file can exist in the migration release | user, 2026-11-10, batch 2 gate (prompted). Consequence: a default that a later release changes does not reach a file that already holds the old value | 2026-11-10 |

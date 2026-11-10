@@ -63,8 +63,6 @@ What the three status columns mean for this feature:
   as commands (owner: LIB-18).
 - Rendering display output: pixels, glyph styles, colours (the
   frontends; LIB-14, open point "Calculator view" in `features/INDEX.md`).
-- The power state (off, display on): `capabilities.md` Q-1, a phase 5
-  walkthrough.
 - Descriptors for SC61860 models (paper machines; phase 5).
 
 ## Acceptance Criteria
@@ -176,6 +174,9 @@ Display and sound
   indicators, when its display output is read, then each indicator of
   its descriptor is given by name with its state: on or off, and a
   brightness where the hardware has one.
+- [ ] **AC-43** — Given any display output, then it says whether the
+  display is on or off; a display that is off shows nothing. No machine
+  reports a power state besides that.
 - [ ] **AC-18** — Given any display output, then it contains no pixels
   in a host format, no glyph style and no colour.
 - [ ] **AC-19** — Given a machine with sound, then its sound output is
@@ -358,12 +359,7 @@ checked in review and in the phase 5 walkthroughs:
   shows the build side of this.
 
 ## Open Questions
-- [ ] **OQ-2** — The power state. Both Sharp machines can be off, and
-  their display can be off while they run; the frontends need both on
-  the first day (C1600-1 OQ-2). `capabilities.md` Q-1 leaves this to a
-  phase 5 walkthrough. *Recommendation:* decide now: "the display is
-  on" is part of display output for every display kind, and "the
-  machine is off" is a state every machine reports.
+None in this spec.
 
 Settled in other specs: the lists of key IDs and indicator names
 (C59-1, C1600-1); the form of a ROM entry (LIB-12).
@@ -394,3 +390,4 @@ Settled in other specs: the lists of key IDs and indicator names
 | The lists of key IDs and indicator names are written in the C59-1 and C1600-1 specs, not left to phase 6 | Recommendation applied; the user raised no objection at the batch 1 gate; replaces the assignment of `presets.md` Q-3 | 2026-11-10 |
 | Reset, power cycle and cold boot return at once and are over when the machine is ready to accept a key press; key readiness is part of the machine interface | user, 2026-11-10, batch 2 gate; amends `typing.md` T-2 | 2026-11-10 |
 | The host drive is a peripheral on the 60-pin connector in a place of its own | user, 2026-11-10, batch 2 gate; amends `presets.md` PR-11 | 2026-11-10 |
+| Only the display has an on and an off; it is part of display output. A machine reports no power state | user, 2026-11-10, batch 2 gate (prompted); answers `capabilities.md` Q-1 | 2026-11-10 |

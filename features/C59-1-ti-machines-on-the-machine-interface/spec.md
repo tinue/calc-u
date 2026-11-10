@@ -156,7 +156,8 @@ Display
   and the indicator C is on; given the
   machine waits for a key, then the positions show the number
   (`reference/CoreArchitecture.md:504`, `Core/TMC0501.cpp:296-305`).
-- [ ] **AC-16** — Given a TI machine, then it has no sound output.
+- [ ] **AC-16** — Given a TI machine, then it has no sound output, and
+  its display is always on (LIB-1 AC-43).
 
 Key readiness
 - [ ] **AC-18** — Given a TI machine, then it reports key readiness

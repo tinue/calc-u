@@ -77,15 +77,18 @@ Regular speed
   still hold: overshoots do not add up either.
 - [ ] **AC-4** — Given the lag has grown beyond 0.1 seconds (the host
   was busy, a dialog was open), when the pacer is called, then the lag
-  is dropped and not caught up, and pacing goes on from the moment of
-  that call (both products today; how much is still run in that call:
-  OQ-4).
+  is dropped whole and not caught up, and pacing goes on from the moment
+  of that call (Calc-U-59 today, `Shared/EmulationRunner.cpp:13-15, 120`;
+  Calc-U-1600 runs 0.1 seconds of emulated time first today,
+  `Shared/Pacer.cpp:32-40`).
 
 Full speed
 - [ ] **AC-5** — Given a machine at full speed, when the pacer is
   called, then it runs slice after slice without waiting, until the
   host time allowed for one call is used up, measured on the wall clock
-  the caller supplies (the allowance: OQ-2).
+  the caller supplies. The allowance is 14 ms of each call, one value of
+  the library (Calc-U-1600 today, `Shared/Pacer.hpp:29`), so that the
+  host has the rest of its roughly 16 ms to repaint and take input.
 - [ ] **AC-6** — Given a machine is switched from full speed back to
   regular speed, then pacing goes on from that moment: the emulated time
   gained at full speed is neither waited out nor counted as lag.
@@ -207,24 +210,7 @@ Starting afresh
   `docs/contracts/harness.md`, H-4) is decided in the design.
 
 ## Open Questions
-- [ ] **OQ-2** — The host time allowed for one call at full speed
-  (AC-5). Today: Calc-U-1600 14 ms (`Shared/Pacer.hpp:29`); the
-  Calc-U-59 Web frontend 10 ms (`Shared/EmulationRunner.hpp:42`); the
-  Calc-U-59 Swift and Qt6 frontends none, because the machine runs flat
-  out on a thread of its own (`docs/inventory/divergence-matrix.md`,
-  M11). With sessions driven by calls (ADR 0009) the third case goes. Is
-  it one value of the library or a value of the pacing profile, and is
-  the slightly lower top speed of the Calc-U-59 apps accepted?
-  *Recommendation:* one value in the library, 14 ms; accepted without a
-  row in `docs/behaviour-changes.md`, because no user will see it.
-- [ ] **OQ-4** — What a call does when the lag is over the limit
-  (AC-4). The products differ: Calc-U-59 drops the whole lag
-  (`Shared/EmulationRunner.cpp:13-15, 120`); Calc-U-1600 runs 0.1
-  seconds of emulated time in that call and drops the rest
-  (`Shared/Pacer.cpp:32-40`). One pacer needs one rule.
-  *Recommendation:* drop the whole lag. The difference is one burst of
-  0.1 seconds after each stall in Calc-U-1600, which nobody sees; it
-  needs no row in `docs/behaviour-changes.md`.
+None.
 
 ## Decision Log
 
@@ -242,3 +228,5 @@ Starting afresh
 | "Slice" and "lag" are glossary terms | Recommendation applied; the user raised no objection at the batch 1 gate | 2026-11-10 |
 | Full speed is paced while a TI machine is ready to accept a key press or needs a card now; the wording is not "key scan loop", because the TI models have several such loops, depending on the model and on a printer | user, 2026-11-10, batch 2 gate; amends `frontend.md` SP-1 | 2026-11-10 |
 | The new pacer carries the overshoot of every advance (AC-3). Calc-U-1600 drops it today, so the before-and-after test of AC-21 states the measured old drift as the expected difference | user, 2026-11-10, batch 2 gate | 2026-11-10 |
+| A lag over 0.1 seconds is dropped whole, for every model | user, 2026-11-10, batch 2 gate (prompted) | 2026-11-10 |
+| The full-speed allowance is one library value, 14 ms per call. The Calc-U-59 Swift and Qt6 frontends lose the free-running thread of today and with it a little top speed | Recommendation applied; the user had no preference and asked what the problem is, which was explained at the gate | 2026-11-10 |

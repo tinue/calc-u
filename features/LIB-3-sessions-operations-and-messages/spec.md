@@ -145,8 +145,9 @@ Commands
 Operations and busy
 - [ ] **AC-14** — Given an operation is started, then the busy topic
   says so until the operation ends; one part of it runs per call of the
-  host, short enough in host time for the frontend to repaint between
-  two calls; and the machine runs inside it at full speed unless the
+  host, within the same allowance of host time as a call at full speed
+  (LIB-17 AC-5), so that the frontend repaints between two calls; and
+  the machine runs inside it at full speed unless the
   operation asks for regular speed for a stretch, which is then paced
   like any regular-speed running (`presets.md` PR-4; behaviour change
   59-5).
@@ -327,11 +328,6 @@ Invariants checked in review and in the phase 5 walkthroughs:
   (`frontend.md` FE-2).
 
 ## Open Questions
-- [ ] **OQ-2** — How long one part of an operation may take in host
-  time (AC-14). Calc-U-1600 uses 10 ms in its Qt6 frontend today
-  (`frontend.md` SP-2, facts). It is the same kind of value as the
-  full-speed allowance of LIB-17 (OQ-2 there). *Recommendation:* one
-  value for both, decided with LIB-17.
 - [ ] **OQ-3** — When a command's effect goes out. A command can arrive
   between two host calls, and a suspended frontend may stop calling
   altogether. *Recommendation:* a command is carried out when it

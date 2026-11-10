@@ -30,7 +30,9 @@ replaces Calc-U-59's read-old/write-new rule.
 - Briefing §1.2 ("Calc-U-59 stays backwards compatible", the version 1
   rules for presets, `ti58c.mem` and ASM overlays, Calc-U-1600's
   "existing version numbers stay as they are, even where a format
-  changes") and the success criterion "Calc-U-59 reads all of its existing
+  changes") and Calc-U-1600's own rule "from 1.0 on, the previous format
+  version keeps working" (`docs/background/Decisions.md`, File formats)
+  and the success criterion "Calc-U-59 reads all of its existing
   files" in §7 are replaced; both carry a note.
 - Superseded parts of earlier ADRs: ADR 0018's v1 reader; ADR 0016's
   consequence that the v1 reader fills in the module and printer; ADR

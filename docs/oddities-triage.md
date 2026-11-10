@@ -63,7 +63,7 @@ Outcomes:
 | One 60-pin connector per machine; generic open-bus path for peripheral ROMs | Stays (connector model); phase 4: peripheral and connector model |
 | Preset is YAML-shaped | Adopted by ADR 0018 |
 | Presets cold boot (preset owns `NEW0` and mode) | Adopted by ADR 0016 |
-| `format-version` policy | Stays until the family preset format; phase 4: preset contract |
+| `format-version` policy | Required version kept; "previous version keeps working from 1.0" replaced by ADR 0037; phase 4: preset contract |
 | Two preset lists (defaults, examples) | Stays as startup presets and examples (glossary) |
 | `saveas:` needs `template`/`live`; name lives in the file | Stays; phase 4: media contract |
 | Repository layout rules | Superseded by ADR 0002 |

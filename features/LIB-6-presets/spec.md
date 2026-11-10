@@ -25,8 +25,9 @@
 Words used here that the glossary does not define yet (OQ-5):
 - A **header key** is a top-level `key: value` line of a preset that
   describes the preset or its machine.
-- A **section** is a top-level key with a block below it. Sections are
-  carried out in file order.
+- A **section** is a top-level key with a block below it, or, where its
+  owner says so, with only a value (`partition: 479`, C59-2). Sections
+  are carried out in file order.
 - A **step** is one item of a step list (`- verb: value`). It is not a
   program step (glossary).
 - A machine is **idle** when it has finished what it was doing and waits

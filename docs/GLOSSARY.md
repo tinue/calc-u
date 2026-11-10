@@ -531,8 +531,8 @@ A top-level `key: value` line of a preset that describes the preset or
 its machine.
 
 **Section**:
-A top-level key of a preset with a block below it. Sections are carried
-out in file order.
+A top-level key of a preset with a block below it, or, where its owner
+says so, with only a value. Sections are carried out in file order.
 
 **Step**:
 One item of a step list in a preset (`- verb: value`). Not a program

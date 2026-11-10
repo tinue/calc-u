@@ -78,7 +78,7 @@ The file
   today, in today's layout with a first line that states the version
   (`Shared/ConstantMemory.cpp:9-66`).
 - [ ] **AC-5** — Given a TI-58C runs and its constant memory or the
-  user's cue card changes, then `ti58c.mem` holds the new content at the
+  fitted cue card changes, then `ti58c.mem` holds the new content at the
   latest half a second after the change, counted in the wall time the
   host passes to the session (LIB-3 AC-2), and is not written when
   nothing changed (`Shared/SessionController.cpp:247-256, 285-286`).

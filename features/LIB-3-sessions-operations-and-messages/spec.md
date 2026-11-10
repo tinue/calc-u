@@ -356,7 +356,7 @@ Invariants checked in review and in the phase 5 walkthroughs:
 - [ ] **OQ-6** — "Suspend" and "continue" for the glossary, as defined
   above. `frontend.md` says "pause and resume" for both the background
   and the debugger; the glossary gives those words to the debugger.
-- [ ] **OQ-7** — Calc-U-59 shows "Loading…" and refuses other operations
+- [x] **OQ-7** — *Decided (user, 2026-11-10, batch 5 gate): "Loading…" is added to row 59-5.* Calc-U-59 shows "Loading…" and refuses other operations
   while a preset loads at full speed or a power cycle runs (AC-32).
   Behaviour change 59-5 covers the speed of a preset and the dropped
   keys, not this. *Recommendation:* add it to row 59-5; it is new for a
@@ -385,4 +385,4 @@ Invariants checked in review and in the phase 5 walkthroughs:
 | The app session owns the busy state and the audio policy | `frontend.md`, responsibilities (adopted from Calc-U-1600) | 2026-11-10 |
 | Proposed in this spec, for the gate: a frontend that starts to listen is sent every state topic once (AC-6) and states its host services (AC-26); a suspend and a debugger pause do not end each other (AC-25); a host service is asked with one message and answered with one, without making the session busy (AC-27) | AC-6 follows from FE-1 ("never asks back"); the others make the seam checkable and no contract states them | 2026-11-10 |
 | Every command gets a short reply: done, or refused with the reason | user, 2026-11-10, batch 2 gate | 2026-11-10 |
-| Proposed with LIB-6 and LIB-14, for the batch 5 gate: the busy topic says whether the running operation is at full speed or at regular speed now (AC-14) | `presets.md` PR-4: "Loading…" only while it runs at full speed | 2026-11-10 |
+| Proposed with LIB-6 and LIB-14 and accepted (user, 2026-11-10, batch 5 gate): the busy topic says whether the running operation is at full speed or at regular speed now (AC-14) | `presets.md` PR-4: "Loading…" only while it runs at full speed | 2026-11-10 |

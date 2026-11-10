@@ -416,7 +416,7 @@ The shell and what goes into it
   (ADR 0032).
 
 ## Open Questions
-- [ ] **OQ-1** — The menu table of AC-1, where the products differ
+- [x] **OQ-1** — *Decided as recommended (user, 2026-11-10, batch 5 gate).* The menu table of AC-1, where the products differ
   today. *Recommendation:* "Load Preset…" in both (Calc-U-59's Qt6 says
   "Open Preset…"); Settings… at the end of File in both (Calc-U-1600 has
   it in Edit), so that Calc-U-59 needs no Edit menu for one item;
@@ -425,14 +425,14 @@ The shell and what goes into it
   products, and no shortcuts in a Web frontend. The labels that change
   with it ("Open Preset…", "Startup Calculator", "Startup device", "Card
   Folder", "Samples folder") go into `docs/glossary-mapping.md`.
-- [ ] **OQ-2** — The family rule for a place that is not a module slot
+- [x] **OQ-2** — *Decided as recommended (user, 2026-11-10, batch 5 gate).* The family rule for a place that is not a module slot
   (LIB-4 OQ-2). *Recommendation:* AC-9: a button when one peripheral
   fits, a picker when several do, computed from the descriptors. It
   keeps the PC-1500's buttons, moves the "PC-100C" button from the
   printer panel to the bar, and changes the PC-1600: a printer picker in
   place of the "CE-1600P" button, and the CE-158 and the CE-150 on the
   bar. The product entry of LIB-4 AC-17 for this then goes.
-- [ ] **OQ-3** — Calc-U-59 without a menu bar. Its Web frontend has
+- [x] **OQ-3** — *Decided as recommended (user, 2026-11-10, batch 5 gate).* Calc-U-59 without a menu bar. Its Web frontend has
   buttons on the bar today (Reset, Preset, Settings), and so do Qt6 and
   Swift next to their small menus. *Recommendation:* where there is a
   menu bar, these buttons leave the control bar (AC-28), which then
@@ -440,13 +440,13 @@ The shell and what goes into it
   its wide layout and one menu button in its portrait layout (AC-29);
   the long press for "Clean" goes there, because Cold boot is a menu
   item. The Swift frontend on iOS is settled in C59-8.
-- [ ] **OQ-4** — How a notice is shown. Today Calc-U-1600 shows a dialog
+- [x] **OQ-4** — *Decided as recommended (user, 2026-11-10, batch 5 gate).* How a notice is shown. Today Calc-U-1600 shows a dialog
   with a title and OK in both frontends; Calc-U-59 shows an alert in
   Swift and Qt6 and a line below the calculator on the web, and the
   Swift frontend loses a notice when a second one comes. A notice is a
   whole sentence (LIB-3 AC-10), so it needs no title. *Recommendation:*
   AC-17 for every frontend: a dialog with OK, no title, none lost.
-- [ ] **OQ-5** — The calculator view (open point of
+- [x] **OQ-5** — *Decided as recommended (user, 2026-11-10, batch 5 gate).* The calculator view (open point of
   `features/INDEX.md`). *Recommendation:* as the divergence matrix
   suggests (M16, M52): the component sets find the key under a pointer
   by the one rule of AC-24 from the product's hit map, and drawing the
@@ -455,9 +455,9 @@ The shell and what goes into it
   Calc-U-1600 the drawn areas and its 24 px. A point between two keys
   may then find another key than today in one frontend; that is taken
   as too small to list.
-- [ ] **OQ-6** — "Shell", "faceplate" and "hit map" for the glossary, as
+- [x] **OQ-6** — *Decided as recommended (user, 2026-11-10, batch 5 gate).* "Shell", "faceplate" and "hit map" for the glossary, as
   defined above.
-- [ ] **OQ-7** — Rows for `docs/behaviour-changes.md`. Row 59-14 covers
+- [x] **OQ-7** — *Decided as recommended (user, 2026-11-10, batch 5 gate).* Rows for `docs/behaviour-changes.md`. Row 59-14 covers
   Calc-U-59's menus and bar; Calc-U-1600 has no such row, and "Loading…"
   in Calc-U-59 has none (LIB-3 OQ-7). *Recommendation:* a new row for
   Calc-U-1600, "Menus and the control bar follow the family structure:
@@ -478,13 +478,13 @@ The shell and what goes into it
 | Reset, Cold boot and a model switch can be used while an operation runs | `frontend.md` Q-1 as amended; LIB-18 AC-16 | 2026-11-10 |
 | The in-app Help opens the product's help on calc-u.org | `help.md` HL-3 | 2026-11-10 |
 | "Cold boot", "Startup presets" and "Save folder" replace "Clean", "Reset All", "Default presets" and "Battery-card saves" | `docs/glossary-mapping.md`, visible renames | 2026-11-10 |
-| Proposed in this spec, for the gate: "Save folder" also replaces Calc-U-59's "Card Folder", "Load Preset…" replaces "Open Preset…", "Examples folder" replaces "Samples folder" | The glossary's terms; one label per thing in the family | 2026-11-10 |
-| Proposed in this spec, for the gate: "Loading…" does not block the window; a notice does until it is closed (AC-16, AC-17) | Reset must be reachable while an operation runs (LIB-18 AC-16) | 2026-11-10 |
-| Proposed in this spec, for the gate: a Web frontend binds no shortcuts to menu items (AC-4) | Ctrl+R and Ctrl+O are the browser's | 2026-11-10 |
-| Proposed in this spec, for the gate: the shell reads no product entry; a product's frontend code puts its own controls and panels into the places the shell gives (AC-42, AC-23) | `frontend.md` I-4, FE-6 | 2026-11-10 |
+| Proposed in this spec and accepted (user, 2026-11-10, batch 5 gate): "Save folder" also replaces Calc-U-59's "Card Folder", "Load Preset…" replaces "Open Preset…", "Examples folder" replaces "Samples folder" | The glossary's terms; one label per thing in the family | 2026-11-10 |
+| Proposed in this spec and accepted (user, 2026-11-10, batch 5 gate): "Loading…" does not block the window; a notice does until it is closed (AC-16, AC-17) | Reset must be reachable while an operation runs (LIB-18 AC-16) | 2026-11-10 |
+| Proposed in this spec and accepted (user, 2026-11-10, batch 5 gate): a Web frontend binds no shortcuts to menu items (AC-4) | Ctrl+R and Ctrl+O are the browser's | 2026-11-10 |
+| Proposed in this spec and accepted (user, 2026-11-10, batch 5 gate): the shell reads no product entry; a product's frontend code puts its own controls and panels into the places the shell gives (AC-42, AC-23) | `frontend.md` I-4, FE-6 | 2026-11-10 |
 | GUI tests carry the same scenarios under the same criterion IDs in every frontend | ADR 0032 | 2026-11-10 |
-| Proposed in this spec, for the gate: "Startup model" replaces "Startup Calculator" and "Startup device" | The glossary's term | 2026-11-10 |
-| Proposed in this spec, for the gate: the 500 ms before "Loading…" and no cancel button, as in Calc-U-1600 today, for both products | Today's behaviour of one product, taken for the family | 2026-11-10 |
-| Proposed in this spec, for the gate: a disabled control shows the reason of the control state as its tooltip (AC-5) | LIB-4 gives one reason per entry; this is where the user sees it | 2026-11-10 |
-| Proposed in this spec, for the gate: the settings dialog applies every change at once and has only Close, in both products (Calc-U-59 applies some on close today) | Calc-U-1600's way; LIB-9 AC-6 | 2026-11-10 |
-| Proposed in this spec, for the gate: the scenarios of AC-25 | ADR 0032 asks for named scenarios | 2026-11-10 |
+| Proposed in this spec and accepted (user, 2026-11-10, batch 5 gate): "Startup model" replaces "Startup Calculator" and "Startup device" | The glossary's term | 2026-11-10 |
+| Proposed in this spec and accepted (user, 2026-11-10, batch 5 gate): the 500 ms before "Loading…" and no cancel button, as in Calc-U-1600 today, for both products | Today's behaviour of one product, taken for the family | 2026-11-10 |
+| Proposed in this spec and accepted (user, 2026-11-10, batch 5 gate): a disabled control shows the reason of the control state as its tooltip (AC-5) | LIB-4 gives one reason per entry; this is where the user sees it | 2026-11-10 |
+| Proposed in this spec and accepted (user, 2026-11-10, batch 5 gate): the settings dialog applies every change at once and has only Close, in both products (Calc-U-59 applies some on close today) | Calc-U-1600's way; LIB-9 AC-6 | 2026-11-10 |
+| Proposed in this spec and accepted (user, 2026-11-10, batch 5 gate): the scenarios of AC-25 | ADR 0032 asks for named scenarios | 2026-11-10 |

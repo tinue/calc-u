@@ -317,7 +317,7 @@ Options:
   medium that lies outside the save folder. ADR 0019 allows two ways to
   such a file only (a preset names it, or the user puts it into the save
   folder), so a dropped medium cannot be opened in place.
-- Q-3 (phase 4b, with the preset feature): What "idle" means per model
+- Q-3 (answered 2026-11-10, phase 4b, LIB-6 AC-36 and AC-45): What "idle" means per model
   for a bare `- wait:` (`presets.md`, PR-5 gives it to both products;
   Calc-U-59 has no such step today).
 - Q-1 (answered 2026-11-10): commands that would start an operation (load a
@@ -358,3 +358,4 @@ Options:
 | 2026-11-10 | FE-2 (amended, user, phase 4b, batch 3 gate) | The control state also lists the actions that start an operation (Reset, Cold boot, loading a preset or opening a file), each available now or not with a reason, so that every frontend disables them by one rule. |
 | 2026-11-10 | FE-7 (amended, user, phase 4b, batch 3 gate) | `model` takes the model's name; `keyboard` is on by default in every product; without `width` and `height` the component fills its parent; `workerUrl` is part of the interface; the prop `module` of Calc-U-59's component goes. |
 | 2026-11-10 | Q-1 (amended, user, phase 4b, batch 4 gate) | Reset, Cold boot and a model switch are not refused while an operation runs: they end it first. Everything else that would start an operation is still refused. |
+| 2026-11-10 | Q-3 (answered, user, 2026-11-10, batch 5 gate) | Idle for a `wait:` without a value: on a Sharp machine prompt readiness, as today; on a TI machine key readiness without a break for 100 ms of emulated time, to be checked against 2.3.0 in the first task. |

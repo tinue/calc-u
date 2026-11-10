@@ -36,7 +36,10 @@ parenthesis is removed with it.
 | Medium, media | — | "media" (e.g. "Saved Media…"): unchanged |
 | Name & Save | — (cards written in place) | "Name & Save": unchanged |
 | Startup preset | — | "Default presets" (Settings, Qt and web) |
-| Save folder | — | "Battery-card saves" (Settings ▸ Storage) |
+| Save folder | "Card Folder" (Settings, Qt6) | "Battery-card saves" (Settings ▸ Storage) |
+| Startup model | "Startup Calculator" (Settings) | "Startup device" (Settings) |
+| Load Preset… | "Open Preset…" (File menu, Qt6); the button "Preset" | "Load Preset…": unchanged |
+| Examples folder | — | "Samples folder" (Settings ▸ General) |
 | Host drive | — | "Mount Directory…", "Host drive folder": unchanged |
 | Fit / Insert / Eject | "Fit Card", "Fit Fresh Card", "Eject Card": unchanged | module picker, floppy insert/eject: unchanged |
 

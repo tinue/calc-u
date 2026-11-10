@@ -294,7 +294,7 @@ While an operation runs
   the user. *Recommendation:* "what follows" is the machine's answer at that
   moment, and a switched-off Sharp machine answers "nothing"; that keeps
   today's behaviour without a power state at the interface.
-- [x] **OQ-4** — *Decided as recommended (user, 2026-11-10, batch 4 gate).* What the Calc-U-59 Reset does besides resetting the
+- [x] **OQ-4** — *Decided as recommended (user, 2026-11-10, batch 4 gate). Amended (user, 2026-11-10, batch 5 gate): Reset keeps the cue card that is fitted; the rest is settled in C59-7.* What the Calc-U-59 Reset does besides resetting the
   machine today: it takes the fitted card and the card in the reader
   away and clears the cue cards (`Shared/SessionController.cpp:156-172`).
   *Recommendation:* that stays, and is specified with the cards in

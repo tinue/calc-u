@@ -241,7 +241,7 @@ One seam
   ROM's default; this was read from the code and is covered by no test.
   *Recommendation:* verify on 2.3.0 first; if true, keep it and say so
   in AC-6.
-- [ ] **OQ-6** — TI-58C: Reset equals a power cycle (glossary), and the
+- [x] **OQ-6** — *Decided (user, 2026-11-10, batch 5 gate): from the running machine. Reset keeps the memory and the fitted cue card and loses everything else (the SCOM is reset, a running program stops, a selected module program is no longer selected).* TI-58C: Reset equals a power cycle (glossary), and the
   constant memory then comes from the running machine. Today Reset reads
   it back from `ti58c.mem`, which can be up to half a second old
   (`Shared/SessionController.cpp:186, 258-266`). *Recommendation:* from

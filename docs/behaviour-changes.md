@@ -19,7 +19,7 @@ step. Label and menu renames are not repeated here; they are in
 | 59-2 | Settings start at their defaults; the platform stores are not converted. | `contracts/settings.md`, ST-1 |
 | 59-3 | The preset format is new (YAML-shaped, key IDs instead of matrix codes, `format-version: 2`); a preset with any error is refused whole. | ADR 0017, 0018; `contracts/presets.md` |
 | 59-4 | A preset always builds its machine from a cold boot. It no longer adds to the running calculator, and it no longer keeps the module or printer it does not name. | ADR 0016 |
-| 59-5 | A preset's steps run at full speed unless a speed step asks for regular speed; user keys are dropped while it runs. | `contracts/presets.md`, PR-4; `contracts/typing.md`, T-4 |
+| 59-5 | A preset's steps run at full speed unless a speed step asks for regular speed; user keys are dropped while it runs. While a preset or another operation runs at full speed for more than half a second, "Loading…" is shown. | `contracts/presets.md`, PR-4; `contracts/typing.md`, T-4; LIB-14 AC-15 |
 | 59-6 | Magnetic cards live in the save folder. A card file elsewhere is no longer opened and written back in place; a card gets a name inside its file. | ADR 0019; `contracts/media.md`, MD-2, MD-5 |
 | 59-7 | The first write to a card a preset names makes an instance in the save folder and replaces an instance of that name. | `contracts/media.md`, MD-1 |
 | 59-8 | On the web, magnetic cards persist across page loads. When the product is open twice in one browser, only the first copy keeps what is saved; the second says so. | `contracts/settings.md`, ST-3; `features/LIB-15-web-client-shell/spec.md` |
@@ -28,7 +28,10 @@ step. Label and menu renames are not repeated here; they are in
 | 59-11 | Changing the module, or connecting or disconnecting the PC-100C, power-cycles the machine: the TI-58 and TI-59 lose program and data registers; the TI-58C keeps its constant memory. | `contracts/peripherals.md`, P-1 |
 | 59-12 | The TI-58C keeps its constant memory across starts only while no startup preset is set for it; a startup preset cold boots it. | `contracts/capabilities.md`, C-3 |
 | 59-13 | A second key pressed while another is held no longer releases the first; both reach the key matrix. | `contracts/typing.md`, T-3 |
-| 59-14 | Menus and the control bar follow the family structure. | ADR 0024 |
+| 59-14 | Menus and the control bar follow the family structure: Reset, Cold boot (today "Clean"), Load Preset and Settings are menu items and leave the bar where there is a menu bar; the PC-100C is connected with a button on the bar, not in the printer panel; the Web frontend gets the menus, shows a notice as a dialog instead of a line below the calculator, and loses the long press for "Clean". | ADR 0024; LIB-14 (user, batch 5 gate) |
+| 59-15 | The TI-58C's constant memory is in place before the ROM starts, so the partition and the display format come back at a start as on the real calculator. To be confirmed in phase 6 whether 2.3.0, which restores the registers after the ROM's start-up, showed otherwise. | C59-3 AC-2 (user, batch 5 gate) |
+| 59-16 | A damaged `ti58c.mem` and a failed write of it are reported with a notice (today: silent). | C59-3 EC-3, EC-4 (user, batch 5 gate) |
+| 59-17 | Reset keeps the cue card that is fitted (today: it is taken away). `ti58c.mem` remembers the fitted cue card as it is. | user, batch 5 gate; C59-3 AC-4, AC-11; C59-7 |
 
 ## Calc-U-1600 (against 0.8.1)
 
@@ -42,4 +45,6 @@ step. Label and menu renames are not repeated here; they are in
 | 1600-6 | An outdated file shows in its picker as a disabled entry with a hint (today: left out silently). | `contracts/media.md`, MD-4 |
 | 1600-7 | The first write to a medium a preset names replaces an instance of that name. | `contracts/media.md`, MD-1 |
 | 1600-9 | Keys pressed while a preset, a load, a reset or a power cycle runs are dropped (today: held back in Qt6, passed on in the Web frontend). Reset, Cold boot and a model switch stop what runs. | `contracts/typing.md`, T-4; `contracts/frontend.md`, Q-1 as amended |
+| 1600-10 | Menus and the control bar follow the family structure: Settings… is in File; Help has a help item; Examples is a menu of its own in the Web frontend; on the PC-1600's bar a printer picker (none, CE-150, CE-1600P) replaces the CE-1600P button and the CE-158 has a button; a notice has no title; a control that cannot be used says why. | ADR 0024; LIB-14 (user, batch 5 gate) |
+| 1600-11 | A preset is checked as far as possible before the running machine is given up: a module or a disk that is missing, a host drive folder that does not exist, a ROM image that does not fit, a key that is none and a character without a key refuse the preset and leave the machine alone (today: found after the old machine is gone). A preset opened without its folder is refused when it names a file. | `contracts/presets.md`, I-2; LIB-6 AC-7, AC-52, EC-5 (user, batch 5 gate) |
 | 1600-8 | A held host key stays down until it is released, for every key, so the ROM's own auto-repeat works; the PC-1500's fixed key cadence goes once its key readiness is found. | `contracts/typing.md`, T-2, Q-3 |

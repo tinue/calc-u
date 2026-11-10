@@ -150,7 +150,7 @@ What the three status columns mean for this feature:
   | `slotCount` | the places `slot-1` and, on the PC-1600, `slot-2` |
   | `ce150`, `ce1600p`: `offered`, `attached`, `enabled` | the place `printer`: what fits, what is plugged in, available now with the reason (LIB-2 AC-29) |
   | `ce158`: `offered`, `attached`, `enabled` | the place `interface`, likewise |
-  | `ce150/ce158/ce1600p.onControlBar` | a product entry: on the PC-1500 and PC-1500A the CE-150 and CE-158 have a control on the bar, on the PC-1600 the CE-1600P has (OQ-2) |
+  | `ce150/ce158/ce1600p.onControlBar` | goes: every place that is not a module slot has a control on the bar by the family rule of LIB-14 AC-9 (user, 2026-11-10, batch 5 gate) |
   | `pc1500RomMenu`, `pc1600RomMenu` | the variants of the model |
   | `ce1600pRomMenu` | the variants of the CE-1600P in the place `printer`, and which one runs |
   | `floppyEnabled`, `tapeShown` | the media places of the CE-1600F and of the cassette, listed while the peripheral that owns them is plugged in |

@@ -19,8 +19,11 @@
 - Facts: Calc-U-59 at `v2.3.0`; every `path:line` below is at that tag.
 
 In this spec "the calculator" is the real device; the running thing is
-"the machine" (glossary). "The user's cue card" is the blank cue card
-with the labels the user or a preset wrote on it (glossary, Cue card;
+"the machine" (glossary). "The fitted cue card" is the cue card that is
+in the window above the keys at the moment, of either type a TI-58C can
+have: the blank one with the labels the user or a preset wrote on it,
+or the pre-printed one of a module. A TI-58C has no magnetic cards, so
+its cue card never has bank numbers (glossary, Cue card;
 the cue card as such: C59-7).
 
 ## User Stories
@@ -43,7 +46,7 @@ the cue card as such: C59-7).
 - Program steps and registers written by a preset (owner: C59-2).
 - The cue card as such: its templates, its drawing, `fit`, and what
   Reset does to cue cards on the other models (owner: C59-7). This
-  feature only stores the user's cue card with the memory.
+  feature only stores the fitted cue card with the memory.
 - A constant memory for any other model, and more than one stored
   memory (new functions).
 
@@ -60,7 +63,8 @@ The product kind
   TI-58C that is switched on again: the ROM's start-up runs on that
   memory, and the program, the registers and what the ROM keeps in its
   own registers (the partition, the display format) are as they were
-  left (`rom/TI58C-ROM-Guide.md`; OQ-2).
+  left: the memory is in place before the processor starts, and the ROM
+  does the rest (`rom/TI58C-ROM-Guide.md`; user, batch 5 gate).
 
 The file
 - [ ] **AC-3** — Given Calc-U-59, then the constant memory is kept in
@@ -70,8 +74,9 @@ The file
 - [ ] **AC-4** — Given `ti58c.mem`, then it is a text file that states
   its format version and holds the whole constant memory as C59-1 AC-6
   defines it, the registers H00 to H03 included, leaving out the
-  registers that are zero, and the user's cue card if there is one, as
-  today (`Shared/ConstantMemory.cpp:9-66`; the layout: OQ-1).
+  registers that are zero, and the fitted cue card if there is one, as
+  today, in today's layout with a first line that states the version
+  (`Shared/ConstantMemory.cpp:9-66`).
 - [ ] **AC-5** — Given a TI-58C runs and its constant memory or the
   user's cue card changes, then `ti58c.mem` holds the new content at the
   latest half a second after the change, counted in the wall time the
@@ -87,24 +92,26 @@ When the memory comes back
 - [ ] **AC-7** — Given no startup preset is set for the TI-58C, when a
   TI-58C is built at the start of the product or at a model switch
   (LIB-18 AC-19), then it is handed the content of `ti58c.mem` (AC-2),
-  and the user's cue card of the file is the user's cue card again.
+  and the cue card of the file is fitted again.
 - [ ] **AC-8** — Given a TI-58C is built from a preset or from a startup
   preset, then it is handed no constant memory and starts with an empty
-  one (LIB-18 AC-19), and the user's cue card is the one the preset
+  one (LIB-18 AC-19), and the fitted cue card is the one the preset
   gives, or none (`capabilities.md` C-3; behaviour change 59-12).
 - [ ] **AC-9** — Given Cold boot on a running TI-58C, then its constant
   memory is empty afterwards (C59-1 AC-6).
 - [ ] **AC-10** — Given AC-8 or AC-9, then `ti58c.mem` follows: at the
   latest half a second after the machine reports key readiness it holds
-  the constant memory and the user's cue card of that machine, also when
+  the constant memory and the fitted cue card of that machine, also when
   nothing has changed since (`capabilities.md` C-3: "the file
   follows").
 - [ ] **AC-11** — Given a TI-58C is reset or power-cycled (a Reset, a
   module change, the PC-100C attached or detached; LIB-18 AC-21, AC-22),
   then its constant memory stays in the machine (C59-1 AC-6),
-  `ti58c.mem` is not read, and the user's cue card stays. Today Reset
-  reads the file back (`Shared/SessionController.cpp:186-187`; C59-1
-  OQ-6).
+  `ti58c.mem` is not read, and the fitted cue card stays; everything
+  else is as after switching on: a running program has stopped and a
+  module program that was selected no longer is (C59-1 AC-6; user,
+  batch 5 gate). Today Reset reads the file back
+  (`Shared/SessionController.cpp:186-187`).
 - [ ] **AC-12** — Given the product runs a TI-59 or a TI-58, then
   `ti58c.mem` is neither read nor written, and it still holds what the
   last TI-58C left.
@@ -123,7 +130,7 @@ Every frontend
 
 ## Edge Cases
 - **EC-1** — Given there is no `ti58c.mem`, then a TI-58C is built with
-  an empty constant memory and no user's cue card, and the file is
+  an empty constant memory and no cue card fitted, and the file is
   written at the first change.
 - **EC-2** — Given `ti58c.mem` is in an older format version or states
   none (a file of Calc-U-59 2.3.0), then it is not read: the TI-58C is
@@ -133,7 +140,7 @@ Every frontend
 - **EC-3** — Given `ti58c.mem` states the current version but cannot be
   read (a damaged line), then nothing of it is used, as today, and a
   notice says so; today nothing is said
-  (`Shared/ConstantMemory.cpp:9-66`; OQ-4).
+  (`Shared/ConstantMemory.cpp:9-66`).
 - **EC-4** — Given a write of `ti58c.mem` fails, then the machine runs
   on, a notice says so once per start of the product, and the next
   change tries again. Today a failed write is silent
@@ -144,7 +151,7 @@ Every frontend
 - **EC-6** — Given the startup preset that is set for the TI-58C cannot
   be loaded, so that the built-in default machine is built (LIB-18
   EC-1), then that machine is handed the content of `ti58c.mem` as in
-  AC-7 (OQ-5).
+  AC-7.
 - **EC-7** — Given a preset or a startup preset fails while it is
   carried out (LIB-18 EC-6), then AC-10 holds for the machine as it is
   left.
@@ -163,14 +170,14 @@ Every frontend
   the file last written wins and nothing is merged, as today.
 
 ## Open Questions
-- [ ] **OQ-1** — The layout of the new version of `ti58c.mem` (AC-4).
+- [x] **OQ-1** — *Decided as recommended (user, 2026-11-10, batch 5 gate).* The layout of the new version of `ti58c.mem` (AC-4).
   Today: an optional `CUECARD:` block, a line of dashes with "Registers
   (raw values)", then `Rnnn:` and eight hex bytes per register that is
   not zero, the registers H00 to H03 among them as R060 to R063; no
   version. *Recommendation:* the same layout with a first line that
   states the version, so that today's reader and writer are carried
   over.
-- [ ] **OQ-2** — What comes back at a start (AC-2). Read from the code,
+- [x] **OQ-2** — *Decided (user, 2026-11-10, batch 5 gate): the real calculator keeps its RAM powered, so the memory is what comes back; it is in place before the processor starts, and the ROM restores the partition and the rest. AC-2 stands; row 59-15.* What comes back at a start (AC-2). Read from the code,
   not run: today the ROM's start-up runs first and the saved registers
   are written afterwards, so the partition and the display format, which
   the ROM rebuilds from one of its own registers at power-on, would come
@@ -180,15 +187,15 @@ Every frontend
   The first task verifies 2.3.0 with a TI-58C that is filled, quit and
   started again; if today differs, AC-2 is a visible fix and gets a row
   in `docs/behaviour-changes.md`.
-- [ ] **OQ-3** — The user's cue card in `ti58c.mem` (AC-4). Today it is
+- [x] **OQ-3** — *Decided (user, 2026-11-10, batch 5 gate): the file remembers the cue card that is fitted and restores it, as it is. A TI-58C has no magnetic cards, so no bank numbers arise.* The fitted cue card in `ti58c.mem` (AC-4). Today it is
   written with its template set to the blank cue card and its bank
   numbers dropped, whatever it was (`Shared/ConstantMemory.cpp:9-30`).
   *Recommendation:* write it as it is.
-- [ ] **OQ-4** — EC-3 and EC-4 add a notice where today nothing is said.
+- [x] **OQ-4** — *Decided as recommended (user, 2026-11-10, batch 5 gate).* EC-3 and EC-4 add a notice where today nothing is said.
   *Recommendation:* add both, with one row in
   `docs/behaviour-changes.md`; a user who loses the constant memory
   should be told why.
-- [ ] **OQ-5** — EC-6: a startup preset is set for the TI-58C but cannot
+- [x] **OQ-5** — *Decided as recommended (user, 2026-11-10, batch 5 gate).* EC-6: a startup preset is set for the TI-58C but cannot
   be loaded. `capabilities.md` C-3 says "with a startup preset set, the
   preset cold boots the machine"; here no preset runs. An empty machine
   would then overwrite the file (AC-10). *Recommendation:* the memory
@@ -205,7 +212,10 @@ Every frontend
 | The file is at the root of the save folder and is not a medium | `settings.md` ST-3; `media.md` Q-2 | 2026-11-10 |
 | A `ti58c.mem` of 2.3.0 is refused with a hint; the TI-58C then starts with an empty constant memory | ADR 0037; behaviour change 59-1 | 2026-11-10 |
 | Reset on the TI-58C is a power cycle | Glossary, Reset; C59-1 AC-6 | 2026-11-10 |
-| Proposed in this spec, for the gate: on a Reset or power cycle the memory stays in the machine and the file is not read (AC-11); this is C59-1 OQ-6, still open there | The machine keeps the memory itself | 2026-11-10 |
-| Proposed in this spec, for the gate: the half second of AC-5 and AC-10 and the moments of AC-6, taken from today; a file with no register lines is valid (EC-5, today's behaviour) | They make the criteria checkable | 2026-11-10 |
-| Proposed in this spec, for the gate: the user's cue card comes back with the memory and stays through a Reset of the TI-58C (AC-7, AC-11); today both happen because the file is read back | Today's visible behaviour kept | 2026-11-10 |
-| Proposed in this spec, for the gate: the constant memory that the Web frontend of 2.3.0 kept in `localStorage` is not read and nothing is said (EC-8) | LIB-9 AC-23; row 59-1 covers the loss | 2026-11-10 |
+| Proposed in this spec and accepted (user, 2026-11-10, batch 5 gate): on a Reset or power cycle the memory stays in the machine and the file is not read (AC-11); this is C59-1 OQ-6, still open there | The machine keeps the memory itself | 2026-11-10 |
+| Proposed in this spec and accepted (user, 2026-11-10, batch 5 gate): the half second of AC-5 and AC-10 and the moments of AC-6, taken from today; a file with no register lines is valid (EC-5, today's behaviour) | They make the criteria checkable | 2026-11-10 |
+| Proposed in this spec and accepted (user, 2026-11-10, batch 5 gate): the fitted cue card comes back with the memory and stays through a Reset of the TI-58C (AC-7, AC-11); today both happen because the file is read back | Today's visible behaviour kept | 2026-11-10 |
+| Proposed in this spec and accepted (user, 2026-11-10, batch 5 gate): the constant memory that the Web frontend of 2.3.0 kept in `localStorage` is not read and nothing is said (EC-8) | LIB-9 AC-23; row 59-1 covers the loss | 2026-11-10 |
+| Reset in the emulator keeps the memory and the cue card that is fitted, and loses everything else | user, 2026-11-10, batch 5 gate | 2026-11-10 |
+| The constant memory is in place before the processor starts | user, 2026-11-10, batch 5 gate | 2026-11-10 |
+| `ti58c.mem` also remembers the fitted cue card, whichever type it is | user, 2026-11-10, batch 5 gate | 2026-11-10 |

@@ -492,7 +492,7 @@ Harness
   `tests/golden/formats.txt`; Calc-U-1600's version 1).
 
 ## Open Questions
-- [ ] **OQ-1** — What idle means for a `wait:` without a value
+- [x] **OQ-1** — *Decided as recommended (user, 2026-11-10, batch 5 gate).* What idle means for a `wait:` without a value
   (`frontend.md` Q-3). Sharp: prompt readiness, as today (AC-45). TI:
   the step is new, and key readiness alone will not do, because
   readiness can be a short window and the ROM samples R/S and GTO while
@@ -504,7 +504,7 @@ Harness
   PC-100C; if no stretch tells the two apart, idle on a TI needs a state
   of its own in the machine interface. The Calc-U-59 column waits for
   this.
-- [ ] **OQ-2** — How far the check before the build reaches (AC-7).
+- [x] **OQ-2** — *Decided as recommended (user, 2026-11-10, batch 5 gate).* How far the check before the build reaches (AC-7).
   Today Calc-U-1600 finds a module or a disk that is missing, a host
   drive folder that is none, a ROM file of the wrong size, a key that is
   not a PC-1600 key and a character without a key only after the old
@@ -516,18 +516,18 @@ Harness
   it names a file (EC-5), so that `presets.md` I-2 holds as far as it
   can. These are small visible changes for Calc-U-1600 and get one row
   in `docs/behaviour-changes.md`.
-- [ ] **OQ-3** — The picture of `screenshot:` on a TI machine.
+- [x] **OQ-3** — *Decided as recommended (user, 2026-11-10, batch 5 gate).* The picture of `screenshot:` on a TI machine.
   `presets.md` PR-5 gives the step to every product; Calc-U-59 draws its
   display only in its frontends today. *Recommendation:* the product
   supplies the picture of its segment display below the frontend, in the
   classic segment style, and a reference picture in the tests fixes its
   size and look.
-- [ ] **OQ-4** — The folder for screenshots outside Qt6 (AC-25) depends
+- [x] **OQ-4** — *Decided (user, 2026-11-10, batch 5 gate): the save folder in Qt6, as LIB-9 AC-17 says, and a download on the web; the Swift frontend with LIB-9 OQ-7.* The folder for screenshots outside Qt6 (AC-25) depends
   on LIB-9 OQ-7. Today Calc-U-1600 writes a preset's screenshot to the
   trace folder (`Core/Preset/PresetRunner.cpp:124-136`), while LIB-9
   AC-17 gives screenshots the save folder. *Recommendation:* settle it there; on the web
   the picture is handed to the user to keep (LIB-15 AC-9).
-- [ ] **OQ-5** — "Header key", "section", "step" (of a preset), "idle",
+- [x] **OQ-5** — *Decided as recommended (user, 2026-11-10, batch 5 gate).* "Header key", "section", "step" (of a preset), "idle",
   "reference" and "preset list" for the glossary, as defined above.
   "Step" stands next to "program step".
 
@@ -547,12 +547,12 @@ Harness
 | The hardware keys are the places and media places of the descriptor; `printer:` in every product | `presets.md` PR-11 | 2026-11-10 |
 | Reset, Cold boot and a model switch end a running preset; another load is refused | `frontend.md` Q-1 as amended; LIB-18 AC-16 | 2026-11-10 |
 | A preset that fails while it is carried out leaves the machine as it is at that moment | LIB-18 EC-6 | 2026-11-10 |
-| Proposed in this spec, for the gate: the step-list section keeps Calc-U-1600's name `keys:` | It reads well for both products; `steps:` is taken by the TI program | 2026-11-10 |
-| Proposed in this spec, for the gate: every header key may appear once (today a repeated `model:` or `plotter:` is accepted and the last one counts) | One rule for all keys | 2026-11-10 |
-| Proposed in this spec, for the gate: the reply and the notice give the first error in file order (Calc-U-59 collects all errors today, Calc-U-1600 stops at the first) | It makes AC-6 checkable | 2026-11-10 |
-| Proposed in this spec, for the gate: the harness commands of AC-34 and their names; `check-preset` ends the run as failed when a file failed | They make the criteria checkable | 2026-11-10 |
-| Proposed in this spec, for the gate: after a preset the machine runs at regular speed, whatever ran before (AC-22) | LIB-18 AC-2: full speed does not carry over to a new machine; Calc-U-59 today | 2026-11-10 |
-| Proposed in this spec, for the gate: a machine that never reports key readiness after its build fails the load (EC-10); today both products go on after a fixed time | Its steps would wait without end (LIB-5 EC-3) | 2026-11-10 |
-| Proposed in this spec, for the gate: `expect:` compares case and spaces exactly; the minutes of `Elapsed:` count on beyond 59 | They make the criteria checkable | 2026-11-10 |
-| Proposed in this spec, for the gate: inside a block scalar, empty lines and `#` lines are skipped as everywhere (Calc-U-1600 today); a ` #` later in a line is its owner's | One rule for skipped lines; `presets.md` PR-6 | 2026-11-10 |
-| Proposed in this spec, for the gate: a preset handed over without a folder that names a relative file is refused when it is read (EC-5) | It follows from all-or-nothing | 2026-11-10 |
+| Proposed in this spec and accepted (user, 2026-11-10, batch 5 gate): the step-list section keeps Calc-U-1600's name `keys:` | It reads well for both products; `steps:` is taken by the TI program | 2026-11-10 |
+| Proposed in this spec and accepted (user, 2026-11-10, batch 5 gate): every header key may appear once (today a repeated `model:` or `plotter:` is accepted and the last one counts) | One rule for all keys | 2026-11-10 |
+| Proposed in this spec and accepted (user, 2026-11-10, batch 5 gate): the reply and the notice give the first error in file order (Calc-U-59 collects all errors today, Calc-U-1600 stops at the first) | It makes AC-6 checkable | 2026-11-10 |
+| Proposed in this spec and accepted (user, 2026-11-10, batch 5 gate): the harness commands of AC-34 and their names; `check-preset` ends the run as failed when a file failed | They make the criteria checkable | 2026-11-10 |
+| Proposed in this spec and accepted (user, 2026-11-10, batch 5 gate): after a preset the machine runs at regular speed, whatever ran before (AC-22) | LIB-18 AC-2: full speed does not carry over to a new machine; Calc-U-59 today | 2026-11-10 |
+| Proposed in this spec and accepted (user, 2026-11-10, batch 5 gate): a machine that never reports key readiness after its build fails the load (EC-10); today both products go on after a fixed time | Its steps would wait without end (LIB-5 EC-3) | 2026-11-10 |
+| Proposed in this spec and accepted (user, 2026-11-10, batch 5 gate): `expect:` compares case and spaces exactly; the minutes of `Elapsed:` count on beyond 59 | They make the criteria checkable | 2026-11-10 |
+| Proposed in this spec and accepted (user, 2026-11-10, batch 5 gate): inside a block scalar, empty lines and `#` lines are skipped as everywhere (Calc-U-1600 today); a ` #` later in a line is its owner's | One rule for skipped lines; `presets.md` PR-6 | 2026-11-10 |
+| Proposed in this spec and accepted (user, 2026-11-10, batch 5 gate): a preset handed over without a folder that names a relative file is refused when it is read (EC-5) | It follows from all-or-nothing | 2026-11-10 |

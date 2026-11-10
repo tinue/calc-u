@@ -8,11 +8,9 @@
 
 ## Dependencies
 - Features: C1600-1 (the Sharp machines, their places and product
-  kinds), LIB-6 (the preset loader: the grammar, the place for a
+  kinds), C1600-2 (the loaders that put a program into a machine), LIB-6 (the preset loader: the grammar, the place for a
   product's keys, sections and steps, the product's part of a load, the
   preset list); through LIB-6 also LIB-2 (attach) and LIB-5 (typing).
-  The loaders that put a program into a machine are named here and
-  specified elsewhere (OQ-1).
 - Contracts and decisions: `docs/contracts/presets.md` (PR-3, PR-5,
   PR-11 as amended, I-1 to I-3); ADR 0018, 0037;
   `docs/behaviour-changes.md` rows 1600-1, 1600-3.
@@ -40,7 +38,7 @@ Words of other specs used here: "header key", "section", "step",
   the build of the machine and the preset list as such (owner: LIB-6).
 - How a program gets into the machine: telling a BASIC listing from
   tokenized BASIC and from machine code, loading, typing in, placing
-  machine code and starting it (OQ-1).
+  machine code and starting it (owner: C1600-2).
 - Naming a module or a disk, by name or by file, `medium:` sections and
   the step `saveas` (owner: LIB-7); the step `trace` (LIB-10).
 - What the debugger does with the settings of a `debug:` block (owner:
@@ -74,14 +72,14 @@ The `program:` section
   (`Core/Preset/PresetFile.cpp:492-534`).
 - [ ] **AC-3** — Given a `program:` section with a file whose turn has
   come, then the program is put into the machine by the loader for its
-  kind (OQ-1): a BASIC listing or tokenized BASIC is loaded at once, a
+  kind (C1600-2): a BASIC listing or tokenized BASIC is loaded at once, a
   BASIC listing with `typed: true` is typed in, machine code is placed,
   at `address:` when it is given, and started when its file says so.
   Given the loader fails, then the preset fails there with the loader's
   reason (LIB-6 AC-17) (`Core/Preset/PresetRunner.cpp:200-257`).
 - [ ] **AC-4** — Given a `program:` section with `text: |`, then its
   lines are typed in as a BASIC program, line by line, by the loader
-  that types (OQ-1); the preset has to put the machine into its program
+  that types (C1600-2); the preset has to put the machine into its program
   mode before (`- key: mode`). Given no line was stored, or some were
   not, then the preset fails with a reason that says so and names the
   lines (`Core/PC1600/PC1600BasicTyper.cpp:333-340`).
@@ -228,7 +226,7 @@ The shipped presets
   never written.
 
 ## Open Questions
-- [ ] **OQ-1** — Where the loaders are specified. AC-3 and AC-4 need
+- [x] **OQ-1** — *Decided as recommended (user, 2026-11-10, batch 5 gate).* Where the loaders are specified. AC-3 and AC-4 need
   them: telling the kind of a program file, loading BASIC, typing a
   program in, placing and starting machine code. The index gives them to
   C1600-2, "as product file kinds of 'open file'", which depends on

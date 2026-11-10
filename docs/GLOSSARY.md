@@ -525,3 +525,38 @@ _Avoid_: batch, frame (for this)
 **Lag**:
 How far a machine's emulated time is behind the wall clock at regular
 speed.
+
+**Header key**:
+A top-level `key: value` line of a preset that describes the preset or
+its machine.
+
+**Section**:
+A top-level key of a preset with a block below it. Sections are carried
+out in file order.
+
+**Step**:
+One item of a step list in a preset (`- verb: value`). Not a program
+step.
+
+**Idle**:
+Said of a machine that has finished what it was doing and waits for the
+user. Each product says how this is told for its models.
+
+**Reference**:
+The name of a bundled preset without a path:
+`examples:<path inside the product's bundled presets>`.
+
+**Preset list**:
+The presets a product bundles: its startup presets and its examples.
+_Avoid_: catalogue (which lists descriptors)
+
+**Shell**:
+The part of a component set that every product's window is put together
+from: the menu bar, the control bar, the settings dialog, the About
+dialog, the notice, "Loading…", and the area for panels.
+
+**Faceplate**:
+The picture of the calculator with its display and its on-screen keys.
+
+**Hit map**:
+What says which area of a faceplate is which key.

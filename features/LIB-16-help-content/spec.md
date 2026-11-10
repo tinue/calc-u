@@ -16,14 +16,17 @@
 - Facts: Calc-U-59's help in calc-u-site at `acd629c` (`59/Pages.jsx`,
   `59/routes.js`); Calc-U-1600's `docs/` at `b4ea8c8`.
 
-Words used here: the **help** of a product is its user guide; a
-**shared chapter** is written once for the family and holds nothing of
-one product; a **product chapter** belongs to one product; the **help
-asset** is the file `<Product>-help.zip` that a release carries.
+Words used here: the **help** of a product is its user guide; a chapter
+has a **shared part**, written once for the family and holding nothing
+of one product, a **product part**, which belongs to one product, or
+both; the **help asset** is the file `<Product>-help.zip` that a
+release carries; the **help tool** is the command of the source
+repository that builds and checks a help asset (AC-6).
 
 What the three status columns mean for this feature:
-- **Library:** the shared chapters are written, and the help asset can
-  be built and checked for any product.
+- **Library:** the shared parts are written, and the help tool builds
+  and checks the help asset of any product. The tool is this feature's
+  only code.
 - **Calc-U-59, Calc-U-1600:** the product's chapters are written, and
   its release carries its help asset.
 
@@ -65,36 +68,54 @@ Structure
   | 9 | Product topics | P | what only this product has |
   | 10 | Reference | S, P | the file formats in their current versions, the keyboard maps, the glossary |
 
-- [ ] **AC-2** — Given a shared chapter, then it names no product, no
-  model and no product's file, and holds no example that works in one
-  product only; there is no way to pull a product's text into it
-  (`help.md` HL-1).
-- [ ] **AC-3** — Given a chapter, then it describes what these specs
-  say, in the glossary's terms: 2: LIB-14, LIB-5; 3: LIB-18, LIB-12; 4:
-  LIB-7, LIB-13; 5: LIB-2, LIB-8; 6: LIB-6; 7: LIB-10; 8: LIB-9; 10: the
-  formats of LIB-6, LIB-7 and LIB-9 and each product's own; and the
-  product parts those of the product's rows.
+- [ ] **AC-2** — Given a file of a shared part, then it names no
+  product, no model and no peripheral of one product, and it has no
+  picture of a product's window, only diagrams; what differs by model
+  (what a Reset keeps, for one) stands in a product part (`help.md`
+  HL-1).
+- [ ] **AC-3** — Given the shared part of a chapter, then it describes
+  what these specs say, in the glossary's terms: 2: LIB-14, LIB-5; 3:
+  LIB-18, LIB-12; 4: LIB-7, LIB-13; 5: LIB-2, LIB-8; 6: LIB-6; 7:
+  LIB-10; 8: LIB-9; 10: the grammar of the preset format (LIB-6 AC-1)
+  and the rules of the settings file (LIB-9), each once. A product part
+  describes what the product's rows say, and where a thing has no row
+  because it is carried over unchanged (the host drive, the COM ports,
+  fast mode), what the product's document of today says (AC-9, AC-11).
+- [ ] **AC-14** — Given chapter 8, then every key the settings of a
+  product declare (LIB-9 AC-19, AC-26) is described there, the family's
+  in the shared part and the product's in its part; the help tool fails
+  when a declared key is not described.
 - [ ] **AC-4** — Given the help, then it is written in Markdown, in
   English, with pictures as files next to it and diagrams in Mermaid
   where a diagram helps (ADR 0036; `help.md`, facts).
 - [ ] **AC-5** — Given the help, then it uses the glossary's terms and
-  the visible names of `docs/glossary-mapping.md`, and none of the words
-  the glossary lists under "Avoid" for a thing it names (`help.md` I-3).
+  the visible names of `docs/glossary-mapping.md`; the help tool lists
+  every place where a word stands that the glossary gives under "Avoid",
+  as a warning for the author to judge (`help.md` I-3; OQ-3). The
+  glossary of chapter 10 holds the terms the help itself uses.
 
 The asset
-- [ ] **AC-6** — Given a product, then its help asset
-  `<Product>-help.zip` can be built from the source repository: the
-  Markdown files of its ten chapters, the shared parts and its own, its
-  pictures, and a table of contents that lists the chapters in order,
+- [ ] **AC-6** — Given a product and a version, then the help tool
+  builds its help asset `<Product>-help.zip` from the source repository:
+  the Markdown files of its ten chapters, the shared parts and its own,
+  its pictures, the files its text offers for download (the presets of a
+  tutorial), and a table of contents that lists the chapters in order,
   each with its title, its files and whether a file is shared, and that
-  names the product and its version (`help.md` HL-3).
-- [ ] **AC-7** — Given the build of a help asset, then it fails, and
+  names the product and its version (`help.md` HL-3; OQ-2).
+- [ ] **AC-7** — Given the help tool builds an asset, then it fails, and
   says where, when: a chapter of AC-1 is missing; a link to another help
-  file, to a heading or to a picture leads nowhere; a file is in the
-  folder and not in the table of contents; or a shared chapter names a
-  product or a model (AC-2).
-- [ ] **AC-8** — Given a release of a product, then the help asset of
-  that version is attached to it, next to the product's other files
+  file, to a heading or to a picture leads nowhere; a file of the help's
+  source folders is not in the table of contents; a picture is used by
+  no file; or a file of a shared part names a product, a model or a
+  peripheral of one product (AC-2).
+- [ ] **AC-15** — Given a link in a help file, then it is written
+  relative to that file when it leads into the same product's help,
+  with the heading's anchor made by the rule GitHub uses for Markdown
+  headings, and as a full `https://` address otherwise; LIB-19 renders
+  by the same rule.
+- [ ] **AC-8** — Given the release of a product is built, then the help
+  tool builds the help asset of that version, and the asset is among the
+  release's files; the test suite builds both products' assets
   (`help.md` HL-3, I-1).
 
 ### Calc-U-59
@@ -104,12 +125,15 @@ The asset
 
   | Today's page (`59/routes.js:24-39`) | Goes to |
   |---|---|
-  | Home, "What is a TI-59" | 1 Introduction |
-  | Getting started; Printer and card reader | 2, 4 and 5 |
-  | Loading a preset; the preset tutorial | 6 |
-  | Debugger | 7 |
-  | "Every control, annotated" | 2, 5 and 7, each control with its part |
-  | Library modules | 9 |
+  | `/` (Home), `/what-is-a-ti-59/` | 1 Introduction |
+  | `/getting-started/` and its topics, one of them the printer and the card reader | 2, 4 and 5 |
+  | `/install/…` (four pages) | 2, product part (OQ-1) |
+  | `/presets/`, `/presets/tutorial/` with its six preset files, upgraded to version 2 | 6 |
+  | `/debugger/` | 7 |
+  | `/reference/` (every control, the settings) | 2, 5, 7 and 8, each control with its part |
+  | `/modules/` | 9 |
+  | `/faq/` | 9 (OQ-1) |
+  | `/play/`, `/software/` and its articles | stay pages of the site (OQ-1) |
   | the file formats, today in `reference/StateFileFormat.md` | 10 |
 
   and chapter 9 covers cue cards, Solid State ROM modules, the TI-58C's
@@ -156,15 +180,17 @@ The asset
 - **EC-2** — Given a help file links to something outside the help (the
   site, a source repository), then the build does not follow the link
   and does not fail on it.
-- **EC-3** — Given a picture that no help file uses, then the build
-  fails and names it.
+- **EC-3** — Given a product part needs to say what differs by model in
+  a chapter that has only a shared part (chapter 3), then it stands in
+  chapter 9 and the shared part points there.
 
 ## Technical Requirements (optional)
 - The help lives in the source repository: the shared chapters with the
   library, the product chapters with each product (ADR 0036).
 - A concept that two products share is described once (`help.md` I-2).
-- The help of a release describes that release (`help.md` I-1); what is
-  written ahead of a feature is not shipped before the feature.
+- The help of a release describes that release (`help.md` I-1).
+- There is no way to pull a product's text into a shared part (`help.md`
+  HL-1).
 
 ## Open Questions
 - [ ] **OQ-1** — The pages of calc-u.org/59 that are not a user guide:
@@ -181,11 +207,18 @@ The asset
   for the words under "Avoid" and lists each place as a warning, not a
   failure, because several of them are common words.
 - [ ] **OQ-4** — The pictures of Calc-U-59's help. The site has its own
-  today; nothing makes them from the product. *Recommendation:* they are
-  moved with the text as they are; making them by scenarios, as
+  today; nothing makes them from the product, and those that show the
+  window show 2.3.0's bar and no menus. *Recommendation:* pictures that
+  show what changed are taken anew, by hand for the first release; the
+  others are moved as they are. Making them by scenarios, as
   Calc-U-1600 does, is a later step.
-- [ ] **OQ-5** — "Help", "shared chapter", "product chapter" and "help
-  asset" for the glossary, as defined above.
+- [ ] **OQ-5** — "Help", "shared part", "product part", "help asset" and
+  "help tool" for the glossary, as defined above.
+- [ ] **OQ-6** — The help tool (AC-6, AC-7). The index says this feature
+  holds no library code. *Recommendation:* the tool is a small program
+  of the source repository's tools, run as `tools/help build <product>`
+  and `tools/help check <product>`; it is the one piece of code of this
+  feature.
 
 ## Decision Log
 

@@ -16,9 +16,13 @@
   records it; every path below is in that repository.
 
 This feature is carried out in the repository calc-u-site, not in the
-source repository. "The site" is https://calc-u.org; a **pin** is the
-record, kept in the site, of one release file by its address, its
-version and its sha256.
+source repository, by that repository's own rules: its design, its
+navigation, its branches (one for each site folder and product version)
+and its skills. "The site" is https://calc-u.org; a product's **site
+folder** is `/59/` or `/1600/`; a **pin** is the record, kept in the
+site, of one release file by its address, its version and its sha256; a
+**preview** is a build of a coming release shown next to the released
+one.
 
 What the three status columns mean for this feature:
 - **Library:** the site can take the help asset of any product, by its
@@ -42,7 +46,8 @@ What the three status columns mean for this feature:
   frontends themselves (LIB-15 and the products).
 - The site's design, fonts and style (calc-u-site; Briefing §3).
 - The pages of the site that are not help: the root page, the software
-  pages and their articles (calc-u-site; LIB-16 OQ-1).
+  pages and their articles (calc-u-site; LIB-16 OQ-1); the design of
+  `/1600/` (OQ-6).
 - The old domain, which only redirects (Briefing §4.3).
 
 ## Acceptance Criteria
@@ -55,10 +60,11 @@ What the three status columns mean for this feature:
   names "the latest release" or a preview (`help.md` HL-3; today for the
   Web frontend `59/web-client.json:2-5`).
 - [ ] **AC-2** — Given a pinned help asset, then the site's build makes
-  one page for each chapter of its table of contents (LIB-16 AC-6), in
-  the site's design, with the chapters' order as the navigation, the
-  Markdown rendered, its Mermaid diagrams drawn and its pictures shown;
-  the pages are static and load nothing from another site (`help.md`
+  the pages of its chapters from its table of contents (LIB-16 AC-6),
+  with the Markdown rendered, its Mermaid diagrams drawn, its pictures
+  shown and its links and anchors as LIB-16 AC-15 writes them; how the
+  pages look and how they are reached is the site's; the pages are
+  static and load nothing from another site (`help.md`
   HL-3; today's rule `CLAUDE.md:53-55`).
 - [ ] **AC-3** — Given the site's checks, then they fail when: the
   asset in the site differs from its pin; the pages differ from what the
@@ -67,7 +73,11 @@ What the three status columns mean for this feature:
   of the product (`help.md` I-1; today's checks `.github/workflows/site.yml:33-51`).
 - [ ] **AC-4** — Given a new release of a product, then publishing its
   help is: changing the two pins, running the build, and committing what
-  it made; no page is written by hand for it.
+  it made, on the branch the site's rules give that folder and version;
+  no page is written by hand for it.
+- [ ] **AC-15** — Given the checks of AC-2 and AC-3 themselves, then the
+  site's tests run them on a small help asset that the help tool of
+  LIB-16 built for this purpose and that is kept with the tests.
 - [ ] **AC-5** — Given a product's folder, then a page of it embeds the
   product's Web frontend as LIB-15 AC-15 and AC-16 say, from the pinned
   release's `dist/`, unchanged (`frontend.md` FE-7; today
@@ -77,20 +87,27 @@ What the three status columns mean for this feature:
 
 - [ ] **AC-6** — Given `/59/`, then its help pages are those AC-2 makes
   from the pinned Calc-U-59 help asset, in place of the pages written in
-  the site today (`59/Pages.jsx`; ADR 0036).
+  the site today (`59/Pages.jsx`; ADR 0036). Until the first release
+  from the source repository, which is the first with a help asset,
+  `/59/` stays as it is.
 - [ ] **AC-7** — Given an address of `/59/` that works today
-  (`59/routes.js:24-56`), then it still leads to a page with that
-  content, at the same address or by a redirect (OQ-1).
+  (`59/routes.js:24-56`), then it still answers: with the same page
+  where the page stays (OQ-1), and otherwise with a redirect to the
+  chapter that LIB-16 AC-9 gives for it; a test of the site goes through
+  the table of today's addresses.
 - [ ] **AC-8** — Given `/59/play/` and the installable app under
   `/59/calc/app/`, then they are the pinned Web frontend of Calc-U-59,
   as today.
-- [ ] **AC-9** — Given the presets the site hosts under
-  `59/software-files/`, then they are those of the pinned release, in
-  version 2 (C59-2 AC-12), and the site's checks compare them with the
-  release's.
+- [ ] **AC-9** — Given the files the site hosts under
+  `59/software-files/`, the presets and the four ASM overlays, then they
+  are those of the pinned release's `examples/`, in the current versions
+  of their formats (C59-2 AC-12; C59-4 AC-20; ADR 0037), and the site's
+  checks compare them with the source repository at that release's tag
+  (OQ-5).
 - [ ] **AC-10** — Given the tests of `/59/` today (`59/tests/`, 29
-  tests), then those about navigation, fonts and the calculator page
-  still pass, with the addresses of AC-7.
+  tests), then those about fonts and the calculator page pass unchanged,
+  and those about navigation are rewritten for the chapters' pages and
+  the redirects of AC-7.
 
 ### Calc-U-1600
 
@@ -98,15 +115,16 @@ What the three status columns mean for this feature:
   has the help pages AC-2 makes from the pinned Calc-U-1600 help asset,
   a page with the Web frontend of the pinned release, and the app that
   can be installed from it (Briefing §4.3; LIB-15 AC-10, AC-24).
-- [ ] **AC-12** — Given the root page of the site, the sitemap and the
-  rules for crawlers, then they name `/1600/` as they name `/59/`
-  (`robots.txt:10-16`).
+- [ ] **AC-12** — Given the sitemap and the rules for crawlers, then
+  they name the pages of `/1600/` as they name those of `/59/`
+  (`robots.txt:10-16`); the root page already links both.
 - [ ] **AC-13** — Given `/59/` and `/1600/` are open in one browser,
   then what each Web frontend keeps is apart from the other's (LIB-15
   AC-7).
 - [ ] **AC-14** — Given the checks and tests of the site, then `/1600/`
   has a job like that of `/59/`: the pins, the build, the links, and a
-  test that the page with the Web frontend starts a machine.
+  test that the page with the Web frontend starts a machine: its display
+  shows what the model shows after a start (LIB-18 AC-25).
 
 ## Edge Cases
 - **EC-1** — Given a help asset whose table of contents names a file
@@ -139,7 +157,17 @@ What the three status columns mean for this feature:
   this project says that there is no page with a calculator. It is out
   of date, since 0.8.0 has a Web frontend. *Recommendation:* this spec
   replaces it.
-- [ ] **OQ-4** — "Pin" for the glossary, as defined above.
+- [ ] **OQ-4** — "Pin", "site folder" and "preview" for the glossary, as
+  defined above. The index row says "web clients"; the glossary's term
+  is Web frontend, and the row should be renamed "Help and Web frontends
+  on calc-u-site".
+- [ ] **OQ-5** — What the hosted example files are compared with
+  (AC-9). No release file holds Calc-U-59's examples today; Calc-U-1600's
+  release has them as a zip. *Recommendation:* each release carries its
+  examples as a file, and the site pins it like the other two.
+- [ ] **OQ-6** — The design of `/1600/`. The site has a design system
+  for `/59/` only. *Recommendation:* decided in calc-u-site, by its own
+  skills, before AC-11 is built; this spec does not set it.
 
 ## Decision Log
 

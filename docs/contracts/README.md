@@ -16,5 +16,5 @@ back to the user first.
 | 5 | [Preset engine and family preset format](presets.md) | ADR 0016-0018, 0021, 0037 | Draft, forks decided |
 | 6 | [Media and save folder](media.md) | ADR 0019, 0020, 0037 | Draft, forks decided |
 | 7 | [Settings and paths](settings.md) | ADR 0021, 0022, 0037 | Draft, forks decided |
-| 8 | Debugger (debug target, DAP, debug panel) | ODD59-27 | Planned |
+| 8 | [Debugger (debug target, DAP, debug panel)](debugger.md) | ODD59-27 | Draft, forks decided |
 | 9 | Harness protocol, ROM lookup, help structure | ADR 0026, 0033, 0035, 0036 | Planned |

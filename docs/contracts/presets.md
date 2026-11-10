@@ -1,7 +1,7 @@
 # Contract: preset engine and family preset format
 
 Status: draft (2026-11-10). First batch (PR-1 to PR-4) decided; second
-batch (PR-5 to PR-10) open.
+batch (PR-5 to PR-9) open; PR-10 resolved by T-1.
 
 Inherits: ADR 0016 (a preset always cold boots), 0017 (all-or-nothing
 parsing), 0018 (one family preset format, YAML-shaped, product-specific
@@ -139,20 +139,117 @@ Options:
 - (c) Always full speed (Calc-U-1600): the Calc-U-59 demos are lost
   (breaks Briefing §1.1).
 
-## Second batch (after PR-1 to PR-4)
+## Open forks, second batch
 
-- PR-5: step vocabulary and names (wait units, `key:` with several key
-  IDs per step vs one, TI matrix codes replaced by key IDs (M-3),
-  kebab-case, `expect:` and `screenshot:` for Calc-U-59).
-- PR-6: comments (ODD59-9) and raw values.
-- PR-7: GUI-control steps (`DebugPanel:`, `Freeze:`, `Step:`, `Resume:`,
-  `PrinterTrace:`, `CutPaper:`) and peripheral keys (PC-100C TRACE).
-- PR-8: media in presets (`CARD: mem:` blocks, `ArmCard:`/`InsertCard:`,
-  `slot-1-file:`, `floppy:`, `saveas:`), with contract 6.
-- PR-9: hardware keys named after the descriptor's connectors (`slot-1:`
-  for the TI-59 module slot, `printer:`).
-- PR-10: ODD59-13 (Adv needs regular speed) under T-1's emulated-time
-  holds.
+### PR-5: Key and wait steps
+
+**Decided (2026-11-10): option (a).** The user's condition, confirmed:
+one syntax for every product as far as the hardware allows, so
+`- key: mode cl` works on the PC-1600 as `- key: 2nd Pgm` does on the
+TI-59.
+
+Facts: Calc-U-59 KEYSTROKES lines carry several matrix codes and words
+as comments (`21 31  92 82  71 95`); Calc-U-1600 has `- key: name`, one
+key per step, and `- type:` for a line plus ENTER. Calc-U-59 `Wait: 2s`
+requires a unit; Calc-U-1600 `- wait: 2` is seconds, a bare `- wait:`
+waits until idle. Names: CamelCase (59), kebab-case (1600).
+
+Options:
+- (a) **Recommended:** `- key:` takes one or more key IDs (M-3)
+  separated by spaces, typed in turn by the typing engine
+  (`- key: 2nd Pgm 0 1 SBR =`); matrix codes go. `- wait:` needs a unit
+  (`2s`, `500ms`) and counts emulated time; a bare `- wait:` waits until
+  idle (both products). `- type:` exists where the model types text.
+  Every key and step name is kebab-case and lowercase in the docs
+  (`speed: full` / `speed: regular`, `elapsed: zero` / `elapsed: report`).
+  `expect:` and `screenshot:` are generic steps, available to every
+  product.
+- (b) One key per `- key:` step: TI presets with long key sequences grow
+  several times.
+
+### PR-6: Comments and raw values (ODD59-9)
+
+**Decided (2026-11-10): option (a).**
+
+Options:
+- (a) **Recommended:** Calc-U-1600's rule for the whole format: a `#`
+  line, or ` #` after a value, is a comment; raw values (`type:`,
+  `expect:`) are taken to the end of the line, `#` included. Inside the
+  TI block scalars (`steps:`, `registers:`, `cue-card:`) ` #` starts a
+  comment, as today. ODD59-9 (`#` anywhere) goes with the v1 reader.
+- (b) `#` anywhere, everywhere: BASIC text with `#` could not be typed.
+
+### PR-7: GUI-control steps
+
+**Decided (2026-11-10): option (a), and Calc-U-1600 supports them too**
+(the user's addition): debugger, paper and screenshot steps work in
+both products, which makes Calc-U-1600's screenshots (for example for
+the user guide) scriptable. This is a new Calc-U-1600 capability, decided
+by the user.
+
+Facts: Calc-U-59 presets press the controls around the calculator:
+`PrinterTrace:` (the PC-100C TRACE switch), `CutPaper:`, `DebugPanel:`,
+`Freeze:`, `FreezeOnStart:`, `Step:`, `Resume:`; screenshot sequences and
+UI tests use them (`examples/screentest/test_cdebug.ti59`). Calc-U-1600
+has none. Briefing §1.1: no feature may break.
+
+Options:
+- (a) **Recommended:** all are kept. Debugger steps get generic names
+  (`debug-panel:`, `pause:`, `pause-on-start:`, `step:`, `resume:`),
+  their meaning per product is the debugger contract's (8). Paper:
+  `cut-paper:` for every paper panel. A peripheral's own controls are
+  named with the peripheral (`- switch: PC-100C TRACE on`), following M-3
+  (peripheral keys belong to the peripheral).
+- (b) Drop them: breaks Calc-U-59's screenshot presets and UI tests.
+
+### PR-8: Media in presets
+
+Facts: Calc-U-59 defines in-memory cards in the preset (`CARD: mem:name`
+… `END-CARD`, never saved), feeds cards with `InsertCard:` (the user
+pushing a card in; waits until it has passed) and `ArmCard:` (laid ready;
+fed when the ROM waits for a card, PC `0x16B2-0x16B7`), and names card
+files in the card folder (`Results`, `Results:2`). Calc-U-1600 names media
+in the header by name or file (`floppy:`, `floppy-file:`, `slot-1:`,
+`slot-1-file:`) and saves with `- saveas:`. ADR 0019: a medium a preset
+names by path is never written; its first write makes an instance in
+the save folder.
+
+Options:
+- (a) **Recommended:** generic media steps over the descriptor's media
+  places: `- insert: <place> <medium>` (InsertCard) and `- arm: <place>
+  <medium>` (ArmCard; fed when the machine reports that it waits for a
+  medium, through the media capability). A medium is named by name (a
+  template or a save-folder instance), by `file:` (relative to the
+  preset, ADR 0019), or as a medium defined in the preset (`medium:`
+  section, today's `CARD: mem:` block), which is never saved. `- saveas:`
+  stays. The same steps work for any media place, though using them
+  beyond today's features (a floppy swap mid-preset) is not a goal.
+- (b) Keep the card steps TI-specific: two vocabularies for one concept.
+
+### PR-9: Hardware keys
+
+**Decided (2026-11-10): option (a); a TI machine without a module is
+allowed** (the slot empty, as on the real calculator). Answers Q-2.
+
+Facts: Calc-U-59: `SOLID-STATE-MODULE: ML` (IDs `ML ST RE SY …`),
+`PRINTER: on`, both "keep the current one" when absent. Calc-U-1600:
+`plotter:`, `interface:`, `floppy:`, `slot-1:`, `slot-2:`, `host-drive:`;
+absent means none (ADR 0016).
+
+Options:
+- (a) **Recommended:** the keys name the places as the user sees them,
+  with Calc-U-1600's keys kept and the TI-59 brought in line:
+  `slot-1:` for the module slot (a module by name or ID) and `printer:
+  PC-100C`. Absent means none (ADR 0016), so a TI preset without
+  `slot-1:` has no module, which no Calc-U-59 GUI offers today (Q-2).
+- (b) Product-specific keys (`solid-state-module:`): two names for "the
+  module in the slot".
+
+### PR-10: ODD59-13 (Adv needs `RegularSpeed:`)
+
+Resolved by T-1, no fork: Adv repeats are gated by CPU steps, and a
+press is now held for emulated time, so one press feeds the same lines
+at every speed. The oddity and its rule go.
 
 ## Fit table
 
@@ -163,6 +260,11 @@ Filled in after the second batch.
 - Q-1: The upgrade of the 57 Calc-U-59 and 32 Calc-U-1600 example files
   and the calc-u.org copies (ADR 0037) is implementation work in phase 6;
   whether a throwaway script does it is the implementer's choice.
+- Q-2 (answered 2026-11-10, PR-9): a TI machine without a module is
+  allowed.
+- Q-3: The key IDs of each model (M-3) and their ASCII spellings
+  (`x<>t`, `sqrt`, …) are the descriptor's; the preset format uses them as
+  they are.
 
 ## Decision log
 
@@ -171,4 +273,9 @@ Filled in after the second batch.
 | 2026-11-10 | PR-1 | The family format is a documented YAML-shaped subset (header fields, repeatable sections in file order, `- verb: value` steps, `\|` blocks, raw values where needed), read by the library's own parser. |
 | 2026-11-10 | PR-2 | `format-version: 2` in both products; extensions stay per model; `model:` required. |
 | 2026-11-10 | PR-3 | TI bulk content as `\|` block scalars in today's notation: `program:` with `steps: \|`, `registers: \|`, `cue-card: \|`, `partition:`; reloads are repeated sections in file order. |
+| 2026-11-10 | PR-5 | `- key:` takes one or more key IDs in every product (`- key: mode cl`, `- key: 2nd Pgm 0 1`); matrix codes go. `- wait:` needs a unit and counts emulated time; bare `- wait:` waits until idle. kebab-case names; `expect:` and `screenshot:` in every product. |
+| 2026-11-10 | PR-6 | `#` line or ` #` after a value is a comment, except in raw values (`type:`, `expect:`); ` #` also comments inside TI blocks. ODD59-9 goes. |
+| 2026-11-10 | PR-7 | GUI-control steps kept with generic names (`debug-panel:`, `pause:`, `pause-on-start:`, `step:`, `resume:`, `cut-paper:`, `- switch: PC-100C TRACE on`), supported in both products. |
+| 2026-11-10 | PR-9 | Hardware keys shared (`slot-1:`, `slot-2:`, `printer:`, `plotter:`, `interface:`, `floppy:`, `host-drive:`); absent means none; a TI machine without a module is allowed. |
+| 2026-11-10 | PR-10 | ODD59-13 resolved by T-1 (emulated-time holds); no rule needed. |
 | 2026-11-10 | PR-4 | Building runs at full speed; steps run at full speed by default, a speed step makes the following steps paced and visible. The whole preset is one operation (busy, user keys dropped); "Loading…" only while at full speed. |

@@ -12,7 +12,7 @@ back to the user first.
 | 1 | [Machine interface and descriptor](machine.md) | ADR 0006-0009, 0012, 0035 | Draft, forks decided |
 | 2 | [Peripheral and connector model](peripherals.md) | ADR 0010, 0011, 0021 | Draft, forks decided |
 | 3 | [Frontend interface, session hosting and messages](frontend.md) | ADR 0009, 0015, 0023-0025 | Draft, forks decided |
-| 4 | Typing strategy | C11, ODD59-4, ADR 0009 | Planned |
+| 4 | [Typing strategy](typing.md) | C11, ODD59-4, ADR 0009 | Draft, forks decided |
 | 5 | Preset engine and family preset format | ADR 0016-0018, 0021 | Planned |
 | 6 | Media and save folder | ADR 0019, 0020 | Planned |
 | 7 | Settings and paths | ADR 0021, 0022 | Planned |

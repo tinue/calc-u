@@ -154,7 +154,8 @@ Options:
   `runNow` straight through (`Shared/AppSession.cpp:94-121`); while busy,
   `tick()` runs operation slices instead of paced emulation (`:136-156`).
   What key input and other commands do while busy is not settled; it is
-  taken up with the typing contract (4).
+  taken up with the typing contract (4), which drops user keys while
+  busy (`typing.md`, T-4).
 - Q-2: Host services: the minimal list (audio sink, clipboard, file and
   folder pickers, …) is settled with contracts 6 and 7, where file access
   is decided.

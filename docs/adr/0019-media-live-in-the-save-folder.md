@@ -2,7 +2,13 @@
 
 Status: accepted (2026-11-09); the open point on the copy's name was
 settled 2026-11-10 (`docs/contracts/media.md`, MD-1: the medium's name,
-replacing an instance of that name).
+replacing an instance of that name). Amended 2026-11-10 (user, phase
+4b, batch 7 gate): a medium file the user opens from elsewhere (a drop,
+Open With, a file dialog) is used where it lies and written back there,
+as Calc-U-59 does today; only a Web frontend copies it into the save
+folder, because a browser cannot write back. The sentence "that ends"
+below no longer holds. A medium a preset names by path is still never
+written.
 
 Every medium of every product, magnetic cards included, follows
 Calc-U-1600's model: templates are bundled, instances are made by Name &

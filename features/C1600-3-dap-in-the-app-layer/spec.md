@@ -287,7 +287,7 @@ Checks
   because the extension uses them.
 
 ## Open Questions
-- [ ] **OQ-1** — How the harness hosts the server (AC-22). A harness run
+- [x] **OQ-1** — *Decided as recommended (user, 2026-11-10, batch 7 gate).* How the harness hosts the server (AC-22). A harness run
   has no wall clock and two forms (`harness.md` I-2; LIB-11 AC-6), but a
   debugger expects a machine that runs by itself after `continue`.
   *Recommendation:* no third form and no real time: `serve --dap
@@ -295,19 +295,19 @@ Checks
   it running. A scenario that pauses by a breakpoint repeats exactly;
   one that pauses by hand does not, and that is said in the help of the
   option.
-- [ ] **OQ-2** — `program.after` without a value means `none` in the
+- [x] **OQ-2** — *Decided as recommended (user, 2026-11-10, batch 7 gate).* `program.after` without a value means `none` in the
   server, while the extension's description of the key gives
   `stopOnEntry` as its default (`Qt6/app/debug/DapSession.cpp:379-382`,
   `vscode/calcu1600-debug/package.json:228-234`). *Recommendation:* the
   server keeps `none`; the extension's description is corrected.
-- [ ] **OQ-3** — The server never sends `continued` when it resumes the
+- [x] **OQ-3** — *Decided as recommended (user, 2026-11-10, batch 7 gate).* The server never sends `continued` when it resumes the
   machine by itself (`configurationDone`, `restart`, the two own
   requests). *Recommendation:* keep that; no client is known to need it.
-- [ ] **OQ-4** — A log message on a breakpoint on memory: the code
+- [x] **OQ-4** — *Decided as recommended (user, 2026-11-10, batch 7 gate).* A log message on a breakpoint on memory: the code
   takes it, the documentation says it does not
   (`Core/Debug/BreakpointTable.cpp:339-342`, `docs/Debugger.md:344`).
   *Recommendation:* take it, as the code does.
-- [ ] **OQ-5** — "DAP", "server", "client", "DAP session",
+- [x] **OQ-5** — *Decided as recommended (user, 2026-11-10, batch 7 gate).* "DAP", "server", "client", "DAP session",
   "configuration", "thread", "Build & Load", "clean start", "listing"
   and "binding" for the glossary, as defined above.
 
@@ -319,6 +319,6 @@ Checks
 | Listings, symbols, the `debug:` block, `boot: debug` and the VS Code extension stay Calc-U-1600 material, unchanged | `debugger.md`, minimal agreement | 2026-11-10 |
 | `stopOnEntry` and pause-on-start stay separate things | `debugger.md`, minimal agreement | 2026-11-10 |
 | No DAP for Calc-U-59 | Briefing §2 | 2026-11-10 |
-| Proposed in this spec, for the gate: the scenarios of `tools/dap_smoke.py` become tests of the test suite (AC-20) | The server no longer needs a window; today nothing checks it automatically | 2026-11-10 |
-| Proposed in this spec, for the gate: a wrong `--dap` port is an error at the start (EC-1) | Today it is ignored without a word | 2026-11-10 |
-| Proposed in this spec, for the gate: the server's status is a state topic of the product (AC-21) | The settings dialog of any frontend can then show it | 2026-11-10 |
+| Proposed in this spec and accepted (user, 2026-11-10, batch 7 gate): the scenarios of `tools/dap_smoke.py` become tests of the test suite (AC-20) | The server no longer needs a window; today nothing checks it automatically | 2026-11-10 |
+| Proposed in this spec and accepted (user, 2026-11-10, batch 7 gate): a wrong `--dap` port is an error at the start (EC-1) | Today it is ignored without a word | 2026-11-10 |
+| Proposed in this spec and accepted (user, 2026-11-10, batch 7 gate): the server's status is a state topic of the product (AC-21) | The settings dialog of any frontend can then show it | 2026-11-10 |

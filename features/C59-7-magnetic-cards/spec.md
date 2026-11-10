@@ -131,7 +131,9 @@ The card and its file
   refuses a preset when it is read.
 - [ ] **AC-5** — Given a card is written, then its file holds the card
   as the product has it, whole: the sides that hold a bank, its cue card
-  and its name, in version 3.0, and it reads back as the same card.
+  and its name, in version 3.0, and it reads back as the same card. A
+  card that was opened from outside the save folder is written back to
+  its own file (LIB-13 AC-4).
   Nothing of the file as it was is kept; today the side that was not
   passed is read from the file again first
   (`tests/shared_formats_tests.cpp:272-296`,
@@ -146,9 +148,11 @@ The card reader
   ROM decides, and the card is given back by itself; given the ROM wrote
   a whole bank, then that side of the card holds it afterwards, the
   other side is as the product has it, and the card's instance is
-  written (LIB-7 AC-12). Given the ROM does not take the card, as while
-  a program runs that asks for none, then the card is given back after 2
-  seconds of emulated time, unread
+  written (LIB-7 AC-12). Given the ROM does not take the card at once,
+  as while a program runs that asks for none, then the card stays at the
+  reader with the card switch closed, and the ROM takes it as soon as it
+  can, as the real calculator pulls a card in; nothing gives it back by
+  a time of its own (user, 2026-11-10, batch 7 gate)
   (`Core/TMC0501.cpp:704-757, 1190-1229`,
   `Shared/SessionController.cpp:554-582`).
 - [ ] **AC-8** — Given a side with a bank is inserted while the
@@ -213,7 +217,9 @@ In presets and the harness
   `- insert: card-reader` with a side alone, which inserts that side of
   the fitted card and fails when none is fitted, or with a card and a
   side, which inserts it without fitting it; a side that is left out is
-  side 1; the step ends when the card is back (AC-7; LIB-7 AC-26);
+  side 1; the step ends when the card is back, or, when the ROM has not
+  taken it after an hour of emulated time, with a line in the log, as
+  the waits of LIB-6 AC-21 do (AC-7; LIB-7 AC-26);
   `- arm: card-reader` with a card and a side, which is inserted when
   the program asks for a card (AC-9)
   (`presets.md` PR-8; today `Shared/StateFile.cpp:168-201`,
@@ -273,7 +279,7 @@ What lasts
   again afterwards by its corners (AC-12); a card that is in the reader
   at that moment is taken out as by Eject Card (user, batch 5 and batch
   6 gates; behaviour change 59-17). The same holds for a power cycle
-  and a Cold boot (OQ-1). Given a new machine is built, by a model
+  and a Cold boot (user, 2026-11-10, batch 7 gate). Given a new machine is built, by a model
   switch or a preset, then nothing is fitted until the preset fits
   something, or, on a TI-58C, `ti58c.mem` brings its cue card back
   (C59-3 AC-7).
@@ -342,39 +348,39 @@ Every frontend
   records of `tests/golden/formats.txt` are not carried over.
 
 ## Open Questions
-- [ ] **OQ-1** — A power cycle and a Cold boot (AC-25). Decided for a
+- [x] **OQ-1** — *Decided as recommended (user, 2026-11-10, batch 7 gate).* A power cycle and a Cold boot (AC-25). Decided for a
   Reset (user, 2026-11-10, batch 6 gate): a fitted cue card stays on every model, and a fitted
   magnetic card can still be fed. Today a module change, the printer's
   switch and Clean take the card away as Reset does. *Recommendation:*
   the same for a power cycle and a Cold boot, since the card lies
   outside the machine; only a new machine starts with nothing
   fitted.
-- [ ] **OQ-2** — `.bin` (AC-4). Today a card file can end in `.u59` or
+- [x] **OQ-2** — *Decided as recommended (user, 2026-11-10, batch 7 gate).* `.bin` (AC-4). Today a card file can end in `.u59` or
   `.bin`; a `.bin` is one of the two binary layouts, which are no longer
   read. *Recommendation:* `.bin` is no longer a card; a `.bin` that is
   opened is refused like any file the product cannot open.
-- [ ] **OQ-3** — An empty side inserted while the calculator waits for
+- [x] **OQ-3** — *Decided (user, 2026-11-10, batch 7 gate): verified on 2.3.0 in the first task; there is no fallback by time, the ROM decides (OQ-8).* An empty side inserted while the calculator waits for
   a key (EC-2): whether the pass ends by itself is not verified; today's
   test ejects the card by hand after five seconds. *Recommendation:*
   verify on 2.3.0 in the first task; if the ROM never gives it back, the
   reader does after the time a pass takes.
-- [ ] **OQ-4** — Small changes in the card file (AC-2, AC-3): an
+- [x] **OQ-4** — *Decided as recommended (user, 2026-11-10, batch 7 gate).* Small changes in the card file (AC-2, AC-3): an
   unknown key of the cue card refuses the file; a ` #` in a title is no
   longer cut off, because comments in a card file go; the file ends with
   a line end. *Recommendation:* all three, with the new version.
-- [ ] **OQ-5** — "Side", "bank", "pass", "fresh" (of a magnetic card)
+- [x] **OQ-5** — *Decided as recommended (user, 2026-11-10, batch 7 gate).* "Side", "bank", "pass", "fresh" (of a magnetic card)
   and "library program" for the glossary, as defined above.
-- [ ] **OQ-6** — Writing a card back (AC-5, EC-3). Today the file is
+- [x] **OQ-6** — *Decided as recommended (user, 2026-11-10, batch 7 gate).* Writing a card back (AC-5, EC-3). Today the file is
   read again before a write, so that a side another device wrote in the
   meantime is kept. LIB-7 writes what the product has and merges
   nothing. *Recommendation:* the family's rule, also for cards; with
   two devices on one iCloud folder the last write then wins for the
   whole card.
-- [ ] **OQ-7** — `fit:` (AC-17). `presets.md` PR-8 says it "places a
+- [x] **OQ-7** — *Decided as recommended (user, 2026-11-10, batch 7 gate).* `fit:` (AC-17). `presets.md` PR-8 says it "places a
   magnetic card or cue card". *Recommendation:* `fit:` takes a magnetic
   card, on the TI-59; the other cue cards are fitted by `cue-card:`,
   which C59-2 already has for every model.
-- [ ] **OQ-8** — The time after which a card the ROM does not take is
+- [x] **OQ-8** — *Decided (user, 2026-11-10, batch 7 gate): no time. The card is armed with the card switch closed, and it is for the ROM to decide what to do with it; real hardware pulls the card as soon as the calculator can.* The time after which a card the ROM does not take is
   given back (AC-7). Nothing states one today; a pass takes about half a
   second. *Recommendation:* 2 seconds of emulated time.
 
@@ -388,6 +394,6 @@ Every frontend
 | `fit` places a card above the keys and affects only what the user sees; `insert` and `arm` go through the card reader, a pass-through media place | `presets.md` PR-8 | 2026-11-10 |
 | The cue card of the running module program is a Calc-U-59 product kind | `capabilities.md`, product kinds | 2026-11-10 |
 | Reset keeps the cue card that is fitted, on all models; a fitted magnetic card can then still be fed | user, 2026-11-10, batch 5 and batch 6 gates; behaviour change 59-17 | 2026-11-10 |
-| Proposed in this spec, for the gate: the version is 3.0 and the name is the line `Name:` after the first line (AC-2) | `media.md` MD-2 asks for a name field and names no layout | 2026-11-10 |
-| Proposed in this spec, for the gate: a `medium:` section for a card has the fields of AC-18 | Today's `CARD: mem:` block, in the notation of version 2 | 2026-11-10 |
-| Proposed in this spec, for the gate: the machine itself says when it waits for a card (AC-9) | LIB-7 AC-6; the pacing already needs "needs a card now" from the machine | 2026-11-10 |
+| Proposed in this spec and accepted (user, 2026-11-10, batch 7 gate): the version is 3.0 and the name is the line `Name:` after the first line (AC-2) | `media.md` MD-2 asks for a name field and names no layout | 2026-11-10 |
+| Proposed in this spec and accepted (user, 2026-11-10, batch 7 gate): a `medium:` section for a card has the fields of AC-18 | Today's `CARD: mem:` block, in the notation of version 2 | 2026-11-10 |
+| Proposed in this spec and accepted (user, 2026-11-10, batch 7 gate): the machine itself says when it waits for a card (AC-9) | LIB-7 AC-6; the pacing already needs "needs a card now" from the machine | 2026-11-10 |

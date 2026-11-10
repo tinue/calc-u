@@ -223,12 +223,11 @@ In the frontends
 - [ ] **AC-15** — Given the Qt6 and the Web frontend, then the File menu
   has "Load BASIC Program…" and "Load Machine Code…" (LIB-14 AC-34 for
   Qt6, AC-35 for Web); the
-  file dialog offers `.bas`, `.bbin` and `.wav`, or `.bin`, `.rom` and
-  `.wav`, and all files; in Qt6 it starts in the folder set for BASIC or
+  file dialog offers `.bas`, `.bbin` and `.wav`, or `.bin` and `.wav`,
+  and all files; in Qt6 it starts in the folder set for BASIC or
   for assembly, or the one last used (LIB-9 AC-29)
   (`Qt6/app/MainWindow.cpp:178-180, 410-412, 877-878`,
-  `Web/src/CalcU1600.jsx:268-269`). `.rom` is new in the dialog; a drop
-  takes it today (OQ-3).
+  `Web/src/CalcU1600.jsx:268-269`).
 - [ ] **AC-16** — Given a cassette WAV with more than one file that can
   be read, then the user is asked "`<file>` holds `<n>` files. Load
   which one?" with the files by number and name, and Cancel loads
@@ -303,7 +302,7 @@ Commands
   what loads today loads afterwards (ADR 0037; Briefing §1.2).
 
 ## Open Questions
-- [ ] **OQ-1** — SharpDataExchange. Telling what a file is, turning a
+- [x] **OQ-1** — *Decided (user, 2026-11-10, batch 7 gate): as today, the build on GitHub fetches the library.* SharpDataExchange. Telling what a file is, turning a
   listing into tokens and decoding a WAV are done by a library that
   Calc-U-1600 carries as a built file for arm64 and for the web only
   (`Core/Basic/vendor/sharpdx/README.md:1-54`). The harness and the Qt6
@@ -311,18 +310,18 @@ Commands
   Windows. *Recommendation:* this spec takes the library as it is; how
   it is got for every platform is a point for the migration plan (phase
   6), and I need to know where its source lives.
-- [ ] **OQ-2** — AC-10: a PC-1500 load that meets a byte that is not RAM
+- [x] **OQ-2** — *Decided as recommended (user, 2026-11-10, batch 7 gate); row 1600-15, without `.rom`.* AC-10: a PC-1500 load that meets a byte that is not RAM
   writes the rest today and then fails. *Recommendation:* nothing is
   written, as on the PC-1600. This, OQ-3 and EC-1 are small visible
   changes; one row in `docs/behaviour-changes.md` names the three.
-- [ ] **OQ-3** — `.rom` in the file dialog of Load Machine Code…
+- [x] **OQ-3** — *Decided (user, 2026-11-10, batch 7 gate): no. `.rom` is not added; the extension is not used anywhere.* `.rom` in the file dialog of Load Machine Code…
   (AC-15). A drop and the macOS document types take it; the dialog's
   filter does not. *Recommendation:* add it.
-- [ ] **OQ-4** — The words of a refusal. The same case is worded three
+- [x] **OQ-4** — *Decided as recommended (user, 2026-11-10, batch 7 gate).* The words of a refusal. The same case is worded three
   ways today, by the machine-code loader, the BASIC loader and the
   preset. *Recommendation:* one sentence for each case, the menu's of
   today; a preset puts its line number before it.
-- [ ] **OQ-5** — "BASIC listing", "tokenized BASIC", "header",
+- [x] **OQ-5** — *Decided as recommended (user, 2026-11-10, batch 7 gate).* "BASIC listing", "tokenized BASIC", "header",
   "headerless", "program area", "program mode", "plan" and "starting
   command" for the glossary, as defined above (C1600-4 uses some too).
   The glossary's Program module, "cannot be written", does not fit the
@@ -337,6 +336,6 @@ Commands
 | The loaders' memory access is a Calc-U-1600 product kind | `capabilities.md`, product kinds; C1600-1 AC-19 | 2026-11-10 |
 | One "open file" command; a product adds its file kinds | `frontend.md` SP-3 | 2026-11-10 |
 | External formats are not touched | ADR 0037; Briefing §1.2 | 2026-11-10 |
-| Proposed in this spec, for the gate: the commands of AC-21 and their names | Rule 4 of the index; LIB-11 AC-18 | 2026-11-10 |
-| Proposed in this spec, for the gate: an empty file is refused as empty by every loader (EC-1) | One wording, see OQ-4 | 2026-11-10 |
-| Proposed in this spec, for the gate: the menu items and dialogs of the loaders are this feature's (AC-15 to AC-19) | Rule 5 of the index: they show this feature's behaviour | 2026-11-10 |
+| Proposed in this spec and accepted (user, 2026-11-10, batch 7 gate): the commands of AC-21 and their names | Rule 4 of the index; LIB-11 AC-18 | 2026-11-10 |
+| Proposed in this spec and accepted (user, 2026-11-10, batch 7 gate): an empty file is refused as empty by every loader (EC-1) | One wording, see OQ-4 | 2026-11-10 |
+| Proposed in this spec and accepted (user, 2026-11-10, batch 7 gate): the menu items and dialogs of the loaders are this feature's (AC-15 to AC-19) | Rule 5 of the index: they show this feature's behaviour | 2026-11-10 |

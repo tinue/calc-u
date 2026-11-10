@@ -313,7 +313,7 @@ Options:
 
 ## Open questions
 
-- Q-4 (phase 4b, with the media feature): What "open file" does with a
+- Q-4 (answered 2026-11-10, phase 4b, LIB-13 AC-4): What "open file" does with a
   medium that lies outside the save folder. ADR 0019 allows two ways to
   such a file only (a preset names it, or the user puts it into the save
   folder), so a dropped medium cannot be opened in place.
@@ -359,3 +359,4 @@ Options:
 | 2026-11-10 | FE-7 (amended, user, phase 4b, batch 3 gate) | `model` takes the model's name; `keyboard` is on by default in every product; without `width` and `height` the component fills its parent; `workerUrl` is part of the interface; the prop `module` of Calc-U-59's component goes. |
 | 2026-11-10 | Q-1 (amended, user, phase 4b, batch 4 gate) | Reset, Cold boot and a model switch are not refused while an operation runs: they end it first. Everything else that would start an operation is still refused. |
 | 2026-11-10 | Q-3 (answered, user, 2026-11-10, batch 5 gate) | Idle for a `wait:` without a value: on a Sharp machine prompt readiness, as today; on a TI machine key readiness without a break for 100 ms of emulated time, to be checked against 2.3.0 in the first task. |
+| 2026-11-10 | Q-4 (answered, user, 2026-11-10, batch 7 gate) | A medium opened from outside the save folder stays where it is and is written back there; only a Web frontend copies it in. A file is told by its name before its content; a file with a preset extension is a preset. |

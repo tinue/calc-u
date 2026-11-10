@@ -564,4 +564,4 @@ Harness
 | Proposed in this spec and accepted (user, 2026-11-10, batch 5 gate): `expect:` compares case and spaces exactly; the minutes of `Elapsed:` count on beyond 59 | They make the criteria checkable | 2026-11-10 |
 | Proposed in this spec and accepted (user, 2026-11-10, batch 5 gate): inside a block scalar, empty lines and `#` lines are skipped as everywhere (Calc-U-1600 today); a ` #` later in a line is its owner's | One rule for skipped lines; `presets.md` PR-6 | 2026-11-10 |
 | Proposed in this spec and accepted (user, 2026-11-10, batch 5 gate): a preset handed over without a folder that names a relative file is refused when it is read (EC-5) | It follows from all-or-nothing | 2026-11-10 |
-| Added with C1600-3's cold read, for the batch 7 gate: a load can build only (AC-55) | The debugger's `boot: debug` needs the machine before its first instruction; Calc-U-1600 has it today | 2026-11-10 |
+| Added with C1600-3's cold read and accepted (user, 2026-11-10, batch 7 gate): a load can build only (AC-55) | The debugger's `boot: debug` needs the machine before its first instruction; Calc-U-1600 has it today | 2026-11-10 |

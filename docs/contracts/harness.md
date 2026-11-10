@@ -136,3 +136,4 @@ Options:
 | 2026-11-10 | H-4 | Any frontend may offer attach; the migration builds it for the Swift frontend only, Qt6 and the web follow when needed. |
 | 2026-11-10 | H-3 | Line-based text (`--json` on request) over stdin/stdout, localhost TCP for apps, a WebSocket from the page in development builds; localhost only; never in release builds. |
 | 2026-11-10 | Functions to keep (amended, user, phase 4b, batch 3 gate) | The Calc-U-1600 probes and the Calc-U-59 calendar scripts stay scripts that use `calcu serve`; they do not become commands. Product commands are the index rows C59-9 and C1600-5. |
+| 2026-11-10 | H-1 (completed, user, 2026-11-10, batch 7 gate) | `serve` takes `--dap <port>` with Calc-U-1600: the debug server is hosted without a wall clock, the machine running unpaced whenever a debugger has it running. |

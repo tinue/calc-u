@@ -89,21 +89,22 @@ The command
 - [ ] **AC-3** — Given the command, then its reply says what the file
   was opened as, that it is kept for later (AC-7), or why it was
   refused.
-- [ ] **AC-4** — Given a medium, then everything is checked first, and
-  then it is imported into the save folder and put into its place:
-  an outdated file, or one that cannot be read, is refused with the hint
-  of LIB-7 AC-9, and nothing is imported;
-  a file that already lies in the save folder is not imported again;
-  given a medium of that kind already has the name, then the rule of
-  Name & Save holds (LIB-7 AC-17, first column): the user is asked
-  before an instance is replaced, and a bundled medium's name, a user
-  template's and that of an instance in another place are refused;
-  then a medium for a holding media place is inserted (LIB-7 AC-26),
-  with its first side, the medium that was there being ejected first; a
-  medium for a pass-through place gets what the product says follows; a
-  module, and a medium whose place is not there now, is imported only,
-  and a notice says where it can now be chosen.
-  The file outside the save folder is never written (ADR 0019;
+- [ ] **AC-4** — Given a medium, then it is used where it lies: nothing
+  is copied, the file is the medium's instance from then on, and what
+  the machine writes to it is saved back to that file (LIB-7 AC-1,
+  AC-11, AC-12), unless the file says it is a template, which is never
+  written. Everything is checked first: an outdated file, or one that
+  cannot be read, is refused with the hint of LIB-7 AC-9. Then a medium
+  for a holding media place is inserted (LIB-7 AC-26), with its first
+  side, the medium that was there being ejected first; a medium for a
+  pass-through place gets what the product says follows; a module, and
+  a medium whose place is not there now, is refused with a notice that
+  says where such a medium is chosen.
+  In a Web frontend, where a file that is opened is an upload and
+  cannot be written back, the medium is imported into the save folder
+  first (LIB-7 AC-30); given a medium of that kind already has the name,
+  then the rule of Name & Save holds (LIB-7 AC-17, first column)
+  (user, 2026-11-10, batch 7 gate; ADR 0019 as amended;
   `media.md` I-1; `frontend.md` Q-4; OQ-1).
 
 The ways in
@@ -135,8 +136,7 @@ The ways in
   first file is opened alone
   (Calc-U-1600 `Web/src/CalcU1600.jsx:137-147`).
 - [ ] **AC-9** — Given the harness, then `open <path>` is this command,
-  with the reply of AC-3; where a user would be asked (AC-4), it is
-  refused unless the word `replace` follows the path.
+  with the reply of AC-3.
 - [ ] **AC-10** — Given a product, then it can set the largest file each
   way in takes; a larger one is refused (AC-1).
 
@@ -148,9 +148,9 @@ The ways in
   it sets no limit on the size of a file
   (`Shared/SessionController.cpp:620-638`, `Shared/StateFile.cpp:554-557`).
 - [ ] **AC-12** — Given a magnetic card is opened on a TI-59, then it is
-  imported and fitted (AC-4; C59-7 AC-11); today it is fitted from where it
-  lies and written back there (`Shared/SessionController.hpp:192-196`;
-  behaviour change 59-6). Given a TI-58 or TI-58C, which has no card
+  fitted from where it lies and written back there, as today (AC-4;
+  C59-7 AC-11; `Shared/SessionController.hpp:192-196`); in the Web
+  frontend it is imported and fitted. Given a TI-58 or TI-58C, which has no card
   reader, then it is refused with a notice; today nothing happens
   (`tests/shared_cooperative_tests.cpp:593`).
 - [ ] **AC-13** — Given a file kind that a later feature adds (the ASM
@@ -199,9 +199,11 @@ The ways in
   the loader of its own kind. In the harness, which has no dialogs,
   `open` loads the first file of a WAV and refuses headerless code,
   which needs an address (C1600-2 AC-21).
-- [ ] **AC-19** — Given a module file or a disk file is opened, then
-  AC-4 holds: it is imported, and a disk is inserted when the drive is
-  there; today such a file can only be imported from the menu of the Web
+- [ ] **AC-19** — Given a disk file is opened, then AC-4 holds: in Qt6
+  it is inserted from where it lies, when the drive is there; in the Web
+  frontend it is imported, and inserted when the drive is there. A
+  module file is imported in the Web frontend and refused in Qt6 (AC-4).
+  Today such a file can only be imported from the menu of the Web
   frontend (`Shared/MediaLibrary.cpp:59-107`). A WAV is never taken as a
   tape here; a tape is imported from the menu (LIB-7 AC-43).
 - [ ] **AC-20** — Given a drop or Open With, then a file of more than
@@ -224,7 +226,8 @@ The ways in
   has a mistake, then it is a preset and LIB-6 refuses it, with its
   hint; it is not tried as anything else.
 - **EC-2** — Given a floppy disk file is opened while no drive is there,
-  then it is imported only (AC-4).
+  then it is refused with a notice in Qt6, and imported only in the Web
+  frontend (AC-4).
 - **EC-3** — Given a preset opened in a Web frontend alone, which names
   other files, then it is refused when it is read (LIB-6 EC-5).
 - **EC-4** — Given a medium is opened while its place holds one that is
@@ -234,8 +237,9 @@ The ways in
   (`Shared/SessionController.cpp:399`).
 - **EC-5** — Given a file that cannot be read, then the command is
   refused and the notice names the file.
-- **EC-6** — Given the user says no to replacing a medium (AC-4), then
-  nothing is imported and nothing is put into a place.
+- **EC-6** — Given the user of a Web frontend says no to replacing a
+  medium (AC-4), then nothing is imported and nothing is put into a
+  place.
 
 ## Technical Requirements (optional)
 - No frontend decides what a file is; it hands the file over
@@ -246,25 +250,25 @@ The ways in
   rules are supplied by the product (`frontend.md` SP-3, I-4).
 
 ## Open Questions
-- [ ] **OQ-1** — A medium that lies outside the save folder
+- [x] **OQ-1** — *Decided (user, 2026-11-10, batch 7 gate): no copy, except in a Web frontend. A medium that is dropped or opened stays where it is and, if necessary, is written back where it is. In a Web frontend a drop is an upload, so there it is copied into the save folder.* A medium that lies outside the save folder
   (`frontend.md` Q-4). ADR 0019 lets such a file be used only when a
   preset names it or the user puts it into the save folder; Calc-U-59
   fits a dropped card and writes it back where it lies today.
   *Recommendation:* AC-4: opening it puts it into the save folder for
   the user (an import) and then into its place; a medium of the same
   name is replaced only after the user said yes.
-- [ ] **OQ-2** — A file named at the start of the program (AC-14,
+- [x] **OQ-2** — *Decided as recommended (user, 2026-11-10, batch 7 gate).* A file named at the start of the program (AC-14,
   AC-21): Calc-U-59's Qt6 frontend opens it, Calc-U-1600's passes it
   over. *Recommendation:* both open it, through this command.
-- [ ] **OQ-3** — A file dialog and the folder it starts in (LIB-9
+- [x] **OQ-3** — *Decided as recommended (user, 2026-11-10, batch 7 gate).* A file dialog and the folder it starts in (LIB-9
   AC-29). Today a drop in Calc-U-1600 changes the folder the next file
   dialog starts in. *Recommendation:* only a file dialog does.
-- [ ] **OQ-4** — Refusals that are silent today get a notice: a file
+- [x] **OQ-4** — *Decided as recommended (user, 2026-11-10, batch 7 gate).* Refusals that are silent today get a notice: a file
   that is nothing the product opens, after Open With or at the start; a
   file over 1 MiB in Calc-U-1600; a magnetic card on a model without a
   reader; a card while one is in the reader (AC-1, AC-12, AC-20, EC-4). *Recommendation:* all three; too small
   for a row each, one line in row 59-14 and its Calc-U-1600 twin.
-- [ ] **OQ-5** — "Open" (a file) and "file kind" for the glossary, as
+- [x] **OQ-5** — *Decided as recommended (user, 2026-11-10, batch 7 gate).* "Open" (a file) and "file kind" for the glossary, as
   defined above.
 
 ## Decision Log
@@ -273,10 +277,10 @@ The ways in
 |----------|-----------|------|
 | One "open file" command on the app session for a drop, Open With and a file picker that takes any file; the library tells presets and media, a product adds its file kinds | `frontend.md` SP-3 (user) | 2026-11-10 |
 | Today's accepted files stay; where a platform has no drop today, none is added | `frontend.md` SP-3 (user) | 2026-11-10 |
-| A magnetic card elsewhere is no longer opened and written back in place | ADR 0019; behaviour change 59-6 | 2026-11-10 |
+| A medium opened from elsewhere is used and written back where it lies; only a Web frontend copies it | user, 2026-11-10, batch 7 gate; ADR 0019 as amended; behaviour change 59-6 as reworded | 2026-11-10 |
 | Each product's file kinds are product data of this spec; Calc-U-1600's rest on the loaders of C1600-2 | user, 2026-11-10, batch 5 gate | 2026-11-10 |
-| Proposed in this spec, for the gate: a file with a preset extension is a preset whatever it holds (AC-1, EC-1) | An outdated preset then gets its hint, not "cannot open" | 2026-11-10 |
-| Proposed in this spec, for the gate: the order of the tests of AC-1, a file's name before its content | A medium or a program file that happens to hold a `model:` line is then not taken for a preset | 2026-11-10 |
-| Proposed in this spec, for the gate: a name that is taken follows the rule of Name & Save (AC-4), and the harness needs the word `replace` (AC-9) | One rule for a name that is taken; LIB-7 AC-17 | 2026-11-10 |
-| Proposed in this spec, for the gate: a module file or a disk file can be dropped in Calc-U-1600 (AC-19) | It follows from one command for every kind | 2026-11-10 |
-| Proposed in this spec, for the gate: one file is kept while the session is busy (AC-7), as in Calc-U-1600 | Today's behaviour of one product, taken for the family | 2026-11-10 |
+| Proposed in this spec and accepted (user, 2026-11-10, batch 7 gate): a file with a preset extension is a preset whatever it holds (AC-1, EC-1) | An outdated preset then gets its hint, not "cannot open" | 2026-11-10 |
+| Proposed in this spec and accepted (user, 2026-11-10, batch 7 gate): the order of the tests of AC-1, a file's name before its content | A medium or a program file that happens to hold a `model:` line is then not taken for a preset | 2026-11-10 |
+| In a Web frontend an opened medium is imported, and a name that is taken follows the rule of Name & Save (AC-4) | user, 2026-11-10, batch 7 gate; LIB-7 AC-17 | 2026-11-10 |
+| Proposed in this spec and accepted (user, 2026-11-10, batch 7 gate): a module file or a disk file can be dropped in Calc-U-1600 (AC-19) | It follows from one command for every kind | 2026-11-10 |
+| Proposed in this spec and accepted (user, 2026-11-10, batch 7 gate): one file is kept while the session is busy (AC-7), as in Calc-U-1600 | Today's behaviour of one product, taken for the family | 2026-11-10 |

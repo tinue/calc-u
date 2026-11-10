@@ -584,3 +584,48 @@ machine after an instruction that read or wrote one of them.
 **History** (of a debug target):
 Its last instructions, each with the registers as they were before
 it.
+
+**Side**, **Bank**, **Pass**, **Fresh** (of a magnetic card):
+A magnetic card has two sides, 1 and 2; a side holds one bank, a
+quarter of the TI-59's memory, numbered 1 to 4. A pass is one run of a
+side through the card reader. A card is fresh while neither side has
+been written.
+
+**Library program**:
+One of the numbered programs of a Solid State ROM module, selected with
+`Pgm`.
+
+**Open** (a file), **File kind**:
+To open a file is to hand it to the app session, which finds out what
+it is and does what belongs to it. A file kind is one sort of file a
+product opens besides presets and media.
+
+**BASIC listing**, **Tokenized BASIC**:
+A BASIC program as text; the same as the machine stores it, in a file
+with a header.
+
+**Header**, **Headerless**:
+The first bytes of a program file that say what it is, how long it is
+and where it goes; code in a file without them.
+
+**Program area**, **Program mode**:
+The part of memory BASIC keeps the program in (on the PC-1600: S0, S1
+or S2); the mode in which typed lines are stored (PRO).
+
+**Plan**, **Starting command**:
+The loader's answer to where a machine-code file would go, made before
+anything is written; the BASIC command that starts loaded code.
+
+**DAP**, **Server**, **Client**, **DAP session**, **Configuration**, **Thread**:
+The Debug Adapter Protocol; the part of Calc-U-1600 that answers it;
+the debugger that connects; the time from a client's `initialize` to
+its disconnect; what the client sends with `attach`; DAP's word for a
+debug target.
+
+**Build & Load**, **Clean start**:
+Putting a freshly built program into the machine from the debugger;
+building the machine anew before that.
+
+**Listing** (of an assembler), **Binding**:
+The file an assembler writes with addresses, bytes and source lines;
+what ties a listing or a table of symbols to a debug target.

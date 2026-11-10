@@ -82,7 +82,9 @@ The model
 - [ ] **AC-1** — Given a medium, then it is a template or an instance. A
   template is bundled with the product, or is a file in the save folder
   that says it is one (a user template); an instance is a file in the
-  save folder. A bundled file is never written, and a user template only
+  save folder, or a medium file the user opened from elsewhere, which
+  stays where it lies and is saved there (LIB-13 AC-4). A bundled file
+  is never written, and a user template only
   by a save as a template (AC-17) (`media.md` I-1; ADR 0019).
 - [ ] **AC-2** — Given a medium file, then it carries the medium's name
   inside; the file name counts only for a file that carries none
@@ -259,7 +261,7 @@ Steps and commands
 
   | Step | Value | What it does | Emulated time (LIB-6 AC-19) |
   |---|---|---|---|
-  | `insert:` | a place, a medium (AC-21), a side where the place has sides; for a pass-through place the medium can be left out, which means the one that is fitted (C59-7) | in a holding place the medium is in at once and stays; through a pass-through place it is passed, and the step ends when it is back, or after the time the place's owner states when the machine does not take it | pass-through: needs it |
+  | `insert:` | a place, a medium (AC-21), a side where the place has sides; for a pass-through place the medium can be left out, which means the one that is fitted (C59-7) | in a holding place the medium is in at once and stays; through a pass-through place it is passed, and the step ends when it is back; the owner of a place can state a time after which a medium the machine does not take is given back, and the TI card reader states none (C59-7 AC-7) | pass-through: needs it |
   | `eject:` | a place | takes the medium out (AC-13 first) | none |
   | `arm:` | a place, a medium, a side | lays the medium ready; it is passed through when the machine says it waits for one (AC-6); the step does not wait | none |
   | `saveas:` | `live` or `template`, optionally `protected`, then the place, a colon and the name, which is the rest of the line, or the place, `:file:` and a path, which is the rest of the line | AC-17 to AC-19; a failure fails the preset | none |
@@ -499,3 +501,4 @@ Getting media in and out
 | Proposed in this spec and accepted (user, 2026-11-10, batch 6 gate): a module change leaves the other slot and the disk alone (AC-38) | It follows from the power cycle of behaviour change 1600-4 | 2026-11-10 |
 | Proposed in this spec and accepted (user, 2026-11-10, batch 6 gate): the half second of AC-11 for every kind, taken from Calc-U-1600 | It makes the criterion checkable | 2026-11-10 |
 | Proposed in this spec and accepted (user, 2026-11-10, batch 6 gate): the harness commands of AC-28 | Rule 4 of the index; LIB-11 AC-14, AC-18 | 2026-11-10 |
+| A medium the user opens from outside the save folder is used where it lies and written back there; only a Web frontend copies it in, because a browser cannot write back | user, 2026-11-10, batch 7 gate; LIB-13 AC-4; ADR 0019 as amended | 2026-11-10 |

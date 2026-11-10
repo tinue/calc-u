@@ -266,7 +266,8 @@ PC-1350 machine overviews, `Shared/11-Pin-Port.md`, `Shared/Peripherals.md`).
 
 ## Open questions
 
-- Q-1: The ROM version of the PC-1350 dump and how many PC-1403 versions
+- Q-1 (deferred 2026-11-10: to an SC61860 product, or a phase 5 walkthrough
+  that needs it): The ROM version of the PC-1350 dump and how many PC-1403 versions
   a product would offer as variants (only version 3 is dumped).
 - Q-2 (answered from the facts, 2026-11-10): the TI-59/58's constants
   are a section of the two SCOM ROM chips, not chips of their own;

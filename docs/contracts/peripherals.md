@@ -179,13 +179,16 @@ and `calc-u-1600.md` (Modelling depth, Media), datamath TMC0540 page,
 
 ## Open questions
 
-- Q-1: Do the real TI-58/59, PC-1500 and PC-1600 require power off to
+- Q-1 (closed 2026-11-10: no longer needed, P-1 decided a power cycle
+  regardless): Do the real TI-58/59, PC-1500 and PC-1600 require power off to
   change a module or a peripheral? Not found in `ti59-research`,
   `Sharp1500-1600-Ref` or the datamath TMC0540 page.
-- Q-2: What the PC-1403 and PC-1350 ROMs do when an 11-pin peripheral or a
+- Q-2 (deferred 2026-11-10: to an SC61860 product or a phase 5 walkthrough):
+  What the PC-1403 and PC-1350 ROMs do when an 11-pin peripheral or a
   PC-1350 RAM card changes (paper machines; needed only for their
   descriptors).
-- Q-3: The datamath page gives the TMC0540 chip's pins; that the 8-pin
+- Q-3 (deferred 2026-11-10: until the slot is modelled at contact level,
+  ADR 0011): The datamath page gives the TMC0540 chip's pins; that the 8-pin
   slot carries exactly these signals is assumed, not stated there.
 
 ## Decision log

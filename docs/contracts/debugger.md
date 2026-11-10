@@ -197,7 +197,10 @@ Options:
 
 ## Open questions
 
-- Q-1: Whether `pause-on-start: cpu` on the PC-1500 waits for its key
+- Q-1 (answered 2026-11-10, user): when this is built (phase 6), research the
+  PC-1500's key-scan loop and implement key readiness, so
+  `pause-on-start: cpu` works there too (also answers `typing.md` Q-3).
+  Background: Whether `pause-on-start: cpu` on the PC-1500 waits for its key
   readiness signal (typing Q-3) or is not offered until one exists.
 
 ## Decision log

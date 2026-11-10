@@ -25,7 +25,7 @@ breakpoints).
 
 ## Responsibilities
 
-- One program, `calc-u-harness` (name open, Q-1), with `--product`,
+- One program, `calcu` (Q-1), with `--product`,
   running the same library and app-layer code as the frontends (ADR
   0009: the same code in virtual time).
 - One-shot subcommands and `serve` mode (ADR 0026); `serve` is also what a
@@ -100,8 +100,8 @@ Options:
 
 ## Open questions
 
-- Q-1: The program's name.
-- Q-2: The Python step-by-step driving of `tools/headless/` becomes a
+- Q-1 (answered 2026-11-10): the program is called `calcu`.
+- Q-2 (phase 6, with the skills): The Python step-by-step driving of `tools/headless/` becomes a
   Python script talking to `serve` over a pipe; whether a small Python
   helper ships with the harness is decided in phase 6 with the skills.
 

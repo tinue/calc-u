@@ -290,12 +290,12 @@ at every speed. The oddity and its rule go.
 
 ## Open questions
 
-- Q-1: The upgrade of the 57 Calc-U-59 and 32 Calc-U-1600 example files
+- Q-1 (phase 6): The upgrade of the 57 Calc-U-59 and 32 Calc-U-1600 example files
   and the calc-u.org copies (ADR 0037) is implementation work in phase 6;
   whether a throwaway script does it is the implementer's choice.
 - Q-2 (answered 2026-11-10, PR-9): a TI machine without a module is
   allowed.
-- Q-3: The key IDs of each model (M-3) and their ASCII spellings
+- Q-3 (phase 6, with the descriptors): The key IDs of each model (M-3) and their ASCII spellings
   (`x<>t`, `sqrt`, …) are the descriptor's; the preset format uses them as
   they are.
 

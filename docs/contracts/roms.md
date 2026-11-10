@@ -94,7 +94,9 @@ Options:
 
 ## Open questions
 
-- Q-1: Whether the own host-drive ROM (built from source) goes through
+- Q-1 (answered 2026-11-10): the own host-drive ROM is always bundled, built
+  with the product; it is not in a ROM repository and the lookup is not
+  involved. Background: Whether the own host-drive ROM (built from source) goes through
   the lookup like the others or is always bundled.
 
 ## Decision log

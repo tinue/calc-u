@@ -122,7 +122,7 @@ Options:
 
 ## Open questions
 
-- Q-1: Whether the paper machines (SC61860) need anything here before
+- Q-1 (answered 2026-11-10): Whether the paper machines (SC61860) need anything here before
   a third product exists: no (help is per product).
 
 ## Decision log

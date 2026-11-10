@@ -176,7 +176,9 @@ Options:
 
 ## Open questions
 
-- Q-1: Cassette tapes: today fixed-role (play or record) and written at
+- Q-1 (answered 2026-11-10): cassette tapes keep their own rules (fixed role,
+  written at each motor stop into `Tapes/`); WAV is an external format.
+  Background: today fixed-role (play or record) and written at
   each motor stop into the tapes folder; whether a recorded tape is an
   instance with Name & Save like the other media, or keeps its own rules,
   is open (the WAV format itself is external).

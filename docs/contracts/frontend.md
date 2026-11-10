@@ -148,7 +148,10 @@ Options:
 
 ## Open questions
 
-- Q-1: What the app session does with a command that arrives while an
+- Q-1 (answered 2026-11-10): commands that would start an operation (load a
+  preset, reset, cold boot, model switch, attach or detach, insert) are
+  refused while one runs; user keys are dropped (T-4); everything else
+  (settings, panels, copy, screenshot) goes through. Background: What the app session does with a command that arrives while an
   operation runs. Facts: Calc-U-1600 refuses a second operation
   (`AppSession::start()` returns false while busy) and runs a nested
   `runNow` straight through (`Shared/AppSession.cpp:94-121`); while busy,
@@ -156,7 +159,12 @@ Options:
   What key input and other commands do while busy is not settled; it is
   taken up with the typing contract (4), which drops user keys while
   busy (`typing.md`, T-4).
-- Q-2: Host services: the minimal list (audio sink, clipboard, file and
+- Q-2 (answered 2026-11-10): the host services every frontend provides: an
+  audio sink; the clipboard (text and image); file and folder pickers
+  (open preset, choose the ROM folder, the save-folder override); export
+  or download of a file (web: download); opening a URL (Help); haptics
+  where the platform has them. File access in the save folder and the
+  settings file are the library's. Background: the minimal list (audio sink, clipboard, file and
   folder pickers, …) is settled with contracts 6 and 7, where file access
   is decided.
 

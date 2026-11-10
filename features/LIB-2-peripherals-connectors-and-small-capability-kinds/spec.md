@@ -118,6 +118,10 @@ Attach and detach
 - [ ] **AC-7** — Given a place that already holds as many peripherals as
   it takes, when another is attached, then the attach is refused with a
   reason.
+- [ ] **AC-35** — Given a place that holds a peripheral, when it is
+  replaced by another in one step (the user picks another module), then
+  the first is detached, the second attached, and what follows is asked
+  once.
 - [ ] **AC-8** — Given a connector that takes a chain, when peripherals
   are attached to different places on it, then all of them are plugged
   in at once, each under its own place.
@@ -337,4 +341,4 @@ Invariants checked in review and in the phase 5 walkthroughs:
 | Controls, serial port and real-time clock are generic kinds | `capabilities.md` C-1; ADR 0007 | 2026-11-10 |
 | The power cycle after an attach is run by the app session as an operation, so it is specified in LIB-18 | Glossary, Operation; rule 1 of the cut | 2026-11-10 |
 | Peripherals stay plugged in through reset, power cycle and cold boot | Both products today (AC-10) | 2026-11-10 |
-| Proposed in this spec, for the gate: a place presents one pin-out and fit follows from it (AC-2); the machine can be asked whether an attach would succeed (AC-6); a detach takes the peripherals plugged into the detached one with it (EC-3); a serial port file outlives the machine or peripheral it serves (AC-20, today's behaviour made a rule) | The control state needs "available now" with a reason (`frontend.md` FE-6); no contract states the others | 2026-11-10 |
+| Proposed in this spec, for the gate: a place presents one pin-out and fit follows from it (AC-2); the machine can be asked whether an attach would succeed (AC-6); a detach takes the peripherals plugged into the detached one with it (EC-3); replacing a peripheral is one step with one power cycle (AC-35); a serial port file outlives the machine or peripheral it serves (AC-20, today's behaviour made a rule) | The control state needs "available now" with a reason (`frontend.md` FE-6); no contract states the others | 2026-11-10 |

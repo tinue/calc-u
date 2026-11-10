@@ -118,7 +118,8 @@ Emulated time
   ticks, then it runs whole instructions only, runs at least that many
   ticks, reports the ticks it actually ran, and its tick count has grown
   by exactly the reported number. Where an instruction ends is the
-  core's to say (the PC-1600 with its two CPUs: C1600-1).
+  core's to say (the PC-1600 with its two CPUs: C1600-1). An advance
+  that a debug target stops early is LIB-10's.
 - [ ] **AC-8** — Given a machine that is advanced and has keys pressed,
   when its tick count is read at any two moments, then the later reading
   is never smaller than the earlier one, also across a reset, a power
@@ -213,8 +214,8 @@ Connectors and capabilities
   second (`machine.md`, fit table).
 - [ ] **AC-27** — Given any of the three models, then its descriptor
   states a segment display of 12 positions with a segment layout of the
-  segments A to G and the decimal point, a brightness per position, and
-  the indicator C with a brightness of its own; and it states no sound
+  segments A to G and the decimal point, a brightness per position and a separate one for
+  the decimal point, and the indicator C with a brightness of its own; and it states no sound
   (`machine.md`, fit table).
 - [ ] **AC-28** — Given the TI-59 and the TI-58, then their descriptors
   list the three instruction ROM files and the two constant files of
@@ -283,8 +284,9 @@ Connectors and capabilities
   (`roms.md`, facts).
 - [ ] **AC-39** — Given the Calc-U-1600 catalogue, then it holds a
   peripheral descriptor for every peripheral the product offers today:
-  the bundled memory modules; the CE-150, with its cassette as a media
-  place and its paper; the CE-158; and the CE-1600P (variants New, Old;
+  the nine bundled memory modules (AC-41); the CE-150, with its paper
+  and its cassette as a media place (which a machine lists only on the
+  PC-1500 and PC-1500A, C1600-1 AC-16); the CE-158; and the CE-1600P (variants New, Old;
   default New), with its cassette and paper and, described with it as
   today, the CE-1600F with a holding media place for floppy disks with
   the sides A and B. Each lists its ROM files and the pin-outs it fits;
@@ -298,8 +300,21 @@ Connectors and capabilities
   debug targets are the descriptor's, each media place of the descriptor
   shows as one media place capability, and every peripheral plugged in
   fits its place by the descriptor.
+- [ ] **AC-41** — Given the bundled memory modules, then each fits
+  these places, by its module definition (Calc-U-1600
+  `Qt6/resources/cards/*.card.yaml`, `compatible-hosts`):
+
+  | Module | PC-1500, PC-1500A `slot-1` | PC-1600 `slot-1` | PC-1600 `slot-2` |
+  |---|---|---|---|
+  | CE-151 (4 KB), CE-155 (8 KB) | yes | yes | no |
+  | CE-161 (16 KB), CE-1638 (128 KB), CE-163F (256 KB), all battery-backed | yes | yes | yes |
+  | CE-502B (ROM) | yes | no | no |
+  | CE-1600M (32 KB, battery-backed) | no | yes | yes |
+  | CE-1601M (64 KB), superRAM (512 KB), both battery-backed | no | no | yes |
 
 ## Edge Cases
+- **EC-8** — Given a machine, when it is advanced by zero ticks, then
+  it runs nothing and reports zero.
 - **EC-1** — Given a model and a variant, when a machine is to be built
   and one of the ROM images its descriptor lists is not handed in, then
   no machine is built and the missing file is named.
@@ -342,9 +357,11 @@ checked in review and in the phase 5 walkthroughs:
   Today the Calc-U-59 session runs 300,000 instructions after a reset,
   and Calc-U-1600 plays a power cycle through the ROM's own OFF and ON
   and then runs the machine to its prompt (C59-1 OQ-1, C1600-1 OQ-1).
+  On the TI-59 and TI-58 the ROM's start-up clears the memory, so a
+  Reset that keeps it needs the machine to put it back afterwards.
   *Recommendation:* the call returns at once; the start-up runs with the
-  following advances; the operation that asked for it (LIB-18) waits for
-  the machine's readiness.
+  following advances; every machine reports "starting up" until it is
+  over, and the operation that asked for it (LIB-18) waits for that.
 - [ ] **OQ-2** — The power state. Both Sharp machines can be off, and
   their display can be off while they run; the frontends need both on
   the first day (C1600-1 OQ-2). `capabilities.md` Q-1 leaves this to a

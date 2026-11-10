@@ -15,6 +15,9 @@
   59-11, 59-13.
 - Facts: Calc-U-59 at `v2.3.0`; every `path:line` below is at that tag.
 
+In this spec "the calculator" is the real device; the running thing is
+"the machine" (glossary).
+
 ## User Stories
 - As a user of Calc-U-59, I want the TI-58, TI-58C and TI-59 to behave
   exactly as today after the rebuild: the same ROM, the same display,
@@ -34,16 +37,18 @@
 - The card reader as a media place, cards and cue cards (owner: C59-7).
 - Writing program steps, registers and the partition (the keystroke
   program memory product kind; owner: C59-2).
-- The `ti58c.mem` file (owner: C59-3). This feature says what the
-  machine keeps; C59-3 says what is stored.
+- The `ti58c.mem` file, and handing a newly built TI-58C its constant
+  memory (owner: C59-3). This feature says what the machine keeps.
 - The debug target, the program level, the ASM overlay, the ROM heatmap
   and the trace (owners: LIB-10, C59-4).
 - Key readiness and how a key is held (owner: LIB-5); the pacing profile
   (LIB-17).
+- Other names for a key in presets and in the harness, such as the
+  second functions (owner: LIB-6, with the list in C59-2; OQ-2).
 - The descriptors' content: models, tick rates, display kind, ROM files,
   places (owner: LIB-1, Calc-U-59 column).
 - Which operation follows a model switch, an attach or the user's Reset
-  and Cold boot, and running the ROM's start-up to its end (owner:
+  and Cold boot, and building a machine with its peripherals (owner:
   LIB-18).
 - Glyph styles (Classic, Modernized) and drawing the display (the
   frontends).
@@ -55,48 +60,52 @@
 
 Emulated time
 - [ ] **AC-1** — Given a TI machine, then one instruction takes 32
-  ticks; on the TI-59 and the TI-58 an instruction executed while the
-  calculator is in IDLE takes 128 ticks; on the TI-58C every instruction
-  takes 32 (`Core/MachineVariant.hpp:29-39`, `Core/TMC0501.cpp:283-285`).
-- [ ] **AC-2** — Given a TI machine advanced by any number of ticks,
-  then it overshoots by less than one instruction (at most 127 ticks),
-  and reports what it ran (LIB-1 AC-7).
+  ticks; on the TI-59 and the TI-58 an instruction executed in the ROM's
+  idle state takes 128 ticks; on the TI-58C every instruction takes 32
+  (`Core/MachineVariant.hpp:29-39`, `Core/TMC0501.cpp:283-285`).
+- [ ] **AC-2** — Given a TI machine advanced by any number of ticks
+  above zero, then it overshoots by less than one instruction (at most
+  127 ticks), and reports what it ran (LIB-1 AC-7).
 - [ ] **AC-3** — Given a TI machine, then its tick count goes on across
   a reset, a power cycle and a cold boot (LIB-1 AC-8). Today the count
   starts again at every reset (`Core/TMC0501.cpp:156-157`).
 
 Behaviour unchanged
-- [ ] **AC-4** — Given the ROMs of a model and keys pressed at the same
-  tick counts as in a run of Calc-U-59 2.3.0, when the machine is driven
-  through the machine interface, then its display output position by
-  position, and the content of its memory, are the same as in that run.
+- [ ] **AC-4** — Given a golden run (Technical Requirements), when its
+  script is played on the machine through the machine interface, then
+  the display output at each recorded moment and the content of the
+  memory at the end are the recorded ones, for each of the three models.
 - [ ] **AC-5** — Given what `tests/core_tests.cpp` checks today, then it
-  holds through the machine interface for all three models: the boot to
-  the key scan; 2 + 3 = 5; the glyphs of the control nibbles; the period
-  of the error blink per model; the normalised display duty; the TI-58C
-  keeping its memory; the ROM's start-up clearing the RAM on the TI-59
-  and TI-58 only (`tests/core_tests.cpp`, 17 tests at the pin).
+  holds through the machine interface for all three models: the machine
+  reaches the state in which it takes keys; 2 + 3 = 5; the glyphs of the
+  control nibbles; the period of the error blink per model; the
+  normalised display duty; the TI-58C keeping its memory; the ROM's
+  start-up clearing the memory on the TI-59 and TI-58 only
+  (`tests/core_tests.cpp`, 17 tests at the pin).
 
 Reset, power cycle, cold boot
 - [ ] **AC-6** — Given a TI machine, then the three operations leave it
-  as follows once the ROM's start-up has run:
+  as follows once its start-up is over (OQ-1; today a fixed run of
+  300,000 instructions, `Shared/StateApplier.cpp:12-18`):
 
   | | TI-59, TI-58 | TI-58C |
   |---|---|---|
-  | Reset | program and data registers kept; everything else as after switching on | the same as a power cycle |
-  | Power cycle | all memory lost | the constant memory kept (all of its RAM, including the registers H00 to H03); everything else as after switching on |
-  | Cold boot | all memory empty | all memory empty, the constant memory too |
+  | Reset | the content of its RAM kept (program and data registers); everything else as after switching on | the same as a power cycle |
+  | Power cycle | as the ROM's start-up leaves a machine whose memory was lost | the constant memory kept (all of its RAM, including the registers H00 to H03); everything else as after switching on |
+  | Cold boot | as the ROM's start-up leaves a machine whose memory was all zero | the same, the constant memory included |
 
   (Glossary: Reset, Power cycle, Cold boot. Today: Reset is
   `Shared/StateApplier.cpp:95-107`, which saves the RAM, resets, runs the
-  start-up and writes the RAM back; the clean reset is `:109-115`. A
-  power cycle that loses the memory of the TI-59 and TI-58 is new:
-  behaviour change 59-11.)
+  start-up and writes the RAM back, because the ROM's start-up clears it
+  on the TI-59 and TI-58; the clean reset is `:109-115`. A power cycle
+  that loses the memory of the TI-59 and TI-58 is new: behaviour change
+  59-11.)
 - [ ] **AC-7** — Given a newly built TI machine, then it is in the state
-  after a cold boot.
+  after a cold boot, unless it was handed content at its build (the
+  constant memory of a TI-58C, C59-3).
 - [ ] **AC-8** — Given a TI machine after any of the three operations,
-  then no key is down and the display output is that of a calculator
-  just switched on, once the start-up has run.
+  then no key is down, and once its start-up is over the display output
+  is that of a machine just switched on.
 
 Keys
 - [ ] **AC-9** — Given a TI machine, then its 45 keys have these key
@@ -132,45 +141,29 @@ Display
   of A (top), B (upper right), C (lower right), D (bottom), E (lower
   left), F (upper left), G (middle) and the decimal point; a brightness
   from 0 to 1 for the position and a separate one for its decimal point
-  (`Core/TMC0501.hpp:36-49`, `Shared/SevenSegment.hpp:10-11`).
+  (`Core/TMC0501.hpp:36-49`, `Shared/SevenSegment.hpp:10-11`; LIB-1
+  AC-15). A brightness is the share of the time since the display output
+  was last read in which the position was driven (OQ-7).
 - [ ] **AC-14** — Given what a position shows, then the segments follow
   today's rules: a digit; the signs for degree, minus, quote and
   apostrophe; or blank, with zero suppression as today
   (`Shared/SevenSegment.hpp:15-52`, `Core/TMC0501.cpp:1428-1465`).
 - [ ] **AC-15** — Given a running program, then the positions are dark
   and the indicator C is on with a brightness of its own; given the
-  calculator waits for a key, then the positions show the number
+  machine waits for a key, then the positions show the number
   (`reference/CoreArchitecture.md:504`, `Core/TMC0501.cpp:296-305`).
 - [ ] **AC-16** — Given a TI machine, then it has no sound output.
 
 One seam
-- [ ] **AC-17** — Given Calc-U-59 after this feature, when its app layer
-  and frontends are built, then they use nothing of the core but the
-  machine interface and capabilities. Today these core types are used
-  outside `Core/` and go behind the interface: the display snapshot
-  (`Shared/DisplayPov.hpp:2`, `Shared/FrameSampler.hpp:25`), the step
-  boundary (`Shared/DebugSnapshots.hpp:127`), the printer's code line
-  (`Shared/PrinterFont.hpp:2`, `Qt6/app/PrinterWidget.cpp:39`,
-  `Web/bindings.cpp:659`), the model list and instruction rate
-  (`Shared/MachineModelInfo.hpp:2`), the CPU trace frame and debug event
-  (`Shared/TraceWriter.hpp:2`, `Bridge/BridgeConvert.h:5`,
-  `Web/bindings.cpp:764`, `Shared/FrameSampler.cpp:19`).
-- [ ] **AC-18** — Given the machine, then what the app layer does today
-  through calls on it is reached as follows:
-
-  | Today (callers in `Shared/`) | After |
-  |---|---|
-  | `step`, `stepN`, `pc`, `reset`, `pressKey`, `releaseKey`, `takeDisplay`, `elapsedTicks` | the machine interface (this feature) |
-  | printer calls, `loadLibrary` | peripherals in places (C59-6) |
-  | `insertCard`, `cardEject`, `isCardPresent`, `isWaitingForCard` | media place (C59-7) |
-  | RAM, registers, program steps, partition | product kind keystroke program memory (C59-2); the constant memory (C59-3) |
-  | `stepUntilNextKeycode`, `beginNextStep`, `snapshotCPU`, `disassemble`, breakpoints, trace, debug overlay | debug target and product kinds (LIB-10, C59-4) |
-  | the scan-loop and key-detect ranges, "polled hardware" | typing support and the report "waits for input" (LIB-5; LIB-17 OQ-3) |
+- [ ] **AC-17** — Given Calc-U-59 after this feature, then its app layer
+  reaches the machine's model, its advances and tick count, its reset,
+  power cycle and cold boot, its keys and its display output through the
+  machine interface only.
 
 ## Edge Cases
-- **EC-1** — Given a machine in IDLE on the TI-59 or TI-58, when it is
-  advanced by 32 ticks, then it runs one instruction of 128 ticks and
-  reports 128.
+- **EC-1** — Given a machine in the ROM's idle state on the TI-59 or
+  TI-58, when it is advanced by 32 ticks, then it runs one instruction
+  of 128 ticks and reports 128.
 - **EC-2** — Given the display output is read twice with no advance in
   between, then both readings are the same (`Core/TMC0501.cpp:227`).
 - **EC-3** — Given a key ID that is not in AC-9, then key down is
@@ -180,34 +173,64 @@ One seam
   (`Core/TI59Machine.cpp:14-23, 154-156`).
 
 ## Technical Requirements (optional)
+- **Golden runs.** A golden run is a script of calls on the machine:
+  key down and key up with a key of AC-9, each at a tick count, and
+  advances. It is recorded in phase 6 from the Calc-U-59 code as it is
+  imported, before the core is changed, by a driver that calls the old
+  machine directly. The golden file holds the script, the display output
+  at moments the script names, and at the end the content of the RAM
+  and the registers, read by the test inside the core. A comparison is
+  exact. The runs cover at least, for each model: switching on;
+  2 + 3 = 5; keying in and running a program of a few steps; an error
+  blink; a reset, a power cycle and a cold boot after memory was filled.
+- What the app layer still calls on the core after this feature, and
+  which row takes it behind the seam:
+
+  | Today (callers in `Shared/`) | Row |
+  |---|---|
+  | printer calls, `loadLibrary` | C59-6 |
+  | `insertCard`, `cardEject`, `isCardPresent`, `isWaitingForCard` | C59-7 |
+  | RAM, registers, program steps, partition | C59-2; the constant memory: C59-3 |
+  | `stepUntilNextKeycode`, `beginNextStep`, `snapshotCPU`, `disassemble`, breakpoints, trace, debug overlay | LIB-10, C59-4 |
+  | the scan-loop and key-detect ranges, "polled hardware" | LIB-5; LIB-17 OQ-3 |
+
+  When this row and those rows are done, nothing above the core uses a
+  core type (`machine.md` I-1). The core types used outside `Core/`
+  today are: the display snapshot (`Shared/DisplayPov.hpp:2`,
+  `Shared/FrameSampler.hpp:25`), the step boundary
+  (`Shared/DebugSnapshots.hpp:127`), the printer's code line
+  (`Shared/PrinterFont.hpp:2`, `Qt6/app/PrinterWidget.cpp:39`,
+  `Web/bindings.cpp:659`), the model list and instruction rate
+  (`Shared/MachineModelInfo.hpp:2`), the CPU trace frame and debug event
+  (`Shared/TraceWriter.hpp:2`, `Bridge/BridgeConvert.h:5`,
+  `Web/bindings.cpp:764`, `Shared/FrameSampler.cpp:19`).
 - The machine holds no lock and starts no thread (ADR 0009). The core's
   four mutexes of today (`reference/CoreArchitecture.md:834-850`) have no
   successor.
 - The descriptors' depth entries say what is folded into the CPU
   component after this feature and after C59-6 (ADR 0012).
-- Before the core is touched, the behaviours of AC-4 are recorded from
-  2.3.0 for the shipped examples (display output and memory at the end
-  of each), as golden files for this feature.
 
 ## Open Questions
-- [ ] **OQ-1** — Do reset, power cycle and cold boot finish at the call,
-  or does the ROM's start-up run with the advances that follow? Today
-  the session runs 300,000 instructions after a reset
-  (`Shared/StateApplier.cpp:12-18`) and nothing after a model switch.
-  The same question exists for the Sharp machines (C1600-1 OQ-1) and
-  belongs to the interface. *Recommendation:* the call returns at once;
-  the start-up runs with the following advances; the operation that
-  asked for it (LIB-18) waits until the machine reports key readiness.
+- [ ] **OQ-1** — When a reset, a power cycle or a cold boot is over
+  (LIB-1 OQ-1). Today the session runs 300,000 instructions after a
+  reset, about 21 seconds of emulated time, and for a Reset on the TI-59
+  and TI-58 it puts the RAM back afterwards, because the ROM's start-up
+  clears it. So the machine itself must know when its start-up has
+  passed that point. *Recommendation:* the call returns at once; the
+  machine reports "starting up" until its start-up is over, and for a
+  Reset it puts the memory back itself at the right moment; the
+  operation that asked (LIB-18) waits for the report to end. The
+  alternative is that the call runs the whole start-up before it
+  returns.
 - [ ] **OQ-2** — The spelling of the key IDs (AC-9), and the second
   functions. `presets.md` PR-5 shows `- key: 2nd Pgm 0 1 SBR =`: "Pgm"
-  is the second function printed above LRN, not a key. Either a key has
-  one ID and the preset reads `2nd LRN`, or the descriptor also lists
-  each second-function name as another name of the same key.
-  *Recommendation:* one ID per key as in AC-9, matched without regard
-  to case; the 43 second-function names of
-  `reference/StateFileFormat.md:179-220` are accepted as other names of
-  their keys in presets and in the harness, so that `2nd Pgm` reads as
-  on the calculator. The list of those names then goes into this spec.
+  is the second function printed above LRN, not a key, so by EC-3 the
+  machine would refuse it. *Recommendation:* the machine takes exactly
+  the 45 IDs of AC-9. Presets and the harness also accept the 43
+  second-function names of `reference/StateFileFormat.md:179-220` as
+  other names of their keys and match all names without regard to case;
+  that is specified in LIB-6, with the list in C59-2, so that `2nd Pgm`
+  reads as on the calculator.
 - [ ] **OQ-3** — The indicator C together with the minus sign in the
   leftmost position. On the real calculator both show; today one glyph
   shows per position (`Shared/SevenSegment.hpp:54-67`,
@@ -226,14 +249,18 @@ One seam
 - [ ] **OQ-5** — Reset and the partition on the TI-59 and TI-58. Today's
   Reset keeps the RAM but not the partition, which goes back to the
   ROM's default; this was read from the code and is covered by no test.
-  Is that what "program and data registers kept" should mean?
-  *Recommendation:* verify on 2.3.0 first; if true, keep it as it is and
-  say so in AC-6.
+  *Recommendation:* verify on 2.3.0 first; if true, keep it and say so
+  in AC-6.
 - [ ] **OQ-6** — TI-58C: Reset equals a power cycle (glossary), and the
   constant memory then comes from the running machine. Today Reset reads
   it back from `ti58c.mem`, which can be up to half a second old
   (`Shared/SessionController.cpp:186, 258-266`). *Recommendation:* from
   the running machine; nobody will see the difference.
+- [ ] **OQ-7** — The stretch a brightness is measured over (AC-13).
+  Today it is "since the last read", so a second reader would disturb
+  the first. *Recommendation:* keep it, and let the machine session be
+  the only reader, once per call of its host; the harness and a second
+  listener get the display from the session.
 
 ## Decision Log
 
@@ -246,4 +273,4 @@ One seam
 | A power cycle loses the memory of the TI-59 and TI-58 and keeps the constant memory of the TI-58C | Glossary; `peripherals.md` P-1; behaviour change 59-11 | 2026-11-10 |
 | Component boundaries follow observable behaviour; depth is recorded in the descriptor | ADR 0012 | 2026-11-09 |
 | The key IDs are written in this spec, not left to phase 6 | LIB-1 decision log | 2026-11-10 |
-| Proposed in this spec, for the gate: a newly built machine is in the state after a cold boot (AC-7); the key IDs of AC-9 | Today a new machine and a reset one differ in one CPU flag (`Shared/EmulatorSession.cpp:16-35`); no contract lists the IDs | 2026-11-10 |
+| Proposed in this spec, for the gate: a newly built machine is in the state after a cold boot (AC-7); the key IDs of AC-9; what a golden run is and what the runs cover | Today a new machine and a reset one differ in one CPU flag (`Shared/EmulatorSession.cpp:16-35`); no contract lists the IDs or defines the golden runs | 2026-11-10 |

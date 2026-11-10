@@ -1,7 +1,7 @@
 # Contract: peripheral and connector model
 
-Status: draft (2026-11-10). Forks P-1 to P-4 are decided (decision log);
-open questions remain.
+Status: draft (2026-11-10). Forks P-1 to P-6 are decided (decision log;
+P-5 and P-6 were added in the phase 4 review); open questions remain.
 
 Inherits: ADR 0008 (composition), 0010 (peripherals keyed by connector),
 0011 (TI-59 printer and module slot as functional connectors), 0012
@@ -9,7 +9,7 @@ Inherits: ADR 0008 (composition), 0010 (peripherals keyed by connector),
 change keep RAM or cold boot), 0025 (modules chosen in the control bar).
 Builds on the machine contract (`machine.md`): M-1 (ticks), M-4 (static
 descriptor, live queries), M-5 (capabilities listed by the machine), M-6
-(power cycle).
+(power cycle), M-8 (peripheral descriptors, places).
 
 ## Responsibilities
 
@@ -28,10 +28,17 @@ descriptor, live queries), M-5 (capabilities listed by the machine), M-6
   only the bus").
 - A peripheral exposes capabilities (media, printer output, serial port,
   real-time clock, …) through the machine (M-5), with itself as owner.
+- A connector takes one peripheral or, where the hardware chains them,
+  several at once (P-6): the Sharp 60-pin system bus carries a printer
+  and a CE-158 together. The user and the presets name **places**, not
+  connectors (`machine.md`, M-8).
 - Attaching or detaching a peripheral is a call on the machine, between
-  two advances of emulated time, and is followed by a power cycle (P-1). It can be refused, with a reason (for
-  example: one plotter at a time on the PC-1500/1600, CE-1600P with CE-158
-  not supported, `User-Guide.md:198-201`).
+  two advances of emulated time. What follows is stated by the pin-out
+  (P-5); for every pin-out of today's products it is a power cycle (P-1).
+  An attach can be refused, with a reason (for example: one plotter at a
+  time on the PC-1500/1600, CE-1600P with CE-158 not supported,
+  `User-Guide.md:198-201`); the control state shows such a peripheral as
+  not available now, with the same reason (`frontend.md`, FE-2).
 - What the running machine has plugged in where is a live query (M-4).
 
 ## Non-responsibilities
@@ -161,6 +168,47 @@ Options:
 - (b) The library defines the signal interfaces too: shared code for
   pin-outs no other product uses.
 
+### P-5: Where the rule "what follows an attach" is stated
+
+**Decided (2026-11-10, in the review; approved by the user).** P-1's
+behaviour stays as decided; only the place of the rule changes.
+
+Facts: P-1 made "a power cycle everywhere" a rule of the library. P-3
+lets peripherals have connectors of their own, so the rule would also
+cover a cassette recorder on the CE-150's cassette jack and a cable on a
+serial port. What the SC61860 machines do on an 11-pin change is unknown
+(Q-2).
+
+Options:
+- (a) **Recommended:** each pin-out states what follows an attach or
+  detach on it: a power cycle, or nothing. Every pin-out of today's
+  products says power cycle (P-1: module slots, the TI printer
+  connector, the Sharp 60-pin system bus). A cassette jack or a serial
+  cable can say "nothing" when it is modelled as a connector. No
+  behaviour differs from P-1 today.
+- (b) The library rule as in P-1: a later hot-pluggable connector would
+  need the library changed.
+
+### P-6: Several peripherals on one connector
+
+**Decided (2026-11-10, in the review; approved by the user).**
+
+Facts: Calc-U-1600's 60-pin `SystemBus` is a chain: "every card sees
+every cycle and decides from the contacts whether it answers"; the
+CE-150 has a rear connector a CE-158 chains onto, and the CE-1600P
+passes the bus on (`Core/Connector/SystemBus.hpp`). The 40-pin connector
+takes exactly one module (`Core/Connector/ExpansionConnector.hpp`). The
+rear connectors are not modelled (P-3: implicit until refined).
+
+Options:
+- (a) **Recommended:** a pin-out says whether its connector takes one
+  peripheral or a chain. While a chain's pass-through connectors are
+  implicit, the machine's connector holds all chained peripherals; when
+  they are refined (P-3), the same peripherals hang off each other in
+  the tree. The places (M-8) do not change either way.
+- (b) Model every pass-through connector now: more than the migration
+  needs (ADR 0011's reasoning).
+
 ## Fit table
 
 Facts, except the last row, which is the decided behaviour (P-1). Sources: `docs/inventory/calc-u-59.md`
@@ -173,6 +221,7 @@ and `calc-u-1600.md` (Modelling depth, Media), datamath TMC0540 page,
 | Connectors | module slot (8 contacts); PC-100C printer connector (11 pads) | 40-pin memory slot; 60-pin system bus | 2 × 40-pin slots (Slot 1, Slot 2); 60-pin system bus; RS-232C | 11-pin | 11-pin; 15-pin serial; RAM card slot |
 | Pin-out level | functional (ADR 0011). Slot = the TMC0540 chip's pins: VGG, VDD, instruction words, calculating status, external access, Φ2, Φ1, common. Printer: Busy (KR), KP, KN, Φ1, D0, D15, IRG, IDLE, EXT, Φ2, D12, I/A | contact level (`PinState`, `SystemBusPins`) | contact level; Slot 1/2 carry different pin-outs on one connector form | 11-pin pin-out per model (port bits differ, `11-Pin-Port.md`) | 11-pin as PC-1350 column; 15-pin serial (`15-Pin-Serial.md`) |
 | Peripherals | 14 Solid State ROM modules (TMC0541-0555 family); PC-100C | memory modules (CE-151, CE-155, CE-161, CE-502B, …); CE-150, CE-158 | memory modules (CE-1600M, CE-1601M, CE-161, CE-163F, …); CE-1600P (+ CE-1600F); CE-150, CE-158 (MODE 1); host drive | CE-126P (printer + cassette), CE-140F (floppy) | CE-126P, CE-124 (cassette), CE-130T, CE-516L → CE-515P; CE-201M / CE-202M RAM cards |
+| Peripherals at once (P-6) | one per connector | slot: one; 60-pin: a chain (CE-150, CE-158) | slots: one each; 60-pin: a chain (CE-1600P or CE-150, CE-158) | unknown | unknown |
 | Peripheral connectors (P-3) | — | CE-150 cassette jack (`TapeDeck`) | CE-1600P rear connector (not modelled); CE-1600F union (implicit); CE-158 printer port (implicit) | CE-126P cassette | — |
 | After attach/detach today | reset, RAM kept | printers: power cycle; modules: restart | printers: power cycle; modules: restart | unknown (Q-2) | unknown (Q-2) |
 | After attach/detach (P-1) | power cycle: TI-58/59 lose RAM, TI-58C keeps constant memory | power cycle, memory kept | power cycle, memory kept | power cycle | power cycle |
@@ -199,3 +248,5 @@ and `calc-u-1600.md` (Modelling depth, Media), datamath TMC0540 page,
 | 2026-11-10 | P-2 | A peripheral is passed the host's ticks through its connector and learns the host's tick rate when attached. |
 | 2026-11-10 | P-3 | A peripheral may offer connectors of its own; what is plugged in is a tree. Today's implicit cases stay implicit until refined. |
 | 2026-11-10 | P-4 | The library defines what every peripheral and connector has; each pin-out's signal interface is defined by the core of the product that owns the connector. |
+| 2026-11-10 | P-5 | What follows an attach or detach (a power cycle, or nothing) is stated per pin-out, not as a library rule; every pin-out of today's products says power cycle, as P-1 decided. |
+| 2026-11-10 | P-6 | A pin-out says whether its connector takes one peripheral or a chain; chained peripherals sit on the machine's connector while the pass-through connectors are implicit. |

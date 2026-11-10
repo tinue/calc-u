@@ -384,3 +384,124 @@ One published version of one product, with its assets.
 **Research repository**:
 A repository of hardware and firmware research, such as `ti59-research` or
 `Sharp1500-1600-Ref`.
+
+## Added with the contracts (phase 4)
+
+Terms the contracts in `docs/contracts/` introduced. Added on 2026-11-10
+in the phase 4 review; they wait for the review gate like the contracts.
+
+**Emulated time**:
+The time a machine has run, counted by the machine itself and independent
+of the host's clock.
+
+**Tick**:
+The unit of emulated time of a model: one period of a real clock of that
+model, at the rate its machine descriptor gives.
+_Avoid_: cycle, step (for the unit across models)
+
+**Machine descriptor**:
+The static description of a model and its variants: ROMs needed, tick
+rate, display, keys, connectors, places, components and their modelling
+depth. A **peripheral descriptor** is the same for a peripheral; a
+product's **catalogue** lists all of its descriptors.
+_Avoid_: model info, machine info
+
+**Place**:
+A named position on a machine or peripheral where the user puts a
+peripheral, as the control bar and the presets name it: `slot-1`,
+`printer`, `interface`. Several places can share one connector.
+_Avoid_: bay, slot (for this), port
+
+**Media place**:
+A place for a medium: the card reader, a floppy drive, a cassette. It is
+**pass-through** (takes the medium through and gives it back, as the
+TI-59 card reader) or **holding** (keeps it until it is ejected).
+_Avoid_: bay, drive (for the general term)
+
+**Key ID**:
+The stable name of a key, listed in the machine descriptor.
+_Avoid_: key name, matrix code, key code (for this)
+
+**Display kind**:
+The form of a machine's display output: a **segment display** (positions
+of named segments) or a **dot-matrix display** (dots, optionally in
+character cells). An **indicator** is a named symbol of either kind
+outside its positions or dots, such as a status-line symbol.
+
+**Generic kind**:
+A kind of capability that the library defines and handles the same way
+for every product.
+
+**Product kind**:
+A kind of capability, topic, command or control entry that one product
+defines for a function only it has; the library carries it without
+naming it.
+_Avoid_: extension, hook
+
+**Typing engine**:
+The library part that turns host keys, on-screen key hits and text into
+key presses on a machine.
+_Avoid_: key sequencer, typer
+
+**Typing profile**:
+What a product supplies per model for the typing engine: key sequences
+for characters, the minimum hold, the cadence.
+
+**Key readiness**:
+The state in which a machine's ROM can take the next key.
+_Avoid_: scan loop (for the general term)
+
+**Operation**:
+Long work an app session runs as one unit, such as loading a preset, a
+power cycle or typing a paste. While one runs, the session is **busy**.
+_Avoid_: job, task (for the user-visible unit)
+
+**Topic**:
+A named part of what an app session sends to its frontend: a **state
+topic** carries its whole state, a **stream topic** what was appended.
+_Avoid_: event, callback, change flag
+
+**Control state**:
+What the controls around the machine offer right now: models, variants,
+places and what fits them, media places, panels.
+
+**Control bar**:
+The bar below the calculator that holds the machine's hardware: the
+model, then one picker per module slot and media place.
+_Avoid_: toolbar
+
+**Paper panel**:
+The view of a printer's paper inside a frontend.
+_Avoid_: printer view, plotter view
+
+**Host service**:
+Something only a frontend can give an app session: the audio sink, the
+clipboard, a file or folder picker, opening a URL.
+
+**Debug target**:
+What a machine exposes of one CPU for debugging: registers, address
+spaces, breakpoints, stepping.
+
+**Run control**:
+The library part that pauses, steps and resumes a machine and checks
+breakpoints.
+
+**Level**:
+What one debugger step means: `cpu` (one instruction) on every machine,
+`program` (one program step) where a product declares it.
+
+**ROM lookup**:
+The library part that finds each ROM image a machine needs: bundled
+first, then the user's **ROM folder**.
+
+**ROM repository**:
+A repository that holds ROM dumps, from which a product fetches them at
+build time.
+
+**Arm**:
+Laying a medium ready at a media place, so that it is fed when the
+machine waits for one.
+
+**Outdated**:
+Said of a file in an older version of an own format than the release
+reads.

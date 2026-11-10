@@ -1,13 +1,14 @@
 # Contract: media and save folder
 
-Status: draft (2026-11-10). Forks MD-1 to MD-4 are decided (decision
-log); open questions remain.
+Status: draft (2026-11-10). Forks MD-1 to MD-5 are decided (decision
+log; MD-5 was added in the phase 4 review); open questions remain.
 
 Inherits: ADR 0019 (media live in the save folder; a medium a preset
 names by path is never written, its first write makes an instance; the
 copy's name and collisions are this contract's), 0020 (cards written in
 the current version), 0037 (only the current version is read; older
-files get a hint). Oddities: Calc-U-1600's "`saveas:` needs
+files get a hint; a one-time exception for the migration release, after
+which a release reads one version back). Oddities: Calc-U-1600's "`saveas:` needs
 `template`/`live`; name lives in the file" (`docs/oddities-triage.md`).
 Builds on `presets.md` (PR-8: fit, insert, eject, arm; media places
 pass-through or holding; `medium:` sections; `saveas:`).
@@ -128,6 +129,20 @@ Options:
   any character in a name; but the card format changes, so every
   Calc-U-59 user's saved cards are refused after the update.
 
+### MD-5: Name, file name and two files with one name
+
+**Decided (2026-11-10, user, in the phase 4 review).** Refines MD-2.
+
+- The name inside the file is the medium's name. The file name counts
+  only as a fallback, for a file that carries no name inside.
+- A save dialog asks for the name only; the file name is derived from
+  it. If a file of that derived name already exists and holds a medium
+  with a different name, the new file gets a numbered name: with a file
+  `foo` whose medium is called "bar", saving a medium called "foo"
+  writes `foo-1`.
+- Two files that carry the same name inside both show in the picker
+  under that name. Preventing this is the user's.
+
 ### MD-3: Saving under a name, and collisions
 
 **Decided (2026-11-10): option (a).** The character rule now follows
@@ -176,6 +191,15 @@ Options:
 
 ## Open questions
 
+- Q-4 (open, for the user): MD-2 gives the magnetic card format a name
+  field and a new version, so saved cards are refused once (ADR 0037).
+  MD-5 lets a file without a name inside fall back to its file name. If
+  the name field is optional, card text 2.0 would not need a new version
+  and saved 2.0 cards would stay readable. Whether the card format still
+  gets a new version is to be confirmed.
+- Q-5 (phase 6): When two instances carry the same name (MD-5), which
+  one a save by name replaces (`saveas: live`, Name & Save, a preset's
+  first write).
 - Q-1 (answered 2026-11-10): cassette tapes keep their own rules (fixed role,
   written at each motor stop into `Tapes/`); WAV is an external format.
   Background: today fixed-role (play or record) and written at
@@ -194,4 +218,5 @@ Options:
 | 2026-11-10 | MD-1 | The first write to a preset-named medium makes an instance with the medium's name and replaces an instance of that name. Settles ADR 0019's open point. |
 | 2026-11-10 | MD-2 | Every medium carries its name inside its file; the file is named after it. The card format gets a name field and a new version; saved Calc-U-59 cards are refused after the update (ADR 0037). |
 | 2026-11-10 | MD-3 | Calc-U-1600's save rules for every product, frontend and the harness; a name a file name cannot hold is refused. |
+| 2026-11-10 | MD-5 | The name inside the file is the name; the file name is only the fallback for a file without one. The file name is derived from the name, numbered (`foo-1`) when that file exists with another name inside. Two files with the same name both show; preventing it is the user's. |
 | 2026-11-10 | MD-4 | Outdated files show as disabled "outdated" entries in their picker with the hint; a preset naming one is refused with the same hint; logged once per start. |

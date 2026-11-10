@@ -1,6 +1,26 @@
 # Each release reads only the current version of its own formats
 
-Status: accepted (2026-11-10)
+Status: accepted (2026-11-10); scope made explicit 2026-11-10 (user,
+phase 4 review): a one-time exception for the migration, see "Scope".
+
+## Scope: a one-time exception
+
+This rule applies once, to each product's first release from the source
+repository, because of the size of the rebuild. It is not the rule for
+later releases. For every release after that first one, the regular
+rule holds, for every product:
+
+- only an incompatible change to an own format gets a new version
+  number;
+- a release reads at least the previous version of each of its own
+  formats and converts it on the fly; what it writes is in the current
+  version.
+
+So the one violation is Calc-U-59's: its first release from this
+repository does not read what 2.3.0 wrote. (Calc-U-1600 needed no
+backwards compatibility before this release, Briefing §1.2.)
+
+## Decision
 
 Every product reads only the current version of each of its own formats
 (presets, magnetic cards, `ti58c.mem`, ASM overlays, module definitions,
@@ -27,6 +47,13 @@ replaces Calc-U-59's read-old/write-new rule.
 
 ## Consequences
 
+- After the migration release, the library's readers for own formats
+  keep one earlier version each; "the oddities kept for the v1 reader"
+  and the other points below concern the migration release only.
+- Calc-U-1600's own rule "from 1.0 on, the previous format version keeps
+  working" is replaced by the regular rule above: its first release from
+  this repository is the baseline, and every later release reads one
+  version back (user, 2026-11-10), whether or not it is 1.0 yet.
 - Briefing §1.2 ("Calc-U-59 stays backwards compatible", the version 1
   rules for presets, `ti58c.mem` and ASM overlays, Calc-U-1600's
   "existing version numbers stay as they are, even where a format

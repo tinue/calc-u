@@ -21,8 +21,8 @@ the table below.
 | 1 | Inventory | `docs/inventory/` | Facts only, no decisions | Done (approved 2026-11-09) |
 | 2 | Domain model | `docs/GLOSSARY.md` | One meaning per term | Done (glossary approved 2026-11-09) |
 | 3 | Architecture decisions | `docs/adr/NNNN-*.md` | The forks | Done (approved 2026-11-09) |
-| 4 | Contracts | `docs/contracts/*.md` | The abstractions, as interface specs | Drafted 2026-11-10, awaiting review gate |
-| 4b | Capability specs | `features/INDEX.md`, `features/<ID>-*/spec.md` | What each shared capability does, per product | Planned |
+| 4 | Contracts | `docs/contracts/*.md` | The abstractions, as interface specs | Drafted and reviewed 2026-11-10 (review changes applied); awaiting review gate |
+| 4b | Feature specs | `features/INDEX.md`, `features/<ID>-*/spec.md` | What each shared feature does, per product | Planned |
 | 5 | Validation on paper | `docs/walkthroughs/*.md`, optional throwaway spikes | Whether the abstractions hold | Planned |
 | 6 | Migration plan, then code | `docs/migration-plan.md`, `features/<ID>-*/design.md`, `qa-report.md` | Order of steps, each leaving every product green | Planned |
 
@@ -141,7 +141,10 @@ the table below.
   model, typing strategy (keyboard), preset engine and format, debugger
   (debug target and DAP), settings and paths, media and save folder,
   harness protocol (ADR 0026, 0033), ROM lookup (ADR 0035), help structure
-  (ADR 0036). The open points each contract inherits from phase 3 are
+  (ADR 0036), capabilities and product kinds (ADR 0007; added in the
+  phase 4 review). `docs/contracts/README.md` also holds the rules that
+  cross contracts and the map of what is library and what is app layer
+  (ADR 0002). The open points each contract inherits from phase 3 are
   listed in `docs/oddities-triage.md` ("Phase 4") and in the ADRs'
   consequences.
 - Each contract states responsibilities, explicit non-responsibilities and
@@ -152,14 +155,18 @@ the table below.
   SC61860 machines are paper machines; the TI-59 (TMC0501, PC-100C cradle,
   magnetic card reader) is the main stress test for anything Sharp-shaped.
 
-### Phase 4b — Capability specs
+### Phase 4b — Feature specs
+("Capability" is kept for what a machine exposes, glossary; phase 1 used
+the word for features, and its inventories keep their wording.)
 - Kaldris template (`spec.md`: dependencies, user stories, out of scope,
   acceptance criteria, edge cases, open questions, decision log). IDs
   `LIB-n` for library features, `C59-n` and `C1600-n` for product
   features; status only in `features/INDEX.md`.
 - Acceptance criteria are written per product and frontend, which makes them
   the parity checklist. They describe today's behaviour of each product
-  (briefing §1.3: no new product features).
+  (briefing §1.3: no new product features), except where
+  `docs/behaviour-changes.md` lists a decided change; there they describe
+  the new behaviour and name the row.
 
 ### Phase 5 — Validation on paper
 - Scenarios played against the contracts, for example: add a PC-1403; add a

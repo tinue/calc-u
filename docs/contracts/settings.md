@@ -6,7 +6,8 @@ log).
 Inherits: ADR 0021 (settings hold preferences, the startup model and each
 model's startup preset; nothing about hardware), 0022 (settings files are
 INI, `Calc-U-59.ini`, `Calc-U-1600.ini`), 0037 (only the current version
-of own formats is read), Briefing §1.2 (settings become a file format;
+of own formats is read; a one-time exception for the migration release),
+Briefing §1.2 (settings become a file format;
 "the first start of the new release converts the existing platform store
 into the file"; a lookup hierarchy may follow later). Open questions
 handed over: `media.md` Q-2 (`ti58c.mem`), Q-3 (the Calc-U-59 web save

@@ -9,7 +9,8 @@ the features the products have in common.
 
 ### 1.1 Products keep working
 - Calc-U-59 and Calc-U-1600 continue to be released, without breaking any
-  user-visible feature.
+  user-visible feature. The exceptions decided since are listed in
+  `docs/behaviour-changes.md`.
   - Each product keeps its functionality. Its frontends change where family
     coherence (§1.5) or shared GUI concepts (§1.3) need it.
 - Each product keeps its own release cycle and its supported platforms (§4.2).
@@ -25,6 +26,14 @@ the features the products have in common.
 > compatibility below and Calc-U-1600's "existing version numbers stay"
 > rule; the rule for external formats is unchanged. The bullets marked
 > *(replaced)* are kept for the record.
+>
+> **Scope, 2026-11-10** (user, phase 4 review): this is a one-time
+> exception for each product's first release from this repository. For
+> every later release the regular rule holds, for every product: only an
+> incompatible change gets a new version, and a release reads at least
+> the previous version of each own format and converts it on the fly.
+> The user-visible changes of the migration are listed in
+> `docs/behaviour-changes.md`.
 
 - These rules apply to Calc-U's **own** formats: presets, settings, and its
   own formats for magnetic cards, module definitions and floppy disks.
@@ -400,8 +409,9 @@ Each point names the phase that settles it (`docs/Process.md`).
   A product that still has its own implementation of a shared feature does
   not meet this criterion.
 - *(replaced, ADR 0037)* Calc-U-59 reads all of its existing files (§1.2)
-  and writes the new format. Now: every product reads the current version
-  of its own formats, and every shipped and hosted file is upgraded.
+  and writes the new format. Now: in its first release from this
+  repository, every product reads the current version of its own
+  formats, and every shipped and hosted file is upgraded.
 - calc-u.org reflects both releases and shares common material between the
   products instead of duplicating it. This includes the new Calc-U-1600 help
   site with the published web client (§4.3).

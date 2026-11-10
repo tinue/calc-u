@@ -1,6 +1,11 @@
 # One product per model family; the Sharp product stays Calc-U-1600
 
-Status: accepted (2026-11-09)
+Status: accepted (2026-11-09); amended 2026-11-10 (phase 4 review,
+approved by the user): the second consequence takes effect when the
+SC61860 product is started, not in the migration. Until a second product
+uses them, Sharp BASIC handling, SDE exchange and cassette tape code
+stay in Calc-U-1600 (glossary, Library: "used by more than one
+product"), kept free of PC-1500/1600 specifics so they can move.
 
 Each product emulates one model family with one core: Calc-U-59 the
 TI-58/58C/59, Calc-U-1600 the PC-1500/1500A/1600. SC61860 models

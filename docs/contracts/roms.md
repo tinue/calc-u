@@ -1,6 +1,7 @@
 # Contract: ROM lookup
 
-Status: draft (2026-11-10). Forks R-1 to R-3 are decided (decision log).
+Status: draft (2026-11-10). Forks R-1 to R-4 are decided (decision log;
+R-4 was added in the phase 4 review).
 
 Inherits: ADR 0034 (ROMs live in ROM repositories, fetched at build time
 and md5-checked; release packages bundle them), 0035 (a core contains no
@@ -68,6 +69,28 @@ Options:
 - (b) Only known md5s: a user's own dump of the same ROM version is
   refused when it differs in one byte.
 
+### R-4: Checking a ROM file that is text
+
+**Decided (2026-11-10, in the review; approved by the user).** Amends
+R-1 and R-2 for text formats.
+
+Facts: the TI ROM files are Datamath "ROM Recorder" text with header
+lines ("TMS0500 FIRST ROM Recorder Initialized", the chip's marking, a
+date) followed by address and word columns (`roms/calculator/TMC0582.txt`).
+The byte size of such a file changes with line endings and header text,
+so "the expected name and size" (R-2) says nothing about a user's own
+dump.
+
+Options:
+- (a) **Recommended:** an entry states the size of the **decoded
+  content** (words or bytes) next to the md5 of the known file. A binary
+  file is checked by its byte size as before; a text file is decoded by
+  the core's reader and checked by the number of words it yields. R-2
+  otherwise stands: the right amount of content with an unknown md5 is
+  used with a log notice, the wrong amount is refused.
+- (b) Byte size for every file: a user's own text dump is refused for a
+  different line ending.
+
 ### R-3: What a build without ROMs shows
 
 **Decided (2026-11-10): option (a).**
@@ -105,4 +128,5 @@ Options:
 |---|---|---|
 | 2026-11-10 | R-1 | The lookup unit is the file as fetched (name, size, md5 of the known dump); the file-to-chip mapping is the core's. |
 | 2026-11-10 | R-2 | A user's dump with the expected name and size is used even with an unknown md5, with a log notice; a wrong size is refused. |
+| 2026-11-10 | R-4 | An entry states the size of the decoded content; a text ROM file is checked by the number of words its reader yields, a binary file by its byte size. Amends R-1 and R-2. |
 | 2026-11-10 | R-3 | A ROM-less build starts and shows a "ROMs missing" state (files, ROM folder, "Check again"); models with ROMs work; peripherals without their ROM cannot be attached; the harness exits with an error; the web bundles its ROMs. |

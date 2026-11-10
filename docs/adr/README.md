@@ -41,7 +41,7 @@ deferred until after the migration (Briefing §6).
 | [0016](0016-a-preset-always-cold-boots.md) | Loading a preset always builds its machine from a cold boot |
 | [0017](0017-presets-are-parsed-all-or-nothing.md) | Presets are parsed all-or-nothing |
 | [0018](0018-one-family-preset-format.md) | One preset format for the family |
-| [0037](0037-releases-read-only-the-current-version-of-own-formats.md) | Each release reads only the current version of its own formats (2026-11-10) |
+| [0037](0037-releases-read-only-the-current-version-of-own-formats.md) | The migration release reads only the current version of its own formats (2026-11-10; a one-time exception, afterwards one version back) |
 
 ## Media and settings
 
@@ -82,6 +82,7 @@ deferred until after the migration (Briefing §6).
 | [0031](0031-three-test-groups-with-budgets.md) | Three test groups with time budgets |
 | [0032](0032-gui-tests-are-thin-and-share-scenario-ids.md) | GUI tests are thin and share scenario IDs |
 | [0033](0033-harness-attaches-to-running-apps-in-simulators.md) | The harness attaches to running apps in simulators |
+| [0038](0038-one-test-runner.md) | One C++ test runner: Calc-U-59's TestHarness (2026-11-10) |
 
 ## ROMs
 

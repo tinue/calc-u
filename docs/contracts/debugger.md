@@ -1,7 +1,8 @@
 # Contract: debugger (debug target, DAP, debug panel)
 
-Status: draft (2026-11-10). DB-1, DB-3, DB-4 decided; DB-2 and DB-5
-replaced by a minimal agreement (below), decided.
+Status: draft (2026-11-10). DB-1, DB-3, DB-4, DB-6 decided; DB-2 and
+DB-5 replaced by a minimal agreement (below), decided. DB-6 and the
+note on DB-1 were added in the phase 4 review.
 
 Inherits: ADR 0006 (debug targets are part of what a machine exposes),
 0023 (the debug panel is in the shared component sets), Briefing §2
@@ -50,8 +51,10 @@ Common ground in the library:
 4. The preset steps of PR-7 drive this run control (`pause: program |
    cpu`, `step: cpu 5`, `resume:`, `pause-on-start: …`); `debug-panel:`
    selects a view where the product has a debug panel.
-5. The debug panel component (ADR 0023) renders views each product
-   builds below the frontend; the content stays per product.
+5. The debug panel is per product (DB-6): each product keeps its own
+   panel in each of its frontends, fed by product topics
+   (`frontend.md`, FE-6). The shared component sets hold only the run
+   control's buttons (pause, step, resume).
 
 Stays product-specific, unchanged:
 - Calc-U-59: the CALCULATOR / CPU / LOG panel, FREEZE and FREEZE ON
@@ -74,8 +77,9 @@ Backlog, not part of the migration:
 - The library's **run control** pauses, steps and resumes a machine at
   the levels its target offers (DB-2), and checks breakpoints and watches
   (DB-3).
-- The **debug panel** content comes to the frontend as topics (FE-1);
-  the shared component sets render it (DB-5).
+- The **debug panel** content comes to the frontend as product topics
+  (`frontend.md`, FE-5, FE-6); each product's frontends render their own
+  panel (DB-6).
 - Preset steps `pause:`, `pause-on-start:`, `step:`, `resume:`,
   `debug-panel:` (PR-7) drive the same run control in both products.
 
@@ -114,6 +118,12 @@ Options:
   Z-80 memory) and its registers with any width (the TI's 64-bit nibble
   registers); history, decode, breakpoints and watches as today. The TI
   machine adapts `TMC0501` to it.
+  Added in the review (2026-11-10, approved by the user): a target
+  states which parts it offers. Every target has registers, reading and
+  writing its address spaces, PC breakpoints and stepping; watches,
+  breakpoint conditions and hit counts, decode and the history ring are
+  optional per target. The TI target starts with the required parts and
+  what its harness commands need, since nothing else uses it (no DAP).
 - (b) Calc-U-1600's interface as it is, the TI keeps its own: two
   debugger stacks, against ADR 0006's one seam.
 
@@ -184,6 +194,23 @@ Options:
   their views below the frontend.
 - (b) Per-product panel widgets in each component set.
 
+### DB-6: The debug panel is per product
+
+**Decided (2026-11-10, user, in the phase 4 review).**
+
+Facts: ADR 0023 lists the debug panel among the shared component sets.
+The minimal agreement keeps "the CALCULATOR / CPU / LOG panel" and the
+INSPECTOR product-specific and unchanged; DB-5's generic views were
+found too far-reaching.
+
+Options:
+- (a) **Chosen:** per-product panels. Each product keeps its own panel
+  widgets per frontend, fed by product topics. Shared in the library:
+  the debug target, the run control, and the pause, step and resume
+  controls. ADR 0023 carries a note.
+- (b) One shared panel rendering generic views (DB-5 (a)).
+- (c) A shared frame with product content inside.
+
 ## Fit table
 
 | | TI-59 (58, 58C) | PC-1500 (1500A) | PC-1600 | PC-1403 (paper) | PC-1350 (paper) |
@@ -210,4 +237,6 @@ Options:
 | 2026-11-10 | DB-1 | Calc-U-1600's `DebugTarget` becomes the library interface, generalised: address spaces with their cell width, registers of any width. |
 | 2026-11-10 | DB-3 | Breakpoints and watches are checked whenever a debugger client set some and no operation runs; ODD59-27 superseded. Calc-U-59 gets no breakpoint UI. |
 | 2026-11-10 | DB-4 | DAP stays Calc-U-1600 product code, moved out of the Qt frontend into the app layer, on the library's debug target and run control. |
+| 2026-11-10 | DB-1 (note) | A debug target states which parts it offers: registers, address spaces, PC breakpoints and stepping are required; watches, conditions, decode and history are optional per target. |
+| 2026-11-10 | DB-6 | The debug panel is per product, fed by product topics; the library shares the debug target, the run control and the pause, step and resume controls. ADR 0023 carries a note. |
 | 2026-11-10 | DB-2, DB-5 | Replaced by the minimal agreement: common debug target, run control and named levels in the library; panels, DAP and freezes stay product-specific; two backlog items. |

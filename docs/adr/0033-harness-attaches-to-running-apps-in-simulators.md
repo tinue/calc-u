@@ -1,6 +1,9 @@
 # The harness attaches to running apps in simulators
 
-Status: accepted (2026-11-09)
+Status: accepted (2026-11-09); amended 2026-11-10
+(`docs/contracts/harness.md`, H-4): every frontend **may** offer attach;
+the migration builds it for the Swift frontend only, Qt6 and the web
+follow when a need shows.
 
 In development and test builds, every frontend can open its app session to
 the harness protocol (the serve mode of ADR 0026): over the local network

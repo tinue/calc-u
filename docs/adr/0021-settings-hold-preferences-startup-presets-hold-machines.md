@@ -2,6 +2,11 @@
 
 Status: accepted (2026-11-09); the open point on module changes was
 settled 2026-11-10: a power cycle (`docs/contracts/peripherals.md`, P-1).
+Amended 2026-11-10 (user, `docs/contracts/capabilities.md`, C-3): no
+bundled startup preset restores `ti58c.mem`. The TI-58C keeps its
+constant memory across starts only while no startup preset is set for
+it; a startup preset cold boots it, and `ti58c.mem` follows. The
+sentence on the TI-58C under "Consequences" no longer applies.
 
 A product's settings hold the user's preferences, the startup model and
 each model's startup preset, nothing about the machine's hardware. The

@@ -1,6 +1,7 @@
 # Contract: harness protocol
 
-Status: draft (2026-11-10). Forks H-1 to H-3 are decided (decision log).
+Status: draft (2026-11-10). Forks H-1 to H-4 are decided (decision log;
+H-4 was added in the phase 4 review).
 
 Inherits: ADR 0026 (one C++ CLI for the family with one-shot
 subcommands, plain lines or `--json`, and a `serve` mode taking one
@@ -12,9 +13,12 @@ stay). Builds on `frontend.md` (FE-1 messages), `presets.md` (step
 vocabulary), `debugger.md` (run control, DB-3: the harness may set
 breakpoints).
 
-## Capabilities to keep (facts)
+## Functions to keep (facts)
 
-| Tool today | Capabilities | Source |
+("Capabilities" in Briefing §8 and ADR 0026 means what the tools can do;
+the glossary keeps that word for what a machine exposes.)
+
+| Tool today | Functions | Source |
 |---|---|---|
 | Calc-U-59 `tools/headless/` (C API + `ti59.py`) | headless run, scripted keys, step-by-step driving from Python, per-instruction records, state dump (registers, SCOM, RAM), printer lines, cards, disassembly, ROM coverage | `docs/inventory/calc-u-59.md`, Tests |
 | Calc-U-59 `tools/agentic/` | run `.ti59` files, timing in emulated seconds, printout, hot steps, step cost, keycode assembler and disassembler | same |
@@ -30,7 +34,7 @@ breakpoints).
   0009: the same code in virtual time).
 - One-shot subcommands and `serve` mode (ADR 0026); `serve` is also what a
   frontend exposes for attach (ADR 0033).
-- Every capability in the table above, as a common command or a
+- Every function in the table above, as a common command or a
   product command (H-2).
 
 ## Non-responsibilities
@@ -90,13 +94,31 @@ Options:
 - (b) A binary or JSON-RPC protocol: harder for an agent to type and
   read.
 
+### H-4: Which frontends get attach, and when
+
+**Decided (2026-11-10, in the review; approved by the user).** ADR 0033
+carries a note.
+
+Facts: ADR 0033 says every frontend can open its app session to the
+serve protocol. Its reason is the iOS simulator, where UI automation
+often fails. The web clients have working Playwright suites (28 and 21
+tests, in CI); the Qt6 frontends have screenshot scenarios.
+
+Options:
+- (a) **Recommended:** the protocol and the transports of H-3 stay as
+  designed, so any frontend **may** offer attach. The migration builds
+  it for the Swift frontend (iOS simulator and macOS); Qt6 and the web
+  get it when a need shows.
+- (b) All three in the migration: two transports built before anyone
+  needs them.
+
 ## Fit table
 
 | | TI-59 (58, 58C) | PC-1500 (1500A) | PC-1600 | PC-1403 (paper) | PC-1350 (paper) |
 |---|---|---|---|---|---|
 | Common commands | key, type (—), wait, expect, lcd, dump, peek, break, trace, screenshot | same, with `type` | same | same | same |
 | Product commands (H-2) | `asm` (ASM overlay), keycode (dis)assembler, ROM coverage, printer lines, card dump | BASIC dump, tape in/out, CE-158 serial | BASIC dump, tape, serial, host drive, probes | — | — |
-| Attach (ADR 0033) | Swift iOS simulator, macOS app, Qt, web | Qt, web | Qt, web | — | — |
+| Attach (ADR 0033, H-4) | Swift (iOS simulator, macOS) in the migration; Qt, web later | Qt, web later | Qt, web later | — | — |
 
 ## Open questions
 
@@ -111,4 +133,5 @@ Options:
 |---|---|---|
 | 2026-11-10 | H-1 | The serve protocol's commands are the preset step vocabulary plus inspection and control commands; a preset is a recorded harness session. |
 | 2026-11-10 | H-2 | Common commands at the top level; product-only commands under the product's name; `--product` for one-shot runs. |
+| 2026-11-10 | H-4 | Any frontend may offer attach; the migration builds it for the Swift frontend only, Qt6 and the web follow when needed. |
 | 2026-11-10 | H-3 | Line-based text (`--json` on request) over stdin/stdout, localhost TCP for apps, a WebSocket from the page in development builds; localhost only; never in release builds. |

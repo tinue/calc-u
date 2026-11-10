@@ -1,13 +1,13 @@
 # Contract: machine interface and descriptor
 
-Status: draft (2026-11-10). Forks M-1 to M-6 are decided (decision log);
-open questions remain.
+Status: draft (2026-11-10). Forks M-1 to M-8 are decided (decision log;
+M-7 and M-8 were added in the phase 4 review); open questions remain.
 
 Inherits: ADR 0006 (the machine is the only seam), 0007 (small interface
 plus capabilities), 0008 (composition), 0009 (single-threaded sessions),
 0012 (boundaries follow observable behaviour; depth in the descriptor),
 0035 (no ROM data in a core). Related contracts: peripheral and connector
-model (2), debugger (8), typing (4).
+model (2), debugger (8), typing (4), capabilities and product kinds (10).
 
 ## Responsibilities
 
@@ -43,7 +43,9 @@ A machine:
 
 - I-1: Nothing above a core uses core types or touches components
   directly (ADR 0006). There are no branches on the model above the
-  machine.
+  machine. This holds for a product's own app layer too: what only one
+  product needs from its machines is a product kind (M-7), not a way
+  around the machine.
 - I-2: Emulated time advances only through the machine interface (ADR
   0009). Two machines built alike and fed the same calls produce the same
   outputs.
@@ -68,11 +70,24 @@ machine (M-4, M-5). Contents:
 - keys: the list of key IDs (M-3);
 - connectors: each with its form and the pin-outs it can carry (contract
   2);
+- places (M-8): each named position where the user puts a peripheral,
+  with the name the control bar and the presets use (`slot-1`, `printer`,
+  `interface`, …), the connector behind it, the peripherals that fit and
+  how many it takes at once;
 - components: each with the chip(s) or block it stands for and its
   modelling depth (separate, folded into another component, functional);
 - media places: each with its kind, pass-through (TI card reader) or
   holding (floppy drive), and its sides (`presets.md`, PR-8);
 - debug targets (contract 8).
+
+A **peripheral descriptor** (M-8) is the same for a peripheral: static,
+available before any machine is built. Contents: name, variants and
+default variant (CE-1600P ROM New/Old), ROMs needed per variant, the
+pin-outs it fits, its own connectors and places (P-3), its media places,
+its controls (keys and switches, M-3), its components and their depth.
+A product's **catalogue** lists its model descriptors and peripheral
+descriptors; the ROM lookup, the control state and the preset loader read
+it.
 
 ## Open forks
 
@@ -245,9 +260,53 @@ Options:
 - (b) Power cycle stays inside the cores (for example as part of
   attaching a peripheral); the interface keeps reset and cold boot only.
 
+### M-7: Product kinds
+
+**Decided (2026-11-10, in the review; approved by the user).**
+
+Facts: ADR 0007 allows "extensions named after a product … for functions
+that are really one of a kind" but no contract said how they are reached.
+Both app layers need such functions: the TI preset sections write
+program steps, registers and the partition; the Sharp loaders write BASIC
+and machine code into memory; the ASM overlay, the ROM heatmap and the
+host drive exist in one product only (`capabilities.md`, facts).
+
+Options:
+- (a) **Recommended:** a product may define capability kinds of its own.
+  They are listed and handed out exactly like generic kinds (M-5), but
+  their typed interface is defined by the product's core, and only that
+  product's app layer and frontends use them. The library transports
+  them and never names one. A function that a second product needs
+  becomes a generic kind (`capabilities.md`, C-1).
+- (b) A product's app layer may use its own core's types directly: no
+  mechanism, but nothing then stops model branches from growing above
+  the machine again (ADR 0006), and the harness cannot list what a
+  machine offers.
+
+### M-8: Peripheral descriptors and places
+
+**Decided (2026-11-10, in the review; approved by the user).**
+
+Facts: `roms.md` already assumes ROMs "per peripheral"; the glossary
+gives the CE-1600P variants; the control state must know before a
+machine is built which peripherals a model offers. Preset keys and
+control-bar toggles name what the user sees (`plotter:`, `interface:`,
+`slot-1:`), not connectors, and the Sharp 60-pin connector carries
+several peripherals at once: Calc-U-1600's `SystemBus` is a chain, the
+CE-150 "has a rear connector a second peripheral (typically a CE-158)
+chains onto" (`Core/Connector/SystemBus.hpp`).
+
+Options:
+- (a) **Recommended:** peripherals have descriptors, and every model and
+  peripheral descriptor lists its **places** (above). The preset loader
+  and the control state go from a place to its connector through the
+  descriptor, so neither branches on the model (I-1).
+- (b) Presets and the control bar name connectors: the user would have to
+  know that the plotter and the CE-158 share the 60-pin connector.
+
 ## Fit table
 
-Facts only until the forks are decided. Sources:
+Sources:
 `docs/inventory/calc-u-59.md` and `calc-u-1600.md` (Modelling depth), the
 SC61860 knowledge base (`~/Development/sharp/SC61860/ref/`, PC-140x and
 PC-1350 machine overviews, `Shared/11-Pin-Port.md`, `Shared/Peripherals.md`).
@@ -260,6 +319,7 @@ PC-1350 machine overviews, `Shared/11-Pin-Port.md`, `Shared/Peripherals.md`).
 | Display (M-2) | segment display: 12 LED positions, segments A-G + decimal point, brightness per position; the C indicator lights segments A, F, E, D of the leftmost position with its own brightness, from another chip (`Shared/SevenSegment.hpp`, `reference/CoreArchitecture.md`, Display Subsystem). Today one glyph per position; M-2 lets C and minus show together as on hardware | dot matrix: 156 × 7 + status-line indicators | dot matrix: 156 × 32 + 16 status-line indicators | dot matrix: 24 cells of 5 × 7 + status segments | dot matrix: 150 × 32 |
 | Sound | none emulated | piezo buzzer | piezo buzzer | buzzer via control port 5F | buzzer via control port 5F |
 | Connectors | module slot (8 pins), PC-100C printer connector (11 pads) — both functional (ADR 0011) | 40-pin memory slot, 60-pin system bus | 2 × 40-pin slots, 60-pin system bus, RS-232C | 11-pin | 11-pin, 15-pin serial, RAM card slot |
+| Places (M-8) | `slot-1` (module slot); `printer` (printer connector) | `slot-1`; `printer` and `interface` (both on the 60-pin system bus) | `slot-1`, `slot-2`; `printer`, `interface` (60-pin system bus) | not named yet | not named yet |
 | Built-in media | magnetic card reader (TI-59) | — | — | — | — |
 | Depth today | coarse: SCOM, module, card reader, printer folded into `TMC0501` | CPU, RTC, keyboard separate; LH5811 and decoding folded into memory; LCD functional | two CPUs and arbiter separate; SC7852 blocks and LR38041 spread over memory/bank classes; sub-CPU functional | paper | paper |
 | Debug targets | TMC0501 | LH5801 | SC7852, LH5803 | SC61860 | SC61860 |
@@ -288,3 +348,5 @@ PC-1350 machine overviews, `Shared/11-Pin-Port.md`, `Shared/Peripherals.md`).
 | 2026-11-10 | M-4 | The descriptor is static per model and variant (what can exist); live state (what is plugged in, which capabilities are present) is asked from the running machine. |
 | 2026-11-10 | M-5 | The machine lists the capabilities present now, each with kind, ID and owner (component, or peripheral on a connector), and hands out the typed interface of that kind. |
 | 2026-11-10 | M-6 | Power cycle joins reset and cold boot as an operation of every machine; what survives it is the model's business. ADR 0007 amended. |
+| 2026-11-10 | M-7 | A product may define capability kinds of its own, listed and handed out like generic kinds, defined by its core and used only by its own app layer and frontends; the library never names one. I-1 holds for a product's own app layer too. |
+| 2026-11-10 | M-8 | Peripherals have descriptors; a product's catalogue lists its model and peripheral descriptors. Every descriptor lists its places (user-visible name, connector, what fits, how many at once); presets and the control state name places, not connectors. |

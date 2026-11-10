@@ -1,7 +1,8 @@
 # Contract: frontend interface, session hosting and messages
 
-Status: draft (2026-11-10). Forks FE-1 to FE-4 are decided (decision
-log); open questions remain.
+Status: draft (2026-11-10). Forks FE-1 to FE-6 are decided (decision
+log; FE-5 and FE-6 were added in the phase 4 review). FE-7 and SP-1 to
+SP-3 are proposed and wait for the review gate.
 
 Inherits: ADR 0009 (single-threaded sessions, hosted by the frontend,
 messages only), 0014 (ObjC++ bridge translates only), 0015 (Swift session
@@ -65,9 +66,11 @@ Calc-U-1600's "busy state in AppSession; UI rules in Shared
   through a queue (Swift) or `postMessage` (web).
 - I-3: The bridge and the web bindings only translate (ADR 0014); no
   rule lives in them.
-- I-4: Nothing in a message names a model-specific type: state is
-  described with the descriptor's terms (display kinds, key IDs,
-  connectors, capabilities).
+- I-4: Nothing in a **generic** message names a model-specific type:
+  state is described with the descriptor's terms (display kinds, key
+  IDs, places, generic capability kinds). What only one product has
+  travels in **product topics** and product commands (FE-6), which the
+  library and the shared component sets carry but never read.
 
 ## Open forks
 
@@ -136,6 +139,148 @@ Options:
   stays a backlog item (Briefing §2: no new features).
 - (b) Build the unified input surface in the migration: a new feature.
 
+### FE-5: Shapes of a topic
+
+**Decided (2026-11-10, in the review; approved by the user).** Refines
+FE-1.
+
+Facts: FE-1 says every message carries the whole state of its topic and
+a frontend never asks back. Paper, logs and serial output only grow;
+Calc-U-59's web bindings already send the paper as "the lines from the
+first one that changed" (`Web/bindings.cpp:651`). Both web workers
+already answer requests (`reply`), for example for card and trace bytes.
+
+Options:
+- (a) **Recommended:** three shapes. A **state topic** carries its whole
+  state when it changed (display, control state, run state, busy, media
+  state). A **stream topic** carries what was appended since the last
+  message, plus a reset marker when it starts over (paper, log, serial
+  output, trace list). A **request** gets one reply and is for large
+  things asked for rarely (the paper as a 600 dpi image, the bytes of a
+  file to export). A frontend still never reads session state directly.
+- (b) Whole state only (FE-1 as written): a long paper is sent again
+  with every printed line, through a queue (Swift) or `postMessage`.
+
+### FE-6: Product topics, product commands and product control entries
+
+**Decided (2026-11-10, in the review; approved by the user).** Refines
+FE-2 and I-4.
+
+Facts: cue cards, the CALCULATOR tab, the ROM heatmap, the ASM overlay
+(Calc-U-59) and the host drive, the INSPECTOR views, the CE-158 printer
+output (Calc-U-1600) exist in one product. Calc-U-1600's `ControlState`
+holds rules no descriptor yields: the disk picker "shown on every
+PC-1600 (so the bar doesn't jump), usable only while the CE-1600P … is
+attached"; the host drive offered "only on a frontend that has host
+directories" (`Shared/ControlState.hpp`).
+
+Options:
+- (a) **Recommended:** the same rule as for capabilities (`machine.md`,
+  M-7). A product's app layer may define topics and commands of its own;
+  they use the same message path and the three shapes of FE-5, and only
+  that product's frontends read them. The control state has a generic
+  part computed by the library (FE-2: models, variants, places and what
+  fits them with "available now" and a reason, media places, panels)
+  and may carry product entries added by the product's app layer under
+  the same rule (still computed below the frontend, never in it). A
+  topic that a second product needs becomes generic.
+- (b) Everything generic: the generic messages would grow a field for
+  every product's one-of-a-kind function.
+
+### FE-7: The web embedding interface
+
+**Proposed; waits for the review gate.**
+
+Facts: calc-u-site, another repository, embeds each web client from its
+release zip and pins it by sha256. Calc-U-59: `Web/dist/` is
+location-independent, a host loads `calc.js` and `calc.css` and mounts
+the component `PlayCalculator` (props `layout`, `width`, `keyboard`);
+`MANIFEST.json` gives name, version, commit and files. Calc-U-1600: the
+component `CalcU1600` (props `width`, `height`, `keyboard`, `model`,
+`preset`, `workerUrl`), `files.json`, `MANIFEST.json`; styles of both
+under `.calcu-client` (`divergence-matrix.md`, M61).
+
+Options:
+- (a) **Recommended:** one embedding interface for the family, written
+  down once: a location-independent `dist/`, `MANIFEST.json` with the
+  same fields, styles under `.calcu-client`, one component per product
+  with the same prop names for the same things (`width`, `height`,
+  `keyboard`, `model`, `preset`), product props beside them. The
+  component names stay per product.
+- (b) Each product keeps its own: the site carries two embed codes that
+  drift.
+
+## Sessions, pacing and operations
+
+Added in the phase 4 review: the divergence matrix marked these "merge"
+(M10, M12, M17, M44), and no contract covered them. The facts and the
+rules that follow from decisions already taken come first; the three
+forks are proposed.
+
+### Today (facts)
+
+| | Calc-U-59 | Calc-U-1600 |
+|---|---|---|
+| Pacing | 20 ms batches of weighted steps against absolute deadlines; lag over 100 ms restarts the schedule; random jitter on batch ends (ODD59-5) (`Shared/Pacing.hpp`) | `shared::Pacer`: about 16 ms ticks against an absolute deadline; a stall over 0.1 s is dropped (`Shared/Pacer.hpp`) |
+| Full speed | holding the display, or `FullSpeed:`; still sleeps in the scan loop or after a hardware poll (ODD59-6) | holding the LCD: as many frames as fit in 14 ms; operations run at full speed |
+| Background | Swift and web pause; Qt keeps running (ODD59-25) | web pauses; Qt keeps running |
+| Long work | on the emulation thread | coroutine jobs, sliced (`start`) or to completion; Qt blocks in `runNow` and pumps its event loop |
+| A file dropped or opened | each frontend decides by name | classified in one place (`Core/DropFile`), by content through libsharpdx |
+
+### Rules that follow from decisions already taken
+
+- The machine session paces: it compares the machine's tick count
+  (`machine.md`, M-1) with the wall time the host passes to the tick; lag
+  beyond about 0.1 s is dropped (both products).
+- ODD59-5 and ODD59-6 stay (`docs/oddities-triage.md`) as pacing
+  parameters of the TI machines. The scan-loop sleep reads key readiness
+  from typing support (`typing.md`, T-2).
+- Holding the display runs at full speed in every product (both today).
+- Pausing in the background stays per frontend as today (ODD59-25
+  stays): the frontend sends pause and resume; the session decides
+  nothing about the host.
+- Long work is an operation: a coroutine job (ADR 0009), busy until it
+  ends (Q-1).
+
+### SP-1: One pacer, a pacing profile per model
+
+**Proposed; waits for the review gate.**
+
+Options:
+- (a) **Recommended:** one pacer in the library. A product supplies a
+  **pacing profile** per model, like the typing profile: the slice
+  length, the jitter (TI) and whether full speed sleeps while the
+  machine reports key readiness (TI).
+- (b) Each product keeps its pacer: the same absolute-deadline code
+  twice.
+
+### SP-2: How operations run on a GUI-thread host
+
+**Proposed; waits for the review gate.**
+
+Facts: FE-3 keeps the Qt6 session on the GUI thread; Calc-U-1600's Qt
+app runs operations with `runNow` (blocking, pumping the Qt event loop,
+"Loading…" popup), its web client with `start` (sliced per tick).
+
+Options:
+- (a) **Recommended:** operations always run sliced, one slice per host
+  tick, in every frontend; the frontend shows "Loading…" from the busy
+  state. `runNow` goes; the harness runs an operation to completion
+  because nothing else needs the thread.
+- (b) Keep `runNow` for Qt: two ways to run the same operation.
+
+### SP-3: Opening a file
+
+**Proposed; waits for the review gate.**
+
+Options:
+- (a) **Recommended:** one "open file" command on the app session for a
+  drop, Open With and a file picker that takes any file. The library
+  classifies the file (preset, medium, something of the product's); a
+  product adds its own file kinds (BASIC and machine-code programs, ASM
+  overlays) and their classifier. Calc-U-1600's way, for the family.
+- (b) Each frontend decides by file name (Calc-U-59 today).
+
 ## Fit table
 
 | | TI-59 (58, 58C) | PC-1500 (1500A) | PC-1600 | PC-1403 (paper) | PC-1350 (paper) |
@@ -145,9 +290,15 @@ Options:
 | Control state (FE-2) | model; module slot picker (ADR 0025); printer connect; card reader place (TI-59) | model, ROM variant; one slot picker; CE-150, CE-158 | model, ROM variant; two slot pickers; CE-1600P (+ disk picker, CE-1600P ROM variant), CE-150, CE-158 (MODE 1); host drive | model; 11-pin peripheral | model; RAM card picker; 11-pin and 15-pin peripherals |
 | Panels | printer paper (PC-100C), debug panel | paper (CE-150), CE-158 printer, debug panel | paper (CE-1600P), CE-158 printer, debug panel | paper (CE-126P) | paper (CE-126P, CE-515P) |
 | Sound out | none emulated (key click is a frontend feature) | buzzer PCM | buzzer PCM | buzzer | buzzer |
+| Stream topics (FE-5) | paper (PC-100C), log | paper (CE-150), CE-158 printer output | paper (CE-1600P), CE-158 printer output | paper (CE-126P) | paper |
+| Product topics (FE-6) | cue card, the debug panel's tabs, heatmap, ASM overlay | INSPECTOR views, CE-158 printer output | same, plus host drive | — | — |
+| Pacing profile (SP-1) | 20 ms slices, jitter, scan-loop sleep at full speed | about 16 ms slices | about 16 ms slices | — | — |
 
 ## Open questions
 
+- Q-3 (phase 4b, with the preset feature): What "idle" means per model
+  for a bare `- wait:` (`presets.md`, PR-5 gives it to both products;
+  Calc-U-59 has no such step today).
 - Q-1 (answered 2026-11-10): commands that would start an operation (load a
   preset, reset, cold boot, model switch, attach or detach, insert) are
   refused while one runs; user keys are dropped (T-4); everything else
@@ -176,3 +327,5 @@ Options:
 | 2026-11-10 | FE-2 | The rules about which controls a machine offers live in the library, as one generic control state computed from the descriptor and the live machine. |
 | 2026-11-10 | FE-3 | The Qt6 frontends keep their session on the GUI thread for the migration; the messages are the same as elsewhere, so moving later changes only the Qt host. |
 | 2026-11-10 | FE-4 | The contract requires one owner per host key at a time; which surface owns it is the frontend's. Today's behaviour stays (ODD59-3); the unified input surface stays a backlog item. |
+| 2026-11-10 | FE-5 | Three topic shapes: state topics (whole state), stream topics (appended since the last message, with a reset marker) and requests with one reply for large, rare things. Refines FE-1. |
+| 2026-11-10 | FE-6 | A product's app layer may define topics, commands and control-state entries of its own, on the same message path; only that product's frontends read them. Generic messages stay free of model-specific types (I-4). Refines FE-2. |

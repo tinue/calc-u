@@ -1,17 +1,19 @@
 # Contract: preset engine and family preset format
 
-Status: draft (2026-11-10). Forks PR-1 to PR-10 decided (decision log);
-open questions remain.
+Status: draft (2026-11-10). Forks PR-1 to PR-11 decided (decision log;
+PR-11 was added in the phase 4 review); open questions remain.
 
 Inherits: ADR 0016 (a preset always cold boots), 0017 (all-or-nothing
 parsing), 0018 (one family preset format, YAML-shaped, product-specific
 sections), 0021 (startup presets; three bundled Calc-U-59 startup
 presets), 0037 (only the current version is read; older files get a
-hint; shipped and hosted files are upgraded). Oddities: ODD59-9 (`#`
+hint; shipped and hosted files are upgraded; a one-time exception for
+the migration release, after which a release reads one version back).
+Oddities: ODD59-9 (`#`
 anywhere), ODD59-10 (registers written after the program), ODD59-13 (Adv
 needs `RegularSpeed:`), Calc-U-1600's preset rules
 (`docs/oddities-triage.md`). Builds on `typing.md` (T-1 to T-4),
-`peripherals.md` (P-1) and `machine.md` (M-3 key IDs).
+`peripherals.md` (P-1) and `machine.md` (M-3 key IDs, M-8 places).
 
 ## Today (facts)
 
@@ -48,6 +50,9 @@ to the second batch.
 - Every preset a product ships or calc-u.org hosts is in the current
   version and passes the reader before a release (ADR 0017, 0037).
 - Calc-U-59 ships three startup presets, one per model (ADR 0021).
+- A preset that builds a TI-58C cold boots it like any other machine;
+  `ti58c.mem` follows and then holds the new machine's constant memory
+  (`capabilities.md`, C-3). No preset key restores it.
 
 ## Non-responsibilities
 
@@ -269,6 +274,27 @@ Options:
 - (b) Product-specific keys (`solid-state-module:`): two names for "the
   module in the slot".
 
+### PR-11: One key for the printer; hardware keys are places
+
+**Decided (2026-11-10, in the review; approved by the user).** Amends
+PR-9.
+
+Facts: PR-9 kept Calc-U-1600's `plotter:` and gave the TI-59 `printer:`.
+The glossary has one term, Printer, "a peripheral that prints or plots:
+PC-100C, CE-150, CE-1600P". I-3 asks for one name per thing. Every
+Calc-U-1600 preset is rewritten for version 2 anyway (ADR 0037).
+
+Options:
+- (a) **Recommended:** `printer:` in every product (`printer: PC-100C`,
+  `printer: CE-150`, `printer: CE-1600P`); `plotter:` goes. The hardware
+  keys of a preset are the **places** of the model's descriptor
+  (`machine.md`, M-8: `slot-1`, `slot-2`, `printer`, `interface`) and its
+  media places (`floppy`), so the loader finds the connector through the
+  descriptor and does not know any model. `host-drive:` stays a
+  Calc-U-1600 key (a product section, ADR 0018).
+- (b) Keep `plotter:` for the Sharp models: two keys for one glossary
+  term.
+
 ### PR-10: ODD59-13 (Adv needs `RegularSpeed:`)
 
 Resolved by T-1, no fork: Adv repeats are gated by CPU steps, and a
@@ -280,7 +306,7 @@ at every speed. The oddity and its rule go.
 | | TI-59 (58, 58C) | PC-1500 (1500A) | PC-1600 | PC-1403 (paper) | PC-1350 (paper) |
 |---|---|---|---|---|---|
 | Extension (PR-2) | `.ti59`, `.ti58`, `.ti58c` | `.pc1500`, `.pc1500a` | `.pc1600` | not named yet (a model extension, by PR-2) | not named yet |
-| Hardware keys (PR-9) | `slot-1:` (Solid State ROM module), `printer: PC-100C` | `slot-1:`, `plotter: CE-150`, `interface: CE-158` | `slot-1:`, `slot-2:`, `plotter:`, `interface:`, `floppy:`, `host-drive:` | 11-pin peripheral | RAM card slot, 11-pin and 15-pin peripherals |
+| Hardware keys (PR-9, PR-11) | `slot-1:` (Solid State ROM module), `printer: PC-100C` | `slot-1:`, `printer: CE-150`, `interface: CE-158` | `slot-1:`, `slot-2:`, `printer:`, `interface:`, `floppy:`, `host-drive:` | 11-pin peripheral | RAM card slot, 11-pin and 15-pin peripherals |
 | Product sections (PR-3) | `partition:`, `program:` `steps: \|`, `registers: \|`, `cue-card: \|` | `program:` `file:` / `text: \|` | as PC-1500 | as PC-1500 | as PC-1500 |
 | `key:` (PR-5) | `- key: 2nd Pgm 0 1 SBR =` | `- key: mode cl` | `- key: mode cl` | key IDs of the model | key IDs of the model |
 | `type:` | — (no text typing) | yes | yes (KBII accents) | yes | yes |
@@ -312,4 +338,5 @@ at every speed. The oddity and its rule go.
 | 2026-11-10 | PR-8 | `fit:` (TI, GUI only) and generic `insert:` / `eject:` / `arm:` over media places marked pass-through or holding; sides generic; `medium:` sections for preset-defined media; `saveas:` stays. |
 | 2026-11-10 | PR-9 | Hardware keys shared (`slot-1:`, `slot-2:`, `printer:`, `plotter:`, `interface:`, `floppy:`, `host-drive:`); absent means none; a TI machine without a module is allowed. |
 | 2026-11-10 | PR-10 | ODD59-13 resolved by T-1 (emulated-time holds); no rule needed. |
+| 2026-11-10 | PR-11 | `printer:` in every product, `plotter:` goes; a preset's hardware keys are the places and media places of the model's descriptor. Amends PR-9. |
 | 2026-11-10 | PR-4 | Building runs at full speed; steps run at full speed by default, a speed step makes the following steps paced and visible. The whole preset is one operation (busy, user keys dropped); "Loading…" only while at full speed. |

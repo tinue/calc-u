@@ -1,6 +1,10 @@
 # Frontend components are shared per technology
 
-Status: accepted (2026-11-09)
+Status: accepted (2026-11-09); amended 2026-11-10 (user,
+`docs/contracts/debugger.md`, DB-6): the debug panel is not in the
+shared component sets. Each product keeps its own debug panel per
+frontend; the sets share only the run control's pause, step and resume
+controls.
 
 The library holds one Qt6 component set and one React component set,
 built around the capabilities (ADR 0007): media pickers, the printer's

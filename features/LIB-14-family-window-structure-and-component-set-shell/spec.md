@@ -216,7 +216,8 @@ Notices and the log
 Help and About
 - [ ] **AC-19** — Given the control state was not sent because the
   product could not start (LIB-4 AC-6), then the shell shows no control
-  bar and no Machine menu; Help and About still work.
+  bar and no Machine menu, and the message LIB-12 AC-5 gives in place of
+  the faceplate; Help and About still work.
 - [ ] **AC-20** — Given Help ▸ `<Product>` Help, then the product's help
   on calc-u.org opens in the user's browser, at the address the product
   gives (`help.md` HL-3).
@@ -235,6 +236,11 @@ The shell and what goes into it
   into the same area by the product's frontend code, from its own
   product entry (AC-42). Where the area is and how panels share it is
   the product's layout (ADR 0023).
+- [ ] **AC-43** — Given the pointer is pressed on the display of the
+  faceplate and held there, then the frontend commands full speed, and
+  regular speed when the pointer is let go or leaves the display (LIB-3
+  AC-21; both products today: Calc-U-59
+  `App/Views/KeyboardView.swift:136-152`, Calc-U-1600 `Shared/Pacer.cpp:51-60`).
 - [ ] **AC-24** — Given a faceplate and its hit map, which states an
   area for each key and one distance for the faceplate, then both
   component sets find the key for a pointer position by this rule: a
@@ -488,3 +494,4 @@ The shell and what goes into it
 | Proposed in this spec and accepted (user, 2026-11-10, batch 5 gate): a disabled control shows the reason of the control state as its tooltip (AC-5) | LIB-4 gives one reason per entry; this is where the user sees it | 2026-11-10 |
 | Proposed in this spec and accepted (user, 2026-11-10, batch 5 gate): the settings dialog applies every change at once and has only Close, in both products (Calc-U-59 applies some on close today) | Calc-U-1600's way; LIB-9 AC-6 | 2026-11-10 |
 | Proposed in this spec and accepted (user, 2026-11-10, batch 5 gate): the scenarios of AC-25 | ADR 0032 asks for named scenarios | 2026-11-10 |
+| Added with C59-8's cold read, for the batch 6 gate: holding the display commands full speed (AC-43); a failed start shows LIB-12's message (AC-19) | LIB-17 and LIB-12 name this feature as the owner | 2026-11-10 |

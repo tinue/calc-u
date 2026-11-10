@@ -205,11 +205,14 @@ The cue card that shows
   (`tests/shared_cooperative_tests.cpp:767-779`).
 
 What lasts
-- [ ] **AC-25** — Given a Reset or a power cycle, then what is fitted
-  stays fitted, and a card that is in the reader is taken out as by
-  Eject Card (user, batch 5 gate; behaviour change 59-17; OQ-1). Given a
-  new machine is built, by a model switch or a preset, then nothing is
-  fitted until the preset fits something.
+- [ ] **AC-25** — Given a Reset, on any model, then what is fitted stays
+  fitted, a cue card of any kind; a fitted magnetic card can be fed
+  again afterwards by its corners (AC-12); a card that is in the reader
+  at that moment is taken out as by Eject Card (user, batch 5 and batch
+  6 gates; behaviour change 59-17). The same holds for a power cycle
+  and a Cold boot (OQ-1). Given a new machine is built, by a model
+  switch or a preset, then nothing is fitted until the preset fits
+  something.
 
 Every frontend
 - [ ] **AC-26** — Given the Swift, Qt6 and Web frontends, then AC-11 to
@@ -269,13 +272,13 @@ Every frontend
   records of `tests/golden/formats.txt` are not carried over.
 
 ## Open Questions
-- [ ] **OQ-1** — What a Reset keeps (AC-25). You said that a Reset
-  keeps the cue card that is fitted. A magnetic card is one of the
-  three kinds of cue card, and today Reset, Clean, a module change and
-  the printer's switch all take it away. *Recommendation:* a fitted
-  magnetic card stays through a Reset and a power cycle too, since it
-  lies outside the machine, and the same holds for a Cold boot; only a
-  new machine starts with nothing fitted.
+- [ ] **OQ-1** — A power cycle and a Cold boot (AC-25). Decided for a
+  Reset (user, 2026-11-10, batch 6 gate): a fitted cue card stays on every model, and a fitted
+  magnetic card can still be fed. Today a module change, the printer's
+  switch and Clean take the card away as Reset does. *Recommendation:*
+  the same for a power cycle and a Cold boot, since the card lies
+  outside the machine; only a new machine starts with nothing
+  fitted.
 - [ ] **OQ-2** — `.bin` (AC-4). Today a card file can end in `.u59` or
   `.bin`; a `.bin` is one of the two binary layouts, which are no longer
   read. *Recommendation:* `.bin` is no longer a card; a `.bin` that is
@@ -301,7 +304,7 @@ Every frontend
 | Magnetic cards live in the save folder, also on the web; a card file elsewhere is not written back in place | ADR 0019; behaviour changes 59-6, 59-8 | 2026-11-10 |
 | `fit` places a card above the keys and affects only what the user sees; `insert` and `arm` go through the card reader, a pass-through media place | `presets.md` PR-8 | 2026-11-10 |
 | The cue card of the running module program is a Calc-U-59 product kind | `capabilities.md`, product kinds | 2026-11-10 |
-| Reset keeps the cue card that is fitted | user, 2026-11-10, batch 5 gate; behaviour change 59-17 | 2026-11-10 |
+| Reset keeps the cue card that is fitted, on all models; a fitted magnetic card can then still be fed | user, 2026-11-10, batch 5 and batch 6 gates; behaviour change 59-17 | 2026-11-10 |
 | Proposed in this spec, for the gate: the version is 3.0 and the name is the line `Name:` after the first line (AC-2) | `media.md` MD-2 asks for a name field and names no layout | 2026-11-10 |
 | Proposed in this spec, for the gate: a `medium:` section for a card has the fields of AC-18 | Today's `CARD: mem:` block, in the notation of version 2 | 2026-11-10 |
 | Proposed in this spec, for the gate: the machine itself says when it waits for a card (AC-9) | LIB-7 AC-6; the pacing already needs "needs a card now" from the machine | 2026-11-10 |

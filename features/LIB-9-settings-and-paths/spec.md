@@ -143,7 +143,9 @@ Paths
   save folder unless `[trace] folder` names another folder, serial links
   to the save folder unless `[serial] link-folder` names another folder,
   and screenshots to the save folder (`settings.md` ST-3, ST-4; the
-  other frontends: OQ-7).
+  other frontends: OQ-7). Given a Swift frontend, then screenshots go to
+  its save folder too, the iCloud Drive folder of AC-14 (user, batch 6
+  gate).
 - [ ] **AC-18** — Given a caller (the harness, a test) passes host
   directories of its own, then nothing is read from or written to the
   user's settings file and save folder.

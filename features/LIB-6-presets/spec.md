@@ -367,9 +367,10 @@ Harness
   AC-16); `switch: PC-100C TRACE on` and `off` set the TRACE switch of
   the PC-100C (today `PrinterTrace:`, `Shared/SessionController.cpp:674-676`);
   `elapsed: report` counts emulated time as LIB-11 AC-17 does.
-- [ ] **AC-41** — Given a preset is loaded, then the paper of the
-  PC-100C it names is empty at the start, as today
-  (`Shared/SessionController.cpp:655`; the paper as such: LIB-8).
+- [ ] **AC-41** — Given a preset is loaded by the user, then the paper
+  of the PC-100C it names is empty at the start, as today; a startup
+  preset at a model switch leaves the paper as it is
+  (`Shared/SessionController.cpp:655`; LIB-8 AC-8).
 - [ ] **AC-42** — Given the Swift, Qt6 and Web frontends, then each
   hands a preset to the session as a file in a folder or, where it has
   only the content (Swift on iOS, Web; EC-5), as its content, and
@@ -524,7 +525,7 @@ Harness
   supplies the picture of its segment display below the frontend, in the
   classic segment style, and a reference picture in the tests fixes its
   size and look.
-- [x] **OQ-4** — *Decided (user, 2026-11-10, batch 5 gate): the save folder in Qt6, as LIB-9 AC-17 says, and a download on the web; the Swift frontend with LIB-9 OQ-7.* The folder for screenshots outside Qt6 (AC-25) depends
+- [x] **OQ-4** — *Decided (user, 2026-11-10, batch 5 gate): the save folder in Qt6, as LIB-9 AC-17 says, and a download on the web. Swift (user, 2026-11-10, batch 6 gate): the iCloud Drive folder, which is its save folder.* The folder for screenshots outside Qt6 (AC-25) depends
   on LIB-9 OQ-7. Today Calc-U-1600 writes a preset's screenshot to the
   trace folder (`Core/Preset/PresetRunner.cpp:124-136`), while LIB-9
   AC-17 gives screenshots the save folder. *Recommendation:* settle it there; on the web

@@ -92,9 +92,10 @@ The kind
   starts a new paper.
 
 The topic
-- [ ] **AC-6** — Given a machine with paper output capabilities, then
-  the app session has one stream topic for each (LIB-3 AC-7), named
-  `paper` with the owner's name (`paper PC-100C`): a message carries the
+- [ ] **AC-6** — Given a product, then its app session has one stream
+  topic for each type of printer the product has (LIB-3 AC-7), named
+  `paper` with the owner's name (`paper PC-100C`), whether or not that
+  printer is plugged in: a message carries the
   marks and text lines appended since the last one and how far the paper
   reaches now (AC-4), or says that the paper was emptied. A frontend
   that starts to listen is sent the whole paper first (LIB-3 OQ-5, open
@@ -104,36 +105,41 @@ The topic
   AC-6).
 
 What the paper lives through
-- [ ] **AC-8** — Given what happens to a machine or to its printer, then
-  the paper is afterwards as this table says; where two rows apply, the
-  one about what is plugged in decides, and a power cycle that follows
-  changes nothing:
+- [ ] **AC-8** — Given a product, then its app session keeps one paper
+  for each type of printer the product has, from the start of the
+  product until it quits, whatever machine runs and whether or not that
+  printer is plugged in: one for the PC-100C in Calc-U-59; one for the
+  CE-150 and one for the CE-1600P in Calc-U-1600. A printer that is
+  attached prints onto the paper of its type as it was left, also on
+  another model: a plot the CE-150 made on a PC-1500 is on its paper
+  when it is attached to a PC-1600 (user, 2026-11-10, batch 6 gate). A paper is afterwards as this
+  table says:
 
-  | What happens | The paper |
+  | What happens | The paper of that printer |
   |---|---|
-  | Reset, Cold boot, a power cycle (LIB-18 AC-13, AC-29, AC-30) | stays |
-  | a printer is attached (LIB-18 AC-10) | starts empty |
-  | the printer is detached, by itself or with the peripheral it is plugged into (LIB-18 AC-10, EC-5) | gone (OQ-1) |
-  | the printer is replaced in one step by a printer of another type | gone; the new one starts empty |
-  | the printer is replaced in one step by another variant of itself (LIB-18 AC-31) | stays |
-  | a new machine is built by a model switch or a variant switch, with or without a startup preset (LIB-18 AC-6, AC-7, EC-1), and has a printer of the same type in the same place | carried over (LIB-18 OQ-6 as decided; OQ-5) |
-  | the same, and the new machine has no such printer | gone |
-  | the user loads a preset (LIB-6 AC-10) | empty at the start (LIB-6 AC-41) |
-  | a preset is refused before the build (LIB-6 AC-6) | stays |
+  | Reset, Cold boot, a power cycle | stays |
+  | the printer is detached, or the machine is replaced by one without it | kept, and not shown (AC-12) |
+  | the printer is attached again, on any model, in any variant | shown again as it was left |
+  | the user loads a preset that names the printer (LIB-6 AC-10) | empty at the start (LIB-6 AC-41) |
+  | a machine is built from a startup preset, at a model switch | stays |
   | Cut, `cut-paper` | empty |
+  | the product quits | gone; a paper is not saved |
 
-  (Calc-U-59 `Shared/SessionController.cpp:93-207, 655`; Calc-U-1600
-  `Core/tests/ce150_tests.cpp:204-222`.)
-- [ ] **AC-9** — Given a paper is carried over, then a frontend that
-  listens is sent nothing for it: neither that the paper was emptied nor
-  the paper again.
+  (Today: Calc-U-59 `Shared/SessionController.cpp:93-207, 655`;
+  Calc-U-1600 `Core/tests/ce150_tests.cpp:204-222`.)
+- [ ] **AC-9** — Given a printer is detached and attached again, or the
+  machine is replaced, then a frontend that listens is sent nothing for
+  the papers: which paper it shows follows from the control state
+  (AC-12).
 
 The paper panel
-- [ ] **AC-12** — Given the control state lists a paper panel (LIB-4
-  AC-1), then the panel shows, under the owner's name, the whole width
-  of the paper scaled to the width of the panel, with every mark at its
-  position: a dot in the grey of its darkness, a pen stroke in its
-  colour.
+- [ ] **AC-12** — Given a product with printers, then its paper panel is
+  always there (LIB-4 AC-1). While a printer is plugged in, it shows,
+  under the owner's name, the whole width of that printer's paper scaled
+  to the width of the panel, with every mark at its position: a dot in
+  the grey of its darkness, a pen stroke in its colour. While none is
+  plugged in, it shows an empty paper under no name, and Copy and Cut
+  cannot be used (user, 2026-11-10, batch 6 gate).
 - [ ] **AC-13** — Given the paper grows while the view is at its end or
   no more than 64 points from it, then the view follows the newest
   marks; given the user has scrolled further back, then it stays where
@@ -231,10 +237,12 @@ Step and commands
   switch (AC-15; C59-6), and the control for the marks and the text
   (AC-14). In the Web frontend that control shows today the view it
   would switch to (`Web/src/Printer.jsx:132-133`).
-- [ ] **AC-29** — Given the PC-100C is detached, then its paper is gone
-  (AC-8). Today the paper stays through a disconnect and through every
-  model switch (`Shared/SessionController.cpp:368-371`,
-  `tests/shared_controller_tests.cpp:119-132`; OQ-1).
+- [ ] **AC-29** — Given the PC-100C is detached, then the paper panel
+  shows an empty paper without a name, and its paper is back when it is
+  attached again, on any model (AC-8, AC-12). Today the paper stays in
+  view through a disconnect and through every model switch
+  (`Shared/SessionController.cpp:368-371`,
+  `tests/shared_controller_tests.cpp:119-132`).
 - [ ] **AC-30** — Given what the tests of Calc-U-59 check today about
   the paper, then it holds: the shape of the font, the heights of a
   feed, a complete and a cut-short line, the rows of a printer-interrupt
@@ -265,11 +273,13 @@ Step and commands
 - [ ] **AC-35** — Given Copy on a plotter's paper, then the picture is
   at 1200 dots per inch unless AC-17 lowers it; a short CE-1600P paper
   gives 9921 pixels of width (`Shared/tests/shared_geometry_tests.cpp:56-68`).
-- [ ] **AC-36** — Given the ROM of the model, or of the CE-1600P, is
-  switched, then the paper stays (AC-8). Today it is lost, as it
-  is when a module is chosen (`Shared/MachineSession.cpp:86-142, 732-739`);
-  a module change is a power cycle now (LIB-18 AC-29), so the paper
-  stays there too (OQ-2).
+- [ ] **AC-36** — Given Calc-U-1600, then the paper panel is always
+  shown, with the plotter's name while one is plugged in, and each of
+  the two plotters keeps its paper through a detach, a change of ROM, a
+  module change and a model switch (AC-8). Today the panel is there
+  only while a plotter is plugged in, and the paper is lost at each of
+  these (`Qt6/app/MainWindow.cpp:509-528`,
+  `Shared/MachineSession.cpp:86-142, 732-739`).
 - [ ] **AC-37** — Given what the tests of Calc-U-1600 check today about
   the paper, then it holds: how steps become places, a stroke per pen
   down, the colour changes of both plotters, the paper kept through a
@@ -290,9 +300,12 @@ Step and commands
   commands are refused. Given an empty paper, then `paper text` and
   `paper marks` reply with no lines but `reach 0 0`.
 - **EC-7** — Given the printer is detached in the middle of a line, then
-  the rest of the line is not printed, and the paper is gone like any
-  other (AC-8; C59-6 EC-2 says today that the printed rows stay, which
-  OQ-1 settles).
+  the rest of the line is not printed, and what was printed stays on its
+  paper (AC-8; C59-6 EC-2).
+- **EC-8** — Given the `paper` commands of AC-23 for a printer that is
+  not plugged in, then they work on its kept paper when its name is
+  given; without a name they mean the printer that is plugged in, and
+  are refused when none is.
 - **EC-3** — Given a frontend starts to listen while the paper is long,
   then it is sent the whole paper once and from then on only what is
   appended (AC-6).
@@ -315,7 +328,7 @@ Step and commands
 - Paper output crosses the machine as marks; the machine draws nothing.
 
 ## Open Questions
-- [ ] **OQ-1** — What becomes of the paper when its printer is detached
+- [x] **OQ-1** — *Decided (user, 2026-11-10, batch 6 gate): the paper panel is always shown; without a printer it shows an empty paper without a name; each printer type keeps its paper for the whole run of the product, so it is back when the printer is attached again, also on another model (AC-8, AC-12).* What becomes of the paper when its printer is detached
   (AC-8, AC-29). Today Calc-U-59 keeps it through a disconnect and
   shows it again on reconnect; Calc-U-1600 loses it. LIB-18 OQ-6 decided
   for the model switch that the paper goes when the new machine has no
@@ -323,7 +336,7 @@ Step and commands
   belongs to the printer and goes with it. This is a visible change for
   Calc-U-59 and gets a row in `docs/behaviour-changes.md`; C59-6 EC-2 is
   then reworded (EC-7).
-- [ ] **OQ-2** — AC-36 keeps a plotter's paper where Calc-U-1600 loses
+- [x] **OQ-2** — *Decided (user, 2026-11-10, batch 6 gate): kept, see OQ-1.* AC-36 keeps a plotter's paper where Calc-U-1600 loses
   it today (a ROM switch, a module change). *Recommendation:* keep it,
   as AC-8 says; it follows from one rule for both products, and
   the row of OQ-1 names it.
@@ -336,7 +349,7 @@ Step and commands
   are what the reference runs of the examples are compared with (AC-39),
   so they must not change once those runs are recorded.
   *Recommendation:* as written in AC-23.
-- [ ] **OQ-5** — A model switch with a startup preset (AC-8). LIB-18
+- [x] **OQ-5** — *Decided (user, 2026-11-10, batch 6 gate): kept, see OQ-1; only a preset the user loads starts with empty paper.* A model switch with a startup preset (AC-8). LIB-18
   OQ-6 decided that the paper stays at a model switch while the new
   machine has a PC-100C; LIB-6 AC-41 says a preset starts with empty
   paper, and each startup preset of Calc-U-59 connects the PC-100C
@@ -352,7 +365,7 @@ Step and commands
 | One paper panel per component set; Copy gives the picture always and the text when there is a text layer; Cut and `cut-paper` exist once | `capabilities.md` C-2; ADR 0023 | 2026-11-10 |
 | The CE-158's printer port stays a product kind; a text layer for the plotters is a backlog idea | `capabilities.md` C-2 | 2026-11-10 |
 | `cut-paper:` is a step in every product | `presets.md` PR-7 | 2026-11-10 |
-| At a model switch the paper stays while the new machine has the same printer, and goes otherwise | LIB-18 OQ-6 (user, batch 4 gate) | 2026-11-10 |
+| The paper panel is always shown. Each type of printer keeps one paper for the run of the product: empty panel without a name while none is plugged in, the paper back when the printer is attached again, also on another model. This replaces the batch 4 answer that the paper goes at a model switch without the printer | user, 2026-11-10, batch 6 gate | 2026-11-10 |
 | A preset starts with empty paper | LIB-6 AC-41; both products today | 2026-11-10 |
 | Proposed in this spec, for the gate: the caps of AC-17 for both products (Calc-U-59 has only the 16000 pixels today) | One rule; no PC-100C picture reaches 64 million pixels | 2026-11-10 |
 | Proposed in this spec, for the gate: Cut cuts also when the copy failed (AC-18) | All frontends today | 2026-11-10 |

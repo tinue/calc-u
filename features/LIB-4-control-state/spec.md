@@ -68,8 +68,9 @@ What the three status columns mean for this feature:
   each media place of the machine and of the peripherals plugged in,
   with its owner, its kind, whether it is pass-through or holding, and
   its sides;
-  the panels the machine offers now: one paper panel per paper output
-  capability, with its owner;
+  the panels: one paper panel in a product that has printers, always,
+  with the printer that is plugged in as its owner, or none (LIB-8
+  AC-12);
   the actions that start an operation and are not a choice among
   entries: Reset, Cold boot, and loading a preset or opening a file,
   each available now or not, with the reason;
@@ -125,9 +126,9 @@ What the three status columns mean for this feature:
   (`App/Views/CalculatorView.swift:347-367`, `App/MachineModel.swift:16-33`,
   `Qt6/app/ControlBar.cpp:93-100`, `Qt6/app/MainWindow.cpp:57-58`,
   `Web/src/ControlBar.jsx:85, 103-111`; behaviour change 59-14).
-- [ ] **AC-13** — Given a PC-100C is plugged in, then the control state
-  lists a paper panel owned by it; given none, then it lists no paper
-  panel.
+- [ ] **AC-13** — Given Calc-U-59, then the control state always lists
+  the paper panel, owned by the PC-100C while it is plugged in and by
+  nothing otherwise (LIB-8 AC-12; user, batch 6 gate).
 - [ ] **AC-14** — Given Calc-U-59, then its product entries can say what
   its debug panel offers now (specified in C59-4; OQ-4).
 - [ ] **AC-15** — Given the Swift, Qt6 and Web frontends of Calc-U-59,

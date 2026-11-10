@@ -302,7 +302,7 @@ While an operation runs
 - [x] **OQ-5** — *Decided as recommended (user, 2026-11-10, batch 4 gate).* The names of the harness commands (AC-15). Presets name
   hardware in their header and have no such steps. *Recommendation:* as
   in AC-15.
-- [x] **OQ-6** — *Decided as recommended (user, 2026-11-10, batch 4 gate).* Calc-U-59 keeps the paper, the log and the debug
+- [x] **OQ-6** — *Decided as recommended (user, 2026-11-10, batch 4 gate). Amended (user, 2026-11-10, batch 6 gate): the paper is kept per printer for the run of the product and is back when the printer is attached again (LIB-8 AC-8).* Calc-U-59 keeps the paper, the log and the debug
   settings across a model switch today
   (`tests/shared_controller_tests.cpp:119-132`). The paper belongs to a
   printer that the new machine may not have. *Recommendation:* the log

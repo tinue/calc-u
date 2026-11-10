@@ -230,9 +230,9 @@ The shell and what goes into it
   for the tests, then the shell of the Qt6 component set and the shell
   of the React component set each show AC-1 to AC-21 for them, with no
   code of a product (ADR 0023; `frontend.md` I-4).
-- [ ] **AC-23** — Given a paper panel the control state lists, then the
-  shell shows it in the area for panels while it is listed and takes it
-  away when it is not (LIB-4 AC-1, AC-13). A panel of the product is put
+- [ ] **AC-23** — Given the paper panel the control state lists, then
+  the shell shows it in the area for panels, always, with or without an
+  owner (LIB-4 AC-1; LIB-8 AC-12). A panel of the product is put
   into the same area by the product's frontend code, from its own
   product entry (AC-42). Where the area is and how panels share it is
   the product's layout (ADR 0023).
@@ -379,8 +379,9 @@ The shell and what goes into it
   `Web/src/Dialogs.jsx:232-246`).
 - [ ] **AC-40** — Given the windows of Calc-U-1600, then their layout is
   that of today: the faceplate, below it the control bar, below it the
-  row with the INSPECTOR and, while they are plugged in, the paper panel
-  and the CE-158 printer panel; in the Web frontend the panels appear
+  row with the INSPECTOR, the paper panel, which is now always there
+  (LIB-8 AC-36), and, while the CE-158 is plugged in, its printer panel;
+  in the Web frontend the panels appear
   only when there is room for them, as today
   (`Qt6/app/MainWindow.cpp:89-124, 511-528`, `Web/src/CalcU1600.jsx:348-408`).
 - [ ] **AC-41** — Given Edit ▸ Copy Screen, then the clipboard gets the
@@ -399,9 +400,9 @@ The shell and what goes into it
 - **EC-4** — Given a model switch changes what the control state lists,
   then the menus and the bar show the new entries without the window
   being opened anew.
-- **EC-5** — Given a peripheral is plugged in or removed, then a panel
-  it owns appears or goes (AC-23) and the other panels keep their
-  content.
+- **EC-5** — Given a printer is plugged in or removed, then the paper
+  panel shows that printer's paper under its name, or an empty paper
+  under none (LIB-8 AC-12), and the other panels keep their content.
 - **EC-6** — Given the address of AC-20 cannot be opened (no browser, no
   network), then nothing else happens; the machine is not affected.
 - **EC-7** — Given an operation goes from regular speed back to full

@@ -62,17 +62,18 @@ Menus
   before the keyboard map sees the key (LIB-14 AC-4). Settings…, About
   and Quit are in the application menu. Today the app adds only About
   (`App/Calc-U-59App.swift:31-37`; behaviour change 59-14).
-- [ ] **AC-18** — Given the family's menus in the Swift frontend, on
-  macOS in the menu bar and on iOS behind the menu button of AC-5, then
+- [ ] **AC-18** — Given the family's menus in the Swift frontend, in the
+  menu bar of macOS and in the menu bar iPadOS gives an app (EC-6), then
   they hold, in this order:
 
   | Menu | Items |
   |---|---|
-  | File | Load Preset…; Examples ▸ with one submenu per group, when the preset list has examples; the magnetic card items (C59-7), on the TI-59; on iOS Settings… |
+  | File | Load Preset…; Examples ▸ with one submenu per group, when the preset list has examples; the magnetic card items (C59-7), on the TI-59 |
   | Machine | Model ▸; Peripherals ▸; Reset; Cold boot |
   | Help | "Calc-U-59 Help" |
 
-  (LIB-14 AC-1, AC-26.)
+  An item that cannot be used now is shown disabled, not left out
+  (LIB-14 AC-1, AC-5, AC-26; Apple's guidelines for the menu bar).
 - [ ] **AC-2** — Given Help ▸ "Calc-U-59 Help", then `https://calc-u.org/59/`
   opens in the browser (LIB-14 AC-32); today the Swift frontend has no
   help item (`reference/FrontendParity.md:84`).
@@ -89,13 +90,15 @@ Control bar
   longer on the bar, and holding Command to turn Reset into "Clean" is
   gone: both are the menu items of AC-18 (LIB-14 AC-28;
   `App/Views/CalculatorView.swift:214-222, 304-315`).
-- [ ] **AC-5** — Given iOS and iPadOS, then a menu button is the first
-  control of the bar, before the model picker; it opens a menu with the
-  submenus File, Machine and Help of AC-18. The buttons Reset, Preset
-  and Settings are no longer on the bar, and the long press on Reset for
-  "Clean" is gone, because Cold boot is a menu item (ADR 0024: "on iOS
-  the same items appear without a menu bar";
-  `App/Views/CalculatorView.swift:316-393`; OQ-1).
+- [ ] **AC-5** — Given iOS and iPadOS, where an app cannot count on a
+  menu bar, then every item of AC-18 can be reached in the window: the
+  bar keeps the buttons Reset, Preset (Load Preset…) and Settings of
+  today, next to the controls of AC-3, and a More button, with the
+  ellipsis, opens a menu with the items that have no control of their
+  own: Examples ▸, Cold boot, and "Calc-U-59 Help". Cold boot is marked
+  as destructive there and asks before it is carried out. The long press
+  on Reset for "Clean" is gone (ADR 0024: "on iOS the same items appear
+  without a menu bar"; `App/Views/CalculatorView.swift:316-393`; OQ-1).
 - [ ] **AC-6** — Given any control or menu item that is drawn from the
   control state, then it can be used exactly when its entry is available
   now (LIB-14 AC-5). On macOS the reason is its help tag, which a test
@@ -103,7 +106,8 @@ Control bar
   shown, and neither is the description of a module (LIB-7 AC-8).
 
 Settings
-- [ ] **AC-7** — Given Settings…, then it opens as the settings window
+- [ ] **AC-7** — Given Settings…, on iOS and iPadOS the Settings button
+  of the bar, then it opens as the settings window
   of the app on macOS and as a sheet on iOS, whose one button is Done,
   the native form of Close (LIB-14 AC-11), and holds:
 
@@ -166,15 +170,14 @@ The native counterparts
 
 Layout
 - [ ] **AC-15** — Given the windows of the Swift frontend, then their
-  layouts are today's, with the paper panel there only while the control
-  state lists it (LIB-4 AC-13; LIB-14 AC-23): on macOS the faceplate,
+  layouts are today's, with the paper panel always there (LIB-8 AC-12):
+  on macOS the faceplate,
   the paper panel and the debug panel side by side; on iOS and iPadOS
   side by side when the window is wider than high and at least 820 by
   560 points, the faceplate and the paper panel alone when it is wider
   than high and smaller, and otherwise pages that are turned with the
   arrows at the corners, the debug panel as a page among them when
-  Debug Page in Portrait is on. Without a paper panel its room goes to
-  the debug panel, or its page is not there. The iPhone is used in
+  Debug Page in Portrait is on. The iPhone is used in
   portrait only (`App/Views/CalculatorView.swift:228-276, 429-477`,
   `Shared/DebugText.cpp:16-30`).
 
@@ -185,21 +188,21 @@ Scenarios
 
   | ID | On macOS | On iOS |
   |---|---|---|
-  | LIB-14 AC-1 | the three menus and their items are in the menu bar | they are behind the menu button |
+  | LIB-14 AC-1 | the three menus and their items are in the menu bar | every item is on the bar or behind the More button |
   | LIB-14 AC-4 | Command+R resets | not there |
   | LIB-14 AC-6 | Settings…, About and Quit are in the application menu | not there |
-  | LIB-14 AC-8 | the bar holds the controls of AC-3 | the same, after the menu button |
+  | LIB-14 AC-8 | the bar holds the controls of AC-3 | the same, with the buttons of AC-5 |
   | LIB-14 AC-11 | the settings window with the rows of AC-7 | the sheet with the rows of AC-7 |
   | LIB-14 AC-15 | "Loading…" shows during a long load | the same |
   | LIB-14 AC-17 | a notice shows as an alert and goes with OK | the same |
-  | LIB-14 AC-20 | the help item is there and can be chosen | the same, in the menu |
+  | LIB-14 AC-20 | the help item is there and can be chosen | the same, behind the More button |
   | LIB-14 AC-24 | a click on a key presses it | a touch on a key presses it |
   | C59-8 AC-15 | one picture of the window | one picture per layout |
   | LIB-6 AC-42 | a bundled example is loaded and the display shows its result | the same |
   | LIB-8 AC-31 | the PC-100C prints, the text view shows it, Cut empties the paper | the same |
 
 - [ ] **AC-17** — Given what the XCUITest suite checks today, then it
-  holds, with Reset, Preset and Settings found in the menus: the
+  holds, on macOS with Reset and Preset found in the menus: the
   controls can be reached in portrait and, on the iPad, in landscape; a
   wide window shows the debug panel and its tabs take taps; the file
   picker opens and opens again after Cancel; a preset loaded through it
@@ -216,8 +219,9 @@ Scenarios
   `App/Views/CalculatorView.swift:84-147`).
 
 ## Edge Cases
-- **EC-1** — Given the menu of AC-5 is open when an operation starts,
-  then its items follow the control state as soon as it changes.
+- **EC-1** — Given the More menu of AC-5 is open when an operation
+  starts, then its items follow the control state as soon as it
+  changes.
 - **EC-2** — Given a notice arrives while the settings sheet is open on
   iOS, then it is shown over the sheet.
 - **EC-3** — Given a TI-58 or TI-58C, then the bar and the menus show
@@ -226,11 +230,13 @@ Scenarios
   can be reached; where the bar is too narrow for labels, the controls
   show their icons only, as today (`Shared/DebugText.cpp:16-30`).
 - **EC-5** — Given the PC-100C is attached or detached, then the paper
-  panel appears or goes (AC-15), and the other panels keep what they
-  show (LIB-14 EC-5).
-- **EC-6** — Given an iPad on which the system shows a menu bar for the
-  app, then the menus of AC-18 are there too, with the shortcuts of
-  AC-1; the menu button of AC-5 stays (OQ-1).
+  panel shows its paper under its name, or an empty paper under none
+  (LIB-8 AC-12), and the other panels keep what they show (LIB-14 EC-5).
+- **EC-6** — Given an iPad, where the system shows a menu bar for the
+  app when the user reveals it, then the menus of AC-18 are there, with
+  the shortcuts of AC-1, and the bar of AC-5 stays as it is, because the
+  menu bar is hidden most of the time. The item for settings that the
+  system puts into the app's own menu is left to the system (OQ-1).
 
 ## Technical Requirements (optional)
 - A view decides no rule about what the machine offers; it draws the
@@ -247,18 +253,30 @@ Scenarios
 
 ## Open Questions
 - [ ] **OQ-1** — iOS without a menu bar (AC-5, AC-18, EC-6; LIB-14 OQ-3
-  left it to this spec). *Recommendation:* one menu button at the start
-  of the bar with the family's menus as submenus, as the Web frontend
-  has in its portrait layout (LIB-14 AC-29); Reset, Preset and Settings
-  leave the bar, and the long press for "Clean" goes; where iPadOS shows
-  a menu bar, the same menus are there as well.
+  left it to this spec). You asked whether one menu button for
+  everything is accepted by Apple. Checked against Apple's Human
+  Interface Guidelines on 2026-11-10: they say "Avoid putting all of a
+  view's actions in one pull-down button", because the main actions must
+  be easy to find, and "Consider using a More pull-down button to
+  present items that don't need prominent positions in the main
+  interface"; the menu bar is "not supported in iOS", and on an iPad it
+  is hidden until revealed, so an app must "ensure that people can
+  access all of your app's functions through its UI"; an item that is
+  not actionable is disabled, not hidden; and the app menu's Settings
+  item is reserved for the app's page in the system's Settings. These
+  are design guidelines; whether App Review enforces them was not
+  checked. *Recommendation:* as AC-5 and EC-6 now say: the bar keeps
+  Reset, Preset and Settings; a More button holds Examples, Cold boot
+  (with a confirmation) and Help; on the iPad the same items are also in
+  the system's menu bar. The Web frontend's portrait layout (LIB-14
+  AC-29) should then follow the same pattern.
 - [ ] **OQ-2** — Row 59-14 names the Web frontend's changes and not this
   frontend's. *Recommendation:* extend it: in the Swift frontend, Reset,
   Preset and Settings are menu items on iOS too and the long press for
   "Clean" goes; on macOS "Clean" with Command held goes, the model
   picker moves from the window toolbar to the control bar, and Help is
-  new; the paper panel is there only while the PC-100C is plugged in, in
-  every frontend.
+  new. The first part changes with OQ-1: on iOS the three buttons stay
+  and only the long press goes.
 - [ ] **OQ-3** — A startup preset from a file of the user's (LIB-14
   AC-12 gives "Choose…" to Qt6 only). *Recommendation:* not in the Swift
   frontend now: the bundled ones and "None", as on the web.
@@ -281,3 +299,4 @@ Scenarios
 | Proposed in this spec, for the gate: "Loading…" is a small sign that takes no touches (AC-9); a notice alert has the notice as its only text (AC-10) | LIB-14 AC-16, AC-17 | 2026-11-10 |
 | Proposed in this spec, for the gate: the reason of a control that cannot be used is its help tag on macOS and is not shown on iOS (AC-6) | iOS has no such text | 2026-11-10 |
 | Proposed in this spec, for the gate: Copy keeps its two forms of today on macOS and iOS (AC-13) | Today's behaviour | 2026-11-10 |
+| The paper panel is always there, empty and without a name while the PC-100C is detached | user, 2026-11-10, batch 6 gate; LIB-8 AC-12 | 2026-11-10 |

@@ -155,7 +155,9 @@ Operations and busy
   the machine runs inside it at full speed unless the
   operation asks for regular speed for a stretch, which is then paced
   like any regular-speed running (`presets.md` PR-4; behaviour change
-  59-5).
+  59-5). The busy topic also says, for every operation, whether it runs
+  at full speed or at regular speed now, so that a frontend shows
+  "Loading…" only for the first (LIB-6 AC-22, LIB-14 AC-15).
 - [ ] **AC-15** — Given an operation runs, when the display, the paper
   or any other topic changes, then the change is sent at the end of the
   host call in which it happened (`frontend.md` I-5).
@@ -383,3 +385,4 @@ Invariants checked in review and in the phase 5 walkthroughs:
 | The app session owns the busy state and the audio policy | `frontend.md`, responsibilities (adopted from Calc-U-1600) | 2026-11-10 |
 | Proposed in this spec, for the gate: a frontend that starts to listen is sent every state topic once (AC-6) and states its host services (AC-26); a suspend and a debugger pause do not end each other (AC-25); a host service is asked with one message and answered with one, without making the session busy (AC-27) | AC-6 follows from FE-1 ("never asks back"); the others make the seam checkable and no contract states them | 2026-11-10 |
 | Every command gets a short reply: done, or refused with the reason | user, 2026-11-10, batch 2 gate | 2026-11-10 |
+| Proposed with LIB-6 and LIB-14, for the batch 5 gate: the busy topic says whether the running operation is at full speed or at regular speed now (AC-14) | `presets.md` PR-4: "Loading…" only while it runs at full speed | 2026-11-10 |

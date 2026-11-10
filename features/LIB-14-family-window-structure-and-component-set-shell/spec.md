@@ -34,10 +34,14 @@ Words used here that the glossary does not define yet (OQ-6):
   and its on-screen keys; the **hit map** says which area of it is which
   key (ADR 0023; `frontend.md`, non-responsibilities).
 
+Words of other specs used here: "notice", "log" and "busy topic" (LIB-3
+AC-9 to AC-11, AC-14), "live input" (LIB-5 AC-2), "preset list" (LIB-6
+AC-31), "product entry" (LIB-4 AC-7).
+
 What the three status columns mean for this feature:
 - **Library:** the shell exists in the Qt6 and in the React component
-  set and is shown to work with a control state, settings and a
-  catalogue built for the tests, without code of a product.
+  set and is shown to work with a control state, settings and a preset
+  list built for the tests, without code of a product.
 - **Calc-U-59:** its Qt6 and Web frontends are put together from the
   shell. Its Swift frontend follows natively and is C59-8.
 - **Calc-U-1600:** its Qt6 and Web frontends are put together from the
@@ -63,7 +67,8 @@ What the three status columns mean for this feature:
   C59-7), the paper panel with Copy and Cut (LIB-8), the run-control
   buttons (LIB-10), the file pickers and the drop (LIB-13), the debug
   panel of Calc-U-59 (C59-4). The INSPECTOR and the CE-158 printer panel
-  of Calc-U-1600 stay as they are and are product material.
+  of Calc-U-1600 stay as they are and are product material; the status
+  and the Disconnect button of its debug server are C1600-3's.
 - The Swift frontend (owner: C59-8); the embedding of a Web frontend,
   its props and its worker (LIB-15).
 - The layout of a product's window, its faceplates and its hit maps
@@ -84,7 +89,7 @@ Menus
 
   | Menu | Items | Comes from |
   |---|---|---|
-  | File | Load Preset…; Examples ▸ (one submenu per group, when the catalogue lists examples) | LIB-13, LIB-6 |
+  | File | Load Preset…; Examples ▸ (one submenu per group, when the preset list has examples) | LIB-13, LIB-6 |
   | File | the product's own kinds of files | LIB-13; C1600-2 |
   | File | the items for media | LIB-7; C59-7; the host drive of Calc-U-1600 |
   | File | Settings…; Quit | this feature (AC-11); the platform |
@@ -97,20 +102,26 @@ Menus
   product's models with the running one marked, and choosing another
   sends the model switch (LIB-18 AC-6); for the running model, and for
   each plugged-in peripheral, that has variants, a submenu lists them
-  with the running one marked, under a label the product gives
+  with the running one marked, under a label the product gives;
+  choosing another sends the variant switch for a model (LIB-18 AC-7)
+  and the replace by that variant for a peripheral (LIB-18 AC-10, AC-31)
   (Calc-U-1600 `Qt6/app/MainWindow.cpp:858-1018`).
 - [ ] **AC-3** — Given the control state, then Machine ▸ Peripherals
-  lists every place that is not a module slot with the peripherals that
-  fit it, the plugged-in one marked; choosing one attaches it, choosing
-  the marked one detaches it (LIB-18 AC-10).
+  lists every place that has a control by AC-9 with the peripherals that
+  fit it, the plugged-in one marked; choosing one that is not plugged in
+  sends its attach, which replaces what is there (LIB-18 AC-10; LIB-2
+  AC-35), and choosing the marked one sends the detach.
 - [ ] **AC-4** — Given Machine ▸ Reset and Machine ▸ Cold boot, then
-  they send those commands (LIB-18 AC-13); their shortcuts are Ctrl+R
-  and Ctrl+Shift+R, with the Command key on macOS (Calc-U-1600
+  they send those commands (LIB-18 AC-13); in a Qt6 frontend their
+  shortcuts are Ctrl+R and Ctrl+Shift+R, and Ctrl+O is Load Preset…,
+  with the Command key on macOS. A Web frontend binds no shortcut to a
+  menu item, because these are the browser's own. A shortcut is taken
+  before the keyboard map sees the key (Calc-U-1600
   `Qt6/app/MainWindow.cpp:1025-1050`; `docs/glossary-mapping.md`).
 - [ ] **AC-5** — Given any menu item or control that is drawn from the
   control state, then it can be used exactly when its entry is available
-  now, and otherwise it is shown disabled with the entry's reason as its
-  tooltip (LIB-4 AC-2, AC-3).
+  now, and otherwise it is shown disabled, with the entry's reason as
+  its tooltip where the platform shows tooltips (LIB-4 AC-2, AC-3).
 - [ ] **AC-6** — Given the Qt6 frontend on macOS, then Settings…, About
   and Quit are in the application menu, as the platform expects; given a
   Web frontend, then there is no Quit.
@@ -120,18 +131,27 @@ Menus
 
 Control bar
 - [ ] **AC-8** — Given the control state, then the control bar below the
-  faceplate holds, from left to right and in the order of the
-  descriptors: the model picker; for each module slot its picker
-  (LIB-7), with the slot's number before it when the model has more than
-  one; for each other place the control of AC-9; and for each media
-  place the controls of its owner (LIB-7, C59-7) (ADR 0024, 0025;
-  Calc-U-1600 `Qt6/app/ControlBar.cpp:76-272`).
+  faceplate holds these groups from left to right, and inside a group
+  the entries in the order of the descriptors: the model picker; for
+  each module slot its picker (LIB-7), with the slot's number before it
+  when the model has more than one; for each other place the control of
+  AC-9; and for each media place the control state lists, the controls
+  of its owner (LIB-7, C59-7) (ADR 0024, 0025; Calc-U-1600
+  `Qt6/app/ControlBar.cpp:76-272`).
+- [ ] **AC-42** — Given a product's app layer has a product entry for a
+  control of its own on the bar, or one that keeps a control of AC-8
+  shown while it cannot be used, then the product's frontend code reads
+  that entry and puts the control into the group the shell gives it; the
+  shell itself reads no product entry (`frontend.md` I-4, FE-6).
 - [ ] **AC-9** — Given a place that is not a module slot, then its
   control is a button that shows the peripheral's name and whether it is
   plugged in, when exactly one peripheral fits the place, and a picker
-  with the empty place as a choice, when several fit (OQ-2). A place
-  whose peripheral needs more than a choice to be attached (the host
-  drive's folder) has no control on the bar.
+  with the empty place as a choice, when several fit (OQ-2). Pressing
+  the button sends the attach when the place is empty and the detach
+  when it is not (LIB-18 AC-10). A place whose peripheral needs more
+  than a choice to be attached (the host drive's folder) has no control
+  on the bar and no entry under Peripherals ▸; its owner adds its own
+  menu items (AC-7).
 - [ ] **AC-10** — Given a model without a place or a media place, then
   the bar has no control for it and no gap where it would be (LIB-4
   AC-5).
@@ -140,7 +160,7 @@ Settings dialog
 - [ ] **AC-11** — Given Settings…, then a dialog titled "Settings" opens
   with these sections, each shown when the frontend has one of its
   settings (LIB-9 AC-25, AC-32); a change is applied and written at
-  once (LIB-9 AC-6), and the only button is Close:
+  once, so that it is kept (LIB-9 AC-6), and the only button is Close:
 
   | Section | Setting | Key (LIB-9) |
   |---|---|---|
@@ -154,36 +174,39 @@ Settings dialog
   (Calc-U-1600 `Qt6/app/SettingsDialog.cpp:29-383`, Calc-U-59
   `Qt6/app/SettingsDialog.cpp:19-94`.)
 - [ ] **AC-12** — Given the row of a model under Startup presets, then
-  it offers "None", the startup presets the catalogue lists for that
+  it offers "None", the startup presets the preset list has for that
   model (LIB-6 AC-32), shown with name and description, and the file
   that is set now when it is not one of them; in a Qt6 frontend
   "Choose…" also sets a preset file from a folder (Calc-U-1600
   `Qt6/app/SettingsDialog.cpp:168-211`, `Web/src/Dialogs.jsx:189-230`).
 - [ ] **AC-13** — Given a setting that is a folder, then its row shows
   the folder in use, with `~` for the home folder, a "Change…" button,
-  and a "Reset" button that can be used only while the setting differs
-  from its default (both products' Qt6 frontends today: Calc-U-1600
+  and a button labelled "Reset", as today, which puts the setting back
+  to its default and can be used only while it differs from it (both products' Qt6 frontends today: Calc-U-1600
   `Qt6/app/SettingsDialog.cpp:97-131`).
 - [ ] **AC-14** — Given the settings dialog is open, when an operation
   runs, then the settings can still be changed (`frontend.md` Q-1).
 
 "Loading…"
 - [ ] **AC-15** — Given the busy topic says that an operation runs at
-  full speed, when it has run for 500 ms of wall time, then "Loading…"
-  is shown, with a sign that work is going on and without a button to
-  cancel, until the operation ends or goes on at regular speed
+  full speed (LIB-3 AC-14), when it has done so for 500 ms of wall time
+  without a break, then "Loading…" is shown, with a sign that work is
+  going on and without a button to cancel, until the operation ends or
+  goes on at regular speed
   (Calc-U-1600 `Qt6/app/SyncOperations.cpp:18-79`,
   `Web/src/Dialogs.jsx:298-310`; `presets.md` PR-4; LIB-6 AC-22).
 - [ ] **AC-16** — Given "Loading…" is shown, then the display, the paper
   and the control bar go on showing what changes (`frontend.md` I-5),
-  and the model picker, Reset and Cold boot can be used (LIB-4 AC-3;
-  LIB-18 AC-16).
+  and "Loading…" does not block the window: the menus and the control
+  bar can be reached, and the model picker, Reset and Cold boot can be
+  used (LIB-4 AC-3; LIB-18 AC-16).
 
 Notices and the log
 - [ ] **AC-17** — Given a notice (LIB-3 AC-10), then it is shown as it
-  is, in a dialog with an OK button, while the machine goes on running;
-  given several notices, then each is shown, one after the other, in the
-  order in which they came (OQ-4).
+  is, in a dialog with an OK button that must be closed before the
+  window can be used again, while the machine and a running operation go
+  on behind it; given several notices, then each is shown, one after the
+  other, in the order in which they came (OQ-4).
 - [ ] **AC-18** — Given the log (LIB-3 AC-11), then the shell has no
   view of its own for it: a product that has a place for it shows it
   there (Calc-U-59: the LOG tab, C59-4); otherwise a Qt6 frontend writes
@@ -202,32 +225,43 @@ Help and About
   product gives, with one button to close it.
 
 The shell and what goes into it
-- [ ] **AC-22** — Given a control state, settings and a catalogue built
+- [ ] **AC-22** — Given a control state, settings and a preset list built
   for the tests, then the shell of the Qt6 component set and the shell
   of the React component set each show AC-1 to AC-21 for them, with no
   code of a product (ADR 0023; `frontend.md` I-4).
-- [ ] **AC-23** — Given a panel the control state lists (a paper panel,
-  a panel of the product), then the shell shows it in the area for
-  panels while it is listed and takes it away when it is not (LIB-4
-  AC-13); where the area is and how panels share it is the product's
-  layout (ADR 0023).
-- [ ] **AC-24** — Given a faceplate and its hit map, then both component
-  sets find the key for a pointer position by one rule, from what the
-  hit map states for each key: its area, and how far outside it a hit
-  still counts; a hit is sent as live input with the key's ID (LIB-5
-  AC-4), several pointers can each hold a key, and the keys that live
-  input holds are drawn pressed (LIB-5 AC-19) (OQ-5).
+- [ ] **AC-23** — Given a paper panel the control state lists, then the
+  shell shows it in the area for panels while it is listed and takes it
+  away when it is not (LIB-4 AC-1, AC-13). A panel of the product is put
+  into the same area by the product's frontend code, from its own
+  product entry (AC-42). Where the area is and how panels share it is
+  the product's layout (ADR 0023).
+- [ ] **AC-24** — Given a faceplate and its hit map, which states an
+  area for each key and one distance for the faceplate, then both
+  component sets find the key for a pointer position by this rule: a
+  position inside an area is that key; otherwise it is the key whose
+  area is nearest, when it is no farther away than the distance, and
+  the one that comes first in the hit map when two are equally near;
+  otherwise it is no key (OQ-5). A key found is sent as live input with
+  its key ID when the pointer goes down and released when it goes up
+  (LIB-5 AC-4), and several pointers can each hold a key. The product
+  draws a key pressed from the keys live input holds (LIB-5 AC-19).
 - [ ] **AC-25** — Given a frontend built from a component set, then its
   GUI test carries out these criteria as scenarios under their IDs, in
-  every frontend the same: AC-1, AC-8, AC-11, AC-15, AC-17 (ADR 0032).
-  The other criteria are checked on the components without a window.
+  every frontend the same (ADR 0032): AC-1 (the menus), AC-4 (a
+  shortcut), AC-6 (the platform's places), AC-8 (the bar), AC-11 (the
+  settings dialog), AC-15 ("Loading…"), AC-17 (a notice), AC-20 (the
+  help opens), AC-24 (a key under the pointer), and one picture of the
+  window per layout for AC-33 and AC-40. A product's criterion that
+  says what one of these shows for that product is checked by the same
+  scenario. The other criteria are checked on the components without a
+  window.
 
 ### Calc-U-59
 
 - [ ] **AC-26** — Given the Qt6 frontend, then its menus are: File with
   Load Preset… (Ctrl+O; today "Open Preset…"), Examples ▸ when the
-  catalogue lists examples (C59-2), the card items of C59-7 (today "Fit
-  Card…", "Fit Fresh Card…"), Settings… and Quit; Machine with Model ▸,
+  preset list has examples (C59-2), the magnetic card items of C59-7
+  (today "Fit Card…", "Fit Fresh Card…"), Settings… and Quit; Machine with Model ▸,
   Peripherals ▸, Reset and Cold boot; Help with "Calc-U-59 Help" and
   "About Calc-U-59". There is no Edit menu, because Calc-U-59 has
   neither Copy Screen nor Paste Text (`Qt6/app/MainWindow.cpp:54-77`;
@@ -236,18 +270,22 @@ The shell and what goes into it
   model picker, the picker of `slot-1` with the 14 Solid State ROM
   modules and the empty slot (LIB-4 AC-11; ADR 0025; behaviour change
   59-9), and the button "PC-100C" for the place `printer`; on the TI-59
-  also the card controls (C59-7). Today the PC-100C is connected in the
+  also the magnetic card controls (C59-7). Today the PC-100C is connected in the
   header of the printer panel
   (`Qt6/app/ControlBar.cpp`, `Web/src/ControlBar.jsx:90-100`; OQ-2).
 - [ ] **AC-28** — Given a frontend of Calc-U-59 with a menu bar, then
   the buttons Reset, Preset and Settings are no longer on the control
   bar: they are the menu items of AC-26, and "Clean", today Reset with
   the Ctrl or Command key held, is Machine ▸ Cold boot (behaviour change
-  59-14; `docs/glossary-mapping.md`; OQ-3).
+  59-14; `docs/glossary-mapping.md`; OQ-3). The long press on the Reset
+  button, which gives "Clean" after one second in the Web frontend
+  today, goes with the button (`Web/src/ControlBar.jsx:7, 37-60`; the
+  Swift frontend on iOS: C59-8).
 - [ ] **AC-29** — Given the Web frontend of Calc-U-59, which has no menu
   bar today, then in its wide layout it has the menu bar of AC-1, and in
   its portrait layout one button on the control bar opens the same menus
-  (OQ-3; `Web/src/PlayCalculator.jsx:127-196`).
+  (OQ-3; `Web/src/PlayCalculator.jsx:127-196`). Given its prop
+  `settings` is off (LIB-15 AC-19), then Settings… does not appear.
 - [ ] **AC-30** — Given the settings dialog of Calc-U-59, then it shows:
   General with Startup model (today "Startup Calculator") and the
   version; Startup presets with the rows TI-59, TI-58 and TI-58C;
@@ -272,7 +310,7 @@ The shell and what goes into it
   `Web/src/Dialogs.jsx:190-209`). In the Web frontend Help and About are
   in the Help menu and no longer in the settings dialog.
 - [ ] **AC-33** — Given the windows of Calc-U-59, then their layouts are
-  those of today: in Qt6 the calculator, the printer and the debug panel
+  those of today: in Qt6 the faceplate, the paper panel and the debug panel
   side by side with dividers the user can move; in the Web frontend the
   layouts `portrait`, `wide` and `auto` (`Qt6/app/MainWindow.cpp:27-49`,
   `Web/src/PlayCalculator.jsx:127-196`).
@@ -297,12 +335,15 @@ The shell and what goes into it
   inside "Load Preset ▸" (`Web/src/CalcU1600.jsx:243-298`).
 - [ ] **AC-36** — Given a PC-1500 or PC-1500A, then the control bar
   holds: the model picker, the picker of `slot-1` with its Name & Save
-  button (LIB-7), the buttons "CE-150" and "CE-158", and the tape
-  controls while a peripheral with a cassette is plugged in. Given a
+  button (LIB-7), the buttons "CE-150" and "CE-158", and the cassette
+  tape controls while a peripheral with a cassette is plugged in. Given a
   PC-1600, then it holds: the model picker, the pickers of `slot-1` and
   `slot-2`, marked "1:" and "2:", a picker for `printer` with the
   CE-150, the CE-1600P and the empty place, the button "CE-158", the
-  disk controls, and the tape controls. Today the PC-1600 has a button
+  floppy disk controls, which Calc-U-1600 shows on every PC-1600 and
+  which can be used only while the CE-1600P is plugged in (a product
+  entry, AC-42; LIB-4 AC-17), and the cassette tape controls while a
+  peripheral with a cassette is plugged in. Today the PC-1600 has a button
   "CE-1600P" on the bar and the CE-150 and CE-158 in the menu only
   (`Qt6/app/ControlBar.cpp:76-272`, `Shared/ControlState.cpp:7-48`;
   OQ-2).
@@ -311,11 +352,13 @@ The shell and what goes into it
   presets (today "Default presets") with the rows PC-1500, PC-1500A and
   PC-1600; Storage with Save folder (today "Battery-card saves") and
   Tapes (Qt6), and in the Web frontend the sentence that says where
-  saved media are kept; Folders with the samples, BASIC, assembly and
-  host drive folders (Qt6); Tracing with Trace folder and Maximum file
-  size (Qt6); Serial ports with the link folder and the two port lines
-  (Qt6, not on Windows); Debugger with the debug server, its port, its
-  status and Disconnect (Qt6) (`Qt6/app/SettingsDialog.cpp:217-383`,
+  saved media are kept; Folders with the examples folder (today
+  "Samples folder") and the BASIC, assembly and host drive folders
+  (Qt6); Tracing with Trace folder and Maximum file size (Qt6); Serial
+  ports with the link folder, and below it two lines that show where
+  each serial port is linked, which are not settings (Qt6, not on
+  Windows); Debugger with the debug server and its port (Qt6), next to
+  which C1600-3 puts its status and Disconnect (`Qt6/app/SettingsDialog.cpp:217-383`,
   `Web/src/Dialogs.jsx:189-230`; LIB-9 AC-26).
 - [ ] **AC-38** — Given an operation in the Qt6 frontend, then
   "Loading…" is shown as today after 500 ms, and it no longer keeps the
@@ -355,6 +398,11 @@ The shell and what goes into it
   content.
 - **EC-6** — Given the address of AC-20 cannot be opened (no browser, no
   network), then nothing else happens; the machine is not affected.
+- **EC-7** — Given an operation goes from regular speed back to full
+  speed, then "Loading…" is shown when it has again run at full speed
+  for 500 ms without a break.
+- **EC-8** — Given a pointer goes down where the rule of AC-24 finds no
+  key, then nothing is sent, also when it then moves onto a key.
 
 ## Technical Requirements (optional)
 - A component decides no rule about what the machine offers; it draws
@@ -372,22 +420,26 @@ The shell and what goes into it
   today. *Recommendation:* "Load Preset…" in both (Calc-U-59's Qt6 says
   "Open Preset…"); Settings… at the end of File in both (Calc-U-1600 has
   it in Edit), so that Calc-U-59 needs no Edit menu for one item;
-  Examples ▸ as an item of its own in every frontend; Ctrl+O for Load
-  Preset…, Ctrl+R and Ctrl+Shift+R for Reset and Cold boot in both.
+  Examples ▸ as an item of its own in every frontend; in Qt6 Ctrl+O for
+  Load Preset…, Ctrl+R and Ctrl+Shift+R for Reset and Cold boot in both
+  products, and no shortcuts in a Web frontend. The labels that change
+  with it ("Open Preset…", "Startup Calculator", "Startup device", "Card
+  Folder", "Samples folder") go into `docs/glossary-mapping.md`.
 - [ ] **OQ-2** — The family rule for a place that is not a module slot
   (LIB-4 OQ-2). *Recommendation:* AC-9: a button when one peripheral
   fits, a picker when several do, computed from the descriptors. It
   keeps the PC-1500's buttons, moves the "PC-100C" button from the
   printer panel to the bar, and changes the PC-1600: a printer picker in
-  place of the "CE-1600P" button, and the CE-158 on the bar. The product
-  entry of LIB-4 AC-17 for this then goes.
+  place of the "CE-1600P" button, and the CE-158 and the CE-150 on the
+  bar. The product entry of LIB-4 AC-17 for this then goes.
 - [ ] **OQ-3** — Calc-U-59 without a menu bar. Its Web frontend has
   buttons on the bar today (Reset, Preset, Settings), and so do Qt6 and
   Swift next to their small menus. *Recommendation:* where there is a
   menu bar, these buttons leave the control bar (AC-28), which then
   holds only hardware (ADR 0024); the Web frontend gets the menu bar in
-  its wide layout and one menu button in its portrait layout (AC-29).
-  The Swift frontend on iOS is settled in C59-8.
+  its wide layout and one menu button in its portrait layout (AC-29);
+  the long press for "Clean" goes there, because Cold boot is a menu
+  item. The Swift frontend on iOS is settled in C59-8.
 - [ ] **OQ-4** — How a notice is shown. Today Calc-U-1600 shows a dialog
   with a title and OK in both frontends; Calc-U-59 shows an alert in
   Swift and Qt6 and a line below the calculator on the web, and the
@@ -397,13 +449,22 @@ The shell and what goes into it
 - [ ] **OQ-5** — The calculator view (open point of
   `features/INDEX.md`). *Recommendation:* as the divergence matrix
   suggests (M16, M52): the component sets find the key under a pointer
-  by one rule from the product's hit map (AC-24), and drawing the
-  display stays with each product. Which of today's two rules becomes
-  the one rule (Calc-U-59 widens each key's area; Calc-U-1600's Web
-  frontend takes the nearest key within 24 px) is chosen in the design
-  so that every faceplate behaves as today.
+  by the one rule of AC-24 from the product's hit map, and drawing the
+  display and the pressed keys stays with each product. The rule covers
+  both of today's: Calc-U-59 states widened areas and the distance 0,
+  Calc-U-1600 the drawn areas and its 24 px. A point between two keys
+  may then find another key than today in one frontend; that is taken
+  as too small to list.
 - [ ] **OQ-6** — "Shell", "faceplate" and "hit map" for the glossary, as
   defined above.
+- [ ] **OQ-7** — Rows for `docs/behaviour-changes.md`. Row 59-14 covers
+  Calc-U-59's menus and bar; Calc-U-1600 has no such row, and "Loading…"
+  in Calc-U-59 has none (LIB-3 OQ-7). *Recommendation:* a new row for
+  Calc-U-1600, "Menus and the control bar follow the family structure:
+  Settings… in File, a Help item, Examples as a menu of its own on the
+  web, a printer picker and the CE-150 and CE-158 on the PC-1600's bar,
+  notices without a title, renamed labels", and "Loading…" added to row
+  59-5.
 
 ## Decision Log
 
@@ -416,7 +477,11 @@ The shell and what goes into it
 | "Loading…" comes from the busy topic and is shown only while an operation runs at full speed | `frontend.md` SP-2; `presets.md` PR-4 | 2026-11-10 |
 | Reset, Cold boot and a model switch can be used while an operation runs | `frontend.md` Q-1 as amended; LIB-18 AC-16 | 2026-11-10 |
 | The in-app Help opens the product's help on calc-u.org | `help.md` HL-3 | 2026-11-10 |
-| "Cold boot", "Startup presets" and "Save folder" replace "Clean", "Reset All", "Default presets", "Battery-card saves" and "Card Folder" | `docs/glossary-mapping.md`, visible renames | 2026-11-10 |
+| "Cold boot", "Startup presets" and "Save folder" replace "Clean", "Reset All", "Default presets" and "Battery-card saves" | `docs/glossary-mapping.md`, visible renames | 2026-11-10 |
+| Proposed in this spec, for the gate: "Save folder" also replaces Calc-U-59's "Card Folder", "Load Preset…" replaces "Open Preset…", "Examples folder" replaces "Samples folder" | The glossary's terms; one label per thing in the family | 2026-11-10 |
+| Proposed in this spec, for the gate: "Loading…" does not block the window; a notice does until it is closed (AC-16, AC-17) | Reset must be reachable while an operation runs (LIB-18 AC-16) | 2026-11-10 |
+| Proposed in this spec, for the gate: a Web frontend binds no shortcuts to menu items (AC-4) | Ctrl+R and Ctrl+O are the browser's | 2026-11-10 |
+| Proposed in this spec, for the gate: the shell reads no product entry; a product's frontend code puts its own controls and panels into the places the shell gives (AC-42, AC-23) | `frontend.md` I-4, FE-6 | 2026-11-10 |
 | GUI tests carry the same scenarios under the same criterion IDs in every frontend | ADR 0032 | 2026-11-10 |
 | Proposed in this spec, for the gate: "Startup model" replaces "Startup Calculator" and "Startup device" | The glossary's term | 2026-11-10 |
 | Proposed in this spec, for the gate: the 500 ms before "Loading…" and no cancel button, as in Calc-U-1600 today, for both products | Today's behaviour of one product, taken for the family | 2026-11-10 |

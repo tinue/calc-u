@@ -28,7 +28,8 @@ What the three status columns mean for this feature:
 Words used here: **live input** is what a user does now, a host key or
 an on-screen key; **typed text** is a string the engine types by itself
 (a paste, a `type` step); a **press** is one key going down and later
-up.
+up; a **frame** is 1/60 second of emulated time, the unit Calc-U-1600
+counts its holds in today (OQ-9).
 
 ## User Stories
 - As a user, I want every key I press to arrive, however fast I type and
@@ -70,19 +71,21 @@ Presses
   minimum hold of the model's typing profile, counted in emulated time;
   a key-up that comes earlier is carried out when the minimum is
   reached, never dropped (`typing.md` T-1).
-- [ ] **AC-2** — Given live input finds no other press waiting and no
-  key held by the engine, then its key goes down at once, whatever the
-  machine is doing; given it finds presses waiting, then it waits its
-  turn (OQ-1).
-- [ ] **AC-3** — Given a press waits its turn, then it starts when the
-  key before it is up and, where the typing profile says so, the machine
-  reports key readiness (LIB-1 AC-42) or the profile's cadence has
-  passed (`typing.md` T-2).
-- [ ] **AC-4** — Given a host key is held down by the user, when its
-  press starts, then the key stays down until the user lets go; given
-  the user has already let go when its turn comes, then it is typed as
-  one press of the minimum hold. Auto-repeat events of the host are
-  ignored (`typing.md`, responsibilities).
+- [ ] **AC-2** — Given live input, then what an earlier sequence or
+  typed text still has waiting is dropped (AC-9), and its key goes down
+  at once, whatever the machine is doing; only when a press of the
+  engine is still in its minimum hold, or in the gap after it, does the
+  key go down right after that (OQ-1).
+- [ ] **AC-3** — Given a press of a sequence, of typed text or of a
+  `key` command, then it starts when the key before it is up, the
+  profile's gap after a release has passed and, where the typing profile
+  says so, the machine reports key readiness (LIB-1 AC-42) (`typing.md`
+  T-2).
+- [ ] **AC-4** — Given live input that the user holds, a host key or an
+  on-screen key, when its press starts, then the key stays down until
+  the user lets go; given the user has already let go when it starts,
+  then it is typed as one press of the minimum hold. Auto-repeat events
+  of the host are ignored (`typing.md`, responsibilities).
 - [ ] **AC-5** — Given the user holds two keys at once, then both are
   down on the machine together, each from its own key-down to its own
   key-up; the engine itself never makes two keys overlap that the user
@@ -108,8 +111,16 @@ Host keys
   finished to leave the machine in order (the closing key of an accent)
   is still typed (both products today).
 - [ ] **AC-10** — Given the frontend says that it lost the focus, then
-  every key the user holds is released, after its minimum hold, and
+  every key live input holds is released, after its minimum hold, and
   presses that wait are dropped.
+- [ ] **AC-38** — Given typed text, a `key` or a `type` outside a preset,
+  then it is not an operation: the session is not busy, and live input
+  stops it as in AC-9. Inside a preset it is part of the preset's
+  operation (OQ-8).
+- [ ] **AC-39** — Given a key that was put down by a raw key down on the
+  machine (the harness command `key-down`, LIB-11 AC-9), not by the
+  engine, then the engine does not count it as its own: it does not wait
+  for it, does not release it, and it is not in the topic of AC-19.
 
 Typed text
 - [ ] **AC-11** — Given a text and a typing profile that maps characters
@@ -132,14 +143,17 @@ Commands and steps
   names, then each named key is pressed in turn as in AC-1 and AC-3; a
   name is a key ID of the model or another name the typing profile gives
   for a key or for a sequence of keys; a name the model does not have
-  refuses the command (`presets.md` PR-5).
+  refuses the command (`presets.md` PR-5). In a preset this is found
+  when the preset is read, before anything is built (LIB-6; ADR 0017).
 - [ ] **AC-16** — Given the command or step `type` with a text, on a
   model whose profile maps characters, then the text is typed and ENTER
   is pressed after it; a character without a key refuses the command and
   nothing of the text is typed; on a model without such a profile the
   command does not exist (`presets.md` PR-5).
-- [ ] **AC-17** — Given `key` or `type`, then the reply comes when the
-  last key is up.
+- [ ] **AC-17** — Given `key`, then the reply comes when the last key is
+  up. Given `type`, then the reply comes when the machine reports prompt
+  readiness again after ENTER, or when the time the profile gives for
+  that has passed, whichever is first; the reply is done in both cases.
 
 While an operation runs
 - [ ] **AC-18** — Given an operation runs, then live input is dropped;
@@ -155,8 +169,9 @@ What is shown
 ### Calc-U-59
 - [ ] **AC-20** — Given a TI model, then its typing profile gives: a
   minimum hold of 100 ms of emulated time; presses that wait start at
-  key readiness; no characters (`typing.md` T-1, fit table; today 100 ms
-  of wall time, `Shared/KeySequencer.hpp:80`).
+  key readiness and, after a release, wait for key readiness again; no
+  characters (`typing.md` T-1, fit table; today 100 ms of wall time,
+  `Shared/KeySequencer.hpp:80`, `Shared/KeySequencer.cpp:136-167`).
 - [ ] **AC-21** — Given the keyboard map of Calc-U-59, then it maps the
   26 keys it maps today and no others, by these rules
   (`Shared/KeyboardMap.cpp:10-65`):
@@ -224,11 +239,16 @@ What is shown
 
 ### Calc-U-1600
 - [ ] **AC-28** — Given a Sharp model, then its typing profile gives: a
-  minimum hold of 2 frames, 1/30 second of emulated time; for typed
-  text a cadence of 4 frames down and 4 frames up, and on the PC-1600 6
-  frames more after a SHIFT or KBII press; and the characters of AC-30
-  (`typing.md` T-1; `Shared/MachineSession.cpp:42`,
-  `Core/KeyPaste.hpp:82-98`).
+  minimum hold of 2 frames; a gap of 2 frames after a release before the
+  next press; for typed text a cadence of 4 frames down and 4 frames up,
+  and on the PC-1600 6 frames more after a SHIFT or KBII press; the
+  characters of AC-30; and for `type` a wait for the prompt after ENTER
+  of at most 12 seconds of emulated time on the PC-1500 and PC-1500A and
+  at most 1 second on the PC-1600. Live input is not held back for key
+  readiness on any Sharp model (`typing.md` T-1;
+  `Shared/MachineSession.cpp:42, 279-309`, `Core/KeyPaste.hpp:82-98`,
+  `Core/PC1500/PC1500BasicTyper.cpp:79-105, 188`,
+  `Core/PC1600/PC1600BasicTyper.cpp:48-49, 281-284`).
 - [ ] **AC-29** — Given the keyboard map of Calc-U-1600, then it is the
   one of today for every model, as `docs/Keyboard-Mapping.md` gives it:
   the named keys (Backspace, F1 to F6, Scroll Lock and Insert, Home,
@@ -246,19 +266,17 @@ What is shown
   `Core/PC1600/PC1600TypedInput.hpp:26-111`). In typed text a lower-case
   letter is `shift` and its key, so that the case is kept
   (`Core/PC1500/PC1500TypedInput.hpp:25-42`).
-- [ ] **AC-31** — Given a host key held down on any Sharp model, then
-  its key stays down until it is released, so that the ROM's own
-  auto-repeat works for every key (behaviour change 1600-8). Today that
-  holds on the PC-1600 and for the cursor keys of the PC-1500; other
-  keys of the PC-1500 go through a queue of 16 with a fixed cadence of 4
-  frames down and 4 up, which drops a key when it is full
-  (`Shared/MachineSession.cpp:371-407`,
-  `Core/PC1500/PC1500Machine.cpp:342-377`).
-- [ ] **AC-32** — Given the PC-1500 and PC-1500A, then how their ROM
-  takes keys is researched as part of this feature, and they report key
-  readiness from it (`typing.md` Q-3; C1600-1 AC-21); the fixed cadence
-  and the queue of 16 then go. Until that is done, AC-31 holds for them
-  as it does today.
+- [ ] **AC-31** — Given a host key held down on the PC-1600, or a cursor
+  key or Backspace held down on the PC-1500 and PC-1500A, then its key
+  stays down until it is released, so that the ROM's own auto-repeat
+  works, as today (`Shared/MachineSession.cpp:371-407`).
+- [ ] **AC-32** — Given any other host key on the PC-1500 and PC-1500A,
+  then it is typed as today: one press of 4 frames down and 4 frames
+  up, from a queue of at most 16 that drops the newest key when it is
+  full, however long the user holds the key
+  (`Core/PC1500/PC1500Machine.cpp:342-377`). This is the state until the
+  research of OQ-10; behaviour change 1600-8 describes the state after
+  it.
 - [ ] **AC-33** — Given the SHIFT key of the host is tapped alone,
   pressed and let go within 400 ms with nothing else in between, then
   the machine's `shift` key is pressed once
@@ -298,7 +316,8 @@ What is shown
 - **EC-3** — Given a press waits for key readiness and the machine does
   not report it (a program that never stops), then it waits without
   limit until it is dropped by AC-9, AC-10, a reset or a new machine;
-  both products wait without limit in this case today.
+  Calc-U-59 waits without limit in this case today. Only the wait of
+  `type` for the prompt has a bound (AC-17).
 - **EC-4** — Given a text that the input method of the host commits as a
   whole (an accent composed on the host), then each of its characters is
   typed as a press of the minimum hold (Calc-U-1600 Qt6 today,
@@ -353,6 +372,23 @@ What is shown
   `CLR`, and `Adv` for the second function of `.`, which is not the ADV
   key of the PC-100C. *Recommendation:* keep both as today's tool
   spells them; the PC-100C's key is a control, named with its owner.
+- [ ] **OQ-8** — Is typing an operation? The glossary lists "typing a
+  paste" among the operations, and `typing.md` T-4 says an operation
+  "owns the keyboard until it ends", while the same contract says "any
+  host key stops a running paste". Calc-U-1600 does not make the session
+  busy for a paste today. *Recommendation:* as in AC-38: not an
+  operation outside a preset; take "typing a paste" out of the
+  glossary's examples.
+- [ ] **OQ-9** — "Live input", "typed text", "press" and "frame" for the
+  glossary, as defined above. The glossary lists "frame" under Avoid
+  for a slice, which is another thing.
+- [ ] **OQ-10** — The research of the PC-1500's key handling (`typing.md`
+  Q-3: done when this feature is built). Its result is not known, so no
+  criterion can state it. *Recommendation:* it is a task of the
+  Calc-U-1600 column with two ends: either a readiness signal is found,
+  the PC-1500 profile becomes that of the PC-1600 (AC-31 for every key)
+  and AC-32 is struck; or none is found, AC-32 stays, and row 1600-8 is
+  corrected. The spec is changed at that point, with the user.
 
 ## Decision Log
 

@@ -27,6 +27,10 @@ What the three status columns mean for this feature:
   only through them; its own code for the start, the model switch, the
   resets and the attaching of peripherals is gone.
 
+Loading a preset is LIB-6's, which depends on this feature. The Library
+column shows the criteria that use a startup preset (AC-4, AC-6, EC-1)
+with a stand-in for the loader; the product columns need LIB-6.
+
 ## User Stories
 - As a user, I want the product to start with the model I chose, or the
   one I used last, set up the way I chose.
@@ -51,7 +55,8 @@ What the three status columns mean for this feature:
 - The `ti58c.mem` file (owner: C59-3). This feature says when a TI-58C
   is built with its constant memory.
 - Media in a media place, inserting and ejecting (owner: LIB-7).
-- The debugger's pause across a reset (owner: LIB-10).
+- The debugger's pause across a reset (owner: LIB-10); the ASM overlay
+  of Calc-U-59 across a reset and a model switch (owner: C59-4).
 - What is saved when a product quits (LIB-7, LIB-9, C59-3).
 - The message of a product that cannot start for a missing ROM (owner:
   LIB-12).
@@ -75,9 +80,9 @@ Building a machine
 Start of a product
 - [ ] **AC-3** — Given a product starts and its full ROM set is there
   (LIB-12), then it builds the startup model: the model named by
-  `[startup] model`, or with `last` the model that was built last, or
-  with nothing recorded the product's fallback model (LIB-9 AC-9, AC-20,
-  AC-27).
+  `[startup] model`, or with `last` the last used model, or with nothing
+  recorded the product's fallback model (LIB-9 AC-9, AC-20, AC-27; where
+  the last used model is kept: LIB-9 OQ-5).
 - [ ] **AC-4** — Given a startup preset is set for the startup model
   (`[preset]`, LIB-9 AC-10), then the machine is built by loading that
   preset (LIB-6); given none is set, then the product's built-in default
@@ -101,17 +106,19 @@ Model and variant
   runs, then nothing happens and the reply is done (both products
   today).
 - [ ] **AC-9** — Given a machine was built by any of these commands or
-  by a preset, then its model is recorded as the one built last, for
+  by a preset, then its model is recorded as the last used model, for
   `[startup] model = last` (both products today: Calc-U-59
   `Shared/SessionController.cpp:116`, Calc-U-1600
   `Shared/MachineSession.cpp:122, 179`).
 
 Attach, detach, replace
-- [ ] **AC-10** — Given the command to attach a peripheral to a place,
-  to detach it or to replace it by another, then the session makes the
-  change on the machine (LIB-2 AC-4, AC-5, AC-35), runs what the machine
-  says follows, and the command is one operation that is over when the
-  machine reports key readiness again.
+- [ ] **AC-10** — Given the command to attach a peripheral, in a named
+  variant or its default one, to a place, or to detach what is in a
+  place, then the session makes the change on the machine (LIB-2 AC-4,
+  AC-5), runs what the machine says follows, and the command is one
+  operation that is over when the machine reports key readiness again.
+  An attach to a place that takes one peripheral and holds one replaces
+  it in one step, with one power cycle (LIB-2 AC-35).
 - [ ] **AC-11** — Given a power cycle follows, then the machine's memory
   is what its model keeps through a power cycle (C59-1 AC-6, C1600-1
   AC-6), and afterwards its ROM has found what is plugged in now
@@ -121,18 +128,20 @@ Attach, detach, replace
   machine's reason (LIB-2 AC-6).
 
 Reset, power cycle, cold boot
-- [ ] **AC-13** — Given the commands Reset and Cold boot, then each runs
-  that operation of the machine (LIB-1 AC-11) as an operation of the
+- [ ] **AC-13** — Given the commands Reset, Cold boot and, in the
+  harness, power cycle, then each runs that operation of the machine (LIB-1 AC-11) as an operation of the
   session that is over when the machine reports key readiness; what is
   plugged in stays plugged in (LIB-2 AC-10), and the real-time clock is
   handed the host's time at the end (LIB-2 AC-23).
-- [ ] **AC-14** — Given Reset or Cold boot, then typed text that is
-  still waiting and the keys the typing engine holds are dropped
-  (LIB-5 EC-5), and the machine goes back to regular speed.
+- [ ] **AC-14** — Given Reset, Cold boot or a power cycle, then typed
+  text that is still waiting and the keys the typing engine holds are
+  dropped (LIB-5 EC-5; today Calc-U-1600 `Shared/MachineSession.cpp:230,
+  270`).
 - [ ] **AC-15** — Given the harness, then these commands exist at the
   top level, each with the reply of its operation: `model <name>`,
-  `variant <name>`, `attach <place> <peripheral>`, `detach <place>`,
-  `reset`, `cold-boot` and `power-cycle` (OQ-5).
+  `variant <name>`, `attach <place> <peripheral>` with the variant
+  written as in a preset (`CE-1600P:old`), `detach <place>`, `reset`,
+  `cold-boot` and `power-cycle` (OQ-5).
 
 While an operation runs
 - [ ] **AC-16** — Given an operation runs, then every command of this
@@ -206,7 +215,10 @@ While an operation runs
   (`Shared/AppSession.cpp:339-380`, `Shared/MachineSession.cpp:244-275`).
 - [ ] **AC-31** — Given the ROM of the CE-1600P is switched while it is
   plugged in, then it is a replace of the CE-1600P by its other variant
-  (C1600-1 AC-18).
+  (C1600-1 AC-18); given it is switched while the CE-1600P is not
+  plugged in, then the choice holds for the next attach, until the
+  product quits or the model is switched, as today
+  (`Shared/AppSession.cpp:326-337`).
 - [ ] **AC-32** — Given Reset, then the machine's memory is kept; given
   Cold boot, then it is empty; these are today's Reset and Reset All
   (`Shared/AppSession.cpp:276-280`; the names: glossary and
@@ -222,6 +234,19 @@ While an operation runs
   then the built-in default machine of that model is built and a notice
   says why (today Calc-U-1600 says "The default preset … is for a
   different model", `Shared/AppSession.cpp:264-274`).
+- **EC-6** — Given a startup preset is read without an error but fails
+  while it runs, then the machine stays as far as the preset built it,
+  and a notice says why (LIB-6; today Calc-U-1600 builds the bare
+  machine first and it stays, `Shared/AppSession.cpp:264-306`).
+- **EC-7** — Given a machine does not report key readiness after it was
+  built, reset, power-cycled or cold booted, then the operation ends
+  after a time its model states and a line of the log says so; the
+  machine is left as it is. Today the products wait a fixed time
+  instead: Calc-U-59 runs 300,000 instructions, Calc-U-1600 waits 2
+  seconds and at most 5 more, on the PC-1600 at most 20 more
+  (`Shared/StateApplier.cpp:12-18`,
+  `Core/PC1500/PC1500BasicTyper.cpp:148-157`,
+  `Core/PC1600/PC1600BasicTyper.cpp:184-204`; OQ-8).
 - **EC-2** — Given `[startup] model = last` and the model built last was
   built by a preset, then that model is the startup model, and its
   startup preset or built-in default applies, not the preset that built
@@ -262,8 +287,9 @@ While an operation runs
   *Recommendation:* the same: the Master Library module, no printer.
 - [ ] **OQ-3** — AC-33 needs the machine to say that nothing follows an
   attach while it is switched off, although its pin-out says a power
-  cycle (LIB-2 AC-4). No machine reports a power state (LIB-1 decision
-  log). *Recommendation:* "what follows" is the machine's answer at that
+  cycle (LIB-2 AC-4; `peripherals.md` P-5, a decided fork). No machine
+  reports a power state (LIB-1 decision log). This amends P-5 and needs
+  the user. *Recommendation:* "what follows" is the machine's answer at that
   moment, and a switched-off Sharp machine answers "nothing"; that keeps
   today's behaviour without a power state at the interface.
 - [ ] **OQ-4** — What the Calc-U-59 Reset does besides resetting the
@@ -285,6 +311,10 @@ While an operation runs
   (`Core/PC1500/PC1500PresetLoader.cpp:156-162`). Row 1600-4 names the
   module change only. *Recommendation:* word the row for any change of
   what is plugged in that changes the memory the ROM finds.
+- [ ] **OQ-8** — The bound of EC-7: the times per model. *Recommendation:*
+  today's times, counted in emulated time: 25 seconds for the TI models
+  (300,000 instructions take about 21), 7 seconds for the PC-1500 and
+  PC-1500A, 27 seconds for the PC-1600.
 
 ## Decision Log
 

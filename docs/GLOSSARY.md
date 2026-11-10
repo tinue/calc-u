@@ -514,3 +514,14 @@ machine waits for one.
 **Outdated**:
 Said of a file in an older version of an own format than the release
 reads.
+
+## Added with the feature specs (phase 4b)
+
+**Slice**:
+The stretch of emulated time that the pacer runs in one go. Its length
+is part of the pacing profile.
+_Avoid_: batch, frame (for this)
+
+**Lag**:
+How far a machine's emulated time is behind the wall clock at regular
+speed.

@@ -20,10 +20,6 @@ What the three status columns mean for this feature:
   library's pacer and a pacing profile per model, its own pacer is gone,
   and the long-run test of that product gives the same result as before.
 
-Two words used here that the glossary does not define yet (OQ-6):
-a **slice** is the stretch of emulated time the pacer runs in one go;
-**lag** is how far a machine's emulated time is behind the wall clock.
-
 ## User Stories
 - As a user, I want a machine to run at the pace of the real device, so
   that a program, a `PAUSE`, a beep or a printout takes as long as on the
@@ -148,7 +144,7 @@ Starting afresh
   and after, when the long-run test runs a TI-59, a TI-58 and a TI-58C
   at regular speed, then emulated time against wall time is the same in
   both, within the bound of AC-1 (`frontend.md`, SP-1: the user's
-  condition; the test: OQ-1).
+  condition; the two tests: Technical Requirements).
 - [ ] **AC-19** — Given each frontend of Calc-U-59 (Swift iOS, Swift
   macOS, Qt6, Web), when a TI-59 runs at regular speed for one minute of
   wall time, then its emulated time has grown by one minute, within the
@@ -161,7 +157,8 @@ Starting afresh
 - [ ] **AC-21** — Given Calc-U-1600 before the pacer moves to the
   library and after, when the long-run test runs a PC-1500A and a
   PC-1600 at regular speed, then emulated time against wall time is the
-  same in both, within the bound of AC-1 (the test: OQ-1).
+  same in both, within the bound of AC-1 (the two tests: Technical
+  Requirements).
 - [ ] **AC-22** — Given each frontend of Calc-U-1600 (Qt6, Web), when a
   PC-1600 runs at regular speed for one minute of wall time, then its
   emulated time has grown by one minute, within the bound of AC-1.
@@ -193,19 +190,19 @@ Starting afresh
   later change cannot quietly undo it.
 - No frontend and no product app layer holds a pacing rule of its own;
   what differs per model is in the pacing profile.
-- The long-run tests of AC-18 and AC-21 exist before the product's pacer
-  is replaced, and are run on the old code first.
+- The long-run test of AC-18 and AC-21 is two tests per product. One
+  uses a wall clock supplied by the test, with jitter, oversleep and
+  stalls scripted and hours of wall time simulated in seconds, and
+  asserts the bound of AC-1 exactly; it belongs to the frequent group.
+  One runs a real build on the real clock for ten minutes and asserts
+  that emulated time and wall time differ by no more than the bound of
+  AC-1 at the end; it belongs to the checkpoint group. Both exist before
+  the product's pacer is replaced and are run on the old code first.
+- How AC-19 and AC-22 read a running frontend's emulated time where
+  harness attach does not exist yet (Qt6, Web;
+  `docs/contracts/harness.md`, H-4) is decided in the design.
 
 ## Open Questions
-- [ ] **OQ-1** — The long-run test of AC-18 and AC-21: how long, on
-  which workload, with which tolerance, and in which test group?
-  *Recommendation:* two tests per product. One with a wall clock
-  supplied by the test (jitter, oversleep and stalls scripted; hours of
-  wall time simulated in seconds), asserting the bound of AC-1 exactly;
-  it belongs to the frequent group. One with the real clock on a real
-  build for ten minutes, asserting that emulated time and wall time
-  differ by no more than the bound of AC-1 at the end; it belongs to the
-  checkpoint group.
 - [ ] **OQ-2** — The host time allowed for one call at full speed
   (AC-5). Today: Calc-U-1600 14 ms (`Shared/Pacer.hpp:29`); the
   Calc-U-59 Web frontend 10 ms (`Shared/EmulationRunner.hpp:42`); the
@@ -237,15 +234,6 @@ Starting afresh
   *Recommendation:* drop the whole lag. The difference is one burst of
   0.1 seconds after each stall in Calc-U-1600, which nobody sees; it
   needs no row in `docs/behaviour-changes.md`.
-- [ ] **OQ-5** — AC-19 and AC-22 need a way to read a running
-  frontend's emulated time: harness attach exists for the Swift frontend
-  only in the migration (`docs/contracts/harness.md`, H-4).
-  *Recommendation:* check Qt6 and Web through the session's own log of
-  emulated time at the end of the test run, written in development
-  builds; decide in the design.
-- [ ] **OQ-6** — "Slice" and "lag" for the glossary. The glossary uses
-  "slice length" in "Pacing profile" without defining a slice.
-  *Recommendation:* add both, with the definitions given above.
 
 ## Decision Log
 
@@ -259,3 +247,5 @@ Starting afresh
 | A machine counts its own emulated time; pacing only compares it with the wall clock | `machine.md` M-1, F-1 to F-3 | 2026-11-10 |
 | The TI slice stays 20 ms; the Sharp slice is the call, as today | `frontend.md`, fit table; Calc-U-1600 `Shared/Pacer.cpp:21-43` | 2026-11-10 |
 | Proposed in this spec, for the gate: the numbers of AC-17 (50 slice ends) and AC-19, AC-22 (one minute) | They make the criteria checkable; no source gives them | 2026-11-10 |
+| The long-run test is two tests per product: a scripted clock (frequent group) and ten minutes on the real clock (checkpoint group) | Recommendation applied; the user raised no objection at the batch 1 gate | 2026-11-10 |
+| "Slice" and "lag" are glossary terms | Recommendation applied; the user raised no objection at the batch 1 gate | 2026-11-10 |

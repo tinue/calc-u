@@ -93,8 +93,9 @@ Descriptors and catalogue
   available without building a machine, that states: the name; the
   variants and the default variant; the ROM files needed per variant;
   the pin-outs it fits; its own connectors and places; its media places;
-  its controls; its components and their modelling depth (where the
-  descriptors of memory modules come from: OQ-6).
+  its controls; its components and their modelling depth. A module
+  definition read after the catalogue was built gives a peripheral
+  descriptor of the same form (who reads the files: LIB-7, C1600-1).
 - [ ] **AC-4** — Given a place name of a model (for example `slot-1` or
   `printer`), when the descriptor is asked, then it gives the connector
   behind the place and the peripherals that fit it, so that no caller
@@ -116,11 +117,12 @@ Emulated time
 - [ ] **AC-7** — Given a machine, when it is advanced by a number of
   ticks, then it runs whole instructions only, runs at least that many
   ticks, reports the ticks it actually ran, and its tick count has grown
-  by exactly the reported number (OQ-5).
+  by exactly the reported number. Where an instruction ends is the
+  core's to say (the PC-1600 with its two CPUs: C1600-1).
 - [ ] **AC-8** — Given a machine that is advanced and has keys pressed,
   when its tick count is read at any two moments, then the later reading
-  is never smaller than the earlier one (across a reset, a power cycle
-  and a cold boot: OQ-1).
+  is never smaller than the earlier one, also across a reset, a power
+  cycle and a cold boot; a newly built machine starts at zero.
 - [ ] **AC-9** — Given a machine that is not advanced, when any amount
   of wall time passes, then its tick count, its display output and its
   capability outputs do not change.
@@ -153,7 +155,8 @@ Display and sound
 - [ ] **AC-15** — Given a machine with a segment display, when its
   display output is read, then it gives, per position, which of the
   named segments of the segment layout are lit, and a brightness per
-  position where the hardware has one (what brightness is: OQ-7); the
+  position where the hardware has one, from 0 to 1, as the duty the core
+  measures (what the eye sees is the frontends'); the
   number of segments per position is not limited to seven or eight, and
   the decimal point is a segment.
 - [ ] **AC-16** — Given a machine with a dot-matrix display, when its
@@ -166,10 +169,12 @@ Display and sound
   brightness where the hardware has one.
 - [ ] **AC-18** — Given any display output, then it contains no pixels
   in a host format, no glyph style and no colour.
-- [ ] **AC-19** — Given a machine with sound, when the same stretch of
-  emulated time is run once in many small advances and once in one large
-  advance, then the sound output of both runs is the same. A machine
-  without sound gives no sound output (the form of sound output: OQ-2).
+- [ ] **AC-19** — Given a machine with sound, then its sound output is
+  samples at the rate its caller named when the machine was built,
+  derived from the ticks alone; when the same stretch of emulated time
+  is run once in many small advances and once in one large advance, the
+  samples of both runs are identical. A machine without sound gives no
+  sound output.
 
 Connectors and capabilities
 - [ ] **AC-20** — Given a running machine, when it is asked what is
@@ -213,10 +218,10 @@ Connectors and capabilities
   list the three instruction ROM files and the two constant files of
   that set, and the TI-58C's descriptor those of its set, as Calc-U-59
   `roms/calculator/files.txt` names them at the pin (`machine.md` Q-2;
-  name form, sizes and md5 values: OQ-8).
+  the form of a ROM entry and the md5 values: LIB-12).
 - [ ] **AC-29** — Given any of the three models, then its descriptor
   lists one key ID for each key of the calculator and no key of the
-  PC-100C (the IDs: OQ-3); the connectors module slot (8 contacts) and
+  PC-100C (the list of IDs: C59-1); the connectors module slot (8 contacts) and
   printer connector (11 pads), each with a functional pin-out and taking
   one peripheral; the places `slot-1` and `printer`; and the debug
   target TMC0501 (`machine.md` and `peripherals.md`, fit tables).
@@ -252,8 +257,8 @@ Connectors and capabilities
 - [ ] **AC-35** — Given the PC-1500 or the PC-1500A, then its descriptor
   states a dot-matrix display of 156 × 7 dots with its status-line
   indicators; given the PC-1600, then 156 × 32 dots with 16 status-line
-  indicators; all three state sound (`machine.md`, fit table; the
-  indicators' names: OQ-3).
+  indicators; all three state sound (`machine.md`, fit table; the lists
+  of key IDs and indicator names: C1600-1).
 - [ ] **AC-36** — Given the PC-1500 or the PC-1500A, then its descriptor
   lists the 40-pin connector with the PC-1500 memory slot pin-out,
   taking one module, with the place `slot-1`; the 60-pin connector,
@@ -275,13 +280,15 @@ Connectors and capabilities
   (`roms.md`, facts).
 - [ ] **AC-39** — Given the Calc-U-1600 catalogue, then it holds a
   peripheral descriptor for every peripheral the product offers today:
-  the memory modules (OQ-6); the CE-150, with its cassette as a media
+  the bundled memory modules; the CE-150, with its cassette as a media
   place and its paper; the CE-158; and the CE-1600P (variants New, Old;
   default New), with its cassette and paper and, described with it as
   today, the CE-1600F with a holding media place for floppy disks with
   the sides A and B. Each lists its ROM files and the pin-outs it fits;
   the CE-161 lists its write-protect switch as a control
-  (`peripherals.md` and `capabilities.md`, fit tables; P-3).
+  (`peripherals.md` and `capabilities.md`, fit tables; P-3). Whether the
+  host drive is a peripheral with a descriptor is an open question of
+  C1600-1.
 - [ ] **AC-40** — Given a running machine of any of the three models
   and variants, when it is compared with its descriptor, then its model,
   variant, tick rate, display kind and geometry, key IDs, places and
@@ -327,64 +334,10 @@ checked in review and in the phase 5 walkthroughs:
   shows the build side of this.
 
 ## Open Questions
-- [ ] **OQ-1** — Does the tick count of a machine go on across a reset,
-  a power cycle and a cold boot, or does it start again? `machine.md`
-  M-1 says "a monotonic tick count" and does not name these three.
-  *Recommendation:* it never goes back for as long as the machine
-  exists, also across the three; a new machine (model or variant switch)
-  starts at zero. Pacing (LIB-17) and the "elapsed" steps (LIB-6) can
-  then rely on one rule.
-- [ ] **OQ-2** — What sound output is at the interface. The contract
-  says only "sound output"; Calc-U-1600 produces 48 kHz samples today,
-  derived from the ticks (`docs/inventory/divergence-matrix.md`, M54).
-  Every later feature that touches sound, and the test machines of
-  AC-24, need the form. *Recommendation:* samples at a rate the caller
-  names when the machine is built, derived from the ticks alone; AC-19
-  then reads "the samples are identical".
-- [ ] **OQ-3** — The names a descriptor lists: the key IDs of each model
-  with their spellings (`presets.md` Q-3, assigned to phase 6), whether
-  the PC-1500's ON key is an ordinary key ID (it has a call of its own
-  today, `machine.md` M-3), and the names of the indicators. Presets,
-  keyboard maps, the harness and the help all quote them.
-  *Recommendation:* write the lists into the specs of C59-1 and C1600-1
-  now; a list invented during implementation would be hard to change.
-- [ ] **OQ-4** — Is the host drive of the PC-1600 a peripheral with a
-  descriptor and a place? `peripherals.md` lists it among the PC-1600's
-  peripherals, `presets.md` PR-11 keeps `host-drive:` as a product key,
-  and its ROM is always bundled (`roms.md` Q-1). AC-39 leaves it out
-  until this is answered. *Recommendation:* settle it in the C1600-1
-  spec.
-- [ ] **OQ-5** — The rule for an advance (AC-7). Both products round up
-  to whole instructions today, and the caller carries the overshoot.
-  Open is what an instruction boundary is on the PC-1600, where two CPUs
-  share the machine. *Recommendation:* AC-7 as written (at least the
-  ticks asked for, ending where the core says an instruction ends); the
-  PC-1600's rule is stated in C1600-1.
-- [ ] **OQ-6** — Where the peripheral descriptors of memory modules come
-  from. The glossary says a memory module is described by a module
-  definition, which is a file; users can have their own. A catalogue
-  that is fixed in the product cannot list those. *Recommendation:* the
-  catalogue holds the descriptors of the bundled module definitions, and
-  a module definition read later gives a descriptor of the same form;
-  who reads the files is settled in the LIB-7 and C1600-1 specs.
-- [ ] **OQ-7** — What "brightness" is at the interface (AC-15, AC-17):
-  its range, and whether it is what the core measures (the duty of each
-  position) or a finished brightness. Today Calc-U-59 turns duty into
-  brightness above the core (`machine.md` M-2, facts: `Shared/DisplayPov`).
-  *Recommendation:* the duty as the core measures it, from 0 to 1; what
-  the eye sees stays with the frontends.
-- [ ] **OQ-8** — The ROM entries of the TI descriptors (AC-28, AC-32):
-  whether a file name includes the extension and a folder, whether an
-  entry says if its size counts words or bytes (`roms.md` R-4), and
-  where the md5 values of the known TI dumps come from, since the TI ROM
-  repository does not exist yet (ADR 0034). *Recommendation:* settle the
-  form in the LIB-12 spec; the values come with the TI ROM repository.
-- [ ] **OQ-9** — The C indicator of the TI display. `machine.md` (fit
-  table) notes that today one glyph shows per position and that the
-  display kinds let C and the minus sign show together, as on the real
-  calculator. If the machines do so, a user sees a difference.
-  *Recommendation:* decide in the C59-1 spec; if yes, it gets a row in
-  `docs/behaviour-changes.md`.
+None in this spec. Three questions that came up here are settled in
+other specs: the lists of key IDs and indicator names, the host drive
+as a peripheral, and whether the TI display shows C and the minus sign
+together (C59-1, C1600-1); the form of a ROM entry (LIB-12).
 
 ## Decision Log
 
@@ -404,3 +357,9 @@ checked in review and in the phase 5 walkthroughs:
 | A ROM entry is a file with name, size of the decoded content and md5 | `roms.md` R-1, R-4 | 2026-11-10 |
 | This feature's product columns hold the descriptor content; the machines' behaviour is C59-1, C59-6 and C1600-1 | Rules 2 and 3 of the cut, `features/INDEX.md` | 2026-11-10 |
 | Proposed in this spec, for the gate: the bound of AC-10 (one year of emulated time), EC-3 (a repeated key down or key up changes nothing), and that a capability ID is unique within a machine and repeatable (AC-21) | They make the criteria checkable; no contract states them | 2026-11-10 |
+| The tick count never goes back for as long as a machine exists, also across reset, power cycle and cold boot; a new machine starts at zero | Recommendation applied; the user raised no objection at the batch 1 gate | 2026-11-10 |
+| Sound output is samples at a rate named at the build, derived from the ticks alone | Recommendation applied; the user raised no objection at the batch 1 gate | 2026-11-10 |
+| An advance runs at least the ticks asked for, in whole instructions; the caller carries the overshoot | Both products today; recommendation applied; the user raised no objection at the batch 1 gate | 2026-11-10 |
+| The catalogue holds the descriptors of the bundled module definitions; one read later has the same form | Recommendation applied; the user raised no objection at the batch 1 gate | 2026-11-10 |
+| Brightness is the duty the core measures, from 0 to 1 | Recommendation applied; the user raised no objection at the batch 1 gate | 2026-11-10 |
+| The lists of key IDs and indicator names are written in the C59-1 and C1600-1 specs, not left to phase 6 | Recommendation applied; the user raised no objection at the batch 1 gate; replaces the assignment of `presets.md` Q-3 | 2026-11-10 |

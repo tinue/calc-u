@@ -18,7 +18,7 @@ What the three status columns mean for this feature:
 - **Calc-U-59, Calc-U-1600:** every frontend of the product keeps its
   settings in the product's settings file and takes its folders from the
   library; the platform stores are no longer read or written for
-  settings (one possible exception: OQ-6).
+  settings (one exception: AC-34).
 
 ## User Stories
 - As a user, I want my preferences in one documented file per product,
@@ -64,24 +64,38 @@ The settings file
   are kept in one INI file named `<Product>.ini`, with `[section]`
   headers and `key = value` lines; section and key names are kebab-case,
   except the keys of `[preset]`, which are model names as the glossary
-  writes them (`settings.md` ST-4; the grammar: OQ-10).
+  writes them (`settings.md` ST-4).
+- [ ] **AC-33** — Given a settings file, then it is read by this
+  grammar: UTF-8 without a byte order mark; both line endings; a line
+  starting with `#` or `;` is a comment; a value is the rest of the line
+  after `=`, trimmed, with no quoting and no escapes; section and key
+  names are matched without regard to case; of a key given twice the
+  last one counts; booleans are `true` and `false`; a path is absolute,
+  and a leading `~` stands for the user's home folder.
 - [ ] **AC-2** — Given a frontend on a platform, then the settings file
   is in exactly one place: the Application Support folder of that app on
-  macOS and iOS (inside the sandbox container for a sandboxed app);
-  `%APPDATA%\<Product>\` on Windows; `$XDG_CONFIG_HOME/<product>/`, or
-  `~/.config/<product>/` when that variable is not set, on Linux; the
-  file system the Web frontend passes. No other place is searched (the
-  spelling of the folders: OQ-11).
+  macOS and iOS (inside the sandbox container for a sandboxed app,
+  `~/Library/Application Support/<Product>/` otherwise);
+  `%APPDATA%\<Product>\` on Windows; `$XDG_CONFIG_HOME/<Product>/`, or
+  `~/.config/<Product>/` when that variable is not set, on Linux; the
+  file system the Web frontend passes. `<Product>` is the product's name
+  as it is written (`Calc-U-59`, `Calc-U-1600`) on every platform. No
+  other place is searched.
 - [ ] **AC-3** — Given a settings file that lacks a key, when the
   setting is read, then it has its documented default.
 - [ ] **AC-4** — Given a settings file with a key or a section the
   product does not know, when the product writes the file, then that key
-  or section is still in the file with its value.
+  or section is still in the file with its value, and so are the
+  comments, the blank lines and the order of the file.
 - [ ] **AC-5** — Given no settings file, when the product starts, then
-  every setting has its default and the product works.
+  every setting has its default and the product works; no file is
+  written until a setting is changed, and the file then holds only the
+  keys that have been set. A key that was set stays in the file, also
+  when it is set back to its default.
 - [ ] **AC-6** — Given a setting is changed in a frontend, when that
   frontend is quit and started again, then the setting has the new
-  value.
+  value. The file is read when the product starts and not again while
+  it runs.
 - [ ] **AC-7** — Given a settings file, then it states its format
   version, and a file in another version is treated as ADR 0037 says
   (where the version sits and what "refused" means for a settings file:
@@ -162,6 +176,14 @@ Paths
   keys of AC-19 have the same names, values and defaults in each; a key
   a frontend has no use for (for example `[keyboard] feedback` in Qt6,
   `[storage] save-folder` outside Qt6) is kept in the file and ignored.
+- [ ] **AC-34** — Given the Swift frontend on macOS and a trace folder
+  the user chose, then the grant macOS gives for that folder (a
+  security-scoped bookmark) stays in the platform store; the frontend
+  resolves it and passes the folder in (AC-12). It is the only thing a
+  frontend keeps outside the settings file.
+- [ ] **AC-35** — Given the Qt6 frontend, then the size and place of its
+  window and the split between its panels are in `[window]` as plain
+  numbers.
 
 ### Calc-U-1600
 - [ ] **AC-26** — Given Calc-U-1600, then its settings file is
@@ -214,6 +236,25 @@ Paths
   build of Calc-U-59 on the same Mac, then each has its own settings
   file (AC-2); a change in one does not show in the other.
 
+- **EC-5** — Given a value its key does not accept (text where a number
+  belongs, an unknown `led-style`), then the setting has its default,
+  and the value stays in the file until that setting is changed.
+- **EC-6** — Given a settings file that cannot be read as INI, then it
+  is left untouched, the product starts with the defaults and says so in
+  its log.
+- **EC-7** — Given the product is ended by force while it writes the
+  settings file, then the file holds either the old or the new content,
+  never part of one.
+- **EC-8** — Given the save folder, or `Tapes/` inside it, does not
+  exist, when something is first written there, then it is created.
+- **EC-9** — Given `[storage] save-folder` names a folder that cannot be
+  created or written, then the user is told, and nothing is written to
+  another folder instead.
+- **EC-10** — Given two running instances of one product, when both
+  write the settings file, then the last write wins and no key the
+  other one does not know is lost. A hand edit made while the product
+  runs can be lost at its next write.
+
 ## Technical Requirements (optional)
 - The library decides nothing about the platform: every base folder
   (home, Application Support, Documents, the iCloud container, the Web
@@ -225,15 +266,6 @@ Paths
 - The settings file is an own format (ADR 0037).
 
 ## Open Questions
-- [ ] **OQ-1** — When is the settings file written, and with which
-  keys? ST-1 says the new release "starts with the defaults and writes
-  the INI file". Either the file is written at the first start with
-  every key at its default (it documents itself, as `mame.ini` does), or
-  a key is written only once the user has set it. *Recommendation:*
-  write a key only once it has been set. A default that a later release
-  changes then reaches every user who never touched that setting; with
-  all keys written, it reaches nobody. The answer also decides whether
-  setting a value back to its default removes the key.
 - [ ] **OQ-2** — The version of the settings file. ADR 0037 names
   settings files among the own formats: a file in an older version, or
   without a version, is refused with a hint. Two things are open. Where
@@ -246,17 +278,6 @@ Paths
   beside the new one under another name when it first writes. No such
   file exists before the first release from this repository, so this
   matters only later and for hand-written files.
-- [ ] **OQ-3** — Do comments, blank lines and the order of a hand-edited
-  file survive a write? I-3 names unknown keys only. *Recommendation:*
-  yes; "hand edits survive" would otherwise surprise.
-- [ ] **OQ-4** — What happens with a value a key does not accept (text
-  where a number belongs, an unknown `led-style`), and with a file that
-  is not INI at all or was cut off while being written? Today a bad
-  number reads as the default in Calc-U-59 and as 0 in Calc-U-1600
-  (`Shared/Settings.cpp:40-46`). *Recommendation:* a bad value counts as
-  missing (AC-3) and stays in the file until that setting is changed; a
-  file that cannot be read is left untouched, the product starts with
-  the defaults and says so in the log; a write never leaves half a file.
 - [ ] **OQ-5** — The app-written keys. ST-4 names the sections
   `[window]` and `[folders]` but no keys. Needed: the last used model
   (both products keep `lastUsedModel` today; *recommendation:*
@@ -266,44 +287,11 @@ Paths
   `[window]`; and whether Calc-U-59's Swift key `portraitDebugPage` is
   kept. *Recommendation:* list them in this spec once named; dropping
   `portraitDebugPage` would be a visible change and need a row.
-- [ ] **OQ-6** — Frontend state that is not readable text: the Qt6
-  window geometry and splitter state (Calc-U-59 `windowGeometry`,
-  `splitterState`) and the macOS security-scoped bookmark of a custom
-  trace folder (`traceCustomPathBookmark`). *Recommendation:* the
-  bookmark stays in the platform store, as the one exception to "no
-  longer read or written", because it is a grant by macOS and not a
-  preference; the frontend resolves it and passes the folder in (AC-12).
-  The Qt6 geometry goes into `[window]` as plain numbers where possible.
 - [ ] **OQ-7** — Traces and screenshots outside Qt6. For the Swift
   frontend: the key names and values of the trace location (AC-24) next
   to `[trace] folder`, and where screenshots go. For the Web frontends:
   where traces and screenshots go (today Calc-U-59's Web frontend offers
   a trace as a download, `settings.md`, facts).
-- [ ] **OQ-8** — What happens when the save folder does not exist or
-  cannot be written (a new installation, an override on a removed
-  volume), and who creates `Tapes/`? *Recommendation:* a missing folder
-  is created at the first write; an override that cannot be used is
-  reported, and nothing is written elsewhere without the user knowing.
-- [ ] **OQ-9** — Reading and writing while the product runs. Is the file
-  read at the start only, so that a hand edit made while the product
-  runs is lost at the next write? And two running instances of one
-  product write the same file. *Recommendation:* read at the start
-  only; the last write wins and unknown keys are kept, as with QSettings
-  today. The help says to edit the file while the product is not
-  running.
-- [ ] **OQ-10** — The INI grammar. ADR 0022 says `[section]` and
-  `key = value`; nothing fixes the rest. *Recommendation:* UTF-8 without
-  a byte order mark; both line endings read; a line starting with `#` or
-  `;` is a comment; the value is the rest of the line after `=`, trimmed,
-  with no quoting and no escapes (so a Windows path is written as it
-  is); names are matched without regard to case; a key given twice
-  counts once, the last one; booleans are `true` and `false`; a path is
-  absolute, with a leading `~` standing for the home folder.
-- [ ] **OQ-11** — The spelling of the settings folders (AC-2): the
-  folder inside Application Support for a Qt6 frontend on macOS, and
-  `<product>` on Linux. *Recommendation:*
-  `~/Library/Application Support/<Product>/` and the product name as it
-  is written, `Calc-U-59` and `Calc-U-1600`, on every platform.
 
 ## Decision Log
 
@@ -317,3 +305,9 @@ Paths
 | Sections from Calc-U-1600's groups, kebab-case names, glossary values; app-written state in `[window]` and `[folders]`; on the web the INI is a file | `settings.md` ST-4 | 2026-11-10 |
 | A missing key has its default; an unknown key is kept on write | `settings.md` I-3 | 2026-11-10 |
 | Proposed in this spec, for the gate: the trace size rule of AC-11 holds for both products (Calc-U-1600 reads a non-number as 0 today) | One reader, one rule (`settings.md` I-2) | 2026-11-10 |
+| A key is written only once it has been set; the file is read at the start only; comments, blank lines and order survive a write | Recommendation applied; the user raised no objection at the batch 1 gate | 2026-11-10 |
+| A bad value counts as missing; an unreadable file is left untouched; a write never leaves half a file | Recommendation applied; the user raised no objection at the batch 1 gate | 2026-11-10 |
+| The INI grammar of AC-33 | ADR 0022 fixes only sections and `key = value`; recommendation applied; the user raised no objection at the batch 1 gate | 2026-11-10 |
+| The settings folders carry the product's name as written, on every platform | Recommendation applied; the user raised no objection at the batch 1 gate | 2026-11-10 |
+| The macOS bookmark of a custom trace folder stays in the platform store; Qt6 window state is plain numbers in `[window]` | A bookmark is a grant by macOS, not a preference; recommendation applied; the user raised no objection at the batch 1 gate | 2026-11-10 |
+| A missing save folder is created at the first write; an override that cannot be used is reported and never replaced silently | Recommendation applied; the user raised no objection at the batch 1 gate | 2026-11-10 |

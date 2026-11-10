@@ -49,8 +49,9 @@ the features the products have in common.
     the platform stores (UserDefaults, QSettings, `localStorage`). They are
     replaced by one documented settings file per product, an INI file
     (`Calc-U-59.ini`, as MAME does; `docs/adr/0022-settings-files-are-ini.md`), read and written by
-    one shared implementation; an exporter follows later. The first start
-    of the new release converts the existing platform store into the file.
+    one shared implementation; an exporter follows later. *(replaced,
+    ADR 0037, `docs/contracts/settings.md` ST-1)* The first start of the new
+    release converts the existing platform store into the file.
     A lookup hierarchy (dot directory, home, …) may follow later. Details
     (file syntax, location per platform, the web) → phase 3/4.
   - Remnants from before versioning started are dropped: any other

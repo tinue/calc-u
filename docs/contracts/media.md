@@ -180,12 +180,10 @@ Options:
   each motor stop into the tapes folder; whether a recorded tape is an
   instance with Name & Save like the other media, or keeps its own rules,
   is open (the WAV format itself is external).
-- Q-2: `ti58c.mem` is not a medium (not removable); its place in the save
-  folder and its file are contract 7's. ADR 0037 already means it is
-  refused when outdated.
-- Q-3: Calc-U-59's web client keeps cards in memory for the page session
-  only; with ADR 0019 its save folder becomes persistent (IndexedDB, as
-  Calc-U-1600's). Confirm with contract 7.
+- Q-2 (answered 2026-11-10, `settings.md` ST-3): `ti58c.mem` is not a
+  medium; it lives at the root of the save folder.
+- Q-3 (answered 2026-11-10, `settings.md` ST-3): the web save folder is
+  persistent IndexedDB in both products.
 
 ## Decision log
 

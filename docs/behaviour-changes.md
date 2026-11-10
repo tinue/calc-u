@@ -15,7 +15,7 @@ step. Label and menu renames are not repeated here; they are in
 
 | # | Change | Source |
 |---|---|---|
-| 59-1 | Files written for 2.3.0 are refused with a hint to upgrade them: presets (`.ti59`, `.ti58`, `.ti58c`), `ti58c.mem`, ASM overlays, magnetic cards in text 1.0 and the binary layouts. Whether card text 2.0 stays readable is open (`contracts/media.md`, Q-4). A one-time exception for this release. | ADR 0037 |
+| 59-1 | Files written for 2.3.0 are refused with a hint to upgrade them: presets (`.ti59`, `.ti58`, `.ti58c`), `ti58c.mem`, ASM overlays and magnetic cards (text 1.0, text 2.0 and the binary layouts; the card format gets a new version for the name field). A one-time exception for this release. | ADR 0037; `contracts/media.md`, MD-2, Q-4 |
 | 59-2 | Settings start at their defaults; the platform stores are not converted. | `contracts/settings.md`, ST-1 |
 | 59-3 | The preset format is new (YAML-shaped, key IDs instead of matrix codes, `format-version: 2`); a preset with any error is refused whole. | ADR 0017, 0018; `contracts/presets.md` |
 | 59-4 | A preset always builds its machine from a cold boot. It no longer adds to the running calculator, and it no longer keeps the module or printer it does not name. | ADR 0016 |

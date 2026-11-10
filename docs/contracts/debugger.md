@@ -67,8 +67,8 @@ Stays product-specific, unchanged:
 Backlog, not part of the migration:
 - Calc-U-1600 BASIC-level debugger (already `B1600-59`).
 - Calc-U-59 CPU tab showing the commented ROM disassembly instead of raw
-  mnemonics (new, from the user on 2026-11-10; goes into the Calc-U-59
-  product backlog).
+  mnemonics (new, from the user on 2026-11-10; `B59-59` in
+  `docs/inventory/backlog.md`).
 
 ## Responsibilities
 

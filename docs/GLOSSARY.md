@@ -447,6 +447,10 @@ _Avoid_: key sequencer, typer
 What a product supplies per model for the typing engine: key sequences
 for characters, the minimum hold, the cadence.
 
+**Pacing profile**:
+What a product supplies per model for the pacer: the slice length and
+the model's pacing particulars.
+
 **Key readiness**:
 The state in which a machine's ROM can take the next key.
 _Avoid_: scan loop (for the general term)
@@ -473,6 +477,11 @@ _Avoid_: toolbar
 **Paper panel**:
 The view of a printer's paper inside a frontend.
 _Avoid_: printer view, plotter view
+
+**Mark**:
+One thing a printer put on its paper: a dot, or a pen stroke with its
+colour. The **text layer** is the characters of each printed line with
+their place on the paper, where the printer knows them.
 
 **Host service**:
 Something only a frontend can give an app session: the audio sink, the

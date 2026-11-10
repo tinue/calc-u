@@ -1,8 +1,8 @@
 # Contract: frontend interface, session hosting and messages
 
-Status: draft (2026-11-10). Forks FE-1 to FE-6 are decided (decision
-log; FE-5 and FE-6 were added in the phase 4 review). FE-7 and SP-1 to
-SP-3 are proposed and wait for the review gate.
+Status: draft (2026-11-10). Forks FE-1 to FE-7 and SP-1 to SP-3 are
+decided (decision log; FE-5 to FE-7 and SP-1 to SP-3 were added in the
+phase 4 review); open questions remain.
 
 Inherits: ADR 0009 (single-threaded sessions, hosted by the frontend,
 messages only), 0014 (ObjC++ bridge translates only), 0015 (Swift session
@@ -66,6 +66,12 @@ Calc-U-1600's "busy state in AppSession; UI rules in Shared
   through a queue (Swift) or `postMessage` (web).
 - I-3: The bridge and the web bindings only translate (ADR 0014); no
   rule lives in them.
+- I-5: While an operation runs, the app session keeps sending what
+  changed (display, paper, state) at least once per host tick, so every
+  frontend visibly updates behind "Loading…" (SP-2).
+- I-6: Pacing keeps the long-run rate exact: emulated time is compared
+  with an absolute wall-clock deadline, never with the length of the
+  last slice, so no lag builds up (SP-1).
 - I-4: Nothing in a **generic** message names a model-specific type:
   state is described with the descriptor's terms (display kinds, key
   IDs, places, generic capability kinds). What only one product has
@@ -189,7 +195,7 @@ Options:
 
 ### FE-7: The web embedding interface
 
-**Proposed; waits for the review gate.**
+**Decided (2026-11-10, user): option (a).**
 
 Facts: calc-u-site, another repository, embeds each web client from its
 release zip and pins it by sha256. Calc-U-59: `Web/dist/` is
@@ -214,8 +220,8 @@ Options:
 
 Added in the phase 4 review: the divergence matrix marked these "merge"
 (M10, M12, M17, M44), and no contract covered them. The facts and the
-rules that follow from decisions already taken come first; the three
-forks are proposed.
+rules that follow from decisions already taken come first, then the
+three forks (decided 2026-11-10).
 
 ### Today (facts)
 
@@ -244,7 +250,12 @@ forks are proposed.
 
 ### SP-1: One pacer, a pacing profile per model
 
-**Proposed; waits for the review gate.**
+**Decided (2026-11-10, user): option (a)**, on the condition that the
+pacing algorithm is carried over correctly. The user's reason: the same
+bug was fixed once in each product, an emulation that lagged behind
+because the pacing was not averaged. I-6 states the property; a test per
+product compares emulated time with wall time over a long run, before
+and after the pacer moves to the library.
 
 Options:
 - (a) **Recommended:** one pacer in the library. A product supplies a
@@ -256,7 +267,12 @@ Options:
 
 ### SP-2: How operations run on a GUI-thread host
 
-**Proposed; waits for the review gate.**
+**Decided (2026-11-10, user): option (a), always sliced, with live
+updates.** The user's requirement: the GUI keeps updating while
+"Loading…" is in front. Both options can meet it (`runNow` pumps the Qt
+event loop between 10 ms slices; a sliced operation sends its topics
+after each slice and the window repaints through the normal event loop).
+It is now an invariant (I-5) and is checked by a test.
 
 Facts: FE-3 keeps the Qt6 session on the GUI thread; Calc-U-1600's Qt
 app runs operations with `runNow` (blocking, pumping the Qt event loop,
@@ -271,7 +287,8 @@ Options:
 
 ### SP-3: Opening a file
 
-**Proposed; waits for the review gate.**
+**Decided (2026-11-10, user): option (a).** Today's accepted files stay;
+where a platform has no drop today (iOS), none is added.
 
 Options:
 - (a) **Recommended:** one "open file" command on the app session for a
@@ -296,6 +313,10 @@ Options:
 
 ## Open questions
 
+- Q-4 (phase 4b, with the media feature): What "open file" does with a
+  medium that lies outside the save folder. ADR 0019 allows two ways to
+  such a file only (a preset names it, or the user puts it into the save
+  folder), so a dropped medium cannot be opened in place.
 - Q-3 (phase 4b, with the preset feature): What "idle" means per model
   for a bare `- wait:` (`presets.md`, PR-5 gives it to both products;
   Calc-U-59 has no such step today).
@@ -328,4 +349,8 @@ Options:
 | 2026-11-10 | FE-3 | The Qt6 frontends keep their session on the GUI thread for the migration; the messages are the same as elsewhere, so moving later changes only the Qt host. |
 | 2026-11-10 | FE-4 | The contract requires one owner per host key at a time; which surface owns it is the frontend's. Today's behaviour stays (ODD59-3); the unified input surface stays a backlog item. |
 | 2026-11-10 | FE-5 | Three topic shapes: state topics (whole state), stream topics (appended since the last message, with a reset marker) and requests with one reply for large, rare things. Refines FE-1. |
+| 2026-11-10 | FE-7 | One written embedding interface for the web clients: location-independent `dist/`, `MANIFEST.json` with the same fields, styles under `.calcu-client`, the same prop names for the same things; component names stay per product. |
+| 2026-11-10 | SP-1 | One pacer in the library with a pacing profile per model (slice length, jitter, scan-loop sleep at full speed). The algorithm is carried over unchanged in effect; the long-run rate stays exact (I-6), checked per product. |
+| 2026-11-10 | SP-2 | Operations always run sliced, one slice per host tick, in every frontend; `runNow` goes. The session keeps sending updates while an operation runs (I-5). |
+| 2026-11-10 | SP-3 | One "open file" command on the app session for drop, Open With and generic pickers; the library classifies presets and media, a product adds its own file kinds. |
 | 2026-11-10 | FE-6 | A product's app layer may define topics, commands and control-state entries of its own, on the same message path; only that product's frontends read them. Generic messages stay free of model-specific types (I-4). Refines FE-2. |

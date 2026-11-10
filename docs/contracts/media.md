@@ -191,12 +191,14 @@ Options:
 
 ## Open questions
 
-- Q-4 (open, for the user): MD-2 gives the magnetic card format a name
-  field and a new version, so saved cards are refused once (ADR 0037).
-  MD-5 lets a file without a name inside fall back to its file name. If
-  the name field is optional, card text 2.0 would not need a new version
-  and saved 2.0 cards would stay readable. Whether the card format still
-  gets a new version is to be confirmed.
+- Q-4 (answered 2026-11-10, user): the magnetic card format gets a new
+  version, as MD-2 says. The user's condition for keeping 2.0 was that
+  the current reader ignores an unknown keyword; it does not:
+  Calc-U-59 2.3.0 refuses a card text 2.0 file with an unknown line at
+  the top level or in `HEADER:` and skips unknown keys only inside
+  `CUECARD:` (`Shared/CardFile.cpp`, `parseCardTextV2`; `Shared/CueCard.cpp`,
+  `parseLine`). A name field is therefore an incompatible change. Saved
+  2.0 cards are refused once at the update (ADR 0037).
 - Q-5 (phase 6): When two instances carry the same name (MD-5), which
   one a save by name replaces (`saveas: live`, Name & Save, a preset's
   first write).
@@ -219,4 +221,5 @@ Options:
 | 2026-11-10 | MD-2 | Every medium carries its name inside its file; the file is named after it. The card format gets a name field and a new version; saved Calc-U-59 cards are refused after the update (ADR 0037). |
 | 2026-11-10 | MD-3 | Calc-U-1600's save rules for every product, frontend and the harness; a name a file name cannot hold is refused. |
 | 2026-11-10 | MD-5 | The name inside the file is the name; the file name is only the fallback for a file without one. The file name is derived from the name, numbered (`foo-1`) when that file exists with another name inside. Two files with the same name both show; preventing it is the user's. |
+| 2026-11-10 | MD-2 (confirmed) | The magnetic card format gets a new version for the name field; 2.3.0's reader refuses unknown keywords, so the change is incompatible (Q-4). |
 | 2026-11-10 | MD-4 | Outdated files show as disabled "outdated" entries in their picker with the hint; a preset naming one is refused with the same hint; logged once per start. |

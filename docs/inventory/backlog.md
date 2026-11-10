@@ -188,6 +188,16 @@ suggestion only; the decision is made when the merged backlog is written.
 | B1600-89 | `TODO.md:728` | loader-matrix PC-1600 MEM: use `readPC1600ProgramAreas(peek).memS0` | product backlog | |
 | B1600-90 | `TODO.md:731` | loader-matrix `snapshot()`: use `PC1600Machine::debugCopyInternalRam()` | product backlog | |
 
+## Added after the inventory
+
+Ideas that came up in later phases (Briefing §1.7: no idea gets lost).
+The source is the document that records them.
+
+| ID | Source | Item | Target | Note |
+|---|---|---|---|---|
+| B59-59 | `docs/contracts/debugger.md` (user, 2026-11-10) | CPU tab shows the commented ROM disassembly instead of raw mnemonics | product backlog | Calc-U-59 |
+| B1600-91 | `docs/contracts/capabilities.md`, C-2 (user, 2026-11-10) | A text layer for the plotters' paper: intercept text printing so Copy can give text as well as the image | product backlog | Calc-U-1600; the paper output kind already allows it |
+
 Notes:
 - `TODO.md:185-192` ("Expansion connectors: one model on both machines",
   done 2026-10-07) is a context paragraph, not a bullet; no row. It records

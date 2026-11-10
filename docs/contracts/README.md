@@ -20,10 +20,10 @@ back to the user first.
 | 9a | [Harness protocol](harness.md) | ADR 0026, 0033 | Draft, forks decided |
 | 9b | [ROM lookup](roms.md) | ADR 0034, 0035 | Draft, forks decided |
 | 9c | [Help structure](help.md) | ADR 0036 | Draft, forks decided |
-| 10 | [Capabilities and product kinds](capabilities.md) | ADR 0006, 0007 | Draft; C-2 proposed |
+| 10 | [Capabilities and product kinds](capabilities.md) | ADR 0006, 0007 | Draft, forks decided |
 
 Contract 3 also holds "Sessions, pacing and operations" (SP-1 to SP-3)
-and the web embedding interface (FE-7), all proposed. The contracts were
+and the web embedding interface (FE-7). The contracts were
 reviewed on 2026-11-10; the forks added then are marked "added in the
 phase 4 review" in each contract. User-visible changes that the
 decisions cause are collected in
@@ -44,7 +44,7 @@ decisions cause are collected in
   | Control state | computed by the library from the descriptors | product entries (`frontend.md`, FE-6) |
   | Preset format | header, steps, media | product sections (ADR 0018, `presets.md`) |
   | Harness | common commands | product commands (`harness.md`, H-2) |
-  | Files | presets, media | product file kinds (`frontend.md`, SP-3, proposed) |
+  | Files | presets, media | product file kinds (`frontend.md`, SP-3) |
   | Debug panel | run control and its buttons | the panel itself (`debugger.md`, DB-6) |
 
 - **Formats.** For the migration release only the current version of an
@@ -54,12 +54,14 @@ decisions cause are collected in
 ## What is library and what is app layer
 
 ADR 0002 left the library's structure to phase 4. The table collects
-what the contracts say; it adds one proposal (L-1).
+what the contracts say, plus one decision of its own (L-1).
 
-**L-1 (proposed; waits for the review gate):** the app session and the
-machine session are library classes. A product does not write a session
-of its own; its app layer supplies the parts listed in the right-hand
-column and whatever only that product has.
+**L-1 (decided 2026-11-10, user):** the app session and the machine
+session are library classes. A product does not write a session of its
+own; its app layer supplies the parts listed in the right-hand column
+and whatever only that product has. The alternative, a session class per
+product assembled from library parts, was rejected: the glue would be
+written twice and could drift again.
 
 | Library part | Contract | The product supplies |
 |---|---|---|
@@ -98,11 +100,7 @@ Every contract lists its open questions with their status. Still open:
 | `presets.md` Q-1 | upgrade of the shipped and hosted presets | phase 6 |
 | `presets.md` Q-3 | key ID lists per model | phase 6, with the descriptors |
 | `harness.md` Q-2 | a Python helper for `calcu serve` | phase 6, with the skills |
-| `capabilities.md` C-2 | paper output: one kind with dot rows and pen strokes (proposed) | the review gate |
-| `frontend.md` FE-7 | one web embedding interface (proposed) | the review gate |
-| `frontend.md` SP-1 to SP-3 | one pacer with pacing profiles; operations always sliced; one "open file" command (proposed) | the review gate |
-| this file, L-1 | app session and machine session are library classes (proposed) | the review gate |
-| `media.md` Q-4 | does the magnetic card format still get a new version, now that the name inside may be absent | the user |
+| `frontend.md` Q-4 | what "open file" does with a medium outside the save folder | phase 4b |
 | `media.md` Q-5 | which of two same-named instances a save by name replaces | phase 6 |
 | `capabilities.md` Q-1 | the power state (off, display on): where it belongs | phase 5 walkthrough |
 | `capabilities.md` Q-2 | where the media formats' readers and writers sit | phase 4b |

@@ -1,7 +1,7 @@
 # Contract: capabilities and product kinds
 
-Status: draft (2026-11-10), added in the phase 4 review. C-1 and C-3 are
-decided; C-2 is proposed and waits for the review gate.
+Status: draft (2026-11-10), added in the phase 4 review. Forks C-1 to
+C-3 are decided (decision log).
 
 Inherits: ADR 0007 (a small machine interface plus generic capabilities;
 "the capabilities and their contracts are written in phase 4"; extensions
@@ -66,7 +66,7 @@ Sources: `docs/inventory/calc-u-59.md` and `calc-u-1600.md`
 | Kind | Offers | Used by the library for |
 |---|---|---|
 | **Media place** | whether it is pass-through or holding; its sides and the current side; insert (content in) and eject (content out); a change counter for autosave; write protection where the medium has it; "waits for a medium" where the ROM does (TI card reader) | pickers, Name & Save and autosave (`media.md`); `insert:`, `eject:`, `arm:` (PR-8) |
-| **Paper output** (C-2) | what was printed since a mark, as an append-only stream; cut and clear; the paper's width | the paper panel (ADR 0023), `cut-paper:`, Copy (text and image), harness printout |
+| **Paper output** (C-2) | the paper's width; an append-only stream of **marks** on the paper (dots, or pen strokes with their colour); a **text layer** where the printer knows which characters it printed (each line's characters and their place on the paper); cut and clear | the paper panel (ADR 0023), `cut-paper:`, Copy (the image always, the text when there is a text layer), harness printout |
 | **Controls** | the keys and switches of a peripheral or component that are not machine keys (M-3), each with an ID and its state | `- switch:` (PR-7), the buttons a panel shows, the harness |
 | **Typing support** | key readiness, command-prompt readiness, latch states, each where the model has it (`typing.md`, T-2) | the typing engine; pacing (`frontend.md`, sessions and pacing) |
 | **Serial port** | bytes in and out, line settings as far as the model has them | the host link (a pseudo-terminal, ADR 0009), harness serial commands |
@@ -98,7 +98,31 @@ typing support are generic because both products need them today.
 
 ### C-2: Paper output, one kind or several
 
-**Proposed; waits for the review gate.**
+**Decided (2026-11-10, user): one kind, marks plus an optional text
+layer** (re-proposed after the user's comment; the first proposal is
+kept below for the record).
+
+The user's point: a dot printer and a plotter are the same thing. Both
+put graphics on paper, and both print text. The PC-100C's paper is
+rendered from its dots, and Copy offers two formats, text and dots; a
+later CE-125 or CE-126P is the same in principle. The plotters support
+only a graphical copy today, but nothing fundamental stops a text copy
+if the text-printing keywords were intercepted.
+
+- Every printer gives a stream of **marks** on its paper: dots (PC-100C,
+  CE-126P) or pen strokes with their colour (CE-150, CE-1600P).
+- A printer may also give a **text layer**: the characters of each
+  printed line and their place on the paper. The PC-100C has it today.
+- One paper panel per component set renders the marks. Copy offers the
+  image always and the text when a text layer exists. Cut and
+  `cut-paper:` exist once.
+- The CE-158 printer port stays a Calc-U-1600 product kind: raw bytes as
+  sent, no paper.
+- Not part of the migration: a text layer for the plotters (intercepting
+  their text printing). It is a backlog idea (`docs/inventory/backlog.md`,
+  B1600-91).
+
+First proposal:
 
 Facts: the PC-100C prints rows of dots with their text (20 characters a
 line; column timing matters for a line cut short by the printer
@@ -140,7 +164,7 @@ Options:
 | | TI-59 (58, 58C) | PC-1500 (1500A) | PC-1600 | PC-1403 (paper) | PC-1350 (paper) |
 |---|---|---|---|---|---|
 | Media places | card reader (TI-59; pass-through, sides 1/2, waits for a medium) | module slot (battery-backed modules); cassette (CE-150) | 2 module slots; floppy (CE-1600F; holding, sides A/B); cassette (CE-1600P) | cassette (CE-126P, CE-124) | RAM card slot; cassette |
-| Paper output (C-2) | PC-100C: dot rows | CE-150: pen strokes | CE-1600P, CE-150: pen strokes | CE-126P: dot rows | CE-126P: dot rows; CE-515P: pen strokes |
+| Paper output (C-2) | PC-100C: dots, text layer | CE-150: pen strokes, no text layer today | CE-1600P, CE-150: pen strokes, no text layer today | CE-126P: dots; text layer unknown | CE-126P: dots; CE-515P: pen strokes |
 | Controls | PC-100C PRINT, ADV, TRACE | CE-161 write-protect switch | CE-161 write-protect switch | unknown | unknown |
 | Typing support | key readiness | prompt readiness; key readiness to be identified (`typing.md`, Q-3) | key and prompt readiness, latches | unknown (`typing.md`, Q-1) | unknown |
 | Serial port | — | CE-158 | RS-232C; CE-158 | — | 15-pin serial |
@@ -165,4 +189,5 @@ Options:
 | Date | ID | Decision |
 |---|---|---|
 | 2026-11-10 | C-1 | Generic kinds: those ADR 0007 names (media, serial port, real-time clock, printer output), plus controls and typing support. Any other function starts as a product kind and becomes generic when a second product needs it. |
+| 2026-11-10 | C-2 | Paper output is one generic kind: a stream of marks (dots, or pen strokes with colour) plus an optional text layer. One paper panel; Copy gives the image always and the text when a text layer exists. The CE-158 printer port stays a product kind; plotter text is a backlog idea. |
 | 2026-11-10 | C-3 | `ti58c.mem` always mirrors the running TI-58C's constant memory and follows a cold boot. A product restart is a power cycle: without a TI-58C startup preset the memory comes back; with one, the preset cold boots it. ADR 0021 amended. |

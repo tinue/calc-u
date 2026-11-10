@@ -1,6 +1,7 @@
 # Settings hold preferences; startup presets hold machines
 
-Status: accepted (2026-11-09)
+Status: accepted (2026-11-09); the open point on module changes was
+settled 2026-11-10: a power cycle (`docs/contracts/peripherals.md`, P-1).
 
 A product's settings hold the user's preferences, the startup model and
 each model's startup preset, nothing about the machine's hardware. The

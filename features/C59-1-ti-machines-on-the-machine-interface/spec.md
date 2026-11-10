@@ -44,7 +44,7 @@ In this spec "the calculator" is the real device; the running thing is
 - Key readiness and how a key is held (owner: LIB-5); the pacing profile
   (LIB-17).
 - Other names for a key in presets and in the harness, such as the
-  second functions (owner: LIB-6, with the list in C59-2; OQ-2).
+  second functions (owner: LIB-5, AC-26 there).
 - The descriptors' content: models, tick rates, display kind, ROM files,
   places (owner: LIB-1, Calc-U-59 column).
 - Which operation follows a model switch, an attach or the user's Reset
@@ -265,5 +265,5 @@ One seam
 | The key IDs are written in this spec, not left to phase 6 | LIB-1 decision log | 2026-11-10 |
 | Proposed in this spec, for the gate: a newly built machine is in the state after a cold boot (AC-7); the key IDs of AC-9; what a golden run is and what the runs cover | Today a new machine and a reset one differ in one CPU flag (`Shared/EmulatorSession.cpp:16-35`); no contract lists the IDs or defines the golden runs | 2026-11-10 |
 | Key readiness is reported by the machine; a Reset, power cycle or cold boot is over when it is reported again | user, 2026-11-10, batch 2 gate | 2026-11-10 |
-| The machine takes the 45 key IDs of AC-9 exactly. In presets and in the harness a second-function name (`Pgm`) stands for 2nd and its key, and a `2nd` written before it is not pressed twice; names are matched without regard to case (specified in LIB-6, the list in C59-2) | user, 2026-11-10, batch 2 gate | 2026-11-10 |
+| The machine takes the 45 key IDs of AC-9 exactly. In presets and in the harness a second-function name (`Pgm`) stands for 2nd and its key, and a `2nd` written before it is not pressed twice; names are matched without regard to case (specified in LIB-5, AC-26 there) | user, 2026-11-10, batch 2 gate | 2026-11-10 |
 | C and the minus sign can be lit together, each with its own brightness as on the hardware; the frontends show at least what they show today | user, 2026-11-10, batch 2 gate: today both show, but not with independent brightness | 2026-11-10 |

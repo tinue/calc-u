@@ -44,8 +44,8 @@
 - Key readiness, prompt readiness, the latches, and how a key is held
   or queued (owner: LIB-5); the pacing profile and the carry of an
   overshoot (LIB-17, OQ-5 there).
-- Other names for a key in presets and in the harness (owner: LIB-6,
-  with the list in C1600-4; OQ-5).
+- Other names for a key in presets and in the harness (owner: LIB-5,
+  OQ-6 there; OQ-5 here).
 - The debug targets, an advance that a debug target stops, and the trace
   (owners: LIB-10, C1600-3).
 - Loading BASIC and machine code into memory (owner: C1600-2).

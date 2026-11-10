@@ -234,6 +234,16 @@ Starting afresh
   *Recommendation:* drop the whole lag. The difference is one burst of
   0.1 seconds after each stall in Calc-U-1600, which nobody sees; it
   needs no row in `docs/behaviour-changes.md`.
+- [ ] **OQ-5** — The overshoot in Calc-U-1600. AC-3 says overshoots do
+  not add up. Calc-U-59 carries each overshoot into the next slice
+  today; Calc-U-1600 throws it away
+  (`Shared/MachineSession.cpp:452`), so every call runs a few ticks more
+  than were due and the machine runs very slightly fast. With AC-3 the
+  new pacer is more exact than Calc-U-1600's old one, and the
+  before-and-after test of AC-21 will show that difference.
+  *Recommendation:* keep AC-3; measure the old drift first and state it
+  in AC-21 as the expected difference. It is far smaller than the known
+  0.4 to 0.65 % of the PC-1600's BASIC and is not its cause.
 
 ## Decision Log
 

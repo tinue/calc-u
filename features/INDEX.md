@@ -59,6 +59,11 @@ Values: Planned, Specified, In progress, Done.
   (Briefing §7). "Specified" (the spec is approved) is set in all three
   at once.
 - The unit of work in phase 6 is therefore a feature and a column.
+- Rule 1 of the cut holds for a Library column and for a product row.
+  A product column of a library feature may be complete only together
+  with a product row that builds on the library part (for example LIB-3's
+  Calc-U-59 column with C59-5, which hosts the session in the Swift
+  frontend); the spec says so where it applies.
 - The "Depends on" column lists direct dependencies only. In addition,
   a product column of any library feature needs that product's machine
   row first (C59-1, C1600-1).
@@ -68,7 +73,7 @@ Values: Planned, Specified, In progress, Done.
 | ID | Name | Description | Contracts, ADRs | Depends on | Library | Calc-U-59 | Calc-U-1600 |
 |---|---|---|---|---|---|---|---|
 | LIB-1 | Machine interface and descriptors | One machine interface; model and peripheral descriptors in a catalogue; emulated time in ticks and the emulated-time type; display kinds; key IDs; places; capabilities listed by the machine; product kinds; the descriptor content of each product (the product columns) | machine, capabilities; ADR 0006-0008, 0012 | — | Planned | Planned | Planned |
-| LIB-2 | Peripherals, connectors and small capability kinds | Attach and detach in places, refusal with a reason, what follows an attach (power cycle), peripherals keyed by pin-out, chains; the generic kinds controls, serial port (with the host link) and real-time clock | peripherals; capabilities C-1; ADR 0007, 0010 | LIB-1 | Planned | Planned | Planned |
+| LIB-2 | Peripherals, connectors and small capability kinds | Attach and detach in places, refusal with a reason, what follows an attach (power cycle), peripherals keyed by pin-out, chains; the generic kinds controls, serial port (with the host link) and real-time clock | peripherals; capabilities C-1; ADR 0007, 0010 | LIB-1 (the host link of a serial port: LIB-3, LIB-9) | Planned | Planned | Planned |
 | LIB-3 | Sessions, operations and messages | Library app and machine sessions; operations sliced with live updates; busy and what is refused while busy; audio policy; pause in the background; topics (state, stream, request), commands, product topics and commands, host services | frontend FE-1, FE-3 to FE-6, SP-2; contracts README L-1; ADR 0009, 0014, 0015 | LIB-1, LIB-17 | Planned | Planned | Planned |
 | LIB-4 | Control state | The generic control state computed from the descriptors and the live machine: models, variants, places and what fits them ("available now" with a reason), media places, panels; product entries | frontend FE-2, FE-6 | LIB-2, LIB-3 | Planned | Planned | Planned |
 | LIB-5 | Typing | Typing engine for host keys, on-screen keys and text; holds in emulated time; readiness through typing support; two keys; Paste Text; typing profile and keyboard map per model; the `key` and `type` steps and commands | typing | LIB-1, LIB-3, LIB-11 | Planned | Planned | Planned |
@@ -128,6 +133,12 @@ Points this index leaves open:
   suggests merging the hit test (M16) and keeps the display per product
   (M52). Whether rendering a display kind and the hit test go into the
   component sets is to be settled in the LIB-14 spec.
+- **Product commands of the harness for functions that are carried
+  over.** `harness.md` H-2 names `pc1600 serial`, `pc1600 tape`,
+  `pc1600 dump-basic`, `ti59 keycodes` and `ti59 coverage`. Rule 4 gives
+  a command to the feature that owns the behaviour, but a function that
+  is carried over unchanged has no row. Proposal for the gate: one row
+  per product, "Harness product commands", depending on LIB-11.
 - **Sharp media formats.** `.card.yaml` and `.floppy.yaml` stay readable
   (behaviour change 1600-1). If moving their readers and writers under
   the media model (`capabilities.md` Q-2) turns out to be more than

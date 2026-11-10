@@ -155,8 +155,10 @@ Display and sound
 - [ ] **AC-15** — Given a machine with a segment display, when its
   display output is read, then it gives, per position, which of the
   named segments of the segment layout are lit, and a brightness per
-  position where the hardware has one, from 0 to 1, as the duty the core
-  measures (what the eye sees is the frontends'); the
+  position where the hardware has one, and a separate one for a segment
+  the hardware drives separately (the TI decimal point), each from 0 to
+  1, as the duty the core measures (what the eye sees is decided above
+  the machine); the
   number of segments per position is not limited to seven or eight, and
   the decimal point is a segment.
 - [ ] **AC-16** — Given a machine with a dot-matrix display, when its
@@ -255,10 +257,11 @@ Connectors and capabilities
   `Shared/MachineSession.hpp:369`, `Core/PC1500/PC1500Clocks.hpp:9`,
   `Core/PC1600/PC1600Clocks.hpp:8`).
 - [ ] **AC-35** — Given the PC-1500 or the PC-1500A, then its descriptor
-  states a dot-matrix display of 156 × 7 dots with its status-line
-  indicators; given the PC-1600, then 156 × 32 dots with 16 status-line
-  indicators; all three state sound (`machine.md`, fit table; the lists
-  of key IDs and indicator names: C1600-1).
+  states a dot-matrix display of 156 × 7 dots with 14 indicators; given
+  the PC-1600, then 156 × 32 dots with 18 indicators; all three state
+  sound (`machine.md`, fit table, which says 16 for the PC-1600; the
+  code has 18, Calc-U-1600 `Core/Display/StatusLine.hpp:86-132`; the
+  lists of key IDs and indicator names: C1600-1).
 - [ ] **AC-36** — Given the PC-1500 or the PC-1500A, then its descriptor
   lists the 40-pin connector with the PC-1500 memory slot pin-out,
   taking one module, with the place `slot-1`; the 60-pin connector,
@@ -334,10 +337,24 @@ checked in review and in the phase 5 walkthroughs:
   shows the build side of this.
 
 ## Open Questions
-None in this spec. Three questions that came up here are settled in
-other specs: the lists of key IDs and indicator names, the host drive
-as a peripheral, and whether the TI display shows C and the minus sign
-together (C59-1, C1600-1); the form of a ROM entry (LIB-12).
+- [ ] **OQ-1** — Do reset, power cycle and cold boot finish at the call
+  (AC-11), or does the ROM's start-up run with the advances that follow?
+  Today the Calc-U-59 session runs 300,000 instructions after a reset,
+  and Calc-U-1600 plays a power cycle through the ROM's own OFF and ON
+  and then runs the machine to its prompt (C59-1 OQ-1, C1600-1 OQ-1).
+  *Recommendation:* the call returns at once; the start-up runs with the
+  following advances; the operation that asked for it (LIB-18) waits for
+  the machine's readiness.
+- [ ] **OQ-2** — The power state. Both Sharp machines can be off, and
+  their display can be off while they run; the frontends need both on
+  the first day (C1600-1 OQ-2). `capabilities.md` Q-1 leaves this to a
+  phase 5 walkthrough. *Recommendation:* decide now: "the display is
+  on" is part of display output for every display kind, and "the
+  machine is off" is a state every machine reports.
+
+Settled in other specs: the lists of key IDs and indicator names, the
+host drive as a peripheral, and whether the TI display shows C and the
+minus sign together (C59-1, C1600-1); the form of a ROM entry (LIB-12).
 
 ## Decision Log
 
@@ -359,7 +376,7 @@ together (C59-1, C1600-1); the form of a ROM entry (LIB-12).
 | Proposed in this spec, for the gate: the bound of AC-10 (one year of emulated time), EC-3 (a repeated key down or key up changes nothing), and that a capability ID is unique within a machine and repeatable (AC-21) | They make the criteria checkable; no contract states them | 2026-11-10 |
 | The tick count never goes back for as long as a machine exists, also across reset, power cycle and cold boot; a new machine starts at zero | Recommendation applied; the user raised no objection at the batch 1 gate | 2026-11-10 |
 | Sound output is samples at a rate named at the build, derived from the ticks alone | Recommendation applied; the user raised no objection at the batch 1 gate | 2026-11-10 |
-| An advance runs at least the ticks asked for, in whole instructions; the caller carries the overshoot | Both products today; recommendation applied; the user raised no objection at the batch 1 gate | 2026-11-10 |
+| An advance runs at least the ticks asked for, in whole instructions; the caller carries the overshoot | Calc-U-59 today; Calc-U-1600 drops the overshoot today (C1600-1 OQ-6); recommendation applied, the user raised no objection at the batch 1 gate | 2026-11-10 |
 | The catalogue holds the descriptors of the bundled module definitions; one read later has the same form | Recommendation applied; the user raised no objection at the batch 1 gate | 2026-11-10 |
 | Brightness is the duty the core measures, from 0 to 1 | Recommendation applied; the user raised no objection at the batch 1 gate | 2026-11-10 |
 | The lists of key IDs and indicator names are written in the C59-1 and C1600-1 specs, not left to phase 6 | Recommendation applied; the user raised no objection at the batch 1 gate; replaces the assignment of `presets.md` Q-3 | 2026-11-10 |

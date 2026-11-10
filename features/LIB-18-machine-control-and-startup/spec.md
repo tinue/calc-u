@@ -144,9 +144,11 @@ Reset, power cycle, cold boot
   `cold-boot` and `power-cycle` (OQ-5).
 
 While an operation runs
-- [ ] **AC-16** — Given an operation runs, then every command of this
-  feature is refused (`frontend.md` Q-1), except as OQ-1 decides for
-  stopping an operation.
+- [ ] **AC-16** — Given an operation runs, when Reset, Cold boot or a
+  model switch is commanded, then the running operation is ended first,
+  the command that started it gets the reply that it was stopped, and
+  the new command is carried out. Every other command of this feature
+  is refused while an operation runs (`frontend.md` Q-1 as amended).
 
 ### Calc-U-59
 - [ ] **AC-17** — Given no settings yet, then Calc-U-59 starts with a
@@ -271,7 +273,7 @@ While an operation runs
   (`machine.md` I-6).
 
 ## Open Questions
-- [ ] **OQ-1** — Stopping an operation. `frontend.md` Q-1 refuses every
+- [x] **OQ-1** — *Decided as recommended (user, 2026-11-10, batch 4 gate).* Stopping an operation. `frontend.md` Q-1 refuses every
   command that would start an operation while one runs, Reset included,
   and a preset is one operation until its last step. Today Reset is the
   only way to stop a preset that plays in Calc-U-59
@@ -282,36 +284,36 @@ While an operation runs
   model switch are not refused while an operation runs: they end it
   first, and it replies that it was stopped. This amends Q-1 and LIB-3
   AC-16, and it keeps what Calc-U-59 users know.
-- [ ] **OQ-2** — The built-in default machine of the TI-58 and the
+- [x] **OQ-2** — *Decided as recommended (user, 2026-11-10, batch 4 gate).* The built-in default machine of the TI-58 and the
   TI-58C (`capabilities.md` Q-3). ADR 0021 states it for the TI-59 only.
   *Recommendation:* the same: the Master Library module, no printer.
-- [ ] **OQ-3** — AC-33 needs the machine to say that nothing follows an
+- [x] **OQ-3** — *Decided as recommended (user, 2026-11-10, batch 4 gate).* AC-33 needs the machine to say that nothing follows an
   attach while it is switched off, although its pin-out says a power
   cycle (LIB-2 AC-4; `peripherals.md` P-5, a decided fork). No machine
   reports a power state (LIB-1 decision log). This amends P-5 and needs
   the user. *Recommendation:* "what follows" is the machine's answer at that
   moment, and a switched-off Sharp machine answers "nothing"; that keeps
   today's behaviour without a power state at the interface.
-- [ ] **OQ-4** — What the Calc-U-59 Reset does besides resetting the
+- [x] **OQ-4** — *Decided as recommended (user, 2026-11-10, batch 4 gate).* What the Calc-U-59 Reset does besides resetting the
   machine today: it takes the fitted card and the card in the reader
   away and clears the cue cards (`Shared/SessionController.cpp:156-172`).
   *Recommendation:* that stays, and is specified with the cards in
   C59-7.
-- [ ] **OQ-5** — The names of the harness commands (AC-15). Presets name
+- [x] **OQ-5** — *Decided as recommended (user, 2026-11-10, batch 4 gate).* The names of the harness commands (AC-15). Presets name
   hardware in their header and have no such steps. *Recommendation:* as
   in AC-15.
-- [ ] **OQ-6** — Calc-U-59 keeps the paper, the log and the debug
+- [x] **OQ-6** — *Decided as recommended (user, 2026-11-10, batch 4 gate).* Calc-U-59 keeps the paper, the log and the debug
   settings across a model switch today
   (`tests/shared_controller_tests.cpp:119-132`). The paper belongs to a
   printer that the new machine may not have. *Recommendation:* the log
   and the debug settings stay; the paper stays while the new machine has
   a PC-100C and goes otherwise; settle the paper in the LIB-8 spec.
-- [ ] **OQ-7** — A PC-1500 that is power-cycled with a newly attached
+- [x] **OQ-7** — *Decided as recommended (user, 2026-11-10, batch 4 gate).* A PC-1500 that is power-cycled with a newly attached
   CE-150 stops at `NEW0? :CHECK` like after a module change
   (`Core/PC1500/PC1500PresetLoader.cpp:156-162`). Row 1600-4 names the
   module change only. *Recommendation:* word the row for any change of
   what is plugged in that changes the memory the ROM finds.
-- [ ] **OQ-8** — The bound of EC-7: the times per model. *Recommendation:*
+- [x] **OQ-8** — *Decided as recommended (user, 2026-11-10, batch 4 gate).* The bound of EC-7: the times per model. *Recommendation:*
   today's times, counted in emulated time: 25 seconds for the TI models
   (300,000 instructions take about 21), 7 seconds for the PC-1500 and
   PC-1500A, 27 seconds for the PC-1600.
@@ -329,3 +331,6 @@ While an operation runs
 | A TI-58C without a startup preset is built with its constant memory; with one it is cold booted | `capabilities.md` C-3 (user); behaviour change 59-12 | 2026-11-10 |
 | Reset and Cold boot are the family's names; "clean reset" and "Reset All" go | ADR 0024; glossary | 2026-11-09 |
 | Proposed in this spec, for the gate: a start builds exactly one machine (AC-5); a variant switch keeps what is plugged in and loads no startup preset (AC-7, Calc-U-1600's rule for the family); a switch to what already runs does nothing (AC-8); a startup preset that cannot be loaded gives the built-in default with a notice (EC-1) | Today the Calc-U-1600 Web frontend builds two machines when a model is named; no contract states the others | 2026-11-10 |
+| Reset, Cold boot and a model switch end a running operation instead of being refused, so that the user can stop a preset | user, 2026-11-10, batch 4 gate; amends `frontend.md` Q-1 | 2026-11-10 |
+| What follows an attach is the machine's answer at that moment; a switched-off Sharp machine answers that nothing follows | user, 2026-11-10, batch 4 gate; amends `peripherals.md` P-5 | 2026-11-10 |
+| The built-in default machine of the TI-58 and TI-58C is the same as the TI-59's: Master Library module, no printer | user, 2026-11-10, batch 4 gate; answers `capabilities.md` Q-3 | 2026-11-10 |

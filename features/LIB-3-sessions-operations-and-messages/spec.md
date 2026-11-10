@@ -164,6 +164,8 @@ Operations and busy
   and request is carried out as usual. Starting an operation always goes
   through the session, also for a product command, so the rule holds for
   product commands without the library reading them (`frontend.md` Q-1).
+  The commands that end a running operation are the exception: Reset,
+  Cold boot and a model switch (LIB-18 AC-16).
 - [ ] **AC-17** — Given an operation runs, when it does itself what
   would otherwise be an operation (a preset that cold boots, attaches
   and types), then that is part of the running operation and is not

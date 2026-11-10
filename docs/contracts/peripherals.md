@@ -250,3 +250,4 @@ and `calc-u-1600.md` (Modelling depth, Media), datamath TMC0540 page,
 | 2026-11-10 | P-4 | The library defines what every peripheral and connector has; each pin-out's signal interface is defined by the core of the product that owns the connector. |
 | 2026-11-10 | P-5 | What follows an attach or detach (a power cycle, or nothing) is stated per pin-out, not as a library rule; every pin-out of today's products says power cycle, as P-1 decided. |
 | 2026-11-10 | P-6 | A pin-out says whether its connector takes one peripheral or a chain; chained peripherals sit on the machine's connector while the pass-through connectors are implicit. |
+| 2026-11-10 | P-5 (amended, user, phase 4b, batch 4 gate) | What follows an attach or detach is the machine's answer at that moment: what the pin-out states, or nothing while the machine is switched off (the Sharp machines; the ROM finds the change at its next power-on). |

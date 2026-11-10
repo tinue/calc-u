@@ -207,8 +207,10 @@ What is shown
   directly, without a minimum hold
   (`App/EmulatorViewModel.swift:249-250`,
   `Qt6/app/EmulatorController.cpp:57-58`).
-- [ ] **AC-25** — Given a key pressed on a running program (R/S to stop
-  it), then it goes down at once (AC-2), as today.
+- [ ] **AC-25** — Given a TI machine that runs a program, when R/S or
+  GTO is pressed as live input, then the key goes down at once (AC-2),
+  the ROM samples it as the real calculator does, and the program stops
+  or is acted on as in Calc-U-59 2.3.0.
 - [ ] **AC-26** — Given the names a `key` takes on a TI model, then they
   are the 45 key IDs of C59-1 AC-9 and these 43 names of second
   functions, each of which stands for `2nd` followed by its key; a `2nd`
@@ -293,6 +295,9 @@ What is shown
   latches, as they are found today
   (`Core/PC1500/PC1500TypedInput.hpp:51-56`,
   `Core/PC1600/PC1600TypedInput.hpp:118-137`).
+- [ ] **AC-40** — Given a Sharp machine that runs a program, when the
+  key `on` is pressed as live input, then it goes down at once and the
+  ROM takes it as BREAK, as today.
 - [ ] **AC-36** — Given an operation runs in Calc-U-1600, then AC-18
   holds in both frontends. Today the Qt6 frontend holds input back
   during an operation, and the Web frontend lets keys reach the machine
@@ -335,54 +340,62 @@ What is shown
   counted in the machine's emulated time (`typing.md` I-1; ADR 0009).
 - The one rule that uses wall time is the tap of AC-33, which is about
   the user's hand, not about the machine; the frontend measures it.
-- The research of AC-32 is recorded in the PC-1500 research repository
+- The research of OQ-10 is recorded in the PC-1500 research repository
   before the cadence is removed.
+- A ROM does not take keys at every moment: while a program runs it
+  samples a few keys from time to time (R/S and GTO on the TI models,
+  BREAK on the Sharp ones), and key readiness can be a short window. A
+  key must be down long enough to be sampled. If the minimum hold of a
+  profile turns out too short for a tap on a running program
+  (`typing.md` Q-2), the engine may keep the key down until the machine
+  has sampled it, as a user of the real calculator holds R/S until it
+  is taken. Whichever way is built, AC-25 and AC-40 are the measure.
 
 ## Open Questions
-- [ ] **OQ-1** — AC-2: live input that finds nothing waiting goes down at
+- [x] **OQ-1** — *Decided as recommended (user, 2026-11-10, batch 4 gate).* AC-2: live input that finds nothing waiting goes down at
   once. `typing.md` T-2 says key readiness "gates only the start of the
   next queued press". Read strictly, a key pressed on a running TI
   program would wait for a readiness that does not come, and R/S could
   not stop the program. Today a single key goes down at once in both
   products. *Recommendation:* as in AC-2; it is today's behaviour and
   what T-2 means by "queued".
-- [ ] **OQ-2** — The letters of the Calc-U-59 keyboard map in the Web
+- [x] **OQ-2** — *Decided as recommended (user, 2026-11-10, batch 4 gate).* The letters of the Calc-U-59 keyboard map in the Web
   frontend follow the position of the key on a US keyboard today
   (`Web/src/PlayCalculator.jsx:34-43`), while Swift and Qt6 follow the
   letter the key carries. With one map in the library there is one rule
   (AC-7, AC-21). *Recommendation:* the letter the key carries, in every
   frontend.
-- [ ] **OQ-3** — Focus loss (AC-10): Calc-U-59 releases the held key at
+- [x] **OQ-3** — *Decided as recommended (user, 2026-11-10, batch 4 gate).* Focus loss (AC-10): Calc-U-59 releases the held key at
   once today, without its minimum hold (`Shared/KeySequencer.cpp:296-306`).
   *Recommendation:* keep the minimum, so that a press is never too short
   for the ROM.
-- [ ] **OQ-4** — AC-36 is a change for Calc-U-1600 that
+- [x] **OQ-4** — *Decided as recommended (user, 2026-11-10, batch 4 gate).* AC-36 is a change for Calc-U-1600 that
   `docs/behaviour-changes.md` does not list: keys pressed while a preset
   or a load runs are dropped. Row 59-5 says it for Calc-U-59.
   *Recommendation:* add a row for Calc-U-1600.
-- [ ] **OQ-5** — `type` and a character without a key (AC-16): a preset
+- [x] **OQ-5** — *Decided as recommended (user, 2026-11-10, batch 4 gate).* `type` and a character without a key (AC-16): a preset
   fails on it today, and a paste leaves it out. Should the harness
   command `type` fail like the step? *Recommendation:* yes; the command
   and the step are one.
-- [ ] **OQ-6** — The other names of Sharp keys in `key` (AC-15): presets
+- [x] **OQ-6** — *Decided as recommended (user, 2026-11-10, batch 4 gate).* The other names of Sharp keys in `key` (AC-15): presets
   accept `ent` for `enter` and `break` for `on` today.
   *Recommendation:* `break` stays as another name of `on`; `ent` goes;
   names are matched without regard to case on every model.
-- [ ] **OQ-7** — The name `2ndCLR` in AC-26 for the second function of
+- [x] **OQ-7** — *Decided as recommended (user, 2026-11-10, batch 4 gate).* The name `2ndCLR` in AC-26 for the second function of
   `CLR`, and `Adv` for the second function of `.`, which is not the ADV
   key of the PC-100C. *Recommendation:* keep both as today's tool
   spells them; the PC-100C's key is a control, named with its owner.
-- [ ] **OQ-8** — Is typing an operation? The glossary lists "typing a
+- [x] **OQ-8** — *Decided as recommended (user, 2026-11-10, batch 4 gate).* Is typing an operation? The glossary lists "typing a
   paste" among the operations, and `typing.md` T-4 says an operation
   "owns the keyboard until it ends", while the same contract says "any
   host key stops a running paste". Calc-U-1600 does not make the session
   busy for a paste today. *Recommendation:* as in AC-38: not an
   operation outside a preset; take "typing a paste" out of the
   glossary's examples.
-- [ ] **OQ-9** — "Live input", "typed text", "press" and "frame" for the
+- [x] **OQ-9** — *Decided as recommended (user, 2026-11-10, batch 4 gate).* "Live input", "typed text", "press" and "frame" for the
   glossary, as defined above. The glossary lists "frame" under Avoid
   for a slice, which is another thing.
-- [ ] **OQ-10** — The research of the PC-1500's key handling (`typing.md`
+- [x] **OQ-10** — *Decided as recommended (user, 2026-11-10, batch 4 gate).* The research of the PC-1500's key handling (`typing.md`
   Q-3: done when this feature is built). Its result is not known, so no
   criterion can state it. *Recommendation:* it is a task of the
   Calc-U-1600 column with two ends: either a readiness signal is found,
@@ -404,3 +417,6 @@ What is shown
 | `key` takes one or more names; `type` types a line and ENTER | `presets.md` PR-5 | 2026-11-10 |
 | On a TI model a second-function name stands for `2nd` and its key, and a `2nd` before it is not pressed twice | `presets.md` PR-5 as amended (user) | 2026-11-10 |
 | Proposed in this spec, for the gate: live input goes down at once when nothing waits (AC-2); a state topic lists the keys live input holds (AC-19); on-screen keys of Calc-U-59 get the minimum hold (AC-24); a key-up acts only on its own key (EC-1); the 43 names of AC-26 and the place of this list, here instead of C59-2 | Today's behaviour in both products for AC-2; the frontends draw pressed keys from such a state today; one engine means one path; the index gives `key` and `type` to this feature | 2026-11-10 |
+| A live key goes down at once. Key readiness need not last: it can be a short window, and while a program runs the ROM samples R/S and GTO (TI) or BREAK (Sharp) from time to time. The engine may hold a key until the machine has sampled it. However it is done, R/S and GTO on a running program work as they do today | user, 2026-11-10, batch 4 gate | 2026-11-10 |
+| Typing outside a preset is not an operation; the glossary's example "typing a paste" is removed | user, 2026-11-10, batch 4 gate | 2026-11-10 |
+| Live input during an operation is dropped in Calc-U-1600 too (new ledger row 1600-9); on-screen keys of Calc-U-59 go through the engine; the letters of the Calc-U-59 keyboard map follow the letter the key carries in every frontend | user, 2026-11-10, batch 4 gate | 2026-11-10 |

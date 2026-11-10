@@ -83,7 +83,8 @@ What the three status columns mean for this feature:
   now, with the machine's reason (LIB-2 AC-6).
 - [ ] **AC-3** — Given an operation runs, then every entry whose choice
   would start an operation is not available now, with the reason that an
-  operation runs; when the operation has ended, the control state is
+  operation runs, except the models and the actions Reset and Cold boot,
+  which end the running operation (LIB-18 AC-16); when the operation has ended, the control state is
   computed again from the machine as it now is.
 - [ ] **AC-4** — Given the end of any call of the host and of any
   command, then the control state is computed, and sent if it differs

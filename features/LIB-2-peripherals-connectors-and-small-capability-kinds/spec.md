@@ -105,7 +105,9 @@ Attach and detach
   the peripheral is attached between two advances, then it shows under
   that place in what is plugged in, its capabilities are in the
   machine's list with the peripheral and its place as owner, and the
-  machine says what follows by the pin-out: a power cycle, or nothing.
+  machine says what follows by the pin-out: a power cycle, or nothing. A
+  machine that is switched off says that nothing follows; its ROM finds
+  the change when it is switched on (LIB-18 AC-33).
 - [ ] **AC-5** — Given a peripheral in a place, when it is detached
   between two advances, then it no longer shows under that place, its
   capabilities are no longer listed, and the machine says what follows

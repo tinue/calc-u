@@ -456,8 +456,8 @@ The state in which a machine's ROM can take the next key.
 _Avoid_: scan loop (for the general term)
 
 **Operation**:
-Long work an app session runs as one unit, such as loading a preset, a
-power cycle or typing a paste. While one runs, the session is **busy**.
+Long work an app session runs as one unit, such as loading a preset or a
+power cycle. While one runs, the session is **busy**.
 _Avoid_: job, task (for the user-visible unit)
 
 **Topic**:

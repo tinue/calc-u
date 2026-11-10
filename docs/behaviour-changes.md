@@ -41,4 +41,5 @@ step. Label and menu renames are not repeated here; they are in
 | 1600-5 | A media name with a character a file name cannot hold is refused (today: `/` and `:` silently become `-`). | `contracts/media.md`, MD-3 |
 | 1600-6 | An outdated file shows in its picker as a disabled entry with a hint (today: left out silently). | `contracts/media.md`, MD-4 |
 | 1600-7 | The first write to a medium a preset names replaces an instance of that name. | `contracts/media.md`, MD-1 |
+| 1600-9 | Keys pressed while a preset, a load, a reset or a power cycle runs are dropped (today: held back in Qt6, passed on in the Web frontend). Reset, Cold boot and a model switch stop what runs. | `contracts/typing.md`, T-4; `contracts/frontend.md`, Q-1 as amended |
 | 1600-8 | A held host key stays down until it is released, for every key, so the ROM's own auto-repeat works; the PC-1500's fixed key cadence goes once its key readiness is found. | `contracts/typing.md`, T-2, Q-3 |

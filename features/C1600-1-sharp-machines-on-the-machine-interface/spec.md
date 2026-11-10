@@ -276,14 +276,6 @@ One seam
   key IDs of AC-9 and AC-10. Presets and the harness match them without
   regard to case and accept `break` as another name of `on`; `ent` goes.
   That is specified in LIB-6, with the list in C1600-4.
-- [ ] **OQ-2** — An attach while the machine is switched off. Today the
-  change is made and the machine stays off
-  (`Shared/MachineSession.cpp:244-275`: "if already off, change only").
-  With the power cycle as an operation of the machine, the machine would
-  be on afterwards, and an operation that waits for key readiness would
-  otherwise never end. *Recommendation:* settle it in the LIB-18 spec;
-  keeping today's behaviour needs the operation to know that a machine
-  whose display is off will not become ready.
 
 ## Decision Log
 
@@ -303,3 +295,4 @@ One seam
 | After a module change and its power cycle the PC-1500 and PC-1600 find the changed memory and ask the user to set BASIC up again; this is what the hardware does and what today's restart leads to | user, 2026-11-10, batch 2 gate; ledger row 1600-4 corrected | 2026-11-10 |
 | The host drive is a peripheral on the 60-pin connector in the place `host-drive`; its folder is a product kind | user, 2026-11-10, batch 2 gate; amends `presets.md` PR-11 | 2026-11-10 |
 | Only the display has an on and an off, reported in display output; a switched-off Sharp machine is one whose display is off and whose ROM waits for the `on` key | user, 2026-11-10, batch 2 gate (prompted) | 2026-11-10 |
+| An attach while the machine is switched off is followed by nothing; the machine stays off, as today | user, 2026-11-10, batch 4 gate; LIB-18 AC-33 | 2026-11-10 |

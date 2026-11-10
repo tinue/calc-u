@@ -22,7 +22,7 @@ the table below.
 | 2 | Domain model | `docs/GLOSSARY.md` | One meaning per term | Done (glossary approved 2026-11-09) |
 | 3 | Architecture decisions | `docs/adr/NNNN-*.md` | The forks | Done (approved 2026-11-09) |
 | 4 | Contracts | `docs/contracts/*.md` | The abstractions, as interface specs | Done (approved 2026-11-10) |
-| 4b | Feature specs | `features/INDEX.md`, `features/<ID>-*/spec.md` | What each shared feature does, per product | Planned |
+| 4b | Feature specs | `features/INDEX.md`, `features/<ID>-*/spec.md` | What each shared feature does, per product | In progress (index approved 2026-11-10; prompt: `prompts/phase-4b.md`) |
 | 5 | Validation on paper | `docs/walkthroughs/*.md`, optional throwaway spikes | Whether the abstractions hold | Planned |
 | 6 | Migration plan, then code | `docs/migration-plan.md`, `features/<ID>-*/design.md`, `qa-report.md` | Order of steps, each leaving every product green | Planned |
 

@@ -1,6 +1,7 @@
 # A small machine interface plus generic capabilities
 
-Status: accepted (2026-11-09)
+Status: accepted (2026-11-09); amended 2026-11-10: power cycle added to
+the operations every machine has (`docs/contracts/machine.md`, M-6).
 
 The library defines a small machine interface with what every machine
 has: model and variant, reset and cold boot, advancing emulated time, key

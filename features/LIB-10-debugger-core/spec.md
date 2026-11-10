@@ -87,8 +87,8 @@ Debug targets
   the address space its instructions are in, which is the one a
   breakpoint's address means; and which of the optional parts it offers:
   watches, stepping over and out, decoding an instruction to text, a
-  history, and a qualifier for breakpoints, with the names of its fields
-  and the values each takes (`debugger.md` DB-1 and its note). A target
+  history, and a qualifier for breakpoints, with the names of its fields,
+  the values each takes and the value each has now (`debugger.md` DB-1 and its note). A target
   is named as its descriptor names it (LIB-1 AC-36).
 - [ ] **AC-2** — Given a target, then every register can be read, and
   written where the target says so; every cell of an address space can

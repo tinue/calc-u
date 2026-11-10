@@ -171,6 +171,11 @@ Building the machine
   name, in one step (LIB-18 AC-1); the machine before it is gone (LIB-18
   AC-2), and the steps and sections start when the new machine reports
   key readiness.
+- [ ] **AC-55** — Given the load command with the option to build only,
+  then the preset is read and checked as always, the machine is built
+  (AC-10), and the load is over at once: it does not wait for key
+  readiness, and no step and no section is carried out (Calc-U-1600
+  today, `Shared/AppSession.hpp:111-114`; C1600-3 AC-6 uses it).
 - [ ] **AC-52** — Given the machine refuses what the preset names when
   it is built (a combination its pin-outs do not allow, LIB-2 AC-6,
   AC-7), then the load is refused as in AC-6, with the machine's reason
@@ -559,3 +564,4 @@ Harness
 | Proposed in this spec and accepted (user, 2026-11-10, batch 5 gate): `expect:` compares case and spaces exactly; the minutes of `Elapsed:` count on beyond 59 | They make the criteria checkable | 2026-11-10 |
 | Proposed in this spec and accepted (user, 2026-11-10, batch 5 gate): inside a block scalar, empty lines and `#` lines are skipped as everywhere (Calc-U-1600 today); a ` #` later in a line is its owner's | One rule for skipped lines; `presets.md` PR-6 | 2026-11-10 |
 | Proposed in this spec and accepted (user, 2026-11-10, batch 5 gate): a preset handed over without a folder that names a relative file is refused when it is read (EC-5) | It follows from all-or-nothing | 2026-11-10 |
+| Added with C1600-3's cold read, for the batch 7 gate: a load can build only (AC-55) | The debugger's `boot: debug` needs the machine before its first instruction; Calc-U-1600 has it today | 2026-11-10 |

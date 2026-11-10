@@ -22,8 +22,13 @@
 
 Words used here: **DAP** is the Debug Adapter Protocol, which debuggers
 such as VS Code speak; the **server** is the part of Calc-U-1600 that
-answers it; a **client** is the debugger that connects; a **session**
-lasts from a client's `initialize` to its disconnect. A **listing** is
+answers it; a **client** is the debugger that connects; a **DAP
+session** lasts from a client's `initialize` to its disconnect; a
+**configuration** is what the client sends with `attach`; a **thread**
+is DAP's word for a debug target, numbered in the order the machine
+lists its targets (LIB-1 AC-36), from 1. **Build & Load** puts a freshly
+built program into the machine (AC-7), after a **clean start** when the
+machine is first built anew. A **listing** is
 the file an assembler writes with addresses, bytes and source lines; a
 **binding** ties a listing or a table of symbols to a debug target, so
 that addresses become source lines and names. Words of LIB-10:
@@ -70,56 +75,75 @@ The server and its hosts
 
 A session
 - [ ] **AC-4** — Given `initialize`, then the machine is paused (LIB-10
-  AC-6) and stays so while the client sets up; given
-  `configurationDone`, then it resumes, or with `stopOnEntry` it stays
-  paused with the reason entry (`Qt6/app/debug/DapSession.cpp:146-176, 542-546`).
+  AC-6), and it is paused again after every step of the set-up of AC-6
+  that built it anew or let it run; given `configurationDone`, then it
+  resumes, or with `stopOnEntry` it stays paused and the client is told
+  `stopped` with the reason entry
+  (`Qt6/app/debug/DapSession.cpp:146-176, 542-546`).
 - [ ] **AC-5** — Given `attach`, or `launch`, which means the same, then
   its configuration has the keys of a `debug:` block (C1600-4 AC-11)
   and, in a launch configuration only, `project` and `preset`. With
   `project`, that preset's `debug:` block is the base: the keys of the
   configuration win, `program` is merged key by key, and `listings` and
-  `symbols` are added to the block's. A key the server does not know is
-  passed over in a configuration. A number is a JSON number or a text by
+  `symbols` are added to the block's. `project` is the path of that
+  preset. A key the server does not know is passed over in a
+  configuration, except `slot` inside `program`, which was removed and
+  is refused with a hint. A number is a JSON number or a text by
   the preset's rule (LIB-6 AC-1); a text of hexadecimal digits without a
   mark is refused (`Core/Debug/AttachKeys.hpp:9-88`,
   `Qt6/app/debug/DapSession.cpp:212-297`).
 - [ ] **AC-6** — Given a configuration, then the machine is set up in
   this order (`Qt6/app/debug/DapSession.cpp:416-478`):
   `boot: debug` together with `program` or `command` is refused;
-  with `preset` and no `program`, the preset is loaded (LIB-6), and with
-  `boot: debug` the machine it names is built and paused before its
-  first instruction, its sections not carried out (LIB-10 AC-46);
+  with `preset` and no `program`, the preset is loaded (LIB-6), which
+  builds a machine that runs until the load is over; with `boot: debug`
+  the preset is loaded to build only (LIB-6 AC-55): its machine is built
+  and is paused before its first instruction, and its sections are not
+  carried out (LIB-10 AC-46);
   with `reset: reset` or `allReset`, a Reset or a Cold boot follows that
   is paused before its first instruction;
-  the `listings` and `symbols` are bound (AC-13);
+  the `listings` and `symbols` are bound (AC-13), each to the thread its
+  `cpu` names, the first without it, with its `bank`, `me`, `pu` and
+  `pv` as the qualifier;
   with `program`, Build & Load follows (AC-7); without it, a `command`
-  is typed with ENTER.
+  is handed to the typing engine with ENTER and is typed when the
+  machine runs.
 - [ ] **AC-7** — Given Build & Load of a `program`, then: with
   `cleanStart`, which is on unless it is switched off, the machine is
   first built anew, from the configuration's `preset`, else from the
-  model's startup preset, else by a Cold boot; the file `bin` is placed
-  by the loader of C1600-2 (AC-8 there), with `address` and `cpu` where
-  given, a length that differs from the header's accepted; the entry is
+  model's startup preset, else by a Cold boot, and a `preset` is used
+  for nothing else when there is a `program`; the file `bin` is placed
+  by the loader of C1600-2 (AC-8, AC-23 there), with the length of the
+  file given by hand, so that a header that says another length does not
+  refuse it, and with the address given by hand that is `address`, else
+  for headerless code the lowest address of the listing; `cpu` names the
+  processor; the entry is
   `entry` (a number, or a symbol of the listing), else the header's
   address to start at, else the listing's entry when it lies in the
-  code, else the load address; the listing is bound over exactly the
-  bytes loaded; and then, by `after`: with `none`, the default, nothing
+  code, else the load address; the `listing`, with `source` as its main
+  source file where that cannot be told, and the `symbols` are bound
+  over exactly the bytes loaded, with `bank`, `me`, `pu` and `pv` as the
+  qualifier; and then, by `after`: with `none`, the default, nothing
   more; with `call` the starting command (C1600-2 AC-11), or `command`
   in its place, is typed and the machine resumes; with `stopOnEntry` the
-  same, and the machine pauses at the entry
+  same, after the server has set a breakpoint of its own at the entry
+  that holds once, and the client is told `stopped` with the reason
+  entry when it is hit
   (`Qt6/app/debug/DapSession.cpp:343-414`,
   `Core/Debug/ProgramLoader.cpp:17-133`).
 - [ ] **AC-8** — Given a message of the client arrives while an
-  operation runs, then it waits and is answered when the operation is
-  over, in the order of arrival (`Qt6/app/debug/DebugController.cpp:25-50`).
+  operation runs, then the server holds it back and answers it when the
+  operation is over, in the order of arrival; this is the server's own
+  rule, as today (`Qt6/app/debug/DebugController.cpp:25-50`).
 - [ ] **AC-9** — Given the machine is replaced under a session (a preset,
   a model switch), then the session goes on with the new machine: the
   breakpoints are set again (LIB-10 AC-15), the client gets `invalidated`
   and the line "The machine was rebuilt; breakpoints re-applied."
   (`Qt6/app/debug/DapSession.cpp:552-556`).
 - [ ] **AC-10** — Given `disconnect`, a closed socket or Disconnect in
-  the settings dialog, then the session ends, its breakpoints and
-  watches are gone (LIB-10 AC-47), and the machine runs on
+  the settings dialog, then the DAP session ends, its breakpoints and
+  watches are gone (LIB-10 AC-47), and the machine runs on, resumed if
+  it was paused
   (`Qt6/app/debug/DebugController.cpp:89-154`).
 
 What it answers
@@ -128,9 +152,9 @@ What it answers
 
   | Requests | Through |
   |---|---|
-  | `threads` | the debug targets, the first as thread 1 (LIB-10 AC-1, AC-36) |
-  | `stackTrace`, `scopes`, `variables`, `setVariable` | the registers now and, read-only, of the last 20 instructions of the history, in the scopes Registers, Flags and Banks (LIB-10 AC-2, AC-4) |
-  | `readMemory`, `writeMemory`, `disassemble`, `evaluate` | reading and writing memory, decoding, and the expressions of AC-15 |
+  | `threads` | the debug targets as threads (LIB-10 AC-1, AC-36) |
+  | `stackTrace`, `scopes`, `variables`, `setVariable` | frame 0 of a thread is its state now, frames 1 to 20 its last instructions from the history, the newest first, which are read-only; the scopes are Registers, Flags and Banks, the last being the state of the qualifier's fields now (LIB-10 AC-1, AC-2, AC-4) |
+  | `readMemory`, `writeMemory`, `disassemble`, `evaluate` | reading and writing memory, decoding, and the expressions of AC-15, for the frame the request names, else frame 0 of the current target; a memory reference is a number: the address in its low 16 bits, the thread above them, and one more bit for ME1, as today |
   | `continue`, `pause` | resume and pause (LIB-10 AC-6) |
   | `next`, `stepIn`, `stepOut` | AC-12 |
   | `setBreakpoints`, `setFunctionBreakpoints`, `setInstructionBreakpoints`, `dataBreakpointInfo`, `setDataBreakpoints`, `setExceptionBreakpoints` | AC-14; the last answers with nothing |
@@ -158,9 +182,10 @@ What it answers
 - [ ] **AC-14** — Given breakpoints of the client, by source line, by
   address, by a symbol's name or on memory, then each is a breakpoint or
   a watch of LIB-10 (AC-10, AC-11) that belongs to the session (AC-47),
-  with the qualifier of its binding; a condition, a hit condition (`5`,
-  `>= 5`, `% 3` and the like) and a log message with `{expression}`
-  parts are its test (LIB-10 AC-12): a breakpoint with a log message
+  with the qualifier of its binding; a condition, a hit condition (a
+  number `N` alone or after `==`, `!=`, `>=`, `<=`, `>`, `<` or `%`,
+  compared with the count of hits; one that cannot be read counts as
+  met) and a log message with `{expression}` parts are its test (LIB-10 AC-12): a breakpoint with a log message
   writes the line and does not pause; a condition that cannot be worked
   out pauses and says why. A breakpoint in a bank that is not switched
   in is passed, and its status says "Only while" that bank
@@ -174,9 +199,13 @@ What it answers
   operators of C with their order. An error names what is wrong
   (`Core/Debug/DebugExpression.cpp:18-279`,
   `Core/tests/debug_target_tests.cpp:84, 637-701`).
-- [ ] **AC-16** — Given the run state changes (LIB-10 AC-17), then the
-  client gets `stopped` with the reason, the thread, the IDs of its own
-  breakpoints that were hit, and the word that every thread stopped.
+- [ ] **AC-16** — Given a request of the client ends with the machine
+  paused, or the machine is paused from elsewhere (a preset, the
+  harness), then the client gets `stopped` once, with the thread, the
+  IDs of its own breakpoints that were hit, the word that every thread
+  stopped, and the reason: "pause", "step", "breakpoint", "data
+  breakpoint" for a watch, or "entry" (LIB-10 AC-17). The pauses in
+  between of a step by source line or of the set-up are not told.
   Further events are, as today: `initialized`, `output`, `breakpoint`
   when one is resolved anew, `invalidated`, `memory` after a write, and
   `terminated` after Disconnect in the settings dialog
@@ -202,16 +231,20 @@ In the frontends
   127.0.0.1:`<port>`" and "Port `<port>` not available: `<why>`", and a
   state topic of Calc-U-1600 carries it
   (`Qt6/app/debug/DebugController.cpp:79-85`).
-- [ ] **AC-19** — Given the VS Code extension of `b4ea8c8`, then it
-  works against the server unchanged: attach, Build & Load, Reset and
-  Stop, All Reset and Stop, and its four project templates
+- [ ] **AC-19** — Given the VS Code extension of `b4ea8c8`, its code
+  unchanged and its presets and templates as C1600-4 upgrades them, then
+  it works against the server: attach, Build & Load, Reset and Stop, All
+  Reset and Stop, and its four project templates; the scenarios of AC-20
+  that use a project and a template check it
   (`vscode/calcu1600-debug/package.json:26-603`,
   `vscode/calcu1600-debug/extension.js:215-262`).
 
 Checks
-- [ ] **AC-22** — Given the harness with Calc-U-1600 and the option to
-  host the server on a port, then a client can attach to a machine
-  without a window (`debugger.md` DB-4; OQ-1).
+- [ ] **AC-22** — Given the harness in its form `serve` with
+  Calc-U-1600 and the option `--dap <port>`, then a client can attach to
+  a machine without a window; while a DAP session wants the machine to
+  run, the harness lets emulated time pass as fast as it can, without a
+  wall clock (`debugger.md` DB-4; LIB-11 AC-3, AC-6; OQ-1).
 - [ ] **AC-20** — Given the ten scenarios of `tools/dap_smoke.py`, then
   each passes against the server hosted by the harness, as a test of the
   test suite; today they are run by hand against a running app
@@ -230,8 +263,9 @@ Checks
   `after`, `cpu` or `reset`, or the removed key `slot`, then the request
   is refused with `Bad "<key>": <what>`.
 - **EC-3** — Given Build & Load of headerless code without `address`
-  and without a listing, then it is refused with "a headerless program
-  needs an "address" or a listing".
+  and without a listing, then it is refused as C1600-2 refuses headerless
+  code without an address (AC-8 there), with the hint that a listing
+  would do too.
 - **EC-4** — Given the clean start would take the model's startup preset
   and that preset is for another model, then Build & Load is refused.
 - **EC-5** — Given a session is ended while a request of it is carried
@@ -254,11 +288,13 @@ Checks
 
 ## Open Questions
 - [ ] **OQ-1** — How the harness hosts the server (AC-22). A harness run
-  has no wall clock (LIB-11 AC-6), but a debugger expects a machine that
-  runs by itself after `continue`. *Recommendation:* a form of its own,
-  `calcu --product 1600 dap <port>`, which hosts an app session that
-  runs in real time like a frontend without a window; it is not for
-  runs that must repeat exactly.
+  has no wall clock and two forms (`harness.md` I-2; LIB-11 AC-6), but a
+  debugger expects a machine that runs by itself after `continue`.
+  *Recommendation:* no third form and no real time: `serve --dap
+  <port>`, in which the machine runs unpaced whenever a DAP session has
+  it running. A scenario that pauses by a breakpoint repeats exactly;
+  one that pauses by hand does not, and that is said in the help of the
+  option.
 - [ ] **OQ-2** — `program.after` without a value means `none` in the
   server, while the extension's description of the key gives
   `stopOnEntry` as its default (`Qt6/app/debug/DapSession.cpp:379-382`,
@@ -271,9 +307,9 @@ Checks
   takes it, the documentation says it does not
   (`Core/Debug/BreakpointTable.cpp:339-342`, `docs/Debugger.md:344`).
   *Recommendation:* take it, as the code does.
-- [ ] **OQ-5** — "DAP", "server", "client", "session" (of the debugger),
-  "listing" and "binding" for the glossary, as defined above. "Session"
-  stands next to app session and machine session.
+- [ ] **OQ-5** — "DAP", "server", "client", "DAP session",
+  "configuration", "thread", "Build & Load", "clean start", "listing"
+  and "binding" for the glossary, as defined above.
 
 ## Decision Log
 

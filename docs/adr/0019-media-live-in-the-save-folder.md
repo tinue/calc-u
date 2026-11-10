@@ -1,6 +1,8 @@
 # Media live in the save folder
 
-Status: accepted (2026-11-09)
+Status: accepted (2026-11-09); the open point on the copy's name was
+settled 2026-11-10 (`docs/contracts/media.md`, MD-1: the medium's name,
+replacing an instance of that name).
 
 Every medium of every product, magnetic cards included, follows
 Calc-U-1600's model: templates are bundled, instances are made by Name &

@@ -14,7 +14,7 @@ back to the user first.
 | 3 | [Frontend interface, session hosting and messages](frontend.md) | ADR 0009, 0015, 0023-0025 | Draft, forks decided |
 | 4 | [Typing strategy](typing.md) | C11, ODD59-4, ADR 0009 | Draft, forks decided |
 | 5 | [Preset engine and family preset format](presets.md) | ADR 0016-0018, 0021, 0037 | Draft, forks decided |
-| 6 | Media and save folder | ADR 0019, 0020 | Planned |
+| 6 | [Media and save folder](media.md) | ADR 0019, 0020, 0037 | Draft, forks decided |
 | 7 | Settings and paths | ADR 0021, 0022 | Planned |
 | 8 | Debugger (debug target, DAP, debug panel) | ODD59-27 | Planned |
 | 9 | Harness protocol, ROM lookup, help structure | ADR 0026, 0033, 0035, 0036 | Planned |

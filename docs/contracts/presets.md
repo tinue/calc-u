@@ -279,7 +279,7 @@ at every speed. The oddity and its rule go.
 
 | | TI-59 (58, 58C) | PC-1500 (1500A) | PC-1600 | PC-1403 (paper) | PC-1350 (paper) |
 |---|---|---|---|---|---|
-| Extension (PR-2) | `.ti59`, `.ti58`, `.ti58c` | `.pc1500`, `.pc1500a` | `.pc1600` | `.pc1403` (assumed) | `.pc1350` (assumed) |
+| Extension (PR-2) | `.ti59`, `.ti58`, `.ti58c` | `.pc1500`, `.pc1500a` | `.pc1600` | not named yet (a model extension, by PR-2) | not named yet |
 | Hardware keys (PR-9) | `slot-1:` (Solid State ROM module), `printer: PC-100C` | `slot-1:`, `plotter: CE-150`, `interface: CE-158` | `slot-1:`, `slot-2:`, `plotter:`, `interface:`, `floppy:`, `host-drive:` | 11-pin peripheral | RAM card slot, 11-pin and 15-pin peripherals |
 | Product sections (PR-3) | `partition:`, `program:` `steps: \|`, `registers: \|`, `cue-card: \|` | `program:` `file:` / `text: \|` | as PC-1500 | as PC-1500 | as PC-1500 |
 | `key:` (PR-5) | `- key: 2nd Pgm 0 1 SBR =` | `- key: mode cl` | `- key: mode cl` | key IDs of the model | key IDs of the model |

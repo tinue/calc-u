@@ -203,7 +203,8 @@ Speed and pacing
   key readiness (LIB-1 AC-42), or one of its media places waits for a
   medium (LIB-7).
 - [ ] **AC-23** — Given a session is created, is continued after a
-  suspend, ends an operation or gets a new machine, then it tells the
+  suspend, ends an operation, gets a new machine or resumes a machine
+  the debugger had paused (LIB-10 AC-16), then it tells the
   pacer to start afresh, in the last case with the new machine and its
   pacing profile (LIB-17 AC-13, AC-14).
 

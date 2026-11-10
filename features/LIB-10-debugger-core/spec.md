@@ -426,20 +426,20 @@ Traces
   library starts, limits and ends the trace (OQ-1).
 
 ## Open Questions
-- [ ] **OQ-1** — Traces (open point of `features/INDEX.md`): is starting,
+- [x] **OQ-1** — *Decided as recommended (user, 2026-11-10, batch 6 gate).* Traces (open point of `features/INDEX.md`): is starting,
   limiting and ending a trace library code? *Recommendation:* yes, as
   AC-22 to AC-27 say: one trace session in the library for the step, the
   command and the buttons, and the file's content per product. No
   product row is then needed for traces; the two formats are stated in
   this spec (AC-33, AC-42).
-- [ ] **OQ-2** — The way out of a pause in Calc-U-1600 (AC-41).
+- [x] **OQ-2** — *Decided as recommended (user, 2026-11-10, batch 6 gate).* The way out of a pause in Calc-U-1600 (AC-41).
   `debugger.md` keeps Calc-U-1600 without an in-app stepping debugger,
   but a preset can now pause the machine in both frontends, and without
   a debugger attached only Reset would end it. *Recommendation:* the
   Machine menu of the family gets the item Resume, which can be used
   while the machine is paused, in every product (LIB-14 AC-1); the
   INSPECTOR stays as it is.
-- [ ] **OQ-3** — Trace rules where the products differ today.
+- [x] **OQ-3** — *Decided as recommended (user, 2026-11-10, batch 6 gate).* Trace rules where the products differ today.
   *Recommendation:* one trace at a time (Calc-U-59 can run a button's
   and a preset's trace side by side); the size limit for every trace
   (AC-43); a notice when the limit ends a trace (Calc-U-59 tells the
@@ -447,11 +447,11 @@ Traces
   INSPECTOR); a trace that cannot be started fails its preset
   (Calc-U-59 shows an alert and goes on). One row in
   `docs/behaviour-changes.md` for each product.
-- [ ] **OQ-4** — A preset's `step:` while the machine is not paused
+- [x] **OQ-4** — *Decided as recommended (user, 2026-11-10, batch 6 gate).* A preset's `step:` while the machine is not paused
   (AC-19). Today Calc-U-59 writes a line into the log and goes on.
   *Recommendation:* keep that for presets; the harness command is
   refused.
-- [ ] **OQ-5** — "Breakpoint", "watch" and "history" for the glossary,
+- [x] **OQ-5** — *Decided as recommended (user, 2026-11-10, batch 6 gate).* "Breakpoint", "watch" and "history" for the glossary,
   as defined above.
 
 ## Decision Log
@@ -465,12 +465,12 @@ Traces
 | The debug panel is per product; the component sets share only the pause, step and resume buttons | `debugger.md` DB-6; ADR 0023 as amended | 2026-11-10 |
 | The debugger steps work in both products | `presets.md` PR-7 (user) | 2026-11-10 |
 | Trace file formats stay per product | `debugger.md`, non-responsibilities | 2026-11-10 |
-| Proposed in this spec, for the gate: conditions, hit counts and log messages are tests of the setter (AC-12) and belong to C1600-3, not to the targets | `debugger.md` DB-1 lists them as optional per target; only DAP uses them | 2026-11-10 |
-| Proposed in this spec, for the gate: the commands of AC-20 and their names, `profile` among them | LIB-11 AC-14 and AC-18 assign these functions of today's tools to this feature | 2026-11-10 |
-| Proposed in this spec, for the gate: `tools/read_trace.py` of each product stays a script | The formats do not change; LIB-11 OQ-5 kept other one-purpose tools as scripts | 2026-11-10 |
-| Proposed in this spec, for the gate: on resume a real-time clock is handed the host's time (AC-16); today the Sharp clocks fall behind after a pause | LIB-2 AC-23 does the same at the end of an operation | 2026-11-10 |
-| Proposed in this spec, for the gate: a watch past the end of its space is refused (EC-3) | Today it is accepted and never hit | 2026-11-10 |
-| Proposed in this spec, for the gate: a step of another level than the one that owns the pause is carried out and takes the pause over (AC-45) | A preset's `Step:` does so today; only the buttons follow the owner | 2026-11-10 |
-| Proposed in this spec, for the gate: a product may let a `cpu` step carry out an instruction that only waits again (AC-7, AC-29) | The TI step does so today; the minimal agreement leaves only the `program` step to the product | 2026-11-10 |
-| Proposed in this spec, for the gate: pausing before the first instruction after a start (AC-46), and breakpoints that belong to the one that set them (AC-47) | C1600-3 needs both for `stopOnEntry` and for a debugger next to the harness | 2026-11-10 |
-| Proposed in this spec, for the gate: after a resume pacing starts afresh (AC-16) | Otherwise regular speed would race to make up the pause | 2026-11-10 |
+| Proposed in this spec and accepted (user, 2026-11-10, batch 6 gate): conditions, hit counts and log messages are tests of the setter (AC-12) and belong to C1600-3, not to the targets | `debugger.md` DB-1 lists them as optional per target; only DAP uses them | 2026-11-10 |
+| Proposed in this spec and accepted (user, 2026-11-10, batch 6 gate): the commands of AC-20 and their names, `profile` among them | LIB-11 AC-14 and AC-18 assign these functions of today's tools to this feature | 2026-11-10 |
+| Proposed in this spec and accepted (user, 2026-11-10, batch 6 gate): `tools/read_trace.py` of each product stays a script | The formats do not change; LIB-11 OQ-5 kept other one-purpose tools as scripts | 2026-11-10 |
+| Proposed in this spec and accepted (user, 2026-11-10, batch 6 gate): on resume a real-time clock is handed the host's time (AC-16); today the Sharp clocks fall behind after a pause | LIB-2 AC-23 does the same at the end of an operation | 2026-11-10 |
+| Proposed in this spec and accepted (user, 2026-11-10, batch 6 gate): a watch past the end of its space is refused (EC-3) | Today it is accepted and never hit | 2026-11-10 |
+| Proposed in this spec and accepted (user, 2026-11-10, batch 6 gate): a step of another level than the one that owns the pause is carried out and takes the pause over (AC-45) | A preset's `Step:` does so today; only the buttons follow the owner | 2026-11-10 |
+| Proposed in this spec and accepted (user, 2026-11-10, batch 6 gate): a product may let a `cpu` step carry out an instruction that only waits again (AC-7, AC-29) | The TI step does so today; the minimal agreement leaves only the `program` step to the product | 2026-11-10 |
+| Proposed in this spec and accepted (user, 2026-11-10, batch 6 gate): pausing before the first instruction after a start (AC-46), and breakpoints that belong to the one that set them (AC-47) | C1600-3 needs both for `stopOnEntry` and for a debugger next to the harness | 2026-11-10 |
+| Proposed in this spec and accepted (user, 2026-11-10, batch 6 gate): after a resume pacing starts afresh (AC-16) | Otherwise regular speed would race to make up the pause | 2026-11-10 |

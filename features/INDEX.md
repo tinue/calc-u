@@ -127,9 +127,9 @@ Points this index leaves open:
 
 - **Traces.** `debugger.md` keeps the trace file formats per product,
   and `trace` is a common step and command. Whether the trace writer
-  (start, stop, size limit) is library code is not decided. To be
-  settled in the LIB-10 spec; if it stays product code, it gets a
-  product row each.
+  (start, stop, size limit) is library code is not decided. Settled
+  (user, batch 6 gate): it is library code in LIB-10; the two file
+  formats stay per product and are stated there. No product row.
 - **Calculator view.** ADR 0023 does not list the display or the
   on-screen keys among the shared components; the divergence matrix
   suggests merging the hit test (M16) and keeps the display per product
@@ -138,4 +138,6 @@ Points this index leaves open:
 - **Sharp media formats.** `.card.yaml` and `.floppy.yaml` stay readable
   (behaviour change 1600-1). If moving their readers and writers under
   the media model (`capabilities.md` Q-2) turns out to be more than
-  per-product criteria of LIB-7, they get a `C1600` row.
+  per-product criteria of LIB-7, they get a `C1600` row. Settled (user,
+  batch 6 gate): product code behind one seam of LIB-7 (AC-46 there);
+  no row.

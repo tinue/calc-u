@@ -430,26 +430,26 @@ Getting media in and out
   a part.
 
 ## Open Questions
-- [ ] **OQ-1** — Two instances with one name (`media.md` Q-5): which one
+- [x] **OQ-1** — *Decided as recommended (user, 2026-11-10, batch 6 gate).* Two instances with one name (`media.md` Q-5): which one
   a save by name replaces, and which one a preset finds.
   *Recommendation:* the one whose file name is the one the name gives
   (AC-4); if neither is, the first by file name.
-- [ ] **OQ-2** — The characters a name must not hold (AC-3). `media.md`
+- [x] **OQ-2** — *Decided as recommended (user, 2026-11-10, batch 6 gate).* The characters a name must not hold (AC-3). `media.md`
   MD-3 says "a character a file name cannot hold" and lists none.
   *Recommendation:* as in AC-3, what Windows, macOS and Linux refuse
   between them, the same on every platform, so that a save folder can be
   carried from one to another.
-- [ ] **OQ-3** — How a preset writes a medium (AC-21, AC-26). PR-8 gives
+- [x] **OQ-3** — *Decided as recommended (user, 2026-11-10, batch 6 gate).* How a preset writes a medium (AC-21, AC-26). PR-8 gives
   examples, not a notation. *Recommendation:* as in AC-21: a name, in
   quotes when it holds a space, `file:<path>` or `mem:<name>`, then the
   side; `slot-1-file:` and `floppy-file:` go, and `saveas:` keeps
   today's form.
-- [ ] **OQ-4** — Import, export and delete of saved media (AC-29 to
+- [x] **OQ-4** — *Decided as recommended (user, 2026-11-10, batch 6 gate).* Import, export and delete of saved media (AC-29 to
   AC-31) exist only in Calc-U-1600's Web frontend today, and delete does
   not ask. *Recommendation:* in the Web frontend of both products,
   because a browser has no folder the user can reach; a delete asks
   first; the Qt6 and Swift frontends leave it to the file manager.
-- [ ] **OQ-5** — Changes this spec makes to what a user sees, which
+- [x] **OQ-5** — *Decided as recommended (user, 2026-11-10, batch 6 gate).* Changes this spec makes to what a user sees, which
   have no row in `docs/behaviour-changes.md` yet: a notice for a failed
   autosave (AC-14) and a line of the log for a file that cannot be read
   (EC-3), both silent today; every change written when the session is
@@ -458,17 +458,17 @@ Getting media in and out
   where Calc-U-1600 refuses the name today (AC-40; `media.md` MD-3);
   deleting saved media asking first (AC-31). *Recommendation:* all of
   them, with one row for each product.
-- [ ] **OQ-6** — Where the readers and writers of the media formats sit
+- [x] **OQ-6** — *Decided as recommended (user, 2026-11-10, batch 6 gate).* Where the readers and writers of the media formats sit
   (`capabilities.md` Q-2; the open point "Sharp media formats" of
   `features/INDEX.md`). *Recommendation:* product code behind one seam
   of this feature: the magnetic card with C59-7; `.card.yaml`,
   `.floppy.yaml` and the tape's WAV with the Calc-U-1600 column of this
   feature, moved under the seam unchanged. No product row is added for
   them.
-- [ ] **OQ-7** — "Kind" (of medium), "user template" and "saved media"
+- [x] **OQ-7** — *Decided as recommended (user, 2026-11-10, batch 6 gate).* "Kind" (of medium), "user template" and "saved media"
   for the glossary, as defined above; the glossary's Template then says
   "bundled with a product or made by the user".
-- [ ] **OQ-8** — A write to a template (AC-15, AC-5). `media.md` I-2
+- [x] **OQ-8** — *Decided as recommended (user, 2026-11-10, batch 6 gate).* A write to a template (AC-15, AC-5). `media.md` I-2
   says "a write to a template or to a preset-named file goes to an
   instance". For a preset that is settled (AC-25). For a template the
   user chose in a picker, Calc-U-1600 keeps the written content in the
@@ -495,7 +495,7 @@ Getting media in and out
 | Modules are chosen with a picker on the control bar | ADR 0025 | 2026-11-10 |
 | Cassette tapes keep their own rules; WAV is an external format | `media.md` Q-1 | 2026-11-10 |
 | The names and states of media are a topic of this feature; the picker joins it with the control state | LIB-4 OQ-3 (user, batch 3 gate) | 2026-11-10 |
-| Proposed in this spec, for the gate: every change is written when the session is suspended (AC-13, EC-8) | LIB-3 AC-24; a hidden tab loses a change today | 2026-11-10 |
-| Proposed in this spec, for the gate: a module change leaves the other slot and the disk alone (AC-38) | It follows from the power cycle of behaviour change 1600-4 | 2026-11-10 |
-| Proposed in this spec, for the gate: the half second of AC-11 for every kind, taken from Calc-U-1600 | It makes the criterion checkable | 2026-11-10 |
-| Proposed in this spec, for the gate: the harness commands of AC-28 | Rule 4 of the index; LIB-11 AC-14, AC-18 | 2026-11-10 |
+| Proposed in this spec and accepted (user, 2026-11-10, batch 6 gate): every change is written when the session is suspended (AC-13, EC-8) | LIB-3 AC-24; a hidden tab loses a change today | 2026-11-10 |
+| Proposed in this spec and accepted (user, 2026-11-10, batch 6 gate): a module change leaves the other slot and the disk alone (AC-38) | It follows from the power cycle of behaviour change 1600-4 | 2026-11-10 |
+| Proposed in this spec and accepted (user, 2026-11-10, batch 6 gate): the half second of AC-11 for every kind, taken from Calc-U-1600 | It makes the criterion checkable | 2026-11-10 |
+| Proposed in this spec and accepted (user, 2026-11-10, batch 6 gate): the harness commands of AC-28 | Rule 4 of the index; LIB-11 AC-14, AC-18 | 2026-11-10 |

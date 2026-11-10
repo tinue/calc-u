@@ -252,7 +252,7 @@ Scenarios
   that stay, and move with a control that moves into a menu.
 
 ## Open Questions
-- [ ] **OQ-1** — iOS without a menu bar (AC-5, AC-18, EC-6; LIB-14 OQ-3
+- [x] **OQ-1** — *Decided (user, 2026-11-10, batch 6 gate): the revised bar. On iOS and iPadOS the bar keeps Reset, Preset and Settings; a More button holds Examples, Cold boot (with a confirmation) and Help; on the iPad the same items are also in the system's menu bar; the long press for "Clean" goes.* iOS without a menu bar (AC-5, AC-18, EC-6; LIB-14 OQ-3
   left it to this spec). You asked whether one menu button for
   everything is accepted by Apple. Checked against Apple's Human
   Interface Guidelines on 2026-11-10: they say "Avoid putting all of a
@@ -270,17 +270,17 @@ Scenarios
   (with a confirmation) and Help; on the iPad the same items are also in
   the system's menu bar. The Web frontend's portrait layout (LIB-14
   AC-29) should then follow the same pattern.
-- [ ] **OQ-2** — Row 59-14 names the Web frontend's changes and not this
+- [x] **OQ-2** — *Decided as recommended (user, 2026-11-10, batch 6 gate).* Row 59-14 names the Web frontend's changes and not this
   frontend's. *Recommendation:* extend it: in the Swift frontend, Reset,
   Preset and Settings are menu items on iOS too and the long press for
   "Clean" goes; on macOS "Clean" with Command held goes, the model
   picker moves from the window toolbar to the control bar, and Help is
   new. The first part changes with OQ-1: on iOS the three buttons stay
   and only the long press goes.
-- [ ] **OQ-3** — A startup preset from a file of the user's (LIB-14
+- [x] **OQ-3** — *Decided as recommended (user, 2026-11-10, batch 6 gate).* A startup preset from a file of the user's (LIB-14
   AC-12 gives "Choose…" to Qt6 only). *Recommendation:* not in the Swift
   frontend now: the bundled ones and "None", as on the web.
-- [ ] **OQ-4** — "Debug Page in Portrait" (AC-7, AC-15) is a setting
+- [x] **OQ-4** — *Decided as recommended (user, 2026-11-10, batch 6 gate).* "Debug Page in Portrait" (AC-7, AC-15) is a setting
   only this frontend has (LIB-9 OQ-5). *Recommendation:* keep it, on
   iOS.
 
@@ -294,9 +294,9 @@ Scenarios
 | Where there is a menu bar, Reset, Preset and Settings leave the control bar; a notice is a dialog and none is lost; "Loading…" is new | LIB-14 OQ-3, OQ-4 (user, batch 5 gate); behaviour change 59-5 | 2026-11-10 |
 | GUI tests carry the same scenarios under the same IDs in every frontend | ADR 0032 | 2026-11-10 |
 | The test-only aids of the app go once the harness attaches | C59-5 OQ-4 (user, batch 3 gate); ADR 0033 | 2026-11-10 |
-| Proposed in this spec, for the gate: the menus macOS gives every app stay next to the family's (AC-1) | "Where the platform expects it" (ADR 0024) | 2026-11-10 |
-| Proposed in this spec, for the gate: Done on the iOS settings sheet is the native form of Close (AC-7) | The platform's custom | 2026-11-10 |
-| Proposed in this spec, for the gate: "Loading…" is a small sign that takes no touches (AC-9); a notice alert has the notice as its only text (AC-10) | LIB-14 AC-16, AC-17 | 2026-11-10 |
-| Proposed in this spec, for the gate: the reason of a control that cannot be used is its help tag on macOS and is not shown on iOS (AC-6) | iOS has no such text | 2026-11-10 |
-| Proposed in this spec, for the gate: Copy keeps its two forms of today on macOS and iOS (AC-13) | Today's behaviour | 2026-11-10 |
+| Proposed in this spec and accepted (user, 2026-11-10, batch 6 gate): the menus macOS gives every app stay next to the family's (AC-1) | "Where the platform expects it" (ADR 0024) | 2026-11-10 |
+| Proposed in this spec and accepted (user, 2026-11-10, batch 6 gate): Done on the iOS settings sheet is the native form of Close (AC-7) | The platform's custom | 2026-11-10 |
+| Proposed in this spec and accepted (user, 2026-11-10, batch 6 gate): "Loading…" is a small sign that takes no touches (AC-9); a notice alert has the notice as its only text (AC-10) | LIB-14 AC-16, AC-17 | 2026-11-10 |
+| Proposed in this spec and accepted (user, 2026-11-10, batch 6 gate): the reason of a control that cannot be used is its help tag on macOS and is not shown on iOS (AC-6) | iOS has no such text | 2026-11-10 |
+| Proposed in this spec and accepted (user, 2026-11-10, batch 6 gate): Copy keeps its two forms of today on macOS and iOS (AC-13) | Today's behaviour | 2026-11-10 |
 | The paper panel is always there, empty and without a name while the PC-100C is detached | user, 2026-11-10, batch 6 gate; LIB-8 AC-12 | 2026-11-10 |

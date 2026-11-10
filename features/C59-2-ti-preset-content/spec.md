@@ -251,26 +251,26 @@ The shipped and hosted presets
   code is touched, together with the golden runs of C59-1.
 
 ## Open Questions
-- [ ] **OQ-1** — Which values `partition:` takes (AC-2). Today any value
+- [x] **OQ-1** — *Decided as recommended (user, 2026-11-10, batch 6 gate).* Which values `partition:` takes (AC-2). Today any value
   is rounded up to the next multiple of 80 steps between 80 and 960, a
   value that cannot be read counts as 479 without a word, and negative
   values pass (`Shared/StateFile.cpp:156-164, 450-458`).
   *Recommendation:* only the partitions the model's ROM can set, taken
   from the research (`ti59-research`); every other value refuses the
   preset.
-- [ ] **OQ-2** — Strictness inside the blocks (AC-3 to AC-5). Today a
+- [x] **OQ-2** — *Decided as recommended (user, 2026-11-10, batch 6 gate).* Strictness inside the blocks (AC-3 to AC-5). Today a
   word that is no keycode, a line without `=`, an unknown cue-card key
   and a step number out of range are passed over without a word.
   *Recommendation:* each refuses the preset, as ADR 0017 asks; the
   examples are rewritten anyway.
-- [ ] **OQ-3** — The names and groups of the ten examples (AC-13). They
+- [x] **OQ-3** — *Decided as recommended (user, 2026-11-10, batch 6 gate).* The names and groups of the ten examples (AC-13). They
   have titles of up to 43 characters and no groups today.
   *Recommendation:* the groups "Diagnostics" (`diag.ti59`, `diag.ti58`,
   `ram_test.ti59`), "Programs" (`sum.ti59`, `characters.ti59`,
   `fastmode-sst.ti59`) and "Printer pictures" (`printer-interrupt.ti59`,
   `picard.ti59`, `globe-print.ti59`, `switzerland.ti59`); short names
   chosen when the files are upgraded and checked by AC-15.
-- [ ] **OQ-4** — The three startup presets (AC-13) connect the PC-100C,
+- [x] **OQ-4** — *Decided as recommended (user, 2026-11-10, batch 6 gate).* The three startup presets (AC-13) connect the PC-100C,
   as ADR 0021 says, while the built-in default machine has none
   (behaviour change 59-10). No startup preset is set at first.
   *Recommendation:* as written; the user who wants today's start, with
@@ -286,10 +286,10 @@ The shipped and hosted presets
 | Presets of 2.3.0 are refused; every shipped and hosted preset is upgraded and checked | ADR 0037; behaviour change 59-1 | 2026-11-10 |
 | Three bundled startup presets, one per model: Master Library module, printer attached; none restores `ti58c.mem` | ADR 0021 as amended | 2026-11-10 |
 | The picture of a TI display for `screenshot:` is supplied by the product, in the classic segment style | LIB-6 OQ-3 (user, batch 5 gate) | 2026-11-10 |
-| Proposed in this spec, for the gate: `partition:` is a section that is only a value | `presets.md` PR-3 lists it with the sections; a partition can change in a reload today | 2026-11-10 |
-| Proposed in this spec, for the gate: an upgraded example names the Master Library module and the PC-100C where its 2.3.0 file named none, and starts its keys with `- speed: regular` | It keeps what the example does in a fresh 2.3.0 | 2026-11-10 |
-| Proposed in this spec, for the gate: the comparison of AC-11 with reference runs as the proof that the upgrade changed nothing | ADR 0037 asks for the upgrade, nothing says how it is checked | 2026-11-10 |
-| Proposed in this spec, for the gate: this feature defines the product kind for program memory (AC-17) | C59-1 leaves it to this feature | 2026-11-10 |
-| Proposed in this spec, for the gate: `cue-card:` fits a cue card; `Template` chooses only its look (AC-1, AC-5) | Today's three templates are artwork | 2026-11-10 |
-| Proposed in this spec, for the gate: the check of the preset list is the one of C1600-4 AC-18, the 18 characters included (AC-15) | One rule for both products' lists | 2026-11-10 |
-| Proposed in this spec, for the gate: the commands of AC-9 | LIB-11 AC-14 assigns "write a program" to this feature | 2026-11-10 |
+| Proposed in this spec and accepted (user, 2026-11-10, batch 6 gate): `partition:` is a section that is only a value | `presets.md` PR-3 lists it with the sections; a partition can change in a reload today | 2026-11-10 |
+| Proposed in this spec and accepted (user, 2026-11-10, batch 6 gate): an upgraded example names the Master Library module and the PC-100C where its 2.3.0 file named none, and starts its keys with `- speed: regular` | It keeps what the example does in a fresh 2.3.0 | 2026-11-10 |
+| Proposed in this spec and accepted (user, 2026-11-10, batch 6 gate): the comparison of AC-11 with reference runs as the proof that the upgrade changed nothing | ADR 0037 asks for the upgrade, nothing says how it is checked | 2026-11-10 |
+| Proposed in this spec and accepted (user, 2026-11-10, batch 6 gate): this feature defines the product kind for program memory (AC-17) | C59-1 leaves it to this feature | 2026-11-10 |
+| Proposed in this spec and accepted (user, 2026-11-10, batch 6 gate): `cue-card:` fits a cue card; `Template` chooses only its look (AC-1, AC-5) | Today's three templates are artwork | 2026-11-10 |
+| Proposed in this spec and accepted (user, 2026-11-10, batch 6 gate): the check of the preset list is the one of C1600-4 AC-18, the 18 characters included (AC-15) | One rule for both products' lists | 2026-11-10 |
+| Proposed in this spec and accepted (user, 2026-11-10, batch 6 gate): the commands of AC-9 | LIB-11 AC-14 assigns "write a program" to this feature | 2026-11-10 |

@@ -275,7 +275,9 @@ Plural: media.
 _Avoid_: removable, item, card
 
 **Template**:
-A medium bundled with a product, which is never written.
+A medium bundled with a product, which is never written, or one the
+user made (a **user template**: a file in the save folder that says it
+is one).
 _Avoid_: bundled card, default
 
 **Instance**:
@@ -561,3 +563,24 @@ The picture of the calculator with its display and its on-screen keys.
 
 **Hit map**:
 What says which area of a faceplate is which key.
+
+**Kind** (of medium):
+What one sort of media place takes: a magnetic card, a floppy disk, a
+battery-backed module, a cassette tape. Each kind has its file suffix
+and its format.
+
+**Saved media**:
+The media in the save folder and the tape folder, and the list of them
+that a Web frontend shows.
+
+**Breakpoint**:
+An address of a debug target at which the run control pauses the
+machine before the instruction there is carried out.
+
+**Watch**:
+A range of cells of an address space; the run control pauses the
+machine after an instruction that read or wrote one of them.
+
+**History** (of a debug target):
+Its last instructions, each with the registers as they were before
+it.

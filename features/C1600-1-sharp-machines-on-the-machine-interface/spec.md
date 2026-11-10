@@ -296,3 +296,4 @@ One seam
 | The host drive is a peripheral on the 60-pin connector in the place `host-drive`; its folder is a product kind | user, 2026-11-10, batch 2 gate; amends `presets.md` PR-11 | 2026-11-10 |
 | Only the display has an on and an off, reported in display output; a switched-off Sharp machine is one whose display is off and whose ROM waits for the `on` key | user, 2026-11-10, batch 2 gate (prompted) | 2026-11-10 |
 | An attach while the machine is switched off is followed by nothing; the machine stays off, as today | user, 2026-11-10, batch 4 gate; LIB-18 AC-33 | 2026-11-10 |
+| A bus ROM is a peripheral on the 60-pin connector that only a preset can plug in; it is listed in what is plugged in and has no control (C1600-4 AC-10) | C1600-4 OQ-2 (user, 2026-11-10, batch 6 gate) | 2026-11-10 |

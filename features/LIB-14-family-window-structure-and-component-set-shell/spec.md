@@ -95,7 +95,7 @@ Menus
   | File | Settings…; Quit | this feature (AC-11); the platform |
   | Edit | Copy Screen; Paste Text | the product (AC-41); LIB-5 |
   | Machine | Model ▸; one submenu for each thing that has variants; Peripherals ▸ | this feature (AC-2, AC-3) |
-  | Machine | Reset; Cold boot | this feature (AC-4) |
+  | Machine | Reset; Cold boot; Resume, which can be used while the machine is paused | this feature (AC-4); LIB-10 AC-6 |
   | Help | `<Product>` Help; About `<Product>` | this feature (AC-20, AC-21) |
 
 - [ ] **AC-2** — Given the control state, then Machine ▸ Model lists the
@@ -289,8 +289,12 @@ The shell and what goes into it
   Swift frontend on iOS: C59-8).
 - [ ] **AC-29** — Given the Web frontend of Calc-U-59, which has no menu
   bar today, then in its wide layout it has the menu bar of AC-1, and in
-  its portrait layout one button on the control bar opens the same menus
-  (OQ-3; `Web/src/PlayCalculator.jsx:127-196`). Given its prop
+  its portrait layout the control bar keeps the buttons Reset, Preset
+  and Settings of today and gets a More button, which opens a menu with
+  the items that have no control of their own: Examples ▸, Cold boot,
+  which asks first, Resume and "Calc-U-59 Help"; the long press on Reset
+  for "Clean" goes (the pattern of C59-8 AC-5; user, 2026-11-10, batch 6 gate;
+  `Web/src/PlayCalculator.jsx:127-196`). Given its prop
   `settings` is off (LIB-15 AC-19), then Settings… does not appear.
 - [ ] **AC-30** — Given the settings dialog of Calc-U-59, then it shows:
   General with Startup model (today "Startup Calculator") and the
@@ -496,3 +500,5 @@ The shell and what goes into it
 | Proposed in this spec and accepted (user, 2026-11-10, batch 5 gate): the settings dialog applies every change at once and has only Close, in both products (Calc-U-59 applies some on close today) | Calc-U-1600's way; LIB-9 AC-6 | 2026-11-10 |
 | Proposed in this spec and accepted (user, 2026-11-10, batch 5 gate): the scenarios of AC-25 | ADR 0032 asks for named scenarios | 2026-11-10 |
 | Added with C59-8's cold read, for the batch 6 gate: holding the display commands full speed (AC-43); a failed start shows LIB-12's message (AC-19) | LIB-17 and LIB-12 name this feature as the owner | 2026-11-10 |
+| A frontend without a menu bar (iOS, the Web frontend's portrait layout) keeps Reset, Preset and Settings on the bar and gets a More button for the rest; this replaces the one menu button of the batch 5 gate | user, 2026-11-10, batch 6 gate, after a check of Apple's Human Interface Guidelines | 2026-11-10 |
+| The Machine menu has Resume | LIB-10 OQ-2 (user, 2026-11-10, batch 6 gate) | 2026-11-10 |

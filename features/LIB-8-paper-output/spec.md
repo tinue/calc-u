@@ -340,12 +340,12 @@ Step and commands
   it today (a ROM switch, a module change). *Recommendation:* keep it,
   as AC-8 says; it follows from one rule for both products, and
   the row of OQ-1 names it.
-- [ ] **OQ-3** — The message of AC-20 is new in Calc-U-1600, and
+- [x] **OQ-3** — *Decided as recommended (user, 2026-11-10, batch 6 gate).* The message of AC-20 is new in Calc-U-1600, and
   following the paper only near its end (AC-13) is new in Calc-U-59's
   Qt6 frontend, which jumps to the end on every line today
   (`Qt6/app/PrinterWidget.cpp:228-232`). *Recommendation:* both, as
   written; too small for a row.
-- [ ] **OQ-4** — The replies of `paper text` and `paper marks` (AC-23)
+- [x] **OQ-4** — *Decided as recommended (user, 2026-11-10, batch 6 gate).* The replies of `paper text` and `paper marks` (AC-23)
   are what the reference runs of the examples are compared with (AC-39),
   so they must not change once those runs are recorded.
   *Recommendation:* as written in AC-23.
@@ -367,10 +367,11 @@ Step and commands
 | `cut-paper:` is a step in every product | `presets.md` PR-7 | 2026-11-10 |
 | The paper panel is always shown. Each type of printer keeps one paper for the run of the product: empty panel without a name while none is plugged in, the paper back when the printer is attached again, also on another model. This replaces the batch 4 answer that the paper goes at a model switch without the printer | user, 2026-11-10, batch 6 gate | 2026-11-10 |
 | A preset starts with empty paper | LIB-6 AC-41; both products today | 2026-11-10 |
-| Proposed in this spec, for the gate: the caps of AC-17 for both products (Calc-U-59 has only the 16000 pixels today) | One rule; no PC-100C picture reaches 64 million pixels | 2026-11-10 |
-| Proposed in this spec, for the gate: Cut cuts also when the copy failed (AC-18) | All frontends today | 2026-11-10 |
-| Proposed in this spec, for the gate: the control of AC-14 shows the view that is on (Qt6 and Swift today; the Web frontend shows the other) | One rule for the family | 2026-11-10 |
-| Proposed in this spec, for the gate: the commands of AC-23 and their names; `cut-paper` without a copy | They make the criteria checkable; LIB-11 AC-14 | 2026-11-10 |
-| Proposed in this spec, for the gate: a dot has a darkness (AC-2) | The PC-100C's cut-short lines print lighter dots today | 2026-11-10 |
-| Proposed in this spec, for the gate: Copy and Cut are commands of the session that use the clipboard host service (AC-16, AC-18) | It makes them checkable without a window, and gives every frontend the same picture | 2026-11-10 |
-| Proposed in this spec, for the gate: a paper's topic and commands name it by its printer's name (AC-6, AC-22, AC-23) | A machine may have more than one paper | 2026-11-10 |
+| Proposed in this spec and accepted (user, 2026-11-10, batch 6 gate): the caps of AC-17 for both products (Calc-U-59 has only the 16000 pixels today) | One rule; no PC-100C picture reaches 64 million pixels | 2026-11-10 |
+| Proposed in this spec and accepted (user, 2026-11-10, batch 6 gate): Cut cuts also when the copy failed (AC-18) | All frontends today | 2026-11-10 |
+| Proposed in this spec and accepted (user, 2026-11-10, batch 6 gate): the control of AC-14 shows the view that is on (Qt6 and Swift today; the Web frontend shows the other) | One rule for the family | 2026-11-10 |
+| Proposed in this spec and accepted (user, 2026-11-10, batch 6 gate): the commands of AC-23 and their names; `cut-paper` without a copy | They make the criteria checkable; LIB-11 AC-14 | 2026-11-10 |
+| Proposed in this spec and accepted (user, 2026-11-10, batch 6 gate): a dot has a darkness (AC-2) | The PC-100C's cut-short lines print lighter dots today | 2026-11-10 |
+| Proposed in this spec and accepted (user, 2026-11-10, batch 6 gate): Copy and Cut are commands of the session that use the clipboard host service (AC-16, AC-18) | It makes them checkable without a window, and gives every frontend the same picture | 2026-11-10 |
+| Proposed in this spec and accepted (user, 2026-11-10, batch 6 gate): a paper's topic and commands name it by its printer's name (AC-6, AC-22, AC-23) | A machine may have more than one paper | 2026-11-10 |
+| A preset the user loads starts with empty paper: a preset is there for a controlled state | user, 2026-11-10, batch 6 gate | 2026-11-10 |

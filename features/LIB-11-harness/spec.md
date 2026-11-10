@@ -155,7 +155,7 @@ The first commands
   | `tools/agentic/ti59file.py` | run a preset and report the emulated time and the printout | LIB-6, LIB-8 |
   | `tools/agentic/linetimes.py`, `runtime.py`, `hotsteps.py`, `stepcost.py`, `fastmode_matrix.py` | timings per printed line and per key, the hottest program steps, the cost of a step | product commands (OQ-4) |
   | `tools/agentic/kdis.py`, `asm59.py` | list a program's keycodes; assemble keycodes | product commands (OQ-4) |
-  | `tools/read_trace.py` | a trace file as text or JSON | stays a script of the product (proposed in LIB-10, AC-33 and AC-42 there) |
+  | `tools/read_trace.py` | a trace file as text or JSON | stays a script of the product (LIB-10 AC-33, AC-42; user, 2026-11-10, batch 6 gate) |
 
   (`tools/headless/capi.cpp:47-196`, `tools/headless/ti59.py:155-437`,
   `tools/agentic/README.md`.)
@@ -194,7 +194,7 @@ The first commands
   | `--save-dir`, `--modules-dir` | the save folder; where module definitions are | this feature (AC-8), LIB-7 |
   | the summary after a run: registers, the last instructions, where the program counter spent its time | | LIB-10 |
   | `pc1600_plotter_probe`, `pc1600_power_probe`, `pc1600_uart_probe` | diagnostics of the plotter, of power-off and of the serial port | OQ-5 |
-  | `tools/read_trace.py` | a trace file as text or JSON | stays a script of the product (proposed in LIB-10, AC-33 and AC-42 there) |
+  | `tools/read_trace.py` | a trace file as text or JSON | stays a script of the product (LIB-10 AC-33, AC-42; user, 2026-11-10, batch 6 gate) |
   | `tools/dap_smoke.py` | a smoke test of the DAP server | C1600-3 |
   | `--shots` of the Qt6 frontend | screenshot scenarios | not a harness function (ADR 0032) |
 

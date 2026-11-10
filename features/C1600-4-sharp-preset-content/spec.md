@@ -278,7 +278,7 @@ The shipped presets
   the Calc-U-1600 column of LIB-13 depend on it; the file kinds of "open
   file" are product data in the LIB-13 spec (rule 2 of the index). The
   index rows C1600-2, C1600-4 and LIB-13 change accordingly.
-- [ ] **OQ-2** — What a bus ROM is in the machine (AC-10). The
+- [x] **OQ-2** — *Decided as recommended (user, 2026-11-10, batch 6 gate).* What a bus ROM is in the machine (AC-10). The
   descriptors of C1600-1 have no place for it; today it is a card put in
   front of the others on the bus, named after its file in the INSPECTOR
   (`Core/Preset/PresetBusRomLoader.hpp:30-32, 58-62`).
@@ -287,12 +287,12 @@ The shipped presets
   defines a module; it is listed in what is plugged in, and the control
   state offers no control for it. C1600-1 then gets the place and the
   rule for the order.
-- [ ] **OQ-3** — `boot: debug` in a `debug:` block makes the debugger
+- [x] **OQ-3** — *Decided as recommended (user, 2026-11-10, batch 6 gate): settled in C1600-3 with LIB-10 AC-46 and the build-only load of LIB-6 AC-55.* `boot: debug` in a `debug:` block makes the debugger
   load the preset so that the machine is built and not started
   (`Qt6/app/debug/DapSession.cpp:432`). LIB-6 builds a machine in one
   step up to key readiness. *Recommendation:* settle it in C1600-3 with
   `pause-on-start` of LIB-10; nothing in this spec depends on it.
-- [ ] **OQ-4** — AC-7: a preset with `host-drive:` in the Web frontend.
+- [x] **OQ-4** — *Decided as recommended (user, 2026-11-10, batch 6 gate).* AC-7: a preset with `host-drive:` in the Web frontend.
   Today's behaviour is not recorded. *Recommendation:* refused when it
   is read, as AC-7 says; the one example that uses the key is not in the
   preset list.
@@ -308,5 +308,5 @@ The shipped presets
 | `printer:` in place of `plotter:`; `wait:` with a unit | `presets.md` PR-5, PR-11; behaviour change 1600-3 | 2026-11-10 |
 | `debug:` and `bus-rom:` keep their YAML notation | `presets.md`, facts ("only `debug:` and `bus-rom:` are YAML proper"); LIB-6 AC-1, raw block | 2026-11-10 |
 | A host drive folder that does not exist, and a ROM image that cannot be read or does not fit, refuse the preset when it is read, not after the machine was built | Behaviour change 1600-11 (user, batch 5 gate) | 2026-11-10 |
-| Proposed in this spec, for the gate: `bus-rom:` and `debug:` are header keys with a block, not sections (AC-9, AC-11) | They describe the machine and the debugger's settings; nothing in them is carried out in file order | 2026-11-10 |
-| Proposed in this spec, for the gate: the comparison of AC-16 as the proof that the upgrade changed nothing | ADR 0037 asks for the upgrade, nothing says how it is checked | 2026-11-10 |
+| Proposed in this spec and accepted (user, 2026-11-10, batch 6 gate): `bus-rom:` and `debug:` are header keys with a block, not sections (AC-9, AC-11) | They describe the machine and the debugger's settings; nothing in them is carried out in file order | 2026-11-10 |
+| Proposed in this spec and accepted (user, 2026-11-10, batch 6 gate): the comparison of AC-16 as the proof that the upgrade changed nothing | ADR 0037 asks for the upgrade, nothing says how it is checked | 2026-11-10 |

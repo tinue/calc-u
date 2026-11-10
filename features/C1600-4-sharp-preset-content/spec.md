@@ -1,0 +1,275 @@
+# C1600-4: Sharp preset content
+
+<!-- spec.md is the stable CONTRACT: WHAT, not HOW. It changes only
+     deliberately, when the requirements change, and stays unchanged
+     during implementation. Design lives in design.md, QA results in
+     qa-report.md. No status or dates here: status lives only in
+     features/INDEX.md. -->
+
+## Dependencies
+- Features: C1600-1 (the Sharp machines, their places and product
+  kinds), LIB-6 (the preset loader: the grammar, the place for a
+  product's keys, sections and steps, the product's part of a load, the
+  preset list); through LIB-6 also LIB-2 (attach) and LIB-5 (typing).
+  The loaders that put a program into a machine are named here and
+  specified elsewhere (OQ-1).
+- Contracts and decisions: `docs/contracts/presets.md` (PR-3, PR-5,
+  PR-11 as amended, I-1 to I-3); ADR 0018, 0037;
+  `docs/behaviour-changes.md` rows 1600-1, 1600-3.
+- Facts: Calc-U-1600 at `b4ea8c8`; every `path:line` below is at that
+  commit.
+
+Words of other specs used here: "header key", "section", "step",
+"idle", "preset list" and "raw block" (LIB-6, definitions and AC-1),
+"notice" (LIB-3 AC-10).
+
+## User Stories
+- As a user of a Sharp machine, I want a preset to put a BASIC program
+  or a machine-code program into the machine it builds, from a file or
+  from text in the preset.
+- As a user of the PC-1600, I want a preset to mount a folder as the
+  host drive.
+- As a developer of a ROM or of a program in a module, I want a preset
+  to put my ROM image on the bus or into a module, and to carry the
+  settings my debugger needs.
+- As a user, I want every example and startup preset that Calc-U-1600
+  ships to work after the update as it did before.
+
+## Out of Scope
+- The grammar, the header keys of the family, the steps, all or nothing,
+  the build of the machine and the preset list as such (owner: LIB-6).
+- How a program gets into the machine: telling a BASIC listing from
+  tokenized BASIC and from machine code, loading, typing in, placing
+  machine code and starting it (OQ-1).
+- Naming a module or a disk, by name or by file, `medium:` sections and
+  the step `saveas` (owner: LIB-7); the step `trace` (LIB-10).
+- What the debugger does with the settings of a `debug:` block (owner:
+  C1600-3).
+- The places, pin-outs and variants of the Sharp machines (owner:
+  C1600-1); which hardware fits together (LIB-2; LIB-6 AC-47, AC-52).
+- The presets of Calc-U-59 (owner: C59-2).
+
+## Acceptance Criteria
+
+The `program:` section
+- [ ] **AC-1** — Given a preset for a Sharp model, then it can have the
+  section `program:`, any number of times; each is carried out in its
+  place in file order (LIB-6 AC-14, AC-15). Its block is a list of
+  these fields, read and checked when the preset is read (LIB-6 AC-6,
+  AC-7) (`Core/Preset/PresetFile.cpp:393-537`):
+
+  | Field | Value | Rules |
+  |---|---|---|
+  | `file:` | a path (LIB-6 AC-1) | exactly one of `file:` and `text:` is required |
+  | `text: \|` | a block scalar: the lines of a BASIC program | not together with `typed:`, `address:` or `length:` |
+  | `typed:` | `true` or `false`, in any case | only for a file that is a BASIC listing |
+  | `address:` | a number up to &FFFF | only for a file that is machine code |
+  | `length:` | a number | only for a file that is machine code |
+
+- [ ] **AC-2** — Given `file:`, then the file is read and its kind is
+  told when the preset is read, and the preset is refused when the file
+  cannot be read, is empty, is of a kind that is not a program, or has a
+  field its kind does not take (`typed: true` on tokenized BASIC or on
+  machine code; `address:` or `length:` on BASIC)
+  (`Core/Preset/PresetFile.cpp:492-534`).
+- [ ] **AC-3** — Given a `program:` section with a file whose turn has
+  come, then the program is put into the machine by the loader for its
+  kind (OQ-1): a BASIC listing or tokenized BASIC is loaded at once, a
+  BASIC listing with `typed: true` is typed in, machine code is placed,
+  at `address:` when it is given, and started when its file says so.
+  Given the loader fails, then the preset fails there with the loader's
+  reason (LIB-6 AC-17) (`Core/Preset/PresetRunner.cpp:200-257`).
+- [ ] **AC-4** — Given a `program:` section with `text: |`, then its
+  lines are typed in as a BASIC program, line by line, by the loader
+  that types (OQ-1); the preset has to put the machine into its program
+  mode before (`- key: mode`). Given no line was stored, or some were
+  not, then the preset fails with a reason that says so and names the
+  lines (`Core/PC1600/PC1600BasicTyper.cpp:333-340`).
+- [ ] **AC-5** — Given the lines of `text: |`, then they are taken as
+  LIB-6 AC-1 says for a block scalar: empty lines and lines that start
+  with `#` are left out, and everything else in a line is typed, a ` #`
+  included (`Core/Preset/PresetFile.cpp:133-151, 453-470`).
+
+The host drive
+- [ ] **AC-6** — Given a preset for the PC-1600 with the header key
+  `host-drive:` and a folder as its value (a path, LIB-6 AC-1), then the
+  machine is built with the host drive in the place `host-drive`,
+  showing that folder as the drive S3: (C1600-1 AC-19; `presets.md`
+  PR-11 as amended). Given the value is not a folder that exists, or the
+  model is not the PC-1600, then the preset is refused when it is read
+  (`Core/Preset/PresetFile.cpp:918-921`,
+  `Core/PC1600/PC1600PresetLoader.cpp:105-114`).
+- [ ] **AC-7** — Given a frontend that cannot mount a host folder (the
+  Web frontend; LIB-4 AC-18), then a preset with `host-drive:` is
+  refused when it is read, with that reason.
+
+ROM images
+- [ ] **AC-8** — Given the header key `slot-1-rom:` or, on the PC-1600,
+  `slot-2-rom:`, with a path, then the module the preset names for that
+  slot is built with the bytes of that file as its ROM, read anew at
+  every load. Given no module is named for the slot, the key is given
+  twice, or the file cannot be read or does not fit the module, then the
+  preset is refused when it is read. A module built this way is never
+  saved back (LIB-7) (`Core/Preset/PresetFile.cpp:784-787, 861-873`,
+  `Core/Preset/PresetRunner.cpp:21-39`).
+- [ ] **AC-9** — Given the key `bus-rom:`, then its raw block is a list
+  in YAML, each item with `file:` (required) and exactly one of `bank:`
+  (4 to 7; PC-1600 only) or `address:` (&0000 to &FFFF), and with
+  `address:` optionally `me:`, `pv:`, `pu:` (each 0 or 1); a key that
+  repeats adds to the list. Any other shape, and a file that cannot be
+  read, is empty or is larger than its bank or than the room from its
+  address to &FFFF, refuses the preset when it is read
+  (`Core/Preset/PresetFile.cpp:576-642, 922-926`,
+  `Core/Preset/PresetBusRomLoader.hpp:17-46`).
+- [ ] **AC-10** — Given a preset with `bus-rom:` items, then the machine
+  is built with each ROM on the system bus of its 60-pin connector at
+  that bank or address, after everything the place keys name; a ROM that
+  comes later in the list is found before an earlier one, and before a
+  peripheral's ROM, at the same place
+  (`Core/Preset/PresetBusRomLoader.hpp:58-62`,
+  `Core/tests/pc1600_preset_tests.cpp:935, 1019`; OQ-2).
+
+The `debug:` block
+- [ ] **AC-11** — Given the key `debug:`, at most once, then its raw
+  block is a map in YAML with the debugger's settings; it is checked
+  when the preset is read against the keys and values the debugger
+  states (C1600-3; today `Core/Debug/AttachKeys.hpp:42-66`), its paths
+  are taken from the preset's folder, and an unknown key or a wrong
+  value refuses the preset (`Core/Preset/PresetDebugBlock.hpp:38-128`).
+- [ ] **AC-12** — Given a preset with a `debug:` block is loaded, then
+  the load does nothing with the block; the debugger asks for it
+  (C1600-3) (`Core/Preset/PresetFile.hpp:259-262`).
+
+The product's part of a load
+- [ ] **AC-13** — Given LIB-6 AC-53, then Calc-U-1600 tells the loader
+  for the PC-1500, the PC-1500A and the PC-1600 when the machine is idle
+  (LIB-6 AC-45), what is done after the build (LIB-6 AC-46), and the
+  picture of the display (LIB-6 AC-48).
+
+Errors
+- [ ] **AC-14** — Given any error of AC-1 to AC-11, then the notice
+  gives the line and names the key or field and what was expected, and
+  an error inside a raw block starts with `debug:` or `bus-rom:`
+  (`Core/Preset/PresetFile.cpp:845-852`; LIB-6 AC-6).
+
+The shipped presets
+- [ ] **AC-15** — Given the presets in the source repository that belong
+  to Calc-U-1600, then each is in version 2: the 32 under `examples/`,
+  those of the tests, of the developer tools, of the developer
+  documentation and of the VS Code extension, its templates included
+  (ADR 0037; behaviour change 1600-1). In each, only this changes:
+
+  | Version 1 | Version 2 | Why |
+  |---|---|---|
+  | `format-version: 1` | `format-version: 2` | `presets.md` PR-2 |
+  | `plotter: CE-150` | `printer: CE-150` | PR-11 |
+  | `- wait: 2` | `- wait: 2s` | PR-5 |
+  | `- key: ent` | `- key: enter` | LIB-5, decided with its OQ-6 |
+  | `floppy:`, `floppy-file:`, `slot-N-file:`, `- saveas:`, `- trace:` | as LIB-7 and LIB-10 write them | PR-8; their specs |
+
+- [ ] **AC-16** — Given each of the 32 examples, when its version 2 file
+  is loaded through the harness, then at its end the display as text and
+  the content of the program memory are what its version 1 file gives
+  under `b4ea8c8`, recorded there before the files are upgraded.
+- [ ] **AC-17** — Given the preset list of Calc-U-1600 (LIB-6 AC-31),
+  then it holds what `examples/bundled.yaml` holds today: as startup
+  presets `startup/default-pc1500.pc1500`,
+  `startup/default-pc1500a.pc1500a` and `startup/default-pc1600.pc1600`;
+  as examples, in the group "BASIC" `basic/hanoi.pc1600`, in the group
+  "Plotter" `plotter/lissajou-1500.pc1500a`,
+  `plotter/lissajou-1600.pc1600`, `plotter/globus.pc1600`,
+  `plotter/biorhythmus_1600.pc1600` and `plotter/ascii.pc1600`, and in
+  the group "Machine code" `machine-code/memtest_1500a.pc1500a`
+  (`examples/bundled.yaml:12-31`). The Qt6 and the Web frontend bundle
+  the same list, each preset with the files it names.
+- [ ] **AC-18** — Given the preset list, then the test suite fails
+  unless every preset in it has a `preset-name` of at most 18 characters
+  and a `description`, is listed once, and shares its name with no other
+  listed preset of the same model
+  (`Shared/PresetCatalog.cpp:131-147`,
+  `Shared/tests/shared_preset_catalog_tests.cpp:37-99`).
+- [ ] **AC-19** — Given what the tests of Calc-U-1600 check today about
+  these keys and sections, then it holds: `program:` blocks and their
+  address forms, the kind following the file, keys and `program:`
+  sections in sequence; `slot-N-rom:`; `bus-rom:` in its forms, its
+  order and its gating; `host-drive:`; the `debug:` block with its
+  paths, unknown keys, numbers, choices and truth values
+  (`Core/tests/preset_tests.cpp:480-517, 568-655, 732-850`,
+  `Core/tests/pc1600_preset_tests.cpp:846-1019`).
+
+## Edge Cases
+- **EC-1** — Given `text: |` with no line below it, then the preset is
+  refused when it is read (`Core/Preset/PresetFile.cpp:459`).
+- **EC-2** — Given a `program:` section without a block, or with a field
+  that is none of AC-1, then the preset is refused when it is read
+  (`Core/Preset/PresetFile.cpp:396, 472`).
+- **EC-3** — Given two `program:` sections, then the second starts when
+  the machine is idle after the first (LIB-6 AC-15); a program the first
+  one started and that still runs after an hour does not stop the
+  second from starting.
+- **EC-4** — Given a `debug:` block with a mistake in a preset that is
+  loaded without a debugger, then the preset is refused all the same
+  (AC-11); the user guide says today that the block is ignored
+  (`docs/User-Guide.md:891`).
+- **EC-5** — Given a preset that was handed over without its folder and
+  names a program file, a ROM image or a host drive folder by a path
+  that is not absolute, then it is refused when it is read (LIB-6 EC-5).
+- **EC-6** — Given `bus-rom:` with `bank:` on a PC-1500 or PC-1500A,
+  then the preset is refused when it is read, with a notice that says
+  that those models take `address:` (`Core/Preset/PresetFile.cpp:922-926`).
+
+## Technical Requirements (optional)
+- These keys and sections are added through the place LIB-6 AC-29 gives;
+  the loader itself knows none of them.
+- The YAML of the two raw blocks is the subset Calc-U-1600 reads today
+  (`Core/Yaml.hpp`); the rest of a preset is not YAML (`presets.md`
+  PR-1).
+- A ROM image or a program file a preset names is read at every load and
+  never written.
+
+## Open Questions
+- [ ] **OQ-1** — Where the loaders are specified. AC-3 and AC-4 need
+  them: telling the kind of a program file, loading BASIC, typing a
+  program in, placing and starting machine code. The index gives them to
+  C1600-2, "as product file kinds of 'open file'", which depends on
+  LIB-13 and so on LIB-7; C1600-1 AC-19 says the same. A preset's
+  `program:` would then wait for "open file", and so would every
+  example. *Recommendation:* C1600-2 becomes the loaders alone
+  (dependency: C1600-1), checked through the harness; this feature and
+  the Calc-U-1600 column of LIB-13 depend on it; the file kinds of "open
+  file" are product data in the LIB-13 spec (rule 2 of the index). The
+  index rows C1600-2, C1600-4 and LIB-13 change accordingly.
+- [ ] **OQ-2** — What a bus ROM is in the machine (AC-10). The
+  descriptors of C1600-1 have no place for it; today it is a card put in
+  front of the others on the bus, named after its file in the INSPECTOR
+  (`Core/Preset/PresetBusRomLoader.hpp:30-32, 58-62`).
+  *Recommendation:* a peripheral on the 60-pin connector that only a
+  preset can plug in, defined by the preset as a module definition
+  defines a module; it is listed in what is plugged in, and the control
+  state offers no control for it. C1600-1 then gets the place and the
+  rule for the order.
+- [ ] **OQ-3** — `boot: debug` in a `debug:` block makes the debugger
+  load the preset so that the machine is built and not started
+  (`Qt6/app/debug/DapSession.cpp:432`). LIB-6 builds a machine in one
+  step up to key readiness. *Recommendation:* settle it in C1600-3 with
+  `pause-on-start` of LIB-10; nothing in this spec depends on it.
+- [ ] **OQ-4** — AC-7: a preset with `host-drive:` in the Web frontend.
+  Today's behaviour is not recorded. *Recommendation:* refused when it
+  is read, as AC-7 says; the one example that uses the key is not in the
+  preset list.
+- [ ] **OQ-5** — AC-16 compares the display and the program memory. A
+  plotter example also draws. *Recommendation:* add the paper once LIB-8
+  says how a drawing is compared.
+
+## Decision Log
+
+| Decision | Rationale | Date |
+|----------|-----------|------|
+| Product sections for what only a model family has, read by product code under the loader's rules | ADR 0018; `presets.md` PR-3 | 2026-11-10 |
+| `program:` has the forms `file:` and `text: \|` on the Sharp models | `presets.md` PR-3 | 2026-11-10 |
+| `host-drive:` names the place of the host drive on the PC-1600; the folder is a product kind | `presets.md` PR-11 as amended (user) | 2026-11-10 |
+| Presets of version 1 are refused; every shipped preset is upgraded and checked | ADR 0037; behaviour change 1600-1 | 2026-11-10 |
+| `printer:` in place of `plotter:`; `wait:` with a unit | `presets.md` PR-5, PR-11; behaviour change 1600-3 | 2026-11-10 |
+| `debug:` and `bus-rom:` keep their YAML notation | `presets.md`, facts ("only `debug:` and `bus-rom:` are YAML proper"); LIB-6 AC-1, raw block | 2026-11-10 |
+| Proposed in this spec, for the gate: a host drive folder that does not exist, and a ROM image that cannot be read or does not fit, refuse the preset when it is read, not after the machine was built | LIB-6 AC-7 and its OQ-2 | 2026-11-10 |
+| Proposed in this spec, for the gate: the comparison of AC-16 as the proof that the upgrade changed nothing | ADR 0037 asks for the upgrade, nothing says how it is checked | 2026-11-10 |

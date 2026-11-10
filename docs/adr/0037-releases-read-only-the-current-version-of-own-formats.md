@@ -33,7 +33,8 @@ replaces Calc-U-59's read-old/write-new rule.
   changes") and Calc-U-1600's own rule "from 1.0 on, the previous format
   version keeps working" (`docs/background/Decisions.md`, File formats)
   and the success criterion "Calc-U-59 reads all of its existing
-  files" in §7 are replaced; both carry a note.
+  files" in §7 are replaced. The Briefing carries a note; Calc-U-1600's
+  `Decisions.md` is updated with the code in phase 6.
 - Superseded parts of earlier ADRs: ADR 0018's v1 reader; ADR 0016's
   consequence that the v1 reader fills in the module and printer; ADR
   0017's consequence for version 1 files; ADR 0020's reading of version 1

@@ -66,77 +66,97 @@ What the three status columns mean for this feature:
 
 The command
 - [ ] **AC-1** — Given the command to open a file, with its bytes, its
-  name and, where the host has it, its path, then the session tells what
-  the file is, in this order, and does what belongs to it
+  name and, where the host has it, its path, then the session goes
+  through these tests in this order, and the first that applies decides;
+  names are compared without regard to upper and lower case
   (`frontend.md` SP-3):
 
-  | The file is | Told by | Then |
+  | # | Test | Then |
   |---|---|---|
-  | a preset | its name ends in a preset extension of the product, or its text has a top-level `model:` line (AC-2) | it is loaded (LIB-6), from its folder where the path is known, else as its content (LIB-6 EC-5) |
-  | of a file kind of the product | the product's rule for that kind, the kinds asked in the order the product gives | the product's handling of that kind |
-  | a medium | its name ends in the suffix of a kind of medium of the product | AC-4 |
-  | nothing of these | | it is refused with a notice that names the file and says that the product cannot open it |
+  | 1 | the file cannot be read, is larger than the product allows for this way in (AC-10), or its name starts with a dot | refused |
+  | 2 | its name ends in a preset extension of the product | a preset: it is loaded (LIB-6), from its folder where the path is known, else as its content (LIB-6 EC-5) |
+  | 3 | its name ends in the suffix of a kind of medium of the product | a medium: AC-4 |
+  | 4 | a file kind of the product takes it, the kinds asked in the order the product gives, each by its own rule | the product's handling of that kind |
+  | 5 | its text has a top-level `model:` line (AC-2) | a preset, as in 2 |
+  | 6 | nothing of these | refused |
+
+  A refusal is a notice that names the file and says why.
 
 - [ ] **AC-2** — Given a file without a preset extension, then it is a
   preset when it is text in UTF-8 without a zero byte and has a line
   that starts with `model:` in the first column (Calc-U-1600
   `Core/DropFile.cpp:20-37`, `Core/tests/program_file_tests.cpp:199-242`).
 - [ ] **AC-3** — Given the command, then its reply says what the file
-  was opened as, or why it was refused; what follows can be an operation
-  (a preset) and is then refused while another runs (LIB-3 AC-16).
-- [ ] **AC-4** — Given a medium, then it is imported into the save
-  folder (LIB-7 AC-30) and put into its place: a medium for a
-  pass-through place is fitted (C59-7), one for a holding media place is
-  inserted (LIB-7 AC-26), and a module is imported only, with a notice
-  that it is now in the pickers of its slots. Given a medium of that
-  kind already has the name, then the user is asked whether to replace
-  it, which is refused for a bundled one. The file outside the save
-  folder is never written (ADR 0019; `media.md` I-1; `frontend.md` Q-4;
-  OQ-1).
+  was opened as, that it is kept for later (AC-7), or why it was
+  refused.
+- [ ] **AC-4** — Given a medium, then everything is checked first, and
+  then it is imported into the save folder and put into its place:
+  an outdated file, or one that cannot be read, is refused with the hint
+  of LIB-7 AC-9, and nothing is imported;
+  a file that already lies in the save folder is not imported again;
+  given a medium of that kind already has the name, then the rule of
+  Name & Save holds (LIB-7 AC-17, first column): the user is asked
+  before an instance is replaced, and a bundled medium's name, a user
+  template's and that of an instance in another place are refused;
+  then a medium for a holding media place is inserted (LIB-7 AC-26),
+  with its first side, the medium that was there being ejected first; a
+  medium for a pass-through place gets what the product says follows; a
+  module, and a medium whose place is not there now, is imported only,
+  and a notice says where it can now be chosen.
+  The file outside the save folder is never written (ADR 0019;
+  `media.md` I-1; `frontend.md` Q-4; OQ-1).
 
 The ways in
 - [ ] **AC-5** — Given a drop on the window, Open With of the platform,
   a file named when the program is started, and the file dialog of File
   ▸ Load Preset…, which offers the preset extensions and all files, then
-  each sends this command and nothing else decides what the file is
-  (`frontend.md` SP-3).
+  each sends this command and nothing else decides what the file is. A
+  menu item of a product for one kind of file (Calc-U-1600's Load BASIC
+  Program…) and the import item of LIB-7 do not: they go straight to
+  their feature (`frontend.md` SP-3).
 - [ ] **AC-6** — Given a frontend where a drag can be told what it
-  carries before the drop (Qt6, Swift on macOS), then a drag of more
-  than one file, or of a file AC-1 would refuse, is not taken, so that
-  the pointer shows it; elsewhere the refusal is the notice of AC-1
+  carries before the drop (Qt6, Swift on macOS), then the frontend asks
+  the session whether it would take a file of that name, which goes by
+  the tests 1 to 3 of AC-1 and by the names the product's file kinds go
+  by; a drag of more than one file, or of a name it would not take, is
+  not taken, so that the pointer shows it. The drop itself goes through
+  all of AC-1
   (Calc-U-1600 `Qt6/app/MainWindow.cpp:781-812`; Calc-U-59
   `App/EmulatorViewModel.swift:362-374`).
 - [ ] **AC-7** — Given a file is to be opened while an operation runs or
-  before the product has finished its start, then it is kept and opened
-  when the session is free; given a second one comes meanwhile, then it
-  takes the place of the first (Calc-U-1600 `Qt6/app/MainWindow.cpp:814-834`,
+  before the product has finished its start, then the session keeps it,
+  the reply says so, and it is opened when the session is free; given a
+  second one comes meanwhile, then it takes the place of the first (Calc-U-1600 `Qt6/app/MainWindow.cpp:814-834`,
   `Web/src/CalcU1600.jsx:173-186`).
 - [ ] **AC-8** — Given a Web frontend whose file dialog hands over
   several files at once, then they are taken as one folder, and the
-  preset among them is opened, so that the files it names are found
+  preset among them is opened, the first by name when there are several,
+  so that the files it names are found; given none is a preset, then the
+  first file is opened alone
   (Calc-U-1600 `Web/src/CalcU1600.jsx:137-147`).
 - [ ] **AC-9** — Given the harness, then `open <path>` is this command,
-  with the reply of AC-3.
-- [ ] **AC-10** — Given a product, then it states for its frontends
-  which kinds of file are its own in the file manager of each platform,
-  and the largest file a drop or Open With takes, if it sets a limit.
+  with the reply of AC-3; where a user would be asked (AC-4), it is
+  refused unless the word `replace` follows the path.
+- [ ] **AC-10** — Given a product, then it can set the largest file each
+  way in takes; a larger one is refused (AC-1).
 
 ### Calc-U-59
 
 - [ ] **AC-11** — Given Calc-U-59, then its preset extensions are
   `.ti59`, `.ti58` and `.ti58c`; its one kind of medium is the magnetic
-  card, `.u59`; its one file kind is the ASM overlay, told by C59-4's
-  rule; it sets no limit on the size of a file
+  card, `.u59`; its one file kind, the ASM overlay, is added by C59-4;
+  it sets no limit on the size of a file
   (`Shared/SessionController.cpp:620-638`, `Shared/StateFile.cpp:554-557`).
 - [ ] **AC-12** — Given a magnetic card is opened on a TI-59, then it is
-  imported and fitted (AC-4; C59-7); today it is fitted from where it
+  imported and fitted (AC-4; C59-7 AC-11); today it is fitted from where it
   lies and written back there (`Shared/SessionController.hpp:192-196`;
   behaviour change 59-6). Given a TI-58 or TI-58C, which has no card
   reader, then it is refused with a notice; today nothing happens
   (`tests/shared_cooperative_tests.cpp:593`).
-- [ ] **AC-13** — Given an ASM overlay is opened, then it is handed to
-  the debug panel as its file dialog does today (C59-4); today a drop of
-  an `.asm` file is refused (`Shared/SessionController.cpp:620-624`).
+- [ ] **AC-13** — Given a file kind that a later feature adds (the ASM
+  overlay, C59-4), then this feature's column is complete without it;
+  until then an `.asm` file is refused, as today
+  (`Shared/SessionController.cpp:620-624`).
 - [ ] **AC-14** — Given the ways in of Calc-U-59, then they are those of
   today: a drop in Qt6, in the Web frontend and in the Swift frontend on
   macOS; File ▸ Load Preset… in every frontend; in Qt6 a file named at
@@ -167,20 +187,25 @@ The ways in
   program and the machine-code program, told by what C1600-2 says the
   file is (C1600-2 AC-1): a BASIC listing or tokenized BASIC is a BASIC
   program; machine code with a header is a machine-code program;
-  headerless code only when it looks like code and its name ends in
-  `.bin` or `.rom`; a cassette WAV is what its first readable file is,
-  and a BASIC program when none can be read, so that the loader says
-  why (`Core/DropFile.cpp:39-67`).
+  headerless bytes only when C1600-2 says they look like code and the
+  name ends in `.bin` or `.rom`; a cassette WAV goes to the loader of
+  its first readable file, and to the BASIC loader when none can be
+  read, so that the loader says why; an empty file and "something else"
+  are taken by neither (`Core/DropFile.cpp:39-67`).
 - [ ] **AC-18** — Given a BASIC program or a machine-code program is
   opened, then what follows is what File ▸ Load BASIC Program… and Load
-  Machine Code… do with that file (C1600-2 AC-16 to AC-19).
+  Machine Code… do with that file (C1600-2 AC-16 to AC-19): a WAV with
+  several files asks which one, and the file chosen is then loaded by
+  the loader of its own kind. In the harness, which has no dialogs,
+  `open` loads the first file of a WAV and refuses headerless code,
+  which needs an address (C1600-2 AC-21).
 - [ ] **AC-19** — Given a module file or a disk file is opened, then
   AC-4 holds: it is imported, and a disk is inserted when the drive is
   there; today such a file can only be imported from the menu of the Web
   frontend (`Shared/MediaLibrary.cpp:59-107`). A WAV is never taken as a
   tape here; a tape is imported from the menu (LIB-7 AC-43).
 - [ ] **AC-20** — Given a drop or Open With, then a file of more than
-  1 MiB is refused, as today (`Qt6/app/MainWindow.cpp:768-779`,
+  1 MiB is refused; today it is passed over without a word (OQ-4) (`Qt6/app/MainWindow.cpp:768-779`,
   `Web/src/CalcU1600.jsx:16, 175`); the file dialogs of the menu have no
   limit.
 - [ ] **AC-21** — Given the ways in of Calc-U-1600, then they are those
@@ -198,13 +223,14 @@ The ways in
 - **EC-1** — Given a file with a preset extension that is outdated or
   has a mistake, then it is a preset and LIB-6 refuses it, with its
   hint; it is not tried as anything else.
-- **EC-2** — Given a file whose name starts with a dot, then it is
-  refused (Calc-U-59 `Shared/StateFile.cpp:554-557`).
+- **EC-2** — Given a floppy disk file is opened while no drive is there,
+  then it is imported only (AC-4).
 - **EC-3** — Given a preset opened in a Web frontend alone, which names
   other files, then it is refused when it is read (LIB-6 EC-5).
 - **EC-4** — Given a medium is opened while its place holds one that is
-  being passed through or written, then it is refused with a notice;
-  today Calc-U-59 does nothing and says nothing
+  being passed through or written, then it is refused with a notice,
+  and nothing is imported; today Calc-U-59 does nothing and says
+  nothing
   (`Shared/SessionController.cpp:399`).
 - **EC-5** — Given a file that cannot be read, then the command is
   refused and the notice names the file.
@@ -214,6 +240,8 @@ The ways in
 ## Technical Requirements (optional)
 - No frontend decides what a file is; it hands the file over
   (`frontend.md` SP-3, FE-2).
+- Which kinds of file a product claims in the file manager of each
+  platform is product data of its frontends (AC-14, AC-21).
 - The library tells presets and media; a product's file kinds and their
   rules are supplied by the product (`frontend.md` SP-3, I-4).
 
@@ -233,8 +261,8 @@ The ways in
   dialog starts in. *Recommendation:* only a file dialog does.
 - [ ] **OQ-4** — Refusals that are silent today get a notice: a file
   that is nothing the product opens, after Open With or at the start; a
-  magnetic card on a model without a reader; a card while one is in the
-  reader (AC-1, AC-12, EC-4). *Recommendation:* all three; too small
+  file over 1 MiB in Calc-U-1600; a magnetic card on a model without a
+  reader; a card while one is in the reader (AC-1, AC-12, AC-20, EC-4). *Recommendation:* all three; too small
   for a row each, one line in row 59-14 and its Calc-U-1600 twin.
 - [ ] **OQ-5** — "Open" (a file) and "file kind" for the glossary, as
   defined above.
@@ -248,6 +276,7 @@ The ways in
 | A magnetic card elsewhere is no longer opened and written back in place | ADR 0019; behaviour change 59-6 | 2026-11-10 |
 | Each product's file kinds are product data of this spec; Calc-U-1600's rest on the loaders of C1600-2 | user, 2026-11-10, batch 5 gate | 2026-11-10 |
 | Proposed in this spec, for the gate: a file with a preset extension is a preset whatever it holds (AC-1, EC-1) | An outdated preset then gets its hint, not "cannot open" | 2026-11-10 |
-| Proposed in this spec, for the gate: the ASM overlay can be dropped and opened like any file (AC-13) | The index makes it a file kind of "open file"; today only the debug panel's dialog takes it | 2026-11-10 |
+| Proposed in this spec, for the gate: the order of the tests of AC-1, a file's name before its content | A medium or a program file that happens to hold a `model:` line is then not taken for a preset | 2026-11-10 |
+| Proposed in this spec, for the gate: a name that is taken follows the rule of Name & Save (AC-4), and the harness needs the word `replace` (AC-9) | One rule for a name that is taken; LIB-7 AC-17 | 2026-11-10 |
 | Proposed in this spec, for the gate: a module file or a disk file can be dropped in Calc-U-1600 (AC-19) | It follows from one command for every kind | 2026-11-10 |
 | Proposed in this spec, for the gate: one file is kept while the session is busy (AC-7), as in Calc-U-1600 | Today's behaviour of one product, taken for the family | 2026-11-10 |

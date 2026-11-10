@@ -113,7 +113,7 @@ Options:
 |---|---|---|---|---|---|
 | Machine ROM files | 3 instruction + 2 constant files per set (TI-59/58; TI-58C) | one per variant (A01/A03/A04) | 6 per variant (new/old) | CPU ROM + 4 banked ROM files (SC61860 `roms/pc1403`) | CPU ROM + BASIC ROM (`roms/pc1350`) |
 | Peripheral ROM files | 14 module images (Solid State ROM modules) | CE-150, CE-158 | CE-1600P new/old (2 each), CE-150, CE-158; own host-drive ROM | — | — |
-| Repository (ADR 0034) | new TI ROM repository (name open) | tinue/PC-1500-ROM | tinue/PC-1600-ROM | tinue/SC61860 `roms/` | same |
+| Repository (ADR 0034) | `TI-59-ROM` (`~/Development/public/TI-59-ROM`; not yet committed or on GitHub, 2026-11-10) | tinue/PC-1500-ROM | tinue/PC-1600-ROM | tinue/SC61860 `roms/` | same |
 
 ## Open questions
 

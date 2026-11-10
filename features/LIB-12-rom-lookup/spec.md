@@ -99,15 +99,39 @@ be added.
   together give 6144 words, its two constant files together give 64
   rows, and a module file gives at least one row of data
   (`Shared/RomLoader.cpp:9-150`).
-- [ ] **AC-9** — Given Calc-U-59, then its full set is these 24 files
-  (`roms/calculator/`, `roms/solid-state/`,
-  `Shared/MachineModelInfo.hpp:86-105`):
+- [ ] **AC-9** — Given Calc-U-59, then its full set is these 24 files,
+  with the md5 values of the dumps in the TI ROM repository
+  (`~/Development/public/TI-59-ROM`, folders `dumps/ti59`,
+  `dumps/ti58c`, `dumps/modules`; each file is byte for byte the one
+  Calc-U-59 2.3.0 has in `roms/calculator/` and `roms/solid-state/`,
+  compared on 2026-11-10; `Shared/MachineModelInfo.hpp:86-105`):
 
-  | Needed by | Files |
-  |---|---|
-  | TI-59, TI-58 | `TMC0582.txt`, `TMC0583.txt`, `TMC0571B.txt`; `TMC0582-CONST-K.txt`, `TMC0583-CONST-K.txt` |
-  | TI-58C | `CD2400.txt`, `CD2401.txt`, `TMC0573.txt`; `CD2400-CONST-K.txt`, `CD2401-CONST-K.txt` |
-  | the 14 Solid State ROM modules | `TMC0541.txt` to `TMC0551.txt`, `TMC0553.txt` to `TMC0555.txt` |
+  | File | md5 | Needed by |
+  |---|---|---|
+  | `TMC0582.txt` | `c1cb6d40e063aae1ba7b851b11b1c18a` | TI-59, TI-58 |
+  | `TMC0583.txt` | `2341a8e484c31ff24a16e70c14c1b3a3` | TI-59, TI-58 |
+  | `TMC0571B.txt` | `599050d2b1c1900e64b56c089338d32e` | TI-59, TI-58 |
+  | `TMC0582-CONST-K.txt` | `bf4fb6005177ffdec8f8ceee7e7e16d6` | TI-59, TI-58 |
+  | `TMC0583-CONST-K.txt` | `81724f14b2827410650f032ef352b1aa` | TI-59, TI-58 |
+  | `CD2400.txt` | `638c4d0c8359e00cf1f600884f43b789` | TI-58C |
+  | `CD2401.txt` | `3b0ec122cd34b214477780fd405ffdd8` | TI-58C |
+  | `TMC0573.txt` | `6c0cb7db542f3b74a28613ff4ed14bce` | TI-58C |
+  | `CD2400-CONST-K.txt` | `dbaee54fe0f478c7659d17bff4b790d4` | TI-58C |
+  | `CD2401-CONST-K.txt` | `ac81d5b45c736a0f45c3835f0d977b87` | TI-58C |
+  | `TMC0541.txt` | `bbca8e7dc631849cf3f7770d1efa7aa7` | module `ML` |
+  | `TMC0542.txt` | `99b1b41f4361ec2900f990002529193f` | module `ST` |
+  | `TMC0543.txt` | `eb3a8d6a66996b471ee19c2a10458aad` | module `RE` |
+  | `TMC0544.txt` | `64cd0fbe5adc5820c58a7e1262df521b` | module `SY` |
+  | `TMC0545.txt` | `1f50c8b671f9f4aa1bfebe8ed8007002` | module `NG` |
+  | `TMC0546.txt` | `0509ff2657edb063fbc666ffb8997d51` | module `AV` |
+  | `TMC0547.txt` | `f3ac4e66fce6624bd2f4b0faee0db422` | module `LE` |
+  | `TMC0548.txt` | `a3b802d1d70d38c8bd9de8e72b54a9fe` | module `SA` |
+  | `TMC0549.txt` | `c30fe59d97f268f50756c15d223ef6a9` | module `BD` |
+  | `TMC0550.txt` | `78e46b957573c63c05be0b2fa93f7ded` | module `MU` |
+  | `TMC0551.txt` | `5f1d46e22657e3c432b8ec97a9b2f9ae` | module `EE` |
+  | `TMC0553.txt` | `080546debf5326fe83eb4334923570e1` | module `SE` |
+  | `TMC0554.txt` | `40832575c1464fbf23e3893495b165a4` | module `AG` |
+  | `TMC0555.txt` | `86c670fb71d51d36c58f6846b25d025b` | module `RP` |
 
 - [ ] **AC-10** — Given a file of the full set is missing or bad in
   Calc-U-59, then AC-5 holds in every frontend. Today a bad machine ROM
@@ -188,12 +212,6 @@ be added.
   first and last word of the TI-59's instruction ROM
   (`Shared/RomLoader.cpp:116-150`). *Recommendation:* keep them as they
   are; without own dumps nothing speaks against them.
-- [ ] **OQ-2** — The md5 values of the TI files. The entry carries one
-  (AC-1), and the build checks it at the fetch; the values come with the
-  TI ROM repository, which does not exist yet (ADR 0034).
-  *Recommendation:* the Calc-U-59 column waits for them only in the
-  build step, not in the lookup; the lookup's tests need the files, not
-  their md5.
 
 ## Decision Log
 
@@ -208,3 +226,4 @@ be added.
 | If even one file of the full set is missing, the product does not start and asks for the full set; this state is reachable only in a local build before the ROMs were fetched | user, 2026-11-10, batch 3 gate | 2026-11-10 |
 | No ROM set is used in place of another; today's use of the New ROMs for missing Old ones goes | Follows from the full-set rule | 2026-11-10 |
 | An entry names the file as it is bundled, not as the ROM repository names it | The Sharp build renames and joins files at the fetch (`tools/fetch_roms.sh:93-137`) | 2026-11-10 |
+| The TI ROM repository is the project `~/Development/public/TI-59-ROM`; its 24 dumps are the files of Calc-U-59 2.3.0, and their md5 values are the ones of AC-9 | user, 2026-11-10; the files compared on that day | 2026-11-10 |

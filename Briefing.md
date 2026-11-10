@@ -358,6 +358,7 @@ and Windows CI builds. The macOS and WASM libraries are committed binaries.
 | Path | GitHub | Content |
 |---|---|---|
 | `ti59-research` | `tinue/ti59-research` | TI-59 research: architecture, quirks, ROM disassembly, PC-100C |
+| `public/TI-59-ROM` | not on GitHub yet (2026-11-10) | TI-58, TI-59 and TI-58C ROM dumps, the 14 Solid State ROM module dumps, annotated disassemblies; the TI ROM repository of ADR 0034 |
 | `sharp/Sharp1500-1600-Ref` | `tinue/Sharp1500-1600-Ref` | Consolidated PC-1500/1600 reference |
 | `sharp/SharpBasicReference` | `tinue/SharpBasicReference` | PC-1500/1600 BASIC references |
 | `sharp/pc1500` | `tinue/sharp-pc1500` | PC-1500 ROM annotation, LH5801 disassembler toolchain |

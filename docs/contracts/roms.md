@@ -1,6 +1,6 @@
 # Contract: ROM lookup
 
-Status: draft (2026-11-10). Forks R-1 to R-3 are open.
+Status: draft (2026-11-10). Forks R-1 to R-3 are decided (decision log).
 
 Inherits: ADR 0034 (ROMs live in ROM repositories, fetched at build time
 and md5-checked; release packages bundle them), 0035 (a core contains no
@@ -44,6 +44,8 @@ ROMs a variant needs; Q-2: per chip or per file).
 
 ### R-1: Unit of the lookup (machine Q-2)
 
+**Decided (2026-11-10): option (a), the file.** Answers machine Q-2.
+
 Options:
 - (a) **Recommended:** the **file**, as fetched from the ROM repository:
   each entry has a file name, a size and the md5 of the known dump. How
@@ -55,6 +57,8 @@ Options:
 
 ### R-2: A user's own dump
 
+**Decided (2026-11-10): option (a).**
+
 Options:
 - (a) **Recommended:** a file in the ROM folder with the expected name
   and size is used even if its md5 is not the known one, with a notice in
@@ -65,6 +69,8 @@ Options:
   refused when it differs in one byte.
 
 ### R-3: What a build without ROMs shows
+
+**Decided (2026-11-10): option (a).**
 
 Facts: designed, not shipped (Briefing §8, ADR 0035).
 
@@ -95,4 +101,6 @@ Options:
 
 | Date | ID | Decision |
 |---|---|---|
-| | | |
+| 2026-11-10 | R-1 | The lookup unit is the file as fetched (name, size, md5 of the known dump); the file-to-chip mapping is the core's. |
+| 2026-11-10 | R-2 | A user's dump with the expected name and size is used even with an unknown md5, with a log notice; a wrong size is refused. |
+| 2026-11-10 | R-3 | A ROM-less build starts and shows a "ROMs missing" state (files, ROM folder, "Check again"); models with ROMs work; peripherals without their ROM cannot be attached; the harness exits with an error; the web bundles its ROMs. |

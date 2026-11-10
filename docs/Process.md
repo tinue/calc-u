@@ -21,7 +21,7 @@ the table below.
 | 1 | Inventory | `docs/inventory/` | Facts only, no decisions | Done (approved 2026-11-09) |
 | 2 | Domain model | `docs/GLOSSARY.md` | One meaning per term | Done (glossary approved 2026-11-09) |
 | 3 | Architecture decisions | `docs/adr/NNNN-*.md` | The forks | Done (approved 2026-11-09) |
-| 4 | Contracts | `docs/contracts/*.md` | The abstractions, as interface specs | In progress (started 2026-11-10) |
+| 4 | Contracts | `docs/contracts/*.md` | The abstractions, as interface specs | Drafted 2026-11-10, awaiting review gate |
 | 4b | Capability specs | `features/INDEX.md`, `features/<ID>-*/spec.md` | What each shared capability does, per product | Planned |
 | 5 | Validation on paper | `docs/walkthroughs/*.md`, optional throwaway spikes | Whether the abstractions hold | Planned |
 | 6 | Migration plan, then code | `docs/migration-plan.md`, `features/<ID>-*/design.md`, `qa-report.md` | Order of steps, each leaving every product green | Planned |

@@ -17,6 +17,6 @@ back to the user first.
 | 6 | [Media and save folder](media.md) | ADR 0019, 0020, 0037 | Draft, forks decided |
 | 7 | [Settings and paths](settings.md) | ADR 0021, 0022, 0037 | Draft, forks decided |
 | 8 | [Debugger (debug target, DAP, debug panel)](debugger.md) | ODD59-27 | Draft, forks decided |
-| 9a | [Harness protocol](harness.md) | ADR 0026, 0033 | Draft |
-| 9b | [ROM lookup](roms.md) | ADR 0034, 0035 | Draft |
-| 9c | [Help structure](help.md) | ADR 0036 | Draft |
+| 9a | [Harness protocol](harness.md) | ADR 0026, 0033 | Draft, forks decided |
+| 9b | [ROM lookup](roms.md) | ADR 0034, 0035 | Draft, forks decided |
+| 9c | [Help structure](help.md) | ADR 0036 | Draft, forks decided |

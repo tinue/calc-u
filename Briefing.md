@@ -379,10 +379,12 @@ Each point names the phase that settles it (`docs/Process.md`).
   Z-80 or LH5801/LH5803 machine code); analyse ROMs and run traces (also
   when fixing issues). One big skill overloads the context, too many tiny
   ones miss results; the cut balances both. → After phase 6.
-- The help's chapter structure and how calc-u-site renders it
-  (`docs/adr/0036-help-is-markdown-in-the-source-repository.md`). → Phase 4.
-- The modelling depth of each machine, recorded in its machine
-  descriptor (rules: ADR 0010-0012). → Phase 4.
+- ~~The help's chapter structure and how calc-u-site renders it
+  (`docs/adr/0036-help-is-markdown-in-the-source-repository.md`). → Phase 4.~~
+  Settled 2026-11-10: `docs/contracts/help.md`.
+- ~~The modelling depth of each machine, recorded in its machine
+  descriptor (rules: ADR 0010-0012). → Phase 4.~~ Settled 2026-11-10:
+  `docs/contracts/machine.md` (descriptor; fit table, "Depth today").
 - PC-100C printer connector: which of the 12 springs is unconnected is not
   recorded (§1.9). → When the printer is modelled at contact level
   (ADR 0011).

@@ -275,7 +275,7 @@ PC-1350 machine overviews, `Shared/11-Pin-Port.md`, `Shared/Peripherals.md`).
   `TMC0582-CONST-K`, `TMC0583-CONST-K`; TI-58C likewise with CD2400,
   CD2401, TMC0573). The descriptor lists the ROM images a variant needs;
   whether the ROM lookup names images per chip or per file is for the ROM
-  lookup contract (9).
+  lookup contract (9). Settled there: per file (`roms.md`, R-1).
 
 ## Decision log
 

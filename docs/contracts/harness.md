@@ -1,6 +1,6 @@
 # Contract: harness protocol
 
-Status: draft (2026-11-10). Forks H-1 to H-3 are open.
+Status: draft (2026-11-10). Forks H-1 to H-3 are decided (decision log).
 
 Inherits: ADR 0026 (one C++ CLI for the family with one-shot
 subcommands, plain lines or `--json`, and a `serve` mode taking one
@@ -51,6 +51,8 @@ breakpoints).
 
 ### H-1: Command vocabulary
 
+**Decided (2026-11-10): option (a).**
+
 Options:
 - (a) **Recommended:** the serve protocol's commands are the preset step
   vocabulary (`key`, `type`, `wait`, `expect`, `screenshot`, `insert`,
@@ -63,6 +65,8 @@ Options:
 
 ### H-2: Product-specific commands
 
+**Decided (2026-11-10): option (a).**
+
 Options:
 - (a) **Recommended:** common commands at the top level; commands that
   exist for one product only live under the product's name (`ti59 asm`,
@@ -73,6 +77,8 @@ Options:
 - (b) Flat command list with product prefixes in the names.
 
 ### H-3: Attach transport and safety
+
+**Decided (2026-11-10): option (a).**
 
 Options:
 - (a) **Recommended:** the serve protocol is line-based text (one command
@@ -103,4 +109,6 @@ Options:
 
 | Date | ID | Decision |
 |---|---|---|
-| | | |
+| 2026-11-10 | H-1 | The serve protocol's commands are the preset step vocabulary plus inspection and control commands; a preset is a recorded harness session. |
+| 2026-11-10 | H-2 | Common commands at the top level; product-only commands under the product's name; `--product` for one-shot runs. |
+| 2026-11-10 | H-3 | Line-based text (`--json` on request) over stdin/stdout, localhost TCP for apps, a WebSocket from the page in development builds; localhost only; never in release builds. |

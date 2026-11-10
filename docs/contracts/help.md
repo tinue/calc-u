@@ -1,6 +1,7 @@
 # Contract: help structure
 
-Status: draft (2026-11-10). Forks HL-1 to HL-3 are open.
+Status: draft (2026-11-10). Forks HL-1 to HL-3 are decided (decision
+log). Settles the help open point of Briefing §6.
 
 Inherits: ADR 0036 (help is Markdown in the source repository; shared
 chapters once with the library, product chapters per product; shipped as
@@ -43,6 +44,10 @@ for phase 4).
 
 ### HL-1: Product material inside shared chapters
 
+**Decided (2026-11-10): option (b), fully generic** (the user's choice;
+(a) was recommended). Shared chapters carry no product material and no
+include mechanism exists; product examples live in the product chapters.
+
 Facts: a shared chapter such as Presets needs product examples (TI key
 IDs vs Sharp `type:` lines).
 
@@ -58,6 +63,9 @@ Options:
   write and check.
 
 ### HL-2: Chapter structure (Briefing §6)
+
+**Decided (2026-11-10): option (a)**, with HL-1 (b): the "snippets" in
+the list below are product chapters or product sections instead.
 
 Proposal, following ADR 0024's menu and control-bar order; S = shared,
 P = per product:
@@ -88,6 +96,9 @@ Options:
 
 ### HL-3: The release asset and its rendering
 
+**Decided (2026-11-10): option (a)**, with HL-1 (b): there are no includes
+to resolve.
+
 Options:
 - (a) **Recommended:** each release attaches `<Product>-help.zip`:
   Markdown files with includes resolved, images, and a table of contents
@@ -104,7 +115,7 @@ Options:
 |---|---|---|
 | Source today | JSX in calc-u-site, converted once (ADR 0036) | `docs/` Markdown, moved |
 | Product chapters (HL-2, 9) | cue cards, modules, constant memory, fast mode | BASIC and machine code, COM ports, host drive, module definitions |
-| Snippets (HL-1) | TI key examples, card reader | Sharp `type:` examples, modules, disks, tapes |
+| Product examples (HL-1) | in product chapters: TI key examples, card reader | in product chapters: Sharp `type:` examples, modules, disks, tapes |
 | Site | `/59/` | `/1600/` (new, Briefing §4.3) |
 
 (Per product, not per model: help is per product.)
@@ -118,4 +129,6 @@ Options:
 
 | Date | ID | Decision |
 |---|---|---|
-| | | |
+| 2026-11-10 | HL-1 | Shared chapters are fully generic; product examples live in product chapters; no include mechanism. |
+| 2026-11-10 | HL-2 | The ten-chapter structure above, in menu and control-bar order (shared and product chapters). |
+| 2026-11-10 | HL-3 | Each release attaches `<Product>-help.zip` (Markdown, images, table of contents); calc-u-site pins it by version and sha256 and renders Markdown and Mermaid itself; the in-app Help links to the product's site. |

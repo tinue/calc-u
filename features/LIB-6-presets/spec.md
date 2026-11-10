@@ -23,8 +23,9 @@
   `path:line` below is at those pins.
 
 Words used here that the glossary does not define yet (OQ-5):
-- A **header key** is a top-level `key: value` line of a preset that
-  describes the preset or its machine.
+- A **header key** is a top-level key of a preset that describes the
+  preset or its machine, wherever it stands; it has a value on its line
+  or, where its owner says so, a block (`bus-rom:`, `debug:`, C1600-4).
 - A **section** is a top-level key with a block below it, or, where its
   owner says so, with only a value (`partition: 479`, C59-2). Sections
   are carried out in file order.

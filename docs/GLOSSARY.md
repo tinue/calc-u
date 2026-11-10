@@ -527,8 +527,9 @@ How far a machine's emulated time is behind the wall clock at regular
 speed.
 
 **Header key**:
-A top-level `key: value` line of a preset that describes the preset or
-its machine.
+A top-level key of a preset that describes the preset or its machine,
+wherever it stands; it has a value on its line or, where its owner says
+so, a block.
 
 **Section**:
 A top-level key of a preset with a block below it, or, where its owner

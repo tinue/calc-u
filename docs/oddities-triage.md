@@ -26,12 +26,12 @@ Outcomes:
 | ODD59-5 | Random jitter on batch ends | Stays (pacing parameter of the TI machines) |
 | ODD59-6 | Full speed still sleeps in the scan loop | Stays |
 | ODD59-7 | Preset parse errors reported, load continues | Superseded by ADR 0017 |
-| ODD59-8 | A preset keeps the current module and printer | Superseded by ADR 0016 (v1 reader fills them in) |
-| ODD59-9 | `#` starts a comment anywhere | Stays for the v1 reader; phase 4: preset contract |
+| ODD59-8 | A preset keeps the current module and printer | Superseded by ADR 0016; no v1 reader to fill them in (ADR 0037) |
+| ODD59-9 | `#` starts a comment anywhere | No v1 reader (ADR 0037); phase 4: preset contract decides for the family format |
 | ODD59-10 | Registers written after the program, as given | Stays; phase 4: preset contract |
 | ODD59-11 | A damaged card file is refused whole | Stays |
-| ODD59-12 | Version 1 cards stay version 1 when written | Superseded by ADR 0020 |
-| ODD59-13 | Adv in KEYSTROKES needs `RegularSpeed:` | Stays for the v1 reader; phase 4: preset contract |
+| ODD59-12 | Version 1 cards stay version 1 when written | Superseded by ADR 0020; version 1 cards are no longer read (ADR 0037) |
+| ODD59-13 | Adv in KEYSTROKES needs `RegularSpeed:` | No v1 reader (ADR 0037); phase 4: preset contract decides for the family format |
 | ODD59-14 | A load runs 300,000 power-on steps before writing RAM | Stays (part of the TI cold boot) |
 | ODD59-15 | TI-58C extra registers `H00`–`H03` | Stays |
 | ODD59-16 | Leftmost display position: brighter of C and glyph | Stays |

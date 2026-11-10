@@ -41,6 +41,7 @@ deferred until after the migration (Briefing §6).
 | [0016](0016-a-preset-always-cold-boots.md) | Loading a preset always builds its machine from a cold boot |
 | [0017](0017-presets-are-parsed-all-or-nothing.md) | Presets are parsed all-or-nothing |
 | [0018](0018-one-family-preset-format.md) | One preset format for the family |
+| [0037](0037-releases-read-only-the-current-version-of-own-formats.md) | Each release reads only the current version of its own formats (2026-11-10) |
 
 ## Media and settings
 

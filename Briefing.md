@@ -17,13 +17,22 @@ the features the products have in common.
   Screenshots are retaken only where something visible changed.
 
 ### 1.2 Supporting files (presets, magnetic cards, module definitions, floppy disks, …)
+> **Changed 2026-11-10** (user; `docs/adr/0037-releases-read-only-the-current-version-of-own-formats.md`):
+> each product reads only the **current** version of its own formats; an
+> older or unversioned file is refused with a hint to upgrade it, and
+> there is no converter. Shipped and calc-u.org-hosted files are upgraded
+> in the implementation. This replaces the Calc-U-59 backwards
+> compatibility below and Calc-U-1600's "existing version numbers stay"
+> rule; the rule for external formats is unchanged. The bullets marked
+> *(replaced)* are kept for the record.
+
 - These rules apply to Calc-U's **own** formats: presets, settings, and its
   own formats for magnetic cards, module definitions and floppy disks.
   **External** formats (from the real devices or outside tools: cassette
   tape WAV, ROM dumps, SDE exchange formats, raw BASIC/binary images) must
   never break, in either product.
   The inventory tags every format as own or external.
-- **Calc-U-59 stays backwards compatible.** Anything it reads may be in the
+- *(replaced, ADR 0037)* **Calc-U-59 stays backwards compatible.** Anything it reads may be in the
   old format. Anything it writes uses the new format. Writing an item that
   was just read therefore upgrades it.
   - "Old format" means every explicitly versioned format the latest
@@ -52,8 +61,8 @@ the features the products have in common.
   not load in the first release from this repository. A release-note
   warning is enough; no converter.
   - In preparation for 1.0.0, its preset, module definition and floppy disk formats already
-    carry `format-version: 1`. Existing version numbers stay as they are,
-    even where a format changes.
+    carry `format-version: 1`. *(replaced, ADR 0037)* Existing version
+    numbers stay as they are, even where a format changes.
   - `.floppy.yaml` is an own format, although SharpDataExchange (SDE) also
     reads and writes it: Calc-U owns the spec, and SDE follows a change.
   - The legacy `.floppy.img` is dropped; no converter.
@@ -387,8 +396,9 @@ Each point names the phase that settles it (`docs/Process.md`).
   feature. The list is `features/INDEX.md` (the `LIB-n` entries).
   A product that still has its own implementation of a shared feature does
   not meet this criterion.
-- Calc-U-59 reads all of its existing files (§1.2) and writes the new
-  format.
+- *(replaced, ADR 0037)* Calc-U-59 reads all of its existing files (§1.2)
+  and writes the new format. Now: every product reads the current version
+  of its own formats, and every shipped and hosted file is upgraded.
 - calc-u.org reflects both releases and shares common material between the
   products instead of duplicating it. This includes the new Calc-U-1600 help
   site with the published web client (§4.3).

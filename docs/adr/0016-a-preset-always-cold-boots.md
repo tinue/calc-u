@@ -1,6 +1,6 @@
 # Loading a preset always builds its machine from a cold boot
 
-Status: accepted (2026-11-09)
+Status: accepted (2026-11-09); partly superseded 2026-11-10 by ADR 0037 (no v1 reader; the consequence below about it no longer applies)
 
 A preset fully describes its machine: loading it builds the machine anew
 from a cold boot, with the model, peripherals and modules the preset

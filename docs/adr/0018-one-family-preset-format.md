@@ -1,6 +1,6 @@
 # One preset format for the family
 
-Status: accepted (2026-11-09)
+Status: accepted (2026-11-09); partly superseded 2026-11-10 by ADR 0037 (no v1 reader; Calc-U-59 version 1 presets are refused with a hint to upgrade)
 
 The family has one preset format, versioned and YAML-shaped like
 Calc-U-1600's, with product-specific sections where a model family needs

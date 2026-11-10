@@ -1,6 +1,6 @@
 # Presets are parsed all-or-nothing
 
-Status: accepted (2026-11-09)
+Status: accepted (2026-11-09); partly superseded 2026-11-10 by ADR 0037 (version 1 files are refused as outdated, not parsed)
 
 Every preset, in every version and product, is parsed completely before
 the machine is built; any error refuses the whole preset with a message

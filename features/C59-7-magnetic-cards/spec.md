@@ -28,7 +28,9 @@ has two **sides**, 1 and 2; a side holds one **bank**, a quarter of the
 TI-59's memory, numbered 1 to 4: 240 program steps or 30 data registers;
 a **pass** is one run of a side through the card reader, in which the
 calculator reads or writes that side's bank; a card is **fresh** while
-neither side has been written. Words of LIB-7: kind, saved media.
+neither side has been written; a **library program** is one of the
+numbered programs of a Solid State ROM module, which the user selects
+with `Pgm`. Words of LIB-7: kind, saved media.
 
 ## User Stories
 - As a user of the TI-59, I want to keep programs and data on magnetic
@@ -62,15 +64,52 @@ The card and its file
   number, whether it is protected, 30 registers and a checksum. Either
   side can hold any bank (`Shared/CardFile.hpp:53-65`,
   `tests/shared_cooperative_tests.cpp:661`).
-- [ ] **AC-2** — Given a card file, then it is a text file in the card
-  format, version 3.0: the layout of version 2.0 with the first line
-  `Calc-U-59 Card 3.0` and after it the line `Name:` with the card's
-  name (`media.md` MD-2; ADR 0020; today's layout
-  `Shared/CardFile.cpp:52-92, 293-311`, `reference/StateFileFormat.md:458-495`):
-  an optional `CUECARD:` block; for each side that holds a bank `SIDE:`
-  with its number, `HEADER:` with `Partition`, `DataType`, `Bank`,
-  `Protection` and `Checksum`, and `DATA:` with 30 rows of eight bytes;
-  and `END-CARD`.
+- [ ] **AC-2** — Given a card file, then it is a text file in UTF-8 in
+  the card format, version 3.0, which is the layout of version 2.0 with
+  a new first line and the name after it (`media.md` MD-2; ADR 0020;
+  today's layout `Shared/CardFile.cpp:52-92, 293-311`). Its lines, in
+  this order, empty lines allowed between them:
+
+  | Line | Content |
+  |---|---|
+  | `Calc-U-59 Card 3.0` | exactly this; the first line |
+  | `Name: <name>` | required; the card's name as LIB-7 AC-3 leaves it |
+  | `CUECARD:` and the lines of a cue card | optional; the keys of C59-2 AC-5 |
+  | `SIDE: 1` or `SIDE: 2` | once for each side that holds a bank; an empty side is not written |
+  | `HEADER:` | follows `SIDE:` |
+  | `Partition: HH` | two hexadecimal digits, the first byte of the bank |
+  | `DataType: program` or `data` | |
+  | `Bank: n` | 1 to 4 |
+  | `Protection: yes` or `no` | |
+  | `Checksum: HH` | two hexadecimal digits |
+  | `DATA:` | follows the five header lines |
+  | `Rnnn: HH HH HH HH HH HH HH HH` | exactly 30 such rows, each the eight bytes of one register in hexadecimal; the number after `R` is for the reader's eye and is not read |
+  | `END-CARD` | the last line; required |
+
+  For example, a card with a program on side 1 and nothing on side 2:
+
+  ```
+  Calc-U-59 Card 3.0
+  Name: Diagnostic
+
+  CUECARD:
+  Template: MagnetCard
+  Title: Diagnostic
+
+  SIDE: 1
+  HEADER:
+  Partition: 1C
+  DataType: program
+  Bank: 1
+  Protection: no
+  Checksum: 02
+
+  DATA:
+  R000: 00 00 00 00 00 63 20 17
+  (29 more rows)
+
+  END-CARD
+  ```
 - [ ] **AC-3** — Given a card file is read, then it is refused when a
   key of a header is missing or unknown, a side has not exactly 30 rows,
   a side comes twice, `END-CARD` is missing, or a line is none the
@@ -78,14 +117,25 @@ The card and its file
   AC-5). Keys are read in any case. Today an unknown key of the cue card
   is passed over (`Shared/CardFile.cpp:147-203`,
   `tests/shared_formats_tests.cpp:306-331`).
-- [ ] **AC-4** — Given a file that starts with `Calc-U-59 Card ` and
-  another version, or is one of the two earlier binary layouts, then it
-  is outdated (LIB-7 AC-9): it is not read, and the hint names the card
-  format, its version 3.0 and where it is described (ADR 0037; behaviour
-  change 59-1). A card file ends in `.u59` (OQ-2).
-- [ ] **AC-5** — Given a card is written, then its file holds both
-  sides, its cue card and its name, in version 3.0, and it reads back as
-  the same card (`tests/shared_formats_tests.cpp:272-296`).
+- [ ] **AC-4** — Given a `.u59` file that starts with `Calc-U-59 Card `
+  and another version, then it is outdated (LIB-7 AC-9): it is not read,
+  and the hint names the card format, its version 3.0 and where it is
+  described (ADR 0037; behaviour change 59-1). Any other file that is
+  not AC-2, the two earlier binary layouts among them, is a card that
+  cannot be read (LIB-7 EC-3). A card file ends in `.u59` (OQ-2).
+- [ ] **AC-29** — Given the media model of LIB-7 (AC-46 there), then a
+  magnetic card gives it: its name; as its description the title of its
+  cue card; no template mark, because there are no card templates; and
+  no write-protect switch, because a bank's protection is the
+  calculator's matter. `saveas:` is not there for the card reader and
+  refuses a preset when it is read.
+- [ ] **AC-5** — Given a card is written, then its file holds the card
+  as the product has it, whole: the sides that hold a bank, its cue card
+  and its name, in version 3.0, and it reads back as the same card.
+  Nothing of the file as it was is kept; today the side that was not
+  passed is read from the file again first
+  (`tests/shared_formats_tests.cpp:272-296`,
+  `Shared/SessionController.cpp:554-582`; LIB-7 EC-2; OQ-6).
 
 The card reader
 - [ ] **AC-6** — Given a TI-59, then its card reader is a media place of
@@ -94,8 +144,11 @@ The card reader
 - [ ] **AC-7** — Given a side of a card is inserted, then one pass
   follows: the calculator reads the side's bank or writes one, as its
   ROM decides, and the card is given back by itself; given the ROM wrote
-  a bank, then that side of the card holds it afterwards, the other side
-  is as it was, and the card's instance is written (LIB-7 AC-12)
+  a whole bank, then that side of the card holds it afterwards, the
+  other side is as the product has it, and the card's instance is
+  written (LIB-7 AC-12). Given the ROM does not take the card, as while
+  a program runs that asks for none, then the card is given back after 2
+  seconds of emulated time, unread
   (`Core/TMC0501.cpp:704-757, 1190-1229`,
   `Shared/SessionController.cpp:554-582`).
 - [ ] **AC-8** — Given a side with a bank is inserted while the
@@ -111,8 +164,8 @@ The card reader
   this is told from the place in the ROM
   (`Shared/MachineModelInfo.hpp:70-102`, `Shared/EmulatorSession.cpp:309-325`).
 - [ ] **AC-10** — Given a card in the reader, then Eject Card takes it
-  out at once, and a bank the ROM had written until then is kept as in
-  AC-7 (`Shared/SessionController.cpp:472-487`).
+  out at once; a bank is kept as in AC-7 only when the ROM had written
+  all of it (`Shared/SessionController.cpp:472-487`).
 
 Fitting a card
 - [ ] **AC-11** — Given a card is fitted, then it lies in the window
@@ -128,11 +181,13 @@ Fitting a card
   (`Shared/KeyboardLayout.hpp:27-49`,
   `tests/shared_cooperative_tests.cpp:548-567, 781`).
 - [ ] **AC-13** — Given the control bar on a TI-59 (LIB-14 AC-27), then
-  while no card is in the reader it has two buttons, "Crd" to fit a card
-  and "Crd" to fit a fresh one, and while one is in the reader it has
-  "Eject Card" in their place; the File menu has "Fit Card…" and "Fit
-  Fresh Card…" (`Qt6/app/ControlBar.cpp:55-99`,
-  `Qt6/app/MainWindow.cpp:57-58`).
+  while no card is in the reader it has two buttons that both read "Crd"
+  and differ by their icon and their name for a screen reader, "Fit
+  Card" and "Fit Fresh Card", and while a card is in the reader it has
+  "Eject Card" in their place; where the frontend has a File menu, it
+  has "Fit Card…" and "Fit Fresh Card…" (`Qt6/app/ControlBar.cpp:55-99`,
+  `Qt6/app/MainWindow.cpp:57-58`; the Swift frontend on iOS has the
+  buttons only, C59-8 AC-18).
 - [ ] **AC-14** — Given "Fit Card", then a dialog lists the saved
   magnetic cards by name, an outdated one as an entry that cannot be
   chosen (LIB-7 AC-9), and the chosen one is fitted; given none is
@@ -152,19 +207,24 @@ Fitting a card
 
 In presets and the harness
 - [ ] **AC-17** — Given a preset for the TI-59, then it can have:
-  `- fit:` with a card (LIB-7 AC-21), which fits it;
+  `- fit:` with a magnetic card (LIB-7 AC-21), which fits it; a cue card
+  of another kind is fitted by a `cue-card:` section (C59-2), on every
+  model;
   `- insert: card-reader` with a side alone, which inserts that side of
-  the fitted card, or with a card and a side, which inserts it without
-  fitting it; the step ends when the card is back (LIB-7 AC-26);
+  the fitted card and fails when none is fitted, or with a card and a
+  side, which inserts it without fitting it; a side that is left out is
+  side 1; the step ends when the card is back (AC-7; LIB-7 AC-26);
   `- arm: card-reader` with a card and a side, which is inserted when
   the program asks for a card (AC-9)
   (`presets.md` PR-8; today `Shared/StateFile.cpp:168-201`,
   `Shared/EmulatorSession.cpp:296-325`). The harness has commands of the
   same names. On a TI-58 or TI-58C these steps refuse the preset when it
   is read.
-- [ ] **AC-18** — Given a `medium:` section of the kind magnetic card
-  (LIB-7 AC-22), then it has `name:`, `bank:` (1 to 4, required),
-  optionally `protected:` and `partition:`, and the content of the bank
+- [ ] **AC-18** — Given a `medium:` section with `kind: card` (LIB-7
+  AC-22), then it describes one bank, which is on whichever side of that
+  card is inserted. It has `name:`, `bank:` (1 to 4, required),
+  optionally `protected:` (`yes` or `no`) and `partition:` (as C59-2
+  AC-2), and the content of the bank
   as C59-2 writes it: `steps: |`, whose keycodes start at the bank's
   first step, or `registers: |`, and `cue-card: |`. A step or a register
   outside the bank refuses the preset when it is read
@@ -173,7 +233,8 @@ In presets and the harness
 - [ ] **AC-19** — Given such a card is inserted, then the bank it holds
   is the one a program wrote to it earlier in the same preset, else the
   one its section describes, built with its `partition:` or with the
-  calculator's partition at that moment, else none; the bank built is,
+  calculator's partition at that moment; a section without `steps:` and
+  `registers:` gives an empty side; the bank built is,
   byte for byte, the one the ROM writes for the same content
   (`Shared/SessionController.cpp:494-511`,
   `tests/shared_preset_stages_tests.cpp:119-138`).
@@ -184,15 +245,17 @@ In presets and the harness
 
 The cue card that shows
 - [ ] **AC-21** — Given a TI machine, then it lists a product kind that
-  gives the number of the library program of the module that runs now,
-  or none (`capabilities.md`, product kinds; today read from the
+  gives the number of the library program that is selected now, or
+  none (`capabilities.md`, product kinds; today read from the
   calculator's own registers, `Shared/CueCard.hpp:153-154`).
-- [ ] **AC-22** — Given the topic `cue-card` (C59-2 AC-6), then it names
-  the cue card to show by this rule: while a library program runs, the
-  pre-printed cue card of that program, where the module has one, else a
-  card with the module's title and ID; otherwise the cue card of the
-  fitted magnetic card, if one is fitted; otherwise the cue card a
-  preset or `ti58c.mem` fitted, if any. It follows a change at the
+- [ ] **AC-22** — Given a machine, then at most one cue card is fitted
+  at a time: fitting a magnetic card, a `cue-card:` section and the
+  cue card `ti58c.mem` brings back (C59-3 AC-7) each take the place of
+  the one before. The topic `cue-card` (C59-2 AC-6) names the cue card
+  to show: while a library program is selected, the pre-printed cue card
+  of that program, where the module has one, else a card with the
+  module's title and ID; otherwise the fitted cue card, if there is
+  one. It follows a change at the
   latest half a second later (`Shared/CueCard.cpp:402-418`,
   `Shared/SessionController.cpp:315-343`).
 - [ ] **AC-23** — Given the pre-printed cue cards, then they are those
@@ -201,7 +264,7 @@ The cue card that shows
   (`roms/solid-state/cuecards.txt`, `tests/shared_formats_tests.cpp:433-461`).
 - [ ] **AC-24** — Given a library program's cue card covers a fitted
   magnetic card, then the corners do nothing, and the fitted card shows
-  again when the program is no longer selected
+  again when no library program is selected
   (`tests/shared_cooperative_tests.cpp:767-779`).
 
 What lasts
@@ -212,7 +275,15 @@ What lasts
   6 gates; behaviour change 59-17). The same holds for a power cycle
   and a Cold boot (OQ-1). Given a new machine is built, by a model
   switch or a preset, then nothing is fitted until the preset fits
-  something.
+  something, or, on a TI-58C, `ti58c.mem` brings its cue card back
+  (C59-3 AC-7).
+- [ ] **AC-30** — Given the four examples of Calc-U-59 with magnetic
+  cards (C59-2 AC-10), then they are upgraded by these rules and
+  compared as C59-2 AC-11 says: a `CARD: mem:X` block becomes a
+  `medium:` section with `kind: card` and `name: X`; `ArmCard:` and
+  `InsertCard:` become `- arm: card-reader` and `- insert: card-reader`
+  with the card, written `mem:X` or by its name, and the side as a word
+  of its own (`PDCM-1:2` becomes `PDCM-1 2`).
 
 Every frontend
 - [ ] **AC-26** — Given the Swift, Qt6 and Web frontends, then AC-11 to
@@ -244,13 +315,12 @@ Every frontend
   for a key, then nothing is written and the card comes back
   (`tests/shared_cooperative_tests.cpp:738-750`; OQ-3).
 - **EC-3** — Given a card's instance was changed by another device
-  since it was fitted, then a write keeps the other side as that device
-  left it; given the file can no longer be read, then the write is
-  refused with a notice and the file is left alone
-  (`tests/shared_cooperative_tests.cpp:697`).
-- **EC-4** — Given a write of a card fails, then a notice says so, and
-  the card stays fitted as it was before the pass (LIB-7 AC-14;
-  `Shared/SessionController.cpp:554-578`).
+  since it was fitted, then a write replaces it with the card as this
+  product has it (AC-5; LIB-7 EC-2); today the other side is kept as
+  that device left it (`tests/shared_cooperative_tests.cpp:697`; OQ-6).
+- **EC-4** — Given a write of a card fails, then a notice says so, the
+  fitted card keeps the bank that was written, and the next write tries
+  again (LIB-7 AC-14; `media.md` I-2).
 - **EC-5** — Given a card file with a mark for the byte order at its
   start, or one that is not UTF-8, then it is refused as a card that
   cannot be read; today the message speaks of its size
@@ -292,8 +362,21 @@ Every frontend
   unknown key of the cue card refuses the file; a ` #` in a title is no
   longer cut off, because comments in a card file go; the file ends with
   a line end. *Recommendation:* all three, with the new version.
-- [ ] **OQ-5** — "Side", "bank", "pass" and "fresh" (of a magnetic
-  card) for the glossary, as defined above.
+- [ ] **OQ-5** — "Side", "bank", "pass", "fresh" (of a magnetic card)
+  and "library program" for the glossary, as defined above.
+- [ ] **OQ-6** — Writing a card back (AC-5, EC-3). Today the file is
+  read again before a write, so that a side another device wrote in the
+  meantime is kept. LIB-7 writes what the product has and merges
+  nothing. *Recommendation:* the family's rule, also for cards; with
+  two devices on one iCloud folder the last write then wins for the
+  whole card.
+- [ ] **OQ-7** — `fit:` (AC-17). `presets.md` PR-8 says it "places a
+  magnetic card or cue card". *Recommendation:* `fit:` takes a magnetic
+  card, on the TI-59; the other cue cards are fitted by `cue-card:`,
+  which C59-2 already has for every model.
+- [ ] **OQ-8** — The time after which a card the ROM does not take is
+  given back (AC-7). Nothing states one today; a pass takes about half a
+  second. *Recommendation:* 2 seconds of emulated time.
 
 ## Decision Log
 

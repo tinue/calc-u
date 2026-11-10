@@ -135,8 +135,8 @@ A session
   operation runs, then the server holds it back and answers it when the
   operation is over, in the order of arrival; this is the server's own
   rule, as today (`Qt6/app/debug/DebugController.cpp:25-50`).
-- [ ] **AC-9** — Given the machine is replaced under a session (a preset,
-  a model switch), then the session goes on with the new machine: the
+- [ ] **AC-9** — Given the machine is replaced under a DAP session (a preset,
+  a model switch), then the DAP session goes on with the new machine: the
   breakpoints are set again (LIB-10 AC-15), the client gets `invalidated`
   and the line "The machine was rebuilt; breakpoints re-applied."
   (`Qt6/app/debug/DapSession.cpp:552-556`).
@@ -147,7 +147,7 @@ A session
   (`Qt6/app/debug/DebugController.cpp:89-154`).
 
 What it answers
-- [ ] **AC-11** — Given a session, then the server answers these
+- [ ] **AC-11** — Given a DAP session, then the server answers these
   requests as today, each through LIB-10 (`Qt6/app/debug/DapSession.cpp:91-120`):
 
   | Requests | Through |
@@ -181,7 +181,7 @@ What it answers
   `Core/Debug/SourceMap.cpp:60-170`, `Core/tests/listing_tests.cpp:62-302`).
 - [ ] **AC-14** — Given breakpoints of the client, by source line, by
   address, by a symbol's name or on memory, then each is a breakpoint or
-  a watch of LIB-10 (AC-10, AC-11) that belongs to the session (AC-47),
+  a watch of LIB-10 (AC-10, AC-11) that belongs to the DAP session (AC-47),
   with the qualifier of its binding; a condition, a hit condition (a
   number `N` alone or after `==`, `!=`, `>=`, `<=`, `>`, `<` or `%`,
   compared with the count of hits; one that cannot be read counts as
@@ -217,8 +217,8 @@ What it answers
   `calcu1600/reset` does a Reset, or with `kind: allReset` a Cold boot,
   paused before the first instruction unless `stop` is false;
   `calcu1600/screen` answers with the display as text (LIB-11 AC-19),
-  also without a session;
-  `calcu1600/quit` ends the session and the program
+  also without a DAP session;
+  `calcu1600/quit` ends the DAP session and the program
   (`Qt6/app/debug/DapSession.cpp:125-131, 496-540`).
 
 In the frontends
@@ -268,7 +268,7 @@ Checks
   would do too.
 - **EC-4** — Given the clean start would take the model's startup preset
   and that preset is for another model, then Build & Load is refused.
-- **EC-5** — Given a session is ended while a request of it is carried
+- **EC-5** — Given a DAP session is ended while a request of it is carried
   out, then the request is finished first.
 - **EC-6** — Given `setVariable` for a register of an earlier
   instruction, then it is refused: only the registers of now can be
@@ -279,7 +279,7 @@ Checks
 
 ## Technical Requirements (optional)
 - The server names no type of a frontend; what it needs from a host is a
-  local socket, a way to be called again later on the session's thread,
+  local socket, a way to be called again later on the app session's thread,
   and the settings (`debugger.md` DB-4, I-4).
 - The server reaches the machine only through LIB-10, C1600-2 and the
   app session; it names no machine class.

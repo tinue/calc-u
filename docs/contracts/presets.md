@@ -1,7 +1,7 @@
 # Contract: preset engine and family preset format
 
-Status: draft (2026-11-10). First batch (PR-1 to PR-4) decided; second
-batch (PR-5 to PR-9) open; PR-10 resolved by T-1.
+Status: draft (2026-11-10). Forks PR-1 to PR-10 decided (decision log);
+open questions remain.
 
 Inherits: ADR 0016 (a preset always cold boots), 0017 (all-or-nothing
 parsing), 0018 (one family preset format, YAML-shaped, product-specific
@@ -204,6 +204,30 @@ Options:
 
 ### PR-8: Media in presets
 
+**Decided (2026-11-10): fit and insert, re-proposed after the user's
+comments** (the first proposal, below, is kept for the record):
+- `- fit: <card>` (TI only) places a magnetic card or cue card in the
+  window above the top row of keys. It affects only the GUI: the card
+  labels the keys and its corners can be tapped; the machine sees
+  nothing.
+- `- insert: <place> …` (generic) brings a medium to a media place. A
+  **pass-through** place (the TI card reader) takes the medium through
+  and gives it back: `- insert: card-reader 2` is the corner tap on side
+  2 of the fitted card, `- insert: card-reader mem:Bank1` feeds a card
+  directly without fitting it; playback waits until it has passed. A
+  **holding** place (a floppy drive) keeps it: `- insert: floppy
+  Formatted A` mounts the disk, ready at once, until `- eject: floppy`.
+  The descriptor marks each media place pass-through or holding.
+- `- arm: <place> <medium>` lays a medium ready; it is fed when the
+  machine reports, through the media capability, that it waits for one
+  (the TI card reader on `n Write` / `n INV Write`).
+- Sides are generic: 1 and 2 on a magnetic card, A and B on a floppy
+  disk.
+- A `medium:` section defines a medium in the preset (today's `CARD:
+  mem:` … `END-CARD`); it is never saved. `- saveas:` stays.
+
+First proposal:
+
 Facts: Calc-U-59 defines in-memory cards in the preset (`CARD: mem:name`
 … `END-CARD`, never saved), feeds cards with `InsertCard:` (the user
 pushing a card in; waits until it has passed) and `ArmCard:` (laid ready;
@@ -253,7 +277,16 @@ at every speed. The oddity and its rule go.
 
 ## Fit table
 
-Filled in after the second batch.
+| | TI-59 (58, 58C) | PC-1500 (1500A) | PC-1600 | PC-1403 (paper) | PC-1350 (paper) |
+|---|---|---|---|---|---|
+| Extension (PR-2) | `.ti59`, `.ti58`, `.ti58c` | `.pc1500`, `.pc1500a` | `.pc1600` | `.pc1403` (assumed) | `.pc1350` (assumed) |
+| Hardware keys (PR-9) | `slot-1:` (Solid State ROM module), `printer: PC-100C` | `slot-1:`, `plotter: CE-150`, `interface: CE-158` | `slot-1:`, `slot-2:`, `plotter:`, `interface:`, `floppy:`, `host-drive:` | 11-pin peripheral | RAM card slot, 11-pin and 15-pin peripherals |
+| Product sections (PR-3) | `partition:`, `program:` `steps: \|`, `registers: \|`, `cue-card: \|` | `program:` `file:` / `text: \|` | as PC-1500 | as PC-1500 | as PC-1500 |
+| `key:` (PR-5) | `- key: 2nd Pgm 0 1 SBR =` | `- key: mode cl` | `- key: mode cl` | key IDs of the model | key IDs of the model |
+| `type:` | — (no text typing) | yes | yes (KBII accents) | yes | yes |
+| Media places (PR-8) | card reader (TI-59; pass-through, sides 1/2); `fit:` | cassette (holding) | floppy (holding, sides A/B), cassette | cassette (CE-126P) | cassette |
+| `arm:` | card reader | — | — | — | — |
+| GUI steps (PR-7) | debugger, `cut-paper:`, `- switch: PC-100C TRACE …`, `screenshot:` | debugger, `cut-paper:`, `screenshot:` | debugger, `cut-paper:`, `screenshot:` | same | same |
 
 ## Open questions
 
@@ -276,6 +309,7 @@ Filled in after the second batch.
 | 2026-11-10 | PR-5 | `- key:` takes one or more key IDs in every product (`- key: mode cl`, `- key: 2nd Pgm 0 1`); matrix codes go. `- wait:` needs a unit and counts emulated time; bare `- wait:` waits until idle. kebab-case names; `expect:` and `screenshot:` in every product. |
 | 2026-11-10 | PR-6 | `#` line or ` #` after a value is a comment, except in raw values (`type:`, `expect:`); ` #` also comments inside TI blocks. ODD59-9 goes. |
 | 2026-11-10 | PR-7 | GUI-control steps kept with generic names (`debug-panel:`, `pause:`, `pause-on-start:`, `step:`, `resume:`, `cut-paper:`, `- switch: PC-100C TRACE on`), supported in both products. |
+| 2026-11-10 | PR-8 | `fit:` (TI, GUI only) and generic `insert:` / `eject:` / `arm:` over media places marked pass-through or holding; sides generic; `medium:` sections for preset-defined media; `saveas:` stays. |
 | 2026-11-10 | PR-9 | Hardware keys shared (`slot-1:`, `slot-2:`, `printer:`, `plotter:`, `interface:`, `floppy:`, `host-drive:`); absent means none; a TI machine without a module is allowed. |
 | 2026-11-10 | PR-10 | ODD59-13 resolved by T-1 (emulated-time holds); no rule needed. |
 | 2026-11-10 | PR-4 | Building runs at full speed; steps run at full speed by default, a speed step makes the following steps paced and visible. The whole preset is one operation (busy, user keys dropped); "Loading…" only while at full speed. |

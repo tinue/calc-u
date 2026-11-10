@@ -70,6 +70,8 @@ machine (M-4, M-5). Contents:
   2);
 - components: each with the chip(s) or block it stands for and its
   modelling depth (separate, folded into another component, functional);
+- media places: each with its kind, pass-through (TI card reader) or
+  holding (floppy drive), and its sides (`presets.md`, PR-8);
 - debug targets (contract 8).
 
 ## Open forks

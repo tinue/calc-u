@@ -24,8 +24,11 @@ Glossary terms used: Debug panel, Pause, Trace, ASM overlay, Level,
 Program step. On the panel, pause is called FREEZE and pause-on-start
 FREEZE ON START, as today. Words of this spec: the **heatmap** shows
 how often each part of the ROM was carried out; a **dump** is a text
-that lists a part of the calculator's memory into the log. Words of
-LIB-10: run state, history, breakpoint.
+that lists a part of the calculator's memory into the log; **SCOM** is
+the name of the calculator's own 16 registers; an overlay **runs** from
+the moment Run entered it until the machine is reset or cold booted or
+the overlay is cleared. Words of LIB-10: run state, history,
+breakpoint.
 
 ## User Stories
 - As a user who wants to see how the calculator works, I want to freeze
@@ -54,13 +57,32 @@ LIB-10: run state, history, breakpoint.
 The panel
 - [ ] **AC-1** — Given a frontend of Calc-U-59 that shows the debug
   panel, then the panel has the three tabs CALCULATOR, CPU and LOG, as
-  today, and is fed by product topics of Calc-U-59 only (`debugger.md`
-  DB-6; `App/Views/DebugView.swift:11-63`). It is shown in Qt6 and in
+  today, and is fed by the product topics of AC-25 and by the generic
+  topics `log`, `run-state` and `trace` (LIB-3 AC-11; LIB-10 AC-17,
+  AC-25) (`debugger.md` DB-6; `App/Views/DebugView.swift:11-63`).
+- [ ] **AC-25** — Given Calc-U-59's app session, then it has these
+  product topics, all state topics, which the harness reads with
+  `state` (`frontend.md` FE-6; today the change flags of
+  `Shared/SessionController.hpp:198-236`):
+
+  | Topic | Carries |
+  |---|---|
+  | `calculator-debug` | what AC-3 lists |
+  | `program-listing` | the listing of AC-4 and the current step, while the machine is paused |
+  | `cpu-debug` | the instructions of AC-6 |
+  | `heatmap` | the counts of AC-8 |
+  | `asm-overlay` | the file's name, the number of instructions, the status line, and whether the overlay runs |
+  | `debug-view` | the tab a `debug-panel:` step asked for last |
+
+  and these product entries in the control state (LIB-4 AC-14): whether
+  Run can be used, whether TRACE can be used, and whether the CALCULATOR
+  tab can be chosen, each with its reason. It is shown in Qt6 and in
   the Swift frontend where the layout has room for it, and in the Web
   frontend in the wide layout (LIB-14 AC-33; C59-8 AC-15).
 - [ ] **AC-2** — Given the step `debug-panel:` with `calculator`, `cpu`
   or `log` (LIB-10 AC-32), then that tab is shown; while an ASM overlay
-  runs, `calculator` is passed over (`Shared/SessionController.cpp:678-679`).
+  runs, `calculator` is passed over without a word
+  (`Shared/SessionController.cpp:678-679`).
 
 CALCULATOR tab
 - [ ] **AC-3** — Given the CALCULATOR tab, then it shows what it shows
@@ -91,19 +113,22 @@ CPU tab
   (`reference/DebugAPI.md:251-292`).
 - [ ] **AC-7** — Given the tab's buttons, then they are those of AC-5
   for the level `cpu` (`App/Views/CPUInspectorView.swift:295-337`).
-- [ ] **AC-8** — Given a TI machine, then it lists a product kind for
-  the heatmap, which counts for each address of the ROM how often it was
-  carried out since the count was last set to zero. The CPU tab shows
-  the counts as a picture of the ROM; they are set to zero by the tab's
-  button, by a Reset, by a model switch and when the panel comes into
-  view (`capabilities.md`, product kinds;
+- [ ] **AC-8** — Given a TI machine, then the heatmap counts for each
+  address of the ROM how often it was carried out since the count was
+  last set to zero; it is taken through the debug target as the profile
+  of LIB-10 is (AC-20 there), and is Calc-U-59's own count, apart from
+  a `profile` of the harness. The CPU tab shows the counts as a picture
+  of the ROM. They are set to zero by the command `ti59 heatmap reset`,
+  which the tab's button sends and which a frontend sends when the
+  panel comes into view, and by a Reset and a model switch
+  (`capabilities.md`, product kinds;
   `Shared/SessionController.cpp:188, 203, 756-767`,
   `tests/shared_debug_tests.cpp:220`).
 
 LOG tab
-- [ ] **AC-9** — Given the LOG tab, then it shows the log (LIB-3 AC-11),
-  the last 2000 lines, and its text can be copied; a button clears the
-  view (`Shared/DebugLog.hpp:13-29`).
+- [ ] **AC-9** — Given the LOG tab, then it shows the last 2000 lines
+  of the log (LIB-3 AC-11), and its text can be copied; a button empties
+  the tab's view, not the log itself (`Shared/DebugLog.hpp:13-29`).
 - [ ] **AC-10** — Given the buttons SCOM, Memory, Prog and Vars, then
   each writes its dump into the log: the calculator's own registers, the
   memory, the program, the data registers, in today's layout
@@ -111,7 +136,8 @@ LOG tab
 - [ ] **AC-11** — Given the button LOG, then it steps the level of the
   machine's own log lines through off, info and debug and shows which
   one holds; at debug the machine logs each write to its own registers
-  and to memory, as today; lines of the app itself are in the log at
+  and to memory, as today; the lines the product writes above the
+  machine (a Reset, a preset's steps, the dumps) are in the log at
   every level (`Shared/SessionController.cpp:795-804`,
   `reference/DebugAPI.md:343-365`).
 - [ ] **AC-12** — Given the button TRACE, then it starts and ends the
@@ -128,18 +154,27 @@ The ASM overlay
   at 1800 (`capabilities.md`, product kinds; `Core/ROM.hpp:11-36`,
   `Core/TI59Machine.cpp:250-264`).
 - [ ] **AC-14** — Given an ASM overlay file, then it is a text file in
-  the ASM overlay format, version 2.0: the first line is `Calc-U-59 ASM
-  2.0`; everything up to a line `HEX:` is for the reader and is not
-  read; after it come the instructions as groups of four hexadecimal
-  digits, optionally after `0x`, parted by spaces or line ends; a `;`
-  starts a comment that runs to the end of its line. A file without the
-  first line is outdated (ADR 0037; behaviour change 59-1; today
-  `Shared/AsmOverlay.cpp:10-49`; OQ-1).
+  UTF-8 in the ASM overlay format, version 2.0, read by these rules
+  (ADR 0037; behaviour change 59-1; today `Shared/AsmOverlay.cpp:10-49`;
+  OQ-1):
+  1. Lines end with LF or CRLF. The first line is exactly `Calc-U-59 ASM
+     2.0`. A file whose first line is `Calc-U-59 ASM ` and another
+     version, or that has no such line, is outdated.
+  2. Everything up to the first line that is `HEX:`, in any case, alone
+     on its line, is for the reader and is not read.
+  3. After it, a `;` starts a comment that runs to the end of its line.
+  4. What remains is runs of hexadecimal digits, in either case, parted
+     by spaces and line ends, each optionally after `0x`. A run of four
+     digits is one instruction; a run of eight, twelve and so on is
+     that many, four digits each.
+  5. An instruction is a value from 0000 to 1FFF. The first goes to the
+     address 1800, each further one to the next address.
 - [ ] **AC-15** — Given an ASM overlay file is read, then it is refused,
-  with a notice that says which, when: it is outdated; it has no `HEX:`
-  line; nothing follows that line; a group is not four hexadecimal
-  digits or a multiple of four; or there are more than 2048
-  instructions (`Shared/AsmOverlay.cpp:16-47`,
+  with a notice that says which, when: it is outdated, for which the
+  notice names the format, its version 2.0 and where it is described; it
+  has no `HEX:` line; nothing follows that line; a run of digits is not
+  a multiple of four long; an instruction is above 1FFF, which today is
+  cut to 13 bits; or there are more than 2048 instructions (`Shared/AsmOverlay.cpp:16-47`,
   `tests/shared_debug_tests.cpp:238-259`).
 - [ ] **AC-16** — Given the box "ASM OVERLAY" on the CPU tab, then it
   shows the file's name, the number of instructions and a status line,
@@ -152,14 +187,20 @@ The ASM overlay
 - [ ] **AC-17** — Given Run, then the machine is brought to the next
   program step boundary and made to go on at 1800; given it has not got
   there after 8192 instructions, then the status says "ASM entry failed
-  after n step(s)." and a notice says so. Given pause-on-start for `cpu`
-  is armed, then the machine is paused at 1800; otherwise the overlay
-  runs (`Shared/AsmOverlay.cpp:51-59`, `Core/TMC0501.cpp:424-463`).
+  after n step(s).", n being that number of instructions, and a notice
+  says so. Given pause-on-start for `cpu` is armed, then the machine is
+  paused at 1800, with the reason pause-on-start, which is one more
+  event for it next to those of LIB-10 AC-30; otherwise the overlay goes
+  on. Run can be used while the machine is paused, and not while an
+  operation runs (`Shared/AsmOverlay.cpp:51-59`, `Core/TMC0501.cpp:424-463`).
 - [ ] **AC-18** — Given an overlay runs, then the CALCULATOR tab cannot
-  be chosen and the panel shows the CPU tab; given the machine is
-  paused, reset or cold booted, then the overlay no longer runs, its
-  instructions stay over the ROM, and Run enters them again; given the
-  model is switched, then they are put over the new machine's ROM
+  be chosen and the panel shows the CPU tab; FREEZE, STEP and RESUME of
+  the CPU tab work on its instructions as on the ROM's, and it still
+  runs afterwards. Given the machine is reset or cold booted, then the
+  overlay no longer runs, its instructions stay over the ROM, and Run
+  enters them again; given the model is switched, then they are put
+  over the new machine's ROM; they are not kept when the product quits
+  (OQ-5)
   (`Shared/SessionController.cpp:141-163, 769-775`,
   `tests/shared_controller_tests.cpp:221-243`).
 - [ ] **AC-19** — Given a file whose name ends in `.asm` is opened
@@ -168,8 +209,9 @@ The ASM overlay
   Today such a file can only be chosen in the box
   (`Shared/SessionController.cpp:620-624`).
 - [ ] **AC-20** — Given the four overlays under `examples/assembly/`,
-  then each is in version 2.0, and each that loads in 2.3.0 loads and
-  gives the same instructions (`tests/shared_debug_tests.cpp:238-259`).
+  and their copies that calc-u.org hosts, then each is in version 2.0,
+  and each that loads in 2.3.0 loads and gives the same instructions
+  (`tests/shared_debug_tests.cpp:238-259`; ADR 0037; LIB-19 AC-9).
 
 Every frontend, and the checks
 - [ ] **AC-21** — Given the Swift, Qt6 and Web frontends, then AC-1 to
@@ -178,15 +220,16 @@ Every frontend, and the checks
   (`App/Views/LiveDebugView.swift:71-76`).
 - [ ] **AC-22** — Given the harness with Calc-U-59, then `ti59 asm load
   <file>`, `ti59 asm run` and `ti59 asm clear` do what the three buttons
-  do, `ti59 dump scom|memory|prog|vars` gives a dump as its reply, and
-  `ti59 log-level off|info|debug` sets the level of AC-11.
+  do, `ti59 dump scom|memory|prog|vars` gives the lines of a dump as its
+  reply, `ti59 log-level off|info|debug` sets the level of AC-11, and
+  `ti59 heatmap reset` is the command of AC-8. They are commands only;
+  a preset has no steps for them. The other commands under `ti59` are
+  C59-2's and C59-9's.
 - [ ] **AC-23** — Given what the tests of Calc-U-59 check today about
-  the panel, then it holds: the step shown is the next one; while the
-  machine runs only whole program steps are shown; the cursor at rest
-  is where LRN after SST shows it; the snapshot and the listing; the
-  heatmap counting new instructions once; the overlay's reading and
-  running; the pages of the log; the dumps
-  (`tests/shared_debug_tests.cpp:78-287`).
+  the panel, beyond what LIB-10 AC-35 covers, then it holds: what the
+  CALCULATOR tab shows and the listing; the heatmap counting an
+  instruction once; the overlay's reading and running; the log shown in
+  pages of lines; the dumps (`tests/shared_debug_tests.cpp:184-287`).
 - [ ] **AC-24** — Given the GUI test of each frontend, then it has two
   scenarios: under the ID C59-4 AC-5, FREEZE, STEP and RESUME on the
   CALCULATOR tab; under the ID C59-4 AC-16, an overlay is chosen and run
@@ -206,8 +249,9 @@ Every frontend, and the checks
   frontend in its portrait layout), then a `debug-panel:` step is kept
   and has its effect when the panel is shown
   (`Web/src/Debugger.jsx:290-292`).
-- **EC-5** — Given an ASM overlay is opened before a machine runs, then
-  it is refused with a notice.
+- **EC-5** — Given an ASM overlay is opened before the product has
+  built its first machine, then it is kept and opened afterwards
+  (LIB-13 AC-7).
 
 ## Technical Requirements (optional)
 - The panel is not part of the shared component sets; each frontend of
@@ -229,6 +273,14 @@ Every frontend, and the checks
   than "off". *Recommendation:* keep the three levels as they are.
 - [ ] **OQ-3** — The commands of AC-22. *Recommendation:* as written;
   they belong here by rule 4 of the index.
+- [ ] **OQ-5** — While an overlay runs (AC-18). Today a FREEZE ends the
+  state in which the CALCULATOR tab is closed, although the processor
+  is still inside the overlay. *Recommendation:* as AC-18 says: the
+  overlay runs until a Reset, a Cold boot or Clear.
+- [ ] **OQ-6** — Two small visible changes: an `.asm` file can be
+  dropped and opened like any file (AC-19), and an instruction above
+  1FFF refuses the file (AC-15). *Recommendation:* both; they go into
+  row 59-1 with the new version of the format.
 - [ ] **OQ-4** — "Heatmap" and "dump" for the glossary, as defined
   above.
 

@@ -1,0 +1,174 @@
+# Contract: preset engine and family preset format
+
+Status: draft (2026-11-10). First batch (PR-1 to PR-4) decided; second
+batch (PR-5 to PR-10) open.
+
+Inherits: ADR 0016 (a preset always cold boots), 0017 (all-or-nothing
+parsing), 0018 (one family preset format, YAML-shaped, product-specific
+sections), 0021 (startup presets; three bundled Calc-U-59 startup
+presets), 0037 (only the current version is read; older files get a
+hint; shipped and hosted files are upgraded). Oddities: ODD59-9 (`#`
+anywhere), ODD59-10 (registers written after the program), ODD59-13 (Adv
+needs `RegularSpeed:`), Calc-U-1600's preset rules
+(`docs/oddities-triage.md`). Builds on `typing.md` (T-1 to T-4),
+`peripherals.md` (P-1) and `machine.md` (M-3 key IDs).
+
+## Today (facts)
+
+| | Calc-U-59 (`reference/StateFileFormat.md`) | Calc-U-1600 (`docs/User-Guide.md` §8) |
+|---|---|---|
+| Files | `.ti59`, `.ti58`, `.ti58c`; 57 in `examples/`, mirrored on calc-u.org (`59/software-files/`, `59/calc/presets/`) | `.pc1500`, `.pc1500a`, `.pc1600`; 32 in `examples/` |
+| Version | none (version 1 per Briefing §1.2) | `format-version: 1`, required |
+| Shape | line sections `MODEL:`, `PARTITION:`, `PROGRAM:`, `REGISTERS:`, `KEYSTROKES:`, `CUECARD:`, `CARD: mem:…`/`END-CARD`, `SOLID-STATE-MODULE:`, `PRINTER:`; case-insensitive | "YAML-shaped, not YAML": flat `key: value`, `- verb: value` steps, one `text: \|` block; only `debug:` and `bus-rom:` are YAML proper. A real YAML reader "would strip ` #1` from `CLOSE #1` and choke on `PRINT "A: B"`" (`Decisions.md`, Preset format) |
+| Order | sections after `KEYSTROKES:` form reloads, in file order | `keys:` and `program:` may repeat, run top to bottom |
+| Bulk content | `PROGRAM:` keycodes, bare or step-numbered with labels, up to 960 steps; `REGISTERS:` `NN = value`, `HNN` on the TI-58C | `program:` `file:` (BASIC, tokenized, machine code) or `text: \|` |
+| Keys | KEYSTROKES: matrix codes (row × 10 + col), several per line; words on a line are comments | `- key: name`, one per step; `- type:` a line plus ENTER |
+| Running | applied live at regular speed, a demo; keys wait for the scan loop; `FullSpeed:`/`RegularSpeed:` | full speed behind "Loading…"; bare `- wait:` waits until idle |
+| Steps / directives | `Wait: 2s`, `FullSpeed:`, `RegularSpeed:`, `Trace:`, `ZeroElapseTime:`, `ReportElapseTime:`, `ArmCard:`, `InsertCard:`, `PrinterTrace:`, `CutPaper:`, `DebugPanel:`, `Freeze:`, `FreezeOnStart:`, `Step:`, `Resume:` | `key:`, `type:`, `wait:`, `expect:`, `saveas:`, `screenshot:`, `syncclock:`, `trace:` |
+| Hardware | `SOLID-STATE-MODULE: ML`, `PRINTER: on` | `model: PC-1600:new`, `plotter:`, `interface:`, `floppy:`/`floppy-file:`, `slot-1:`/`slot-1-file:`, `slot-1-rom:`, `host-drive:`, `bus-rom:` |
+| Naming | CamelCase directives | kebab-case keys; Sharp product names with the hyphen |
+| Comments | `#` anywhere (ODD59-9) | `#` line or ` # …` after a value, except `type:` (typed as written) |
+| Other | — | `preset-name:`, `description:`, `debug:` block (DAP project settings) |
+
+Calc-U-59's own comparison (`ideas/PresetConvergence.md`) concluded that
+two syntaxes were better; ADR 0018 decided one format instead. Its "cheap
+convergence" points (wait units `2s`/`500ms`, lowercase spelling, a format
+version, one naming style for new keys) and its feature lists are input
+to the second batch.
+
+## Responsibilities
+
+- One **preset loader** in the library parses every preset of every
+  product completely before anything is built (ADR 0017), refuses an
+  older or unversioned file with a hint to upgrade (ADR 0037), then
+  builds the machine from a cold boot with the hardware it names (ADR
+  0016) and runs its content in file order.
+- Products contribute **sections** for what only their model family has
+  (ADR 0018), parsed by product code under the loader's rules.
+- Every preset a product ships or calc-u.org hosts is in the current
+  version and passes the reader before a release (ADR 0017, 0037).
+- Calc-U-59 ships three startup presets, one per model (ADR 0021).
+
+## Non-responsibilities
+
+- How a step types keys: the typing engine (`typing.md`).
+- Where named media come from and how they are saved: contract 6.
+- The `debug:` block's meaning: contract 8.
+
+## Invariants
+
+- I-1: The same preset gives the same machine every time (ADR 0016).
+- I-2: A preset either loads completely or not at all (ADR 0017).
+- I-3: A preset means the same thing in every product (Briefing §1.5):
+  a key or step that exists in two products has one name and one
+  meaning.
+
+## Open forks, first batch
+
+### PR-1: Syntax base
+
+**Decided (2026-11-10): option (a), a YAML-shaped subset with a written grammar.**
+
+Options:
+- (a) **Recommended:** a documented **YAML-shaped subset**, extended from
+  Calc-U-1600's: `key: value` header fields, sections that may repeat
+  and run in file order, `- verb: value` steps, `|` block scalars, and
+  values that are taken raw where the content needs it (`type:`).
+  Parsed by the library's own parser, with a written grammar in the
+  format reference. Keeps BASIC text (`CLOSE #1`, `PRINT "A: B"`)
+  typeable as written.
+- (b) Real YAML (a YAML library, one `run:` list instead of repeated
+  sections): any YAML tool can read it, but every BASIC line with `#`,
+  `:` or quotes must be quoted or put in a block, and repeated sections
+  have to become a list.
+
+### PR-2: Version number and file extensions
+
+**Decided (2026-11-10): option (a), `format-version: 2`, extensions per model.**
+
+Options:
+- (a) **Recommended:** the family format starts at `format-version: 2`
+  in both products, so every file of either product written before is
+  "older" by the same rule (Calc-U-59's are version 1 by Briefing §1.2,
+  Calc-U-1600's say 1). The extensions stay per model (`.ti59`, `.ti58`,
+  `.ti58c`, `.pc1500`, `.pc1500a`, `.pc1600`): file associations and the
+  pickers keep working; `model:` stays required inside.
+- (b) Version 1 of the family format, restarting the count: a
+  Calc-U-1600 `format-version: 1` file would then look current.
+- (c) One family extension (for example `.calcu`): one association per
+  product instead of per model, but users lose the model at a glance.
+
+### PR-3: TI bulk content (program steps, registers, cue card)
+
+**Decided (2026-11-10): option (a), block scalars in today's notation.**
+
+Facts: `PROGRAM:` runs up to 960 steps; listings use step numbers,
+labels and gap markers; `REGISTERS:` uses `NN = value`. A list item per
+step would multiply the file size.
+
+Options:
+- (a) **Recommended:** product sections carry their bulk content as `|`
+  block scalars in today's notation, parsed by the TI section parser:
+  `program:` with `steps: |` (the family's `program:` then has three
+  forms, `file:`, `text: |` and `steps: |`, all meaning a program in
+  the glossary's sense), `registers: |`, `cue-card: |`, `partition:`.
+  Reloads (ODD59-10, registers after the program) become repeated
+  `program:` / `registers:` sections in file order, as Calc-U-1600's
+  repeated sections already work.
+- (b) YAML lists (`- 43`): bloats every file.
+- (c) Separate files next to the preset: a preset no longer travels as
+  one file (Calc-U-59 loads presets as bytes on iOS and the web,
+  `ideas/PresetConvergence.md`).
+
+### PR-4: How a preset runs: speed and visibility
+
+**Decided (2026-11-10): option (a), full speed by default, a speed step for paced playback.**
+
+Facts: Calc-U-59 presets are demos played live at regular speed;
+Calc-U-1600 presets run at full speed behind "Loading…". T-4: user keys
+are dropped while an operation runs.
+
+Options:
+- (a) **Recommended:** building the machine (cold boot, hardware,
+  memory contents) always runs at full speed. The steps then run at full
+  speed by default; a speed step (today's `RegularSpeed:`) makes the
+  following steps run paced and visible, and back. The whole preset is
+  one operation: busy until its last step, user keys dropped (T-4); the
+  frontend shows "Loading…" only while it runs at full speed.
+- (b) Live by default (Calc-U-59): every Calc-U-1600 preset gets slower.
+- (c) Always full speed (Calc-U-1600): the Calc-U-59 demos are lost
+  (breaks Briefing §1.1).
+
+## Second batch (after PR-1 to PR-4)
+
+- PR-5: step vocabulary and names (wait units, `key:` with several key
+  IDs per step vs one, TI matrix codes replaced by key IDs (M-3),
+  kebab-case, `expect:` and `screenshot:` for Calc-U-59).
+- PR-6: comments (ODD59-9) and raw values.
+- PR-7: GUI-control steps (`DebugPanel:`, `Freeze:`, `Step:`, `Resume:`,
+  `PrinterTrace:`, `CutPaper:`) and peripheral keys (PC-100C TRACE).
+- PR-8: media in presets (`CARD: mem:` blocks, `ArmCard:`/`InsertCard:`,
+  `slot-1-file:`, `floppy:`, `saveas:`), with contract 6.
+- PR-9: hardware keys named after the descriptor's connectors (`slot-1:`
+  for the TI-59 module slot, `printer:`).
+- PR-10: ODD59-13 (Adv needs regular speed) under T-1's emulated-time
+  holds.
+
+## Fit table
+
+Filled in after the second batch.
+
+## Open questions
+
+- Q-1: The upgrade of the 57 Calc-U-59 and 32 Calc-U-1600 example files
+  and the calc-u.org copies (ADR 0037) is implementation work in phase 6;
+  whether a throwaway script does it is the implementer's choice.
+
+## Decision log
+
+| Date | ID | Decision |
+|---|---|---|
+| 2026-11-10 | PR-1 | The family format is a documented YAML-shaped subset (header fields, repeatable sections in file order, `- verb: value` steps, `\|` blocks, raw values where needed), read by the library's own parser. |
+| 2026-11-10 | PR-2 | `format-version: 2` in both products; extensions stay per model; `model:` required. |
+| 2026-11-10 | PR-3 | TI bulk content as `\|` block scalars in today's notation: `program:` with `steps: \|`, `registers: \|`, `cue-card: \|`, `partition:`; reloads are repeated sections in file order. |
+| 2026-11-10 | PR-4 | Building runs at full speed; steps run at full speed by default, a speed step makes the following steps paced and visible. The whole preset is one operation (busy, user keys dropped); "Loading…" only while at full speed. |

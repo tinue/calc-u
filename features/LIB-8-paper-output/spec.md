@@ -98,8 +98,9 @@ The topic
   printer is plugged in: a message carries the
   marks and text lines appended since the last one and how far the paper
   reaches now (AC-4), or says that the paper was emptied. A frontend
-  that starts to listen is sent the whole paper first (LIB-3 OQ-5, open
-  there).
+  that starts to listen is first sent the paper from its last reset
+  marker on, which is the whole paper since it was last emptied (LIB-3
+  OQ-5).
 - [ ] **AC-7** — Given the same commands at the same tick counts in two
   runs, then the paper holds the same marks in the same order (LIB-11
   AC-6).
@@ -186,12 +187,13 @@ Copy and Cut
 
 Step and commands
 - [ ] **AC-22** — Given the step `- cut-paper:`, without a value or
-  with an owner's name, then every paper of the machine, or that one, is
+  with an owner's name, then every paper of the product, or that one, is
   cut (AC-5), without a copy; the step needs no emulated time (LIB-6
   AC-19) (`presets.md` PR-7).
 - [ ] **AC-23** — Given the harness, then these commands exist at the
-  top level; each takes an owner's name as its last value, which can be
-  left out while the machine has one paper:
+  top level; each takes an owner's name as its last value; without it
+  the command means the printer that is plugged in, and is refused when
+  none is (EC-8):
 
   | Command | Reply |
   |---|---|
@@ -295,9 +297,12 @@ Step and commands
 ## Edge Cases
 - **EC-1** — Given a cut while the printer is printing, then the marks
   made after the cut are on the new paper.
-- **EC-2** — Given a machine without a printer, then there is no paper
-  topic, `cut-paper` is done and changes nothing, and the `paper`
-  commands are refused. Given an empty paper, then `paper text` and
+- **EC-2** — Given a product with printers whose machine has none
+  plugged in, then the papers of the product's printers are still there
+  (AC-8): `cut-paper` without a name cuts each of them, and the `paper`
+  commands work on a kept paper by its owner's name and are refused
+  without a name (EC-8). Given a product without printers, then there
+  is no paper topic. Given an empty paper, then `paper text` and
   `paper marks` reply with no lines but `reach 0 0`.
 - **EC-7** — Given the printer is detached in the middle of a line, then
   the rest of the line is not printed, and what was printed stays on its
@@ -366,7 +371,7 @@ Step and commands
 | The CE-158's printer port stays a product kind; a text layer for the plotters is a backlog idea | `capabilities.md` C-2 | 2026-11-10 |
 | `cut-paper:` is a step in every product | `presets.md` PR-7 | 2026-11-10 |
 | The paper panel is always shown. Each type of printer keeps one paper for the run of the product: empty panel without a name while none is plugged in, the paper back when the printer is attached again, also on another model. This replaces the batch 4 answer that the paper goes at a model switch without the printer | user, 2026-11-10, batch 6 gate | 2026-11-10 |
-| A preset starts with empty paper | LIB-6 AC-41; both products today | 2026-11-10 |
+| A preset the user loads starts with empty paper, as in both products today; a machine built from a startup preset at a model switch keeps its paper | LIB-6 AC-41; OQ-5 | 2026-11-10 |
 | Proposed in this spec and accepted (user, 2026-11-10, batch 6 gate): the caps of AC-17 for both products (Calc-U-59 has only the 16000 pixels today) | One rule; no PC-100C picture reaches 64 million pixels | 2026-11-10 |
 | Proposed in this spec and accepted (user, 2026-11-10, batch 6 gate): Cut cuts also when the copy failed (AC-18) | All frontends today | 2026-11-10 |
 | Proposed in this spec and accepted (user, 2026-11-10, batch 6 gate): the control of AC-14 shows the view that is on (Qt6 and Swift today; the Web frontend shows the other) | One rule for the family | 2026-11-10 |

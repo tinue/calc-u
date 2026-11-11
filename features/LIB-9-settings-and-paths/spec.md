@@ -41,8 +41,8 @@ What the three status columns mean for this feature:
   bundled example (owner: LIB-6); building the startup model's machine
   (owner: LIB-18).
 - What is stored in the save folder and how: media (LIB-7),
-  `ti58c.mem` (C59-3), traces (`features/INDEX.md`, open point
-  "Traces"), screenshots (LIB-6), serial links (LIB-2).
+  `ti58c.mem` (C59-3), traces (LIB-10), screenshots (LIB-6), serial
+  links (LIB-2).
 - The ROM folder (owner: LIB-12).
 - The Web frontend's persistent file system: that it survives a page
   load (behaviour change 59-8) and its one-writer rule (owner: LIB-15).
@@ -142,10 +142,12 @@ Paths
 - [ ] **AC-17** — Given a Qt6 frontend, then traces are written to the
   save folder unless `[trace] folder` names another folder, serial links
   to the save folder unless `[serial] link-folder` names another folder,
-  and screenshots to the save folder (`settings.md` ST-3, ST-4; the
-  other frontends: OQ-7). Given a Swift frontend, then screenshots go to
-  its save folder too, the iCloud Drive folder of AC-14 (user, batch 6
-  gate).
+  and screenshots to the save folder (`settings.md` ST-3, ST-4). Given
+  a Swift frontend, then screenshots go to its save folder too, the
+  iCloud Drive folder of AC-14 (user, batch 6 gate), and traces to the
+  place of AC-24. Given a Web frontend, then a trace that has ended and
+  a screenshot are offered to the user as a download, and no folder for
+  them exists (LIB-10 AC-26; LIB-15 AC-9; OQ-7).
 - [ ] **AC-18** — Given a caller (the harness, a test) passes host
   directories of its own, then nothing is read from or written to the
   user's settings file and save folder.

@@ -30,7 +30,7 @@ place takes (a magnetic card, a floppy disk, a battery-backed module, a
 cassette tape); each kind has its file suffix and its format, which its
 product supplies (AC-46). A **user template** is a template the user
 made, a file in the save folder that says it is one; the glossary's
-Template names only the bundled ones (OQ-7). The **saved media** are
+Template covers both. The **saved media** are
 the media in the save folder and the tape folder, and the list of them
 that a Web frontend shows.
 
@@ -83,7 +83,9 @@ The model
   template is bundled with the product, or is a file in the save folder
   that says it is one (a user template); an instance is a file in the
   save folder, or a medium file the user opened from elsewhere, which
-  stays where it lies and is saved there (LIB-13 AC-4). A bundled file
+  stays where it lies and is saved there (LIB-13 AC-4); a Web frontend
+  instead imports such a file into its save folder (AC-30), because a
+  browser cannot write it back. A bundled file
   is never written, and a user template only
   by a save as a template (AC-17) (`media.md` I-1; ADR 0019).
 - [ ] **AC-2** — Given a medium file, then it carries the medium's name
@@ -105,8 +107,10 @@ The model
   (Calc-U-1600 `Core/Connector/NamedFileCatalog.hpp:124-170`). An
   instance can carry the name of a bundled template only by AC-25; it is
   listed among the instances, and a lookup by name finds the template
-  (OQ-8). Two files of the save folder with one name are both listed
-  (`media.md` MD-5; OQ-1). In a module slot the modules that are not
+  (OQ-8). Two files of the save folder with one name are both listed;
+  a save by that name replaces, and a preset finds, the one whose file
+  name is the one the name gives (AC-4), and if neither is, the first
+  by file name (`media.md` MD-5; OQ-1). In a module slot the modules that are not
   media (LIB-4 AC-1) and the media of the slot's kind are one list of
   names.
 - [ ] **AC-6** — Given a media place of a machine, then its capability
@@ -176,7 +180,8 @@ Autosave
   machine writes to it, then the template is not written, and what was
   written lives in the place until Name & Save makes it an instance or
   the medium leaves the place, as today (Calc-U-1600
-  `Shared/ModuleBay.cpp:425`). `media.md` I-2 reads otherwise (OQ-8).
+  `Shared/ModuleBay.cpp:425`); `media.md` I-2 holds for the media a
+  preset names (AC-25; OQ-8).
   Given a medium a preset defines itself (`mem:`), then nothing is ever
   written for it.
 
@@ -211,7 +216,7 @@ Name & Save
 - [ ] **AC-19** — Given the write-protect switch is asked for with a
   save, then the file says so, the medium in the machine is protected
   at once, and the machine goes through a power cycle, as if a module
-  had been plugged in (LIB-2 AC-24, AC-32; user, 2026-11-11; behaviour change
+  had been plugged in (LIB-2 AC-28, AC-32; user, 2026-11-11; behaviour change
   1600-17); no control switches it off again, as today (Calc-U-1600
   `Shared/ModuleBay.cpp:208-220`).
 - [ ] **AC-20** — Given a place where a new, empty medium is started
@@ -232,7 +237,9 @@ Media in presets
   the path in double quotes when it holds a space; or as `mem:` and the
   name of a `medium:` section of the same preset, wherever that section
   stands (`slot-1: "My programs"`, `floppy: file:disks/work.floppy.yaml B`)
-  (`presets.md` PR-8, PR-11; OQ-3).
+  (`presets.md` PR-8, PR-11; OQ-3). The keys `slot-1-file:` and
+  `floppy-file:` of today are gone; a preset that uses them is refused
+  (LIB-6 AC-30).
 - [ ] **AC-22** — Given a `medium:` section, then it defines a medium
   inside the preset, with `name:`, `kind:` and the content fields of
   that kind, which the kind's owner reads; it may repeat; every such
@@ -263,7 +270,7 @@ Steps and commands
 
   | Step | Value | What it does | Emulated time (LIB-6 AC-19) |
   |---|---|---|---|
-  | `insert:` | a place, a medium (AC-21), a side where the place has sides; for a pass-through place the medium can be left out, which means the one that is fitted (C59-7) | in a holding place the medium is in at once and stays; through a pass-through place it is passed, and the step ends when it is back; the owner of a place can state a time after which a medium the machine does not take is given back, and the TI card reader states none (C59-7 AC-7) | pass-through: needs it |
+  | `insert:` | a place, a medium (AC-21), a side where the place has sides; for a pass-through place the medium can be left out, which means the one that is fitted (C59-7) | in a holding place the medium is in at once and stays; through a pass-through place it is passed, and the step ends when it is back; the owner of a place can state a time after which a medium the machine does not take is given back, and the TI card reader states none; the owner can also end the preset while its medium waits at the place, as the TI card reader does when the card is still there and the machine has put out nothing new for 30 minutes of emulated time (C59-7 AC-7, AC-17) | pass-through: needs it |
   | `eject:` | a place | takes the medium out (AC-13 first) | none |
   | `arm:` | a place, a medium, a side | lays the medium ready; it is passed through when the machine says it waits for one (AC-6); the step does not wait | none |
   | `saveas:` | `live` or `template`, optionally `protected`, then the place, a colon and the name, which is the rest of the line, or the place, `:file:` and a path, which is the rest of the line | AC-17 to AC-19; a failure fails the preset | none |

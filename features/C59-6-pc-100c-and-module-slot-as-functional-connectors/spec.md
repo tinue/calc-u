@@ -57,8 +57,10 @@ In this spec "the calculator" is the real device; the running thing is
 
 The PC-100C
 - [ ] **AC-1** — Given a TI machine, then a PC-100C can be plugged into
-  the place `printer` and removed again; nothing of the printer exists
-  in a machine without one: no paper, no controls.
+  the place `printer` and removed again; a machine without one has no
+  paper output and no controls of a printer. The paper the PC-100C
+  printed is kept by the app session and is back when a PC-100C is
+  attached again (LIB-8 AC-8, AC-12).
 - [ ] **AC-2** — Given a PC-100C is plugged in, then the machine's ROM
   finds a printer as on the real device (today: the printer line at D0
   on the TI-59 and TI-58, at D10 on the TI-58C,
@@ -89,8 +91,9 @@ The PC-100C
   off.
 - [ ] **AC-6** — Given `TRACE` is on, when the machine goes through a
   reset, a power cycle or a cold boot, then `TRACE` is still on; when
-  the PC-100C is detached and attached again, then `TRACE` is off
-  (`Core/TI59Machine.cpp:44, 214-221`).
+  the PC-100C is detached and attached again, then `TRACE` is off,
+  unlike the real switch, which keeps its position; the help says so
+  (`Core/TI59Machine.cpp:44, 214-221`; OQ-3).
 - [ ] **AC-7** — Given a machine without a PC-100C and a golden run in
   which a program executes print instructions, then the display output
   and the tick counts are the recorded ones: a program takes as long
@@ -143,8 +146,9 @@ The module slot
   the full ROM set required at the start (LIB-12 AC-5), a running
   product does not meet this.
 - **EC-2** — Given the PC-100C is detached while it prints a line, then
-  the rows already printed stay on the paper, the rest of the line is
-  not printed, and the power cycle that follows a detach runs.
+  the rows already printed stay on the paper, which is kept for the run
+  of the product (LIB-8 AC-8), the rest of the line is not printed, and
+  the power cycle that follows a detach runs.
 - **EC-3** — Given the TI-58C, then the ROM's key handling differs with
   and without a printer as today (`Shared/MachineModelInfo.hpp:36-38`);
   key readiness takes this into account (LIB-5).
@@ -165,7 +169,8 @@ The module slot
   This reads `peripherals.md` P-2 so: a peripheral is passed the host's
   ticks, and a functional pin-out may also carry the signal that marks
   an instruction.
-- The golden runs for AC-3, AC-7 and AC-9 are recorded with those of
+- The golden runs for AC-3, AC-7, AC-9 and AC-10 (an empty slot and
+  `2nd Pgm 01`) are recorded with those of
   C59-1, from the code as imported, and also hold the printed lines and
   dots.
 
@@ -203,7 +208,7 @@ The module slot
 |----------|-----------|------|
 | The PC-100C printer connector and the module slot become functional connectors in the migration | ADR 0011 | 2026-11-09 |
 | Peripherals are keyed by connector and see only its signals | ADR 0010; `peripherals.md` I-1 | 2026-11-09 |
-| The keys of the PC-100C belong to the printer, not to the calculator | `machine.md` M-3 | 2026-11-10 |
+| The keys of the PC-100C belong to the printer, not to the machine | `machine.md` M-3 | 2026-11-10 |
 | A module change and connecting or disconnecting the printer are followed by a power cycle | `peripherals.md` P-1 (user); behaviour change 59-11 | 2026-11-10 |
 | A TI machine without a module is allowed | `presets.md` PR-9 | 2026-11-10 |
 | A peripheral whose ROM is missing cannot be attached | `roms.md` R-3 | 2026-11-10 |

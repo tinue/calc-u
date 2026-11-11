@@ -49,8 +49,9 @@ breakpoint, watch, hit, qualifier, run state.
 - Placing a program in memory and the commands that start it (owner:
   C1600-2); the keys of a `debug:` block and their check when a preset
   is read (C1600-4 AC-11).
-- The VS Code extension, which stays as it is; its presets and templates
-  are upgraded with C1600-4.
+- The VS Code extension, which stays as it is, except that its
+  description of `program.after` gives `none` as the default (OQ-2);
+  its presets and templates are upgraded with C1600-4.
 - A debugger for BASIC, a debugger in the Web frontend, and DAP for
   Calc-U-59 (`debugger.md`, backlog and Briefing §2).
 - The INSPECTOR.
@@ -232,7 +233,8 @@ In the frontends
   state topic of Calc-U-1600 carries it
   (`Qt6/app/debug/DebugController.cpp:79-85`).
 - [ ] **AC-19** — Given the VS Code extension of `b4ea8c8`, its code
-  unchanged and its presets and templates as C1600-4 upgrades them, then
+  unchanged except the description of `program.after` (OQ-2), and its
+  presets and templates as C1600-4 upgrades them, then
   it works against the server: attach, Build & Load, Reset and Stop, All
   Reset and Stop, and its four project templates; the scenarios of AC-20
   that use a project and a template check it

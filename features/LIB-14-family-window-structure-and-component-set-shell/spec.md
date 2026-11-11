@@ -25,7 +25,7 @@
 - Facts: Calc-U-59 at `v2.3.0`, Calc-U-1600 at `b4ea8c8`; every
   `path:line` below is at those pins.
 
-Words used here that the glossary does not define yet (OQ-6):
+Glossary terms that this spec introduced (OQ-6):
 - The **shell** is the part of a component set that every product's
   window is put together from: the menu bar, the control bar, the
   settings dialog, the About dialog, the notice, "Loading…", and the
@@ -268,7 +268,7 @@ The shell and what goes into it
   Load Preset… (Ctrl+O; today "Open Preset…"), Examples ▸ when the
   preset list has examples (C59-2), the magnetic card items of C59-7
   (today "Fit Card…", "Fit Fresh Card…"), Settings… and Quit; Machine with Model ▸,
-  Peripherals ▸, Reset and Cold boot; Help with "Calc-U-59 Help" and
+  Peripherals ▸, Reset, Cold boot and Resume; Help with "Calc-U-59 Help" and
   "About Calc-U-59". There is no Edit menu, because Calc-U-59 has
   neither Copy Screen nor Paste Text (`Qt6/app/MainWindow.cpp:54-77`;
   behaviour change 59-14).
@@ -333,10 +333,11 @@ The shell and what goes into it
   Settings… and Quit; Edit with Copy Screen (Copy Log Selection while
   text of the INSPECTOR is selected) and Paste Text; Machine with
   Model ▸, ROM Revision ▸ on the PC-1500, ROM Version ▸ and CE-1600P
-  ROM ▸ on the PC-1600, Peripherals ▸, Reset and Cold boot; Help with
-  "Calc-U-1600 Help" and "About Calc-U-1600…". Changed against today:
-  Settings… moves from Edit to File (OQ-1), "Reset All" is named Cold
-  boot (`docs/glossary-mapping.md`), and the Help item is new
+  ROM ▸ on the PC-1600, Peripherals ▸, Reset, Cold boot and Resume;
+  Help with "Calc-U-1600 Help" and "About Calc-U-1600…". Changed against
+  today: Settings… moves from Edit to File (OQ-1), "Reset All" is named
+  Cold boot (`docs/glossary-mapping.md`), and the Resume item (LIB-10
+  AC-41) and the Help item are new
   (`Qt6/app/MainWindow.cpp:858-1018`).
 - [ ] **AC-35** — Given the Web frontend, then its menus are the same
   without Mount Directory…, Unmount and Quit, and with the media items

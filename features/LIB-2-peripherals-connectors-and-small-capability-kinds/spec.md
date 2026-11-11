@@ -28,7 +28,7 @@ What the three status columns mean for this feature:
   real-time clocks are reached only through these kinds. The columns are
   worked together with C59-6 and C1600-1, which build the peripherals.
 
-Two words used here that the glossary does not define yet (OQ-5): a
+Two glossary terms that this spec introduced: a
 **host link** is what connects a machine's serial port to the user's
 computer; a **serial port file** is the name under which a host link
 appears there, a pseudo-terminal that any serial program can open.
@@ -176,7 +176,10 @@ Serial port
   pseudo-terminals, then the app session gives it a host link: every
   byte the machine sends reaches the host link and every byte arriving
   on the host link reaches the machine, moved between two advances on
-  the session's thread (ADR 0009).
+  the session's thread (ADR 0009). The host link ignores the line
+  settings: a program on the user's computer can open the serial port
+  file with any settings, and the bytes pass as they are, as today
+  (OQ-2).
 - [ ] **AC-19** — Given a host link, then it appears to the user as a
   serial port file with a fixed name in the folder for serial links
   (LIB-9), and the name stays the same for as long as the product runs.
@@ -245,7 +248,7 @@ Real-time clock
   on, every write to the module's RAM is blocked, and the module's media
   place reports the same position as its write protection. The switch
   is set with a save (LIB-7 AC-19), and a power cycle follows, as after
-  an attach (AC-24); at an attach its position is the one the saved
+  an attach (AC-28); at an attach its position is the one the saved
   file gives (user, 2026-11-11; OQ-4)
   (`Core/Connector/ExpansionCard.hpp:159-165`; `capabilities.md`,
   generic kinds).

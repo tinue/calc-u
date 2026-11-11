@@ -667,3 +667,10 @@ appears there, a pseudo-terminal that any serial program can open.
 To suspend a session is the frontend stopping its machine while the
 product is in the background; to continue it is the opposite. Pause and
 resume are the debugger's words.
+
+**Live input**, **Typed text**, **Press**, **Frame** (of typing):
+Live input is what a user does now, with a host key or an on-screen
+key. Typed text is a string the typing engine types by itself (a paste,
+a `type` step). A press is one key going down and later up. A frame is
+1/60 second of emulated time, the unit Calc-U-1600 counts its key holds
+in; a slice is not called a frame.

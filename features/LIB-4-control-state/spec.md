@@ -72,8 +72,9 @@ What the three status columns mean for this feature:
   with the printer that is plugged in as its owner, or none (LIB-8
   AC-12);
   the actions that start an operation and are not a choice among
-  entries: Reset, Cold boot, and loading a preset or opening a file,
-  each available now or not, with the reason;
+  entries: Reset, Cold boot, loading a preset or opening a file, and
+  inserting a medium, each available now or not, with the reason
+  (OQ-1);
   and the product's own entries (`frontend.md` FE-2, FE-6).
 - [ ] **AC-2** — Given a model, a variant, or a peripheral or variant
   for a place, then its entry says whether it is available now, and if
@@ -256,6 +257,6 @@ What the three status columns mean for this feature:
 | One menu and control-bar structure; items a product lacks do not appear | ADR 0024 | 2026-11-09 |
 | A module is chosen with a picker for its slot | ADR 0025; behaviour change 59-9 | 2026-11-09 |
 | Proposed in this spec and accepted (user, 2026-11-11): every model, variant and peripheral entry carries "available now" with one reason, in the order of AC-2; a product's app layer can make a generic entry not available (AC-7); while an operation runs, the entries that would start one are not available (AC-3) | FE-6 names "available now and a reason" for places only; no contract says where the rule for a running operation lives, and the Calc-U-1600 frontends differ today | 2026-11-10 |
-| The control state also lists the actions that start an operation (Reset, Cold boot, loading a preset or opening a file), so that every frontend disables them by one rule | user, 2026-11-10, batch 3 gate; widens `frontend.md` FE-2 | 2026-11-10 |
+| The control state also lists the actions that start an operation (Reset, Cold boot, loading a preset or opening a file, inserting a medium), so that every frontend disables them by one rule | user, 2026-11-10, batch 3 gate; widens `frontend.md` FE-2 | 2026-11-10 |
 | The Calc-U-59 module picker offers the empty slot | user, 2026-11-10, batch 3 gate; ledger row 59-9 extended | 2026-11-10 |
 | With the full ROM set required at the start (LIB-12), no entry is ever unavailable for a missing ROM | user, 2026-11-10, batch 3 gate | 2026-11-10 |

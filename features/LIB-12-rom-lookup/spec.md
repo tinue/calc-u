@@ -73,7 +73,8 @@ be added.
   other part of a product looks for a ROM file (ADR 0035).
 - [ ] **AC-3** — Given a bundled file, then it is checked when the
   product starts by the amount of its content: a binary file by its size
-  in bytes, a text file by what its reader yields (`roms.md` R-4). The
+  in bytes, a text file by what its reader yields, and by the checks
+  its product adds (AC-8) (`roms.md` R-4). The
   md5 is checked when the files are fetched at build time, not at the
   start.
 - [ ] **AC-4** — Given the product starts, then the lookup checks the
@@ -97,8 +98,9 @@ be added.
   the Datamath form, an external format, read by the reader Calc-U-59
   supplies, and checked as today: the three instruction files of a model
   together give 6144 words, its two constant files together give 64
-  rows, and a module file gives at least one row of data
-  (`Shared/RomLoader.cpp:9-150`).
+  rows, and a module file gives at least one row of data; and the first
+  and the last word of the TI-59's instruction ROM are those of the
+  known dump, as today (`Shared/RomLoader.cpp:9-150`; OQ-1).
 - [ ] **AC-9** — Given Calc-U-59, then its full set is these 24 files,
   with the md5 values of the dumps in the TI ROM repository
   (`~/Development/public/TI-59-ROM`, folders `dumps/ti59`,
@@ -227,3 +229,4 @@ be added.
 | No ROM set is used in place of another; today's use of the New ROMs for missing Old ones goes | Follows from the full-set rule | 2026-11-10 |
 | An entry names the file as it is bundled, not as the ROM repository names it | The Sharp build renames and joins files at the fetch (`tools/fetch_roms.sh:93-137`) | 2026-11-10 |
 | The TI ROM repository is the project `~/Development/public/TI-59-ROM`; its 24 dumps are the files of Calc-U-59 2.3.0, and their md5 values are the ones of AC-9 | user, 2026-11-10; the files compared on that day | 2026-11-10 |
+| Calc-U-59 keeps today's check of the first and the last word of the TI-59's instruction ROM (AC-8) | user, 2026-11-11; OQ-1 | 2026-11-11 |

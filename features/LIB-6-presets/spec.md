@@ -22,7 +22,7 @@
 - Facts: Calc-U-59 at `v2.3.0`, Calc-U-1600 at `b4ea8c8`; every
   `path:line` below is at those pins.
 
-Words used here that the glossary does not define yet (OQ-5):
+Glossary terms that this spec introduced:
 - A **header key** is a top-level key of a preset that describes the
   preset or its machine, wherever it stands; it has a value on its line
   or, where its owner says so, a block (`bus-rom:`, `debug:`, C1600-4).
@@ -272,8 +272,10 @@ The steps of this feature
   `Core/Preset/PresetRunner.cpp:137-146`).
 - [ ] **AC-25** — Given the step `screenshot:` with a file name, then a
   PNG picture of the display as it is at that moment (AC-53) is written
-  under that name to the folder for screenshots (LIB-9 AC-12, AC-17); a
-  name that is empty or
+  under that name to the folder for screenshots, which is the save
+  folder in a Qt6 or Swift frontend (LIB-9 AC-12, AC-17); in a Web
+  frontend the picture is handed to the user to keep, as a download
+  (LIB-15 AC-9; OQ-4); a name that is empty or
   holds `/` or `\` is refused when the preset is read; given the file
   cannot be written, then the preset fails (Calc-U-1600
   `Core/Preset/PresetFile.cpp:262-276`, `Core/Preset/PresetRunner.cpp:124-136`).
@@ -355,9 +357,13 @@ Harness
   Solid State ROM modules (C59-6) and `printer: PC-100C` (`presets.md`
   PR-2, PR-9, PR-11).
 - [ ] **AC-36** — Given a TI machine, then it is idle when it has
-  reported key readiness (C59-1 AC-18) without a break for a stretch of
-  emulated time that is long enough to tell a stopped calculator from a
-  running program whose ROM samples a key (OQ-1). The step `wait:`
+  reported key readiness (C59-1 AC-18) without a break for 100 ms of
+  emulated time, the minimum hold of LIB-5 AC-20, which is to tell a
+  stopped machine from a running program whose ROM samples a key. The
+  first task checks this against 2.3.0 with a running program on each
+  model, with and without the PC-100C; if no stretch tells the two
+  apart, idle on a TI machine becomes a state of its own in the machine
+  interface, and the spec is changed then (OQ-1). The step `wait:`
   without a value is new in Calc-U-59 (`presets.md` PR-5).
 - [ ] **AC-37** — Given a preset without `slot-1:` or without
   `printer:`, then the machine has no module, or no printer. Today a
@@ -377,11 +383,14 @@ Harness
   preset is read, because no TI typing profile maps characters (LIB-5
   AC-16); `switch: PC-100C TRACE on` and `off` set the TRACE switch of
   the PC-100C (today `PrinterTrace:`, `Shared/SessionController.cpp:674-676`);
-  `elapsed: report` counts emulated time as LIB-11 AC-17 does.
+  `elapsed: report` counts emulated time as LIB-11 AC-17 does;
+  `screenshot:` writes the picture Calc-U-59 supplies of its segment
+  display, in the classic segment style (C59-2; OQ-3).
 - [ ] **AC-41** — Given a preset is loaded by the user, then the paper
   of the PC-100C it names is empty at the start, as today; a startup
   preset at a model switch leaves the paper as it is
-  (`Shared/SessionController.cpp:655`; LIB-8 AC-8).
+  (`Shared/SessionController.cpp:655`). The same rule holds for every
+  printer of both products (LIB-8 AC-8).
 - [ ] **AC-42** — Given the Swift, Qt6 and Web frontends, then each
   hands a preset to the session as a file in a folder or, where it has
   only the content (Swift on iOS, Web; EC-5), as its content, and

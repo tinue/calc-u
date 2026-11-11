@@ -99,9 +99,12 @@ The asset
   builds its help asset `<Product>-help.zip` from the source repository:
   the Markdown files of its ten chapters, the shared parts and its own,
   its pictures, the files its text offers for download (the presets of a
-  tutorial), and a table of contents that lists the chapters in order,
-  each with its title, its files and whether a file is shared, and that
-  names the product and its version (`help.md` HL-3; OQ-2).
+  tutorial), and a table of contents, one JSON file `toc.json`, that
+  lists the chapters in order, each with its number, its title, its
+  files and whether a file is shared, and that names the product and
+  its version (`help.md` HL-3; OQ-2). The help tool is run as
+  `tools/help build <product>`, which builds the asset, and `tools/help
+  check <product>`, which makes the checks without building it (OQ-6).
 - [ ] **AC-7** — Given the help tool builds an asset, then it fails, and
   says where, when: a chapter of AC-1 is missing; a link to another help
   file, to a heading or to a picture leads nowhere; a file of the help's
@@ -162,6 +165,11 @@ The asset
   | `PC1600-Host-Drive.md`, `PC1500-Keyword-Modules.md` | 9 |
 
   (`docs/User-Guide.md:14-22`; `help.md`, fit table.)
+- [ ] **AC-16** — Given the pictures of Calc-U-59's help, then for the
+  first release those that show what changed (the menus, the control
+  bar) are taken anew by hand, and the others are moved from the site
+  as they are; making them by scenarios, as Calc-U-1600 does, is a
+  later step (OQ-4).
 - [ ] **AC-12** — Given the pictures of Calc-U-1600's help, then they
   are made as today, by the scenarios that drive the Qt6 frontend, one
   set for each chapter that has pictures, and they show the family's

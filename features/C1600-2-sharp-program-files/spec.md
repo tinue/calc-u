@@ -55,7 +55,8 @@ area** is the memory the system keeps its own variables in.
   preset or a medium (owner: LIB-13); this feature supplies the kinds
   and what is done with each.
 - Telling what a file is and decoding a cassette WAV: SharpDataExchange
-  does both, and it is used as it is (OQ-1).
+  does both, and it is used as it is, as a built library that the build
+  on GitHub fetches, as today (OQ-1).
 - Playing and recording a cassette tape in the tape bay (owner: LIB-7).
 - How a key is pressed (owner: LIB-5).
 - A menu item that types a program in (today only a preset can; a new
@@ -274,6 +275,10 @@ Commands
   `Core/tests/machine_code_file_tests.cpp`,
   `Core/tests/presetloader_trace_tests.cpp:326-360`,
   `Shared/tests/shared_app_session_tests.cpp:236-252`).
+- [ ] **AC-25** — Given the same case is refused by the machine-code
+  loader, by the BASIC loader or by a preset, then the reason is the
+  same sentence, the menu's of today; a preset puts its line number
+  before it (OQ-4; behaviour change 1600-15).
 
 ## Edge Cases
 - **EC-1** — Given an empty file, then it is refused as empty by every

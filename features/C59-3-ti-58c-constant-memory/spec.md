@@ -15,7 +15,7 @@
   product kinds of Calc-U-59; I-3), `docs/contracts/settings.md` (ST-3:
   the file is at the root of the save folder), `docs/contracts/media.md`
   (Q-2: the file is not a medium); ADR 0021 as amended, 0037;
-  `docs/behaviour-changes.md` rows 59-1, 59-12.
+  `docs/behaviour-changes.md` rows 59-1, 59-12, 59-15.
 - Facts: Calc-U-59 at `v2.3.0`; every `path:line` below is at that tag.
 
 In this spec "the calculator" is the real device; the running thing is
@@ -64,7 +64,8 @@ The product kind
   memory, and the program, the registers and what the ROM keeps in its
   own registers (the partition, the display format) are as they were
   left: the memory is in place before the processor starts, and the ROM
-  does the rest (`rom/TI58C-ROM-Guide.md`; user, batch 5 gate).
+  does the rest (`rom/TI58C-ROM-Guide.md`; user, batch 5 gate;
+  behaviour change 59-15).
 
 The file
 - [ ] **AC-3** — Given Calc-U-59, then the constant memory is kept in
@@ -75,7 +76,8 @@ The file
   its format version and holds the whole constant memory as C59-1 AC-6
   defines it, the registers H00 to H03 included, leaving out the
   registers that are zero, and the fitted cue card if there is one, as
-  today, in today's layout with a first line that states the version
+  it is, its template included (OQ-3; today it is written as a blank
+  cue card), in today's layout with a first line that states the version
   (`Shared/ConstantMemory.cpp:9-66`).
 - [ ] **AC-5** — Given a TI-58C runs and its constant memory or the
   fitted cue card changes, then `ti58c.mem` holds the new content at the
@@ -212,7 +214,7 @@ Every frontend
 | The file is at the root of the save folder and is not a medium | `settings.md` ST-3; `media.md` Q-2 | 2026-11-10 |
 | A `ti58c.mem` of 2.3.0 is refused with a hint; the TI-58C then starts with an empty constant memory | ADR 0037; behaviour change 59-1 | 2026-11-10 |
 | Reset on the TI-58C is a power cycle | Glossary, Reset; C59-1 AC-6 | 2026-11-10 |
-| Proposed in this spec and accepted (user, 2026-11-10, batch 5 gate): on a Reset or power cycle the memory stays in the machine and the file is not read (AC-11); this is C59-1 OQ-6, still open there | The machine keeps the memory itself | 2026-11-10 |
+| Proposed in this spec and accepted (user, 2026-11-10, batch 5 gate): on a Reset or power cycle the memory stays in the machine and the file is not read (AC-11); the same was decided as C59-1 OQ-6 | The machine keeps the memory itself | 2026-11-10 |
 | Proposed in this spec and accepted (user, 2026-11-10, batch 5 gate): the half second of AC-5 and AC-10 and the moments of AC-6, taken from today; a file with no register lines is valid (EC-5, today's behaviour) | They make the criteria checkable | 2026-11-10 |
 | Proposed in this spec and accepted (user, 2026-11-10, batch 5 gate): the fitted cue card comes back with the memory and stays through a Reset of the TI-58C (AC-7, AC-11); today both happen because the file is read back | Today's visible behaviour kept | 2026-11-10 |
 | Proposed in this spec and accepted (user, 2026-11-10, batch 5 gate): the constant memory that the Web frontend of 2.3.0 kept in `localStorage` is not read and nothing is said (EC-8) | LIB-9 AC-23; row 59-1 covers the loss | 2026-11-10 |

@@ -46,8 +46,7 @@ What the three status columns mean for this feature:
   stepping, traces (LIB-10); model, variant, attach, reset (LIB-18).
   Each is specified with its feature (rule 4 of the cut).
 - Product commands (`harness.md` H-2) for functions that are carried
-  over without a row of their own; see the open point in
-  `features/INDEX.md` and OQ-4.
+  over without a row of their own: owners C59-9 and C1600-5 (OQ-4).
 - Attach to a running frontend (owner: C59-5 for the Swift frontend;
   Qt6 and Web later, `harness.md` H-4). This feature defines the
   protocol that attach uses.
@@ -66,20 +65,24 @@ What the three status columns mean for this feature:
 The program
 - [ ] **AC-1** — Given the source repository, then it builds one program
   named `calcu` for the family, which takes the product to run from
-  `--product` (ADR 0026; `harness.md` Q-1; the product's name: OQ-2).
+  `--product`, in both forms: its value is the product's name as
+  written or a short form (`59`, `1600`), matched without regard to
+  case (ADR 0026; `harness.md` Q-1; OQ-2).
 - [ ] **AC-2** — Given `calcu` with one command or several and their
   arguments, then it builds the machine the product starts with (LIB-18)
   under the default settings, carries out the commands in the order
   given on that one machine, prints each result and ends, with exit
   status zero when all were done and non-zero, with the reason, at the
-  first that was refused (how several commands are written: OQ-7).
+  first that was refused; the commands follow each other on the command
+  line, parted by a word of their own that the design names (OQ-7).
 - [ ] **AC-3** — Given `calcu serve`, then it builds the same machine,
   reads one command per line from its standard input and writes one
   reply per command to its standard output, until `quit` or the end of
   the input.
 - [ ] **AC-4** — Given either form, then a reply is plain lines of text;
-  with `--json` it is one JSON value on one line instead (`harness.md`
-  H-3; the shape: OQ-3).
+  with `--json` it is one JSON object on one line instead, with the
+  same three keys for every command: whether it was done, the result,
+  and the reason of a refusal (`harness.md` H-3; OQ-3).
 - [ ] **AC-5** — Given a command, then its reply says done, with the
   result where the command reads something, or refused with the reason
   (LIB-3 AC-13); a line that is not a command gets a refusal, and
@@ -107,7 +110,7 @@ The first commands
 
   | Command | What it does | Reply |
   |---|---|---|
-  | `wait <duration>` | lets that much emulated time pass; the duration has a unit, `2s` or `500ms` | the emulated time that passed, which can exceed the duration by less than one instruction |
+  | `wait <duration>` | lets that much emulated time pass; the duration has a unit, `2s` or `500ms`; while the debugger has the machine paused it ends at once (LIB-10 AC-21) | the emulated time that passed, which can exceed the duration by less than one instruction |
   | `key-down <key ID>`, `key-up <key ID>` | calls key down or key up on the machine with that key | done, or refused for an unknown key ID |
   | `lcd` | reads the display from the display topic | the display as text (AC-10) |
   | `state <topic>` | reads a topic by its name | the last state of a state topic, or what a stream topic appended since it was last read |
@@ -168,7 +171,8 @@ The first commands
   a digit, a minus sign, the signs for degree, quote and apostrophe, or
   a blank, as `display()` of today's tool does
   (`tools/headless/ti59.py:268-289`); and, new, whether the indicator C
-  is on (OQ-6).
+  is on, on a line of its own like the Sharp indicators, its brightness
+  only with `--json` (OQ-6).
 - [ ] **AC-17** — Given `wait` on a TI machine, then the emulated time
   it reports counts as the tools count today: an instruction in the
   ROM's idle state weighs four on the TI-59 and TI-58 (C59-1 AC-1).
@@ -188,13 +192,13 @@ The first commands
   | `--lcd-png <file>` | the display as an image | LIB-6 (`screenshot`) |
   | `--wav <file>` | the buzzer of the whole run as a WAV file | this feature (`audio`) |
   | `--dump-mem <address>,<length>` | memory as a hex dump | LIB-10 |
-  | `--inspect <view>` | an INSPECTOR view as text | a product command (C1600-1 AC-19, OQ-4) |
-  | `--dump-basic` | the BASIC pointers and the program area | a product command (OQ-4) |
-  | `--tape-in <wav>`, `--tape-out <wav>` | play or record a cassette | LIB-7; a product command for the file (OQ-4) |
-  | `--ce158-pty`, `--ce158-rx`, `--ce158-rx-hold`, `--ce158-tx` | feed and capture the CE-158's serial port | a product command (OQ-4) |
+  | `--inspect <view>` | an INSPECTOR view as text | C1600-5 (`pc1600 inspect`; C1600-1 AC-19) |
+  | `--dump-basic` | the BASIC pointers and the program area | C1600-5 (`pc1600 dump-basic`) |
+  | `--tape-in <wav>`, `--tape-out <wav>` | play or record a cassette | LIB-7 (`insert`, `eject`); C1600-5 (`pc1600 tape record`, `tape status`) |
+  | `--ce158-pty`, `--ce158-rx`, `--ce158-rx-hold`, `--ce158-tx` | feed and capture the CE-158's serial port | C1600-5 (`pc1600 serial`) |
   | `--save-dir`, `--modules-dir` | the save folder; where module definitions are | this feature (AC-8), LIB-7 |
   | the summary after a run: registers, the last instructions, where the program counter spent its time | | LIB-10 |
-  | `pc1600_plotter_probe`, `pc1600_power_probe`, `pc1600_uart_probe` | diagnostics of the plotter, of power-off and of the serial port | OQ-5 |
+  | `pc1600_plotter_probe`, `pc1600_power_probe`, `pc1600_uart_probe` | diagnostics of the plotter, of power-off and of the serial port | stay scripts that drive `calcu serve` (OQ-5) |
   | `tools/read_trace.py` | a trace file as text or JSON | stays a script of the product (LIB-10 AC-33, AC-42; user, 2026-11-10, batch 6 gate) |
   | `tools/dap_smoke.py` | a smoke test of the DAP server | C1600-3 |
   | `--shots` of the Qt6 frontend | screenshot scenarios | not a harness function (ADR 0032) |

@@ -81,8 +81,8 @@ Start of a product
 - [ ] **AC-3** — Given a product starts and its full ROM set is there
   (LIB-12), then it builds the startup model: the model named by
   `[startup] model`, or with `last` the last used model, or with nothing
-  recorded the product's fallback model (LIB-9 AC-9, AC-20, AC-27; where
-  the last used model is kept: LIB-9 OQ-5).
+  recorded the product's fallback model; the last used model is kept in
+  `[startup] last-model` (LIB-9 AC-9, AC-19, AC-20, AC-26, AC-27).
 - [ ] **AC-4** — Given a startup preset is set for the startup model
   (`[preset]`, LIB-9 AC-10), then the machine is built by loading that
   preset (LIB-6); given none is set, then the product's built-in default
@@ -169,6 +169,8 @@ While an operation runs
   has what its startup preset or the built-in default gives it. Today
   the printer's connection and the module of the settings stay
   (`Shared/SessionController.cpp:93-154`; behaviour changes 59-9, 59-10).
+  The log and the debug settings stay across the switch; the paper is
+  kept per printer (LIB-8 AC-8; OQ-6).
 - [ ] **AC-21** — Given the module is changed or the PC-100C is attached
   or detached, then a power cycle follows: a TI-59 and a TI-58 lose
   program and data registers, a TI-58C keeps its constant memory. Today
@@ -182,9 +184,10 @@ While an operation runs
   (`Shared/SessionController.cpp:182-207`; the names: glossary and
   `docs/glossary-mapping.md`).
 - [ ] **AC-23** — Given Reset or Cold boot in Calc-U-59, then the
-  printer's paper, the module, the printer and the position of the TRACE
-  switch are as before (`Shared/SessionController.cpp:156-207`; C59-6
-  AC-6).
+  printer's paper, the module, the printer, the position of the TRACE
+  switch and the fitted cue card are as before; a power cycle keeps the
+  fitted cue card too (`Shared/SessionController.cpp:156-207`; C59-6
+  AC-6; C59-7 AC-25; behaviour change 59-17).
 - [ ] **AC-24** — Given a preset names another model than the one that
   runs, then the machine of that model is built by the preset (LIB-6),
   and AC-9 holds for it, as today (`Shared/SessionController.cpp:598-614`).
@@ -222,7 +225,10 @@ While an operation runs
   product quits or the model is switched, as today
   (`Shared/AppSession.cpp:326-337`).
 - [ ] **AC-32** — Given Reset, then the machine's memory is kept; given
-  Cold boot, then it is empty; these are today's Reset and Reset All
+  Cold boot, then it is empty, and so is a RAM module without a battery
+  of its own (CE-151, CE-155), while a battery-backed module keeps its
+  content (C1600-1 AC-6; behaviour change 1600-16); these are today's
+  Reset and Reset All
   (`Shared/AppSession.cpp:276-280`; the names: glossary and
   `docs/glossary-mapping.md`).
 - [ ] **AC-33** — Given a Sharp machine is switched off when a
@@ -242,8 +248,9 @@ While an operation runs
   machine first and it stays, `Shared/AppSession.cpp:264-306`).
 - **EC-7** — Given a machine does not report key readiness after it was
   built, reset, power-cycled or cold booted, then the operation ends
-  after a time its model states and a line of the log says so; the
-  machine is left as it is. Today the products wait a fixed time
+  after this much emulated time, and a line of the log says so: 25
+  seconds on the TI models, 7 seconds on the PC-1500 and PC-1500A, 27
+  seconds on the PC-1600 (OQ-8); the machine is left as it is. Today the products wait a fixed time
   instead: Calc-U-59 runs 300,000 instructions, Calc-U-1600 waits 2
   seconds and at most 5 more, on the PC-1600 at most 20 more
   (`Shared/StateApplier.cpp:12-18`,
@@ -325,7 +332,7 @@ While an operation runs
 | Settings hold the startup model and each model's startup preset; without a startup preset a product starts with its built-in default machine | ADR 0021 | 2026-11-09 |
 | A preset always builds its machine from a cold boot | ADR 0016 | 2026-11-09 |
 | Calc-U-59's built-in default is a TI-59 with the Master Library module and no printer | ADR 0021; behaviour change 59-10 | 2026-11-09 |
-| Every attach or detach on today's pin-outs is followed by a power cycle | `peripherals.md` P-1 (user); behaviour changes 59-11, 1600-4 | 2026-11-10 |
+| Every attach or detach on today's pin-outs is followed by a power cycle while the machine is on; what follows is the machine's answer at that moment (the row on a switched-off Sharp machine below) | `peripherals.md` P-1 (user); behaviour changes 59-11, 1600-4 | 2026-11-10 |
 | A reset, power cycle or cold boot is over when the machine is ready to accept a key press | LIB-1 decision log (user) | 2026-11-10 |
 | After a module change and its power cycle the PC-1500 and PC-1600 ask the user to set BASIC up again, as the hardware does | C1600-1 decision log (user) | 2026-11-10 |
 | A TI-58C without a startup preset is built with its constant memory; with one it is cold booted | `capabilities.md` C-3 (user); behaviour change 59-12 | 2026-11-10 |

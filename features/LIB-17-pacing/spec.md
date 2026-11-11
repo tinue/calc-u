@@ -36,8 +36,8 @@ What the three status columns mean for this feature:
   keep moving while a ROM loop runs (ODD59-5).
 
 ## Out of Scope
-- Who calls the pacer and when: the host's calls, pause and resume in
-  the background, operations, and throwing away the sound of a
+- Who calls the pacer and when: the host's calls, suspend and continue
+  in the background, operations, and throwing away the sound of a
   full-speed stretch (owner: LIB-3).
 - The gesture "hold the display", the `speed` step and the "elapsed"
   steps (owners: LIB-14 and C59-8 for the gesture; LIB-6 for the steps).
@@ -124,7 +124,9 @@ Pacing profile
 
 Starting afresh
 - [ ] **AC-13** — Given the machine session tells the pacer to start
-  afresh (at the start, after a pause, after an operation), then pacing
+  afresh (at the start, when a suspended session is continued, when the
+  debugger resumes a paused machine, after an operation; LIB-3 AC-23),
+  then pacing
   goes on from that moment with no lag and nothing to wait out.
 - [ ] **AC-14** — Given the machine session hands the pacer a new
   machine with its pacing profile (a model or variant switch), then

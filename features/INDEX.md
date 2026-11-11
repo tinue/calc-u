@@ -135,7 +135,10 @@ Points this index leaves open:
   on-screen keys among the shared components; the divergence matrix
   suggests merging the hit test (M16) and keeps the display per product
   (M52). Whether rendering a display kind and the hit test go into the
-  component sets is to be settled in the LIB-14 spec.
+  component sets is to be settled in the LIB-14 spec. Settled (user,
+  batch 5 gate): the component sets find the key under a pointer by one
+  rule from the product's hit map; drawing the display and the pressed
+  keys stays with each product (LIB-14 AC-24).
 - **Sharp media formats.** `.card.yaml` and `.floppy.yaml` stay readable
   (behaviour change 1600-1). If moving their readers and writers under
   the media model (`capabilities.md` Q-2) turns out to be more than

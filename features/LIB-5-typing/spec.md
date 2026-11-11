@@ -189,9 +189,10 @@ What is shown
   | `>` | `EE` |
   | Escape | `CLR` |
 
-  With Command, Control or Option held, nothing is mapped. For a letter
-  the key itself counts and Shift means `2nd`; for anything else the
-  character the layout produced counts.
+  With Command, Control or Option held, nothing is mapped. For a letter,
+  the letter the key carries on the user's keyboard layout counts, not
+  the key's position, in every frontend (OQ-2), and Shift means `2nd`;
+  for anything else the character the layout produced counts.
 - [ ] **AC-22** — Given the frontends of Calc-U-59, then the host
   keyboard reaches the machine in the Swift frontend on macOS, in Qt6
   and in the Web frontend, and not on iOS, as today
@@ -276,9 +277,12 @@ What is shown
   then it is typed as today: one press of 4 frames down and 4 frames
   up, from a queue of at most 16 that drops the newest key when it is
   full, however long the user holds the key
-  (`Core/PC1500/PC1500Machine.cpp:342-377`). This is the state until the
-  research of OQ-10; behaviour change 1600-8 describes the state after
-  it.
+  (`Core/PC1500/PC1500Machine.cpp:342-377`). This holds until the
+  research of the PC-1500's key handling is done, when this feature is
+  built: if it finds a key readiness signal, AC-31 holds for every key
+  of the PC-1500 and this criterion is struck, as behaviour change
+  1600-8 describes; if it finds none, this criterion stays and row
+  1600-8 is corrected. The spec is changed then, with the user (OQ-10).
 - [ ] **AC-33** — Given the SHIFT key of the host is tapped alone,
   pressed and let go within 400 ms with nothing else in between, then
   the machine's `shift` key is pressed once
@@ -311,6 +315,11 @@ What is shown
   (`Shared/tests/shared_machine_session_tests.cpp:96-190`,
   `Shared/tests/shared_host_key_map_tests.cpp:24-90`,
   `Core/tests/key_paste_tests.cpp:45-310`).
+- [ ] **AC-41** — Given the names `key` takes on a Sharp model, then
+  they are its key IDs (C1600-1 AC-9, AC-10) and `break` for `on`,
+  matched without regard to case; `ent`, which presets accept for
+  `enter` today, is no longer a name, and a preset that uses it is
+  refused when it is read (OQ-6; `Core/Preset/PresetFile.cpp:202`).
 
 ## Edge Cases
 - **EC-1** — Given a key-up for a key that the engine does not hold for
@@ -413,7 +422,7 @@ What is shown
 | Keys held together are fed to the matrix as they are | `typing.md` T-3; behaviour change 59-13 | 2026-11-10 |
 | Live input that arrives while an operation runs is dropped | `typing.md` T-4; behaviour change 59-5 | 2026-11-10 |
 | Paste Text never presses ENTER; a host key stops a running paste | `typing.md`, responsibilities (adopted from Calc-U-1600) | 2026-11-10 |
-| The PC-1500's key handling is researched when this feature is built; its fixed cadence then goes | `typing.md` Q-3 (user); behaviour change 1600-8 | 2026-11-10 |
+| The PC-1500's key handling is researched when this feature is built: if a key readiness signal is found, its fixed cadence goes; if none is found, the cadence stays and row 1600-8 is corrected (AC-32) | `typing.md` Q-3 (user); behaviour change 1600-8 | 2026-11-10 |
 | `key` takes one or more names; `type` types a line and ENTER | `presets.md` PR-5 | 2026-11-10 |
 | On a TI model a second-function name stands for `2nd` and its key, and a `2nd` before it is not pressed twice | `presets.md` PR-5 as amended (user) | 2026-11-10 |
 | Proposed in this spec and accepted (user, 2026-11-11): live input goes down at once when nothing waits (AC-2); a state topic lists the keys live input holds (AC-19); on-screen keys of Calc-U-59 get the minimum hold (AC-24); a key-up acts only on its own key (EC-1); the 43 names of AC-26 and the place of this list, here instead of C59-2 | Today's behaviour in both products for AC-2; the frontends draw pressed keys from such a state today; one engine means one path; the index gives `key` and `type` to this feature | 2026-11-10 |

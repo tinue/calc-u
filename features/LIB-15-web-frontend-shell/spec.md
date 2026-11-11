@@ -134,7 +134,9 @@ Embedding interface
 - [ ] **AC-14** — Given `dist/`, then it holds a `MANIFEST.json` with
   the same fields in every product: `name`, `version`, `commit`, and
   `files`, the sha256 of every file by its path (both products today,
-  `Web/build.js`).
+  `Web/build.js`). No other file of `dist/` is part of the embedding
+  interface; a list of bundled files that a worker reads is the
+  design's, one way for both products (OQ-6).
 - [ ] **AC-15** — Given a host page that has loaded React 18 as a
   global, then it embeds a product by loading `calc.css` and, as a
   classic script, `calc.js`, which defines one global component whose
@@ -147,8 +149,11 @@ Embedding interface
   reach the machine), `model` (the model to start with), `preset` (a
   bundled preset to start with), and `workerUrl` (where the worker's
   script is, for a page that serves it from another path); a product
-  adds props of its own beside them (`frontend.md` FE-7; the values and
-  defaults: OQ-1, OQ-3).
+  adds props of its own beside them. `model` takes the model's name as
+  the glossary writes it (`TI-58C`, `PC-1600`); `keyboard` is on by
+  default; without `width` and `height` the component fills its parent,
+  and a product whose faceplate has a fixed shape keeps that shape
+  inside it (`frontend.md` FE-7; OQ-1, OQ-3).
 - [ ] **AC-17** — Given the styles of a Web frontend, then they apply
   only inside the element with the class `calcu-client`, and a host
   page's own styles are not changed by them.
@@ -161,7 +166,8 @@ Embedding interface
   component is `PlayCalculator`, with the props of AC-16 and its own:
   `layout` (`portrait`, `wide`, `auto`) and `settings` (whether the
   settings control is shown) (`Web/src/PlayCalculator.jsx:179-189`,
-  `reference/WebClient.md:146-156`; the prop `module`: OQ-2).
+  `reference/WebClient.md:146-156`). The prop `module` of today goes; a
+  host page that wants another module names a preset (OQ-2).
 - [ ] **AC-20** — Given the Web frontend of Calc-U-59, then its
   settings, its magnetic cards and `ti58c.mem` are in the persistent
   file system and survive a page load. Today the settings and
@@ -190,8 +196,9 @@ Embedding interface
 - [ ] **AC-25** — Given the Web frontend of Calc-U-1600, then its
   settings are in `Calc-U-1600.ini` in the persistent file system (LIB-9
   AC-32); today they are `localStorage` keys with the prefix
-  `calcu1600/` (`Web/src/engine.js:20-39`). What happens to the media a
-  user saved with 0.8.x: OQ-4.
+  `calcu1600/` (`Web/src/engine.js:20-39`). The media a user saved with
+  the Web frontend of 0.8.x are still there: the store and the place in
+  it stay the same; the settings start afresh (OQ-4).
 - [ ] **AC-26** — Given the Web frontend of Calc-U-1600 and a Sharp
   machine at regular speed, then its buzzer is heard, and nothing is
   heard at full speed or while an operation runs (LIB-3 AC-37; today the

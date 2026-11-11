@@ -141,7 +141,11 @@ ROM images
   is built with each ROM on the system bus of its 60-pin connector at
   that bank or address, after everything the place keys name; a ROM that
   comes later in the list is found before an earlier one, and before a
-  peripheral's ROM, at the same place
+  peripheral's ROM, at the same place; this order is promised, although
+  the peripherals of the chain have none among themselves (C1600-1
+  AC-17). Each bus ROM is a peripheral that only a preset can plug in:
+  it is listed in what is plugged in, and the control state offers no
+  control for it (OQ-2)
   (`Core/Preset/PresetBusRomLoader.hpp:58-62`,
   `Core/tests/pc1600_preset_tests.cpp:935, 1019`; OQ-2).
 

@@ -44,8 +44,10 @@
 - Key readiness, prompt readiness, the latches, and how a key is held
   or queued (owner: LIB-5); the pacing profile and the carry of an
   overshoot (LIB-17, OQ-5 there).
-- Other names for a key in presets and in the harness (owner: LIB-5,
-  OQ-6 there; OQ-5 here).
+- Other names for a key in presets and in the harness: they are matched
+  without regard to case, `break` is another name of `on`, and `ent`
+  goes; the machine takes exactly the key IDs of AC-9 and AC-10 (owner:
+  LIB-5, AC-41 there; OQ-5).
 - The debug targets, an advance that a debug target stops, and the trace
   (owners: LIB-10, C1600-3).
 - Loading BASIC and machine code into memory (owner: C1600-2).
@@ -169,15 +171,17 @@ Peripherals and product kinds
   today (`Core/PC1500/PC1500Machine.cpp:49`,
   `Core/PC1600/PC1600Machine.cpp:259-270`).
 - [ ] **AC-17** — Given several peripherals on the 60-pin connector,
-  then the first of them that answers a bus cycle wins, as today: in
-  the order of plugging in when the user plugs them in, and in the
-  order CE-150, CE-1600P, CE-1600F, CE-158, host drive when a machine
-  is built with them (`Core/Connector/CardChain.hpp:18-33`,
-  `Shared/MachineSession.cpp:657-664`; bus ROMs: C1600-4 AC-10). The
-  real connector has no order: one peripheral plugs into the machine
-  and the next into a connector of that one, the chain is passive, and
-  two peripherals that answer at the same address give no predictable
-  result on the real hardware (user, 2026-11-11; OQ-3).
+  then the first of them that answers a bus cycle wins, as today; which
+  one that is when two answer at the same address is not promised,
+  because the real connector has no order: one peripheral plugs into
+  the machine and the next into a connector of that one, the chain is
+  passive, and two peripherals that answer at the same address give no
+  predictable result on the real hardware (user, 2026-11-11; OQ-3).
+  Today the order is that of plugging in when the user plugs them in,
+  and CE-150, CE-1600P, CE-1600F, CE-158, host drive when a machine is
+  built with them (`Core/Connector/CardChain.hpp:18-33`,
+  `Shared/MachineSession.cpp:657-664`). The bus ROMs of a preset are
+  the exception: their order is promised (C1600-4 AC-10).
 - [ ] **AC-18** — Given the CE-1600P, whose ROM has the variants New and
   Old, then changing the variant is a detach and an attach of the
   CE-1600P with the other variant: the machine keeps its memory and the
@@ -240,7 +244,7 @@ One seam
   |---|---|---|
   | building a machine and its ROM set | 7 | the catalogue and the ROM lookup (LIB-1, LIB-12) |
   | reset level and booting | 3 | AC-6 |
-  | power state and power cycle | 4 | AC-6, AC-7; OQ-2 |
+  | power state and power cycle | 4 | AC-6, AC-7 |
   | the built-in serial port | 1 | serial port capability (LIB-2) |
   | keys and typing | 9 | key IDs (AC-9 to AC-11); LIB-5 |
   | clock rate | 1 | the tick rate of the descriptor |
@@ -307,3 +311,4 @@ One seam
 | A bus ROM is a peripheral on the 60-pin connector that only a preset can plug in; it is listed in what is plugged in and has no control (C1600-4 AC-10) | C1600-4 OQ-2 (user, 2026-11-10, batch 6 gate) | 2026-11-10 |
 | On the 60-pin connector the first peripheral that answers wins, as today; no fixed order is promised, because the real chain is passive and has none (AC-17) | user, 2026-11-11; reverses the recommendation of OQ-3 | 2026-11-11 |
 | A Cold boot empties a RAM module without a battery of its own (AC-6) | user, 2026-11-11; behaviour change 1600-16 | 2026-11-11 |
+| Presets and the harness match key names without regard to case and take `break` for `on`; `ent` goes; the machine takes exactly its key IDs | LIB-5 OQ-6 (user, 2026-11-10, batch 4 gate); OQ-5 | 2026-11-10 |

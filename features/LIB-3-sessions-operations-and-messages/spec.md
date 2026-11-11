@@ -28,8 +28,7 @@ What the three status columns mean for this feature:
   complete only together with the rows that host the session in the
   other frontends (C59-5 for Swift, LIB-15 for Web).
 
-Two words used here that the glossary does not have in this sense
-(OQ-6): to **suspend** a session is the frontend stopping its machine
+Two glossary terms that this spec introduced: to **suspend** a session is the frontend stopping its machine
 while the product is in the background, and to **continue** it is the
 opposite; the glossary's "pause" and "resume" are the debugger's.
 
@@ -104,9 +103,12 @@ Sessions and the host
 
 Topics
 - [ ] **AC-5** — Given a state topic, when its state at the end of a
-  host call differs from the state last sent, then one message with the
-  whole state of the topic is sent; when it does not differ, none is
-  sent.
+  host call or of a command differs from the state last sent, then one
+  message with the whole state of the topic is sent; when it does not
+  differ, none is sent. A command that arrives between two host calls
+  is carried out when it arrives, and its reply and the state topics it
+  changed are sent at once; what the machine puts out is sent with the
+  host calls (OQ-3).
 - [ ] **AC-6** — Given a frontend that starts to listen, then it is sent
   every state topic once, so that a frontend that keeps the last message
   of each state topic always has the whole current state and never asks
@@ -125,7 +127,9 @@ Topics
   them (LIB-11 AC-9).
 - [ ] **AC-9** — Given the library's own topics of this feature, then
   they are: the display (state topic: the machine's display output),
-  busy (state topic), notices (stream topic) and the log (stream topic).
+  busy (state topic: whether an operation runs, and whether the machine
+  runs at full speed or at regular speed now, with or without an
+  operation; OQ-8), notices (stream topic) and the log (stream topic).
   Every other generic topic is defined by the feature that owns it, in
   one of the three shapes.
 - [ ] **AC-10** — Given a notice, then it is an English sentence for the
@@ -247,7 +251,7 @@ Host services
   | `CueCardChanged` | product topic | C59-7 |
   | `PrinterChanged`, `PaperCut` | paper (stream topic, reset marker) | LIB-8 |
   | `CardChanged` | media state | LIB-7, C59-7 |
-  | `RunStateChanged` | run state; full speed; playback (busy) | LIB-10, this feature |
+  | `RunStateChanged` | run state and armed freezes; full speed and playback (busy); the keys live input holds (LIB-5 AC-19) | LIB-10, C59-4; this feature; LIB-5 |
   | `LiveChanged`, `CpuChanged`, `HeatmapChanged`, `LogChanged`, `AsmChanged`, `ListingChanged` | product topics | C59-4 |
   | `TraceChanged` | see the open point "Traces" in `features/INDEX.md` | LIB-10 |
 
@@ -265,8 +269,9 @@ Host services
 - [ ] **AC-32** — Given a long piece of work in Calc-U-59 (loading a
   preset, a power cycle), then it runs as an operation: the busy topic
   says so and AC-15 and AC-16 hold. Today such work runs on the
-  emulation thread without a busy signal (`frontend.md`, facts; whether
-  this needs a row of its own: OQ-7).
+  emulation thread without a busy signal (`frontend.md`, facts;
+  behaviour change 59-5, which also covers "Loading…" and the refused
+  operations).
 - [ ] **AC-33** — Given Calc-U-59, then no machine has sound and no
   sound is asked for; the key click and haptics are the frontend's own
   (`frontend.md`, fit table).

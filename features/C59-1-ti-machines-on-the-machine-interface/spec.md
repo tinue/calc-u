@@ -113,7 +113,7 @@ Reset, power cycle, cold boot
 
 Keys
 - [ ] **AC-9** — Given a TI machine, then its 45 keys have these key
-  IDs, by row of the keyboard from top to bottom (the spelling: OQ-2):
+  IDs, by row of the keyboard from top to bottom:
 
   | Row | Key IDs, left to right |
   |---|---|
@@ -170,8 +170,9 @@ Key readiness
   (`Shared/MachineModelInfo.hpp:59-105`); the spec does not name them,
   because there are several such loops.
 - [ ] **AC-19** — Given a Reset on the TI-59 or TI-58, whose ROM clears
-  the memory in its start-up, then the machine itself puts the content
-  of the RAM back before it reports key readiness (AC-6).
+  the memory and sets the partition up anew in its start-up, then the
+  machine itself puts the content of the RAM and the partition back
+  before it reports key readiness (AC-6).
 
 One seam
 - [ ] **AC-17** — Given Calc-U-59 after this feature, then its app layer

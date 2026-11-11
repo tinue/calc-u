@@ -20,7 +20,8 @@
   `path:line` below is at those pins.
 
 Glossary terms used: Debugger, Debug target, Run control, Level, Pause,
-Trace, Debug panel. Words the glossary does not define yet (OQ-5):
+Trace, Debug panel. Words of this spec, of which breakpoint, watch and
+history are glossary terms since (OQ-5):
 - A **breakpoint** is an address of a debug target at which the run
   control pauses the machine before the instruction there is carried
   out.
@@ -109,7 +110,10 @@ Run control
   whether or not anything uses it; the machine is either running or
   paused. While it is paused no emulated time passes: the display keeps
   its last picture, nothing is printed, and what waits for emulated time
-  waits (LIB-6 AC-19). A paused machine has every target between two
+  waits; a preset's `wait:` with a duration is the exception: what is
+  left of it passes in the host's time, and the step ends with the
+  machine still paused (LIB-6 AC-19). A paused machine has every target
+  between two
   instructions. An advance of the machine that the run control stops
   ends there and gives the ticks it ran, which can be fewer than were
   asked for (LIB-1 AC-7).
@@ -252,7 +256,9 @@ Steps and commands
   Calc-U-1600 `tools/CliCommon.hpp:98-148`, `tools/pc1500_cli.cpp:228-333`.)
 - [ ] **AC-21** — Given the harness command `wait` with a duration, when
   the machine pauses before the duration is over, then the wait ends
-  there and its reply gives the time that passed and the run state.
+  there and its reply gives the time that passed and the run state;
+  given the machine is paused when the command is given, then it ends
+  at once, with no time passed (LIB-6 AC-19).
 
 Traces
 - [ ] **AC-22** — Given `trace:` with a file name, in a preset or as a

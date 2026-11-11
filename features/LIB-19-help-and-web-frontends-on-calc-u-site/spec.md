@@ -55,7 +55,8 @@ What the three status columns mean for this feature:
 ### Library
 
 - [ ] **AC-1** — Given a product's folder on the site, then it has a pin
-  for the product's help asset and one for its Web frontend, each with
+  for the product's help asset, one for its Web frontend and one for
+  the file with its examples (OQ-5), each with
   the address of a release file, its version and its sha256; a pin never
   names "the latest release" or a preview (`help.md` HL-3; today for the
   Web frontend `59/web-client.json:2-5`).
@@ -69,10 +70,10 @@ What the three status columns mean for this feature:
 - [ ] **AC-3** — Given the site's checks, then they fail when: the
   asset in the site differs from its pin; the pages differ from what the
   build makes from the asset; a link inside the help leads nowhere; or
-  the pinned help and the pinned Web frontend are of different versions
-  of the product (`help.md` I-1; today's checks `.github/workflows/site.yml:33-51`).
+  the pinned help, the pinned Web frontend and the pinned examples are
+  not all of one version of the product (`help.md` I-1; today's checks `.github/workflows/site.yml:33-51`).
 - [ ] **AC-4** — Given a new release of a product, then publishing its
-  help is: changing the two pins, running the build, and committing what
+  help is: changing the three pins, running the build, and committing what
   it made, on the branch the site's rules give that folder and version;
   no page is written by hand for it.
 - [ ] **AC-15** — Given the checks of AC-2 and AC-3 themselves, then the
@@ -100,10 +101,9 @@ What the three status columns mean for this feature:
   as today.
 - [ ] **AC-9** — Given the files the site hosts under
   `59/software-files/`, the presets and the four ASM overlays, then they
-  are those of the pinned release's `examples/`, in the current versions
-  of their formats (C59-2 AC-12; C59-4 AC-20; ADR 0037), and the site's
-  checks compare them with the source repository at that release's tag
-  (OQ-5).
+  are those of the pinned examples file of the release (AC-1), in the
+  current versions of their formats (C59-2 AC-12; C59-4 AC-20; ADR
+  0037), and the site's checks compare them with it (OQ-5).
 - [ ] **AC-10** — Given the tests of `/59/` today (`59/tests/`, 29
   tests), then those about fonts and the calculator page pass unchanged,
   and those about navigation are rewritten for the chapters' pages and
@@ -113,8 +113,9 @@ What the three status columns mean for this feature:
 
 - [ ] **AC-11** — Given `/1600/`, then it is no longer a placeholder: it
   has the help pages AC-2 makes from the pinned Calc-U-1600 help asset,
-  a page with the Web frontend of the pinned release, and the app that
-  can be installed from it (Briefing §4.3; LIB-15 AC-10, AC-24).
+  a page with the Web frontend of the pinned release at `/1600/play/`,
+  and the app that can be installed from it under `/1600/calc/app/`, as
+  under `/59/` (Briefing §4.3; LIB-15 AC-10, AC-24; OQ-2).
 - [ ] **AC-12** — Given the sitemap and the rules for crawlers, then
   they name the pages of `/1600/` as they name those of `/59/`
   (`robots.txt:10-16`); the root page already links both.

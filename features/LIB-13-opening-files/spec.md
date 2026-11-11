@@ -244,6 +244,10 @@ The ways in
   (`Shared/SessionController.cpp:399`).
 - **EC-5** — Given a file that cannot be read, then the command is
   refused and the notice names the file.
+- **EC-7** — Given a file is dropped, opened with Open With or named
+  at the start, then the folder in which the next file dialog starts
+  does not change; only a file chosen in a file dialog sets it (LIB-9
+  AC-29; OQ-3). Today a drop in Calc-U-1600 changes it.
 - **EC-6** — Given the user of a Web frontend says no to replacing a
   medium (AC-4), then nothing is imported and nothing is put into a
   place.
@@ -293,3 +297,4 @@ The ways in
 | Proposed in this spec and accepted (user, 2026-11-10, batch 7 gate): one file is kept while the session is busy (AC-7), as in Calc-U-1600 | Today's behaviour of one product, taken for the family | 2026-11-10 |
 | An opened module file is plugged in when it is clear from the context where it goes (a machine with one slot; a module that fits only one slot); otherwise it is refused with a notice. It is plugged in as by the slot's picker, from where it lies | user, 2026-11-10, after the batch 7 gate; confirmed 2026-11-11 | 2026-11-10 |
 | `.rom` is no name of a machine-code file: not in a dialog, not on a drop, not in the file types of Open With | user, 2026-11-10, after the batch 7 gate: the extension is not used anywhere | 2026-11-10 |
+| Only a file dialog changes the folder in which the next file dialog starts (EC-7) | user, 2026-11-10, batch 7 gate; OQ-3; behaviour change 1600-15 | 2026-11-10 |

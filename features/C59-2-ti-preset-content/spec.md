@@ -79,11 +79,14 @@ The sections
   one of the registers H00 to H03 can be read and written, and the
   partition can be read and set; what was written reads back.
 - [ ] **AC-2** — Given `partition:`, then its value is the number of the
-  last program step, optionally followed by a point and digits that are
+  last program step of a partition the model's ROM can set
+  (`ti59-research`), optionally followed by a point and digits that are
   not read (`479`, `479.59`); given none, then the machine keeps the
   partition its ROM gives after a cold boot. A value that is not a
-  number, or lies beyond the last step of the model (959 on the TI-59,
-  479 on the TI-58 and TI-58C), refuses the preset when it is read
+  number, or that is no partition the model's ROM can set (the last
+  step is at most 959 on the TI-59 and 479 on the TI-58 and TI-58C),
+  refuses the preset when it is read; today any value is rounded up to
+  the next multiple of 80 steps
   (`Shared/StateFile.cpp:156-164`, `Shared/MachineModelInfo.hpp:80`;
   OQ-1).
 - [ ] **AC-3** — Given `steps: |`, then each of its lines is one of
@@ -203,7 +206,12 @@ The shipped and hosted presets
   Library module in `slot-1` and the PC-100C in `printer` and nothing
   else (ADR 0021 as amended), and as examples the ten presets the Web
   frontend bundles today, in today's order, with today's title as their
-  `description` (`Web/presets.json:1-12`; their names and groups: OQ-3).
+  `description`, in the groups "Diagnostics" (`diag.ti59`, `diag.ti58`,
+  `ram_test.ti59`), "Programs" (`sum.ti59`, `characters.ti59`,
+  `fastmode-sst.ti59`) and "Printer pictures" (`printer-interrupt.ti59`,
+  `picard.ti59`, `globe-print.ti59`, `switzerland.ti59`), each under a
+  short name chosen when the files are upgraded and checked by AC-15
+  (`Web/presets.json:1-12`; OQ-3).
 - [ ] **AC-14** — Given the Swift, Qt6 and Web frontends, then each
   bundles the preset list and its files, so that the scenario of LIB-6
   AC-42 can load an example in each; today only the Web frontend bundles

@@ -69,7 +69,7 @@ Menus
   | Menu | Items |
   |---|---|
   | File | Load Preset…; Examples ▸ with one submenu per group, when the preset list has examples; the magnetic card items (C59-7), on the TI-59 |
-  | Machine | Model ▸; Peripherals ▸; Reset; Cold boot |
+  | Machine | Model ▸; Peripherals ▸; Reset; Cold boot; Resume |
   | Help | "Calc-U-59 Help" |
 
   An item that cannot be used now is shown disabled, not left out
@@ -95,7 +95,8 @@ Control bar
   bar keeps the buttons Reset, Preset (Load Preset…) and Settings of
   today, next to the controls of AC-3, and a More button, with the
   ellipsis, opens a menu with the items that have no control of their
-  own: Examples ▸, Cold boot, and "Calc-U-59 Help". Cold boot is marked
+  own: Examples ▸, Cold boot, Resume and "Calc-U-59 Help" (LIB-14
+  AC-29). Cold boot is marked
   as destructive there and asks before it is carried out. The long press
   on Reset for "Clean" is gone (ADR 0024: "on iOS the same items appear
   without a menu bar"; `App/Views/CalculatorView.swift:316-393`; OQ-1).

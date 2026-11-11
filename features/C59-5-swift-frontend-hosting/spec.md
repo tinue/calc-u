@@ -101,11 +101,14 @@ Background and foreground
   (`App/EmulatorViewModel.swift:188-202`; OQ-5).
 
 Harness attach
-- [ ] **AC-10** — Given a development build of the Swift frontend, on
-  macOS or in the iOS simulator, then it opens its app session to the
-  serve protocol on a TCP port bound to localhost, and `calcu` on the
-  same Mac can attach to it (`harness.md` H-3, H-4; ADR 0033; what a
-  development build is: OQ-2).
+- [ ] **AC-10** — Given a development build of the Swift frontend, which
+  is a build in the Debug configuration, on macOS or in the iOS
+  simulator, then it opens its app session to the serve protocol on a
+  TCP port bound to localhost, the port a launch argument names, else a
+  fixed default that is set after the phase 5 spike, and `calcu` on the
+  same Mac can attach to it; only the Debug configuration has an
+  entitlements file for incoming connections, and Release has none
+  (`harness.md` H-3, H-4; ADR 0033; OQ-1, OQ-2).
 - [ ] **AC-11** — Given `calcu` is attached, then the commands of the
   harness work on the running app's session as in `calcu serve`, and
   what a command changes shows in the app's window. The options of

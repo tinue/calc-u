@@ -86,6 +86,9 @@ The card and its file
   | `Rnnn: HH HH HH HH HH HH HH HH` | exactly 30 such rows, each the eight bytes of one register in hexadecimal; the number after `R` is for the reader's eye and is not read |
   | `END-CARD` | the last line; required |
 
+  A card file has no comments: a ` #` in a value, such as a title, is
+  part of the value. The file ends with a line end (OQ-4).
+
   For example, a card with a program on side 1 and nothing on side 2:
 
   ```
@@ -133,7 +136,8 @@ The card and its file
   as the product has it, whole: the sides that hold a bank, its cue card
   and its name, in version 3.0, and it reads back as the same card. A
   card that was opened from outside the save folder is written back to
-  its own file (LIB-13 AC-4).
+  its own file; in a Web frontend it was imported into the save folder
+  when it was opened (LIB-13 AC-4).
   Nothing of the file as it was is kept; today the side that was not
   passed is read from the file again first
   (`tests/shared_formats_tests.cpp:272-296`,
@@ -301,8 +305,8 @@ Every frontend
   they last for one page only (`Web/bindings.cpp:225-257`; LIB-7 AC-33,
   AC-36; behaviour change 59-6).
 - [ ] **AC-27** — Given what the tests of Calc-U-59 check today about
-  cards, then it holds, without the earlier formats and without writing
-  a card back outside the save folder: a blank card written and read
+  cards, then it holds, without the earlier formats: a blank card
+  written and read
   back; a card fed only when a corner is pressed; a read that writes
   nothing; both sides in one file; the other side kept on a write; a
   fresh card replacing a file only at its first write; `arm` not
@@ -396,7 +400,7 @@ Every frontend
 |----------|-----------|------|
 | The card format gets a name field and a new version; saved cards of 2.3.0 are refused with the hint | `media.md` MD-2, Q-4 (user); ADR 0037; behaviour change 59-1 | 2026-11-10 |
 | Cards are always written in the current version | ADR 0020 | 2026-11-10 |
-| Magnetic cards live in the save folder, also on the web; a card file elsewhere is not written back in place | ADR 0019; behaviour changes 59-6, 59-8 | 2026-11-10 |
+| Magnetic cards the product makes live in the save folder, also on the web; a card file opened from elsewhere is used and written back where it lies, and only a Web frontend imports it (LIB-13 AC-4) | ADR 0019 as amended; behaviour changes 59-6, 59-8 | 2026-11-10 |
 | `fit` places a card above the keys and affects only what the user sees; `insert` and `arm` go through the card reader, a pass-through media place | `presets.md` PR-8 | 2026-11-10 |
 | The cue card of the running module program is a Calc-U-59 product kind | `capabilities.md`, product kinds | 2026-11-10 |
 | Reset keeps the cue card that is fitted, on all models; a fitted magnetic card can then still be fed | user, 2026-11-10, batch 5 and batch 6 gates; behaviour change 59-17 | 2026-11-10 |

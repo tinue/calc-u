@@ -208,7 +208,7 @@ be added.
   its callers (ADR 0035).
 
 ## Open Questions
-- [ ] **OQ-1** — The checks Calc-U-59 has today beyond the amount: the
+- [x] **OQ-1** — *Decided as recommended (user, 2026-11-11).* The checks Calc-U-59 has today beyond the amount: the
   first and last word of the TI-59's instruction ROM
   (`Shared/RomLoader.cpp:116-150`). *Recommendation:* keep them as they
   are; without own dumps nothing speaks against them.

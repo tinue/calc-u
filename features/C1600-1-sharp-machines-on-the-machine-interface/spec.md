@@ -100,9 +100,10 @@ Reset, power cycle, cold boot
   | Power cycle | switched off and on again: all memory kept | the same |
   | Cold boot | the machine's own memory empty (today's Reset All, `Core/PC1500/PC1500Memory.cpp:20-29`) | the internal memory empty (ALL RESET, `Core/PC1600/PC1600Machine.cpp:52-62`) |
 
-  Today none of the three touches the content of a module in a slot
-  (whether a cold boot should empty a RAM module without a battery:
-  OQ-4).
+  A Cold boot also empties a RAM module that has no battery of its own
+  (CE-151, CE-155), as the real device would; a battery-backed module
+  keeps its content. Today none of the three touches the content of a
+  module in a slot (user, 2026-11-11; OQ-4; behaviour change 1600-16).
 - [ ] **AC-7** — Given a Sharp machine, when its `off` key is pressed
   through the ROM or it switches itself off, then AC-3 holds until the
   key `on` is pressed, and then it runs again, as today
@@ -168,8 +169,15 @@ Peripherals and product kinds
   today (`Core/PC1500/PC1500Machine.cpp:49`,
   `Core/PC1600/PC1600Machine.cpp:259-270`).
 - [ ] **AC-17** — Given several peripherals on the 60-pin connector,
-  then the order in which they answer does not depend on the order in
-  which they were plugged in (OQ-3).
+  then the first of them that answers a bus cycle wins, as today: in
+  the order of plugging in when the user plugs them in, and in the
+  order CE-150, CE-1600P, CE-1600F, CE-158, host drive when a machine
+  is built with them (`Core/Connector/CardChain.hpp:18-33`,
+  `Shared/MachineSession.cpp:657-664`; bus ROMs: C1600-4 AC-10). The
+  real connector has no order: one peripheral plugs into the machine
+  and the next into a connector of that one, the chain is passive, and
+  two peripherals that answer at the same address give no predictable
+  result on the real hardware (user, 2026-11-11; OQ-3).
 - [ ] **AC-18** — Given the CE-1600P, whose ROM has the variants New and
   Old, then changing the variant is a detach and an attach of the
   CE-1600P with the other variant: the machine keeps its memory and the
@@ -255,14 +263,14 @@ One seam
   fit table, "Depth today").
 
 ## Open Questions
-- [ ] **OQ-3** — The order on the 60-pin connector (AC-17). The first
+- [x] **OQ-3** — *Decided (user, 2026-11-11): not the fixed order. Exactly one peripheral plugs into the machine's connector, and some peripherals have a further connector (a CE-158 plugs into the PC-1600 or into the CE-150); the hardware has no order, the chain is passive, and two devices on the same address or page would give unpredictable results. "First that answers" is the better model: AC-17 keeps today's behaviour.* The order on the 60-pin connector (AC-17). The first
   peripheral that answers a bus cycle wins. Today the order is the order
   of plugging in when the user does it, and a fixed one (CE-150,
   CE-1600P, CE-1600F, CE-158, host drive) when a machine is rebuilt
   (`Core/Connector/CardChain.hpp:18-33`,
   `Shared/MachineSession.cpp:657-664`). *Recommendation:* always the
   fixed order.
-- [ ] **OQ-4** — A cold boot and a RAM module without a battery (CE-151,
+- [x] **OQ-4** — *Decided as recommended (user, 2026-11-11).* A cold boot and a RAM module without a battery (CE-151,
   CE-155). The glossary says a cold boot leaves "all memory empty, on
   every model", as after a long battery removal; today's Reset All
   leaves every module as it is. A battery-backed module is a medium and
@@ -297,3 +305,5 @@ One seam
 | Only the display has an on and an off, reported in display output; a switched-off Sharp machine is one whose display is off and whose ROM waits for the `on` key | user, 2026-11-10, batch 2 gate (prompted) | 2026-11-10 |
 | An attach while the machine is switched off is followed by nothing; the machine stays off, as today | user, 2026-11-10, batch 4 gate; LIB-18 AC-33 | 2026-11-10 |
 | A bus ROM is a peripheral on the 60-pin connector that only a preset can plug in; it is listed in what is plugged in and has no control (C1600-4 AC-10) | C1600-4 OQ-2 (user, 2026-11-10, batch 6 gate) | 2026-11-10 |
+| On the 60-pin connector the first peripheral that answers wins, as today; no fixed order is promised, because the real chain is passive and has none (AC-17) | user, 2026-11-11; reverses the recommendation of OQ-3 | 2026-11-11 |
+| A Cold boot empties a RAM module without a battery of its own (AC-6) | user, 2026-11-11; behaviour change 1600-16 | 2026-11-11 |

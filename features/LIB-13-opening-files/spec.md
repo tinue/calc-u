@@ -291,5 +291,5 @@ The ways in
 | In a Web frontend an opened medium is imported, and a name that is taken follows the rule of Name & Save (AC-4) | user, 2026-11-10, batch 7 gate; LIB-7 AC-17 | 2026-11-10 |
 | Proposed in this spec and accepted (user, 2026-11-10, batch 7 gate): a module file or a disk file can be dropped in Calc-U-1600 (AC-19) | It follows from one command for every kind | 2026-11-10 |
 | Proposed in this spec and accepted (user, 2026-11-10, batch 7 gate): one file is kept while the session is busy (AC-7), as in Calc-U-1600 | Today's behaviour of one product, taken for the family | 2026-11-10 |
-| An opened module file is plugged in when it is clear from the context where it goes (a machine with one slot; a module that fits only one slot); otherwise it is refused with a notice | user, 2026-11-10, after the batch 7 gate | 2026-11-10 |
+| An opened module file is plugged in when it is clear from the context where it goes (a machine with one slot; a module that fits only one slot); otherwise it is refused with a notice. It is plugged in as by the slot's picker, from where it lies | user, 2026-11-10, after the batch 7 gate; confirmed 2026-11-11 | 2026-11-10 |
 | `.rom` is no name of a machine-code file: not in a dialog, not on a drop, not in the file types of Open With | user, 2026-11-10, after the batch 7 gate: the extension is not used anywhere | 2026-11-10 |

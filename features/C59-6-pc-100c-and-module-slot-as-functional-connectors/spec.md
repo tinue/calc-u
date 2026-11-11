@@ -121,7 +121,11 @@ The module slot
   and the printed lines are the recorded ones; there is such a run for
   the Master Library and for at least one other module.
 - [ ] **AC-10** — Given the place `slot-1` is empty, then the machine
-  runs, and its ROM finds no module (`presets.md` PR-9; OQ-1). Today a
+  runs, and its ROM finds no module: a library program that is asked
+  for, as with `2nd Pgm 01`, makes the display blink as for an error,
+  as `2nd Pgm 30` does with the Master Library module, which has no
+  program 30 (user, 2026-11-11, from the real machine; `presets.md` PR-9; OQ-1).
+  Today a
   missing module leaves an image of zeros and a line in the log
   (`Shared/SessionController.cpp:129-130`).
 - [ ] **AC-11** — Given a module was changed, or the PC-100C attached or
@@ -164,27 +168,27 @@ The module slot
   dots.
 
 ## Open Questions
-- [ ] **OQ-1** — What the real ROM does with an empty module slot
+- [x] **OQ-1** — *Decided (user, 2026-11-11): the real machine error-blinks, the same as for `2nd Pgm 30` on the Master Library module, which does not have 30 programs. A golden run records it.* What the real ROM does with an empty module slot
   (AC-10): for example on `2nd Pgm 01`. Today's code has no test for it
   and the research notes do not say. *Recommendation:* whatever the
   original ROM does when it reads no module is right by definition; try
   it on a real TI-59 once, record the result in `ti59-research`, and
   add a golden run.
-- [ ] **OQ-2** — Print instructions without a printer (AC-7). Today the
+- [x] **OQ-2** — *Decided (user, 2026-11-11): this is the ROM's job, and the emulator must not interfere. AC-7 holds as written, checked by a golden run against 2.3.0.* Print instructions without a printer (AC-7). Today the
   printer's logic and its busy time sit in the CPU and do not ask
   whether a printer is connected; whether the ROM ever executes a print
   instruction without one is not verified. If it does, the busy time
   must still pass after the printer has moved out, or programs would run
   faster than in 2.3.0. *Recommendation:* verify on 2.3.0 with a program
   that prints; AC-7 holds either way, and the design follows the result.
-- [ ] **OQ-3** — `TRACE` after a detach (AC-6): the real switch keeps
+- [x] **OQ-3** — *Decided as recommended (user, 2026-11-11).* `TRACE` after a detach (AC-6): the real switch keeps
   its position when the calculator is lifted off the cradle. Today's
   code releases it. *Recommendation:* keep today's behaviour, because in
   the emulator a detached printer does not exist; say so in the help.
-- [ ] **OQ-4** — The name of a module in a preset and in the harness:
+- [x] **OQ-4** — *Decided as recommended (user, 2026-11-11).* The name of a module in a preset and in the harness:
   `presets.md` PR-9 says "a module by name or ID". *Recommendation:* the
   two-letter ID of AC-8 is the name; the title is for the picker.
-- [ ] **OQ-5** — The fit table names 12 signals on the printer
+- [x] **OQ-5** — *Decided as recommended (user, 2026-11-11).* The fit table names 12 signals on the printer
   connector, and `Briefing.md` §1.9 says the calculator has 11 pads.
   Which of the 12 is not on the connector is the open point of
   `Briefing.md` §6. *Recommendation:* leave the list as it is until the
@@ -203,3 +207,6 @@ The module slot
 | A peripheral whose ROM is missing cannot be attached | `roms.md` R-3 | 2026-11-10 |
 | It is an internal restructuring: what the user sees stays, except the listed changes | `Briefing.md` §1.9 | 2026-11-09 |
 | Proposed in this spec, for the gate: the control IDs `PRINT`, `ADV`, `TRACE`; what a detach in the middle of a line leaves (EC-2); the reading of P-2 for the printer's busy time | `presets.md` PR-7 writes `TRACE`; no source gives EC-2; P-2 speaks of ticks only | 2026-11-10 |
+| With an empty module slot a library program that is asked for makes the display blink as for an error (AC-10) | user, 2026-11-11, from the real machine | 2026-11-11 |
+| What a print instruction does without a printer is the ROM's; the emulator adds nothing of its own (AC-7) | user, 2026-11-11 | 2026-11-11 |
+| A preset and the harness name a module by its two-letter ID only; `TRACE` is released by a detach, as today; the fit table keeps its 12 signals until the connector is modelled at contact level | user, 2026-11-11 | 2026-11-11 |

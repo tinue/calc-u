@@ -91,7 +91,7 @@ Reset, power cycle, cold boot
 
   | | TI-59, TI-58 | TI-58C |
   |---|---|---|
-  | Reset | the content of its RAM kept (program and data registers); everything else as after switching on | the same as a power cycle |
+  | Reset | the content of its RAM kept (program and data registers), and the partition; everything else as after switching on | the same as a power cycle |
   | Power cycle | as the ROM's start-up leaves a machine whose memory was lost | the constant memory kept (all of its RAM, including the registers H00 to H03); everything else as after switching on |
   | Cold boot | as the ROM's start-up leaves a machine whose memory was all zero | the same, the constant memory included |
 
@@ -100,7 +100,10 @@ Reset, power cycle, cold boot
   start-up and writes the RAM back, because the ROM's start-up clears it
   on the TI-59 and TI-58; the clean reset is `:109-115`. A power cycle
   that loses the memory of the TI-59 and TI-58 is new: behaviour change
-  59-11.)
+  59-11. The ROM's reset routine sets the partition up anew, so a Reset
+  saves the partition and puts it back; today, as read from the code and
+  covered by no test, it goes back to the ROM's default: behaviour
+  change 59-22; user, 2026-11-11; OQ-5.)
 - [ ] **AC-7** — Given a newly built TI machine, then it is in the state
   after a cold boot, unless it was handed content at its build (the
   constant memory of a TI-58C, C59-3).
@@ -227,7 +230,7 @@ One seam
   component after this feature and after C59-6 (ADR 0012).
 
 ## Open Questions
-- [ ] **OQ-4** — Where the persistence of vision lives. The machine
+- [x] **OQ-4** — *Decided as recommended (user, 2026-11-11).* Where the persistence of vision lives. The machine
   gives the duty per position (AC-13). Today Calc-U-59 turns it into
   what the eye sees, with hold, fade and a perceptual curve, in its app
   layer for all three frontends (`Shared/DisplayPov.hpp:6-73`,
@@ -236,7 +239,7 @@ One seam
   Calc-U-59 app layer, once for all frontends, and its result is what
   the frontends draw; whether it travels as the display topic or as a
   product topic is decided with LIB-3.
-- [ ] **OQ-5** — Reset and the partition on the TI-59 and TI-58. Today's
+- [x] **OQ-5** — *Decided (user, 2026-11-11): the partition is set up by the ROM's reset routine, so Reset must back it up and restore it: a Reset keeps the partition (AC-6). The first task records on 2.3.0 what today's Reset does.* Reset and the partition on the TI-59 and TI-58. Today's
   Reset keeps the RAM but not the partition, which goes back to the
   ROM's default; this was read from the code and is covered by no test.
   *Recommendation:* verify on 2.3.0 first; if true, keep it and say so
@@ -246,7 +249,7 @@ One seam
   it back from `ti58c.mem`, which can be up to half a second old
   (`Shared/SessionController.cpp:186, 258-266`). *Recommendation:* from
   the running machine; nobody will see the difference.
-- [ ] **OQ-7** — The stretch a brightness is measured over (AC-13).
+- [x] **OQ-7** — *Decided as recommended (user, 2026-11-11): only one GUI per core is allowed.* The stretch a brightness is measured over (AC-13).
   Today it is "since the last read", so a second reader would disturb
   the first. *Recommendation:* keep it, and let the machine session be
   the only reader, once per call of its host; the harness and a second
@@ -267,3 +270,5 @@ One seam
 | Key readiness is reported by the machine; a Reset, power cycle or cold boot is over when it is reported again | user, 2026-11-10, batch 2 gate | 2026-11-10 |
 | The machine takes the 45 key IDs of AC-9 exactly. In presets and in the harness a second-function name (`Pgm`) stands for 2nd and its key, and a `2nd` written before it is not pressed twice; names are matched without regard to case (specified in LIB-5, AC-26 there) | user, 2026-11-10, batch 2 gate | 2026-11-10 |
 | C and the minus sign can be lit together, each with its own brightness as on the hardware; the frontends show at least what they show today | user, 2026-11-10, batch 2 gate: today both show, but not with independent brightness | 2026-11-10 |
+| A Reset keeps the partition on the TI-59 and TI-58 (AC-6) | user, 2026-11-11; behaviour change 59-22 | 2026-11-11 |
+| The persistence of vision stays in the Calc-U-59 app layer, once for all frontends; the machine session is the only reader of the display output | user, 2026-11-11 | 2026-11-11 |

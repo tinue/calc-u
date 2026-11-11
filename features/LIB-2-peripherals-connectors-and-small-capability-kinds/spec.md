@@ -243,7 +243,10 @@ Real-time clock
 - [ ] **AC-32** — Given a CE-161 in a module slot, then it has a
   controls capability with its write-protect switch; while the switch is
   on, every write to the module's RAM is blocked, and the module's media
-  place reports the same position as its write protection
+  place reports the same position as its write protection. The switch
+  is set with a save (LIB-7 AC-19), and a power cycle follows, as after
+  an attach (AC-24); at an attach its position is the one the saved
+  file gives (user, 2026-11-11; OQ-4)
   (`Core/Connector/ExpansionCard.hpp:159-165`; `capabilities.md`,
   generic kinds).
 - [ ] **AC-33** — Given a PC-1600 exists, then on macOS and Linux its
@@ -293,13 +296,13 @@ Invariants checked in review and in the phase 5 walkthroughs:
   defined by the core that owns the connector (`peripherals.md` P-4).
 
 ## Open Questions
-- [ ] **OQ-1** — The reason of a refused attach (AC-6): is it an English
+- [x] **OQ-1** — *Decided as recommended (user, 2026-11-11).* The reason of a refused attach (AC-6): is it an English
   sentence, shown as it is (`frontend.md`: "messages to the user are
   English sentences from the app layer"), or a code the library turns
   into text? *Recommendation:* a sentence, from the core for product
   rules (AC-29) and from the library for the general cases (AC-7, EC-1);
   the control state shows the same sentence.
-- [ ] **OQ-2** — The serial port in detail (AC-17, AC-18): which line
+- [x] **OQ-2** — *Decided as recommended (user, 2026-11-11).* The serial port in detail (AC-17, AC-18): which line
   settings the capability gives; whether the host link follows them;
   how much may wait in each direction, and what happens when the machine
   does not take bytes as fast as the user's program sends them. Today
@@ -308,7 +311,7 @@ Invariants checked in review and in the phase 5 walkthroughs:
   as it is and write it into the Calc-U-1600 criteria once it has been
   read from the code (`Core/` serial link, `Shared/PtySerialLink`); the
   capability reports what the machine set and the host link ignores it.
-- [ ] **OQ-4** — The write-protect switch of the CE-161 (AC-32): does
+- [x] **OQ-4** — *Decided (user, 2026-11-11): the switch is flipped with a save. After the save the machine does a power cycle, as if a module had been plugged in. When a module is plugged in, the switch's position comes from the saved file.* The write-protect switch of the CE-161 (AC-32): does
   the ROM see a change at once, or at its next power-on? The glossary
   says a CE-161 "becomes" a program module with the switch set. Today
   the switch is moved without anything following
@@ -318,7 +321,7 @@ Invariants checked in review and in the phase 5 walkthroughs:
   position comes with the content handed in at the attach (LIB-7).
 - [ ] **OQ-5** — "Host link" and "serial port file" for the glossary, as
   defined above.
-- [ ] **OQ-6** — Controls of a component of the machine itself. The
+- [x] **OQ-6** — *Decided (user, 2026-11-11): none.* Controls of a component of the machine itself. The
   contract allows them ("a peripheral or component"); neither product
   has one today. Nothing to decide unless the user knows of one.
 
@@ -338,3 +341,5 @@ Invariants checked in review and in the phase 5 walkthroughs:
 | Peripherals stay plugged in through reset, power cycle and cold boot | Both products today (AC-10) | 2026-11-10 |
 | Proposed in this spec, for the gate: a place presents one pin-out and fit follows from it (AC-2); the machine can be asked whether an attach would succeed (AC-6); a detach takes the peripherals plugged into the detached one with it (EC-3); replacing a peripheral is one step with one power cycle (AC-35); a serial port file outlives the machine or peripheral it serves (AC-20, today's behaviour made a rule) | The control state needs "available now" with a reason (`frontend.md` FE-6); no contract states the others | 2026-11-10 |
 | The real-time clock is set from the host when a machine is built and at the end of every operation; Calc-U-1600's note "seeded once" is out of date and is corrected in phase 6 | user, 2026-11-10, batch 2 gate: the clock runs on emulated time, so every stretch at full speed moves it ahead; later changes re-seed it more often | 2026-11-10 |
+| The CE-161's write-protect switch is set with a save, and a power cycle follows; at an attach its position comes from the saved file (AC-32) | user, 2026-11-11; reverses the recommendation of OQ-4; behaviour change 1600-17 | 2026-11-11 |
+| The reason of a refused attach is an English sentence, from the core for product rules and from the library for the general cases; the serial port carries today's behaviour over; no machine has controls of its own | user, 2026-11-11 | 2026-11-11 |

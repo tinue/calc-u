@@ -217,9 +217,12 @@ In presets and the harness
   `- insert: card-reader` with a side alone, which inserts that side of
   the fitted card and fails when none is fitted, or with a card and a
   side, which inserts it without fitting it; a side that is left out is
-  side 1; the step ends when the card is back, or, when the ROM has not
-  taken it after an hour of emulated time, with a line in the log, as
-  the waits of LIB-6 AC-21 do (AC-7; LIB-7 AC-26);
+  side 1; the step ends when the card is back. A preset in which the
+  ROM does not take the card has a defect: given the card is still at
+  the reader and the machine has put out nothing new, on the display or
+  on the paper, for 30 minutes of emulated time, then the preset ends
+  there with a line in the log; a program that keeps giving output is
+  never stopped by this, however long it runs (user, 2026-11-11; AC-7; LIB-7 AC-26);
   `- arm: card-reader` with a card and a side, which is inserted when
   the program asks for a card (AC-9)
   (`presets.md` PR-8; today `Shared/StateFile.cpp:168-201`,
@@ -401,3 +404,4 @@ Every frontend
 | Proposed in this spec and accepted (user, 2026-11-10, batch 7 gate): a `medium:` section for a card has the fields of AC-18 | Today's `CARD: mem:` block, in the notation of version 2 | 2026-11-10 |
 | Proposed in this spec and accepted (user, 2026-11-10, batch 7 gate): the machine itself says when it waits for a card (AC-9) | LIB-7 AC-6; the pacing already needs "needs a card now" from the machine | 2026-11-10 |
 | An empty side gives the ROM zeroes, and the ROM ends the read with an error (EC-2) | user, 2026-11-10, after the batch 7 gate | 2026-11-10 |
+| A preset whose `insert:` step leaves the card at the reader while the machine gives no output for 30 minutes of emulated time ends there; a program that keeps giving output is never stopped. Read into the answer: "hanging" is measured by output, and the preset ends instead of going on | user, 2026-11-11: "If possible I'd stop a hanging preset after 30 minutes emulated time, but again: don't break a working program" | 2026-11-11 |

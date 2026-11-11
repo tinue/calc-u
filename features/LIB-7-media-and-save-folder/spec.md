@@ -209,8 +209,10 @@ Name & Save
   it is autosaved from then on, saved as a template it is not
   (Calc-U-1600 `Shared/ModuleBay.cpp:222-229`).
 - [ ] **AC-19** — Given the write-protect switch is asked for with a
-  save, then the file says so and the medium in the machine is protected
-  at once; no control switches it off again, as today (Calc-U-1600
+  save, then the file says so, the medium in the machine is protected
+  at once, and the machine goes through a power cycle, as if a module
+  had been plugged in (LIB-2 AC-24, AC-32; user, 2026-11-11; behaviour change
+  1600-17); no control switches it off again, as today (Calc-U-1600
   `Shared/ModuleBay.cpp:208-220`).
 - [ ] **AC-20** — Given a place where a new, empty medium is started
   under a name before anything is written (a fresh magnetic card, a tape
@@ -502,3 +504,4 @@ Getting media in and out
 | Proposed in this spec and accepted (user, 2026-11-10, batch 6 gate): the half second of AC-11 for every kind, taken from Calc-U-1600 | It makes the criterion checkable | 2026-11-10 |
 | Proposed in this spec and accepted (user, 2026-11-10, batch 6 gate): the harness commands of AC-28 | Rule 4 of the index; LIB-11 AC-14, AC-18 | 2026-11-10 |
 | A medium the user opens from outside the save folder is used where it lies and written back there; only a Web frontend copies it in, because a browser cannot write back | user, 2026-11-10, batch 7 gate; LIB-13 AC-4; ADR 0019 as amended | 2026-11-10 |
+| A save that sets the write-protect switch is followed by a power cycle, as if a module had been plugged in (AC-19) | user, 2026-11-11; LIB-2 OQ-4 | 2026-11-11 |

@@ -1,4 +1,4 @@
-# LIB-15: Web client shell
+# LIB-15: Web frontend shell
 
 <!-- spec.md is the stable CONTRACT: WHAT, not HOW. It changes only
      deliberately, when the requirements change, and stays unchanged
@@ -278,5 +278,6 @@ Embedding interface
 | The web save folder is persistent IndexedDB in both products; on the web the settings file is a file in it | `settings.md` ST-3, ST-4 | 2026-11-10 |
 | The Web frontend always bundles its ROMs | `roms.md` R-3 | 2026-11-10 |
 | Suspending in the background stays per frontend as today: the Web frontends suspend when hidden | `frontend.md`, rules from decisions already taken | 2026-11-10 |
-| Proposed in this spec, for the gate: the one-writer rule of Calc-U-1600 becomes the rule for every Web frontend, per product, with no later takeover (AC-7, AC-8); a change is kept within one second (AC-6); a Web frontend that cannot start says so itself (AC-3); an unreadable persistent file system is not written over (EC-2); `workerUrl` is part of the embedding interface (AC-16); an unknown `model` or `preset` gives a notice (EC-4) | Persistent storage opened twice needs a rule; today a failed start of Calc-U-59 leaves "Starting the emulator…" for ever; both products have `workerUrl` today although FE-7 does not list it; no source gives EC-2 and EC-4 | 2026-11-10 |
+| Proposed in this spec and accepted (user, 2026-11-11): the one-writer rule of Calc-U-1600 becomes the rule for every Web frontend, per product, with no later takeover (AC-7, AC-8); a change is kept within one second (AC-6); a Web frontend that cannot start says so itself (AC-3); an unreadable persistent file system is not written over (EC-2); `workerUrl` is part of the embedding interface (AC-16); an unknown `model` or `preset` gives a notice (EC-4) | Persistent storage opened twice needs a rule; today a failed start of Calc-U-59 leaves "Starting the emulator…" for ever; both products have `workerUrl` today although FE-7 does not list it; no source gives EC-2 and EC-4 | 2026-11-10 |
 | `model` takes the model's name; `keyboard` is on by default in both products; without `width` and `height` the component fills its parent; the prop `module` of `PlayCalculator` goes; media saved with the Calc-U-1600 Web frontend of 0.8.x stay; the one-writer rule is added to ledger row 59-8 | user, 2026-11-10, batch 3 gate | 2026-11-10 |
+| The row is named "Web frontend shell" | user, 2026-11-11; the glossary's term is Web frontend | 2026-11-11 |

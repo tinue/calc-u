@@ -319,7 +319,7 @@ Invariants checked in review and in the phase 5 walkthroughs:
   when its peripheral is attached: off, or what was saved with the
   module? *Recommendation:* nothing follows a switch, as today; the
   position comes with the content handed in at the attach (LIB-7).
-- [ ] **OQ-5** — "Host link" and "serial port file" for the glossary, as
+- [x] **OQ-5** — *Decided as recommended (user, 2026-11-11).* "Host link" and "serial port file" for the glossary, as
   defined above.
 - [x] **OQ-6** — *Decided (user, 2026-11-11): none.* Controls of a component of the machine itself. The
   contract allows them ("a peripheral or component"); neither product
@@ -339,7 +339,7 @@ Invariants checked in review and in the phase 5 walkthroughs:
 | Controls, serial port and real-time clock are generic kinds | `capabilities.md` C-1; ADR 0007 | 2026-11-10 |
 | The power cycle after an attach is run by the app session as an operation, so it is specified in LIB-18 | Glossary, Operation; rule 1 of the cut | 2026-11-10 |
 | Peripherals stay plugged in through reset, power cycle and cold boot | Both products today (AC-10) | 2026-11-10 |
-| Proposed in this spec, for the gate: a place presents one pin-out and fit follows from it (AC-2); the machine can be asked whether an attach would succeed (AC-6); a detach takes the peripherals plugged into the detached one with it (EC-3); replacing a peripheral is one step with one power cycle (AC-35); a serial port file outlives the machine or peripheral it serves (AC-20, today's behaviour made a rule) | The control state needs "available now" with a reason (`frontend.md` FE-6); no contract states the others | 2026-11-10 |
+| Proposed in this spec and accepted (user, 2026-11-11): a place presents one pin-out and fit follows from it (AC-2); the machine can be asked whether an attach would succeed (AC-6); a detach takes the peripherals plugged into the detached one with it (EC-3); replacing a peripheral is one step with one power cycle (AC-35); a serial port file outlives the machine or peripheral it serves (AC-20, today's behaviour made a rule) | The control state needs "available now" with a reason (`frontend.md` FE-6); no contract states the others | 2026-11-10 |
 | The real-time clock is set from the host when a machine is built and at the end of every operation; Calc-U-1600's note "seeded once" is out of date and is corrected in phase 6 | user, 2026-11-10, batch 2 gate: the clock runs on emulated time, so every stretch at full speed moves it ahead; later changes re-seed it more often | 2026-11-10 |
 | The CE-161's write-protect switch is set with a save, and a power cycle follows; at an attach its position comes from the saved file (AC-32) | user, 2026-11-11; reverses the recommendation of OQ-4; behaviour change 1600-17 | 2026-11-11 |
 | The reason of a refused attach is an English sentence, from the core for product rules and from the library for the general cases; the serial port carries today's behaviour over; no machine has controls of its own | user, 2026-11-11 | 2026-11-11 |

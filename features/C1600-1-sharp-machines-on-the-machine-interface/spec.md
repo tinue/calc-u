@@ -298,7 +298,7 @@ One seam
 | Product kinds are listed by the machine like generic kinds | `machine.md` M-7 | 2026-11-10 |
 | The key IDs and indicator names are written in this spec, not left to phase 6 | LIB-1 decision log | 2026-11-10 |
 | The PC-1600 has 18 indicators in the code, not 16 as the fit table of `machine.md` says; the code counts | `Briefing.md` §2: where a note and a product disagree, the product code is authoritative | 2026-11-10 |
-| Proposed in this spec, for the gate: `on` is a key ID like the others (AC-11); changing the CE-1600P's ROM variant is a detach and an attach (AC-18); what a golden run is and what the runs cover | `machine.md` M-3 lists the ON key's own call as a fact, not a decision; no contract defines the others | 2026-11-10 |
+| Proposed in this spec and accepted (user, 2026-11-11): `on` is a key ID like the others (AC-11); changing the CE-1600P's ROM variant is a detach and an attach (AC-18); what a golden run is and what the runs cover | `machine.md` M-3 lists the ON key's own call as a fact, not a decision; no contract defines the others | 2026-11-10 |
 | A Reset, power cycle or cold boot is over when the machine is ready to accept a key press | user, 2026-11-10, batch 2 gate | 2026-11-10 |
 | After a module change and its power cycle the PC-1500 and PC-1600 find the changed memory and ask the user to set BASIC up again; this is what the hardware does and what today's restart leads to | user, 2026-11-10, batch 2 gate; ledger row 1600-4 corrected | 2026-11-10 |
 | The host drive is a peripheral on the 60-pin connector in the place `host-drive`; its folder is a product kind | user, 2026-11-10, batch 2 gate; amends `presets.md` PR-11 | 2026-11-10 |

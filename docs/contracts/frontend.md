@@ -229,7 +229,7 @@ three forks (decided 2026-11-10).
 |---|---|---|
 | Pacing | 20 ms batches of weighted steps against absolute deadlines; lag over 100 ms restarts the schedule; random jitter on batch ends (ODD59-5) (`Shared/Pacing.hpp`) | `shared::Pacer`: about 16 ms ticks against an absolute deadline; a stall over 0.1 s is dropped (`Shared/Pacer.hpp`) |
 | Full speed | holding the display, or `FullSpeed:`; still sleeps in the scan loop or after a hardware poll (ODD59-6) | holding the LCD: as many frames as fit in 14 ms; operations run at full speed |
-| Background | Swift and web pause; Qt keeps running (ODD59-25) | web pauses; Qt keeps running |
+| Background | Swift and web suspend; Qt keeps running (ODD59-25) | web suspends; Qt keeps running |
 | Long work | on the emulation thread | coroutine jobs, sliced (`start`) or to completion; Qt blocks in `runNow` and pumps its event loop |
 | A file dropped or opened | each frontend decides by name | classified in one place (`Core/DropFile`), by content through libsharpdx |
 
@@ -242,8 +242,8 @@ three forks (decided 2026-11-10).
   parameters of the TI machines. The scan-loop sleep reads key readiness
   from typing support (`typing.md`, T-2).
 - Holding the display runs at full speed in every product (both today).
-- Pausing in the background stays per frontend as today (ODD59-25
-  stays): the frontend sends pause and resume; the session decides
+- Suspending in the background stays per frontend as today (ODD59-25
+  stays): the frontend sends suspend and continue; the session decides
   nothing about the host.
 - Long work is an operation: a coroutine job (ADR 0009), busy until it
   ends (Q-1).
@@ -362,3 +362,4 @@ Options:
 | 2026-11-10 | Q-4 (answered, user, 2026-11-10, batch 7 gate) | A medium opened from outside the save folder stays where it is and is written back there; only a Web frontend copies it in. A file is told by its name before its content; a file with a preset extension is a preset. |
 | 2026-11-10 | Q-4 (completed, user, 2026-11-10, after the batch 7 gate) | An opened module file is plugged in when it is clear from the context where it goes (a machine with one slot, or a module that fits only one slot); otherwise it is refused with a notice. `.rom` is no name of a machine-code file. |
 | 2026-11-11 | Open questions of LIB-3 (user, 2026-11-11) | A command is carried out when it arrives and its reply and changed state topics go out at once; a frontend that starts to listen late gets the paper and the log from their last reset marker on and no earlier notices. |
+| 2026-11-11 | Open questions of LIB-3 (completed, user, 2026-11-11) | The background rule says "suspend" and "continue"; "pause" and "resume" are the debugger's. A suspend while an operation runs stops its progress until continue, and busy stays. Row LIB-15 is named "Web frontend shell". |

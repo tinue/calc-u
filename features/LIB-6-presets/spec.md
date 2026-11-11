@@ -228,6 +228,12 @@ Carrying it out
   carried out. Of this feature's steps `wait`, and of LIB-5's `key` and
   `type`, need emulated time, and so does the wait of AC-15; `speed`,
   `elapsed`, `expect`, `screenshot`, `switch` and `syncclock` need none.
+  A `wait:` with a duration is the exception: while the machine is
+  paused, what is left of the duration passes in the host's time, and
+  the step then ends with the machine still paused, as `Wait:` does in
+  2.3.0, whose time is the host's; in the harness, which has no wall
+  clock, it ends at once (user, 2026-11-11; Calc-U-59 `Shared/KeySequencer.cpp`,
+  the case `K::Wait`; `examples/screentest/test_cdebug.ti59`).
   Every other step says which it is in the spec that owns it (Calc-U-59
   `tests/shared_cooperative_tests.cpp`,
   `cooperative_script_waits_out_a_freeze_but_runs_its_directives`).
@@ -565,3 +571,5 @@ Harness
 | Proposed in this spec and accepted (user, 2026-11-10, batch 5 gate): inside a block scalar, empty lines and `#` lines are skipped as everywhere (Calc-U-1600 today); a ` #` later in a line is its owner's | One rule for skipped lines; `presets.md` PR-6 | 2026-11-10 |
 | Proposed in this spec and accepted (user, 2026-11-10, batch 5 gate): a preset handed over without a folder that names a relative file is refused when it is read (EC-5) | It follows from all-or-nothing | 2026-11-10 |
 | Added with C1600-3's cold read and accepted (user, 2026-11-10, batch 7 gate): a load can build only (AC-55) | The debugger's `boot: debug` needs the machine before its first instruction; Calc-U-1600 has it today | 2026-11-10 |
+| While the debugger has the machine paused, a `wait:` with a duration passes in the host's time and ends with the machine still paused; in the harness it ends at once. Keys and a `wait:` without a value still wait for the machine to run again (AC-19) | user, 2026-11-11; 2.3.0's `Wait:` is wall-clock time, and the screenshot test preset `test_cdebug.ti59` waits after its freeze | 2026-11-11 |
+| The waits of AC-15 and AC-21 stay at one hour, after which the preset goes on; only a card that the ROM does not take ends a preset, after 30 minutes without output (C59-7) | user, 2026-11-11 | 2026-11-11 |

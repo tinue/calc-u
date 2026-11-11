@@ -346,7 +346,7 @@ Invariants checked in review and in the phase 5 walkthroughs:
   arrives, and its reply and the state topics it changed are sent at
   once; what the machine puts out is sent with the host calls. AC-4
   then holds for a given order of commands and calls.
-- [ ] **OQ-4** — Suspend while an operation runs (EC-4): today's
+- [x] **OQ-4** — *Decided as recommended (user, 2026-11-11).* Suspend while an operation runs (EC-4): today's
   behaviour is not recorded for either product. *Recommendation:* as in
   EC-4.
 - [x] **OQ-5** — *Decided as recommended (user, 2026-11-11).* What a frontend that starts to listen late is sent of a
@@ -354,7 +354,7 @@ Invariants checked in review and in the phase 5 walkthroughs:
   and the log from their last reset marker on, so that a panel opened
   later shows all of it; notices not at all, because a notice is about
   the moment.
-- [ ] **OQ-6** — "Suspend" and "continue" for the glossary, as defined
+- [x] **OQ-6** — *Decided as recommended (user, 2026-11-11).* "Suspend" and "continue" for the glossary, as defined
   above. `frontend.md` says "pause and resume" for both the background
   and the debugger; the glossary gives those words to the debugger.
 - [x] **OQ-7** — *Decided (user, 2026-11-10, batch 5 gate): "Loading…" is added to row 59-5.* Calc-U-59 shows "Loading…" and refuses other operations
@@ -384,7 +384,8 @@ Invariants checked in review and in the phase 5 walkthroughs:
 | The Qt6 frontends keep their session on the GUI thread for the migration | `frontend.md` FE-3 | 2026-11-10 |
 | Stopping in the background stays per frontend as today; the session decides nothing about the host | `frontend.md`, rules from decisions already taken; ODD59-25 | 2026-11-10 |
 | The app session owns the busy state and the audio policy | `frontend.md`, responsibilities (adopted from Calc-U-1600) | 2026-11-10 |
-| Proposed in this spec, for the gate: a frontend that starts to listen is sent every state topic once (AC-6) and states its host services (AC-26); a suspend and a debugger pause do not end each other (AC-25); a host service is asked with one message and answered with one, without making the session busy (AC-27) | AC-6 follows from FE-1 ("never asks back"); the others make the seam checkable and no contract states them | 2026-11-10 |
+| Proposed in this spec and accepted (user, 2026-11-11): a frontend that starts to listen is sent every state topic once (AC-6) and states its host services (AC-26); a suspend and a debugger pause do not end each other (AC-25); a host service is asked with one message and answered with one, without making the session busy (AC-27) | AC-6 follows from FE-1 ("never asks back"); the others make the seam checkable and no contract states them | 2026-11-10 |
 | Every command gets a short reply: done, or refused with the reason | user, 2026-11-10, batch 2 gate | 2026-11-10 |
 | Proposed with LIB-6 and LIB-14 and accepted (user, 2026-11-10, batch 5 gate): the busy topic says whether the running operation is at full speed or at regular speed now (AC-14) | `presets.md` PR-4: "Loading…" only while it runs at full speed | 2026-11-10 |
 | A command is carried out when it arrives, and its reply and the state topics it changed go out at once; what the machine puts out goes with the host calls. A frontend that starts to listen late gets the paper and the log from their last reset marker on, and no earlier notices. Of what `RunStateChanged` carries today, run state and the armed freezes are LIB-10's and C59-4's, full speed and playback are part of busy, and the held key is LIB-5's | user, 2026-11-11; OQ-3, OQ-5, OQ-8 | 2026-11-11 |
+| A suspend while an operation runs stops its progress until continue, and busy stays (EC-4); "suspend" and "continue" are glossary terms | user, 2026-11-11; OQ-4, OQ-6 | 2026-11-11 |

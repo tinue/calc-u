@@ -305,7 +305,7 @@ Paths
 | Save folder: iCloud Documents with local fallback (Swift), `~/<Product>` with an override (Qt6), persistent IndexedDB (Web); the layout inside it | `settings.md` ST-3 | 2026-11-10 |
 | Sections from Calc-U-1600's groups, kebab-case names, glossary values; app-written state in `[window]` and `[folders]`; on the web the INI is a file | `settings.md` ST-4 | 2026-11-10 |
 | A missing key has its default; an unknown key is kept on write | `settings.md` I-3 | 2026-11-10 |
-| Proposed in this spec, for the gate: the trace size rule of AC-11 holds for both products (Calc-U-1600 reads a non-number as 0 today) | One reader, one rule (`settings.md` I-2) | 2026-11-10 |
+| Proposed in this spec and accepted (user, 2026-11-11): the trace size rule of AC-11 holds for both products (Calc-U-1600 reads a non-number as 0 today) | One reader, one rule (`settings.md` I-2) | 2026-11-10 |
 | The file is read at the start only; comments, blank lines and order survive a write | Recommendation applied; the user raised no objection at the batch 1 gate | 2026-11-10 |
 | A bad value counts as missing; an unreadable file is left untouched; a write never leaves half a file | Recommendation applied; the user raised no objection at the batch 1 gate | 2026-11-10 |
 | The INI grammar of AC-33 | ADR 0022 fixes only sections and `key = value`; recommendation applied; the user raised no objection at the batch 1 gate | 2026-11-10 |

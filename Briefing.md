@@ -170,6 +170,9 @@ the features the products have in common.
     These counts were made by hand on the real calculator and printer. The "14-contact" in the
     PC-100A service manual (`ti59-research/PC100C/service_manual.txt:2`) is
     a typo.
+  - Printer timing: every measurement of the printer's timing was made on
+    a PC-100A, not on a PC-100C. No difference between the two is expected
+    (user, 2026-11-11).
   - Sources: the TMS0500 chip set as a whole is outlined at
     https://www.datamath.org/Chips/TMS0500-CS.htm; research notes and code
     are corrected against it where they disagree (chip names, clock,

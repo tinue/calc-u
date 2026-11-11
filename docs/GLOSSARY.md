@@ -657,3 +657,13 @@ a listing.
 A view is one of the texts the INSPECTOR, Calc-U-1600's debug panel,
 shows. A character time is the time one character takes on a serial
 port at the speed the port is set to: ten bits.
+
+**Host link**, **Serial port file**:
+A host link is what connects a machine's serial port to the user's
+computer. A serial port file is the name under which a host link
+appears there, a pseudo-terminal that any serial program can open.
+
+**Suspend**, **Continue** (a session):
+To suspend a session is the frontend stopping its machine while the
+product is in the background; to continue it is the opposite. Pause and
+resume are the debugger's words.

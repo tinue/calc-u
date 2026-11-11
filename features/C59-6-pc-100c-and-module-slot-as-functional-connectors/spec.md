@@ -75,7 +75,9 @@ The PC-100C
   (`Core/TMC0501.hpp:246-247, 554-556`,
   `reference/CoreArchitecture.md:722-830`); a line cut short by the
   printer interrupt has the same partial row as today
-  (`tests/core_tests.cpp`: printer-interrupt partial rows).
+  (`tests/core_tests.cpp`: printer-interrupt partial rows). The timings
+  of today's code come from measurements on a PC-100A, not on a
+  PC-100C; no difference between the two is expected (user, 2026-11-11).
 - [ ] **AC-5** — Given a PC-100C is plugged in, then it has the controls
   `PRINT` and `ADV`, which are keys, and `TRACE`, which is a switch
   (`Core/TI59Machine.cpp:198-212`; today's headless tool calls ADV
@@ -206,7 +208,8 @@ The module slot
 | A TI machine without a module is allowed | `presets.md` PR-9 | 2026-11-10 |
 | A peripheral whose ROM is missing cannot be attached | `roms.md` R-3 | 2026-11-10 |
 | It is an internal restructuring: what the user sees stays, except the listed changes | `Briefing.md` §1.9 | 2026-11-09 |
-| Proposed in this spec, for the gate: the control IDs `PRINT`, `ADV`, `TRACE`; what a detach in the middle of a line leaves (EC-2); the reading of P-2 for the printer's busy time | `presets.md` PR-7 writes `TRACE`; no source gives EC-2; P-2 speaks of ticks only | 2026-11-10 |
+| Proposed in this spec and accepted (user, 2026-11-11): the control IDs `PRINT`, `ADV`, `TRACE`; what a detach in the middle of a line leaves (EC-2); the reading of P-2 for the printer's busy time | `presets.md` PR-7 writes `TRACE`; no source gives EC-2; P-2 speaks of ticks only | 2026-11-10 |
 | With an empty module slot a library program that is asked for makes the display blink as for an error (AC-10) | user, 2026-11-11, from the real machine | 2026-11-11 |
 | What a print instruction does without a printer is the ROM's; the emulator adds nothing of its own (AC-7) | user, 2026-11-11 | 2026-11-11 |
 | A preset and the harness name a module by its two-letter ID only; `TRACE` is released by a detach, as today; the fit table keeps its 12 signals until the connector is modelled at contact level | user, 2026-11-11 | 2026-11-11 |
+| Every measurement of the printer's timing was made on a PC-100A, not on a PC-100C; no difference is expected, and the criteria keep today's numbers (AC-4) | user, 2026-11-11 | 2026-11-11 |

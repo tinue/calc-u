@@ -223,7 +223,7 @@ None.
 | Holding the display runs at full speed in every product | `frontend.md`, rules from decisions already taken | 2026-11-10 |
 | A machine counts its own emulated time; pacing only compares it with the wall clock | `machine.md` M-1, F-1 to F-3 | 2026-11-10 |
 | The TI slice stays 20 ms; the Sharp slice is the call, as today | `frontend.md`, fit table; Calc-U-1600 `Shared/Pacer.cpp:21-43` | 2026-11-10 |
-| Proposed in this spec, for the gate: the numbers of AC-17 (50 slice ends) and AC-19, AC-22 (one minute) | They make the criteria checkable; no source gives them | 2026-11-10 |
+| Proposed in this spec and accepted (user, 2026-11-11): the numbers of AC-17 (50 slice ends) and AC-19, AC-22 (one minute) | They make the criteria checkable; no source gives them | 2026-11-10 |
 | The long-run test is two tests per product: a scripted clock (frequent group) and ten minutes on the real clock (checkpoint group) | Recommendation applied; the user raised no objection at the batch 1 gate | 2026-11-10 |
 | "Slice" and "lag" are glossary terms | Recommendation applied; the user raised no objection at the batch 1 gate | 2026-11-10 |
 | Full speed is paced while a TI machine is ready to accept a key press or needs a card now; the wording is not "key scan loop", because the TI models have several such loops, depending on the model and on a printer | user, 2026-11-10, batch 2 gate; amends `frontend.md` SP-1 | 2026-11-10 |

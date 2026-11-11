@@ -79,7 +79,8 @@ Timings
 - [ ] **AC-4** — Given a printout, then the least time the printer needs
   for it is 4165 instructions for each printed line and 1370 for each
   feed (`tools/agentic/ti59file.py:192-195`,
-  `tools/agentic/README.md:69-70`).
+  `tools/agentic/README.md:69-70`). Both
+  numbers come from measurements on a PC-100A (C59-6 AC-4).
 - [ ] **AC-5** — Given `ti59 run-time` with key names, then each key is
   pressed in turn as the command `key` presses it (LIB-5 AC-15), and the
   reply gives for each the time from its press until the display is lit

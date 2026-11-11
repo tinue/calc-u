@@ -380,7 +380,7 @@ Settled in other specs: the lists of key IDs and indicator names
 | A connector takes one peripheral or a chain; implicit connectors stay implicit until refined | `peripherals.md` P-3, P-6 | 2026-11-10 |
 | A ROM entry is a file with name, size of the decoded content and md5 | `roms.md` R-1, R-4 | 2026-11-10 |
 | This feature's product columns hold the descriptor content; the machines' behaviour is C59-1, C59-6 and C1600-1 | Rules 2 and 3 of the cut, `features/INDEX.md` | 2026-11-10 |
-| Proposed in this spec, for the gate: the bound of AC-10 (one year of emulated time), EC-3 (a repeated key down or key up changes nothing), and that a capability ID is unique within a machine and repeatable (AC-21) | They make the criteria checkable; no contract states them | 2026-11-10 |
+| Proposed in this spec and accepted (user, 2026-11-11): the bound of AC-10 (one year of emulated time), EC-3 (a repeated key down or key up changes nothing), and that a capability ID is unique within a machine and repeatable (AC-21) | They make the criteria checkable; no contract states them | 2026-11-10 |
 | The tick count never goes back for as long as a machine exists, also across reset, power cycle and cold boot; a new machine starts at zero | Recommendation applied; the user raised no objection at the batch 1 gate | 2026-11-10 |
 | Sound output is samples at a rate named at the build, derived from the ticks alone | Recommendation applied; the user raised no objection at the batch 1 gate | 2026-11-10 |
 | An advance runs at least the ticks asked for, in whole instructions; the caller carries the overshoot | Calc-U-59 today; Calc-U-1600 drops the overshoot today (C1600-1 OQ-6); recommendation applied, the user raised no objection at the batch 1 gate | 2026-11-10 |

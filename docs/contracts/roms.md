@@ -104,7 +104,7 @@ Options:
   and a "Check again" action; the frontend shows it in place of the
   calculator. Models whose ROMs are present work; a peripheral whose ROM
   is missing cannot be attached. The harness exits with an error naming
-  the files. The web client always bundles its ROMs (no ROM folder).
+  the files. The Web frontend always bundles its ROMs (no ROM folder).
 - (b) Calc-U-1600 today: report and exit.
 
 ## Fit table

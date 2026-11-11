@@ -101,7 +101,7 @@ carries a note.
 
 Facts: ADR 0033 says every frontend can open its app session to the
 serve protocol. Its reason is the iOS simulator, where UI automation
-often fails. The web clients have working Playwright suites (28 and 21
+often fails. The Web frontends have working Playwright suites (28 and 21
 tests, in CI); the Qt6 frontends have screenshot scenarios.
 
 Options:

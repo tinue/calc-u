@@ -15,7 +15,7 @@ for phase 4).
 
 | | Calc-U-59 | Calc-U-1600 |
 |---|---|---|
-| Source | React JSX pages in calc-u-site `59/Pages.jsx` (2246 lines), prerendered by `59/.seo/build.js`; site pins the web client by sha256 (`docs/inventory/calc-u-site.md`) | Markdown in `docs/`: `User-Guide.md` (chapters 1 Introduction, 2 Getting started, 3 Plotters, 4 Loading a BASIC program, 5 Memory modules and floppy disks, 6 Machine-code programs, 7 COM ports, 8 Presets, 9 Appendix), `Debugger.md`, `Keyboard-Mapping.md`, `PC1600-Host-Drive.md`, module definition spec and format; Mermaid diagrams (`User-Guide.md` 8, `Debugger.md` 4); generated screenshots |
+| Source | React JSX pages in calc-u-site `59/Pages.jsx` (2246 lines), prerendered by `59/.seo/build.js`; site pins the Web frontend by sha256 (`docs/inventory/calc-u-site.md`) | Markdown in `docs/`: `User-Guide.md` (chapters 1 Introduction, 2 Getting started, 3 Plotters, 4 Loading a BASIC program, 5 Memory modules and floppy disks, 6 Machine-code programs, 7 COM ports, 8 Presets, 9 Appendix), `Debugger.md`, `Keyboard-Mapping.md`, `PC1600-Host-Drive.md`, module definition spec and format; Mermaid diagrams (`User-Guide.md` 8, `Debugger.md` 4); generated screenshots |
 | Site | full help site at `/59/` | placeholder at `/1600/` |
 | Format references | `reference/StateFileFormat.md` linked from the site | in `docs/` |
 
@@ -103,7 +103,7 @@ Options:
 - (a) **Recommended:** each release attaches `<Product>-help.zip`:
   Markdown files with includes resolved, images, and a table of contents
   file in chapter order. calc-u-site pins it by version and sha256 as it
-  pins the web client, and renders Markdown and Mermaid itself with its
+  pins the Web frontend, and renders Markdown and Mermaid itself with its
   own design. The in-app Help menu links to the product's site
   (`https://calc-u.org/59/`, `/1600/`).
 - (b) The release ships rendered HTML: the site loses control of its

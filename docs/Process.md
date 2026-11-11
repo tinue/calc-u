@@ -22,7 +22,7 @@ the table below.
 | 2 | Domain model | `docs/GLOSSARY.md` | One meaning per term | Done (glossary approved 2026-11-09) |
 | 3 | Architecture decisions | `docs/adr/NNNN-*.md` | The forks | Done (approved 2026-11-09) |
 | 4 | Contracts | `docs/contracts/*.md` | The abstractions, as interface specs | Done (approved 2026-11-10) |
-| 4b | Feature specs | `features/INDEX.md`, `features/<ID>-*/spec.md` | What each shared feature does, per product | In progress (index approved 2026-11-10; prompt: `prompts/phase-4b.md`) |
+| 4b | Feature specs | `features/INDEX.md`, `features/<ID>-*/spec.md` | What each shared feature does, per product | Done (index approved 2026-11-10, specs approved 2026-11-11; prompt: `prompts/phase-4b.md`) |
 | 5 | Validation on paper | `docs/walkthroughs/*.md`, optional throwaway spikes | Whether the abstractions hold | Planned |
 | 6 | Migration plan, then code | `docs/migration-plan.md`, `features/<ID>-*/design.md`, `qa-report.md` | Order of steps, each leaving every product green | Planned |
 
@@ -64,7 +64,7 @@ the table below.
   phase 2 (briefing §1.11): every skill, `CLAUDE.md`, memory file and
   agent-facing developer doc of both products and of the research skills.
 - `docs/inventory/calc-u-site.md`: site structure, material per product,
-  duplications, how the web clients are embedded. Findings include the
+  duplications, how the Web frontends are embedded. Findings include the
   stale README (it still describes the `gh-pages`/calcu59.ch setup).
 - `docs/inventory/release-tooling.md`: ReleaseIt's single-product
   assumptions (one root `release.yaml`, `vX.Y.Z`/`-pre` tags, `dev-x.y.z`

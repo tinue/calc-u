@@ -13,7 +13,7 @@ no build on tag push. No release is marked "Latest"
 (`make_latest=false` / `gh release create --latest=false`), so GitHub's
 "latest" never points at the wrong product; calc-u-site links each
 product's downloads to its current release by exact tag, updated when the
-site is re-pinned, as it already does for the web client. Neither app has
+site is re-pinned, as it already does for the Web frontend. Neither app has
 an auto-updater that could pick up the other product's release.
 
 ## Considered options

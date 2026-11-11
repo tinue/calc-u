@@ -237,7 +237,7 @@ the features the products have in common.
   upstream dependency like SDE: it may be extended in its own repository
   where releasing several products from one repository needs it.
 - Adding or removing build targets. Every existing target stays, including
-  the Calc-U-1600 web client. The design must allow new targets later
+  the Calc-U-1600 Web frontend. The design must allow new targets later
   (§1.4), but this project adds none.
 - Mixing families that are too far apart. TI might later gain a TI-57 core,
   but an HP-41 core would be a separate product (Calc-U-41).
@@ -305,7 +305,7 @@ the features the products have in common.
 | Calc-U-1600 | Qt6 (Ubuntu 24.04 package, 6.4.2 in CI) | Linux x86_64 / aarch64 | — | AppImage on GitHub | Released |
 | Calc-U-1600 | Web (React + WASM) | Browser | — | Zip on GitHub | Released, not on calc-u.org yet (see below) |
 
-The Calc-U-1600 web client is built as a zip and attached to each release.
+The Calc-U-1600 Web frontend is built as a zip and attached to each release.
 It is not published on calc-u.org yet, because the Calc-U-1600 help site
 does not exist yet (§4.3); it will end up at calc-u.org/1600. The preview
 at https://tinue.github.io/1600/ (private repository `tinue/tinue.github.io`)
@@ -316,7 +316,7 @@ and Windows CI builds. The macOS and WASM libraries are committed binaries.
 
 ### 4.3 calc-u-site
 - Repository: `/Users/me/Development/public/calc-u-site`. Builds
-  https://calc-u.org (documentation; it also embeds the web clients).
+  https://calc-u.org (documentation; it also embeds the Web frontends).
 - The site must always reflect a released product, so it is in scope, but it
   stays a separate repository (§3).
 - `/59/` is the full Calc-U-59 site and its only source. calcu59.ch is only a
@@ -324,10 +324,10 @@ and Windows CI builds. The macOS and WASM libraries are committed binaries.
   domain is paid for; the new project never uses or mentions the old domain.
   Calc-U-59 has no `gh-pages` branch. The calc-u-site README is stale: it
   still describes a `gh-pages`/calcu59.ch setup. `/59/` embeds the 2.3.0
-  web client (calc-u-site `acd629c`).
+  Web frontend (calc-u-site `acd629c`).
 - `/1600/` is a placeholder. Building the Calc-U-1600 help site is in scope:
   it starts from Calc-U-1600's `docs/`, uses the shared-material structure,
-  and publishes the Calc-U-1600 web client. This is new documentation, not a
+  and publishes the Calc-U-1600 Web frontend. This is new documentation, not a
   new product feature (§2).
 
 ### 4.4 Backlogs
@@ -418,7 +418,7 @@ Each point names the phase that settles it (`docs/Process.md`).
   formats, and every shipped and hosted file is upgraded.
 - calc-u.org reflects both releases and shares common material between the
   products instead of duplicating it. This includes the new Calc-U-1600 help
-  site with the published web client (§4.3).
+  site with the published Web frontend (§4.3).
 - A design for SC61860 support exists and has been validated against the
   abstractions: adding it needs no changes to the library.
 - Every item of both TODO files (§4.4) is accounted for: it is part of the

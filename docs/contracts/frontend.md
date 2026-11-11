@@ -197,7 +197,7 @@ Options:
 
 **Decided (2026-11-10, user): option (a).**
 
-Facts: calc-u-site, another repository, embeds each web client from its
+Facts: calc-u-site, another repository, embeds each Web frontend from its
 release zip and pins it by sha256. Calc-U-59: `Web/dist/` is
 location-independent, a host loads `calc.js` and `calc.css` and mounts
 the component `PlayCalculator` (props `layout`, `width`, `keyboard`);
@@ -276,7 +276,7 @@ It is now an invariant (I-5) and is checked by a test.
 
 Facts: FE-3 keeps the Qt6 session on the GUI thread; Calc-U-1600's Qt
 app runs operations with `runNow` (blocking, pumping the Qt event loop,
-"Loading…" popup), its web client with `start` (sliced per tick).
+"Loading…" popup), its Web frontend with `start` (sliced per tick).
 
 Options:
 - (a) **Recommended:** operations always run sliced, one slice per host
@@ -349,7 +349,7 @@ Options:
 | 2026-11-10 | FE-3 | The Qt6 frontends keep their session on the GUI thread for the migration; the messages are the same as elsewhere, so moving later changes only the Qt host. |
 | 2026-11-10 | FE-4 | The contract requires one owner per host key at a time; which surface owns it is the frontend's. Today's behaviour stays (ODD59-3); the unified input surface stays a backlog item. |
 | 2026-11-10 | FE-5 | Three topic shapes: state topics (whole state), stream topics (appended since the last message, with a reset marker) and requests with one reply for large, rare things. Refines FE-1. |
-| 2026-11-10 | FE-7 | One written embedding interface for the web clients: location-independent `dist/`, `MANIFEST.json` with the same fields, styles under `.calcu-client`, the same prop names for the same things; component names stay per product. |
+| 2026-11-10 | FE-7 | One written embedding interface for the Web frontends: location-independent `dist/`, `MANIFEST.json` with the same fields, styles under `.calcu-client`, the same prop names for the same things; component names stay per product. |
 | 2026-11-10 | SP-1 | One pacer in the library with a pacing profile per model (slice length, jitter, scan-loop sleep at full speed). The algorithm is carried over unchanged in effect; the long-run rate stays exact (I-6), checked per product. |
 | 2026-11-10 | SP-2 | Operations always run sliced, one slice per host tick, in every frontend; `runNow` goes. The session keeps sending updates while an operation runs (I-5). |
 | 2026-11-10 | SP-3 | One "open file" command on the app session for drop, Open With and generic pickers; the library classifies presets and media, a product adds its own file kinds. |

@@ -153,14 +153,16 @@ The `debug:` block
 - [ ] **AC-11** — Given the header key `debug:`, at most once, which has
   a block that is taken raw, then the block is a map in YAML with these
   keys: `reset` (`none`, `reset` or `allReset`), `stopOnEntry` (true or
-  false), `command` (a text), `listings` and `symbols` (each a list of
-  files), `boot` (`debug`), and `program`, a map with `bin` (required),
+  false), `command` (a text), `listings` and `symbols` (each a list
+  whose items are a file, or a map with `path` and optionally `cpu`,
+  `bank`, `me`, `pu`, `pv` and, in `listings`, `source`), `boot`
+  (`debug`), and `program`, a map with `bin` (required),
   `listing`, `source`, `symbols`, `cpu` (`lh5801`, `z80` or `lh5803`),
   `address`, `entry`, `after` (`stopOnEntry`, `call` or `none`),
   `cleanStart`, `bank`, `me`, `pu`, `pv`. It is checked when the preset
   is read, its paths are taken from the preset's folder, and an unknown
   key or a wrong value refuses the preset; what the keys mean is
-  C1600-3's (`Core/Debug/AttachKeys.hpp:42-66`,
+  C1600-3's (`Core/Debug/AttachKeys.hpp:42-88`,
   `Core/Preset/PresetDebugBlock.hpp:38-128`).
 - [ ] **AC-20** — Given the YAML of the two blocks, then it is what
   Calc-U-1600 reads today, no more; empty lines and `#` lines in them
@@ -187,16 +189,18 @@ Errors
 The shipped presets
 - [ ] **AC-15** — Given the presets in the source repository that belong
   to Calc-U-1600, then each is in version 2: the 32 under `examples/`,
-  those of the tests, of the developer tools, of the developer
-  documentation and of the VS Code extension, its templates included
+  those of the tests, of the developer tools (the folder `dev/`), of
+  the developer documentation and of the VS Code extension, its
+  templates included, and the presets that a tool or a test writes as
+  text, as the scenarios of `tools/dap_smoke.py` do (C1600-3 AC-20)
   (ADR 0037; behaviour change 1600-1). In each, only this changes:
 
   | Version 1 | Version 2 | Why |
   |---|---|---|
   | `format-version: 1` | `format-version: 2` | `presets.md` PR-2 |
-  | `plotter: CE-150` | `printer: CE-150` | PR-11 |
-  | `- wait: 2` | `- wait: 2s` | PR-5 |
-  | `- wait: 0.5` | `- wait: 500ms` | PR-5 |
+  | `plotter:` with a printer and, where given, its variant (`plotter: CE-150`, `plotter: CE-1600P`) | `printer:` with the same value | PR-11 |
+  | `- wait:` with whole seconds (`- wait: 2`) | the number with `s` (`- wait: 2s`) | PR-5 |
+  | `- wait:` with a fraction (`- wait: 0.5`) | the same time in `ms` (`- wait: 500ms`) | PR-5 |
   | `- key: ent` | `- key: enter`; no other key name changes | LIB-5, decided with its OQ-6 |
   | a header key given twice | the last one only | LIB-6 AC-1 |
   | `floppy:`, `floppy-file:`, `slot-N-file:`, `- saveas:`, `- trace:` | as LIB-7 and LIB-10 write them | PR-8; their specs |
@@ -314,3 +318,6 @@ The shipped presets
 | A host drive folder that does not exist, and a ROM image that cannot be read or does not fit, refuse the preset when it is read, not after the machine was built | Behaviour change 1600-11 (user, batch 5 gate) | 2026-11-10 |
 | Proposed in this spec and accepted (user, 2026-11-10, batch 6 gate): `bus-rom:` and `debug:` are header keys with a block, not sections (AC-9, AC-11) | They describe the machine and the debugger's settings; nothing in them is carried out in file order | 2026-11-10 |
 | Proposed in this spec and accepted (user, 2026-11-10, batch 6 gate): the comparison of AC-16 as the proof that the upgrade changed nothing | ADR 0037 asks for the upgrade, nothing says how it is checked | 2026-11-10 |
+| The upgrade rows for `plotter:` and `- wait:` are rules, not single cases: `plotter: CE-1600P` and `- wait: 20` had no row (AC-15) | Phase 5, preset pass (`docs/walkthroughs/presets.md`, A-5); `presets.md` PR-5, PR-11; behaviour change 1600-3 | 2026-11-11 |
+| The items of `listings` and `symbols` can be maps, as the VS Code templates write them and today's tests check (AC-11) | Phase 5, preset pass (`docs/walkthroughs/presets.md`, A-9); AC-19, AC-20 | 2026-11-11 |
+| The presets under `dev/`, and presets that a tool or a test writes as text, are among those that are upgraded (AC-15) | Phase 5, preset pass (`docs/walkthroughs/presets.md`, A-10); "every shipped preset is upgraded and checked", C1600-3 AC-20 | 2026-11-11 |

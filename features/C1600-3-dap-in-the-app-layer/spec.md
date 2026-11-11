@@ -117,7 +117,8 @@ A session
   by the loader of C1600-2 (AC-8, AC-23 there), with the length of the
   file given by hand, so that a header that says another length does not
   refuse it, and with the address given by hand that is `address`, else
-  for headerless code the lowest address of the listing; `cpu` names the
+  for headerless code the lowest address of a line of the listing that
+  holds bytes, so that an equate does not count; `cpu` names the
   processor; the entry is
   `entry` (a number, or a symbol of the listing), else the header's
   address to start at, else the listing's entry when it lies in the
@@ -324,3 +325,4 @@ Checks
 | Proposed in this spec and accepted (user, 2026-11-10, batch 7 gate): the scenarios of `tools/dap_smoke.py` become tests of the test suite (AC-20) | The server no longer needs a window; today nothing checks it automatically | 2026-11-10 |
 | Proposed in this spec and accepted (user, 2026-11-10, batch 7 gate): a wrong `--dap` port is an error at the start (EC-1) | Today it is ignored without a word | 2026-11-10 |
 | Proposed in this spec and accepted (user, 2026-11-10, batch 7 gate): the server's status is a state topic of the product (AC-21) | The settings dialog of any frontend can then show it | 2026-11-10 |
+| "The lowest address of the listing" (AC-7) means the lowest address of a line with bytes, as today's listing readers keep only such lines | Phase 5, preset pass (`docs/walkthroughs/presets.md`, A-11); AC-23; `Core/Debug/Listing/ZasmListing.cpp:90-91`, `SdasListing.cpp:174-175` | 2026-11-11 |

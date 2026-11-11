@@ -320,7 +320,9 @@ Preset list and startup presets
   `Shared/PresetCatalog.cpp`).
 - [ ] **AC-32** — Given the request for the preset list, then the reply
   lists each entry with its reference, its model, its name and its
-  description; the name is the preset's `preset-name`, or the file name
+  description, whether it is a startup preset or an example, and for an
+  example its group (AC-31; LIB-14 AC-1, AC-12); the name is the
+  preset's `preset-name`, or the file name
   without its extension when there is none. Only the header keys of each
   file are read for this, so an entry whose preset names a missing file
   is still listed (Calc-U-1600 `Core/tests/preset_tests.cpp:52`).
@@ -457,9 +459,11 @@ Harness
   `Core/tests/job_tests.cpp:230-234`).
 - [ ] **AC-51** — Given the presets in the source repository that belong
   to Calc-U-1600 (examples, startup presets, test fixtures, the presets
-  of the developer documentation), then the test suite checks each with
-  `check-preset`, as today (`tools/check_presets.sh`); files with
-  placeholders that are filled in later are left out.
+  under `dev/`, the presets of the developer documentation and of the
+  VS Code extension), then the test suite checks each with
+  `check-preset`; today `tools/check_presets.sh` checks the same files
+  and is run by hand; files with placeholders that are filled in later
+  are left out.
 - [ ] **AC-54** — Given the Qt6 and Web frontends, then each hands a
   preset to the session as a file in a folder or, where it has only the
   content (a file dropped on the Web frontend; EC-5), as its content,
@@ -582,3 +586,5 @@ Harness
 | Added with C1600-3's cold read and accepted (user, 2026-11-10, batch 7 gate): a load can build only (AC-55) | The debugger's `boot: debug` needs the machine before its first instruction; Calc-U-1600 has it today | 2026-11-10 |
 | While the debugger has the machine paused, a `wait:` with a duration passes in the host's time and ends with the machine still paused; in the harness it ends at once. Keys and a `wait:` without a value still wait for the machine to run again (AC-19) | user, 2026-11-11; 2.3.0's `Wait:` is wall-clock time, and the screenshot test preset `test_cdebug.ti59` waits after its freeze | 2026-11-11 |
 | The waits of AC-15 and AC-21 stay at one hour, after which the preset goes on; only a card that the ROM does not take ends a preset, after 30 minutes without output (C59-7) | user, 2026-11-11 | 2026-11-11 |
+| The reply to the preset list says for each entry whether it is a startup preset or an example, and an example's group (AC-32) | Phase 5, preset pass (`docs/walkthroughs/presets.md`, A-6); AC-31 and LIB-14 AC-1, AC-12 already decide groups and the two kinds of entry | 2026-11-11 |
+| AC-51 names the presets under `dev/` and of the VS Code extension, which today's check covers, and no longer says that the test suite runs that check today | Phase 5, preset pass (`docs/walkthroughs/presets.md`, A-10); `tools/check_presets.sh:2-11` | 2026-11-11 |

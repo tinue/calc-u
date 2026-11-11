@@ -253,8 +253,12 @@ In presets and the harness
   `tests/shared_preset_stages_tests.cpp:119-138`).
 - [ ] **AC-20** — Given a card named in a step by a name that no card
   has, then it is a fresh card of that name, and a line of the log says
-  so; its first write makes the instance (LIB-7 AC-25, AC-35)
-  (`Shared/SessionController.cpp:513-536`).
+  so; its first write makes the instance (LIB-7 AC-25, AC-35). A name
+  stands for one card throughout a preset: a later step that names it
+  gets the card as the earlier steps left it, so that two steps can fill
+  the two sides of one card (AC-27)
+  (`Shared/SessionController.cpp:513-536`,
+  `tests/shared_cooperative_tests.cpp:791-812`).
 
 The cue card that shows
 - [ ] **AC-21** — Given a TI machine, then it lists a product kind that
@@ -408,4 +412,5 @@ Every frontend
 | Proposed in this spec and accepted (user, 2026-11-10, batch 7 gate): a `medium:` section for a card has the fields of AC-18 | Today's `CARD: mem:` block, in the notation of version 2 | 2026-11-10 |
 | Proposed in this spec and accepted (user, 2026-11-10, batch 7 gate): the machine itself says when it waits for a card (AC-9) | LIB-7 AC-6; the pacing already needs "needs a card now" from the machine | 2026-11-10 |
 | An empty side gives the ROM zeroes, and the ROM ends the read with an error (EC-2) | user, 2026-11-10, after the batch 7 gate | 2026-11-10 |
+| A card name stands for one card throughout a preset (AC-20) | Phase 5, preset pass (`docs/walkthroughs/presets.md`, A-12); AC-27 keeps today's test of both sides in one file | 2026-11-11 |
 | A preset whose `insert:` step leaves the card at the reader while the machine gives no output for 30 minutes of emulated time ends there; a program that keeps giving output is never stopped. "Hanging" is measured by output, and the preset ends instead of going on; the other waits of a preset stay at one hour (reading confirmed by the user, 2026-11-11) | user, 2026-11-11: "If possible I'd stop a hanging preset after 30 minutes emulated time, but again: don't break a working program" | 2026-11-11 |

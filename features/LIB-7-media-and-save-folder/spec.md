@@ -229,8 +229,10 @@ Name & Save
 
 Media in presets
 - [ ] **AC-21** — Given a preset, then the header key of a module slot
-  and of a holding media place other than the cassette, and the steps of
-  AC-26, take a raw value (LIB-6 AC-1) made of words that spaces part: a
+  and of a holding media place other than the cassette, and the steps
+  `insert` and `arm` of AC-26, take a raw value (LIB-6 AC-1) made of
+  words that spaces part (`saveas` keeps the form AC-26 gives it, in
+  which a name or a path is the rest of the line, without quotes): a
   medium, and after it a side where the place has sides, which is the
   last word only when it is one of them. A medium is written as its
   name, in double quotes when it holds a space; as `file:` and a path,
@@ -512,3 +514,4 @@ Getting media in and out
 | Proposed in this spec and accepted (user, 2026-11-10, batch 6 gate): the harness commands of AC-28 | Rule 4 of the index; LIB-11 AC-14, AC-18 | 2026-11-10 |
 | A medium the user opens from outside the save folder is used where it lies and written back there; only a Web frontend copies it in, because a browser cannot write back | user, 2026-11-10, batch 7 gate; LIB-13 AC-4; ADR 0019 as amended | 2026-11-10 |
 | A save that sets the write-protect switch is followed by a power cycle, as if a module had been plugged in (AC-19) | user, 2026-11-11; LIB-2 OQ-4 | 2026-11-11 |
+| The notation of AC-21 holds for header keys, `insert` and `arm`; `saveas` keeps today's form, as OQ-3 decided, so a name or a path with spaces is written without quotes there | Phase 5, preset pass (`docs/walkthroughs/presets.md`, A-7); OQ-3 | 2026-11-11 |

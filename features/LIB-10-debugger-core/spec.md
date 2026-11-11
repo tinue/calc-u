@@ -180,7 +180,10 @@ Run control
 - [ ] **AC-13** — Given an operation runs, then breakpoints and watches
   do not pause the machine (`debugger.md` I-3); a pause, a step and a
   resume that are commanded, by a preset's own steps or from outside,
-  are carried out (Calc-U-59 `tests/shared_cooperative_tests.cpp:849`).
+  are carried out, and a pause-on-start that is armed fires (AC-9), as
+  in the preset `examples/screentest/test_cdebug.ti59` (Calc-U-59
+  `tests/shared_cooperative_tests.cpp:849`,
+  `Shared/FreezeController.cpp:24-28`).
 - [ ] **AC-14** — Given a machine with several targets, then a pause
   stops all of them, and the run state names the current target
   (AC-7).
@@ -480,3 +483,4 @@ Traces
 | Proposed in this spec and accepted (user, 2026-11-10, batch 6 gate): a product may let a `cpu` step carry out an instruction that only waits again (AC-7, AC-29) | The TI step does so today; the minimal agreement leaves only the `program` step to the product | 2026-11-10 |
 | Proposed in this spec and accepted (user, 2026-11-10, batch 6 gate): pausing before the first instruction after a start (AC-46), and breakpoints that belong to the one that set them (AC-47) | C1600-3 needs both for `stopOnEntry` and for a debugger next to the harness | 2026-11-10 |
 | Proposed in this spec and accepted (user, 2026-11-10, batch 6 gate): after a resume pacing starts afresh (AC-16) | Otherwise regular speed would race to make up the pause | 2026-11-10 |
+| A pause-on-start that is armed fires while an operation runs (AC-13); AC-9 never excepted an operation, and AC-13's list left it out | Phase 5, preset pass (`docs/walkthroughs/presets.md`, A-13); LIB-6 AC-19 and its decision of 2026-11-11 rest on the preset `test_cdebug.ti59`, which arms and fires inside its own load | 2026-11-11 |

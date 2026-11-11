@@ -106,14 +106,17 @@ The sections
 - [ ] **AC-4** — Given `registers: |`, then each of its lines is
   `NN = value` for the data register NN, or on the TI-58C `HNN = value`
   for one of the registers H00 to H03; the value is a decimal number
-  with an optional exponent. A whole number is stored digit for digit; a
+  with an optional exponent; a ` #` starts a comment, as in `steps: |`
+  (`presets.md` PR-6). A whole number is stored digit for digit; a
   number with more than 13 digits loses those after the 13th; every
   other value is rounded to 13 digits. A line without `=`, a value that
   is no number, a register the model does not have (60 to 99 on the
   TI-58 and TI-58C; H on another model) refuse the preset when it is
   read (`Shared/StateFile.cpp:54-82`, `Shared/Bcd.cpp:20-65`; OQ-2).
 - [ ] **AC-5** — Given `cue-card: |`, then each of its lines is
-  `Key: value` with one of these keys, in any case: `Template`
+  `Key: value`, in which a ` #` starts a comment (`presets.md` PR-6;
+  a `#` without a space before it is part of the value), with one of
+  these keys, in any case: `Template`
   (`CueCard`, `MagnetCard` or `SolidStateCard`), `Title`, `ID`, `Row1`,
   `Row2`, `Row2R`, `Row1Align`, `Row2Align`, `Row2RAlign` (`left`,
   `center` or `right`), `Style` (`none` or `button`), `PencilColor`
@@ -301,3 +304,4 @@ The shipped and hosted presets
 | Proposed in this spec and accepted (user, 2026-11-10, batch 6 gate): `cue-card:` fits a cue card; `Template` chooses only its look (AC-1, AC-5) | Today's three templates are artwork | 2026-11-10 |
 | Proposed in this spec and accepted (user, 2026-11-10, batch 6 gate): the check of the preset list is the one of C1600-4 AC-18, the 18 characters included (AC-15) | One rule for both products' lists | 2026-11-10 |
 | Proposed in this spec and accepted (user, 2026-11-10, batch 6 gate): the commands of AC-9 | LIB-11 AC-14 assigns "write a program" to this feature | 2026-11-10 |
+| ` #` starts a comment in `registers: \|` and `cue-card: \|` too (AC-4, AC-5): the decision of the second row above was written into AC-3 only | Phase 5, preset pass (`docs/walkthroughs/presets.md`, A-1); `presets.md` PR-6 | 2026-11-11 |

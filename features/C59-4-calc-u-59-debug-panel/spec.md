@@ -209,7 +209,10 @@ The ASM overlay
   Today such a file can only be chosen in the box
   (`Shared/SessionController.cpp:620-624`).
 - [ ] **AC-20** — Given the four overlays under `examples/assembly/`,
-  and their copies that calc-u.org hosts, then each is in version 2.0,
+  the overlay `examples/screentest/test_stopwatch.asm`, which the
+  screenshot test of AC-24 loads and which holds the same bytes as
+  `examples/assembly/stopwatch.asm`, and the copies that calc-u.org
+  hosts, then each is in version 2.0,
   and each that loads in 2.3.0 loads and gives the same instructions
   (`tests/shared_debug_tests.cpp:238-259`; ADR 0037; LIB-19 AC-9).
 
@@ -295,3 +298,4 @@ Every frontend, and the checks
 | The ASM overlay is a file kind of "open file" | `frontend.md` SP-3; the index row | 2026-11-10 |
 | "FREEZE" and "RESUME" stay as the panel's words | `docs/glossary-mapping.md` | 2026-11-10 |
 | Proposed in this spec and accepted (user, 2026-11-10, batch 8 gate): an `.asm` file is told by its name (AC-19) | LIB-13 AC-1 asks each file kind for its rule | 2026-11-10 |
+| The fifth shipped overlay, `examples/screentest/test_stopwatch.asm`, is upgraded with the other four (AC-20) | Phase 5, preset pass (`docs/walkthroughs/presets.md`, A-4); ADR 0037 and behaviour change 59-1: every shipped file of an own format is upgraded | 2026-11-11 |

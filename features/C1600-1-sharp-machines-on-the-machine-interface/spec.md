@@ -270,7 +270,7 @@ One seam
   empties a RAM module that has no battery of its own, as the real
   device would; the user will hardly see it, because the ROM sets the
   memory up again after ALL RESET.
-- [ ] **OQ-5** — Other names of keys. Presets accept `ent` for `enter`
+- [x] **OQ-5** — *Decided with LIB-5 OQ-6, as recommended (user, 2026-11-10, batch 4 gate).* Other names of keys. Presets accept `ent` for `enter`
   and `break` for `on` today (`Core/Preset/PresetFile.cpp:202`), and
   upper-case letters. *Recommendation:* the machine takes exactly the
   key IDs of AC-9 and AC-10. Presets and the harness match them without

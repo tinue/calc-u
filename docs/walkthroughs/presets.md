@@ -426,3 +426,705 @@ before them and no user of their own. Not traced: the `.bas`, `.bin`,
 `.card.yaml` and `.floppy.yaml` files that presets name, beyond what a
 preset does with them; the copies on calc-u.org, which are the same
 files (`docs/inventory/calc-u-site.md`).
+
+## 4. The traced files
+
+One line per traced file: "holds", or the findings of section 5 it
+showed. A finding named for one file can hold for others with the same
+line; section 5 says how far it reaches. The tracers' full reports, with
+each file written in version 2 and gone through line by line, are
+working files outside the repository and are not kept.
+
+**Group 59-A**
+
+| File | Result |
+|---|---|
+| `examples/diag.ti59` | B-1, B-16, B-23 |
+| `examples/diag.ti58` | A-2, B-10, B-16 |
+| `examples/ram_test.ti59` | B-10, B-13, B-16 |
+| `examples/sum.ti59` | B-10, B-16, B-23 |
+| `examples/characters.ti59` | B-10, B-16 |
+| the list of `Web/presets.json` | B-27 |
+
+**Group 59-B**
+
+| File | Result |
+|---|---|
+| `examples/printer-interrupt.ti59` | holds |
+| `examples/picard.ti59` | A-1, B-1 |
+| `examples/globe-print.ti59` | A-1, B-1, B-6, B-9, B-10, B-13 |
+| `examples/switzerland.ti59` | A-1, B-1 |
+| `examples/fastmode-sst.ti59` | holds |
+
+**Group 59-C**
+
+| File | Result |
+|---|---|
+| `screentest/test_58_glyphs.ti58` | B-10, B-15, B-21 |
+| `screentest/test_58c_display.ti58c` | B-21 |
+| `screentest/test_cdebug.ti59` | A-13, B-1, B-2, B-3, B-10, B-13, B-15, B-21 |
+| `screentest/test_diag.ti59` | B-1, B-13, B-21 |
+| `screentest/test_texas.ti59` | B-1, B-3, B-13, B-21 |
+| `screentest/test_stopwatch.asm` | A-4, B-21 |
+
+**Group 59-D**
+
+| File | Result |
+|---|---|
+| `fixtures/statefiles/bad-partition.ti58` | A-2, B-14, B-15 |
+| `fixtures/statefiles/edge-cases.ti59` | A-1, B-13, B-14, B-15 |
+| `fixtures/statefiles/model-58c.ti58c` | A-2, B-15 |
+| `fixtures/cards/program-bank1.u59` | B-14 |
+| `fixtures/cards/data-bank3-nocue.u59` | B-14 |
+| `fixtures/cards/no-data.u59, bad-bank.u59, bad-row.u59` | holds |
+| `fixtures/cards/bank1-protected.hex, bank4-data.hex` | holds |
+| `assembly/Decoder.asm, DPT.asm` | B-18, B-26 |
+| `assembly/simple_count.asm` | B-18, B-26 |
+| `assembly/stopwatch.asm` | A-4, B-18, B-26 |
+
+**Group 59-E**
+
+| File | Result |
+|---|---|
+| `debug/example-brief.ti59` | A-1, A-2, B-1, B-10, B-12 |
+| `debug/example.ti59` | A-1, A-2, B-1, B-10 |
+| `debug/nibbleerror.ti58` | A-2, B-10 |
+| `debug/operror.ti59` | A-2, B-1, B-10, B-13, B-17 |
+| `debug/printer-interrupt-bits.ti59` | A-1, B-1, B-10 |
+| `debug/printer-interrupt-sweep.ti58c` | A-1, B-1, B-10 |
+| `debug/printer-timing.ti59` | A-3, B-1, B-10 |
+| `debug/ret_bug_label.ti59, ret_bug_repo_2levels.ti59` | A-2, B-10 |
+| `debug/selftest-speed-check.ti59` | B-1, B-10 |
+| `debug/test-cuecard.ti59, test-solidstate.ti59` | A-2, B-10, B-13 |
+| `debug/test-magnetcard.ti59` | A-2, B-10 |
+
+**Group 59-F**
+
+| File | Result |
+|---|---|
+| `historic/characters-fastmode.ti59` | B-1, B-10 |
+| `historic/pdcm-card-tricks.ti59` | B-1, B-6, B-7, B-8, B-10 |
+| `historic/pdcm-make-cards.ti59` | A-12, B-1, B-6, B-8, B-10 |
+| `historic/fast-grafik-3d-plot.ti59` | B-1, B-10, B-13 |
+
+**Group 59-G**
+
+| File | Result |
+|---|---|
+| `historic/trace-quirk.ti59` | B-10, B-13 |
+| `historic/repartition.ti58c` | A-2, B-10, B-13, B-28 |
+| `historic/printer-quirks.ti59` | A-2, B-1, B-13, B-14 |
+| `historic/firmware.ti59` | A-2, B-13 |
+| `historic/fastmode.ti58` | A-2, B-10 |
+| `historic/fastmode.ti59, FastMode_Zero4.ti59, keycodes.ti59, ram_test_full_fast.ti59` | A-2 |
+| `historic/stars-and-stripes.ti59` | A-1, B-1 |
+| `historic/texas-print.ti59` | B-1, B-10, B-13 |
+| `calendar/calendar-01, -05` | B-1, B-25 |
+| `calendar/calendar-09-dispatch.ti59` | A-1, B-1, B-25 |
+| `historic/erdkundetest.ti59, erdkundetest-2.ti59` (line by line) | A-1 |
+| `historic/life.ti59` (line by line) | B-1, B-10 |
+| `historic/Integer-Base-Conversion.ti59, Frequency-Transformation.ti59` (line by line) | A-2, B-14 |
+| `calendar-02, -03, -06, -07` (line by line) | B-1, B-25 |
+| `calendar-04-skillman.ti59` (line by line) | B-1, B-14, B-25 |
+| `calendar-08-acosta.ti59` (line by line) | B-1, B-13, B-14, B-25 |
+
+**Group 1600-A**
+
+| File | Result |
+|---|---|
+| `examples/startup/default-pc1500.pc1500` | A-10, B-5 |
+| `examples/startup/default-pc1500a.pc1500a` | B-5 |
+| `examples/startup/default-pc1600.pc1600` | B-4, B-5, B-8, B-20 |
+| `fixtures/presets/hanoi.pc1600` | B-4, B-20 |
+| `fixtures/presets/maxed-out-mem.pc1600` | B-5, B-8, B-20 |
+| `fixtures/presets/memtest_stock.pc1500` | B-4, B-20 |
+| `fixtures/presets/startup-pc1500a.pc1500a` | B-5, B-20 |
+| `fixtures/presets/startup-pc1600.pc1600` | B-4, B-5, B-8, B-20 |
+| `examples/bundled.yaml` | holds |
+
+**Group 1600-B**
+
+| File | Result |
+|---|---|
+| `basic/hanoi.pc1600` | A-6, B-4, B-27 |
+| `plotter/lissajou-1500.pc1500a` | B-4, B-27 |
+| `plotter/lissajou-1600.pc1600` | A-5, B-4, B-27 |
+| `plotter/globus.pc1600, biorhythmus_1600.pc1600, ascii.pc1600` | A-5, B-4, B-27 |
+| `machine-code/memtest_1500a.pc1500a` | B-4, B-27 |
+
+**Group 1600-C**
+
+| File | Result |
+|---|---|
+| `plotter/ce150_demo.pc1500a` | B-4, B-27 |
+| `plotter/ce150-text-and-frame.pc1600` | B-27 |
+| `plotter/ce1600p-text-and-frame.pc1600` | A-5, B-25, B-27 |
+| `plotter/lissajou-ce150.pc1600` | B-4, B-27 |
+| `machine-code/Calculat.pc1600` | B-27, C-3 |
+| `machine-code/memtest_bank.pc1500a, memtest_ce155.pc1500, memtest_CE1638.pc1500, memtest_stock.pc1500` | B-27 |
+| `dev/presets/iterator.pc1500a` | A-10, B-4 |
+| `dev/presets/loader_test_1600_memory_cards.pc1600` | A-5, A-10, B-4 |
+| `dev/presets/supercard_debug.pc1600` | A-10, B-4 |
+| `dev/presets/trace_demo.pc1500a` | A-10, B-4, B-17 |
+| `dev/hardware-checks/adrtest, instrquirks, lcdallon` | A-10 |
+| `dev/tape-matrix/run.py` | B-25 |
+
+**Group 1600-D**
+
+| File | Result |
+|---|---|
+| `screenshots/pc1500-ready.pc1500, pc1500a-ce158.pc1500a, pc1600-hanoi-list.pc1600, pc1600-hanoi-run.pc1600` | B-4, B-22 |
+| `screenshots/pc1500a-ready.pc1500a` | B-4, B-22 |
+| `screenshots/pc1600-lissajou.pc1600` | A-5, B-4, B-22 |
+| `screenshots/pc1600-modules.pc1600` | A-5, A-7, B-4, B-5, B-8, B-22 |
+| `screenshots/pc1600-ready.pc1600` | B-4, B-22 |
+| `screenshots/pc1600-tape.pc1600` | A-5, B-4, B-22 |
+
+**Group 1600-E**
+
+| File | Result |
+|---|---|
+| `vscode presets/debug-pc1500a.pc1500a, debug-pc1600.pc1600` | holds |
+| `templates/pc1500a-program/debug.pc1500a` | B-19, B-24 |
+| `templates/pc1600-program/debug.pc1600` | A-11, B-19, B-24 |
+| `templates/pc1500-bus-rom/debug.pc1500a` | B-19, B-24, B-29 |
+| `templates/pc1600-bus-rom/debug.pc1600` | A-9, B-19, B-24 |
+| the presets `tools/dap_smoke.py` writes | A-10 |
+
+**Group 1600-F**
+
+| File | Result |
+|---|---|
+| `dwx/DiskWorks.pc1600` | B-4, B-5, B-8, B-11, B-26 |
+| `dwx/make_diskworks_media.pc1600` | A-7, B-4, B-5, B-8, B-11, B-26 |
+| `memory/flashtest_ce163f.pc1500a` | B-5 |
+| `memory/maxed-out-mem.pc1600` | B-5 |
+| `memory/memory-cards/pc1500-maxed-out.pc1500` | B-5, B-11, B-26 |
+| `interfaces/ce158_demo.pc1500a` | B-25, B-26 |
+| `interfaces/ce158_demo.pc1600` | B-25 |
+| `interfaces/setcom1600.pc1600` | B-4, B-5 |
+| `setup/ce1638_bankswrm.pc1500, .pc1500a` | B-5 |
+| `setup/firmware_bootstrap_util_15, utilrm_15, utilrm_20` | B-5 |
+
+## 5. Findings
+
+The thirteen tracers reported 143 findings. Every one was checked
+against the spec text and the pinned code by the main session; findings
+of several tracers about one thing were merged, which leaves the 49
+below. Classes (`prompts/phase-5.md`, step 6): **A** a recorded
+decision was missing from a criterion or from the ledger, fixed; **B**
+needs the user; **C** cannot be settled on paper and goes into
+`first-steps.md`. Nothing a tracer reported was dropped as wrong; where
+a finding falls away with the ruling on another, it says so.
+
+### 5.1 Class A: fixed
+
+| # | Finding | Record that was missing from the criterion | Fixed in |
+|---|---|---|---|
+| A-1 | `registers: \|` and `cue-card: \|` did not say that ` #` starts a comment; every register listing of the examples has such comments, so the upgraded files would have been refused | `presets.md` PR-6 ("inside the TI block scalars … ` #` starts a comment"); C59-2 decision log | C59-2 AC-4, AC-5 |
+| A-2 | A 2.3.0 preset without `MODEL:` loads into the running model (`Shared/StateFile.cpp:545-552`, `Shared/SessionController.cpp:598`); its upgraded file names the model of its extension, so `diag.ti58` switches to a TI-58. No ledger row said so | `presets.md` PR-2 (`model:` is required); C59-2 AC-10, second row | ledger row 59-4 |
+| A-3 | Key holds in emulated time change what `Adv` feeds at full speed and what an `Elapsed:` line counts (`reference/StateFileFormat.md:299-301`); no ledger row | `typing.md` T-1; `presets.md` PR-10 | ledger row 59-23 (new) |
+| A-4 | `examples/screentest/test_stopwatch.asm`, the overlay the screenshot test loads (`ScreenshotTests.swift:125-176`), was not among the overlays that are upgraded | ADR 0037, ledger row 59-1 | C59-4 AC-20 |
+| A-5 | The upgrade table of the Sharp presets had rows for `plotter: CE-150` and `- wait: 2` only; `plotter: CE-1600P` (13 files) and `- wait: 20` had none under "only this changes" | `presets.md` PR-5, PR-11; ledger row 1600-3 | C1600-4 AC-15 |
+| A-6 | The reply to the preset list had no group and did not tell a startup preset from an example, which the Examples menu and the settings need (`Web/bindings.cpp:562-571`) | LIB-6 AC-31; LIB-14 AC-1, AC-12 | LIB-6 AC-32 |
+| A-7 | LIB-7 AC-21 gave its notation (a path with a space in quotes) to "the steps of AC-26", `saveas` among them, while AC-26 keeps the rest of the line for `saveas`, as `- saveas: template slot-2:file:CE-1601M - Progs.card.yaml` needs | LIB-7 OQ-3 ("`saveas:` keeps today's form") | LIB-7 AC-21 |
+| A-8 | Ledger row 1600-7 says only that the first write "replaces an instance of that name", not that it makes one, as row 59-7 does | `media.md` MD-1; LIB-7 AC-25 | waits for B-5, which may change the rule itself |
+| A-9 | `listings` and `symbols` of a `debug:` block were "a list of files"; the VS Code template `pc1600-bus-rom` writes maps (`path`, `cpu`, `bank`), which today's reader takes (`Core/Debug/AttachKeys.hpp:69-88`) | C1600-4 AC-19, AC-20 (today's YAML, today's tests) | C1600-4 AC-11 |
+| A-10 | The presets under `dev/` and the presets `tools/dap_smoke.py` writes as text were not named among those that are upgraded; LIB-6 AC-51 said the test suite checks all presets "as today", where today a tool does it by hand (`tools/check_presets.sh:2-11`) | C1600-4 decision log ("every shipped preset is upgraded and checked"); C1600-3 AC-20 | C1600-4 AC-15; LIB-6 AC-51 |
+| A-11 | "The lowest address of the listing" would be an equate's address in a zasm listing; today only lines with bytes count (`Core/Debug/Listing/ZasmListing.cpp:90-91`) | C1600-3 AC-23 | C1600-3 AC-7 |
+| A-12 | Two steps that name one card (`PDCM-1:1`, `PDCM-1:2`): one card or two fresh ones, the second replacing the first | C59-7 AC-27 ("both sides in one file"; `tests/shared_cooperative_tests.cpp:791-812`) | C59-7 AC-20 |
+| A-13 | LIB-10 AC-13 listed what an operation lets through, and a pause-on-start that fires was not in the list; `test_cdebug.ti59` arms and fires inside its own load | LIB-10 AC-9 (no exception); LIB-6 AC-19 as decided on 2026-11-11 | LIB-10 AC-13 |
+
+Each fix has its row in the decision log of its spec.
+
+### 5.2 Class B: put to the user
+
+Status of all: open, put to the user on 2026-11-11. Each has the facts,
+the spec text it meets, and one recommendation.
+
+#### Steps and time
+
+**B-1 — When a `key` step ends on a TI.**
+Today: after each key, the last one too, playback waits until the
+processor is back in the key scan loop, so until the program the key
+started has stopped; only then does the next directive act and the
+script end (`Shared/KeySequencer.cpp:157-167`). The format reference
+gives this as the way to run a program at full speed
+(`reference/StateFileFormat.md:291-296`). The user can press keys
+meanwhile. Specs: LIB-5 AC-17 "Given `key`, then the reply comes when
+the last key is up"; LIB-6 EC-4 "the load is over after that step, and
+the program runs on at regular speed"; `speed`, `elapsed`, `switch`,
+`trace` need no emulated time (LIB-6 AC-19); C59-2 AC-10 writes one
+step per line and adds nothing. Under the specs: the `Elapsed:` lines
+of thirteen examples (the calendar examples, `picard`, `globe-print`,
+`selftest-speed-check`, `printer-timing`) report 100 ms; `FullSpeed:`
+before the key that starts a run lasts 100 ms (`test_texas`,
+`fast-grafik-3d-plot`, `switzerland`); `trace: off` and `switch:
+PC-100C TRACE on` act while the program before them still runs
+(`operror`, `test_cdebug`); `insert:` closes the card switch into a
+running program (`globe-print`, `characters-fastmode`). The comparison
+of C59-2 AC-11 does not see it, because it looks at the idle machine.
+Found by seven tracers.
+*Recommendation:* on a TI model a `key` step ends when the machine is
+idle again after its last key (LIB-6 AC-36), as 2.3.0 does, with the
+bound of LIB-6 AC-15: after one hour of emulated time the preset goes on
+and a line of the log says so. LIB-5 AC-17, AC-20 and LIB-6 EC-4 are
+worded so. What follows from it: while the program a preset started
+runs, the load is still an operation, so R/S pressed by the user is
+dropped (ledger row 59-5); Reset ends it.
+
+**B-2 — A pause that lands inside the hold of a key.**
+`test_cdebug.ti59` arms `pause-on-start: program` and presses `SBR`,
+`=`. The ROM appears to take a key while it is held
+(`rom/TI59-commented.asm:2100-2116`), so the program starts and the
+pause lands inside the 100 ms hold; a run has to confirm it (C-1). Today the hold is wall time: the key comes up on the
+frozen machine and the wait after it ends at once
+(`Shared/KeySequencer.cpp:119-126, 152-167`). Specs: the hold is
+emulated time (LIB-5 AC-1, AC-20); "a step that needs emulated time to
+pass waits until the machine runs again", `key` among them (LIB-6
+AC-19). The `key` step would never end, and the `wait: 1.5s` that was
+fixed on 2026-11-11 would never be reached: the same preset would hang
+one step earlier.
+*Recommendation:* as for `wait:` with a duration: while the machine is
+paused, what is left of a hold passes in the host's time, the key comes
+up, and the step ends with the machine still paused; in the harness at
+once. A key that is not yet down waits for the machine to run, as now.
+
+**B-3 — Key readiness on a TI while a program runs.**
+Today a press waits for the narrow scan loop (`0x063C-0x0660` on the
+TI-59, `Shared/MachineModelInfo.hpp:59-68`), never for the moments in
+which a running program samples R/S. C59-1 AC-18 does not name the
+loops ("there are several"); LIB-6 AC-36 and OQ-1 assume that readiness
+can show while a program runs. If it did, LIB-5 AC-20 would press `2nd`
+into the running diagnostic of `test_cdebug`.
+*Recommendation:* C59-1 AC-18 says that key readiness is the steady
+state of today's scan loop, with a printer its confirmation scan, and
+not the sampling of a running program. The first step on LIB-6 AC-36
+then only confirms the 100 ms.
+
+**B-4 — `key` and `type` on the Sharp machines.**
+Today (`Core/PC1600/PC1600BasicTyper.cpp:150-204, 243-289`,
+`Core/PC1600/PC1600PresetLoader.cpp:143-157`,
+`Core/PC1500/PC1500BasicTyper.cpp:16-19, 79-193`): a `type` line starts
+at once on the PC-1500; on the PC-1600 with a plotter it starts when the
+ROM is in the command loop or reads the key matrix, held 15 frames, and
+after 15 s all the same. A `key` step is 4 frames down and 4 up, on the
+PC-1600 after the same wait. After ENTER the PC-1500 waits for its
+settle test, at most 12 s, the PC-1600 until BUSY is off, at most 1 s,
+and 12 frames more. After the build the PC-1600 also waits until it is
+steady in the command loop, at most 20 s. Idle is the command loop for
+20 frames in a row. Specs: "a `type` starts its line only when the
+machine reports [prompt readiness]" (LIB-5 AC-14), with no bound (EC-3);
+prompt readiness is the command loop (AC-35), which an `INPUT`, the
+RESERVE mode and possibly MODE 1 are outside of; a `key` step is the
+2-frame minimum (AC-28); the wait after ENTER is "prompt readiness"
+(AC-17); nothing is done after the build of a PC-1600 (LIB-6 AC-46).
+Under the specs the three bundled examples that answer an `INPUT`
+(`globus`, `biorhythmus_1600`, `ascii`) hang at their first answer, and
+so may the PC-1600 startup preset, which types in RESERVE mode, and
+with it the start of the product; every key step and every load ends
+at another tick than today, so the comparison of C1600-4 AC-16 "at the
+end of the load" differs without a defect (`hanoi`, `ce150_demo`).
+Found by all six Sharp tracers.
+*Recommendation:* in a preset and in the harness, `key` and `type` on
+the Sharp models do what they do today, tick for tick, and the criteria
+say what that is: LIB-5 AC-14 holds "where the typing profile says so";
+LIB-5 AC-28 gets the start of a line and of a key step (PC-1500: at
+once; PC-1600: key readiness of C1600-1 AC-21 for 15 frames, at most
+15 s, with a plotter), the 4 + 4 frames of a key step, and the two
+waits after ENTER as they are; LIB-6 AC-46 gets the PC-1600's wait
+after the build; LIB-6 AC-45 gets the 20 frames. The reference runs of
+C1600-4 AC-16 then compare like with like.
+
+#### Media and cards
+
+**B-5 — A bundled template that a preset names.**
+Today a template a preset names stays a template in its place: what the
+machine writes lives there, no file is made, and Name & Save keeps it
+under a name of the user's (`Shared/ModuleBay.cpp:98-112`,
+`Shared/ModuleBay.hpp:81-86`); the user guide tells the user to do so
+(`docs/User-Guide.md:1013-1019`). Specs: LIB-7 AC-25, "a medium by
+file, or a template by name": the first write makes an instance with
+the template's name, replacing one of that name; AC-5: a lookup by name
+still finds the template; AC-16, EC-9: no Name & Save for an instance.
+Under the specs: every preset that names a RAM module (`slot-1:
+CE-1600M`) leaves an instance "CE-1600M" in the save folder, which the
+next such preset replaces; the PC-1600 startup preset does so at every
+start; the setup presets (`examples/setup/`), whose purpose is a
+prepared module to keep, leave it under the bundled name, where no
+preset finds it and Name & Save cannot rename it; the pickers show two
+entries of one name. ADR 0019 itself speaks only of "a medium a preset
+names by path".
+*Recommendation:* a template that a preset names by name behaves like
+one chosen in a picker (LIB-7 AC-15): what is written lives in the
+place, and Name & Save is offered, as today. LIB-7 AC-25 holds for a
+medium named by file and for a card name on the TI-59. The exception in
+AC-5 goes, row 1600-7 says "by file" (A-8), and row 1600-13 is not
+touched.
+
+**B-6 — What shows above the keys when a preset passes a card.**
+Today (`Shared/SessionController.cpp:494-536`,
+`tests/shared_cooperative_tests.cpp:450-461, 791-812`): a card file a
+preset feeds is fitted and stays fitted; a `mem:` card is not fitted,
+but its cue card shows from then on (`globe-print` shows "part 2",
+"part 3"); the preset's own cue card goes onto every card file the
+preset writes. Specs: `- insert:` with a card "inserts it without
+fitting it" (C59-7 AC-17, `presets.md` PR-8); the topic shows "the
+fitted cue card" (AC-22); a fresh card gets its name as title (AC-15);
+nothing says which cue card a card written by a preset carries. No
+ledger row for any of the three.
+*Recommendation:* keep today's three: a card that `insert` or `arm`
+names by name or by file is fitted when it goes in; a `mem:` card with
+a `cue-card:` fits that cue card, as a `cue-card:` section would; a
+fresh card a preset writes carries the cue card fitted at its first
+write, else its name as title. C59-7 AC-17, AC-20 and PR-8 are worded
+so. If not: three ledger rows.
+
+**B-7 — A blank `mem:` card.**
+`pdcm-card-tricks.ti59` arms `mem:D-1`, `mem:D0`, `mem:D1`, `mem:D2`
+and `mem:D-2`, which have no `CARD:` block: blank cards that the
+program writes and reads back (`reference/StateFileFormat.md:418`).
+Specs: LIB-7 AC-23 refuses "a `mem:` name without its section"; a card
+section needs `bank:` (C59-7 AC-18).
+*Recommendation:* a `medium:` section with `kind: card` and only its
+`name:` is a blank card; `bank:` is required only with `steps:` or
+`registers:`. The upgrade writes such a section for each blank card.
+
+**B-8 — Small rules for media in presets.**
+(a) A side that is left out: today side A of a disk, side 1 of a card
+(`Core/Preset/PresetFile.cpp:689-690`, `Shared/StateFile.cpp:166-178`);
+LIB-7 AC-21 and C59-7 AC-17 say it for `insert:` on a card only.
+(b) Today's `floppy: name,B` has no upgrade row. (c) Several armed
+cards: today a queue, each used once, in order
+(`Shared/EmulatorSession.cpp:296-322`); LIB-7 AC-26 does not say.
+(d) "The log says which file was written" (LIB-7 AC-25): a path would
+break LIB-11 AC-8 and the equal logs of LIB-6 AC-13. (e) A 2.3.0 card
+`PDCM-1.U59` in the save folder when a preset names `PDCM-1`: refused
+when read (LIB-7 AC-23) or a numbered file (AC-17, last row); and
+whether `.U59` is `.u59`.
+*Recommendation:* (a) without a side, the first (A, 1), for every key
+and step, side names in any case; (b) `,B` becomes the word `B`;
+(c) armed media queue and pass in the order armed, each once; (d) the
+log names the file by its name in the save folder; (e) refused when
+read, with the hint, as AC-23 says, and the suffix is read in any case.
+
+**B-9 — A preset the card reader ends after 30 minutes.**
+C59-7 AC-17: "the preset ends there with a line in the log". LIB-6
+AC-17 gives a failing step a reply and a notice; LIB-6 AC-43 loads
+every example "to its end without a failure".
+*Recommendation:* it fails there as LIB-6 AC-17 says, with the card
+reader's reason.
+
+#### The proof that the upgrade changed nothing
+
+**B-10 — The reference runs of the TI examples (C59-2 AC-11).**
+AC-11 records them "with the tools of 2.3.0 (`tools/agentic/ti59file.py`,
+`tools/headless/`)". That tool has a reader of its own: always a TI-59
+with the Master Library and the printer (`ti59file.py:163`); every
+directive but `PrinterTrace:` dropped (`:76-91`); no reloads, no cards
+(`tools/agentic/README.md:250-255`); the partition set by keys; `002
+11.` read as 11 and a register cut to 13 digits where 2.3.0 rounds; it
+fails on a file without keys. `tools/headless/` loads no preset. So
+the named tools cannot record the 17 examples without keys, the 8 for a
+TI-58 or TI-58C, the 4 with cards and 2 with reloads. Also: a preset
+that ends paused (`test_58_glyphs`, `test_cdebug`) is never "idle" and
+never passes "an hour"; a program that does not stop (`life.ti59`) has
+no moment that is the same in both runs; the cards a preset writes
+(`pdcm-make-cards`, whose only product they are) are not compared.
+*Recommendation:* a reference run is recorded by a driver on 2.3.0's
+own session code (`SessionController` in its cooperative mode with a
+clock the driver supplies, as `tests/shared_cooperative_tests.cpp:478-484`
+does), on the model of AC-10. It ends when the script has ended and the
+machine is idle, or is paused, or one hour of emulated time after the
+last key went down. Compared are also the banks and cue cards of every
+card the preset wrote.
+
+**B-11 — The comparison of the Sharp examples (C1600-4 AC-16).**
+(a) It compares display, BASIC area, machine code and paper, not the
+media; for `make_diskworks_media` and the setup presets the module or
+the disk is the whole result. (b) A reference run of
+`make_diskworks_media` rewrites two tracked files
+(`- saveas: template …:file:`), and `DiskWorks` mounts the tracked
+folder `examples/dwx/S3`. (c) Three examples (`DiskWorks`,
+`make_diskworks_media`, `pc1500-maxed-out`), and four on the TI side,
+are upgraded only "when LIB-7 and LIB-10 are built", while LIB-6 AC-43
+and AC-51 check every preset as soon as the loader is there.
+*Recommendation:* (a) the content of every medium in a place at the end
+of the load, and of every file a `saveas` wrote, without its time
+stamps, is compared too; (b) both runs are made in a copy of
+`examples/`; (c) the presets that wait for LIB-7, LIB-10 or C59-7 are
+left out of the checks of LIB-6 AC-43 and AC-51 until then, by name.
+
+**B-12 — `debug/example-brief.ti59:16`: `002  11. A`.**
+2.3.0 passes `11.` over, so step 002 stays 00 and the program has no
+label A (`Shared/StateFile.cpp:35-43`; `tests/golden/formats.txt:16574-16578`).
+C59-2 AC-3 refuses the line. The author meant 11.
+*Recommendation:* the example is corrected to `002 11`, and its
+reference run is recorded from the corrected 2.3.0 file.
+
+**B-13 — Upgrade rules that C59-2 AC-10 lacks.**
+(a) Tabs (`ram_test.ti59`, 152 lines): LIB-6 refuses a tab.
+(b) `IdAlign:` (`debug/test-solidstate.ti59:7`), read and not used
+today (`Shared/CueCard.cpp:204-205`), no key of AC-5. (c) A label key
+without a value (`D:` in `debug/test-cuecard.ti59`). (d) `21` alone on a
+line and its key on the next (`test_texas`, `fast-grafik-3d-plot`,
+`calendar-08`, `operror`): "a second function by its name" would give
+`- key: 2nd`, `- key: Op`, and `Op` presses `2nd` again (LIB-5 AC-26).
+(e) `Wait: 1.5s`: whether a duration takes a fraction (LIB-6 AC-1:
+"decimal digits"). (f) A directive that is commented out for the user
+to switch on (`#Trace: printhack.bin`, `historic/printer-quirks.ti59:46`).
+(g) Where the `medium:` sections of a former `CARD:` block go, and that
+LIB-6 AC-15 and C59-2 AC-7 ("sections after a step list … are carried
+out when … idle") do not mean them (LIB-7 AC-22).
+*Recommendation:* (a) spaces; (b) the line is dropped; (c) an empty
+value is an empty label; (d) a second function gets its name only where
+`21` and its key stand on one 2.3.0 line; a line with `21` alone stays
+`- key: 2nd`, the next key keeps its key ID, and LIB-5 AC-26 says
+"within one step"; (e) no fraction: `1500ms`; (f) it is written in
+version 2 (`# - trace: printhack.bin`); (g) at the end of the file, and
+AC-15 and AC-7 except them by name.
+
+**B-14 — Small points of the grammar and of the TI blocks.**
+(a) Five examples end without a line end; LIB-6 AC-1 says "lines end
+with LF or CRLF". (b) Leading spaces of a line in `steps: |`.
+(c) `registers:` for a register beyond the partition in force
+(`calendar-04`, `calendar-08`): written into the program area today
+(`reference/StateFileFormat.md:109-112`); C59-2 EC-1 covers steps only.
+(d) `trace: off` while no trace runs (`historic/printer-quirks.ti59:59`).
+(e) Cue-card values: an unlisted value keeps the default today,
+`Template` is matched in exact case and the others in any, and `A′`
+(U+2032) is a label (`Shared/CueCard.cpp:111-134, 187-224`). (f) Card
+file: values in any case today (`Shared/CardFile.cpp:104, 236`); a
+card's cue card is always a MagnetCard, and `Banks` is dropped
+(`:198-201, 296-300`), while C59-7 AC-2 allows every key of C59-2 AC-5.
+*Recommendation:* (a) the last line may end without one; (b) not read;
+(c) written all the same, as today (EC-1); (d) nothing happens; (e) an
+unlisted value refuses, values are read in any case, `A′` to `E′` stay;
+(f) values in any case; in a card file `Template` can only be
+`MagnetCard`, and `Banks` refuses the file.
+
+**B-15 — The preset fixtures and the screentest presets.**
+The three files of `tests/fixtures/statefiles/` exist for the `STATE`
+golden records, which "are not carried over" (LIB-6, C59-2, Technical
+Requirements); their lines are today's lenient cases and have no
+mapping. C59-2 AC-10 speaks of "those … that the new tests still load".
+The five presets of `examples/screentest/` are among the 57, but only
+the UI tests use them.
+*Recommendation:* the three fixtures go with the `STATE` records, and
+each refusal of C59-2 AC-2 to AC-5 is tested by a text with that one
+error; the 57 of AC-10, the screentest presets among them, are all
+checked and loaded by LIB-6 AC-43.
+
+#### Debugger, traces, overlays
+
+**B-16 — The TRACE switch of a PC-100C that a preset builds.**
+Today TRACE survives a load; `PRINTER: on` in the file sets it off
+(`Core/TI59Machine.cpp:39-45, 215-221`, `Shared/SessionController.cpp:657`).
+C59-6 AC-6 speaks of reset, power cycle, cold boot, detach; LIB-18 AC-2
+of a new machine does not name switches.
+*Recommendation:* a machine that is built has every switch of its
+peripherals in its first position (TRACE off).
+
+**B-17 — Traces.**
+(a) Today a preset's trace holds instructions and gaps; key and card
+records go to the button's trace only (`Shared/EmulatorSession.cpp:68-77,
+243-252`). LIB-10 makes them one trace (AC-22, AC-23, AC-33). (b) The
+harness has no trace folder: LIB-9 AC-17 names it per frontend, and a
+one-shot run removes its save folder (LIB-11 AC-8), so `operror.ti59`
+fails its load in the test suite or its trace is gone before
+`tools/read_trace.py` can read it; `dev/presets/trace_demo.pc1500a`
+tells its reader to do just that.
+*Recommendation:* (a) every trace holds key and card records, added to
+row 59-19; (b) the harness takes a trace folder as an option; without
+it, traces go to the run's save folder.
+
+**B-18 — ASM overlays.**
+(a) LIB-10 AC-29 lets a pause land "at the next program step boundary,
+or, while none comes because the calculator waits for a key, after
+50000 instructions". In an overlay neither holds, so FREEZE, `step:
+program` and a second Run would wait without end; today the cap holds
+whatever the processor does (`Core/TI59Machine.cpp:287-297`). (b) Run
+enters at 1800 with COND set; without it `DPT.asm` runs into dead
+address space (`Core/TMC0501.cpp:446-450`); C59-4 AC-17 is silent.
+(c) Whether an overlay still "runs" after a model switch or a preset:
+today yes (`Shared/SessionController.cpp:93-135`). (d) C59-4 AC-23
+keeps "what the tests check about the overlay's reading", and that test
+checks that a run of two digits is passed over and a value is cut to 13
+bits (`tests/shared_debug_tests.cpp:249-251`), both of which AC-15
+refuses; row 59-1 names only the second. (e) What a word or another
+character after `HEX:` does.
+*Recommendation:* (a) the cap holds whatever the processor does;
+(b) AC-17 says "with COND set", and AC-20 runs `DPT.asm`; (c) a new
+machine ends the run, and the instructions are put over the new ROM;
+(d) AC-23 excepts both, and row 59-1 names the short run; (e) it
+refuses the file.
+
+**B-19 — The DAP server and the `debug:` block.**
+(a) "A Reset or a Cold boot follows that is paused before its first
+instruction" (C1600-3 AC-6, AC-17) meets "Reset … is over when the
+machine reports key readiness" (LIB-18 AC-13), "an operation runs, then
+breakpoints … do not pause" (LIB-10 AC-13) and "the server holds
+[messages] back" during an operation (C1600-3 AC-8): the reset never
+ends, or breakpoints in the boot never fire. Today the debugger's reset
+is the reset alone, and the boot runs in normal frames
+(`Qt6/app/debug/DebugController.cpp:262-277`). (b) `boot: debug` forces
+a Cold boot today and overrides `reset:` (`DapSession.cpp:430-444`);
+LIB-10 AC-15 ("a new machine … is not paused") and AC-46 disagree.
+(c) Between Build & Load and `configurationDone`: paused (C1600-3
+AC-4) or running (AC-7). (d) Whether the files a `debug:` block names
+must exist when the preset is read (LIB-6 AC-7); a project from a
+template has none before its first build. (e) Build & Load without a
+program, which the two ROM templates use, has no criterion.
+(f) `bus-rom:` given twice: "each header key may appear once" (LIB-6
+AC-1), "a key that repeats adds to the list" (C1600-4 AC-9), "the last
+one only" (AC-15).
+*Recommendation:* (a) a Reset or Cold boot with a pause at its start is
+over at that pause, and the boot after it is no operation; (b) `boot:
+debug` takes no `reset:`, and AC-15 holds "unless AC-46 is armed";
+(c) paused until `configurationDone`; (d) not read with the preset;
+(e) the set-up again, then resume, or paused with reason entry under
+`stopOnEntry`; (f) AC-9 holds, as today, and LIB-6 AC-1 and the table
+of AC-15 except `bus-rom:`.
+
+#### Harness, tests, tools
+
+**B-20 — The host's date and time in the harness.**
+A build and `syncclock` hand a real-time clock the host's time (LIB-2
+AC-23, LIB-6 AC-27), and the log gets it; LIB-11 AC-6 asks for equal
+replies from equal runs. Today's test pins the clock
+(`Core/tests/job_tests.cpp:228-235`).
+*Recommendation:* the harness takes the host date and time as an option
+and uses a fixed instant without it.
+
+**B-21 — The UI tests of the Swift frontend.**
+Today: `--UITesting` shows an element `keystroke-playback-status`; a
+test taps Preset, picks a file and waits for `playing`, then `idle`
+(`AppHelpers.swift:70-89`); settings come as launch arguments into
+UserDefaults (`ScreenshotTests.swift:27-41`); a hidden button presses
+R/S into a running overlay. Specs: C59-8 AC-21 removes the three aids,
+"the tests reach the session through the attached harness instead";
+LIB-9 AC-21 reads nothing from UserDefaults. Open: (a) who speaks to
+the attached harness from an XCUITest, and what a test waits on after a
+load it started with a tap; a load at full speed can begin and end
+between two polls. (b) How a test launch gets its settings (classic
+segments, the debug page in portrait, the model). (c) `key R/S` waits
+for key readiness, which an overlay never reports (LIB-5 AC-3, EC-3).
+(d) The `Wait: 1.5s` lines of `test_diag` and `test_cdebug` exist only
+so that the poll sees `playing`.
+*Recommendation:* (a) settled by the spike on attach in the simulator
+(first steps) and written into C59-8 then; the signal is the end of the
+operation on the busy topic, received as a stream; (b) a development
+build takes a launch argument that names a settings file for that
+launch; (c) C59-8 AC-21 names `key-down` and `key-up`; (d) the two
+lines are dropped in the upgrade.
+
+**B-22 — The screenshot scenarios of Calc-U-1600.**
+The runner is the Qt6 app (`--shots`): it stops the pacer for the whole
+run, loads a preset to its end in one call, and advances emulated time
+itself for `run:`, `key:` and `type:` (`ShotRunner.cpp:115, 233-271`).
+Specs: operations run in parts by host calls, none blocks the GUI
+thread (LIB-3 AC-3, AC-14, AC-35); a frontend has no command that lets
+emulated time pass; `--shots` is "not a harness function" (LIB-11
+AC-18) and the pictures are "made as today" (LIB-16 AC-12). The runner
+as it is would wait without end for the start. Two scenarios click
+`Edit > Settings…`, which moves to File (LIB-14 AC-34); the scenarios
+find widgets by object names no criterion keeps.
+*Recommendation:* the Qt6 frontend gets harness attach (`harness.md`
+H-4, "when a need shows"), and the runner becomes its client: `preset`,
+`wait`, `key`, `type` in place of its own stepping. LIB-14 owns the
+scenarios and the object names they use, and they are upgraded with the
+shell.
+
+**B-23 — Two GUI scenarios the specs cite.**
+LIB-6 AC-42: "a bundled example is loaded and the display shows its
+result"; the cited Web test checks the cue card of `sum.ti59`, and the
+Swift test only that playback began; four of the five bundled presets
+of that group have no keys. `Web/tests/play-calculator.spec.js:471-491`
+loads a bundled preset offline; LIB-15 AC-23 keeps "runs every model".
+*Recommendation:* AC-42 names `sum.ti59` and its cue card; LIB-15 AC-23
+adds "and loads a bundled example".
+
+**B-24 — The VS Code templates.**
+C1600-4 AC-15: the templates "are upgraded by hand and are not
+checked"; C1600-3 AC-19 says the scenarios check them, and one of ten
+uses a template, skipping without `sdaslh5801` (`tools/dap_smoke.py:370-373`).
+*Recommendation:* a test fills each template as `scaffold.js:49-58`
+does and runs `check-preset` on it; the RENUM scenario uses a built ROM
+kept as a fixture.
+
+**B-25 — Tools around the examples.**
+(a) `tools/agentic/calendar/fastcal.py` generates `calendar-09` in the
+2.3.0 format, and `years.py` finds the year by matrix code 11
+(`fastcal.py:163-203`, `years.py:21-25`). (b) `dev/tape-matrix/run.py`
+writes version 1 presets (`:44, 91-96`); `dev/README.md:20-22` calls it
+a one-time check. (c) The CE-158's peer is set before the preset builds
+the machine today (`tools/pc1500_cli.cpp:185-187`); `pc1600 serial` is
+refused without a CE-158 (C1600-5 EC-3), and `preset` replies after the
+program has sent its first line. (d) `tools/pc1600_plotter_probe`
+prints pen and motor events; no command gives them.
+*Recommendation:* (a) the calendar scripts read and write version 2
+with the upgrade; (b) kept as the record of a finished check, not
+upgraded; (c) a `pc1600 serial` command given before a machine has the
+CE-158 holds for the next one built; (d) the probe keeps what `paper
+marks` and the log give.
+
+**B-26 — Texts next to the examples.**
+C1600-4 AC-15: "in each, only this changes". Comments in the presets
+and the READMEs under `examples/` name keys that are gone
+(`slot-N-file:`, `floppy-file:`) and tools that are gone
+(`examples/setup/README.md:18-21`, `ce158_demo.pc1500a:7-8`);
+`examples/assembly/README.md:8-22` describes the 2.3.0 overlay format.
+No spec owns them.
+*Recommendation:* the upgrade of a file corrects its comments, and the
+READMEs under `examples/` are upgraded with them (C59-2 AC-10, C59-4
+AC-20, C1600-4 AC-15).
+
+#### Lists and bundles
+
+**B-27 — The preset lists.**
+(a) Calc-U-1600 bundles the whole folder of each listed preset
+(`examples/bundled.yaml:9-10`, `Web/build.js:77-94`), so nine unlisted
+examples are bundled and start with `?preset=`; C1600-4 AC-17: "each
+preset with the files it names". (b) An entry of Examples is labelled
+by its description today (`Shared/PresetCatalog.hpp:29`), which two Web
+tests click; LIB-14 AC-1 gives no label. (c) What the Web `preset` prop
+takes (LIB-15 AC-16). (d) C59-2 AC-13: "today's order" and three
+groups; `fastmode-sst` is tenth today and in the second group.
+*Recommendation:* (a) the whole folders, as today; (b) the description,
+else the name; (c) a reference, or a path inside the bundled presets;
+(d) today's order within each group.
+
+**B-28 — "Empty" constant memory of a TI-58C a preset built.**
+C59-2 EC-3, AC-1 and C59-3 AC-8 say empty; C59-1 AC-6 says a cold boot
+is "as the ROM's start-up leaves a machine whose memory was all zero",
+and that start-up writes its signature into H00
+(`rom/TI58C-ROM-Guide.md:165-176`). Today a load keeps these registers
+for that reason (`Shared/StateApplier.cpp:66-73`).
+*Recommendation:* the three criteria say "as the ROM's start-up leaves
+it"; first step C-6 confirms it.
+
+**B-29 — C1600-4 AC-4: "the preset has to put the machine into program
+mode before (`- key: mode`)".** The RENUM template types its program
+without a `mode` and presses `mode` afterwards to go to RUN, so the
+PC-1500A is in PRO after its cold start; following AC-4 would switch it
+out.
+*Recommendation:* AC-4 says "unless the model's start leaves it there";
+first step C-7 confirms which models.
+
+### 5.3 Class C: into the first steps
+
+| # | What cannot be settled on paper | Showed on | First step |
+|---|---|---|---|
+| C-1 | Whether a pause-on-start lands inside the 100 ms hold of the key that starts the program, and whether a TI reports key readiness while a program runs | `screentest/test_cdebug.ti59` (B-2, B-3) | with the check of LIB-6 AC-36 |
+| C-2 | Whether a PC-1600 in MODE 1, and in RESERVE mode, is ever in the command loop that is prompt readiness | `plotter/lissajou-ce150.pc1600`, `startup/default-pc1600.pc1600` (B-4) | with the reference runs |
+| C-3 | How long the load of an auto-run program lasts that never returns to BASIC: up to the hour, with the keyboard dead | `machine-code/Calculat.pc1600` | with the reference runs |
+| C-4 | Whether `DiskWorks` writes into the folder `examples/dwx/S3` | `dwx/DiskWorks.pc1600` (B-11) | with the reference runs |
+| C-5 | Whether the start-up of a Sharp ROM writes into a battery-backed module | every preset that names one (only if B-5 keeps LIB-7 AC-25 for templates) | with the reference runs |
+| C-6 | What a TI-58C holds in H00 to H03 after a cold boot, and whether a program a preset wrote outlives a Reset | `historic/repartition.ti58c` (B-28) | with the TI-58C check |
+| C-7 | Which mode a PC-1500 and a PC-1500A are in after a cold boot | VS Code template `pc1500-bus-rom` (B-29) | with the golden runs |
+
+Falling away with a ruling: the card switch closed into a running
+program or into the reset routine (`globe-print`,
+`characters-fastmode`) with B-1; whether 2 frames are enough for a
+Sharp key, and the first step of a PC-1600 preset in the tail of the
+start-up, with B-4.

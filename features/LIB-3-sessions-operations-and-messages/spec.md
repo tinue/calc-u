@@ -340,7 +340,7 @@ Invariants checked in review and in the phase 5 walkthroughs:
   (`frontend.md` FE-2).
 
 ## Open Questions
-- [ ] **OQ-3** — When a command's effect goes out. A command can arrive
+- [x] **OQ-3** — *Decided as recommended (user, 2026-11-11).* When a command's effect goes out. A command can arrive
   between two host calls, and a suspended frontend may stop calling
   altogether. *Recommendation:* a command is carried out when it
   arrives, and its reply and the state topics it changed are sent at
@@ -349,7 +349,7 @@ Invariants checked in review and in the phase 5 walkthroughs:
 - [ ] **OQ-4** — Suspend while an operation runs (EC-4): today's
   behaviour is not recorded for either product. *Recommendation:* as in
   EC-4.
-- [ ] **OQ-5** — What a frontend that starts to listen late is sent of a
+- [x] **OQ-5** — *Decided as recommended (user, 2026-11-11).* What a frontend that starts to listen late is sent of a
   stream topic (AC-6 covers state topics). *Recommendation:* the paper
   and the log from their last reset marker on, so that a panel opened
   later shows all of it; notices not at all, because a notice is about
@@ -362,7 +362,7 @@ Invariants checked in review and in the phase 5 walkthroughs:
   Behaviour change 59-5 covers the speed of a preset and the dropped
   keys, not this. *Recommendation:* add it to row 59-5; it is new for a
   Calc-U-59 user, though short.
-- [ ] **OQ-8** — The Calc-U-59 topic behind `RunStateChanged` carries
+- [x] **OQ-8** — *Decided as recommended (user, 2026-11-11).* The Calc-U-59 topic behind `RunStateChanged` carries
   five things today (freeze, armed freezes, full speed, playback, held
   key), and "live" has no generic meaning. *Recommendation:* run state
   and the armed freezes go to LIB-10 and C59-4; full speed becomes part
@@ -387,3 +387,4 @@ Invariants checked in review and in the phase 5 walkthroughs:
 | Proposed in this spec, for the gate: a frontend that starts to listen is sent every state topic once (AC-6) and states its host services (AC-26); a suspend and a debugger pause do not end each other (AC-25); a host service is asked with one message and answered with one, without making the session busy (AC-27) | AC-6 follows from FE-1 ("never asks back"); the others make the seam checkable and no contract states them | 2026-11-10 |
 | Every command gets a short reply: done, or refused with the reason | user, 2026-11-10, batch 2 gate | 2026-11-10 |
 | Proposed with LIB-6 and LIB-14 and accepted (user, 2026-11-10, batch 5 gate): the busy topic says whether the running operation is at full speed or at regular speed now (AC-14) | `presets.md` PR-4: "Loading…" only while it runs at full speed | 2026-11-10 |
+| A command is carried out when it arrives, and its reply and the state topics it changed go out at once; what the machine puts out goes with the host calls. A frontend that starts to listen late gets the paper and the log from their last reset marker on, and no earlier notices. Of what `RunStateChanged` carries today, run state and the armed freezes are LIB-10's and C59-4's, full speed and playback are part of busy, and the held key is LIB-5's | user, 2026-11-11; OQ-3, OQ-5, OQ-8 | 2026-11-11 |

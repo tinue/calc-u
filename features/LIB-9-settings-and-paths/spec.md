@@ -159,9 +159,14 @@ Paths
   `[trace] folder` (empty) and `max-file-size-mb = 50`;
   `[display] led-style = modernized` (accepts `modernized`, `classic`);
   `[keyboard] feedback = off` (accepts `off`, `haptic`, `click`);
-  and the app-written sections `[window]` and `[folders]`
+  `[trace] location = app-support` (accepts `app-support`, `icloud`,
+  `folder`; used by the Swift frontend only, AC-24);
+  and, written by the app: `[startup] last-model`; `[folders] presets`,
+  `asm-overlays` and `other`, each the folder in which a file dialog
+  for that kind of file starts; and `[window]`, which holds plain
+  numbers and, for the Swift frontend, `portrait-debug-page`
   (`settings.md` ST-4; today's defaults: Calc-U-59
-  `Shared/SettingsKeys.hpp:13-24`; the app-written keys: OQ-5).
+  `Shared/SettingsKeys.hpp:13-24`; user, 2026-11-11, OQ-5, OQ-7).
 - [ ] **AC-20** — Given `[startup] model = last` and no model was used
   before, when Calc-U-59 starts, then the startup model is the TI-59
   (`Shared/SettingsKeys.hpp:29-33`).
@@ -175,8 +180,9 @@ Paths
   is read or written.
 - [ ] **AC-24** — Given the Swift frontend, then the trace location can
   be Application Support (the default), iCloud, or on macOS a folder the
-  user chooses, as today (`settings.md`, facts and ST-3; the keys:
-  OQ-7).
+  user chooses, as today: `[trace] location` is `app-support`, `icloud`
+  or `folder`, and with `folder` the folder is the one of `[trace]
+  folder` (`settings.md`, facts and ST-3; user, 2026-11-11, OQ-7).
 - [ ] **AC-25** — Given Swift iOS, Swift macOS, Qt6 and Web, then the
   keys of AC-19 have the same names, values and defaults in each; a key
   a frontend has no use for (for example `[keyboard] feedback` in Qt6,
@@ -200,9 +206,11 @@ Paths
   `[trace] folder` (empty) and `max-file-size-mb = 50`;
   `[debug] dap-enabled = false` and `dap-port = 32168`;
   `[serial] link-folder` (empty);
-  and the app-written sections `[window]` and `[folders]`
+  and, written by the app: `[startup] last-model`; `[folders] presets`,
+  `basic-programs`, `machine-code` and `host-drive` (AC-29); and
+  `[window]` (AC-30)
   (`settings.md` ST-4; today's defaults: Calc-U-1600
-  `Shared/Settings.hpp:34-126`; the app-written keys: OQ-5).
+  `Shared/Settings.hpp:34-126`; user, 2026-11-11, OQ-5).
 - [ ] **AC-27** — Given `[startup] model = last` and no model was used
   before, when Calc-U-1600 starts, then the startup model is the
   PC-1500A (`Shared/Settings.hpp:114-126`).
@@ -271,7 +279,7 @@ Paths
 - The settings file is an own format (ADR 0037).
 
 ## Open Questions
-- [ ] **OQ-5** — The app-written keys. ST-4 names the sections
+- [x] **OQ-5** — *Decided as recommended (user, 2026-11-11): `[startup] last-model`; `[folders]` with one key for each kind of file (Calc-U-1600: `presets`, `basic-programs`, `machine-code`, `host-drive`; Calc-U-59: `presets`, `asm-overlays`, `other`); `[window]` with plain numbers; `portraitDebugPage` is kept, as `[window] portrait-debug-page`.* The app-written keys. ST-4 names the sections
   `[window]` and `[folders]` but no keys. Needed: the last used model
   (both products keep `lastUsedModel` today; *recommendation:*
   `[startup] last-model`); the names in `[folders]` for Calc-U-1600's
@@ -280,7 +288,7 @@ Paths
   `[window]`; and whether Calc-U-59's Swift key `portraitDebugPage` is
   kept. *Recommendation:* list them in this spec once named; dropping
   `portraitDebugPage` would be a visible change and need a row.
-- [ ] **OQ-7** — Traces and screenshots outside Qt6. For the Swift
+- [x] **OQ-7** — *Decided as recommended (user, 2026-11-11): Swift has `[trace] location = app-support | icloud | folder`, default `app-support`, with `[trace] folder` for the chosen one; a Web frontend offers a finished trace as a download, as today (LIB-10 AC-26). Screenshots were decided before: the save folder in Swift, a download on the web (LIB-6 OQ-4).* Traces and screenshots outside Qt6. For the Swift
   frontend: the key names and values of the trace location (AC-24) next
   to `[trace] folder`, and where screenshots go. For the Web frontends:
   where traces and screenshots go (today Calc-U-59's Web frontend offers
@@ -305,3 +313,4 @@ Paths
 | The macOS bookmark of a custom trace folder stays in the platform store; Qt6 window state is plain numbers in `[window]` | A bookmark is a grant by macOS, not a preference; recommendation applied; the user raised no objection at the batch 1 gate | 2026-11-10 |
 | A missing save folder is created at the first write; an override that cannot be used is reported and never replaced silently | Recommendation applied; the user raised no objection at the batch 1 gate | 2026-11-10 |
 | At the first start the product ignores the old platform stores, starts with the defaults and writes its first settings file at that moment, with every key; so no older version of the file can exist in the migration release | user, 2026-11-10, batch 2 gate (prompted). Consequence: a default that a later release changes does not reach a file that already holds the old value | 2026-11-10 |
+| The app-written keys: `[startup] last-model`; `[folders]` with one key for each kind of file; `[window]` with plain numbers and, for Swift, `portrait-debug-page`. The Swift trace location is `[trace] location` (`app-support`, `icloud`, `folder`) | user, 2026-11-11; OQ-5, OQ-7 | 2026-11-11 |

@@ -158,16 +158,16 @@ Checks
   Calc-U-1600 (`harness.md` H-2).
 
 ## Open Questions
-- [ ] **OQ-1** — The PC-1600's own RS-232C port (AC-7). Neither tool
+- [x] **OQ-1** — *Decided as recommended (user, 2026-11-10, batch 8 gate).* The PC-1600's own RS-232C port (AC-7). Neither tool
   reaches it today; only a probe does. The serial port is one generic
   kind (LIB-2), so the same commands cost little. *Recommendation:* add
   it, as AC-7 says.
-- [ ] **OQ-2** — The names of the commands. `harness.md` H-2 names
+- [x] **OQ-2** — *Decided as recommended (user, 2026-11-10, batch 8 gate).* The names of the commands. `harness.md` H-2 names
   `pc1600 dump-basic`, `pc1600 tape` and `pc1600 serial`; the INSPECTOR
   has a view that is also called `dump-basic`. *Recommendation:* as
   written here: the contract's names, with the view reached as `pc1600
   inspect dump-basic`.
-- [ ] **OQ-3** — "View" (of the INSPECTOR) and "character time" for the
+- [x] **OQ-3** — *Decided as recommended (user, 2026-11-10, batch 8 gate).* "View" (of the INSPECTOR) and "character time" for the
   glossary, as defined above.
 
 ## Decision Log
@@ -177,6 +177,6 @@ Checks
 | What only one product's tools have becomes product commands under the product's name | `harness.md` H-2; LIB-11 AC-13, OQ-4 (user, batch 3 gate) | 2026-11-10 |
 | The three probes stay scripts | LIB-11 OQ-5 (user, batch 3 gate) | 2026-11-10 |
 | Cassette tapes keep their own rules | `media.md` Q-1; LIB-7 AC-42 | 2026-11-10 |
-| Proposed in this spec, for the gate: playing a recording and ejecting are LIB-7's `insert` and `eject`; only recording to a path and the status are commands of this spec | One vocabulary (`harness.md` H-1) | 2026-11-10 |
-| Proposed in this spec, for the gate: a serial port has no host link in a harness run unless `link` asks (AC-9) | A run must repeat exactly and touch no file of the user (LIB-11 AC-6, AC-8) | 2026-11-10 |
-| Proposed in this spec, for the gate: `pc1600 host-drive` (AC-11) | `harness.md`'s fit table lists the host drive among the product commands; today no tool has an option for it | 2026-11-10 |
+| Proposed in this spec and accepted (user, 2026-11-10, batch 8 gate): playing a recording and ejecting are LIB-7's `insert` and `eject`; only recording to a path and the status are commands of this spec | One vocabulary (`harness.md` H-1) | 2026-11-10 |
+| Proposed in this spec and accepted (user, 2026-11-10, batch 8 gate): a serial port has no host link in a harness run unless `link` asks (AC-9) | A run must repeat exactly and touch no file of the user (LIB-11 AC-6, AC-8) | 2026-11-10 |
+| Proposed in this spec and accepted (user, 2026-11-10, batch 8 gate): `pc1600 host-drive` (AC-11) | `harness.md`'s fit table lists the host drive among the product commands; today no tool has an option for it | 2026-11-10 |

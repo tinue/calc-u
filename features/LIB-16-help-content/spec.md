@@ -193,28 +193,28 @@ The asset
   HL-1).
 
 ## Open Questions
-- [ ] **OQ-1** — The pages of calc-u.org/59 that are not a user guide:
+- [x] **OQ-1** — *Decided as recommended (user, 2026-11-10, batch 8 gate).* The pages of calc-u.org/59 that are not a user guide:
   installing on each platform, the FAQ, the software pages with their
   articles, and the page with the web calculator. *Recommendation:*
   installing goes into chapter 2 as a product part, the FAQ into chapter
   9; the software pages, the articles and the page with the calculator
   stay pages of the site and are not in the asset.
-- [ ] **OQ-2** — The table of contents of the asset (AC-6). `help.md`
+- [x] **OQ-2** — *Decided as recommended (user, 2026-11-10, batch 8 gate).* The table of contents of the asset (AC-6). `help.md`
   HL-3 asks for one and gives no form. *Recommendation:* one JSON file,
   `toc.json`, with the product, the version, and for each chapter its
   number, title and files in order, each marked shared or product.
-- [ ] **OQ-3** — The check of AC-5. *Recommendation:* the build looks
+- [x] **OQ-3** — *Decided as recommended (user, 2026-11-10, batch 8 gate).* The check of AC-5. *Recommendation:* the build looks
   for the words under "Avoid" and lists each place as a warning, not a
   failure, because several of them are common words.
-- [ ] **OQ-4** — The pictures of Calc-U-59's help. The site has its own
+- [x] **OQ-4** — *Decided as recommended (user, 2026-11-10, batch 8 gate).* The pictures of Calc-U-59's help. The site has its own
   today; nothing makes them from the product, and those that show the
   window show 2.3.0's bar and no menus. *Recommendation:* pictures that
   show what changed are taken anew, by hand for the first release; the
   others are moved as they are. Making them by scenarios, as
   Calc-U-1600 does, is a later step.
-- [ ] **OQ-5** — "Help", "shared part", "product part", "help asset" and
+- [x] **OQ-5** — *Decided as recommended (user, 2026-11-10, batch 8 gate).* "Help", "shared part", "product part", "help asset" and
   "help tool" for the glossary, as defined above.
-- [ ] **OQ-6** — The help tool (AC-6, AC-7). The index says this feature
+- [x] **OQ-6** — *Decided as recommended (user, 2026-11-10, batch 8 gate).* The help tool (AC-6, AC-7). The index says this feature
   holds no library code. *Recommendation:* the tool is a small program
   of the source repository's tools, run as `tools/help build <product>`
   and `tools/help check <product>`; it is the one piece of code of this
@@ -229,5 +229,5 @@ The asset
 | The ten-chapter structure, in menu and control-bar order | `help.md` HL-2 | 2026-11-10 |
 | Each release attaches `<Product>-help.zip` with Markdown, pictures and a table of contents; the site renders it | `help.md` HL-3 | 2026-11-10 |
 | Help uses only glossary terms | `help.md` I-3 | 2026-11-10 |
-| Proposed in this spec, for the gate: the mappings of AC-9 and AC-11 from today's pages and documents to the chapters | The contract gives the chapters, not where today's text goes | 2026-11-10 |
-| Proposed in this spec, for the gate: the checks of AC-7 | They make "the help matches the release" checkable | 2026-11-10 |
+| Proposed in this spec and accepted (user, 2026-11-10, batch 8 gate): the mappings of AC-9 and AC-11 from today's pages and documents to the chapters | The contract gives the chapters, not where today's text goes | 2026-11-10 |
+| Proposed in this spec and accepted (user, 2026-11-10, batch 8 gate): the checks of AC-7 | They make "the help matches the release" checkable | 2026-11-10 |

@@ -97,9 +97,12 @@ The command
   cannot be read, is refused with the hint of LIB-7 AC-9. Then a medium
   for a holding media place is inserted (LIB-7 AC-26), with its first
   side, the medium that was there being ejected first; a medium for a
-  pass-through place gets what the product says follows; a module, and
-  a medium whose place is not there now, is refused with a notice that
-  says where such a medium is chosen.
+  pass-through place gets what the product says follows. A module is
+  plugged in, as by choosing it in the slot's picker, when it is clear
+  from the context where it goes: the machine has one module slot (a
+  PC-1500), or the module can go into only one of the machine's slots
+  (user, 2026-11-10, after the batch 7 gate). Any other module, and a medium whose place is not there now, is
+  refused with a notice that says where such a medium is chosen.
   In a Web frontend, where a file that is opened is an upload and
   cannot be written back, the medium is imported into the save folder
   first (LIB-7 AC-30); given a medium of that kind already has the name,
@@ -188,7 +191,8 @@ The ways in
   file is (C1600-2 AC-1): a BASIC listing or tokenized BASIC is a BASIC
   program; machine code with a header is a machine-code program;
   headerless bytes only when C1600-2 says they look like code and the
-  name ends in `.bin` or `.rom`; a cassette WAV goes to the loader of
+  name ends in `.bin` (today also `.rom`, which goes: user, 2026-11-10, after the batch 7 gate); a cassette
+  WAV goes to the loader of
   its first readable file, and to the BASIC loader when none can be
   read, so that the loader says why; an empty file and "something else"
   are taken by neither (`Core/DropFile.cpp:39-67`).
@@ -202,7 +206,9 @@ The ways in
 - [ ] **AC-19** — Given a disk file is opened, then AC-4 holds: in Qt6
   it is inserted from where it lies, when the drive is there; in the Web
   frontend it is imported, and inserted when the drive is there. A
-  module file is imported in the Web frontend and refused in Qt6 (AC-4).
+  module file is plugged in from where it lies in Qt6 when its slot is
+  clear from the context, and refused otherwise; in the Web frontend it
+  is imported, and plugged in under the same rule (AC-4).
   Today such a file can only be imported from the menu of the Web
   frontend (`Shared/MediaLibrary.cpp:59-107`). A WAV is never taken as a
   tape here; a tape is imported from the menu (LIB-7 AC-43).
@@ -213,7 +219,8 @@ The ways in
 - [ ] **AC-21** — Given the ways in of Calc-U-1600, then they are those
   of today: a drop in Qt6 and in the Web frontend; the items of the File
   menu; in Qt6 on macOS Open With, for the three preset extensions as
-  the product's own and for `.bas`, `.bbin`, `.bin` and `.rom`
+  the product's own and for `.bas`, `.bbin` and `.bin`; `.rom`, which
+  is in that list today, goes
   (`Qt6/app/main.cpp:23-49`, `Qt6/resources/macos/Info.plist.in:49-99`).
   A file named at the start of the Qt6 program is opened too; today it
   is passed over (`Qt6/app/main.cpp:72-101`; OQ-2).
@@ -284,3 +291,5 @@ The ways in
 | In a Web frontend an opened medium is imported, and a name that is taken follows the rule of Name & Save (AC-4) | user, 2026-11-10, batch 7 gate; LIB-7 AC-17 | 2026-11-10 |
 | Proposed in this spec and accepted (user, 2026-11-10, batch 7 gate): a module file or a disk file can be dropped in Calc-U-1600 (AC-19) | It follows from one command for every kind | 2026-11-10 |
 | Proposed in this spec and accepted (user, 2026-11-10, batch 7 gate): one file is kept while the session is busy (AC-7), as in Calc-U-1600 | Today's behaviour of one product, taken for the family | 2026-11-10 |
+| An opened module file is plugged in when it is clear from the context where it goes (a machine with one slot; a module that fits only one slot); otherwise it is refused with a notice | user, 2026-11-10, after the batch 7 gate | 2026-11-10 |
+| `.rom` is no name of a machine-code file: not in a dialog, not on a drop, not in the file types of Open With | user, 2026-11-10, after the batch 7 gate: the extension is not used anywhere | 2026-11-10 |

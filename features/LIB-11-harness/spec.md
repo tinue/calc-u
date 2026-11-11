@@ -151,10 +151,11 @@ The first commands
   | | printer lines and dot lines; the PC-100C's PRINT, ADV and TRACE | LIB-8; LIB-2 (controls), C59-6 |
   | | insert and eject a card, whether the machine waits for one | LIB-7, C59-7 |
   | | which module is plugged in, with or without printer, the model | LIB-18 |
-  | `tools/headless/coverage.py` | which ROM addresses a set of scenarios reaches | a product command (OQ-4) |
+  | `tools/headless/coverage.py` | which ROM addresses a run reaches | C59-9 (`ti59 coverage`); the script, with its scenarios, stays a script that drives the harness (C59-9 AC-13) |
   | `tools/agentic/ti59file.py` | run a preset and report the emulated time and the printout | LIB-6, LIB-8 |
-  | `tools/agentic/linetimes.py`, `runtime.py`, `hotsteps.py`, `stepcost.py`, `fastmode_matrix.py` | timings per printed line and per key, the hottest program steps, the cost of a step | product commands (OQ-4) |
-  | `tools/agentic/kdis.py`, `asm59.py` | list a program's keycodes; assemble keycodes | product commands (OQ-4) |
+  | `tools/agentic/linetimes.py`, `runtime.py`, `hotsteps.py`, `stepcost.py` | timings per printed line and per key, the hottest program steps, the cost of a step | C59-9 |
+  | `tools/agentic/fastmode_matrix.py` | its table of cases, each run in fast mode and in normal mode | stays a script that drives the harness (C59-9 AC-13) |
+  | `tools/agentic/kdis.py`, `asm59.py` | list a program's keycodes; assemble keycodes | C59-9 (`ti59 keycodes list` and `assemble`); the assembler with labels stays a library of the calendar scripts |
   | `tools/read_trace.py` | a trace file as text or JSON | stays a script of the product (LIB-10 AC-33, AC-42; user, 2026-11-10, batch 6 gate) |
 
   (`tools/headless/capi.cpp:47-196`, `tools/headless/ti59.py:155-437`,
@@ -294,3 +295,4 @@ The first commands
 | `dump` belongs to LIB-10 with `peek` and `poke`; the index row of this feature no longer lists it | Memory and registers are read through debug targets | 2026-11-10 |
 | Proposed in this spec, for the gate: a run touches no settings file and no save folder of the user unless options say so (AC-8); the first commands and their names (AC-9); a one-shot run can carry several commands (AC-2); `audio` takes all sound output, also that of an operation (AC-9) | LIB-9 left the default to this spec; H-1 names only some commands; today's tools combine several functions in one call and record the buzzer of a whole run | 2026-11-10 |
 | Product commands get one row per product in the index (C59-9, C1600-5); the Calc-U-1600 probes and the Calc-U-59 calendar scripts stay scripts that use `calcu serve` | user, 2026-11-10, batch 3 gate; amends the table of functions to keep in `harness.md` | 2026-11-10 |
+| Of Calc-U-59's tools, the coverage scenarios and the fast-mode matrix stay scripts that drive the harness; only the addresses reached become a command. AC-14 is worded so | user, 2026-11-10, batch 8 gate; C59-9 OQ-5 | 2026-11-10 |

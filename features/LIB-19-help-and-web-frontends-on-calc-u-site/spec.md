@@ -1,4 +1,4 @@
-# LIB-19: Help and web clients on calc-u-site
+# LIB-19: Help and Web frontends on calc-u-site
 
 <!-- spec.md is the stable CONTRACT: WHAT, not HOW. It changes only
      deliberately, when the requirements change, and stays unchanged
@@ -145,27 +145,27 @@ What the three status columns mean for this feature:
   I-1); nothing of the help is edited in the site.
 
 ## Open Questions
-- [ ] **OQ-1** — The addresses of `/59/` (AC-7). Today's pages do not
+- [x] **OQ-1** — *Decided as recommended (user, 2026-11-10, batch 8 gate).* The addresses of `/59/` (AC-7). Today's pages do not
   map one to one onto the ten chapters (LIB-16 AC-9). *Recommendation:*
   the chapters get addresses of their own, and every address of today
   redirects to the chapter that holds its content, as the site already
   redirects older names.
-- [ ] **OQ-2** — The address of the Web frontend under `/1600/`.
+- [x] **OQ-2** — *Decided as recommended (user, 2026-11-10, batch 8 gate).* The address of the Web frontend under `/1600/`.
   *Recommendation:* `/1600/play/` and `/1600/calc/app/`, as under
   `/59/`.
-- [ ] **OQ-3** — The content plan for `/1600/` that was approved before
+- [x] **OQ-3** — *Decided as recommended (user, 2026-11-10, batch 8 gate).* The content plan for `/1600/` that was approved before
   this project says that there is no page with a calculator. It is out
   of date, since 0.8.0 has a Web frontend. *Recommendation:* this spec
   replaces it.
-- [ ] **OQ-4** — "Pin", "site folder" and "preview" for the glossary, as
+- [x] **OQ-4** — *Decided as recommended (user, 2026-11-10, batch 8 gate); the index row is renamed.* "Pin", "site folder" and "preview" for the glossary, as
   defined above. The index row says "web clients"; the glossary's term
   is Web frontend, and the row should be renamed "Help and Web frontends
   on calc-u-site".
-- [ ] **OQ-5** — What the hosted example files are compared with
+- [x] **OQ-5** — *Decided as recommended (user, 2026-11-10, batch 8 gate).* What the hosted example files are compared with
   (AC-9). No release file holds Calc-U-59's examples today; Calc-U-1600's
   release has them as a zip. *Recommendation:* each release carries its
   examples as a file, and the site pins it like the other two.
-- [ ] **OQ-6** — The design of `/1600/`. The site has a design system
+- [x] **OQ-6** — *Decided as recommended (user, 2026-11-10, batch 8 gate).* The design of `/1600/`. The site has a design system
   for `/59/` only. *Recommendation:* decided in calc-u-site, by its own
   skills, before AC-11 is built; this spec does not set it.
 
@@ -176,5 +176,6 @@ What the three status columns mean for this feature:
 | The site imports and renders the help of the release it pins, as it pins the Web frontend; it keeps its repository and design | ADR 0036; `help.md` HL-3; Briefing §3 | 2026-11-10 |
 | `/1600/` is built: the help from Calc-U-1600's documents and its published Web frontend | Briefing §4.3 | 2026-11-10 |
 | One embedding interface for the Web frontends | `frontend.md` FE-7 | 2026-11-10 |
-| Proposed in this spec, for the gate: the help and the Web frontend that a folder pins are of one version (AC-3) | `help.md` I-1 | 2026-11-10 |
-| Proposed in this spec, for the gate: `/1600/` gets a job of checks and tests like `/59/` (AC-14) | Today only `/59/` is checked | 2026-11-10 |
+| Proposed in this spec and accepted (user, 2026-11-10, batch 8 gate): the help and the Web frontend that a folder pins are of one version (AC-3) | `help.md` I-1 | 2026-11-10 |
+| Proposed in this spec and accepted (user, 2026-11-10, batch 8 gate): `/1600/` gets a job of checks and tests like `/59/` (AC-14) | Today only `/59/` is checked | 2026-11-10 |
+| The row is named "Help and Web frontends on calc-u-site"; this spec replaces the earlier content plan for `/1600/` | user, 2026-11-10, batch 8 gate; the glossary's term is Web frontend | 2026-11-10 |

@@ -629,3 +629,31 @@ building the machine anew before that.
 **Listing** (of an assembler), **Binding**:
 The file an assembler writes with addresses, bytes and source lines;
 what ties a listing or a table of symbols to a debug target.
+
+**Heatmap**, **Dump** (in Calc-U-59's debug panel):
+The heatmap shows how often each part of the ROM was carried out. A
+dump is a text that lists a part of the machine's memory into the log.
+
+**Help**, **Shared part**, **Product part**, **Help asset**, **Help tool**:
+The help of a product is its user guide. A chapter has a shared part,
+written once for the family and holding nothing of one product, a
+product part, which belongs to one product, or both. The help asset is
+the file `<Product>-help.zip` that a release carries; the help tool is
+the command of the source repository that builds and checks it.
+
+**Site folder**, **Pin** (of the site), **Preview**:
+A product's site folder is its part of calc-u.org, `/59/` or `/1600/`.
+A pin is the record, kept in the site, of one release file by its
+address, its version and its sha256. A preview is a build of a coming
+release shown next to the released one.
+
+**Mnemonic**, **Listing** (of a keystroke program):
+A mnemonic is the name of a keycode, which is the name of its key. A
+listing is a keystroke program written as one line per instruction; it
+is the written form of a program, and the program itself is not called
+a listing.
+
+**View** (of the INSPECTOR), **Character time**:
+A view is one of the texts the INSPECTOR, Calc-U-1600's debug panel,
+shows. A character time is the time one character takes on a serial
+port at the speed the port is set to: ten bits.

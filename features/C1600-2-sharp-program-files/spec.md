@@ -314,7 +314,7 @@ Commands
   writes the rest today and then fails. *Recommendation:* nothing is
   written, as on the PC-1600. This, OQ-3 and EC-1 are small visible
   changes; one row in `docs/behaviour-changes.md` names the three.
-- [x] **OQ-3** — *Decided (user, 2026-11-10, batch 7 gate): no. `.rom` is not added; the extension is not used anywhere.* `.rom` in the file dialog of Load Machine Code…
+- [x] **OQ-3** — *Decided (user, 2026-11-10, batch 7 gate): no. `.rom` is not added; the extension is not used anywhere. Afterwards the user dropped it from a drop and from Open With too (LIB-13 AC-17, AC-21).* `.rom` in the file dialog of Load Machine Code…
   (AC-15). A drop and the macOS document types take it; the dialog's
   filter does not. *Recommendation:* add it.
 - [x] **OQ-4** — *Decided as recommended (user, 2026-11-10, batch 7 gate).* The words of a refusal. The same case is worded three

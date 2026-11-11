@@ -173,24 +173,24 @@ Scripts that stay
   Calc-U-59 (`harness.md` H-2).
 
 ## Open Questions
-- [ ] **OQ-1** — The spelling of the mnemonics (AC-11). Three exist
+- [x] **OQ-1** — *Decided as recommended (user, 2026-11-10, batch 8 gate).* The spelling of the mnemonics (AC-11). Three exist
   today: the key names of the headless tool, which LIB-5 AC-26 took
   (`Lbl`, `StFlg`, `IfFlg`); the table of the debug panel's listing
   (`LBL`, `STF`, `IFF`; `Shared/KeyNames.cpp:8-29`); and those of
   `kdis.py`. *Recommendation:* a listing of the harness uses the key
   names of LIB-5, so that one spelling holds in every command and
   preset; the debug panel keeps what it shows today.
-- [ ] **OQ-2** — What `ti59 keycodes assemble` reads (AC-10). Today's
+- [x] **OQ-2** — *Decided as recommended (user, 2026-11-10, batch 8 gate).* What `ti59 keycodes assemble` reads (AC-10). Today's
   assembler is a library for scripts, with labels and computed
   addresses, and has no text form. *Recommendation:* the command reads
   what `ti59 keycodes list` writes, no more; the library with labels
   stays with the calendar scripts that use it.
-- [ ] **OQ-3** — The names of the commands. `harness.md` H-2 names `ti59
+- [x] **OQ-3** — *Decided as recommended (user, 2026-11-10, batch 8 gate).* The names of the commands. `harness.md` H-2 names `ti59
   keycodes` and `ti59 coverage`. *Recommendation:* as written here.
-- [ ] **OQ-4** — "Mnemonic" and "listing" for the glossary, as defined
+- [x] **OQ-4** — *Decided as recommended (user, 2026-11-10, batch 8 gate).* "Mnemonic" and "listing" for the glossary, as defined
   above. The glossary lists "listing" under Avoid for a program; here it
   is the written form of one.
-- [ ] **OQ-5** — LIB-11 AC-14 names the functions of `coverage.py` and
+- [x] **OQ-5** — *Decided as recommended (user, 2026-11-10, batch 8 gate).* LIB-11 AC-14 names the functions of `coverage.py` and
   `fastmode_matrix.py` as product commands. Their scenarios and tables
   are the data of one investigation each. *Recommendation:* only the
   addresses reached become a command (AC-2); the two scripts stay
@@ -202,6 +202,6 @@ Scripts that stay
 |----------|-----------|------|
 | What only one product's tools have becomes product commands under the product's name | `harness.md` H-2; LIB-11 AC-13, OQ-4 (user, batch 3 gate) | 2026-11-10 |
 | Tools written for one investigation stay scripts | LIB-11 OQ-5 (user, batch 3 gate) | 2026-11-10 |
-| Proposed in this spec, for the gate: coverage is read from the `profile` of LIB-10; there is no second counter (AC-2) | LIB-10 AC-20 already counts every address | 2026-11-10 |
-| Proposed in this spec, for the gate: `step-cost` uses and changes the session's machine (AC-8) | A harness run has one machine (LIB-11 AC-2) | 2026-11-10 |
-| Proposed in this spec, for the gate: every timing counts from the start of its command, and the limit is written `limit=` in each | One rule for the replies | 2026-11-10 |
+| Proposed in this spec and accepted (user, 2026-11-10, batch 8 gate): coverage is read from the `profile` of LIB-10; there is no second counter (AC-2) | LIB-10 AC-20 already counts every address | 2026-11-10 |
+| Proposed in this spec and accepted (user, 2026-11-10, batch 8 gate): `step-cost` uses and changes the session's machine (AC-8) | A harness run has one machine (LIB-11 AC-2) | 2026-11-10 |
+| Proposed in this spec and accepted (user, 2026-11-10, batch 8 gate): every timing counts from the start of its command, and the limit is written `limit=` in each | One rule for the replies | 2026-11-10 |

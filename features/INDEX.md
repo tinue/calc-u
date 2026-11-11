@@ -8,7 +8,8 @@ The only place where a feature's status lives (`CLAUDE.md`). Phase 4b
   library for every one of them; a product that keeps its own
   implementation does not meet the success criterion. LIB-16 and LIB-19
   hold no library code (help chapters, calc-u-site); they are `LIB`
-  because both products share them.
+  because both products share them. LIB-16's one piece of code is the
+  help tool, a tool of the source repository.
 - **`C59-n`, `C1600-n`**: product features: product code with behaviour
   of its own that the migration writes or changes (rule 2 below).
   Product functions not listed here are carried over unchanged (for
@@ -90,7 +91,7 @@ Values: Planned, Specified, In progress, Done.
 | LIB-16 | Help content | Shared chapters (the Library column) and product chapters in Markdown, in the ten-chapter structure; the help release asset `<Product>-help.zip` | help HL-1 to HL-3; ADR 0036 | — | Planned | Planned | Planned |
 | LIB-17 | Pacing | One pacer with a pacing profile per model; regular speed and full speed; lag dropped; the long-run rate stays exact, shown by a test per product before and after the pacer moves | frontend SP-1, I-6; machine M-1 (F-1 to F-3) | LIB-1 | Planned | Planned | Planned |
 | LIB-18 | Machine control and startup | The commands that change the machine: model and variant switch (a new machine), attach and detach, Reset, Cold boot; the start of a product: startup model, the built-in default machine | machine M-6, I-6; peripherals P-1; roms R-3; ADR 0021, 0024 | LIB-2, LIB-3, LIB-9, LIB-11, LIB-12 | Planned | Planned | Planned |
-| LIB-19 | Help and web clients on calc-u-site | In the calc-u-site repository: rendering the pinned help asset (the Library column); `/59/` moved to it; the new `/1600/` with the published Calc-U-1600 web client | help HL-3; frontend FE-7; Briefing §4.3 | LIB-15, LIB-16 | Planned | Planned | Planned |
+| LIB-19 | Help and Web frontends on calc-u-site | In the calc-u-site repository: rendering the pinned help asset (the Library column); `/59/` moved to it; the new `/1600/` with the published Calc-U-1600 Web frontend | help HL-3; frontend FE-7; Briefing §4.3 | LIB-15, LIB-16 | Planned | Planned | Planned |
 
 ## Product features
 
@@ -109,7 +110,7 @@ Values: Planned, Specified, In progress, Done.
 | C1600-2 | Sharp program files | The loaders on the loader memory access product kind: telling the kind of a program file, loading BASIC, typing a program in, placing and starting machine code, tape fast-load; checked through the harness. Their use as file kinds of "open file" is product data in LIB-13; the two menu items and their dialogs | frontend SP-3 | C1600-1, LIB-5, LIB-11, LIB-14 | Planned |
 | C1600-3 | DAP in the app layer | The DAP server out of the Qt frontend, on the library's debug target and run control, without Qt types | debugger DB-4 | LIB-10, LIB-11, C1600-2, C1600-4 | Planned |
 | C1600-4 | Sharp preset content | Product sections and keys (`program:` with `file:` and `text:`, `host-drive:`, `bus-rom:`, `slot-N-rom:`, the `debug:` block); the 32 examples upgraded to version 2; the examples catalogue (behaviour changes 1600-1, 1600-3) | presets PR-3, PR-5, PR-11; ADR 0018 | C1600-1, C1600-2, LIB-6, LIB-8, LIB-10 | Planned |
-| C1600-5 | Harness product commands of Calc-U-1600 | The functions of today's tools that only Calc-U-1600 has, as commands under `pc1600`: the BASIC dump, INSPECTOR views as text, cassette files, the CE-158's serial peer | harness H-2; LIB-11 AC-18 | LIB-11, LIB-7, LIB-10 | Planned |
+| C1600-5 | Harness product commands of Calc-U-1600 | The functions of today's tools that only Calc-U-1600 has, as commands under `pc1600`: the BASIC dump, INSPECTOR views as text, cassette files, the peer of a serial port (the CE-158's and the PC-1600's own), the host drive | harness H-2; LIB-11 AC-18 | LIB-11, LIB-7, LIB-10 | Planned |
 
 ## Open points for the specs
 

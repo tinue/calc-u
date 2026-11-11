@@ -263,25 +263,25 @@ Every frontend, and the checks
   reference chapter of the help (LIB-16 AC-10).
 
 ## Open Questions
-- [ ] **OQ-1** — The new version of the ASM overlay format (AC-14). The
+- [x] **OQ-1** — *Decided as recommended (user, 2026-11-10, batch 8 gate).* The new version of the ASM overlay format (AC-14). The
   index asks for a version; today's files have none, and after `HEX:`
   any run of four or more hexadecimal digits is taken as instructions,
   also inside what looks like a comment. *Recommendation:* as in AC-14:
   a first line `Calc-U-59 ASM 2.0`, and `;` for comments.
-- [ ] **OQ-2** — The level button of the log (AC-11). The machine has
+- [x] **OQ-2** — *Decided as recommended (user, 2026-11-10, batch 8 gate).* The level button of the log (AC-11). The machine has
   log lines only at the level debug today, so "info" shows nothing more
   than "off". *Recommendation:* keep the three levels as they are.
-- [ ] **OQ-3** — The commands of AC-22. *Recommendation:* as written;
+- [x] **OQ-3** — *Decided as recommended (user, 2026-11-10, batch 8 gate).* The commands of AC-22. *Recommendation:* as written;
   they belong here by rule 4 of the index.
-- [ ] **OQ-5** — While an overlay runs (AC-18). Today a FREEZE ends the
+- [x] **OQ-5** — *Decided as recommended (user, 2026-11-10, batch 8 gate).* While an overlay runs (AC-18). Today a FREEZE ends the
   state in which the CALCULATOR tab is closed, although the processor
   is still inside the overlay. *Recommendation:* as AC-18 says: the
   overlay runs until a Reset, a Cold boot or Clear.
-- [ ] **OQ-6** — Two small visible changes: an `.asm` file can be
+- [x] **OQ-6** — *Decided as recommended (user, 2026-11-10, batch 8 gate).* Two small visible changes: an `.asm` file can be
   dropped and opened like any file (AC-19), and an instruction above
   1FFF refuses the file (AC-15). *Recommendation:* both; they go into
   row 59-1 with the new version of the format.
-- [ ] **OQ-4** — "Heatmap" and "dump" for the glossary, as defined
+- [x] **OQ-4** — *Decided as recommended (user, 2026-11-10, batch 8 gate).* "Heatmap" and "dump" for the glossary, as defined
   above.
 
 ## Decision Log
@@ -294,4 +294,4 @@ Every frontend, and the checks
 | ASM overlays written for 2.3.0 are refused with the hint | ADR 0037; behaviour change 59-1 | 2026-11-10 |
 | The ASM overlay is a file kind of "open file" | `frontend.md` SP-3; the index row | 2026-11-10 |
 | "FREEZE" and "RESUME" stay as the panel's words | `docs/glossary-mapping.md` | 2026-11-10 |
-| Proposed in this spec, for the gate: an `.asm` file is told by its name (AC-19) | LIB-13 AC-1 asks each file kind for its rule | 2026-11-10 |
+| Proposed in this spec and accepted (user, 2026-11-10, batch 8 gate): an `.asm` file is told by its name (AC-19) | LIB-13 AC-1 asks each file kind for its rule | 2026-11-10 |

@@ -318,8 +318,11 @@ Every frontend
   read while the calculator waits for a key, then nothing is stored and
   the display blinks (AC-8).
 - **EC-2** — Given an empty side is inserted while the calculator waits
-  for a key, then nothing is written and the card comes back
-  (`tests/shared_cooperative_tests.cpp:738-750`; OQ-3).
+  for a key, then the card reader gives the ROM zeroes for that side,
+  and what follows is the ROM's: it ends the read with an error.
+  Nothing is written to the card (user, 2026-11-10, after the batch 7
+  gate; OQ-3). Today's test ejects such a card by hand
+  (`tests/shared_cooperative_tests.cpp:738-750`).
 - **EC-3** — Given a card's instance was changed by another device
   since it was fitted, then a write replaces it with the card as this
   product has it (AC-5; LIB-7 EC-2); today the other side is kept as
@@ -359,7 +362,7 @@ Every frontend
   `.bin`; a `.bin` is one of the two binary layouts, which are no longer
   read. *Recommendation:* `.bin` is no longer a card; a `.bin` that is
   opened is refused like any file the product cannot open.
-- [x] **OQ-3** — *Decided (user, 2026-11-10, batch 7 gate): verified on 2.3.0 in the first task; there is no fallback by time, the ROM decides (OQ-8).* An empty side inserted while the calculator waits for
+- [x] **OQ-3** — *Decided (user, 2026-11-10, after the batch 7 gate): an empty side feeds the calculator zeroes, and the ROM errors out; there is no fallback by time (OQ-8). The first task records on 2.3.0 how that error shows.* An empty side inserted while the calculator waits for
   a key (EC-2): whether the pass ends by itself is not verified; today's
   test ejects the card by hand after five seconds. *Recommendation:*
   verify on 2.3.0 in the first task; if the ROM never gives it back, the
@@ -397,3 +400,4 @@ Every frontend
 | Proposed in this spec and accepted (user, 2026-11-10, batch 7 gate): the version is 3.0 and the name is the line `Name:` after the first line (AC-2) | `media.md` MD-2 asks for a name field and names no layout | 2026-11-10 |
 | Proposed in this spec and accepted (user, 2026-11-10, batch 7 gate): a `medium:` section for a card has the fields of AC-18 | Today's `CARD: mem:` block, in the notation of version 2 | 2026-11-10 |
 | Proposed in this spec and accepted (user, 2026-11-10, batch 7 gate): the machine itself says when it waits for a card (AC-9) | LIB-7 AC-6; the pacing already needs "needs a card now" from the machine | 2026-11-10 |
+| An empty side gives the ROM zeroes, and the ROM ends the read with an error (EC-2) | user, 2026-11-10, after the batch 7 gate | 2026-11-10 |

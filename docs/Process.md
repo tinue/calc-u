@@ -23,7 +23,7 @@ the table below.
 | 3 | Architecture decisions | `docs/adr/NNNN-*.md` | The forks | Done (approved 2026-11-09) |
 | 4 | Contracts | `docs/contracts/*.md` | The abstractions, as interface specs | Done (approved 2026-11-10) |
 | 4b | Feature specs | `features/INDEX.md`, `features/<ID>-*/spec.md` | What each shared feature does, per product | Done (index approved 2026-11-10, specs approved 2026-11-11; prompt: `prompts/phase-4b.md`) |
-| 5 | Validation on paper | `docs/walkthroughs/*.md`, optional throwaway spikes | Whether the abstractions hold | Planned |
+| 5 | Validation on paper (reduced) | `docs/walkthroughs/presets.md`, `docs/walkthroughs/first-steps.md` | Whether the specs hold together on the products' own presets; what must be tried before anything is built on it | Planned (reduced 2026-11-11; prompt: `prompts/phase-5.md`) |
 | 6 | Migration plan, then code | `docs/migration-plan.md`, `features/<ID>-*/design.md`, `qa-report.md` | Order of steps, each leaving every product green | Planned |
 
 ### Phase 0 — Charter
@@ -168,20 +168,28 @@ the word for features, and its inventories keep their wording.)
   `docs/behaviour-changes.md` lists a decided change; there they describe
   the new behaviour and name the row.
 
-### Phase 5 — Validation on paper
-- Scenarios played against the contracts, for example: add a PC-1403; add a
-  CE-126P; TI-59 App Store build without DAP or PTY; add a Swift frontend to
-  Calc-U-1600; the PC-1600 using the PC-1500 tape codec; ship without ROMs;
-  refine the TI-59 to individual chips so `Decoder.asm` runs; attach the PC-100C printer and a Solid State ROM module through
-  explicit connectors.
-- A scenario that needs a change to the library means the abstraction
-  is wrong; fix the contract, not the scenario.
-- Reviewed by a fresh agent that sees only the contracts, not the reasoning
-  behind them.
-- Spikes only where paper is not enough (for example threading on iOS);
-  thrown away afterwards.
+### Phase 5 — Validation on paper (reduced)
+Reduced by the user on 2026-11-11, after the feature specs were approved.
+- **The preset pass.** The presets, examples and test files that both
+  products ship are played step by step against the feature specs, by
+  fresh agents that see the specs and not the reasoning behind them.
+  The cold reads of phase 4b took one spec at a time; this checks the
+  specs together, on real material. A finding is fixed in the spec, or
+  put to the user.
+- **The first steps.** What the specs leave to a spike or to a check on
+  a running product is collected in `docs/walkthroughs/first-steps.md`.
+  No spike is carried out in this phase: the migration plan starts with
+  them. Where a spec or an ADR says "phase 5 spike", it means one of
+  these first steps.
+- Dropped: the scenarios for products and peripherals that do not exist
+  (a PC-1403, a CE-126P, the TI-59 refined to chips, and the like). Each
+  contract's fit table already holds an SC61860 model, and the contracts
+  were reviewed for their level at the end of phase 4.
 
 ### Phase 6 — Migration plan, then code
+- The plan starts with the first steps of
+  `docs/walkthroughs/first-steps.md` (phase 5): spikes, and checks on the
+  products at their pins, before anything is built on what they test.
 - Steps, each leaving every product building, testing and releasable:
   repository merge with history archived, CI for all products, golden tests
   as the safety net, then one capability extraction at a time.

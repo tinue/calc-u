@@ -27,7 +27,9 @@ is stored:
   after each change (autosave).
 - **Name & Save** gives a template a name and saves a copy as an
   instance, without the `template` key. A preset's `saveas:` can also
-  save a copy as a template ([preset.md §5.2.1](preset.md#521-saveas-1600)).
+  save a copy as a template ([preset.md §5.2.1](preset.md#521-saveas)).
+- The magnetic card has one template, the **fresh** card (§1). It is
+  always there and has no file.
 - A medium is addressed by its name tag or by its file
   ([README.md §3](README.md#3-addressing-a-resource)).
 
@@ -99,8 +101,10 @@ Each side:
 A card file holds a side as the ROM writes it: header bytes and raw
 registers. A preset's **in-file card** ([preset.md §3.1](preset.md#31-magnetic-cards-59-ti-59))
 describes a side by its contents instead (bank, program, data), and is
-built into the same bytes when it goes in. An in-file card is never
-saved.
+built into the same bytes when it goes in. A preset saves an in-file
+card, with its cue card, by `saveas:` ([preset.md §5.2.1](preset.md#521-saveas));
+the user does so with Name & Save. A new card starts as a fresh in-file
+card, from the implicit template.
 
 ### 1.3 Using a card
 
@@ -110,8 +114,8 @@ saved.
 - **Insert** (`card:` in a preset, or the user feeding an armed card):
   one side passes through the reader, which reads it or writes it. After
   it has passed, the card is fitted ([cue-card.md §2](cue-card.md#2-fitting)).
-- A `file:` reference to a missing file is a fresh card. The file is
-  created when a side is written, with its file stem as `card-name`.
+- A reference to a card file that doesn't exist is an error; a new card
+  starts fresh and is saved by Name & Save.
 
 ### 1.4 Written cards
 
@@ -119,10 +123,11 @@ saved.
   stays in memory for an in-file card.
 - A template card is never written; the product makes an instance first
   or refuses the write.
-- A preset's cue card (`cue-card:`) goes onto every card file the preset
-  writes, with its whole layout. A new card without a cue card gets one
-  whose title is its card name. The cue card of an in-file card doesn't
-  count.
+- A card file's cue card is its own `cue-card`; a saved in-file card
+  takes the one it was defined with. A card saved without a cue card
+  gets one whose title is its card name.
+- The corners of a card's cue card show the banks of its written sides;
+  they follow from the sides and are not set by hand.
 
 ---
 

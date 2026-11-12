@@ -38,9 +38,11 @@ keys:
 2. **Cold boot** it: all memory empty, the constant memory of a TI-58C
    included.
 3. **Carry out the sections** in file order (§4). Each item starts only
-   after the item before it has finished ([§6](#6-full-speed)).
-4. **End.** The machine runs on at regular speed, under the user's
-   control.
+   after the item before it has finished, unless a `skip-wait:` follows
+   that item ([§6](#6-speed-and-waiting)).
+4. **End** once the last item has been carried out; it is not waited
+   for, unless it is `let-it-finish:`. The machine runs on at regular
+   speed, under the user's control.
 
 Without a `cue-card:` section, no cue card is fitted.
 
@@ -52,7 +54,7 @@ Without a `cue-card:` section, no cue card is fitted.
 | `model` | [both] | Required. `TI-59`, `TI-58`, `TI-58C` [59]; `PC-1500[:A01\|A03\|A04]` (default `A04`), `PC-1500A` (ROM A04 only), `PC-1600[:new\|old]` (default `new`) [1600]. Any case. The part after `:` is the **variant** |
 | `preset-name` | [both] | The name tag. Optional; default: the file stem |
 | `description` | [both] | One line for lists, menus and tooltips |
-| `timeout` | [both] | The longest an item may take to finish, in seconds of emulated time ([§6.3](#63-timeout)). Optional; default `3600` |
+| `timeout` | [both] | The longest the preset waits between two items for the machine to become idle, in seconds of emulated time ([§6.3](#63-timeout)). Optional; default `3600` |
 | `printer` | [both] | `PC-100C` [59]; `CE-150` [1600]; `CE-1600P[:new\|old]` (default `new`) [1600: PC-1600]. Any case |
 | `interface` | [1600] | `CE-158` |
 | `slot-1` | [both] | A module, as a reference by `file:` or `name:`. [59]: a Solid State ROM module ([modules.md §2](modules.md#2-solid-state-rom-module)); `name:` is its catalogue ID. [1600]: a module definition ([modules.md §1](modules.md#1-module-definition)); `name:` is its `module-name` |
@@ -77,9 +79,10 @@ slot-2: { file: cards/my.card.yaml }
 ### 3.1 `magnetic-cards` [59: TI-59]
 
 A list of **in-file cards**: magnetic cards defined by the preset, which
-a `card:` or `arm:` step addresses with `mem: <card-name>`. An in-file
-card is never saved to a file. A bank written to it is kept, and read
-back by its next use, until the next load, reset or model switch.
+a `card:` or `arm:` step addresses with `mem: <card-name>`. A bank
+written to it is kept, and read back by its next use, until the next
+load, reset or model switch. An in-file card is saved to a file only by
+`saveas:` (§5.2.1), with its cue card.
 
 ```yaml
 magnetic-cards:
@@ -111,7 +114,12 @@ magnetic-cards:
 - A side is built into the bytes the ROM would write, header and checksum
   included.
 - A `mem:` reference to a card name the preset doesn't define is a
-  **fresh** in-file card.
+  **fresh** in-file card, without a cue card. The fresh card is the
+  magnetic card's one template; it is always there and is not named in a
+  preset ([media.md §1.2](media.md#12-card-files-and-in-file-cards)).
+- A card's corners show the banks its sides hold; they are empty while a
+  side is fresh and show the bank once it is written. They are not set
+  by hand.
 - Two items with one `card-name` are an error.
 
 ### 3.2 `slot-N-rom` [1600]
@@ -300,15 +308,15 @@ partition: 479.59
 ### 4.4 `cue-card` [59]
 
 Fits a stand-alone cue card ([cue-card.md](cue-card.md)) in the window
-above the top row of keys, as the machine's own card ([cue-card.md §2](cue-card.md#2-fitting)). A preset's cue card
-also goes onto every magnetic card file the preset writes, with its whole
-layout ([media.md §1.4](media.md#14-written-cards)).
+above the top row of keys, as the machine's own card ([cue-card.md §2](cue-card.md#2-fitting)). It doesn't go
+onto magnetic cards: a magnetic card has its own `cue-card` (§3.1).
 
 ## 5. Steps
 
 A `keys:` section holds a list of steps, each `- verb: value` or, for a
 verb without a value, `- verb:`. **Every step starts only after the step
-before has finished** ([§6](#6-full-speed)).
+before has finished**, unless a `skip-wait:` stands between them
+([§6](#6-speed-and-waiting)).
 
 ```yaml
 keys:
@@ -322,7 +330,7 @@ keys:
 
 | Step | Where | Meaning |
 |---|---|---|
-| `key: <id> [<id> …]` | [both] | **Press**: press and release each key, one after the other. Each press waits for key readiness before it goes down. Key IDs (§8) are separated by spaces and compared in any case |
+| `key: <id> [<id> …]` | [both] | **Press**: press and release each key, one after the other. Each press waits for key readiness before it goes down, and holds the key long enough for the machine to register it, but not much longer; the exact time is the product's. Key IDs (§8) are separated by spaces and compared in any case |
 | `type: <text>` | [1600] | **Typing**: type the text as key presses, then ENTER. The text runs verbatim to the end of the line: `#` and quotes are typed, not read as a comment or quotes |
 
 - `key:` presses keys; it doesn't type text. `key: PRINT` is an error,
@@ -339,15 +347,15 @@ keys:
 |---|---|---|
 | `card: <reference>` | [59: TI-59] | **Insert** a magnetic card: push one side through the card reader. Reference by `file:`, `name:` or `mem:`, with `side: 1\|2` (default 1) |
 | `arm: <reference>` | [59: TI-59] | **Arm** a magnetic card: make it ready for the user to feed. Reference by `file:`, `name:` or `mem:`, without a side |
-| `saveas: <target>` | [1600] | **Name & Save** the medium or module at a place (§5.2.1) |
+| `saveas: <target>` | [both] | **Name & Save** the medium or module at a place, or an in-file magnetic card [59: TI-59] (§5.2.1) |
 
 **`card:`** is the user pushing a card into the calculator. The ROM
 reads the side, or writes it if the machine waits for a card to write.
 The step has finished when the card has passed. **After it has passed,
 the card is fitted** ([cue-card.md §2](cue-card.md#2-fitting)).
 
-- The TI-59 takes a card when it is idle (in its keyboard loop), and when
-  it explicitly waits for one (after `Write`). Both count as idle
+- The TI-59 takes a card when it is idle, and when it explicitly waits
+  for one (after `Write`). A machine waiting for a card counts as idle
   ([§6.2](#62-what-finished-means)), so `- key: 3 2nd Write` finishes
   when the machine waits for the card, and the next step, `card:`, feeds
   it. A card inserted while the machine can't take one is the ROM's
@@ -355,9 +363,9 @@ the card is fitted** ([cue-card.md §2](cue-card.md#2-fitting)).
 - The ROM checks what it checks on real hardware: the partition on a
   read at idle, the bank number on `n INV Write`. Choosing the right
   card is the preset's job.
-- A `file:` reference to a file that doesn't exist is a fresh card. The
-  file is created when a side is written, with its file stem as
-  `card-name`.
+- A `file:` or `name:` reference to a card that doesn't exist is an
+  error, as for every medium. A new card is an in-file card (§3.1),
+  saved with `saveas:`.
 
 **`arm:`** makes the card ready for the user to feed by hand: the card
 is fitted, and the user feeds it by tapping a corner. Arming does nothing
@@ -365,35 +373,54 @@ electrically (no card is detected by the machine) and doesn't read the
 card, so no side is chosen. A preset inserts cards with `card:`; it arms
 one only to leave it to the user, typically as its last step.
 
-#### 5.2.1 `saveas` [1600]
+#### 5.2.1 `saveas`
 
 ```yaml
 - saveas: { place: slot-1, as: live, name: My card }
 - saveas: { place: slot-1, as: live, protected: true, name: My ROM }
 - saveas: { place: floppy, as: template, file: disks/Work.floppy.yaml }
+- saveas: { card: PDCM-1, as: live, name: PDCM 1 }        # TI-59
 ```
 
 | Key | Value |
 |---|---|
-| `place` | `slot-1`, `slot-2` [PC-1600] or `floppy` [PC-1600]: the place whose medium or module is saved |
+| `place` | [1600]: `slot-1`, `slot-2` [PC-1600] or `floppy` [PC-1600]: the place whose medium or module is saved |
+| `card` | [59: TI-59]: the `card-name` of an in-file card (§3.1), defined or fresh. Exactly one of `place` and `card` |
 | `as` | `live`: an instance, saved again after each change. `template`: a template, never written again |
-| `protected` | `true`: save with the module's write-protect switch on, and switch it on in the machine. Only for a module that has the switch (CE-161); not for a floppy disk |
-| `name` / `file` | Exactly one. `name`: the name tag of the saved copy, which goes into the save folder. `file`: the file to write; its name tag is the file name without the suffix (`.card.yaml`, `.floppy.yaml`), which it must have |
+| `protected` | `true`: save with the module's write-protect switch on, and switch it on in the machine. Only for a module that has the switch (CE-161); not for a floppy disk or a magnetic card |
+| `name` / `file` | Exactly one. `name`: the name tag of the saved copy, which goes into the save folder. `file`: the file to write; its name tag is the file name without the suffix (`.card.yaml`, `.floppy.yaml`, `.magnetcard.yaml`), which it must have |
 
 - A name must not contain `"`. A saved copy never takes the name of a
   bundled template.
 - A module with a `slot-N-rom:` can't be saved.
-- The TI-59 has nothing to save: its card reader is pass-through, and the
-  program writes magnetic cards itself.
+- **A magnetic card** [59: TI-59] is saved with its sides as they stand
+  (written by the machine or defined in §3.1) and with the in-file
+  card's `cue-card`; its `card-name` becomes the name tag. Saved as
+  `live`, the card is that instance from then on: a side written to it
+  later is saved into the file. A typical preset defines the card with
+  its cue card, writes it, then saves it:
 
-### 5.3 Speed
+```yaml
+magnetic-cards:
+  - card-name: PDCM-1
+    cue-card: { title: "PDCM 1: 11.-03 / -998.-03" }
+keys:
+  - key: 1 2nd Write
+  - card: { mem: PDCM-1, side: 1 }
+  - saveas: { card: PDCM-1, as: live, name: PDCM 1 }
+```
+
+### 5.3 Speed and waiting
 
 | Step | Where | Meaning |
 |---|---|---|
 | `regular-speed:` | [both] | The items after it run at regular speed |
 | `full-speed:` | [both] | The items after it run at full speed |
+| `wait: <duration>` | [both] | **Wait**: let the duration pass, in emulated time, after the item before has finished; while the machine is paused, in wall-clock time. The duration is required and needs a unit: `2s`, `1.5s`, `500ms` |
+| `skip-wait:` | [both] | **Skip wait**: the item before it is not waited for; the next item starts as soon as that one has been carried out. Not as the first or the last item |
+| `let-it-finish:` | [both] | **Let it finish**: keep the machine running at the speed in force until it is idle, then end the preset. Only as the last item; without limit |
 
-Their meaning is the subject of [§6](#6-full-speed).
+Their meaning is the subject of [§6](#6-speed-and-waiting).
 
 ### 5.4 Test and trace
 
@@ -430,6 +457,9 @@ Their meaning is the subject of [§6](#6-full-speed).
   `card:`, a `program:` section, …) waits until it runs again, by a
   `resume:` or by the user. Debugger and frontend steps go on, so `step:`
   and `resume:` work. A preset that ends paused stays paused.
+- **`wait:` while paused** counts wall-clock time, not the machine's
+  (§6.1), and ends with the machine still paused. `let-it-finish:` waits
+  until the machine runs again and becomes idle.
 - **On the Sharp models** these steps would have to name a debug target
   (the PC-1600 has a Z-80 and an LH5803), which is not defined.
 
@@ -447,39 +477,56 @@ frontend step never fails; it has finished when it has taken effect.
 `debug-panel:` only chooses what is shown. `pause: cpu` pauses the
 machine whichever view is shown.
 
-## 6. Full speed
+## 6. Speed and waiting
 
 ### 6.1 The rules
 
-- A preset runs at **full speed** unless it says otherwise.
-- Every **item** (a step, or a section) starts only after the item
-  before it has **finished** (§6.2). There is no step to wait.
-- `regular-speed:` makes the items after it run at **regular speed**,
-  until a `full-speed:`; `full-speed:` does the opposite. They stand
-  between other steps, so that the user can watch part of a preset happen
-  in real time. At regular speed, too, each item waits for the one
-  before it.
-- **The last item** of a preset:
-  - at full speed, runs to its end at full speed; then the preset ends
-    and the user has control;
-  - at regular speed, starts, and the preset ends right away: the user
-    has control while the item runs on at regular speed.
+- A machine under a preset is in one of three states: **full speed**,
+  **regular speed** or **paused**. A preset runs at full speed unless it
+  says otherwise; the debugger steps (§5.6) or the user pause it.
+- `regular-speed:` makes the items after it run at regular speed, until
+  a `full-speed:`; `full-speed:` does the opposite. They stand between
+  other steps, so that the user can watch part of a preset happen in
+  real time. Several in a row: the last one counts. Speed steps stand in
+  `keys:` sections.
+- **The implicit wait.** Between two items the preset waits until the
+  item before has **finished** (§6.2), which for most items means until
+  the machine is idle, at most `timeout:` (§6.3). It waits in the state
+  in force.
+- **`skip-wait:`** drops the implicit wait after the item before it: the
+  next item starts as soon as that item has been carried out. It is for
+  a step that works on a running machine, such as BREAK or R/S; most
+  steps need a machine in a defined state and so the implicit wait.
+- **`wait: <duration>`** lets time pass after the implicit wait (or at
+  once, after a `skip-wait:`), so that a display can be seen or a
+  running program goes on. The time is the machine's emulated time at
+  full and at regular speed; at full speed it passes as fast as the host
+  allows. While the machine is paused, it is wall-clock time.
+- **The last item** is carried out (the keys pressed, ENTER typed, the
+  card passed) and not waited for: the preset ends at once, and what the
+  item started runs on at regular speed, under the user's control.
+- **`let-it-finish:`**, allowed only as the last item, is the exception:
+  the machine runs on in the state in force until it is idle, without a
+  limit, and the preset ends then.
 - **A preset always ends at regular speed**, whatever the speed was
-  before it was loaded. Once the user has control, full speed is a
-  gesture of the frontend (holding the display), not part of the preset.
+  before it was loaded; a preset that ends paused stays paused (§5.6).
+  Once the user has control, full speed is a gesture of the frontend
+  (holding the display), not part of the preset.
 - While a preset runs, the speed is the preset's; the user's gesture
   doesn't change it.
-- Speed steps stand in `keys:` sections. Several in a row: the last one
-  counts.
 
-**Example.** With `- regular-speed:`, `- key: A`, `- full-speed:`,
-`- key: B`, the program that A starts runs to its end at regular speed.
-B is pressed after that, and its program runs at full speed, to its end,
-before the preset ends. Had the preset ended after `- key: A`, it would
-have ended right after A was pressed, with A's program running on at
-regular speed.
+**Example.** With `- full-speed:`, `- key: A`, `- key: B`, the program
+that A starts runs to its end at full speed. B is pressed after that,
+and the preset ends at once: B's program runs on at regular speed, under
+the user's control. With `- let-it-finish:` after `- key: B`, B's
+program also runs to its end at full speed before the preset ends. With
+`- skip-wait:`, `- wait: 2s` between A and B, B is pressed 2 s after A,
+while A's program still runs.
 
 ### 6.2 What "finished" means
+
+The implicit wait waits for this between two items; not after the last
+item, and not after an item followed by `skip-wait:`.
 
 | Item | Finished when |
 |---|---|
@@ -489,17 +536,15 @@ regular speed.
 | `data:`, `partition:`, `cue-card:` | the contents are written or the cue card is fitted |
 | `card:` | the card has passed through the reader and is fitted |
 | `arm:` | the card is fitted |
+| `wait:` | the duration has passed |
 | every other step | it has taken effect |
 
-**Idle**, per model family:
-
-- **TI-58/58C/59:** the ROM is in its keyboard loop (key readiness). On
-  the TI-59, a machine waiting for a magnetic card (after `Write`) is
-  idle too.
-- **PC-1500/1500A/1600:** the ROM's keyboard idle loop has taken over.
-
-A paused machine is not idle; the item finishes after the machine has
-been resumed (§5.6).
+**Idle** has the meaning of the glossary: the machine has finished what
+it was doing and waits for the user. On the TI-59, a machine waiting
+for a magnetic card (after `Write`) is idle too (§5.2). How a product
+tells that its machine is idle is the product's matter, not this
+format's. A paused machine is not idle; the item finishes after the
+machine has been resumed (§5.6).
 
 So a key that starts a program finishes when the program stops:
 `full-speed:` before it runs the whole program at full speed,
@@ -507,17 +552,16 @@ So a key that starts a program finishes when the program stops:
 
 ### 6.3 Timeout
 
-`timeout:` (header key, default `3600`) is the longest an item may take
-to finish, in seconds of **emulated** time. An item that hasn't finished
-by then fails, and so ends the preset ([README.md §4](README.md#4-errors)).
+`timeout:` (header key, default `3600`) is the longest the implicit wait
+lasts, in seconds of **emulated** time. An item that hasn't finished by
+then fails, and so ends the preset ([README.md §4](README.md#4-errors)).
 
-- It applies at both speeds, to every item the preset waits for. The
-  last item at regular speed is not waited for, so no timeout applies to
-  it.
+- It applies at both speeds. It doesn't apply to the last item, which is
+  not waited for, nor to `let-it-finish:`, which has no limit.
 - Emulated time doesn't pass while the machine is paused.
 - A program that never stops (a game loop, a loop polling the keyboard),
-  or one meant to be stopped with BREAK or R/S, reaches the timeout unless
-  it runs as the last item at regular speed.
+  or one meant to be stopped with BREAK or R/S, either runs as the last
+  item, or is followed by `skip-wait:`.
 
 ### 6.4 Behaviour that depends on speed
 
@@ -545,10 +589,10 @@ by then fails, and so ends the preset ([README.md §4](README.md#4-errors)).
 | `program` | keycodes | keycodes | keycodes | BASIC, code | BASIC, code | BASIC, code |
 | `data` | ✓ | ✓ | ✓, with H00–H03 | undefined | undefined | undefined |
 | `partition`, `cue-card` | ✓ | ✓ | ✓ | | | |
-| `keys`, `key`, speed steps, `expect`, `screenshot`, `trace`, `elapsed-time`, `cut-paper` | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| `keys`, `key`, speed steps, `wait`, `skip-wait`, `let-it-finish`, `expect`, `screenshot`, `trace`, `elapsed-time`, `cut-paper` | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
 | `type`, `syncclock` | | | | ✓ | ✓ | ✓ |
 | `card`, `arm` | ✓ | | | | | |
-| `saveas` | | | | `slot-1` | `slot-1` | `slot-1`, `slot-2`, `floppy` |
+| `saveas` | `card` | | | `slot-1` | `slot-1` | `slot-1`, `slot-2`, `floppy` |
 | `printer-trace`, `debug-panel` | ✓ | ✓ | ✓ | | | |
 | `pause`, `pause-on-start`, `step`, `resume` | ✓ | ✓ | ✓ | undefined | undefined | undefined |
 
@@ -665,11 +709,13 @@ For converting files written for the products before this specification.
 | sections after `KEYSTROKES:` (reload) | sections in file order |
 | `CARD: mem:X` … `END-CARD` | an item of `magnetic-cards:` |
 | `KEYSTROKES:` with matrix codes `21 31` | `keys:` with `- key: Pgm` (positions: §8.1) |
-| `Wait: 2s` | — (removed) |
-| `FullSpeed:` / `RegularSpeed:` (default regular) | `- full-speed:` / `- regular-speed:` (default full) |
+| `Wait: 2s` | `- wait: 2s` |
+| `FullSpeed:` / `RegularSpeed:` (default regular) | `- full-speed:` / `- regular-speed:` (default full); `- regular-speed:` first keeps the version 1 speed |
+| the last key is waited for until the machine is idle, then regular speed | the last item is not waited for; `- let-it-finish:` last keeps a run at full speed to its end |
 | `Trace: x` / `Trace: Off` | `- trace: x` / `- trace: off` |
 | `ZeroElapseTime:` / `ReportElapseTime:` | `- elapsed-time: start` / `report` |
 | `InsertCard: X:2` | `- card: { file: X.magnetcard.yaml, side: 2 }` |
+| `InsertCard:` / `ArmCard:` on a card file that doesn't exist yet (created when written, with the latest `CUECARD:`) | an in-file card with that `cue-card`, fed with `mem:`, then `- saveas: { card: X, as: live, name: X }` |
 | `ArmCard: mem:X` (fed when the program waits) | `- card: { mem: X }` after the step that makes the machine wait for a card; or `- arm: { mem: X }` for the user to feed |
 | a card fed by `InsertCard:` / `ArmCard:`: a `mem:` card is not fitted | every card is fitted after it has passed |
 | `PrinterTrace: on` | `- printer-trace: on` |
@@ -689,7 +735,11 @@ For converting files written for the products before this specification.
 | `floppy: Formatted,B` / `floppy-file: d.floppy.yaml` | `floppy: { name: Formatted, side: B }` / `floppy: { file: d.floppy.yaml }` |
 | `host-drive: shared` | `host-drive: { folder: shared }` |
 | `- key: cl` (one key) | `- key: cl`, or several: `- key: shift up up` |
-| `- wait: 2`, `- wait:` (until idle, at most 1 h) | — (removed; every item waits until it has finished, within `timeout:`) |
+| `- wait: 2` (seconds) | `- wait: 2s` |
+| `- wait:` (half a second, then until idle, at most 1 h) | last: `- let-it-finish:` (without limit); elsewhere dropped, since the implicit wait does it |
+| `- wait: 2` to let a running program run before the next step (BREAK) | `- skip-wait:`, `- wait: 2s` |
+| `- type:` waits after ENTER only until BUSY clears, at most 1 s (PC-1600) or the machine settles, at most 12 s (PC-1500); `- key:` doesn't wait | every item but the last is waited for until the machine is idle, within `timeout:` |
+| the last `- type:` at full speed is waited for as above | not waited for; `- let-it-finish:` last keeps it |
 | `- saveas: live protected slot-1:My ROM` | `- saveas: { place: slot-1, as: live, protected: true, name: My ROM }` |
 | `- saveas: template slot-2:file:C.card.yaml` | `- saveas: { place: slot-2, as: template, file: C.card.yaml }` |
 | `- expect:` right after `- type: RUN` checks at once | checks when the program has ended |
@@ -751,6 +801,6 @@ program:
   file: hanoi.bas
 keys:
   - key: mode
-  - type: RUN                  # at full speed; finished when the program waits for input
   - syncclock:
+  - type: RUN                  # the last item: the game runs at regular speed
 ```

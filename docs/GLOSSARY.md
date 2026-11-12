@@ -277,7 +277,8 @@ _Avoid_: removable, item, card
 **Template**:
 A medium bundled with a product, which is never written, or one the
 user made (a **user template**: a file in the save folder that says it
-is one).
+is one). The magnetic card's one template is the fresh card, which is
+always there and has no file.
 _Avoid_: bundled card, default
 
 **Instance**:
@@ -549,7 +550,22 @@ step.
 
 **Idle**:
 Said of a machine that has finished what it was doing and waits for the
-user. Each product says how this is told for its models.
+user; on the TI-59 also a machine waiting for a magnetic card. Each
+product says how this is told for its models; the formats don't.
+
+**Implicit wait**:
+The wait of a preset, between two items, until the item before has
+finished. Not after the last item.
+
+**Skip wait**:
+The preset step `skip-wait:`, which drops the implicit wait after the
+item before it, so that the next step acts on a running machine.
+
+**Let it finish**:
+The preset step `let-it-finish:`, allowed only as the last item: the
+machine runs on in the state in force until it is idle, then the preset
+ends.
+_Avoid_: wait (for this)
 
 **Reference**:
 The name of a bundled preset without a path:

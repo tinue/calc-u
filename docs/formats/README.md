@@ -13,8 +13,8 @@ Terms follow `docs/GLOSSARY.md`.
 
 | File | Contents |
 |---|---|
-| [README.md](README.md) | This index and the rules every format shares: syntax, byte blocks, version, name and description, addressing a resource, errors, platform markers, open questions |
-| [preset.md](preset.md) | The preset format, with the chapter on full speed |
+| [README.md](README.md) | This index and the rules every format shares: syntax, byte blocks, version, name and description, addressing a resource, errors, platform markers |
+| [preset.md](preset.md) | The preset format, with the chapter on full speed, and the keystroke program file |
 | [media.md](media.md) | The media: magnetic card, floppy disk, cassette tape; and the TI-58C's constant memory file |
 | [modules.md](modules.md) | The modules: module definition (memory module) and Solid State ROM module |
 | [cue-card.md](cue-card.md) | The cue card block, shared by presets, magnetic cards, Solid State ROM modules and the constant memory file |
@@ -24,12 +24,13 @@ Terms follow `docs/GLOSSARY.md`.
 | Format | Kind | Suffix | `format:` | `format-version` | Name key | Products |
 |---|---|---|---|---|---|---|
 | Preset | — | `.ti59` `.ti58` `.ti58c` `.pc1500` `.pc1500a` `.pc1600` | — | 2 | `preset-name` | both |
-| Magnetic card | medium | `.magnetic-card.yaml` (OQ-2) | `ti59-magnetic-card` | 3 | `card-name` | Calc-U-59 (TI-59) |
+| Magnetic card | medium | `.magnetcard.yaml` | `ti59-magnetic-card` | 3 | `card-name` | Calc-U-59 (TI-59) |
 | Floppy disk | medium | `.floppy.yaml` | `ce1600f-floppy` | 1 | `disk-name` | Calc-U-1600 (PC-1600) |
-| Cassette tape | medium | `.tape.yaml` (OQ-2), with a `.wav` | `cassette-tape` | 1 | `tape-name` | Calc-U-1600 |
-| Constant memory | — | `ti58c-constant-memory.yaml` (OQ-2) | `ti58c-constant-memory` | 1 | `memory-name` | Calc-U-59 (TI-58C) |
+| Cassette tape | medium | `.tape.yaml`, with a `.wav` | `cassette-tape` | 1 | `tape-name` | Calc-U-1600 |
+| Constant memory | — | `ti58c.memory.yaml` | `ti58c-constant-memory` | 1 | `memory-name` | Calc-U-59 (TI-58C) |
 | Module definition | module (memory module) | `.card.yaml` | — | 1 | `module-name` | Calc-U-1600 |
-| Solid State ROM module | module | `.solid-state-module.yaml` (OQ-2) | `solid-state-rom-module` | 1 | `module-name` | Calc-U-59 |
+| Keystroke program | — | `.keystrokes.yaml` | `ti-keystroke-program` | 1 | `program-name` | Calc-U-59 |
+| Solid State ROM module | module | `.rom.yaml` | `solid-state-rom-module` | 1 | `module-name` | Calc-U-59 |
 
 Each medium has a format of its own; media are not merged into one
 format.
@@ -79,7 +80,7 @@ allows and which range the block covers.
 | `hex` | Hex byte pairs; whitespace and newlines are ignored |
 | `base64` | Base64; whitespace and newlines are ignored |
 | `addressed-hex` | `$XXXX: <1–16 hex byte pairs>` places those bytes from that address. `$XXXX: XX...`, the only token on its line, repeats byte `XX` up to the next line's address, or to the end of the block's range for the last line. Lines in address order cover the block's range exactly: no gap, no overlap. A run stands for one byte value only |
-| `register-hex` | `Rnnn: <8 hex byte pairs>`: one TI-58/59 register of 16 digits, `nnn` its decimal number. The format says which numbers are allowed; the byte order is OQ-3 |
+| `register-hex` | `Rnnn: <8 hex byte pairs>`: one TI-58/59 register of 16 digits, `nnn` its decimal number. The format says which numbers are allowed. Number the register's digits 0–15 as the machine's RAM holds them; byte k (k = 0–7) holds digit 14 − 2k in its high half and digit 15 − 2k in its low half |
 
 `addressed-hex` is made so that a memory dump pastes straight in. Its
 **canonical form**, which writers emit so that files diff cleanly: rows
@@ -95,7 +96,7 @@ Every format has these keys at the top level:
 | Key | Required | Meaning |
 |---|---|---|
 | `format-version` | yes | The integer version of the format the file is written in |
-| `<kind>-name` | yes, except in presets and the constant memory file | The **name tag**: the short name shown in GUIs, pickers and drop-down lists, and the name a `name:` reference resolves against (§3). The key is named after the kind: `preset-name`, `card-name`, `disk-name`, `tape-name`, `memory-name`, `module-name` |
+| `<kind>-name` | yes, except in presets and the constant memory file | The **name tag**: the short name shown in GUIs, pickers and drop-down lists, and the name a `name:` reference resolves against (§3). The key is named after the kind: `preset-name`, `card-name`, `disk-name`, `tape-name`, `memory-name`, `module-name`, `program-name` |
 | `description` | no, except in the Solid State ROM module | One line about the item, for a tooltip or a longer list entry |
 
 - A reader rejects a file without `format-version`, or with a version it
@@ -158,15 +159,3 @@ Every keyword says where it applies:
 A keyword marked for one product is an error in a preset for the other
 product's models. Within one product, a keyword used with a model it
 doesn't apply to is an error too (for example `slot-2:` on a PC-1500).
-
-## 6. Open questions
-
-| ID | Question |
-|---|---|
-| OQ-1 | **ASCII spellings of TI key IDs.** Several TI-58/59 key IDs contain characters outside ASCII (`x⇄t`, `x²`, `√x`, `yˣ`, `÷`, `×`, `Σ+`, `x̄`, `π`, `x≥t`). [preset.md §8.1](preset.md#81-ti-5858c59) proposes ASCII spellings (`x^2`, `*`, `pi`, …). |
-| OQ-2 | **File suffixes** of the magnetic card, cassette tape, constant memory and Solid State ROM module formats; and whether a keystroke program file (`program: { file: … }` on the TI models) has a suffix of its own. |
-| OQ-3 | **Register byte order.** The order of the 8 bytes of a `register-hex` row, stated in terms of the TI register's 16 digits, for the magnetic card and the constant memory file. |
-| OQ-4 | **Cassette tape details.** The tape position, a tape with several recordings one after another, and the CE-150's two recorder connections. Until they are specified, the preset key `tape:` is undefined. |
-| OQ-5 | **`expect:` on the TI models.** How a segment display reads as text: blank digits, the decimal point, the exponent, a blinking display. |
-| OQ-6 | **INSPECTOR view names.** The names of the Calc-U-1600 debug panel's **Dump ▾** entries for `debug-panel:`. |
-| OQ-7 | **Program files on the Sharp models.** Which file kinds `program: { file: … }` may name beyond BASIC and machine code: can it be a cassette tape? |

@@ -6,7 +6,7 @@ into a module slot. Its two kinds have a format each:
 | Kind | Format | Version | Products |
 |---|---|---|---|
 | Memory module | §1, module definition `.card.yaml` | 1 | [1600] |
-| Solid State ROM module | §2, `.solid-state-module.yaml` (OQ-2) | 1 | [59] |
+| Solid State ROM module | §2, `.rom.yaml` | 1 | [59] |
 
 A preset puts a module into a slot with `slot-1:` / `slot-2:`, by
 `file:` or by `name:`; the name is the file's `module-name` in both

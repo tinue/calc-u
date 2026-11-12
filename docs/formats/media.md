@@ -87,7 +87,7 @@ Each side:
 | `protection` | yes | `true` or `false`: the side was written protected (`−n Write`) |
 | `checksum` | yes | The header's checksum byte |
 | `encoding` | yes | `register-hex` |
-| `bytes` | yes | Exactly 30 rows, the bank's registers. The row labels are the bank's register numbers, (bank − 1) × 30 … + 29, and are informational. Byte order: OQ-3 |
+| `bytes` | yes | Exactly 30 rows, the bank's registers. The row labels are the bank's register numbers, (bank − 1) × 30 … + 29, and are informational. Byte order: [README.md §1.1](README.md#11-byte-blocks) |
 
 - A damaged file is refused as a whole. A side is never read with parts
   blanked: every side key and all 30 rows are required.
@@ -213,6 +213,7 @@ format-version: 1
 tape-name: "Games"
 description: "Three games saved with CSAVE"
 audio: { file: games.wav }
+position: 0
 ```
 
 | Key | Required | Value |
@@ -223,13 +224,18 @@ audio: { file: games.wav }
 | `description` | no | One line about the tape |
 | `template` | no | `true`: a template. Its sound file is never written either |
 | `audio` | yes | The sound file, by `file:` only, relative to the tape definition |
+| `position` | no | Where the tape stands, in seconds from the start of the sound. Default `0` (rewound). An instance keeps it up to date |
 
 - The sound file is a WAV file of the tape's sound. Its sample format is
   the product's.
 - Recording onto an instance writes into its sound file. Name & Save
   copies the definition and the sound file.
-- The tape position, a tape holding several recordings one after
-  another, and the CE-150's two recorder connections are OQ-4.
+- Several recordings on one tape are part of the sound, not of this
+  format. Which recorder connection a tape is used on belongs to the
+  machine, not to the tape.
+- A `.wav` file on its own is a program file, not a tape: a preset's
+  `program:` loads it into the program area. A tape definition is a
+  medium, inserted as a cassette.
 
 ---
 
@@ -262,7 +268,7 @@ ram:
 | `memory-name` | no | A name tag, for a product that lists constant memory files |
 | `description` | no | One line |
 | `cue-card` | no | The cue card fitted when the file was written ([cue-card.md](cue-card.md), a stand-alone cue card). Absent: none fitted |
-| `ram` | yes | `encoding: register-hex` and `bytes`: the RAM as 120 raw registers, `R000`–`R119`. A register that is not listed is zero; writers leave out registers that are zero. Byte order: OQ-3 |
+| `ram` | yes | `encoding: register-hex` and `bytes`: the RAM as 120 raw registers, `R000`–`R119`. A register that is not listed is zero; writers leave out registers that are zero. Byte order: [README.md §1.1](README.md#11-byte-blocks) |
 
 A preset loaded on a TI-58C starts from a cold boot, so the constant
 memory then holds only what the preset puts there.

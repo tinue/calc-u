@@ -60,7 +60,7 @@ Without a `cue-card:` section, no cue card is fitted.
 | `slot-1-rom`, `slot-2-rom` | [1600] | A ROM file, by `file:` only, whose bytes replace the ROM of the module in that slot (§3.2) |
 | `floppy` | [1600: PC-1600 with `printer: CE-1600P`] | A floppy disk ([media.md §2](media.md#2-floppy-disk)), by `file:` or `name:`, with `side: A\|B` (default `A`). The CE-1600F drive comes with the CE-1600P |
 | `host-drive` | [1600: PC-1600] | The folder that backs drive `S3:`, by `folder:` |
-| `tape` | [undefined] | A cassette tape ([media.md §3](media.md#3-cassette-tape)); undefined until the tape position and the recorder are specified (OQ-4) |
+| `tape` | [1600: with `printer: CE-150` or `CE-1600P`] | A cassette tape ([media.md §3](media.md#3-cassette-tape)), by `file:` or `name:`, inserted into the printer's cassette interface |
 | `bus-rom` | [1600] | ROMs on the 60-pin connector (§3.3) |
 | `debug` | [1600] | The debugger configuration of a project preset (§3.4) |
 | `magnetic-cards` | [59: TI-59] | Magnetic cards defined inside the preset (§3.1) |
@@ -190,7 +190,7 @@ section changes the machine in the middle of the script.
 **[59]: a keystroke program.** One of:
 
 - `keycodes: |`: the program inline;
-- `file: <path>`: a file holding the program in the same notation.
+- `file: <path>`: a keystroke program file (§4.1.1).
 
 ```yaml
 program:
@@ -216,11 +216,33 @@ program:
 - Keycodes are not key IDs: digit 1 is keycode `01`, and `Pgm` is the
   one step `36`. Key IDs are for `key:` steps (§8).
 
+#### 4.1.1 Keystroke program file [59]
+
+A keystroke program kept in a file of its own, suffix `.keystrokes.yaml`:
+
+```yaml
+format: ti-keystroke-program
+format-version: 1
+program-name: Loan
+description: Monthly payment of a loan
+keycodes: |
+  000 76 LBL
+  001 11 A
+```
+
+| Key | Required | Value |
+|---|---|---|
+| `format` | yes | `ti-keystroke-program` |
+| `format-version` | yes | `1` |
+| `program-name` | yes | The name tag |
+| `description` | no | One line about the program |
+| `keycodes` | yes | The program, in the keycode notation above |
+
 **[1600]: a BASIC or machine-code program.**
 
 | Key | Value |
 |---|---|
-| `file: <path>` | Loaded by what the file holds: a BASIC listing (`.bas`), tokenized BASIC, or machine code with or without a header |
+| `file: <path>` | Loaded by what the file holds: a BASIC listing (`.bas`), tokenized BASIC, machine code with or without a header, or the sound of a tape (`.wav`), whose program goes into the program area. A cassette tape definition is not a program file |
 | `typed: true` | With a listing in `file:`: type it in line by line instead of writing it into memory |
 | `address: <n>` | Machine code: where it goes. Required for headerless code |
 | `length: <n>` | Machine code: load only this many bytes |
@@ -234,7 +256,6 @@ program:
   or `TITLE` in a `keys:` section before the `program:`.
 - **Auto-run:** machine code whose header has an auto-run address is
   started with `CALL`.
-- Other file kinds: OQ-7.
 
 ### 4.2 `data` [59]
 
@@ -378,7 +399,7 @@ Their meaning is the subject of [§6](#6-full-speed).
 
 | Step | Where | Meaning |
 |---|---|---|
-| `expect: <text>` | [both] | Fail the preset unless the display shows the text. Verbatim to the end of the line, like `type:`. [1600]: one line of the display contains the text; a backslash is written `\\`, a character outside ASCII `\xHH`. [59]: the display read as text (OQ-5) |
+| `expect: <text>` | [both] | Fail the preset unless the display shows the text. Verbatim to the end of the line, like `type:`. [1600]: one line of the display contains the text; a backslash is written `\\`, a character outside ASCII `\xHH`. [59]: the text is a number, compared with the value in the display register X; blinking is not tested |
 | `screenshot: <file name>` | [both] | Save an image of the display into the trace folder. No path separator |
 | `trace: <file name>` / `trace: off` | [both] | Start a trace into that file in the trace folder, or stop it. No path separator. A new `trace:` closes the previous one. An open trace is closed when the preset ends |
 | `elapsed-time: start` / `elapsed-time: report` | [both] | Take the emulated time as the baseline; log the emulated time since the baseline (or since the start of the preset) as `m:ss.mmm` |
@@ -420,7 +441,7 @@ frontend step never fails; it has finished when it has taken effect.
 
 | Step | Where | Meaning |
 |---|---|---|
-| `debug-panel: <view>` | [both] | Show that view of the debug panel. [59]: `calculator`, `cpu`, `log`; `calculator` is ignored while an ASM overlay runs. [1600]: a view of the INSPECTOR: `pointers`, `inventory`, `z80-view` (PC-1600), `lh5803-view` (PC-1600), `lh5801-view` (PC-1500), `basic-area`, `program-areas` (PC-1600), `disk-areas` (PC-1600), `physical-ram`, `dump` (OQ-6) |
+| `debug-panel: <view>` | [59] | Show that tab of the debug panel: `calculator`, `cpu`, `log`; `calculator` is ignored while an ASM overlay runs. The Sharp models have no such step: their debug panel, the INSPECTOR, is always shown |
 | `cut-paper:` | [both] | Clear the paper in the paper panel. Without a printer: no effect |
 
 `debug-panel:` only chooses what is shown. `pause: cpu` pauses the
@@ -520,15 +541,15 @@ by then fails, and so ends the preset ([README.md §4](README.md#4-errors)).
 | `slot-2-rom` | | | | | | ✓ |
 | `interface`, `bus-rom`, `debug` | | | | ✓ | ✓ | ✓ |
 | `magnetic-cards` | ✓ | | | | | |
-| `tape` | | | | undefined | undefined | undefined |
+| `tape` | | | | ✓ | ✓ | ✓ |
 | `program` | keycodes | keycodes | keycodes | BASIC, code | BASIC, code | BASIC, code |
 | `data` | ✓ | ✓ | ✓, with H00–H03 | undefined | undefined | undefined |
 | `partition`, `cue-card` | ✓ | ✓ | ✓ | | | |
-| `keys`, `key`, speed steps, `expect`, `screenshot`, `trace`, `elapsed-time`, `debug-panel`, `cut-paper` | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| `keys`, `key`, speed steps, `expect`, `screenshot`, `trace`, `elapsed-time`, `cut-paper` | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
 | `type`, `syncclock` | | | | ✓ | ✓ | ✓ |
 | `card`, `arm` | ✓ | | | | | |
 | `saveas` | | | | `slot-1` | `slot-1` | `slot-1`, `slot-2`, `floppy` |
-| `printer-trace` | ✓ | ✓ | ✓ | | | |
+| `printer-trace`, `debug-panel` | ✓ | ✓ | ✓ | | | |
 | `pause`, `pause-on-start`, `step`, `resume` | ✓ | ✓ | ✓ | undefined | undefined | undefined |
 
 ## 8. Key IDs
@@ -539,9 +560,9 @@ Key IDs are compared in any case. They are separated by spaces in a
 ### 8.1 TI-58/58C/59
 
 A key's ID is the label on the key when that label is one plain word;
-otherwise it is the name the PC-100C prints for it. The printer's name is
-always accepted as well. The ASCII spellings for labels with characters
-outside ASCII are proposed (OQ-1).
+otherwise it is the name the PC-100C prints for it. Every name the
+PC-100C prints for a keycode is accepted (§8.1.1), and so is an ASCII
+spelling for each name with characters outside ASCII.
 
 **Keys**, with their position (row × 10 + column):
 
@@ -549,7 +570,7 @@ outside ASCII are proposed (OQ-1).
 |---|---|---|---|---|---|---|
 | 11–15 | `A` `B` `C` `D` `E` | | | 61 | `GTO` | |
 | 21 | `2nd` | `2ND` | | 62–64 | `7` `8` `9` | |
-| 22 | `INV` | | | 65 | `×` | `*` |
+| 22 | `INV` | | | 65 | `×` | `x`, `*` |
 | 23 | `lnx` | `LNX` | | 71 | `SBR` | |
 | 24 | `CE` | | | 72–74 | `4` `5` `6` | |
 | 25 | `CLR` | | | 75 | `-` | |
@@ -594,8 +615,32 @@ LRN.
   names, `STF` and `IFF`.
 - `CLR`'s second function has the same printer name as `CLR`, so the bare
   ID `CLR` is the key, and its second function is written `2nd CLR`.
-- Merged program codes (`Pgm Ind`, `STO Ind`, `RTN`, …) are key
-  sequences: `- key: STO Ind 0 5`, `- key: INV SBR`.
+- Merged program codes are key sequences; their printer names press
+  them (§8.1.1).
+
+#### 8.1.1 Printer names
+
+Every name the PC-100C prints for a keycode is accepted in a `key:` step,
+in any case. Most are the IDs or "Also" names above. The others:
+
+| Keycode | Printer name | Presses |
+|---|---|---|
+| 20 | `CLR` | `CLR` (the key; its second function is `2nd CLR`) |
+| 26, 27 | `2ND`, `INV` | `2nd`, `INV` |
+| 62 | `PG*` | `Pgm Ind` |
+| 63 | `EX*` | `Exc Ind` |
+| 64 | `PD*` | `Prd Ind` |
+| 72 | `ST*` | `STO Ind` |
+| 73 | `RC*` | `RCL Ind` |
+| 74 | `SM*` | `SUM Ind` |
+| 83 | `GO*` | `GTO Ind` |
+| 84 | `OP*` | `Op Ind` |
+| 92 | `RTN` | `INV SBR` |
+| 82 | `HIR` | — (no key sequence enters it; an error) |
+
+ASCII spellings of the printer names with characters outside ASCII:
+`X⇄T` `x<>t`, `X²` `x^2`, `√X` `sqrt`, `Yˣ` `y^x`, `÷` `/`, `∑+` `sum+`,
+`x̄` `xbar`, `π` `pi`.
 
 ### 8.2 PC-1500/1500A/1600
 
@@ -624,7 +669,7 @@ For converting files written for the products before this specification.
 | `FullSpeed:` / `RegularSpeed:` (default regular) | `- full-speed:` / `- regular-speed:` (default full) |
 | `Trace: x` / `Trace: Off` | `- trace: x` / `- trace: off` |
 | `ZeroElapseTime:` / `ReportElapseTime:` | `- elapsed-time: start` / `report` |
-| `InsertCard: X:2` | `- card: { file: X.magnetic-card.yaml, side: 2 }` |
+| `InsertCard: X:2` | `- card: { file: X.magnetcard.yaml, side: 2 }` |
 | `ArmCard: mem:X` (fed when the program waits) | `- card: { mem: X }` after the step that makes the machine wait for a card; or `- arm: { mem: X }` for the user to feed |
 | a card fed by `InsertCard:` / `ArmCard:`: a `mem:` card is not fitted | every card is fitted after it has passed |
 | `PrinterTrace: on` | `- printer-trace: on` |
@@ -656,7 +701,7 @@ For converting files written for the products before this specification.
 |---|---|
 | card file `Calc-U-59 Card 2.0`, one per card | magnetic card format 3 ([media.md §1](media.md#1-magnetic-card)); `card-name` from the file stem |
 | `SIDE: n`, `HEADER:` keys `Partition`, `DataType`, `Bank`, `Protection`, `Checksum` | `sides: n:` keys `partition`, `data-type`, `bank`, `protection` (`yes` → `true`), `checksum` |
-| `DATA:` rows `R###: …` | `encoding: register-hex`, `bytes:` rows copied unchanged |
+| `DATA:` rows `R###: …` | `encoding: register-hex`, `bytes:` rows with their 8 bytes in reverse order |
 | card files 1.0 and the binary layouts | not converted |
 | `ti58c.mem` (cue card, `R###:` rows) | constant memory format 1 ([media.md §4](media.md#4-constant-memory-file)), rows copied unchanged |
 | `roms/solid-state/cuecards.txt` + one `TMC05xx.txt` per module | one Solid State ROM module file per module ([modules.md §2](modules.md#2-solid-state-rom-module)): `MODULE-ID` → `module-name`, `MODULE-MENU-TITLE` → `description`, `MODULE-TITLE` → `title`, `MODULE-MENU-SORT` → `menu-sort`, `CUECARD: n` → a `cue-cards:` item with `program: n`. The dump's decimal row addresses become hex `addressed-hex` addresses; its header lines go into `notes` |
@@ -684,7 +729,7 @@ magnetic-cards:
           76 11 99 91
 keys:
   - card: { mem: Bank1 }
-  - card: { file: cards/bank2.magnetic-card.yaml }
+  - card: { file: cards/bank2.magnetcard.yaml }
   - regular-speed:
   - key: A                     # the last item, at regular speed: the preset ends here
 ```

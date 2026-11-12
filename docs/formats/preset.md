@@ -428,7 +428,7 @@ Their meaning is the subject of [§6](#6-speed-and-waiting).
 |---|---|---|
 | `expect: <text>` | [both] | Fail the preset unless the display shows the text. Verbatim to the end of the line, like `type:`. [1600]: one line of the display contains the text; a backslash is written `\\`, a character outside ASCII `\xHH`. [59]: the text is a number, compared with the value in the display register X; blinking is not tested |
 | `screenshot: <file name>` | [both] | Save an image of the display into the trace folder. No path separator |
-| `trace: <file name>` / `trace: off` | [both] | Start a trace into that file in the trace folder, or stop it. No path separator. A new `trace:` closes the previous one. An open trace is closed when the preset ends |
+| `trace: <file name>` / `trace: off` | [both] | Start a trace into that file in the trace folder, or stop it. No path separator. A new `trace:` closes the previous one; `trace: off` with no trace open has no effect. An open trace is closed when the preset ends |
 | `elapsed-time: start` / `elapsed-time: report` | [both] | Take the emulated time as the baseline; log the emulated time since the baseline (or since the start of the preset) as `m:ss.mmm` |
 | `syncclock:` | [1600] | Set the machine's clock from the host's |
 
@@ -513,7 +513,13 @@ machine whichever view is shown.
   Once the user has control, full speed is a gesture of the frontend
   (holding the display), not part of the preset.
 - While a preset runs, the speed is the preset's; the user's gesture
-  doesn't change it.
+  doesn't change it, and the user's key presses on the machine are
+  dropped.
+- **Ending a preset early.** Anything that resets the machine, directly
+  or indirectly (a reset, a model change, loading a preset, …), ends a
+  running preset at once, without an error. This is the way out of a
+  wait without limit (`let-it-finish:`, or the implicit wait on a paused
+  machine).
 
 **Example.** With `- full-speed:`, `- key: A`, `- key: B`, the program
 that A starts runs to its end at full speed. B is pressed after that,

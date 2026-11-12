@@ -60,7 +60,10 @@ Every format is written in one YAML subset, not general YAML:
 **Keywords** (keys and fixed values) are kebab-case and lower-case:
 `format-version`, `cue-card`, `full-speed`, `solid-state-card`. Values
 the user picks (names, texts, key IDs) keep their case unless a format
-says otherwise.
+says otherwise. The exception is the preset's `debug:` block
+([preset.md §3.4](preset.md#34-debug-1600)): its keys and values are camelCase
+(`stopOnEntry`, `cleanStart`, `allReset`), as in the debug launch
+configuration they mirror.
 
 **Numbers.** `&`, `0x` or `$` makes a number hex; without one it is
 decimal. In the module definition, a number is decimal or hex with `0x`.
@@ -107,8 +110,10 @@ Every format has these keys at the top level:
 - A saved instance keeps the `format-version` of the file it was saved
   from, as long as nothing in it needs a newer one.
 - A preset without `preset-name` is named by its file stem (`hanoi` for
-  `hanoi.pc1600`). A preset name is short (18 characters at most) and
-  differs from the other presets of the same model.
+  `hanoi.pc1600`). A `preset-name` is short (18 characters at most) and
+  differs from the other presets of the same model. These two rules
+  apply only to a `preset-name` written in the file; a file stem is
+  shown as it is, whatever its length, and may repeat.
 
 ## 3. Addressing a resource
 

@@ -251,6 +251,11 @@ together with the cue card fitted at the time. The product writes it and
 reads it back when a TI-58C starts. It can't be inserted or ejected, and
 there is one per product. Where it is kept is the product's.
 
+A preset doesn't write the file. Its cold boot empties the machine's
+constant memory, not the file, so the machine then holds only what the
+preset puts there. The file takes the machine's state when it would
+anyway: the calculator switched off, the product quit.
+
 ### 4.1 Keys
 
 ```yaml
@@ -274,6 +279,3 @@ ram:
 | `description` | no | One line |
 | `cue-card` | no | The cue card fitted when the file was written ([cue-card.md](cue-card.md), a stand-alone cue card). Absent: none fitted |
 | `ram` | yes | `encoding: register-hex` and `bytes`: the RAM as 120 raw registers, `R000`–`R119`. A register that is not listed is zero; writers leave out registers that are zero. Byte order: [README.md §1.1](README.md#11-byte-blocks) |
-
-A preset loaded on a TI-58C starts from a cold boot, so the constant
-memory then holds only what the preset puts there.

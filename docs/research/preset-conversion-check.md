@@ -83,87 +83,50 @@ No action is needed for these.
 | How long a key is held is the product's: long enough to register, not much longer (`preset.md` §5.1). `printer-timing` (Adv) relies on the product keeping today's hold | `printer-timing` |
 | A bad line rejects the whole file | the 3 fixtures (they become rejection tests) |
 
-## 5. Proposed spec changes (not applied)
+## 5. Spec changes
 
-The waiting rules and the key hold (§5.1) are already in `preset.md` and in
-the GLOSSARY (uncommitted).
-They include:
+**In the specification** (`docs/formats/`, GLOSSARY):
 
-- `wait:` as a pause;
-- `skip-wait:`;
-- `let-it-finish:`;
-- the three states: full speed, regular speed, paused;
-- "idle" removed from the format specification;
-- `saveas:` for TI-59 magnetic cards, and the fresh card as the magnetic
-  card's implicit template;
-- a reference to a missing card file is an error;
-- a magnetic card's cue card is its own, not the preset's.
+- waiting: the implicit wait, `wait:` as a pause, `skip-wait:`,
+  `let-it-finish:`; three states (full speed, regular speed, paused);
+- "idle" is the product's matter; a key is held long enough to register;
+- `saveas:` for TI-59 magnetic cards; the fresh card is the implicit
+  template; a missing card file is an error; a magnetic card has its own
+  cue card;
+- decided 2026-11-12:
+  - S4: a magnetic card without a cue card shows a plain card titled with
+    its card name; the corners always show the written banks
+    (cue-card.md §2);
+  - S6: anything that resets the machine (reset, model change, loading a
+    preset) ends a running preset without an error (preset.md §6.1);
+  - S13: a preset doesn't write the TI-58C constant memory file; it takes
+    the machine's state at power-off as usual (media.md §4);
+  - S14: the 18-character and uniqueness rules apply only to a written
+    `preset-name`, not to a file stem (README §2);
+  - S15: the `debug:` block keeps camelCase, as an exception
+    (README §1);
+  - S16: `trace: off` with no trace open has no effect (preset.md §5.4);
+  - S17: the user's key presses are dropped while a preset runs
+    (preset.md §6.1).
 
-The proposals below are still open; their numbers are kept from the earlier
-list.
+**Open, conversion guide** (`preset.md` §9; set aside for now):
 
-**S3. §9.1, the converter's speed.** State that a converter writes
-`- regular-speed:` as the first step of a version 1 script.
-
-**S4. A fitted card without a cue card** (cue-card.md §2). No preset needs
-this any more (`pdcm-card-tricks` defines its blank cards). It remains a
-default to state: either the cue card shown before stays, or a plain card
-titled with its card name (`media.md` §1.4 already says the latter for a
-card saved without one).
-
-**S6. Stopping a preset that waits without limit** (`let-it-finish:`, or an
-implicit wait on a paused machine). The user can end a running
-preset, through a frontend gesture or by loading another preset, without an
-error.
-
-**S9. §9.1, absent `MODEL:`.** The model comes from the suffix (`.ti59`,
-`.ti58`, `.ti58c`).
-
-**S10. §9.1, `PROGRAM:` and `REGISTERS:`.** Add the row "→ `program:` then
-`data:`, whatever the order in the file". Version 1 always wrote the registers
-after the program (`calendar-05`).
-
-**S11. §9.3, cue card look.** State that a preset's own MagnetCard or
-SolidStateCard becomes a plain stand-alone card, and that `ID` / `IdAlign`
-cannot be converted. (`test-solidstate` is deleted.)
-
-**S13. TI-58C constant memory.** State whether the constant memory file holds
-the machine's state when a preset ends.
-
-**S14. Preset names** (README §2). The 18-character limit and the uniqueness
-rule apply to the displayed name. Uniqueness covers one product and one model.
-This affects:
-
-- `loader_test_1600_memory_cards`, which is 29 characters;
-- four templates, all named `debug`.
-
-**S15. `debug:` keys** (`stopOnEntry`, `cleanStart`, `allReset`). Either:
-
-- rename them to kebab-case;
-- or exempt them from README §1.
-
-**S16. Small additions.**
-
-- `trace: off` with no trace open has no effect.
+- S3: a converted C59 script starts with `- regular-speed:`.
+- S9: an absent `MODEL:` is taken from the suffix.
+- S10: `PROGRAM:` before `REGISTERS:`, whatever the file order.
+- S11: a preset's own MagnetCard or SolidStateCard becomes a plain card;
+  `ID` / `IdAlign` can't be converted.
 - §9.2 rows:
   - `plotter: CE-150` → `printer: CE-150`;
   - `floppy-file: …,B` → `{ file: …, side: B }`;
-  - a `\` in `expect:` text now starts an escape.
+  - `\` in `expect:` text.
 
-**S17. The user during a preset.** State:
+**Later, as its own task** (S18): align the documents that still describe
+the old waiting rules:
 
-- whether the user's key presses are refused or held;
-- that loading a preset ends a running one.
-
-**S18. Documents to align with the waiting rules.**
-
-- LIB-6:
-  - AC-16 (speed, the three states);
-  - AC-19 (`wait:` while paused: wall-clock time, which matches);
-  - AC-21 (`wait:` without a value becomes `let-it-finish:`, without the
-    half second and the 1 h limit).
-- `docs/contracts/presets.md` PR-4 and PR-5.
-- The `wait` upgrade table in `features/C1600-4-sharp-preset-content/spec.md`.
+- LIB-6 AC-16, AC-19 and AC-21;
+- `docs/contracts/presets.md` PR-4 and PR-5;
+- the `wait` upgrade table in C1600-4.
 
 ## 6. Skipped presets
 

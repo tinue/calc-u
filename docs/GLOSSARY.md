@@ -294,8 +294,12 @@ Putting a medium into its place on a machine; **Eject** takes it out.
 _Avoid_: mount, load, attach (for this)
 
 **Fit**:
-Placing a cue card in the window above the top row of keys, where it
-labels them; a TI-59 magnetic card is fitted after it was read.
+Making a cue card the one shown in the window above the top row of keys,
+where it labels them. A card is fitted by a preset's cue card, by a
+magnetic card after it was read or when it is armed, and by selecting a
+library program of a module, whose cue card is fitted over the card
+shown until the program is deselected. Fitting changes nothing in the
+machine.
 _Avoid_: insert (for this)
 
 **Save folder**:
@@ -510,8 +514,10 @@ A repository that holds ROM dumps, from which a product fetches them at
 build time.
 
 **Arm**:
-Laying a medium ready at a media place, so that it is fed when the
-machine waits for one.
+Making a TI-59 magnetic card ready for the user to feed by hand: the
+card is fitted, and the user feeds it by tapping a corner. Arming does
+nothing electrically; the machine doesn't detect the card until it is
+inserted.
 
 **Outdated**:
 Said of a file in an older version of an own format than the release

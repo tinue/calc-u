@@ -41,7 +41,8 @@ parenthesis is removed with it.
 | Load Preset… | "Open Preset…" (File menu, Qt6); the button "Preset" | "Load Preset…": unchanged |
 | Examples folder | — | "Samples folder" (Settings ▸ General) |
 | Host drive | — | "Mount Directory…", "Host drive folder": unchanged |
-| Fit / Insert / Eject | "Fit Card", "Fit Fresh Card", "Eject Card": unchanged | module picker, floppy insert/eject: unchanged |
+| Arm | "Fit Card" → "Arm Card", "Fit Fresh Card" → "Arm Fresh Card" | — |
+| Insert / Eject | "Eject Card": unchanged | module picker, floppy insert/eject: unchanged |
 
 ## Code names
 

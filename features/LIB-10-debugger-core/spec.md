@@ -54,9 +54,8 @@ What the three status columns mean for this feature:
   a keystroke program or through the ROM, and resume, as today.
 - As a developer of a program for a Sharp machine, I want breakpoints,
   watches and stepping that behave the same whichever tool sets them.
-- As the author of a preset, I want to pause, step and resume from a
-  preset in every product, so that demos and screenshots can be
-  scripted.
+- As the author of a Calc-U-59 preset, I want to pause, step and
+  resume from a preset, so that demos and screenshots can be scripted.
 - As a developer or an agent, I want to read and write registers and
   memory, set a breakpoint and record a trace through the harness.
 
@@ -216,15 +215,18 @@ The run state
   (`debugger.md` DB-6; Calc-U-59 `App/Views/HoldRepeatButton.swift:11-12`).
 
 Steps and commands
-- [ ] **AC-19** — Given a preset, then these steps exist in every
-  product (`presets.md` PR-7); none of them needs emulated time before
-  it is carried out (LIB-6 AC-19):
+- [ ] **AC-19** — Given a preset for a TI model, then these steps exist
+  (`preset.md` §5.6, §5.7); on the Sharp models `pause:`,
+  `pause-on-start:`, `step:` and `resume:` are [undefined] and
+  `debug-panel:` is Calc-U-59's, so each refuses the preset when it is
+  read (LIB-6 AC-62), while `trace:` exists in both products. None of
+  them needs emulated time before it is carried out (LIB-6 AC-19):
 
   | Step | Value | What it does |
   |---|---|---|
   | `pause:` | a level | AC-6 |
   | `resume:` | none | AC-6 |
-  | `step:` | a level, then optionally a count from 1 to 100000 (1 without), then optionally a target | AC-7; while the machine is not paused it does nothing but a line in the log (OQ-4) |
+  | `step:` | `{ level: program\|cpu, count: n }`, the count from 1 to 100000 (1 without) | AC-7; while the machine is not paused it does nothing but a line in the log (OQ-4) |
   | `pause-on-start:` | a level, or `off` | AC-9 |
   | `debug-panel:` | the name of a view of the product's debug panel | the frontend is told to show that view; without a frontend nothing is shown |
   | `trace:` | a file name, or `off` | AC-22 |
@@ -369,9 +371,9 @@ Traces
   `Core/tests/debug_target_tests.cpp:464`).
 - [ ] **AC-40** — Given Calc-U-1600, then the run control is there in
   the Qt6 and in the Web frontend, with or without a debugger attached,
-  and a preset's `pause:`, `step:` and `resume:` work in both;
-  `debug-panel:` is refused when a preset is read, because Calc-U-1600
-  has no views to choose, and `trace:` fails in the Web frontend (AC-26;
+  and the harness commands `pause`, `step` and `resume` work in both;
+  the preset steps `pause:`, `pause-on-start:`, `step:` and `resume:`
+  and `debug-panel:` are refused when a preset is read (AC-19), and `trace:` fails in the Web frontend (AC-26;
   EC-8). Today the run control
   exists only in the Qt6 frontend while a debugger is attached
   (`Qt6/app/debug/DebugController.cpp:156`,
@@ -484,3 +486,4 @@ Traces
 | Proposed in this spec and accepted (user, 2026-11-10, batch 6 gate): pausing before the first instruction after a start (AC-46), and breakpoints that belong to the one that set them (AC-47) | C1600-3 needs both for `stopOnEntry` and for a debugger next to the harness | 2026-11-10 |
 | Proposed in this spec and accepted (user, 2026-11-10, batch 6 gate): after a resume pacing starts afresh (AC-16) | Otherwise regular speed would race to make up the pause | 2026-11-10 |
 | A pause-on-start that is armed fires while an operation runs (AC-13); AC-9 never excepted an operation, and AC-13's list left it out | Phase 5, preset pass (`docs/walkthroughs/presets.md`, A-13); LIB-6 AC-19 and its decision of 2026-11-11 rest on the preset `test_cdebug.ti59`, which arms and fires inside its own load | 2026-11-11 |
+| The preset steps `pause:`, `pause-on-start:`, `step:`, `resume:` and `debug-panel:` are Calc-U-59's for now; on the Sharp models they are refused, since a step would have to name one of the PC-1600's two CPUs. `step:` takes `{ level, count }`. The run control and its harness commands stay in both products (AC-19, AC-40). Replaces the row of 2026-11-10 "The debugger steps work in both products" | user, 2026-11-13 (question F-4 of `docs/walkthroughs/presets.md` §5.4); `docs/formats/preset.md` §5.6, §7 | 2026-11-13 |

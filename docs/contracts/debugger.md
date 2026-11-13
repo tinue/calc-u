@@ -12,8 +12,8 @@ debugger entries (nothing copied into projects, `debug:` block, ROM
 extensions, bus ROM shadows, `boot: debug`, pre-execution snapshots)
 (`docs/oddities-triage.md`). Builds on `machine.md` (debug targets in
 the descriptor), `frontend.md` (FE-1 topics), `presets.md` (PR-7:
-`debug-panel:`, `pause:`, `pause-on-start:`, `step:`, `resume:` in both
-products).
+`debug-panel:`, `pause:`, `pause-on-start:`, `step:`, `resume:`; since
+2026-11-13 in Calc-U-59 presets only, `docs/formats/preset.md` §5.6).
 
 ## Today (facts)
 
@@ -48,9 +48,11 @@ Common ground in the library:
    including stepping through the ROM's and the modules' keycode
    programs (no step out, as today). Calc-U-1600: a BASIC level stepping
    statement by statement is prepared, not built.
-4. The preset steps of PR-7 drive this run control (`pause: program |
-   cpu`, `step: cpu 5`, `resume:`, `pause-on-start: …`); `debug-panel:`
-   selects a view where the product has a debug panel.
+4. The preset steps of PR-7 drive this run control in Calc-U-59
+   (`pause: program | cpu`, `step: { level: cpu, count: 5 }`, `resume:`,
+   `pause-on-start: …`); `debug-panel:` selects a view of its debug
+   panel. On the Sharp models they are [undefined] for now (user,
+   2026-11-13).
 5. The debug panel is per product (DB-6): each product keeps its own
    panel in each of its frontends, fed by product topics
    (`frontend.md`, FE-6). The shared component sets hold only the run
@@ -81,7 +83,8 @@ Backlog, not part of the migration:
   (`frontend.md`, FE-5, FE-6); each product's frontends render their own
   panel (DB-6).
 - Preset steps `pause:`, `pause-on-start:`, `step:`, `resume:`,
-  `debug-panel:` (PR-7) drive the same run control in both products.
+  `debug-panel:` (PR-7) drive the run control in Calc-U-59; the harness
+  commands drive it in both products.
 
 ## Non-responsibilities
 

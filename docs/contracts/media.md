@@ -3,15 +3,17 @@
 Status: draft (2026-11-10). Forks MD-1 to MD-5 are decided (decision
 log; MD-5 was added in the phase 4 review); open questions remain.
 
-Inherits: ADR 0019 (media live in the save folder; a medium a preset
-names by path is never written, its first write makes an instance; the
-copy's name and collisions are this contract's), 0020 (cards written in
+Inherits: ADR 0019 (media live in the save folder; as amended
+2026-11-13, a medium's file decides: `template: true` is never written,
+any other file is an instance written in place; the copy's name and
+collisions are this contract's), 0020 (cards written in
 the current version), 0037 (only the current version is read; older
 files get a hint; a one-time exception for the migration release, after
 which a release reads one version back). Oddities: Calc-U-1600's "`saveas:` needs
 `template`/`live`; name lives in the file" (`docs/oddities-triage.md`).
-Builds on `presets.md` (PR-8: fit, insert, eject, arm; media places
-pass-through or holding; `medium:` sections; `saveas:`).
+Builds on `presets.md` (PR-8: media places pass-through or holding) and
+`docs/formats/preset.md` §3.1, §5.2 (steps `card:`, `arm:`, `floppy:`,
+`tape:`, `eject:`, `saveas:`; the header key `magnetic-cards:`).
 
 Glossary: medium, template, instance, Name & Save (autosave), insert and
 eject, fit, save folder.
@@ -39,8 +41,8 @@ eject, fit, save folder.
   after a change.
 - A picker lists the templates and the save folder's instances that fit
   the media place.
-- A medium named by a preset (by name, by `file:`, or a `medium:`
-  section) follows PR-8 and ADR 0019 as amended 2026-11-13: its file
+- A medium named by a preset (by `name:`, by `file:`, or an in-file
+  magnetic card by `mem:`, saved only by `saveas:`) follows PR-8 and ADR 0019 as amended 2026-11-13: its file
   decides, `template: true` is never written, any other file is an
   instance written in place (`docs/formats/media.md`).
 - Saving under a name follows one set of rules (MD-3) for the GUI's Name
@@ -186,11 +188,11 @@ Options:
 
 | | TI-59 (58, 58C) | PC-1500 (1500A) | PC-1600 | PC-1403 (paper) | PC-1350 (paper) |
 |---|---|---|---|---|---|
-| Media places (PR-8) | card reader, pass-through, sides 1/2 (TI-59 only) | module slot (battery-backed modules), cassette (CE-150) | 2 module slots, floppy (CE-1600F; holding, sides A/B), cassette (CE-1600P) | cassette (CE-126P, CE-124) | RAM card slot (CE-201M, CE-202M: battery-backed), cassette |
-| Templates | bundled cards: none today | bundled modules | bundled modules and disks (Blank, Formatted) | — | — |
-| Instance files | `.u59` (card 2.0) | `.card.yaml` | `.card.yaml`, `.floppy.yaml` | — | — |
+| Media places (PR-8) | card reader, pass-through, sides 0/1 (TI-59 only) | module slot (battery-backed modules), cassette (CE-150) | 2 module slots, floppy (CE-1600F; holding, sides 0/1), cassette (CE-1600P, CE-150) | cassette (CE-126P, CE-124) | RAM card slot (CE-201M, CE-202M: battery-backed), cassette |
+| Templates | the fresh card (implicit, no file) | bundled modules | bundled modules and disks (Blank, Formatted) | — | — |
+| Instance files | `.magnetcard.yaml` (format 3) | `.card.yaml`, `.tape.yaml` | `.card.yaml`, `.floppy.yaml` (version 2), `.tape.yaml` | — | — |
 | Name (MD-2) | in the file (new card version) | in the file | in the file | — | — |
-| Preset-defined media | `medium:` (today `CARD: mem:`) | `medium:` possible | `medium:` possible | — | — |
+| Preset-defined media | `magnetic-cards:` (in-file cards; today `CARD: mem:`) | — | — | — | — |
 | External media formats | — | cassette WAV | cassette WAV | cassette WAV | cassette WAV |
 
 ## Open questions
@@ -214,8 +216,8 @@ Options:
   each motor stop into the tapes folder; whether a recorded tape is an
   instance with Name & Save like the other media, or keeps its own rules,
   is open (the WAV format itself is external).
-- Q-2 (answered 2026-11-10, `settings.md` ST-3): `ti58c.mem` is not a
-  medium; it lives at the root of the save folder.
+- Q-2 (answered 2026-11-10, `settings.md` ST-3): the constant memory
+  file (`ti58c.memory.yaml`) is not a medium; it lives at the root of the save folder.
 - Q-3 (answered 2026-11-10, `settings.md` ST-3): the web save folder is
   persistent IndexedDB in both products.
 
@@ -235,3 +237,4 @@ Options:
 | 2026-11-10 | ADR 0019 (amended, user, 2026-11-10, batch 7 gate) | A medium the user opens from elsewhere is used and written back where it lies; a Web frontend copies it into the save folder. The card format is version 3.0 with a `Name:` line; `.bin` is no longer a card; a card is written whole. |
 | 2026-11-13 | MD-1, I-2, I-3 (superseded, user, 2026-11-13) | A medium's own file decides: `template: true` is never written; any other medium file is an instance, written in place, also when a preset names it by path; no copy at a first write; no instance takes a bundled template's name. The earlier rule was an error of the spec; Calc-U-1600 works so today (`docs/formats/media.md`). |
 | 2026-11-13 | Q-1 (superseded, user, 2026-11-13) | A cassette tape is a medium: a `.tape.yaml` definition with its WAV, templates and instances, Name & Save, `position`; one bundled template, the empty tape (`docs/formats/media.md` §3). |
+| 2026-11-13 | Alignment after the Q&A round | Magnetic card format 3 is YAML (`.magnetcard.yaml`, `card-name`, sides 0/1; `docs/formats/media.md` §1), superseding the 3.0 text layout; floppy disks are version 2 with sides 0/1; in-file media are the TI-59's `magnetic-cards:` only; the media steps of `docs/formats/preset.md` §5.2 replace fit, insert and `medium:` sections. |

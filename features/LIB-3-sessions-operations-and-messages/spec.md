@@ -200,7 +200,9 @@ Sound
 Speed and pacing
 - [ ] **AC-21** — Given the command to run at full speed or at regular
   speed (a frontend sends it when the display is held and when it is let
-  go), then the machine runs so from the next call of the host.
+  go), then the machine runs so from the next call of the host; while a
+  preset runs, the speed is the preset's and the gesture's command
+  changes nothing (`docs/formats/preset.md` §6.1).
 - [ ] **AC-22** — Given a pacing profile whose full speed is paced while
   the machine waits for input, then the machine session tells the pacer
   whether that holds, for each slice (LIB-17 AC-12): the machine reports
@@ -396,3 +398,4 @@ Invariants checked in review and in the phase 5 walkthroughs:
 | A command is carried out when it arrives, and its reply and the state topics it changed go out at once; what the machine puts out goes with the host calls. A frontend that starts to listen late gets the paper and the log from their last reset marker on, and no earlier notices. Of what `RunStateChanged` carries today, run state and the armed freezes are LIB-10's and C59-4's, full speed and playback are part of busy, and the held key is LIB-5's | user, 2026-11-11; OQ-3, OQ-5, OQ-8 | 2026-11-11 |
 | A suspend while an operation runs stops its progress until continue, and busy stays (EC-4); "suspend" and "continue" are glossary terms | user, 2026-11-11; OQ-4, OQ-6 | 2026-11-11 |
 | Aligned with `docs/formats/` after the Q&A round: `ti58c.memory.yaml` (AC-30) | user rulings of 2026-11-13 (`docs/walkthroughs/presets.md` §5.2, §5.4); `docs/formats/` | 2026-11-13 |
+| While a preset runs, the speed gesture changes nothing (AC-21) | `docs/formats/preset.md` §6.1 (user, 2026-11-12) | 2026-11-13 |

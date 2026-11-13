@@ -642,6 +642,41 @@ Each fix has its row in the decision log of its spec.
 Status of all: open, put to the user on 2026-11-11. Each has the facts,
 the spec text it meets, and one recommendation.
 
+**Re-evaluated on 2026-11-13 against `docs/formats/`** (the user's
+format specification of 2026-11-12). "Settled" means the format states
+it; "read into" says what was taken from it beyond its words. Applied so
+far: LIB-6, C59-2, C1600-4 (commit `fe9fa0b`); the other specs wait for
+the questions of §5.4.
+
+| # | Status | What the format says, and what is left |
+|---|---|---|
+| B-1 | Settled | A `key:` has finished when its last press is done and the machine is idle; every item waits for that, bounded by `timeout:` (default 3600 s emulated), after which the item **fails** (not "goes on", as recommended); the last item is not waited for; user keys are dropped while a preset runs; anything that resets ends it (`preset.md` §6). Applied: LIB-6 AC-56, AC-57, AC-60, AC-61. LIB-5 AC-17 is still to be aligned |
+| B-2 | Open, narrower | Debugger and frontend steps go on while paused; a paused machine is not idle; `test_cdebug` gets `skip-wait:` (conversion check §3). Left: whether a press whose hold the pause interrupts comes up while paused; if not, it is never "carried out" and `skip-wait:` never lets the next step start. Recommendation unchanged |
+| B-3 | Open | Unchanged. Applied meanwhile: a TI-59 that waits for a card is idle (LIB-6 AC-36; `preset.md` §6.2) |
+| B-4 | Changed | The waits after a `type:` or `key:` are the implicit wait now, not 1 s or 12 s (`preset.md` §9.2); the hold and the start of a press are "the product's" (§5.1). So "tick for tick" falls away. Left: (a) the holds and the start of a line: recommendation, today's (4 + 4 frames; PC-1600 key readiness for 15 frames, at most 15 s); (b) Sharp idle must include a program waiting at `INPUT` and the RESERVE mode, or `globus`, `biorhythmus_1600`, `ascii` and the PC-1600 startup preset fail at `timeout:` (C-2) |
+| B-5 | Settled as recommended | A template is never written; Name & Save copies it with its live contents; a saved copy never takes a bundled template's name (`media.md`, Templates and instances; `modules.md` §1.8; `preset.md` §5.2.1). Read into: a template a preset names by name keeps what is written in its place, as one chosen in a picker. A-8 follows. To apply in LIB-7 with §5.4 F-1 |
+| B-6 | Settled, part 3 reversed | Every card is fitted after it has passed, `mem:` cards included (parts 1, 2 as recommended); but a magnetic card carries its own cue card, never the preset's: without one it shows a plain card titled with its name (`cue-card.md` §2, `media.md` §1.4). To apply in C59-7 |
+| B-7 | Settled otherwise | A `mem:` name the preset does not define is a fresh in-file card (`preset.md` §3.1); no section is needed |
+| B-8 | Mostly settled | (a) side 1 and side A by default (§3, §5.2); the case of side names is open; (b) `{ name: Formatted, side: B }` (§9.2); (c) void: `arm:` is only for the user to feed, and a new card fitted replaces the one before; (d) open; (e) card files are `.magnetcard.yaml` version 3, a missing or outdated one refuses; whether old `.u59` files get the hint is §5.4 F-2 |
+| B-9 | Void | The 30 minutes give way to `timeout:` (`preset.md` §6.3); as the last item a card is not waited for |
+| B-10 | Open, premise changed | The upgraded files run differently by design (full speed, last item not waited for, `let-it-finish:`, `skip-wait:`), so the comparison is at the idle machine after the load (harness `wait`, LIB-6 AC-34; C59-2 AC-11 so worded). Cards a preset writes are saved by `saveas:` now; compare their content. Recommendation otherwise unchanged |
+| B-11 | Open, one more point | (a) to (c) unchanged; (d) new: C1600-4 AC-16 "at the end of the load" no longer compares like with like; recommendation: as B-10, at the idle machine, the intended differences of the conversion check §4 excepted by name |
+| B-12 | Open | Unchanged; under §4.1 `11.` is no keycode either |
+| B-13 | Partly settled | (a) a tab is an error, the converter's rule is open (conversion guide set aside); (b) settled: no `IdAlign` in the format; (c) settled: an empty label is an empty cell (`cue-card.md` §3); (d) open; (e) reversed: a duration may have a fraction, `1.5s`; (f) open; (g) void: `magnetic-cards:` is a header key and may stand anywhere |
+| B-14 | Mostly settled | (a) open; (b) settled: tokens are split by spaces; (c) settled as recommended (§4.2); (d) settled as recommended (§5.4, S16); (e) settled: an unknown key refuses, labels in any case, `A′` accepted; the case of values open; (f) settled: card files are version 3, without `Template` and `Banks` |
+| B-15 | Partly settled | The three fixtures become rejection tests (conversion check §1). The rest open |
+| B-16 | Open | Unchanged; the step is `printer-trace:` now |
+| B-17 | Open | Unchanged; and `screenshot:` writes to the trace folder (`preset.md` §5.4) against LIB-9 AC-17 (LIB-6 OQ-6) |
+| B-18 | Open | Unchanged |
+| B-19 | Partly settled | (d) settled as recommended: a load for use ignores the block, which is still read by the format (§3.4); (f) settled against the recommendation: `bus-rom:` once (C1600-4 AC-9). (a), (b), (c), (e) open; and C1600-4 OQ-5 (the block's keys against §3.4) |
+| B-20 | Open | Unchanged; `syncclock:` is Sharp-only |
+| B-21 | Open | (d) the conversion check keeps `test_cdebug`'s `wait: 1.5s` behind a `skip-wait:`; for `test_diag` see §5.4 (conversion check) |
+| B-22 | Open | Unchanged; the command names follow LIB-6 AC-34 |
+| B-23 to B-26 | Open | Unchanged |
+| B-27 | Partly settled | (b) settled otherwise: a list shows the name tag (`preset-name`, else the file stem), the description is the tooltip or longer entry (`README.md` §2). (a), (c), (d) open |
+| B-28 | Partly settled | A cold boot empties all memory, the constant memory included (`preset.md` §2); what the ROM's start-up then writes stays open (C-6). Recommendation holds as "empty at the cold boot, then as the ROM's start-up leaves it" |
+| B-29 | Open | Unchanged |
+
 #### Steps and time
 
 **B-1 — When a `key` step ends on a TI.**
@@ -1110,6 +1145,52 @@ PC-1500A is in PRO after its cold start; following AC-4 would switch it
 out.
 *Recommendation:* AC-4 says "unless the model's start leaves it there";
 first step C-7 confirms which models.
+
+### 5.4 Questions the formats raise (2026-11-13)
+
+Where `docs/formats/` reverses a decision recorded with "user" before
+2026-11-12, or is silent where a spec needs an answer. The reversals are
+taken as the user's newer decision in LIB-6, C59-2 and C1600-4; the
+other specs are aligned once these are answered.
+
+| # | Question | The format | Earlier decision |
+|---|---|---|---|
+| F-1 | Who writes a medium's file | Decided by the file: no `template` key, an instance saved in place; a template is never written, "the product makes an instance first or refuses the write" (`media.md`) | ADR 0019 as amended, `media.md` MD-1, LIB-7 AC-25: a medium a preset names by path is never written; its first write makes an instance |
+| F-2 | The version of a file that is saved again | "A saved instance keeps the `format-version` of the file it was saved from" (`README.md` §2) | ADR 0020, 0037: written in the current version |
+| F-3 | Loading a preset while one runs | It ends the running preset, as anything that resets "directly or indirectly" (`preset.md` §6.1); applied in LIB-6 AC-12 | `frontend.md` Q-1 (batch 4): only Reset, Cold boot, a model switch; LIB-3 AC-16, LIB-4, LIB-14 AC-16, LIB-18 AC-16. Also open: which of variant switch, attach, detach is "indirectly" |
+| F-4 | Debugger steps on Calc-U-1600 | [undefined] on the Sharp models (§5.6) | PR-7, the user's addition: in both products (LIB-10 AC-19, AC-40) |
+| F-5 | The TI key names | §8.1: printer names and their spellings (`x²`, `x^2`, `STF`, `2nd CLR`); `x2`, `2ndCLR`, `StFlg` are not in it | LIB-5 AC-26 and OQ-7, C59-1 AC-9 (2026-11-11), C59-9 OQ-1 |
+| F-6 | `cut-paper:` | No value; without a printer no effect; a frontend step, which the harness passes over (§5.7) | LIB-8 AC-22 (batch 6): an owner's name, every paper |
+| F-7 | Tapes | A `.tape.yaml` definition with its `.wav`, templates, Name & Save, `position`, the key `tape:` (`media.md` §3) | `media.md` Q-1, LIB-7 AC-42: a tape is a WAV, no templates, no header key; today's WAVs in `Tapes/` (Briefing §1.2); where definitions live; `tape:` with a CE-150 on a PC-1600 (LIB-6 OQ-10) |
+| F-8 | The TI-58C constant memory file | Written when the calculator is switched off or the product quits; a preset never writes it (`media.md` §4, S13) | `capabilities.md` C-3, C59-3 AC-5, AC-10: it always mirrors the machine, half a second after a change, and follows a cold boot |
+| F-9 | Solid State ROM module files | One `.rom.yaml` per module with ROM and cue cards; `slot-1: { file: }` allowed (`modules.md` §2) | `roms.md` I-1 (no ROM data in the source repository), LIB-12 AC-8, AC-9, C59-6 (ID only, 2026-11-11); LIB-6 OQ-8 |
+| F-10 | The cue card at a cold boot | "A cold boot (every preset starts with one): no card" (`cue-card.md` §2) | LIB-18 AC-23, row 59-17 (batch 7): the Cold boot command keeps the card. Read: the row means a preset's cold boot |
+| F-11 | Where `screenshot:` writes | The trace folder (§5.4) | LIB-9 AC-17, LIB-6 OQ-4: the save folder (LIB-6 OQ-6) |
+| F-12 | `wait:` at full speed on an idle TI | "As fast as the host allows" (§6.1) | ODD59-6 in LIB-17 AC-16 (batch 2): an idle TI at full speed runs at the pace of regular speed |
+| F-13 | Case of names | "Compared as written", TI and Sharp product names excepted (`README.md` §3) | LIB-7 AC-3, MD-3 (batch 6): names that differ only in case are one name |
+| F-14 | The module picker | The picker shows `description`; `menu-sort` orders (`modules.md` §2.1) | C59-6 OQ-4 (the title for the picker), LIB-7 AC-8 (sorted by name), C59-8 AC-6 (no description on iOS) |
+| F-15 | The harness and the waiting rules | Silent; frontend steps are passed over | `harness.md` H-1, one vocabulary; LIB-6 OQ-7; whether `key`/`type` commands wait until idle |
+
+Smaller points, each in the spec named: LIB-6 OQ-9 (`expect:` against
+X); C59-2 OQ-5 (one-digit tokens, a line after `...`); C1600-4 OQ-5
+(the `debug:` block); the constant memory file numbers R000 to R119
+without H cells (C59-3 AC-4); a module program without a printed card
+(C59-7 AC-22, a fallback card or the own card); an in-file card fitted
+after a Reset feeds its defined content; no step inserts or ejects a
+floppy disk after the build (LIB-7 EC-5, EC-6; harness commands only?);
+what a write keeps in a card file (`description`, `saved`).
+
+**The conversion check** (`docs/research/preset-conversion-check.md`)
+has four facts that the pins do not bear out: `test_diag.ti59` has no
+pause-on-start and needs no `skip-wait:`; `switzerland` and
+`stars-and-stripes` have no `ReportElapseTime:` and need
+`let-it-finish:`, not a `timeout:`; `printer-quirks`, `texas-print` and
+`screentest/test_texas` end with `FullSpeed:` and a key that starts a
+print, and so need `let-it-finish:` too; the counts are 62 Calc-U-59 and
+59 Calc-U-1600 files at the pins (this walkthrough says 60 and 59, the
+check 61 and 58). And `pc1600-hanoi-run` has `- wait: 3` after
+`type: RUN`, so under format 2 its screenshot shows the `INPUT` prompt
+of `hanoi.bas`, not the title.
 
 ### 5.3 Class C: into the first steps
 

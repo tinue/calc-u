@@ -21,6 +21,27 @@ done, which criteria wait for it, and what changes if it turns out the
 other way. Where a step waits for a ruling on a finding of
 `presets.md`, it names it.
 
+**After `docs/formats/` (2026-11-13).** The preset format of 2026-11-12
+changes some steps; they are reworded when the questions of
+`presets.md` §5.4 are answered:
+- Steps 6 and 13 (reference runs) change in substance: an upgraded
+  preset runs differently by design (full speed by default, the last
+  item not waited for, `let-it-finish:` and `skip-wait:` where the
+  conversion check puts them), so the comparison is at the idle machine
+  after the load, not "at the end of the load" (B-10, B-11). "Waits for
+  B-1" and "tick for tick" (B-4) fall away; C-3 and C-5 are void.
+- Step 4: "a load has ended" is now right after its last item; the UI
+  tests' `idle` comes at another moment (`test_texas` ends during its
+  print).
+- Step 5: the hold and "idle" are the product's (`preset.md` §5.1,
+  §6.2), the bound is `timeout:` and fails the item; C-1 stays for
+  `test_cdebug`.
+- Step 10: an undefined `mem:` card is the fresh card; `card:` has
+  finished when the card has passed.
+- Step 11: (a) stands, a preset never writes the constant memory file;
+  (b) narrows to what the ROM's start-up writes after the cold boot
+  (C-6).
+
 ## Before anything else
 
 ### 1. The pin of Calc-U-1600 (check)

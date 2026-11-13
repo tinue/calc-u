@@ -102,7 +102,7 @@ A session
   and is paused before its first instruction, and its sections are not
   carried out (LIB-10 AC-46);
   with `reset: reset` or `allReset`, a Reset or a Cold boot follows that
-  is paused before its first instruction;
+  is paused before its first instruction, at the reset vector;
   the `listings` and `symbols` are bound (AC-13), each to the thread its
   `cpu` names, the first without it, with its `bank`, `me`, `pu` and
   `pv` as the qualifier;
@@ -133,6 +133,15 @@ A session
   entry when it is hit
   (`Qt6/app/debug/DapSession.cpp:343-414`,
   `Core/Debug/ProgramLoader.cpp:17-133`).
+- [ ] **AC-24** — Given a debug session, then there are two ways to
+  use it, and the rules of operations (LIB-18 AC-13, LIB-10 AC-13, AC-8
+  here) never stand in the way of either: breakpoints that work
+  normally on a running machine; or the calculator's reset routine
+  watched from its reset vector, where the machine stops (AC-6,
+  `reset:` or `boot: debug`), after which stepping and breakpoints work
+  normally. A reset that stops at the reset vector is over when it
+  stops there. How the configuration's keys combine beyond this is not
+  specified; today's behaviour holds (`Qt6/app/debug/DapSession.cpp:430-444`).
 - [ ] **AC-8** — Given a message of the client arrives while an
   operation runs, then the server holds it back and answers it when the
   operation is over, in the order of arrival; this is the server's own
@@ -326,3 +335,4 @@ Checks
 | Proposed in this spec and accepted (user, 2026-11-10, batch 7 gate): a wrong `--dap` port is an error at the start (EC-1) | Today it is ignored without a word | 2026-11-10 |
 | Proposed in this spec and accepted (user, 2026-11-10, batch 7 gate): the server's status is a state topic of the product (AC-21) | The settings dialog of any frontend can then show it | 2026-11-10 |
 | "The lowest address of the listing" (AC-7) means the lowest address of a line with bytes, as today's listing readers keep only such lines | Phase 5, preset pass (`docs/walkthroughs/presets.md`, A-11); AC-23; `Core/Debug/Listing/ZasmListing.cpp:90-91`, `SdasListing.cpp:174-175` | 2026-11-11 |
+| Two uses of a debug session: breakpoints that work normally, or the reset routine watched from the reset vector; a reset that stops there is over when it stops; nothing more is specified about combining `reset:` and `boot: debug` (AC-6, AC-24) | user, 2026-11-13 (B-19 (a), (b) of `docs/walkthroughs/presets.md` §5.2): "may be overspecified" | 2026-11-13 |

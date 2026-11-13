@@ -150,7 +150,12 @@ Embedding interface
   bundled preset to start with), and `workerUrl` (where the worker's
   script is, for a page that serves it from another path); a product
   adds props of its own beside them. `model` takes the model's name as
-  the glossary writes it (`TI-58C`, `PC-1600`); `keyboard` is on by
+  the glossary writes it (`TI-58C`, `PC-1600`); `preset`, and the play
+  page's `?preset=` alike, takes a bundled preset's path inside the
+  bundle (`sum.ti59`, `plotter/globus.pc1600`), the glossary's
+  `examples:` reference without its prefix, and a path the bundle file
+  does not list (`docs/formats/bundle.md`) is refused with a notice and
+  the component starts as without the prop; `keyboard` is on by
   default; without `width` and `height` the component fills its parent,
   and a product whose faceplate has a fixed shape keeps that shape
   inside it (`frontend.md` FE-7; OQ-1, OQ-3).
@@ -291,3 +296,4 @@ Embedding interface
 | `model` takes the model's name; `keyboard` is on by default in both products; without `width` and `height` the component fills its parent; the prop `module` of `PlayCalculator` goes; media saved with the Calc-U-1600 Web frontend of 0.8.x stay; the one-writer rule is added to ledger row 59-8 | user, 2026-11-10, batch 3 gate | 2026-11-10 |
 | The row is named "Web frontend shell" | user, 2026-11-11; the glossary's term is Web frontend | 2026-11-11 |
 | The installed app without the server also loads a bundled example (AC-23) | user, 2026-11-13 (B-23 of `docs/walkthroughs/presets.md` §5.2); today's Playwright test checks it | 2026-11-13 |
+| `preset` and `?preset=` take a bundled preset's path inside the bundle; an unlisted path is refused with a notice (AC-16) | user, 2026-11-13 (B-27 (c) of `docs/walkthroughs/presets.md` §5.2); a name tag can repeat across models and change, a path stays stable for links | 2026-11-13 |

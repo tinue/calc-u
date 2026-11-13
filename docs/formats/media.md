@@ -121,6 +121,10 @@ card, from the implicit template.
 
 - A side the machine writes goes into the card's file (an instance), or
   stays in memory for an in-file card.
+- A write into a card file rewrites the file whole, in the key order of
+  §1.1. It replaces only the side that was written, keeps `card-name`,
+  `description`, `template` and `cue-card` as they were, and sets
+  `saved` to the time of the write. Comments in the file are not kept.
 - A template card is never written; the product makes an instance first
   or refuses the write.
 - A card file's cue card is its own `cue-card`; a saved in-file card

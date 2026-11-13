@@ -347,9 +347,11 @@ Getting media in and out
 - [ ] **AC-37** — Given Calc-U-1600, then its kinds of media are the
   battery-backed module (`.card.yaml`), the floppy disk
   (`.floppy.yaml`) and the cassette tape (a tape definition
-  `.tape.yaml` with its `.wav`, `media.md` §3, version 1, new); the two
-  other YAML formats stay at `format-version: 1` and are read and
-  written as today, the name being `module-name:`, `disk-name:` or
+  `.tape.yaml` with its `.wav`, `media.md` §3, version 1, new); the
+  module definition stays at `format-version: 1`, the floppy disk goes
+  to version 2, whose sides are `0:` and `1:` in place of `a:` and `b:`
+  (`media.md` §2; `preset.md` §9.4), and both are read and written as
+  today otherwise, the name being `module-name:`, `disk-name:` or
   `tape-name:` and a template saying `template: true` (`Core/Connector/MemoryCardDefinition.hpp:24-25, 168-172`,
   `Core/Connector/FloppyImageFile.hpp:23-54`; behaviour change 1600-1).
 - [ ] **AC-38** — Given the picker of a module slot, then it is that of
@@ -542,3 +544,4 @@ Getting media in and out
 | Cassette tapes are media by `media.md` §3: a `.tape.yaml` definition with its WAV, templates and instances, Name & Save, `position`, the preset key `tape:`; one bundled template, the empty tape; a `.wav` alone is a program file (AC-37, AC-42, AC-43). Replaces "tapes keep their own rules" (`media.md` Q-1) | user, 2026-11-13 (question F-7 of `docs/walkthroughs/presets.md` §5.4); `docs/formats/media.md` §3 | 2026-11-13 |
 | A Solid State ROM module shows its `description` in the picker, ordered by `menu-sort`, as today (AC-8) | user, 2026-11-13 (question F-14 of `docs/walkthroughs/presets.md` §5.4); `docs/formats/modules.md` §2.1, §2.4 | 2026-11-13 |
 | The log names a written medium by its kind and name tag, never by its path, so that logs are equal in every frontend and the harness (LIB-6 AC-11, AC-13) | user, 2026-11-13 (B-8 (d) of `docs/walkthroughs/presets.md` §5.2) | 2026-11-13 |
+| Sides are numbered 0 and 1 for magnetic cards and floppy disks, in presets, files and the GUI; the floppy disk format goes to version 2 (AC-37), so disks saved with 0.8.x are refused with the hint until upgraded by hand | user, 2026-11-13 (B-8 (a) of `docs/walkthroughs/presets.md` §5.2); `docs/formats/media.md` §1, §2 | 2026-11-13 |

@@ -38,6 +38,7 @@ step. Label and menu renames are not repeated here; they are in
 | 59-19 | Traces: one at a time (today the button's and a preset's can run side by side); a trace that cannot be started fails its preset (today: an alert, and the preset goes on); a notice when the size limit ends a preset's trace (today: only the button's). | LIB-10 AC-22 to AC-24 (user, batch 6 gate) |
 | 59-23 | A key that a preset or a host key sequence presses is held for 100 ms of emulated time (today: of wall time). At full speed a key therefore no longer keeps the machine running for longer: `Adv` feeds the same lines at every speed (today one press feeds many lines at full speed), and an `Elapsed:` line over a full-speed stretch counts less. | `contracts/typing.md`, T-1; `contracts/presets.md`, PR-10; LIB-5 AC-20 |
 | 59-18 | While the PC-100C is detached the paper panel shows an empty paper without a name (today: the paper stays in view); the paper is back when the printer is attached again. | LIB-8 AC-8, AC-12, AC-29 (user, batch 6 gate) |
+| 59-24 | The sides of a magnetic card are 0 and 1 (today 1 and 2), in presets, in the card file and on screen. | user, 2026-11-13; `docs/formats/media.md` §1 |
 
 ## Calc-U-1600 (against 0.8.1)
 
@@ -61,3 +62,4 @@ step. Label and menu renames are not repeated here; they are in
 | 1600-17 | Saving a CE-161 with the write-protect switch set power-cycles the machine, as plugging in a module does (today: nothing follows). | LIB-7 AC-19; LIB-2 AC-32 (user, 2026-11-11) |
 | 1600-8 | A held host key stays down until it is released, for every key, so the ROM's own auto-repeat works; the PC-1500's fixed key cadence goes once its key readiness is found. | `contracts/typing.md`, T-2, Q-3 |
 | 1600-18 | A cassette tape is a tape definition (`.tape.yaml`) with its WAV: it has a name, a description and a position, can be a template, and gets Name & Save; the picker offers the empty tape and the saved tapes. A WAV of today's tape folder is not listed as a tape until it is wrapped in a definition; a dropped or opened WAV is loaded as a program. | user, 2026-11-13; LIB-7 AC-42 |
+| 1600-19 | The sides of a floppy disk are 0 and 1 (today A and B), in presets, in the disk file and on screen; the disk file is version 2, so a disk saved with 0.8.x is refused with the hint until it is upgraded by hand (rename `a:`/`b:` to `0:`/`1:`). | user, 2026-11-13; `docs/formats/media.md` §2 |

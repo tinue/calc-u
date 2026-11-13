@@ -207,7 +207,9 @@ The shipped presets
   (ADR 0037; behaviour change 1600-1). Its comments are corrected where
   they name a key, a tool or a format that changed (today
   `ce158_demo.pc1500a:7-8`), and the READMEs under `examples/` are
-  upgraded with the files (`examples/setup/README.md:18-21`). Beyond
+  upgraded with the files (`examples/setup/README.md:18-21`); the
+  floppy disk files under `examples/` go to version 2 (`preset.md` §9.4:
+  `a:`/`b:` become `0:`/`1:`; `examples/dwx/Progs.floppy.yaml`). Beyond
   that, in each, only what `preset.md`
   §9.2 lists changes, by these rules, which settle for Calc-U-1600 what
   §9.2 leaves open:
@@ -220,9 +222,10 @@ The shipped presets
   | `- wait:` without a value | as the last item `- let-it-finish:`; elsewhere dropped, since the implicit wait does it | `preset.md` §9.2 |
   | `- wait:` with a duration that lets a running program run before the next step (BREAK) | `- skip-wait:` before it | `preset.md` §9.2 |
   | the last `- type:` or `- key:` whose run version 1 waited for at full speed | `- let-it-finish:` after it where that run is part of the result | `preset.md` §9.2 |
-  | `slot-N: name`, `slot-N-file: path`, `slot-N-rom: path`, `floppy: name,B`, `floppy-file: path`, `host-drive: path` | `{ name: … }`, `{ file: … }`, `{ folder: … }`, a side as `side: B` | `preset.md` §9.2 |
+  | `slot-N: name`, `slot-N-file: path`, `slot-N-rom: path`, `host-drive: path` | `{ name: … }`, `{ file: … }`, `{ folder: … }` | `preset.md` §9.2 |
+  | `floppy: name,B` / `floppy-file: path` (header) | the step `- floppy: { name: …, side: 1 }` / `- floppy: { file: … }` in a `keys:` section that comes first (A and B are sides 0 and 1) | `preset.md` §9.2 |
   | `- key: ent` | `- key: enter`; no other key name changes | LIB-5, decided with its OQ-6 |
-  | a header key given twice | the last one only | LIB-6 AC-1 |
+  | a header key given twice | refused: version 2 takes each header key once; the upgrade keeps the last, as version 1 read it | LIB-6 AC-1, `preset.md` §1 |
   | `- saveas:`, `- trace:` | `- saveas: { place: …, as: …, name\|file: … }` (`preset.md` §5.2.1, §9.2); `- trace:` as LIB-10 writes it | PR-8; their specs |
 
   The presets that have a row of the last line are upgraded when LIB-7
@@ -247,8 +250,8 @@ The shipped presets
   `docs/research/preset-conversion-check.md` §4 (such as `Calculat`,
   whose program never returns to BASIC) are excepted by name.
 - [ ] **AC-17** — Given the preset list of Calc-U-1600 (LIB-6 AC-31),
-  then its bundle file (LIB-6 AC-31) holds what `examples/bundled.yaml`
-  holds today: as startup
+  then its bundle file `examples/bundle.yaml` (`docs/formats/bundle.md`;
+  LIB-6 AC-31) lists what `examples/bundled.yaml` lists today: as startup
   presets `startup/default-pc1500.pc1500`,
   `startup/default-pc1500a.pc1500a` and `startup/default-pc1600.pc1600`;
   as examples, in the group "BASIC" `basic/hanoi.pc1600`, in the group
@@ -368,7 +371,7 @@ The shipped presets
 | The presets under `dev/`, and presets that a tool or a test writes as text, are among those that are upgraded (AC-15) | Phase 5, preset pass (`docs/walkthroughs/presets.md`, A-10); "every shipped preset is upgraded and checked", C1600-3 AC-20 | 2026-11-11 |
 | The whole preset is the simplified YAML of `docs/formats/README.md` §1; `debug:` and `bus-rom:` are no longer raw blocks; references are written `{ name: }`, `{ file: }`, `{ folder: }` (AC-6, AC-8, AC-9, AC-11, AC-20) | user, 2026-11-12 (`docs/formats/`) | 2026-11-13 |
 | `bus-rom:` given twice refuses the preset, as every header key (AC-9). Settles B-19 (f) of the preset pass, against its recommendation | user, 2026-11-12 (`preset.md` §1, §3.3) | 2026-11-13 |
-| The `debug:` block has the key `preset` (AC-11) | user, 2026-11-12 (`preset.md` §3.4) | 2026-11-13 |
+| *Superseded by the row of C1600-4 OQ-5 below.* The `debug:` block has the key `preset` (AC-11) | user, 2026-11-12 (`preset.md` §3.4) | 2026-11-13 |
 | A `.wav` is a program file whose program goes into the program area (AC-1) | user, 2026-11-12 (`preset.md` §4.1) | 2026-11-13 |
 | The upgrade follows `preset.md` §9.2: a duration keeps its fraction (`0.5s`), a bare `- wait:` becomes `let-it-finish:` or goes, a wait before BREAK gets `skip-wait:` (AC-15). Replaces the `ms` row and "only this changes" | user, 2026-11-12 (`preset.md` §9.2; conversion check §3) | 2026-11-13 |
 | Two `program:` sections: a first one whose code has not returned within the `timeout:` fails the preset (EC-3). Replaces "after an hour the second starts all the same" | user, 2026-11-12 (`preset.md` §6.3) | 2026-11-13 |

@@ -87,7 +87,9 @@ A session
   `project`, that preset's `debug:` block is the base: the keys of the
   configuration win, `program` is merged key by key, and `listings` and
   `symbols` are added to the block's. `project` is the path of that
-  preset. A key the server does not know is passed over in a
+  preset, and it is the configuration's `preset` (AC-6, AC-7) unless the
+  launch configuration gives a `preset` of its own, which then wins like
+  any of its keys (`Qt6/app/debug/DapSession.cpp:225-240`). A key the server does not know is passed over in a
   configuration, except `slot` inside `program`, which was removed and
   is refused with a hint. A number is a JSON number or a text by
   the preset's rule (LIB-6 AC-1); a text of hexadecimal digits without a

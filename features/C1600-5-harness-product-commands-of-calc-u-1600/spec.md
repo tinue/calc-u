@@ -8,7 +8,7 @@
 
 ## Dependencies
 - Features: LIB-11 (the harness, product commands under the product's
-  name), LIB-7 (cassette tapes, `insert` and `eject`), LIB-10 (reading
+  name), LIB-7 (cassette tapes, `tape` and `eject`), LIB-10 (reading
   memory); also named here: C1600-1 (the product kinds for the INSPECTOR
   views, for the CE-158's printer port and for the host drive's folder),
   LIB-2 (the serial port kind, its host link and serial port file),
@@ -41,9 +41,8 @@ serial port file.
   dump, registers, the last instructions and where time was spent
   (LIB-10); the model's variants and attaching a peripheral (LIB-18);
   the paper of the plotters (LIB-8); the loaders (C1600-2).
-- Playing a cassette recording and taking a tape out: `insert` and
-  `eject` of LIB-7 for the cassette, with `file:` and a path (LIB-7
-  AC-26, AC-42).
+- Playing a cassette recording and taking a tape out: `tape` and
+  `eject` of LIB-7 for the cassette (LIB-7 AC-26, AC-42).
 - The three probes and `dev/tape-matrix/run.py`, which are not taken over
   (LIB-11 OQ-5 as amended, 2026-11-13).
 
@@ -68,9 +67,8 @@ BASIC
   dump (`tools/pc1500_cli.cpp:342-373`, `tools/pc1600_cli.cpp:200-237`;
   OQ-2).
 - [ ] **AC-3** — Given the lines of that reply, then their form is
-  today's, so that what reads them today still can:
-  `BASPRG_END $7867 = $40D2   (len = 13)` for a pointer and
-  `40C5: 00 0A … |…|` for a row (`dev/tape-matrix/run.py:99-105`).
+  today's: `BASPRG_END $7867 = $40D2   (len = 13)` for a pointer and
+  `40C5: 00 0A … |…|` for a row (`tools/pc1600_cli.cpp:200-237`).
 
 INSPECTOR views
 - [ ] **AC-4** — Given `pc1600 inspect` with the name of a view, then
@@ -136,8 +134,8 @@ Checks
   the replies of AC-2 and of `peek`.
 
 ## Edge Cases
-- **EC-2** — Given a `tape` command on a machine without a cassette (a
-  PC-1600 with a CE-150), then it is refused.
+- **EC-2** — Given a `tape` command on a machine without a cassette
+  (neither a CE-150 nor a CE-1600P), then it is refused.
 - **EC-3** — Given `serial ce158` on a machine without a CE-158, or
   `serial rs232c` on a PC-1500 or PC-1500A, then it is refused; it is
   not held for a machine built later. A script that needs the port from
@@ -159,7 +157,7 @@ Checks
 - The commands reach the machine through the product kinds of C1600-1
   and the generic kinds (the serial port, media); they name no machine
   class.
-- Each command of AC-2 to AC-11 has a test in the test suite whose
+- Each command of AC-2 to AC-9 and AC-11 has a test in the test suite whose
   expected reply is written out in the test; today no test runs these
   functions.
 - The commands are product commands: they are reached only with
@@ -183,8 +181,8 @@ Checks
 | Decision | Rationale | Date |
 |----------|-----------|------|
 | What only one product's tools have becomes product commands under the product's name | `harness.md` H-2; LIB-11 AC-13, OQ-4 (user, batch 3 gate) | 2026-11-10 |
-| The three probes stay scripts | LIB-11 OQ-5 (user, batch 3 gate) | 2026-11-10 |
-| Cassette tapes keep their own rules | `media.md` Q-1; LIB-7 AC-42 | 2026-11-10 |
+| *Superseded 2026-11-13 (B-25).* The three probes stay scripts | LIB-11 OQ-5 (user, batch 3 gate) | 2026-11-10 |
+| *Superseded 2026-11-13 (F-7: a tape is a medium, LIB-7 AC-42).* Cassette tapes keep their own rules | `media.md` Q-1; LIB-7 AC-42 | 2026-11-10 |
 | Proposed in this spec and accepted (user, 2026-11-10, batch 8 gate): playing a recording and ejecting are LIB-7's `insert` and `eject`; only recording to a path and the status are commands of this spec | One vocabulary (`harness.md` H-1) | 2026-11-10 |
 | Proposed in this spec and accepted (user, 2026-11-10, batch 8 gate): a serial port has no host link in a harness run unless `link` asks (AC-9) | A run must repeat exactly and touch no file of the user (LIB-11 AC-6, AC-8) | 2026-11-10 |
 | Proposed in this spec and accepted (user, 2026-11-10, batch 8 gate): `pc1600 host-drive` (AC-11) | `harness.md`'s fit table lists the host drive among the product commands; today no tool has an option for it | 2026-11-10 |

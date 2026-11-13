@@ -200,7 +200,10 @@ Machine code
   header with an address to start at, then after the load the starting
   command is typed with ENTER and the command waits until the machine is
   idle; after an hour of emulated time it is done all the same, and a
-  line of the log says so. Without such an address nothing is started
+  line of the log says so. Within a preset the wait is the preset's
+  implicit wait instead: code that has not returned within `timeout:`
+  fails the preset (`preset.md` §6.2, §6.3; C1600-4 EC-3). Without such
+  an address nothing is started
   (`Core/Preset/PresetRunner.cpp:243-257`).
 - [ ] **AC-24** — Given the commands of this feature, then loading BASIC
   and loading machine code are carried out at once and are no

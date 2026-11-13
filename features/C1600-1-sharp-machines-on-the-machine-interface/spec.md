@@ -43,7 +43,7 @@
   disks and cassettes (owner: LIB-7); the plotters' paper (LIB-8).
 - Key readiness, prompt readiness, the latches, and how a key is held
   or queued (owner: LIB-5); the pacing profile and the carry of an
-  overshoot (LIB-17, OQ-5 there).
+  overshoot (LIB-17 AC-3).
 - Other names for a key in presets and in the harness: they are matched
   without regard to case, `break` is another name of `on`, and `ent`
   goes; the machine takes exactly the key IDs of AC-9 and AC-10 (owner:

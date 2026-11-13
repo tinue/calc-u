@@ -224,6 +224,12 @@ The shipped and hosted presets
   Excepted by name, each with its reason: `life.ti59`, which never
   stops and is only loaded without a failure; the intended differences
   of `docs/research/preset-conversion-check.md` §4, where they show.
+- [ ] **AC-18** — Given the calendar scripts (`tools/agentic/calendar/`),
+  then they read and write version 2: `fastcal.py` generates
+  `calendar-09` as its version 2 file of AC-10, and `years.py` finds
+  the year in it as today by matrix code 11; they are upgraded with the
+  examples and stay scripts that use `calcu serve` (LIB-11 OQ-5)
+  (`fastcal.py:163-203`, `years.py:21-25`).
 - [ ] **AC-12** — Given the copies of the examples that calc-u.org hosts
   under `59/software-files/`, then they are the version 2 files of
   AC-10, copied there with the site's own tools; the presets under
@@ -348,3 +354,4 @@ The shipped and hosted presets
 | `debug/example-brief.ti59`: `002  11.` is corrected to `11` with the upgrade, and its reference run is recorded from the corrected file (AC-10) | user, 2026-11-13 (B-12 of `docs/walkthroughs/presets.md` §5.2) | 2026-11-13 |
 | Upgrade rules for tabs, a `21` before its key on the next line, and directives commented out (AC-10) | user, 2026-11-13 (B-13 of `docs/walkthroughs/presets.md` §5.2) | 2026-11-13 |
 | The three statefile fixtures go with the `STATE` records; each refusal of AC-2 to AC-5 has a test text with that one error; all 57 examples, screentest included, are upgraded and loaded (LIB-6 AC-43) | user, 2026-11-13 (B-15 of `docs/walkthroughs/presets.md` §5.2) | 2026-11-13 |
+| The calendar scripts are upgraded to version 2 (AC-18) | user, 2026-11-13 (B-25 of `docs/walkthroughs/presets.md` §5.2): "old, no longer relevant scripts and probes are not taken over into the new project. calendar yes, upgrade it" | 2026-11-13 |

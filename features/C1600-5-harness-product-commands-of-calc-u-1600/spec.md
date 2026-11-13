@@ -44,7 +44,8 @@ serial port file.
 - Playing a cassette recording and taking a tape out: `insert` and
   `eject` of LIB-7 for the cassette, with `file:` and a path (LIB-7
   AC-26, AC-42).
-- The three probes, which stay scripts (LIB-11 OQ-5 as decided).
+- The three probes and `dev/tape-matrix/run.py`, which are not taken over
+  (LIB-11 OQ-5 as amended, 2026-11-13).
 
 ## Acceptance Criteria
 
@@ -129,9 +130,10 @@ Host drive
   C1600-1 AC-19).
 
 Checks
-- [ ] **AC-10** — Given `dev/tape-matrix/run.py`, which reads the replies
-  of AC-2 and of `peek`, then it runs against the harness and passes;
-  porting it belongs to this feature.
+- **AC-10** — *Withdrawn (user, 2026-11-13, B-25 of
+  `docs/walkthroughs/presets.md`): `dev/tape-matrix/run.py`, a finished
+  one-time check, is not taken over (LIB-11 OQ-5 as amended).* It read
+  the replies of AC-2 and of `peek`.
 
 ## Edge Cases
 - **EC-2** — Given a `tape` command on a machine without a cassette (a
@@ -180,3 +182,4 @@ Checks
 | Proposed in this spec and accepted (user, 2026-11-10, batch 8 gate): playing a recording and ejecting are LIB-7's `insert` and `eject`; only recording to a path and the status are commands of this spec | One vocabulary (`harness.md` H-1) | 2026-11-10 |
 | Proposed in this spec and accepted (user, 2026-11-10, batch 8 gate): a serial port has no host link in a harness run unless `link` asks (AC-9) | A run must repeat exactly and touch no file of the user (LIB-11 AC-6, AC-8) | 2026-11-10 |
 | Proposed in this spec and accepted (user, 2026-11-10, batch 8 gate): `pc1600 host-drive` (AC-11) | `harness.md`'s fit table lists the host drive among the product commands; today no tool has an option for it | 2026-11-10 |
+| The probes and `dev/tape-matrix/run.py` are not taken over; AC-10 withdrawn | user, 2026-11-13 (B-25 of `docs/walkthroughs/presets.md` §5.2): "old, no longer relevant scripts and probes are not taken over into the new project. calendar yes, upgrade it" | 2026-11-13 |

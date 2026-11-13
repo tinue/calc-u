@@ -209,7 +209,7 @@ The first commands
   | `--ce158-pty`, `--ce158-rx`, `--ce158-rx-hold`, `--ce158-tx` | feed and capture the CE-158's serial port | C1600-5 (`pc1600 serial`) |
   | `--save-dir`, `--modules-dir` | the save folder; where module definitions are | this feature (AC-8), LIB-7 |
   | the summary after a run: registers, the last instructions, where the program counter spent its time | | LIB-10 |
-  | `pc1600_plotter_probe`, `pc1600_power_probe`, `pc1600_uart_probe` | diagnostics of the plotter, of power-off and of the serial port | stay scripts that drive `calcu serve` (OQ-5) |
+  | `pc1600_plotter_probe`, `pc1600_power_probe`, `pc1600_uart_probe` | diagnostics of the plotter, of power-off and of the serial port | not taken over (OQ-5 as amended) |
   | `tools/read_trace.py` | a trace file as text or JSON | stays a script of the product (LIB-10 AC-33, AC-42; user, 2026-11-10, batch 6 gate) |
   | `tools/dap_smoke.py` | a smoke test of the DAP server | C1600-3 |
   | `--shots` of the Qt6 frontend | screenshot scenarios | not a harness function (ADR 0032); a client of harness attach (LIB-14 AC-44) |
@@ -287,7 +287,11 @@ The first commands
   scripts of Calc-U-59 (`tools/agentic/calendar/`) were written for one
   investigation each. `harness.md` lists the probes among the functions
   to keep. *Recommendation:* they stay as scripts that use
-  `calcu serve`, not as commands.
+  `calcu serve`, not as commands. *Amended (user, 2026-11-13, B-25 of
+  `docs/walkthroughs/presets.md`): old scripts and probes that are no
+  longer relevant are not taken over; the three probes go, and so does
+  `dev/tape-matrix/run.py`; the calendar scripts stay and are upgraded
+  to version 2 (C59-2 AC-18).*
 - [x] **OQ-6** — *Decided as recommended (user, 2026-11-10, batch 3 gate).* The indicator C in `lcd` for a TI machine (AC-16).
   Today's tool does not report it. *Recommendation:* report it, on a
   line of its own like the Sharp indicators; brightness only with
@@ -317,3 +321,4 @@ The first commands
 | A run's traces and screenshots go to its own save folder by default; an option names a folder for them (AC-8) | user, 2026-11-13 (B-17 of `docs/walkthroughs/presets.md` §5.2) | 2026-11-13 |
 | The harness hands a real-time clock a fixed instant by default; an option names another date and time or the host's (AC-21) | user, 2026-11-13 (B-20 of `docs/walkthroughs/presets.md` §5.2): "a plain fixed instant as default"; today only a test pins the clock (`Core/tests/job_tests.cpp:228-235`) | 2026-11-13 |
 | The Qt6 screenshot scenarios are a client of harness attach (Out of Scope, AC-18) | user, 2026-11-13 (B-22 of `docs/walkthroughs/presets.md` §5.2, left to the specification: "what works best for an agentic workflow") | 2026-11-13 |
+| The three probes are not taken over; the calendar scripts stay (AC-18, OQ-5 amended) | user, 2026-11-13 (B-25 of `docs/walkthroughs/presets.md` §5.2): "old, no longer relevant scripts and probes are not taken over into the new project. calendar yes, upgrade it" | 2026-11-13 |

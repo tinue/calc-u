@@ -79,12 +79,14 @@ The file
   it is, its template included (OQ-3; today it is written as a blank
   cue card), in today's layout with a first line that states the version
   (`Shared/ConstantMemory.cpp:9-66`).
-- [ ] **AC-5** — Given a TI-58C runs and its constant memory or the
+- [ ] **AC-5** — Given a TI-58C built from the file runs (AC-7, AC-10)
+  and its constant memory or the
   fitted cue card changes, then `ti58c.mem` holds the new content at the
   latest half a second after the change, counted in the wall time the
   host passes to the session (LIB-3 AC-2), and is not written when
   nothing changed (`Shared/SessionController.cpp:247-256, 285-286`).
-- [ ] **AC-6** — Given a TI-58C runs, then `ti58c.mem` is brought up to
+- [ ] **AC-6** — Given a TI-58C built from the file runs (AC-10), then
+  `ti58c.mem` is brought up to
   date at once, without waiting for AC-5: before the machine is replaced
   by another, when the session is suspended (LIB-3 AC-24; in the Web
   frontend when the page is hidden, LIB-15 AC-2), and when the product
@@ -101,11 +103,15 @@ When the memory comes back
   gives, or none (`capabilities.md` C-3; behaviour change 59-12).
 - [ ] **AC-9** — Given Cold boot on a running TI-58C, then its constant
   memory is empty afterwards (C59-1 AC-6).
-- [ ] **AC-10** — Given AC-8 or AC-9, then `ti58c.mem` follows: at the
-  latest half a second after the machine reports key readiness it holds
-  the constant memory and the fitted cue card of that machine, also when
-  nothing has changed since (`capabilities.md` C-3: "the file
-  follows").
+- [ ] **AC-10** — Given a TI-58C built from a preset or a startup preset
+  (AC-8), then it never writes `ti58c.mem`, neither after a change nor
+  when it is replaced, suspended or the product quits: the file keeps
+  the constant memory of the last TI-58C built from it, which the next
+  one built from it gets back (AC-7). AC-5 and AC-6 hold only for a
+  TI-58C built from the file. Given Cold boot on a TI-58C built from the
+  file (AC-9), then the file follows: at the latest half a second after
+  the machine reports key readiness it holds the empty memory and no
+  cue card (`docs/formats/media.md` §4).
 - [ ] **AC-11** — Given a TI-58C is reset or power-cycled (a Reset, a
   module change, the PC-100C attached or detached; LIB-18 AC-21, AC-22),
   then its constant memory stays in the machine (C59-1 AC-6),
@@ -155,8 +161,8 @@ Every frontend
   EC-1), then that machine is handed the content of `ti58c.mem` as in
   AC-7.
 - **EC-7** — Given a preset or a startup preset fails while it is
-  carried out (LIB-18 EC-6), then AC-10 holds for the machine as it is
-  left.
+  carried out (LIB-18 EC-6), then the machine it left writes no file
+  either (AC-10).
 - **EC-8** — Given the Web frontend of the first release from this
   repository and a constant memory that 2.3.0 kept in `localStorage`,
   then it is not read (LIB-9 AC-23) and nothing is said; the TI-58C
@@ -221,3 +227,4 @@ Every frontend
 | Reset in the emulator keeps the memory and the cue card that is fitted, and loses everything else | user, 2026-11-10, batch 5 gate | 2026-11-10 |
 | The constant memory is in place before the processor starts | user, 2026-11-10, batch 5 gate | 2026-11-10 |
 | `ti58c.mem` also remembers the fitted cue card, whichever type it is | user, 2026-11-10, batch 5 gate | 2026-11-10 |
+| A TI-58C built from a preset or a startup preset never writes the constant memory file; only one built from the file keeps it up to date (half a second after a change, before it is replaced, on suspend, on quit); a Cold boot of such a machine empties the file (AC-5, AC-6, AC-10, EC-7). Replaces "the file follows" for presets (`capabilities.md` C-3) | user, 2026-11-13 (question F-8 of `docs/walkthroughs/presets.md` §5.4); `docs/formats/media.md` §4 | 2026-11-13 |

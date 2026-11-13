@@ -146,13 +146,16 @@ Options:
   machine; it is saved after a change, as today.
 - When a TI-58C machine is cold booted (a preset, a startup preset, Cold
   boot), the file follows: it then holds the memory of the machine just
-  built.
+  built. *Superseded 2026-11-13 (user; `docs/formats/media.md` §4): a
+  machine a preset or a startup preset built never writes the file; only
+  a TI-58C built from the file keeps it up to date, and a Cold boot of
+  that machine empties it (C59-3 AC-10).*
 - Quitting and starting the product counts as a power cycle for the
   TI-58C. With no startup preset set for the TI-58C, the machine is built
   with the constant memory from `ti58c.mem`. With a startup preset set,
-  the preset cold boots the machine (ADR 0016) and the file follows. A
-  user who wants the TI-58C to keep its memory sets no startup preset for
-  it.
+  the preset cold boots the machine (ADR 0016); the file is left as it
+  is (as amended 2026-11-13). A user who wants the TI-58C to keep its
+  memory sets no startup preset for it.
 - The same holds when the model is switched to the TI-58C: the machine is
   built the same way as at the start (glossary, Startup preset).
 - ADR 0021 is amended: no bundled startup preset restores `ti58c.mem`.
@@ -196,3 +199,4 @@ Options:
 | 2026-11-10 | C-3 (amended, user, 2026-11-10, batch 5 gate) | The memory is in place before the processor starts. `ti58c.mem` also remembers the cue card that is fitted. Reset keeps the memory and the fitted cue card. A startup preset that is set but cannot be loaded does not cost the memory: it comes back as without one. |
 | 2026-11-10 | Q-2 (answered, user, 2026-11-10, batch 6 gate) | The readers and writers of the media formats are product code behind one seam of the media feature (LIB-7 AC-46); the content crosses the media place as the kind's own content, which the library does not look into. |
 | 2026-11-10 | C-2 (amended, user, 2026-11-10, batch 6 gate) | The paper panel is always shown. Each type of printer keeps one paper for the run of the product; it is back when the printer is attached again, also on another model. A preset the user loads starts with empty paper. |
+| 2026-11-13 | C-3 (amended, user, 2026-11-13) | A TI-58C a preset or a startup preset built never writes `ti58c.mem`; only one built from the file keeps it up to date; a Cold boot of that machine empties it (`docs/formats/media.md` §4; C59-3 AC-10). |

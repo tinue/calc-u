@@ -242,8 +242,9 @@ The shipped and hosted presets
   it has three startup presets, one for each model, each with the Master
   Library module in `slot-1` and the PC-100C in `printer` and nothing
   else (ADR 0021 as amended), and as examples the ten presets the Web
-  frontend bundles today, in today's order, with today's title as their
-  `description`, in the groups "Diagnostics" (`diag.ti59`, `diag.ti58`,
+  frontend bundles today, with today's title as their `description`,
+  in its bundle file (LIB-6 AC-31), in today's order within each of
+  the groups "Diagnostics" (`diag.ti59`, `diag.ti58`,
   `ram_test.ti59`), "Programs" (`sum.ti59`, `characters.ti59`,
   `fastmode-sst.ti59`) and "Printer pictures" (`printer-interrupt.ti59`,
   `picard.ti59`, `globe-print.ti59`, `switzerland.ti59`), each under a
@@ -359,3 +360,4 @@ The shipped and hosted presets
 | The three statefile fixtures go with the `STATE` records; each refusal of AC-2 to AC-5 has a test text with that one error; all 57 examples, screentest included, are upgraded and loaded (LIB-6 AC-43) | user, 2026-11-13 (B-15 of `docs/walkthroughs/presets.md` §5.2) | 2026-11-13 |
 | The calendar scripts are upgraded to version 2 (AC-18) | user, 2026-11-13 (B-25 of `docs/walkthroughs/presets.md` §5.2): "old, no longer relevant scripts and probes are not taken over into the new project. calendar yes, upgrade it" | 2026-11-13 |
 | Its comments are corrected where they name a key, a tool or a format that changed, and the READMEs under `examples/` are upgraded with the files (AC-10) | user, 2026-11-13 (B-26 of `docs/walkthroughs/presets.md` §5.2); no spec owned these texts | 2026-11-13 |
+| The examples keep today's order within each group; `fastmode-sst` is last in "Programs" (AC-13; behaviour change 59-26) | user, 2026-11-13 (B-27 of `docs/walkthroughs/presets.md` §5.2): a format for bundling that lists all presets and their files and sets order and structure; a selection; the site and local builds take the files from the repository or the disk; today it is tenth, after the printer pictures | 2026-11-13 |

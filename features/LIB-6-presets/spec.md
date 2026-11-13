@@ -421,10 +421,13 @@ The place for other features and for products
 Preset list and startup presets
 - [ ] **AC-31** — Given a product, then it bundles one preset list: the
   startup presets it offers for each model, and its examples in named
-  groups, in the order in which they are to be listed. The list is part
-  of the product, is never read from a folder of the user, and is not
-  an own format with a version (Calc-U-1600 `examples/bundled.yaml`,
-  `Shared/PresetCatalog.cpp`).
+  groups, in the order in which they are to be listed. The list is the
+  product's bundle file (`docs/formats/bundle.md`), which also lists
+  every file each preset needs; every distribution that bundles
+  examples is built from it and bundles exactly what it lists; it is
+  part of the product and is never read from a folder of the user
+  (today Calc-U-1600 `examples/bundled.yaml`, which takes whole folders,
+  Calc-U-59 `Web/presets.json`; `Shared/PresetCatalog.cpp`).
 - [ ] **AC-32** — Given the request for the preset list, then the reply
   lists each entry with its reference, its model, its name and its
   description, whether it is a startup preset or an example, and for an
@@ -762,3 +765,4 @@ Harness
 | Every keyword a preset leaves out has a stated default; `printer-trace` absent means off (AC-65) | user, 2026-11-13 (B-16 of `docs/walkthroughs/presets.md` §5.2) | 2026-11-13 |
 | The GUI scenario of AC-42 checks what a bundled example puts on screen: in Calc-U-59 the cue card of `sum.ti59`; the Sharp example is the design's | user, 2026-11-13 (B-23 of `docs/walkthroughs/presets.md` §5.2); `sum.ti59` and four of the five bundled presets of its group have no keys, so no result shows | 2026-11-13 |
 | Files with placeholders are checked as filled in, not left out (AC-51) | user, 2026-11-13 (B-24 of `docs/walkthroughs/presets.md` §5.2) | 2026-11-13 |
+| The preset list is the bundle file, a format of its own (`docs/formats/bundle.md`): presets and their files, order and groups; distributions bundle exactly what it lists (AC-31). Replaces "not an own format with a version" | user, 2026-11-13 (B-27 of `docs/walkthroughs/presets.md` §5.2): a format for bundling that lists all presets and their files and sets order and structure; a selection; the site and local builds take the files from the repository or the disk | 2026-11-13 |

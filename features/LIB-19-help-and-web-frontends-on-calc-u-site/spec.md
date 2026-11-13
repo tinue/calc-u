@@ -55,9 +55,10 @@ What the three status columns mean for this feature:
 ### Library
 
 - [ ] **AC-1** — Given a product's folder on the site, then it has a pin
-  for the product's help asset, one for its Web frontend and one for
-  the file with its examples (OQ-5), each with
-  the address of a release file, its version and its sha256; a pin never
+  for the product's help asset and one for its Web frontend, each with
+  the address of a release file, its version and its sha256, and one
+  for its examples, the release's tag in the source repository (OQ-5);
+  a pin never
   names "the latest release" or a preview (`help.md` HL-3; today for the
   Web frontend `59/web-client.json:2-5`).
 - [ ] **AC-2** — Given a pinned help asset, then the site's build makes
@@ -101,7 +102,8 @@ What the three status columns mean for this feature:
   as today.
 - [ ] **AC-9** — Given the files the site hosts under
   `59/software-files/`, the presets and the four ASM overlays, then they
-  are those of the pinned examples file of the release (AC-1), in the
+  are those of `examples/` in the source repository at the pinned tag
+  (AC-1), which the site's build takes from there, in the
   current versions of their formats (C59-2 AC-12; C59-4 AC-20; ADR
   0037), and the site's checks compare them with it (OQ-5).
 - [ ] **AC-10** — Given the tests of `/59/` today (`59/tests/`, 29
@@ -166,6 +168,10 @@ What the three status columns mean for this feature:
   (AC-9). No release file holds Calc-U-59's examples today; Calc-U-1600's
   release has them as a zip. *Recommendation:* each release carries its
   examples as a file, and the site pins it like the other two.
+  *Amended (user, 2026-11-13, B-27 of `docs/walkthroughs/presets.md`):
+  no release carries its examples as a file; the binaries bundle the
+  selection of the bundle file, and the site's build takes the files
+  from the source repository at the release's tag.*
 - [x] **OQ-6** — *Decided as recommended (user, 2026-11-10, batch 8 gate).* The design of `/1600/`. The site has a design system
   for `/59/` only. *Recommendation:* decided in calc-u-site, by its own
   skills, before AC-11 is built; this spec does not set it.
@@ -180,3 +186,4 @@ What the three status columns mean for this feature:
 | Proposed in this spec and accepted (user, 2026-11-10, batch 8 gate): the help and the Web frontend that a folder pins are of one version (AC-3) | `help.md` I-1 | 2026-11-10 |
 | Proposed in this spec and accepted (user, 2026-11-10, batch 8 gate): `/1600/` gets a job of checks and tests like `/59/` (AC-14) | Today only `/59/` is checked | 2026-11-10 |
 | The row is named "Help and Web frontends on calc-u-site"; this spec replaces the earlier content plan for `/1600/` | user, 2026-11-10, batch 8 gate; the glossary's term is Web frontend | 2026-11-10 |
+| The examples pin is the release's tag in the source repository; no examples file (AC-1, AC-9, OQ-5 amended) | user, 2026-11-13 (B-27 of `docs/walkthroughs/presets.md` §5.2): a format for bundling that lists all presets and their files and sets order and structure; a selection; the site and local builds take the files from the repository or the disk | 2026-11-13 |

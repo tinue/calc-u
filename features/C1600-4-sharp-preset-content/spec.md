@@ -245,7 +245,8 @@ The shipped presets
   `docs/research/preset-conversion-check.md` §4 (such as `Calculat`,
   whose program never returns to BASIC) are excepted by name.
 - [ ] **AC-17** — Given the preset list of Calc-U-1600 (LIB-6 AC-31),
-  then it holds what `examples/bundled.yaml` holds today: as startup
+  then its bundle file (LIB-6 AC-31) holds what `examples/bundled.yaml`
+  holds today: as startup
   presets `startup/default-pc1500.pc1500`,
   `startup/default-pc1500a.pc1500a` and `startup/default-pc1600.pc1600`;
   as examples, in the group "BASIC" `basic/hanoi.pc1600`, in the group
@@ -253,8 +254,10 @@ The shipped presets
   `plotter/lissajou-1600.pc1600`, `plotter/globus.pc1600`,
   `plotter/biorhythmus_1600.pc1600` and `plotter/ascii.pc1600`, and in
   the group "Machine code" `machine-code/memtest_1500a.pc1500a`
-  (`examples/bundled.yaml:12-31`). The Qt6 and the Web frontend bundle
-  the same list, each preset with the files it names.
+  (`examples/bundled.yaml:12-31`), each with the files its preset
+  names. The Qt6 and the Web frontend bundle exactly these files; the
+  rest of their folders is no longer bundled (behaviour change
+  1600-21).
 - [ ] **AC-18** — Given the preset list, then the test suite fails
   unless every preset in it has a `preset-name` of at most 18 characters
   and a `description`, is listed once, and shares its name with no other
@@ -371,3 +374,4 @@ The shipped presets
 | `debug:` block: `reset: none` and `after: none` are the defaults; no `preset` key in the block, the session's machine is the preset the block is in (AC-11) | user, 2026-11-13 (C1600-4 OQ-5; B-19 of `docs/walkthroughs/presets.md` §5.2); today's reader has no `preset` key in the block (`Core/Debug/AttachKeys.hpp:41-49`, `Qt6/app/debug/DapSession.cpp:230`) | 2026-11-13 |
 | The templates are checked once filled in (AC-15) | user, 2026-11-13 (B-24 of `docs/walkthroughs/presets.md` §5.2); today nothing checks them | 2026-11-13 |
 | Its comments are corrected where they name a key, a tool or a format that changed, and the READMEs under `examples/` are upgraded with the files (AC-15) | user, 2026-11-13 (B-26 of `docs/walkthroughs/presets.md` §5.2); no spec owned these texts | 2026-11-13 |
+| The bundle file lists each preset with its files; only these are bundled, not whole folders (AC-17) | user, 2026-11-13 (B-27 of `docs/walkthroughs/presets.md` §5.2): a format for bundling that lists all presets and their files and sets order and structure; a selection; the site and local builds take the files from the repository or the disk | 2026-11-13 |

@@ -18,6 +18,7 @@ Terms follow `docs/GLOSSARY.md`.
 | [media.md](media.md) | The media: magnetic card, floppy disk, cassette tape; and the TI-58C's constant memory file |
 | [modules.md](modules.md) | The modules: module definition (memory module) and Solid State ROM module |
 | [cue-card.md](cue-card.md) | The cue card block, shared by presets, magnetic cards, Solid State ROM modules and the constant memory file |
+| [bundle.md](bundle.md) | The bundle file: what a product bundles from `examples/` and how the bundled presets are shown |
 
 ## Formats at a glance
 
@@ -31,6 +32,7 @@ Terms follow `docs/GLOSSARY.md`.
 | Module definition | module (memory module) | `.card.yaml` | — | 1 | `module-name` | Calc-U-1600 |
 | Keystroke program | — | `.keystrokes.yaml` | `ti-keystroke-program` | 1 | `program-name` | Calc-U-59 |
 | Solid State ROM module | module | `.rom.yaml` | `solid-state-rom-module` | 1 | `module-name` | Calc-U-59 |
+| Bundle file | — | `examples/bundle.yaml` | `example-bundle` | 1 | — | both |
 
 Each medium has a format of its own; media are not merged into one
 format.
@@ -102,7 +104,7 @@ Every format has these keys at the top level:
 | Key | Required | Meaning |
 |---|---|---|
 | `format-version` | yes | The integer version of the format the file is written in |
-| `<kind>-name` | yes, except in presets and the constant memory file | The **name tag**: the short name shown in GUIs, pickers and drop-down lists, and the name a `name:` reference resolves against (§3). The key is named after the kind: `preset-name`, `card-name`, `disk-name`, `tape-name`, `memory-name`, `module-name`, `program-name` |
+| `<kind>-name` | yes, except in presets, the constant memory file and the bundle file | The **name tag**: the short name shown in GUIs, pickers and drop-down lists, and the name a `name:` reference resolves against (§3). The key is named after the kind: `preset-name`, `card-name`, `disk-name`, `tape-name`, `memory-name`, `module-name`, `program-name` |
 | `description` | no, except in the Solid State ROM module | One line about the item, for a tooltip or a longer list entry |
 
 - A reader rejects a file without `format-version`, or with a version it

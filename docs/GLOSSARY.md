@@ -571,8 +571,14 @@ _Avoid_: wait (for this)
 The name of a bundled preset without a path:
 `examples:<path inside the product's bundled presets>`.
 
+**Bundle file**:
+The file `examples/bundle.yaml` of a product: the presets it bundles,
+every file they need, and their order and groups
+(`docs/formats/bundle.md`).
+
 **Preset list**:
-The presets a product bundles: its startup presets and its examples.
+The presets a product bundles: its startup presets and its examples,
+as its bundle file lists them.
 _Avoid_: catalogue (which lists descriptors)
 
 **Shell**:

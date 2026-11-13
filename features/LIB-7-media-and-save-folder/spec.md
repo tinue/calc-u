@@ -270,7 +270,9 @@ Media in presets
   that file in place, also when a preset named it by file; a preset
   that is run again then starts from what the last run left. Calc-U-1600
   does so today (`docs/formats/media.md`, Templates and instances;
-  `modules.md` §1.8; ADR 0019 as amended 2026-11-13).
+  `modules.md` §1.8; ADR 0019 as amended 2026-11-13). The log names a
+  medium that was written by its kind and its name tag, never by its
+  path.
 
 Steps and commands
 - [ ] **AC-26** — Given a preset, then these steps exist, and the
@@ -539,3 +541,4 @@ Getting media in and out
 | A medium's own file decides: `template: true` is never written, wherever it lies and however it was named; without it the file is an instance, written in place, also when a preset names it by file. No copy is made at a first write, and no instance takes a bundled template's name (AC-5, AC-15, AC-25, AC-35). Replaces MD-1 and the second part of OQ-8; the earlier rule was an error of the spec, Calc-U-1600 works so today | user, 2026-11-13 (question F-1 of `docs/walkthroughs/presets.md` §5.4); `docs/formats/media.md` | 2026-11-13 |
 | Cassette tapes are media by `media.md` §3: a `.tape.yaml` definition with its WAV, templates and instances, Name & Save, `position`, the preset key `tape:`; one bundled template, the empty tape; a `.wav` alone is a program file (AC-37, AC-42, AC-43). Replaces "tapes keep their own rules" (`media.md` Q-1) | user, 2026-11-13 (question F-7 of `docs/walkthroughs/presets.md` §5.4); `docs/formats/media.md` §3 | 2026-11-13 |
 | A Solid State ROM module shows its `description` in the picker, ordered by `menu-sort`, as today (AC-8) | user, 2026-11-13 (question F-14 of `docs/walkthroughs/presets.md` §5.4); `docs/formats/modules.md` §2.1, §2.4 | 2026-11-13 |
+| The log names a written medium by its kind and name tag, never by its path, so that logs are equal in every frontend and the harness (LIB-6 AC-11, AC-13) | user, 2026-11-13 (B-8 (d) of `docs/walkthroughs/presets.md` §5.2) | 2026-11-13 |

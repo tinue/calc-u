@@ -344,8 +344,7 @@ The steps of this feature
   holds `/` or `\` is refused when the preset is read; given the file
   cannot be written, then the preset fails (Calc-U-1600
   `Core/Preset/PresetFile.cpp:262-276`, `Core/Preset/PresetRunner.cpp:124-136`).
-  `preset.md` §5.4 writes the picture "into the trace folder", whose
-  place is the product's; which folder holds is open (OQ-6).
+  `preset.md` §5.4 says the same since 2026-11-13 (OQ-6).
 - [ ] **AC-26** — Given the step `switch:`, then the preset is refused
   when it is read: the format has no such step. A peripheral's switch is
   set by a step of its own, which its owner adds (AC-29): the PC-100C's
@@ -657,7 +656,7 @@ Harness
   "reference" and "preset list" for the glossary, as defined above.
   "Step" stands next to "program step".
 
-- [ ] **OQ-6** — Where `screenshot:` writes its picture. `preset.md`
+- [x] **OQ-6** — *Decided (user, 2026-11-13, F-11): the folder for screenshots, the save folder, as AC-25 and OQ-4 say; `preset.md` §5.4 corrected.* Where `screenshot:` writes its picture. `preset.md`
   §5.4 (user, 2026-11-12) says the trace folder, whose place is the
   product's; LIB-9 AC-17 and OQ-4 above (user, batch 5 and 6 gates)
   give screenshots the save folder and traces a folder of their own.

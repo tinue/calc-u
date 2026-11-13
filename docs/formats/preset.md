@@ -427,14 +427,14 @@ Their meaning is the subject of [§6](#6-speed-and-waiting).
 | Step | Where | Meaning |
 |---|---|---|
 | `expect: <text>` | [both] | Fail the preset unless the display shows the text. Verbatim to the end of the line, like `type:`. [1600]: one line of the display contains the text; a backslash is written `\\`, a character outside ASCII `\xHH`. [59]: the text is a number, compared with the value in the display register X; blinking is not tested |
-| `screenshot: <file name>` | [both] | Save an image of the display into the trace folder. No path separator |
+| `screenshot: <file name>` | [both] | Save an image of the display into the product's folder for screenshots, where the GUI saves its screenshots (the save folder). No path separator |
 | `trace: <file name>` / `trace: off` | [both] | Start a trace into that file in the trace folder, or stop it. No path separator. A new `trace:` closes the previous one; `trace: off` with no trace open has no effect. An open trace is closed when the preset ends |
 | `elapsed-time: start` / `elapsed-time: report` | [both] | Take the emulated time as the baseline; log the emulated time since the baseline (or since the start of the preset) as `m:ss.mmm` |
 | `syncclock:` | [1600] | Set the machine's clock from the host's |
 
 - `expect:` checks after the step before has finished: after
   `- type: RUN`, when the program has ended.
-- Where the trace folder is, and where `elapsed-time: report` is logged,
+- Where the trace folder and the folder for screenshots are, and where `elapsed-time: report` is logged,
   is the product's.
 
 ### 5.5 Peripheral controls

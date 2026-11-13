@@ -2,6 +2,9 @@
 
 Status: accepted (2026-11-10); scope made explicit 2026-11-10 (user,
 phase 4 review): a one-time exception for the migration, see "Scope".
+Made explicit again 2026-11-13 (user): the regular rule upgrades a file
+silently and in place, and a version number changes only when the
+requirements change (`docs/formats/README.md` §2).
 
 ## Scope: a one-time exception
 
@@ -13,8 +16,10 @@ rule holds, for every product:
 - only an incompatible change to an own format gets a new version
   number;
 - a release reads at least the previous version of each of its own
-  formats and converts it on the fly; what it writes is in the current
-  version.
+  formats and silently upgrades the file in place to the current
+  version; what it writes is in the current version;
+- a format whose requirements stay the same keeps its version number,
+  even when its specification is rewritten (user, 2026-11-13).
 
 So the one violation is Calc-U-59's: its first release from this
 repository does not read what 2.3.0 wrote. (Calc-U-1600 needed no

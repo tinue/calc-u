@@ -381,10 +381,10 @@ The place for other features and for products
   profile, LIB-5 AC-20, AC-28), plus the `wait:` durations the preset
   asks for; no time is added because the machine waits for the next key
   longer than that, and the host's speed does not change it (LIB-6
-  AC-11; behaviour change 59-23). The test suite checks it on the
-  examples with an `Elapsed:` line against the times their authors give
+  AC-11; behaviour change 59-23). The examples with an `Elapsed:` line
   (`selftest-speed-check`, the calendar examples, `picard`,
-  `globe-print`, `printer-timing`).
+  `globe-print`, `printer-timing`) show it; which bound a test puts on
+  their times is settled with the reference runs (B-10).
 - [ ] **AC-62** — Given a keyword marked for one product
   (`docs/formats/README.md` §5, `preset.md` §7), then it is refused in a
   preset for the other product's models, and a keyword used with a model

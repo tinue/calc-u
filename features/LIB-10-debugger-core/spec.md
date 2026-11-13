@@ -328,8 +328,9 @@ Traces
 - [ ] **AC-33** — Given a trace of a TI machine, then its file is in the
   format of today, version 2: the header with `TI59`, the version and
   the model; the records for the start and the end of a session, for an
-  instruction with its processor frame, for a key and a card event, and
-  for a gap; a trace started by the button is named `CALCU59_TRACE.bin`,
+  instruction with its processor frame, and for a gap; the records for a
+  key and a card event go, so that every trace is the CPU's log alone,
+  whoever started it (user, 2026-11-13); a trace started by the button is named `CALCU59_TRACE.bin`,
   `CALCU58_TRACE.bin` or `CALCU58C_TRACE.bin` after the model
   (`reference/DebugAPI.md:417-493`, `Shared/TraceWriter.cpp:22, 44-50`).
   `tools/read_trace.py` stays a script and reads it.
@@ -487,3 +488,4 @@ Traces
 | Proposed in this spec and accepted (user, 2026-11-10, batch 6 gate): after a resume pacing starts afresh (AC-16) | Otherwise regular speed would race to make up the pause | 2026-11-10 |
 | A pause-on-start that is armed fires while an operation runs (AC-13); AC-9 never excepted an operation, and AC-13's list left it out | Phase 5, preset pass (`docs/walkthroughs/presets.md`, A-13); LIB-6 AC-19 and its decision of 2026-11-11 rest on the preset `test_cdebug.ti59`, which arms and fires inside its own load | 2026-11-11 |
 | The preset steps `pause:`, `pause-on-start:`, `step:`, `resume:` and `debug-panel:` are Calc-U-59's for now; on the Sharp models they are refused, since a step would have to name one of the PC-1600's two CPUs. `step:` takes `{ level, count }`. The run control and its harness commands stay in both products (AC-19, AC-40). Replaces the row of 2026-11-10 "The debugger steps work in both products" | user, 2026-11-13 (question F-4 of `docs/walkthroughs/presets.md` §5.4); `docs/formats/preset.md` §5.6, §7 | 2026-11-13 |
+| A TI trace holds the CPU's log only: the key and card records go, in every trace (AC-33) | user, 2026-11-13 (B-17 of `docs/walkthroughs/presets.md` §5.2): early debug aids, never reliable | 2026-11-13 |

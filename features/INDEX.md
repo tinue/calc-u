@@ -139,6 +139,11 @@ Points this index leaves open:
   batch 5 gate): the component sets find the key under a pointer by one
   rule from the product's hit map; drawing the display and the pressed
   keys stays with each product (LIB-14 AC-24).
+- **Switches of the Sharp printers.** The CE-150 and the CE-1600P each
+  have a switch equivalent to the PC-100C's TRACE switch, which Calc-U-1600
+  does not emulate yet (user, 2026-11-13). When it is, it belongs to its
+  printer as TRACE does (C59-6 AC-6) and gets a preset step and a default
+  (LIB-6 AC-65). Not in the migration.
 - **Sharp media formats.** `.card.yaml` and `.floppy.yaml` stay readable
   (behaviour change 1600-1). If moving their readers and writers under
   the media model (`capabilities.md` Q-2) turns out to be more than

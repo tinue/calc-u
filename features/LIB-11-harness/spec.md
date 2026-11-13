@@ -101,8 +101,11 @@ How it runs
   the save folder is an empty one made for the run and removed at its
   end, whose path appears in no reply; bundled ROMs, bundled media and
   bundled presets are found as a frontend finds them (LIB-12, LIB-7,
-  LIB-6). Options name a settings file and a save folder to use instead
-  (LIB-9 AC-18).
+  LIB-6). The traces and screenshots of the run go to that save folder
+  and are gone with it. Options name a settings file, a save folder, and
+  a folder for the run's traces and screenshots to use instead (LIB-9
+  AC-18), for an agent that has to look at them or at its files
+  afterwards.
 
 The first commands
 - [ ] **AC-9** — Given a product behind the machine interface, then
@@ -305,3 +308,4 @@ The first commands
 | Product commands get one row per product in the index (C59-9, C1600-5); the Calc-U-1600 probes and the Calc-U-59 calendar scripts stay scripts that use `calcu serve` | user, 2026-11-10, batch 3 gate; amends the table of functions to keep in `harness.md` | 2026-11-10 |
 | Of Calc-U-59's tools, the coverage scenarios and the fast-mode matrix stay scripts that drive the harness; only the addresses reached become a command. AC-14 is worded so | user, 2026-11-10, batch 8 gate; C59-9 OQ-5 | 2026-11-10 |
 | Commands reply when carried out; `wait` without a duration is the counterpart of the implicit wait; the preset's waiting rules have no commands (AC-12) | question F-15 of `docs/walkthroughs/presets.md` §5.4, left to the specification by the user on 2026-11-13 ("what works best for agentic use") | 2026-11-13 |
+| A run's traces and screenshots go to its own save folder by default; an option names a folder for them (AC-8) | user, 2026-11-13 (B-17 of `docs/walkthroughs/presets.md` §5.2) | 2026-11-13 |

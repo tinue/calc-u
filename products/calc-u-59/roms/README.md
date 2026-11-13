@@ -1,0 +1,21 @@
+# ROM assets — provenance
+
+ROMs are not in this repository (see `.gitignore`; ADR 0034). They are
+Texas Instruments' copyrighted firmware. Run [`fetch_roms.sh`](fetch_roms.sh)
+to (re)download the full set of 24 files into this directory before building.
+It checks each file against the md5 listed in the script.
+
+Every file comes from the TI ROM repository
+[tinue/TI-59-ROM](https://github.com/tinue/TI-59-ROM). Its README holds the
+details of each dump (chip marking, banks, date of recording).
+
+| Files | Source in TI-59-ROM | Needed by | Format |
+|---|---|---|---|
+| `TMC0582.txt`, `TMC0583.txt`, `TMC0571B.txt`, `TMC0582-CONST-K.txt`, `TMC0583-CONST-K.txt` | `dumps/ti59/` | TI-59, TI-58 | Datamath "ROM Recorder" text (external) |
+| `CD2400.txt`, `CD2401.txt`, `TMC0573.txt`, `CD2400-CONST-K.txt`, `CD2401-CONST-K.txt` | `dumps/ti58c/` | TI-58C | Datamath "ROM Recorder" text (external) |
+| `ML.rom.yaml` … `RP.rom.yaml` (14) | `modules/` | the Solid State ROM modules | Solid State ROM module, `docs/formats/modules.md` §2 (own, `format-version: 1`) |
+
+The calculator dumps are byte for byte the files Calc-U-59 2.3.0 had in
+`roms/calculator/`. The module files were made once from the 2.3.0 module
+dumps (`roms/solid-state/TMC05xx.txt`, which are the same as TI-59-ROM
+`dumps/modules/`) and from `roms/solid-state/cuecards.txt` (LIB-12 AC-14).

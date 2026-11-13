@@ -1,0 +1,5 @@
+# Fetched ROM files are not committed (ADR 0034); fetch_roms.sh downloads them.
+*
+!.gitignore
+!fetch_roms.sh
+!README.md

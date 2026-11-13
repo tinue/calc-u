@@ -186,10 +186,13 @@ Copy and Cut
   `Web/src/painters.js:158-185`).
 
 Step and commands
-- [ ] **AC-22** — Given the step `- cut-paper:`, without a value or
-  with an owner's name, then every paper of the product, or that one, is
-  cut (AC-5), without a copy; the step needs no emulated time (LIB-6
-  AC-19) (`presets.md` PR-7).
+- [ ] **AC-22** — Given the step `- cut-paper:`, which takes no value,
+  then the paper of the printer that is plugged in is cut (AC-5),
+  without a copy, as the GUI's Cut Paper does; the papers of the other
+  printers stay as they are; without a printer the step has no effect
+  and does not fail. It acts in the app session, so the harness carries
+  it out too; it needs no emulated time (LIB-6 AC-19)
+  (`docs/formats/preset.md` §5.5; `presets.md` PR-7).
 - [ ] **AC-23** — Given the harness, then these commands exist at the
   top level; each takes an owner's name as its last value; without it
   the command means the printer that is plugged in, and is refused when
@@ -197,7 +200,7 @@ Step and commands
 
   | Command | Reply |
   |---|---|
-  | `cut-paper` | done; without a name every paper is cut |
+  | `cut-paper` | done; without a name the paper of the printer that is plugged in is cut, with a name that printer's paper |
   | `paper text` | the text layer of the whole paper, one line of the reply for each of its lines; refused without a text layer |
   | `paper marks` | first `reach <from> <to>` (AC-4), then every mark in the order made, one line each: `dot <x> <y> <darkness>`, or `stroke <colour>` followed by its positions as `<x>,<y>` |
   | `paper png <path>` | the picture of AC-16 and AC-17 written to that file; refused for an empty paper |
@@ -299,9 +302,9 @@ Step and commands
   made after the cut are on the new paper.
 - **EC-2** — Given a product with printers whose machine has none
   plugged in, then the papers of the product's printers are still there
-  (AC-8): `cut-paper` without a name cuts each of them, and the `paper`
-  commands work on a kept paper by its owner's name and are refused
-  without a name (EC-8). Given a product without printers, then there
+  (AC-8): the step `cut-paper:` has no effect, and the command
+  `cut-paper` and the `paper` commands work on a kept paper by its
+  owner's name and are refused without a name (EC-8). Given a product without printers, then there
   is no paper topic. Given an empty paper, then `paper text` and
   `paper marks` reply with no lines but `reach 0 0`.
 - **EC-7** — Given the printer is detached in the middle of a line, then
@@ -380,3 +383,4 @@ Step and commands
 | Proposed in this spec and accepted (user, 2026-11-10, batch 6 gate): Copy and Cut are commands of the session that use the clipboard host service (AC-16, AC-18) | It makes them checkable without a window, and gives every frontend the same picture | 2026-11-10 |
 | Proposed in this spec and accepted (user, 2026-11-10, batch 6 gate): a paper's topic and commands name it by its printer's name (AC-6, AC-22, AC-23) | A machine may have more than one paper | 2026-11-10 |
 | A preset the user loads starts with empty paper: a preset is there for a controlled state | user, 2026-11-10, batch 6 gate | 2026-11-10 |
+| `- cut-paper:` takes no value and cuts the paper of the printer that is plugged in, as the GUI does; each printer keeps its paper; without a printer no effect; carried out in the session, so in the harness too (AC-22, AC-23, EC-2). Replaces "every paper, or one by name" for the step; the harness command keeps the owner's name | user, 2026-11-13 (question F-6 of `docs/walkthroughs/presets.md` §5.4); `docs/formats/preset.md` §5.5 | 2026-11-13 |

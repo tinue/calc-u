@@ -379,11 +379,11 @@ The place for other features and for products
   keyword marked [undefined] for the model, then the preset is refused
   as using what the format has not defined yet. All of it when the
   preset is read (AC-6).
-- [ ] **AC-63** — Given a frontend step (`preset.md` §5.7: `cut-paper:`,
-  and on the TI models `debug-panel:`), then it never fails and has
+- [ ] **AC-63** — Given a frontend step (`preset.md` §5.7: on the TI
+  models `debug-panel:`), then it never fails and has
   finished when it has taken effect; a frontend that does not have the
-  panel concerned passes it over, and so does the harness. Their owners
-  are LIB-8 and LIB-10.
+  panel concerned passes it over, and so does the harness. Its owner is
+  LIB-10; `cut-paper:` is a session step (LIB-8 AC-22).
 - [ ] **AC-53** — Given a product's app layer, then it tells the loader
   for each of its models, and the loader itself names no model: when a
   machine of that model is idle, from what the machine reports; what, if

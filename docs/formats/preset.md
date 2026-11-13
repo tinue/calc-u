@@ -442,6 +442,7 @@ Their meaning is the subject of [§6](#6-speed-and-waiting).
 | Step | Where | Meaning |
 |---|---|---|
 | `printer-trace: on` / `off` | [59] | Set the PC-100C's TRACE switch (the paper trace, not a CPU trace). Needs `printer: PC-100C` |
+| `cut-paper:` | [both] | Cut the paper of the printer that is plugged in, as the GUI's Cut Paper does. Each printer keeps its own paper; the others stay as they are. Without a printer: no effect. Never fails |
 
 ### 5.6 Debugger
 
@@ -472,7 +473,6 @@ frontend step never fails; it has finished when it has taken effect.
 | Step | Where | Meaning |
 |---|---|---|
 | `debug-panel: <view>` | [59] | Show that tab of the debug panel: `calculator`, `cpu`, `log`; `calculator` is ignored while an ASM overlay runs. The Sharp models have no such step: their debug panel, the INSPECTOR, is always shown |
-| `cut-paper:` | [both] | Clear the paper in the paper panel. Without a printer: no effect |
 
 `debug-panel:` only chooses what is shown. `pause: cpu` pauses the
 machine whichever view is shown.

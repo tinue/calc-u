@@ -106,6 +106,12 @@ How it runs
   a folder for the run's traces and screenshots to use instead (LIB-9
   AC-18), for an agent that has to look at them or at its files
   afterwards.
+- [ ] **AC-21** — Given a run that hands a real-time clock the host's
+  date and time (a build, the end of an operation, `syncclock:`; LIB-2
+  AC-23, LIB-6 AC-27), then without an option it hands a fixed instant,
+  the same in every run, so that AC-6 holds; an option names a date and
+  time to hand instead, or asks for the host's date and time, and with
+  the host's a run is not repeatable.
 
 The first commands
 - [ ] **AC-9** — Given a product behind the machine interface, then
@@ -309,3 +315,4 @@ The first commands
 | Of Calc-U-59's tools, the coverage scenarios and the fast-mode matrix stay scripts that drive the harness; only the addresses reached become a command. AC-14 is worded so | user, 2026-11-10, batch 8 gate; C59-9 OQ-5 | 2026-11-10 |
 | Commands reply when carried out; `wait` without a duration is the counterpart of the implicit wait; the preset's waiting rules have no commands (AC-12) | question F-15 of `docs/walkthroughs/presets.md` §5.4, left to the specification by the user on 2026-11-13 ("what works best for agentic use") | 2026-11-13 |
 | A run's traces and screenshots go to its own save folder by default; an option names a folder for them (AC-8) | user, 2026-11-13 (B-17 of `docs/walkthroughs/presets.md` §5.2) | 2026-11-13 |
+| The harness hands a real-time clock a fixed instant by default; an option names another date and time or the host's (AC-21) | user, 2026-11-13 (B-20 of `docs/walkthroughs/presets.md` §5.2): "a plain fixed instant as default"; today only a test pins the clock (`Core/tests/job_tests.cpp:228-235`) | 2026-11-13 |

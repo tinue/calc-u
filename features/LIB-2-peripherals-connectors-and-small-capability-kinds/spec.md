@@ -201,7 +201,8 @@ Real-time clock
 - [ ] **AC-23** — Given a machine with a real-time clock, then whoever
   builds it or runs an operation on it hands the clock the host's date
   and time through the capability: when the machine is built and at the
-  end of every operation (LIB-18; today Calc-U-1600
+  end of every operation; in the harness, the date and time of LIB-11
+  AC-21 (LIB-18; today Calc-U-1600
   `Shared/AppSession.cpp:86-92`, `Shared/MachineSession.cpp:224`).
 
 ### Calc-U-59
@@ -346,3 +347,4 @@ Invariants checked in review and in the phase 5 walkthroughs:
 | The real-time clock is set from the host when a machine is built and at the end of every operation; Calc-U-1600's note "seeded once" is out of date and is corrected in phase 6 | user, 2026-11-10, batch 2 gate: the clock runs on emulated time, so every stretch at full speed moves it ahead; later changes re-seed it more often | 2026-11-10 |
 | The CE-161's write-protect switch is set with a save, and a power cycle follows; at an attach its position comes from the saved file (AC-32) | user, 2026-11-11; reverses the recommendation of OQ-4; behaviour change 1600-17 | 2026-11-11 |
 | The reason of a refused attach is an English sentence, from the core for product rules and from the library for the general cases; the serial port carries today's behaviour over; no machine has controls of its own | user, 2026-11-11 | 2026-11-11 |
+| In the harness the real-time clock gets the date and time of LIB-11 AC-21, by default a fixed instant (AC-23) | user, 2026-11-13 (B-20 of `docs/walkthroughs/presets.md` §5.2) | 2026-11-13 |

@@ -41,7 +41,8 @@ format.
 
 Every format is written in one YAML subset, not general YAML:
 
-- UTF-8 text. Lines end in `\n`; a `\r` before it is dropped.
+- UTF-8 text. Lines end in `\n`; a `\r` before it is dropped. The last
+  line may end without one.
 - Block mappings by indentation, spaces only. A tab anywhere is an
   error. Writers use 2 spaces per level.
 - Block sequences `- item`. An item is a scalar, a flow collection, or a
@@ -64,6 +65,8 @@ says otherwise. The exception is the preset's `debug:` block
 ([preset.md §3.4](preset.md#34-debug-1600)): its keys and values are camelCase
 (`stopOnEntry`, `cleanStart`, `allReset`), as in the debug launch
 configuration they mirror.
+Keys are matched exactly; fixed values are written in lower case and
+read in any case (`Center` is `center`).
 
 **Numbers.** `&`, `0x` or `$` makes a number hex; without one it is
 decimal. In the module definition, a number is decimal or hex with `0x`.

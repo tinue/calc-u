@@ -159,15 +159,15 @@ ROM images
 The `debug:` block
 - [ ] **AC-11** — Given the header key `debug:`, at most once, then its
   value is a mapping (`preset.md` §3.4) with these keys, which keep their
-  camelCase (`docs/formats/README.md` §1): `preset` (a preset for the
-  clean start; default: the model's startup preset), `reset` (`none`,
-  `reset` or `allReset`; `none` is not in `preset.md` §3.4, OQ-5), `stopOnEntry` (true or
+  camelCase (`docs/formats/README.md` §1): `reset` (`none`, the default,
+  `reset` or `allReset`), `stopOnEntry` (true or
   false), `command` (a text), `listings` and `symbols` (each a list
   whose items are a file, or a map with `path` and optionally `cpu`,
   `bank`, `me`, `pu`, `pv` and, in `listings`, `source`), `boot`
   (`debug`), and `program`, a map with `bin` (required),
   `listing`, `source`, `symbols`, `cpu` (`lh5801`, `z80` or `lh5803`),
-  `address`, `entry`, `after` (`stopOnEntry`, `call` or `none`),
+  `address`, `entry`, `after` (`stopOnEntry`, `call` or `none`, the
+  default),
   `cleanStart`, `bank`, `me`, `pu`, `pv`. It is checked when the preset
   is read, its paths are taken from the preset's folder, and an unknown
   key or a wrong value refuses the preset; what the keys mean is
@@ -326,7 +326,12 @@ The shipped presets
   is read, as AC-7 says; the one example that uses the key is not in the
   preset list.
 
-- [ ] **OQ-5** — The `debug:` block against `preset.md` §3.4 (user,
+- [x] **OQ-5** — *Decided as recommended (user, 2026-11-13): `reset:
+  none` is the default; `after: none` is the default; §3.4's reset reads
+  as C1600-3 AC-24; the block has no `preset` key, the session's machine
+  is the preset the block is in, and `preset` stays a key of the launch
+  configuration (C1600-3 AC-5). Applied in AC-11 and `preset.md` §3.4.*
+  The `debug:` block against `preset.md` §3.4 (user,
   2026-11-12): §3.4 gives `reset` only `reset` and `allReset`, while
   C1600-3 and today's reader take `none` too; it gives no default for
   `program.after` (C1600-3: `none`); it says "reset without the boot",
@@ -358,3 +363,4 @@ The shipped presets
 | The upgrade follows `preset.md` §9.2: a duration keeps its fraction (`0.5s`), a bare `- wait:` becomes `let-it-finish:` or goes, a wait before BREAK gets `skip-wait:` (AC-15). Replaces the `ms` row and "only this changes" | user, 2026-11-12 (`preset.md` §9.2; conversion check §3) | 2026-11-13 |
 | Two `program:` sections: a first one whose code has not returned within the `timeout:` fails the preset (EC-3). Replaces "after an hour the second starts all the same" | user, 2026-11-12 (`preset.md` §6.3) | 2026-11-13 |
 | The comparison is at the idle machine after the harness `wait`, includes media and the files a `saveas` wrote, runs in a copy of `examples/`, and excepts the intended differences by name (AC-16) | user, 2026-11-13 (B-11 of `docs/walkthroughs/presets.md` §5.2) | 2026-11-13 |
+| `debug:` block: `reset: none` and `after: none` are the defaults; no `preset` key in the block, the session's machine is the preset the block is in (AC-11) | user, 2026-11-13 (C1600-4 OQ-5; B-19 of `docs/walkthroughs/presets.md` §5.2); today's reader has no `preset` key in the block (`Core/Debug/AttachKeys.hpp:41-49`, `Qt6/app/debug/DapSession.cpp:230`) | 2026-11-13 |

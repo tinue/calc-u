@@ -165,17 +165,18 @@ Each item has `file` and either `bank` (4–7, PC-1600 only) or `address`
 
 What a debug session loads, builds and starts on the machine this preset
 sets up. A loader that loads the preset for use, not for debugging,
-ignores the block. Its keys:
+ignores the block. The machine of the session is the one this preset
+sets up; a `preset` key belongs to a launch configuration without a
+project, not to the block. Its keys:
 
 | Key | Meaning |
 |---|---|
-| `preset` | A preset for the clean start; default: the model's startup preset |
-| `program` | The program to load: `bin`, `listing`, `source` (if the main source isn't `<listing>.asm`), `symbols`, `cpu` (`lh5801` / `z80` / `lh5803`), `address`, `entry`, `after` (`stopOnEntry` / `call` / `none`), `cleanStart` (default `true`), and the bank qualifiers `bank`, `me`, `pu`, `pv` |
+| `program` | The program to load: `bin`, `listing`, `source` (if the main source isn't `<listing>.asm`), `symbols`, `cpu` (`lh5801` / `z80` / `lh5803`), `address`, `entry`, `after` (`stopOnEntry` / `call` / `none`; default `none`), `cleanStart` (default `true`), and the bank qualifiers `bank`, `me`, `pu`, `pv` |
 | `listings` | Listings of code that isn't loaded (ROM): a path, or `{path, source, cpu, bank, me, pu, pv}` |
 | `symbols` | Symbol tables: a path, or `{path, cpu, bank, me, pu, pv}` |
 | `command` | A BASIC line typed to start the code: in place of the program's `CALL`, or, without a program, once the machine is set up |
 | `boot` | `debug`: run the power-on under the debugger (the preset's hardware only; no `program` or `command`) |
-| `reset` | `reset` / `allReset`: reset without the boot, and start at the reset vector |
+| `reset` | `none` (default) / `reset` / `allReset`: a Reset or a Cold boot that stops at the reset vector; the start-up runs from there under the debugger |
 | `stopOnEntry` | Stop right after attaching (after a reset: before the first instruction) |
 
 Numbers (`address`, `entry`, `bank`, `me`, `pu`, `pv`) follow the

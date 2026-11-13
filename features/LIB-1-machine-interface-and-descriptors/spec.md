@@ -391,4 +391,4 @@ Settled in other specs: the lists of key IDs and indicator names
 | The host drive is a peripheral on the 60-pin connector in a place of its own | user, 2026-11-10, batch 2 gate; amends `presets.md` PR-11 | 2026-11-10 |
 | Only the display has an on and an off; it is part of display output. A machine reports no power state | user, 2026-11-10, batch 2 gate (prompted); answers `capabilities.md` Q-1 | 2026-11-10 |
 | The CE-150's cassette is no longer limited to the PC-1500 and PC-1500A in the catalogue (AC-39; C1600-1 AC-16) | user, 2026-11-13 (LIB-7 OQ-9, §5.4 of `docs/walkthroughs/presets.md`) | 2026-11-13 |
-| Aligned with `docs/formats/` after the Q&A round: LIB-12 AC-9/AC-12 and LIB-17 AC-3 cited; sides 0 and 1 (AC-35, AC-39) | user rulings of 2026-11-13 (`docs/walkthroughs/presets.md` §5.2, §5.4); `docs/formats/` | 2026-11-13 |
+| Aligned with `docs/formats/` after the Q&A round: LIB-12 AC-9/AC-12 and LIB-17 AC-3 cited; sides 0 and 1 (AC-30, AC-39) | user rulings of 2026-11-13 (`docs/walkthroughs/presets.md` §5.2, §5.4); `docs/formats/` | 2026-11-13 |

@@ -162,7 +162,7 @@ covers it.
 | erdkundetest-2 | erdkundetest |
 | texas-print, test_texas | printer-quirks |
 | test_58c_display | repartition |
-| test_diag | needs no edit: it has no pause-on-start; `15 E` is waited for, then `- wait: 1.5s` is the last item |
+| test_diag | needs no edit: it has no pause-on-start; `15 E` is waited for, then `- wait: 1.5s` is the last item. The upgrade drops that last `- wait: 1.5s`, which existed only for the UI test's poll (user, 2026-11-13, B-21 (d) of `docs/walkthroughs/presets.md`) |
 | Core fixture `hanoi.pc1600`, `pc1600-hanoi-list` | hanoi.pc1600 (`pc1600-hanoi-run` has an edit of its own, §3) |
 | Core fixture `maxed-out-mem.pc1600`, `supercard_debug` | maxed-out-mem.pc1600 |
 | Core fixture `memtest_stock.pc1500`, `adrtest`, `instrquirks`, `memtest_1500a`, `memtest_CE1638`, `memtest_ce155`, `memtest_bank`, `pc1500-maxed-out.pc1500` | memtest_stock.pc1500 |

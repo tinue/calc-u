@@ -218,7 +218,15 @@ Scenarios
   hidden R/S button and the element that tells the state of a preset;
   the tests reach the session through the attached harness instead
   (C59-5 OQ-4 as decided; ADR 0033;
-  `App/Views/CalculatorView.swift:84-147`).
+  `App/Views/CalculatorView.swift:84-147`). A test that starts a load
+  with a tap waits for the end of the operation on the busy topic,
+  received as a stream, not polled; how an XCUITest reaches the attached
+  harness is the result of spike 4 of `first-steps.md` and is written
+  here then (OQ-5). A development build takes one launch argument that
+  names a settings file for that launch; a release build has none. A
+  test presses into a running program, an overlay among them, with the
+  harness's `key-down` and `key-up` (LIB-11), which do not wait for key
+  readiness.
 
 ## Edge Cases
 - **EC-1** — Given the More menu of AC-5 is open when an operation
@@ -285,6 +293,11 @@ Scenarios
 - [x] **OQ-4** — *Decided as recommended (user, 2026-11-10, batch 6 gate).* "Debug Page in Portrait" (AC-7, AC-15) is a setting
   only this frontend has (LIB-9 OQ-5). *Recommendation:* keep it, on
   iOS.
+- [ ] **OQ-5** — The UI tests of the Swift frontend, in particular
+  those that run in a simulator, need more work later (user,
+  2026-11-13, B-21 of `docs/walkthroughs/presets.md` §5.2: "for now
+  agree, but the Swift UI testing, specifically the one through an
+  emulator, needs work later"). AC-21 holds for now.
 
 ## Decision Log
 
@@ -302,3 +315,4 @@ Scenarios
 | Proposed in this spec and accepted (user, 2026-11-10, batch 6 gate): the reason of a control that cannot be used is its help tag on macOS and is not shown on iOS (AC-6) | iOS has no such text | 2026-11-10 |
 | Proposed in this spec and accepted (user, 2026-11-10, batch 6 gate): Copy keeps its two forms of today on macOS and iOS (AC-13) | Today's behaviour | 2026-11-10 |
 | The paper panel is always there, empty and without a name while the PC-100C is detached | user, 2026-11-10, batch 6 gate; LIB-8 AC-12 | 2026-11-10 |
+| The UI tests wait for the end of an operation on the busy topic as a stream; a development build takes a settings file as a launch argument; a running program gets `key-down` and `key-up` (AC-21); more work on simulator tests later (OQ-5) | user, 2026-11-13 (B-21 of `docs/walkthroughs/presets.md` §5.2): "for now agree" | 2026-11-13 |

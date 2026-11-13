@@ -46,8 +46,10 @@ Glossary terms that this spec introduced:
 - Since 2026-11-12 also in the glossary: **implicit wait**, **skip
   wait**, **let it finish** (`preset.md` §6). An **item** is a section
   or a step.
-- A **reference** names a bundled preset without a path:
-  `examples:<path inside the product's bundled presets>`.
+- A **bundle path** names a bundled preset without a path on disk:
+  `examples:<path inside the product's bundled presets>`; a
+  **reference** is a mapping that addresses a resource
+  (`docs/formats/README.md` §3).
 - The **preset list** of a product names the presets it bundles: its
   startup presets and its examples. It is not the catalogue of the
   glossary, which lists descriptors.
@@ -432,7 +434,7 @@ Preset list and startup presets
   (today Calc-U-1600 `examples/bundled.yaml`, which takes whole folders,
   Calc-U-59 `Web/presets.json`; `Shared/PresetCatalog.cpp`).
 - [ ] **AC-32** — Given the request for the preset list, then the reply
-  lists each entry with its reference, its model, its name and its
+  lists each entry with its bundle path, its model, its name and its
   description, whether it is a startup preset or an example, and for an
   example its group (AC-31; LIB-14 AC-1, AC-12); the name is the
   preset's `preset-name`, or the file name
@@ -441,7 +443,7 @@ Preset list and startup presets
   is still listed (Calc-U-1600 `Core/tests/preset_tests.cpp:52`).
 - [ ] **AC-33** — Given a place where a preset is named (the load
   command, `[preset]` in the settings, LIB-9 AC-10), then it takes a
-  path or a reference; a reference is found in the product's bundled
+  path or a bundle path; a bundle path is found in the product's bundled
   presets on every platform (Calc-U-1600 `Shared/AppPaths.cpp:55-59`).
 
 Harness
@@ -780,3 +782,4 @@ Harness
 | `expect:` on a TI model compares with X in its full precision, 13 digits, not rounded, whatever the display format (AC-40, OQ-9) | user, 2026-11-13 (§5.4 of `docs/walkthroughs/presets.md`); the step is new, so no preset depends on another rule | 2026-11-13 |
 | A floppy disk and a cassette tape are steps, not header keys; the header holds installed peripherals (AC-2, AC-44, AC-47). Replaces the header key `tape:` (row of 2026-11-13 above) and the media places as header keys of PR-11 | user, 2026-11-13 (LIB-7 EC-5, EC-6, §5.4 of `docs/walkthroughs/presets.md`): removable media are changed at runtime and belong into the chain of steps, like the TI-59's magnetic cards; installed peripherals, memory modules included, is fitted before the machine boots | 2026-11-13 |
 | Aligned with `docs/formats/` after the Q&A round: `bundle.md` as a source; header keys for installed peripherals only (AC-2); harness clock (AC-27); `screenshot` by file name and a `printer-trace` command (AC-34) | user rulings of 2026-11-13 (`docs/walkthroughs/presets.md` §5.2, §5.4); `docs/formats/` | 2026-11-13 |
+| "Reference" is the formats' mapping; the name of a bundled preset is its bundle path (Words of this spec; glossary) | user, 2026-11-13 (consistency pass after the Q&A round) | 2026-11-13 |

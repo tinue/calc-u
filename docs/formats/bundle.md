@@ -39,8 +39,8 @@ An entry is a mapping:
   both.
 - The name, the description and the model of an entry come from its
   preset (`preset-name`, else the file stem; `description`; `model`).
-- A bundled preset is reached by its path inside the bundle (the
-  glossary's reference `examples:<path>`).
+- A bundled preset is reached by its path inside the bundle, its
+  **bundle path** (`examples:<path>`, glossary).
 
 ```yaml
 format: example-bundle

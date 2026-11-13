@@ -152,8 +152,8 @@ Embedding interface
   adds props of its own beside them. `model` takes the model's name as
   the glossary writes it (`TI-58C`, `PC-1600`); `preset`, and the play
   page's `?preset=` alike, takes a bundled preset's path inside the
-  bundle (`sum.ti59`, `plotter/globus.pc1600`), the glossary's
-  `examples:` reference without its prefix, and a path the bundle file
+  bundle (`sum.ti59`, `plotter/globus.pc1600`), its bundle path without
+  the prefix `examples:`, and a path the bundle file
   does not list (`docs/formats/bundle.md`) is refused with a notice and
   the component starts as without the prop; `keyboard` is on by
   default; without `width` and `height` the component fills its parent,

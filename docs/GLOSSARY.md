@@ -225,8 +225,12 @@ The file format of presets.
 _Avoid_: state file format
 
 **Example**:
-A preset bundled with a product to show what it can do.
-_Avoid_: sample, demo, bundled preset
+A preset in a product's `examples/` folder that shows what it can do;
+those its bundle file lists are bundled with the product.
+_Avoid_: sample, demo
+
+**Bundled preset**:
+A preset the bundle file lists: a startup preset or an example.
 
 **Startup preset**:
 The preset a machine is built from when the product starts or the model is
@@ -599,8 +603,14 @@ ends.
 _Avoid_: wait (for this)
 
 **Reference**:
-The name of a bundled preset without a path:
-`examples:<path inside the product's bundled presets>`.
+A mapping that addresses a resource by exactly one of `file:`, `name:`,
+`mem:` or `folder:`, with the options its owner allows
+(`docs/formats/README.md` §3).
+
+**Bundle path**:
+A bundled preset's path inside the bundle, written
+`examples:<path inside the product's bundled presets>` where a place
+takes it.
 
 **Bundle file**:
 The file `examples/bundle.yaml` of a product: the presets it bundles,

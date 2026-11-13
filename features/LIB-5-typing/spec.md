@@ -173,7 +173,12 @@ What is shown
 - [ ] **AC-20** — Given a TI model, then its typing profile gives: a
   minimum hold of 100 ms of emulated time; presses that wait start at
   key readiness and, after a release, wait for key readiness again; no
-  characters (`typing.md` T-1, fit table; today 100 ms of wall time,
+  characters. Given the machine is paused while a key is held (a
+  pause-on-start that fires inside the hold, LIB-10), then the rest of
+  the hold passes in the host's time, in the harness at once, and the
+  key comes up on the paused machine, so that the step has been carried
+  out (LIB-6 AC-19, AC-58); a press that has not gone down yet waits
+  for the machine to run (`typing.md` T-1, fit table; today 100 ms of wall time,
   `Shared/KeySequencer.hpp:80`, `Shared/KeySequencer.cpp:136-167`).
 - [ ] **AC-21** — Given the keyboard map of Calc-U-59, then it maps the
   26 keys it maps today and no others, by these rules
@@ -439,3 +444,4 @@ What is shown
 | Live input during an operation is dropped in Calc-U-1600 too (new ledger row 1600-9); on-screen keys of Calc-U-59 go through the engine; the letters of the Calc-U-59 keyboard map follow the letter the key carries in every frontend | user, 2026-11-10, batch 4 gate | 2026-11-10 |
 | The names a `key` takes on a TI model are exactly those of `preset.md` §8.1, in presets and in the harness (AC-26); `2ndCLR`, `P>R`, `S+`, `mean`, `StFlg`, `IfFlg` go. Replaces OQ-7 | user, 2026-11-13 (question F-5 of `docs/walkthroughs/presets.md` §5.4); `docs/formats/preset.md` §8.1 | 2026-11-13 |
 | `key` and `type` reply when carried out (keys up, ENTER up); waiting until idle is `wait`, and in a preset the implicit wait (AC-17) | question F-15 of `docs/walkthroughs/presets.md` §5.4, left to the specification by the user on 2026-11-13 ("what works best for agentic use") | 2026-11-13 |
+| A key held when the machine is paused comes up after the rest of its hold in the host's time (in the harness at once), on the paused machine; the ROM, which took the key while it was down, does not look at it again until its program has ended (AC-20) | user, 2026-11-13 (B-2 of `docs/walkthroughs/presets.md` §5.2) | 2026-11-13 |

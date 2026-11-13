@@ -258,8 +258,11 @@ Carrying it out
   ends with the machine still paused, as `Wait:` does in 2.3.0; in the
   harness, which has no wall clock, it ends at once (user, 2026-11-11;
   `preset.md` §5.3, §6.1; Calc-U-59 `Shared/KeySequencer.cpp`, the case
-  `K::Wait`). `let-it-finish:` waits until the machine runs again and
-  is idle. A preset that ends paused leaves the machine paused. Every
+  `K::Wait`). A key that is held when the pause comes is released after
+  the rest of its hold in the host's time (LIB-5 AC-20), so a `key:`
+  followed by `skip-wait:` has been carried out and the next item
+  starts. `let-it-finish:` waits until the machine runs again and is
+  idle. A preset that ends paused leaves the machine paused. Every
   other step says which it is in the spec that owns it (Calc-U-59
   `tests/shared_cooperative_tests.cpp`,
   `cooperative_script_waits_out_a_freeze_but_runs_its_directives`).

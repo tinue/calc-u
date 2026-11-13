@@ -65,9 +65,9 @@ Sources: `docs/inventory/calc-u-59.md` and `calc-u-1600.md`
 
 | Kind | Offers | Used by the library for |
 |---|---|---|
-| **Media place** | whether it is pass-through or holding; its sides and the current side; insert (content in) and eject (content out); a change counter for autosave; write protection where the medium has it; "waits for a medium" where the ROM does (TI card reader) | pickers, Name & Save and autosave (`media.md`); `insert:`, `eject:`, `arm:` (PR-8) |
+| **Media place** | whether it is pass-through or holding; its sides and the current side; insert (content in) and eject (content out); a change counter for autosave; write protection where the medium has it; "waits for a medium" where the ROM does (TI card reader) | pickers, Name & Save and autosave (`media.md`); `card:`, `arm:` (TI-59); `floppy:`, `tape:`, `eject:` (Sharp) (`docs/formats/preset.md` §5.2) |
 | **Paper output** (C-2) | the paper's width; an append-only stream of **marks** on the paper (dots, or pen strokes with their colour); a **text layer** where the printer knows which characters it printed (each line's characters and their place on the paper); cut and clear | the paper panel (ADR 0023), `cut-paper:`, Copy (the image always, the text when there is a text layer), harness printout |
-| **Controls** | the keys and switches of a peripheral or component that are not machine keys (M-3), each with an ID and its state | `- switch:` (PR-7), the buttons a panel shows, the harness |
+| **Controls** | the keys and switches of a peripheral or component that are not machine keys (M-3), each with an ID and its state | `- printer-trace:` (`docs/formats/preset.md` §5.5), the harness command `switch` (LIB-6 AC-34), the buttons a panel shows |
 | **Typing support** | key readiness, command-prompt readiness, latch states, each where the model has it (`typing.md`, T-2) | the typing engine; pacing (`frontend.md`, sessions and pacing) |
 | **Serial port** | bytes in and out, line settings as far as the model has them | the host link (a pseudo-terminal, ADR 0009), harness serial commands |
 | **Real-time clock** | reading and setting the clock | `syncclock:`, seeding from the host at build time |
@@ -142,14 +142,17 @@ Options:
 
 **Decided (2026-11-10, user).** A Calc-U-59 product kind.
 
-- `ti58c.mem` always holds the constant memory of the running TI-58C
-  machine; it is saved after a change, as today.
+- *Superseded 2026-11-13: only a TI-58C built from the file writes it
+  (see the next bullet).* `ti58c.mem` always holds the constant memory
+  of the running TI-58C machine; it is saved after a change, as today.
 - When a TI-58C machine is cold booted (a preset, a startup preset, Cold
   boot), the file follows: it then holds the memory of the machine just
   built. *Superseded 2026-11-13 (user; `docs/formats/media.md` §4): a
   machine a preset or a startup preset built never writes the file; only
   a TI-58C built from the file keeps it up to date, and a Cold boot of
-  that machine empties it (C59-3 AC-10).*
+  that machine zeroes its memory before the processor starts, then the
+  ROM's start-up runs (C59-3 AC-9, AC-10). The file is now
+  `ti58c.memory.yaml` (`docs/formats/media.md` §4).*
 - Quitting and starting the product counts as a power cycle for the
   TI-58C. With no startup preset set for the TI-58C, the machine is built
   with the constant memory from `ti58c.mem`. With a startup preset set,
@@ -166,7 +169,7 @@ Options:
 
 | | TI-59 (58, 58C) | PC-1500 (1500A) | PC-1600 | PC-1403 (paper) | PC-1350 (paper) |
 |---|---|---|---|---|---|
-| Media places | card reader (TI-59; pass-through, sides 1/2, waits for a medium) | module slot (battery-backed modules); cassette (CE-150) | 2 module slots; floppy (CE-1600F; holding, sides A/B); cassette (CE-1600P) | cassette (CE-126P, CE-124) | RAM card slot; cassette |
+| Media places | card reader (TI-59; pass-through, sides 0/1, waits for a medium) | module slot (battery-backed modules); cassette (CE-150) | 2 module slots; floppy (CE-1600F; holding, sides 0/1); cassette (CE-1600P, CE-150) | cassette (CE-126P, CE-124) | RAM card slot; cassette |
 | Paper output (C-2) | PC-100C: dots, text layer | CE-150: pen strokes, no text layer today | CE-1600P, CE-150: pen strokes, no text layer today | CE-126P: dots; text layer unknown | CE-126P: dots; CE-515P: pen strokes |
 | Controls | PC-100C PRINT, ADV, TRACE | CE-161 write-protect switch | CE-161 write-protect switch | unknown | unknown |
 | Typing support | key readiness | prompt readiness; key readiness to be identified (`typing.md`, Q-3) | key and prompt readiness, latches | unknown (`typing.md`, Q-1) | unknown |
@@ -176,12 +179,13 @@ Options:
 
 ## Open questions
 
-- Q-1 (phase 5 walkthrough): The power state. Calc-U-1600 asks its
+- Q-1 (answered in phase 4b, user; decision log): The power state. Calc-U-1600 asks its
   machines `isPoweredOff` and `isDisplayOn`; Calc-U-59 has no off.
   Whether "off" is part of display output, a generic kind or a
   Calc-U-1600 product kind is open.
-- Q-2 (phase 4b, with the media feature): Where the readers and writers
-  of the media file formats sit (card text, `.card.yaml`, `.floppy.yaml`):
+- Q-2 (answered 2026-11-10, batch 6 gate: product code behind LIB-7
+  AC-46): Where the readers and writers of the media file formats sit
+  (magnetic card format 3, `.card.yaml`, `.floppy.yaml`):
   the machine takes no files, so content crosses the media place in a
   form still to be named.
 - Q-3 (phase 4b): The built-in default machine of the TI-58 and TI-58C
@@ -199,4 +203,5 @@ Options:
 | 2026-11-10 | C-3 (amended, user, 2026-11-10, batch 5 gate) | The memory is in place before the processor starts. `ti58c.mem` also remembers the cue card that is fitted. Reset keeps the memory and the fitted cue card. A startup preset that is set but cannot be loaded does not cost the memory: it comes back as without one. |
 | 2026-11-10 | Q-2 (answered, user, 2026-11-10, batch 6 gate) | The readers and writers of the media formats are product code behind one seam of the media feature (LIB-7 AC-46); the content crosses the media place as the kind's own content, which the library does not look into. |
 | 2026-11-10 | C-2 (amended, user, 2026-11-10, batch 6 gate) | The paper panel is always shown. Each type of printer keeps one paper for the run of the product; it is back when the printer is attached again, also on another model. A preset the user loads starts with empty paper. |
-| 2026-11-13 | C-3 (amended, user, 2026-11-13) | A TI-58C a preset or a startup preset built never writes `ti58c.mem`; only one built from the file keeps it up to date; a Cold boot of that machine empties it (`docs/formats/media.md` §4; C59-3 AC-10). |
+| 2026-11-13 | C-3 (amended, user, 2026-11-13) | A TI-58C a preset or a startup preset built never writes the constant memory file (`ti58c.memory.yaml`); only one built from the file keeps it up to date; a Cold boot of that machine empties it (`docs/formats/media.md` §4; C59-3 AC-10). |
+| 2026-11-13 | Alignment after the Q&A round | Media steps `card:`, `arm:`, `floppy:`, `tape:`, `eject:` and the step `printer-trace:` in the kinds table; sides 0/1; a CE-150 has a cassette on every model; a Cold boot zeroes the memory before the processor starts, then the ROM's start-up runs (B-28); Q-1 and Q-2 marked answered. |

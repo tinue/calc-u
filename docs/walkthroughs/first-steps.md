@@ -22,8 +22,8 @@ other way. Where a step waits for a ruling on a finding of
 `presets.md`, it names it.
 
 **After `docs/formats/` (2026-11-13).** The preset format of 2026-11-12
-changes some steps; they are reworded when the questions of
-`presets.md` §5.4 are answered:
+changes some steps. The questions of `presets.md` §5.2 and §5.4 were
+ruled on 2026-11-13, and the steps below are worded accordingly:
 - Steps 6 and 13 (reference runs) change in substance: an upgraded
   preset runs differently by design (full speed by default, the last
   item not waited for, `let-it-finish:` and `skip-wait:` where the
@@ -63,8 +63,8 @@ changes some steps; they are reworded when the questions of
   power cycle and a cold boot after memory was filled, and one run for
   each peripheral and for two Solid State ROM modules.
 - **Depends on it:** C59-1 AC-4, AC-5; C1600-1 AC-4; C59-6 AC-3, AC-7,
-  AC-9, AC-10; and steps 10 to 12 and C-7 below, which are each one more
-  golden run.
+  AC-9, AC-10; and steps 7 to 9 and C-7 (step 15) below, which are each
+  one more golden run.
 - **If a run cannot be recorded** (a state the old interface cannot
   reach): the run is cut to what can be, and the criterion that names
   it says so.
@@ -98,8 +98,8 @@ changes some steps; they are reworded when the questions of
   AC-21 (the UI tests and the screenshot tests lose
   `keystroke-playback-status`, `--UITesting` and the hidden R/S button
   and get the attached harness); ADR 0032 for every GUI scenario of the
-  Swift frontend. If B-22 is ruled as recommended, the same mechanism
-  is built for Qt6.
+  Swift frontend. The same mechanism is built for Qt6 (B-22; LIB-14
+  AC-44, LIB-16 AC-12), which depends on it too.
 - **If it does not hold** (the simulator's sandbox refuses the port, or
   a test cannot reach it): C59-8 AC-21 keeps the three aids until
   another way is found, and ADR 0033 is amended with the user.
@@ -118,10 +118,9 @@ changes some steps; they are reworded when the questions of
   LIB-5 AC-25), and whether, with FREEZE ON START armed, the freeze lands
   while the key that starts the program is still down (`presets.md`
   C-1, on `examples/screentest/test_cdebug.ti59`).
-- **Depends on it:** LIB-6 AC-15, AC-21, AC-36 (its Calc-U-59 column
-  "waits for this"); C59-1 AC-18; LIB-5 AC-20, AC-25; C59-2 AC-1, AC-7
-  and AC-11, which all act "when the machine is idle"; `presets.md`
-  B-1 to B-3.
+- **Depends on it:** LIB-6 AC-36, AC-56, AC-59 (the Calc-U-59 column
+  of AC-36 "waits for this"); C59-1 AC-18; LIB-5 AC-20, AC-25; C59-2
+  AC-1, AC-7 and AC-11, which all act "when the machine is idle".
 - **If no stretch tells the two apart:** idle becomes a state of its
   own in the machine interface (LIB-1, C59-1), and LIB-6 AC-36 is
   rewritten. **If 100 ms of hold are too short somewhere:** the engine
@@ -140,9 +139,6 @@ changes some steps; they are reworded when the questions of
   Requirements).
 - **Depends on it:** C59-2 AC-10, AC-11; C59-7 AC-30 (the four card
   examples); LIB-6 AC-43.
-- **Waits for:** B-10 (the recorder and where a run ends), B-12
-  (`example-brief.ti59`), B-1 (when a key step ends, which decides what
-  the version 2 files look like).
 - **If an example's two runs differ:** the upgrade rule that produced
   the difference is a finding; the spec is changed with the user, not
   the reference.
@@ -189,12 +185,12 @@ changes some steps; they are reworded when the questions of
   program a preset wrote outlives a Reset when they were left as the
   ROM's start-up made them (`presets.md` C-6, B-28, on
   `examples/historic/repartition.ti58c`).
-- **Depends on it:** C59-3 AC-2, AC-8; C59-2 EC-3, AC-1; C59-1 AC-6;
-  ledger row 59-15 ("to be confirmed in phase 6").
+- **Depends on it:** C59-3 AC-2, AC-8, AC-9; C59-2 EC-3, AC-1; C59-1
+  AC-6; ledger row 59-15 ("to be confirmed in phase 6").
 - **If (a) shows that 2.3.0 already restores them:** row 59-15 is no
-  change and goes. **If (b) shows that zeroed H registers make the ROM
-  clear the memory:** the three criteria say "as the ROM's start-up
-  leaves it" (B-28).
+  change and goes. (b) confirms which of `R060`–`R063` (H00–H03;
+  `media.md` §4.1) the ROM's start-up writes; the criteria already say
+  "as the ROM's start-up leaves it in zeroed memory" (B-28).
 
 ### 12. The Mac app in the background (check)
 - **What:** whether macOS reports the background for a window that is
@@ -206,29 +202,19 @@ changes some steps; they are reworded when the questions of
 ## Checks on Calc-U-1600 at `b4ea8c8`
 
 ### 13. Reference runs of the 32 Sharp examples (record)
-- **What:** for each example, what its version 1 file leaves at the end
-  of its load: display as text, BASIC program area, placed machine
-  code, paper (C1600-4 AC-16), and, if B-11 is ruled as recommended,
-  the media. Made in a copy of `examples/`, because one example
+- **What:** for each example, what its version 1 file leaves at the
+  idle machine after its load (B-11 (d); C1600-4 AC-16): display as
+  text, BASIC program area, placed machine code, paper, and the media. Made in a copy of `examples/`, because one example
   rewrites two tracked files and one mounts a tracked folder. Noted in
   the same runs, from the log each load writes:
   - whether a bare `wait:` in MODE 1 and a `type` in RESERVE mode find
     the command loop, or run into their bound (`presets.md` C-2, on
     `plotter/lissajou-ce150.pc1600` and `startup/default-pc1600.pc1600`);
-  - how long the load of `machine-code/Calculat.pc1600` lasts, whose
-    program never returns to BASIC (C-3);
   - whether `dwx/DiskWorks.pc1600` writes into `examples/dwx/S3` (C-4);
-  - whether the start-up of a ROM writes into a battery-backed module,
-    by the module's content counter after the boot (C-5; needed only if
-    B-5 keeps LIB-7 AC-25 for templates).
 - **Depends on it:** C1600-4 AC-15, AC-16; LIB-6 AC-45, AC-46; LIB-5
   AC-14, AC-17, AC-28; C1600-2 AC-13.
-- **Waits for:** B-4 (if `key` and `type` stay as today, the end of a
-  load does not move and the runs compare like with like), B-11.
 - **If C-2 shows a bound was hit:** C1600-1 says how a PC-1600 in that
-  mode reports prompt readiness. **If C-3 shows the hour:** the user
-  rules on a shorter bound for an auto-run program, or the load ends
-  after the start command. **If C-4 shows a write:** AC-16 says that
+  mode reports prompt readiness. **If C-4 shows a write:** AC-16 says that
   such runs use a copy of the folder.
 
 ### 14. The long-run pacing tests on the old code (record)

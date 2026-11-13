@@ -225,14 +225,20 @@ The shipped presets
   upgraded by hand and are not checked (LIB-6 AC-51).
 
 - [ ] **AC-16** — Given each of the 32 examples, when its version 2 file
-  is loaded through the harness, then at the end of the load the display
-  as text (`lcd`), the BASIC program area, the bytes of every
-  machine-code program it placed (LIB-10 `peek`) and the paper (`paper
-  marks`; LIB-8 AC-39) are those of its reference run. A reference run
-  is recorded before the files are upgraded, with the tools of `b4ea8c8`
+  is loaded through the harness and the harness `wait` (LIB-6 AC-34) has
+  ended with the machine idle, then the display as text (`lcd`), the
+  BASIC program area, the bytes of every machine-code program it placed
+  (LIB-10 `peek`), the paper (`paper marks`; LIB-8 AC-39), the content
+  of every medium in a place and of every file a `saveas` wrote, without
+  its time stamps, are those of its reference run. A reference run is
+  recorded before the files are upgraded, with the tools of `b4ea8c8`
   (`pc1500_cli` and `pc1600_cli` with `--preset`, `--lcd-text`,
-  `--dump-basic`, `--dump-mem`) from the version 1 file, up to the end
-  of its load. The cells of a real-time clock are left out.
+  `--dump-basic`, `--dump-mem`) from the version 1 file, until the
+  machine is idle after its load. Both runs are made in a copy of
+  `examples/`, never in the tracked folder. The cells of a real-time
+  clock and the tick counts are left out; the intended differences of
+  `docs/research/preset-conversion-check.md` §4 (such as `Calculat`,
+  whose program never returns to BASIC) are excepted by name.
 - [ ] **AC-17** — Given the preset list of Calc-U-1600 (LIB-6 AC-31),
   then it holds what `examples/bundled.yaml` holds today: as startup
   presets `startup/default-pc1500.pc1500`,
@@ -351,3 +357,4 @@ The shipped presets
 | A `.wav` is a program file whose program goes into the program area (AC-1) | user, 2026-11-12 (`preset.md` §4.1) | 2026-11-13 |
 | The upgrade follows `preset.md` §9.2: a duration keeps its fraction (`0.5s`), a bare `- wait:` becomes `let-it-finish:` or goes, a wait before BREAK gets `skip-wait:` (AC-15). Replaces the `ms` row and "only this changes" | user, 2026-11-12 (`preset.md` §9.2; conversion check §3) | 2026-11-13 |
 | Two `program:` sections: a first one whose code has not returned within the `timeout:` fails the preset (EC-3). Replaces "after an hour the second starts all the same" | user, 2026-11-12 (`preset.md` §6.3) | 2026-11-13 |
+| The comparison is at the idle machine after the harness `wait`, includes media and the files a `saveas` wrote, runs in a copy of `examples/`, and excepts the intended differences by name (AC-16) | user, 2026-11-13 (B-11 of `docs/walkthroughs/presets.md` §5.2) | 2026-11-13 |

@@ -516,7 +516,9 @@ Harness
   calc-u.org hosts for Calc-U-59 (`59/software-files/`,
   `59/calc/presets/`), then `check-preset` over them reports no failure
   before a release (ADR 0017, 0037); the release checklist of the
-  product names this step.
+  product names this step. The presets that can only be upgraded when
+  LIB-7, LIB-10 or C59-7 is built are left out of these checks, by name,
+  until then.
 
 ### Calc-U-1600
 
@@ -582,7 +584,9 @@ Harness
   VS Code extension), then the test suite checks each with
   `check-preset`; today `tools/check_presets.sh` checks the same files
   and is run by hand; files with placeholders that are filled in later
-  are left out.
+  are left out, and so are, by name, the presets that can only be
+  upgraded when LIB-7 or LIB-10 is built, until then (`DiskWorks`,
+  `make_diskworks_media`, `pc1500-maxed-out`).
 - [ ] **AC-54** — Given the Qt6 and Web frontends, then each hands a
   preset to the session as a file in a folder or, where it has only the
   content (a file dropped on the Web frontend; EC-5), as its content,
@@ -743,3 +747,4 @@ Harness
 | The elapsed time a preset reports at full speed is about that of a quick real user: computing time, quick key holds and gaps, the asked `wait:` durations, nothing for idle waiting; on every model (AC-64). A preset's `wait:` at full speed is not paced on an idle TI (AC-20, LIB-17 AC-16) | user, 2026-11-13 (question F-12 of `docs/walkthroughs/presets.md` §5.4) | 2026-11-13 |
 | After `skip-wait:` the first press of a `key:` or `type:` goes down at once (AC-58) | user, 2026-11-13 (B-3 follow-up of `docs/walkthroughs/presets.md` §5.2); `preset.md` §5.1 corrected | 2026-11-13 |
 | A Sharp machine is idle when it reports key readiness for 20 frames: the prompt, `INPUT`, RESERVE mode (AC-45). Replaces prompt readiness | user, 2026-11-13 (B-4 of `docs/walkthroughs/presets.md` §5.2) | 2026-11-13 |
+| Presets that wait for LIB-7, LIB-10 or C59-7 are left out of the checks of AC-43 and AC-51 by name until then | user, 2026-11-13 (B-11 of `docs/walkthroughs/presets.md` §5.2) | 2026-11-13 |

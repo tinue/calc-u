@@ -44,7 +44,7 @@ ROMs a variant needs; Q-2: per chip or per file).
   together with what the product needs (a Solid State ROM module
   `.rom.yaml`, the CE-502B module definition) lives in the ROM
   repository and is fetched like a ROM (I-1 holds), but is an own
-  format with a version (LIB-12 AC-56).
+  format with a version (LIB-12 AC-14).
 
 ## Open forks
 

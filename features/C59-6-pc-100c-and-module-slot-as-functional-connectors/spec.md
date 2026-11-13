@@ -103,7 +103,7 @@ The module slot
 - [ ] **AC-8** — Given a TI machine, then one of these 14 Solid State
   ROM modules can be plugged into the place `slot-1`, named by its ID,
   the `module-name` of its module file (`docs/formats/modules.md` §2;
-  the files come from the ROM repository, LIB-12 AC-56). A preset names
+  the files come from the ROM repository, LIB-12 AC-14). A preset names
   it by `slot-1: { name: <ID> }`; `{ file: … }` is refused with a notice
   that this release takes a module by its ID only:
 

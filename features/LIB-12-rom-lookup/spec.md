@@ -59,7 +59,7 @@ be added.
 - What a module file holds besides its ROM (description, cue cards):
   `docs/formats/modules.md` and C59-6, C59-7. Since 2026-11-13 the
   module cue cards are in the module files of the ROM repository
-  (AC-56).
+  (AC-14).
 
 ## Acceptance Criteria
 
@@ -179,7 +179,7 @@ be added.
 
   Since 2026-11-13 the set also holds the module definition of the
   CE-502B, the one bundled ROM module of Calc-U-1600, with its ROM
-  bytes (AC-56).
+  bytes (AC-14).
 
 - [ ] **AC-13** — Given a file of the full set is missing or bad in
   Calc-U-1600, then AC-5 holds in both frontends, and no ROM set is used
@@ -190,7 +190,7 @@ be added.
   command-line tools look in a `roms` folder next to where they are run
   (`Shared/MachineSession.cpp:77-79, 146-158, 706-722`,
   `Qt6/app/MachineController.cpp:37-48`, `tools/pc1600_cli.cpp:110-141`).
-- [ ] **AC-56** — Given a module whose file holds its ROM bytes, then
+- [ ] **AC-14** — Given a module whose file holds its ROM bytes, then
   that file lives in the product's ROM repository and is fetched and
   checked like a ROM file (AC-9, AC-12), not kept in the source
   repository (`roms.md` I-1): for Calc-U-59 the 14 Solid State ROM
@@ -248,4 +248,4 @@ be added.
 | An entry names the file as it is bundled, not as the ROM repository names it | The Sharp build renames and joins files at the fetch (`tools/fetch_roms.sh:93-137`) | 2026-11-10 |
 | The TI ROM repository is the project `~/Development/public/TI-59-ROM`; its 24 dumps are the files of Calc-U-59 2.3.0, and their md5 values are the ones of AC-9 | user, 2026-11-10; the files compared on that day | 2026-11-10 |
 | Calc-U-59 keeps today's check of the first and the last word of the TI-59's instruction ROM (AC-8) | user, 2026-11-11; OQ-1 | 2026-11-11 |
-| A module whose file holds ROM bytes lives in the ROM repository and is fetched like the ROMs: the 14 Solid State ROM modules as `.rom.yaml` (made once from the dumps of AC-9 and `cuecards.txt`), and Calc-U-1600's CE-502B module definition; `roms.md` I-1 holds, and the module file is an own format for its version (AC-56) | user, 2026-11-13 (question F-9 of `docs/walkthroughs/presets.md` §5.4); `docs/formats/modules.md` | 2026-11-13 |
+| A module whose file holds ROM bytes lives in the ROM repository and is fetched like the ROMs: the 14 Solid State ROM modules as `.rom.yaml` (made once from the dumps of AC-9 and `cuecards.txt`), and Calc-U-1600's CE-502B module definition; `roms.md` I-1 holds, and the module file is an own format for its version (AC-14) | user, 2026-11-13 (question F-9 of `docs/walkthroughs/presets.md` §5.4); `docs/formats/modules.md` | 2026-11-13 |

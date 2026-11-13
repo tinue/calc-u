@@ -291,8 +291,7 @@ Connectors and capabilities
 - [ ] **AC-39** — Given the Calc-U-1600 catalogue, then it holds a
   peripheral descriptor for every peripheral the product offers today:
   the nine bundled memory modules (AC-41); the CE-150, with its paper
-  and its cassette as a media place (which a machine lists only on the
-  PC-1500 and PC-1500A, C1600-1 AC-16); the CE-158; and the CE-1600P (variants New, Old;
+  and its cassette as a media place (C1600-1 AC-16); the CE-158; and the CE-1600P (variants New, Old;
   default New), with its cassette and paper and, described with it as
   today, the CE-1600F with a holding media place for floppy disks with
   the sides A and B. Each lists its ROM files and the pin-outs it fits;
@@ -390,3 +389,4 @@ Settled in other specs: the lists of key IDs and indicator names
 | Reset, power cycle and cold boot return at once and are over when the machine is ready to accept a key press; key readiness is part of the machine interface | user, 2026-11-10, batch 2 gate; amends `typing.md` T-2 | 2026-11-10 |
 | The host drive is a peripheral on the 60-pin connector in a place of its own | user, 2026-11-10, batch 2 gate; amends `presets.md` PR-11 | 2026-11-10 |
 | Only the display has an on and an off; it is part of display output. A machine reports no power state | user, 2026-11-10, batch 2 gate (prompted); answers `capabilities.md` Q-1 | 2026-11-10 |
+| The CE-150's cassette is no longer limited to the PC-1500 and PC-1500A in the catalogue (AC-39; C1600-1 AC-16) | user, 2026-11-13 (LIB-7 OQ-9, §5.4 of `docs/walkthroughs/presets.md`) | 2026-11-13 |

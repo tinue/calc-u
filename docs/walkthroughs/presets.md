@@ -1183,7 +1183,7 @@ after a Reset feeds its defined content; no step inserts or ejects a
 floppy disk after the build (LIB-7 EC-5, EC-6; harness commands only?);
 what a write keeps in a card file (`description`, `saved`).
 
-**Status of the smaller points:** C1600-4 OQ-5 **ruled 2026-11-13 (user), see B-19**; LIB-6 OQ-9 **ruled 2026-11-13 (user): full precision of X, 13 digits, not rounded. Applied in LIB-6 AC-40, OQ-9, `preset.md` §5.4**.
+**Status of the smaller points:** C1600-4 OQ-5 **ruled 2026-11-13 (user), see B-19**; LIB-6 OQ-9 **ruled 2026-11-13 (user): full precision of X, 13 digits, not rounded. Applied in LIB-6 AC-40, OQ-9, `preset.md` §5.4**. LIB-7 OQ-9 and LIB-6 OQ-10 **ruled 2026-11-13 (user): a saved tape's WAV beside its definition, a hand-written one names it by any relative path; `position` reserved, 0; old WAVs as 1600-18; CE-150 tape on a PC-1600 not restricted. Applied in LIB-7 AC-42, `media.md` §3, LIB-6 OQ-10, C1600-1 AC-16, LIB-1 AC-39**.
 
 **The conversion check** (`docs/research/preset-conversion-check.md`)
 had four facts that the pins do not bear out (corrected in `602988b`): `test_diag.ti59` has no

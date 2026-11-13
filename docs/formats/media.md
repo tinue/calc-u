@@ -229,12 +229,14 @@ position: 0
 | `description` | no | One line about the tape |
 | `template` | no | `true`: a template. Its sound file is never written either |
 | `audio` | yes | The sound file, by `file:` only, relative to the tape definition |
-| `position` | no | Where the tape stands, in seconds from the start of the sound. Default `0` (rewound). An instance keeps it up to date |
+| `position` | no | Reserved for future use (where the tape stands, in seconds from the start of the sound). Must be `0`, the default; any other value is an error |
 
 - The sound file is a WAV file of the tape's sound. Its sample format is
   the product's.
 - Recording onto an instance writes into its sound file. Name & Save
-  copies the definition and the sound file.
+  copies the definition and the sound file, and writes them side by
+  side. A definition written by hand around an existing WAV may name it
+  by any relative path.
 - Several recordings on one tape are part of the sound, not of this
   format. Which recorder connection a tape is used on belongs to the
   machine, not to the tape.

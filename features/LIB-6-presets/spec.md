@@ -719,7 +719,10 @@ Harness
   X" (AC-40).* `expect:` on a TI model compares a number with the
   display register X (`preset.md` §5.4): with how many digits, and
   whether `3.141592654` matches the 13-digit value in X.
-- [ ] **OQ-10** — `tape:` on the PC-1600: `preset.md` §3 allows it with
+- [x] **OQ-10** — *Decided (user, 2026-11-13, with LIB-7 OQ-9): it
+  should work, but may not be tested yet; the specification does not
+  restrict it, `preset.md` §3 stands, and C1600-1 AC-16 no longer says
+  that a CE-150 on a PC-1600 has no cassette.* `tape:` on the PC-1600: `preset.md` §3 allows it with
   `printer: CE-150` or `CE-1600P`; LIB-1 AC-39 and C1600-1 AC-16 say a
   CE-150 on a PC-1600 has no cassette.
 

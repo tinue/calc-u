@@ -382,12 +382,14 @@ Getting media in and out
 - [ ] **AC-42** — Given cassette tapes, then a tape is a medium like the
   others: a tape definition (`media.md` §3) with its name tag
   `tape-name`, its `description`, the sound file it names by `file:`
-  and its `position`, a template when it says `template: true` and an
+  and its `position`, which is reserved for future use and is 0, a
+  template when it says `template: true` and an
   instance otherwise (AC-25). The product bundles one tape template, the
   empty tape, which the tape picker offers; Name & Save of a tape copies
-  the definition and its sound file into an instance, and recording
-  onto an instance writes into its sound file, which keeps its
-  `position` up to date. A preset inserts a tape with the header key
+  the definition and its sound file into an instance, written side by
+  side in the tape folder (LIB-9 AC-16), and recording onto an instance
+  writes into its sound file; a definition the user writes around an
+  existing WAV may name it by any relative path. A preset inserts a tape with the header key
   `tape:` (`preset.md` §3), and the picker lists the tape definitions
   (the topic of AC-7). A `.wav` on its own is not a tape but a program
   file (C1600-2; LIB-13 AC-19). What stays of today: a recording is
@@ -511,7 +513,14 @@ Getting media in and out
   says, so that a preset finds the template again and replaces its own
   results.
 
-- [ ] **OQ-9** — Tapes (AC-42), what `media.md` §3 leaves open: where
+- [x] **OQ-9** — *Decided (user, 2026-11-13, §5.4 of
+  `docs/walkthroughs/presets.md`): a tape saved by the product has its
+  WAV beside its definition; a definition written around an existing
+  WAV names it by a relative path of the user's choice; `position` is
+  reserved for future use and must be 0; an old WAV is not a tape until
+  it is wrapped (behaviour change 1600-18); `tape:` with a CE-150 on a
+  PC-1600 is not restricted by the specification (LIB-6 OQ-10, C1600-1
+  AC-16) (AC-42).* Tapes (AC-42), what `media.md` §3 leaves open: where
   tape definitions and their sound files lie (the tape folder of LIB-9
   AC-16, or the save folder like the other media); when `position` is
   written; what a WAV of today's tape folder is after the update, given
@@ -545,3 +554,4 @@ Getting media in and out
 | A Solid State ROM module shows its `description` in the picker, ordered by `menu-sort`, as today (AC-8) | user, 2026-11-13 (question F-14 of `docs/walkthroughs/presets.md` §5.4); `docs/formats/modules.md` §2.1, §2.4 | 2026-11-13 |
 | The log names a written medium by its kind and name tag, never by its path, so that logs are equal in every frontend and the harness (LIB-6 AC-11, AC-13) | user, 2026-11-13 (B-8 (d) of `docs/walkthroughs/presets.md` §5.2) | 2026-11-13 |
 | Sides are numbered 0 and 1 for magnetic cards and floppy disks, in presets, files and the GUI; the floppy disk format goes to version 2 (AC-37), so disks saved with 0.8.x are refused with the hint until upgraded by hand | user, 2026-11-13 (B-8 (a) of `docs/walkthroughs/presets.md` §5.2); `docs/formats/media.md` §1, §2 | 2026-11-13 |
+| A saved tape's WAV lies beside its definition; a hand-written definition names its WAV by any relative path; `position` is reserved and 0 (AC-42, OQ-9) | user, 2026-11-13 (LIB-7 OQ-9, §5.4 of `docs/walkthroughs/presets.md`) | 2026-11-13 |

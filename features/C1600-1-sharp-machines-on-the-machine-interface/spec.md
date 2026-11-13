@@ -166,9 +166,9 @@ Peripherals and product kinds
   as a peripheral that is plugged in and removed through LIB-2 only, and
   it behaves as today on every model it fits (AC-4, AC-5).
 - [ ] **AC-16** — Given a CE-150 on a PC-1500 or PC-1500A, then the
-  machine lists its cassette as a media place; given a CE-150 on a
-  PC-1600, then it prints and the machine lists no cassette for it, as
-  today (`Core/PC1500/PC1500Machine.cpp:49`,
+  machine lists its cassette as a media place; on a PC-1600 its
+  cassette is not specified here: it should work, and today it is not
+  listed (LIB-6 OQ-10; `Core/PC1500/PC1500Machine.cpp:49`,
   `Core/PC1600/PC1600Machine.cpp:259-270`).
 - [ ] **AC-17** — Given several peripherals on the 60-pin connector,
   then the first of them that answers a bus cycle wins, as today; which
@@ -312,3 +312,4 @@ One seam
 | On the 60-pin connector the first peripheral that answers wins, as today; no fixed order is promised, because the real chain is passive and has none (AC-17) | user, 2026-11-11; reverses the recommendation of OQ-3 | 2026-11-11 |
 | A Cold boot empties a RAM module without a battery of its own (AC-6) | user, 2026-11-11; behaviour change 1600-16 | 2026-11-11 |
 | Presets and the harness match key names without regard to case and take `break` for `on`; `ent` goes; the machine takes exactly its key IDs | LIB-5 OQ-6 (user, 2026-11-10, batch 4 gate); OQ-5 | 2026-11-10 |
+| The cassette of a CE-150 on a PC-1600 is not specified: it should work, and may not be tested yet (AC-16) | user, 2026-11-13 (LIB-7 OQ-9, §5.4 of `docs/walkthroughs/presets.md`): "should work, but might not be tested yet. The spec must not care here" | 2026-11-13 |

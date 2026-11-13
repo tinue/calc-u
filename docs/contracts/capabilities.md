@@ -30,7 +30,7 @@ interface:
 | Typing | scan-loop ranges (`MachineModelInfo`) | command-loop windows, key-matrix reads, SHIFT and KBII latches |
 | Power | no off | `isPoweredOff`, `isDisplayOn` |
 | Memory access for loaders | RAM written directly by `StateApplier` (program steps, registers, partition) | `memory()` for the BASIC and machine-code loaders |
-| One of a kind | ASM overlay, ROM heatmap, constant memory (`ti58c.mem`), cue card of the running library program | host drive (`setHostDriveDirectory`, …), `debugInspect` views, CE-1600P ROM switch |
+| One of a kind | ASM overlay, ROM heatmap, constant memory (`ti58c.memory.yaml`), cue card of the running library program | host drive (`setHostDriveDirectory`, …), `debugInspect` views, CE-1600P ROM switch |
 
 Sources: `docs/inventory/calc-u-59.md` and `calc-u-1600.md`
 (Capabilities, Modelling depth); Calc-U-1600 `Shared/MachineSession.cpp`,
@@ -155,13 +155,14 @@ Options:
   `ti58c.memory.yaml` (`docs/formats/media.md` §4).*
 - Quitting and starting the product counts as a power cycle for the
   TI-58C. With no startup preset set for the TI-58C, the machine is built
-  with the constant memory from `ti58c.mem`. With a startup preset set,
+  with the constant memory from `ti58c.memory.yaml`. With a startup preset set,
   the preset cold boots the machine (ADR 0016); the file is left as it
   is (as amended 2026-11-13). A user who wants the TI-58C to keep its
   memory sets no startup preset for it.
 - The same holds when the model is switched to the TI-58C: the machine is
   built the same way as at the start (glossary, Startup preset).
-- ADR 0021 is amended: no bundled startup preset restores `ti58c.mem`.
+- ADR 0021 is amended: no bundled startup preset restores the constant
+  memory file.
 - The file is at the root of the save folder (`settings.md`, ST-3) and is
   not a medium (`media.md`, Q-2).
 

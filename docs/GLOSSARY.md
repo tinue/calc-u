@@ -707,10 +707,14 @@ address, its version and its sha256, or, for the examples, of the
 release's tag in the source repository (LIB-19 AC-1). A preview is a build of a coming
 release shown next to the released one.
 
-**Mnemonic**, **Listing** (of a keystroke program):
+**Mnemonic**, **Listing**, **Assembly** (of a keystroke program):
 A mnemonic is the name of a keycode, which is the name of its key. A
-listing is a keystroke program written as one line per instruction; it
-is the written form of a program, and the program itself is not called
+listing is a keystroke program written as one line per step, as the
+PC-100C's `List` prints it: step number, keycode, mnemonic; a preset's
+`keycodes:` takes it (`docs/formats/preset.md` §4.1). An assembly is a
+keystroke program written as one line per instruction, mnemonics with
+their operands and no keycodes (`ti59 keycodes disassemble`, C59-9).
+Both are written forms of a program; the program itself is not called
 a listing.
 
 **View** (of the INSPECTOR), **Character time**:

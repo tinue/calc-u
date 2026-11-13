@@ -21,7 +21,10 @@
 Words of this spec: a **keycode** is the two-digit code of one program
 step (C59-2); a **mnemonic** is the name of a keycode, which is the name
 of its key (LIB-5 AC-26; C59-1 AC-9); a **listing** is a keystroke
-program written as one line per instruction, in the form of AC-9;
+program written as one line per step, as the PC-100C's `List` prints
+it (AC-9; `preset.md` §4.1); an **assembly** is a keystroke program
+written as one line per instruction, mnemonics with their operands and
+no keycodes, in the form of AC-14;
 **normal mode** is the calculator when it is not in fast mode
 (glossary). A time in **instructions** is emulated time in units of 32
 ticks, the time of one instruction outside the ROM's idle state (LIB-11
@@ -33,8 +36,8 @@ AC-17). The machine is idle as LIB-6 AC-36 says.
   steps the time goes to, and what a step costs.
 - As a developer who studies the ROM, I want to know which parts of it a
   run reaches.
-- As an agent, I want to read a program as a listing and to write one
-  back.
+- As an agent, I want to read a program as a listing and paste it into
+  a preset, and to read and write it as an assembly.
 
 ## Out of Scope
 - Running a preset, the emulated time of a run and the printed lines
@@ -114,7 +117,15 @@ Timings
 Listings
 - [ ] **AC-9** — Given `ti59 keycodes list`, optionally with a first and
   a last step, then the reply is the program in the calculator's memory
-  as a listing, one line per instruction: the step number in three
+  as a listing, as `2nd List` prints it on the PC-100C: one line per
+  step, the step number in three digits, the keycode in two, then the
+  mnemonic (`010 43 RCL`); it is the listing notation of
+  `docs/formats/preset.md` §4.1 and can be pasted into a preset's
+  `keycodes:` or a keystroke program file as it is; no printer is
+  needed.
+- [ ] **AC-14** — Given `ti59 keycodes disassemble`, optionally with a
+  first and a last step, then the reply is the program in the
+  calculator's memory as an assembly, one line per instruction: the step number in three
   digits, two spaces, the mnemonic, and after one space what the
   instruction takes: a register, a flag or a program number in two
   digits, a step address in three, a label as its mnemonic, each after
@@ -130,13 +141,13 @@ Listings
 
   (`tools/agentic/kdis.py:20-58`).
 - [ ] **AC-10** — Given `ti59 keycodes assemble` with a file that holds
-  a listing, then the keycodes it stands for are written into the
+  an assembly, then the keycodes it stands for are written into the
   program memory, each line from the step it names; a mnemonic that is
   unknown, an operand that is missing, or a step beyond the model's last
   one refuses the command, and nothing is written. What `ti59 keycodes
-  list` gives, assembled again, gives the same program; `ti59 program`
+  disassemble` gives, assembled again, gives the same program; `ti59 program`
   (C59-2 AC-9) reads and writes the same memory as bare keycodes (OQ-2).
-- [ ] **AC-11** — Given a listing, then every mnemonic in it is a name
+- [ ] **AC-11** — Given an assembly, then every mnemonic in it is a name
   that the command `key` takes for that key (LIB-5 AC-26; OQ-1): the
   names of `preset.md` §8.1, such as `Lbl`, `STF`, `IFF`.
 
@@ -166,9 +177,9 @@ Scripts that stay
   gives zero for the two shares of the printer.
 
 ## Technical Requirements (optional)
-- The mnemonics of a listing and the names of keys are one table of the
-  product (AC-11).
-- Each command of AC-2 to AC-10 has a test in the test suite, with a
+- The mnemonics of an assembly and the names of keys are one table of
+  the product (AC-11).
+- Each command of AC-2 to AC-10 and AC-14 has a test in the test suite, with a
   program small enough that its expected reply is written out in the
   test; today no test runs these tools.
 - The commands are product commands: they are reached only with
@@ -211,3 +222,4 @@ Scripts that stay
 | Proposed in this spec and accepted (user, 2026-11-10, batch 8 gate): every timing counts from the start of its command, and the limit is written `limit=` in each | One rule for the replies | 2026-11-10 |
 | The mnemonics of a listing are the names of `preset.md` §8.1 (AC-11) | user, 2026-11-13 (question F-5 of `docs/walkthroughs/presets.md` §5.4); `docs/formats/preset.md` §8.1 | 2026-11-13 |
 | Aligned with `docs/formats/` after the Q&A round of 2026-11-13: a card file is magnetic card format 3 (`media.md` §1) (Out of Scope) | user rulings of 2026-11-13 (`docs/walkthroughs/presets.md` §5.2, §5.4); `docs/formats/` | 2026-11-13 |
+| A **listing** is the PC-100C's `List` form (step, keycode, mnemonic), which `ti59 keycodes list` gives and a preset takes; the instruction form is an **assembly**, given by `ti59 keycodes disassemble` and read by `assemble` (AC-9, AC-10, AC-11, AC-14) | user, 2026-11-13 (consistency pass): "this thing that the printer produces, and that I can copy / paste into the program section of a preset is a listing" | 2026-11-13 |

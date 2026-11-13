@@ -14,8 +14,14 @@
   the start of a product, what ends a running operation); through them
   LIB-1 (descriptors, key readiness) and LIB-3 (operations, the busy
   topic, notices, the log).
+- The format: `docs/formats/` (the user, 2026-11-12): `README.md` (the
+  syntax, version, name, references, errors, platform markers) and
+  `preset.md` (preset format 2). It says what a preset holds and means;
+  this spec says what the loader carries out and how it is checked.
+  Where an earlier decision below and the format differ, the format
+  holds; the decision log says where.
 - Contracts and decisions: `docs/contracts/presets.md` (PR-1 to PR-11,
-  I-1 to I-3), `docs/contracts/typing.md` (T-4),
+  I-1 to I-3; the syntax of its forks is superseded by `docs/formats/`), `docs/contracts/typing.md` (T-4),
   `docs/contracts/frontend.md` (Q-1 as amended, Q-3, SP-2); ADR 0016,
   0017, 0018, 0021, 0037; `docs/behaviour-changes.md` rows 59-1, 59-3,
   59-4, 59-5, 1600-1, 1600-3, 1600-9.
@@ -32,8 +38,13 @@ Glossary terms that this spec introduced:
 - A **step** is one item of a step list (`- verb: value`). It is not a
   program step (glossary).
 - A machine is **idle** when it has finished what it was doing and waits
-  for the user. Each product says for its models how this is told from
-  what the machine reports (AC-53, AC-36, AC-45).
+  for the user; a TI-59 that waits for a magnetic card is idle too
+  (glossary; `preset.md` §6.2). A paused machine is not idle. Each
+  product says for its models how this is told from what the machine
+  reports (AC-53, AC-36, AC-45).
+- Since 2026-11-12 also in the glossary: **implicit wait**, **skip
+  wait**, **let it finish** (`preset.md` §6). An **item** is a section
+  or a step.
 - A **reference** names a bundled preset without a path:
   `examples:<path inside the product's bundled presets>`.
 - The **preset list** of a product names the presets it bundles: its
@@ -69,19 +80,17 @@ What the three status columns mean for this feature:
 ## Out of Scope
 - How a key is pressed and how text is typed, the names a `key` takes
   (owner: LIB-5).
-- Media in presets: naming a module instance or a disk, `medium:`
-  sections, and the steps `insert`, `eject`, `arm`, `saveas` (owner:
-  LIB-7); `fit` and the TI card reader (C59-7).
+- Media and modules in presets: references by `name:`, `file:` and
+  `mem:` (`docs/formats/README.md` §3), the header keys `floppy:` and
+  `tape:`, the step `saveas` (owner: LIB-7); the header key
+  `magnetic-cards:` and the steps `card` and `arm` (owner: C59-7).
 - The steps `cut-paper` (owner: LIB-8) and `debug-panel`, `pause`,
   `pause-on-start`, `step`, `resume`, `trace` (owner: LIB-10; the open
   point "Traces" of `features/INDEX.md`).
 - The product sections and keys and their content: `partition:`,
-  `program:` with `steps:`, `registers:`, `cue-card:` (owner: C59-2);
-  `program:` with `file:` and `text:`, the value of `host-drive:`,
-  `bus-rom:`, `slot-N-rom:`, `debug:` (owner: C1600-4).
-- Header keys for media places (`floppy:`): each is added by the owner
-  of the media place (LIB-7). The TI card reader and the cassette have
-  none.
+  `program:` with `keycodes:` or `file:`, `data:`, `cue-card:` (owner:
+  C59-2); `program:` with `file:` and `text:`, the value of
+  `host-drive:`, `bus-rom:`, `slot-N-rom:`, `debug:` (owner: C1600-4).
 - Which presets a product ships, their upgrade to version 2, and the
   content of each product's preset list (owners: C59-2, C1600-4).
 - The ways to open a preset: drop, Open With, file pickers, and how a
@@ -97,38 +106,47 @@ What the three status columns mean for this feature:
 ### Library
 
 The file
-- [ ] **AC-1** — Given a preset, then it is a text file in the family
-  preset format, version 2, read by these rules (`presets.md` PR-1,
-  PR-6; taken from Calc-U-1600 `Core/Preset/PresetFile.cpp:19-151`):
-
-  | | Rule |
-  |---|---|
-  | Text | UTF-8; lines end with LF or CRLF; a tab anywhere is an error. |
-  | Skipped lines | An empty line, and a line whose first character that is not a space is `#`, are skipped everywhere, also inside a block. |
-  | Top level | A line that starts in the first column has the form `key:` or `key: value`; it is split at its first colon. |
-  | Value | Spaces around it are removed. Then the comment goes: a value that starts with `#` is empty; in a value that starts with a quote, what follows the closing quote is dropped; otherwise the value ends before the first ` #` (a space and a hash). A `#` without a space before it stays. Then one pair of matching quotes, `'…'` or `"…"`, is removed; there are no escapes. |
-  | Raw value | Where a key or a step is declared raw, its value is the text after the first colon up to the end of the line, with only the spaces around it removed: no comment, no quotes. |
-  | Block | A key without a value, followed by lines that are indented deeper, has a block. A block is a step list (items `- verb: value` or `- verb:`, all at one indentation) or a list of fields (`name: value`, all at one indentation). Where the owner of a key says so, its block is taken raw instead: the lines are handed to the owner as they are, each with its line number, for a notation of its own (Calc-U-1600's `debug:` and `bus-rom:`, C1600-4). A block ends before the first line, not skipped, that is indented no deeper than its key, or at the end of the file. |
-  | Block scalar | A key or field written `name: \|` takes the lines that follow and are indented deeper than it. Skipped lines are skipped here too; every other line is taken as it is, without the comment and quote rules, with its indentation relative to the first one kept. What a line means, a ` #` in it included, is its owner's. It ends like a block. |
-  | Names | Keys, fields and step verbs are lower-case words joined by hyphens and are matched exactly. Names of models, variants and peripherals are matched without regard to case; their hyphen is required (`PC-1600`, `pc-1600`, not `PC1600`). |
-  | Numbers | Decimal digits, or hexadecimal after `0x`, `&` or `$`. A duration is written as in LIB-11 AC-9 (`2s`, `500ms`). |
-  | Paths | A path that is not absolute is taken from the folder of the preset; `~` stands for the user's home folder. |
-  | Order | Top-level keys may come in any order. Each header key may appear once; a section may repeat where its owner says so. |
+- [ ] **AC-1** — Given a preset, then it is a text file in preset format
+  version 2 as `docs/formats/preset.md` specifies it, read by the syntax
+  of `docs/formats/README.md` §1 (simplified YAML: block and flow
+  mappings and sequences, quoted scalars without escapes, `|` block
+  scalars, `#` comments, the raw values of `type:` and `expect:`, numbers
+  with `&`, `0x` or `$` for hex, booleans `true` and `false`, a tab
+  anywhere an error, an unknown key an error at every level) and the
+  rules of its §2 to §5 (version, name and description, references,
+  errors, platform markers). Paths not absolute are taken from the
+  folder of the preset, `~/` is the user's home folder (README §3).
+  Names of models, variants and peripherals are matched without regard
+  to case; their hyphen is required (`PC-1600`, `pc-1600`, not
+  `PC1600`). Header keys may stand anywhere and appear once each;
+  sections repeat and run in file order (`preset.md` §1). The syntax
+  holds for the whole file, so a product's sections and blocks (C59-2,
+  C1600-4) are read by it too; no block is handed to its owner as raw
+  lines.
 
 - [ ] **AC-2** — Given a preset, then its header keys are:
   `format-version` (required; the value 2), `model` (required; a model
   of the product, optionally followed by `:` and one of its variants),
-  `preset-name` and `description` (optional; not empty when given), and
-  one key for each place of the model's descriptor, under the name of
-  that place (`slot-1`, `slot-2`, `printer`, `interface`, `host-drive`;
-  `presets.md` PR-2, PR-9, PR-11).
+  `preset-name` (optional; at most 18 characters; without it the
+  preset's name is its file stem, shown as it is), `description`
+  (optional; one line), `timeout` (optional; AC-57), and one key for
+  each place of the model's descriptor, under the name of that place
+  (`slot-1`, `slot-2`, `printer`, `interface`, `host-drive`, `floppy`,
+  `tape`; `presets.md` PR-2, PR-9, PR-11; `docs/formats/README.md` §2,
+  `preset.md` §3). The product header keys of `preset.md` §3
+  (`magnetic-cards`, `slot-N-rom`, `bus-rom`, `debug`) are added by
+  their owners (AC-29). That a `preset-name` differs from those of the
+  other presets of the same model is checked over the preset list
+  (C59-2 AC-15, C1600-4 AC-18), not when one file is read.
 - [ ] **AC-3** — Given a key for a place, then its value names a
   peripheral that fits that place (LIB-2 AC-2), optionally followed by
-  `:` and one of its variants (`printer: CE-1600P:old`,
-  `slot-1: ML`). A place that no key names is empty (ADR 0016; behaviour
-  change 59-4). Where the value names a medium, or the owner of the
-  place gives the value a form of its own, reading it is that owner's
-  (LIB-7; the host drive's folder: C1600-4).
+  `:` and one of its variants (`printer: CE-1600P:old`); a module slot
+  takes a reference by `name:` or `file:` (`slot-1: { name: ML }`,
+  `docs/formats/README.md` §3, `modules.md`). A place that no key names
+  is empty (ADR 0016; behaviour change 59-4). Where the value is a
+  reference to a module or a medium, or the owner of the place gives the
+  value a form of its own, resolving it is that owner's (LIB-7; the host
+  drive's folder: C1600-4).
 - [ ] **AC-4** — Given the section `keys:`, then it has a step list, it
   may repeat, and its steps are carried out in file order
   (Calc-U-1600 `Core/Preset/PresetFile.cpp:758-767`).
@@ -150,8 +168,9 @@ Reading: all or nothing
   has each place named and that the peripheral named fits it by the
   descriptors (LIB-2 AC-2); that every key of a `key` step is a
   name the model takes, and every character of a `type` step has a key
-  (LIB-5 AC-15, AC-16); that a control named by `switch` exists on a
-  peripheral the preset names; and what each feature and product checks
+  (LIB-5 AC-15, AC-16); that each keyword is marked for the product and
+  the model (AC-62); the places of `skip-wait:` and `let-it-finish:`
+  (AC-58, AC-59); and what each feature and product checks
   for its own keys, sections and steps, including that the files they
   name can be read (OQ-2).
 - [ ] **AC-8** — Given a file without `format-version`, or with a value
@@ -186,10 +205,13 @@ Building the machine
   the same tick count at the end, and the log holds the same lines
   (`presets.md` I-1).
 - [ ] **AC-12** — Given a load, then it is one operation from the
-  command to the end of the last step (`presets.md` PR-4; LIB-3 AC-14,
-  AC-17): the busy topic says so, live input is dropped (LIB-5 AC-18),
-  another load is refused (LIB-3 AC-16), and Reset, Cold boot or a model
-  switch end it (LIB-18 AC-16).
+  command until its last item has been carried out, or, when that item
+  is `let-it-finish:`, until the machine is idle (AC-59, AC-60;
+  `presets.md` PR-4; `preset.md` §6.1; LIB-3 AC-14, AC-17): the busy
+  topic says so and live input is dropped (LIB-5 AC-18). Anything that
+  builds or resets the machine ends it at once, without an error: Reset,
+  Cold boot, a model switch (LIB-18 AC-16), and the load of another
+  preset, which then runs (`preset.md` §6.1).
 - [ ] **AC-13** — Given a load is run in parts by a frontend, and the
   same load in one go by the harness, then the result is the same: the
   log, the reply, the memory and the display output (LIB-3 AC-19;
@@ -201,18 +223,18 @@ Carrying it out
   header keys describe the machine that is built before the first
   section, wherever they stand in the file.
 - [ ] **AC-15** — Given a section that is not a step list (a product
-  section that writes a program or data), then it starts when the
-  machine is idle, without the half second of AC-21; given the machine
-  is not idle after one hour of emulated time, then the section starts
-  all the same and a line of the log says so (Calc-U-1600
-  `Core/Preset/PresetRunner.cpp:331-335`; Calc-U-59
-  `Shared/KeySequencer.cpp:172-183`).
+  section that writes a program or data, or fits a cue card), then it
+  starts when the item before it has finished (AC-56), and it has
+  finished when its content is written or its cue card fitted; a
+  `program:` with machine code that starts itself has finished when the
+  code has returned (`preset.md` §6.2; C1600-2).
 - [ ] **AC-16** — Given a load, then the machine runs at full speed
-  while it is built and while its steps and sections are carried out,
-  unless a `speed` step asks for regular speed (AC-22; `presets.md`
-  PR-4; behaviour change 59-5).
+  while it is built and while its items are carried out, unless a
+  `regular-speed:` step asks for regular speed (AC-22; `presets.md`
+  PR-4; `preset.md` §6.1; behaviour change 59-5).
 - [ ] **AC-17** — Given a step or a section fails while it is carried
-  out, then the preset stops there: the steps after it are not carried
+  out, or has not finished when the `timeout:` of AC-57 has passed,
+  then the preset stops there (`docs/formats/README.md` §4): the steps after it are not carried
   out, the machine stays as it is at that moment, and the reply and a
   notice give the line of the step and the reason (LIB-18 EC-6; LIB-3
   AC-18).
@@ -221,54 +243,97 @@ Carrying it out
   each section and each step with its outcome, and a last line that says
   whether the preset was carried out to its end; a failure line holds
   the error. The wording of these lines is not part of this contract,
-  except the line of `elapsed: report` (AC-23).
-- [ ] **AC-19** — Given the machine is paused by the debugger while a
-  preset is carried out, then a step that needs emulated time to pass
-  waits until the machine runs again, and a step that needs none is
-  carried out. Of this feature's steps `wait`, and of LIB-5's `key` and
-  `type`, need emulated time, and so does the wait of AC-15; `speed`,
-  `elapsed`, `expect`, `screenshot`, `switch` and `syncclock` need none.
-  A `wait:` with a duration is the exception: while the machine is
-  paused, what is left of the duration passes in the host's time, and
-  the step then ends with the machine still paused, as `Wait:` does in
-  2.3.0, whose time is the host's; in the harness, which has no wall
-  clock, it ends at once (user, 2026-11-11; Calc-U-59 `Shared/KeySequencer.cpp`,
-  the case `K::Wait`; `examples/screentest/test_cdebug.ti59`).
-  Every other step says which it is in the spec that owns it (Calc-U-59
+  except the line of `elapsed-time: report` (AC-23).
+- [ ] **AC-19** — Given the machine is paused (by the debugger or the
+  user) while a preset is carried out, then a step that needs the
+  machine to run (`key`, `type`, `card`, a section that writes memory)
+  waits until it runs again, and the debugger steps (LIB-10) and the
+  frontend steps (AC-63) are carried out (`preset.md` §5.6). A paused
+  machine is not idle, so the implicit wait after an item (AC-56) lasts
+  until the machine has been resumed and is idle; the `timeout:` does
+  not run meanwhile, since no emulated time passes (`preset.md` §6.3).
+  Of this feature's steps, the speed steps, `elapsed-time`, `expect`,
+  `screenshot` and `syncclock` need no running machine. A `wait:` with
+  a duration passes in the host's time while the machine is paused and
+  ends with the machine still paused, as `Wait:` does in 2.3.0; in the
+  harness, which has no wall clock, it ends at once (user, 2026-11-11;
+  `preset.md` §5.3, §6.1; Calc-U-59 `Shared/KeySequencer.cpp`, the case
+  `K::Wait`). `let-it-finish:` waits until the machine runs again and
+  is idle. A preset that ends paused leaves the machine paused. Every
+  other step says which it is in the spec that owns it (Calc-U-59
   `tests/shared_cooperative_tests.cpp`,
   `cooperative_script_waits_out_a_freeze_but_runs_its_directives`).
+- [ ] **AC-56** — Given two items in a row, then the second starts only
+  when the first has **finished** (the implicit wait, `preset.md` §6.1,
+  §6.2): a `key:` when its last press is done and the machine is idle; a
+  `type:` when ENTER is done and the machine is idle; a section as AC-15
+  says; `card:` when the card has passed and is fitted, `arm:` when the
+  card is fitted (C59-7); `wait:` when its duration has passed; every
+  other step when it has taken effect. The wait runs at the speed in
+  force. So a key that starts a program finishes when the program
+  stops.
+- [ ] **AC-57** — Given the header key `timeout:` (seconds of emulated
+  time; default 3600), then it bounds every implicit wait of the
+  preset at both speeds: an item that has not finished by then fails
+  (AC-17). It does not bound the last item, which is not waited for,
+  nor `let-it-finish:` (`preset.md` §6.3).
+- [ ] **AC-58** — Given `skip-wait:` after an item, then the implicit
+  wait after that item is dropped: the next item starts as soon as that
+  one has been carried out (its keys pressed, ENTER typed, the card
+  passed). As the first or the last item it is refused when the preset
+  is read (`preset.md` §5.3, §6.1).
+- [ ] **AC-59** — Given `let-it-finish:` as the last item, then the
+  machine runs on at the speed in force until it is idle, without a
+  limit, and the preset ends then; anywhere else it is refused when the
+  preset is read (`preset.md` §5.3, §6.1).
+- [ ] **AC-60** — Given the last item of a preset, when it is not
+  `let-it-finish:`, then it is carried out and not waited for: the
+  preset ends at once, the machine runs at regular speed, and what the
+  item started runs on under the user's control (`preset.md` §2, §6.1).
+  A preset that ends paused stays paused (AC-19).
+- [ ] **AC-61** — Given a preset runs, then the speed is the preset's: a
+  frontend's gesture for full speed (LIB-17) does not change it, and the
+  user's key presses on the machine are dropped (`preset.md` §6.1;
+  AC-12).
 
 The steps of this feature
-- [ ] **AC-20** — Given the step `wait:` with a duration, then that much
-  emulated time passes (LIB-11 AC-9); a value without a unit is refused
-  when the preset is read (`presets.md` PR-5; behaviour change 1600-3).
-- [ ] **AC-21** — Given the step `wait:` without a value, then half a
-  second of emulated time passes, and then the step waits until the
-  machine is idle (AC-53). One hour of emulated time after the step
-  began it ends although the machine is not idle, a line of the log
-  says so, and the preset goes on
-  (Calc-U-1600 `Core/Preset/PresetRunner.cpp:75-91`).
-- [ ] **AC-22** — Given the step `speed: regular`, then the steps and
-  sections after it run paced at regular speed, the display and the
-  paper show what happens, and the busy topic says that the operation
-  runs at regular speed (LIB-3 AC-14); given `speed: full`, then full
-  speed is back. At the end of the preset the machine runs at regular
-  speed (LIB-18 AC-2; Calc-U-59 `Shared/KeySequencer.cpp:209-210`,
-  `Shared/EmulatorSession.cpp:340`). In the harness, which has no wall
-  clock (LIB-11 AC-6), the step changes nothing that can be read from
-  the machine.
-- [ ] **AC-23** — Given the step `elapsed: zero`, then the machine's
-  emulated time at that moment is noted; given `elapsed: report`, then
-  the log gets the line `Elapsed: m:ss.mmm` with the emulated time since
-  the last `elapsed: zero`, or since the machine was built when there
-  was none; the minutes count on beyond 59 (Calc-U-59 `Shared/EmulatorSession.cpp:256-265`,
+- [ ] **AC-20** — Given the step `wait:` with a duration, then, after
+  the implicit wait of the item before (or at once after a
+  `skip-wait:`), that much emulated time passes (LIB-11 AC-9), at full
+  speed as fast as the host allows; the duration needs a unit and may
+  have a fraction (`2s`, `1.5s`, `500ms`); a value without a unit is
+  refused when the preset is read (`presets.md` PR-5; `preset.md` §5.3,
+  §6.1; behaviour change 1600-3).
+- [ ] **AC-21** — Given the step `wait:` without a value, then the
+  preset is refused when it is read: the duration is required
+  (`preset.md` §5.3). What version 1's bare `- wait:` did is now the
+  implicit wait (AC-56), or `let-it-finish:` as the last item (AC-59)
+  (`preset.md` §9.2).
+- [ ] **AC-22** — Given the step `regular-speed:`, then the items after
+  it run paced at regular speed, the display and the paper show what
+  happens, and the busy topic says that the operation runs at regular
+  speed (LIB-3 AC-14); given `full-speed:`, then full speed is back.
+  Several in a row: the last counts. Both take no value and stand in a
+  `keys:` section. At the end of the preset the machine runs at regular
+  speed, whatever ran before the load (AC-60; LIB-18 AC-2; Calc-U-59
+  `Shared/KeySequencer.cpp:209-210`, `Shared/EmulatorSession.cpp:340`;
+  `preset.md` §5.3, §6.1). In the harness, which has no wall clock
+  (LIB-11 AC-6), the steps change nothing that can be read from the
+  machine.
+- [ ] **AC-23** — Given the step `elapsed-time: start`, then the
+  machine's emulated time at that moment is noted; given
+  `elapsed-time: report`, then the log gets the line
+  `Elapsed: m:ss.mmm` with the emulated time since the last `start`, or
+  since the start of the preset when there was none; the minutes count
+  on beyond 59 (`preset.md` §5.4; Calc-U-59 `Shared/EmulatorSession.cpp:256-265`,
   `Shared/EmulatorSession.hpp:201-206`).
 - [ ] **AC-24** — Given the step `expect:` with a text (a raw value, not
-  empty), then it passes when the text, with its case and its spaces as
-  written, is part of one row of what the display shows as text (LIB-11
-  AC-10); otherwise the preset fails
-  (AC-17) and the reason holds the text and what the display shows
-  (Calc-U-1600 `Core/Display/LcdText.cpp:137-164`,
+  empty), then it is checked after the item before has finished (after
+  `- type: RUN`, when the program has ended); it passes when the
+  product's comparison finds the text (Calc-U-59: AC-40; Calc-U-1600:
+  AC-48); otherwise the preset fails (AC-17) and the reason holds the
+  text and what the display shows (`preset.md` §5.4; Calc-U-1600
+  `Core/Display/LcdText.cpp:137-164`,
   `Core/Preset/PresetRunner.cpp:137-146`).
 - [ ] **AC-25** — Given the step `screenshot:` with a file name, then a
   PNG picture of the display as it is at that moment (AC-53) is written
@@ -279,18 +344,22 @@ The steps of this feature
   holds `/` or `\` is refused when the preset is read; given the file
   cannot be written, then the preset fails (Calc-U-1600
   `Core/Preset/PresetFile.cpp:262-276`, `Core/Preset/PresetRunner.cpp:124-136`).
-- [ ] **AC-26** — Given the step `switch:` with a peripheral, the ID of
-  one of its controls that is a switch, and `on` or `off`
-  (`- switch: PC-100C TRACE on`), then the switch is set through the
-  controls capability (LIB-2 AC-16; `presets.md` PR-7).
-- [ ] **AC-27** — Given the step `syncclock:`, which takes no value,
-  then every real-time clock of the machine is handed the host's date and
-  time as at a build (LIB-2 AC-23), and the log gets the time set; on a
-  machine without a real-time clock the step does nothing (Calc-U-1600
+  `preset.md` §5.4 writes the picture "into the trace folder", whose
+  place is the product's; which folder holds is open (OQ-6).
+- [ ] **AC-26** — Given the step `switch:`, then the preset is refused
+  when it is read: the format has no such step. A peripheral's switch is
+  set by a step of its own, which its owner adds (AC-29): the PC-100C's
+  TRACE switch by `printer-trace: on|off` (AC-40; `preset.md` §5.5).
+- [ ] **AC-27** — Given the step `syncclock:`, which takes no value, on
+  a Sharp model, then every real-time clock of the machine is handed the
+  host's date and time as at a build (LIB-2 AC-23), and the log gets the
+  time set; on a TI model it is refused when the preset is read, since
+  it is marked [1600] (AC-62; `preset.md` §5.4; Calc-U-1600
   `Core/Preset/PresetFile.cpp:287-294`, `Core/Preset/PresetRunner.hpp:177`).
 - [ ] **AC-28** — Given the steps `key:` and `type:`, then they are
   LIB-5's (LIB-5 AC-15 to AC-17); `type:` and `expect:` take a raw
-  value.
+  value. When they have finished in a preset is AC-56: the last press
+  done, or ENTER done, and the machine idle.
 
 The place for other features and for products
 - [ ] **AC-29** — Given another library feature or a product's app
@@ -303,6 +372,18 @@ The place for other features and for products
   feature nor any feature or product in the running program has added,
   then the preset is refused (AC-6); a preset with a product section of
   another product is thus refused.
+- [ ] **AC-62** — Given a keyword marked for one product
+  (`docs/formats/README.md` §5, `preset.md` §7), then it is refused in a
+  preset for the other product's models, and a keyword used with a model
+  it does not apply to is refused too (`slot-2:` on a PC-1500); given a
+  keyword marked [undefined] for the model, then the preset is refused
+  as using what the format has not defined yet. All of it when the
+  preset is read (AC-6).
+- [ ] **AC-63** — Given a frontend step (`preset.md` §5.7: `cut-paper:`,
+  and on the TI models `debug-panel:`), then it never fails and has
+  finished when it has taken effect; a frontend that does not have the
+  panel concerned passes it over, and so does the harness. Their owners
+  are LIB-8 and LIB-10.
 - [ ] **AC-53** — Given a product's app layer, then it tells the loader
   for each of its models, and the loader itself names no model: when a
   machine of that model is idle, from what the machine reports; what, if
@@ -340,12 +421,12 @@ Harness
   | `preset <path or reference>` | loads the preset (AC-6 to AC-18) | done, or refused or failed with the line and the reason |
   | `check-preset <file>…` | reads and checks each file as AC-6 and AC-7 do, and builds nothing | one line per file, `ok` or `FAIL` with the error; the run ends as failed when a file failed |
   | `preset-list` | the request of AC-32 | the entries |
-  | `wait` | the step without a value (AC-21) | the emulated time that passed, and whether the hour was reached |
-  | `speed full`, `speed regular` | the command of LIB-3 AC-21; not paced in the harness (AC-22) | done |
-  | `elapsed zero`, `elapsed report` | AC-23 | done; for `report` the time |
+  | `wait` | harness only: waits until the machine is idle, at most one hour of emulated time; the preset format has no such step since 2026-11-12 (AC-21; OQ-7) | the emulated time that passed, and whether the hour was reached |
+  | `full-speed`, `regular-speed` | the command of LIB-3 AC-21; not paced in the harness (AC-22) | done |
+  | `elapsed-time start`, `elapsed-time report` | AC-23 | done; for `report` the time |
   | `expect <text>` | AC-24 | done, or refused with what the display shows |
   | `screenshot <path>` | AC-25, written to that path | done, or refused |
-  | `switch <peripheral> <control> on\|off` | AC-26 | done, or refused for an unknown control |
+  | `switch <peripheral> <control> on\|off` | harness only: sets a switch through the controls capability (LIB-2 AC-16); the preset step is the peripheral's own (AC-26) | done, or refused for an unknown control |
   | `syncclock` | AC-27 | done |
 
   (Calc-U-1600 `tools/pc1600_cli.cpp:97-99, 243-258`; LIB-11 AC-14,
@@ -355,9 +436,11 @@ Harness
 
 - [ ] **AC-35** — Given Calc-U-59, then its presets end in `.ti59`,
   `.ti58` or `.ti58c`; `model:` takes `TI-59`, `TI-58` or `TI-58C`, and
-  no variant; the place keys are `slot-1:` with the ID of one of the 14
-  Solid State ROM modules (C59-6) and `printer: PC-100C` (`presets.md`
-  PR-2, PR-9, PR-11).
+  no variant; the place keys are `slot-1:` with a reference by `name:`
+  to the ID of one of the 14 Solid State ROM modules
+  (`slot-1: { name: ML }`; C59-6) and `printer: PC-100C` (`presets.md`
+  PR-2, PR-9, PR-11; `preset.md` §3). Whether Calc-U-59 also takes a
+  module file by `file:`, which the format allows, is open (OQ-8).
 - [ ] **AC-36** — Given a TI machine, then it is idle when it has
   reported key readiness (C59-1 AC-18) without a break for 100 ms of
   emulated time, the minimum hold of LIB-5 AC-20, which is to tell a
@@ -365,8 +448,10 @@ Harness
   first task checks this against 2.3.0 with a running program on each
   model, with and without the PC-100C; if no stretch tells the two
   apart, idle on a TI machine becomes a state of its own in the machine
-  interface, and the spec is changed then (OQ-1). The step `wait:`
-  without a value is new in Calc-U-59 (`presets.md` PR-5).
+  interface, and the spec is changed then (OQ-1). A TI-59 that waits for
+  a magnetic card after `Write` (C59-7 AC-9) is idle too (`preset.md`
+  §6.2), so that `- key: 3 2nd Write` finishes and the next step,
+  `card:`, feeds the card.
 - [ ] **AC-37** — Given a preset without `slot-1:` or without
   `printer:`, then the machine has no module, or no printer. Today a
   preset keeps the module and the printer it does not name
@@ -377,17 +462,22 @@ Harness
   shown and the rest of the file is loaded
   (`Shared/SessionController.cpp:609-615`; behaviour changes 59-1, 59-3).
 - [ ] **AC-39** — Given a preset with steps, then they run at full speed
-  unless `speed: regular` comes first, and the keys the user presses
+  unless `regular-speed:` comes first, and the keys the user presses
   meanwhile are dropped. Today the steps run at regular speed, the user
   can press keys, and a second preset waits behind the first
   (`Shared/KeySequencer.cpp:247-252`; behaviour change 59-5).
 - [ ] **AC-40** — Given a TI model, then `type:` is refused when the
   preset is read, because no TI typing profile maps characters (LIB-5
-  AC-16); `switch: PC-100C TRACE on` and `off` set the TRACE switch of
-  the PC-100C (today `PrinterTrace:`, `Shared/SessionController.cpp:674-676`);
-  `elapsed: report` counts emulated time as LIB-11 AC-17 does;
+  AC-16); `printer-trace: on` and `off` set the TRACE switch of the
+  PC-100C and are refused without `printer: PC-100C` (`preset.md` §5.5;
+  today `PrinterTrace:`, `Shared/SessionController.cpp:674-676`);
+  `elapsed-time: report` counts emulated time as LIB-11 AC-17 does;
   `screenshot:` writes the picture Calc-U-59 supplies of its segment
-  display, in the classic segment style (C59-2; OQ-3).
+  display, in the classic segment style (C59-2; OQ-3); `expect:` takes a
+  number and passes when it equals the value in the display register X,
+  whether or not the display blinks (`preset.md` §5.4); how the number
+  is compared with X (digits, rounding, the display format) is open
+  (OQ-9).
 - [ ] **AC-41** — Given a preset is loaded by the user, then the paper
   of the PC-100C it names is empty at the start, as today; a startup
   preset at a model switch leaves the paper as it is
@@ -419,8 +509,11 @@ Harness
   `printer: CE-150` and `interface: CE-158` on every model, and on the
   PC-1600 also `slot-2:`, `printer: CE-1600P` with the variants `new`
   and `old`, `host-drive:` and `floppy:`
-  (`Core/Preset/PresetFile.cpp:745-946`; `presets.md` PR-11). The key
-  `plotter:` is gone (behaviour change 1600-3).
+  (`Core/Preset/PresetFile.cpp:745-946`; `presets.md` PR-11), and
+  `tape:` with a printer that has a cassette interface (`preset.md` §3;
+  which printers on the PC-1600 is open, OQ-10). The key `plotter:` is
+  gone (behaviour change 1600-3). The keys `ctrl`, `kbii` and `bs` are
+  refused in a `key:` step (`preset.md` §5.1).
 - [ ] **AC-45** — Given a Sharp machine, then it is idle when its typing
   support reports prompt readiness (LIB-5 AC-35), as today
   (`Core/Preset/PresetRunner.cpp:75-91`; OQ-1).
@@ -441,7 +534,10 @@ Harness
   graphics area without the indicator row
   (`Core/PC1500/PC1500PresetLoader.cpp:63-65`,
   `Core/PC1600/PC1600PresetLoader.cpp:164-167`). Given `expect:`, then
-  the rows are the text of LIB-11 AC-19.
+  it passes when one line of the display, as the text of LIB-11 AC-19,
+  contains the text, with its case and spaces as written; in the text a
+  backslash is written `\\` and a character outside ASCII `\xHH`
+  (`preset.md` §5.4).
 - [ ] **AC-49** — Given a preset is loaded in the Qt6 or the Web
   frontend, then its log lines are on the log topic. Today the Qt6
   frontend writes them to the platform's log and the Web frontend keeps
@@ -450,7 +546,8 @@ Harness
 - [ ] **AC-50** — Given what the tests of Calc-U-1600 check today about
   the rules of AC-1 and the steps of this feature, then it holds: the
   comment and raw-value rules, a `#` without a space before it, quoted
-  values, keys given twice, `wait` with and without a value,
+  values, keys given twice, `wait` with a value (the form without one
+  is now refused, AC-21),
   `syncclock`, `expect`, `screenshot`, names in any case with the hyphen
   required, and a run in parts against a run in one go
   (`Core/tests/preset_tests.cpp:36-159, 277-331, 423-437`,
@@ -477,13 +574,15 @@ Harness
   `Shared/SessionController.cpp:586-597`).
 - **EC-2** — Given a preset with header keys only, then the machine is
   built and the load ends when it reports key readiness.
-- **EC-3** — Given Reset, Cold boot or a model switch while a preset is
-  carried out, then the preset ends there (LIB-18 AC-16): its remaining
+- **EC-3** — Given Reset, Cold boot, a model switch or the load of
+  another preset while a preset is carried out (AC-12), then the preset ends there (LIB-18 AC-16): its remaining
   steps are not carried out, the reply to its load says that it was
   stopped, and the machine is as that command leaves it.
 - **EC-4** — Given the last step of a preset starts a program that keeps
   running, then the load is over after that step, and the program runs
-  on at regular speed (AC-22).
+  on at regular speed (AC-60). With `let-it-finish:` after it, the load
+  waits without a limit; Reset, Cold boot, a model switch or another
+  load end it (AC-12).
 - **EC-5** — Given a preset that was handed over as its content, without
   a folder, and that names a file by a path that is not absolute, then
   it is refused when it is read, with a notice that names the file
@@ -512,8 +611,8 @@ Harness
   descriptor (`presets.md` PR-11).
 - A key or a step that exists in two products has one name and one
   meaning (`presets.md` I-3).
-- The rules of AC-1 are written down as the grammar of the format in the
-  reference chapter of the help (LIB-16; `presets.md` PR-1).
+- The format of `docs/formats/` is the reference chapter of the help on
+  presets (LIB-16; `presets.md` PR-1).
 - The readers of the earlier formats and their tests are not carried
   over (Calc-U-59's sectioned format and the `STATE` records of
   `tests/golden/formats.txt`; Calc-U-1600's version 1).
@@ -558,6 +657,28 @@ Harness
   "reference" and "preset list" for the glossary, as defined above.
   "Step" stands next to "program step".
 
+- [ ] **OQ-6** — Where `screenshot:` writes its picture. `preset.md`
+  §5.4 (user, 2026-11-12) says the trace folder, whose place is the
+  product's; LIB-9 AC-17 and OQ-4 above (user, batch 5 and 6 gates)
+  give screenshots the save folder and traces a folder of their own.
+- [ ] **OQ-7** — The harness and the waiting rules. The format has no
+  `wait:` without a value; the harness keeps its `wait` until idle
+  (AC-34), as the counterpart of the implicit wait, which `harness.md`
+  H-1 ("one vocabulary") does not yet cover. Open with the harness
+  questions of LIB-11 (implicit wait, `skip-wait`, `let-it-finish`,
+  frontend steps as commands).
+- [ ] **OQ-8** — `slot-1: { file: … }` on the TI models: `preset.md` §3
+  allows a Solid State ROM module file; the decision of 2026-11-11
+  (C59-6, "by its two-letter ID only") and LIB-12 ("no own dumps")
+  exclude it. The format README leaves to each product which keywords
+  its loader carries out.
+- [ ] **OQ-9** — `expect:` on a TI model compares a number with the
+  display register X (`preset.md` §5.4): with how many digits, and
+  whether `3.141592654` matches the 13-digit value in X.
+- [ ] **OQ-10** — `tape:` on the PC-1600: `preset.md` §3 allows it with
+  `printer: CE-150` or `CE-1600P`; LIB-1 AC-39 and C1600-1 AC-16 say a
+  CE-150 on a PC-1600 has no cassette.
+
 ## Decision Log
 
 | Decision | Rationale | Date |
@@ -588,3 +709,12 @@ Harness
 | The waits of AC-15 and AC-21 stay at one hour, after which the preset goes on; only a card that the ROM does not take ends a preset, after 30 minutes without output (C59-7) | user, 2026-11-11 | 2026-11-11 |
 | The reply to the preset list says for each entry whether it is a startup preset or an example, and an example's group (AC-32) | Phase 5, preset pass (`docs/walkthroughs/presets.md`, A-6); AC-31 and LIB-14 AC-1, AC-12 already decide groups and the two kinds of entry | 2026-11-11 |
 | AC-51 names the presets under `dev/` and of the VS Code extension, which today's check covers, and no longer says that the test suite runs that check today | Phase 5, preset pass (`docs/walkthroughs/presets.md`, A-10); `tools/check_presets.sh:2-11` | 2026-11-11 |
+| The format of a preset is `docs/formats/` (README.md, preset.md); AC-1 points to it instead of carrying a grammar of its own; no block is taken raw | user, 2026-11-12 (`docs/formats/`); supersedes the grammar of `presets.md` PR-1 and the raw blocks of `debug:` and `bus-rom:` | 2026-11-13 |
+| Header keys `timeout:` and `tape:`; `preset-name` at most 18 characters and, without it, the file stem; module slots take a reference `{ name: … }` or `{ file: … }` (AC-2, AC-3, AC-57) | user, 2026-11-12 (`docs/formats/README.md` §2, §3; `preset.md` §3) | 2026-11-13 |
+| The implicit wait between items, bounded by `timeout:` after which the item fails; `skip-wait:`; `let-it-finish:` as the last item; the last item is not waited for; a preset ends at regular speed; while it runs the user's gesture does not change the speed (AC-12, AC-15, AC-56 to AC-61). Replaces the hour after which the preset went on (row of 2026-11-11 above) | user, 2026-11-12 (`preset.md` §6; `docs/research/preset-conversion-check.md` S17, S18) | 2026-11-13 |
+| `wait:` needs a duration, which may have a fraction (`1.5s`); the form without a value is refused (AC-20, AC-21). Replaces PR-5's bare `- wait:` | user, 2026-11-12 (`preset.md` §5.3, §9.2) | 2026-11-13 |
+| The steps are `regular-speed:`, `full-speed:`, `elapsed-time: start\|report`; `switch:` is gone and the PC-100C's TRACE switch is `printer-trace:` (AC-22, AC-23, AC-26, AC-40). Replaces the names of PR-5 and PR-7 | user, 2026-11-12 (`preset.md` §5.3 to §5.5) | 2026-11-13 |
+| The load of another preset ends a running preset, as Reset, Cold boot and a model switch do (AC-12, EC-3). Replaces "another load is refused"; LIB-3 AC-16, LIB-4, LIB-14 AC-16, LIB-18 AC-16 and `frontend.md` Q-1 follow when they are aligned | user, 2026-11-12 (`preset.md` §6.1, S6) | 2026-11-13 |
+| A paused machine is not idle; steps that need it to run wait, debugger and frontend steps go on; `let-it-finish:` waits for it to run again (AC-19) | user, 2026-11-12 (`preset.md` §5.6, §6.2) | 2026-11-13 |
+| Keywords marked for one product, or [undefined], are refused (AC-62); `syncclock:` is refused on the TI models (AC-27); frontend steps never fail and the harness passes them over (AC-63) | user, 2026-11-12 (`docs/formats/README.md` §5; `preset.md` §5.4, §5.7) | 2026-11-13 |
+| `expect:` on a TI model compares a number with the display register X; on the Sharp models one line contains the text, with `\\` and `\xHH` (AC-24, AC-40, AC-48) | user, 2026-11-12 (`preset.md` §5.4) | 2026-11-13 |

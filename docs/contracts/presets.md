@@ -3,6 +3,20 @@
 Status: draft (2026-11-10). Forks PR-1 to PR-11 decided (decision log;
 PR-11 was added in the phase 4 review); open questions remain.
 
+**Superseded in its syntax (user, 2026-11-12):** the preset format is now
+`docs/formats/` (`README.md`, `preset.md`). The forks below are kept as
+the record; where their notation or a rule differs from the format, the
+format holds: references `{ name: }`, `{ file: }`, `{ mem: }` in place
+of PR-8's notation; `magnetic-cards:`, `card:` and `arm:` in place of
+`medium:`, `fit:`, `insert:`, `eject:` and the auto-fed `arm:` (PR-8);
+`keycodes:`, `data:` and a cue card block in place of `steps: |`,
+`registers: |`, `cue-card: |` (PR-3); `full-speed:`, `regular-speed:`,
+`elapsed-time:`, `printer-trace:` in place of `speed:`, `elapsed:`,
+`switch:` (PR-5, PR-7); no bare `wait:`, but the implicit wait,
+`skip-wait:` and `let-it-finish:` (PR-5); the debugger steps and
+`debug-panel:` on the TI models only, [undefined] on the Sharp models
+(PR-7); the whole file one simplified YAML (PR-1).
+
 Inherits: ADR 0016 (a preset always cold boots), 0017 (all-or-nothing
 parsing), 0018 (one family preset format, YAML-shaped, product-specific
 sections), 0021 (startup presets; three bundled Calc-U-59 startup
@@ -347,3 +361,4 @@ at every speed. The oddity and its rule go.
 | 2026-11-10 | PR-8 (completed, user, 2026-11-10, batch 7 gate) | `fit:` takes a magnetic card (TI-59); a cue card of another kind is fitted by a `cue-card:` section. An inserted card stays at the reader with the card switch closed until the ROM takes it; nothing gives it back by time. |
 | 2026-11-11 | PR-9, PR-8 (completed, user, 2026-11-11) | A preset names a Solid State ROM module by its two-letter ID only. A preset whose `insert:` step leaves the card at the reader while the machine gives no output for 30 minutes of emulated time ends there; a program that keeps giving output is never stopped. |
 | 2026-11-11 | PR-5 (completed, user, 2026-11-11) | While the debugger has the machine paused, a `wait:` with a duration passes in the host's time and ends with the machine still paused, as in Calc-U-59 2.3.0; in the harness it ends at once. The waits for an idle machine stay at one hour. |
+| 2026-11-12 | PR-1, PR-3, PR-5, PR-7, PR-8 (superseded, user) | The preset format is `docs/formats/`; see the note under Status. The feature specs (LIB-6, C59-2, C1600-4 on 2026-11-13; the others as they are aligned) point to it. |

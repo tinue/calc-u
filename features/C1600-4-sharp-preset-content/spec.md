@@ -14,6 +14,11 @@
   LIB-8 and LIB-10 for comparing what an example leaves (AC-16). The
   examples that name media or record a trace are upgraded and compared
   with LIB-7 and LIB-10 (AC-15).
+- The format: `docs/formats/preset.md` §3 (`host-drive`, `slot-N-rom`,
+  `bus-rom`, `debug`), §4.1 (`program:` on the Sharp models), §8.2,
+  §9.2 (from version 1) (user, 2026-11-12). Where an earlier decision
+  below and the format differ, the format holds; the decision log says
+  where.
 - Contracts and decisions: `docs/contracts/presets.md` (PR-3, PR-5,
   PR-11 as amended, I-1 to I-3); ADR 0018, 0037;
   `docs/behaviour-changes.md` rows 1600-1, 1600-3, 1600-11.
@@ -21,7 +26,7 @@
   commit.
 
 Words of other specs used here: "header key", "section", "step", "idle"
-and "preset list" (LIB-6), a block "taken raw" (LIB-6 AC-1), "notice"
+and "preset list" (LIB-6), "notice"
 (LIB-3 AC-10). Words of this spec: a **bus ROM** is a ROM image that a
 preset puts on the system bus of the 60-pin connector, outside any
 module; a **bank** is one of the parts of the PC-1600's memory that are
@@ -49,8 +54,8 @@ behind, made with `b4ea8c8` (AC-16).
 - How a program gets into the machine: telling a BASIC listing from
   tokenized BASIC and from machine code, loading, typing in, placing
   machine code and starting it (owner: C1600-2).
-- Naming a module or a disk, by name or by file, `medium:` sections and
-  the step `saveas` (owner: LIB-7); the step `trace` (LIB-10).
+- Naming a module, a disk or a tape, by name or by file, and the step
+  `saveas` (owner: LIB-7); the step `trace` (LIB-10).
 - What the debugger does with the settings of a `debug:` block (owner:
   C1600-3).
 - The places, pin-outs and variants of the Sharp machines (owner:
@@ -68,9 +73,9 @@ The `program:` section
 
   | Field | Value | Rules |
   |---|---|---|
-  | `file:` | a path (LIB-6 AC-1) | exactly one of `file:` and `text:` is required |
+  | `file:` | a path (LIB-6 AC-1): a BASIC listing, tokenized BASIC, machine code with or without a header, or the sound of a tape (`.wav`); a cassette tape definition is not a program file (`preset.md` §4.1) | exactly one of `file:` and `text:` is required |
   | `text: \|` | a block scalar: the lines of a BASIC program | not together with `typed:`, `address:` or `length:` |
-  | `typed:` | `true` or `false`, in any case | only for a file that is a BASIC listing |
+  | `typed:` | `true` or `false` | only for a file that is a BASIC listing |
   | `address:` | a number up to &FFFF | only for a file that is machine code |
   | `length:` | a number | only for a file that is machine code |
 
@@ -104,7 +109,8 @@ The `program:` section
 
 The host drive
 - [ ] **AC-6** — Given a preset for the PC-1600 with the header key
-  `host-drive:` and a folder as its value (a path, LIB-6 AC-1), then the
+  `host-drive:` and a folder as its value (`host-drive: { folder: shared }`,
+  `docs/formats/README.md` §3), then the
   machine is built with the host drive in the place `host-drive`,
   showing that folder as the drive S3: (C1600-1 AC-19; `presets.md`
   PR-11 as amended). Given the value is not a folder that exists, or the
@@ -117,21 +123,22 @@ The host drive
 
 ROM images
 - [ ] **AC-8** — Given the header key `slot-1-rom:` or, on the PC-1600,
-  `slot-2-rom:`, with a path, then the module the preset names for that
+  `slot-2-rom:`, with a file (`{ file: build/x.bin }`, `preset.md`
+  §3.2), then the module the preset names for that
   slot is built with the bytes of that file as its ROM, read anew at
   every load. Given no module is named for the slot, the key is given
   twice, or the file cannot be read or is not of the size the module's
   ROM has, then the preset is refused when it is read. A module built
   this way is never an instance and is never saved (LIB-7 AC-15) (`Core/Preset/PresetFile.cpp:784-787, 861-873`,
   `Core/Preset/PresetRunner.cpp:21-39`).
-- [ ] **AC-9** — Given the header key `bus-rom:`, which has a block that
-  is taken raw (LIB-6 AC-1), then the block is a list in YAML, each item
+- [ ] **AC-9** — Given the header key `bus-rom:`, at most once, then its
+  value is a list (`preset.md` §3.3), each item
   with `file:` (required) and exactly one of `bank:` (4 to 7; PC-1600
   only) or `address:` (&0000 to &FFFF), and with `address:` optionally
   `me:`, `pv:`, `pu:` (each 0 or 1), which say for which state of the
   LH5801's or LH5803's memory selection (ME) and of its two bank
-  flip-flops (PV, PU) the ROM is seen; a key that repeats adds to the
-  list. Wherever the key stands in the file, it describes the machine
+  flip-flops (PV, PU) the ROM is seen; given twice, the key refuses the
+  preset as every header key does. Wherever the key stands in the file, it describes the machine
   that is built (LIB-6 AC-14). Any other shape, and a file that cannot be
   read, is empty or is larger than its bank or than the room from its
   address to &FFFF, refuses the preset when it is read
@@ -150,9 +157,11 @@ ROM images
   `Core/tests/pc1600_preset_tests.cpp:935, 1019`; OQ-2).
 
 The `debug:` block
-- [ ] **AC-11** — Given the header key `debug:`, at most once, which has
-  a block that is taken raw, then the block is a map in YAML with these
-  keys: `reset` (`none`, `reset` or `allReset`), `stopOnEntry` (true or
+- [ ] **AC-11** — Given the header key `debug:`, at most once, then its
+  value is a mapping (`preset.md` §3.4) with these keys, which keep their
+  camelCase (`docs/formats/README.md` §1): `preset` (a preset for the
+  clean start; default: the model's startup preset), `reset` (`none`,
+  `reset` or `allReset`; `none` is not in `preset.md` §3.4, OQ-5), `stopOnEntry` (true or
   false), `command` (a text), `listings` and `symbols` (each a list
   whose items are a file, or a map with `path` and optionally `cpu`,
   `bank`, `me`, `pu`, `pv` and, in `listings`, `source`), `boot`
@@ -164,14 +173,14 @@ The `debug:` block
   key or a wrong value refuses the preset; what the keys mean is
   C1600-3's (`Core/Debug/AttachKeys.hpp:42-88`,
   `Core/Preset/PresetDebugBlock.hpp:38-128`).
-- [ ] **AC-20** — Given the YAML of the two blocks, then it is what
-  Calc-U-1600 reads today, no more; empty lines and `#` lines in them
-  are skipped as everywhere (LIB-6 AC-1). Its grammar is written into
-  the reference chapter of the help from `Core/Yaml.hpp` at the pin
-  (LIB-16).
+- [ ] **AC-20** — Given the two blocks, then they are read by the syntax
+  of the whole file (`docs/formats/README.md` §1; LIB-6 AC-1); a block
+  that today's reader takes (`Core/Yaml.hpp` at the pin) is taken
+  (AC-19).
 - [ ] **AC-12** — Given a preset with a `debug:` block is loaded, then
-  the load does nothing with the block; the debugger asks for it
-  (C1600-3) (`Core/Preset/PresetFile.hpp:259-262`).
+  the load does nothing with the block beyond reading it by the format;
+  the debugger asks for it (C1600-3; `preset.md` §3.4)
+  (`Core/Preset/PresetFile.hpp:259-262`).
 
 The product's part of a load
 - [ ] **AC-13** — Given LIB-6 AC-53, then this feature delivers what
@@ -183,7 +192,7 @@ The product's part of a load
 Errors
 - [ ] **AC-14** — Given any error of AC-1 to AC-11, then the notice
   gives the line and names the key or field and what was expected, and
-  an error inside a raw block starts with `debug:` or `bus-rom:`
+  an error inside `debug:` or `bus-rom:` starts with that key
   (`Core/Preset/PresetFile.cpp:845-852`; LIB-6 AC-6).
 
 The shipped presets
@@ -193,20 +202,25 @@ The shipped presets
   the developer documentation and of the VS Code extension, its
   templates included, and the presets that a tool or a test writes as
   text, as the scenarios of `tools/dap_smoke.py` do (C1600-3 AC-20)
-  (ADR 0037; behaviour change 1600-1). In each, only this changes:
+  (ADR 0037; behaviour change 1600-1). In each, only what `preset.md`
+  §9.2 lists changes, by these rules, which settle for Calc-U-1600 what
+  §9.2 leaves open:
 
   | Version 1 | Version 2 | Why |
   |---|---|---|
   | `format-version: 1` | `format-version: 2` | `presets.md` PR-2 |
   | `plotter:` with a printer and, where given, its variant (`plotter: CE-150`, `plotter: CE-1600P`) | `printer:` with the same value | PR-11 |
-  | `- wait:` with whole seconds (`- wait: 2`) | the number with `s` (`- wait: 2s`) | PR-5 |
-  | `- wait:` with a fraction (`- wait: 0.5`) | the same time in `ms` (`- wait: 500ms`) | PR-5 |
+  | `- wait:` with a number of seconds (`- wait: 2`, `- wait: 0.5`) | the number with `s` (`- wait: 2s`, `- wait: 0.5s`) | PR-5; `preset.md` §5.3 |
+  | `- wait:` without a value | as the last item `- let-it-finish:`; elsewhere dropped, since the implicit wait does it | `preset.md` §9.2 |
+  | `- wait:` with a duration that lets a running program run before the next step (BREAK) | `- skip-wait:` before it | `preset.md` §9.2 |
+  | the last `- type:` or `- key:` whose run version 1 waited for at full speed | `- let-it-finish:` after it where that run is part of the result | `preset.md` §9.2 |
+  | `slot-N: name`, `slot-N-file: path`, `slot-N-rom: path`, `floppy: name,B`, `floppy-file: path`, `host-drive: path` | `{ name: … }`, `{ file: … }`, `{ folder: … }`, a side as `side: B` | `preset.md` §9.2 |
   | `- key: ent` | `- key: enter`; no other key name changes | LIB-5, decided with its OQ-6 |
   | a header key given twice | the last one only | LIB-6 AC-1 |
-  | `floppy:`, `floppy-file:`, `slot-N-file:`, `- saveas:`, `- trace:` | as LIB-7 and LIB-10 write them | PR-8; their specs |
+  | `- saveas:`, `- trace:` | `- saveas: { place: …, as: …, name\|file: … }` (`preset.md` §5.2.1, §9.2); `- trace:` as LIB-10 writes it | PR-8; their specs |
 
-  A `slot-N:` with a module's name stays as it is. The presets that have
-  a row of the last line are upgraded when LIB-7 and LIB-10 are built.
+  The presets that have a row of the last line are upgraded when LIB-7
+  and LIB-10 are built.
   The templates of the VS Code extension, which hold placeholders, are
   upgraded by hand and are not checked (LIB-6 AC-51).
 
@@ -252,9 +266,9 @@ The shipped presets
   that is none of AC-1, then the preset is refused when it is read
   (`Core/Preset/PresetFile.cpp:396, 472`).
 - **EC-3** — Given two `program:` sections, then the second starts when
-  the machine is idle after the first (LIB-6 AC-15); a program the first
-  one started and that still runs after an hour does not stop the
-  second from starting.
+  the first has finished (LIB-6 AC-15, AC-56); given the first started
+  machine code that has not returned within the `timeout:`, then the
+  preset fails there (LIB-6 AC-57).
 - **EC-4** — Given a `debug:` block with a mistake in a preset that is
   loaded without a debugger, then the preset is refused all the same
   (AC-11), as today; the user guide says that the block is ignored,
@@ -270,7 +284,8 @@ The shipped presets
 ## Technical Requirements (optional)
 - These keys and sections are added through the place LIB-6 AC-29 gives;
   the loader itself knows none of them.
-- The rest of a preset is not YAML (`presets.md` PR-1).
+- A preset is the simplified YAML of `docs/formats/README.md` §1, not
+  general YAML.
 - A ROM image or a program file a preset names is read at every load and
   never written.
 
@@ -305,6 +320,15 @@ The shipped presets
   is read, as AC-7 says; the one example that uses the key is not in the
   preset list.
 
+- [ ] **OQ-5** — The `debug:` block against `preset.md` §3.4 (user,
+  2026-11-12): §3.4 gives `reset` only `reset` and `allReset`, while
+  C1600-3 and today's reader take `none` too; it gives no default for
+  `program.after` (C1600-3: `none`); it says "reset without the boot",
+  where C1600-3 AC-6 lets a Cold boot follow `allReset`; and it does
+  not say whether the debug machine is built from the preset's own
+  header keys or from `preset`, which C1600-3 AC-5 gives to the launch
+  configuration only.
+
 ## Decision Log
 
 | Decision | Rationale | Date |
@@ -321,3 +345,9 @@ The shipped presets
 | The upgrade rows for `plotter:` and `- wait:` are rules, not single cases: `plotter: CE-1600P` and `- wait: 20` had no row (AC-15) | Phase 5, preset pass (`docs/walkthroughs/presets.md`, A-5); `presets.md` PR-5, PR-11; behaviour change 1600-3 | 2026-11-11 |
 | The items of `listings` and `symbols` can be maps, as the VS Code templates write them and today's tests check (AC-11) | Phase 5, preset pass (`docs/walkthroughs/presets.md`, A-9); AC-19, AC-20 | 2026-11-11 |
 | The presets under `dev/`, and presets that a tool or a test writes as text, are among those that are upgraded (AC-15) | Phase 5, preset pass (`docs/walkthroughs/presets.md`, A-10); "every shipped preset is upgraded and checked", C1600-3 AC-20 | 2026-11-11 |
+| The whole preset is the simplified YAML of `docs/formats/README.md` §1; `debug:` and `bus-rom:` are no longer raw blocks; references are written `{ name: }`, `{ file: }`, `{ folder: }` (AC-6, AC-8, AC-9, AC-11, AC-20) | user, 2026-11-12 (`docs/formats/`) | 2026-11-13 |
+| `bus-rom:` given twice refuses the preset, as every header key (AC-9). Settles B-19 (f) of the preset pass, against its recommendation | user, 2026-11-12 (`preset.md` §1, §3.3) | 2026-11-13 |
+| The `debug:` block has the key `preset` (AC-11) | user, 2026-11-12 (`preset.md` §3.4) | 2026-11-13 |
+| A `.wav` is a program file whose program goes into the program area (AC-1) | user, 2026-11-12 (`preset.md` §4.1) | 2026-11-13 |
+| The upgrade follows `preset.md` §9.2: a duration keeps its fraction (`0.5s`), a bare `- wait:` becomes `let-it-finish:` or goes, a wait before BREAK gets `skip-wait:` (AC-15). Replaces the `ms` row and "only this changes" | user, 2026-11-12 (`preset.md` §9.2; conversion check §3) | 2026-11-13 |
+| Two `program:` sections: a first one whose code has not returned within the `timeout:` fails the preset (EC-3). Replaces "after an hour the second starts all the same" | user, 2026-11-12 (`preset.md` §6.3) | 2026-11-13 |

@@ -19,12 +19,13 @@
 - Facts: Calc-U-59 at `v2.3.0`; every `path:line` below is at that tag.
 
 In this spec "the calculator" is the real device; the running thing is
-"the machine" (glossary). "The fitted cue card" is the cue card that is
-in the window above the keys at the moment, of either type a TI-58C can
-have: the blank one with the labels the user or a preset wrote on it,
-or the pre-printed one of a module. A TI-58C has no magnetic cards, so
-its cue card never has bank numbers (glossary, Cue card;
-the cue card as such: C59-7).
+"the machine" (glossary). "The fitted cue card" is the machine's own
+card in the window above the keys at the moment (`cue-card.md` §2). On
+a TI-58C it is a stand-alone cue card, the blank one with the labels
+the user or a preset wrote on it; the pre-printed module cue card of a
+selected library program shows over it and is not the own card. A
+TI-58C has no magnetic cards, so its cue card never has bank numbers
+(glossary, Cue card; the cue card as such: C59-7).
 
 ## User Stories
 - As a user of the TI-58C, I want my program and my registers to be
@@ -44,7 +45,7 @@ the cue card as such: C59-7).
 - Where the save folder is on each platform (owner: LIB-9), and the
   persistent file system of the Web frontend (LIB-15).
 - Program steps and registers written by a preset (owner: C59-2).
-- The cue card as such: its templates, its drawing, `fit`, and what
+- The cue card as such: its kinds, its drawing, fitting, and what
   Reset does to cue cards on the other models (owner: C59-7). This
   feature only stores the fitted cue card with the memory.
 - A constant memory for any other model, and more than one stored
@@ -69,26 +70,27 @@ The product kind
 
 The file
 - [ ] **AC-3** — Given Calc-U-59, then the constant memory is kept in
-  the file `ti58c.mem` at the root of the save folder (LIB-9 AC-12,
+  the file `ti58c.memory.yaml` at the root of the save folder (LIB-9 AC-12,
   AC-16); it is not a medium and is in no picker (`settings.md` ST-3;
   `media.md` Q-2).
-- [ ] **AC-4** — Given `ti58c.mem`, then it is a text file that states
-  its format version and holds the whole constant memory as C59-1 AC-6
-  defines it, its 64 raw registers `R000` to `R063`, the registers H00
-  to H03 included as `R060` to `R063` (`media.md` §4.1;
-  `rom/TI58C-ROM-Guide.md:37`), leaving out the
-  registers that are zero, and the fitted cue card if there is one, as
-  it is, its template included (OQ-3; today it is written as a blank
-  cue card), in today's layout with a first line that states the version
-  (`Shared/ConstantMemory.cpp:9-66`).
+- [ ] **AC-4** — Given `ti58c.memory.yaml`, then it is a constant
+  memory file, format `ti58c-constant-memory`, `format-version: 1`
+  (`docs/formats/media.md` §4.1), and holds the whole constant memory as
+  C59-1 AC-6 defines it: under `ram`, with `encoding: register-hex`, the
+  raw registers `R000` to `R063` that are not zero, the registers H00 to
+  H03 included as `R060` to `R063` (`rom/TI58C-ROM-Guide.md:37`); and as
+  `cue-card` the machine's own card if one is fitted, a stand-alone cue
+  card (`cue-card.md` §1, §2); a module cue card lies over the own card
+  and is not stored (OQ-3; today the cue card is written as a blank cue
+  card, `Shared/ConstantMemory.cpp:9-66`).
 - [ ] **AC-5** — Given a TI-58C built from the file runs (AC-7, AC-10)
   and its constant memory or the
-  fitted cue card changes, then `ti58c.mem` holds the new content at the
+  fitted cue card changes, then `ti58c.memory.yaml` holds the new content at the
   latest half a second after the change, counted in the wall time the
   host passes to the session (LIB-3 AC-2), and is not written when
   nothing changed (`Shared/SessionController.cpp:247-256, 285-286`).
 - [ ] **AC-6** — Given a TI-58C built from the file runs (AC-10), then
-  `ti58c.mem` is brought up to
+  `ti58c.memory.yaml` is brought up to
   date at once, without waiting for AC-5: before the machine is replaced
   by another, when the session is suspended (LIB-3 AC-24; in the Web
   frontend when the page is hidden, LIB-15 AC-2), and when the product
@@ -97,7 +99,7 @@ The file
 When the memory comes back
 - [ ] **AC-7** — Given no startup preset is set for the TI-58C, when a
   TI-58C is built at the start of the product or at a model switch
-  (LIB-18 AC-19), then it is handed the content of `ti58c.mem` (AC-2),
+  (LIB-18 AC-19), then it is handed the content of `ti58c.memory.yaml` (AC-2),
   and the cue card of the file is fitted again.
 - [ ] **AC-8** — Given a TI-58C is built from a preset or from a startup
   preset, then it is handed no constant memory: its memory is zeroed
@@ -108,24 +110,25 @@ When the memory comes back
   memory is zeroed before the processor starts again and holds what the
   ROM's start-up leaves in it afterwards (C59-1 AC-6).
 - [ ] **AC-10** — Given a TI-58C built from a preset or a startup preset
-  (AC-8), then it never writes `ti58c.mem`, neither after a change nor
+  (AC-8), then it never writes `ti58c.memory.yaml`, neither after a change nor
   when it is replaced, suspended or the product quits: the file keeps
   the constant memory of the last TI-58C built from it, which the next
   one built from it gets back (AC-7). AC-5 and AC-6 hold only for a
   TI-58C built from the file. Given Cold boot on a TI-58C built from the
   file (AC-9), then the file follows: at the latest half a second after
-  the machine reports key readiness it holds the empty memory and no
-  cue card (`docs/formats/media.md` §4).
+  the machine reports key readiness it holds what the ROM's start-up
+  leaves in zeroed memory (AC-9) and the cue card that is still fitted
+  (`cue-card.md` §2; `docs/formats/media.md` §4).
 - [ ] **AC-11** — Given a TI-58C is reset or power-cycled (a Reset, a
   module change, the PC-100C attached or detached; LIB-18 AC-21, AC-22),
   then its constant memory stays in the machine (C59-1 AC-6),
-  `ti58c.mem` is not read, and the fitted cue card stays; everything
+  `ti58c.memory.yaml` is not read, and the fitted cue card stays; everything
   else is as after switching on: a running program has stopped and a
   module program that was selected no longer is (C59-1 AC-6; user,
   batch 5 gate). Today Reset reads the file back
   (`Shared/SessionController.cpp:186-187`).
 - [ ] **AC-12** — Given the product runs a TI-59 or a TI-58, then
-  `ti58c.mem` is neither read nor written, and it still holds what the
+  `ti58c.memory.yaml` is neither read nor written, and it still holds what the
   last TI-58C left.
 
 Every frontend
@@ -141,19 +144,21 @@ Every frontend
   `Web/tests/play-calculator.spec.js:181-196`).
 
 ## Edge Cases
-- **EC-1** — Given there is no `ti58c.mem`, then a TI-58C is built with
-  an empty constant memory and no cue card fitted, and the file is
+- **EC-1** — Given there is no `ti58c.memory.yaml`, then a TI-58C is
+  built with its constant memory zeroed before the processor starts
+  (C59-1 AC-6) and no cue card fitted, and the file is
   written at the first change.
-- **EC-2** — Given `ti58c.mem` is in an older format version or states
-  none (a file of Calc-U-59 2.3.0), then it is not read: the TI-58C is
-  built with an empty constant memory, a notice says that the file is
+- **EC-2** — Given `ti58c.memory.yaml` is in an older format version or
+  states none, or there is the `ti58c.mem` of Calc-U-59 2.3.0, then it is
+  not read: the TI-58C is built with its constant memory zeroed before
+  the processor starts (C59-1 AC-6), a notice says that the file is
   outdated and where the format is described, and the file is replaced
   at the first change (ADR 0037; behaviour change 59-1).
-- **EC-3** — Given `ti58c.mem` states the current version but cannot be
+- **EC-3** — Given `ti58c.memory.yaml` states the current version but cannot be
   read (a damaged line), then nothing of it is used, as today, and a
   notice says so; today nothing is said
   (`Shared/ConstantMemory.cpp:9-66`).
-- **EC-4** — Given a write of `ti58c.mem` fails, then the machine runs
+- **EC-4** — Given a write of `ti58c.memory.yaml` fails, then the machine runs
   on, a notice says so once per start of the product, and the next
   change tries again. Today a failed write is silent
   (`App/EmulatorViewModel.swift:500-505`,
@@ -162,27 +167,29 @@ Every frontend
   empty constant memory.
 - **EC-6** — Given the startup preset that is set for the TI-58C cannot
   be loaded, so that the built-in default machine is built (LIB-18
-  EC-1), then that machine is handed the content of `ti58c.mem` as in
+  EC-1), then that machine is handed the content of `ti58c.memory.yaml` as in
   AC-7.
 - **EC-7** — Given a preset or a startup preset fails while it is
   carried out (LIB-18 EC-6), then the machine it left writes no file
   either (AC-10).
 - **EC-8** — Given the Web frontend of the first release from this
   repository and a constant memory that 2.3.0 kept in `localStorage`,
-  then it is not read (LIB-9 AC-23) and nothing is said; the TI-58C
-  starts with an empty constant memory (behaviour change 59-1).
+  then it is not read (LIB-9 AC-23) and nothing is said; the TI-58C is
+  built with its constant memory zeroed before the processor starts
+  (C59-1 AC-6; behaviour change 59-1).
 
 ## Technical Requirements (optional)
 - The constant memory crosses the machine as content, not as a file:
   the machine reads and writes no file (`capabilities.md` I-3).
-- `ti58c.mem` is an own format (ADR 0037), described in the help's
+- `ti58c.memory.yaml` is an own format, constant memory format 1
+  (`docs/formats/media.md` §4; ADR 0037), described in the help's
   reference chapter with the other formats.
-- A running product never reads `ti58c.mem` again after the build of
+- A running product never reads `ti58c.memory.yaml` again after the build of
   its TI-58C. Where two devices share the save folder through iCloud,
   the file last written wins and nothing is merged, as today.
 
 ## Open Questions
-- [x] **OQ-1** — *Decided as recommended (user, 2026-11-10, batch 5 gate).* The layout of the new version of `ti58c.mem` (AC-4).
+- [x] **OQ-1** — *Superseded 2026-11-13 (`docs/formats/media.md` §4.1): the file is `ti58c.memory.yaml` in constant memory format 1, simplified YAML, not today's layout with a version line (AC-4).* *Decided as recommended (user, 2026-11-10, batch 5 gate).* The layout of the new version of `ti58c.mem` (AC-4).
   Today: an optional `CUECARD:` block, a line of dashes with "Registers
   (raw values)", then `Rnnn:` and eight hex bytes per register that is
   not zero, the registers H00 to H03 among them as R060 to R063; no
@@ -199,7 +206,7 @@ Every frontend
   The first task verifies 2.3.0 with a TI-58C that is filled, quit and
   started again; if today differs, AC-2 is a visible fix and gets a row
   in `docs/behaviour-changes.md`.
-- [x] **OQ-3** — *Decided (user, 2026-11-10, batch 5 gate): the file remembers the cue card that is fitted and restores it, as it is. A TI-58C has no magnetic cards, so no bank numbers arise.* The fitted cue card in `ti58c.mem` (AC-4). Today it is
+- [x] **OQ-3** — *Superseded in part 2026-11-13 (`docs/formats/media.md` §4.1, `cue-card.md` §2): the file stores the own card as a stand-alone cue card; a module cue card is an overlay and is not stored (AC-4).* *Decided (user, 2026-11-10, batch 5 gate): the file remembers the cue card that is fitted and restores it, as it is. A TI-58C has no magnetic cards, so no bank numbers arise.* The fitted cue card in `ti58c.mem` (AC-4). Today it is
   written with its template set to the blank cue card and its bank
   numbers dropped, whatever it was (`Shared/ConstantMemory.cpp:9-30`).
   *Recommendation:* write it as it is.
@@ -230,7 +237,8 @@ Every frontend
 | Proposed in this spec and accepted (user, 2026-11-10, batch 5 gate): the constant memory that the Web frontend of 2.3.0 kept in `localStorage` is not read and nothing is said (EC-8) | LIB-9 AC-23; row 59-1 covers the loss | 2026-11-10 |
 | Reset in the emulator keeps the memory and the cue card that is fitted, and loses everything else | user, 2026-11-10, batch 5 gate | 2026-11-10 |
 | The constant memory is in place before the processor starts | user, 2026-11-10, batch 5 gate | 2026-11-10 |
-| `ti58c.mem` also remembers the fitted cue card, whichever type it is | user, 2026-11-10, batch 5 gate | 2026-11-10 |
+| *Superseded in part 2026-11-13 (`docs/formats/media.md` §4.1, `cue-card.md` §2): only the own card, a stand-alone cue card, is stored (AC-4).* `ti58c.mem` also remembers the fitted cue card, whichever type it is | user, 2026-11-10, batch 5 gate | 2026-11-10 |
 | A TI-58C built from a preset or a startup preset never writes the constant memory file; only one built from the file keeps it up to date (half a second after a change, before it is replaced, on suspend, on quit); a Cold boot of such a machine empties the file (AC-5, AC-6, AC-10, EC-7). Replaces "the file follows" for presets (`capabilities.md` C-3) | user, 2026-11-13 (question F-8 of `docs/walkthroughs/presets.md` §5.4); `docs/formats/media.md` §4 | 2026-11-13 |
 | "Empty" constant memory after a preset build or a Cold boot is zeroed memory before the processor starts, then what the ROM's start-up leaves (AC-8, AC-9) | user, 2026-11-13 (B-28 of `docs/walkthroughs/presets.md` §5.2): "memory gets cleared *before* the CPU is let loose, in order to simulate real hardware": initialize the model, load the RAM from `ti58c.memory.yaml`, power the CPU; the start-up writes its signature into H00 (`rom/TI58C-ROM-Guide.md:165-176`); first step C-6 confirms the cells | 2026-11-13 |
 | The constant memory file holds the 64 raw registers `R000`–`R063`, H00–H03 as `R060`–`R063`; a higher register is an error (AC-4) | user, 2026-11-13 (§5.4 of `docs/walkthroughs/presets.md`); the TI-58C's CMOS memory is 64 raw registers, today's writer loops over a TI-59-sized 120 | 2026-11-13 |
+| Aligned with `docs/formats/` after the Q&A round of 2026-11-13: the file is `ti58c.memory.yaml` (AC-3, AC-5 to AC-7, AC-10 to AC-12, EC-1 to EC-4, EC-6, Technical Requirements); constant memory format 1 with the own card as a stand-alone cue card (AC-4, intro); a Cold boot leaves what the start-up leaves and the fitted cue card (AC-10); "empty" memory is memory zeroed before the processor starts (EC-1, EC-2, EC-8) | user rulings of 2026-11-13 (`docs/walkthroughs/presets.md` §5.2, §5.4); `docs/formats/` | 2026-11-13 |

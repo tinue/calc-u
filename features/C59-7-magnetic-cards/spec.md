@@ -9,9 +9,10 @@
 ## Dependencies
 - Features: C59-1 (the TI-59 behind the machine interface, which says
   when it needs a card), LIB-7 (the media model: instances in the save
-  folder, names, the steps `insert` and `arm`, `medium:` sections, the
-  saved media of the Web frontend); also named here: LIB-6 (the place
-  for the step `fit`), LIB-14 (the control bar), C59-2 (the `cue-card`
+  folder, names, the steps `card:` and `arm:`, the header key
+  `magnetic-cards:`, `saveas:` for a card, the saved media of the Web
+  frontend); also named here: LIB-6 (the preset loader), LIB-14 (the
+  control bar), C59-2 (the `cue-card`
   topic and the content of a cue card), C59-6 (the Solid State ROM
   modules).
 - Contracts and decisions: `docs/contracts/media.md` (MD-1 to MD-5, Q-4),
@@ -24,7 +25,7 @@
 
 Glossary terms used: Magnetic card, Cue card, Fit, Insert, Arm, Medium,
 Instance, Media place, Partition. Words of this spec: a magnetic card
-has two **sides**, 1 and 2; a side holds one **bank**, a quarter of the
+has two **sides**, 0 and 1 (`docs/formats/media.md` §1); a side holds one **bank**, a quarter of the
 TI-59's memory, numbered 1 to 4: 240 program steps or 30 data registers;
 a **pass** is one run of a side through the card reader, in which the
 calculator reads or writes that side's bank; a card is **fresh** while
@@ -64,88 +65,54 @@ The card and its file
   number, whether it is protected, 30 registers and a checksum. Either
   side can hold any bank (`Shared/CardFile.hpp:53-65`,
   `tests/shared_cooperative_tests.cpp:661`).
-- [ ] **AC-2** — Given a card file, then it is a text file in UTF-8 in
-  the card format, version 3.0, which is the layout of version 2.0 with
-  a new first line and the name after it (`media.md` MD-2; ADR 0020;
-  today's layout `Shared/CardFile.cpp:52-92, 293-311`). Its lines, in
-  this order, empty lines allowed between them:
-
-  | Line | Content |
-  |---|---|
-  | `Calc-U-59 Card 3.0` | exactly this; the first line |
-  | `Name: <name>` | required; the card's name as LIB-7 AC-3 leaves it |
-  | `CUECARD:` and the lines of a cue card | optional; the keys of C59-2 AC-5 |
-  | `SIDE: 1` or `SIDE: 2` | once for each side that holds a bank; an empty side is not written |
-  | `HEADER:` | follows `SIDE:` |
-  | `Partition: HH` | two hexadecimal digits, the first byte of the bank |
-  | `DataType: program` or `data` | |
-  | `Bank: n` | 1 to 4 |
-  | `Protection: yes` or `no` | |
-  | `Checksum: HH` | two hexadecimal digits |
-  | `DATA:` | follows the five header lines |
-  | `Rnnn: HH HH HH HH HH HH HH HH` | exactly 30 such rows, each the eight bytes of one register in hexadecimal; the number after `R` is for the reader's eye and is not read |
-  | `END-CARD` | the last line; required |
-
-  A card file has no comments: a ` #` in a value, such as a title, is
-  part of the value. The file ends with a line end (OQ-4).
-
-  For example, a card with a program on side 1 and nothing on side 2:
-
-  ```
-  Calc-U-59 Card 3.0
-  Name: Diagnostic
-
-  CUECARD:
-  Template: MagnetCard
-  Title: Diagnostic
-
-  SIDE: 1
-  HEADER:
-  Partition: 1C
-  DataType: program
-  Bank: 1
-  Protection: no
-  Checksum: 02
-
-  DATA:
-  R000: 00 00 00 00 00 63 20 17
-  (29 more rows)
-
-  END-CARD
-  ```
-- [ ] **AC-3** — Given a card file is read, then it is refused when a
-  key of a header is missing or unknown, a side has not exactly 30 rows,
-  a side comes twice, `END-CARD` is missing, or a line is none the
-  format knows; inside `CUECARD:` an unknown key is refused too (C59-2
-  AC-5). Keys are read in any case. Today an unknown key of the cue card
-  is passed over (`Shared/CardFile.cpp:147-203`,
+- [ ] **AC-2** — Given a card file, then it is a magnetic card file
+  (`docs/formats/media.md` §1): format `ti59-magnetic-card`,
+  `format-version: 3`, suffix `.magnetcard.yaml`, with the keys of
+  `media.md` §1.1 (`card-name`, `description`, `template`, `saved`,
+  `cue-card`, `sides` with `0` and/or `1`; each side `partition`,
+  `data-type`, `bank`, `protection`, `checksum`, `encoding: register-hex`,
+  `bytes` of exactly 30 rows), in the syntax of `docs/formats/README.md`
+  §1. An example is in `media.md` §1.1 (ADR 0020; today's layout
+  `Shared/CardFile.cpp:52-92, 293-311`).
+- [ ] **AC-3** — Given a card file is read, then it is refused as a
+  whole when it breaks `media.md` §1.1 or `README.md` §1: a missing side
+  key, a side without exactly 30 rows, an unknown key at any level (the
+  cue card included, `cue-card.md` §3). Keys are matched exactly; fixed
+  values are read in any case (`README.md` §1, §4). Today an unknown key
+  of the cue card is passed over (`Shared/CardFile.cpp:147-203`,
   `tests/shared_formats_tests.cpp:306-331`).
 - [ ] **AC-4** — Given a `.u59` file that starts with `Calc-U-59 Card `
   and another version, then it is outdated (LIB-7 AC-9): it is not read,
-  and the hint names the card format, its version 3.0 and where it is
+  and the hint names the card format, its version 3 and where it is
   described (ADR 0037; behaviour change 59-1). Any other file that is
   not AC-2, the two earlier binary layouts among them, is a card that
-  cannot be read (LIB-7 EC-3). A card file ends in `.u59` (OQ-2).
+  cannot be read (LIB-7 EC-3). A card file ends in `.magnetcard.yaml`
+  (`docs/formats/README.md`, formats at a glance; OQ-2).
 - [ ] **AC-29** — Given the media model of LIB-7 (AC-46 there), then a
-  magnetic card gives it: its name; as its description the title of its
-  cue card; no template mark, because there are no card templates; and
-  no write-protect switch, because a bank's protection is the
-  calculator's matter. `saveas:` is not there for the card reader and
-  refuses a preset when it is read.
-- [ ] **AC-5** — Given a card is written, then its file holds the card
-  as the product has it, whole: the sides that hold a bank, its cue card
-  and its name, in version 3.0, and it reads back as the same card. A
-  card that was opened from outside the save folder is written back to
-  its own file; in a Web frontend it was imported into the save folder
-  when it was opened (LIB-13 AC-4).
-  Nothing of the file as it was is kept; today the side that was not
-  passed is read from the file again first
+  magnetic card file gives it: its `card-name`; its `description`;
+  whether it is a template (`template: true`; the fresh card is the
+  implicit template and has no file, `media.md` §1, "Templates and
+  instances", and §1.2); and no write-protect switch, because a bank's
+  protection is the calculator's matter. An in-file card is saved by
+  `saveas: { card: <card-name>, as: live|template, name: … }` or with
+  `file:` in place of `name:` (`preset.md` §5.2.1); `protected:` is
+  refused for a card.
+- [ ] **AC-5** — Given a card is written, then its file is rewritten
+  whole in the key order of `media.md` §1.1: only the side that was
+  written is replaced, `card-name`, `description`, `template` and
+  `cue-card` are kept as they were, and `saved` is set to the time of the
+  write; comments are not kept (`media.md` §1.4). A template card is
+  never written (`media.md` §1.4). A card that was opened from outside
+  the save folder is written back to its own file; in a Web frontend it
+  was imported into the save folder when it was opened (LIB-13 AC-4).
+  As today, the side that was not written is kept as the file holds it;
+  today the file is read again first for that
   (`tests/shared_formats_tests.cpp:272-296`,
   `Shared/SessionController.cpp:554-582`; LIB-7 EC-2; OQ-6).
 
 The card reader
 - [ ] **AC-6** — Given a TI-59, then its card reader is a media place of
-  the kind magnetic card, pass-through, with the sides 1 and 2 (LIB-7
+  the kind magnetic card, pass-through, with the sides 0 and 1 (LIB-7
   AC-6, AC-32); a TI-58 or TI-58C has none.
 - [ ] **AC-7** — Given a side of a card is inserted, then one pass
   follows: the calculator reads the side's bank or writes one, as its
@@ -182,7 +149,7 @@ Fitting a card
   the machine sees nothing of it (`presets.md` PR-8;
   `Shared/SessionController.cpp:454-463`).
 - [ ] **AC-12** — Given a fitted card, when the user presses its top
-  left or top right corner, without dragging, then side 1 or side 2 is
+  left or top right corner, without dragging, then side 0 or side 1 is
   inserted (AC-7), and the corner is lit while that side is in the
   reader; the card stays fitted afterwards. Each corner is a fifth of
   the card's width and 27.7 % of its height
@@ -214,49 +181,53 @@ Fitting a card
   (`tests/shared_cooperative_tests.cpp:605`).
 
 In presets and the harness
-- [ ] **AC-17** — Given a preset for the TI-59, then it can have:
-  `- fit:` with a magnetic card (LIB-7 AC-21), which fits it; a cue card
-  of another kind is fitted by a `cue-card:` section (C59-2), on every
-  model;
-  `- insert: card-reader` with a side alone, which inserts that side of
-  the fitted card and fails when none is fitted, or with a card and a
-  side, which inserts it without fitting it; a side that is left out is
-  side 1; the step ends when the card is back. A preset in which the
-  ROM does not take the card has a defect: given the card is still at
-  the reader and the machine has put out nothing new, on the display or
-  on the paper, for 30 minutes of emulated time, then the preset ends
-  there with a line in the log; a program that keeps giving output is
-  never stopped by this, however long it runs (user, 2026-11-11; AC-7; LIB-7 AC-26);
-  `- arm: card-reader` with a card and a side, which is inserted when
-  the program asks for a card (AC-9)
-  (`presets.md` PR-8; today `Shared/StateFile.cpp:168-201`,
+- [ ] **AC-17** — Given a preset for the TI-59, then it can have
+  `- card: <reference>` (`{ file: }`, `{ name: }` or `{ mem: }`, with
+  `side: 0|1`, default 0), which pushes that side through the reader and
+  has finished when the card has passed and is fitted; and
+  `- arm: <reference>` (no side), which fits the card for the user to
+  feed by a corner (AC-12) and has finished when it is fitted
+  (`preset.md` §5.2, §6.2). A card the ROM does not take is waited for
+  at most the preset's `timeout:`, after which the step fails
+  (`preset.md` §6.3; AC-7); as the last item it is not waited for. A cue
+  card of another kind is fitted by a `cue-card:` section (C59-2)
+  (today `Shared/StateFile.cpp:168-201`,
   `Shared/EmulatorSession.cpp:296-325`). The harness has commands of the
-  same names. On a TI-58 or TI-58C these steps refuse the preset when it
-  is read.
-- [ ] **AC-18** — Given a `medium:` section with `kind: card` (LIB-7
-  AC-22), then it describes one bank, which is on whichever side of that
-  card is inserted. It has `name:`, `bank:` (1 to 4, required),
-  optionally `protected:` (`yes` or `no`) and `partition:` (as C59-2
-  AC-2), and the content of the bank
-  as C59-2 writes it: `steps: |`, whose keycodes start at the bank's
-  first step, or `registers: |`, and `cue-card: |`. A step or a register
-  outside the bank refuses the preset when it is read
+  same names. On a TI-58 or TI-58C these steps and `magnetic-cards:`
+  refuse the preset (`preset.md` §7; `README.md` §5).
+- [ ] **AC-18** — Given the header key `magnetic-cards:` (`preset.md`
+  §3.1), then each of its items is an in-file card with `card-name`,
+  optionally `description` and `cue-card` (`cue-card.md`), and `sides`
+  with `0`, `1` or both; each side has `bank` (1 to 4, required),
+  optionally `protected` (`true` or `false`, default `false`; `true` is
+  written as `−n Write`) and `partition` (as C59-2 AC-2; default: the
+  machine's when the card goes in), and the content of the bank:
+  `program: |` in the keycode notation of `preset.md` §4.1, whose bare
+  keycodes start at the bank's first step, and `data:` in the notation of
+  `preset.md` §4.2. Contents outside the bank and two items with one
+  `card-name` refuse the preset
   (`Shared/StateFile.cpp:210-237, 397-448`,
   `tests/shared_preset_stages_tests.cpp:70-138`).
-- [ ] **AC-19** — Given such a card is inserted, then the bank it holds
-  is the one a program wrote to it earlier in the same preset, else the
-  one its section describes, built with its `partition:` or with the
-  calculator's partition at that moment; a section without `steps:` and
-  `registers:` gives an empty side; the bank built is,
-  byte for byte, the one the ROM writes for the same content
-  (`Shared/SessionController.cpp:494-511`,
+- [ ] **AC-19** — Given an in-file card's side goes in, then the bank it
+  holds is the one last written to that side since the preset was
+  loaded, kept through a Reset, a power cycle or a Cold boot, until the
+  next load or model switch (AC-25; `preset.md` §3.1); else the side as
+  its item defines it, built with its `partition` or with the
+  calculator's partition at that moment: steps and registers it does not
+  list are read as 00, and a side that is not defined is fresh; the bank
+  built is, byte for byte, the one the ROM writes for the same content,
+  header and checksum included (`preset.md` §3.1;
+  `Shared/SessionController.cpp:494-511`,
   `tests/shared_preset_stages_tests.cpp:119-138`).
-- [ ] **AC-20** — Given a card named in a step by a name that no card
-  has, then it is a fresh card of that name, and a line of the log says
-  so; its first write makes the instance (LIB-7 AC-25, AC-35). A name
-  stands for one card throughout a preset: a later step that names it
-  gets the card as the earlier steps left it, so that two steps can fill
-  the two sides of one card (AC-27)
+- [ ] **AC-20** — Given a step with `{ mem: X }` and no item `X` in
+  `magnetic-cards:`, then `X` is a fresh in-file card without a cue card,
+  and a line of the log says so; it is saved to a file only by `saveas:`
+  (`preset.md` §3.1, §5.2.1). Given a `{ name: }` or `{ file: }`
+  reference to a card that does not exist, then it is an error
+  (`preset.md` §5.2; `media.md` §1.3), and the preset is refused (EC-6).
+  A name stands for one card throughout a preset: a later step that
+  names it gets the card as the earlier steps left it, so that two steps
+  can fill the two sides of one card (AC-27)
   (`Shared/SessionController.cpp:513-536`,
   `tests/shared_cooperative_tests.cpp:791-812`).
 
@@ -267,7 +238,8 @@ The cue card that shows
   calculator's own registers, `Shared/CueCard.hpp:153-154`).
 - [ ] **AC-22** — Given a machine, then at most one cue card is fitted
   at a time: fitting a magnetic card, a `cue-card:` section and the
-  cue card `ti58c.mem` brings back (C59-3 AC-7) each take the place of
+  cue card the constant memory file (`ti58c.memory.yaml`) brings back
+  (C59-3 AC-7) each take the place of
   the one before. The topic `cue-card` (C59-2 AC-6) names the cue card
   to show: while a library program is selected, the module cue card of
   that program as the module file defines it (`modules.md` §2.3), and,
@@ -280,7 +252,8 @@ The cue card that shows
   then the pre-printed ones are those of today: 25 for the Master
   Library and 21 for the Leisure Library; every other library program
   of every bundled module has a card in its module file that looks like
-  today's stand-in, with the module's title and ID (`modules.md` §2.3)
+  today's stand-in, with the module's `description` as its title and its
+  `module-name` as its ID (`modules.md` §2.3)
   (`roms/solid-state/cuecards.txt`, `tests/shared_formats_tests.cpp:433-461`,
   `Shared/CueCard.cpp:402-418`).
 - [ ] **AC-24** — Given a library program's cue card covers a fitted
@@ -298,15 +271,21 @@ What lasts
   6 gates; behaviour change 59-17). The same holds for a power cycle
   and a Cold boot (user, 2026-11-10, batch 7 gate). Given a new machine is built, by a model
   switch or a preset, then nothing is fitted until the preset fits
-  something, or, on a TI-58C, `ti58c.mem` brings its cue card back
+  something, or, on a TI-58C, the constant memory file
+  (`ti58c.memory.yaml`) brings its cue card back
   (C59-3 AC-7).
 - [ ] **AC-30** — Given the four examples of Calc-U-59 with magnetic
-  cards (C59-2 AC-10), then they are upgraded by these rules and
-  compared as C59-2 AC-11 says: a `CARD: mem:X` block becomes a
-  `medium:` section with `kind: card` and `name: X`; `ArmCard:` and
-  `InsertCard:` become `- arm: card-reader` and `- insert: card-reader`
-  with the card, written `mem:X` or by its name, and the side as a word
-  of its own (`PDCM-1:2` becomes `PDCM-1 2`).
+  cards (C59-2 AC-10), then they are upgraded by the rows of `preset.md`
+  §9.1 and compared as C59-2 AC-11 says: a `CARD: mem:X` … `END-CARD`
+  block becomes an item of `magnetic-cards:`; `InsertCard: X:2` becomes
+  `- card: { file: X.magnetcard.yaml, side: 1 }` (version 1's sides 1
+  and 2 are 0 and 1); `InsertCard:` or `ArmCard:` on a card file that
+  does not exist yet becomes an in-file card with that `cue-card`, fed
+  with `mem:`, then `- saveas: { card: X, as: live, name: X }`;
+  `ArmCard: mem:X` becomes `- card: { mem: X }` after the step that makes
+  the machine wait for a card, or `- arm: { mem: X }` for the user to
+  feed; and every card is fitted after it has passed, where today a
+  `mem:` card is not.
 
 Every frontend
 - [ ] **AC-26** — Given the Swift, Qt6 and Web frontends, then AC-11 to
@@ -319,8 +298,8 @@ Every frontend
   written and read
   back; a card fed only when a corner is pressed; a read that writes
   nothing; both sides in one file; the other side kept on a write; a
-  fresh card replacing a file only at its first write; `arm` not
-  waiting and `insert` waiting; a card defined in a preset read by a
+  fresh card replacing a file only at its first write; `arm:` finished
+  once the card is fitted, `card:` once it has passed; a card defined in a preset read by a
   program; a card written and then inserted; a card that was armed and
   never used logged (`tests/shared_cooperative_tests.cpp:345-791`,
   `tests/core_tests.cpp:257`).
@@ -341,9 +320,10 @@ Every frontend
   gate; OQ-3). Today's test ejects such a card by hand
   (`tests/shared_cooperative_tests.cpp:738-750`).
 - **EC-3** — Given a card's instance was changed by another device
-  since it was fitted, then a write replaces it with the card as this
-  product has it (AC-5; LIB-7 EC-2); today the other side is kept as
-  that device left it (`tests/shared_cooperative_tests.cpp:697`; OQ-6).
+  since it was fitted, then a write replaces only the side that was
+  written; the side not written is kept as the file holds it, and the
+  other keys as AC-5 says (`media.md` §1.4; LIB-7 EC-2); so does today
+  (`tests/shared_cooperative_tests.cpp:697`; OQ-6).
 - **EC-4** — Given a write of a card fails, then a notice says so, the
   fitted card keeps the bank that was written, and the next write tries
   again (LIB-7 AC-14; `media.md` I-2).
@@ -351,8 +331,8 @@ Every frontend
   start, or one that is not UTF-8, then it is refused as a card that
   cannot be read; today the message speaks of its size
   (`Shared/CardFile.cpp:383-408`).
-- **EC-6** — Given `fit:` in a preset for a card that is outdated or
-  cannot be read, then the preset is refused when it is read (LIB-7
+- **EC-6** — Given a `card:` or `arm:` step whose `file:` or `name:`
+  card does not exist, is outdated or cannot be read, then the preset is refused when it is read (LIB-7
   AC-23).
 - **EC-7** — Given a card with a protected bank is read, then the
   calculator behaves as the real one does with a protected program; this
@@ -384,19 +364,19 @@ Every frontend
   test ejects the card by hand after five seconds. *Recommendation:*
   verify on 2.3.0 in the first task; if the ROM never gives it back, the
   reader does after the time a pass takes.
-- [x] **OQ-4** — *Decided as recommended (user, 2026-11-10, batch 7 gate).* Small changes in the card file (AC-2, AC-3): an
+- [x] **OQ-4** — *Superseded 2026-11-13 (`docs/formats/media.md` §1, `README.md` §1): the card file is magnetic card format 3 in simplified YAML (AC-2, AC-3); an unknown key of the cue card is still refused; comments are allowed and are not kept on a write; the last line may end without a line end.* *Decided as recommended (user, 2026-11-10, batch 7 gate).* Small changes in the card file (AC-2, AC-3): an
   unknown key of the cue card refuses the file; a ` #` in a title is no
   longer cut off, because comments in a card file go; the file ends with
   a line end. *Recommendation:* all three, with the new version.
 - [x] **OQ-5** — *Decided as recommended (user, 2026-11-10, batch 7 gate).* "Side", "bank", "pass", "fresh" (of a magnetic card)
   and "library program" for the glossary, as defined above.
-- [x] **OQ-6** — *Decided as recommended (user, 2026-11-10, batch 7 gate).* Writing a card back (AC-5, EC-3). Today the file is
+- [x] **OQ-6** — *Superseded 2026-11-13 (`docs/formats/media.md` §1.4): a write replaces only the side that was written and keeps the other side, `card-name`, `description`, `template` and `cue-card` as the file holds them (AC-5, EC-3).* *Decided as recommended (user, 2026-11-10, batch 7 gate).* Writing a card back (AC-5, EC-3). Today the file is
   read again before a write, so that a side another device wrote in the
   meantime is kept. LIB-7 writes what the product has and merges
   nothing. *Recommendation:* the family's rule, also for cards; with
   two devices on one iCloud folder the last write then wins for the
   whole card.
-- [x] **OQ-7** — *Decided as recommended (user, 2026-11-10, batch 7 gate).* `fit:` (AC-17). `presets.md` PR-8 says it "places a
+- [x] **OQ-7** — *Superseded 2026-11-13 (`docs/formats/preset.md` §5.2, `cue-card.md` §2): there is no `fit:` step; a magnetic card is fitted after `card:` has passed it, or by `arm:` (AC-17).* *Decided as recommended (user, 2026-11-10, batch 7 gate).* `fit:` (AC-17). `presets.md` PR-8 says it "places a
   magnetic card or cue card". *Recommendation:* `fit:` takes a magnetic
   card, on the TI-59; the other cue cards are fitted by `cue-card:`,
   which C59-2 already has for every model.
@@ -411,14 +391,15 @@ Every frontend
 | The card format gets a name field and a new version; saved cards of 2.3.0 are refused with the hint | `media.md` MD-2, Q-4 (user); ADR 0037; behaviour change 59-1 | 2026-11-10 |
 | Cards are always written in the current version | ADR 0020 | 2026-11-10 |
 | Magnetic cards the product makes live in the save folder, also on the web; a card file opened from elsewhere is used and written back where it lies, and only a Web frontend imports it (LIB-13 AC-4) | ADR 0019 as amended; behaviour changes 59-6, 59-8 | 2026-11-10 |
-| `fit` places a card above the keys and affects only what the user sees; `insert` and `arm` go through the card reader, a pass-through media place | `presets.md` PR-8 | 2026-11-10 |
+| *Superseded 2026-11-13 (`docs/formats/preset.md` §5.2): the steps are `card:` and `arm:`; there is no `fit` step (AC-17).* `fit` places a card above the keys and affects only what the user sees; `insert` and `arm` go through the card reader, a pass-through media place | `presets.md` PR-8 | 2026-11-10 |
 | The cue card of the running module program is a Calc-U-59 product kind | `capabilities.md`, product kinds | 2026-11-10 |
 | Reset keeps the cue card that is fitted, on all models; a fitted magnetic card can then still be fed | user, 2026-11-10, batch 5 and batch 6 gates; behaviour change 59-17 | 2026-11-10 |
-| Proposed in this spec and accepted (user, 2026-11-10, batch 7 gate): the version is 3.0 and the name is the line `Name:` after the first line (AC-2) | `media.md` MD-2 asks for a name field and names no layout | 2026-11-10 |
-| Proposed in this spec and accepted (user, 2026-11-10, batch 7 gate): a `medium:` section for a card has the fields of AC-18 | Today's `CARD: mem:` block, in the notation of version 2 | 2026-11-10 |
+| *Superseded 2026-11-13 (`docs/formats/media.md` §1): magnetic card format 3, `.magnetcard.yaml`, name key `card-name` (AC-2).* Proposed in this spec and accepted (user, 2026-11-10, batch 7 gate): the version is 3.0 and the name is the line `Name:` after the first line (AC-2) | `media.md` MD-2 asks for a name field and names no layout | 2026-11-10 |
+| *Superseded 2026-11-13 (`docs/formats/preset.md` §3.1): in-file cards are items of the header key `magnetic-cards:` (AC-18).* Proposed in this spec and accepted (user, 2026-11-10, batch 7 gate): a `medium:` section for a card has the fields of AC-18 | Today's `CARD: mem:` block, in the notation of version 2 | 2026-11-10 |
 | Proposed in this spec and accepted (user, 2026-11-10, batch 7 gate): the machine itself says when it waits for a card (AC-9) | LIB-7 AC-6; the pacing already needs "needs a card now" from the machine | 2026-11-10 |
 | An empty side gives the ROM zeroes, and the ROM ends the read with an error (EC-2) | user, 2026-11-10, after the batch 7 gate | 2026-11-10 |
 | A card name stands for one card throughout a preset (AC-20) | Phase 5, preset pass (`docs/walkthroughs/presets.md`, A-12); AC-27 keeps today's test of both sides in one file | 2026-11-11 |
-| A preset whose `insert:` step leaves the card at the reader while the machine gives no output for 30 minutes of emulated time ends there; a program that keeps giving output is never stopped. "Hanging" is measured by output, and the preset ends instead of going on; the other waits of a preset stay at one hour (reading confirmed by the user, 2026-11-11) | user, 2026-11-11: "If possible I'd stop a hanging preset after 30 minutes emulated time, but again: don't break a working program" | 2026-11-11 |
+| *Superseded 2026-11-13 (`docs/formats/preset.md` §6.3): a card the ROM does not take is waited for at most `timeout:`, then the step fails (AC-17).* A preset whose `insert:` step leaves the card at the reader while the machine gives no output for 30 minutes of emulated time ends there; a program that keeps giving output is never stopped. "Hanging" is measured by output, and the preset ends instead of going on; the other waits of a preset stay at one hour (reading confirmed by the user, 2026-11-11) | user, 2026-11-11: "If possible I'd stop a hanging preset after 30 minutes emulated time, but again: don't break a working program" | 2026-11-11 |
 | Module cue cards come only from the module file; the bundled modules get a card like today's stand-in for every program without a pre-printed one; a program without a card takes off the module cue card (AC-22, AC-23) | user, 2026-11-13 (§5.4 of `docs/walkthroughs/presets.md`): every program has a cue card in reality; the fallback card was a stand-in for missing ones; the modules get one card per program, generated like the stand-in where none is defined; without one, any module cue card is taken off | 2026-11-13 |
 | What is written to an in-file card lasts until the next preset load or model switch; a Reset, a power cycle or a Cold boot keeps it (AC-25; `preset.md` §3.1) | user, 2026-11-13 (§5.4 of `docs/walkthroughs/presets.md`); the format said "until the next load, reset or model switch" | 2026-11-13 |
+| Aligned with `docs/formats/` after the Q&A round of 2026-11-13: sides 0 and 1 (AC-6, AC-12); card file is magnetic card format 3, `.magnetcard.yaml` (AC-2, AC-3, AC-4); what a card file gives the media model and `saveas:` for an in-file card (AC-29); a write replaces only the written side (AC-5, EC-3); steps `card:` and `arm:` with `timeout:` (AC-17, AC-27, EC-6); in-file cards under `magnetic-cards:` (AC-18, AC-19, AC-20); constant memory file name (AC-22, AC-25); stand-in module cue card (AC-23); upgrade rows of `preset.md` §9.1 (AC-30) | user rulings of 2026-11-13 (`docs/walkthroughs/presets.md` §5.2, §5.4); `docs/formats/` | 2026-11-13 |

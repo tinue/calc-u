@@ -47,11 +47,11 @@ In this spec "the calculator" is the real device; the running thing is
 - The descriptors of the PC-100C and the modules (owner: LIB-1,
   Calc-U-59 column, AC-31 and AC-32 there), and finding their ROM files
   (LIB-12).
-- The cue card of the running module program, a Calc-U-59 product kind,
-  and `fit` (owner: C59-7).
+- The cue card of the running module program, a Calc-U-59 product kind
+  (owner: C59-7).
 - Modelling either connector at contact level, and which of the 12
   springs of the PC-100C is unconnected (`Briefing.md` §6).
-- The `switch` step for TRACE in presets (owner: LIB-6).
+- The `printer-trace:` step (`preset.md` §5.5; owner: LIB-6, AC-40).
 
 ## Acceptance Criteria
 
@@ -199,7 +199,7 @@ The module slot
   must still pass after the printer has moved out, or programs would run
   faster than in 2.3.0. *Recommendation:* verify on 2.3.0 with a program
   that prints; AC-7 holds either way, and the design follows the result.
-- [x] **OQ-3** — *Decided as recommended (user, 2026-11-11).* `TRACE` after a detach (AC-6): the real switch keeps
+- [x] **OQ-3** — *Replaced 2026-11-13 (user, B-16): TRACE keeps its position (AC-6).* *Decided as recommended (user, 2026-11-11).* `TRACE` after a detach (AC-6): the real switch keeps
   its position when the calculator is lifted off the cradle. Today's
   code releases it. *Recommendation:* keep today's behaviour, because in
   the emulator a detached printer does not exist; say so in the help.
@@ -229,8 +229,9 @@ The module slot
 | Proposed in this spec and accepted (user, 2026-11-11): the control IDs `PRINT`, `ADV`, `TRACE`; what a detach in the middle of a line leaves (EC-2); the reading of P-2 for the printer's busy time | `presets.md` PR-7 writes `TRACE`; no source gives EC-2; P-2 speaks of ticks only | 2026-11-10 |
 | With an empty module slot a library program that is asked for makes the display blink as for an error (AC-10) | user, 2026-11-11, from the real machine | 2026-11-11 |
 | What a print instruction does without a printer is the ROM's; the emulator adds nothing of its own (AC-7) | user, 2026-11-11 | 2026-11-11 |
-| A preset and the harness name a module by its two-letter ID only; `TRACE` is released by a detach, as today; the fit table keeps its 12 signals until the connector is modelled at contact level | user, 2026-11-11 | 2026-11-11 |
+| *Superseded in part 2026-11-13 (user, B-16): `TRACE` keeps its position through a detach (AC-6).* A preset and the harness name a module by its two-letter ID only; `TRACE` is released by a detach, as today; the fit table keeps its 12 signals until the connector is modelled at contact level | user, 2026-11-11 | 2026-11-11 |
 | Every measurement of the printer's timing was made on a PC-100A, not on a PC-100C; no difference is expected, and the criteria keep today's numbers (AC-4) | user, 2026-11-11 | 2026-11-11 |
 | The modules come from `.rom.yaml` files of the ROM repository; a preset names one by `name:` only, `file:` is refused in this release (AC-8) | user, 2026-11-13 (question F-9 of `docs/walkthroughs/presets.md` §5.4); `docs/formats/modules.md` | 2026-11-13 |
 | The picker shows a module's `description`, ordered by `menu-sort`; the names of AC-8 are those of `modules.md` §2.4 | user, 2026-11-13 (question F-14 of `docs/walkthroughs/presets.md` §5.4); `docs/formats/modules.md` §2.1, §2.4 | 2026-11-13 |
 | `TRACE` belongs to the printer like its paper: kept through reset, power cycle, cold boot, model switch, detach and attach, until the product quits; a preset sets it off unless it says `printer-trace: on` (AC-6). Replaces "off after a detach and attach" of OQ-3 | user, 2026-11-13 (B-16 of `docs/walkthroughs/presets.md` §5.2) | 2026-11-13 |
+| Aligned with `docs/formats/` after the Q&A round of 2026-11-13: no `fit` step (Out of Scope); the TRACE step is `printer-trace:` (Out of Scope); OQ-3 marked replaced | user rulings of 2026-11-13 (`docs/walkthroughs/presets.md` §5.2, §5.4); `docs/formats/` | 2026-11-13 |

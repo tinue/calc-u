@@ -37,7 +37,7 @@ In this spec "the calculator" is the real device; the running thing is
 - The card reader as a media place, cards and cue cards (owner: C59-7).
 - Writing program steps, registers and the partition (the keystroke
   program memory product kind; owner: C59-2).
-- The `ti58c.mem` file, and handing a newly built TI-58C its constant
+- The constant memory file `ti58c.memory.yaml`, and handing a newly built TI-58C its constant
   memory (owner: C59-3). This feature says what the machine keeps.
 - The debug target, the program level, the ASM overlay, the ROM heatmap
   and the trace (owners: LIB-10, C59-4).
@@ -291,3 +291,4 @@ One seam
 | The key IDs and their other spellings are those of `preset.md` §8.1 (AC-9); `x2` goes. Replaces the names of `tools/headless/ti59.py` | user, 2026-11-13 (question F-5 of `docs/walkthroughs/presets.md` §5.4); `docs/formats/preset.md` §8.1 | 2026-11-13 |
 | Key readiness on a TI is the steady state of the keyboard scan loop, not a running program's sampling of R/S or GTO (AC-18) | user, 2026-11-13 (B-3 of `docs/walkthroughs/presets.md` §5.2) | 2026-11-13 |
 | Build and cold boot: defaults with zeroed memory, then the constant memory where one is handed, then the processor powered (AC-6) | user, 2026-11-13 (B-28 of `docs/walkthroughs/presets.md` §5.2): "memory gets cleared *before* the CPU is let loose, in order to simulate real hardware": initialize the model, load the RAM from `ti58c.memory.yaml`, power the CPU | 2026-11-13 |
+| Aligned with `docs/formats/` after the Q&A round of 2026-11-13: the constant memory file is `ti58c.memory.yaml` (Out of Scope) | user rulings of 2026-11-13 (`docs/walkthroughs/presets.md` §5.2, §5.4); `docs/formats/` | 2026-11-13 |

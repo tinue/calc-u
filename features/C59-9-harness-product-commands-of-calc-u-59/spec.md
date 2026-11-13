@@ -42,8 +42,8 @@ AC-17). The machine is idle as LIB-6 AC-36 says.
   memory, the record of instructions and the count of `profile`
   (LIB-10); writing and reading program steps and registers as keycodes
   (C59-2 AC-9); the ASM overlay and the dumps (C59-4).
-- A dump of a magnetic card: a card file is text and is its own dump
-  (C59-7 AC-2).
+- A dump of a magnetic card: a card file is its own dump, a text file
+  in magnetic card format 3 (`docs/formats/media.md` §1; C59-7 AC-2).
 - An assembler with labels and computed addresses (today
   `tools/agentic/asm59.py`, a library of the calendar scripts; OQ-2).
 - The calendar scripts, which stay scripts (LIB-11 OQ-5 as decided).
@@ -210,3 +210,4 @@ Scripts that stay
 | Proposed in this spec and accepted (user, 2026-11-10, batch 8 gate): `step-cost` uses and changes the session's machine (AC-8) | A harness run has one machine (LIB-11 AC-2) | 2026-11-10 |
 | Proposed in this spec and accepted (user, 2026-11-10, batch 8 gate): every timing counts from the start of its command, and the limit is written `limit=` in each | One rule for the replies | 2026-11-10 |
 | The mnemonics of a listing are the names of `preset.md` §8.1 (AC-11) | user, 2026-11-13 (question F-5 of `docs/walkthroughs/presets.md` §5.4); `docs/formats/preset.md` §8.1 | 2026-11-13 |
+| Aligned with `docs/formats/` after the Q&A round of 2026-11-13: a card file is magnetic card format 3 (`media.md` §1) (Out of Scope) | user rulings of 2026-11-13 (`docs/walkthroughs/presets.md` §5.2, §5.4); `docs/formats/` | 2026-11-13 |

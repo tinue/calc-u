@@ -106,7 +106,7 @@ The sections
   `ti-keystroke-program`, version 1), read by the same rules, and one
   that cannot be read or breaks its format refuses the preset. This
   replaces OQ-2's refusal of a word on a line of keycodes (decision
-  log); what is still open about the notation is OQ-5.
+  log); the notation is as decided in OQ-5.
 - [ ] **AC-4** — Given `data:`, then each of its entries is `NN: value`
   for the data register NN (00 to 99), or on the TI-58C `HNN: value` for
   one of the cells H00 to H03, which are not registers 60 to 63; the
@@ -367,3 +367,4 @@ The shipped and hosted presets
 | The examples keep today's order within each group; `fastmode-sst` is last in "Programs" (AC-13; behaviour change 59-26) | user, 2026-11-13 (B-27 of `docs/walkthroughs/presets.md` §5.2): a format for bundling that lists all presets and their files and sets order and structure; a selection; the site and local builds take the files from the repository or the disk; today it is tenth, after the printer pictures | 2026-11-13 |
 | Before its first section a preset's machine holds what the ROM's start-up leaves in zeroed memory, not "empty" (AC-1, EC-3) | user, 2026-11-13 (B-28 of `docs/walkthroughs/presets.md` §5.2): "memory gets cleared *before* the CPU is let loose, in order to simulate real hardware": initialize the model, load the RAM from `ti58c.memory.yaml`, power the CPU | 2026-11-13 |
 | The keycode notation has two notations, compact and listing; a compact line holds only two-digit keycodes; no `...` gap marker; the upgrade writes one-digit keycodes with two digits and moves words and `...` into comments (AC-3, AC-10, OQ-5). Replaces "a token that is not a keycode … is a label and is passed over" | user, 2026-11-13 (C59-2 OQ-5, §5.4 of `docs/walkthroughs/presets.md`): two notations, compact (like a hex listing of a ROM, zeros spelled out, no skip indicator) and listing (like a PC-100C listing; the step number places the code, dots are only for readability, a comment in YAML); both limits agreed | 2026-11-13 |
+| Aligned with `docs/formats/` after the Q&A round of 2026-11-13: the keycode notation is as decided in OQ-5, no longer open (AC-3) | user rulings of 2026-11-13 (`docs/walkthroughs/presets.md` §5.2, §5.4); `docs/formats/` | 2026-11-13 |

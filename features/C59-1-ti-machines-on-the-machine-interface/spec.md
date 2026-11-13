@@ -171,7 +171,12 @@ Key readiness
   every model and with or without a PC-100C. Today this is found from
   ROM address ranges that differ per model and with a printer present
   (`Shared/MachineModelInfo.hpp:59-105`); the spec does not name them,
-  because there are several such loops.
+  because there are several such loops. Key readiness is the steady
+  state of that keyboard scan loop (with a printer, its confirmation
+  scan), as 2.3.0 finds it; the moments in which a running program
+  samples R/S or GTO are not key readiness. A key meant to reach a
+  running program would have to be held down until the ROM samples it,
+  which no preset step does in this release (a `key-down` step would).
 - [ ] **AC-19** — Given a Reset on the TI-59 or TI-58, whose ROM clears
   the memory and sets the partition up anew in its start-up, then the
   machine itself puts the content of the RAM and the partition back
@@ -277,3 +282,4 @@ One seam
 | A Reset keeps the partition on the TI-59 and TI-58 (AC-6) | user, 2026-11-11; behaviour change 59-22 | 2026-11-11 |
 | The persistence of vision stays in the Calc-U-59 app layer, once for all frontends; the machine session is the only reader of the display output | user, 2026-11-11 | 2026-11-11 |
 | The key IDs and their other spellings are those of `preset.md` §8.1 (AC-9); `x2` goes. Replaces the names of `tools/headless/ti59.py` | user, 2026-11-13 (question F-5 of `docs/walkthroughs/presets.md` §5.4); `docs/formats/preset.md` §8.1 | 2026-11-13 |
+| Key readiness on a TI is the steady state of the keyboard scan loop, not a running program's sampling of R/S or GTO (AC-18) | user, 2026-11-13 (B-3 of `docs/walkthroughs/presets.md` §5.2) | 2026-11-13 |

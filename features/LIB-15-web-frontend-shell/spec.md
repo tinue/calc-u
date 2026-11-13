@@ -185,9 +185,11 @@ Embedding interface
 - [ ] **AC-23** — Given what the Playwright tests of Calc-U-59 check
   today about the shell, then it still holds: both layouts load without
   an error in the console; the installed app starts with the server gone
-  and runs every model, in Chromium and in WebKit; the component renders
+  and runs every model and loads a bundled example, in Chromium and in
+  WebKit; the component renders
   on a server (`Web/tests/play-calculator.spec.js`,
-  `Web/tests/offline.spec.js`, `Web/tests/prerender.spec.js`).
+  `Web/tests/offline.spec.js`, `Web/tests/prerender.spec.js`;
+  `Web/tests/play-calculator.spec.js:471-491` for the example).
 
 ### Calc-U-1600
 - [ ] **AC-24** — Given the Web frontend of Calc-U-1600, then its
@@ -288,3 +290,4 @@ Embedding interface
 | Proposed in this spec and accepted (user, 2026-11-11): the one-writer rule of Calc-U-1600 becomes the rule for every Web frontend, per product, with no later takeover (AC-7, AC-8); a change is kept within one second (AC-6); a Web frontend that cannot start says so itself (AC-3); an unreadable persistent file system is not written over (EC-2); `workerUrl` is part of the embedding interface (AC-16); an unknown `model` or `preset` gives a notice (EC-4) | Persistent storage opened twice needs a rule; today a failed start of Calc-U-59 leaves "Starting the emulator…" for ever; both products have `workerUrl` today although FE-7 does not list it; no source gives EC-2 and EC-4 | 2026-11-10 |
 | `model` takes the model's name; `keyboard` is on by default in both products; without `width` and `height` the component fills its parent; the prop `module` of `PlayCalculator` goes; media saved with the Calc-U-1600 Web frontend of 0.8.x stay; the one-writer rule is added to ledger row 59-8 | user, 2026-11-10, batch 3 gate | 2026-11-10 |
 | The row is named "Web frontend shell" | user, 2026-11-11; the glossary's term is Web frontend | 2026-11-11 |
+| The installed app without the server also loads a bundled example (AC-23) | user, 2026-11-13 (B-23 of `docs/walkthroughs/presets.md` §5.2); today's Playwright test checks it | 2026-11-13 |

@@ -513,8 +513,10 @@ Harness
   hands a preset to the session as a file in a folder or, where it has
   only the content (Swift on iOS, Web; EC-5), as its content, and
   everything else is this loader's. The GUI test of each frontend has
-  one scenario for it under this ID: a bundled example is loaded and the
-  display shows its result (today
+  one scenario for it under this ID: a bundled example is loaded and
+  what it puts on screen shows; in Calc-U-59 the example is `sum.ti59`
+  and what shows is its cue card, "Sum 1..N"; the Sharp example of the
+  Qt6 frontend is the design's (today
   `Calc-U-59UITests/PresetLoadTests.swift:35`,
   `Web/tests/play-calculator.spec.js:210-232`; ADR 0032).
 - [ ] **AC-43** — Given the examples and startup presets Calc-U-59
@@ -757,3 +759,4 @@ Harness
 | A Sharp machine is idle when it reports key readiness for 20 frames: the prompt, `INPUT`, RESERVE mode (AC-45). Replaces prompt readiness | user, 2026-11-13 (B-4 of `docs/walkthroughs/presets.md` §5.2) | 2026-11-13 |
 | Presets that wait for LIB-7, LIB-10 or C59-7 are left out of the checks of AC-43 and AC-51 by name until then | user, 2026-11-13 (B-11 of `docs/walkthroughs/presets.md` §5.2) | 2026-11-13 |
 | Every keyword a preset leaves out has a stated default; `printer-trace` absent means off (AC-65) | user, 2026-11-13 (B-16 of `docs/walkthroughs/presets.md` §5.2) | 2026-11-13 |
+| The GUI scenario of AC-42 checks what a bundled example puts on screen: in Calc-U-59 the cue card of `sum.ti59`; the Sharp example is the design's | user, 2026-11-13 (B-23 of `docs/walkthroughs/presets.md` §5.2); `sum.ti59` and four of the five bundled presets of its group have no keys, so no result shows | 2026-11-13 |

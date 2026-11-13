@@ -54,7 +54,7 @@ What the three status columns mean for this feature:
   skills).
 - GUI automation, and the screenshot scenarios of the Qt6 frontends
   (`--shots`): they are GUI tests of a frontend (ADR 0032) and stay with
-  it.
+  it; they reach the session through harness attach (LIB-14 AC-44).
 - The smoke test of the DAP server, `dap_smoke.py` (owner: C1600-3).
 - When the old tools are removed (the migration plan).
 
@@ -212,7 +212,7 @@ The first commands
   | `pc1600_plotter_probe`, `pc1600_power_probe`, `pc1600_uart_probe` | diagnostics of the plotter, of power-off and of the serial port | stay scripts that drive `calcu serve` (OQ-5) |
   | `tools/read_trace.py` | a trace file as text or JSON | stays a script of the product (LIB-10 AC-33, AC-42; user, 2026-11-10, batch 6 gate) |
   | `tools/dap_smoke.py` | a smoke test of the DAP server | C1600-3 |
-  | `--shots` of the Qt6 frontend | screenshot scenarios | not a harness function (ADR 0032) |
+  | `--shots` of the Qt6 frontend | screenshot scenarios | not a harness function (ADR 0032); a client of harness attach (LIB-14 AC-44) |
 
   (`tools/pc1500_cli.cpp:92-377`, `tools/pc1600_cli.cpp:90-365`,
   `tools/pc1600_plotter_probe.cpp`, `tools/pc1600_power_probe.cpp`,
@@ -316,3 +316,4 @@ The first commands
 | Commands reply when carried out; `wait` without a duration is the counterpart of the implicit wait; the preset's waiting rules have no commands (AC-12) | question F-15 of `docs/walkthroughs/presets.md` §5.4, left to the specification by the user on 2026-11-13 ("what works best for agentic use") | 2026-11-13 |
 | A run's traces and screenshots go to its own save folder by default; an option names a folder for them (AC-8) | user, 2026-11-13 (B-17 of `docs/walkthroughs/presets.md` §5.2) | 2026-11-13 |
 | The harness hands a real-time clock a fixed instant by default; an option names another date and time or the host's (AC-21) | user, 2026-11-13 (B-20 of `docs/walkthroughs/presets.md` §5.2): "a plain fixed instant as default"; today only a test pins the clock (`Core/tests/job_tests.cpp:228-235`) | 2026-11-13 |
+| The Qt6 screenshot scenarios are a client of harness attach (Out of Scope, AC-18) | user, 2026-11-13 (B-22 of `docs/walkthroughs/presets.md` §5.2, left to the specification: "what works best for an agentic workflow") | 2026-11-13 |

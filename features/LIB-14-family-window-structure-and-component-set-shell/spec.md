@@ -392,6 +392,15 @@ The shell and what goes into it
 - [ ] **AC-41** — Given Edit ▸ Copy Screen, then the clipboard gets the
   picture of the display and its text, as today
   (`Qt6/app/MainWindow.cpp:680-699`, `Web/src/CalcU1600.jsx:229-232`).
+- [ ] **AC-44** — Given a development or test build of the Qt6 frontend,
+  then it offers harness attach (ADR 0033, `harness.md` H-4), and its
+  screenshot scenarios (`--shots`) are a client of it: they load a
+  preset, let time pass, press keys and type with the harness's
+  `preset`, `wait`, `key` and `type` (LIB-11), and step the machine in
+  no other way. This spec owns the scenarios and the object names by
+  which they find widgets; the scenarios are upgraded with the shell,
+  `Edit > Settings…` to `File > Settings…` (AC-34)
+  (`Qt6/app/ShotRunner.cpp:115, 233-271` today).
 
 ## Edge Cases
 - **EC-1** — Given an operation that ends before 500 ms have passed,
@@ -503,3 +512,4 @@ The shell and what goes into it
 | Added with C59-8's cold read, for the batch 6 gate: holding the display commands full speed (AC-43); a failed start shows LIB-12's message (AC-19) | LIB-17 and LIB-12 name this feature as the owner | 2026-11-10 |
 | A frontend without a menu bar (iOS, the Web frontend's portrait layout) keeps Reset, Preset and Settings on the bar and gets a More button for the rest; this replaces the one menu button of the batch 5 gate | user, 2026-11-10, batch 6 gate, after a check of Apple's Human Interface Guidelines | 2026-11-10 |
 | The Machine menu has Resume | LIB-10 OQ-2 (user, 2026-11-10, batch 6 gate) | 2026-11-10 |
+| The Qt6 frontend gets harness attach in development and test builds; the screenshot scenarios are its client and are owned here with their object names (AC-44) | user, 2026-11-13 (B-22 of `docs/walkthroughs/presets.md` §5.2, left to the specification: "what works best for an agentic workflow"); today's runner steps the machine itself, which the operation rules (LIB-3 AC-3, AC-14, AC-35) no longer allow | 2026-11-13 |

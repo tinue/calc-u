@@ -127,7 +127,7 @@ Options:
 |---|---|---|---|---|---|
 | Common commands | key, type (—), wait, expect, lcd, dump, peek, break, trace, screenshot | same, with `type` | same | same | same |
 | Product commands (H-2) | `asm` (ASM overlay), keycode (dis)assembler, ROM coverage, printer lines, card dump | BASIC dump, tape in/out, CE-158 serial | BASIC dump, tape, serial, host drive, probes | — | — |
-| Attach (ADR 0033, H-4) | Swift (iOS simulator, macOS) in the migration; Qt, web later | Qt, web later | Qt, web later | — | — |
+| Attach (ADR 0033, H-4) | Swift (iOS simulator, macOS) in the migration; Qt, web later | Qt in the migration (screenshot scenarios); web later | Qt in the migration (screenshot scenarios); web later | — | — |
 
 ## Open questions
 
@@ -148,3 +148,4 @@ Options:
 | 2026-11-10 | H-1 (completed, user, 2026-11-10, batch 7 gate) | `serve` takes `--dap <port>` with Calc-U-1600: the debug server is hosted without a wall clock, the machine running unpaced whenever a debugger has it running. |
 | 2026-11-10 | H-2 (completed, user, 2026-11-10, batch 8 gate) | Product commands of Calc-U-59 (C59-9): `ti59 coverage`, read from the debugger core's `profile`, `line-times`, `run-time`, `hot-steps`, `step-trace`, `step-cost`, `keycodes list` and `keycodes assemble`, which reads what `list` writes; a listing uses the key names of typing. The coverage scenarios and the fast-mode matrix stay scripts. Product commands of Calc-U-1600 (C1600-5): `pc1600 dump-basic`, `inspect <view>`, `tape record <path>` and `tape status`, `serial <port> feed|capture|link|report` for the CE-158's port and the PC-1600's own RS-232C port, `host-drive <folder>|off`. No serial port has a host link in a harness run unless `link` asks. |
 | 2026-11-13 | H-1 (reworded; question F-15 of `docs/walkthroughs/presets.md` §5.4, left to the specification by the user on 2026-11-13 ("what works best for agentic use")) | Commands carry the names and meanings of the steps that act and reply when carried out; waiting is asked for with `wait` (a duration, or none: until idle, at most one hour); the preset's waiting rules have no commands; frontend steps have none. |
+| 2026-11-13 | H-4 (the need shows; B-22 of `docs/walkthroughs/presets.md` §5.2, left to the specification by the user) | The Qt6 frontend gets attach in the migration: its screenshot scenarios become a client of it (LIB-14 AC-44) |

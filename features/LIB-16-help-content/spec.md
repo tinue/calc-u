@@ -171,7 +171,8 @@ The asset
   as they are; making them by scenarios, as Calc-U-1600 does, is a
   later step (OQ-4).
 - [ ] **AC-12** — Given the pictures of Calc-U-1600's help, then they
-  are made as today, by the scenarios that drive the Qt6 frontend, one
+  are made by the scenarios that drive the Qt6 frontend through harness
+  attach (LIB-14 AC-44), one
   set for each chapter that has pictures, and they show the family's
   menus and control bar (`docs/developer/screenshots/README.md:1-120`).
 - [ ] **AC-13** — Given the reference chapter of Calc-U-1600, then it
@@ -239,3 +240,4 @@ The asset
 | Help uses only glossary terms | `help.md` I-3 | 2026-11-10 |
 | Proposed in this spec and accepted (user, 2026-11-10, batch 8 gate): the mappings of AC-9 and AC-11 from today's pages and documents to the chapters | The contract gives the chapters, not where today's text goes | 2026-11-10 |
 | Proposed in this spec and accepted (user, 2026-11-10, batch 8 gate): the checks of AC-7 | They make "the help matches the release" checkable | 2026-11-10 |
+| The pictures of Calc-U-1600's help are made by scenarios that drive the Qt6 frontend through harness attach (AC-12) | user, 2026-11-13 (B-22 of `docs/walkthroughs/presets.md` §5.2, left to the specification: "what works best for an agentic workflow") | 2026-11-13 |

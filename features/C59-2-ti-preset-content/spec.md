@@ -197,15 +197,26 @@ The shipped and hosted presets
   `historic/pdcm-make-cards`) are upgraded and compared when C59-7 is
   built; every other example with this feature.
 - [ ] **AC-11** — Given each example, when its version 2 file is loaded
-  through the harness and the machine is then idle, or an hour of
-  emulated time has passed (the harness `wait`, LIB-6 AC-34), then the display (`lcd`), the
-  program steps, the registers and the partition (AC-9) and the paper
-  (`paper text`, `paper marks`; LIB-8 AC-39) are those of its reference
-  run. A reference run is recorded before the files are upgraded, with
-  the tools of 2.3.0 (`tools/agentic/ti59file.py`, `tools/headless/`),
-  from the 2.3.0 file, with the model of AC-10, the Master Library
-  module, the printer connected and no `ti58c.mem`, up to the same
-  moment.
+  through the harness and the harness `wait` (LIB-6 AC-34) has ended
+  with the machine idle or paused, or after an hour of emulated time,
+  then the display (`lcd`), the program steps, the registers and the
+  partition (AC-9), the paper (`paper text`, `paper marks`; LIB-8 AC-39)
+  and every magnetic card the preset wrote (its banks and its cue card,
+  whether 2.3.0 wrote it as a card file or the version 2 file saves it
+  with `saveas:`) are those of its reference run. Tick counts and
+  `Elapsed:` lines are not compared (behaviour change 59-23; LIB-6
+  AC-64). A reference run is recorded before the files are upgraded, by
+  a driver on 2.3.0's own session code (`Shared/SessionController.cpp`
+  in its cooperative mode, with a clock the driver supplies, as
+  `tests/shared_cooperative_tests.cpp:478-484` does), from the 2.3.0
+  file, on the model of AC-10, with the Master Library module, the
+  printer connected and no `ti58c.mem`; it ends when the script has
+  ended and the machine is idle, or is paused, or one hour of emulated
+  time after the last key went down. `tools/agentic/ti59file.py` and
+  `tools/headless/` are not used: they cannot load every example.
+  Excepted by name, each with its reason: `life.ti59`, which never
+  stops and is only loaded without a failure; the intended differences
+  of `docs/research/preset-conversion-check.md` §4, where they show.
 - [ ] **AC-12** — Given the copies of the examples that calc-u.org hosts
   under `59/software-files/`, then they are the version 2 files of
   AC-10, copied there with the site's own tools; the presets under
@@ -323,3 +334,4 @@ The shipped and hosted presets
 | A token that is not a keycode on a line of bare keycodes is a label and is passed over (AC-3). Replaces that part of OQ-2 (batch 6 gate) | user, 2026-11-12 (`preset.md` §4.1) | 2026-11-13 |
 | A stand-alone cue card has no `Template` and no `Banks`; its kind follows from where it stands, so a preset's card always looks like the plain card (AC-5). Replaces "`Template` chooses only its look" (batch 6 gate); six examples lose their look (`docs/research/preset-conversion-check.md` §1) | user, 2026-11-12 (`cue-card.md` §1, `preset.md` §9.3) | 2026-11-13 |
 | The upgrade follows `preset.md` §9.1; the rules of AC-10 settle for Calc-U-59 what the conversion guide leaves open there (S3 `regular-speed:` first, S9 the model from the suffix, S10 program before data), and add `let-it-finish:` and `skip-wait:` where the run needs them | user, 2026-11-12 (`preset.md` §9.1; conversion check §3); AC-10 as decided at the batch 6 gate | 2026-11-13 |
+| The reference runs are recorded by a driver on 2.3.0's session code and end at idle, at a pause or an hour after the last key; the comparison is at the idle or paused machine after the harness `wait`, includes the cards a preset wrote, leaves out ticks and `Elapsed:`, and excepts `life.ti59` and the intended differences by name (AC-11) | user, 2026-11-13 (B-10 of `docs/walkthroughs/presets.md` §5.2) | 2026-11-13 |

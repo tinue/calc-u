@@ -8,7 +8,12 @@ Open With, a file dialog) is used where it lies and written back there,
 as Calc-U-59 does today; only a Web frontend copies it into the save
 folder, because a browser cannot write back. The sentence "that ends"
 below no longer holds. A medium a preset names by path is still never
-written.
+written. Amended again 2026-11-13 (user; `docs/formats/media.md`): that
+last sentence and the first consequence below no longer hold. A
+medium's own file decides: `template: true` is never written, wherever
+it lies; any other medium file is an instance and is written in place,
+also when a preset names it by path. No copy is made at a first write,
+and the open point on the copy's name falls away.
 
 Every medium of every product, magnetic cards included, follows
 Calc-U-1600's model: templates are bundled, instances are made by Name &

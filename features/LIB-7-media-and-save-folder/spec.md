@@ -105,9 +105,8 @@ The model
 - [ ] **AC-5** — Given a medium is looked up by its name and kind, then
   the bundled ones are searched first and the save folder second
   (Calc-U-1600 `Core/Connector/NamedFileCatalog.hpp:124-170`). An
-  instance can carry the name of a bundled template only by AC-25; it is
-  listed among the instances, and a lookup by name finds the template
-  (OQ-8). Two files of the save folder with one name are both listed;
+  instance never carries the name of a bundled template
+  (`docs/formats/preset.md` §5.2.1). Two files of the save folder with one name are both listed;
   a save by that name replaces, and a preset finds, the one whose file
   name is the one the name gives (AC-4), and if neither is, the first
   by file name (`media.md` MD-5; OQ-1). In a module slot the modules that are not
@@ -180,8 +179,8 @@ Autosave
   machine writes to it, then the template is not written, and what was
   written lives in the place until Name & Save makes it an instance or
   the medium leaves the place, as today (Calc-U-1600
-  `Shared/ModuleBay.cpp:425`); `media.md` I-2 holds for the media a
-  preset names (AC-25; OQ-8).
+  `Shared/ModuleBay.cpp:425`); the same holds for a template a preset
+  names, by name or by file (AC-25).
   Given a medium a preset defines itself (`mem:`), then nothing is ever
   written for it.
 
@@ -257,14 +256,16 @@ Media in presets
   (AC-20: a magnetic card, AC-35).
 - [ ] **AC-24** — Given a preset names an instance by its name, then the
   machine is built with that instance, and it is autosaved as always.
-- [ ] **AC-25** — Given a preset names a medium by file, or a template
-  by name, when the machine first writes to it, then an instance with
-  the medium's name is made in the save folder, replacing an instance of
-  that name, the write goes there, and the log says which file was
-  written; the file the preset named is never written. A preset that is
-  run again thus starts from the same medium and replaces what the last
-  run left (`media.md` MD-1, I-2; ADR 0019; behaviour changes 59-7,
-  1600-7).
+- [ ] **AC-25** — Given a medium whose file says `template: true`, then
+  it is a template wherever it lies and however it was named (by a
+  preset by name or by file, by the user, in a picker), and it is never
+  written: what the machine writes lives in the place, and Name & Save
+  is offered (AC-15, AC-16). Given a medium whose file does not say so,
+  then it is an instance wherever it lies, and every write is saved into
+  that file in place, also when a preset named it by file; a preset
+  that is run again then starts from what the last run left. Calc-U-1600
+  does so today (`docs/formats/media.md`, Templates and instances;
+  `modules.md` §1.8; ADR 0019 as amended 2026-11-13).
 
 Steps and commands
 - [ ] **AC-26** — Given a preset, then these steps exist, and the
@@ -328,9 +329,8 @@ Getting media in and out
   name the card reader, a card by name, by file or by `mem:`, and the
   side, and a card name that no card has stands for a new, empty card of
   that name, with a line in the log, as today
-  (`Shared/SessionController.cpp:513-536`); a card named by file is
-  never written, and its first write makes the instance of AC-25
-  (behaviour change 59-7).
+  (`Shared/SessionController.cpp:513-536`); a card file is written in
+  place unless it is a template (AC-25).
 - [ ] **AC-36** — Given the Web frontend, then it has the import and the
   saved media of AC-29 to AC-31 for cards; today it has a download per
   card and an upload in the card picker (`Web/src/Dialogs.jsx:93-103`).
@@ -515,3 +515,4 @@ Getting media in and out
 | A medium the user opens from outside the save folder is used where it lies and written back there; only a Web frontend copies it in, because a browser cannot write back | user, 2026-11-10, batch 7 gate; LIB-13 AC-4; ADR 0019 as amended | 2026-11-10 |
 | A save that sets the write-protect switch is followed by a power cycle, as if a module had been plugged in (AC-19) | user, 2026-11-11; LIB-2 OQ-4 | 2026-11-11 |
 | The notation of AC-21 holds for header keys, `insert` and `arm`; `saveas` keeps today's form, as OQ-3 decided, so a name or a path with spaces is written without quotes there | Phase 5, preset pass (`docs/walkthroughs/presets.md`, A-7); OQ-3 | 2026-11-11 |
+| A medium's own file decides: `template: true` is never written, wherever it lies and however it was named; without it the file is an instance, written in place, also when a preset names it by file. No copy is made at a first write, and no instance takes a bundled template's name (AC-5, AC-15, AC-25, AC-35). Replaces MD-1 and the second part of OQ-8; the earlier rule was an error of the spec, Calc-U-1600 works so today | user, 2026-11-13 (question F-1 of `docs/walkthroughs/presets.md` §5.4); `docs/formats/media.md` | 2026-11-13 |

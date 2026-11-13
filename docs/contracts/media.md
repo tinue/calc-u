@@ -40,9 +40,9 @@ eject, fit, save folder.
 - A picker lists the templates and the save folder's instances that fit
   the media place.
 - A medium named by a preset (by name, by `file:`, or a `medium:`
-  section) follows PR-8 and ADR 0019: a file named by path is never
-  written; its first write makes an instance (MD-1); a `medium:` medium
-  is never saved.
+  section) follows PR-8 and ADR 0019 as amended 2026-11-13: its file
+  decides, `template: true` is never written, any other file is an
+  instance written in place (`docs/formats/media.md`).
 - Saving under a name follows one set of rules (MD-3) for the GUI's Name
   & Save, preset `saveas:` and the harness (as Calc-U-1600's
   `planMediaSave` already does for both of its paths).
@@ -60,18 +60,22 @@ eject, fit, save folder.
 ## Invariants
 
 - I-1: A template is never written.
-- I-2: The emulator never loses a write: a write to a template or to a
-  preset-named file goes to an instance (ADR 0019).
+- I-2: The emulator never loses a write: a write to a template lives in
+  its place until Name & Save makes it an instance; a write to an
+  instance goes into its file (ADR 0019 as amended 2026-11-13).
 - I-3: The emulator overwrites an instance only when the user or a
   preset asks for it: Name & Save after confirmation, a preset's
-  explicit `saveas:`, or a preset's first write to a medium it names
-  (MD-1).
+  explicit `saveas:`, or a write by the machine to that instance.
 - I-4: One media model and one set of save rules for every product,
   frontend and the harness.
 
 ## Open forks
 
 ### MD-1: The copy made on the first write of a preset-named medium (ADR 0019)
+
+**Superseded (user, 2026-11-13):** no copy is made; a medium's file
+decides whether it is written (I-2, ADR 0019 as amended). Kept for the
+record:
 
 **Decided (2026-11-10): option (b), overwrite** (the user's choice; (a)
 was recommended). The instance takes the medium's name and replaces an
@@ -227,3 +231,4 @@ Options:
 | 2026-11-10 | Q-5 (answered, user, 2026-11-10, batch 6 gate) | Of two instances with one name, a save or a preset uses the one whose file name is the one the name gives, else the first by file name. |
 | 2026-11-10 | MD-3 (completed, user, 2026-11-10, batch 6 gate) | A name must not hold `/ \\ : * ? " < > \|` or a control character, on every platform; names that differ only in case are one name. Import, export and delete of saved media are in the Web frontend of both products; delete asks first. |
 | 2026-11-10 | ADR 0019 (amended, user, 2026-11-10, batch 7 gate) | A medium the user opens from elsewhere is used and written back where it lies; a Web frontend copies it into the save folder. The card format is version 3.0 with a `Name:` line; `.bin` is no longer a card; a card is written whole. |
+| 2026-11-13 | MD-1, I-2, I-3 (superseded, user, 2026-11-13) | A medium's own file decides: `template: true` is never written; any other medium file is an instance, written in place, also when a preset names it by path; no copy at a first write; no instance takes a bundled template's name. The earlier rule was an error of the spec; Calc-U-1600 works so today (`docs/formats/media.md`). |

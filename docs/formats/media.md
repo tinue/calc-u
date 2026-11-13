@@ -272,7 +272,7 @@ ram:
   encoding: register-hex
   bytes: |
     R000: 00 00 00 00 00 00 00 25
-    R060: 23 02 58 50 92 99 40 21
+    R059: 00 00 00 00 00 00 10 00
 ```
 
 | Key | Required | Value |

@@ -439,8 +439,8 @@ Harness
   no variant; the place keys are `slot-1:` with a reference by `name:`
   to the ID of one of the 14 Solid State ROM modules
   (`slot-1: { name: ML }`; C59-6) and `printer: PC-100C` (`presets.md`
-  PR-2, PR-9, PR-11; `preset.md` §3). Whether Calc-U-59 also takes a
-  module file by `file:`, which the format allows, is open (OQ-8).
+  PR-2, PR-9, PR-11; `preset.md` §3); `file:`, which the format allows,
+  is refused in this release (OQ-8; C59-6 AC-8).
 - [ ] **AC-36** — Given a TI machine, then it is idle when it has
   reported key readiness (C59-1 AC-18) without a break for 100 ms of
   emulated time, the minimum hold of LIB-5 AC-20, which is to tell a
@@ -667,7 +667,7 @@ Harness
   H-1 ("one vocabulary") does not yet cover. Open with the harness
   questions of LIB-11 (implicit wait, `skip-wait`, `let-it-finish`,
   frontend steps as commands).
-- [ ] **OQ-8** — `slot-1: { file: … }` on the TI models: `preset.md` §3
+- [x] **OQ-8** — *Decided (user, 2026-11-13, F-9): Calc-U-59 takes `name:` only in this release and refuses `file:` with a notice (C59-6 AC-8).* `slot-1: { file: … }` on the TI models: `preset.md` §3
   allows a Solid State ROM module file; the decision of 2026-11-11
   (C59-6, "by its two-letter ID only") and LIB-12 ("no own dumps")
   exclude it. The format README leaves to each product which keywords

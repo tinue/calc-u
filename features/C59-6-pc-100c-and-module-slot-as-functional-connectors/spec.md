@@ -101,8 +101,11 @@ The PC-100C
 
 The module slot
 - [ ] **AC-8** — Given a TI machine, then one of these 14 Solid State
-  ROM modules can be plugged into the place `slot-1`, named by its ID
-  (`roms/solid-state/cuecards.txt`):
+  ROM modules can be plugged into the place `slot-1`, named by its ID,
+  the `module-name` of its module file (`docs/formats/modules.md` §2;
+  the files come from the ROM repository, LIB-12 AC-56). A preset names
+  it by `slot-1: { name: <ID> }`; `{ file: … }` is refused with a notice
+  that this release takes a module by its ID only:
 
   | ID | Module | ROM |
   |---|---|---|
@@ -218,3 +221,4 @@ The module slot
 | What a print instruction does without a printer is the ROM's; the emulator adds nothing of its own (AC-7) | user, 2026-11-11 | 2026-11-11 |
 | A preset and the harness name a module by its two-letter ID only; `TRACE` is released by a detach, as today; the fit table keeps its 12 signals until the connector is modelled at contact level | user, 2026-11-11 | 2026-11-11 |
 | Every measurement of the printer's timing was made on a PC-100A, not on a PC-100C; no difference is expected, and the criteria keep today's numbers (AC-4) | user, 2026-11-11 | 2026-11-11 |
+| The modules come from `.rom.yaml` files of the ROM repository; a preset names one by `name:` only, `file:` is refused in this release (AC-8) | user, 2026-11-13 (question F-9 of `docs/walkthroughs/presets.md` §5.4); `docs/formats/modules.md` | 2026-11-13 |

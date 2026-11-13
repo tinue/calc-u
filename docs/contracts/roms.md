@@ -40,6 +40,11 @@ ROMs a variant needs; Q-2: per chip or per file).
   0035).
 - I-2: The lookup is the same in every frontend and the harness.
 - I-3: ROM files are external formats; ADR 0037 does not apply to them.
+  Exception (user, 2026-11-13): a module file that holds ROM bytes
+  together with what the product needs (a Solid State ROM module
+  `.rom.yaml`, the CE-502B module definition) lives in the ROM
+  repository and is fetched like a ROM (I-1 holds), but is an own
+  format with a version (LIB-12 AC-56).
 
 ## Open forks
 
@@ -131,3 +136,4 @@ Options:
 | 2026-11-10 | R-4 | An entry states the size of the decoded content; a text ROM file is checked by the number of words its reader yields, a binary file by its byte size. Amends R-1 and R-2. |
 | 2026-11-10 | R-3 | A ROM-less build starts and shows a "ROMs missing" state (files, ROM folder, "Check again"); models with ROMs work; peripherals without their ROM cannot be attached; the harness exits with an error; the web bundles its ROMs. |
 | 2026-11-10 | R-2, R-3 (amended, user, phase 4b, batch 3 gate) | Architecture only, not built in the migration: the user's ROM folder, own dumps, a start with some ROMs missing and "Check again". In the migration release a product needs its full ROM set: if even one file is missing it does not start and asks for the full set, a state only a local build of a fresh clone can reach. The one change is that Calc-U-59 also fetches its ROMs at build time. |
+| 2026-11-13 | I-1, I-3 (completed, user, 2026-11-13) | The Solid State ROM module files (`.rom.yaml`, ROM and cue cards) and the CE-502B module definition live in the ROM repositories and are fetched like ROMs; they are own formats for their version. |

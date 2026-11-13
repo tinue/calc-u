@@ -131,7 +131,7 @@ The file
   `preset-name` (optional; at most 18 characters; without it the
   preset's name is its file stem, shown as it is), `description`
   (optional; one line), `timeout` (optional; AC-57), and one key for
-  each place of the model's descriptor that holds installed periphery, under
+  each place of the model's descriptor that holds an installed peripheral, under
   the name of that place (`slot-1`, `slot-2`, `printer`, `interface`,
   `host-drive`; `presets.md` PR-2, PR-9, PR-11); a removable medium is
   no header key but a step (`card:`, `floppy:`, `tape:`; `preset.md`
@@ -778,5 +778,5 @@ Harness
 | Files with placeholders are checked as filled in, not left out (AC-51) | user, 2026-11-13 (B-24 of `docs/walkthroughs/presets.md` §5.2) | 2026-11-13 |
 | The preset list is the bundle file, a format of its own (`docs/formats/bundle.md`): presets and their files, order and groups; distributions bundle exactly what it lists (AC-31). Replaces "not an own format with a version" | user, 2026-11-13 (B-27 of `docs/walkthroughs/presets.md` §5.2): a format for bundling that lists all presets and their files and sets order and structure; a selection; the site and local builds take the files from the repository or the disk | 2026-11-13 |
 | `expect:` on a TI model compares with X in its full precision, 13 digits, not rounded, whatever the display format (AC-40, OQ-9) | user, 2026-11-13 (§5.4 of `docs/walkthroughs/presets.md`); the step is new, so no preset depends on another rule | 2026-11-13 |
-| A floppy disk and a cassette tape are steps, not header keys; the header holds installed periphery (AC-2, AC-44, AC-47). Replaces the header key `tape:` (row of 2026-11-13 above) and the media places as header keys of PR-11 | user, 2026-11-13 (LIB-7 EC-5, EC-6, §5.4 of `docs/walkthroughs/presets.md`): removable media are changed at runtime and belong into the chain of steps, like the TI-59's magnetic cards; installed periphery, memory modules included, is fitted before the machine boots | 2026-11-13 |
-| Aligned with `docs/formats/` after the Q&A round: `bundle.md` as a source; header keys for installed periphery only (AC-2); harness clock (AC-27); `screenshot` by file name and a `printer-trace` command (AC-34) | user rulings of 2026-11-13 (`docs/walkthroughs/presets.md` §5.2, §5.4); `docs/formats/` | 2026-11-13 |
+| A floppy disk and a cassette tape are steps, not header keys; the header holds installed peripherals (AC-2, AC-44, AC-47). Replaces the header key `tape:` (row of 2026-11-13 above) and the media places as header keys of PR-11 | user, 2026-11-13 (LIB-7 EC-5, EC-6, §5.4 of `docs/walkthroughs/presets.md`): removable media are changed at runtime and belong into the chain of steps, like the TI-59's magnetic cards; installed peripherals, memory modules included, is fitted before the machine boots | 2026-11-13 |
+| Aligned with `docs/formats/` after the Q&A round: `bundle.md` as a source; header keys for installed peripherals only (AC-2); harness clock (AC-27); `screenshot` by file name and a `printer-trace` command (AC-34) | user rulings of 2026-11-13 (`docs/walkthroughs/presets.md` §5.2, §5.4); `docs/formats/` | 2026-11-13 |

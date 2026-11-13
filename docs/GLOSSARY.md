@@ -116,10 +116,14 @@ _Avoid_: card (bare)
 
 **Cue card**:
 The card in the window above the top row of keys that labels the
-TI-58/58C/59's user-defined keys for a program. Three types exist: the
-magnetic card (TI-59 only), the blank non-magnetic card (all three models)
-and the pre-printed card delivered with a Solid State ROM module, such as
-the Master Library's (all three models).
+TI-58/58C/59's user-defined keys for a program. Three kinds exist
+(`docs/formats/cue-card.md` §1): the **stand-alone cue card**, the blank
+non-magnetic card (all three models); the **magnetic card** (TI-59
+only); and the **module cue card**, pre-printed for a library program of
+a Solid State ROM module, such as the Master Library's (all three
+models). The machine's **own card** is the stand-alone or magnetic card
+fitted; a module cue card is shown above it while its library program
+is selected.
 
 **Chip family**:
 A group of chips of one design that differ in content, such as the
@@ -135,7 +139,9 @@ one at a time.
 _Avoid_: disk image, floppy (bare)
 
 **Cassette tape**:
-A tape for the cassette interface of a CE-150 or CE-1600P, stored as sound.
+A tape for the cassette interface of a CE-150 or CE-1600P, stored as a
+**tape definition** (`.tape.yaml`) that names its sound file (`.wav`)
+(`docs/formats/media.md` §3).
 _Avoid_: tape image, WAV (for this)
 
 **Host drive**:
@@ -145,6 +151,8 @@ _Avoid_: mounted directory, virtual drive
 
 **Constant memory**:
 The TI-58C's RAM that keeps its contents while the calculator is off.
+The **constant memory file** (`ti58c.memory.yaml`) holds it with the
+fitted cue card between starts (`docs/formats/media.md` §4).
 _Avoid_: continuous memory, permanent memory
 
 **Partition**:
@@ -271,8 +279,28 @@ Power gone long enough for a real device's RAM to lose its contents.
 **Medium**:
 A removable item that holds user data and can be named and saved: a
 magnetic card, a floppy disk, a cassette tape, a battery-backed module.
-Plural: media.
-_Avoid_: removable, item, card
+Plural: media. A **removable medium** (a magnetic card, a floppy disk,
+a cassette tape) is changed while the machine runs and is inserted by a
+preset step; a module is installed before the machine starts, by a
+header key, like the other **installed peripherals**
+(`docs/formats/preset.md` §3, §5.2).
+_Avoid_: removable (alone), item, card
+
+**Name tag**:
+The short name a file of a format carries in its `<kind>-name` key
+(`card-name`, `disk-name`, …), shown in pickers and lists and matched by
+a `name:` reference (`docs/formats/README.md` §2).
+
+**Card file**, **In-file card**:
+A card file is a magnetic card saved as a file (`.magnetcard.yaml`). An
+in-file card is a magnetic card a preset defines in its header key
+`magnetic-cards:` and addresses with `mem:`; it is written to a file
+only by `saveas:` (`docs/formats/media.md` §1.2, `preset.md` §3.1).
+
+**Keystroke program file**:
+A TI keystroke program kept in a file of its own (`.keystrokes.yaml`,
+`docs/formats/preset.md` §4.1.1), which a preset's `program:` names by
+`file:`.
 
 **Template**:
 A medium bundled with a product, which is never written, or one the
@@ -282,7 +310,8 @@ always there and has no file.
 _Avoid_: bundled card, default
 
 **Instance**:
-A user's saved medium made from a template.
+A medium whose file is not a template (no `template: true`), wherever
+it came from; it saves itself in place after each change.
 _Avoid_: copy, saved card
 
 **Name & Save**:
@@ -297,9 +326,11 @@ _Avoid_: mount, load, attach (for this)
 **Fit**:
 Making a cue card the one shown in the window above the top row of keys,
 where it labels them. A card is fitted by a preset's cue card, by a
-magnetic card after it was read or when it is armed, and by selecting a
-library program of a module, whose cue card is fitted over the card
-shown until the program is deselected. Fitting changes nothing in the
+magnetic card after it has passed through the reader (read or written)
+or when it is armed, by a TI-58C starting from its constant memory
+file, and by selecting a library program of a module, whose cue card is
+shown over the own card until the program is deselected
+(`docs/formats/cue-card.md` §2). Fitting changes nothing in the
 machine.
 _Avoid_: insert (for this)
 
@@ -672,7 +703,8 @@ the command of the source repository that builds and checks it.
 **Site folder**, **Pin** (of the site), **Preview**:
 A product's site folder is its part of calc-u.org, `/59/` or `/1600/`.
 A pin is the record, kept in the site, of one release file by its
-address, its version and its sha256. A preview is a build of a coming
+address, its version and its sha256, or, for the examples, of the
+release's tag in the source repository (LIB-19 AC-1). A preview is a build of a coming
 release shown next to the released one.
 
 **Mnemonic**, **Listing** (of a keystroke program):

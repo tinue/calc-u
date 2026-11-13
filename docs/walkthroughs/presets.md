@@ -1181,7 +1181,7 @@ floppy disk after the build (LIB-7 EC-5, EC-6; harness commands only?);
 what a write keeps in a card file (`description`, `saved`).
 
 **The conversion check** (`docs/research/preset-conversion-check.md`)
-has four facts that the pins do not bear out: `test_diag.ti59` has no
+had four facts that the pins do not bear out (corrected in `602988b`): `test_diag.ti59` has no
 pause-on-start and needs no `skip-wait:`; `switzerland` and
 `stars-and-stripes` have no `ReportElapseTime:` and need
 `let-it-finish:`, not a `timeout:`; `printer-quirks`, `texas-print` and

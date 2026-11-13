@@ -37,8 +37,9 @@ keys:
    A hardware key that is absent means **none**, on every model. Every
    keyword a preset leaves out has a default, given where it is
    specified; where none is given, the cold boot's state holds.
-2. **Cold boot** it: all memory empty, the constant memory of a TI-58C
-   included.
+2. **Cold boot** it, as on the real hardware: all memory zeroed, the
+   constant memory of a TI-58C included, before the processor is
+   powered; then the ROM's start-up runs.
 3. **Carry out the sections** in file order (§4). Each item starts only
    after the item before it has finished, unless a `skip-wait:` follows
    that item ([§6](#6-speed-and-waiting)).

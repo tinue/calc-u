@@ -251,9 +251,11 @@ together with the cue card fitted at the time. The product writes it and
 reads it back when a TI-58C starts. It can't be inserted or ejected, and
 there is one per product. Where it is kept is the product's.
 
-A preset doesn't write the file. Its cold boot empties the machine's
-constant memory, not the file, so the machine then holds only what the
-preset puts there. The file takes the machine's state when it would
+A preset doesn't write the file. Its cold boot zeroes the machine's
+constant memory, not the file, before the processor starts; the machine
+then holds what the ROM's start-up leaves there and what the preset
+puts there. When a TI-58C starts from the file, its RAM is loaded from
+it before the processor is powered. The file takes the machine's state when it would
 anyway: the calculator switched off, the product quit.
 
 ### 4.1 Keys

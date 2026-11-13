@@ -95,6 +95,13 @@ Reset, power cycle, cold boot
   | Power cycle | as the ROM's start-up leaves a machine whose memory was lost | the constant memory kept (all of its RAM, including the registers H00 to H03); everything else as after switching on |
   | Cold boot | as the ROM's start-up leaves a machine whose memory was all zero | the same, the constant memory included |
 
+  A machine is built, and a cold boot is done, in this order, as on the
+  real hardware: the model is set up with its defaults, its registers
+  and memory zeroed; then, on a TI-58C handed a constant memory (C59-3
+  AC-2), its RAM is loaded from it; then the processor is powered and
+  the ROM's start-up runs. Nothing clears the memory after the
+  processor has started.
+
   (Glossary: Reset, Power cycle, Cold boot. Today: Reset is
   `Shared/StateApplier.cpp:95-107`, which saves the RAM, resets, runs the
   start-up and writes the RAM back, because the ROM's start-up clears it
@@ -283,3 +290,4 @@ One seam
 | The persistence of vision stays in the Calc-U-59 app layer, once for all frontends; the machine session is the only reader of the display output | user, 2026-11-11 | 2026-11-11 |
 | The key IDs and their other spellings are those of `preset.md` §8.1 (AC-9); `x2` goes. Replaces the names of `tools/headless/ti59.py` | user, 2026-11-13 (question F-5 of `docs/walkthroughs/presets.md` §5.4); `docs/formats/preset.md` §8.1 | 2026-11-13 |
 | Key readiness on a TI is the steady state of the keyboard scan loop, not a running program's sampling of R/S or GTO (AC-18) | user, 2026-11-13 (B-3 of `docs/walkthroughs/presets.md` §5.2) | 2026-11-13 |
+| Build and cold boot: defaults with zeroed memory, then the constant memory where one is handed, then the processor powered (AC-6) | user, 2026-11-13 (B-28 of `docs/walkthroughs/presets.md` §5.2): "memory gets cleared *before* the CPU is let loose, in order to simulate real hardware": initialize the model, load the RAM from `ti58c.memory.yaml`, power the CPU | 2026-11-13 |

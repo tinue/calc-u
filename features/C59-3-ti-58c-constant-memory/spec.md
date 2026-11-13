@@ -98,11 +98,13 @@ When the memory comes back
   (LIB-18 AC-19), then it is handed the content of `ti58c.mem` (AC-2),
   and the cue card of the file is fitted again.
 - [ ] **AC-8** — Given a TI-58C is built from a preset or from a startup
-  preset, then it is handed no constant memory and starts with an empty
-  one (LIB-18 AC-19), and the fitted cue card is the one the preset
+  preset, then it is handed no constant memory: its memory is zeroed
+  before the processor starts, and the machine holds what the ROM's
+  start-up leaves in it (C59-1 AC-6; LIB-18 AC-19), and the fitted cue card is the one the preset
   gives, or none (`capabilities.md` C-3; behaviour change 59-12).
 - [ ] **AC-9** — Given Cold boot on a running TI-58C, then its constant
-  memory is empty afterwards (C59-1 AC-6).
+  memory is zeroed before the processor starts again and holds what the
+  ROM's start-up leaves in it afterwards (C59-1 AC-6).
 - [ ] **AC-10** — Given a TI-58C built from a preset or a startup preset
   (AC-8), then it never writes `ti58c.mem`, neither after a change nor
   when it is replaced, suspended or the product quits: the file keeps
@@ -228,3 +230,4 @@ Every frontend
 | The constant memory is in place before the processor starts | user, 2026-11-10, batch 5 gate | 2026-11-10 |
 | `ti58c.mem` also remembers the fitted cue card, whichever type it is | user, 2026-11-10, batch 5 gate | 2026-11-10 |
 | A TI-58C built from a preset or a startup preset never writes the constant memory file; only one built from the file keeps it up to date (half a second after a change, before it is replaced, on suspend, on quit); a Cold boot of such a machine empties the file (AC-5, AC-6, AC-10, EC-7). Replaces "the file follows" for presets (`capabilities.md` C-3) | user, 2026-11-13 (question F-8 of `docs/walkthroughs/presets.md` §5.4); `docs/formats/media.md` §4 | 2026-11-13 |
+| "Empty" constant memory after a preset build or a Cold boot is zeroed memory before the processor starts, then what the ROM's start-up leaves (AC-8, AC-9) | user, 2026-11-13 (B-28 of `docs/walkthroughs/presets.md` §5.2): "memory gets cleared *before* the CPU is let loose, in order to simulate real hardware": initialize the model, load the RAM from `ti58c.memory.yaml`, power the CPU; the start-up writes its signature into H00 (`rom/TI58C-ROM-Guide.md:165-176`); first step C-6 confirms the cells | 2026-11-13 |

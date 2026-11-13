@@ -74,8 +74,8 @@ The sections
   | `cue-card:` | a cue card block (`cue-card.md` §3) | fits it as a stand-alone cue card, the machine's own card (glossary, Fit; `cue-card.md` §2), in place of the one fitted before |
 
   They write through the product kind for program memory (AC-17). A
-  machine that a preset has built is empty before its first section
-  (ADR 0016), so the first `program:` and `data:` give what today's
+  machine that a preset has built holds before its first section what
+  the ROM's start-up leaves in zeroed memory (C59-1 AC-6; ADR 0016), so the first `program:` and `data:` give what today's
   first stage gives (`Shared/StateApplier.cpp:59-87`).
 - [ ] **AC-17** — Given a TI machine, then it lists a product kind
   "program memory", which this feature defines (C59-1, out of scope
@@ -276,7 +276,7 @@ The shipped and hosted presets
   holds follows from the calculator's memory, not from this spec.
 - **EC-3** — Given a preset for the TI-58C with `H00` to `H03`, then
   they are written after the cold boot; a preset without them leaves
-  them empty (C59-3 AC-8). Today a preset load keeps what they held
+  them as the ROM's start-up left them in zeroed memory (C59-3 AC-8). Today a preset load keeps what they held
   (`Shared/StateApplier.cpp:67-73`; behaviour change 59-12).
 - **EC-4** — Given two `cue-card:` sections, then the second replaces
   the first when its turn comes.
@@ -361,3 +361,4 @@ The shipped and hosted presets
 | The calendar scripts are upgraded to version 2 (AC-18) | user, 2026-11-13 (B-25 of `docs/walkthroughs/presets.md` §5.2): "old, no longer relevant scripts and probes are not taken over into the new project. calendar yes, upgrade it" | 2026-11-13 |
 | Its comments are corrected where they name a key, a tool or a format that changed, and the READMEs under `examples/` are upgraded with the files (AC-10) | user, 2026-11-13 (B-26 of `docs/walkthroughs/presets.md` §5.2); no spec owned these texts | 2026-11-13 |
 | The examples keep today's order within each group; `fastmode-sst` is last in "Programs" (AC-13; behaviour change 59-26) | user, 2026-11-13 (B-27 of `docs/walkthroughs/presets.md` §5.2): a format for bundling that lists all presets and their files and sets order and structure; a selection; the site and local builds take the files from the repository or the disk; today it is tenth, after the printer pictures | 2026-11-13 |
+| Before its first section a preset's machine holds what the ROM's start-up leaves in zeroed memory, not "empty" (AC-1, EC-3) | user, 2026-11-13 (B-28 of `docs/walkthroughs/presets.md` §5.2): "memory gets cleared *before* the CPU is let loose, in order to simulate real hardware": initialize the model, load the RAM from `ti58c.memory.yaml`, power the CPU | 2026-11-13 |

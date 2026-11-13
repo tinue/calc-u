@@ -109,20 +109,24 @@ The module slot
 
   | ID | Module | ROM |
   |---|---|---|
-  | `ML` | Master Library (1) | TMC0541 |
-  | `ST` | Applied Statistics (2) | TMC0542 |
-  | `RE` | Real Estate / Investment (3) | TMC0543 |
-  | `SY` | Surveying (4) | TMC0544 |
-  | `NG` | Marine Navigation (5) | TMC0545 |
-  | `AV` | Aviation (6) | TMC0546 |
-  | `LE` | Leisure Library (7) | TMC0547 |
-  | `SA` | Securities Analysis (8) | TMC0548 |
-  | `BD` | Business Decisions (9) | TMC0549 |
-  | `MU` | Math / Utilities (10) | TMC0550 |
-  | `EE` | Electrical Engineering (11) | TMC0551 |
+  | `ML` | Master Library | TMC0541 |
+  | `ST` | Applied Statistics | TMC0542 |
+  | `RE` | Investment | TMC0543 |
+  | `SY` | Surveying | TMC0544 |
+  | `NG` | Marine Navigation | TMC0545 |
+  | `AV` | Aviation | TMC0546 |
+  | `LE` | Leisure Library | TMC0547 |
+  | `SA` | Securities Analysis | TMC0548 |
+  | `BD` | Business Decisions | TMC0549 |
+  | `MU` | Math/Utilities | TMC0550 |
+  | `EE` | EE Library | TMC0551 |
   | `SE` | Structural Engineering | TMC0553 |
-  | `AG` | Agriculture (12) | TMC0554 |
-  | `RP` | RPN Simulator (13) | TMC0555 |
+  | `AG` | Agriculture | TMC0554 |
+  | `RP` | RPN Simulator | TMC0555 |
+
+  The second column is each module's `description`, which the picker
+  shows, in the order of `menu-sort` (`modules.md` §2.4; today's
+  `MODULE-MENU-TITLE` and `MODULE-MENU-SORT`; LIB-7 AC-8).
 
 - [ ] **AC-9** — Given a module is plugged in and a golden run that
   calls one of its programs by keys, then the display output, the memory
@@ -198,6 +202,8 @@ The module slot
 - [x] **OQ-4** — *Decided as recommended (user, 2026-11-11).* The name of a module in a preset and in the harness:
   `presets.md` PR-9 says "a module by name or ID". *Recommendation:* the
   two-letter ID of AC-8 is the name; the title is for the picker.
+  *Read since 2026-11-13 (user): the ID is the name a preset uses; the
+  picker shows the `description` (AC-8).*
 - [x] **OQ-5** — *Decided as recommended (user, 2026-11-11).* The fit table names 12 signals on the printer
   connector, and `Briefing.md` §1.9 says the calculator has 11 pads.
   Which of the 12 is not on the connector is the open point of
@@ -222,3 +228,4 @@ The module slot
 | A preset and the harness name a module by its two-letter ID only; `TRACE` is released by a detach, as today; the fit table keeps its 12 signals until the connector is modelled at contact level | user, 2026-11-11 | 2026-11-11 |
 | Every measurement of the printer's timing was made on a PC-100A, not on a PC-100C; no difference is expected, and the criteria keep today's numbers (AC-4) | user, 2026-11-11 | 2026-11-11 |
 | The modules come from `.rom.yaml` files of the ROM repository; a preset names one by `name:` only, `file:` is refused in this release (AC-8) | user, 2026-11-13 (question F-9 of `docs/walkthroughs/presets.md` §5.4); `docs/formats/modules.md` | 2026-11-13 |
+| The picker shows a module's `description`, ordered by `menu-sort`; the names of AC-8 are those of `modules.md` §2.4 | user, 2026-11-13 (question F-14 of `docs/walkthroughs/presets.md` §5.4); `docs/formats/modules.md` §2.1, §2.4 | 2026-11-13 |

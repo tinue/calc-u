@@ -143,7 +143,11 @@ Pickers
   instances; and, in a module slot, the modules that are not media (LIB-4
   AC-1). An entry shows the name, and its description as its tooltip
   (ADR 0025; Calc-U-1600 `Qt6/app/ControlBar.cpp:41-62`,
-  `Web/src/ControlBar.jsx:24-43`).
+  `Web/src/ControlBar.jsx:24-43`). The exception is a Solid State ROM
+  module: it shows its `description` as its label, without a tooltip,
+  and the modules are in the order of their `menu-sort`, equal values in
+  the loader's order, as today (`docs/formats/modules.md` §2.1; C59-6
+  AC-8).
 - [ ] **AC-9** — Given an outdated file of that kind in the save folder,
   then the picker shows it as an entry that cannot be chosen, marked
   outdated, with a hint that names the format, its current version and
@@ -534,3 +538,4 @@ Getting media in and out
 | The notation of AC-21 holds for header keys, `insert` and `arm`; `saveas` keeps today's form, as OQ-3 decided, so a name or a path with spaces is written without quotes there | Phase 5, preset pass (`docs/walkthroughs/presets.md`, A-7); OQ-3 | 2026-11-11 |
 | A medium's own file decides: `template: true` is never written, wherever it lies and however it was named; without it the file is an instance, written in place, also when a preset names it by file. No copy is made at a first write, and no instance takes a bundled template's name (AC-5, AC-15, AC-25, AC-35). Replaces MD-1 and the second part of OQ-8; the earlier rule was an error of the spec, Calc-U-1600 works so today | user, 2026-11-13 (question F-1 of `docs/walkthroughs/presets.md` §5.4); `docs/formats/media.md` | 2026-11-13 |
 | Cassette tapes are media by `media.md` §3: a `.tape.yaml` definition with its WAV, templates and instances, Name & Save, `position`, the preset key `tape:`; one bundled template, the empty tape; a `.wav` alone is a program file (AC-37, AC-42, AC-43). Replaces "tapes keep their own rules" (`media.md` Q-1) | user, 2026-11-13 (question F-7 of `docs/walkthroughs/presets.md` §5.4); `docs/formats/media.md` §3 | 2026-11-13 |
+| A Solid State ROM module shows its `description` in the picker, ordered by `menu-sort`, as today (AC-8) | user, 2026-11-13 (question F-14 of `docs/walkthroughs/presets.md` §5.4); `docs/formats/modules.md` §2.1, §2.4 | 2026-11-13 |

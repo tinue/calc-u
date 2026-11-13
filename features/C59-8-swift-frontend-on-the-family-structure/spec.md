@@ -104,7 +104,8 @@ Control bar
   control state, then it can be used exactly when its entry is available
   now (LIB-14 AC-5). On macOS the reason is its help tag, which a test
   reads as the control's accessibility help; on iOS the reason is not
-  shown, and neither is the description of a module (LIB-7 AC-8).
+  shown, and neither is the tooltip of a module (LIB-7 AC-8); a Solid
+  State ROM module's description is its label and is shown.
 
 Settings
 - [ ] **AC-7** — Given Settings…, on iOS and iPadOS the Settings button

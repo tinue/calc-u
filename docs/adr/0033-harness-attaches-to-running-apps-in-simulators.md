@@ -3,7 +3,9 @@
 Status: accepted (2026-11-09); amended 2026-11-10
 (`docs/contracts/harness.md`, H-4): every frontend **may** offer attach;
 the migration builds it for the Swift frontend only, Qt6 and the web
-follow when a need shows.
+follow when a need shows. Amended 2026-11-13 (user, B-22 of
+`docs/walkthroughs/presets.md`): the Qt6 frontend gets attach in the
+migration; its screenshot scenarios are its client (LIB-14 AC-44).
 
 In development and test builds, every frontend can open its app session to
 the harness protocol (the serve mode of ADR 0026): over the local network

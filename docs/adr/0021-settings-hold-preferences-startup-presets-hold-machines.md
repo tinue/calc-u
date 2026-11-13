@@ -7,6 +7,10 @@ bundled startup preset restores `ti58c.mem`. The TI-58C keeps its
 constant memory across starts only while no startup preset is set for
 it; a startup preset cold boots it, and `ti58c.mem` follows. The
 sentence on the TI-58C under "Consequences" no longer applies.
+Amended 2026-11-13 (user, F-8 of `docs/walkthroughs/presets.md`): a
+TI-58C a preset or a startup preset built never writes the constant
+memory file, which is now `ti58c.memory.yaml` (`docs/formats/media.md`
+§4).
 
 A product's settings hold the user's preferences, the startup model and
 each model's startup preset, nothing about the machine's hardware. The

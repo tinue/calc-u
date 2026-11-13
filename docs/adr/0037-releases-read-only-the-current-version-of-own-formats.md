@@ -5,6 +5,10 @@ phase 4 review): a one-time exception for the migration, see "Scope".
 Made explicit again 2026-11-13 (user): the regular rule upgrades a file
 silently and in place, and a version number changes only when the
 requirements change (`docs/formats/README.md` §2).
+Amended 2026-11-13 (user): the 2.3.0 card files (`.u59`) and
+`ti58c.mem` are ignored, not refused, and get no hint; the new files
+have new names (`.magnetcard.yaml`, `ti58c.memory.yaml`; C59-7 AC-4,
+C59-3 EC-2, behaviour change 59-1).
 
 ## Scope: a one-time exception
 

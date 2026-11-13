@@ -147,7 +147,8 @@ The ways in
 
 - [ ] **AC-11** — Given Calc-U-59, then its preset extensions are
   `.ti59`, `.ti58` and `.ti58c`; its one kind of medium is the magnetic
-  card, `.magnetcard.yaml`; its one file kind, the ASM overlay, is added by C59-4;
+  card, `.magnetcard.yaml`; its file kinds are the keystroke program
+  file (AC-23) and the ASM overlay, which C59-4 adds;
   it sets no limit on the size of a file
   (`Shared/SessionController.cpp:620-638`, `Shared/StateFile.cpp:554-557`).
 - [ ] **AC-12** — Given a magnetic card is opened on a TI-59, then it is
@@ -158,6 +159,17 @@ The ways in
   frontend it is imported and fitted. Given a TI-58 or TI-58C, which has no card
   reader, then it is refused with a notice; today nothing happens
   (`tests/shared_cooperative_tests.cpp:593`).
+- [ ] **AC-23** — Given a keystroke program file (`.keystrokes.yaml`,
+  `docs/formats/preset.md` §4.1.1) is opened on a TI machine, then its
+  program is written into the running machine's program memory from
+  step 000, as a preset's `program:` writes it, without a cold boot:
+  the partition, the data registers and the steps it does not list
+  stay; a file that cannot be read, or a step beyond the model's last
+  step (C59-2 AC-3), is refused with a notice. Given a Solid State ROM module file
+  (`.rom.yaml`), then it is refused with a notice that this release
+  takes a module by its ID only (C59-6 AC-8). Given the constant memory
+  file (`ti58c.memory.yaml`), then it is refused with a notice that it
+  is the product's own file and is not opened.
 - [ ] **AC-13** — Given a file kind that a later feature adds (the ASM
   overlay, C59-4), then this feature's column is complete without it;
   until then an `.asm` file is refused, as today
@@ -305,3 +317,4 @@ The ways in
 | An opened `.tape.yaml` is a medium; a WAV is a program file and is loaded (AC-19) | user, 2026-11-13 (question F-7 of `docs/walkthroughs/presets.md` §5.4); `docs/formats/media.md` §3 | 2026-11-13 |
 | Aligned with `docs/formats/` after the Q&A round: `.magnetcard.yaml` (AC-11) | user rulings of 2026-11-13 (`docs/walkthroughs/presets.md` §5.2, §5.4); `docs/formats/` | 2026-11-13 |
 | Aligned with `docs/formats/` after the Q&A round: a template card is never written (AC-12); the cassette tape as a media kind (AC-17) | user rulings of 2026-11-13 (`docs/walkthroughs/presets.md` §5.2, §5.4); `docs/formats/` | 2026-11-13 |
+| Opening a `.keystrokes.yaml` writes its program into the running machine; `.rom.yaml` and `ti58c.memory.yaml` are refused with a notice (AC-11, AC-23) | user, 2026-11-13 (consistency pass after the Q&A round) | 2026-11-13 |

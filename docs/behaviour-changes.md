@@ -42,6 +42,7 @@ step. Label and menu renames are not repeated here; they are in
 | 59-25 | The PC-100C's TRACE switch keeps its position when the printer is detached and attached again, as the real switch does (today: off); a preset sets it off unless it says `printer-trace: on` (today a preset without `PRINTER: on` keeps it). | user, 2026-11-13; C59-6 AC-6 |
 | 59-26 | Under Examples, `fastmode-sst` is the last of "Programs", not tenth after the printer pictures. | user, 2026-11-13; C59-2 AC-13 |
 | 59-27 | A magnetic card carries its own cue card (from `magnetic-cards:` or from its card file), never the preset's `cue-card:`; a card without one shows a plain card titled with its name; a card a preset feeds is fitted after it has passed, in-file cards too. | user, 2026-11-13 (B-6 of `docs/walkthroughs/presets.md`); `docs/formats/cue-card.md` §2, `media.md` §1.4 |
+| 59-28 | A keystroke program file (`.keystrokes.yaml`) can be opened or dropped: its program goes into the running calculator without a cold boot. A Solid State ROM module file or the constant memory file is refused with a notice. | user, 2026-11-13; LIB-13 AC-23 |
 
 ## Calc-U-1600 (against 0.8.1)
 

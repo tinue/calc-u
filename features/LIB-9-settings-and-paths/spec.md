@@ -41,7 +41,7 @@ What the three status columns mean for this feature:
   bundled example (owner: LIB-6); building the startup model's machine
   (owner: LIB-18).
 - What is stored in the save folder and how: media (LIB-7),
-  `ti58c.mem` (C59-3), traces (LIB-10), screenshots (LIB-6), serial
+  `ti58c.memory.yaml` (C59-3), traces (LIB-10), screenshots (LIB-6), serial
   links (LIB-2).
 - The ROM folder (owner: LIB-12).
 - The Web frontend's persistent file system: that it survives a page
@@ -124,7 +124,7 @@ Paths
 - [ ] **AC-12** — Given the host directories its caller passes when the
   library starts, then the library gives the place of the settings file,
   the save folder, the tape folder, the trace folder, the folder for
-  screenshots and the folder for serial links, and of `ti58c.mem`; no
+  screenshots and the folder for serial links, and of `ti58c.memory.yaml`; no
   frontend and no other feature works out one of these places itself.
   A folder the user chooses through the platform (AC-24) is passed in by
   the frontend like a host directory.
@@ -137,7 +137,7 @@ Paths
 - [ ] **AC-15** — Given a Web frontend, then the save folder and the
   settings file are inside the file system that frontend passes.
 - [ ] **AC-16** — Given the save folder, then media instances and
-  `ti58c.mem` are at its root and cassette tapes are in `Tapes/` inside
+  `ti58c.memory.yaml` are at its root and cassette tapes are in `Tapes/` inside
   it, unless `[storage] tape-folder` names another folder.
 - [ ] **AC-17** — Given a Qt6 frontend, then traces are written to the
   save folder unless `[trace] folder` names another folder, serial links
@@ -316,3 +316,4 @@ Paths
 | A missing save folder is created at the first write; an override that cannot be used is reported and never replaced silently | Recommendation applied; the user raised no objection at the batch 1 gate | 2026-11-10 |
 | At the first start the product ignores the old platform stores, starts with the defaults and writes its first settings file at that moment, with every key; so no older version of the file can exist in the migration release | user, 2026-11-10, batch 2 gate (prompted). Consequence: a default that a later release changes does not reach a file that already holds the old value | 2026-11-10 |
 | The app-written keys: `[startup] last-model`; `[folders]` with one key for each kind of file; `[window]` with plain numbers and, for Swift, `portrait-debug-page`. The Swift trace location is `[trace] location` (`app-support`, `icloud`, `folder`) | user, 2026-11-11; OQ-5, OQ-7 | 2026-11-11 |
+| Aligned with `docs/formats/` after the Q&A round: `ti58c.memory.yaml` (AC-12, AC-16) | user rulings of 2026-11-13 (`docs/walkthroughs/presets.md` §5.2, §5.4); `docs/formats/` | 2026-11-13 |

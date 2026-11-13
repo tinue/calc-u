@@ -234,8 +234,10 @@ Steps and commands
   A level the model does not have, a view the product does not have and
   a count out of range refuse the preset when it is read (Calc-U-59
   `Shared/StateFile.cpp:269-310`).
-- [ ] **AC-20** — Given the harness, then the steps of AC-19 exist as
-  commands with the same names and values, and also these:
+- [ ] **AC-20** — Given the harness, then the steps of AC-19 but
+  `debug-panel:`, a frontend step, which has no command (`harness.md`
+  H-1), exist as commands with the same names and values, and also
+  these:
 
   | Command | Reply |
   |---|---|
@@ -436,14 +438,14 @@ Traces
   of AC-18 are (`debugger.md` DB-6).
 - A trace file is an own format of its product (ADR 0037); neither
   format changes in the migration, so neither gets a new version. The
-  product supplies what a file holds, its header and its records, those
-  for events only it knows (a key, a magnetic card) included; the
-  library starts, limits and ends the trace (OQ-1).
+  product supplies what a file holds, its header and its records, which
+  are the CPU's log alone (AC-33, AC-42); the library starts, limits and
+  ends the trace (OQ-1).
 
 ## Open Questions
 - [x] **OQ-1** — *Decided as recommended (user, 2026-11-10, batch 6 gate).* Traces (open point of `features/INDEX.md`): is starting,
   limiting and ending a trace library code? *Recommendation:* yes, as
-  AC-22 to AC-27 say: one trace session in the library for the step, the
+  AC-22 to AC-26 say: one trace session in the library for the step, the
   command and the buttons, and the file's content per product. No
   product row is then needed for traces; the two formats are stated in
   this spec (AC-33, AC-42).
@@ -493,3 +495,4 @@ Traces
 | The preset steps `pause:`, `pause-on-start:`, `step:`, `resume:` and `debug-panel:` are Calc-U-59's for now; on the Sharp models they are refused, since a step would have to name one of the PC-1600's two CPUs. `step:` takes `{ level, count }`. The run control and its harness commands stay in both products (AC-19, AC-40). Replaces the row of 2026-11-10 "The debugger steps work in both products" | user, 2026-11-13 (question F-4 of `docs/walkthroughs/presets.md` §5.4); `docs/formats/preset.md` §5.6, §7 | 2026-11-13 |
 | A TI trace holds the CPU's log only: the key and card records go, in every trace (AC-33) | user, 2026-11-13 (B-17 of `docs/walkthroughs/presets.md` §5.2): early debug aids, never reliable | 2026-11-13 |
 | In an ASM overlay a pause lands after 50000 instructions whatever the processor does (AC-29) | user, 2026-11-13 (B-18 of `docs/walkthroughs/presets.md` §5.2) | 2026-11-13 |
+| Aligned with `docs/formats/` after the Q&A round: no command for `debug-panel:` (AC-20); trace records are the CPU log (Technical Requirements); OQ-1 cites AC-22 to AC-26 | user rulings of 2026-11-13 (`docs/walkthroughs/presets.md` §5.2, §5.4); `docs/formats/` | 2026-11-13 |

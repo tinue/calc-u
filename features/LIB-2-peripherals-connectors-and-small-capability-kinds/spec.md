@@ -66,8 +66,9 @@ appears there, a pseudo-terminal that any serial program can open.
 - Media places, the content of a peripheral that holds memory, and
   saving a switch position with it (owner: LIB-7); paper output (LIB-8);
   typing support (LIB-5); debug targets (LIB-10).
-- The steps `switch` and `syncclock` and their harness commands (owner:
-  LIB-6, which builds on this feature); harness commands for a serial
+- The step `syncclock` and the harness commands `switch` and
+  `syncclock` (owner: LIB-6, which builds on this feature); the step
+  `printer-trace` (owner: LIB-6 AC-40, C59-6); harness commands for a serial
   port (`harness.md` H-2: a Calc-U-1600 product command; see the open
   point in `features/INDEX.md`).
 - Module definitions as files (LIB-7, C1600-1); finding the ROM images
@@ -348,3 +349,4 @@ Invariants checked in review and in the phase 5 walkthroughs:
 | The CE-161's write-protect switch is set with a save, and a power cycle follows; at an attach its position comes from the saved file (AC-32) | user, 2026-11-11; reverses the recommendation of OQ-4; behaviour change 1600-17 | 2026-11-11 |
 | The reason of a refused attach is an English sentence, from the core for product rules and from the library for the general cases; the serial port carries today's behaviour over; no machine has controls of its own | user, 2026-11-11 | 2026-11-11 |
 | In the harness the real-time clock gets the date and time of LIB-11 AC-21, by default a fixed instant (AC-23) | user, 2026-11-13 (B-20 of `docs/walkthroughs/presets.md` §5.2) | 2026-11-13 |
+| Aligned with `docs/formats/` after the Q&A round: the step `printer-trace` and the harness command `switch` (Out of Scope) | user rulings of 2026-11-13 (`docs/walkthroughs/presets.md` §5.2, §5.4); `docs/formats/` | 2026-11-13 |

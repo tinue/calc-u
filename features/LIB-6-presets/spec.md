@@ -16,7 +16,8 @@
   topic, notices, the log).
 - The format: `docs/formats/` (the user, 2026-11-12): `README.md` (the
   syntax, version, name, references, errors, platform markers) and
-  `preset.md` (preset format 2). It says what a preset holds and means;
+  `preset.md` (preset format 2), and `bundle.md` (the bundle file,
+  AC-31). It says what a preset holds and means;
   this spec says what the loader carries out and how it is checked.
   Where an earlier decision below and the format differ, the format
   holds; the decision log says where.
@@ -130,10 +131,11 @@ The file
   `preset-name` (optional; at most 18 characters; without it the
   preset's name is its file stem, shown as it is), `description`
   (optional; one line), `timeout` (optional; AC-57), and one key for
-  each place of the model's descriptor, under the name of that place
-  (`slot-1`, `slot-2`, `printer`, `interface`, `host-drive`, `floppy`,
-  `tape`; `presets.md` PR-2, PR-9, PR-11; `docs/formats/README.md` §2,
-  `preset.md` §3). The product header keys of `preset.md` §3
+  each place of the model's descriptor that holds installed periphery, under
+  the name of that place (`slot-1`, `slot-2`, `printer`, `interface`,
+  `host-drive`; `presets.md` PR-2, PR-9, PR-11); a removable medium is
+  no header key but a step (`card:`, `floppy:`, `tape:`; `preset.md`
+  §3, §5.2; LIB-7; `docs/formats/README.md` §2). The product header keys of `preset.md` §3
   (`magnetic-cards`, `slot-N-rom`, `bus-rom`, `debug`) are added by
   their owners (AC-29). That a `preset-name` differs from those of the
   other presets of the same model is checked over the preset list
@@ -357,7 +359,8 @@ The steps of this feature
   TRACE switch by `printer-trace: on|off` (AC-40; `preset.md` §5.5).
 - [ ] **AC-27** — Given the step `syncclock:`, which takes no value, on
   a Sharp model, then every real-time clock of the machine is handed the
-  host's date and time as at a build (LIB-2 AC-23), and the log gets the
+  host's date and time as at a build (LIB-2 AC-23; in the harness, the
+  date and time of LIB-11 AC-21), and the log gets the
   time set; on a TI model it is refused when the preset is read, since
   it is marked [1600] (AC-62; `preset.md` §5.4; Calc-U-1600
   `Core/Preset/PresetFile.cpp:287-294`, `Core/Preset/PresetRunner.hpp:177`).
@@ -454,7 +457,8 @@ Harness
   | `full-speed`, `regular-speed` | the command of LIB-3 AC-21; not paced in the harness (AC-22) | done |
   | `elapsed-time start`, `elapsed-time report` | AC-23 | done; for `report` the time |
   | `expect <text>` | AC-24 | done, or refused with what the display shows |
-  | `screenshot <path>` | AC-25, written to that path | done, or refused |
+  | `screenshot <file name>` | AC-25, written under that name to the run's folder for screenshots (LIB-11 AC-8) | done, or refused |
+  | `printer-trace on\|off` | AC-40 | done, or refused without a PC-100C |
   | `switch <peripheral> <control> on\|off` | harness only: sets a switch through the controls capability (LIB-2 AC-16); the preset step is the peripheral's own (AC-26) | done, or refused for an unknown control |
   | `syncclock` | AC-27 | done |
 
@@ -774,4 +778,5 @@ Harness
 | Files with placeholders are checked as filled in, not left out (AC-51) | user, 2026-11-13 (B-24 of `docs/walkthroughs/presets.md` §5.2) | 2026-11-13 |
 | The preset list is the bundle file, a format of its own (`docs/formats/bundle.md`): presets and their files, order and groups; distributions bundle exactly what it lists (AC-31). Replaces "not an own format with a version" | user, 2026-11-13 (B-27 of `docs/walkthroughs/presets.md` §5.2): a format for bundling that lists all presets and their files and sets order and structure; a selection; the site and local builds take the files from the repository or the disk | 2026-11-13 |
 | `expect:` on a TI model compares with X in its full precision, 13 digits, not rounded, whatever the display format (AC-40, OQ-9) | user, 2026-11-13 (§5.4 of `docs/walkthroughs/presets.md`); the step is new, so no preset depends on another rule | 2026-11-13 |
-| A floppy disk and a cassette tape are steps, not header keys; the header holds installed periphery (AC-44, AC-47) | user, 2026-11-13 (LIB-7 EC-5, EC-6, §5.4 of `docs/walkthroughs/presets.md`): removable media are changed at runtime and belong into the chain of steps, like the TI-59's magnetic cards; installed periphery, memory modules included, is fitted before the machine boots | 2026-11-13 |
+| A floppy disk and a cassette tape are steps, not header keys; the header holds installed periphery (AC-2, AC-44, AC-47). Replaces the header key `tape:` (row of 2026-11-13 above) and the media places as header keys of PR-11 | user, 2026-11-13 (LIB-7 EC-5, EC-6, §5.4 of `docs/walkthroughs/presets.md`): removable media are changed at runtime and belong into the chain of steps, like the TI-59's magnetic cards; installed periphery, memory modules included, is fitted before the machine boots | 2026-11-13 |
+| Aligned with `docs/formats/` after the Q&A round: `bundle.md` as a source; header keys for installed periphery only (AC-2); harness clock (AC-27); `screenshot` by file name and a `printer-trace` command (AC-34) | user rulings of 2026-11-13 (`docs/walkthroughs/presets.md` §5.2, §5.4); `docs/formats/` | 2026-11-13 |

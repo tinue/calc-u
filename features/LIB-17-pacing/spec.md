@@ -39,8 +39,8 @@ What the three status columns mean for this feature:
 - Who calls the pacer and when: the host's calls, suspend and continue
   in the background, operations, and throwing away the sound of a
   full-speed stretch (owner: LIB-3).
-- The gesture "hold the display", the `speed` step and the "elapsed"
-  steps (owners: LIB-14 and C59-8 for the gesture; LIB-6 for the steps).
+- The gesture "hold the display", the steps `regular-speed:`,
+  `full-speed:` and `elapsed-time:` (owners: LIB-14 and C59-8 for the gesture; LIB-6 for the steps).
   This feature takes "regular speed" or "full speed" as an input.
 - When a machine is ready to accept a key press (key readiness: LIB-1,
   C59-1) and when it needs a card (a media place that waits for a
@@ -210,7 +210,7 @@ Starting afresh
   AC-1 at the end; it belongs to the checkpoint group. Both exist before
   the product's pacer is replaced and are run on the old code first.
 - How AC-19 and AC-22 read a running frontend's emulated time where
-  harness attach does not exist yet (Qt6, Web;
+  harness attach does not exist yet (the Web frontends;
   `docs/contracts/harness.md`, H-4) is decided in the design.
 
 ## Open Questions
@@ -235,3 +235,4 @@ None.
 | A lag over 0.1 seconds is dropped whole, for every model | user, 2026-11-10, batch 2 gate (prompted) | 2026-11-10 |
 | The full-speed allowance is one library value, 14 ms per call. The Calc-U-59 Swift and Qt6 frontends lose the free-running thread of today and with it a little top speed | Recommendation applied; the user had no preference and asked what the problem is, which was explained at the gate | 2026-11-10 |
 | ODD59-6 stays; only a preset's `wait:` at full speed is not paced on an idle TI machine (AC-16) | user, 2026-11-13 (question F-12 of `docs/walkthroughs/presets.md` §5.4): what was built is kept | 2026-11-13 |
+| Aligned with `docs/formats/` after the Q&A round: step names; attach missing only on the Web | user rulings of 2026-11-13 (`docs/walkthroughs/presets.md` §5.2, §5.4); `docs/formats/` | 2026-11-13 |

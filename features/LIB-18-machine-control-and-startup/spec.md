@@ -52,7 +52,7 @@ with a stand-in for the loader; the product columns need LIB-6.
   menu, the control bar, shortcuts, the long press (owners: LIB-14,
   C59-8; ADR 0024).
 - "Available now" for a model, a variant or a peripheral (owner: LIB-4).
-- The `ti58c.mem` file (owner: C59-3). This feature says when a TI-58C
+- The constant memory file `ti58c.memory.yaml` (owner: C59-3). This feature says when a TI-58C
   is built with its constant memory.
 - Media in a media place, inserting and ejecting (owner: LIB-7).
 - The debugger's pause across a reset (owner: LIB-10); the ASM overlay
@@ -161,7 +161,7 @@ While an operation runs
   (OQ-2).
 - [ ] **AC-19** — Given a TI-58C is built without a startup preset, at a
   start or at a model switch, then it is built with the constant memory
-  of `ti58c.mem`; given it is built from a startup preset or from any
+  of `ti58c.memory.yaml`; given it is built from a startup preset or from any
   preset, then it is cold booted like any machine (`capabilities.md`
   C-3; behaviour change 59-12).
 - [ ] **AC-20** — Given a model switch in Calc-U-59, then the module and
@@ -341,3 +341,4 @@ While an operation runs
 | Reset, Cold boot and a model switch end a running operation instead of being refused, so that the user can stop a preset | user, 2026-11-10, batch 4 gate; amends `frontend.md` Q-1 | 2026-11-10 |
 | What follows an attach is the machine's answer at that moment; a switched-off Sharp machine answers that nothing follows | user, 2026-11-10, batch 4 gate; amends `peripherals.md` P-5 | 2026-11-10 |
 | The built-in default machine of the TI-58 and TI-58C is the same as the TI-59's: Master Library module, no printer | user, 2026-11-10, batch 4 gate; answers `capabilities.md` Q-3 | 2026-11-10 |
+| Aligned with `docs/formats/` after the Q&A round: `ti58c.memory.yaml` (AC-19) | user rulings of 2026-11-13 (`docs/walkthroughs/presets.md` §5.2, §5.4); `docs/formats/` | 2026-11-13 |

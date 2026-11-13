@@ -39,16 +39,16 @@ What the three status columns mean for this feature:
   and media.
 
 ## Out of Scope
-- The commands of other features: `key` and `type` (LIB-5); `load` of a
-  preset, the other steps as commands, the bare `wait` that waits until
+- The commands of other features: `key` and `type` (LIB-5); the command
+  `preset`, the other steps as commands, the bare `wait` that waits until
   the machine is idle, `expect`, `screenshot`, checking presets (LIB-6);
   media (LIB-7); paper (LIB-8); `dump`, `peek`, `poke`, `break`,
   stepping, traces (LIB-10); model, variant, attach, reset (LIB-18).
   Each is specified with its feature (rule 4 of the cut).
 - Product commands (`harness.md` H-2) for functions that are carried
   over without a row of their own: owners C59-9 and C1600-5 (OQ-4).
-- Attach to a running frontend (owner: C59-5 for the Swift frontend;
-  Qt6 and Web later, `harness.md` H-4). This feature defines the
+- Attach to a running frontend (owners: C59-5 for the Swift frontend,
+  LIB-14 AC-44 for Qt6; Web later, `harness.md` H-4). This feature defines the
   protocol that attach uses.
 - A Python helper for `serve` (`harness.md` Q-2: phase 6, with the
   skills).
@@ -205,7 +205,7 @@ The first commands
   | `--dump-mem <address>,<length>` | memory as a hex dump | LIB-10 |
   | `--inspect <view>` | an INSPECTOR view as text | C1600-5 (`pc1600 inspect`; C1600-1 AC-19) |
   | `--dump-basic` | the BASIC pointers and the program area | C1600-5 (`pc1600 dump-basic`) |
-  | `--tape-in <wav>`, `--tape-out <wav>` | play or record a cassette | LIB-7 (`insert`, `eject`); C1600-5 (`pc1600 tape record`, `tape status`) |
+  | `--tape-in <wav>`, `--tape-out <wav>` | play or record a cassette | LIB-7 (`tape`, `eject`); C1600-5 (`pc1600 tape record`, `tape status`) |
   | `--ce158-pty`, `--ce158-rx`, `--ce158-rx-hold`, `--ce158-tx` | feed and capture the CE-158's serial port | C1600-5 (`pc1600 serial`) |
   | `--save-dir`, `--modules-dir` | the save folder; where module definitions are | this feature (AC-8), LIB-7 |
   | the summary after a run: registers, the last instructions, where the program counter spent its time | | LIB-10 |
@@ -322,3 +322,4 @@ The first commands
 | The harness hands a real-time clock a fixed instant by default; an option names another date and time or the host's (AC-21) | user, 2026-11-13 (B-20 of `docs/walkthroughs/presets.md` §5.2): "a plain fixed instant as default"; today only a test pins the clock (`Core/tests/job_tests.cpp:228-235`) | 2026-11-13 |
 | The Qt6 screenshot scenarios are a client of harness attach (Out of Scope, AC-18) | user, 2026-11-13 (B-22 of `docs/walkthroughs/presets.md` §5.2, left to the specification: "what works best for an agentic workflow") | 2026-11-13 |
 | The three probes are not taken over; the calendar scripts stay (AC-18, OQ-5 amended) | user, 2026-11-13 (B-25 of `docs/walkthroughs/presets.md` §5.2): "old, no longer relevant scripts and probes are not taken over into the new project. calendar yes, upgrade it" | 2026-11-13 |
+| Aligned with `docs/formats/` after the Q&A round: the command `preset`; Qt6 attach (LIB-14 AC-44); tape commands `tape`, `eject` (AC-18) | user rulings of 2026-11-13 (`docs/walkthroughs/presets.md` §5.2, §5.4); `docs/formats/` | 2026-11-13 |

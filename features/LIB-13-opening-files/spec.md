@@ -147,7 +147,7 @@ The ways in
 
 - [ ] **AC-11** — Given Calc-U-59, then its preset extensions are
   `.ti59`, `.ti58` and `.ti58c`; its one kind of medium is the magnetic
-  card, `.u59`; its one file kind, the ASM overlay, is added by C59-4;
+  card, `.magnetcard.yaml`; its one file kind, the ASM overlay, is added by C59-4;
   it sets no limit on the size of a file
   (`Shared/SessionController.cpp:620-638`, `Shared/StateFile.cpp:554-557`).
 - [ ] **AC-12** — Given a magnetic card is opened on a TI-59, then it is
@@ -301,3 +301,4 @@ The ways in
 | `.rom` is no name of a machine-code file: not in a dialog, not on a drop, not in the file types of Open With | user, 2026-11-10, after the batch 7 gate: the extension is not used anywhere | 2026-11-10 |
 | Only a file dialog changes the folder in which the next file dialog starts (EC-7) | user, 2026-11-10, batch 7 gate; OQ-3; behaviour change 1600-15 | 2026-11-10 |
 | An opened `.tape.yaml` is a medium; a WAV is a program file and is loaded (AC-19) | user, 2026-11-13 (question F-7 of `docs/walkthroughs/presets.md` §5.4); `docs/formats/media.md` §3 | 2026-11-13 |
+| Aligned with `docs/formats/` after the Q&A round: `.magnetcard.yaml` (AC-11) | user rulings of 2026-11-13 (`docs/walkthroughs/presets.md` §5.2, §5.4); `docs/formats/` | 2026-11-13 |

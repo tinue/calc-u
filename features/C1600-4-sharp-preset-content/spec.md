@@ -97,8 +97,10 @@ The `program:` section
   reason (LIB-6 AC-17) (`Core/Preset/PresetRunner.cpp:200-257`).
 - [ ] **AC-4** — Given a `program:` section with `text: |`, then its
   lines are typed in as a BASIC program, line by line, by the loader
-  that types (C1600-2); the preset has to put the machine into program
-  mode before (`- key: mode`), and the load does not do it. Given no
+  that types (C1600-2); the preset puts the machine into program mode
+  before (`- key: mode`), unless the model's start leaves it there
+  (first steps C-7 confirms which models), and the load never changes
+  the mode itself. Given no
   line was stored, as when the machine was not in program mode, or some
   were not, then the preset fails with a reason that says so and names
   the lines (`Core/PC1600/PC1600BasicTyper.cpp:333-340`).
@@ -375,3 +377,4 @@ The shipped presets
 | The templates are checked once filled in (AC-15) | user, 2026-11-13 (B-24 of `docs/walkthroughs/presets.md` §5.2); today nothing checks them | 2026-11-13 |
 | Its comments are corrected where they name a key, a tool or a format that changed, and the READMEs under `examples/` are upgraded with the files (AC-15) | user, 2026-11-13 (B-26 of `docs/walkthroughs/presets.md` §5.2); no spec owned these texts | 2026-11-13 |
 | The bundle file lists each preset with its files; only these are bundled, not whole folders (AC-17) | user, 2026-11-13 (B-27 of `docs/walkthroughs/presets.md` §5.2): a format for bundling that lists all presets and their files and sets order and structure; a selection; the site and local builds take the files from the repository or the disk | 2026-11-13 |
+| Program mode before `text: \|` is the preset's, unless the model's start leaves the machine in it (AC-4) | user, 2026-11-13 (B-29 of `docs/walkthroughs/presets.md` §5.2); the RENUM template relies on a PC-1500A in PRO after its cold start | 2026-11-13 |

@@ -678,7 +678,7 @@ the questions of §5.4.
 | B-26 | **Ruled 2026-11-13 (user) as recommended: comments corrected, READMEs under `examples/` upgraded with the files. Applied in C59-2 AC-10, C59-4 AC-20, C1600-4 AC-15** | Unchanged |
 | B-27 | (a), (d) **ruled 2026-11-13 (user): a bundle file (`docs/formats/bundle.md`) lists the presets and their files, order and groups; every distribution bundles exactly that; a selection; no examples zip; the site takes the files from the repository. Applied in LIB-6 AC-31, C1600-4 AC-17, C59-2 AC-13, LIB-19 AC-1, AC-9, OQ-5, glossary**; (c) **ruled 2026-11-13 (user) as recommended: a path inside the bundle; unlisted refused with a notice. Applied in LIB-15 AC-16** | (b) settled otherwise: a list shows the name tag (`preset-name`, else the file stem), the description is the tooltip or longer entry (`README.md` §2). (a), (c), (d) open |
 | B-28 | **Ruled 2026-11-13 (user): zeroed defaults, then the memory file where one is handed, then the processor powered; nothing clears memory after the start. Applied in C59-1 AC-6, C59-3 AC-8, AC-9, C59-2 AC-1, EC-3, `media.md` §4** | A cold boot zeroes all memory before the processor starts, the constant memory included (`preset.md` §2); what the ROM's start-up then writes is confirmed by C-6 |
-| B-29 | Open | Unchanged |
+| B-29 | **Ruled 2026-11-13 (user) as recommended: "unless the model's start leaves it there"; C-7 confirms. Applied in C1600-4 AC-4** | Unchanged |
 
 #### Steps and time
 

@@ -664,7 +664,7 @@ the questions of §5.4.
 | B-12 | **Ruled 2026-11-13 (user): corrected to `11` (C59-2 AC-10)** | Unchanged; under §4.1 `11.` is no keycode either |
 | B-13 | **(a), (d), (f) ruled 2026-11-13 (user; C59-2 AC-10)**; the rest settled by the format | (a) a tab is an error, the converter's rule is open (conversion guide set aside); (b) settled: no `IdAlign` in the format; (c) settled: an empty label is an empty cell (`cue-card.md` §3); (d) open; (e) reversed: a duration may have a fraction, `1.5s`; (f) open; (g) void: `magnetic-cards:` is a header key and may stand anywhere |
 | B-14 | **(a), (e) ruled 2026-11-13 (user): last line without a line end; fixed values read in any case (`README.md` §1)**; the rest settled by the format | (a) open; (b) settled: tokens are split by spaces; (c) settled as recommended (§4.2); (d) settled as recommended (§5.4, S16); (e) settled: an unknown key refuses, labels in any case, `A′` accepted; the case of values open; (f) settled: card files are version 3, without `Template` and `Banks` |
-| B-15 | Partly settled | The three fixtures become rejection tests (conversion check §1). The rest open |
+| B-15 | **Ruled 2026-11-13 (user): as recommended (C59-2 AC-10, Technical Requirements)** | The three fixtures become rejection tests (conversion check §1). The rest open |
 | B-16 | Open | Unchanged; the step is `printer-trace:` now |
 | B-17 | Open | Unchanged; and `screenshot:` writes to the trace folder (`preset.md` §5.4) against LIB-9 AC-17 (LIB-6 OQ-6) |
 | B-18 | Open | Unchanged |

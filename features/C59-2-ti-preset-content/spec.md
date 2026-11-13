@@ -166,8 +166,8 @@ Commands
   (LIB-11 AC-13, AC-14; today `tools/headless/ti59.py:265-266`).
 
 The shipped and hosted presets
-- [ ] **AC-10** — Given the 57 presets under `examples/`, and those
-  presets under `tests/fixtures/` that the new tests still load, then
+- [ ] **AC-10** — Given the 57 presets under `examples/`, the five of
+  `examples/screentest/` among them, then
   each is in version 2 (ADR 0037; behaviour change
   59-1), written from its 2.3.0 file by the table of `preset.md` §9.1
   and these rules, which settle for Calc-U-59 what §9.1 leaves open:
@@ -282,7 +282,10 @@ The shipped and hosted presets
 - These sections are added through the place LIB-6 AC-29 gives; the
   loader itself knows none of them.
 - The readers of the 2.3.0 format and the `STATE` records of
-  `tests/golden/formats.txt` are not carried over (LIB-6).
+  `tests/golden/formats.txt` are not carried over (LIB-6), and nor are
+  the three presets of `tests/fixtures/statefiles/` that exist for them.
+  Each refusal of AC-2 to AC-5 is tested instead by a small text with
+  that one error.
 - The reference runs of AC-11 are recorded with 2.3.0 before any core
   code is touched, together with the golden runs of C59-1.
 
@@ -344,3 +347,4 @@ The shipped and hosted presets
 | The reference runs are recorded by a driver on 2.3.0's session code and end at idle, at a pause or an hour after the last key; the comparison is at the idle or paused machine after the harness `wait`, includes the cards a preset wrote, leaves out ticks and `Elapsed:`, and excepts `life.ti59` and the intended differences by name (AC-11) | user, 2026-11-13 (B-10 of `docs/walkthroughs/presets.md` §5.2) | 2026-11-13 |
 | `debug/example-brief.ti59`: `002  11.` is corrected to `11` with the upgrade, and its reference run is recorded from the corrected file (AC-10) | user, 2026-11-13 (B-12 of `docs/walkthroughs/presets.md` §5.2) | 2026-11-13 |
 | Upgrade rules for tabs, a `21` before its key on the next line, and directives commented out (AC-10) | user, 2026-11-13 (B-13 of `docs/walkthroughs/presets.md` §5.2) | 2026-11-13 |
+| The three statefile fixtures go with the `STATE` records; each refusal of AC-2 to AC-5 has a test text with that one error; all 57 examples, screentest included, are upgraded and loaded (LIB-6 AC-43) | user, 2026-11-13 (B-15 of `docs/walkthroughs/presets.md` §5.2) | 2026-11-13 |

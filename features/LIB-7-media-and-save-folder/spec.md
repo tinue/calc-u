@@ -63,8 +63,9 @@ What the three status columns mean for this feature:
 - What a medium's content means and the format of each kind: the
   magnetic card and its new version, the card reader, `fit`, the corner
   taps and the cue cards (owner: C59-7); `.card.yaml` and
-  `.floppy.yaml`, which stay as they are, and the cassette's WAV
-  (Calc-U-1600; OQ-6).
+  `.floppy.yaml`, which stay as they are, and the cassette tape
+  definition `.tape.yaml` with its WAV (Calc-U-1600; OQ-6;
+  `docs/formats/media.md` §3).
 - Which places a model has and what fits them (LIB-1, LIB-2, LIB-4);
   what a module change does to the machine (LIB-18 AC-29).
 - Opening a medium by drop, Open With or a file picker (owner: LIB-13;
@@ -339,10 +340,11 @@ Getting media in and out
 
 - [ ] **AC-37** — Given Calc-U-1600, then its kinds of media are the
   battery-backed module (`.card.yaml`), the floppy disk
-  (`.floppy.yaml`) and the cassette tape (`.wav`); the two YAML formats
-  stay at `format-version: 1` and are read and written as today, the
-  name being `module-name:` or `disk-name:` and a template saying
-  `template: true` (`Core/Connector/MemoryCardDefinition.hpp:24-25, 168-172`,
+  (`.floppy.yaml`) and the cassette tape (a tape definition
+  `.tape.yaml` with its `.wav`, `media.md` §3, version 1, new); the two
+  other YAML formats stay at `format-version: 1` and are read and
+  written as today, the name being `module-name:`, `disk-name:` or
+  `tape-name:` and a template saying `template: true` (`Core/Connector/MemoryCardDefinition.hpp:24-25, 168-172`,
   `Core/Connector/FloppyImageFile.hpp:23-54`; behaviour change 1600-1).
 - [ ] **AC-38** — Given the picker of a module slot, then it is that of
   AC-8, with the modules that fit the slot (LIB-2 AC-2); choosing one
@@ -369,22 +371,27 @@ Getting media in and out
   mark, as today; a disk is written whole and keeps its description
   (`Core/Connector/BatteryCardInstance.hpp:233-249, 329`,
   `Shared/FloppyBay.cpp:154`).
-- [ ] **AC-42** — Given cassette tapes, then they keep their own rules
-  (`media.md` Q-1). A tape is a WAV file in the tape folder; its name is
-  its file name, by the rule of AC-3; there are no tape templates, no
-  autosave by AC-11 and no Name & Save; the cassette has no header key
-  in a preset, and `insert:` and `eject:` work for it with a tape to
-  play; the topic of AC-7 lists the tapes. The tape picker lists the WAV files of the tape
-  folder by name; a tape chosen there only plays, from its start; a new
-  tape is named first (AC-20) and only records; a recording is written
-  whole, as mono 16-bit WAV at 48000 Hz, each time the motor stops and
+- [ ] **AC-42** — Given cassette tapes, then a tape is a medium like the
+  others: a tape definition (`media.md` §3) with its name tag
+  `tape-name`, its `description`, the sound file it names by `file:`
+  and its `position`, a template when it says `template: true` and an
+  instance otherwise (AC-25). The product bundles one tape template, the
+  empty tape, which the tape picker offers; Name & Save of a tape copies
+  the definition and its sound file into an instance, and recording
+  onto an instance writes into its sound file, which keeps its
+  `position` up to date. A preset inserts a tape with the header key
+  `tape:` (`preset.md` §3), and the picker lists the tape definitions
+  (the topic of AC-7). A `.wav` on its own is not a tape but a program
+  file (C1600-2; LIB-13 AC-19). What stays of today: a recording is
+  written as mono 16-bit WAV at 48000 Hz, each time the motor stops and
   when the tape is ejected; a failed write is a notice; the counter
   shows the position while playing and the length while recording, and
   is green while the motor runs (`Shared/TapeBay.cpp:28-80`,
   `Core/Tape/TapeDeck.hpp:30-163`, `Qt6/app/ControlBar.cpp:386-411`).
+  Open: OQ-9.
 - [ ] **AC-43** — Given the Web frontend, then importing takes module
-  files, disk files and WAV files as today, a WAV under its file name
-  and only when it can be played, and the saved media list is today's
+  files, disk files and tape definitions with their WAV, and the saved
+  media list is today's
   (`Shared/MediaLibrary.cpp:59-116`); deleting now asks first (OQ-4).
 - [ ] **AC-44** — Given what the tests of Calc-U-1600 check today about
   media, then it holds, with the changes of AC-38 and AC-40: the lists
@@ -477,7 +484,8 @@ Getting media in and out
   of this feature: the magnetic card with C59-7; `.card.yaml`,
   `.floppy.yaml` and the tape's WAV with the Calc-U-1600 column of this
   feature, moved under the seam unchanged. No product row is added for
-  them.
+  them. *Since 2026-11-13 (user) the tape definition `.tape.yaml` is
+  new there too.*
 - [x] **OQ-7** — *Decided as recommended (user, 2026-11-10, batch 6 gate).* "Kind" (of medium), "user template" and "saved media"
   for the glossary, as defined above; the glossary's Template then says
   "bundled with a product or made by the user".
@@ -494,6 +502,15 @@ Getting media in and out
   instance may. *Recommendation:* allow it for AC-25 only, as AC-5
   says, so that a preset finds the template again and replaces its own
   results.
+
+- [ ] **OQ-9** — Tapes (AC-42), what `media.md` §3 leaves open: where
+  tape definitions and their sound files lie (the tape folder of LIB-9
+  AC-16, or the save folder like the other media); when `position` is
+  written; what a WAV of today's tape folder is after the update, given
+  that the user wraps the few there are in a definition by hand (read
+  into the ruling of 2026-11-13); and whether `tape:` works with a
+  CE-150 on a PC-1600, which `preset.md` §3 allows and C1600-1 AC-16
+  ("as today") does not (LIB-6 OQ-10).
 
 ## Decision Log
 
@@ -516,3 +533,4 @@ Getting media in and out
 | A save that sets the write-protect switch is followed by a power cycle, as if a module had been plugged in (AC-19) | user, 2026-11-11; LIB-2 OQ-4 | 2026-11-11 |
 | The notation of AC-21 holds for header keys, `insert` and `arm`; `saveas` keeps today's form, as OQ-3 decided, so a name or a path with spaces is written without quotes there | Phase 5, preset pass (`docs/walkthroughs/presets.md`, A-7); OQ-3 | 2026-11-11 |
 | A medium's own file decides: `template: true` is never written, wherever it lies and however it was named; without it the file is an instance, written in place, also when a preset names it by file. No copy is made at a first write, and no instance takes a bundled template's name (AC-5, AC-15, AC-25, AC-35). Replaces MD-1 and the second part of OQ-8; the earlier rule was an error of the spec, Calc-U-1600 works so today | user, 2026-11-13 (question F-1 of `docs/walkthroughs/presets.md` §5.4); `docs/formats/media.md` | 2026-11-13 |
+| Cassette tapes are media by `media.md` §3: a `.tape.yaml` definition with its WAV, templates and instances, Name & Save, `position`, the preset key `tape:`; one bundled template, the empty tape; a `.wav` alone is a program file (AC-37, AC-42, AC-43). Replaces "tapes keep their own rules" (`media.md` Q-1) | user, 2026-11-13 (question F-7 of `docs/walkthroughs/presets.md` §5.4); `docs/formats/media.md` §3 | 2026-11-13 |

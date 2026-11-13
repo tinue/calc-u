@@ -210,8 +210,10 @@ The ways in
   clear from the context, and refused otherwise; in the Web frontend it
   is imported, and plugged in under the same rule (AC-4).
   Today such a file can only be imported from the menu of the Web
-  frontend (`Shared/MediaLibrary.cpp:59-107`). A WAV is never taken as a
-  tape here; a tape is imported from the menu (LIB-7 AC-43).
+  frontend (`Shared/MediaLibrary.cpp:59-107`). A tape definition
+  (`.tape.yaml`) is a medium, inserted into the cassette when the model
+  has one (LIB-7 AC-42). A WAV is never taken as a tape here: it is a
+  program file and is loaded (`docs/formats/media.md` §3; C1600-2).
 - [ ] **AC-20** — Given a drop or Open With, then a file of more than
   1 MiB is refused; today it is passed over without a word (OQ-4) (`Qt6/app/MainWindow.cpp:768-779`,
   `Web/src/CalcU1600.jsx:16, 175`); the file dialogs of the menu have no
@@ -298,3 +300,4 @@ The ways in
 | An opened module file is plugged in when it is clear from the context where it goes (a machine with one slot; a module that fits only one slot); otherwise it is refused with a notice. It is plugged in as by the slot's picker, from where it lies | user, 2026-11-10, after the batch 7 gate; confirmed 2026-11-11 | 2026-11-10 |
 | `.rom` is no name of a machine-code file: not in a dialog, not on a drop, not in the file types of Open With | user, 2026-11-10, after the batch 7 gate: the extension is not used anywhere | 2026-11-10 |
 | Only a file dialog changes the folder in which the next file dialog starts (EC-7) | user, 2026-11-10, batch 7 gate; OQ-3; behaviour change 1600-15 | 2026-11-10 |
+| An opened `.tape.yaml` is a medium; a WAV is a program file and is loaded (AC-19) | user, 2026-11-13 (question F-7 of `docs/walkthroughs/presets.md` §5.4); `docs/formats/media.md` §3 | 2026-11-13 |

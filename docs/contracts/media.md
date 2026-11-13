@@ -206,7 +206,9 @@ Options:
 - Q-5 (phase 6): When two instances carry the same name (MD-5), which
   one a save by name replaces (`saveas: live`, Name & Save, a preset's
   first write).
-- Q-1 (answered 2026-11-10): cassette tapes keep their own rules (fixed role,
+- Q-1 (answered 2026-11-10; superseded 2026-11-13, user: a tape is a
+  medium by `docs/formats/media.md` §3, a definition with its WAV,
+  templates, Name & Save, one bundled empty tape): cassette tapes keep their own rules (fixed role,
   written at each motor stop into `Tapes/`); WAV is an external format.
   Background: today fixed-role (play or record) and written at
   each motor stop into the tapes folder; whether a recorded tape is an
@@ -232,3 +234,4 @@ Options:
 | 2026-11-10 | MD-3 (completed, user, 2026-11-10, batch 6 gate) | A name must not hold `/ \\ : * ? " < > \|` or a control character, on every platform; names that differ only in case are one name. Import, export and delete of saved media are in the Web frontend of both products; delete asks first. |
 | 2026-11-10 | ADR 0019 (amended, user, 2026-11-10, batch 7 gate) | A medium the user opens from elsewhere is used and written back where it lies; a Web frontend copies it into the save folder. The card format is version 3.0 with a `Name:` line; `.bin` is no longer a card; a card is written whole. |
 | 2026-11-13 | MD-1, I-2, I-3 (superseded, user, 2026-11-13) | A medium's own file decides: `template: true` is never written; any other medium file is an instance, written in place, also when a preset names it by path; no copy at a first write; no instance takes a bundled template's name. The earlier rule was an error of the spec; Calc-U-1600 works so today (`docs/formats/media.md`). |
+| 2026-11-13 | Q-1 (superseded, user, 2026-11-13) | A cassette tape is a medium: a `.tape.yaml` definition with its WAV, templates and instances, Name & Save, `position`; one bundled template, the empty tape (`docs/formats/media.md` §3). |

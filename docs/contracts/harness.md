@@ -55,7 +55,16 @@ the glossary keeps that word for what a machine exposes.)
 
 ### H-1: Command vocabulary
 
-**Decided (2026-11-10): option (a).**
+**Decided (2026-11-10): option (a).** *Reworded 2026-11-13 (the user
+left it to the specification): a command has the name and meaning of the
+preset step that acts (`docs/formats/preset.md`); it replies when its
+action has been carried out (keys up, ENTER done, the card passed) and
+does not wait until the machine is idle. The waiting rules of a preset
+(the implicit wait, `skip-wait`, `let-it-finish`, `timeout`) are the
+preset's; their one harness counterpart is `wait` without a duration,
+until the machine is idle, at most one hour. Frontend steps have no
+command. A preset is thus not a recorded harness session: it is the
+same actions plus its waiting rules.*
 
 Options:
 - (a) **Recommended:** the serve protocol's commands are the preset step
@@ -138,3 +147,4 @@ Options:
 | 2026-11-10 | Functions to keep (amended, user, phase 4b, batch 3 gate) | The Calc-U-1600 probes and the Calc-U-59 calendar scripts stay scripts that use `calcu serve`; they do not become commands. Product commands are the index rows C59-9 and C1600-5. |
 | 2026-11-10 | H-1 (completed, user, 2026-11-10, batch 7 gate) | `serve` takes `--dap <port>` with Calc-U-1600: the debug server is hosted without a wall clock, the machine running unpaced whenever a debugger has it running. |
 | 2026-11-10 | H-2 (completed, user, 2026-11-10, batch 8 gate) | Product commands of Calc-U-59 (C59-9): `ti59 coverage`, read from the debugger core's `profile`, `line-times`, `run-time`, `hot-steps`, `step-trace`, `step-cost`, `keycodes list` and `keycodes assemble`, which reads what `list` writes; a listing uses the key names of typing. The coverage scenarios and the fast-mode matrix stay scripts. Product commands of Calc-U-1600 (C1600-5): `pc1600 dump-basic`, `inspect <view>`, `tape record <path>` and `tape status`, `serial <port> feed|capture|link|report` for the CE-158's port and the PC-1600's own RS-232C port, `host-drive <folder>|off`. No serial port has a host link in a harness run unless `link` asks. |
+| 2026-11-13 | H-1 (reworded; question F-15 of `docs/walkthroughs/presets.md` §5.4, left to the specification by the user on 2026-11-13 ("what works best for agentic use")) | Commands carry the names and meanings of the steps that act and reply when carried out; waiting is asked for with `wait` (a duration, or none: until idle, at most one hour); the preset's waiting rules have no commands; frontend steps have none. |

@@ -130,8 +130,10 @@ The first commands
   the app session: those of LIB-3 (`display`, `busy`, `notices`, `log`),
   those other features define, and a product's own.
 - [ ] **AC-12** — Given the command `wait`, then this feature specifies
-  its form with a duration; LIB-6 uses the same command as the preset
-  step and adds the form without a duration.
+  its form with a duration, the preset step's; LIB-6 adds the form
+  without a duration, which has no step: the harness counterpart of a
+  preset's implicit wait (LIB-6 AC-34; `harness.md` H-1 as reworded
+  2026-11-13).
 - [ ] **AC-13** — Given a product's commands that only that product has,
   then they are reached under the product's name (`ti59 …`, `pc1600 …`),
   and a command that every product has is at the top level, with
@@ -249,7 +251,9 @@ The first commands
   commands and replies.
 - The commands are the preset step vocabulary plus commands to look and
   to control (`harness.md` H-1): a command that is also a step has the
-  same name and meaning in both, and is specified once.
+  same name and meaning in both, and is specified once; a command
+  replies when its action is carried out, and waiting is asked for with
+  `wait`, since the preset's waiting rules have no commands.
 
 ## Open Questions
 - [x] **OQ-1** — *Decided as recommended (user, 2026-11-10, batch 3 gate).* The names of the first commands (AC-9). `harness.md`
@@ -300,3 +304,4 @@ The first commands
 | Proposed in this spec and accepted (user, 2026-11-11): a run touches no settings file and no save folder of the user unless options say so (AC-8); the first commands and their names (AC-9); a one-shot run can carry several commands (AC-2); `audio` takes all sound output, also that of an operation (AC-9) | LIB-9 left the default to this spec; H-1 names only some commands; today's tools combine several functions in one call and record the buzzer of a whole run | 2026-11-10 |
 | Product commands get one row per product in the index (C59-9, C1600-5); the Calc-U-1600 probes and the Calc-U-59 calendar scripts stay scripts that use `calcu serve` | user, 2026-11-10, batch 3 gate; amends the table of functions to keep in `harness.md` | 2026-11-10 |
 | Of Calc-U-59's tools, the coverage scenarios and the fast-mode matrix stay scripts that drive the harness; only the addresses reached become a command. AC-14 is worded so | user, 2026-11-10, batch 8 gate; C59-9 OQ-5 | 2026-11-10 |
+| Commands reply when carried out; `wait` without a duration is the counterpart of the implicit wait; the preset's waiting rules have no commands (AC-12) | question F-15 of `docs/walkthroughs/presets.md` §5.4, left to the specification by the user on 2026-11-13 ("what works best for agentic use") | 2026-11-13 |

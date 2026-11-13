@@ -150,10 +150,13 @@ Commands and steps
   is pressed after it; a character without a key refuses the command and
   nothing of the text is typed; on a model without such a profile the
   command does not exist (`presets.md` PR-5).
-- [ ] **AC-17** — Given `key`, then the reply comes when the last key is
-  up. Given `type`, then the reply comes when the machine reports prompt
-  readiness again after ENTER, or when the time the profile gives for
-  that has passed, whichever is first; the reply is done in both cases.
+- [ ] **AC-17** — Given the harness command `key`, then the reply comes
+  when the last key is up. Given `type`, then the reply comes when ENTER
+  is up. Neither waits until the machine is idle; an agent asks for that
+  with `wait` (LIB-6 AC-34; `harness.md` H-1 as reworded 2026-11-13). In
+  a preset the step has finished only when the machine is idle as well
+  (LIB-6 AC-56). The bound of the profile after ENTER (AC-28) is no
+  longer used for a reply.
 
 While an operation runs
 - [ ] **AC-18** — Given an operation runs, then live input is dropped;
@@ -435,3 +438,4 @@ What is shown
 | Typing outside a preset is not an operation; the glossary's example "typing a paste" is removed | user, 2026-11-10, batch 4 gate | 2026-11-10 |
 | Live input during an operation is dropped in Calc-U-1600 too (new ledger row 1600-9); on-screen keys of Calc-U-59 go through the engine; the letters of the Calc-U-59 keyboard map follow the letter the key carries in every frontend | user, 2026-11-10, batch 4 gate | 2026-11-10 |
 | The names a `key` takes on a TI model are exactly those of `preset.md` §8.1, in presets and in the harness (AC-26); `2ndCLR`, `P>R`, `S+`, `mean`, `StFlg`, `IfFlg` go. Replaces OQ-7 | user, 2026-11-13 (question F-5 of `docs/walkthroughs/presets.md` §5.4); `docs/formats/preset.md` §8.1 | 2026-11-13 |
+| `key` and `type` reply when carried out (keys up, ENTER up); waiting until idle is `wait`, and in a preset the implicit wait (AC-17) | question F-15 of `docs/walkthroughs/presets.md` §5.4, left to the specification by the user on 2026-11-13 ("what works best for agentic use") | 2026-11-13 |

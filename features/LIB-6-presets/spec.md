@@ -434,7 +434,7 @@ Harness
   | `preset <path or reference>` | loads the preset (AC-6 to AC-18) | done, or refused or failed with the line and the reason |
   | `check-preset <file>…` | reads and checks each file as AC-6 and AC-7 do, and builds nothing | one line per file, `ok` or `FAIL` with the error; the run ends as failed when a file failed |
   | `preset-list` | the request of AC-32 | the entries |
-  | `wait` | harness only: waits until the machine is idle, at most one hour of emulated time; the preset format has no such step since 2026-11-12 (AC-21; OQ-7) | the emulated time that passed, and whether the hour was reached |
+  | `wait` | harness only: waits until the machine is idle, at most one hour of emulated time: the counterpart of a preset's implicit wait, since the harness commands reply when carried out (`harness.md` H-1; OQ-7) | the emulated time that passed, and whether the hour was reached |
   | `full-speed`, `regular-speed` | the command of LIB-3 AC-21; not paced in the harness (AC-22) | done |
   | `elapsed-time start`, `elapsed-time report` | AC-23 | done; for `report` the time |
   | `expect <text>` | AC-24 | done, or refused with what the display shows |
@@ -674,7 +674,7 @@ Harness
   §5.4 (user, 2026-11-12) says the trace folder, whose place is the
   product's; LIB-9 AC-17 and OQ-4 above (user, batch 5 and 6 gates)
   give screenshots the save folder and traces a folder of their own.
-- [ ] **OQ-7** — The harness and the waiting rules. The format has no
+- [x] **OQ-7** — *Decided 2026-11-13 (the user left it to the specification, F-15): commands reply when carried out; `wait` without a duration is the implicit wait made explicit; `skip-wait`, `let-it-finish` and frontend steps have no command (`harness.md` H-1).* The harness and the waiting rules. The format has no
   `wait:` without a value; the harness keeps its `wait` until idle
   (AC-34), as the counterpart of the implicit wait, which `harness.md`
   H-1 ("one vocabulary") does not yet cover. Open with the harness

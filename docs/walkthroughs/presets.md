@@ -667,7 +667,7 @@ the questions of §5.4.
 | B-15 | **Ruled 2026-11-13 (user): as recommended (C59-2 AC-10, Technical Requirements)** | The three fixtures become rejection tests (conversion check §1). The rest open |
 | B-16 | **Ruled 2026-11-13 (user; the Sharp printers' equivalent switches are an open point of `features/INDEX.md`): TRACE belongs to the printer like its paper; a preset's absent `printer-trace` is off; every absent keyword has a default (C59-6 AC-6, LIB-6 AC-65, `preset.md` §2, §5.5, ledger 59-25)** | Unchanged; the step is `printer-trace:` now |
 | B-17 | **Ruled 2026-11-13 (user): (a) key and card records go, a trace is the CPU log only (LIB-10 AC-33, ledger 59-19); (b) the run's own save folder by default, an option overrides (LIB-11 AC-8)** | Unchanged; and `screenshot:` writes to the trace folder (`preset.md` §5.4) against LIB-9 AC-17 (LIB-6 OQ-6) |
-| B-18 | Open | Unchanged |
+| B-18 | **Ruled 2026-11-13 (user): (a), (b), (d), (e) as recommended; (c) a cold boot or a new machine removes the overlay (LIB-10 AC-29; C59-4 AC-15, AC-17, AC-20, AC-23, AC-26; ledger 59-1)** | Unchanged |
 | B-19 | Partly settled | (d) settled as recommended: a load for use ignores the block, which is still read by the format (§3.4); (f) settled against the recommendation: `bus-rom:` once (C1600-4 AC-9). (a), (b), (c), (e) open; and C1600-4 OQ-5 (the block's keys against §3.4) |
 | B-20 | Open | Unchanged; `syncclock:` is Sharp-only |
 | B-21 | Open | (d) the conversion check keeps `test_cdebug`'s `wait: 1.5s` behind a `skip-wait:`; for `test_diag` see §5.4 (conversion check) |

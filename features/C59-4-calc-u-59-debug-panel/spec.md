@@ -174,7 +174,8 @@ The ASM overlay
   notice names the format, its version 2.0 and where it is described; it
   has no `HEX:` line; nothing follows that line; a run of digits is not
   a multiple of four long; an instruction is above 1FFF, which today is
-  cut to 13 bits; or there are more than 2048 instructions (`Shared/AsmOverlay.cpp:16-47`,
+  cut to 13 bits; anything after `HEX:` that is neither a run of hex
+  digits nor a comment; or there are more than 2048 instructions (`Shared/AsmOverlay.cpp:16-47`,
   `tests/shared_debug_tests.cpp:238-259`).
 - [ ] **AC-16** — Given the box "ASM OVERLAY" on the CPU tab, then it
   shows the file's name, the number of instructions and a status line,
@@ -185,7 +186,8 @@ The ASM overlay
   (`Shared/SessionController.cpp:859-933`,
   `Qt6/app/debug/AsmOverlayBox.cpp:19-70`).
 - [ ] **AC-17** — Given Run, then the machine is brought to the next
-  program step boundary and made to go on at 1800; given it has not got
+  program step boundary and made to go on at 1800 with the processor's
+  COND flag set, as today; given it has not got
   there after 8192 instructions, then the status says "ASM entry failed
   after n step(s).", n being that number of instructions, and a notice
   says so. Given pause-on-start for `cpu` is armed, then the machine is
@@ -214,7 +216,8 @@ The ASM overlay
   `examples/assembly/stopwatch.asm`, and the copies that calc-u.org
   hosts, then each is in version 2.0,
   and each that loads in 2.3.0 loads and gives the same instructions
-  (`tests/shared_debug_tests.cpp:238-259`; ADR 0037; LIB-19 AC-9).
+  (`tests/shared_debug_tests.cpp:238-259`; ADR 0037; LIB-19 AC-9); the
+  test also runs `DPT.asm`, which needs COND set at its entry (AC-17).
 
 Every frontend, and the checks
 - [ ] **AC-21** — Given the Swift, Qt6 and Web frontends, then AC-1 to
@@ -231,14 +234,22 @@ Every frontend, and the checks
 - [ ] **AC-23** — Given what the tests of Calc-U-59 check today about
   the panel, beyond what LIB-10 AC-35 covers, then it holds: what the
   CALCULATOR tab shows and the listing; the heatmap counting an
-  instruction once; the overlay's reading and running; the log shown in
-  pages of lines; the dumps (`tests/shared_debug_tests.cpp:184-287`).
+  instruction once; the overlay's reading and running, except the two
+  lenient cases AC-15 now refuses (a run of two digits passed over, a
+  value cut to 13 bits); the log shown in pages of lines; the dumps
+  (`tests/shared_debug_tests.cpp:184-287`).
 - [ ] **AC-24** — Given the GUI test of each frontend, then it has two
   scenarios: under the ID C59-4 AC-5, FREEZE, STEP and RESUME on the
   CALCULATOR tab; under the ID C59-4 AC-16, an overlay is chosen and run
   and the CPU tab shows it (today
   `Web/tests/play-calculator.spec.js:389`,
   `Calc-U-59UITests/ScreenshotTests.swift:115-145`; ADR 0032).
+
+- [ ] **AC-26** — Given an overlay is loaded, when the machine is cold
+  booted or replaced by a new one (a preset, a model switch), then the
+  overlay is removed: its run ends and Run has nothing to run until an
+  overlay is loaded again. Today an overlay outlives a model switch and
+  a preset (`Shared/SessionController.cpp:93-135`).
 
 ## Edge Cases
 - **EC-1** — Given Run without instructions loaded, then the status
@@ -299,3 +310,4 @@ Every frontend, and the checks
 | "FREEZE" and "RESUME" stay as the panel's words | `docs/glossary-mapping.md` | 2026-11-10 |
 | Proposed in this spec and accepted (user, 2026-11-10, batch 8 gate): an `.asm` file is told by its name (AC-19) | LIB-13 AC-1 asks each file kind for its rule | 2026-11-10 |
 | The fifth shipped overlay, `examples/screentest/test_stopwatch.asm`, is upgraded with the other four (AC-20) | Phase 5, preset pass (`docs/walkthroughs/presets.md`, A-4); ADR 0037 and behaviour change 59-1: every shipped file of an own format is upgraded | 2026-11-11 |
+| Run enters with COND set; a word after `HEX:` refuses the file; AC-23 excepts the two lenient cases; a cold boot or a new machine removes the overlay (AC-15, AC-17, AC-20, AC-23, AC-26) | user, 2026-11-13 (B-18 of `docs/walkthroughs/presets.md` §5.2) | 2026-11-13 |

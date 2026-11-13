@@ -303,7 +303,10 @@ Traces
   `program`. A pause of either level lands at the next program step
   boundary, or, while none comes because the calculator waits for a key,
   after 50000 instructions as the ROM's idle state counts them, as today
-  (`Core/TI59Machine.hpp:124-129`). One step of `program` runs to the next program
+  (`Core/TI59Machine.hpp:124-129`); while an ASM overlay runs, which has
+  no program steps, the pause lands after those 50000 instructions
+  whatever the processor does, as today (`Core/TI59Machine.cpp:287-297`;
+  C59-4). One step of `program` runs to the next program
   step boundary, one program byte as SST does, also through the programs
   of the ROM and of a module; one step of `cpu` is one instruction,
   carried out again, up to 32 times, while the processor stays at the
@@ -489,3 +492,4 @@ Traces
 | A pause-on-start that is armed fires while an operation runs (AC-13); AC-9 never excepted an operation, and AC-13's list left it out | Phase 5, preset pass (`docs/walkthroughs/presets.md`, A-13); LIB-6 AC-19 and its decision of 2026-11-11 rest on the preset `test_cdebug.ti59`, which arms and fires inside its own load | 2026-11-11 |
 | The preset steps `pause:`, `pause-on-start:`, `step:`, `resume:` and `debug-panel:` are Calc-U-59's for now; on the Sharp models they are refused, since a step would have to name one of the PC-1600's two CPUs. `step:` takes `{ level, count }`. The run control and its harness commands stay in both products (AC-19, AC-40). Replaces the row of 2026-11-10 "The debugger steps work in both products" | user, 2026-11-13 (question F-4 of `docs/walkthroughs/presets.md` §5.4); `docs/formats/preset.md` §5.6, §7 | 2026-11-13 |
 | A TI trace holds the CPU's log only: the key and card records go, in every trace (AC-33) | user, 2026-11-13 (B-17 of `docs/walkthroughs/presets.md` §5.2): early debug aids, never reliable | 2026-11-13 |
+| In an ASM overlay a pause lands after 50000 instructions whatever the processor does (AC-29) | user, 2026-11-13 (B-18 of `docs/walkthroughs/presets.md` §5.2) | 2026-11-13 |

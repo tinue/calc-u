@@ -151,7 +151,9 @@ The ways in
   it sets no limit on the size of a file
   (`Shared/SessionController.cpp:620-638`, `Shared/StateFile.cpp:554-557`).
 - [ ] **AC-12** — Given a magnetic card is opened on a TI-59, then it is
-  fitted from where it lies and written back there, as today (AC-4;
+  fitted from where it lies and written back there, as today, unless
+  its file is a template (`template: true`), which is never written
+  (LIB-7 AC-25) (AC-4;
   C59-7 AC-11; `Shared/SessionController.hpp:192-196`); in the Web
   frontend it is imported and fitted. Given a TI-58 or TI-58C, which has no card
   reader, then it is refused with a notice; today nothing happens
@@ -185,8 +187,8 @@ The ways in
 
 - [ ] **AC-17** — Given Calc-U-1600, then its preset extensions are
   `.pc1500`, `.pc1500a` and `.pc1600`; its kinds of media are the
-  battery-backed module (`.card.yaml`) and the floppy disk
-  (`.floppy.yaml`); its file kinds, asked in this order, are the BASIC
+  battery-backed module (`.card.yaml`), the floppy disk
+  (`.floppy.yaml`) and the cassette tape (`.tape.yaml`, AC-19); its file kinds, asked in this order, are the BASIC
   program and the machine-code program, told by what C1600-2 says the
   file is (C1600-2 AC-1): a BASIC listing or tokenized BASIC is a BASIC
   program; machine code with a header is a machine-code program;
@@ -302,3 +304,4 @@ The ways in
 | Only a file dialog changes the folder in which the next file dialog starts (EC-7) | user, 2026-11-10, batch 7 gate; OQ-3; behaviour change 1600-15 | 2026-11-10 |
 | An opened `.tape.yaml` is a medium; a WAV is a program file and is loaded (AC-19) | user, 2026-11-13 (question F-7 of `docs/walkthroughs/presets.md` §5.4); `docs/formats/media.md` §3 | 2026-11-13 |
 | Aligned with `docs/formats/` after the Q&A round: `.magnetcard.yaml` (AC-11) | user rulings of 2026-11-13 (`docs/walkthroughs/presets.md` §5.2, §5.4); `docs/formats/` | 2026-11-13 |
+| Aligned with `docs/formats/` after the Q&A round: a template card is never written (AC-12); the cassette tape as a media kind (AC-17) | user rulings of 2026-11-13 (`docs/walkthroughs/presets.md` §5.2, §5.4); `docs/formats/` | 2026-11-13 |

@@ -163,7 +163,7 @@ build, and in the phase 5 walkthroughs:
   no state of the machine (ADR 0014; today's rule, `CLAUDE.md:65`).
 - What the Swift frontend does for the session today through
   `TIPlatform` (`Bridge/TISessionController.mm:166-201`) goes as LIB-3
-  AC-30 says: file access for cards and `ti58c.mem`, the trace location
+  AC-30 says: file access for cards and `ti58c.memory.yaml`, the trace location
   and the last model are the library's; errors and diagnostics are a
   notice and the log; the module is no longer saved; queueing work on
   the main thread has no successor.
@@ -220,3 +220,4 @@ build, and in the phase 5 walkthroughs:
 | Attach is built for the Swift frontend (iOS simulator and macOS) in the migration; localhost TCP, line-based text | `harness.md` H-3, H-4 | 2026-11-10 |
 | Proposed in this spec and accepted (user, 2026-11-11): an attached harness is a second listener, works with the app's own settings and save folder, and does not take the session off the wall clock (AC-11, AC-12, AC-14); `quit` ends the attach; one harness at a time (EC-4); the host services of AC-7 | `harness.md` says virtual time holds "without attach" and leaves the attached case open; `frontend.md` Q-2 lists the host services without saying which frontend has which | 2026-11-10 |
 | The Mac app keeps one app session for all its windows; attach exists in the Debug configuration only; an attached harness works with the app's own settings and save folder | user, 2026-11-10, batch 3 gate | 2026-11-10 |
+| Aligned with `docs/formats/` after the Q&A round: `ti58c.memory.yaml` | user rulings of 2026-11-13 (`docs/walkthroughs/presets.md` §5.2, §5.4); `docs/formats/` | 2026-11-13 |

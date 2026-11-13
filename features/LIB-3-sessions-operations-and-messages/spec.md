@@ -257,7 +257,8 @@ Host services
 
 - [ ] **AC-30** — Given what the frontends do for the session today
   through `SessionController::Platform` (`Shared/SessionController.hpp:57-90`),
-  then after the migration: file access for cards and `ti58c.mem` is the
+  then after the migration: file access for cards and the constant
+  memory file (`ti58c.memory.yaml`) is the
   library's (LIB-7, C59-3, C59-7); the trace location comes from LIB-9;
   the last used model is a setting (LIB-9) and the module ID is no
   longer saved (behaviour change 59-9); `error` is a notice and
@@ -394,3 +395,4 @@ Invariants checked in review and in the phase 5 walkthroughs:
 | Proposed with LIB-6 and LIB-14 and accepted (user, 2026-11-10, batch 5 gate): the busy topic says whether the running operation is at full speed or at regular speed now (AC-14) | `presets.md` PR-4: "Loading…" only while it runs at full speed | 2026-11-10 |
 | A command is carried out when it arrives, and its reply and the state topics it changed go out at once; what the machine puts out goes with the host calls. A frontend that starts to listen late gets the paper and the log from their last reset marker on, and no earlier notices. Of what `RunStateChanged` carries today, run state and the armed freezes are LIB-10's and C59-4's, full speed and playback are part of busy, and the held key is LIB-5's | user, 2026-11-11; OQ-3, OQ-5, OQ-8 | 2026-11-11 |
 | A suspend while an operation runs stops its progress until continue, and busy stays (EC-4); "suspend" and "continue" are glossary terms | user, 2026-11-11; OQ-4, OQ-6 | 2026-11-11 |
+| Aligned with `docs/formats/` after the Q&A round: `ti58c.memory.yaml` (AC-30) | user rulings of 2026-11-13 (`docs/walkthroughs/presets.md` §5.2, §5.4); `docs/formats/` | 2026-11-13 |

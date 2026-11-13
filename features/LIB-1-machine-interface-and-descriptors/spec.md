@@ -236,7 +236,7 @@ Connectors and capabilities
   one peripheral; the places `slot-1` and `printer`; and the debug
   target TMC0501 (`machine.md` and `peripherals.md`, fit tables).
 - [ ] **AC-30** — Given the TI-59, then its descriptor lists the card
-  reader as a pass-through media place with the sides 1 and 2; given
+  reader as a pass-through media place with the sides 0 and 1; given
   the TI-58 or the TI-58C, then it lists no media place
   (`capabilities.md`, fit table).
 - [ ] **AC-31** — Given any of the three models, then its descriptor
@@ -287,14 +287,15 @@ Connectors and capabilities
   "Depth today").
 - [ ] **AC-38** — Given any of the three models and each variant, then
   its descriptor lists the ROM entries that variant needs; the list of
-  files with their md5 values is LIB-12 AC-16.
+  files with their md5 values is LIB-12 AC-9 (Calc-U-59) and AC-12
+  (Calc-U-1600).
 - [ ] **AC-39** — Given the Calc-U-1600 catalogue, then it holds a
   peripheral descriptor for every peripheral the product offers today:
   the nine bundled memory modules (AC-41); the CE-150, with its paper
   and its cassette as a media place (C1600-1 AC-16); the CE-158; and the CE-1600P (variants New, Old;
   default New), with its cassette and paper and, described with it as
   today, the CE-1600F with a holding media place for floppy disks with
-  the sides A and B. Each lists its ROM files and the pin-outs it fits;
+  the sides 0 and 1. Each lists its ROM files and the pin-outs it fits;
   the CE-161 lists its write-protect switch as a control
   (`peripherals.md` and `capabilities.md`, fit tables; P-3). The host
   drive is a peripheral of the PC-1600 in the place `host-drive`, with
@@ -382,7 +383,7 @@ Settled in other specs: the lists of key IDs and indicator names
 | Proposed in this spec and accepted (user, 2026-11-11): the bound of AC-10 (one year of emulated time), EC-3 (a repeated key down or key up changes nothing), and that a capability ID is unique within a machine and repeatable (AC-21) | They make the criteria checkable; no contract states them | 2026-11-10 |
 | The tick count never goes back for as long as a machine exists, also across reset, power cycle and cold boot; a new machine starts at zero | Recommendation applied; the user raised no objection at the batch 1 gate | 2026-11-10 |
 | Sound output is samples at a rate named at the build, derived from the ticks alone | Recommendation applied; the user raised no objection at the batch 1 gate | 2026-11-10 |
-| An advance runs at least the ticks asked for, in whole instructions; the caller carries the overshoot | Calc-U-59 today; Calc-U-1600 drops the overshoot today (C1600-1 OQ-6); recommendation applied, the user raised no objection at the batch 1 gate | 2026-11-10 |
+| An advance runs at least the ticks asked for, in whole instructions; the caller carries the overshoot | Calc-U-59 today; Calc-U-1600 drops the overshoot today (LIB-17 AC-3); recommendation applied, the user raised no objection at the batch 1 gate | 2026-11-10 |
 | The catalogue holds the descriptors of the bundled module definitions; one read later has the same form | Recommendation applied; the user raised no objection at the batch 1 gate | 2026-11-10 |
 | Brightness is the duty the core measures, from 0 to 1 | Recommendation applied; the user raised no objection at the batch 1 gate | 2026-11-10 |
 | The lists of key IDs and indicator names are written in the C59-1 and C1600-1 specs, not left to phase 6 | Recommendation applied; the user raised no objection at the batch 1 gate; replaces the assignment of `presets.md` Q-3 | 2026-11-10 |
@@ -390,3 +391,4 @@ Settled in other specs: the lists of key IDs and indicator names
 | The host drive is a peripheral on the 60-pin connector in a place of its own | user, 2026-11-10, batch 2 gate; amends `presets.md` PR-11 | 2026-11-10 |
 | Only the display has an on and an off; it is part of display output. A machine reports no power state | user, 2026-11-10, batch 2 gate (prompted); answers `capabilities.md` Q-1 | 2026-11-10 |
 | The CE-150's cassette is no longer limited to the PC-1500 and PC-1500A in the catalogue (AC-39; C1600-1 AC-16) | user, 2026-11-13 (LIB-7 OQ-9, §5.4 of `docs/walkthroughs/presets.md`) | 2026-11-13 |
+| Aligned with `docs/formats/` after the Q&A round: LIB-12 AC-9/AC-12 and LIB-17 AC-3 cited; sides 0 and 1 (AC-35, AC-39) | user rulings of 2026-11-13 (`docs/walkthroughs/presets.md` §5.2, §5.4); `docs/formats/` | 2026-11-13 |

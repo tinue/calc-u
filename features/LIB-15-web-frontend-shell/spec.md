@@ -48,7 +48,7 @@ of the second never touches the first.
   pickers and panels (owners: LIB-14 and the features whose panels they
   are); the faceplate, layout and product props (the product).
 - What the settings file and the save folder hold (LIB-9, LIB-7;
-  `ti58c.mem`: C59-3).
+  `ti58c.memory.yaml`: C59-3).
 - The messages themselves (owner: LIB-3); this feature carries them
   between the page and the worker.
 - Publishing on calc-u.org and the site's pin of a release zip (owner:
@@ -174,7 +174,7 @@ Embedding interface
   `reference/WebClient.md:146-156`). The prop `module` of today goes; a
   host page that wants another module names a preset (OQ-2).
 - [ ] **AC-20** — Given the Web frontend of Calc-U-59, then its
-  settings, its magnetic cards and `ti58c.mem` are in the persistent
+  settings, its magnetic cards and `ti58c.memory.yaml` are in the persistent
   file system and survive a page load. Today the settings and
   `ti58c.mem` are `localStorage` keys with the prefix `calcu59/`, and
   cards are held in memory for the page session
@@ -247,7 +247,7 @@ Embedding interface
   and has no ROM folder (`roms.md` R-3).
 - The persistent file system holds only files the library and the
   product's app layer write through LIB-9's paths; `localStorage` is not
-  used for settings, media or `ti58c.mem`.
+  used for settings, media or `ti58c.memory.yaml`.
 - The sentences a Web frontend shows about storage (AC-8, EC-2, EC-3)
   come from the library, the same for every product.
 
@@ -297,3 +297,4 @@ Embedding interface
 | The row is named "Web frontend shell" | user, 2026-11-11; the glossary's term is Web frontend | 2026-11-11 |
 | The installed app without the server also loads a bundled example (AC-23) | user, 2026-11-13 (B-23 of `docs/walkthroughs/presets.md` §5.2); today's Playwright test checks it | 2026-11-13 |
 | `preset` and `?preset=` take a bundled preset's path inside the bundle; an unlisted path is refused with a notice (AC-16) | user, 2026-11-13 (B-27 (c) of `docs/walkthroughs/presets.md` §5.2); a name tag can repeat across models and change, a path stays stable for links | 2026-11-13 |
+| Aligned with `docs/formats/` after the Q&A round: `ti58c.memory.yaml` | user rulings of 2026-11-13 (`docs/walkthroughs/presets.md` §5.2, §5.4); `docs/formats/` | 2026-11-13 |

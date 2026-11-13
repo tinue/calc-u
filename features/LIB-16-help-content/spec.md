@@ -143,8 +143,10 @@ The asset
   constant memory and fast mode (`help.md`, fit table).
 - [ ] **AC-10** — Given the reference chapter of Calc-U-59, then it
   describes, each in its current version: the preset format with the TI
-  sections (LIB-6, C59-2), the magnetic card (C59-7), `ti58c.mem`
-  (C59-3), the ASM overlay (C59-4), the settings file (LIB-9) and the
+  sections (LIB-6, C59-2), the keystroke program file (`.keystrokes.yaml`,
+  `preset.md` §4.1.1), the magnetic card (C59-7), the constant memory
+  file `ti58c.memory.yaml` (C59-3), the Solid State ROM module file
+  (`.rom.yaml`, `modules.md` §2), the ASM overlay (C59-4), the settings file (LIB-9) and the
   keyboard map (LIB-5 AC-21).
 
 ### Calc-U-1600
@@ -178,8 +180,8 @@ The asset
 - [ ] **AC-13** — Given the reference chapter of Calc-U-1600, then it
   describes, each in its current version: the preset format with the
   Sharp sections and the YAML of `debug:` and `bus-rom:` (LIB-6,
-  C1600-4 AC-20), the module definition and the floppy disk file
-  (LIB-7 AC-37), the settings file (LIB-9) and the keyboard map (LIB-5
+  C1600-4 AC-20), the module definition, the floppy disk file
+  (LIB-7 AC-37) and the tape definition (`.tape.yaml`, LIB-7 AC-42), the settings file (LIB-9) and the keyboard map (LIB-5
   AC-29).
 
 ## Edge Cases
@@ -241,3 +243,4 @@ The asset
 | Proposed in this spec and accepted (user, 2026-11-10, batch 8 gate): the mappings of AC-9 and AC-11 from today's pages and documents to the chapters | The contract gives the chapters, not where today's text goes | 2026-11-10 |
 | Proposed in this spec and accepted (user, 2026-11-10, batch 8 gate): the checks of AC-7 | They make "the help matches the release" checkable | 2026-11-10 |
 | The pictures of Calc-U-1600's help are made by scenarios that drive the Qt6 frontend through harness attach (AC-12) | user, 2026-11-13 (B-22 of `docs/walkthroughs/presets.md` §5.2, left to the specification: "what works best for an agentic workflow") | 2026-11-13 |
+| Aligned with `docs/formats/` after the Q&A round: the reference chapters list the keystroke program file, the Solid State ROM module file, the constant memory file and the tape definition (AC-10, AC-13) | user rulings of 2026-11-13 (`docs/walkthroughs/presets.md` §5.2, §5.4); `docs/formats/` | 2026-11-13 |

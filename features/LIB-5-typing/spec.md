@@ -212,12 +212,17 @@ What is shown
   GTO is pressed as live input, then the key goes down at once (AC-2),
   the ROM samples it as the real calculator does, and the program stops
   or is acted on as in Calc-U-59 2.3.0.
-- [ ] **AC-26** — Given the names a `key` takes on a TI model, then they
-  are the 45 key IDs of C59-1 AC-9 and these 43 names of second
-  functions, each of which stands for `2nd` followed by its key; a `2nd`
-  written before such a name is pressed once, not twice; names are
-  matched without regard to case
-  (`tools/headless/ti59.py:44-54`; `presets.md` PR-5 as amended):
+- [ ] **AC-26** — Given the names a `key` takes on a TI model, in a
+  preset and in the harness, then they are exactly those of
+  `docs/formats/preset.md` §8.1: the 45 key IDs of C59-1 AC-9 with
+  their other spellings, the second functions, each of which stands for
+  `2nd` followed by its key, and every name the PC-100C prints for a
+  keycode (§8.1.1); a `2nd` written before a second function is pressed
+  once, not twice; names are matched without regard to case; any other
+  word is refused (`presets.md` PR-5 as amended). The table below, the
+  names of today's `tools/headless/ti59.py:44-54`, is kept for the
+  record; of it `2ndCLR` (now `2nd CLR`), `P>R` (`P/R`), `S+` (`Σ+`,
+  `sum+`), `mean` (`x̄`, `xbar`), `StFlg` (`STF`) and `IfFlg` (`IFF`) go:
 
   | Row | Names, left to right |
   |---|---|
@@ -390,7 +395,7 @@ What is shown
   accept `ent` for `enter` and `break` for `on` today.
   *Recommendation:* `break` stays as another name of `on`; `ent` goes;
   names are matched without regard to case on every model.
-- [x] **OQ-7** — *Decided as recommended (user, 2026-11-10, batch 4 gate).* The name `2ndCLR` in AC-26 for the second function of
+- [x] **OQ-7** — *Decided as recommended (user, 2026-11-10, batch 4 gate); superseded 2026-11-13 (user): `2nd CLR`, `preset.md` §8.1.* The name `2ndCLR` in AC-26 for the second function of
   `CLR`, and `Adv` for the second function of `.`, which is not the ADV
   key of the PC-100C. *Recommendation:* keep both as today's tool
   spells them; the PC-100C's key is a control, named with its owner.
@@ -429,3 +434,4 @@ What is shown
 | A live key goes down at once. Key readiness need not last: it can be a short window, and while a program runs the ROM samples R/S and GTO (TI) or BREAK (Sharp) from time to time. The engine may hold a key until the machine has sampled it. However it is done, R/S and GTO on a running program work as they do today | user, 2026-11-10, batch 4 gate | 2026-11-10 |
 | Typing outside a preset is not an operation; the glossary's example "typing a paste" is removed | user, 2026-11-10, batch 4 gate | 2026-11-10 |
 | Live input during an operation is dropped in Calc-U-1600 too (new ledger row 1600-9); on-screen keys of Calc-U-59 go through the engine; the letters of the Calc-U-59 keyboard map follow the letter the key carries in every frontend | user, 2026-11-10, batch 4 gate | 2026-11-10 |
+| The names a `key` takes on a TI model are exactly those of `preset.md` §8.1, in presets and in the harness (AC-26); `2ndCLR`, `P>R`, `S+`, `mean`, `StFlg`, `IfFlg` go. Replaces OQ-7 | user, 2026-11-13 (question F-5 of `docs/walkthroughs/presets.md` §5.4); `docs/formats/preset.md` §8.1 | 2026-11-13 |

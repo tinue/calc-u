@@ -119,16 +119,19 @@ Keys
   |---|---|
   | 1 | `A` `B` `C` `D` `E` |
   | 2 | `2nd` `INV` `lnx` `CE` `CLR` |
-  | 3 | `LRN` `x<>t` `x2` `sqrt` `1/x` |
-  | 4 | `SST` `STO` `RCL` `SUM` `y^x` |
-  | 5 | `BST` `EE` `(` `)` `/` |
-  | 6 | `GTO` `7` `8` `9` `*` |
+  | 3 | `LRN` `x⇄t` `x²` `√x` `1/x` |
+  | 4 | `SST` `STO` `RCL` `SUM` `yˣ` |
+  | 5 | `BST` `EE` `(` `)` `÷` |
+  | 6 | `GTO` `7` `8` `9` `×` |
   | 7 | `SBR` `4` `5` `6` `-` |
   | 8 | `RST` `1` `2` `3` `+` |
   | 9 | `R/S` `0` `.` `+/-` `=` |
 
-  (`Shared/KeyboardLayout.hpp:55-75`; the names are those of
-  `tools/headless/ti59.py:32-54`.)
+  (`Shared/KeyboardLayout.hpp:55-75`.) The IDs, and the other
+  spellings the descriptor lists for them (`x<>t`, `x^2`, `sqrt`, `y^x`,
+  `/`, `*` and those of the table), are those of
+  `docs/formats/preset.md` §8.1; the names of today's
+  `tools/headless/ti59.py:32-54` that it lacks (`x2`) go.
 - [ ] **AC-10** — Given a key ID of AC-9, when key down is called, then
   the ROM sees the key of that row and column of the keyboard: the key
   in row r, column c is the one today's matrix code r × 10 + c presses
@@ -273,3 +276,4 @@ One seam
 | C and the minus sign can be lit together, each with its own brightness as on the hardware; the frontends show at least what they show today | user, 2026-11-10, batch 2 gate: today both show, but not with independent brightness | 2026-11-10 |
 | A Reset keeps the partition on the TI-59 and TI-58 (AC-6) | user, 2026-11-11; behaviour change 59-22 | 2026-11-11 |
 | The persistence of vision stays in the Calc-U-59 app layer, once for all frontends; the machine session is the only reader of the display output | user, 2026-11-11 | 2026-11-11 |
+| The key IDs and their other spellings are those of `preset.md` §8.1 (AC-9); `x2` goes. Replaces the names of `tools/headless/ti59.py` | user, 2026-11-13 (question F-5 of `docs/walkthroughs/presets.md` §5.4); `docs/formats/preset.md` §8.1 | 2026-11-13 |

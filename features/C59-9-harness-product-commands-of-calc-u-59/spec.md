@@ -137,7 +137,8 @@ Listings
   list` gives, assembled again, gives the same program; `ti59 program`
   (C59-2 AC-9) reads and writes the same memory as bare keycodes (OQ-2).
 - [ ] **AC-11** — Given a listing, then every mnemonic in it is a name
-  that the command `key` takes for that key (LIB-5 AC-26; OQ-1).
+  that the command `key` takes for that key (LIB-5 AC-26; OQ-1): the
+  names of `preset.md` §8.1, such as `Lbl`, `STF`, `IFF`.
 
 Scripts that stay
 - [ ] **AC-13** — Given `tools/headless/coverage.py`, with its scenarios
@@ -180,7 +181,9 @@ Scripts that stay
   (`LBL`, `STF`, `IFF`; `Shared/KeyNames.cpp:8-29`); and those of
   `kdis.py`. *Recommendation:* a listing of the harness uses the key
   names of LIB-5, so that one spelling holds in every command and
-  preset; the debug panel keeps what it shows today.
+  preset; the debug panel keeps what it shows today. *Since 2026-11-13
+  (user) those names are `preset.md` §8.1's, so `StFlg` and `IfFlg`
+  become `STF` and `IFF`.*
 - [x] **OQ-2** — *Decided as recommended (user, 2026-11-10, batch 8 gate).* What `ti59 keycodes assemble` reads (AC-10). Today's
   assembler is a library for scripts, with labels and computed
   addresses, and has no text form. *Recommendation:* the command reads
@@ -206,3 +209,4 @@ Scripts that stay
 | Proposed in this spec and accepted (user, 2026-11-10, batch 8 gate): coverage is read from the `profile` of LIB-10; there is no second counter (AC-2) | LIB-10 AC-20 already counts every address | 2026-11-10 |
 | Proposed in this spec and accepted (user, 2026-11-10, batch 8 gate): `step-cost` uses and changes the session's machine (AC-8) | A harness run has one machine (LIB-11 AC-2) | 2026-11-10 |
 | Proposed in this spec and accepted (user, 2026-11-10, batch 8 gate): every timing counts from the start of its command, and the limit is written `limit=` in each | One rule for the replies | 2026-11-10 |
+| The mnemonics of a listing are the names of `preset.md` §8.1 (AC-11) | user, 2026-11-13 (question F-5 of `docs/walkthroughs/presets.md` §5.4); `docs/formats/preset.md` §8.1 | 2026-11-13 |

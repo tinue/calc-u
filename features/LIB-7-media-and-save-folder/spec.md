@@ -276,7 +276,14 @@ Media in presets
 
 Steps and commands
 - [ ] **AC-26** — Given a preset, then these steps exist, and the
-  harness has commands of the same names and values (`presets.md` PR-8):
+  harness has commands of the same names and values (`presets.md` PR-8).
+  Removable media are inserted and ejected by steps, never by header
+  keys: on the Sharp models `floppy:` and `tape:` insert, replacing what
+  is in (EC-5), and `eject: floppy` or `eject: tape` empties the place,
+  which its selector then shows as empty (EC-6); modules and other
+  installed periphery are header keys only and are fitted before the
+  machine starts (`preset.md` §3, §5.2; user, 2026-11-13). The table
+  below is aligned with `preset.md` §5.2 after the Q&A round:
 
   | Step | Value | What it does | Emulated time (LIB-6 AC-19) |
   |---|---|---|---|
@@ -390,7 +397,7 @@ Getting media in and out
   side in the tape folder (LIB-9 AC-16), and recording onto an instance
   writes into its sound file; a definition the user writes around an
   existing WAV may name it by any relative path. A preset inserts a tape with the header key
-  `tape:` (`preset.md` §3), and the picker lists the tape definitions
+  step `tape:` (`preset.md` §5.2), and the picker lists the tape definitions
   (the topic of AC-7). A `.wav` on its own is not a tape but a program
   file (C1600-2; LIB-13 AC-19). What stays of today: a recording is
   written as mono 16-bit WAV at 48000 Hz, each time the motor stops and
@@ -555,3 +562,4 @@ Getting media in and out
 | The log names a written medium by its kind and name tag, never by its path, so that logs are equal in every frontend and the harness (LIB-6 AC-11, AC-13) | user, 2026-11-13 (B-8 (d) of `docs/walkthroughs/presets.md` §5.2) | 2026-11-13 |
 | Sides are numbered 0 and 1 for magnetic cards and floppy disks, in presets, files and the GUI; the floppy disk format goes to version 2 (AC-37), so disks saved with 0.8.x are refused with the hint until upgraded by hand | user, 2026-11-13 (B-8 (a) of `docs/walkthroughs/presets.md` §5.2); `docs/formats/media.md` §1, §2 | 2026-11-13 |
 | A saved tape's WAV lies beside its definition; a hand-written definition names its WAV by any relative path; `position` is reserved and 0 (AC-42, OQ-9) | user, 2026-11-13 (LIB-7 OQ-9, §5.4 of `docs/walkthroughs/presets.md`) | 2026-11-13 |
+| Removable media (floppy disk, tape) are inserted and ejected by steps `floppy:`, `tape:`, `eject:`; modules are header keys only (AC-26, AC-42, EC-5, EC-6) | user, 2026-11-13 (LIB-7 EC-5, EC-6, §5.4 of `docs/walkthroughs/presets.md`): removable media are changed at runtime and belong into the chain of steps, like the TI-59's magnetic cards; installed periphery, memory modules included, is fitted before the machine boots | 2026-11-13 |

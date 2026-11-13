@@ -81,8 +81,8 @@ What the three status columns mean for this feature:
 - How a key is pressed and how text is typed, the names a `key` takes
   (owner: LIB-5).
 - Media and modules in presets: references by `name:`, `file:` and
-  `mem:` (`docs/formats/README.md` §3), the header keys `floppy:` and
-  `tape:`, the step `saveas` (owner: LIB-7); the header key
+  `mem:` (`docs/formats/README.md` §3), the steps `floppy:`, `tape:`,
+  `eject:` and `saveas` (owner: LIB-7); the header key
   `magnetic-cards:` and the steps `card` and `arm` (owner: C59-7).
 - The steps `cut-paper` (owner: LIB-8) and `debug-panel`, `pause`,
   `pause-on-start`, `step`, `resume`, `trace` (owner: LIB-10; the open
@@ -542,10 +542,10 @@ Harness
   the variants `new` and `old`; the place keys are `slot-1:`,
   `printer: CE-150` and `interface: CE-158` on every model, and on the
   PC-1600 also `slot-2:`, `printer: CE-1600P` with the variants `new`
-  and `old`, `host-drive:` and `floppy:`
-  (`Core/Preset/PresetFile.cpp:745-946`; `presets.md` PR-11), and
-  `tape:` with a printer that has a cassette interface (`preset.md` §3;
-  which printers on the PC-1600 is open, OQ-10). The key `plotter:` is
+  and `old` and `host-drive:`
+  (`Core/Preset/PresetFile.cpp:745-946`; `presets.md` PR-11); a floppy
+  disk and a cassette tape are not header keys but the steps `floppy:`
+  and `tape:` (`preset.md` §5.2; LIB-7). The key `plotter:` is
   gone (behaviour change 1600-3). The keys `ctrl`, `kbii` and `bs` are
   refused in a `key:` step (`preset.md` §5.1).
 - [ ] **AC-45** — Given a Sharp machine, then it is idle when it waits
@@ -563,7 +563,7 @@ Harness
   Calc-U-1600 does after the build (AC-53).
 - [ ] **AC-47** — Given a preset that names hardware the pin-outs do not
   allow together (a CE-1600P on a PC-1500, a CE-158 with a CE-1600P, a
-  `floppy:` without a CE-1600P, a `slot-2:` on a PC-1500), then it is
+  `floppy:` step without a CE-1600P, a `slot-2:` on a PC-1500), then it is
   refused when it is read, with a notice that names both, as today
   (`Core/Preset/PresetFile.cpp:861-930`).
 - [ ] **AC-48** — Given `screenshot:`, then the picture is the one the
@@ -774,3 +774,4 @@ Harness
 | Files with placeholders are checked as filled in, not left out (AC-51) | user, 2026-11-13 (B-24 of `docs/walkthroughs/presets.md` §5.2) | 2026-11-13 |
 | The preset list is the bundle file, a format of its own (`docs/formats/bundle.md`): presets and their files, order and groups; distributions bundle exactly what it lists (AC-31). Replaces "not an own format with a version" | user, 2026-11-13 (B-27 of `docs/walkthroughs/presets.md` §5.2): a format for bundling that lists all presets and their files and sets order and structure; a selection; the site and local builds take the files from the repository or the disk | 2026-11-13 |
 | `expect:` on a TI model compares with X in its full precision, 13 digits, not rounded, whatever the display format (AC-40, OQ-9) | user, 2026-11-13 (§5.4 of `docs/walkthroughs/presets.md`); the step is new, so no preset depends on another rule | 2026-11-13 |
+| A floppy disk and a cassette tape are steps, not header keys; the header holds installed periphery (AC-44, AC-47) | user, 2026-11-13 (LIB-7 EC-5, EC-6, §5.4 of `docs/walkthroughs/presets.md`): removable media are changed at runtime and belong into the chain of steps, like the TI-59's magnetic cards; installed periphery, memory modules included, is fitted before the machine boots | 2026-11-13 |

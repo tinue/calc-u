@@ -63,9 +63,7 @@ Without a `cue-card:` section, no cue card is fitted.
 | `slot-1` | [both] | A module, as a reference by `file:` or `name:`. [59]: a Solid State ROM module ([modules.md §2](modules.md#2-solid-state-rom-module)); `name:` is its catalogue ID. [1600]: a module definition ([modules.md §1](modules.md#1-module-definition)); `name:` is its `module-name` |
 | `slot-2` | [1600: PC-1600] | As `slot-1` |
 | `slot-1-rom`, `slot-2-rom` | [1600] | A ROM file, by `file:` only, whose bytes replace the ROM of the module in that slot (§3.2) |
-| `floppy` | [1600: PC-1600 with `printer: CE-1600P`] | A floppy disk ([media.md §2](media.md#2-floppy-disk)), by `file:` or `name:`, with `side: 0\|1` (default `0`). The CE-1600F drive comes with the CE-1600P |
 | `host-drive` | [1600: PC-1600] | The folder that backs drive `S3:`, by `folder:` |
-| `tape` | [1600: with `printer: CE-150` or `CE-1600P`] | A cassette tape ([media.md §3](media.md#3-cassette-tape)), by `file:` or `name:`, inserted into the printer's cassette interface |
 | `bus-rom` | [1600] | ROMs on the 60-pin connector (§3.3) |
 | `debug` | [1600] | The debugger configuration of a project preset (§3.4) |
 | `magnetic-cards` | [59: TI-59] | Magnetic cards defined inside the preset (§3.1) |
@@ -74,10 +72,14 @@ Without a `cue-card:` section, no cue card is fitted.
 format-version: 2
 model: PC-1600:new
 printer: CE-1600P
-floppy: { name: Formatted, side: 0 }
 slot-1: { name: CE-1600M }
 slot-2: { file: cards/my.card.yaml }
 ```
+
+The header holds what is installed before the machine starts: the
+printer, the interface, the modules, the ROMs, the host drive.
+Removable media, which are changed while the machine runs (a magnetic
+card, a floppy disk, a cassette tape), are steps (§5.2).
 
 ### 3.1 `magnetic-cards` [59: TI-59]
 
@@ -358,6 +360,9 @@ keys:
 |---|---|---|
 | `card: <reference>` | [59: TI-59] | **Insert** a magnetic card: push one side through the card reader. Reference by `file:`, `name:` or `mem:`, with `side: 0\|1` (default 0) |
 | `arm: <reference>` | [59: TI-59] | **Arm** a magnetic card: make it ready for the user to feed. Reference by `file:`, `name:` or `mem:`, without a side |
+| `floppy: <reference>` | [1600: PC-1600 with `printer: CE-1600P`] | **Insert** a floppy disk ([media.md §2](media.md#2-floppy-disk)) into the CE-1600F drive, by `file:` or `name:`, with `side: 0\|1` (default `0`). A disk that is in the drive is ejected first |
+| `tape: <reference>` | [1600: with `printer: CE-150` or `CE-1600P`] | **Insert** a cassette tape ([media.md §3](media.md#3-cassette-tape)) into the printer's cassette interface, by `file:` or `name:`. A tape that is in is ejected first |
+| `eject: <place>` | [1600] | **Eject** the floppy disk (`floppy`) or the tape (`tape`): the place is empty afterwards, and its selector shows it so. An empty place: nothing happens |
 | `saveas: <target>` | [both] | **Name & Save** the medium or module at a place, or an in-file magnetic card [59: TI-59] (§5.2.1) |
 
 **`card:`** is the user pushing a card into the calculator. The ROM
@@ -598,12 +603,12 @@ then fails, and so ends the preset ([README.md §4](README.md#4-errors)).
 | `format-version`, `model`, `preset-name`, `description`, `timeout` | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
 | `printer` | PC-100C | PC-100C | PC-100C | CE-150 | CE-150 | CE-150, CE-1600P |
 | `slot-1` | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
-| `slot-2`, `floppy`, `host-drive` | | | | | | ✓ |
+| `slot-2`, `host-drive`, step `floppy` | | | | | | ✓ |
 | `slot-1-rom` | | | | ✓ | ✓ | ✓ |
 | `slot-2-rom` | | | | | | ✓ |
 | `interface`, `bus-rom`, `debug` | | | | ✓ | ✓ | ✓ |
 | `magnetic-cards` | ✓ | | | | | |
-| `tape` | | | | ✓ | ✓ | ✓ |
+| steps `tape`, `eject` | | | | ✓ | ✓ | ✓ |
 | `program` | keycodes | keycodes | keycodes | BASIC, code | BASIC, code | BASIC, code |
 | `data` | ✓ | ✓ | ✓, with H00–H03 | undefined | undefined | undefined |
 | `partition`, `cue-card` | ✓ | ✓ | ✓ | | | |
@@ -750,7 +755,7 @@ For converting files written for the products before this specification.
 | `plotter: CE-1600P:old` | `printer: CE-1600P:old` |
 | `slot-1: CE-1600M` / `slot-1-file: my.card.yaml` | `slot-1: { name: CE-1600M }` / `slot-1: { file: my.card.yaml }` |
 | `slot-1-rom: build/x.bin` | `slot-1-rom: { file: build/x.bin }` |
-| `floppy: Formatted,B` / `floppy-file: d.floppy.yaml` | `floppy: { name: Formatted, side: 1 }` / `floppy: { file: d.floppy.yaml }` (A and B are sides 0 and 1) |
+| `floppy: Formatted,B` / `floppy-file: d.floppy.yaml` (header) | the step `- floppy: { name: Formatted, side: 1 }` / `- floppy: { file: d.floppy.yaml }` in a `keys:` section that comes first (A and B are sides 0 and 1) |
 | `host-drive: shared` | `host-drive: { folder: shared }` |
 | `- key: cl` (one key) | `- key: cl`, or several: `- key: shift up up` |
 | `- wait: 2` (seconds) | `- wait: 2s` |
@@ -817,9 +822,9 @@ model: PC-1600
 preset-name: Hanoi
 description: Towers of Hanoi, up to seven bricks
 printer: CE-1600P
-floppy: { name: Formatted }
 slot-1: { name: CE-1600M }
 keys:
+  - floppy: { name: Formatted }
   - key: mode
   - type: NEW0
 program:

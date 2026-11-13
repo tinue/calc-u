@@ -147,6 +147,12 @@ The first commands
   then they are reached under the product's name (`ti59 …`, `pc1600 …`),
   and a command that every product has is at the top level, with
   product-specific output where the hardware differs (`harness.md` H-2).
+- [ ] **AC-22** — Given a command whose preset step takes a mapping as
+  its value (a reference, `saveas:`), then the command takes that value
+  exactly, as a YAML flow mapping after the command's name, by the
+  syntax of `docs/formats/README.md` §1: `floppy { name: Disk2, side: 1 }`,
+  `card { mem: X, side: 0 }`, `saveas { place: slot-1, as: live, name: My card }`;
+  a preset step becomes the command by dropping `- ` and the colon.
 
 ### Calc-U-59
 - [ ] **AC-14** — Given the tools of Calc-U-59 at the pin, then each of
@@ -323,3 +329,4 @@ The first commands
 | The Qt6 screenshot scenarios are a client of harness attach (Out of Scope, AC-18) | user, 2026-11-13 (B-22 of `docs/walkthroughs/presets.md` §5.2, left to the specification: "what works best for an agentic workflow") | 2026-11-13 |
 | The three probes are not taken over; the calendar scripts stay (AC-18, OQ-5 amended) | user, 2026-11-13 (B-25 of `docs/walkthroughs/presets.md` §5.2): "old, no longer relevant scripts and probes are not taken over into the new project. calendar yes, upgrade it" | 2026-11-13 |
 | Aligned with `docs/formats/` after the Q&A round: the command `preset`; Qt6 attach (LIB-14 AC-44); tape commands `tape`, `eject` (AC-18) | user rulings of 2026-11-13 (`docs/walkthroughs/presets.md` §5.2, §5.4); `docs/formats/` | 2026-11-13 |
+| A command whose step takes a mapping takes the step's value as a YAML flow mapping (AC-22) | user, 2026-11-13 (consistency pass after the Q&A round): one spelling for presets and commands | 2026-11-13 |

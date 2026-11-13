@@ -276,7 +276,8 @@ Media in presets
 
 Steps and commands
 - [ ] **AC-26** — Given a preset, then these steps exist, and the
-  harness has commands of the same names and values (`presets.md` PR-8).
+  harness has commands of the same names and values (`presets.md` PR-8;
+  a mapping written as LIB-11 AC-22 says).
   Removable media are inserted and ejected by steps, never by header
   keys: on the Sharp models `floppy:` and `tape:` insert, replacing what
   is in (EC-5), and `eject: floppy` or `eject: tape` empties the place,

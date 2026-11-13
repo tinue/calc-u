@@ -202,7 +202,11 @@ The shipped presets
   the developer documentation and of the VS Code extension, its
   templates included, and the presets that a tool or a test writes as
   text, as the scenarios of `tools/dap_smoke.py` do (C1600-3 AC-20)
-  (ADR 0037; behaviour change 1600-1). In each, only what `preset.md`
+  (ADR 0037; behaviour change 1600-1). Its comments are corrected where
+  they name a key, a tool or a format that changed (today
+  `ce158_demo.pc1500a:7-8`), and the READMEs under `examples/` are
+  upgraded with the files (`examples/setup/README.md:18-21`). Beyond
+  that, in each, only what `preset.md`
   §9.2 lists changes, by these rules, which settle for Calc-U-1600 what
   §9.2 leaves open:
 
@@ -366,3 +370,4 @@ The shipped presets
 | The comparison is at the idle machine after the harness `wait`, includes media and the files a `saveas` wrote, runs in a copy of `examples/`, and excepts the intended differences by name (AC-16) | user, 2026-11-13 (B-11 of `docs/walkthroughs/presets.md` §5.2) | 2026-11-13 |
 | `debug:` block: `reset: none` and `after: none` are the defaults; no `preset` key in the block, the session's machine is the preset the block is in (AC-11) | user, 2026-11-13 (C1600-4 OQ-5; B-19 of `docs/walkthroughs/presets.md` §5.2); today's reader has no `preset` key in the block (`Core/Debug/AttachKeys.hpp:41-49`, `Qt6/app/debug/DapSession.cpp:230`) | 2026-11-13 |
 | The templates are checked once filled in (AC-15) | user, 2026-11-13 (B-24 of `docs/walkthroughs/presets.md` §5.2); today nothing checks them | 2026-11-13 |
+| Its comments are corrected where they name a key, a tool or a format that changed, and the READMEs under `examples/` are upgraded with the files (AC-15) | user, 2026-11-13 (B-26 of `docs/walkthroughs/presets.md` §5.2); no spec owned these texts | 2026-11-13 |

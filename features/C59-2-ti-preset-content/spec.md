@@ -170,7 +170,10 @@ The shipped and hosted presets
   `examples/screentest/` among them, then
   each is in version 2 (ADR 0037; behaviour change
   59-1), written from its 2.3.0 file by the table of `preset.md` §9.1
-  and these rules, which settle for Calc-U-59 what §9.1 leaves open:
+  and the rules below; its comments are corrected where they name a
+  key, a tool or a format that changed, and the READMEs under
+  `examples/` are upgraded with the files. The rules, which settle for
+  Calc-U-59 what §9.1 leaves open:
 
   | 2.3.0 | Version 2 |
   |---|---|
@@ -355,3 +358,4 @@ The shipped and hosted presets
 | Upgrade rules for tabs, a `21` before its key on the next line, and directives commented out (AC-10) | user, 2026-11-13 (B-13 of `docs/walkthroughs/presets.md` §5.2) | 2026-11-13 |
 | The three statefile fixtures go with the `STATE` records; each refusal of AC-2 to AC-5 has a test text with that one error; all 57 examples, screentest included, are upgraded and loaded (LIB-6 AC-43) | user, 2026-11-13 (B-15 of `docs/walkthroughs/presets.md` §5.2) | 2026-11-13 |
 | The calendar scripts are upgraded to version 2 (AC-18) | user, 2026-11-13 (B-25 of `docs/walkthroughs/presets.md` §5.2): "old, no longer relevant scripts and probes are not taken over into the new project. calendar yes, upgrade it" | 2026-11-13 |
+| Its comments are corrected where they name a key, a tool or a format that changed, and the READMEs under `examples/` are upgraded with the files (AC-10) | user, 2026-11-13 (B-26 of `docs/walkthroughs/presets.md` §5.2); no spec owned these texts | 2026-11-13 |

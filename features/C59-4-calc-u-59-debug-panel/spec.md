@@ -218,6 +218,9 @@ The ASM overlay
   and each that loads in 2.3.0 loads and gives the same instructions
   (`tests/shared_debug_tests.cpp:238-259`; ADR 0037; LIB-19 AC-9); the
   test also runs `DPT.asm`, which needs COND set at its entry (AC-17).
+  Their comments are corrected where they name a key, a tool or a format
+  that changed, and `examples/assembly/README.md`, which describes the
+  2.3.0 format (`:8-22`), is upgraded with them.
 
 Every frontend, and the checks
 - [ ] **AC-21** — Given the Swift, Qt6 and Web frontends, then AC-1 to
@@ -311,3 +314,4 @@ Every frontend, and the checks
 | Proposed in this spec and accepted (user, 2026-11-10, batch 8 gate): an `.asm` file is told by its name (AC-19) | LIB-13 AC-1 asks each file kind for its rule | 2026-11-10 |
 | The fifth shipped overlay, `examples/screentest/test_stopwatch.asm`, is upgraded with the other four (AC-20) | Phase 5, preset pass (`docs/walkthroughs/presets.md`, A-4); ADR 0037 and behaviour change 59-1: every shipped file of an own format is upgraded | 2026-11-11 |
 | Run enters with COND set; a word after `HEX:` refuses the file; AC-23 excepts the two lenient cases; a cold boot or a new machine removes the overlay (AC-15, AC-17, AC-20, AC-23, AC-26) | user, 2026-11-13 (B-18 of `docs/walkthroughs/presets.md` §5.2) | 2026-11-13 |
+| The overlays' comments and `examples/assembly/README.md` are upgraded with them (AC-20) | user, 2026-11-13 (B-26 of `docs/walkthroughs/presets.md` §5.2); no spec owned these texts | 2026-11-13 |

@@ -675,7 +675,7 @@ the questions of §5.4.
 | B-23 | **Ruled 2026-11-13 (user) as recommended: what the example puts on screen, `sum.ti59`'s cue card in Calc-U-59, the Sharp example the design's; offline load of a bundled example kept. Applied in LIB-6 AC-42, LIB-15 AC-23** | Unchanged |
 | B-24 | **Ruled 2026-11-13 (user) as recommended: each template filled and checked; RENUM with a ROM fixture. Applied in C1600-3 AC-19, C1600-4 AC-15, LIB-6 AC-51** | Unchanged |
 | B-25 | (a), (b), (d) **ruled 2026-11-13 (user): calendar scripts upgraded; old scripts and probes not taken over (tape-matrix, the three probes). Applied in C59-2 AC-18, LIB-11 OQ-5, C1600-5 AC-10 withdrawn, `harness.md`**; (c) **ruled 2026-11-13 (user), revised recommendation: no hold; refused as EC-3 says, the script builds with commands, connects, then starts. Applied in C1600-5 EC-3** | Unchanged |
-| B-26 | Open | Unchanged |
+| B-26 | **Ruled 2026-11-13 (user) as recommended: comments corrected, READMEs under `examples/` upgraded with the files. Applied in C59-2 AC-10, C59-4 AC-20, C1600-4 AC-15** | Unchanged |
 | B-27 | Partly settled | (b) settled otherwise: a list shows the name tag (`preset-name`, else the file stem), the description is the tooltip or longer entry (`README.md` §2). (a), (c), (d) open |
 | B-28 | Partly settled | A cold boot empties all memory, the constant memory included (`preset.md` §2); what the ROM's start-up then writes stays open (C-6). Recommendation holds as "empty at the cold boot, then as the ROM's start-up leaves it" |
 | B-29 | Open | Unchanged |

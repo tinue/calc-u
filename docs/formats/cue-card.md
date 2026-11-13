@@ -31,7 +31,8 @@ while a library program is selected, that program's **module cue card**.
 | A library program of the module in the slot is selected (`Pgm nn`) | Fits that program's module cue card over the own card, if the module has one for nn |
 | The library program is deselected | The module cue card goes; the own card shows again |
 | The frontend fits a card | As the matching row above |
-| A cold boot (every preset starts with one) | No card |
+| A preset's cold boot (every preset starts with one) | No card, until the preset fits one |
+| A reset, a power cycle, or a cold boot the user commands | The fitted card stays |
 
 A new own card replaces the previous one. Which library program is
 selected is the machine's state, read from the machine.

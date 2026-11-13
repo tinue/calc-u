@@ -94,14 +94,12 @@ The sections
   `Shared/MachineModelInfo.hpp:80`). This replaces OQ-1's "only the
   partitions the ROM can set" (decision log).
 - [ ] **AC-3** — Given `keycodes: |`, then it is read in the keycode
-  notation of `preset.md` §4.1, and a ` #` starts a comment: on a line
-  of bare keycodes every token of one or two digits with a value 0 to
-  99 is a keycode, written to the steps that follow the last step
-  written, and every other token is a label and is passed over; a line
-  whose first token has three or more digits is a step number, which
-  sets the position, then one keycode, then a label that is not read,
-  even a number (`473 00 0`); a line that is exactly `...` writes
-  nothing, and the position moves on at the next step number. A step
+  notation of `preset.md` §4.1, and a ` #` starts a comment: a compact
+  line holds keycodes of exactly two digits, written to the steps that
+  follow the last step written, and any other token refuses the preset
+  when it is read; a listing line starts with a step number of three or
+  more digits, which places its one keycode, and the mnemonic after it
+  is not read, even a number (`473 00 0`); there is no gap marker. A step
   number beyond the model's last step (959 on the TI-59, 479 on the
   TI-58 and TI-58C) refuses the preset when it is read. Given `file:`,
   then the file is a keystroke program file (`preset.md` §4.1.1, format
@@ -186,7 +184,8 @@ The shipped and hosted presets
   | `#` anywhere in a line | a `#` line, or ` #` after the value |
   | a tab | spaces, aligned as it showed (8 columns) |
   | a directive commented out (`#Trace: printhack.bin`) | the same in version 2, still commented out (`# - trace: printhack.bin`) |
-  | words between the keycodes of `PROGRAM:` | labels, which the notation passes over (AC-3), or a comment after ` #` |
+  | words between the keycodes of a line without a step number in `PROGRAM:` | a comment after ` #`; a one-digit keycode is written with two digits (`1` → `01`) |
+  | a `...` line in `PROGRAM:` | `# ...` |
   | `KEYSTROKES:` with matrix codes | `keys:` with one `- key:` step for each 2.3.0 line, naming the same keys in the same order by the key IDs of `preset.md` §8.1, a second function by its name; the words of the line become a comment after the step |
   | `21` (2nd) and the key after it, on one line or with the key on the next line | one step with the second function's name (`- key: Op`), or `- key: 2nd Op` in one step; never `- key: 2nd` and `- key: Op` as two steps, which would press 2nd twice (LIB-5 AC-26) |
   | the first `KEYSTROKES:` not starting with `FullSpeed:` | its step list starts with `- regular-speed:`, which holds until a `- full-speed:` (LIB-6 AC-22) |
@@ -325,7 +324,12 @@ The shipped and hosted presets
   *Recommendation:* as written; the user who wants today's start, with
   the printer, picks the startup preset once.
 
-- [ ] **OQ-5** — Two points of the keycode notation that `preset.md`
+- [x] **OQ-5** — *Decided (user, 2026-11-13, §5.4 of
+  `docs/walkthroughs/presets.md`): two notations, compact (two-digit
+  keycodes only, zeros written out, no gap marker) and listing (a step
+  number places one keycode, a mnemonic follows); `...` goes, a comment
+  shows a gap; a one-digit token or a mnemonic on a compact line is an
+  error (AC-3, AC-10; `preset.md` §4.1).* Two points of the keycode notation that `preset.md`
   §4.1 leaves open: whether a one-digit token on a line of bare keycodes
   (`1`) is the keycode `01` or a label, and where a line of bare
   keycodes right after `...` writes. 2.3.0 is the fact for both
@@ -362,3 +366,4 @@ The shipped and hosted presets
 | Its comments are corrected where they name a key, a tool or a format that changed, and the READMEs under `examples/` are upgraded with the files (AC-10) | user, 2026-11-13 (B-26 of `docs/walkthroughs/presets.md` §5.2); no spec owned these texts | 2026-11-13 |
 | The examples keep today's order within each group; `fastmode-sst` is last in "Programs" (AC-13; behaviour change 59-26) | user, 2026-11-13 (B-27 of `docs/walkthroughs/presets.md` §5.2): a format for bundling that lists all presets and their files and sets order and structure; a selection; the site and local builds take the files from the repository or the disk; today it is tenth, after the printer pictures | 2026-11-13 |
 | Before its first section a preset's machine holds what the ROM's start-up leaves in zeroed memory, not "empty" (AC-1, EC-3) | user, 2026-11-13 (B-28 of `docs/walkthroughs/presets.md` §5.2): "memory gets cleared *before* the CPU is let loose, in order to simulate real hardware": initialize the model, load the RAM from `ti58c.memory.yaml`, power the CPU | 2026-11-13 |
+| The keycode notation has two notations, compact and listing; a compact line holds only two-digit keycodes; no `...` gap marker; the upgrade writes one-digit keycodes with two digits and moves words and `...` into comments (AC-3, AC-10, OQ-5). Replaces "a token that is not a keycode … is a label and is passed over" | user, 2026-11-13 (C59-2 OQ-5, §5.4 of `docs/walkthroughs/presets.md`): two notations, compact (like a hex listing of a ROM, zeros spelled out, no skip indicator) and listing (like a PC-100C listing; the step number places the code, dots are only for readability, a comment in YAML); both limits agreed | 2026-11-13 |

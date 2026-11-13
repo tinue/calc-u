@@ -207,21 +207,27 @@ section changes the machine in the middle of the script.
 ```yaml
 program:
   keycodes: |
-    76 11 42 00              # bare keycodes, any number per line
-    000 43 RCL               # step number, keycode, then an optional label
-    001 00 00
-    110 42 STO               # a step number moves the position
-    ...                      # a gap: the steps it stands for are not written
+    76 11 42 29 92 76 12 42 30 92   # compact: 000-009
+    010 43 RCL                      # listing: step number, keycode, mnemonic
+    011 00 00
+    # ...                           # a gap is a comment, if wanted
+    110 42 STO                      # the step number places the keycode
 ```
 
-- **Bare keycodes:** every token of 1–2 digits with a value 0–99 is a
-  keycode. Other tokens (mnemonics) are labels and are skipped.
-- **Step-numbered:** a first token of 3 or more digits is a step number
-  (0 up to the model's last physical step: 959 on the TI-59, 479 on the
-  TI-58/58C). It sets the position. The next token is the one keycode;
-  anything after it is a label, even a number (`473 00 0`).
-- **Gap:** a line that is exactly `...` writes nothing; the position
-  moves on at the next step number.
+Each line is in one of two notations:
+
+- **Compact:** a line of keycodes, as many as wanted, each exactly two
+  digits (`00` to `99`), like a hex listing of a ROM but with keycodes.
+  The line goes on at the step after the one written last (step 000 at
+  the start). Steps of `00` are written out; there is no gap marker.
+  Any other token, a one-digit number or a mnemonic, is an error.
+- **Listing:** as a PC-100C lists a program. A first token of 3 or more
+  digits is a step number (0 up to the model's last physical step: 959
+  on the TI-59, 479 on the TI-58/58C), which places the keycode; the
+  next token is the one keycode, two digits; anything after it is the
+  mnemonic, which is not read, even a number (`473 00 0`).
+- A gap in a listing needs no marker, since the step numbers place the
+  keycodes; a comment (`# ...`) can show it for the reader.
 - **Only the listed steps are written.** Every other step keeps its
   contents (00 after the cold boot).
 - Each `program:` section starts at step 000.

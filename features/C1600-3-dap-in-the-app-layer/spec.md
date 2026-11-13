@@ -127,7 +127,9 @@ A session
   over exactly the bytes loaded, with `bank`, `me`, `pu` and `pv` as the
   qualifier; and then, by `after`: with `none`, the default, nothing
   more; with `call` the starting command (C1600-2 AC-11), or `command`
-  in its place, is typed and the machine resumes; with `stopOnEntry` the
+  in its place, is typed and the machine resumes, and in the set-up of a
+  session (AC-6) it resumes only at `configurationDone` (AC-4), so the
+  client's breakpoints are set first; with `stopOnEntry` the
   same, after the server has set a breakpoint of its own at the entry
   that holds once, and the client is told `stopped` with the reason
   entry when it is hit
@@ -142,6 +144,10 @@ A session
   normally. A reset that stops at the reset vector is over when it
   stops there. How the configuration's keys combine beyond this is not
   specified; today's behaviour holds (`Qt6/app/debug/DapSession.cpp:430-444`).
+- [ ] **AC-25** — Given Build & Load in a session whose configuration has
+  no `program` (a ROM project), then the set-up of AC-6 is done again,
+  and the machine then goes on as at `configurationDone` (AC-4)
+  (`Qt6/app/debug/DapSession.cpp:496-514`).
 - [ ] **AC-8** — Given a message of the client arrives while an
   operation runs, then the server holds it back and answers it when the
   operation is over, in the order of arrival; this is the server's own
@@ -336,3 +342,4 @@ Checks
 | Proposed in this spec and accepted (user, 2026-11-10, batch 7 gate): the server's status is a state topic of the product (AC-21) | The settings dialog of any frontend can then show it | 2026-11-10 |
 | "The lowest address of the listing" (AC-7) means the lowest address of a line with bytes, as today's listing readers keep only such lines | Phase 5, preset pass (`docs/walkthroughs/presets.md`, A-11); AC-23; `Core/Debug/Listing/ZasmListing.cpp:90-91`, `SdasListing.cpp:174-175` | 2026-11-11 |
 | Two uses of a debug session: breakpoints that work normally, or the reset routine watched from the reset vector; a reset that stops there is over when it stops; nothing more is specified about combining `reset:` and `boot: debug` (AC-6, AC-24) | user, 2026-11-13 (B-19 (a), (b) of `docs/walkthroughs/presets.md` §5.2): "may be overspecified" | 2026-11-13 |
+| In the set-up of a session the program started by `after: call` waits for `configurationDone` (AC-7); Build & Load without a `program` does the set-up again (AC-25) | user, 2026-11-13 (B-19 (c), (e) of `docs/walkthroughs/presets.md` §5.2); today the program runs during `attach`, before the client's breakpoints arrive | 2026-11-13 |

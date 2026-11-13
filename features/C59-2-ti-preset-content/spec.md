@@ -195,7 +195,11 @@ The shipped and hosted presets
   59-4). The four examples with magnetic cards (`globe-print`,
   `historic/characters-fastmode`, `historic/pdcm-card-tricks`,
   `historic/pdcm-make-cards`) are upgraded and compared when C59-7 is
-  built; every other example with this feature.
+  built; every other example with this feature. One example is corrected
+  as it is upgraded: in `debug/example-brief.ti59` line 16, `002  11. A`
+  becomes `002  11 A`, the label its author meant, which 2.3.0 skips
+  (`Shared/StateFile.cpp:35-43`); its reference run (AC-11) is recorded
+  from a 2.3.0 file with the same correction.
 - [ ] **AC-11** — Given each example, when its version 2 file is loaded
   through the harness and the harness `wait` (LIB-6 AC-34) has ended
   with the machine idle or paused, or after an hour of emulated time,
@@ -335,3 +339,4 @@ The shipped and hosted presets
 | A stand-alone cue card has no `Template` and no `Banks`; its kind follows from where it stands, so a preset's card always looks like the plain card (AC-5). Replaces "`Template` chooses only its look" (batch 6 gate); six examples lose their look (`docs/research/preset-conversion-check.md` §1) | user, 2026-11-12 (`cue-card.md` §1, `preset.md` §9.3) | 2026-11-13 |
 | The upgrade follows `preset.md` §9.1; the rules of AC-10 settle for Calc-U-59 what the conversion guide leaves open there (S3 `regular-speed:` first, S9 the model from the suffix, S10 program before data), and add `let-it-finish:` and `skip-wait:` where the run needs them | user, 2026-11-12 (`preset.md` §9.1; conversion check §3); AC-10 as decided at the batch 6 gate | 2026-11-13 |
 | The reference runs are recorded by a driver on 2.3.0's session code and end at idle, at a pause or an hour after the last key; the comparison is at the idle or paused machine after the harness `wait`, includes the cards a preset wrote, leaves out ticks and `Elapsed:`, and excepts `life.ti59` and the intended differences by name (AC-11) | user, 2026-11-13 (B-10 of `docs/walkthroughs/presets.md` §5.2) | 2026-11-13 |
+| `debug/example-brief.ti59`: `002  11.` is corrected to `11` with the upgrade, and its reference run is recorded from the corrected file (AC-10) | user, 2026-11-13 (B-12 of `docs/walkthroughs/presets.md` §5.2) | 2026-11-13 |

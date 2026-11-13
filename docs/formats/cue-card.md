@@ -41,7 +41,7 @@ selected is the machine's state, read from the machine.
   cue card whose title is its card name, as [media.md §1.4](media.md#14-written-cards)
   gives a card saved without one.
 - On every fitted magnetic card, whatever its cue card holds, the
-  corners (top left, top right) show the banks of sides 1 and 2. A
+  corners (top left, top right) show the banks of sides 0 and 1. A
   corner is empty while its side is fresh and shows the bank as soon as
   the side is written.
 

@@ -25,7 +25,7 @@ Terms follow `docs/GLOSSARY.md`.
 |---|---|---|---|---|---|---|
 | Preset | — | `.ti59` `.ti58` `.ti58c` `.pc1500` `.pc1500a` `.pc1600` | — | 2 | `preset-name` | both |
 | Magnetic card | medium | `.magnetcard.yaml` | `ti59-magnetic-card` | 3 | `card-name` | Calc-U-59 (TI-59) |
-| Floppy disk | medium | `.floppy.yaml` | `ce1600f-floppy` | 1 | `disk-name` | Calc-U-1600 (PC-1600) |
+| Floppy disk | medium | `.floppy.yaml` | `ce1600f-floppy` | 2 | `disk-name` | Calc-U-1600 (PC-1600) |
 | Cassette tape | medium | `.tape.yaml`, with a `.wav` | `cassette-tape` | 1 | `tape-name` | Calc-U-1600 |
 | Constant memory | — | `ti58c.memory.yaml` | `ti58c-constant-memory` | 1 | `memory-name` | Calc-U-59 (TI-58C) |
 | Module definition | module (memory module) | `.card.yaml` | — | 1 | `module-name` | Calc-U-1600 |
@@ -130,7 +130,7 @@ medium, a program file, a ROM file, a folder. A reference always says
 ```yaml
 floppy: Formatted                # error: is "Formatted" a file or a name?
 floppy: { name: Formatted }      # the floppy disk whose disk-name is "Formatted"
-floppy: { file: disks/work.floppy.yaml, side: B }
+floppy: { file: disks/work.floppy.yaml, side: 1 }
 ```
 
 A reference is a mapping, in block or flow form, with **exactly one** of

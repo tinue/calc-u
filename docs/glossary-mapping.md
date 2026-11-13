@@ -42,6 +42,7 @@ parenthesis is removed with it.
 | Examples folder | — | "Samples folder" (Settings ▸ General) |
 | Host drive | — | "Mount Directory…", "Host drive folder": unchanged |
 | Arm | "Fit Card" → "Arm Card", "Fit Fresh Card" → "Arm Fresh Card" | — |
+| Side | sides 1 and 2 of a magnetic card → 0 and 1 | sides A and B of a floppy disk → 0 and 1 |
 | Insert / Eject | "Eject Card": unchanged | module picker, floppy insert/eject: unchanged |
 
 ## Code names

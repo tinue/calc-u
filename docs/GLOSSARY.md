@@ -130,7 +130,7 @@ One concrete part, a member of a chip family or a single design, such as
 the TMC0541 (Master Library ROM) or the LH5801.
 
 **Floppy disk**:
-A disk for the PC-1600's CE-1600F drive, with two **sides**, A and B, used
+A disk for the PC-1600's CE-1600F drive, with two **sides**, 0 and 1, used
 one at a time.
 _Avoid_: disk image, floppy (bare)
 
@@ -608,7 +608,7 @@ Its last instructions, each with the registers as they were before
 it.
 
 **Side**, **Bank**, **Pass**, **Fresh** (of a magnetic card):
-A magnetic card has two sides, 1 and 2; a side holds one bank, a
+A magnetic card has two sides, 0 and 1; a side holds one bank, a
 quarter of the TI-59's memory, numbered 1 to 4. A pass is one run of a
 side through the card reader. A card is fresh while neither side has
 been written.

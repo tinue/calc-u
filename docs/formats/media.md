@@ -8,7 +8,7 @@ battery-backed module, the fourth kind of medium, is a module definition
 | Medium | Format | Place | Products |
 |---|---|---|---|
 | Magnetic card | §1, version 3 | the TI-59's card reader (pass-through) | [59: TI-59] |
-| Floppy disk | §2, version 1 | the CE-1600F drive of the CE-1600P (holding) | [1600: PC-1600] |
+| Floppy disk | §2, version 2 | the CE-1600F drive of the CE-1600P (holding) | [1600: PC-1600] |
 | Cassette tape | §3, version 1 | the cassette interface of a CE-150 or CE-1600P | [1600] |
 
 §4 specifies the TI-58C's constant memory file, which is not a medium.
@@ -37,7 +37,7 @@ is stored:
 
 ## 1. Magnetic card
 
-The TI-59's removable magnetic strip, with two sides, 1 and 2. A side
+The TI-59's removable magnetic strip, with two sides, 0 and 1. A side
 holds one bank, a quarter of the TI-59's memory, numbered 1 to 4. Both
 sides can hold the same bank number. A card is **fresh** while neither
 side has been written.
@@ -54,7 +54,7 @@ cue-card:
   title: My Program
   A: run
 sides:
-  1:
+  0:
     partition: 0x1C
     data-type: program
     bank: 1
@@ -64,7 +64,7 @@ sides:
     bytes: |
       R000: 00 29 43 59 40 58 21 67
       # … 30 rows in all
-  2:
+  1:
     # …
 ```
 
@@ -77,7 +77,7 @@ sides:
 | `template` | no | `true`: a template |
 | `saved` | no | ISO-8601 UTC time of the last write, `YYYY-MM-DDTHH:MM:SSZ`. Informational |
 | `cue-card` | no | The card's labels ([cue-card.md](cue-card.md)) |
-| `sides` | yes | A mapping with `1`, `2` or both. A side not written yet is left out; an empty `sides` is a fresh card |
+| `sides` | yes | A mapping with `0`, `1` or both. A side not written yet is left out; an empty `sides` is a fresh card |
 
 Each side:
 
@@ -133,7 +133,7 @@ card, from the implicit template.
 
 ## 2. Floppy disk
 
-A disk for the PC-1600's CE-1600F drive, with two sides, A and B, used
+A disk for the PC-1600's CE-1600F drive, with two sides, 0 and 1, used
 one at a time. The file holds the raw bytes of both sides and nothing
 else. It knows nothing about files: the filesystem inside a side is
 Sharp's, which the CE-1600P ROM reads as on real hardware.
@@ -143,13 +143,13 @@ Sharp's, which the CE-1600P ROM reads as on real hardware.
 ```yaml
 # Calc-U-1600 CE-1600F floppy disk image
 format: ce1600f-floppy
-format-version: 1
+format-version: 2
 disk-name: "Formatted"
 description: "Formatted, both sides empty"
 template: true
 saved: 2026-09-19T10:17:46Z
 sides:
-  a:
+  0:
     encoding: addressed-hex
     bytes: |
       $0000: 00...
@@ -157,7 +157,7 @@ sides:
       $0210: 00...
       $0400: F2 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00
       $0410: 00...
-  b:
+  1:
     encoding: addressed-hex
     bytes: |
       $0000: 00...
@@ -166,13 +166,13 @@ sides:
 | Key | Required | Value |
 |---|---|---|
 | `format` | yes | `ce1600f-floppy` |
-| `format-version` | yes | `1` |
+| `format-version` | yes | `2` (version 1, Calc-U-1600 0.8.x, named the sides `a` and `b`) |
 | `disk-name` | yes | The name tag; non-empty. Writers double-quote it, so it must not contain `"` or a newline |
 | `description` | no | One line, the picker's tooltip. Written double-quoted, or single-quoted when it holds a `"`. Name & Save and autosave keep it |
 | `template` | no | `true`: a template. Written only by a preset's `saveas:` as a template; Name & Save never writes it |
 | `saved` | no | ISO-8601 UTC time of the last write. Informational |
-| `sides` | yes | Exactly the keys `a` and `b` |
-| `sides.a`, `sides.b` | yes | Exactly `encoding` and `bytes` |
+| `sides` | yes | Exactly the keys `0` and `1` |
+| `sides.0`, `sides.1` | yes | Exactly `encoding` and `bytes` |
 | `…encoding` | yes | `addressed-hex` |
 | `…bytes` | yes | Covers exactly `0x10000` bytes |
 

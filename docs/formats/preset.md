@@ -60,7 +60,7 @@ Without a `cue-card:` section, no cue card is fitted.
 | `slot-1` | [both] | A module, as a reference by `file:` or `name:`. [59]: a Solid State ROM module ([modules.md §2](modules.md#2-solid-state-rom-module)); `name:` is its catalogue ID. [1600]: a module definition ([modules.md §1](modules.md#1-module-definition)); `name:` is its `module-name` |
 | `slot-2` | [1600: PC-1600] | As `slot-1` |
 | `slot-1-rom`, `slot-2-rom` | [1600] | A ROM file, by `file:` only, whose bytes replace the ROM of the module in that slot (§3.2) |
-| `floppy` | [1600: PC-1600 with `printer: CE-1600P`] | A floppy disk ([media.md §2](media.md#2-floppy-disk)), by `file:` or `name:`, with `side: A\|B` (default `A`). The CE-1600F drive comes with the CE-1600P |
+| `floppy` | [1600: PC-1600 with `printer: CE-1600P`] | A floppy disk ([media.md §2](media.md#2-floppy-disk)), by `file:` or `name:`, with `side: 0\|1` (default `0`). The CE-1600F drive comes with the CE-1600P |
 | `host-drive` | [1600: PC-1600] | The folder that backs drive `S3:`, by `folder:` |
 | `tape` | [1600: with `printer: CE-150` or `CE-1600P`] | A cassette tape ([media.md §3](media.md#3-cassette-tape)), by `file:` or `name:`, inserted into the printer's cassette interface |
 | `bus-rom` | [1600] | ROMs on the 60-pin connector (§3.3) |
@@ -71,7 +71,7 @@ Without a `cue-card:` section, no cue card is fitted.
 format-version: 2
 model: PC-1600:new
 printer: CE-1600P
-floppy: { name: Formatted, side: A }
+floppy: { name: Formatted, side: 0 }
 slot-1: { name: CE-1600M }
 slot-2: { file: cards/my.card.yaml }
 ```
@@ -90,7 +90,7 @@ magnetic-cards:
     cue-card:                 # optional
       title: My Vars
     sides:
-      1:
+      0:
         bank: 3               # required, 1–4
         protected: false      # optional, default false; true = written as −n Write
         partition: 479.59     # optional; default: the machine's when the card goes in
@@ -103,7 +103,7 @@ magnetic-cards:
 
 - Each item has `card-name`, optional `description`, optional
   `cue-card` ([cue-card.md](cue-card.md)), and
-  `sides` with `1`, `2` or both. A side not given is fresh (unwritten).
+  `sides` with `0`, `1` or both. A side not given is fresh (unwritten).
 - **A side replaces its whole bank.** Steps and registers it does not
   list are read as 00. Bank n holds program steps 240·(n−1) … +239 and
   data registers 120 − 30·n … 149 − 30·n (bank 4 = R00–R29, bank 3 =
@@ -345,7 +345,7 @@ keys:
 
 | Step | Where | Meaning |
 |---|---|---|
-| `card: <reference>` | [59: TI-59] | **Insert** a magnetic card: push one side through the card reader. Reference by `file:`, `name:` or `mem:`, with `side: 1\|2` (default 1) |
+| `card: <reference>` | [59: TI-59] | **Insert** a magnetic card: push one side through the card reader. Reference by `file:`, `name:` or `mem:`, with `side: 0\|1` (default 0) |
 | `arm: <reference>` | [59: TI-59] | **Arm** a magnetic card: make it ready for the user to feed. Reference by `file:`, `name:` or `mem:`, without a side |
 | `saveas: <target>` | [both] | **Name & Save** the medium or module at a place, or an in-file magnetic card [59: TI-59] (§5.2.1) |
 
@@ -406,7 +406,7 @@ magnetic-cards:
     cue-card: { title: "PDCM 1: 11.-03 / -998.-03" }
 keys:
   - key: 1 2nd Write
-  - card: { mem: PDCM-1, side: 1 }
+  - card: { mem: PDCM-1, side: 0 }
   - saveas: { card: PDCM-1, as: live, name: PDCM 1 }
 ```
 
@@ -721,7 +721,7 @@ For converting files written for the products before this specification.
 | the last key is waited for until the machine is idle, then regular speed | the last item is not waited for; `- let-it-finish:` last keeps a run at full speed to its end |
 | `Trace: x` / `Trace: Off` | `- trace: x` / `- trace: off` |
 | `ZeroElapseTime:` / `ReportElapseTime:` | `- elapsed-time: start` / `report` |
-| `InsertCard: X:2` | `- card: { file: X.magnetcard.yaml, side: 2 }` |
+| `InsertCard: X:2` | `- card: { file: X.magnetcard.yaml, side: 1 }` (sides are numbered 0 and 1; version 1's 1 and 2 are 0 and 1) |
 | `InsertCard:` / `ArmCard:` on a card file that doesn't exist yet (created when written, with the latest `CUECARD:`) | an in-file card with that `cue-card`, fed with `mem:`, then `- saveas: { card: X, as: live, name: X }` |
 | `ArmCard: mem:X` (fed when the program waits) | `- card: { mem: X }` after the step that makes the machine wait for a card; or `- arm: { mem: X }` for the user to feed |
 | a card fed by `InsertCard:` / `ArmCard:`: a `mem:` card is not fitted | every card is fitted after it has passed |
@@ -739,7 +739,7 @@ For converting files written for the products before this specification.
 | `plotter: CE-1600P:old` | `printer: CE-1600P:old` |
 | `slot-1: CE-1600M` / `slot-1-file: my.card.yaml` | `slot-1: { name: CE-1600M }` / `slot-1: { file: my.card.yaml }` |
 | `slot-1-rom: build/x.bin` | `slot-1-rom: { file: build/x.bin }` |
-| `floppy: Formatted,B` / `floppy-file: d.floppy.yaml` | `floppy: { name: Formatted, side: B }` / `floppy: { file: d.floppy.yaml }` |
+| `floppy: Formatted,B` / `floppy-file: d.floppy.yaml` | `floppy: { name: Formatted, side: 1 }` / `floppy: { file: d.floppy.yaml }` (A and B are sides 0 and 1) |
 | `host-drive: shared` | `host-drive: { folder: shared }` |
 | `- key: cl` (one key) | `- key: cl`, or several: `- key: shift up up` |
 | `- wait: 2` (seconds) | `- wait: 2s` |
@@ -757,7 +757,7 @@ For converting files written for the products before this specification.
 | Version 1 | Version 2 |
 |---|---|
 | card file `Calc-U-59 Card 2.0`, one per card | magnetic card format 3 ([media.md §1](media.md#1-magnetic-card)); `card-name` from the file stem |
-| `SIDE: n`, `HEADER:` keys `Partition`, `DataType`, `Bank`, `Protection`, `Checksum` | `sides: n:` keys `partition`, `data-type`, `bank`, `protection` (`yes` → `true`), `checksum` |
+| `SIDE: n` (1 or 2), `HEADER:` keys `Partition`, `DataType`, `Bank`, `Protection`, `Checksum` | `sides: n−1:` (0 or 1) keys `partition`, `data-type`, `bank`, `protection` (`yes` → `true`), `checksum` |
 | `DATA:` rows `R###: …` | `encoding: register-hex`, `bytes:` rows with their 8 bytes in reverse order |
 | card files 1.0 and the binary layouts | not converted |
 | `ti58c.mem` (cue card, `R###:` rows) | constant memory format 1 ([media.md §4](media.md#4-constant-memory-file)), rows copied unchanged |
@@ -765,6 +765,13 @@ For converting files written for the products before this specification.
 | `CUECARD:` keys `Title`, `ID`, `Style`, `Row1`, `Row2`, `Row2R`, `Row1Align`, `Row2Align`, `Row2RAlign`, `PencilColor` | `title`, `id`, `style`, `row-1`, `row-2`, `row-2-r`, `row-1-align`, `row-2-align`, `row-2-r-align`, `pencil-color` ([cue-card.md](cue-card.md)) |
 | `CUECARD:` keys `Template` and `Banks` | dropped: the kind follows from where the card is defined; a magnetic card's corners show its sides' banks |
 | `CUECARD:` unknown keys and `IDAlign` are ignored | an error |
+
+### 9.4 Calc-U-1600 floppy disk version 1
+
+| Version 1 | Version 2 |
+|---|---|
+| `format-version: 1` | `format-version: 2` |
+| `sides:` with `a:` and `b:` | `sides:` with `0:` and `1:`, the same bytes |
 
 ## 10. Examples
 
@@ -780,7 +787,7 @@ printer: PC-100C
 magnetic-cards:
   - card-name: Bank1
     sides:
-      1:
+      0:
         bank: 1
         program: |
           76 11 99 91

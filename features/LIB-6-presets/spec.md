@@ -283,7 +283,9 @@ Carrying it out
 - [ ] **AC-58** — Given `skip-wait:` after an item, then the implicit
   wait after that item is dropped: the next item starts as soon as that
   one has been carried out (its keys pressed, ENTER typed, the card
-  passed). As the first or the last item it is refused when the preset
+  passed). If the next item is a `key:` or `type:`, its first press goes
+  down at once, without waiting for key readiness; its later presses
+  wait as usual (`preset.md` §5.1; LIB-5 AC-14, AC-20, AC-28). As the first or the last item it is refused when the preset
   is read (`preset.md` §5.3, §6.1).
 - [ ] **AC-59** — Given `let-it-finish:` as the last item, then the
   machine runs on at the speed in force until it is idle, without a
@@ -530,9 +532,13 @@ Harness
   which printers on the PC-1600 is open, OQ-10). The key `plotter:` is
   gone (behaviour change 1600-3). The keys `ctrl`, `kbii` and `bs` are
   refused in a `key:` step (`preset.md` §5.1).
-- [ ] **AC-45** — Given a Sharp machine, then it is idle when its typing
-  support reports prompt readiness (LIB-5 AC-35), as today
-  (`Core/Preset/PresetRunner.cpp:75-91`; OQ-1).
+- [ ] **AC-45** — Given a Sharp machine, then it is idle when it waits
+  for a key from the user: it reports key readiness (C1600-1 AC-21: the
+  ROM in its command loop or reading the key matrix for a key) for 20
+  frames in a row, as today's wait does with the command loop
+  (`Core/Preset/PresetRunner.cpp:75-91`; OQ-1). This covers the command
+  prompt, a program that waits at `INPUT` and the RESERVE mode; first
+  step C-2 confirms the RESERVE mode and MODE 1 on a run.
 - [ ] **AC-46** — Given a PC-1500 or PC-1500A is built by a preset and
   its ROM asks `NEW0? :CHECK`, then the load answers with the key `cl`,
   at most five times, before the first section starts; on the PC-1600
@@ -735,3 +741,5 @@ Harness
 | Keywords marked for one product, or [undefined], are refused (AC-62); `syncclock:` is refused on the TI models (AC-27); frontend steps never fail and the harness passes them over (AC-63) | user, 2026-11-12 (`docs/formats/README.md` §5; `preset.md` §5.4, §5.7) | 2026-11-13 |
 | `expect:` on a TI model compares a number with the display register X; on the Sharp models one line contains the text, with `\\` and `\xHH` (AC-24, AC-40, AC-48) | user, 2026-11-12 (`preset.md` §5.4) | 2026-11-13 |
 | The elapsed time a preset reports at full speed is about that of a quick real user: computing time, quick key holds and gaps, the asked `wait:` durations, nothing for idle waiting; on every model (AC-64). A preset's `wait:` at full speed is not paced on an idle TI (AC-20, LIB-17 AC-16) | user, 2026-11-13 (question F-12 of `docs/walkthroughs/presets.md` §5.4) | 2026-11-13 |
+| After `skip-wait:` the first press of a `key:` or `type:` goes down at once (AC-58) | user, 2026-11-13 (B-3 follow-up of `docs/walkthroughs/presets.md` §5.2); `preset.md` §5.1 corrected | 2026-11-13 |
+| A Sharp machine is idle when it reports key readiness for 20 frames: the prompt, `INPUT`, RESERVE mode (AC-45). Replaces prompt readiness | user, 2026-11-13 (B-4 of `docs/walkthroughs/presets.md` §5.2) | 2026-11-13 |

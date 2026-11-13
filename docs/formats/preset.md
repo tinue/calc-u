@@ -330,7 +330,7 @@ keys:
 
 | Step | Where | Meaning |
 |---|---|---|
-| `key: <id> [<id> …]` | [both] | **Press**: press and release each key, one after the other. Each press waits for key readiness before it goes down, and holds the key long enough for the machine to register it, but not much longer; the exact time is the product's. Key IDs (§8) are separated by spaces and compared in any case |
+| `key: <id> [<id> …]` | [both] | **Press**: press and release each key, one after the other. Each press waits for key readiness before it goes down, except the first press of a step right after a `skip-wait:`, which goes down at once, ready or not; each press holds the key long enough for the machine to register it, but not much longer; the exact time is the product's. Key IDs (§8) are separated by spaces and compared in any case |
 | `type: <text>` | [1600] | **Typing**: type the text as key presses, then ENTER. The text runs verbatim to the end of the line: `#` and quotes are typed, not read as a comment or quotes |
 
 - `key:` presses keys; it doesn't type text. `key: PRINT` is an error,

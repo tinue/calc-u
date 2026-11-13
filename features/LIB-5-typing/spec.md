@@ -134,9 +134,13 @@ Typed text
   this feature) that reports latches, then typed text takes them into
   account as the profile says: a key that is latched is not pressed
   again, or is released first.
-- [ ] **AC-14** — Given the machine has typing support that reports
-  prompt readiness, then a `type` starts its line only when the machine
-  reports it.
+- [ ] **AC-14** — Given a Sharp machine, then a `type` starts its line,
+  and a `key` its first press, when the machine reports key readiness
+  (C1600-1 AC-21) on the PC-1600, after 15 s of emulated time all the
+  same, and at once on the PC-1500 and PC-1500A, as today
+  (`Core/PC1600/PC1600BasicTyper.cpp:150-204`,
+  `Core/PC1500/PC1500BasicTyper.cpp:16-19`); right after a `skip-wait:`
+  the first press goes down at once on every model (LIB-6 AC-58).
 
 Commands and steps
 - [ ] **AC-15** — Given the command or step `key` with one or more
@@ -254,13 +258,13 @@ What is shown
   `tests/shared_tables_tests.cpp:42-61`).
 
 ### Calc-U-1600
-- [ ] **AC-28** — Given a Sharp model, then its typing profile gives: a
-  minimum hold of 2 frames; a gap of 2 frames after a release before the
-  next press; for typed text a cadence of 4 frames down and 4 frames up,
-  and on the PC-1600 6 frames more after a SHIFT or KBII press; the
-  characters of AC-30; and for `type` a wait for the prompt after ENTER
-  of at most 12 seconds of emulated time on the PC-1500 and PC-1500A and
-  at most 1 second on the PC-1600. Live input is not held back for key
+- [ ] **AC-28** — Given a Sharp model, then its typing profile gives,
+  as today: a press of `key` and of typed text held 4 frames down and 4
+  frames up, and on the PC-1600 6 frames more after a SHIFT or KBII
+  press; the start of AC-14; and the characters of AC-30. What follows
+  ENTER is no longer the profile's: in a preset the implicit wait until
+  the machine is idle (LIB-6 AC-45, AC-56), in the harness the command
+  `wait` (AC-17). Live input is not held back for key
   readiness on any Sharp model (`typing.md` T-1;
   `Shared/MachineSession.cpp:42, 279-309`, `Core/KeyPaste.hpp:82-98`,
   `Core/PC1500/PC1500BasicTyper.cpp:79-105, 188`,
@@ -343,8 +347,9 @@ What is shown
 - **EC-3** — Given a press waits for key readiness and the machine does
   not report it (a program that never stops), then it waits without
   limit until it is dropped by AC-9, AC-10, a reset or a new machine;
-  Calc-U-59 waits without limit in this case today. Only the wait of
-  `type` for the prompt has a bound (AC-17).
+  Calc-U-59 waits without limit in this case today. On the PC-1600 the
+  first press of a step has the bound of AC-14; in a preset, an item
+  that has not finished fails at `timeout:` (LIB-6 AC-57).
 - **EC-4** — Given a text that the input method of the host commits as a
   whole (an accent composed on the host), then each of its characters is
   typed as a press of the minimum hold (Calc-U-1600 Qt6 today,
@@ -445,3 +450,4 @@ What is shown
 | The names a `key` takes on a TI model are exactly those of `preset.md` §8.1, in presets and in the harness (AC-26); `2ndCLR`, `P>R`, `S+`, `mean`, `StFlg`, `IfFlg` go. Replaces OQ-7 | user, 2026-11-13 (question F-5 of `docs/walkthroughs/presets.md` §5.4); `docs/formats/preset.md` §8.1 | 2026-11-13 |
 | `key` and `type` reply when carried out (keys up, ENTER up); waiting until idle is `wait`, and in a preset the implicit wait (AC-17) | question F-15 of `docs/walkthroughs/presets.md` §5.4, left to the specification by the user on 2026-11-13 ("what works best for agentic use") | 2026-11-13 |
 | A key held when the machine is paused comes up after the rest of its hold in the host's time (in the harness at once), on the paused machine; the ROM, which took the key while it was down, does not look at it again until its program has ended (AC-20) | user, 2026-11-13 (B-2 of `docs/walkthroughs/presets.md` §5.2) | 2026-11-13 |
+| Sharp presses as today: 4 + 4 frames, on the PC-1600 at key readiness (at most 15 s), on the PC-1500 at once; after `skip-wait:` at once; the waits after ENTER go (AC-14, AC-28, EC-3). Replaces the 2-frame minimum and prompt readiness for `type` | user, 2026-11-13 (B-4 of `docs/walkthroughs/presets.md` §5.2) | 2026-11-13 |

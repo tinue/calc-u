@@ -7,15 +7,23 @@ PR-11 was added in the phase 4 review); open questions remain.
 `docs/formats/` (`README.md`, `preset.md`). The forks below are kept as
 the record; where their notation or a rule differs from the format, the
 format holds: references `{ name: }`, `{ file: }`, `{ mem: }` in place
-of PR-8's notation; `magnetic-cards:`, `card:` and `arm:` in place of
-`medium:`, `fit:`, `insert:`, `eject:` and the auto-fed `arm:` (PR-8);
+of PR-8's notation (also `{ folder: }`); `magnetic-cards:`, `card:`
+and `arm:` in place of `medium:`, `fit:`, `insert:` and the auto-fed
+`arm:` (PR-8); a floppy disk and a tape are the steps `floppy:` and
+`tape:`, with `eject:` for both, and the header holds installed
+peripherals only (PR-8, PR-9, PR-11, as ruled 2026-11-13);
 `keycodes:`, `data:` and a cue card block in place of `steps: |`,
 `registers: |`, `cue-card: |` (PR-3); `full-speed:`, `regular-speed:`,
 `elapsed-time:`, `printer-trace:` in place of `speed:`, `elapsed:`,
 `switch:` (PR-5, PR-7); no bare `wait:`, but the implicit wait,
 `skip-wait:` and `let-it-finish:` (PR-5); the debugger steps and
 `debug-panel:` on the TI models only, [undefined] on the Sharp models
-(PR-7); the whole file one simplified YAML (PR-1).
+(PR-7); the whole file one simplified YAML (PR-1). Ruled on
+2026-11-13 as well: a duration has a unit and may have a fraction
+(`1.5s`); `timeout:` bounds every implicit wait and the item fails,
+replacing the 30 minutes at the card reader and the "one hour, then
+goes on" of 2026-11-11; `cut-paper:` takes no value; `screenshot:`
+writes to the save folder.
 
 Inherits: ADR 0016 (a preset always cold boots), 0017 (all-or-nothing
 parsing), 0018 (one family preset format, YAML-shaped, product-specific
@@ -65,8 +73,9 @@ to the second batch.
   version and passes the reader before a release (ADR 0017, 0037).
 - Calc-U-59 ships three startup presets, one per model (ADR 0021).
 - A preset that builds a TI-58C cold boots it like any other machine;
-  `ti58c.mem` follows and then holds the new machine's constant memory
-  (`capabilities.md`, C-3). No preset key restores it.
+  that machine never writes the constant memory file
+  (`ti58c.memory.yaml`; `docs/formats/media.md` §4; `capabilities.md`,
+  C-3 as amended 2026-11-13). No preset key restores it.
 
 ## Non-responsibilities
 
@@ -320,13 +329,13 @@ at every speed. The oddity and its rule go.
 | | TI-59 (58, 58C) | PC-1500 (1500A) | PC-1600 | PC-1403 (paper) | PC-1350 (paper) |
 |---|---|---|---|---|---|
 | Extension (PR-2) | `.ti59`, `.ti58`, `.ti58c` | `.pc1500`, `.pc1500a` | `.pc1600` | not named yet (a model extension, by PR-2) | not named yet |
-| Hardware keys (PR-9, PR-11) | `slot-1:` (Solid State ROM module), `printer: PC-100C` | `slot-1:`, `printer: CE-150`, `interface: CE-158` | `slot-1:`, `slot-2:`, `printer:`, `interface:`, `floppy:`, `host-drive:` | 11-pin peripheral | RAM card slot, 11-pin and 15-pin peripherals |
-| Product sections (PR-3) | `partition:`, `program:` `steps: \|`, `registers: \|`, `cue-card: \|` | `program:` `file:` / `text: \|` | as PC-1500 | as PC-1500 | as PC-1500 |
+| Hardware keys (PR-9, PR-11) | `slot-1:` (Solid State ROM module), `printer: PC-100C` | `slot-1:`, `printer: CE-150`, `interface: CE-158` | `slot-1:`, `slot-2:`, `printer:`, `interface:`, `host-drive:` | 11-pin peripheral | RAM card slot, 11-pin and 15-pin peripherals |
+| Product sections (PR-3) | `partition:`, `program:` `keycodes: \|` or `file:`, `data:`, `cue-card:` | `program:` `file:` / `text: \|` | as PC-1500 | as PC-1500 | as PC-1500 |
 | `key:` (PR-5) | `- key: 2nd Pgm 0 1 SBR =` | `- key: mode cl` | `- key: mode cl` | key IDs of the model | key IDs of the model |
 | `type:` | — (no text typing) | yes | yes (KBII accents) | yes | yes |
-| Media places (PR-8) | card reader (TI-59; pass-through, sides 1/2); `fit:` | cassette (holding) | floppy (holding, sides A/B), cassette | cassette (CE-126P) | cassette |
+| Media places (PR-8) | card reader (TI-59; pass-through, sides 0/1): `card:`, `arm:` | cassette (CE-150): `tape:`, `eject:` | floppy (CE-1600F; holding, sides 0/1): `floppy:`, `eject:`; cassette: `tape:`, `eject:` | cassette (CE-126P) | cassette |
 | `arm:` | card reader | — | — | — | — |
-| GUI steps (PR-7) | debugger, `cut-paper:`, `- switch: PC-100C TRACE …`, `screenshot:` | debugger, `cut-paper:`, `screenshot:` | debugger, `cut-paper:`, `screenshot:` | same | same |
+| GUI steps (PR-7) | debugger, `debug-panel:`, `cut-paper:`, `printer-trace:`, `screenshot:` | `cut-paper:`, `screenshot:` (debugger steps [undefined]) | `cut-paper:`, `screenshot:` (debugger steps [undefined]) | same | same |
 
 ## Open questions
 
@@ -335,7 +344,7 @@ at every speed. The oddity and its rule go.
   whether a throwaway script does it is the implementer's choice.
 - Q-2 (answered 2026-11-10, PR-9): a TI machine without a module is
   allowed.
-- Q-3 (phase 6, with the descriptors): The key IDs of each model (M-3) and their ASCII spellings
+- Q-3 (answered 2026-11-13, F-5: the key IDs are those of `docs/formats/preset.md` §8): The key IDs of each model (M-3) and their ASCII spellings
   (`x<>t`, `sqrt`, …) are the descriptor's; the preset format uses them as
   they are.
 
@@ -362,3 +371,4 @@ at every speed. The oddity and its rule go.
 | 2026-11-11 | PR-9, PR-8 (completed, user, 2026-11-11) | A preset names a Solid State ROM module by its two-letter ID only. A preset whose `insert:` step leaves the card at the reader while the machine gives no output for 30 minutes of emulated time ends there; a program that keeps giving output is never stopped. |
 | 2026-11-11 | PR-5 (completed, user, 2026-11-11) | While the debugger has the machine paused, a `wait:` with a duration passes in the host's time and ends with the machine still paused, as in Calc-U-59 2.3.0; in the harness it ends at once. The waits for an idle machine stay at one hour. |
 | 2026-11-12 | PR-1, PR-3, PR-5, PR-7, PR-8 (superseded, user) | The preset format is `docs/formats/`; see the note under Status. The feature specs (LIB-6, C59-2, C1600-4 on 2026-11-13; the others as they are aligned) point to it. |
+| 2026-11-13 | PR-8, PR-9, PR-11 (amended, user) | A floppy disk and a cassette tape are steps (`floppy:`, `tape:`, `eject:`), not header keys; the header holds installed peripherals; Q-3 answered by F-5. |

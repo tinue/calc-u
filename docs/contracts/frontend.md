@@ -317,9 +317,10 @@ Options:
   medium that lies outside the save folder. ADR 0019 allows two ways to
   such a file only (a preset names it, or the user puts it into the save
   folder), so a dropped medium cannot be opened in place.
-- Q-3 (answered 2026-11-10, phase 4b, LIB-6 AC-36 and AC-45): What "idle" means per model
-  for a bare `- wait:` (`presets.md`, PR-5 gives it to both products;
-  Calc-U-59 has no such step today).
+- Q-3 (answered 2026-11-10, phase 4b; amended 2026-11-13, LIB-6 AC-36
+  and AC-45): What "idle" means per model, for the implicit wait
+  (`docs/formats/preset.md` §6.2) and the harness `wait` without a
+  duration; the bare `- wait:` step is gone.
 - Q-1 (answered 2026-11-10): commands that would start an operation (load a
   preset, reset, cold boot, model switch, attach or detach, insert) are
   refused while one runs; user keys are dropped (T-4); everything else
@@ -363,3 +364,4 @@ Options:
 | 2026-11-10 | Q-4 (completed, user, 2026-11-10, after the batch 7 gate) | An opened module file is plugged in when it is clear from the context where it goes (a machine with one slot, or a module that fits only one slot); otherwise it is refused with a notice. `.rom` is no name of a machine-code file. |
 | 2026-11-11 | Open questions of LIB-3 (user, 2026-11-11) | A command is carried out when it arrives and its reply and changed state topics go out at once; a frontend that starts to listen late gets the paper and the log from their last reset marker on and no earlier notices. |
 | 2026-11-11 | Open questions of LIB-3 (completed, user, 2026-11-11) | The background rule says "suspend" and "continue"; "pause" and "resume" are the debugger's. A suspend while an operation runs stops its progress until continue, and busy stays. Row LIB-15 is named "Web frontend shell". |
+| 2026-11-13 | Q-3 (amended, user, B-4) | A Sharp machine is idle when it reports key readiness for 20 frames in a row (the prompt, `INPUT`, the RESERVE mode; LIB-6 AC-45); the bare `- wait:` is gone. |

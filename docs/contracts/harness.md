@@ -9,8 +9,8 @@ command per line; keeps every capability of today's tools), 0033 (in
 development and test builds every frontend can open its app session to
 the serve protocol: local network for the iOS simulator, WebSocket for a
 browser; release builds leave it out), Briefing §8 (today's capabilities
-stay). Builds on `frontend.md` (FE-1 messages), `presets.md` (step
-vocabulary), `debugger.md` (run control, DB-3: the harness may set
+stay). Builds on `frontend.md` (FE-1 messages), `docs/formats/preset.md`
+(step vocabulary), `debugger.md` (run control, DB-3: the harness may set
 breakpoints).
 
 ## Functions to keep (facts)
@@ -106,7 +106,9 @@ Options:
 ### H-4: Which frontends get attach, and when
 
 **Decided (2026-11-10, in the review; approved by the user).** ADR 0033
-carries a note.
+carries a note. *Amended 2026-11-13 (B-22, left to the specification by
+the user): the Qt6 frontend gets attach in the migration; its `--shots`
+scenarios are its client (LIB-14 AC-44).*
 
 Facts: ADR 0033 says every frontend can open its app session to the
 serve protocol. Its reason is the iOS simulator, where UI automation
@@ -126,8 +128,8 @@ Options:
 | | TI-59 (58, 58C) | PC-1500 (1500A) | PC-1600 | PC-1403 (paper) | PC-1350 (paper) |
 |---|---|---|---|---|---|
 | Common commands | key, type (—), wait, expect, lcd, dump, peek, break, trace, screenshot | same, with `type` | same | same | same |
-| Product commands (H-2) | `asm` (ASM overlay), keycode (dis)assembler, ROM coverage, printer lines, card dump | BASIC dump, tape in/out, CE-158 serial | BASIC dump, tape, serial, host drive, probes | — | — |
-| Attach (ADR 0033, H-4) | Swift (iOS simulator, macOS) in the migration; Qt, web later | Qt in the migration (screenshot scenarios); web later | Qt in the migration (screenshot scenarios); web later | — | — |
+| Product commands (H-2) | `asm` (ASM overlay), keycode (dis)assembler, ROM coverage, printer lines, card dump | BASIC dump, tape in/out, CE-158 serial | BASIC dump, tape, serial, host drive | — | — |
+| Attach (ADR 0033, H-4) | Swift (iOS simulator, macOS) and Qt6 in the migration; web later | Qt in the migration (screenshot scenarios); web later | Qt in the migration (screenshot scenarios); web later | — | — |
 
 ## Open questions
 

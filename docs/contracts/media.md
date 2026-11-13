@@ -205,7 +205,7 @@ Options:
   `CUECARD:` (`Shared/CardFile.cpp`, `parseCardTextV2`; `Shared/CueCard.cpp`,
   `parseLine`). A name field is therefore an incompatible change. Saved
   2.0 cards are refused once at the update (ADR 0037).
-- Q-5 (phase 6): When two instances carry the same name (MD-5), which
+- Q-5 (answered 2026-11-10, batch 6 gate; decision log): When two instances carry the same name (MD-5), which
   one a save by name replaces (`saveas: live`, Name & Save, a preset's
   first write).
 - Q-1 (answered 2026-11-10; superseded 2026-11-13, user: a tape is a

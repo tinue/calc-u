@@ -57,7 +57,7 @@ hold rules.
 - Keyboard maps (host key → key ID) are product material; the engine
   applies them.
 - What the frontend does with focus (FE-4).
-- Preset step semantics (`Wait:`, speed changes, ODD59-13): contract 5.
+- Preset step semantics (`wait:`, the speed steps, the implicit wait, ODD59-13): `docs/formats/preset.md`, contract 5.
 
 ## Invariants
 
@@ -93,7 +93,9 @@ support capability** (revised option (a), after the user's questions):
 - The machine exposes, where the model has it: **key readiness** (the
   ROM can take the next key now), **command-prompt readiness** (scripted
   typing may start a new line), and **latch states** (SHIFT, KBII, …).
-- Key readiness gates only the start of the next queued press. A held
+- Key readiness gates only the start of the next queued press, except
+  the first press of a preset step right after `skip-wait:`, which goes
+  down at once (`docs/formats/preset.md` §5.1; 2026-11-13). A held
   key needs none: the ROM is in its key handling or auto-repeat, and the
   scan loop engages again once the key is released; the presses queued
   behind it wait anyway.
@@ -194,3 +196,4 @@ Options:
 | 2026-11-10 | T-4 | User keys arriving while an operation runs are dropped. |
 | 2026-11-10 | T-2 (amended in phase 4b, user) | Key readiness is part of the machine interface, not only of typing support: every machine reports whether it is ready to accept a key press. It is worded so, not as a "scan loop": the TI models have several such loops, depending on the model and on a printer. Typing support keeps prompt readiness and the latch states. |
 | 2026-11-10 | T-2, T-4 (amended, user, phase 4b, batch 4 gate) | A live key goes down at once and is not held back for key readiness; readiness can be a short window, and a ROM samples some keys while a program runs (R/S and GTO on the TI models, BREAK on the Sharp ones), which must keep working as today. Typing outside a preset is not an operation: a host key stops a running paste. |
+| 2026-11-13 | T-2 (amended, user, B-3) | The first press of a preset step right after `skip-wait:` goes down at once, ready or not (LIB-5 AC-14, LIB-6 AC-58). |

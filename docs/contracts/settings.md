@@ -34,7 +34,7 @@ folder).
   preset (ADR 0021), plus window and dialog state the frontends need
   (ST-4).
 - The library resolves every path a product uses (settings file, save
-  folder, tapes, traces, serial links, `ti58c.mem`) from what the frontend
+  folder, tapes, traces, serial links, `ti58c.memory.yaml`) from what the frontend
   passes (Calc-U-1600's rule: the frontend passes the host's directories,
   the library decides nothing about the platform).
 
@@ -102,7 +102,7 @@ Options:
   persistent IndexedDB for both products (answers `media.md` Q-3:
   Calc-U-59's web save folder stops being per page session). An override
   in the settings on desktop Qt (`storage` section). Layout: instances
-  and `ti58c.mem` at the root (answers `media.md` Q-2), tapes in
+  and `ti58c.memory.yaml` at the root (answers `media.md` Q-2), tapes in
   `Tapes/`; traces and screenshots, and the serial links (Calc-U-1600),
   default to the save folder on Qt and keep the Swift trace setting
   (Application Support, iCloud, custom).

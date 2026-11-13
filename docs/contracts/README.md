@@ -48,8 +48,9 @@ decisions cause are collected in
   | Debug panel | run control and its buttons | the panel itself (`debugger.md`, DB-6) |
 
 - **Formats.** For the migration release only the current version of an
-  own format is read; afterwards one version back, converted on the fly
-  (ADR 0037, "Scope").
+  own format is read; afterwards a release reads the previous version
+  and silently upgrades the file in place (ADR 0037, "Scope";
+  `docs/formats/README.md` §2).
 
 ## What is library and what is app layer
 
@@ -87,7 +88,7 @@ product code.
 
 ## Open questions left after the forks (2026-11-10)
 
-Every contract lists its open questions with their status. Still open:
+Every contract lists its open questions with their status. Still open (answered rows removed 2026-11-13):
 
 | Where | Question | Settled in |
 |---|---|---|
@@ -98,11 +99,4 @@ Every contract lists its open questions with their status. Still open:
 | `typing.md` Q-2 | 100 ms emulated hold enough everywhere | phase 6, Calc-U-59 tests |
 | `typing.md` Q-3, `debugger.md` Q-1 | PC-1500 key-scan loop: research and implement key readiness | phase 6 |
 | `presets.md` Q-1 | upgrade of the shipped and hosted presets | phase 6 |
-| `presets.md` Q-3 | key ID lists per model | phase 6, with the descriptors |
 | `harness.md` Q-2 | a Python helper for `calcu serve` | phase 6, with the skills |
-| `frontend.md` Q-4 | what "open file" does with a medium outside the save folder | phase 4b |
-| `media.md` Q-5 | which of two same-named instances a save by name replaces | phase 6 |
-| `capabilities.md` Q-1 | the power state (off, display on): where it belongs | phase 5 walkthrough |
-| `capabilities.md` Q-2 | where the media formats' readers and writers sit | phase 4b |
-| `capabilities.md` Q-3 | the built-in default machine of the TI-58 and TI-58C | phase 4b |
-| `frontend.md` Q-3 | what "idle" means per model for a bare `- wait:` | phase 4b |

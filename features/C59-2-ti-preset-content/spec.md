@@ -181,8 +181,11 @@ The shipped and hosted presets
   | `PARTITION:`, `PROGRAM:`, `REGISTERS:`, `CUECARD:` | the sections of AC-1 (`partition:`, `program:` with `keycodes: \|`, `data:`, `cue-card:`), in the order partition, program, data, cue card within what was one stage; the cue card keys by `preset.md` §9.3, `Template` and `Banks` dropped |
   | section names in any case | the lower-case keys of version 2 |
   | `#` anywhere in a line | a `#` line, or ` #` after the value |
+  | a tab | spaces, aligned as it showed (8 columns) |
+  | a directive commented out (`#Trace: printhack.bin`) | the same in version 2, still commented out (`# - trace: printhack.bin`) |
   | words between the keycodes of `PROGRAM:` | labels, which the notation passes over (AC-3), or a comment after ` #` |
   | `KEYSTROKES:` with matrix codes | `keys:` with one `- key:` step for each 2.3.0 line, naming the same keys in the same order by the key IDs of `preset.md` §8.1, a second function by its name; the words of the line become a comment after the step |
+  | `21` (2nd) and the key after it, on one line or with the key on the next line | one step with the second function's name (`- key: Op`), or `- key: 2nd Op` in one step; never `- key: 2nd` and `- key: Op` as two steps, which would press 2nd twice (LIB-5 AC-26) |
   | the first `KEYSTROKES:` not starting with `FullSpeed:` | its step list starts with `- regular-speed:`, which holds until a `- full-speed:` (LIB-6 AC-22) |
   | `FullSpeed:`, `RegularSpeed:`, `Wait:`, `ZeroElapseTime:`, `ReportElapseTime:` | `- full-speed:`, `- regular-speed:`, `- wait:`, `- elapsed-time: start`, `- elapsed-time: report` (LIB-6) |
   | the last key of a file, whose run 2.3.0 waited for at full speed | `- let-it-finish:` after it where that run is part of the result (`preset.md` §9.1); a step that has to reach a running program gets `- skip-wait:` before it (LIB-6 AC-58) |
@@ -340,3 +343,4 @@ The shipped and hosted presets
 | The upgrade follows `preset.md` §9.1; the rules of AC-10 settle for Calc-U-59 what the conversion guide leaves open there (S3 `regular-speed:` first, S9 the model from the suffix, S10 program before data), and add `let-it-finish:` and `skip-wait:` where the run needs them | user, 2026-11-12 (`preset.md` §9.1; conversion check §3); AC-10 as decided at the batch 6 gate | 2026-11-13 |
 | The reference runs are recorded by a driver on 2.3.0's session code and end at idle, at a pause or an hour after the last key; the comparison is at the idle or paused machine after the harness `wait`, includes the cards a preset wrote, leaves out ticks and `Elapsed:`, and excepts `life.ti59` and the intended differences by name (AC-11) | user, 2026-11-13 (B-10 of `docs/walkthroughs/presets.md` §5.2) | 2026-11-13 |
 | `debug/example-brief.ti59`: `002  11.` is corrected to `11` with the upgrade, and its reference run is recorded from the corrected file (AC-10) | user, 2026-11-13 (B-12 of `docs/walkthroughs/presets.md` §5.2) | 2026-11-13 |
+| Upgrade rules for tabs, a `21` before its key on the next line, and directives commented out (AC-10) | user, 2026-11-13 (B-13 of `docs/walkthroughs/presets.md` §5.2) | 2026-11-13 |

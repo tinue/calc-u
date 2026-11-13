@@ -4,7 +4,8 @@ Phase 5 (`docs/Process.md`; prompt `prompts/phase-5.md`, step 7). What
 the specs, the ADRs and the ledger leave to a spike or to a check on a
 running product, and what the preset pass could not settle on paper
 (`docs/walkthroughs/presets.md`, class C; below `presets.md` means
-that file, and a contract is named with `contracts/`). None of it was
+that file, removed on 2026-11-13, last version at commit `536f713`
+(`docs/Process.md`, phase 5); a contract is named with `contracts/`). None of it was
 carried out in phase 5. The
 migration plan starts with these steps, before anything is built on
 what they test.

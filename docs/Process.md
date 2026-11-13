@@ -23,7 +23,7 @@ the table below.
 | 3 | Architecture decisions | `docs/adr/NNNN-*.md` | The forks | Done (approved 2026-11-09) |
 | 4 | Contracts | `docs/contracts/*.md` | The abstractions, as interface specs | Done (approved 2026-11-10) |
 | 4b | Feature specs | `features/INDEX.md`, `features/<ID>-*/spec.md` | What each shared feature does, per product | Done (index approved 2026-11-10, specs approved 2026-11-11; prompt: `prompts/phase-4b.md`) |
-| 5 | Validation on paper (reduced) | `docs/walkthroughs/presets.md`, `docs/walkthroughs/first-steps.md` | Whether the specs hold together on the products' own presets; what must be tried before anything is built on it | Planned (reduced 2026-11-11; prompt: `prompts/phase-5.md`) |
+| 5 | Validation on paper (reduced) | `docs/walkthroughs/first-steps.md` (the preset pass went into the specs, the ADRs and `docs/formats/`) | Whether the specs hold together on the products' own presets; what must be tried before anything is built on it | Done (reduced 2026-11-11; first steps approved 2026-11-13; preset walkthrough removed 2026-11-13 as superseded; prompt: `prompts/phase-5.md`) |
 | 6 | Migration plan, then code | `docs/migration-plan.md`, `features/<ID>-*/design.md`, `qa-report.md` | Order of steps, each leaving every product green | Planned |
 
 ### Phase 0 — Charter
@@ -176,6 +176,12 @@ Reduced by the user on 2026-11-11, after the feature specs were approved.
   The cold reads of phase 4b took one spec at a time; this checks the
   specs together, on real material. A finding is fixed in the spec, or
   put to the user.
+  All findings were ruled and applied to the specs, the ADRs and
+  `docs/formats/`. The walkthrough, `docs/walkthroughs/presets.md`, was
+  then superseded by them and removed (2026-11-13). Its last version is
+  `git show 536f713:docs/walkthroughs/presets.md`; where a spec, an ADR or
+  a ledger row cites a finding of it (F-n, B-n, C-n), it means that
+  version.
 - **The first steps.** What the specs leave to a spike or to a check on
   a running product is collected in `docs/walkthroughs/first-steps.md`.
   No spike is carried out in this phase: the migration plan starts with

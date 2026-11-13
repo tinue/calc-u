@@ -112,8 +112,9 @@ No action is needed for these.
   - S4: a magnetic card without a cue card shows a plain card titled with
     its card name; the corners always show the written banks
     (cue-card.md §2);
-  - S6: anything that resets the machine (reset, model change, loading a
-    preset) ends a running preset without an error (preset.md §6.1);
+  - S6: a reset, a cold boot and a model change end a running preset
+    without an error; loading another preset is refused while one runs
+    (preset.md §6.1; corrected 2026-11-13, user);
   - S13: a preset doesn't write the TI-58C constant memory file; it takes
     the machine's state at power-off as usual (media.md §4);
   - S14: the 18-character and uniqueness rules apply only to a written

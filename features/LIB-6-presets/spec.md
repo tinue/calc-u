@@ -208,10 +208,10 @@ Building the machine
   command until its last item has been carried out, or, when that item
   is `let-it-finish:`, until the machine is idle (AC-59, AC-60;
   `presets.md` PR-4; `preset.md` §6.1; LIB-3 AC-14, AC-17): the busy
-  topic says so and live input is dropped (LIB-5 AC-18). Anything that
-  builds or resets the machine ends it at once, without an error: Reset,
-  Cold boot, a model switch (LIB-18 AC-16), and the load of another
-  preset, which then runs (`preset.md` §6.1).
+  topic says so, live input is dropped (LIB-5 AC-18), and another load
+  is refused (LIB-3 AC-16). Reset, Cold boot and a model switch, and
+  nothing else, end it at once, without an error, whether it hangs or
+  not (LIB-18 AC-16; `preset.md` §6.1).
 - [ ] **AC-13** — Given a load is run in parts by a frontend, and the
   same load in one go by the harness, then the result is the same: the
   log, the reply, the memory and the display output (LIB-3 AC-19;
@@ -574,15 +574,15 @@ Harness
   `Shared/SessionController.cpp:586-597`).
 - **EC-2** — Given a preset with header keys only, then the machine is
   built and the load ends when it reports key readiness.
-- **EC-3** — Given Reset, Cold boot, a model switch or the load of
-  another preset while a preset is carried out (AC-12), then the preset ends there (LIB-18 AC-16): its remaining
+- **EC-3** — Given Reset, Cold boot or a model switch while a preset is
+  carried out (AC-12), then the preset ends there (LIB-18 AC-16): its remaining
   steps are not carried out, the reply to its load says that it was
   stopped, and the machine is as that command leaves it.
 - **EC-4** — Given the last step of a preset starts a program that keeps
   running, then the load is over after that step, and the program runs
   on at regular speed (AC-60). With `let-it-finish:` after it, the load
-  waits without a limit; Reset, Cold boot, a model switch or another
-  load end it (AC-12).
+  waits without a limit; Reset, Cold boot or a model switch end it
+  (AC-12).
 - **EC-5** — Given a preset that was handed over as its content, without
   a folder, and that names a file by a path that is not absolute, then
   it is refused when it is read, with a notice that names the file
@@ -714,7 +714,7 @@ Harness
 | The implicit wait between items, bounded by `timeout:` after which the item fails; `skip-wait:`; `let-it-finish:` as the last item; the last item is not waited for; a preset ends at regular speed; while it runs the user's gesture does not change the speed (AC-12, AC-15, AC-56 to AC-61). Replaces the hour after which the preset went on (row of 2026-11-11 above) | user, 2026-11-12 (`preset.md` §6; `docs/research/preset-conversion-check.md` S17, S18) | 2026-11-13 |
 | `wait:` needs a duration, which may have a fraction (`1.5s`); the form without a value is refused (AC-20, AC-21). Replaces PR-5's bare `- wait:` | user, 2026-11-12 (`preset.md` §5.3, §9.2) | 2026-11-13 |
 | The steps are `regular-speed:`, `full-speed:`, `elapsed-time: start\|report`; `switch:` is gone and the PC-100C's TRACE switch is `printer-trace:` (AC-22, AC-23, AC-26, AC-40). Replaces the names of PR-5 and PR-7 | user, 2026-11-12 (`preset.md` §5.3 to §5.5) | 2026-11-13 |
-| The load of another preset ends a running preset, as Reset, Cold boot and a model switch do (AC-12, EC-3). Replaces "another load is refused"; LIB-3 AC-16, LIB-4, LIB-14 AC-16, LIB-18 AC-16 and `frontend.md` Q-1 follow when they are aligned | user, 2026-11-12 (`preset.md` §6.1, S6) | 2026-11-13 |
+| Reset, Cold boot and a model switch are the only actions that end a running preset, hung or not; another load stays refused (AC-12, EC-3, EC-4). `preset.md` §6.1 had "anything that resets, directly or indirectly, loading a preset included"; corrected there | user, 2026-11-13 (question F-3 of `docs/walkthroughs/presets.md` §5.4) | 2026-11-13 |
 | A paused machine is not idle; steps that need it to run wait, debugger and frontend steps go on; `let-it-finish:` waits for it to run again (AC-19) | user, 2026-11-12 (`preset.md` §5.6, §6.2) | 2026-11-13 |
 | Keywords marked for one product, or [undefined], are refused (AC-62); `syncclock:` is refused on the TI models (AC-27); frontend steps never fail and the harness passes them over (AC-63) | user, 2026-11-12 (`docs/formats/README.md` §5; `preset.md` §5.4, §5.7) | 2026-11-13 |
 | `expect:` on a TI model compares a number with the display register X; on the Sharp models one line contains the text, with `\\` and `\xHH` (AC-24, AC-40, AC-48) | user, 2026-11-12 (`preset.md` §5.4) | 2026-11-13 |

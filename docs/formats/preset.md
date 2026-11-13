@@ -515,11 +515,12 @@ machine whichever view is shown.
 - While a preset runs, the speed is the preset's; the user's gesture
   doesn't change it, and the user's key presses on the machine are
   dropped.
-- **Ending a preset early.** Anything that resets the machine, directly
-  or indirectly (a reset, a model change, loading a preset, …), ends a
-  running preset at once, without an error. This is the way out of a
+- **Ending a preset early.** A reset, a cold boot and a model change
+  are the only actions that end a running preset; they end it at once,
+  without an error, whether it hangs or not. This is the way out of a
   wait without limit (`let-it-finish:`, or the implicit wait on a paused
-  machine).
+  machine). Everything else that would start something new, loading
+  another preset included, is refused while a preset runs.
 
 **Example.** With `- full-speed:`, `- key: A`, `- key: B`, the program
 that A starts runs to its end at full speed. B is pressed after that,

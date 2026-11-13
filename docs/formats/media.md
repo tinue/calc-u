@@ -272,7 +272,7 @@ ram:
   encoding: register-hex
   bytes: |
     R000: 00 00 00 00 00 00 00 25
-    R118: 00 00 00 00 00 00 10 00
+    R060: 23 02 58 50 92 99 40 21
 ```
 
 | Key | Required | Value |
@@ -282,4 +282,4 @@ ram:
 | `memory-name` | no | A name tag, for a product that lists constant memory files |
 | `description` | no | One line |
 | `cue-card` | no | The cue card fitted when the file was written ([cue-card.md](cue-card.md), a stand-alone cue card). Absent: none fitted |
-| `ram` | yes | `encoding: register-hex` and `bytes`: the RAM as 120 raw registers, `R000`–`R119`. A register that is not listed is zero; writers leave out registers that are zero. Byte order: [README.md §1.1](README.md#11-byte-blocks) |
+| `ram` | yes | `encoding: register-hex` and `bytes`: the constant memory as its 64 raw registers, `R000`–`R063`; the registers H00 to H03 are `R060` to `R063`, and a register above `R063` is an error. A register that is not listed is zero; writers leave out registers that are zero. Byte order: [README.md §1.1](README.md#11-byte-blocks) |

@@ -74,7 +74,9 @@ The file
   `media.md` Q-2).
 - [ ] **AC-4** — Given `ti58c.mem`, then it is a text file that states
   its format version and holds the whole constant memory as C59-1 AC-6
-  defines it, the registers H00 to H03 included, leaving out the
+  defines it, its 64 raw registers `R000` to `R063`, the registers H00
+  to H03 included as `R060` to `R063` (`media.md` §4.1;
+  `rom/TI58C-ROM-Guide.md:37`), leaving out the
   registers that are zero, and the fitted cue card if there is one, as
   it is, its template included (OQ-3; today it is written as a blank
   cue card), in today's layout with a first line that states the version
@@ -231,3 +233,4 @@ Every frontend
 | `ti58c.mem` also remembers the fitted cue card, whichever type it is | user, 2026-11-10, batch 5 gate | 2026-11-10 |
 | A TI-58C built from a preset or a startup preset never writes the constant memory file; only one built from the file keeps it up to date (half a second after a change, before it is replaced, on suspend, on quit); a Cold boot of such a machine empties the file (AC-5, AC-6, AC-10, EC-7). Replaces "the file follows" for presets (`capabilities.md` C-3) | user, 2026-11-13 (question F-8 of `docs/walkthroughs/presets.md` §5.4); `docs/formats/media.md` §4 | 2026-11-13 |
 | "Empty" constant memory after a preset build or a Cold boot is zeroed memory before the processor starts, then what the ROM's start-up leaves (AC-8, AC-9) | user, 2026-11-13 (B-28 of `docs/walkthroughs/presets.md` §5.2): "memory gets cleared *before* the CPU is let loose, in order to simulate real hardware": initialize the model, load the RAM from `ti58c.memory.yaml`, power the CPU; the start-up writes its signature into H00 (`rom/TI58C-ROM-Guide.md:165-176`); first step C-6 confirms the cells | 2026-11-13 |
+| The constant memory file holds the 64 raw registers `R000`–`R063`, H00–H03 as `R060`–`R063`; a higher register is an error (AC-4) | user, 2026-11-13 (§5.4 of `docs/walkthroughs/presets.md`); the TI-58C's CMOS memory is 64 raw registers, today's writer loops over a TI-59-sized 120 | 2026-11-13 |

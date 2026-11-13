@@ -111,8 +111,9 @@ The sections
   for the data register NN (00 to 99), or on the TI-58C `HNN: value` for
   one of the cells H00 to H03, which are not registers 60 to 63; the
   value is a decimal number with an optional exponent. A whole number
-  is stored digit for digit; a number with more than 13 digits loses
-  those after the 13th; every other value is rounded to 13 significant
+  is stored digit for digit; a whole number with more than 13
+  significant digits loses those after the 13th, which are cut, not
+  rounded (`preset.md` §4.2); every other value is rounded to 13 significant
   digits. A value that is no number and a register the model does not
   have (60 to 99 on the TI-58 and TI-58C; H on another model) refuse
   the preset when it is read (`preset.md` §4.2;
@@ -368,3 +369,4 @@ The shipped and hosted presets
 | Before its first section a preset's machine holds what the ROM's start-up leaves in zeroed memory, not "empty" (AC-1, EC-3) | user, 2026-11-13 (B-28 of `docs/walkthroughs/presets.md` §5.2): "memory gets cleared *before* the CPU is let loose, in order to simulate real hardware": initialize the model, load the RAM from `ti58c.memory.yaml`, power the CPU | 2026-11-13 |
 | The keycode notation has two notations, compact and listing; a compact line holds only two-digit keycodes; no `...` gap marker; the upgrade writes one-digit keycodes with two digits and moves words and `...` into comments (AC-3, AC-10, OQ-5). Replaces "a token that is not a keycode … is a label and is passed over" | user, 2026-11-13 (C59-2 OQ-5, §5.4 of `docs/walkthroughs/presets.md`): two notations, compact (like a hex listing of a ROM, zeros spelled out, no skip indicator) and listing (like a PC-100C listing; the step number places the code, dots are only for readability, a comment in YAML); both limits agreed | 2026-11-13 |
 | Aligned with `docs/formats/` after the Q&A round of 2026-11-13: the keycode notation is as decided in OQ-5, no longer open (AC-3) | user rulings of 2026-11-13 (`docs/walkthroughs/presets.md` §5.2, §5.4); `docs/formats/` | 2026-11-13 |
+| A whole number with more than 13 significant digits is cut after the 13th, as today (AC-4; `preset.md` §4.2) | user, 2026-11-13 (consistency pass): "this needs to be a cut"; old listings do not have so many digits | 2026-11-13 |

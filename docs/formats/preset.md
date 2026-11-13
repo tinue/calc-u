@@ -296,6 +296,8 @@ data:
   60–63. They are an error on any other model.
 - The value is a decimal literal; an exponent is allowed. Integers are
   stored digit for digit, other values rounded to 13 significant digits.
+  A whole number with more than 13 significant digits keeps its first
+  13: the digits after the 13th are cut, as today.
 - **Only the listed registers are written.** Every other register keeps
   its contents (zero after the cold boot).
 - `program:` and `data:` are written as given, in file order; a listing

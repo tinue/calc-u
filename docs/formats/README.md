@@ -145,9 +145,12 @@ these keys, plus the options its owner allows (`side:` and so on):
 
 - Where a reference is defined, it says which of these keys it accepts.
   `slot-1-rom:`, for example, accepts `file:` only.
-- A name is compared as written, except where its format says otherwise.
-  Names that Sharp or TI gave their products (`CE-1600P`, `PC-100C`) are
-  matched in any case.
+- Names are **case preserving**: a name keeps the case it was written
+  in and is shown so, but two names that differ only in upper and lower
+  case are the same name, whatever the platform's file system does. This
+  holds for every name tag (a lookup by `name:`, a save under a name,
+  the rule that a `preset-name` differs from the others) and for the
+  names that Sharp or TI gave their products (`CE-1600P`, `PC-100C`).
 
 ## 4. Errors
 

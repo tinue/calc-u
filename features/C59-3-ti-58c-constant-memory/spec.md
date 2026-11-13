@@ -149,11 +149,12 @@ Every frontend
   (C59-1 AC-6) and no cue card fitted, and the file is
   written at the first change.
 - **EC-2** — Given `ti58c.memory.yaml` is in an older format version or
-  states none, or there is the `ti58c.mem` of Calc-U-59 2.3.0, then it is
-  not read: the TI-58C is built with its constant memory zeroed before
+  states none, then it is not read: the TI-58C is built with its constant memory zeroed before
   the processor starts (C59-1 AC-6), a notice says that the file is
   outdated and where the format is described, and the file is replaced
-  at the first change (ADR 0037; behaviour change 59-1).
+  at the first change (ADR 0037; behaviour change 59-1). The
+  `ti58c.mem` of Calc-U-59 2.3.0 is ignored: not read, not changed, and
+  no notice names it.
 - **EC-3** — Given `ti58c.memory.yaml` states the current version but cannot be
   read (a damaged line), then nothing of it is used, as today, and a
   notice says so; today nothing is said
@@ -229,7 +230,7 @@ Every frontend
 | `ti58c.mem` always holds the constant memory of the running TI-58C and follows a cold boot | `capabilities.md` C-3 (user) | 2026-11-10 |
 | A restart of the product is a power cycle for the TI-58C: without a startup preset the memory comes back; with one, the preset cold boots it | `capabilities.md` C-3; ADR 0021 as amended; behaviour change 59-12 | 2026-11-10 |
 | The file is at the root of the save folder and is not a medium | `settings.md` ST-3; `media.md` Q-2 | 2026-11-10 |
-| A `ti58c.mem` of 2.3.0 is refused with a hint; the TI-58C then starts with an empty constant memory | ADR 0037; behaviour change 59-1 | 2026-11-10 |
+| *Superseded 2026-11-13: ignored, without a notice (EC-2).* A `ti58c.mem` of 2.3.0 is refused with a hint; the TI-58C then starts with an empty constant memory | ADR 0037; behaviour change 59-1 | 2026-11-10 |
 | Reset on the TI-58C is a power cycle | Glossary, Reset; C59-1 AC-6 | 2026-11-10 |
 | Proposed in this spec and accepted (user, 2026-11-10, batch 5 gate): on a Reset or power cycle the memory stays in the machine and the file is not read (AC-11); the same was decided as C59-1 OQ-6 | The machine keeps the memory itself | 2026-11-10 |
 | Proposed in this spec and accepted (user, 2026-11-10, batch 5 gate): the half second of AC-5 and AC-10 and the moments of AC-6, taken from today; a file with no register lines is valid (EC-5, today's behaviour) | They make the criteria checkable | 2026-11-10 |
@@ -242,3 +243,4 @@ Every frontend
 | "Empty" constant memory after a preset build or a Cold boot is zeroed memory before the processor starts, then what the ROM's start-up leaves (AC-8, AC-9) | user, 2026-11-13 (B-28 of `docs/walkthroughs/presets.md` §5.2): "memory gets cleared *before* the CPU is let loose, in order to simulate real hardware": initialize the model, load the RAM from `ti58c.memory.yaml`, power the CPU; the start-up writes its signature into H00 (`rom/TI58C-ROM-Guide.md:165-176`); first step C-6 confirms the cells | 2026-11-13 |
 | The constant memory file holds the 64 raw registers `R000`–`R063`, H00–H03 as `R060`–`R063`; a higher register is an error (AC-4) | user, 2026-11-13 (§5.4 of `docs/walkthroughs/presets.md`); the TI-58C's CMOS memory is 64 raw registers, today's writer loops over a TI-59-sized 120 | 2026-11-13 |
 | Aligned with `docs/formats/` after the Q&A round of 2026-11-13: the file is `ti58c.memory.yaml` (AC-3, AC-5 to AC-7, AC-10 to AC-12, EC-1 to EC-4, EC-6, Technical Requirements); constant memory format 1 with the own card as a stand-alone cue card (AC-4, intro); a Cold boot leaves what the start-up leaves and the fitted cue card (AC-10); "empty" memory is memory zeroed before the processor starts (EC-1, EC-2, EC-8) | user rulings of 2026-11-13 (`docs/walkthroughs/presets.md` §5.2, §5.4); `docs/formats/` | 2026-11-13 |
+| The `ti58c.mem` of 2.3.0 is ignored, without a notice (EC-2) | user, 2026-11-13 (consistency pass after the Q&A round): "ignore them" | 2026-11-13 |

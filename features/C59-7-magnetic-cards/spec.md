@@ -81,12 +81,12 @@ The card and its file
   values are read in any case (`README.md` §1, §4). Today an unknown key
   of the cue card is passed over (`Shared/CardFile.cpp:147-203`,
   `tests/shared_formats_tests.cpp:306-331`).
-- [ ] **AC-4** — Given a `.u59` file that starts with `Calc-U-59 Card `
-  and another version, then it is outdated (LIB-7 AC-9): it is not read,
-  and the hint names the card format, its version 3 and where it is
-  described (ADR 0037; behaviour change 59-1). Any other file that is
-  not AC-2, the two earlier binary layouts among them, is a card that
-  cannot be read (LIB-7 EC-3). A card file ends in `.magnetcard.yaml`
+- [ ] **AC-4** — Given a card file of 2.3.0 (`.u59`, any of its
+  layouts), then the product ignores it: it is not listed, not read and
+  not changed, and the user converts it by hand (ADR 0037; behaviour
+  change 59-1). Given a `.magnetcard.yaml` in an older format version,
+  then it is outdated (LIB-7 AC-9). Any other `.magnetcard.yaml` that is
+  not AC-2 is a card that cannot be read (LIB-7 EC-3). A card file ends in `.magnetcard.yaml`
   (`docs/formats/README.md`, formats at a glance; OQ-2).
 - [ ] **AC-29** — Given the media model of LIB-7 (AC-46 there), then a
   magnetic card file gives it: its `card-name`; its `description`;
@@ -388,7 +388,7 @@ Every frontend
 
 | Decision | Rationale | Date |
 |----------|-----------|------|
-| The card format gets a name field and a new version; saved cards of 2.3.0 are refused with the hint | `media.md` MD-2, Q-4 (user); ADR 0037; behaviour change 59-1 | 2026-11-10 |
+| *Superseded in part 2026-11-13: saved cards of 2.3.0 are ignored (AC-4).* The card format gets a name field and a new version; saved cards of 2.3.0 are refused with the hint | `media.md` MD-2, Q-4 (user); ADR 0037; behaviour change 59-1 | 2026-11-10 |
 | Cards are always written in the current version | ADR 0020 | 2026-11-10 |
 | Magnetic cards the product makes live in the save folder, also on the web; a card file opened from elsewhere is used and written back where it lies, and only a Web frontend imports it (LIB-13 AC-4) | ADR 0019 as amended; behaviour changes 59-6, 59-8 | 2026-11-10 |
 | *Superseded 2026-11-13 (`docs/formats/preset.md` §5.2): the steps are `card:` and `arm:`; there is no `fit` step (AC-17).* `fit` places a card above the keys and affects only what the user sees; `insert` and `arm` go through the card reader, a pass-through media place | `presets.md` PR-8 | 2026-11-10 |
@@ -403,3 +403,4 @@ Every frontend
 | Module cue cards come only from the module file; the bundled modules get a card like today's stand-in for every program without a pre-printed one; a program without a card takes off the module cue card (AC-22, AC-23) | user, 2026-11-13 (§5.4 of `docs/walkthroughs/presets.md`): every program has a cue card in reality; the fallback card was a stand-in for missing ones; the modules get one card per program, generated like the stand-in where none is defined; without one, any module cue card is taken off | 2026-11-13 |
 | What is written to an in-file card lasts until the next preset load or model switch; a Reset, a power cycle or a Cold boot keeps it (AC-25; `preset.md` §3.1) | user, 2026-11-13 (§5.4 of `docs/walkthroughs/presets.md`); the format said "until the next load, reset or model switch" | 2026-11-13 |
 | Aligned with `docs/formats/` after the Q&A round of 2026-11-13: sides 0 and 1 (AC-6, AC-12); card file is magnetic card format 3, `.magnetcard.yaml` (AC-2, AC-3, AC-4); what a card file gives the media model and `saveas:` for an in-file card (AC-29); a write replaces only the written side (AC-5, EC-3); steps `card:` and `arm:` with `timeout:` (AC-17, AC-27, EC-6); in-file cards under `magnetic-cards:` (AC-18, AC-19, AC-20); constant memory file name (AC-22, AC-25); stand-in module cue card (AC-23); upgrade rows of `preset.md` §9.1 (AC-30) | user rulings of 2026-11-13 (`docs/walkthroughs/presets.md` §5.2, §5.4); `docs/formats/` | 2026-11-13 |
+| A 2.3.0 card file (`.u59`) is ignored: not listed, read or changed (AC-4) | user, 2026-11-13 (consistency pass after the Q&A round): "ignore them" | 2026-11-13 |

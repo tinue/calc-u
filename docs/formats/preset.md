@@ -34,7 +34,9 @@ keys:
 
 1. **Build the machine** of the model and its variant, with the
    peripherals, modules and media the header keys name, and nothing else.
-   A hardware key that is absent means **none**, on every model.
+   A hardware key that is absent means **none**, on every model. Every
+   keyword a preset leaves out has a default, given where it is
+   specified; where none is given, the cold boot's state holds.
 2. **Cold boot** it: all memory empty, the constant memory of a TI-58C
    included.
 3. **Carry out the sections** in file order (§4). Each item starts only
@@ -441,7 +443,7 @@ Their meaning is the subject of [§6](#6-speed-and-waiting).
 
 | Step | Where | Meaning |
 |---|---|---|
-| `printer-trace: on` / `off` | [59] | Set the PC-100C's TRACE switch (the paper trace, not a CPU trace). Needs `printer: PC-100C` |
+| `printer-trace: on` / `off` | [59] | Set the PC-100C's TRACE switch (the paper trace, not a CPU trace). Needs `printer: PC-100C`. Without the step, TRACE is off after the build |
 | `cut-paper:` | [both] | Cut the paper of the printer that is plugged in, as the GUI's Cut Paper does. Each printer keeps its own paper; the others stay as they are. Without a printer: no effect. Never fails |
 
 ### 5.6 Debugger

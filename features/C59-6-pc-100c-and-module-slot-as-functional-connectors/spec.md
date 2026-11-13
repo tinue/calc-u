@@ -89,11 +89,15 @@ The PC-100C
   `ADV` held down feeds paper for as long as it is held;
   `TRACE` on makes the machine print as it calculates, until it is set
   off.
-- [ ] **AC-6** — Given `TRACE` is on, when the machine goes through a
-  reset, a power cycle or a cold boot, then `TRACE` is still on; when
-  the PC-100C is detached and attached again, then `TRACE` is off,
-  unlike the real switch, which keeps its position; the help says so
-  (`Core/TI59Machine.cpp:44, 214-221`; OQ-3).
+- [ ] **AC-6** — Given `TRACE`, then its position belongs to the
+  PC-100C, as its paper does (LIB-8 AC-8): the app session keeps it
+  from the start of the product until it quits, through a reset, a power
+  cycle, a cold boot, a model switch and the PC-100C detached and
+  attached again, like the real switch; it is off when the product
+  starts and is not saved. Given a preset that names the PC-100C, then
+  `TRACE` is off after its build unless the preset sets it with
+  `- printer-trace: on` (LIB-6 AC-65; `preset.md` §5.5). Today a detach
+  and attach sets it off (`Core/TI59Machine.cpp:44, 214-221`; OQ-3).
 - [ ] **AC-7** — Given a machine without a PC-100C and a golden run in
   which a program executes print instructions, then the display output
   and the tick counts are the recorded ones: a program takes as long
@@ -229,3 +233,4 @@ The module slot
 | Every measurement of the printer's timing was made on a PC-100A, not on a PC-100C; no difference is expected, and the criteria keep today's numbers (AC-4) | user, 2026-11-11 | 2026-11-11 |
 | The modules come from `.rom.yaml` files of the ROM repository; a preset names one by `name:` only, `file:` is refused in this release (AC-8) | user, 2026-11-13 (question F-9 of `docs/walkthroughs/presets.md` §5.4); `docs/formats/modules.md` | 2026-11-13 |
 | The picker shows a module's `description`, ordered by `menu-sort`; the names of AC-8 are those of `modules.md` §2.4 | user, 2026-11-13 (question F-14 of `docs/walkthroughs/presets.md` §5.4); `docs/formats/modules.md` §2.1, §2.4 | 2026-11-13 |
+| `TRACE` belongs to the printer like its paper: kept through reset, power cycle, cold boot, model switch, detach and attach, until the product quits; a preset sets it off unless it says `printer-trace: on` (AC-6). Replaces "off after a detach and attach" of OQ-3 | user, 2026-11-13 (B-16 of `docs/walkthroughs/presets.md` §5.2) | 2026-11-13 |

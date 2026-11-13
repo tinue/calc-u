@@ -390,6 +390,14 @@ The place for other features and for products
   (`selftest-speed-check`, the calendar examples, `picard`,
   `globe-print`, `printer-timing`) show it; which bound a test puts on
   their times is settled with the reference runs (B-10).
+- [ ] **AC-65** — Given a keyword that a preset leaves out, then it has
+  a default, which the spec or the format section that specifies the
+  keyword states: a hardware key absent means none (`preset.md` §2);
+  `printer-trace` absent means off on a PC-100C the preset builds (C59-6
+  AC-6); for others the default is to do nothing, where the machine's
+  cold boot gives the state (`partition:`, whose default the ROM sets).
+  So no state that a preset could set carries over from before the load
+  (AC-11).
 - [ ] **AC-62** — Given a keyword marked for one product
   (`docs/formats/README.md` §5, `preset.md` §7), then it is refused in a
   preset for the other product's models, and a keyword used with a model
@@ -748,3 +756,4 @@ Harness
 | After `skip-wait:` the first press of a `key:` or `type:` goes down at once (AC-58) | user, 2026-11-13 (B-3 follow-up of `docs/walkthroughs/presets.md` §5.2); `preset.md` §5.1 corrected | 2026-11-13 |
 | A Sharp machine is idle when it reports key readiness for 20 frames: the prompt, `INPUT`, RESERVE mode (AC-45). Replaces prompt readiness | user, 2026-11-13 (B-4 of `docs/walkthroughs/presets.md` §5.2) | 2026-11-13 |
 | Presets that wait for LIB-7, LIB-10 or C59-7 are left out of the checks of AC-43 and AC-51 by name until then | user, 2026-11-13 (B-11 of `docs/walkthroughs/presets.md` §5.2) | 2026-11-13 |
+| Every keyword a preset leaves out has a stated default; `printer-trace` absent means off (AC-65) | user, 2026-11-13 (B-16 of `docs/walkthroughs/presets.md` §5.2) | 2026-11-13 |

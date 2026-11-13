@@ -38,6 +38,7 @@ step. Label and menu renames are not repeated here; they are in
 | 59-19 | Traces: one at a time (today the button's and a preset's can run side by side); a trace that cannot be started fails its preset (today: an alert, and the preset goes on); a notice when the size limit ends a preset's trace (today: only the button's). | LIB-10 AC-22 to AC-24 (user, batch 6 gate) |
 | 59-23 | A key that a preset or a host key sequence presses is held for 100 ms of emulated time (today: of wall time). At full speed a key therefore no longer keeps the machine running for longer: `Adv` feeds the same lines at every speed (today one press feeds many lines at full speed), and an `Elapsed:` line over a full-speed stretch counts less. | `contracts/typing.md`, T-1; `contracts/presets.md`, PR-10; LIB-5 AC-20 |
 | 59-18 | While the PC-100C is detached the paper panel shows an empty paper without a name (today: the paper stays in view); the paper is back when the printer is attached again. | LIB-8 AC-8, AC-12, AC-29 (user, batch 6 gate) |
+| 59-25 | The PC-100C's TRACE switch keeps its position when the printer is detached and attached again, as the real switch does (today: off); a preset sets it off unless it says `printer-trace: on` (today a preset without `PRINTER: on` keeps it). | user, 2026-11-13; C59-6 AC-6 |
 | 59-24 | The sides of a magnetic card are 0 and 1 (today 1 and 2), in presets, in the card file and on screen. | user, 2026-11-13; `docs/formats/media.md` §1 |
 
 ## Calc-U-1600 (against 0.8.1)

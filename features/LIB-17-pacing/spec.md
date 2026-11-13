@@ -139,7 +139,9 @@ Starting afresh
   `Shared/Pacing.hpp:9-33`; `frontend.md`, fit table).
 - [ ] **AC-16** — Given a TI machine at full speed, when it waits for
   input, then it runs at the pace of regular speed; when it computes, it
-  runs at full speed. It waits for input when it is ready to accept a
+  runs at full speed. The exception is a preset's `wait:` with a
+  duration at full speed: it passes as fast as the host allows, also on
+  an idle machine (`docs/formats/preset.md` §5.3; LIB-6 AC-20). It waits for input when it is ready to accept a
   key press, or, on the TI-59, when it needs a card now; a wait for the
   printer does not count. Today this is found from ROM address ranges
   that differ per model and with a printer present, and from retried
@@ -232,3 +234,4 @@ None.
 | The new pacer carries the overshoot of every advance (AC-3). Calc-U-1600 drops it today, so the before-and-after test of AC-21 states the measured old drift as the expected difference | user, 2026-11-10, batch 2 gate | 2026-11-10 |
 | A lag over 0.1 seconds is dropped whole, for every model | user, 2026-11-10, batch 2 gate (prompted) | 2026-11-10 |
 | The full-speed allowance is one library value, 14 ms per call. The Calc-U-59 Swift and Qt6 frontends lose the free-running thread of today and with it a little top speed | Recommendation applied; the user had no preference and asked what the problem is, which was explained at the gate | 2026-11-10 |
+| ODD59-6 stays; only a preset's `wait:` at full speed is not paced on an idle TI machine (AC-16) | user, 2026-11-13 (question F-12 of `docs/walkthroughs/presets.md` §5.4): what was built is kept | 2026-11-13 |

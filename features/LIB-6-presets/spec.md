@@ -300,7 +300,8 @@ The steps of this feature
 - [ ] **AC-20** — Given the step `wait:` with a duration, then, after
   the implicit wait of the item before (or at once after a
   `skip-wait:`), that much emulated time passes (LIB-11 AC-9), at full
-  speed as fast as the host allows; the duration needs a unit and may
+  speed as fast as the host allows, on an idle TI machine too (LIB-17
+  AC-16); the duration needs a unit and may
   have a fraction (`2s`, `1.5s`, `500ms`); a value without a unit is
   refused when the preset is read (`presets.md` PR-5; `preset.md` §5.3,
   §6.1; behaviour change 1600-3).
@@ -371,6 +372,19 @@ The place for other features and for products
   feature nor any feature or product in the running program has added,
   then the preset is refused (AC-6); a preset with a product section of
   another product is thus refused.
+- [ ] **AC-64** — Given a preset that drives a scenario at full speed
+  and reports `elapsed-time: report` at its end, on any model and in
+  any frontend or the harness, then the emulated time it reports is
+  about what a real user who drives the real calculator quickly would
+  take: the time the machine computes, plus each key held and spaced as
+  a quick user does (the minimum hold and the gaps of the typing
+  profile, LIB-5 AC-20, AC-28), plus the `wait:` durations the preset
+  asks for; no time is added because the machine waits for the next key
+  longer than that, and the host's speed does not change it (LIB-6
+  AC-11; behaviour change 59-23). The test suite checks it on the
+  examples with an `Elapsed:` line against the times their authors give
+  (`selftest-speed-check`, the calendar examples, `picard`,
+  `globe-print`, `printer-timing`).
 - [ ] **AC-62** — Given a keyword marked for one product
   (`docs/formats/README.md` §5, `preset.md` §7), then it is refused in a
   preset for the other product's models, and a keyword used with a model
@@ -717,3 +731,4 @@ Harness
 | A paused machine is not idle; steps that need it to run wait, debugger and frontend steps go on; `let-it-finish:` waits for it to run again (AC-19) | user, 2026-11-12 (`preset.md` §5.6, §6.2) | 2026-11-13 |
 | Keywords marked for one product, or [undefined], are refused (AC-62); `syncclock:` is refused on the TI models (AC-27); frontend steps never fail and the harness passes them over (AC-63) | user, 2026-11-12 (`docs/formats/README.md` §5; `preset.md` §5.4, §5.7) | 2026-11-13 |
 | `expect:` on a TI model compares a number with the display register X; on the Sharp models one line contains the text, with `\\` and `\xHH` (AC-24, AC-40, AC-48) | user, 2026-11-12 (`preset.md` §5.4) | 2026-11-13 |
+| The elapsed time a preset reports at full speed is about that of a quick real user: computing time, quick key holds and gaps, the asked `wait:` durations, nothing for idle waiting; on every model (AC-64). A preset's `wait:` at full speed is not paced on an idle TI (AC-20, LIB-17 AC-16) | user, 2026-11-13 (question F-12 of `docs/walkthroughs/presets.md` §5.4) | 2026-11-13 |

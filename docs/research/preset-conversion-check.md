@@ -27,7 +27,7 @@ File and line references are into the product repository at its pin.
 
 | | Calc-U-59 | Calc-U-1600 | Total |
 |---|---|---|---|
-| Preset files found | 61 | 58 | 119 |
+| Preset files found | 62 | 59 | 121 |
 | Checked in detail | 30 (27 presets, 3 fixtures) | 22 | 52 |
 | Skipped as covered (§6) | 31 | 36 | 67 |
 | Convert without loss | 20 | 22 | 42 |
@@ -37,6 +37,12 @@ File and line references are into the product repository at its pin.
 | Fixable problem: the converted preset needs an edit (§3) | 9 | 1 | 10 |
 | Real problem: needs a spec decision (§2) | 0 | 0 | 0 |
 | To be deleted | 1 | 0 | 1 |
+
+Corrected on 2026-11-13: the pins hold 62 and 59 preset files. The rows
+below "found" were counted before that and leave out three files, which
+§3.1 now covers: `historic/trace-quirk.ti59`,
+`screentest/test_58_glyphs.ti58` and `interfaces/setcom1600.pc1600`;
+§6 names 32 skipped Calc-U-59 files, not 31.
 
 The 3 fixtures are malformed on purpose. Format 2 rejects them, which is
 intended, so they count as "run the same, or differ only as intended". The
@@ -56,15 +62,24 @@ for each one.
 
 | Edit | Presets | Why |
 |---|---|---|
-| `- let-it-finish:` as the last item | `fast-grafik-3d-plot` | Version 1 waited for the last key, running the plot to its end at full speed. Format 2 doesn't wait for the last item, so without `let-it-finish:` the plot runs on at regular speed. (`globus` and `lissajou-1500` get it from their bare `- wait:` by the §9.2 row) |
+| `- let-it-finish:` as the last item | `fast-grafik-3d-plot`, `switzerland`, `stars-and-stripes`, `printer-quirks`, `texas-print`, `screentest/test_texas` | Version 1 waited for the last key, running the plot or the print to its end at full speed (each ends with `FullSpeed:` and the key that starts it). Format 2 doesn't wait for the last item, so without `let-it-finish:` the plot runs on at regular speed. (`globus` and `lissajou-1500` get it from their bare `- wait:` by the §9.2 row) |
 | `- regular-speed:` as the first step | `selftest-speed-check` (every converted C59 script, as a rule) | Version 1 defaulted to regular speed. The check compares a run at regular speed with one at full speed |
 | `- skip-wait:` before `- wait: 2s` | `iterator` | BREAK has to reach the running program. Without `skip-wait:`, the implicit wait lets RUN finish its loop first |
-| `- skip-wait:` before `- wait: 1.5s` | `test_cdebug`, `test_diag` | `SBR =` with `pause-on-start` leaves the machine paused. A paused machine is not idle, so the implicit wait would hold until the user resumes it |
-| Set `timeout:` after measuring the run | `globe-print`, `calendar-09` (and `picard`, `switzerland`, `stars-and-stripes`) | A long print at full speed comes before `elapsed-time: report`, so the implicit wait has to cover it; version 1 had no limit |
+| `- skip-wait:` before `- wait: 1.5s` | `test_cdebug` | `SBR =` with `pause-on-start` leaves the machine paused. A paused machine is not idle, so the implicit wait would hold until the user resumes it |
+| `- skip-wait:` before `- wait: 3s` | `pc1600-hanoi-run` (developer screenshots) | Version 1 waited after RUN only until BUSY cleared, so the 3 s show the title screen. Format 2 would wait for RUN until the machine is idle, which comes at the `INPUT` of `hanoi.bas` at the earliest, and its screenshot would show that prompt |
+| Set `timeout:` after measuring the run | `globe-print`, `picard`, every calendar example (`calendar-01` … `calendar-09`) | A long print at full speed comes before `elapsed-time: report`, so the implicit wait has to cover it; version 1 had no limit |
 | Blank cards as in-file cards with their own `cue-card:` (no data: the corners are empty until a side is written, then show its bank) | `pdcm-card-tricks` (`D-2` … `D2`) | Version 1 kept the card shown before; format 2 fits the blank card, so it gets its own cue card |
 | `cue-card:` on the in-file card | `characters-fastmode` | Version 1 kept the preset's card shown; format 2 fits the in-file card, which has no cue card of its own |
 | In-file cards with their cue cards, written, then `- saveas: { card: …, as: live, name: … }` | `pdcm-make-cards` (`PDCM-1`, `PDCM-2`, …) | Version 1 created the card files when written, in the card folder, with the latest `CUECARD:`. Format 2 creates a new card from the fresh template and saves it into the save folder by `saveas:` (`preset.md` §5.2.1, §9.1) |
 | `slot-1: { name: ML }` | `firmware.ti59` | Version 1 used the user's module (normally ML); format 2 has none |
+
+### 3.1 Added on 2026-11-13
+
+| Preset | Result |
+|---|---|
+| `historic/trace-quirk.ti59` | Converts; the cue card look (`Template: MagnetCard`, `Banks:`) is lost. `MODEL: TI-58` in a `.ti59` file: the converted file keeps both (C59-2 EC-6). It ends with keys that need no wait; runs the same |
+| `screentest/test_58_glyphs.ti58` | Converts without loss (`PRINTER: off` → no printer). The `Del` keys are waited for, then `- wait: 400ms`, then `- pause: cpu` as the last item, which leaves the machine paused as today; runs the same |
+| `interfaces/setcom1600.pc1600` | Converts without loss (`slot-2: { name: CE-1601M }`). Every `type:` is waited for until idle instead of BUSY; differs only as intended (§4, "Commands are waited for to their end") |
 
 ## 4. Intended differences
 
@@ -146,8 +161,8 @@ covers it.
 | erdkundetest-2 | erdkundetest |
 | texas-print, test_texas | printer-quirks |
 | test_58c_display | repartition |
-| test_diag | test_cdebug |
-| Core fixture `hanoi.pc1600`, `pc1600-hanoi-list`, `pc1600-hanoi-run` | hanoi.pc1600 |
+| test_diag | needs no edit: it has no pause-on-start; `15 E` is waited for, then `- wait: 1.5s` is the last item |
+| Core fixture `hanoi.pc1600`, `pc1600-hanoi-list` | hanoi.pc1600 (`pc1600-hanoi-run` has an edit of its own, §3) |
 | Core fixture `maxed-out-mem.pc1600`, `supercard_debug` | maxed-out-mem.pc1600 |
 | Core fixture `memtest_stock.pc1500`, `adrtest`, `instrquirks`, `memtest_1500a`, `memtest_CE1638`, `memtest_ce155`, `memtest_bank`, `pc1500-maxed-out.pc1500` | memtest_stock.pc1500 |
 | `startup-pc1500a` fixture, `default-pc1500`, `pc1500-ready`, `pc1500a-ready`, `pc1600-ready`, `debug-pc1500a`, `debug-pc1600`, `pc1600-tape` | default-pc1500a |

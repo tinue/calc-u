@@ -19,7 +19,7 @@
   `docs/contracts/capabilities.md` (the media kind, Q-2),
   `docs/contracts/machine.md` (M-8, media places); ADR 0019, 0020, 0025,
   0037; `docs/behaviour-changes.md` rows 59-6, 59-7, 59-9, 59-11,
-  1600-1, 1600-4 to 1600-7.
+  1600-1, 1600-4 to 1600-6, 1600-18, 1600-19.
 - Facts: Calc-U-59 at `v2.3.0`, Calc-U-1600 at `b4ea8c8`; every
   `path:line` below is at those pins.
 
@@ -40,7 +40,7 @@ What the three status columns mean for this feature:
   and commands exist and are shown to work with a machine and a kind of
   medium built for the tests.
 - **Calc-U-59:** magnetic cards are media of this model in every
-  frontend; the card reader, the card format and `fit` are C59-7, and
+  frontend; the card reader, the card format and fitting are C59-7, and
   this column is complete only together with it.
 - **Calc-U-1600:** memory modules, floppy disks and cassette tapes are
   media of this model in both frontends.
@@ -61,16 +61,17 @@ What the three status columns mean for this feature:
 - Where the save folder and the tape folder are (owner: LIB-9); the
   persistent file system of a Web frontend and two tabs (LIB-15).
 - What a medium's content means and the format of each kind: the
-  magnetic card and its new version, the card reader, `fit`, the corner
-  taps and the cue cards (owner: C59-7); `.card.yaml` and
-  `.floppy.yaml`, which stay as they are, and the cassette tape
+  magnetic card and its new version, the card reader, fitting, the
+  corner taps and the cue cards (owner: C59-7); `.card.yaml`, which
+  stays as it is, `.floppy.yaml`, which goes to version 2 with the
+  sides `0` and `1` (AC-37), and the cassette tape
   definition `.tape.yaml` with its WAV (Calc-U-1600; OQ-6;
   `docs/formats/media.md` §3).
 - Which places a model has and what fits them (LIB-1, LIB-2, LIB-4);
   what a module change does to the machine (LIB-18 AC-29).
 - Opening a medium by drop, Open With or a file picker (owner: LIB-13;
   `frontend.md` Q-4).
-- The host drive, `ti58c.mem`, traces and screenshots: they are in or
+- The host drive, the constant memory file `ti58c.memory.yaml`, traces and screenshots: they are in or
   near the save folder and are not media (`media.md` Q-2).
 - Renaming a medium, and merging the instances of two devices (new
   functions; none today).
@@ -186,8 +187,10 @@ Autosave
   the medium leaves the place, as today (Calc-U-1600
   `Shared/ModuleBay.cpp:425`); the same holds for a template a preset
   names, by name or by file (AC-25).
-  Given a medium a preset defines itself (`mem:`), then nothing is ever
-  written for it.
+  Given an in-file card a preset defines itself (`mem:`), then nothing
+  is written for it unless `saveas:` saves it; saved `as: live`, it is
+  that instance from then on and later writes go into its file
+  (`preset.md` §3.1, §5.2.1).
 
 Name & Save
 - [ ] **AC-16** — Given a place that holds a medium which is not an
@@ -199,7 +202,7 @@ Name & Save
   or by the harness, then these rules hold in this order (`media.md`
   MD-3, I-3, I-4; Calc-U-1600 `Core/Connector/MediaSave.hpp:73-95`):
 
-  | Case, always among media of the same kind | Name & Save | `saveas: live` | `saveas: template` |
+  | Case, always among media of the same kind | Name & Save | `saveas` with `as: live` | `saveas` with `as: template` |
   |---|---|---|---|
   | the name is refused by AC-3 | refused | refused | refused |
   | the name is that of a bundled medium | refused | refused | refused |
@@ -232,35 +235,32 @@ Name & Save
   `Qt6/app/MainWindow.cpp:381-393`).
 
 Media in presets
-- [ ] **AC-21** — Given a preset, then the header key of a module slot
-  and of a holding media place other than the cassette, and the steps
-  `insert` and `arm` of AC-26, take a raw value (LIB-6 AC-1) made of
-  words that spaces part (`saveas` keeps the form AC-26 gives it, in
-  which a name or a path is the rest of the line, without quotes): a
-  medium, and after it a side where the place has sides, which is the
-  last word only when it is one of them. A medium is written as its
-  name, in double quotes when it holds a space; as `file:` and a path,
-  the path in double quotes when it holds a space; or as `mem:` and the
-  name of a `medium:` section of the same preset, wherever that section
-  stands (`slot-1: "My programs"`, `floppy: file:disks/work.floppy.yaml B`)
-  (`presets.md` PR-8, PR-11; OQ-3). The keys `slot-1-file:` and
-  `floppy-file:` of today are gone; a preset that uses them is refused
-  (LIB-6 AC-30).
-- [ ] **AC-22** — Given a `medium:` section, then it defines a medium
-  inside the preset, with `name:`, `kind:` and the content fields of
-  that kind, which the kind's owner reads; it may repeat; every such
-  section is read before the machine is built, and it is not carried out
-  in its place like other sections; such a medium is never saved by
-  itself (`presets.md` PR-8; Calc-U-59
+- [ ] **AC-21** — Given a preset, then the module slot keys
+  (`slot-1:`, `slot-2:`) and the media steps (`card:`, `arm:` on the
+  TI-59; `floppy:`, `tape:` on the Sharp models) take a reference as
+  `docs/formats/README.md` §3 defines it: a mapping with exactly one of
+  `name:` or `file:`, on the TI-59 also `mem:` for an in-file card of
+  `magnetic-cards:`, plus `side: 0|1` where the place has sides
+  (`card:`, `floppy:`; default 0), as in `slot-1: { name: My programs }`
+  and `- floppy: { file: disks/work.floppy.yaml, side: 1 }`; a bare
+  value is an error. `saveas:` is a mapping of its own (`preset.md`
+  §5.2.1). The keys `slot-1-file:` and `floppy-file:` of today are
+  gone; a preset that uses them is refused (LIB-6 AC-30).
+- [ ] **AC-22** — Given media defined inside a preset, then they are
+  the in-file magnetic cards of the TI-59's header key
+  `magnetic-cards:` (`preset.md` §3.1; owner: C59-7), read before the
+  machine is built and saved only by `saveas:`; no other kind of medium
+  is defined inside a preset (today Calc-U-59
   `Shared/StateFile.cpp:397-448`).
-- [ ] **AC-23** — Given a preset names a medium that does not exist, is
-  outdated or cannot be read, or a `mem:` name without its section, then
-  the preset is refused when it is read, for an outdated file with the
-  hint of AC-9 (LIB-6 AC-7; `media.md` MD-4). A name that no medium has
-  is not refused where the kind starts a new, empty medium under a name
-  (AC-20: a magnetic card, AC-35).
-- [ ] **AC-24** — Given a preset names an instance by its name, then the
-  machine is built with that instance, and it is autosaved as always.
+- [ ] **AC-23** — Given a preset names a medium by `file:` or `name:`
+  that does not exist, is outdated or cannot be read, then the preset is
+  refused when it is read, for an outdated file with the hint of AC-9
+  (LIB-6 AC-7; `media.md` MD-4; `preset.md` §5.2). A `mem:` name the
+  preset does not define is a fresh in-file card (`preset.md` §3.1).
+- [ ] **AC-24** — Given a preset names an instance by its name, then a
+  module in a slot key is fitted with that instance before the machine
+  starts, and a medium in a step is inserted as that instance; either is
+  autosaved as always.
 - [ ] **AC-25** — Given a medium whose file says `template: true`, then
   it is a template wherever it lies and however it was named (by a
   preset by name or by file, by the user, in a picker), and it is never
@@ -287,10 +287,12 @@ Steps and commands
 
   | Step | Value | What it does | Emulated time (LIB-6 AC-19) |
   |---|---|---|---|
-  | `insert:` | a place, a medium (AC-21), a side where the place has sides; for a pass-through place the medium can be left out, which means the one that is fitted (C59-7) | in a holding place the medium is in at once and stays; through a pass-through place it is passed, and the step ends when it is back; the owner of a place can state a time after which a medium the machine does not take is given back, and the TI card reader states none; the owner can also end the preset while its medium waits at the place, as the TI card reader does when the card is still there and the machine has put out nothing new for 30 minutes of emulated time (C59-7 AC-7, AC-17) | pass-through: needs it |
-  | `eject:` | a place | takes the medium out (AC-13 first) | none |
-  | `arm:` | a place, a medium, a side | lays the medium ready; it is passed through when the machine says it waits for one (AC-6); the step does not wait | none |
-  | `saveas:` | `live` or `template`, optionally `protected`, then the place, a colon and the name, which is the rest of the line, or the place, `:file:` and a path, which is the rest of the line | AC-17 to AC-19; a failure fails the preset | none |
+  | `card:` [TI-59] | a reference (AC-21) by `file:`, `name:` or `mem:`, with `side: 0\|1` (default 0) | pushes that side through the card reader; the step has finished when the card has passed and is fitted; a card the ROM does not take is waited for within `timeout:` (`preset.md` §6.3; C59-7 AC-17) | needs it |
+  | `arm:` [TI-59] | a reference by `file:`, `name:` or `mem:`, no side | fits the card for the user to feed by a corner; finished when it is fitted (C59-7) | none |
+  | `floppy:` [PC-1600 with CE-1600P] | a reference by `file:` or `name:`, with `side: 0\|1` (default 0) | the disk is in at once and stays; one in the drive is ejected first (EC-5) | none |
+  | `tape:` [with CE-150 or CE-1600P] | a reference by `file:` or `name:` | the tape is in the cassette interface; one that is in is ejected first (EC-5) | none |
+  | `eject:` [Sharp] | `floppy` or `tape` | takes the medium out (AC-13 first); the place shows as empty (EC-6) | none |
+  | `saveas:` | a mapping: `place:` (or `card:` on the TI-59), `as: live\|template`, optionally `protected: true`, and `name:` or `file:` (`preset.md` §5.2.1) | AC-17 to AC-19; a failure fails the preset | none |
 
   (Calc-U-1600 `Core/Preset/PresetFile.cpp:295-367`; Calc-U-59
   `Shared/StateFile.cpp:168-201`, `Shared/KeySequencer.cpp:214-219`.)
@@ -324,9 +326,11 @@ Getting media in and out
 ### Calc-U-59
 
 - [ ] **AC-32** — Given Calc-U-59, then its one kind of medium is the
-  magnetic card, with the suffix `.u59`, and its one media place is the
-  card reader of the TI-59, which is pass-through with the sides 1 and 2
-  (C59-7; LIB-4 AC-12). There are no bundled cards.
+  magnetic card, with the suffix `.magnetcard.yaml` (format 3,
+  `media.md` §1), and its one media place is the card reader of the
+  TI-59, which is pass-through with the sides 0 and 1 (C59-7; LIB-4
+  AC-12). There are no bundled card files; its one template is the fresh
+  card, which has no file (`media.md` §1.2).
 - [ ] **AC-47** — Given any TI model, then the picker of `slot-1` is
   that of AC-8 with one group: the empty slot and the 14 Solid State ROM
   modules, which are not media (LIB-4 AC-11; C59-6); choosing one
@@ -339,12 +343,13 @@ Getting media in and out
 - [ ] **AC-34** — Given a card that is read and written through the
   reader, then its instance is written when it is given back (AC-12);
   what that write keeps of the other side is C59-7's.
-- [ ] **AC-35** — Given a preset of Calc-U-59, then `insert:` and `arm:`
-  name the card reader, a card by name, by file or by `mem:`, and the
-  side, and a card name that no card has stands for a new, empty card of
-  that name, with a line in the log, as today
-  (`Shared/SessionController.cpp:513-536`); a card file is written in
-  place unless it is a template (AC-25).
+- [ ] **AC-35** — Given a preset of Calc-U-59, then `card:` (with
+  `side: 0|1`) and `arm:` (no side) take a card by `name:`, `file:` or
+  `mem:` (AC-21); a `name:` or `file:` card that does not exist refuses
+  the preset (AC-23); a `mem:` name the preset does not define is a
+  fresh in-file card (`preset.md` §3.1); today a card name that no card
+  has stands for a new, empty card (`Shared/SessionController.cpp:513-536`);
+  a card file is written in place unless it is a template (AC-25).
 - [ ] **AC-36** — Given the Web frontend, then it has the import and the
   saved media of AC-29 to AC-31 for cards; today it has a download per
   card and an upload in the card picker (`Web/src/Dialogs.jsx:93-103`).
@@ -369,7 +374,7 @@ Getting media in and out
   what a template held is lost (`Shared/AppSession.cpp:308-312`,
   `Shared/ModuleBay.cpp:59-118`; behaviour change 1600-4).
 - [ ] **AC-39** — Given the floppy disk controls, then they are: the
-  picker of AC-8; a button "A" or "B" that turns the disk over, which is
+  picker of AC-8; a button "0" or "1" that turns the disk over, which is
   an eject and an insert of the other side; a Name & Save button; and a
   lamp that is green while the drive's motor runs
   (`Qt6/app/ControlBar.cpp:174-215, 355-370`, `Shared/FloppyBay.cpp:200-210`).
@@ -396,16 +401,17 @@ Getting media in and out
   the definition and its sound file into an instance, written side by
   side in the tape folder (LIB-9 AC-16), and recording onto an instance
   writes into its sound file; a definition the user writes around an
-  existing WAV may name it by any relative path. A preset inserts a tape with the header key
-  step `tape:` (`preset.md` §5.2), and the picker lists the tape definitions
+  existing WAV may name it by any relative path. A preset inserts a
+  tape with the step `tape:` and takes it out with `eject: tape`
+  (`preset.md` §5.2), and the picker lists the tape definitions
   (the topic of AC-7). A `.wav` on its own is not a tape but a program
   file (C1600-2; LIB-13 AC-19). What stays of today: a recording is
   written as mono 16-bit WAV at 48000 Hz, each time the motor stops and
   when the tape is ejected; a failed write is a notice; the counter
   shows the position while playing and the length while recording, and
   is green while the motor runs (`Shared/TapeBay.cpp:28-80`,
-  `Core/Tape/TapeDeck.hpp:30-163`, `Qt6/app/ControlBar.cpp:386-411`).
-  Open: OQ-9.
+  `Core/Tape/TapeDeck.hpp:30-163`, `Qt6/app/ControlBar.cpp:386-411`;
+  OQ-9 as decided).
 - [ ] **AC-43** — Given the Web frontend, then importing takes module
   files, disk files and tape definitions with their WAV, and the saved
   media list is today's
@@ -441,11 +447,11 @@ Getting media in and out
 - **EC-4** — Given a medium is deleted from the saved media while the
   list is open elsewhere, then a second delete says that it is no longer
   there.
-- **EC-5** — Given `insert:` into a holding place that holds a medium,
-  then that one is ejected first (AC-13).
+- **EC-5** — Given `floppy:` or `tape:` while the place holds a medium,
+  then that one is ejected first (AC-13; `preset.md` §5.2).
 - **EC-6** — Given `eject:` for an empty place, then nothing happens.
 - **EC-7** — Given `saveas:` for a place whose medium has no
-  write-protect switch, with `protected`, then it fails with that reason
+  write-protect switch, with `protected: true`, then it fails with that reason
   (Calc-U-1600 `Shared/tests/shared_app_session_tests.cpp:342-380`).
 - **EC-8** — Given a session is suspended, then every change not yet
   written is written (AC-13); today the Web frontend of Calc-U-1600 can
@@ -476,7 +482,7 @@ Getting media in and out
   *Recommendation:* as in AC-3, what Windows, macOS and Linux refuse
   between them, the same on every platform, so that a save folder can be
   carried from one to another.
-- [x] **OQ-3** — *Decided as recommended (user, 2026-11-10, batch 6 gate).* How a preset writes a medium (AC-21, AC-26). PR-8 gives
+- [x] **OQ-3** — *Superseded 2026-11-13: references are mappings (`docs/formats/README.md` §3) and `saveas:` is a mapping (`preset.md` §5.2.1); AC-21.* *Decided as recommended (user, 2026-11-10, batch 6 gate).* How a preset writes a medium (AC-21, AC-26). PR-8 gives
   examples, not a notation. *Recommendation:* as in AC-21: a name, in
   quotes when it holds a space, `file:<path>` or `mem:<name>`, then the
   side; `slot-1-file:` and `floppy-file:` go, and `saveas:` keeps
@@ -545,9 +551,9 @@ Getting media in and out
 | Every medium carries its name inside its file; the file is named after it; the file name is only a fallback | `media.md` MD-2, MD-5; behaviour change 59-6 | 2026-11-10 |
 | One set of save rules for Name & Save, `saveas` and the harness; Name & Save asks before replacing an instance; a name a file name cannot hold is refused | `media.md` MD-3; behaviour change 1600-5 | 2026-11-10 |
 | An outdated file shows in its picker as a disabled entry with the hint; a preset naming one is refused; logged once per start | `media.md` MD-4; ADR 0037; behaviour change 1600-6 | 2026-11-10 |
-| `insert`, `eject`, `arm` over media places that are pass-through or holding; `medium:` sections; `saveas` stays | `presets.md` PR-8 | 2026-11-10 |
+| *Superseded 2026-11-13 (row at the end).* `insert`, `eject`, `arm` over media places that are pass-through or holding; `medium:` sections; `saveas` stays | `presets.md` PR-8 | 2026-11-10 |
 | Modules are chosen with a picker on the control bar | ADR 0025 | 2026-11-10 |
-| Cassette tapes keep their own rules; WAV is an external format | `media.md` Q-1 | 2026-11-10 |
+| *Superseded 2026-11-13 (F-7: a tape is a medium, AC-42).* Cassette tapes keep their own rules; WAV is an external format | `media.md` Q-1 | 2026-11-10 |
 | The names and states of media are a topic of this feature; the picker joins it with the control state | LIB-4 OQ-3 (user, batch 3 gate) | 2026-11-10 |
 | Proposed in this spec and accepted (user, 2026-11-10, batch 6 gate): every change is written when the session is suspended (AC-13, EC-8) | LIB-3 AC-24; a hidden tab loses a change today | 2026-11-10 |
 | Proposed in this spec and accepted (user, 2026-11-10, batch 6 gate): a module change leaves the other slot and the disk alone (AC-38) | It follows from the power cycle of behaviour change 1600-4 | 2026-11-10 |
@@ -555,7 +561,7 @@ Getting media in and out
 | Proposed in this spec and accepted (user, 2026-11-10, batch 6 gate): the harness commands of AC-28 | Rule 4 of the index; LIB-11 AC-14, AC-18 | 2026-11-10 |
 | A medium the user opens from outside the save folder is used where it lies and written back there; only a Web frontend copies it in, because a browser cannot write back | user, 2026-11-10, batch 7 gate; LIB-13 AC-4; ADR 0019 as amended | 2026-11-10 |
 | A save that sets the write-protect switch is followed by a power cycle, as if a module had been plugged in (AC-19) | user, 2026-11-11; LIB-2 OQ-4 | 2026-11-11 |
-| The notation of AC-21 holds for header keys, `insert` and `arm`; `saveas` keeps today's form, as OQ-3 decided, so a name or a path with spaces is written without quotes there | Phase 5, preset pass (`docs/walkthroughs/presets.md`, A-7); OQ-3 | 2026-11-11 |
+| *Superseded 2026-11-13 (row at the end).* The notation of AC-21 holds for header keys, `insert` and `arm`; `saveas` keeps today's form, as OQ-3 decided, so a name or a path with spaces is written without quotes there | Phase 5, preset pass (`docs/walkthroughs/presets.md`, A-7); OQ-3 | 2026-11-11 |
 | A medium's own file decides: `template: true` is never written, wherever it lies and however it was named; without it the file is an instance, written in place, also when a preset names it by file. No copy is made at a first write, and no instance takes a bundled template's name (AC-5, AC-15, AC-25, AC-35). Replaces MD-1 and the second part of OQ-8; the earlier rule was an error of the spec, Calc-U-1600 works so today | user, 2026-11-13 (question F-1 of `docs/walkthroughs/presets.md` §5.4); `docs/formats/media.md` | 2026-11-13 |
 | Cassette tapes are media by `media.md` §3: a `.tape.yaml` definition with its WAV, templates and instances, Name & Save, `position`, the preset key `tape:`; one bundled template, the empty tape; a `.wav` alone is a program file (AC-37, AC-42, AC-43). Replaces "tapes keep their own rules" (`media.md` Q-1) | user, 2026-11-13 (question F-7 of `docs/walkthroughs/presets.md` §5.4); `docs/formats/media.md` §3 | 2026-11-13 |
 | A Solid State ROM module shows its `description` in the picker, ordered by `menu-sort`, as today (AC-8) | user, 2026-11-13 (question F-14 of `docs/walkthroughs/presets.md` §5.4); `docs/formats/modules.md` §2.1, §2.4 | 2026-11-13 |
@@ -563,3 +569,4 @@ Getting media in and out
 | Sides are numbered 0 and 1 for magnetic cards and floppy disks, in presets, files and the GUI; the floppy disk format goes to version 2 (AC-37), so disks saved with 0.8.x are refused with the hint until upgraded by hand | user, 2026-11-13 (B-8 (a) of `docs/walkthroughs/presets.md` §5.2); `docs/formats/media.md` §1, §2 | 2026-11-13 |
 | A saved tape's WAV lies beside its definition; a hand-written definition names its WAV by any relative path; `position` is reserved and 0 (AC-42, OQ-9) | user, 2026-11-13 (LIB-7 OQ-9, §5.4 of `docs/walkthroughs/presets.md`) | 2026-11-13 |
 | Removable media (floppy disk, tape) are inserted and ejected by steps `floppy:`, `tape:`, `eject:`; modules are header keys only (AC-26, AC-42, EC-5, EC-6) | user, 2026-11-13 (LIB-7 EC-5, EC-6, §5.4 of `docs/walkthroughs/presets.md`): removable media are changed at runtime and belong into the chain of steps, like the TI-59's magnetic cards; installed periphery, memory modules included, is fitted before the machine boots | 2026-11-13 |
+| Aligned with `docs/formats/` after the Q&A round: references are mappings `{ name: }`, `{ file: }`, `{ mem: }`; steps `card:`, `arm:`, `floppy:`, `tape:`, `eject:` and a `saveas:` mapping, no `insert:` step and no `medium:` section; in-file media are the TI-59's `magnetic-cards:`; `.magnetcard.yaml` with sides 0 and 1; the floppy button shows 0 or 1 (AC-17, AC-21 to AC-24, AC-26, AC-32, AC-35, AC-39, AC-42, EC-5, EC-7) | user rulings of 2026-11-12/13 (`docs/formats/README.md` §3, `preset.md` §3.1, §5.2; `docs/walkthroughs/presets.md` §5.2, §5.4) | 2026-11-13 |

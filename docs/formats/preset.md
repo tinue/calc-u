@@ -84,7 +84,8 @@ slot-2: { file: cards/my.card.yaml }
 A list of **in-file cards**: magnetic cards defined by the preset, which
 a `card:` or `arm:` step addresses with `mem: <card-name>`. A bank
 written to it is kept, and read back by its next use, until the next
-load, reset or model switch. An in-file card is saved to a file only by
+load or model switch; a reset, a power cycle or a cold boot keeps it,
+as a real card keeps what was written. An in-file card is saved to a file only by
 `saveas:` (§5.2.1), with its cue card.
 
 ```yaml

@@ -291,7 +291,9 @@ The cue card that shows
 What lasts
 - [ ] **AC-25** — Given a Reset, on any model, then what is fitted stays
   fitted, a cue card of any kind; a fitted magnetic card can be fed
-  again afterwards by its corners (AC-12); a card that is in the reader
+  again afterwards by its corners (AC-12), and an in-file card then
+  gives back what was written to it, as a real card would (`preset.md`
+  §3.1); a card that is in the reader
   at that moment is taken out as by Eject Card (user, batch 5 and batch
   6 gates; behaviour change 59-17). The same holds for a power cycle
   and a Cold boot (user, 2026-11-10, batch 7 gate). Given a new machine is built, by a model
@@ -419,3 +421,4 @@ Every frontend
 | A card name stands for one card throughout a preset (AC-20) | Phase 5, preset pass (`docs/walkthroughs/presets.md`, A-12); AC-27 keeps today's test of both sides in one file | 2026-11-11 |
 | A preset whose `insert:` step leaves the card at the reader while the machine gives no output for 30 minutes of emulated time ends there; a program that keeps giving output is never stopped. "Hanging" is measured by output, and the preset ends instead of going on; the other waits of a preset stay at one hour (reading confirmed by the user, 2026-11-11) | user, 2026-11-11: "If possible I'd stop a hanging preset after 30 minutes emulated time, but again: don't break a working program" | 2026-11-11 |
 | Module cue cards come only from the module file; the bundled modules get a card like today's stand-in for every program without a pre-printed one; a program without a card takes off the module cue card (AC-22, AC-23) | user, 2026-11-13 (§5.4 of `docs/walkthroughs/presets.md`): every program has a cue card in reality; the fallback card was a stand-in for missing ones; the modules get one card per program, generated like the stand-in where none is defined; without one, any module cue card is taken off | 2026-11-13 |
+| What is written to an in-file card lasts until the next preset load or model switch; a Reset, a power cycle or a Cold boot keeps it (AC-25; `preset.md` §3.1) | user, 2026-11-13 (§5.4 of `docs/walkthroughs/presets.md`); the format said "until the next load, reset or model switch" | 2026-11-13 |

@@ -78,7 +78,7 @@ Calc-U-59 at `v2.3.0`:
   `Web/tests/`, `tools/agentic/` and `tools/headless/`
 
 Calc-U-1600 at `b4ea8c8`:
-- `examples/**` (34 presets in eight folders)
+- `examples/**` (32 presets in eight folders)
 - `docs/developer/screenshots/presets/` (9), `dev/presets/` (4),
   `dev/hardware-checks/` (3), `Core/tests/fixtures/presets/` (5)
 - `vscode/calcu1600-debug/presets/` and `templates/**` (6)

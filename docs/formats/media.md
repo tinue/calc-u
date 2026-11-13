@@ -115,7 +115,10 @@ card, from the implicit template.
   one side passes through the reader, which reads it or writes it. After
   it has passed, the card is fitted ([cue-card.md §2](cue-card.md#2-fitting)).
 - A reference to a card file that doesn't exist is an error; a new card
-  starts fresh and is saved by Name & Save.
+  starts fresh and is saved by Name & Save. A frontend may ask for the
+  name when it fits a fresh card: that is Name & Save done up front, and
+  the instance's file is written at the card's first write. The fresh
+  card itself is never written.
 
 ### 1.4 Written cards
 

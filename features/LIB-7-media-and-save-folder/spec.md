@@ -230,7 +230,8 @@ Name & Save
   under a name before anything is written (a fresh magnetic card, a tape
   to record), then the name is asked first, and when an instance of that
   name exists the user is asked before it is replaced; the file is
-  replaced only at the first write (Calc-U-59
+  replaced only at the first write; this is Name & Save done up front,
+  and the template itself is never written (`media.md` §1.3) (Calc-U-59
   `tests/shared_cooperative_tests.cpp:727`; Calc-U-1600
   `Qt6/app/MainWindow.cpp:381-393`).
 
@@ -571,3 +572,4 @@ Getting media in and out
 | A saved tape's WAV lies beside its definition; a hand-written definition names its WAV by any relative path; `position` is reserved and 0 (AC-42, OQ-9) | user, 2026-11-13 (LIB-7 OQ-9, §5.4 of `docs/walkthroughs/presets.md`) | 2026-11-13 |
 | Removable media (floppy disk, tape) are inserted and ejected by steps `floppy:`, `tape:`, `eject:`; modules are header keys only (AC-26, AC-42, EC-5, EC-6) | user, 2026-11-13 (LIB-7 EC-5, EC-6, §5.4 of `docs/walkthroughs/presets.md`): removable media are changed at runtime and belong into the chain of steps, like the TI-59's magnetic cards; installed peripherals, memory modules included, is fitted before the machine boots | 2026-11-13 |
 | Aligned with `docs/formats/` after the Q&A round: references are mappings `{ name: }`, `{ file: }`, `{ mem: }`; steps `card:`, `arm:`, `floppy:`, `tape:`, `eject:` and a `saveas:` mapping, no `insert:` step and no `medium:` section; in-file media are the TI-59's `magnetic-cards:`; `.magnetcard.yaml` with sides 0 and 1; the floppy button shows 0 or 1 (AC-17, AC-21 to AC-24, AC-26, AC-32, AC-35, AC-39, AC-42, EC-5, EC-7) | user rulings of 2026-11-12/13 (`docs/formats/README.md` §3, `preset.md` §3.1, §5.2; `docs/walkthroughs/presets.md` §5.2, §5.4) | 2026-11-13 |
+| A medium started under a name is Name & Save done up front (AC-20; `media.md` §1.3) | user, 2026-11-13 (consistency pass after the Q&A round): today's flow, read as Name & Save done up front | 2026-11-13 |

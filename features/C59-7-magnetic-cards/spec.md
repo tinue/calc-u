@@ -173,7 +173,8 @@ Fitting a card
   card has the name as its title; given a card of that name is saved,
   then it asks "Replace card `<name>`?" with "Its first write replaces
   both sides and the cue card." first; nothing is written until the
-  fresh card's first write (LIB-7 AC-20;
+  fresh card's first write. This is Name & Save done up front: the
+  fresh card, the template, is never written (`media.md` §1.3) (LIB-7 AC-20;
   `Shared/CardFile.cpp:330-337`, `tests/shared_cooperative_tests.cpp:727`).
 - [ ] **AC-16** — Given a card is fitted, by a button, a preset or a
   drop, while another is fitted, then it takes its place; while a card
@@ -404,3 +405,4 @@ Every frontend
 | What is written to an in-file card lasts until the next preset load or model switch; a Reset, a power cycle or a Cold boot keeps it (AC-25; `preset.md` §3.1) | user, 2026-11-13 (§5.4 of `docs/walkthroughs/presets.md`); the format said "until the next load, reset or model switch" | 2026-11-13 |
 | Aligned with `docs/formats/` after the Q&A round of 2026-11-13: sides 0 and 1 (AC-6, AC-12); card file is magnetic card format 3, `.magnetcard.yaml` (AC-2, AC-3, AC-4); what a card file gives the media model and `saveas:` for an in-file card (AC-29); a write replaces only the written side (AC-5, EC-3); steps `card:` and `arm:` with `timeout:` (AC-17, AC-27, EC-6); in-file cards under `magnetic-cards:` (AC-18, AC-19, AC-20); constant memory file name (AC-22, AC-25); stand-in module cue card (AC-23); upgrade rows of `preset.md` §9.1 (AC-30) | user rulings of 2026-11-13 (`docs/walkthroughs/presets.md` §5.2, §5.4); `docs/formats/` | 2026-11-13 |
 | A 2.3.0 card file (`.u59`) is ignored: not listed, read or changed (AC-4) | user, 2026-11-13 (consistency pass after the Q&A round): "ignore them" | 2026-11-13 |
+| "Fit Fresh Card" asks the name first and writes the instance at the first write: Name & Save done up front (AC-15; `media.md` §1.3) | user, 2026-11-13 (consistency pass after the Q&A round): today's flow, read as Name & Save done up front | 2026-11-13 |

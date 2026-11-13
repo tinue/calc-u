@@ -673,7 +673,8 @@ the questions of §5.4.
 | B-21 | **Ruled 2026-11-13 (user) as recommended, "for now": (a) busy topic as a stream, mechanism from spike 4; (b) a settings file as a launch argument in development builds; (c) `key-down`/`key-up`; (d) `test_diag`'s wait dropped. Simulator UI testing needs work later (C59-8 OQ-5). Applied in C59-8 AC-21, OQ-5; conversion check** | (d) the conversion check keeps `test_cdebug`'s `wait: 1.5s` behind a `skip-wait:`; for `test_diag` see §5.4 (conversion check) |
 | B-22 | **Ruled 2026-11-13 (user, left to the specification) as recommended: Qt6 gets harness attach; `--shots` is its client; LIB-14 owns scenarios and object names. Applied in LIB-14 AC-44, LIB-11, LIB-16 AC-12, `harness.md` fit table** | Unchanged; the command names follow LIB-6 AC-34 |
 | B-23 | **Ruled 2026-11-13 (user) as recommended: what the example puts on screen, `sum.ti59`'s cue card in Calc-U-59, the Sharp example the design's; offline load of a bundled example kept. Applied in LIB-6 AC-42, LIB-15 AC-23** | Unchanged |
-| B-24 to B-26 | Open | Unchanged |
+| B-24 | **Ruled 2026-11-13 (user) as recommended: each template filled and checked; RENUM with a ROM fixture. Applied in C1600-3 AC-19, C1600-4 AC-15, LIB-6 AC-51** | Unchanged |
+| B-25, B-26 | Open | Unchanged |
 | B-27 | Partly settled | (b) settled otherwise: a list shows the name tag (`preset-name`, else the file stem), the description is the tooltip or longer entry (`README.md` §2). (a), (c), (d) open |
 | B-28 | Partly settled | A cold boot empties all memory, the constant memory included (`preset.md` §2); what the ROM's start-up then writes stays open (C-6). Recommendation holds as "empty at the cold boot, then as the ROM's start-up leaves it" |
 | B-29 | Open | Unchanged |

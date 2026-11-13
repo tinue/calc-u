@@ -594,7 +594,8 @@ Harness
   VS Code extension), then the test suite checks each with
   `check-preset`; today `tools/check_presets.sh` checks the same files
   and is run by hand; files with placeholders that are filled in later
-  are left out, and so are, by name, the presets that can only be
+  are checked as filled in: the templates of the VS Code extension each
+  filled as the extension fills them (C1600-3 AC-19); left out are, by name, the presets that can only be
   upgraded when LIB-7 or LIB-10 is built, until then (`DiskWorks`,
   `make_diskworks_media`, `pc1500-maxed-out`).
 - [ ] **AC-54** — Given the Qt6 and Web frontends, then each hands a
@@ -760,3 +761,4 @@ Harness
 | Presets that wait for LIB-7, LIB-10 or C59-7 are left out of the checks of AC-43 and AC-51 by name until then | user, 2026-11-13 (B-11 of `docs/walkthroughs/presets.md` §5.2) | 2026-11-13 |
 | Every keyword a preset leaves out has a stated default; `printer-trace` absent means off (AC-65) | user, 2026-11-13 (B-16 of `docs/walkthroughs/presets.md` §5.2) | 2026-11-13 |
 | The GUI scenario of AC-42 checks what a bundled example puts on screen: in Calc-U-59 the cue card of `sum.ti59`; the Sharp example is the design's | user, 2026-11-13 (B-23 of `docs/walkthroughs/presets.md` §5.2); `sum.ti59` and four of the five bundled presets of its group have no keys, so no result shows | 2026-11-13 |
+| Files with placeholders are checked as filled in, not left out (AC-51) | user, 2026-11-13 (B-24 of `docs/walkthroughs/presets.md` §5.2) | 2026-11-13 |

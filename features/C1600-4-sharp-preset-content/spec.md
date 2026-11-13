@@ -222,7 +222,8 @@ The shipped presets
   The presets that have a row of the last line are upgraded when LIB-7
   and LIB-10 are built.
   The templates of the VS Code extension, which hold placeholders, are
-  upgraded by hand and are not checked (LIB-6 AC-51).
+  upgraded by hand and checked once filled in (LIB-6 AC-51, C1600-3
+  AC-19).
 
 - [ ] **AC-16** — Given each of the 32 examples, when its version 2 file
   is loaded through the harness and the harness `wait` (LIB-6 AC-34) has
@@ -364,3 +365,4 @@ The shipped presets
 | Two `program:` sections: a first one whose code has not returned within the `timeout:` fails the preset (EC-3). Replaces "after an hour the second starts all the same" | user, 2026-11-12 (`preset.md` §6.3) | 2026-11-13 |
 | The comparison is at the idle machine after the harness `wait`, includes media and the files a `saveas` wrote, runs in a copy of `examples/`, and excepts the intended differences by name (AC-16) | user, 2026-11-13 (B-11 of `docs/walkthroughs/presets.md` §5.2) | 2026-11-13 |
 | `debug:` block: `reset: none` and `after: none` are the defaults; no `preset` key in the block, the session's machine is the preset the block is in (AC-11) | user, 2026-11-13 (C1600-4 OQ-5; B-19 of `docs/walkthroughs/presets.md` §5.2); today's reader has no `preset` key in the block (`Core/Debug/AttachKeys.hpp:41-49`, `Qt6/app/debug/DapSession.cpp:230`) | 2026-11-13 |
+| The templates are checked once filled in (AC-15) | user, 2026-11-13 (B-24 of `docs/walkthroughs/presets.md` §5.2); today nothing checks them | 2026-11-13 |

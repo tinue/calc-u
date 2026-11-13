@@ -253,7 +253,12 @@ In the frontends
   presets and templates as C1600-4 upgrades them, then
   it works against the server: attach, Build & Load, Reset and Stop, All
   Reset and Stop, and its four project templates; the scenarios of AC-20
-  that use a project and a template check it
+  that use a project and a template check it. The test suite fills each
+  of the four templates as the extension does
+  (`vscode/calcu1600-debug/scaffold.js:49-58`) and checks the result
+  with `check-preset` (LIB-6 AC-51); the RENUM scenario uses a ROM built
+  from its template and kept as a fixture, so it needs no assembler and
+  never skips (today `tools/dap_smoke.py:370-373`)
   (`vscode/calcu1600-debug/package.json:26-603`,
   `vscode/calcu1600-debug/extension.js:215-262`).
 
@@ -343,3 +348,4 @@ Checks
 | "The lowest address of the listing" (AC-7) means the lowest address of a line with bytes, as today's listing readers keep only such lines | Phase 5, preset pass (`docs/walkthroughs/presets.md`, A-11); AC-23; `Core/Debug/Listing/ZasmListing.cpp:90-91`, `SdasListing.cpp:174-175` | 2026-11-11 |
 | Two uses of a debug session: breakpoints that work normally, or the reset routine watched from the reset vector; a reset that stops there is over when it stops; nothing more is specified about combining `reset:` and `boot: debug` (AC-6, AC-24) | user, 2026-11-13 (B-19 (a), (b) of `docs/walkthroughs/presets.md` §5.2): "may be overspecified" | 2026-11-13 |
 | In the set-up of a session the program started by `after: call` waits for `configurationDone` (AC-7); Build & Load without a `program` does the set-up again (AC-25) | user, 2026-11-13 (B-19 (c), (e) of `docs/walkthroughs/presets.md` §5.2); today the program runs during `attach`, before the client's breakpoints arrive | 2026-11-13 |
+| Each template is filled and checked; the RENUM scenario uses a ROM kept as a fixture (AC-19) | user, 2026-11-13 (B-24 of `docs/walkthroughs/presets.md` §5.2); today one scenario uses a template and skips without `sdaslh5801` | 2026-11-13 |

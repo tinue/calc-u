@@ -1183,6 +1183,8 @@ after a Reset feeds its defined content; no step inserts or ejects a
 floppy disk after the build (LIB-7 EC-5, EC-6; harness commands only?);
 what a write keeps in a card file (`description`, `saved`).
 
+**Status of the smaller points:** C1600-4 OQ-5 **ruled 2026-11-13 (user), see B-19**; LIB-6 OQ-9 **ruled 2026-11-13 (user): full precision of X, 13 digits, not rounded. Applied in LIB-6 AC-40, OQ-9, `preset.md` §5.4**.
+
 **The conversion check** (`docs/research/preset-conversion-check.md`)
 had four facts that the pins do not bear out (corrected in `602988b`): `test_diag.ti59` has no
 pause-on-start and needs no `skip-wait:`; `switzerland` and

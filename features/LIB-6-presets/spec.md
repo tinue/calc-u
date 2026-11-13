@@ -503,10 +503,11 @@ Harness
   `elapsed-time: report` counts emulated time as LIB-11 AC-17 does;
   `screenshot:` writes the picture Calc-U-59 supplies of its segment
   display, in the classic segment style (C59-2; OQ-3); `expect:` takes a
-  number and passes when it equals the value in the display register X,
-  whether or not the display blinks (`preset.md` §5.4); how the number
-  is compared with X (digits, rounding, the display format) is open
-  (OQ-9).
+  number and passes when it equals the value in the display register X
+  in its full precision, all 13 digits of the mantissa and the
+  exponent, not rounded and whatever the display format, and whether or
+  not the display blinks (`preset.md` §5.4; OQ-9): after `π`,
+  `3.14159265359` passes and `3.141592654` fails.
 - [ ] **AC-41** — Given a preset is loaded by the user, then the paper
   of the PC-100C it names is empty at the start, as today; a startup
   preset at a model switch leaves the paper as it is
@@ -712,7 +713,10 @@ Harness
   (C59-6, "by its two-letter ID only") and LIB-12 ("no own dumps")
   exclude it. The format README leaves to each product which keywords
   its loader carries out.
-- [ ] **OQ-9** — `expect:` on a TI model compares a number with the
+- [x] **OQ-9** — *Decided (user, 2026-11-13, §5.4 of
+  `docs/walkthroughs/presets.md`): "as we don't use this yet (it's
+  new), we can set the rule now, and we use the full precision as in
+  X" (AC-40).* `expect:` on a TI model compares a number with the
   display register X (`preset.md` §5.4): with how many digits, and
   whether `3.141592654` matches the 13-digit value in X.
 - [ ] **OQ-10** — `tape:` on the PC-1600: `preset.md` §3 allows it with
@@ -766,3 +770,4 @@ Harness
 | The GUI scenario of AC-42 checks what a bundled example puts on screen: in Calc-U-59 the cue card of `sum.ti59`; the Sharp example is the design's | user, 2026-11-13 (B-23 of `docs/walkthroughs/presets.md` §5.2); `sum.ti59` and four of the five bundled presets of its group have no keys, so no result shows | 2026-11-13 |
 | Files with placeholders are checked as filled in, not left out (AC-51) | user, 2026-11-13 (B-24 of `docs/walkthroughs/presets.md` §5.2) | 2026-11-13 |
 | The preset list is the bundle file, a format of its own (`docs/formats/bundle.md`): presets and their files, order and groups; distributions bundle exactly what it lists (AC-31). Replaces "not an own format with a version" | user, 2026-11-13 (B-27 of `docs/walkthroughs/presets.md` §5.2): a format for bundling that lists all presets and their files and sets order and structure; a selection; the site and local builds take the files from the repository or the disk | 2026-11-13 |
+| `expect:` on a TI model compares with X in its full precision, 13 digits, not rounded, whatever the display format (AC-40, OQ-9) | user, 2026-11-13 (§5.4 of `docs/walkthroughs/presets.md`); the step is new, so no preset depends on another rule | 2026-11-13 |

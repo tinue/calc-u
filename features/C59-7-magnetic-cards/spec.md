@@ -269,16 +269,20 @@ The cue card that shows
   at a time: fitting a magnetic card, a `cue-card:` section and the
   cue card `ti58c.mem` brings back (C59-3 AC-7) each take the place of
   the one before. The topic `cue-card` (C59-2 AC-6) names the cue card
-  to show: while a library program is selected, the pre-printed cue card
-  of that program, where the module has one, else a card with the
-  module's title and ID; otherwise the fitted cue card, if there is
-  one. It follows a change at the
+  to show: while a library program is selected, the module cue card of
+  that program as the module file defines it (`modules.md` §2.3), and,
+  where it defines none, no module cue card, so that the fitted cue
+  card shows, or none; otherwise the fitted cue card, if there is
+  one. No card is made up at run time. It follows a change at the
   latest half a second later (`Shared/CueCard.cpp:402-418`,
   `Shared/SessionController.cpp:315-343`).
-- [ ] **AC-23** — Given the pre-printed cue cards, then they are those
-  of today: 25 for the Master Library and 21 for the Leisure Library;
-  the other twelve modules have none
-  (`roms/solid-state/cuecards.txt`, `tests/shared_formats_tests.cpp:433-461`).
+- [ ] **AC-23** — Given the module cue cards of the bundled modules,
+  then the pre-printed ones are those of today: 25 for the Master
+  Library and 21 for the Leisure Library; every other library program
+  of every bundled module has a card in its module file that looks like
+  today's stand-in, with the module's title and ID (`modules.md` §2.3)
+  (`roms/solid-state/cuecards.txt`, `tests/shared_formats_tests.cpp:433-461`,
+  `Shared/CueCard.cpp:402-418`).
 - [ ] **AC-24** — Given a library program's cue card covers a fitted
   magnetic card, then the corners do nothing, and the fitted card shows
   again when no library program is selected
@@ -414,3 +418,4 @@ Every frontend
 | An empty side gives the ROM zeroes, and the ROM ends the read with an error (EC-2) | user, 2026-11-10, after the batch 7 gate | 2026-11-10 |
 | A card name stands for one card throughout a preset (AC-20) | Phase 5, preset pass (`docs/walkthroughs/presets.md`, A-12); AC-27 keeps today's test of both sides in one file | 2026-11-11 |
 | A preset whose `insert:` step leaves the card at the reader while the machine gives no output for 30 minutes of emulated time ends there; a program that keeps giving output is never stopped. "Hanging" is measured by output, and the preset ends instead of going on; the other waits of a preset stay at one hour (reading confirmed by the user, 2026-11-11) | user, 2026-11-11: "If possible I'd stop a hanging preset after 30 minutes emulated time, but again: don't break a working program" | 2026-11-11 |
+| Module cue cards come only from the module file; the bundled modules get a card like today's stand-in for every program without a pre-printed one; a program without a card takes off the module cue card (AC-22, AC-23) | user, 2026-11-13 (§5.4 of `docs/walkthroughs/presets.md`): every program has a cue card in reality; the fallback card was a stand-in for missing ones; the modules get one card per program, generated like the stand-in where none is defined; without one, any module cue card is taken off | 2026-11-13 |

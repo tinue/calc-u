@@ -377,8 +377,17 @@ card block ([cue-card.md](cue-card.md)), a module cue card, plus:
 |---|---|---|
 | `program` | yes | The library program number, 1–99, as selected with `Pgm` |
 
-Two items with the same `program` are an error. A library program
-without an item has no cue card.
+Two items with the same `program` are an error. Every library program
+of the module should have an item, as every program has a cue card on
+the real module. A library program without an item has no module cue
+card: selecting it takes off any module cue card, and the own card
+shows, or nothing.
+
+When the bundled modules are written in this format, every library
+program without a pre-printed cue card gets an item that looks like
+the stand-in card 2.3.0 showed for it: the module's `description` as
+`title` and its `module-name` as `id` (today
+`Shared/CueCard.cpp:402-418`).
 
 ### 2.4 The bundled modules
 

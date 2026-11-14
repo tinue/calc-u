@@ -1,0 +1,216 @@
+# Calc-U-59 (products/calc-u-59/, ADR 0002, 0004): Qt6 builds for Windows
+# and Linux, the web client (frontends/web/), plus the C++ test suite. Every
+# run step works in the product directory.
+#
+# Run by hand (workflow_dispatch) — ReleaseIt's `release` dispatches it for a
+# pre-release and attaches the artifacts (release.yaml). There is no macOS Qt
+# job on purpose: on the Mac the Swift app (built locally) is the product, and
+# the Mac Qt build is for development only (tools/build_qt.sh).
+#
+# ROMs are not in this repository (ADR 0034): every job fetches them with
+# roms/fetch_roms.sh from tinue/TI-59-ROM and checks their md5; the Qt build
+# compiles them in as resources.
+
+name: Calc-U-59
+
+on:
+  workflow_dispatch: {}
+
+defaults:
+  run:
+    working-directory: products/calc-u-59
+
+jobs:
+  core-tests:
+    # core/ + app/ + tests from the product's CMakeLists.txt, without Qt.
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v5
+      - name: Install build tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential cmake ninja-build python3
+      - name: Fetch ROMs
+        shell: bash
+        run: roms/fetch_roms.sh
+      - name: Configure
+        run: cmake -S . -B build/cmake -G Ninja -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCALCU59_BUILD_QT=OFF
+      - name: Build
+        run: cmake --build build/cmake
+      - name: Run tests
+        run: ctest --test-dir build/cmake --output-on-failure
+
+  web:
+    # frontends/web/build.sh into frontends/web/dist/, the Playwright tests
+    # against it, and dist/ zipped (reference/WebClient.md).
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v5
+      - name: Install emsdk
+        uses: mymindstorm/setup-emsdk@v16
+        with:
+          # Keep in step with the local toolchain (emcc --version).
+          version: 6.0.12
+      - name: Install Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24
+      - name: Fetch ROMs
+        shell: bash
+        run: roms/fetch_roms.sh
+      - name: Build
+        run: frontends/web/build.sh
+      - name: Install Playwright
+        working-directory: products/calc-u-59/frontends/web
+        run: |
+          npm ci --no-audit --no-fund
+          npx playwright install --with-deps chromium webkit
+      - name: Test
+        run: frontends/web/run-tests.sh
+      - name: Zip dist/
+        run: |
+          set -euo pipefail
+          # The version build.js read from MARKETING_VERSION, as the Qt build does.
+          VERSION=$(node -p 'require("./frontends/web/dist/MANIFEST.json").version')
+          (cd frontends/web/dist && zip -qr "$GITHUB_WORKSPACE/Calc-U-59-web-$VERSION.zip" .)
+      - name: Upload artifact
+        uses: actions/upload-artifact@v6
+        with:
+          name: Calc-U-59-web
+          path: Calc-U-59-web-*.zip
+          if-no-files-found: error
+
+  linux:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: x86_64
+            runner: ubuntu-24.04
+          - arch: aarch64
+            runner: ubuntu-24.04-arm
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - uses: actions/checkout@v5
+      - name: Install Qt6 + build tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential cmake ninja-build patchelf \
+            qt6-base-dev qt6-base-dev-tools qt6-wayland libgl1-mesa-dev qt6-gtk-platformtheme qt6ct
+      - name: Fetch ROMs
+        shell: bash
+        run: roms/fetch_roms.sh
+      - name: Configure
+        run: cmake -S frontends/qt6 -B frontends/qt6/build -G Ninja -DCMAKE_BUILD_TYPE=Release
+      - name: Build
+        run: cmake --build frontends/qt6/build
+      - name: Build AppImage
+        env:
+          QMAKE: /usr/lib/qt6/bin/qmake6
+          APPIMAGE_EXTRACT_AND_RUN: "1"
+          # Wayland sessions (the default on current desktops) need these on top
+          # of the xcb plugin linuxdeploy-plugin-qt deploys by default.
+          EXTRA_PLATFORM_PLUGINS: "libqwayland-egl.so;libqwayland-generic.so"
+        run: |
+          set -euo pipefail
+          mkdir -p AppDir/usr/bin
+          cp frontends/qt6/build/Calc-U-59 AppDir/usr/bin/
+          curl -fsSL -o linuxdeploy.AppImage \
+            https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-${{ matrix.arch }}.AppImage
+          curl -fsSL -o linuxdeploy-plugin-qt.AppImage \
+            https://github.com/linuxdeploy/linuxdeploy-plugin-qt/releases/download/continuous/linuxdeploy-plugin-qt-${{ matrix.arch }}.AppImage
+          chmod +x linuxdeploy.AppImage linuxdeploy-plugin-qt.AppImage
+          export PATH="$PWD:$PATH"
+          ./linuxdeploy.AppImage --appdir=AppDir --executable=AppDir/usr/bin/Calc-U-59 \
+            --desktop-file=frontends/qt6/resources/linux/calc-u-59.desktop \
+            --icon-file=frontends/qt6/resources/linux/calc-u-59.png --plugin=qt
+          QT_PLUGINS_DIR=$("$QMAKE" -query QT_INSTALL_PLUGINS)
+          # Wayland EGL rendering and the desktop's platform theme (dark/light, dialogs).
+          for dir in wayland-graphics-integration-client platformthemes styles; do
+            if [ -d "$QT_PLUGINS_DIR/$dir" ]; then
+              cp -r "$QT_PLUGINS_DIR/$dir" AppDir/usr/plugins/
+              ./linuxdeploy.AppImage --appdir=AppDir --deploy-deps-only=AppDir/usr/plugins/$dir
+            else
+              echo "::warning::$dir plugins not found in $QT_PLUGINS_DIR"
+            fi
+          done
+          # Default to the GTK platform theme unless the user picked one.
+          mv AppDir/AppRun AppDir/AppRun.qt
+          printf '%s\n' '#!/bin/sh' \
+            'export QT_QPA_PLATFORMTHEME="${QT_QPA_PLATFORMTHEME:-gtk3}"' \
+            'HERE="$(dirname "$(readlink -f "$0")")"' \
+            'exec "$HERE/AppRun.qt" "$@"' > AppDir/AppRun
+          chmod +x AppDir/AppRun
+          # Qt is LGPLv3: ship its licence and our notices inside the image.
+          mkdir -p AppDir/usr/share/doc/calc-u-59
+          cp -r ../../LICENSE NOTICE THIRD-PARTY-NOTICES.md licenses AppDir/usr/share/doc/calc-u-59/
+          ./linuxdeploy.AppImage --appdir=AppDir --output=appimage
+      - name: Upload artifact
+        uses: actions/upload-artifact@v6
+        with:
+          name: Calc-U-59-linux-${{ matrix.arch }}
+          path: products/calc-u-59/Calc-U-59-*.AppImage
+          if-no-files-found: error
+
+  windows:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: x86_64
+            runner: windows-latest
+            qt-host: windows
+            qt-arch: win64_msvc2022_64
+            msvc-arch: x64
+            iss-arch: x64
+            installer: Calc-U-59-Setup.exe
+          - arch: arm64
+            runner: windows-11-arm
+            qt-host: windows_arm64
+            qt-arch: win64_msvc2022_arm64
+            msvc-arch: arm64
+            iss-arch: arm64
+            installer: Calc-U-59-Setup-arm64.exe
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - uses: actions/checkout@v5
+      - name: Install Qt6 (MSVC)
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: '6.8.2'
+          host: ${{ matrix.qt-host }}
+          target: 'desktop'
+          arch: ${{ matrix.qt-arch }}
+      - name: Set up MSVC dev environment
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: ${{ matrix.msvc-arch }}
+      - name: Install Ninja
+        uses: seanmiddleditch/gha-setup-ninja@v6
+      - name: Fetch ROMs
+        shell: bash
+        run: roms/fetch_roms.sh
+      - name: Configure
+        run: cmake -S frontends/qt6 -B frontends/qt6/build -G Ninja -DCMAKE_BUILD_TYPE=Release
+      - name: Build
+        run: cmake --build frontends/qt6/build
+      - name: Stage the app folder
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path frontends/qt6/dist | Out-Null
+          Copy-Item frontends/qt6/build/Calc-U-59.exe frontends/qt6/dist/
+          Copy-Item ../../LICENSE, NOTICE, THIRD-PARTY-NOTICES.md frontends/qt6/dist/
+          Copy-Item licenses frontends/qt6/dist/licenses -Recurse
+          windeployqt --release --compiler-runtime frontends/qt6/dist/Calc-U-59.exe
+      - name: Install Inno Setup
+        shell: pwsh
+        run: choco install innosetup -y
+      - name: Build installer
+        shell: pwsh
+        run: ISCC.exe /DAPP_ARCH=${{ matrix.iss-arch }} frontends\qt6\resources\windows\calc-u-59.iss
+      - name: Upload artifact
+        uses: actions/upload-artifact@v6
+        with:
+          name: Calc-U-59-windows-${{ matrix.arch }}
+          path: products/calc-u-59/${{ matrix.installer }}
+          if-no-files-found: error

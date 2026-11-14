@@ -12,8 +12,10 @@
 #
 # Usage: products/calc-u-59/roms/fetch_roms.sh
 #
-# Writes (24 files, into this directory, flat):
-#   TMC0582.txt, TMC0583.txt, TMC0571B.txt, TMC0582-CONST-K.txt,
+# Writes (38 files until M-24, then 24): the calculator dumps into
+# calculator/, the module dumps into solid-state/ (until M-24), the
+# module files into this directory:
+#   calculator/TMC0582.txt, TMC0583.txt, TMC0571B.txt, TMC0582-CONST-K.txt,
 #   TMC0583-CONST-K.txt
 #     -- TI-58 / TI-59, from dumps/ti59/ (Datamath "ROM Recorder" text)
 #   CD2400.txt, CD2401.txt, TMC0573.txt, CD2400-CONST-K.txt,
@@ -78,23 +80,42 @@ fetch_if_needed() {
   mv "$tmp" "$dest"
 }
 
-mkdir -p "$ROMS_DIR"
+mkdir -p "$ROMS_DIR/calculator" "$ROMS_DIR/solid-state"
 
 TI59_BASE="${TI59_ROM_BASE:-https://raw.githubusercontent.com/tinue/TI-59-ROM/main}"
 
 # ---- TI-58 / TI-59 calculator ROM (dumps/ti59/) ----
-fetch_if_needed "$ROMS_DIR/TMC0582.txt"         c1cb6d40e063aae1ba7b851b11b1c18a "$TI59_BASE/dumps/ti59/TMC0582.txt"
-fetch_if_needed "$ROMS_DIR/TMC0583.txt"         2341a8e484c31ff24a16e70c14c1b3a3 "$TI59_BASE/dumps/ti59/TMC0583.txt"
-fetch_if_needed "$ROMS_DIR/TMC0571B.txt"        599050d2b1c1900e64b56c089338d32e "$TI59_BASE/dumps/ti59/TMC0571B.txt"
-fetch_if_needed "$ROMS_DIR/TMC0582-CONST-K.txt" bf4fb6005177ffdec8f8ceee7e7e16d6 "$TI59_BASE/dumps/ti59/TMC0582-CONST-K.txt"
-fetch_if_needed "$ROMS_DIR/TMC0583-CONST-K.txt" 81724f14b2827410650f032ef352b1aa "$TI59_BASE/dumps/ti59/TMC0583-CONST-K.txt"
+fetch_if_needed "$ROMS_DIR/calculator/TMC0582.txt"         c1cb6d40e063aae1ba7b851b11b1c18a "$TI59_BASE/dumps/ti59/TMC0582.txt"
+fetch_if_needed "$ROMS_DIR/calculator/TMC0583.txt"         2341a8e484c31ff24a16e70c14c1b3a3 "$TI59_BASE/dumps/ti59/TMC0583.txt"
+fetch_if_needed "$ROMS_DIR/calculator/TMC0571B.txt"        599050d2b1c1900e64b56c089338d32e "$TI59_BASE/dumps/ti59/TMC0571B.txt"
+fetch_if_needed "$ROMS_DIR/calculator/TMC0582-CONST-K.txt" bf4fb6005177ffdec8f8ceee7e7e16d6 "$TI59_BASE/dumps/ti59/TMC0582-CONST-K.txt"
+fetch_if_needed "$ROMS_DIR/calculator/TMC0583-CONST-K.txt" 81724f14b2827410650f032ef352b1aa "$TI59_BASE/dumps/ti59/TMC0583-CONST-K.txt"
 
 # ---- TI-58C calculator ROM (dumps/ti58c/) ----
-fetch_if_needed "$ROMS_DIR/CD2400.txt"          638c4d0c8359e00cf1f600884f43b789 "$TI59_BASE/dumps/ti58c/CD2400.txt"
-fetch_if_needed "$ROMS_DIR/CD2401.txt"          3b0ec122cd34b214477780fd405ffdd8 "$TI59_BASE/dumps/ti58c/CD2401.txt"
-fetch_if_needed "$ROMS_DIR/TMC0573.txt"         6c0cb7db542f3b74a28613ff4ed14bce "$TI59_BASE/dumps/ti58c/TMC0573.txt"
-fetch_if_needed "$ROMS_DIR/CD2400-CONST-K.txt"  dbaee54fe0f478c7659d17bff4b790d4 "$TI59_BASE/dumps/ti58c/CD2400-CONST-K.txt"
-fetch_if_needed "$ROMS_DIR/CD2401-CONST-K.txt"  ac81d5b45c736a0f45c3835f0d977b87 "$TI59_BASE/dumps/ti58c/CD2401-CONST-K.txt"
+fetch_if_needed "$ROMS_DIR/calculator/CD2400.txt"          638c4d0c8359e00cf1f600884f43b789 "$TI59_BASE/dumps/ti58c/CD2400.txt"
+fetch_if_needed "$ROMS_DIR/calculator/CD2401.txt"          3b0ec122cd34b214477780fd405ffdd8 "$TI59_BASE/dumps/ti58c/CD2401.txt"
+fetch_if_needed "$ROMS_DIR/calculator/TMC0573.txt"         6c0cb7db542f3b74a28613ff4ed14bce "$TI59_BASE/dumps/ti58c/TMC0573.txt"
+fetch_if_needed "$ROMS_DIR/calculator/CD2400-CONST-K.txt"  dbaee54fe0f478c7659d17bff4b790d4 "$TI59_BASE/dumps/ti58c/CD2400-CONST-K.txt"
+fetch_if_needed "$ROMS_DIR/calculator/CD2401-CONST-K.txt"  ac81d5b45c736a0f45c3835f0d977b87 "$TI59_BASE/dumps/ti58c/CD2401-CONST-K.txt"
+
+# ---- Solid State ROM module dumps (dumps/modules/), where Calc-U-59 2.3.0
+# reads them, with roms/solid-state/cuecards.txt (kept in this repository).
+# Until M-24 of docs/migration-plan.md switches the product to the module
+# files below (LIB-12 AC-14); then these lines and cuecards.txt go. ----
+fetch_if_needed "$ROMS_DIR/solid-state/TMC0541.txt" bbca8e7dc631849cf3f7770d1efa7aa7 "$TI59_BASE/dumps/modules/TMC0541.txt"
+fetch_if_needed "$ROMS_DIR/solid-state/TMC0542.txt" 99b1b41f4361ec2900f990002529193f "$TI59_BASE/dumps/modules/TMC0542.txt"
+fetch_if_needed "$ROMS_DIR/solid-state/TMC0543.txt" eb3a8d6a66996b471ee19c2a10458aad "$TI59_BASE/dumps/modules/TMC0543.txt"
+fetch_if_needed "$ROMS_DIR/solid-state/TMC0544.txt" 64cd0fbe5adc5820c58a7e1262df521b "$TI59_BASE/dumps/modules/TMC0544.txt"
+fetch_if_needed "$ROMS_DIR/solid-state/TMC0545.txt" 1f50c8b671f9f4aa1bfebe8ed8007002 "$TI59_BASE/dumps/modules/TMC0545.txt"
+fetch_if_needed "$ROMS_DIR/solid-state/TMC0546.txt" 0509ff2657edb063fbc666ffb8997d51 "$TI59_BASE/dumps/modules/TMC0546.txt"
+fetch_if_needed "$ROMS_DIR/solid-state/TMC0547.txt" f3ac4e66fce6624bd2f4b0faee0db422 "$TI59_BASE/dumps/modules/TMC0547.txt"
+fetch_if_needed "$ROMS_DIR/solid-state/TMC0548.txt" a3b802d1d70d38c8bd9de8e72b54a9fe "$TI59_BASE/dumps/modules/TMC0548.txt"
+fetch_if_needed "$ROMS_DIR/solid-state/TMC0549.txt" c30fe59d97f268f50756c15d223ef6a9 "$TI59_BASE/dumps/modules/TMC0549.txt"
+fetch_if_needed "$ROMS_DIR/solid-state/TMC0550.txt" 78e46b957573c63c05be0b2fa93f7ded "$TI59_BASE/dumps/modules/TMC0550.txt"
+fetch_if_needed "$ROMS_DIR/solid-state/TMC0551.txt" 5f1d46e22657e3c432b8ec97a9b2f9ae "$TI59_BASE/dumps/modules/TMC0551.txt"
+fetch_if_needed "$ROMS_DIR/solid-state/TMC0553.txt" 080546debf5326fe83eb4334923570e1 "$TI59_BASE/dumps/modules/TMC0553.txt"
+fetch_if_needed "$ROMS_DIR/solid-state/TMC0554.txt" 40832575c1464fbf23e3893495b165a4 "$TI59_BASE/dumps/modules/TMC0554.txt"
+fetch_if_needed "$ROMS_DIR/solid-state/TMC0555.txt" 86c670fb71d51d36c58f6846b25d025b "$TI59_BASE/dumps/modules/TMC0555.txt"
 
 # ---- Solid State ROM modules (modules/) ----
 # fetch_module ID MD5

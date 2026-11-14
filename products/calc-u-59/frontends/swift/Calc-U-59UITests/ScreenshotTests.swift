@@ -1,0 +1,324 @@
+import XCTest
+
+/// Screenshot automation — produces PNG files on the Desktop for visual review.
+///
+/// This class is excluded from UIRegressionTests via skippedTests.
+/// Run via the Screenshots test plan (Product → Test Plan → Screenshots) or:
+///   xcodebuild test -scheme "Calc-U-59" \
+///     -testPlan Screenshots \
+///     -destination "platform=iOS Simulator,name=iPad Pro 13-inch (M5)"
+///
+/// Landscape shots run through bin/run-screenshots are taken by that script;
+/// see saveScreenshot(fallbackName:).
+#if !os(macOS)
+final class ScreenshotTests: XCTestCase {
+
+    override func setUpWithError() throws {
+        continueAfterFailure = false
+    }
+
+    override class func tearDown() {
+        XCUIDevice.shared.orientation = .portrait
+        super.tearDown()
+    }
+
+    // MARK: - Helpers
+
+    /// The app settings the screenshots show, as launch arguments, so a new
+    /// simulator needs no setup by hand. They take effect for this launch only
+    /// and aren't saved on the simulator. Numbers need the plist form: plain
+    /// "1" arrives as a string, which the app's `as? Int` lookups don't accept.
+    private static let settingsArguments = [
+        "-portraitDebugPage", "YES",
+        "-ledFontStyle", "<integer>1</integer>",   // classic
+        "-solidStateModuleID", "LE",
+        "-lastUsedModel", "<integer>0</integer>",  // TI-59
+    ]
+
+    @discardableResult
+    private func launchForScreenshot(orientation: UIDeviceOrientation) -> XCUIApplication {
+        launchApp(orientation: orientation, arguments: Self.settingsArguments)
+    }
+
+    private var screenshotDir: String {
+        if let dir = try? String(contentsOfFile: "/tmp/calc-u-59-screenshot-dir", encoding: .utf8)
+                .trimmingCharacters(in: .whitespacesAndNewlines), !dir.isEmpty {
+            return dir
+        }
+        // HOME points to the simulator sandbox; SIMULATOR_HOST_HOME is the real Mac home.
+        let home = ProcessInfo.processInfo.environment["SIMULATOR_HOST_HOME"] ?? "/tmp"
+        return "\(home)/Desktop"
+    }
+
+    /// Desired output filename stem, written by bin/run-screenshots before each xcodebuild call.
+    /// Falls back to nil when running tests directly from Xcode (no temp file present).
+    private var screenshotName: String? {
+        guard let s = try? String(contentsOfFile: "/tmp/calc-u-59-screenshot-name", encoding: .utf8)
+                .trimmingCharacters(in: .whitespacesAndNewlines), !s.isEmpty else { return nil }
+        return s
+    }
+
+    /// Capture the screen and write it to `screenshotDir` as `screenshotName`
+    /// (or `<fallbackName>-<device>.png` when run straight from Xcode).
+    ///
+    /// Since Xcode 27 (Device Hub), XCUIScreen hands back landscape shots in
+    /// portrait pixel order, tagged with the orientation that turns them
+    /// upright (.left on the iPad, .right on the open iPhone Duo), and the open
+    /// Duo's come out a pixel short of the size App Store Connect wants. So
+    /// bin/run-screenshots takes those shots with simctl; run straight from
+    /// Xcode, the tagged shot is written as is.
+    private func saveScreenshot(fallbackName: String) throws {
+        let dest = URL(fileURLWithPath: "\(screenshotDir)/\(screenshotName ?? "\(fallbackName)-\(UIDevice.current.name)").png")
+        // The largest screen: XCUIScreen.main is the iPhone Duo's outer
+        // display, dark while the device is open.
+        let shot = XCUIScreen.screens.map { $0.screenshot() }.max {
+            $0.image.size.width * $0.image.size.height < $1.image.size.width * $1.image.size.height
+        } ?? XCUIScreen.main.screenshot()
+        if shot.image.imageOrientation != .up, screenshotName != nil {
+            waitForScriptCapture()
+        } else {
+            try shot.pngRepresentation.write(to: dest)
+        }
+    }
+
+    /// Ask bin/run-screenshots to take the shot, holding the screen as it is
+    /// until the script has removed the request file.
+    private func waitForScriptCapture() {
+        let request = "/tmp/calc-u-59-screenshot-request"
+        XCTAssertTrue(FileManager.default.createFile(atPath: request, contents: nil),
+                      "could not create \(request)")
+        let deadline = Date().addingTimeInterval(60)
+        while FileManager.default.fileExists(atPath: request), Date() < deadline {
+            Thread.sleep(forTimeInterval: 0.25)
+        }
+        XCTAssertFalse(FileManager.default.fileExists(atPath: request),
+                       "bin/run-screenshots did not take the screenshot")
+    }
+
+    // MARK: - Screenshots
+
+    /// Load diag.ti59, run the diagnostic to completion, save a Desktop PNG.
+    ///
+    /// Prerequisite: diag.ti59 must be present on "On My iPhone" in the simulator.
+    func testScreenshotLoadDiagPreset() throws {
+        let orientation: UIDeviceOrientation = UIDevice.current.userInterfaceIdiom == .pad
+            ? .landscapeLeft : .portrait
+        let app = launchForScreenshot(orientation: orientation)
+
+        // Wait for the diagnostic to finish before capturing.
+        loadPreset(app, file: "test_diag.ti59", idleTimeout: 10)
+
+        try saveScreenshot(fallbackName: "Diagnostic")
+        attachScreenshot(app, name: "diag.ti59 — diagnostic complete")
+    }
+
+    /// Assembly overlay screenshot — iPad mini (A17 Pro) landscape.
+    ///
+    /// Sequence:
+    ///   1. Switch to CPU tab (shows ASM overlay at the bottom)
+    ///   2. Select test_stopwatch.asm via the file picker
+    ///   3. Tap Run
+    ///   4. Tap R/S to start the stopwatch
+    ///   5. Wait 3.5 seconds
+    ///   6. Tap R/S to stop the stopwatch
+    ///   7. Capture screenshot showing elapsed time
+    func testScreenshotAssembly() throws {
+        let app = launchForScreenshot(orientation: .landscapeLeft)
+
+        // Step 1: switch to CPU tab
+        let cpuTab = app.buttons["btn-tab-cpu"]
+        XCTAssertTrue(cpuTab.waitForExistence(timeout: 5), "CPU tab not found")
+        cpuTab.tap()
+
+        // Step 2: open file picker and navigate to test_stopwatch.asm
+        let selectFile = app.buttons["btn-asm-select"]
+        XCTAssertTrue(selectFile.waitForExistence(timeout: 3), "btn-asm-select not found")
+        selectFile.tap()
+
+        navigateToOnMyIPhone(app, targetFile: "test_stopwatch.asm")
+        let asmCell = app.cells.containing(.staticText, identifier: "test_stopwatch.asm").firstMatch
+        XCTAssertTrue(asmCell.waitForExistence(timeout: 5), "test_stopwatch.asm not found")
+        asmCell.tap()
+
+        // Step 3: run the ASM overlay
+        let runButton = app.buttons["btn-asm-run"]
+        XCTAssertTrue(runButton.waitForExistence(timeout: 3), "btn-asm-run not found")
+        runButton.tap()
+
+        // If a "ROM Load Error" alert appears, dismiss it then Freeze/Resume to
+        // clear the bad state before continuing.
+        if app.alerts.buttons["OK"].waitForExistence(timeout: 2) {
+            app.alerts.buttons["OK"].tap()
+            app.buttons["btn-tab-calculator"].tap()
+            let freeze = app.buttons["btn-freeze"]
+            XCTAssertTrue(freeze.waitForExistence(timeout: 3), "btn-freeze not found")
+            freeze.tap()
+            let resume = app.buttons["btn-resume"]
+            XCTAssertTrue(resume.waitForExistence(timeout: 3), "btn-resume not found")
+            resume.tap()
+            app.buttons["btn-tab-cpu"].tap()
+        }
+
+        // Step 4: press R/S to start the stopwatch
+        let rs = app.buttons["btn-key-rs"]
+        XCTAssertTrue(rs.waitForExistence(timeout: 3), "btn-key-rs not found")
+        rs.press(forDuration: 0.05)
+
+        // Step 5: let the stopwatch run for 3.5 seconds
+        Thread.sleep(forTimeInterval: 3.5)
+
+        // Step 6: press R/S to stop the stopwatch
+        rs.press(forDuration: 0.05)
+
+        // Screenshot
+        try saveScreenshot(fallbackName: "Assembly")
+        attachScreenshot(app, name: "Assembly — stopwatch stopped at ~3.5s")
+    }
+
+    /// Settings screenshot — iPhone 16e portrait.
+    func testScreenshotSettings() throws {
+        let app = launchForScreenshot(orientation: .portrait)
+
+        let settingsButton = app.buttons["btn-settings"]
+        XCTAssertTrue(settingsButton.waitForExistence(timeout: 5), "btn-settings not found")
+        settingsButton.tap()
+
+        XCTAssertTrue(app.navigationBars["Settings"].waitForExistence(timeout: 5),
+                      "Settings sheet did not appear")
+
+        try saveScreenshot(fallbackName: "Settings")
+        attachScreenshot(app, name: "Settings")
+    }
+
+    /// Plain calculator screenshot — TI-58C with -1.2345678e-90 on the display.
+    func testScreenshotPlainCalculator() throws {
+        let isPad = UIDevice.current.userInterfaceIdiom == .pad
+        let app = launchForScreenshot(orientation: isPad ? .landscapeLeft : .portrait)
+
+        loadPreset(app, file: "test_58c_display.ti58c", idleTimeout: 15)
+
+        try saveScreenshot(fallbackName: "PlainCalculator")
+        attachScreenshot(app, name: "Plain Calculator — TI-58C display")
+    }
+
+    /// Display glyphs screenshot — a TI-58 frozen in the lit phase of an error
+    /// blink that shows the double quote, apostrophe and degree sign. The
+    /// preset freezes the CPU itself (see test_58_glyphs.ti58); a frozen
+    /// display keeps its last frame.
+    func testScreenshotGlyphs() throws {
+        let app = launchForScreenshot(orientation: .portrait)
+
+        loadPreset(app, file: "test_58_glyphs.ti58", idleTimeout: 20)
+
+        try saveScreenshot(fallbackName: "Glyphs")
+        attachScreenshot(app, name: "Display glyphs — TI-58 blink, lit phase")
+    }
+
+    /// CPU Inspector screenshot — iPhone 17 Pro Max portrait only.
+    ///
+    /// Sequence:
+    ///   1. Navigate left to debugger
+    ///   2. Switch to CPU tab
+    ///   3. Arm FREEZE ON START (CPU pane)
+    ///   4. Navigate right to calculator
+    ///   5. Long-press Reset (clean reset) — freeze fires on first PC change
+    ///   6. Navigate left to debugger
+    ///   7. Single-step 5 times
+    ///   8. Capture screenshot
+    func testScreenshotCPUInspector() throws {
+        let app = launchForScreenshot(orientation: .portrait)
+
+        let left  = app.buttons["btn-page-left"]
+        let right = app.buttons["btn-page-right"]
+
+        // Step 1: navigate to debugger
+        XCTAssertTrue(left.waitForExistence(timeout: 5), "btn-page-left not found")
+        left.tap()
+
+        // Step 2: switch to CPU tab
+        let cpuTab = app.buttons["btn-tab-cpu"]
+        XCTAssertTrue(cpuTab.waitForExistence(timeout: 3), "CPU tab not found")
+        cpuTab.tap()
+
+        // Step 3: arm FREEZE ON START in CPU pane
+        let freezeButton = app.buttons["btn-cpu-freeze-on-start"]
+        XCTAssertTrue(freezeButton.waitForExistence(timeout: 3), "btn-cpu-freeze-on-start not found")
+        freezeButton.tap()
+
+        // Step 4: navigate back to calculator
+        XCTAssertTrue(right.waitForExistence(timeout: 3), "btn-page-right not found")
+        right.tap()
+
+        // Step 5: clean reset (long press). FREEZE ON START fires on its first PC
+        // change; a plain Reset runs the routine out of sight, to keep the memory.
+        let resetButton = app.buttons["btn-reset"]
+        XCTAssertTrue(resetButton.waitForExistence(timeout: 3), "btn-reset not found")
+        resetButton.press(forDuration: 1.5)
+
+        // Step 6: navigate back to debugger
+        XCTAssertTrue(left.waitForExistence(timeout: 3), "btn-page-left not found")
+        left.tap()
+
+        // Step 7: hold STEP for 2 seconds (auto-repeats at 4 steps/second)
+        let stepButton = app.buttons["btn-cpu-step"]
+        XCTAssertTrue(stepButton.waitForExistence(timeout: 3), "btn-cpu-step not found")
+        stepButton.press(forDuration: 2)
+
+        // Screenshot
+        try saveScreenshot(fallbackName: "CPUInspector")
+        attachScreenshot(app, name: "CPU Inspector — 5 steps after reset")
+    }
+
+    /// Calc Debugger screenshot — landscape where the debugger sits beside the
+    /// calculator (iPad, iPhone Duo opened flat), else iPhone portrait.
+    ///
+    /// Side by side (landscape): debug panel is visible alongside the calculator; no panel navigation needed.
+    /// iPhone (portrait): after the playback, navigate left to the debug panel for the screenshot.
+    ///
+    /// Sequence:
+    ///   1. Load test_cdebug.ti59: it sets up the module, runs the program, prints
+    ///      the trace, then arms FREEZE ON START itself (KEYSTROKES FreezeOnStart:)
+    ///      and re-enters the program with SBR =, so the calculator freezes
+    ///   2. [iPhone] Navigate left to debug panel
+    ///   3. Capture screenshot
+    ///
+    /// The file must be present on the device — run bin/setup-simulator-state-files first.
+    func testScreenshotCalcDebugger() throws {
+        // Try landscape; a plain iPhone stays in portrait (page arrows), so
+        // relaunch it upright for the paged flow and an unrotated screenshot.
+        var app = launchForScreenshot(orientation: .landscapeLeft)
+        XCTAssertTrue(app.buttons["btn-preset"].waitForExistence(timeout: 5), "Preset button not found")
+        let isPad = !app.buttons["btn-page-right"].exists  // side by side
+        if !isPad {
+            app.terminate()
+            app = launchForScreenshot(orientation: .portrait)
+        }
+
+        // Step 1: load test_cdebug.ti59
+        loadPreset(app, file: "test_cdebug.ti59", idleTimeout: 40)
+
+        // Step 2 (iPhone): navigate left to debug panel for screenshot
+        if !isPad {
+            let left = app.buttons["btn-page-left"]
+            XCTAssertTrue(left.waitForExistence(timeout: 3), "btn-page-left not found")
+            left.tap()
+        }
+
+        // Screenshot — freeze has fired; calculator is stopped on first instruction
+        try saveScreenshot(fallbackName: "CalcDebugger")
+        attachScreenshot(app, name: "Calc Debugger — frozen on run")
+    }
+
+    /// Texas Instruments printer program screenshot — iPad only.
+    ///
+    /// Loads test_texas.ti59, waits for keystroke playback to complete, captures a screenshot.
+    func testScreenshotTexas() throws {
+        let app = launchForScreenshot(orientation: .landscapeLeft)
+
+        loadPreset(app, file: "test_texas.ti59", idleTimeout: 45)
+
+        try saveScreenshot(fallbackName: "Texas")
+        attachScreenshot(app, name: "Texas — test_texas.ti59 complete")
+    }
+}
+#endif

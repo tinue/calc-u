@@ -10,8 +10,9 @@ if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
                       "configure the repository root, e.g. cmake -S ../../../.. -B ../../../../build/all")
 endif()
 #
-# The app compiles core/ and app/ unchanged — the same sources the Swift
-# app and the product's CMakeLists.txt (tests) build. No GUI-independent
+# The app links calcu59_shared and calcu59_core of the product's
+# CMakeLists.txt, the libraries the tests and the Swift app's XCFramework
+# are built from. No GUI-independent
 # logic lives in frontends/qt6/app; see CLAUDE.md § "Frontend Parity".
 set(CMAKE_OSX_DEPLOYMENT_TARGET "15.6" CACHE STRING "Minimum macOS version")
 project(CalcU59Qt LANGUAGES CXX)

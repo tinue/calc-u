@@ -30,8 +30,10 @@ cmake_minimum_required(VERSION 3.21)
 # Under the Emscripten toolchain (emcmake) each product defines only its
 # Web engine (calcu59_web, calcu_web) and Calc-U-1600's wasm_smoke check;
 # frontends/web/build.sh of each product builds it in build/web and puts
-# dist/ together. Not here: the Swift frontend (Xcode compiles core/ and
-# app/ itself; ADR 0013, M-15).
+# dist/ together. The Swift frontend's XCFramework (ADR 0013):
+# products/calc-u-59/frontends/swift/build_xcframework.sh configures this
+# file for macOS, iOS and the iOS simulator in build/xcframework-59; the
+# Xcode project runs it before every build.
 
 # One minimum for the whole tree, before project(): Calc-U-1600 needs 15.8
 # (its vendored libsharpdx is built for it); the Calc-U-59 Qt build on the

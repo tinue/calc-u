@@ -91,6 +91,22 @@ freeze survives.
 
 ---
 
+## Build
+
+Xcode compiles only Swift and the bridge (`frontends/swift/Bridge/`). The
+C++ below them, the library, `core/` and `app/`, comes as
+`CalcU59.xcframework` (ADR 0013): the project's aggregate target
+`CalcU59Core`, which the app depends on, runs
+`frontends/swift/build_xcframework.sh`, which builds it with the
+repository's root CMake project for macOS, iOS devices and the iOS
+simulator into `build/xcframework-59/` (Release or Debug, as the Xcode
+build). So every Xcode build is built from the current sources; without
+CMake and Ninja the build stops with an error. The bridge includes the
+headers from the XCFramework (`<calcu59/app/…>`, `<calcu59/core/…>`).
+`frontends/swift/check_xcode_project.sh` (CTest, Frequent) fails when the
+project takes in a C++ source or the bridge includes from the source
+tree.
+
 ## Bridge Layer
 
 The wrappers translate types only. `frontends/swift/Bridge/Calc-U-59-Bridging-Header.h`

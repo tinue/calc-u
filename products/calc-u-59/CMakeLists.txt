@@ -7,9 +7,11 @@ cmake_minimum_required(VERSION 3.21)
 # desktop app via add_subdirectory(frontends/qt6). Under Emscripten only
 # the core, the app layer and the Web engine (calcu59_web).
 #
-# The Swift app is built by Calc-U-59.xcodeproj, which compiles the same
-# core/ and app/ sources (synchronized folders). Every core/ or app/
-# change must pass both builds — see CLAUDE.md § "Frontend Parity".
+# The Swift app links CalcU59.xcframework, which frontends/swift/
+# build_xcframework.sh builds from calcu59_core and calcu59_shared of this
+# file (ADR 0013); Xcode compiles only Swift and the bridge. Every core/ or
+# app/ change must pass the CMake, Xcode and Web builds — see CLAUDE.md
+# § "Frontend Parity".
 
 if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
   message(FATAL_ERROR "products/calc-u-59 is part of the root CMake project (ADR 0003): "
@@ -122,6 +124,10 @@ if(CALCU_TESTS)
              WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
     set_tests_properties(CalcU59TraceReader PROPERTIES DEPENDS CalcU59Tests LABELS frequent)
   endif()
+  # The Xcode project compiles only Swift and the bridge (C59-5, ADR 0013).
+  add_test(NAME CalcU59XcodeProjectCheck COMMAND frontends/swift/check_xcode_project.sh
+           WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
+  set_tests_properties(CalcU59XcodeProjectCheck PROPERTIES LABELS frequent)
 
   # Longer: run locally before merging into main and at the end of a part.
   if(CALCU_TESTS_LONGER)

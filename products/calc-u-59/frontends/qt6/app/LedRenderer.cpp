@@ -68,7 +68,7 @@ void render(QPainter& p, const QRectF& rect, const cu59::LedFrame& d, double cal
     const auto classic = cu59::classicSegments(w, h);
     for (int i = 0; i < 12; ++i) {
         const double x = rect.left() + (11 - i) * w;
-        const cu59::LedCell cell = cu59::ledCell(i, d.digits[i], d.ctrl[i], d.digitLevel[i], calcOpacity);
+        const cu59::LedCell cell = cu59::ledCell(i, d.segments[i], d.digitLevel[i], calcOpacity);
         // Shear x' = x + slant × (h − y): the bottom stays put.
         QTransform t(1, 0, -sp.slant, 1, x + h * sp.slant, rect.top());
         for (int bit = 0; bit < 7; ++bit) {

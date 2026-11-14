@@ -98,8 +98,7 @@ struct KeyboardView: View {
 
                 // ── LED display ─────────────────────────────────────────
                 LEDDisplayView(
-                    digits:        viewModel.displayDigits,
-                    ctrl:          viewModel.displayCtrl,
+                    segments:      viewModel.displaySegments,
                     levels:        viewModel.displayLevels,
                     dpLevels:      viewModel.dpLevels,
                     calcIndicatorOpacity: viewModel.calcIndicatorOpacity,

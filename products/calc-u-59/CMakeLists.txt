@@ -74,21 +74,22 @@ set_target_properties(calcu59_shared PROPERTIES POSITION_INDEPENDENT_CODE ON)
 # frontends/web/dist/wasm/, reference/WebClient.md): core/ + app/ behind
 # frontends/web/bindings.cpp. Single-threaded (no -pthread): a static host
 # can't be relied on to send the headers SharedArrayBuffer needs, so
-# SessionController runs in Threading::Cooperative. -fexceptions: app/
-# reports ROM and file errors with exceptions (Emscripten's JS-based
-# model; Calc-U-1600's engine uses native wasm exceptions, which its
-# libsharpdx needs). -UNDEBUG: the core's asserts stay on, as in the em++
-# build this replaces (-O3 without -DNDEBUG).
+# SessionController runs in Threading::Cooperative. -fwasm-exceptions: app/
+# reports ROM and file errors with exceptions; native wasm exceptions, as
+# Calc-U-1600's engine and calcu_library use, so one build/web tree holds
+# both engines (C59-1, since M-19; LIB-1 design §2a, D-6). -UNDEBUG: the
+# core's asserts stay on, as in the em++ build this replaces (-O3 without
+# -DNDEBUG).
 # -----------------------------------------------------------------------------
 if(EMSCRIPTEN)
   foreach(target calcu59_core calcu59_shared)
-    target_compile_options(${target} PRIVATE -fexceptions -UNDEBUG)
+    target_compile_options(${target} PRIVATE -fwasm-exceptions -UNDEBUG)
   endforeach()
   add_executable(calcu59_web ${CMAKE_CURRENT_SOURCE_DIR}/frontends/web/bindings.cpp)
   target_link_libraries(calcu59_web PRIVATE calcu59_shared)
-  target_compile_options(calcu59_web PRIVATE -fexceptions -UNDEBUG)
+  target_compile_options(calcu59_web PRIVATE -fwasm-exceptions -UNDEBUG)
   set_target_properties(calcu59_web PROPERTIES OUTPUT_NAME ti59-core)
-  target_link_options(calcu59_web PRIVATE -fexceptions -lembind -sMODULARIZE=1
+  target_link_options(calcu59_web PRIVATE -fwasm-exceptions -lembind -sMODULARIZE=1
                       -sEXPORT_NAME=createTI59CoreModule -sENVIRONMENT=web,worker
                       -sALLOW_MEMORY_GROWTH=1 -sNO_EXIT_RUNTIME=1)
   return()

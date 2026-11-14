@@ -63,8 +63,7 @@ enum ProgramSource: Equatable {
 class EmulatorViewModel {
     private static let logger = Logger(subsystem: Bundle.main.bundleIdentifier ?? "Calc-U-59", category: "EmulatorViewModel")
 
-    var displayDigits:   [UInt8] = Array(repeating: 0, count: 12)
-    var displayCtrl:     [UInt8] = Array(repeating: 0, count: 12)
+    var displaySegments: [UInt8] = Array(repeating: 0, count: 12)
     var displayLevels:   [UInt8] = Array(repeating: 0, count: 12)  // brightness 0…255 per position
     var dpLevels:        [UInt8] = Array(repeating: 0, count: 12)  // decimal point brightness per position
     var calcIndicatorOpacity: Double = 0.0
@@ -384,12 +383,10 @@ class EmulatorViewModel {
         }
         if c.contains(.display) {
             let snap = controller.display
-            let d = withUnsafeBytes(of: snap.digits) { Array($0) }
-            let k = withUnsafeBytes(of: snap.ctrl) { Array($0) }
+            let g = withUnsafeBytes(of: snap.segments) { Array($0) }
             let lv = withUnsafeBytes(of: snap.digitLevel) { Array($0) }
             let dp = withUnsafeBytes(of: snap.dpLevel) { Array($0) }
-            if displayDigits != d { displayDigits = d }
-            if displayCtrl != k { displayCtrl = k }
+            if displaySegments != g { displaySegments = g }
             if displayLevels != lv { displayLevels = lv }
             if dpLevels != dp { dpLevels = dp }
             if calcIndicatorOpacity != controller.calcIndicatorOpacity { calcIndicatorOpacity = controller.calcIndicatorOpacity }

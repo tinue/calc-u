@@ -57,12 +57,13 @@ wrappers in `frontends/swift/Bridge/`, which only translate types (`AppArchitect
 | `StateApplier` | Writes a parsed file into the machine; power-on, soft and clean reset |
 | `CardFile` | Magnetic card files (text 2.0 and 1.0, headered and legacy binary); which names the pickers list |
 | `ConstantMemory` | `ti58c.mem` |
-| `RomLoader` | ROM, constants and module text dumps |
+| `RomLoader` | The model's ROM files as `RomImage`s and `buildMachine` (the core decodes them; C59-1), module text dumps |
 | `ModuleCatalog` | `roms/solid-state/cuecards.txt` |
 | `CueCard` | Cue-card model, encode/parse, spans, layout, geometry, inks, which card shows |
 | **Tables and drawing rules** | |
-| `MachineModelInfo` | Per-model facts: instruction rate, RAM, card reader, ROM files, scan-loop PC ranges |
-| `KeyMatrix` | Matrix code ↔ key grid, K-line bit and digit slot |
+| `MachineModelInfo` | Per-model facts: `Model` ↔ `ModelId`, RAM, card reader, ROM files (the tick rate is the descriptor's, key readiness the machine's: C59-1) |
+| `MachineGuard` | The lock that serialises the runner, UI and sequencer threads on the machine until M-33/M-34 (C59-1 D-1) |
+| `KeyIds` | Matrix code ↔ key ID of the machine's descriptor (C59-1 AC-10) |
 | `KeyboardLayout` | Canvas geometry, key rects, widened hit test; `PointerTracker` (hold the display for full speed, one held key, drag between keys — Qt and web) |
 | `KeyboardMap` | Computer keyboard → matrix codes |
 | `KeyNames` | Keycode mnemonics, operand-step grammar |
@@ -192,11 +193,11 @@ applies it before reporting it.
 | Layer | Coordinates |
 |---|---|
 | Frontend hit test (`KeyboardLayout`) | Visual row 0–8, col 0–4 from the top left |
-| `matrixCode(row, col)` (`KeyMatrix`) | `(row+1)×10 + (col+1)`, 11–95 — the codes KEYSTROKES uses |
-| `pressMatrix` (`KeyMatrix`) | `code / 10` → digit slot, `code % 10` → column → K-line bit via `kKBits` |
-| `TI59Machine::pressKey(kbit, digitSlot)` | `key[digitSlot] \|= 1 << kbit` in the CPU |
+| `matrixCode(row, col)` (`KeyIds`) | `(row+1)×10 + (col+1)`, 11–95 — the codes KEYSTROKES uses |
+| `keyIdAt(code)` (`KeyIds`) | the descriptor's key `(row−1)×5 + (col−1)`: a key ID (C59-1 AC-9) |
+| `Machine::keyDown(keyId)` (`TIMachine`, `core/TIKeys.hpp`) | row → digit slot, column → K-line bit via `kTIKeyLineBits`; `key[digitSlot] \|= 1 << kbit` in the CPU |
 
-`kKBits` maps column 1–5 to K-line bits `{1, 2, 3, 5, 6}` (index 0 unused);
+`kTIKeyLineBits` maps column 1–5 to K-line bits `{1, 2, 3, 5, 6}` (index 0 unused);
 bit 4 is the card-detect line. Scanning: `CoreArchitecture.md`
 § "Keyboard Matrix and Scanning".
 
@@ -401,7 +402,7 @@ in `DebugAPI.md`) through the platform, which decides where the file lives.
 | Machine start | Power-on routine, then the saved RAM restored (`powerOn`), so startup code can't overwrite it |
 | 0.5 s after a run-loop batch | Rewritten if its contents changed |
 | Model switch, preset load, `suspend()` | Written at once if changed |
-| Reset | Reset, then the saved RAM restored (`softReset`) |
+| Reset | `Machine::reset()`: the running machine keeps it (C59-1 OQ-6) |
 | Clean reset | RAM zeroed, reset, written at once |
 
 ## ROM Loading
@@ -428,7 +429,7 @@ differ.
 
 ### LED Display Rendering
 
-- Glyphs: `SevenSegment` (`ledCell(i, digit, ctrl, level, calcOpacity)`:
+- Glyphs: `SevenSegment` (`ledCell(i, glyph, level, calcOpacity)`, the glyph being `LedFrame::segments[i]` from the machine's display output:
   segments and opacity per cell, in cell 11 the "C" annunciator when it is
   brighter than the glyph there), never a
   font. Zero suppression happens in the core (`TMC0501`), which reports

@@ -19,27 +19,63 @@ file formats) is in `reference/SharedArchitecture.md`.
 ## Component Overview
 
 ```
-TI59Machine          (core/TI59Machine.hpp/.cpp)
- ├─ ROM              (core/ROM.hpp/.cpp)
- ├─ RAM              (core/RAM.hpp/.cpp)
- └─ TMC0501          (core/TMC0501.hpp/.cpp)
-      ├─ references ROM & RAM
-      └─ uses TraceTypes (core/TraceTypes.hpp)
+calcu::machine::Machine     (library/machine/Machine.hpp: the machine interface)
+ └─ TIMachine               (core/TIMachine.hpp/.cpp)
+      ├─ TI59Machine        (core/TI59Machine.hpp/.cpp, core-internal)
+      │   ├─ ROM            (core/ROM.hpp/.cpp)
+      │   ├─ RAM            (core/RAM.hpp/.cpp)
+      │   └─ TMC0501        (core/TMC0501.hpp/.cpp; references ROM & RAM, uses TraceTypes)
+      └─ the adapters       (core/TIAdapters.hpp/.cpp, until their removal steps)
+tiCatalogue(), TIMachineBuilder (core/TICatalogue.hpp/.cpp: the three descriptors)
 ```
 
-`TI59Machine` is the public facade. `app/` (and through it both apps and
-the headless tools) talks to it and never touches `TMC0501` directly. It
-holds the three hardware components as value members and serialises access
-with `m_keyMutex` (see "Threading Model").
+Since C59-1 (M-19) the only interface above the core is
+`calcu::machine::Machine` (ADR 0006): `app/` builds a `TIMachine` through
+`calcu::machine::build(tiCatalogue(), TIMachineBuilder, request)`
+(`cu59::buildMachine`, `app/RomLoader.hpp`) and reaches the model, the
+advances and tick count, Reset / power cycle / cold boot, key readiness,
+the keys and the display output through it only (C59-1 AC-17; CTest
+`CalcU59CoreSeam`). What the interface does not have yet goes through the
+adapters of `core/TIAdapters.hpp` (`peripheralsOf(machine)` …), each with
+its removal step: `TIPeripheralsAdapter` (module image, printer; M-25),
+`TICardReaderAdapter` (M-55), `TIMemoryAdapter` (program, registers,
+partition, RAM; M-54), `TIDebugTargetAdapter` (steps, trace ring,
+breakpoints, run control; M-53), `TIDebugPanelAdapter` (ASM overlay, debug
+events; M-56), `TIPacingHints` (polled hardware, idle range; M-33).
+`TI59Machine` is the core-internal facade over the three hardware
+components. The core holds no lock (see "Threading Model").
+
+**Ticks, operations, keys and display (C59-1).** One instruction is 32
+ticks of the tick rate (455,000 / 384,000 / 394,000 per second, the
+resonator; `TICatalogue.cpp`), 128 in IDLE on the TI-59/58 (the step weight
+× 32). `advance(n)` runs whole instructions until at least `n` ticks
+passed; the tick count is `TIMachine`'s own and goes on across every
+operation (`cpuReset()` carries it). `reset()` on the TI-59/58 saves the
+RAM and the partition, resets the CPU and writes both back at the first
+instruction that ends in the scan loop, before `isKeyReady()` is true;
+`powerCycle()` resets the CPU (the ROM's start-up clears the RAM on the
+TI-59/58; the TI-58C keeps it); `coldBoot()` zeroes the RAM first. A Reset on
+the TI-58C is a power cycle. None of them runs instructions: the start-up
+runs in the advances that follow. Keys are the 45 key IDs of
+`core/TIKeys.hpp` (row and column of the keyboard; other spellings are the
+tools' to resolve); `readDisplay()` turns the display snapshot into 12
+positions of segments A–G and DP (index 0 rightmost) with the duty as
+brightness and the indicator C (`core/TISegments.hpp`).
 
 | File | Emulated chip | Role |
 |---|---|---|
 | `ROM.hpp/.cpp` | TMC0582/0583/0571B, CD2400/2401/TMC0573 | Instruction ROM (13-bit words) plus the debug overlay |
 | `RAM.hpp/.cpp` | TMC0598 | User RAM (120 × 16 BCD nibbles) |
 | `TMC0501.hpp/.cpp` | TMC0501 + SCOM + CROM, card reader, printer | CPU and every peripheral; full instruction execution |
-| `TI59Machine.hpp/.cpp` | — | Facade; variant setup; locking |
-| `MachineVariant.hpp` | — | `TI59 \| TI58 \| TI58C`, `hasConstantMemory()`, `hasLargeMemory()` |
-| `TraceTypes.hpp` | — | `CpuFrame`, `DebugEvent`, `TRACE_*` flags |
+| `TI59Machine.hpp/.cpp` | — | Core-internal facade; variant setup |
+| `TIMachine.hpp/.cpp` | — | `calcu::machine::Machine`: ticks, operations, Reset restore, key readiness, keys, display output |
+| `TICatalogue.hpp/.cpp` | — | `tiCatalogue()`, `TIMachineBuilder`, `TIConstantMemory` |
+| `TIAdapters.hpp/.cpp` | — | The adapters of C59-1 design §5 and their accessors |
+| `TIKeys.hpp/.cpp`, `TISegments.hpp`, `TIRomRanges.hpp`, `TIRomText.hpp/.cpp` | — | Key IDs; glyph rules; scan-loop, idle and card-wait ranges; ROM text decoding |
+| `TIPrinterTypes.hpp` | — | `PrinterCodeLine` (until M-53) |
+| `TIMachineTesting.hpp` | — | Test-only reads inside the core |
+| `MachineVariant.hpp` | — | `TI59 \| TI58 \| TI58C` (core-internal), `hasConstantMemory()`, `hasLargeMemory()` |
+| `TraceTypes.hpp` | — | `CpuFrame`, `DebugEvent`, `TIStepBoundary`, `TRACE_*` flags |
 
 ### Two different "PCs"
 
@@ -285,7 +321,7 @@ is all the emulator uses.
 TI-58C at 64). Program steps fill registers from the bottom (2 nibbles per
 step, units digit first, 8 steps per register); data registers count down
 from the top, Rnn = RAM[top − nn]. The ROM keeps top as BCD in SCOM[13]
-nibbles 5–3: 119 (TI-59) or 59 (TI-58/58C); `TI59Machine::dataRegCount()`
+nibbles 5–3: 119 (TI-59) or 59 (TI-58/58C); `TIMemoryAdapter::dataRegCount()`
 is top + 1 and `readDataReg`/`writeDataRegister` use it. The
 partition (SCOM[9] nibble 0 = program registers ÷ 10) is set by Op 17; the
 defaults are 479.59 (TI-59) and 239.29 (TI-58/58C).
@@ -416,13 +452,14 @@ ROM having no other clear at power-on. `TI_58_59-HW-manual.pdf` calls op 2 "clea
 shows the difference elsewhere. The TI-58 has the same CPU and RAM chips and is
 assumed to behave the same; there the address is even out of range.
 
-So `reset()` followed by the ROM's boot clears the RAM on the TI-59 and TI-58, as
-switching on does; a clean reset is nothing more. The apps' Reset button, which
-the real calculator doesn't have, keeps the memory from outside the core:
-`softReset` in `app/StateApplier.cpp` saves the RAM, runs the boot and
-restores it. That boot runs with the run loop stopped, so on these two models CPU
-FREEZE ON START and a trace see the reset routine only on a clean reset (freeze
-checked in the app and by `tests/shared_controller_tests.cpp`). The TI-58C's ROM
+So a CPU reset followed by the ROM's boot clears the RAM on the TI-59 and
+TI-58, as switching on does: that is `powerCycle()`, and `coldBoot()` is the
+same from zeroed RAM. The Reset button, which the real calculator doesn't
+have, keeps the memory inside the machine since C59-1: `TIMachine::reset()`
+saves the RAM and the partition and puts them back when the boot reaches the
+scan loop (AC-6, AC-19). The boot runs in the run loop's advances, so CPU
+FREEZE ON START and a trace see the reset routine on a Reset as on a clean
+reset (2.3.0 ran it with the loop stopped; `tests/shared_controller_tests.cpp`). The TI-58C's ROM
 has no `RAM.OP`: its constant memory stays through a reset, and its clean reset
 zeroes the RAM.
 
@@ -463,7 +500,8 @@ counts as "no jump" (see `rom/TI58C-ROM-Guide.md` § "Emulator issues found").
 7. **Display strobe** (`postOperation()`) — see "Display Subsystem".
 8. **Advance** — unless HOLD: PREG redirect if pending, else `addr++`.
 9. **Accounting** — weight, trace post-step, C-indicator and poll counters,
-   `elapsedTicks()`.
+   `elapsedTicks()` (since the last CPU reset; `TIMachine::tickCount()` is
+   32 × it plus the count before the reset).
 10. **PREG latch** — if `KR[1]` is set.
 11. **Step boundary** (`noteStepBoundary()`) — see below.
 
@@ -482,9 +520,13 @@ The return value carries the weight in `kWeightMask` and two bits:
   the debugger's CALCULATOR view (`reference/DebugAPI.md` §
   "Frozen-display semantics").
 
-`TI59Machine::step()` adds `kBreakpointHit`. `stepUntilNextKeycode()` (the
-debugger's STEP) runs until `kStepBoundary`, a breakpoint or a cycle limit:
-one program byte per call, as SST.
+`TI59Machine::step()` adds `kBreakpointHit`. `TIMachine::advance()` checks it
+and asks the run-control observer after each instruction only while a hook
+is set (`TIDebugTargetAdapter::setRunControl`; the run loop's
+`FreezeController`), and may then return early (`takeStop()`).
+`TIDebugTargetAdapter::stepUntilNextKeycode()` (the debugger's STEP) runs
+until `kStepBoundary`, a breakpoint or a cycle limit: one program byte per
+call, as SST.
 
 ---
 
@@ -498,19 +540,20 @@ suppression circuit is modelled per strobe (`suppressedMask`). While it is
 active and the digit is 0, nibbles 2 and 4 stay dark and nibble 5 shows a minus
 instead of the degree sign; a leftmost 0 stays dark with any nibble. Normal
 displays use neither: these rules come from the pictures of a real TI-59 in
-`del_in_keycode_rom_shows_control_nibble_glyphs` (`tests/core_tests.cpp`). A strobe that
+`c59_1_ac5_control_nibble_glyphs` (`tests/core_tests.cpp`). A strobe that
 shows a glyph latches it and adds the instruction's weight to the position's
 driven time; the decimal point of the position `R5` names is driven the same
 way. Nothing is driven in RUN mode, so the display goes dark while the
 calculator computes.
 
-`takeDisplay()` (UI thread, under `m_displayMutex`) returns per position the
+`takeDisplay()` (inside the core; above it `TIMachine::readDisplay()`, C59-1
+AC-13) returns per position the
 last latched glyph and its **duty**: the driven time since the previous call
 × 16 (a position is strobed one instruction in 16), so a steadily multiplexed
 display reads 1.0 and a computing one 0. `pollTicks` is the interval in
 weighted cycles; a poll with no cycle since the last one returns the last
 snapshot again. Each call restarts the window, so a core has one display
-consumer (`FrameSampler`). The core makes no visibility decision: brightness and
+consumer (`FrameSampler`, through `readDisplay()`). The core makes no visibility decision: brightness and
 persistence of vision are `app/DisplayPov`.
 
 The **C indicator** (`calcIndicator`) is its mean drive over the interval: the
@@ -608,7 +651,7 @@ discard the hit (multi-key rejection).
 | 12 | KN | Printer ADV button | Ordinary scan hit at row 12 |
 | 15 | KP | Printer TRACE switch (latch) | Above the scan window; polled in the keystroke/print path |
 
-The TRACE latch survives `reset()` (`TI59Machine` re-applies it).
+The TRACE latch survives a CPU reset (`TI59Machine` re-applies it).
 
 ---
 
@@ -688,7 +731,7 @@ So the step holds steady during label searches, which a taken label branch
 repeats in full on every pass. `fA`/`fB` cannot tell execution from search
 fetches (verified by trace), hence the address check. The latch starts at
 `kLibExecPCNone` (0xFFFF) and is reset by `reset()` and `loadLibrary()`. It
-is exposed as `TI59Machine::libExecPC()` (locked), not as a `CpuFrame`
+is exposed as `TICardReaderAdapter::libExecPC()`, not as a `CpuFrame`
 field, so the trace format did not change. `ModuleImage::libraryStep` turns
 it into program number and program-relative step.
 
@@ -833,21 +876,15 @@ decide.
 
 ## Threading Model
 
-The core expects **two threads**: the emulation thread (`step()`, `stepN()`,
-`stepUntilNextKeycode()`) and a UI thread (display, printer, keys, cards,
-inspection).
-
-| Mechanism | Protects |
-|---|---|
-| `m_keyMutex` (`TI59Machine`) | All CPU, SCOM, RAM, card and printer-buffer state; every public method except those below |
-| `m_displayMutex` (`TMC0501`) | Strobe buffers and duty counters (`takeDisplay()` takes only this one) |
-| `m_prnMutex` (`TMC0501`) | Printer output queues (`drainPrinterLines`/`drainPrinterCodeLines`) |
-| `m_traceMutex` (`TMC0501`) | Trace ring and breakpoint list; taken by every traced step and by `drainCpuFrames`/`readCpuFrames` |
-| atomics | `m_traceFlags`, C-indicator and poll counters, `elapsedTicks()` |
-
-`readROMKeycode` and `disassemble` need no lock (immutable after load /
-pure). The full lock policy is the comment above `m_keyMutex` in
-`TI59Machine.hpp`.
+The core holds no lock, no atomic and starts no thread (ADR 0009; C59-1):
+a machine is used from one thread at a time, and the caller serialises.
+2.3.0's four mutexes (`m_keyMutex` in `TI59Machine`, `m_displayMutex`,
+`m_prnMutex`, `m_traceMutex` in `TMC0501`) and the atomics of the trace
+flags and counters have no successor in the core. Until the session runs on
+one thread (M-33 for Qt6 and Swift, M-34 for the Web), the app layer's
+`cu59::MachineGuard` (`app/MachineGuard.hpp`) is that caller: the run loop
+holds it per batch (one `advance()`), every other call on the machine or an
+adapter per call (`EmulatorSession::access()`).
 
 ---
 
@@ -857,7 +894,7 @@ pure). The full lock policy is the comment above `m_keyMutex` in
 
 | Flag | Cost | Content |
 |---|---|---|
-| `TRACE_NONE` | One atomic load per step | — |
+| `TRACE_NONE` | One load per step | — |
 | `TRACE_PC` | Low | pc, opcode, digit, cycle weight, seqno |
 | `TRACE_REGS_LIGHT` | Medium | + KR, SR, fA, fB, R5, cpuFlags |
 | `TRACE_REGS_FULL` | High | + A–E, SCOM, Sout, EXT, PREG, library address |
@@ -878,7 +915,7 @@ debug events".
 | Feature | TI-59 | TI-58 | TI-58C |
 |---|---|---|---|
 | ROM | TMC0582/0583/0571B | same as TI-59 | CD2400/2401/TMC0573 |
-| Clock (instructions/s) | 14,219 | 12,000 | 12,312.5 |
+| Tick rate (ticks/s; instructions/s = ÷ 32) | 455,000 (14,219) | 384,000 (12,000) | 394,000 (12,312.5) |
 | IDLE weight | 4 | 4 | 1 |
 | RAM registers | 120 | 60 | 60 + E000–E003 |
 | RAM access | `RAM.OP` | `RAM.OP` | `MEMWR`/`MEMRD` |
@@ -886,7 +923,8 @@ debug events".
 | Printer-present digit | 0 | 0 | 10 |
 | Printer BUSY (line / feed) | 4165 / 1370 cycles | same | same |
 | Library module | Yes | Yes | Yes |
-| Constant memory | No | No | Yes (`ti58c.mem` via `serialiseRAM`) |
+| Constant memory | No | No | Yes (`ti58c.mem` via `TIMemoryAdapter::serialiseRAM`; `TIConstantMemory` at build) |
+| Reset | RAM and partition kept (restored at the scan loop) | same | a power cycle; constant memory kept |
 | Step dispatch / module fetch | `0837` / `082F` | same | `082B` / `0823` |
 
 ---

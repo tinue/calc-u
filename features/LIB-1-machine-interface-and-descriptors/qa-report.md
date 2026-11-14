@@ -111,3 +111,21 @@ the media place clause of AC-33 passes in M-55 (LIB-7; design D-1).
 
 AC-34 to AC-41: later, M-26 (with C1600-1); the media place clause of
 AC-40 passes in M-47 (LIB-7; design D-1).
+
+## Calc-U-59, the M-19 part (2026-11-14, branch `m19-ti-machines`)
+
+With C59-1 (its qa-report has the run). Tests in
+`products/calc-u-59/tests/descriptor_tests.cpp`, program `CalcU59Tests`
+(label `frequent`): 7 tests, 341 checks passed, 0 failed. AC-32 and AC-33
+with peripherals are tested in M-25 (C59-6), the media place clause of
+AC-33 in M-55 (D-1); the column stays In progress until then.
+
+| ID | Result | Test case |
+|---|---|---|
+| AC-26 | Pass | `lib1_ac26_models_and_tick_rates` (TI-59, TI-58, TI-58C; no variant; 455,000 / 384,000 / 394,000) |
+| AC-27 | Pass | `lib1_ac27_segment_display_and_no_sound` (12 positions, A–G and DP, DP's own brightness, a brightness per position, indicator C with brightness, no sound) |
+| AC-28 | Pass | `lib1_ac28_rom_entries_per_model` (the three instruction files and two constant files per set, as the fetch list names them; the same names as the app's adapter until M-24) |
+| AC-29 | Pass | `lib1_ac29_keys_connectors_places_debug_target` (45 key IDs of C59-1, no PRINT/ADV/TRACE; module slot "8 contacts" and printer connector "11 pads", functional, one each; places `slot-1`, `printer`; debug target TMC0501) |
+| AC-30 | Pass | `lib1_ac30_card_reader_on_ti59_only` (pass-through, sides 0 and 1) |
+| AC-31 | Pass | `lib1_ac31_components_and_depth` (TMC0501, ROM, RAM separate; SCOM, CROM, printer interface and, on the TI-59, the card reader folded into TMC0501; module slot and printer connector functional) |
+| AC-33 | Pass (without peripherals) | `lib1_ac33_machine_conforms_without_peripherals` (`checkAgainstDescriptor` empty for the three models; nothing plugged; no capability before M-55) |

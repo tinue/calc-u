@@ -3,8 +3,7 @@ import SwiftUI
 /// 7-segment LED display for 12 digit positions (positions 2–13 of A/B registers).
 /// Position 0 (leftmost) is the "C" (calculate) annunciator.
 struct LEDDisplayView: View, Equatable {
-    let digits:    [UInt8]   // 12 elements: A[2..13]
-    let ctrl:      [UInt8]   // 12 elements: B[2..13]
+    let segments:  [UInt8]   // 12 elements: last driven glyph, A–G as bits 0–6 (Shared LedFrame)
     let levels:    [UInt8]   // 12 elements: brightness 0…255 per position (Shared/DisplayPov)
     let dpLevels:  [UInt8]   // 12 elements: decimal point brightness per position
     let calcIndicatorOpacity: Double
@@ -25,7 +24,7 @@ struct LEDDisplayView: View, Equatable {
                 let rect = CGRect(x: x, y: 0, width: digitWidth, height: height)
 
                 var cOpacity = 0.0     // the position's brightness, or the fading "C"
-                let segs = TISharedTables.ledCell(index: i, digit: digits[i], ctrl: ctrl[i], level: levels[i],
+                let segs = TISharedTables.ledCell(index: i, glyph: segments[i], level: levels[i],
                                                   calcOpacity: calcIndicatorOpacity, opacity: &cOpacity)
 
                 // Slant transform for the digit
@@ -136,8 +135,7 @@ struct LEDDisplayView: View, Equatable {
 
 #Preview {
     LEDDisplayView(
-        digits:        [8,8,8,8,8,8,8,8,8,8,8,8],
-        ctrl:          [0,0,0,0,0,0,0,0,0,0,0,0],
+        segments:      Array(repeating: 0x7F, count: 12),   // 8 in every position
         levels:        Array(repeating: 255, count: 12),
         dpLevels:      [255, 255, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],  // positions 2 & 3 lit
         calcIndicatorOpacity: 1.0,

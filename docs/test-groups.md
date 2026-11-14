@@ -65,10 +65,12 @@ Frequent):
 
 | CTest entry | What | Group | Measured (M4 Pro, 2026-11-14) |
 |---|---|---|---|
-| `CalcU59Tests` | 154 `TEST`s: unit and ROM-driven integration tests of the core and the app layer, the golden replays (table below) | Frequent | 8.2 s |
-| `CalcU59TraceReader` | `tools/read_trace.py` reads the trace `CalcU59Tests` wrote | Frequent | 16.2 s (Python 3.15; 0.3 s in CI) |
+| `CalcU59Tests` | 188 `TEST`s: unit and ROM-driven integration tests of the core and the app layer, the machine interface (C59-1, LIB-1 59), the golden replays through it (table below) | Frequent | 7.5 s (M-19) |
+| `CalcU59TraceReader` | `tools/read_trace.py` reads the trace `CalcU59Tests` wrote | Frequent | 16.4 s (Python 3.15; 0.3 s in CI) |
+| `CalcU59CoreSeam` | `tests/check_core_seam.sh`: no core-internal header outside `core/` and `tests/`, no machine call in the adapters (C59-1 AC-17; M-19) | Frequent | 0.02 s |
+| `CalcU59HeadlessSmoke` | `tools/headless/ti59.py 5 + 7 =` against the CMake-built `ti59headless` shows 12 (C59-1 T14; M-19; with Python 3) | Frequent | 0.04 s |
 | `CalcU59XcodeProjectCheck` | `frontends/swift/check_xcode_project.sh`: Xcode compiles only Swift and the bridge and links `CalcU59.xcframework` (C59-5, ADR 0013; M-15) | Frequent | 0.02 s |
-| | **Frequent, Calc-U-59** | | **24.4 s** |
+| | **Frequent, Calc-U-59** | | **24.0 s** (M-19) |
 | `CalcU59WebPlaywright` | `frontends/web/run-tests.sh`: Playwright, Chromium (root, sub-path) and WebKit (offline) | Longer | 77.7 s |
 | `CalcU59UIRegression` | XCUITest plan `UIRegressionTests` on the `iphone` simulator | Longer | 154.5 s (iPhone 18 Pro Max, iOS 27.2) |
 | `CalcU59PacingRealClock` | `pacing_longrun_real_clock_ti` with `CALCU59_PACING_LONGRUN=600` | Checkpoint | 10 min (by design) |
@@ -80,8 +82,10 @@ Frequent except where the table says otherwise):
 
 | File | `TEST`s |
 |---|---|
-| `core_tests.cpp` | 17 |
-| `golden_runs_tests.cpp` | 1 (the golden replays; `CALCU59_GOLDEN_RECORD=1` records new references only) |
+| `core_tests.cpp` | 17 (C59-1 AC-5) |
+| `descriptor_tests.cpp` | 7 (LIB-1 AC-26–31, AC-33; M-19) |
+| `golden_runs_tests.cpp` | 1 (the golden replays through the machine interface, C59-1 AC-4; `CALCU59_GOLDEN_RECORD=1` records a missing reference only) |
+| `machine_tests.cpp` | 26 (C59-1 AC-1–3, 6–16, 18, 19, EC-1–4; M-19) |
 | `pacing_longrun_tests.cpp` | 2: `pacing_longrun_scripted_ti` Frequent; `pacing_longrun_real_clock_ti` Checkpoint (returns at once without `CALCU59_PACING_LONGRUN`) |
 | `reference_runs_tests.cpp` | 1, a recorder, not a check: returns at once without `CALCU59_REFERENCE_RECORD` |
 | `shared_controller_tests.cpp` | 14 |
@@ -89,7 +93,7 @@ Frequent except where the table says otherwise):
 | `shared_debug_tests.cpp` | 14 |
 | `shared_formats_tests.cpp` | 21 |
 | `shared_preset_stages_tests.cpp` | 7 |
-| `shared_runtime_tests.cpp` | 17 |
+| `shared_runtime_tests.cpp` | 18 |
 | `shared_state_applier_tests.cpp` | 8 |
 | `shared_tables_tests.cpp` | 8 |
 | `shared_trace_tests.cpp` | 2 |

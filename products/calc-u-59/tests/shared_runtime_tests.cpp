@@ -331,11 +331,11 @@ TEST(runner_keeps_real_time) {
     cb.batchDone = [] { std::this_thread::sleep_for(2ms); };  // a slow UI callback
     MachineGuard guard(*m);
     EmulationRunner runner(guard, Model::TI59, freeze, cb);
-    uint64_t t0 = ((*m).tickCount() / 32);
+    uint64_t t0 = guard.access().machine().tickCount() / 32;
     auto w0 = std::chrono::steady_clock::now();
     runner.start();
     std::this_thread::sleep_for(1500ms);
-    uint64_t t1 = ((*m).tickCount() / 32);
+    uint64_t t1 = guard.access().machine().tickCount() / 32;   // the runner is running: under the guard
     double wall = std::chrono::duration<double>(std::chrono::steady_clock::now() - w0).count();
     runner.stop();
     double ratio = double(t1 - t0) / testroms::instructionHz(Model::TI59) / wall;
@@ -348,12 +348,12 @@ TEST(session_plays_keystrokes_in_real_time) {
     CHECK(!session.moduleImage().empty());
     session.setFullSpeed(true);  // boot quickly; the scan loop still runs at regular speed
     session.start();
-    CHECK(waitFor([&] { return session.machine().isKeyReady(); }, 5000ms));
+    CHECK(waitFor([&] { return session.access().machine().isKeyReady(); }, 5000ms));
     session.setFullSpeed(false);
     auto r = parseStateFile("KEYSTROKES:\n25 83 85 84 95\nZeroElapseTime:\nWait: 50ms\nReportElapseTime:\n");
     session.playKeystrokes(r.keystrokes);
     CHECK(waitFor([&] { return listener.playbackDone.load() == 1; }, 8000ms));
-    CHECK_EQ(testroms::displayText(session.machine()), std::string("5"));
+    CHECK_EQ(testroms::displayText(session.access().machine()), std::string("5"));
     {
         std::lock_guard<std::mutex> lock(listener.mutex);
         CHECK_EQ(listener.logs.size(), size_t{1});
@@ -369,10 +369,10 @@ TEST(session_freeze_fires_through_listener) {
     listener.session = &session;
     session.setFullSpeed(true);
     session.start();
-    CHECK(waitFor([&] { return session.machine().isKeyReady(); }, 5000ms));
+    CHECK(waitFor([&] { return session.access().machine().isKeyReady(); }, 5000ms));
     session.armScanLoopExit();
     CHECK(session.debugState().scanLoopExitArmed);
-    CHECK(testroms::dbg(session.machine()).traceFlags() != TRACE_NONE);  // an armed freeze needs the trace ring
+    CHECK(testroms::dbg(session.access().machine()).traceFlags() != TRACE_NONE);  // an armed freeze needs the trace ring
     session.keyboardDown({83});
     CHECK(waitFor([&] { return listener.freezes.load() == 1; }, 2000ms));
     CHECK(listener.frozenWhenFired.load());
@@ -382,7 +382,7 @@ TEST(session_freeze_fires_through_listener) {
     session.keyboardRelease();
     session.resume();
     CHECK(!session.debugState().frozen && session.isRunning());
-    CHECK_EQ(testroms::dbg(session.machine()).traceFlags(), static_cast<uint32_t>(TRACE_NONE));
+    CHECK_EQ(testroms::dbg(session.access().machine()).traceFlags(), static_cast<uint32_t>(TRACE_NONE));
     session.stop();
 }
 

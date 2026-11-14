@@ -50,7 +50,7 @@ TEST(controller_loads_a_preset_for_another_model) {
     c.loadStateFile(bytes("MODEL: TI-58\nREGISTERS:\n05 = 3.25\n"));
     CHECK(c.model() == Model::TI58);
     CHECK(c.session()->isRunning());
-    CHECK_EQ(testroms::mem(c.session()->machine()).readDataReg(5), 3.25);
+    CHECK_EQ(testroms::mem(c.session()->access().machine()).readDataReg(5), 3.25);
     CHECK(p.errors.empty());
 }
 
@@ -77,7 +77,7 @@ TEST(controller_load_while_frozen_ends_running_without_tracing) {
     CHECK(!c.isFrozen());
     CHECK(!c.session()->debugState().frozen);
     CHECK(c.session()->isRunning());
-    CHECK_EQ(testroms::dbg(c.session()->machine()).traceFlags(), static_cast<uint32_t>(TRACE_NONE));
+    CHECK_EQ(testroms::dbg(c.session()->access().machine()).traceFlags(), static_cast<uint32_t>(TRACE_NONE));
 }
 
 TEST(controller_keystroke_controls_drive_the_gui) {
@@ -125,7 +125,7 @@ TEST(controller_model_switch_keeps_printer_and_log_resets_freeze) {
     c.armPcChange();
     CHECK(c.debugState().pcChangeArmed);
     CHECK(c.startMachine(Model::TI58));
-    CHECK(!testroms::per(c.session()->machine()).isPrinterConnected());
+    CHECK(!testroms::per(c.session()->access().machine()).isPrinterConnected());
     CHECK(!c.debugState().pcChangeArmed && !c.isFrozen());
     CHECK(c.logText().find("──") != std::string::npos);  // the dump survived the switch
     CHECK(c.cardState() == SessionController::CardState::NoCard);
@@ -136,17 +136,16 @@ TEST(controller_reset_keeps_the_memory_and_clean_reset_clears_it) {
     SessionController c(p, testroms::reader(), catalog(), "ML");
     CHECK(c.startMachine(Model::TI59));
     CHECK(waitForScanLoop(c));
-    calcu::machine::Machine& m = c.session()->machine();
     const uint8_t marked[16] = {1, 2, 3};
     uint8_t reg[16];
-    testroms::mem(m).writeRAMReg(90, marked);
+    c.session()->access().memory().writeRAMReg(90, marked);
     c.resetMachine();
     CHECK(waitForScanLoop(c));
-    testroms::mem(m).copyRAMReg(90, reg);
+    c.session()->access().memory().copyRAMReg(90, reg);
     CHECK(std::equal(std::begin(marked), std::end(marked), reg));
     c.cleanResetMachine();
     CHECK(pumpUntil(p, [&] {
-        testroms::mem(m).copyRAMReg(90, reg);
+        c.session()->access().memory().copyRAMReg(90, reg);
         return reg[0] == 0;
     }));
 }
@@ -260,7 +259,7 @@ TEST(controller_threaded_reload_and_memory_card) {
     CHECK(tickUntil([&] { return c.keystrokesPlaying(); }));
     CHECK(tickUntil([&] { return !c.keystrokesPlaying(); }));
     CHECK(waitForScanLoop(c));
-    CHECK_EQ(testroms::mem(c.session()->machine()).readDataReg(0), 42.0);
-    CHECK_EQ(int(testroms::mem(c.session()->machine()).readProgramStep(2)), 47);  // part 2 is in
+    CHECK_EQ(testroms::mem(c.session()->access().machine()).readDataReg(0), 42.0);
+    CHECK_EQ(int(testroms::mem(c.session()->access().machine()).readProgramStep(2)), 47);  // part 2 is in
     CHECK(p.errors.empty());
 }

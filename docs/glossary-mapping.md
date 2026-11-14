@@ -53,7 +53,8 @@ parenthesis is removed with it.
 | Machine session | `EmulatorSession` | `MachineSession` |
 | Frontend interface | `Platform` (`cu59::SessionController`) | `Platform` (`shared::AppSession::Platform`) |
 | App layer | `Shared/` | `Shared/` |
-| Model | `Model` (Shared), `MachineVariant` (Core), `ModelInfo` | model (`startup/modelPreference`) |
+| Machine | `TIMachine` (`calcu::machine::Machine`, C59-1) | — |
+| Model | `ModelId` (descriptor, `tiCatalogue()`); `cu59::Model` kept as the app enum (`modelId`, `modelFrom`), `ModelInfo` for file-format facts; `MachineVariant` core-internal | model (`startup/modelPreference`) |
 | Startup model | `startupModel`, `lastUsedModel` | `startup/modelPreference`, `startup/lastUsedModel` |
 | Preset, preset format | `StateFile`, "state file" | preset, `PresetFile` |
 | Peripheral, module | — | `CardBase`, `ExpansionCard`, "card" |
@@ -66,8 +67,9 @@ parenthesis is removed with it.
 | Full speed | `FullSpeed:` (preset directive) | `setTurbo`, `turboRequested` |
 | Regular speed | `RegularSpeed:` (preset directive) | — |
 | Pause | `freeze`, `FreezeController`, `FreezeOwner` | `paused` (`DebugController`) |
-| Cold boot | `cleanReset` | `resetJob(allReset = true)` |
-| Reset | `softReset` | `resetJob(allReset = false)` |
+| Cold boot | `Machine::coldBoot()` (was `cleanReset`) | `resetJob(allReset = true)` |
+| Reset | `Machine::reset()` (was `softReset`) | `resetJob(allReset = false)` |
+| Power cycle | `Machine::powerCycle()` (2.3.0's core reset) | — |
 | Feature ID | — | — (`KIT-n` in early docs, now `LIB-n`, `C59-n`, `C1600-n`) |
 | Harness | `tools/headless/`, `tools/agentic/` | `pc1500_cli`, `pc1600_cli`, probes |
 

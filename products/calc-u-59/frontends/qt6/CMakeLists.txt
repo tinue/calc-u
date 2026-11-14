@@ -74,6 +74,11 @@ set(CORE_SOURCES
   ${CORE_ROOT}/TMC0501.cpp
   ${CORE_ROOT}/ROM.cpp
   ${CORE_ROOT}/RAM.cpp
+  ${CORE_ROOT}/TIAdapters.cpp
+  ${CORE_ROOT}/TICatalogue.cpp
+  ${CORE_ROOT}/TIKeys.cpp
+  ${CORE_ROOT}/TIMachine.cpp
+  ${CORE_ROOT}/TIRomText.cpp
 )
 
 qt_add_executable(CalcU59Qt
@@ -123,7 +128,8 @@ endforeach()
 qt_add_resources(CalcU59Qt "artwork" PREFIX "/img" FILES ${ARTWORK})
 
 target_include_directories(CalcU59Qt PRIVATE ${CORE_ROOT} ${SHARED_ROOT} app ${CMAKE_CURRENT_BINARY_DIR}/generated)
-target_link_libraries(CalcU59Qt PRIVATE Qt6::Widgets)
+# The machine interface (C59-1; LIB-1 §2a): the core implements calcu::machine.
+target_link_libraries(CalcU59Qt PRIVATE Qt6::Widgets calcu_library)
 if(MSVC)
   target_compile_options(CalcU59Qt PRIVATE /W4 /utf-8)  # UTF-8 literals in Shared/
 else()

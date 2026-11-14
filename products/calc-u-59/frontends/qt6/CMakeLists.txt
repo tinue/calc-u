@@ -1,12 +1,14 @@
 cmake_minimum_required(VERSION 3.21)
-# Calc-U-59 Qt6 desktop app — the release build entry point for Windows and
-# Linux (.github/workflows/build.yml configures -S Qt6) and the local
-# development build on macOS (tools/build_qt.sh). The Mac Qt build is never
-# shipped: on macOS the Swift app (Calc-U-59.xcodeproj) is the product.
+# Calc-U-59 Qt6 desktop app. Built as part of the repository's root CMake
+# project (ADR 0003; tools/build_qt.sh, the local development build on
+# macOS); the release packaging for Windows and Linux in CI
+# (.github/workflows/calc-u-59.yml) still configures this directory on its
+# own (-S frontends/qt6). The Mac Qt build is never shipped: on macOS the
+# Swift app (Calc-U-59.xcodeproj) is the product.
 #
-# The app compiles Core/ and Shared/ unchanged — the same sources the Swift
-# app and the root CMakeLists.txt (tests) build. No GUI-independent logic
-# lives in Qt6/app; see CLAUDE.md § "Frontend Parity".
+# The app compiles core/ and app/ unchanged — the same sources the Swift
+# app and the product's CMakeLists.txt (tests) build. No GUI-independent
+# logic lives in frontends/qt6/app; see CLAUDE.md § "Frontend Parity".
 set(CMAKE_OSX_DEPLOYMENT_TARGET "15.6" CACHE STRING "Minimum macOS version")
 project(CalcU59Qt LANGUAGES CXX)
 
@@ -46,7 +48,7 @@ endforeach()
 # git describe: a short build id for bug reports ("unknown" without git).
 set(APP_BUILD_ID "unknown")
 find_package(Git QUIET)
-if(GIT_FOUND AND EXISTS ${REPO_ROOT}/.git)
+if(GIT_FOUND AND EXISTS ${REPO_ROOT}/../../.git)  # the source repository's root
   execute_process(COMMAND ${GIT_EXECUTABLE} describe --always --dirty
                   WORKING_DIRECTORY ${REPO_ROOT}
                   OUTPUT_VARIABLE APP_BUILD_ID_RAW OUTPUT_STRIP_TRAILING_WHITESPACE

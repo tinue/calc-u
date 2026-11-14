@@ -1,13 +1,19 @@
 cmake_minimum_required(VERSION 3.21)
 
-# Development / IDE build of the whole repository: the emulation core, the
-# Shared/ C++ layer both frontends use, the C++ test suite (CTest), the
-# headless harness library, and — when Qt6 is found — the Qt6 desktop app
-# via add_subdirectory(frontends/qt6).
+# Calc-U-59 in the repository's root CMake project (ADR 0003; option
+# CALCU_PRODUCT_59): the emulation core, the app/ C++ layer the frontends
+# use, the C++ test suite (CTest), the headless harness library, and, with
+# CALCU_FRONTEND_QT and when Qt6 is found, the Qt6 desktop app via
+# add_subdirectory(frontends/qt6).
 #
 # The Swift app is built by Calc-U-59.xcodeproj, which compiles the same
-# Core/ and Shared/ sources (synchronized folders). Every Core/ or Shared/
+# core/ and app/ sources (synchronized folders). Every core/ or app/
 # change must pass both builds — see CLAUDE.md § "Frontend Parity".
+
+if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
+  message(FATAL_ERROR "products/calc-u-59 is part of the root CMake project (ADR 0003): "
+                      "configure the repository root, e.g. cmake -S ../.. -B ../../build/all")
+endif()
 
 project(Calc-U-59 LANGUAGES CXX)
 
@@ -39,7 +45,7 @@ target_include_directories(calcu59_core PUBLIC ${CORE_ROOT})
 target_compile_options(calcu59_core PRIVATE ${CALCU59_WARNINGS})
 set_target_properties(calcu59_core PROPERTIES POSITION_INDEPENDENT_CODE ON)
 find_package(Threads REQUIRED)
-target_link_libraries(calcu59_core PUBLIC Threads::Threads)
+target_link_libraries(calcu59_core PUBLIC Threads::Threads calcu_library)
 
 file(GLOB SHARED_SOURCES CONFIGURE_DEPENDS ${SHARED_ROOT}/*.cpp)
 add_library(calcu59_shared STATIC ${SHARED_SOURCES})
@@ -83,19 +89,15 @@ if(Python3_FOUND)
 endif()
 
 # -----------------------------------------------------------------------------
-# Qt6 desktop app (optional: Core/Shared/tests build without Qt)
+# Qt6 desktop app (CALCU_FRONTEND_QT; core/, app/ and the tests build without Qt)
 # -----------------------------------------------------------------------------
-# Qt6/CMakeLists.txt stays the release entry point (CI configures -S Qt6);
-# this only pulls the same directory in for IDEs and local development.
-option(CALCU59_BUILD_QT "Build the Qt6 desktop app when Qt6 is available" ON)
-if(CALCU59_BUILD_QT)
-  if(APPLE AND NOT DEFINED CMAKE_PREFIX_PATH AND EXISTS /opt/homebrew/opt/qt)
-    list(APPEND CMAKE_PREFIX_PATH /opt/homebrew/opt/qt)
-  endif()
+# The release packaging in CI still configures frontends/qt6/ on its own;
+# the root project's Homebrew prefix covers this build on the Mac.
+if(CALCU_FRONTEND_QT)
   find_package(Qt6 QUIET COMPONENTS Widgets)
   if(Qt6_FOUND)
     add_subdirectory(frontends/qt6)
   else()
-    message(STATUS "Qt6 not found: building Core, Shared and the tests only")
+    message(STATUS "Qt6 not found: building Calc-U-59's core, app layer and tests only")
   endif()
 endif()

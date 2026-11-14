@@ -5,13 +5,15 @@
 #   calcu_shared  Shared/ -- everything above Core that isn't drawing
 #                 (docs/developer/Shared-Architecture.md); links calcu_core
 #
-# Included by the repo-root CMakeLists.txt and by Qt6/CMakeLists.txt (which
-# must still configure on its own, `-S Qt6`, for the release builds). The
-# NOT TARGET guard makes the second include in a root build a no-op.
+# Included by the product's CMakeLists.txt (a subdirectory of the
+# repository's root CMake project, ADR 0003) and by frontends/qt6/
+# CMakeLists.txt (which the release packaging in CI still configures on its
+# own, `-S frontends/qt6`). The NOT TARGET guard makes the second include
+# a no-op.
 #
-# The source lists are globbed: every Core/**/*.cpp except Core/tests/ and
-# every Shared/**/*.cpp except Shared/tests/. The probes in the root file
-# compile their own Core lists, because they need PC1600_POWER_PROBE.
+# The source lists are globbed: every core/**/*.cpp except core/tests/ and
+# every app/**/*.cpp except app/tests/. calcu_add_core() makes a further
+# copy of the core for the probes, which need PC1600_POWER_PROBE.
 #
 # Options the including file may set before include():
 #   CALCU_CORE_DEBUG_O1  compile calcu_core at -O1 in Debug (the test suite
@@ -90,21 +92,32 @@ endif()
 # ---- calcu_core
 file(GLOB_RECURSE CALCU_CORE_SOURCES CONFIGURE_DEPENDS ${CALCU_CORE_ROOT}/*.cpp)
 list(FILTER CALCU_CORE_SOURCES EXCLUDE REGEX "^${CALCU_CORE_ROOT}/tests/")
-add_library(calcu_core STATIC ${CALCU_CORE_SOURCES})
-target_include_directories(calcu_core PUBLIC ${CALCU_CORE_ROOT})
-target_compile_features(calcu_core PUBLIC cxx_std_20)
-target_compile_options(calcu_core PRIVATE ${CALCU_WARNINGS})
-# The sources are UTF-8 without a BOM (U'á' literals, PC1600TypedInput.hpp);
-# MSVC would read them in the ANSI codepage (C2015). Targets linking Qt got
-# /utf-8 from Qt6::Platform; Core and Shared don't link Qt, so set it here --
-# PUBLIC, since everything that includes Core's headers needs it too.
-if(MSVC)
-  target_compile_options(calcu_core PUBLIC /utf-8)
-endif()
-target_link_libraries(calcu_core PUBLIC calcu_sharpdx)
-if(CALCU_CORE_DEBUG_O1 AND NOT MSVC)
-  target_compile_options(calcu_core PRIVATE $<$<CONFIG:Debug>:-O1>)
-endif()
+
+# calcu_add_core(<name>): a static library of every core/ source. Called
+# once for calcu_core here, and by the product's CMakeLists.txt for the
+# probes' copy, which adds PC1600_POWER_PROBE (PUBLIC: it changes
+# PC1600Memory's layout, so everything including core/ headers needs it).
+function(calcu_add_core name)
+  add_library(${name} STATIC ${CALCU_CORE_SOURCES})
+  target_include_directories(${name} PUBLIC ${CALCU_CORE_ROOT})
+  target_compile_features(${name} PUBLIC cxx_std_20)
+  target_compile_options(${name} PRIVATE ${CALCU_WARNINGS})
+  # The sources are UTF-8 without a BOM (U'á' literals, PC1600TypedInput.hpp);
+  # MSVC would read them in the ANSI codepage (C2015). Targets linking Qt got
+  # /utf-8 from Qt6::Platform; core/ and app/ don't link Qt, so set it here --
+  # PUBLIC, since everything that includes core/'s headers needs it too.
+  if(MSVC)
+    target_compile_options(${name} PUBLIC /utf-8)
+  endif()
+  target_link_libraries(${name} PUBLIC calcu_sharpdx)
+  if(TARGET calcu_library)  # absent when frontends/qt6 configures on its own
+    target_link_libraries(${name} PUBLIC calcu_library)
+  endif()
+  if(CALCU_CORE_DEBUG_O1 AND NOT MSVC)
+    target_compile_options(${name} PRIVATE $<$<CONFIG:Debug>:-O1>)
+  endif()
+endfunction()
+calcu_add_core(calcu_core)
 
 # ---- calcu_shared
 # Shared/ is C++20 and standard-library-only: no Qt, Cocoa or Emscripten

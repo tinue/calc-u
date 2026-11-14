@@ -1,13 +1,17 @@
 #!/usr/bin/env bash
-# Build the headless harness shared library used by tools/headless/ti59.py.
-# Core/ is compiled unmodified, plus Shared/'s ROM loader; output goes to
+# Build the headless harness shared library used by tools/headless/ti59.py:
+# the ti59headless target of the root CMake project (ADR 0003; capi.cpp on
+# core/ and app/, sources from the product's CMakeLists.txt), built in the
+# repository's build/tools tree (Release, no Qt) and copied to
 # tools/headless/build/ (ignored).
 set -euo pipefail
 HERE="$(cd "$(dirname "$0")" && pwd)"
-CORE="$HERE/../../core"
-SHARED="$HERE/../../app"
+REPO="$(cd "$HERE/../../../.." && pwd)"
+TREE="$REPO/build/tools"
+if [ ! -f "$TREE/CMakeCache.txt" ]; then
+  cmake -S "$REPO" -B "$TREE" -G Ninja -DCMAKE_BUILD_TYPE=Release -DCALCU_FRONTEND_QT=OFF >/dev/null
+fi
+cmake --build "$TREE" --target ti59headless
 mkdir -p "$HERE/build"
-clang++ -std=c++17 -O2 -shared -fPIC -o "$HERE/build/libti59headless.dylib" \
-  "$HERE/capi.cpp" "$CORE/TI59Machine.cpp" "$CORE/TMC0501.cpp" "$CORE/ROM.cpp" "$CORE/RAM.cpp" \
-  "$SHARED/RomLoader.cpp" "$SHARED/ModuleCatalog.cpp" "$SHARED/CueCard.cpp"
+cp "$TREE/products/calc-u-59/libti59headless.dylib" "$HERE/build/"
 echo "built $HERE/build/libti59headless.dylib"

@@ -35,12 +35,14 @@ are needed.
 Same as `core-tests`:
 
 ```bash
-cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=RelWithDebInfo
-cmake --build build
-ctest --test-dir build --output-on-failure
+cmake -S ../.. -B ../../build/tests -G Ninja -DCMAKE_BUILD_TYPE=RelWithDebInfo \
+  -DCALCU_PRODUCT_59=OFF -DCALCU_FRONTEND_QT=OFF
+cmake --build ../../build/tests
+ctest --test-dir ../../build/tests --output-on-failure
 ```
 
-No display, so the GUI app builds but can't be driven interactively. Use
+No display, so the GUI app (`-DCALCU_FRONTEND_QT=ON`, Qt needed) can't be
+driven interactively. Use
 the headless CLIs (`pc1500_cli`, `pc1600_cli`) for anything that needs to
 run the emulator.
 

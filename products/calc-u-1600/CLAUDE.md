@@ -6,11 +6,11 @@ Before removing, simplifying or "fixing" code in a review or cleanup, read `docs
 
 ## Test builds
 
-Run the test suite optimized: `tools/run_tests.sh` (`-O1`) or the `CoreTests` target in `build/` (`-O1` in Debug). When chasing a bug — a debugger, stepping, inspecting variables — first build a full-debug tree and work there, leaving `build/` as it is:
+All C++ builds go through the repository's root CMake project (ADR 0003; options `CALCU_PRODUCT_59`, `CALCU_PRODUCT_1600`, `CALCU_FRONTEND_QT`); this directory configures on its own only under Emscripten, until the Web frontends move to the root (M-12). Run the test suite optimized: `tools/run_tests.sh` (`-O1`, the repository's `build/tests` tree) or the `CoreTests` target of any root tree (`-O1` in Debug). When chasing a bug — a debugger, stepping, inspecting variables — first build a full-debug tree and work there, leaving the other trees as they are:
 
 ```sh
-cmake -S . -B build-debug -G Ninja -DCMAKE_BUILD_TYPE=Debug -DCALCU_TESTS_DEBUG=ON
-cmake --build build-debug --target CoreTests
+cmake -S ../.. -B ../../build/debug -G Ninja -DCMAKE_BUILD_TYPE=Debug -DCALCU_FRONTEND_QT=OFF -DCALCU_TESTS_DEBUG=ON
+cmake --build ../../build/debug --target CoreTests
 ```
 
 ## Core, Shared, frontends

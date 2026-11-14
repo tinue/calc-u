@@ -5,7 +5,7 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-BUILD_DIR="${SCRIPT_DIR}/frontends/qt6/build"
+BUILD_DIR="$("${SCRIPT_DIR}/tools/build_app.sh" app_dir)"
 
 "${SCRIPT_DIR}/tools/build_app.sh"
 

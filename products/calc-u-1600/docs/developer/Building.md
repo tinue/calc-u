@@ -4,14 +4,25 @@ This is the developer build guide: prerequisites, getting the ROMs, and
 building the Qt6 desktop app on macOS, Linux, and Windows. For how to
 *use* the emulator once it's built, see [User-Guide.md](../User-Guide.md).
 
-Everything here is derived from the project's own recipes —
-[`frontends/qt6/CMakeLists.txt`](../../Qt6/CMakeLists.txt) and the CI workflow at
-[`.github/workflows/calc-u-1600.yml (repository root)`](../../.github/workflows/calc-u-1600.yml (repository root)) — which is
-also where to look first if a step below stops matching reality. The
-macOS steps are exercised on an actual Mac as part of writing this doc;
-the Linux and Windows steps are transcribed from CI and not independently
-verified on a fresh machine — if something's off, please open an issue or
-PR.
+Everything here is derived from the project's own recipes — the
+repository's root [`CMakeLists.txt`](../../../../CMakeLists.txt) (ADR 0003),
+this product's [`CMakeLists.txt`](../../CMakeLists.txt) and
+[`frontends/qt6/CMakeLists.txt`](../../frontends/qt6/CMakeLists.txt), and
+the CI workflow
+[`.github/workflows/calc-u-1600.yml`](../../../../.github/workflows/calc-u-1600.yml)
+at the repository root — which is also where to look first if a step below
+stops matching reality. The macOS steps are exercised on an actual Mac as
+part of writing this doc; the Linux and Windows steps are transcribed from
+CI and not independently verified on a fresh machine — if something's off,
+please open an issue or PR.
+
+All C++ builds go through the root CMake project, configured from the
+repository root (`-S ../..` from this directory). Its options choose what
+is built: `CALCU_PRODUCT_59`, `CALCU_PRODUCT_1600` and `CALCU_FRONTEND_QT`
+(all ON by default). This directory does not configure on its own, except
+under Emscripten until the Web frontends move to the root (M-12 of the
+migration plan). The commands below run from this directory and put their
+trees under the repository's `build/`.
 
 ## Prerequisites
 
@@ -48,7 +59,7 @@ fetches or commits it for you.
 
 ```sh
 git clone <this repository's URL>
-cd Calc-U-1600
+cd calc-u/products/calc-u-1600
 ```
 
 ## 2. Get the ROMs
@@ -77,46 +88,46 @@ tools/fetch_sharpdx.sh
 
 ```sh
 brew install qt cmake ninja
-cmake -S Qt6 -B frontends/qt6/build -G Ninja \
-  -DCMAKE_PREFIX_PATH=$(brew --prefix qt) \
-  -DCMAKE_BUILD_TYPE=Release
-cmake --build frontends/qt6/build
+tools/build_app.sh
 ```
 
-This produces `frontends/qt6/build/Calc-U-1600.app`, a real macOS bundle. To run it
-standalone outside this checkout (e.g. hand it to another Mac), also run
-`macdeployqt` to embed the Qt frameworks:
+`tools/build_app.sh` configures the root project once
+(`cmake -S ../.. -B ../../build/app-1600 -G Ninja -DCMAKE_BUILD_TYPE=Release -DCALCU_PRODUCT_59=OFF`;
+Homebrew's Qt is found automatically) and builds it. The app is
+`../../build/app-1600/products/calc-u-1600/frontends/qt6/Calc-U-1600.app`,
+a real macOS bundle (`tools/build_app.sh app_dir` prints its directory;
+`./build_and_run.sh` builds and starts it). To run it standalone outside
+this checkout (e.g. hand it to another Mac), also run `macdeployqt` to
+embed the Qt frameworks:
 
 ```sh
-$(brew --prefix qt)/bin/macdeployqt frontends/qt6/build/Calc-U-1600.app
+$(brew --prefix qt)/bin/macdeployqt "$(tools/build_app.sh app_dir)/Calc-U-1600.app"
 ```
 
 Without that step the app still runs from this build directory (Qt is
 found via the Homebrew prefix), just not as a portable, relocatable
 bundle. The signing/notarizing/DMG steps CI does after this are
-release-packaging concerns — see the `mac-aarch64` job in
-[`.github/workflows/calc-u-1600.yml (repository root)`](../../.github/workflows/calc-u-1600.yml (repository root)).
+release-packaging concerns — see the `mac-aarch64` job in the workflow.
 
 ### Linux (best-effort — CI-derived, not verified on a fresh machine)
 
 ```sh
 sudo apt-get install -y \
-  build-essential cmake ninja-build patchelf \
+  build-essential cmake ninja-build patchelf zlib1g-dev \
   qt6-base-dev qt6-base-dev-tools qt6-multimedia-dev qt6-wayland libgl1-mesa-dev \
   qt6-gtk-platformtheme qt6ct
-cmake -S Qt6 -B frontends/qt6/build -G Ninja -DCMAKE_BUILD_TYPE=Release
-cmake --build frontends/qt6/build
+tools/build_app.sh
 ```
 
-This produces a plain `frontends/qt6/build/Calc-U-1600` executable plus a
-`frontends/qt6/build/resources/` folder (bundled `.card.yaml` definitions and ROMs)
-that must stay next to it. That's enough to run on the machine that built
-it. To package a standalone `.AppImage` that runs on other Linux machines,
-see the `linux-x86_64`/`linux-aarch64` jobs in
-[`.github/workflows/calc-u-1600.yml (repository root)`](../../.github/workflows/calc-u-1600.yml (repository root)) for the
-full `linuxdeploy`/`linuxdeploy-plugin-qt` recipe (it's involved enough —
-Wayland plugin handling included — that it's not worth hand-transcribing
-here; run the workflow or copy its steps directly).
+This produces a plain `Calc-U-1600` executable plus a `resources/` folder
+(bundled `.card.yaml` definitions and ROMs) that must stay next to it, in
+`../../build/app-1600/products/calc-u-1600/frontends/qt6/`. That's enough
+to run on the machine that built it. To package a standalone `.AppImage`
+that runs on other Linux machines, see the `linux-x86_64`/`linux-aarch64`
+jobs in the workflow for the full `linuxdeploy`/`linuxdeploy-plugin-qt`
+recipe (it's involved enough — Wayland plugin handling included — that
+it's not worth hand-transcribing here; run the workflow or copy its steps
+directly).
 
 ### Windows (best-effort — CI-derived, not verified on a fresh machine)
 
@@ -124,25 +135,23 @@ here; run the workflow or copy its steps directly).
 # Install Qt 6.8.x (MSVC, win64_msvc2022_64, with the qtmultimedia module)
 # and Ninja by whatever means you prefer (CI uses the aqtinstall-based
 # jurplel/install-qt-action).
-cmake -S Qt6 -B frontends/qt6/build -G Ninja -DCMAKE_BUILD_TYPE=Release
-cmake --build frontends/qt6/build
+cmake -S ..\.. -B ..\..\build\app-1600 -G Ninja -DCMAKE_BUILD_TYPE=Release -DCALCU_PRODUCT_59=OFF
+cmake --build ..\..\build\app-1600
 ```
 
 Run this from a shell with the MSVC toolchain on `PATH` (a Visual Studio
 "Developer Command Prompt", or `vcvarsall.bat`/`ilammy/msvc-dev-cmd`'s
-equivalent). This produces `frontends/qt6/build/Calc-U-1600.exe` plus a
-`frontends/qt6/build/resources/` folder that must stay next to it. To stage a
+equivalent). This produces `Calc-U-1600.exe` plus a `resources\` folder
+that must stay next to it, in
+`..\..\build\app-1600\products\calc-u-1600\frontends\qt6\`. To stage a
 standalone-runnable copy (Qt DLLs + MSVC runtime bundled in) and package
-it as an installer:
-
-```powershell
-windeployqt --release --compiler-runtime Qt6\build\Calc-U-1600.exe
-```
-
-then package the staged folder with Inno Setup using
-[`frontends/qt6/resources/windows/calc-u-1600.iss`](../../Qt6/resources/windows/calc-u-1600.iss)
-— see the `windows-x86_64` job in `build.yml` for the exact staging
-layout. The installer is currently unsigned.
+it as an installer, run `windeployqt --release --compiler-runtime` on the
+`.exe` and package the staged folder with Inno Setup using
+[`frontends/qt6/resources/windows/calc-u-1600.iss`](../../frontends/qt6/resources/windows/calc-u-1600.iss)
+— see the `windows-x86_64` job in the workflow for the exact staging
+layout. The packaging jobs still configure `frontends/qt6/` on its own
+(`-S frontends/qt6 -B frontends/qt6/build`), which the `.iss` file expects
+for its generated `Version.iss`. The installer is currently unsigned.
 
 CI also builds a native ARM64 version (`windows-arm64` job) on a
 `windows-11-arm` runner, the same way as x86_64 but with Qt's
@@ -155,17 +164,10 @@ ARM64 machine, run the steps above from an ARM64 developer prompt
 
 ### CLion / IDE integration
 
-Alongside the per-platform recipes above, the repo root has its own
-[`CMakeLists.txt`](../../CMakeLists.txt) that builds *everything* in one
-project — the Qt6 app (it just pulls in `frontends/qt6/` unchanged), the headless
-CLI harnesses and probes that `tools/build_*.sh` build by hand, and the
-`core/` test suite as a CTest target. It's a development/IDE
-convenience; `frontends/qt6/` stays the release entry point, so keep using the
-commands above for an actual build.
-
-Open the repository root in CLion and it configures that project
-automatically, picking up the shared run/debug configurations committed
-in `.run/`:
+Open the repository root in CLion and it configures the root project
+with every product: the Qt6 apps, the headless CLI harnesses and probes,
+and the test suites as CTest targets. It picks up the shared run/debug
+configurations committed in the repository's `.run/`:
 
 | Run configuration | CMake target | Notes |
 |---|---|---|
@@ -180,18 +182,17 @@ inspection, stepping) — which is the main thing this build adds over
 
 Run `roms/fetch_roms.sh` (step 2 above) first: `CoreTests` and the
 `pc1500_cli`/probe configurations pass paths under `roms/`, and ROMs
-aren't committed. The configurations use repo-relative paths throughout,
-so they work in any checkout without editing.
+aren't committed.
 
-Both CMake files take `core/` and `app/` from
-[`cmake/CalcU.cmake`](../../cmake/CalcU.cmake), which globs the sources into
-two static libraries: `calcu_core` and `calcu_shared` (the frontend-neutral
-layer above Core). A new `.cpp` under either directory needs no list entry;
-re-run CMake (or let Ninja's glob check do it). Only `tools/build_*.sh` and
-the probes in the root file still list Core sources by hand. CI covers the
-root build too: the `core-tests` job in
-[`.github/workflows/calc-u-1600.yml (repository root)`](../../.github/workflows/calc-u-1600.yml (repository root))
-configures the root `CMakeLists.txt` and runs CTest.
+`core/` and `app/` come from [`cmake/CalcU.cmake`](../../cmake/CalcU.cmake),
+which globs the sources into two static libraries: `calcu_core` and
+`calcu_shared` (the frontend-neutral layer above Core); `calcu_add_core()`
+makes a third, `calcu_core_probe`, with `PC1600_POWER_PROBE` for the two
+probes that need it. A new `.cpp` under either directory needs no list
+entry; re-run CMake (or let Ninja's glob check do it). No script lists
+sources: `tools/build_*.sh` build the CMake targets
+(`tools/build_tool.sh`, in the repository's `build/tools` tree) and copy
+them into `headless/`.
 
 ## Running the tests
 
@@ -200,20 +201,20 @@ tools/run_tests.sh
 ```
 
 Builds and runs the headless `core/` + `app/` test suite (no Qt, no
-GUI): it configures the root `CMakeLists.txt` with `-DCALCU_BUILD_QT=OFF`
-into `build-tests/` (Debug, so Core and the tests compile at `-O1`) and runs
-`CoreTests` from the repo root, since the tests load `roms/` via relative
-paths. Arguments are passed on to `CoreTests`. Needs CMake, Ninja and zlib
-(`zlib1g-dev` on Ubuntu; macOS has it).
+GUI): it configures the root project with `-DCALCU_FRONTEND_QT=OFF` into
+the repository's `build/tests` tree (Debug, so Core and the tests compile
+at `-O1`) and runs `CoreTests` from this directory, since the tests load
+`roms/` via relative paths. Arguments are passed on to `CoreTests`. Needs
+CMake, Ninja and zlib (`zlib1g-dev` on Ubuntu; macOS has it).
 
-The same suite is also a `CoreTests` target in the root `CMakeLists.txt`
-(see [CLion / IDE integration](#clion--ide-integration) above), which is
-what CI's `core-tests` job runs (as `RelWithDebInfo`):
+CI's `core-tests` job runs the same suite through CTest (as
+`RelWithDebInfo`, with Calc-U-1600 only):
 
 ```sh
-cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Debug
-cmake --build build --target CoreTests
-ctest --test-dir build --output-on-failure
+cmake -S ../.. -B ../../build/tests -G Ninja -DCMAKE_BUILD_TYPE=RelWithDebInfo \
+  -DCALCU_PRODUCT_59=OFF -DCALCU_FRONTEND_QT=OFF
+cmake --build ../../build/tests
+ctest --test-dir ../../build/tests --output-on-failure
 ```
 
 The tests are always built optimized: `CoreTests` and `calcu_core` compile
@@ -223,9 +224,10 @@ full-debug tree with `CALCU_TESTS_DEBUG=ON` (Core and the tests at `-O0`) (in CL
 CMake profile's options):
 
 ```sh
-cmake -S . -B build-debug -G Ninja -DCMAKE_BUILD_TYPE=Debug -DCALCU_TESTS_DEBUG=ON
-cmake --build build-debug --target CoreTests
-./build-debug/CoreTests   # from the repo root
+cmake -S ../.. -B ../../build/debug -G Ninja -DCMAKE_BUILD_TYPE=Debug \
+  -DCALCU_FRONTEND_QT=OFF -DCALCU_TESTS_DEBUG=ON
+cmake --build ../../build/debug --target CoreTests
+../../build/debug/products/calc-u-1600/CoreTests   # from this directory
 ```
 
 ## WebAssembly check

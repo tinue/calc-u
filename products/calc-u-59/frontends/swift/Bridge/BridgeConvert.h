@@ -2,7 +2,7 @@
 // the Swift bridging header.
 #import <Foundation/Foundation.h>
 #import "TITypes.h"
-#include "../../../core/TraceTypes.hpp"
+#include <calcu59/core/TraceTypes.hpp>
 #include <cstddef>
 #include <cstdint>
 #include <cstring>

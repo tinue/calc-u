@@ -1,7 +1,7 @@
 // ObjC++-only TICueCard conversion for the other Bridge/ wrappers. Never
 // import from the Swift bridging header.
 #import "TIFileFormats.h"
-#include "../../../app/CueCard.hpp"
+#include <calcu59/app/CueCard.hpp>
 
 /// TICueCard ↔ cu59::CueCardContent.
 TICueCard* TICueCardFrom(const cu59::CueCardContent& c);

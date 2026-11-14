@@ -1,8 +1,8 @@
 #import "TISessionController.h"
 #import "BridgeConvert.h"
 #import "TIFileFormats+Cpp.h"
-#include "../../../app/PrinterFont.hpp"
-#include "../../../app/SessionController.hpp"
+#include <calcu59/app/PrinterFont.hpp>
+#include <calcu59/app/SessionController.hpp>
 #include <memory>
 
 // ── Value objects ────────────────────────────────────────────────────────────

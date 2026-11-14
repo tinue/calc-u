@@ -6,6 +6,20 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXAggregateTarget section */
+		CA1C5900000000000000A001 /* CalcU59Core */ = {
+			isa = PBXAggregateTarget;
+			buildConfigurationList = CA1C5900000000000000A002 /* Build configuration list for PBXAggregateTarget "CalcU59Core" */;
+			buildPhases = (
+				CA1C5900000000000000A005 /* Build CalcU59.xcframework */,
+			);
+			dependencies = (
+			);
+			name = CalcU59Core;
+			productName = CalcU59Core;
+		};
+/* End PBXAggregateTarget section */
+
 /* Begin PBXBuildFile section */
 		2340B7D61C0D4DBD6D9300A5 /* roms/calculator/TMC0583-CONST-K.txt in Resources */ = {isa = PBXBuildFile; fileRef = 82EB9107C1DE1D77AB49F0D3 /* roms/calculator/TMC0583-CONST-K.txt */; };
 		35B51855411FB1D5C01A25BB /* roms/calculator/CD2401.txt in Resources */ = {isa = PBXBuildFile; fileRef = E08C9C771806E7B736D15277 /* roms/calculator/CD2401.txt */; };
@@ -32,6 +46,7 @@
 		D33A7AEB1F005859A35CAB9E /* roms/calculator/CD2401-CONST-K.txt in Resources */ = {isa = PBXBuildFile; fileRef = 5E899B70D779E3C3D40E77C0 /* roms/calculator/CD2401-CONST-K.txt */; };
 		E492E897460954A16FFCE97D /* roms/calculator/TMC0582.txt in Resources */ = {isa = PBXBuildFile; fileRef = 067A301B08617C3C718CAD6B /* roms/calculator/TMC0582.txt */; };
 		FFF462699020D7E427019C23 /* roms/calculator/CD2400-CONST-K.txt in Resources */ = {isa = PBXBuildFile; fileRef = A03FEEC869500F2ED42C8381 /* roms/calculator/CD2400-CONST-K.txt */; };
+		CA1C5900000000000000A009 /* CalcU59.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = CA1C5900000000000000A008 /* CalcU59.xcframework */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -41,6 +56,13 @@
 			proxyType = 1;
 			remoteGlobalIDString = 8C7285582F69626400D5F025;
 			remoteInfo = "Calc-U-59";
+		};
+		CA1C5900000000000000A007 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 8C7285512F69626400D5F025 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = CA1C5900000000000000A001;
+			remoteInfo = CalcU59Core;
 		};
 /* End PBXContainerItemProxy section */
 
@@ -74,6 +96,7 @@
 		D1A2B3C4E5F6A7B8C9D0E1FF /* roms/solid-state/TMC0555.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = "../../roms/solid-state/TMC0555.txt"; sourceTree = "<group>"; };
 		E08C9C771806E7B736D15277 /* roms/calculator/CD2401.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = "../../roms/calculator/CD2401.txt"; sourceTree = "<group>"; };
 		E2B162B7479B9E09AE31CB82 /* roms/calculator/TMC0573.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = "../../roms/calculator/TMC0573.txt"; sourceTree = "<group>"; };
+		CA1C5900000000000000A008 /* CalcU59.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; name = CalcU59.xcframework; path = "../../../../build/xcframework-59/CalcU59.xcframework"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -82,19 +105,9 @@
 			path = App;
 			sourceTree = "<group>";
 		};
-		8C7285702F69626400D5F025 /* Core */ = {
-			isa = PBXFileSystemSynchronizedRootGroup;
-			path = ../../core;
-			sourceTree = "<group>";
-		};
 		8C7285712F69626400D5F025 /* Bridge */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			path = Bridge;
-			sourceTree = "<group>";
-		};
-		8C7285722F69626400D5F025 /* Shared */ = {
-			isa = PBXFileSystemSynchronizedRootGroup;
-			path = ../../app;
 			sourceTree = "<group>";
 		};
 		8C7473C32FE5638A009DC59A /* Calc-U-59UITests */ = {
@@ -109,6 +122,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				CA1C5900000000000000A009 /* CalcU59.xcframework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -135,9 +149,8 @@
 				8CF668232F7ED56C006116D2 /* Calc-U-59-Info.plist */,
 				8CC614992F6C2E370041355E /* Calc-U-59.entitlements */,
 				8C72855B2F69626400D5F025 /* App */,
-				8C7285702F69626400D5F025 /* Core */,
 				8C7285712F69626400D5F025 /* Bridge */,
-				8C7285722F69626400D5F025 /* Shared */,
+				CA1C5900000000000000A008 /* CalcU59.xcframework */,
 				067A301B08617C3C718CAD6B /* roms/calculator/TMC0582.txt */,
 				922A6D0E64ED7C6A5E52CCD5 /* roms/calculator/TMC0583.txt */,
 				4E36B672AB3C06A1BC192AA5 /* roms/calculator/TMC0571B.txt */,
@@ -192,12 +205,11 @@
 			buildRules = (
 			);
 			dependencies = (
+				CA1C5900000000000000A006 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				8C72855B2F69626400D5F025 /* App */,
-				8C7285702F69626400D5F025 /* Core */,
 				8C7285712F69626400D5F025 /* Bridge */,
-				8C7285722F69626400D5F025 /* Shared */,
 			);
 			name = "Calc-U-59";
 			packageProductDependencies = (
@@ -264,6 +276,7 @@
 			targets = (
 				8C7285582F69626400D5F025 /* Calc-U-59 */,
 				8C7473C12FE5638A009DC59A /* Calc-U-59UITests */,
+				CA1C5900000000000000A001 /* CalcU59Core */,
 			);
 		};
 /* End PBXProject section */
@@ -327,11 +340,38 @@
 		};
 /* End PBXSourcesBuildPhase section */
 
+/* Begin PBXShellScriptBuildPhase section */
+		CA1C5900000000000000A005 /* Build CalcU59.xcframework */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+			);
+			name = "Build CalcU59.xcframework";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "# The library, core and app layer through the root CMake project (ADR 0013).\n\"$SRCROOT/build_xcframework.sh\" \"$CONFIGURATION\"\n";
+		};
+/* End PBXShellScriptBuildPhase section */
+
 /* Begin PBXTargetDependency section */
 		8C7473C92FE5638A009DC59A /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = 8C7285582F69626400D5F025 /* Calc-U-59 */;
 			targetProxy = 8C7473C82FE5638A009DC59A /* PBXContainerItemProxy */;
+		};
+		CA1C5900000000000000A006 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = CA1C5900000000000000A001 /* CalcU59Core */;
+			targetProxy = CA1C5900000000000000A007 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
@@ -632,6 +672,26 @@
 			};
 			name = Release;
 		};
+		CA1C5900000000000000A003 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = auto;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx";
+			};
+			name = Debug;
+		};
+		CA1C5900000000000000A004 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = auto;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx";
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -658,6 +718,15 @@
 			buildConfigurations = (
 				8C7473CA2FE5638A009DC59A /* Debug */,
 				8C7473CB2FE5638A009DC59A /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		CA1C5900000000000000A002 /* Build configuration list for PBXAggregateTarget "CalcU59Core" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				CA1C5900000000000000A003 /* Debug */,
+				CA1C5900000000000000A004 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

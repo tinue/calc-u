@@ -43,6 +43,7 @@ about 6 min, within the 10 min.
 |---|---|---|---|
 | `CalcU59Tests` | 154 `TEST`s: unit and ROM-driven integration tests of the core and the app layer, the golden replays (table below) | Frequent | 8.2 s |
 | `CalcU59TraceReader` | `tools/read_trace.py` reads the trace `CalcU59Tests` wrote | Frequent | 16.2 s (Python 3.15; 0.3 s in CI) |
+| `CalcU59XcodeProjectCheck` | `frontends/swift/check_xcode_project.sh`: Xcode compiles only Swift and the bridge and links `CalcU59.xcframework` (C59-5, ADR 0013; M-15) | Frequent | 0.02 s |
 | | **Frequent, Calc-U-59** | | **24.4 s** |
 | `CalcU59WebPlaywright` | `frontends/web/run-tests.sh`: Playwright, Chromium (root, sub-path) and WebKit (offline) | Longer | 77.7 s |
 | `CalcU59UIRegression` | XCUITest plan `UIRegressionTests` on the `iphone` simulator | Longer | 154.5 s (iPhone 18 Pro Max, iOS 27.2) |

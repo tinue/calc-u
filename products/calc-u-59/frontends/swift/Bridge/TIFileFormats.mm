@@ -1,7 +1,7 @@
 #import "TIFileFormats+Cpp.h"
 #import "BridgeConvert.h"
-#include "../../../app/CardFile.hpp"
-#include "../../../app/ModuleCatalog.hpp"
+#include <calcu59/app/CardFile.hpp>
+#include <calcu59/app/ModuleCatalog.hpp>
 
 // ── Cue card conversion ──────────────────────────────────────────────────────
 

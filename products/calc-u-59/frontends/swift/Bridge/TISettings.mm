@@ -1,6 +1,6 @@
 #import "TISettings.h"
 #import "BridgeConvert.h"
-#include "../../../app/SettingsKeys.hpp"
+#include <calcu59/app/SettingsKeys.hpp>
 
 namespace s = cu59::settings;
 

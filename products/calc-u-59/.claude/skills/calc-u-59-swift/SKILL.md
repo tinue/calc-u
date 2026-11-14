@@ -57,5 +57,9 @@ xcodebuild -project frontends/swift/Calc-U-59.xcodeproj -scheme "Calc-U-59" \
   -destination "platform=iOS Simulator,id=<UDID>" build
 ```
 
+The Xcode build first builds `CalcU59.xcframework` (the library, `core/`,
+`app/`) through CMake: it needs CMake and Ninja, and Xcode compiles only
+Swift and the bridge (`reference/AppArchitecture.md` § "Build").
+
 A change to `core/` or `app/` also needs the CMake build and tests
 (calc-u-59-shared skill).

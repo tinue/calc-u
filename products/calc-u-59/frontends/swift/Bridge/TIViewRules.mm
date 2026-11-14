@@ -1,13 +1,13 @@
 #import "TIViewRules.h"
 #import "BridgeConvert.h"
 #import "TIFileFormats+Cpp.h"
-#include "../../../app/KeyboardLayout.hpp"
-#include "../../../app/DebugSnapshots.hpp"
-#include "../../../app/DebugText.hpp"
-#include "../../../app/LedGeometry.hpp"
-#include "../../../app/ModuleImage.hpp"
-#include "../../../app/PrinterFont.hpp"
-#include "../../../app/RomHeatmap.hpp"
+#include <calcu59/app/KeyboardLayout.hpp>
+#include <calcu59/app/DebugSnapshots.hpp>
+#include <calcu59/app/DebugText.hpp>
+#include <calcu59/app/LedGeometry.hpp>
+#include <calcu59/app/ModuleImage.hpp>
+#include <calcu59/app/PrinterFont.hpp>
+#include <calcu59/app/RomHeatmap.hpp>
 
 
 @interface TILabelSpan ()

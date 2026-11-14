@@ -1,9 +1,9 @@
 #import "TISharedTables.h"
-#include "../../../app/KeyMatrix.hpp"
-#include "../../../app/KeyboardLayout.hpp"
-#include "../../../app/KeyboardMap.hpp"
-#include "../../../app/PrinterFont.hpp"
-#include "../../../app/SevenSegment.hpp"
+#include <calcu59/app/KeyMatrix.hpp>
+#include <calcu59/app/KeyboardLayout.hpp>
+#include <calcu59/app/KeyboardMap.hpp>
+#include <calcu59/app/PrinterFont.hpp>
+#include <calcu59/app/SevenSegment.hpp>
 
 namespace {
 CGRect toCG(const cu59::NRect& r) { return CGRectMake(r.x, r.y, r.w, r.h); }

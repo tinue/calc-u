@@ -38,7 +38,8 @@ drawing rules: `reference/SharedArchitecture.md`. Don't restate them here.
 
 1. `app/Foo.{hpp,cpp}` in namespace `cu59`, with a header comment saying
    what it is and where its format/rules are documented. CMake picks up new
-   `.cpp` files by glob; the Xcode project by its synchronized `Shared` folder.
+   `.cpp` files by glob; the Swift app gets them through
+   `CalcU59.xcframework`, which the Xcode build makes first (ADR 0013).
 2. A test in `tests/`.
 3. Swift access: usually through `SessionController` and its Bridge wrapper
    `frontends/swift/Bridge/TISessionController`; a standalone module gets an ObjC++ wrapper in

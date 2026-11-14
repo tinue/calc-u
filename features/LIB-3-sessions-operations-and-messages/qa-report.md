@@ -17,9 +17,10 @@ wall clock (`ScriptedClock.hpp`: it moves only when the test moves it, plus
 1 ms at every reading). No test reads the host's clock.
 
 Result of the run: `calcu_library_tests` 176 tests (63 of them LIB-3's),
-1,622 checks passed, 0 failed, about 1.5 s. The same in the library-only
-tree (`-DCALCU_PRODUCT_59=OFF -DCALCU_PRODUCT_1600=OFF
--DCALCU_FRONTEND_QT=OFF`). The sources of `library/sessions/` also compile
+1,622 checks passed, 0 failed, 0.51 s in a RelWithDebInfo tree (about
+1.5 s without a build type). The same in the library-only tree (`-DCALCU_PRODUCT_59=OFF -DCALCU_PRODUCT_1600=OFF
+-DCALCU_FRONTEND_QT=OFF`). The whole Frequent group passed in the
+RelWithDebInfo tree: Calc-U-59 23 s, Calc-U-1600 39 s. The sources of `library/sessions/` also compile
 with Emscripten (`em++ -std=c++20 -fwasm-exceptions -Wall -Wextra`), and
 the branch passed both product workflows (GCC 13, MSVC, Emscripten, Apple
 clang).
@@ -64,6 +65,11 @@ clang).
 Support cases: `value_round_trip_every_alternative` (`value_tests.cpp`),
 `topics_request_lists_declared_topics` (`command_tests.cpp`),
 `mirror_keeps_last_state_and_appended` (`mirror_tests.cpp`).
+
+The tests were checked against three broken sessions (each change made,
+the tests run, the change undone): a state topic sent without comparing
+(AC-5 and EC-2 fail); the sound of full speed and of operations played
+(AC-20 fails); a second operation not refused (the test program fails).
 
 Technical Requirements (review): every class of `library/sessions/` is
 single-threaded; it holds no lock, starts no thread and lets no exception

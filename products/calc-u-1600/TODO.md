@@ -395,8 +395,6 @@ Shared-Layer-Followup-Plan.md and Web-GUI-Plan.md.
 - **CLIs on Shared.** `tools/pc1500_cli.cpp` / `pc1600_cli.cpp` build their
   own preset environment and both copy the `drainWav` yield hook; they could
   run presets through `AppSession` (headless Platform) instead.
-- **`tools/build_*.sh` and the probes still list Core sources by hand**
-  (the probes need `PC1600_POWER_PROBE`); CMake globs everything else.
 
 ## Feature ideas
 

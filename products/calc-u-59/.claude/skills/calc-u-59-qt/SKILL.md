@@ -41,7 +41,7 @@ Everything that isn't drawing: `reference/SharedArchitecture.md`.
 5. **Settings keys** both apps store come from `app/SettingsKeys.hpp`;
    only the Qt-only folder and window keys live in `frontends/qt6/app/AppSettings.hpp`.
 6. **Compile, don't run.** Build with the commands below. To check rendering
-   without showing a window: `QT_QPA_PLATFORM=offscreen frontends/qt6/build/Calc-U-59.app/Contents/MacOS/Calc-U-59 [state-file] --grab out.png --after 3000`
+   without showing a window: `QT_QPA_PLATFORM=offscreen ../../build/app-59/products/calc-u-59/frontends/qt6/Calc-U-59.app/Contents/MacOS/Calc-U-59 [state-file] --grab out.png --after 3000`
    (an offscreen screen may clamp the window size). Ask the user to try the app itself.
 7. **Commit often, never push.**
 
@@ -69,11 +69,15 @@ Everything that isn't drawing: `reference/SharedArchitecture.md`.
 ## Build
 
 ```bash
-tools/build_qt.sh                 # Release build into frontends/qt6/build (configures once)
+tools/build_qt.sh                 # Release build into ../../build/app-59 (configures once)
 ./build_and_run.sh [file.ti59]    # build and start (user's call — see rule 6)
-cmake -S . -B build/cmake -G Ninja && cmake --build build/cmake   # root build: tests + Qt app
+cmake -S ../.. -B ../../build/all -G Ninja && cmake --build ../../build/all   # root project: both products, tests + Qt apps
 ```
 
+All C++ builds go through the repository's root `CMakeLists.txt` (ADR 0003;
+options `CALCU_PRODUCT_59`, `CALCU_PRODUCT_1600`, `CALCU_FRONTEND_QT`); the
+product directory does not configure on its own. The packaging jobs in CI
+still configure `-S frontends/qt6`.
 Qt comes from Homebrew on macOS (`/opt/homebrew/opt/qt`, found automatically).
 The version is read from the Xcode project's `MARKETING_VERSION`.
 

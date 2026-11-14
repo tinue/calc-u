@@ -71,7 +71,8 @@ landscape on a large screen) — its column in
   that table either way. `tools/check_parity.sh` flags a branch that touches
   one GUI only.
 - **Every change to `core/` or `app/` must pass all builds before committing:**
-  `cmake -S . -B build/cmake -G Ninja && cmake --build build/cmake && ctest --test-dir build/cmake --output-on-failure`,
+  `cmake -S ../.. -B ../../build/tests -G Ninja -DCALCU_FRONTEND_QT=OFF && cmake --build ../../build/tests && ctest --test-dir ../../build/tests/products/calc-u-59 --output-on-failure`
+  (the repository's root CMake project, ADR 0003),
   `xcodebuild -project frontends/swift/Calc-U-59.xcodeproj -scheme Calc-U-59 -destination platform=macOS build`,
   and the web client, which compiles both layers too:
   `frontends/web/build.sh && frontends/web/run-tests.sh` (`frontends/web/dist/` is gitignored; CI builds it).

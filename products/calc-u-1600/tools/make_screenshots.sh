@@ -11,7 +11,7 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-BUILD_DIR="${ROOT}/frontends/qt6/build"
+BUILD_DIR="$("${ROOT}/tools/build_app.sh" app_dir)"
 
 "${ROOT}/tools/build_app.sh"
 

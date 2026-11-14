@@ -22,7 +22,8 @@ defaults:
 
 jobs:
   core-tests:
-    # core/ + app/ + tests from the product's CMakeLists.txt, without Qt.
+    # core/ + app/ + tests from the repository's root CMake project (ADR
+    # 0003) with Calc-U-59 only, without Qt.
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v5
@@ -34,11 +35,13 @@ jobs:
         shell: bash
         run: roms/fetch_roms.sh
       - name: Configure
-        run: cmake -S . -B build/cmake -G Ninja -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCALCU59_BUILD_QT=OFF
+        run: >-
+          cmake -S ../.. -B ../../build/tests -G Ninja -DCMAKE_BUILD_TYPE=RelWithDebInfo
+          -DCALCU_PRODUCT_1600=OFF -DCALCU_FRONTEND_QT=OFF
       - name: Build
-        run: cmake --build build/cmake
+        run: cmake --build ../../build/tests
       - name: Run tests
-        run: ctest --test-dir build/cmake --output-on-failure
+        run: ctest --test-dir ../../build/tests --output-on-failure
 
   web:
     # frontends/web/build.sh into frontends/web/dist/, the Playwright tests

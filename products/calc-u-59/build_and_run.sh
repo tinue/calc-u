@@ -3,8 +3,9 @@
 # .ti59 state file, are passed to the app.
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")" && pwd)"
+APP_DIR="$ROOT/../../build/app-59/products/calc-u-59/frontends/qt6"  # tools/build_qt.sh
 "$ROOT/tools/build_qt.sh"
 case "$(uname)" in
-    Darwin) open "$ROOT/frontends/qt6/build/Calc-U-59.app" --args "$@" ;;
-    *) exec "$ROOT/Qt6/build/Calc-U-59" "$@" ;;
+    Darwin) open "$APP_DIR/Calc-U-59.app" --args "$@" ;;
+    *) exec "$APP_DIR/Calc-U-59" "$@" ;;
 esac

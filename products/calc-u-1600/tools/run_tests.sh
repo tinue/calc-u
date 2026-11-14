@@ -1,13 +1,16 @@
 #!/bin/sh
 # Builds and runs the headless core/ + app/ test suite (CoreTests) at -O1,
-# from the repo-root CMakeLists.txt without the Qt app, in build-tests/.
-# The source lists come from cmake/CalcU.cmake and the root file's test
-# glob, so there is nothing to keep in sync here. The tests run from the
-# repo root (they load roms/ via relative paths).
+# from the repository's root CMake project (ADR 0003) without the Qt apps,
+# in the repository's build/tests tree. The source lists come from
+# cmake/CalcU.cmake and the product file's test glob, so there is nothing
+# to keep in sync here. The tests run from the product directory (they
+# load roms/ via relative paths).
 set -e
 cd "$(dirname "$0")/.."
-if [ ! -f build-tests/CMakeCache.txt ]; then
-  cmake -S . -B build-tests -G Ninja -DCMAKE_BUILD_TYPE=Debug -DCALCU_BUILD_QT=OFF >/dev/null
+REPO="$(cd ../.. && pwd)"
+TREE="$REPO/build/tests"
+if [ ! -f "$TREE/CMakeCache.txt" ]; then
+  cmake -S "$REPO" -B "$TREE" -G Ninja -DCMAKE_BUILD_TYPE=Debug -DCALCU_FRONTEND_QT=OFF >/dev/null
 fi
-cmake --build build-tests --target CoreTests
-build-tests/CoreTests "$@"
+cmake --build "$TREE" --target CoreTests
+"$TREE/products/calc-u-1600/CoreTests" "$@"

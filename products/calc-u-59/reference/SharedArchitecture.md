@@ -12,13 +12,12 @@ emulation nor drawing. It sits between `core/` (the emulated hardware, see
 
 ```
 frontends/swift/App/ (SwiftUI) ── frontends/swift/Bridge/ (ObjC++) ─────────┐
-frontends/qt6/app/ (Qt Widgets) ──────────────────────┼── app/ (C++17, std only) ── core/
+frontends/qt6/app/ (Qt Widgets) ──────────────────────┼── app/ (C++20, std only) ── core/
 frontends/web/ (React) ── frontends/web/bindings.cpp ───────────┘   (WebAssembly, no threads)
 ```
 
-- **C++17, standard library only** — no Foundation, no Qt, no iCloud. The
-  root `CMakeLists.txt` builds it as C++17 (the Xcode project compiles it as
-  gnu++17), so a C++20-ism fails the CMake build.
+- **C++20, standard library only** (ADR 0005) — no Foundation, no Qt, no
+  iCloud. CMake builds it as C++20, the Xcode project as gnu++20.
 - **No locations.** `app/` never resolves where files live: it takes paths
   (`std::filesystem::path`) or a `ResourceReader` callback that returns a
   bundled file's text by name (Swift: `Bundle.main`; Qt: the `:/roms/` qrc).

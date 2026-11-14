@@ -41,7 +41,7 @@ Pre-built macOS DMGs, Windows installers (x64, ARM64) and Linux AppImages (x86_6
 
 ## Building
 
-The code is layered: `core/` emulates the hardware, `app/` (C++17, standard library only) holds all non-drawing logic, and the three GUIs only draw — see [`reference/SharedArchitecture.md`](reference/SharedArchitecture.md) and [`reference/FrontendParity.md`](reference/FrontendParity.md).
+The code is layered: `core/` emulates the hardware, `app/` (C++20, standard library only) holds all non-drawing logic, and the three GUIs only draw — see [`reference/SharedArchitecture.md`](reference/SharedArchitecture.md) and [`reference/FrontendParity.md`](reference/FrontendParity.md).
 
 **Swift app (macOS, iOS, iPadOS):** open `frontends/swift/Calc-U-59.xcodeproj` in Xcode, or `xcodebuild -project frontends/swift/Calc-U-59.xcodeproj -scheme Calc-U-59 -destination platform=macOS build`. The project carries the author's Apple Developer Team ID and bundle identifier (`ch.erzberger.calcu59`). To build it yourself, change the team on the target's *Signing & Capabilities* tab to your own; Xcode updates the bundle identifier. The Simulator needs no changes. For iCloud card sync on a real device, also register a new iCloud container and update the two container identifiers in `Calc-U-59.entitlements`.
 

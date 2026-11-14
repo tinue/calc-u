@@ -1,0 +1,5 @@
+# The CE-158 on the PC-1600.
+model PC-1600
+attach ce158
+boot
+run 1

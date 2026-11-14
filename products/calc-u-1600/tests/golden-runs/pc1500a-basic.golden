@@ -1,0 +1,71 @@
+> boot
+  cycles 0
+  lcd |NEW0? :CHECK|
+  status DEG PRO I
+  audio samples=48000 nonzero=0 sum=266b3312cb1d9783
+> keys cl
+  cycles 260000
+  lcd |>|
+  status DEG PRO I
+  audio samples=9600 nonzero=0 sum=4b66313d0e238783
+> type new0
+  cycles 1300000
+  lcd |NEW0_|
+  status DEG PRO I
+  audio samples=38400 nonzero=0 sum=d3d0b151f5d71383
+> keys enter
+  cycles 1560000
+  lcd |>|
+  status DEG PRO I
+  audio samples=9600 nonzero=0 sum=4b66313d0e238783
+> run 0.5
+  cycles 2210000
+  lcd |>|
+  status DEG PRO I
+  audio samples=24000 nonzero=0 sum=95e7975ad1774d83
+> type 10 print 2*3
+  cycles 5330004
+  lcd |10 PRINT 2*3_|
+  status DEG PRO I
+  audio samples=48000 nonzero=0 sum=266b3312cb1d9783
+> keys enter
+  cycles 5590004
+  lcd |10:PRINT 2*3|
+  status DEG PRO I
+  audio samples=9600 nonzero=0 sum=4b66313d0e238783
+> keys mode
+  cycles 5850004
+  lcd |>|
+  status DEG RUN I
+  audio samples=9600 nonzero=0 sum=4b66313d0e238783
+> type run
+  cycles 6630004
+  lcd |RUN_|
+  status DEG RUN I
+  audio samples=28800 nonzero=0 sum=3b048dc78f408f83
+> keys enter
+  cycles 6890004
+  lcd |                         6|
+  status DEG RUN I
+  audio samples=9600 nonzero=0 sum=4b66313d0e238783
+> run 1
+  cycles 8190004
+  lcd |                         6|
+  status DEG RUN I
+  audio samples=48000 nonzero=0 sum=266b3312cb1d9783
+> type list
+  cycles 9230004
+  lcd |LIST_|
+  status DEG RUN I
+  audio samples=38400 nonzero=0 sum=d3d0b151f5d71383
+> keys enter
+  cycles 9490008
+  lcd | ERROR 26|
+  status DEG RUN I
+  audio samples=9600 nonzero=0 sum=4b66313d0e238783
+> run 0.5
+  cycles 10140008
+  lcd | ERROR 26|
+  status DEG RUN I
+  audio samples=24000 nonzero=0 sum=95e7975ad1774d83
+= me0 sum=21399fe992e07494

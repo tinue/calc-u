@@ -1,0 +1,10 @@
+# The CE-150 on the PC-1600 (MODE 1).
+model PC-1600
+attach ce150
+boot
+type mode1
+keys enter
+run 1
+type lprint 123
+keys enter
+run 3

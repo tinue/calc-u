@@ -1,0 +1,11 @@
+# A RAM module (CE-151).
+model PC-1500A
+card ce151.card.yaml
+boot
+keys cl
+type new0
+keys enter
+run 0.5
+type print mem
+keys enter
+run 0.5

@@ -1,0 +1,8 @@
+# An error on the PC-1600.
+model PC-1600
+boot
+type 1/0
+keys enter
+run 0.5
+keys cl
+run 0.2

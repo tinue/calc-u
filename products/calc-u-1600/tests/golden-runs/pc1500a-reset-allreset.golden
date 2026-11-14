@@ -1,0 +1,91 @@
+> boot
+  cycles 0
+  lcd |NEW0? :CHECK|
+  status DEG PRO I
+  audio samples=48000 nonzero=0 sum=266b3312cb1d9783
+> keys cl
+  cycles 260000
+  lcd |>|
+  status DEG PRO I
+  audio samples=9600 nonzero=0 sum=4b66313d0e238783
+> type new0
+  cycles 1300000
+  lcd |NEW0_|
+  status DEG PRO I
+  audio samples=38400 nonzero=0 sum=d3d0b151f5d71383
+> keys enter
+  cycles 1560000
+  lcd |>|
+  status DEG PRO I
+  audio samples=9600 nonzero=0 sum=4b66313d0e238783
+> run 0.5
+  cycles 2210000
+  lcd |>|
+  status DEG PRO I
+  audio samples=24000 nonzero=0 sum=95e7975ad1774d83
+> type 10 a=5
+  cycles 3770000
+  lcd |10 A=5_|
+  status DEG PRO I
+  audio samples=48000 nonzero=0 sum=266b3312cb1d9783
+> keys enter
+  cycles 4030000
+  lcd |10:A=5|
+  status DEG PRO I
+  audio samples=9600 nonzero=0 sum=4b66313d0e238783
+> reset
+  cycles 4030000
+  lcd ||
+  status DEG PRO I
+  audio samples=0 nonzero=0 sum=14650fb0739d0383
+> run 2
+  cycles 6630000
+  lcd |NEW0? :CHECK|
+  status DEG PRO I
+  audio samples=48000 nonzero=0 sum=266b3312cb1d9783
+> keys cl
+  cycles 6890000
+  lcd |>|
+  status DEG PRO I
+  audio samples=9600 nonzero=0 sum=4b66313d0e238783
+> type list
+  cycles 7930000
+  lcd |LIST_|
+  status DEG PRO I
+  audio samples=38400 nonzero=0 sum=d3d0b151f5d71383
+> keys enter
+  cycles 8190000
+  lcd |10:A=5|
+  status DEG PRO I
+  audio samples=9600 nonzero=0 sum=4b66313d0e238783
+> run 0.5
+  cycles 8840000
+  lcd |10:A=5|
+  status DEG PRO I
+  audio samples=24000 nonzero=0 sum=95e7975ad1774d83
+> allreset
+  cycles 8840000
+  lcd |NEW0? :CHECK|
+  status DEG PRO I
+  audio samples=48000 nonzero=0 sum=266b3312cb1d9783
+> keys cl
+  cycles 9100000
+  lcd |>|
+  status DEG PRO I
+  audio samples=9600 nonzero=0 sum=4b66313d0e238783
+> type list
+  cycles 10140000
+  lcd |LIST_|
+  status DEG PRO I
+  audio samples=38400 nonzero=0 sum=d3d0b151f5d71383
+> keys enter
+  cycles 10400000
+  lcd |>|
+  status DEG PRO I
+  audio samples=9600 nonzero=0 sum=4b66313d0e238783
+> run 0.5
+  cycles 11050000
+  lcd |>|
+  status DEG PRO I
+  audio samples=24000 nonzero=0 sum=95e7975ad1774d83
+= me0 sum=e68d6ccd623d128b

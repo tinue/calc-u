@@ -1,0 +1,50 @@
+> boot
+  cycles 0
+  lcd |>|
+  lcd ||
+  lcd ||
+  lcd ||
+  status DEG RUN I
+  audio samples=48000 nonzero=0 sum=266b3312cb1d9783
+> type 1/0
+  cycles 1718416
+  lcd |1/0|
+  lcd ||
+  lcd ||
+  lcd ||
+  status DEG RUN I
+  audio samples=23040 nonzero=0 sum=234d05f272597383
+> keys enter
+  cycles 2291218
+  lcd |1/0|
+  lcd |ERROR 38|
+  lcd ||
+  lcd ||
+  status DEG RUN I
+  audio samples=7680 nonzero=0 sum=4f9197d17adbd383
+> run 0.5
+  cycles 4081221
+  lcd |1/0|
+  lcd |ERROR 38|
+  lcd ||
+  lcd ||
+  status DEG RUN I
+  audio samples=24000 nonzero=0 sum=95e7975ad1774d83
+> keys cl
+  cycles 4654026
+  lcd |1/0|
+  lcd |>|
+  lcd ||
+  lcd ||
+  status DEG RUN I
+  audio samples=7680 nonzero=0 sum=4f9197d17adbd383
+> run 0.2
+  cycles 5370030
+  lcd |1/0|
+  lcd |>|
+  lcd ||
+  lcd ||
+  status DEG RUN I
+  audio samples=9600 nonzero=0 sum=4b66313d0e238783
+= internal ram sum=fb3699026acd7034
+= z80 view sum=623b4084a5355a61

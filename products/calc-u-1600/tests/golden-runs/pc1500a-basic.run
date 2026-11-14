@@ -1,0 +1,16 @@
+# A BASIC line, LIST and RUN.
+model PC-1500A
+boot
+keys cl
+type new0
+keys enter
+run 0.5
+type 10 print 2*3
+keys enter
+keys mode
+type run
+keys enter
+run 1
+type list
+keys enter
+run 0.5

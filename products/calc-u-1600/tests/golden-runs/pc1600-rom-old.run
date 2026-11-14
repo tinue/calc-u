@@ -1,0 +1,7 @@
+# The PC-1600's old ROM set.
+model PC-1600
+rom old
+boot
+type print 1+2
+keys enter
+run 0.5

@@ -1,0 +1,18 @@
+# Memory filled, then today's Reset, a power cycle and a Cold boot.
+model TI-59
+boot
+keys 4 2 STO 0 5
+keys LRN 1 + 2 = R/S LRN
+keys CLR
+app-reset
+boot
+keys RCL 0 5
+keys RST R/S
+idle
+core-reset
+boot
+keys RCL 0 5
+keys 9 STO 0 6 LRN 3 R/S LRN
+app-coldboot
+boot
+keys RCL 0 6

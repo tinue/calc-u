@@ -23,8 +23,10 @@ Per example `<folder>_<file>`:
 - `.meta`: exit code, seconds, the files the run changed in the copy of
   `examples/`, the media saved by name.
 
-Not in these files: the paper itself, the CE-150's plot points and all of
-the CE-1600P's output (the CLIs give the CE-150's pen events and their
-count only). They are recorded with the golden runs from
-the code as imported (M-8), before any core change, and turned into
-`paper` replies once (LIB-8 AC-39).
+- `.paper` (the 14 examples with a plotter): the paper as plot points,
+  one per line (`x y color newStroke`) after a header per plotter. Added
+  on 2026-11-14 (M-8) from the code as imported (the 0.8.1 code in
+  `products/calc-u-1600`), before any core change, with the imported CLIs
+  and `CALCU_PAPER_OUT=<file>` (added to them for this,
+  `tools/CliCommon.hpp`), each example again in a fresh copy of
+  `examples/`. They are turned into `paper` replies once (LIB-8 AC-39).

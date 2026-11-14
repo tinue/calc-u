@@ -179,6 +179,12 @@ int runPreset(const std::string& presetPath, uint64_t maxCycles, bool dumpBasic,
             return 1;
         }
     }
+    if (const char* paperPath = std::getenv("CALCU_PAPER_OUT")) {
+        std::string paper;
+        if (machine.ce150Attached()) cli::appendPlotPoints(&paper, "CE-150", machine.ce150PlotPoints());
+        if (machine.ce1600pAttached()) cli::appendPlotPoints(&paper, "CE-1600P", machine.ce1600pPlotPoints());
+        if (!cli::writeFile(paperPath, paper)) return 1;
+    }
     cli::printCe150Report(machine);
     if (!ce158Peer.report(machine)) return 1;
     if (!tape.finish(machine)) return 1;

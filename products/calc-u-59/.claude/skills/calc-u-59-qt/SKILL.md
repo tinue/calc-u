@@ -76,8 +76,10 @@ cmake -S ../.. -B ../../build/all -G Ninja && cmake --build ../../build/all   # 
 
 All C++ builds go through the repository's root `CMakeLists.txt` (ADR 0003;
 options `CALCU_PRODUCT_59`, `CALCU_PRODUCT_1600`, `CALCU_FRONTEND_QT`); the
-product directory does not configure on its own. The packaging jobs in CI
-still configure `-S frontends/qt6`.
+product directory and `frontends/qt6/` do not configure on their own. The
+packaging jobs in CI configure the root into `build/release`
+(`-DCALCU_PRODUCT_1600=OFF -DCALCU_TESTS=OFF`) and build `CalcU59Qt`; the
+`.iss` includes `Version.iss` from that tree.
 Qt comes from Homebrew on macOS (`/opt/homebrew/opt/qt`, found automatically).
 The version is read from the Xcode project's `MARKETING_VERSION`.
 

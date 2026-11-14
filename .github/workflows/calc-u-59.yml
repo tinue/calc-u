@@ -10,6 +10,10 @@
 # ROMs are not in this repository (ADR 0034): every job fetches them with
 # roms/fetch_roms.sh from tinue/TI-59-ROM and checks their md5; the Qt build
 # compiles them in as resources.
+#
+# Every build configures the repository's root CMake project (ADR 0003):
+# build/tests (core-tests), build/web (frontends/web/build.sh, under
+# Emscripten) and build/release (the Qt6 app for packaging, without tests).
 
 name: Calc-U-59
 
@@ -19,6 +23,12 @@ on:
 defaults:
   run:
     working-directory: products/calc-u-59
+
+env:
+  # The packaging jobs' tree and the Qt6 app's directory in it, relative to
+  # the product directory.
+  RELEASE_BUILD: ../../build/release
+  QT_BUILD: ../../build/release/products/calc-u-59/frontends/qt6
 
 jobs:
   core-tests:
@@ -44,11 +54,16 @@ jobs:
         run: ctest --test-dir ../../build/tests --output-on-failure
 
   web:
-    # frontends/web/build.sh into frontends/web/dist/, the Playwright tests
-    # against it, and dist/ zipped (reference/WebClient.md).
+    # frontends/web/build.sh into frontends/web/dist/ (the engine is the
+    # root project's calcu59_web target, built in build/web), the
+    # Playwright tests against it, and dist/ zipped (reference/WebClient.md).
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v5
+      - name: Install build tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake ninja-build
       - name: Install emsdk
         uses: mymindstorm/setup-emsdk@v16
         with:
@@ -103,10 +118,12 @@ jobs:
       - name: Fetch ROMs
         shell: bash
         run: roms/fetch_roms.sh
-      - name: Configure
-        run: cmake -S frontends/qt6 -B frontends/qt6/build -G Ninja -DCMAKE_BUILD_TYPE=Release
+      - name: Configure (repository root)
+        run: >-
+          cmake -S ../.. -B $RELEASE_BUILD -G Ninja -DCMAKE_BUILD_TYPE=Release
+          -DCALCU_PRODUCT_1600=OFF -DCALCU_TESTS=OFF
       - name: Build
-        run: cmake --build frontends/qt6/build
+        run: cmake --build $RELEASE_BUILD --target CalcU59Qt
       - name: Build AppImage
         env:
           QMAKE: /usr/lib/qt6/bin/qmake6
@@ -117,7 +134,7 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p AppDir/usr/bin
-          cp frontends/qt6/build/Calc-U-59 AppDir/usr/bin/
+          cp $QT_BUILD/Calc-U-59 AppDir/usr/bin/
           curl -fsSL -o linuxdeploy.AppImage \
             https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-${{ matrix.arch }}.AppImage
           curl -fsSL -o linuxdeploy-plugin-qt.AppImage \
@@ -193,15 +210,17 @@ jobs:
       - name: Fetch ROMs
         shell: bash
         run: roms/fetch_roms.sh
-      - name: Configure
-        run: cmake -S frontends/qt6 -B frontends/qt6/build -G Ninja -DCMAKE_BUILD_TYPE=Release
+      - name: Configure (repository root)
+        run: >-
+          cmake -S ../.. -B ${{ env.RELEASE_BUILD }} -G Ninja -DCMAKE_BUILD_TYPE=Release
+          -DCALCU_PRODUCT_1600=OFF -DCALCU_TESTS=OFF
       - name: Build
-        run: cmake --build frontends/qt6/build
+        run: cmake --build ${{ env.RELEASE_BUILD }} --target CalcU59Qt
       - name: Stage the app folder
         shell: pwsh
         run: |
           New-Item -ItemType Directory -Force -Path frontends/qt6/dist | Out-Null
-          Copy-Item frontends/qt6/build/Calc-U-59.exe frontends/qt6/dist/
+          Copy-Item $env:QT_BUILD/Calc-U-59.exe frontends/qt6/dist/
           Copy-Item ../../LICENSE, NOTICE, THIRD-PARTY-NOTICES.md frontends/qt6/dist/
           Copy-Item licenses frontends/qt6/dist/licenses -Recurse
           windeployqt --release --compiler-runtime frontends/qt6/dist/Calc-U-59.exe

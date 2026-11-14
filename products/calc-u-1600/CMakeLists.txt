@@ -4,21 +4,20 @@ cmake_minimum_required(VERSION 3.21)
 # CALCU_PRODUCT_1600): the calcu_core / calcu_shared libraries
 # (cmake/CalcU.cmake), the Qt6 GUI app (with CALCU_FRONTEND_QT, via
 # add_subdirectory(frontends/qt6)), the headless CLIs and probes, and the
-# core/ + app/ test suite as a CTest target. Opening the repository root in
-# CLion (or any CMake-aware IDE) gives run/debug configurations for all of
-# them -- see the "CLion / IDE Integration" section of
-# docs/developer/Building.md.
-#
-# The release packaging in CI still configures frontends/qt6/ on its own
-# (`-S frontends/qt6`); this file pulls the same directory in.
-#
-# Until the Web frontends build through the root project (M-12 of the
-# migration plan), this directory still configures on its own under
-# Emscripten (tools/build_wasm_check.sh, frontends/web/build.sh); any other
-# build configures the repository root.
+# core/ + app/ test suite as a CTest target (with CALCU_TESTS). Opening the
+# repository root in CLion (or any CMake-aware IDE) gives run/debug
+# configurations for all of them -- see the "CLion / IDE Integration"
+# section of docs/developer/Building.md. Under Emscripten only the Web
+# engine (calcu_web) and the wasm_smoke check (frontends/web/build.sh,
+# tools/build_wasm_check.sh; both build in the root's build/web).
 #
 # Options (besides the root ones):
 #   CALCU_TESTS_DEBUG  build core/ and the tests at -O0 for stepping through
+
+if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
+  message(FATAL_ERROR "products/calc-u-1600 is part of the root CMake project (ADR 0003): "
+                      "configure the repository root, e.g. cmake -S ../.. -B ../../build/all")
+endif()
 
 set(CMAKE_OSX_DEPLOYMENT_TARGET "15.8" CACHE STRING "Minimum macOS version")
 
@@ -26,12 +25,6 @@ if(APPLE)
   project(Calc-U-1600 LANGUAGES CXX OBJCXX)
 else()
   project(Calc-U-1600 LANGUAGES CXX)
-endif()
-
-# After project(): the Emscripten toolchain sets EMSCRIPTEN there.
-if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR AND NOT EMSCRIPTEN)
-  message(FATAL_ERROR "products/calc-u-1600 is part of the root CMake project (ADR 0003): "
-                      "configure the repository root, e.g. cmake -S ../.. -B ../../build/all")
 endif()
 
 set(CMAKE_CXX_STANDARD 20)
@@ -53,9 +46,10 @@ endif()
 include(cmake/CalcU.cmake)
 
 # -----------------------------------------------------------------------------
-# WebAssembly check (tools/build_wasm_check.sh: emcmake cmake ...): only
-# Core + Shared and a node smoke test -- no Qt, no CLIs, probes or CoreTests.
-# Proves the frontend-neutral layers build and run for a web GUI.
+# WebAssembly (emcmake cmake on the repository root): only Core + Shared,
+# the node smoke test (tools/build_wasm_check.sh) and the web client's
+# engine -- no Qt, no CLIs, probes or CoreTests. The smoke test proves the
+# frontend-neutral layers build and run for a web GUI.
 # -----------------------------------------------------------------------------
 if(EMSCRIPTEN)
   # Shared/ reports with exceptions; Core's jobs rethrow through them.
@@ -70,7 +64,8 @@ if(EMSCRIPTEN)
   target_link_options(wasm_smoke PRIVATE -fwasm-exceptions -sNODERAWFS=1 -sALLOW_MEMORY_GROWTH=1
                       -sENVIRONMENT=node -sEXIT_RUNTIME=1)
 
-  # The web client's engine (Web/build.sh copies it into Web/dist/wasm/):
+  # The web client's engine (frontends/web/build.sh copies it into
+  # frontends/web/dist/wasm/):
   # Shared/ behind Web/bindings.cpp, for a Web Worker. No -pthread: a static
   # host can't be relied on for the COOP/COEP headers threads need. IDBFS
   # keeps the save folder in IndexedDB (mounted by the worker).
@@ -120,21 +115,24 @@ add_executable(pc1600_plotter_probe ${TOOLS_ROOT}/pc1600_plotter_probe.cpp)
 target_link_libraries(pc1600_plotter_probe PRIVATE calcu_core)
 
 # -----------------------------------------------------------------------------
-# Test Suite target
+# Test Suite target (CALCU_TESTS; the release packaging turns it off, which
+# also spares the Windows runners a zlib)
 # -----------------------------------------------------------------------------
-find_package(ZLIB REQUIRED)
+if(CALCU_TESTS)
+  find_package(ZLIB REQUIRED)
 
-file(GLOB TEST_SOURCES CONFIGURE_DEPENDS
-  ${CMAKE_CURRENT_SOURCE_DIR}/tests/*.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/app/tests/*.cpp
-)
+  file(GLOB TEST_SOURCES CONFIGURE_DEPENDS
+    ${CMAKE_CURRENT_SOURCE_DIR}/tests/*.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/app/tests/*.cpp
+  )
 
-add_executable(CoreTests ${TEST_SOURCES})
-target_link_libraries(CoreTests PRIVATE calcu_shared ZLIB::ZLIB)
-target_compile_options(CoreTests PRIVATE ${CALCU_WARNINGS})
-if(NOT CALCU_TESTS_DEBUG AND NOT MSVC)
-  target_compile_options(CoreTests PRIVATE $<$<CONFIG:Debug>:-O1>)
+  add_executable(CoreTests ${TEST_SOURCES})
+  target_link_libraries(CoreTests PRIVATE calcu_shared ZLIB::ZLIB)
+  target_compile_options(CoreTests PRIVATE ${CALCU_WARNINGS})
+  if(NOT CALCU_TESTS_DEBUG AND NOT MSVC)
+    target_compile_options(CoreTests PRIVATE $<$<CONFIG:Debug>:-O1>)
+  endif()
+
+  enable_testing()
+  add_test(NAME CoreTests COMMAND CoreTests WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
 endif()
-
-enable_testing()
-add_test(NAME CoreTests COMMAND CoreTests WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})

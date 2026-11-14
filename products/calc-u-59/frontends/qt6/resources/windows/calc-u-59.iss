@@ -1,14 +1,15 @@
 ; Inno Setup script for the Calc-U-59 Windows installer, run by
-; .github/workflows/build.yml after windeployqt has staged Qt6/dist.
+; .github/workflows/calc-u-59.yml after windeployqt has staged frontends/qt6/dist.
 ; /DAPP_ARCH=arm64 builds the ARM64 installer; the default is x64.
-; The version comes from the CMake build (Qt6/build/generated/Version.iss,
-; itself from the Xcode project's MARKETING_VERSION).
+; The version comes from the CMake build: the root project's build/release
+; tree (ADR 0003), generated/Version.iss of the Qt6 app's directory in it,
+; itself from the Xcode project's MARKETING_VERSION.
 
 #ifndef APP_ARCH
   #define APP_ARCH "x64"
 #endif
 
-#include "..\..\build\generated\Version.iss"
+#include "..\..\..\..\..\..\build\release\products\calc-u-59\frontends\qt6\generated\Version.iss"
 
 [Setup]
 AppName=Calc-U-59

@@ -1,24 +1,24 @@
 #!/usr/bin/env bash
-# Build the web client into Web/dist/ (gitignored): the WASM engine (Core/ +
-# Shared/ + bindings.cpp), the ROM files it loads, the calculator's script,
-# stylesheet and fonts, the presets, the installable PWA and a demo page.
-# reference/WebClient.md is the contract for what dist/ contains.
+# Build the web client into frontends/web/dist/ (gitignored): the WASM
+# engine (core/ + app/ + bindings.cpp; CMake target calcu59_web of the
+# repository's root project, ADR 0003, built in build/web), the ROM files it
+# loads, the calculator's script, stylesheet and fonts, the presets, the
+# installable PWA and a demo page. reference/WebClient.md is the contract
+# for what dist/ contains; the product's CMakeLists.txt has the engine's
+# Emscripten flags.
 #
-# Requires emcc on PATH (e.g. `brew install emscripten`; CI pins the version
-# in .github/workflows/build.yml) and node. Re-run whenever Core/, Shared/,
-# roms/ or anything in Web/ changes.
-#
-# Single-threaded (no -pthread): a static host can't be relied on to send
-# the headers SharedArrayBuffer needs, so SessionController runs in
-# Threading::Cooperative. -fexceptions: Shared/ reports ROM and file errors
-# with exceptions.
+# Requires emcmake/cmake (e.g. `brew install emscripten`; CI pins the
+# version in .github/workflows/calc-u-59.yml), ninja and node. Re-run
+# whenever core/, app/, roms/ or anything in frontends/web/ changes.
 set -euo pipefail
 
 WEB="$(cd "$(dirname "$0")" && pwd)"
 REPO_ROOT="$(cd "$WEB/../.." && pwd)"  # the product directory
+ROOT="$(cd "$REPO_ROOT/../.." && pwd)"  # the repository's root CMake project
+BUILD="$ROOT/build/web"
 DIST="$WEB/dist"
 
-for tool in em++ node; do
+for tool in emcmake cmake ninja node; do
   if ! command -v "$tool" >/dev/null 2>&1; then
     echo "error: $tool not found on PATH." >&2
     exit 1
@@ -28,20 +28,11 @@ done
 rm -rf "$DIST"
 mkdir -p "$DIST/wasm/roms" "$DIST/app" "$DIST/vendor" "$DIST/fonts" "$DIST/img"
 
-em++ \
-  -O3 \
-  -std=c++17 \
-  -fexceptions \
-  --bind \
-  -s MODULARIZE=1 \
-  -s EXPORT_NAME=createTI59CoreModule \
-  -s ENVIRONMENT=web,worker \
-  -s ALLOW_MEMORY_GROWTH=1 \
-  -s NO_EXIT_RUNTIME=1 \
-  -o "$DIST/wasm/ti59-core.js" \
-  "$REPO_ROOT"/core/*.cpp \
-  "$REPO_ROOT"/app/*.cpp \
-  "$WEB/bindings.cpp"
+if [ ! -f "$BUILD/CMakeCache.txt" ]; then
+  emcmake cmake -S "$ROOT" -B "$BUILD" -G Ninja -DCMAKE_BUILD_TYPE=Release >/dev/null
+fi
+cmake --build "$BUILD" --target calcu59_web
+cp "$BUILD/products/calc-u-59/ti59-core.js" "$BUILD/products/calc-u-59/ti59-core.wasm" "$DIST/wasm/"
 
 # Every model's ROM and constants, the module catalogue and every module
 # image: the files the worker hands SessionController's ResourceReader.

@@ -49,7 +49,8 @@ frontends/web/run-tests.sh    # Playwright: root, sub-path, offline (Chromium, W
 
 `build.sh` needs `emcmake` (emsdk 6.0.13, as for the
 [WebAssembly check](Building.md#webassembly-check)), node and the ROMs. The
-engine is the CMake target `calcu_web` in `build-wasm/`
+engine is the CMake target `calcu_web` of the repository's root project,
+built in its `build/web` tree
 (`calcu1600-core.js` / `.wasm`): no `-pthread`, native wasm exceptions,
 `IDBFS`. `build.js` compiles the JSX with the vendored Babel (no npm
 runtime dependencies), copies the presets that

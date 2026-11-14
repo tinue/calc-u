@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Builds the web client into frontends/web/dist/ (gitignored): the WASM engine (core/ +
-# app/ + frontends/web/bindings.cpp, CMake target calcu_web), the files it loads
+# app/ + frontends/web/bindings.cpp, CMake target calcu_web of the repository's
+# root project, ADR 0003, built in build/web), the files it loads
 # (ROMs, bundled cards and disks, the curated presets), the faceplates, the
 # client script and stylesheet, the installable app (app/) and a demo page.
 # docs/developer/Web-Client.md is the contract for what dist/ contains.
@@ -11,10 +12,11 @@ set -euo pipefail
 
 WEB="$(cd "$(dirname "$0")" && pwd)"
 REPO="$(cd "$WEB/../.." && pwd)"  # the product directory
+ROOT="$(cd "$REPO/../.." && pwd)"  # the repository's root CMake project
 DIST="$WEB/dist"
-BUILD="$REPO/build-wasm"
+BUILD="$ROOT/build/web"
 
-for tool in emcmake cmake node; do
+for tool in emcmake cmake ninja node; do
   if ! command -v "$tool" >/dev/null 2>&1; then
     echo "error: $tool not found on PATH." >&2
     exit 1
@@ -26,14 +28,14 @@ if ! ls "$REPO"/roms/*.bin >/dev/null 2>&1; then
 fi
 
 if [ ! -f "$BUILD/CMakeCache.txt" ]; then
-  emcmake cmake -S "$REPO" -B "$BUILD" -G Ninja -DCMAKE_BUILD_TYPE=Release >/dev/null
+  emcmake cmake -S "$ROOT" -B "$BUILD" -G Ninja -DCMAKE_BUILD_TYPE=Release >/dev/null
 fi
 cmake --build "$BUILD" --target calcu_web
 
 rm -rf "$DIST"
 mkdir -p "$DIST/wasm" "$DIST/bundle" "$DIST/img" "$DIST/app" "$DIST/vendor"
 
-cp "$BUILD/calcu1600-core.js" "$BUILD/calcu1600-core.wasm" "$DIST/wasm/"
+cp "$BUILD/products/calc-u-1600/calcu1600-core.js" "$BUILD/products/calc-u-1600/calcu1600-core.wasm" "$DIST/wasm/"
 # What the engine reads as bundled resources (AppPaths::bundledResourcesDir):
 # every ROM image and the bundled card and disk templates. The host-drive
 # ROM stays out: the web has no host drive.

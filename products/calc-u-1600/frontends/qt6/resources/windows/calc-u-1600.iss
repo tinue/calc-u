@@ -12,9 +12,10 @@
   #define APP_ARCH "x64"
 #endif
 
-; APP_VERSION comes from Qt6/CMakeLists.txt's APP_VERSION, written into the
-; build dir at configure time -- so configure (cmake) before running ISCC.
-#include "..\..\build\generated\Version.iss"
+; APP_VERSION comes from frontends/qt6/CMakeLists.txt's APP_VERSION, written
+; at configure time into the Qt6 app's directory of the root project's
+; build/release tree (ADR 0003) -- so configure (cmake) before running ISCC.
+#include "..\..\..\..\..\..\build\release\products\calc-u-1600\frontends\qt6\generated\Version.iss"
 
 [Setup]
 AppName=Calc-U-1600

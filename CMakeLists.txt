@@ -8,17 +8,20 @@ cmake_minimum_required(VERSION 3.21)
 #   cmake -S . -B build/all -G Ninja                         # everything, Qt6 when found
 #   cmake -S . -B build/tests -G Ninja -DCALCU_FRONTEND_QT=OFF  # cores and tests, no Qt
 #   ctest --test-dir build/tests/products/calc-u-59          # one product's tests
+#   emcmake cmake -S . -B build/web -G Ninja -DCMAKE_BUILD_TYPE=Release  # the Web engines
 #
 # Options:
 #   CALCU_PRODUCT_59    Calc-U-59 (products/calc-u-59/)
 #   CALCU_PRODUCT_1600  Calc-U-1600 (products/calc-u-1600/)
 #   CALCU_FRONTEND_QT   the Qt6 desktop apps; without it nothing needs Qt
+#   CALCU_TESTS         the products' test suites; the release packaging in
+#                       CI turns them off (build/release, the Qt6 apps only)
 #
-# Not yet here: the Web frontends (Calc-U-59's frontends/web/build.sh calls
-# em++; Calc-U-1600's Emscripten builds still configure its product
-# directory, M-12 of docs/migration-plan.md), the Swift frontend (Xcode
-# compiles core/ and app/ itself; ADR 0013, M-15), and the Qt6 release
-# packaging in CI, which configures frontends/qt6/ of each product.
+# Under the Emscripten toolchain (emcmake) each product defines only its
+# Web engine (calcu59_web, calcu_web) and Calc-U-1600's wasm_smoke check;
+# frontends/web/build.sh of each product builds it in build/web and puts
+# dist/ together. Not here: the Swift frontend (Xcode compiles core/ and
+# app/ itself; ADR 0013, M-15).
 
 # One minimum for the whole tree, before project(): Calc-U-1600 needs 15.8
 # (its vendored libsharpdx is built for it); the Calc-U-59 Qt build on the
@@ -35,6 +38,7 @@ endif()
 option(CALCU_PRODUCT_59 "Build Calc-U-59" ON)
 option(CALCU_PRODUCT_1600 "Build Calc-U-1600" ON)
 option(CALCU_FRONTEND_QT "Build the Qt6 desktop apps" ON)
+option(CALCU_TESTS "Build the products' test suites" ON)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 enable_testing()

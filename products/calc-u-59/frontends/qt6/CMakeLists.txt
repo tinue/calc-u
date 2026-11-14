@@ -1,10 +1,14 @@
 cmake_minimum_required(VERSION 3.21)
 # Calc-U-59 Qt6 desktop app. Built as part of the repository's root CMake
 # project (ADR 0003; tools/build_qt.sh, the local development build on
-# macOS); the release packaging for Windows and Linux in CI
-# (.github/workflows/calc-u-59.yml) still configures this directory on its
-# own (-S frontends/qt6). The Mac Qt build is never shipped: on macOS the
-# Swift app (Calc-U-59.xcodeproj) is the product.
+# macOS; the release packaging for Windows and Linux in CI,
+# .github/workflows/calc-u-59.yml, in build/release). It does not configure
+# on its own. The Mac Qt build is never shipped: on macOS the Swift app
+# (Calc-U-59.xcodeproj) is the product.
+if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
+  message(FATAL_ERROR "frontends/qt6 is part of the root CMake project (ADR 0003): "
+                      "configure the repository root, e.g. cmake -S ../../../.. -B ../../../../build/all")
+endif()
 #
 # The app compiles core/ and app/ unchanged — the same sources the Swift
 # app and the product's CMakeLists.txt (tests) build. No GUI-independent

@@ -149,9 +149,12 @@ it as an installer, run `windeployqt --release --compiler-runtime` on the
 `.exe` and package the staged folder with Inno Setup using
 [`frontends/qt6/resources/windows/calc-u-1600.iss`](../../frontends/qt6/resources/windows/calc-u-1600.iss)
 — see the `windows-x86_64` job in the workflow for the exact staging
-layout. The packaging jobs still configure `frontends/qt6/` on its own
-(`-S frontends/qt6 -B frontends/qt6/build`), which the `.iss` file expects
-for its generated `Version.iss`. The installer is currently unsigned.
+layout. The packaging jobs configure the repository root into
+`build/release` with `-DCALCU_PRODUCT_59=OFF -DCALCU_TESTS=OFF` and build
+only `CalcU1600Qt`; the `.iss` file includes its generated `Version.iss`
+from that tree (`build/release/products/calc-u-1600/frontends/qt6/generated/`).
+`CALCU_TESTS=OFF` leaves out `CoreTests` and with it the zlib the Windows
+runners don't have. The installer is currently unsigned.
 
 CI also builds a native ARM64 version (`windows-arm64` job) on a
 `windows-11-arm` runner, the same way as x86_64 but with Qt's
@@ -236,7 +239,8 @@ cmake --build ../../build/debug --target CoreTests
 tools/build_wasm_check.sh
 ```
 
-Builds `core/` + `app/` with Emscripten (`emcmake`, into `build-wasm/`)
+Builds `core/` + `app/` with Emscripten (`emcmake` on the repository
+root, into `../../build/web`, the tree `frontends/web/build.sh` uses too)
 and runs `tools/wasm_smoke.cpp` under node from the repo root: both models
 boot through `shared::AppSession` and presets run cooperatively, a slice
 per `tick()`, never blocking -- what a browser GUI will do. It keeps the

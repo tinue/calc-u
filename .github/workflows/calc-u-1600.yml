@@ -43,12 +43,20 @@ defaults:
   run:
     working-directory: products/calc-u-1600
 
+env:
+  # The packaging jobs' tree of the root CMake project (ADR 0003; the Qt6
+  # app without the tests) and the Qt6 app's directory in it, relative to
+  # the product directory.
+  RELEASE_BUILD: ../../build/release
+  QT_BUILD: ../../build/release/products/calc-u-1600/frontends/qt6
+
 jobs:
   # The repository's root CMake project (ADR 0003) with Calc-U-1600 only and
   # without Qt: the CLI harnesses, the probes and CoreTests on top of the
   # calcu_core / calcu_shared libraries from cmake/CalcU.cmake. This job is
   # the only CI run of the core/ + app/ test suite. The packaging jobs below
-  # still configure `-S frontends/qt6` and build the GUI app.
+  # configure the root too (build/release, CALCU_TESTS off) and build only
+  # the GUI app.
   core-tests:
     runs-on: ubuntu-24.04
     steps:
@@ -90,7 +98,8 @@ jobs:
   # Core + Shared built for WebAssembly with Emscripten, and a node smoke
   # test running presets cooperatively through shared::AppSession (no
   # threads, no blocking) -- keeps the frontend-neutral layers portable to
-  # a web GUI. Then the web client itself (frontends/web/build.sh), its Playwright
+  # a web GUI. Both build in build/web of the root CMake project (ADR 0003).
+  # Then the web client itself (frontends/web/build.sh), its Playwright
   # tests in Chromium and WebKit (frontends/web/run-tests.sh), and dist/ zipped as the
   # Calc-U-1600-web artifact (release.yaml attaches it). libsharpdx-wasm.a
   # is committed (tools/build_sharpdx_wasm.sh), so no Rust toolchain is
@@ -173,11 +182,13 @@ jobs:
         shell: bash
         run: tools/fetch_sharpdx.sh
 
-      - name: Configure
-        run: cmake -S frontends/qt6 -B frontends/qt6/build -G Ninja -DCMAKE_BUILD_TYPE=Release
+      - name: Configure (repository root)
+        run: >-
+          cmake -S ../.. -B ${{ env.RELEASE_BUILD }} -G Ninja -DCMAKE_BUILD_TYPE=Release
+          -DCALCU_PRODUCT_59=OFF -DCALCU_TESTS=OFF
 
       - name: Build
-        run: cmake --build frontends/qt6/build
+        run: cmake --build ${{ env.RELEASE_BUILD }} --target CalcU1600Qt
 
       - name: Build AppImage
         env:
@@ -200,8 +211,8 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p AppDir/usr/bin
-          cp frontends/qt6/build/Calc-U-1600 AppDir/usr/bin/
-          cp -R frontends/qt6/build/resources AppDir/usr/bin/resources
+          cp $QT_BUILD/Calc-U-1600 AppDir/usr/bin/
+          cp -R $QT_BUILD/resources AppDir/usr/bin/resources
 
           curl -fsSL -o linuxdeploy.AppImage \
             https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-x86_64.AppImage
@@ -320,11 +331,13 @@ jobs:
         shell: bash
         run: tools/fetch_sharpdx.sh
 
-      - name: Configure
-        run: cmake -S frontends/qt6 -B frontends/qt6/build -G Ninja -DCMAKE_BUILD_TYPE=Release
+      - name: Configure (repository root)
+        run: >-
+          cmake -S ../.. -B ${{ env.RELEASE_BUILD }} -G Ninja -DCMAKE_BUILD_TYPE=Release
+          -DCALCU_PRODUCT_59=OFF -DCALCU_TESTS=OFF
 
       - name: Build
-        run: cmake --build frontends/qt6/build
+        run: cmake --build ${{ env.RELEASE_BUILD }} --target CalcU1600Qt
 
       # See linux-x86_64's identical step for what each part of this does.
       - name: Build AppImage
@@ -335,8 +348,8 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p AppDir/usr/bin
-          cp frontends/qt6/build/Calc-U-1600 AppDir/usr/bin/
-          cp -R frontends/qt6/build/resources AppDir/usr/bin/resources
+          cp $QT_BUILD/Calc-U-1600 AppDir/usr/bin/
+          cp -R $QT_BUILD/resources AppDir/usr/bin/resources
 
           curl -fsSL -o linuxdeploy.AppImage \
             https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-aarch64.AppImage
@@ -412,15 +425,15 @@ jobs:
         shell: bash
         run: roms/fetch_roms.sh
 
-      - name: Configure
+      - name: Configure (repository root)
         run: |
-          cmake -S frontends/qt6 -B frontends/qt6/build -G Ninja \
+          cmake -S ../.. -B $RELEASE_BUILD -G Ninja \
             -DCMAKE_PREFIX_PATH=$(brew --prefix qt) \
-            -DCMAKE_BUILD_TYPE=Release
+            -DCMAKE_BUILD_TYPE=Release -DCALCU_PRODUCT_59=OFF -DCALCU_TESTS=OFF
 
       - name: Build
         # Produces a real .app bundle (frontends/qt6/CMakeLists.txt's MACOSX_BUNDLE).
-        run: cmake --build frontends/qt6/build
+        run: cmake --build $RELEASE_BUILD --target CalcU1600Qt
 
       - name: Embed Qt frameworks (macdeployqt)
         # Without this the .app links Qt via an absolute Homebrew path
@@ -431,7 +444,7 @@ jobs:
         # required before signing/notarizing, since Gatekeeper doesn't care
         # but every non-dev Mac downloading this would otherwise crash on
         # launch.
-        run: $(brew --prefix qt)/bin/macdeployqt frontends/qt6/build/Calc-U-1600.app
+        run: $(brew --prefix qt)/bin/macdeployqt $QT_BUILD/Calc-U-1600.app
 
       # See ../macos-signing.md (same Developer ID, team 7Q3QN9AV9J, as
       # SharpDataExchange) for how these repo secrets were produced and
@@ -465,7 +478,7 @@ jobs:
       - name: Codesign the .app (Developer ID Application, hardened runtime)
         run: |
           set -euo pipefail
-          APP=frontends/qt6/build/Calc-U-1600.app
+          APP=$QT_BUILD/Calc-U-1600.app
           # --deep signs every embedded framework/dylib macdeployqt placed
           # under Contents/Frameworks too, not just the outer bundle.
           codesign --deep --force --timestamp --options runtime \
@@ -480,7 +493,7 @@ jobs:
         run: |
           set -euo pipefail
           echo "$API_KEY_B64" | base64 --decode > "$RUNNER_TEMP/asc_api_key.p8"
-          APP=frontends/qt6/build/Calc-U-1600.app
+          APP=$QT_BUILD/Calc-U-1600.app
           ditto -c -k --keepParent "$APP" "$RUNNER_TEMP/Calc-U-1600.zip"
           xcrun notarytool submit "$RUNNER_TEMP/Calc-U-1600.zip" \
             --key "$RUNNER_TEMP/asc_api_key.p8" --key-id "$KEY_ID" --issuer "$ISSUER_ID" \
@@ -500,10 +513,10 @@ jobs:
           set -euo pipefail
           STAGE="$RUNNER_TEMP/dmg-stage"
           mkdir -p "$STAGE"
-          cp -R frontends/qt6/build/Calc-U-1600.app "$STAGE/"
+          cp -R $QT_BUILD/Calc-U-1600.app "$STAGE/"
           ln -s /Applications "$STAGE/Applications"
           hdiutil create -volname "Calc-U-1600" -srcfolder "$STAGE" \
-            -ov -format UDZO frontends/qt6/build/Calc-U-1600.dmg
+            -ov -format UDZO $QT_BUILD/Calc-U-1600.dmg
 
       - name: Sign + notarize + staple the DMG
         env:
@@ -511,7 +524,7 @@ jobs:
           ISSUER_ID: ${{ secrets.APPLE_API_ISSUER_ID }}
         run: |
           set -euo pipefail
-          DMG=frontends/qt6/build/Calc-U-1600.dmg
+          DMG=$QT_BUILD/Calc-U-1600.dmg
           codesign --force --timestamp --sign "$APP_IDENTITY" --keychain "$SIGN_KEYCHAIN" "$DMG"
           xcrun notarytool submit "$DMG" \
             --key "$RUNNER_TEMP/asc_api_key.p8" --key-id "$KEY_ID" --issuer "$ISSUER_ID" \
@@ -536,7 +549,7 @@ jobs:
         uses: actions/upload-artifact@v6
         with:
           name: Calc-U-1600-mac-aarch64
-          path: products/calc-u-1600/frontends/qt6/build/Calc-U-1600.dmg
+          path: build/release/products/calc-u-1600/frontends/qt6/Calc-U-1600.dmg
           if-no-files-found: error
 
   windows-x86_64:
@@ -572,22 +585,24 @@ jobs:
         shell: bash
         run: tools/fetch_sharpdx.sh
 
-      - name: Configure
-        run: cmake -S frontends/qt6 -B frontends/qt6/build -G Ninja -DCMAKE_BUILD_TYPE=Release
+      - name: Configure (repository root)
+        run: >-
+          cmake -S ../.. -B ${{ env.RELEASE_BUILD }} -G Ninja -DCMAKE_BUILD_TYPE=Release
+          -DCALCU_PRODUCT_59=OFF -DCALCU_TESTS=OFF
 
       - name: Build
-        run: cmake --build frontends/qt6/build
+        run: cmake --build ${{ env.RELEASE_BUILD }} --target CalcU1600Qt
 
       - name: Stage standalone-runnable folder
         shell: pwsh
         run: |
           New-Item -ItemType Directory -Force -Path frontends/qt6/dist | Out-Null
-          Copy-Item frontends/qt6/build/Calc-U-1600.exe frontends/qt6/dist/
+          Copy-Item $env:QT_BUILD/Calc-U-1600.exe frontends/qt6/dist/
           # AppPaths::bundledCardResourcesDir() expects a "resources" folder
           # (the *.card.yaml files and ROM images) next to the .exe --
-          # CMakeLists.txt's POST_BUILD step places one at frontends/qt6/build/resources,
+          # CMakeLists.txt's POST_BUILD step places one at $QT_BUILD/resources,
           # but that doesn't end up in frontends/qt6/dist/ on its own.
-          Copy-Item frontends/qt6/build/resources frontends/qt6/dist/resources -Recurse
+          Copy-Item $env:QT_BUILD/resources frontends/qt6/dist/resources -Recurse
           # --compiler-runtime bundles the MSVC redistributable DLLs too,
           # so this runs on a clean Windows machine without the VC++
           # redistributable pre-installed, not just without a Qt install.
@@ -654,19 +669,21 @@ jobs:
           SHARPDX_PLATFORM: windows-aarch64
         run: tools/fetch_sharpdx.sh
 
-      - name: Configure
-        run: cmake -S frontends/qt6 -B frontends/qt6/build -G Ninja -DCMAKE_BUILD_TYPE=Release
+      - name: Configure (repository root)
+        run: >-
+          cmake -S ../.. -B ${{ env.RELEASE_BUILD }} -G Ninja -DCMAKE_BUILD_TYPE=Release
+          -DCALCU_PRODUCT_59=OFF -DCALCU_TESTS=OFF
 
       - name: Build
-        run: cmake --build frontends/qt6/build
+        run: cmake --build ${{ env.RELEASE_BUILD }} --target CalcU1600Qt
 
       - name: Stage standalone-runnable folder
         shell: pwsh
         run: |
           New-Item -ItemType Directory -Force -Path frontends/qt6/dist | Out-Null
-          Copy-Item frontends/qt6/build/Calc-U-1600.exe frontends/qt6/dist/
+          Copy-Item $env:QT_BUILD/Calc-U-1600.exe frontends/qt6/dist/
           # See the windows-x86_64 job's identical step for what this does.
-          Copy-Item frontends/qt6/build/resources frontends/qt6/dist/resources -Recurse
+          Copy-Item $env:QT_BUILD/resources frontends/qt6/dist/resources -Recurse
           windeployqt --release --compiler-runtime frontends/qt6/dist/Calc-U-1600.exe
 
       - name: Install Inno Setup

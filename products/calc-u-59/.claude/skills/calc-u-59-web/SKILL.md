@@ -53,7 +53,7 @@ Never edit the calculator there — that copy is generated.
 ## Build and test
 
 ```bash
-frontends/web/build.sh                       # → frontends/web/dist/ (~15 s)
+frontends/web/build.sh                       # → frontends/web/dist/ (~15 s; engine: CMake target calcu59_web in ../../build/web)
 frontends/web/run-tests.sh                   # all tests, at / and under /anything/calc/
 frontends/web/run-tests.sh -g "cue card"     # extra args go to playwright test
 python3 -m http.server 8000 -d frontends/web/dist   # look at it: http://localhost:8000/
@@ -67,6 +67,10 @@ the debugger and trace download, the portrait pages, the service worker's
 precache. Key presses after a program stops can extend its last entry, as
 on the real calculator — press CLR first. `tests/prerender.spec.js` renders `calc.js`
 in Node. Ports 8059 and 8060 (`CALCU_WEB_PORT` moves both).
+
+The engine's Emscripten flags live in the product's `CMakeLists.txt`
+(`calcu59_web`); the tree is configured once — delete `../../build/web`
+after an Emscripten upgrade.
 
 CI: job `web` in the repository's `.github/workflows/calc-u-59.yml` (emsdk pinned to the local
 `emcc --version`; bump both together). Artifacts: `reference/WebClient.md`.

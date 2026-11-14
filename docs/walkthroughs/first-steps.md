@@ -72,6 +72,22 @@ ruled on 2026-11-13, and the steps below are worded accordingly:
 - **If a run cannot be recorded** (a state the old interface cannot
   reach): the run is cut to what can be, and the criterion that names
   it says so.
+- **Result (2026-11-14, M-8):** recorded from the code as imported,
+  replayed in each product's Frequent tests:
+  `products/calc-u-59/tests/golden-runs/` (17 runs on `TI59Machine` and
+  2.3.0's resets: switching on, calculations, errors, Reset, power cycle
+  and Cold boot after memory was filled, the TI-58C's restart, the
+  PC-100C, no module, the ML and LE modules, a card) and
+  `products/calc-u-1600/tests/golden-runs/` (20 runs on `PC1500Machine`
+  and `PC1600Machine`: switching on, BASIC, errors, BEEP, reset and ALL
+  RESET after memory was filled, the CE-150 on both, the CE-158, the
+  CE-1600P, the CE-151 and CE-1600M, the A01 and old ROMs). Each step
+  records the display (TI: per position; Sharp: as text with the status
+  symbols), the printed lines and dots or the plot points, the buzzer as
+  samples and a checksum, and the memory at the end. The paper of the 32
+  Sharp examples is in `products/calc-u-1600/tests/reference/v0.8.1-examples/*.paper`.
+  Not recorded: a Sharp power cycle (0.8.1 makes it in the app layer,
+  `MachineSession` `powerCycle`, not on the machine).
 
 ## Spikes
 
@@ -330,6 +346,10 @@ ruled on 2026-11-13, and the steps below are worded accordingly:
   and AC-32 is struck. **If none is found:** AC-32 stays, row 1600-8 is
   corrected, and `pause-on-start: cpu` is not offered on the PC-1500.
   Either way the spec is changed then, with the user (LIB-5 OQ-10).
+- **Result of C-7 (2026-11-14, M-8; golden runs `pc1500-switch-on`,
+  `pc1500a-switch-on`, `pc1600-switch-on`):** after ALL RESET and the boot
+  run the PC-1500 and PC-1500A show `NEW0? :CHECK` in PRO mode and take
+  only CL there; the PC-1600 shows `>` in RUN mode.
 - **Result of the research part (2026-11-14, M-5; A04 disassembly
   `~/Development/sharp/pc1500/disasm/rom/pc1500/a04/PC-1500-A04.asm`,
   A01 and A03 the same here):** a signal exists. A key is taken when it

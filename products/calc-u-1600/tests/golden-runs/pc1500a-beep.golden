@@ -1,0 +1,41 @@
+> boot
+  cycles 0
+  lcd |NEW0? :CHECK|
+  status DEG PRO I
+  audio samples=48000 nonzero=0 sum=266b3312cb1d9783
+> keys cl
+  cycles 260000
+  lcd |>|
+  status DEG PRO I
+  audio samples=9600 nonzero=0 sum=4b66313d0e238783
+> type new0
+  cycles 1300000
+  lcd |NEW0_|
+  status DEG PRO I
+  audio samples=38400 nonzero=0 sum=d3d0b151f5d71383
+> keys enter
+  cycles 1560000
+  lcd |>|
+  status DEG PRO I
+  audio samples=9600 nonzero=0 sum=4b66313d0e238783
+> run 0.5
+  cycles 2210000
+  lcd |>|
+  status DEG PRO I
+  audio samples=24000 nonzero=0 sum=95e7975ad1774d83
+> type beep 1
+  cycles 3770003
+  lcd |BEEP 1_|
+  status DEG PRO I
+  audio samples=48000 nonzero=0 sum=266b3312cb1d9783
+> keys enter
+  cycles 4030003
+  lcd |>|
+  status DEG PRO I
+  audio samples=9600 nonzero=2495 sum=329e7015fe34566b
+> run 2
+  cycles 6630008
+  lcd |>|
+  status DEG PRO I
+  audio samples=48000 nonzero=0 sum=266b3312cb1d9783
+= me0 sum=2cb6c277658d1eab

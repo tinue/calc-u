@@ -1,0 +1,7 @@
+# The CE-1600P: a printed line.
+model PC-1600
+attach ce1600p
+boot
+type lprint 123
+keys enter
+run 3

@@ -1,0 +1,17 @@
+# Memory filled, then reset and ALL RESET on the PC-1600; LIST in PRO mode.
+model PC-1600
+boot
+keys mode
+type 10 a=5
+keys enter
+reset
+run 2
+keys mode
+type list
+keys enter
+run 0.5
+allreset
+keys mode
+type list
+keys enter
+run 0.5

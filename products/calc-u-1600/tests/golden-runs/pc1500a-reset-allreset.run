@@ -1,0 +1,20 @@
+# Memory filled, then reset and ALL RESET.
+model PC-1500A
+boot
+keys cl
+type new0
+keys enter
+run 0.5
+type 10 a=5
+keys enter
+reset
+run 2
+keys cl
+type list
+keys enter
+run 0.5
+allreset
+keys cl
+type list
+keys enter
+run 0.5

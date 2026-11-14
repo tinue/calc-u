@@ -1,0 +1,6 @@
+# The buzzer on the PC-1600.
+model PC-1600
+boot
+type beep 1
+keys enter
+run 2

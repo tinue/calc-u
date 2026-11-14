@@ -1183,7 +1183,11 @@ with a row, or worked together with it).
 - **Exit check:** the repository is read-only on GitHub.
 
 #### M-64 Release Calc-U-59 (R-59)
-- **Does:** the first release of Calc-U-59 from tinue/calc-u
+- **Does:** first the App Store metadata: the orphan branch `appstore` of
+  tinue/Calc-U-59 (description, keywords, screenshots, `whatsnew.txt`) is
+  pushed to tinue/calc-u and checked out as the worktree
+  `products/calc-u-59/appstore` that `release.yaml` names. Then the first
+  release of Calc-U-59 from tinue/calc-u
   (`calc-u-59-v3.0.0`), macOS DMG notarised locally, iOS through
   TestFlight to the App Store; the Checkpoint group (App Store and User
   Guide screenshots, retaken only where something visible changed,

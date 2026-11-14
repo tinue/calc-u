@@ -58,8 +58,9 @@ LongRun longRun(const PacingProfile& profile) {
             w0 = clock.now;
         }
         const std::int64_t dev = deviation(*m, t0, clock.now, w0);
-        out.worst = std::max(out.worst, std::llabs(dev));
-        if (std::llabs(dev) > bound) ++out.outside;
+        const std::int64_t absDev = dev < 0 ? -dev : dev;   // int64_t is long on Linux, long long on macOS
+        out.worst = std::max(out.worst, absDev);
+        if (absDev > bound) ++out.outside;
         runner.slices.clear();   // the records of five hours are not needed
     }
     out.hours = std::chrono::duration<double>(clock.now - start).count() / 3'600;

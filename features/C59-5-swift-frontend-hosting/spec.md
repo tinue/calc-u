@@ -104,8 +104,8 @@ Harness attach
 - [ ] **AC-10** — Given a development build of the Swift frontend, which
   is a build in the Debug configuration, on macOS or in the iOS
   simulator, then it opens its app session to the serve protocol on a
-  TCP port bound to localhost, the port a launch argument names, else a
-  fixed default that is set after the phase 5 spike, and `calcu` on the
+  TCP port bound to localhost, the port a launch argument names, else
+  59059 (each simulator needs a port of its own; first step 4), and `calcu` on the
   same Mac can attach to it; only the Debug configuration has an
   entitlements file for incoming connections, and Release has none
   (`harness.md` H-3, H-4; ADR 0033; OQ-1, OQ-2).
@@ -221,3 +221,5 @@ build, and in the phase 5 walkthroughs:
 | Proposed in this spec and accepted (user, 2026-11-11): an attached harness is a second listener, works with the app's own settings and save folder, and does not take the session off the wall clock (AC-11, AC-12, AC-14); `quit` ends the attach; one harness at a time (EC-4); the host services of AC-7 | `harness.md` says virtual time holds "without attach" and leaves the attached case open; `frontend.md` Q-2 lists the host services without saying which frontend has which | 2026-11-10 |
 | The Mac app keeps one app session for all its windows; attach exists in the Debug configuration only; an attached harness works with the app's own settings and save folder | user, 2026-11-10, batch 3 gate | 2026-11-10 |
 | Aligned with `docs/formats/` after the Q&A round: `ti58c.memory.yaml` | user rulings of 2026-11-13 (`docs/walkthroughs/presets.md` §5.2, §5.4); `docs/formats/` | 2026-11-13 |
+| A PC-1600 on iOS is not a target (on iOS Calc-U-1600 is its Web frontend): the session-thread spike (first step 3) is tried with the TI-59 only; the busy whole call of AC-5 is made with full speed and deliberately slowed session calls | user, 2026-11-14 (M-16) | 2026-11-14 |
+| AC-10: the default attach port is 59059; several simulators share the Mac's loopback, so each needs its own port, given by the launch argument | first step 4 (M-16, `docs/walkthroughs/first-steps.md`); user, 2026-11-14 | 2026-11-14 |

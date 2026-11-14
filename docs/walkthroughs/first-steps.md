@@ -102,6 +102,30 @@ ruled on 2026-11-13, and the steps below are worded accordingly:
 - **If it does not hold** (the display stutters, messages arrive out of
   order, SwiftUI cannot be fed from the queue at 60 Hz): ADR 0015 is
   reopened with the user; the alternative it names is the main thread.
+- **Result (2026-11-14, M-16; spike on branch `spike-fs3-fs4`,
+  `spikes/swift-session/`, not merged): it holds.** TI-59 only (user,
+  2026-11-14: a PC-1600 on iOS is not a target; C59-5 decision log). The
+  TI-59 `SessionController` (cooperative, as the Web build runs it) on a
+  thread of its own, called every 16.7 ms; commands in and messages out
+  through two queues; the bridge drains the messages on the main thread,
+  one hop per batch. Scenario: idle; a program running (an endless loop)
+  at regular speed, then at full speed; 15 session calls of 200 ms each
+  (AC-5's busy whole call, made by a sleep in the call), with a key and 20
+  commands sent meanwhile; a burst of 1000 commands; an operation of 2 s
+  at full speed. Measured on the iPhone 18 Pro Max simulator (iOS 27.2),
+  the iPhone 16e simulator (iOS 18.6) and macOS 27.2 (M4 Pro):
+  - Main thread: a display link at 60 Hz on iOS, p95 and max gap
+    16.7 ms in every phase, no gap over 25 ms, also while the session
+    calls took 215 ms. On macOS (a 60 Hz timer) p95 17.5 ms, one gap of
+    53 ms in the phase of the 200 ms calls.
+  - Session: 0.04–0.1 ms a call at regular speed; 10 ms a call at full
+    speed (the cooperative full-speed slice).
+  - Order: 1020 of 1020 commands arrived, in the order sent; no message
+    out of sequence. A command sent during a slow call is applied when
+    that call is over (latency up to 125 ms with 200 ms calls; 1.8 ms
+    median otherwise).
+  - Not tried: a real display of the calculator's art; SwiftUI is fed one
+    display text per change.
 
 ### 4. Harness attach in the iOS simulator (spike)
 - **What:** a Debug build of the Swift frontend in a simulator started
@@ -123,6 +147,36 @@ ruled on 2026-11-13, and the steps below are worded accordingly:
 - **If it does not hold** (the simulator's sandbox refuses the port, or
   a test cannot reach it): C59-8 AC-21 keeps the three aids until
   another way is found, and ADR 0033 is amended with the user.
+- **Result (2026-11-14, M-16; same spike): it holds.** A Debug build
+  opens its session on `127.0.0.1:<port>`, the port from the launch
+  argument `-port N` (default 59059 in the spike); a line client on the
+  Mac (`attach.py`, a stand-in for `calcu`) attaches to the app in the
+  simulator: the state on attach, a reply only to the sender and the
+  messages as a stream, `wait` on the app's own clock (1.5 s took
+  1.53 s), `quit` ends the attach and the app goes on; EC-2 (gone without
+  `quit`), EC-3 (refused while suspended) and EC-4 (a second harness gets
+  one line and is closed) as the spec says.
+  - Several simulators: they share the Mac's loopback, so each app needs
+    a port of its own (two simulators, iOS 27.2 and 18.6, on 59102 and
+    59103, both attached). The same port in a second simulator: `bind`
+    fails ("Address already in use"), the app starts all the same and
+    logs that attach is not available (EC-1). So a launch argument per
+    simulator is required, a fixed default is enough for one (C59-5
+    OQ-1 as decided).
+  - XCUITest: the test runner, which runs in the same simulator (Xcode
+    ran it on a clone of the simulator), connects to `127.0.0.1:<port>`
+    with a socket; it passes the port to the app as a launch argument.
+    The test taps Load, reads `msg op started` from the stream and sends
+    `wait-idle`, whose reply came when the load had ended (B-21).
+  - Mac app: sandboxed, with `com.apple.security.network.server`
+    (`ENABLE_INCOMING_NETWORK_CONNECTIONS = YES`, Debug) attach works;
+    without it `bind` fails ("Operation not permitted") and the app goes
+    on (C59-5 OQ-2 as decided: Debug only).
+  - The Xcode plugin: its MCP server did not connect in this session
+    either ("Connection closed"); not needed, `xcodebuild`, `simctl` and
+    the socket did everything.
+  - Simulators were booted with `simctl`, not through the Device Hub;
+    the network is the same.
 
 ## Checks on Calc-U-59 at `v2.3.0`
 

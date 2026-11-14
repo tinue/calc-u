@@ -41,7 +41,7 @@ the `<cstdlib>` fix).
 
 | CTest entry | What | Group | Measured (M4 Pro, 2026-11-14) |
 |---|---|---|---|
-| `calcu_library_tests` | 40 `TEST`s: the library's own tests with the machines built for the tests (`library/machine/tests/TestMachines.*`), no product code (LIB-1 AC-24; LIB-1 design §2a); also run alone by the CI job `library` of both product workflows | Frequent | 0.18 s (0.15 s of it are the deliberate wall-time gaps of AC-6 and AC-9) |
+| `calcu_library_tests` | 66 `TEST`s: the library's own tests with the machines built for the tests (`library/machine/tests/TestMachines.*`), no product code (LIB-1 AC-24; LIB-1 design §2a); also run alone by the CI job `library` of both product workflows. The pacing tests run on a scripted wall clock (`library/pacing/tests/TestSliceRunner.hpp`), never the host's | Frequent | 1.4 s (M-21, 2026-11-14, with other builds running; about 1.1 s of it the two five-hour scripted long runs of LIB-17; 0.15 s the deliberate wall-time gaps of LIB-1 AC-6 and AC-9) |
 
 `calcu_library_tests` by file (`library/<area>/tests/`; every `TEST` is
 Frequent):
@@ -60,6 +60,9 @@ Frequent):
 | `machine/tests/operations_tests.cpp` | 2 |
 | `machine/tests/sound_tests.cpp` | 2 |
 | `machine/tests/time_tests.cpp` | 5 |
+| `pacing/tests/jitter_tests.cpp` | 4 |
+| `pacing/tests/pacer_tests.cpp` | 20 |
+| `pacing/tests/pacing_longrun_tests.cpp` | 2 (LIB-17 AC-2, AC-3: five hours on a scripted clock, Frequent) |
 
 ## Calc-U-59
 

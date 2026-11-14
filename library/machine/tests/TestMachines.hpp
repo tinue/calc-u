@@ -24,6 +24,9 @@
 //             3/8 of the tick, converted inside the machine (EC-7).
 //   Both      a start-up of 50 ticks before key readiness after a build,
 //             reset, power cycle and cold boot.
+//   test-seg  build option TestSegTiming (LIB-17, M-21; LIB-1 D-8): every
+//             instruction of a fixed length, and a loop of a settable number
+//             of instructions whose position loopPosition() reports.
 //   test-printer  fits test.bus; a switch control `online`; while plugged a
 //             capability of the product kind "test.counter".
 //   test-module   fits test.slot and test.bus; variants 4k (default) and
@@ -62,6 +65,14 @@ public:
 struct TestModuleDefinition : ProductData {
     explicit TestModuleDefinition(std::string t) : text(std::move(t)) {}
     std::string text;
+};
+
+// The build option of test-seg for the pacing tests (LIB-1 D-8), handed in
+// as BuildRequest::content.
+struct TestSegTiming : ProductData {
+    TestSegTiming(Ticks length, std::uint64_t loop) : instructionLength(length), loopLength(loop) {}
+    Ticks instructionLength;   // ticks of every instruction, at least 1
+    std::uint64_t loopLength;  // instructions per loop, at least 1
 };
 
 Catalogue makeTestCatalogue();
@@ -115,6 +126,9 @@ public:
     const std::vector<KeyId>& keysDown() const { return keysDown_; }
     std::uint64_t instructionsRun() const { return generic_.instructions; }
     std::uint64_t innerCycles() const { return innerCycles_; }
+    void setTiming(std::shared_ptr<const TestSegTiming> t) { timing_ = std::move(t); }
+    // The instruction of the loop the machine is at (0 without a timing).
+    std::uint64_t loopPosition() const { return timing_ ? generic_.instructions % timing_->loopLength : 0; }
 
 private:
     bool isDot() const;
@@ -136,11 +150,15 @@ private:
     std::vector<std::int16_t> sound_;
     TestGeneric generic_;
     TestCounter printerCounter_;
+    std::shared_ptr<const TestSegTiming> timing_;
 };
 
 // Builds through calcu::machine::build() on testCatalogue(); null if refused.
 std::unique_ptr<TestMachine> buildTestMachine(const ModelId&, std::optional<VariantId> variant = std::nullopt,
                                               std::vector<PeripheralRequest> peripherals = {}, int soundRate = 8000);
+
+// test-seg with the build option TestSegTiming (LIB-17's tests).
+std::unique_ptr<TestMachine> buildTimedTestSeg(Ticks instructionLength, std::uint64_t loopLength = 1);
 
 // Display outputs compared field by field (indicator names by content).
 bool sameDisplay(const DisplayOutput&, const DisplayOutput&);

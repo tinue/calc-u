@@ -188,6 +188,17 @@ ruled on 2026-11-13, and the steps below are worded accordingly:
 - **If an example's two runs differ:** the upgrade rule that produced
   the difference is a finding; the spec is changed with the user, not
   the reference.
+- **Result (2026-11-14, M-9):** the recorder is
+  `products/calc-u-59/tests/reference_runs_tests.cpp` (2.3.0's
+  `SessionController`, cooperative, a 60 Hz clock it supplies; runs only
+  with `CALCU59_REFERENCE_RECORD=1`); the references are
+  `products/calc-u-59/tests/reference/v2.3.0-examples/` (display, model,
+  partition, printed lines, card files and in-file cards written, log,
+  RAM). 56 examples end their playback; `historic/life.ti59` keeps
+  computing and printing (recorded after 30 minutes of emulated time).
+  Card files are written by `pdcm-make-cards` (two); `pdcm-card-tricks`
+  writes in-file cards (five). The only change to imported code is a
+  read-only accessor, `SessionController::memoryCardBanks()`.
 
 ### 7. Reset and the partition (check, by a golden run)
 - **What:** on a TI-59 and a TI-58 with a partition other than the

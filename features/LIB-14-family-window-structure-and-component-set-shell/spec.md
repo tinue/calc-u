@@ -21,7 +21,7 @@
   `docs/contracts/frontend.md` (FE-2, FE-6, SP-2, I-4, I-5, Q-1 as
   amended), `docs/contracts/help.md` (HL-3), `docs/contracts/presets.md`
   (PR-4, "Loading…"); `docs/glossary-mapping.md` (visible renames);
-  `docs/behaviour-changes.md` rows 59-5, 59-9, 59-14, 1600-9.
+  `docs/behaviour-changes.md` rows 59-5, 59-9, 59-14, 1600-9, 1600-10.
 - Facts: Calc-U-59 at `v2.3.0`, Calc-U-1600 at `b4ea8c8`; every
   `path:line` below is at those pins.
 
@@ -513,3 +513,4 @@ The shell and what goes into it
 | A frontend without a menu bar (iOS, the Web frontend's portrait layout) keeps Reset, Preset and Settings on the bar and gets a More button for the rest; this replaces the one menu button of the batch 5 gate | user, 2026-11-10, batch 6 gate, after a check of Apple's Human Interface Guidelines | 2026-11-10 |
 | The Machine menu has Resume | LIB-10 OQ-2 (user, 2026-11-10, batch 6 gate) | 2026-11-10 |
 | The Qt6 frontend gets harness attach in development and test builds; the screenshot scenarios are its client and are owned here with their object names (AC-44) | user, 2026-11-13 (B-22 of `docs/walkthroughs/presets.md` §5.2, left to the specification: "what works best for an agentic workflow"); today's runner steps the machine itself, which the operation rules (LIB-3 AC-3, AC-14, AC-35) no longer allow | 2026-11-13 |
+| The ledger row of the Calc-U-1600 menus (OQ-7) is 1600-10; it is cited with the others | user, 2026-11-14 (question 9 of `docs/migration-plan.md`) | 2026-11-14 |

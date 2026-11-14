@@ -104,11 +104,13 @@ be added.
   and the last word of the TI-59's instruction ROM are those of the
   known dump, as today (`Shared/RomLoader.cpp:9-150`; OQ-1).
 - [ ] **AC-9** — Given Calc-U-59, then its full set is these 24 files,
-  with the md5 values of the dumps in the TI ROM repository
+  with the md5 values of the files in the TI ROM repository
   (`~/Development/public/TI-59-ROM`, folders `dumps/ti59`,
-  `dumps/ti58c`, `dumps/modules`; each file is byte for byte the one
-  Calc-U-59 2.3.0 has in `roms/calculator/` and `roms/solid-state/`,
-  compared on 2026-11-10; `Shared/MachineModelInfo.hpp:86-105`):
+  `dumps/ti58c` and `modules`): the ten calculator dumps are byte for
+  byte the ones Calc-U-59 2.3.0 has in `roms/calculator/`, compared on
+  2026-11-10 (`Shared/MachineModelInfo.hpp:86-105`); the 14 module files
+  are those of AC-14, with the md5 values recorded when they were made
+  (TI-59-ROM `90cd4a7`; `products/calc-u-59/roms/fetch_roms.sh`):
 
   | File | md5 | Needed by |
   |---|---|---|
@@ -122,20 +124,20 @@ be added.
   | `TMC0573.txt` | `6c0cb7db542f3b74a28613ff4ed14bce` | TI-58C |
   | `CD2400-CONST-K.txt` | `dbaee54fe0f478c7659d17bff4b790d4` | TI-58C |
   | `CD2401-CONST-K.txt` | `ac81d5b45c736a0f45c3835f0d977b87` | TI-58C |
-  | `TMC0541.txt` | `bbca8e7dc631849cf3f7770d1efa7aa7` | module `ML` |
-  | `TMC0542.txt` | `99b1b41f4361ec2900f990002529193f` | module `ST` |
-  | `TMC0543.txt` | `eb3a8d6a66996b471ee19c2a10458aad` | module `RE` |
-  | `TMC0544.txt` | `64cd0fbe5adc5820c58a7e1262df521b` | module `SY` |
-  | `TMC0545.txt` | `1f50c8b671f9f4aa1bfebe8ed8007002` | module `NG` |
-  | `TMC0546.txt` | `0509ff2657edb063fbc666ffb8997d51` | module `AV` |
-  | `TMC0547.txt` | `f3ac4e66fce6624bd2f4b0faee0db422` | module `LE` |
-  | `TMC0548.txt` | `a3b802d1d70d38c8bd9de8e72b54a9fe` | module `SA` |
-  | `TMC0549.txt` | `c30fe59d97f268f50756c15d223ef6a9` | module `BD` |
-  | `TMC0550.txt` | `78e46b957573c63c05be0b2fa93f7ded` | module `MU` |
-  | `TMC0551.txt` | `5f1d46e22657e3c432b8ec97a9b2f9ae` | module `EE` |
-  | `TMC0553.txt` | `080546debf5326fe83eb4334923570e1` | module `SE` |
-  | `TMC0554.txt` | `40832575c1464fbf23e3893495b165a4` | module `AG` |
-  | `TMC0555.txt` | `86c670fb71d51d36c58f6846b25d025b` | module `RP` |
+  | `ML.rom.yaml` | `ab6db47478041bb1bd1b50b3114b8949` | module `ML` |
+  | `ST.rom.yaml` | `6e7e4045c9e31720dba5fbee0ace248a` | module `ST` |
+  | `RE.rom.yaml` | `6ea276ed76b4b67df59141d73708e6ec` | module `RE` |
+  | `SY.rom.yaml` | `d87b45b1f0fc6963db7dc3e537eeaf05` | module `SY` |
+  | `NG.rom.yaml` | `889d6f5c516afd62f7bd7680cecf47ed` | module `NG` |
+  | `AV.rom.yaml` | `84823786f1b065a74ba7b36319c05ba4` | module `AV` |
+  | `LE.rom.yaml` | `f67efb0d1b10c46266d9a32891c9aa6c` | module `LE` |
+  | `SA.rom.yaml` | `f26fd2f1cbe52ec93387c76fe26122e6` | module `SA` |
+  | `BD.rom.yaml` | `4ee8f14c5ce0f088cff3ea3f0c149f76` | module `BD` |
+  | `MU.rom.yaml` | `81403a7ed013e53c0334a156a7ca8c0e` | module `MU` |
+  | `EE.rom.yaml` | `63fdc4324deb68025c9e98af817a91fc` | module `EE` |
+  | `SE.rom.yaml` | `ea082fed55d93610d95f16cf2577f1e1` | module `SE` |
+  | `AG.rom.yaml` | `4903315a721f4ff41e60b40abbaeb284` | module `AG` |
+  | `RP.rom.yaml` | `d62d3ea22600d0df8f24a6355ee0ea95` | module `RP` |
 
 - [ ] **AC-10** — Given a file of the full set is missing or bad in
   Calc-U-59, then AC-5 holds in every frontend. Today a bad machine ROM
@@ -248,4 +250,5 @@ be added.
 | An entry names the file as it is bundled, not as the ROM repository names it | The Sharp build renames and joins files at the fetch (`tools/fetch_roms.sh:93-137`) | 2026-11-10 |
 | The TI ROM repository is the project `~/Development/public/TI-59-ROM`; its 24 dumps are the files of Calc-U-59 2.3.0, and their md5 values are the ones of AC-9 | user, 2026-11-10; the files compared on that day | 2026-11-10 |
 | Calc-U-59 keeps today's check of the first and the last word of the TI-59's instruction ROM (AC-8) | user, 2026-11-11; OQ-1 | 2026-11-11 |
+| AC-9 lists the 14 module files with their md5 values instead of the 14 dumps they replace, as AC-14 says | user, 2026-11-14 (question 9 of `docs/migration-plan.md`) | 2026-11-14 |
 | A module whose file holds ROM bytes lives in the ROM repository and is fetched like the ROMs: the 14 Solid State ROM modules as `.rom.yaml` (made once from the dumps of AC-9 and `cuecards.txt`), and Calc-U-1600's CE-502B module definition; `roms.md` I-1 holds, and the module file is an own format for its version (AC-14) | user, 2026-11-13 (question F-9 of `docs/walkthroughs/presets.md` §5.4); `docs/formats/modules.md` | 2026-11-13 |

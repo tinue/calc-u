@@ -317,7 +317,9 @@ Commands
   frontend of the source repository are to build on macOS, Linux and
   Windows. *Recommendation:* this spec takes the library as it is; how
   it is got for every platform is a point for the migration plan (phase
-  6), and I need to know where its source lives.
+  6), and I need to know where its source lives. (Its source is
+  `~/Development/sharp/SharpDataExchange`, Briefing §5.3; the migration
+  plan fetches it as today, M-7.)
 - [x] **OQ-2** — *Decided as recommended (user, 2026-11-10, batch 7 gate); row 1600-15, without `.rom`.* AC-10: a PC-1500 load that meets a byte that is not RAM
   writes the rest today and then fails. *Recommendation:* nothing is
   written, as on the PC-1600. This, OQ-3 and EC-1 are small visible
@@ -347,3 +349,4 @@ Commands
 | Proposed in this spec and accepted (user, 2026-11-10, batch 7 gate): the commands of AC-21 and their names | Rule 4 of the index; LIB-11 AC-18 | 2026-11-10 |
 | Proposed in this spec and accepted (user, 2026-11-10, batch 7 gate): an empty file is refused as empty by every loader (EC-1) | One wording, see OQ-4 | 2026-11-10 |
 | Proposed in this spec and accepted (user, 2026-11-10, batch 7 gate): the menu items and dialogs of the loaders are this feature's (AC-15 to AC-19) | Rule 5 of the index: they show this feature's behaviour | 2026-11-10 |
+| OQ-1's last point answered: SDE's source is `sharp/SharpDataExchange`; the migration plan gets the library as today (M-7) | user, 2026-11-14 (question 9 of `docs/migration-plan.md`) | 2026-11-14 |

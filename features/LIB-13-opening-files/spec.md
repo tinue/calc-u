@@ -295,6 +295,8 @@ The ways in
   file over 1 MiB in Calc-U-1600; a magnetic card on a model without a
   reader; a card while one is in the reader (AC-1, AC-12, AC-20, EC-4). *Recommendation:* all three; too small
   for a row each, one line in row 59-14 and its Calc-U-1600 twin.
+  (Since then the file changes have rows of their own: 59-20 and
+  1600-15.)
 - [x] **OQ-5** — *Decided as recommended (user, 2026-11-10, batch 7 gate).* "Open" (a file) and "file kind" for the glossary, as
   defined above.
 
@@ -318,3 +320,4 @@ The ways in
 | Aligned with `docs/formats/` after the Q&A round: `.magnetcard.yaml` (AC-11) | user rulings of 2026-11-13 (`docs/walkthroughs/presets.md` §5.2, §5.4); `docs/formats/` | 2026-11-13 |
 | Aligned with `docs/formats/` after the Q&A round: a template card is never written (AC-12); the cassette tape as a media kind (AC-17) | user rulings of 2026-11-13 (`docs/walkthroughs/presets.md` §5.2, §5.4); `docs/formats/` | 2026-11-13 |
 | Opening a `.keystrokes.yaml` writes its program into the running machine; `.rom.yaml` and `ti58c.memory.yaml` are refused with a notice (AC-11, AC-23) | user, 2026-11-13 (consistency pass after the Q&A round) | 2026-11-13 |
+| OQ-4's "row 59-14 and its twin" are now rows 59-20 and 1600-15; a note says so | user, 2026-11-14 (question 9 of `docs/migration-plan.md`) | 2026-11-14 |

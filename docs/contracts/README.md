@@ -92,8 +92,8 @@ Every contract lists its open questions with their status. Still open (answered 
 
 | Where | Question | Settled in |
 |---|---|---|
-| `machine.md` Q-1 | PC-1350 / PC-1403 ROM versions as variants | an SC61860 product, or a phase 5 walkthrough |
-| `peripherals.md` Q-2 | PC-1403 / PC-1350 behaviour on a peripheral or RAM card change | an SC61860 product, or a phase 5 walkthrough |
+| `machine.md` Q-1 | PC-1350 / PC-1403 ROM versions as variants | an SC61860 product (the phase 5 scenarios were dropped; `docs/walkthroughs/first-steps.md`, "Not first steps") |
+| `peripherals.md` Q-2 | PC-1403 / PC-1350 behaviour on a peripheral or RAM card change | an SC61860 product (as above) |
 | `peripherals.md` Q-3 | TMC0540 slot signals = the chip's pins (assumed) | when the slot is modelled at contact level (ADR 0011) |
 | `typing.md` Q-1 | PC-1403 / PC-1350 hold, readiness, sequences | an SC61860 product |
 | `typing.md` Q-2 | 100 ms emulated hold enough everywhere | phase 6, Calc-U-59 tests |

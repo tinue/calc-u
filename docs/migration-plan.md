@@ -1250,7 +1250,7 @@ qa-report can show every criterion passing (§1).
 
 | Spec | L: tested / Done in | Calc-U-59: tested / Done in | Calc-U-1600: tested / Done in | EC |
 |---|---|---|---|---|
-| LIB-1 | 1–25, 42–43: M-18 / M-18 | 26–33: M-19, M-25 / M-25 | 34–41: M-26 / M-26 | 1–8: M-18 |
+| LIB-1 | 1–25, 42–43: M-18 / M-18 | 26–33: M-19, M-25 / M-55 | 34–41: M-26 / M-47 | 1–8: M-18 |
 | LIB-2 | 1–23, 35: M-23 / M-23 | 24–27: M-25 / M-25 | 28–34: M-26, M-31, M-47 / M-47 | 1–7: M-23 |
 | LIB-3 | 1–27, 39: M-22 / M-22 | 28–33: M-33, M-34 / M-58 | 34–38: M-31 / M-49 | 1–6: M-22 |
 | LIB-4 | 1–9: M-37 / M-37 | 10–15: M-57, M-58 / M-58 | 16–20: M-49 / M-49 | 1, 3–5: M-37 |
@@ -1261,10 +1261,10 @@ qa-report can show every criterion passing (§1).
 | LIB-9 | 1–18, 33: M-20 / M-20 | 19–25, 34–35: M-32, M-34 / M-34 | 26–32: M-30 / M-30 | 1–10: M-20 |
 | LIB-10 | 1–26, 45–47: M-40 / M-40 | 28–35: M-53 / M-53 or M-58 | 36–44: M-45 / M-46 | 1–9: M-40 |
 | LIB-11 | 1–13, 21–22: M-28 / M-28 | 14–17: M-59 / M-59 | 18–20: M-51 / M-51 | 1–7: M-28 |
-| LIB-12 | 1–7: M-24 / M-24 | 8–10, 14 (TI): M-24 / M-24 | 11–13, 14 (CE-502B): M-27 / M-27 | 2–3: M-24; 1: M-27 |
+| LIB-12 | 1–7: M-24 / M-28 | 8–10, 14 (TI): M-24 / M-24 | 11–13, 14 (CE-502B): M-27 / M-27 | 2–3: M-24; 1: M-27 |
 | LIB-13 | 1–10: M-42 / M-42 | 11–16, 23: M-56 / M-56 | 17–22: M-48 / M-48 | 1–7: M-42 |
 | LIB-14 | 1–25, 42–43: M-43 / M-43 | 26–33: M-57 / M-57 | 34–41, 44: M-49 / M-49 | 1–8: M-43 |
-| LIB-15 | 1–18: M-29 / M-29 | 19–23: M-34 / M-55 | 24–28: M-31 / M-31 | 1–5: M-29 |
+| LIB-15 | 1–18: M-29 / M-29 | 19–23: M-34 / M-55 | 24–28: M-31 / M-46 | 1–5: M-29 |
 | LIB-16 | 1–8, 14–15: M-52 / M-52 | 9–10, 16: M-60 / M-64 | 11–13: M-52 / M-61 | 1–3: M-52 |
 | LIB-17 | 1–14: M-21 / M-21 | 15–19: M-33 / M-33 | 20–22: M-31 / M-31 | 1–6: M-21 |
 | LIB-18 | 1–16: M-35 / M-35 | 17–24: M-54 / M-54 | 25–33: M-46 / M-46 | 1–7: M-35 |
@@ -1277,7 +1277,7 @@ qa-report can show every criterion passing (§1).
 | C59-3 | M-54 | M-54 | 1–14 | 1–8 |
 | C59-4 | M-56 (AC-20's hosted overlays M-65) | M-65 | 1–26 | 1–5 |
 | C59-5 | M-15 (1–3), M-33 (4–14) | M-33 | 1–14 | 1–4 |
-| C59-6 | M-25 | M-25 | 1–11 | 1–3 |
+| C59-6 | M-25 | M-58 | 1–11 | 1–3 |
 | C59-7 | M-55 | M-55 | 1–30 | 1–7 |
 | C59-8 | M-58 | M-58 | 1–13, 15–21 (14 withdrawn) | 1–6 |
 | C59-9 | M-59 | M-59 | 1–11, 13–14 (12 withdrawn) | 2–6 |
@@ -1286,6 +1286,12 @@ qa-report can show every criterion passing (§1).
 | C1600-3 | M-50 | M-50 | 1–25 | 1–7 |
 | C1600-4 | M-46 (AC-15's disk and waiting presets M-47) | M-47 | 1–20 | 1–6 |
 | C1600-5 | M-51 | M-51 | 1–9, 11 (10 withdrawn) | 2–6 |
+
+The C1 designs (2026-11-14) moved five "Done in" entries by the rule of
+§1 (a criterion that names a later feature passes in that feature's
+step): LIB-1 59 to M-55 and 1600 to M-47 (the media place of AC-33,
+AC-40), LIB-12 L to M-28 (AC-7's harness), LIB-15 1600 to M-46 (AC-16's
+bundle file), C59-6 to M-58.
 
 The ID ranges were taken from the specs with a script (2026-11-14): 891
 acceptance criteria and 202 edge cases; no ID of a spec is outside the

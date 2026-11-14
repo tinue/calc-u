@@ -41,7 +41,7 @@ the `<cstdlib>` fix).
 
 | CTest entry | What | Group | Measured (M4 Pro, 2026-11-14) |
 |---|---|---|---|
-| `calcu_library_tests` | 113 `TEST`s: the library's own tests with the machines built for the tests (`library/machine/tests/TestMachines.*`) and the product declared for the settings tests (`library/settings/tests/TestProduct.hpp`), no product code (LIB-1 AC-24; LIB-1 design §2a); also run alone by the CI job `library` of both product workflows. The pacing tests run on a scripted wall clock (`library/pacing/tests/TestSliceRunner.hpp`), never the host's | Frequent | 0.55 s (after the merge of M-19 to M-21, 2026-11-14; about 0.4 s of it the five-hour scripted runs of LIB-17) |
+| `calcu_library_tests` | 176 `TEST`s: the library's own tests with the machines built for the tests (`library/machine/tests/TestMachines.*`) and the product declared for the settings tests (`library/settings/tests/TestProduct.hpp`), no product code (LIB-1 AC-24; LIB-1 design §2a); also run alone by the CI job `library` of both product workflows. The pacing tests run on a scripted wall clock (`library/pacing/tests/TestSliceRunner.hpp`), never the host's; so do the session tests (`library/sessions/tests/ScriptedClock.hpp`), with the test frontend and the test product part of `library/sessions/tests/` | Frequent | 0.51 s (M-22, 2026-11-14, RelWithDebInfo; most of it the five-hour scripted runs of LIB-17) |
 | `LibraryPlatformStoreCheck` | `library/settings/tests/check_platform_stores_test.sh`: the self-test of `library/settings/check_platform_stores.sh`, the source check the products run over their frontends (LIB-9 design T-14); not registered on Windows | Frequent | 0.03 s |
 
 `calcu_library_tests` by file (`library/<area>/tests/`; every `TEST` is
@@ -68,6 +68,17 @@ Frequent):
 | `pacing/tests/jitter_tests.cpp` | 4 |
 | `pacing/tests/pacer_tests.cpp` | 20 |
 | `pacing/tests/pacing_longrun_tests.cpp` | 2 (LIB-17 AC-2, AC-3: five hours on a scripted clock, Frequent) |
+| `sessions/tests/command_tests.cpp` | 9 |
+| `sessions/tests/host_call_tests.cpp` | 6 |
+| `sessions/tests/host_service_tests.cpp` | 4 |
+| `sessions/tests/library_topics_tests.cpp` | 3 |
+| `sessions/tests/mirror_tests.cpp` | 1 |
+| `sessions/tests/operation_tests.cpp` | 14 |
+| `sessions/tests/sound_tests.cpp` | 5 |
+| `sessions/tests/speed_tests.cpp` | 6 |
+| `sessions/tests/suspend_tests.cpp` | 5 |
+| `sessions/tests/topic_tests.cpp` | 9 |
+| `sessions/tests/value_tests.cpp` | 1 |
 
 ## Calc-U-59
 

@@ -1,0 +1,75 @@
+#pragma once
+#include "machine/Machine.hpp"
+#include "pacing/WallClock.hpp"
+#include "sessions/HostServices.hpp"
+#include "sessions/Messages.hpp"
+#include "sessions/Operation.hpp"
+#include "sessions/Topics.hpp"
+#include <chrono>
+#include <functional>
+#include <optional>
+#include <string>
+#include <variant>
+
+// Session parts (LIB-3 design §3.8; docs/contracts/README.md L-1; spec AC-12,
+// FE-6): what a library feature or a product's app layer plugs into the app
+// session. A product's names carry its prefix ("c59.", "c1600."); the
+// library carries its topics, commands and requests without reading them.
+
+namespace calcu::sessions {
+
+class MachineSession;
+
+struct Done { PayloadPtr result; };
+struct Refused { std::string reason; };   // a refused command changes nothing (AC-13)
+struct StartOperation { Operation op; };  // refused while another runs (AC-16)
+using CommandOutcome = std::variant<Done, Refused, StartOperation>;
+
+// What parts, handlers and operations see, on the session's thread.
+class SessionContext {
+public:
+    virtual MachineSession& machineSession() = 0;
+    virtual machine::Machine* machine() = 0;
+    virtual void notice(std::string sentence) = 0;   // AC-10
+    virtual void log(std::string line) = 0;          // AC-11
+    virtual bool busy() const = 0;                    // an operation runs
+    virtual bool hostOffers(HostService) const = 0;   // AC-26
+    // AC-27: asks the first listener that offers the service; `then` runs
+    // when the answer arrives. std::nullopt: nobody offers it, nothing asked.
+    virtual std::optional<CallId> askHost(HostService, Value args, std::function<void(const ServiceAnswer&)> then) = 0;
+    virtual std::chrono::system_clock::time_point hostTime() const = 0;   // A-7
+
+protected:
+    ~SessionContext() = default;
+};
+
+// At attach: what a part declares.
+class SessionSetup {
+public:
+    using Handler = std::function<CommandOutcome(const Value& args, SessionContext&)>;
+    using RequestHandler = std::function<ReplyMessage(const Value& args, SessionContext&)>;
+
+    virtual StateTopic& stateTopic(TopicName) = 0;
+    virtual StreamTopic& streamTopic(TopicName, History) = 0;
+    // endsRunningOperation: the command first stops a running operation
+    // (Reset, Cold boot, a model switch; LIB-18 AC-16).
+    virtual void command(CommandName, Handler, bool endsRunningOperation = false) = 0;
+    virtual void request(RequestName, RequestHandler) = 0;
+
+protected:
+    ~SessionSetup() = default;
+};
+
+class SessionPart {
+public:
+    virtual void attach(SessionSetup&) = 0;
+    virtual void beforeCall(SessionContext&, pacing::WallTime) {}
+    virtual void afterCall(SessionContext&, pacing::WallTime) {}   // per-call duties
+    virtual void machineChanged(SessionContext&) {}
+    virtual void suspending(SessionContext&) {}
+
+protected:
+    ~SessionPart() = default;
+};
+
+} // namespace calcu::sessions

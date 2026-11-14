@@ -153,9 +153,14 @@ Starting afresh
   a row, then it takes more than one value (`Shared/Pacing.hpp:25-30`).
 - [ ] **AC-18** — Given Calc-U-59 before the pacer moves to the library
   and after, when the long-run test runs a TI-59, a TI-58 and a TI-58C
-  at regular speed, then emulated time against wall time is the same in
-  both, within the bound of AC-1 (`frontend.md`, SP-1: the user's
-  condition; the two tests: Technical Requirements).
+  at regular speed, then the rate of emulated time against wall time
+  differs between the two by no more than 0.3 %, about the drift of a
+  calculator's resonator; a difference between 0.3 % and 1 % goes to the
+  user, above 1 % the criterion fails (`frontend.md`, SP-1: the user's
+  condition; the two tests: Technical Requirements). 2.3.0 runs the TI-59
+  0.13 % and the TI-58C 0.10 % slow against its own clock, because it
+  cuts each 20 ms batch to whole ticks (`Shared/Pacing.hpp:22`; first
+  step 14); the TI-58 divides evenly.
 - [ ] **AC-19** — Given each frontend of Calc-U-59 (Swift iOS, Swift
   macOS, Qt6, Web), when a TI-59 runs at regular speed for one minute of
   wall time, then its emulated time has grown by one minute, within the
@@ -236,3 +241,4 @@ None.
 | The full-speed allowance is one library value, 14 ms per call. The Calc-U-59 Swift and Qt6 frontends lose the free-running thread of today and with it a little top speed | Recommendation applied; the user had no preference and asked what the problem is, which was explained at the gate | 2026-11-10 |
 | ODD59-6 stays; only a preset's `wait:` at full speed is not paced on an idle TI machine (AC-16) | user, 2026-11-13 (question F-12 of `docs/walkthroughs/presets.md` §5.4): what was built is kept | 2026-11-13 |
 | Aligned with `docs/formats/` after the Q&A round: step names; attach missing only on the Web | user rulings of 2026-11-13 (`docs/walkthroughs/presets.md` §5.2, §5.4); `docs/formats/` | 2026-11-13 |
+| AC-18: the rates before and after may differ by up to 0.3 % (a calculator resonator's drift); 0.3 % to 1 % goes to the user, above 1 % fails. 2.3.0's own rate is 0.13 % (TI-59) and 0.10 % (TI-58C) slow | user, 2026-11-14 (first step 14) | 2026-11-14 |

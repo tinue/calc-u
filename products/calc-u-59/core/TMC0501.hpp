@@ -2,34 +2,20 @@
 #include <array>
 #include <cstdint>
 #include <cstring>
-#include <atomic>
-#include <mutex>
 #include <string>
 #include <vector>
+#include "TIPrinterTypes.hpp"
 #include "TraceTypes.hpp"
 #include "MachineVariant.hpp"
 
 class ROM;
 class RAM;
 
-// ── Printer output line ───────────────────────────────────────────────────────
-//
-// Each printed character-line produces one PrinterCodeLine.  rowCount is 7 for
-// a complete line; 0–6 when the print was aborted mid-stroke (a new PRT_PRINT
-// arrived before the previous line's BUSY window (kPrinterLineCycles) elapsed).
-// The head fires a row one dot column at a time, right to left, so a cut can
-// also leave the rightmost partialColumns columns of the next row on paper.
-struct PrinterCodeLine {
-    std::array<uint8_t, 20> codes{};
-    uint8_t rowCount{7};        // dot rows started in full (0–7); 7 = complete line
-    uint8_t partialColumns{0};  // columns of row rowCount started before the cut (0–5, from the right)
-    uint8_t partialHeat{0};     // cycles the leftmost of them was heated before the cut (capped at 255)
-};
 
 // ── Display snapshot ──────────────────────────────────────────────────────────
 //
-// Atomic copy of the display state, written by the CPU thread at every digit==0
-// when IDLE is set, and read by the UI thread at 60 Hz.  All 12 visible digit
+// Copy of the display state, written by the CPU at every digit==0 when IDLE is
+// set, and taken by the machine's one display reader (TIMachine::readDisplay).  All 12 visible digit
 // positions come from the A and B registers; decimal point (R5) and the "C"
 // annunciator are captured and buffered the same way.
 
@@ -105,7 +91,7 @@ enum : uint16_t {
 //        ≈ 14,219 instructions/sec in active mode; ÷4 further in idle mode.
 //        TI-58: 384 kHz oscillator ÷ 2 ÷ 16 = 12,000 instructions/sec.
 //        TI-58C: 394 kHz ÷ 2 ÷ 16 = 12,312.5 instructions/sec (one measured
-//        unit; the RC clock varies by unit), no idle divisor. See resonatorHz().
+//        unit; the RC clock varies by unit), no idle divisor. Tick rates: TICatalogue.cpp.
 
 class TMC0501 {
 public:
@@ -151,14 +137,7 @@ public:
     static constexpr int kStepBoundary = 0x2000'0000;
     static constexpr int kPolledHardware = 0x4000'0000;
 
-    /// The CPU state at the last step boundary or idle entry, with the module
-    /// fetch latch of that moment and a count of boundaries (0 = none since reset).
-    struct StepBoundary {
-        CpuFrame cpu;
-        uint16_t libExecPC;
-        bool atStep;        ///< false: idle entry
-        uint64_t count;
-    };
+    using StepBoundary = TIStepBoundary;   // TraceTypes.hpp
     const StepBoundary& lastStepBoundary() const { return m_stepBoundary; }
 
     /// Press / release a key by hardware matrix coordinates.
@@ -166,6 +145,8 @@ public:
     /// col = digit-counter slot (D1–D9 for the 9 keyboard rows)
     void pressKey(int row, int col);
     void releaseKey(int row, int col);
+    /// The key matrix byte of digit slot `col` (bit = K-line); for tests.
+    uint8_t keyLines(int col) const { return (col >= 0 && col < 16) ? key[col] : 0; }
 
     /// Load a library module image (up to 5,000 bytes).
     /// Used by the TI-59 magnetic card reader / solid-state library modules.
@@ -208,15 +189,15 @@ public:
     std::vector<PrinterCodeLine> drainPrinterCodeLines();
 
     // ── Trace / debug API ─────────────────────────────────────────────────────
-    // Zero overhead when disabled: step() hot path costs one atomic<uint32_t>
-    // load; falls through with no extra work when traceFlags == TRACE_NONE.
+    // Zero overhead when disabled: step() hot path costs one load; falls
+    // through with no extra work when traceFlags == TRACE_NONE.
 
     void     setTraceFlags(uint32_t flags);
     uint32_t traceFlags() const;
 
     // ── Debug event log ───────────────────────────────────────────────────────
     // The CPU emits DebugEvents for write operations when debugLevel > 0.
-    // Events are drained by TI59Machine under m_keyMutex at 60 Hz.
+    // Events are drained at 60 Hz (TIDebugPanelAdapter).
     void setDebugLevel(uint8_t level) { m_debugLevel = level; }
     uint8_t debugLevel() const { return m_debugLevel; }
     std::vector<DebugEvent> drainDebugEvents();
@@ -297,7 +278,7 @@ public:
     /// m_pollSteps). Weighted the same way as m_pollSteps (non-IDLE=1, IDLE=4, except
     /// TI-58C which never applies the IDLE weight), so it tracks real elapsed wall-clock
     /// time when divided by the machine's active-mode instruction rate.
-    uint64_t elapsedTicks() const { return m_elapsedTicks.load(std::memory_order_relaxed); }
+    uint64_t elapsedTicks() const { return m_elapsedTicks; }
 
     /// Capture a snapshot of all CPU registers at the current instant.
     CpuFrame snapshotCPU() const;
@@ -415,35 +396,31 @@ private:
     uint32_t m_prnBusyCycles{0};     // Countdown for FLG_BUSY assertion
     PrinterCodeLine  m_prnPending{};      // Code-line in progress (deferred until BUSY expires or aborted)
     bool             m_prnHasPending{false};
-    std::vector<std::string>      m_prnLines;      // Thread-safe text output queue
+    std::vector<std::string>      m_prnLines;      // Text output queue
     std::vector<PrinterCodeLine>  m_prnCodeLines;  // Parallel raw-code queue (deferred commits)
-    mutable std::mutex            m_prnMutex;
     void flushPendingCodeLine(uint32_t elapsed);  // commit m_prnPending cut `elapsed` cycles after PRT.GO
     void flushPendingIfActive();                  // flush at the current BUSY count; no-op if !m_prnHasPending
 
-    // ── Display state (shared between CPU thread and UI thread) ───────
+    // ── Display state ─────────────────────────────────────────────────
     // Per-digit live buffers: updated during each digit's strobe phase when IDLE.
     // takeDisplay() reports the duty since its previous call and restarts the window.
-    // IMPORTANT: All access to display state members (below) must be guarded by
-    // m_displayMutex. Updated exclusively by postOperation() (CPU thread), read only
-    // by takeDisplay() (UI thread, ~60 Hz).
-    mutable std::mutex m_displayMutex;
-    uint8_t  m_digitSegmentsA[12]{};  // A[2..13] → m_digitSegmentsA[0..11] per strobe (CPU thread write, UI thread read)
-    uint8_t  m_digitSegmentsB[12]{};  // B[2..13] → m_digitSegmentsB[0..11] per strobe (CPU thread write, UI thread read)
+    // Written by postOperation(), read by takeDisplay(). The core holds no lock
+    // (ADR 0009): the caller serialises every call (C59-1 design §3.1).
+    uint8_t  m_digitSegmentsA[12]{};  // A[2..13] → m_digitSegmentsA[0..11] per strobe
+    uint8_t  m_digitSegmentsB[12]{};  // B[2..13] → m_digitSegmentsB[0..11] per strobe
     uint32_t m_digitLitTicks[12]{};   // Weighted cycles each position was driven since the last takeDisplay().
     uint32_t m_dpLitTicks[12]{};  // Same for each position's decimal point.
     DisplaySnapshot m_lastDisplay{};  // Returned again when no cycle ran since the last poll.
     uint16_t m_digitSuppressedMask{0}; // Zero-suppression circuit output bitmask for indices 0..11.
     bool     m_zeroSuppressRunning{true}; // Scan-chain running state for leading-zero suppression.
-    // CPU thread only (postOperation, computeDisplayTraceState): no lock.
+    // Used by postOperation and computeDisplayTraceState.
     uint16_t m_drivenThisRev{0};      // Positions driven (digit or dot) in the current digit-counter revolution.
     uint16_t m_drivenLastRev{0};      // … and in the last complete one (trace display state).
 
 
-    std::atomic<uint32_t> m_cSteps{0};          // Steps (IDLE or non-IDLE) where fA≠0 since last takeDisplay().
-    std::atomic<uint32_t> m_pollSteps{0};       // Weighted step count since last takeDisplay() (non-IDLE=1, IDLE=4).
-    mutable std::atomic<uint64_t> m_elapsedTicks{0};    // Weighted step count since last reset(); never drained (see elapsedTicks()).
-    uint64_t m_elapsedTicksLocal{0};    // Non-atomic running total, owned by the stepping thread; mirrored into m_elapsedTicks via store (cheaper than fetch_add on every step()).
+    uint32_t m_cSteps{0};          // Steps (IDLE or non-IDLE) where fA≠0 since last takeDisplay().
+    uint32_t m_pollSteps{0};       // Weighted step count since last takeDisplay() (non-IDLE=1, IDLE=4).
+    uint64_t m_elapsedTicks{0};    // Weighted step count since last reset(); never drained (see elapsedTicks()).
 
     // ── Keyboard matrix ───────────────────────────────────────────────
     // key[col] holds a bitmask of which rows are pressed for that digit-counter
@@ -461,7 +438,7 @@ private:
         ;
 
     // ── Trace / debug state ───────────────────────────────────────────
-    std::atomic<uint32_t> m_traceFlags{TRACE_NONE};
+    uint32_t m_traceFlags{TRACE_NONE};
     uint32_t m_traceSeqno{0};
     uint16_t m_pendingOpcode{};  // opcode cached by beginNextStep, consumed by step()
 
@@ -477,13 +454,10 @@ private:
     static constexpr uint32_t kFrameRingSize = 1024u;
     static constexpr uint32_t kFrameRingMask = kFrameRingSize - 1u;
     CpuFrame m_frameRing[kFrameRingSize]{};
-    uint32_t m_frameHead{0};     // write index (emulation thread only, always advancing)
-    uint32_t m_diskCursor{0};    // drain read cursor (protected by m_traceMutex)
+    uint32_t m_frameHead{0};     // write index (always advancing)
+    uint32_t m_diskCursor{0};    // drain read cursor
 
-    // Non-recursive: no acquisition site re-enters.  beginNextStep() releases its
-    // lock scope before calling tracePreStep(), which takes the lock fresh.
-    mutable std::mutex m_traceMutex;
-    std::vector<uint16_t> m_breakpoints; // sorted ascending; protected by m_traceMutex
+    std::vector<uint16_t> m_breakpoints; // sorted ascending
     bool m_breakpointHit{false};
 
     void tracePreStep(uint32_t tf, uint16_t opcode);

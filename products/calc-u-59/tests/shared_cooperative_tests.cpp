@@ -6,7 +6,6 @@
 #include "FakePlatform.hpp"
 #include "TestRoms.hpp"
 #include "../app/EmulationRunner.hpp"
-#include "../app/KeyMatrix.hpp"
 #include "../app/KeyboardLayout.hpp"
 #include "../app/TextUtil.hpp"
 #include "../app/KeySequencer.hpp"
@@ -29,19 +28,18 @@ using Clock = std::chrono::steady_clock;
 
 namespace {
 
-// Records every call with the time it came at; pc() is in the scan loop when `idle`.
+// Records every call with the time it came at; key ready when `idle`.
 struct FakeHost : KeySequencer::Host {
     std::mutex mutex;
     std::vector<std::pair<std::string, Clock::time_point>> calls;
     std::atomic<bool> idle{true};
     std::atomic<bool> full{false};
     std::function<Clock::time_point()> clock = [] { return Clock::now(); };
-    uint16_t idlePC = info(Model::TI59).scanLoop.lo;
 
     void note(std::string s) { std::lock_guard<std::mutex> lock(mutex); calls.emplace_back(std::move(s), clock()); }
     void pressKey(uint8_t c) override { note("press " + std::to_string(c)); }
     void releaseKey(uint8_t c) override { note("release " + std::to_string(c)); }
-    uint16_t pc() override { return idle ? idlePC : 0; }
+    bool isKeyReady() override { return idle; }
     std::atomic<bool> frozen{false};
     bool isFrozen() override { return frozen; }
     void heldKeyChanged(int id) override { note("held " + std::to_string(id)); }
@@ -78,7 +76,7 @@ struct FakeHost : KeySequencer::Host {
 struct VirtualRig {
     FakeHost host;
     Clock::time_point t = Clock::time_point{} + 1h;
-    KeySequencer keys{Model::TI59, host, Threading::Cooperative};
+    KeySequencer keys{host, Threading::Cooperative};
     VirtualRig() { host.clock = [this] { return t; }; keys.advance(t); }
     void run(Clock::duration d, Clock::duration slice = 20ms) {
         auto end = t + d;
@@ -189,7 +187,7 @@ TEST(cooperative_two_code_binding_taps_both_keys) {
 TEST(threaded_and_cooperative_sequencers_agree) {
     FakeHost host;
     {
-        KeySequencer keys(Model::TI59, host);
+        KeySequencer keys(host);
         auto events = keyEvents({25, 83});
         events.push_back(event(KeystrokeEvent::Kind::Wait, 0.05));
         keys.play(events);
@@ -215,20 +213,21 @@ TEST(threaded_and_cooperative_sequencers_agree) {
 TEST(cooperative_runner_paces_by_the_wall_clock) {
     auto m = testroms::makeMachine(Model::TI59);
     testroms::runToScanLoop(*m, Model::TI59);
-    FreezeController freeze(Model::TI59);
+    FreezeController freeze;
     int batches = 0;
     EmulationRunner::Callbacks cb;
     cb.batchDone = [&] { ++batches; };
-    EmulationRunner runner(*m, Model::TI59, freeze, cb, Threading::Cooperative);
+    MachineGuard guard(*m);
+    EmulationRunner runner(guard, Model::TI59, freeze, cb, Threading::Cooperative);
     std::vector<int> order;
     runner.post([&] { order.push_back(1); });
     runner.start();
     runner.post([&] { order.push_back(2); });  // behind the loop: waits until it stops
     auto t = Clock::time_point{} + 1h;
-    uint64_t t0 = m->elapsedTicks();
+    uint64_t t0 = ((*m).tickCount() / 32);
     for (int i = 0; i < 60; ++i, t += std::chrono::microseconds(16'667)) runner.pump(t, nullptr);
     CHECK_EQ(batches, 50);  // one second of 20 ms batches
-    uint64_t ticks = m->elapsedTicks() - t0;
+    uint64_t ticks = ((*m).tickCount() / 32) - t0;
     CHECK(ticks >= 50u * 284u && ticks < 50u * 284u + 142u + 8u);  // + the last batch's jitter offset
     CHECK(order == std::vector<int>{1});
     t += 5s;  // a stall: the schedule restarts instead of catching up
@@ -250,17 +249,18 @@ TEST(cooperative_runner_batch_ends_do_not_lock_onto_a_loop) {
     auto m = testroms::makeMachine(Model::TI58);
     testroms::runToScanLoop(*m, Model::TI58);
     for (int k : {92, 35}) testroms::tap(*m, Model::TI58, k);  // 0 1/x: error blink
-    FreezeController freeze(Model::TI58);
+    FreezeController freeze;
     EmulationRunner::Callbacks cb;
     cb.jitterSeed = 59;
-    EmulationRunner runner(*m, Model::TI58, freeze, cb, Threading::Cooperative);
+    MachineGuard guard(*m);
+    EmulationRunner runner(guard, Model::TI58, freeze, cb, Threading::Cooperative);
     std::vector<uint16_t> ends;
     runner.start();
     auto t = Clock::time_point{} + 1h;
-    uint64_t t0 = m->elapsedTicks();
+    uint64_t t0 = ((*m).tickCount() / 32);
     for (int i = 0; i < 180; ++i, t += std::chrono::microseconds(16'667))  // 3 s: a few blinks
-        runner.pump(t, [&](Clock::time_point) { ends.push_back(m->pc()); });
-    uint64_t ticks = m->elapsedTicks() - t0;
+        runner.pump(t, [&](Clock::time_point) { ends.push_back(testroms::dbg(*m).pc()); });
+    uint64_t ticks = ((*m).tickCount() / 32) - t0;
     CHECK_EQ(ends.size(), size_t{150});
     CHECK(ticks >= 150u * 240u && ticks < 150u * 240u + 120u + 8u);
     size_t run = 1, longest = 1;
@@ -272,19 +272,20 @@ TEST(cooperative_runner_full_speed_runs_a_slice) {
     auto m = testroms::makeMachine(Model::TI59);
     testroms::runToScanLoop(*m, Model::TI59);
     const uint8_t loop[] = {61, 0, 0};  // GTO 000: computes forever
-    m->writeProgram(loop, 3);
-    pressMatrix(*m, 91);  // R/S
-    m->stepN(30'000, false);
-    releaseMatrix(*m, 91);
-    m->stepN(30'000, false);
-    CHECK(!info(Model::TI59).idleAndKeyDetect.contains(m->pc()));
-    FreezeController freeze(Model::TI59);
+    testroms::mem(*m).writeProgram(loop, 3);
+    testroms::press(*m, 91);  // R/S
+    testroms::run(*m, 30'000);
+    testroms::release(*m, 91);
+    testroms::run(*m, 30'000);
+    CHECK(!pacingHintsOf(*m)->inIdleAndKeyDetect());
+    FreezeController freeze;
     auto wall = Clock::time_point{} + 1h;
     int batches = 0;
     EmulationRunner::Callbacks cb;
     cb.batchDone = [&] { ++batches; wall += 1ms; };  // each batch "takes" 1 ms
     cb.wallClock = [&] { return wall; };
-    EmulationRunner runner(*m, Model::TI59, freeze, cb, Threading::Cooperative);
+    MachineGuard guard(*m);
+    EmulationRunner runner(guard, Model::TI59, freeze, cb, Threading::Cooperative);
     runner.setFullSpeed(true);
     runner.start();
     runner.pump(Clock::time_point{} + 1h, nullptr);
@@ -323,7 +324,7 @@ bool cardIdle(ControllerRig& r) { return r.c.cardState() == SessionController::C
 TEST(cooperative_controller_plays_a_preset) {
     ControllerRig r;
     r.run(1s);
-    CHECK(info(Model::TI59).scanLoop.contains(r.c.session()->machine().pc()));
+    CHECK(r.c.session()->machine().isKeyReady());
     r.load("KEYSTROKES:\n25 83 85 84 95\nZeroElapseTime:\nWait: 50ms\nReportElapseTime:\n");
     CHECK(r.runUntil([&] { return r.c.keystrokesPlaying(); }));
     CHECK(r.runUntil([&] { return !r.c.keystrokesPlaying(); }));
@@ -338,8 +339,8 @@ TEST(cooperative_controller_reload_keeps_the_program) {
     r.load("PROGRAM:\n85 01\nKEYSTROKES:\n25\nREGISTERS:\n05 = 3.25\n");  // CLR, then a reload
     CHECK(r.runUntil([&] { return r.c.keystrokesPlaying(); }));
     CHECK(r.runUntil([&] { return !r.c.keystrokesPlaying(); }));
-    CHECK_EQ(int(r.c.session()->machine().readProgramStep(1)), 1);
-    CHECK_EQ(r.c.session()->machine().readDataReg(5), 3.25);
+    CHECK_EQ(int(testroms::mem(r.c.session()->machine()).readProgramStep(1)), 1);
+    CHECK_EQ(testroms::mem(r.c.session()->machine()).readDataReg(5), 3.25);
 }
 
 TEST(cooperative_controller_writes_and_reads_a_card) {
@@ -355,13 +356,13 @@ TEST(cooperative_controller_writes_and_reads_a_card) {
     CHECK_EQ(r.p.cards.count("web:card"), size_t{1});
     r.load("PARTITION: 479\n");  // a fresh machine: no program
     r.run(1s);
-    CHECK_EQ(int(r.c.session()->machine().readProgramStep(1)), 0);
+    CHECK_EQ(int(testroms::mem(r.c.session()->machine()).readProgramStep(1)), 0);
     const std::string& card = r.p.cards["web:card"];
     CHECK(r.c.fitCard(std::vector<uint8_t>(card.begin(), card.end()), "web:card", "card.U59"));
     CHECK(r.c.feedSide(0));
     CHECK(r.runUntil([&] { return cardIdle(r); }));
     r.run(1s);
-    CHECK_EQ(int(r.c.session()->machine().readProgramStep(1)), 11);
+    CHECK_EQ(int(testroms::mem(r.c.session()->machine()).readProgramStep(1)), 11);
     CHECK(r.p.errors.empty());
 }
 
@@ -427,9 +428,9 @@ TEST(cooperative_controller_reload_after_the_first_run) {
     CHECK(r.runUntil([&] { return r.c.keystrokesPlaying(); }));
     CHECK(r.runUntil([&] { return !r.c.keystrokesPlaying(); }));
     r.run(300ms);
-    TI59Machine& m = r.c.session()->machine();
+    calcu::machine::Machine& m = r.c.session()->machine();
     CHECK_EQ(testroms::displayText(m), std::string("124"));  // part 2 used part 1's R08
-    CHECK_EQ(m.readDataReg(7), 9.0);
+    CHECK_EQ(testroms::mem(m).readDataReg(7), 9.0);
     CHECK(r.c.cueCard() && r.c.cueCard()->title == "Part 2");
     CHECK(r.p.errors.empty());
 }
@@ -455,7 +456,7 @@ TEST(cooperative_controller_program_reads_a_defined_card) {
     CHECK(r.runUntil([&] { return r.c.keystrokesPlaying(); }));
     CHECK(r.runUntil([&] { return !r.c.keystrokesPlaying(); }, 60s));
     r.run(300ms);
-    CHECK_EQ(r.c.session()->machine().readDataReg(5), 2.5);  // the full load cleared it; the card set it
+    CHECK_EQ(testroms::mem(r.c.session()->machine()).readDataReg(5), 2.5);  // the full load cleared it; the card set it
     CHECK(r.c.cueCard() && r.c.cueCard()->title == "Vars");
     CHECK(r.p.errors.empty());
 }
@@ -470,7 +471,7 @@ TEST(cooperative_controller_card_file_written_then_inserted) {
     CHECK(r.runUntil([&] { return r.c.keystrokesPlaying(); }));
     CHECK(r.runUntil([&] { return !r.c.keystrokesPlaying(); }, 60s));
     CHECK(cardIdle(r));  // playback waited for the card
-    CHECK_EQ(r.c.session()->machine().readDataReg(3), 7.0);
+    CHECK_EQ(testroms::mem(r.c.session()->machine()).readDataReg(3), 7.0);
     CHECK(r.p.errors.empty());
 }
 
@@ -481,7 +482,7 @@ TEST(cooperative_controller_fast_mode_entry_then_card_prints_the_table) {
     r.load(testroms::readFile("examples/historic/characters-fastmode.ti59").value());
     CHECK(r.runUntil([&] { return r.c.printerLines().size() >= 8; }, 120s));
     CHECK(r.p.errors.empty());
-    CHECK(r.c.session()->machine().readProgramStep(5) == 36);  // from the card, not the load
+    CHECK(testroms::mem(r.c.session()->machine()).readProgramStep(5) == 36);  // from the card, not the load
 }
 
 TEST(cooperative_controller_unused_card_is_logged_on_the_next_load) {
@@ -508,7 +509,7 @@ TEST(cooperative_controller_insert_card_passes_an_unused_armed_card) {
            "KEYSTROKES:\nArmCard: mem:NeverAsked\nInsertCard: mem:Data\n");
     CHECK(r.runUntil([&] { return r.c.keystrokesPlaying(); }));
     CHECK(r.runUntil([&] { return !r.c.keystrokesPlaying(); }, 30s));
-    CHECK_EQ(r.c.session()->machine().readDataReg(3), 7.0);  // read at idle, as pushed in by hand
+    CHECK_EQ(testroms::mem(r.c.session()->machine()).readDataReg(3), 7.0);  // read at idle, as pushed in by hand
 }
 
 namespace {
@@ -550,18 +551,18 @@ TEST(dropped_card_is_fitted_and_read_at_idle) {
     const std::string card = writtenCard(r);
     r.load("PARTITION: 479\n");  // a fresh machine: no program
     r.run(1s);
-    CHECK_EQ(int(r.c.session()->machine().readProgramStep(1)), 0);
+    CHECK_EQ(int(testroms::mem(r.c.session()->machine()).readProgramStep(1)), 0);
     CHECK(r.c.openDroppedFile(bytes(card), "dropped", "dropped.U59"));
     CHECK(r.c.cardFitted());
     CHECK(cardIdle(r));  // not fed until a corner is tapped
     r.run(500ms);
-    CHECK_EQ(int(r.c.session()->machine().readProgramStep(1)), 0);
+    CHECK_EQ(int(testroms::mem(r.c.session()->machine()).readProgramStep(1)), 0);
     CHECK(r.c.feedSide(0));
     CHECK(r.c.cardState() == SessionController::CardState::Swiping);
     CHECK(r.c.litCardCorner() == 0);
     CHECK(r.runUntil([&] { return cardIdle(r); }));
     r.run(1s);
-    CHECK_EQ(int(r.c.session()->machine().readProgramStep(1)), 11);
+    CHECK_EQ(int(testroms::mem(r.c.session()->machine()).readProgramStep(1)), 11);
     CHECK_EQ(r.p.cards.count("dropped"), size_t{0});  // read, not written
     CHECK(r.p.errors.empty());
 }
@@ -587,7 +588,7 @@ TEST(dropped_card_is_overwritten_after_write) {
     CHECK(r.c.feedSide(0));
     CHECK(r.runUntil([&] { return cardIdle(r); }));
     r.run(1s);
-    CHECK_EQ(int(r.c.session()->machine().readProgramStep(1)), 12);
+    CHECK_EQ(int(testroms::mem(r.c.session()->machine()).readProgramStep(1)), 12);
 }
 
 TEST(dropped_card_is_ignored_without_a_reader) {
@@ -831,7 +832,7 @@ TEST(preset_side_on_a_version_1_file_feeds_its_one_side) {
     CHECK(r.runUntil([&] { return r.c.keystrokesPlaying(); }));
     CHECK(r.runUntil([&] { return !r.c.keystrokesPlaying(); }));
     r.run(1s);
-    CHECK_EQ(int(r.c.session()->machine().readProgramStep(1)), 11);
+    CHECK_EQ(int(testroms::mem(r.c.session()->machine()).readProgramStep(1)), 11);
     CHECK(r.p.errors.empty());
 }
 
@@ -839,7 +840,7 @@ TEST(dropped_preset_loads_as_the_button_does) {
     ControllerRig r;
     CHECK(r.c.openDroppedFile(bytes("MODEL: TI-58\nPROGRAM:\n76 11\nKEYSTROKES:\n25\n"), "p", "p.ti58"));
     CHECK(r.c.model() == Model::TI58);
-    CHECK_EQ(int(r.c.session()->machine().readProgramStep(1)), 11);
+    CHECK_EQ(int(testroms::mem(r.c.session()->machine()).readProgramStep(1)), 11);
     CHECK(r.runUntil([&] { return r.c.keystrokesPlaying(); }));
     CHECK(r.p.errors.empty());
     CHECK(!r.c.openDroppedFile(std::nullopt, "p", "p.ti58"));

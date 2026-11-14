@@ -53,7 +53,8 @@ public:
         virtual ~Host() = default;
         virtual void pressKey(uint8_t matrixCode) = 0;
         virtual void releaseKey(uint8_t matrixCode) = 0;
-        virtual uint16_t pc() = 0;
+        /// The machine reports key readiness (Machine::isKeyReady, C59-1 AC-18).
+        virtual bool isKeyReady() = 0;
         virtual bool isFrozen() = 0;
         /// The key shown pressed (row×5 + col, 0-based), -1 for none.
         virtual void heldKeyChanged(int highlightID) = 0;
@@ -80,7 +81,7 @@ public:
     static constexpr std::chrono::milliseconds kHold{100};
     static constexpr std::chrono::microseconds kScanPoll{1500};
 
-    KeySequencer(Model model, Host& host, Threading threading = Threading::Threads);
+    KeySequencer(Host& host, Threading threading = Threading::Threads);
     ~KeySequencer();
     KeySequencer(const KeySequencer&) = delete;
     KeySequencer& operator=(const KeySequencer&) = delete;
@@ -166,7 +167,6 @@ private:
     void timerLoop();
     Clock::time_point now() const;
 
-    const PcRange m_scanLoop;
     Host& m_host;
     const Threading m_threading;
     std::atomic<bool> m_playing{false};

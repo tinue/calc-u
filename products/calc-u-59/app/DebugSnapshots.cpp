@@ -84,16 +84,16 @@ int decodeProgramCounter(const CpuFrame& cpu) {
     return cpu.SCOM[0][7] * 800 + cpu.SCOM[0][6] * 80 + cpu.SCOM[0][5] * 8 + cpu.SCOM[0][4];
 }
 
-std::vector<uint8_t> programSteps(const TI59Machine& m) {
-    int count = std::min(m.partitionProgramRegs(), m.ramRegCount()) * 8;
+std::vector<uint8_t> programSteps(const calcu::machine::Machine& m) {
+    int count = std::min(memoryOf(m)->partitionProgramRegs(), memoryOf(m)->ramRegCount()) * 8;
     std::vector<uint8_t> steps(static_cast<size_t>(std::max(count, 0)));
-    for (int i = 0; i < count; ++i) steps[static_cast<size_t>(i)] = m.readProgramStep(i);
+    for (int i = 0; i < count; ++i) steps[static_cast<size_t>(i)] = memoryOf(m)->readProgramStep(i);
     return steps;
 }
 
-std::vector<uint8_t> romKeycodes(const TI59Machine& m) {
+std::vector<uint8_t> romKeycodes(const calcu::machine::Machine& m) {
     std::vector<uint8_t> k(384);
-    for (int i = 0; i < 384; ++i) k[static_cast<size_t>(i)] = m.readROMKeycode(i);
+    for (int i = 0; i < 384; ++i) k[static_cast<size_t>(i)] = debugTargetOf(m)->readROMKeycode(i);
     return k;
 }
 
@@ -119,29 +119,29 @@ bool LiveDebugSnapshot::operator==(const LiveDebugSnapshot& o) const {
            returnAddressSourceFlags == o.returnAddressSourceFlags && returnAddresses == o.returnAddresses;
 }
 
-void readTraceRing(const TI59Machine& m, std::vector<CpuFrame>& frames) {
+void readTraceRing(const calcu::machine::Machine& m, std::vector<CpuFrame>& frames) {
     frames.resize(1024);
-    frames.resize(m.readCpuFrames(frames.data(), 1024));
+    frames.resize(debugTargetOf(m)->readCpuFrames(frames.data(), 1024));
 }
 
-std::vector<CpuFrame> readTraceRing(const TI59Machine& m) {
+std::vector<CpuFrame> readTraceRing(const calcu::machine::Machine& m) {
     std::vector<CpuFrame> frames;
     readTraceRing(m, frames);
     return frames;
 }
 
-std::vector<InspectorEntry> inspectorHistory(const TI59Machine& m) {
+std::vector<InspectorEntry> inspectorHistory(const calcu::machine::Machine& m) {
     std::vector<CpuFrame> frames = readTraceRing(m);
     std::vector<InspectorEntry> out;
     out.reserve(frames.size() + 1);
     for (size_t i = 0; i < frames.size(); ++i) {
         const CpuFrame& f = frames[i];
-        out.push_back({f.pc, f.opcode, TI59Machine::disassemble(f.pc, f.opcode), f, true, i + 1 == frames.size()});
+        out.push_back({f.pc, f.opcode, TIDebugTargetAdapter::disassemble(f.pc, f.opcode), f, true, i + 1 == frames.size()});
     }
     // snapshotCPU() carries the real next opcode.
-    uint16_t pc = m.pc();
-    uint16_t next = m.snapshotCPU().opcode;
-    out.push_back({pc, next, TI59Machine::disassemble(pc, next), CpuFrame{}, false, false});
+    uint16_t pc = debugTargetOf(m)->pc();
+    uint16_t next = debugTargetOf(m)->snapshotCPU().opcode;
+    out.push_back({pc, next, TIDebugTargetAdapter::disassemble(pc, next), CpuFrame{}, false, false});
     return out;
 }
 
@@ -150,43 +150,43 @@ std::vector<InspectorEntry> recentInstructions(const std::vector<CpuFrame>& fram
     size_t first = frames.size() > count ? frames.size() - count : 0;
     for (size_t i = first; i < frames.size(); ++i) {
         const CpuFrame& f = frames[i];
-        out.push_back({f.pc, f.opcode, TI59Machine::disassemble(f.pc, f.opcode), f, true, i + 1 == frames.size()});
+        out.push_back({f.pc, f.opcode, TIDebugTargetAdapter::disassemble(f.pc, f.opcode), f, true, i + 1 == frames.size()});
     }
     return out;
 }
 
-TMC0501::StepBoundary calcViewState(const TI59Machine& m) {
-    TMC0501::StepBoundary latched = m.lastStepBoundary();
+TIStepBoundary calcViewState(const calcu::machine::Machine& m) {
+    TIStepBoundary latched = debugTargetOf(m)->lastStepBoundary();
     if (latched.count != 0) return latched;
-    return {m.snapshotCPU(), m.libExecPC(), false, 0};
+    return {debugTargetOf(m)->snapshotCPU(), cardReaderOf(m)->libExecPC(), false, 0};
 }
 
 namespace {
 // Quirky partitions may claim more registers than physically exist.
-int programRAMRegs(const TI59Machine& m) { return std::min(m.partitionProgramRegs(), m.ramRegCount()); }
+int programRAMRegs(const calcu::machine::Machine& m) { return std::min(memoryOf(m)->partitionProgramRegs(), memoryOf(m)->ramRegCount()); }
 } // namespace
 
-int partitionDataRegCount(const TI59Machine& m) { return std::max(0, m.dataRegCount() - programRAMRegs(m)); }
+int partitionDataRegCount(const calcu::machine::Machine& m) { return std::max(0, memoryOf(m)->dataRegCount() - programRAMRegs(m)); }
 
-std::vector<LiveDebugSnapshot::RegEntry> nonZeroDataRegs(const TI59Machine& m) {
-    const int top = m.dataRegCount();  // Rnn = RAM[top - 1 - nn]; Hnn = RAM[top + nn]
+std::vector<LiveDebugSnapshot::RegEntry> nonZeroDataRegs(const calcu::machine::Machine& m) {
+    const int top = memoryOf(m)->dataRegCount();  // Rnn = RAM[top - 1 - nn]; Hnn = RAM[top + nn]
     std::vector<LiveDebugSnapshot::RegEntry> regs;
-    for (int ramIdx = programRAMRegs(m); ramIdx < m.ramRegCount(); ++ramIdx) {
+    for (int ramIdx = programRAMRegs(m); ramIdx < memoryOf(m)->ramRegCount(); ++ramIdx) {
         uint8_t n[16];
-        m.copyRAMReg(ramIdx, n);
+        memoryOf(m)->copyRAMReg(ramIdx, n);
         if (std::all_of(n, n + 16, [](uint8_t v) { return v == 0; })) continue;
-        const double value = TI59Machine::decodeBCD(n);
+        const double value = TIDebugTargetAdapter::decodeBCD(n);
         if (ramIdx < top) regs.push_back({top - 1 - ramIdx, value, false});
         else regs.push_back({ramIdx - top, value, true});
     }
     return regs;
 }
 
-LiveDebugBuild buildLiveSnapshot(const TI59Machine& m, const ModuleImage& module,
-                                 std::vector<uint8_t>& romCache, const TMC0501::StepBoundary& state) {
+LiveDebugBuild buildLiveSnapshot(const calcu::machine::Machine& m, const ModuleImage& module,
+                                 std::vector<uint8_t>& romCache, const TIStepBoundary& state) {
     LiveDebugBuild out;
     LiveDebugSnapshot& snap = out.snap;
-    snap.programRegCount = m.partitionProgramRegs();
+    snap.programRegCount = memoryOf(m)->partitionProgramRegs();
     snap.dataRegCount = partitionDataRegCount(m);
     snap.nonZeroRegs = nonZeroDataRegs(m);
 
@@ -194,8 +194,8 @@ LiveDebugBuild buildLiveSnapshot(const TI59Machine& m, const ModuleImage& module
     const auto& S = cpu.SCOM;
     const bool atStepBoundary = state.atStep;
 
-    for (int h = 1; h <= 8; ++h) snap.hir[static_cast<size_t>(h - 1)] = TI59Machine::decodeBCD(S[h]);  // HIR n in SCOM[n]
-    snap.tRegister = TI59Machine::decodeBCD(S[11]);
+    for (int h = 1; h <= 8; ++h) snap.hir[static_cast<size_t>(h - 1)] = TIDebugTargetAdapter::decodeBCD(S[h]);  // HIR n in SCOM[n]
+    snap.tRegister = TIDebugTargetAdapter::decodeBCD(S[11]);
     decodeX(cpu, atStepBoundary, snap);
 
     snap.prSourceFlag = S[0][3];

@@ -131,21 +131,23 @@ bool SessionController::startMachine(Model model) {
     m_debug.attach(*m_session);
     if (!m_debug.moduleImageError().empty()) m_platform.diagnostic(m_debug.moduleImageError());
 
-    TI59Machine& m = m_session->machine();
-    m.setPrinterConnected(m_printerConnected);
-    m.setDebugLevel(static_cast<uint8_t>(m_debugLevel));
-    if (info(model).hasConstantMemory) {
-        auto saved = loadConstantMemory();
-        powerOn(m, model, saved ? &*saved : nullptr);
-    }
-    if (!m_asmWords.empty() && !m.loadDebugOverlay(m_asmWords.data(), m_asmWords.size())) {
-        m_asmWords.clear();
-        m_asmActive = false;
-        m_asmStatus = "ASM overlay cleared (incompatible after model switch).";
+    {
+        auto a = m_session->access();
+        a.peripherals().setPrinterConnected(m_printerConnected);
+        a.debugPanel().setDebugLevel(static_cast<uint8_t>(m_debugLevel));
+        if (info(model).hasConstantMemory) {
+            auto saved = loadConstantMemory();
+            powerOn(a.machine(), model, saved ? &*saved : nullptr);
+        }
+        if (!m_asmWords.empty() && !a.debugPanel().loadDebugOverlay(m_asmWords.data(), m_asmWords.size())) {
+            m_asmWords.clear();
+            m_asmActive = false;
+            m_asmStatus = "ASM overlay cleared (incompatible after model switch).";
+        }
     }
     configureTraceLocation();
     m_session->setCpuPanelVisible(m_cpuDebugEnabled);
-    m_debug.resetHeatmapBaseline(m);
+    m_debug.resetHeatmapBaseline(m_session->access().machine());
     refreshCueCard();
     m_session->start();
     emitChanged(ModelChanged | RunStateChanged | CardChanged | PrinterChanged | CueCardChanged | LiveChanged |
@@ -182,25 +184,26 @@ void SessionController::adoptPresetCue(const std::optional<CueCardContent>& cue)
 void SessionController::resetMachine() {
     if (!m_session) return;
     beginReset();
-    // The printer's TRACE latch survives a reset, as on the hardware (the core keeps it).
-    auto saved = info(m_model).hasConstantMemory ? loadConstantMemory() : std::nullopt;
-    softResetStopped(saved ? &*saved : nullptr);
-    m_debug.resetHeatmapBaseline(m_session->machine());
+    // The printer's TRACE latch survives a reset, as on the hardware (the core
+    // keeps it). The TI-58C keeps its constant memory from the running machine
+    // (C59-1 OQ-6); the TI-59/58 keep RAM and partition (AC-6, AC-19).
+    resetStopped();
+    m_debug.resetHeatmapBaseline(m_session->access().machine());
     log({"Calculator Reset"});
     emitChanged(ModelChanged | CardChanged | AsmChanged | HeatmapChanged);
 }
 
-void SessionController::softResetStopped(const std::vector<uint8_t>* savedRam) {
+void SessionController::resetStopped() {
     m_session->stop();
-    m_session->sync([&] { softReset(m_session->machine(), m_model, savedRam); });
+    m_session->sync([&] { m_session->access().machine().reset(); });
     m_session->start();
 }
 
 void SessionController::cleanResetMachine() {
     if (!m_session) return;
     beginReset();
-    cleanReset(m_session->machine(), m_model);
-    m_debug.resetHeatmapBaseline(m_session->machine());
+    m_session->access().machine().coldBoot();
+    m_debug.resetHeatmapBaseline(m_session->access().machine());
     persistConstantMemory();  // the zeroed state, at once
     log({"Clean Reset — all registers cleared"});
     emitChanged(ModelChanged | CardChanged | AsmChanged | HeatmapChanged);
@@ -248,7 +251,7 @@ void SessionController::persistConstantMemory() {
     m_persistDue.reset();
     if (!m_session || !info(m_model).hasConstantMemory) return;
     std::vector<uint8_t> ram(kConstantMemoryBytes);
-    m_session->machine().serialiseRAM(ram.data());
+    m_session->access().memory().serialiseRAM(ram.data());
     std::string text = encodeConstantMemory(ram, m_userCueCard ? &*m_userCueCard : nullptr);
     if (text == m_persistedText) return;
     m_platform.writeConstantMemory(text);
@@ -294,7 +297,7 @@ void SessionController::tick(Clock::time_point now) {
         changes |= DisplayChanged;
     }
 
-    DebugModel::Update u = m_debug.tick(m_session->machine(), m_liveDebugEnabled, m_cpuDebugEnabled,
+    DebugModel::Update u = m_debug.tick(m_session->access().machine(), m_liveDebugEnabled, m_cpuDebugEnabled,
                                         m_debugState.frozen);
     if (u.live) changes |= LiveChanged;
     if (u.listing) changes |= ListingChanged;
@@ -326,7 +329,7 @@ void SessionController::tick(Clock::time_point now) {
 }
 
 void SessionController::checkProgramNumber() {
-    int program = activeLibraryProgram(m_session->machine().snapshotCPU().SCOM[9]);
+    int program = activeLibraryProgram(m_session->access().debugTarget().snapshotCPU().SCOM[9]);
     if (program != m_activeProgram) {
         m_activeProgram = program;
         refreshCueCard();
@@ -361,7 +364,7 @@ void SessionController::setFullSpeed(bool on) {
 
 void SessionController::setPrinterConnected(bool connected) {
     m_printerConnected = connected;
-    if (m_session) m_session->machine().setPrinterConnected(connected);
+    if (m_session) m_session->access().peripherals().setPrinterConnected(connected);
     emitChanged(PrinterChanged);
 }
 
@@ -372,13 +375,13 @@ void SessionController::togglePrinterConnection() {
 
 void SessionController::togglePrinterTrace() {
     if (!m_session) return;
-    TI59Machine& m = m_session->machine();
-    m.setPrinterTrace(!m.printerTrace());
+    auto a = m_session->access();
+    a.peripherals().setPrinterTrace(!a.peripherals().printerTrace());
     emitChanged(PrinterChanged);
 }
 
-void SessionController::pressPrinterPrint(bool pressed) { if (m_session) m_session->machine().pressPrinterPrint(pressed); }
-void SessionController::pressPrinterAdv(bool pressed) { if (m_session) m_session->machine().pressPrinterAdv(pressed); }
+void SessionController::pressPrinterPrint(bool pressed) { if (m_session) m_session->access().peripherals().pressPrinterPrint(pressed); }
+void SessionController::pressPrinterAdv(bool pressed) { if (m_session) m_session->access().peripherals().pressPrinterAdv(pressed); }
 
 double SessionController::printerStripHeightUnits() const {
     double units = 0;
@@ -465,7 +468,7 @@ CueCardContent SessionController::fittedCueCard() const {
 void SessionController::startSwipe(const std::vector<uint8_t>& data, const CardPass& pass) {
     m_pass = pass;
     m_session->manualTrace().writeCardInsert();
-    m_session->machine().insertCard(data.empty() ? nullptr : data.data(), data.size());
+    m_session->access().cardReader().insertCard(data.empty() ? nullptr : data.data(), data.size());
     emitChanged(CardChanged);
 }
 
@@ -476,7 +479,7 @@ void SessionController::ejectCard() {
         return;
     }
     m_session->manualTrace().writeCardEject();
-    std::vector<uint8_t> written = m_session->machine().cardEject();
+    std::vector<uint8_t> written = m_session->access().cardReader().cardEject();
     const CardPass pass = *std::exchange(m_pass, std::nullopt);
     if (!written.empty()) {
         if (pass.memoryKey) m_memoryCards[*pass.memoryKey] = {written, m_userCueCard};
@@ -500,7 +503,7 @@ void SessionController::feedQueuedCard() {
             bank = it->second.bank;
             cueCard = it->second.cueCard;
         } else if (card->definition) {
-            bank = buildCardBank(*card->definition, m_session->machine().partitionProgramRegs());
+            bank = buildCardBank(*card->definition, m_session->access().memory().partitionProgramRegs());
             cueCard = card->definition->cueCard;
         }
         m_fitted.reset();  // a memory card has no file behind it: it is not fitted
@@ -640,7 +643,6 @@ bool SessionController::openDroppedFile(const std::optional<std::vector<uint8_t>
 
 void SessionController::applyState(const LoadStateResult& parsed) {
     if (!m_session) return;
-    TI59Machine& m = m_session->machine();
     if (auto e = stateFilePartitionError(parsed, m_model)) {
         m_platform.error("State file load error", *e);
         return;
@@ -649,8 +651,8 @@ void SessionController::applyState(const LoadStateResult& parsed) {
     m_session->stop();
     m_session->clearFreeze();
     m_activeProgram = 0;
-    m_session->sync([&] { cu59::applyState(m, parsed, m_model); });
-    m_debug.resetHeatmapBaseline(m);  // fresh machine state: skip the power-on walk
+    m_session->sync([&] { cu59::applyState(m_session->access().machine(), parsed, m_model); });
+    m_debug.resetHeatmapBaseline(m_session->access().machine());  // fresh machine state: skip the power-on walk
     m_session->start();
     cutPaper();  // each loaded state starts with a blank strip
     if (parsed.solidStateModuleID && *parsed.solidStateModuleID != m_moduleID) selectModule(*parsed.solidStateModuleID);
@@ -671,7 +673,7 @@ void SessionController::applyControl(const KeystrokeEvent& e) {
     const FreezeOwner owner = e.panel == DebugPanel::Cpu ? FreezeOwner::Cpu : FreezeOwner::Calculator;
     switch (e.kind) {
     case K::PrinterTrace:
-        m_session->machine().setPrinterTrace(e.on);
+        m_session->access().peripherals().setPrinterTrace(e.on);
         emitChanged(PrinterChanged);
         break;
     case K::CutPaper: cutPaper(); break;
@@ -711,10 +713,9 @@ void SessionController::applyReloadStage(const ReloadStage& stage) {
         log({"KEYSTROKES: reload skipped — its partition (" + std::to_string(*stage.partitionMaxStep) + ") exceeds the " +
              mi.displayName + " maximum (" + std::to_string(mi.maxStep()) + ")"});
     } else {
-        TI59Machine& m = m_session->machine();
         bool frozen = m_session->frozen();
         m_session->stop();
-        m_session->sync([&] { applyReload(m, stage, m_model); });
+        m_session->sync([&] { applyReload(m_session->access().machine(), stage, m_model); });
         if (!frozen) m_session->start();
         if (stage.cueCard) adoptPresetCue(stage.cueCard);
         persistConstantMemory();
@@ -738,7 +739,7 @@ void SessionController::onFrozenView(uint64_t freezeGeneration, FrozenViewReason
     pullDebugState();
     // RESUME (or a new freeze) came first: this view is stale, and the machine may be running.
     if (!m_debugState.frozen || m_debugState.generation != freezeGeneration) return;
-    DebugModel::Update u = m_debug.frozenView(m_session->machine(), reason);
+    DebugModel::Update u = m_debug.frozenView(m_session->access().machine(), reason);
     if (u.diagnostic) m_platform.diagnostic(*u.diagnostic);
     emitChanged(changeIf(u.live, LiveChanged) | changeIf(u.listing, ListingChanged) | changeIf(u.cpu, CpuChanged) |
                 RunStateChanged);
@@ -748,7 +749,7 @@ void SessionController::setLiveDebugEnabled(bool on) {
     m_liveDebugEnabled = on;
     // Shown while frozen: the frozen view may predate it, so build it now.
     if (on && m_debugState.frozen && m_session) {
-        DebugModel::Update u = m_debug.rebuildLive(m_session->machine(), true);
+        DebugModel::Update u = m_debug.rebuildLive(m_session->access().machine(), true);
         emitChanged(changeIf(u.live, LiveChanged) | changeIf(u.listing, ListingChanged));
     }
 }
@@ -760,7 +761,7 @@ void SessionController::setCpuDebugEnabled(bool on) {
     // The heatmap shows activity since the panel became visible (no tracing
     // while hidden); a frozen heatmap is static, so keep it.
     if (on && !m_debugState.frozen) {
-        m_debug.resetHeatmapBaseline(m_session->machine());
+        m_debug.resetHeatmapBaseline(m_session->access().machine());
         emitChanged(HeatmapChanged);
     }
     m_session->setCpuPanelVisible(on);
@@ -794,7 +795,7 @@ void SessionController::clearHeatmap() {
 
 void SessionController::cycleDebugLevel() {
     m_debugLevel = static_cast<DebugLevel>((static_cast<int>(m_debugLevel) + 1) % 3);
-    if (m_session) m_session->machine().setDebugLevel(static_cast<uint8_t>(m_debugLevel));
+    if (m_session) m_session->access().debugPanel().setDebugLevel(static_cast<uint8_t>(m_debugLevel));
     emitChanged(LogChanged);
 }
 
@@ -816,10 +817,10 @@ void SessionController::clearLog() {
     emitChanged(LogChanged);
 }
 
-void SessionController::dumpVars() { if (m_session) log(cu59::dumpVars(m_session->machine())); }
-void SessionController::dumpScom() { if (m_session) log(cu59::dumpScom(m_session->machine())); }
-void SessionController::dumpProg() { if (m_session) log(cu59::dumpProg(m_session->machine())); }
-void SessionController::dumpMemory() { if (m_session) log(cu59::dumpMemory(m_session->machine())); }
+void SessionController::dumpVars() { if (m_session) log(cu59::dumpVars(m_session->access().machine())); }
+void SessionController::dumpScom() { if (m_session) log(cu59::dumpScom(m_session->access().machine())); }
+void SessionController::dumpProg() { if (m_session) log(cu59::dumpProg(m_session->access().machine())); }
+void SessionController::dumpMemory() { if (m_session) log(cu59::dumpMemory(m_session->access().machine())); }
 
 // ── Traces ───────────────────────────────────────────────────────────────────
 
@@ -866,7 +867,7 @@ void SessionController::loadAsm(const std::optional<std::string>& text, const st
             std::vector<uint16_t> words = parseAsmWords(*text);
             if (!m_session) {
                 m_asmStatus = "Machine not initialized yet.";
-            } else if (!m_session->machine().loadDebugOverlay(words.data(), words.size())) {
+            } else if (!m_session->access().debugPanel().loadDebugOverlay(words.data(), words.size())) {
                 m_asmStatus = "ASM program exceeds overlay range 0x1800-0x1FFF.";
                 m_platform.error(title, m_asmStatus);
             } else {
@@ -894,7 +895,7 @@ void SessionController::runAsm() {
     m_session->disarmScanLoopExit();
     m_session->clearFreeze();
     AsmRunResult r;
-    m_session->sync([&] { r = runAsmOverlay(m_session->machine(), m_asmWords); });
+    m_session->sync([&] { r = runAsmOverlay(m_session->access().machine(), m_asmWords); });
     uint32_t changes = AsmChanged;
     if (!r.loaded) {
         m_asmStatus = "ASM program exceeds overlay range 0x1800-0x1FFF.";
@@ -905,7 +906,7 @@ void SessionController::runAsm() {
         if (freezeOnStart) {
             // FREEZE ON START was armed: freeze in place at the 0x1800 entry.
             m_session->freezeInPlace(FreezeOwner::Cpu);
-            DebugModel::Update u = m_debug.frozenView(m_session->machine(), FrozenViewReason::Freeze);
+            DebugModel::Update u = m_debug.frozenView(m_session->access().machine(), FrozenViewReason::Freeze);
             changes |= changeIf(u.live, LiveChanged) | changeIf(u.listing, ListingChanged) | changeIf(u.cpu, CpuChanged);
         } else {
             m_session->start();
@@ -920,14 +921,14 @@ void SessionController::runAsm() {
 
 void SessionController::clearAsm() {
     bool wasActive = m_asmActive;
-    if (m_session) m_session->machine().clearDebugOverlay();
+    if (m_session) m_session->access().debugPanel().clearDebugOverlay();
     m_asmWords.clear();
     m_asmActive = false;
     m_asmStatus = "ASM overlay cleared.";
     // A running overlay would now execute the empty range: reset the machine.
     if (wasActive && m_session) {
         resume();
-        softResetStopped(nullptr);
+        resetStopped();
     }
     emitChanged(AsmChanged);
 }

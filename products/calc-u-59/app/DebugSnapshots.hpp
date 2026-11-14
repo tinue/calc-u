@@ -1,5 +1,5 @@
 #pragma once
-#include "../core/TI59Machine.hpp"
+#include "../core/TIAdapters.hpp"
 #include "MachineModelInfo.hpp"
 #include "ModuleImage.hpp"
 #include <array>
@@ -21,10 +21,10 @@ int decodeProgramCounter(const CpuFrame& cpu);
 
 /// Program steps of the current partition (clamped to physical RAM: the
 /// partition nibble can transiently claim more registers than exist).
-std::vector<uint8_t> programSteps(const TI59Machine& m);
+std::vector<uint8_t> programSteps(const calcu::machine::Machine& m);
 
 /// The 384 constant-ROM keycodes (PRG SOURCE = 8).
-std::vector<uint8_t> romKeycodes(const TI59Machine& m);
+std::vector<uint8_t> romKeycodes(const calcu::machine::Machine& m);
 
 struct StepEntry {
     int stepNum;
@@ -105,31 +105,31 @@ struct InspectorEntry {
 /// Frozen CPU view: every frame still in the trace ring (read, not drained),
 /// then the certain next instruction — shown even at the same PC (WAIT/KEY
 /// loops re-execute one instruction).
-std::vector<InspectorEntry> inspectorHistory(const TI59Machine& m);
+std::vector<InspectorEntry> inspectorHistory(const calcu::machine::Machine& m);
 
 /// Running CPU view: the newest `count` of `frames`, the last one current.
 std::vector<InspectorEntry> recentInstructions(const std::vector<CpuFrame>& frames, size_t count = 32);
 
 /// The ring's frames, read without draining (up to 1024).
-std::vector<CpuFrame> readTraceRing(const TI59Machine& m);
+std::vector<CpuFrame> readTraceRing(const calcu::machine::Machine& m);
 /// The same into `frames`, reusing its storage (the 60 Hz read).
-void readTraceRing(const TI59Machine& m, std::vector<CpuFrame>& frames);
+void readTraceRing(const calcu::machine::Machine& m, std::vector<CpuFrame>& frames);
 
 /// Data registers in the current partition (the ROM's register top less the
 /// program registers), and the non-zero ones: Rnn, plus the TI-58C's extra
 /// registers above the top as Hnn (isHidden).
-int partitionDataRegCount(const TI59Machine& m);
-std::vector<LiveDebugSnapshot::RegEntry> nonZeroDataRegs(const TI59Machine& m);
+int partitionDataRegCount(const calcu::machine::Machine& m);
+std::vector<LiveDebugSnapshot::RegEntry> nonZeroDataRegs(const calcu::machine::Machine& m);
 
 /// The CPU state a CALCULATOR view is built from: the last step boundary
 /// (about to dispatch a program byte) or idle entry the CPU latched, never
 /// the middle of an operation; the live state only before the first one.
-TMC0501::StepBoundary calcViewState(const TI59Machine& m);
+TIStepBoundary calcViewState(const calcu::machine::Machine& m);
 
 /// Build the live snapshot from `state`. `romCache` holds the 384 ROM keycodes
 /// once filled (constant per machine). The current step is the next one to
 /// execute, as the calculator's LRN display shows it.
-LiveDebugBuild buildLiveSnapshot(const TI59Machine& m, const ModuleImage& module,
-                                 std::vector<uint8_t>& romCache, const TMC0501::StepBoundary& state);
+LiveDebugBuild buildLiveSnapshot(const calcu::machine::Machine& m, const ModuleImage& module,
+                                 std::vector<uint8_t>& romCache, const TIStepBoundary& state);
 
 } // namespace cu59

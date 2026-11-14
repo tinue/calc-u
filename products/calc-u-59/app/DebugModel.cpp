@@ -19,7 +19,7 @@ void DebugModel::moduleChanged(const EmulatorSession& session) {
     m_romCache.clear();
 }
 
-DebugModel::Update DebugModel::tick(const TI59Machine& m, bool livePanel, bool cpuPanel, bool frozen) {
+DebugModel::Update DebugModel::tick(const calcu::machine::Machine& m, bool livePanel, bool cpuPanel, bool frozen) {
     Update u;
     if (livePanel && !frozen) u |= rebuildLive(m, false);
     if (cpuPanel || frozen) {
@@ -37,14 +37,14 @@ DebugModel::Update DebugModel::tick(const TI59Machine& m, bool livePanel, bool c
     return u;
 }
 
-DebugModel::Update DebugModel::frozenView(const TI59Machine& m, FrozenViewReason reason) {
+DebugModel::Update DebugModel::frozenView(const calcu::machine::Machine& m, FrozenViewReason reason) {
     Update u;
     if (reason != FrozenViewReason::StepInstruction) u |= rebuildLive(m, true);
     u |= captureInspector(m);
     return u;
 }
 
-DebugModel::Update DebugModel::rebuildLive(const TI59Machine& m, bool frozen) {
+DebugModel::Update DebugModel::rebuildLive(const calcu::machine::Machine& m, bool frozen) {
     Update u;
     LiveDebugBuild b = buildLiveSnapshot(m, m_module, m_romCache, calcViewState(m));
     if (b.libProgramMismatch && b.libProgramMismatch->second != m_lastLibMismatch) {
@@ -69,7 +69,7 @@ DebugModel::Update DebugModel::rebuildLive(const TI59Machine& m, bool frozen) {
     return u;
 }
 
-DebugModel::Update DebugModel::captureInspector(const TI59Machine& m) {
+DebugModel::Update DebugModel::captureInspector(const calcu::machine::Machine& m) {
     m_cpuHistory = inspectorHistory(m);
     m_cpuHistorySeqno.reset();  // the next running frame rebuilds the list
     Update u;
@@ -82,7 +82,7 @@ int DebugModel::listingCurrentIndex() const {
     return it == m_listing.end() ? -1 : static_cast<int>(it - m_listing.begin());
 }
 
-void DebugModel::resetHeatmapBaseline(const TI59Machine& m) {
+void DebugModel::resetHeatmapBaseline(const calcu::machine::Machine& m) {
     m_heatmap.clear();
     auto frames = readTraceRing(m);
     if (!frames.empty()) m_heatmap.resetBaseline(frames.back().seqno);

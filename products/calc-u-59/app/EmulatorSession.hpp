@@ -1,9 +1,9 @@
 #pragma once
-#include "../core/TI59Machine.hpp"
 #include "EmulationRunner.hpp"
 #include "FrameSampler.hpp"
 #include "FreezeController.hpp"
 #include "KeySequencer.hpp"
+#include "MachineGuard.hpp"
 #include "MachineModelInfo.hpp"
 #include "RomLoader.hpp"
 #include "StateFile.hpp"
@@ -93,8 +93,9 @@ public:
         virtual void controlRequested(const KeystrokeEvent&) {}
     };
 
-    /// Build the machine from ROM text files: the model's ROM and constants
-    /// and, if given, a solid-state module image. Throws RomError.
+    /// Build the machine through the machine interface (calcu::machine::build,
+    /// tiCatalogue()) from the model's ROM files and, if given, load a
+    /// solid-state module image. Throws RomError.
     EmulatorSession(Model model, const ResourceReader& roms, const std::optional<std::string>& moduleRomFile,
                     Listener& listener, Threading threading = Threading::Threads);
     ~EmulatorSession();
@@ -102,8 +103,12 @@ public:
     EmulatorSession& operator=(const EmulatorSession&) = delete;
 
     Model model() const { return m_model; }
-    TI59Machine& machine() { return *m_machine; }
-    const std::shared_ptr<TI59Machine>& sharedMachine() const { return m_machine; }
+    /// The machine and its adapters under MachineGuard (C59-1 design D-1):
+    /// hold it per call, never across sync() or a listener call.
+    MachineGuard::Access access() const { return m_guard.access(); }
+    /// The machine without the guard: for code on the one thread that runs
+    /// it (a test, a sync() job that takes access() itself).
+    calcu::machine::Machine& machine() { return *m_machine; }
     /// The module image loaded at construction or by loadModule() (empty if none).
     const std::vector<uint8_t>& moduleImage() const { return m_moduleImage; }
     /// Swap the solid-state module (no reset). False if the file can't be read.
@@ -161,7 +166,7 @@ public:
     bool keystrokesPlaying() const { return m_keys->isPlaying(); }
     /// The next queued card the machine takes where it stands: the first
     /// InsertCard card in the idle scan loop, the first ArmCard card in the
-    /// card wait of Write / INV Write (ModelInfo::cardWait). UI thread.
+    /// card wait of Write / INV Write (TICardReaderAdapter::isInCardWait). UI thread.
     std::optional<QueuedCard> takeQueuedCard();
     /// A reload has been applied, or an InsertCard card has passed (or failed).
     void hostDone();
@@ -170,7 +175,8 @@ public:
 
     // ── Frames ───────────────────────────────────────────────────────────────
     FrameUpdate tick(int debugLevel, bool cardSwiping) {
-        return m_sampler.tick(*m_machine, info(m_model).instructionHz, debugLevel, cardSwiping);
+        auto a = access();
+        return m_sampler.tick(a.machine(), debugLevel, cardSwiping);
     }
 
     // ── Traces ───────────────────────────────────────────────────────────────
@@ -194,11 +200,11 @@ public:
 
 private:
     // KeySequencer::Host (pressKey, releaseKey and setFullSpeed are public above)
-    uint16_t pc() override { return m_machine->pc(); }
+    bool isKeyReady() override { return access().machine().isKeyReady(); }
     bool isFrozen() override { return m_frozen.load(); }
     void heldKeyChanged(int id) override { m_listener.heldKeyChanged(id); }
     void scriptedTrace(const std::optional<std::string>& fileName) override;
-    void zeroElapseTime() override { m_elapseBaseline = m_machine->elapsedTicks(); }
+    void zeroElapseTime() override { m_elapseBaseline = access().machine().tickCount(); }
     void onFreezeFired(FreezeOwner owner);       // emulation thread
     /// Set the frozen state (and owner, generation); disarms both armed freezes when freezing.
     uint64_t setFrozenState(bool frozen, std::optional<FreezeOwner> owner);
@@ -216,7 +222,8 @@ private:
 
     const Model m_model;
     Listener& m_listener;
-    std::shared_ptr<TI59Machine> m_machine;
+    std::unique_ptr<calcu::machine::Machine> m_machine;
+    mutable MachineGuard m_guard{*m_machine};
     std::vector<uint8_t> m_moduleImage;
     FreezeController m_freeze;
     FrameSampler m_sampler;

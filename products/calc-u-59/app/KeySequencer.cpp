@@ -84,8 +84,8 @@ std::optional<KeySequencer::Clock::time_point> KeySequencer::Lane::advance(Clock
 
 // ── KeySequencer ─────────────────────────────────────────────────────────────
 
-KeySequencer::KeySequencer(Model model, Host& host, Threading threading)
-    : m_scanLoop(info(model).scanLoop), m_host(host), m_threading((requireThreadSupport(threading), threading)),
+KeySequencer::KeySequencer(Host& host, Threading threading)
+    : m_host(host), m_threading((requireThreadSupport(threading), threading)),
       m_script(*this, threading), m_keys(*this, threading) {
     if (threading == Threading::Threads) m_timer = std::thread([this] { timerLoop(); });
 }
@@ -145,8 +145,8 @@ std::optional<KeySequencer::Clock::time_point> KeySequencer::step(Lane& lane, Ta
                 break;
             }
             // A script waits out a freeze; a keyboard tap goes in, as a finger would.
-            if (task.script ? !m_host.isFrozen() && m_scanLoop.contains(m_host.pc())
-                            : m_host.isFrozen() || m_scanLoop.contains(m_host.pc())) {
+            if (task.script ? !m_host.isFrozen() && m_host.isKeyReady()
+                            : m_host.isFrozen() || m_host.isKeyReady()) {
                 if (!task.script) m_host.heldKeyChanged(highlightID(task.code));
                 m_host.pressKey(task.code);
                 task.wake = now + kHold;
@@ -160,7 +160,7 @@ std::optional<KeySequencer::Clock::time_point> KeySequencer::step(Lane& lane, Ta
             task.phase = P::WaitingIdle;
             break;
         case P::WaitingIdle:
-            if (lane.cancelled(task.generation) || m_host.isFrozen() || m_scanLoop.contains(m_host.pc())) {
+            if (lane.cancelled(task.generation) || m_host.isFrozen() || m_host.isKeyReady()) {
                 task.phase = P::Next;
                 break;
             }
@@ -174,7 +174,7 @@ std::optional<KeySequencer::Clock::time_point> KeySequencer::step(Lane& lane, Ta
                 task.phase = P::Next;
                 break;
             }
-            if (m_host.isFrozen() || !m_scanLoop.contains(m_host.pc())) return poll();
+            if (m_host.isFrozen() || !m_host.isKeyReady()) return poll();
             const KeystrokeEvent& e = task.events[task.next - 1];
             if (e.kind == K::Reload) m_host.applyReload(e.reload);
             else m_host.queueCard(e);

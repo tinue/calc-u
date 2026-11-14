@@ -1,6 +1,7 @@
 #pragma once
-#include "../core/TI59Machine.hpp"
+#include "../core/TIAdapters.hpp"
 #include "DisplayPov.hpp"
+#include "machine/Machine.hpp"
 #include <string>
 #include <vector>
 
@@ -13,8 +14,7 @@ namespace cu59 {
 
 /// The display as drawn: glyphs and per-position brightness 0–255.
 struct LedFrame {
-    uint8_t digits[12]{};     ///< last driven glyph per position (DisplaySnapshot::digits)
-    uint8_t ctrl[12]{};
+    uint8_t segments[12]{};   ///< last driven glyph per position: A–G as bits 0–6 (SevenSegment.hpp)
     uint8_t digitLevel[12]{}; ///< 0 = dark … 255 = fully lit
     uint8_t dpLevel[12]{};    ///< decimal point of each position
     bool operator==(const LedFrame& o) const;
@@ -22,7 +22,7 @@ struct LedFrame {
 };
 
 struct FrameUpdate {
-    DisplaySnapshot display;  ///< the core's raw snapshot (duties, latched glyphs)
+    calcu::machine::DisplayOutput display;  ///< the machine's display output (C59-1 AC-13)
     LedFrame led;
     double calcIndicatorOpacity = 0;      ///< 0–1, see FrameSampler
     std::vector<std::string> printerLines;
@@ -35,21 +35,26 @@ struct FrameUpdate {
 
 class FrameSampler {
 public:
-    /// debugLevel: 0 off, 1 info, 2 debug. cardSwiping: the frontend's card state.
-    /// instructionHz converts the poll's weighted cycles to emulated seconds.
-    FrameUpdate tick(TI59Machine& m, double instructionHz, int debugLevel, bool cardSwiping);
+    /// debugLevel: 0 off, 1 info, 2 debug. cardSwiping: the frontend's card
+    /// state. The poll covers the emulated time since the previous tick (tick
+    /// count difference over the tick rate). The only reader of the machine's
+    /// display output (C59-1 OQ-7).
+    FrameUpdate tick(calcu::machine::Machine& m, int debugLevel, bool cardSwiping);
 
     /// Forget the indicator history (new machine).
     void reset();
 
-    /// Advance the C indicator by one frame with the core's mean drive
-    /// (DisplaySnapshot::calcIndicator); returns the new opacity.
+    /// Advance the C indicator by one frame with the core's mean drive (the
+    /// indicator's brightness × 16: 0–16); returns the new opacity.
     double updateCalcIndicator(float drive);
 
 private:
     double m_calcOpacity = 0;
     int m_zeroFrames = 0;
     DisplayPov m_pov;
+    uint8_t m_lastSegments[12]{};          ///< per position, the glyph of its last driven poll
+    calcu::machine::Ticks m_lastTicks = 0;  ///< tick count at the previous tick
+    double m_lastSeconds = 0;              ///< the previous poll's length (no instruction since: again)
 };
 
 } // namespace cu59

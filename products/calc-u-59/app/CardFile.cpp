@@ -341,7 +341,7 @@ std::vector<uint8_t> buildCardBank(const CardDefinition& card, int programRegs) 
     const int bank = card.bank;
     const int firstReg = 30 * (bank - 1);
     // The bank's 30 raw RAM registers. A step is two nibbles of register
-    // step / 8, units first (TI59Machine::writeProgram); data register n is
+    // step / 8, units first (TIMemoryAdapter::writeProgram); data register n is
     // raw register 119 − n.
     std::vector<Nibbles16> regs(30, Nibbles16{});
     for (const auto& s : card.programSteps) {

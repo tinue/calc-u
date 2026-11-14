@@ -4,7 +4,7 @@
 // ── Trace feature flags ───────────────────────────────────────────────────────
 //
 // Independently gated cost tiers for the instruction trace / debug API.
-// Set via TMC0501::setTraceFlags() or TI59Machine::setTraceFlags().
+// Set via TIDebugTargetAdapter::setTraceFlags().
 
 enum : uint32_t {
     TRACE_NONE         = 0x0000,
@@ -53,4 +53,17 @@ struct CpuFrame {
 struct DebugEvent {
     uint8_t level;    ///< 1=INFO, 2=DEBUG
     char    msg[80];  ///< Null-terminated message
+};
+
+// ── Step boundary ─────────────────────────────────────────────────────────────
+//
+// The CPU state at the last step boundary or idle entry, with the module fetch
+// latch of that moment and a count of boundaries (0 = none since reset). Read
+// through TIDebugTargetAdapter; goes with it in M-53 (C59-1 design D-7).
+
+struct TIStepBoundary {
+    CpuFrame cpu;
+    uint16_t libExecPC;
+    bool atStep;        ///< false: idle entry
+    uint64_t count;
 };

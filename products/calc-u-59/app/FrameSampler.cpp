@@ -6,32 +6,46 @@
 namespace cu59 {
 
 bool LedFrame::operator==(const LedFrame& o) const {
-    return std::memcmp(digits, o.digits, sizeof digits) == 0 && std::memcmp(ctrl, o.ctrl, sizeof ctrl) == 0 &&
+    return std::memcmp(segments, o.segments, sizeof segments) == 0 &&
            std::memcmp(digitLevel, o.digitLevel, sizeof digitLevel) == 0 &&
            std::memcmp(dpLevel, o.dpLevel, sizeof dpLevel) == 0;
 }
 
-FrameUpdate FrameSampler::tick(TI59Machine& m, double instructionHz, int debugLevel, bool cardSwiping) {
+FrameUpdate FrameSampler::tick(calcu::machine::Machine& m, int debugLevel, bool cardSwiping) {
     FrameUpdate u;
-    u.cardAutoEjected = cardSwiping && !m.isCardPresent();
-    u.printerLines = m.drainPrinterLines();
+    u.cardAutoEjected = cardSwiping && !cardReaderOf(m)->isCardPresent();
+    u.printerLines = peripheralsOf(m)->drainPrinterLines();
     if (debugLevel > 0) {
-        for (const auto& e : m.drainDebugEvents())
+        for (const auto& e : debugPanelOf(m)->drainDebugEvents())
             if (e.level <= debugLevel) u.logLines.emplace_back(e.msg);
     }
-    u.printerCodeLines = m.drainPrinterCodeLines();
+    u.printerCodeLines = peripheralsOf(m)->drainPrinterCodeLines();
 
-    u.display = m.takeDisplay();
-    m_pov.update(u.display, u.display.pollTicks / instructionHz);
+    u.display = m.readDisplay();
+    // The poll's length: what ran since the previous tick. With nothing run
+    // since, the core repeats its last snapshot, and the poll counts as long
+    // as the previous one (as 2.3.0's pollTicks did).
+    const calcu::machine::Ticks now = m.tickCount();
+    if (now != m_lastTicks) m_lastSeconds = static_cast<double>(now - m_lastTicks) / m.descriptor().tickRate;
+    m_lastTicks = now;
+    m_pov.update(u.display, m_lastSeconds);
     auto level = [](float b) { return static_cast<uint8_t>(std::lround(b * 255.0f)); };
+    const auto& positions = std::get<calcu::machine::SegmentFrame>(u.display.frame).positions;
     for (int i = 0; i < 12; ++i) {
-        u.led.digits[i] = u.display.digits[i];
-        u.led.ctrl[i] = u.display.ctrl[i];
+        const auto& p = positions[static_cast<size_t>(i)];
+        if (p.brightness.value_or(0.0f) > 0) {
+            uint8_t bits = 0;
+            for (int s = 0; s < 7; ++s)
+                if (p.lit[static_cast<size_t>(s)]) bits |= static_cast<uint8_t>(1u << s);
+            m_lastSegments[i] = bits;
+        }
+        u.led.segments[i] = m_lastSegments[i];
         u.led.digitLevel[i] = level(m_pov.digit(i));
         u.led.dpLevel[i] = level(m_pov.dp(i));
     }
 
-    u.calcIndicatorOpacity = updateCalcIndicator(u.display.calcIndicator);
+    const auto& c = u.display.indicators.front();
+    u.calcIndicatorOpacity = updateCalcIndicator(c.on ? c.brightness.value_or(0.0f) * 16.0f : 0.0f);
     return u;
 }
 
@@ -39,9 +53,10 @@ void FrameSampler::reset() {
     m_calcOpacity = 0;
     m_zeroFrames = 0;
     m_pov = {};
+    std::fill(std::begin(m_lastSegments), std::end(m_lastSegments), 0);
 }
 
-// The C indicator follows the core's mean drive (DisplaySnapshot::calcIndicator):
+// The C indicator follows the core's mean drive (the indicator's brightness × 16):
 // its brightness changes at once, as on a real TI-59, whose C visibly jumps
 // while a program runs and between the phases of a blink. The one exception is
 // 60 Hz aliasing: the ROM's IDLE display scan lasts ~4.5 ms (16 IDLE steps ×

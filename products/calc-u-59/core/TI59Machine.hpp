@@ -4,9 +4,11 @@
 #include "TMC0501.hpp"
 #include "MachineVariant.hpp"
 #include <cstdint>
-#include <mutex>
 #include <vector>
 
+// The core-internal facade over CPU, ROM and RAM (C59-1 design §3.1): only
+// TIMachine and the adapters of TIAdapters.hpp use it. It holds no lock and
+// starts no thread (ADR 0009); the caller serialises every call.
 class TI59Machine {
 public:
     explicit TI59Machine(MachineVariant variant);
@@ -28,12 +30,13 @@ public:
     /// The CPU state latched at the last step boundary or idle entry (count 0: none since reset).
     TMC0501::StepBoundary lastStepBoundary() const;
 
-    /// Key input — thread-safe.
+    /// Key input.
     void pressKey(int row, int col);
     void releaseKey(int row, int col);
+    uint8_t keyLinesForTest(int col) const { return m_cpu.keyLines(col); }
 
-    /// Display since the previous call — safe from any thread, but it restarts
-    /// the integration window: one consumer per machine (see TMC0501).
+    /// Display since the previous call; it restarts the integration window:
+    /// one consumer per machine (see TMC0501).
     DisplaySnapshot takeDisplay();
 
     /// TI-58C persistence helpers.
@@ -117,7 +120,7 @@ public:
     uint32_t drainCpuFrames(CpuFrame* out, uint32_t max, uint32_t* outLost);
     uint32_t readCpuFrames(CpuFrame* out, uint32_t max) const;
 
-    /// Run up to n steps under a single mutex lock; returns count actually executed.
+    /// Run up to n steps; returns count actually executed.
     /// Stops early if a breakpoint is hit (when TRACE_BREAKPOINTS is set).
     uint32_t stepN(uint32_t n, bool stopOnBreakpoint = true);
 
@@ -162,11 +165,11 @@ public:
     /// Call after stepUntilNextKeycode() or after step() in debugger mode.
     void beginNextStep();
 
-    /// Raw RAM access — copies/writes a complete 16-nibble register under the lock.
+    /// Raw RAM access — copies/writes a complete 16-nibble register.
     /// reg must be in [0, ramRegCount()).
     void copyRAMReg(int reg, uint8_t* out16) const;
     void writeRAMReg(int reg, const uint8_t* nibbles16);
-    /// Constant after construction; safe to call without locking.
+    /// Constant after construction.
     int  ramRegCount() const { return m_ram.size(); }
 
     /// Content currently held in the printer character buffer (not yet printed).
@@ -177,23 +180,11 @@ public:
 private:
     int dataRegCountLocked() const;
     int dataRegRAMIndexLocked(int regNum) const;  // -1: no RAM behind it
-    void storeProgramStep(int stepAddr, uint8_t keycode);  // caller holds m_keyMutex
+    void storeProgramStep(int stepAddr, uint8_t keycode);
     MachineVariant m_variant;
     ROM            m_rom;
     RAM            m_ram;
     TMC0501        m_cpu;
-    // ── Lock policy ───────────────────────────────────────────────────────
-    // m_keyMutex serialises the emulation thread (step/stepN/…) against every
-    // UI-thread access to CPU, SCOM, RAM, card and printer-buffer state —
-    // including the read-only accessors (snapshotCPU, readDataReg, copyRAMReg,
-    // partitionProgramRegs, card getters, printerBufferContent, pc).
-    // Exceptions, each with their own synchronisation:
-    //   takeDisplay()               → m_displayMutex inside TMC0501
-    //   drainPrinterLines/CodeLines → m_prnMutex inside TMC0501
-    //   drain/readCpuFrames         → m_traceMutex inside TMC0501
-    //   setTraceFlags/traceFlags    → std::atomic
-    //   readROMKeycode/disassemble  → immutable after load / pure
-    mutable std::mutex m_keyMutex;
     bool           m_printerConnected = true;
     // The printer's TRACE button is a physical hardware latch: it stays pressed
     // until physically released, so it must survive a calculator reset (which

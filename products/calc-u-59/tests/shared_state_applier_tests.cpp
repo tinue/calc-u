@@ -11,7 +11,7 @@
 using namespace cu59;
 
 namespace {
-double reg(const TI59Machine& m, int n) { return m.readDataReg(n); }
+double reg(calcu::machine::Machine& m, int n) { return testroms::mem(m).readDataReg(n); }
 }
 
 TEST(apply_state_full) {
@@ -20,7 +20,7 @@ TEST(apply_state_full) {
     auto r = parseStateFile("PARTITION: 239\nPROGRAM:\n76 11 42 05 91\n010 85\nREGISTERS:\n05 = 3.25\n99 = -7\n", 959);
     CHECK(!stateFilePartitionError(r, Model::TI59));
     applyState(*m, r, Model::TI59);
-    CHECK_EQ(m->partitionProgramRegs(), 30);
+    CHECK_EQ(testroms::mem(*m).partitionProgramRegs(), 30);
     auto steps = programSteps(*m);
     CHECK_EQ(steps.size(), size_t{240});
     CHECK_EQ(steps[0], 76);
@@ -37,7 +37,7 @@ TEST(apply_state_ti58_default_partition_and_limits) {
     auto r = parseStateFile("PROGRAM:\n1 2 3\n");
     auto m = testroms::makeMachine(Model::TI58);
     applyState(*m, r, Model::TI58);
-    CHECK_EQ(m->partitionProgramRegs(), 30);  // no PARTITION: → 239 on the 60-register models
+    CHECK_EQ(testroms::mem(*m).partitionProgramRegs(), 30);  // no PARTITION: → 239 on the 60-register models
     auto big = parseStateFile("PARTITION: 959\n", 959);
     auto err = stateFilePartitionError(big, Model::TI58);
     CHECK(err.has_value());
@@ -49,14 +49,14 @@ TEST(apply_state_ti58c_keeps_extra_registers) {
     auto m = testroms::makeMachine(Model::TI58C);
     testroms::runToScanLoop(*m, Model::TI58C);
     uint8_t before[16];
-    m->copyRAMReg(60, before);
+    testroms::mem(*m).copyRAMReg(60, before);
     auto r = parseStateFile("REGISTERS:\nH02 = 9\n00 = 1\n", 479, true);
     applyState(*m, r, Model::TI58C);
     uint8_t after60[16], h2[16];
-    m->copyRAMReg(60, after60);
-    m->copyRAMReg(62, h2);
+    testroms::mem(*m).copyRAMReg(60, after60);
+    testroms::mem(*m).copyRAMReg(62, h2);
     CHECK(std::equal(before, before + 16, after60));
-    CHECK_EQ(TI59Machine::decodeBCD(h2), 9.0);
+    CHECK_EQ(TIDebugTargetAdapter::decodeBCD(h2), 9.0);
 }
 
 /// A parsed file's sections as a reload stage.
@@ -72,15 +72,15 @@ TEST(reload_touches_only_given_sections) {
     auto m = testroms::makeMachine(Model::TI59);
     testroms::runToScanLoop(*m, Model::TI59);
     applyState(*m, parseStateFile("PROGRAM:\n11 12 13\nREGISTERS:\n01 = 5\n", 959), Model::TI59);
-    int partition = m->partitionProgramRegs();
+    int partition = testroms::mem(*m).partitionProgramRegs();
     applyReload(*m, stageOf(parseStateFile("REGISTERS:\n02 = 6\n", 959)), Model::TI59);
-    CHECK_EQ(m->partitionProgramRegs(), partition);
+    CHECK_EQ(testroms::mem(*m).partitionProgramRegs(), partition);
     auto kept = programSteps(*m);
     CHECK_EQ(kept[1], 12);  // program untouched
     CHECK_EQ(reg(*m, 1), 5.0);
     CHECK_EQ(reg(*m, 2), 6.0);
     applyReload(*m, stageOf(parseStateFile("PARTITION: 159\nPROGRAM:\n99\n", 959)), Model::TI59);
-    CHECK_EQ(m->partitionProgramRegs(), 20);
+    CHECK_EQ(testroms::mem(*m).partitionProgramRegs(), 20);
     auto rewritten = programSteps(*m);
     CHECK_EQ(rewritten[0], 99);
     CHECK_EQ(rewritten[1], 12);  // only the listed step
@@ -89,7 +89,7 @@ TEST(reload_touches_only_given_sections) {
     // A listed step beyond the partition is still written (registers as program).
     applyReload(*m, stageOf(parseStateFile("PROGRAM:\n940 77\n", 959)), Model::TI59);
     uint8_t r2[16];
-    m->copyRAMReg(117, r2);      // steps 936-943 = R02 (RAM[119 - 2])
+    testroms::mem(*m).copyRAMReg(117, r2);      // steps 936-943 = R02 (RAM[119 - 2])
     CHECK_EQ(r2[(940 & 7) * 2] + 10 * r2[(940 & 7) * 2 + 1], 77);
     CHECK_EQ(reg(*m, 1), 5.0);
 }
@@ -141,43 +141,43 @@ TEST(data_registers_match_the_rom) {
     auto m = testroms::makeMachine(Model::TI58C);
     CHECK(testroms::runToScanLoop(*m, Model::TI58C));
     uint8_t r60[16];
-    m->copyRAMReg(60, r60);
+    testroms::mem(*m).copyRAMReg(60, r60);
     r60[0] = 0; r60[1] = 6; r60[2] = 1; r60[3] = 4;
-    m->writeRAMReg(60, r60);
+    testroms::mem(*m).writeRAMReg(60, r60);
     m->reset();
     CHECK(testroms::runToScanLoop(*m, Model::TI58C));
-    CHECK_EQ(m->dataRegCount(), 120);
+    CHECK_EQ(testroms::mem(*m).dataRegCount(), 120);
     for (int k : {kKey7, kSto, 73, 64, kClr}) testroms::tap(*m, Model::TI58C, k);  // 7 STO 59
-    m->copyRAMReg(60, r60);
-    CHECK_EQ(TI59Machine::decodeBCD(r60), 7.0);
+    testroms::mem(*m).copyRAMReg(60, r60);
+    CHECK_EQ(TIDebugTargetAdapter::decodeBCD(r60), 7.0);
     CHECK_EQ(reg(*m, 59), 7.0);
     auto r = parseStateFile("REGISTERS:\n56 = 5\n", 479, true);
     applyReload(*m, stageOf(r), Model::TI58C);
     uint8_t r63[16];
-    m->copyRAMReg(63, r63);
-    CHECK_EQ(TI59Machine::decodeBCD(r63), 5.0);
+    testroms::mem(*m).copyRAMReg(63, r63);
+    CHECK_EQ(TIDebugTargetAdapter::decodeBCD(r63), 5.0);
     CHECK_EQ(reg(*m, 0), 0.0);  // R00 would be RAM 119: no hardware
 }
 
-TEST(soft_reset_keeps_the_ram_and_clean_reset_clears_it) {
+TEST(reset_keeps_the_ram_and_cold_boot_clears_it) {
     for (Model model : {Model::TI59, Model::TI58, Model::TI58C}) {
         auto m = testroms::makeMachine(model);
         CHECK(testroms::runToScanLoop(*m, model));
         auto eleven = encodeBcd("11");
-        const int regs = info(model).hasConstantMemory ? kExtraRegisterBase : m->ramRegCount();
-        for (int r = 0; r < regs; ++r) m->writeRAMReg(r, eleven.data());
+        const int regs = info(model).hasConstantMemory ? kExtraRegisterBase : testroms::mem(*m).ramRegCount();
+        for (int r = 0; r < regs; ++r) testroms::mem(*m).writeRAMReg(r, eleven.data());
         std::vector<uint8_t> before(1920), after(1920), zero(1920, 0);
-        m->serialiseRAM(before.data());
+        testroms::mem(*m).serialiseRAM(before.data());
 
-        softReset(*m, model, nullptr);
+        m->reset();
         CHECK(testroms::runToScanLoop(*m, model));
         CHECK_EQ(testroms::displayText(*m), std::string("0"));
-        m->serialiseRAM(after.data());
+        testroms::mem(*m).serialiseRAM(after.data());
         CHECK(after == before);  // register 90, the ROM's size probe, too
 
-        cleanReset(*m, model);
+        m->coldBoot();
         CHECK(testroms::runToScanLoop(*m, model));
-        m->serialiseRAM(after.data());
+        testroms::mem(*m).serialiseRAM(after.data());
         CHECK(std::equal(after.begin(), after.begin() + regs * 16, zero.begin()));
     }
 }
@@ -190,9 +190,9 @@ TEST(reload_changes_only_the_listed_steps_and_registers) {
     stage.programSteps = {{1, 22}};
     stage.registers = {{2, encodeBcd("5"), false}};
     applyReload(*m, stage, Model::TI58);
-    CHECK_EQ(int(m->readProgramStep(0)), 11);
-    CHECK_EQ(int(m->readProgramStep(1)), 22);
-    CHECK_EQ(int(m->readProgramStep(3)), 14);  // not listed: kept
-    CHECK_EQ(m->readDataReg(1), 1.0);
-    CHECK_EQ(m->readDataReg(2), 5.0);
+    CHECK_EQ(int(testroms::mem(*m).readProgramStep(0)), 11);
+    CHECK_EQ(int(testroms::mem(*m).readProgramStep(1)), 22);
+    CHECK_EQ(int(testroms::mem(*m).readProgramStep(3)), 14);  // not listed: kept
+    CHECK_EQ(testroms::mem(*m).readDataReg(1), 1.0);
+    CHECK_EQ(testroms::mem(*m).readDataReg(2), 5.0);
 }

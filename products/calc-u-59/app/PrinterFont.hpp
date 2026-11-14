@@ -1,5 +1,5 @@
 #pragma once
-#include "../core/TMC0501.hpp"
+#include "../core/TIPrinterTypes.hpp"
 #include <cmath>
 #include <cstdint>
 

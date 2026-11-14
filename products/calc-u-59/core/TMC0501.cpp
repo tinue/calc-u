@@ -6,7 +6,7 @@
 #include <cstdarg>
 #include <cstdio>
 #include <cstring>
-#include <mutex>
+#include <utility>
 #include <string>
 
 // ── Field mask table ──────────────────────────────────────────────────────────
@@ -153,8 +153,7 @@ void TMC0501::reset() {
     R5 = digit = RAM_ADDR = RAM_OP = REG_ADDR = 0;
     addr  = 0;
     flags = FLG_COND;  // COND starts true; display active
-    m_elapsedTicksLocal = 0;
-    m_elapsedTicks.store(0, std::memory_order_relaxed);
+    m_elapsedTicks = 0;
     // Initialize per-digit live buffers
     memset(m_digitSegmentsA, 0, sizeof(m_digitSegmentsA));
     memset(m_digitSegmentsB, 0, sizeof(m_digitSegmentsB));
@@ -304,7 +303,6 @@ static uint32_t calcIndicatorDrive(uint32_t flags, uint16_t fA) {
 }
 
 DisplaySnapshot TMC0501::takeDisplay() {
-    std::lock_guard<std::mutex> lock(m_displayMutex);
     // Integrate the C indicator's drive over the polling interval rather than
     // sampling a boolean at one instant.
     //
@@ -318,8 +316,8 @@ DisplaySnapshot TMC0501::takeDisplay() {
     //   • IDLE with only decimal-point bits → drive = 0.0 (no false C)
     //   • label-not-found blink (e.g. A on a reset calculator): IDLE with
     //     fA[14] set during the dark phase → C alternates with "0" → duty ≈ 0.25
-    const uint32_t cSteps    = m_cSteps.exchange(0, std::memory_order_relaxed);
-    const uint32_t pollSteps = m_pollSteps.exchange(0, std::memory_order_relaxed);
+    const uint32_t cSteps    = std::exchange(m_cSteps, 0u);
+    const uint32_t pollSteps = std::exchange(m_pollSteps, 0u);
     const float cLevel = pollSteps ? (float)cSteps / (float)pollSteps : 0.0f;
 
     // A poll with no cycle since the last one has nothing new to integrate.
@@ -467,7 +465,7 @@ bool TMC0501::runDebugInjectedProgram(uint16_t startAddr, uint32_t maxSteps,
 int TMC0501::step() {
     // ── Trace gate ────────────────────────────────────────────────────
     // One relaxed atomic load per step; falls through at zero cost when disabled.
-    const uint32_t tf = m_traceFlags.load(std::memory_order_relaxed);
+    const uint32_t tf = m_traceFlags;
 
     // ── Printer busy countdown ────────────────────────────────────────
     if (m_prnBusyCycles > 0) {
@@ -532,10 +530,9 @@ int TMC0501::step() {
         // TI-58C runs at constant speed; TI-59/58 slow to 1/4 speed during IDLE
         int w = getStepWeight();
         if (tf != TRACE_NONE) tracePostStep(w);
-        if (uint32_t d = calcIndicatorDrive(flags, fA)) m_cSteps.fetch_add(d, std::memory_order_relaxed);
-        m_pollSteps.fetch_add(static_cast<uint32_t>(w), std::memory_order_relaxed);
-        m_elapsedTicksLocal += static_cast<uint64_t>(w);
-        m_elapsedTicks.store(m_elapsedTicksLocal, std::memory_order_relaxed);
+        if (uint32_t d = calcIndicatorDrive(flags, fA)) m_cSteps += d;
+        m_pollSteps += static_cast<uint32_t>(w);
+        m_elapsedTicks += static_cast<uint64_t>(w);
         // A backward branch immediately after a KEY-scan/TST.BUSY poll means the ROM
         // is looping back to retry it — a genuine spin-wait, not just an incidental
         // poll on the way through otherwise-productive code. See step()'s doc comment.
@@ -816,7 +813,6 @@ int TMC0501::step() {
                     }
                     m_prnHasPending = true;
                     {
-                        std::lock_guard<std::mutex> lk(m_prnMutex);
                         m_prnLines.push_back(std::move(line));
                     }
                     flags |= FLG_BUSY;
@@ -834,7 +830,6 @@ int TMC0501::step() {
                 // making the print appear to render at the ADV slot instead.
                 flushPendingIfActive();
                 {
-                    std::lock_guard<std::mutex> lk(m_prnMutex);
                     m_prnLines.emplace_back();
                     m_prnCodeLines.emplace_back();  // zero-filled
                 }
@@ -974,10 +969,9 @@ int TMC0501::step() {
     // TI-58C runs at constant speed; TI-59/58 slow to 1/4 speed during IDLE
     int w = getStepWeight();
     if (tf != TRACE_NONE) tracePostStep(w);
-    if (uint32_t d = calcIndicatorDrive(flags, fA)) m_cSteps.fetch_add(d, std::memory_order_relaxed);
-    m_pollSteps.fetch_add(static_cast<uint32_t>(w), std::memory_order_relaxed);
-    m_elapsedTicksLocal += static_cast<uint64_t>(w);
-    m_elapsedTicks.store(m_elapsedTicksLocal, std::memory_order_relaxed);
+    if (uint32_t d = calcIndicatorDrive(flags, fA)) m_cSteps += d;
+    m_pollSteps += static_cast<uint32_t>(w);
+    m_elapsedTicks += static_cast<uint64_t>(w);
 
     // ── PREG latch (after instruction execution) ─────────────────────────
     // When KR bit 1 is set (by SET KR[1] instruction), store the address
@@ -1232,12 +1226,10 @@ std::vector<uint8_t> TMC0501::cardEject() {
 // ── Printer ────────────────────────────────────────────────────────────────────
 
 std::vector<std::string> TMC0501::drainPrinterLines() {
-    std::lock_guard<std::mutex> lk(m_prnMutex);
     return std::move(m_prnLines);
 }
 
 std::vector<PrinterCodeLine> TMC0501::drainPrinterCodeLines() {
-    std::lock_guard<std::mutex> lk(m_prnMutex);
     return std::move(m_prnCodeLines);
 }
 
@@ -1256,7 +1248,6 @@ void TMC0501::flushPendingCodeLine(uint32_t elapsed) {
     m_prnPending.rowCount = static_cast<uint8_t>(std::min<uint32_t>(7, rows));
     m_prnPending.partialColumns = static_cast<uint8_t>(cols);
     m_prnPending.partialHeat = static_cast<uint8_t>(std::min<uint32_t>(255, heat));
-    std::lock_guard<std::mutex> lk(m_prnMutex);
     m_prnCodeLines.push_back(m_prnPending);
     m_prnHasPending = false;
 }
@@ -1297,29 +1288,26 @@ void TMC0501::setPrinterConnected(bool connected) {
 // ── Trace / debug API ──────────────────────────────────────────────────────────
 
 void TMC0501::setTraceFlags(uint32_t f) {
-    m_traceFlags.store(f, std::memory_order_relaxed);
+    m_traceFlags = f;
 }
 
 uint32_t TMC0501::traceFlags() const {
-    return m_traceFlags.load(std::memory_order_relaxed);
+    return m_traceFlags;
 }
 
 void TMC0501::addBreakpoint(uint16_t pc) {
-    std::lock_guard<std::mutex> lk(m_traceMutex);
     auto it = std::lower_bound(m_breakpoints.begin(), m_breakpoints.end(), pc);
     if (it == m_breakpoints.end() || *it != pc)
         m_breakpoints.insert(it, pc);
 }
 
 void TMC0501::removeBreakpoint(uint16_t pc) {
-    std::lock_guard<std::mutex> lk(m_traceMutex);
     auto it = std::lower_bound(m_breakpoints.begin(), m_breakpoints.end(), pc);
     if (it != m_breakpoints.end() && *it == pc)
         m_breakpoints.erase(it);
 }
 
 void TMC0501::clearBreakpoints() {
-    std::lock_guard<std::mutex> lk(m_traceMutex);
     m_breakpoints.clear();
 }
 
@@ -1339,7 +1327,7 @@ bool TMC0501::consumeBreakpointHit() {
 // However, repeated calls do redundant ROM reads and snapshot captures.
 
 void TMC0501::beginNextStep() {
-    const uint32_t tf = m_traceFlags.load(std::memory_order_relaxed);
+    const uint32_t tf = m_traceFlags;
 
     m_pendingOpcode = rom.read(addr);
 
@@ -1355,7 +1343,6 @@ void TMC0501::beginNextStep() {
     // frame uses the same post-exec semantics for UI and trace-file consumers,
     // including COND after auto-restore handling.
     if (tf != TRACE_NONE && m_frameHead > 0) {
-        std::lock_guard<std::mutex> lk(m_traceMutex);
         CpuFrame& prev = m_frameRing[(m_frameHead - 1) & kFrameRingMask];
 
         if (tf & (TRACE_REGS_LIGHT | TRACE_REGS_FULL)) {
@@ -1414,7 +1401,6 @@ void TMC0501::postOperation() {
     // "active display position" from that decremented value.
     uint8_t strobeDigit = digit ? static_cast<uint8_t>(digit - 1) : 15;
     if ((flags & FLG_IDLE) && strobeDigit >= 2 && strobeDigit <= 13) {
-        std::lock_guard<std::mutex> lock(m_displayMutex);
 
         const int idx = static_cast<int>(strobeDigit - 2); // display index 0..11
         const uint8_t a = static_cast<uint8_t>(A[strobeDigit] & 0x0F);
@@ -1487,7 +1473,6 @@ void TMC0501::postOperation() {
 // frame to full post-execution state so all emitted entries share one semantic.
 
 void TMC0501::tracePreStep(uint32_t tf, uint16_t opcode) {
-    std::lock_guard<std::mutex> lk(m_traceMutex);
 
     // Breakpoint check
     if (tf & TRACE_BREAKPOINTS) {
@@ -1543,7 +1528,6 @@ void TMC0501::tracePreStep(uint32_t tf, uint16_t opcode) {
 // boundary, where the previous frame is rewritten to post-execution state.
 
 void TMC0501::tracePostStep(int weight) {
-    std::lock_guard<std::mutex> lk(m_traceMutex);
     CpuFrame& frame = m_frameRing[m_frameHead & kFrameRingMask];
 
     // Identity fields only known after execution
@@ -1556,10 +1540,9 @@ void TMC0501::tracePostStep(int weight) {
 }
 
 uint32_t TMC0501::drainCpuFrames(CpuFrame* out, uint32_t max, uint32_t* outLost) {
-    std::lock_guard<std::mutex> lk(m_traceMutex);
     if (max == 0) { if (outLost) *outLost = 0; return 0; }
 
-    uint32_t head = m_frameHead;  // stable: both writer (tracePostStep) and this drain hold m_traceMutex
+    uint32_t head = m_frameHead;
 
     // Detect ring overflow: if head has advanced beyond diskCursor + ring size,
     // frames were overwritten.
@@ -1587,7 +1570,6 @@ uint32_t TMC0501::drainCpuFrames(CpuFrame* out, uint32_t max, uint32_t* outLost)
 }
 
 uint32_t TMC0501::readCpuFrames(CpuFrame* out, uint32_t max) const {
-    std::lock_guard<std::mutex> lk(m_traceMutex);
     uint32_t head = m_frameHead;
     if (max == 0 || head == 0) return 0;
 

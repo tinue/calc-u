@@ -45,7 +45,7 @@ boundaries of the parts only:
 | C2 | M-35 to M-43 | the other Library columns |
 | D | M-44 to M-52 | Calc-U-1600 complete, up to its help asset |
 | E | M-53 to M-60 | Calc-U-59 complete, up to its help asset |
-| F | M-61 to M-68 | clean-up, tinue/calc-u public, both releases, the site, archives, closing check |
+| F | M-61 to M-66 | both releases, the site, archives, closing check |
 
 At a boundary the user reviews the part that ends (a summary, its
 `qa-report.md` files, the results of its first steps, the release-point
@@ -369,8 +369,8 @@ with a row, or worked together with it).
   each fetching the ROMs. `release.yaml` and `CHANGELOG.md` sit in the
   product directory; the version is `MARKETING_VERSION` 3.0.0 of the
   scaffold. This is the first commit that imports product code: no more
-  hotfixes from the old repositories (Briefing §3). tinue/calc-u stays
-  private until M-62 (question 8 as amended).
+  hotfixes from the old repositories (Briefing §3). tinue/calc-u is made
+  public with it (question 8; the user).
 - **Completes:** ADR 0002 and 0004 for Calc-U-59; ADR 0034 for its build
   (fetch at build time).
 - **Waits for:** M-2; the user's go for the import (question 2).
@@ -1004,7 +1004,7 @@ with a row, or worked together with it).
 - **Does:** the help tool (`tools/help build|check`), the shared
   chapters, Calc-U-1600's chapters converted from its `docs/`, the help
   asset `Calc-U-1600-help.zip` in the release build.
-- **Completes:** LIB-16 L, LIB-16 1600 (Done in M-63, with the asset in
+- **Completes:** LIB-16 L, LIB-16 1600 (Done in M-61, with the asset in
   the release). **Tests from:** LIB-16 AC-1–8, AC-11–15; EC-1–3.
 - **Waits for:** M-46 to M-51 (the chapters follow those specs), M-49
   (AC-12 through attach).
@@ -1042,7 +1042,7 @@ with a row, or worked together with it).
   format 1), in place before the ROM starts, never written by a machine a
   preset built; the Web frontend keeps it in the save folder;
   `ti58c.mem` ignored.
-- **Completes:** LIB-6 59, C59-2 (Done in M-67: AC-10's card examples,
+- **Completes:** LIB-6 59, C59-2 (Done in M-65: AC-10's card examples,
   AC-12's site copies), LIB-18 59, C59-3. **Tests from:** LIB-6
   AC-35–43; C59-2 AC-1–18, EC-1–6; LIB-18 AC-17–24; C59-3 AC-1–14,
   EC-1–8.
@@ -1138,78 +1138,51 @@ with a row, or worked together with it).
 #### M-60 LIB-16 Calc-U-59 column
 - **Does:** Calc-U-59's chapters, converted once from calc-u-site `/59/`
   at `acd629c` (AC-9), the six tutorial presets upgraded, the help asset.
-- **Completes:** LIB-16 59 (Done in M-66). **Tests from:** LIB-16
+- **Completes:** LIB-16 59 (Done in M-64). **Tests from:** LIB-16
   AC-9–10, AC-16.
 - **Waits for:** M-52, M-54 to M-59.
 - **Green after:** default.
 - **Knowledge, ledger:** `calc-u-59-docs` skill.
 - **Exit check:** `Calc-U-59-help.zip` builds.
 
-### Part F — clean-up, public, releases (the user, 2026-11-14)
+### Part F — the releases (the user, 2026-11-14: one release each, once everything is finished)
 
-#### M-61 Clean-up of the design and specification material
-- **Does:** before tinue/calc-u goes public, the user decides which of
-  the design and specification material (`Briefing.md`, `docs/`,
-  `features/`, `prompts/`, the walkthroughs, this plan) stays, moves or
-  goes, and whether it must also be absent from the public history
-  (question 13); the step carries that out. The product and library code,
-  the help chapters and the agent guidance that refers to the specs are
-  changed with it, so nothing points at a removed file.
-- **Completes:** the user's condition for going public (2026-11-14).
-- **Waits for:** M-60 (both products releasable: every column Done except
-  the release-side ones).
-- **Green after:** default; a check that no file links to a removed one.
-- **Knowledge, ledger:** every `CLAUDE.md`, skill and memory file that
-  cites a removed document; `docs/behaviour-changes.md` is the seed of
-  the release notes and moves into the products' CHANGELOGs first if it
-  goes.
-- **Exit check:** the user approves the tree that will be public.
-
-#### M-62 tinue/calc-u public
-- **Does:** the user makes tinue/calc-u public (ADR 0028: before the
-  first release); the release links and the site's build can reach it
-  from then on.
-- **Completes:** ADR 0028's precondition.
-- **Waits for:** M-61.
-- **Green after:** both workflows run on the public repository.
-- **Knowledge, ledger:** none.
-- **Exit check:** the repository is public.
-
-#### M-63 Release Calc-U-1600 (R-1600)
+#### M-61 Release Calc-U-1600 (R-1600)
 - **Does:** the first release of Calc-U-1600 from tinue/calc-u
   (`calc-u-1600-v0.9.0`, question 7), with the Checkpoint group;
   release notes from the Calc-U-1600 rows of the ledger; no
   `Calc-U-1600-examples.zip`.
 - **Completes:** Briefing §7 for Calc-U-1600, release side.
-- **Waits for:** M-52, M-62 (tinue/calc-u public).
+- **Waits for:** M-52, M-60: everything of the project is finished
+  (question 14); tinue/calc-u public since M-6.
 - **Green after:** Checkpoint for Calc-U-1600.
 - **Knowledge, ledger:** release checklist; every 1600 row visible.
 - **Exit check:** the GitHub release with its seven assets (help zip
   instead of the examples zip).
 
-#### M-64 LIB-19 Library and the Calc-U-1600 column (calc-u-site)
+#### M-62 LIB-19 Library and the Calc-U-1600 column (calc-u-site)
 - **Does:** in calc-u-site, by its own rules: rendering the pinned help
   asset, `/1600/` with the published Web frontend, its CI job (the /1600/
   design first, by the site's skills, OQ-6).
 - **Completes:** LIB-19 L, LIB-19 1600. **Tests from:** LIB-19 AC-1–5,
   AC-15, AC-11–14; EC-1–4.
-- **Waits for:** M-63.
+- **Waits for:** M-61.
 - **Green after:** the site's tests.
 - **Knowledge, ledger:** the site's `CLAUDE.md` and skills (a 1600 site
   skill does not exist yet).
 - **Exit check:** calc-u.org/1600 shows the help and the Web frontend.
 
-#### M-65 Archive Calc-U-1600 (ADR 0030)
+#### M-63 Archive Calc-U-1600 (ADR 0030)
 - **Does:** tinue/Calc-U-1600 gets a README pointing to tinue/calc-u and
   is archived.
 - **Completes:** ADR 0030 for Calc-U-1600.
-- **Waits for:** M-63.
+- **Waits for:** M-61.
 - **Green after:** unchanged.
 - **Knowledge, ledger:** the old memory directory of
   `sharp/Calc-U-1600` per question 4.
 - **Exit check:** the repository is read-only on GitHub.
 
-#### M-66 Release Calc-U-59 (R-59)
+#### M-64 Release Calc-U-59 (R-59)
 - **Does:** the first release of Calc-U-59 from tinue/calc-u
   (`calc-u-59-v3.0.0`), macOS DMG notarised locally, iOS through
   TestFlight to the App Store; the Checkpoint group (App Store and User
@@ -1217,32 +1190,32 @@ with a row, or worked together with it).
   Briefing §1.1); release notes from the Calc-U-59 rows of the ledger;
   the hosted presets and overlays pass `check-preset` (LIB-6 AC-43).
 - **Completes:** Briefing §7 for Calc-U-59, release side.
-- **Waits for:** M-60, M-63 (its release after Calc-U-1600's, question 5).
+- **Waits for:** M-60, M-61 (its release after Calc-U-1600's, question 5).
 - **Green after:** Checkpoint for Calc-U-59.
 - **Knowledge, ledger:** release checklist; every 59 row visible.
 - **Exit check:** the GitHub release, and the version live in the App
   Store.
 
-#### M-67 LIB-19 Calc-U-59 column (calc-u-site)
+#### M-65 LIB-19 Calc-U-59 column (calc-u-site)
 - **Does:** `/59/` moved to the pinned help asset and the 3.0.0 Web
   frontend; redirects for every address of today; the upgraded hosted
   copies of presets and overlays; the four links to `releases/latest`
   become exact links (ADR 0028); the embed code changed once (LIB-15
   AC-16).
 - **Completes:** LIB-19 59. **Tests from:** LIB-19 AC-6–10.
-- **Waits for:** M-64, M-66.
+- **Waits for:** M-62, M-64.
 - **Green after:** the site's tests (navigation tests rewritten, AC-10).
 - **Knowledge, ledger:** `site-59`, `site-59-design` skills, the site's
   `CLAUDE.md` and README (stale `gh-pages` text).
 - **Exit check:** calc-u.org/59 shows the help of 3.0.0.
 
-#### M-68 Archive Calc-U-59, and the closing check
+#### M-66 Archive Calc-U-59, and the closing check
 - **Does:** tinue/Calc-U-59 gets the README and is archived (ADR 0030).
   Then the checks of §5: every column of `features/INDEX.md` Done, every
   success criterion of Briefing §7 met except the SC61860 one (§5.5); `docs/Process.md` gets the phase
   status.
 - **Completes:** ADR 0030 for Calc-U-59; phase 6.
-- **Waits for:** M-66, M-67.
+- **Waits for:** M-64, M-65.
 - **Green after:** default.
 - **Knowledge, ledger:** the Calc-U-59 memory directory per question 4;
   a last grep of every element of `agent-knowledge.md` for the old terms.
@@ -1250,22 +1223,18 @@ with a row, or worked together with it).
 
 ## 4. Release points (Part A, step 6)
 
-- **No release before M-62.** tinue/calc-u stays private until the
-  clean-up of M-61 is done (the user, 2026-11-14), and a GitHub Release of
-  a private repository cannot be downloaded by users; `/1600/` and the
-  site's build need the source repository too (LIB-19). Both products
-  are therefore released in Part F, after both are complete.
-- Between the import (M-6, M-7) and M-62 no release of either product is
-  possible: the old repositories take no hotfix any more (Briefing §3),
-  and the new one cannot publish one (question 14).
-- **R-1600 (M-63)** and **R-59 (M-66)**: each product complete; Calc-U-59
-  with the App Store. `/1600/` follows in M-64, `/59/` in M-67.
-- Every step still leaves both products green and releasable in the
-  sense of §1.1 (building, tested, a release could be cut from `main`
-  once the repository is public), so Part F does not depend on a step
-  being redone.
+- **One release each, once everything is finished** (the user,
+  2026-11-14, question 14): R-1600 (M-61) and R-59 (M-64), after Parts D
+  and E are complete; no release in between. `/1600/` follows in M-62,
+  `/59/` in M-65.
+- Every step still leaves both products green and releasable in the sense
+  of §1.1 (building, tested, a release could be cut from `main`); no step
+  depends on a release before Part F. From the import (M-6, M-7) on the
+  old repositories take no hotfix (Briefing §3), and none is planned.
+- A release cut earlier would spend ADR 0037's one-time exception
+  (Briefing §1.2) without the decided changes; question 10.
 - The success criteria of Briefing §7, but the SC61860 one (§5.5), are
-  met after M-68.
+  met after M-66.
 
 ## 5. Coverage (Part A, step 5)
 
@@ -1292,17 +1261,17 @@ qa-report can show every criterion passing (§1).
 | LIB-13 | 1–10: M-42 / M-42 | 11–16, 23: M-56 / M-56 | 17–22: M-48 / M-48 | 1–7: M-42 |
 | LIB-14 | 1–25, 42–43: M-43 / M-43 | 26–33: M-57 / M-57 | 34–41, 44: M-49 / M-49 | 1–8: M-43 |
 | LIB-15 | 1–18: M-29 / M-29 | 19–23: M-34 / M-55 | 24–28: M-31 / M-31 | 1–5: M-29 |
-| LIB-16 | 1–8, 14–15: M-52 / M-52 | 9–10, 16: M-60 / M-66 | 11–13: M-52 / M-63 | 1–3: M-52 |
+| LIB-16 | 1–8, 14–15: M-52 / M-52 | 9–10, 16: M-60 / M-64 | 11–13: M-52 / M-61 | 1–3: M-52 |
 | LIB-17 | 1–14: M-21 / M-21 | 15–19: M-33 / M-33 | 20–22: M-31 / M-31 | 1–6: M-21 |
 | LIB-18 | 1–16: M-35 / M-35 | 17–24: M-54 / M-54 | 25–33: M-46 / M-46 | 1–7: M-35 |
-| LIB-19 | 1–5, 15: M-64 / M-64 | 6–10: M-67 / M-67 | 11–14: M-64 / M-64 | 1–4: M-64 |
+| LIB-19 | 1–5, 15: M-62 / M-62 | 6–10: M-65 / M-65 | 11–14: M-62 / M-62 | 1–4: M-62 |
 
 | Row | Tested in | Done in | ACs | ECs |
 |---|---|---|---|---|
 | C59-1 | M-19 | M-19 | 1–19 | 1–4 |
-| C59-2 | M-54 (AC-10's card examples M-55, AC-12 M-67) | M-67 | 1–18 | 1–6 |
+| C59-2 | M-54 (AC-10's card examples M-55, AC-12 M-65) | M-65 | 1–18 | 1–6 |
 | C59-3 | M-54 | M-54 | 1–14 | 1–8 |
-| C59-4 | M-56 (AC-20's hosted overlays M-67) | M-67 | 1–26 | 1–5 |
+| C59-4 | M-56 (AC-20's hosted overlays M-65) | M-65 | 1–26 | 1–5 |
 | C59-5 | M-15 (1–3), M-33 (4–14) | M-33 | 1–14 | 1–4 |
 | C59-6 | M-25 | M-25 | 1–11 | 1–3 |
 | C59-7 | M-55 | M-55 | 1–30 | 1–7 |
@@ -1348,7 +1317,7 @@ their specs and are placed by what they are about (§2.3).
 | 1600-8 | M-36 (after M-5) |
 | 1600-9 | M-31 (keys dropped), M-46 (Reset and switch stop what runs) |
 | 1600-10 | M-49 |
-| 1600-11, 1600-21 | M-46 (1600-21's examples zip: M-63) |
+| 1600-11, 1600-21 | M-46 (1600-21's examples zip: M-61) |
 | 1600-12, 1600-14 | M-45 (1600-14's "Copied" and Resume: with M-49) |
 | 1600-15 | M-44 (loaders), M-48 (opening) |
 | 1600-20 | M-50 |
@@ -1362,7 +1331,7 @@ their specs and are placed by what they are about (§2.3).
 | B59-13 | LIB-3 topics instead of change flags (M-22) |
 | B59-48, B59-50, B59-51, B59-52, B59-53, B59-58 | LIB-6 and the format (M-38); B59-49 (lowercase spelling) in the help reference chapter (M-52) |
 | B59-54 | LIB-7, preset-named media (M-41) |
-| B1600-46, B1600-47 | LIB-19 (M-64), LIB-16 (M-52) |
+| B1600-46, B1600-47 | LIB-19 (M-62), LIB-16 (M-52) |
 | B1600-49 | C1600-3 (M-50) |
 | B1600-50 | LIB-11 (M-28, M-51) |
 | B1600-51 | M-11 |
@@ -1374,15 +1343,15 @@ their specs and are placed by what they are about (§2.3).
 
 | Criterion | Where |
 |---|---|
-| One release each from the new repository; Calc-U-59 in the App Store | M-63, M-66 |
+| One release each from the new repository; Calc-U-59 in the App Store | M-61, M-64 |
 | Each product keeps its features; GUI changes only for §1.3, §1.5 | every step (golden runs, reference runs, the product criteria) |
 | Each product uses the library for every `LIB-n` | the product columns; the adapter checks in M-51 (Calc-U-1600) and M-59 (Calc-U-59) |
-| Current format versions read, shipped and hosted files upgraded | M-46, M-47, M-54 to M-56, M-67 |
-| calc-u.org reflects both releases and shares material; the /1600 site | M-64, M-67 |
+| Current format versions read, shipped and hosted files upgraded | M-46, M-47, M-54 to M-56, M-65 |
+| calc-u.org reflects both releases and shares material; the /1600 site | M-62, M-65 |
 | A design for SC61860 support, validated against the abstractions | not checked in phase 6: the SC61860 work starts once both products are released (question 12) |
 | Every TODO item accounted for | `docs/inventory/backlog.md`; M-1 adds the new item; §5.3 |
 | The testing concept covers both products; every test in a group | M-13 |
-| Agent knowledge uses the glossary terms | M-17 and the "Knowledge" field of every step; M-68 |
+| Agent knowledge uses the glossary terms | M-17 and the "Knowledge" field of every step; M-66 |
 | No new product features | the specs (Briefing §1.3) |
 
 ### 5.5 Outside phase 6
@@ -1456,7 +1425,7 @@ specs and `docs/contracts/README.md` (`76e9452`), question 11 in
    not load in this repository. *Recommendation:* at each import the
    files still valid move into this repository's memory directory, in
    glossary terms, one index line each; the old directory is deleted
-   when its repository is archived (M-65, M-68).
+   when its repository is archived (M-63, M-66).
 5. **Which product first.** Part D (Calc-U-1600) and Part E (Calc-U-59)
    are independent after Part C2. *Recommendation:* Calc-U-1600 first: the
    library's sessions follow its coroutine jobs (ADR 0009), its release
@@ -1475,10 +1444,9 @@ specs and `docs/contracts/README.md` (`76e9452`), question 11 in
    the first release; both old repositories are public. *Recommendation:*
    public at the import (M-6), so the code stays as open as today; it
    holds no ROM (ADR 0034).
-   **Amended by the user (2026-11-14):** it stays private until the
-   project is finished and both products can be released; most of the
-   design and specification work is cleaned up first, then the code is
-   made public (M-61, M-62). Both releases move to Part F.
+   *(Amended and then withdrawn by the user on 2026-11-14: private
+   Actions minutes, macOS ten-fold, decide it; public at the import as
+   recommended. The user makes it public when M-6 asks.)*
 9. **Spec fixes of §2.3** (LIB-12 AC-9's md5 table, LIB-14's ledger
    citation, LIB-13 OQ-4's row names, C1600-2 OQ-1, the stale lines of
    `docs/contracts/README.md`). *Recommendation:* apply them now, each
@@ -1492,8 +1460,7 @@ specs and `docs/contracts/README.md` (`76e9452`), question 11 in
     *Recommendation:* such an urgent release is a patch release of the old
     formats and does not count as the first release of the exception;
     the exception stays with R-1600 and R-59.
-    *(Since question 8 was amended, no release is possible before M-62;
-    question 14.)*
+    *(Answered by question 14: there is no release before Part F.)*
 11. **Eight design-input items no spec builds:** B59-3, B59-4 (display
     scan, TMC0501 and SCOM split), B59-18 (TI-57), B59-30 (card transport
     timing), B1600-20 (socket serial transport), B1600-25 (DME0 and ME1
@@ -1504,25 +1471,16 @@ specs and `docs/contracts/README.md` (`76e9452`), question 11 in
     abstractions: adding it needs no changes to the library"). Every
     contract has a fit table with a PC-1403 and a PC-1350 (phase 4); the
     phase 5 scenarios were dropped. *Recommendation:* the fit tables are
-    the design; M-68 reads them again against the library as built and
+    the design; M-66 reads them again against the library as built and
     lists what the two models would need changed; nothing listed means
     the criterion is met.
     **Answer:** not checked in phase 6; the SC61860 work starts once both
     products are fully released.
 
-### Asked on 2026-11-14, after question 8 was amended
+### Asked on 2026-11-14
 
-13. **What "clean-up" covers (M-61).** The repository's history holds
-    every commit of the specification work; ADR 0029 keeps history
-    unsquashed. A clean-up commit removes files from the tree, but they
-    stay readable in the public history. *Recommendation:* say before
-    M-61 whether the tree is enough, or whether the public repository must
-    not contain them at all (then it starts from the cleaned tree, the
-    private one is kept as the archive of the specification work, as
-    ADR 0030 does for the old repositories; an ADR records it).
-14. **No release window.** From the import (M-6) to M-62 neither product
-    can be released: the old repositories take no hotfix (Briefing §3),
-    and a release of the private repository cannot be downloaded.
-    *Recommendation:* accept it (both products are stable, few users);
-    an urgent fix in that time would go to you to decide, for example a
-    hotfix from the old repository as a recorded delta.
+13. *(Withdrawn with the amendment of question 8: what a clean-up of the
+    specification work before going public would cover.)*
+14. **Releases during the migration.** **Answer (user, 2026-11-14):**
+    exactly one release of each product, once everything in this project
+    is finished; no release in between (Part F).

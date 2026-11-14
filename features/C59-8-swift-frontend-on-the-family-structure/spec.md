@@ -220,9 +220,11 @@ Scenarios
   (C59-5 OQ-4 as decided; ADR 0033;
   `App/Views/CalculatorView.swift:84-147`). A test that starts a load
   with a tap waits for the end of the operation on the busy topic,
-  received as a stream, not polled; how an XCUITest reaches the attached
-  harness is the result of spike 4 of `first-steps.md` and is written
-  here then (OQ-5). A development build takes one launch argument that
+  received as a stream, not polled. The test passes a port to the app as
+  a launch argument and connects to 127.0.0.1 on that port from the test
+  runner, which runs in the same simulator; it reads the messages as a
+  stream and waits for a load it started with a tap by the reply to a
+  wait for idle (first step 4). A development build takes one launch argument that
   names a settings file for that launch; a release build has none. A
   test presses into a running program, an overlay among them, with the
   harness's `key-down` and `key-up` (LIB-11), which do not wait for key
@@ -316,3 +318,4 @@ Scenarios
 | Proposed in this spec and accepted (user, 2026-11-10, batch 6 gate): Copy keeps its two forms of today on macOS and iOS (AC-13) | Today's behaviour | 2026-11-10 |
 | The paper panel is always there, empty and without a name while the PC-100C is detached | user, 2026-11-10, batch 6 gate; LIB-8 AC-12 | 2026-11-10 |
 | The UI tests wait for the end of an operation on the busy topic as a stream; a development build takes a settings file as a launch argument; a running program gets `key-down` and `key-up` (AC-21); more work on simulator tests later (OQ-5) | user, 2026-11-13 (B-21 of `docs/walkthroughs/presets.md` §5.2): "for now agree" | 2026-11-13 |
+| AC-21: how an XCUITest reaches the attached harness: the port as a launch argument, a socket to 127.0.0.1 from the test runner in the same simulator, the wait for idle | first step 4 (M-16, `docs/walkthroughs/first-steps.md`); user, 2026-11-14 | 2026-11-14 |

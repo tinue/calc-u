@@ -31,12 +31,37 @@ Each step `M-n` has six fields:
   `docs/glossary-mapping.md`) and the ledger rows that become visible.
 - **Exit check:** what the user or a test sees when it is done.
 
-Rules that hold for every step of Part B (from the prompt; not repeated
-per step):
-- A feature column's `design.md` is approved by the user before its code;
-  tests from the criteria come before the code; `qa-report.md` reports
-  per AC ID. A column moves to In progress when its design is approved
-  and to Done when its qa-report shows every AC of that column passing.
+**Steps and parts** (user, 2026-11-14). A step `M-n` is the order of
+the work and a merge into `main` that is green by the automated checks
+(build, Frequent, CI); no approval is asked between steps, and several
+steps may be done in one session or branch. The user approves at the
+boundaries of the parts only:
+
+| Part | Steps | Contents |
+|---|---|---|
+| A | M-1 to M-5 | first steps at the pins, ReleaseIt |
+| B | M-6 to M-17 | import, golden and reference runs, build infrastructure, spikes |
+| C1 | M-18 to M-34 | machine interface, machine rows, sessions, harness, ROM lookup |
+| C2 | M-35 to M-43 | the other Library columns |
+| D | M-44 to M-55 | Calc-U-1600 to its release, `/1600/`, archive |
+| E | M-56 to M-66 | Calc-U-59 to its release, `/59/`, archive, closing check |
+
+At a boundary the user reviews the part that ends (a summary, its
+`qa-report.md` files, the results of its first steps, the release-point
+status) and approves the designs of the part that starts: one
+`design.md` per feature, covering every column the part works on. The
+Longer group runs at the end of a part and before a release; Frequent
+and CI at every merge. Between boundaries the user is asked only what
+cannot wait: a first step that turns out the other way, a spec that
+reads two ways, a user-visible change not in the ledger.
+
+Rules that hold for every step of Part B of the prompt (not repeated per
+step):
+- A feature's `design.md` is approved before its code (at the boundary
+  that starts its part); tests from the criteria come before the code;
+  `qa-report.md` reports per AC ID. A column moves to In progress when
+  its design is approved and to Done when its qa-report shows every AC of
+  that column passing.
 - **Adapters.** Until the step that takes an old call behind a seam is
   done, the old call stays, behind an adapter that the design names. A
   step lists the adapters it removes. No adapter is left at the end
@@ -72,7 +97,7 @@ per step):
   Calc-U-1600 also macOS arm64, signed and notarised); the Calc-U-59
   Swift app builds locally for macOS and the iOS simulator; the Frequent
   group passes locally within 60 s per product; the Longer group
-  (10 min) passes locally before the merge into `main`: Playwright of
+  (10 min) passes locally at the end of each part: Playwright of
   both Web frontends, XCUITest `UIRegressionTests` on one simulator,
   Calc-U-1600's screenshot scenarios run as checks, `tools/dap_smoke.py`
   (ADR 0031). Measured on 2026-11-09: Frequent 6.75 s (Calc-U-59) and
@@ -523,7 +548,7 @@ with a row, or worked together with it).
 - **Exit check:** a grep for the old terms of `glossary-mapping.md` in
   those elements finds only quoted history.
 
-### Part C — the library columns and the machine rows
+### Part C1 — the machine interface, the machine rows and the sessions
 
 #### M-18 LIB-1 Library
 - **Does:** the machine interface, descriptors and the catalogue,
@@ -754,6 +779,8 @@ with a row, or worked together with it).
 - **Knowledge, ledger:** `calc-u-59-web` skill, `reference/WebClient.md`;
   row 59-8 (the one-writer rule).
 - **Exit check:** Playwright passes; a second tab says it cannot save.
+
+### Part C2 — the other Library columns
 
 #### M-35 LIB-18 Library
 - **Does:** model and variant switch, attach and detach, Reset, Cold
@@ -1401,7 +1428,7 @@ specs and `docs/contracts/README.md` (`76e9452`), question 11 in
    glossary terms, one index line each; the old directory is deleted
    when its repository is archived (M-55, M-66).
 5. **Which product first.** Part D (Calc-U-1600) and Part E (Calc-U-59)
-   are independent after Part C. *Recommendation:* Calc-U-1600 first: the
+   are independent after Part C2. *Recommendation:* Calc-U-1600 first: the
    library's sessions follow its coroutine jobs (ADR 0009), its release
    has no App Store step, and `/1600/` has no old addresses to redirect.
 6. **Presets that wait.** Between M-46 and M-47 the Sharp presets that

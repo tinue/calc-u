@@ -99,6 +99,17 @@ struct TapeOptions {
 using MemDumps = std::vector<std::pair<uint32_t, uint32_t>>;
 
 /// Adds `<addr>,<len>` to `dumps`; false (with a message) if malformed.
+// CALCU_PAPER_OUT=<file>: the plotters' paper as points, one per line
+// ("x y color newStroke"), after a header per plotter -- the reference the
+// migration records once (M-8 of docs/migration-plan.md, LIB-8 AC-39).
+inline void appendPlotPoints(std::string* out, const char* plotter,
+                             const std::vector<AlpsPlotterMechanism::FlatPoint>& points) {
+    *out += std::string("plotter ") + plotter + " points " + std::to_string(points.size()) + "\n";
+    for (const auto& p : points)
+        *out += std::to_string(p.x) + " " + std::to_string(p.y) + " " + std::to_string(p.color) + " " +
+                std::to_string(p.newStroke) + "\n";
+}
+
 inline bool parseMemDump(const char* arg, MemDumps* dumps) {
     char* rest = nullptr;
     const auto start = static_cast<uint32_t>(std::strtoul(arg, &rest, 0));

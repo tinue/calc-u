@@ -275,6 +275,11 @@ int main(int argc, char** argv) {
             return 1;
         }
     }
+    if (const char* paperPath = std::getenv("CALCU_PAPER_OUT")) {
+        std::string paper;
+        if (machine.ce150Attached()) cli::appendPlotPoints(&paper, "CE-150", machine.ce150PlotPoints());
+        if (!cli::writeFile(paperPath, paper)) return 1;
+    }
 
     // Convergence signal: an idle loop revisits a small set of addresses a
     // large number of times. Report the most-visited PC and how many

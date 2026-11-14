@@ -691,7 +691,7 @@ with a row, or worked together with it).
   the place for product commands, the table of today's tools' functions;
   the Python helper for `calcu serve` (`contracts/harness.md` Q-2).
   Built on macOS, Linux and Windows (AC-15).
-- **Completes:** LIB-11 L. **Tests from:** LIB-11 AC-1–13, AC-21–23;
+- **Completes:** LIB-11 L. **Tests from:** LIB-11 AC-1–13, AC-21–24;
   EC-1–7.
 - **Waits for:** M-22, M-26 (a machine of each product behind the
   interface to drive).
@@ -827,7 +827,7 @@ with a row, or worked together with it).
   from the bundle file, the check of shipped and hosted presets as test
   suite checks (AC-51).
 - **Completes:** LIB-6 L. **Tests from:** LIB-6 AC-1–34, AC-52–53,
-  AC-55–65; EC-1–10.
+  AC-55–66; EC-1–10.
 - **Waits for:** M-3 (FS 5: AC-56, AC-59), M-35, M-36.
 - **Green after:** default.
 - **Knowledge, ledger:** none yet (the products still read their old
@@ -990,7 +990,7 @@ with a row, or worked together with it).
   go (LIB-11 OQ-5). Then the adapter check of §1 over Calc-U-1600 and
   the library.
 - **Completes:** C1600-5, LIB-11 1600. **Tests from:** C1600-5 AC-1–9,
-  AC-11–12, EC-2–6; LIB-11 AC-18–20.
+  AC-11–13, EC-2–6; LIB-11 AC-18–20.
 - **Waits for:** M-47, M-50.
 - **Green after:** default; no old CLI and no adapter of Calc-U-1600
   left.
@@ -1126,7 +1126,7 @@ with a row, or worked together with it).
   (`coverage.py`, `fastmode_matrix.py` and `asm59.py` stay scripts on the
   harness). Then the adapter check of §1 over Calc-U-59 and the library.
 - **Completes:** C59-9, LIB-11 59. **Tests from:** C59-9 AC-1–11,
-  AC-13–14, EC-2–6; LIB-11 AC-14–17.
+  AC-13–15, EC-2–6; LIB-11 AC-14–17.
 - **Waits for:** M-54, M-55, M-56.
 - **Green after:** default; no old tool and no adapter left.
 - **Knowledge, ledger:** `tools/agentic/README.md`,
@@ -1255,12 +1255,12 @@ qa-report can show every criterion passing (§1).
 | LIB-3 | 1–27, 39: M-22 / M-22 | 28–33: M-33, M-34 / M-58 | 34–38: M-31 / M-49 | 1–6: M-22 |
 | LIB-4 | 1–9: M-37 / M-37 | 10–15: M-57, M-58 / M-58 | 16–20: M-49 / M-49 | 1, 3–5: M-37 |
 | LIB-5 | 1–19, 38–39: M-36 / M-36 | 20–27: M-36 / M-36 | 28–37, 40–41: M-36 / M-36 | 1–6: M-36 |
-| LIB-6 | 1–34, 52–53, 55–65: M-38 / M-38 | 35–43: M-54 / M-54 | 44–51, 54: M-46 / M-46 | 1–10: M-38 |
+| LIB-6 | 1–34, 52–53, 55–66: M-38 / M-38 | 35–43: M-54 / M-54 | 44–51, 54: M-46 / M-46 | 1–10: M-38 |
 | LIB-7 | 1–31, 46: M-41 / M-41 | 32–36, 47: M-55 / M-55 | 37–45: M-47 / M-47 | 1–9: M-41 |
 | LIB-8 | 1–9, 12–23, 39: M-39 / M-39 | 24–31: M-53 / M-53 | 32–38: M-45 / M-46 | 1–8: M-39 |
 | LIB-9 | 1–18, 33: M-20 / M-20 | 19–25, 34–35: M-32, M-34 / M-34 | 26–32: M-30 / M-30 | 1–10: M-20 |
 | LIB-10 | 1–26, 45–51: M-40 / M-40 | 28–35: M-53 / M-53 or M-58 | 36–44, 52: M-45 / M-46 | 1–9: M-40 |
-| LIB-11 | 1–13, 21–23: M-28 / M-28 | 14–17: M-59 / M-59 | 18–20: M-51 / M-51 | 1–7: M-28 |
+| LIB-11 | 1–13, 21–24: M-28 / M-28 | 14–17: M-59 / M-59 | 18–20: M-51 / M-51 | 1–7: M-28 |
 | LIB-12 | 1–7: M-24 / M-28 | 8–10, 14 (TI): M-24 / M-24 | 11–13, 14 (CE-502B): M-27 / M-27 | 2–3: M-24; 1: M-27 |
 | LIB-13 | 1–10: M-42 / M-42 | 11–16, 23: M-56 / M-56 | 17–22: M-48 / M-48 | 1–7: M-42 |
 | LIB-14 | 1–25, 42–43: M-43 / M-43 | 26–33: M-57 / M-57 | 34–41, 44: M-49 / M-49 | 1–8: M-43 |
@@ -1280,12 +1280,12 @@ qa-report can show every criterion passing (§1).
 | C59-6 | M-25 | M-58 | 1–11 | 1–3 |
 | C59-7 | M-55 | M-55 | 1–30 | 1–7 |
 | C59-8 | M-58 | M-58 | 1–13, 15–21 (14 withdrawn) | 1–6 |
-| C59-9 | M-59 | M-59 | 1–11, 13–14 (12 withdrawn) | 2–6 |
+| C59-9 | M-59 | M-59 | 1–11, 13–15 (12 withdrawn) | 2–6 |
 | C1600-1 | M-26 | M-26 | 1–21 | 1–3 |
 | C1600-2 | M-44 (AC-15 with M-49) | M-49 | 1–25 | 1–6 |
 | C1600-3 | M-50 | M-50 | 1–25 | 1–7 |
 | C1600-4 | M-46 (AC-15's disk and waiting presets M-47) | M-47 | 1–20 | 1–6 |
-| C1600-5 | M-51 | M-51 | 1–9, 11–12 (10 withdrawn) | 2–6 |
+| C1600-5 | M-51 | M-51 | 1–9, 11–13 (10 withdrawn) | 2–6 |
 
 The C1 designs (2026-11-14) moved five "Done in" entries by the rule of
 §1 (a criterion that names a later feature passes in that feature's

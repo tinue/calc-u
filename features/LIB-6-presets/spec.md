@@ -345,6 +345,13 @@ The steps of this feature
   text and what the display shows (`preset.md` §5.4; Calc-U-1600
   `Core/Display/LcdText.cpp:137-164`,
   `Core/Preset/PresetRunner.cpp:137-146`).
+- [ ] **AC-66** — Given the step `not-expect:` with a text, then it is
+  checked when `expect:` would be (AC-24) and passes when the product's
+  comparison does not find the text (Calc-U-59: AC-40; Calc-U-1600:
+  AC-48), whatever else the display shows; otherwise the preset fails
+  (AC-17) and the reason holds the text and what the display shows. The
+  harness command `not-expect <text>` does the same and is refused
+  where the step would fail.
 - [ ] **AC-25** — Given the step `screenshot:` with a file name, then a
   PNG picture of the display as it is at that moment (AC-53) is written
   under that name to the folder for screenshots, which is the save
@@ -459,6 +466,7 @@ Harness
   | `full-speed`, `regular-speed` | the command of LIB-3 AC-21; not paced in the harness (AC-22) | done |
   | `elapsed-time start`, `elapsed-time report` | AC-23 | done; for `report` the time |
   | `expect <text>` | AC-24 | done, or refused with what the display shows |
+  | `not-expect <text>` | AC-66 | done, or refused with what the display shows |
   | `screenshot <file name>` | AC-25, written under that name to the run's folder for screenshots (LIB-11 AC-8) | done, or refused |
   | `printer-trace on\|off` | AC-40 | done, or refused without a PC-100C |
   | `switch <peripheral> <control> on\|off` | harness only: sets a switch through the controls capability (LIB-2 AC-16); the preset step is the peripheral's own (AC-26) | done, or refused for an unknown control |
@@ -783,3 +791,4 @@ Harness
 | A floppy disk and a cassette tape are steps, not header keys; the header holds installed peripherals (AC-2, AC-44, AC-47). Replaces the header key `tape:` (row of 2026-11-13 above) and the media places as header keys of PR-11 | user, 2026-11-13 (LIB-7 EC-5, EC-6, §5.4 of `docs/walkthroughs/presets.md`): removable media are changed at runtime and belong into the chain of steps, like the TI-59's magnetic cards; installed peripherals, memory modules included, is fitted before the machine boots | 2026-11-13 |
 | Aligned with `docs/formats/` after the Q&A round: `bundle.md` as a source; header keys for installed peripherals only (AC-2); harness clock (AC-27); `screenshot` by file name and a `printer-trace` command (AC-34) | user rulings of 2026-11-13 (`docs/walkthroughs/presets.md` §5.2, §5.4); `docs/formats/` | 2026-11-13 |
 | "Reference" is the formats' mapping; the name of a bundled preset is its bundle path (Words of this spec; glossary) | user, 2026-11-13 (consistency pass after the Q&A round) | 2026-11-13 |
+| `not-expect:` (step and command) passes when the display does not show the text, by the same comparison as `expect:` (AC-66) | user, 2026-11-14 (debugging and testing through the harness) | 2026-11-14 |

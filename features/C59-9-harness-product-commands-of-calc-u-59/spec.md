@@ -159,6 +159,10 @@ Scripts that stay
   documentation states what it gives today
   (`tools/headless/README.md:29-30`, `tools/agentic/README.md:158-171`;
   OQ-5).
+- [ ] **AC-15** — Given a TI-58, TI-58C or TI-59, then it offers the
+  machine state of LIB-11 AC-24: the processor, RAM, SCOM, the constant
+  memory, the plugged PC-100C and Solid State ROM module, and a magnetic
+  card in the reader with its position.
 
 ## Edge Cases
 - **EC-2** — Given `ti59 line-times` and nothing is printed, then the
@@ -223,3 +227,4 @@ Scripts that stay
 | The mnemonics of a listing are the names of `preset.md` §8.1 (AC-11) | user, 2026-11-13 (question F-5 of `docs/walkthroughs/presets.md` §5.4); `docs/formats/preset.md` §8.1 | 2026-11-13 |
 | Aligned with `docs/formats/` after the Q&A round of 2026-11-13: a card file is magnetic card format 3 (`media.md` §1) (Out of Scope) | user rulings of 2026-11-13 (`docs/walkthroughs/presets.md` §5.2, §5.4); `docs/formats/` | 2026-11-13 |
 | A **listing** is the PC-100C's `List` form (step, keycode, mnemonic), which `ti59 keycodes list` gives and a preset takes; the instruction form is an **assembly**, given by `ti59 keycodes disassemble` and read by `assemble` (AC-9, AC-10, AC-11, AC-14) | user, 2026-11-13 (consistency pass): "this thing that the printer produces, and that I can copy / paste into the program section of a preset is a listing" | 2026-11-13 |
+| The TI machines offer the machine state of LIB-11 AC-24 (AC-15) | user, 2026-11-14 (debugging and testing through the harness) | 2026-11-14 |

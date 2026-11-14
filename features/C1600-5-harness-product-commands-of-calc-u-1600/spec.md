@@ -142,6 +142,12 @@ Machine-code routines
   routine took; when it has not returned within the timeout (default
   10 s of emulated time), the machine is paused and the reply says so.
 
+Machine state
+- [ ] **AC-13** — Given a PC-1500, PC-1500A or PC-1600, then it offers the
+  machine state of LIB-11 AC-24: every processor, all memory with its
+  banks, the clocks and timers, and every plugged peripheral with a
+  medium in it (a cassette tape with its position, a floppy disk).
+
 ## Edge Cases
 - **EC-2** — Given a `tape` command on a machine without a cassette
   (neither a CE-150 nor a CE-1600P), then it is refused.
@@ -198,3 +204,4 @@ Machine-code routines
 | The probes and `dev/tape-matrix/run.py` are not taken over; AC-10 withdrawn | user, 2026-11-13 (B-25 of `docs/walkthroughs/presets.md` §5.2): "old, no longer relevant scripts and probes are not taken over into the new project. calendar yes, upgrade it" | 2026-11-13 |
 | A `serial` command on a machine without the port is refused, never held for a later machine; the order is the script's: build, connect, start (EC-3) | user, 2026-11-13 (B-25 (c) of `docs/walkthroughs/presets.md` §5.2), the revised recommendation: every preset change has a harness command (LIB-18 AC-15, LIB-7 AC-26, LIB-6 AC-34), so no command needs to wait for a future machine | 2026-11-13 |
 | `pc1600 call` runs a machine-code routine until it returns, for testing routines (AC-12) | user, 2026-11-14 (debugging and testing through the harness) | 2026-11-14 |
+| The Sharp machines offer the machine state of LIB-11 AC-24 (AC-13) | user, 2026-11-14 (debugging and testing through the harness) | 2026-11-14 |

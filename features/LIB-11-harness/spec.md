@@ -160,6 +160,18 @@ The first commands
   its segments; then the indicators as a bit string in the order of the
   descriptor, with their names in that order on the line after; and
   whether the display is on. With `--json` the same as arrays.
+- [ ] **AC-24** — Given a machine that offers the capability kind
+  machine state, when `state-save <file>` is given, then the file holds
+  the full state of the machine and its plugged peripherals, in a form
+  that is internal to the product and not documented; when
+  `state-restore <file>` is given later, in the same run or another,
+  then the machine continues from that state so that what follows (the
+  display, the emulated time, the sound, the replies) is the same as
+  after the save. A restore is refused, and changes nothing, when the
+  file comes from another product version, model, variant or set of
+  plugged peripherals, or the machine does not offer the kind. Files of
+  the host (the save folder, a host drive's folder, a serial port file)
+  are not part of the state.
 
 ### Calc-U-59
 - [ ] **AC-14** — Given the tools of Calc-U-59 at the pin, then each of
@@ -338,3 +350,4 @@ The first commands
 | Aligned with `docs/formats/` after the Q&A round: the command `preset`; Qt6 attach (LIB-14 AC-44); tape commands `tape`, `eject` (AC-18) | user rulings of 2026-11-13 (`docs/walkthroughs/presets.md` §5.2, §5.4); `docs/formats/` | 2026-11-13 |
 | A command whose step takes a mapping takes the step's value as a YAML flow mapping (AC-22) | user, 2026-11-13 (consistency pass after the Q&A round): one spelling for presets and commands | 2026-11-13 |
 | `display` gives the raw display output: dots or segments, and the indicators as a bit string in the descriptor's order (AC-23) | user, 2026-11-14 (debugging and testing through the harness) | 2026-11-14 |
+| `state-save` and `state-restore` keep and restore the full machine state in an internal form; a restore is refused for another version or machine configuration (AC-24) | user, 2026-11-14 (debugging and testing through the harness) | 2026-11-14 |

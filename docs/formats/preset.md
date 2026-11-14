@@ -445,6 +445,7 @@ Their meaning is the subject of [§6](#6-speed-and-waiting).
 | Step | Where | Meaning |
 |---|---|---|
 | `expect: <text>` | [both] | Fail the preset unless the display shows the text. Verbatim to the end of the line, like `type:`. [1600]: one line of the display contains the text; a backslash is written `\\`, a character outside ASCII `\xHH`. [59]: the text is a number, compared with the value in the display register X in its full precision (13 digits, not rounded, whatever the display format: after `π`, `3.14159265359` passes, `3.141592654` fails); blinking is not tested |
+| `not-expect: <text>` | [both] | The inverse of `expect:`: fail the preset if the display shows the text, by the same comparison; passes whatever else it shows |
 | `screenshot: <file name>` | [both] | Save an image of the display into the product's folder for screenshots, where the GUI saves its screenshots (the save folder). No path separator |
 | `trace: <file name>` / `trace: off` | [both] | Start a trace into that file in the trace folder, or stop it. No path separator. A new `trace:` closes the previous one; `trace: off` with no trace open has no effect. An open trace is closed when the preset ends |
 | `elapsed-time: start` / `elapsed-time: report` | [both] | Take the emulated time as the baseline; log the emulated time since the baseline (or since the start of the preset) as `m:ss.mmm` |
@@ -614,7 +615,7 @@ then fails, and so ends the preset ([README.md §4](README.md#4-errors)).
 | `program` | keycodes | keycodes | keycodes | BASIC, code | BASIC, code | BASIC, code |
 | `data` | ✓ | ✓ | ✓, with H00–H03 | undefined | undefined | undefined |
 | `partition`, `cue-card` | ✓ | ✓ | ✓ | | | |
-| `keys`, `key`, speed steps, `wait`, `skip-wait`, `let-it-finish`, `expect`, `screenshot`, `trace`, `elapsed-time`, `cut-paper` | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| `keys`, `key`, speed steps, `wait`, `skip-wait`, `let-it-finish`, `expect`, `screenshot`, `trace`, `elapsed-time`, `cut-paper`, `not-expect` | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
 | `type`, `syncclock` | | | | ✓ | ✓ | ✓ |
 | `card`, `arm` | ✓ | | | | | |
 | `saveas` | `card` | | | `slot-1` | `slot-1` | `slot-1`, `slot-2`, `floppy` |

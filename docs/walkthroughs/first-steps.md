@@ -128,6 +128,32 @@ ruled on 2026-11-13, and the steps below are worded accordingly:
   holds the key until the ROM has sampled it (LIB-5, Technical
   Requirements). **If the freeze lands inside the hold:** the rule of
   B-2 is needed as written; if not, it stays as a safeguard.
+- **Result (2026-11-14, M-3; `tools/headless/` of `v2.3.0`, Core only,
+  holds of 100 ms of emulated time):**
+  - *Idle.* On the TI-59, TI-58 and TI-58C, with and without the
+    PC-100C, the idle machine is in the scan loop (`scanLoop`,
+    `Shared/MachineModelInfo.hpp:86-103`) all the time; while a program
+    runs (`Lbl A GTO A`, with `Pause`, with `Prt`, a `Dsz` count of 100,
+    Master Library `Pgm 01 SBR =`) it never enters it, not even for one
+    instruction, over 2 s; the count and the library program come back to
+    it when they stop (15 to 21 s) and stay. So 100 ms without a break
+    tell the two apart; LIB-6 AC-36 stands.
+  - *Hold.* Keys pressed at the scan loop are taken with 100 ms (every
+    key of these runs); R/S as a 100 ms tap stops `Lbl A GTO A` and the
+    `Pause` loop on every model. It does **not** stop a printing loop
+    (`Lbl A Prt GTO A`): taken in 1 of 4 phases on the TI-59 and never on
+    the TI-58 and TI-58C; 200 ms or more stop it always. At regular speed
+    2.3.0's 100 ms of wall time are about as long (inferred from the
+    pacing, not run in the app); at full speed they span seconds of
+    emulated time and are taken. So 100 ms of emulated hold are too short
+    for a tap during printing: the fallback of LIB-5 (Technical
+    Requirements) applies, to the user before the spec changes.
+  - *C-1.* After `=` (`Pgm 01 SBR =`, `test_cdebug.ti59`) the processor
+    leaves the scan loop 5 to 18 ms into the hold (a FREEZE ON START on
+    the CPU lands inside the hold); the first program step is dispatched
+    at 120 to 149 ms, after the hold (the calculator's FREEZE ON START of
+    `test_cdebug` lands after the key is up). B-2 is needed for the CPU
+    case and a safeguard for the calculator case.
 
 ### 6. Reference runs of the 57 TI examples (record)
 - **What:** for each example of `examples/`, what its 2.3.0 file leaves
@@ -178,6 +204,13 @@ ruled on 2026-11-13, and the steps below are worded accordingly:
 - **Depends on it:** C59-7 EC-2; ledger row 59-20.
 - **If the ROM never gives the card back:** the user decided there is
   no fallback by time (C59-7 OQ-8); the finding goes back to the user.
+- **Result (2026-11-14, M-3; `tools/headless/` of `v2.3.0`):** a TI-59
+  showing `5`, with and without the PC-100C, given a card side of zeroes
+  (2.3.0's blank card) while it waits for a key: the ROM leaves the key
+  loop for 0.15 s, the pass ends by itself (no card in the reader, the
+  reader waits again), and the display flashes `5.` until CLR, which the
+  ROM's error looks like; nothing is printed. C59-7 EC-2 and row 59-20
+  stand.
 
 ### 11. The TI-58C's constant memory (check)
 - **What:** (a) a TI-58C that is filled, quit and started again in
@@ -192,6 +225,19 @@ ruled on 2026-11-13, and the steps below are worded accordingly:
   change and goes. (b) confirms which of `R060`–`R063` (H00–H03;
   `media.md` §4.1) the ROM's start-up writes; the criteria already say
   "as the ROM's start-up leaves it in zeroed memory" (B-28).
+- **Result (2026-11-14, M-3; `tools/headless/` of `v2.3.0`):**
+  - (a) A TI-58C set to partition `319.19` and `Fix 2`, then started the
+    way 2.3.0 starts it (the ROM's start-up first, then the saved RAM
+    written back, `Shared/StateApplier.cpp:89-93`): partition `239.29`
+    (the default) and no fixed format. With the RAM in place before the
+    start-up, as on the real calculator: `319.19` and `0.33`. So 2.3.0
+    does not restore them; row 59-15 is a change and stays.
+  - (b) After a cold boot the start-up writes only R060 (H00): ln(10)
+    unscaled, `2.302585092994`, and the partition and format digits, as
+    `repartition.ti58c` (PPC Notes v5n7) describes; R061 to R063 stay
+    zero. A program written into that machine outlives a Reset (no
+    register changes). The criteria's "as the ROM's start-up leaves it"
+    stands.
 
 ### 12. The Mac app in the background (check)
 - **What:** whether macOS reports the background for a window that is

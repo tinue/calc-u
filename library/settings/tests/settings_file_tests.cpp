@@ -179,7 +179,7 @@ TEST(ec6_unreadable_file_untouched_defaults_logged) {
     SettingsFile f = SettingsFile::open(testProduct(), iniPath(dir));
     CHECK(f.outcome() == Outcome::Unreadable);
     CHECK(!f.problem().empty());  // for the log, with the line
-    CHECK(f.problem().find('3') != std::string::npos);
+    CHECK(f.problem().find("line 4 ") != std::string::npos);  // the line that is not INI
     CHECK_EQ(f.text("test", "name"), std::string("plain"));
     CHECK(!f.set("test", "name", "other").ok);
     CHECK_EQ(readText(iniPath(dir)), broken);

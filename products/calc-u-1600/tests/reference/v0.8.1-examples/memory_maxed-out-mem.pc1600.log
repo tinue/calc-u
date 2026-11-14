@@ -1,0 +1,27 @@
+[preset] slot 1: CE-1600M (Qt6/resources/cards/ce1600m.card.yaml) attached
+[preset] slot 2: CE-1601M (Qt6/resources/cards/ce1601m.card.yaml) attached
+[preset] reset + boot settle done  input="................................................................................" lcd=[">","","",""] pc=Z:$92B3
+[preset] section 1/3: keys (4 steps)
+[preset]   key: mode  input="................................................................................" lcd=[">","","",""] pc=Z:$92B3
+[preset]   type: "TITLE" ...
+[preset]   type: "TITLE" done  input=".." lcd=["TITLE",">","",""] pc=Z:$92B3
+[preset]   type: "INIT"S2:","F"" ...
+[preset]   type: "INIT"S2:","F"" done  input=".."S2:","F"" lcd=["TITLE","INIT\"S2:\",\"F\"",">",""] pc=Z:$92B3
+[preset]   type: "INIT"S2:","M"" ...
+[preset]   type: "INIT"S2:","M"" done  input=".."S2:","M"" lcd=["TITLE","INIT\"S2:\",\"F\"","INIT\"S2:\",\"M\"",">"] pc=Z:$92B3
+[preset] section 2/3: program (typed, 4 lines)
+[preset]   program typed OK  input="..I" lcd=["10:WAIT 0","20:FOR I=1TO 100","30:PRINT I","40:NEXT I"] pc=Z:$4872
+[preset] section 3/3: keys (7 steps)
+[preset]   type: "SAVE"S2:LOOP.BAS"" ...
+[preset]   type: "SAVE"S2:LOOP.BAS"" done  input=".."S2:LOOP.BAS"" lcd=["30:PRINT I","40:NEXT I","SAVE\"S2:LOOP.BAS\"",">"] pc=Z:$92B3
+[preset]   type: "NEW" ...
+[preset]   type: "NEW" done  input=".." lcd=["40:NEXT I","SAVE\"S2:LOOP.BAS\"","NEW",">"] pc=Z:$92B3
+[preset]   key: mode  input=".." lcd=[">","","",""] pc=Z:$92B3
+[preset]   type: "A=MEM" ...
+[preset]   type: "A=MEM" done  input="A=.X" lcd=["A=MEM","                     77370","",""] pc=Z:$92B3
+[preset]   key: cl  input="A=.X" lcd=["A=MEM","                     77370",">",""] pc=Z:$92B3
+[preset]   type: "PRINT"Memory:";A" ...
+[preset]   type: "PRINT"Memory:";A" done  input=".."Memory:";A" lcd=["A=MEM","                     77370","PRINT\"Memory:\";A","Memory: 77370"] pc=Z:$92B3
+[preset]   type: "FILES"S2:"" ...
+[preset]   type: "FILES"S2:"" done  input=".."S2:"" lcd=["Memory: 77370","FILES\"S2:\"","LOOP    .BAS,   1/01 00:00",">"] pc=Z:$92B3
+[preset] preset applied OK  input=".."S2:"" lcd=["Memory: 77370","FILES\"S2:\"","LOOP    .BAS,   1/01 00:00",">"] pc=Z:$92B3

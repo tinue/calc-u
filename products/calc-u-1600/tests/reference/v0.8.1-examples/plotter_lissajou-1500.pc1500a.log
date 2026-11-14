@@ -1,0 +1,15 @@
+[preset] ROM loaded: revision A04
+[preset] plotter: CE-150 attached
+[preset] reset + boot settle done  input=">" lcd=[">"] pc=$E2AA
+[preset] section 1/3: keys (2 steps)
+[preset]   key: cl  input=">" lcd=[">"] pc=$E2AA
+[preset]   type: "NEW0" ...
+[preset]   type: "NEW0" done  input=">" lcd=[">"] pc=$E2AA
+[preset] section 2/3: program (BASIC, <copy>/examples/plotter/lissajou-1500.bas)
+[preset]   program loaded OK: $40C5..$4228  input=">" lcd=[">"] pc=$E2AA
+[preset] section 3/3: keys (3 steps)
+[preset]   key: mode  input=">" lcd=[">"] pc=$E2AA
+[preset]   type: "RUN" ...
+[preset]   type: "RUN" done  input=".." lcd=["Progress: 5%"] pc=$DDCE
+[preset]   wait: (until idle, 62.2s)  input=">" lcd=[">"] pc=$E2AA
+[preset] preset applied OK  input=">" lcd=[">"] pc=$E2AA

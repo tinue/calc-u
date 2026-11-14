@@ -1,0 +1,6 @@
+preset: examples/setup/firmware_bootstrap_util_15.pc1500a
+cli: headless/pc1500_cli
+exit: 0
+seconds: 1
+--- files changed in the copy of examples/:
+--- saved media:

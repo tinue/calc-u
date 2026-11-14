@@ -1,0 +1,6 @@
+preset: examples/machine-code/memtest_1500a.pc1500a
+cli: headless/pc1500_cli
+exit: 0
+seconds: 0
+--- files changed in the copy of examples/:
+--- saved media:

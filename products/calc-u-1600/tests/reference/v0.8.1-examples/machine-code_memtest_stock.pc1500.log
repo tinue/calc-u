@@ -1,0 +1,17 @@
+[preset] ROM loaded: revision A04
+[preset] reset + boot settle done  input=">" lcd=[">"] pc=$E2AA
+[preset] section 1/3: keys (3 steps)
+[preset]   key: cl  input=">" lcd=[">"] pc=$E2AA
+[preset]   type: "NEW&417D" ...
+[preset]   type: "NEW&417D" done  input=">" lcd=[">"] pc=$E2D8
+[preset]   key: mode  input=">" lcd=[">"] pc=$E2A8
+[preset] section 2/3: binary <copy>/examples/machine-code/memtest_stock.bin (184 bytes) -> $40C5..$417C  input=">" lcd=[">"] pc=$E2AA
+[preset] section 3/3: keys (4 steps)
+[preset]   type: "X=2" ...
+[preset]   type: "X=2" done  input="X=2" lcd=["                         2"] pc=$E2AA
+[preset]   type: "CALL&40C5,X" ...
+[preset]   type: "CALL&40C5,X" done  input=">" lcd=[">"] pc=$E2AA
+[preset]   type: "X" ...
+[preset]   type: "X" done  input="X" lcd=["                         0"] pc=$E2AA
+[preset]   wait: 5s  input="X" lcd=["                         0"] pc=$E2AA
+[preset] preset applied OK  input="X" lcd=["                         0"] pc=$E2AA

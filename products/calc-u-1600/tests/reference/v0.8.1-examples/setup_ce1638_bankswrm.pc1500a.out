@@ -1,0 +1,141 @@
+Preset '<copy>/examples/setup/ce1638_bankswrm.pc1500a' applied successfully.
+CPU halted (HLT) at PC=0xE2AA after 0 cycles with no pending interrupt
+Ran 0 instructions, 0 cycles
+── Pointers ──
+┌─────────────────┬──────┬───────┬───────────────────────────────────────────────┐
+│ Name            │ Addr │ Value │ Meaning                                       │
+├─────────────────┴──────┴───────┴───────────────────────────────────────────────┤
+│ BASIC program                                                                  │
+├─────────────────┬──────┬───────┬───────────────────────────────────────────────┤
+│ BASPRG_ST       │ 7865 │ 0104  │ BASIC program start                           │
+│ BASPRG_END      │ 7867 │ 0113  │ BASIC program end, the FFH mark               │
+│ BASPRG_EDT      │ 7869 │ 0104  │ Editor line-modification pointer              │
+│ CURR_TOP        │ 789E │ 0104  │ Start of the program holding the current line │
+│ CURR_LINE       │ 789C │ 0000  │ Current line number                           │
+│ PREV_LINE       │ 78A2 │ 000A  │ Previous line number                          │
+│ SRCH_LINE       │ 78A8 │ 000A  │ Line found by a search                        │
+│ DATA_PTR        │ 78BE │ 8107  │ DATA statement cursor                         │
+│ ROM_ST          │ 7861 │ FFFF  │ BASIC program in a ROM module                 │
+│ TRACE_ON        │ 788D │ 00    │ TRON: off                                     │
+│ TRACE_PARAM     │ 788E │ 0160  │ Trace output vector                           │
+├─────────────────┴──────┴───────┴───────────────────────────────────────────────┤
+│ Errors and BREAK                                                               │
+├─────────────────┬──────┬───────┬───────────────────────────────────────────────┤
+│ ERL             │ 789B │ 00    │ Error code                                    │
+│ BREAKPARAM      │ 788A │ 20    │ BREAK flag                                    │
+│ BRK_ADD         │ 78AC │ 0113  │ BREAK address                                 │
+│ BRK_LINE        │ 78AE │ 000A  │ BREAK line                                    │
+│ ERR_ADD         │ 78B2 │ FFFF  │ Error address                                 │
+│ ERR_LINE        │ 78B4 │ 0000  │ Error line                                    │
+│ ON_ERR_ADD      │ 78B8 │ FFFF  │ ON ERROR GOTO target                          │
+│ ON_ERR_LINE     │ 78BA │ FFFF  │ ON ERROR line                                 │
+├─────────────────┴──────┴───────┴───────────────────────────────────────────────┤
+│ Variables and stacks                                                           │
+├─────────────────┬──────┬───────┬───────────────────────────────────────────────┤
+│ RAM_ST          │ 7863 │ 00    │ Page of the user RAM start                    │
+│ RAM_END         │ 7864 │ 58    │ Page one past the user RAM top                │
+│ VAR_START       │ 7899 │ 5800  │ Start of the variables (they grow down)       │
+│ CURVARADD       │ 7883 │ 79B8  │ Currently accessed variable                   │
+│ CURVARTYPE      │ 7885 │ 88    │ Its type                                      │
+│ STK_PTR_GSB_FOR │ 7882 │ FF    │ Stack pointer for GOSUB and FOR               │
+│ FORNXT_STK_PTR  │ 7890 │ 38    │ FOR/NEXT stack pointer (low byte)             │
+│ GOSB_STK_PTR_L  │ 7891 │ FF    │ GOSUB stack pointer (low byte)                │
+│ STR_BUF_PTR_L   │ 7894 │ 17    │ String buffer pointer (low byte, 7B10H-7B5FH) │
+│ INBUFPTR_L      │ 788B │ B0    │ Input buffer pointer (low byte, 7BB0H-7BFFH)  │
+├─────────────────┴──────┴───────┴───────────────────────────────────────────────┤
+│ Mode and system                                                                │
+├─────────────────┬──────┬───────┬───────────────────────────────────────────────┤
+│ Annunciators    │ 764F │ 43    │ Mode: RUN                                     │
+│ LOCK            │ 79FF │ FF    │ unlocked                                      │
+│ DISPARAM        │ 7880 │ 02    │ Display at READY                              │
+│ PU_PV           │ 79D0 │ FE    │ PU/PV flag, ROM bank (00 ROM 1, 01 ROM 2)     │
+│ OPN             │ 79D1 │ 60    │ OPN device: LCD                               │
+│ WAIT_CFG        │ 7871 │ 00    │ WAIT setting                                  │
+│ CURSOR_PTR      │ 7875 │ 00    │ Cursor column                                 │
+├─────────────────┴──────┴───────┴───────────────────────────────────────────────┤
+│ Computed                                                                       │
+├─────────────────┬──────┬───────┬───────────────────────────────────────────────┤
+│ MEM             │      │ 22252 │ RAM_END:00 − BASPRG_END − 1                   │
+│ Program         │      │ 16    │ BASIC program, with the FFH mark              │
+│ ML reserve      │      │ 63    │ Machine-language area 00C5 up to BASPRG_ST    │
+│ Variables       │      │ 0     │ RAM_END:00 − VAR_START                        │
+└─────────────────┴──────┴───────┴───────────────────────────────────────────────┘
+── BASIC Area ──
+┌───────────┬─────────┬──────────┬────────────────────────────────────────┐
+│ Address   │    Size │ RAM      │ Holds                                  │
+├───────────┼─────────┼──────────┼────────────────────────────────────────┤
+│ 0000–00C4 │   197 B │ CE-1638  │ system reserve (197 B)                 │
+│ 00C5–0103 │    63 B │ CE-1638  │ machine-language reserve               │
+│ 0104–0113 │    16 B │ CE-1638  │ program (BASPRG_ST … BASPRG_END = FFH) │
+│ 0114–3FFF │ 16108 B │ CE-1638  │ free                                   │
+│ 4000–57FF │      6K │ built-in │ free                                   │
+└───────────┴─────────┴──────────┴────────────────────────────────────────┘
+RAM_ST:00 = 0000, RAM_END:00 = 5800; MEM 22252 bytes free.
+── BASIC area 0000–57FF ──
+0000: 00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00  ................
+0010–004F: (00/FF only)
+0050: 00 00 00 00 00 00 11 F1  8A 26 44 35 2C 58 40 12  .........&D5,X@.
+0060: F0 97 22 42 61 6E 6B 3A  22 3B F1 6F 26 44 34 40  .."Bank:";.o&D4@
+0070–00BF: (00/FF only)
+00C0: 00 00 00 00 00 FF BE E2  4A B7 0F 89 30 BE 00 D3  ........J...0...
+00D0: BA E3 3F 4A 07 04 5A FE  58 00 4A 65 48 78 FD 88  ..?J..Z.X.JeHx..
+00E0: FD 98 B7 08 8B 0A BE 00  F8 2A 68 58 2E 68 68 2E  .........*hX.hh.
+00F0: FD 0A FD 1A E9 78 63 00  6A 05 F5 88 03 9A 01 04  .....xc.j.......
+0100: 01 13 01 04 00 0A 0C F0  97 22 42 61 6E 6B 3A 20  ........."Bank: 
+0110: 37 22 0D FF 00 00 00 00  00 00 00 00 00 00 00 00  7"..............
+0120–40FF: (00/FF only)
+4100: B5 00 BE 41 0F DD B7 08  99 08 BE 00 D6 9A 04 2A  ...A...........*
+4110: FD C8 68 58 2E 68 68 2E  B5 00 1A 18 6A C4 51 88  ..hX.hh.....j.Q.
+4120: 03 4A 39 48 41 6A 3F F5  88 03 FD 8A AE 00 D4 58  .J9HAj?........X
+4130: 00 5A 56 6A 19 F5 88 03  9A FF BE E2 4A B7 0F 89  .ZVj........J...
+4140: 30 BE 00 D3 BA E3 3F 4A  00 04 5A FE 58 00 4A 65  0.....?J..Z.X.Je
+4150: 48 78 FD 88 FD 98 B7 08  8B 0A BE 00 F8 2A 68 58  Hx...........*hX
+4160: 2E 68 68 2E FD 0A FD 1A  E9 78 63 00 6A 05 F5 88  .hh......xc.j...
+4170: 03 9A 01 04 01 04 01 04  FF 11 F1 8A 26 44 35 2C  ............&D5,
+4180: 58 40 12 F0 97 22 42 61  6E 6B 3A 22 3B F1 6F 26  X@..."Bank:";.o&
+4190: 44 34 40 00 00 00 00 00  00 00 00 00 00 00 00 00  D4@.............
+41A0–57EF: (00/FF only)
+57F0: 00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00  ................
+── Machine-language area 7C00–7FFF ──
+7C00: 0D 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00  ................
+7C10–7FEF: (00/FF only)
+7FF0: 00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00  ................
+Bank: 7
+status: DEG RUN I
+Most-visited PC: 0x0000 (0 visits, 0 distinct PCs total)
+Final registers: A=0x57 X=0x7B0C Y=0x0113 U=0x0002 S=0x784D P=0xE2AA T=0x02 (C=0 IE=1 Z=0 V=0 H=0)
+Drained 512 trace frames (862598 lost to overflow before this drain)
+  seq=863078 pc=0xE41A opcode=0xFDAE cycles=16 A=0xFF T=0x02
+  seq=863079 pc=0xE41E opcode=0xFDE9 cycles=23 A=0xFF T=0x02
+  seq=863080 pc=0xE423 opcode=0x006A cycles=6 A=0xFF T=0x06
+  seq=863081 pc=0xE425 opcode=0x0088 cycles=11 A=0xFF T=0x06
+  seq=863082 pc=0xE425 opcode=0x0088 cycles=11 A=0xFF T=0x06
+  seq=863083 pc=0xE425 opcode=0x0088 cycles=11 A=0xFF T=0x06
+  seq=863084 pc=0xE425 opcode=0x0088 cycles=8 A=0xFF T=0x06
+  seq=863085 pc=0xE427 opcode=0xFDBA cycles=9 A=0xFF T=0x06
+  seq=863086 pc=0xE429 opcode=0x00BD cycles=7 A=0xFF T=0x02
+  seq=863087 pc=0xE42B opcode=0x009A cycles=11 A=0x00 T=0x06
+  seq=863088 pc=0xE270 opcode=0x008B cycles=10 A=0x00 T=0x06
+  seq=863089 pc=0xE2C4 opcode=0x00ED cycles=16 A=0x00 T=0x06
+  seq=863090 pc=0xE2C8 opcode=0x008B cycles=10 A=0x00 T=0x06
+  seq=863091 pc=0xE2D8 opcode=0x00ED cycles=16 A=0x00 T=0x06
+  seq=863092 pc=0xE2DC opcode=0x0089 cycles=8 A=0x00 T=0x06
+  seq=863093 pc=0xE2DE opcode=0x006A cycles=6 A=0x00 T=0x06
+  seq=863094 pc=0xE2E0 opcode=0x0048 cycles=6 A=0x00 T=0x06
+  seq=863095 pc=0xE2E2 opcode=0x004A cycles=6 A=0x00 T=0x06
+  seq=863096 pc=0xE2E4 opcode=0x0046 cycles=5 A=0x00 T=0x06
+  seq=863097 pc=0xE2E5 opcode=0x004F cycles=13 A=0x00 T=0x06
+  seq=863098 pc=0xE2E7 opcode=0x0081 cycles=10 A=0x00 T=0x02
+  seq=863099 pc=0xE303 opcode=0x004A cycles=6 A=0x00 T=0x02
+  seq=863100 pc=0xE305 opcode=0x0045 cycles=6 A=0x00 T=0x02
+  seq=863101 pc=0xE306 opcode=0x00BF cycles=7 A=0x1D T=0x02
+  seq=863102 pc=0xE308 opcode=0x0089 cycles=10 A=0x1D T=0x02
+  seq=863103 pc=0xE315 opcode=0x00ED cycles=16 A=0x1D T=0x02
+  seq=863104 pc=0xE319 opcode=0x009B cycles=11 A=0x1D T=0x06
+  seq=863105 pc=0xE29E opcode=0x00E9 cycles=19 A=0x1D T=0x06
+  seq=863106 pc=0xE2A2 opcode=0x00B5 cycles=6 A=0x1D T=0x06
+  seq=863107 pc=0xE2A4 opcode=0xFDCE cycles=9 A=0x57 T=0x02
+  seq=863108 pc=0xE2A6 opcode=0xFD81 cycles=8 A=0x57 T=0x02
+  seq=863109 pc=0xE2A8 opcode=0xFDB1 cycles=9 A=0x57 T=0x02
+Display status: DEG RUN I
+Display input-line text: "??"

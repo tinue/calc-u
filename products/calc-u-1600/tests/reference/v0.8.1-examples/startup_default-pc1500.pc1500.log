@@ -1,0 +1,11 @@
+[preset] ROM loaded: revision A04
+[preset] software-defined module attached: Qt6/resources/cards/ce163f.card.yaml
+[preset] plotter: CE-150 attached
+[preset] reset + boot settle done  input=">" lcd=[">"] pc=$E2E7
+[preset] section 1/1: keys (3 steps)
+[preset]   type: "NEW0" ...
+[preset]   type: "NEW0" done  input=">" lcd=[">"] pc=$E425
+[preset]   type: "NEW&112" ...
+[preset]   type: "NEW&112" done  input=">" lcd=[">"] pc=$E2AA
+[preset]   key: mode  input=">" lcd=[">"] pc=$E2AA
+[preset] preset applied OK  input=">" lcd=[">"] pc=$E2AA

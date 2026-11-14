@@ -269,6 +269,22 @@ ruled on 2026-11-13, and the steps below are worded accordingly:
 - **If C-2 shows a bound was hit:** C1600-1 says how a PC-1600 in that
   mode reports prompt readiness. **If C-4 shows a write:** AC-16 says that
   such runs use a copy of the folder.
+- **Result (2026-11-14, M-4; the CLIs of `v0.8.1`):** all 32 load without
+  an error; the references are in
+  `products/calc-u-1600/tests/reference/v0.8.1-examples/` (display as
+  text, BASIC and machine-code areas, the log of each load, the files a
+  run changed). Not recorded: the paper (the CLIs give the CE-150's pen
+  events and point count only, nothing of the CE-1600P); it is recorded
+  with the golden runs of M-8, from the same code, before any core
+  change. C-2: the bare `wait:` after `MODE1` in
+  `lissajou-ce150.pc1600` finds the command loop (Z:92B3, "Complete",
+  after 71 s of emulated time); the `type` steps in RESERVE mode of
+  `default-pc1600.pc1600` end at Z:42CC/42CE, outside the command loop,
+  and are taken through the ROM's key-matrix reads (the display shows the
+  whole text); no bound was hit. C-4: `DiskWorks.pc1600` mounts
+  `examples/dwx/S3` and writes nothing into it;
+  `make_diskworks_media.pc1600` rewrites `CE-1601M - Progs.card.yaml` and
+  `Progs.floppy.yaml`. C1600-1, C1600-4 AC-16 stand as written.
 
 ### 14. The long-run pacing tests on the old code (record)
 - **What:** per product two tests exist before its pacer is replaced

@@ -1,0 +1,158 @@
+Preset '<copy>/examples/machine-code/memtest_stock.pc1500' applied successfully.
+CPU halted (HLT) at PC=0xE2AA after 0 cycles with no pending interrupt
+Ran 0 instructions, 0 cycles
+── Pointers ──
+┌─────────────────┬──────┬───────┬───────────────────────────────────────────────┐
+│ Name            │ Addr │ Value │ Meaning                                       │
+├─────────────────┴──────┴───────┴───────────────────────────────────────────────┤
+│ BASIC program                                                                  │
+├─────────────────┬──────┬───────┬───────────────────────────────────────────────┤
+│ BASPRG_ST       │ 7865 │ 417D  │ BASIC program start                           │
+│ BASPRG_END      │ 7867 │ 417D  │ BASIC program end, the FFH mark               │
+│ BASPRG_EDT      │ 7869 │ 417D  │ Editor line-modification pointer              │
+│ CURR_TOP        │ 789E │ FFFF  │ Start of the program holding the current line │
+│ CURR_LINE       │ 789C │ 0000  │ Current line number                           │
+│ PREV_LINE       │ 78A2 │ 0000  │ Previous line number                          │
+│ SRCH_LINE       │ 78A8 │ FFFF  │ Line found by a search                        │
+│ DATA_PTR        │ 78BE │ 8002  │ DATA statement cursor                         │
+│ ROM_ST          │ 7861 │ FFFF  │ BASIC program in a ROM module                 │
+│ TRACE_ON        │ 788D │ 00    │ TRON: off                                     │
+│ TRACE_PARAM     │ 788E │ 0478  │ Trace output vector                           │
+├─────────────────┴──────┴───────┴───────────────────────────────────────────────┤
+│ Errors and BREAK                                                               │
+├─────────────────┬──────┬───────┬───────────────────────────────────────────────┤
+│ ERL             │ 789B │ 00    │ Error code                                    │
+│ BREAKPARAM      │ 788A │ 00    │ BREAK flag                                    │
+│ BRK_ADD         │ 78AC │ FFFF  │ BREAK address                                 │
+│ BRK_LINE        │ 78AE │ FFFF  │ BREAK line                                    │
+│ ERR_ADD         │ 78B2 │ FFFF  │ Error address                                 │
+│ ERR_LINE        │ 78B4 │ 0000  │ Error line                                    │
+│ ON_ERR_ADD      │ 78B8 │ FFFF  │ ON ERROR GOTO target                          │
+│ ON_ERR_LINE     │ 78BA │ FFFF  │ ON ERROR line                                 │
+├─────────────────┴──────┴───────┴───────────────────────────────────────────────┤
+│ Variables and stacks                                                           │
+├─────────────────┬──────┬───────┬───────────────────────────────────────────────┤
+│ RAM_ST          │ 7863 │ 40    │ Page of the user RAM start                    │
+│ RAM_END         │ 7864 │ 48    │ Page one past the user RAM top                │
+│ VAR_START       │ 7899 │ 4800  │ Start of the variables (they grow down)       │
+│ CURVARADD       │ 7883 │ 79B8  │ Currently accessed variable                   │
+│ CURVARTYPE      │ 7885 │ 88    │ Its type                                      │
+│ STK_PTR_GSB_FOR │ 7882 │ FF    │ Stack pointer for GOSUB and FOR               │
+│ FORNXT_STK_PTR  │ 7890 │ 38    │ FOR/NEXT stack pointer (low byte)             │
+│ GOSB_STK_PTR_L  │ 7891 │ FF    │ GOSUB stack pointer (low byte)                │
+│ STR_BUF_PTR_L   │ 7894 │ 10    │ String buffer pointer (low byte, 7B10H-7B5FH) │
+│ INBUFPTR_L      │ 788B │ B0    │ Input buffer pointer (low byte, 7BB0H-7BFFH)  │
+├─────────────────┴──────┴───────┴───────────────────────────────────────────────┤
+│ Mode and system                                                                │
+├─────────────────┬──────┬───────┬───────────────────────────────────────────────┤
+│ Annunciators    │ 764F │ 43    │ Mode: RUN                                     │
+│ LOCK            │ 79FF │ FF    │ unlocked                                      │
+│ DISPARAM        │ 7880 │ 20    │ Display at READY                              │
+│ PU_PV           │ 79D0 │ FE    │ PU/PV flag, ROM bank (00 ROM 1, 01 ROM 2)     │
+│ OPN             │ 79D1 │ 60    │ OPN device: LCD                               │
+│ WAIT_CFG        │ 7871 │ 00    │ WAIT setting                                  │
+│ CURSOR_PTR      │ 7875 │ 00    │ Cursor column                                 │
+├─────────────────┴──────┴───────┴───────────────────────────────────────────────┤
+│ Computed                                                                       │
+├─────────────────┬──────┬───────┬───────────────────────────────────────────────┤
+│ MEM             │      │ 1666  │ RAM_END:00 − BASPRG_END − 1                   │
+│ Program         │      │ 1     │ BASIC program, with the FFH mark              │
+│ ML reserve      │      │ 184   │ Machine-language area 40C5 up to BASPRG_ST    │
+│ Variables       │      │ 0     │ RAM_END:00 − VAR_START                        │
+└─────────────────┴──────┴───────┴───────────────────────────────────────────────┘
+── BASIC Area ──
+┌───────────┬────────┬──────────┬────────────────────────────────────────┐
+│ Address   │   Size │ RAM      │ Holds                                  │
+├───────────┼────────┼──────────┼────────────────────────────────────────┤
+│ 4000–40C4 │  197 B │ built-in │ system reserve (197 B)                 │
+│ 40C5–417C │  184 B │ built-in │ machine-language reserve               │
+│ 417D–417D │    1 B │ built-in │ program (BASPRG_ST … BASPRG_END = FFH) │
+│ 417E–47FF │ 1666 B │ built-in │ free                                   │
+└───────────┴────────┴──────────┴────────────────────────────────────────┘
+RAM_ST:00 = 4000, RAM_END:00 = 4800; MEM 1666 bytes free.
+── BASIC area 4000–47FF ──
+4000: 00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00  ................
+4010–40BF: (00/FF only)
+40C0: 00 00 00 00 00 8E 05 00  00 00 00 00 B5 00 AE 40  ...............@
+40D0: C7 86 89 0E 06 89 0B B5  02 AE 40 C7 48 00 4A 02  ..........@.H.J.
+40E0: FB 9A 04 2A 62 A5 78 64  18 5A 00 A5 78 67 08 A5  ...*b.xd.Z..xg..
+40F0: 78 68 0A B5 55 28 A4 0E  05 A6 89 67 44 84 96 91  xh..U(.....gD...
+4100: 0B 89 04 04 16 91 11 A5  78 67 08 A5 78 68 0A B5  ........xg..xh..
+4110: AA 28 A4 0E 05 A6 89 4B  44 84 96 91 0B 89 04 04  .(.....KD.......
+4120: 16 91 11 A5 78 67 08 A5  78 68 0A B5 FF 28 A4 0E  ....xg..xh...(..
+4130: 05 A6 89 2F 44 84 96 91  0B 89 04 04 16 91 11 A5  .../D...........
+4140: 78 67 08 A5 78 68 0A B5  00 28 A4 0E 05 A6 89 13  xg..xh...(......
+4150: 44 84 96 91 0B 89 04 04  16 91 11 88 72 48 00 4A  D...........rH.J
+4160: 00 FB 9A AE 40 CB A4 AE  40 CA 84 AE 40 C8 04 AE  ....@...@...@...
+4170: 40 C9 B5 01 AE 40 C7 48  00 4A 01 FB 9A 00 00 00  @....@.H.J......
+4180–47EF: (00/FF only)
+47F0: 00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00  ................
+── 7C00–7FFF (the 1K system RAM again) ──
+7C00: 0D FF FF FF FF FF FF FF  FF FF FF FF FF FF FF FF  ................
+7C10–7C2F: (00/FF only)
+7C30: FF FF FF FF FF FF FF ED  F6 ED 6F 7B 7A ED 1E 7B  ..........o{z..{
+7C40: 79 00 7B 7A E7 2F E6 EE  FE 00 57 E2 E2 70 CA 92  y.{z./....W..p..
+7C50–7C5F: (00/FF only)
+7C60: FF FF FF 40 48 41 7D 41  7D 41 7D 00 FF FF FF FF  ...@HA}A}A}.....
+7C70: FF 00 00 00 00 00 00 00  00 00 00 09 00 00 74 0C  ..............t.
+7C80: 20 01 FF 79 B8 88 FF FF  FF FE 00 B0 01 00 04 78   ..y...........x
+7C90: 38 FF 3C FF 10 00 00 00  00 48 00 00 00 00 FF FF  8.<......H......
+7CA0–7CAF: (00/FF only)
+7CB0: FF FF FF FF 00 00 FF FF  FF FF FF FF FF FF 80 02  ................
+7CC0–7DAF: (00/FF only)
+7DB0: 00 00 00 00 00 00 00 00  00 00 00 00 B2 00 00 00  ................
+7DC0–7DCF: (00/FF only)
+7DD0: FE 60 00 00 00 00 00 00  00 00 00 00 00 00 00 FF  .`..............
+7DE0–7DFF: (00/FF only)
+7E00: 00 00 00 00 00 00 00 00  00 00 00 00 10 00 00 00  ................
+7E10: 20 20 20 20 20 20 20 20  20 20 20 20 20 20 30 2E                0.
+7E20: 30 30 30 30 30 30 30 30  30 FF FF FF FF FF FF FF  000000000.......
+7E30–7EFF: (00/FF only)
+7F00: FF 00 22 56 63 10 32 58  FF 60 FE 23 BD 80 00 98  .."Vc.2X.`.#....
+7F10–7F6F: (00/FF only)
+7F70: 00 00 00 00 00 00 00 00  20 30 00 00 00 00 00 00  ........ 0......
+7F80–7FAF: (00/FF only)
+7FB0: 58 0D 0D 0D 0D 0D 0D 0D  0D 0D 0D 0D 0D 0D 0D 0D  X...............
+7FC0: 0D 0D 0D 0D 0D 0D 0D 0D  0D 0D 0D 0D 0D 0D 0D 0D  ................
+7FD0: 0D 0D 0D 0D 0D 0D 0D 0D  0D 0D 0D 0D 0D 0D 0D 0D  ................
+7FE0: 0D 0D 0D 0D 0D 0D 0D 0D  0D 0D 0D 0D 0D 0D 0D 0D  ................
+7FF0: 0D 0D 0D 0D 0D 0D 0D 0D  0D 0D 0D 0D 0D 0D 0D 0D  ................
+                         0
+status: DEG RUN I
+Most-visited PC: 0x0000 (0 visits, 0 distinct PCs total)
+Final registers: A=0x57 X=0x7B0C Y=0x7BB2 U=0x0002 S=0x784D P=0xE2AA T=0x02 (C=0 IE=1 Z=0 V=0 H=0)
+Drained 512 trace frames (523363 lost to overflow before this drain)
+  seq=523843 pc=0xE41A opcode=0xFDAE cycles=16 A=0xFF T=0x02
+  seq=523844 pc=0xE41E opcode=0xFDE9 cycles=23 A=0xFF T=0x02
+  seq=523845 pc=0xE423 opcode=0x006A cycles=6 A=0xFF T=0x06
+  seq=523846 pc=0xE425 opcode=0x0088 cycles=11 A=0xFF T=0x06
+  seq=523847 pc=0xE425 opcode=0x0088 cycles=11 A=0xFF T=0x06
+  seq=523848 pc=0xE425 opcode=0x0088 cycles=11 A=0xFF T=0x06
+  seq=523849 pc=0xE425 opcode=0x0088 cycles=8 A=0xFF T=0x06
+  seq=523850 pc=0xE427 opcode=0xFDBA cycles=9 A=0xFF T=0x06
+  seq=523851 pc=0xE429 opcode=0x00BD cycles=7 A=0xFF T=0x02
+  seq=523852 pc=0xE42B opcode=0x009A cycles=11 A=0x00 T=0x06
+  seq=523853 pc=0xE270 opcode=0x008B cycles=10 A=0x00 T=0x06
+  seq=523854 pc=0xE2C4 opcode=0x00ED cycles=16 A=0x00 T=0x06
+  seq=523855 pc=0xE2C8 opcode=0x008B cycles=10 A=0x00 T=0x06
+  seq=523856 pc=0xE2D8 opcode=0x00ED cycles=16 A=0x00 T=0x06
+  seq=523857 pc=0xE2DC opcode=0x0089 cycles=8 A=0x00 T=0x06
+  seq=523858 pc=0xE2DE opcode=0x006A cycles=6 A=0x00 T=0x06
+  seq=523859 pc=0xE2E0 opcode=0x0048 cycles=6 A=0x00 T=0x06
+  seq=523860 pc=0xE2E2 opcode=0x004A cycles=6 A=0x00 T=0x06
+  seq=523861 pc=0xE2E4 opcode=0x0046 cycles=5 A=0x00 T=0x06
+  seq=523862 pc=0xE2E5 opcode=0x004F cycles=13 A=0x00 T=0x06
+  seq=523863 pc=0xE2E7 opcode=0x0081 cycles=10 A=0x00 T=0x02
+  seq=523864 pc=0xE303 opcode=0x004A cycles=6 A=0x00 T=0x02
+  seq=523865 pc=0xE305 opcode=0x0045 cycles=6 A=0x00 T=0x02
+  seq=523866 pc=0xE306 opcode=0x00BF cycles=7 A=0x23 T=0x02
+  seq=523867 pc=0xE308 opcode=0x0089 cycles=10 A=0x23 T=0x02
+  seq=523868 pc=0xE315 opcode=0x00ED cycles=16 A=0x23 T=0x02
+  seq=523869 pc=0xE319 opcode=0x009B cycles=11 A=0x23 T=0x06
+  seq=523870 pc=0xE29E opcode=0x00E9 cycles=19 A=0x23 T=0x06
+  seq=523871 pc=0xE2A2 opcode=0x00B5 cycles=6 A=0x23 T=0x06
+  seq=523872 pc=0xE2A4 opcode=0xFDCE cycles=9 A=0x57 T=0x02
+  seq=523873 pc=0xE2A6 opcode=0xFD81 cycles=8 A=0x57 T=0x02
+  seq=523874 pc=0xE2A8 opcode=0xFDB1 cycles=9 A=0x57 T=0x02
+Display status: DEG RUN I
+Display input-line text: "X"

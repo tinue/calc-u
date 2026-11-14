@@ -1,0 +1,9 @@
+[preset] ROM loaded: revision A04
+[preset] software-defined module attached: <copy>/examples/memory/memory-cards/pc1500-maxed-out.card.yaml
+[preset] reset + boot settle done  input=">" lcd=[">"] pc=$E2AA
+[preset] section 1/1: keys (3 steps)
+[preset]   key: cl  input=">" lcd=[">"] pc=$E2AA
+[preset]   type: "PRINT"MEM =";MEM" ...
+[preset]   type: "PRINT"MEM =";MEM" done  input=".."MEM =";.X" lcd=["MEM = 24576"] pc=$E2AA
+[preset]   wait: 2s  input=".."MEM =";.X" lcd=["MEM = 24576"] pc=$E2AA
+[preset] preset applied OK  input=".."MEM =";.X" lcd=["MEM = 24576"] pc=$E2AA

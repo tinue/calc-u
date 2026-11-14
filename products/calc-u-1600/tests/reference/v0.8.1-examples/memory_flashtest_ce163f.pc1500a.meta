@@ -1,0 +1,6 @@
+preset: examples/memory/flashtest_ce163f.pc1500a
+cli: headless/pc1500_cli
+exit: 0
+seconds: 1
+--- files changed in the copy of examples/:
+--- saved media:

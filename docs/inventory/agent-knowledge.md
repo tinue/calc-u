@@ -205,15 +205,20 @@ project's scope (names only, not read): `-Users-me-Development-sharp`,
 ## Open questions
 - ~~Is `calc-u-1403h-ui` in scope?~~ Answered 2026-11-09: no, out of scope
   for now, as is Calc-U-16 (Briefing §1.11).
-- Should `Sharp1500-1600-Ref/skills/sharp-pc1500-1600/SKILL.md` (not
+- ~~Should `Sharp1500-1600-Ref/skills/sharp-pc1500-1600/SKILL.md` (not
   installed) be treated as a research skill to update, or is it superseded
-  by `~/.claude/skills/PC1500`?
+  by `~/.claude/skills/PC1500`?~~ Answered by Briefing §1.11: both are
+  updated; the repository's skill works stand-alone. Done in M-17
+  (2026-11-14).
 - Are the Calc-U-1600 `docs/background/plans/*.md` (historic plans) in
   scope for the terminology update, or only `Decisions.md` and
   `docs/developer/`?
-- Should the stale Calc-U-59 memory directory for
+- ~~Should the stale Calc-U-59 memory directory for
   `-Users-me-Development-claude-ti59-emul` and the one for the removed
-  `sharp/Calc-U-1600-Binary` be updated, or left as they are?
+  `sharp/Calc-U-1600-Binary` be updated, or left as they are?~~ Answered
+  by Briefing §1.11. Deleted in M-17 (2026-11-14); nothing in them still
+  held (a `.ti59` loader in files that no longer exist; a commit rule for
+  the removed repository), so nothing moved into the live memory.
 - Calc-U-1600's `MEMORY.md` index is 64 lines and 15 260 bytes; Calc-U-59's
   is 35 lines. Whether either exceeds what Claude Code loads at session
   start is not known here.

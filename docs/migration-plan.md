@@ -1179,7 +1179,7 @@ with a row, or worked together with it).
 #### M-66 Archive Calc-U-59, and the closing check
 - **Does:** tinue/Calc-U-59 gets the README and is archived (ADR 0030).
   Then the checks of §5: every column of `features/INDEX.md` Done, every
-  success criterion of Briefing §7 met; `docs/Process.md` gets the phase
+  success criterion of Briefing §7 met except the SC61860 one (§5.5); `docs/Process.md` gets the phase
   status.
 - **Completes:** ADR 0030 for Calc-U-59; phase 6.
 - **Waits for:** M-64, M-65.
@@ -1207,7 +1207,8 @@ with a row, or worked together with it).
 - A cut of Calc-U-59 after M-59 would hold every format change but lack:
   the family structure in Qt6, Web (M-60) and Swift (M-61), the harness
   commands (M-62), the help asset (M-63).
-- The success criteria of Briefing §7 are met after M-66.
+- The success criteria of Briefing §7, but the SC61860 one (§5.5), are
+  met after M-66.
 
 ## 5. Coverage (Part A, step 5)
 

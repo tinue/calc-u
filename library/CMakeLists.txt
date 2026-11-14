@@ -5,6 +5,7 @@
 file(GLOB CALCU_LIBRARY_SOURCES CONFIGURE_DEPENDS
   ${CMAKE_CURRENT_SOURCE_DIR}/machine/*.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/settings/*.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/pacing/*.cpp
 )
 add_library(calcu_library STATIC ${CALCU_LIBRARY_SOURCES})
 target_include_directories(calcu_library PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
@@ -36,6 +37,7 @@ if(CALCU_TESTS AND NOT EMSCRIPTEN)
   file(GLOB CALCU_LIBRARY_TEST_SOURCES CONFIGURE_DEPENDS
     ${CMAKE_CURRENT_SOURCE_DIR}/machine/tests/*.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/settings/tests/*.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/pacing/tests/*.cpp
   )
   add_executable(calcu_library_tests ${CALCU_LIBRARY_TEST_SOURCES})
   target_include_directories(calcu_library_tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/machine/tests)

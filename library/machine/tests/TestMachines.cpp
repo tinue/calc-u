@@ -147,6 +147,8 @@ BuildResult TestBuilder::build(const BuildRequest& req, const Catalogue& cat) {
     const MachineDescriptor* d = cat.model(req.model);
     if (!d) return BuildResult{nullptr, {}, "unknown model"};
     auto m = std::make_unique<TestMachine>(*d, req.variant, req.soundRate);
+    if (auto t = std::dynamic_pointer_cast<const TestSegTiming>(req.content); t && req.model == kSeg)
+        m->setTiming(std::move(t));
     std::vector<PlaceName> taken;
     for (const auto& p : req.peripherals) {
         if (p.place.steps.size() != 1) return BuildResult{nullptr, {}, "no such place"};
@@ -167,6 +169,15 @@ std::unique_ptr<TestMachine> buildTestMachine(const ModelId& model, std::optiona
     TestBuilder builder;
     const Catalogue& cat = testCatalogue();
     BuildResult r = build(cat, builder, requestFor(cat, model, variant, std::move(peripherals), soundRate));
+    return std::unique_ptr<TestMachine>(static_cast<TestMachine*>(r.machine.release()));
+}
+
+std::unique_ptr<TestMachine> buildTimedTestSeg(Ticks instructionLength, std::uint64_t loopLength) {
+    TestBuilder builder;
+    const Catalogue& cat = testCatalogue();
+    BuildRequest req = requestFor(cat, kSeg);
+    req.content = std::make_shared<TestSegTiming>(instructionLength, loopLength);
+    BuildResult r = build(cat, builder, req);
     return std::unique_ptr<TestMachine>(static_cast<TestMachine*>(r.machine.release()));
 }
 
@@ -211,7 +222,7 @@ Ticks TestMachine::advance(Ticks atLeast) {
     const bool printer = hasPrinter();
     Ticks ran = 0;
     while (ran < atLeast) {
-        const Ticks len = isDot() ? 4 : (generic_.instructions % 2 == 0 ? 3 : 5);
+        const Ticks len = isDot() ? 4 : timing_ ? timing_->instructionLength : (generic_.instructions % 2 == 0 ? 3 : 5);
         ran += len;
         ++generic_.instructions;
         if (printer) ++printerCounter_.count;

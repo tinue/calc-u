@@ -41,7 +41,7 @@ the `<cstdlib>` fix).
 
 | CTest entry | What | Group | Measured (M4 Pro, 2026-11-14) |
 |---|---|---|---|
-| `calcu_library_tests` | 87 `TEST`s: the library's own tests with the machines built for the tests (`library/machine/tests/TestMachines.*`) and the product declared for the settings tests (`library/settings/tests/TestProduct.hpp`), no product code (LIB-1 AC-24; LIB-1 design §2a); also run alone by the CI job `library` of both product workflows | Frequent | 0.14 s in the full Frequent run (0.22 s alone; the machine was loaded by other builds, M-20) |
+| `calcu_library_tests` | 113 `TEST`s: the library's own tests with the machines built for the tests (`library/machine/tests/TestMachines.*`) and the product declared for the settings tests (`library/settings/tests/TestProduct.hpp`), no product code (LIB-1 AC-24; LIB-1 design §2a); also run alone by the CI job `library` of both product workflows. The pacing tests run on a scripted wall clock (`library/pacing/tests/TestSliceRunner.hpp`), never the host's | Frequent | 0.55 s (after the merge of M-19 to M-21, 2026-11-14; about 0.4 s of it the five-hour scripted runs of LIB-17) |
 | `LibraryPlatformStoreCheck` | `library/settings/tests/check_platform_stores_test.sh`: the self-test of `library/settings/check_platform_stores.sh`, the source check the products run over their frontends (LIB-9 design T-14); not registered on Windows | Frequent | 0.03 s |
 
 `calcu_library_tests` by file (`library/<area>/tests/`; every `TEST` is
@@ -65,6 +65,9 @@ Frequent):
 | `settings/tests/paths_tests.cpp` | 21 |
 | `settings/tests/settings_file_tests.cpp` | 15 |
 | `settings/tests/startup_tests.cpp` | 4 |
+| `pacing/tests/jitter_tests.cpp` | 4 |
+| `pacing/tests/pacer_tests.cpp` | 20 |
+| `pacing/tests/pacing_longrun_tests.cpp` | 2 (LIB-17 AC-2, AC-3: five hours on a scripted clock, Frequent) |
 
 ## Calc-U-59
 

@@ -177,12 +177,12 @@ Options:
 - Q-1 (deferred 2026-11-10: to an SC61860 product): Hold, readiness and sequences for the PC-1403 and PC-1350 come
   from their key-scan routines (SC61860 knowledge base,
   `PC-140x-Keyboard.md`); not needed before an SC61860 product exists.
-- Q-3 (answered 2026-11-10, user, with `debugger.md` Q-1): when this is built
+- Q-3 (answered 2026-11-10, user, with `debugger.md` Q-1; researched 2026-11-14, first step 15: the readiness signal is `WAIT_4_KB` with 7B0E bit 0 clear, C1600-1 AC-21): when this is built
   in phase 6, the PC-1500's key-scan loop is researched and key readiness
   implemented; the fixed cadence then goes. Background: A key-readiness signal for the PC-1500 (for example key-matrix
   reads through the LH5811, as the PC-1600's port 37H reads); until it is
   found, the fixed cadence stays.
-- Q-2 (phase 6, Calc-U-59 tests): Whether 100 ms of emulated time is enough everywhere the TI wall
+- Q-2 (answered 2026-11-14, first step 5: not for a tap of R/S while a program prints; the user ruled the fallback of LIB-5, a TI tap is held until the ROM has sampled it): Whether 100 ms of emulated time is enough everywhere the TI wall
   time worked, for example presses during a running program; to be
   checked by Calc-U-59's tests in phase 6.
 

@@ -286,20 +286,20 @@ What is shown
   `Core/PC1600/PC1600TypedInput.hpp:26-111`). In typed text a lower-case
   letter is `shift` and its key, so that the case is kept
   (`Core/PC1500/PC1500TypedInput.hpp:25-42`).
-- [ ] **AC-31** — Given a host key held down on the PC-1600, or a cursor
-  key or Backspace held down on the PC-1500 and PC-1500A, then its key
-  stays down until it is released, so that the ROM's own auto-repeat
-  works, as today (`Shared/MachineSession.cpp:371-407`).
-- [ ] **AC-32** — Given any other host key on the PC-1500 and PC-1500A,
-  then it is typed as today: one press of 4 frames down and 4 frames
-  up, from a queue of at most 16 that drops the newest key when it is
-  full, however long the user holds the key
-  (`Core/PC1500/PC1500Machine.cpp:342-377`). This holds until the
-  research of the PC-1500's key handling is done, when this feature is
-  built: if it finds a key readiness signal, AC-31 holds for every key
-  of the PC-1500 and this criterion is struck, as behaviour change
-  1600-8 describes; if it finds none, this criterion stays and row
-  1600-8 is corrected. The spec is changed then, with the user (OQ-10).
+- [ ] **AC-31** — Given a host key held down on the PC-1600, the
+  PC-1500 or the PC-1500A, then its key stays down until it is released,
+  so that the ROM's own auto-repeat works where the ROM has one (on the
+  PC-1500 and PC-1500A the four cursor keys), as today for the PC-1600
+  and for the PC-1500's cursor keys and Backspace
+  (`Shared/MachineSession.cpp:371-407`). On the PC-1500 and PC-1500A a
+  press that waits goes down at key readiness (C1600-1 AC-21); since the
+  research of first step 15 this holds for every key (behaviour change
+  1600-8).
+- **AC-32** — *Withdrawn (user, 2026-11-14): the research of the
+  PC-1500's key handling found a key readiness signal (first step 15,
+  OQ-10), so AC-31 holds for every key of the PC-1500 and PC-1500A.* It
+  kept today's cadence of 4 frames down and 4 up from a queue of 16
+  (`Core/PC1500/PC1500Machine.cpp:342-377`).
 - [ ] **AC-33** — Given the SHIFT key of the host is tapped alone,
   pressed and let go within 400 ms with nothing else in between, then
   the machine's `shift` key is pressed once
@@ -369,6 +369,10 @@ What is shown
   the user's hand, not about the machine; the frontend measures it.
 - The research of OQ-10 is recorded in the PC-1500 research repository
   before the cadence is removed.
+- On a TI model a tap is held at least the minimum hold and, where 100 ms
+  are too short (a tap of R/S while a program prints: first step 5), until
+  the ROM has sampled it, by the fallback below; the design says how
+  the machine tells that the key was sampled (user, 2026-11-14).
 - A ROM does not take keys at every moment: while a program runs it
   samples a few keys from time to time (R/S and GTO on the TI models,
   BREAK on the Sharp ones), and key readiness can be a short window. A
@@ -451,3 +455,5 @@ What is shown
 | `key` and `type` reply when carried out (keys up, ENTER up); waiting until idle is `wait`, and in a preset the implicit wait (AC-17) | question F-15 of `docs/walkthroughs/presets.md` §5.4, left to the specification by the user on 2026-11-13 ("what works best for agentic use") | 2026-11-13 |
 | A key held when the machine is paused comes up after the rest of its hold in the host's time (in the harness at once), on the paused machine; the ROM, which took the key while it was down, does not look at it again until its program has ended (AC-20) | user, 2026-11-13 (B-2 of `docs/walkthroughs/presets.md` §5.2) | 2026-11-13 |
 | Sharp presses as today: 4 + 4 frames, on the PC-1600 at key readiness (at most 15 s), on the PC-1500 at once; after `skip-wait:` at once; the waits after ENTER go (AC-14, AC-28, EC-3). Replaces the 2-frame minimum and prompt readiness for `type` | user, 2026-11-13 (B-4 of `docs/walkthroughs/presets.md` §5.2) | 2026-11-13 |
+| The PC-1500's key handling was researched: a readiness signal exists (`WAIT_4_KB` with 7B0E bit 0 clear); AC-31 holds for every key of the PC-1500 and PC-1500A, AC-32 is withdrawn (OQ-10) | user, 2026-11-14 (first step 15, `docs/walkthroughs/first-steps.md`) | 2026-11-14 |
+| On a TI model 100 ms of emulated hold are too short for a tap of R/S while a program prints; the fallback of Technical Requirements applies to TI taps: held until the ROM has sampled the key | user, 2026-11-14 (first step 5) | 2026-11-14 |

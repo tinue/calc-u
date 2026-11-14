@@ -367,8 +367,8 @@ Traces
 - [ ] **AC-38** — Given a Sharp machine, then it has the level `cpu`
   only; a pause lands before the next instruction. `pause-on-start: cpu`
   fires when the processor leaves key readiness: on the PC-1600 as it is
-  found today, on the PC-1500 and PC-1500A once its key handling has
-  been researched (`debugger.md` Q-1; C1600-1 AC-21).
+  found today, on the PC-1500 and PC-1500A as its research found it
+  (first step 15; `debugger.md` Q-1; C1600-1 AC-21).
 - [ ] **AC-39** — Given a PC-1600, then a step of one target runs the
   machine until that target has carried out an instruction, the other
   target running meanwhile when it has the bus; after a resume only the
@@ -496,3 +496,4 @@ Traces
 | A TI trace holds the CPU's log only: the key and card records go, in every trace (AC-33) | user, 2026-11-13 (B-17 of `docs/walkthroughs/presets.md` §5.2): early debug aids, never reliable | 2026-11-13 |
 | In an ASM overlay a pause lands after 50000 instructions whatever the processor does (AC-29) | user, 2026-11-13 (B-18 of `docs/walkthroughs/presets.md` §5.2) | 2026-11-13 |
 | Aligned with `docs/formats/` after the Q&A round: no command for `debug-panel:` (AC-20); trace records are the CPU log (Technical Requirements); OQ-1 cites AC-22 to AC-26 | user rulings of 2026-11-13 (`docs/walkthroughs/presets.md` §5.2, §5.4); `docs/formats/` | 2026-11-13 |
+| `pause-on-start: cpu` is offered on the PC-1500 and PC-1500A: the research found their key readiness (AC-38) | user, 2026-11-14 (first step 15, `docs/walkthroughs/first-steps.md`) | 2026-11-14 |

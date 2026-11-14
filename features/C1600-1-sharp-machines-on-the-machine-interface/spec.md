@@ -142,10 +142,11 @@ Key readiness
   AC-42) whenever its ROM is ready to accept a key press, as it is found
   today from the ROM reading the key matrix
   (`Core/PC1600/PC1600BasicTyper.cpp:159-182`). Given a PC-1500 or
-  PC-1500A, then it reports key readiness when its ROM waits at the
-  BASIC prompt or at a prompt that takes a key, such as `NEW0? :CHECK`,
-  until its key handling has been researched (`typing.md` Q-3; today
-  `Core/PC1500/PC1500TypedInput.hpp:51`).
+  PC-1500A, then it reports key readiness while the processor is in the
+  ROM's key wait `WAIT_4_KB` (E243-E33D) with bit 0 of `CURS_CTRL` (7B0E)
+  clear, as the research of its key handling found it (first step 15;
+  `typing.md` Q-3; today it waits at the BASIC prompt or a prompt that
+  takes a key, `Core/PC1500/PC1500TypedInput.hpp:51`).
 
 Display and sound
 - [ ] **AC-13** — Given a PC-1500 or PC-1500A, then its display output
@@ -313,3 +314,4 @@ One seam
 | A Cold boot empties a RAM module without a battery of its own (AC-6) | user, 2026-11-11; behaviour change 1600-16 | 2026-11-11 |
 | Presets and the harness match key names without regard to case and take `break` for `on`; `ent` goes; the machine takes exactly its key IDs | LIB-5 OQ-6 (user, 2026-11-10, batch 4 gate); OQ-5 | 2026-11-10 |
 | The cassette of a CE-150 on a PC-1600 is not specified: it should work, and may not be tested yet (AC-16) | user, 2026-11-13 (LIB-7 OQ-9, §5.4 of `docs/walkthroughs/presets.md`): "should work, but might not be tested yet. The spec must not care here" | 2026-11-13 |
+| The PC-1500's key readiness is `WAIT_4_KB` (E243-E33D) with 7B0E bit 0 clear (AC-21) | user, 2026-11-14 (first step 15, `docs/walkthroughs/first-steps.md`) | 2026-11-14 |

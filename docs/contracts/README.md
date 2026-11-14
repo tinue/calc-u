@@ -88,7 +88,7 @@ product code.
 
 ## Open questions left after the forks (2026-11-10)
 
-Every contract lists its open questions with their status. Still open (answered rows removed 2026-11-13):
+Every contract lists its open questions with their status. Still open (answered rows removed 2026-11-13 and 2026-11-14):
 
 | Where | Question | Settled in |
 |---|---|---|
@@ -96,7 +96,5 @@ Every contract lists its open questions with their status. Still open (answered 
 | `peripherals.md` Q-2 | PC-1403 / PC-1350 behaviour on a peripheral or RAM card change | an SC61860 product (as above) |
 | `peripherals.md` Q-3 | TMC0540 slot signals = the chip's pins (assumed) | when the slot is modelled at contact level (ADR 0011) |
 | `typing.md` Q-1 | PC-1403 / PC-1350 hold, readiness, sequences | an SC61860 product |
-| `typing.md` Q-2 | 100 ms emulated hold enough everywhere | phase 6, Calc-U-59 tests |
-| `typing.md` Q-3, `debugger.md` Q-1 | PC-1500 key-scan loop: research and implement key readiness | phase 6 |
 | `presets.md` Q-1 | upgrade of the shipped and hosted presets | phase 6 |
 | `harness.md` Q-2 | a Python helper for `calcu serve` | phase 6, with the skills |

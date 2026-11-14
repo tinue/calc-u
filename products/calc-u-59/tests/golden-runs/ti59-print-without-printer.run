@@ -1,0 +1,7 @@
+# First step 8: a program that executes print instructions, without the PC-100C.
+model TI-59
+printer off
+boot
+keys LRN 5 Prt Adv Prt R/S LRN
+keys RST R/S
+idle

@@ -1,0 +1,23 @@
+# First step 9: 2nd Pgm 01 with no module in the slot, sampled every 0.1 s.
+model TI-59
+module none
+boot
+keys Pgm 0 1
+run 0.1
+run 0.1
+run 0.1
+run 0.1
+run 0.1
+run 0.1
+run 0.1
+run 0.1
+keys SBR =
+run 0.1
+run 0.1
+run 0.1
+run 0.1
+run 0.1
+run 0.1
+run 0.1
+run 0.1
+keys CLR

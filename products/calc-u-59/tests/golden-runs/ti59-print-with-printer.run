@@ -1,0 +1,7 @@
+# The same program with the PC-100C, for the tick counts of first step 8.
+model TI-59
+printer on
+boot
+keys LRN 5 Prt Adv Prt R/S LRN
+keys RST R/S
+idle

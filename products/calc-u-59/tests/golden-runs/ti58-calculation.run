@@ -1,0 +1,6 @@
+model TI-58
+boot
+keys 7 * 6 =
+keys 1 / 0 =
+run 0.3
+keys CLR

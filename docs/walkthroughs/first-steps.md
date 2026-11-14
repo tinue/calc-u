@@ -180,6 +180,11 @@ ruled on 2026-11-13, and the steps below are worded accordingly:
   as read from the code".
 - **If 2.3.0 already keeps the partition:** row 59-22 goes; AC-6
   stands.
+- **Result (2026-11-14, M-8; golden runs `ti59-reset-partition`,
+  `ti58-reset-partition` in `products/calc-u-59/tests/golden-runs/`):**
+  2.3.0's Reset (`softReset`) puts the partition back to the ROM's
+  default: TI-59 639.39 → 479.59, TI-58 319.19 → 239.29, while the
+  registers and the program stay. Row 59-22 stands.
 
 ### 8. Print instructions without a printer (check, by a golden run)
 - **What:** a program that executes print instructions, run without
@@ -189,6 +194,14 @@ ruled on 2026-11-13, and the steps below are worded accordingly:
   processor).
 - **If the ROM never executes a print instruction without a printer:**
   AC-7 holds trivially and the design is free.
+- **Result (2026-11-14, M-8; golden runs `ti59-print-without-printer`,
+  `ti59-print-with-printer`, and an instruction trace with `tools/headless`):**
+  without the PC-100C the program `5 Prt Adv Prt R/S` runs to its end
+  with the same display and prints nothing, in 16 543 ticks against
+  27 119 with it; the ROM executes no print instruction then (one
+  `PRT.STEP`, no `PRT.GO`, `PRT.OUT` or `PRT.FEED`; with the printer
+  3330 `PRT.STEP`, 2 `PRT.GO`, 2 `PRT.FEED`). AC-7 holds trivially; the
+  design is free.
 
 ### 9. An empty module slot (check, by a golden run)
 - **What:** `2nd Pgm 01` with no module, on the code as imported, with
@@ -199,6 +212,10 @@ ruled on 2026-11-13, and the steps below are worded accordingly:
 - **If the emulated ROM does something else:** the slot's model of "no
   module" is wrong, not the criterion; it is corrected until the run
   shows the blink.
+- **Result (2026-11-14, M-8; golden runs `ti59-no-module`,
+  `ti58-no-module`):** with no module loaded, `2nd Pgm 01` (and `SBR =`)
+  makes the display blink `0.` on and off until CLR, on the TI-59 and the
+  TI-58. C59-6 AC-10 stands as the code does it today.
 
 ### 10. An empty card side (check)
 - **What:** a side without a bank inserted while the calculator waits

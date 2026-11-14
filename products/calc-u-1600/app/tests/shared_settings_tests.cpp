@@ -6,19 +6,15 @@
 
 #include "MemorySettingsStore.hpp"
 #include "app/AppPaths.hpp"
-#include "SharedTestSupport.hpp"
+#include "TestHarness.hpp"
 
 namespace {
-
-int g_pass = 0;
-int g_fail = 0;
-#define CHECK(cond) SHARED_CHECK(g_pass, g_fail, cond)
 
 namespace fs = std::filesystem;
 using shared::Model;
 using shared::OpenFolder;
 
-void test_defaults_and_keys() {
+TEST(test_defaults_and_keys) {
     MemorySettingsStore store;
     shared::Settings s(store);
     CHECK(s.traceMaxFileSizeMB() == 50);
@@ -47,7 +43,7 @@ void test_defaults_and_keys() {
     CHECK(store.values["hostDrive/openDir"] == "/drive");
 }
 
-void test_startup_model() {
+TEST(test_startup_model) {
     MemorySettingsStore store;
     shared::Settings s(store);
     s.setLastUsedModel(static_cast<int>(Model::PC1600));
@@ -59,7 +55,7 @@ void test_startup_model() {
     CHECK(s.startupModel() == Model::PC1500A);
 }
 
-void test_open_start_dir() {
+TEST(test_open_start_dir) {
     MemorySettingsStore store;
     shared::Settings s(store);
     CHECK(s.openStartDir(OpenFolder::Basic, "/home") == "/home");
@@ -72,7 +68,7 @@ void test_open_start_dir() {
     CHECK(s.openStartDir(OpenFolder::Basic, "/home") == "/fixed");
 }
 
-void test_app_paths() {
+TEST(test_app_paths) {
     const fs::path root = fs::temp_directory_path() / "calcu-shared-paths-test";
     fs::remove_all(root);
     const std::string home = (root / "home").generic_string();
@@ -117,12 +113,3 @@ void test_app_paths() {
 }
 
 } // namespace
-
-int run_shared_settings_tests() {
-    test_defaults_and_keys();
-    test_startup_model();
-    test_open_start_dir();
-    test_app_paths();
-    std::printf("shared_settings_tests: %d passed, %d failed\n", g_pass, g_fail);
-    return g_fail;
-}

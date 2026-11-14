@@ -127,12 +127,67 @@ if(CALCU_TESTS)
   )
 
   add_executable(CoreTests ${TEST_SOURCES})
-  target_link_libraries(CoreTests PRIVATE calcu_shared ZLIB::ZLIB)
+  # The one test runner (ADR 0038): library/testing/, its main() included.
+  target_link_libraries(CoreTests PRIVATE calcu_shared calcu_test_runner ZLIB::ZLIB)
   target_compile_options(CoreTests PRIVATE ${CALCU_WARNINGS})
   if(NOT CALCU_TESTS_DEBUG AND NOT MSVC)
     target_compile_options(CoreTests PRIVATE $<$<CONFIG:Debug>:-O1>)
   endif()
 
   enable_testing()
+  # Test groups (ADR 0031, docs/test-groups.md): labels frequent, longer,
+  # checkpoint; the last two only with CALCU_TESTS_LONGER / _CHECKPOINT.
   add_test(NAME CoreTests COMMAND CoreTests WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
+  set_tests_properties(CoreTests PROPERTIES LABELS frequent)
+  # Every preset in the repository parses (nothing is booted).
+  add_test(NAME CalcU1600CheckPresets COMMAND tools/check_presets.sh
+           WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
+  set_tests_properties(CalcU1600CheckPresets PROPERTIES LABELS frequent
+                       ENVIRONMENT PC1600_CLI=$<TARGET_FILE:pc1600_cli>)
+
+  # Longer: run locally before merging into main and at the end of a part.
+  if(CALCU_TESTS_LONGER)
+    # Against frontends/web/dist/ (frontends/web/build.sh first); the WASM
+    # smoke builds in build/web itself (Emscripten).
+    add_test(NAME CalcU1600WebPlaywright COMMAND frontends/web/run-tests.sh
+             WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
+    add_test(NAME CalcU1600WasmSmoke COMMAND tools/build_wasm_check.sh
+             WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
+    set_tests_properties(CalcU1600WebPlaywright CalcU1600WasmSmoke PROPERTIES LABELS longer)
+    if(TARGET CalcU1600Qt)
+      # The screenshot scenarios run as checks: every shot is taken, into
+      # the build tree, not docs/images/.
+      file(GLOB CALCU1600_SCENARIOS ${CMAKE_CURRENT_SOURCE_DIR}/docs/developer/screenshots/guide/*.shots.yaml)
+      foreach(scenario ${CALCU1600_SCENARIOS})
+        get_filename_component(name ${scenario} NAME_WE)
+        add_test(NAME CalcU1600Shots.${name}
+                 COMMAND CalcU1600Qt --shots ${scenario} --shots-out ${CMAKE_CURRENT_BINARY_DIR}/shots-check/${name}
+                 WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
+        set_tests_properties(CalcU1600Shots.${name} PROPERTIES LABELS longer RUN_SERIAL TRUE)
+      endforeach()
+      find_package(Python3 COMPONENTS Interpreter)
+      if(Python3_FOUND)
+        add_test(NAME CalcU1600DapSmoke
+                 COMMAND ${Python3_EXECUTABLE} tools/dap_smoke.py --app $<TARGET_FILE:CalcU1600Qt>
+                 WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
+        set_tests_properties(CalcU1600DapSmoke PROPERTIES LABELS longer RUN_SERIAL TRUE)
+      endif()
+    endif()
+  endif()
+
+  # Checkpoint: run before a release.
+  if(CALCU_TESTS_CHECKPOINT)
+    # Ten minutes per model on the real clock (PC-1500A, then PC-1600).
+    add_test(NAME CalcU1600PacingRealClock COMMAND CoreTests pacing_longrun_real_clock
+             WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
+    set_tests_properties(CalcU1600PacingRealClock PROPERTIES LABELS checkpoint
+                         ENVIRONMENT CALCU1600_PACING_LONGRUN=600 TIMEOUT 1500)
+    if(TARGET CalcU1600Qt)
+      # The User Guide screenshots into docs/images/ (tools/make_screenshots.sh
+      # builds the app in build/app-1600).
+      add_test(NAME CalcU1600GuideScreenshots COMMAND tools/make_screenshots.sh
+               WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
+      set_tests_properties(CalcU1600GuideScreenshots PROPERTIES LABELS checkpoint RUN_SERIAL TRUE)
+    endif()
+  endif()
 endif()

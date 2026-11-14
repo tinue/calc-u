@@ -13,16 +13,9 @@
 #include "../core/PC1500/PC1500BasicTyper.hpp"
 #include "../core/PC1500/PC1500Machine.hpp"
 #include "TestCards.hpp"
+#include "TestHarness.hpp"
 
 namespace {
-
-int g_pass = 0;
-int g_fail = 0;
-
-#define CHECK(cond) do { \
-    if (cond) { g_pass++; } \
-    else { g_fail++; std::fprintf(stderr, "FAIL %s:%d: %s\n", __FILE__, __LINE__, #cond); } \
-} while (0)
 
 PinState makePins(uint16_t addr, bool y0) {
     PinState p;
@@ -34,12 +27,12 @@ PinState makePins(uint16_t addr, bool y0) {
 #define CE161_OR_FAIL(card, host)                                                         \
     auto card = bundledCard("ce161.card.yaml", host);                                     \
     if (!card) {                                                                          \
-        g_fail++; std::fprintf(stderr, "FAIL %s: frontends/qt6/resources/cards/ce161.card.yaml missing or unloadable\n", __func__); \
+        testharness::failCount()++; std::fprintf(stderr, "FAIL %s: frontends/qt6/resources/cards/ce161.card.yaml missing or unloadable\n", __func__); \
         return;                                                                           \
     }
 
 // Y0 alone selects all 16 KB; A0-A13 are the offset.
-void test_ce161_pin4_full_window() {
+TEST(test_ce161_pin4_full_window) {
     CE161_OR_FAIL(owned, CardHost::PC1500);
     SoftwareDefinedCard& card = *owned;
     uint8_t v;
@@ -62,7 +55,7 @@ void test_ce161_pin4_full_window() {
 }
 
 // &0000-&3FFF on both models, right below the built-in RAM.
-void test_ce161_end_to_end_via_machine() {
+TEST(test_ce161_end_to_end_via_machine) {
     for (PC1500Variant variant : {PC1500Variant::PC1500, PC1500Variant::PC1500A}) {
         const CardHost host = variant == PC1500Variant::PC1500 ? CardHost::PC1500 : CardHost::PC1500A;
         CE161_OR_FAIL(card, host);
@@ -77,7 +70,7 @@ void test_ce161_end_to_end_via_machine() {
     }
 }
 
-void test_ce161_hosts() {
+TEST(test_ce161_hosts) {
     CHECK(bundledCard("ce161.card.yaml", CardHost::PC1500) != nullptr);
     CHECK(bundledCard("ce161.card.yaml", CardHost::PC1500A) != nullptr);
     CHECK(bundledCard("ce161.card.yaml", CardHost::PC1600Slot1) != nullptr);
@@ -149,19 +142,9 @@ void protectedProgramModule(PC1500Variant variant) {
     CHECK(m.memory().peek(0x0100) == 0x00 && m.memory().peek(0x0101) == 0x0A);  // line 10 untouched
 }
 
-void test_ce161_protected_program_module_with_rom() {
+TEST(test_ce161_protected_program_module_with_rom) {
     protectedProgramModule(PC1500Variant::PC1500);
     protectedProgramModule(PC1500Variant::PC1500A);
 }
 
 } // namespace
-
-int run_ce161_tests() {
-    test_ce161_pin4_full_window();
-    test_ce161_end_to_end_via_machine();
-    test_ce161_hosts();
-    test_ce161_protected_program_module_with_rom();
-
-    std::printf("ce161_tests: %d passed, %d failed\n", g_pass, g_fail);
-    return g_fail;
-}

@@ -15,16 +15,9 @@
 #include "../core/Connector/CE1600FCard.hpp"
 #include "../core/Connector/FloppyImageFile.hpp"
 #include "../core/PC1600/PC1600BusDrive.hpp"
+#include "TestHarness.hpp"
 
 namespace {
-
-int g_pass = 0;
-int g_fail = 0;
-
-#define CHECK(cond) do { \
-    if (cond) { g_pass++; } \
-    else { g_fail++; std::fprintf(stderr, "FAIL %s:%d: %s\n", __FILE__, __LINE__, #cond); } \
-} while (0)
 
 SystemBusPins ioPins(uint8_t port, bool forWrite) {
     return PC1600BusDrive::z80IoPins(port, forWrite);
@@ -43,7 +36,7 @@ void writeReg(CE1600FCard& card, uint8_t port, uint8_t value) {
 // A freshly constructed card has no disk: base+0 bit3 (disk-in-drive) is
 // clear, and a sector command finds nothing -- the ROM reports that as
 // ERROR 160. Inserting a disk sets bit3; ejecting clears it again.
-void test_default_construction_is_empty_drive() {
+TEST(test_default_construction_is_empty_drive) {
     CE1600FCard card;
     CHECK(!card.hasDisk());
     CHECK((readReg(card, 0x78) & 0x08) == 0);
@@ -72,7 +65,7 @@ void test_default_construction_is_empty_drive() {
 // file offset 0x413 (write 0x81 to base+2) / 0x480 (poll base+0 bit7).
 // The Service Manual's own "Motor startup time: 0.5 second" spec is
 // modeled as a real timed busy window (advance()), not instant completion.
-void test_motor_start_clears_engine_not_started_bit() {
+TEST(test_motor_start_clears_engine_not_started_bit) {
     CE1600FCard card;
     card.insertBlankDisk();
     uint8_t status = readReg(card, 0x78);
@@ -88,7 +81,7 @@ void test_motor_start_clears_engine_not_started_bit() {
 // Write a full sector via the command(0x60)/sector(0x79)/data(0x7B)
 // registers, then read it back via command(0x40) -- confirms the
 // base+0/+1/+3 addressing and the auto-incrementing byte offset.
-void test_write_then_read_sector_round_trip() {
+TEST(test_write_then_read_sector_round_trip) {
     CE1600FCard card;
     card.insertBlankDisk();
     const uint64_t revBefore = card.revision();
@@ -122,7 +115,7 @@ void seekTo(CE1600FCard& card, uint8_t track) {
 // Format track (0xA0), as at bank-5 0x4555-0x4586: eight 3-byte ID fields
 // (track, sector, 1) through DATA, then the track's data is laid down --
 // the current head track only, leaving the rest of the disk alone.
-void test_format_track_takes_eight_id_fields_and_clears_the_head_track() {
+TEST(test_format_track_takes_eight_id_fields_and_clears_the_head_track) {
     CE1600FCard card;
     card.insertBlankDisk();
     std::vector<uint8_t> image(CE1600FCard::kImageSize, 0x77);
@@ -150,7 +143,7 @@ void test_format_track_takes_eight_id_fields_and_clears_the_head_track() {
 // the ID field (track, sector, size code) -- the seek-verify at bank-5
 // 0x4976-0x49a9 compares its first byte against the seek target. Busy
 // stays set while the three bytes are read and drops right after.
-void test_seek_then_read_id_returns_the_target_track() {
+TEST(test_seek_then_read_id_returns_the_target_track) {
     CE1600FCard card;
     card.insertBlankDisk();
     seekTo(card, 5);
@@ -174,7 +167,7 @@ void test_seek_then_read_id_returns_the_target_track() {
 
 // The sector register selects 0-7 within the head's current track, so the
 // same sector number on different tracks addresses different image bytes.
-void test_sector_address_combines_head_track_and_sector_register() {
+TEST(test_sector_address_combines_head_track_and_sector_register) {
     CE1600FCard card;
     card.insertBlankDisk();
     seekTo(card, 3);
@@ -189,7 +182,7 @@ void test_sector_address_combines_head_track_and_sector_register() {
 // The sector is latched when the command is issued: rewriting the sector
 // register mid-transfer (here to 0xFF, far past the image on side B's last
 // track) must neither move the transfer nor reach outside the image.
-void test_sector_register_rewrite_mid_transfer_keeps_the_latched_sector() {
+TEST(test_sector_register_rewrite_mid_transfer_keeps_the_latched_sector) {
     CE1600FCard card;
     card.insertBlankDisk();
     card.setSide(1);
@@ -215,7 +208,7 @@ void test_sector_register_rewrite_mid_transfer_keeps_the_latched_sector() {
 
 // Outside a write transfer, DATA is only a latch (the seek target) -- it
 // must never land in the disk image.
-void test_data_writes_outside_a_transfer_do_not_touch_the_image() {
+TEST(test_data_writes_outside_a_transfer_do_not_touch_the_image) {
     CE1600FCard card;
     card.insertBlankDisk();
     const uint64_t revBefore = card.revision();
@@ -227,7 +220,7 @@ void test_data_writes_outside_a_transfer_do_not_touch_the_image() {
 
 // A transfer the ROM abandons part-way (the verify bail-out at bank-5
 // 0x4909) still completes on its own once the sector has passed the head.
-void test_abandoned_transfer_times_out() {
+TEST(test_abandoned_transfer_times_out) {
     CE1600FCard card;
     card.insertBlankDisk();
     writeReg(card, 0x79, 0);
@@ -241,7 +234,7 @@ void test_abandoned_transfer_times_out() {
 // Port 0x81 bit0 write (active-low) resets latched command/motor state --
 // confirmed at bank-5 file offset 0xf7 (`xor a` / `out (081h),a`). This
 // must not collide with CE1600PCard's own (read-only) use of port 0x81.
-void test_port_0x81_reset_clears_motor_and_command_state() {
+TEST(test_port_0x81_reset_clears_motor_and_command_state) {
     CE1600FCard card;
     card.insertBlankDisk();
     writeReg(card, 0x7A, 0x81);  // motor on
@@ -254,7 +247,7 @@ void test_port_0x81_reset_clears_motor_and_command_state() {
 
 // loadImage()/insertBlankDisk() bump the revision -- the change counter
 // FloppyDiskManager polls on each frame tick to decide on autosave.
-void test_load_image_and_insert_blank_bump_revision() {
+TEST(test_load_image_and_insert_blank_bump_revision) {
     CE1600FCard card;
     card.insertBlankDisk();
     std::vector<uint8_t> image(CE1600FCard::kImageSize, 0x77);
@@ -274,7 +267,7 @@ void test_load_image_and_insert_blank_bump_revision() {
 // A freshly constructed/blanked/loaded card reports "disk changed" (base+2
 // bit6) until a seek command (0x20) acknowledges it -- modeled on a real
 // FDC's DSKCHG latch.
-void test_disk_changed_latch_starts_set_and_clears_on_step() {
+TEST(test_disk_changed_latch_starts_set_and_clears_on_step) {
     CE1600FCard card;
     card.insertBlankDisk();
     CHECK((readReg(card, 0x7A) & 0x40) != 0);
@@ -290,7 +283,7 @@ void test_disk_changed_latch_starts_set_and_clears_on_step() {
 // immediately polls base+2 -- if the changed-disk latch only cleared on
 // 0x20 (an earlier draft's unconfirmed guess), that poll would still see
 // it set and DSKINIT would abort. The latch must clear on any command.
-void test_disk_changed_latch_clears_on_any_command_not_just_step() {
+TEST(test_disk_changed_latch_clears_on_any_command_not_just_step) {
     CE1600FCard card;
     card.insertBlankDisk();
     CHECK((readReg(card, 0x7A) & 0x40) != 0);
@@ -302,7 +295,7 @@ void test_disk_changed_latch_clears_on_any_command_not_just_step() {
 // it re-arms the changed-disk latch and switches which 64KB half of the
 // image sector/data access addresses, without disturbing the other side's
 // contents.
-void test_set_side_switches_data_and_rearms_changed_latch() {
+TEST(test_set_side_switches_data_and_rearms_changed_latch) {
     CE1600FCard card;
     card.insertBlankDisk();
     writeReg(card, 0x78, 0x20);  // acknowledge the initial changed-disk latch
@@ -338,7 +331,7 @@ void test_set_side_switches_data_and_rearms_changed_latch() {
 // bytes are being moved -- the ROM's transfer loops (bank-5 0x4841) treat
 // busy dropping mid-transfer as an error -- and releases it right after
 // the last byte, well inside the ~9ms `sub_44e4` b=1 poll that follows.
-void test_transfer_holds_busy_until_the_last_byte() {
+TEST(test_transfer_holds_busy_until_the_last_byte) {
     CE1600FCard card;
     card.insertBlankDisk();
     writeReg(card, 0x79, 0);
@@ -353,7 +346,7 @@ void test_transfer_holds_busy_until_the_last_byte() {
 
 // A seek busies the drive for the real mechanical time (Service Manual
 // §1: 80ms per track + 50ms settling) before base+2 bit0/bit7 clear.
-void test_seek_busies_the_drive_for_the_real_step_time() {
+TEST(test_seek_busies_the_drive_for_the_real_step_time) {
     CE1600FCard card;
     card.insertBlankDisk();
     writeReg(card, 0x7B, 4);
@@ -367,7 +360,7 @@ void test_seek_busies_the_drive_for_the_real_step_time() {
 
 // motorOn() is the "green lamp" the GUI reads to tell the user when it's
 // safe to eject and flip the disk.
-void test_motor_on_reflects_motor_register_writes() {
+TEST(test_motor_on_reflects_motor_register_writes) {
     CE1600FCard card;
     card.insertBlankDisk();
     CHECK(!card.motorOn());
@@ -379,7 +372,7 @@ void test_motor_on_reflects_motor_register_writes() {
 
 // Only ports 0x70-0x7F and the write side of 0x81 are claimed -- everything
 // else (e.g. CE1600PCard's own 0x81 read, 0x82/0x83) must be left alone.
-void test_claims_only_its_own_ports() {
+TEST(test_claims_only_its_own_ports) {
     CE1600FCard card;
     card.insertBlankDisk();
     uint8_t v = 0;
@@ -410,7 +403,7 @@ size_t countLines(const std::string& s) {
     return n;
 }
 
-void test_floppy_file_round_trips_both_sides() {
+TEST(test_floppy_file_round_trips_both_sides) {
     const auto image = patternedImage();
     const std::string text = formatFloppyFile("My Disk", image);
     CHECK(text.find("format-version: 1\n") != std::string::npos);
@@ -423,7 +416,7 @@ void test_floppy_file_round_trips_both_sides() {
 
 // `description:` is written when set (single-quoted around a '"') and read
 // back, by the full parse and by the header-only catalogue entry.
-void test_floppy_file_description_round_trips() {
+TEST(test_floppy_file_description_round_trips) {
     const std::vector<uint8_t> blank(CE1600FCard::kImageSize, 0);
     for (const std::string d : {std::string("Two formatted sides"), std::string("The \"Progs\" disk")}) {
         const std::string text = formatFloppyFile("D", blank, false, d);
@@ -441,14 +434,14 @@ void test_floppy_file_description_round_trips() {
     CHECK(f.description.empty());
 }
 
-void test_floppy_file_blank_disk_is_compact() {
+TEST(test_floppy_file_blank_disk_is_compact) {
     const std::vector<uint8_t> blank(CE1600FCard::kImageSize, 0);
     const std::string text = formatFloppyFile("Empty", blank);
     CHECK(text.find("      $0000: 00...\n") != std::string::npos);
     CHECK(countLines(text) < 20);
 }
 
-void test_floppy_file_rejects_missing_or_unknown_version() {
+TEST(test_floppy_file_rejects_missing_or_unknown_version) {
     const std::string good = formatFloppyFile("V", std::vector<uint8_t>(CE1600FCard::kImageSize, 0));
     FloppyFile f;
     std::string err;
@@ -469,7 +462,7 @@ void test_floppy_file_rejects_missing_or_unknown_version() {
     CHECK(!parseFloppyFile(wrongFormat, &f, &err));
 }
 
-void test_floppy_file_rejects_wrong_side_size() {
+TEST(test_floppy_file_rejects_wrong_side_size) {
     const std::string good = formatFloppyFile("S", std::vector<uint8_t>(CE1600FCard::kImageSize, 0));
     // Side B cut short: one explicit 16-byte row instead of a run to $10000.
     std::string shortSide = good;
@@ -489,7 +482,7 @@ void writeText(const std::filesystem::path& p, const std::string& text) {
     std::ofstream(p, std::ios::binary) << text;
 }
 
-void test_floppy_directory_resolution_prefers_first_dir() {
+TEST(test_floppy_directory_resolution_prefers_first_dir) {
     namespace fs = std::filesystem;
     const fs::path root = fs::temp_directory_path() / "calcu_floppy_resolve_test";
     fs::remove_all(root);
@@ -527,33 +520,3 @@ void test_floppy_directory_resolution_prefers_first_dir() {
 }
 
 }  // namespace
-
-int run_ce1600f_tests() {
-    test_default_construction_is_empty_drive();
-    test_motor_start_clears_engine_not_started_bit();
-    test_write_then_read_sector_round_trip();
-    test_format_track_takes_eight_id_fields_and_clears_the_head_track();
-    test_seek_then_read_id_returns_the_target_track();
-    test_sector_address_combines_head_track_and_sector_register();
-    test_sector_register_rewrite_mid_transfer_keeps_the_latched_sector();
-    test_data_writes_outside_a_transfer_do_not_touch_the_image();
-    test_abandoned_transfer_times_out();
-    test_port_0x81_reset_clears_motor_and_command_state();
-    test_load_image_and_insert_blank_bump_revision();
-    test_disk_changed_latch_starts_set_and_clears_on_step();
-    test_disk_changed_latch_clears_on_any_command_not_just_step();
-    test_set_side_switches_data_and_rearms_changed_latch();
-    test_motor_on_reflects_motor_register_writes();
-    test_transfer_holds_busy_until_the_last_byte();
-    test_seek_busies_the_drive_for_the_real_step_time();
-    test_claims_only_its_own_ports();
-    test_floppy_file_round_trips_both_sides();
-    test_floppy_file_description_round_trips();
-    test_floppy_file_blank_disk_is_compact();
-    test_floppy_file_rejects_missing_or_unknown_version();
-    test_floppy_file_rejects_wrong_side_size();
-    test_floppy_directory_resolution_prefers_first_dir();
-
-    std::printf("ce1600f_tests: %d passed, %d failed\n", g_pass, g_fail);
-    return g_fail;
-}

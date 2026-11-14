@@ -15,13 +15,9 @@
 #include "app/MachineSession.hpp"
 #include "app/ModuleBay.hpp"
 #include "app/TapeBay.hpp"
-#include "SharedTestSupport.hpp"
+#include "TestHarness.hpp"
 
 namespace {
-
-int g_pass = 0;
-int g_fail = 0;
-#define CHECK(cond) SHARED_CHECK(g_pass, g_fail, cond)
 
 namespace fs = std::filesystem;
 using shared::Model;
@@ -103,7 +99,8 @@ struct Fixture {
     }
 };
 
-void test_module_bay() {
+TEST(test_module_bay) {
+    SKIP_UNLESS(std::ifstream("roms/PC1600-P0-B0-new.bin").good(), "no ROMs in roms/");
     Fixture f;
     const auto lists = f.modules->moduleLists(CardHost::PC1600Slot1);
     CHECK(contains(lists.templates, "CE-1600M"));
@@ -139,7 +136,8 @@ void test_module_bay() {
     CHECK(f.modules->selectedModuleName(1).empty());
 }
 
-void test_floppy_bay() {
+TEST(test_floppy_bay) {
+    SKIP_UNLESS(std::ifstream("roms/PC1600-P0-B0-new.bin").good(), "no ROMs in roms/");
     Fixture f;
     const auto lists = f.floppy->diskLists();
     CHECK(contains(lists.templates, "Formatted"));
@@ -184,7 +182,8 @@ void test_floppy_bay() {
     CHECK(fs::exists(saved));
 }
 
-void test_tape_bay() {
+TEST(test_tape_bay) {
+    SKIP_UNLESS(std::ifstream("roms/PC1600-P0-B0-new.bin").good(), "no ROMs in roms/");
     Fixture f;
     int changed = 0;
     shared::TapeBay tapes(*f.session, *f.paths, shared::TapeBay::Events{[&] { ++changed; }, {}});
@@ -207,7 +206,8 @@ void test_tape_bay() {
 
 // DirectoryScanCache: one parse while the files stay put; a new, grown or
 // removed file makes the next get() parse again.
-void test_directory_scan_cache() {
+TEST(test_directory_scan_cache) {
+    SKIP_UNLESS(std::ifstream("roms/PC1600-P0-B0-new.bin").good(), "no ROMs in roms/");
     const fs::path dir = fs::temp_directory_path() / "calcu-scan-cache-test";
     fs::remove_all(dir);
     fs::create_directories(dir);
@@ -230,17 +230,4 @@ void test_directory_scan_cache() {
     fs::remove(dir / "a.card.yaml");
     CHECK(cache.get(dir.string(), scan).empty() && scans == 4);
     fs::remove_all(dir);
-}
-
-int run_shared_bay_tests() {
-    test_directory_scan_cache();
-    if (!std::ifstream("roms/PC1600-P0-B0-new.bin").good()) {
-        std::printf("shared_bay_tests: SKIP (no ROMs in roms/)\n");
-        return 0;
-    }
-    test_module_bay();
-    test_floppy_bay();
-    test_tape_bay();
-    std::printf("shared_bay_tests: %d passed, %d failed\n", g_pass, g_fail);
-    return g_fail;
 }

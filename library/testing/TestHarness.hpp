@@ -5,9 +5,11 @@
 #include <string>
 #include <vector>
 
-// Minimal no-framework test harness (same assert-and-tally style as
-// Calc-U-1600's Core/tests). Each test file registers its cases with TEST();
-// tests/test_main.cpp runs them all and returns non-zero on any failure.
+// The one C++ test runner of the repository (ADR 0038): a TEST() registry
+// with assert-and-tally checks, no dependency. Each test file registers its
+// cases with TEST(); TestMain.cpp (target calcu_test_runner) runs them all
+// and returns non-zero on any failure. A product's test program links
+// calcu_test_runner and needs no main() of its own.
 
 namespace testharness {
 
@@ -16,10 +18,19 @@ struct Case { const char* name; std::function<void()> fn; };
 inline std::vector<Case>& registry() { static std::vector<Case> r; return r; }
 inline int& passCount() { static int n = 0; return n; }
 inline int& failCount() { static int n = 0; return n; }
+inline int& skipCount() { static int n = 0; return n; }
+inline const char*& currentName() { static const char* n = ""; return n; }
 
 struct Registrar {
     Registrar(const char* name, std::function<void()> fn) { registry().push_back({name, std::move(fn)}); }
 };
+
+// Marks the running test as skipped (a missing ROM image, say); the test
+// returns after it. A skip is neither a pass nor a failure.
+inline void skip(const char* why) {
+    skipCount()++;
+    std::printf("SKIP %s: %s\n", currentName(), why);
+}
 
 } // namespace testharness
 
@@ -42,6 +53,11 @@ struct Registrar {
     else { testharness::failCount()++; \
            std::fprintf(stderr, "FAIL %s:%d: %s == %s (%s vs %s)\n", __FILE__, __LINE__, #a, #b, \
                         testharness::show(th_a).c_str(), testharness::show(th_b).c_str()); } \
+} while (0)
+
+// Inside a TEST: skips the rest of it unless `cond` holds.
+#define SKIP_UNLESS(cond, why) do { \
+    if (!(cond)) { testharness::skip(why); return; } \
 } while (0)
 
 namespace testharness {

@@ -3,13 +3,9 @@
 #include <cstdio>
 
 #include "app/HostKeyMap.hpp"
-#include "SharedTestSupport.hpp"
+#include "TestHarness.hpp"
 
 namespace {
-
-int g_pass = 0;
-int g_fail = 0;
-#define CHECK(cond) SHARED_CHECK(g_pass, g_fail, cond)
 
 using shared::HostKey;
 using shared::HostModifiers;
@@ -21,7 +17,7 @@ bool is(const std::optional<shared::ResolvedKey>& r, const char* key, bool shift
     return r && r->baseKey == key && r->needsShift == shifted && r->needsKbii == kbii;
 }
 
-void test_special_keys() {
+TEST(test_special_keys) {
     for (bool mac : {false, true}) {
         CHECK(is(resolveHostKey(HostKey::Backspace, {}, 0, false, mac), "left"));
         CHECK(is(resolveHostKey(HostKey::Backspace, {}, 0, true, mac), "bs"));
@@ -40,7 +36,7 @@ void test_special_keys() {
     }
 }
 
-void test_characters() {
+TEST(test_characters) {
     CHECK(is(resolveHostKey(HostKey::Other, {}, 'A', false, true), "a"));
     CHECK(is(resolveHostKey(HostKey::Other, {}, 'z', false, true), "z"));
     CHECK(is(resolveHostKey(HostKey::Other, {}, '7', false, true), "7"));
@@ -56,7 +52,7 @@ void test_characters() {
     CHECK(resolveHostKey(HostKey::Other, {}, U'é', false, true) == std::nullopt);
 }
 
-void test_modifiers() {
+TEST(test_modifiers) {
     HostModifiers cmd; cmd.command = true;
     HostModifiers ctrl; ctrl.control = true;
     HostModifiers alt; alt.alt = true;
@@ -73,18 +69,9 @@ void test_modifiers() {
     CHECK(is(resolveHostKey(HostKey::Other, altGr, '+', false, false), "+"));
 }
 
-void test_repeat_keys() {
+TEST(test_repeat_keys) {
     CHECK(resolveHostKey(HostKey::Backspace, {}, 0, false, false)->isPc1500RepeatKey());
     CHECK(!resolveHostKey(HostKey::Return, {}, 0, false, false)->isPc1500RepeatKey());
 }
 
 } // namespace
-
-int run_shared_host_key_map_tests() {
-    test_special_keys();
-    test_characters();
-    test_modifiers();
-    test_repeat_keys();
-    std::printf("shared_host_key_map_tests: %d passed, %d failed\n", g_pass, g_fail);
-    return g_fail;
-}

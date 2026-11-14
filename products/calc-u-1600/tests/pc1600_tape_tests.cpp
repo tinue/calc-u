@@ -21,16 +21,9 @@
 
 #include "../core/PC1600/PC1600LcdText.hpp"
 #include "TestRoms.hpp"
+#include "TestHarness.hpp"
 
 namespace {
-
-int g_pass = 0;
-int g_fail = 0;
-
-#define CHECK(cond) do { \
-    if (cond) { g_pass++; } \
-    else { g_fail++; std::fprintf(stderr, "FAIL %s:%d: %s\n", __FILE__, __LINE__, #cond); } \
-} while (0)
 
 constexpr uint64_t kSecond = PC1600Machine::kTStateHz;
 constexpr uint16_t kProgramStart = 0xC0C5; // S0 BASIC program, Z-80 view
@@ -78,7 +71,7 @@ std::vector<float> asPlayback(const std::vector<int16_t>& recording) {
 }
 
 // A bin2wav tape CLOADs into exactly bas2img's program image.
-void test_cload_bin2wav_tape() {
+TEST(test_cload_bin2wav_tape) {
     const std::vector<uint8_t> image = readFile(kFixtureImg);
     PC1600Machine m;
     if (image.empty() || !bootWithCE1600P(m)) {
@@ -104,7 +97,7 @@ void test_cload_bin2wav_tape() {
 }
 
 // CSAVE onto a blank tape, then CLOAD that recording into a fresh machine.
-void test_csave_cload_round_trip() {
+TEST(test_csave_cload_round_trip) {
     const std::vector<uint8_t> image = readFile(kFixtureImg);
     PC1600Machine a;
     if (image.empty() || !bootWithCE1600P(a)) {
@@ -166,7 +159,7 @@ std::vector<int16_t> csaveInSlices(uint64_t slice) {
     return m.tapeDeck().recording();
 }
 
-void test_recording_independent_of_pacing() {
+TEST(test_recording_independent_of_pacing) {
     const std::vector<int16_t> small = csaveInSlices(997);
     if (small.empty()) {
         std::fprintf(stderr, "SKIP test_recording_independent_of_pacing: PC-1600 ROM images not found\n");
@@ -179,11 +172,3 @@ void test_recording_independent_of_pacing() {
 }
 
 } // namespace
-
-int run_pc1600_tape_tests() {
-    test_cload_bin2wav_tape();
-    test_csave_cload_round_trip();
-    test_recording_independent_of_pacing();
-    std::printf("pc1600_tape_tests: %d passed, %d failed\n", g_pass, g_fail);
-    return g_fail;
-}

@@ -20,16 +20,9 @@
 #include "../core/PC1600/PC1600Machine.hpp"
 #include "TestCards.hpp"
 #include "TestRoms.hpp"
+#include "TestHarness.hpp"
 
 namespace {
-
-int g_pass = 0;
-int g_fail = 0;
-
-#define CHECK(cond) do { \
-    if (cond) { g_pass++; } \
-    else { g_fail++; std::fprintf(stderr, "FAIL %s:%d: %s\n", __FILE__, __LINE__, #cond); } \
-} while (0)
 
 using machinecode::File;
 using machinecode::Slot;
@@ -68,7 +61,7 @@ std::vector<uint8_t> ce158File(const std::vector<uint8_t>& payload, uint16_t loa
 
 // ── readFile ─────────────────────────────────────────────────────────────
 
-void test_read_ce158() {
+TEST(test_read_ce158) {
     File f = machinecode::readFile(ce158File(kCode, 0x40C5, 0x40C7));
     CHECK(f.ok);
     CHECK(f.header == File::Header::CE158);
@@ -77,13 +70,13 @@ void test_read_ce158() {
     CHECK(f.payload == kCode);
 }
 
-void test_read_ffff_autorun_is_none() {
+TEST(test_read_ffff_autorun_is_none) {
     // &FFFF is the header's "no auto-start" default -- no XCALL/CALL advice.
     CHECK(machinecode::readFile(ce158File(kCode, 0x40C5, 0xFFFF)).autorunAddr == 0);
     CHECK(machinecode::readFile(pc1600File(kCode, 0xC0C5, 0xFFFF)).autorunAddr == 0);
 }
 
-void test_read_ce158_length_mismatch() {
+TEST(test_read_ce158_length_mismatch) {
     auto bytes = ce158File(kCode, 0x40C5, 0);
     bytes.push_back(0xAA);  // one byte more than the header's (length - 1) + 1
     File f = machinecode::readFile(bytes);
@@ -96,13 +89,13 @@ void test_read_ce158_length_mismatch() {
     CHECK(f.payload.size() == kCode.size() + 1);
 }
 
-void test_read_ce158_basic_type_rejected() {
+TEST(test_read_ce158_basic_type_rejected) {
     File f = machinecode::readFile(ce158File(kCode, 0, 0, /*type=*/0x40));
     CHECK(!f.ok);
     CHECK(f.error.find("not machine code") != std::string::npos);
 }
 
-void test_read_pc1600() {
+TEST(test_read_pc1600) {
     File f = machinecode::readFile(pc1600File(kCode, 0xC0C5, 0));
     CHECK(f.ok);
     CHECK(f.header == File::Header::PC1600);
@@ -111,13 +104,13 @@ void test_read_pc1600() {
     CHECK(f.payload == kCode);
 }
 
-void test_read_pc1600_basic_type_rejected() {
+TEST(test_read_pc1600_basic_type_rejected) {
     File f = machinecode::readFile(pc1600File(kCode, 0, 0, /*type=*/0x21));
     CHECK(!f.ok);
     CHECK(f.error.find("Load BASIC Program") != std::string::npos);
 }
 
-void test_read_basic_listing_rejected() {
+TEST(test_read_basic_listing_rejected) {
     const std::string bas = "10 PRINT \"HI\"\n20 END\n";
     File f = machinecode::readFile(std::vector<uint8_t>(bas.begin(), bas.end()));
     CHECK(!f.ok);
@@ -125,7 +118,7 @@ void test_read_basic_listing_rejected() {
     CHECK(f.error.find("Load BASIC Program") != std::string::npos);
 }
 
-void test_read_other_kinds_rejected() {
+TEST(test_read_other_kinds_rejected) {
     const std::string notes = "Just some notes,\nnot a program.\n";
     File text = machinecode::readFile(std::vector<uint8_t>(notes.begin(), notes.end()));
     CHECK(!text.ok);
@@ -136,7 +129,7 @@ void test_read_other_kinds_rejected() {
     CHECK(cut.error.find("no complete header") != std::string::npos);
 }
 
-void test_read_truncated() {
+TEST(test_read_truncated) {
     auto bytes = pc1600File(kCode, 0xC0C5, 0);
     bytes.pop_back();
     File f = machinecode::readFile(bytes);
@@ -147,7 +140,7 @@ void test_read_truncated() {
 }
 
 // `00` bytes before the header (e.g. from a serial capture) are skipped.
-void test_read_leading_noise() {
+TEST(test_read_leading_noise) {
     auto bytes = ce158File(kCode, 0x40C5, 0x40C7);
     bytes.insert(bytes.begin(), {0x00, 0x00});
     File f = machinecode::readFile(bytes);
@@ -156,7 +149,7 @@ void test_read_leading_noise() {
     CHECK(f.payload == kCode);
 }
 
-void test_read_headerless() {
+TEST(test_read_headerless) {
     File f = machinecode::readFile(kCode);
     CHECK(f.ok);
     CHECK(f.header == File::Header::None);
@@ -189,7 +182,7 @@ const PC1600State kStock = state(kStockAreas);
 const PC1600State kSlot1First = state(kSlot1FirstAreas);
 const PC1600State kSlot2First = state(kSlot2FirstAreas);
 
-void test_plan_model_mismatch() {
+TEST(test_plan_model_mismatch) {
     // A CE-158 (PC-1500) file: the PC-1600 takes it in MODE 1 only.
     auto ce158 = machinecode::readFile(ce158File(kCode, 0x40C5, 0));
     auto p = machinecode::plan(Target::PC1600, ce158, kStock);
@@ -206,7 +199,7 @@ void test_plan_model_mismatch() {
     CHECK(p.error.empty() && p.cpu == Cpu::Z80 && p.busAddr == 0xC0C5);
 }
 
-void test_plan_headerless_needs_address() {
+TEST(test_plan_headerless_needs_address) {
     auto f = machinecode::readFile(kCode);
     auto p1500 = machinecode::plan(Target::PC1500, f, {});
     CHECK(p1500.error.empty() && p1500.needsAddress && p1500.defaultAddr == 0);
@@ -223,7 +216,7 @@ void test_plan_headerless_needs_address() {
     CHECK(machinecode::plan(Target::PC1600, f, state(kStockAreas, false, 1)).defaultAddr == 0x80C5);
 }
 
-void test_plan_pc1600_target() {
+TEST(test_plan_pc1600_target) {
     // $C000-$FFFF always goes to internal RAM.
     auto s0 = machinecode::readFile(pc1600File(kCode, 0xC0C5, 0));
     auto p = machinecode::plan(Target::PC1600, s0, kSlot1First);
@@ -276,7 +269,7 @@ void test_plan_pc1600_target() {
     CHECK(p.error.find("&80C5") == std::string::npos);
 }
 
-void test_plan_load_configurations() {
+TEST(test_plan_load_configurations) {
     using machinecode::LoadError;
     using machinecode::LoadOptions;
     // A header whose length disagrees with the file (one byte too many).
@@ -346,7 +339,7 @@ void test_plan_load_configurations() {
 
 // ── advice ───────────────────────────────────────────────────────────────
 
-void test_advice_pc1500() {
+TEST(test_advice_pc1500) {
     // PC-1500A-style RAM $4000-$57FF: BASIC can start at $40C5 at the lowest.
     auto a = machinecode::advice(Target::PC1500, Slot::S0, 0, 0x40C5, 0x20, 0, 0x4000, 0x5800, {}, Cpu::Z80);
     CHECK(a.newCommand == "NEW &40E5");
@@ -364,7 +357,7 @@ void test_advice_pc1500() {
     CHECK(a.newNote.find("outside") != std::string::npos);
 }
 
-void test_advice_pc1600() {
+TEST(test_advice_pc1600) {
     // Stock: the S0 area starts in internal RAM.
     auto a = machinecode::advice(Target::PC1600, Slot::S0, 0, 0xC0C5, 0x100, 0, 0, 0, kStock, Cpu::Z80);
     CHECK(a.newCommand == "NEW \"S0:\",&1C5");
@@ -423,7 +416,7 @@ void test_advice_pc1600() {
     CHECK(a.newCommand == "NEW &4105");
 }
 
-void test_plan_header_bank() {
+TEST(test_plan_header_bank) {
     // Bank 0 is "no bank given": an &80C5 file goes to S0's first module
     // run -- slot 2 (bank 2) when slot 2 starts S0, as with RAM in both slots.
     auto noBank = machinecode::readFile(pc1600File(kCode, 0x0080C5, 0));
@@ -479,7 +472,7 @@ void test_plan_header_bank() {
 
 // ── parseHexAddress ──────────────────────────────────────────────────────
 
-void test_parse_hex_address() {
+TEST(test_parse_hex_address) {
     uint32_t v = 0;
     CHECK(machinecode::parseHexAddress("C0C5", &v) && v == 0xC0C5);
     CHECK(machinecode::parseHexAddress(" &c0c5 ", &v) && v == 0xC0C5);
@@ -493,7 +486,7 @@ void test_parse_hex_address() {
 
 // ── writers ──────────────────────────────────────────────────────────────
 
-void test_pc1600_writer() {
+TEST(test_pc1600_writer) {
     PC1600Machine m;
     std::string err;
     CHECK(loadPC1600MachineCode(m, 0, 0xC0C5, kCode.data(), kCode.size(), &err, 0));
@@ -529,7 +522,7 @@ void test_pc1600_writer() {
     CHECK(m.debugPeek(0xC000) == kCode[2] && m.debugPeek(0xC002) == kCode[4]);
 }
 
-void test_pc1500_writer() {
+TEST(test_pc1500_writer) {
     PC1500Machine m;
     CHECK(m.loadROMFile("roms/PC-1500_A04.ROM"));
     std::string err;
@@ -543,7 +536,7 @@ void test_pc1500_writer() {
     CHECK(!loadPC1500MachineCode(m, 0xFFFE, kCode.data(), kCode.size(), &err));
 }
 
-void test_pc1600_basic_areas() {
+TEST(test_pc1600_basic_areas) {
     {
         PC1600Machine m;
         CHECK(bootPC1600(m));
@@ -566,31 +559,3 @@ void test_pc1600_basic_areas() {
 }
 
 }  // namespace
-
-int run_machine_code_file_tests() {
-    test_read_ce158();
-    test_read_ffff_autorun_is_none();
-    test_read_ce158_length_mismatch();
-    test_read_ce158_basic_type_rejected();
-    test_read_pc1600();
-    test_read_pc1600_basic_type_rejected();
-    test_read_basic_listing_rejected();
-    test_read_other_kinds_rejected();
-    test_read_truncated();
-    test_read_leading_noise();
-    test_read_headerless();
-    test_plan_model_mismatch();
-    test_plan_headerless_needs_address();
-    test_plan_pc1600_target();
-    test_plan_load_configurations();
-    test_advice_pc1500();
-    test_advice_pc1600();
-    test_plan_header_bank();
-    test_parse_hex_address();
-    test_pc1600_writer();
-    test_pc1500_writer();
-    test_pc1600_basic_areas();
-
-    std::printf("machine_code_file_tests: %d passed, %d failed\n", g_pass, g_fail);
-    return g_fail;
-}

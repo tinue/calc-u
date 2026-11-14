@@ -22,16 +22,9 @@
 #include "DebugTargetTestSupport.hpp"
 #include "LegacyExpression.hpp"
 #include "TestRoms.hpp"
+#include "TestHarness.hpp"
 
 namespace {
-
-int g_pass = 0;
-int g_fail = 0;
-
-#define CHECK(cond) do { \
-    if (cond) { g_pass++; } \
-    else { g_fail++; std::fprintf(stderr, "FAIL %s:%d: %s\n", __FILE__, __LINE__, #cond); } \
-} while (0)
 
 class LhBus : public LH5801Bus {
 public:
@@ -81,7 +74,7 @@ bool evalIs(const std::string& text, int64_t want, bool bigEndian = false) {
     return r.ok && r.value == want;
 }
 
-void test_expressions() {
+TEST(test_expressions) {
     CHECK(evalIs("A == 0x10", 1));
     CHECK(evalIs("a != 16", 0));
     CHECK(evalIs("1 + 2 * 3", 7));
@@ -108,7 +101,7 @@ void test_expressions() {
 
 // ── CPU hooks ─────────────────────────────────────────────────────────────
 
-void test_z80_breakpoint_and_skip_once() {
+TEST(test_z80_breakpoint_and_skip_once) {
     ZBus bus;
     const uint8_t code[] = {0x00, 0x00, 0x18, 0xFC}; // nop; nop; jr 0x0000
     for (size_t i = 0; i < sizeof code; i++) bus.mem[i] = code[i];
@@ -131,7 +124,7 @@ void test_z80_breakpoint_and_skip_once() {
     CHECK(cpu.step() == 0 && cpu.consumeBreakpointHit()); // skip was once only
 }
 
-void test_z80_breakpoint_not_between_prefix_and_opcode() {
+TEST(test_z80_breakpoint_not_between_prefix_and_opcode) {
     ZBus bus;
     const uint8_t code[] = {0xDD, 0xFD, 0x21, 0x00, 0x00}; // DD carried, then FD 21
     for (size_t i = 0; i < sizeof code; i++) bus.mem[i] = code[i];
@@ -144,7 +137,7 @@ void test_z80_breakpoint_not_between_prefix_and_opcode() {
     CHECK(cpu.iy() == 0x0000 && cpu.pc() == 0x0005);
 }
 
-void test_z80_skip_is_tied_to_its_address() {
+TEST(test_z80_skip_is_tied_to_its_address) {
     // Parked on 0001 with an interrupt pending: the continue takes the
     // interrupt first. The handler's breakpoint still stops, and the skip
     // is still there for 0001 when the handler returns.
@@ -173,7 +166,7 @@ void test_z80_skip_is_tied_to_its_address() {
     CHECK(cpu.step() == 0 && cpu.consumeBreakpointHit());
 }
 
-void test_z80_breakpoint_keeps_ei_shadow() {
+TEST(test_z80_breakpoint_keeps_ei_shadow) {
     // ei; nop (breakpoint) with INT pending: parking on the nop must not
     // drop the EI delay, so the nop still runs before the interrupt.
     ZBus bus;
@@ -190,7 +183,7 @@ void test_z80_breakpoint_keeps_ei_shadow() {
     CHECK(cpu.step() > 0 && cpu.pc() == 0x0038);  // now the interrupt
 }
 
-void test_lh5801_skip_once() {
+TEST(test_lh5801_skip_once) {
     LhBus bus;
     bus.mem[0xFFFE] = 0x40; bus.mem[0xFFFF] = 0x00;
     bus.mem[0x4000] = 0x38; bus.mem[0x4001] = 0x9E; bus.mem[0x4002] = 0x03; // nop; bch 0x4000
@@ -205,7 +198,7 @@ void test_lh5801_skip_once() {
     CHECK(cpu.pc() == 0x4000 && cpu.step() == 0);
 }
 
-void test_breakpoint_set() {
+TEST(test_breakpoint_set) {
     BreakpointSet set;
     set.add(0x0000);
     set.add(0xFFFF);
@@ -220,7 +213,7 @@ void test_breakpoint_set() {
     CHECK(!set.contains(0x0000) && !set.contains(0x0040));
 }
 
-void test_trace_flags_leave_breakpoints_alone() {
+TEST(test_trace_flags_leave_breakpoints_alone) {
     // Trace flags alone never check breakpoints.
     LhBus bus;
     bus.mem[0xFFFE] = 0x40; bus.mem[0xFFFF] = 0x00;
@@ -240,7 +233,7 @@ void test_trace_flags_leave_breakpoints_alone() {
     CHECK(machine.cpu().breakpointsEnabled() && machine.cpu().traceFlags() == TRACE_NONE);
 }
 
-void test_reset_clears_breakpoint_state() {
+TEST(test_reset_clears_breakpoint_state) {
     LhBus bus;
     bus.mem[0xFFFE] = 0x40; bus.mem[0xFFFF] = 0x00;
     bus.mem[0x4000] = 0x38;
@@ -266,7 +259,7 @@ void test_reset_clears_breakpoint_state() {
     CHECK(z.step() == 0 && z.consumeBreakpointHit());
 }
 
-void test_lh5801_watches_skip_fetches() {
+TEST(test_lh5801_watches_skip_fetches) {
     LhBus bus;
     bus.mem[0xFFFE] = 0x40; bus.mem[0xFFFF] = 0x00;
     const uint8_t code[] = {
@@ -298,7 +291,7 @@ void test_lh5801_watches_skip_fetches() {
     cpu.setWatches(nullptr);
 }
 
-void test_z80_watches() {
+TEST(test_z80_watches) {
     ZBus bus;
     const uint8_t code[] = {0x3E, 0x77, 0x32, 0x00, 0x80, 0xC5}; // ld a,0x77; ld (0x8000),a; push bc
     for (size_t i = 0; i < sizeof code; i++) bus.mem[i] = code[i];
@@ -320,7 +313,7 @@ void test_z80_watches() {
 
 // ── Machine targets ───────────────────────────────────────────────────────
 
-void test_pc1500_target() {
+TEST(test_pc1500_target) {
     PC1500Machine machine;
     if (!machine.loadROMFile("roms/PC-1500_A04.ROM")) {
         std::printf("  SKIP test_pc1500_target: roms/PC-1500_A04.ROM missing\n");
@@ -376,7 +369,7 @@ void test_pc1500_target() {
     target.setWatches(1, {});
 }
 
-void test_pc1600_target() {
+TEST(test_pc1600_target) {
     PC1600Machine machine;
     if (!bootPC1600(machine)) {
         std::printf("  SKIP test_pc1600_target: PC-1600 ROMs missing\n");
@@ -418,7 +411,7 @@ void test_pc1600_target() {
     CHECK(target.decode(1, 0x0000).len >= 1);
 }
 
-void test_pc1600_lh5803_thread() {
+TEST(test_pc1600_lh5803_thread) {
     // Z-80: OUT (38H),A ; HALT hands the bus to the LH5803, whose ROM loops
     // at C000: sta (0x1000) (Z-80 0x9000) ; nop ; bch C000.
     PC1600Machine m;
@@ -461,7 +454,7 @@ void test_pc1600_lh5803_thread() {
     CHECK(s.kind == debug::Stop::Watch && s.thread == debug::PC1600DebugTarget::kLh5803);
 }
 
-void test_pc1600_skip_only_for_the_running_cpu() {
+TEST(test_pc1600_skip_only_for_the_running_cpu) {
     // Same machine as test_pc1600_lh5803_thread(). The LH5803 sits at its
     // reset address C000 off the bus while the Z-80 runs; a continue must
     // not hand it the skip, so it stops at C000 when it gets the bus.
@@ -485,7 +478,7 @@ void test_pc1600_skip_only_for_the_running_cpu() {
     CHECK(target.pc(2) == 0xC000 && target.retired(2) == before); // its first instruction, not a later pass
 }
 
-void test_machine_step_latches_stops() {
+TEST(test_machine_step_latches_stops) {
     // PC-1500: a stepped store into a watched byte latches a watch stop on
     // CPU 1; a reset drops a stop nobody consumed.
     {
@@ -541,7 +534,7 @@ void test_machine_step_latches_stops() {
     }
 }
 
-void test_cpu_views() {
+TEST(test_cpu_views) {
     PC1600Machine m;
     std::vector<uint8_t> lower(PC1600Memory::kBankSize, 0x76), upper(PC1600Memory::kBankSize, 0x00); // halt
     CHECK(m.loadBank0(lower.data(), lower.size(), upper.data(), upper.size()));
@@ -585,7 +578,7 @@ void test_cpu_views() {
     m.lh5803().setBreakpointsEnabled(false);
 }
 
-void test_register_reads() {
+TEST(test_register_reads) {
     // Every listed register reads back its listed value, plus the halves
     // and aliases the list doesn't show.
     LhBus bus;
@@ -610,7 +603,7 @@ void test_register_reads() {
     CHECK(debug::z80ReadRegister(z, "zf", &v) && !debug::z80ReadRegister(z, "q", &v));
 }
 
-void test_watch_set() {
+TEST(test_watch_set) {
     WatchSet w;
     w.add({0x0000, 0x0001, 0, true, false});   // read, ME0
     w.add({0xFFFF, 0xFFFF, 1, false, true});   // write, ME1
@@ -634,7 +627,7 @@ void test_watch_set() {
     CHECK(!w.hitPending() && w.empty());
 }
 
-void test_compiled_expressions_match_legacy() {
+TEST(test_compiled_expressions_match_legacy) {
     static std::map<std::string, int64_t> names = {{"a", 0x10}, {"hl", 0x7A00}, {"cf", 1}, {"LOOP", 0x40C5}, {"Mixed", 7}};
     static uint8_t mem[65536] = {};
     mem[0x7A00] = 0x34; mem[0x7A01] = 0x12; mem[0x0010] = 0x99;
@@ -698,7 +691,7 @@ void test_compiled_expressions_match_legacy() {
     CHECK(mismatches == 0);
 }
 
-void test_hit_conditions_and_log_templates_match_legacy() {
+TEST(test_hit_conditions_and_log_templates_match_legacy) {
     const char* const hits[] = {"", "  ", "5", "== 5", "=5", ">= 3", "<=2", "!= 4", "> 1", "<3", "% 3", "%0", "% -2",
                                 "0x10", ">= 0x2", "abc", "5x", "==", " % ", "-1", "= 3 "};
     int mismatches = 0;
@@ -729,7 +722,7 @@ void test_hit_conditions_and_log_templates_match_legacy() {
     CHECK(mismatches == 0);
 }
 
-void test_function_breakpoint_on_lh5803_symbol() {
+TEST(test_function_breakpoint_on_lh5803_symbol) {
     // A function breakpoint arms on the CPU whose binding defines the
     // symbol: here the LH5803 (thread 2).
     PC1600Machine m;
@@ -759,30 +752,3 @@ void test_function_breakpoint_on_lh5803_symbol() {
 }
 
 } // namespace
-
-int run_debug_target_tests() {
-    test_expressions();
-    test_z80_breakpoint_and_skip_once();
-    test_z80_breakpoint_not_between_prefix_and_opcode();
-    test_z80_skip_is_tied_to_its_address();
-    test_z80_breakpoint_keeps_ei_shadow();
-    test_lh5801_skip_once();
-    test_breakpoint_set();
-    test_trace_flags_leave_breakpoints_alone();
-    test_reset_clears_breakpoint_state();
-    test_lh5801_watches_skip_fetches();
-    test_z80_watches();
-    test_pc1500_target();
-    test_pc1600_target();
-    test_pc1600_lh5803_thread();
-    test_pc1600_skip_only_for_the_running_cpu();
-    test_machine_step_latches_stops();
-    test_cpu_views();
-    test_register_reads();
-    test_watch_set();
-    test_compiled_expressions_match_legacy();
-    test_hit_conditions_and_log_templates_match_legacy();
-    test_function_breakpoint_on_lh5803_symbol();
-    std::printf("debug target tests: %d passed, %d failed\n", g_pass, g_fail);
-    return g_fail;
-}

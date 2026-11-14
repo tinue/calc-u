@@ -18,16 +18,9 @@
 #include "../core/PC1600/PC1600Machine.hpp"
 #include "TestCards.hpp"
 #include "TestRoms.hpp"
+#include "TestHarness.hpp"
 
 namespace {
-
-int g_pass = 0;
-int g_fail = 0;
-
-#define CHECK(cond) do { \
-    if (cond) { g_pass++; } \
-    else { g_fail++; std::fprintf(stderr, "FAIL %s:%d: %s\n", __FILE__, __LINE__, #cond); } \
-} while (0)
 
 // A bundled module definition. They ship in the repo, so a missing or
 // unloadable one is a test failure, not a SKIP.
@@ -67,7 +60,7 @@ void selectPageCBank(PC1600Machine& m, uint8_t bank) {
     m.memory().writeIO(0x31, uint8_t(bank << 4));
 }
 
-void test_ce155_in_slot1_both_cpu_views() {
+TEST(test_ce155_in_slot1_both_cpu_views) {
     auto ce155 = card("ce155.card.yaml", CardHost::PC1600Slot1);
     if (!ce155) return;
     PC1600Machine m;
@@ -119,7 +112,7 @@ void test_ce155_in_slot1_both_cpu_views() {
     CHECK(m.memory().read(0xB800) == 0xFF);
 }
 
-void test_plain_ram_card_via_attach_slot_card() {
+TEST(test_plain_ram_card_via_attach_slot_card) {
     PC1600Machine m;
     m.attachSlot1Card(plainRamCard(0x8000)); // 32KB, two banks
     CHECK(m.slot1Attached());
@@ -147,7 +140,7 @@ void test_plain_ram_card_via_attach_slot_card() {
 // pokeMemory() is a host poke: it lands in flash unconditionally (the
 // direct path, not the flash command decoder), and a region that claims
 // the write but keeps nothing makes it fail without changing anything.
-void test_poke_memory_uses_the_host_path_and_verifies() {
+TEST(test_poke_memory_uses_the_host_path_and_verifies) {
     {
         PC1600Machine m;
         auto card = slotCardWithContent(
@@ -190,7 +183,7 @@ void test_poke_memory_uses_the_host_path_and_verifies() {
     }
 }
 
-void test_slot2_plain_card_ignores_vertical_bank_through_connector() {
+TEST(test_slot2_plain_card_ignores_vertical_bank_through_connector) {
     // The connector selects Slot 2 regardless of the Port 28H vertical bank
     // (the vertical bank is the card's own business -- a CE-1601M-class
     // card latches it from OUT (28H)). A plain RAM card does not decode
@@ -216,7 +209,7 @@ void test_slot2_plain_card_ignores_vertical_bank_through_connector() {
 // reachable through the running machine. (Not an assertion about `MEM`
 // growth: a bare CE-155 tiles A000-BFFF and the ROM credits its full 8KB
 // -- verified separately against the documented real-hardware figure.)
-void test_boot_with_ce155_in_slot1_is_stable() {
+TEST(test_boot_with_ce155_in_slot1_is_stable) {
     PC1600Machine m;
     if (!loadPC1600Roms(m)) {
         std::fprintf(stderr, "SKIP test_boot_with_ce155_in_slot1_is_stable: PC-1600 ROM images not found\n");
@@ -245,7 +238,7 @@ void test_boot_with_ce155_in_slot1_is_stable() {
 // with the module the BASIC RAM base drops from C0C5H to A0C5H (the
 // documented CE-159 figure -- Ref/PC-1600/PC-1600-Memory-Architecture.md), i.e. every
 // RAM-base/size work-area pointer moves by exactly 8192.
-void test_ce155_contributes_full_8k_to_mem() {
+TEST(test_ce155_contributes_full_8k_to_mem) {
     auto m0 = bootWithCard(1, nullptr), m1 = bootWithCard(1, "ce155.card.yaml");
     if (!m0 || !m1) {
         std::fprintf(stderr, "SKIP test_ce155_contributes_full_8k_to_mem: PC-1600 ROM images not found\n");
@@ -263,7 +256,7 @@ void test_ce155_contributes_full_8k_to_mem() {
 // A000-AFFF. Measured on a real PC-1600 with a CE-155 whose pins 4 and 18
 // were taped off (electrically a CE-151). The probe picks 1BH with an empty
 // slot and 5BH for a CE-155.
-void test_ce151_fills_b000_bfff_in_slot1() {
+TEST(test_ce151_fills_b000_bfff_in_slot1) {
     auto m0 = bootWithCard(1, nullptr), m1 = bootWithCard(1, "ce151.card.yaml"),
          m5 = bootWithCard(1, "ce155.card.yaml");
     if (!m0 || !m1 || !m5) {
@@ -291,7 +284,7 @@ void test_ce151_fills_b000_bfff_in_slot1() {
 // A CE-161 fills the whole 8000-BFFF page in either slot: the boot ROM
 // credits +16384 (MEM 11834 + 16384, Ref/PC-1600/PC-1600-Memory-Architecture.md),
 // BASIC RAM base C0C5H -> 80C5H.
-void test_ce161_contributes_full_16k_in_both_slots() {
+TEST(test_ce161_contributes_full_16k_in_both_slots) {
     auto m0 = bootWithCard(1, nullptr), m1 = bootWithCard(1, "ce161.card.yaml"),
          m2 = bootWithCard(2, "ce161.card.yaml");
     if (!m0 || !m1 || !m2) {
@@ -311,7 +304,7 @@ void test_ce161_contributes_full_16k_in_both_slots() {
 // bank, not alias. Bank switching is the pin-18 write strobe (PC-1600 Slot
 // 1 S3, at B000-B7FF once the boot probe has set Port 3CH = 5BH for a full
 // 16KB module), bank number from address bits A0-A2 of the strobing write.
-void test_ce1638_in_slot1_banked_window() {
+TEST(test_ce1638_in_slot1_banked_window) {
     auto ce1638 = card("ce1638.card.yaml", CardHost::PC1600Slot1);
     if (!ce1638) return;
     PC1600Machine m;
@@ -350,7 +343,7 @@ void test_ce1638_in_slot1_banked_window() {
 // the low 11 bits of the *masked* window offset, so &9555/&AAAA on the
 // slot hit the same 0x555/0x2AA the firmware uses at &1555/&2AAA on a
 // PC-1500.
-void test_ce163f_in_slot1_ram_and_flash_protocol() {
+TEST(test_ce163f_in_slot1_ram_and_flash_protocol) {
     auto ce163f = card("ce163f.card.yaml", CardHost::PC1600Slot1);
     if (!ce163f) return;
     PC1600Machine m;
@@ -391,7 +384,7 @@ void test_ce163f_in_slot1_ram_and_flash_protocol() {
 // (stock - 0x4000), every RAM-base/size work-area pointer moving by 16384.
 // (In Slot 1 the same card gets nothing, because S3 on pin 18 trips the
 // bank latch throughout the boot RAM-sizing scan.)
-void test_trigger_latch_modules_in_slot2_contribute_full_16k() {
+TEST(test_trigger_latch_modules_in_slot2_contribute_full_16k) {
     auto boot = [](std::unique_ptr<ExpansionCard> card) -> std::unique_ptr<PC1600Machine> {
         auto m = std::make_unique<PC1600Machine>();
         if (!loadPC1600Roms(*m)) return nullptr;
@@ -425,7 +418,7 @@ void test_trigger_latch_modules_in_slot2_contribute_full_16k() {
 // be a statement of its own: nested in an XPOKE it runs inside that
 // statement's handover, with the Z-80's 31H = 26H already in place. XPOKE
 // lands in Slot 2 either way, so it carries the result back to the test.
-void test_mode1_xpeek_maps_program_bank_via_lh5803_p_bank() {
+TEST(test_mode1_xpeek_maps_program_bank_via_lh5803_p_bank) {
     auto ce163f = card("ce163f.card.yaml", CardHost::PC1600Slot2);
     if (!ce163f) return;
     PC1600Machine m;
@@ -445,7 +438,7 @@ void test_mode1_xpeek_maps_program_bank_via_lh5803_p_bank() {
 }
 
 // The LH5803 reaches the SC7852's 30H-3FH control ports at ME1 A030-A03F.
-void test_lh5803_me1_a03x_is_the_control_port_block() {
+TEST(test_lh5803_me1_a03x_is_the_control_port_block) {
     PC1600Machine m;
     m.lh5803Memory().writeME1(0xA031, 0x26);
     CHECK(m.memory().readIO(0x31) == 0x26);
@@ -454,22 +447,3 @@ void test_lh5803_me1_a03x_is_the_control_port_block() {
 }
 
 } // namespace
-
-int run_pc1600_slot_module_tests() {
-    test_mode1_xpeek_maps_program_bank_via_lh5803_p_bank();
-    test_lh5803_me1_a03x_is_the_control_port_block();
-    test_ce155_in_slot1_both_cpu_views();
-    test_plain_ram_card_via_attach_slot_card();
-    test_poke_memory_uses_the_host_path_and_verifies();
-    test_slot2_plain_card_ignores_vertical_bank_through_connector();
-    test_ce1638_in_slot1_banked_window();
-    test_ce163f_in_slot1_ram_and_flash_protocol();
-    test_trigger_latch_modules_in_slot2_contribute_full_16k();
-    test_boot_with_ce155_in_slot1_is_stable();
-    test_ce155_contributes_full_8k_to_mem();
-    test_ce151_fills_b000_bfff_in_slot1();
-    test_ce161_contributes_full_16k_in_both_slots();
-
-    std::printf("pc1600_slot_module_tests: %d passed, %d failed\n", g_pass, g_fail);
-    return g_fail;
-}

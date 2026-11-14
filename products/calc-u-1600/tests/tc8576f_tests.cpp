@@ -13,16 +13,9 @@
 #include "../core/PC1600/PC1600SubCpu.hpp"
 #include "../core/Serial/SerialLink.hpp"
 #include "../core/PC1600/TC8576F.hpp"
+#include "TestHarness.hpp"
 
 namespace {
-
-int g_pass = 0;
-int g_fail = 0;
-
-#define CHECK(cond) do { \
-    if (cond) { g_pass++; } \
-    else { g_fail++; std::fprintf(stderr, "FAIL %s:%d: %s\n", __FILE__, __LINE__, #cond); } \
-} while (0)
 
 // SSR / PSR bit positions (CPC §4; mirror TC8576F.cpp's constants).
 constexpr uint8_t kSsrTxRDY = 0x01;
@@ -86,7 +79,7 @@ void bootInit(TC8576F& uart, uint16_t divisor = 8) {
     uart.writeRegister(3, 0xC5); uart.writeRegister(2, 0x0E);
 }
 
-void test_reset_status_is_idle_ready() {
+TEST(test_reset_status_is_idle_ready) {
     PC1600SubCpu sub;
     TC8576F uart(sub);
     bootInit(uart);
@@ -101,7 +94,7 @@ void test_reset_status_is_idle_ready() {
     CHECK(!uart.interruptOutput());       // every serial interrupt masked
 }
 
-void test_parameter_address_pointer_and_file() {
+TEST(test_parameter_address_pointer_and_file) {
     PC1600SubCpu sub;
     TC8576F uart(sub);
     uart.reset();
@@ -120,7 +113,7 @@ void test_parameter_address_pointer_and_file() {
 
 // CPC §7: a reset (here the parameter-address D5 bit) keeps PR0-PR7 and
 // holds the chip until the next parameter-address write with D5 = 0.
-void test_chip_reset_keeps_parameters_and_holds() {
+TEST(test_chip_reset_keeps_parameters_and_holds) {
     PC1600SubCpu sub;
     TC8576F uart(sub);
     uart.reset();
@@ -139,7 +132,7 @@ void test_chip_reset_keeps_parameters_and_holds() {
     CHECK(uart.parameter(0) == 0x77);
 }
 
-void test_serial_transmit_reports_sent_immediately() {
+TEST(test_serial_transmit_reports_sent_immediately) {
     PC1600SubCpu sub;
     TC8576F uart(sub);
     bootInit(uart);
@@ -152,7 +145,7 @@ void test_serial_transmit_reports_sent_immediately() {
 // CPC §8.1 / §9.4: the 21H write sets XBUSY at once; KI reaches the sub-CPU
 // after the DSTB delay, which then stays busy (Z10) for its response time
 // and ACKs (Z9, clearing XBUSY) when its answer is ready.
-void test_parallel_out_drives_subcpu_command_and_handshake() {
+TEST(test_parallel_out_drives_subcpu_command_and_handshake) {
     PC1600SubCpu sub;
     TC8576F uart(sub);
     bootInit(uart);
@@ -178,7 +171,7 @@ void test_parallel_out_drives_subcpu_command_and_handshake() {
 
 // A command without an answer (a parameter nibble) ACKs on receipt and
 // then keeps the sub-CPU busy (Service Manual §4-3 type (ii)).
-void test_no_answer_command_acks_on_receipt() {
+TEST(test_no_answer_command_acks_on_receipt) {
     PC1600SubCpu sub;
     TC8576F uart(sub);
     bootInit(uart);
@@ -193,7 +186,7 @@ void test_no_answer_command_acks_on_receipt() {
 
 // CPC §8.3: B4H/B5H/B6H drive PRIME = PRIM (RS-232C / SIO select); B6H
 // also clears XBUSY.
-void test_parallel_command_drives_prime_and_clears_xbusy() {
+TEST(test_parallel_command_drives_prime_and_clears_xbusy) {
     PC1600SubCpu sub;
     TC8576F uart(sub);
     bootInit(uart);
@@ -211,7 +204,7 @@ void test_parallel_command_drives_prime_and_clears_xbusy() {
 // CPC §6.5: the transmit interrupt needs TxEN, /CTS = 0 (tied to GND on
 // the PC-1600), an empty buffer and TxINTM clear -- a freshly reset chip
 // does not interrupt.
-void test_interrupt_output_follows_tx_equation() {
+TEST(test_interrupt_output_follows_tx_equation) {
     PC1600SubCpu sub;
     TC8576F uart(sub);
     uart.reset();
@@ -228,7 +221,7 @@ void test_interrupt_output_follows_tx_equation() {
 
 // ── A serial peer attached via setSerialLink() ──────────────────────────
 
-void test_serial_tx_fifo_drains_one_byte_per_char_time() {
+TEST(test_serial_tx_fifo_drains_one_byte_per_char_time) {
     PC1600SubCpu sub;
     TC8576F uart(sub);
     bootInit(uart);
@@ -250,7 +243,7 @@ void test_serial_tx_fifo_drains_one_byte_per_char_time() {
     CHECK((uart.ssr() & kSsrTxRDY) != 0);
 }
 
-void test_serial_rx_latches_and_flags_overrun() {
+TEST(test_serial_rx_latches_and_flags_overrun) {
     PC1600SubCpu sub;
     TC8576F uart(sub);
     bootInit(uart);
@@ -276,7 +269,7 @@ void test_serial_rx_latches_and_flags_overrun() {
 
 // CPC §6.2/§6.5: with RxEN clear the receiver ignores the line (bytes wait
 // in the link) and cannot interrupt.
-void test_serial_receiver_needs_rxenable() {
+TEST(test_serial_receiver_needs_rxenable) {
     PC1600SubCpu sub;
     TC8576F uart(sub);
     bootInit(uart);
@@ -298,7 +291,7 @@ void test_serial_receiver_needs_rxenable() {
 }
 
 // A receive error interrupts too when ERINTM is clear (CPC §6.5).
-void test_serial_error_interrupt() {
+TEST(test_serial_error_interrupt) {
     PC1600SubCpu sub;
     TC8576F uart(sub);
     bootInit(uart);
@@ -315,7 +308,7 @@ void test_serial_error_interrupt() {
     CHECK(!uart.interruptOutput());
 }
 
-void test_serial_baud_divisor_sets_cadence_and_notifies_peer() {
+TEST(test_serial_baud_divisor_sets_cadence_and_notifies_peer) {
     PC1600SubCpu sub;
     TC8576F uart(sub);
     bootInit(uart);
@@ -348,7 +341,7 @@ void test_serial_baud_divisor_sets_cadence_and_notifies_peer() {
 }
 
 // CPC §9.5: CS reads 0 when on (FAULT, not inverted), CD/DR read 1 when on.
-void test_serial_psr_carries_peer_modem_lines() {
+TEST(test_serial_psr_carries_peer_modem_lines) {
     PC1600SubCpu sub;
     TC8576F uart(sub);
     bootInit(uart);
@@ -374,7 +367,7 @@ void test_serial_psr_carries_peer_modem_lines() {
 }
 
 // CI goes to the sub-CPU (Q1), which reports it in SRINP bit 5, inverted.
-void test_serial_ci_reaches_the_subcpu() {
+TEST(test_serial_ci_reaches_the_subcpu) {
     PC1600SubCpu sub;
     TC8576F uart(sub);
     bootInit(uart);
@@ -392,7 +385,7 @@ void test_serial_ci_reaches_the_subcpu() {
     CHECK((sub.readAnswer() & 0x20) != 0);
 }
 
-void test_serial_command_register_forwards_rts_dtr() {
+TEST(test_serial_command_register_forwards_rts_dtr) {
     PC1600SubCpu sub;
     TC8576F uart(sub);
     bootInit(uart);
@@ -411,7 +404,7 @@ void test_serial_command_register_forwards_rts_dtr() {
 // peer's CS never holds the transmitter, TxRDY or the Tx interrupt; only
 // the ROM sees it, through PSR FAULT. SSR DSR is the RXD pin, not the
 // peer's DSR.
-void test_serial_peer_cs_does_not_gate_the_chip() {
+TEST(test_serial_peer_cs_does_not_gate_the_chip) {
     PC1600SubCpu sub;
     TC8576F uart(sub);
     bootInit(uart);
@@ -433,7 +426,7 @@ void test_serial_peer_cs_does_not_gate_the_chip() {
     CHECK(uart.interruptOutput());
 }
 
-void test_no_link_preserves_standalone_behaviour() {
+TEST(test_no_link_preserves_standalone_behaviour) {
     PC1600SubCpu sub;
     TC8576F uart(sub);
     bootInit(uart);
@@ -446,7 +439,7 @@ void test_no_link_preserves_standalone_behaviour() {
     CHECK(uart.psr() == (kPsrFAULT | kPsrP5V));
 }
 
-void test_chip_reset_keeps_peer_attached() {
+TEST(test_chip_reset_keeps_peer_attached) {
     PC1600SubCpu sub;
     TC8576F uart(sub);
     uart.reset();
@@ -461,7 +454,7 @@ void test_chip_reset_keeps_peer_attached() {
 
 // Detaching the peer mid-transmit must not leave TxRDY low: without a
 // link tick() never drains the FIFO, so a ROM transmit poll would hang.
-void test_detach_with_queued_bytes_restores_ready() {
+TEST(test_detach_with_queued_bytes_restores_ready) {
     PC1600SubCpu sub;
     TC8576F uart(sub);
     bootInit(uart);
@@ -483,29 +476,3 @@ void test_detach_with_queued_bytes_restores_ready() {
 }
 
 } // namespace
-
-int run_tc8576f_tests() {
-    g_pass = g_fail = 0;
-    test_reset_status_is_idle_ready();
-    test_parameter_address_pointer_and_file();
-    test_chip_reset_keeps_parameters_and_holds();
-    test_serial_transmit_reports_sent_immediately();
-    test_parallel_out_drives_subcpu_command_and_handshake();
-    test_no_answer_command_acks_on_receipt();
-    test_parallel_command_drives_prime_and_clears_xbusy();
-    test_interrupt_output_follows_tx_equation();
-    test_serial_tx_fifo_drains_one_byte_per_char_time();
-    test_serial_rx_latches_and_flags_overrun();
-    test_serial_receiver_needs_rxenable();
-    test_serial_error_interrupt();
-    test_serial_baud_divisor_sets_cadence_and_notifies_peer();
-    test_serial_psr_carries_peer_modem_lines();
-    test_serial_ci_reaches_the_subcpu();
-    test_serial_command_register_forwards_rts_dtr();
-    test_serial_peer_cs_does_not_gate_the_chip();
-    test_no_link_preserves_standalone_behaviour();
-    test_chip_reset_keeps_peer_attached();
-    test_detach_with_queued_bytes_restores_ready();
-    std::printf("tc8576f: %d passed, %d failed\n", g_pass, g_fail);
-    return g_fail;
-}

@@ -15,16 +15,9 @@
 #include <vector>
 
 #include "../core/Basic/BasicProgramSource.hpp"
+#include "TestHarness.hpp"
 
 namespace {
-
-int g_pass = 0;
-int g_fail = 0;
-
-#define CHECK(cond) do { \
-    if (cond) { g_pass++; } \
-    else { g_fail++; std::fprintf(stderr, "FAIL %s:%d: %s\n", __FILE__, __LINE__, #cond); } \
-} while (0)
 
 std::string writeTemp(const std::string& name, const std::string& text) {
     std::filesystem::path p = std::filesystem::temp_directory_path() / name;
@@ -35,7 +28,7 @@ std::string writeTemp(const std::string& name, const std::string& text) {
 
 // A .bas listing tokenizes to a bare run of line records: 00 0A (line 10),
 // a length byte, tokens, 0x0D; no header, no trailing program-end marker.
-void test_listing_tokenized() {
+TEST(test_listing_tokenized) {
     std::string path = writeTemp("bps.bas", "10 PRINT \"HI\"\n20 END\n");
     basic::BasicProgramSource s = basic::readBasicProgramFile(path, basic::TransferModel::PC1500);
     CHECK(s.ok);
@@ -47,7 +40,7 @@ void test_listing_tokenized() {
 }
 
 // Both device families tokenize; PC-1600 accepts non-ASCII, PC-1500 does not.
-void test_device_is_passed_through() {
+TEST(test_device_is_passed_through) {
     std::string path = writeTemp("bps_u.bas", "10 PRINT \"\xC3\x9C\"\n");  // UTF-8 U+00DC
     basic::BasicProgramSource p16 =
         basic::readBasicProgramFile(path, basic::TransferModel::PC1600);
@@ -60,14 +53,14 @@ void test_device_is_passed_through() {
 }
 
 // A file that isn't an ASCII BASIC listing is rejected by the tokenizer.
-void test_non_listing_rejected() {
+TEST(test_non_listing_rejected) {
     std::string path = writeTemp("bps_prose.bas", "just some prose, not a program\n");
     basic::BasicProgramSource s = basic::readBasicProgramFile(path, basic::TransferModel::PC1500);
     CHECK(!s.ok);
     CHECK(!s.error.empty());
 }
 
-void test_missing_file_rejected() {
+TEST(test_missing_file_rejected) {
     basic::BasicProgramSource s = basic::readBasicProgramFile(
         "/no/such/dir/nope.bas", basic::TransferModel::PC1500);
     CHECK(!s.ok);
@@ -85,7 +78,7 @@ void test_missing_file_rejected() {
 // pacing marker, see sender.rs). Confirmed against the emulator's own
 // LOAD "COM1:" -- BASPRG_END - BASPRG_ST == 0x52 (82), matching this
 // payload's length exactly.
-void test_segment_marker_tokenized() {
+TEST(test_segment_marker_tokenized) {
     std::string path = writeTemp("bps_segment.bas",
                                   "5 \"PART1\"\n"
                                   "10 \"A\"CLS : WAIT: GOSUB \"PART2\"\n"
@@ -145,7 +138,7 @@ std::vector<uint8_t> pc1600(const std::vector<uint8_t>& payload, uint8_t type = 
 }
 
 // The header decides the source machine, whatever model a listing would get.
-void test_tokenized_files() {
+TEST(test_tokenized_files) {
     const basic::BasicProgramSource a = basic::readBasicProgram(ce158(kRecords), basic::TransferModel::PC1600);
     CHECK(a.ok && !a.listing);
     CHECK(a.source == basic::TransferModel::PC1500);
@@ -157,7 +150,7 @@ void test_tokenized_files() {
     CHECK(b.payload == kRecords);
 }
 
-void test_tokenized_rejects() {
+TEST(test_tokenized_rejects) {
     // Machine code, with either header.
     const auto ml = basic::readBasicProgram(pc1600(kRecords, /*type=*/0x10), basic::TransferModel::PC1600);
     CHECK(!ml.ok);
@@ -177,7 +170,7 @@ void test_tokenized_rejects() {
 }
 
 // The listing and the tokenized file of the same program load the same bytes.
-void test_listing_equals_tokenized() {
+TEST(test_listing_equals_tokenized) {
     std::ifstream in("tests/fixtures/basic/lissajou-1600.bbin", std::ios::binary);
     std::ifstream listing("tests/fixtures/basic/lissajou-1600.bas", std::ios::binary);
     if (!in || !listing) {
@@ -193,17 +186,3 @@ void test_listing_equals_tokenized() {
 }
 
 }  // namespace
-
-int run_basic_program_source_tests() {
-    test_listing_tokenized();
-    test_device_is_passed_through();
-    test_non_listing_rejected();
-    test_missing_file_rejected();
-    test_segment_marker_tokenized();
-    test_tokenized_files();
-    test_tokenized_rejects();
-    test_listing_equals_tokenized();
-
-    std::printf("basic_program_source_tests: %d passed, %d failed\n", g_pass, g_fail);
-    return g_fail;
-}

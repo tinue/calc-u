@@ -15,29 +15,22 @@
 #include "../core/PC1600/PC1600Machine.hpp"
 #include "TestCards.hpp"
 #include "TestRoms.hpp"
+#include "TestHarness.hpp"
 
 namespace {
-
-int g_pass = 0;
-int g_fail = 0;
-
-#define CHECK(cond) do { \
-    if (cond) { g_pass++; } \
-    else { g_fail++; std::fprintf(stderr, "FAIL %s:%d: %s\n", __FILE__, __LINE__, #cond); } \
-} while (0)
 
 std::vector<uint8_t> makeBank(uint8_t fillByte) {
     return std::vector<uint8_t>(PC1600Memory::kBankSize, fillByte);
 }
 
-void test_reset_starts_on_sc7852() {
+TEST(test_reset_starts_on_sc7852) {
     PC1600Machine m;
     m.reset();
     CHECK(m.sc7852Owns());
     CHECK(m.sc7852().pc() == 0x0000);
 }
 
-void test_sc7852_to_lh5803_handoff() {
+TEST(test_sc7852_to_lh5803_handoff) {
     PC1600Machine m;
     // Bank 0 lower/upper (pages A/B bank 0): OUT (38H),A ; HALT at 0x0000.
     std::vector<uint8_t> lower = makeBank(0x00);
@@ -71,7 +64,7 @@ void test_sc7852_to_lh5803_handoff() {
     CHECK(!m.sc7852Owns()); // still LH5803's turn, no handoff requested yet
 }
 
-void test_lh5803_to_sc7852_handoff() {
+TEST(test_lh5803_to_sc7852_handoff) {
     PC1600Machine m;
     std::vector<uint8_t> lower = makeBank(0x00);
     std::vector<uint8_t> upper = makeBank(0x00);
@@ -103,7 +96,7 @@ void test_lh5803_to_sc7852_handoff() {
     CHECK(m.sc7852Owns());
 }
 
-void test_trace_rings_are_independent_and_cpu_id_tagged() {
+TEST(test_trace_rings_are_independent_and_cpu_id_tagged) {
     PC1600Machine m;
     std::vector<uint8_t> lower = makeBank(0x00);
     std::vector<uint8_t> upper = makeBank(0x00);
@@ -144,7 +137,7 @@ void test_trace_rings_are_independent_and_cpu_id_tagged() {
 // must be scaled into the T-state budget by the clock ratio rather than
 // summed raw (otherwise MODE 1 would pace at the wrong clock).
 
-void test_runcycles_charges_halted_steps_at_the_halt_tick_rate() {
+TEST(test_runcycles_charges_halted_steps_at_the_halt_tick_rate) {
     PC1600Machine m;
     std::vector<uint8_t> lower = makeBank(0x00);
     std::vector<uint8_t> upper = makeBank(0x00);
@@ -165,7 +158,7 @@ void test_runcycles_charges_halted_steps_at_the_halt_tick_rate() {
     CHECK(consumed % SC7852::kHaltTickCycles == 0);
 }
 
-void test_yield_hook_fires_per_interval_across_runcycles_calls() {
+TEST(test_yield_hook_fires_per_interval_across_runcycles_calls) {
     PC1600Machine m;
     std::vector<uint8_t> lower = makeBank(0x00);
     std::vector<uint8_t> upper = makeBank(0x00);
@@ -187,7 +180,7 @@ void test_yield_hook_fires_per_interval_across_runcycles_calls() {
     CHECK(calls == 5);
 }
 
-void test_half_second_tick_raises_srirq_bit1() {
+TEST(test_half_second_tick_raises_srirq_bit1) {
     // The sub-CPU's 0.5 s tick raises SRIRQ (A2H) bit 1; step()'s 0.5 s
     // accumulator drives it, and the SRIRQ read clears it.
     PC1600Machine m;
@@ -208,7 +201,7 @@ void test_half_second_tick_raises_srirq_bit1() {
     CHECK(sub.pendingInterrupts() == 0);
 }
 
-void test_runcycles_budget_is_tstates_in_either_bus_mode() {
+TEST(test_runcycles_budget_is_tstates_in_either_bus_mode) {
     // The budget unit is SC-7852 T-states regardless of which CPU runs, so
     // one emulated second is kTStateHz in both modes. LH-5803 cycles are
     // scaled by the clock ratio rather than counted raw -- summing them raw
@@ -225,7 +218,7 @@ void test_runcycles_budget_is_tstates_in_either_bus_mode() {
     CHECK(PC1600Machine::kLH5803Hz == 1300000);
 }
 
-void test_simple_reset_keeps_internal_ram_all_reset_wipes_it() {
+TEST(test_simple_reset_keeps_internal_ram_all_reset_wipes_it) {
     PC1600Machine m;
     // Internal RAM is page D bank 0, Z-80 window C000-FFFF.
     m.memory().write(0xC100, 0xAB);
@@ -245,7 +238,7 @@ void test_simple_reset_keeps_internal_ram_all_reset_wipes_it() {
 
 // A key whose host release never arrived (the GUI lost track of it) must
 // not outlive a reset -- otherwise the machine stays wedged on it.
-void test_reset_releases_held_keys() {
+TEST(test_reset_releases_held_keys) {
     PC1600Machine m;
     m.pressKey("*");
     m.pressKey("ctrl");
@@ -258,7 +251,7 @@ void test_reset_releases_held_keys() {
     CHECK(m.keyboard().scan(0x00, true) == 0xFF);
 }
 
-void test_reset_level_reported_to_boot_rom_via_request_5A() {
+TEST(test_reset_level_reported_to_boot_rom_via_request_5A) {
     PC1600Machine m;
     auto& bus = static_cast<SC7852Bus&>(m.memory());
     auto cause = [&] { bus.writeIO(0x21, 0x5A); return bus.readIO(0x33); };
@@ -275,13 +268,13 @@ void test_reset_level_reported_to_boot_rom_via_request_5A() {
 
 // ── Debug reads (the debug panel's inspector) ──────────────────────────
 
-void test_debug_peek_reads_internal_ram_through_current_banks() {
+TEST(test_debug_peek_reads_internal_ram_through_current_banks) {
     PC1600Machine m;
     m.memory().write(0xF042, 0x9C); // PTR-table region, page D bank 0
     CHECK(m.debugPeek(0xF042) == 0x9C);
 }
 
-void test_debug_copy_internal_ram_is_the_live_state() {
+TEST(test_debug_copy_internal_ram_is_the_live_state) {
     PC1600Machine m;
     m.memory().write(0xC000, 0xDD);
     m.memory().write(0xFFFF, 0xEE);
@@ -293,7 +286,7 @@ void test_debug_copy_internal_ram_is_the_live_state() {
     CHECK(ram[0x3FFF] == 0xEE);
 }
 
-void test_debug_slot_image_returns_the_whole_card_backing_store() {
+TEST(test_debug_slot_image_returns_the_whole_card_backing_store) {
     PC1600Machine m;
     CHECK(m.debugSlotImage(1).empty()); // empty slot -> empty image
     CHECK(m.debugSlotImage(2).empty());
@@ -309,7 +302,7 @@ void test_debug_slot_image_returns_the_whole_card_backing_store() {
     CHECK(m.debugSlotImage(2).size() == 2u * 0x4000);
 }
 
-void test_debug_write_internal_ram_and_slot_image_land_directly() {
+TEST(test_debug_write_internal_ram_and_slot_image_land_directly) {
     PC1600Machine m;
 
     // Internal RAM: written bytes are visible through an ordinary peek.
@@ -336,7 +329,7 @@ void test_debug_write_internal_ram_and_slot_image_land_directly() {
 // A loader's bus write lands where a CPU write to that bank lands, through
 // the card's own wiring: a CE-155 keeps A000H (its S1 chip) at image
 // offset 0800H, not 2000H.
-void test_debug_write_slot_bus_follows_card_wiring() {
+TEST(test_debug_write_slot_bus_follows_card_wiring) {
     PC1600Machine m;
     m.memory().attachSlot1Card(bundledCard("ce155.card.yaml", CardHost::PC1600Slot1));
     m.memory().writeIO(0x3C, 0x5B);                      // what the boot probe sets for a CE-155
@@ -350,7 +343,7 @@ void test_debug_write_slot_bus_follows_card_wiring() {
     CHECK(!m.debugSlotBusWritable(0, 0x9F00, 0x100));    // below it: open bus
 }
 
-void test_debug_bank_state_reports_registers_and_card_bank() {
+TEST(test_debug_bank_state_reports_registers_and_card_bank) {
     PC1600Machine m;
 
     // Empty slots, all bank registers at reset: everything reads back 0.
@@ -381,7 +374,7 @@ void test_debug_bank_state_reports_registers_and_card_bank() {
     CHECK(s.slot2CardBank == -1);
 }
 
-void test_debug_bank_state_resolves_the_live_address_map() {
+TEST(test_debug_bank_state_resolves_the_live_address_map) {
     using PT = PC1600Machine::PageTarget;
     PC1600Machine m;
 
@@ -423,7 +416,7 @@ void test_debug_bank_state_resolves_the_live_address_map() {
 // SC7852's IORQ); the bus keeps its last byte. A real PC-1600 in MODE 1:
 // XPOKE &4100,85 -> XPEEK &4100 = 85, XPEEK# &4100 / &C000 / &1000 = 37,
 // the 25H of XPEEK#'s LDA #(U) (FD 25H).
-void test_lh5803_unclaimed_me1_floats() {
+TEST(test_lh5803_unclaimed_me1_floats) {
     PC1600Machine m;
     LH5803SharedMemory& lh = m.lh5803Memory();
     m.memory().write(0xC100, 85);                 // LH5803 4100H
@@ -475,7 +468,7 @@ uint8_t subCpuPowerOnCause(PC1600Machine& m) {
 // SubCpu doc §4: the system goes off once the sub-CPU has EAH and the CPU
 // side halts; the calendar clock keeps running; the ON key's rising edge
 // powers it on as a Z-80 reset that reports "ON key" (A5H bit 3).
-void test_off_command_switches_power_and_on_key_resets() {
+TEST(test_off_command_switches_power_and_on_key_resets) {
     PC1600Machine m;
     loadOffSequence(m);
     m.seedClock(2026, 9, 26, 10, 0, 0);
@@ -500,7 +493,7 @@ void test_off_command_switches_power_and_on_key_resets() {
 
 // The wake-up timer matches either way, but only switches the system on
 // when SWPON bit 1 allows it (WAKE$(0)).
-void test_wake_timer_powers_on_only_when_enabled() {
+TEST(test_wake_timer_powers_on_only_when_enabled) {
     PC1600Machine m;
     loadOffSequence(m);
     auto& sub = m.memory().subCpu();
@@ -528,7 +521,7 @@ void test_wake_timer_powers_on_only_when_enabled() {
 }
 
 // RS-232C CI switches the system on when SWPON bit 0 allows it (WAKE$(1)).
-void test_ci_powers_on_when_enabled() {
+TEST(test_ci_powers_on_when_enabled) {
     PC1600Machine m;
     loadOffSequence(m);
     auto& sub = m.memory().subCpu();
@@ -547,7 +540,7 @@ void test_ci_powers_on_when_enabled() {
 // The ROM's handoff (P1-B3 5C0E-5C22): 35H = 08H, OUT (38H), EI, HALT.
 // The LH5803's STA #(0A038H) then raises cause bit 3, and that INT -- not a
 // direct resume -- ends the SC7852's HALT.
-void test_lh5803_handback_is_a_cause_bit3_interrupt() {
+TEST(test_lh5803_handback_is_a_cause_bit3_interrupt) {
     PC1600Machine m;
     std::vector<uint8_t> lower = makeBank(0x00);
     std::vector<uint8_t> upper = makeBank(0x00);
@@ -580,7 +573,7 @@ void test_lh5803_handback_is_a_cause_bit3_interrupt() {
 // An ON press while the bus owner is running is a BREAK the ROM reads from
 // the 1BH latch -- it must not stay pending and later wake the machine out
 // of the next power-down park.
-void test_on_press_while_running_does_not_wake_a_later_park() {
+TEST(test_on_press_while_running_does_not_wake_a_later_park) {
     PC1600Machine m;
     std::vector<uint8_t> lower = makeBank(0x00);
     std::vector<uint8_t> upper = makeBank(0x00);
@@ -608,7 +601,7 @@ void test_on_press_while_running_does_not_wake_a_later_park() {
 }
 
 
-void test_rtc_advances_while_lh5803_owns_the_bus() {
+TEST(test_rtc_advances_while_lh5803_owns_the_bus) {
     // The OFF-key / auto-power-off shutdown hands the bus to the LH5803 for
     // the whole powered-off span, and the calendar clock must keep
     // advancing even though the SC7852 isn't the one stepping -- it lives
@@ -654,7 +647,7 @@ void test_rtc_advances_while_lh5803_owns_the_bus() {
 // the 1 Hz accumulator: seeded at hh:mm:ss.900, the next tick must come
 // 0.1 s later, not a full second (which left the clock ~1 s behind after
 // every reset). Seeded at .000, it takes the full second.
-void test_seed_clock_millisecond_aligns_next_tick() {
+TEST(test_seed_clock_millisecond_aligns_next_tick) {
     PC1600Machine m;
     std::vector<uint8_t> lower = makeBank(0x00);
     std::vector<uint8_t> upper = makeBank(0x00);
@@ -679,7 +672,7 @@ void test_seed_clock_millisecond_aligns_next_tick() {
 
 // INT is the level (cause & mask): masking a latched cause at 35H or the
 // 32H read that clears it withdraws the request.
-void test_int_line_follows_cause_and_mask() {
+TEST(test_int_line_follows_cause_and_mask) {
     PC1600Machine m;
     auto& mem = m.memory();
     CHECK(!m.sc7852().intLine());
@@ -747,7 +740,7 @@ static int litPixels(const PC1600Machine& m) {
 
 // ROM-gated: OFF parks the machine, it stays parked (no stray interrupt
 // brings it back), and ON restarts it -- several times over.
-void test_real_rom_off_stays_off_and_on_restarts() {
+TEST(test_real_rom_off_stays_off_and_on_restarts) {
     PC1600Machine m;
     if (!bootPC1600(m)) {
         std::fprintf(stderr, "SKIP test_real_rom_off_stays_off_and_on_restarts: PC-1600 ROM images not found\n");
@@ -782,7 +775,7 @@ void typeProgram(PC1600Machine& m, std::initializer_list<const char*> lines) {
     for (const char* l : lines) CHECK(typeLine(m, l, /*pressEnter=*/true, &err));
 }
 
-void test_rom_on_time_gosub_fires() {
+TEST(test_rom_on_time_gosub_fires) {
     PC1600Machine m;
     if (!bootPC1600(m)) {
         std::fprintf(stderr, "SKIP test_rom_on_time_gosub_fires: PC-1600 ROM images not found\n");
@@ -823,7 +816,7 @@ bool runUntil(PC1600Machine& m, bool wantOff, double seconds) {
 // Real ROM: the OFF key runs the ROM's power-off (signature at FA08H, EAH
 // from the LH-5803), the system goes off, and ON brings it back through a
 // reset that resumes -- program kept, prompt responsive (SubCpu §4.1).
-void test_rom_off_on_resumes() {
+TEST(test_rom_off_on_resumes) {
     PC1600Machine m;
     if (!bootPC1600(m)) {
         std::fprintf(stderr, "SKIP test_rom_off_on_resumes: PC-1600 ROM images not found\n");
@@ -862,7 +855,7 @@ void test_rom_off_on_resumes() {
 // Real ROM: WAKE$(0) switches a POWER OFF machine on at the set minute and
 // runs its command string (FA1BH bit 6 -> FF00H to the key buffer). The
 // ROM separates the command with ':' (romIII-3 6E23H compares 3AH).
-void test_rom_wake_runs_command_at_the_set_time() {
+TEST(test_rom_wake_runs_command_at_the_set_time) {
     PC1600Machine m;
     if (!bootPC1600(m)) {
         std::fprintf(stderr, "SKIP test_rom_wake_runs_command_at_the_set_time: PC-1600 ROM images not found\n");
@@ -896,7 +889,7 @@ void test_rom_wake_runs_command_at_the_set_time() {
 // starts at 04B0H half-second ticks in KEYGET (P2-B6 929AH); the test sets
 // it to a few ticks instead of idling 10 emulated minutes, and checks the
 // 04B0H reload after the resume.
-void test_rom_auto_power_off_resumes() {
+TEST(test_rom_auto_power_off_resumes) {
     PC1600Machine m;
     if (!bootPC1600(m)) {
         std::fprintf(stderr, "SKIP test_rom_auto_power_off_resumes: PC-1600 ROM images not found\n");
@@ -944,7 +937,7 @@ struct RecordingLink : SerialLink {
     void getStatus(Lines& in) override { in = lines; }
 };
 
-void test_rom_com1_print_reaches_the_peer() {
+TEST(test_rom_com1_print_reaches_the_peer) {
     PC1600Machine m;
     if (!bootPC1600(m)) {
         std::fprintf(stderr, "SKIP test_rom_com1_print_reaches_the_peer: PC-1600 ROM images not found\n");
@@ -974,43 +967,4 @@ void test_rom_com1_print_reaches_the_peer() {
     m.runCycles(static_cast<uint64_t>(PC1600Machine::kTStateHz) * 2);
     CHECK(std::string(link.tx.begin(), link.tx.end()).find("WORLD") == std::string::npos);
     m.setSerialLink(nullptr);
-}
-
-int run_pc1600_machine_tests() {
-    test_rom_com1_print_reaches_the_peer();
-    test_rom_auto_power_off_resumes();
-    test_rom_off_on_resumes();
-    test_rom_wake_runs_command_at_the_set_time();
-    test_off_command_switches_power_and_on_key_resets();
-    test_wake_timer_powers_on_only_when_enabled();
-    test_ci_powers_on_when_enabled();
-    test_rom_on_time_gosub_fires();
-    test_simple_reset_keeps_internal_ram_all_reset_wipes_it();
-    test_reset_releases_held_keys();
-    test_reset_level_reported_to_boot_rom_via_request_5A();
-    test_debug_peek_reads_internal_ram_through_current_banks();
-    test_debug_copy_internal_ram_is_the_live_state();
-    test_debug_slot_image_returns_the_whole_card_backing_store();
-    test_debug_write_internal_ram_and_slot_image_land_directly();
-    test_debug_write_slot_bus_follows_card_wiring();
-    test_debug_bank_state_reports_registers_and_card_bank();
-    test_debug_bank_state_resolves_the_live_address_map();
-    test_lh5803_unclaimed_me1_floats();
-    test_reset_starts_on_sc7852();
-    test_sc7852_to_lh5803_handoff();
-    test_lh5803_to_sc7852_handoff();
-    test_trace_rings_are_independent_and_cpu_id_tagged();
-    test_runcycles_charges_halted_steps_at_the_halt_tick_rate();
-    test_yield_hook_fires_per_interval_across_runcycles_calls();
-    test_half_second_tick_raises_srirq_bit1();
-    test_runcycles_budget_is_tstates_in_either_bus_mode();
-    test_int_line_follows_cause_and_mask();
-    test_lh5803_handback_is_a_cause_bit3_interrupt();
-    test_on_press_while_running_does_not_wake_a_later_park();
-    test_real_rom_off_stays_off_and_on_restarts();
-    test_rtc_advances_while_lh5803_owns_the_bus();
-    test_seed_clock_millisecond_aligns_next_tick();
-
-    std::printf("pc1600_machine_tests: %d passed, %d failed\n", g_pass, g_fail);
-    return g_fail;
 }

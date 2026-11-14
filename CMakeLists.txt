@@ -8,6 +8,7 @@ cmake_minimum_required(VERSION 3.21)
 #   cmake -S . -B build/all -G Ninja                         # everything, Qt6 when found
 #   cmake -S . -B build/tests -G Ninja -DCALCU_FRONTEND_QT=OFF  # cores and tests, no Qt
 #   ctest --test-dir build/tests/products/calc-u-59          # one product's tests
+#   ctest --test-dir build/tests -L frequent                 # one test group (ADR 0031)
 #   emcmake cmake -S . -B build/web -G Ninja -DCMAKE_BUILD_TYPE=Release  # the Web engines
 #
 # Options:
@@ -16,6 +17,15 @@ cmake_minimum_required(VERSION 3.21)
 #   CALCU_FRONTEND_QT   the Qt6 desktop apps; without it nothing needs Qt
 #   CALCU_TESTS         the products' test suites; the release packaging in
 #                       CI turns them off (build/release, the Qt6 apps only)
+#   CALCU_TESTS_LONGER      also the Longer group's tests (ADR 0031): Playwright,
+#                           the WASM smoke, XCUITest, screenshot scenarios, DAP
+#   CALCU_TESTS_CHECKPOINT  also the Checkpoint group's tests: the screenshot
+#                           sets and the ten-minute pacing runs
+#
+# Test groups (ADR 0031): every CTest entry carries the label frequent,
+# longer or checkpoint. Without the two options a tree has only the
+# Frequent group, so a plain ctest is the Frequent run. docs/test-groups.md
+# lists every test and its group.
 #
 # Under the Emscripten toolchain (emcmake) each product defines only its
 # Web engine (calcu59_web, calcu_web) and Calc-U-1600's wasm_smoke check;
@@ -39,6 +49,8 @@ option(CALCU_PRODUCT_59 "Build Calc-U-59" ON)
 option(CALCU_PRODUCT_1600 "Build Calc-U-1600" ON)
 option(CALCU_FRONTEND_QT "Build the Qt6 desktop apps" ON)
 option(CALCU_TESTS "Build the products' test suites" ON)
+option(CALCU_TESTS_LONGER "Also register the Longer group's tests (ADR 0031)" OFF)
+option(CALCU_TESTS_CHECKPOINT "Also register the Checkpoint group's tests (ADR 0031)" OFF)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 enable_testing()

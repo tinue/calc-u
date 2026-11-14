@@ -17,23 +17,16 @@
 
 #include "../core/PC1500/PC1500Machine.hpp"
 #include "TestCards.hpp"
+#include "TestHarness.hpp"
 
 namespace {
-
-int g_pass = 0;
-int g_fail = 0;
-
-#define CHECK(cond) do { \
-    if (cond) { g_pass++; } \
-    else { g_fail++; std::fprintf(stderr, "FAIL %s:%d: %s\n", __FILE__, __LINE__, #cond); } \
-} while (0)
 
 // Declares `card` (a fresh CE-1638). The definition ships in the repo, so a
 // missing or unloadable one fails the test.
 #define CE1638_OR_SKIP(card, host)                                                        \
     auto card = bundledCard("ce1638.card.yaml", host);                                    \
     if (!card) {                                                                          \
-        g_fail++; std::fprintf(stderr, "FAIL %s: frontends/qt6/resources/cards/ce1638.card.yaml missing or unloadable\n", __func__); \
+        testharness::failCount()++; std::fprintf(stderr, "FAIL %s: frontends/qt6/resources/cards/ce1638.card.yaml missing or unloadable\n", __func__); \
         return;                                                                           \
     }
 
@@ -51,7 +44,7 @@ PinState triggerAt(uint16_t addr) { // bank-latch strobe on physical pin 18
     return p;
 }
 
-void test_ce1638_banking() {
+TEST(test_ce1638_banking) {
     CE1638_OR_SKIP(owned, CardHost::PC1500);
     SoftwareDefinedCard& card = *owned;
     uint8_t v;
@@ -87,7 +80,7 @@ void test_ce1638_banking() {
     CHECK(!card.respondsToRead(triggerAt(0x4800), v));
 }
 
-void test_ce1638_end_to_end_via_machine() {
+TEST(test_ce1638_end_to_end_via_machine) {
     CE1638_OR_SKIP(card, CardHost::PC1500);
     PC1500Machine pc1500(PC1500Variant::PC1500);
     pc1500.attachExpansionCard(std::move(card));
@@ -119,11 +112,3 @@ void test_ce1638_end_to_end_via_machine() {
 }
 
 } // namespace
-
-int run_ce1638_tests() {
-    test_ce1638_banking();
-    test_ce1638_end_to_end_via_machine();
-
-    std::printf("ce1638_tests: %d passed, %d failed\n", g_pass, g_fail);
-    return g_fail;
-}

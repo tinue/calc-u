@@ -12,16 +12,9 @@
 
 #include "../core/Debug/BasicPointerTable.hpp"
 #include "../core/PC1600/PC1600ProgramPlacement.hpp"
+#include "TestHarness.hpp"
 
 namespace {
-
-int g_pass = 0;
-int g_fail = 0;
-
-#define CHECK(cond) do { \
-    if (cond) { g_pass++; } \
-    else { g_fail++; std::fprintf(stderr, "FAIL %s:%d: %s\n", __FILE__, __LINE__, #cond); } \
-} while (0)
 
 using pc1600::PlacementInput;
 using pc1600::PlacementResult;
@@ -80,7 +73,7 @@ std::vector<uint8_t> program(int lines, size_t recordSize) {
 }
 
 // ── Stock machine: one internal-RAM segment at $C0C5 ───────────────────
-void test_stock_single_internal_segment() {
+TEST(test_stock_single_internal_segment) {
     FakeMem m;
     m.set(pc1600::kS0MTb, 0xFF);      // not 1..5 -> S0 is internal-only
     m.setBE(pc1600::kBasPrgSt, 0x40C5);
@@ -106,7 +99,7 @@ void test_stock_single_internal_segment() {
 // Two program segments (a `#SEGMENT` / `99999` listing line): the lone $FF
 // between them is a 1-byte record, and the second segment restarts its line
 // numbers -- rom3b LOADLINE 6F70H.
-void test_two_program_segments() {
+TEST(test_two_program_segments) {
     FakeMem m;
     m.set(pc1600::kS0MTb, 0xFF);
     m.setBE(pc1600::kBasPrgSt, 0x40C5);
@@ -138,7 +131,7 @@ void test_two_program_segments() {
 // ── CE-1600M in Slot 1 as extension memory, boot + NEW0 -- the real
 //    intro.pc1600 case observed on the emulated machine:
 //    S0MTb=$04, ADTBL[4..5] = 01 11, BASPRG_ST=$00C5. ──────────────────
-void test_ce1600m_slot1_extension_memory() {
+TEST(test_ce1600m_slot1_extension_memory) {
     FakeMem m;
     m.set(pc1600::kS0MTb, 0x04);
     m.set(pc1600::kS1MTb, 0xFE);
@@ -172,7 +165,7 @@ void test_ce1600m_slot1_extension_memory() {
 //    -> S0 banks [0, 2, 3] then internal. No line straddles two module
 //    banks: the line that doesn't fit leaves a 00 00 bank-end mark and
 //    starts the next bank (rom3b LOADSTORE 7074H). ─────────────────────
-void test_trm_example1_scatter_and_bank_end_mark() {
+TEST(test_trm_example1_scatter_and_bank_end_mark) {
     FakeMem m;
     m.set(pc1600::kS0MTb, 3);
     m.set(pc1600::kS1MTb, 0xFE);
@@ -223,7 +216,7 @@ void test_trm_example1_scatter_and_bank_end_mark() {
 
 // ADTBL entry 5's module bank runs straight on into internal RAM ($BFFF ->
 // $C000), so there a line does straddle, with no mark.
-void test_entry5_straddles_into_internal_ram() {
+TEST(test_entry5_straddles_into_internal_ram) {
     FakeMem m;
     m.set(pc1600::kS0MTb, 5);
     m.set(pc1600::kAdtbl1 + 4, 0x01);   // ADTBL[5] = bank 0 / slot 1
@@ -245,7 +238,7 @@ void test_entry5_straddles_into_internal_ram() {
 // ── TRM §3.12.2 Example 2: CE-1600M Slot 1 + CE-161 Slot 2 as PROGRAM
 //    modules. ADTBL = 00 81 11 A2 00, S1MTb/S1MBb = 02/03. The Slot-1
 //    region's leading bank gets the 197-byte header+reserve. ───────────
-void test_trm_example2_program_module_region() {
+TEST(test_trm_example2_program_module_region) {
     FakeMem m;
     m.set(pc1600::kS0MTb, 5);           // 00 -> S0 internal-only
     m.set(pc1600::kS1MTb, 2);
@@ -284,7 +277,7 @@ void test_trm_example2_program_module_region() {
 }
 
 // ── Error paths ───────────────────────────────────────────────────────
-void test_program_too_large() {
+TEST(test_program_too_large) {
     FakeMem m;
     m.set(pc1600::kS0MTb, 0xFF);
     m.setBE(pc1600::kBasPrgSt, 0x40C5);
@@ -294,7 +287,7 @@ void test_program_too_large() {
     CHECK(r.error.find("too large") != std::string::npos);
 }
 
-void test_basprgst_outside_first_segment() {
+TEST(test_basprgst_outside_first_segment) {
     FakeMem m;
     m.set(pc1600::kS0MTb, 0xFF);
     m.setBE(pc1600::kBasPrgSt, 0x0100);  // -> Z-80 $8100, not in the internal segment
@@ -304,7 +297,7 @@ void test_basprgst_outside_first_segment() {
     CHECK(r.error.find("outside the first S0 segment") != std::string::npos);
 }
 
-void test_adtbl_points_at_absent_module() {
+TEST(test_adtbl_points_at_absent_module) {
     FakeMem m;
     m.set(pc1600::kS0MTb, 5);
     m.set(pc1600::kAdtbl1 + 4, 0x21);    // ADTBL[5] = bank 2 / slot 2, but slot 2 empty
@@ -318,7 +311,7 @@ void test_adtbl_points_at_absent_module() {
 // extension memory: the program area lives in vertical bank 0, so the
 // writes land in the first 32 KB of the card image exactly as for a plain
 // CE-1600M. Not rejected.
-void test_vertical_banked_module_uses_bank0() {
+TEST(test_vertical_banked_module_uses_bank0) {
     FakeMem m;
     m.set(pc1600::kS0MTb, 4);
     m.set(pc1600::kS2MTb, 0xFE);
@@ -342,7 +335,7 @@ void test_vertical_banked_module_uses_bank0() {
 }
 
 // A module whose window is absurdly small is still rejected.
-void test_tiny_module_window_rejected() {
+TEST(test_tiny_module_window_rejected) {
     FakeMem m;
     m.set(pc1600::kS0MTb, 5);
     m.set(pc1600::kAdtbl1 + 4, 0x11);    // ADTBL[5] = bank 1 / slot 1
@@ -355,7 +348,7 @@ void test_tiny_module_window_rejected() {
 
 // The Debug panel's MEM / STATUS 259 figures, checked against a real unit:
 // CE-1600M in slot 1 after INIT"S1:","P" -- MEM 10810, STATUS 259 32571.
-void test_debug_program_areas_match_rom() {
+TEST(test_debug_program_areas_match_rom) {
     FakeMem m;
     m.set(0xF1D5, 0x01);            // TITLE "S1:"
     m.set(0xF02B, 0x05);
@@ -381,21 +374,3 @@ void test_debug_program_areas_match_rom() {
 }
 
 }  // namespace
-
-int run_pc1600_program_placement_tests() {
-    test_debug_program_areas_match_rom();
-    test_stock_single_internal_segment();
-    test_two_program_segments();
-    test_ce1600m_slot1_extension_memory();
-    test_trm_example1_scatter_and_bank_end_mark();
-    test_entry5_straddles_into_internal_ram();
-    test_trm_example2_program_module_region();
-    test_program_too_large();
-    test_basprgst_outside_first_segment();
-    test_adtbl_points_at_absent_module();
-    test_vertical_banked_module_uses_bank0();
-    test_tiny_module_window_rejected();
-
-    std::printf("pc1600_program_placement_tests: %d passed, %d failed\n", g_pass, g_fail);
-    return g_fail;
-}

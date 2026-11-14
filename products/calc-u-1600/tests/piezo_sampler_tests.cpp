@@ -26,16 +26,9 @@
 #include "../core/PC1600/PC1600Machine.hpp"
 #include "../core/PC1600/PC1600Memory.hpp"
 #include "TestRoms.hpp"
+#include "TestHarness.hpp"
 
 namespace {
-
-int g_pass = 0;
-int g_fail = 0;
-
-#define CHECK(cond) do { \
-    if (cond) { g_pass++; } \
-    else { g_fail++; std::fprintf(stderr, "FAIL %s:%d: %s\n", __FILE__, __LINE__, #cond); } \
-} while (0)
 
 constexpr int kRate = PiezoSampler::kDefaultSampleRate;
 constexpr int16_t kAudible = 2000; // well above the DC blocker's decay tail
@@ -93,7 +86,7 @@ bool near(double a, double b, double tolerance) {
 // ── Synthetic (no ROM) ──────────────────────────────────────────────────
 
 // A square wave of known period, in CPU cycles, comes out at that pitch.
-void test_square_wave_pitch() {
+TEST(test_square_wave_pitch) {
     const double cpuHz = 1300000.0;
     PiezoSampler s(cpuHz);
     const uint32_t halfPeriod = 650; // 1000 Hz
@@ -110,7 +103,7 @@ void test_square_wave_pitch() {
 
 // A line parked high (the ROM's idle level) decays to silence: the DC
 // blocker stands in for the piezo's AC coupling.
-void test_constant_level_decays_to_silence() {
+TEST(test_constant_level_decays_to_silence) {
     PiezoSampler s(3580000.0);
     s.setLevel(true);
     s.advance(3580000); // 1 s
@@ -122,7 +115,7 @@ void test_constant_level_decays_to_silence() {
 
 // An edge halfway through a sample interval yields the proportional
 // average, not a hard 0 or 1.
-void test_mid_sample_edge_is_averaged() {
+TEST(test_mid_sample_edge_is_averaged) {
     const double cpuHz = 48000.0 * 100; // exactly 100 cycles per sample
     PiezoSampler s(cpuHz);
     s.setLevel(false);
@@ -154,7 +147,7 @@ double toneLevel(const std::vector<int16_t>& pcm, double hz) {
 // 287 Hz square (BEEP A=200) comes out with its fundamental far below the
 // 2 kHz 7th harmonic (real unit: ~35 dB), while the raw line keeps the
 // square wave's own 1/7 (-17 dB) ratio the other way round.
-void test_pc1600_transducer_shape() {
+TEST(test_pc1600_transducer_shape) {
     const double cpuHz = 3580000.0;
     const uint32_t halfPeriod = 6221; // 60*200+441 T per period, /2
     PiezoSampler raw(cpuHz), piezo(cpuHz, PiezoSampler::Transducer::PC1600);
@@ -187,7 +180,7 @@ void test_pc1600_transducer_shape() {
 // The PC-1500 transducer model: a 551 Hz square (BEEP A=100) is heard
 // through its 7th harmonic at 3.9 kHz, which the real unit's sweep puts
 // ~26 dB above the fundamental; the raw line has the fundamental 17 dB up.
-void test_pc1500_transducer_shape() {
+TEST(test_pc1500_transducer_shape) {
     const double cpuHz = 1300000.0;
     const uint32_t halfPeriod = 1181; // (161 + 22*100) cycles per period, /2
     PiezoSampler raw(cpuHz), piezo(cpuHz, PiezoSampler::Transducer::PC1500);
@@ -218,7 +211,7 @@ void test_pc1500_transducer_shape() {
 }
 
 // The ring keeps only the newest ~1 s when nobody drains it.
-void test_overflow_keeps_newest() {
+TEST(test_overflow_keeps_newest) {
     PiezoSampler s(48000.0); // 1 cycle per sample
     s.advance(kRate + 500);
     CHECK(s.available() == static_cast<size_t>(kRate));
@@ -264,7 +257,7 @@ std::vector<int16_t> runAndCapture(PC1500Machine& m, const std::string& line, do
     return pcm;
 }
 
-void test_pc1500_beep() {
+TEST(test_pc1500_beep) {
     PC1500Machine m;
     if (!bootPC1500(m)) {
         std::fprintf(stderr, "SKIP test_pc1500_beep: PC-1500 ROM image not found\n");
@@ -290,7 +283,7 @@ void test_pc1500_beep() {
 // typeLine()'s post-Enter settle must not mistake the BEEP tone loop (a
 // small PC window high in ROM, like the idle prompt) for the prompt --
 // otherwise the next typed line lands mid-beep and is mangled.
-void test_pc1500_settle_waits_for_beep() {
+TEST(test_pc1500_settle_waits_for_beep) {
     PC1500Machine m;
     if (!bootPC1500(m)) {
         std::fprintf(stderr, "SKIP test_pc1500_settle_waits_for_beep: PC-1500 ROM image not found\n");
@@ -326,7 +319,7 @@ std::vector<int16_t> runAndCapture(PC1600Machine& m, const std::string& line, do
     return pcm;
 }
 
-void test_pc1600_beep() {
+TEST(test_pc1600_beep) {
     PC1600Machine m;
     if (!bootPC1600(m)) {
         std::fprintf(stderr, "SKIP test_pc1600_beep: PC-1600 ROM images not found\n");
@@ -374,7 +367,7 @@ void test_pc1600_beep() {
 // gives a tone too short (9 ticks), and the slow PB5-synced sub-CPU path in
 // the 0.5 s ISR swallows edges (+1 tick about every other beep), so the
 // boot's IOCS 25H probe must leave F0B8H bit 0 set (fast path).
-void test_pc1600_beep_repeat_spacing() {
+TEST(test_pc1600_beep_repeat_spacing) {
     PC1600Machine m;
     if (!bootPC1600(m)) {
         std::fprintf(stderr, "SKIP test_pc1600_beep_repeat_spacing: PC-1600 ROM images not found\n");
@@ -408,7 +401,7 @@ void test_pc1600_beep_repeat_spacing() {
 // FX on SDO, which drives the buzzer alongside OPC. dampflok.bas whistles
 // with F = 41H (FX = phi/128), measured at 2539 Hz on a real unit, so
 // phi = 1.3 MHz / 4.
-void test_pc1600_f_register_modulator() {
+TEST(test_pc1600_f_register_modulator) {
     PC1600Machine m;
     if (!bootPC1600(m)) {
         std::fprintf(stderr, "SKIP test_pc1600_f_register_modulator: PC-1600 ROM images not found\n");
@@ -434,7 +427,7 @@ void test_pc1600_f_register_modulator() {
 // Switching 17H to a faster divider mid-period (no 14H reset) leaves the
 // SDO phase past the new half period. The overdue toggle must fire at once,
 // not wrap into a ~4e9 T-state advance of the sampler.
-void test_pc1600_f_register_faster_divider_mid_period() {
+TEST(test_pc1600_f_register_faster_divider_mid_period) {
     PC1600Machine m;
     PC1600Memory& mem = m.memory();
     mem.writeIO(0x17, 0x44);   // FX = phi/1024: half period ~5640 T-states
@@ -449,21 +442,3 @@ void test_pc1600_f_register_faster_divider_mid_period() {
 }
 
 } // namespace
-
-int run_piezo_sampler_tests() {
-    test_square_wave_pitch();
-    test_constant_level_decays_to_silence();
-    test_mid_sample_edge_is_averaged();
-    test_overflow_keeps_newest();
-    test_pc1600_transducer_shape();
-    test_pc1500_transducer_shape();
-    test_pc1500_beep();
-    test_pc1500_settle_waits_for_beep();
-    test_pc1600_beep();
-    test_pc1600_beep_repeat_spacing();
-    test_pc1600_f_register_modulator();
-    test_pc1600_f_register_faster_divider_mid_period();
-
-    std::printf("piezo_sampler_tests: %d passed, %d failed\n", g_pass, g_fail);
-    return g_fail;
-}

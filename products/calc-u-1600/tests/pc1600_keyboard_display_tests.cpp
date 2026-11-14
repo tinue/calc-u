@@ -19,20 +19,13 @@
 #include "../core/PC1600/PC1600Keyboard.hpp"
 #include "../core/PC1600/PC1600Memory.hpp"
 #include "../core/SharpShiftedSymbols.hpp"
+#include "TestHarness.hpp"
 
 namespace {
 
-int g_pass = 0;
-int g_fail = 0;
-
-#define CHECK(cond) do { \
-    if (cond) { g_pass++; } \
-    else { g_fail++; std::fprintf(stderr, "FAIL %s:%d: %s\n", __FILE__, __LINE__, #cond); } \
-} while (0)
-
 // ── PC1600Keyboard ────────────────────────────────────────────────────
 
-void test_keyboard_name_lookup() {
+TEST(test_keyboard_name_lookup) {
     using K = PC1600Keyboard::Key;
     CHECK(PC1600Keyboard::keyFromName("5") == K::Digit5);
     CHECK(PC1600Keyboard::keyFromName("a") == K::A);
@@ -45,7 +38,7 @@ void test_keyboard_name_lookup() {
     CHECK(PC1600Keyboard::keyFromName("nonsense") == K::Unknown);
 }
 
-void test_keyboard_rsv_matrix_position() {
+TEST(test_keyboard_rsv_matrix_position) {
     // KS1 bit7 -- see PC1600Keyboard::Key::Rsv's own doc comment for how
     // this was confirmed (ROM key-code table + schematic, 2026-08-30).
     PC1600Keyboard kb;
@@ -54,7 +47,7 @@ void test_keyboard_rsv_matrix_position() {
     CHECK((sense & 0x80) == 0);
 }
 
-void test_keyboard_scan_single_strobe() {
+TEST(test_keyboard_scan_single_strobe) {
     PC1600Keyboard kb;
     // '5' is KS0 bit1 (Ref/PC-1600/PC-1600-Keyboard.md §5).
     kb.setKeyState(PC1600Keyboard::Key::Digit5, true);
@@ -67,7 +60,7 @@ void test_keyboard_scan_single_strobe() {
     CHECK(senseKS1 == 0xFF);
 }
 
-void test_keyboard_pb6_strobe() {
+TEST(test_keyboard_pb6_strobe) {
     PC1600Keyboard kb;
     kb.setKeyState(PC1600Keyboard::Key::Ctrl, true); // PB6 strobe, bit0
     uint8_t senseNoStrobe = kb.scan(0xFF, false);
@@ -76,14 +69,14 @@ void test_keyboard_pb6_strobe() {
     CHECK((senseWithStrobe & 0x01) == 0);
 }
 
-void test_keyboard_no_keys_pressed_is_all_ones() {
+TEST(test_keyboard_no_keys_pressed_is_all_ones) {
     PC1600Keyboard kb;
     CHECK(kb.scan(0x00, true) == 0xFF);
 }
 
 // ── PC1600Display ─────────────────────────────────────────────────────
 
-void test_display_ic2_command_and_data() {
+TEST(test_display_ic2_command_and_data) {
     PC1600Display d;
     // Port block 0x58-0x5B = IC2-only. Within the block: offset 0 (0x58) =
     // command write, offset 2 (0x5A) = data write, offset 1 (0x59) = status
@@ -101,7 +94,7 @@ void test_display_ic2_command_and_data() {
 // Status bit 7 (busy) after a write: set until the 4th edge of the
 // controllers' 216.7 kHz clock (~16.5 T per edge), then clear. Only the
 // written controller goes busy; 50H-53H writes hit both.
-void test_display_busy_after_write() {
+TEST(test_display_busy_after_write) {
     PC1600Display d;
     d.setClockEnabled(true);
     d.writeIO(0x50, 0x3F);               // both on, so the status byte is only busy
@@ -125,7 +118,7 @@ void test_display_busy_after_write() {
 
 // Without CK0 (port 37H bit 4) the HD61102s get no phi clock, so busy
 // cannot clear; it clears 4 edges after the clock comes back.
-void test_display_busy_holds_while_clock_off() {
+TEST(test_display_busy_holds_while_clock_off) {
     PC1600Display d;
     d.writeIO(0x5A, 0x81);
     d.tick(10'000);
@@ -139,7 +132,7 @@ void test_display_busy_holds_while_clock_off() {
 
 // Status DB5 = ON/OFF, 1 = display off (the reverse of the instruction's
 // D bit); DB4 (RESET) stays clear.
-void test_display_status_reports_on_off() {
+TEST(test_display_status_reports_on_off) {
     PC1600Display d;
     d.setClockEnabled(true);
     CHECK(d.readIO(0x59) == 0x20);      // off after power-on
@@ -153,7 +146,7 @@ void test_display_status_reports_on_off() {
     CHECK(d.readIO(0x59) == 0x20);
 }
 
-void test_display_ic3_column_offset() {
+TEST(test_display_ic3_column_offset) {
     PC1600Display d;
     // Port block 0x54-0x57 = IC3-only, columns 64-127 of the panel.
     d.writeIO(0x54, 0x3F);
@@ -164,7 +157,7 @@ void test_display_ic3_column_offset() {
     CHECK(!d.pixel(0, 0)); // IC2 untouched
 }
 
-void test_display_read_returns_output_register() {
+TEST(test_display_read_returns_output_register) {
     // See PC1600Display.cpp's dataByte() comment: a read returns the
     // output register, which the previous read loaded, then reloads it
     // from the current address. The first read after setting an address
@@ -199,7 +192,7 @@ void test_display_read_returns_output_register() {
 /// cursor-blink routine (set column, dummy read, real read, XOR a
 /// pattern in, re-home the column, write back) -- confirms it recovers
 /// the ORIGINAL byte, not a neighboring column's.
-void test_display_cursor_style_read_modify_write_roundtrip() {
+TEST(test_display_cursor_style_read_modify_write_roundtrip) {
     PC1600Display d;
     d.writeIO(0x58, 0x3F);
     d.writeIO(0x58, 0xB8); // page 0
@@ -224,7 +217,7 @@ void test_display_cursor_style_read_modify_write_roundtrip() {
     d.writeIO(0x5A, restored);
 }
 
-void test_display_off_reads_as_blank() {
+TEST(test_display_off_reads_as_blank) {
     PC1600Display d;
     d.writeIO(0x58, 0x3F); // on
     d.writeIO(0x58, 0xB8); // page 0
@@ -240,7 +233,7 @@ void test_display_off_reads_as_blank() {
 // addressable pixels, not a duplicate of columns 0-27's own page 0-3
 // content. See PC1600Display.hpp's class comment for how this mapping
 // was derived from the TRM block diagram.
-void test_display_rightmost_columns_read_ic2_pages4to7() {
+TEST(test_display_rightmost_columns_read_ic2_pages4to7) {
     PC1600Display d;
     d.writeIO(0x58, 0x3F); // IC2 on
 
@@ -275,7 +268,7 @@ void test_display_rightmost_columns_read_ic2_pages4to7() {
 // 8 pages (64 raw rows) appear at visible row 0-31; the ROM's own scroll
 // routines depend on this rotation to avoid drawing stray dots or
 // misplaced content.
-void test_display_start_line_rotates_visible_window() {
+TEST(test_display_start_line_rotates_visible_window) {
     PC1600Display d;
     d.writeIO(0x58, 0x3F); // IC2 on
 
@@ -304,7 +297,7 @@ void test_display_start_line_rotates_visible_window() {
 // 7/6/4 -- per the TRM's own SMBLSET table. Writing through the ordinary
 // HD61102 I/O path (ports 54H/56H, IC3) should update statusLine()
 // automatically.
-void test_display_status_symbols_wired_to_ic3_column63() {
+TEST(test_display_status_symbols_wired_to_ic3_column63) {
     PC1600Display d;
     d.writeIO(0x54, 0x3F); // IC3 on
 
@@ -349,7 +342,7 @@ void test_display_status_symbols_wired_to_ic3_column63() {
 // the ROM's OFF-key / auto-power-off power-down should not leave DEG/RUN/
 // BUSY frozen on the glass. Turning the display back on recomputes from the
 // retained pixel RAM.
-void test_display_status_symbols_blank_when_ic3_display_off() {
+TEST(test_display_status_symbols_blank_when_ic3_display_off) {
     PC1600Display d;
     using Symbol = StatusLine::Symbol;
 
@@ -370,7 +363,7 @@ void test_display_status_symbols_blank_when_ic3_display_off() {
     CHECK(d.statusLine().isOn(Symbol::Busy));
 }
 
-void test_display_clock_enable_flag() {
+TEST(test_display_clock_enable_flag) {
     PC1600Display d;
     CHECK(!d.clockEnabled());
     d.setClockEnabled(true);
@@ -379,12 +372,12 @@ void test_display_clock_enable_flag() {
 
 // ── StatusLine ─────────────────────────────────────────────────
 
-void test_statusline_defaults_all_off() {
+TEST(test_statusline_defaults_all_off) {
     StatusLine s;
     for (bool on : s.all()) CHECK(!on);
 }
 
-void test_statusline_set_and_read() {
+TEST(test_statusline_set_and_read) {
     StatusLine s;
     s.set(StatusLine::Symbol::Batt, true);
     CHECK(s.isOn(StatusLine::Symbol::Batt));
@@ -393,7 +386,7 @@ void test_statusline_set_and_read() {
     CHECK(!s.isOn(StatusLine::Symbol::Batt));
 }
 
-void test_statusline_reset_clears_all() {
+TEST(test_statusline_reset_clears_all) {
     StatusLine s;
     s.set(StatusLine::Symbol::De, true);
     s.set(StatusLine::Symbol::Ctrl, true);
@@ -401,7 +394,7 @@ void test_statusline_reset_clears_all() {
     for (bool on : s.all()) CHECK(!on);
 }
 
-void test_display_owns_status_line() {
+TEST(test_display_owns_status_line) {
     PC1600Display d;
     CHECK(!d.statusLine().isOn(StatusLine::Symbol::Shift));
     d.statusLine().set(StatusLine::Symbol::Shift, true);
@@ -410,7 +403,7 @@ void test_display_owns_status_line() {
 
 // ── PC1600Memory I/O wiring ────────────────────────────────────────────
 
-void test_memory_keyboard_and_on_key_via_io() {
+TEST(test_memory_keyboard_and_on_key_via_io) {
     PC1600Bank bank;
     PC1600Memory mem(bank);
     mem.keyboard().setKeyState(PC1600Keyboard::Key::Digit1, true); // KS2 bit0
@@ -451,7 +444,7 @@ void test_memory_keyboard_and_on_key_via_io() {
     CHECK(bus.readIO(0x1A) == 0x0F);
 }
 
-void test_memory_pb6_strobe_needs_output_mode_via_io() {
+TEST(test_memory_pb6_strobe_needs_output_mode_via_io) {
     PC1600Bank bank;
     PC1600Memory mem(bank);
     auto& bus = static_cast<SC7852Bus&>(mem);
@@ -484,7 +477,7 @@ void test_memory_pb6_strobe_needs_output_mode_via_io() {
     CHECK((bus.readIO(0x37) & 0x02) == 0); // bit1 low = MODE, no KBII collision
 }
 
-void test_memory_pb5_survives_opb_read_modify_write() {
+TEST(test_memory_pb5_survives_opb_read_modify_write) {
     PC1600Bank bank;
     PC1600Memory mem(bank);
     auto& bus = static_cast<SC7852Bus&>(mem);
@@ -538,7 +531,7 @@ void test_memory_pb5_survives_opb_read_modify_write() {
 
 // The values below are what the Z-80 writes to port 21H: the complement of
 // the sub-CPU operand (PC1600SubCpu's class comment). Operands in brackets.
-void test_subcpu_requests_answer_on_port33() {
+TEST(test_subcpu_requests_answer_on_port33) {
     PC1600Bank bank;
     PC1600Memory mem(bank);
     auto& bus = static_cast<SC7852Bus&>(mem);
@@ -572,7 +565,7 @@ void test_subcpu_requests_answer_on_port33() {
     CHECK(bus.readIO(0x33) == 0x20);
 }
 
-void test_subcpu_nibble_stack_clock_roundtrip() {
+TEST(test_subcpu_nibble_stack_clock_roundtrip) {
     PC1600Bank bank;
     PC1600Memory mem(bank);
     auto& bus = static_cast<SC7852Bus&>(mem);
@@ -618,7 +611,7 @@ void test_subcpu_nibble_stack_clock_roundtrip() {
     }
 }
 
-void test_subcpu_clock_ticks_and_rolls_over() {
+TEST(test_subcpu_clock_ticks_and_rolls_over) {
     PC1600Bank bank;
     PC1600Memory mem(bank);
     auto& sub = mem.subCpu();
@@ -659,7 +652,7 @@ void test_subcpu_clock_ticks_and_rolls_over() {
     CHECK(dt.month == 0x01 && dt.day == 0x01);
 }
 
-void test_subcpu_host_seed_survives_cold_init() {
+TEST(test_subcpu_host_seed_survives_cold_init) {
     PC1600Bank bank;
     PC1600Memory mem(bank);
     auto& bus = static_cast<SC7852Bus&>(mem);
@@ -690,7 +683,7 @@ void test_subcpu_host_seed_survives_cold_init() {
           dt.minute == 0x15 && dt.second == 0x30);
 }
 
-void test_subcpu_interrupt_mask_and_password() {
+TEST(test_subcpu_interrupt_mask_and_password) {
     PC1600Bank bank;
     PC1600Memory mem(bank);
     auto& bus = static_cast<SC7852Bus&>(mem);
@@ -712,7 +705,7 @@ void test_subcpu_interrupt_mask_and_password() {
     CHECK(bus.readIO(0x33) == 0x24);
 }
 
-void test_memory_intmask_reads_back_via_port35() {
+TEST(test_memory_intmask_reads_back_via_port35) {
     PC1600Bank bank;
     PC1600Memory mem(bank);
     auto& bus = static_cast<SC7852Bus&>(mem);
@@ -726,7 +719,7 @@ void test_memory_intmask_reads_back_via_port35() {
 // The romaji->kana caption is on commons X35 / X59 (Service Manual glass
 // pinout): page 4 bit 2 and page 7 bit 2 of IC3 column 63. KBII's bit 7
 // has no electrode, and the KBII mode flag in RAM must not light anything.
-void test_romaji_kana_segments_follow_the_glass_pinout() {
+TEST(test_romaji_kana_segments_follow_the_glass_pinout) {
     PC1600Bank bank;
     PC1600Memory mem(bank);
     auto& bus = static_cast<SC7852Bus&>(mem);
@@ -760,7 +753,7 @@ void test_romaji_kana_segments_follow_the_glass_pinout() {
     CHECK(!mem.display().statusLine().isOn(Symbol::Romaji));
 }
 
-void test_subcpu_interrupt_cause_bit6() {
+TEST(test_subcpu_interrupt_cause_bit6) {
     PC1600Bank bank;
     PC1600Memory mem(bank);
     auto& bus = static_cast<SC7852Bus&>(mem);
@@ -796,7 +789,7 @@ void test_subcpu_interrupt_cause_bit6() {
 // SWA1T / SRA1T (96H / 97H) store and read back a timer; at the minute
 // carry that matches it, the sub-CPU raises its SRIRQ bit. '?' fields are
 // sent as F nibbles and match anything (SubCpu §7.3).
-void test_subcpu_timer_store_readback_and_match() {
+TEST(test_subcpu_timer_store_readback_and_match) {
     PC1600Bank bank;
     PC1600Memory mem(bank);
     auto& sub = mem.subCpu();
@@ -834,7 +827,7 @@ void test_subcpu_timer_store_readback_and_match() {
     CHECK((sub.pendingInterrupts() & PC1600SubCpu::kIrqWakeUp) != 0);
 }
 
-void test_pb3_reads_high_for_the_alternate_charset_gate() {
+TEST(test_pb3_reads_high_for_the_alternate_charset_gate) {
     PC1600Bank bank;
     PC1600Memory mem(bank);
     auto& bus = static_cast<SC7852Bus&>(mem);
@@ -861,7 +854,7 @@ void test_pb3_reads_high_for_the_alternate_charset_gate() {
     CHECK((bus.readIO(0x1F) & 0x20) != 0);
 }
 
-void test_memory_display_wiring_via_io() {
+TEST(test_memory_display_wiring_via_io) {
     PC1600Bank bank;
     PC1600Memory mem(bank);
     static_cast<SC7852Bus&>(mem).writeIO(0x58, 0x3F);
@@ -871,7 +864,7 @@ void test_memory_display_wiring_via_io() {
     CHECK(mem.display().pixel(0, 0));
 }
 
-void test_memory_clock_enable_via_port37_write() {
+TEST(test_memory_clock_enable_via_port37_write) {
     PC1600Bank bank;
     PC1600Memory mem(bank);
     CHECK(!mem.display().clockEnabled());
@@ -893,7 +886,7 @@ void test_memory_clock_enable_via_port37_write() {
 // own SHIFT-code table (SFTCDT, bank 6 @ 953FH, indexed by key code - 08H;
 // Ref/PC-1600/PC-1600-Keyboard.md §7): '_' is SHIFT + ".", and 9 has no
 // SHIFT character.
-void test_digit_row_shift_table_matches_rom_sftcdt() {
+TEST(test_digit_row_shift_table_matches_rom_sftcdt) {
     std::ifstream in("roms/PC1600-P2-B6-new.bin", std::ios::binary);
     if (!in) {
         std::fprintf(stderr, "SKIP test_digit_row_shift_table_matches_rom_sftcdt: roms/PC1600-P2-B6-new.bin not found\n");
@@ -919,48 +912,4 @@ void test_digit_row_shift_table_matches_rom_sftcdt() {
     std::string base;
     CHECK(pc1600DigitRowShiftedBaseKey('_', &base) && base == ".");
     CHECK(rom[kSftcdt + ('9' - 0x08)] == '9'); // SHIFT + 9 has no second legend
-}
-
-int run_pc1600_keyboard_display_tests() {
-    test_keyboard_name_lookup();
-    test_keyboard_scan_single_strobe();
-    test_keyboard_pb6_strobe();
-    test_keyboard_rsv_matrix_position();
-    test_keyboard_no_keys_pressed_is_all_ones();
-    test_display_ic2_command_and_data();
-    test_display_read_returns_output_register();
-    test_display_cursor_style_read_modify_write_roundtrip();
-    test_display_ic3_column_offset();
-    test_display_off_reads_as_blank();
-    test_display_rightmost_columns_read_ic2_pages4to7();
-    test_display_start_line_rotates_visible_window();
-    test_display_status_symbols_wired_to_ic3_column63();
-    test_display_status_symbols_blank_when_ic3_display_off();
-    test_display_clock_enable_flag();
-    test_display_busy_after_write();
-    test_display_busy_holds_while_clock_off();
-    test_display_status_reports_on_off();
-    test_statusline_defaults_all_off();
-    test_statusline_set_and_read();
-    test_statusline_reset_clears_all();
-    test_display_owns_status_line();
-    test_memory_keyboard_and_on_key_via_io();
-    test_memory_pb6_strobe_needs_output_mode_via_io();
-    test_memory_pb5_survives_opb_read_modify_write();
-    test_subcpu_requests_answer_on_port33();
-    test_subcpu_nibble_stack_clock_roundtrip();
-    test_subcpu_clock_ticks_and_rolls_over();
-    test_subcpu_host_seed_survives_cold_init();
-    test_subcpu_interrupt_mask_and_password();
-    test_memory_intmask_reads_back_via_port35();
-    test_romaji_kana_segments_follow_the_glass_pinout();
-    test_subcpu_interrupt_cause_bit6();
-    test_subcpu_timer_store_readback_and_match();
-    test_pb3_reads_high_for_the_alternate_charset_gate();
-    test_memory_display_wiring_via_io();
-    test_memory_clock_enable_via_port37_write();
-    test_digit_row_shift_table_matches_rom_sftcdt();
-
-    std::printf("pc1600_keyboard_display_tests: %d passed, %d failed\n", g_pass, g_fail);
-    return g_fail;
 }

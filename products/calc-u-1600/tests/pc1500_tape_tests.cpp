@@ -21,16 +21,9 @@
 #include "../core/PC1500/PC1500LcdText.hpp"
 #include "../core/PC1500/PC1500Machine.hpp"
 #include "TestRoms.hpp"
+#include "TestHarness.hpp"
 
 namespace {
-
-int g_pass = 0;
-int g_fail = 0;
-
-#define CHECK(cond) do { \
-    if (cond) { g_pass++; } \
-    else { g_fail++; std::fprintf(stderr, "FAIL %s:%d: %s\n", __FILE__, __LINE__, #cond); } \
-} while (0)
 
 constexpr uint64_t kSecond = PC1500Machine::kCpuHz;
 const char* kFixtureWav = "tests/fixtures/tape/pc1500_tape.wav";
@@ -86,7 +79,7 @@ std::vector<float> asPlayback(const std::vector<int16_t>& recording) {
 }
 
 // A bin2wav tape CLOADs into exactly bas2img's program image.
-void test_cload_bin2wav_tape() {
+TEST(test_cload_bin2wav_tape) {
     const std::vector<uint8_t> image = readFile(kFixtureImg);
     PC1500Machine m(PC1500Variant::PC1500A);
     if (image.empty() || !bootWithCE150(m)) {
@@ -108,7 +101,7 @@ void test_cload_bin2wav_tape() {
 }
 
 // CSAVE onto a blank tape, then CLOAD that recording into a fresh machine.
-void test_csave_cload_round_trip() {
+TEST(test_csave_cload_round_trip) {
     const std::vector<uint8_t> image = readFile(kFixtureImg);
     PC1500Machine a(PC1500Variant::PC1500A);
     if (image.empty() || !bootWithCE150(a)) {
@@ -152,10 +145,3 @@ void test_csave_cload_round_trip() {
 }
 
 } // namespace
-
-int run_pc1500_tape_tests() {
-    test_cload_bin2wav_tape();
-    test_csave_cload_round_trip();
-    std::printf("pc1500_tape_tests: %d passed, %d failed\n", g_pass, g_fail);
-    return g_fail;
-}

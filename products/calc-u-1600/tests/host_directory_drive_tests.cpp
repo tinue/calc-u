@@ -17,16 +17,9 @@
 #include "../core/Connector/HostDirectoryDrive.hpp"
 #include "../core/Connector/PC1600HostDriveCard.hpp"
 #include "../core/PC1600/PC1600BusDrive.hpp"
+#include "TestHarness.hpp"
 
 namespace {
-
-int g_pass = 0;
-int g_fail = 0;
-
-#define CHECK(cond) do { \
-    if (cond) { g_pass++; } \
-    else { g_fail++; std::fprintf(stderr, "FAIL %s:%d: %s\n", __FILE__, __LINE__, #cond); } \
-} while (0)
 
 namespace fs = std::filesystem;
 using Drive = HostDirectoryDrive;
@@ -85,7 +78,7 @@ std::vector<std::string> listNames(Drive& drive, const std::string& pattern) {
     return names;
 }
 
-void test_name_mapping() {
+TEST(test_name_mapping) {
     CHECK(Drive::toFcbName("prog.bas") == "PROG    BAS");
     CHECK(Drive::toFcbName("MAKEFILE") == "MAKEFILE   ");
     CHECK(Drive::toFcbName("A-B_{1}.$$$") == "A-B_{1} $$$");
@@ -100,7 +93,7 @@ void test_name_mapping() {
     CHECK(Drive::toHostName("MAKEFILE   ") == "MAKEFILE");
 }
 
-void test_timestamp_has_no_real_year() {
+TEST(test_timestamp_has_no_real_year) {
     std::tm tm{};
     tm.tm_year = 2026 - 1900;
     tm.tm_mon = 8;   // September
@@ -115,7 +108,7 @@ void test_timestamp_has_no_real_year() {
     CHECK(date == ((6 << 9) | (9 << 5) | 29));
 }
 
-void test_no_directory_is_no_media() {
+TEST(test_no_directory_is_no_media) {
     Drive drive;
     auto r = drive.execute(request(Drive::kOpen, "PROG    BAS"));
     CHECK(r.status == 0x20);
@@ -125,7 +118,7 @@ void test_no_directory_is_no_media() {
     CHECK(r.status == 0x20);
 }
 
-void test_listing_filters_and_sorts() {
+TEST(test_listing_filters_and_sorts) {
     TempDir dir;
     writeFile(dir.path / "zeta.txt", "z");
     writeFile(dir.path / "ALPHA.BAS", "a");
@@ -142,7 +135,7 @@ void test_listing_filters_and_sorts() {
     CHECK(bas.size() == 1);
 }
 
-void test_directory_entry_fields() {
+TEST(test_directory_entry_fields) {
     TempDir dir;
     writeFile(dir.path / "DATA.TXT", std::string(70000, 'x'));
     Drive drive;
@@ -168,7 +161,7 @@ void test_directory_entry_fields() {
     CHECK(r.erl == Drive::kErlEof);  // SNEXT after the end, like FDSNEXT
 }
 
-void test_case_collision_keeps_one_file() {
+TEST(test_case_collision_keeps_one_file) {
     TempDir dir;
     writeFile(dir.path / "Prog.bas", "lower");
     writeFile(dir.path / "PROG.BAS", "upper");
@@ -190,7 +183,7 @@ void test_case_collision_keeps_one_file() {
     }
 }
 
-void test_open_fills_the_fcb_like_the_floppy() {
+TEST(test_open_fills_the_fcb_like_the_floppy) {
     TempDir dir;
     writeFile(dir.path / "prog.bas", std::string(300, 'p'));
     Drive drive;
@@ -233,7 +226,7 @@ Drive::Response closeWithCount(Drive& drive, const std::string& name,
     return drive.execute(cl);
 }
 
-void test_write_then_read_records_beyond_32k() {
+TEST(test_write_then_read_records_beyond_32k) {
     TempDir dir;
     Drive drive;
     drive.setDirectory(dir.path);
@@ -274,7 +267,7 @@ void test_write_then_read_records_beyond_32k() {
     CHECK(r.erl == Drive::kErlEof);
 }
 
-void test_close_without_writes_keeps_the_file() {
+TEST(test_close_without_writes_keeps_the_file) {
     TempDir dir;
     writeFile(dir.path / "R.TXT", std::string(300, 'r'));
     Drive drive;
@@ -285,7 +278,7 @@ void test_close_without_writes_keeps_the_file() {
     CHECK(fs::file_size(dir.path / "R.TXT") == 300);
 }
 
-void test_append_rewrite_truncates_after_the_last_record() {
+TEST(test_append_rewrite_truncates_after_the_last_record) {
     TempDir dir;
     writeFile(dir.path / "LOG.TXT", std::string("abc\x1A", 4));
     Drive drive;
@@ -301,7 +294,7 @@ void test_append_rewrite_truncates_after_the_last_record() {
     CHECK(readFile(dir.path / "LOG.TXT") == "abd");
 }
 
-void test_create_existing_file_keeps_its_host_spelling() {
+TEST(test_create_existing_file_keeps_its_host_spelling) {
     TempDir dir;
     writeFile(dir.path / "notes.txt", "old contents");
     Drive drive;
@@ -317,7 +310,7 @@ void test_create_existing_file_keeps_its_host_spelling() {
     CHECK(r.erl == Drive::kErlWildcard);
 }
 
-void test_protect_attribute_round_trips_through_permissions() {
+TEST(test_protect_attribute_round_trips_through_permissions) {
     TempDir dir;
     writeFile(dir.path / "KEEP.BAS", "k");
     writeFile(dir.path / "DROP.BAS", "d");
@@ -346,7 +339,7 @@ void test_protect_attribute_round_trips_through_permissions() {
     CHECK(drive.execute(wild).erl == Drive::kErlWildcard);
 }
 
-void test_rename() {
+TEST(test_rename) {
     TempDir dir;
     writeFile(dir.path / "old.bas", "1");
     writeFile(dir.path / "TAKEN.BAS", "2");
@@ -363,7 +356,7 @@ void test_rename() {
     CHECK(drive.execute(req).erl == Drive::kErlNotFound);
 }
 
-void test_get_alloc_fits_dskf() {
+TEST(test_get_alloc_fits_dskf) {
     TempDir dir;
     Drive drive;
     drive.setDirectory(dir.path);
@@ -375,7 +368,7 @@ void test_get_alloc_fits_dskf() {
     CHECK(r.hl > 0);
 }
 
-void test_get_length_in_records() {
+TEST(test_get_length_in_records) {
     TempDir dir;
     writeFile(dir.path / "L.DAT", std::string(513, 'l'));
     Drive drive;
@@ -385,7 +378,7 @@ void test_get_length_in_records() {
     CHECK(r.de == 0 && r.hl == 3);
 }
 
-void test_reset_ends_searches() {
+TEST(test_reset_ends_searches) {
     TempDir dir;
     writeFile(dir.path / "A.TXT", "a");
     writeFile(dir.path / "B.TXT", "b");
@@ -404,7 +397,7 @@ std::string promptOf(const Drive::Response& r) {
     return p.substr(0, p.find('\r'));
 }
 
-void test_change_directory_paths() {
+TEST(test_change_directory_paths) {
     TempDir dir;
     fs::create_directories(dir.path / "Dev" / "asm");
     fs::create_directories(dir.path / "GAMES");
@@ -443,7 +436,7 @@ void test_change_directory_paths() {
     CHECK(drive.currentDirectory() == std::vector<std::string>{"GAMES"});
 }
 
-void test_change_directory_skips_symlinks() {
+TEST(test_change_directory_skips_symlinks) {
     TempDir dir, outside;
     fs::create_directories(dir.path / "IN");
     std::error_code ec;
@@ -455,7 +448,7 @@ void test_change_directory_skips_symlinks() {
     CHECK(drive.changeDirectory("IN").status == 0);
 }
 
-void test_long_prompt_keeps_the_end() {
+TEST(test_long_prompt_keeps_the_end) {
     TempDir dir;
     fs::create_directories(dir.path / "AAAAAAAA" / "BBBBBBBB" / "CCCCCCCC" / "DDDDDDDD");
     Drive drive;
@@ -468,7 +461,7 @@ void test_long_prompt_keeps_the_end() {
     CHECK(p.substr(p.size() - 10) == "/DDDDDDDD>");
 }
 
-void test_files_live_in_the_current_directory() {
+TEST(test_files_live_in_the_current_directory) {
     TempDir dir;
     writeFile(dir.path / "ROOT.TXT", "r");
     fs::create_directories(dir.path / "SUB");
@@ -493,7 +486,7 @@ void test_files_live_in_the_current_directory() {
     CHECK(drive.execute(request(Drive::kCreate, "INNER      ")).erl == Drive::kErlExists);
 }
 
-void test_vanished_directory_fails_until_cdir() {
+TEST(test_vanished_directory_fails_until_cdir) {
     TempDir dir;
     fs::create_directories(dir.path / "GONE");
     Drive drive;
@@ -507,7 +500,7 @@ void test_vanished_directory_fails_until_cdir() {
     CHECK(drive.execute(request(Drive::kCreate, "X       TXT")).status == 0);
 }
 
-void test_directory_mode_lists_subdirectories() {
+TEST(test_directory_mode_lists_subdirectories) {
     TempDir dir;
     writeFile(dir.path / "A.TXT", "a");
     fs::create_directories(dir.path / "zeta");
@@ -526,7 +519,7 @@ void test_directory_mode_lists_subdirectories() {
     CHECK(listNames(drive, "???????????") == std::vector<std::string>{"A       TXT"});
 }
 
-void test_reset_functions() {
+TEST(test_reset_functions) {
     TempDir dir;
     fs::create_directories(dir.path / "SUB");
     Drive drive;
@@ -545,7 +538,7 @@ void test_reset_functions() {
 }
 
 // The MEP fixed entries' bus protocol, as the driver ROM speaks it.
-void test_card_mep_commands() {
+TEST(test_card_mep_commands) {
     TempDir dir;
     writeFile(dir.path / "A.TXT", "a");
     fs::create_directories(dir.path / "DOCS");
@@ -596,7 +589,7 @@ void test_card_mep_commands() {
     CHECK(card.drive().currentDirectory().empty());
 }
 
-void test_unsupported_function() {
+TEST(test_unsupported_function) {
     TempDir dir;
     Drive drive;
     drive.setDirectory(dir.path);
@@ -606,34 +599,3 @@ void test_unsupported_function() {
 }
 
 }  // namespace
-
-int run_host_directory_drive_tests() {
-    test_name_mapping();
-    test_timestamp_has_no_real_year();
-    test_no_directory_is_no_media();
-    test_listing_filters_and_sorts();
-    test_directory_entry_fields();
-    test_case_collision_keeps_one_file();
-    test_open_fills_the_fcb_like_the_floppy();
-    test_write_then_read_records_beyond_32k();
-    test_close_without_writes_keeps_the_file();
-    test_append_rewrite_truncates_after_the_last_record();
-    test_create_existing_file_keeps_its_host_spelling();
-    test_protect_attribute_round_trips_through_permissions();
-    test_rename();
-    test_get_alloc_fits_dskf();
-    test_get_length_in_records();
-    test_reset_ends_searches();
-    test_change_directory_paths();
-    test_change_directory_skips_symlinks();
-    test_long_prompt_keeps_the_end();
-    test_files_live_in_the_current_directory();
-    test_vanished_directory_fails_until_cdir();
-    test_directory_mode_lists_subdirectories();
-    test_reset_functions();
-    test_card_mep_commands();
-    test_unsupported_function();
-
-    std::printf("host_directory_drive_tests: %d passed, %d failed\n", g_pass, g_fail);
-    return g_fail;
-}

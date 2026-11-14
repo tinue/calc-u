@@ -26,16 +26,9 @@
 
 #include "../core/Debug/Listing/Listing.hpp"
 #include "../core/Debug/SourceMap.hpp"
+#include "TestHarness.hpp"
 
 namespace {
-
-int g_pass = 0;
-int g_fail = 0;
-
-#define CHECK(cond) do { \
-    if (cond) { g_pass++; } \
-    else { g_fail++; std::fprintf(stderr, "FAIL %s:%d: %s\n", __FILE__, __LINE__, #cond); } \
-} while (0)
 
 const std::string kDir = "tests/fixtures/listings/";
 
@@ -59,7 +52,7 @@ size_t totalBytes(const debug::Listing& l) {
     return n;
 }
 
-void test_sdas_lh5801_memtest() {
+TEST(test_sdas_lh5801_memtest) {
     debug::Listing l;
     std::string error;
     CHECK(debug::loadListing(kDir + "sdas-lh5801/memtest.rst", &l, &error));
@@ -91,7 +84,7 @@ void test_sdas_lh5801_memtest() {
 
 // sdaslh5801 prints addresses and equates of 8000H and up with eight digits
 // (FFFF8000) and shifts the rest of the line: a ROM extension's listing.
-void test_sdas_lh5801_high_addresses() {
+TEST(test_sdas_lh5801_high_addresses) {
     debug::Listing l;
     std::string error;
     CHECK(debug::loadListing(kDir + "sdas-lh5801/busrom.rst", &l, &error));
@@ -117,7 +110,7 @@ void test_sdas_lh5801_high_addresses() {
     CHECK(same);
 }
 
-void test_sdas_include_and_wrapped_data() {
+TEST(test_sdas_include_and_wrapped_data) {
     debug::Listing l;
     std::string error;
     CHECK(debug::loadListing(kDir + "sdas-lh5801/include_main.lst", &l, &error));
@@ -133,7 +126,7 @@ void test_sdas_include_and_wrapped_data() {
     CHECK(l.symbols.count("HELPER") && l.symbols.at("HELPER") == 0x40C8);
 }
 
-void test_sdas_z80_relocated() {
+TEST(test_sdas_z80_relocated) {
     debug::Listing rst, lst;
     std::string error;
     CHECK(debug::loadListing(kDir + "sdas-z80/blink.rst", &rst, &error));
@@ -153,7 +146,7 @@ void test_sdas_z80_relocated() {
     CHECK(lineAt(lst, 0x0000) && lineAt(lst, 0x0000)->line == 8);
 }
 
-void test_zasm_include_and_wrapped_data() {
+TEST(test_zasm_include_and_wrapped_data) {
     debug::Listing l;
     std::string error;
     CHECK(debug::loadListing(kDir + "zasm/include_main.lst", &l, &error));
@@ -172,7 +165,7 @@ void test_zasm_include_and_wrapped_data() {
     CHECK(l.symbols.count("helper") && l.symbols.at("helper") == 0xC0C8);
 }
 
-void test_zasm_rom_dumper_against_its_symbol_table() {
+TEST(test_zasm_rom_dumper_against_its_symbol_table) {
     debug::Listing l;
     std::string error;
     CHECK(debug::loadListing(kDir + "zasm/pc1600-rom-dumper.lst", &l, &error));
@@ -211,7 +204,7 @@ void test_zasm_rom_dumper_against_its_symbol_table() {
     CHECK(agreed == compared);
 }
 
-void test_symbols_file() {
+TEST(test_symbols_file) {
     debug::Listing l;
     std::string error;
     CHECK(debug::loadSymbolFile(kDir + "symbols.sym", &l, &error));
@@ -220,7 +213,7 @@ void test_symbols_file() {
     CHECK(!debug::loadSymbolFile(kDir + "sdas-lh5801/memtest.asm", &l, &error));
 }
 
-void test_include_target() {
+TEST(test_include_target) {
     CHECK(debug::includeTarget("\t.include \"lib/math.asm\"") == "lib/math.asm");
     CHECK(debug::includeTarget("#include \"a.inc\" ; x") == "a.inc");
     CHECK(debug::includeTarget("  include 'b.s'") == "b.s");
@@ -230,7 +223,7 @@ void test_include_target() {
 
 // ── SourceMap ─────────────────────────────────────────────────────────────
 
-void test_source_map() {
+TEST(test_source_map) {
     debug::Listing memtest;
     std::string error;
     CHECK(debug::loadListing(kDir + "sdas-lh5801/memtest.rst", &memtest, &error));
@@ -299,7 +292,7 @@ void test_source_map() {
     CHECK(loads.bindings().size() == 2);
 }
 
-void test_symbols_per_binding() {
+TEST(test_symbols_per_binding) {
     // Symbols carry the thread and bank key of the binding that defines
     // them; a stale binding's symbols don't count.
     auto reader = [](const std::string& path, std::vector<std::string>* lines) {
@@ -328,18 +321,3 @@ void test_symbols_per_binding() {
 }
 
 } // namespace
-
-int run_listing_tests() {
-    test_sdas_lh5801_high_addresses();
-    test_sdas_lh5801_memtest();
-    test_sdas_include_and_wrapped_data();
-    test_sdas_z80_relocated();
-    test_zasm_include_and_wrapped_data();
-    test_zasm_rom_dumper_against_its_symbol_table();
-    test_symbols_file();
-    test_include_target();
-    test_source_map();
-    test_symbols_per_binding();
-    std::printf("listing tests: %d passed, %d failed\n", g_pass, g_fail);
-    return g_fail;
-}

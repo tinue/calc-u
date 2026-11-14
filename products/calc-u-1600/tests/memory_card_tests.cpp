@@ -32,16 +32,9 @@
 #include "PresetTestSupport.hpp"
 #include "TestRoms.hpp"
 #include "TestCards.hpp"
+#include "TestHarness.hpp"
 
 namespace {
-
-int g_pass = 0;
-int g_fail = 0;
-
-#define CHECK(cond) do { \
-    if (cond) { g_pass++; } \
-    else { g_fail++; std::fprintf(stderr, "FAIL %s:%d: %s\n", __FILE__, __LINE__, #cond); } \
-} while (0)
 
 // ── inline card definitions (CE-155 / CE-1600M / CE-1601M shapes) ───────
 
@@ -190,7 +183,7 @@ std::unique_ptr<SoftwareDefinedCard> buildCard(const char* yaml, CardHost host) 
 
 // ── YAML reader ──────────────────────────────────────────────────────────
 
-void test_yaml_block_map_and_scalars() {
+TEST(test_yaml_block_map_and_scalars) {
     YamlNode n;
     std::string err;
     CHECK(parseYaml("a: 1\nb: hello\nc: true\n", &n, &err));
@@ -203,7 +196,7 @@ void test_yaml_block_map_and_scalars() {
     CHECK(n.find("c") && n.find("c")->asBool(&b, &err) && b);
 }
 
-void test_yaml_hex_ints() {
+TEST(test_yaml_hex_ints) {
     YamlNode n;
     std::string err;
     CHECK(parseYaml("x: 0x2000\ny: 0xFF\nz: 255\n", &n, &err));
@@ -213,7 +206,7 @@ void test_yaml_hex_ints() {
     CHECK(n.find("z")->asInt(&v, &err) && v == 255);
 }
 
-void test_yaml_block_and_flow_sequences() {
+TEST(test_yaml_block_and_flow_sequences) {
     YamlNode n;
     std::string err;
     CHECK(parseYaml("flow: [a, b, c]\nblock:\n  - one\n  - two\n", &n, &err));
@@ -223,7 +216,7 @@ void test_yaml_block_and_flow_sequences() {
     CHECK(bl && bl->isSeq() && bl->seq.size() == 2 && bl->seq[0].scalar == "one");
 }
 
-void test_yaml_flow_map_nested() {
+TEST(test_yaml_flow_map_nested) {
     YamlNode n;
     std::string err;
     CHECK(parseYaml("bits: { A13: 1, A12: 0 }\n", &n, &err));
@@ -234,7 +227,7 @@ void test_yaml_flow_map_nested() {
     CHECK(bits->find("A12")->asInt(&v, &err) && v == 0);
 }
 
-void test_yaml_seq_of_maps_with_continuation_keys() {
+TEST(test_yaml_seq_of_maps_with_continuation_keys) {
     YamlNode n;
     std::string err;
     CHECK(parseYaml("groups:\n"
@@ -250,7 +243,7 @@ void test_yaml_seq_of_maps_with_continuation_keys() {
     CHECK(item.find("all-of")->isSeq() && item.find("all-of")->seq[0].find("chip-select"));
 }
 
-void test_yaml_comments_and_blank_lines() {
+TEST(test_yaml_comments_and_blank_lines) {
     YamlNode n;
     std::string err;
     CHECK(parseYaml("# a comment\n\na: 1   # trailing\nb: \"x # y\"\n", &n, &err));
@@ -259,7 +252,7 @@ void test_yaml_comments_and_blank_lines() {
     CHECK(n.find("b")->asString(&s, &err) && s == "x # y");  // '#' inside quotes kept
 }
 
-void test_yaml_block_scalar() {
+TEST(test_yaml_block_scalar) {
     YamlNode n;
     std::string err;
     CHECK(parseYaml("bytes: |\n  43 16\n  00 00\nnext: 1\n", &n, &err));
@@ -268,7 +261,7 @@ void test_yaml_block_scalar() {
     CHECK(n.find("next")->asInt(&v, &err) && v == 1);
 }
 
-void test_yaml_rejects_tabs_and_bad_indent() {
+TEST(test_yaml_rejects_tabs_and_bad_indent) {
     YamlNode n;
     std::string err;
     CHECK(!parseYaml("a:\n\tb: 1\n", &n, &err) && !err.empty());
@@ -278,7 +271,7 @@ void test_yaml_rejects_tabs_and_bad_indent() {
 
 // ── definition parse / validation ───────────────────────────────────────
 
-void test_inline_definitions_parse() {
+TEST(test_inline_definitions_parse) {
     for (const char* y : {kCe155Yaml, kCe1600mYaml, kCe1601mYaml}) {
         MemoryCardDefinition def;
         std::string err;
@@ -288,7 +281,7 @@ void test_inline_definitions_parse() {
     }
 }
 
-void test_card_description() {
+TEST(test_card_description) {
     MemoryCardDefinition def;
     std::string err;
     CHECK(parseMemoryCardDefinition(kCe155Yaml, &def, &err));
@@ -300,7 +293,7 @@ void test_card_description() {
     CHECK(described.description == "8 KB static RAM");
 }
 
-void test_ce155_definition_shape() {
+TEST(test_ce155_definition_shape) {
     MemoryCardDefinition def;
     std::string err;
     CHECK(parseMemoryCardDefinition(kCe155Yaml, &def, &err));
@@ -381,7 +374,7 @@ const char* kMinPrefix =
     "definition-terminology: PC-1500\n"
     "regions:\n";
 
-void test_reject_unknown_top_key() {
+TEST(test_reject_unknown_top_key) {
     std::string err;
     CHECK(rejects(std::string(kMinPrefix) +
                       "  - name: r\n    capacity: 0x800\n    banking: none\n"
@@ -393,7 +386,7 @@ void test_reject_unknown_top_key() {
 // A card without `format-version`, or with one this build doesn't know, is
 // refused -- and the version is checked before the key list, so a newer
 // file with new keys still says which version it is.
-void test_reject_missing_or_unknown_format_version() {
+TEST(test_reject_missing_or_unknown_format_version) {
     const std::string body = std::string(kMinPrefix) +
                              "  - name: r\n    capacity: 0x800\n    banking: none\n"
                              "    content: regular\n    addressing: { chip-select: Y0, span: 0x800 }\n";
@@ -412,7 +405,7 @@ void test_reject_missing_or_unknown_format_version() {
     CHECK(err == "unsupported card format-version 2 (this build reads 1)");
 }
 
-void test_reject_terminology_not_in_hosts() {
+TEST(test_reject_terminology_not_in_hosts) {
     std::string err;
     CHECK(rejects("format-version: 1\nmodule-name: T\n"
                   "compatible-hosts: [PC-1500]\n"
@@ -423,7 +416,7 @@ void test_reject_terminology_not_in_hosts() {
                   &err));
 }
 
-void test_reject_tiling_gap_and_overlap() {
+TEST(test_reject_tiling_gap_and_overlap) {
     std::string err;
     CHECK(rejects(std::string(kMinPrefix) +
                       "  - name: r\n    capacity: 0x1000\n    banking: none\n    content: regular\n"
@@ -439,7 +432,7 @@ void test_reject_tiling_gap_and_overlap() {
                   &err));
 }
 
-void test_reject_rom_flash_bybank_linebased() {
+TEST(test_reject_rom_flash_bybank_linebased) {
     std::string err;
     // A ROM range with no initial-content has no bytes at all.
     CHECK(rejects(std::string(kMinPrefix) +
@@ -460,7 +453,7 @@ void test_reject_rom_flash_bybank_linebased() {
                   &err));
 }
 
-void test_reject_bybank_shapes() {
+TEST(test_reject_bybank_shapes) {
     std::string err;
     // by-bank on an unbanked region.
     CHECK(rejects(std::string(kMinPrefix) +
@@ -517,7 +510,7 @@ void test_reject_bybank_shapes() {
                   &err));
 }
 
-void test_reject_unbanked_without_capacity() {
+TEST(test_reject_unbanked_without_capacity) {
     std::string err;
     CHECK(rejects(std::string(kMinPrefix) +
                       "  - name: r\n    banking: none\n    content: regular\n"
@@ -527,12 +520,12 @@ void test_reject_unbanked_without_capacity() {
 
 // ── compatibility gate ─────────────────────────────────────────────────
 
-void test_compat_gate_inline() {
+TEST(test_compat_gate_inline) {
     CHECK(buildCard(kCe1600mYaml, CardHost::PC1600Slot1) != nullptr);
     CHECK(buildCard(kCe1600mYaml, CardHost::PC1500) == nullptr);  // not in compatible-hosts
 }
 
-void test_compat_gate_via_file_if_present() {
+TEST(test_compat_gate_via_file_if_present) {
     const char* path = "frontends/qt6/resources/cards/ce155.card.yaml";
     std::ifstream probe(path);
     if (!probe) {
@@ -546,7 +539,7 @@ void test_compat_gate_via_file_if_present() {
           err.find("not compatible") != std::string::npos);
 }
 
-void test_superram_card_yaml_if_present() {
+TEST(test_superram_card_yaml_if_present) {
     const char* path = "frontends/qt6/resources/cards/superram.card.yaml";
     std::ifstream probe(path);
     if (!probe) {
@@ -596,7 +589,7 @@ std::string romYaml(const std::string& bytes) {
            "          bytes: \"" + bytes + "\"\n";
 }
 
-void test_rom_reads_and_ignores_every_write() {
+TEST(test_rom_reads_and_ignores_every_write) {
     auto card = buildCard(romYaml("55 00 00 C5 40 00 00 FF 01 02 03 04 05 06 07 08").c_str(), CardHost::PC1500);
     CHECK(card != nullptr);
     if (!card) return;
@@ -619,7 +612,7 @@ void test_rom_reads_and_ignores_every_write() {
     CHECK(card->debugImage()[3] == 0xC5);
 }
 
-void test_rom_needs_every_byte_covered() {
+TEST(test_rom_needs_every_byte_covered) {
     std::string err;
     CHECK(rejects(romYaml("55 00 00 C5 40 00 00 FF"), &err));  // 8 of 16 bytes
     CHECK(err.find("0x8") != std::string::npos);
@@ -629,7 +622,7 @@ void test_rom_needs_every_byte_covered() {
 // file's placeholder (`$0000: FF...`) gives way to the file's bytes, a
 // rebuilt file is picked up by the next build of the card, and only a
 // single-region ROM module of exactly the file's size takes it.
-void test_rom_replaced_from_a_file() {
+TEST(test_rom_replaced_from_a_file) {
     const std::string placeholder = std::string(kMinPrefix) +
                                     "  - name: r\n    capacity: 0x10\n    banking: none\n    content: rom\n"
                                     "    addressing: { chip-select: Y0, span: 0x10 }\n"
@@ -710,7 +703,7 @@ void test_rom_replaced_from_a_file() {
 
 // ROM and RAM banks in one region: the ROM banks stay read-only, the RAM
 // bank takes writes, and the card isn't a ROM module as a whole.
-void test_rom_by_bank_mixed_with_regular() {
+TEST(test_rom_by_bank_mixed_with_regular) {
     const std::string yaml = std::string(kMinPrefix) +
         "  - name: r\n"
         "    banking:\n"
@@ -735,7 +728,7 @@ void test_rom_by_bank_mixed_with_regular() {
 
 // ── CE-1601M trigger-based banking ─────────────────────────────────────
 
-void test_ce1601m_trigger_banking_direct() {
+TEST(test_ce1601m_trigger_banking_direct) {
     auto sd = buildCard(kCe1601mYaml, CardHost::PC1600Slot2);
     CHECK(sd != nullptr);
     if (!sd) return;
@@ -778,7 +771,7 @@ void test_ce1601m_trigger_banking_direct() {
 // label reads this alongside debugCurrentBank() -- confirms it reports the
 // definition's bank-count (kCe1601mYaml: 2) and is stable across latch
 // writes (unlike debugCurrentBank(), which tracks the live selection).
-void test_debug_bank_count() {
+TEST(test_debug_bank_count) {
     auto sd = buildCard(kCe1601mYaml, CardHost::PC1600Slot2);
     CHECK(sd != nullptr);
     if (!sd) return;
@@ -804,7 +797,7 @@ void test_debug_bank_count() {
 
 // ── superRAM: CE-1601M mechanism with a 4-bit (D0-D3) vertical-bank latch ─
 
-void test_superram_16way_vertical_banking_direct() {
+TEST(test_superram_16way_vertical_banking_direct) {
     // Slot 2 only -- same gate as the CE-1601M.
     CHECK(buildCard(kSuperRamYaml, CardHost::PC1600Slot1) == nullptr);
     CHECK(buildCard(kSuperRamYaml, CardHost::PC1500) == nullptr);
@@ -862,7 +855,7 @@ void test_superram_16way_vertical_banking_direct() {
 
 // End to end through PC1600Memory: OUT (28H) forwards the whole byte
 // (including D3) to the Slot 2 card's latch.
-void test_superram_end_to_end_through_pc1600() {
+TEST(test_superram_end_to_end_through_pc1600) {
     PC1600Bank bank;
     PC1600Memory mem(bank);
     mem.attachSlot2Card(buildCard(kSuperRamYaml, CardHost::PC1600Slot2));
@@ -884,7 +877,7 @@ void test_superram_end_to_end_through_pc1600() {
 
 // ── flash content / by-bank split ───────────────────────────────────────
 
-void test_flash_sector_and_chip_erase() {
+TEST(test_flash_sector_and_chip_erase) {
     auto sd = buildCard(kFlashByBankYaml, CardHost::PC1500);
     CHECK(sd != nullptr);
     if (!sd) return;
@@ -963,7 +956,7 @@ void test_flash_sector_and_chip_erase() {
 
 // ── initial-content ──────────────────────────────────────────────────
 
-void test_initial_content_addressed_hex_and_hex() {
+TEST(test_initial_content_addressed_hex_and_hex) {
     auto sd = buildCard(kInitialContentYaml, CardHost::PC1500);
     CHECK(sd != nullptr);
     if (!sd) return;
@@ -1010,7 +1003,7 @@ void test_initial_content_addressed_hex_and_hex() {
     CHECK(read(0x0000) == 0xAA);
 }
 
-void test_reject_initial_content_addressed_hex_gap_or_overlap() {
+TEST(test_reject_initial_content_addressed_hex_gap_or_overlap) {
     std::string err;
     // Gap: $0000-$000F run, then $0020 directly (skips $0010-$001F).
     CHECK(rejects(std::string(kMinPrefix) +
@@ -1047,7 +1040,7 @@ void test_reject_initial_content_addressed_hex_gap_or_overlap() {
                   &err));
 }
 
-void test_reject_initial_content_missing_bank_on_banked_region() {
+TEST(test_reject_initial_content_missing_bank_on_banked_region) {
     std::string err;
     CHECK(rejects(std::string(kMinPrefix) +
                       "  - name: r\n"
@@ -1068,7 +1061,7 @@ void test_reject_initial_content_missing_bank_on_banked_region() {
 
 std::string makeScratchCardDir();  // defined below, in the catalogue section
 
-void test_preset_parses_modulespec() {
+TEST(test_preset_parses_modulespec) {
     // `slot-N-file:` -- a path, resolved relative to the preset dir.
     PresetFile preset;
     std::string err;
@@ -1093,7 +1086,7 @@ void test_preset_parses_modulespec() {
     CHECK(p3.slot1ModuleSpecFile.empty());
 }
 
-void test_preset_rejects_second_modulespec_item() {
+TEST(test_preset_rejects_second_modulespec_item) {
     PresetFile preset;
     std::string err;
     CHECK(!parsePresetString("format-version: 1\nmodel: PC-1600\n"
@@ -1102,7 +1095,7 @@ void test_preset_rejects_second_modulespec_item() {
                              "/tmp/memory_card_tests_scratch2.pc1600", &preset, &err));
 }
 
-void test_ce1601m_end_to_end_through_pc1600() {
+TEST(test_ce1601m_end_to_end_through_pc1600) {
     // Drive a CE-1601M through a full preset load two ways -- a
     // `slot-2-file:` path and a `slot-N:` module-name resolved from
     // a scratch module directory -- both exercising the OUT (28H) -> Slot 2
@@ -1152,7 +1145,7 @@ void test_ce1601m_end_to_end_through_pc1600() {
 // `slot-N-rom:` end to end: the preset's ROM file replaces the module's
 // placeholder ROM, the load result names the file (so the GUI never saves
 // the card), and a rebuilt file is read again by the next load.
-void test_slot_rom_end_to_end_through_pc1600() {
+TEST(test_slot_rom_end_to_end_through_pc1600) {
     char tmpl[] = "/tmp/slot_rom_XXXXXX";
     const char* dir = mkdtemp(tmpl);
     CHECK(dir != nullptr);
@@ -1204,7 +1197,7 @@ void test_slot_rom_end_to_end_through_pc1600() {
 // Slot 2 RAM chip-select assert for a bank-1 access outside the ordinary
 // page-C window -- the "(S2:) at Bank 1" path the RAM-disk file system uses.
 // SLOT2MAP ROM routine: PC1600-P0-B0-new.bin 0A6DH.
-void test_ce1601m_slot2map_remap() {
+TEST(test_ce1601m_slot2map_remap) {
     PC1600Bank bank;
     PC1600Memory mem(bank);
     mem.attachSlot2Card(buildCard(kCe1601mYaml, CardHost::PC1600Slot2));
@@ -1273,7 +1266,7 @@ void test_ce1601m_slot2map_remap() {
 // contentRevision() moves only when the stored content changes: a guest
 // write of a new value, a loader's slotBusWrite(); not a write of the value
 // already there (what the GUI's card autosave relies on to skip a copy).
-void test_card_content_revision() {
+TEST(test_card_content_revision) {
     PC1600Bank bank;
     PC1600Memory mem(bank);
     CHECK(mem.slot1CardRevision() == 0); // empty slot
@@ -1294,7 +1287,7 @@ void test_card_content_revision() {
 
 // SLOT2MAP with an empty Slot 2: the redirect must be inert, never divert a
 // page-A/B ROM fetch into nothing.
-void test_slot2map_remap_no_card_is_inert() {
+TEST(test_slot2map_remap_no_card_is_inert) {
     PC1600Bank bank;
     PC1600Memory mem(bank);
     std::vector<uint8_t> lo(0x4000, 0x11), hi(0x4000, 0x22);
@@ -1311,7 +1304,7 @@ void test_slot2map_remap_no_card_is_inert() {
 // The SLOT1MAP gate-array remap (Port 3CH b2): when armed, Slot 1's high
 // 16K half (beta, normally page-C bank 1) also answers at page-B bank 1
 // (4000-7FFF) -- a mirror, not a move (TRM 0196H entry + diagram).
-void test_slot1map_remap() {
+TEST(test_slot1map_remap) {
     PC1600Bank bank;
     PC1600Memory mem(bank);
     mem.attachSlot1Card(plainRamCard(0x8000)); // 32K unbanked: bank 0 = alpha, bank 1 = beta
@@ -1343,7 +1336,7 @@ void test_slot1map_remap() {
 }
 
 // SLOT1MAP with an empty Slot 1: the redirect must be inert.
-void test_slot1map_remap_no_card_is_inert() {
+TEST(test_slot1map_remap_no_card_is_inert) {
     PC1600Bank bank;
     PC1600Memory mem(bank);
 
@@ -1359,7 +1352,7 @@ void test_slot1map_remap_no_card_is_inert() {
 // "last call wins": whichever field's value most recently changed owns the
 // window; an exact tie (both changed in the same Port 3CH write) favors
 // SLOT2MAP. See PC1600Bank::slot1MapWinsTie().
-void test_slot1map_slot2map_collision_last_call_wins() {
+TEST(test_slot1map_slot2map_collision_last_call_wins) {
     PC1600Bank bank;
     PC1600Memory mem(bank);
     mem.attachSlot1Card(plainRamCard(0x8000));
@@ -1422,7 +1415,7 @@ std::string makeScratchCardDir() {
     return dir;
 }
 
-void test_catalog_scan_lists_and_sorts() {
+TEST(test_catalog_scan_lists_and_sorts) {
     const std::string dir = makeScratchCardDir();
     std::string err;
     auto entries = scanMemoryCardDirectory(dir, &err);
@@ -1438,14 +1431,14 @@ void test_catalog_scan_lists_and_sorts() {
     CHECK(err.find("broken.card.yaml") != std::string::npos);  // reported, not fatal
 }
 
-void test_catalog_scan_missing_dir() {
+TEST(test_catalog_scan_missing_dir) {
     std::string err;
     auto entries = scanMemoryCardDirectory("/no/such/module/dir", &err);
     CHECK(entries.empty());
     CHECK(!err.empty());
 }
 
-void test_resolve_modulespec_by_name() {
+TEST(test_resolve_modulespec_by_name) {
     const std::string dir = makeScratchCardDir();
     std::string path, err;
     CHECK(resolveModuleSpecByName(dir, "CE-1601M", &path, &err));
@@ -1462,7 +1455,7 @@ void test_resolve_modulespec_by_name() {
     CHECK(err.find("no module named") != std::string::npos);
 }
 
-void test_resolve_modulespec_ambiguous() {
+TEST(test_resolve_modulespec_ambiguous) {
     const std::string dir = makeScratchCardDir();
     // Second file, same module-name as ce155.card.yaml.
     { std::ofstream(dir + "/ce155-dup.card.yaml") << kCe155Yaml; }
@@ -1475,7 +1468,7 @@ void test_resolve_modulespec_ambiguous() {
 // fallback directory (the GUI's save folder) that holds a
 // user's saved battery-card instance named `CE-1601M - Programs.card.yaml`
 // (module-name with spaces, the exact string `slot-N:` would carry).
-void test_resolve_modulespec_multi_dir() {
+TEST(test_resolve_modulespec_multi_dir) {
     const std::string bundled = makeScratchCardDir();  // ce155 / ce1600m / ce1601m
     const std::string instances = "/tmp/memory_card_catalog_tests_instances";
     std::system(("rm -rf " + instances + " && mkdir -p " + instances).c_str());
@@ -1527,7 +1520,7 @@ void test_resolve_modulespec_multi_dir() {
 
 // Without `power-up-fill`, regular RAM powers up 0x00 (CMOS RAM after a
 // power loss) and flash powers up erased (0xFF).
-void test_power_up_fill_defaults_per_kind() {
+TEST(test_power_up_fill_defaults_per_kind) {
     std::string yaml = kFlashByBankYaml;
     for (const char* line : {", power-up-fill: 0xFF", "          power-up-fill: 0xAA\n"}) {
         const size_t at = yaml.find(line);
@@ -1544,7 +1537,7 @@ void test_power_up_fill_defaults_per_kind() {
 
 // ── review fixes ─────────────────────────────────────────────────────────
 
-void test_yaml_apostrophe_inside_plain_scalar() {
+TEST(test_yaml_apostrophe_inside_plain_scalar) {
     YamlNode n;
     std::string err;
     CHECK(parseYaml("name: Martin's CE-1600M  # my card\nlist: [Bob's, x]\nq: 'a # b'\n", &n, &err));
@@ -1555,7 +1548,7 @@ void test_yaml_apostrophe_inside_plain_scalar() {
     CHECK(n.find("q") && n.find("q")->asString(&s, &err) && s == "a # b");
 }
 
-void test_reject_unknown_key_inside_all_of() {
+TEST(test_reject_unknown_key_inside_all_of) {
     std::string err;
     CHECK(rejects(std::string(kMinPrefix) +
                       "  - name: r\n    capacity: 0x800\n    banking: none\n    content: regular\n"
@@ -1569,7 +1562,7 @@ void test_reject_unknown_key_inside_all_of() {
 // `write-protect:` is the module's switch position (CE-161): a scalar,
 // part of the file. While protected, every write into the RAM is refused --
 // host pokes (`direct`) too -- and setWriteProtected() moves it at runtime.
-void test_write_protect_switch() {
+TEST(test_write_protect_switch) {
     auto yamlWith = [](const std::string& wp) {
         return std::string(kMinPrefix) +
                "  - name: r\n    capacity: 0x800\n    banking: none\n"
@@ -1621,7 +1614,7 @@ void test_write_protect_switch() {
 
 // A memory-range window need be neither a power of two nor aligned: its
 // offset counts from `from`.
-void test_memory_range_offset_counts_from_range_start() {
+TEST(test_memory_range_offset_counts_from_range_start) {
     const std::string yaml = std::string(kMinPrefix) +
         "  - name: r\n    capacity: 0x1800\n    banking: none\n"
         "    content: { kind: regular, writable: true, power-up-fill: 0x00 }\n"
@@ -1675,7 +1668,7 @@ const char* kUnbankedFlashYaml =
     "        reset-command: 0xF0\n"
     "        sector-size: 0x100\n";
 
-void test_flash_unbanked_chip_and_sector_erase() {
+TEST(test_flash_unbanked_chip_and_sector_erase) {
     auto sd = buildCard(kUnbankedFlashYaml, CardHost::PC1500);
     CHECK(sd != nullptr);
     if (!sd) return;
@@ -1716,7 +1709,7 @@ void test_flash_unbanked_chip_and_sector_erase() {
     CHECK(read(0x1FF) == 0xFF);
 }
 
-void test_reject_unbanked_flash_sector_not_dividing_capacity() {
+TEST(test_reject_unbanked_flash_sector_not_dividing_capacity) {
     // capacity 0x180 (tiled 0x100 + 0x80) with sector-size 0x100: a sector
     // erase at offset 0x100 would run past the backing store.
     std::string yaml = kUnbankedFlashYaml;
@@ -1731,72 +1724,4 @@ void test_reject_unbanked_flash_sector_not_dividing_capacity() {
     std::string err;
     CHECK(rejects(yaml, &err));
     CHECK(err.find("sector-size") != std::string::npos);
-}
-
-int run_memory_card_tests() {
-    test_rom_replaced_from_a_file();
-    test_slot_rom_end_to_end_through_pc1600();
-    test_card_content_revision();
-    test_power_up_fill_defaults_per_kind();
-    test_yaml_block_map_and_scalars();
-    test_yaml_hex_ints();
-    test_yaml_block_and_flow_sequences();
-    test_yaml_flow_map_nested();
-    test_yaml_seq_of_maps_with_continuation_keys();
-    test_yaml_comments_and_blank_lines();
-    test_yaml_block_scalar();
-    test_yaml_rejects_tabs_and_bad_indent();
-
-    test_inline_definitions_parse();
-    test_card_description();
-    test_ce155_definition_shape();
-    test_reject_unknown_top_key();
-    test_reject_missing_or_unknown_format_version();
-    test_reject_terminology_not_in_hosts();
-    test_reject_tiling_gap_and_overlap();
-    test_reject_rom_flash_bybank_linebased();
-    test_rom_reads_and_ignores_every_write();
-    test_rom_needs_every_byte_covered();
-    test_rom_by_bank_mixed_with_regular();
-    test_reject_bybank_shapes();
-    test_reject_unbanked_without_capacity();
-
-    test_compat_gate_inline();
-    test_compat_gate_via_file_if_present();
-    test_ce1601m_trigger_banking_direct();
-    test_debug_bank_count();
-    test_superram_16way_vertical_banking_direct();
-    test_superram_end_to_end_through_pc1600();
-
-    test_flash_sector_and_chip_erase();
-    test_superram_card_yaml_if_present();
-
-    test_initial_content_addressed_hex_and_hex();
-    test_reject_initial_content_addressed_hex_gap_or_overlap();
-    test_reject_initial_content_missing_bank_on_banked_region();
-
-    test_preset_parses_modulespec();
-    test_preset_rejects_second_modulespec_item();
-    test_ce1601m_end_to_end_through_pc1600();
-    test_ce1601m_slot2map_remap();
-    test_slot2map_remap_no_card_is_inert();
-    test_slot1map_remap();
-    test_slot1map_remap_no_card_is_inert();
-    test_slot1map_slot2map_collision_last_call_wins();
-
-    test_catalog_scan_lists_and_sorts();
-    test_catalog_scan_missing_dir();
-    test_resolve_modulespec_by_name();
-    test_resolve_modulespec_ambiguous();
-    test_resolve_modulespec_multi_dir();
-
-    test_yaml_apostrophe_inside_plain_scalar();
-    test_reject_unknown_key_inside_all_of();
-    test_memory_range_offset_counts_from_range_start();
-    test_write_protect_switch();
-    test_flash_unbanked_chip_and_sector_erase();
-    test_reject_unbanked_flash_sector_not_dividing_capacity();
-
-    std::printf("memory_card_tests: %d passed, %d failed\n", g_pass, g_fail);
-    return g_fail;
 }

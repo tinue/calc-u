@@ -20,16 +20,9 @@
 #include "../core/Audio/WavFile.hpp"
 #include "../core/CPU/LH5811Serial.hpp"
 #include "../core/Tape/TapeDeck.hpp"
+#include "TestHarness.hpp"
 
 namespace {
-
-int g_pass = 0;
-int g_fail = 0;
-
-#define CHECK(cond) do { \
-    if (cond) { g_pass++; } \
-    else { g_fail++; std::fprintf(stderr, "FAIL %s:%d: %s\n", __FILE__, __LINE__, #cond); } \
-} while (0)
 
 constexpr double kPi = 3.14159265358979323846;
 constexpr double kCpuHz = 3580000.0; // PC-1600 T-states
@@ -88,7 +81,7 @@ void appendTone(std::vector<float>& out, int rate, double hz, int cycles, double
     }
 }
 
-void testWavRoundTrip16() {
+TEST(testWavRoundTrip16) {
     const std::string path = tempPath("calcu_tape_rt16.wav");
     std::vector<int16_t> samples = {0, 1000, -1000, 32767, -32768, 12345};
     CHECK(writeWavMono16(path, samples, 44100));
@@ -102,7 +95,7 @@ void testWavRoundTrip16() {
     std::filesystem::remove(path);
 }
 
-void testWavEncodings() {
+TEST(testWavEncodings) {
     const std::string path = tempPath("calcu_tape_enc.wav");
     WavData wav;
     std::string error;
@@ -148,7 +141,7 @@ void testWavEncodings() {
 
 // A noisy, offset, 8-bit-like FSK burst plays back as clean edges at the
 // tone's half periods; the silence after it doesn't toggle the line.
-void testPlayFsk() {
+TEST(testPlayFsk) {
     const int rate = 44100;
     std::vector<float> s;
     appendTone(s, rate, 1270.0, 40, 0.0, true);        // leading silence (amplitude 0)
@@ -184,7 +177,7 @@ void testPlayFsk() {
 }
 
 // Motor off: the tape doesn't move and nothing is recorded.
-void testMotorGating() {
+TEST(testMotorGating) {
     TapeDeck deck(kCpuHz);
     std::vector<float> s;
     appendTone(s, 48000, 1200.0, 50, 0.8, true);
@@ -229,7 +222,7 @@ int zeroCrossings(const std::vector<int16_t>& s, size_t from, size_t to) {
 
 // Recording: 48 kHz PCM of the line at the right pitch, only while the
 // motor runs; eject() writes a WAV that reads back the same.
-void testRecord() {
+TEST(testRecord) {
     const std::string path = tempPath("calcu_tape_rec.wav");
     TapeDeck deck(kCpuHz);
     deck.armRecord(path);
@@ -276,7 +269,7 @@ void testRecord() {
 
 // The WAV is saved whenever the motor stops; a later CSAVE on the same tape
 // appends and saves again; Eject then only un-arms.
-void testAutoSaveOnMotorOff() {
+TEST(testAutoSaveOnMotorOff) {
     const std::string path = tempPath("calcu_tape_autosave.wav");
     std::filesystem::remove(path);
     TapeDeck deck(kCpuHz);
@@ -315,7 +308,7 @@ void testAutoSaveOnMotorOff() {
 
 // A line already parked high (or low) when the motor starts records as
 // silence, not a click.
-void testRecordStartsQuiet() {
+TEST(testRecordStartsQuiet) {
     for (bool level : {true, false}) {
         TapeDeck deck(kCpuHz);
         deck.armRecord("");
@@ -339,7 +332,7 @@ void testRecordStartsQuiet() {
 }
 
 // What one deck records, another plays back with the same edge timing.
-void testRecordThenPlay() {
+TEST(testRecordThenPlay) {
     TapeDeck rec(kCpuHz);
     rec.armRecord("");
     rec.setMotor(true);
@@ -381,7 +374,7 @@ std::vector<std::pair<bool, uint64_t>> sdoRuns(LH5811Serial& s, uint32_t cycles,
 
 // The serial clock comes out on CL0 only with G4 = 1, and restarts low on
 // a divider reset: ÷4096 = low for 2048 phi, then high for 2048.
-void testSerialClockAndDividerReset() {
+TEST(testSerialClockAndDividerReset) {
     LH5811Serial s(kPhi, kPhi);
     s.reset();
     s.writeG(0x07); // ÷4096, output inhibited
@@ -405,7 +398,7 @@ void testSerialClockAndDividerReset() {
 // L sends start, 8 data bits LSB first, 2 stop bits; the start bit begins
 // at the write, each serial clock rise ends a bit. TD comes once the
 // second stop bit is done, and a byte written then follows without a gap.
-void testTransmitFrames() {
+TEST(testTransmitFrames) {
     LH5811Serial s(kPhi, kPhi);
     s.reset();
     s.writeG(0x17); // bit time 4096 phi
@@ -438,7 +431,7 @@ void testTransmitFrames() {
 
 // F6 = 1: SDO carries FX for a 1 bit and FY for a 0 bit. F = 63H (the
 // CE-150's) gives FX = phi/512, FY = phi/1024: 8 and 4 cycles per bit.
-void testModulation() {
+TEST(testModulation) {
     LH5811Serial s(kPhi, kPhi);
     s.reset();
     s.writeG(0x17);
@@ -460,19 +453,3 @@ void testModulation() {
 }
 
 } // namespace
-
-int run_tape_deck_tests() {
-    testWavRoundTrip16();
-    testWavEncodings();
-    testPlayFsk();
-    testMotorGating();
-    testRecord();
-    testRecordStartsQuiet();
-    testAutoSaveOnMotorOff();
-    testRecordThenPlay();
-    testSerialClockAndDividerReset();
-    testTransmitFrames();
-    testModulation();
-    std::printf("tape_deck_tests: %d passed, %d failed\n", g_pass, g_fail);
-    return g_fail;
-}

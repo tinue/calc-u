@@ -21,16 +21,9 @@
 #include "../core/Connector/SystemBusCard.hpp"
 #include "../core/PC1500/PC1500Machine.hpp"
 #include "../core/PC1600/PC1600BusDrive.hpp"
+#include "TestHarness.hpp"
 
 namespace {
-
-int g_pass = 0;
-int g_fail = 0;
-
-#define CHECK(cond) do { \
-    if (cond) { g_pass++; } \
-    else { g_fail++; std::fprintf(stderr, "FAIL %s:%d: %s\n", __FILE__, __LINE__, #cond); } \
-} while (0)
 
 // Test-only card: every behavior is supplied as a lambda so each test can
 // describe exactly the enable-condition shape it wants (mirroring
@@ -75,7 +68,7 @@ Stub makeReadStub(uint8_t value, Predicate predicate, bool inhibit = false) {
         nullptr, inhibit);
 }
 
-void test_regression_no_card_attached() {
+TEST(test_regression_no_card_attached) {
     // Identical to lh5801_tests.cpp's test_memory_open_bus_and_ram_regions,
     // but via PC1500Machine, which always owns both connectors -- confirms
     // that wiring is a true no-op when nothing is attached.
@@ -86,7 +79,7 @@ void test_regression_no_card_attached() {
     CHECK(machine.memory().readME0(0xC000) == 0xFF); // ROM, powers up 0xFF, no INHIBIT
 }
 
-void test_expansion_connector_y0_subrange_dispatch() {
+TEST(test_expansion_connector_y0_subrange_dispatch) {
     // Mirrors CE-155's own decode shape (Ref/PC-1500/Memory-Architecture/PC-1500-Address-Decoding.md §3.2):
     // Y0 AND AD11-AD13=111, i.e. the top 2KB of the 16KB Y0 window.
     PC1500Machine machine(PC1500Variant::PC1500A);
@@ -104,7 +97,7 @@ void test_expansion_connector_y0_subrange_dispatch() {
     CHECK(machine.memory().readME0(0x3800) == 0xFF); // detach actually clears it
 }
 
-void test_expansion_connector_variant_routing() {
+TEST(test_expansion_connector_variant_routing) {
     // Ref/Shared/Expansion-Connectors.md §3.2: S5 (&6800-&6FFF) never reaches the
     // PC-1500's 40-pin connector at all -- no physical wire exists for it,
     // regardless of what the attached card wants to react to. On the
@@ -124,7 +117,7 @@ void test_expansion_connector_variant_routing() {
     CHECK(pc1500a.memory().readME0(0x6800) == 0x55); // S5 reaches the connector on PC-1500A
 }
 
-void test_expansion_connector_pu_pv_gating() {
+TEST(test_expansion_connector_pu_pv_gating) {
     // Ref/PC-1500/Memory-Architecture/PU-PV-Signals.md §4: PV/PU select which peripheral ROM table is
     // visible in Y2 (&8000-&BFFF). A card gated on "PU=1, PV=0" should only
     // respond in exactly that state.
@@ -142,7 +135,7 @@ void test_expansion_connector_pu_pv_gating() {
     CHECK(machine.memory().readME0(0x8000) == 0xFF); // PV=1 no longer matches the card's gate
 }
 
-void test_inhibit_suppresses_rom() {
+TEST(test_inhibit_suppresses_rom) {
     PC1500Machine machine(PC1500Variant::PC1500A);
     std::vector<uint8_t> rom(0x4000, 0xAB);
     CHECK(machine.memory().loadROM(rom.data(), rom.size()));
@@ -163,7 +156,7 @@ void test_inhibit_suppresses_rom() {
     CHECK(machine.memory().readME0(0xC000) == 0xAB); // ROM restored once nothing asserts INHIBIT
 }
 
-void test_systembus_me1_access() {
+TEST(test_systembus_me1_access) {
     // Only the 60-pin connector's DME1/ME1 pins expose ME1-space access at
     // all (Ref/Shared/Expansion-Connectors.md §2.2) -- ExpansionConnector has no
     // equivalent method. 0x2000 is outside the LH5811 I/O-chip's own
@@ -180,7 +173,7 @@ void test_systembus_me1_access() {
     CHECK(machine.memory().readME0(0x2000) == 0xFF); // ME0 side is untouched -- me1 stub only matches me1 accesses
 }
 
-void test_systembus_daisy_chain() {
+TEST(test_systembus_daisy_chain) {
     // Models a CE-150-alike and a CE-158-alike sharing the 60-pin chain,
     // each claiming its own Y2 sub-range without conflicting -- see
     // Ref/Shared/Expansion-Connectors.md §2.2's note that the CE-150's 64-pin rear
@@ -201,7 +194,7 @@ void test_systembus_daisy_chain() {
     CHECK(machine.memory().readME0(0x9050) == 0x58);
 }
 
-void test_expansion_connector_single_slot_replaces_not_chains() {
+TEST(test_expansion_connector_single_slot_replaces_not_chains) {
     // Real hardware: the 40-pin connector is exactly one slot -- attaching
     // a second card replaces the first, it never chains (contrast with
     // SystemBus's daisy chain above).
@@ -214,7 +207,7 @@ void test_expansion_connector_single_slot_replaces_not_chains() {
     CHECK(machine.memory().readME0(0x0000) == 0xBB); // b replaced a, not layered on top of it
 }
 
-void test_two_independent_ports() {
+TEST(test_two_independent_ports) {
     PC1500Machine machine(PC1500Variant::PC1500A);
     StubCard onFortyPin = makeReadStub(0x40, [](const PinState& p) { return p.pin[4]; });
     BusStub onSixtyPin = makeReadStub<BusStub>(0x60, [](const SystemBusPins& p) { return p.pin[Contact60::kDme0] && p.address >= 0x8000; });
@@ -225,7 +218,7 @@ void test_two_independent_ports() {
     CHECK(machine.memory().readME0(0x8000) == 0x60); // 60-pin card claims it (40-pin connector has no card there)
 }
 
-void test_card_chain_shell() {
+TEST(test_card_chain_shell) {
     // The shell every connector dispatches through (CardChain.hpp), on its own.
     CardChain<ExpansionCard, PinState> chain;
     PinState pins;
@@ -257,7 +250,7 @@ void test_card_chain_shell() {
     CHECK(chain.empty() && !chain.inhibitAsserted());
 }
 
-void test_systembus_contacts_pc1500() {
+TEST(test_systembus_contacts_pc1500) {
     // What an LH5801 cycle puts on the 60-pin plug: PU 15, PV 16 (measured),
     // DME0 for ME0, ME1 + DME1 for ME1; no 40-pin Y/S strobes.
     using namespace Contact60;
@@ -268,7 +261,7 @@ void test_systembus_contacts_pc1500() {
     CHECK(me1.forWrite && me1.pin[kPV] && me1.pin[kMe1] && me1.pin[kDme1] && !me1.pin[kDme0]);
 }
 
-void test_systembus_contacts_lh5803() {
+TEST(test_systembus_contacts_lh5803) {
     // An LH5803 cycle on the PC-1600 plug: ELH̄ asserted, PU/PV straight
     // through, ME0 = MREQ + DME0, ME1 = IORQ, IOE only for xx00-xx0F and
     // 8000-FFFF.
@@ -283,7 +276,7 @@ void test_systembus_contacts_lh5803() {
     CHECK(PC1600BusDrive::lh5803Pins(0x1213, false, true, false, false).pin[kIorq]); // still an I/O cycle
 }
 
-void test_systembus_contacts_z80() {
+TEST(test_systembus_contacts_z80) {
     // A Z-80 cycle on the PC-1600 plug: page bank on PT/PU/PVOUT (MSB
     // first), MREQ or IORQ, ELH̄ not asserted.
     using namespace Contact60;
@@ -295,7 +288,7 @@ void test_systembus_contacts_z80() {
     CHECK(io.forWrite && io.pin[kIorq] && !io.pin[kMreq] && !io.pin[kElh] && !io.pin[kIoe] && io.address == 0x82);
 }
 
-void test_each_card_answers_its_own_cpu() {
+TEST(test_each_card_answers_its_own_cpu) {
     // One plug, two CPUs: the CE-1600P (built for the SC7852) never answers
     // an LH5803 cycle, the CE-150 (built for the LH5801) never a Z-80 one.
     std::vector<uint8_t> lo(CE1600PCard::kRomHalfSize, 0x44), hi(CE1600PCard::kRomHalfSize, 0x55);
@@ -321,26 +314,3 @@ void test_each_card_answers_its_own_cpu() {
 }
 
 } // namespace
-
-// Returns the number of failed checks (0 = all passed), so the shared
-// main() in lh5801_tests.cpp can fold this file's results into the overall
-// exit code.
-int run_connector_tests() {
-    test_regression_no_card_attached();
-    test_expansion_connector_y0_subrange_dispatch();
-    test_expansion_connector_variant_routing();
-    test_expansion_connector_pu_pv_gating();
-    test_inhibit_suppresses_rom();
-    test_systembus_me1_access();
-    test_systembus_daisy_chain();
-    test_systembus_contacts_pc1500();
-    test_systembus_contacts_lh5803();
-    test_systembus_contacts_z80();
-    test_each_card_answers_its_own_cpu();
-    test_expansion_connector_single_slot_replaces_not_chains();
-    test_two_independent_ports();
-    test_card_chain_shell();
-
-    std::printf("connector_tests: %d passed, %d failed\n", g_pass, g_fail);
-    return g_fail;
-}

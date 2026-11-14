@@ -19,20 +19,13 @@
 
 #include <filesystem>
 #include <unistd.h>  // mkdtemp
+#include "TestHarness.hpp"
 
 namespace {
 
-int g_pass = 0;
-int g_fail = 0;
-
-#define CHECK(cond) do { \
-    if (cond) { g_pass++; } \
-    else { g_fail++; std::fprintf(stderr, "FAIL %s:%d: %s\n", __FILE__, __LINE__, #cond); } \
-} while (0)
-
 std::vector<uint8_t> uniformBank(size_t n, uint8_t v) { return std::vector<uint8_t>(n, v); }
 
-void test_addressed_hex_roundtrip_uniform() {
+TEST(test_addressed_hex_roundtrip_uniform) {
     auto bank = uniformBank(0x4000, 0xFF);
     auto lines = formatAddressedHexLines(bank);
     CHECK(lines.size() == 1);  // whole bank collapses to one run line
@@ -45,7 +38,7 @@ void test_addressed_hex_roundtrip_uniform() {
     CHECK(out == bank);
 }
 
-void test_addressed_hex_roundtrip_mixed() {
+TEST(test_addressed_hex_roundtrip_mixed) {
     std::vector<uint8_t> bank(0x100, 0);
     for (size_t i = 0; i < bank.size(); ++i) bank[i] = static_cast<uint8_t>(i * 7 + 3);
     auto lines = formatAddressedHexLines(bank);
@@ -59,7 +52,7 @@ void test_addressed_hex_roundtrip_mixed() {
     CHECK(out == bank);
 }
 
-void test_addressed_hex_roundtrip_uniform_run_plus_tail() {
+TEST(test_addressed_hex_roundtrip_uniform_run_plus_tail) {
     // A long uniform run followed by a differing tail -- the run must
     // collapse exactly up to the first row that isn't uniform.
     std::vector<uint8_t> bank(0x40, 0x00);
@@ -77,7 +70,7 @@ void test_addressed_hex_roundtrip_uniform_run_plus_tail() {
     CHECK(out == bank);
 }
 
-void test_addressed_hex_single_differing_byte() {
+TEST(test_addressed_hex_single_differing_byte) {
     std::vector<uint8_t> bank(0x20, 0xAA);
     bank[5] = 0x11;
     auto lines = formatAddressedHexLines(bank);
@@ -91,7 +84,7 @@ void test_addressed_hex_single_differing_byte() {
     CHECK(out == bank);
 }
 
-void test_battery_card_block_keeps_uniform_banks() {
+TEST(test_battery_card_block_keeps_uniform_banks) {
     // A uniform bank must still be written: dropped, it would reload at the
     // region's power-up-fill (0xFF here), not the 0x00 it held.
     std::vector<uint8_t> image;
@@ -157,7 +150,7 @@ const char* kSyntheticCardYaml =
     "      bank-size: 0x0100\n"
     "      bank-window: { chip-select: Y0, span: 0x0100 }\n";
 
-void test_battery_card_block_never_empty_when_all_banks_uniform() {
+TEST(test_battery_card_block_never_empty_when_all_banks_uniform) {
     // A freshly-attached, never-written-to card: every bank sits at its
     // power-up-fill value. Core's parseInitialContent() rejects an empty
     // 'blocks' list, so the writer must emit explicit blocks here too.
@@ -191,7 +184,7 @@ void test_battery_card_block_never_empty_when_all_banks_uniform() {
     if (!err.empty()) std::fprintf(stderr, "  (parse error: %s)\n", err.c_str());
 }
 
-void test_battery_card_block_unbanked_region_omits_bank_key() {
+TEST(test_battery_card_block_unbanked_region_omits_bank_key) {
     // An unbanked battery card (e.g. CE-1600M: "banking: none",
     // capacity: 0x8000) reports debugBankCount() == -1 (ExpansionCard's
     // "no bank concept" convention) -- formatBatteryCardInitialContentBlock
@@ -229,7 +222,7 @@ void test_battery_card_block_unbanked_region_omits_bank_key() {
     }
 }
 
-void test_splice_first_save_inserts_header_and_content() {
+TEST(test_splice_first_save_inserts_header_and_content) {
     std::vector<uint8_t> image(0x100, 0);
     image[3] = 0x99;
     auto contentLines = formatBatteryCardInitialContentBlock(1, image);
@@ -254,7 +247,7 @@ void test_splice_first_save_inserts_header_and_content() {
     if (it != def.regions[0].initialContentByBank.end()) CHECK(it->second == image);
 }
 
-void test_splice_resave_preserves_created_updates_last_saved() {
+TEST(test_splice_resave_preserves_created_updates_last_saved) {
     std::vector<uint8_t> image1(0x100, 0);
     auto contentLines1 = formatBatteryCardInitialContentBlock(1, image1);
     std::string firstSave;
@@ -285,7 +278,7 @@ void test_splice_resave_preserves_created_updates_last_saved() {
     if (it != def.regions[0].initialContentByBank.end()) CHECK(it->second == image2);
 }
 
-void test_card_template_key() {
+TEST(test_card_template_key) {
     std::string err;
     MemoryCardDefinition def;
     CHECK(parseMemoryCardDefinition(kSyntheticCardYaml, &def, &err));
@@ -299,7 +292,7 @@ void test_card_template_key() {
 }
 
 // Saving from a template yields an instance: the `template:` line is gone.
-void test_splice_drops_template_key() {
+TEST(test_splice_drops_template_key) {
     const std::string templ = std::string("template: true\n") + kSyntheticCardYaml;
     std::vector<uint8_t> image(0x100, 0);
     std::string spliced, err;
@@ -314,7 +307,7 @@ void test_splice_drops_template_key() {
 // A protected save moves the card's switch (every `write-protect:` line,
 // keeping indentation and comment); without the option the file's position
 // stays; a card without the key can't be saved protected.
-void test_splice_write_protect() {
+TEST(test_splice_write_protect) {
     const std::string templ =
         "format-version: 1\nmodule-name: \"CE-161\"\ntemplate: true\nbattery: true\n"
         "compatible-hosts: [PC-1500]\ndefinition-terminology: PC-1500\nregions:\n"
@@ -342,7 +335,7 @@ void test_splice_write_protect() {
 
 // Every bundled card and floppy declares itself a template -- the app never
 // writes to them (and the bundle may be read-only anyway).
-void test_bundled_files_are_templates() {
+TEST(test_bundled_files_are_templates) {
     const char* dir = "frontends/qt6/resources/cards";
     std::string err;
     const auto cards = scanMemoryCardDirectory(dir, &err);
@@ -370,7 +363,7 @@ void test_bundled_files_are_templates() {
 }
 
 // A saved floppy is an instance: formatFloppyFile() never writes `template:`.
-void test_saved_floppy_is_instance() {
+TEST(test_saved_floppy_is_instance) {
     const std::vector<uint8_t> image(CE1600FCard::kImageSize, 0xE5);
     FloppyFile disk;
     std::string err;
@@ -378,7 +371,7 @@ void test_saved_floppy_is_instance() {
     CHECK(disk.diskName == "Mine" && !disk.isTemplate);
 }
 
-void test_splice_fails_without_module_name() {
+TEST(test_splice_fails_without_module_name) {
     const char* noModuleName =
         "compatible-hosts: [PC-1500]\n"
         "definition-terminology: PC-1500\n"
@@ -389,7 +382,7 @@ void test_splice_fails_without_module_name() {
     CHECK(!err.empty());
 }
 
-void test_splice_fails_without_regions() {
+TEST(test_splice_fails_without_regions) {
     const char* noRegions =
         "format-version: 1\nmodule-name: X\n"
         "compatible-hosts: [PC-1500]\n"
@@ -399,7 +392,7 @@ void test_splice_fails_without_regions() {
     CHECK(!err.empty());
 }
 
-void test_splice_roundtrip_through_real_bundled_file_if_present() {
+TEST(test_splice_roundtrip_through_real_bundled_file_if_present) {
     const char* path = "frontends/qt6/resources/cards/ce1638.card.yaml";
     std::ifstream probe(path);
     if (!probe) {
@@ -448,7 +441,7 @@ std::string cardText(const std::string& name, bool isTemplate) {
 }
 
 // Where a save goes, and every refusal -- the same for a card and a disk.
-void test_plan_media_save() {
+TEST(test_plan_media_save) {
     const std::string d = scratchDir();
     CHECK(!d.empty());
     if (d.empty()) return;
@@ -487,7 +480,7 @@ void test_plan_media_save() {
 // A preset `saveas:` without the GUI, for any model: the card is spliced
 // into the file it came from (keeping `format-version`), a slot whose ROM
 // came from `slot-N-rom:` is refused.
-void test_save_preset_media() {
+TEST(test_save_preset_media) {
     const std::string d = scratchDir();
     CHECK(!d.empty());
     if (d.empty()) return;
@@ -548,29 +541,3 @@ void test_save_preset_media() {
 }
 
 }  // namespace
-
-int run_battery_card_instance_tests() {
-    test_addressed_hex_roundtrip_uniform();
-    test_addressed_hex_roundtrip_mixed();
-    test_addressed_hex_roundtrip_uniform_run_plus_tail();
-    test_addressed_hex_single_differing_byte();
-    test_battery_card_block_keeps_uniform_banks();
-    test_battery_card_block_never_empty_when_all_banks_uniform();
-    test_battery_card_block_unbanked_region_omits_bank_key();
-
-    test_splice_first_save_inserts_header_and_content();
-    test_splice_resave_preserves_created_updates_last_saved();
-    test_card_template_key();
-    test_splice_drops_template_key();
-    test_splice_write_protect();
-    test_bundled_files_are_templates();
-    test_saved_floppy_is_instance();
-    test_splice_fails_without_module_name();
-    test_splice_fails_without_regions();
-    test_splice_roundtrip_through_real_bundled_file_if_present();
-    test_plan_media_save();
-    test_save_preset_media();
-
-    std::printf("battery_card_instance_tests: %d passed, %d failed\n", g_pass, g_fail);
-    return g_fail;
-}

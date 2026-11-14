@@ -207,8 +207,16 @@ Builds and runs the headless `core/` + `app/` test suite (no Qt, no
 GUI): it configures the root project with `-DCALCU_FRONTEND_QT=OFF` into
 the repository's `build/tests` tree (Debug, so Core and the tests compile
 at `-O1`) and runs `CoreTests` from this directory, since the tests load
-`roms/` via relative paths. Arguments are passed on to `CoreTests`. Needs
-CMake, Ninja and zlib (`zlib1g-dev` on Ubuntu; macOS has it).
+`roms/` via relative paths. An argument is passed on to `CoreTests` as a
+filter: `tools/run_tests.sh ce158` runs the tests whose name contains
+`ce158`. Needs CMake, Ninja and zlib (`zlib1g-dev` on Ubuntu; macOS has it).
+
+The tests use the repository's one C++ test runner,
+`library/testing/TestHarness.hpp` (ADR 0038): each file registers its
+tests with `TEST(name)` and checks with `CHECK` / `CHECK_EQ`; a test that
+needs the ROMs starts with `SKIP_UNLESS(...)`, which reports it as skipped
+when they are missing. The runner's `main()` (target `calcu_test_runner`)
+runs every registered test; there is no list to keep.
 
 CI's `core-tests` job runs the same suite through CTest (as
 `RelWithDebInfo`, with Calc-U-1600 only):
@@ -232,6 +240,28 @@ cmake -S ../.. -B ../../build/debug -G Ninja -DCMAKE_BUILD_TYPE=Debug \
 cmake --build ../../build/debug --target CoreTests
 ../../build/debug/products/calc-u-1600/CoreTests   # from this directory
 ```
+
+### Test groups
+
+Every CTest entry carries a group label (ADR 0031): `frequent` (on every
+change, ≤ 60 s: `CoreTests`, `CalcU1600CheckPresets`), `longer` (before
+merging into `main`, ≤ 10 min: Playwright, the WebAssembly check, the
+screenshot scenarios run as checks into the build tree, `tools/dap_smoke.py`)
+and `checkpoint` (before a release: the User Guide screenshots, the
+ten-minute pacing runs on the real clock). A tree has only the Frequent
+group unless it is configured with `-DCALCU_TESTS_LONGER=ON` or
+`-DCALCU_TESTS_CHECKPOINT=ON`; the screenshot and DAP entries also need
+the Qt app in the tree, Playwright a built `frontends/web/dist/`:
+
+```sh
+cmake -S ../.. -B ../../build/groups -G Ninja -DCMAKE_BUILD_TYPE=Release \
+  -DCALCU_TESTS_LONGER=ON -DCALCU_TESTS_CHECKPOINT=ON
+cmake --build ../../build/groups
+ctest --test-dir ../../build/groups/products/calc-u-1600 -L longer
+```
+
+`docs/test-groups.md` at the repository root lists every test of both
+products and its group.
 
 ## WebAssembly check
 

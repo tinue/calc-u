@@ -11,16 +11,9 @@
 
 #include "../core/PC1500/PC1500Machine.hpp"
 #include "TestCards.hpp"
+#include "TestHarness.hpp"
 
 namespace {
-
-int g_pass = 0;
-int g_fail = 0;
-
-#define CHECK(cond) do { \
-    if (cond) { g_pass++; } \
-    else { g_fail++; std::fprintf(stderr, "FAIL %s:%d: %s\n", __FILE__, __LINE__, #cond); } \
-} while (0)
 
 PinState makePins(uint16_t addr) {
     PinState p;
@@ -33,12 +26,12 @@ PinState makePins(uint16_t addr) {
 #define CE151_OR_FAIL(card, host)                                                         \
     auto card = bundledCard("ce151.card.yaml", host);                                     \
     if (!card) {                                                                          \
-        g_fail++; std::fprintf(stderr, "FAIL %s: frontends/qt6/resources/cards/ce151.card.yaml missing or unloadable\n", __func__); \
+        testharness::failCount()++; std::fprintf(stderr, "FAIL %s: frontends/qt6/resources/cards/ce151.card.yaml missing or unloadable\n", __func__); \
         return;                                                                           \
     }
 
 // Two 2 KB chips, CS = pin 16 (S1) and pin 17 (S2); A0-A10 are the offset.
-void test_ce151_pins_16_17_chips() {
+TEST(test_ce151_pins_16_17_chips) {
     CE151_OR_FAIL(owned, CardHost::PC1500);
     SoftwareDefinedCard& card = *owned;
     uint8_t v;
@@ -71,7 +64,7 @@ void test_ce151_pins_16_17_chips() {
 
 // Through the machine: &4800-&57FF on the PC-1500 (pins 16/17 = S1/S2),
 // &5800-&67FF on the PC-1500A (pins 16/17 = S3/S4).
-void test_ce151_end_to_end_via_machine() {
+TEST(test_ce151_end_to_end_via_machine) {
     CE151_OR_FAIL(card, CardHost::PC1500);
     PC1500Machine pc1500(PC1500Variant::PC1500);
     pc1500.attachExpansionCard(std::move(card));
@@ -99,7 +92,7 @@ void test_ce151_end_to_end_via_machine() {
 
 // The definition is declared for the PC-1500 family and PC-1600 Slot 1
 // (TRM 3.12.1: "only in slot 1").
-void test_ce151_hosts() {
+TEST(test_ce151_hosts) {
     CHECK(bundledCard("ce151.card.yaml", CardHost::PC1500) != nullptr);
     CHECK(bundledCard("ce151.card.yaml", CardHost::PC1500A) != nullptr);
     CHECK(bundledCard("ce151.card.yaml", CardHost::PC1600Slot1) != nullptr);
@@ -107,12 +100,3 @@ void test_ce151_hosts() {
 }
 
 } // namespace
-
-int run_ce151_tests() {
-    test_ce151_pins_16_17_chips();
-    test_ce151_end_to_end_via_machine();
-    test_ce151_hosts();
-
-    std::printf("ce151_tests: %d passed, %d failed\n", g_pass, g_fail);
-    return g_fail;
-}

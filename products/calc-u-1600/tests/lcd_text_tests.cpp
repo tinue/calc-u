@@ -31,16 +31,9 @@
 #include "../core/PC1600/PC1600PresetLoader.hpp"
 #include "PresetTestSupport.hpp"
 #include "TestRoms.hpp"
+#include "TestHarness.hpp"
 
 namespace {
-
-int g_pass = 0;
-int g_fail = 0;
-
-#define CHECK(cond) do { \
-    if (cond) { g_pass++; } \
-    else { g_fail++; std::fprintf(stderr, "FAIL %s:%d: %s\n", __FILE__, __LINE__, #cond); } \
-} while (0)
 
 // ── Synthetic ───────────────────────────────────────────────────────────
 
@@ -71,7 +64,7 @@ void put(LcdBitmap& b, int textRow, int textCol, const LcdCell& cell, bool inver
                 (((cell[c] >> r) & 1) != 0) != invert;
 }
 
-void test_synthetic_cells() {
+TEST(test_synthetic_cells) {
     const LcdFont f = tinyFont();
     LcdBitmap b = blankBitmap(156, 16);
     put(b, 0, 0, f.glyphs[0].cell);
@@ -94,7 +87,7 @@ void test_synthetic_cells() {
     CHECK(t.plainText() == "A\\\u2592 A");
 }
 
-void test_synthetic_plain_text() {
+TEST(test_synthetic_plain_text) {
     const LcdFont f = tinyFont();
     // Only graphics: no text at all.
     LcdBitmap b = blankBitmap(156, 16);
@@ -115,7 +108,7 @@ void test_synthetic_plain_text() {
     CHECK(encodeUtf8(U'\u00C4') == "\xC3\x84" && encodeUtf8(U'\uFF71') == "\xEF\xBD\xB1");
 }
 
-void test_synthetic_cursor() {
+TEST(test_synthetic_cursor) {
     const LcdFont f = tinyFont();
     LcdBitmap b = blankBitmap(156, 8);
     put(b, 0, 0, f.glyphs[0].cell);
@@ -140,7 +133,7 @@ void test_synthetic_cursor() {
     CHECK(t.unparsed == 1 && t.cursorRow == 0 && t.cursorCol == 5);
 }
 
-void test_powered_off() {
+TEST(test_powered_off) {
     LcdBitmap b = blankBitmap(156, 8);
     put(b, 0, 0, tinyFont().glyphs[0].cell);
     b.poweredOn = false;
@@ -199,7 +192,7 @@ LcdText pc1600Run(PC1600Machine& m, const std::string& line) {
     return pc1600LcdText(m);
 }
 
-void test_pc1600_font_from_both_roms() {
+TEST(test_pc1600_font_from_both_roms) {
     for (const char* version : {"new", "old"}) {
         PC1600Machine m;
         std::string error;
@@ -215,7 +208,7 @@ void test_pc1600_font_from_both_roms() {
     }
 }
 
-void test_pc1600_print_roundtrip() {
+TEST(test_pc1600_print_roundtrip) {
     PC1600Machine m;
     if (!bootPC1600(m)) {
         std::fprintf(stderr, "SKIP test_pc1600_print_roundtrip: PC-1600 ROMs not found\n");
@@ -238,7 +231,7 @@ void test_pc1600_print_roundtrip() {
     CHECK(std::find(t.status.begin(), t.status.end(), std::string("RUN")) != t.status.end());
 }
 
-void test_pc1600_graphics_is_unparsed() {
+TEST(test_pc1600_graphics_is_unparsed) {
     PC1600Machine m;
     if (!bootPC1600(m)) {
         std::fprintf(stderr, "SKIP test_pc1600_graphics_is_unparsed: PC-1600 ROMs not found\n");
@@ -249,7 +242,7 @@ void test_pc1600_graphics_is_unparsed() {
 }
 
 // CP437 and backslash, as readable text.
-void test_pc1600_plain_text() {
+TEST(test_pc1600_plain_text) {
     PC1600Machine m;
     if (!bootPC1600(m)) {
         std::fprintf(stderr, "SKIP test_pc1600_plain_text: PC-1600 ROMs not found\n");
@@ -299,7 +292,7 @@ std::string pc1500RoundtripProgram() {
     return program;
 }
 
-void test_pc1500_print_roundtrip() {
+TEST(test_pc1500_print_roundtrip) {
     for (const char* rom : {"roms/PC-1500_A04.ROM", "roms/PC-1500_A03.ROM"}) {
         PC1500Machine m;
         if (!bootPC1500(m, rom)) {
@@ -330,7 +323,7 @@ void test_pc1500_print_roundtrip() {
 }
 
 // The signs CHARSET draws in place of ASCII.
-void test_pc1500_plain_text() {
+TEST(test_pc1500_plain_text) {
     PC1500Machine m;
     if (!bootPC1500(m, "roms/PC-1500_A04.ROM")) {
         std::fprintf(stderr, "SKIP test_pc1500_plain_text: roms/PC-1500_A04.ROM not found\n");
@@ -345,7 +338,7 @@ void test_pc1500_plain_text() {
 
 // ── `expect:` preset step ───────────────────────────────────────────────
 
-void test_expect_parse() {
+TEST(test_expect_parse) {
     PresetFile p;
     std::string err;
     CHECK(parsePresetString("format-version: 1\nmodel: PC-1600\nkeys:\n  - expect: ERROR 1 # not a comment\n",
@@ -361,7 +354,7 @@ void test_expect_parse() {
 // MEM with and without the CE-1600P: the floppy module's work area (428H
 // bytes, EXROMWK) is reserved as soon as the drive answers -- and the
 // emulator attaches a CE-1600F with every CE-1600P.
-void test_expect_pc1600() {
+TEST(test_expect_pc1600) {
     struct Case {
         const char* text;
         bool ok;
@@ -391,7 +384,7 @@ void test_expect_pc1600() {
     }
 }
 
-void test_expect_pc1500() {
+TEST(test_expect_pc1500) {
     PresetFile p;
     std::string err;
     CHECK(parsePresetString("format-version: 1\nmodel: PC-1500\nkeys:\n  - key: mode\n  - type: PRINT 12345*-2\n  - expect: -24690\n",
@@ -406,7 +399,7 @@ void test_expect_pc1500() {
     if (!r.ok) std::fprintf(stderr, "  %s\n", r.error.c_str());
 }
 
-void test_log_field() {
+TEST(test_log_field) {
     LcdText t;
     t.rows = {"A\"B", ""};
     CHECK(t.logField() == "lcd=[\"A\\\"B\",\"\"]");
@@ -418,7 +411,7 @@ void test_log_field() {
 
 // The same two bytes (PC-1500 764EH/764FH, PC-1600 IC3 column 63 pages
 // 7/6) read as the same words on both displays.
-void test_status_words_same_on_both_models() {
+TEST(test_status_words_same_on_both_models) {
     struct Case {
         uint8_t set0, set1;
         std::vector<std::string> want;
@@ -449,7 +442,7 @@ void test_status_words_same_on_both_models() {
 }
 
 // Both machines boot with DEG and I lit (and RUN or PRO, by boot path).
-void test_status_after_boot() {
+TEST(test_status_after_boot) {
     PC1600Machine m16;
     if (bootPC1600(m16)) {
         const LcdText t = pc1600LcdText(m16);
@@ -467,7 +460,7 @@ void test_status_after_boot() {
 }
 
 // GRAD / RADIAN on the PC-1500 write 764FH, the glass itself.
-void test_status_angle_pc1500() {
+TEST(test_status_angle_pc1500) {
     PC1500Machine m;
     if (!bootPC1500(m, "roms/PC-1500_A04.ROM")) {
         std::fprintf(stderr, "SKIP test_status_angle_pc1500: roms/PC-1500_A04.ROM not found\n");
@@ -502,7 +495,7 @@ uint8_t bottomColumn(const PC1600Display& d, int x) {
     return dots;
 }
 
-void test_pc1600_mirror_unit() {
+TEST(test_pc1600_mirror_unit) {
     PC1600Display d;
     d.writeIO(0x50, 0x3F); // both controllers on
     for (int startLine : {0, 8, 40}) {
@@ -518,7 +511,7 @@ void test_pc1600_mirror_unit() {
     }
 }
 
-void test_pc1600_mirror_real_rom() {
+TEST(test_pc1600_mirror_real_rom) {
     PC1600Machine m;
     if (!bootPC1600(m)) {
         std::fprintf(stderr, "SKIP test_pc1600_mirror_real_rom: PC-1600 ROMs not found\n");
@@ -556,7 +549,7 @@ void test_pc1600_mirror_real_rom() {
 }
 
 // ME0 writes drive the mirror; ME1 writes reach neither the LCD nor the RAM.
-void test_pc1600_mirror_me0_only() {
+TEST(test_pc1600_mirror_me0_only) {
     PC1600Bank bank;
     PC1600Memory mem(bank);
     LH5803SharedMemory lh(mem);
@@ -571,7 +564,7 @@ void test_pc1600_mirror_me0_only() {
 // LHA90: 7400H-744FH / 7500H-754FH land on 7600H-764FH / 7700H-774FH,
 // RAM and mirror alike (hardware: XPOKE &7400 reads back at &7600 and
 // draws; &744F changes the legend). 774EH/774FH are not mirrored.
-void test_pc1600_lha90_alias() {
+TEST(test_pc1600_lha90_alias) {
     PC1600Bank bank;
     PC1600Memory mem(bank);
     LH5803SharedMemory lh(mem);
@@ -597,30 +590,3 @@ void test_pc1600_lha90_alias() {
 }
 
 } // namespace
-
-int run_lcd_text_tests() {
-    test_synthetic_cells();
-    test_synthetic_cursor();
-    test_powered_off();
-    test_synthetic_plain_text();
-    test_pc1600_font_from_both_roms();
-    test_pc1600_print_roundtrip();
-    test_pc1600_graphics_is_unparsed();
-    test_pc1500_print_roundtrip();
-    test_pc1600_plain_text();
-    test_pc1500_plain_text();
-    test_expect_parse();
-    test_expect_pc1600();
-    test_expect_pc1500();
-    test_log_field();
-    test_status_words_same_on_both_models();
-    test_status_after_boot();
-    test_status_angle_pc1500();
-    test_pc1600_mirror_unit();
-    test_pc1600_mirror_real_rom();
-    test_pc1600_mirror_me0_only();
-    test_pc1600_lha90_alias();
-
-    std::printf("lcd_text_tests: %d passed, %d failed\n", g_pass, g_fail);
-    return g_fail;
-}

@@ -13,23 +13,16 @@
 
 #include "../core/PC1600/PC1600Machine.hpp"
 #include "TestRoms.hpp"
+#include "TestHarness.hpp"
 
 namespace {
-
-int g_pass = 0;
-int g_fail = 0;
-
-#define CHECK(cond) do { \
-    if (cond) { g_pass++; } \
-    else { g_fail++; std::fprintf(stderr, "FAIL %s:%d: %s\n", __FILE__, __LINE__, #cond); } \
-} while (0)
 
 // Real ROM files loaded via loadBank3Rom/loadBank3bRom, then exercised
 // through actual SC7852 execution (LD A,(4000H) ; HALT) rather than just
 // checking the raw bytes loaded correctly -- confirms the hidden-ROM latch
 // (Port 3DH bit 2) actually switches which of the two loaded images page B
 // resolves to.
-void test_hidden_rom_latch_via_execution() {
+TEST(test_hidden_rom_latch_via_execution) {
     PC1600Machine m;
     std::vector<uint8_t> bank3, bank3b;
     if (!readRomImage("roms/PC1600-P1-B3-new.bin", &bank3) ||
@@ -67,7 +60,7 @@ void test_hidden_rom_latch_via_execution() {
 // for bank 3/3b -- and confirming those banks are still open bus before
 // attach / after detach, and that unrelated banks (1, 2, 7) stay open bus
 // once a CE-1600P is attached (its ROM only answers on 4/5).
-void test_ce1600p_rom_attach_and_open_bus() {
+TEST(test_ce1600p_rom_attach_and_open_bus) {
     PC1600Machine m;
     std::vector<uint8_t> ce1, ce2;
     if (!readRomImage("roms/PC1600-P1-B4-CE1600P-new.bin", &ce1) ||
@@ -121,7 +114,7 @@ void test_ce1600p_rom_attach_and_open_bus() {
 
 // BundledRoms::attachCE1600P picks the new or old ROM pair by version,
 // independently of the PC-1600's own ROM, and rejects an unknown version.
-void test_ce1600p_rom_version_selection() {
+TEST(test_ce1600p_rom_version_selection) {
     std::vector<uint8_t> newB4, newB5, oldB4, oldB5;
     if (!readRomImage("roms/PC1600-P1-B4-CE1600P-new.bin", &newB4) ||
         !readRomImage("roms/PC1600-P1-B5-CE1600P-OR-F-new.bin", &newB5) ||
@@ -165,12 +158,3 @@ void test_ce1600p_rom_version_selection() {
 }
 
 } // namespace
-
-int run_pc1600_phase54_tests() {
-    test_ce1600p_rom_version_selection();
-    test_hidden_rom_latch_via_execution();
-    test_ce1600p_rom_attach_and_open_bus();
-
-    std::printf("pc1600_phase54_tests: %d passed, %d failed\n", g_pass, g_fail);
-    return g_fail;
-}

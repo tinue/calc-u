@@ -7,16 +7,9 @@
 #include <cstdio>
 
 #include "../core/Connector/AlpsPlotterMechanism.hpp"
+#include "TestHarness.hpp"
 
 namespace {
-
-int g_pass = 0;
-int g_fail = 0;
-
-#define CHECK(cond) do { \
-    if (cond) { g_pass++; } \
-    else { g_fail++; std::fprintf(stderr, "FAIL %s:%d: %s\n", __FILE__, __LINE__, #cond); } \
-} while (0)
 
 // cmotor.cpp's phaseList forms an 8-position ring over these phases: moving
 // from kRing[i] to kRing[i+1] is always a half-step ("_MID") in the X
@@ -44,7 +37,7 @@ int stepRing(void (AlpsPlotterMechanism::*write)(uint8_t), AlpsPlotterMechanism&
     return pos;
 }
 
-void test_stepper_full_and_half_steps() {
+TEST(test_stepper_full_and_half_steps) {
     AlpsPlotterMechanism x;
     CHECK(x.penX() == 0);
     x.writeMotorX(0x9); // Stepper already starts at phase 9 (ring position 0); no move
@@ -61,7 +54,7 @@ void test_stepper_full_and_half_steps() {
 // relocating the tracked motor phase, so deltaFor() has no row for 0xF and
 // the step immediately after a brake must land exactly where it would have
 // without the brake in between.
-void test_brake_write_does_not_eat_the_next_step() {
+TEST(test_brake_write_does_not_eat_the_next_step) {
     AlpsPlotterMechanism x;
     x.writeMotorX(0x9); // anchor at ring position 0
     x.writeMotorX(0xf); // brake/hold -- must not move, must not relocate currentPhase
@@ -73,7 +66,7 @@ void test_brake_write_does_not_eat_the_next_step() {
 // Y and Z apply the opposite sign to the same phase table as X (see
 // AlpsPlotterMechanism::stepXY()/stepZ()'s comments): a +1 step in X's own
 // convention moves Y/Z by -1 instead.
-void test_y_applies_inverted_sign_from_x() {
+TEST(test_y_applies_inverted_sign_from_x) {
     AlpsPlotterMechanism m;
     m.writeMotorY(0x9); // establish, ring position 0
     stepRing(&AlpsPlotterMechanism::writeMotorY, m, 0, -5); // X-convention -5 -> Y +5
@@ -86,7 +79,7 @@ void test_y_applies_inverted_sign_from_x() {
 // crossing 6 (already up, no-op) then landing on 0, which must fire the
 // false->true pen-down edge and start a stroke; a subsequent X move while
 // down must extend it; returning to 6 must end it.
-void test_pen_down_traces_a_stroke_and_pen_up_ends_it() {
+TEST(test_pen_down_traces_a_stroke_and_pen_up_ends_it) {
     AlpsPlotterMechanism m;
     CHECK(!m.penDown());
 
@@ -127,7 +120,7 @@ void test_pen_down_traces_a_stroke_and_pen_up_ends_it() {
 // silently reporting penZ==0 already, which would suppress the down edge
 // and, on the real CE-1600P TEST diagnostic, leave the black rectangle
 // (drawn first, right after power-on) empty while the others still draw.
-void test_first_pen_down_from_rest_fires_immediately() {
+TEST(test_first_pen_down_from_rest_fires_immediately) {
     AlpsPlotterMechanism m;
     CHECK(!m.penDown());
     CHECK(m.penZ() == 6);
@@ -140,14 +133,3 @@ void test_first_pen_down_from_rest_fires_immediately() {
 }
 
 } // namespace
-
-int run_ce1600p_tests() {
-    test_stepper_full_and_half_steps();
-    test_brake_write_does_not_eat_the_next_step();
-    test_y_applies_inverted_sign_from_x();
-    test_pen_down_traces_a_stroke_and_pen_up_ends_it();
-    test_first_pen_down_from_rest_fires_immediately();
-
-    std::printf("ce1600p_tests: %d passed, %d failed\n", g_pass, g_fail);
-    return g_fail;
-}

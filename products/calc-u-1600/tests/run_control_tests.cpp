@@ -25,16 +25,9 @@
 #include "../core/Debug/RunControl.hpp"
 #include "../core/Debug/SourceMap.hpp"
 #include "../core/PC1500/PC1500Machine.hpp"
+#include "TestHarness.hpp"
 
 namespace {
-
-int g_pass = 0;
-int g_fail = 0;
-
-#define CHECK(cond) do { \
-    if (cond) { g_pass++; } \
-    else { g_fail++; std::fprintf(stderr, "FAIL %s:%d: %s\n", __FILE__, __LINE__, #cond); } \
-} while (0)
 
 // One PC-1500A with memtest + harness loaded, its listing bound as a load,
 // and the debugger objects around it.
@@ -119,7 +112,7 @@ size_t outputs(const std::vector<debug::DebugEvent>& events) {
     return n;
 }
 
-void test_line_breakpoint_and_line_steps() {
+TEST(test_line_breakpoint_and_line_steps) {
     Rig r;
     if (!r.ok) { std::printf("  SKIP run control tests: memtest fixture missing\n"); return; }
     // Line 88 is a comment: the breakpoint resolves to 89 (ldi a,0x00).
@@ -156,7 +149,7 @@ void test_line_breakpoint_and_line_steps() {
     CHECK(r.target.peek(1, debug::kSpaceMain, 0x40C7, &flag) && flag == 0); // ERR_FLAG: pass
 }
 
-void test_step_over_a_call() {
+TEST(test_step_over_a_call) {
     Rig r;
     if (!r.ok) return;
     // At the harness: step over `sjp 0x40C5` runs all of memtest.
@@ -175,7 +168,7 @@ void test_step_over_a_call() {
     CHECK(stop && stop->reason == debug::DebugEvent::Breakpoint && r.target.pc(1) == 0x40CE);
 }
 
-void test_conditions_hit_counts_and_logpoints() {
+TEST(test_conditions_hit_counts_and_logpoints) {
     Rig r;
     if (!r.ok) return;
     // Line 137 is `sta (x)` in pass 1's loop, once per tested byte.
@@ -217,7 +210,7 @@ void test_conditions_hit_counts_and_logpoints() {
     CHECK(lastStop(ev) && r.target.pc(1) == 0x40CC && outputs(ev) == 1);
 }
 
-void test_data_breakpoint_and_pause() {
+TEST(test_data_breakpoint_and_pause) {
     Rig r;
     if (!r.ok) return;
     debug::DataBreakpointSpec w;
@@ -240,7 +233,7 @@ void test_data_breakpoint_and_pause() {
     CHECK(ev.size() == 1 && ev[0].reason == debug::DebugEvent::Pause && r.rc.paused());
 }
 
-void test_bank_qualified_listing() {
+TEST(test_bank_qualified_listing) {
     Rig r;
     if (!r.ok) return;
     // The same listing bound statically for PV=1 only: with PV=0 its
@@ -268,7 +261,7 @@ void test_bank_qualified_listing() {
     CHECK(stop && stop->reason == debug::DebugEvent::Breakpoint && r.target.pc(1) == 0x40CC);
 }
 
-void test_hit_condition_parsing() {
+TEST(test_hit_condition_parsing) {
     CHECK(debug::hitConditionMet("3", 3) && !debug::hitConditionMet("3", 4));
     CHECK(debug::hitConditionMet(">= 5", 5) && !debug::hitConditionMet(">=5", 4));
     CHECK(debug::hitConditionMet("% 3", 6) && !debug::hitConditionMet("%3", 7));
@@ -278,14 +271,3 @@ void test_hit_condition_parsing() {
 }
 
 } // namespace
-
-int run_run_control_tests() {
-    test_hit_condition_parsing();
-    test_line_breakpoint_and_line_steps();
-    test_step_over_a_call();
-    test_conditions_hit_counts_and_logpoints();
-    test_data_breakpoint_and_pause();
-    test_bank_qualified_listing();
-    std::printf("run control tests: %d passed, %d failed\n", g_pass, g_fail);
-    return g_fail;
-}

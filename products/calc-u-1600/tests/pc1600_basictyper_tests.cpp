@@ -25,20 +25,13 @@
 #include "../core/PC1600/PC1600BasicTyper.hpp"
 #include "../core/PC1600/PC1600Machine.hpp"
 #include "TestRoms.hpp"
+#include "TestHarness.hpp"
 
 namespace {
 
-int g_pass = 0;
-int g_fail = 0;
-
-#define CHECK(cond) do { \
-    if (cond) { g_pass++; } \
-    else { g_fail++; std::fprintf(stderr, "FAIL %s:%d: %s\n", __FILE__, __LINE__, #cond); } \
-} while (0)
-
 // No ROM needed: an untypeable character fails the line cleanly with an
 // error rather than half-typing it.
-void test_typeline_rejects_untypeable_char() {
+TEST(test_typeline_rejects_untypeable_char) {
     PC1600Machine m;
     std::string err;
     CHECK(!typeLine(m, std::string("a\x01""b"), /*pressEnter=*/true, &err));
@@ -50,7 +43,7 @@ void test_typeline_rejects_untypeable_char() {
 // so the fitting lines get flagged too -- that path is covered by the
 // ROM-gated tests below; here we only assert the over-limit line is
 // caught and never typed.)
-void test_typebasicprogram_length_guard() {
+TEST(test_typebasicprogram_length_guard) {
     PC1600Machine m; // no ROM: keystrokes just spin the CPU
 
     std::string tooLong = "10 REM ";
@@ -65,7 +58,7 @@ void test_typebasicprogram_length_guard() {
 
 // ROM-gated: in PRO mode a fitting program loads (every line advances
 // BASPRG_END), and an over-length line is the only one rejected.
-void test_typebasicprogram_pro_mode_load() {
+TEST(test_typebasicprogram_pro_mode_load) {
     PC1600Machine m;
     if (!bootPC1600(m)) {
         std::fprintf(stderr, "SKIP test_typebasicprogram_pro_mode_load: PC-1600 ROM images not found\n");
@@ -86,7 +79,7 @@ void test_typebasicprogram_pro_mode_load() {
 
 // ROM-gated: re-typing a line number with a same-length body replaces the
 // line without moving BASPRG_END -- that is still a stored line.
-void test_typebasicprogram_same_length_replacement_is_stored() {
+TEST(test_typebasicprogram_same_length_replacement_is_stored) {
     PC1600Machine m;
     if (!bootPC1600(m)) {
         std::fprintf(stderr, "SKIP test_typebasicprogram_same_length_replacement_is_stored: PC-1600 ROM images not found\n");
@@ -102,7 +95,7 @@ void test_typebasicprogram_same_length_replacement_is_stored() {
 
 // ROM-gated: called in RUN mode (no `key: mode`), the editor stores
 // nothing -- every line is reported rejected and the error names PRO mode.
-void test_typebasicprogram_detects_run_mode() {
+TEST(test_typebasicprogram_detects_run_mode) {
     PC1600Machine m;
     if (!bootPC1600(m)) {
         std::fprintf(stderr, "SKIP test_typebasicprogram_detects_run_mode: PC-1600 ROM images not found\n");
@@ -120,7 +113,7 @@ void test_typebasicprogram_detects_run_mode() {
 // SHIFT-tap path rather than silently uppercased (the pre-typer raw-
 // keystroke behaviour). The ROM materialises this buffer on the line
 // commit (ENTER), so type WITH enter and read it back after.
-void test_typeline_lowercase_reaches_input_buffer() {
+TEST(test_typeline_lowercase_reaches_input_buffer) {
     PC1600Machine m;
     if (!bootPC1600(m)) {
         std::fprintf(stderr, "SKIP test_typeline_lowercase_reaches_input_buffer: PC-1600 ROM images not found\n");
@@ -138,7 +131,7 @@ void test_typeline_lowercase_reaches_input_buffer() {
 
 // ROM-gated: a typed '^' reaches the console input buffer as a real caret
 // byte (0x5E), same check shape as the lowercase test above.
-void test_typeline_caret_reaches_input_buffer() {
+TEST(test_typeline_caret_reaches_input_buffer) {
     PC1600Machine m;
     if (!bootPC1600(m)) {
         std::fprintf(stderr, "SKIP test_typeline_caret_reaches_input_buffer: PC-1600 ROM images not found\n");
@@ -163,7 +156,7 @@ std::string inputBuffer(PC1600Machine& m) {
 // (no uppercase in the ROM) falls back to ë (89H), and `û` / `«` exist only
 // as SHIFT+KBII (96H / AEH). Plain letters keep their case around them, and
 // KBII (RAM F3C6H bit 7) is off again afterwards.
-void test_typeline_kbii_chars_reach_input_buffer() {
+TEST(test_typeline_kbii_chars_reach_input_buffer) {
     PC1600Machine m;
     if (!bootPC1600(m)) {
         std::fprintf(stderr, "SKIP test_typeline_kbii_chars_reach_input_buffer: PC-1600 ROM images not found\n");
@@ -178,7 +171,7 @@ void test_typeline_kbii_chars_reach_input_buffer() {
 
 // ROM-gated: SML doesn't change a KBII character (KEYCONV tests KBII
 // before the SML/caps bit), so a locked SML still gives the same codes.
-void test_typeline_kbii_chars_ignore_sml() {
+TEST(test_typeline_kbii_chars_ignore_sml) {
     PC1600Machine m;
     if (!bootPC1600(m)) {
         std::fprintf(stderr, "SKIP test_typeline_kbii_chars_ignore_sml: PC-1600 ROM images not found\n");
@@ -195,7 +188,7 @@ void test_typeline_kbii_chars_ignore_sml() {
 // the KBII key would toggle the key click instead): `ö` still gives ö
 // (94H), and SHIFT (SYMB0 F64EH bit 1), KBII and the key click (KEYWK1
 // F079H bit 1) end up as before.
-void test_typeline_kbii_char_after_latched_shift() {
+TEST(test_typeline_kbii_char_after_latched_shift) {
     PC1600Machine m;
     if (!bootPC1600(m)) {
         std::fprintf(stderr, "SKIP test_typeline_kbii_char_after_latched_shift: PC-1600 ROM images not found\n");
@@ -215,7 +208,7 @@ void test_typeline_kbii_char_after_latched_shift() {
 
 // ROM-gated: with KBII latched by the user an accented character is
 // dropped, and KBII stays on -- the next plain A types KBII A = á (A0H).
-void test_typeline_kbii_char_ignored_while_kbii_latched() {
+TEST(test_typeline_kbii_char_ignored_while_kbii_latched) {
     PC1600Machine m;
     if (!bootPC1600(m)) {
         std::fprintf(stderr, "SKIP test_typeline_kbii_char_ignored_while_kbii_latched: PC-1600 ROM images not found\n");
@@ -234,7 +227,7 @@ void test_typeline_kbii_char_ignored_while_kbii_latched() {
 
 // No ROM needed: a character without a key (not in the KBII tables) fails
 // the line and names the character.
-void test_typeline_rejects_unknown_non_ascii() {
+TEST(test_typeline_rejects_unknown_non_ascii) {
     PC1600Machine m;
     std::string err;
     CHECK(!typeLine(m, "Gr\xC3\x9F" "e", /*pressEnter=*/true, &err));
@@ -242,21 +235,3 @@ void test_typeline_rejects_unknown_non_ascii() {
 }
 
 } // namespace
-
-int run_pc1600_basictyper_tests() {
-    test_typeline_kbii_chars_reach_input_buffer();
-    test_typeline_kbii_chars_ignore_sml();
-    test_typeline_rejects_unknown_non_ascii();
-    test_typeline_kbii_char_after_latched_shift();
-    test_typeline_kbii_char_ignored_while_kbii_latched();
-    test_typeline_rejects_untypeable_char();
-    test_typeline_caret_reaches_input_buffer();
-    test_typebasicprogram_length_guard();
-    test_typebasicprogram_pro_mode_load();
-    test_typebasicprogram_same_length_replacement_is_stored();
-    test_typebasicprogram_detects_run_mode();
-    test_typeline_lowercase_reaches_input_buffer();
-
-    std::printf("pc1600_basictyper_tests: %d passed, %d failed\n", g_pass, g_fail);
-    return g_fail;
-}

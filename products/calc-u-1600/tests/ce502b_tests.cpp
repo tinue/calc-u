@@ -10,16 +10,9 @@
 
 #include "../core/PC1500/PC1500Machine.hpp"
 #include "TestCards.hpp"
+#include "TestHarness.hpp"
 
 namespace {
-
-int g_pass = 0;
-int g_fail = 0;
-
-#define CHECK(cond) do { \
-    if (cond) { g_pass++; } \
-    else { g_fail++; std::fprintf(stderr, "FAIL %s:%d: %s\n", __FILE__, __LINE__, #cond); } \
-} while (0)
 
 // The definition ships in the repo, so a missing or unloadable one fails.
 std::unique_ptr<SoftwareDefinedCard> ce502b(CardHost host) {
@@ -28,7 +21,7 @@ std::unique_ptr<SoftwareDefinedCard> ce502b(CardHost host) {
     return c;
 }
 
-void test_ce502b_is_a_16k_rom_module() {
+TEST(test_ce502b_is_a_16k_rom_module) {
     auto card = ce502b(CardHost::PC1500A);
     if (!card) return;
     CHECK(card->moduleName() == "CE-502B");
@@ -38,7 +31,7 @@ void test_ce502b_is_a_16k_rom_module() {
     CHECK(bundledCard("ce502b.card.yaml", CardHost::PC1600Slot1) == nullptr);
 }
 
-void test_ce502b_end_to_end_via_machine() {
+TEST(test_ce502b_end_to_end_via_machine) {
     auto card = ce502b(CardHost::PC1500);
     if (!card) return;
     PC1500Machine pc1500(PC1500Variant::PC1500);
@@ -59,11 +52,3 @@ void test_ce502b_end_to_end_via_machine() {
 }
 
 } // namespace
-
-int run_ce502b_tests() {
-    test_ce502b_is_a_16k_rom_module();
-    test_ce502b_end_to_end_via_machine();
-
-    std::printf("ce502b_tests: %d passed, %d failed\n", g_pass, g_fail);
-    return g_fail;
-}

@@ -72,7 +72,10 @@ landscape on a large screen) — its column in
   one GUI only.
 - **Every change to `core/` or `app/` must pass all builds before committing:**
   `cmake -S ../.. -B ../../build/tests -G Ninja -DCALCU_FRONTEND_QT=OFF && cmake --build ../../build/tests && ctest --test-dir ../../build/tests/products/calc-u-59 --output-on-failure`
-  (the repository's root CMake project, ADR 0003),
+  (the repository's root CMake project, ADR 0003; that tree holds the
+  Frequent group only, ADR 0031 and `docs/test-groups.md` at the root list
+  every test and its group; `CalcU59Tests <substring>` runs the matching
+  `TEST`s of the one runner, `library/testing/`, ADR 0038),
   `xcodebuild -project frontends/swift/Calc-U-59.xcodeproj -scheme Calc-U-59 -destination platform=macOS build`,
   and the web client, which compiles both layers too:
   `frontends/web/build.sh && frontends/web/run-tests.sh` (`frontends/web/dist/` is gitignored; CI builds it).

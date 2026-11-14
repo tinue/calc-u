@@ -16,16 +16,9 @@
 
 #include "../core/Preset/PresetFile.hpp"
 #include "PresetTestSupport.hpp"
+#include "TestHarness.hpp"
 
 namespace {
-
-int g_pass = 0;
-int g_fail = 0;
-
-#define CHECK(cond) do { \
-    if (cond) { g_pass++; } \
-    else { g_fail++; std::fprintf(stderr, "FAIL %s:%d: %s\n", __FILE__, __LINE__, #cond); } \
-} while (0)
 
 bool parse(const std::string& yaml, PresetFile* out, std::string* err) {
     return parsePresetString(yaml, "/tmp/preset_tests_scratch.pc1500", out, err);
@@ -33,7 +26,7 @@ bool parse(const std::string& yaml, PresetFile* out, std::string* err) {
 
 // `preset-name:` / `description:` -- plain inline values, quotes and a
 // trailing comment handled like any other key; each at most once.
-void test_preset_name_and_description() {
+TEST(test_preset_name_and_description) {
     PresetFile p;
     std::string err;
     CHECK(parse("format-version: 1\nmodel: PC-1500A\npreset-name: Hanoi   # short\n"
@@ -49,7 +42,7 @@ void test_preset_name_and_description() {
 // readPresetHeader(): only the header keys, no steps or files resolved (a
 // missing `program:` file doesn't matter); a missing name falls back to the
 // file stem.
-void test_preset_header() {
+TEST(test_preset_header) {
     const std::string path = "/tmp/preset_tests_header.pc1600";
     std::ofstream(path) << "format-version: 1\nmodel: pc-1600:old\npreset-name: Globe\n"
                            "description: Globe on the CE-1600P\nprogram:\n  file: missing.bas\n";
@@ -85,7 +78,7 @@ std::string nthType(const PresetFile& p, int n) {
 // step's payload is keystroke-literal -- NOT comment-stripped -- because a
 // mid-line `#` is BASIC (`... AS #1`), never a comment. See PresetFile.cpp's
 // stripInlineComment / parseStepList `type` branch.
-void test_inline_comment_stripped_from_key_step_only() {
+TEST(test_inline_comment_stripped_from_key_step_only) {
     PresetFile p;
     std::string err;
     CHECK(parse(
@@ -101,7 +94,7 @@ void test_inline_comment_stripped_from_key_step_only() {
 
 // A comment right after a block key (`keys:   # note`) leaves the key's
 // inline value empty, so it still opens its block.
-void test_comment_after_block_key() {
+TEST(test_comment_after_block_key) {
     PresetFile p;
     std::string err;
     CHECK(parse(
@@ -115,7 +108,7 @@ void test_comment_after_block_key() {
     CHECK(p.sections.size() == 1);
 }
 
-void test_hash_without_leading_space_is_kept() {
+TEST(test_hash_without_leading_space_is_kept) {
     PresetFile p;
     std::string err;
     CHECK(parse(
@@ -128,7 +121,7 @@ void test_hash_without_leading_space_is_kept() {
 
 // A space-separated `#` in real BASIC (`OPEN ... AS #1`, `CLOSE #1`) is
 // not a comment marker; the whole line must survive intact.
-void test_type_step_keeps_space_hash() {
+TEST(test_type_step_keeps_space_hash) {
     PresetFile p;
     std::string err;
     CHECK(parse(
@@ -143,7 +136,7 @@ void test_type_step_keeps_space_hash() {
 
 // A `type:` value is typed as written: quotes around the whole value are
 // typed too (`"SAVE LOAD"` is a BASIC string), and a `#` inside survives.
-void test_type_step_is_literal() {
+TEST(test_type_step_is_literal) {
     PresetFile p;
     std::string err;
     CHECK(parse(
@@ -162,7 +155,7 @@ void test_type_step_is_literal() {
 // a `type:` step written with the wrong verb (`key: X=34`, `key: CALL ...`).
 // tapKey() would just press nothing and the load would carry on silently --
 // so the parser rejects it up front and names the fix.
-void test_key_step_with_non_key_value_is_rejected() {
+TEST(test_key_step_with_non_key_value_is_rejected) {
     PresetFile p;
     std::string err;
     CHECK(!parse(
@@ -176,7 +169,7 @@ void test_key_step_with_non_key_value_is_rejected() {
 }
 
 // ...but real single keys (and the special break/on) still parse fine.
-void test_key_step_with_real_key_names_ok() {
+TEST(test_key_step_with_real_key_names_ok) {
     PresetFile p;
     std::string err;
     CHECK(parse(
@@ -207,7 +200,7 @@ std::string nthTrace(const PresetFile& p, int n) {
 
 // `- trace: <filename>` parses to a Trace step carrying the filename;
 // `- trace: off` (any case) parses to a Trace step with empty text (stop).
-void test_trace_step_start_and_stop() {
+TEST(test_trace_step_start_and_stop) {
     PresetFile p;
     std::string err;
     CHECK(parse(
@@ -226,7 +219,7 @@ void test_trace_step_start_and_stop() {
 
 // A trace filename with a path separator is rejected up front -- WHERE the
 // file lands is the trace directory's concern.
-void test_trace_step_rejects_path_separator() {
+TEST(test_trace_step_rejects_path_separator) {
     PresetFile p;
     std::string err;
     CHECK(!parse(
@@ -247,7 +240,7 @@ void test_trace_step_rejects_path_separator() {
 }
 
 // A bare `- trace:` with no value hits the generic malformed-step path.
-void test_trace_step_requires_a_value() {
+TEST(test_trace_step_requires_a_value) {
     PresetFile p;
     std::string err;
     CHECK(!parse(
@@ -274,7 +267,7 @@ double nthWait(const PresetFile& p, int n) {
 
 // `- wait: N` carries N seconds; `- wait:` with no value is the
 // "wait until idle" sentinel (negative waitSeconds).
-void test_wait_step_value_and_parameterless() {
+TEST(test_wait_step_value_and_parameterless) {
     PresetFile p;
     std::string err;
     CHECK(parse(
@@ -290,7 +283,7 @@ void test_wait_step_value_and_parameterless() {
 }
 
 // Parameterless `- wait:` is valid for a PC-1600 preset too.
-void test_wait_parameterless_pc1600() {
+TEST(test_wait_parameterless_pc1600) {
     PresetFile p;
     std::string err;
     CHECK(parse("format-version: 1\nmodel: PC-1600\nkeys:\n  - type: RUN\n  - wait:\n", &p, &err));
@@ -298,7 +291,7 @@ void test_wait_parameterless_pc1600() {
 }
 
 // `- syncclock:` takes no value; any value is rejected.
-void test_syncclock_step() {
+TEST(test_syncclock_step) {
     PresetFile p;
     std::string err;
     CHECK(parse("format-version: 1\nmodel: PC-1600\nkeys:\n  - wait: 1\n  - syncclock:\n", &p, &err));
@@ -310,7 +303,7 @@ void test_syncclock_step() {
 }
 
 // A wait value is a number and nothing else (`1s` is refused, not read as 1).
-void test_wait_step_rejects_trailing_text() {
+TEST(test_wait_step_rejects_trailing_text) {
     PresetFile p;
     std::string err;
     CHECK(!parse("format-version: 1\nmodel: PC-1500A\nkeys:\n  - wait: 1s\n", &p, &err));
@@ -320,7 +313,7 @@ void test_wait_step_rejects_trailing_text() {
 }
 
 // A negative explicit wait value is rejected (points at the parameterless form).
-void test_wait_step_rejects_negative_value() {
+TEST(test_wait_step_rejects_negative_value) {
     PresetFile p;
     std::string err;
     CHECK(!parse("format-version: 1\nmodel: PC-1500A\nkeys:\n  - wait: -5\n", &p, &err));
@@ -330,7 +323,7 @@ void test_wait_step_rejects_negative_value() {
 // `- saveas: template|live slot-1:<name>` / `slot-2:` / `floppy:` -- all three
 // targets parse on a PC-1600 preset, with the kind, target and name split
 // correctly.
-void test_saveas_step_parses_all_targets_pc1600() {
+TEST(test_saveas_step_parses_all_targets_pc1600) {
     PresetFile p;
     std::string err;
     CHECK(parse(
@@ -364,7 +357,7 @@ void test_saveas_step_parses_all_targets_pc1600() {
 
 // `file:<path>` is resolved against the preset's directory, and the name is
 // the file name minus the target's suffix.
-void test_saveas_file_form_resolves_against_the_preset() {
+TEST(test_saveas_file_form_resolves_against_the_preset) {
     std::filesystem::create_directories("/tmp/calcu_preset_dir");
     PresetFile p;
     std::string err;
@@ -389,7 +382,7 @@ void test_saveas_file_form_resolves_against_the_preset() {
 // A missing template/live word, a missing target/name colon, an unknown
 // target, an empty name, a quoted name, and a `file:` with the wrong suffix
 // are all rejected.
-void test_saveas_step_rejects_malformed_forms() {
+TEST(test_saveas_step_rejects_malformed_forms) {
     PresetFile p;
     std::string err;
     CHECK(!parse("format-version: 1\nmodel: PC-1600\nkeys:\n  - saveas: s1:Name\n", &p, &err));
@@ -409,7 +402,7 @@ void test_saveas_step_rejects_malformed_forms() {
 
 // `slot-1` is valid on a PC-1500/1500A preset (its one slot); `slot-2`
 // and `floppy` are PC-1600 only.
-void test_saveas_step_pc1500_scope() {
+TEST(test_saveas_step_pc1500_scope) {
     PresetFile p;
     std::string err;
     CHECK(parse("format-version: 1\nmodel: PC-1500A\nkeys:\n  - saveas: live slot-1:My Card\n", &p, &err));
@@ -420,7 +413,7 @@ void test_saveas_step_pc1500_scope() {
 }
 
 // Sharp's spelling, in any case; the hyphen is part of the name.
-void test_product_names_any_case_hyphen_required() {
+TEST(test_product_names_any_case_hyphen_required) {
     PresetFile p;
     std::string err;
     CHECK(parse("format-version: 1\nmodel: PC-1600\nplotter: CE-1600P\n", &p, &err));
@@ -436,28 +429,28 @@ void test_product_names_any_case_hyphen_required() {
     CHECK(err.find("unsupported model") != std::string::npos);
 }
 
-void test_plotter_ce150_on_pc1600_parses() {
+TEST(test_plotter_ce150_on_pc1600_parses) {
     PresetFile p;
     std::string err;
     CHECK(parse("format-version: 1\nmodel: PC-1600\nplotter: CE-150\n", &p, &err));
     CHECK(p.plotter == "ce150");  // on the LH5803 side, MODE 1
 }
 
-void test_plotter_unknown_value_is_rejected() {
+TEST(test_plotter_unknown_value_is_rejected) {
     PresetFile p;
     std::string err;
     CHECK(!parse("format-version: 1\nmodel: PC-1600\nplotter: laserjet\n", &p, &err));
     CHECK(err.find("not a known plotter") != std::string::npos);
 }
 
-void test_plotter_ce1600p_on_pc1500_is_rejected() {
+TEST(test_plotter_ce1600p_on_pc1500_is_rejected) {
     PresetFile p;
     std::string err;
     CHECK(!parse("format-version: 1\nmodel: PC-1500A\nplotter: CE-1600P\n", &p, &err));
     CHECK(err.find("PC-1600 device") != std::string::npos);
 }
 
-void test_plotter_ce150_on_pc1500_parses() {
+TEST(test_plotter_ce150_on_pc1500_parses) {
     PresetFile p;
     std::string err;
     CHECK(parse("format-version: 1\nmodel: PC-1500A\nplotter: CE-150\n", &p, &err));
@@ -467,7 +460,7 @@ void test_plotter_ce150_on_pc1500_parses() {
     CHECK(p2.plotter == "ce150");
 }
 
-void test_plotter_absent_leaves_field_empty() {
+TEST(test_plotter_absent_leaves_field_empty) {
     PresetFile p;
     std::string err;
     CHECK(parse("format-version: 1\nmodel: PC-1600\n", &p, &err));
@@ -477,7 +470,7 @@ void test_plotter_absent_leaves_field_empty() {
 // ── slots / general parser rules ──
 
 // `slot-N: <name>` / `slot-N-file: <path>`, like `floppy:` / `floppy-file:`.
-void test_slot_keys() {
+TEST(test_slot_keys) {
     PresetFile p;
     std::string err;
     CHECK(parse("format-version: 1\nmodel: PC-1600\nslot-1: CE-1600M\nslot-2-file: cards/my.card.yaml\n", &p, &err));
@@ -494,7 +487,7 @@ void test_slot_keys() {
 
 // `slot-N-rom: <path>` -- a ROM file for the module in that slot: resolved
 // like a `-file` path, and only next to a module in the same slot.
-void test_slot_rom_keys() {
+TEST(test_slot_rom_keys) {
     std::string err;
     const auto parse = [](const std::string& yaml, PresetFile* out, std::string* e) {
         *out = PresetFile{};  // a fresh result per parse
@@ -518,7 +511,7 @@ void test_slot_rom_keys() {
 
 // `format-version` is required, and checked before the key list: a preset
 // of a newer format names its version, not its first new key.
-void test_format_version() {
+TEST(test_format_version) {
     PresetFile p;
     std::string err;
     CHECK(!parse("model: PC-1500\n", &p, &err));
@@ -532,7 +525,7 @@ void test_format_version() {
 
 // Old forms fail as invalid, without a hint at the new one (pre-1.0) --
 // except `slot:` in a program block (docs/background/Decisions.md).
-void test_old_forms_are_unrecognized() {
+TEST(test_old_forms_are_unrecognized) {
     PresetFile p;
     std::string err;
     CHECK(!parse("format-version: 1\nmodel: PC-1500\nmemory-expansion:\n  - modulespec: CE-155\n", &p, &err));
@@ -555,7 +548,7 @@ void test_old_forms_are_unrecognized() {
     CHECK(err.find("'slot:' was removed") != std::string::npos);
 }
 
-void test_preset_parser_no_slot_key_is_unaffected() {
+TEST(test_preset_parser_no_slot_key_is_unaffected) {
     // A preset that names no module leaves both slots empty.
     PresetFile preset;
     std::string error;
@@ -565,7 +558,7 @@ void test_preset_parser_no_slot_key_is_unaffected() {
 }
 
 
-void test_preset_parser_sequential_keys_and_program_blocks() {
+TEST(test_preset_parser_sequential_keys_and_program_blocks) {
     // The sequential-blocks rule (PresetFile.hpp's top-of-file comment):
     // a preset is an ORDERED sequence of `keys:`/`program:`
     // blocks, applied in file order -- not a fixed pre-load-keys/program/
@@ -596,7 +589,7 @@ void test_preset_parser_sequential_keys_and_program_blocks() {
     CHECK(preset.sections[2].keys[1].text == "CALL&7C01,X$");
 }
 
-void test_preset_parser_program_address_forms() {
+TEST(test_preset_parser_program_address_forms) {
     auto address = [](const std::string& value, uint16_t* out) {
         PresetFile preset;
         std::string error;
@@ -619,7 +612,7 @@ void test_preset_parser_program_address_forms() {
 
 // `program: file:` is loaded by what the file holds; `text: |` and
 // `typed: true` type a listing in.
-void test_program_kind_follows_the_file() {
+TEST(test_program_kind_follows_the_file) {
     std::ofstream("/tmp/preset_tests_data.txt") << "just some words\n";
     PresetFile p;
     std::string err;
@@ -654,7 +647,7 @@ void test_program_kind_follows_the_file() {
 }
 
 
-void test_preset_parser_model_rom_pc1500() {
+TEST(test_preset_parser_model_rom_pc1500) {
     // `model: PC-1500:A03` -- the ROM rides on the model. `model` itself
     // stays the bare name; the revision goes into romVariant.
     PresetFile preset;
@@ -671,7 +664,7 @@ void test_preset_parser_model_rom_pc1500() {
     CHECK(!parse("format-version: 1\nmodel: PC-1500:\n", &preset, &error));
 }
 
-void test_preset_parser_model_rom_pc1500a_is_a04_only() {
+TEST(test_preset_parser_model_rom_pc1500a_is_a04_only) {
     // PC-1500A can only run A04: no suffix or A04 are fine, anything else
     // is an error.
     PresetFile preset;
@@ -684,7 +677,7 @@ void test_preset_parser_model_rom_pc1500a_is_a04_only() {
     CHECK(error.find("A04") != std::string::npos);
 }
 
-void test_preset_parser_model_rom_pc1600() {
+TEST(test_preset_parser_model_rom_pc1600) {
     // PC-1600: `model: PC-1600:new|old` selects the calculator ROM version.
     PresetFile preset;
     std::string error;
@@ -701,7 +694,7 @@ void test_preset_parser_model_rom_pc1600() {
 }
 
 
-void test_preset_parser_plotter_ce1600p_rom() {
+TEST(test_preset_parser_plotter_ce1600p_rom) {
     // `plotter: CE-1600P:old` -- independent of the PC-1600's own ROM.
     PresetFile preset;
     std::string error;
@@ -729,7 +722,7 @@ void test_preset_parser_plotter_ce1600p_rom() {
 
 // `debug:` -- the debugger's attach settings in a project preset: nested
 // YAML, paths resolved against the preset's directory, the rest kept as is.
-void test_debug_block_parses_and_resolves_paths() {
+TEST(test_debug_block_parses_and_resolves_paths) {
     PresetFile p;
     std::string err;
     const bool ok = parse("format-version: 1\nmodel: PC-1600\n"
@@ -772,14 +765,14 @@ void test_debug_block_parses_and_resolves_paths() {
     CHECK(p.debug.find("stopOnEntry")->asBool(&stop, &err) && stop);
 }
 
-void test_debug_block_absent_is_null() {
+TEST(test_debug_block_absent_is_null) {
     PresetFile p;
     std::string err;
     CHECK(parse("format-version: 1\nmodel: PC-1600\n", &p, &err));
     CHECK(p.debug.isNull());
 }
 
-void test_debug_block_rejects_unknown_keys_and_shapes() {
+TEST(test_debug_block_rejects_unknown_keys_and_shapes) {
     PresetFile p;
     std::string err;
     CHECK(!parse("format-version: 1\nmodel: PC-1600\ndebug:\n  bogus: 1\n", &p, &err));
@@ -795,7 +788,7 @@ void test_debug_block_rejects_unknown_keys_and_shapes() {
 
 // Numbers in `debug:` follow the preset's rule: `&`, `0x` or `$` is hex, a
 // bare number decimal. Bare hex, and values out of range, are refused.
-void test_debug_block_numbers_follow_the_preset_rule() {
+TEST(test_debug_block_numbers_follow_the_preset_rule) {
     PresetFile p;
     std::string err;
     const auto program = [](const std::string& line) {
@@ -819,7 +812,7 @@ void test_debug_block_numbers_follow_the_preset_rule() {
 
 // The other values are checked against the attach-key table too, with the
 // line number, instead of reaching the debugger unchecked.
-void test_debug_block_checks_choices_and_booleans() {
+TEST(test_debug_block_checks_choices_and_booleans) {
     PresetFile p;
     std::string err;
     const auto program = [](const std::string& line) {
@@ -839,54 +832,4 @@ void test_debug_block_checks_choices_and_booleans() {
     CHECK(!parse("format-version: 1\nmodel: PC-1600\ndebug:\n  stopOnEntry: maybe\n", &p, &err));
     CHECK(!parse("format-version: 1\nmodel: PC-1600\ndebug:\n  symbols:\n    - path: a.sym\n      source: a.asm\n", &p, &err));
     CHECK(err.find("unknown key 'source'") != std::string::npos);
-}
-
-int run_preset_tests() {
-    test_debug_block_parses_and_resolves_paths();
-    test_debug_block_absent_is_null();
-    test_debug_block_rejects_unknown_keys_and_shapes();
-    test_debug_block_numbers_follow_the_preset_rule();
-    test_debug_block_checks_choices_and_booleans();
-    test_preset_parser_model_rom_pc1600();
-    test_preset_parser_plotter_ce1600p_rom();
-    test_preset_parser_model_rom_pc1500a_is_a04_only();
-    test_preset_parser_no_slot_key_is_unaffected();
-    test_preset_parser_sequential_keys_and_program_blocks();
-    test_preset_parser_program_address_forms();
-    test_preset_parser_model_rom_pc1500();
-    test_inline_comment_stripped_from_key_step_only();
-    test_comment_after_block_key();
-    test_hash_without_leading_space_is_kept();
-    test_type_step_keeps_space_hash();
-    test_type_step_is_literal();
-    test_key_step_with_non_key_value_is_rejected();
-    test_key_step_with_real_key_names_ok();
-    test_trace_step_start_and_stop();
-    test_trace_step_rejects_path_separator();
-    test_trace_step_requires_a_value();
-    test_wait_step_value_and_parameterless();
-    test_wait_parameterless_pc1600();
-    test_syncclock_step();
-    test_saveas_step_parses_all_targets_pc1600();
-    test_saveas_file_form_resolves_against_the_preset();
-    test_saveas_step_rejects_malformed_forms();
-    test_saveas_step_pc1500_scope();
-    test_wait_step_rejects_negative_value();
-    test_wait_step_rejects_trailing_text();
-    test_slot_keys();
-    test_slot_rom_keys();
-    test_format_version();
-    test_old_forms_are_unrecognized();
-    test_program_kind_follows_the_file();
-    test_product_names_any_case_hyphen_required();
-    test_plotter_ce150_on_pc1600_parses();
-    test_plotter_unknown_value_is_rejected();
-    test_plotter_ce1600p_on_pc1500_is_rejected();
-    test_plotter_ce150_on_pc1500_parses();
-    test_plotter_absent_leaves_field_empty();
-    test_preset_name_and_description();
-    test_preset_header();
-
-    std::printf("preset_tests: %d passed, %d failed\n", g_pass, g_fail);
-    return g_fail;
 }

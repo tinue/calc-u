@@ -14,16 +14,9 @@
 
 #include "../core/Connector/Ce150Card.hpp"
 #include "../core/PC1600/PC1600Machine.hpp"
+#include "TestHarness.hpp"
 
 namespace {
-
-int g_pass = 0;
-int g_fail = 0;
-
-#define CHECK(cond) do { \
-    if (cond) { g_pass++; } \
-    else { g_fail++; std::fprintf(stderr, "FAIL %s:%d: %s\n", __FILE__, __LINE__, #cond); } \
-} while (0)
 
 constexpr uint8_t kRing[8] = {0x9, 0x8, 0xc, 0x4, 0x6, 0x2, 0x3, 0x1};
 
@@ -33,7 +26,7 @@ std::vector<uint8_t> fakeRom(size_t n, uint8_t seed) {
     return v;
 }
 
-void test_lh5803_rom_window_follows_cpu_pv() {
+TEST(test_lh5803_rom_window_follows_cpu_pv) {
     PC1600Machine m;
     auto rom = fakeRom(Ce150Card::kRomSize, 1);
     CHECK(m.attachCE150(rom.data(), rom.size()));
@@ -58,7 +51,7 @@ void test_lh5803_rom_window_follows_cpu_pv() {
     CHECK(mem.readME0(0xA000) == 0xFF);
 }
 
-void test_lh5803_me1_block_and_motor_writes() {
+TEST(test_lh5803_me1_block_and_motor_writes) {
     PC1600Machine m;
     auto rom = fakeRom(Ce150Card::kRomSize, 2);
     m.attachCE150(rom.data(), rom.size());
@@ -88,7 +81,7 @@ void test_lh5803_me1_block_and_motor_writes() {
     CHECK(m.ce150Card()->mechanism().penX() == 4);
 }
 
-void test_ce150_and_ce1600p_are_mutually_exclusive() {
+TEST(test_ce150_and_ce1600p_are_mutually_exclusive) {
     PC1600Machine m;
     auto ce150 = fakeRom(Ce150Card::kRomSize, 3);
     auto half1 = fakeRom(CE1600PCard::kRomHalfSize, 4);
@@ -105,7 +98,7 @@ void test_ce150_and_ce1600p_are_mutually_exclusive() {
     CHECK(!m.ce1600pAttached());             // ...and vice versa
 }
 
-void test_reset_reanchors_but_keeps_the_card() {
+TEST(test_reset_reanchors_but_keeps_the_card) {
     PC1600Machine m;
     auto rom = fakeRom(Ce150Card::kRomSize, 6);
     m.attachCE150(rom.data(), rom.size());
@@ -122,7 +115,7 @@ void test_reset_reanchors_but_keeps_the_card() {
     CHECK(mem.readME0(0xA000) == rom[0]);              // ROM still served
 }
 
-void test_lh5803_internal_pio_f00x_is_a_register_not_rom() {
+TEST(test_lh5803_internal_pio_f00x_is_a_register_not_rom) {
     // ME1 0xF000-0xF00F is the SC7852's LH5810-compatible block, Z-80 ports
     // 10H-1FH -- real registers, not a fall-through to readME0() (where
     // 0xF00x >= kRomBase serves LH5803 ROM / open-bus bytes). The CE-150
@@ -161,14 +154,3 @@ void test_lh5803_internal_pio_f00x_is_a_register_not_rom() {
 }
 
 } // namespace
-
-int run_pc1600_ce150_tests() {
-    test_lh5803_rom_window_follows_cpu_pv();
-    test_lh5803_me1_block_and_motor_writes();
-    test_ce150_and_ce1600p_are_mutually_exclusive();
-    test_reset_reanchors_but_keeps_the_card();
-    test_lh5803_internal_pio_f00x_is_a_register_not_rom();
-
-    std::printf("pc1600_ce150_tests: %d passed, %d failed\n", g_pass, g_fail);
-    return g_fail;
-}

@@ -925,7 +925,7 @@ with a row, or worked together with it).
   LIB-18; version 1 refused with a hint; the readers of version 1 go.
 - **Completes:** LIB-6 1600, C1600-4 (Done in M-47: AC-15's disk and
   waiting presets), LIB-18 1600, LIB-10 1600. **Tests from:** LIB-6
-  AC-44–51, AC-54; C1600-4 AC-1–20 (AC-4 per C-7), EC-1–6; LIB-18
+  AC-44–51, AC-54, AC-67; C1600-4 AC-1–20 (AC-4 per C-7), EC-1–6; LIB-18
   AC-25–33.
 - **Waits for:** M-4 (FS 13), M-8 (C-7), M-44, M-45.
 - **Green after:** default; the reference runs of M-4 compared at the
@@ -1044,7 +1044,7 @@ with a row, or worked together with it).
   `ti58c.mem` ignored.
 - **Completes:** LIB-6 59, C59-2 (Done in M-65: AC-10's card examples,
   AC-12's site copies), LIB-18 59, C59-3. **Tests from:** LIB-6
-  AC-35–43; C59-2 AC-1–18, EC-1–6; LIB-18 AC-17–24; C59-3 AC-1–14,
+  AC-35–43, AC-68; C59-2 AC-1–18, EC-1–6; LIB-18 AC-17–24; C59-3 AC-1–14,
   EC-1–8.
 - **Waits for:** M-3 (FS 5, FS 11), M-8 (FS 7, FS 9), M-9 (FS 6), M-25,
   M-34, M-35, M-53.
@@ -1255,7 +1255,7 @@ qa-report can show every criterion passing (§1).
 | LIB-3 | 1–27, 39: M-22 / M-22 | 28–33: M-33, M-34 / M-58 | 34–38: M-31 / M-49 | 1–6: M-22 |
 | LIB-4 | 1–9: M-37 / M-37 | 10–15: M-57, M-58 / M-58 | 16–20: M-49 / M-49 | 1, 3–5: M-37 |
 | LIB-5 | 1–19, 38–39: M-36 / M-36 | 20–27: M-36 / M-36 | 28–37, 40–41: M-36 / M-36 | 1–6: M-36 |
-| LIB-6 | 1–34, 52–53, 55–66: M-38 / M-38 | 35–43: M-54 / M-54 | 44–51, 54: M-46 / M-46 | 1–10: M-38 |
+| LIB-6 | 1–34, 52–53, 55–66: M-38 / M-38 | 35–43, 68: M-54 / M-54 | 44–51, 54, 67: M-46 / M-46 | 1–10: M-38 |
 | LIB-7 | 1–31, 46: M-41 / M-41 | 32–36, 47: M-55 / M-55 | 37–45: M-47 / M-47 | 1–9: M-41 |
 | LIB-8 | 1–9, 12–23, 39: M-39 / M-39 | 24–31: M-53 / M-53 | 32–38: M-45 / M-46 | 1–8: M-39 |
 | LIB-9 | 1–18, 33: M-20 / M-20 | 19–25, 34–35: M-32, M-34 / M-34 | 26–32: M-30 / M-30 | 1–10: M-20 |

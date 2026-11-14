@@ -547,6 +547,9 @@ Harness
   product names this step. The presets that can only be upgraded when
   LIB-7, LIB-10 or C59-7 is built are left out of these checks, by name,
   until then.
+- [ ] **AC-68** — Given a TI model, then an `expect:` or `not-expect:`
+  whose text is a regular expression (AC-67) is refused when the preset
+  is read, because the TI comparison is with a number (AC-40).
 
 ### Calc-U-1600
 
@@ -622,6 +625,14 @@ Harness
   and everything else is this loader's. The GUI test of each frontend
   has one scenario for it under this ID: a bundled example is loaded and
   its result shows (today `Web/tests/play.spec.js:208`; ADR 0032).
+- [ ] **AC-67** — Given `expect:` or `not-expect:` (and their commands)
+  whose text begins and ends with `/`, then the text between the slashes
+  is a regular expression (ECMAScript syntax), and the comparison of
+  AC-48 finds it when it matches somewhere in one line of the display
+  text: `not-expect: /ERROR 1\b/` fails on ERROR 1 only, not on ERROR
+  10. An expression that is not valid refuses the preset when it is
+  read, with the reason. A text meant literally that begins with `/` is
+  written `\/`.
 
 ## Edge Cases
 - **EC-1** — Given a file that cannot be read or is not UTF-8, then the
@@ -792,3 +803,4 @@ Harness
 | Aligned with `docs/formats/` after the Q&A round: `bundle.md` as a source; header keys for installed peripherals only (AC-2); harness clock (AC-27); `screenshot` by file name and a `printer-trace` command (AC-34) | user rulings of 2026-11-13 (`docs/walkthroughs/presets.md` §5.2, §5.4); `docs/formats/` | 2026-11-13 |
 | "Reference" is the formats' mapping; the name of a bundled preset is its bundle path (Words of this spec; glossary) | user, 2026-11-13 (consistency pass after the Q&A round) | 2026-11-13 |
 | `not-expect:` (step and command) passes when the display does not show the text, by the same comparison as `expect:` (AC-66) | user, 2026-11-14 (debugging and testing through the harness) | 2026-11-14 |
+| `expect:` and `not-expect:` take a regular expression written between slashes on the Sharp models; the TI models refuse it (AC-67, AC-68) | user, 2026-11-14 (regular expression instead of a whole-word option) | 2026-11-14 |

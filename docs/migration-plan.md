@@ -407,7 +407,9 @@ with a row, or worked together with it).
   (C59-1 and C1600-1, Technical Requirements) records scripts of calls
   (keys at tick counts, attaches, advances) with the display output, the
   sound (Sharp), the printed lines and dots (PC-100C) and the memory at
-  the end, covering at least what FS 2 lists; then the three TI checks
+  the end, covering at least what FS 2 lists; and the paper of the CE-150
+  and CE-1600P for the 32 Sharp examples, which the CLIs of M-4 do not
+  give (LIB-8 AC-39); then the three TI checks
   by golden run (Reset with a partition, print instructions without a
   printer, `2nd Pgm 01` without a module) and the PC-1500/1500A mode
   after a cold boot. Replaying them is a test of the Frequent group.

@@ -7,9 +7,9 @@ stable: `B59-n` and `B1600-n`, in source order.
 
 | Suggested target | Calc-U-59 | Calc-U-1600 | Total |
 |---|---|---|---|
-| design input | 14 | 15 | 29 |
+| design input | 10 | 11 | 21 |
 | shared backlog | 10 | 3 | 13 |
-| product backlog | 34 | 64 | 98 |
+| product backlog | 38 | 68 | 106 |
 | done | 0 | 8 | 8 |
 | dropped | 0 | 0 | 0 |
 | **total** | 58 | 90 | 148 |
@@ -29,8 +29,8 @@ in the Reason column.
 |---|---|---|---|---|
 | B59-1 | `TODO.md:5` | Keep memory on model switch: RAM is lost on a switch (except TI-58C constant memory); keep memory per model | product backlog | Not done: a switch starts a new machine (`reference/SharedArchitecture.md:85-86`) |
 | B59-2 | `TODO.md:6` | Emulation speed control: a multiplier to run faster or slower than real time | shared backlog | Pacing is a capability both products have |
-| B59-3 | `TODO.md:7` | Rework display scanning: simple scanning on DIGIT 0 vs. scan per digit; open issues with the latter | design input | Modelling depth, Briefing §1.9 |
-| B59-4 | `TODO.md:8` | Split TMC0501 and SCOM, to support out-of-phase DIGIT / KEY behaviour | design input | Needed for `Decoder.asm`, Briefing §1.9 |
+| B59-3 | `TODO.md:7` | Rework display scanning: simple scanning on DIGIT 0 vs. scan per digit; open issues with the latter | product backlog | Modelling depth, Briefing §1.9; was design input, not built in phase 6 (user, 2026-11-14, question 11 of `docs/migration-plan.md`) |
+| B59-4 | `TODO.md:8` | Split TMC0501 and SCOM, to support out-of-phase DIGIT / KEY behaviour | product backlog | Needed for `Decoder.asm`, Briefing §1.9; was design input, not built in phase 6 (user, 2026-11-14, question 11 of `docs/migration-plan.md`) |
 | B59-5 | `TODO.md:11` | Enable/disable persistency for TI-58/59 (TI-58C always persistent) | product backlog | |
 | B59-6 | `TODO.md:14` | Unified Mac input surface: whole window one keyboard surface, one meaning per key, no focus concept | design input | Shared keyboard layer and family coherence, Briefing §1.3, §1.5 |
 | B59-7 | `TODO.md:15` | Keyboard support for the debug panels and the printer (resolved by the unified surface) | shared backlog | Calculator keyboard is done; panels are not |
@@ -44,7 +44,7 @@ in the Reason column.
 | B59-15 | `TODO.md:30` | Card sound: play a recorded card pass, emulator pass timed to match (`ideas/CardSound.md`) | product backlog | |
 | B59-16 | `TODO.md:31` | REST API: scripted control of a running app | shared backlog | Prerequisites done: headless runs (`tools/headless/`, `tools/agentic/`) and GUI decoupling (`Shared/`) |
 | B59-17 | `TODO.md:32` | Visually indicate when the calculator is frozen in a debugger (mainly iPhone) | shared backlog | Debugger GUI concept |
-| B59-18 | `TODO.md:35` | Additional calculator models such as the TI-57 | design input | Briefing §2 names a possible TI-57 core; tests the core seam |
+| B59-18 | `TODO.md:35` | Additional calculator models such as the TI-57 | product backlog | Briefing §2 names a possible TI-57 core; tests the core seam; was design input, not built in phase 6 (user, 2026-11-14, question 11 of `docs/migration-plan.md`) |
 | B59-19 | `ideas/CardRecovery.md:3` | Card recovery rig: Pico capture tapped in parallel onto a working TI-59's card read, decoding the raw waveform to recover cards the TI-59 fails to read | product backlog | Hardware project outside the emulator |
 | B59-20 | `ideas/CardRecovery.md:392` | Card-sense/position switches as a recording trigger | product backlog | Part of B59-19 |
 | B59-21 | `ideas/CardRecovery.md:402` | Optional speed sensor (photo-interrupter or magnetic) for diagnostics and the flywheel clock | product backlog | Part of B59-19 |
@@ -56,7 +56,7 @@ in the Reason column.
 | B59-27 | `ideas/CardRecovery.md:486` | Suggested order of attack (tap points, bench circuit, taps, captures, azimuth check, then decoder) | product backlog | Plan for B59-19 |
 | B59-28 | `ideas/CardSound.md:3` | Play the sound of a real card pass while "C" shows; emulator pass lasts as long as the sound | product backlog | Same as B59-15 |
 | B59-29 | `ideas/CardSound.md:10` | Record a cleaner take of a card pass and measure motor on, grab, motor off | product backlog | Step of B59-28 |
-| B59-30 | `ideas/CardSound.md:16` | Card transport timing in the core: switch opens at once, reader busy for the free run, `CRD.RD`/`CRD.WR` hold about 67 instruction times per byte | design input | Core modelling depth (§1.9); a pass goes from ~0.47 s to ~1.4 s |
+| B59-30 | `ideas/CardSound.md:16` | Card transport timing in the core: switch opens at once, reader busy for the free run, `CRD.RD`/`CRD.WR` hold about 67 instruction times per byte | product backlog | Core modelling depth (§1.9); a pass goes from ~0.47 s to ~1.4 s; was design input, not built in phase 6 (user, 2026-11-14, question 11 of `docs/migration-plan.md`) |
 | B59-31 | `ideas/CardSound.md:25` | Expose the motor state through `Shared/`; the three GUIs only play the file | shared backlog | Machine sound playback is a frontend capability |
 | B59-32 | `ideas/CardSound.md:33` | Tie the sound to the motor (first `CRD.RD`/`CRD.WR` to `CRD.OFF`), stop on R/S abort | product backlog | Detail of B59-28 |
 | B59-33 | `ideas/CardSound.md:36` | Stop holding after a card's worth of bytes (refused card makes 261 `CRD.RD`) | product backlog | Detail of B59-30 |
@@ -116,14 +116,14 @@ suggestion only; the decision is made when the merged backlog is written.
 | B1600-17 | `TODO.md:137` | IN0-IN7 bit order of the LH-5803 vs KIN: verify | product backlog | |
 | B1600-18 | `TODO.md:145` | RS-232C / SIO connector mux: separate `calcu1600-sio.serial` | product backlog | |
 | B1600-19 | `TODO.md:151` | Capture on-wire `SAVE"COM1:"` framing from a ROM trace; one live round-trip with SharpDataExchange over the PTY | product backlog | |
-| B1600-20 | `TODO.md:156` | Localhost-socket serial transport (`SocketSerialLink`) for `OUTSTAT`/RTS end-to-end, `socat` bridging | design input | A second `SerialLink` transport; relevant to the device/port contract and to platforms without PTYs |
+| B1600-20 | `TODO.md:156` | Localhost-socket serial transport (`SocketSerialLink`) for `OUTSTAT`/RTS end-to-end, `socat` bridging | product backlog | A second `SerialLink` transport; relevant to the device/port contract and to platforms without PTYs; was design input, not built in phase 6 (user, 2026-11-14, question 11 of `docs/migration-plan.md`) |
 | B1600-21 | `TODO.md:164` | Open questions of the load/save matrix (`INPUT#-1` MODE 1 via CE-1600P; `SAVE`/`LOAD "CAS:"` MODE 1; CE-150/CE-158 `PRINT#`/`INPUT#` MODE 0) | product backlog | |
 | B1600-22 | `TODO.md:172` | CE-158 on PC-1600 MODE 1: `SETDEV KI` + `INPUT` reads keyboard, not UART; trace and check on real unit | product backlog | |
 | B1600-23 | `TODO.md:177` | Fast loader limit for CE-158 BASIC in MODE 1 (MEM + 1 vs MEM − 2): decide | product backlog | |
 | B1600-24 | `TODO.md:194` | PC-1600 slot pin 2 (PVIN) reads low; drive it high | product backlog | |
-| B1600-25 | `TODO.md:199` | 40-pin connector: model DME0 and ME1 cycles instead of the shortcut (6-step plan, card files, tests) | design input | Connector/pin model is shared by both machines; relevant to the device/port contract (Briefing §1.9) |
+| B1600-25 | `TODO.md:199` | 40-pin connector: model DME0 and ME1 cycles instead of the shortcut (6-step plan, card files, tests) | product backlog | Connector/pin model is shared by both machines; relevant to the device/port contract (Briefing §1.9); was design input, not built in phase 6 (user, 2026-11-14, question 11 of `docs/migration-plan.md`) |
 | B1600-26 | `TODO.md:261` | INHIBIT / INH on the PC-1600 (polarity, ROM banks, test card) | product backlog | |
-| B1600-27 | `TODO.md:273` | Interrupt request lines: an interrupt-source interface like `InhibitSource`, per card, OR'd on the chain | design input | New connector-level interface; device/port contract |
+| B1600-27 | `TODO.md:273` | Interrupt request lines: an interrupt-source interface like `InhibitSource`, per card, OR'd on the chain | product backlog | New connector-level interface; device/port contract; was design input, not built in phase 6 (user, 2026-11-14, question 11 of `docs/migration-plan.md`) |
 | B1600-28 | `TODO.md:283` | WAIT lines (WEX, W1, WAIT); S6·WEX interrupt forwarding | product backlog | |
 | B1600-29 | `TODO.md:289` | PC-1600 RSTE external reset line not modelled | product backlog | |
 | B1600-30 | `TODO.md:291` | BFO / φOS (VCC-on, CPU-phase clock); BF0 gating of chip selects | product backlog | |
@@ -158,7 +158,7 @@ suggestion only; the decision is made when the merged backlog is written.
 | B1600-59 | `TODO.md:457` | BASIC-level debugger (line breakpoints, statement step, variables) | product backlog | |
 | B1600-60 | `TODO.md:462` | Create Debug Project: templates for slot-module ROMs (PC-1500 module, PC-1600 S1/S2) | product backlog | |
 | B1600-61 | `TODO.md:467` | PC-1600 auto power-off control (Settings toggle for `KEYWK3`, OFF/ON control) | product backlog | |
-| B1600-62 | `TODO.md:470` | Floppy `dirty` key: pick up outside changes to an inserted `.floppy.yaml` (format, periodic check in `FloppyBay`) | design input | Format change planned pre-1.0 at `format-version: 1`; touches format versioning and the media bays |
+| B1600-62 | `TODO.md:470` | Floppy `dirty` key: pick up outside changes to an inserted `.floppy.yaml` (format, periodic check in `FloppyBay`) | product backlog | Format change planned pre-1.0 at `format-version: 1`; touches format versioning and the media bays; was design input, not built in phase 6 (user, 2026-11-14, question 11 of `docs/migration-plan.md`) |
 | B1600-63 | `TODO.md:498` | SharpDataExchange: `sde put`/`del` set `dirty: true`, refuse templates; libsharpdx reader accepts the key | product backlog | Work in the separate SDE repository (Briefing §2) |
 | B1600-64 | `TODO.md:509` | Picker and serial-status plumbing written twice (ROM-version enum clones, enum↔string, old-ROM fallback, four Machine-menu builders, serial status pair); one picker with one guard | design input | GUI duplication across menus/pickers; GUI sharing decision (Briefing §1.3) |
 | B1600-65 | `TODO.md:535` | Peripheral buttons one setter per peripheral; one attach/detach path per peripheral kind, "enabled" derived from the bus | design input | Device/port model and `ControlState` |

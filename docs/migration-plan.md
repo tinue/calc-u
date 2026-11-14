@@ -10,7 +10,8 @@ names steps, not states.
 Sources: `features/INDEX.md`, the 33 specs, `docs/walkthroughs/first-steps.md`
 (below "FS n" is its step n), ADR 0002-0005, 0013-0015, 0027-0031, 0033,
 0034, 0038, `docs/behaviour-changes.md` (the ledger),
-`docs/inventory/`. Draft of 2026-11-14; the questions of §7 are open.
+`docs/inventory/`. Draft of 2026-11-14; the questions of §7 were
+answered on 2026-11-14 and are applied. For the user's review.
 
 ## 1. How to read a step
 
@@ -79,6 +80,22 @@ per step):
 - The Checkpoint group runs at the release steps only.
 - "Every product" means every imported product; a product not yet
   imported is green in its old repository.
+
+### 1.2 Done before the plan
+
+Approved by the user as an exception to "no code" on 2026-11-13, outside
+this plan; the steps build on it and do not make it again:
+- the ADR 0002 tree with empty product and library directories,
+  `products/calc-u-59/frontends/swift/Calc-U-59.xcodeproj` from 2.3.0
+  with `MARKETING_VERSION` 3.0.0, and `products/<product>/roms/fetch_roms.sh`
+  with the fetch lists and md5 values of LIB-12 AC-9, AC-12, AC-14
+  (`db5500a`);
+- the ROM repositories prepared: TI-59-ROM (`90cd4a7`, public on GitHub)
+  with the calculator and module dumps and the 14 `.rom.yaml` files made
+  from the dumps and `cuecards.txt`; PC-1500-ROM (`b664f0b`) with
+  `modules/CE-502B.card.yaml`. ADR 0034's TI ROM repository is therefore
+  named and filled, and LIB-12 AC-14's files are made: M-24 and M-27 only
+  switch the products to them.
 
 ## 2. Dependencies (Part A, step 1)
 
@@ -199,8 +216,8 @@ with a row, or worked together with it).
   `cuecards.txt` leaves then. The same holds for Calc-U-1600's
   `CE-502B.card.yaml` (read from `Qt6/resources/cards/` by 0.8.1;
   M-27).
-- **Small inconsistencies in the specs**, to fix in the step that builds
-  the spec (each a decision-log row; question 9):
+- **Small inconsistencies in the specs**, fixed on 2026-11-14 with a
+  decision-log row each (question 9; commit `76e9452`):
   - LIB-12 AC-9 still lists the md5 values of the 14 dumps that AC-14
     replaces (handover).
   - LIB-14, Dependencies, cites ledger row 1600-9 (keys dropped while
@@ -236,7 +253,7 @@ with a row, or worked together with it).
   spec that cites a changed file is read again. The new `TODO.md` item
   of `f0b3732` gets a backlog row (Briefing §1.7).
 - **Completes:** first step 1.
-- **Waits for:** the tag (the user; question 1).
+- **Waits for:** the tag, at the tip `76baadf` (the user; question 1).
 - **Green after:** unchanged.
 - **Knowledge, ledger:** none.
 - **Exit check:** the delta is written down, or "identical" is.
@@ -321,12 +338,13 @@ with a row, or worked together with it).
   ADR 0002 does not name as in question 3. Only paths and build files
   change, no source line of the core or the app layer. `roms/` holds no
   ROM: the fetch list is what the imported code reads (the calculator
-  dumps, `dumps/modules/TMC05xx.txt`), `cuecards.txt` stays until M-24.
+  dumps, `dumps/modules/TMC05xx.txt`), `cuecards.txt` stays until M-58.
   The workflow `calc-u-59.yml` replaces `build.yml` with the same jobs,
   each fetching the ROMs. `release.yaml` and `CHANGELOG.md` sit in the
   product directory; the version is `MARKETING_VERSION` 3.0.0 of the
   scaffold. This is the first commit that imports product code: no more
-  hotfixes from the old repositories (Briefing §3).
+  hotfixes from the old repositories (Briefing §3). tinue/calc-u is made
+  public with it (question 8; the user).
 - **Completes:** ADR 0002 and 0004 for Calc-U-59; ADR 0034 for its build
   (fetch at build time).
 - **Waits for:** M-2; the user's go for the import (question 2).
@@ -628,7 +646,8 @@ with a row, or worked together with it).
 
 #### M-27 LIB-12 Calc-U-1600 column
 - **Does:** Calc-U-1600 gets every ROM image through the lookup; the
-  CE-502B definition comes from the ROM repository (AC-14); the CLI's
+  CE-502B definition is fetched from PC-1500-ROM, where it already is
+  (§1.2; AC-14), and leaves `Qt6/resources/cards/`; the CLI's
   own ROM lookup goes (LIB-11 AC-20); New-for-Old substitution goes
   (AC-13).
 - **Completes:** LIB-12 1600. **Tests from:** LIB-12 AC-11–13, AC-14
@@ -837,7 +856,7 @@ with a row, or worked together with it).
 - **Knowledge, ledger:** none yet.
 - **Exit check:** components tested without a window.
 
-### Part D — Calc-U-1600 (question 5: which product first)
+### Part D — Calc-U-1600 (first: question 5)
 
 #### M-44 C1600-2 Sharp program files
 - **Does:** the loaders on the loader memory access product kind:
@@ -965,11 +984,11 @@ with a row, or worked together with it).
 
 #### M-53 Release Calc-U-1600 (R-1600)
 - **Does:** the first release of Calc-U-1600 from tinue/calc-u
-  (`calc-u-1600-v<version>`, question 7), with the Checkpoint group;
+  (`calc-u-1600-v0.9.0`, question 7), with the Checkpoint group;
   release notes from the Calc-U-1600 rows of the ledger; no
   `Calc-U-1600-examples.zip`.
 - **Completes:** Briefing §7 for Calc-U-1600, release side.
-- **Waits for:** M-52; tinue/calc-u public (question 8).
+- **Waits for:** M-52; tinue/calc-u public since M-6 (question 8).
 - **Green after:** Checkpoint for Calc-U-1600.
 - **Knowledge, ledger:** release checklist; every 1600 row visible.
 - **Exit check:** the GitHub release with its seven assets (help zip
@@ -1291,7 +1310,7 @@ their specs and are placed by what they are about (§2.3).
 | B1600-51 | M-11 |
 | B1600-64, B1600-65 | LIB-4, LIB-18, LIB-14 (M-37, M-35, M-43) |
 | B1600-66, B1600-67, B1600-68 | LIB-7 (M-41, M-47) |
-| B59-3, B59-4, B59-18, B59-30, B1600-20, B1600-25, B1600-27, B1600-62 | no spec builds them; question 11 |
+| B59-3, B59-4, B59-18, B59-30, B1600-20, B1600-25, B1600-27, B1600-62 | retargeted to their product backlogs, not built in phase 6 (question 11; `backlog.md`) |
 
 ### 5.4 Briefing §7
 
@@ -1302,7 +1321,7 @@ their specs and are placed by what they are about (§2.3).
 | Each product uses the library for every `LIB-n` | the product columns; the adapter checks in M-51 (Calc-U-1600) and M-62 (Calc-U-59) |
 | Current format versions read, shipped and hosted files upgraded | M-46, M-47, M-57 to M-59, M-65 |
 | calc-u.org reflects both releases and shares material; the /1600 site | M-54, M-65 |
-| A design for SC61860 support, validated against the abstractions | the fit tables of every contract (phase 4); M-66 checks that no step changed the library in a way the fit tables do not cover (question 12) |
+| A design for SC61860 support, validated against the abstractions | not checked in phase 6: the SC61860 work starts once both products are released (question 12) |
 | Every TODO item accounted for | `docs/inventory/backlog.md`; M-1 adds the new item; §5.3 |
 | The testing concept covers both products; every test in a group | M-13 |
 | Agent knowledge uses the glossary terms | M-17 and the "Knowledge" field of every step; M-66 |
@@ -1311,6 +1330,8 @@ their specs and are placed by what they are about (§2.3).
 ### 5.5 Outside phase 6
 
 - The skill cut (Briefing §6), after the migration.
+- The SC61860 work, and with it the check of Briefing §7's SC61860
+  criterion: it starts once both products are released (question 12).
 - The ROM folder of the user and own dumps (ADR 0035): designed only.
 - The switches of the Sharp printers (`features/INDEX.md`).
 - Installation and smoke tests on Windows and Linux (Briefing §1.10).
@@ -1345,9 +1366,12 @@ ones were checked against the sources and hold; all were applied:
 
 ## 7. Questions to the user (Part A, step 8)
 
-Facts first, one recommendation each. The answers are applied here and
-in the documents they touch; nothing is built on what an answer does not
-state.
+Facts first, one recommendation each. **Answered by the user on
+2026-11-14:** 1 to 11 as recommended; 12 differently (below). The answers
+are applied here and in the documents they touch: question 9 in the
+specs and `docs/contracts/README.md` (`76e9452`), question 11 in
+`docs/inventory/backlog.md`; the others are carried out in their steps
+(question 1 in M-1, 2 and 8 in M-6, 3 and 4 in M-6 and M-7).
 
 1. **Pin of Calc-U-1600.** `v0.8.1` is not tagged. `dev-0.8.1` is at
    `76baadf`, two commits after the pin `b4ea8c8`, both docs only (a
@@ -1419,3 +1443,5 @@ state.
     the design; M-66 reads them again against the library as built and
     lists what the two models would need changed; nothing listed means
     the criterion is met.
+    **Answer:** not checked in phase 6; the SC61860 work starts once both
+    products are fully released.

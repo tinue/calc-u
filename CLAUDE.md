@@ -33,6 +33,9 @@ One repository for the Calc-U products, released separately
   (tag `v2.3.0`), Calc-U-1600 at `/Users/me/Development/sharp/Calc-U-1600`
   (tag `v0.8.1`; `b4ea8c8` plus a docs-only delta). Pins and history:
   `docs/Process.md`, phase 1.
+- Library code: one target `calcu_library`, a folder per area under
+  `library/`; the layout and its rules are in
+  `features/LIB-1-machine-interface-and-descriptors/design.md` §2a.
 - Short branches merged into `main` (ADR 0029); commit per step; no push
   unless asked.
 - Don't reopen anything listed in `Briefing.md` §3 (decisions already made).

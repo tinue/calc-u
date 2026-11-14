@@ -37,6 +37,30 @@ Longer, measured locally on 2026-11-14 at the end of Part B: 291.5 s,
 within the 10 min; all entries ran (the two Calc-U-1600 web entries since
 the `<cstdlib>` fix).
 
+## Library
+
+| CTest entry | What | Group | Measured (M4 Pro, 2026-11-14) |
+|---|---|---|---|
+| `calcu_library_tests` | 40 `TEST`s: the library's own tests with the machines built for the tests (`library/machine/tests/TestMachines.*`), no product code (LIB-1 AC-24; LIB-1 design §2a); also run alone by the CI job `library` of both product workflows | Frequent | 0.18 s (0.15 s of it are the deliberate wall-time gaps of AC-6 and AC-9) |
+
+`calcu_library_tests` by file (`library/<area>/tests/`; every `TEST` is
+Frequent):
+
+| File | `TEST`s |
+|---|---|
+| `machine/tests/build_alone_tests.cpp` | 1 |
+| `machine/tests/build_tests.cpp` | 3 |
+| `machine/tests/capability_tests.cpp` | 6 |
+| `machine/tests/conformance_tests.cpp` | 2 |
+| `machine/tests/descriptor_tests.cpp` | 6 |
+| `machine/tests/determinism_tests.cpp` | 1 |
+| `machine/tests/display_tests.cpp` | 5 |
+| `machine/tests/emulated_time_tests.cpp` | 3 |
+| `machine/tests/keys_tests.cpp` | 4 |
+| `machine/tests/operations_tests.cpp` | 2 |
+| `machine/tests/sound_tests.cpp` | 2 |
+| `machine/tests/time_tests.cpp` | 5 |
+
 ## Calc-U-59
 
 | CTest entry | What | Group | Measured (M4 Pro, 2026-11-14) |

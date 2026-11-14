@@ -1,0 +1,26 @@
+# PC-1600 plotter test -- draws a Lissajous figure on the CE-150.
+
+format-version: 1
+preset-name: Lissajous CE-150
+description: Lissajous figure on the CE-150, driven in MODE 1
+model: PC-1600
+
+# CE-150 pen-plotter attached.
+plotter: CE-150
+
+# PRO mode, then MODE 1: the CE-150 is driven from the PC-1500 side.
+keys:
+  - key: mode
+  - type: NEW0
+  - type: MODE1
+
+# A `.bas` listing is tokenized while it loads -- much faster than typing
+# it in.
+program:
+  file: lissajou-ce150-1600.bas
+
+# Back to RUN mode, then run it -- the figure plots on the virtual paper.
+keys:
+  - key: mode
+  - type: RUN
+  - wait:

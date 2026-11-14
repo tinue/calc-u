@@ -1,0 +1,44 @@
+#pragma once
+#include <chrono>
+#include <ctime>
+
+// Seeds a machine's real-time clock from the host's local wall-clock time.
+// Works for both PC1500Machine and PC1600Machine (same seedClock()
+// signature, no shared base). Used by the `- syncclock:` preset step
+// (PC1500PresetLoader / PC1600PresetLoader): a preset load runs the
+// emulator flat out, so the free-running RTC ends up ahead of real time;
+// re-seeding at the end of the script puts it back. Returns the time
+// that was seeded (for the loader's log line).
+
+// Tests pin the wall clock here so a run that ends in `- syncclock:` is
+// reproducible (job_tests' sliced-vs-straight equivalence). Null: the real
+// clock.
+using HostClockSource = std::chrono::system_clock::time_point (*)();
+inline HostClockSource& hostClockOverride() {
+    static HostClockSource source = nullptr;
+    return source;
+}
+
+template <typename Machine>
+std::tm seedClockFromHostTime(Machine& machine) {
+    const auto nowTp = hostClockOverride() ? hostClockOverride()() : std::chrono::system_clock::now();
+    std::time_t now = std::chrono::system_clock::to_time_t(nowTp);
+    // to_time_t may round rather than truncate: take the sub-second phase
+    // relative to the time_t it actually returned, borrowing a second if
+    // it rounded up, so it stays in 0-999.
+    auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(
+                  nowTp - std::chrono::system_clock::from_time_t(now)).count();
+    if (ms < 0) {
+        now -= 1;
+        ms += 1000;
+    }
+    std::tm local{};
+#ifdef _WIN32
+    localtime_s(&local, &now);
+#else
+    localtime_r(&now, &local);
+#endif
+    machine.seedClock(local.tm_year + 1900, local.tm_mon + 1, local.tm_mday, local.tm_hour, local.tm_min,
+                      local.tm_sec, static_cast<int>(ms));
+    return local;
+}

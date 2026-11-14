@@ -1,0 +1,42 @@
+#!/usr/bin/env bash
+# Regenerates the user-guide screenshots (docs/images/) by playing the
+# scenarios in docs/developer/screenshots/ against the Qt app -- see
+# docs/developer/screenshots/README.md. Builds the app first if needed.
+#
+#   tools/make_screenshots.sh                  # every docs/developer/screenshots/guide/*.shots.yaml
+#   tools/make_screenshots.sh 05-modules       # just these (names without .shots.yaml)
+#
+# Extra --shots-* options can follow the names after `--`, e.g.
+#   tools/make_screenshots.sh 09-appendix -- --shots-only 09-settings
+set -euo pipefail
+
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+BUILD_DIR="${ROOT}/frontends/qt6/build"
+
+"${ROOT}/tools/build_app.sh"
+
+if [[ "$(uname -s)" == "Darwin" ]]; then
+  APP="${BUILD_DIR}/Calc-U-1600.app/Contents/MacOS/Calc-U-1600"
+else
+  APP="${BUILD_DIR}/Calc-U-1600"
+fi
+
+names=()
+extra=()
+while [[ $# -gt 0 ]]; do
+  if [[ "$1" == "--" ]]; then shift; extra=("$@"); break; fi
+  names+=("$1"); shift
+done
+
+scenarios=()
+if [[ ${#names[@]} -eq 0 ]]; then
+  scenarios=("${ROOT}"/docs/developer/screenshots/guide/*.shots.yaml)
+else
+  for n in "${names[@]}"; do scenarios+=("${ROOT}/docs/developer/screenshots/guide/${n}.shots.yaml"); done
+fi
+
+status=0
+for s in "${scenarios[@]}"; do
+  "${APP}" --shots "${s}" ${extra[@]+"${extra[@]}"} || status=1
+done
+exit ${status}

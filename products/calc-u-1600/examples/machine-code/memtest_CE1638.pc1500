@@ -1,0 +1,26 @@
+# PC-1500 memory test. Loads at the start of general RAM and starts with:
+#  X=2 (for 2 passes)
+#  CALL &C5,X
+# When finished, check X for the test result.
+
+format-version: 1
+preset-name: Memtest CE-1638
+description: Memory test with the CE-1638 module
+model: PC-1500
+
+slot-1: CE-1638
+
+keys:
+  - key: cl
+  - type: NEW&017D
+  - key: mode
+
+program:
+  file: memtest_CE1638.bin
+  address: 0x00C5
+
+keys:
+  - type: X=2
+  - type: CALL&C5,X
+  - type: X
+  - wait: 5

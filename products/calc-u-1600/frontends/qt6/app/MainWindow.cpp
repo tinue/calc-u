@@ -1,0 +1,1067 @@
+#include "MainWindow.hpp"
+#include "SyncOperations.hpp"
+#include "FaceplateWidget.hpp"
+#include "LcdWidget.hpp"
+#include "ControlBar.hpp"
+#include "DebugPanel.hpp"
+#include "MachineController.hpp"
+#include "MemoryModuleManager.hpp"
+#include "FloppyDiskManager.hpp"
+#include "TapeManager.hpp"
+#include "PC1500KeyboardMap.hpp"
+#include "PlotterPaperWidget.hpp"
+#include "Ce158PrinterWidget.hpp"
+#include "SettingsDialog.hpp"
+#include "AboutDialog.hpp"
+#include "MachineCodeLoadDialog.hpp"
+#include "AudioOutput.hpp"
+#include "EmulationPacer.hpp"
+#include "debug/DebugController.hpp"
+#include "AppSettings.hpp"
+#include "MacClipboardImage.h"
+#include "PC1500/PC1500Machine.hpp"
+#include "PC1600/PC1600Machine.hpp"
+#include "DropFile.hpp"
+#include "app/MachineCodeLoad.hpp"
+#include "app/PresetCatalog.hpp"
+#include "AppPaths.hpp"
+
+#include <QHBoxLayout>
+#include <QInputMethodEvent>
+#include <QVBoxLayout>
+#include <QDebug>
+#include <QTimer>
+#include <QElapsedTimer>
+#include <QKeyEvent>
+#include <QCloseEvent>
+#include <QCheckBox>
+#include <QDialog>
+#include <QDialogButtonBox>
+#include <QFormLayout>
+#include <QInputDialog>
+#include <QLineEdit>
+#include <QMessageBox>
+#include <QFile>
+#include <QDir>
+#include <QMap>
+#include <QFileDialog>
+#include <QApplication>
+#include <QCoreApplication>
+#include <QMenuBar>
+#include <QMenu>
+#include <QAction>
+#include <QActionGroup>
+#include <QKeySequence>
+#include <QClipboard>
+#include <QGuiApplication>
+#include <QImage>
+#include <QMimeData>
+#include <QDragEnterEvent>
+#include <QDragMoveEvent>
+#include <QDropEvent>
+#include <QFileInfo>
+#include <QUrl>
+#include <chrono>
+#include <cstring>
+#include <functional>
+#include <utility>
+
+namespace {
+// Longest host-Shift press still counted as a tap (see m_shiftTapArmed).
+constexpr qint64 kShiftTapMaxMs = 400;
+} // namespace
+
+MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
+    setWindowTitle(tr("Calc-U-1600"));
+    setFocusPolicy(Qt::StrongFocus);
+    // Take part in input-method composition, or dead keys never compose:
+    // Qt hands a widget without it the raw Key_Dead_* press (empty text,
+    // dropped by resolve()) and the next letter uncombined. Plain keys
+    // still arrive as key events; a composed character comes as
+    // inputMethodEvent()'s commit string.
+    setAttribute(Qt::WA_InputMethodEnabled);
+
+    m_controller = std::make_unique<MachineController>(this);
+    m_moduleManager = std::make_unique<MemoryModuleManager>(m_controller.get(), this);
+    m_floppyManager = std::make_unique<FloppyDiskManager>(m_controller.get(), this);
+    m_tapeManager = std::make_unique<TapeManager>(m_controller.get(), this);
+
+    // QMainWindow takes exactly one central widget; the faceplate, control
+    // bar and debug panel live in this wrapper.
+    auto* central = new QWidget(this);
+    m_faceplate = new FaceplateWidget(central);
+    m_controlBar = new ControlBar(central);
+    m_debugPanel = new DebugPanel(m_controller.get(), central);
+    m_plotterPaper = new PlotterPaperWidget(m_controller.get(), central);
+    m_plotterPaper->hide(); // added to m_debugRowLayout only once a plotter attaches
+    m_ce158Printer = new Ce158PrinterWidget(m_controller.get(), central);
+    m_ce158Printer->hide(); // added to m_debugRowLayout only once a CE-158 attaches
+    // Handles screenshot scenarios address these by
+    // (docs/developer/screenshots/README.md).
+    m_faceplate->setObjectName(QStringLiteral("faceplate"));
+    m_faceplate->lcdWidget()->setObjectName(QStringLiteral("lcd"));
+    m_debugPanel->setObjectName(QStringLiteral("debugpanel"));
+    m_plotterPaper->setObjectName(QStringLiteral("paper"));
+    m_ce158Printer->setObjectName(QStringLiteral("ce158printer"));
+
+    auto* layout = new QVBoxLayout(central);
+    layout->setContentsMargins(6, 6, 6, 4);
+    layout->setSpacing(4);
+    // Faceplate is stretch 0 (pinned to its own aspect-locked heightForWidth
+    // size, top-aligned) so extra vertical space goes to the debug row
+    // instead of letterboxing the calculator body -- see FaceplateWidget's
+    // own heightForWidth()/sizeHint().
+    layout->addWidget(m_faceplate, /*stretch=*/0);
+    layout->addWidget(m_controlBar, /*stretch=*/0);
+
+    m_debugRow = new QWidget(central);
+    m_debugRowLayout = new QHBoxLayout(m_debugRow);
+    m_debugRowLayout->setContentsMargins(0, 0, 0, 0);
+    m_debugRowLayout->setSpacing(4);
+    m_debugRowLayout->addWidget(m_debugPanel, /*stretch=*/2);
+    layout->addWidget(m_debugRow, /*stretch=*/1);
+
+    setCentralWidget(central);
+    buildMenuBar();
+
+    connect(m_controlBar, &ControlBar::modelSelected, this, &MainWindow::applyModelSelection);
+    connect(m_controlBar, &ControlBar::moduleSelected, this, [this](int slot, QString moduleNameOrEmpty) {
+        m_sync->run(tr("Memory Module"), m_controller->app().selectModuleJob(slot, moduleNameOrEmpty.toStdString()));
+    });
+    connect(m_controlBar, &ControlBar::nameAndSaveRequested, this, [this](int slot) {
+        // The name, plus -- for a card with a write-protect switch (CE-161)
+        // -- whether to save it with the switch on. That is final: the
+        // saved card stays read-only.
+        QDialog dialog(this);
+        dialog.setWindowTitle(tr("Name & Save"));
+        auto* form = new QFormLayout(&dialog);
+        auto* nameEdit = new QLineEdit(&dialog);
+        form->addRow(tr("Instance name:"), nameEdit);
+        QCheckBox* protectBox = nullptr;
+        if (m_moduleManager->canWriteProtect(slot)) {
+            protectBox = new QCheckBox(tr("Write-protect (switch to read-only, can't be undone)"), &dialog);
+            form->addRow(protectBox);
+        }
+        auto* buttons = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel, &dialog);
+        connect(buttons, &QDialogButtonBox::accepted, &dialog, &QDialog::accept);
+        connect(buttons, &QDialogButtonBox::rejected, &dialog, &QDialog::reject);
+        form->addRow(buttons);
+        if (dialog.exec() != QDialog::Accepted) return;
+        const QString name = nameEdit->text();
+        QString error;
+        if (!m_moduleManager->nameAndSave(slot, name, &error, protectBox && protectBox->isChecked())) {
+            QMessageBox::warning(this, tr("Name & Save"), error);
+            return;
+        }
+        refreshModuleCombos();
+    });
+    auto openSettingsDialog = [this] {
+        SettingsDialog dialog(m_controller.get(), this);
+        dialog.exec();
+    };
+    connect(m_controller.get(), &MachineController::presetWasArmed, this, &MainWindow::onPresetArmed);
+    auto openPresetDialog = [this] {
+        const QString path = QFileDialog::getOpenFileName(this, tr("Load Preset"),
+                                                            AppSettings::openStartDir(AppSettings::OpenFolder::Samples),
+                                                            tr("Presets (*.pc1500 *.pc1500a *.pc1600);;All Files (*)"));
+        if (!path.isEmpty()) loadPresetFile(path);
+    };
+    // Menu actions built in buildMenuBar() -- see its own doc comment.
+    connect(m_openPresetAction, &QAction::triggered, this, openPresetDialog);
+    connect(m_settingsAction, &QAction::triggered, this, openSettingsDialog);
+    connect(m_aboutAction, &QAction::triggered, this, [this] {
+        AboutDialog dialog(this);
+        dialog.exec();
+    });
+    connect(m_loadBasicProgramAction, &QAction::triggered, this, [this] {
+        // Starts in Settings' "Basic folder" (fixed or <last used>).
+        const QString path = QFileDialog::getOpenFileName(this, tr("Load BASIC Program"),
+                                                            AppSettings::openStartDir(AppSettings::OpenFolder::Basic),
+                                                            tr("BASIC Programs (*.bas *.bbin *.wav);;All Files (*)"));
+        if (!path.isEmpty()) loadBasicProgramFile(path);
+    });
+    connect(m_loadMachineCodeAction, &QAction::triggered, this, &MainWindow::loadMachineCode);
+    connect(m_mountDirectoryAction, &QAction::triggered, this, &MainWindow::mountHostDirectory);
+    connect(m_unmountDirectoryAction, &QAction::triggered, this, &MainWindow::unmountHostDirectory);
+    connect(m_moduleManager.get(), &MemoryModuleManager::errorMessage, this,
+            [this](const QString& text) { QMessageBox::warning(this, tr("Memory Module"), text); });
+    connect(m_controlBar, &ControlBar::floppyDiskSelected, this, [this](QString diskNameOrEmpty) {
+        m_floppyManager->selectDisk(diskNameOrEmpty);
+        refreshFloppyCombo();
+    });
+    connect(m_controlBar, &ControlBar::tapeSelected, this, &MainWindow::selectTape);
+    connect(m_controlBar, &ControlBar::tapeSaveRequested, this, &MainWindow::saveTape);
+    connect(m_tapeManager.get(), &TapeManager::tapesChanged, this, &MainWindow::refreshTapeCombo);
+    connect(m_tapeManager.get(), &TapeManager::errorMessage, this,
+            [this](const QString& text) { QMessageBox::warning(this, tr("Tape"), text); });
+    connect(m_controlBar, &ControlBar::floppySideToggleRequested, this, [this] {
+        m_floppyManager->toggleSide();
+        m_controlBar->setFloppySide(m_floppyManager->side());
+    });
+    connect(m_controlBar, &ControlBar::floppyNameAndSaveRequested, this, [this] {
+        bool ok = false;
+        const QString name = QInputDialog::getText(this, tr("Name & Save"), tr("Disk name:"),
+                                                   QLineEdit::Normal, QString(), &ok);
+        if (!ok) return;
+        QString error;
+        if (!m_floppyManager->nameAndSave(name, &error)) {
+            QMessageBox::warning(this, tr("Name & Save"), error);
+            return;
+        }
+        refreshFloppyCombo();
+    });
+    connect(m_floppyManager.get(), &FloppyDiskManager::errorMessage, this,
+            [this](const QString& text) { QMessageBox::warning(this, tr("Floppy Disk"), text); });
+    connect(m_controlBar, &ControlBar::ce150ToggleRequested, this,
+            [this] { togglePeripheral(shared::Peripheral::CE150); });
+    connect(m_controlBar, &ControlBar::ce1600pToggleRequested, this,
+            [this] { togglePeripheral(shared::Peripheral::CE1600P); });
+    connect(m_controlBar, &ControlBar::ce158ToggleRequested, this,
+            [this] { togglePeripheral(shared::Peripheral::CE158); });
+    // Queued: the failure is reported from inside the power cycle, and the
+    // dialog should appear once the machine is back on, not block it off.
+    connect(
+        m_controller.get(), &MachineController::peripheralAttachFailed, this,
+        [this](const QString& device, const QString& reason) {
+            const auto message = shared::AppSession::attachFailedText(device.toStdString(), reason.toStdString());
+            QMessageBox::warning(this, QString::fromStdString(message.title), QString::fromStdString(message.text));
+        },
+        Qt::QueuedConnection);
+    connect(m_faceplate, &FaceplateWidget::keyPressed, this, [this](QString name) {
+        const std::string key = name.toStdString();
+        if (key == "on") {
+            m_controller->setOnKeyPressed(true);
+        } else {
+            m_controller->pressKey(key);
+        }
+    });
+    connect(m_faceplate, &FaceplateWidget::keyReleased, this, [this](QString name) {
+        const std::string key = name.toStdString();
+        if (key == "on") {
+            m_controller->setOnKeyPressed(false);
+        } else {
+            m_controller->releaseKey(key);
+        }
+    });
+    // A key held while focus moves to another widget (a combo box, a
+    // dialog) releases there, not here -- let go of it now instead.
+    connect(qApp, &QApplication::focusChanged, this, [this] { releaseHeldKeys(); });
+    connect(m_faceplate->lcdWidget(), &LcdWidget::turboRequested, this,
+            [this](bool active) { m_pacer->setTurbo(active); });
+
+    // The debugger's pause shows in the title bar.
+    connect(m_controller->debugController(), &DebugController::pausedChanged, this, [this](bool paused) {
+        setWindowTitle(paused ? tr("Calc-U-1600 — Paused (debugger)") : tr("Calc-U-1600"));
+    });
+
+    // The sink is a child of the window, so it outlives m_controller (and
+    // with it the session's audio pump).
+    m_audio = new AudioOutput(this);
+    m_controller->app().attachAudio(m_audio->sink(), [](const std::string& text) {
+        qWarning().noquote() << QString::fromStdString(text);
+    });
+    // Pay the audio backend's first-start cost right after startup.
+    QTimer::singleShot(0, this, [this] { m_controller->app().warmUpAudio(); });
+    m_pacer = new EmulationPacer(m_controller.get(), [this] { refreshViewsAfterAdvance(); }, this);
+    m_sync = new SyncOperations(
+        this, m_controller.get(), m_pacer,
+        [this] {
+            m_faceplate->lcdWidget()->setFrame(m_controller->currentDisplay());
+            m_faceplate->lcdWidget()->update();
+        },
+        this);
+    // The debugger's clean starts and loads go through the same service.
+    m_controller->debugController()->setSyncOperations(m_sync);
+
+    // MachineController's constructor already booted whatever model the
+    // "Startup device" setting picked (see AppSettings::startupModelPreference()),
+    // but the faceplate/control bar were built with their own hardcoded
+    // PC-1500A defaults -- resync them now so the visible calculator
+    // actually matches what's running underneath.
+    syncUiFromController();
+
+    resize(AppSettings::windowSize());
+    setFocus();
+
+    // Starting up selects the startup model too -- apply its default preset
+    // once the event loop runs, so the window is already up while a preset
+    // with long `wait:` steps plays out.
+    QTimer::singleShot(0, this, [this] {
+        applyDefaultPreset();
+        m_startupDone = true;
+        drainPendingDrop();
+    });
+    // Every operation (a menu, the control bar, the debugger, a preset --
+    // also one that failed before arming) may have rebuilt the machine or
+    // changed what is attached: resync every surface once it ends. Then a
+    // drop that came in while the machine was being driven.
+    connect(m_controller.get(), &MachineController::appBusyChanged, this, [this](bool busy) {
+        if (busy) return;
+        syncUiFromController();
+        QTimer::singleShot(0, this, &MainWindow::drainPendingDrop);
+    });
+    setAcceptDrops(true);
+}
+
+MainWindow::~MainWindow() {
+    // The child widgets hold raw MachineController pointers, and some use
+    // them on destruction (~DebugPanel ends an active TRACE session through
+    // the controller). ~QWidget only deletes children after the unique_ptr
+    // members -- m_controller included -- are gone, so tear the widget tree
+    // down here while the controller still exists.
+    m_pacer->suspend();
+    delete takeCentralWidget();
+    m_faceplate = nullptr;
+    m_controlBar = nullptr;
+    m_debugPanel = nullptr;
+    m_plotterPaper = nullptr;
+    m_ce158Printer = nullptr;
+    m_debugRow = nullptr;
+    m_debugRowLayout = nullptr;
+}
+
+void MainWindow::closeEvent(QCloseEvent* event) {
+    AppSettings::setWindowSize(size());
+    m_moduleManager->flushPendingPersist();
+    m_floppyManager->flushPendingPersist();
+    m_controller->tapeEject(); // writes anything a CSAVE still had running
+    QMainWindow::closeEvent(event);
+}
+
+void MainWindow::syncControlBarForModel() {
+    const shared::ControlState state = m_controller->app().controlState();
+    m_controlBar->setSlot2Visible(state.slotCount >= 2);
+    m_controlBar->setCe150Visible(state.ce150.onControlBar);
+    m_controlBar->setCe158Visible(state.ce158.onControlBar);
+    m_controlBar->setCe1600pVisible(state.ce1600p.onControlBar);
+    m_ce1600pAction->setVisible(state.ce1600p.offered);
+    m_ce1600pRomMenuAction->setVisible(state.ce1600pRomMenu);
+    m_controlBar->setFloppyVisible(state.floppyShown);  // its combo: syncPeripherals()
+    m_romMenuAction->setVisible(state.pc1500RomMenu);
+    m_rom1600MenuAction->setVisible(state.pc1600RomMenu);
+    syncHostDriveActions(state);
+}
+
+void MainWindow::resetMachine(bool allReset) { m_sync->resetToPrompt(allReset); }
+
+bool MainWindow::isLoading() const { return m_sync && m_sync->busy(); }
+
+// File > Mount Directory…: the host directory becomes drive S3: (alias Y:
+// without a CE-1600F). The first mount plugs the host drive in, with the
+// power cycle every peripheral attach gets; mounting another directory
+// while one is mounted is a live media swap.
+void MainWindow::mountHostDirectory() {
+    const QString title = tr("Mount Directory as S3:");
+    // Starts in Settings' "Host drive folder" (fixed or <last used>).
+    const QString dir =
+        QFileDialog::getExistingDirectory(this, title, AppSettings::openStartDir(AppSettings::OpenFolder::HostDrive));
+    if (dir.isEmpty()) return;
+    AppSettings::rememberOpenDir(AppSettings::OpenFolder::HostDrive, dir);
+    // A power cycle if no drive is attached yet, else a live directory swap.
+    m_sync->run(title, m_controller->app().mountHostDriveJob(dir.toStdString()));
+}
+
+void MainWindow::unmountHostDirectory() {
+    if (!m_controller->hostDriveAttached()) return;
+    m_sync->run(tr("Unmount Directory"), m_controller->app().mountHostDriveJob({}));
+}
+
+// Control bar > Tape: picking a tape puts it in to play (CLOAD), rewound;
+// "–empty–" takes the tape out. A recording is already saved (at each motor
+// stop), so taking it out only un-arms it.
+void MainWindow::selectTape(const QString& nameOrEmpty) {
+    QString error;
+    if (!m_tapeManager->selectForPlay(nameOrEmpty, &error)) QMessageBox::warning(this, tr("Tape"), error);
+    refreshTapeCombo();
+}
+
+// Control bar > Tape > Save: a blank tape to record onto (CSAVE), named like
+// a card or disk. It keeps recording -- each CSAVE appended -- until another
+// tape goes in.
+void MainWindow::saveTape() {
+    bool ok = false;
+    const QString name = QInputDialog::getText(this, tr("Save Tape"), tr("Tape name:"), QLineEdit::Normal,
+                                               QString(), &ok).trimmed();
+    if (!ok) return;
+    if (m_tapeManager->exists(name) &&
+        QMessageBox::question(this, tr("Save Tape"), tr("A tape named \"%1\" exists. Replace it?").arg(name)) !=
+            QMessageBox::Yes)
+        return;
+    QString error;
+    if (!m_tapeManager->recordNew(name, &error)) QMessageBox::warning(this, tr("Save Tape"), error);
+    refreshTapeCombo();
+}
+
+void MainWindow::refreshTapeCombo() {
+    m_controlBar->setTapeCombo(m_tapeManager->pickerNames(), m_tapeManager->currentName());
+}
+
+void MainWindow::syncHostDriveActions(const shared::ControlState& state) {
+    const QString dir = QString::fromStdString(state.hostDriveDir);
+    m_mountDirectoryAction->setEnabled(state.hostDriveOffered);
+    m_unmountDirectoryAction->setEnabled(state.hostDriveOffered && !dir.isEmpty());
+    m_unmountDirectoryAction->setText(dir.isEmpty() ? tr("Unmount Directory")
+                                                    : tr("Unmount \"%1\"").arg(QDir(dir).dirName()));
+    m_unmountDirectoryAction->setToolTip(dir);
+}
+
+void MainWindow::loadMachineCode() {
+    const QString title = tr("Load Machine Code");
+    const QString path = QFileDialog::getOpenFileName(this, title,
+                                                      AppSettings::openStartDir(AppSettings::OpenFolder::Assembly),
+                                                      tr("Machine Code (*.bin *.wav);;All Files (*)"));
+    if (!path.isEmpty()) loadMachineCodeFile(path);
+}
+
+void MainWindow::loadPresetFile(const QString& path) {
+    AppSettings::rememberOpenFile(AppSettings::OpenFolder::Samples, path);
+    m_sync->loadPreset(path);
+}
+
+std::optional<std::vector<uint8_t>> MainWindow::readProgramFile(const QString& path, const QString& title) {
+    QFile file(path);
+    if (!file.open(QIODevice::ReadOnly)) {
+        QMessageBox::warning(this, title, tr("Could not read %1: %2").arg(path, file.errorString()));
+        return std::nullopt;
+    }
+    const QByteArray raw = file.readAll();
+    shared::ProgramChoice choice = shared::programChoice(std::vector<uint8_t>(raw.begin(), raw.end()));
+    if (!choice.needsChoice()) return std::move(choice.images.front());
+
+    QStringList names;
+    for (const std::string& name : choice.names) names << QString::fromStdString(name);
+    bool ok = false;
+    const QString picked = QInputDialog::getItem(this, title,
+                                                 tr("%1 holds %2 files. Load which one?")
+                                                     .arg(QFileInfo(path).fileName())
+                                                     .arg(choice.images.size()),
+                                                 names, 0, false, &ok);
+    if (!ok) return std::nullopt;
+    return std::move(choice.images[static_cast<size_t>(names.indexOf(picked))]);
+}
+
+void MainWindow::loadBasicProgramFile(const QString& path) {
+    const QString title = tr("Load BASIC Program");
+    AppSettings::rememberOpenFile(AppSettings::OpenFolder::Basic, path);
+    std::optional<std::vector<uint8_t>> bytes = readProgramFile(path, title);
+    if (!bytes) return;
+    m_sync->run(title, [this, &bytes, &path] { return m_controller->app().loadBasicProgram(*bytes, path.toStdString()); });
+}
+
+void MainWindow::loadMachineCodeFile(const QString& path) {
+    const QString title = tr("Load Machine Code");
+    AppSettings::rememberOpenFile(AppSettings::OpenFolder::Assembly, path);
+
+    const std::optional<std::vector<uint8_t>> bytes = readProgramFile(path, title);
+    if (!bytes) return;
+    shared::MachineCodeLoad load = shared::MachineCodeLoad::plan(m_controller->session(), *bytes);
+    if (!load.error().empty()) {
+        QMessageBox::warning(this, title, QString::fromStdString(load.error()));
+        return;
+    }
+    if (load.needsAddress()) {
+        MachineCodeLoadDialog dialog(this, load);
+        if (dialog.exec() != QDialog::Accepted) return;
+    }
+    if (!m_sync->run(title, [this, &load] { return m_controller->app().loadMachineCode(load.request()); })) return;
+
+    const shared::MachineCodeLoad::Loaded loaded = load.loaded(m_controller->session());
+    const machinecode::Advice& advice = loaded.advice;
+    QString html = QStringLiteral("<p>%1.</p>").arg(QString::fromStdString(loaded.summary).toHtmlEscaped());
+    html += QStringLiteral("<p>%1<br>").arg(tr("Keep BASIC from overwriting it:").toHtmlEscaped());
+    if (!advice.newCommand.empty())
+        html += QStringLiteral("<b><tt>%1</tt></b><br>").arg(QString::fromStdString(advice.newCommand).toHtmlEscaped());
+    html += QStringLiteral("<small>%1</small></p>").arg(QString::fromStdString(advice.newNote).toHtmlEscaped());
+    html += QStringLiteral("<p>%1<br><b><tt>%2</tt></b><br><small>%3</small></p>")
+                .arg(tr("Start it:").toHtmlEscaped(),
+                     QString::fromStdString(advice.callCommand).toHtmlEscaped(),
+                     QString::fromStdString(advice.callNote).toHtmlEscaped());
+
+    QMessageBox box(QMessageBox::Information, tr("Machine Code Loaded"), html, QMessageBox::Ok, this);
+    box.setTextFormat(Qt::RichText);
+    box.setTextInteractionFlags(Qt::TextSelectableByMouse);
+    box.exec();
+
+    // Type the proposed CALL, ready to run: the user presses ENTER.
+    m_controller->pasteText(advice.callCommand);
+}
+
+void MainWindow::togglePeripheral(shared::Peripheral p) {
+    // Flat out, like Reset: the pin header's power-on rotation isn't worth
+    // watching, and the clock is re-injected afterwards.
+    m_sync->run(tr("Plotter"), m_controller->app().togglePeripheralJob(p));
+}
+
+void MainWindow::syncPeripherals() {
+    const shared::ControlState state = m_controller->app().controlState();
+    auto sync = [this](QAction* action, void (ControlBar::*setState)(bool, bool), const shared::PeripheralState& p) {
+        (m_controlBar->*setState)(p.attached, p.enabled);
+        action->setChecked(p.attached);
+        action->setEnabled(p.enabled);
+    };
+    sync(m_ce150Action, &ControlBar::setCe150State, state.ce150);
+    sync(m_ce1600pAction, &ControlBar::setCe1600pState, state.ce1600p);
+    sync(m_ce158Action, &ControlBar::setCe158State, state.ce158);
+    // Whoever attached the CE-1600F (the toggle or a preset) already put
+    // its disk in; the picker only grays in and out.
+    m_controlBar->setFloppyEnabled(state.floppyEnabled);
+    refreshFloppyCombo();
+    // Re-kind on every sync, not just on a change: it also drops the paper's
+    // cached plot revision, which a rebuilt machine's plotter restarts.
+    if (state.paper != shared::PaperKind::None)
+        m_plotterPaper->setKind(state.paper);
+    setDockedPane(m_plotterPaper, state.paper != shared::PaperKind::None);
+    m_controlBar->setTapeVisible(state.tapeShown);
+    refreshTapeCombo();
+    setDockedPane(m_ce158Printer, state.printerShown);
+}
+
+void MainWindow::setDockedPane(QWidget* pane, bool show) {
+    const bool docked = m_debugRowLayout->indexOf(pane) >= 0;
+    if (show) {
+        if (!docked) m_debugRowLayout->addWidget(pane, 1);
+        pane->show();
+    } else if (docked) {
+        m_debugRowLayout->removeWidget(pane);
+        pane->hide();
+    }
+}
+
+void MainWindow::onPresetArmed() {
+    // The preset attached its plotter directly on the Core machine, bypassing
+    // the control bar's toggles entirely -- the plotter
+    // resync inside this picks that up from the machine's actual state.
+    syncUiFromController();
+    // Force a repaint of the armed-but-off state now, before control
+    // returns into Core's (possibly many-seconds-long) boot + preset
+    // script -- otherwise nothing would reach the screen until the whole
+    // preset had run. The setModel()/refreshModuleCombos() calls above only
+    // *request* a repaint (QWidget::update(), queued); repaint() forces an
+    // immediate, synchronous one, and processEvents() additionally drains
+    // any other pending GUI event so the window is fully up to date before
+    // this call returns into the blocking preset script below (user input
+    // excluded, as in SyncOperations' own pump).
+    repaint();
+    QCoreApplication::processEvents(QEventLoop::ExcludeUserInputEvents);
+}
+
+// Every UI surface that mirrors machine state, pulled from the controller:
+// called after anything rebuilds or replaces the machine (startup, model
+// switch, preset load), so no call site has to know which pickers exist.
+void MainWindow::syncUiFromController() {
+    const Model model = m_controller->currentModel();
+    m_faceplate->setModel(model);
+    m_controlBar->setModel(model);
+    syncControlBarForModel();
+    syncMachineMenuFromModel(model);
+    syncMachineMenuFromRomRevision(m_controller->pc1500RomRevision());
+    syncMachineMenuFromPC1600RomVersion(m_controller->pc1600RomVersion());
+    syncMachineMenuFromCE1600PRomVersion(m_controller->ce1600pRomVersion());
+    refreshModuleCombos();
+    syncPeripherals();
+}
+
+void MainWindow::refreshModuleCombos() {
+    const int slotCount = m_controller->session().slotCount();
+    for (int slot = 1; slot <= slotCount; ++slot) {
+        const CardHost host = MemoryModuleManager::hostForModel(slot, m_controller->currentModel());
+        const MemoryModuleManager::ModuleLists lists = m_moduleManager->moduleLists(host);
+        m_controlBar->setModuleCombos(slot, lists, m_moduleManager->selectedModuleName(slot));
+        m_controlBar->setSlotSaveEnabled(slot, m_moduleManager->canNameAndSave(slot));
+    }
+}
+
+void MainWindow::refreshFloppyCombo() {
+    const FloppyDiskManager::DiskLists lists = m_floppyManager->diskLists();
+    m_controlBar->setFloppyCombo(lists.templates, lists.instances, m_floppyManager->selectedDiskName());
+    m_controlBar->setFloppySide(m_floppyManager->side());
+    m_controlBar->setFloppySaveEnabled(m_floppyManager->canNameAndSave());
+}
+
+namespace {
+
+// The physical key behind a key event, stable between its press and its
+// release whatever the modifiers did in between (unlike QKeyEvent::key()).
+quint32 physicalKeyId(const QKeyEvent* event) {
+#ifdef Q_OS_MACOS
+    // nativeScanCode() carries nothing on macOS; the virtual key code is
+    // the physical key position (kVK_*), independent of the layout.
+    return event->nativeVirtualKey();
+#else
+    if (event->nativeScanCode() != 0) return event->nativeScanCode();
+    return static_cast<quint32>(event->key());
+#endif
+}
+
+} // namespace
+
+void MainWindow::keyPressEvent(QKeyEvent* event) {
+    if (event->isAutoRepeat()) {
+        // Qt delivers OS auto-repeat as repeated .down events -- without
+        // this, holding a shift-needing key would re-fire the whole
+        // tapShiftedKey choreography on every repeat tick.
+        event->accept();
+        return;
+    }
+
+    // A Shift press arms the tap; any other key (letters, Cmd/Ctrl/Alt,
+    // Shift+Delete, ...) means Shift is being used as a modifier.
+    if (event->key() == Qt::Key_Shift) {
+        armShiftTap();
+        QWidget::keyPressEvent(event);
+        return;
+    }
+    disarmShiftTap();
+
+    const bool isPC1600 = m_controller->currentModel() == Model::PC1600;
+    auto resolved = PC1500KeyboardMap::resolve(static_cast<Qt::Key>(event->key()),
+                                                event->modifiers(), event->text(), isPC1600,
+                                                event->nativeVirtualKey());
+    if (!resolved) {
+        QWidget::keyPressEvent(event);
+        return;
+    }
+
+    // After resolve(), so bare modifiers -- the Cmd of a second Cmd-V,
+    // Cmd-Tab -- don't stop a paste.
+    if (m_controller->session().hostKeyDown(*resolved, /*physical=*/true))
+        m_physicalKeysDown.insert(physicalKeyId(event), resolved->baseKey);  // released on its .up event
+    event->accept();
+}
+
+void MainWindow::inputMethodEvent(QInputMethodEvent* event) {
+    // The preedit (a pending ¨) isn't shown -- the calculator shows nothing
+    // until the letter either. Each committed character is typed as a tap,
+    // resolved like a key press's text; one with no key is dropped (a bare
+    // ¨ after dead key + Space, ...).
+    disarmShiftTap();
+    const bool isPC1600 = m_controller->currentModel() == Model::PC1600;
+    for (const QChar c : event->commitString()) {
+        auto resolved = PC1500KeyboardMap::resolve(Qt::Key_unknown, Qt::NoModifier, QString(c), isPC1600);
+        if (resolved) m_controller->session().hostKeyDown(*resolved, /*physical=*/false);
+    }
+    event->accept();
+}
+
+QVariant MainWindow::inputMethodQuery(Qt::InputMethodQuery query) const {
+    switch (query) {
+    case Qt::ImEnabled:
+        return true;
+    case Qt::ImHints:
+        return static_cast<int>(Qt::ImhNoPredictiveText | Qt::ImhNoAutoUppercase);
+    case Qt::ImCursorRectangle:
+        // No text cursor: put input-method popups (candidate lists, the
+        // character viewer) at the LCD, where the typing shows.
+        if (m_faceplate && m_faceplate->lcdWidget()) {
+            const QWidget* lcd = m_faceplate->lcdWidget();
+            return QRect(lcd->mapTo(this, QPoint(0, 0)), lcd->size());
+        }
+        return QRect();
+    default:
+        return QMainWindow::inputMethodQuery(query);
+    }
+}
+
+QImage MainWindow::toQImage(const GrayImage& screen) {
+    if (screen.width <= 0 || screen.height <= 0) return {};
+    QImage image(screen.width, screen.height, QImage::Format_Grayscale8);
+    for (int y = 0; y < screen.height; ++y) {
+        std::memcpy(image.scanLine(y), screen.pixels.data() + static_cast<std::size_t>(y) * screen.width,
+                    static_cast<std::size_t>(screen.width));
+    }
+    const int dotsPerMeter = static_cast<int>(screen.pixelsPerMeter());
+    image.setDotsPerMeterX(dotsPerMeter);
+    image.setDotsPerMeterY(dotsPerMeter);
+    return image;
+}
+
+// The image, plus the screen as readable text (LcdText::plainText()) when
+// any of it is text -- a text editor pastes the text, an image app the dots.
+void MainWindow::copyScreenToClipboard() {
+    const GrayImage screen = m_controller->currentScreenImage();
+    const QImage image = toQImage(screen);
+    if (image.isNull()) return;
+    LcdText lcd;
+    const QString text = m_controller->lcdText(&lcd) ? QString::fromStdString(lcd.plainText()) : QString();
+
+#ifdef Q_OS_MACOS
+    // Qt's QClipboard::setImage() drops the physical size on macOS (see
+    // MacClipboardImage.h) -- go through Cocoa so a paste lands at the
+    // real display's size.
+    const double widthPt = screen.width * 72.0 / screen.dpi;
+    const double heightPt = screen.height * 72.0 / screen.dpi;
+    if (macSetClipboardImage(image, widthPt, heightPt, text)) return;
+#endif
+    auto* mime = new QMimeData;
+    mime->setImageData(image);
+    if (!text.isEmpty()) mime->setText(text);
+    QGuiApplication::clipboard()->setMimeData(mime);
+}
+
+void MainWindow::pasteClipboardText() {
+    const QMimeData* mime = QGuiApplication::clipboard()->mimeData();
+    if (!mime || !mime->hasText()) return; // images etc. are ignored
+    m_controller->pasteText(mime->text().toStdString());
+}
+
+void MainWindow::keyReleaseEvent(QKeyEvent* event) {
+    if (event->isAutoRepeat()) {
+        event->accept();
+        return;
+    }
+
+    if (event->key() == Qt::Key_Shift) {
+        const bool tapped = m_shiftTapArmed && m_shiftTapClock.elapsed() <= kShiftTapMaxMs;
+        disarmShiftTap();
+        if (tapped) {
+            m_controller->session().hostShiftTap();
+            event->accept();
+            return;
+        }
+    }
+
+    auto it = m_physicalKeysDown.find(physicalKeyId(event));
+    if (it == m_physicalKeysDown.end()) {
+        QWidget::keyReleaseEvent(event);
+        return;
+    }
+    m_controller->session().hostKeyUp(it.value());
+    m_physicalKeysDown.erase(it);
+    event->accept();
+}
+
+void MainWindow::changeEvent(QEvent* event) {
+    if (event->type() == QEvent::ActivationChange && !isActiveWindow()) releaseHeldKeys();
+    QMainWindow::changeEvent(event);
+}
+
+void MainWindow::releaseHeldKeys() {
+    for (const std::string& key : std::as_const(m_physicalKeysDown)) m_controller->session().hostKeyUp(key);
+    m_physicalKeysDown.clear();
+    disarmShiftTap(); // the Shift release may land elsewhere
+}
+
+// The app-wide filter is only installed while a tap is armed (at most
+// kShiftTapMaxMs), not for the window's life: it sees every event of
+// every object, just to catch a Shift-click.
+void MainWindow::armShiftTap() {
+    if (!m_shiftTapArmed) qApp->installEventFilter(this);
+    m_shiftTapArmed = true;
+    m_shiftTapClock.start();
+}
+
+void MainWindow::disarmShiftTap() {
+    if (!m_shiftTapArmed) return;
+    m_shiftTapArmed = false;
+    qApp->removeEventFilter(this);
+}
+
+bool MainWindow::eventFilter(QObject* watched, QEvent* event) {
+    if (event->type() == QEvent::MouseButtonPress) disarmShiftTap(); // a Shift-click
+    return QMainWindow::eventFilter(watched, event);
+}
+
+// ── Drag and drop ──────────────────────────────────────────────────────
+
+namespace {
+
+// No Sharp program comes near this; it keeps a hover over a large file from
+// reading all of it.
+constexpr qint64 kMaxDropBytes = 1 << 20;
+
+dropfile::Target dropTargetOf(const QString& path) {
+    const QFileInfo info(path);
+    if (!info.isFile() || info.size() > kMaxDropBytes) return dropfile::Target::None;
+    QFile file(path);
+    if (!file.open(QIODevice::ReadOnly)) return dropfile::Target::None;
+    const QByteArray raw = file.readAll();
+    return dropfile::classify(std::vector<uint8_t>(raw.begin(), raw.end()), info.fileName().toStdString());
+}
+
+// The one local file a drag carries, or "".
+QString draggedPath(const QMimeData* mime) {
+    const QList<QUrl> urls = mime->hasUrls() ? mime->urls() : QList<QUrl>();
+    return urls.size() == 1 && urls.first().isLocalFile() ? urls.first().toLocalFile() : QString();
+}
+
+}  // namespace
+
+QString MainWindow::droppableFile(const QMimeData* mime) const {
+    if (m_sync->busy()) return {};
+    const QString path = draggedPath(mime);
+    return path.isEmpty() || dropTargetOf(path) == dropfile::Target::None ? QString() : path;
+}
+
+void MainWindow::dragEnterEvent(QDragEnterEvent* event) {
+    if (!droppableFile(event->mimeData()).isEmpty()) event->acceptProposedAction();
+}
+
+void MainWindow::dragMoveEvent(QDragMoveEvent* event) {
+    // The file was checked on enter; only a load that started since matters.
+    if (!m_sync->busy()) event->acceptProposedAction();
+}
+
+void MainWindow::dropEvent(QDropEvent* event) {
+    // Vetted on enter; openDroppedFile() classifies it once more to load it.
+    const QString path = draggedPath(event->mimeData());
+    if (path.isEmpty() || m_sync->busy()) return;
+    event->acceptProposedAction();
+    // Out of the drop handler: a load and its dialogs would keep the drag
+    // source (Finder, Explorer) waiting.
+    QTimer::singleShot(0, this, [this, path] { openDroppedFile(path); });
+}
+
+void MainWindow::openDroppedFile(const QString& path) {
+    if (!m_startupDone || m_sync->busy()) {
+        m_pendingDrop = path;
+        return;
+    }
+    const dropfile::Target target = dropTargetOf(path);
+    if (target == dropfile::Target::None) return;
+    raise();
+    activateWindow();
+    switch (target) {
+        case dropfile::Target::Preset: loadPresetFile(path); break;
+        case dropfile::Target::BasicProgram: loadBasicProgramFile(path); break;
+        case dropfile::Target::MachineCode: loadMachineCodeFile(path); break;
+        case dropfile::Target::None: break;
+    }
+}
+
+void MainWindow::drainPendingDrop() {
+    // openDroppedFile() holds it back again if still not ready.
+    if (!m_pendingDrop.isEmpty()) openDroppedFile(std::exchange(m_pendingDrop, QString()));
+}
+
+void MainWindow::refreshViewsAfterAdvance() {
+    const DisplayFrame frame = m_controller->currentDisplay();
+    m_faceplate->lcdWidget()->setFrame(frame);
+    m_faceplate->lcdWidget()->update();
+
+    // (Card/disk autosave and the tape bay run in AppSession::frameDuties().)
+    m_controlBar->setFloppyMotorOn(m_floppyManager->motorOn());
+    m_controlBar->setTapeStatus(m_controller->app().tapeStatus());
+    m_debugPanel->onFrameTick();
+    if (m_debugRowLayout->indexOf(m_plotterPaper) >= 0) m_plotterPaper->onFrameTick();
+    if (m_debugRowLayout->indexOf(m_ce158Printer) >= 0) m_ce158Printer->onFrameTick();
+}
+
+bool MainWindow::loadPresetForShots(const QString& path, QString* error) {
+    const bool ok = m_sync->loadPreset(path, error);
+    // Frozen emulation means no frame tick will show the end state -- the
+    // LCD would keep the load's last throttled repaint, the paper its
+    // pre-plot points.
+    refreshViewsAfterAdvance();
+    return ok;
+}
+
+void MainWindow::buildMenuBar() {
+    // File: one-shot actions -- openPresetAction/settingsAction/aboutAction
+    // are connected by the constructor, next to their handler closures.
+    QMenu* fileMenu = menuBar()->addMenu(tr("&File"));
+    m_openPresetAction = fileMenu->addAction(tr("Load Preset…"));
+    // Examples: the bundled presets (examples/bundled.yaml's `examples`),
+    // grouped, each by its description. The default presets are offered in
+    // Settings instead.
+    QMenu* examplesMenu = fileMenu->addMenu(tr("Examples"));
+    QMap<QString, QMenu*> groupMenus;
+    for (const shared::PresetEntry& e : shared::PresetCatalog(AppPaths::paths()).examples()) {
+        const QString group = QString::fromStdString(e.group);
+        QMenu*& groupMenu = groupMenus[group];
+        if (!groupMenu) groupMenu = examplesMenu->addMenu(group);
+        const QString label = QString::fromStdString(e.label());
+        const QString ref = QString::fromStdString(e.ref);
+        connect(groupMenu->addAction(label), &QAction::triggered, this, [this, ref] { m_sync->loadPreset(ref); });
+    }
+    examplesMenu->setEnabled(!groupMenus.isEmpty());
+    m_loadBasicProgramAction = fileMenu->addAction(tr("Load BASIC Program…"));
+    m_loadMachineCodeAction = fileMenu->addAction(tr("Load Machine Code…"));
+    fileMenu->addSeparator();
+    m_mountDirectoryAction = fileMenu->addAction(tr("Mount Directory…"));
+    m_unmountDirectoryAction = fileMenu->addAction(tr("Unmount Directory"));
+    fileMenu->addSeparator();
+    QAction* quitAction = fileMenu->addAction(tr("Quit"));
+    quitAction->setMenuRole(QAction::QuitRole);
+    quitAction->setShortcut(QKeySequence::Quit);
+    connect(quitAction, &QAction::triggered, this, &QWidget::close);
+
+    // Edit: Cmd-C / Cmd-V (Ctrl on other platforms). A focused text field
+    // (e.g. the debug panel's) still gets its own copy/paste first -- Qt
+    // lets a widget claim standard shortcuts via ShortcutOverride.
+    // Copy is Copy Screen, or -- while text is selected in the debug
+    // panel's output (which never takes focus) -- Copy Log Selection.
+    QMenu* editMenu = menuBar()->addMenu(tr("&Edit"));
+    QAction* copyAction = editMenu->addAction(tr("Copy Screen"));
+    copyAction->setShortcut(QKeySequence::Copy);
+    connect(copyAction, &QAction::triggered, this, [this] {
+        const QString selection = m_debugPanel->selectedOutputText();
+        if (selection.isEmpty()) {
+            copyScreenToClipboard();
+        } else {
+            QGuiApplication::clipboard()->setText(selection);
+        }
+    });
+    connect(m_debugPanel, &DebugPanel::outputSelectionChanged, copyAction, [copyAction, this](bool hasSelection) {
+        copyAction->setText(hasSelection ? tr("Copy Log Selection") : tr("Copy Screen"));
+    });
+    m_pasteAction = editMenu->addAction(tr("Paste Text"));
+    m_pasteAction->setShortcut(QKeySequence::Paste);
+    connect(m_pasteAction, &QAction::triggered, this, &MainWindow::pasteClipboardText);
+    auto refreshPasteEnabled = [this] {
+        const QMimeData* mime = QGuiApplication::clipboard()->mimeData();
+        m_pasteAction->setEnabled(mime && mime->hasText());
+    };
+    connect(QGuiApplication::clipboard(), &QClipboard::dataChanged, this, refreshPasteEnabled);
+    refreshPasteEnabled();
+    // Settings: the platform's usual place -- the application menu on macOS
+    // (PreferencesRole moves it there, as "Settings…" with Cmd-,), the end
+    // of the Edit menu elsewhere.
+    editMenu->addSeparator();
+    m_settingsAction = editMenu->addAction(tr("Settings…"));
+    m_settingsAction->setMenuRole(QAction::PreferencesRole);
+    m_settingsAction->setShortcut(QKeySequence::Preferences);
+    if (m_settingsAction->shortcut().isEmpty())
+        m_settingsAction->setShortcut(QKeySequence(Qt::ControlModifier | Qt::Key_Comma));
+
+    // Machine: duplicates ControlBar's model picker and peripheral toggles,
+    // plus the ROM pickers (checkable, exclusive per group) and Reset/Reset
+    // All, which live only here.
+    QMenu* machineMenu = menuBar()->addMenu(tr("&Machine"));
+
+    QMenu* modelMenu = machineMenu->addMenu(tr("Model"));
+    m_modelActionGroup = new QActionGroup(this);
+    m_modelActionGroup->setExclusive(true);
+    auto addModelAction = [&](Model model, const QString& label) {
+        QAction* action = modelMenu->addAction(label);
+        action->setCheckable(true);
+        m_modelActionGroup->addAction(action);
+        m_modelActions.insert(model, action);
+        connect(action, &QAction::triggered, this, [this, model] { applyModelSelection(model); });
+    };
+    addModelAction(Model::PC1500, tr("PC-1500"));
+    addModelAction(Model::PC1500A, tr("PC-1500A"));
+    addModelAction(Model::PC1600, tr("PC-1600"));
+
+    QMenu* romMenu = machineMenu->addMenu(tr("ROM Revision"));
+    m_romMenuAction = romMenu->menuAction();
+    m_romActionGroup = new QActionGroup(this);
+    m_romActionGroup->setExclusive(true);
+    auto addRomAction = [&](PC1500RomRevision revision, const QString& label) {
+        QAction* action = romMenu->addAction(label);
+        action->setCheckable(true);
+        m_romActionGroup->addAction(action);
+        m_romActions.insert(revision, action);
+        connect(action, &QAction::triggered, this, [this, revision] { applyRomRevisionSelection(revision); });
+    };
+    addRomAction(PC1500RomRevision::A01, tr("A01"));
+    addRomAction(PC1500RomRevision::A03, tr("A03"));
+    addRomAction(PC1500RomRevision::A04, tr("A04"));
+
+    QMenu* rom1600Menu = machineMenu->addMenu(tr("ROM Version"));
+    m_rom1600MenuAction = rom1600Menu->menuAction();
+    m_rom1600ActionGroup = new QActionGroup(this);
+    m_rom1600ActionGroup->setExclusive(true);
+    auto addRom1600Action = [&](PC1600RomVersion version, const QString& label) {
+        QAction* action = rom1600Menu->addAction(label);
+        action->setCheckable(true);
+        m_rom1600ActionGroup->addAction(action);
+        m_rom1600Actions.insert(version, action);
+        connect(action, &QAction::triggered, this, [this, version] { applyPC1600RomVersionSelection(version); });
+    };
+    addRom1600Action(PC1600RomVersion::New, tr("New"));
+    addRom1600Action(PC1600RomVersion::Old, tr("Old"));
+    m_rom1600MenuAction->setVisible(false);
+
+    // The CE-1600P's ROM is independent of the PC-1600's (any combination is
+    // possible); the CE-1600F in the same box follows it.
+    QMenu* ce1600pRomMenu = machineMenu->addMenu(tr("CE-1600P ROM"));
+    m_ce1600pRomMenuAction = ce1600pRomMenu->menuAction();
+    m_ce1600pRomActionGroup = new QActionGroup(this);
+    m_ce1600pRomActionGroup->setExclusive(true);
+    auto addCE1600PRomAction = [&](CE1600PRomVersion version, const QString& label) {
+        QAction* action = ce1600pRomMenu->addAction(label);
+        action->setCheckable(true);
+        m_ce1600pRomActionGroup->addAction(action);
+        m_ce1600pRomActions.insert(version, action);
+        connect(action, &QAction::triggered, this, [this, version] { applyCE1600PRomVersionSelection(version); });
+    };
+    addCE1600PRomAction(CE1600PRomVersion::New, tr("New"));
+    addCE1600PRomAction(CE1600PRomVersion::Old, tr("Old"));
+    m_ce1600pRomMenuAction->setVisible(false);
+
+    // Peripherals: checkable like the control bar's toggles; syncPeripherals()
+    // resyncs check and enabled state once the toggle has run.
+    QMenu* peripheralsMenu = machineMenu->addMenu(tr("Peripherals"));
+    auto addPeripheralAction = [&](const QString& label, shared::Peripheral p) {
+        QAction* action = peripheralsMenu->addAction(label);
+        action->setCheckable(true);
+        connect(action, &QAction::triggered, this, [this, p] { togglePeripheral(p); });
+        return action;
+    };
+    m_ce150Action = addPeripheralAction(tr("CE-150"), shared::Peripheral::CE150);
+    m_ce158Action = addPeripheralAction(tr("CE-158"), shared::Peripheral::CE158);
+    m_ce1600pAction = addPeripheralAction(tr("CE-1600P"), shared::Peripheral::CE1600P);
+    m_ce1600pAction->setVisible(false);
+
+    machineMenu->addSeparator();
+    QAction* resetAction = machineMenu->addAction(tr("Reset"));
+    resetAction->setShortcut(QKeySequence(Qt::ControlModifier | Qt::Key_R));
+    connect(resetAction, &QAction::triggered, this, [this] { resetMachine(false); });
+    QAction* resetAllAction = machineMenu->addAction(tr("Reset All"));
+    resetAllAction->setShortcut(QKeySequence(Qt::ControlModifier | Qt::ShiftModifier | Qt::Key_R));
+    connect(resetAllAction, &QAction::triggered, this, [this] { resetMachine(true); });
+
+    // Help
+    QMenu* helpMenu = menuBar()->addMenu(tr("&Help"));
+    m_aboutAction = helpMenu->addAction(tr("About Calc-U-1600…"));
+    m_aboutAction->setMenuRole(QAction::AboutRole);
+}
+
+void MainWindow::applyModelSelection(Model model) {
+    // The Machine menu's QActionGroup re-emits triggered() for the item
+    // that is already checked; re-picking it must not cold-rebuild.
+    if (model == m_controller->currentModel()) return;
+    // A fresh default machine; its default preset customises it.
+    m_sync->run(tr("Machine"), m_controller->app().pickModelJob(model));
+}
+
+void MainWindow::applyDefaultPreset() {
+    if (AppSettings::defaultPresetPath(m_controller->currentModel()).isEmpty()) return;
+    m_sync->run(tr("Default Preset"), m_controller->app().defaultPresetJob());
+}
+
+void MainWindow::applyRomRevisionSelection(PC1500RomRevision revision) {
+    if (revision == m_controller->pc1500RomRevision()) return; // see applyModelSelection()
+    m_sync->run(tr("ROM"), m_controller->app().selectPC1500RomJob(revision)); // rebuilds the machine
+}
+
+void MainWindow::applyPC1600RomVersionSelection(PC1600RomVersion version) {
+    if (version == m_controller->pc1600RomVersion()) return; // see applyModelSelection()
+    // Rebuilds a PC-1600; the menu shows New if the old ROM failed to load.
+    m_sync->run(tr("ROM"), m_controller->app().selectPC1600RomJob(version));
+}
+
+void MainWindow::applyCE1600PRomVersionSelection(CE1600PRomVersion version) {
+    if (version == m_controller->ce1600pRomVersion()) return; // see applyModelSelection()
+    // The ROM is in the CE-1600P box: on an attached one this is a box swap
+    // inside an OFF/ON cycle (no rebuild, RAM survives); otherwise it just
+    // records the choice for the next attach.
+    // The menu shows New if the old ROM failed to load.
+    m_sync->run(tr("Plotter"), m_controller->app().selectCE1600PRomJob(version));
+}
+
+void MainWindow::syncMachineMenuFromCE1600PRomVersion(CE1600PRomVersion version) {
+    if (QAction* action = m_ce1600pRomActions.value(version, nullptr)) action->setChecked(true);
+}
+
+void MainWindow::syncMachineMenuFromPC1600RomVersion(PC1600RomVersion version) {
+    if (QAction* action = m_rom1600Actions.value(version, nullptr)) action->setChecked(true);
+}
+
+void MainWindow::syncMachineMenuFromModel(Model model) {
+    if (QAction* action = m_modelActions.value(model, nullptr)) action->setChecked(true);
+}
+
+void MainWindow::syncMachineMenuFromRomRevision(PC1500RomRevision revision) {
+    if (QAction* action = m_romActions.value(revision, nullptr)) action->setChecked(true);
+}

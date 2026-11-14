@@ -1,0 +1,297 @@
+#include "DebugController.hpp"
+
+#include <QTimer>
+
+#include <algorithm>
+
+#include "AppSettings.hpp"
+#include "DapServer.hpp"
+#include "DapSession.hpp"
+#include "Debug/MachineDebugTargets.hpp"
+#include "MachineController.hpp"
+#include "PC1500/PC1500Machine.hpp"
+#include "PC1600/PC1600Machine.hpp"
+#include "SyncOperations.hpp"
+
+DebugController::DebugController(MachineController* machines, QObject* parent)
+    : QObject(parent), m_machines(machines) {
+    m_server = new DapServer(this);
+    connect(m_server, &DapServer::clientConnected, this, &DebugController::onClientConnected);
+    connect(m_server, &DapServer::clientDisconnected, this, &DebugController::onClientDisconnected);
+    connect(m_server, &DapServer::messageReceived, this, &DebugController::dispatch);
+    connect(m_machines, &MachineController::appBusyChanged, this, &DebugController::setAppBusy);
+}
+
+void DebugController::dispatch(const QJsonObject& message) {
+    // A synchronous load pumps the event loop: messages arriving meanwhile
+    // (or while a request is being handled) wait, in order.
+    m_queued.push_back(message);
+    drainQueue();
+}
+
+void DebugController::drainQueue() {
+    if (m_busy || appBusy()) return;
+    finishTeardown(); // a client that left meanwhile, before its successor's messages
+    m_busy = true;
+    while (!m_queued.empty() && !appBusy()) {
+        const QJsonObject next = m_queued.front();
+        m_queued.erase(m_queued.begin());
+        if (m_session) m_session->handle(next);
+    }
+    m_busy = false;
+    finishTeardown();
+}
+
+bool DebugController::appBusy() const { return m_machines->app().busy(); }
+
+void DebugController::setAppBusy(bool busy) {
+    if (!busy && (!m_queued.empty() || m_teardownPending))
+        QTimer::singleShot(0, this, &DebugController::drainQueue);
+}
+
+DebugController::~DebugController() {
+    endSession();
+    m_session.reset();
+}
+
+// ── Server ────────────────────────────────────────────────────────────────
+
+namespace {
+int s_commandLinePort = 0; // --dap <port>; 0 = use Settings
+
+bool serverWanted() { return s_commandLinePort > 0 || AppSettings::dapEnabled(); }
+int serverPort() { return s_commandLinePort > 0 ? s_commandLinePort : AppSettings::dapPort(); }
+} // namespace
+
+void DebugController::setCommandLinePort(int port) { s_commandLinePort = port >= 1024 && port <= 65535 ? port : 0; }
+
+void DebugController::refreshServer() {
+    m_serverError.clear();
+    if (!serverWanted()) {
+        m_server->close();
+    } else if (!m_server->isListening() || m_server->port() != serverPort()) {
+        QString error;
+        if (!m_server->listen(quint16(serverPort()), &error)) m_serverError = error;
+    }
+    emit serverStatusChanged();
+}
+
+QString DebugController::serverStatus() const {
+    if (!serverWanted()) return tr("Off");
+    if (!m_server->isListening())
+        return tr("Port %1 not available: %2").arg(serverPort()).arg(m_serverError);
+    if (m_server->hasClient()) return tr("Client connected on 127.0.0.1:%1").arg(m_server->port());
+    return tr("Listening on 127.0.0.1:%1").arg(m_server->port());
+}
+
+bool DebugController::hasClient() const { return m_server->hasClient(); }
+
+void DebugController::disconnectClient() {
+    if (m_session) {
+        m_session->output(tr("Disconnected from the app (Settings > Debugger)."), QStringLiteral("important"));
+        m_session->terminated();
+    }
+    m_server->disconnectClient(); // -> onClientDisconnected(): session ends, machine runs on
+}
+
+void DebugController::onClientConnected() {
+    m_session = std::make_unique<DapSession>(m_server, this);
+    emit serverStatusChanged();
+}
+
+void DebugController::onClientDisconnected() {
+    // The socket may close while a request is being handled -- a Build &
+    // Load pumps the event loop for seconds. That request's DapSession,
+    // target and run control are still on the stack, so they go only once
+    // it has returned (finishTeardown()); until then the session is just
+    // detached from the controller.
+    m_queued.clear(); // the old client's; a new one's must not see them
+    if (m_session) m_retiredSessions.push_back(std::move(m_session));
+    m_teardownPending = true;
+    finishTeardown();
+    emit serverStatusChanged();
+}
+
+void DebugController::finishTeardown() {
+    if (!m_teardownPending || m_busy || appBusy()) return;
+    m_teardownPending = false;
+    endSession();
+    m_retiredSessions.clear();
+}
+
+// ── Session ───────────────────────────────────────────────────────────────
+
+void DebugController::createTarget() {
+    m_run.reset();
+    m_target.reset();
+    m_machines->withMachine([this](auto& machine) { m_target = debug::makeDebugTarget(machine); });
+    if (!m_target) return;
+    m_target->arm(false); // armed only inside runSlice()
+    m_run = std::make_unique<debug::RunControl>(*m_target, m_map, m_breakpoints);
+}
+
+bool DebugController::beginSession() {
+    m_map.clear();
+    m_breakpoints.clear();
+    m_replacedPending = false;
+    createTarget();
+    m_sessionActive = m_target != nullptr;
+    return m_sessionActive;
+}
+
+void DebugController::endSession() {
+    // Dropping the target clears its breakpoints and watches from the CPUs;
+    // the machine then runs on normally.
+    m_sessionActive = false;
+    m_run.reset();
+    m_target.reset();
+    m_breakpoints.clear();
+    m_map.clear();
+    if (m_lastPaused) {
+        m_lastPaused = false;
+        emit pausedChanged(false);
+    }
+}
+
+bool DebugController::attached() const { return m_sessionActive; }
+
+bool DebugController::paused() const { return m_sessionActive && m_run && m_run->paused(); }
+
+void DebugController::runSlice(std::uint64_t cycles) {
+    if (!m_sessionActive || !m_target) return;
+    if (m_replacedPending) {
+        // The machine was rebuilt since the last frame (the target bound to
+        // it then). Now that it has booted and nothing else drives it, the
+        // listings can be checked against it and the breakpoints armed.
+        m_replacedPending = false;
+        m_run->resume();
+        if (m_session) m_session->onMachineReplaced();
+    }
+    // Breakpoints and watches act only while the debugger runs the machine;
+    // a boot or load in between must not park on one.
+    m_target->arm(true);
+    const std::vector<debug::DebugEvent> events = m_run->slice(cycles);
+    m_target->arm(false);
+    if (m_session && !events.empty()) m_session->onEvents(events);
+    const bool nowPaused = m_run->paused();
+    if (nowPaused != m_lastPaused) {
+        m_lastPaused = nowPaused;
+        emit pausedChanged(nowPaused);
+    }
+}
+
+std::vector<debug::BreakpointStatus> DebugController::rebindListings() {
+    if (!m_run) return {};
+    for (const auto& b : m_map.bindings()) m_map.verify(b.id, m_run->bankMatch(), m_run->codePeek());
+    auto changed = m_breakpoints.reresolve(m_map);
+    if (m_target) m_breakpoints.apply(*m_target);
+    return changed;
+}
+
+void DebugController::setSyncOperations(SyncOperations* sync) {
+    m_sync = sync;
+}
+
+bool DebugController::loadPreset(const QString& path, QString* error, bool armOnly) {
+    if (!m_sync) {
+        *error = tr("Presets can't be loaded from the debugger here");
+        return false;
+    }
+    const bool ok = m_sync->loadPreset(path, error, armOnly);
+    // The preset rebuilt the machine and the target rebound to it; it stays
+    // paused, as a fresh session is -- the caller re-binds the listings.
+    m_replacedPending = false;
+    return ok;
+}
+
+bool DebugController::cleanStart(const QString& preset, QString* how, QString* error) {
+    if (!m_sync) {
+        *error = tr("The machine can't be set up from the debugger here");
+        return false;
+    }
+    bool ok = false;
+    if (!preset.isEmpty()) {
+        *how = tr("preset %1").arg(preset);
+        ok = m_sync->loadPreset(preset, error);
+    } else if (const QString path = AppSettings::defaultPresetPath(m_machines->currentModel());
+               !path.isEmpty()) {
+        // As the app applies it: refused if it's for another model.
+        *how = tr("default preset %1").arg(path);
+        ok = m_sync->loadDefaultPreset(path, m_machines->currentModel(), error);
+    } else {
+        // No preset: the machine as Reset All leaves it, booted to the prompt.
+        *how = tr("All Reset (no default preset for this model)");
+        ok = m_sync->resetToPrompt(/*allReset=*/true, error);
+    }
+    // A rebuilt machine stays paused, as a fresh session is -- the caller
+    // re-binds the listings.
+    m_replacedPending = false;
+    return ok;
+}
+
+debug::LoadResult DebugController::loadProgram(const debug::LoadRequest& request, After after,
+                                               const std::string& command) {
+    debug::LoadResult r;
+    if (!m_target || !m_run || !m_sync) {
+        r.error = "no machine";
+        return r;
+    }
+    QString error;
+    m_sync->run(tr("Load Program"), [this, &r, &request] {
+        r = debug::loadProgram(m_machines->pc1500(), m_machines->pc1600(), request, m_map, *m_target);
+        return r.ok ? shared::OpResult{} : shared::OpResult::fail(r.error);
+    }, &error);
+    if (!r.ok) return r;
+    if (after == After::None) return r;
+    if (!command.empty()) r.callCommand = command;
+    if (r.callCommand.empty()) {
+        r.warnings.push_back("no BASIC command starts this code; load it, then call it from your own code");
+        return r;
+    }
+    if (after == After::StopOnEntry) m_breakpoints.setEntry(request.thread, r.entry);
+    m_breakpoints.apply(*m_target);
+    m_machines->typeCommand(r.callCommand); // typed and entered as the machine runs
+    m_run->resume();
+    return r;
+}
+
+void DebugController::typeCommand(const std::string& line) { m_machines->typeCommand(line); }
+
+bool DebugController::lcdText(LcdText* out) const { return m_machines->lcdText(out); }
+
+bool DebugController::resetMachine(bool allReset, bool stop, QString* error) {
+    if (!m_target || !m_run || !m_sync) {
+        *error = tr("No machine is running");
+        return false;
+    }
+    // Without the boot run (ROM research starts at the vector), but like
+    // any reset: timer stopped meanwhile, clock re-seeded after.
+    if (!m_sync->run(allReset ? tr("Reset All") : tr("Reset"), [this, allReset] {
+            m_machines->cancelPaste();
+            m_target->reset(allReset);
+            return shared::OpResult{};
+        }, error))
+        return false;
+    if (stop) m_run->pause(debug::DebugEvent::Entry);
+    else m_run->resume();
+    return true;
+}
+
+void DebugController::machineAboutToChange() {
+    // The target refers to the machine that is about to go; machineReplaced()
+    // binds to its successor.
+    m_run.reset();
+    m_target.reset();
+    if (m_lastPaused) {
+        m_lastPaused = false;
+        emit pausedChanged(false);
+    }
+}
+
+void DebugController::machineReplaced() {
+    if (!m_sessionActive) return;
+    createTarget();
+    // The new machine hasn't booted yet; the next frame resumes it and
+    // re-binds the listings (see runSlice()).
+    m_replacedPending = true;
+}

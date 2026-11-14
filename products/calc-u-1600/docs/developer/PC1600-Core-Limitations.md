@@ -1,0 +1,444 @@
+# PC-1600 emulator core — known limitations
+
+A catalogue of the deliberate shortcuts, "not modelled" scope notes
+and unconfirmed assumptions in the emulator core
+(`core/`). Every entry is backed by a comment in the code; the file or
+symbol after it points there.
+
+Scope: this file covers the PC-1600 machine plus the CPU cores
+(`LH5801`, `SC7852`, `LH5803`) and the connector / memory-card layer it
+shares with the PC-1500/1500A, since a PC-1600 limitation is often really
+a limitation of that shared code. PC-1500-only items are marked
+*(PC-1500 side)*.
+
+This is a "what the core does **not** do" list. It is not a bug list —
+these are design boundaries, chosen to keep boot-to-BASIC and the
+already-shipped behaviour deterministic and well-sourced. Revisit an
+entry when a primary source or a ROM trace disagrees with it.
+
+---
+
+## CPU cores
+
+### LH5801 — `core/CPU/LH5801/`
+*(PC-1500/1500A main CPU; also the base class for the LH5803.)*
+
+- **`CDV` (`FD 8E`) clock divider not modelled** — an 8-cycle no-op.
+  `LH5801.cpp` (`executeFD`)
+- **NMI is edge-triggered and resets IE** — `requestNonMaskableInterrupt()`
+  is serviced once through `0xFFFC`, whatever IE is, pushing T and P like
+  the maskable entry. No document says whether the real input is edge- or
+  level-sensitive or whether it clears IE; the PC-1600's only NMI user
+  (the CE-158 trap below) acknowledges its source late and ends in `SIE`,
+  which fits this model. The PC-1500 never raises it. The ON key's BFI
+  wake doesn't jump to a vector. `LH5801::requestNonMaskableInterrupt()`,
+  `LH5801::wakeFromHalt()`
+- **Undocumented opcodes execute as no-ops** — their real-hardware
+  behaviour isn't sourced. They don't halt, but the trace marks them
+  (`consumeIllegalOpcodeHit()`). `LH5801.cpp` (`kIllegalOpcode`)
+- **Timer while halted** advances by a fixed tick unit per `step()` call,
+  not true crystal timing (deliberate, so `HLT`-then-timer-interrupt idle
+  loops work). `LH5801::step()`
+- **Timer tick divisor (8 cycles / LFSR step)** is fitted to a real unit's
+  edit-cursor blink rate, not taken from a spec. `LH5801TimerTable.hpp`
+
+### SC7852 / Z-80 — `core/CPU/SC7852/`
+*(PC-1600 main CPU.)*
+
+- **Wait states: M1 only** — the TRM's "1 WAIT automatically inserted in
+  the machine cycle" is modelled as one wait per M1 (opcode fetch /
+  interrupt acknowledge), calibrated against real-hardware BEEP pitch (A=200
+  and A=50 both within 0.22%). Whether I/O cycles get an extra wait on top
+  of the Z-80's own is not modelled; the BEEP loop's 4 port accesses per
+  period can't resolve it (<0.05%). `SC7852.hpp` (`kM1WaitStates`)
+- **MEMPTR register not modelled** — the undocumented X/Y flag bits after
+  `BIT n,(HL)` / `(IX+d)` / `(IY+d)` are approximated from the operand
+  byte instead of the internal MEMPTR. `SC7852.cpp` (`BIT` flag handling)
+- **`DD`/`FD` `CB` undocumented register-copy side effect not modelled** —
+  hardware also writes the rotate/shift/RES/SET result into the register
+  named by the opcode's low 3 bits. `SC7852::executeDDFDCB()`
+- **Undocumented `ED` opcodes** treated as 4-T NOPs. `SC7852.cpp` (`ED` decode)
+- **Registers not re-randomised on reset** — A/F and the GP registers keep
+  their construction-time values; a deterministic simplification, not a
+  claim about real silicon's power-up pattern. `SC7852::reset()`
+
+### LH5803 — `core/CPU/LH5803/`
+*(PC-1600 sub-processor, PC-1500-compatibility CPU.)*
+
+- **ME0 / ME1 are not two separate 64 KB spaces**: ME1 aliases ME0 except
+  for the blocks routed below (the A030H–A03FH control ports with the A038H
+  handoff, the LCD ports, F000H–F00FH, the UART / sub-CPU block, and
+  8000H–FFFFH offered to the 60-pin cards). `LH5803SharedMemory.hpp`
+- **ME1 A020H–A033H** is routed to the UART / sub-CPU block like
+  0020H–0033H, by analogy with the A03xH control-port shadow. rom1500 uses
+  only the literal form (E538H); the shadow is unverified on hardware.
+  `LH5803SharedMemory.hpp`
+- **CE-158 display-shift trap decodes 9400H only** — the SC7852's LHNMIO
+  (pin 92) raises the LH5803's NMI on the opcode fetch at 9400H with
+  PU = PV = 1; the ROM's handler (C440H) runs its copy of the CE-158's
+  93F9H–9439H, redraws the LCD and resumes at 943AH. The Service Manual
+  says "94\*\*H", but the CE-158 keeps running in 94xxH with the trap
+  re-armed, so only 9400H is decoded. Whether port 30H b0 gates the trap
+  is open (port 30H is not modelled). A port 36H write clears the latch.
+  `PC1600Machine::stepLocked()`, `PC1600Memory::latchLhNmi()`
+- **ME1 A040H–A05FH and 8040H–805FH are Z-80 ports 40H–5FH** (the
+  HD61102s), routed like A030H–A03FH. The ROM's own LCD routines need them
+  (`LCD1500_ALL` E84AH polls `#(A058H)`/`#(A059H)`, `LCD1500_BYTE` E7E1H
+  `#(8059H)`). Only the forms the ROM uses are routed.
+  `LH5803SharedMemory::isLcdPort()`
+- **ME1 F000H–F00FH is Z-80 ports 10H–1FH**, the SC-7852's LH-5810-
+  compatible block (TRM pin 78 PCSTB: "LH-5803 is F008H of the ME1" = port
+  18H; pin 4 φOS syncs that port). Not stated as an address map anywhere.
+- **SDP, RDP and OFF are NOPs on the LH-5803** (TRM §7.1.2). `LH5803.hpp`
+- **The LH-5803's MI input (vector FFF8H) is not driven**: the SC-7852's
+  LHMIO (pin 91) and the PC-1500 peripheral IRQ path to the LH-5803 are
+  not modelled; nothing found so far needs them. Since 8858e75 the IF/MSK
+  registers (F00BH/F00AH = ports 1BH/1AH) are the real ones, but nothing
+  drives MI from them.
+- **ME1 wait states** (LHWAIT: one wait for ME1 `**0*H` and 8000H–FFFFH)
+  are not modelled. IOE (59) is asserted for ME1 `**00H–**0FH` and
+  8000H–FFFFH (`PC1600BusDrive::lh5803Pins`), but the ME1 card decode
+  offers only 8000H–FFFFH to the cards.
+- **Standalone `LH5803Memory` uses a private 16 KB RAM array**, for
+  testing the LH5803 on its own; the machine shares RAM between the CPUs
+  through `LH5803SharedMemory`. `LH5803Memory.hpp`
+
+---
+
+## PC-1600 serial / UART (TC8576F)
+
+`core/PC1600/TC8576F.*`, `core/Serial/SerialLink.hpp`, `core/Serial/PtySerialLink.*`
+
+The register model follows Toshiba's TC8576AF data sheet
+([Ref/PC-1600/PC-1600-CPC-TC8576.md](https://github.com/tinue/Sharp1500-1600-Ref/blob/main/PC-1600/PC-1600-CPC-TC8576.md)). Remaining gaps:
+
+- **RS-232C / SIO connector mux not modelled** — the chip's PRIME output
+  (the gate array's PRIM select) is tracked (`TC8576F::rs232Selected()`),
+  but both connectors map to the one `SerialLink`.
+- **Line timing is per character, not per bit** — the character time comes
+  from PR7 and PR1:PR0 exactly, but no start/stop/parity bits are generated:
+  a host transport carries bytes. `SerialLink::onBaud()` is advisory.
+  Parity/framing errors and break (RBRK, SBRK) never occur.
+- **Transmit queue deeper than the chip's double buffer** — 512 bytes, so a
+  host bridge doesn't stall the ROM; TxRDY drops only when it is full.
+- **SSR bit 7 (DSR) always reads 0** — the chip's /DSR is wired to RXD
+  (Service Manual §9-5), and with no bit-level line model RXD idles at
+  mark. The ROM never reads it.
+- **Parallel status-line interrupts (factor 2) not modelled** — the
+  PC-1600 keeps IM2 set, so the ROM never sees them.
+- **No `SerialLink` attached** → nothing connected: modem inputs read off,
+  TxD is accepted and reported "sent" immediately, RxD never has data.
+  Enough for the internal handshakes the ROM runs before any medium access
+  (RAM disk, power-off) and keeps headless probes deterministic.
+- **Raw PTY carries no RS-232C modem lines** — `PtySerialLink::getStatus()`
+  reports CTS and DSR permanently asserted; DCD approximates "a peer
+  currently holds the slave open". Non-POSIX build: every operation is a
+  no-op and `isOpen()` is false.
+- **Still open** (see `docs/developer/PC1600-Serial-Port.md` and `TODO.md`): an
+  end-to-end round-trip against real SharpDataExchange and the follow-on
+  localhost-socket transport.
+
+---
+
+## PC-1600 sub-CPU (LU-57813P)
+
+`core/PC1600/PC1600SubCpu.*`
+
+No datasheet and no ROM dump exist; the command set comes from the Z-80 ROM
+([Ref/PC-1600/PC-1600-SubCPU-LU57813P.md](https://github.com/tinue/Sharp1500-1600-Ref/blob/main/PC-1600/PC-1600-SubCPU-LU57813P.md)). Modelled: the
+clock, the wake-up and two alarm timers with minute-carry compare and `?`
+wildcards, the interrupt mask/pending bits and INT6, the password, the reset
+/ power-on cause, system off/on, and the handshake timing. Remaining gaps:
+
+- **Commands no source fully explains**: IOCS 0CH–0FH, 26H and the
+  LH-5803's DCH are accepted with no effect; the reads 16H/17H (external
+  keyboard), 1BH, 1DH and 1FH leave the previous answer standing; 1CH
+  (`SINIT`) answers 00H.
+- **Analog input / external keyboard** — the SWA1A thresholds are stored;
+  IOCS 1EH (port-mode select: F12CH b0 analog input, b1 external keyboard)
+  is acknowledged but not stored, and no analog-input interrupt or external-
+  keyboard event is generated. The analog port (SRA1) is injected state
+  (`setAnalogInput()`); nothing in the core drives it.
+- **Supply voltages** (SRA0 main, SRA2 CE-1600P pack) always read C0H, clear
+  of the ROM's low-battery thresholds. No low-battery (Q3) power-off.
+- **F-pin tones not generated** — key click (SBEEP), the ALARM$ beep, the
+  wake-up beep and the hour signal. Frequency and length are unmeasured
+  (`TODO.md`).
+- **Response time** is one fitted figure for every command
+  (`kResponseMicros`), see the timing item in `TODO.md`.
+- **Clock is never read from the host clock inside Core** — kept
+  deterministic for tests; the GUI/CLI layer injects a real "now". The
+  emulated clock is paced off emulated time, so a seeded time drifts if the
+  host cannot hold the emulation at real speed (exactly as a real PC-1600
+  drifts against its own crystal).
+
+---
+
+## PC-1600 interrupts, timers, power management
+
+`core/PC1600/PC1600Machine.hpp`, `PC1600Memory.*`
+
+- **Port 32H causes**: bit 0 (TC8576F INT) and bit 6 (sub-CPU Z7) are live
+  levels, bit 3 (LH-5803 hand-back) and bit 4 (1/64 s timer) are latched and
+  cleared by the 32H read. The other bits have no source.
+- **Timer clock domain**: the 1/64 s signal and the sub-CPU's 0.5 s tick
+  run whichever CPU owns the bus (LH-5803 cycles converted to T-states;
+  the LH-5803 ROM counts the pulse on PB5 too), but pause while the system
+  is off. On hardware both come from the sub-CPU and never stop. The
+  calendar clock and the timers don't have this gap: they run in every
+  state. `PC1600Machine::advanceTimer64()`
+- **Power**: modelled as on hardware (Decisions.md). The sub-CPU cuts power
+  after the system-off command once the bus owner halts; the ON key, the
+  wake-up timer (SWPON bit 1) and CI (SWPON bit 0) power on through a
+  reset that reports the cause. The OFF key leaves FA08H = AAH (no
+  resume), auto power-off leaves A5H plus the saved SP, and the ROM resumes
+  from that. The PCTRL -> Q0 timing is not documented; "the bus owner
+  halted" stands in for it. `reset()` always leaves the machine on, even
+  from off; whether the real RESET switch powers the system on isn't
+  documented (the Service Manual lists the CE-1600P's reset, KL, but not
+  the RESET switch among the power-on sources).
+- **No auto-power-off suppression / GUI affordance**: the ROM-level
+  `KEYWK3` (F07BH) APO-suppress bit is not driven from Core, and there is
+  no Settings toggle or OFF/ON UI control in the app layer.
+
+---
+
+## PC-1600 bank switching, slots, memory decode
+
+`core/PC1600/PC1600Bank.hpp`, `PC1600Memory.*`
+
+- **SLOT1MAP (Port 3CH bit 2) is modelled** — when set, Slot 1's high 16KB
+  half (beta) mirrors onto page-B bank 1 (4000-7FFF) in addition to its
+  normal page-C bank-1 home, per the TRM's 0196H entry + diagram. Untested
+  against real hardware or firmware: no card in this project's catalogue
+  (CE-155, CE-1600M, CE-1620M) is banked or invokes 0196H, so coverage is
+  synthetic port-write tests only, transcribing the documented truth table
+  rather than cross-checked against an independent source. Collides with
+  SLOT2MAP mode 2 at the same window (page-B bank 1) if firmware ever arms
+  both; resolved by "last call wins" (`PC1600Bank::slot1MapWinsTie()`), an
+  emulator-invented policy — real hardware's behaviour there is undocumented.
+  `PC1600Bank.hpp` (Port 3CH), `PC1600Memory::slot1MapTarget()`,
+  `PC1600Bank::resolveSlotCollision()`
+- **Slot 2 vertical banking (Port 28H) *is* modelled** — on the card
+  side. A `SoftwareDefinedCard` with a trigger-based latch samples the
+  data bus on `OUT (28H)` and selects which 32 KB chip sits behind the
+  8000-BFFF window, with PVOUT (Port 31H b4) as the nested 16 KB
+  half-select. `frontends/qt6/resources/cards/ce1601m.card.yaml` ships two vertical
+  banks populated behind a 3-bit (D0-D2) latch; `superram.card.yaml` is the
+  same card with a 4-bit (D0-D3) latch and all 16 x 32 KB banks fitted =
+  512 KB. `PC1600Memory::writeIO()` (routes 28-2FH to the card as an
+  `ioWrite`), `tests/pc1600_slot_module_tests.cpp`
+  (`test_trigger_latch_modules_in_slot2…`),
+  `tests/memory_card_tests.cpp` (`test_superram_16way_vertical_banking_direct`).
+  What is *not* modelled: `PC1600Bank`'s own Port 28H latch is a bare
+  readback register (`slot2VerticalBank()`), consulted only by the debug
+  panel and the bank tests — the live decode is entirely card-side.
+  `PC1600Bank.hpp`
+- **CS24 8 KB sub-banking of Bank 3 (`A16A`) not separately modelled** —
+  both Bank 3 / Bank 3b ROM images load as flat 16 KB blocks and the
+  decoder does a whole-16 KB swap. `PC1600Memory.hpp` (class comment)
+- **Page B banks 1 and 2** are open bus (CS24 decodes internal ROM only).
+  Banks 4-7 go to the 60-pin system bus (4/5 the CE-1600P ROM, 7 the
+  host-directory drive); bank 6 has no known card, so it reads open bus. `PC1600Memory::resolveConst()`
+- **Page C banks 0/1 (Slot 1) and 2/3 (Slot 2)**: open bus only when the
+  slot is *empty*; otherwise the attached card answers (software-defined
+  cards from `.card.yaml` files, attached by a preset's `slot-N:` key or
+  the control-bar module picker). `core/Connector/SoftwareDefinedCard.hpp`,
+  `frontends/qt6/resources/cards/*.card.yaml`
+- **Page D bank 1**: the weakest-evidenced cell in the whole
+  bank-switching map (single-source, routing it to the external 60-pin
+  system bus). Left open bus rather than built on that; revisit only if a
+  primary source turns up. `PC1600Memory.hpp` (class comment)
+- **Page A bank 1** (a hypothetical second bank at `0000-3FFF`) is
+  undocumented — only bank 0 content is ever loaded. `PC1600Memory.hpp`
+  (page-A comment)
+- **Ports without a device read open bus** (`0xFF`) and ignore writes.
+  Decoded: 14H, 17H-18H, 1AH-1FH (PIO, keyboard, buzzer), 20H-27H
+  (TC8576F), 28H-2FH (Slot 2 card), 31H-33H, 35H-39H, 3CH-3DH (banks,
+  interrupts, sub-CPU, LCD clock, CPU switch), 50H-5BH (LCD) and 70H-9FH
+  (60-pin bus). Not modelled: 15H-16H, 19H (G), 30H (P_MOD), 34H
+  (P_LHMSK2), 3AH-3BH.
+  `PC1600Memory::readIO()` / `writeIO()`
+- **Keyboard strobes consult DDA/DDB**: a KS line counts as strobed only
+  while its PA bit is an output (DDA = 1) driven low; PB6 likewise. Both
+  ROMs select a column through DDA. The LH-5803 reads the same matrix with
+  `ITA` (its IN0-IN7 share the KIN net, TRM §9.1(1) p.264).
+  `PC1600Memory::readIO()` (37H), `LH5803SharedMemory::readInputPort()`
+
+---
+
+## PC-1600 display (HD61203 + 2× HD61102)
+
+`core/PC1600/PC1600Display.*`, `core/Display/StatusLine.hpp`
+
+- **Controller busy time is fitted**: busy (status bit 7) holds until the
+  4th edge of the 216.7 kHz LCD clock after each write (13.8–18.5 µs),
+  fitted to a real unit's scrolling-PRINT benchmark (Decisions.md) and
+  inside the HD61102 datasheet's bound (9.2–27.7 µs). Datasheet details
+  left out until the re-fit: see the timing item in `TODO.md`. `PC1600Display.hpp` (`kBusyClocks`)
+- **Unrecognised controller commands** are silently dropped.
+  `PC1600Display::writeIO()`
+- **Status-symbol line** is read from display RAM (IC3 column 63, pages
+  4/6/7), as the ROM's symbol writer (bank 6 8220H) stores it and the
+  Service Manual glass pinout wires it. Sets 00H/01H are the PC-1500's
+  764EH/764FH bit for bit; both models decode them in one place.
+  `core/Display/StatusLine.hpp`
+- **`Romaji` / `Kana` segments** (page 4 bit 2 / page 7 bit 2, commons
+  X35 / X59): which part of the "ローマ字→カナ" caption each lights is
+  *inferred* from pin order, and the GUI's `kana` position is estimated.
+  The western ROM never sets either bit. `core/Display/StatusLine.hpp`,
+  `frontends/qt6/app/LcdWidget.cpp`
+- **DE / G / RAD are three segments of one legend**: the ROM (LH5803
+  DEGREE/RADIAN/GRAD, CD7DH) stores 03H / 04H / 06H, so DEG = DE+G and
+  GRAD = G+RAD; the GUI and the text read-out join the lit segments into
+  the word. `core/Display/StatusLine.hpp`
+- **LH5803 writes to the PC-1500 display RAM are mirrored onto the LCD**
+  (measured on a real PC-1600, 2026-10-03; no document describes it and
+  the ROM has no code for it, so it is the gate array):
+  - A write to 7600H–764DH / 7700H–774DH redraws that column pair on the
+    bottom text line, in PC-1500 layout. The whole column is rebuilt from
+    both RAM bytes and replaces what was there. It lands on the line that
+    is at the bottom at that moment, at any scroll position.
+  - A write to 764EH / 764FH redraws status set 00H / 01H. That is why
+    DEGREE / RADIAN / GRAD, which run on the LH5803 (CD7DH), change the
+    legend at once.
+  - Z-80 writes to the same RAM (F600H–F64FH) are not mirrored. They reach
+    the glass only when the ROM redraws the symbols on a scroll (`SYMSAVE`
+    / `SYMRESTORE`, bank 6 82E4H / 82FAH).
+
+  `PC1600Display::mirrorPc1500Column()`, `LH5803SharedMemory::mirrorPc1500Display()`.
+  - **Aliases:** the LH5803's 7400H–744FH / 7500H–754FH land on
+    7600H–764FH / 7700H–774FH, because the SC7852's LHA90 pin is forced
+    high for them. They hit the same RAM and are mirrored the same way.
+    Both points are measured. `LH5803SharedMemory::lha90()`.
+  - **774EH / 774FH:** measured; they draw nothing.
+  - **ME1:** an ME1 write there reaches only the RAM. ME1 is unlikely to
+    drive the mirror, and the ROM uses it only for I/O.
+
+---
+
+## PC-1500 memory / I/O *(PC-1500 side — shared LH5801 platform)*
+
+`core/PC1500/PC1500Memory.*`, `Upd1990ac.*`, `PC1500Keyboard.hpp`
+
+- **LH5811 I/O controller: only the registers a stock PC-1500 needs are
+  modelled** (DDA/OPA, DDB/OPB, and the uPD1990AC RTC bit-banged via
+  OPC/PC0-PC5), plus the buzzer on OPC/PC6 and the serial block the
+  CE-150 cassette uses (divider, G clock, F modulation, L transmitter:
+  `LH5811Serial.hpp`). **Serial receive is out of scope.**
+  `PC1500Memory.hpp`
+- **MSK and the unused register-select codes** are stored as plain
+  read/write bytes (default `0x00`); a MSK read adds CL1 in bit 7. MSK's
+  interrupt-masking effect isn't modelled. `m_ioScratchRegs` in
+  `PC1500Memory::readME1()` / `writeME1()`
+- **BREAK via the ON key** is reproduced by a direct write to IF bit 1 on
+  the press transition. Real hardware most plausibly has the ON key's IRQ
+  line OR-wired onto the same latch TP's rising edge sets — "plausible but
+  unconfirmed by ROM tracing", and unconfirmable by disassembly since no
+  software sets that bit. `PC1500Memory::setOnKeyPressed()`
+- **ME1 outside the I/O-chip decode window mirrors ME0** — no source
+  documents anything else there. `PC1500Memory.hpp` (class comment)
+- **uPD1990AC RTC**: test mode (C0-C2 select) not modelled; the live
+  clock advances via a 1 Hz cycle accumulator, not the host wall-clock.
+  `Upd1990ac.hpp`
+
+---
+
+## Expansion connector & memory cards
+
+`core/Connector/`
+
+- **40-pin `ExpansionConnector` (PC-1500 side)**: concrete cards attach
+  through it — the `SoftwareDefinedCard`, built from a `.card.yaml`
+  definition and wired by `PC1500PresetLoader`. The GUI reads the
+  attached module's name from the slot (`ExpansionCard::moduleName()`).
+- **60-pin `SystemBus`: WEX / W1 / WAIT, INT / IRQ, BFO / φOS, RSTE** are
+  not driven or read. A contact whose level isn't documented (DME0 on Z-80
+  cycles, M1 on memory cycles, PT/PU/PVOUT on I/O cycles) stays inactive
+  (TODO.md, "Expansion connectors"). `SystemBusCard.hpp`,
+  `PC1600BusDrive.hpp`
+- **Assumption, not independently confirmed**: the 60-pin connector's
+  pinout is identical between PC-1500 and PC-1500A. Worth confirming
+  against a second TRM scan. `PC1500SignalDecode::systemBusPins`
+- **CE-1638 / CE-163F only work in Slot 2 on a PC-1600, not Slot 1.**
+  Both cards decode a banked Y0 window from pin 4; on a PC-1600 they act
+  as a plain unbanked 16K module (the boot ROM sizes them as +16384 and
+  BASIC RAM base drops `C0C5H` → `80C5H`), which is exactly what happens
+  in **Slot 2**, where pins 16-18 carry the dormant K0-K2 lines so the
+  pin-18 bank strobe never fires. **Slot 1 is broken for these two
+  cards**: there pin 18 carries S3, which the mainboard pulses on every
+  write to `&B000-&B7FF`, so the boot ROM's RAM-sizing scan keeps
+  tripping the bank latch (and walking it into the FLASH banks on
+  CE-163F) — `MEM` shows no growth at all. Verified end to end with the
+  real ROM set.
+- **CE163F flash: DQ7/DQ6 toggle-bit status polling and
+  software-ID / autoselect (`0x90`) deliberately not modelled** — erase
+  and program complete instantaneously, so the firmware's poll loops exit
+  naturally. `SoftwareDefinedCard::flashWrite()`
+- **No battery backup model** — a module's contents persist only as its
+  `.card.yaml` file (a live card autosaves); there is no per-chip
+  battery-backed state in a machine snapshot.
+- **`MemoryCardDefinition` v1 scope**: Regular, Flash and ROM content,
+  single-kind or `by-bank`-split, with Unbanked or trigger-based Banked
+  latches. `line-based` latches are rejected with a "not supported in v1"
+  error. `MemoryCardDefinition.hpp`
+- **Slot 2 K0-K2 connector pins (16-18) not asserted** — harmless: the
+  modelled CE-1601M reaches its vertical-bank latch off the Port 28H
+  *data-bus write* instead (see the bank-switching section above), so
+  nothing needs those pins driven. **Pin 2** (the TRM calls it PVIN, the
+  LH5803 PV line) is likewise deasserted, but a real PC-1600 ties it to
+  VCC on both slots (measured 2026-10-03), so it should read high.
+  `MemorySlotConnector.hpp`
+
+---
+
+## Peripherals with no model at all
+
+- **CE-1600P Ni-Cd pack / battery voltage** — no model (see PC-1600
+  sub-CPU section above).
+- **CE-158 on the PC-1600: input through `SETDEV KI` / `INPUT`** — in
+  MODE 1 the CE-158 prints (parallel `OPN "LPRT"`, serial `SETDEV PO`)
+  and `RINKEY$` reads its UART, but `SETDEV KI` + `INPUT` never reaches
+  the CE-158's ROM (no UART access at all; INPUT takes the keyboard). The
+  PC-1600 has its own native `SETDEV` (KI = F14EH b0); it passes non-`COM`
+  devices on (`SETDEV PO` reaches the CE-158), yet `INPUT` after
+  `SETDEV KI` still takes the keyboard. Why is open (TODO.md).
+  `core/Connector/Ce158Card.hpp`, `LH5803SharedMemory.cpp`
+- **Cassette (CMT) through a CE-150 on the PC-1600** — no tape path
+  (TODO.md, "Cassette tape"). `LH5803SharedMemory.cpp`
+- **Buzzer: partial.** Modelled: the PC-1500 OPC/PC6 line, the PC-1600 OPC
+  b7/b6 line, and the PC-1600 F-register (17H) modulator in its idle case
+  (SDO = FX, phi = 1.3 MHz / 4, measured). The PC-1600 also has an
+  acoustic transducer model. Not modelled: serial transmit through
+  L (16H), so SXO never leaves mark and FY is never heard; the G register
+  (19H); and the buzzer's second input F from the sub-CPU (key click,
+  alarm). `PiezoSampler.hpp`, `PC1600Memory.hpp` (m_fReg)
+
+## CE-1600P plotter / CE-1600F floppy
+
+`core/Connector/CE1600PCard.hpp`, `core/Connector/CE1600FCard.hpp`
+
+- **Implemented**: page-B banks 4/5 ROM window, plotter motor-phase ports
+  (0x81-0x83), and the CE-1600F's full register protocol (ports
+  0x70-0x7F) — command/sector/motor-status/data registers, disk-changed
+  latch, two-sided media, real motor-startup/access timing. CE-1600F
+  attaches as a union with CE-1600P (there is no separate floppy
+  attach/detach); persistence is a versioned `<name>.floppy.yaml`
+  (`Connector/FloppyImageFile.hpp`) via `shared::FloppyBay`.
+- **Not modeled**: GCR (4/5) encoding (sector bytes are stored decoded,
+  per the Service Manual's own note that this only matters at the
+  flux/bitstream level), the FDU-250's solenoid/cam seek mechanics,
+  per-track formatted/unformatted state (the image holds sector data only,
+  so every track answers READ ID with standard IDs -- an unformatted disk
+  is recognised at the filesystem level instead: `FILES` gives ERROR 161), and
+  write-protect (the status always reports "not protected",
+  `CE1600FCard.hpp`).
+
+---
+
+## Preset loader
+
+`core/Preset/PresetFile.cpp`, `core/PC1600/PC1600PresetLoader.cpp`
+
+- **YAML-shaped, not YAML**: tabs, flow style and multiple documents are
+  rejected; 2-space indentation only (docs/background/Decisions.md).

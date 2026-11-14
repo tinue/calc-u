@@ -1,0 +1,55 @@
+#pragma once
+#include <QWidget>
+#include <QPixmap>
+#include <QString>
+
+#include "MachineController.hpp"
+#include "app/KeyLayout/FaceplateLayout.hpp"
+
+class LcdWidget;
+
+// Faceplate art + invisible key hit-regions + embedded LCD: a resizable
+// widget that keeps the body art's aspect ratio (heightForWidth) and lets
+// its child LcdWidget + a cached key-hit-rect table track every resize.
+class FaceplateWidget : public QWidget {
+    Q_OBJECT
+public:
+    explicit FaceplateWidget(QWidget* parent = nullptr);
+
+    void setModel(Model model);
+
+    bool hasHeightForWidth() const override { return true; }
+    int heightForWidth(int w) const override;
+    QSize sizeHint() const override;
+
+    LcdWidget* lcdWidget() const { return m_lcd; }
+
+    // Presses `name` exactly as a mouse click on it would -- highlight
+    // overlay plus keyPressed() -- and keeps it down until
+    // releasePressedKey(). For scripted screenshots (`hold-key:`). False
+    // if the current model's layout has no key of that name.
+    bool pressKeyByName(const QString& name);
+    // Releases whatever key is down (mouse or pressKeyByName()).
+    void releasePressedKey();
+
+signals:
+    void keyPressed(QString name);
+    void keyReleased(QString name);
+
+protected:
+    void paintEvent(QPaintEvent* event) override;
+    void resizeEvent(QResizeEvent* event) override;
+    void mousePressEvent(QMouseEvent* event) override;
+    void mouseReleaseEvent(QMouseEvent* event) override;
+
+private:
+    const KeyLayout::Layout* m_layout = nullptr;
+    QPixmap m_pixmap;
+    KeyLayout::FittedLayout m_fitted; // art, key and LCD rects for the current size, widget-local
+    LcdWidget* m_lcd = nullptr;
+    QString m_pressedKey;
+    int m_pressedIndex = -1; // index into m_layout->keys, or -1; drives the press-highlight overlay
+
+    void relayout();
+    void pressIndex(int idx); // highlight + keyPressed() for m_layout->keys[idx]
+};

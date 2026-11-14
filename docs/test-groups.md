@@ -41,7 +41,8 @@ the `<cstdlib>` fix).
 
 | CTest entry | What | Group | Measured (M4 Pro, 2026-11-14) |
 |---|---|---|---|
-| `calcu_library_tests` | 40 `TEST`s: the library's own tests with the machines built for the tests (`library/machine/tests/TestMachines.*`), no product code (LIB-1 AC-24; LIB-1 design §2a); also run alone by the CI job `library` of both product workflows | Frequent | 0.18 s (0.15 s of it are the deliberate wall-time gaps of AC-6 and AC-9) |
+| `calcu_library_tests` | 87 `TEST`s: the library's own tests with the machines built for the tests (`library/machine/tests/TestMachines.*`) and the product declared for the settings tests (`library/settings/tests/TestProduct.hpp`), no product code (LIB-1 AC-24; LIB-1 design §2a); also run alone by the CI job `library` of both product workflows | Frequent | 0.14 s in the full Frequent run (0.22 s alone; the machine was loaded by other builds, M-20) |
+| `LibraryPlatformStoreCheck` | `library/settings/tests/check_platform_stores_test.sh`: the self-test of `library/settings/check_platform_stores.sh`, the source check the products run over their frontends (LIB-9 design T-14); not registered on Windows | Frequent | 0.03 s |
 
 `calcu_library_tests` by file (`library/<area>/tests/`; every `TEST` is
 Frequent):
@@ -60,6 +61,10 @@ Frequent):
 | `machine/tests/operations_tests.cpp` | 2 |
 | `machine/tests/sound_tests.cpp` | 2 |
 | `machine/tests/time_tests.cpp` | 5 |
+| `settings/tests/ini_document_tests.cpp` | 7 |
+| `settings/tests/paths_tests.cpp` | 21 |
+| `settings/tests/settings_file_tests.cpp` | 15 |
+| `settings/tests/startup_tests.cpp` | 4 |
 
 ## Calc-U-59
 

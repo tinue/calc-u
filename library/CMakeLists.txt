@@ -4,6 +4,7 @@
 # library/: #include "machine/Machine.hpp". The products link calcu_library.
 file(GLOB CALCU_LIBRARY_SOURCES CONFIGURE_DEPENDS
   ${CMAKE_CURRENT_SOURCE_DIR}/machine/*.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/settings/*.cpp
 )
 add_library(calcu_library STATIC ${CALCU_LIBRARY_SOURCES})
 target_include_directories(calcu_library PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
@@ -34,6 +35,7 @@ if(CALCU_TESTS AND NOT EMSCRIPTEN)
   # library/<area>/tests/*.cpp.
   file(GLOB CALCU_LIBRARY_TEST_SOURCES CONFIGURE_DEPENDS
     ${CMAKE_CURRENT_SOURCE_DIR}/machine/tests/*.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/settings/tests/*.cpp
   )
   add_executable(calcu_library_tests ${CALCU_LIBRARY_TEST_SOURCES})
   target_include_directories(calcu_library_tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/machine/tests)
@@ -45,4 +47,12 @@ if(CALCU_TESTS AND NOT EMSCRIPTEN)
   endif()
   add_test(NAME calcu_library_tests COMMAND calcu_library_tests)
   set_tests_properties(calcu_library_tests PROPERTIES LABELS frequent)
+
+  # LIB-9 T-14: the self-test of the platform-store source check the
+  # products run over their frontends (Frequent).
+  if(NOT WIN32)
+    add_test(NAME LibraryPlatformStoreCheck
+             COMMAND bash ${CMAKE_CURRENT_SOURCE_DIR}/settings/tests/check_platform_stores_test.sh)
+    set_tests_properties(LibraryPlatformStoreCheck PROPERTIES LABELS frequent)
+  endif()
 endif()

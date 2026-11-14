@@ -82,10 +82,13 @@ frontends/web/build.sh          # → frontends/web/dist/ (gitignored)
 frontends/web/run-tests.sh      # Playwright against dist/; build first
 ```
 
-`build.sh` needs `emcc` (Homebrew `emscripten`; CI pins the same version in
-the repository's `.github/workflows/calc-u-59.yml`, job `web`) and `node`. It
+`build.sh` needs `emcmake`/`cmake` (Homebrew `emscripten`; CI pins the same
+version in the repository's `.github/workflows/calc-u-59.yml`, job `web`),
+`ninja` and `node`. It
 
-1. compiles `core/*.cpp` + `app/*.cpp` + `bindings.cpp` with `em++`:
+1. builds the CMake target `calcu59_web` (`core/` + `app/` + `bindings.cpp`)
+   in the repository root's `build/web` tree, configured once with
+   `emcmake` (ADR 0003; the flags are in the product's `CMakeLists.txt`):
    single-threaded (`Threading::Cooperative` — a static host can't be relied
    on to send the COOP/COEP headers `SharedArrayBuffer` needs), with
    `-fexceptions` (app/ reports ROM and file errors with exceptions),

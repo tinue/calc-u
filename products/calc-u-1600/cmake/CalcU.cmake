@@ -7,9 +7,8 @@
 #
 # Included by the product's CMakeLists.txt (a subdirectory of the
 # repository's root CMake project, ADR 0003) and by frontends/qt6/
-# CMakeLists.txt (which the release packaging in CI still configures on its
-# own, `-S frontends/qt6`). The NOT TARGET guard makes the second include
-# a no-op.
+# CMakeLists.txt, its subdirectory. The NOT TARGET guard makes the second
+# include a no-op.
 #
 # The source lists are globbed: every core/**/*.cpp except core/tests/ and
 # every app/**/*.cpp except app/tests/. calcu_add_core() makes a further

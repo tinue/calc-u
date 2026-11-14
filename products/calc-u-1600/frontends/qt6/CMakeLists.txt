@@ -1,4 +1,11 @@
 cmake_minimum_required(VERSION 3.21)
+# The Calc-U-1600 Qt6 app, a subdirectory of the product in the repository's
+# root CMake project (ADR 0003; the release packaging in CI builds it in
+# build/release). It does not configure on its own.
+if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
+  message(FATAL_ERROR "frontends/qt6 is part of the root CMake project (ADR 0003): "
+                      "configure the repository root, e.g. cmake -S ../../../.. -B ../../../../build/all")
+endif()
 # Minimum macOS for the .app (must precede project()). Without it the
 # compiler defaults to the build host's OS version, so the minimum silently
 # follows whatever runner/Mac built it. Matches the vendored libsharpdx

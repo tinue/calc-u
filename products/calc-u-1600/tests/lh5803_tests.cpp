@@ -1,0 +1,143 @@
+// Headless C++ tests for the LH5803 core (a thin
+// subclass of LH5801, see Core/CPU/LH5803/LH5803.hpp) and its standalone
+// LH5803Memory bus adapter. Same no-framework, assert-and-tally style as
+// lh5801_tests.cpp -- see that file's header comment.
+//
+// Build & run: see tools/run_tests.sh
+
+#include <cstdint>
+#include <cstdio>
+#include <vector>
+
+#include "../core/CPU/LH5803/LH5803.hpp"
+#include "../core/CPU/LH5803/LH5803Memory.hpp"
+
+namespace {
+
+int g_pass = 0;
+int g_fail = 0;
+
+#define CHECK(cond) do { \
+    if (cond) { g_pass++; } \
+    else { g_fail++; std::fprintf(stderr, "FAIL %s:%d: %s\n", __FILE__, __LINE__, #cond); } \
+} while (0)
+
+void test_lh5803_inherits_lh5801_reset_and_opcode_behavior() {
+    // Sanity check that LH5803 really is LH5801 underneath -- same reset
+    // vector convention (16-bit big-endian at ME0 0xFFFE/0xFFFF) and same
+    // opcode execution (LDI A,n), exercised through the LH5803 type. The
+    // reset vector itself lives in ROM (0xFFFE/0xFFFF fall in the
+    // C000-FFFF ROM window, which ignores poke()), so it has to be baked
+    // into a loaded ROM image rather than poked in; the vector points at
+    // 0x4234, inside the RAM window, so the LDI that follows it can still
+    // be poked in directly.
+    LH5803Memory mem;
+    std::vector<uint8_t> rom(16384, 0x00);
+    rom[16384 - 2] = 0x42; // 0xFFFE
+    rom[16384 - 1] = 0x34; // 0xFFFF -> reset vector 0x4234
+    CHECK(mem.loadROM(rom.data(), rom.size()));
+    LH5803 cpu(mem);
+    cpu.reset();
+    CHECK(cpu.pc() == 0x4234);
+
+    // LDI A,0x7F at the reset vector target.
+    mem.poke(0x4234, 0xB5);
+    mem.poke(0x4235, 0x7F);
+    cpu.step();
+    CHECK(cpu.a() == 0x7F);
+    CHECK(!cpu.flagZ());
+}
+
+// TRM §7.1.2: SDP, RDP and OFF "operate as a NOP instruction in LH-5803".
+// The plain LH5801 powers down on OFF; the LH5803 just carries on.
+void test_lh5803_off_sdp_rdp_are_nops() {
+    LH5803Memory mem;
+    std::vector<uint8_t> rom(16384, 0x00);
+    rom[16384 - 2] = 0x42;
+    rom[16384 - 1] = 0x34; // reset vector 0x4234
+    CHECK(mem.loadROM(rom.data(), rom.size()));
+    LH5803 cpu(mem);
+    cpu.reset();
+    const uint8_t code[] = {0xFD, 0xC1, 0xFD, 0x4C, 0xFD, 0xC0, 0xB5, 0x99}; // sdp ; off ; rdp ; ldi a,0x99
+    for (size_t i = 0; i < sizeof code; ++i) mem.poke(uint16_t(0x4234 + i), code[i]);
+    CHECK(cpu.step() == 9);    // sdp
+    CHECK(!cpu.displayOn());
+    CHECK(cpu.step() == 8);    // off
+    CHECK(!cpu.poweredOff());
+    CHECK(cpu.step() == 8);    // rdp
+    CHECK(cpu.step() > 0);     // ldi a,0x99 still runs
+    CHECK(cpu.a() == 0x99);
+
+    // The same OFF on a plain LH5801 is a real power-down.
+    LH5801 plain(mem);
+    plain.reset();
+    plain.setPC(0x4236);
+    plain.step();
+    CHECK(plain.poweredOff());
+}
+
+void test_memory_slot_window_open_bus() {
+    LH5803Memory mem;
+    CHECK(mem.peek(0x0000) == 0xFF);
+    CHECK(mem.peek(0x3FFF) == 0xFF);
+    mem.poke(0x1000, 0x55); // ignored -- open bus
+    CHECK(mem.peek(0x1000) == 0xFF);
+}
+
+void test_memory_internal_ram_readwrite() {
+    LH5803Memory mem;
+    mem.poke(0x4000, 0xAB);
+    CHECK(mem.peek(0x4000) == 0xAB);
+    mem.poke(0x7FFF, 0xCD);
+    CHECK(mem.peek(0x7FFF) == 0xCD);
+}
+
+void test_memory_ce158_window_open_bus_in_v1() {
+    LH5803Memory mem;
+    CHECK(mem.peek(0x8000) == 0xFF);
+    CHECK(mem.peek(0xBFFF) == 0xFF);
+    mem.poke(0x9000, 0x99);
+    CHECK(mem.peek(0x9000) == 0xFF);
+}
+
+void test_memory_rom_load_and_write_ignored() {
+    LH5803Memory mem;
+    std::vector<uint8_t> rom(16384, 0x42);
+    CHECK(mem.loadROM(rom.data(), rom.size()));
+    CHECK(mem.peek(0xC000) == 0x42);
+    CHECK(mem.peek(0xFFFF) == 0x42);
+    mem.poke(0xC000, 0x99);
+    CHECK(mem.peek(0xC000) == 0x42); // unchanged
+}
+
+void test_memory_load_rejects_wrong_size() {
+    LH5803Memory mem;
+    std::vector<uint8_t> tooShort(100, 0);
+    CHECK(!mem.loadROM(tooShort.data(), tooShort.size()));
+}
+
+void test_reset_clears_ram_not_rom() {
+    LH5803Memory mem;
+    std::vector<uint8_t> rom(16384, 0x42);
+    mem.loadROM(rom.data(), rom.size());
+    mem.poke(0x4000, 0xAB);
+    mem.reset();
+    CHECK(mem.peek(0x4000) == 0x00); // RAM powers up 0x00, see .cpp comment
+    CHECK(mem.peek(0xC000) == 0x42); // ROM untouched
+}
+
+} // namespace
+
+int run_lh5803_tests() {
+    test_lh5803_inherits_lh5801_reset_and_opcode_behavior();
+    test_lh5803_off_sdp_rdp_are_nops();
+    test_memory_slot_window_open_bus();
+    test_memory_internal_ram_readwrite();
+    test_memory_ce158_window_open_bus_in_v1();
+    test_memory_rom_load_and_write_ignored();
+    test_memory_load_rejects_wrong_size();
+    test_reset_clears_ram_not_rom();
+
+    std::printf("lh5803_tests: %d passed, %d failed\n", g_pass, g_fail);
+    return g_fail;
+}

@@ -1,0 +1,709 @@
+name: Calc-U-1600
+
+# Calc-U-1600 lives in products/calc-u-1600/ (ADR 0002, 0004); every run step
+# works there (defaults below).
+
+# Builds the Qt6 app (see docs/developer/Building.md) on Linux x86_64,
+# Linux arm64, macOS, and Windows. Every job runs roms/fetch_roms.sh
+# before configuring -- ROMs aren't committed here (see roms/README.md),
+# so without this step the build "succeeds" (CMake globs an empty roms/ directory without erroring)
+# but produces a binary with no firmware bundled, silently non-functional.
+# The linux-x86_64/linux-aarch64 jobs build once, then package the
+# result as a genuinely standalone .AppImage (linuxdeploy + its Qt
+# plugin, the Linux analogue of macdeployqt below) on ubuntu-24.04 --
+# this repo's CMakeLists.txt needs Qt 6.3+'s qt_standard_project_setup(),
+# which an older Ubuntu baseline can't provide (22.04's apt-packaged Qt6
+# is only 6.2.4). Tradeoff: the AppImage only runs forward from
+# roughly-24.04-equivalent glibc, less than AppImage's usual promise of
+# running on much older systems too, but that's an acceptable bar here.
+# macOS runs macdeployqt to embed the Qt frameworks (see
+# frontends/qt6/CMakeLists.txt's MACOSX_BUNDLE), then Developer-ID-signs the .app
+# (hardened runtime), notarizes + staples it, and packages it into a
+# signed/notarized/stapled .dmg -- same Developer ID/Team ID as
+# SharpDataExchange, see .github/macos-signing.md for the repo
+# secrets this needs and how to rotate them. The Windows jobs run
+# windeployqt so the staged folder is genuinely standalone-runnable (Qt
+# DLLs + MSVC runtime bundled alongside the .exe, since Windows has no
+# equivalent to Linux's "the system already has Qt installed" or macOS's
+# shared Homebrew prefix), then package that folder into an Inno Setup
+# installer (Start Menu shortcut, optional desktop icon, uninstaller)
+# via frontends/qt6/resources/windows/calc-u-1600.iss. windows-arm64 builds
+# natively on a windows-11-arm runner (free for public repos, like every
+# standard runner used here) with Qt's native ARM64 kit, and fetches
+# SharpDataExchange's sharpdx-windows-aarch64 release like the other jobs.
+# The one job that doesn't package anything is core-tests, which builds the
+# repo-root CMakeLists.txt (the dev/IDE build, not the release entry point)
+# and runs core/'s test suite via CTest -- see its own comment below.
+on:
+  # Manual trigger only (Actions tab, or `gh workflow run build.yml`).
+  # The eventual plan is to trigger on pre-release tag creation instead.
+  workflow_dispatch: {}
+
+defaults:
+  run:
+    working-directory: products/calc-u-1600
+
+jobs:
+  # The only job that configures the repo-root CMakeLists.txt (every other
+  # job builds `-S frontends/qt6`, the release entry point). That root file is the
+  # dev/IDE build: it adds the CLI harnesses, the probes (which still list
+  # core/ sources by hand, see the root file) and CoreTests on top of the
+  # calcu_core / calcu_shared libraries from cmake/CalcU.cmake. This job is
+  # the only CI run of the core/ + app/ test suite.
+  core-tests:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v5
+
+      # Qt is needed even though this job never runs the GUI: the root
+      # CMakeLists.txt does add_subdirectory(Qt6). zlib1g-dev is CoreTests'
+      # own find_package(ZLIB REQUIRED).
+      - name: Install Qt6 + build tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            build-essential cmake ninja-build \
+            qt6-base-dev qt6-base-dev-tools qt6-multimedia-dev libgl1-mesa-dev \
+            zlib1g-dev
+
+      # CoreTests loads roms/PC-1500_A04.ROM relative to the repo root (which
+      # is also the CTest working directory), so this isn't optional here.
+      - name: Fetch ROMs
+        shell: bash
+        run: roms/fetch_roms.sh
+
+      # See linux-x86_64's identical step for what this does.
+      - name: Fetch sharpdx
+        shell: bash
+        run: tools/fetch_sharpdx.sh
+
+      # Optimized: the test suite runs ~3x faster than at -O0.
+      - name: Configure (repo root)
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=RelWithDebInfo
+
+      # Builds every target the root file defines -- the GUI app, the CLI
+      # harnesses, the probes and CoreTests -- which is the drift check.
+      - name: Calc-U-1600
+
+# Calc-U-1600 lives in products/calc-u-1600/ (ADR 0002, 0004); every run step
+# works there (defaults below).
+        run: cmake --build build
+
+      - name: Run tests
+        run: ctest --test-dir build --output-on-failure
+
+  # Core + Shared built for WebAssembly with Emscripten, and a node smoke
+  # test running presets cooperatively through shared::AppSession (no
+  # threads, no blocking) -- keeps the frontend-neutral layers portable to
+  # a web GUI. Then the web client itself (frontends/web/build.sh), its Playwright
+  # tests in Chromium and WebKit (frontends/web/run-tests.sh), and dist/ zipped as the
+  # Calc-U-1600-web artifact (release.yaml attaches it). libsharpdx-wasm.a
+  # is committed (tools/build_sharpdx_wasm.sh), so no Rust toolchain is
+  # needed here. Same Emscripten as it was built with: Rust's
+  # wasm32-unknown-emscripten std uses native wasm exceptions.
+  web:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Install build tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake ninja-build
+
+      - uses: mymindstorm/setup-emsdk@v14
+        with:
+          version: 6.0.13
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Fetch ROMs
+        shell: bash
+        run: roms/fetch_roms.sh
+
+      - name: Build and run the WebAssembly smoke test
+        shell: bash
+        run: tools/build_wasm_check.sh
+
+      - name: Build the web client
+        shell: bash
+        run: frontends/web/build.sh
+
+      - name: Install Playwright browsers
+        working-directory: products/calc-u-1600/frontends/web
+        run: |
+          npm ci --no-audit --no-fund
+          npx playwright install --with-deps chromium webkit
+
+      - name: Test the web client
+        shell: bash
+        run: frontends/web/run-tests.sh --reporter=line
+
+      - name: Package the web client
+        shell: bash
+        run: |
+          version=$(sed -n 's/^set(APP_VERSION "\(.*\)")/\1/p' frontends/qt6/CMakeLists.txt)
+          (cd frontends/web/dist && zip -qr "../../../Calc-U-1600-web-${version}.zip" .)
+
+      - name: Upload the web client
+        uses: actions/upload-artifact@v6
+        with:
+          name: Calc-U-1600-web
+          path: products/calc-u-1600/Calc-U-1600-web-*.zip
+
+  linux-x86_64:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Install Qt6 + build tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            build-essential cmake ninja-build patchelf \
+            qt6-base-dev qt6-base-dev-tools qt6-multimedia-dev qt6-wayland libgl1-mesa-dev \
+            qt6-gtk-platformtheme qt6ct
+
+      - name: Fetch ROMs
+        shell: bash
+        run: roms/fetch_roms.sh
+
+      # Vendors core/Basic/vendor/sharpdx/libsharpdx-linux.a from a
+      # SharpDataExchange GitHub release (see tools/fetch_sharpdx.sh).
+      # Required: every program loader classifies files through it, and
+      # CMake refuses to configure without it.
+      - name: Fetch sharpdx
+        shell: bash
+        run: tools/fetch_sharpdx.sh
+
+      - name: Configure
+        run: cmake -S frontends/qt6 -B frontends/qt6/build -G Ninja -DCMAKE_BUILD_TYPE=Release
+
+      - name: Calc-U-1600
+
+# Calc-U-1600 lives in products/calc-u-1600/ (ADR 0002, 0004); every run step
+# works there (defaults below).
+        run: cmake --build frontends/qt6/build
+
+      - name: Build AppImage
+        env:
+          # linuxdeploy-plugin-qt locates the Qt install via `qmake`/
+          # `qtpaths` on PATH under those exact names -- Ubuntu's
+          # qt6-base-dev-tools instead provides them as qmake6/qtpaths6,
+          # so point it there explicitly.
+          QMAKE: /usr/lib/qt6/bin/qmake6
+          # GitHub-hosted runners generally lack FUSE, which linuxdeploy's
+          # own AppImage packaging (and the AppImages it downloads below)
+          # need to mount themselves -- this makes them extract-and-run
+          # instead, the standard CI workaround.
+          APPIMAGE_EXTRACT_AND_RUN: "1"
+          # linuxdeploy-plugin-qt hardcodes platforms/libqxcb.so as the
+          # only platform plugin it deploys unless told otherwise --
+          # without this, the AppImage has no Wayland support at all and
+          # silently falls back to XWayland (blurry/non-HiDPI) on a
+          # Wayland session, even though qt6-wayland is installed above.
+          EXTRA_PLATFORM_PLUGINS: "libqwayland-egl.so;libqwayland-generic.so"
+        run: |
+          set -euo pipefail
+          mkdir -p AppDir/usr/bin
+          cp frontends/qt6/build/Calc-U-1600 AppDir/usr/bin/
+          cp -R frontends/qt6/build/resources AppDir/usr/bin/resources
+
+          curl -fsSL -o linuxdeploy.AppImage \
+            https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-x86_64.AppImage
+          curl -fsSL -o linuxdeploy-plugin-qt.AppImage \
+            https://github.com/linuxdeploy/linuxdeploy-plugin-qt/releases/download/continuous/linuxdeploy-plugin-qt-x86_64.AppImage
+          chmod +x linuxdeploy.AppImage linuxdeploy-plugin-qt.AppImage
+          export PATH="$PWD:$PATH"
+
+          ./linuxdeploy.AppImage \
+            --appdir=AppDir \
+            --executable=AppDir/usr/bin/Calc-U-1600 \
+            --desktop-file=frontends/qt6/resources/linux/calc-u-1600.desktop \
+            --icon-file=frontends/qt6/resources/linux/calc-u-1600.png \
+            --plugin=qt
+
+          # EXTRA_PLATFORM_PLUGINS above pulls in the Wayland platform
+          # plugins themselves, but not the separate wayland-graphics-
+          # integration-client plugin category libqwayland-egl.so needs at
+          # runtime -- linuxdeploy-plugin-qt doesn't bundle that category
+          # at all. Copy it in by hand and resolve its own dependencies
+          # with a second linuxdeploy pass.
+          QT_PLUGINS_DIR=$("$QMAKE" -query QT_INSTALL_PLUGINS)
+          if [ -d "$QT_PLUGINS_DIR/wayland-graphics-integration-client" ]; then
+            cp -r "$QT_PLUGINS_DIR/wayland-graphics-integration-client" AppDir/usr/plugins/
+            ./linuxdeploy.AppImage \
+              --appdir=AppDir \
+              --deploy-deps-only=AppDir/usr/plugins/wayland-graphics-integration-client
+          else
+            echo "::warning::wayland-graphics-integration-client plugin dir not found at $QT_PLUGINS_DIR -- Wayland EGL rendering may not work"
+          fi
+
+          # --plugin=qt only bundles the "platforms" plugin category
+          # (libqxcb.so + the Wayland ones above) -- it never bundles
+          # "platformthemes", which is what actually feeds Qt an updated
+          # QPalette when the OS switches light/dark. Without it the
+          # AppImage never learns the OS is in dark mode at all, unlike a
+          # native build that picks up the system Qt install's
+          # platformthemes plugin. Both packages installed above land in
+          # this one directory, so a single copy covers both:
+          # qt6-gtk-platformtheme's libqgtk3.so (GTK-theme-name heuristic;
+          # a reasonable default for plain GNOME-ish desktops with no
+          # theming tool of their own) and qt6ct's libqt6ct.so (reads
+          # ~/.config/qt6ct/qt6ct.conf directly -- confirmed via /proc/
+          # <pid>/maps against a real desktop, Raspberry Pi OS's PIXEL,
+          # that this is what a *native* Calc-U-1600 build there actually
+          # uses; PIXEL doesn't go through GTK settings or
+          # xdg-desktop-portal at all, so gtk3 alone silently detected
+          # nothing there despite loading fine). qt6ct's plugin also
+          # covers the QT_QPA_PLATFORMTHEME=qt5ct that some sessions
+          # (including PIXEL's) set by default -- it responds to both
+          # names. The "styles" dir is qt6ct's separate, optional
+          # QStyle plugin (native widget look) -- not required for
+          # palette/dark-mode detection since this app doesn't use
+          # QStyle (see ChromeColors.hpp's QSS-based chrome instead), but
+          # bundled anyway since it's what a native install also loads
+          # alongside the platformtheme plugin.
+          if [ -d "$QT_PLUGINS_DIR/platformthemes" ]; then
+            cp -r "$QT_PLUGINS_DIR/platformthemes" AppDir/usr/plugins/
+            ./linuxdeploy.AppImage \
+              --appdir=AppDir \
+              --deploy-deps-only=AppDir/usr/plugins/platformthemes
+          else
+            echo "::warning::platformthemes plugin dir not found at $QT_PLUGINS_DIR -- dark/light mode won't be detected"
+          fi
+          if [ -d "$QT_PLUGINS_DIR/styles" ]; then
+            cp -r "$QT_PLUGINS_DIR/styles" AppDir/usr/plugins/
+            ./linuxdeploy.AppImage \
+              --appdir=AppDir \
+              --deploy-deps-only=AppDir/usr/plugins/styles
+          fi
+
+          # Bundling the plugins isn't enough on its own -- Qt only loads
+          # a platformthemes plugin if QT_QPA_PLATFORMTHEME names one,
+          # and linuxdeploy-plugin-qt's generated AppRun doesn't set
+          # that. Wrap it so the bundled gtk3 theme is used as a
+          # fallback default, but still respect an existing
+          # QT_QPA_PLATFORMTHEME (e.g. PIXEL's own qt5ct, or a KDE
+          # session's kde) rather than overriding it.
+          mv AppDir/AppRun AppDir/AppRun.qt
+          printf '%s\n' \
+            '#!/bin/sh' \
+            'export QT_QPA_PLATFORMTHEME="${QT_QPA_PLATFORMTHEME:-gtk3}"' \
+            'HERE="$(dirname "$(readlink -f "$0")")"' \
+            'exec "$HERE/AppRun.qt" "$@"' \
+            > AppDir/AppRun
+          chmod +x AppDir/AppRun
+
+          ./linuxdeploy.AppImage --appdir=AppDir --output=appimage
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v6
+        with:
+          name: Calc-U-1600-linux-x86_64
+          path: products/calc-u-1600/Calc-U-1600-*.AppImage
+          if-no-files-found: error
+
+  linux-aarch64:
+    runs-on: ubuntu-24.04-arm
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Install Qt6 + build tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            build-essential cmake ninja-build patchelf \
+            qt6-base-dev qt6-base-dev-tools qt6-multimedia-dev qt6-wayland libgl1-mesa-dev \
+            qt6-gtk-platformtheme qt6ct
+
+      - name: Fetch ROMs
+        shell: bash
+        run: roms/fetch_roms.sh
+
+      # See linux-x86_64's identical step for what this does.
+      - name: Fetch sharpdx
+        shell: bash
+        run: tools/fetch_sharpdx.sh
+
+      - name: Configure
+        run: cmake -S frontends/qt6 -B frontends/qt6/build -G Ninja -DCMAKE_BUILD_TYPE=Release
+
+      - name: Calc-U-1600
+
+# Calc-U-1600 lives in products/calc-u-1600/ (ADR 0002, 0004); every run step
+# works there (defaults below).
+        run: cmake --build frontends/qt6/build
+
+      # See linux-x86_64's identical step for what each part of this does.
+      - name: Build AppImage
+        env:
+          QMAKE: /usr/lib/qt6/bin/qmake6
+          APPIMAGE_EXTRACT_AND_RUN: "1"
+          EXTRA_PLATFORM_PLUGINS: "libqwayland-egl.so;libqwayland-generic.so"
+        run: |
+          set -euo pipefail
+          mkdir -p AppDir/usr/bin
+          cp frontends/qt6/build/Calc-U-1600 AppDir/usr/bin/
+          cp -R frontends/qt6/build/resources AppDir/usr/bin/resources
+
+          curl -fsSL -o linuxdeploy.AppImage \
+            https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-aarch64.AppImage
+          curl -fsSL -o linuxdeploy-plugin-qt.AppImage \
+            https://github.com/linuxdeploy/linuxdeploy-plugin-qt/releases/download/continuous/linuxdeploy-plugin-qt-aarch64.AppImage
+          chmod +x linuxdeploy.AppImage linuxdeploy-plugin-qt.AppImage
+          export PATH="$PWD:$PATH"
+
+          ./linuxdeploy.AppImage \
+            --appdir=AppDir \
+            --executable=AppDir/usr/bin/Calc-U-1600 \
+            --desktop-file=frontends/qt6/resources/linux/calc-u-1600.desktop \
+            --icon-file=frontends/qt6/resources/linux/calc-u-1600.png \
+            --plugin=qt
+
+          QT_PLUGINS_DIR=$("$QMAKE" -query QT_INSTALL_PLUGINS)
+          if [ -d "$QT_PLUGINS_DIR/wayland-graphics-integration-client" ]; then
+            cp -r "$QT_PLUGINS_DIR/wayland-graphics-integration-client" AppDir/usr/plugins/
+            ./linuxdeploy.AppImage \
+              --appdir=AppDir \
+              --deploy-deps-only=AppDir/usr/plugins/wayland-graphics-integration-client
+          else
+            echo "::warning::wayland-graphics-integration-client plugin dir not found at $QT_PLUGINS_DIR -- Wayland EGL rendering may not work"
+          fi
+
+          # See linux-x86_64's identical step for what this does (bundles
+          # both gtk3's and qt6ct's platformthemes plugins, plus qt6ct's
+          # styles plugin, so dark/light mode is detected).
+          if [ -d "$QT_PLUGINS_DIR/platformthemes" ]; then
+            cp -r "$QT_PLUGINS_DIR/platformthemes" AppDir/usr/plugins/
+            ./linuxdeploy.AppImage \
+              --appdir=AppDir \
+              --deploy-deps-only=AppDir/usr/plugins/platformthemes
+          else
+            echo "::warning::platformthemes plugin dir not found at $QT_PLUGINS_DIR -- dark/light mode won't be detected"
+          fi
+          if [ -d "$QT_PLUGINS_DIR/styles" ]; then
+            cp -r "$QT_PLUGINS_DIR/styles" AppDir/usr/plugins/
+            ./linuxdeploy.AppImage \
+              --appdir=AppDir \
+              --deploy-deps-only=AppDir/usr/plugins/styles
+          fi
+
+          mv AppDir/AppRun AppDir/AppRun.qt
+          printf '%s\n' \
+            '#!/bin/sh' \
+            'export QT_QPA_PLATFORMTHEME="${QT_QPA_PLATFORMTHEME:-gtk3}"' \
+            'HERE="$(dirname "$(readlink -f "$0")")"' \
+            'exec "$HERE/AppRun.qt" "$@"' \
+            > AppDir/AppRun
+          chmod +x AppDir/AppRun
+
+          ./linuxdeploy.AppImage --appdir=AppDir --output=appimage
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v6
+        with:
+          name: Calc-U-1600-linux-aarch64
+          path: products/calc-u-1600/Calc-U-1600-*.AppImage
+          if-no-files-found: error
+
+  mac-aarch64:
+    # Apple Silicon (arm64). macOS 15 so Homebrew's Qt bottles (embedded by
+    # macdeployqt) are built for 15.x too, matching CMAKE_OSX_DEPLOYMENT_TARGET.
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Install Qt6 + build tools
+        run: brew install qt cmake ninja
+
+      - name: Fetch ROMs
+        shell: bash
+        run: roms/fetch_roms.sh
+
+      - name: Configure
+        run: |
+          cmake -S frontends/qt6 -B frontends/qt6/build -G Ninja \
+            -DCMAKE_PREFIX_PATH=$(brew --prefix qt) \
+            -DCMAKE_BUILD_TYPE=Release
+
+      - name: Calc-U-1600
+
+# Calc-U-1600 lives in products/calc-u-1600/ (ADR 0002, 0004); every run step
+# works there (defaults below).
+        # Produces a real .app bundle (frontends/qt6/CMakeLists.txt's MACOSX_BUNDLE).
+        run: cmake --build frontends/qt6/build
+
+      - name: Embed Qt frameworks (macdeployqt)
+        # Without this the .app links Qt via an absolute Homebrew path
+        # (/opt/homebrew/opt/qtbase/lib/...) -- it would only run on a Mac
+        # with that exact Homebrew Qt installed. macdeployqt copies the Qt
+        # frameworks into Contents/Frameworks and rewrites the binary's
+        # rpaths to point there, making the bundle actually standalone --
+        # required before signing/notarizing, since Gatekeeper doesn't care
+        # but every non-dev Mac downloading this would otherwise crash on
+        # launch.
+        run: $(brew --prefix qt)/bin/macdeployqt frontends/qt6/build/Calc-U-1600.app
+
+      # See ../macos-signing.md (same Developer ID, team 7Q3QN9AV9J, as
+      # SharpDataExchange) for how these repo secrets were produced and
+      # how to rotate them.
+      - name: Import signing certificate
+        env:
+          APP_P12_B64: ${{ secrets.APPLE_CERT_APPLICATION_P12_BASE64 }}
+          P12_PASSWORD: ${{ secrets.APPLE_CERT_P12_PASSWORD }}
+        run: |
+          set -euo pipefail
+          KEYCHAIN="$RUNNER_TEMP/build.keychain-db"
+          KEYCHAIN_PWD="$(openssl rand -base64 24)"
+          security create-keychain -p "$KEYCHAIN_PWD" "$KEYCHAIN"
+          security set-keychain-settings -lut 21600 "$KEYCHAIN"
+          security unlock-keychain -p "$KEYCHAIN_PWD" "$KEYCHAIN"
+
+          echo "$APP_P12_B64" | base64 --decode > "$RUNNER_TEMP/app.p12"
+          security import "$RUNNER_TEMP/app.p12" -k "$KEYCHAIN" -P "$P12_PASSWORD" -T /usr/bin/codesign
+          rm -f "$RUNNER_TEMP/app.p12"
+
+          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$KEYCHAIN_PWD" "$KEYCHAIN" >/dev/null
+          security list-keychains -d user -s "$KEYCHAIN" $(security list-keychains -d user | sed 's/"//g')
+
+          APP_IDENTITY="$(security find-identity -v -p codesigning "$KEYCHAIN" | sed -n 's/.*"\(Developer ID Application:.*\)"/\1/p' | head -n1)"
+          if [ -z "$APP_IDENTITY" ]; then
+            echo "::error::missing Developer ID Application identity after import"; exit 1
+          fi
+          echo "APP_IDENTITY=$APP_IDENTITY" >> "$GITHUB_ENV"
+          echo "SIGN_KEYCHAIN=$KEYCHAIN"    >> "$GITHUB_ENV"
+
+      - name: Codesign the .app (Developer ID Application, hardened runtime)
+        run: |
+          set -euo pipefail
+          APP=frontends/qt6/build/Calc-U-1600.app
+          # --deep signs every embedded framework/dylib macdeployqt placed
+          # under Contents/Frameworks too, not just the outer bundle.
+          codesign --deep --force --timestamp --options runtime \
+            --sign "$APP_IDENTITY" --keychain "$SIGN_KEYCHAIN" "$APP"
+          codesign --verify --deep --strict --verbose=2 "$APP"
+
+      - name: Notarize the .app
+        env:
+          KEY_ID: ${{ secrets.APPLE_API_KEY_ID }}
+          ISSUER_ID: ${{ secrets.APPLE_API_ISSUER_ID }}
+          API_KEY_B64: ${{ secrets.APPLE_API_KEY_P8_BASE64 }}
+        run: |
+          set -euo pipefail
+          echo "$API_KEY_B64" | base64 --decode > "$RUNNER_TEMP/asc_api_key.p8"
+          APP=frontends/qt6/build/Calc-U-1600.app
+          ditto -c -k --keepParent "$APP" "$RUNNER_TEMP/Calc-U-1600.zip"
+          xcrun notarytool submit "$RUNNER_TEMP/Calc-U-1600.zip" \
+            --key "$RUNNER_TEMP/asc_api_key.p8" --key-id "$KEY_ID" --issuer "$ISSUER_ID" \
+            --wait --timeout 30m
+          # The ticket comes from Apple's CloudKit server; a dropped connection
+          # there (stapler error 68) is transient, so retry before giving up.
+          for i in 1 2 3; do
+            xcrun stapler staple "$APP" && break
+            [ "$i" = 3 ] && exit 1
+            echo "stapler failed, retrying in 30 s…"; sleep 30
+          done
+          xcrun stapler validate "$APP"
+          spctl -a -vvv "$APP"
+
+      - name: Build the DMG
+        run: |
+          set -euo pipefail
+          STAGE="$RUNNER_TEMP/dmg-stage"
+          mkdir -p "$STAGE"
+          cp -R frontends/qt6/build/Calc-U-1600.app "$STAGE/"
+          ln -s /Applications "$STAGE/Applications"
+          hdiutil create -volname "Calc-U-1600" -srcfolder "$STAGE" \
+            -ov -format UDZO frontends/qt6/build/Calc-U-1600.dmg
+
+      - name: Sign + notarize + staple the DMG
+        env:
+          KEY_ID: ${{ secrets.APPLE_API_KEY_ID }}
+          ISSUER_ID: ${{ secrets.APPLE_API_ISSUER_ID }}
+        run: |
+          set -euo pipefail
+          DMG=frontends/qt6/build/Calc-U-1600.dmg
+          codesign --force --timestamp --sign "$APP_IDENTITY" --keychain "$SIGN_KEYCHAIN" "$DMG"
+          xcrun notarytool submit "$DMG" \
+            --key "$RUNNER_TEMP/asc_api_key.p8" --key-id "$KEY_ID" --issuer "$ISSUER_ID" \
+            --wait --timeout 30m
+          # The ticket comes from Apple's CloudKit server; a dropped connection
+          # there (stapler error 68) is transient, so retry before giving up.
+          for i in 1 2 3; do
+            xcrun stapler staple "$DMG" && break
+            [ "$i" = 3 ] && exit 1
+            echo "stapler failed, retrying in 30 s…"; sleep 30
+          done
+          xcrun stapler validate "$DMG"
+          spctl -a -vvv -t open --context context:primary-signature "$DMG"
+
+      - name: Clean up signing material
+        if: always()
+        run: |
+          rm -f "$RUNNER_TEMP/asc_api_key.p8"
+          security delete-keychain "$RUNNER_TEMP/build.keychain-db" 2>/dev/null || true
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v6
+        with:
+          name: Calc-U-1600-mac-aarch64
+          path: products/calc-u-1600/frontends/qt6/build/Calc-U-1600.dmg
+          if-no-files-found: error
+
+  windows-x86_64:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Install Qt6 (MSVC)
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: '6.8.2' # verify this is available in aqt's index if this step ever fails; bump to another 6.8.x/6.9.x release otherwise
+          host: 'windows'
+          target: 'desktop'
+          arch: 'win64_msvc2022_64'
+          modules: 'qtmultimedia' # QAudioSink for the buzzer (app/AudioOutput.cpp)
+
+      - name: Set up MSVC dev environment
+        uses: ilammy/msvc-dev-cmd@v1
+
+      - name: Install Ninja
+        uses: seanmiddleditch/gha-setup-ninja@v6
+
+      # `shell: bash` runs it via the Git Bash already on windows-latest
+      # runners -- roms/fetch_roms.sh is a POSIX sh script.
+      - name: Fetch ROMs
+        shell: bash
+        run: roms/fetch_roms.sh
+
+      # See the linux-x86_64 job's identical step for what this does.
+      # `shell: bash` runs it via the Git Bash already on windows-latest
+      # runners -- tools/fetch_sharpdx.sh is a POSIX sh script.
+      - name: Fetch sharpdx
+        shell: bash
+        run: tools/fetch_sharpdx.sh
+
+      - name: Configure
+        run: cmake -S frontends/qt6 -B frontends/qt6/build -G Ninja -DCMAKE_BUILD_TYPE=Release
+
+      - name: Calc-U-1600
+
+# Calc-U-1600 lives in products/calc-u-1600/ (ADR 0002, 0004); every run step
+# works there (defaults below).
+        run: cmake --build frontends/qt6/build
+
+      - name: Stage standalone-runnable folder
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path frontends/qt6/dist | Out-Null
+          Copy-Item frontends/qt6/build/Calc-U-1600.exe frontends/qt6/dist/
+          # AppPaths::bundledCardResourcesDir() expects a "resources" folder
+          # (the *.card.yaml files and ROM images) next to the .exe --
+          # CMakeLists.txt's POST_BUILD step places one at frontends/qt6/build/resources,
+          # but that doesn't end up in frontends/qt6/dist/ on its own.
+          Copy-Item frontends/qt6/build/resources frontends/qt6/dist/resources -Recurse
+          # --compiler-runtime bundles the MSVC redistributable DLLs too,
+          # so this runs on a clean Windows machine without the VC++
+          # redistributable pre-installed, not just without a Qt install.
+          windeployqt --release --compiler-runtime frontends/qt6/dist/Calc-U-1600.exe
+
+      - name: Install Inno Setup
+        shell: pwsh
+        run: choco install innosetup -y
+
+      - name: Build installer
+        shell: pwsh
+        # Packages the frontends/qt6/dist folder staged above into a Start Menu +
+        # optional-desktop-icon + uninstaller installer -- see
+        # frontends/qt6/resources/windows/calc-u-1600.iss. Unsigned for now; produces
+        # Calc-U-1600-Setup.exe at the repo root (OutputDir in the .iss).
+        run: ISCC.exe frontends\qt6\resources\windows\calc-u-1600.iss
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v6
+        with:
+          name: Calc-U-1600-windows-x86_64
+          path: products/calc-u-1600/Calc-U-1600-Setup.exe
+          if-no-files-found: error
+
+  windows-arm64:
+    # Native ARM64 build: host == target, so this is the windows-x86_64
+    # job with ARM64 names -- Qt's native win64_msvc2022_arm64 kit (aqt
+    # host windows_arm64), msvc-dev-cmd's arm64 toolchain, and a plain
+    # windeployqt that deploys that kit's own ARM64 DLLs.
+    runs-on: windows-11-arm
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Install Qt6 (MSVC, ARM64)
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: '6.8.2' # keep in sync with the windows-x86_64 job above
+          host: 'windows_arm64'
+          target: 'desktop'
+          arch: 'win64_msvc2022_arm64'
+          modules: 'qtmultimedia' # QAudioSink for the buzzer (app/AudioOutput.cpp)
+
+      - name: Set up MSVC dev environment (ARM64)
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: arm64
+
+      - name: Install Ninja
+        uses: seanmiddleditch/gha-setup-ninja@v6
+
+      # ROMs aren't architecture-specific -- identical to the x86_64 job.
+      - name: Fetch ROMs
+        shell: bash
+        run: roms/fetch_roms.sh
+
+      # See the linux-x86_64 job's identical step for what this does.
+      # The platform is set explicitly: the runner image's Git Bash is an
+      # x64 build running under emulation, so it reports
+      # PROCESSOR_ARCHITECTURE=AMD64 and auto-detection would fetch the
+      # x86_64 lib (LNK2019 on every sde_* symbol).
+      - name: Fetch sharpdx
+        shell: bash
+        env:
+          SHARPDX_PLATFORM: windows-aarch64
+        run: tools/fetch_sharpdx.sh
+
+      - name: Configure
+        run: cmake -S frontends/qt6 -B frontends/qt6/build -G Ninja -DCMAKE_BUILD_TYPE=Release
+
+      - name: Calc-U-1600
+
+# Calc-U-1600 lives in products/calc-u-1600/ (ADR 0002, 0004); every run step
+# works there (defaults below).
+        run: cmake --build frontends/qt6/build
+
+      - name: Stage standalone-runnable folder
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path frontends/qt6/dist | Out-Null
+          Copy-Item frontends/qt6/build/Calc-U-1600.exe frontends/qt6/dist/
+          # See the windows-x86_64 job's identical step for what this does.
+          Copy-Item frontends/qt6/build/resources frontends/qt6/dist/resources -Recurse
+          windeployqt --release --compiler-runtime frontends/qt6/dist/Calc-U-1600.exe
+
+      - name: Install Inno Setup
+        shell: pwsh
+        run: choco install innosetup -y
+
+      - name: Build installer
+        shell: pwsh
+        # Same .iss as windows-x86_64, but with /DAPP_ARCH=arm64 so it
+        # produces an ARM64-only installer (ArchitecturesAllowed=arm64)
+        # named Calc-U-1600-Setup-arm64.exe instead -- see the .iss's own
+        # APP_ARCH comment. Unsigned for now.
+        run: ISCC.exe /DAPP_ARCH=arm64 frontends\qt6\resources\windows\calc-u-1600.iss
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v6
+        with:
+          name: Calc-U-1600-windows-arm64
+          path: products/calc-u-1600/Calc-U-1600-Setup-arm64.exe
+          if-no-files-found: error

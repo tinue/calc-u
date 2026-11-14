@@ -1,0 +1,37 @@
+# Loader regression: the fast BASIC loader with memory modules in both
+# slots (CE-1600M, and the CE-1601M formatted and split as a RAM disk). It
+# loads the globe program (examples/plotter/globus.bas) and plots it on the
+# CE-1600P.
+format-version: 1
+model: PC-1600
+plotter: CE-1600P
+
+slot-1: CE-1600M
+slot-2: CE-1601M
+
+# After reset, a NEW0 is required in PRO mode (PC-1600 starts up in RUN)
+keys:
+  - key: mode
+  - type: NEW0
+  - type: INIT"S2:","F"
+  - type: INIT"S2:","M"
+
+# A `.bas` listing is tokenized while it loads -- much faster than typing
+# it in.
+program:
+  file: ../../examples/plotter/globus.bas
+
+# After loading, switch to RUN mode and start the program. Answer the
+# input parameters and then wait for finish.
+keys:
+  - key: mode
+  - type: RUN
+  - type: 90
+  - type: 20
+  - type: 0
+  - type: 0
+  - type: 45
+  - type: 6
+  - type: N
+  - type: J
+  - wait:

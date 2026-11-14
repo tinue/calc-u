@@ -1,0 +1,136 @@
+#pragma once
+#include <QObject>
+#include <QString>
+
+#include <functional>
+#include <memory>
+#include <vector>
+
+#include <QJsonObject>
+
+#include "Debug/BreakpointTable.hpp"
+#include "Debug/DebugTarget.hpp"
+#include "Debug/ProgramLoader.hpp"
+#include "Debug/RunControl.hpp"
+#include "Debug/SourceMap.hpp"
+#include "Display/LcdText.hpp"
+
+class DapServer;
+class DapSession;
+class MachineController;
+class SyncOperations;
+
+// The app side of the debugger. Owns the DAP server (enabled in Settings)
+// and, while a client is attached, the Core debug objects for the live
+// machine: its DebugTarget, the source map, the breakpoint table and the
+// run control. MachineController routes every frame's cycle budget through
+// runSlice() while attached, so pause/step/breakpoints act on the normal
+// paced emulation; a machine rebuild swaps the target underneath and
+// re-applies everything.
+class DebugController : public QObject {
+    Q_OBJECT
+public:
+    explicit DebugController(MachineController* machines, QObject* parent = nullptr);
+    ~DebugController() override;
+
+    /// Starts, stops or rebinds the server from the Settings values (or
+    /// the --dap command-line port, which overrides them for the run).
+    void refreshServer();
+    static void setCommandLinePort(int port);
+    bool hasClient() const;
+    /// Drops the attached client (Settings > Debugger > Disconnect); the
+    /// machine runs on as without a debugger.
+    void disconnectClient();
+    /// "Listening on 127.0.0.1:32168", "Client connected", "Port in use: …",
+    /// "Off".
+    QString serverStatus() const;
+
+    /// A debug session is attached: the frame budget goes to runSlice().
+    bool attached() const;
+    /// Attached and stopped (window title, DebugPanel).
+    bool paused() const;
+    void runSlice(std::uint64_t cycles);
+
+    /// Called by MachineController before it destroys the live machine,
+    /// and once its successor exists.
+    void machineAboutToChange();
+    void machineReplaced();
+
+    // ── For DapSession ────────────────────────────────────────────────────
+    /// Creates the target / run control for the live machine; false if
+    /// there is none.
+    bool beginSession();
+    void endSession();
+    debug::DebugTarget* target() const { return m_target.get(); }
+    debug::RunControl* runControl() const { return m_run.get(); }
+    debug::SourceMap& sourceMap() { return m_map; }
+    debug::BreakpointTable& breakpoints() { return m_breakpoints; }
+    /// Verifies every listing binding against memory and re-resolves the
+    /// breakpoints; returns the breakpoint statuses that changed.
+    std::vector<debug::BreakpointStatus> rebindListings();
+
+    /// The app's synchronous operations: presets, resets and loads from the
+    /// debugger run through them like the menu's, and DAP messages wait
+    /// while any of them runs (it pumps the event loop).
+    void setSyncOperations(SyncOperations* sync);
+    /// Loads a preset the way File > Load Preset does; `armOnly` stops
+    /// before the boot (PresetFile::armOnly).
+    bool loadPreset(const QString& path, QString* error, bool armOnly = false);
+    /// A clean machine for a program load: `preset` if given, else the
+    /// model's default preset (Settings), else an All Reset and boot.
+    /// `how` says which it was.
+    bool cleanStart(const QString& preset, QString* how, QString* error);
+
+    /// What to do once a program is loaded: nothing, type its CALL, or type
+    /// its CALL and stop at its entry.
+    enum class After { None, Call, StopOnEntry };
+    /// Build & Load: loads the program, binds its listing, re-resolves the
+    /// breakpoints, then does `after`. A non-empty `command` is typed in
+    /// place of the program's CALL (e.g. a CALL with arguments).
+    debug::LoadResult loadProgram(const debug::LoadRequest& request, After after, const std::string& command = {});
+    /// Types a BASIC line and ENTER into the machine as it runs.
+    void typeCommand(const std::string& line);
+    /// The LCD as text; false with no machine.
+    bool lcdText(LcdText* out) const;
+    /// Machine reset (all = RAM cleared first) without the boot run: with
+    /// `stop` the machine halts before its first instruction (reason
+    /// "entry"), else it runs on.
+    bool resetMachine(bool allReset, bool stop, QString* error);
+
+signals:
+    void serverStatusChanged();
+    void pausedChanged(bool paused);
+
+private:
+    /// A synchronous operation is running (SyncOperations): the machine is
+    /// being rebuilt or driven directly, so DAP messages wait until it is done.
+    bool appBusy() const;
+    /// MachineController::appBusyChanged: drains what waited once it is done.
+    void setAppBusy(bool busy);
+    void createTarget();
+    void onClientConnected();
+    void onClientDisconnected();
+    /// Ends the session of a client that disconnected, once no request or
+    /// synchronous operation is running (see onClientDisconnected()).
+    void finishTeardown();
+
+    MachineController* m_machines; // not owned
+    DapServer* m_server = nullptr;
+    std::unique_ptr<DapSession> m_session;
+    QString m_serverError;
+
+    std::unique_ptr<debug::DebugTarget> m_target;
+    std::unique_ptr<debug::RunControl> m_run;
+    debug::SourceMap m_map;
+    debug::BreakpointTable m_breakpoints;
+    bool m_sessionActive = false;
+    bool m_lastPaused = false;
+    bool m_replacedPending = false; // machineReplaced(): resume + re-bind on the next frame
+    void dispatch(const QJsonObject& message);
+    void drainQueue();
+    bool m_busy = false;     // handling a message (which may itself load)
+    std::vector<QJsonObject> m_queued;
+    bool m_teardownPending = false; // client gone, session not yet ended
+    std::vector<std::unique_ptr<DapSession>> m_retiredSessions; // detached, maybe still on the stack
+    SyncOperations* m_sync = nullptr; // not owned
+};

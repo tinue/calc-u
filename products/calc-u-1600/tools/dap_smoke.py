@@ -1,0 +1,631 @@
+#!/usr/bin/env python3
+"""DAP smoke test for Calc-U-1600's debug server.
+
+Connects to a running app (started with `--dap <port>`, or with the debug
+server enabled in Settings), attaches, and drives the requests VS Code
+uses: threads, pause, stackTrace/scopes/variables, disassemble, readMemory,
+evaluate, instruction and data breakpoints, stepping, continue, disconnect,
+and the calcu1600/screen text read-out.
+
+Stdlib only:  uv run tools/dap_smoke.py [--port 32168] [--app PATH]
+With --app the script starts the app itself (with --dap) and quits it
+through the calcu1600/quit request.
+"""
+
+import argparse
+import shutil
+import base64
+import json
+import os
+import socket
+import subprocess
+import sys
+import tempfile
+import time
+
+
+class Dap:
+    def __init__(self, port, timeout=10.0):
+        deadline = time.time() + timeout
+        while True:
+            try:
+                self.sock = socket.create_connection(("127.0.0.1", port), timeout=2.0)
+                break
+            except OSError:
+                if time.time() > deadline:
+                    raise
+                time.sleep(0.25)
+        self.sock.settimeout(timeout)
+        self.buf = b""
+        self.seq = 1
+        self.events = []
+
+    def _read_message(self):
+        while b"\r\n\r\n" not in self.buf:
+            chunk = self.sock.recv(65536)
+            if not chunk:
+                raise ConnectionError("server closed the connection")
+            self.buf += chunk
+        header, _, rest = self.buf.partition(b"\r\n\r\n")
+        length = int([l for l in header.split(b"\r\n") if l.lower().startswith(b"content-length:")][0].split(b":")[1])
+        while len(rest) < length:
+            rest += self.sock.recv(65536)
+        self.buf = rest[length:]
+        return json.loads(rest[:length])
+
+    def send(self, command, /, **arguments):
+        """Sends a request without waiting for its response; returns its seq."""
+        seq = self.seq
+        self.seq += 1
+        body = json.dumps({"seq": seq, "type": "request", "command": command, "arguments": arguments}).encode()
+        self.sock.sendall(b"Content-Length: %d\r\n\r\n" % len(body) + body)
+        return seq
+
+    def request(self, command, /, **arguments):
+        seq = self.send(command, **arguments)
+        while True:
+            msg = self._read_message()
+            if msg["type"] == "event":
+                self.events.append(msg)
+            elif msg["type"] == "response" and msg["request_seq"] == seq:
+                if not msg["success"]:
+                    raise RuntimeError(f"{command} failed: {msg.get('message')}")
+                return msg.get("body", {})
+
+    def wait_event(self, name, timeout=10.0, match=None):
+        deadline = time.time() + timeout
+        while True:
+            for i, e in enumerate(self.events):
+                if e["event"] == "output":
+                    print("       |", e["body"]["output"].rstrip())
+                    self.events.pop(i)
+                    break
+            for i, e in enumerate(self.events):
+                if e["event"] == name and (match is None or match(e.get("body", {}))):
+                    return self.events.pop(i).get("body", {})
+            if time.time() > deadline:
+                raise TimeoutError(f"no '{name}' event within {timeout}s (have: {[e['event'] for e in self.events]})")
+            self.sock.settimeout(max(0.1, deadline - time.time()))
+            try:
+                self.events.append(self._read_message())
+            except socket.timeout:
+                pass
+
+
+def check(cond, what):
+    print(("  ok   " if cond else "  FAIL ") + what)
+    if not cond:
+        check.failures += 1
+
+
+check.failures = 0
+
+
+REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+MEMTEST_ASM = os.path.join(REPO, "tests/fixtures/listings/sdas-lh5801/memtest.asm")
+
+
+def top_frame(dap, tid):
+    return dap.request("stackTrace", threadId=tid, startFrame=0, levels=1)["stackFrames"][0]
+
+
+def program_run(port):
+    """Build & Load: a plain PC-1500 (preset), memtest with its listing, stop at its entry."""
+    print("program run:")
+    dap = Dap(port)
+    dap.request("initialize", adapterID="calcu1600")
+    dap.wait_event("initialized")
+    attach = {"type": "calcu1600", "request": "attach",
+              "preset": os.path.join(REPO, "examples/startup/default-pc1500.pc1500"),
+              "program": {"bin": os.path.join(REPO, "tests/fixtures/listings/sdas-lh5801/memtest_stock.bin"),
+                          "listing": os.path.join(REPO, "tests/fixtures/listings/sdas-lh5801/memtest.rst"),
+                          "address": "0x40C5", "after": "stopOnEntry"}}
+    dap.request("attach", **{k: v for k, v in attach.items() if k not in ("type", "request")})
+    bps = dap.request("setBreakpoints", source={"path": MEMTEST_ASM}, breakpoints=[{"line": 88}])["breakpoints"]
+    check(bps and bps[0]["verified"] and bps[0]["line"] == 89, f"source breakpoint 88 -> {bps and bps[0].get('line')}")
+    dap.request("configurationDone")
+    stop = dap.wait_event("stopped", timeout=30)
+    top = top_frame(dap, stop["threadId"])
+    check(stop.get("reason") == "entry" and top.get("line") == 74 and top.get("source", {}).get("path") == MEMTEST_ASM,
+          f"stopped at the entry: {stop.get('reason')} {top.get('source', {}).get('name')}:{top.get('line')}")
+    dap.request("continue", threadId=1)
+    stop = dap.wait_event("stopped", timeout=10)
+    check(stop.get("reason") == "breakpoint" and top_frame(dap, 1).get("line") == 89, "source breakpoint hit at line 89")
+    dap.request("next", threadId=1)
+    dap.wait_event("stopped")
+    check(top_frame(dap, 1).get("line") == 90, "next: line 90")
+    dap.request("stepIn", threadId=1)
+    dap.wait_event("stopped")
+    check(top_frame(dap, 1).get("line") == 94, "stepIn: line 94")
+    ev = dap.request("evaluate", expression="[ERR_FLAG]", frameId=1000, context="watch")
+    check(ev["result"].startswith("0x00"), f"evaluate [ERR_FLAG] = {ev['result']}")
+    dap.request("setBreakpoints", source={"path": MEMTEST_ASM}, breakpoints=[])
+    # Build & Load again (what the extension sends): clean start, load,
+    # auto-start, stop at the entry.
+    body = dap.request("calcu1600/load", bin=os.path.join(REPO, "tests/fixtures/listings/sdas-lh5801/memtest_stock.bin"),
+                       listing=os.path.join(REPO, "tests/fixtures/listings/sdas-lh5801/memtest.rst"),
+                       address="0x40C5", after="stopOnEntry")
+    check(body.get("start") == "0x40C5", f"calcu1600/load -> {body}")
+    stop = dap.wait_event("stopped", timeout=30)
+    check(stop.get("reason") == "entry" and top_frame(dap, 1).get("line") == 74, "reloaded and stopped at the entry again")
+    # Entry from the listing: its ENTRY by default, or a named symbol.
+    rst = os.path.join(REPO, "tests/fixtures/listings/sdas-lh5801/memtest.rst")
+    body = dap.request("calcu1600/load", bin=os.path.join(REPO, "tests/fixtures/listings/sdas-lh5801/memtest_stock.bin"), listing=rst, after="none")
+    check(body.get("start") == "0x40C5" and body.get("entry") == "0x40C5", f"load without address/entry -> {body}")
+    body = dap.request("calcu1600/load", bin=os.path.join(REPO, "tests/fixtures/listings/sdas-lh5801/memtest_stock.bin"), listing=rst,
+                       entry="MEMTEST", after="none")
+    check(body.get("entry") == "0x40CC" and body.get("call") == "CALL &40CC", f"entry MEMTEST -> {body}")
+    # Numbers follow the preset's rule: `&`, `0x` or `$` is hex, a bare
+    # number decimal; bare hex is refused.
+    bin_ = os.path.join(REPO, "tests/fixtures/listings/sdas-lh5801/memtest_stock.bin")
+    body = dap.request("calcu1600/load", bin=bin_, listing=rst, address="16581", entry="&40CC", after="none")
+    check(body.get("start") == "0x40C5" and body.get("entry") == "0x40CC", f"address \"16581\", entry \"&40CC\" -> {body}")
+    try:
+        dap.request("calcu1600/load", bin=bin_, listing=rst, address="40C5", after="none")
+        check(False, "address \"40C5\" (bare hex) refused")
+    except RuntimeError as e:
+        check("address" in str(e), f"address \"40C5\" (bare hex) refused: {e}")
+    # Other values are checked against the attach-key table.
+    for bad in ({"after": "foo"}, {"cpu": "x86"}, {"cleanStart": "false"}):
+        try:
+            dap.request("calcu1600/load", bin=bin_, listing=rst, **bad)
+            check(False, f"{bad} refused")
+        except RuntimeError as e:
+            check(next(iter(bad)) in str(e), f"{bad} refused: {e}")
+    # Restart (the toolbar's): the attach configuration again -- preset,
+    # load, entry stop -- and a breakpoint set before it still hits.
+    dap.request("setBreakpoints", source={"path": MEMTEST_ASM}, breakpoints=[{"line": 88}])
+    dap.request("restart", arguments=attach)
+    stop = dap.wait_event("stopped", timeout=30)
+    check(stop.get("reason") == "entry" and top_frame(dap, 1).get("line") == 74, "restart: stopped at the entry")
+    dap.request("continue", threadId=1)
+    stop = dap.wait_event("stopped", timeout=10)
+    check(stop.get("reason") == "breakpoint" and top_frame(dap, 1).get("line") == 89, "restart: breakpoint hit at line 89")
+    dap.request("setBreakpoints", source={"path": MEMTEST_ASM}, breakpoints=[])
+    dap.request("stepOut", threadId=1)
+    stop = dap.wait_event("stopped", timeout=10)
+    top = top_frame(dap, 1)
+    check(stop.get("reason") == "step" and "source" not in top, f"stepOut back into the ROM: {top['name']}")
+    dap.request("disconnect")
+    dap.sock.close()
+
+
+def pc1600_run(port):
+    """PC-1600: the zasm ROM dumper with its listing; two CPU threads."""
+    print("PC-1600 run:")
+    dumper = os.path.join(REPO, "tests/fixtures/listings/zasm/pc1600-rom-dumper")
+    dap = Dap(port)
+    dap.request("initialize", adapterID="calcu1600")
+    dap.wait_event("initialized")
+    # No "address": the headerless .bin loads at the listing's lowest
+    # address (C0C5), as "Debug current file on PC-1600" relies on.
+    dap.request("attach", preset=os.path.join(REPO, "vscode/calcu1600-debug/presets/debug-pc1600.pc1600"),
+                program={"bin": dumper + ".bin", "listing": dumper + ".lst", "after": "stopOnEntry"})
+    dap.request("configurationDone")
+    stop = dap.wait_event("stopped", timeout=60)
+    top = top_frame(dap, stop["threadId"])
+    check(stop.get("reason") == "entry" and top.get("source", {}).get("name") == "pc1600-rom-dumper.asm",
+          f"stopped at the entry: {top.get('source', {}).get('name')}:{top.get('line')} ({top['name']})")
+    names = [t["name"] for t in dap.request("threads")["threads"]]
+    check(len(names) == 2 and any("LH5803" in n for n in names), f"threads: {names}")
+    line = top.get("line")
+    dap.request("next", threadId=1)
+    dap.wait_event("stopped")
+    check(top_frame(dap, 1).get("line", 0) > (line or 0), f"next: line {line} -> {top_frame(dap, 1).get('line')}")
+    scopes = dap.request("scopes", frameId=1000)["scopes"]
+    regs = dap.request("variables", variablesReference=scopes[0]["variablesReference"])["variables"]
+    bank_var = [v for v in regs if v["name"] == "Banks"][0]
+    banks = dap.request("variables", variablesReference=bank_var["variablesReference"])["variables"]
+    check(len(banks) == 4, "banks: " + ", ".join(f"{b['name'][:6]} {b['value']}" for b in banks))
+    dap.request("continue", threadId=1)
+    dap.request("disconnect")
+    dap.sock.close()
+
+
+def project_run(port):
+    """A project preset: the machine and its `debug:` block; the attach names only the project."""
+    print("project run:")
+    dumper = os.path.join(REPO, "tests/fixtures/listings/zasm/pc1600-rom-dumper")
+    with tempfile.TemporaryDirectory() as tmp:
+        project = os.path.join(tmp, "debug.pc1600")
+        with open(project, "w") as f:
+            f.write("format-version: 1\n"
+                    "model: PC-1600\n"
+                    "keys:\n"
+                    "  - key: mode\n"
+                    "  - type: NEW0\n"
+                    "  - key: mode\n"
+                    "debug:\n"
+                    "  program:\n"
+                    f"    bin: {os.path.relpath(dumper + '.bin', tmp)}\n"
+                    f"    listing: {dumper}.lst\n"
+                    "    address: &C0C5\n"
+                    "    after: stopOnEntry\n")
+        dap = Dap(port)
+        dap.request("initialize", adapterID="calcu1600")
+        dap.wait_event("initialized")
+        dap.request("attach", project=project)
+        dap.request("configurationDone")
+        stop = dap.wait_event("stopped", timeout=60)
+        top = top_frame(dap, stop["threadId"])
+        check(stop.get("reason") == "entry" and top.get("source", {}).get("name") == "pc1600-rom-dumper.asm",
+              f"project: stopped at the entry {top.get('source', {}).get('name')}:{top.get('line')}")
+        entry_line = top.get("line")
+        # Build & Load without arguments reloads the project's program.
+        body = dap.request("calcu1600/load")
+        check(body.get("start") == "0xC0C5", f"calcu1600/load from the project -> {body}")
+        stop = dap.wait_event("stopped", timeout=60)
+        check(stop.get("reason") == "entry" and top_frame(dap, 1).get("line") == entry_line,
+              "project: reloaded and stopped at the entry again")
+        # A launch configuration key overrides the block: no entry stop.
+        dap.request("restart", arguments={"project": project, "program": {"after": "none"}})
+        time.sleep(1)
+        dap.request("pause", threadId=1)
+        stop = dap.wait_event("stopped", timeout=10)
+        check(stop.get("reason") == "pause", f"project + override after:none: runs until paused ({stop.get('reason')})")
+        dap.request("continue", threadId=1)
+        dap.request("disconnect")
+        dap.sock.close()
+
+
+HOSTDRIVE = os.path.join(REPO, "firmware/pc1600-hostdrive")
+
+
+def rom_project(tmp, extra):
+    """A PC-1600 project preset: the host drive, its ROM rebuilt as a bus ROM in bank 7, its listing."""
+    os.makedirs(os.path.join(tmp, "S3"), exist_ok=True)
+    shutil.copy(os.path.join(HOSTDRIVE, "PC1600-P1-B7-HOSTDRIVE.bin"), os.path.join(tmp, "hostdrive.bin"))
+    project = os.path.join(tmp, "debug.pc1600")
+    with open(project, "w") as f:
+        f.write("format-version: 1\n"
+                    "model: PC-1600\n"
+                "host-drive: S3\n"
+                "bus-rom:\n"
+                "  - file: hostdrive.bin\n"
+                "    bank: 7\n"
+                "debug:\n"
+                "  listings:\n"
+                f"    - path: {HOSTDRIVE}/PC1600-P1-B7-HOSTDRIVE.lst\n"
+                "      cpu: z80\n"
+                "      bank: 7\n" + extra)
+    return project
+
+
+def bus_rom_run(port):
+    """ROM extensions: a PC-1500 bus ROM entered by `command`, the host-drive ROM rebuilt, the boot under the debugger."""
+    print("bus ROM runs:")
+    source = os.path.join(REPO, "tests/fixtures/listings/sdas-lh5801/busrom.asm")
+    with tempfile.TemporaryDirectory() as tmp:
+        project = os.path.join(tmp, "debug.pc1500a")
+        with open(project, "w") as f:
+            f.write("format-version: 1\n"
+                    "model: PC-1500A\n"
+                    "bus-rom:\n"
+                    f"  - file: {source[:-4]}.bin\n"
+                    "    address: 0x8000\n"
+                    "debug:\n"
+                    "  command: CALL &8000\n"
+                    "  listings:\n"
+                    f"    - {source[:-4]}.rst\n")
+        dap = Dap(port)
+        dap.request("initialize", adapterID="calcu1600")
+        dap.wait_event("initialized")
+        dap.request("attach", project=project)
+        bps = dap.request("setFunctionBreakpoints", breakpoints=[{"name": "BUSHIT"}])["breakpoints"]
+        check(bps and bps[0]["verified"], "PC-1500 bus ROM: function breakpoint BUSHIT verified")
+        dap.request("configurationDone")
+        stop = dap.wait_event("stopped", timeout=30)
+        top = top_frame(dap, 1)
+        check(stop.get("reason") == "breakpoint" and top.get("source", {}).get("path") == source,
+              f"PC-1500 bus ROM: CALL &8000 stops at {top.get('source', {}).get('name')}:{top.get('line')} ({stop.get('reason')})")
+        dap.request("setFunctionBreakpoints", breakpoints=[])
+        dap.request("continue", threadId=1)
+        dap.request("disconnect")
+        dap.sock.close()
+
+    with tempfile.TemporaryDirectory() as tmp:
+        project = rom_project(tmp, '  command: FILES "S3:"\n')
+        dap = Dap(port)
+        dap.request("initialize", adapterID="calcu1600")
+        dap.wait_event("initialized")
+        dap.request("attach", project=project)
+        dap.request("setFunctionBreakpoints", breakpoints=[{"name": "HDFILE"}])
+        dap.request("configurationDone")
+        stop = dap.wait_event("stopped", timeout=60)
+        top = top_frame(dap, 1)
+        check(stop.get("reason") == "breakpoint" and top.get("source", {}).get("name") == "hostdrive.asm",
+              f"host-drive bus ROM: FILES stops at {top.get('source', {}).get('name')}:{top.get('line')}")
+        # Build & Load without a program: the set-up again, the command again.
+        dap.request("continue", threadId=1)
+        dap.request("calcu1600/load")
+        stop = dap.wait_event("stopped", timeout=60)
+        check(stop.get("reason") == "breakpoint" and top_frame(dap, 1).get("line") == top.get("line"),
+              "host-drive bus ROM: Build & Load stops there again")
+        dap.request("setFunctionBreakpoints", breakpoints=[])
+        dap.request("continue", threadId=1)
+        dap.request("disconnect")
+        dap.sock.close()
+
+    with tempfile.TemporaryDirectory() as tmp:
+        project = rom_project(tmp, "  boot: debug\n")
+        dap = Dap(port)
+        dap.request("initialize", adapterID="calcu1600")
+        dap.wait_event("initialized")
+        dap.request("attach", project=project)
+        dap.request("setFunctionBreakpoints", breakpoints=[{"name": "HDRESET"}])
+        dap.request("configurationDone")
+        stop = dap.wait_event("stopped", timeout=60)
+        top = top_frame(dap, 1)
+        check(stop.get("reason") == "breakpoint" and top.get("source", {}).get("name") == "hostdrive.asm",
+              f"boot: debug: the power-on module reset stops at {top.get('source', {}).get('name')}:{top.get('line')}")
+        dap.request("setFunctionBreakpoints", breakpoints=[])
+        dap.request("continue", threadId=1)
+        dap.request("disconnect")
+        dap.sock.close()
+
+
+def renum_template_run(port):
+    """The PC-1500 ROM extension template: RENUM built as the extension builds it, stopped in, and run."""
+    print("RENUM template run:")
+    sdcc = os.environ.get("CALCU_SDCC_BIN") or os.path.dirname(shutil.which("sdaslh5801") or "")
+    if not sdcc or not os.path.exists(os.path.join(sdcc, "sdaslh5801")):
+        print("  skip: no sdaslh5801 (set CALCU_SDCC_BIN)")
+        return
+    template = os.path.join(REPO, "vscode/calcu1600-debug/templates/pc1500-bus-rom")
+    with tempfile.TemporaryDirectory() as tmp:
+        for name in ("NAME.asm", "debug.pc1500a"):
+            with open(os.path.join(template, name)) as f:
+                text = f.read().replace("{{name}}", "rom")
+            with open(os.path.join(tmp, name.replace("NAME", "rom")), "w") as f:
+                f.write(text)
+        # The VS Code extension's recipe (extension.js, assembleCommand).
+        build = subprocess.run(
+            f"'{sdcc}/sdaslh5801' -plosgff rom.asm"
+            " && printf -- '-muwx\\n-i rom\\nrom.rel\\n\\n-e\\n' > rom.lnk"
+            f" && '{sdcc}/sdld' -nf rom"
+            f" && '{sdcc}/makebin' -p -s 65536 -o 0x$(head -1 rom.ihx | cut -c4-7) rom.ihx rom.bin",
+            shell=True, cwd=tmp, capture_output=True, text=True)
+        check(build.returncode == 0 and not build.stdout.strip(), f"RENUM template builds {build.stdout.strip()}")
+        dap = Dap(port)
+        dap.request("initialize", adapterID="calcu1600")
+        dap.wait_event("initialized")
+        # As VS Code sends it: the extension adds `listings` / `symbols` (the
+        # user's ROM listings, here none), which must add to the project's;
+        # and the breakpoints follow the attach while it is still loading
+        # the preset -- they must not wait for a later request.
+        dap.send("attach", project=os.path.join(tmp, "debug.pc1500a"), listings=[], symbols=[])
+        time.sleep(0.05)
+        asm = os.path.join(tmp, "rom.asm")
+        with open(asm) as f:
+            line = next(i for i, l in enumerate(f, 1) if l.startswith("RENFIX:"))
+        bps = dap.request("setBreakpoints", source={"path": asm}, breakpoints=[{"line": line}])["breakpoints"]
+        check(bps and bps[0]["verified"], f"RENUM template: line breakpoint on RENFIX (line {line}) verified")
+        dap.request("configurationDone")
+        try:
+            stop = dap.wait_event("stopped", timeout=60)
+        except TimeoutError:
+            stop = {}
+        top = top_frame(dap, 1)
+        check(stop.get("reason") == "breakpoint" and top.get("source", {}).get("name") == "rom.asm",
+              f"RENUM template: RENUM 100,,10 stops at {top.get('source', {}).get('name')}:{top.get('line')}")
+        dap.request("setBreakpoints", source={"path": asm}, breakpoints=[])
+        dap.request("continue", threadId=1)
+        time.sleep(1.0)
+        dap.request("pause", threadId=1)
+        dap.wait_event("stopped")
+        start = base64.b64decode(dap.request("readMemory", memoryReference="0x7865", count=2)["data"])
+        prog = base64.b64decode(dap.request("readMemory", memoryReference=f"0x{start[0]:02X}{start[1]:02X}", count=160)["data"])
+        lines, i = [], 0
+        while i < len(prog) and prog[i] != 0xFF:
+            lines.append((prog[i] << 8 | prog[i + 1], prog[i + 3:i + 3 + prog[i + 2] - 1]))
+            i += 3 + prog[i + 2]
+        check([n for n, _ in lines] == list(range(100, 190, 10)), f"RENUM template: lines {[n for n, _ in lines]}")
+        refs = {n: t for n, t in lines}
+        check(refs.get(110, b"").endswith(b"170") and b"\xf1\x92160,140,140,140" in refs.get(130, b"")
+              and refs.get(140, b"").endswith(b"180") and refs.get(150, b"").endswith(b"120"),
+              "RENUM template: RESTORE 170, ON ... GOTO 160,140,140,140, GOSUB 180, THEN 120")
+        dap.request("continue", threadId=1)
+        dap.request("disconnect")
+        dap.sock.close()
+
+
+def lh5803_run(port):
+    """PC-1600 LH5803: LH5801 code loaded for the LH5803, started with the XCALL the debugger types."""
+    print("LH5803 run:")
+    dap = Dap(port)
+    dap.request("initialize", adapterID="calcu1600")
+    dap.wait_event("initialized")
+    dap.request("attach", preset=os.path.join(REPO, "vscode/calcu1600-debug/presets/debug-pc1600.pc1600"),
+                program={"bin": os.path.join(REPO, "tests/fixtures/listings/sdas-lh5801/memtest_stock.bin"),
+                         "listing": os.path.join(REPO, "tests/fixtures/listings/sdas-lh5801/memtest.rst"),
+                         "cpu": "lh5803", "address": "0x40C5", "after": "stopOnEntry"})
+    dap.request("configurationDone")
+    stop = dap.wait_event("stopped", timeout=60)
+    top = top_frame(dap, stop["threadId"])
+    check(stop.get("reason") == "entry" and stop["threadId"] == 2 and top.get("line") == 74,
+          f"XCALL &40C5 stops the LH5803 at {top.get('source', {}).get('name')}:{top.get('line')} (thread {stop['threadId']})")
+    dap.request("disconnect")
+    dap.sock.close()
+
+
+def rom_run(port):
+    """ROM research: reset and stop before the first instruction, then single-step."""
+    print("ROM run:")
+    dap = Dap(port)
+    dap.request("initialize", adapterID="calcu1600")
+    dap.wait_event("initialized")
+    dap.request("attach")
+    dap.request("configurationDone")
+    dap.request("calcu1600/reset", kind="reset", stop=True)
+    stop = dap.wait_event("stopped")
+    tid = stop["threadId"]
+    top = top_frame(dap, tid)
+    check(stop.get("reason") == "entry" and top["instructionPointerReference"] in ("0xE000", "0x0000"),
+          f"reset stops at the vector: {top['name']}")
+    for _ in range(5):
+        dap.request("stepIn", threadId=tid, granularity="instruction")
+        dap.wait_event("stopped")
+    frames = dap.request("stackTrace", threadId=tid, startFrame=0, levels=10)["stackFrames"]
+    check(len(frames) == 6, f"history after 5 steps: {len(frames) - 1} ({frames[-1]['name']} .. {frames[1]['name']})")
+    dap.request("continue", threadId=tid)
+    dap.request("disconnect")
+    dap.sock.close()
+
+
+def reset_run(port):
+    """All Reset & Stop, then run on: the machine boots and breakpoints fire."""
+    print("All Reset run:")
+    dap = Dap(port)
+    dap.request("initialize", adapterID="calcu1600")
+    dap.wait_event("initialized")
+    dap.request("attach")
+    dap.request("configurationDone")
+    dap.request("calcu1600/reset", kind="allReset", stop=True)
+    stop = dap.wait_event("stopped", timeout=30)
+    check(stop.get("reason") == "entry", f"all reset stops at the vector: {top_frame(dap, stop['threadId'])['name']}")
+    tid = stop["threadId"]
+    dap.request("continue", threadId=tid)
+    time.sleep(1.5)
+    dap.request("pause", threadId=tid)
+    stop = dap.wait_event("stopped")
+    tid = stop["threadId"]
+    pc = top_frame(dap, tid)["instructionPointerReference"]
+    dap.request("setInstructionBreakpoints", breakpoints=[{"instructionReference": pc}])
+    dap.request("continue", threadId=tid)
+    try:
+        stop = dap.wait_event("stopped", timeout=10)
+        check(stop.get("reason") == "breakpoint", f"after the boot, a breakpoint at {pc} hits")
+    except TimeoutError:
+        check(False, f"breakpoint at {pc} hit within 10 s")
+        dap.request("pause", threadId=tid)
+        dap.wait_event("stopped")
+    dap.request("setInstructionBreakpoints", breakpoints=[])
+    dap.request("continue", threadId=tid)
+    dap.request("disconnect")
+    dap.sock.close()
+
+
+def screen_run(port):
+    """calcu1600/screen: the LCD as text, after a typed PRINT MEM."""
+    print("Screen run:")
+    dap = Dap(port)
+    dap.request("initialize", adapterID="calcu1600")
+    dap.wait_event("initialized")
+    dap.request("attach", preset=os.path.join(REPO, "vscode/calcu1600-debug/presets/debug-pc1600.pc1600"),
+                command="PRINT MEM")
+    dap.request("configurationDone")
+    screen = {}
+    deadline = time.time() + 15
+    while time.time() < deadline:
+        screen = dap.request("calcu1600/screen")
+        if any("11834" in row for row in screen.get("rows", [])):
+            break
+        time.sleep(0.25)
+    check(any("11834" in row for row in screen.get("rows", [])), f"screen rows: {screen.get('rows')}")
+    check(screen.get("unparsed") == 0 and screen.get("poweredOn") is True,
+          f"unparsed {screen.get('unparsed')}, status {screen.get('status')}")
+    dap.request("disconnect")
+    dap.sock.close()
+
+
+def main():
+    ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    ap.add_argument("--port", type=int, default=32168)
+    ap.add_argument("--app", help="start this app binary with --dap <port> and quit it afterwards")
+    args = ap.parse_args()
+
+    proc = None
+    if args.app:
+        # -ApplePersistenceIgnoreState: no macOS window restoration for this run.
+        proc = subprocess.Popen([args.app, "--dap", str(args.port), "-ApplePersistenceIgnoreState", "YES"],
+                                stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    try:
+        dap = Dap(args.port, timeout=20.0)
+        caps = dap.request("initialize", adapterID="calcu1600", linesStartAt1=True, columnsStartAt1=True)
+        check(caps.get("supportsInstructionBreakpoints"), "initialize: capabilities")
+        dap.wait_event("initialized")
+        dap.request("attach", stopOnEntry=True)
+        dap.request("configurationDone")
+        stop = dap.wait_event("stopped")
+        check(stop.get("reason") == "entry", f"stopOnEntry -> stopped ({stop.get('reason')})")
+
+        threads = dap.request("threads")["threads"]
+        check(len(threads) >= 1, f"threads: {[t['name'] for t in threads]}")
+        tid = stop["threadId"]
+
+        frames = dap.request("stackTrace", threadId=tid, startFrame=0, levels=25)
+        stack = frames["stackFrames"]
+        check(len(stack) == 21, f"stackTrace: {len(stack)} frames; top '{stack[0]['name']}'")
+        pc_ref = stack[0]["instructionPointerReference"]
+        scopes = dap.request("scopes", frameId=stack[0]["id"])["scopes"]
+        regs = dap.request("variables", variablesReference=scopes[0]["variablesReference"])["variables"]
+        check(len(regs) >= 8, "registers: " + ", ".join(f"{v['name']}={v['value']}" for v in regs[:6]))
+        flags = [v for v in regs if v["name"] == "Flags"]
+        if flags:
+            bits = dap.request("variables", variablesReference=flags[0]["variablesReference"])["variables"]
+            check(len(bits) >= 4, "flags: " + " ".join(f"{b['name']}{b['value']}" for b in bits))
+
+        dis = dap.request("disassemble", memoryReference=pc_ref, offset=0, instructionOffset=-4, instructionCount=10)["instructions"]
+        # VS Code's disassembly view parses addresses as numbers.
+        check(len(dis) == 10 and any(i["address"] == pc_ref for i in dis) and all(int(i["address"], 16) >= 0 for i in dis),
+              f"disassemble around {pc_ref}: " + "; ".join(i["instruction"] for i in dis[3:6]))
+
+        mem = dap.request("readMemory", memoryReference=pc_ref, count=16)
+        check(len(base64.b64decode(mem["data"])) == 16, f"readMemory 16 bytes at {pc_ref}")
+
+        ev = dap.request("evaluate", expression="1 + 2 * 3", frameId=stack[0]["id"], context="repl")
+        check(ev["result"].startswith("0x07"), f"evaluate: {ev['result']}")
+
+        # Step one instruction.
+        dap.request("stepIn", threadId=tid, granularity="instruction")
+        stop = dap.wait_event("stopped")
+        check(stop.get("reason") == "step", "stepIn (instruction)")
+
+        # An instruction breakpoint on something just executed comes back.
+        after = dap.request("stackTrace", threadId=tid, startFrame=0, levels=3)["stackFrames"]
+        target = after[1]["instructionPointerReference"]
+        bps = dap.request("setInstructionBreakpoints", breakpoints=[{"instructionReference": target}])["breakpoints"]
+        check(bps and bps[0]["verified"], f"instruction breakpoint at {target}")
+        dap.request("continue", threadId=tid)
+        try:
+            stop = dap.wait_event("stopped", timeout=10)
+            check(stop.get("reason") == "breakpoint", f"breakpoint hit ({stop.get('hitBreakpointIds')})")
+        except TimeoutError:
+            check(False, "breakpoint hit within 10 s")
+            dap.request("pause", threadId=tid)
+            dap.wait_event("stopped")
+        dap.request("setInstructionBreakpoints", breakpoints=[])
+
+        dap.request("continue", threadId=tid)
+        time.sleep(0.3)
+        dap.request("pause", threadId=tid)
+        stop = dap.wait_event("stopped")
+        check(stop.get("reason") == "pause", "continue + pause")
+
+        dap.request("disconnect")
+        dap.sock.close()
+
+        program_run(args.port)
+        pc1600_run(args.port)
+        project_run(args.port)
+        bus_rom_run(args.port)
+        renum_template_run(args.port)
+        rom_run(args.port)
+        reset_run(args.port)
+        lh5803_run(args.port)
+        screen_run(args.port)
+        print("done:", "all passed" if check.failures == 0 else f"{check.failures} failed")
+    finally:
+        if proc:
+            # Quit it the normal way (a kill makes macOS offer to restore
+            # its windows on the next launch); kill only as a last resort.
+            try:
+                Dap(args.port, timeout=5).request("calcu1600/quit")
+                proc.wait(timeout=10)
+            except Exception:
+                proc.kill()
+    return 1 if check.failures else 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

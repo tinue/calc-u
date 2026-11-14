@@ -1,0 +1,274 @@
+#include "PC1500Memory.hpp"
+
+#include <algorithm>
+#include <cstdio>
+#include <vector>
+
+PC1500Memory::PC1500Memory(PC1500Variant variant)
+    : m_variant(variant),
+      m_userRamSize(variant == PC1500Variant::PC1500A ? kUserRamSizeA : kUserRamSizePlain),
+      m_systemRamAddrMask(variant == PC1500Variant::PC1500A ? 0x7FF : 0x3FF),
+      m_expansionConnector(variant) {
+    m_rom.fill(0xFF);  // open until a ROM is loaded
+    // Power-up: user CMOS RAM that has lost its supply comes back (mostly)
+    // zero on real hardware, not 0xFF -- modelled as all 0x00. The 1.5K at
+    // &7600-&7BFF (display RAM + the 1K system RAM) instead reads 0xFF after a
+    // power loss on a real PC-1500 (measured), so that window is filled 0xFF.
+    clearRam();
+}
+
+void PC1500Memory::clearRam() {
+    m_userRam.fill(0x00);
+    // The measured 0xFF window is &7600-&7BFF: all of display RAM plus the low
+    // 1K of system RAM. A PC-1500A's upper 1K (&7C00-&7FFF) is unmeasured, so
+    // it stays 0x00; a plain PC-1500 never reaches it (it aliases the low 1K).
+    m_displayRam.fill(0xFF);
+    const auto systemFfEnd = m_systemRam.begin() + kSystemRamPowerUpFfSize;
+    std::fill(m_systemRam.begin(), systemFfEnd, uint8_t{0xFF});
+    std::fill(systemFfEnd, m_systemRam.end(), uint8_t{0x00});
+}
+
+bool PC1500Memory::loadROM(const uint8_t* data, size_t size) {
+    if (size != kRomSize) return false;
+    for (size_t i = 0; i < kRomSize; i++) m_rom[i] = data[i];
+    return true;
+}
+
+bool PC1500Memory::loadROMFile(const std::string& path) {
+    FILE* f = std::fopen(path.c_str(), "rb");
+    if (!f) return false;
+    std::vector<uint8_t> buf(kRomSize + 1);
+    size_t n = std::fread(buf.data(), 1, buf.size(), f);
+    std::fclose(f);
+    if (n != kRomSize) return false;
+    return loadROM(buf.data(), kRomSize);
+}
+
+void PC1500Memory::reset() {
+    // A real RESET leaves RAM alone -- the BASIC program, variables and
+    // system area survive it, and the ROM's own start-up code decides what
+    // to keep. Clearing RAM is clearRam()'s job (power-up, ALL RESET).
+    m_dda = m_opa = m_ddb = m_opb = 0;
+    m_opc = 0;
+    m_serial.reset();
+    updateBuzzerLine(m_serial.sdo());
+    m_if = 0;
+    m_rtc = Upd1990ac{}; // fresh chip state -- TP un-configured until the ROM issues a rate-select, same as real power-on
+    m_ioScratchRegs.fill(0);
+    // Keyboard/ON-key state deliberately untouched -- a CPU reset doesn't
+    // release physically-held keys.
+}
+
+bool PC1500Memory::inhibitAsserted() const {
+    return m_expansionConnector.inhibitAsserted() || m_systemBus.inhibitAsserted();
+}
+
+const uint8_t* PC1500Memory::resolve(uint16_t addr, bool forWrite) const {
+    if (addr >= kRomBase) {
+        // ROM never accepts writes, regardless of INHIBIT -- checked first
+        // so a write doesn't pay for the INHIBIT query below.
+        if (forWrite) return nullptr;
+        // A card on either connector can pull INHIBIT low to suppress the
+        // system ROM and substitute its own content there (Expansion-
+        // Connectors.md §2.1/§2.2's INHIBIT pin) -- readME0/peek fall
+        // through to the connectors below when this returns nullptr, so
+        // this is the ROM's whole story here; the connector's own response
+        // (if any) is what actually supplies the byte.
+        if (inhibitAsserted()) return nullptr;
+        return &m_rom[addr - kRomBase];
+    }
+    if (addr >= kUserRamBase && addr < kUserRamBase + m_userRamSize) {
+        return &m_userRam[addr - kUserRamBase];
+    }
+    if (addr >= kSystemRamBase && addr < kSystemRamBase + kSystemRamWindowSize) {
+        // Plain PC-1500: the TC5514 pair only decodes A0-A9 (10 lines)
+        // across this 11-line, 2KB window, so &7C00-&7FFF aliases
+        // &7800-&7BFF at a fixed &400 offset (Ref/PC-1500/Memory-Architecture/PC-1500-Address-Decoding.md
+        // §2.3) -- masking off bit 10 of the window-relative offset
+        // reproduces exactly that. The PC-1500A doesn't alias (mask covers
+        // the full window), so one masked expression serves both models.
+        return &m_systemRam[(addr - kSystemRamBase) & m_systemRamAddrMask];
+    }
+    if (addr >= kDisplayRamBase && addr < kDisplayRamBase + kDisplayRamWindowSize) {
+        return &m_displayRam[(addr - kDisplayRamBase) % kDisplayRamSize];
+    }
+    return nullptr; // open bus: 0x0000-0x3FFF, 0x5800-0x6FFF, 0x8000-0xBFFF
+                     // (plus 0x4800-0x57FF on the plain PC-1500)
+}
+
+uint8_t* PC1500Memory::resolve(uint16_t addr, bool forWrite) {
+    return const_cast<uint8_t*>(static_cast<const PC1500Memory*>(this)->resolve(addr, forWrite));
+}
+
+uint8_t PC1500Memory::readOpenBus(uint16_t addr) const {
+    // Called once resolve() has already returned nullptr: either a
+    // module-slot open-bus range (Y0, the variant's open S-range, Y2) or
+    // ROM with INHIBIT asserted -- in both cases, a card on either
+    // connector gets first refusal before we fall back to the open-bus
+    // 0xFF. Consulted on every access in these ranges, not a memory-map
+    // shortcut.
+    uint8_t v;
+    if (m_expansionConnector.read(addr, m_pu, m_pv, v)) return v;
+    if (busRead(addr, /*me1=*/false, v)) return v;
+    return 0xFF;
+}
+
+uint8_t PC1500Memory::readME0(uint16_t addr) {
+    if (const uint8_t* p = resolve(addr, /*forWrite=*/false)) return *p;
+    return readOpenBus(addr);
+}
+
+void PC1500Memory::writeME0(uint16_t addr, uint8_t value) {
+    if (uint8_t* p = resolve(addr, /*forWrite=*/true)) { *p = value; return; }
+    if (m_expansionConnector.write(addr, m_pu, m_pv, value)) return;
+    if (busWrite(addr, /*me1=*/false, value)) return;
+}
+
+uint8_t PC1500Memory::peek(uint16_t addr) const {
+    if (const uint8_t* p = resolve(addr, /*forWrite=*/false)) return *p;
+    return readOpenBus(addr);
+}
+
+bool PC1500Memory::debugSlotResponds(uint16_t addr) const {
+    uint8_t v;
+    return m_expansionConnector.read(addr, m_pu, m_pv, v);
+}
+
+bool PC1500Memory::poke(uint16_t addr, uint8_t value) {
+    // Same address decode as writeME0(), but flagged `direct` on the
+    // connector path: this is the host/debug/preset-loader write, not a
+    // guest-CPU store, so a card that gates runtime writes (the CE-163F's
+    // flash banks need a JEDEC unlock sequence) lets it through
+    // unconditionally. The preset loader has no concept of a bank or a lock
+    // -- it just pokes the currently-selected bank -- which is exactly the
+    // semantics a debug poke wants too.
+    if (uint8_t* p = resolve(addr, /*forWrite=*/true)) { *p = value; return true; }
+    if (const WriteResult r = m_expansionConnector.write(addr, m_pu, m_pv, value, /*direct=*/true))
+        return r.stored;
+    // The 60-pin plug carries no lock-gating card, so a plain write is
+    // enough.
+    return busWrite(addr, /*me1=*/false, value).stored;
+}
+
+uint8_t PC1500Memory::debugPeekME1(uint16_t addr, bool* readable) const {
+    *readable = true;
+    // Same order as readME1(); a card register a read would disturb stays
+    // unread (see SystemBusCard::readHasSideEffects).
+    uint8_t v;
+    const SystemBusPins pins = busPins(addr, /*forWrite=*/false, /*me1=*/true);
+    if (m_systemBus.readHasSideEffects(pins)) {
+        *readable = false;
+        return 0xFF;
+    }
+    if (m_systemBus.read(pins, v)) return v;
+    if (isIoChipAddress(addr) && !isNoRegister(addr)) {
+        switch (addr & 0xF) {
+            case 0xC: return m_dda;
+            case 0xE: return m_opa;
+            case 0xD: return m_ddb;
+            case 0xF: return m_opb;
+            case 0x8: return m_opc;
+            case 0xB: return m_if;
+            default: return m_ioScratchRegs[addr & 0xF];
+        }
+    }
+    return 0xFF; // open bus, as readME1()
+}
+
+uint8_t PC1500Memory::readME1(uint16_t addr) {
+    // Only the 60-pin plug carries ME1 (the 40-pin connector has no
+    // equivalent), and a card there gets first refusal on every ME1
+    // access. The host doesn't need to know which card sits where; with no
+    // card on the chain this falls straight through. The internal LH5811
+    // answers ME1 F000-FFFF (isIoChipAddress()), the CE-150's LH5810 the
+    // B000-BFFF page, so the two never clash.
+    {
+        uint8_t v;
+        if (busRead(addr, /*me1=*/true, v)) return v;
+    }
+    if (isIoChipAddress(addr) && !isNoRegister(addr)) {
+        switch (addr & 0xF) { // RS0-3 = AD0-3
+            case 0xC: return m_dda;
+            case 0xE: return m_opa;
+            case 0xD: return m_ddb;
+            case 0xF: {
+                uint8_t v = uint8_t(m_opb | 0x08); // PB3 must read high -- confirmed ROM-dispatch gotcha, see header comment
+                if (m_rtc.tp()) v |= 0x20; else v &= uint8_t(~0x20); // PB5 = RTC TP live level (+ any pending edge) -- see Upd1990ac::tp()
+                if (m_rtc.dataOut()) v |= 0x40; else v &= uint8_t(~0x40); // PB6 = RTC DATA OUT -- the bit WRITE_2_CLOCK ($E52B) clocks out on a TIME read
+                // ON key on PB7, high while pressed: IF1 latches PB7's rising
+                // edge on a press (TRM p.71), the CE-150's tape reader takes
+                // PB7 = 1 as BREAK (LOAD_NIBBLE &BE2F), and the PC-1600's
+                // compatible block reads 1 = pressed (Baum p.92). The system
+                // ROM itself only sees the IF1 latch.
+                if (m_onKeyPressed) v |= 0x80; else v &= uint8_t(~0x80);
+                // PB2 = CMTIN, while a tape interface drives it
+                if (m_systemBus.cmtIn((v & 0x04) != 0)) v |= 0x04; else v &= uint8_t(~0x04);
+                return v;
+            }
+            case 0x8: return m_opc;
+            case 0xB:
+                // TP's rising edge (if any) latches into bit 1 here --
+                // deliberately does NOT clear on read, see m_if's own doc
+                // comment in the header for why that specific behavior is
+                // what actually breaks BREAK.
+                if (m_rtc.consumeRisingEdge()) m_if |= 0x02;
+                return uint8_t((m_if & ~0x08) | (m_serial.td() ? 0x08 : 0x00)); // b3 = TD, read-only
+            // MSK read: bit 7 = CL1, wired to CL0 (the serial clock; PC-1500
+            // Service Manual pin table) -- the CE-150 tape reader's timer.
+            case 0xA: return uint8_t((m_ioScratchRegs[0xA] & 0x7F) | (m_serial.cl0() ? 0x80 : 0x00));
+            case 0x9: return m_serial.g();
+            default: return m_ioScratchRegs[addr & 0xF]; // not modeled, but read back what was written
+        }
+    }
+    // Nothing else answers in ME1: the RAMs, the display RAM and the ROM
+    // decode ME0 only (TRM chip-select table: "S0-S7, V2, V3 are applicable
+    // only for the ME0 area"), and a real PC-1500A reads 255 there --
+    // PEEK# &111, &7C02 and &C000 (2026-10-10, docs/background/Decisions.md).
+    return 0xFF;
+}
+
+void PC1500Memory::writeME1(uint16_t addr, uint8_t value) {
+    // See readME1(): a 60-pin card gets first refusal on every ME1 access.
+    if (busWrite(addr, /*me1=*/true, value)) return;
+    if (isIoChipAddress(addr) && !isNoRegister(addr)) {
+        switch (addr & 0xF) {
+            case 0xC: m_dda = value; return;
+            case 0xE: m_opa = value; return; // drives the keyboard column strobe -- see readInputPort()
+            case 0xD: m_ddb = value; return;
+            case 0xF: m_opb = value; return;
+            case 0x8:
+                m_opc = value;
+                // PC0=DATA IN, PC1=STB, PC2=CLK, PC3-5=C0-C2 -- see
+                // Upd1990ac::setControlPins(). All six lines matter: STB
+                // latches the C0/C1/C2 mode select, CLK shifts the 40-bit
+                // calendar register, DATA IN feeds bit 39 on a TIME= write.
+                m_rtc.setControlPins((value & 0x01) != 0, (value & 0x02) != 0,
+                                      (value & 0x04) != 0, (value & 0x08) != 0,
+                                      (value & 0x10) != 0, (value & 0x20) != 0);
+                // PC6 is one input of the buzzer gate; the BEEP loop toggles it.
+                updateBuzzerLine(m_serial.sdo());
+                return;
+            case 0xB: m_if = value; return;
+            case 0x4: m_serial.resetDivider(); return;
+            case 0x6: m_serial.writeL(value); return;
+            case 0x7: m_serial.writeF(value); return;
+            case 0x9: m_serial.writeG(value); return;
+            default: m_ioScratchRegs[addr & 0xF] = value; return; // not modeled, but not discarded either
+        }
+    }
+    // Unclaimed ME1: no chip takes the write (see readME1()).
+}
+
+uint8_t PC1500Memory::readInputPort() {
+    // A PA bit only actually drives its column line when DDA has configured
+    // it as an output; an input-mode bit floats regardless of what's latched
+    // in OPA, so it must never read as "strobed" (see m_dda's doc comment in
+    // the header for why this matters -- the real per-key scan routine
+    // selects one column at a time entirely via DDA, holding OPA at a fixed
+    // 0x00 the whole time). scan()'s driveLines convention is active-low
+    // (0 = strobed), so an
+    // input-mode bit (DDA=0) must be forced to 1 ("not strobed") regardless
+    // of OPA -- exactly what ORing in ~m_dda does.
+    uint8_t effectiveDriveLines = uint8_t(m_opa | uint8_t(~m_dda));
+    return m_keyboard.scan(effectiveDriveLines);
+}

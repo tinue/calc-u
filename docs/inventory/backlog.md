@@ -196,6 +196,7 @@ The source is the document that records them.
 | ID | Source | Item | Target | Note |
 |---|---|---|---|---|
 | B59-59 | `docs/contracts/debugger.md` (user, 2026-11-10) | CPU tab shows the commented ROM disassembly instead of raw mnemonics | product backlog | Calc-U-59 |
+| B1600-92 | Calc-U-1600 `TODO.md:403-405` at `v0.8.1` (added after the pin, `f0b3732`) | PC-1500 RAM disk on a CE-1638 / CE-163F card, software only (a driver loaded once over the CE-158); `docs/background/PC1500-Card-Disk-Idea.md` | product backlog | Calc-U-1600; a feature idea |
 | B1600-91 | `docs/contracts/capabilities.md`, C-2 (user, 2026-11-10) | A text layer for the plotters' paper: intercept text printing so Copy can give text as well as the image | product backlog | Calc-U-1600; the paper output kind already allows it |
 
 Notes:

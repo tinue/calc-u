@@ -53,6 +53,9 @@ ruled on 2026-11-13, and the steps below are worded accordingly:
   inventories and `presets.md`.
 - **If it differs:** the difference is recorded as a delta against the
   pin, and each spec that cites a changed file is read again.
+- **Result (2026-11-14, M-1):** `v0.8.1` @ `97f7043`, tree `1c36e0f`: a
+  docs-only delta, recorded in `docs/Process.md` (phase 1) and
+  `docs/inventory/calc-u-1600.md`; no spec cites a changed line.
 
 ### 2. Golden runs of both cores (record)
 - **What:** scripts of calls on each machine (keys at tick counts,
@@ -245,6 +248,9 @@ ruled on 2026-11-13, and the steps below are worded accordingly:
 - **Depends on it:** C59-5 AC-8, AC-9, which are worded exactly after
   it.
 - **If a covered window is suspended today:** AC-9 says so instead.
+- **Result (2026-11-14, M-3; the user, on the Swift app 2.3.0 on the
+  Mac):** a program kept running while its window was covered by another
+  for about 30 s. C59-5 AC-8, AC-9 stand.
 
 ## Checks on Calc-U-1600 at `b4ea8c8`
 

@@ -41,6 +41,13 @@ the table below.
     Re-pinned on 2026-11-09 from `v0.8.0` @ `d976d3f` (tree `bf9f277`).
     When `v0.8.1` is tagged, check that its tree is `947b850`; if not,
     record the difference as a delta.
+    `v0.8.1` was tagged 2026-11-14 at `97f7043` (tree `1c36e0f`, not `947b850`). The
+    delta is docs only: the CHANGELOG date of 0.8.1, `TODO.md` +4 lines
+    after line 402 (a feature idea, backlog B1600-92),
+    `docs/background/README.md` +9 lines after line 22, and the new
+    `docs/background/PC1500-Card-Disk-Idea.md`. Every `path:line` at
+    `b4ea8c8` holds at `v0.8.1`, except `TODO.md` after line 402 (+4);
+    no spec cites a changed line (M-1 of `docs/migration-plan.md`).
   - The patch branch `dev-2.3.1` holds only the version bump. Every later
     change in an old repository (hotfix, briefing §3) is recorded as a
     delta against the pin.

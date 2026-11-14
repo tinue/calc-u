@@ -31,8 +31,8 @@ One repository for the Calc-U products, released separately
 - The old repositories are not changed. Until a product is imported it
   is read only at its pin: Calc-U-59 at `/Users/me/Development/public/Calc-U-59`
   (tag `v2.3.0`), Calc-U-1600 at `/Users/me/Development/sharp/Calc-U-1600`
-  (`v0.8.1`; until it is tagged, branch `dev-0.8.1` @ `b4ea8c8`). Pins and
-  history: `docs/Process.md`, phase 1.
+  (tag `v0.8.1`; `b4ea8c8` plus a docs-only delta). Pins and history:
+  `docs/Process.md`, phase 1.
 - Short branches merged into `main` (ADR 0029); commit per step; no push
   unless asked.
 - Don't reopen anything listed in `Briefing.md` §3 (decisions already made).

@@ -12,6 +12,14 @@ references are at the new pin. Research facts from `Sharp1500-1600-Ref` @
 `42369839986` (2026-11-07, head SHA `70c3258`, the `v0.8.0` tree); no CI
 run exists for `dev-0.8.1` yet.
 
+`v0.8.1` was tagged 2026-11-14 at `97f7043` (tree `1c36e0f`, not `947b850`). The
+delta is docs only: the CHANGELOG date of 0.8.1, `TODO.md` +4 lines
+after line 402 (a feature idea, backlog B1600-92),
+`docs/background/README.md` +9 lines after line 22, and the new
+`docs/background/PC1500-Card-Disk-Idea.md`. Every `path:line` at
+`b4ea8c8` holds at `v0.8.1`, except `TODO.md` after line 402 (+4);
+no spec cites a changed line (M-1 of `docs/migration-plan.md`).
+
 ## Changes from 0.8.0 to 0.8.1
 
 `git diff --stat v0.8.0 b4ea8c8`: 42 files, +939 / −94. CHANGELOG entry

@@ -291,6 +291,22 @@ ruled on 2026-11-13, and the steps below are worded accordingly:
   and AC-32 is struck. **If none is found:** AC-32 stays, row 1600-8 is
   corrected, and `pause-on-start: cpu` is not offered on the PC-1500.
   Either way the spec is changed then, with the user (LIB-5 OQ-10).
+- **Result of the research part (2026-11-14, M-5; A04 disassembly
+  `~/Development/sharp/pc1500/disasm/rom/pc1500/a04/PC-1500-A04.asm`,
+  A01 and A03 the same here):** a signal exists. A key is taken when it
+  is down while the processor is in `WAIT_4_KB` (E243-E33D) with
+  `CURS_CTRL` (7B0E) bit 0 clear: the next `ita` (E427, in `ISKEY`, the
+  only one of the system ROM) takes it, without a debounce. Bit 0 is set
+  when a key is taken (E36A) and cleared only after 8 passes without a
+  key (counter from F8, E267, E2D0-E2D4); a key down while it is set is
+  swallowed. The matrix read alone is no signal (the same `ita` runs in
+  the release gate, `INKEY$` and the TRACE test). The command loop,
+  INPUT, DEF and RESERVE use the same wait; a running program samples
+  only BREAK, which the LH5811 latches. The ROM repeats only the four
+  cursor keys (first after 160 passes, then every 14). The pass length in
+  milliseconds rests on the timer clock, which no primary source gives.
+  Not yet recorded in the PC-1500 research repository; the spec change of
+  "if a signal is found" goes to the user. The C-7 part comes with M-8.
 
 ## Not first steps
 

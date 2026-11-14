@@ -24,7 +24,7 @@ the table below.
 | 4 | Contracts | `docs/contracts/*.md` | The abstractions, as interface specs | Done (approved 2026-11-10) |
 | 4b | Feature specs | `features/INDEX.md`, `features/<ID>-*/spec.md` | What each shared feature does, per product | Done (index approved 2026-11-10, specs approved 2026-11-11; prompt: `prompts/phase-4b.md`) |
 | 5 | Validation on paper (reduced) | `docs/walkthroughs/first-steps.md` (the preset pass went into the specs, the ADRs and `docs/formats/`) | Whether the specs hold together on the products' own presets; what must be tried before anything is built on it | Done (reduced 2026-11-11; first steps approved 2026-11-13; preset walkthrough removed 2026-11-13 as superseded; prompt: `prompts/phase-5.md`) |
-| 6 | Migration plan, then code | `docs/migration-plan.md`, `features/<ID>-*/design.md`, `qa-report.md` | Order of steps, each leaving every product green | Planned |
+| 6 | Migration plan, then code | `docs/migration-plan.md`, `features/<ID>-*/design.md`, `qa-report.md` | Order of steps, each leaving every product green | In progress (migration plan approved 2026-11-14; prompt: `prompts/phase-6.md`) |
 
 ### Phase 0 — Charter
 - `Briefing.md` is grilled until no open question is left that blocks

@@ -170,11 +170,19 @@ Starting afresh
 - [ ] **AC-20** — Given the PC-1500, PC-1500A and PC-1600, then each has
   a pacing profile whose slice is the call, with no jitter, and with
   full speed never paced (Calc-U-1600 `Shared/Pacer.cpp:21-61`).
-- [ ] **AC-21** — Given Calc-U-1600 before the pacer moves to the
-  library and after, when the long-run test runs a PC-1500A and a
-  PC-1600 at regular speed, then emulated time against wall time is the
-  same in both, within the bound of AC-1 (the two tests: Technical
-  Requirements).
+- [ ] **AC-21** — Given Calc-U-1600 after the pacer has moved to the
+  library, when the long-run test runs a PC-1500A and a PC-1600 at
+  regular speed, switched on and switched off, then emulated time,
+  counted at the machine's nominal clock (`kCpuHz`, `kTStateHz`),
+  differs from wall time by no more than 100 ppm (0.01 %, a crystal's
+  tolerance) over the run, and within the bound of AC-1 over a stretch.
+  The "before" test states 0.8.1's measured drift as the expected
+  difference: the PC-1600 0.0037 % fast while on and 0.21 % fast once it
+  has switched itself off, because the overshoot of each advance is
+  dropped (first step 14; decision log). The nominal clocks themselves
+  are not measured on real hardware (backlog B1600-93), so a drift
+  against a real machine is not a finding of this test (the two tests:
+  Technical Requirements).
 - [ ] **AC-22** — Given each frontend of Calc-U-1600 (Qt6, Web), when a
   PC-1600 runs at regular speed for one minute of wall time, then its
   emulated time has grown by one minute, within the bound of AC-1.
@@ -242,3 +250,4 @@ None.
 | ODD59-6 stays; only a preset's `wait:` at full speed is not paced on an idle TI machine (AC-16) | user, 2026-11-13 (question F-12 of `docs/walkthroughs/presets.md` §5.4): what was built is kept | 2026-11-13 |
 | Aligned with `docs/formats/` after the Q&A round: step names; attach missing only on the Web | user rulings of 2026-11-13 (`docs/walkthroughs/presets.md` §5.2, §5.4); `docs/formats/` | 2026-11-13 |
 | AC-18: the rates before and after may differ by up to 0.3 % (a calculator resonator's drift); 0.3 % to 1 % goes to the user, above 1 % fails. 2.3.0's own rate is 0.13 % (TI-59) and 0.10 % (TI-58C) slow | user, 2026-11-14 (first step 14) | 2026-11-14 |
+| AC-21: after the move, emulated time at the nominal clock within 100 ppm of wall time, on and off; the clocks are not measured on real hardware, so a drift seen against hardware may be a false positive (hardware measurements: backlog B1600-93) | user, 2026-11-14 (first step 14) | 2026-11-14 |

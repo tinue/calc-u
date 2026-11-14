@@ -236,8 +236,7 @@ struct PlatformAdapter : cu59::SessionController::Platform {
 - (TIDisplaySnapshot)display {
     const cu59::LedFrame& s = _c->display();
     TIDisplaySnapshot d{};
-    memcpy(d.digits, s.digits, sizeof d.digits);
-    memcpy(d.ctrl, s.ctrl, sizeof d.ctrl);
+    memcpy(d.segments, s.segments, sizeof d.segments);
     memcpy(d.digitLevel, s.digitLevel, sizeof d.digitLevel);
     memcpy(d.dpLevel, s.dpLevel, sizeof d.dpLevel);
     return d;

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Headless TI-59 harness: drive Core/ from Python and capture ROM traces.
+"""Headless TI-59 harness: drive the TI machine from Python and capture ROM traces.
 
 Loads tools/headless/build/libti59headless.dylib (build with build.sh),
 the TI-59 ROM/constant dumps from roms/calculator/, and optionally a
@@ -12,8 +12,10 @@ Library use:
 
 CLI:
     tools/headless/ti59.py 5 + 7 = [--full] [--module ML]
-Each argument is one key name (see KEYS); "2nd:x" style is not needed —
-press "2nd" then the key, as on the hardware.
+Each argument is one key name: a key ID of C59-1 AC-9 or one of its other
+spellings (docs/formats/preset.md §8.1; see KEYS), a second function (SECOND)
+or a matrix code; "2nd:x" style is not needed — press "2nd" then the key, as
+on the hardware.
 """
 from __future__ import annotations
 
@@ -28,18 +30,25 @@ HERE = Path(__file__).resolve().parent
 REPO = HERE.parent.parent
 ROMS = REPO / "roms"
 
-# Matrix code = row*10 + col (row 1-9 top to bottom, col 1-5 left to right).
+# The 45 key IDs (C59-1 AC-9) and the other spellings of docs/formats/preset.md
+# §8.1, each with its matrix code (row*10 + col, row 1-9 top to bottom, col 1-5
+# left to right). The library resolves a name through the machine's
+# descriptor (h_key_down); this table maps a matrix code to its key ID and
+# names the second functions' base keys.
 KEYS = {
     "A": 11, "B": 12, "C": 13, "D": 14, "E": 15,
     "2nd": 21, "INV": 22, "lnx": 23, "CE": 24, "CLR": 25,
-    "LRN": 31, "x<>t": 32, "x2": 33, "sqrt": 34, "1/x": 35,
-    "SST": 41, "STO": 42, "RCL": 43, "SUM": 44, "y^x": 45,
-    "BST": 51, "EE": 52, "(": 53, ")": 54, "/": 55,
-    "GTO": 61, "7": 62, "8": 63, "9": 64, "*": 65,
+    "LRN": 31, "x⇄t": 32, "x²": 33, "√x": 34, "1/x": 35,
+    "SST": 41, "STO": 42, "RCL": 43, "SUM": 44, "yˣ": 45,
+    "BST": 51, "EE": 52, "(": 53, ")": 54, "÷": 55,
+    "GTO": 61, "7": 62, "8": 63, "9": 64, "×": 65,
     "SBR": 71, "4": 72, "5": 73, "6": 74, "-": 75,
     "RST": 81, "1": 82, "2": 83, "3": 84, "+": 85,
     "R/S": 91, "0": 92, ".": 93, "+/-": 94, "=": 95,
 }
+KEY_ID = {code: name for name, code in KEYS.items()}  # matrix code -> key ID
+KEYS.update({"2ND": 21, "LNX": 23, "X⇄T": 32, "x<>t": 32, "X²": 33, "x^2": 33, "√X": 34, "sqrt": 34,
+             "1/X": 35, "Yˣ": 45, "y^x": 45, "/": 55, "x": 65, "*": 65})
 # 2nd functions: pressed as 2nd (21) followed by the base key's matrix code.
 SECOND = {
     "A'": 11, "B'": 12, "C'": 13, "D'": 14, "E'": 15,
@@ -54,13 +63,17 @@ SECOND = {
 }
 # The PC-100's own PRINT and ADV buttons (TI59Machine::pressPrinterPrint/Adv).
 PRINTER_BUTTONS = {"PRINT": "h_printer_print", "PAPER": "h_printer_adv"}
-KBITS = [0, 1, 2, 3, 5, 6]  # physical column -> K-line bit (Bridge/TI59MachineWrapper.mm)
 
-# The TI-59's idle-loop window (idleAndKeyDetect in Shared/MachineModelInfo.hpp);
-# in_idle() reads every model's from the library.
+# The TI-59's idle-loop window (TIPacingHints in core/TIAdapters.hpp); in_idle()
+# reads every model's from the library.
 IDLE_LO, IDLE_HI = 0x0627, 0x0660
 
 FLG_IDLE, FLG_COND = 0x0001, 0x0800
+
+# Segment bits (A-G as bits 0-6, core/TISegments.hpp) to the character shown.
+GLYPHS = {0b0111111: "0", 0b0000110: "1", 0b1011011: "2", 0b1001111: "3", 0b1100110: "4",
+          0b1101101: "5", 0b1111101: "6", 0b0000111: "7", 0b1111111: "8", 0b1101111: "9",
+          0b1000000: "-", 0b1100011: "°", 0b0100010: '"', 0b0100000: "'", 0: " "}
 
 
 class HRec(C.Structure):
@@ -77,18 +90,20 @@ class HRec(C.Structure):
 
 
 def _lib():
-    path = HERE / "build" / "libti59headless.dylib"
+    # TI59HEADLESS_LIB: a library built elsewhere (the CTest CalcU59HeadlessSmoke).
+    path = Path(os.environ.get("TI59HEADLESS_LIB", HERE / "build" / "libti59headless.dylib"))
     if not path.exists():
         os.system(str(HERE / "build.sh"))
     lib = C.CDLL(str(path))
     lib.h_new.restype = C.c_void_p
-    for name in ("h_free", "h_reset", "h_press",
-                 "h_release", "h_printer", "h_trace_sw", "h_stepn", "h_record", "h_snapshot",
+    for name in ("h_free", "h_reset", "h_printer", "h_trace_sw", "h_stepn", "h_record", "h_snapshot",
                  "h_ram_read", "h_ram_write", "h_write_program", "h_display", "h_pc",
                  "h_lib_exec_pc", "h_printer_lines", "h_printer_code_lines", "h_printer_print",
                  "h_printer_adv"):
         getattr(lib, name).argtypes = None
     lib.h_stepn.argtypes = [C.c_void_p, C.c_uint32]
+    lib.h_key_down.argtypes = [C.c_void_p, C.c_char_p]
+    lib.h_key_up.argtypes = [C.c_void_p, C.c_char_p]
     lib.h_load_model_roms.argtypes = [C.c_void_p, C.c_int, C.c_char_p]
     lib.h_load_module.argtypes = [C.c_void_p, C.c_char_p, C.c_char_p]
     lib.h_record.argtypes = [C.c_void_p, C.c_void_p, C.c_int, C.c_int]
@@ -124,10 +139,10 @@ def disasm(pc: int, op: int) -> str:
     return _DIS[k]
 
 
-# Machine variants: Core/MachineVariant.hpp enum value (= Shared/MachineModelInfo.hpp Model).
+# Models: app/MachineModelInfo.hpp Model (0 TI-59, 1 TI-58, 2 TI-58C).
 VARIANTS = {"TI59": 0, "TI58": 1, "TI58C": 2}
 
-# TI-59 active-mode instruction rate (instructionHz in Shared/MachineModelInfo.hpp).
+# TI-59 active-mode instruction rate (tick rate / 32, core/TICatalogue.cpp).
 INSTR_PER_SEC = LIB.h_instruction_hz(VARIANTS["TI59"])
 
 
@@ -181,7 +196,8 @@ class Machine:
         return r
 
     def elapsed(self) -> int:
-        """Weighted instruction count since reset (idle steps count 4); divide by
+        """Weighted instruction count since the machine was built (idle steps
+        count 4; tick count / 32, which goes on across a reset); divide by
         INSTR_PER_SEC for emulated seconds."""
         return LIB.h_elapsed(self.h)
 
@@ -213,17 +229,22 @@ class Machine:
                 return out
         return out
 
+    @staticmethod
+    def _key_id(name: str) -> bytes:
+        """A key name (ID or other spelling) as is; a matrix code as its key ID."""
+        return (KEY_ID[int(name)] if name.isdigit() and int(name) in KEY_ID else name).encode()
+
     def press(self, name: str):
         if name in PRINTER_BUTTONS:
             return getattr(LIB, PRINTER_BUTTONS[name])(self.h, 1)
-        mc = KEYS[name] if name in KEYS else int(name)
-        LIB.h_press(self.h, KBITS[mc % 10], mc // 10)
+        if LIB.h_key_down(self.h, self._key_id(name)) != 0:
+            raise KeyError(name)
 
     def release(self, name: str):
         if name in PRINTER_BUTTONS:
             return getattr(LIB, PRINTER_BUTTONS[name])(self.h, 0)
-        mc = KEYS[name] if name in KEYS else int(name)
-        LIB.h_release(self.h, KBITS[mc % 10], mc // 10)
+        if LIB.h_key_up(self.h, self._key_id(name)) != 0:
+            raise KeyError(name)
 
     def key(self, name: str, hold: int = 3000, max_steps: int = 2_000_000) -> list[HRec]:
         """Press a key, hold it for `hold` steps, release, run to quiescence."""
@@ -265,27 +286,21 @@ class Machine:
     def write_program(self, keycodes: list[int]):
         LIB.h_write_program(self.h, (C.c_uint8 * len(keycodes))(*keycodes), len(keycodes))
 
+    def display_output(self) -> list[tuple[int, bool, float]]:
+        """The machine's display output since the last call, index 0 rightmost:
+        (segments A-G as bits 0-6, decimal point lit, brightness 0-1)."""
+        seg = (C.c_uint8 * 12)(); dp = (C.c_uint8 * 12)(); br = (C.c_float * 12)()
+        LIB.h_display(self.h, seg, dp, br)
+        return [(seg[i], bool(dp[i]), br[i]) for i in range(12)]
+
     def display(self) -> str:
-        """Display as seen on the LEDs, leftmost digit first (glyph decode as in
-        App/Views/LEDDisplayView.swift)."""
-        d = (C.c_uint8 * 12)(); c = (C.c_uint8 * 12)(); mk = (C.c_uint16 * 2)()
-        LIB.h_display(self.h, d, c, mk)
+        """Display as seen on the LEDs, leftmost digit first, decoded from the
+        lit segments (core/TISegments.hpp); a position not driven since the
+        last call reads as blank."""
         out = []
-        for i in reversed(range(12)):
-            ctl, dig = c[i], d[i]
-            if ctl in (0, 1, 8, 9):
-                ch = " " if (mk[1] >> i) & 1 else f"{dig:X}"
-            elif ctl == 2:
-                ch = '"'
-            elif ctl == 4:
-                ch = "'"
-            elif ctl == 5:
-                ch = "°"
-            elif ctl == 6:
-                ch = "-"
-            else:
-                ch = " "
-            out.append(ch + ("." if (mk[0] >> i) & 1 else ""))
+        for seg, dp, bright in reversed(self.display_output()):
+            ch = GLYPHS.get(seg, " ") if bright > 0 else " "
+            out.append(ch + ("." if dp else ""))
         return "".join(out)
 
     def regA_display(self) -> str:

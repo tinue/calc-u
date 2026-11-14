@@ -34,9 +34,9 @@ namespace {
 // (0.13 % and 0.10 %); the TI-58 divides evenly. That rate is the expected
 // difference of this "before" test (LIB-17 AC-18; first step 14): the test
 // checks emulated time against wall time x rate.
-double ticksPerSecond(Model model) { return info(model).instructionHz; }
+double ticksPerSecond(Model model) { return testroms::instructionHz(model); }
 double oldRate(Model model) {
-    const double exact = info(model).instructionHz * kBatchSeconds;
+    const double exact = testroms::instructionHz(model) * kBatchSeconds;
     return static_cast<int32_t>(exact) / exact;
 }
 
@@ -55,10 +55,11 @@ TEST(pacing_longrun_scripted_ti) {
         auto m = testroms::makeMachine(model);
         testroms::runToScanLoop(*m, model);
         const double tps = ticksPerSecond(model) * oldRate(model);  // emulated seconds at 2.3.0's rate
-        FreezeController freeze(model);
+        FreezeController freeze;
         EmulationRunner::Callbacks cb;
         cb.jitterSeed = 59;
-        EmulationRunner runner(*m, model, freeze, cb, Threading::Cooperative);
+        MachineGuard guard(*m);
+    EmulationRunner runner(guard, model, freeze, cb, Threading::Cooperative);
         runner.start();
         auto t = Clock::time_point{} + std::chrono::hours(2);
         runner.pump(t, nullptr);
@@ -66,7 +67,7 @@ TEST(pacing_longrun_scripted_ti) {
         auto rnd = [&] { lcg = lcg * 1664525u + 1013904223u; return (lcg >> 8) / double(1u << 24); };
         std::vector<Stretch> stretches;
         auto begin = t;
-        uint64_t ticks0 = m->elapsedTicks();
+        uint64_t ticks0 = ((*m).tickCount() / 32);
         double worst = 0;
         const auto end = t + std::chrono::hours(1);
         int calls = 0;
@@ -75,20 +76,20 @@ TEST(pacing_longrun_scripted_ti) {
             if (++calls % 9000 == 0) step += std::chrono::milliseconds(50);                          // an oversleep
             bool stall = calls == 108'000;                                                           // 30 min in
             if (stall) {
-                Stretch s{std::chrono::duration<double>(t - begin).count(), (m->elapsedTicks() - ticks0) / tps};
+                Stretch s{std::chrono::duration<double>(t - begin).count(), (((*m).tickCount() / 32) - ticks0) / tps};
                 stretches.push_back(s);
                 t += std::chrono::seconds(5);
                 runner.pump(t, nullptr);  // the schedule restarts instead of catching up
                 begin = t;
-                ticks0 = m->elapsedTicks();
+                ticks0 = ((*m).tickCount() / 32);
                 continue;
             }
             t += step;
             runner.pump(t, nullptr);
-            const double d = std::fabs(std::chrono::duration<double>(t - begin).count() - (m->elapsedTicks() - ticks0) / tps);
+            const double d = std::fabs(std::chrono::duration<double>(t - begin).count() - (((*m).tickCount() / 32) - ticks0) / tps);
             worst = std::max(worst, d);
         }
-        stretches.push_back({std::chrono::duration<double>(t - begin).count(), (m->elapsedTicks() - ticks0) / tps});
+        stretches.push_back({std::chrono::duration<double>(t - begin).count(), (((*m).tickCount() / 32) - ticks0) / tps});
         runner.stop();
         runner.pump(t, nullptr);
         std::printf("  pacing %s: %.2f ticks/s at 2.3.0's rate, worst |emulated - wall| %.4f s over %zu stretches\n",
@@ -106,16 +107,17 @@ TEST(pacing_longrun_real_clock_ti) {
         auto m = testroms::makeMachine(model);
         testroms::runToScanLoop(*m, model);
         const double tps = ticksPerSecond(model) * oldRate(model);
-        FreezeController freeze(model);
+        FreezeController freeze;
         EmulationRunner::Callbacks cb;
-        EmulationRunner runner(*m, model, freeze, cb, Threading::Threads);
-        const uint64_t t0 = m->elapsedTicks();
+        MachineGuard guard(*m);
+    EmulationRunner runner(guard, model, freeze, cb, Threading::Threads);
+        const uint64_t t0 = ((*m).tickCount() / 32);
         const auto w0 = Clock::now();
         runner.start();
         std::this_thread::sleep_for(std::chrono::duration<double>(seconds));
         uint64_t ticks = 0;
         runner.stop();
-        runner.sync([&] { ticks = m->elapsedTicks() - t0; });
+        runner.sync([&] { ticks = ((*m).tickCount() / 32) - t0; });
         const double wall = std::chrono::duration<double>(Clock::now() - w0).count();
         const double emulated = ticks / tps;
         std::printf("  pacing real clock %s: wall %.3f s, emulated %.3f s, difference %.4f s\n",

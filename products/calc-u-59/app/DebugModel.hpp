@@ -44,14 +44,14 @@ public:
     /// The 60 Hz frame: the CALCULATOR snapshot while running and its panel
     /// shows; the heatmap while the CPU panel shows or frozen (steps add
     /// frames); the running CPU history.
-    Update tick(const TI59Machine& m, bool livePanel, bool cpuPanel, bool frozen);
+    Update tick(const calcu::machine::Machine& m, bool livePanel, bool cpuPanel, bool frozen);
     /// The machine stopped at a point to show (freeze, armed freeze, step).
-    Update frozenView(const TI59Machine& m, FrozenViewReason reason);
+    Update frozenView(const calcu::machine::Machine& m, FrozenViewReason reason);
     /// The CALCULATOR snapshot now, and when frozen the listing (only a frozen
     /// panel shows it).
-    Update rebuildLive(const TI59Machine& m, bool frozen);
+    Update rebuildLive(const calcu::machine::Machine& m, bool frozen);
 
-    void resetHeatmapBaseline(const TI59Machine& m);
+    void resetHeatmapBaseline(const calcu::machine::Machine& m);
     void clearHeatmap() { m_heatmap.clear(); }
 
     RingLog& log() { return m_log; }
@@ -66,7 +66,7 @@ public:
     const std::vector<uint32_t>& heatmapCounts() const { return m_heatmap.counts(); }
 
 private:
-    Update captureInspector(const TI59Machine& m);
+    Update captureInspector(const calcu::machine::Machine& m);
 
     ModuleImage m_module;
     std::string m_moduleError;

@@ -20,7 +20,7 @@ the named one still to do (the Notes say why); `Swift only` / `Qt only` /
 | Feature | Swift | Qt | Web | Shared | Status | Notes |
 |---|---|---|---|---|---|---|
 | Model picker TI-59 / TI-58 / TI-58C | `CalculatorView` | `ControlBar` | `ControlBar` | `SessionController` startMachine, `MachineModelInfo` | All | |
-| Reset; clean reset (Cmd/Ctrl held, red "Clean") | `CalculatorView` | `ControlBar` | `ControlBar` | `SessionController`, `StateApplier` softReset/cleanReset | All | iOS and web touch: 1 s long press |
+| Reset; clean reset (Cmd/Ctrl held, red "Clean") | `CalculatorView` | `ControlBar` | `ControlBar` | `SessionController`, `Machine::reset()`/`coldBoot()` (C59-1) | All | iOS and web touch: 1 s long press |
 | Calculator artwork, key hit test (widened rects) | `KeyboardView` | `KeyboardWidget` | `CalculatorFace`, `WebController` (hit test) | `KeyboardLayout` | All | Web: transparent key buttons for assistive technology |
 | Pressed-key effect (blacked out, shifted 3 px) | `KeyboardView` | `KeyboardWidget` | `CalculatorFace` | — | All | |
 | One key at a time; release on focus loss / teardown | `KeyboardView` | `KeyboardWidget` | `CalculatorFace`, `WebController` | — | All | |

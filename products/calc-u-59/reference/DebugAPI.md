@@ -8,7 +8,7 @@ The debugger has three layers:
 
 | Layer | Where | What |
 |---|---|---|
-| Core | `TI59Machine`, `TMC0501` (`core/`) | RAM, program and SCOM access, the trace ring, step-boundary latch, debug events, the ASM overlay, breakpoints |
+| Core | `TIMachine` and the adapters of `core/TIAdapters.hpp` (`TIDebugTargetAdapter`, `TIDebugPanelAdapter`, `TIMemoryAdapter`; C59-1, until LIB-10 59 / C59-4 / C59-2), over `TMC0501` (`core/`) | RAM, program and SCOM access, the trace ring, step-boundary latch, debug events, the ASM overlay, breakpoints |
 | Shared | `EmulatorSession`, `DebugModel`, `DebugSnapshots`, `DebugText`, `DebugLog`, `TraceWriter`, `AsmOverlay` (`app/`) | Freeze and step, the panels' data and text, the LOG, trace files |
 | GUI | Swift: `EmulatorViewModel` → `frontends/swift/Bridge/TISessionController`, views in `frontends/swift/App/Views/` (`DebugView`, `LiveDebugView`, `CPUInspectorView`). Qt: `EmulatorController`, widgets in `frontends/qt6/app/debug/` (`DebugPanel`, `LiveDebugWidget`, `CpuInspectorWidget`, `RomHeatmapWidget`, `AsmOverlayBox`, `LogWidget`). Web: `WebController` (`frontends/web/bindings.cpp`), `frontends/web/src/Debugger.jsx` (`LiveDebug`, `FreezeHeader`, `CpuInspector`, `Heatmap`, `AsmOverlay`, `LogTab`; wide layout only) | Drawing only |
 
@@ -22,7 +22,7 @@ https://calc-u.org/59/.
 
 ## Calculator-level machine access
 
-`TI59Machine` calls the debugger and the state loader use. Writes are made
+The adapter calls (`core/TIAdapters.hpp`) the debugger and the state loader use. Writes are made
 with the run loop stopped (`EmulatorSession::sync`), as
 `app/StateApplier.cpp` does.
 
@@ -293,7 +293,7 @@ of the state.
 
 ### Trace flags
 
-`TI59Machine::setTraceFlags` (`core/TraceTypes.hpp`). In the apps only
+`TIDebugTargetAdapter::setTraceFlags` (`core/TraceTypes.hpp`). In the apps only
 `EmulatorSession` sets them, from `traceFlagsFor(TraceConsumers)`: any
 consumer (CPU panel visible, frozen, an armed freeze, manual or scripted
 trace) gives `TRACE_PC | TRACE_REGS_FULL`; none gives `TRACE_NONE`, the fast
@@ -308,13 +308,13 @@ path.
 
 ### Breakpoints
 
-Core breakpoints (`TI59Machine::addBreakpoint`, `TRACE_BREAKPOINTS`,
+Core breakpoints (`TIDebugTargetAdapter::addBreakpoint`, `TRACE_BREAKPOINTS`,
 `kBreakpointHit`) are used only by the headless tools (`tools/headless/`).
 No GUI sets them.
 
 ### Disassembler
 
-`static std::string TI59Machine::disassemble(uint16_t pc, uint16_t opcode)`
+`static std::string TIDebugTargetAdapter::disassemble(uint16_t pc, uint16_t opcode)`
 needs no machine state and returns a mnemonic such as `"ADD A, C [MANT]"`
 or `"BR 0x03A2"`.
 
@@ -337,7 +337,7 @@ Qt `logText()`).
 
 Qt and the web client have the same names as `SessionController` for the
 four dumps and the level. The level
-is passed to the core (`TI59Machine::setDebugLevel`). Shared code logs
+is passed to the core (`TIDebugPanelAdapter::setDebugLevel`). Shared code logs
 through `SessionController` (or `EmulatorSession::Listener::logLine`).
 
 ### Core debug events
@@ -345,7 +345,7 @@ through `SessionController` (or `EmulatorSession::Listener::logLine`).
 `TMC0501::emitDebug(level, fmt, …)` queues a `DebugEvent` (80-character
 message, `vsnprintf` truncates) and is a no-op above the current level, so
 it costs nothing when the LOG is off. `FrameSampler::tick` drains the queue
-every 60 Hz frame (`TI59Machine::drainDebugEvents`), keeps events at or
+every 60 Hz frame (`TIDebugPanelAdapter::drainDebugEvents`), keeps events at or
 below the level, and the controller appends them to the LOG.
 
 | Level | Shown at | Use for |
@@ -353,7 +353,7 @@ below the level, and the controller appends them to the LOG.
 | 1 (INFO) | Info, Debug | Infrequent events such as mode changes |
 | 2 (DEBUG) | Debug | Per-instruction events such as register writes |
 
-`emitDebug` is private to `TMC0501`; `TI59Machine` needs a public helper or
+`emitDebug` is private to `TMC0501`; the core needs a public helper or
 a call through `m_cpu`. `fmtNibs(d, buf, reverse)` in `TMC0501.cpp` formats
 16 nibbles (`reverse = true`: nibble 15 first). Current DEBUG events:
 
@@ -369,7 +369,7 @@ a call through `m_cpu`. `fmtNibs(d, buf, reverse)` in `TMC0501.cpp` formats
 ## ASM Overlay
 
 Runs hand-assembled TMC0501 code from a debug-only ROM region, for
-ROM-level experiments. Core: `TI59Machine::loadDebugOverlay`,
+ROM-level experiments. Core: `TIDebugPanelAdapter::loadDebugOverlay`,
 `clearDebugOverlay`, `runDebugOverlay`. Shared: `cu59::parseAsmWords` and
 `runAsmOverlay` (`app/AsmOverlay.hpp`), driven by
 `SessionController::loadAsm`, `runAsm`, `clearAsm`.

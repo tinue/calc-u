@@ -14,7 +14,7 @@
 
 namespace cu59 {
 
-inline constexpr size_t kConstantMemoryBytes = 120 * 16;  ///< TI59Machine::serialiseRAM size
+inline constexpr size_t kConstantMemoryBytes = 120 * 16;  ///< TIMemoryAdapter::serialiseRAM size
 
 /// Encode serialised RAM (120 registers × 16 nibbles) and the user's cue card.
 std::string encodeConstantMemory(const std::vector<uint8_t>& ram, const CueCardContent* cueCard);

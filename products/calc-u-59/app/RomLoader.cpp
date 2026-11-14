@@ -1,64 +1,11 @@
 #include "RomLoader.hpp"
+#include "../core/TICatalogue.hpp"
 #include "TextUtil.hpp"
 #include <algorithm>
 #include <fstream>
 #include <sstream>
 
 namespace cu59 {
-
-std::vector<uint16_t> parseRomTxt(std::string_view text) {
-    std::vector<uint16_t> words;
-    bool inData = false;
-    for (std::string_view line : splitLines(text)) {
-        std::string_view s = trim(line);
-        if (!inData) {
-            if (startsWith(s, "---")) inData = true;
-            continue;
-        }
-        if (s.empty()) continue;
-        size_t colon = s.find(':');
-        if (colon == std::string_view::npos) continue;
-        std::string_view addr = trim(s.substr(0, colon));
-        if (addr.size() != 4 || !parseHex(addr)) continue;
-        for (std::string_view w : splitWords(s.substr(colon + 1))) {
-            auto v = parseHex(w);
-            if (!v || *v > 0xFFFF) throw RomError("invalid hex word: " + std::string(w));
-            words.push_back(static_cast<uint16_t>(*v & 0x1FFF));
-        }
-    }
-    return words;
-}
-
-std::vector<std::vector<uint8_t>> parseConstantsTxt(std::string_view text) {
-    std::vector<std::vector<uint8_t>> rows;
-    bool inNumber = false;
-    for (std::string_view line : splitLines(text)) {
-        std::string_view s = trim(line);
-        if (s.find("CONSTANT ROM (NUMBER)") != std::string_view::npos) {
-            inNumber = true;
-            continue;
-        }
-        if (startsWith(s, "---")) {
-            if (inNumber) break;
-            continue;
-        }
-        if (!inNumber || s.empty()) continue;
-        size_t colon = s.find(':');
-        if (colon == std::string_view::npos) continue;
-        std::string_view addr = trim(s.substr(0, colon));
-        if (addr.empty() || !parseDec(addr)) continue;
-        std::string_view hex = trim(s.substr(colon + 1));
-        if (hex.size() != 16) continue;
-        std::vector<uint8_t> nibbles;
-        for (auto it = hex.rbegin(); it != hex.rend(); ++it) {
-            int n = hexDigit(*it);
-            if (n < 0) throw RomError(std::string("invalid hex nibble: ") + *it);
-            nibbles.push_back(static_cast<uint8_t>(n));
-        }
-        rows.push_back(std::move(nibbles));
-    }
-    return rows;
-}
 
 std::optional<std::vector<uint8_t>> parseModuleTxt(std::string_view text) {
     constexpr int kMaxBytes = 5000;
@@ -104,49 +51,29 @@ std::string readOrThrow(const std::string& name, const ResourceReader& read) {
     return *text;
 }
 
-std::string hex4(uint16_t v) {
-    static const char* digits = "0123456789ABCDEF";
-    std::string s;
-    for (int sh = 12; sh >= 0; sh -= 4) s += digits[(v >> sh) & 0xF];
-    return s;
-}
-
 } // namespace
 
-std::vector<uint16_t> loadRom(Model model, const ResourceReader& read) {
-    const ModelInfo& mi = info(model);
-    std::vector<uint16_t> words;
-    words.reserve(static_cast<size_t>(mi.romWordCount));
-    for (const char* name : mi.romFiles) {
-        auto part = parseRomTxt(readOrThrow(name, read));
-        words.insert(words.end(), part.begin(), part.end());
-    }
-    if (static_cast<int>(words.size()) != mi.romWordCount)
-        throw RomError("wrong ROM word count: " + std::to_string(words.size()));
-    if (mi.hasLargeMemory) {
-        // Sentinels from the known-good TI-59 ROM image: words[0] = 0x0A01 (the
-        // first instruction, CLR IDL); words[6143] = 0x1987 (the last). A
-        // mismatch means the file is corrupt, truncated or the wrong variant.
-        if (words[0] != 0x0A01)
-            throw RomError("words[0] expected 0x0A01, got 0x" + hex4(words[0]));
-        if (words[6143] != 0x1987)
-            throw RomError("words[6143] expected 0x1987, got 0x" + hex4(words[6143]));
-    }
-    return words;
+std::vector<calcu::machine::RomImage> loadRomImages(Model model, const ResourceReader& read) {
+    std::vector<calcu::machine::RomImage> images;
+    auto add = [&](const char* name) {
+        std::string text = readOrThrow(name, read);
+        images.push_back({name, std::vector<uint8_t>(text.begin(), text.end())});
+    };
+    for (const char* name : info(model).romFiles) add(name);
+    for (const char* name : info(model).constFiles) add(name);
+    return images;
 }
 
-std::vector<uint8_t> loadConstants(Model model, const ResourceReader& read) {
-    std::vector<std::vector<uint8_t>> rows;
-    for (const char* name : info(model).constFiles) {
-        auto part = parseConstantsTxt(readOrThrow(name, read));
-        rows.insert(rows.end(), part.begin(), part.end());
-    }
-    if (rows.size() != 64)
-        throw RomError("expected 64 constant rows, got " + std::to_string(rows.size()));
-    std::vector<uint8_t> bytes;
-    bytes.reserve(64 * 16);
-    for (const auto& r : rows) bytes.insert(bytes.end(), r.begin(), r.end());
-    return bytes;
+std::unique_ptr<calcu::machine::Machine> buildMachine(Model model, const ResourceReader& read,
+                                                      std::shared_ptr<const calcu::machine::ProductData> content) {
+    calcu::machine::BuildRequest request;
+    request.model = modelId(model);
+    request.roms = loadRomImages(model, read);
+    request.content = std::move(content);
+    TIMachineBuilder builder;
+    calcu::machine::BuildResult r = calcu::machine::build(tiCatalogue(), builder, request);
+    if (!r.machine) throw RomError(r.missingRoms.empty() ? r.refusal : "ROM file not found: " + r.missingRoms.front());
+    return std::move(r.machine);
 }
 
 ResourceReader directoryReader(std::vector<std::string> dirs) {

@@ -2,30 +2,32 @@
 
 namespace cu59 {
 
-BatchResult runBatch(TI59Machine& m, int32_t& carry, int32_t targetCycles, FreezeController& freeze) {
+BatchResult runBatch(calcu::machine::Machine& m, int32_t& carry, int32_t targetTicks, FreezeController& freeze) {
     BatchResult r;
-    while (carry < targetCycles) {
-        uint32_t result = m.step();
-        if (result & TI59Machine::kBreakpointHit) {
-            r.stop = BatchResult::Stop::Breakpoint;
-            return r;
-        }
-        if (result & TI59Machine::kPolledHardware) r.polledHardware = true;
-        carry += static_cast<int32_t>(result & TI59Machine::kWeightMask);
-        if (auto owner = freeze.checkStep(m.pc(), (result & TI59Machine::kStepBoundary) != 0)) {
-            r.stop = BatchResult::Stop::Freeze;
-            r.freezeOwner = *owner;
-            return r;
-        }
+    TIDebugTargetAdapter& debug = *debugTargetOf(m);
+    TIPacingHints& hints = *pacingHintsOf(m);
+    hints.takePolledHardware();   // this batch's instructions only
+    if (carry < targetTicks) carry += static_cast<int32_t>(m.advance(static_cast<calcu::machine::Ticks>(targetTicks - carry)));
+    r.polledHardware = hints.takePolledHardware();
+    switch (debug.takeStop()) {
+    case TIStop::Breakpoint:
+        r.stop = BatchResult::Stop::Breakpoint;
+        return r;
+    case TIStop::Observer:
+        r.stop = BatchResult::Stop::Freeze;
+        r.freezeOwner = freeze.takeFired().value_or(FreezeOwner::Cpu);
+        return r;
+    case TIStop::None:
+        break;
     }
     // Subtract rather than reset: the overshoot carries into the next batch.
-    carry -= targetCycles;
+    carry -= targetTicks;
     return r;
 }
 
-bool shouldSleep(bool fullSpeed, uint16_t pc, bool polledHardware, Model model) {
+bool shouldSleep(bool fullSpeed, bool inIdleAndKeyDetect, bool polledHardware) {
     if (!fullSpeed) return true;
-    return info(model).idleAndKeyDetect.contains(pc) || polledHardware;
+    return inIdleAndKeyDetect || polledHardware;
 }
 
 } // namespace cu59

@@ -1,12 +1,13 @@
 #pragma once
-#include "../core/TMC0501.hpp"
+#include "machine/Display.hpp"
 #include <algorithm>
 #include <cmath>
 
 // Persistence of vision for the LED display. The real LEDs have no afterglow
 // worth modelling; what the eye sees is the multiplexed display integrated
-// over time. The core reports per position how much of each 60 Hz poll it was
-// driven (DisplaySnapshot::digitDuty/dpDuty); this turns that into a
+// over time. The machine reports per position how much of each 60 Hz poll it
+// was driven (DisplayOutput: a position's brightness and its decimal point's,
+// C59-1 AC-13); this turns that into a
 // brightness 0..1 per position, the product of two parts:
 //   • presence: a driven position is on at once — a steadily multiplexed
 //     display (duty ≈ 1, or ≥ kFullDuty while a few cycles of each pass run
@@ -43,8 +44,9 @@ public:
     static constexpr double kShareMinDuty = 0.8;  ///< polls that teach the share: display multiplexed nearly throughout
     static constexpr double kShareFull = 0.95;    ///< a share this close to the best is full: averaging noise never shows
 
-    /// Advance by one poll covering `seconds` of emulated time.
-    void update(const DisplaySnapshot& d, double seconds);
+    /// Advance by one poll covering `seconds` of emulated time: the
+    /// machine's segment frame of 12 positions, the decimal point last.
+    void update(const calcu::machine::DisplayOutput& d, double seconds);
     float digit(int i) const { return static_cast<float>(m_digit[i].brightness(m_bestShare)); }
     float dp(int i) const { return static_cast<float>(m_dp[i].brightness(m_bestShare)); }
 

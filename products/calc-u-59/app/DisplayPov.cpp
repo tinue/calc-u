@@ -32,12 +32,19 @@ double DisplayPov::Channel::step(double polled, double maxDuty, double seconds) 
     return level;
 }
 
-void DisplayPov::update(const DisplaySnapshot& d, double seconds) {
-    const double maxDuty = *std::max_element(std::begin(d.digitDuty), std::end(d.digitDuty));
+void DisplayPov::update(const calcu::machine::DisplayOutput& out, double seconds) {
+    const auto& positions = std::get<calcu::machine::SegmentFrame>(out.frame).positions;
+    float digitDuty[12], dpDuty[12];
+    for (int i = 0; i < 12; ++i) {
+        const auto& p = positions[static_cast<size_t>(i)];
+        digitDuty[i] = p.brightness.value_or(0.0f);
+        dpDuty[i] = p.segmentBrightness.back().value_or(0.0f);
+    }
+    const double maxDuty = *std::max_element(std::begin(digitDuty), std::end(digitDuty));
     double best = 0;
     for (int i = 0; i < 12; ++i) {
-        m_digit[i].step(d.digitDuty[i], maxDuty, seconds);
-        m_dp[i].step(d.dpDuty[i], maxDuty, seconds);
+        m_digit[i].step(digitDuty[i], maxDuty, seconds);
+        m_dp[i].step(dpDuty[i], maxDuty, seconds);
         if (m_digit[i].level > 0) best = std::max(best, m_digit[i].share());
     }
     if (best > 0) m_bestShare = best;

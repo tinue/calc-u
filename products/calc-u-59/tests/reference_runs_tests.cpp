@@ -66,10 +66,10 @@ std::string record(const fs::path& example) {
     char buf[64];
     std::snprintf(buf, sizeof buf, "%.1f", secs);
     out += std::string("playback: ") + (ended ? "ended" : "still running after 30 minutes") + ", recorded after " + buf + " s\n";
-    TI59Machine& m = c.session()->machine();
+    calcu::machine::Machine& m = c.session()->machine();
     out += "model: " + modelName(c.model()) + "\n";
     out += "display: |" + testroms::displayText(m) + "|\n";
-    out += "partition: " + std::to_string(m.partitionProgramRegs()) + " program registers\n";
+    out += "partition: " + std::to_string(testroms::mem(m).partitionProgramRegs()) + " program registers\n";
     for (const auto& e : p.errors) out += "error: " + e + "\n";
     out += "--- printed (" + std::to_string(c.printerLines().size()) + " lines)\n";
     for (const auto& l : c.printerLines()) out += "|" + l + "|\n";
@@ -80,7 +80,7 @@ std::string record(const fs::path& example) {
     for (const auto& [name, bank] : memCards) out += "mem:" + name + " " + hexBytes(bank.data(), bank.size()) + "\n";
     out += "--- log\n" + c.logText() + (c.logText().empty() || c.logText().back() == '\n' ? "" : "\n");
     std::vector<uint8_t> ram(120 * 16);
-    m.serialiseRAM(ram.data());
+    testroms::mem(m).serialiseRAM(ram.data());
     out += "--- ram (register: 16 nibbles)\n";
     for (int r = 0; r < 120; ++r) out += std::to_string(r) + " " + hexBytes(&ram[r * 16], 16) + "\n";
     return out;

@@ -1,32 +1,53 @@
 // Golden runs of the TI core (first step 2 of docs/walkthroughs/first-steps.md,
-// M-8 of docs/migration-plan.md): scripts of calls on TI59Machine, recorded
-// from the code as imported (Calc-U-59 2.3.0), before the core is changed.
+// M-8 of docs/migration-plan.md): scripts of calls on the machine, recorded
+// from the code as imported (Calc-U-59 2.3.0), before the core was changed.
 // A run that differs later is a finding, not a new reference (C59-1, C59-6,
 // Technical Requirements).
 //
+// Since M-19 they replay through the machine interface (C59-1 AC-4; design
+// §8, D-3): build(), advance(), keyDown/keyUp with the key IDs of AC-9,
+// reset/powerCycle/coldBoot, readDisplay(), plus the adapters for what the
+// interface does not have yet (module, printer, card, RAM, partition, PC).
+//
 // Each tests/golden-runs/<name>.run is a script; <name>.golden is what the
-// core did. CALCU59_GOLDEN_RECORD=1 rewrites the .golden files (only when a
-// reference is to be recorded, never to make a failing run pass).
+// core did. A golden "display" line holds 2.3.0's control and digit nibbles;
+// the replay compares it in segment space (core/TISegments.hpp segmentsFor;
+// "--" is brightness 0, "." a decimal point with brightness above 0).
+// CALCU59_GOLDEN_RECORD=1 writes a missing .golden with "segments" lines (the
+// segment bits in hex) for a new reference — only for a new run, never to
+// make a failing run pass.
 //
 // Script lines (# starts a comment):
 //   model TI-59|TI-58|TI-58C     printer on|off     module <ID>|none
-//   boot                         ROM start-up: run to the keyboard scan loop
-//   keys <k> <k> ...             taps (100 ms down, 100 ms up, then to the scan
-//                                loop); a second function stands for 2nd + key
+//   boot                         ROM start-up: run to key readiness
+//   keys <k> <k> ...             taps (100 ms down, 100 ms up, then to key
+//                                readiness); a second function stands for 2nd + key
 //   press <k> / release <k>      one key down or up, nothing else
 //   run <seconds>                advance emulated time
-//   idle                         run to the scan loop (at most 60 s)
+//   idle                         run to key readiness (at most 60 s)
 //   partition <regs>             setPartitionProgramRegs
 //   save-ram                     keep a copy of the RAM
 //   app-poweron                  2.3.0's TI-58C start: start-up, then the saved RAM
-//   app-reset                    2.3.0's Reset (StateApplier softReset, saved RAM)
-//   app-coldboot                 2.3.0's Clean (StateApplier cleanReset)
-//   core-reset                   TI59Machine::reset only
+//   app-reset                    Reset: Machine::reset() (TI-59/58: then to key readiness)
+//   app-coldboot                 Clean: Machine::coldBoot()
+//   core-reset                   2.3.0's core reset: Machine::powerCycle()
 //   trace on|off                 the PC-100C's TRACE switch
 //   paper / print                the PC-100C's ADV / PRINT button (a press)
 //   card-blank / card-eject      a blank card into the reader / out of it
-// After every line the run records the tick count, the display (sampled over
-// the next 30 ms of emulated time) and what was printed; at the end the RAM.
+// After every line the run records the tick count since the last operation
+// (in weighted instructions, tick count / 32) and the PC, the display
+// (sampled over the next 30 ms of emulated time) and what was printed; at the
+// end the RAM and the partition.
+//
+// Expected differences, which are not findings (design §8, D-3): after an
+// app-reset on the TI-59/58, `t` is compared as the difference to the
+// app-reset line, because Reset now ends at key readiness instead of 2.3.0's
+// 300,000 instructions (C59-1 AC-6), and that line's own `t` is not compared;
+// the two *-reset-partition runs are compared up to their app-reset line
+// (behaviour change 59-22: Reset keeps the partition; machine_tests.cpp checks it).
+// In ti59-fill-reset-coldboot the program counter after its app-reset is not
+// compared either: the scan loop is reached at another point of its cycle, while
+// the display, the RAM and the partition still match 2.3.0 (user, 2026-11-14).
 
 #include "TestHarness.hpp"
 #include "TestRoms.hpp"
@@ -39,33 +60,39 @@
 namespace {
 
 namespace fs = std::filesystem;
+using calcu::machine::KeyId;
+using testroms::dbg;
+using testroms::mem;
+using testroms::per;
 
-const std::map<std::string, int>& keyCodes() {
-    static const std::map<std::string, int> k = {
-        {"A", 11}, {"B", 12}, {"C", 13}, {"D", 14}, {"E", 15},
-        {"2nd", 21}, {"INV", 22}, {"lnx", 23}, {"CE", 24}, {"CLR", 25},
-        {"LRN", 31}, {"x<>t", 32}, {"x2", 33}, {"sqrt", 34}, {"1/x", 35},
-        {"SST", 41}, {"STO", 42}, {"RCL", 43}, {"SUM", 44}, {"y^x", 45},
-        {"BST", 51}, {"EE", 52}, {"(", 53}, {")", 54}, {"/", 55},
-        {"GTO", 61}, {"7", 62}, {"8", 63}, {"9", 64}, {"*", 65},
-        {"SBR", 71}, {"4", 72}, {"5", 73}, {"6", 74}, {"-", 75},
-        {"RST", 81}, {"1", 82}, {"2", 83}, {"3", 84}, {"+", 85},
-        {"R/S", 91}, {"0", 92}, {".", 93}, {"+/-", 94}, {"=", 95},
+// The scripts' key names (2.3.0's tools/headless/ti59.py names) to the key IDs
+// of C59-1 AC-9; the replay's own table (design §8).
+const std::map<std::string, std::string>& keyIds() {
+    static const std::map<std::string, std::string> k = {
+        {"A", "A"}, {"B", "B"}, {"C", "C"}, {"D", "D"}, {"E", "E"},
+        {"2nd", "2nd"}, {"INV", "INV"}, {"lnx", "lnx"}, {"CE", "CE"}, {"CLR", "CLR"},
+        {"LRN", "LRN"}, {"x<>t", "x⇄t"}, {"x2", "x²"}, {"sqrt", "√x"}, {"1/x", "1/x"},
+        {"SST", "SST"}, {"STO", "STO"}, {"RCL", "RCL"}, {"SUM", "SUM"}, {"y^x", "yˣ"},
+        {"BST", "BST"}, {"EE", "EE"}, {"(", "("}, {")", ")"}, {"/", "÷"},
+        {"GTO", "GTO"}, {"7", "7"}, {"8", "8"}, {"9", "9"}, {"*", "×"},
+        {"SBR", "SBR"}, {"4", "4"}, {"5", "5"}, {"6", "6"}, {"-", "-"},
+        {"RST", "RST"}, {"1", "1"}, {"2", "2"}, {"3", "3"}, {"+", "+"},
+        {"R/S", "R/S"}, {"0", "0"}, {".", "."}, {"+/-", "+/-"}, {"=", "="},
     };
     return k;
 }
 
-// Second functions: 2nd followed by the base key's matrix code.
-const std::map<std::string, int>& secondCodes() {
-    static const std::map<std::string, int> k = {
-        {"A'", 11}, {"B'", 12}, {"C'", 13}, {"D'", 14}, {"E'", 15},
-        {"log", 23}, {"CP", 24}, {"Pgm", 31}, {"P>R", 32}, {"sin", 33}, {"cos", 34}, {"tan", 35},
-        {"Ins", 41}, {"CMs", 42}, {"Exc", 43}, {"Prd", 44}, {"Ind", 45},
-        {"Del", 51}, {"Eng", 52}, {"Fix", 53}, {"Int", 54}, {"|x|", 55},
-        {"Pause", 61}, {"x=t", 62}, {"Nop", 63}, {"Op", 64}, {"Deg", 65},
-        {"Lbl", 71}, {"x>=t", 72}, {"S+", 73}, {"mean", 74}, {"Rad", 75},
-        {"StFlg", 81}, {"IfFlg", 82}, {"D.MS", 83}, {"pi", 84}, {"Grad", 85},
-        {"Write", 91}, {"Dsz", 92}, {"Adv", 93}, {"Prt", 94}, {"List", 95},
+// Second functions: 2nd followed by the base key.
+const std::map<std::string, std::string>& secondKeys() {
+    static const std::map<std::string, std::string> k = {
+        {"A'", "A"}, {"B'", "B"}, {"C'", "C"}, {"D'", "D"}, {"E'", "E"},
+        {"log", "lnx"}, {"CP", "CE"}, {"Pgm", "LRN"}, {"P>R", "x⇄t"}, {"sin", "x²"}, {"cos", "√x"}, {"tan", "1/x"},
+        {"Ins", "SST"}, {"CMs", "STO"}, {"Exc", "RCL"}, {"Prd", "SUM"}, {"Ind", "yˣ"},
+        {"Del", "BST"}, {"Eng", "EE"}, {"Fix", "("}, {"Int", ")"}, {"|x|", "÷"},
+        {"Pause", "GTO"}, {"x=t", "7"}, {"Nop", "8"}, {"Op", "9"}, {"Deg", "×"},
+        {"Lbl", "SBR"}, {"x>=t", "4"}, {"S+", "5"}, {"mean", "6"}, {"Rad", "-"},
+        {"StFlg", "RST"}, {"IfFlg", "1"}, {"D.MS", "2"}, {"pi", "3"}, {"Grad", "+"},
+        {"Write", "R/S"}, {"Dsz", "0"}, {"Adv", "."}, {"Prt", "+/-"}, {"List", "="},
     };
     return k;
 }
@@ -77,19 +104,39 @@ std::string hex(const uint8_t* p, size_t n) {
     return s;
 }
 
-// Position 13 (leftmost) first: "<ctrl><digit>" when driven, "--" when not,
-// then "." when its decimal point is driven.
-std::string displayState(TI59Machine& m) {
-    DisplaySnapshot d = m.takeDisplay();
+// The display in segment space, position 13 (leftmost) first: the segment
+// bits A–G in hex when driven, "--" when not, then "." when its decimal point
+// is driven.
+std::string segmentState(calcu::machine::Machine& m) {
+    const auto out = m.readDisplay();
     std::string s;
     for (int i = 11; i >= 0; --i) {
-        if (d.digitDuty[i] > 0) {
-            s += "0123456789ABCDEF"[d.ctrl[i] & 15];
-            s += "0123456789ABCDEF"[d.digits[i] & 15];
+        const auto& p = testroms::positions(out)[static_cast<size_t>(i)];
+        if (p.brightness.value_or(0) > 0) {
+            s += "0123456789abcdef"[testroms::segmentBits(p) >> 4];
+            s += "0123456789abcdef"[testroms::segmentBits(p) & 15];
         } else {
             s += "--";
         }
-        s += d.dpDuty[i] > 0 ? '.' : ' ';
+        s += p.segmentBrightness[kTIDecimalPoint].value_or(0) > 0 ? '.' : ' ';
+    }
+    while (!s.empty() && s.back() == ' ') s.pop_back();
+    return s;
+}
+
+// A golden "display" line (2.3.0's "<ctrl><digit>" per position) in segment space.
+std::string segmentsOfGolden(const std::string& display) {
+    std::string s;
+    for (size_t i = 0; i + 1 < display.size() || i < display.size(); i += 3) {
+        std::string tok = display.substr(i, 2);
+        if (tok == "--") s += "--";
+        else {
+            auto nib = [](char c) { return static_cast<uint8_t>(c <= '9' ? c - '0' : c - 'A' + 10); };
+            const uint8_t seg = segmentsFor(nib(tok[1]), nib(tok[0]), false);
+            s += "0123456789abcdef"[seg >> 4];
+            s += "0123456789abcdef"[seg & 15];
+        }
+        s += (i + 2 < display.size() && display[i + 2] == '.') ? '.' : ' ';
     }
     while (!s.empty() && s.back() == ' ') s.pop_back();
     return s;
@@ -97,63 +144,61 @@ std::string displayState(TI59Machine& m) {
 
 struct Run {
     cu59::Model model = cu59::Model::TI59;
-    std::unique_ptr<TI59Machine> m;
+    std::unique_ptr<calcu::machine::Machine> m;
     std::string module = "ML";
     bool printer = false;
     std::vector<uint8_t> savedRam;
+    calcu::machine::Ticks base = 0;   // the tick count at the last operation
     std::string out;
     std::string error;
 
-    double hz() const { return cu59::info(model).instructionHz; }
-    void steps(double seconds) { m->stepN(static_cast<uint32_t>(hz() * seconds), false); }
+    double hz() const { return testroms::instructionHz(model); }
+    void steps(double seconds) { testroms::run(*m, static_cast<uint32_t>(hz() * seconds)); }
+    void idle() { testroms::runToScanLoop(*m, model, static_cast<uint32_t>(hz() * 60)); }
+    void operation() { base = m->tickCount(); }
 
     void build() {
-        m = std::make_unique<TI59Machine>(cu59::toVariant(model));
-        auto words = cu59::loadRom(model, testroms::reader());
-        m->loadROM(words.data(), words.size());
+        m = cu59::buildMachine(model, testroms::reader());
         if (module != "none") {
             auto cue = testroms::readFile("roms/solid-state/cuecards.txt");
             auto file = cue ? cu59::moduleRomFile(*cue, module) : std::nullopt;
             auto lib = file ? cu59::loadModule(*file, testroms::reader()) : std::nullopt;
             if (!lib) { error = "module " + module + " not found"; return; }
-            m->loadLibrary(lib->data(), lib->size());
+            per(*m).loadModuleImage(lib->data(), lib->size());
         }
-        auto k = cu59::loadConstants(model, testroms::reader());
-        m->loadConstants(k.data(), k.size());
-        m->setPrinterConnected(printer);
-        m->reset();
+        per(*m).setPrinterConnected(printer);
+        operation();
     }
 
-    void tap(int code) {
-        cu59::pressMatrix(*m, code);
+    void key(const std::string& id, bool down) {
+        if (down) m->keyDown(KeyId{id}); else m->keyUp(KeyId{id});
+    }
+
+    void tap(const std::string& id) {
+        key(id, true);
         steps(0.1);
-        cu59::releaseMatrix(*m, code);
+        key(id, false);
         steps(0.1);
-        testroms::runToScanLoop(*m, model, static_cast<uint32_t>(hz() * 60));
+        idle();
     }
 
     bool keyName(const std::string& k) {
-        if (auto it = keyCodes().find(k); it != keyCodes().end()) { tap(it->second); return true; }
-        if (auto it = secondCodes().find(k); it != secondCodes().end()) { tap(21); tap(it->second); return true; }
+        if (auto it = keyIds().find(k); it != keyIds().end()) { tap(it->second); return true; }
+        if (auto it = secondKeys().find(k); it != secondKeys().end()) { tap("2nd"); tap(it->second); return true; }
         return false;
-    }
-
-    int code(const std::string& k) {
-        auto it = keyCodes().find(k);
-        return it == keyCodes().end() ? -1 : it->second;
     }
 
     void record(const std::string& line) {
         out += "> " + line + "\n";
         if (!m) return;
-        out += "  t=" + std::to_string(m->elapsedTicks()) + " pc=" + std::to_string(m->pc()) + "\n";
+        out += "  t=" + std::to_string((m->tickCount() - base) / 32) + " pc=" + std::to_string(dbg(*m).pc()) + "\n";
         // The display as it is now: what was shown before is dropped, then
         // 30 ms of emulated time are sampled (part of every recorded step).
-        m->takeDisplay();
+        m->readDisplay();
         steps(0.03);
-        out += "  display " + displayState(*m) + "\n";
-        for (const auto& l : m->drainPrinterLines()) out += "  print |" + l + "|\n";
-        for (const auto& c : m->drainPrinterCodeLines())
+        out += "  segments " + segmentState(*m) + "\n";
+        for (const auto& l : per(*m).drainPrinterLines()) out += "  print |" + l + "|\n";
+        for (const auto& c : per(*m).drainPrinterCodeLines())
             out += "  dots " + hex(c.codes.data(), c.codes.size()) + " rows=" + std::to_string(c.rowCount) +
                    " partial=" + std::to_string(c.partialColumns) + "/" + std::to_string(c.partialHeat) + "\n";
     }
@@ -169,37 +214,42 @@ struct Run {
             return;
         }
         if (cmd == "module") { module = rest(); return; }
-        if (cmd == "printer") { printer = rest() == "on"; if (m) m->setPrinterConnected(printer); record(line); return; }
+        if (cmd == "printer") { printer = rest() == "on"; if (m) per(*m).setPrinterConnected(printer); record(line); return; }
         if (!m) build();
         if (!error.empty()) return;
-        if (cmd == "boot" || cmd == "idle") testroms::runToScanLoop(*m, model, static_cast<uint32_t>(hz() * 60));
+        if (cmd == "boot" || cmd == "idle") idle();
         else if (cmd == "keys") {
             std::string k;
             while (in >> k) if (!keyName(k)) { error = "unknown key " + k; return; }
         } else if (cmd == "press" || cmd == "release") {
             std::string k; in >> k;
-            int c = code(k);
-            if (c < 0) { error = "unknown key " + k; return; }
-            if (cmd == "press") cu59::pressMatrix(*m, c); else cu59::releaseMatrix(*m, c);
+            auto it = keyIds().find(k);
+            if (it == keyIds().end()) { error = "unknown key " + k; return; }
+            key(it->second, cmd == "press");
         } else if (cmd == "run") { double s = 0; in >> s; steps(s); }
-        else if (cmd == "partition") { int r = 0; in >> r; m->setPartitionProgramRegs(r); }
-        else if (cmd == "save-ram") { savedRam.assign(120 * 16, 0); m->serialiseRAM(savedRam.data()); }
-        else if (cmd == "app-poweron") { m->reset(); cu59::powerOn(*m, model, savedRam.empty() ? nullptr : &savedRam); }
+        else if (cmd == "partition") { int r = 0; in >> r; mem(*m).setPartitionProgramRegs(r); }
+        else if (cmd == "save-ram") { savedRam.assign(120 * 16, 0); mem(*m).serialiseRAM(savedRam.data()); }
+        else if (cmd == "app-poweron") {
+            m->powerCycle();
+            operation();
+            cu59::powerOn(*m, model, savedRam.empty() ? nullptr : &savedRam);
+        }
         else if (cmd == "app-reset") {
-            std::vector<uint8_t> ram(120 * 16);
-            m->serialiseRAM(ram.data());
-            cu59::softReset(*m, model, &ram);
+            m->reset();
+            operation();
+            // 2.3.0 ran the start-up inside softReset on the TI-59/58; on the TI-58C it did not.
+            if (!cu59::info(model).hasConstantMemory) idle();
         }
-        else if (cmd == "app-coldboot") cu59::cleanReset(*m, model);
-        else if (cmd == "core-reset") m->reset();
-        else if (cmd == "trace") m->setPrinterTrace(rest() == "on");
+        else if (cmd == "app-coldboot") { m->coldBoot(); operation(); }
+        else if (cmd == "core-reset") { m->powerCycle(); operation(); }
+        else if (cmd == "trace") per(*m).setPrinterTrace(rest() == "on");
         else if (cmd == "paper" || cmd == "print") {
-            auto press = [&](bool d) { if (cmd == "paper") m->pressPrinterAdv(d); else m->pressPrinterPrint(d); };
+            auto press = [&](bool d) { if (cmd == "paper") per(*m).pressPrinterAdv(d); else per(*m).pressPrinterPrint(d); };
             press(true); steps(0.1); press(false); steps(0.1);
-            testroms::runToScanLoop(*m, model, static_cast<uint32_t>(hz() * 60));
+            idle();
         }
-        else if (cmd == "card-blank") m->insertCard(nullptr, 0);
-        else if (cmd == "card-eject") { auto b = m->cardEject(); out += "  card " + hex(b.data(), b.size()) + "\n"; }
+        else if (cmd == "card-blank") testroms::card(*m).insertCard(nullptr, 0);
+        else if (cmd == "card-eject") { auto b = testroms::card(*m).cardEject(); out += "  card " + hex(b.data(), b.size()) + "\n"; }
         else { error = "unknown command " + cmd; return; }
         record(line);
     }
@@ -207,10 +257,10 @@ struct Run {
     std::string finish() {
         if (!m) return out;
         std::vector<uint8_t> ram(120 * 16);
-        m->serialiseRAM(ram.data());
+        mem(*m).serialiseRAM(ram.data());
         out += "= ram\n";
         for (int r = 0; r < 120; ++r) out += "  " + std::to_string(r) + " " + hex(&ram[r * 16], 16) + "\n";
-        out += "= partition " + std::to_string(m->partitionProgramRegs()) + "\n";
+        out += "= partition " + std::to_string(mem(*m).partitionProgramRegs()) + "\n";
         return out;
     }
 };
@@ -229,40 +279,81 @@ std::string play(const std::string& script, std::string* error) {
     return run.finish();
 }
 
+std::vector<std::string> lines(const std::string& text) {
+    std::vector<std::string> v;
+    std::istringstream in(text);
+    for (std::string l; std::getline(in, l);) v.push_back(l);
+    return v;
+}
+
+bool parseT(const std::string& l, long& t, std::string& pc) {
+    if (l.rfind("  t=", 0) != 0) return false;
+    t = std::stol(l.substr(4));
+    pc = l.substr(l.find(" pc="));
+    return true;
+}
+
+// The golden against the replay under the rules of design §8 / D-3. Returns
+// the first difference ("" when none).
+std::string compare(const std::string& name, const std::string& golden, const std::string& got) {
+    const auto want = lines(golden), have = lines(got);
+    const bool stopAtReset = name.find("-reset-partition") != std::string::npos;
+    const bool sixty = name.rfind("ti58c-", 0) != 0;   // the TI-59/58: Reset ends at key readiness
+    const bool pcAfterReset = name != "ti59-fill-reset-coldboot.golden";   // see the header comment
+    bool afterReset = false;
+    long wantResetT = 0, haveResetT = 0;
+    for (size_t i = 0; i < std::max(want.size(), have.size()); ++i) {
+        const std::string w = i < want.size() ? want[i] : "<end>", h = i < have.size() ? have[i] : "<end>";
+        auto diff = [&] { return name + ":" + std::to_string(i + 1) + " differs\n    golden: " + w + "\n    run:    " + h; };
+        if (w == "> app-reset" && stopAtReset) return h == w ? "" : diff();
+        long tw, th;
+        std::string pw, ph;
+        if (parseT(w, tw, pw) && parseT(h, th, ph)) {
+            const bool resetLine = i > 0 && want[i - 1] == "> app-reset" && sixty;
+            if (resetLine) {
+                afterReset = true;
+                wantResetT = tw;
+                haveResetT = th;
+                if (pcAfterReset && pw != ph) return diff();
+                continue;
+            }
+            if (afterReset ? (tw - wantResetT != th - haveResetT || (pcAfterReset && pw != ph)) : w != h) return diff();
+            if (w.rfind("> app-coldboot", 0) == 0 || w.rfind("> core-reset", 0) == 0) afterReset = false;
+            continue;
+        }
+        if (w.rfind("  display ", 0) == 0 && h.rfind("  segments ", 0) == 0) {
+            if (segmentsOfGolden(w.substr(10)) != h.substr(11)) return diff();
+            continue;
+        }
+        if (w.rfind("> ", 0) == 0 && (w == "> app-coldboot" || w == "> core-reset" || w == "> app-poweron")) afterReset = false;
+        if (w != h) return diff();
+    }
+    return "";
+}
+
 } // namespace
 
-TEST(golden_runs_of_the_ti_core) {
+TEST(c59_1_ac4_golden_runs_through_the_machine_interface) {
     const fs::path dir = "tests/golden-runs";
     const bool recording = std::getenv("CALCU59_GOLDEN_RECORD") != nullptr;
     std::vector<fs::path> scripts;
     for (const auto& e : fs::directory_iterator(dir))
         if (e.path().extension() == ".run") scripts.push_back(e.path());
     std::sort(scripts.begin(), scripts.end());
-    CHECK(!scripts.empty());
+    CHECK_EQ(scripts.size(), size_t{17});
     for (const auto& s : scripts) {
         std::string error;
         std::string got = play(testroms::readFile(s.string()).value_or(""), &error);
         if (!error.empty()) { std::printf("  %s: %s\n", s.filename().c_str(), error.c_str()); CHECK(false); continue; }
         fs::path golden = s; golden.replace_extension(".golden");
-        if (recording) {
+        auto want = testroms::readFile(golden.string());
+        if (!want && recording) {
             std::ofstream(golden, std::ios::binary) << got;
             continue;
         }
-        auto want = testroms::readFile(golden.string());
         if (!want) { std::printf("  %s: no .golden (record with CALCU59_GOLDEN_RECORD=1)\n", s.filename().c_str()); CHECK(false); continue; }
-        if (*want != got) {
-            std::istringstream a(*want), b(got);
-            std::string la, lb; int n = 0;
-            while (true) {
-                ++n;
-                bool ea = !std::getline(a, la), eb = !std::getline(b, lb);
-                if (ea && eb) break;
-                if (ea || eb || la != lb) {
-                    std::printf("  %s:%d differs\n    golden: %s\n    run:    %s\n", golden.filename().c_str(), n, la.c_str(), lb.c_str());
-                    break;
-                }
-            }
-        }
-        CHECK(*want == got);
+        const std::string d = compare(golden.filename().string(), *want, got);
+        if (!d.empty()) std::printf("  %s\n", d.c_str());
+        CHECK(d.empty());
     }
 }

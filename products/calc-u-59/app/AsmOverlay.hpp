@@ -1,5 +1,5 @@
 #pragma once
-#include "../core/TI59Machine.hpp"
+#include "../core/TIAdapters.hpp"
 #include <cstdint>
 #include <stdexcept>
 #include <string>
@@ -30,6 +30,6 @@ struct AsmRunResult {
 /// Park the CPU at a keycode boundary (so the digit counter is mid-cycle),
 /// load the overlay and enter it at 0x1800. Run on the emulation thread with
 /// the run loop stopped.
-AsmRunResult runAsmOverlay(TI59Machine& m, const std::vector<uint16_t>& words);
+AsmRunResult runAsmOverlay(calcu::machine::Machine& m, const std::vector<uint16_t>& words);
 
 } // namespace cu59

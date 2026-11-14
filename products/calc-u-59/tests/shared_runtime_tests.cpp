@@ -3,9 +3,9 @@
 
 #include "TestHarness.hpp"
 #include "TestRoms.hpp"
+#include "../core/TIRomRanges.hpp"
 #include "../app/EmulatorSession.hpp"
 #include "../app/FrameSampler.hpp"
-#include "../app/KeyMatrix.hpp"
 #include <algorithm>
 #include <chrono>
 #include <cmath>
@@ -45,47 +45,55 @@ struct RecordingListener : EmulatorSession::Listener {
 TEST(pacing_batches_are_cycle_weighted_with_carry) {
     auto m = testroms::makeMachine(Model::TI59);
     testroms::runToScanLoop(*m, Model::TI59);
-    FreezeController freeze(Model::TI59);
+    FreezeController freeze;
+    testroms::dbg(*m).setRunControl(&freeze);
     int32_t target = batchTargetCycles(Model::TI59);
     CHECK_EQ(target, 284);
     CHECK_EQ(batchTargetCycles(Model::TI58C), 246);
-    uint64_t before = m->elapsedTicks();
+    uint64_t before = ((*m).tickCount() / 32);
     int32_t carry = 0;
     for (int i = 0; i < 50; ++i) {  // one emulated second
-        auto r = runBatch(*m, carry, target, freeze);
+        auto r = runBatch(*m, carry, kTicksPerCycle * target, freeze);
         CHECK(r.stop == BatchResult::Stop::None);
-        CHECK(carry >= 0 && carry < 8);  // overshoot is at most one IDLE step
+        CHECK(carry >= 0 && carry < 8 * kTicksPerCycle);  // overshoot is at most one IDLE step
     }
-    uint64_t ticks = m->elapsedTicks() - before;
+    uint64_t ticks = ((*m).tickCount() / 32) - before;
     CHECK(ticks >= 50u * 284u && ticks < 50u * 284u + 8u);
 }
 
+// The idle/key-detect range of TIPacingHints (the LIB-17 adapter, M-33).
+static bool inIdle(Model model, uint16_t pc) {
+    const auto r = TIPacingHints::idleAndKeyDetectRange(modelId(model));
+    return (pc >= r[0] && pc <= r[1]) || (pc >= r[2] && pc <= r[3]);
+}
+
 TEST(pacing_sleep_rule) {
-    CHECK(shouldSleep(false, 0x0100, false, Model::TI59));
-    CHECK(!shouldSleep(true, 0x0100, false, Model::TI59));      // full speed races productive code
-    CHECK(shouldSleep(true, 0x0640, false, Model::TI59));       // … but never the scan loop
-    CHECK(shouldSleep(true, 0x0100, true, Model::TI59));        // … or a hardware poll
-    CHECK(shouldSleep(true, 0x0A28, false, Model::TI58C));      // TI-58C's printer-line rescan
-    CHECK(!shouldSleep(true, 0x0A28, false, Model::TI59));
-    CHECK(!shouldSleep(true, 0x0800, false, Model::TI58C));     // … not the code between
+    CHECK(shouldSleep(false, inIdle(Model::TI59, 0x0100), false));
+    CHECK(!shouldSleep(true, inIdle(Model::TI59, 0x0100), false));      // full speed races productive code
+    CHECK(shouldSleep(true, inIdle(Model::TI59, 0x0640), false));       // … but never the scan loop
+    CHECK(shouldSleep(true, inIdle(Model::TI59, 0x0100), true));        // … or a hardware poll
+    CHECK(shouldSleep(true, inIdle(Model::TI58C, 0x0A28), false));      // TI-58C's printer-line rescan
+    CHECK(!shouldSleep(true, inIdle(Model::TI59, 0x0A28), false));
+    CHECK(!shouldSleep(true, inIdle(Model::TI58C, 0x0800), false));     // … not the code between
 }
 
 TEST(freeze_on_scan_loop_exit_fires_on_key) {
     auto m = testroms::makeMachine(Model::TI59);
     testroms::runToScanLoop(*m, Model::TI59);
-    FreezeController freeze(Model::TI59);
-    freeze.armScanLoopExit(m->pc());
+    FreezeController freeze;
+    testroms::dbg(*m).setRunControl(&freeze);
+    freeze.armScanLoopExit(testroms::dbg(*m).pc());
     CHECK(freeze.scanLoopExitArmed());
     int32_t carry = 0;
-    auto idle = runBatch(*m, carry, 284, freeze);
+    auto idle = runBatch(*m, carry, kTicksPerCycle * 284, freeze);
     CHECK(idle.stop == BatchResult::Stop::None);  // still scanning
-    pressMatrix(*m, 83);
+    testroms::press(*m, 83);
     BatchResult r;
-    for (int i = 0; i < 50 && r.stop == BatchResult::Stop::None; ++i) r = runBatch(*m, carry, 284, freeze);
+    for (int i = 0; i < 50 && r.stop == BatchResult::Stop::None; ++i) r = runBatch(*m, carry, kTicksPerCycle * 284, freeze);
     CHECK(r.stop == BatchResult::Stop::Freeze);
     CHECK(r.freezeOwner == FreezeOwner::Cpu);
     CHECK(!freeze.scanLoopExitArmed());
-    CHECK(!info(Model::TI59).scanLoop.contains(m->pc()));
+    CHECK(!m->isKeyReady());
 }
 
 // The TI-58's idle pass detours through the card veto (0x0459–0x045B, digit 10
@@ -96,21 +104,22 @@ TEST(ti58_card_veto_is_part_of_the_scan_loop) {
     CHECK(testroms::runToScanLoop(*m, Model::TI58));
     bool sawVeto = false, left = false;
     for (int i = 0; i < 20'000; ++i) {
-        m->step();
-        sawVeto = sawVeto || m->pc() == kCardVetoLo;
-        left = left || !info(Model::TI58).scanLoop.contains(m->pc());
+        testroms::dbg(*m).step();
+        sawVeto = sawVeto || testroms::dbg(*m).pc() == kCardVetoLo;
+        left = left || !m->isKeyReady();
     }
     CHECK(sawVeto && !left);
-    CHECK(shouldSleep(true, kCardVetoLo, false, Model::TI58));
-    CHECK(!info(Model::TI59).scanLoop.contains(kCardVetoLo));  // TI-59: card inserted
-    FreezeController freeze(Model::TI58);
-    freeze.armScanLoopExit(m->pc());
+    CHECK(shouldSleep(true, inIdle(Model::TI58, kCardVetoLo), false));
+    CHECK(!romRanges(MachineVariant::TI59).scanLoop.contains(kCardVetoLo));  // TI-59: card inserted
+    FreezeController freeze;
+    testroms::dbg(*m).setRunControl(&freeze);
+    freeze.armScanLoopExit(testroms::dbg(*m).pc());
     int32_t carry = 0;
     BatchResult r;
-    for (int i = 0; i < 50 && r.stop == BatchResult::Stop::None; ++i) r = runBatch(*m, carry, 240, freeze);
+    for (int i = 0; i < 50 && r.stop == BatchResult::Stop::None; ++i) r = runBatch(*m, carry, kTicksPerCycle * 240, freeze);
     CHECK(r.stop == BatchResult::Stop::None);
-    pressMatrix(*m, 83);
-    for (int i = 0; i < 50 && r.stop == BatchResult::Stop::None; ++i) r = runBatch(*m, carry, 240, freeze);
+    testroms::press(*m, 83);
+    for (int i = 0; i < 50 && r.stop == BatchResult::Stop::None; ++i) r = runBatch(*m, carry, kTicksPerCycle * 240, freeze);
     CHECK(r.stop == BatchResult::Stop::Freeze);
 }
 
@@ -118,21 +127,22 @@ TEST(freeze_on_pc_change_and_mutual_exclusion) {
     auto m = testroms::makeMachine(Model::TI59);
     testroms::runToScanLoop(*m, Model::TI59);
     const uint8_t prog[] = {76, 11, 85, 1, 95, 61, 0, 0};  // LBL A + 1 = GTO 000
-    m->writeProgram(prog, sizeof prog);
-    FreezeController freeze(Model::TI59);
-    freeze.armScanLoopExit(m->pc());
+    testroms::mem(*m).writeProgram(prog, sizeof prog);
+    FreezeController freeze;
+    testroms::dbg(*m).setRunControl(&freeze);
+    freeze.armScanLoopExit(testroms::dbg(*m).pc());
     freeze.armPcChange();
     CHECK(freeze.pcChangeArmed() && !freeze.scanLoopExitArmed());
     int32_t carry = 0;
     BatchResult r;
-    for (int i = 0; i < 20 && r.stop == BatchResult::Stop::None; ++i) r = runBatch(*m, carry, 284, freeze);
+    for (int i = 0; i < 20 && r.stop == BatchResult::Stop::None; ++i) r = runBatch(*m, carry, kTicksPerCycle * 284, freeze);
     CHECK(r.stop == BatchResult::Stop::None);  // idle: the calculator PC doesn't move
-    pressMatrix(*m, 11);  // A: runs the program
-    for (int i = 0; i < 50 && r.stop == BatchResult::Stop::None; ++i) r = runBatch(*m, carry, 284, freeze);
-    releaseMatrix(*m, 11);
+    testroms::press(*m, 11);  // A: runs the program
+    for (int i = 0; i < 50 && r.stop == BatchResult::Stop::None; ++i) r = runBatch(*m, carry, kTicksPerCycle * 284, freeze);
+    testroms::release(*m, 11);
     CHECK(r.stop == BatchResult::Stop::Freeze);
     CHECK(r.freezeOwner == FreezeOwner::Calculator);
-    CHECK(m->lastStepBoundary().count > 0 && m->lastStepBoundary().cpu.pc == m->pc());  // where STEP stops
+    CHECK(testroms::dbg(*m).lastStepBoundary().count > 0 && testroms::dbg(*m).lastStepBoundary().cpu.pc == testroms::dbg(*m).pc());  // where STEP stops
 }
 
 TEST(calc_indicator_smoothing) {
@@ -196,18 +206,18 @@ namespace {
 // as the apps do.
 struct PovRig {
     Model model;
-    std::unique_ptr<TI59Machine> m;
+    std::unique_ptr<calcu::machine::Machine> m;
     FrameSampler sampler;
     double hz;
     double acc = 0;
-    explicit PovRig(Model md) : model(md), m(testroms::makeMachine(md)), hz(info(md).instructionHz) {
+    explicit PovRig(Model md) : model(md), m(testroms::makeMachine(md)), hz(testroms::instructionHz(md)) {
         testroms::runToScanLoop(*m, md);
-        m->takeDisplay();
+        m->readDisplay();
     }
     FrameUpdate frame() {
-        while (acc < hz / 60) acc += m->step() & TI59Machine::kWeightMask;
+        while (acc < hz / 60) acc += (testroms::dbg(*m).step() & 0xFFu);
         acc -= hz / 60;
-        return sampler.tick(*m, hz, 0, false);
+        return sampler.tick(*m, 0, false);
     }
     static int brightest(const FrameUpdate& f) {
         int mx = 0;
@@ -221,10 +231,10 @@ struct PovRig {
         std::vector<int> v(keys);
         for (size_t i = 0; i + 1 < v.size(); ++i) testroms::tap(*m, model, v[i]);
         for (int i = 0; i < 10; ++i) frame();
-        pressMatrix(*m, v.back());
+        testroms::press(*m, v.back());
         int dim = 255;
         for (int i = 0; i < 60; ++i) {
-            if (i == 6) releaseMatrix(*m, v.back());
+            if (i == 6) testroms::release(*m, v.back());
             dim = std::min(dim, brightest(frame()));
         }
         return dim;
@@ -288,8 +298,10 @@ TEST(display_pov_error_blink_is_steady) {
 
 TEST(runner_post_and_sync_are_serial) {
     auto m = testroms::makeMachine(Model::TI59);
-    FreezeController freeze(Model::TI59);
-    EmulationRunner runner(*m, Model::TI59, freeze, {});
+    FreezeController freeze;
+    testroms::dbg(*m).setRunControl(&freeze);
+    MachineGuard guard(*m);
+    EmulationRunner runner(guard, Model::TI59, freeze, {});
     std::vector<int> order;
     std::mutex mu;
     runner.post([&] { std::lock_guard<std::mutex> l(mu); order.push_back(1); });
@@ -300,7 +312,7 @@ TEST(runner_post_and_sync_are_serial) {
     std::this_thread::sleep_for(100ms);
     runner.stop();
     uint64_t ticks = 0;
-    runner.sync([&] { ticks = m->elapsedTicks(); });  // runs after the loop exited
+    runner.sync([&] { ticks = ((*m).tickCount() / 32); });  // runs after the loop exited
     CHECK(!runner.isRunning());
     // ~0.1 s at 14218.75 Hz plus the boot burst being paced too.
     CHECK(ticks > 500 && ticks < 14219 / 2);
@@ -313,18 +325,20 @@ TEST(runner_post_and_sync_are_serial) {
 TEST(runner_keeps_real_time) {
     auto m = testroms::makeMachine(Model::TI59);
     testroms::runToScanLoop(*m, Model::TI59);
-    FreezeController freeze(Model::TI59);
+    FreezeController freeze;
+    testroms::dbg(*m).setRunControl(&freeze);
     EmulationRunner::Callbacks cb;
     cb.batchDone = [] { std::this_thread::sleep_for(2ms); };  // a slow UI callback
-    EmulationRunner runner(*m, Model::TI59, freeze, cb);
-    uint64_t t0 = m->elapsedTicks();
+    MachineGuard guard(*m);
+    EmulationRunner runner(guard, Model::TI59, freeze, cb);
+    uint64_t t0 = guard.access().machine().tickCount() / 32;
     auto w0 = std::chrono::steady_clock::now();
     runner.start();
     std::this_thread::sleep_for(1500ms);
-    uint64_t t1 = m->elapsedTicks();
+    uint64_t t1 = guard.access().machine().tickCount() / 32;   // the runner is running: under the guard
     double wall = std::chrono::duration<double>(std::chrono::steady_clock::now() - w0).count();
     runner.stop();
-    double ratio = double(t1 - t0) / info(Model::TI59).instructionHz / wall;
+    double ratio = double(t1 - t0) / testroms::instructionHz(Model::TI59) / wall;
     CHECK(ratio > 0.95 && ratio < 1.05);
 }
 
@@ -334,12 +348,12 @@ TEST(session_plays_keystrokes_in_real_time) {
     CHECK(!session.moduleImage().empty());
     session.setFullSpeed(true);  // boot quickly; the scan loop still runs at regular speed
     session.start();
-    CHECK(waitFor([&] { return info(Model::TI59).scanLoop.contains(session.machine().pc()); }, 5000ms));
+    CHECK(waitFor([&] { return session.access().machine().isKeyReady(); }, 5000ms));
     session.setFullSpeed(false);
     auto r = parseStateFile("KEYSTROKES:\n25 83 85 84 95\nZeroElapseTime:\nWait: 50ms\nReportElapseTime:\n");
     session.playKeystrokes(r.keystrokes);
     CHECK(waitFor([&] { return listener.playbackDone.load() == 1; }, 8000ms));
-    CHECK_EQ(testroms::displayText(session.machine()), std::string("5"));
+    CHECK_EQ(testroms::displayText(session.access().machine()), std::string("5"));
     {
         std::lock_guard<std::mutex> lock(listener.mutex);
         CHECK_EQ(listener.logs.size(), size_t{1});
@@ -355,10 +369,10 @@ TEST(session_freeze_fires_through_listener) {
     listener.session = &session;
     session.setFullSpeed(true);
     session.start();
-    CHECK(waitFor([&] { return info(Model::TI59).scanLoop.contains(session.machine().pc()); }, 5000ms));
+    CHECK(waitFor([&] { return session.access().machine().isKeyReady(); }, 5000ms));
     session.armScanLoopExit();
     CHECK(session.debugState().scanLoopExitArmed);
-    CHECK(session.machine().traceFlags() != TRACE_NONE);  // an armed freeze needs the trace ring
+    CHECK(testroms::dbg(session.access().machine()).traceFlags() != TRACE_NONE);  // an armed freeze needs the trace ring
     session.keyboardDown({83});
     CHECK(waitFor([&] { return listener.freezes.load() == 1; }, 2000ms));
     CHECK(listener.frozenWhenFired.load());
@@ -368,7 +382,7 @@ TEST(session_freeze_fires_through_listener) {
     session.keyboardRelease();
     session.resume();
     CHECK(!session.debugState().frozen && session.isRunning());
-    CHECK_EQ(session.machine().traceFlags(), static_cast<uint32_t>(TRACE_NONE));
+    CHECK_EQ(testroms::dbg(session.access().machine()).traceFlags(), static_cast<uint32_t>(TRACE_NONE));
     session.stop();
 }
 
@@ -403,4 +417,34 @@ TEST(trace_flags_for_consumers) {
     TraceConsumers c;
     c.frozen = true;
     CHECK_EQ(traceFlagsFor(c), static_cast<uint32_t>(TRACE_PC | TRACE_REGS_FULL));
+}
+
+// C59-1 design T11: runBatch is one Machine::advance() with FreezeController as
+// the run-control hook. FREEZE ON START lands on the same instruction as
+// 2.3.0's runBatch, which stepped one instruction at a time and asked
+// FreezeController after each.
+TEST(c59_1_runbatch_stops_at_freeze_inside_advance) {
+    auto stepped = testroms::makeMachine(Model::TI59), batched = testroms::makeMachine(Model::TI59);
+    for (auto* m : {stepped.get(), batched.get()}) testroms::runToScanLoop(*m, Model::TI59);
+    // 2.3.0's way: one instruction, then checkStep.
+    FreezeController one;
+    one.armScanLoopExit(testroms::dbg(*stepped).pc());
+    testroms::press(*stepped, 83);
+    for (int i = 0; i < 100'000; ++i) {
+        const uint32_t r = testroms::dbg(*stepped).step();
+        const uint16_t pc = testroms::dbg(*stepped).pc();
+        if (one.checkStep(pc, (r & 0x2000'0000u) != 0, romRanges(MachineVariant::TI59).scanLoop.contains(pc))) break;
+    }
+    // Now: batches of one advance each.
+    FreezeController freeze;
+    testroms::dbg(*batched).setRunControl(&freeze);
+    freeze.armScanLoopExit(testroms::dbg(*batched).pc());
+    testroms::press(*batched, 83);
+    int32_t carry = 0;
+    BatchResult r;
+    for (int i = 0; i < 50 && r.stop == BatchResult::Stop::None; ++i) r = runBatch(*batched, carry, kTicksPerCycle * 284, freeze);
+    CHECK(r.stop == BatchResult::Stop::Freeze);
+    CHECK(r.freezeOwner == FreezeOwner::Cpu);
+    CHECK_EQ(batched->tickCount(), stepped->tickCount());
+    CHECK_EQ(testroms::dbg(*batched).pc(), testroms::dbg(*stepped).pc());
 }

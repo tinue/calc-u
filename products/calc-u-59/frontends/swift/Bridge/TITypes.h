@@ -2,15 +2,14 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
-// Plain C mirrors of the Core structs Swift reads: the display snapshot and
-// a CPU trace frame (TICpuFrame matches CpuFrame field for field; the layout
+// Plain C mirrors of the structs Swift reads: the display as drawn (Shared
+// LedFrame) and a CPU trace frame (TICpuFrame matches CpuFrame field for field; the layout
 // is checked in BridgeConvert.h).
 
 /// The display as drawn (Shared LedFrame): each position's last glyph and its
 /// brightness as the eye sees it (Shared/DisplayPov).
 typedef struct {
-    uint8_t  digits[12];      ///< A[2..13] BCD digit values
-    uint8_t  ctrl[12];        ///< B[2..13] display control nibbles
+    uint8_t  segments[12];    ///< last driven glyph per position: A–G as bits 0–6 (the machine's display output)
     uint8_t  digitLevel[12];  ///< brightness 0 (dark) … 255 (lit) per position
     uint8_t  dpLevel[12];     ///< same for the decimal point of each position
 } TIDisplaySnapshot;

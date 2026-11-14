@@ -29,7 +29,7 @@
 
 #include "../../app/CardFile.hpp"
 #include "../../app/DebugText.hpp"
-#include "../../app/KeyMatrix.hpp"
+#include "../../app/KeyIds.hpp"
 #include "../../app/KeyboardLayout.hpp"
 #include "../../app/KeyboardMap.hpp"
 #include "../../app/LedGeometry.hpp"
@@ -484,7 +484,7 @@ private:
         const double calc = m_c->calcIndicatorOpacity();
         float cells[36];
         for (int i = 0; i < 12; ++i) {
-            const cu59::LedCell cell = cu59::ledCell(i, d.digits[i], d.ctrl[i], d.digitLevel[i], calc);
+            const cu59::LedCell cell = cu59::ledCell(i, d.segments[i], d.digitLevel[i], calc);
             cells[i * 3] = cell.segments;
             cells[i * 3 + 1] = static_cast<float>(cell.opacity);
             cells[i * 3 + 2] = d.dpLevel[i] / 255.0f;

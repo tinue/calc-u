@@ -41,13 +41,29 @@ Annotated ROM listings: `rom/TI59-commented.asm`, `rom/TI58C-commented.asm`
 
 ## Rules for Core changes
 
-- **`TI59Machine` is the only public interface.** `app/` (and through it
-  Swift, Qt and the tools) calls it, never `TMC0501`.
+- **`calcu::machine::Machine` is the only public interface** (C59-1,
+  ADR 0006): `TIMachine` (`core/TIMachine.hpp`), built with
+  `calcu::machine::build(tiCatalogue(), TIMachineBuilder, …)`
+  (`core/TICatalogue.hpp`; `cu59::buildMachine` in `app/RomLoader.hpp`).
+  Model, advances and tick count, Reset/power cycle/cold boot, key readiness,
+  keys (key IDs) and the display output go through it only. What it does not
+  have yet goes through the adapters of `core/TIAdapters.hpp`, each until its
+  removal step: `TIPeripheralsAdapter` (M-25), `TICardReaderAdapter` (M-55),
+  `TIMemoryAdapter` (M-54), `TIDebugTargetAdapter` (M-53),
+  `TIDebugPanelAdapter` (M-56), `TIPacingHints` (M-33). `TI59Machine`,
+  `TMC0501`, `MachineVariant`, `TIKeys`, `TIRomRanges` are core-internal; the
+  CTest `CalcU59CoreSeam` (`tests/check_core_seam.sh`) fails on an include of
+  them outside `core/` and `tests/`. Don't add a call to an adapter that the
+  interface has (C59-1 AC-17); a new need goes to the feature that owns it.
+- **Ticks:** one instruction is 32 ticks, 128 in IDLE on the TI-59/58; the
+  tick count is monotonic across every operation (`TIMachine::cpuReset`).
+  Every path that runs an instruction goes through `TIMachine::stepOne()`
+  (the Reset restore, the polled-hardware bit).
 - **Core stays hardware-only.** File formats, run-loop pacing, key timing and
   debugger snapshots belong in `app/` (calc-u-59-shared skill).
-- **Every new public accessor takes `m_keyMutex`** unless it has its own
-  synchronisation; the lock policy is the comment above `m_keyMutex` in
-  `core/TI59Machine.hpp`.
+- **The core holds no lock, no atomic and starts no thread** (ADR 0009).
+  The app's `cu59::MachineGuard` (`app/MachineGuard.hpp`) serialises the
+  runner, UI and sequencer threads until M-33 (Qt6, Swift) / M-34 (Web).
 - **Trace format:** a new `CpuFrame` field changes the binary trace format
   (`reference/DebugAPI.md`); avoid it where an accessor will do (as
   `libExecPC()` does).

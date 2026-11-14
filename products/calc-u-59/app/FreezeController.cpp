@@ -21,13 +21,13 @@ void FreezeController::disarmScanLoopExit() {
 
 void FreezeController::disarmPcChange() { m_pcArmed = false; }
 
-std::optional<FreezeOwner> FreezeController::checkStep(uint16_t pc, bool stepBoundary) {
+std::optional<FreezeOwner> FreezeController::checkStep(uint16_t pc, bool stepBoundary, bool inScanLoop) {
     if (stepBoundary && m_pcArmed.load(std::memory_order_relaxed)) {
         m_pcArmed = false;
         return FreezeOwner::Calculator;
     }
     if (!m_scanArmed.load(std::memory_order_relaxed)) return std::nullopt;
-    if (m_scanLoop.contains(pc)) {
+    if (inScanLoop) {
         m_seenLoop = true;
         return std::nullopt;
     }
@@ -36,6 +36,11 @@ std::optional<FreezeOwner> FreezeController::checkStep(uint16_t pc, bool stepBou
         return FreezeOwner::Cpu;
     }
     return std::nullopt;
+}
+
+bool FreezeController::stopAfter(uint16_t pc, bool stepBoundary, bool inScanLoop) {
+    m_fired = checkStep(pc, stepBoundary, inScanLoop);
+    return m_fired.has_value();
 }
 
 } // namespace cu59

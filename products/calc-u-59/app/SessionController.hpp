@@ -161,7 +161,7 @@ public:
     /// The strip's height in dot pitches (a text line without dot codes yet counts as complete).
     double printerStripHeightUnits() const;
     bool printerConnected() const { return m_printerConnected; }
-    bool printerTrace() const { return m_session && m_session->machine().printerTrace(); }
+    bool printerTrace() const { return m_session && m_session->access().peripherals().printerTrace(); }
     void setPrinterConnected(bool connected);
     /// The printer panel's connect button: plug the PC-100C in or out and reset the calculator.
     void togglePrinterConnection();
@@ -247,7 +247,7 @@ private:
     void emitChanged(uint32_t c) { if (c) m_platform.changed(c); }
     /// Shared start of both resets: stop playback, unfreeze, drop the overlay, card and cue card.
     void beginReset();
-    void softResetStopped(const std::vector<uint8_t>* savedRam);
+    void resetStopped();
     void refreshCueCard();
     void checkProgramNumber();
     void refreshLog();

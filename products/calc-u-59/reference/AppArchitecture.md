@@ -115,11 +115,11 @@ imports the public ones.
 | Wrapper | Wraps |
 |---|---|
 | `TISessionController.{h,mm}` | `SessionController`; its `Platform` as the `TIPlatform` protocol (held weakly); `TIChange` = `Change` bits; value objects `TILiveDebugSnapshot`, `TIStepEntry`, `TIRegEntry`, `TIInspectorEntry`, `TIPrinterLine`, built when Swift reads them after a change |
-| `TISharedTables.{h,mm}` | `KeyboardMap`, `SevenSegment`, `PrinterFont` (font rows), `KeyboardLayout`, `KeyMatrix` |
+| `TISharedTables.{h,mm}` | `KeyboardMap`, `SevenSegment`, `PrinterFont` (font rows), `KeyboardLayout`, `KeyIds` |
 | `TIViewRules.{h,mm}` | `CueCard` (spans, geometry, inks), `LedGeometry`, `PrinterFont` (`PrinterGeometry`), `RomHeatmap`, `ModuleImage` (program source), `DebugText` (incl. the iOS `mobileLayout`, `mobilePrinterWidth`, `compactPrinterBar`, `mobileTopMargin`) |
 | `TIFileFormats.{h,mm}` | `TICueCard`, card file names (`CardFile`), `cuecards.txt` module list (`ModuleCatalog`); `TIResourceReader` |
 | `TISettings.{h,mm}` | `SettingsKeys` |
-| `TITypes.h` | `TIDisplaySnapshot` (mirrors `LedFrame`: glyph, control nibble and brightness 0–255 per digit and decimal point) and `TICpuFrame` (mirrors `CpuFrame`) |
+| `TITypes.h` | `TIDisplaySnapshot` (mirrors `LedFrame`: the glyph's segments A–G and brightness 0–255 per digit and decimal point) and `TICpuFrame` (mirrors `CpuFrame`) |
 | `BridgeConvert.h` | ObjC++-only: string / data conversions; `static_assert`s that `TICpuFrame` matches `CpuFrame` field for field, so a frame converts with one `memcpy` |
 | `TIFileFormats+Cpp.h` | ObjC++-only: `TICueCard` ↔ `CueCardContent` |
 

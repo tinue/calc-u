@@ -1,6 +1,6 @@
 #pragma once
-#include "../core/TI59Machine.hpp"
 #include "FreezeController.hpp"
+#include "MachineGuard.hpp"
 #include "Pacing.hpp"
 #include "Threading.hpp"
 #include <atomic>
@@ -41,7 +41,8 @@ public:
     /// Cooperative: how long one pump() may run batches back to back at full speed.
     static constexpr std::chrono::milliseconds kFullSpeedSlice{10};
 
-    EmulationRunner(TI59Machine& m, Model model, FreezeController& freeze, Callbacks callbacks,
+    /// Sets `freeze` as the machine's run-control hook for the runner's life.
+    EmulationRunner(MachineGuard& guard, Model model, FreezeController& freeze, Callbacks callbacks,
                     Threading threading = Threading::Threads);
     ~EmulationRunner();
     EmulationRunner(const EmulationRunner&) = delete;
@@ -78,8 +79,7 @@ private:
     /// Cooperative: run queued jobs up to a running loop (an empty job marks it).
     void drainJobs();
 
-    TI59Machine& m_machine;
-    const Model m_model;
+    MachineGuard& m_guard;
     FreezeController& m_freeze;
     Callbacks m_callbacks;
     std::atomic<bool> m_running{false};

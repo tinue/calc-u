@@ -39,22 +39,31 @@ endif()
 # -----------------------------------------------------------------------------
 # Core (hardware emulation) and Shared (frontend-neutral logic above it)
 # -----------------------------------------------------------------------------
+# The core and the TI machine behind the machine interface (C59-1): TIMachine,
+# tiCatalogue(), the adapters of C59-1 design §5.
 add_library(calcu59_core STATIC
   ${CORE_ROOT}/TI59Machine.cpp
   ${CORE_ROOT}/TMC0501.cpp
   ${CORE_ROOT}/ROM.cpp
   ${CORE_ROOT}/RAM.cpp
+  ${CORE_ROOT}/TIAdapters.cpp
+  ${CORE_ROOT}/TICatalogue.cpp
+  ${CORE_ROOT}/TIKeys.cpp
+  ${CORE_ROOT}/TIMachine.cpp
+  ${CORE_ROOT}/TIRomText.cpp
 )
 target_include_directories(calcu59_core PUBLIC ${CORE_ROOT})
 target_compile_options(calcu59_core PRIVATE ${CALCU59_WARNINGS})
 set_target_properties(calcu59_core PROPERTIES POSITION_INDEPENDENT_CODE ON)
-find_package(Threads REQUIRED)
-target_link_libraries(calcu59_core PUBLIC Threads::Threads calcu_library)
+# The core holds no lock and starts no thread (ADR 0009); the app layer's
+# runner thread needs Threads (until M-33).
+target_link_libraries(calcu59_core PUBLIC calcu_library)
 
 file(GLOB SHARED_SOURCES CONFIGURE_DEPENDS ${SHARED_ROOT}/*.cpp)
 add_library(calcu59_shared STATIC ${SHARED_SOURCES})
 target_include_directories(calcu59_shared PUBLIC ${SHARED_ROOT})
-target_link_libraries(calcu59_shared PUBLIC calcu59_core)
+find_package(Threads REQUIRED)
+target_link_libraries(calcu59_shared PUBLIC calcu59_core Threads::Threads)
 target_compile_options(calcu59_shared PRIVATE ${CALCU59_WARNINGS})
 # Both static libraries end up in the ti59headless shared object: on Linux
 # that needs -fPIC (macOS always builds position-independent code).
@@ -65,21 +74,22 @@ set_target_properties(calcu59_shared PROPERTIES POSITION_INDEPENDENT_CODE ON)
 # frontends/web/dist/wasm/, reference/WebClient.md): core/ + app/ behind
 # frontends/web/bindings.cpp. Single-threaded (no -pthread): a static host
 # can't be relied on to send the headers SharedArrayBuffer needs, so
-# SessionController runs in Threading::Cooperative. -fexceptions: app/
-# reports ROM and file errors with exceptions (Emscripten's JS-based
-# model; Calc-U-1600's engine uses native wasm exceptions, which its
-# libsharpdx needs). -UNDEBUG: the core's asserts stay on, as in the em++
-# build this replaces (-O3 without -DNDEBUG).
+# SessionController runs in Threading::Cooperative. -fwasm-exceptions: app/
+# reports ROM and file errors with exceptions; native wasm exceptions, as
+# Calc-U-1600's engine and calcu_library use, so one build/web tree holds
+# both engines (C59-1, since M-19; LIB-1 design §2a, D-6). -UNDEBUG: the
+# core's asserts stay on, as in the em++ build this replaces (-O3 without
+# -DNDEBUG).
 # -----------------------------------------------------------------------------
 if(EMSCRIPTEN)
   foreach(target calcu59_core calcu59_shared)
-    target_compile_options(${target} PRIVATE -fexceptions -UNDEBUG)
+    target_compile_options(${target} PRIVATE -fwasm-exceptions -UNDEBUG)
   endforeach()
   add_executable(calcu59_web ${CMAKE_CURRENT_SOURCE_DIR}/frontends/web/bindings.cpp)
   target_link_libraries(calcu59_web PRIVATE calcu59_shared)
-  target_compile_options(calcu59_web PRIVATE -fexceptions -UNDEBUG)
+  target_compile_options(calcu59_web PRIVATE -fwasm-exceptions -UNDEBUG)
   set_target_properties(calcu59_web PROPERTIES OUTPUT_NAME ti59-core)
-  target_link_options(calcu59_web PRIVATE -fexceptions -lembind -sMODULARIZE=1
+  target_link_options(calcu59_web PRIVATE -fwasm-exceptions -lembind -sMODULARIZE=1
                       -sEXPORT_NAME=createTI59CoreModule -sENVIRONMENT=web,worker
                       -sALLOW_MEMORY_GROWTH=1 -sNO_EXIT_RUNTIME=1)
   return()
@@ -123,6 +133,17 @@ if(CALCU_TESTS)
              COMMAND ${Python3_EXECUTABLE} tools/read_trace.py --json build/trace-test.bin
              WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
     set_tests_properties(CalcU59TraceReader PROPERTIES DEPENDS CalcU59Tests LABELS frequent)
+  endif()
+  # C59-1 AC-17: the app layer reaches the machine through the interface only.
+  add_test(NAME CalcU59CoreSeam COMMAND sh tests/check_core_seam.sh WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
+  set_tests_properties(CalcU59CoreSeam PROPERTIES LABELS frequent)
+  if(Python3_FOUND)
+    # tools/headless/ on the machine interface (C59-1 design T14): 5 + 7 = shows 12.
+    add_test(NAME CalcU59HeadlessSmoke COMMAND ${Python3_EXECUTABLE} tools/headless/ti59.py 5 + 7 = --summary
+             WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
+    set_tests_properties(CalcU59HeadlessSmoke PROPERTIES LABELS frequent
+                         ENVIRONMENT TI59HEADLESS_LIB=$<TARGET_FILE:ti59headless>
+                         PASS_REGULAR_EXPRESSION "display: \\[ *12\\.? *\\]" DEPENDS CalcU59Tests)
   endif()
   # The Xcode project compiles only Swift and the bridge (C59-5, ADR 0013).
   add_test(NAME CalcU59XcodeProjectCheck COMMAND frontends/swift/check_xcode_project.sh

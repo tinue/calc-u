@@ -1,5 +1,5 @@
 #pragma once
-#include "../core/TI59Machine.hpp"
+#include "../core/TIAdapters.hpp"
 #include "MachineModelInfo.hpp"
 #include <optional>
 #include <string>
@@ -33,15 +33,15 @@ private:
 
 /// Non-zero data registers of the current partition, sorted by label: normal
 /// registers as Vnn, the TI-58C's extra registers as Hnn.
-std::vector<std::string> dumpVars(const TI59Machine& m);
+std::vector<std::string> dumpVars(const calcu::machine::Machine& m);
 
 /// All 16 SCOM rows, nibble 15 first.
-std::vector<std::string> dumpScom(const TI59Machine& m);
+std::vector<std::string> dumpScom(const calcu::machine::Machine& m);
 
 /// Program registers as nibble pairs in storage order (units nibble first).
-std::vector<std::string> dumpProg(const TI59Machine& m);
+std::vector<std::string> dumpProg(const calcu::machine::Machine& m);
 
 /// Every non-zero RAM register as a register line.
-std::vector<std::string> dumpMemory(const TI59Machine& m);
+std::vector<std::string> dumpMemory(const calcu::machine::Machine& m);
 
 } // namespace cu59

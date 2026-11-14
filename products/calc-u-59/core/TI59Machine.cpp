@@ -37,7 +37,6 @@ void TI59Machine::loadConstants(const uint8_t* data, size_t count) {
 }
 
 void TI59Machine::reset() {
-    std::lock_guard<std::mutex> lock(m_keyMutex);
     m_cpu.reset();
     m_cpu.pressKey(4, cardSwitchCol());  // restore card-absent state after key[] wipe
     m_cpu.setPrinterConnected(m_printerConnected);
@@ -45,7 +44,6 @@ void TI59Machine::reset() {
 }
 
 uint32_t TI59Machine::step() {
-    std::lock_guard<std::mutex> lock(m_keyMutex);
     auto r = static_cast<uint32_t>(m_cpu.step());
     if (m_cpu.consumeBreakpointHit()) {
         r |= kBreakpointHit;
@@ -54,12 +52,10 @@ uint32_t TI59Machine::step() {
 }
 
 void TI59Machine::pressKey(int row, int col) {
-    std::lock_guard<std::mutex> lock(m_keyMutex);
     m_cpu.pressKey(row, col);
 }
 
 void TI59Machine::releaseKey(int row, int col) {
-    std::lock_guard<std::mutex> lock(m_keyMutex);
     m_cpu.releaseKey(row, col);
 }
 
@@ -68,26 +64,22 @@ DisplaySnapshot TI59Machine::takeDisplay() {
 }
 
 void TI59Machine::serialiseRAM(uint8_t* dst) const {
-    std::lock_guard<std::mutex> lock(m_keyMutex);
     m_ram.serialise(dst);
 }
 
 void TI59Machine::deserialiseRAM(const uint8_t* src) {
-    std::lock_guard<std::mutex> lock(m_keyMutex);
     m_ram.deserialise(src);
 }
 
 // ── State file load helpers ────────────────────────────────────────────────────
 
 void TI59Machine::writeProgram(const uint8_t* keycodes, int count) {
-    std::lock_guard<std::mutex> lock(m_keyMutex);
     // 8 steps per register; never write past the physical 120-register RAM.
     if (count > RAM::TOTAL_REGS * 8) count = RAM::TOTAL_REGS * 8;
     for (int stepAddr = 0; stepAddr < count; stepAddr++) storeProgramStep(stepAddr, keycodes[stepAddr]);
 }
 
 void TI59Machine::writeProgramStep(int stepAddr, uint8_t keycode) {
-    std::lock_guard<std::mutex> lock(m_keyMutex);
     if (stepAddr >= 0 && stepAddr < RAM::TOTAL_REGS * 8) storeProgramStep(stepAddr, keycode);
 }
 
@@ -101,13 +93,11 @@ void TI59Machine::storeProgramStep(int stepAddr, uint8_t keycode) {
 }
 
 void TI59Machine::writeDataRegister(int regNum, const uint8_t* nibbles16) {
-    std::lock_guard<std::mutex> lock(m_keyMutex);
     const int idx = dataRegRAMIndexLocked(regNum);
     if (idx >= 0) m_ram.writeReg(idx, nibbles16);
 }
 
 int TI59Machine::partitionProgramRegs() const {
-    std::lock_guard<std::mutex> lock(m_keyMutex);
     // The partition is stored live in two SCOM locations by the ROM's OP 17 handler.
     // SCOM[9][0] encodes programRAMregs / 10 as a single hex nibble (0–12).
     // E.g. value 6 → 60 program regs → 480 steps (the factory default "6 OP 17").
@@ -124,7 +114,6 @@ void TI59Machine::setPartitionProgramRegs(int programRAMregs) {
     //
     // where n = programRAMregs / 10.
     // programRAMregs must be a multiple of 10 in [0, 120].
-    std::lock_guard<std::mutex> lock(m_keyMutex);
     int n = programRAMregs / 10;
     m_cpu.setSCOMNibble(9,  0, static_cast<uint8_t>(n));
     m_cpu.setSCOMNibble(13, 8, static_cast<uint8_t>(n % 10));  // BCD units
@@ -134,14 +123,12 @@ void TI59Machine::setPartitionProgramRegs(int programRAMregs) {
 int TI59Machine::insertedModuleNumber() const {
     // SCOM[9][4] = tens nibble, SCOM[9][3] = units nibble
     // (hardware encoding: nibble4=0,nibble3=1 → ML01; nibble4=1,nibble3=0 → ML10)
-    std::lock_guard<std::mutex> lock(m_keyMutex);
     int tens  = static_cast<int>(m_cpu.scomNibble(9, 4));
     int units = static_cast<int>(m_cpu.scomNibble(9, 3));
     return tens * 10 + units;
 }
 
 uint16_t TI59Machine::libExecPC() const {
-    std::lock_guard<std::mutex> lock(m_keyMutex);
     return m_cpu.libExecPC();
 }
 
@@ -156,37 +143,27 @@ int TI59Machine::cardSwitchCol() const {
 }
 
 void TI59Machine::insertCard(const uint8_t* data, size_t count) {
-    std::lock_guard<std::mutex> lock(m_keyMutex);
     m_cpu.insertCard(data, count);
 }
 
 std::vector<uint8_t> TI59Machine::cardEject() {
-    std::lock_guard<std::mutex> lock(m_keyMutex);
     return m_cpu.cardEject();
 }
 
-// Card state is mutated inside step() (IN CRD / OUT CRD / CRD_OFF), so even
-// these boolean getters must take the lock to avoid racing the emulation thread.
 bool TI59Machine::isCardPresent() const {
-    std::lock_guard<std::mutex> lock(m_keyMutex);
     return m_cpu.isCardPresent();
 }
 
 bool TI59Machine::isWaitingForCard() const {
-    std::lock_guard<std::mutex> lock(m_keyMutex);
     return m_cpu.isWaitingForCard();
 }
 
 int TI59Machine::cardMode() const {
-    std::lock_guard<std::mutex> lock(m_keyMutex);
     return m_cpu.cardMode();
 }
 
 // ── Printer ────────────────────────────────────────────────────────────────────
 
-// The printer line queues are protected by m_prnMutex inside TMC0501; taking
-// m_keyMutex here would only add contention with the emulation loop (same
-// pattern as the trace-frame drains).
 std::vector<std::string> TI59Machine::drainPrinterLines() {
     return m_cpu.drainPrinterLines();
 }
@@ -196,23 +173,19 @@ std::vector<PrinterCodeLine> TI59Machine::drainPrinterCodeLines() {
 }
 
 void TI59Machine::pressPrinterPrint(bool pressed) {
-    std::lock_guard<std::mutex> lock(m_keyMutex);
     m_cpu.pressPrinterPrint(pressed);
 }
 
 void TI59Machine::pressPrinterAdv(bool pressed) {
-    std::lock_guard<std::mutex> lock(m_keyMutex);
     m_cpu.pressPrinterAdv(pressed);
 }
 
 void TI59Machine::setPrinterTrace(bool enabled) {
-    std::lock_guard<std::mutex> lock(m_keyMutex);
     m_printerTrace = enabled;
     m_cpu.setPrinterTrace(enabled);
 }
 
 void TI59Machine::setPrinterConnected(bool connected) {
-    std::lock_guard<std::mutex> lock(m_keyMutex);
     m_printerConnected = connected;
     // Attaching or detaching the printer physically releases the TRACE latch.
     m_printerTrace = false;
@@ -228,38 +201,31 @@ uint32_t TI59Machine::traceFlags() const    { return m_cpu.traceFlags(); }
 void TI59Machine::setDebugLevel(uint8_t level) { m_cpu.setDebugLevel(level); }
 
 std::vector<DebugEvent> TI59Machine::drainDebugEvents() {
-    std::lock_guard<std::mutex> lock(m_keyMutex);
     return m_cpu.drainDebugEvents();
 }
 
 void TI59Machine::addBreakpoint(uint16_t pc) {
-    std::lock_guard<std::mutex> lock(m_keyMutex);
     m_cpu.addBreakpoint(pc);
 }
 
 void TI59Machine::removeBreakpoint(uint16_t pc) {
-    std::lock_guard<std::mutex> lock(m_keyMutex);
     m_cpu.removeBreakpoint(pc);
 }
 
 void TI59Machine::clearBreakpoints() {
-    std::lock_guard<std::mutex> lock(m_keyMutex);
     m_cpu.clearBreakpoints();
 }
 
 bool TI59Machine::loadDebugOverlay(const uint16_t* data, size_t count) {
-    std::lock_guard<std::mutex> lock(m_keyMutex);
     return m_rom.loadOverlay(data, count);
 }
 
 void TI59Machine::clearDebugOverlay() {
-    std::lock_guard<std::mutex> lock(m_keyMutex);
     m_rom.clearOverlay();
 }
 
 bool TI59Machine::runDebugOverlay(uint16_t startAddr, uint32_t maxSteps,
                                   uint32_t* outSteps) {
-    std::lock_guard<std::mutex> lock(m_keyMutex);
     return m_cpu.runDebugInjectedProgram(startAddr, maxSteps, outSteps);
 }
 
@@ -272,7 +238,6 @@ uint32_t TI59Machine::readCpuFrames(CpuFrame* out, uint32_t max) const {
 }
 
 uint32_t TI59Machine::stepN(uint32_t n, bool stopOnBreakpoint) {
-    std::lock_guard<std::mutex> lock(m_keyMutex);
     uint32_t done = 0;
     while (done < n) {
         m_cpu.step();
@@ -285,7 +250,6 @@ uint32_t TI59Machine::stepN(uint32_t n, bool stopOnBreakpoint) {
 }
 
 uint32_t TI59Machine::stepUntilNextKeycode(uint32_t maxCycles) {
-    std::lock_guard<std::mutex> lock(m_keyMutex);
     uint32_t done = 0;
     while (done < maxCycles) {
         int r = m_cpu.step();
@@ -297,17 +261,14 @@ uint32_t TI59Machine::stepUntilNextKeycode(uint32_t maxCycles) {
 }
 
 TMC0501::StepBoundary TI59Machine::lastStepBoundary() const {
-    std::lock_guard<std::mutex> lock(m_keyMutex);
     return m_cpu.lastStepBoundary();
 }
 
 uint16_t TI59Machine::pc() const {
-    std::lock_guard<std::mutex> lock(m_keyMutex);
     return m_cpu.pc();
 }
 
 void TI59Machine::beginNextStep() {
-    std::lock_guard<std::mutex> lock(m_keyMutex);
     m_cpu.beginNextStep();
 }
 
@@ -344,13 +305,11 @@ double TI59Machine::decodeBCD(const uint8_t* n) {
 }
 
 double TI59Machine::readDataReg(int regNum) const {
-    std::lock_guard<std::mutex> lock(m_keyMutex);
     const int idx = dataRegRAMIndexLocked(regNum);
     return idx >= 0 ? decodeBCD(m_ram.readReg(idx)) : 0.0;
 }
 
 int TI59Machine::dataRegCount() const {
-    std::lock_guard<std::mutex> lock(m_keyMutex);
     return dataRegCountLocked();
 }
 
@@ -370,7 +329,6 @@ int TI59Machine::dataRegRAMIndexLocked(int regNum) const {
 }
 
 uint8_t TI59Machine::readProgramStep(int stepAddr) const {
-    std::lock_guard<std::mutex> lock(m_keyMutex);
     // The partition nibble in SCOM[9][0] can transiently claim more registers
     // than physically exist (raw 0xD–0xF); never index past the 120-register RAM.
     if (stepAddr < 0 || stepAddr >= RAM::TOTAL_REGS * 8) return 0;
@@ -385,27 +343,21 @@ uint8_t TI59Machine::readROMKeycode(int addr) const {
 }
 
 CpuFrame TI59Machine::snapshotCPU() const {
-    std::lock_guard<std::mutex> lock(m_keyMutex);
     return m_cpu.snapshotCPU();
 }
 
 std::string TI59Machine::printerBufferContent() const {
-    // m_prnBuf is std::string[]; copying while step() assigns would be UB,
-    // so this read must serialise against the emulation thread.
-    std::lock_guard<std::mutex> lock(m_keyMutex);
     return m_cpu.printerBufferContent();
 }
 
 // Bounded by the physical 120-register RAM (not the per-model limit): existing
 // callers legitimately clear physical registers beyond the accessible range.
 void TI59Machine::copyRAMReg(int reg, uint8_t* out16) const {
-    std::lock_guard<std::mutex> lock(m_keyMutex);
     if (reg < 0 || reg >= RAM::TOTAL_REGS) { memset(out16, 0, 16); return; }
     memcpy(out16, m_ram.readReg(reg), 16);
 }
 
 void TI59Machine::writeRAMReg(int reg, const uint8_t* nibbles16) {
-    std::lock_guard<std::mutex> lock(m_keyMutex);
     if (reg < 0 || reg >= RAM::TOTAL_REGS) return;
     m_ram.writeReg(reg, nibbles16);
 }

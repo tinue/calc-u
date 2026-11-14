@@ -17,11 +17,12 @@ bool lagging(EmulationRunner::Clock::time_point deadline, EmulationRunner::Clock
 
 } // namespace
 
-EmulationRunner::EmulationRunner(TI59Machine& m, Model model, FreezeController& freeze, Callbacks callbacks,
+EmulationRunner::EmulationRunner(MachineGuard& guard, Model model, FreezeController& freeze, Callbacks callbacks,
                                  Threading threading)
-    : m_machine(m), m_model(model), m_freeze(freeze), m_callbacks(std::move(callbacks)), m_threading(threading),
+    : m_guard(guard), m_freeze(freeze), m_callbacks(std::move(callbacks)), m_threading(threading),
       m_jitter(batchTargetCycles(model), m_callbacks.jitterSeed) {
     requireThreadSupport(threading);
+    m_guard.access().debugTarget().setRunControl(&m_freeze);
     if (threading == Threading::Threads) m_thread = std::thread([this] { threadMain(); });
 }
 
@@ -33,6 +34,7 @@ EmulationRunner::~EmulationRunner() {
     }
     m_cv.notify_all();
     if (m_thread.joinable()) m_thread.join();
+    m_guard.access().debugTarget().setRunControl(nullptr);
 }
 
 void EmulationRunner::start() {
@@ -89,7 +91,13 @@ void EmulationRunner::threadMain() {
 }
 
 EmulationRunner::BatchEnd EmulationRunner::runOneBatch(int32_t& carry) {
-    BatchResult r = runBatch(m_machine, carry, m_jitter.next(), m_freeze);
+    BatchResult r;
+    bool idle;
+    {
+        auto a = m_guard.access();   // per advance; the callbacks below run outside it
+        r = runBatch(a.machine(), carry, kTicksPerCycle * m_jitter.next(), m_freeze);
+        idle = a.pacingHints().inIdleAndKeyDetect();
+    }
     if (r.stop == BatchResult::Stop::Breakpoint) {  // Core breakpoints are set by headless tools only
         m_running = false;
         return BatchEnd::Stopped;
@@ -99,8 +107,7 @@ EmulationRunner::BatchEnd EmulationRunner::runOneBatch(int32_t& carry) {
         if (m_callbacks.freezeFired) m_callbacks.freezeFired(r.freezeOwner);
         return BatchEnd::Stopped;
     }
-    return shouldSleep(m_fullSpeed, m_machine.pc(), r.polledHardware, m_model) ? BatchEnd::Paced
-                                                                                : BatchEnd::Unpaced;
+    return shouldSleep(m_fullSpeed, idle, r.polledHardware) ? BatchEnd::Paced : BatchEnd::Unpaced;
 }
 
 void EmulationRunner::runLoop() {

@@ -43,7 +43,7 @@ std::string RingLog::displayText() {
     return out;
 }
 
-std::vector<std::string> dumpVars(const TI59Machine& m) {
+std::vector<std::string> dumpVars(const calcu::machine::Machine& m) {
     const int visible = partitionDataRegCount(m);
     if (visible <= 0) return {"── Vars: no data registers in current partition ──"};
 
@@ -65,8 +65,8 @@ std::vector<std::string> dumpVars(const TI59Machine& m) {
     return lines;
 }
 
-std::vector<std::string> dumpScom(const TI59Machine& m) {
-    CpuFrame cpu = m.snapshotCPU();
+std::vector<std::string> dumpScom(const calcu::machine::Machine& m) {
+    CpuFrame cpu = debugTargetOf(m)->snapshotCPU();
     std::vector<std::string> lines{"── SCOM ──"};
     char buf[32];
     for (int s = 0; s < 16; ++s) {
@@ -76,14 +76,14 @@ std::vector<std::string> dumpScom(const TI59Machine& m) {
     return lines;
 }
 
-std::vector<std::string> dumpProg(const TI59Machine& m) {
-    const int progRegs = m.partitionProgramRegs();
+std::vector<std::string> dumpProg(const calcu::machine::Machine& m) {
+    const int progRegs = memoryOf(m)->partitionProgramRegs();
     char buf[64];
     std::snprintf(buf, sizeof buf, "── Prog P000–P%03d (key codes) ──", std::max(progRegs - 1, 0));
     std::vector<std::string> lines{buf};
     for (int reg = 0; reg < progRegs; ++reg) {
         uint8_t n[16];
-        m.copyRAMReg(reg, n);
+        memoryOf(m)->copyRAMReg(reg, n);
         if (allZero(n)) continue;
         // Storage order (units-tens pairs), deliberately not the register-line format.
         std::string pairs;
@@ -99,11 +99,11 @@ std::vector<std::string> dumpProg(const TI59Machine& m) {
     return lines;
 }
 
-std::vector<std::string> dumpMemory(const TI59Machine& m) {
+std::vector<std::string> dumpMemory(const calcu::machine::Machine& m) {
     std::vector<std::string> lines{"── Registers (raw values) ──"};
-    for (int reg = 0; reg < m.ramRegCount(); ++reg) {
+    for (int reg = 0; reg < memoryOf(m)->ramRegCount(); ++reg) {
         Nibbles16 n{};
-        m.copyRAMReg(reg, n.data());
+        memoryOf(m)->copyRAMReg(reg, n.data());
         if (allZero(n.data())) continue;
         char label[16];
         std::snprintf(label, sizeof label, "R%03d: ", reg);

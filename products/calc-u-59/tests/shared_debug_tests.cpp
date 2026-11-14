@@ -53,17 +53,17 @@ namespace {
 std::vector<std::string> stepThrough(const std::vector<uint8_t>& prog, int last, Model model = Model::TI59) {
     auto m = testroms::makeMachine(model);
     testroms::runToScanLoop(*m, model);
-    m->writeProgram(prog.data(), prog.size());
-    pressMatrix(*m, 11);  // A
-    m->stepUntilNextKeycode();
-    releaseMatrix(*m, 11);
+    testroms::mem(*m).writeProgram(prog.data(), prog.size());
+    testroms::press(*m, 11);  // A
+    testroms::dbg(*m).stepUntilNextKeycode();
+    testroms::release(*m, 11);
     std::vector<uint8_t> romCache;
     std::vector<std::string> steps;
     for (int i = 0; i < 40; ++i) {
-        m->stepUntilNextKeycode();
-        m->beginNextStep();
+        testroms::dbg(*m).stepUntilNextKeycode();
+        testroms::dbg(*m).beginNextStep();
         auto state = calcViewState(*m);
-        CHECK(state.atStep && state.cpu.pc == m->pc());  // STEP stopped at the boundary
+        CHECK(state.atStep && state.cpu.pc == testroms::dbg(*m).pc());  // STEP stopped at the boundary
         auto snap = buildLiveSnapshot(*m, ModuleImage{}, romCache, state).snap;
         steps.push_back(std::to_string(snap.currentStep) + " " + xRegisterLine(snap.xValue, snap.xRaw));
         if (snap.currentStep >= last) break;
@@ -106,16 +106,16 @@ TEST(running_view_shows_only_step_boundaries) {
         testroms::runToScanLoop(*m, model);
         // LBL A, 2, √x, ×, 3, =, 1/x, +, 7, =, GTO 00 02
         const uint8_t prog[] = {76, 11, 2, 34, 65, 3, 95, 35, 85, 7, 95, 61, 0, 2};
-        m->writeProgram(prog, sizeof prog);
-        pressMatrix(*m, 11);  // A
-        m->stepN(2000, false);
-        releaseMatrix(*m, 11);
+        testroms::mem(*m).writeProgram(prog, sizeof prog);
+        testroms::press(*m, 11);  // A
+        testroms::run(*m, 2000);
+        testroms::release(*m, 11);
         std::vector<uint8_t> romCache;
         int raw = 0, liveRaw = 0;
         for (int i = 0; i < 3000; ++i) {
-            m->stepN(37, false);
+            testroms::run(*m, 37);
             raw += !buildLiveSnapshot(*m, ModuleImage{}, romCache, calcViewState(*m)).snap.xRaw.empty();
-            TMC0501::StepBoundary live{m->snapshotCPU(), m->libExecPC(), false, 0};
+            TMC0501::StepBoundary live{testroms::dbg(*m).snapshotCPU(), testroms::card(*m).libExecPC(), false, 0};
             liveRaw += !buildLiveSnapshot(*m, ModuleImage{}, romCache, live).snap.xRaw.empty();
         }
         CHECK_EQ(raw, 0);
@@ -131,7 +131,7 @@ TEST(idle_cursor_matches_lrn_after_sst) {
     std::vector<uint8_t> prog = {1, 85, 61, 0, 17};  // 1 + GTO 00 17 Nop… 2 = R/S
     prog.resize(17, 68);
     prog.insert(prog.end(), {2, 95, 91});
-    m->writeProgram(prog.data(), prog.size());
+    testroms::mem(*m).writeProgram(prog.data(), prog.size());
     std::vector<uint8_t> romCache;
     auto next = [&] {
         return buildLiveSnapshot(*m, ModuleImage{}, romCache, calcViewState(*m))
@@ -186,9 +186,9 @@ TEST(live_snapshot_and_listing) {
     testroms::runToScanLoop(*m, Model::TI59);
     // LBL A, STO 12, RCL 12, GTO 01 23, R/S
     const uint8_t prog[] = {76, 11, 42, 12, 43, 12, 61, 1, 23, 91};
-    m->writeProgram(prog, sizeof prog);
+    testroms::mem(*m).writeProgram(prog, sizeof prog);
     auto reg = encodeBcd(std::string_view("2.5"));
-    m->writeDataRegister(3, reg.data());
+    testroms::mem(*m).writeDataRegister(3, reg.data());
 
     std::vector<uint8_t> romCache;
     auto lib = ModuleImage::parse(*loadModule("TMC0541.txt", testroms::reader()));
@@ -288,7 +288,7 @@ TEST(debug_dumps) {
     auto m = testroms::makeMachine(Model::TI59);
     testroms::runToScanLoop(*m, Model::TI59);
     auto v = encodeBcd(std::string_view("42"));
-    m->writeDataRegister(7, v.data());
+    testroms::mem(*m).writeDataRegister(7, v.data());
     auto vars = dumpVars(*m);
     CHECK(vars.size() >= 2);
     bool found = std::find(vars.begin(), vars.end(), std::string("V07 = 42")) != vars.end();

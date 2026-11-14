@@ -17,7 +17,7 @@ uint32_t le32(const std::string& s, size_t i) { return le16(s, i) | (static_cast
 /// Writes build/trace-test.bin (read again by the read_trace.py CTest).
 TEST(trace_writer_records) {
     auto m = testroms::makeMachine(Model::TI58C);
-    m->setTraceFlags(TRACE_PC | TRACE_REGS_LIGHT | TRACE_REGS_FULL);
+    testroms::dbg(*m).setTraceFlags(TRACE_PC | TRACE_REGS_LIGHT | TRACE_REGS_FULL);
     const std::string path = "build/trace-test.bin";
     TraceWriter w(Model::TI58C);
     CHECK(w.open(path, 50'000'000));
@@ -26,9 +26,9 @@ TEST(trace_writer_records) {
     std::vector<CpuFrame> frames(1024);
     uint32_t total = 0;
     for (int i = 0; i < 5; ++i) {
-        m->stepN(500, false);
+        testroms::run(*m, 500);
         uint32_t lost = 0;
-        uint32_t n = m->drainCpuFrames(frames.data(), 1024, &lost);
+        uint32_t n = testroms::dbg(*m).drainCpuFrames(frames.data(), 1024, &lost);
         if (lost) w.writeLostGap(lost);
         for (uint32_t k = 0; k < n; ++k) CHECK(w.write(frames[k]));
         total += n;
@@ -69,13 +69,13 @@ TEST(trace_writer_records) {
 
 TEST(trace_writer_size_limit) {
     auto m = testroms::makeMachine(Model::TI59);
-    m->setTraceFlags(TRACE_PC | TRACE_REGS_LIGHT | TRACE_REGS_FULL);
+    testroms::dbg(*m).setTraceFlags(TRACE_PC | TRACE_REGS_LIGHT | TRACE_REGS_FULL);
     TraceWriter w(Model::TI59);
     CHECK(w.open("build/trace-limit.bin", 1000));
-    m->stepN(200, false);
+    testroms::run(*m, 200);
     std::vector<CpuFrame> frames(200);
     uint32_t lost = 0;
-    uint32_t n = m->drainCpuFrames(frames.data(), 200, &lost);
+    uint32_t n = testroms::dbg(*m).drainCpuFrames(frames.data(), 200, &lost);
     int written = 0;
     bool stopped = false;
     for (uint32_t k = 0; k < n && !stopped; ++k) {

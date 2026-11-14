@@ -108,9 +108,7 @@ def idle(m):
 
 def lit(m):
     """any display digit lit since the last look (the core's display duty)"""
-    d = (C.c_uint8 * 12)(); c = (C.c_uint8 * 12)(); mk = (C.c_uint16 * 2)()
-    LIB.h_display(m.h, d, c, mk)
-    return any(x != 7 for x in c)     # h_display sets ctrl 7 for a dark digit
+    return any(bright > 0 for _, _, bright in m.display_output())
 
 
 def dark_time(m, code, limit_s=4000, hold=6000, chunk=100):

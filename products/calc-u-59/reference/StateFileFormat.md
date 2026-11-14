@@ -153,7 +153,7 @@ KEYSTROKES simulates fingers: always matrix codes, never keycodes.
 ## Matrix Code Table — KEYSTROKES
 
 Matrix code = **row × 10 + col**, row 1–9 top to bottom, col 1–5 left to
-right (`app/KeyMatrix.hpp`).
+right (`app/KeyIds.hpp`).
 
 ```
          Col 1   Col 2   Col 3   Col 4   Col 5

@@ -56,14 +56,14 @@ SCENARIOS: dict[str, tuple] = {
     "aos_paren": ([], S("(", "5", "+", "7", ")", "*", "3", "=")),
     "aos_deep": ([], S("2", "+", "3", "*", "4", "y^x", "2", "=")),
     "paren_close": ([], S("5", "*", "(", "2", "+", "3", ")", "=")),
-    "pct_add": ([], S("2", "0", "0", "+", "5", "2nd", "x2")),  # placeholder, overwritten below
+    "pct_add": ([], S("2", "0", "0", "+", "5", "2nd", "x^2")),  # placeholder, overwritten below
     "div0": ([], S("1", "/", "0", "=")),
-    "overflow": ([], S("9", "EE", "9", "9", "x2")),
+    "overflow": ([], S("9", "EE", "9", "9", "x^2")),
     "cp": ([S("5", "+", "3")], S("CP")),
     # ── unary ──
     "sqrt": ([], S("2", "sqrt")),
     "sqrt_neg": ([], S("2", "+/-", "sqrt")),
-    "x2": ([], S("3", "x2")),
+    "x2": ([], S("3", "x^2")),
     "recip": ([], S("4", "1/x")),
     "lnx": ([], S("2", "lnx")),
     "exp": ([], S("2", "INV", "lnx")),
@@ -125,7 +125,7 @@ SCENARIOS: dict[str, tuple] = {
     "rst": ([S("GTO", "0", "1", "2")], S("RST")),
     "run_simple": ([S("LRN", "5", "+", "3", "=", "R/S", "LRN", "RST")], S("R/S")),
     "sst_run": ([S("LRN", "5", "+", "3", "=", "R/S", "LRN", "RST")], S("SST", "SST")),
-    "run_label": ([S("LRN", "Lbl", "A", "7", "x2", "INV", "SBR", "LRN")], S("A")),
+    "run_label": ([S("LRN", "Lbl", "A", "7", "x^2", "INV", "SBR", "LRN")], S("A")),
     "run_label_e": ([S("LRN", "Lbl", "E'", "7", "INV", "SBR", "LRN")], S("E'")),
     "run_sbr": ([S("LRN", "Lbl", "A", "7", "INV", "SBR", "LRN")], S("SBR", "A")),
     "run_gto_lbl": ([S("LRN", "Lbl", "B", "8", "R/S", "LRN")], S("GTO", "B")),
@@ -174,7 +174,7 @@ SCENARIOS["op09_copy"] = ([S("0","Op","1","7","CLR","Pgm","0","2")], S("Op", "0"
 SCENARIOS["op17_big"] = ([], S("1","3","Op","1","7"))
 SCENARIOS["ins_del"] = ([S("LRN","1","2","3","4","BST","BST")], S("Ins","Del","LRN"))
 SCENARIOS["cms_regs"] = ([S("5","STO","0","5")], S("CMs","RCL","0","5"))
-SCENARIOS["hir"] = ([], S("5","STO","0","5","CLR","RCL","0","5","x2","="))
+SCENARIOS["hir"] = ([], S("5","STO","0","5","CLR","RCL","0","5","x^2","="))
 SCENARIOS["ind_sbr"] = ([S("LRN","Lbl","A","9","INV","SBR","LRN","1","1","STO","0","1")], S("SBR","Ind","0","1"))
 
 # Fix placeholders with real sequences
@@ -190,8 +190,8 @@ SCENARIOS["read_card_inv"] = ([], S("1", "INV", "Write"), {"card": _CARD})
 SCENARIOS["lrn_ind_merge"] = ([S("LRN")], S("STO","Ind","0","5","GTO","Ind","0","3","Op","Ind","0","4","Exc","Ind","0","1","Fix","Ind","0","2"))
 SCENARIOS["p2r_deep_aos"] = ([S("1","+","(","2","*","(","3","+","(","4","*","(","5","+","(")], S("3","x<>t","4","P>R"))
 SCENARIOS["p2r_in_program"] = ([S("LRN","Lbl","A","3","x<>t","4","Nop","Nop","P>R","R/S","LRN")], S("A"))
-SCENARIOS["label_keys"] = ([S("LRN","Lbl","E'","5","R/S","Lbl","x2","R/S","LRN")], S("GTO","E'","GTO","x2","SBR","E'"))
-SCENARIOS["sto_abandon"] = ([], S("5","STO","x2"))
+SCENARIOS["label_keys"] = ([S("LRN","Lbl","E'","5","R/S","Lbl","x^2","R/S","LRN")], S("GTO","E'","GTO","x^2","SBR","E'"))
+SCENARIOS["sto_abandon"] = ([], S("5","STO","x^2"))
 SCENARIOS["op09_short"] = ([S("Pgm","2","3")], S("Op","0","9"))
 SCENARIOS["inv_list"] = ([S("7","STO","5","8","5","8")], S("INV","List"), {"printer": True})
 SCENARIOS["sbr_overflow"] = ([S("LRN","Lbl","A","SBR","B","R/S","Lbl","B","SBR","C","INV","SBR","Lbl","C","SBR","D","INV","SBR",

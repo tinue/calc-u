@@ -1,5 +1,5 @@
 #include "EmulatorSession.hpp"
-#include "KeyMatrix.hpp"
+#include "KeyIds.hpp"
 #include <algorithm>
 #include <cmath>
 #include <cstdio>
@@ -17,21 +17,16 @@ EmulatorSession::EmulatorSession(Model model, const ResourceReader& roms, const 
                                  Listener& listener, Threading threading)
     : m_model(model),
       m_listener(listener),
-      m_machine(std::make_shared<TI59Machine>(toVariant(model))),
-      m_freeze(model),
+      m_machine(buildMachine(model, roms)),
       m_manualTrace(model),
       m_scriptedTrace(model) {
-    auto words = loadRom(model, roms);
-    m_machine->loadROM(words.data(), words.size());
     if (moduleRomFile) loadModule(*moduleRomFile, roms);
-    auto constants = loadConstants(model, roms);
-    m_machine->loadConstants(constants.data(), constants.size());
 
     EmulationRunner::Callbacks cb;
     cb.freezeFired = [this](FreezeOwner owner) { onFreezeFired(owner); };
     cb.batchDone = [this] { m_ramDirty = true; };
-    m_runner = std::make_unique<EmulationRunner>(*m_machine, model, m_freeze, std::move(cb), threading);
-    m_keys = std::make_unique<KeySequencer>(model, static_cast<KeySequencer::Host&>(*this), threading);
+    m_runner = std::make_unique<EmulationRunner>(m_guard, model, m_freeze, std::move(cb), threading);
+    m_keys = std::make_unique<KeySequencer>(static_cast<KeySequencer::Host&>(*this), threading);
 }
 
 EmulatorSession::~EmulatorSession() {
@@ -42,7 +37,7 @@ EmulatorSession::~EmulatorSession() {
 bool EmulatorSession::loadModule(const std::string& romFile, const ResourceReader& roms) {
     auto image = cu59::loadModule(romFile, roms);
     if (!image) return false;
-    m_machine->loadLibrary(image->data(), image->size());
+    access().peripherals().loadModuleImage(image->data(), image->size());
     m_moduleImage = std::move(*image);
     return true;
 }
@@ -66,15 +61,17 @@ void EmulatorSession::setFullSpeed(bool on) {
 }
 
 void EmulatorSession::pressKey(uint8_t matrixCode) {
-    if (!isValidMatrixCode(matrixCode)) return;
+    auto id = keyIdAt(matrixCode);
+    if (!id) return;
     m_manualTrace.writeKeyDown(static_cast<uint8_t>(matrixCode / 10 - 1), static_cast<uint8_t>(matrixCode % 10 - 1));
-    pressMatrix(*m_machine, matrixCode);
+    access().machine().keyDown(*id);
 }
 
 void EmulatorSession::releaseKey(uint8_t matrixCode) {
-    if (!isValidMatrixCode(matrixCode)) return;
+    auto id = keyIdAt(matrixCode);
+    if (!id) return;
     m_manualTrace.writeKeyUp(static_cast<uint8_t>(matrixCode / 10 - 1), static_cast<uint8_t>(matrixCode % 10 - 1));
-    releaseMatrix(*m_machine, matrixCode);
+    access().machine().keyUp(*id);
 }
 
 // ── Debugger ─────────────────────────────────────────────────────────────────
@@ -107,7 +104,7 @@ uint64_t EmulatorSession::setFrozenState(bool frozen, std::optional<FreezeOwner>
 void EmulatorSession::onFreezeFired(FreezeOwner owner) {
     uint64_t generation = setFrozenState(true, owner);
     // CALCULATOR freezes at a step dispatch: prepare the next step's display state.
-    if (owner == FreezeOwner::Calculator) m_machine->beginNextStep();
+    if (owner == FreezeOwner::Calculator) access().debugTarget().beginNextStep();
     m_listener.debugStateChanged();
     m_listener.frozenViewReady(generation, FrozenViewReason::FreezeFired);
 }
@@ -117,8 +114,11 @@ void EmulatorSession::freeze(FreezeOwner owner) {
     uint64_t generation = setFrozenState(true, owner);
     // Runs after the loop has exited (the job queue is serial).
     post([this, generation] {
-        m_machine->stepUntilNextKeycode();
-        m_machine->beginNextStep();
+        {
+            auto a = access();
+            a.debugTarget().stepUntilNextKeycode();
+            a.debugTarget().beginNextStep();
+        }
         m_listener.frozenViewReady(generation, FrozenViewReason::Freeze);
     });
 }
@@ -143,7 +143,7 @@ void EmulatorSession::armPcChange() {
 }
 
 void EmulatorSession::armScanLoopExit() {
-    m_freeze.armScanLoopExit(m_machine->pc());  // disarms the step-boundary freeze
+    m_freeze.armScanLoopExit(access().debugTarget().pc());  // disarms the step-boundary freeze
     {
         std::lock_guard<std::mutex> lock(m_stateMutex);
         m_state.scanLoopExitArmed = true;
@@ -174,8 +174,11 @@ void EmulatorSession::stepKeycode() {
     DebugState s = debugState();
     if (!s.frozen) return;
     post([this, generation = s.generation] {
-        m_machine->stepUntilNextKeycode();
-        m_machine->beginNextStep();
+        {
+            auto a = access();
+            a.debugTarget().stepUntilNextKeycode();
+            a.debugTarget().beginNextStep();
+        }
         m_listener.frozenViewReady(generation, FrozenViewReason::StepKeycode);
     });
 }
@@ -184,11 +187,11 @@ void EmulatorSession::stepInstruction() {
     DebugState s = debugState();
     if (!s.frozen) return;
     post([this, generation = s.generation] {
-        uint16_t prior = m_machine->pc();
-        m_machine->step();
-        // HOLD (WAIT Dn): the PC didn't advance — step until it does.
-        for (int limit = 32; m_machine->pc() == prior && limit > 0; --limit) m_machine->step();
-        m_machine->beginNextStep();
+        {
+            auto a = access();
+            a.debugTarget().stepInstruction();   // through a HOLD (WAIT Dn) of up to 32
+            a.debugTarget().beginNextStep();
+        }
         m_listener.frozenViewReady(generation, FrozenViewReason::StepInstruction);
     });
 }
@@ -211,7 +214,8 @@ void EmulatorSession::applyTraceFlags() {
     c.manualTrace = m_manualTrace.isOpen();
     c.scriptedTrace = m_scriptedTrace.isOpen();
     uint32_t flags = traceFlagsFor(c);
-    if (m_machine->traceFlags() != flags) m_machine->setTraceFlags(flags);
+    auto a = access();
+    if (a.debugTarget().traceFlags() != flags) a.debugTarget().setTraceFlags(flags);
 }
 
 bool EmulatorSession::openManualTrace(const std::filesystem::path& path, uint64_t maxBytes) {
@@ -238,7 +242,7 @@ EmulatorSession::DrainResult EmulatorSession::drainTrace() {
     DrainResult r;
     auto& frames = m_drainBuf;
     uint32_t lost = 0;
-    uint32_t n = m_machine->drainCpuFrames(frames.data(), static_cast<uint32_t>(frames.size()), &lost);
+    uint32_t n = access().debugTarget().drainCpuFrames(frames.data(), static_cast<uint32_t>(frames.size()), &lost);
     if (lost) {
         m_manualTrace.writeLostGap(lost);
         m_scriptedTrace.writeLostGap(lost);
@@ -254,10 +258,15 @@ EmulatorSession::DrainResult EmulatorSession::drainTrace() {
 }
 
 std::string EmulatorSession::elapsedReport() const {
-    uint64_t now = m_machine->elapsedTicks();
+    uint64_t now, rate;
+    {
+        auto a = access();
+        now = a.machine().tickCount();
+        rate = a.machine().descriptor().tickRate;
+    }
     uint64_t base = m_elapseBaseline.load();
     uint64_t delta = now >= base ? now - base : 0;
-    double seconds = static_cast<double>(delta) / info(m_model).instructionHz;
+    double seconds = static_cast<double>(delta) / static_cast<double>(rate);
     long totalMs = std::lround(seconds * 1000);
     char buf[64];
     std::snprintf(buf, sizeof buf, "Elapsed: %ld:%02ld.%03ld", totalMs / 60000, (totalMs / 1000) % 60, totalMs % 1000);
@@ -307,14 +316,18 @@ void EmulatorSession::hostDone() {
 
 std::optional<QueuedCard> EmulatorSession::takeQueuedCard() {
     if (m_frozen.load()) return std::nullopt;
-    const uint16_t pc = m_machine->pc();
+    bool keyReady, cardWait;
+    {
+        auto a = access();
+        keyReady = a.machine().isKeyReady();
+        cardWait = a.cardReader().isInCardWait() && a.cardReader().isWaitingForCard();
+    }
     std::lock_guard<std::mutex> lock(m_cardMutex);
     // Two queues in one: InsertCard cards for an idle calculator, ArmCard
     // cards for the card wait, each in order; neither holds up the other.
-    const ModelInfo& mi = info(m_model);
     bool insertNow;
-    if (mi.scanLoop.contains(pc)) insertNow = true;
-    else if (mi.cardWait.contains(pc) && m_machine->isWaitingForCard()) insertNow = false;
+    if (keyReady) insertNow = true;
+    else if (cardWait) insertNow = false;
     else return std::nullopt;
     auto it = std::find_if(m_queuedCards.begin(), m_queuedCards.end(),
                            [&](const QueuedCard& c) { return c.insertNow == insertNow; });

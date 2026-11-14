@@ -8,6 +8,8 @@
 #include "../app/KeyboardMap.hpp"
 #include "../app/PrinterFont.hpp"
 #include "../app/SevenSegment.hpp"
+#include "../core/TIRomRanges.hpp"
+#include "../core/TISegments.hpp"
 #include "../app/TextUtil.hpp"
 
 using namespace cu59;
@@ -73,14 +75,15 @@ TEST(seven_segment_decode) {
     CHECK_EQ(segmentsFor(4, 7, false), 0);
     CHECK_EQ(segmentsFor(4, 3, false), 0);
     CHECK_EQ(segmentsFor(0xA, 0, false), kDigitSegments[0]);  // A–F digits wrap mod 10
-    CHECK_EQ(ledCell(11, 8, 0, 51, 0.5).segments, kSegmentsC);    // the brighter "C" covers cell 11
-    CHECK_EQ(ledCell(11, 8, 0, 51, 0.5).opacity, 0.5);
-    CHECK_EQ(ledCell(11, 8, 0, 0, 0.5).segments, kSegmentsC);     // dark: the C alone
-    CHECK_EQ(ledCell(11, 0, 6, 255, 0.06).segments, kSegmentsMinus);  // a faint C leaves a lit glyph
-    CHECK_EQ(ledCell(11, 0, 6, 255, 0.06).opacity, 1.0);
-    CHECK_EQ(ledCell(10, 8, 0, 51, 0.5).segments, 0x7F);         // other cells keep their glyph
-    CHECK_EQ(ledCell(10, 8, 0, 51, 0.5).opacity, 0.2);
-    CHECK_EQ(ledCell(11, 8, 0, 0, 0).segments, 0);                // dark: zero-suppressed
+    const uint8_t eight = segmentsFor(8, 0, false), minus = segmentsFor(0, 6, false);
+    CHECK_EQ(ledCell(11, eight, 51, 0.5).segments, kSegmentsC);    // the brighter "C" covers cell 11
+    CHECK_EQ(ledCell(11, eight, 51, 0.5).opacity, 0.5);
+    CHECK_EQ(ledCell(11, eight, 0, 0.5).segments, kSegmentsC);     // dark: the C alone
+    CHECK_EQ(ledCell(11, minus, 255, 0.06).segments, kSegmentsMinus);  // a faint C leaves a lit glyph
+    CHECK_EQ(ledCell(11, minus, 255, 0.06).opacity, 1.0);
+    CHECK_EQ(ledCell(10, eight, 51, 0.5).segments, 0x7F);         // other cells keep their glyph
+    CHECK_EQ(ledCell(10, eight, 51, 0.5).opacity, 0.2);
+    CHECK_EQ(ledCell(11, eight, 0, 0).segments, 0);                // dark: zero-suppressed
 }
 
 TEST(printer_font_shape) {
@@ -125,12 +128,13 @@ TEST(pointer_tracker) {
 }
 
 TEST(model_info) {
-    CHECK_EQ(info(Model::TI59).instructionHz, 14218.75);
-    CHECK_EQ(info(Model::TI58C).instructionHz, 12312.5);
+    CHECK_EQ(testroms::instructionHz(Model::TI59), 14218.75);
+    CHECK_EQ(testroms::instructionHz(Model::TI58C), 12312.5);
     CHECK(info(Model::TI59).hasCardReader && !info(Model::TI58).hasCardReader);
-    CHECK(info(Model::TI58C).scanLoop.contains(0x0A2E) && !info(Model::TI58C).scanLoop.contains(0x065A));
-    CHECK(info(Model::TI59).scanLoop.contains(0x0660));  // printer line at D0: confirm scan every pass
-    CHECK(!info(Model::TI59).idleAndKeyDetect.contains(0x0661));
+    const auto c = romRanges(MachineVariant::TI58C), t = romRanges(MachineVariant::TI59);
+    CHECK(c.scanLoop.contains(0x0A2E) && !c.scanLoop.contains(0x065A));
+    CHECK(t.scanLoop.contains(0x0660));  // printer line at D0: confirm scan every pass
+    CHECK(!t.idleAndKeyDetect.contains(0x0661));
 }
 
 TEST(printer_strip_geometry) {

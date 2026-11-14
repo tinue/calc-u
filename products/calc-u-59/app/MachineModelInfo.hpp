@@ -1,52 +1,41 @@
 #pragma once
-#include "../core/MachineVariant.hpp"
+#include "machine/Ids.hpp"
 #include <cstdint>
+#include <optional>
 
-// Per-model facts the frontends need above the hardware level: instruction
-// rate for real-time pacing, RAM layout, ROM file names, and the ROM address
-// ranges the run loop and debugger key off. Shared by the Swift app (via
-// Bridge/) and the Qt6 app; see reference/SharedArchitecture.md.
+// Per-model facts the frontends need above the machine: the app's model
+// enum and its ModelId, the RAM layout of the state files and the ROM file
+// names. Shared by the Swift app (via Bridge/) and the Qt6 app; see
+// reference/SharedArchitecture.md. The tick rate, key readiness and the ROM
+// address ranges come from the machine (calcu::machine::Machine, C59-1); the
+// ROM file names here are LIB-1's adapter until M-24 (the lookup reads the
+// descriptor's romsFor()).
 
 namespace cu59 {
 
 /// Raw values match MachineModel (Swift) and the TI59MachineWrapper model code.
 enum class Model : int { TI59 = 0, TI58 = 1, TI58C = 2 };
 
-inline MachineVariant toVariant(Model m) {
+/// The model's ID in the catalogue (tiCatalogue()).
+inline calcu::machine::ModelId modelId(Model m) {
     switch (m) {
-    case Model::TI59:  return MachineVariant::TI59;
-    case Model::TI58:  return MachineVariant::TI58;
-    case Model::TI58C: return MachineVariant::TI58C;
+    case Model::TI58:  return {"TI-58"};
+    case Model::TI58C: return {"TI-58C"};
+    case Model::TI59:  break;
     }
-    return MachineVariant::TI59;
+    return {"TI-59"};
 }
 
-/// Inclusive ROM address range, with an optional second span.
-struct PcRange {
-    uint16_t lo, hi;
-    uint16_t extraLo = 1, extraHi = 0;  ///< empty unless set
-    bool contains(uint16_t pc) const {
-        return (pc >= lo && pc <= hi) || (pc >= extraLo && pc <= extraHi);
-    }
-};
-
-/// TI-58: every idle pass detours through the card veto 0x0459–0x045B (digit 10
-/// open, D7-KR asserted → JNC 0641) — see rom/TI59-commented.asm at 0x063C.
-inline constexpr uint16_t kCardVetoLo = 0x0459, kCardVetoHi = 0x045B;
-
-/// TI-58C with a printer: every idle pass rescans below the printer line at D10
-/// (0x0A25–0x0A2E; through 0x0A30 it confirms a key) — rom/TI58C-commented.asm at 0x0A25.
-inline constexpr uint16_t kPrinterRescanLo = 0x0A25, kPrinterRescanHi = 0x0A2E, kPrinterConfirmHi = 0x0A30;
+inline std::optional<Model> modelFrom(const calcu::machine::ModelId& id) {
+    if (id.value == "TI-59") return Model::TI59;
+    if (id.value == "TI-58") return Model::TI58;
+    if (id.value == "TI-58C") return Model::TI58C;
+    return std::nullopt;
+}
 
 struct ModelInfo {
     const char* displayName;
 
-    /// Instructions/sec in active (RUN) mode: instructionHz() (Core/MachineVariant.hpp).
-    /// IDLE divides this further by 4 except on the TI-58C — see
-    /// TMC0501::getStepWeight() in Core/TMC0501.cpp.
-    double instructionHz;
-
-    int  romWordCount;
     bool hasConstantMemory;  ///< TI-58C: RAM survives power-off (ti58c.mem).
     bool hasLargeMemory;     ///< TI-59: 120 registers.
     bool hasCardReader;      ///< TI-59 only.
@@ -55,23 +44,6 @@ struct ModelInfo {
     /// files) starting at raw RAM index 60 — see reference/CoreArchitecture.md
     /// § "TI-58C Extra (Constant Memory) Registers".
     int extraRegisterCount;
-
-    /// Steady-state keyboard scan loop (FREEZE ON START). With a printer it
-    /// includes the confirmation scan, which the printer line (TI-59/58 D0,
-    /// TI-58C D10) sends every pass through.
-    PcRange scanLoop;
-
-    /// Full keyboard scan/detect cycle — release-gate spin (0x0627) through key
-    /// acceptance (0x0661 CLR.IDLE; TI-58C 0x065A). See rom/TI59-commented.asm (0x0620-0x0661)
-    /// and ideas/KeypressLatch.md. Used wherever a held key or full-speed racing
-    /// must not outrun real scanning/debouncing time.
-    PcRange idleAndKeyDetect;
-
-    /// The card-reader wait of Write / INV Write (0x16B2–0x16B7: R/S aborts,
-    /// else poll the card switch) — rom/TI59-commented.asm at 0x16B2. The idle
-    /// loop polls the card switch too, so isWaitingForCard() alone can't tell
-    /// a program waiting for a card from an idle calculator. Empty without a reader.
-    PcRange cardWait;
 
     const char* romFiles[3];    ///< Concatenated in order into the 6144-word image.
     const char* constFiles[2];  ///< CONST-K files, 32 rows each.
@@ -84,22 +56,17 @@ inline constexpr int kExtraRegisterBase = 60;
 
 inline const ModelInfo& info(Model m) {
     static const ModelInfo kTI59 {
-        "TI-59", instructionHz(MachineVariant::TI59), 6144, false, true, true, 0,
-        {0x063C, 0x0660}, {0x0627, 0x0660}, {0x16B2, 0x16B7},
+        "TI-59", false, true, true, 0,
         {"TMC0582.txt", "TMC0583.txt", "TMC0571B.txt"},
         {"TMC0582-CONST-K.txt", "TMC0583-CONST-K.txt"},
     };
     static const ModelInfo kTI58 {
-        "TI-58", instructionHz(MachineVariant::TI58), 6144, false, false, false, 0,
-        {0x063C, 0x0660, kCardVetoLo, kCardVetoHi}, {0x0627, 0x0660, kCardVetoLo, kCardVetoHi}, {1, 0},
+        "TI-58", false, false, false, 0,
         {"TMC0582.txt", "TMC0583.txt", "TMC0571B.txt"},
         {"TMC0582-CONST-K.txt", "TMC0583-CONST-K.txt"},
     };
     static const ModelInfo kTI58C {
-        "TI-58C", instructionHz(MachineVariant::TI58C), 6144, true, false, false, 4,
-        {0x063D, 0x0659, kPrinterRescanLo, kPrinterRescanHi},
-        {0x0627, 0x0659, kPrinterRescanLo, kPrinterConfirmHi},
-        {1, 0},
+        "TI-58C", true, false, false, 4,
         {"CD2400.txt", "CD2401.txt", "TMC0573.txt"},
         {"CD2400-CONST-K.txt", "CD2401-CONST-K.txt"},
     };

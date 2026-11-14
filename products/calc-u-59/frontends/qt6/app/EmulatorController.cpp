@@ -1,7 +1,7 @@
 #include "EmulatorController.hpp"
 #include "AppPaths.hpp"
 #include "AppSettings.hpp"
-#include "KeyMatrix.hpp"
+#include "KeyIds.hpp"
 #include <QDebug>
 #include <QFile>
 #include <QFileInfo>

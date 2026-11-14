@@ -35,7 +35,7 @@ std::vector<uint8_t> bytes(const std::string& s) { return std::vector<uint8_t>(s
 
 bool waitForScanLoop(SessionController& c) {
     for (int i = 0; i < 600; ++i) {
-        if (info(c.model()).scanLoop.contains(c.session()->machine().pc())) return true;
+        if (c.session()->access().machine().isKeyReady()) return true;
         std::this_thread::sleep_for(5ms);
     }
     return false;
@@ -50,7 +50,7 @@ TEST(controller_loads_a_preset_for_another_model) {
     c.loadStateFile(bytes("MODEL: TI-58\nREGISTERS:\n05 = 3.25\n"));
     CHECK(c.model() == Model::TI58);
     CHECK(c.session()->isRunning());
-    CHECK_EQ(c.session()->machine().readDataReg(5), 3.25);
+    CHECK_EQ(testroms::mem(c.session()->access().machine()).readDataReg(5), 3.25);
     CHECK(p.errors.empty());
 }
 
@@ -77,7 +77,7 @@ TEST(controller_load_while_frozen_ends_running_without_tracing) {
     CHECK(!c.isFrozen());
     CHECK(!c.session()->debugState().frozen);
     CHECK(c.session()->isRunning());
-    CHECK_EQ(c.session()->machine().traceFlags(), static_cast<uint32_t>(TRACE_NONE));
+    CHECK_EQ(testroms::dbg(c.session()->access().machine()).traceFlags(), static_cast<uint32_t>(TRACE_NONE));
 }
 
 TEST(controller_keystroke_controls_drive_the_gui) {
@@ -125,7 +125,7 @@ TEST(controller_model_switch_keeps_printer_and_log_resets_freeze) {
     c.armPcChange();
     CHECK(c.debugState().pcChangeArmed);
     CHECK(c.startMachine(Model::TI58));
-    CHECK(!c.session()->machine().isPrinterConnected());
+    CHECK(!testroms::per(c.session()->access().machine()).isPrinterConnected());
     CHECK(!c.debugState().pcChangeArmed && !c.isFrozen());
     CHECK(c.logText().find("──") != std::string::npos);  // the dump survived the switch
     CHECK(c.cardState() == SessionController::CardState::NoCard);
@@ -136,36 +136,38 @@ TEST(controller_reset_keeps_the_memory_and_clean_reset_clears_it) {
     SessionController c(p, testroms::reader(), catalog(), "ML");
     CHECK(c.startMachine(Model::TI59));
     CHECK(waitForScanLoop(c));
-    TI59Machine& m = c.session()->machine();
     const uint8_t marked[16] = {1, 2, 3};
     uint8_t reg[16];
-    m.writeRAMReg(90, marked);
+    c.session()->access().memory().writeRAMReg(90, marked);
     c.resetMachine();
     CHECK(waitForScanLoop(c));
-    m.copyRAMReg(90, reg);
+    c.session()->access().memory().copyRAMReg(90, reg);
     CHECK(std::equal(std::begin(marked), std::end(marked), reg));
     c.cleanResetMachine();
     CHECK(pumpUntil(p, [&] {
-        m.copyRAMReg(90, reg);
+        c.session()->access().memory().copyRAMReg(90, reg);
         return reg[0] == 0;
     }));
 }
 
-// A plain Reset on the TI-59/58 runs the reset routine with the run loop stopped,
-// to keep the memory, so only a clean reset can be frozen at its first instruction.
-TEST(controller_cpu_freeze_on_start_sees_a_clean_reset_only) {
+// 2.3.0 ran a plain Reset's reset routine with the run loop stopped, so only a
+// clean reset could be frozen at its first instruction. Since C59-1 (AC-6) both
+// return at once and the ROM's start-up runs in the run loop, so an armed
+// FREEZE ON START fires on either (reported with M-19: no ledger row yet).
+TEST(controller_cpu_freeze_on_start_sees_reset_and_clean_reset) {
     FakePlatform p;
     SessionController c(p, testroms::reader(), catalog(), "ML");
     CHECK(c.startMachine(Model::TI59));
     CHECK(waitForScanLoop(c));
-    c.armScanLoopExit();
-    std::this_thread::sleep_for(50ms);  // the armed freeze sees the scan loop
-    c.resetMachine();
-    CHECK(!pumpUntil(p, [&] { return c.isFrozen(); }, 500ms));
-    CHECK(waitForScanLoop(c));
-    c.cleanResetMachine();
-    CHECK(pumpUntil(p, [&] { return c.isFrozen(); }));
-    CHECK(c.debugState().owner == FreezeOwner::Cpu);
+    for (bool clean : {false, true}) {
+        c.armScanLoopExit();
+        std::this_thread::sleep_for(50ms);  // the armed freeze sees the scan loop
+        if (clean) c.cleanResetMachine(); else c.resetMachine();
+        CHECK(pumpUntil(p, [&] { return c.isFrozen(); }));
+        CHECK(c.debugState().owner == FreezeOwner::Cpu);
+        c.resume();
+        CHECK(waitForScanLoop(c));
+    }
 }
 
 TEST(controller_rom_failure_keeps_the_running_machine) {
@@ -257,7 +259,7 @@ TEST(controller_threaded_reload_and_memory_card) {
     CHECK(tickUntil([&] { return c.keystrokesPlaying(); }));
     CHECK(tickUntil([&] { return !c.keystrokesPlaying(); }));
     CHECK(waitForScanLoop(c));
-    CHECK_EQ(c.session()->machine().readDataReg(0), 42.0);
-    CHECK_EQ(int(c.session()->machine().readProgramStep(2)), 47);  // part 2 is in
+    CHECK_EQ(testroms::mem(c.session()->access().machine()).readDataReg(0), 42.0);
+    CHECK_EQ(int(testroms::mem(c.session()->access().machine()).readProgramStep(2)), 47);  // part 2 is in
     CHECK(p.errors.empty());
 }

@@ -3,7 +3,9 @@
 # Calc-U-59 core and the Calc-U-59 app layer from the repository's root
 # CMake project, as one static library per platform -- macOS (arm64,
 # x86_64), iOS devices (arm64), the iOS simulator (arm64, x86_64) -- with
-# their headers under calcu59/core/ and calcu59/app/.
+# their headers under calcu59/core/ and calcu59/app/, and the library's
+# (library/**/*.hpp) under their area folders, machine/Machine.hpp (LIB-1
+# design §2a; from M-19, C59-1).
 #
 #   frontends/swift/build_xcframework.sh [Debug|Release]   # default Release
 #
@@ -46,12 +48,13 @@ slice() {  # slice <name> <cmake args...>
     cmake -S "$REPO" -B "$tree" -G Ninja -DCMAKE_BUILD_TYPE="$CONFIG" \
       -DCALCU_PRODUCT_1600=OFF -DCALCU_TESTS=OFF -DCALCU_FRONTEND_QT=OFF "$@" >/dev/null
   fi
-  cmake --build "$tree" --target calcu59_shared calcu59_core
+  cmake --build "$tree" --target calcu59_shared calcu59_core calcu_library
   lib="$tree/libCalcU59.a"
   core="$tree/products/calc-u-59/libcalcu59_core.a"
   app="$tree/products/calc-u-59/libcalcu59_shared.a"
-  if [ ! -f "$lib" ] || [ "$core" -nt "$lib" ] || [ "$app" -nt "$lib" ]; then
-    libtool -static -no_warning_for_no_symbols -o "$lib" "$core" "$app"
+  library="$tree/library/libcalcu_library.a"
+  if [ ! -f "$lib" ] || [ "$core" -nt "$lib" ] || [ "$app" -nt "$lib" ] || [ "$library" -nt "$lib" ]; then
+    libtool -static -no_warning_for_no_symbols -o "$lib" "$core" "$app" "$library"
   fi
 }
 
@@ -72,6 +75,15 @@ for layer in core app; do
   for h in "$HEADERS/calcu59/$layer"/*.hpp; do
     [ -f "$PRODUCT/$layer/$(basename "$h")" ] || rm -f "$h"
   done
+done
+
+# The library's headers keep their area folders (headers/machine/Machine.hpp).
+( cd "$REPO/library" && find . -name '*.hpp' ) | while read -r rel; do
+  mkdir -p "$HEADERS/$(dirname "$rel")"
+  cmp -s "$REPO/library/$rel" "$HEADERS/$rel" || cp "$REPO/library/$rel" "$HEADERS/$rel"
+done
+( cd "$HEADERS" && find . -name '*.hpp' -not -path './calcu59/*' ) | while read -r rel; do
+  [ -f "$REPO/library/$rel" ] || rm -f "$HEADERS/$rel"
 done
 
 # The XCFramework is made again when a library or a header is newer than

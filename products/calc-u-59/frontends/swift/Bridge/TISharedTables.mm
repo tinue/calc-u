@@ -1,5 +1,5 @@
 #import "TISharedTables.h"
-#include <calcu59/app/KeyMatrix.hpp>
+#include <calcu59/app/KeyIds.hpp>
 #include <calcu59/app/KeyboardLayout.hpp>
 #include <calcu59/app/KeyboardMap.hpp>
 #include <calcu59/app/PrinterFont.hpp>
@@ -17,9 +17,9 @@ CGRect toCG(const cu59::NRect& r) { return CGRectMake(r.x, r.y, r.w, r.h); }
     return [NSData dataWithBytes:codes.data() length:codes.size()];
 }
 
-+ (uint8_t)ledCellSegmentsAt:(NSInteger)index digit:(uint8_t)digit ctrl:(uint8_t)ctrl level:(uint8_t)level
++ (uint8_t)ledCellSegmentsAt:(NSInteger)index glyph:(uint8_t)glyph level:(uint8_t)level
                  calcOpacity:(double)calcOpacity opacity:(double *)opacity {
-    cu59::LedCell cell = cu59::ledCell(static_cast<int>(index), digit, ctrl, level, calcOpacity);
+    cu59::LedCell cell = cu59::ledCell(static_cast<int>(index), glyph, level, calcOpacity);
     *opacity = cell.opacity;
     return cell.segments;
 }

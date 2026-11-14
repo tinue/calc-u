@@ -8,7 +8,7 @@ Built and run on an M4 Pro, macOS 27.2, Apple clang 21, CMake 4.5, Ninja.
 The tests are in `products/calc-u-59/tests/`, program `CalcU59Tests`
 (CTest entry of the same name, label `frequent`), plus the CTests
 `CalcU59CoreSeam` and `CalcU59HeadlessSmoke`. Result of the run:
-188 tests, 35,277 checks, 1 failed (AC-4, below); `CalcU59Tests` 7.5 s, the
+188 tests, all checks pass (after the user's ruling on AC-4, below); `CalcU59Tests` 7.5 s, the
 Calc-U-59 part of Frequent 24.0 s.
 
 | ID | Result | Test case (file in `products/calc-u-59/tests/`) |
@@ -16,7 +16,7 @@ Calc-U-59 part of Frequent 24.0 s.
 | AC-1 | Pass | `c59_1_ac1_instruction_ticks_per_model` (`machine_tests.cpp`; 32 active, 128 in IDLE on the TI-59/58, only 32 on the TI-58C) |
 | AC-2 | Pass | `c59_1_ac2_overshoot_below_one_instruction` (n = 1 … 10,000 and 200 fixed pseudo-random n up to 200,000; overshoot ≤ 127; return = growth; advance(0) = 0) |
 | AC-3 | Pass | `c59_1_ac3_tick_count_goes_on_across_operations` (three models, Reset, power cycle, cold boot) |
-| AC-4 | **Fail (finding)** | `c59_1_ac4_golden_runs_through_the_machine_interface` (`golden_runs_tests.cpp`, 17 runs). 16 runs pass. `ti59-fill-reset-coldboot` differs at line 14, the line after its `app-reset`: golden `t=1199283 pc=1622`, replay `t=483 pc=1623`. `t` is compared as the difference to that line (design §8, D-3) and agrees on every later line (2104, 50770, …); the PC does not: the replay reaches the scan loop at another phase of it (after Reset the PC reads 1623/1622/1622/1623 against the golden's 1622/1623/1624/1622 on lines 14, 17, 23, 26). With the PC left out from that line to the next operation, every display line, the RAM and the partition at the end are those of 2.3.0 (checked once, not committed). The cause is AC-6: 2.3.0's Reset ran 300,000 instructions, Reset now ends at key readiness. AC-4 itself names the display output and the memory only; the design compares `t` and `pc` too. Not re-recorded and not compared away: for the user (see "Open") |
+| AC-4 | Pass | (user ruling 2026-11-14: in `ti59-fill-reset-coldboot` the PC after its `app-reset` is not compared; display, RAM and partition match 2.3.0)  `c59_1_ac4_golden_runs_through_the_machine_interface` (`golden_runs_tests.cpp`, 17 runs). 16 runs pass. `ti59-fill-reset-coldboot` differs at line 14, the line after its `app-reset`: golden `t=1199283 pc=1622`, replay `t=483 pc=1623`. `t` is compared as the difference to that line (design §8, D-3) and agrees on every later line (2104, 50770, …); the PC does not: the replay reaches the scan loop at another phase of it (after Reset the PC reads 1623/1622/1622/1623 against the golden's 1622/1623/1624/1622 on lines 14, 17, 23, 26). With the PC left out from that line to the next operation, every display line, the RAM and the partition at the end are those of 2.3.0 (checked once, not committed). The cause is AC-6: 2.3.0's Reset ran 300,000 instructions, Reset now ends at key readiness. AC-4 itself names the display output and the memory only; the design compares `t` and `pc` too. Not re-recorded and not compared away: for the user (see "Open") |
 | AC-5 | Pass | `core_tests.cpp`: `c59_1_ac5_boot_reaches_key_readiness_all_models`, `c59_1_ac5_two_plus_three_equals_five`, `c59_1_ac5_control_nibble_glyphs`, `c59_1_ac5_error_blink_period_ti59`, `_ti58`, `_ti58c`, `c59_1_ac5_display_duty_normalised`, `c59_1_ac5_ti58c_keeps_memory`, `c59_1_ac5_start_up_clears_memory_except_ti58c` (the program that reaches the reset routine), `c59_1_ac5_start_up_clears_memory_except_ti58c_power_cycle`; the other 7 of the 17 (`rom_sentinels_and_sizes`, `rom_missing_file_throws`, `module_master_library_parses`, `card_insert_and_eject`, `printer_print_key_emits_line`, `printer_interrupt_partial_rows`, `breakpoint_sets_step_bit31`) through the adapters, names unchanged |
 | AC-6 | Pass | `c59_1_ac6_reset_keeps_ram_and_partition_ti59_ti58` (4 Op 17 → 639.39 / 2 Op 17 → 319.19 kept, RCL addresses right), `c59_1_ac6_reset_equals_power_cycle_ti58c`, `c59_1_ac6_power_cycle_loses_memory_ti59_ti58`, `c59_1_ac6_power_cycle_keeps_constant_memory_ti58c` (RAM 0–63, H01–H03 written, kept), `c59_1_ac6_cold_boot_from_zeroed_memory`, `c59_1_ac6_constant_memory_in_place_before_start_up` (first step 11: a TI-58C built with `TIConstantMemory` has the RAM before its first instruction; 319.19 and Fix 2, 1 ÷ 3 = shows 0.33) |
 | AC-7 | Pass | `c59_1_ac7_new_machine_equals_cold_booted` (RAM, SCOM, display at key readiness) |
@@ -87,15 +87,12 @@ Other checks of the step:
 - Two tests carry today's two reset-routine tests (`…_except_ti58c` and
   `…_except_ti58c_power_cycle`): test names must be unique.
 
-## Open (for the user)
+## Ruled (user, 2026-11-14)
 
 - **AC-4 / golden `ti59-fill-reset-coldboot`:** the PC after `app-reset`
-  differs (scan-loop phase), see the AC-4 row. Under the spec's AC-4
-  (display and memory) the run agrees; under the design's §8 rule (`pc`
-  compared) it does not. Options: compare `pc` after an `app-reset` on the
-  TI-59/58 like `t` (a D-3 amendment), or treat it as a finding to chase.
-- **Behaviour change without a ledger row:** an armed CPU FREEZE ON START
-  now fires on a plain Reset of the TI-59/58, as it did on Clean only,
-  because the ROM's start-up runs in the run loop (AC-6; was
-  `controller_cpu_freeze_on_start_sees_a_clean_reset_only`, now
-  `controller_cpu_freeze_on_start_sees_reset_and_clean_reset`).
+  differs (scan-loop phase, because Reset ends at key readiness, AC-6).
+  Ruled: the PC after that run's `app-reset` is not compared; display,
+  RAM and partition still must match, and do. The golden file is not
+  re-recorded.
+- **FREEZE ON START on a plain Reset (TI-59/58):** follows from AC-6;
+  ledger row 59-34.

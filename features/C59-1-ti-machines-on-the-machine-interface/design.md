@@ -431,7 +431,9 @@ Any other difference is a finding.
 - **D-3 (was OQ-3; AC-4).** The two `*-reset-partition` runs are compared
   up to their `app-reset` line, and T4 checks the kept partition (no
   sidecar files). `t` and `pc` are compared as in §8, because the golden
-  files carry them.
+  files carry them. Amended by the user, 2026-11-14: in
+  `ti59-fill-reset-coldboot` the `pc` after its `app-reset` is not
+  compared (scan-loop phase after a Reset at key readiness).
 - **D-4 (was OQ-4; AC-13, AC-15).** Brightness is today's normalised
   duty (steady = 1.0), as AC-5 keeps it; C's brightness is
   `calcIndicator / 16`. Today's behaviour.

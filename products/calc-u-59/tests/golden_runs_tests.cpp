@@ -45,6 +45,9 @@
 // 300,000 instructions (C59-1 AC-6), and that line's own `t` is not compared;
 // the two *-reset-partition runs are compared up to their app-reset line
 // (behaviour change 59-22: Reset keeps the partition; machine_tests.cpp checks it).
+// In ti59-fill-reset-coldboot the program counter after its app-reset is not
+// compared either: the scan loop is reached at another point of its cycle, while
+// the display, the RAM and the partition still match 2.3.0 (user, 2026-11-14).
 
 #include "TestHarness.hpp"
 #include "TestRoms.hpp"
@@ -296,6 +299,7 @@ std::string compare(const std::string& name, const std::string& golden, const st
     const auto want = lines(golden), have = lines(got);
     const bool stopAtReset = name.find("-reset-partition") != std::string::npos;
     const bool sixty = name.rfind("ti58c-", 0) != 0;   // the TI-59/58: Reset ends at key readiness
+    const bool pcAfterReset = name != "ti59-fill-reset-coldboot.golden";   // see the header comment
     bool afterReset = false;
     long wantResetT = 0, haveResetT = 0;
     for (size_t i = 0; i < std::max(want.size(), have.size()); ++i) {
@@ -310,10 +314,10 @@ std::string compare(const std::string& name, const std::string& golden, const st
                 afterReset = true;
                 wantResetT = tw;
                 haveResetT = th;
-                if (pw != ph) return diff();
+                if (pcAfterReset && pw != ph) return diff();
                 continue;
             }
-            if (afterReset ? (tw - wantResetT != th - haveResetT || pw != ph) : w != h) return diff();
+            if (afterReset ? (tw - wantResetT != th - haveResetT || (pcAfterReset && pw != ph)) : w != h) return diff();
             if (w.rfind("> app-coldboot", 0) == 0 || w.rfind("> core-reset", 0) == 0) afterReset = false;
             continue;
         }

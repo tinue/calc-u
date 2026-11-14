@@ -33,9 +33,9 @@ Calc-U-1600 screenshot and DAP entries need the Qt app in the tree.
 A test that outgrows its group's budget moves up a group or is split
 (ADR 0031).
 
-Longer, measured locally on 2026-11-14: 284.8 s for the entries that ran
-(the two Calc-U-1600 web entries failing at once); with their CI times
-about 6 min, within the 10 min.
+Longer, measured locally on 2026-11-14 at the end of Part B: 291.5 s,
+within the 10 min; all entries ran (the two Calc-U-1600 web entries since
+the `<cstdlib>` fix).
 
 ## Calc-U-59
 
@@ -77,10 +77,10 @@ Frequent except where the table says otherwise):
 | `CoreTests` | 811 `TEST`s: unit and integration tests of the core and the app layer (real ROMs, presets, loaders, job equivalence), the golden replays (table below) | Frequent | 38.7 s |
 | `CalcU1600CheckPresets` | `tools/check_presets.sh`: every preset in the repository parses | Frequent | 0.3 s |
 | | **Frequent, Calc-U-1600** | | **39.0 s** |
-| `CalcU1600WebPlaywright` | `frontends/web/run-tests.sh`: Playwright, Chromium (root, sub-path) and WebKit (offline) | Longer | not run locally: `frontends/web/dist/` does not build with Homebrew Emscripten 7.0 (missing `<cstdlib>` in `core/Debug/BreakpointTable.cpp`, same at the pin); 31 s in CI (6.0.13) |
-| `CalcU1600WasmSmoke` | `tools/build_wasm_check.sh`: core and app layer under node | Longer | fails locally for the same reason; 44 s in CI with the build |
+| `CalcU1600WebPlaywright` | `frontends/web/run-tests.sh`: Playwright, Chromium (root, sub-path) and WebKit (offline) | Longer | 22.5 s (Homebrew Emscripten 7.0, after `<cstdlib>` was added to `core/Debug/BreakpointTable.cpp`); 31 s in CI (6.0.13) |
+| `CalcU1600WasmSmoke` | `tools/build_wasm_check.sh`: core and app layer under node | Longer | 5.1 s locally without the build; 44 s in CI with the build |
 | `CalcU1600Shots.<scenario>` | the nine screenshot scenarios of `docs/developer/screenshots/guide/` run as checks, into the build tree | Longer | 39.6 s, the nine together (2.2–9.2 s each), all passed |
-| `CalcU1600DapSmoke` | `tools/dap_smoke.py --app`: the DAP requests VS Code uses | Longer | fails locally, also at the pin: no `stopped` event after the first `stepIn` (passed in 25 s on 2026-11-09); open finding |
+| `CalcU1600DapSmoke` | `tools/dap_smoke.py --app`: the DAP requests VS Code uses | Longer | 24.7 s; failed 3/3 earlier on 2026-11-14 and at the pin (no `stopped` event after the first `stepIn`), passed in the Part B run: possibly timing-dependent, open finding |
 | `CalcU1600PacingRealClock` | `pacing_longrun_real_clock_pc1500a`, `_pc1600` with `CALCU1600_PACING_LONGRUN=600` | Checkpoint | 20 min (by design) |
 | `CalcU1600GuideScreenshots` | `tools/make_screenshots.sh`: the User Guide images into `docs/images/` | Checkpoint | not measured |
 

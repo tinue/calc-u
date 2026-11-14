@@ -1,5 +1,5 @@
 # LIB-15 Web frontend shell: design
-Status: draft for the Part B/C1 boundary review (2026-11-14)
+Status: approved by the user at the Part B/C1 boundary (2026-11-14)
 
 ## 1. Scope
 

@@ -1,5 +1,5 @@
 # C59-1 TI machines on the machine interface: design
-Status: draft for the Part B/C1 boundary review (2026-11-14)
+Status: approved by the user at the Part B/C1 boundary (2026-11-14)
 
 ## 1. Scope
 

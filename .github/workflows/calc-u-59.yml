@@ -53,6 +53,29 @@ jobs:
       - name: Run tests
         run: ctest --test-dir ../../build/tests --output-on-failure
 
+  library:
+    # The library alone, without the code of either product (LIB-1 AC-24;
+    # LIB-1 design D-5): calcu_library and calcu_library_tests from the
+    # repository's root CMake project.
+    runs-on: ubuntu-24.04
+    defaults:
+      run:
+        working-directory: .
+    steps:
+      - uses: actions/checkout@v5
+      - name: Install build tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential cmake ninja-build
+      - name: Configure
+        run: >-
+          cmake -S . -B build/library -G Ninja -DCMAKE_BUILD_TYPE=RelWithDebInfo
+          -DCALCU_PRODUCT_59=OFF -DCALCU_PRODUCT_1600=OFF -DCALCU_FRONTEND_QT=OFF
+      - name: Build
+        run: cmake --build build/library
+      - name: Run tests
+        run: ctest --test-dir build/library --output-on-failure
+
   web:
     # frontends/web/build.sh into frontends/web/dist/ (the engine is the
     # root project's calcu59_web target, built in build/web), the

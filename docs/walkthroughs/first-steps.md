@@ -327,8 +327,11 @@ ruled on 2026-11-13, and the steps below are worded accordingly:
   only BREAK, which the LH5811 latches. The ROM repeats only the four
   cursor keys (first after 160 passes, then every 14). The pass length in
   milliseconds rests on the timer clock, which no primary source gives.
-  Not yet recorded in the PC-1500 research repository; the spec change of
-  "if a signal is found" goes to the user. The C-7 part comes with M-8.
+  Recorded in `Sharp1500-1600-Ref`,
+  `PC-1500/Keyboard/PC-1500-Keyboard-Scan.md` (`5fdf30b`), with a line in
+  the `PC1500` skill and the repository's own skill. "If a signal is
+  found" applied with the user on 2026-11-14 (LIB-5 AC-31, AC-32
+  withdrawn; LIB-10 AC-38; C1600-1 AC-21). The C-7 part comes with M-8.
 
 ## Not first steps
 

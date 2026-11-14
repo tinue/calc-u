@@ -17,16 +17,9 @@
 #include "../core/PC1500/PC1500Machine.hpp"
 #include "../core/PC1500/PC1500PresetLoader.hpp"
 #include "../core/Preset/PresetFile.hpp"
+#include "TestHarness.hpp"
 
 namespace {
-
-int g_pass = 0;
-int g_fail = 0;
-
-#define CHECK(cond) do { \
-    if (cond) { g_pass++; } \
-    else { g_fail++; std::fprintf(stderr, "FAIL %s:%d: %s\n", __FILE__, __LINE__, #cond); } \
-} while (0)
 
 // cmotor.cpp's 8-position drive ring (see AlpsPlotterMechanism / ce1600p_tests):
 // adjacent entries are a half-step (+/-1) in the X motor's own convention.
@@ -51,7 +44,7 @@ std::vector<uint8_t> fakeRom() {
 
 // ── ROM window ────────────────────────────────────────────────────────
 
-void test_rom_window_decode_and_negatives() {
+TEST(test_rom_window_decode_and_negatives) {
     Ce150Card card;
     auto rom = fakeRom();
     CHECK(card.loadRom(rom.data(), rom.size()));
@@ -77,7 +70,7 @@ void test_rom_window_decode_and_negatives() {
 
 // ── LH5810 register block ─────────────────────────────────────────────
 
-void test_lh5810_latches_and_direction_masking() {
+TEST(test_lh5810_latches_and_direction_masking) {
     Ce150Card card;
     uint8_t v = 0;
 
@@ -109,7 +102,7 @@ void writeOpc(Ce150Card& card, uint8_t value) {
     card.respondsToWrite(w, value);
 }
 
-void test_opc_write_walks_x_and_y_steppers() {
+TEST(test_opc_write_walks_x_and_y_steppers) {
     Ce150Card card;
     // Anchor both motors at ring position 0 (phase 0x9 in both nibbles).
     writeOpc(card, 0x99);
@@ -139,7 +132,7 @@ void test_opc_write_walks_x_and_y_steppers() {
 
 // ── pen up/down via OPB ───────────────────────────────────────────────
 
-void test_pen_signals_trace_a_stroke() {
+TEST(test_pen_signals_trace_a_stroke) {
     Ce150Card card;
     writeOpc(card, 0x99); // anchor
 
@@ -161,7 +154,7 @@ void test_pen_signals_trace_a_stroke() {
 
 // ── colour turret at the carriage left stop ───────────────────────────
 
-void test_left_stop_advances_colour_every_third_arrival() {
+TEST(test_left_stop_advances_colour_every_third_arrival) {
     Ce150Card card;
     writeOpc(card, 0x99); // anchor X at ring pos 0
 
@@ -201,7 +194,7 @@ void test_left_stop_advances_colour_every_third_arrival() {
     CHECK(card.mechanism().penColor() == held);
 }
 
-void test_reset_rehomes_but_keeps_ink() {
+TEST(test_reset_rehomes_but_keeps_ink) {
     Ce150Card card;
     writeOpc(card, 0x99);
     { SystemBusPins w = me1Write(0xB00D); card.respondsToWrite(w, 0x03); }
@@ -223,7 +216,7 @@ void test_reset_rehomes_but_keeps_ink() {
 
 // ── integration on a real PC1500Machine over the 60-pin SystemBus ─────
 
-void test_machine_rom_visible_and_me1_block_routed() {
+TEST(test_machine_rom_visible_and_me1_block_routed) {
     PC1500Machine machine(PC1500Variant::PC1500A);
     auto rom = fakeRom();
     CHECK(machine.attachCE150(rom.data(), rom.size()));
@@ -242,7 +235,7 @@ void test_machine_rom_visible_and_me1_block_routed() {
     CHECK(machine.memory().peek(0xA000) == 0xFF); // open bus again
 }
 
-void test_ce150_and_internal_lh5811_coexist() {
+TEST(test_ce150_and_internal_lh5811_coexist) {
     PC1500Machine machine(PC1500Variant::PC1500A);
     auto rom = fakeRom();
     machine.attachCE150(rom.data(), rom.size());
@@ -276,7 +269,7 @@ bool writeScratchPreset(const std::string& path, const std::string& body) {
     return f.good();
 }
 
-void test_preset_plotter_ce150_attaches_before_reset() {
+TEST(test_preset_plotter_ce150_attaches_before_reset) {
     if (!fileExists(kSysRom) || !fileExists(kCe150Rom)) {
         std::fprintf(stderr, "SKIP test_preset_plotter_ce150_attaches_before_reset: "
                               "run from the repo root (needs %s + %s)\n", kSysRom, kCe150Rom);
@@ -319,18 +312,3 @@ void test_preset_plotter_ce150_attaches_before_reset() {
 }
 
 } // namespace
-
-int run_ce150_tests() {
-    test_rom_window_decode_and_negatives();
-    test_lh5810_latches_and_direction_masking();
-    test_opc_write_walks_x_and_y_steppers();
-    test_pen_signals_trace_a_stroke();
-    test_left_stop_advances_colour_every_third_arrival();
-    test_reset_rehomes_but_keeps_ink();
-    test_machine_rom_visible_and_me1_block_routed();
-    test_ce150_and_internal_lh5811_coexist();
-    test_preset_plotter_ce150_attaches_before_reset();
-
-    std::printf("ce150_tests: %d passed, %d failed\n", g_pass, g_fail);
-    return g_fail;
-}

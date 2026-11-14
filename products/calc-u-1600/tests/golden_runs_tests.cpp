@@ -42,16 +42,9 @@
 #include "../core/PC1600/PC1600Machine.hpp"
 #include "../core/Resources/BundledRomCatalog.hpp"
 #include "TestCards.hpp"
+#include "TestHarness.hpp"
 
 namespace {
-
-int g_pass = 0;
-int g_fail = 0;
-
-#define CHECK(cond) do { \
-    if (cond) { g_pass++; } \
-    else { g_fail++; std::fprintf(stderr, "FAIL %s:%d: %s\n", __FILE__, __LINE__, #cond); } \
-} while (0)
 
 namespace fs = std::filesystem;
 
@@ -232,7 +225,7 @@ std::string play(const std::string& script, std::string* error) {
     return run.finish();
 }
 
-void test_golden_runs_of_the_sharp_cores() {
+TEST(test_golden_runs_of_the_sharp_cores) {
     const fs::path dir = "tests/golden-runs";
     const bool recording = std::getenv("CALCU1600_GOLDEN_RECORD") != nullptr;
     std::vector<fs::path> scripts;
@@ -268,9 +261,3 @@ void test_golden_runs_of_the_sharp_cores() {
 }
 
 } // namespace
-
-int run_golden_runs_tests() {
-    test_golden_runs_of_the_sharp_cores();
-    std::printf("golden_runs_tests: %d passed, %d failed\n", g_pass, g_fail);
-    return g_fail;
-}

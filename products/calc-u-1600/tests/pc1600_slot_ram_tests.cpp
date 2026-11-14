@@ -11,18 +11,11 @@
 #include "../core/PC1600/PC1600Bank.hpp"
 #include "../core/PC1600/PC1600Memory.hpp"
 #include "TestCards.hpp"
+#include "TestHarness.hpp"
 
 namespace {
 
-int g_pass = 0;
-int g_fail = 0;
-
-#define CHECK(cond) do { \
-    if (cond) { g_pass++; } \
-    else { g_fail++; std::fprintf(stderr, "FAIL %s:%d: %s\n", __FILE__, __LINE__, #cond); } \
-} while (0)
-
-void test_unattached_slots_are_open_bus() {
+TEST(test_unattached_slots_are_open_bus) {
     PC1600Bank bank;
     PC1600Memory mem(bank);
     CHECK(!mem.slot1Attached());
@@ -33,7 +26,7 @@ void test_unattached_slots_are_open_bus() {
     CHECK(mem.read(0x8000) == 0xFF); // still open bus, write ignored
 }
 
-void test_slot1_16k_readwrite_and_powerup_fill() {
+TEST(test_slot1_16k_readwrite_and_powerup_fill) {
     PC1600Bank bank;
     PC1600Memory mem(bank);
     mem.attachSlot1Card(plainRamCard(PC1600Memory::kBankSize));
@@ -50,7 +43,7 @@ void test_slot1_16k_readwrite_and_powerup_fill() {
     CHECK(mem.read(0x8000) == 0xFF);
 }
 
-void test_slot1_32k_two_banks() {
+TEST(test_slot1_32k_two_banks) {
     PC1600Bank bank;
     PC1600Memory mem(bank);
     mem.attachSlot1Card(plainRamCard(2 * PC1600Memory::kBankSize));
@@ -63,7 +56,7 @@ void test_slot1_32k_two_banks() {
     CHECK(mem.read(0x8000) == 0xAA); // independent from bank 1's byte
 }
 
-void test_slot2_plain_card_aliases_across_vertical_banks() {
+TEST(test_slot2_plain_card_aliases_across_vertical_banks) {
     // The connector does not gate Slot 2 on Port 28H vertical bank -- that
     // is the attached card's concern (a CE-1601M-class card tracks it via
     // its own latch). A plain RAM card that doesn't decode Port 28H simply
@@ -84,7 +77,7 @@ void test_slot2_plain_card_aliases_across_vertical_banks() {
     CHECK(mem.read(0x8000) == 0x99); // the write at vb1 hit the same cell
 }
 
-void test_detach_reverts_to_open_bus() {
+TEST(test_detach_reverts_to_open_bus) {
     PC1600Bank bank;
     PC1600Memory mem(bank);
     mem.attachSlot1Card(plainRamCard(PC1600Memory::kBankSize));
@@ -96,14 +89,3 @@ void test_detach_reverts_to_open_bus() {
 }
 
 } // namespace
-
-int run_pc1600_slot_ram_tests() {
-    test_unattached_slots_are_open_bus();
-    test_slot1_16k_readwrite_and_powerup_fill();
-    test_slot1_32k_two_banks();
-    test_slot2_plain_card_aliases_across_vertical_banks();
-    test_detach_reverts_to_open_bus();
-
-    std::printf("pc1600_slot_ram_tests: %d passed, %d failed\n", g_pass, g_fail);
-    return g_fail;
-}

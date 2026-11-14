@@ -18,16 +18,9 @@
 
 #include "../core/PC1600/PC1600BasicLoader.hpp"
 #include "TestRoms.hpp"
+#include "TestHarness.hpp"
 
 namespace {
-
-int g_pass = 0;
-int g_fail = 0;
-
-#define CHECK(cond) do { \
-    if (cond) { g_pass++; } \
-    else { g_fail++; std::fprintf(stderr, "FAIL %s:%d: %s\n", __FILE__, __LINE__, #cond); } \
-} while (0)
 
 namespace fs = std::filesystem;
 
@@ -67,7 +60,7 @@ bool bootWithHostDrive(PC1600Machine& m, const fs::path& dir, bool withCE1600P =
     if (!loadPC1600Roms(m)) return false;
     if (!BundledRoms::attachHostDrive(m, kHostDriveRomDirs, dir, &error)) {
         std::fprintf(stderr, "FAIL host drive attach: %s\n", error.c_str());
-        g_fail++;
+        testharness::failCount()++;
         return false;
     }
     if (withCE1600P && !BundledRoms::attachCE1600P(m, {"roms"}, "new", &error)) return false;
@@ -121,7 +114,7 @@ int errorOf(PC1600Machine& m, const fs::path& dir, const std::string& statement)
     return text.empty() ? -1 : std::atoi(text.c_str());
 }
 
-void test_sequential_files_round_trip() {
+TEST(test_sequential_files_round_trip) {
     TempDir dir;
     writeFile(dir.path / "in.txt", "HELLO\r\n\x1A");
     PC1600Machine m;
@@ -160,7 +153,7 @@ void test_sequential_files_round_trip() {
     CHECK(std::atof(readFile(dir.path / "D.TXT").c_str()) > 0);
 }
 
-void test_save_load_kill_name_copy() {
+TEST(test_save_load_kill_name_copy) {
     TempDir dir;
     writeFile(dir.path / "a-long-host-name.bas", "not visible");
     PC1600Machine m;
@@ -201,7 +194,7 @@ void test_save_load_kill_name_copy() {
     CHECK(errorOf(m, dir.path, "BLOAD \"S3:M.BIN\"") == 0);
 }
 
-void test_protect_and_errors() {
+TEST(test_protect_and_errors) {
     TempDir dir;
     writeFile(dir.path / "KEEP.TXT", "keep");
     PC1600Machine m;
@@ -222,7 +215,7 @@ void test_protect_and_errors() {
     CHECK(readFile(dir.path / "KEEP.TXT") == "keep");
 }
 
-void test_y_alias_follows_the_floppy() {
+TEST(test_y_alias_follows_the_floppy) {
     {
         TempDir dir;
         PC1600Machine m;
@@ -249,7 +242,7 @@ void test_y_alias_follows_the_floppy() {
     }
 }
 
-void test_unmounted_drive_creates_nothing() {
+TEST(test_unmounted_drive_creates_nothing) {
     TempDir dir;
     PC1600Machine m;
     if (!bootWithHostDrive(m, dir.path)) {
@@ -273,7 +266,7 @@ void test_unmounted_drive_creates_nothing() {
 
 // MEP software (e.g. FILEX) takes "S3:" for the MEP module and calls its
 // fixed entries in bank 7 with RST 20H: they must be code, not data.
-void test_mep_fixed_entries() {
+TEST(test_mep_fixed_entries) {
     TempDir dir;
     PC1600Machine m;
     if (!bootWithHostDrive(m, dir.path)) {
@@ -331,7 +324,7 @@ void powerCycle(PC1600Machine& m) {
 
 // The MEP's BASIC statements CDIR / LDIR: the current directory is where
 // every file statement works; power on goes back to the root.
-void test_cdir_and_ldir_statements() {
+TEST(test_cdir_and_ldir_statements) {
     TempDir dir;
     fs::create_directories(dir.path / "Sub" / "INNER");
     PC1600Machine m;
@@ -374,16 +367,3 @@ void test_cdir_and_ldir_statements() {
 }
 
 }  // namespace
-
-int run_pc1600_host_drive_tests() {
-    test_sequential_files_round_trip();
-    test_save_load_kill_name_copy();
-    test_protect_and_errors();
-    test_y_alias_follows_the_floppy();
-    test_unmounted_drive_creates_nothing();
-    test_mep_fixed_entries();
-    test_cdir_and_ldir_statements();
-
-    std::printf("pc1600_host_drive_tests: %d passed, %d failed\n", g_pass, g_fail);
-    return g_fail;
-}

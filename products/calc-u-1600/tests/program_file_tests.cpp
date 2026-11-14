@@ -13,16 +13,9 @@
 
 #include "../core/DropFile.hpp"
 #include "../core/ProgramFile.hpp"
+#include "TestHarness.hpp"
 
 namespace {
-
-int g_pass = 0;
-int g_fail = 0;
-
-#define CHECK(cond) do { \
-    if (cond) { g_pass++; } \
-    else { g_fail++; std::fprintf(stderr, "FAIL %s:%d: %s\n", __FILE__, __LINE__, #cond); } \
-} while (0)
 
 using programfile::Kind;
 using programfile::classify;
@@ -73,7 +66,7 @@ std::vector<uint8_t> pc1600(const std::vector<uint8_t>& payload, uint8_t type, u
 
 std::vector<uint8_t> text(const std::string& s) { return std::vector<uint8_t>(s.begin(), s.end()); }
 
-void test_kinds() {
+TEST(test_kinds) {
     CHECK(classify({}).kind == Kind::Empty);
     CHECK(classify(text("10 PRINT \"HI\"\n20 END\n")).kind == Kind::BasicListing);
     CHECK(classify(ce158(basicPayload(), 0x40)).kind == Kind::BasicPC1500);
@@ -86,7 +79,7 @@ void test_kinds() {
     CHECK(prose.token == "text");
 }
 
-void test_headered_payload_and_fields() {
+TEST(test_headered_payload_and_fields) {
     const auto ce = classify(ce158(kCode, 0x42, 0x40C5, 0x40C7));
     CHECK(!ce.damaged && !ce.lengthMismatch);
     CHECK(ce.payload == kCode);
@@ -104,7 +97,7 @@ void test_headered_payload_and_fields() {
 }
 
 // 0 and FFFF (bank-qualified FFFFFF on the PC-1600) both mean "no auto-start".
-void test_autorun_none() {
+TEST(test_autorun_none) {
     CHECK(classify(ce158(kCode, 0x42, 0x40C5, 0)).autorunAddr == 0);
     CHECK(classify(ce158(kCode, 0x42, 0x40C5, 0xFFFF)).autorunAddr == 0);
     CHECK(classify(pc1600(kCode, 0x10, 0xC0C5, 0)).autorunAddr == 0);
@@ -114,7 +107,7 @@ void test_autorun_none() {
 }
 
 // A length mismatch keeps everything after the header, for a preset's `length:`.
-void test_length_mismatch() {
+TEST(test_length_mismatch) {
     auto trailing = ce158(kCode, 0x42, 0x40C5);
     trailing.push_back(0xAA);
     const auto t = classify(trailing);
@@ -132,7 +125,7 @@ void test_length_mismatch() {
 }
 
 // `00` bytes before the header are skipped.
-void test_leading_noise() {
+TEST(test_leading_noise) {
     auto noisy = pc1600(kCode, 0x10, 0xC0C5);
     noisy.insert(noisy.begin(), {0x00, 0x00, 0x00});
     const auto f = classify(noisy);
@@ -142,7 +135,7 @@ void test_leading_noise() {
 }
 
 // Header magic without a complete header of a known type.
-void test_header_cut() {
+TEST(test_header_cut) {
     auto unknownType = pc1600(kCode, 0x55);
     CHECK(classify(unknownType).damaged);
     auto shortCe158 = ce158(kCode, 0x42);
@@ -151,7 +144,7 @@ void test_header_cut() {
 }
 
 // The PC-1600 end marker (00 0F, or the 00 F0 older tools wrote) isn't checked.
-void test_pc1600_end_marker_ignored() {
+TEST(test_pc1600_end_marker_ignored) {
     auto f = pc1600(kCode, 0x10, 0xC0C5);
     f[0x0F] = 0xF0;
     CHECK(classify(f).kind == Kind::CodeZ80);
@@ -179,7 +172,7 @@ std::vector<uint8_t> pseudoRandom(size_t len, uint32_t seed) {
 }
 
 // The CPU guess survives only as "looks like code", and never as a Kind.
-void test_looks_like_code() {
+TEST(test_looks_like_code) {
     const auto code = classify(z80Code());
     CHECK(code.kind == Kind::Headerless);
     CHECK(code.looksLikeCode);
@@ -196,7 +189,7 @@ std::vector<uint8_t> readFixture(const char* path, bool* ok) {
 }
 
 // Core/DropFile: which loader a dropped file goes to.
-void test_drop_targets() {
+TEST(test_drop_targets) {
     using dropfile::Target;
     const auto drop = [](const std::vector<uint8_t>& bytes, const std::string& name = "dropped.bin") {
         return dropfile::classify(bytes, name);
@@ -242,7 +235,7 @@ void test_drop_targets() {
 }
 
 // Real SharpDataExchange output. Skipped (not failed) when absent.
-void test_real_sample_files() {
+TEST(test_real_sample_files) {
     struct Case { const char* path; Kind kind; };
     const Case cases[] = {
         {"tests/fixtures/basic/lissajou-1500.bbin", Kind::BasicPC1500},
@@ -269,7 +262,7 @@ void test_real_sample_files() {
 // A cassette WAV is classified as the file on it: these are bin2wav tapes of
 // the .img next to them (Core/tests/pc1500_tape_tests.cpp,
 // pc1600_tape_tests.cpp load the same WAVs through the emulated ROM).
-void test_cassette_wav() {
+TEST(test_cassette_wav) {
     struct Case {
         const char* wav;
         const char* img;
@@ -309,20 +302,3 @@ void test_cassette_wav() {
 }
 
 }  // namespace
-
-int run_program_file_tests() {
-    test_kinds();
-    test_headered_payload_and_fields();
-    test_autorun_none();
-    test_length_mismatch();
-    test_leading_noise();
-    test_header_cut();
-    test_pc1600_end_marker_ignored();
-    test_real_sample_files();
-    test_looks_like_code();
-    test_drop_targets();
-    test_cassette_wav();
-
-    std::printf("program_file_tests: %d passed, %d failed\n", g_pass, g_fail);
-    return g_fail;
-}

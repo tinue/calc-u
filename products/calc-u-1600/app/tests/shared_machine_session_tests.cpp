@@ -8,13 +8,9 @@
 
 #include "MemorySettingsStore.hpp"
 #include "app/MachineSession.hpp"
-#include "SharedTestSupport.hpp"
+#include "TestHarness.hpp"
 
 namespace {
-
-int g_pass = 0;
-int g_fail = 0;
-#define CHECK(cond) SHARED_CHECK(g_pass, g_fail, cond)
 
 using shared::MachineSession;
 using shared::Model;
@@ -93,7 +89,8 @@ void test_switch_and_paste(Model model) {
     if (text.find("42") == std::string::npos) std::fprintf(stderr, "  screen: %s\n", text.c_str());
 }
 
-void test_timed_tap_pc1600() {
+TEST(test_timed_tap_pc1600) {
+    SKIP_UNLESS(romsPresent(), "no ROMs in roms/");
     Fixture f;
     f.session.switchModel(Model::PC1600);
     // tapKey on the PC-1600 presses now and releases 30 ms of emulated time
@@ -153,7 +150,8 @@ void test_minimum_key_hold(Model model) {
 }
 
 // hostKeyDown() routes a host key the way the model needs.
-void test_host_keys() {
+TEST(test_host_keys) {
+    SKIP_UNLESS(romsPresent(), "no ROMs in roms/");
     using shared::ResolvedKey;
     {
         Fixture f;
@@ -194,7 +192,8 @@ void test_host_keys() {
     }
 }
 
-void test_rebuild_keeps_plotter() {
+TEST(test_rebuild_keeps_plotter) {
+    SKIP_UNLESS(romsPresent(), "no ROMs in roms/");
     Fixture f;
     f.session.switchModel(Model::PC1500A);
     f.session.powerCycleAround([&] {
@@ -216,18 +215,8 @@ void test_rebuild_keeps_plotter() {
 
 } // namespace
 
-int run_shared_machine_session_tests() {
-    if (!romsPresent()) {
-        std::printf("shared_machine_session_tests: SKIP (no ROMs in roms/)\n");
-        return 0;
-    }
-    test_switch_and_paste(Model::PC1500A);
-    test_switch_and_paste(Model::PC1600);
-    test_timed_tap_pc1600();
-    test_minimum_key_hold(Model::PC1500A);
-    test_minimum_key_hold(Model::PC1600);
-    test_host_keys();
-    test_rebuild_keeps_plotter();
-    std::printf("shared_machine_session_tests: %d passed, %d failed\n", g_pass, g_fail);
-    return g_fail;
-}
+// The two models of each parameterised test.
+TEST(test_switch_and_paste_pc1500a) { SKIP_UNLESS(romsPresent(), "no ROMs in roms/"); test_switch_and_paste(Model::PC1500A); }
+TEST(test_switch_and_paste_pc1600) { SKIP_UNLESS(romsPresent(), "no ROMs in roms/"); test_switch_and_paste(Model::PC1600); }
+TEST(test_minimum_key_hold_pc1500a) { SKIP_UNLESS(romsPresent(), "no ROMs in roms/"); test_minimum_key_hold(Model::PC1500A); }
+TEST(test_minimum_key_hold_pc1600) { SKIP_UNLESS(romsPresent(), "no ROMs in roms/"); test_minimum_key_hold(Model::PC1600); }

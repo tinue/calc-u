@@ -19,16 +19,9 @@
 #include "../core/PC1600/PC1600Machine.hpp"
 #include "TestCards.hpp"
 #include "TestRoms.hpp"
+#include "TestHarness.hpp"
 
 namespace {
-
-int g_pass = 0;
-int g_fail = 0;
-
-#define CHECK(cond) do { \
-    if (cond) { g_pass++; } \
-    else { g_fail++; std::fprintf(stderr, "FAIL %s:%d: %s\n", __FILE__, __LINE__, #cond); } \
-} while (0)
 
 // Boots, switches to PRO, and runs NEW0 -- the loadable state the loader
 // assumes the preset left the machine in.
@@ -94,7 +87,7 @@ uint16_t runAndReadVarPtr(PC1600Machine& m) {
 // program area into the module window. The fast loader must scatter the
 // tokenised image into the module's backing store byte-for-byte the way
 // the keystroke typer's stored program looks, and the result must RUN.
-void test_ce1600m_module_equivalence_and_run() {
+TEST(test_ce1600m_module_equivalence_and_run) {
     const char* src = "10 A=42\n20 B=A+1\n30 END\n";
 
     // Oracle: type the program with the module fitted; read the stored
@@ -167,7 +160,7 @@ void test_ce1600m_module_equivalence_and_run() {
 // just moving BASPRG_END back -- otherwise a shorter reload leaves stale
 // tokens dangling in RAM (harmless to RUN, but a stray dump of that area
 // would show leftover garbage from the previous program).
-void test_reload_over_shorter_program_clears_tail_stock() {
+TEST(test_reload_over_shorter_program_clears_tail_stock) {
     PC1600Machine m;
     if (!bootIntoProNew0(m)) {
         std::fprintf(stderr, "SKIP pc1600_basicloader reload-shorter: PC-1600 ROM set not found\n");
@@ -203,7 +196,7 @@ void test_reload_over_shorter_program_clears_tail_stock() {
 
 // A live BASPRG_END that doesn't sit at/after BASPRG_ST must be rejected --
 // the loader relies on it to know how much of the resident program to erase.
-void test_rejects_invalid_basprg_end() {
+TEST(test_rejects_invalid_basprg_end) {
     PC1600Machine m;
     if (!bootIntoProNew0(m)) {
         std::fprintf(stderr, "SKIP pc1600_basicloader invalid-end: PC-1600 ROM set not found\n");
@@ -224,7 +217,7 @@ void test_rejects_invalid_basprg_end() {
 // Slot-1 RAM module fitted, so the vacated tail lives in the module's
 // backing store rather than internal RAM -- the erase plan must still find
 // and clear it via the same scattered-placement logic used for writes.
-void test_reload_over_shorter_program_clears_tail_module() {
+TEST(test_reload_over_shorter_program_clears_tail_module) {
     PC1600Machine m;
     if (!bootIntoProNew0Slot1Ram(m, 0x8000)) {
         std::fprintf(stderr, "SKIP pc1600_basicloader reload-shorter-module: PC-1600 ROM set not found\n");
@@ -262,7 +255,7 @@ void test_reload_over_shorter_program_clears_tail_module() {
     }
 }
 
-void test_rejects_pc1500_transfer_file() {
+TEST(test_rejects_pc1500_transfer_file) {
     PC1600Machine m;
     if (!bootIntoProNew0(m)) {
         std::fprintf(stderr, "SKIP pc1600_basicloader pc1500-reject: PC-1600 ROM set not found\n");
@@ -418,7 +411,7 @@ void checkTypedVsFast(const char* label, size_t slot1Ram, size_t slot2Ram, const
     CHECK(m.memory().peek(0xFF80) == 77);
 }
 
-void test_work_area_matches_typed() {
+TEST(test_work_area_matches_typed) {
     const std::vector<uint8_t> shortPayload = programPayload(kShortProgram);
     if (shortPayload.empty()) {
         std::fprintf(stderr, "SKIP pc1600_basicloader work-area: PC-1600 ROM set not found\n");
@@ -463,7 +456,7 @@ bool bootMode(PC1600Machine& m, bool mode1) {
 // A listing is tokenized with the table of the current MODE: CALL is the
 // PC-1600's Z-80 CALL (F282H) in MODE 0 and the PC-1500's CALL (F18AH, which
 // the PC-1600 lists as XCALL) in MODE 1.
-void test_listing_follows_mode() {
+TEST(test_listing_follows_mode) {
     const std::string path = writeTempListing("pc1600_mode_call.bas", "10 CALL &4000\n");
     for (bool mode1 : {false, true}) {
         PC1600Machine m;
@@ -478,7 +471,7 @@ void test_listing_follows_mode() {
 }
 
 // Text the PC-1500 can't hold is refused in MODE 1, and nothing is written.
-void test_mode1_refuses_non_ascii() {
+TEST(test_mode1_refuses_non_ascii) {
     const std::string path = writeTempListing("pc1600_mode_umlaut.bas", "10 PRINT \"\xC3\xA4\xC3\xB6\xC3\xBC\"\n");
     {
         PC1600Machine m;
@@ -499,7 +492,7 @@ void test_mode1_refuses_non_ascii() {
 }
 
 // A CE-158 (PC-1500) transfer file: refused in MODE 0, loaded in MODE 1.
-void test_pc1500_transfer_file_in_mode1() {
+TEST(test_pc1500_transfer_file_in_mode1) {
     std::vector<uint8_t> payload = {0x00, 0x0A, 0x03, 0xF1, 0x8E, 0x0D};
     std::vector<uint8_t> f(27, 0x00);
     f[0] = 0x01; f[1] = 0x40; f[2] = 'C'; f[3] = 'O'; f[4] = 'M';
@@ -516,7 +509,7 @@ void test_pc1500_transfer_file_in_mode1() {
 
 // A tokenized PC-1600 file (.bbin) loads in both MODEs, and in MODE 0 lands
 // byte for byte where its listing does.
-void test_pc1600_bbin_file() {
+TEST(test_pc1600_bbin_file) {
     const std::string bbin = "tests/fixtures/basic/lissajou-1600.bbin";
     const std::string bas = "tests/fixtures/basic/lissajou-1600.bas";
     std::vector<uint8_t> fromListing;
@@ -539,7 +532,7 @@ void test_pc1600_bbin_file() {
 
 // The loaders read MODE and TITLE from the machine: after boot MODE 0 and
 // S0; `MODE1` typed on a stock machine is accepted (the ROM needs no module).
-void test_mode_and_title_queries() {
+TEST(test_mode_and_title_queries) {
     PC1600Machine m;
     if (!bootPC1600(m)) return;
     CHECK(!m.mode1());
@@ -552,21 +545,4 @@ void test_mode_and_title_queries() {
     typeLine(m, "MODE0", /*pressEnter=*/true, &err);
     waitIdle(m, static_cast<uint64_t>(PC1600Machine::kTStateHz));
     CHECK(!m.mode1());
-}
-
-int run_pc1600_basicloader_tests() {
-    test_mode_and_title_queries();
-    test_work_area_matches_typed();
-    test_listing_follows_mode();
-    test_mode1_refuses_non_ascii();
-    test_pc1500_transfer_file_in_mode1();
-    test_pc1600_bbin_file();
-    test_ce1600m_module_equivalence_and_run();
-    test_reload_over_shorter_program_clears_tail_stock();
-    test_reload_over_shorter_program_clears_tail_module();
-    test_rejects_invalid_basprg_end();
-    test_rejects_pc1500_transfer_file();
-
-    std::printf("pc1600_basicloader_tests: %d passed, %d failed\n", g_pass, g_fail);
-    return g_fail;
 }

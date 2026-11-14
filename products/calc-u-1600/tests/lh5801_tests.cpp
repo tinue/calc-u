@@ -19,16 +19,9 @@
 #include "PresetTestSupport.hpp"
 
 #include <ctime>
+#include "TestHarness.hpp"
 
 namespace {
-
-int g_pass = 0;
-int g_fail = 0;
-
-#define CHECK(cond) do { \
-    if (cond) { g_pass++; } \
-    else { g_fail++; std::fprintf(stderr, "FAIL %s:%d: %s\n", __FILE__, __LINE__, #cond); } \
-} while (0)
 
 // A trivial RAM-backed bus for isolated opcode tests: both ME0 and ME1 map
 // to the same flat 64KB array, so tests can freely poke code/data anywhere
@@ -56,7 +49,7 @@ struct Rig {
     }
 };
 
-void test_reset_vector() {
+TEST(test_reset_vector) {
     FlatBus bus;
     bus.mem[0xFFFE] = 0x12;
     bus.mem[0xFFFF] = 0x34;
@@ -66,7 +59,7 @@ void test_reset_vector() {
     CHECK(!cpu.flagC() && !cpu.flagIE() && !cpu.flagZ());
 }
 
-void test_ldi_a_and_zero_flag() {
+TEST(test_ldi_a_and_zero_flag) {
     Rig r({0xB5, 0x00, 0xB5, 0x7F}); // ldi a,0x00 ; ldi a,0x7F
     r.cpu.step();
     CHECK(r.cpu.a() == 0x00);
@@ -76,7 +69,7 @@ void test_ldi_a_and_zero_flag() {
     CHECK(!r.cpu.flagZ());
 }
 
-void test_adc_carry_and_overflow() {
+TEST(test_adc_carry_and_overflow) {
     // ldi a,0xFF ; sec ; adc ul  (ul defaults to 0) => a = 0xFF+0+1 = 0x00, C=1,Z=1
     Rig r({0xB5, 0xFF, 0xFB, 0x22});
     r.cpu.step(); // ldi a,0xFF
@@ -88,7 +81,7 @@ void test_adc_carry_and_overflow() {
     CHECK(r.cpu.flagZ());
 }
 
-void test_adc_signed_overflow_v_flag() {
+TEST(test_adc_signed_overflow_v_flag) {
     // ldi a,0x7F ; rec ; ldi xl,0x01 ; adc xl => 0x7F+1 = 0x80: V should set (pos+pos=neg)
     Rig r({0xB5, 0x7F, 0xF9, 0x4A, 0x01, 0x02});
     r.cpu.step(); r.cpu.step(); r.cpu.step();
@@ -98,7 +91,7 @@ void test_adc_signed_overflow_v_flag() {
     CHECK(!r.cpu.flagC());
 }
 
-void test_sbc_no_borrow_convention() {
+TEST(test_sbc_no_borrow_convention) {
     // ldi a,0x05 ; sec ; ldi xl,0x03 ; sbc xl => 5-3-0=2, C=1 (no borrow)
     Rig r({0xB5, 0x05, 0xFB, 0x4A, 0x03, 0x00});
     r.cpu.step(); r.cpu.step(); r.cpu.step();
@@ -114,7 +107,7 @@ void test_sbc_no_borrow_convention() {
     CHECK(!r2.cpu.flagC()); // borrow occurred
 }
 
-void test_cpa_flags_no_writeback() {
+TEST(test_cpa_flags_no_writeback) {
     // ldi a,0x05 ; sec ; ldi xl,0x05 ; cpa xl => equal: C=1,Z=1, A unmodified
     Rig r({0xB5, 0x05, 0xFB, 0x4A, 0x05, 0x06});
     r.cpu.step(); r.cpu.step(); r.cpu.step();
@@ -124,7 +117,7 @@ void test_cpa_flags_no_writeback() {
     CHECK(r.cpu.flagZ());
 }
 
-void test_lop_iterates_n_plus_1_times() {
+TEST(test_lop_iterates_n_plus_1_times) {
     // ldi ul,0x02 ; lop ul,+2 (a 2-byte self-loop -- e=2 branches back to
     // the lop opcode's own address; this is the exact byte pattern "88 02"
     // seen in the real PC-1500_A04.ROM's own reset-delay loop at 0xE018).
@@ -145,7 +138,7 @@ void test_lop_iterates_n_plus_1_times() {
     CHECK(r.cpu.pc() == 0x8004);
 }
 
-void test_inc_dec_16bit_no_flags() {
+TEST(test_inc_dec_16bit_no_flags) {
     // sec ; ldi xh,0x00 ; ldi xl,0xFF ; inc x -> x=0x0100, flags untouched by inc x
     Rig r({0xFB, 0x48, 0x00, 0x4A, 0xFF, 0x44});
     r.cpu.step(); // sec
@@ -156,7 +149,7 @@ void test_inc_dec_16bit_no_flags() {
     CHECK(r.cpu.flagC()); // untouched from the earlier sec
 }
 
-void test_adr_preserves_flags() {
+TEST(test_adr_preserves_flags) {
     // ADR (FD CA/DA/EA) must leave C/V/H/Z *unchanged* -- the low-byte
     // addition's carry propagates into RH internally but is never published
     // to the status register. The ROM's key-dispatch path depends on carry
@@ -198,7 +191,7 @@ void test_adr_preserves_flags() {
     CHECK(!r2.cpu.flagC());      // ...but the status register still says carry clear
 }
 
-void test_sjp_rtn_stack_roundtrip() {
+TEST(test_sjp_rtn_stack_roundtrip) {
     // At 0x8000: sjp 0x9000 ; (return lands here) ldi a,0x42
     // At 0x9000: rtn
     Rig r({0xBE, 0x90, 0x00, 0xB5, 0x42});
@@ -214,7 +207,7 @@ void test_sjp_rtn_stack_roundtrip() {
     CHECK(r.cpu.a() == 0x42);
 }
 
-void test_psh_pop_pair_roundtrip() {
+TEST(test_psh_pop_pair_roundtrip) {
     // ldi xh,0x12 ; ldi xl,0x34 ; psh x ; ldi xh,0 ; ldi xl,0 ; pop x
     Rig r({0x48, 0x12, 0x4A, 0x34, 0xFD, 0x88, 0x48, 0x00, 0x4A, 0x00, 0xFD, 0x0A});
     r.cpu.step(); r.cpu.step();
@@ -226,7 +219,7 @@ void test_psh_pop_pair_roundtrip() {
     CHECK(r.cpu.x() == 0x1234);
 }
 
-void test_hlt_and_interrupt_wake() {
+TEST(test_hlt_and_interrupt_wake) {
     // Vector target (0x9000) is separate from the code right after HLT,
     // so the IE-off (stays halted) and IE-on (vectors away) scenarios
     // below are clearly distinguishable by PC/A.
@@ -270,7 +263,7 @@ void test_hlt_and_interrupt_wake() {
 // The NMI line (the PC-1600's SC7852 LHNMIO trap drives it): serviced
 // whatever IE is, ends a HLT, vectors through FFFC, pushes T then P like
 // the maskable entry and resets IE. One request is one service.
-void test_nmi_ignores_ie_and_vectors_fffc() {
+TEST(test_nmi_ignores_ie_and_vectors_fffc) {
     Rig r({0xFD, 0xB1, 0xB5, 0x99}); // hlt (0x8000-01) ; ldi a,0x99 (0x8002-03)
     r.bus.mem[0xFFFC] = 0xC4;
     r.bus.mem[0xFFFD] = 0x40; // NMI vector -> 0xC440
@@ -304,7 +297,7 @@ void test_nmi_ignores_ie_and_vectors_fffc() {
 // real power-down HALT is reached with IE clear (a headless real-ROM
 // repro of the reported GUI freeze found the LH5803 parked exactly that
 // way), so the ordinary IE-gated wake above can never reach it.
-void test_wake_from_halt_ignores_ie() {
+TEST(test_wake_from_halt_ignores_ie) {
     Rig r({0xFD, 0xB1, 0xB5, 0x99}); // hlt (0x8000-01) ; ldi a,0x99 (0x8002-03)
     r.cpu.step(); // hlt
     CHECK(r.cpu.halted());
@@ -328,7 +321,7 @@ void test_wake_from_halt_ignores_ie() {
 // key's BFI pin) restores it with a real reset. This is what lets the
 // ROM's own OFF-key/AUTO-POWER-OFF handler actually halt execution at
 // FD 4C instead of falling through to whatever comes next.
-void test_off_instruction_powers_down_until_power_on() {
+TEST(test_off_instruction_powers_down_until_power_on) {
     // off (0xFD 0x4C) ; ldi a,0x99 (would prove execution kept going)
     Rig r({0xFD, 0x4C, 0xB5, 0x99});
     r.cpu.setStatusReg(0x02); // IE=1, so a spurious wake isn't masked by IE
@@ -359,7 +352,7 @@ void test_off_instruction_powers_down_until_power_on() {
     CHECK(r.cpu.statusReg() == 0); // IE cleared too, like any other reset
 }
 
-void test_rti_restores_flags_and_pc() {
+TEST(test_rti_restores_flags_and_pc) {
     // sec ; sie ; ldi xh,0x90 ; ldi xl,0x00 -- prep an interrupt vector at 0x9000: rti
     Rig r({0xFB, 0xFD, 0x81, 0x48, 0x90, 0x4A, 0x00});
     r.bus.mem[0xFFFA] = 0x90;
@@ -389,7 +382,7 @@ void test_rti_restores_flags_and_pc() {
     CHECK(r.cpu.pc() == 0x9000);
 }
 
-void test_trace_ring_and_drain() {
+TEST(test_trace_ring_and_drain) {
     Rig r({0xB5, 0x01, 0xB5, 0x02, 0xB5, 0x03}); // three ldi a,n instructions
     r.cpu.setTraceFlags(TRACE_PC | TRACE_REGS_LIGHT);
     r.cpu.step(); r.cpu.step(); r.cpu.step();
@@ -411,7 +404,7 @@ void test_trace_ring_and_drain() {
     CHECK(n == 0);
 }
 
-void test_trace_ring_overflow_accounting() {
+TEST(test_trace_ring_overflow_accounting) {
     // Ring size is 512; execute far more than that and confirm the drain
     // reports the correct lost count and starts from the oldest still-held frame.
     Rig r(std::vector<uint8_t>(2000, 0x38)); // 2000 NOPs
@@ -427,7 +420,7 @@ void test_trace_ring_overflow_accounting() {
     CHECK(frames[n - 1].seqno == uint32_t(kTotal - 1));
 }
 
-void test_trace_ring_peek_does_not_consume() {
+TEST(test_trace_ring_peek_does_not_consume) {
     // peekTraceEvents() is for a debugger's frozen view: it must return a
     // stable snapshot of the most-recent frames without disturbing the
     // live drain cursor, so an ordinary (non-frozen) drainTraceEvents()
@@ -466,7 +459,7 @@ void test_trace_ring_peek_does_not_consume() {
     CHECK(onlyNewest[0].a == 0x02);
 }
 
-void test_breakpoint_halts_step() {
+TEST(test_breakpoint_halts_step) {
     Rig r({0xB5, 0x01, 0xB5, 0x02, 0xB5, 0x03});
     r.cpu.setBreakpointsEnabled(true);
     r.cpu.addBreakpoint(0x8002);
@@ -486,7 +479,7 @@ void test_breakpoint_halts_step() {
     CHECK(r.cpu.a() == 0x02);
 }
 
-void test_illegal_opcode_is_distinguishable_from_nop() {
+TEST(test_illegal_opcode_is_distinguishable_from_nop) {
     // 0x74 has no case in execute()'s switch, isn't one of the measured "V"
     // opcodes and isn't in the vej range (0xC0-0xFE even) -- an undocumented
     // opcode. Execution still proceeds (so a malformed stream doesn't wedge
@@ -504,7 +497,7 @@ void test_illegal_opcode_is_distinguishable_from_nop() {
     CHECK(!r.cpu.consumeIllegalOpcodeHit()); // must not be reported as illegal
 }
 
-void test_v_register_reads_operand_high_byte() {
+TEST(test_v_register_reads_operand_high_byte) {
     // The undocumented "V" opcodes, as measured on a real PC-1500A and PC-1600:
     // V reads as (WH, 00), W = the last 16-bit
     // operand; writes are ignored; LDI VL,n is two bytes.
@@ -538,7 +531,7 @@ void test_v_register_reads_operand_high_byte() {
     CHECK(!r.cpu.consumeIllegalOpcodeHit());
 }
 
-void test_v_register_arithmetic_and_pointer() {
+TEST(test_v_register_arithmetic_and_pointer) {
     // SBC VL computes with VL = 00 (hardware: 10 with C -> 10, flags C H;
     // 10 without C -> 0F, flags C). LDA (V) reads WH:00. A vector call loads
     // W with the vector's table address (FFxx).
@@ -564,7 +557,7 @@ void test_v_register_arithmetic_and_pointer() {
     CHECK(r.cpu.pc() == 0x9000);
 }
 
-void test_flag_cost_gating_no_trace_by_default() {
+TEST(test_flag_cost_gating_no_trace_by_default) {
     Rig r({0x38, 0x38, 0x38});
     CHECK(r.cpu.traceFlags() == TRACE_NONE);
     r.cpu.step(); r.cpu.step(); r.cpu.step();
@@ -574,7 +567,7 @@ void test_flag_cost_gating_no_trace_by_default() {
     CHECK(n == 0); // nothing recorded when tracing is off
 }
 
-void test_memory_open_bus_and_ram_regions() {
+TEST(test_memory_open_bus_and_ram_regions) {
     PC1500Memory mem;
     CHECK(mem.readME0(0x0000) == 0xFF); // Y0, no module: open bus
     CHECK(mem.readME0(0x8000) == 0xFF); // Y2, no module: open bus
@@ -589,7 +582,7 @@ void test_memory_open_bus_and_ram_regions() {
     CHECK(mem.readME0(0x7FFF) == 0x22);
 }
 
-void test_memory_display_ram_mirroring() {
+TEST(test_memory_display_ram_mirroring) {
     // Per Ref/PC-1500/Memory-Architecture/PC-1500-Address-Decoding.md: the V2/V3 sub-decode only examines
     // AD8/DME0, so the 2KB S6 window (0x7000-0x77FF) collapses onto the
     // same 512 physical bytes 4 times.
@@ -613,7 +606,7 @@ void test_memory_display_ram_mirroring() {
 // first time -- which is exactly why &7C01-&7FFF becomes the PC-1500A-only
 // "machine language area" (§4.1).
 //
-void test_memory_pc1500a_system_ram_has_no_aliasing() {
+TEST(test_memory_pc1500a_system_ram_has_no_aliasing) {
     PC1500Memory mem(PC1500Variant::PC1500A);
     mem.writeME0(0x7800, 0xAA);
     mem.writeME0(0x7C00, 0xBB);
@@ -630,7 +623,7 @@ void test_memory_pc1500a_system_ram_has_no_aliasing() {
 // backed by a TC5514 pair decoding A0-A9 (10 lines) across the 2KB
 // (11-line) window, so &7C00-&7FFF must alias &7800-&7BFF at a fixed
 // &400 offset.
-void test_memory_pc1500_system_ram_has_aliasing() {
+TEST(test_memory_pc1500_system_ram_has_aliasing) {
     PC1500Memory mem(PC1500Variant::PC1500);
     mem.writeME0(0x7800, 0xAA);
     CHECK(mem.readME0(0x7C00) == 0xAA); // &7C00 aliases &7800
@@ -649,7 +642,7 @@ void test_memory_pc1500_system_ram_has_aliasing() {
 // the plain PC-1500 only has 2KB of built-in user RAM (S0); S1/S2
 // (&4800-&57FF), populated as built-in RAM on the PC-1500A, are open bus
 // on the plain PC-1500 (module slot, no module attached).
-void test_memory_pc1500_narrower_user_ram() {
+TEST(test_memory_pc1500_narrower_user_ram) {
     PC1500Memory mem(PC1500Variant::PC1500);
     mem.writeME0(0x4000, 0xAB);
     CHECK(mem.readME0(0x4000) == 0xAB); // S0: still built-in RAM
@@ -662,7 +655,7 @@ void test_memory_pc1500_narrower_user_ram() {
     CHECK(mem.readME0(0x57FF) == 0xFF); // S2: also open bus
 }
 
-void test_rom_load_and_write_ignored() {
+TEST(test_rom_load_and_write_ignored) {
     PC1500Memory mem;
     std::vector<uint8_t> rom(16384, 0);
     rom[0] = 0xAA;
@@ -677,7 +670,7 @@ void test_rom_load_and_write_ignored() {
     CHECK(!mem.loadROM(wrongSize.data(), wrongSize.size()));
 }
 
-void test_keyboard_scan_active_low_matrix() {
+TEST(test_keyboard_scan_active_low_matrix) {
     // Digit1 sits at IN0/PA2 in the real keyboard matrix (see
     // PC1500Keyboard.cpp). Strobing column 2 (bit2=0) with it pressed must
     // clear bit0 (row IN0) in the read-back byte; strobing any other single
@@ -692,7 +685,7 @@ void test_keyboard_scan_active_low_matrix() {
     CHECK(kb.scan(0xFB) == 0xFF);  // released
 }
 
-void test_keyboard_name_lookup() {
+TEST(test_keyboard_name_lookup) {
     CHECK(PC1500Keyboard::keyFromName("1") == PC1500Keyboard::Key::Digit1);
     CHECK(PC1500Keyboard::keyFromName("a") == PC1500Keyboard::Key::A);
     CHECK(PC1500Keyboard::keyFromName("Z") == PC1500Keyboard::Key::Z);
@@ -705,7 +698,7 @@ void test_keyboard_name_lookup() {
     CHECK(PC1500Keyboard::keyFromName("nonsense") == PC1500Keyboard::Key::Unknown);
 }
 
-void test_io_chip_keyboard_wiring_through_memory() {
+TEST(test_io_chip_keyboard_wiring_through_memory) {
     // Exercises the real ROM's own protocol (confirmed against real
     // hardware, see PC1500Memory.hpp's top comment): DDA at register 0xC,
     // OPA (column strobe) at register 0xE, both ME1-mapped and mirrored
@@ -744,7 +737,7 @@ void test_io_chip_keyboard_wiring_through_memory() {
     CHECK(mem.readME1(0xC000) == 0xFF); // the ROM too (PEEK# &C000 = 255)
 }
 
-void test_rtc_tp_rate_and_gating() {
+TEST(test_rtc_tp_rate_and_gating) {
     // TP produces no edges at all until the ROM has issued at least one
     // rate-select command. Without this gate, an always-on TP from
     // power-on would spuriously set IF bit 1 during the boot prompt, well
@@ -779,7 +772,7 @@ void test_rtc_tp_rate_and_gating() {
     CHECK(ticks >= 480 && ticks <= 505); // ~492 expected, generous margin
 }
 
-void test_rtc_tp_phase_free_runs_across_configures() {
+TEST(test_rtc_tp_phase_free_runs_across_configures) {
     // TP comes off the chip's free-running divider: a rate select doesn't
     // restart its phase, so rising edges stay on the 1/64 s grid however
     // the configures fall. (A real unit's BEEP repeat periods measure as
@@ -815,7 +808,7 @@ void test_rtc_tp_phase_free_runs_across_configures() {
     }
 }
 
-void test_rtc_if_does_not_clear_on_read() {
+TEST(test_rtc_if_does_not_clear_on_read) {
     // IF's TP flag (bit 1) must not clear on an ordinary read of the
     // register: the ROM's own MI interrupt handler (LE171) reads IF to
     // test a *different* bit for unrelated dispatch purposes on every
@@ -835,7 +828,7 @@ void test_rtc_if_does_not_clear_on_read() {
     CHECK((mem.readME1(0xF00B) & 0x02) == 0);
 }
 
-void test_rtc_opb_and_if_never_disagree_within_one_poll() {
+TEST(test_rtc_opb_and_if_never_disagree_within_one_poll) {
     // The ROM's WAIT poll checks OPB (E89C) and, ~15 cycles later, IF (via
     // E451) within the *same* iteration. If IF could see a TP edge that
     // OPB's check a few cycles earlier hadn't, the disagreement -- sticky,
@@ -921,7 +914,7 @@ void rtcWriteCalendar40(PC1500Memory& mem, uint64_t value) {
 int rtcNibble(uint64_t reg, int shift) { return int((reg >> shift) & 0x0F); }
 } // namespace
 
-void test_rtc_calendar_seed_and_read() {
+TEST(test_rtc_calendar_seed_and_read) {
     // Seed a known instant and walk it back out via the ROM's exact
     // read protocol: the 40-bit register must carry it field-for-field.
     PC1500Memory mem;
@@ -938,7 +931,7 @@ void test_rtc_calendar_seed_and_read() {
 // `- syncclock:` re-seeds the RTC from the host: the boot seeds a clearly
 // wrong clock (12 hours and 6 months off), and after a `- wait:` and the sync the
 // calendar reads back the host's current time. ROM-gated.
-void test_preset_syncclock_reseeds_rtc() {
+TEST(test_preset_syncclock_reseeds_rtc) {
     PresetFile preset;
     std::string err;
     CHECK(parsePresetString("format-version: 1\nmodel: PC-1500A\nkeys:\n  - wait: 1\n  - syncclock:\n",
@@ -969,7 +962,7 @@ void test_preset_syncclock_reseeds_rtc() {
     CHECK(diff <= 1);                                         // not the boot seed
 }
 
-void test_rtc_calendar_set_via_shift_and_commit() {
+TEST(test_rtc_calendar_set_via_shift_and_commit) {
     // TIME= path: shift 40 bits in, Time Set -> Register Hold to commit,
     // then a Time-Read round-trip must return exactly what was written.
     PC1500Memory mem;
@@ -987,7 +980,7 @@ void test_rtc_calendar_set_via_shift_and_commit() {
     CHECK(rtcReadCalendar40(mem) == want);
 }
 
-void test_rtc_calendar_time_set_straight_to_time_read() {
+TEST(test_rtc_calendar_time_set_straight_to_time_read) {
     // Time Set -> Time Read with no Register Hold in between: the commit
     // on leaving Time Set must land before Time Read's snapshot, or the
     // read returns the old time and the TIME= value is lost.
@@ -1006,7 +999,7 @@ void test_rtc_calendar_time_set_straight_to_time_read() {
     CHECK(rtcReadCalendar40(mem) == want); // starts with Time Read
 }
 
-void test_rtc_calendar_advances_one_hz_with_bcd_and_month_carry() {
+TEST(test_rtc_calendar_advances_one_hz_with_bcd_and_month_carry) {
     // One tick per emulated second, with BCD carry rippling sec->min->
     // hour->day and a Jan(31)->Feb month rollover. 2026 is not a leap
     // year, so January has 31 days.
@@ -1022,7 +1015,7 @@ void test_rtc_calendar_advances_one_hz_with_bcd_and_month_carry() {
     CHECK(rtcNibble(r, 0) == 1 && rtcNibble(r, 4) == 0);   // 58 -> 59 -> 00 -> 01
 }
 
-void test_rtc_seed_millisecond_aligns_next_tick() {
+TEST(test_rtc_seed_millisecond_aligns_next_tick) {
     // seedClock()'s millisecond preloads the 1 Hz accumulator: seeded at
     // .900, the next tick is 0.1 s away, not a full second.
     PC1500Memory mem;
@@ -1038,7 +1031,7 @@ void test_rtc_seed_millisecond_aligns_next_tick() {
     CHECK(rtcNibble(r, 0) == 0 && rtcNibble(r, 4) == 1); // still 10
 }
 
-void test_rtc_calendar_reset_is_deterministic() {
+TEST(test_rtc_calendar_reset_is_deterministic) {
     // reset() must NOT leak host time into the Core -- headless tests and
     // the CLI depend on a fixed cold-start clock. The app re-seeds real
     // time via PC1500MachineWrapper -reset, not here.
@@ -1052,7 +1045,7 @@ void test_rtc_calendar_reset_is_deterministic() {
     CHECK(rtcReadCalendar40(a) == rtcReadCalendar40(b));
 }
 
-void test_machine_seedclock_derives_day_of_week() {
+TEST(test_machine_seedclock_derives_day_of_week) {
     // PC1500Machine::seedClock computes the dow nibble itself (Sakamoto),
     // so callers pass only the date. 2000-01-01 was a Saturday (6),
     // 2026-09-02 a Wednesday (3).
@@ -1065,7 +1058,7 @@ void test_machine_seedclock_derives_day_of_week() {
     CHECK(rtcNibble(rtcReadCalendar40(m2.memory()), 32) == 3);
 }
 
-void test_on_key_press_sets_break_flag() {
+TEST(test_on_key_press_sets_break_flag) {
     // Pressing ON while a program is running must set IF bit 1 (BREAK) for
     // the ROM's statement-boundary check (LC42A) and WAIT's poll loop
     // (0xE89C) to see, both of which test exactly this bit via the vectored
@@ -1093,7 +1086,7 @@ void test_on_key_press_sets_break_flag() {
 
 // A key whose host release never arrived (the GUI lost track of it) must
 // not outlive a reset -- otherwise the machine stays wedged on it.
-void test_pc1500_reset_releases_held_keys() {
+TEST(test_pc1500_reset_releases_held_keys) {
     PC1500Machine machine;
     machine.pressKey("*");
     CHECK(machine.memory().keyboard().scan(0x00) != 0xFF);
@@ -1104,7 +1097,7 @@ void test_pc1500_reset_releases_held_keys() {
 // User RAM powers up 0x00 (CMOS RAM after a power loss) but the 1.5K window
 // &7600-&7BFF powers up 0xFF (measured on a real PC-1500); the reset button
 // keeps RAM (a real RESET only resets the CPU/chips), Reset All clears it.
-void test_pc1500_ram_powerup_reset_and_all_reset() {
+TEST(test_pc1500_ram_powerup_reset_and_all_reset) {
     PC1500Machine machine;
     CHECK(machine.memory().peek(0x40C5) == 0x00);  // user RAM
     CHECK(machine.memory().peek(0x7800) == 0xFF);  // system RAM
@@ -1131,7 +1124,7 @@ void test_pc1500_ram_powerup_reset_and_all_reset() {
 // polling anything would never see. Same shape as
 // PC1600Machine::setOnKeyPressed()'s LH5803 wake
 // (test_wake_from_halt_ignores_ie / PC1600's own machine tests).
-void test_on_key_wakes_a_halted_cpu_with_timer_stopped() {
+TEST(test_on_key_wakes_a_halted_cpu_with_timer_stopped) {
     PC1500Machine machine;
     machine.reset();
     // FD B1 = HLT, parked directly in RAM ($7800, System RAM) rather than
@@ -1163,7 +1156,7 @@ void test_on_key_wakes_a_halted_cpu_with_timer_stopped() {
 // LH5801 side) must go through a real reset (powerOn()), not merely
 // resume fetch/execute where a HLT left off (wakeFromHalt(), which
 // test_on_key_wakes_a_halted_cpu_with_timer_stopped() covers instead).
-void test_on_key_powers_a_powered_off_machine_back_on() {
+TEST(test_on_key_powers_a_powered_off_machine_back_on) {
     PC1500Machine machine;
     machine.reset();
     machine.memory().poke(0x7800, 0xFD);
@@ -1184,7 +1177,7 @@ void test_on_key_powers_a_powered_off_machine_back_on() {
     CHECK(machine.cpu().pc() != 0x7802);
 }
 
-void test_machine_presskey_releasekey_named_api() {
+TEST(test_machine_presskey_releasekey_named_api) {
     PC1500Machine machine;
     machine.memory().writeME1(0xF00C, 0xFF); // DDA: PA all-output -- a PA bit only
                                               // actually strobes its column once DDA
@@ -1212,7 +1205,7 @@ constexpr uint64_t kKeyQueueTapCycles = 86664;
 constexpr uint64_t kKeyQueueGapCycles = 86664;
 }
 
-void test_machine_enqueuekey_paces_press_hold_release_gap() {
+TEST(test_machine_enqueuekey_paces_press_hold_release_gap) {
     PC1500Machine machine;
     machine.memory().writeME1(0xF00C, 0xFF); // DDA: PA all-output
     machine.memory().writeME1(0xF00E, 0xFB); // strobe column 2 -- Digit1 (IN0) and Digit4 (IN1) both live there
@@ -1241,7 +1234,7 @@ void test_machine_enqueuekey_paces_press_hold_release_gap() {
     CHECK(machine.memory().readInputPort() == 0xFF);
 }
 
-void test_machine_enqueuekey_capacity_drops_newest() {
+TEST(test_machine_enqueuekey_capacity_drops_newest) {
     PC1500Machine machine;
     machine.memory().writeME1(0xF00C, 0xFF);
     machine.memory().writeME1(0xF00E, 0xFB); // Digit1 = IN0/col2
@@ -1266,7 +1259,7 @@ void test_machine_enqueuekey_capacity_drops_newest() {
     CHECK(pressEvents == 16);
 }
 
-void test_machine_enqueuekey_ignores_unmapped_name() {
+TEST(test_machine_enqueuekey_ignores_unmapped_name) {
     PC1500Machine machine;
     machine.memory().writeME1(0xF00C, 0xFF);
     machine.memory().writeME1(0xF00E, 0xFB);
@@ -1281,7 +1274,7 @@ void test_machine_enqueuekey_ignores_unmapped_name() {
     CHECK(machine.memory().readInputPort() == 0xFE); // "1" pressed immediately, not stuck behind the ignored names
 }
 
-void test_display_pixel_decode() {
+TEST(test_display_pixel_decode) {
     PC1500Memory mem;
     // col 0: block=0 (low nibble), half=0, addr=0x7600/0x7601.
     mem.poke(0x7600, 0x05); // nibble0 = 0b0101
@@ -1317,7 +1310,7 @@ void test_display_pixel_decode() {
     CHECK(disp.pixel(0, 7) == false);
 }
 
-void test_display_status_icons() {
+TEST(test_display_status_icons) {
     PC1500Memory mem;
     mem.poke(0x764E, 0xA5); // 0b10100101
     mem.poke(0x764F, 0x53); // 0b01010011
@@ -1342,7 +1335,7 @@ void test_display_status_icons() {
     CHECK(!line.isOn(S::S) && !line.isOn(S::Romaji) && !line.isOn(S::Ctrl) && !line.isOn(S::Batt));
 }
 
-void test_boot_smoke_real_rom() {
+TEST(test_boot_smoke_real_rom) {
     PC1500Machine machine;
     bool loaded = machine.loadROMFile("roms/PC-1500_A04.ROM");
     if (!loaded) {
@@ -1425,261 +1418,3 @@ void test_boot_smoke_real_rom() {
 
 } // namespace
 
-// Defined in connector_tests.cpp -- kept as a separate translation
-// unit/file since it exercises a distinct layer (Core/Connector/), but
-// folded into this file's single test-runner executable/exit code per
-// tools/run_tests.sh's existing single-binary convention.
-int run_connector_tests();
-// Defined in ce151_tests.cpp / ce155_tests.cpp / ce161_tests.cpp /
-// ce1638_tests.cpp / ce163f_tests.cpp (the bundled module definitions) --
-// same single-binary convention.
-int run_ce151_tests();
-int run_ce155_tests();
-int run_ce161_tests();
-int run_ce1638_tests();
-int run_ce502b_tests();
-int run_ce163f_tests();
-// Defined in memory_card_tests.cpp (universal software-defined module) --
-// same single-binary convention.
-int run_memory_card_tests();
-// Defined in battery_card_instance_tests.cpp (addressed-hex writer +
-// battery-card instance splice logic) -- same single-binary convention.
-int run_battery_card_instance_tests();
-// Defined in preset_tests.cpp (.pc1500 preset parser) -- same
-// single-binary convention.
-int run_preset_tests();
-// Defined in basictyper_tests.cpp (PC1500BasicTyper's scripted keystroke
-// typing) -- same single-binary convention.
-int run_basictyper_tests();
-// Defined in presetloader_trace_tests.cpp (the preset loader's `- trace:`
-// step, end-to-end against a real ROM) -- same single-binary convention.
-int run_presetloader_trace_tests();
-// Defined in pc1600_basictyper_tests.cpp (PC1600BasicTyper's scripted
-// keystroke typing) -- same single-binary convention.
-int run_pc1600_basictyper_tests();
-// Defined in piezo_sampler_tests.cpp (buzzer audio) -- same single-binary
-// convention.
-int run_piezo_sampler_tests();
-// Defined in tape_deck_tests.cpp (cassette recorder + WAV reader) -- same
-// single-binary convention.
-int run_tape_deck_tests();
-// Defined in pc1600_tape_tests.cpp (CLOAD/CSAVE through the CE-1600P) --
-// same single-binary convention.
-int run_pc1600_tape_tests();
-// Defined in pc1500_tape_tests.cpp (CLOAD/CSAVE through the CE-150) --
-// same single-binary convention.
-int run_pc1500_tape_tests();
-// Defined in pc1600_bank_tests.cpp (PC1600Bank/PC1600Memory bank-switching
-// truth tables) -- same single-binary convention.
-int run_pc1600_bank_tests();
-// Defined in sc7852_tests.cpp (SC7852 Z-80-compatible core) -- same
-// single-binary convention.
-int run_sc7852_tests();
-// Defined in tc8576f_tests.cpp (TC8576F UART model + sub-CPU parallel
-// handshake timing) -- same single-binary convention.
-int run_tc8576f_tests();
-// Defined in lh5803_tests.cpp (LH5803 core + standalone LH5803Memory) --
-// same single-binary convention.
-int run_lh5803_tests();
-// Defined in pc1600_machine_tests.cpp (dual-CPU facade, bus arbiter,
-// forced handoff) -- same single-binary convention.
-int run_pc1600_machine_tests();
-// Defined in pc1600_phase54_tests.cpp (remaining ROM images, inert
-// unmapped images) -- same single-binary convention.
-int run_pc1600_phase54_tests();
-// Defined in pc1600_keyboard_display_tests.cpp (PC1600Keyboard/
-// PC1600Display and their PC1600Memory I/O wiring) -- same single-binary
-// convention.
-int run_pc1600_keyboard_display_tests();
-// Defined in pc1600_slot_ram_tests.cpp (PC1600Memory Slot 1/2 RAM
-// attachment) -- same single-binary convention.
-int run_pc1600_slot_ram_tests();
-// Defined in pc1600_slot_module_tests.cpp -- real module definitions
-// plugged into a PC-1600 memory-slot connector, end to end.
-int run_pc1600_slot_module_tests();
-// Defined in pc1600_preset_tests.cpp -- the `model: PC-1600` preset
-// parser extension + PC1600PresetLoader.
-int run_pc1600_preset_tests();
-// Defined in ce1600p_tests.cpp -- AlpsPlotterMechanism/CE1600PCard, the
-// CE-1600P plotter's motor-phase-to-pen-stroke simulation.
-int run_ce1600p_tests();
-// Defined in ce1600f_tests.cpp -- CE1600FCard, the CE-1600F floppy's
-// register-level protocol (confirmed via ROM disassembly).
-int run_ce1600f_tests();
-// Defined in host_directory_drive_tests.cpp -- HostDirectoryDrive, the
-// file-level half of the PC-1600 host-directory drive (S3: / Y:).
-int run_host_directory_drive_tests();
-// Defined in pc1600_host_drive_tests.cpp -- the host-directory drive end to
-// end: real PC-1600 ROM + driver ROM + PC1600HostDriveCard, BASIC typed.
-int run_pc1600_host_drive_tests();
-// Defined in ce150_tests.cpp -- Ce150Card (LH5810 + ROM window decode) and
-// its PC1500Machine / 60-pin SystemBus integration.
-int run_ce150_tests();
-// Defined in pc1600_ce150_tests.cpp -- the CE-150 attached to the PC-1600's
-// LH5803 side.
-int run_pc1600_ce150_tests();
-// Defined in ce158_tests.cpp -- Ce158Card (ROM window, LH5811, CDP1854 UART,
-// Centronics) and the CE-158 driven by BASIC on a PC1500Machine.
-int run_ce158_tests();
-// Defined in basic_fastloader_tests.cpp -- PC1500BasicLoader (poke +
-// BASPRG_END fix), checked byte-for-byte against the keystroke typer.
-int run_basic_fastloader_tests();
-// Defined in pc1600_basicloader_tests.cpp -- PC1600BasicLoader, same
-// byte-for-byte check against the PC-1600 keystroke typer.
-int run_pc1600_basicloader_tests();
-// Defined in basic_program_source_tests.cpp -- readBasicProgram: listing
-// or tokenized file, libsharpdx tokenize-on-load.
-int run_basic_program_source_tests();
-// Defined in pc1600_program_placement_tests.cpp -- the scattered-bank
-// segment-list + placement logic for the fast BASIC loader.
-int run_pc1600_program_placement_tests();
-// Defined in inspector_tests.cpp -- the debug panel's inspector views.
-int run_inspector_tests();
-// Defined in key_paste_tests.cpp -- the GUI's clipboard-paste feeder.
-int run_key_paste_tests();
-// Defined in lcd_screenshot_tests.cpp -- LCD PNG render + `screenshot:` step.
-int run_lcd_screenshot_tests();
-// Defined in lcd_text_tests.cpp -- the LCD read back as text.
-int run_lcd_text_tests();
-int run_golden_runs_tests();
-int run_pacing_longrun_tests();
-// Defined in machine_code_file_tests.cpp -- "Load Machine Code…": header
-// recognition, load plan, NEW/CALL advice, and the two writers.
-int run_machine_code_file_tests();
-// Defined in program_file_tests.cpp -- what a program file is (libsharpdx).
-int run_program_file_tests();
-int run_disasm_tests();
-int run_debug_target_tests();
-int run_listing_tests();
-int run_run_control_tests();
-// job_tests.cpp -- Core/Job.hpp and sliced-vs-straight preset equivalence.
-int run_job_tests();
-// Shared/tests/shared_tests.cpp -- the Shared/ layer above Core.
-int run_shared_tests();
-
-int main() {
-    test_reset_vector();
-    test_ldi_a_and_zero_flag();
-    test_adc_carry_and_overflow();
-    test_adc_signed_overflow_v_flag();
-    test_sbc_no_borrow_convention();
-    test_cpa_flags_no_writeback();
-    test_lop_iterates_n_plus_1_times();
-    test_inc_dec_16bit_no_flags();
-    test_adr_preserves_flags();
-    test_sjp_rtn_stack_roundtrip();
-    test_psh_pop_pair_roundtrip();
-    test_hlt_and_interrupt_wake();
-    test_nmi_ignores_ie_and_vectors_fffc();
-    test_wake_from_halt_ignores_ie();
-    test_off_instruction_powers_down_until_power_on();
-    test_rti_restores_flags_and_pc();
-    test_trace_ring_and_drain();
-    test_trace_ring_overflow_accounting();
-    test_trace_ring_peek_does_not_consume();
-    test_breakpoint_halts_step();
-    test_illegal_opcode_is_distinguishable_from_nop();
-    test_v_register_reads_operand_high_byte();
-    test_v_register_arithmetic_and_pointer();
-    test_flag_cost_gating_no_trace_by_default();
-    test_memory_open_bus_and_ram_regions();
-    test_memory_display_ram_mirroring();
-    test_memory_pc1500a_system_ram_has_no_aliasing();
-    test_memory_pc1500_system_ram_has_aliasing();
-    test_memory_pc1500_narrower_user_ram();
-    test_rom_load_and_write_ignored();
-    test_keyboard_scan_active_low_matrix();
-    test_keyboard_name_lookup();
-    test_io_chip_keyboard_wiring_through_memory();
-    test_rtc_tp_rate_and_gating();
-    test_rtc_tp_phase_free_runs_across_configures();
-    test_rtc_if_does_not_clear_on_read();
-    test_pc1500_ram_powerup_reset_and_all_reset();
-    test_rtc_opb_and_if_never_disagree_within_one_poll();
-    test_rtc_calendar_seed_and_read();
-    test_preset_syncclock_reseeds_rtc();
-    test_rtc_calendar_set_via_shift_and_commit();
-    test_rtc_calendar_time_set_straight_to_time_read();
-    test_rtc_calendar_advances_one_hz_with_bcd_and_month_carry();
-    test_rtc_seed_millisecond_aligns_next_tick();
-    test_rtc_calendar_reset_is_deterministic();
-    test_machine_seedclock_derives_day_of_week();
-    test_on_key_press_sets_break_flag();
-    test_on_key_wakes_a_halted_cpu_with_timer_stopped();
-    test_on_key_powers_a_powered_off_machine_back_on();
-    test_machine_presskey_releasekey_named_api();
-    test_machine_enqueuekey_paces_press_hold_release_gap();
-    test_machine_enqueuekey_capacity_drops_newest();
-    test_machine_enqueuekey_ignores_unmapped_name();
-    test_display_pixel_decode();
-    test_display_status_icons();
-    test_boot_smoke_real_rom();
-    test_pc1500_reset_releases_held_keys();
-
-    std::printf("\n%d passed, %d failed\n", g_pass, g_fail);
-    int connectorFailures = run_connector_tests();
-    int ce151Failures = run_ce151_tests();
-    int ce155Failures = run_ce155_tests();
-    int ce161Failures = run_ce161_tests();
-    int ce1638Failures = run_ce1638_tests();
-    int ce502bFailures = run_ce502b_tests();
-    int ce163fFailures = run_ce163f_tests();
-    int memoryCardFailures = run_memory_card_tests();
-    int batteryCardInstanceFailures = run_battery_card_instance_tests();
-    int presetFailures = run_preset_tests();
-    int basicTyperFailures = run_basictyper_tests();
-    int presetLoaderTraceFailures = run_presetloader_trace_tests();
-    int pc1600BasicTyperFailures = run_pc1600_basictyper_tests();
-    int pc1600BankFailures = run_pc1600_bank_tests();
-    int sc7852Failures = run_sc7852_tests();
-    int tc8576fFailures = run_tc8576f_tests();
-    int lh5803Failures = run_lh5803_tests();
-    int pc1600MachineFailures = run_pc1600_machine_tests();
-    int pc1600Phase54Failures = run_pc1600_phase54_tests();
-    int pc1600KeyboardDisplayFailures = run_pc1600_keyboard_display_tests();
-    int pc1600SlotRamFailures = run_pc1600_slot_ram_tests();
-    int pc1600SlotModuleFailures = run_pc1600_slot_module_tests();
-    int pc1600PresetFailures = run_pc1600_preset_tests();
-    int ce1600pFailures = run_ce1600p_tests();
-    int ce1600fFailures = run_ce1600f_tests();
-    int hostDirectoryDriveFailures = run_host_directory_drive_tests();
-    int pc1600HostDriveFailures = run_pc1600_host_drive_tests();
-    int ce150Failures = run_ce150_tests();
-    int pc1600Ce150Failures = run_pc1600_ce150_tests();
-    int ce158Failures = run_ce158_tests();
-    int basicFastLoaderFailures = run_basic_fastloader_tests();
-    int pc1600BasicLoaderFailures = run_pc1600_basicloader_tests();
-    int basicProgramSourceFailures = run_basic_program_source_tests();
-    int pc1600ProgramPlacementFailures = run_pc1600_program_placement_tests();
-    int inspectorFailures = run_inspector_tests();
-    int piezoSamplerFailures = run_piezo_sampler_tests();
-    int tapeDeckFailures = run_tape_deck_tests();
-    int pc1600TapeFailures = run_pc1600_tape_tests();
-    int pc1500TapeFailures = run_pc1500_tape_tests();
-    int keyPasteFailures = run_key_paste_tests();
-    int lcdScreenshotFailures = run_lcd_screenshot_tests();
-    int lcdTextFailures = run_lcd_text_tests();
-    int goldenRunsFailures = run_golden_runs_tests();
-    int pacingLongrunFailures = run_pacing_longrun_tests();
-    int machineCodeFileFailures = run_machine_code_file_tests();
-    int programFileFailures = run_program_file_tests();
-    int disasmFailures = run_disasm_tests();
-    int debugTargetFailures = run_debug_target_tests();
-    int listingFailures = run_listing_tests();
-    int runControlFailures = run_run_control_tests();
-    int jobFailures = run_job_tests();
-    int sharedFailures = run_shared_tests();
-    return (g_fail == 0 && jobFailures == 0 && sharedFailures == 0 && machineCodeFileFailures == 0 && programFileFailures == 0 && disasmFailures == 0 && debugTargetFailures == 0 && listingFailures == 0 && runControlFailures == 0 && piezoSamplerFailures == 0 && tapeDeckFailures == 0 && pc1600TapeFailures == 0 && pc1500TapeFailures == 0 && keyPasteFailures == 0 && lcdScreenshotFailures == 0 && lcdTextFailures == 0 && goldenRunsFailures == 0 && pacingLongrunFailures == 0 && basicFastLoaderFailures == 0 && pc1600BasicLoaderFailures == 0 && basicProgramSourceFailures == 0 && pc1600ProgramPlacementFailures == 0 && inspectorFailures == 0 && connectorFailures == 0 && ce151Failures == 0 && ce155Failures == 0 && ce161Failures == 0 && ce1638Failures == 0 && ce502bFailures == 0 &&
-            ce163fFailures == 0 && memoryCardFailures == 0 && batteryCardInstanceFailures == 0 &&
-            presetFailures == 0 &&
-            basicTyperFailures == 0 && pc1600BasicTyperFailures == 0 &&
-            presetLoaderTraceFailures == 0 && pc1600BankFailures == 0 && sc7852Failures == 0 &&
-            tc8576fFailures == 0 &&
-            lh5803Failures == 0 && pc1600MachineFailures == 0 && pc1600Phase54Failures == 0 &&
-            pc1600KeyboardDisplayFailures == 0 && pc1600SlotRamFailures == 0 &&
-            pc1600SlotModuleFailures == 0 && pc1600PresetFailures == 0 && ce1600pFailures == 0 &&
-            ce1600fFailures == 0 && hostDirectoryDriveFailures == 0 && pc1600HostDriveFailures == 0 &&
-            ce150Failures == 0 && pc1600Ce150Failures == 0 && ce158Failures == 0)
-               ? 0
-               : 1;
-}

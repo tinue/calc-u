@@ -18,13 +18,9 @@
 #include "app/CardYamlDump.hpp"
 #include "app/MachineCodeLoad.hpp"
 #include "app/MediaLibrary.hpp"
-#include "SharedTestSupport.hpp"
+#include "TestHarness.hpp"
 
 namespace {
-
-int g_pass = 0;
-int g_fail = 0;
-#define CHECK(cond) SHARED_CHECK(g_pass, g_fail, cond)
 
 namespace fs = std::filesystem;
 using shared::AppSession;
@@ -77,7 +73,8 @@ std::string screen(AppSession& app) {
     return app.machine().lcdText(&text) ? text.text() : std::string();
 }
 
-void test_cooperative_preset() {
+TEST(test_cooperative_preset) {
+    SKIP_UNLESS(std::ifstream("roms/PC1600-P0-B0-new.bin").good(), "no ROMs in roms/");
     Fixture f;
     f.settings.setStartupModelPreference("PC1500A");
     f.app->start();
@@ -116,7 +113,8 @@ void test_cooperative_preset() {
     CHECK(screen(*f.app).find("Memory:") != std::string::npos);
 }
 
-void test_run_now_and_selection() {
+TEST(test_run_now_and_selection) {
+    SKIP_UNLESS(std::ifstream("roms/PC1600-P0-B0-new.bin").good(), "no ROMs in roms/");
     Fixture f;
     f.app->start();
     int pumps = 0;
@@ -143,7 +141,8 @@ void test_run_now_and_selection() {
 
 // tapeStatus() is what the tape bay saw at the last frame -- and an
 // operation ends with one, so it is current right after.
-void test_tape_status_follows_frames() {
+TEST(test_tape_status_follows_frames) {
+    SKIP_UNLESS(std::ifstream("roms/PC1600-P0-B0-new.bin").good(), "no ROMs in roms/");
     Fixture f;
     f.settings.setStartupModelPreference("PC1500A");
     f.app->start();
@@ -163,7 +162,8 @@ void test_tape_status_follows_frames() {
 // controlState(): each model's own peripherals on the bar, the CE-1600P
 // excluding the CE-150 / CE-158, the floppy and tape rows following the
 // attached boxes.
-void test_control_state() {
+TEST(test_control_state) {
+    SKIP_UNLESS(std::ifstream("roms/PC1600-P0-B0-new.bin").good(), "no ROMs in roms/");
     Fixture f;
     f.settings.setStartupModelPreference("PC1500");
     f.app->start();
@@ -193,7 +193,8 @@ void test_control_state() {
 }
 
 // A frontend without host directories never offers the host drive.
-void test_control_state_without_host_directories() {
+TEST(test_control_state_without_host_directories) {
+    SKIP_UNLESS(std::ifstream("roms/PC1600-P0-B0-new.bin").good(), "no ROMs in roms/");
     struct NoDirsPlatform : RecordingPlatform {
         bool hostDirectories() const override { return false; }
     };
@@ -233,7 +234,8 @@ std::vector<std::uint8_t> doubledTape(const std::vector<std::uint8_t>& wav) {
 
 // programChoice(): a plain file is its own image, a one-file tape its
 // file, a several-file tape a list to pick from.
-void test_program_choice() {
+TEST(test_program_choice) {
+    SKIP_UNLESS(std::ifstream("roms/PC1600-P0-B0-new.bin").good(), "no ROMs in roms/");
     const std::vector<std::uint8_t> plain = {1, 2, 3};
     shared::ProgramChoice c = shared::programChoice(plain);
     CHECK(!c.needsChoice() && c.images.size() == 1 && c.images[0] == plain && c.names.empty());
@@ -249,7 +251,8 @@ void test_program_choice() {
 
 // MachineCodeLoad: a headerless file asks for an address, checked as
 // typed; the load gives the summary and the NEW / CALL advice.
-void test_machine_code_load() {
+TEST(test_machine_code_load) {
+    SKIP_UNLESS(std::ifstream("roms/PC1600-P0-B0-new.bin").good(), "no ROMs in roms/");
     Fixture f;
     f.settings.setStartupModelPreference("PC1500A");
     f.app->start();
@@ -293,7 +296,8 @@ const shared::MediaItem* findItem(const std::vector<shared::MediaItem>& items, c
 // MediaLibrary: the save folder's cards, disks and tapes -- listed with
 // their in-use state, exported, deleted (not while in use), imported back
 // (not over an existing name).
-void test_media_library() {
+TEST(test_media_library) {
+    SKIP_UNLESS(std::ifstream("roms/PC1600-P0-B0-new.bin").good(), "no ROMs in roms/");
     Fixture f;
     f.settings.setStartupModelPreference("PC1600");
     f.app->start();
@@ -339,7 +343,8 @@ void test_media_library() {
 // Name & Save with "write-protect": the file records the switch, the live
 // card stops taking writes at once, and the saved instance comes back
 // protected with its contents. A card without a switch is refused.
-void test_card_write_protect() {
+TEST(test_card_write_protect) {
+    SKIP_UNLESS(std::ifstream("roms/PC1600-P0-B0-new.bin").good(), "no ROMs in roms/");
     Fixture f;
     f.settings.setStartupModelPreference("PC1500");
     f.app->start();
@@ -379,7 +384,8 @@ void test_card_write_protect() {
 
 // cardYamlDump(): a header and the initial-content block per slot card,
 // or one line saying there's nothing.
-void test_card_yaml_dump() {
+TEST(test_card_yaml_dump) {
+    SKIP_UNLESS(std::ifstream("roms/PC1600-P0-B0-new.bin").good(), "no ROMs in roms/");
     Fixture f;
     f.settings.setStartupModelPreference("PC1600");
     f.app->start();
@@ -392,7 +398,8 @@ void test_card_yaml_dump() {
 
 // pickModelJob(): a fresh machine of the model, then its default preset;
 // defaultPresetJob() is ok with none set.
-void test_pick_model() {
+TEST(test_pick_model) {
+    SKIP_UNLESS(std::ifstream("roms/PC1600-P0-B0-new.bin").good(), "no ROMs in roms/");
     Fixture f;
     f.settings.setStartupModelPreference("PC1500A");
     f.app->start();
@@ -408,7 +415,8 @@ void test_pick_model() {
 }
 
 // A bundled default preset by its "examples:" ref, as Settings stores it.
-void test_example_ref_default_preset() {
+TEST(test_example_ref_default_preset) {
+    SKIP_UNLESS(std::ifstream("roms/PC1600-P0-B0-new.bin").good(), "no ROMs in roms/");
     Fixture f;
     f.settings.setStartupModelPreference("PC1500A");
     f.app->start();
@@ -433,7 +441,8 @@ struct CountingSink : shared::AudioSink {
 };
 
 // tick() plays the buzzer in real time and throws turbo audio away.
-void test_audio_follows_tick() {
+TEST(test_audio_follows_tick) {
+    SKIP_UNLESS(std::ifstream("roms/PC1600-P0-B0-new.bin").good(), "no ROMs in roms/");
     Fixture f;
     CountingSink sink;
     f.app->attachAudio(sink, {});
@@ -453,25 +462,3 @@ void test_audio_follows_tick() {
 }
 
 } // namespace
-
-int run_shared_app_session_tests() {
-    if (!std::ifstream("roms/PC1600-P0-B0-new.bin").good()) {
-        std::printf("shared_app_session_tests: SKIP (no ROMs in roms/)\n");
-        return 0;
-    }
-    test_cooperative_preset();
-    test_run_now_and_selection();
-    test_tape_status_follows_frames();
-    test_audio_follows_tick();
-    test_control_state();
-    test_control_state_without_host_directories();
-    test_program_choice();
-    test_machine_code_load();
-    test_media_library();
-    test_card_write_protect();
-    test_card_yaml_dump();
-    test_pick_model();
-    test_example_ref_default_preset();
-    std::printf("shared_app_session_tests: %d passed, %d failed\n", g_pass, g_fail);
-    return g_fail;
-}

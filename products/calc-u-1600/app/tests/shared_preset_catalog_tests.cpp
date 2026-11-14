@@ -10,13 +10,9 @@
 #include "MemorySettingsStore.hpp"
 #include "app/AppPaths.hpp"
 #include "app/PresetCatalog.hpp"
-#include "SharedTestSupport.hpp"
+#include "TestHarness.hpp"
 
 namespace {
-
-int g_pass = 0;
-int g_fail = 0;
-#define CHECK(cond) SHARED_CHECK(g_pass, g_fail, cond)
 
 namespace fs = std::filesystem;
 using shared::Model;
@@ -34,7 +30,7 @@ void printProblems(const std::vector<std::string>& problems) {
 }
 
 // The bundle check: what Qt6 and the web client offer by name.
-void test_bundled_lists() {
+TEST(test_bundled_lists) {
     Fixture f;
     std::string error;
     const std::vector<PresetEntry> all = f.catalog.all(&error);
@@ -68,7 +64,7 @@ void test_bundled_lists() {
     }
 }
 
-void test_describe() {
+TEST(test_describe) {
     Fixture f;
     const auto hanoi = f.catalog.describe("examples:basic/hanoi.pc1600");
     CHECK(hanoi && hanoi->name == "Hanoi" && hanoi->model == Model::PC1600 && !hanoi->description.empty());
@@ -84,7 +80,7 @@ void test_describe() {
     CHECK(!f.catalog.describe("examples:no/such.pc1600"));
 }
 
-void test_default_choices() {
+TEST(test_default_choices) {
     Fixture f;
     const auto defaults = f.catalog.defaults(Model::PC1600);
     CHECK(!defaults.empty());
@@ -96,7 +92,7 @@ void test_default_choices() {
     CHECK(choices.back().ref == "/no/such/mine.pc1600" && choices.back().label() == "mine");
 }
 
-void test_name_problems() {
+TEST(test_name_problems) {
     PresetEntry a;
     a.ref = "a";
     a.model = Model::PC1600;
@@ -116,12 +112,3 @@ void test_name_problems() {
 }
 
 } // namespace
-
-int run_shared_preset_catalog_tests() {
-    test_bundled_lists();
-    test_describe();
-    test_default_choices();
-    test_name_problems();
-    std::printf("shared_preset_catalog_tests: %d passed, %d failed\n", g_pass, g_fail);
-    return g_fail;
-}

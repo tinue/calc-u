@@ -13,6 +13,8 @@ cmake -S ../.. -B ../../build/debug -G Ninja -DCMAKE_BUILD_TYPE=Debug -DCALCU_FR
 cmake --build ../../build/debug --target CoreTests
 ```
 
+A test file registers its tests with `TEST(name)` of the repository's one runner, `library/testing/TestHarness.hpp` (ADR 0038; `CHECK`, `CHECK_EQ`, `SKIP_UNLESS` for a missing ROM); there is no list of tests to keep. `tools/run_tests.sh <substring>` runs the tests whose name contains it. Every CTest entry is in a test group (ADR 0031; `docs/test-groups.md` at the repository root): a tree has the Frequent group (`CoreTests`, `CalcU1600CheckPresets`; ≤ 60 s), and with `-DCALCU_TESTS_LONGER=ON` / `-DCALCU_TESTS_CHECKPOINT=ON` also the Longer and Checkpoint ones (`ctest -L longer`).
+
 ## Core, Shared, frontends
 
 Three layers (docs/developer/Shared-Architecture.md): `core/` is the hardware, `app/` all app logic that isn't drawing, `frontends/qt6/app/` the desktop GUI, `frontends/web/` the WebAssembly browser GUI.

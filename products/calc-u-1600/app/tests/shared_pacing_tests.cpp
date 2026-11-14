@@ -6,17 +6,13 @@
 #include "Audio/PiezoSampler.hpp"
 #include "app/AudioPump.hpp"
 #include "app/Pacer.hpp"
-#include "SharedTestSupport.hpp"
+#include "TestHarness.hpp"
 
 namespace {
 
-int g_pass = 0;
-int g_fail = 0;
-#define CHECK(cond) SHARED_CHECK(g_pass, g_fail, cond)
-
 constexpr std::int64_t kMs = 1000000;
 
-void test_absolute_deadline() {
+TEST(test_absolute_deadline) {
     std::int64_t now = 0;
     shared::Pacer pacer([&] { return now; });
     const double hz = 1000000.0;  // 1 MHz: 1000 cycles per ms
@@ -38,7 +34,7 @@ void test_absolute_deadline() {
     CHECK(small == 700);
 }
 
-void test_stall_and_restart() {
+TEST(test_stall_and_restart) {
     std::int64_t now = 0;
     shared::Pacer pacer([&] { return now; });
     const double hz = 1000000.0;
@@ -78,7 +74,7 @@ struct FakeSink : shared::AudioSink {
     bool ranDry() const override { return false; }
 };
 
-void test_audio_pump() {
+TEST(test_audio_pump) {
     FakeSink sink;
     std::vector<std::string> warnings;
     shared::AudioPump pump(sink, [&](const std::string& w) { warnings.push_back(w); });
@@ -106,11 +102,3 @@ void test_audio_pump() {
 }
 
 } // namespace
-
-int run_shared_pacing_tests() {
-    test_absolute_deadline();
-    test_stall_and_restart();
-    test_audio_pump();
-    std::printf("shared_pacing_tests: %d passed, %d failed\n", g_pass, g_fail);
-    return g_fail;
-}

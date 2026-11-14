@@ -9,16 +9,9 @@
 #include <vector>
 
 #include "../core/CPU/SC7852/SC7852.hpp"
+#include "TestHarness.hpp"
 
 namespace {
-
-int g_pass = 0;
-int g_fail = 0;
-
-#define CHECK(cond) do { \
-    if (cond) { g_pass++; } \
-    else { g_fail++; std::fprintf(stderr, "FAIL %s:%d: %s\n", __FILE__, __LINE__, #cond); } \
-} while (0)
 
 // A trivial RAM-backed bus for isolated opcode tests -- mirrors
 // lh5801_tests.cpp's FlatBus. IO is a flat 256-entry array too, readable
@@ -46,7 +39,7 @@ struct Rig {
     }
 };
 
-void test_reset_state() {
+TEST(test_reset_state) {
     FlatBus bus;
     SC7852 cpu(bus);
     CHECK(cpu.pc() == 0x0000);
@@ -56,7 +49,7 @@ void test_reset_state() {
     CHECK(cpu.im() == 0);
 }
 
-void test_ld_r_n_and_ld_r_r() {
+TEST(test_ld_r_n_and_ld_r_r) {
     // LD B,0x42 ; LD C,B (0x48 = dst=C(001) src=B(000))
     Rig r({0x06, 0x42, 0x48});
     r.cpu.step();
@@ -65,7 +58,7 @@ void test_ld_r_n_and_ld_r_r() {
     CHECK(r.cpu.bc() == 0x4242);
 }
 
-void test_ld_hl_nn_and_ld_mem_hl() {
+TEST(test_ld_hl_nn_and_ld_mem_hl) {
     // LD HL,0x9000 ; LD (HL),0x55 ; LD A,(HL)
     Rig r({0x21, 0x00, 0x90, 0x36, 0x55, 0x7E});
     r.cpu.step();
@@ -76,7 +69,7 @@ void test_ld_hl_nn_and_ld_mem_hl() {
     CHECK(r.cpu.a() == 0x55);
 }
 
-void test_add_flags() {
+TEST(test_add_flags) {
     // LD A,0xFF ; ADD A,0x01 -> A=0x00, Z=1, C=1, H=1
     Rig r({0x3E, 0xFF, 0xC6, 0x01});
     r.cpu.step();
@@ -87,7 +80,7 @@ void test_add_flags() {
     CHECK(r.cpu.flagH());
 }
 
-void test_adc_carry_in() {
+TEST(test_adc_carry_in) {
     // SCF ; LD A,0x01 ; ADC A,0x01 -> A=3
     Rig r({0x37, 0x3E, 0x01, 0xCE, 0x01});
     r.cpu.step(); r.cpu.step(); r.cpu.step();
@@ -95,7 +88,7 @@ void test_adc_carry_in() {
     CHECK(!r.cpu.flagC());
 }
 
-void test_sub_and_cp_no_writeback() {
+TEST(test_sub_and_cp_no_writeback) {
     // LD A,0x05 ; SUB 0x03 -> A=2, C=0(no borrow)
     Rig r({0x3E, 0x05, 0xD6, 0x03});
     r.cpu.step(); r.cpu.step();
@@ -109,7 +102,7 @@ void test_sub_and_cp_no_writeback() {
     CHECK(r2.cpu.flagZ());
 }
 
-void test_inc_dec_8bit_flags() {
+TEST(test_inc_dec_8bit_flags) {
     // LD A,0x7F ; INC A -> A=0x80, PV=1 (overflow), S=1
     Rig r({0x3E, 0x7F, 0x3C});
     r.cpu.step(); r.cpu.step();
@@ -125,7 +118,7 @@ void test_inc_dec_8bit_flags() {
     CHECK(r2.cpu.flagN());
 }
 
-void test_16bit_inc_dec_no_flag_change() {
+TEST(test_16bit_inc_dec_no_flag_change) {
     // SCF ; LD BC,0xFFFF ; INC BC -> BC=0, C flag untouched (still set)
     Rig r({0x37, 0x01, 0xFF, 0xFF, 0x03});
     r.cpu.step(); r.cpu.step();
@@ -135,7 +128,7 @@ void test_16bit_inc_dec_no_flag_change() {
     CHECK(r.cpu.flagC()); // untouched from SCF
 }
 
-void test_and_or_xor() {
+TEST(test_and_or_xor) {
     // LD A,0xF0 ; AND 0x3C -> 0x30, H=1,C=0
     Rig r({0x3E, 0xF0, 0xE6, 0x3C});
     r.cpu.step(); r.cpu.step();
@@ -155,7 +148,7 @@ void test_and_or_xor() {
     CHECK(r3.cpu.flagZ());
 }
 
-void test_add_hl_rr() {
+TEST(test_add_hl_rr) {
     // LD HL,0x1000 ; LD BC,0x2000 ; ADD HL,BC -> HL=0x3000, C unaffected by
     // this add (no overflow past 16 bits)
     Rig r({0x21, 0x00, 0x10, 0x01, 0x00, 0x20, 0x09});
@@ -163,7 +156,7 @@ void test_add_hl_rr() {
     CHECK(r.cpu.hl() == 0x3000);
 }
 
-void test_jp_jr_and_conditions() {
+TEST(test_jp_jr_and_conditions) {
     // XOR A (Z=1) ; JP Z,0x0010 ; (skip) ... at 0x0010: LD A,0x99
     Rig r({0xAF, 0xCA, 0x10, 0x00});
     r.bus.mem[0x0010] = 0x3E;
@@ -176,7 +169,7 @@ void test_jp_jr_and_conditions() {
     CHECK(r.cpu.a() == 0x99);
 }
 
-void test_djnz() {
+TEST(test_djnz) {
     // LD B,0x03 ; loop: DEC A(no-op filler) ; DJNZ loop
     // Actually use a tight self-loop: LD B,3 ; DJNZ -2 (back to itself)
     Rig r({0x06, 0x03, 0x10, 0xFE});
@@ -193,7 +186,7 @@ void test_djnz() {
     CHECK(r.cpu.pc() == 0x0004);
 }
 
-void test_call_ret_stack() {
+TEST(test_call_ret_stack) {
     // LD SP,0x9000 ; CALL 0x0010 ; (return lands here at 0x0007) LD A,0x55
     // at 0x0010: RET
     Rig r({0x31, 0x00, 0x90, 0xCD, 0x10, 0x00, 0x00, 0x3E, 0x55});
@@ -210,7 +203,7 @@ void test_call_ret_stack() {
     CHECK(r.cpu.sp() == 0x9000);
 }
 
-void test_push_pop_roundtrip() {
+TEST(test_push_pop_roundtrip) {
     // LD SP,0x9000 ; LD BC,0x1234 ; PUSH BC ; LD BC,0x0000 ; POP BC
     Rig r({0x31, 0x00, 0x90, 0x01, 0x34, 0x12, 0xC5, 0x01, 0x00, 0x00, 0xC1});
     r.cpu.step(); r.cpu.step(); r.cpu.step(); // SP, BC, PUSH
@@ -222,7 +215,7 @@ void test_push_pop_roundtrip() {
     CHECK(r.cpu.sp() == 0x9000);
 }
 
-void test_ex_af_af_and_exx() {
+TEST(test_ex_af_af_and_exx) {
     // LD A,0x11 ; EX AF,AF' ; LD A,0x22 ; EX AF,AF' -> A back to 0x11
     Rig r({0x3E, 0x11, 0x08, 0x3E, 0x22, 0x08});
     r.cpu.step(); r.cpu.step();
@@ -233,7 +226,7 @@ void test_ex_af_af_and_exx() {
     CHECK(r.cpu.a() == 0x11);
 }
 
-void test_ex_de_hl() {
+TEST(test_ex_de_hl) {
     // LD DE,0x1111 ; LD HL,0x2222 ; EX DE,HL
     Rig r({0x11, 0x11, 0x11, 0x21, 0x22, 0x22, 0xEB});
     r.cpu.step(); r.cpu.step(); r.cpu.step();
@@ -241,7 +234,7 @@ void test_ex_de_hl() {
     CHECK(r.cpu.hl() == 0x1111);
 }
 
-void test_rlca_rrca_rla_rra_leave_szpv_alone() {
+TEST(test_rlca_rrca_rla_rra_leave_szpv_alone) {
     // XOR A first to get S deterministically clear (this core's post-reset
     // F is not a documented value -- see SC7852::reset()'s comment -- so a
     // known flag state has to be established before testing "untouched").
@@ -257,14 +250,14 @@ void test_rlca_rrca_rla_rra_leave_szpv_alone() {
     CHECK(!r.cpu.flagS());
 }
 
-void test_daa_after_bcd_add() {
+TEST(test_daa_after_bcd_add) {
     // LD A,0x09 ; ADD A,0x01 ; DAA -> decimal 9+1=10 -> A=0x10
     Rig r({0x3E, 0x09, 0xC6, 0x01, 0x27});
     r.cpu.step(); r.cpu.step(); r.cpu.step();
     CHECK(r.cpu.a() == 0x10);
 }
 
-void test_sub_half_borrow_flag() {
+TEST(test_sub_half_borrow_flag) {
     // SUB's H flag is a half-BORROW (borrow out of bit 3), and it must be
     // the exact inverse of the "add the one's complement" carry the core
     // computes internally -- the same inversion kFlagC already gets.
@@ -283,7 +276,7 @@ void test_sub_half_borrow_flag() {
     CHECK(!noBorrow.cpu.flagH());
 }
 
-void test_daa_after_bcd_sub() {
+TEST(test_daa_after_bcd_sub) {
     // The PC-1600 ROM's floating-point add subtracts BCD digit pairs when
     // the operands' signs differ (e.g. BASIC `L + 5` with L = -5). That
     // path is SUB/SBC followed by DAA, so SUB's H flag must report the
@@ -302,7 +295,7 @@ void test_daa_after_bcd_sub() {
     CHECK(wrap.cpu.flagC());
 }
 
-void test_cb_rotate_and_bit_and_set_res() {
+TEST(test_cb_rotate_and_bit_and_set_res) {
     // LD B,0x80 ; CB 00 (RLC B) -> B=0x01, C=1
     Rig r({0x06, 0x80, 0xCB, 0x00});
     r.cpu.step();
@@ -325,7 +318,7 @@ void test_cb_rotate_and_bit_and_set_res() {
     CHECK(r3.cpu.a() == 0x00);
 }
 
-void test_ed_ldir_block_copy() {
+TEST(test_ed_ldir_block_copy) {
     // LD HL,src ; LD DE,dst ; LD BC,3 ; LDIR
     Rig r({0x21, 0x00, 0x80, 0x11, 0x00, 0x90, 0x01, 0x03, 0x00, 0xED, 0xB0});
     r.bus.mem[0x8000] = 0x11;
@@ -343,7 +336,7 @@ void test_ed_ldir_block_copy() {
     CHECK(r.cpu.de() == 0x9003);
 }
 
-void test_dd_before_ed_is_ignored() {
+TEST(test_dd_before_ed_is_ignored) {
     // LD HL,src ; LD DE,dst ; LD BC,2 ; DD ED B0 = LDIR (the DD is a NOP)
     Rig r({0x21, 0x00, 0x80, 0x11, 0x00, 0x90, 0x01, 0x02, 0x00, 0xDD, 0xED, 0xB0});
     r.bus.mem[0x8000] = 0x11;
@@ -358,7 +351,7 @@ void test_dd_before_ed_is_ignored() {
     CHECK(r.cpu.pc() == 0x000C);
 }
 
-void test_last_index_prefix_wins() {
+TEST(test_last_index_prefix_wins) {
     // DD FD 21 34 12 = LD IY,1234h ; FD DD 21 78 56 = LD IX,5678h
     Rig r({0xDD, 0xFD, 0x21, 0x34, 0x12, 0xFD, 0xDD, 0x21, 0x78, 0x56});
     CHECK(r.cpu.step() == 4 + SC7852::kM1WaitStates); // the ignored DD: one M1 NOP
@@ -379,7 +372,7 @@ void test_last_index_prefix_wins() {
     CHECK(r.cpu.pc() == 0x000A);
 }
 
-void test_prefix_run_is_bounded_and_blocks_int() {
+TEST(test_prefix_run_is_bounded_and_blocks_int) {
     std::vector<uint8_t> code(64, 0xDD);
     code[0] = 0xFB; // EI, then a run of DD prefixes
     Rig r(code);
@@ -392,7 +385,7 @@ void test_prefix_run_is_bounded_and_blocks_int() {
     CHECK(r.cpu.iff1());
 }
 
-void test_r_counts_m1_cycles_only() {
+TEST(test_r_counts_m1_cycles_only) {
     // LD A,n ; LD HL,nn ; LD (IX+d),n ; DD CB d 06 (RLC (IX+d)) ; LD A,R
     Rig r({0x3E, 0x01, 0x21, 0x00, 0x90, 0xDD, 0x36, 0x00, 0x11,
            0xDD, 0xCB, 0x00, 0x06, 0xED, 0x5F});
@@ -404,14 +397,14 @@ void test_r_counts_m1_cycles_only() {
     CHECK(r.cpu.a() == 8);
 }
 
-void test_ed_adc_sbc_hl() {
+TEST(test_ed_adc_sbc_hl) {
     // SCF ; LD HL,0x0001 ; LD BC,0x0001 ; ADC HL,BC -> HL=3 (1+1+1)
     Rig r({0x37, 0x21, 0x01, 0x00, 0x01, 0x01, 0x00, 0xED, 0x4A});
     r.cpu.step(); r.cpu.step(); r.cpu.step(); r.cpu.step();
     CHECK(r.cpu.hl() == 0x0003);
 }
 
-void test_ed_neg() {
+TEST(test_ed_neg) {
     // LD A,0x01 ; NEG -> A=0xFF, C=1
     Rig r({0x3E, 0x01, 0xED, 0x44});
     r.cpu.step(); r.cpu.step();
@@ -419,7 +412,7 @@ void test_ed_neg() {
     CHECK(r.cpu.flagC());
 }
 
-void test_in_out_roundtrip() {
+TEST(test_in_out_roundtrip) {
     // LD A,0x42 ; OUT (0x10),A ; IN A,(0x10) after clearing A first
     Rig r({0x3E, 0x42, 0xD3, 0x10, 0x3E, 0x00, 0xDB, 0x10});
     r.cpu.step(); r.cpu.step();
@@ -428,7 +421,7 @@ void test_in_out_roundtrip() {
     CHECK(r.cpu.a() == 0x42);
 }
 
-void test_di_ei_and_im() {
+TEST(test_di_ei_and_im) {
     Rig r({0xF3, 0xFB, 0xED, 0x56}); // DI ; EI ; IM 1
     r.cpu.step();
     CHECK(!r.cpu.iff1());
@@ -438,7 +431,7 @@ void test_di_ei_and_im() {
     CHECK(r.cpu.im() == 1);
 }
 
-void test_interrupt_im1_pushes_pc_and_vectors_to_0038() {
+TEST(test_interrupt_im1_pushes_pc_and_vectors_to_0038) {
     Rig r({0xFB, 0x00, 0x00}); // EI ; NOP ; NOP
     r.cpu.step(); // EI
     r.bus.intLine = true;
@@ -448,7 +441,7 @@ void test_interrupt_im1_pushes_pc_and_vectors_to_0038() {
     CHECK(!r.cpu.iff1());
 }
 
-void test_halt_wakes_on_interrupt() {
+TEST(test_halt_wakes_on_interrupt) {
     Rig r({0xFB, 0x76, 0x00}); // EI ; HALT ; NOP
     r.cpu.step(); r.cpu.step();
     CHECK(r.cpu.halted());
@@ -461,7 +454,7 @@ void test_halt_wakes_on_interrupt() {
     CHECK(r.bus.mem[r.cpu.sp()] == 0x02); // returns past the HALT
 }
 
-void test_masked_int_keeps_halt() {
+TEST(test_masked_int_keeps_halt) {
     Rig r({0x76, 0x00}); // HALT (IFF1 clear: never EI'd)
     r.cpu.step();
     r.bus.intLine = true;
@@ -477,7 +470,7 @@ void test_masked_int_keeps_halt() {
     CHECK(r.cpu.pc() == 0x0038);
 }
 
-void test_int_line_dropped_before_ei_is_not_taken() {
+TEST(test_int_line_dropped_before_ei_is_not_taken) {
     Rig r({0xFB, 0x00, 0x00, 0x00}); // EI ; NOP ; NOP ; NOP
     r.bus.intLine = true;
     r.bus.intLine = false; // the device withdrew it (cause masked/cleared)
@@ -486,7 +479,7 @@ void test_int_line_dropped_before_ei_is_not_taken() {
     CHECK(r.cpu.iff1());
 }
 
-void test_ei_defers_pending_irq_by_one_instruction() {
+TEST(test_ei_defers_pending_irq_by_one_instruction) {
     Rig r({0xFB, 0x76, 0x00}); // EI ; HALT ; NOP
     r.bus.intLine = true; // already pending when EI runs
     r.cpu.step(); // EI
@@ -498,7 +491,7 @@ void test_ei_defers_pending_irq_by_one_instruction() {
     CHECK(r.bus.mem[uint16_t(r.cpu.sp() + 1)] == 0x00);
 }
 
-void test_ix_load_and_displacement_access() {
+TEST(test_ix_load_and_displacement_access) {
     // DD 21 nn nn: LD IX,0x9000 ; DD 36 05 42: LD (IX+5),0x42 ; DD 7E 05: LD A,(IX+5)
     Rig r({0xDD, 0x21, 0x00, 0x90, 0xDD, 0x36, 0x05, 0x42, 0xDD, 0x7E, 0x05});
     r.cpu.step();
@@ -509,7 +502,7 @@ void test_ix_load_and_displacement_access() {
     CHECK(r.cpu.a() == 0x42);
 }
 
-void test_ix_add_and_inc_dec() {
+TEST(test_ix_add_and_inc_dec) {
     // DD 21: LD IX,0x1000 ; DD 09(after LD BC,1): ADD IX,BC -> 0x1001 ;
     // DD 23: INC IX -> 0x1002
     Rig r({0x01, 0x01, 0x00, 0xDD, 0x21, 0x00, 0x10, 0xDD, 0x09, 0xDD, 0x23});
@@ -522,7 +515,7 @@ void test_ix_add_and_inc_dec() {
     CHECK(r.cpu.ix() == 0x1002);
 }
 
-void test_ix_plain_opcode_passthrough_when_unrelated() {
+TEST(test_ix_plain_opcode_passthrough_when_unrelated) {
     // DD prefix in front of an opcode that doesn't reference H/L/(HL) --
     // e.g. LD BC,nn -- must behave exactly as the unprefixed form (wasted
     // prefix, no IX involvement).
@@ -531,7 +524,7 @@ void test_ix_plain_opcode_passthrough_when_unrelated() {
     CHECK(r.cpu.bc() == 0x1234);
 }
 
-void test_ddcb_bit_set_res_on_displacement() {
+TEST(test_ddcb_bit_set_res_on_displacement) {
     // DD 21: LD IX,0x9000 ; DD CB 03 C6: SET 0,(IX+3) ; DD CB 03 46: BIT 0,(IX+3)
     Rig r({0xDD, 0x21, 0x00, 0x90, 0xDD, 0xCB, 0x03, 0xC6, 0xDD, 0xCB, 0x03, 0x46});
     r.cpu.step();
@@ -543,48 +536,3 @@ void test_ddcb_bit_set_res_on_displacement() {
 }
 
 } // namespace
-
-int run_sc7852_tests() {
-    test_reset_state();
-    test_ld_r_n_and_ld_r_r();
-    test_ld_hl_nn_and_ld_mem_hl();
-    test_add_flags();
-    test_adc_carry_in();
-    test_sub_and_cp_no_writeback();
-    test_inc_dec_8bit_flags();
-    test_16bit_inc_dec_no_flag_change();
-    test_and_or_xor();
-    test_add_hl_rr();
-    test_jp_jr_and_conditions();
-    test_djnz();
-    test_call_ret_stack();
-    test_push_pop_roundtrip();
-    test_ex_af_af_and_exx();
-    test_ex_de_hl();
-    test_rlca_rrca_rla_rra_leave_szpv_alone();
-    test_daa_after_bcd_add();
-    test_sub_half_borrow_flag();
-    test_daa_after_bcd_sub();
-    test_cb_rotate_and_bit_and_set_res();
-    test_ed_ldir_block_copy();
-    test_r_counts_m1_cycles_only();
-    test_dd_before_ed_is_ignored();
-    test_last_index_prefix_wins();
-    test_prefix_run_is_bounded_and_blocks_int();
-    test_ed_adc_sbc_hl();
-    test_ed_neg();
-    test_in_out_roundtrip();
-    test_di_ei_and_im();
-    test_interrupt_im1_pushes_pc_and_vectors_to_0038();
-    test_halt_wakes_on_interrupt();
-    test_masked_int_keeps_halt();
-    test_int_line_dropped_before_ei_is_not_taken();
-    test_ei_defers_pending_irq_by_one_instruction();
-    test_ix_load_and_displacement_access();
-    test_ix_add_and_inc_dec();
-    test_ix_plain_opcode_passthrough_when_unrelated();
-    test_ddcb_bit_set_res_on_displacement();
-
-    std::printf("sc7852_tests: %d passed, %d failed\n", g_pass, g_fail);
-    return g_fail;
-}

@@ -17,16 +17,9 @@
 #include "../core/PC1500/PC1500BasicLoader.hpp"
 #include "../core/PC1500/PC1500BasicTyper.hpp"
 #include "../core/PC1500/PC1500Machine.hpp"
+#include "TestHarness.hpp"
 
 namespace {
-
-int g_pass = 0;
-int g_fail = 0;
-
-#define CHECK(cond) do { \
-    if (cond) { g_pass++; } \
-    else { g_fail++; std::fprintf(stderr, "FAIL %s:%d: %s\n", __FILE__, __LINE__, #cond); } \
-} while (0)
 
 // True if `needle`'s bytes appear contiguously anywhere in
 // [start, end] -- avoids hardcoding the exact program-storage address
@@ -73,7 +66,7 @@ BasicTypeResult typeFreshProgram(PC1500Machine& machine, const std::string& text
     return typeBasicProgramText(machine, text);
 }
 
-void test_typeline_lowercase_via_shift() {
+TEST(test_typeline_lowercase_via_shift) {
     PC1500Machine machine;
     if (!bootMachine(machine)) {
         std::fprintf(stderr, "SKIP test_typeline_lowercase_via_shift: roms/PC-1500_A04.ROM not found "
@@ -94,7 +87,7 @@ void test_typeline_lowercase_via_shift() {
     CHECK(!memoryContainsBytes(machine, "BANK: 7", 0x4000, 0x7FFF));
 }
 
-void test_typeline_still_types_uppercase_directly() {
+TEST(test_typeline_still_types_uppercase_directly) {
     PC1500Machine machine;
     if (!bootMachine(machine)) {
         std::fprintf(stderr, "SKIP test_typeline_still_types_uppercase_directly: roms/PC-1500_A04.ROM not found "
@@ -116,7 +109,7 @@ void test_typeline_still_types_uppercase_directly() {
 // needs an unconditional post-ENTER settle or the next line's opening
 // keystrokes land mid-tokenise and are dropped, and every line after the
 // first gets rejected (the CE-163F UPDATERM.BAS DATA/POKE listing hit this).
-void test_typebasicprogram_consecutive_long_lines() {
+TEST(test_typebasicprogram_consecutive_long_lines) {
     PC1500Machine machine;
     if (!bootMachine(machine)) {
         std::fprintf(stderr, "SKIP test_typebasicprogram_consecutive_long_lines: roms/PC-1500_A04.ROM not found "
@@ -149,7 +142,7 @@ void test_typebasicprogram_consecutive_long_lines() {
 // keystrokes must not land mid-tokenise and get dropped. This is the
 // utilrm.bas tail (line 340 DATA + line 350 REM) from the CE-163F
 // firmware-bootstrap preset.
-void test_typebasicprogram_long_data_then_short_line_tail() {
+TEST(test_typebasicprogram_long_data_then_short_line_tail) {
     PC1500Machine machine;
     if (!bootMachine(machine)) {
         std::fprintf(stderr, "SKIP test_typebasicprogram_long_data_then_short_line_tail: roms/PC-1500_A04.ROM "
@@ -189,7 +182,7 @@ void test_typebasicprogram_long_data_then_short_line_tail() {
 // `CALL` steps.
 // ROM-gated: re-typing a line number with a same-length body replaces the
 // line without moving BASPRG_END -- that is still a stored line.
-void test_typebasicprogram_same_length_replacement_is_stored() {
+TEST(test_typebasicprogram_same_length_replacement_is_stored) {
     PC1500Machine machine;
     if (!bootMachine(machine)) {
         std::fprintf(stderr, "SKIP test_typebasicprogram_same_length_replacement_is_stored: roms/PC-1500_A04.ROM "
@@ -202,7 +195,7 @@ void test_typebasicprogram_same_length_replacement_is_stored() {
 }
 
 // No ROM: LineStoreCheck over a hand-built program area.
-void test_line_store_check() {
+TEST(test_line_store_check) {
     // 10 A=1 / 20 B=2, records [no hi][no lo][len][content][0D].
     std::vector<uint8_t> mem = {0x00, 0x0A, 0x04, 'A', '=', '1', 0x0D,
                                 0x00, 0x14, 0x04, 'B', '=', '2', 0x0D, 0xFF};
@@ -229,7 +222,7 @@ void test_line_store_check() {
     CHECK(!direct.changed(peek, end));
 }
 
-void test_typeline_waits_for_run_to_finish() {
+TEST(test_typeline_waits_for_run_to_finish) {
     PC1500Machine machine;
     if (!bootMachine(machine)) {
         std::fprintf(stderr, "SKIP test_typeline_waits_for_run_to_finish: roms/PC-1500_A04.ROM not found "
@@ -269,7 +262,7 @@ void test_typeline_waits_for_run_to_finish() {
 // structural test mistakes for idle, from ending a parameterless `- wait:`
 // early). Checked here on a short program: the call still has to observe
 // the full hold before returning, and lands with the PC in the prompt loop.
-void test_wait_until_basic_idle_confirms_prompt_loop_hold() {
+TEST(test_wait_until_basic_idle_confirms_prompt_loop_hold) {
     PC1500Machine machine;
     if (!bootMachine(machine)) {
         std::fprintf(stderr, "SKIP test_wait_until_basic_idle_confirms_prompt_loop_hold: roms/PC-1500_A04.ROM "
@@ -299,17 +292,3 @@ void test_wait_until_basic_idle_confirms_prompt_loop_hold() {
 }
 
 } // namespace
-
-int run_basictyper_tests() {
-    test_typeline_lowercase_via_shift();
-    test_typeline_still_types_uppercase_directly();
-    test_typebasicprogram_consecutive_long_lines();
-    test_typebasicprogram_long_data_then_short_line_tail();
-    test_typebasicprogram_same_length_replacement_is_stored();
-    test_line_store_check();
-    test_typeline_waits_for_run_to_finish();
-    test_wait_until_basic_idle_confirms_prompt_loop_hold();
-
-    std::printf("basictyper_tests: %d passed, %d failed\n", g_pass, g_fail);
-    return g_fail;
-}

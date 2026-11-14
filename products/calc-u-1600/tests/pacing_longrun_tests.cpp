@@ -29,16 +29,9 @@
 #include "../core/PC1600/PC1600BasicTyper.hpp"
 #include "../core/PC1600/PC1600Machine.hpp"
 #include "../core/Resources/BundledRomCatalog.hpp"
+#include "TestHarness.hpp"
 
 namespace {
-
-int g_pass = 0;
-int g_fail = 0;
-
-#define CHECK(cond) do { \
-    if (cond) { g_pass++; } \
-    else { g_fail++; std::fprintf(stderr, "FAIL %s:%d: %s\n", __FILE__, __LINE__, #cond); } \
-} while (0)
 
 // The bound of AC-1 for a profile whose slice is the call: the time between
 // two calls (16.7 ms, up to 20.7 ms with the scripted jitter).
@@ -145,11 +138,9 @@ void test_real_clock(bool pc1600) {
 
 } // namespace
 
-int run_pacing_longrun_tests() {
-    test_scripted(false);
-    test_scripted(true);
-    test_real_clock(false);
-    test_real_clock(true);
-    std::printf("pacing_longrun_tests: %d passed, %d failed\n", g_pass, g_fail);
-    return g_fail;
-}
+// Scripted: Frequent group. Real clock: Checkpoint group, only with
+// CALCU1600_PACING_LONGRUN set.
+TEST(pacing_longrun_scripted_pc1500a) { test_scripted(false); }
+TEST(pacing_longrun_scripted_pc1600) { test_scripted(true); }
+TEST(pacing_longrun_real_clock_pc1500a) { test_real_clock(false); }
+TEST(pacing_longrun_real_clock_pc1600) { test_real_clock(true); }

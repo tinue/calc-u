@@ -12,16 +12,9 @@
 
 #include "../core/PC1600/PC1600Bank.hpp"
 #include "../core/PC1600/PC1600Memory.hpp"
+#include "TestHarness.hpp"
 
 namespace {
-
-int g_pass = 0;
-int g_fail = 0;
-
-#define CHECK(cond) do { \
-    if (cond) { g_pass++; } \
-    else { g_fail++; std::fprintf(stderr, "FAIL %s:%d: %s\n", __FILE__, __LINE__, #cond); } \
-} while (0)
 
 std::vector<uint8_t> makeBank(uint8_t fillByte) {
     return std::vector<uint8_t>(PC1600Memory::kBankSize, fillByte);
@@ -29,7 +22,7 @@ std::vector<uint8_t> makeBank(uint8_t fillByte) {
 
 // ── Port 31H: four independent bit fields ────────────────────────────────
 
-void test_port31_page_a_bank_is_bit0_only() {
+TEST(test_port31_page_a_bank_is_bit0_only) {
     PC1600Bank bank;
     bank.writePort31(0x00);
     CHECK(bank.pageABank() == 0);
@@ -40,7 +33,7 @@ void test_port31_page_a_bank_is_bit0_only() {
     CHECK(bank.pageABank() == 0);
 }
 
-void test_port31_page_b_bank_is_bits_1_to_3() {
+TEST(test_port31_page_b_bank_is_bits_1_to_3) {
     PC1600Bank bank;
     for (uint8_t v = 0; v <= 7; v++) {
         bank.writePort31(static_cast<uint8_t>(v << 1));
@@ -51,7 +44,7 @@ void test_port31_page_b_bank_is_bits_1_to_3() {
     CHECK(bank.pageBBank() == 0);
 }
 
-void test_port31_page_c_bank_is_bits_4_to_6() {
+TEST(test_port31_page_c_bank_is_bits_4_to_6) {
     PC1600Bank bank;
     for (uint8_t v = 0; v <= 7; v++) {
         bank.writePort31(static_cast<uint8_t>(v << 4));
@@ -61,7 +54,7 @@ void test_port31_page_c_bank_is_bits_4_to_6() {
     CHECK(bank.pageCBank() == 0);
 }
 
-void test_port31_page_d_bank_is_bit7_only() {
+TEST(test_port31_page_d_bank_is_bit7_only) {
     PC1600Bank bank;
     bank.writePort31(0x00);
     CHECK(bank.pageDBank() == 0);
@@ -71,7 +64,7 @@ void test_port31_page_d_bank_is_bit7_only() {
     CHECK(bank.pageDBank() == 0);
 }
 
-void test_port31_fields_are_fully_independent() {
+TEST(test_port31_fields_are_fully_independent) {
     // Set every field to a distinct, recognizable value in one write and
     // confirm none of the four fields bleeds into another.
     PC1600Bank bank;
@@ -87,7 +80,7 @@ void test_port31_fields_are_fully_independent() {
 
 // ── Port 28H: Slot 2 vertical bank ────────────────────────────────────────
 
-void test_port28_write_readback_round_trip() {
+TEST(test_port28_write_readback_round_trip) {
     PC1600Bank bank;
     CHECK(bank.slot2VerticalBank() == 0);
     bank.writePort28(5);
@@ -98,7 +91,7 @@ void test_port28_write_readback_round_trip() {
 
 // ── Port 3CH: SLOT1MAP / SLOT2MAP mode ────────────────────────────────────
 
-void test_port3c_slot2map_mode_decode() {
+TEST(test_port3c_slot2map_mode_decode) {
     PC1600Bank bank;
     CHECK(bank.slot2MapMode() == 0);   // power-up: default page-C banks 2/3
     bank.writePort3C(0x20);            // b5 -> SLOT2MAP A=1
@@ -115,7 +108,7 @@ void test_port3c_slot2map_mode_decode() {
     CHECK(bank.slot1MapActive());
 }
 
-void test_port3c_slot1map_active() {
+TEST(test_port3c_slot1map_active) {
     PC1600Bank bank;
     CHECK(!bank.slot1MapActive());     // power-up: default, no mirror
     bank.writePort3C(0x04);
@@ -130,7 +123,7 @@ void test_port3c_slot1map_active() {
 // collision at page-B bank 1: whichever field's *value* most recently
 // changed wins; an exact tie (both change in the same write) favors
 // SLOT2MAP. See PC1600Bank::slot1MapWinsTie() / resolveSlotCollision().
-void test_port3c_slot1map_wins_tie() {
+TEST(test_port3c_slot1map_wins_tie) {
     PC1600Bank bank;
     CHECK(!bank.slot1MapWinsTie());    // neither ever changed -> SLOT2MAP default
 
@@ -157,7 +150,7 @@ void test_port3c_slot1map_wins_tie() {
 
 // ── Port 3DH: hidden-ROM latch ────────────────────────────────────────────
 
-void test_port3d_hidden_rom_latch() {
+TEST(test_port3d_hidden_rom_latch) {
     PC1600Bank bank;
     bank.writePort3D(0x04); // bit 2 set -> normal ROM
     CHECK(!bank.hiddenBasicRomSelected());
@@ -169,7 +162,7 @@ void test_port3d_hidden_rom_latch() {
     CHECK(!bank.hiddenBasicRomSelected());
 }
 
-void test_reset_zeroes_bank_registers_and_sets_port3d() {
+TEST(test_reset_zeroes_bank_registers_and_sets_port3d) {
     PC1600Bank bank;
     bank.writePort31(0xBB);
     bank.writePort28(7);
@@ -186,7 +179,7 @@ void test_reset_zeroes_bank_registers_and_sets_port3d() {
 
 // ── PC1600Memory: page A always resident regardless of pageABank() ──────
 
-void test_page_a_always_resident_regardless_of_port31_bit0() {
+TEST(test_page_a_always_resident_regardless_of_port31_bit0) {
     PC1600Bank bank;
     PC1600Memory mem(bank);
     std::vector<uint8_t> lower = makeBank(0x11);
@@ -200,7 +193,7 @@ void test_page_a_always_resident_regardless_of_port31_bit0() {
     CHECK(mem.read(0x0000) == 0x11);
 }
 
-void test_page_b_bank0_is_system_rom_upper_half() {
+TEST(test_page_b_bank0_is_system_rom_upper_half) {
     PC1600Bank bank;
     PC1600Memory mem(bank);
     std::vector<uint8_t> lower = makeBank(0x11);
@@ -211,14 +204,14 @@ void test_page_b_bank0_is_system_rom_upper_half() {
     CHECK(mem.read(0x7FFF) == 0x22);
 }
 
-void test_page_b_unbacked_banks_are_open_bus() {
+TEST(test_page_b_unbacked_banks_are_open_bus) {
     PC1600Bank bank;
     PC1600Memory mem(bank);
     bank.writePort31(static_cast<uint8_t>(1 << 1)); // pageBBank() == 1, never loaded
     CHECK(mem.read(0x4000) == 0xFF);
 }
 
-void test_hidden_rom_latch_selects_bank3_vs_bank3b() {
+TEST(test_hidden_rom_latch_selects_bank3_vs_bank3b) {
     PC1600Bank bank;
     PC1600Memory mem(bank);
     std::vector<uint8_t> bank3 = makeBank(0x33);
@@ -233,7 +226,7 @@ void test_hidden_rom_latch_selects_bank3_vs_bank3b() {
     CHECK(mem.read(0x4000) == 0x3B);
 }
 
-void test_page_c_bank6_display_timer_serial_char_rom() {
+TEST(test_page_c_bank6_display_timer_serial_char_rom) {
     PC1600Bank bank;
     PC1600Memory mem(bank);
     std::vector<uint8_t> bank6 = makeBank(0x66);
@@ -243,7 +236,7 @@ void test_page_c_bank6_display_timer_serial_char_rom() {
     CHECK(mem.read(0xBFFF) == 0x66);
 }
 
-void test_page_c_other_banks_are_open_bus_in_v1() {
+TEST(test_page_c_other_banks_are_open_bus_in_v1) {
     PC1600Bank bank;
     PC1600Memory mem(bank);
     for (uint8_t b = 0; b <= 7; b++) {
@@ -253,7 +246,7 @@ void test_page_c_other_banks_are_open_bus_in_v1() {
     }
 }
 
-void test_page_d_bank0_is_internal_ram_readwrite() {
+TEST(test_page_d_bank0_is_internal_ram_readwrite) {
     PC1600Bank bank;
     PC1600Memory mem(bank);
     bank.writePort31(0x00); // pageDBank() == 0
@@ -263,7 +256,7 @@ void test_page_d_bank0_is_internal_ram_readwrite() {
     CHECK(mem.read(0xFFFF) == 0xCD);
 }
 
-void test_page_d_bank1_is_open_bus_and_ignores_writes() {
+TEST(test_page_d_bank1_is_open_bus_and_ignores_writes) {
     PC1600Bank bank;
     PC1600Memory mem(bank);
     bank.writePort31(0x80); // pageDBank() == 1
@@ -271,7 +264,7 @@ void test_page_d_bank1_is_open_bus_and_ignores_writes() {
     CHECK(mem.read(0xC000) == 0xFF);
 }
 
-void test_rom_ignores_writes() {
+TEST(test_rom_ignores_writes) {
     PC1600Bank bank;
     PC1600Memory mem(bank);
     std::vector<uint8_t> lower = makeBank(0x11);
@@ -283,7 +276,7 @@ void test_rom_ignores_writes() {
 
 // F07DH is plain RAM: a Port 3DH write does not show up there, and a RAM
 // write there does not reach the port (the firmware writes both itself).
-void test_f07dh_is_plain_ram() {
+TEST(test_f07dh_is_plain_ram) {
     PC1600Bank bank;
     PC1600Memory mem(bank);
     bank.writePort31(0x00); // pageDBank() == 0, so 0xF07D is in RAM range
@@ -296,7 +289,7 @@ void test_f07dh_is_plain_ram() {
     CHECK(bank.port3DLatch() == 0x00);
 }
 
-void test_reset_keeps_ram_all_reset_clears_it_never_touches_rom() {
+TEST(test_reset_keeps_ram_all_reset_clears_it_never_touches_rom) {
     PC1600Bank bank;
     PC1600Memory mem(bank);
     std::vector<uint8_t> lower = makeBank(0x11);
@@ -317,7 +310,7 @@ void test_reset_keeps_ram_all_reset_clears_it_never_touches_rom() {
     CHECK(mem.read(0x0000) == 0x11);
 }
 
-void test_load_rejects_wrong_size() {
+TEST(test_load_rejects_wrong_size) {
     PC1600Bank bank;
     PC1600Memory mem(bank);
     std::vector<uint8_t> tooShort(100, 0);
@@ -328,34 +321,3 @@ void test_load_rejects_wrong_size() {
 }
 
 } // namespace
-
-// Defined here, called from lh5801_tests.cpp's main() -- same
-// single-binary convention as run_connector_tests() etc.
-int run_pc1600_bank_tests() {
-    test_port31_page_a_bank_is_bit0_only();
-    test_port31_page_b_bank_is_bits_1_to_3();
-    test_port31_page_c_bank_is_bits_4_to_6();
-    test_port31_page_d_bank_is_bit7_only();
-    test_port31_fields_are_fully_independent();
-    test_port28_write_readback_round_trip();
-    test_port3c_slot2map_mode_decode();
-    test_port3c_slot1map_active();
-    test_port3c_slot1map_wins_tie();
-    test_port3d_hidden_rom_latch();
-    test_reset_zeroes_bank_registers_and_sets_port3d();
-    test_page_a_always_resident_regardless_of_port31_bit0();
-    test_page_b_bank0_is_system_rom_upper_half();
-    test_page_b_unbacked_banks_are_open_bus();
-    test_hidden_rom_latch_selects_bank3_vs_bank3b();
-    test_page_c_bank6_display_timer_serial_char_rom();
-    test_page_c_other_banks_are_open_bus_in_v1();
-    test_page_d_bank0_is_internal_ram_readwrite();
-    test_page_d_bank1_is_open_bus_and_ignores_writes();
-    test_rom_ignores_writes();
-    test_f07dh_is_plain_ram();
-    test_reset_keeps_ram_all_reset_clears_it_never_touches_rom();
-    test_load_rejects_wrong_size();
-
-    std::printf("pc1600_bank_tests: %d passed, %d failed\n", g_pass, g_fail);
-    return g_fail;
-}

@@ -11,16 +11,9 @@
 
 #include "../core/PC1500/PC1500Machine.hpp"
 #include "TestCards.hpp"
+#include "TestHarness.hpp"
 
 namespace {
-
-int g_pass = 0;
-int g_fail = 0;
-
-#define CHECK(cond) do { \
-    if (cond) { g_pass++; } \
-    else { g_fail++; std::fprintf(stderr, "FAIL %s:%d: %s\n", __FILE__, __LINE__, #cond); } \
-} while (0)
 
 std::unique_ptr<SoftwareDefinedCard> ce163f() { return bundledCard("ce163f.card.yaml", CardHost::PC1500A); }
 
@@ -29,7 +22,7 @@ std::unique_ptr<SoftwareDefinedCard> ce163f() { return bundledCard("ce163f.card.
 #define CE163F_OR_SKIP(card)                                                              \
     auto card##Owned = ce163f();                                                          \
     if (!card##Owned) {                                                                   \
-        g_fail++; std::fprintf(stderr, "FAIL %s: frontends/qt6/resources/cards/ce163f.card.yaml missing or unloadable\n", __func__); \
+        testharness::failCount()++; std::fprintf(stderr, "FAIL %s: frontends/qt6/resources/cards/ce163f.card.yaml missing or unloadable\n", __func__); \
         return;                                                                           \
     }                                                                                     \
     SoftwareDefinedCard& card = *card##Owned
@@ -71,7 +64,7 @@ uint8_t readWin(SoftwareDefinedCard& card, uint16_t addr) {
     return v;
 }
 
-void test_ce163f_16_banks_no_mod_wrap() {
+TEST(test_ce163f_16_banks_no_mod_wrap) {
     CE163F_OR_SKIP(card);
 
     CHECK(card.currentBank() == 0);
@@ -91,7 +84,7 @@ void test_ce163f_16_banks_no_mod_wrap() {
     CHECK(readWin(card, 0x0000) == bank13); // bank 13 (flash) untouched
 }
 
-void test_ce163f_ram_banks_freely_writable() {
+TEST(test_ce163f_ram_banks_freely_writable) {
     CE163F_OR_SKIP(card);
     for (int b = 0; b <= 7; b++) {
         card.respondsToWrite(trigger(uint16_t(b)), 0x00);
@@ -103,7 +96,7 @@ void test_ce163f_ram_banks_freely_writable() {
     }
 }
 
-void test_ce163f_flash_bank_locked_by_default() {
+TEST(test_ce163f_flash_bank_locked_by_default) {
     CE163F_OR_SKIP(card);
     card.respondsToWrite(trigger(0x9), 0x00); // bank 9 == flash
     CHECK(card.currentBank() == 9);
@@ -114,7 +107,7 @@ void test_ce163f_flash_bank_locked_by_default() {
     CHECK(readWin(card, 0x0100) == before);
 }
 
-void test_ce163f_flash_program_and_and_semantics() {
+TEST(test_ce163f_flash_program_and_and_semantics) {
     CE163F_OR_SKIP(card);
     card.respondsToWrite(trigger(0x9), 0x00);
 
@@ -137,7 +130,7 @@ void test_ce163f_flash_program_and_and_semantics() {
 // data+address verbatim. Firmware like utilrm.bas's LOADER_HELPER_2 depends
 // on this: its `STA (DE) / CPA (DE) / JR NZ` verify poll would spin forever
 // if the 0xF0 byte were swallowed as a reset instead of programmed.
-void test_ce163f_program_data_byte_0xF0_is_not_a_reset() {
+TEST(test_ce163f_program_data_byte_0xF0_is_not_a_reset) {
     CE163F_OR_SKIP(card);
     card.respondsToWrite(trigger(0x9), 0x00);
 
@@ -157,7 +150,7 @@ void test_ce163f_program_data_byte_0xF0_is_not_a_reset() {
     CHECK(readWin(card, 0x0100) == 0x3C);
 }
 
-void test_ce163f_low_11_bit_command_decode() {
+TEST(test_ce163f_low_11_bit_command_decode) {
     CE163F_OR_SKIP(card);
     card.respondsToWrite(trigger(0xA), 0x00); // bank 10 == flash
     flashSectorErase(card, 0x0200);
@@ -171,7 +164,7 @@ void test_ce163f_low_11_bit_command_decode() {
     CHECK(readWin(card, 0x0200) == 0x3C);
 }
 
-void test_ce163f_sector_erase() {
+TEST(test_ce163f_sector_erase) {
     CE163F_OR_SKIP(card);
     card.respondsToWrite(trigger(0xB), 0x00); // bank 11 == flash
 
@@ -188,7 +181,7 @@ void test_ce163f_sector_erase() {
     CHECK(card.flashIdle());
 }
 
-void test_ce163f_chip_erase_flash_only() {
+TEST(test_ce163f_chip_erase_flash_only) {
     CE163F_OR_SKIP(card);
 
     // Dirty a RAM bank and two flash banks.
@@ -217,7 +210,7 @@ void test_ce163f_chip_erase_flash_only() {
     CHECK(readWin(card, 0x0000) == 0xC3);           // RAM bank 0 untouched
 }
 
-void test_ce163f_broken_sequence_resets() {
+TEST(test_ce163f_broken_sequence_resets) {
     CE163F_OR_SKIP(card);
     card.respondsToWrite(trigger(0x9), 0x00);
 
@@ -243,7 +236,7 @@ void test_ce163f_broken_sequence_resets() {
     CHECK(readWin(card, 0x0100) == 0x42);
 }
 
-void test_ce163f_trigger_is_pin_18() {
+TEST(test_ce163f_trigger_is_pin_18) {
     // The bank latch is physical pin 18 only -- whatever the host calls it
     // (S3 on a PC-1500, S5 on a PC-1500A). A strobe on any other pin does
     // not latch a bank.
@@ -261,10 +254,10 @@ void test_ce163f_trigger_is_pin_18() {
     CHECK(card.currentBank() == 3); // unchanged
 }
 
-void test_ce163f_end_to_end_via_machine_and_poke_bypass() {
+TEST(test_ce163f_end_to_end_via_machine_and_poke_bypass) {
     PC1500Machine pc1500(PC1500Variant::PC1500);
     auto card = ce163f();
-    if (!card) { g_fail++; std::fprintf(stderr, "FAIL %s: ce163f.card.yaml missing\n", __func__); return; }
+    if (!card) { testharness::failCount()++; std::fprintf(stderr, "FAIL %s: ce163f.card.yaml missing\n", __func__); return; }
     pc1500.attachExpansionCard(std::move(card));
 
     // RAM bank 2 via guest-CPU writes.
@@ -306,10 +299,10 @@ void test_ce163f_end_to_end_via_machine_and_poke_bypass() {
 // The bank strobe must NOT reset the chip's command decoder, or the unlock
 // never completes, the flash never arms, and the firmware's post-program
 // `CPA (DE) / JR NZ` verify loop spins forever.
-void test_ce163f_interleaved_bank_strobes_during_unlock() {
+TEST(test_ce163f_interleaved_bank_strobes_during_unlock) {
     PC1500Machine pc(PC1500Variant::PC1500A);
     auto card = ce163f();
-    if (!card) { g_fail++; std::fprintf(stderr, "FAIL %s: ce163f.card.yaml missing\n", __func__); return; }
+    if (!card) { testharness::failCount()++; std::fprintf(stderr, "FAIL %s: ce163f.card.yaml missing\n", __func__); return; }
     pc.attachExpansionCard(std::move(card));
     auto& m = pc.memory();
     auto unlock = [&] {                       // LOADER_HELPER_3
@@ -337,21 +330,3 @@ void test_ce163f_interleaved_bank_strobes_during_unlock() {
 }
 
 } // namespace
-
-int run_ce163f_tests() {
-    test_ce163f_16_banks_no_mod_wrap();
-    test_ce163f_ram_banks_freely_writable();
-    test_ce163f_flash_bank_locked_by_default();
-    test_ce163f_flash_program_and_and_semantics();
-    test_ce163f_program_data_byte_0xF0_is_not_a_reset();
-    test_ce163f_low_11_bit_command_decode();
-    test_ce163f_sector_erase();
-    test_ce163f_chip_erase_flash_only();
-    test_ce163f_broken_sequence_resets();
-    test_ce163f_trigger_is_pin_18();
-    test_ce163f_interleaved_bank_strobes_during_unlock();
-    test_ce163f_end_to_end_via_machine_and_poke_bypass();
-
-    std::printf("ce163f_tests: %d passed, %d failed\n", g_pass, g_fail);
-    return g_fail;
-}

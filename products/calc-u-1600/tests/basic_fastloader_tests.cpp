@@ -18,16 +18,9 @@
 #include "../core/PC1500/PC1500BasicLoader.hpp"
 #include "../core/PC1500/PC1500BasicTyper.hpp"
 #include "../core/PC1500/PC1500Machine.hpp"
+#include "TestHarness.hpp"
 
 namespace {
-
-int g_pass = 0;
-int g_fail = 0;
-
-#define CHECK(cond) do { \
-    if (cond) { g_pass++; } \
-    else { g_fail++; std::fprintf(stderr, "FAIL %s:%d: %s\n", __FILE__, __LINE__, #cond); } \
-} while (0)
 
 bool bootMachine(PC1500Machine& machine) {
     if (!machine.loadROMFile("roms/PC-1500_A04.ROM")) return false;
@@ -128,11 +121,11 @@ void runEquivalenceCase(const char* label, const std::string& src) {
     CHECK(fast == want);
 }
 
-void test_equivalence_small() {
+TEST(test_equivalence_small) {
     runEquivalenceCase("small", "10 PRINT \"AB\"\n20 GOTO 10\n");
 }
 
-void test_equivalence_rem_and_data() {
+TEST(test_equivalence_rem_and_data) {
     runEquivalenceCase("rem+data",
                        "10 REM demo header\n"
                        "20 DATA 1,2,3,4,5\n"
@@ -143,7 +136,7 @@ void test_equivalence_rem_and_data() {
                        "70 END\n");
 }
 
-void test_rejects_pc1600_transfer_file() {
+TEST(test_rejects_pc1600_transfer_file) {
     PC1500Machine m;
     if (!bootMachine(m)) {
         std::fprintf(stderr, "SKIP basic_fastloader pc1600-reject: roms/PC-1500_A04.ROM not found\n");
@@ -169,7 +162,7 @@ void test_rejects_pc1600_transfer_file() {
 // live BASPRG_ST value a `NEW &nnnn` might leave behind -- the loader has no
 // notion of "the" expected NEW0 target, only of "is the current pointer
 // plausible."
-void test_rejects_uninitialized_basprg_st() {
+TEST(test_rejects_uninitialized_basprg_st) {
     std::vector<uint8_t> payload;
     uint16_t st = 0, end = 0;
     uint8_t marker = 0;
@@ -191,7 +184,7 @@ void test_rejects_uninitialized_basprg_st() {
 // A live BASPRG_END that doesn't sit at/after BASPRG_ST (corrupted or
 // otherwise implausible) must be rejected too -- it's the pointer the
 // loader relies on to know how much of the resident program to erase.
-void test_rejects_invalid_basprg_end() {
+TEST(test_rejects_invalid_basprg_end) {
     PC1500Machine m;
     if (!bootMachine(m)) {
         std::fprintf(stderr, "SKIP basic_fastloader invalid-end: roms/PC-1500_A04.ROM not found\n");
@@ -214,7 +207,7 @@ void test_rejects_invalid_basprg_end() {
 // past the new (shorter) BASPRG_END: LOADing "10 PRINT X" then a shorter
 // "10 END" must fully erase the first program's leftover bytes, not just
 // move the end pointer back.
-void test_reload_over_shorter_program_clears_tail() {
+TEST(test_reload_over_shorter_program_clears_tail) {
     std::vector<uint8_t> longPayload, shortPayload;
     uint16_t stLong = 0, endLong = 0, stShort = 0, endShort = 0;
     uint8_t markerLong = 0, markerShort = 0;
@@ -254,7 +247,7 @@ void test_reload_over_shorter_program_clears_tail() {
     }
 }
 
-void test_rejects_garbage() {
+TEST(test_rejects_garbage) {
     PC1500Machine m;
     if (!bootMachine(m)) return;
     std::vector<uint8_t> junk(40, 0xAB);
@@ -263,7 +256,7 @@ void test_rejects_garbage() {
 }
 
 // A tokenized CE-158 file (.bbin) lands byte for byte where its listing does.
-void test_bbin_file_equals_listing() {
+TEST(test_bbin_file_equals_listing) {
     std::vector<uint8_t> fromListing, fromBbin;
     for (const char* path : {"tests/fixtures/basic/lissajou-1500.bas",
                              "tests/fixtures/basic/lissajou-1500.bbin"}) {
@@ -283,17 +276,3 @@ void test_bbin_file_equals_listing() {
 }
 
 }  // namespace
-
-int run_basic_fastloader_tests() {
-    test_equivalence_small();
-    test_equivalence_rem_and_data();
-    test_rejects_pc1600_transfer_file();
-    test_rejects_uninitialized_basprg_st();
-    test_rejects_invalid_basprg_end();
-    test_reload_over_shorter_program_clears_tail();
-    test_rejects_garbage();
-    test_bbin_file_equals_listing();
-
-    std::printf("basic_fastloader_tests: %d passed, %d failed\n", g_pass, g_fail);
-    return g_fail;
-}

@@ -20,16 +20,9 @@
 #include "../core/PC1600/PC1600Machine.hpp"
 #include "../core/PC1600/PC1600TypedInput.hpp"
 #include "TestRoms.hpp"
+#include "TestHarness.hpp"
 
 namespace {
-
-int g_pass = 0;
-int g_fail = 0;
-
-#define CHECK(cond) do { \
-    if (cond) { g_pass++; } \
-    else { g_fail++; std::fprintf(stderr, "FAIL %s:%d: %s\n", __FILE__, __LINE__, #cond); } \
-} while (0)
 
 std::string tapsAsText(const std::vector<PasteStep>& steps) {
     std::string out;
@@ -42,13 +35,13 @@ std::string tapsAsText(const std::vector<PasteStep>& steps) {
     return out;
 }
 
-void test_build_steps_shift_and_skip() {
+TEST(test_build_steps_shift_and_skip) {
     // Lowercase + '"' + ':' + '#' need SHIFT; tab and a UTF-8 'é' are skipped.
     const std::vector<PasteStep> steps = buildPasteSteps("aB\"\t:#\xC3\xA9 1", pc1600ResolveTypedChar);
     CHECK(tapsAsText(steps) == "^A B ^f2 ^* ^f3 _ 1 ");
 }
 
-void test_build_steps_kbii_case_exact() {
+TEST(test_build_steps_kbii_case_exact) {
     // é/É: SHIFT+KBII S / KBII S. Ë has no uppercase in the ROM -> ë (W).
     // û only exists as SHIFT+KBII. ß has no key and is skipped.
     const std::string text = "m\xC3\xA9rci \xC3\x89\xC3\x8B\xC3\xAB\xC3\xBB\xC3\x9B\xC3\x9F";
@@ -60,7 +53,7 @@ void test_build_steps_kbii_case_exact() {
     CHECK(tapsAsText(buildPasteSteps("A\xC3" "B\xFF", pc1600ResolveTypedChar, pc1600ResolveKbiiChar)) == "A B ");
 }
 
-void test_kbii_resolver() {
+TEST(test_kbii_resolver) {
     // One rule everywhere: the character as typed; an uppercase the ROM
     // lacks falls back to its lowercase.
     std::string key;
@@ -74,7 +67,7 @@ void test_kbii_resolver() {
     CHECK(!pc1600ResolveKbiiChar(U'ß', &key, &shift));                        // ß
 }
 
-void test_build_steps_line_breaks() {
+TEST(test_build_steps_line_breaks) {
     // Only the first line is typed; ENTER is never pressed.
     CHECK(tapsAsText(buildPasteSteps("A1\r\nB\rC\n", pc1500ResolveTypedChar)) == "A 1 ");
     CHECK(tapsAsText(buildPasteSteps("A\rB", pc1500ResolveTypedChar)) == "A ");
@@ -82,7 +75,7 @@ void test_build_steps_line_breaks() {
     CHECK(buildPasteSteps("\nB", pc1500ResolveTypedChar).empty());
 }
 
-void test_build_steps_pc1500_lacks_digit_row_legends() {
+TEST(test_build_steps_pc1500_lacks_digit_row_legends) {
     // '[' only exists on the PC-1600 keyboard (SHIFT + 2).
     CHECK(tapsAsText(buildPasteSteps("[", pc1500ResolveTypedChar)).empty());
     CHECK(tapsAsText(buildPasteSteps("[", pc1600ResolveTypedChar)) == "^2 ");
@@ -99,7 +92,7 @@ struct Recorder {
     }
 };
 
-void test_feeder_cadence() {
+TEST(test_feeder_cadence) {
     KeyPasteFeeder f;
     f.setPacing(pc1600PastePacing());
     f.append(buildPasteSteps("a1", pc1600ResolveTypedChar));
@@ -111,7 +104,7 @@ void test_feeder_cadence() {
     CHECK(!f.active());
 }
 
-void test_feeder_kbii_sequence() {
+TEST(test_feeder_kbii_sequence) {
     KeyPasteFeeder f;
     f.setPacing(pc1600PastePacing());
     f.append(buildPasteSteps("\xC3\xA9", pc1600ResolveTypedChar, pc1600ResolveKbiiChar)); // é
@@ -125,7 +118,7 @@ void test_feeder_kbii_sequence() {
 
 // What the user has latched on the machine shapes (or drops) an accented
 // character's sequence -- read when it starts, not when it's queued.
-void test_feeder_kbii_respects_latches() {
+TEST(test_feeder_kbii_respects_latches) {
     auto run = [](const KeyLatches& latched) {
         KeyPasteFeeder f;
         f.setPacing(pc1600PastePacing());
@@ -148,7 +141,7 @@ void test_feeder_kbii_respects_latches() {
     CHECK(run(KeyLatches{true, true}) == "A ");
 }
 
-void test_feeder_cancel_closes_kbii() {
+TEST(test_feeder_cancel_closes_kbii) {
     const std::string text = "\xC3\x84" "B"; // Ä then B
     // Cancelled while the letter is held: release it, then only the closing KBII tap.
     {
@@ -196,7 +189,7 @@ void test_feeder_cancel_closes_kbii() {
     }
 }
 
-void test_feeder_cancel_releases_held_key() {
+TEST(test_feeder_cancel_releases_held_key) {
     KeyPasteFeeder f;
     f.append(buildPasteSteps("AB", pc1500ResolveTypedChar));
     Recorder r;
@@ -239,7 +232,7 @@ uint16_t readBE16(PC1600Machine& m, uint16_t addr) {
 // The motivating example: a listing line pasted verbatim, no ENTER sent.
 // It only reaches the console input buffer (FBB0H) on commit, so the test
 // taps ENTER itself afterwards and checks the characters made it.
-void test_pc1600_paste_line_no_enter() {
+TEST(test_pc1600_paste_line_no_enter) {
     PC1600Machine m;
     if (!bootPC1600(m)) {
         std::fprintf(stderr, "SKIP test_pc1600_paste_line_no_enter: PC-1600 ROM images not found\n");
@@ -262,7 +255,7 @@ void test_pc1600_paste_line_no_enter() {
 // Only the first line is pasted, and never entered: in PRO mode nothing is
 // stored (BASPRG_END, F867H big-endian, stays put) until ENTER is tapped by
 // hand, and then exactly that one line.
-void test_pc1600_paste_multiline_types_first_line() {
+TEST(test_pc1600_paste_multiline_types_first_line) {
     PC1600Machine m;
     if (!bootPC1600(m)) {
         std::fprintf(stderr, "SKIP test_pc1600_paste_multiline_types_first_line: PC-1600 ROM images not found\n");
@@ -296,7 +289,7 @@ bool memoryContains(PC1500Machine& m, const std::string& needle) {
     return false;
 }
 
-void test_pc1500_paste_multiline_types_first_line() {
+TEST(test_pc1500_paste_multiline_types_first_line) {
     PC1500Machine m;
     if (!bootPC1500(m)) {
         std::fprintf(stderr, "SKIP test_pc1500_paste_multiline_types_first_line: roms/PC-1500_A04.ROM not found\n");
@@ -327,22 +320,3 @@ void test_pc1500_paste_multiline_types_first_line() {
 }
 
 } // namespace
-
-int run_key_paste_tests() {
-    test_build_steps_shift_and_skip();
-    test_build_steps_kbii_case_exact();
-    test_kbii_resolver();
-    test_build_steps_line_breaks();
-    test_build_steps_pc1500_lacks_digit_row_legends();
-    test_feeder_cadence();
-    test_feeder_kbii_sequence();
-    test_feeder_kbii_respects_latches();
-    test_feeder_cancel_closes_kbii();
-    test_feeder_cancel_releases_held_key();
-    test_pc1600_paste_line_no_enter();
-    test_pc1600_paste_multiline_types_first_line();
-    test_pc1500_paste_multiline_types_first_line();
-
-    std::printf("key_paste_tests: %d passed, %d failed\n", g_pass, g_fail);
-    return g_fail;
-}

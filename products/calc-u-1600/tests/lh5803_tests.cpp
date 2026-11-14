@@ -11,18 +11,11 @@
 
 #include "../core/CPU/LH5803/LH5803.hpp"
 #include "../core/CPU/LH5803/LH5803Memory.hpp"
+#include "TestHarness.hpp"
 
 namespace {
 
-int g_pass = 0;
-int g_fail = 0;
-
-#define CHECK(cond) do { \
-    if (cond) { g_pass++; } \
-    else { g_fail++; std::fprintf(stderr, "FAIL %s:%d: %s\n", __FILE__, __LINE__, #cond); } \
-} while (0)
-
-void test_lh5803_inherits_lh5801_reset_and_opcode_behavior() {
+TEST(test_lh5803_inherits_lh5801_reset_and_opcode_behavior) {
     // Sanity check that LH5803 really is LH5801 underneath -- same reset
     // vector convention (16-bit big-endian at ME0 0xFFFE/0xFFFF) and same
     // opcode execution (LDI A,n), exercised through the LH5803 type. The
@@ -50,7 +43,7 @@ void test_lh5803_inherits_lh5801_reset_and_opcode_behavior() {
 
 // TRM §7.1.2: SDP, RDP and OFF "operate as a NOP instruction in LH-5803".
 // The plain LH5801 powers down on OFF; the LH5803 just carries on.
-void test_lh5803_off_sdp_rdp_are_nops() {
+TEST(test_lh5803_off_sdp_rdp_are_nops) {
     LH5803Memory mem;
     std::vector<uint8_t> rom(16384, 0x00);
     rom[16384 - 2] = 0x42;
@@ -76,7 +69,7 @@ void test_lh5803_off_sdp_rdp_are_nops() {
     CHECK(plain.poweredOff());
 }
 
-void test_memory_slot_window_open_bus() {
+TEST(test_memory_slot_window_open_bus) {
     LH5803Memory mem;
     CHECK(mem.peek(0x0000) == 0xFF);
     CHECK(mem.peek(0x3FFF) == 0xFF);
@@ -84,7 +77,7 @@ void test_memory_slot_window_open_bus() {
     CHECK(mem.peek(0x1000) == 0xFF);
 }
 
-void test_memory_internal_ram_readwrite() {
+TEST(test_memory_internal_ram_readwrite) {
     LH5803Memory mem;
     mem.poke(0x4000, 0xAB);
     CHECK(mem.peek(0x4000) == 0xAB);
@@ -92,7 +85,7 @@ void test_memory_internal_ram_readwrite() {
     CHECK(mem.peek(0x7FFF) == 0xCD);
 }
 
-void test_memory_ce158_window_open_bus_in_v1() {
+TEST(test_memory_ce158_window_open_bus_in_v1) {
     LH5803Memory mem;
     CHECK(mem.peek(0x8000) == 0xFF);
     CHECK(mem.peek(0xBFFF) == 0xFF);
@@ -100,7 +93,7 @@ void test_memory_ce158_window_open_bus_in_v1() {
     CHECK(mem.peek(0x9000) == 0xFF);
 }
 
-void test_memory_rom_load_and_write_ignored() {
+TEST(test_memory_rom_load_and_write_ignored) {
     LH5803Memory mem;
     std::vector<uint8_t> rom(16384, 0x42);
     CHECK(mem.loadROM(rom.data(), rom.size()));
@@ -110,13 +103,13 @@ void test_memory_rom_load_and_write_ignored() {
     CHECK(mem.peek(0xC000) == 0x42); // unchanged
 }
 
-void test_memory_load_rejects_wrong_size() {
+TEST(test_memory_load_rejects_wrong_size) {
     LH5803Memory mem;
     std::vector<uint8_t> tooShort(100, 0);
     CHECK(!mem.loadROM(tooShort.data(), tooShort.size()));
 }
 
-void test_reset_clears_ram_not_rom() {
+TEST(test_reset_clears_ram_not_rom) {
     LH5803Memory mem;
     std::vector<uint8_t> rom(16384, 0x42);
     mem.loadROM(rom.data(), rom.size());
@@ -127,17 +120,3 @@ void test_reset_clears_ram_not_rom() {
 }
 
 } // namespace
-
-int run_lh5803_tests() {
-    test_lh5803_inherits_lh5801_reset_and_opcode_behavior();
-    test_lh5803_off_sdp_rdp_are_nops();
-    test_memory_slot_window_open_bus();
-    test_memory_internal_ram_readwrite();
-    test_memory_ce158_window_open_bus_in_v1();
-    test_memory_rom_load_and_write_ignored();
-    test_memory_load_rejects_wrong_size();
-    test_reset_clears_ram_not_rom();
-
-    std::printf("lh5803_tests: %d passed, %d failed\n", g_pass, g_fail);
-    return g_fail;
-}

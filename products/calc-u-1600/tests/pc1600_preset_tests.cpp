@@ -25,22 +25,15 @@
 #include "../core/PC1600/PC1600PresetMedia.hpp"
 #include "PresetTestSupport.hpp"
 #include "TestRoms.hpp"
+#include "TestHarness.hpp"
 
 namespace {
-
-int g_pass = 0;
-int g_fail = 0;
-
-#define CHECK(cond) do { \
-    if (cond) { g_pass++; } \
-    else { g_fail++; std::fprintf(stderr, "FAIL %s:%d: %s\n", __FILE__, __LINE__, #cond); } \
-} while (0)
 
 bool parse(const std::string& yaml, PresetFile* out, std::string* error) {
     return parsePresetString(yaml, "/tmp/pc1600_preset_tests_scratch.pc1600", out, error);
 }
 
-void test_parser_accepts_pc1600_with_slot_and_keys() {
+TEST(test_parser_accepts_pc1600_with_slot_and_keys) {
     PresetFile p;
     std::string err;
     CHECK(parse(
@@ -61,7 +54,7 @@ void test_parser_accepts_pc1600_with_slot_and_keys() {
     CHECK(p.sections[0].keys[1].kind == PresetStep::Kind::Key);
 }
 
-void test_parser_rejects_multichar_key() {
+TEST(test_parser_rejects_multichar_key) {
     // `key: MEM` is an error (it would press nothing) -- must use `type:`.
     // Same rule as the PC-1500 side.
     PresetFile p;
@@ -70,7 +63,7 @@ void test_parser_rejects_multichar_key() {
     CHECK(err.find("MEM") != std::string::npos);
 }
 
-void test_parser_both_slots() {
+TEST(test_parser_both_slots) {
     PresetFile p;
     std::string err;
     CHECK(parse(
@@ -82,7 +75,7 @@ void test_parser_both_slots() {
     CHECK(p.slot2ModuleSpecName == "CE-1601M");
 }
 
-void test_parser_rejects_cross_model_fields() {
+TEST(test_parser_rejects_cross_model_fields) {
     PresetFile p;
     std::string err;
     // PC-1600 preset with a firmware: field (gone -- the ROM rides on the model).
@@ -99,7 +92,7 @@ void test_parser_rejects_cross_model_fields() {
     CHECK(!parse("format-version: 1\nmodel: PC-1500A\nslot-2: CE-155\n", &p, &err));
 }
 
-void test_parser_pc1600_machine_binary() {
+TEST(test_parser_pc1600_machine_binary) {
     // parsePresetFile() merges into *out instead of resetting it, so each
     // case that inspects the parse result gets its own PresetFile.
     std::string err;
@@ -199,7 +192,7 @@ bool writeTextFile(const std::string& path, const std::string& text) {
 // Functional: a machine-code `program:` block with a PC-1600 ML header
 // pokes its payload linearly into S0 (internal RAM) at the header's load
 // address.
-void test_loader_machine_binary_header() {
+TEST(test_loader_machine_binary_header) {
     PC1600Machine m;
     if (!loadPC1600Roms(m)) {
         std::fprintf(stderr, "SKIP test_loader_machine_binary_header: PC-1600 ROM images not found\n");
@@ -222,7 +215,7 @@ void test_loader_machine_binary_header() {
 
 // Functional: header length field that disagrees with the file is a hard
 // error naming `length:`; supplying `length:` overrides it.
-void test_loader_machine_binary_length_mismatch() {
+TEST(test_loader_machine_binary_length_mismatch) {
     PC1600Machine m;
     if (!loadPC1600Roms(m)) {
         std::fprintf(stderr, "SKIP test_loader_machine_binary_length_mismatch: PC-1600 ROM images not found\n");
@@ -254,7 +247,7 @@ void test_loader_machine_binary_length_mismatch() {
 }
 
 // Functional: a headerless blob needs both `address:` and `length:`.
-void test_loader_machine_binary_headerless() {
+TEST(test_loader_machine_binary_headerless) {
     PC1600Machine m;
     if (!loadPC1600Roms(m)) {
         std::fprintf(stderr, "SKIP test_loader_machine_binary_headerless: PC-1600 ROM images not found\n");
@@ -285,7 +278,7 @@ void test_loader_machine_binary_headerless() {
 
 // Functional: a headerless blob with only `address:` loads the whole file;
 // a CE-158 (PC-1500) file is refused rather than poked header and all.
-void test_loader_machine_binary_headerless_address_only_and_ce158() {
+TEST(test_loader_machine_binary_headerless_address_only_and_ce158) {
     PC1600Machine m;
     if (!loadPC1600Roms(m)) {
         std::fprintf(stderr, "SKIP test_loader_machine_binary_headerless_address_only_and_ce158: "
@@ -327,7 +320,7 @@ void test_loader_machine_binary_headerless_address_only_and_ce158() {
 // Functional: a non-zero header auto-run address makes the loader type
 // `CALL &<addr>`; a bare RET payload returns immediately and the load
 // completes cleanly.
-void test_loader_machine_binary_autorun() {
+TEST(test_loader_machine_binary_autorun) {
     PC1600Machine m;
     if (!loadPC1600Roms(m)) {
         std::fprintf(stderr, "SKIP test_loader_machine_binary_autorun: PC-1600 ROM images not found\n");
@@ -350,7 +343,7 @@ void test_loader_machine_binary_autorun() {
 // (`CALL #2,&8100`), not `CALL &8100` -- that would run whatever bank 0
 // maps there. The code stores a marker in internal RAM, so it only lands
 // if the right CALL ran it.
-void test_loader_machine_binary_autorun_slot2() {
+TEST(test_loader_machine_binary_autorun_slot2) {
     PC1600Machine m;
     if (!loadPC1600Roms(m)) {
         std::fprintf(stderr, "SKIP test_loader_machine_binary_autorun_slot2: PC-1600 ROM images not found\n");
@@ -378,7 +371,7 @@ void test_loader_machine_binary_autorun_slot2() {
 // (docs/background/plans/Loader-Mode-Plan.md).
 // MODE 1: a headerless file's `address:` is an LH5803 address (&5000 =
 // Z-80 &D000), and a CE-158 file loads at its header's LH5803 address.
-void test_loader_machine_binary_mode1() {
+TEST(test_loader_machine_binary_mode1) {
     PC1600Machine m;
     if (!loadPC1600Roms(m)) {
         std::fprintf(stderr, "SKIP test_loader_machine_binary_mode1: PC-1600 ROM images not found\n");
@@ -408,7 +401,7 @@ void test_loader_machine_binary_mode1() {
 }
 
 // TITLE "S1:": $8000-$BFFF is the S1 program module.
-void test_loader_machine_binary_title_s1() {
+TEST(test_loader_machine_binary_title_s1) {
     PC1600Machine m;
     if (!loadPC1600Roms(m)) {
         std::fprintf(stderr, "SKIP test_loader_machine_binary_title_s1: PC-1600 ROM images not found\n");
@@ -429,7 +422,7 @@ void test_loader_machine_binary_title_s1() {
     CHECK(img.size() > 0x102 && img[0x100] == 0x11 && img[0x102] == 0x33);
 }
 
-void test_parser_accepts_basic_text_program() {
+TEST(test_parser_accepts_basic_text_program) {
     PresetFile p;
     std::string err;
     CHECK(parse(
@@ -450,7 +443,7 @@ void test_parser_accepts_basic_text_program() {
 
 // ROM-gated: the loader's line-length guard -- in PRO mode a fitting
 // program loads and only the over-length line is reported.
-void test_loader_reports_overlong_basic_line() {
+TEST(test_loader_reports_overlong_basic_line) {
     PC1600Machine m;
     if (!loadPC1600Roms(m)) {
         std::fprintf(stderr, "SKIP test_loader_reports_overlong_basic_line: PC-1600 ROM images not found\n");
@@ -479,7 +472,7 @@ void test_loader_reports_overlong_basic_line() {
     CHECK(!r.error.empty());
 }
 
-void test_loader_applies_ce155_and_type_step() {
+TEST(test_loader_applies_ce155_and_type_step) {
     PresetFile p;
     std::string err;
     CHECK(parse(
@@ -504,7 +497,7 @@ void test_loader_applies_ce155_and_type_step() {
     CHECK(m.memory().read(0xA800) == 0x5A);
 }
 
-void test_type_step_rejects_untypeable_char() {
+TEST(test_type_step_rejects_untypeable_char) {
     PresetFile p;
     std::string err;
     // A control byte (0x01) has no PC-1600 key.
@@ -521,7 +514,7 @@ void test_type_step_rejects_untypeable_char() {
 // (FBB0H-FBFFH, Ref/PC-1600/PC-1600-Work-Area-Map.md) -- i.e. SHIFT + base key really
 // produces the character, not a shift that leaks onto the next key
 // (which would turn `INIT"S2:","M"` into `INITs2M`).
-void test_type_step_shifted_punctuation_reaches_input_buffer() {
+TEST(test_type_step_shifted_punctuation_reaches_input_buffer) {
     PC1600Machine m;
     if (!loadPC1600Roms(m)) {
         std::fprintf(stderr,
@@ -556,7 +549,7 @@ void test_type_step_shifted_punctuation_reaches_input_buffer() {
 // step has put the machine in PRO mode. We can't assert the program is
 // stored (locating the PC-1600 native-BASIC program store needs ROM
 // disassembly), but the load must complete cleanly with nothing rejected.
-void test_loader_applies_basic_text_program() {
+TEST(test_loader_applies_basic_text_program) {
     PC1600Machine m;
     if (!loadPC1600Roms(m)) {
         std::fprintf(stderr, "SKIP test_loader_applies_basic_text_program: PC-1600 ROM images not found\n");
@@ -579,7 +572,7 @@ void test_loader_applies_basic_text_program() {
     CHECK(r.error.empty());
 }
 
-void test_loader_rejects_unknown_key_defensively() {
+TEST(test_loader_rejects_unknown_key_defensively) {
     // The parser normally catches a bad key, but the loader's own
     // validation must hold too (hand-build a step it never saw).
     PresetFile p;
@@ -599,7 +592,7 @@ void test_loader_rejects_unknown_key_defensively() {
     CHECK(!r.error.empty());
 }
 
-void test_loader_ce150_plotter_needs_rom_path() {
+TEST(test_loader_ce150_plotter_needs_rom_path) {
     PresetFile p;
     std::string err;
     CHECK(parse("format-version: 1\nmodel: PC-1600\nplotter: CE-150\n", &p, &err));
@@ -612,7 +605,7 @@ void test_loader_ce150_plotter_needs_rom_path() {
     CHECK(!m.ce150Attached());
 }
 
-void test_loader_ce150_plotter_attaches_with_rom_path() {
+TEST(test_loader_ce150_plotter_attaches_with_rom_path) {
     PresetFile p;
     std::string err;
     CHECK(parse("format-version: 1\nmodel: PC-1600\nplotter: CE-150\n", &p, &err));
@@ -629,7 +622,7 @@ void test_loader_ce150_plotter_attaches_with_rom_path() {
     CHECK(m.ce150Attached());
 }
 
-void test_loader_ce1600p_plotter_needs_rom_path() {
+TEST(test_loader_ce1600p_plotter_needs_rom_path) {
     PresetFile p;
     std::string err;
     CHECK(parse("format-version: 1\nmodel: PC-1600\nplotter: CE-1600P\n", &p, &err));
@@ -644,7 +637,7 @@ void test_loader_ce1600p_plotter_needs_rom_path() {
 
 // `floppy:` without `plotter: CE-1600P` is a parse error -- the CE-1600F
 // attaches only as a union with the CE-1600P.
-void test_parser_rejects_floppy_without_ce1600p() {
+TEST(test_parser_rejects_floppy_without_ce1600p) {
     PresetFile p;
     std::string err;
     CHECK(!parse("format-version: 1\nmodel: PC-1600\nfloppy: mydisk\n", &p, &err));
@@ -655,7 +648,7 @@ void test_parser_rejects_floppy_without_ce1600p() {
 }
 
 // `floppy:` is a PC-1600-only field.
-void test_parser_rejects_floppy_on_pc1500() {
+TEST(test_parser_rejects_floppy_on_pc1500) {
     PresetFile p;
     std::string err;
     CHECK(!parse("format-version: 1\nmodel: PC-1500\nfloppy: mydisk\n", &p, &err));
@@ -664,7 +657,7 @@ void test_parser_rejects_floppy_on_pc1500() {
 
 // `floppy: <name>` alongside `plotter: CE-1600P` parses and round-trips
 // verbatim into PresetFile::floppy.
-void test_parser_accepts_floppy_with_ce1600p() {
+TEST(test_parser_accepts_floppy_with_ce1600p) {
     PresetFile p;
     std::string err;
     CHECK(parse("format-version: 1\nmodel: PC-1600\nplotter: CE-1600P\nfloppy: mydisk\n", &p, &err));
@@ -675,7 +668,7 @@ void test_parser_accepts_floppy_with_ce1600p() {
 
 // `floppy: <name>,A`/`,B` (case-insensitive) strips the side suffix into
 // floppySide and leaves floppy as the bare disk name.
-void test_parser_accepts_floppy_side_suffix() {
+TEST(test_parser_accepts_floppy_side_suffix) {
     PresetFile p;
     std::string err;
     CHECK(parse("format-version: 1\nmodel: PC-1600\nplotter: CE-1600P\nfloppy: mydisk,B\n", &p, &err));
@@ -692,7 +685,7 @@ void test_parser_accepts_floppy_side_suffix() {
 
 // Functional: attaching CE-1600P with no `floppy:` key leaves the drive
 // empty -- the same "–empty–" default as the GUI.
-void test_loader_ce1600p_with_no_floppy_key_leaves_drive_empty() {
+TEST(test_loader_ce1600p_with_no_floppy_key_leaves_drive_empty) {
     PresetFile p;
     std::string err;
     CHECK(parse("format-version: 1\nmodel: PC-1600\nplotter: CE-1600P\n", &p, &err));
@@ -711,7 +704,7 @@ void test_loader_ce1600p_with_no_floppy_key_leaves_drive_empty() {
 
 // Functional: `floppy: <name>` resolves the `*.floppy.yaml` declaring that
 // disk-name in `moduleDir` and loads it into the union-attached CE1600FCard.
-void test_loader_floppy_key_loads_named_disk_image() {
+TEST(test_loader_floppy_key_loads_named_disk_image) {
     PresetFile p;
     std::string err;
     CHECK(parse("format-version: 1\nmodel: PC-1600\nplotter: CE-1600P\nfloppy: mydisk\n", &p, &err));
@@ -738,7 +731,7 @@ void test_loader_floppy_key_loads_named_disk_image() {
 // `floppy: <name>,B` selects side B after loading -- loadImage() itself
 // always resets to side A, so the preset loader must apply the suffix
 // after attach.
-void test_loader_floppy_key_side_suffix_selects_side_b() {
+TEST(test_loader_floppy_key_side_suffix_selects_side_b) {
     PresetFile p;
     std::string err;
     CHECK(parse("format-version: 1\nmodel: PC-1600\nplotter: CE-1600P\nfloppy: mydiskb,B\n", &p, &err));
@@ -759,7 +752,7 @@ void test_loader_floppy_key_side_suffix_selects_side_b() {
 
 // A `floppy:` name that no `*.floppy.yaml` declares is a
 // clear error, not a crash or a silent blank disk.
-void test_loader_floppy_key_missing_file_is_an_error() {
+TEST(test_loader_floppy_key_missing_file_is_an_error) {
     PresetFile p;
     std::string err;
     CHECK(parse("format-version: 1\nmodel: PC-1600\nplotter: CE-1600P\nfloppy: nosuchdisk\n", &p, &err));
@@ -773,7 +766,7 @@ void test_loader_floppy_key_missing_file_is_an_error() {
 
 // A `saveas:` step invokes onSaveAs with the right target/name, at the
 // right point in step order (after the preceding steps have already run).
-void test_loader_saveas_step_invokes_callback() {
+TEST(test_loader_saveas_step_invokes_callback) {
     PresetFile p;
     std::string err;
     CHECK(parse(
@@ -809,7 +802,7 @@ void test_loader_saveas_step_invokes_callback() {
 
 // An onSaveAs failure surfaces its error and stops the preset, exactly
 // like any other step failure.
-void test_loader_saveas_step_failure_stops_preset() {
+TEST(test_loader_saveas_step_failure_stops_preset) {
     PresetFile p;
     std::string err;
     CHECK(parse("format-version: 1\nmodel: PC-1600\nkeys:\n  - saveas: live slot-1:Bad\n  - type: 1\n", &p, &err));
@@ -828,7 +821,7 @@ void test_loader_saveas_step_failure_stops_preset() {
 
 // With no onSaveAs callback given, a `saveas:` step is a logged no-op --
 // the preset still succeeds.
-void test_loader_saveas_step_without_callback_is_noop() {
+TEST(test_loader_saveas_step_without_callback_is_noop) {
     PresetFile p;
     std::string err;
     CHECK(parse("format-version: 1\nmodel: PC-1600\nkeys:\n  - saveas: live slot-1:Whatever\n", &p, &err));
@@ -843,7 +836,7 @@ void test_loader_saveas_step_without_callback_is_noop() {
 
 // `floppy-file:` and `host-drive:` resolve against the preset's directory;
 // `~/` is the home directory. One disk key at most; the usual scope rules.
-void test_parser_floppy_file_and_host_drive() {
+TEST(test_parser_floppy_file_and_host_drive) {
     std::filesystem::create_directories("/tmp/calcu_preset_dir");
     PresetFile p;
     std::string err;
@@ -868,7 +861,7 @@ void test_parser_floppy_file_and_host_drive() {
 // End to end with the ROMs: `floppy-file:` loads the disk, `host-drive:`
 // mounts S3: before the boot, and `saveas: template ... file:` writes
 // template files through savePresetMedia() (Core/Preset/PresetMedia.hpp).
-void test_loader_host_drive_floppy_file_and_template_saves() {
+TEST(test_loader_host_drive_floppy_file_and_template_saves) {
     char tmpl[] = "/tmp/pc1600_preset_media_XXXXXX";
     const char* dir = mkdtemp(tmpl);
     CHECK(dir != nullptr);
@@ -932,7 +925,7 @@ void test_loader_host_drive_floppy_file_and_template_saves() {
 // `bus-rom:` end to end: a ROM in bank 7 shadows the host drive's bundled
 // ROM. The bundled ROM's own bytes as a bus ROM keep S3: working; a blank
 // bus ROM hides the drive from the module scan, so the SAVE lands nowhere.
-void test_loader_bus_rom_shadows_the_host_drive_rom() {
+TEST(test_loader_bus_rom_shadows_the_host_drive_rom) {
     for (const bool blank : {false, true}) {
         char tmpl[] = "/tmp/pc1600_bus_rom_XXXXXX";
         const char* dir = mkdtemp(tmpl);
@@ -975,7 +968,7 @@ void test_loader_bus_rom_shadows_the_host_drive_rom() {
     }
 }
 
-void test_parser_bus_rom_forms() {
+TEST(test_parser_bus_rom_forms) {
     PresetFile p;
     std::string err;
     CHECK(parsePresetString("format-version: 1\nmodel: PC-1600\n"
@@ -1001,7 +994,7 @@ void test_parser_bus_rom_forms() {
         const bool ok = parsePresetString(body, "/tmp/pc1600_bus_rom_forms.pc1600", &q, &e);
         CHECK(!ok);
         if (!ok && e.find(what) == std::string::npos) {
-            g_fail++;
+            testharness::failCount()++;
             std::fprintf(stderr, "FAIL bus-rom error '%s' lacks '%s'\n", e.c_str(), what);
         }
     };
@@ -1016,7 +1009,7 @@ void test_parser_bus_rom_forms() {
 
 // The cards on their buses: a bus ROM attached first answers before a card
 // at the same place, and only inside its window and gates.
-void test_bus_rom_cards_shadow_and_gate() {
+TEST(test_bus_rom_cards_shadow_and_gate) {
     using PC1600BusDrive::z80MemPins;
     SystemBus bus;
     PC1600HostDriveCard drive;
@@ -1049,49 +1042,4 @@ void test_bus_rom_cards_shadow_and_gate() {
     CHECK(!rom.respondsToRead(lh(0x7FFF, false, false, true), v));  // below the base
     const SystemBusPins write = lh(0x8000, false, false, true, /*forWrite=*/true);
     CHECK(!rom.respondsToRead(write, v) && !rom.respondsToWrite(write, 0).claimed);
-}
-
-int run_pc1600_preset_tests() {
-    test_parser_bus_rom_forms();
-    test_bus_rom_cards_shadow_and_gate();
-    test_loader_bus_rom_shadows_the_host_drive_rom();
-    test_parser_floppy_file_and_host_drive();
-    test_loader_host_drive_floppy_file_and_template_saves();
-    test_parser_accepts_pc1600_with_slot_and_keys();
-    test_parser_rejects_multichar_key();
-    test_parser_both_slots();
-    test_parser_pc1600_machine_binary();
-    test_parser_rejects_cross_model_fields();
-    test_parser_accepts_basic_text_program();
-    test_loader_reports_overlong_basic_line();
-    test_loader_applies_ce155_and_type_step();
-    test_type_step_rejects_untypeable_char();
-    test_type_step_shifted_punctuation_reaches_input_buffer();
-    test_loader_applies_basic_text_program();
-    test_loader_machine_binary_header();
-    test_loader_machine_binary_length_mismatch();
-    test_loader_machine_binary_headerless();
-    test_loader_machine_binary_headerless_address_only_and_ce158();
-    test_loader_machine_binary_autorun();
-    test_loader_machine_binary_autorun_slot2();
-    test_loader_machine_binary_mode1();
-    test_loader_machine_binary_title_s1();
-    test_loader_rejects_unknown_key_defensively();
-    test_loader_ce150_plotter_needs_rom_path();
-    test_loader_ce150_plotter_attaches_with_rom_path();
-    test_loader_ce1600p_plotter_needs_rom_path();
-    test_parser_rejects_floppy_without_ce1600p();
-    test_parser_rejects_floppy_on_pc1500();
-    test_parser_accepts_floppy_with_ce1600p();
-    test_parser_accepts_floppy_side_suffix();
-    test_loader_ce1600p_with_no_floppy_key_leaves_drive_empty();
-    test_loader_floppy_key_loads_named_disk_image();
-    test_loader_floppy_key_side_suffix_selects_side_b();
-    test_loader_floppy_key_missing_file_is_an_error();
-    test_loader_saveas_step_invokes_callback();
-    test_loader_saveas_step_failure_stops_preset();
-    test_loader_saveas_step_without_callback_is_noop();
-
-    std::printf("pc1600_preset_tests: %d passed, %d failed\n", g_pass, g_fail);
-    return g_fail;
 }

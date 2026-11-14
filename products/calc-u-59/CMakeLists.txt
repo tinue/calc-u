@@ -100,7 +100,8 @@ endif()
 if(CALCU_TESTS)
   file(GLOB TEST_SOURCES CONFIGURE_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/tests/*.cpp)
   add_executable(CalcU59Tests ${TEST_SOURCES})
-  target_link_libraries(CalcU59Tests PRIVATE calcu59_shared)
+  # The one test runner (ADR 0038): library/testing/, its main() included.
+  target_link_libraries(CalcU59Tests PRIVATE calcu59_shared calcu_test_runner)
   target_compile_options(CalcU59Tests PRIVATE ${CALCU59_WARNINGS})
   if(NOT MSVC)
     target_compile_options(CalcU59Tests PRIVATE $<$<CONFIG:Debug>:-O1>)
@@ -108,14 +109,53 @@ if(CALCU_TESTS)
 
   enable_testing()
   file(MAKE_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/build)  # scratch files written by the tests
+  # Test groups (ADR 0031, docs/test-groups.md): labels frequent, longer,
+  # checkpoint; the last two only with CALCU_TESTS_LONGER / _CHECKPOINT.
   add_test(NAME CalcU59Tests COMMAND CalcU59Tests WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
+  set_tests_properties(CalcU59Tests PROPERTIES LABELS frequent)
   # tools/read_trace.py must read the trace CalcU59Tests wrote with Shared/TraceWriter.
   find_package(Python3 COMPONENTS Interpreter)
   if(Python3_FOUND)
     add_test(NAME CalcU59TraceReader
              COMMAND ${Python3_EXECUTABLE} tools/read_trace.py --json build/trace-test.bin
              WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
-    set_tests_properties(CalcU59TraceReader PROPERTIES DEPENDS CalcU59Tests)
+    set_tests_properties(CalcU59TraceReader PROPERTIES DEPENDS CalcU59Tests LABELS frequent)
+  endif()
+
+  # Longer: run locally before merging into main and at the end of a part.
+  if(CALCU_TESTS_LONGER)
+    # Against frontends/web/dist/ (frontends/web/build.sh first).
+    add_test(NAME CalcU59WebPlaywright COMMAND frontends/web/run-tests.sh
+             WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
+    set_tests_properties(CalcU59WebPlaywright PROPERTIES LABELS longer)
+    if(APPLE)
+      # XCUITest UIRegressionTests on one simulator (the iphone role of
+      # bin/simulators.yaml).
+      add_test(NAME CalcU59UIRegression
+               COMMAND sh -c "xcodebuild test -project frontends/swift/Calc-U-59.xcodeproj -scheme Calc-U-59 \
+-testPlan UIRegressionTests -destination \"platform=iOS Simulator,id=$(bin/simulators resolve --role iphone)\""
+               WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
+      set_tests_properties(CalcU59UIRegression PROPERTIES LABELS longer)
+    endif()
+  endif()
+
+  # Checkpoint: run before a release.
+  if(CALCU_TESTS_CHECKPOINT)
+    add_test(NAME CalcU59PacingRealClock COMMAND CalcU59Tests pacing_longrun_real_clock
+             WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
+    set_tests_properties(CalcU59PacingRealClock PROPERTIES LABELS checkpoint
+                         ENVIRONMENT CALCU59_PACING_LONGRUN=600 TIMEOUT 900)
+    if(APPLE)
+      # The App Store set into appstore/screenshots (the iPhone Duo is opened
+      # flat by hand) and the XCUITests on macOS.
+      add_test(NAME CalcU59AppStoreScreenshots COMMAND bin/run-screenshots
+               WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
+      add_test(NAME CalcU59UITestsMac
+               COMMAND xcodebuild test -project frontends/swift/Calc-U-59.xcodeproj -scheme Calc-U-59
+                       -testPlan UIRegressionTests -destination platform=macOS
+               WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
+      set_tests_properties(CalcU59AppStoreScreenshots CalcU59UITestsMac PROPERTIES LABELS checkpoint)
+    endif()
   endif()
 endif()
 

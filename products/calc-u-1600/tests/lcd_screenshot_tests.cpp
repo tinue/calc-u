@@ -20,16 +20,9 @@
 #include "../core/PC1500/PC1500PresetLoader.hpp"
 #include "../core/PC1500/PC1500Screenshot.hpp"
 #include "PresetTestSupport.hpp"
+#include "TestHarness.hpp"
 
 namespace {
-
-int g_pass = 0;
-int g_fail = 0;
-
-#define CHECK(cond) do { \
-    if (cond) { g_pass++; } \
-    else { g_fail++; std::fprintf(stderr, "FAIL %s:%d: %s\n", __FILE__, __LINE__, #cond); } \
-} while (0)
 
 uint32_t be32(const std::vector<uint8_t>& b, std::size_t at) {
     return (uint32_t(b[at]) << 24) | (uint32_t(b[at + 1]) << 16) | (uint32_t(b[at + 2]) << 8) | b[at + 3];
@@ -92,7 +85,7 @@ LcdBitmap checkerboard(int cols, int rows) {
     return b;
 }
 
-void test_render_size_per_model() {
+TEST(test_render_size_per_model) {
     const GrayImage p16 = renderLcdImage(checkerboard(156, 32), kPC1600ScreenMm);
     CHECK(p16.width == 2102 && p16.height == 425); // 89 x 18 mm at 600 DPI
     const GrayImage p15 = renderLcdImage(checkerboard(156, 7), kPC1500ScreenMm);
@@ -100,7 +93,7 @@ void test_render_size_per_model() {
     CHECK(p16.pixelsPerMeter() == 23622);
 }
 
-void test_render_off_is_white_and_dot_layout() {
+TEST(test_render_off_is_white_and_dot_layout) {
     LcdBitmap off = checkerboard(156, 32);
     off.poweredOn = false;
     const GrayImage blank = renderLcdImage(off, kPC1600ScreenMm);
@@ -123,7 +116,7 @@ void test_render_off_is_white_and_dot_layout() {
     CHECK(at(11.5 * cw, 5.5 * ch) == 255);
 }
 
-void test_png_roundtrip() {
+TEST(test_png_roundtrip) {
     const GrayImage img = renderLcdImage(checkerboard(156, 32), kPC1600ScreenMm);
     const std::vector<uint8_t> png = encodePngGray8(img.pixels, img.width, img.height, img.pixelsPerMeter());
     const DecodedPng d = decodePng(png);
@@ -141,7 +134,7 @@ void test_png_roundtrip() {
     CHECK(dn.ok && dn.pixels == noise && dn.ppmX == 0);
 }
 
-void test_preset_screenshot_parse() {
+TEST(test_preset_screenshot_parse) {
     PresetFile p;
     std::string err;
     CHECK(parsePresetString("format-version: 1\nmodel: PC-1500A\nkeys:\n  - screenshot: shot.png\n",
@@ -157,7 +150,7 @@ void test_preset_screenshot_parse() {
 
 // ROM-gated: the step writes a decodable, correctly sized PNG into traceDir
 // that matches a direct render of the same display.
-void test_preset_screenshot_writes_png() {
+TEST(test_preset_screenshot_writes_png) {
     PC1500Machine m;
     PresetFile p;
     std::string err;
@@ -182,14 +175,3 @@ void test_preset_screenshot_writes_png() {
 }
 
 } // namespace
-
-int run_lcd_screenshot_tests() {
-    test_render_size_per_model();
-    test_render_off_is_white_and_dot_layout();
-    test_png_roundtrip();
-    test_preset_screenshot_parse();
-    test_preset_screenshot_writes_png();
-
-    std::printf("lcd_screenshot_tests: %d passed, %d failed\n", g_pass, g_fail);
-    return g_fail;
-}

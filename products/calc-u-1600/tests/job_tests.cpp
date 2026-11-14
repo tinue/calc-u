@@ -23,16 +23,9 @@
 #include "../core/PC1600/PC1600PresetLoader.hpp"
 #include "../core/Preset/PresetFile.hpp"
 #include "../core/Resources/BundledRomCatalog.hpp"
+#include "TestHarness.hpp"
 
 namespace {
-
-int g_pass = 0;
-int g_fail = 0;
-
-#define CHECK(cond) do { \
-    if (cond) { g_pass++; } \
-    else { g_fail++; std::fprintf(stderr, "FAIL %s:%d: %s\n", __FILE__, __LINE__, #cond); } \
-} while (0)
 
 // A fake machine: records every runCycles() call.
 struct FakeMachine {
@@ -61,7 +54,7 @@ job::Task<void> throws(FakeMachine& m) {
     throw std::runtime_error("boom");
 }
 
-void test_driver() {
+TEST(test_driver) {
     FakeMachine straight;
     const std::uint64_t r1 = job::runToCompletion(outer(straight));
     CHECK(r1 == (11 + 12 + 13) + (11 + 12));
@@ -222,20 +215,15 @@ void equivalence_pc1500(const char* presetPath) {
 
 } // namespace
 
-int run_job_tests() {
-    test_driver();
-    if (std::ifstream("roms/PC1600-P0-B0-new.bin").good() && std::ifstream("roms/PC-1500_A04.ROM").good()) {
-        // A pinned wall clock: `- syncclock:` must seed the same time both runs.
-        hostClockOverride() = [] { return std::chrono::system_clock::time_point(std::chrono::hours(500000)); };
-        equivalence_pc1600("tests/fixtures/presets/startup-pc1600.pc1600");
-        equivalence_pc1600("tests/fixtures/presets/maxed-out-mem.pc1600");   // typed program, keys, slot cards
-        equivalence_pc1600("tests/fixtures/presets/hanoi.pc1600");            // BASIC file + RUN
-        equivalence_pc1500("tests/fixtures/presets/startup-pc1500a.pc1500a");
-        equivalence_pc1500("tests/fixtures/presets/memtest_stock.pc1500");  // machine code + typed CALL
-        hostClockOverride() = nullptr;
-    } else {
-        std::printf("job_tests: preset equivalence SKIP (no ROMs in roms/)\n");
-    }
-    std::printf("job_tests: %d passed, %d failed\n", g_pass, g_fail);
-    return g_fail;
+TEST(test_preset_equivalence) {
+    SKIP_UNLESS(std::ifstream("roms/PC1600-P0-B0-new.bin").good() && std::ifstream("roms/PC-1500_A04.ROM").good(),
+                "no ROMs in roms/");
+    // A pinned wall clock: `- syncclock:` must seed the same time both runs.
+    hostClockOverride() = [] { return std::chrono::system_clock::time_point(std::chrono::hours(500000)); };
+    equivalence_pc1600("tests/fixtures/presets/startup-pc1600.pc1600");
+    equivalence_pc1600("tests/fixtures/presets/maxed-out-mem.pc1600");   // typed program, keys, slot cards
+    equivalence_pc1600("tests/fixtures/presets/hanoi.pc1600");            // BASIC file + RUN
+    equivalence_pc1500("tests/fixtures/presets/startup-pc1500a.pc1500a");
+    equivalence_pc1500("tests/fixtures/presets/memtest_stock.pc1500");  // machine code + typed CALL
+    hostClockOverride() = nullptr;
 }

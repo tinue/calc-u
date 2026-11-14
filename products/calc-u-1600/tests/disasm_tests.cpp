@@ -27,20 +27,13 @@
 #include "../core/Debug/Disasm/LH5801Disassembler.hpp"
 #include "../core/Debug/Disasm/Z80Disassembler.hpp"
 #include "TestRoms.hpp"
+#include "TestHarness.hpp"
 
 namespace {
 
-int g_pass = 0;
-int g_fail = 0;
-
-#define CHECK(cond) do { \
-    if (cond) { g_pass++; } \
-    else { g_fail++; std::fprintf(stderr, "FAIL %s:%d: %s\n", __FILE__, __LINE__, #cond); } \
-} while (0)
-
 #define CHECK_TEXT(got, want) do { \
-    if ((got) == (want)) { g_pass++; } \
-    else { g_fail++; std::fprintf(stderr, "FAIL %s:%d: got \"%s\", want \"%s\"\n", __FILE__, __LINE__, \
+    if ((got) == (want)) { testharness::passCount()++; } \
+    else { testharness::failCount()++; std::fprintf(stderr, "FAIL %s:%d: got \"%s\", want \"%s\"\n", __FILE__, __LINE__, \
                                   std::string(got).c_str(), std::string(want).c_str()); } \
 } while (0)
 
@@ -74,7 +67,7 @@ disasm::FetchFn fetchFrom(const std::vector<uint8_t>& bytes, uint16_t base) {
 
 struct LhVector { const char* text; std::vector<uint8_t> bytes; int len; };
 
-void test_lh5801_assembler_vectors() {
+TEST(test_lh5801_assembler_vectors) {
     static const LhVector kVectors[] = {
     {"adc xl", {0x02}, 1},
     {"adc yl", {0x12}, 1},
@@ -348,7 +341,7 @@ void test_lh5801_assembler_vectors() {
     }
 }
 
-void test_lh5801_branches_and_flow() {
+TEST(test_lh5801_branches_and_flow) {
     // The assembler test's hand-computed branches: target = addr + 2 +/- e.
     struct B { uint16_t at; std::vector<uint8_t> bytes; const char* text; uint16_t target; disasm::Flow flow; };
     const B kCases[] = {
@@ -375,7 +368,7 @@ void test_lh5801_branches_and_flow() {
     CHECK(j.flow == disasm::Flow::Jump && !j.hasTarget);
 }
 
-void test_lh5801_vectors_resolve_through_the_table() {
+TEST(test_lh5801_vectors_resolve_through_the_table) {
     // VEJ (C4) and VMJ 0x20 read their handler from ME0 FF00+index, big-endian.
     std::vector<uint8_t> mem(65536, 0);
     mem[0xFFC4] = 0xE8; mem[0xFFC5] = 0x9A;
@@ -394,7 +387,7 @@ void test_lh5801_vectors_resolve_through_the_table() {
     CHECK(vcs.flow == disasm::Flow::CondCall && vcs.target == 0xD461);
 }
 
-void test_lh5801_symbols_and_illegal() {
+TEST(test_lh5801_symbols_and_illegal) {
     std::vector<uint8_t> call{0xBE, 0xE3, 0x3D}, load{0xA5, 0x78, 0x65}, bad{0xE5}, badFd{0xFD, 0x00};
     auto symbols = [](uint16_t a) -> std::string { return a == 0xE33D ? "PRINT" : a == 0x7865 ? "WORK" : ""; };
     CHECK_TEXT(disasm::decodeLH5801(0, fetchFrom(call, 0), symbols).text, "sjp PRINT");
@@ -407,7 +400,7 @@ void test_lh5801_symbols_and_illegal() {
     CHECK_TEXT(f.text, ".db 0xFD,0x00");
 }
 
-void test_lh5801_undocumented_v_opcodes() {
+TEST(test_lh5801_undocumented_v_opcodes) {
     std::vector<uint8_t> sbc{0x30}, ldi{0x7A, 0x40}, fd{0xFD, 0x35};
     disasm::Decoded a = disasm::decodeLH5801(0, fetchFrom(sbc, 0));
     CHECK(a.undocumented && !a.illegal && a.len == 1);
@@ -434,7 +427,7 @@ LhRun runLh5801(const std::vector<uint8_t>& code) {
     return {int(uint16_t(cpu.pc() - 0x4000)), cpu.consumeIllegalOpcodeHit()};
 }
 
-void test_lh5801_sweep_matches_cpu() {
+TEST(test_lh5801_sweep_matches_cpu) {
     int checked = 0;
     for (int prefix = 0; prefix < 2; prefix++) {
         for (int op = 0; op < 256; op++) {
@@ -459,7 +452,7 @@ void test_lh5801_sweep_matches_cpu() {
     CHECK(checked > 300);
 }
 
-void test_lh5801_reset_code_from_rom() {
+TEST(test_lh5801_reset_code_from_rom) {
     // The PC-1500 A04 ROM's reset vector points at E000: rie; ldi a,0; am0; rdp.
     std::vector<uint8_t> rom;
     if (!readRomImage("roms/PC-1500_A04.ROM", &rom) || rom.size() < 0x4000) {
@@ -482,7 +475,7 @@ void test_lh5801_reset_code_from_rom() {
 
 struct ZVector { uint16_t at; std::vector<uint8_t> bytes; const char* text; int len; };
 
-void test_z80_vectors() {
+TEST(test_z80_vectors) {
     static const ZVector kVectors[] = {
         {0x0100, {0x00}, "nop", 1},
         {0x0100, {0x01, 0x34, 0x12}, "ld bc,0x1234", 3},
@@ -562,7 +555,7 @@ void test_z80_vectors() {
     }
 }
 
-void test_z80_flow() {
+TEST(test_z80_flow) {
     struct F { std::vector<uint8_t> bytes; disasm::Flow flow; bool hasTarget; uint16_t target; };
     const F kCases[] = {
         {{0xCD, 0x34, 0x12}, disasm::Flow::Call, true, 0x1234},
@@ -585,7 +578,7 @@ void test_z80_flow() {
     }
 }
 
-void test_z80_prefix_oddities() {
+TEST(test_z80_prefix_oddities) {
     std::vector<uint8_t> ddfd{0xDD, 0xFD, 0x21, 0x00, 0x00}, edBad{0xED, 0x00};
     disasm::Decoded d = disasm::decodeZ80(0, fetchFrom(ddfd, 0));
     CHECK(d.illegal && d.len == 1);
@@ -610,7 +603,7 @@ int runZ80(const std::vector<uint8_t>& code) {
     return int(uint16_t(cpu.pc() - 0x4000));
 }
 
-void test_z80_sweep_matches_cpu() {
+TEST(test_z80_sweep_matches_cpu) {
     int checked = 0;
     auto check = [&](std::vector<uint8_t> code) {
         // The repeating block ops (ED B0-B3, B8-BB) loop until their
@@ -640,7 +633,7 @@ void test_z80_sweep_matches_cpu() {
 
 // ── History rings ─────────────────────────────────────────────────────────
 
-void test_lh5801_history_records_bytes_and_pre_registers() {
+TEST(test_lh5801_history_records_bytes_and_pre_registers) {
     LhBus bus;
     const uint8_t code[] = {0xB5, 0x42,        // ldi a,0x42
                             0xFD, 0xEF, 0x78, 0x00, 0x01, // adi #(0x7800),0x01 (5 bytes)
@@ -669,7 +662,7 @@ void test_lh5801_history_records_bytes_and_pre_registers() {
     CHECK(cpu.history().size() == 0);
 }
 
-void test_lh5801_history_ring_wraps() {
+TEST(test_lh5801_history_ring_wraps) {
     LhBus bus;
     for (int i = 0; i < 100; i++) bus.mem[0x4000 + i] = 0x38; // nop
     bus.mem[0xFFFE] = 0x40; bus.mem[0xFFFF] = 0x00;
@@ -681,7 +674,7 @@ void test_lh5801_history_ring_wraps() {
     CHECK(cpu.history().recent(19).pc == 0x4000 + 30);
 }
 
-void test_z80_history_carried_prefix_and_interrupt() {
+TEST(test_z80_history_carried_prefix_and_interrupt) {
     ZBus bus;
     const uint8_t code[] = {0xDD, 0xFD, 0x21, 0x34, 0x12, // dropped DD, then ld iy,0x1234
                             0xD9,                         // exx
@@ -712,7 +705,7 @@ void test_z80_history_carried_prefix_and_interrupt() {
     CHECK(cpu.history().size() == 0);
 }
 
-void test_z80_history_drops_prefix_before_ed() {
+TEST(test_z80_history_drops_prefix_before_ed) {
     // DD ED 43 nn nn fetches five bytes; the frame keeps the ED instruction.
     ZBus bus;
     const uint8_t code[] = {0xDD, 0xED, 0x43, 0x00, 0x80};
@@ -728,23 +721,3 @@ void test_z80_history_drops_prefix_before_ed() {
 }
 
 } // namespace
-
-int run_disasm_tests() {
-    test_lh5801_assembler_vectors();
-    test_lh5801_branches_and_flow();
-    test_lh5801_vectors_resolve_through_the_table();
-    test_lh5801_symbols_and_illegal();
-    test_lh5801_undocumented_v_opcodes();
-    test_lh5801_sweep_matches_cpu();
-    test_lh5801_reset_code_from_rom();
-    test_z80_vectors();
-    test_z80_flow();
-    test_z80_prefix_oddities();
-    test_z80_sweep_matches_cpu();
-    test_lh5801_history_records_bytes_and_pre_registers();
-    test_lh5801_history_ring_wraps();
-    test_z80_history_carried_prefix_and_interrupt();
-    test_z80_history_drops_prefix_before_ed();
-    std::printf("disasm tests: %d passed, %d failed\n", g_pass, g_fail);
-    return g_fail;
-}

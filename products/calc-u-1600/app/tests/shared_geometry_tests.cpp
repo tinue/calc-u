@@ -10,19 +10,15 @@
 #include "app/DisplayFrame.hpp"
 #include "app/LcdLayout.hpp"
 #include "app/PlotterPaper.hpp"
-#include "SharedTestSupport.hpp"
+#include "TestHarness.hpp"
 
 namespace {
-
-int g_pass = 0;
-int g_fail = 0;
-#define CHECK(cond) SHARED_CHECK(g_pass, g_fail, cond)
 
 bool near(double a, double b, double eps = 1e-6) { return std::fabs(a - b) < eps; }
 
 using FlatPoint = AlpsPlotterMechanism::FlatPoint;
 
-void test_canvas_point() {
+TEST(test_canvas_point) {
     const auto g = shared::PaperGeometry::ce1600p();
     // Pane width == paper width in mm: 1 pt per mm.
     const shared::PaperPoint p = g.canvasPoint(0, 0, 0, 210.0);
@@ -35,7 +31,7 @@ void test_canvas_point() {
     CHECK(near(g.contentHeight(0.0, 0, 1920, 210.0), 190.0 + 48.0));
 }
 
-void test_strokes() {
+TEST(test_strokes) {
     const auto g = shared::PaperGeometry::ce150();
     const std::vector<FlatPoint> pts = {
         {0, 0, 0, 1}, {10, 0, 0, 0}, {10, 10, 0, 0},  // black: one polyline of 3
@@ -53,7 +49,7 @@ void test_strokes() {
     CHECK(shared::penYRange({}).first == 0 && shared::penYRange({}).second == 0);
 }
 
-void test_export_size() {
+TEST(test_export_size) {
     const auto g = shared::PaperGeometry::ce1600p();
     const shared::PaperExportSize s = shared::paperExportSize(g, 0, 0);
     CHECK(near(s.scale, 1200.0 / 72.0));
@@ -67,7 +63,7 @@ void test_export_size() {
     CHECK(static_cast<double>(big.widthPx) * big.heightPx <= 64.0e6 * 1.001);
 }
 
-void test_faceplate_fit() {
+TEST(test_faceplate_fit) {
     const KeyLayout::Layout& l = KeyLayout::layoutFor(shared::Model::PC1600);
     CHECK(&KeyLayout::layoutFor(shared::Model::PC1500) == &KeyLayout::layoutFor(shared::Model::PC1500A));
     CHECK(!KeyLayout::fitLayout(l, 0, 100).art.valid());
@@ -109,7 +105,7 @@ shared::DisplayFrame frameWith(std::initializer_list<const char*> lit) {
     return frame;
 }
 
-void test_lcd_indicators() {
+TEST(test_lcd_indicators) {
     using shared::lcd::Indicator;
     using shared::Model;
     // PC-1500: KANA reads JPN, DE+G is one word, the battery dot is always on.
@@ -129,14 +125,4 @@ void test_lcd_indicators() {
     CHECK(p16[2].text == "II");
     CHECK(p16[0].x > shared::lcd::kP16RowLeft && p16[1].x <= shared::lcd::kP16RowRight);
     CHECK(shared::lcd::indicators(Model::PC1600, frameWith({})).empty());
-}
-
-int run_shared_geometry_tests() {
-    test_canvas_point();
-    test_strokes();
-    test_export_size();
-    test_faceplate_fit();
-    test_lcd_indicators();
-    std::printf("shared_geometry_tests: %d passed, %d failed\n", g_pass, g_fail);
-    return g_fail;
 }

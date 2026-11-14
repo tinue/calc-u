@@ -11,16 +11,9 @@
 
 #include "../core/PC1500/PC1500Machine.hpp"
 #include "TestCards.hpp"
+#include "TestHarness.hpp"
 
 namespace {
-
-int g_pass = 0;
-int g_fail = 0;
-
-#define CHECK(cond) do { \
-    if (cond) { g_pass++; } \
-    else { g_fail++; std::fprintf(stderr, "FAIL %s:%d: %s\n", __FILE__, __LINE__, #cond); } \
-} while (0)
 
 PinState makePins(uint16_t addr, bool y0 = false, bool y2 = false) {
     PinState p;
@@ -35,7 +28,7 @@ PinState makePins(uint16_t addr, bool y0 = false, bool y2 = false) {
 #define CE155_OR_SKIP(card, host)                                                         \
     auto card = bundledCard("ce155.card.yaml", host);                                     \
     if (!card) {                                                                          \
-        g_fail++; std::fprintf(stderr, "FAIL %s: frontends/qt6/resources/cards/ce155.card.yaml missing or unloadable\n", __func__); \
+        testharness::failCount()++; std::fprintf(stderr, "FAIL %s: frontends/qt6/resources/cards/ce155.card.yaml missing or unloadable\n", __func__); \
         return;                                                                           \
     }
 
@@ -44,7 +37,7 @@ PinState makePins(uint16_t addr, bool y0 = false, bool y2 = false) {
 // these tests drive the physical pins directly. Which address window those
 // pins carry a strobe for is the connector's job, not the card's, and is
 // covered by connector_tests.cpp.
-void test_ce155_pin4_subrange_window() {
+TEST(test_ce155_pin4_subrange_window) {
     CE155_OR_SKIP(owned, CardHost::PC1500);
     SoftwareDefinedCard& card = *owned;
     uint8_t v;
@@ -72,7 +65,7 @@ void test_ce155_pin4_subrange_window() {
     CHECK(!card.respondsToRead(p5, v));
 }
 
-void test_ce155_pins_16_17_18_chips() {
+TEST(test_ce155_pins_16_17_18_chips) {
     CE155_OR_SKIP(owned, CardHost::PC1500);
     SoftwareDefinedCard& card = *owned;
     uint8_t v;
@@ -104,7 +97,7 @@ void test_ce155_pins_16_17_18_chips() {
     CHECK(cardA.respondsToRead(a3, v) && v == 0x53);   // chip 3, offset 0x1FFF
 }
 
-void test_ce155_end_to_end_via_machine() {
+TEST(test_ce155_end_to_end_via_machine) {
     CE155_OR_SKIP(card, CardHost::PC1500);
     PC1500Machine pc1500(PC1500Variant::PC1500);
     pc1500.attachExpansionCard(std::move(card));
@@ -127,12 +120,3 @@ void test_ce155_end_to_end_via_machine() {
 }
 
 } // namespace
-
-int run_ce155_tests() {
-    test_ce155_pin4_subrange_window();
-    test_ce155_pins_16_17_18_chips();
-    test_ce155_end_to_end_via_machine();
-
-    std::printf("ce155_tests: %d passed, %d failed\n", g_pass, g_fail);
-    return g_fail;
-}

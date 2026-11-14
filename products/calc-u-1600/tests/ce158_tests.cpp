@@ -22,16 +22,9 @@
 #include "../core/PC1600/PC1600Machine.hpp"
 #include "../core/PC1600/PC1600PresetLoader.hpp"
 #include "../core/Resources/BundledRomCatalog.hpp"
+#include "TestHarness.hpp"
 
 namespace {
-
-int g_pass = 0;
-int g_fail = 0;
-
-#define CHECK(cond) do { \
-    if (cond) { g_pass++; } \
-    else { g_fail++; std::fprintf(stderr, "FAIL %s:%d: %s\n", __FILE__, __LINE__, #cond); } \
-} while (0)
 
 // Cycles as the PC-1500 drives the 60-pin contacts.
 SystemBusPins me1(uint16_t addr, bool forWrite) {
@@ -84,7 +77,7 @@ Ce158Card& freshCard(Ce158Card& card) {
 
 // ── ROM window ────────────────────────────────────────────────────────
 
-void test_rom_window_pv_gated_and_pu_banked() {
+TEST(test_rom_window_pv_gated_and_pu_banked) {
     Ce158Card card;
     auto rom = fakeRom();
     CHECK(!card.loadRom(rom.data(), rom.size() - 1)); // wrong size rejected
@@ -107,7 +100,7 @@ void test_rom_window_pv_gated_and_pu_banked() {
 
 // ── LH5811 ports ──────────────────────────────────────────────────────
 
-void test_port_a_modem_lines_and_strap() {
+TEST(test_port_a_modem_lines_and_strap) {
     Ce158Card card;
     freshCard(card);
     FakeLink link;
@@ -139,7 +132,7 @@ void test_port_a_modem_lines_and_strap() {
     CHECK(rd(card, 0xD00F) == (0x80 | 0x2A));
 }
 
-void test_centronics_strobe_captures_inverted_byte() {
+TEST(test_centronics_strobe_captures_inverted_byte) {
     Ce158Card card;
     freshCard(card);
     wr(card, 0xD00D, 0x7F);
@@ -167,7 +160,7 @@ void test_centronics_strobe_captures_inverted_byte() {
     CHECK(card.drainParallelOutput().empty());
 }
 
-void test_baud_codes_from_rom_table() {
+TEST(test_baud_codes_from_rom_table) {
     Ce158Card card;
     freshCard(card);
     wr(card, 0xD00C, 0xC0);
@@ -184,7 +177,7 @@ void test_baud_codes_from_rom_table() {
 
 // ── CDP1854 UART ──────────────────────────────────────────────────────
 
-void test_uart_transmit_paced_by_baud() {
+TEST(test_uart_transmit_paced_by_baud) {
     Ce158Card card;
     freshCard(card);
     FakeLink link;
@@ -210,7 +203,7 @@ void test_uart_transmit_paced_by_baud() {
     CHECK((rd(card, 0xD203) & Ce158Card::kStatusTHRE) != 0);
 }
 
-void test_uart_receive_never_overruns() {
+TEST(test_uart_receive_never_overruns) {
     Ce158Card card;
     freshCard(card);
     FakeLink link;
@@ -244,7 +237,7 @@ void test_uart_receive_never_overruns() {
 
 // ── integration on a real PC1500Machine ───────────────────────────────
 
-void test_machine_decode_alongside_internal_io() {
+TEST(test_machine_decode_alongside_internal_io) {
     PC1500Machine machine(PC1500Variant::PC1500A);
     auto rom = fakeRom();
     CHECK(machine.attachCE158(rom.data(), rom.size()));
@@ -272,7 +265,7 @@ void test_machine_decode_alongside_internal_io() {
 // The debugger's ME1 peeks ask the cards (readHasSideEffects) instead of
 // knowing their address ranges: a register a read would disturb stays
 // unread, only while that card is plugged in, on both hosts.
-void test_debug_peek_skips_card_registers() {
+TEST(test_debug_peek_skips_card_registers) {
     auto rom = fakeRom();
     std::vector<uint8_t> ce150(Ce150Card::kRomSize, 0x5A);
     bool readable = true;
@@ -331,7 +324,7 @@ bool loadPreset(const std::string& body, PresetFile* preset) {
 
 std::string text(const std::vector<uint8_t>& bytes) { return std::string(bytes.begin(), bytes.end()); }
 
-void test_preset_parse_interface_key() {
+TEST(test_preset_parse_interface_key) {
     PresetFile p;
     CHECK(loadPreset("format-version: 1\nmodel: PC-1500A\ninterface: CE-158\n", &p));
     CHECK(p.interfaceName == "ce158");
@@ -344,7 +337,7 @@ void test_preset_parse_interface_key() {
 
 // LPRINT to the Centronics port with the CE-150 also on the chain: the
 // CE-158 prints its line, OPN hands LPRINT back to the CE-150.
-void test_rom_lprint_centronics_with_ce150_chained() {
+TEST(test_rom_lprint_centronics_with_ce150_chained) {
     if (!haveRoms(__func__)) return;
     PresetFile preset;
     CHECK(loadPreset(
@@ -368,7 +361,7 @@ void test_rom_lprint_centronics_with_ce150_chained() {
 // from it. The peer is armed only once INPUT is waiting -- the ROM flushes
 // the receiver when SETDEV runs, so an earlier byte would be lost (as on
 // the real interface).
-void test_rom_serial_lprint_and_input() {
+TEST(test_rom_serial_lprint_and_input) {
     if (!haveRoms(__func__)) return;
     PresetFile preset;
     CHECK(loadPreset(
@@ -398,7 +391,7 @@ void test_rom_serial_lprint_and_input() {
 
 // ── PC-1600: the CE-158 on the LH5803 side ─────────────────────────────
 
-void test_pc1600_lh5803_window_and_io_routing() {
+TEST(test_pc1600_lh5803_window_and_io_routing) {
     PC1600Machine m;
     auto rom = fakeRom();
     std::vector<uint8_t> ce150(Ce150Card::kRomSize, 0x5A);
@@ -438,7 +431,7 @@ void test_pc1600_lh5803_window_and_io_routing() {
     CHECK(mem.readME0(0x8000) == 0xFF);
 }
 
-void test_pc1600_ce158_and_ce1600p_exclusive() {
+TEST(test_pc1600_ce158_and_ce1600p_exclusive) {
     PC1600Machine m;
     auto rom = fakeRom();
     std::vector<uint8_t> half(CE1600PCard::kRomHalfSize, 0x11);
@@ -470,7 +463,7 @@ std::string pc1600Preset(const std::string& program) {
 
 // MODE 1: LPRINT through the CE-158's parallel port, then (SETDEV PO) its
 // serial port, from PC-1600 BASIC via the LH5803.
-void test_pc1600_rom_mode1_printing() {
+TEST(test_pc1600_rom_mode1_printing) {
     if (!havePC1600Roms(__func__)) return;
     PresetFile preset;
     CHECK(loadPreset(pc1600Preset("    10 OPN \"LPRT\"\n    20 LPRINT \"HELLO 1600\"\n    30 OPN\n"
@@ -493,7 +486,7 @@ void test_pc1600_rom_mode1_printing() {
 
 // MODE 1: RINKEY$ reads the CE-158's UART. The peer is armed once the
 // program is polling.
-void test_pc1600_rom_mode1_rinkey() {
+TEST(test_pc1600_rom_mode1_rinkey) {
     if (!havePC1600Roms(__func__)) return;
     PresetFile preset;
     CHECK(loadPreset(pc1600Preset("    10 B$=RINKEY$\n    20 IF LEN(B$)=0 THEN 10\n"
@@ -522,7 +515,7 @@ void test_pc1600_rom_mode1_rinkey() {
 // NMI; the LH5803 ROM's handler (C440H) runs a copy of the shift, redraws
 // the LCD through ME1 A058H/A059H, acknowledges at port 36H and resumes at
 // 943AH. Ref/PC-1600/PC-1600-CPU-LH5803-Compat.md §6.1.
-void test_pc1600_lhnmio_trap_runs_ce158_shift() {
+TEST(test_pc1600_lhnmio_trap_runs_ce158_shift) {
     if (!havePC1600Roms(__func__)) return;
     PC1600Machine m;
     std::string err;
@@ -576,7 +569,7 @@ void test_pc1600_lhnmio_trap_runs_ce158_shift() {
 
 // ME1 A040H-A05FH is Z-80 ports 40H-5FH for the LH5803 (LCD1500_ALL polls
 // the HD61102 busy bit at #(A058H)/#(A059H)): not open bus.
-void test_pc1600_lh5803_me1_reaches_lcd_ports() {
+TEST(test_pc1600_lh5803_me1_reaches_lcd_ports) {
     PC1600Machine m;
     auto& mem = m.lh5803Memory();
     CHECK(mem.readME1(0xA058) == m.memory().readIO(0x58));
@@ -588,26 +581,3 @@ void test_pc1600_lh5803_me1_reaches_lcd_ports() {
 }
 
 } // namespace
-
-int run_ce158_tests() {
-    test_rom_window_pv_gated_and_pu_banked();
-    test_port_a_modem_lines_and_strap();
-    test_centronics_strobe_captures_inverted_byte();
-    test_baud_codes_from_rom_table();
-    test_uart_transmit_paced_by_baud();
-    test_uart_receive_never_overruns();
-    test_machine_decode_alongside_internal_io();
-    test_debug_peek_skips_card_registers();
-    test_preset_parse_interface_key();
-    test_rom_lprint_centronics_with_ce150_chained();
-    test_rom_serial_lprint_and_input();
-    test_pc1600_lh5803_window_and_io_routing();
-    test_pc1600_ce158_and_ce1600p_exclusive();
-    test_pc1600_rom_mode1_printing();
-    test_pc1600_rom_mode1_rinkey();
-    test_pc1600_lhnmio_trap_runs_ce158_shift();
-    test_pc1600_lh5803_me1_reaches_lcd_ports();
-
-    std::printf("ce158_tests: %d passed, %d failed\n", g_pass, g_fail);
-    return g_fail;
-}

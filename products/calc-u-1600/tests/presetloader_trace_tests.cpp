@@ -28,16 +28,9 @@
 #include "../core/PC1600/PC1600PresetLoader.hpp"
 #include "PresetTestSupport.hpp"
 #include "TestRoms.hpp"
+#include "TestHarness.hpp"
 
 namespace {
-
-int g_pass = 0;
-int g_fail = 0;
-
-#define CHECK(cond) do { \
-    if (cond) { g_pass++; } \
-    else { g_fail++; std::fprintf(stderr, "FAIL %s:%d: %s\n", __FILE__, __LINE__, #cond); } \
-} while (0)
 
 const char* kRomPath = "roms/PC-1500_A04.ROM";
 
@@ -104,7 +97,7 @@ std::string makeTempDir() {
 
 // A preset that explicitly starts and stops a trace produces a complete
 // stream: SESSION_START ... TRACE_EVENT(s) ... SESSION_END.
-void test_trace_step_produces_wellformed_file() {
+TEST(test_trace_step_produces_wellformed_file) {
     if (!romPresent()) {
         std::fprintf(stderr, "SKIP test_trace_step_produces_wellformed_file: %s not found "
                               "relative to cwd (run tests from the repo root)\n", kRomPath);
@@ -145,7 +138,7 @@ void test_trace_step_produces_wellformed_file() {
 
 // A trace left running at the end of the preset is still finalised
 // (SESSION_END written, file closed) by runPresetSections()' TraceCloser guard.
-void test_trace_left_open_is_auto_closed() {
+TEST(test_trace_left_open_is_auto_closed) {
     if (!romPresent()) {
         std::fprintf(stderr, "SKIP test_trace_left_open_is_auto_closed: %s not found\n", kRomPath);
         return;
@@ -185,7 +178,7 @@ void test_trace_left_open_is_auto_closed() {
 // TRACE_EVENT_Z80 (0x04) record's 29-byte payload survives a write/read
 // round trip alongside an ordinary (LH5801-shaped) TRACE_EVENT in the
 // same file, both readable by a single linear scan.
-void test_z80_frame_shares_one_file_with_lh5801_frame() {
+TEST(test_z80_frame_shares_one_file_with_lh5801_frame) {
     std::string dir = makeTempDir();
     CHECK(!dir.empty());
     if (dir.empty()) return;
@@ -241,7 +234,7 @@ void test_z80_frame_shares_one_file_with_lh5801_frame() {
 // stream, and -- because both CPUs run during boot -- it carries BOTH a
 // 25-byte LH5803-shaped TRACE_EVENT (0x02) and a 29-byte SC7852-shaped
 // TRACE_EVENT_Z80 (0x04) in the one file.
-void test_pc1600_trace_step_produces_wellformed_file() {
+TEST(test_pc1600_trace_step_produces_wellformed_file) {
     PC1600Machine machine;
     if (!loadPC1600Roms(machine)) {
         std::fprintf(stderr, "SKIP test_pc1600_trace_step_produces_wellformed_file: PC-1600 ROM images not found\n");
@@ -286,7 +279,7 @@ void test_pc1600_trace_step_produces_wellformed_file() {
 
 // A PC-1600 trace left running at the end of the preset is still finalised
 // by applyPC1600Preset()'s TraceCloser guard.
-void test_pc1600_trace_left_open_is_auto_closed() {
+TEST(test_pc1600_trace_left_open_is_auto_closed) {
     PC1600Machine machine;
     if (!loadPC1600Roms(machine)) {
         std::fprintf(stderr, "SKIP test_pc1600_trace_left_open_is_auto_closed: PC-1600 ROM images not found\n");
@@ -323,7 +316,7 @@ void test_pc1600_trace_left_open_is_auto_closed() {
 // Not a trace test, but the same ROM-driven applyPC1500Preset() setup: a
 // machine-code `program:` block that isn't all RAM, or runs past &FFFF, fails the
 // preset instead of dropping or wrapping bytes and reporting success.
-void test_binary_program_outside_ram_fails() {
+TEST(test_binary_program_outside_ram_fails) {
     if (!romPresent()) {
         std::fprintf(stderr, "SKIP test_binary_program_outside_ram_fails: %s not found\n", kRomPath);
         return;
@@ -357,7 +350,7 @@ void test_binary_program_outside_ram_fails() {
 // A machine-code `file:` with a CE-158 header on a PC-1500: the payload (not the
 // 27 header bytes) lands at the header's load address, with no `address:`.
 // A headerless file without `address:` is refused at load time.
-void test_binary_program_ce158_header() {
+TEST(test_binary_program_ce158_header) {
     if (!romPresent()) {
         std::fprintf(stderr, "SKIP test_binary_program_ce158_header: %s not found\n", kRomPath);
         return;
@@ -401,16 +394,3 @@ void test_binary_program_ce158_header() {
 }
 
 } // namespace
-
-int run_presetloader_trace_tests() {
-    test_trace_step_produces_wellformed_file();
-    test_trace_left_open_is_auto_closed();
-    test_z80_frame_shares_one_file_with_lh5801_frame();
-    test_pc1600_trace_step_produces_wellformed_file();
-    test_pc1600_trace_left_open_is_auto_closed();
-    test_binary_program_outside_ram_fails();
-    test_binary_program_ce158_header();
-
-    std::printf("presetloader_trace_tests: %d passed, %d failed\n", g_pass, g_fail);
-    return g_fail;
-}

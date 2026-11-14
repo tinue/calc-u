@@ -19,16 +19,9 @@
 #include "../core/PC1600/PC1600PresetLoader.hpp"
 #include "PresetTestSupport.hpp"
 #include "TestRoms.hpp"
+#include "TestHarness.hpp"
 
 namespace {
-
-int g_pass = 0;
-int g_fail = 0;
-
-#define CHECK(cond) do { \
-    if (cond) { g_pass++; } \
-    else { g_fail++; std::fprintf(stderr, "FAIL %s:%d: %s\n", __FILE__, __LINE__, #cond); } \
-} while (0)
 
 std::string joined(const std::vector<std::string>& lines) {
     std::string s;
@@ -75,20 +68,20 @@ bool preset1600(PC1600Machine& m, const std::string& yaml) {
     std::string err;
     if (!parsePresetString(yaml, "/tmp/inspector_tests_scratch.pc1600", &p, &err)) {
         std::fprintf(stderr, "FAIL preset parse: %s\n", err.c_str());
-        g_fail++;
+        testharness::failCount()++;
         return false;
     }
     const PresetLoadResult r = applyPC1600Preset(m, p, nullptr, ".", "frontends/qt6/resources/cards");
     if (!r.ok) {
         std::fprintf(stderr, "FAIL preset: %s\n", r.error.c_str());
-        g_fail++;
+        testharness::failCount()++;
     }
     return r.ok;
 }
 
 // ── Formatting ───────────────────────────────────────────────────────────
 
-void test_text_table_draws_boxes_and_spans() {
+TEST(test_text_table_draws_boxes_and_spans) {
     inspect::TextTable t({"Name", "Size"}, {inspect::TextTable::Align::Left, inspect::TextTable::Align::Right});
     t.addSpan("Built in");
     t.addRow({"RAM", "16K"});
@@ -106,7 +99,7 @@ void test_text_table_draws_boxes_and_spans() {
     for (const std::string& l : out) CHECK(inspect::displayWidth(l) == 15);
 }
 
-void test_text_table_widens_for_a_long_span() {
+TEST(test_text_table_widens_for_a_long_span) {
     inspect::TextTable t({"A", "B"});
     t.addSpan("a span longer than the columns");
     t.addRow({"x", "y"});
@@ -114,7 +107,7 @@ void test_text_table_widens_for_a_long_span() {
     for (const std::string& l : out) CHECK(inspect::displayWidth(l) == inspect::displayWidth(out[0]));
 }
 
-void test_hex_dump_folds_filler_rows() {
+TEST(test_hex_dump_folds_filler_rows) {
     std::vector<uint8_t> bytes(0x60, 0x00);
     bytes[0x00] = 'H';
     bytes[0x01] = 'I';
@@ -130,7 +123,7 @@ void test_hex_dump_folds_filler_rows() {
     CHECK(inspect::sizeLabel(197) == "197 B");
 }
 
-void test_view_names_round_trip() {
+TEST(test_view_names_round_trip) {
     for (inspect::View v : {inspect::View::Pointers, inspect::View::Z80View, inspect::View::DumpDiskS2,
                             inspect::View::DumpMlArea}) {
         inspect::View back;
@@ -146,7 +139,7 @@ void test_view_names_round_trip() {
 
 // Page B banks 4-7 go out on the 60-pin bus; the bank state names the card
 // that answers instead of reporting open bus.
-void test_bank_state_names_the_bus_card_in_page_b() {
+TEST(test_bank_state_names_the_bus_card_in_page_b) {
     PC1600Machine m;
     const std::vector<uint8_t> rom(PC1600HostDriveCard::kRomSize, 0xC9);
     CHECK(m.attachHostDrive(rom.data(), rom.size(), "/tmp"));
@@ -159,7 +152,7 @@ void test_bank_state_names_the_bus_card_in_page_b() {
     CHECK(s.target[1] == PC1600Machine::PageTarget::OpenBus);
 }
 
-void test_bank_state_empty_slot_is_open_bus() {
+TEST(test_bank_state_empty_slot_is_open_bus) {
     PC1600Machine m;
     m.bank().writePort31(0x00);  // page C bank 0 = Slot 1, empty
     CHECK(m.debugBankState().target[2] == PC1600Machine::PageTarget::OpenBus);
@@ -167,7 +160,7 @@ void test_bank_state_empty_slot_is_open_bus() {
 
 // LHA90: the LH5803's 7400H-744FH reads 7600H-764FH, in the debugger's peek
 // as on the bus.
-void test_lh5803_debug_peek_applies_lha90() {
+TEST(test_lh5803_debug_peek_applies_lha90) {
     PC1600Machine m;
     m.memory().write(0xF610, 0x5A);  // LH5803 7610H
     bool readable = false;
@@ -176,7 +169,7 @@ void test_lh5803_debug_peek_applies_lha90() {
 }
 
 // A slot read for the inspector leaves the card as it was (no probe write).
-void test_slot_bus_read_has_no_side_effects() {
+TEST(test_slot_bus_read_has_no_side_effects) {
     PC1600Machine m;
     if (!preset1600(m, "format-version: 1\nmodel: PC-1600\nslot-1: CE-1600M\n")) return;
     const uint64_t before = m.memory().slot1CardRevision();
@@ -190,7 +183,7 @@ void test_slot_bus_read_has_no_side_effects() {
 
 // CE-1601M in Slot 2, INIT "F" then "M": vertical bank 0 back to BASIC,
 // vertical bank 1 the RAM disk; the CE-1600M in Slot 1 is expansion memory.
-void test_pc1600_views_split_ce1601m() {
+TEST(test_pc1600_views_split_ce1601m) {
     PC1600Machine m;
     if (!preset1600(m, "format-version: 1\nmodel: PC-1600\nslot-1: CE-1600M\nslot-2: CE-1601M\n"
                        "keys:\n  - key: mode\n  - type: NEW0\n  - type: INIT\"S2:\",\"F\"\n"
@@ -221,7 +214,7 @@ void test_pc1600_views_split_ce1601m() {
 }
 
 // CE-1600M as a program module with an ML reserve, selected by TITLE.
-void test_pc1600_views_program_module() {
+TEST(test_pc1600_views_program_module) {
     PC1600Machine m;
     if (!preset1600(m, "format-version: 1\nmodel: PC-1600\nslot-1: CE-1600M\n"
                        "keys:\n  - key: mode\n  - type: NEW0\n  - type: INIT\"S1:\",\"P\"\n"
@@ -243,7 +236,7 @@ void test_pc1600_views_program_module() {
     CHECK(row(ptrs, {"S1 free", "STATUS 259"}));
 }
 
-void test_pc1600_z80_and_lh_views_on_a_booted_machine() {
+TEST(test_pc1600_z80_and_lh_views_on_a_booted_machine) {
     PC1600Machine m;
     if (!bootPC1600(m)) return;
     const auto z80 = view1600(m, inspect::View::Z80View);
@@ -258,7 +251,7 @@ void test_pc1600_z80_and_lh_views_on_a_booted_machine() {
 // The LH5803's 0000H-3FFFH during a PC-1500 statement, and whether MODE 1
 // is possible: P_MAPPRG maps the program bank in MODE 1 only; PC15MAP
 // refuses MODE 1 when S0 spans more than one module bank.
-void test_pc1600_lh_view_mode1_rows() {
+TEST(test_pc1600_lh_view_mode1_rows) {
     {
         PC1600Machine m;
         if (!preset1600(m, "format-version: 1\nmodel: PC-1600\nslot-1: CE-161\nkeys:\n  - type: MODE 1\n")) return;
@@ -285,7 +278,7 @@ void test_pc1600_lh_view_mode1_rows() {
     }
 }
 
-void test_pc1500_views() {
+TEST(test_pc1500_views) {
     PC1500Machine m(PC1500Variant::PC1500A);
     PresetFile p;
     std::string err;
@@ -317,22 +310,3 @@ void test_pc1500_views() {
 }
 
 }  // namespace
-
-int run_inspector_tests() {
-    test_text_table_draws_boxes_and_spans();
-    test_text_table_widens_for_a_long_span();
-    test_hex_dump_folds_filler_rows();
-    test_view_names_round_trip();
-    test_bank_state_names_the_bus_card_in_page_b();
-    test_bank_state_empty_slot_is_open_bus();
-    test_lh5803_debug_peek_applies_lha90();
-    test_slot_bus_read_has_no_side_effects();
-    test_pc1600_views_split_ce1601m();
-    test_pc1600_views_program_module();
-    test_pc1600_z80_and_lh_views_on_a_booted_machine();
-    test_pc1600_lh_view_mode1_rows();
-    test_pc1500_views();
-
-    std::printf("inspector_tests: %d passed, %d failed\n", g_pass, g_fail);
-    return g_fail;
-}

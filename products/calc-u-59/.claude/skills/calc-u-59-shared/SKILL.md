@@ -14,8 +14,8 @@ drawing rules: `reference/SharedArchitecture.md`. Don't restate them here.
 1. **Shared is the home of all non-GUI logic.** If code would parse, encode,
    time, sequence, build a snapshot or compute a layout number in Swift, Qt
    or the web client's JS, it belongs here instead (CLAUDE.md § "Frontend Parity").
-2. **C++17, standard library only.** No Foundation, Qt or platform APIs; no
-   C++20 (the CMake build is C++17 — it is the gate).
+2. **C++20, standard library only** (ADR 0005). No Foundation, Qt or
+   platform APIs. CMake builds it as C++20, Xcode as gnu++20.
 3. **No locations.** Take `std::filesystem::path` or a `ResourceReader`;
    never look up iCloud, Documents, bundles or qrc.
 4. **All builds before every commit** (commands: CLAUDE.md § "Frontend Parity").

@@ -188,6 +188,17 @@ ruled on 2026-11-13, and the steps below are worded accordingly:
 - **If an example's two runs differ:** the upgrade rule that produced
   the difference is a finding; the spec is changed with the user, not
   the reference.
+- **Result (2026-11-14, M-9):** the recorder is
+  `products/calc-u-59/tests/reference_runs_tests.cpp` (2.3.0's
+  `SessionController`, cooperative, a 60 Hz clock it supplies; runs only
+  with `CALCU59_REFERENCE_RECORD=1`); the references are
+  `products/calc-u-59/tests/reference/v2.3.0-examples/` (display, model,
+  partition, printed lines, card files and in-file cards written, log,
+  RAM). 56 examples end their playback; `historic/life.ti59` keeps
+  computing and printing (recorded after 30 minutes of emulated time).
+  Card files are written by `pdcm-make-cards` (two); `pdcm-card-tricks`
+  writes in-file cards (five). The only change to imported code is a
+  read-only accessor, `SessionController::memoryCardBanks()`.
 
 ### 7. Reset and the partition (check, by a golden run)
 - **What:** on a TI-59 and a TI-58 with a partition other than the
@@ -331,6 +342,22 @@ ruled on 2026-11-13, and the steps below are worded accordingly:
 - **If the old code does not meet the bound of AC-1:** the bound is the
   old code's measured one for the "before" test, and the difference is
   stated in the test.
+- **Result (2026-11-14, M-10; `tests/pacing_longrun_tests.cpp` of both
+  products, scripted in Frequent, `CALCU59_PACING_LONGRUN` /
+  `CALCU1600_PACING_LONGRUN=600` on the real clock for the Checkpoint):**
+  - Calc-U-59 2.3.0 cuts each 20 ms batch to whole ticks
+    (`Shared/Pacing.hpp:22` at the pin): the TI-59 runs 0.13 % and the
+    TI-58C 0.10 % slow against their own clock; the TI-58 divides evenly.
+    At that rate the scripted hour stays within 27-30 ms per model, and
+    ten minutes on the real clock within 3 ms. The user ruled the
+    tolerance of AC-18 (0.3 %; 0.3-1 % to the user).
+  - Calc-U-1600 0.8.1 drops the cycles `runCycles` runs past what the
+    pacer granted: the PC-1600 runs 0.0037 % fast while on and 0.21 %
+    fast once it has switched itself off (after about 10 minutes); the
+    PC-1500A stays within 12.7 ms over an hour; ten minutes on the real
+    clock: +9.7 ms (PC-1500A), +20.6 ms (PC-1600). The "before" test
+    states that drift as the expected difference (LIB-17 decision log);
+    the tolerance of AC-21 is with the user.
 
 ### 15. The PC-1500's key handling (research)
 - **What:** the key scan loop of the PC-1500 and PC-1500A ROMs is read

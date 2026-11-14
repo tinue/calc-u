@@ -144,6 +144,13 @@ public:
     void setFullSpeed(bool on);
     bool fullSpeed() const { return m_fullSpeed; }
     bool keystrokesPlaying() const { return m_keystrokesPlaying; }
+    /// The banks of the in-file (`mem:`) cards as they are now, by name
+    /// (read-only; the reference runs of M-9 record what an example wrote).
+    std::vector<std::pair<std::string, std::vector<uint8_t>>> memoryCardBanks() const {
+        std::vector<std::pair<std::string, std::vector<uint8_t>>> out;
+        for (const auto& [name, card] : m_memoryCards) out.emplace_back(name, card.bank);
+        return out;
+    }
 
     // ── Cue card ─────────────────────────────────────────────────────────────
     const std::optional<CueCardContent>& cueCard() const { return m_cueCard; }

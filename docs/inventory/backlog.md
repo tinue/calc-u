@@ -197,6 +197,7 @@ The source is the document that records them.
 |---|---|---|---|---|
 | B59-59 | `docs/contracts/debugger.md` (user, 2026-11-10) | CPU tab shows the commented ROM disassembly instead of raw mnemonics | product backlog | Calc-U-59 |
 | B1600-92 | Calc-U-1600 `TODO.md:403-405` at `v0.8.1` (added after the pin, `f0b3732`) | PC-1500 RAM disk on a CE-1638 / CE-163F card, software only (a driver loaded once over the CE-158); `docs/background/PC1500-Card-Disk-Idea.md` | product backlog | Calc-U-1600; a feature idea |
+| B1600-93 | user, 2026-11-14 (first step 14, LIB-17 AC-21) | Measure the PC-1500/1500A/1600 clocks on real hardware: the real-time clock's drift over a few days with the machines off, and loops timed from film at 30 or 60 fps, to check the emulator's nominal clocks (`kCpuHz`, `kTStateHz`) | product backlog | Calc-U-1600; as done for the TI-59 (Calc-U-59 memory `real_hardware_timing`) |
 | B1600-91 | `docs/contracts/capabilities.md`, C-2 (user, 2026-11-10) | A text layer for the plotters' paper: intercept text printing so Copy can give text as well as the image | product backlog | Calc-U-1600; the paper output kind already allows it |
 
 Notes:

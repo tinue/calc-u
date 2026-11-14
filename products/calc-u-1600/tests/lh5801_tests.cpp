@@ -1542,6 +1542,7 @@ int run_lcd_screenshot_tests();
 // Defined in lcd_text_tests.cpp -- the LCD read back as text.
 int run_lcd_text_tests();
 int run_golden_runs_tests();
+int run_pacing_longrun_tests();
 // Defined in machine_code_file_tests.cpp -- "Load Machine Code…": header
 // recognition, load plan, NEW/CALL advice, and the two writers.
 int run_machine_code_file_tests();
@@ -1659,6 +1660,7 @@ int main() {
     int lcdScreenshotFailures = run_lcd_screenshot_tests();
     int lcdTextFailures = run_lcd_text_tests();
     int goldenRunsFailures = run_golden_runs_tests();
+    int pacingLongrunFailures = run_pacing_longrun_tests();
     int machineCodeFileFailures = run_machine_code_file_tests();
     int programFileFailures = run_program_file_tests();
     int disasmFailures = run_disasm_tests();
@@ -1667,7 +1669,7 @@ int main() {
     int runControlFailures = run_run_control_tests();
     int jobFailures = run_job_tests();
     int sharedFailures = run_shared_tests();
-    return (g_fail == 0 && jobFailures == 0 && sharedFailures == 0 && machineCodeFileFailures == 0 && programFileFailures == 0 && disasmFailures == 0 && debugTargetFailures == 0 && listingFailures == 0 && runControlFailures == 0 && piezoSamplerFailures == 0 && tapeDeckFailures == 0 && pc1600TapeFailures == 0 && pc1500TapeFailures == 0 && keyPasteFailures == 0 && lcdScreenshotFailures == 0 && lcdTextFailures == 0 && goldenRunsFailures == 0 && basicFastLoaderFailures == 0 && pc1600BasicLoaderFailures == 0 && basicProgramSourceFailures == 0 && pc1600ProgramPlacementFailures == 0 && inspectorFailures == 0 && connectorFailures == 0 && ce151Failures == 0 && ce155Failures == 0 && ce161Failures == 0 && ce1638Failures == 0 && ce502bFailures == 0 &&
+    return (g_fail == 0 && jobFailures == 0 && sharedFailures == 0 && machineCodeFileFailures == 0 && programFileFailures == 0 && disasmFailures == 0 && debugTargetFailures == 0 && listingFailures == 0 && runControlFailures == 0 && piezoSamplerFailures == 0 && tapeDeckFailures == 0 && pc1600TapeFailures == 0 && pc1500TapeFailures == 0 && keyPasteFailures == 0 && lcdScreenshotFailures == 0 && lcdTextFailures == 0 && goldenRunsFailures == 0 && pacingLongrunFailures == 0 && basicFastLoaderFailures == 0 && pc1600BasicLoaderFailures == 0 && basicProgramSourceFailures == 0 && pc1600ProgramPlacementFailures == 0 && inspectorFailures == 0 && connectorFailures == 0 && ce151Failures == 0 && ce155Failures == 0 && ce161Failures == 0 && ce1638Failures == 0 && ce502bFailures == 0 &&
             ce163fFailures == 0 && memoryCardFailures == 0 && batteryCardInstanceFailures == 0 &&
             presetFailures == 0 &&
             basicTyperFailures == 0 && pc1600BasicTyperFailures == 0 &&

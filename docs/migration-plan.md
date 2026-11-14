@@ -691,7 +691,7 @@ with a row, or worked together with it).
   the place for product commands, the table of today's tools' functions;
   the Python helper for `calcu serve` (`contracts/harness.md` Q-2).
   Built on macOS, Linux and Windows (AC-15).
-- **Completes:** LIB-11 L. **Tests from:** LIB-11 AC-1–13, AC-21–22;
+- **Completes:** LIB-11 L. **Tests from:** LIB-11 AC-1–13, AC-21–23;
   EC-1–7.
 - **Waits for:** M-22, M-26 (a machine of each product behind the
   interface to drive).
@@ -847,7 +847,7 @@ with a row, or worked together with it).
 #### M-40 LIB-10 Library
 - **Does:** debug targets, run control, breakpoints and watches, the
   trace session, the run-control buttons, the steps and commands.
-- **Completes:** LIB-10 L. **Tests from:** LIB-10 AC-1–26, AC-45–47;
+- **Completes:** LIB-10 L. **Tests from:** LIB-10 AC-1–26, AC-45–51;
   EC-1–9.
 - **Waits for:** M-3 (C-1 of FS 5: AC-13), M-38.
 - **Green after:** default.
@@ -906,7 +906,7 @@ with a row, or worked together with it).
   debugger; the size limit for every trace. Criteria that need the
   upgraded presets pass in M-46.
 - **Completes:** LIB-8 1600, LIB-10 1600 (Done in M-46). **Tests from:** LIB-8
-  AC-32–38; LIB-10 AC-36–44 (AC-38 per FS 15).
+  AC-32–38; LIB-10 AC-36–44, AC-52 (AC-38 per FS 15).
 - **Waits for:** M-5, M-31, M-39, M-40.
 - **Green after:** default.
 - **Knowledge, ledger:** `docs/developer/Debugger-Internals.md`; rows
@@ -990,7 +990,7 @@ with a row, or worked together with it).
   go (LIB-11 OQ-5). Then the adapter check of §1 over Calc-U-1600 and
   the library.
 - **Completes:** C1600-5, LIB-11 1600. **Tests from:** C1600-5 AC-1–9,
-  AC-11, EC-2–6; LIB-11 AC-18–20.
+  AC-11–12, EC-2–6; LIB-11 AC-18–20.
 - **Waits for:** M-47, M-50.
 - **Green after:** default; no old CLI and no adapter of Calc-U-1600
   left.
@@ -1259,8 +1259,8 @@ qa-report can show every criterion passing (§1).
 | LIB-7 | 1–31, 46: M-41 / M-41 | 32–36, 47: M-55 / M-55 | 37–45: M-47 / M-47 | 1–9: M-41 |
 | LIB-8 | 1–9, 12–23, 39: M-39 / M-39 | 24–31: M-53 / M-53 | 32–38: M-45 / M-46 | 1–8: M-39 |
 | LIB-9 | 1–18, 33: M-20 / M-20 | 19–25, 34–35: M-32, M-34 / M-34 | 26–32: M-30 / M-30 | 1–10: M-20 |
-| LIB-10 | 1–26, 45–47: M-40 / M-40 | 28–35: M-53 / M-53 or M-58 | 36–44: M-45 / M-46 | 1–9: M-40 |
-| LIB-11 | 1–13, 21–22: M-28 / M-28 | 14–17: M-59 / M-59 | 18–20: M-51 / M-51 | 1–7: M-28 |
+| LIB-10 | 1–26, 45–51: M-40 / M-40 | 28–35: M-53 / M-53 or M-58 | 36–44, 52: M-45 / M-46 | 1–9: M-40 |
+| LIB-11 | 1–13, 21–23: M-28 / M-28 | 14–17: M-59 / M-59 | 18–20: M-51 / M-51 | 1–7: M-28 |
 | LIB-12 | 1–7: M-24 / M-28 | 8–10, 14 (TI): M-24 / M-24 | 11–13, 14 (CE-502B): M-27 / M-27 | 2–3: M-24; 1: M-27 |
 | LIB-13 | 1–10: M-42 / M-42 | 11–16, 23: M-56 / M-56 | 17–22: M-48 / M-48 | 1–7: M-42 |
 | LIB-14 | 1–25, 42–43: M-43 / M-43 | 26–33: M-57 / M-57 | 34–41, 44: M-49 / M-49 | 1–8: M-43 |
@@ -1285,7 +1285,7 @@ qa-report can show every criterion passing (§1).
 | C1600-2 | M-44 (AC-15 with M-49) | M-49 | 1–25 | 1–6 |
 | C1600-3 | M-50 | M-50 | 1–25 | 1–7 |
 | C1600-4 | M-46 (AC-15's disk and waiting presets M-47) | M-47 | 1–20 | 1–6 |
-| C1600-5 | M-51 | M-51 | 1–9, 11 (10 withdrawn) | 2–6 |
+| C1600-5 | M-51 | M-51 | 1–9, 11–12 (10 withdrawn) | 2–6 |
 
 The C1 designs (2026-11-14) moved five "Done in" entries by the rule of
 §1 (a criterion that names a later feature passes in that feature's

@@ -292,6 +292,35 @@ Traces
   LIB-15 keeps Calc-U-1600's Web frontend without them), then a trace
   file that has ended is handed to the user to keep (LIB-15 AC-9;
   Calc-U-59 `Web/bindings.cpp:431-435`).
+- [ ] **AC-48** — Given an address space with cells that cannot be read
+  back or whose reading would disturb a device (write-only and I/O
+  cells), then the target may offer for it a second view, named after
+  the space with `-written`, that gives for each such cell the value
+  last written to it, or none when nothing was written since the
+  machine was built; reading the view has no effect on the machine.
+- [ ] **AC-49** — Given a target whose memory is banked, then every bank
+  of it, and every vertical bank of a module that has them, can be read
+  and written directly by naming it, whichever bank the processor has
+  switched in: `peek` and `poke` take `bank=<b>` and, where the module
+  has them, `vbank=<v>`; a range that does not lie inside one bank is
+  refused; reading and writing that way switch no bank and follow
+  AC-2's rules for each cell.
+- [ ] **AC-50** — Given the harness, then these commands also exist:
+
+  | Command | Reply |
+  |---|---|
+  | `peek … file=<file>` | the cells are written to the file as bytes, not into the reply; the reply gives the count |
+  | `expect-register <target> <register> <value>` | done, or refused with the value the register has |
+  | `expect-memory <target> <space> <address> <value>… [bank=<b>] [vbank=<v>]` | done, or refused at the first cell that differs, with its address and value |
+
+  A refused `expect-…` ends a one-shot run with the exit status of a
+  refused command (LIB-11), so a test can check a program's result.
+- [ ] **AC-51** — Given a listing or a table of symbols of an assembler
+  the product supports (LIB-10's bindings), when the harness command
+  `symbols <file> [<target>]` names it, then from then on a name of it
+  can stand wherever a command takes an address of that target, and
+  `history` and `disassemble` show the names; a name it does not know is
+  refused.
 
 ### Calc-U-59
 
@@ -404,6 +433,12 @@ Traces
   (`Core/tests/debug_target_tests.cpp:111-613`,
   `Core/tests/run_control_tests.cpp:159-243`,
   `Core/tests/presetloader_trace_tests.cpp:107-289`).
+- [ ] **AC-52** — Given the Sharp targets, then the SC7852 has an address
+  space `io` for its I/O ports, and the LH5801 and LH5803 offer the
+  `-written` view (AC-48) for ME1 and the SC7852 for `io`; their memory
+  is banked as the model's memory map in C1600-1 says, so that every
+  bank of the PC-1600 and of the modules in its slots, and every
+  vertical bank of a module in Slot 2, is reached by AC-49.
 
 ## Edge Cases
 - **EC-1** — Given a pause is commanded while the machine is paused,
@@ -497,3 +532,5 @@ Traces
 | In an ASM overlay a pause lands after 50000 instructions whatever the processor does (AC-29) | user, 2026-11-13 (B-18 of `docs/walkthroughs/presets.md` §5.2) | 2026-11-13 |
 | Aligned with `docs/formats/` after the Q&A round: no command for `debug-panel:` (AC-20); trace records are the CPU log (Technical Requirements); OQ-1 cites AC-22 to AC-26 | user rulings of 2026-11-13 (`docs/walkthroughs/presets.md` §5.2, §5.4); `docs/formats/` | 2026-11-13 |
 | `pause-on-start: cpu` is offered on the PC-1500 and PC-1500A: the research found their key readiness (AC-38) | user, 2026-11-14 (first step 15, `docs/walkthroughs/first-steps.md`) | 2026-11-14 |
+| A space may offer the values last written to its write-only and I/O cells; banked memory is reached by bank and vertical bank, a range inside one bank; `peek … file=`, `expect-register`, `expect-memory`, `symbols` (AC-48 to AC-51) | user, 2026-11-14 (debugging and testing through the harness) | 2026-11-14 |
+| The SC7852 has an `io` space; the Sharp targets offer the `-written` views and reach every bank and vertical bank (AC-52) | user, 2026-11-14 (debugging and testing through the harness) | 2026-11-14 |

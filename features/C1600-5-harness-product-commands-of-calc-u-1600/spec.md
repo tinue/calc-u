@@ -133,6 +133,15 @@ Checks
   one-time check, is not taken over (LIB-11 OQ-5 as amended).* It read
   the replies of AC-2 and of `peek`.
 
+Machine-code routines
+- [ ] **AC-12** — Given a paused machine, when `pc1600 call <target>
+  <address> [timeout=<duration>]` is given, then the target runs the
+  routine at that address as a call from the current state, by the call
+  and return of that processor, and pauses when it returns to the
+  caller; the reply gives the registers then and the emulated time the
+  routine took; when it has not returned within the timeout (default
+  10 s of emulated time), the machine is paused and the reply says so.
+
 ## Edge Cases
 - **EC-2** — Given a `tape` command on a machine without a cassette
   (neither a CE-150 nor a CE-1600P), then it is refused.
@@ -188,3 +197,4 @@ Checks
 | Proposed in this spec and accepted (user, 2026-11-10, batch 8 gate): `pc1600 host-drive` (AC-11) | `harness.md`'s fit table lists the host drive among the product commands; today no tool has an option for it | 2026-11-10 |
 | The probes and `dev/tape-matrix/run.py` are not taken over; AC-10 withdrawn | user, 2026-11-13 (B-25 of `docs/walkthroughs/presets.md` §5.2): "old, no longer relevant scripts and probes are not taken over into the new project. calendar yes, upgrade it" | 2026-11-13 |
 | A `serial` command on a machine without the port is refused, never held for a later machine; the order is the script's: build, connect, start (EC-3) | user, 2026-11-13 (B-25 (c) of `docs/walkthroughs/presets.md` §5.2), the revised recommendation: every preset change has a harness command (LIB-18 AC-15, LIB-7 AC-26, LIB-6 AC-34), so no command needs to wait for a future machine | 2026-11-13 |
+| `pc1600 call` runs a machine-code routine until it returns, for testing routines (AC-12) | user, 2026-11-14 (debugging and testing through the harness) | 2026-11-14 |

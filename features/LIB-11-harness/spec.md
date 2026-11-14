@@ -153,6 +153,13 @@ The first commands
   syntax of `docs/formats/README.md` §1: `floppy { name: Disk2, side: 1 }`,
   `card { mem: X, side: 0 }`, `saveas { place: slot-1, as: live, name: My card }`;
   a preset step becomes the command by dropping `- ` and the colon.
+- [ ] **AC-23** — Given `display`, then the reply gives the display
+  output as the machine gives it (LIB-1 AC-15 to AC-17, AC-43), without
+  reading it as text: for a dot-matrix display one line per row of dots,
+  each dot `1` or `0`; for a segment display one line per position with
+  its segments; then the indicators as a bit string in the order of the
+  descriptor, with their names in that order on the line after; and
+  whether the display is on. With `--json` the same as arrays.
 
 ### Calc-U-59
 - [ ] **AC-14** — Given the tools of Calc-U-59 at the pin, then each of
@@ -330,3 +337,4 @@ The first commands
 | The three probes are not taken over; the calendar scripts stay (AC-18, OQ-5 amended) | user, 2026-11-13 (B-25 of `docs/walkthroughs/presets.md` §5.2): "old, no longer relevant scripts and probes are not taken over into the new project. calendar yes, upgrade it" | 2026-11-13 |
 | Aligned with `docs/formats/` after the Q&A round: the command `preset`; Qt6 attach (LIB-14 AC-44); tape commands `tape`, `eject` (AC-18) | user rulings of 2026-11-13 (`docs/walkthroughs/presets.md` §5.2, §5.4); `docs/formats/` | 2026-11-13 |
 | A command whose step takes a mapping takes the step's value as a YAML flow mapping (AC-22) | user, 2026-11-13 (consistency pass after the Q&A round): one spelling for presets and commands | 2026-11-13 |
+| `display` gives the raw display output: dots or segments, and the indicators as a bit string in the descriptor's order (AC-23) | user, 2026-11-14 (debugging and testing through the harness) | 2026-11-14 |

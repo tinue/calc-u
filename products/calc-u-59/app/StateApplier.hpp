@@ -1,0 +1,45 @@
+#pragma once
+#include "../core/TI59Machine.hpp"
+#include "StateFile.hpp"
+#include <optional>
+#include <string>
+
+// Writes a parsed state file into a machine: partition, program and
+// registers (see reference/SharedArchitecture.md § "State File Loading"). The
+// frontend owns everything around it — stopping its run loop first, model
+// switches, module and printer changes, the cue card, KEYSTROKES playback.
+
+namespace cu59 {
+
+/// Why a file can't be applied to `model`, or nullopt. Only an explicit
+/// partition beyond 479 on the 60-register models is rejected.
+std::optional<std::string> stateFilePartitionError(const LoadStateResult& r, Model model);
+
+/// Full load: reset, run the ROM's power-on routine to idle, set the
+/// partition (default 239 on the TI-58/58C when the file gives none), clear
+/// RAM (keeping the TI-58C's extra registers, whose RAM[60] the ROM needs),
+/// write the program zero-padded to the model's physical capacity, then the
+/// registers. Run on the emulation thread with the run loop stopped.
+void applyState(TI59Machine& m, const LoadStateResult& r, Model model);
+
+/// A reload during KEYSTROKES playback, as if the user keyed the changes in:
+/// the partition if the stage sets one, then only the listed program steps
+/// and registers — everything else stays.
+void applyReload(TI59Machine& m, const ReloadStage& stage, Model model);
+
+/// A fresh machine's power-on. TI-58C: run the ROM's startup once, then
+/// restore its constant memory from `savedRam` (if given), so startup code
+/// can't overwrite the restored registers. Other models: nothing to do.
+void powerOn(TI59Machine& m, Model model, const std::vector<uint8_t>* savedRam);
+
+/// The Reset button: reset the CPU (the printer's TRACE latch survives, as on
+/// the hardware). TI-58C: restore its constant memory if `savedRam` is given.
+/// TI-59/58: save the RAM, run the ROM's reset routine, which clears it, and
+/// restore it. Run on the emulation thread with the run loop stopped.
+void softReset(TI59Machine& m, Model model, const std::vector<uint8_t>* savedRam);
+
+/// Clean reset. TI-59/58: an ordinary reset; the ROM's reset routine clears the
+/// RAM once the machine runs. TI-58C: zero all RAM, then reset.
+void cleanReset(TI59Machine& m, Model model);
+
+} // namespace cu59

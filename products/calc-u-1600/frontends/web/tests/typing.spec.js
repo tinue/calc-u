@@ -49,9 +49,23 @@ test('host keys type through the product keyboard map', async ({ page }) => {
 test('keys during a load are dropped', async ({ page }) => {
   await gotoReady(page, '?model=2');
   await pickModel(page, 2);
+  // The keys go in at the moment the session says busy (a poll from the
+  // test can miss a short operation): host-key-down/up of '7' three times.
+  await page.evaluate(() => {
+    const e = document.querySelector('.calcu-client').calcuEngine;
+    window.calcuTypedWhileBusy = false;
+    const off = e.subscribe(() => {
+      if (!e.getState().busy || window.calcuTypedWhileBusy) return;
+      window.calcuTypedWhileBusy = true;
+      off();
+      for (let i = 0; i < 3; i++) {
+        e.call('hostKeyDown', 'Digit7', '7', false, false, false, false, false);
+        e.call('hostKeyUp', 'Digit7');
+      }
+    });
+  });
   await page.getByLabel('Model', { exact: true }).selectOption('1');   // a model switch: an operation
-  await expect.poll(() => busy(page), { timeout: 10000 }).toBe(true);
-  await page.keyboard.type('777', { delay: 20 });
+  await expect.poll(() => page.evaluate(() => window.calcuTypedWhileBusy), { timeout: 10000 }).toBe(true);
   await expect.poll(() => busy(page), { timeout: 30000 }).toBe(false);
   await page.waitForTimeout(1000);
   expect(await screen(page)).not.toMatch(/777/);

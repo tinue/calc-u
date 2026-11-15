@@ -1,5 +1,5 @@
 # LIB-8 Paper output: design
-Status: approved by the user at the Part C1/C2 boundary (2026-11-15)
+Status: Library column approved at the Part C1/C2 boundary (2026-11-15); Calc-U-1600 column: draft for the Part C2/D boundary review (2026-11-16)
 
 ## 1. Scope
 
@@ -713,3 +713,280 @@ commands of AC-23 deliver what they do (LIB-11 spec, the tools table).
   (0 to 129.07); M-53 confirms or changes it with the user. The greys
   of the darkness levels are today's `inkAlpha` (`app/PrinterFont.hpp`),
   21 levels for 0 to 20 heating cycles.
+
+## 10. Part D: the Calc-U-1600 column
+
+Status of this section: draft for the Part C2/D boundary review
+(2026-11-16). §1 to §9 above are the approved Library column and are not
+changed. Where M-39's code differs from them, the LIB-8 qa-report's
+"Deviations" is the record, and this section builds on the code.
+
+### 10.1 Scope
+
+| Column | Step | Tests from (plan §3) | Done in (plan §5.1) |
+|---|---|---|---|
+| Calc-U-1600 | M-45 (with LIB-10 1600) | AC-32–38 | M-46 |
+
+- M-45 waits for M-39 (the kind, `PaperPart`, both panels), M-31 (the
+  product on the library's sessions) and M-44 (C1600-2, the first step of
+  Part D). It builds on the code of `main` after M-43. It does not build
+  on the outline of §4.2, which this section replaces.
+- "Done in M-46": AC-36's "a preset that names them" empties a paper by
+  LIB-18's build origin (A-3). Calc-U-1600 gets that origin in M-46 (LIB-18
+  1600). M-45 carries the rule by an adapter (§10.5, P-A2). The clause is
+  tested again on the format 2 presets in M-46, and the column becomes
+  Done there. Every other criterion passes in M-45.
+- The edge cases EC-1 to EC-8 belong to the Library column (M-39). The
+  product adds no edge case.
+- Not here: the run control and traces (LIB-10 1600, in the same step,
+  `features/LIB-10-debugger-core/design.md` §10); the control state's
+  `paper` panel entry and the panel's place in the shell (LIB-4 1600,
+  LIB-14 1600, M-49); the comparison of the 14 plotter examples with their
+  replies (C1600-4 AC-16, M-46); the CE-158's printer port, which stays a
+  product kind.
+
+### 10.2 What the code is today (main, `60e5b09`)
+
+- The ALPS mechanism keeps the strokes itself:
+  `core/Connector/AlpsPlotterMechanism.hpp:39-42` (`Stroke`),
+  `:153-187` (`strokes()`, `revision()`, `flatPoints()`), `:188`
+  (`clearPaper`), `:302-321` (`setPenDown`, `extendStroke`). Its
+  `reset()` (`:122-136`) sets `m_penX` and `m_penY` to 0 and keeps the
+  strokes. `Ce150Card::reset()` (`core/Connector/Ce150Card.hpp:78-81`)
+  calls it. The CE-1600P's card has no reset of its own.
+- The cores read the strokes out per model: `PC1500Machine::ce150PlotPoints`
+  and `clearCE150Paper` (`core/PC1500/PC1500Machine.cpp:111-129`);
+  `PC1600Machine::ce150PlotPoints`, `ce1600pPlotPoints` and the clear
+  calls (`core/PC1600/PC1600Machine.cpp:151-170, 282-300`).
+- The adapter kind `c1600.plotter-paper`
+  (`core/Machine/SharpProductKinds.hpp:77-86`) is offered by
+  `PC1500InterfaceMachine.cpp:82-89, 159` and
+  `PC1600InterfaceMachine.cpp:99-114, 255-262`.
+- The app layer: `app/PlotterPaper.hpp/.cpp` (`PaperKind`,
+  `PaperGeometry`, `buildPaperStrokes`, `paperExportSize`);
+  `SharpAppPart::plotPoints`, `plotRevision`, `clearPaper`
+  (`app/SharpAppPart.hpp:215-218`, `.cpp:1041-1066`);
+  `ControlState::paper` (`app/ControlState.hpp:55`, `.cpp:45`); in
+  `SharpWebPart`, the topic `c1600.paper`, the command `c1600.paper-width`,
+  the request `c1600.paper-export` and the command `c1600.clear-paper`
+  (`app/SharpWebPart.cpp:145, 333-363, 408, 422`).
+- The frontends: `frontends/qt6/app/PlotterPaperWidget.*`, docked only
+  while a plotter is plugged in (`MainWindow.cpp:93-102, 501-505`), with
+  Copy through `MacClipboardImage.mm` on macOS
+  (`PlotterPaperWidget.cpp:226-258`); the screenshot target `plot`
+  (`screenshots/ShotRunner.cpp:9, 651`); on the Web,
+  `frontends/web/src/Panels.jsx:83-140` (`PlotterPaper`),
+  `painters.js:129-156` (`paintPaper`), `engine.js:104-107, 124, 158-173`
+  and `CalcU1600.jsx:370, 408`.
+- The readers outside the app: the golden-run driver
+  (`tests/golden_runs_tests.cpp:85-88, 221-223`, with the summary line
+  `paper <owner> points=<n> sum=<hash>`); today's tools
+  (`tools/CliCommon.hpp:154-160` for the CE-150's events, `:211-232` for
+  `CALCU_PAPER_OUT`); the core tests (`tests/ce150_tests.cpp:136-218`,
+  `tests/ce1600p_tests.cpp:82-135`, `tests/ce158_tests.cpp:339`); and
+  `app/tests/shared_geometry_tests.cpp:21-64`.
+- The library after M-39 (qa-report): `PaperOutputBase` keeps what a
+  printer makes while no sink is connected, and has `connectStanding()`.
+  A printer calls `emitFedTo` before its `standing()` moves. `PaperPart`
+  takes the machine control by `setControl`. The fixtures
+  `library/paper/tests/PaperFixtures.cpp:28-43` hold the two plotters'
+  descriptions: `5'658'947`, `669'474`, `4'320'000` and `21'221'053`,
+  `1'010'526`, `19'200'000`; a stroke of 3.5649 units; 1200 dpi.
+
+### 10.3 Modules and files (M-45)
+
+| File | Change |
+|---|---|
+| `core/Connector/AlpsPlotterMechanism.hpp` | keeps the steppers, the pen and the turret. The strokes go: `Stroke`, `strokes()`, `revision()`, `FlatPoint`, `flatPoints()`, `clearPaper`, `m_strokes`, `m_revision`. It calls a `PenListener` (new, in the same header: `penDown(PenColor, x, y)`, `penTo(x, y)`, `penUp()`, `fedTo(y)`, `reanchored()`) from `setPenDown`, from `extendStroke`, from every Y step of `stepXY`, and from `reset()`. The event log (`drainEvents`, `logEvent`) stays for today's tools (D-19) |
+| `core/Connector/PlotterPaperOutput.hpp` (new) | `sharp::PlotterPaperOutput final : calcu::paper::PaperOutputBase, AlpsPlotterMechanism::PenListener`: the descriptions `ce150PaperDescription()` and `ce1600pPaperDescription()` (AC-32; the numbers of `PaperFixtures.cpp:42-43`), the pen colours `kPenColours` (AC-34: black, (0, 0, 255), (0, 128, 0), (255, 0, 0), from `app/PlotterPaper.hpp:90`), and the mapping of §10.4 |
+| `core/Connector/Ce150Card.hpp`, `CE1600PCard.hpp` | each owns a `PlotterPaperOutput` beside its mechanism and hands it to the mechanism as the listener; `paperOutput()`. It is made with the card at attach and goes with the card at detach (D-16) |
+| `core/PC1500/PC1500Machine.*`, `core/PC1600/PC1600Machine.*` | `ce150PlotPoints`, `ce150PlotRevision`, `clearCE150Paper`, `ce1600pPlotPoints`, `ce1600pPlotRevision` and `clearCE1600PPaper` go. `ce150PaperOutput()` and `ce1600pPaperOutput()` (nullptr while not plugged in) are new; the event drains stay |
+| `core/PC1500/PC1500InterfaceMachine.cpp`, `core/PC1600/PC1600InterfaceMachine.cpp` | the adapters `Paper`, `Ce150Paper`, `Ce1600pPaper` go. `offer()` gives the card's `PlotterPaperOutput` as `<place>/paper-output`, owned by the printer (`byPeripheral`) |
+| `core/Machine/SharpProductKinds.hpp` | `PlotterPaper` (`c1600.plotter-paper`) goes, and the header comment's list of adapter kinds loses it |
+| `core/Machine/LegacyCalls.hpp/.cpp` | `CoreParts` gains `Ce150Card* ce150`, for the tools' event log until M-51 |
+| `app/PlotterPaper.hpp/.cpp` | deleted |
+| `app/SharpPrinters.hpp/.cpp` (new) | `shared::sharpPrinterPapers()`: the two `PrinterPaper`s, `CE-150` and `CE-1600P` with their descriptions, for the app and for the harness entry |
+| `app/SharpAppPart.hpp/.cpp` | a member `calcu::paper::PaperPart m_paper` (the catalogue, `sharpPrinterPapers()`, no machine control until M-46). `sessionParts()` returns `{&m_typingPart, &m_peripherals, &m_paper, &m_debugger, this}` (`m_debugger`: LIB-10 §10). `plotPoints`, `plotRevision`, `clearPaper` and the include of `PlotterPaper.hpp` go. `loadPresetJob` cuts the papers of the plotters a preset plugs in (P-A2) |
+| `app/ControlState.hpp/.cpp` | `paper` becomes `std::optional<calcu::machine::PeripheralId> paperOwner`, the plotter plugged in, until LIB-4 1600 (M-49) |
+| `app/SharpWebPart.hpp/.cpp` | `c1600.paper`, `c1600.paper-width`, `c1600.paper-export`, `c1600.clear-paper`, `paper(bool)` and `m_paper*` go. `ui.paper` carries the owner's peripheral ID, or `""` |
+| `app/HarnessProduct.cpp` | a `PaperPart` on `sharpPrinterPapers()` among `sessionParts()`, returned by `paperPart()`. So the harness's `paper …` commands and `cut-paper` work for Calc-U-1600; LIB-11 hands the part the machine control (A-3) |
+| `frontends/qt6/app/PlotterPaperWidget.*` | deleted. `MainWindow` docks a `calcu::qt6::PaperPanel` (object name `paper`) always, its owner set from `ControlState::paperOwner` (P-A1); the topics come through `MachineController`'s listener |
+| `frontends/qt6/app/MachineController.*` | `plotPoints`, `plotRevision` and `clearPaper` go. It answers `clipboard-image` and `clipboard-text` with `calcu::qt6::ClipboardService` (P-A3) |
+| `frontends/qt6/app/MacClipboardImage.*` | moved to `library/qt6/MacClipboard.h/.mm` (D-17). `MainWindow::copyScreenToClipboard` uses it from there |
+| `library/qt6/ClipboardService.cpp`, `library/qt6/CMakeLists.txt` | on macOS, `clipboard-image` goes through `macSetClipboardImage` with the physical size taken from `dotsPerInch`; on the other platforms nothing changes (D-17) |
+| `frontends/qt6/app/screenshots/ShotRunner.cpp`, `ShotScenario.cpp` | the target `paper` is the `PaperPanel`. The target `plot` writes the PNG of the session's `paper.picture` request. Two new verbs, `expect-panel` and `expect-title`, for the check scenarios (§10.6). M-49 turns the scenarios into an attach client; the verbs then become harness queries |
+| `frontends/web/build.js` | `librarySources: [...dist.LIBRARY_SOURCES, ...dist.COMPONENT_SOURCES]`, and `dist.COMPONENT_CSS` appended to `calc.css` (LIB-14 D-17: a product takes the set in its column; the shell's components come along unused until M-49) |
+| `frontends/web/src/Panels.jsx`, `painters.js`, `engine.js`, `CalcU1600.jsx` | `PlotterPaper`, `paintPaper`, `setPaperWidth`, `paperExport`, `clearPaper` and the `paper` state go. The docked area shows `CalcuPaperPanel` always (`data-panel=paper`), its owner from `ui.paper` (P-A1). Copy and Cut are the panel's (`armClipboard`, `paper.copy`, `paper.cut`) |
+| `tests/golden_runs_tests.cpp` | the summary comes from the `paper-output` capabilities, through a `calcu::paper::Paper` connected to each when it is first seen. The lines stay the same (§10.7) |
+| `tools/CliCommon.hpp` | `CALCU_PAPER_OUT` from a connected `Paper` per plotter, written in today's form: positions back in raw steps, `newStroke` on each stroke's first position. The CE-150's event lines through `coreParts().ce150` |
+| `tests/plotter_paper_tests.cpp` (new), `tests/ce150_tests.cpp`, `tests/ce1600p_tests.cpp`, `tests/ce158_tests.cpp`, `app/tests/shared_geometry_tests.cpp` | §10.6 |
+| `tests/gui/lib8-ac36.shots.yaml`, `tests/gui/lib8-ac38.shots.yaml` (new), the product's `CMakeLists.txt` | the Qt6 check scenarios, as `CalcU1600Shots.<name>` (Longer) |
+| `frontends/web/tests/play.spec.js` | §10.6 |
+
+### 10.4 How a plotter gives its paper (AC-32, AC-33, D-11)
+
+- **Units.** One unit of the description is one raw step of the
+  mechanism, 190/1920 mm, as today (`PaperGeometry::kPlotUnitsPerMM`). A
+  position is `x = printableLeft + penX × 10000` and `y = yBase + penY ×
+  10000` (`Coord`, LIB-8 D-3). `standing()` is `yBase + penY × 10000`.
+- **Marks.** `setPenDown(true)` calls `emitPenDown(colour, position)`.
+  `extendStroke` while the pen is down calls `emitPenTo(position)`.
+  `setPenDown(false)` calls `emitPenUp()`. A Y step calls `emitFedTo`
+  with the new standing before `standing()` moves, with the pen up or down
+  (the qa-report's rule for `PaperOutputBase`). So a move with the pen up
+  gives no mark, and a feed gives reach (AC-33, AC-4; ledger 1600-32).
+- **A reset keeps the paper where it stands (D-11).** Before the
+  mechanism's `reset()` sets `m_penY` to 0, the listener closes an open
+  stroke and adds the old `penY × 10000` to `yBase`. The paper thus goes
+  on below what was plotted. Today a plot after a Reset or a Cold boot
+  starts again at y = 0, on top of the earlier one, because the points
+  are kept in the mechanism's raw coordinates. Proposed ledger row 1600-34
+  (§10.9).
+- **One paper per type.** The CE-150 on a PC-1500, a PC-1500A and (in
+  MODE 1) a PC-1600 has one paper, `CE-150`. The CE-1600P has the other
+  (AC-8, AC-36). `checkPaperOutput` holds on each.
+
+### 10.5 Adapters
+
+Removed in M-45 (LIB-8 §5's rows for Calc-U-1600):
+
+| Old call | Where |
+|---|---|
+| `c1600.plotter-paper` (`sharp::PlotterPaper`); the cores' plot-point and clear calls | `core/Machine/SharpProductKinds.hpp`, the interface machines, `PC1500Machine`, `PC1600Machine` |
+| `shared::PlotterPaper.*` (`PaperKind`, `PaperGeometry`, `buildPaperStrokes`, `paperExportSize`); `SharpAppPart::plotPoints`, `plotRevision`, `clearPaper`; `c1600.paper` and `paperExport` | `app/` |
+| `PlotterPaperWidget`; the paper panel of `Panels.jsx`; `paintPaper` | Qt6, Web |
+
+New in M-45, each with the step that removes it:
+
+| Adapter | Where | Wraps | Removed in |
+|---|---|---|---|
+| P-A1 panel owner | `MainWindow.cpp`, `CalcU1600.jsx` | the owner from the interim `ControlState::paperOwner` and `ui.paper`, instead of LIB-4's `paper` panel entry (A-4) | M-49 (LIB-4 1600, LIB-14 1600) |
+| P-A2 preset cuts | `SharpAppPart::loadPresetJob` | a version 1 preset the user loads cuts the paper of each plotter it plugs in, before its sections, as A-3 does on `BuildOrigin::Preset`. A startup preset at a model switch cuts nothing | M-46 (LIB-18 1600: `PaperPart::setControl`) |
+| P-A3 clipboard | `MachineController` | `clipboard-image` and `clipboard-text` answered by `ClipboardService` | M-49 (LIB-14's `SessionHost`) |
+| `CoreParts::ce150` | `core/Machine/LegacyCalls.hpp` | the CE-150's card, for the tools' event log | M-51 (with `coreParts`) |
+
+### 10.6 Tasks (AC → task → test)
+
+Cases in `products/calc-u-1600/tests/` are in `CoreTests` (Frequent)
+unless named otherwise. Session cases use `app/tests/SessionFixture.hpp`
+with `SharpAppPart`. The tests of each task come before its code. Names
+are `lib8_acN_…` (LIB-1 §2a).
+
+| Task | What | AC | Test (file: cases; group) |
+|---|---|---|---|
+| P16-1 | `PlotterPaperOutput`, the descriptions | AC-32 | `plotter_paper_tests.cpp`: `lib8_ac32_ce150_states_its_paper_on_every_model` (PC-1500, PC-1500A, PC-1600 in MODE 1: `checkPaperOutput` with 56 mm, 42.75 mm drawn on, the margins split evenly, pen strokes, no text layer), `lib8_ac32_ce1600p_states_its_paper` (210 mm, 190 mm); Frequent |
+| P16-2 | Pen events, feeds | AC-33 | `plotter_paper_tests.cpp`: `lib8_ac33_pen_down_move_up_one_stroke_in_the_pen_colour` (both plotters, on a connected `calcu::paper::Paper`), `lib8_ac33_move_with_pen_up_and_feed_give_no_mark`, `lib8_ac33_feed_without_mark_grows_the_reach`; Frequent |
+| P16-3 | Today's tests ported | AC-37 | `ce1600p_tests.cpp:82-135` and `ce150_tests.cpp:136-218` read a connected `Paper` instead of `strokes()`, renamed `lib8_ac37_…`: `_stepper_steps_become_places` (`ce1600p_tests.cpp:40-80`, unchanged but renamed), `_a_stroke_per_pen_down`, `_ce150_colour_every_third_arrival`, `_ce1600p_colour_turret`, `_reset_keeps_the_paper` (now also: it plots on below, D-11), `_places_map_to_the_panel` (replaces `shared_geometry_tests.cpp` `test_canvas_point`: `x = printableLeft + penX`), `_strokes_split_by_colour` (replaces `test_strokes`), `_copied_picture_size` (replaces `test_export_size`: a short CE-1600P paper is 9921 pixels wide). `ce158_tests.cpp:339` reads the CE-150's `Paper`; Frequent |
+| P16-4 | Colours | AC-34 | `plotter_paper_tests.cpp`: `lib8_ac34_four_pen_colours` (the strokes' `Rgb`). The width of one point with round ends is the panels' (LIB-8 T13, T15, D-12); P16-7's check scenario shows it in the product; Frequent |
+| P16-5 | Copy | AC-35 | session: `lib8_ac35_copy_of_a_plotter_is_1200_dpi` (`paper.picture` of a CE-1600P printout: 9921 pixels wide, `dotsPerInch` 1200), `lib8_ac35_long_roll_lowered_by_ac17` (a CE-150 roll longer than 16000 pixels); Frequent |
+| P16-6 | The panel always there, the papers kept | AC-36 | session: `lib8_ac36_papers_topic_lists_both_plotters_without_any_plugged`, `lib8_ac36_ce150_paper_kept_through_detach_rom_module_and_model_switch` (PC-1500A A04, then A03, then a module in slot 1, then a PC-1600 with the CE-150 attached again in MODE 1: it prints on below), `lib8_ac36_ce1600p_paper_kept_through_detach_and_its_rom_variant`, `lib8_ac36_user_preset_naming_a_plotter_starts_it_empty` (P-A2; again on format 2 in M-46); Frequent. Qt6: `CalcU1600Shots.lib8-ac36` (`expect-panel: { name: paper, title: "", empty: true }` at the start; with a CE-150 attached the title is `CE-150`). Web: `play.spec.js` `lib8_ac36 paper panel always shown, named while a plotter is plugged in`; Longer |
+| P16-7 | The GUI scenario | AC-38 | Web: `play.spec.js` `lib8_ac38 plotter example shows the paper panel with marks` (today's `a plotter preset draws on the paper`, `:227-233`, renamed: `[data-panel=paper]` titled `CE-1600P`, not empty). Qt6: `CalcU1600Shots.lib8-ac38` (preset `plotter/lissajou-1600.pc1600`; `expect-panel: { name: paper, title: CE-1600P, empty: false }`; a `capture` of the panel); Longer |
+| P16-8 | The harness | AC-32 (with LIB-8 AC-23) | `harness_tests.cpp`: `lib8_ac32_harness_paper_marks_of_the_ce150` (`attach printer CE-150`, `type LPRINT 123`, `wait 3s`, `paper marks CE-150`: a `reach` line and strokes), `lib8_ac32_harness_cut_paper_and_png`; Frequent |
+| P16-9 | The macOS clipboard | AC-35 (the platform part) | `library/qt6/tests/paper_panel_tests.cpp`: `ac16_mac_clipboard_keeps_physical_size` (macOS only; `calcu_qt6_tests`, Frequent) |
+| R-1 | Golden and reference runs | §10.7 | `golden_runs_tests.cpp` (Frequent); `lib8_ac39_sharp_plots_turned_into_paper_replies`, unchanged |
+
+Coverage: AC-32 to AC-38, 7 of 7. AC-36's preset clause is tested again
+in M-46.
+
+### 10.7 Golden and reference runs
+
+- **Golden runs** (`tests/golden-runs/`, M-8). Four of them have a paper:
+  `pc1500a-ce150`, `pc1600-ce150`, `pc1600-ce1600p` and
+  `pc1600-attach-ce1600p`. After M-45 the driver builds today's summary
+  from the marks: positions turned back into raw steps, one point per
+  position, `newStroke` on a stroke's first position. The 108 and 218
+  points and their sums must come out unchanged. In these runs the cold
+  boot that resets the card comes before the pen moves, so `yBase` is 0.
+  A difference is a finding, not a new reference.
+- **The 14 plotter examples** (M-4) are compared with their replies in
+  M-46 (C1600-4 AC-16). Their reach may differ from the converted one only
+  by a feed (D-14).
+- **Reference pictures.** `ce150.png` and `ce1600p.png` of M-39 are drawn
+  from the fixtures. P16-5 checks a product printout's size, not its
+  bytes.
+
+### 10.8 Agent knowledge (in M-45)
+
+- `products/calc-u-1600/docs/developer/Shared-Architecture.md:71` (the
+  `PlotterPaper` row goes; `app/SharpPrinters` comes) and `:114` (the
+  adapter kind `c1600.plotter-paper` goes);
+  `docs/developer/Web-Client.md:13-16, 89` (the panel is always there;
+  `[data-panel=paper]`); `docs/developer/screenshots/README.md` (the
+  targets `paper` and `plot`; the verbs `expect-panel` and `expect-title`;
+  the check scenarios in `tests/gui/`).
+- `docs/glossary-mapping.md`: rows `PlotterPaperWidget`, `PlotterPaper`
+  (Web), `PaperKind` and `PaperGeometry` → paper panel, paper (as §7
+  says).
+- `docs/test-groups.md`: `tests/plotter_paper_tests.cpp`, the renamed
+  cases, `CalcU1600Shots.lib8-ac36` and `.lib8-ac38`, the new names in
+  `play.spec.js`.
+- Memory: `calc-u-1600/project_ce1600p_paper_geometry.md` (the paper is
+  now the library's paper panel and `PlotterPaperOutput`;
+  `PlotterPaperWidget` and `PaperGeometry` are gone; the unit of 1920/190
+  per mm stays), and its line in `calc-u-1600-memories.md`.
+  `project_ce150_plot_x_offset_step_scale.md` and
+  `project_ce1600p_paper_command_vertical_window.md` stay: they hold
+  facts about the mechanism.
+- No skill changes: Calc-U-1600 has none. The product's `CLAUDE.md` names
+  no paper code.
+
+### 10.9 Ledger rows
+
+- Visible in M-45: 1600-12 (the panel always shown, the papers kept; the
+  preset clause through P-A2, on format 2 in M-46); the "Copied to
+  clipboard" of 1600-14 (LIB-8 AC-20); 1600-32 (a feed shows as blank
+  paper; the 24 points of white go). Plan §5.2 does not list 1600-32 yet:
+  see the plan notes.
+- Proposed new row **1600-34**: "After a Reset or a Cold boot a plotter
+  goes on below what it drew, where the paper stands (today the next plot
+  starts again at the top of the paper, over the earlier one)." LIB-8
+  D-11; §10.4.
+
+### 10.10 Risks
+
+- **Golden summaries.** If the driver's conversion and the mechanism's old
+  `flatPoints()` disagree on a stroke of one point (the pen down and up
+  without a move), the counts differ. `Paper` keeps such a stroke (§3.3:
+  one position is a dot), so they should agree. R-1 shows it.
+- **The macOS clipboard.** `ClipboardService` alone loses the physical
+  size on macOS (`MacClipboardImage.h:6-22`). D-17 keeps today's Cocoa
+  path. It is platform code, so this step dispatches a CI run (plan §1).
+- **Memory while no sink is connected.** `PaperOutputBase` keeps every
+  call until a sink connects. The app session connects at once; today's
+  tools and the golden driver connect when they first see the capability.
+  A host that never connects keeps the calls, as the mechanism keeps its
+  strokes today.
+- **The Web bundle.** Taking the whole `COMPONENT_SOURCES` brings the
+  shell's components a step early. If `calc.js` grows past what the Web
+  tests allow, M-45 takes only `paper.js` and `PaperPanel.jsx`, and M-49
+  the rest.
+
+### 10.11 Decided (best guess)
+
+- **D-16 (where the paper output lives).** In the card, beside the
+  mechanism, made and gone with it. So `standing()` is 0 after a plug
+  (§3.1's conformance) without any reset logic, and a capability object
+  never outlives its printer.
+- **D-17 (the macOS clipboard).** Today's `macSetClipboardImage` moves
+  into the Qt6 component set, and `ClipboardService` uses it on macOS:
+  one clipboard path for the paper and the screen, and nothing lost
+  against 0.8.1.
+- **D-18 (always shown).** "Always shown" means "with or without a
+  plotter". The Web frontend's rule that the docked panels give way in a
+  short window (`CalcU1600.jsx:370-373`) stays: where a panel sits is
+  LIB-14's (AC-23).
+- **D-19 (the event log).** The mechanism's pen event log stays for
+  `pc1500_cli` and `pc1600_cli` until they go (M-51). It is diagnostics,
+  not paper.
+
+### 10.12 Plan notes
+
+- Plan §5.2: add 1600-32, and the proposed 1600-34, to M-45; both become
+  visible with the paper kind.
+- Plan M-45, "Knowledge, ledger": add `Shared-Architecture.md`,
+  `Web-Client.md`, `screenshots/README.md` and the memory file
+  `project_ce1600p_paper_geometry`.
+
+### 10.13 Questions for the user
+
+None that split this design.

@@ -945,11 +945,10 @@ a machine is used from one thread at a time, and the caller serialises.
 2.3.0's four mutexes (`m_keyMutex` in `TI59Machine`, `m_displayMutex`,
 `m_prnMutex`, `m_traceMutex` in `TMC0501`; the printer state they guarded
 is the PC-100C's since C59-6) and the atomics of the trace
-flags and counters have no successor in the core. Until the session runs on
-one thread (M-33 for Qt6 and Swift, M-34 for the Web), the app layer's
-`cu59::MachineGuard` (`app/MachineGuard.hpp`) is that caller: the run loop
-holds it per batch (one `advance()`), every other call on the machine or an
-adapter per call (`EmulatorSession::access()`).
+flags and counters have no successor in the core. Since M-34 every frontend
+runs the machine on the one thread of its app session (2.3.0's lock, the
+app layer's `MachineGuard`, went with the last threaded caller), so no
+caller needs to serialise.
 
 ---
 

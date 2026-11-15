@@ -26,8 +26,8 @@
 // The core types still reachable here (CpuFrame, DebugEvent, TIStepBoundary)
 // go with their adapters (design D-7). TIPeripheralsAdapter went in M-25
 // (C59-6): the PC-100C and the module are peripherals in their places. The
-// machine holds no lock: the caller serialises (app/MachineGuard.hpp until
-// M-33/M-34).
+// machine holds no lock: its one caller is the app session's thread
+// (ADR 0009; since M-34 on every frontend).
 
 class TIMachine;
 

@@ -342,7 +342,7 @@ FreezeOnStart: Calculator
 ```
 
 - The freeze directives name their panel. They don't depend on the tab
-  shown, which is the GUI's (`Platform::showDebugPanel`).
+  shown, which is the GUI's (`the `c59.show-debug-panel` topic`).
 - After a freeze, keys wait until the machine runs again: a `Resume:`, or
   the user's RESUME. `Step:` and `Resume:` work while frozen. A script
   that ends frozen stays frozen.
@@ -584,7 +584,7 @@ and `^{…}` / `_{…}` super- and subscripts. The table is `kMathTokens` in
 
 ## What a load does
 
-In this order (code: `SessionController::loadStateFile`,
+In this order (code: `TIAppPart::loadStateFile`,
 `app/StateApplier.cpp`):
 
 1. `MODEL:` switches the machine if it names another model.

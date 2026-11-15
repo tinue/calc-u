@@ -12,8 +12,8 @@
 // CALCULATOR tab's snapshot and program listing, the CPU tab's instruction
 // history and ROM heatmap, and the LOG tab's ring. Rebuilt at 60 Hz while
 // running (only for visible panels) and once per freeze / step while
-// frozen. UI thread only; reads the machine while the run loop is running
-// (as the panels always have) or stopped. SessionController owns it.
+// frozen. On the session's thread; reads the machine between slices while
+// it runs (as the panels always have) or stopped. TIAppPart owns it.
 
 namespace cu59 {
 

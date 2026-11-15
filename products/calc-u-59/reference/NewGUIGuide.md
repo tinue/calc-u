@@ -30,18 +30,21 @@ Build on `app/` (`SharedArchitecture.md`). The Qt app is the worked
 example: `frontends/qt6/app/EmulatorController` is the whole adapter, about 300 lines
 (header and source).
 
-1. **Own one `cu59::SessionController`** on your UI thread, made by
-   `SessionController::create` with a `calcu::roms::Bundle` of the ROM files
-   of `roms/` as your packaging holds them (LIB-12), the text of
-   `roms/solid-state/cuecards.txt` and the saved module ID (plus
-   `Threading::Cooperative` if your platform has no threads).
-2. **Implement `SessionController::Platform`**: queue jobs on your UI thread,
-   read and write `ti58c.mem` and card files, name a card's file in your card
-   folder (`cardFilePath`), select a debugger tab (`showDebugPanel`), give the
-   trace folder and size limit, store the last model and module, show errors, and redraw on
-   `changed(mask)`.
-3. **Call `tick(now)` at 60 Hz.** Redraw only what the `Change` bits name.
-4. **Forward input**: `pressKey`/`releaseKey` with matrix codes (hit test with
+1. **Host one app session** on one thread of yours: look the ROM files up
+   once (`cu59::lookUpRoms` over a `calcu::roms::Bundle` of the ROM files of
+   `roms/` as your packaging holds them, LIB-12) and make the session with
+   `cu59::makeAppSession` (`app/TIAppPart.hpp`): the `RomSet`, the text of
+   `roms/solid-state/cuecards.txt`, the start model, your save folder
+   (cards, `ti58c.mem`) and trace folder (LIB-9's paths). Without the full
+   set make no session and show `describe(missing)`.
+2. **Listen to it** (`AppSession::listen`) with the host services you offer;
+   keep a `calcu::sessions::TopicMirror` of what it sends: the library's
+   topics and the interim `c59.*` topics (`c59.model`, `c59.led`,
+   `c59.printer`, `c59.card-reader`, `c59.run-state`, `c59.debug.*`, …).
+   Show `notices` as alerts.
+3. **Call it about 60 times a second** (`AppSession::call(now)`); redraw
+   only the topics that came.
+4. **Forward input** as the `c59.*` commands (`cu59::commands`): `pressKey`/`releaseKey` with matrix codes (hit test with
    `KeyboardLayout`, convert with `matrixCode`; `PointerTracker` turns
    pointer moves into presses, releases and full speed), `keyboardDown`/`keyboardUp`
    with `KeyboardMap` codes, `keyboardRelease` on focus loss, `setFullSpeed`
@@ -63,18 +66,17 @@ packaging.
 
 Compile `core/` and `app/` to something it can call, as the web build
 does with Emscripten (`frontends/web/build.sh`), and write the adapter in C++
-on that side (`frontends/web/bindings.cpp`, about 1050 lines with the embind
-surface):
+on that side (`frontends/web/bindings.cpp`: the factory of the app
+session, with `app/TIWebPart` for what the page draws):
 
-- **No threads?** Construct the `SessionController` with
-  `Threading::Cooperative`: `tick()` then runs the emulation and the key
-  lanes itself (`SharedArchitecture.md` § "Cooperative mode (no threads)").
+- **No threads?** None are needed: the session runs on the one thread that
+  calls it (the Web hosts it in a Web Worker, LIB-15; the library's
+  `calcu::web::WorkerHost` translates its messages to the page).
 - **Asynchronous files?** The ROM lookup reads every file once, at the
   start, synchronously. Fetch the full set (`cu59::fullRomSet()`) before
-  constructing the controller, as the web worker does into `/roms`; nothing
-  is read later.
-- **Pass drawing data, not drawing.** The adapter posts what `changed()`
-  names as plain data — segment masks and brightness per LED cell, the cue
+  making the session, as the library's Web worker does into `/bundle`
+  (`files.json`); nothing is read later.
+- **Pass drawing data, not drawing.** `TIWebPart` sends what changed as plain data — segment masks and brightness per LED cell, the cue
   card as a laid-out draw list, printer lines with their heights, debug rows
   formatted by `DebugText`, the LED geometry — and the GUI paints it.
 

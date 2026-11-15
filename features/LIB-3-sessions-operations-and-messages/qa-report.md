@@ -154,7 +154,7 @@ whole Frequent group passes (26 of 26).
 | AC-28 | Pass | Qt6: `EmulatorController` hosts `makeAppSession()` on the GUI thread (a 60 Hz timer), sends `c59.*` commands and reads a `TopicMirror`; run offscreen with a temporary `$HOME` and a preset `1 + 1 =`: the window shows 2 (`--grab`). `CalcU59NoOwnSession` (P59-1): no `EmulatorSession`, `EmulationRunner`, `TISessionController` or own `SessionController` in the Qt6 and Swift sources; no `std::thread` in `app/` but `SessionThread` |
 | AC-29 | Pass | `lib3_ac29_mirror_holds_every_change_flag` (each of the fourteen flags' actions moves its interim topic) |
 | AC-30 | Pass | `lib3_ac30_error_is_notice_diagnostic_is_log`, `lib3_ac30_card_and_constant_memory_files_without_frontend`, `lib3_ac30_module_id_not_saved`, `lib3_ac30_show_debug_panel_is_product_message` |
-| AC-31 | M-34 (Qt6 part checked) | `CalcU59NoOwnSession` checks that Qt6 sends no suspend or continue; Swift: C59-5 AC-8; Web in M-34 |
+| AC-31 | Pass (M-34) | Qt6: `CalcU59NoOwnSession` checks that Qt6 sends no suspend or continue; Swift: C59-5 AC-8; Web: `frontends/web/tests/session.spec.js` `lib3_ac31 hidden page suspends, shown continues` (Longer; hidden: the page sends `suspend`, the emulated time stands still for 1 s; shown: `continue`, it runs again) |
 | AC-32 | Pass | `lib3_ac32_preset_load_is_busy_and_refuses_second`, `lib3_ac32_printer_toggle_is_operation`, `lib3_ac32_updates_during_preset` |
 | AC-33 | Pass | `lib3_ac33_no_sound_messages_and_no_sink_stated` (a frontend offering an audio sink gets no sound and no ask) |
 
@@ -192,6 +192,66 @@ whole Frequent group passes (26 of 26).
 - **`Threading::Threads` is gone, the file `Threading.hpp` stays** with
   `Cooperative` (Web, the controller's tests) and `Hosted`. `MachineGuard`
   and the session's mutexes stay until M-34 (never contended now).
+## Calc-U-59, the session part of M-34 (2026-11-15, branch `m34-web-59`)
+
+The Web frontend hosts the library's app session too (LIB-15 59), so the
+M-33 deviation ends: `SessionController` is taken apart. Its flows are
+`TIAppPart`'s own (`app/TIAppPartFlows.cpp`, the session plumbing in
+`app/TIAppPart.cpp`); its `Platform` goes (errors are notices, diagnostics
+log lines, the files `TIFileAccess`, the trace folder the setup's
+`TraceTarget`); `Threading`, `CooperativePacing`, `Pacing.*` and
+`MachineGuard` are deleted. `EmulatorSession` stays, hosted only and
+without locks: the run flag and its job queue, the freeze-checked advance
+of a machine-session slice (`TIFreezeGate`), the key sequencer at slice ends
+(`TIKeySequencerHook`), freeze state and the trace writers — the adapters of
+design §5 until M-36 / M-53. The types the frontends named
+(`SessionController::CardState`, `DebugLevel`, `DropAction`,
+`dropActionFor`) are `cu59::` names now (Qt6 and the Swift bridge changed
+with them).
+
+The controller's tests are ported to the part on the library session:
+`tests/part_flows_tests.cpp` (47: the 17 controller tests and the 30
+controller tests of the cooperative file, on `tests/PartRig.hpp`: the
+session at 60 Hz on the test's clock, an in-memory `FileIO` for the save
+folder, the notices as errors; same checks, test names with `part_` for
+`controller_` / `cooperative_controller_`). One check has no case any more:
+"Machine not initialized yet." of the ASM overlay before the first machine
+(the session always has one). The key sequencer's tests on virtual time
+are `tests/shared_keys_tests.cpp` (8). The runner's tests
+(`cooperative_runner_*`, `runner_post_and_sync_are_serial`) and the batch
+rules (`pacing_batches_are_cycle_weighted_with_carry`, `pacing_sleep_rule`)
+went with their code; the library's pacer has LIB-17's tests, and the job
+queue's order is `session_post_and_sync_are_serial` on the `EmulatorSession`.
+The ROM lookup's start tests (LIB-12 AC-6, AC-10) make the session the way
+the frontends do (`lookUpRoms`, `makeAppSession`). Frequent: 28 of 28;
+`CalcU59Tests` 260 tests.
+
+**Reference runs (M-9).** `tests/reference_runs_tests.cpp` drives the part
+on the session now (the example loaded with the command `c59.load-state`,
+as the frontends load a preset) and compares each example with its 2.3.0
+recording (`CALCU59_REFERENCE_COMPARE=1`; CTest `CalcU59ReferenceRuns`,
+Longer, 9 s). **Finding: 23 of 57 are identical; 34 differ.** In 32 of them
+only time lines differ: the line "recorded after N s" (the driver's wall
+time until the playback ended; 2.3.0's recorder ran full speed on the
+host's real clock, the session's pacer on the driver's clock, so the line
+measured the host then and the driver now) and, in 11 of them, `Elapsed:` lines
+of a KEYSTROKES `ReportElapseTime:` by a few milliseconds of emulated time
+(slice ends move, LIB-17 §8; the largest 1.1 s in `globe-print.ti59`, a
+full-speed stretch). Two differ in content:
+- `debug/printer-timing.ti59`: 106 printed lines instead of 104 (two more
+  blank paper feeds) and its last `Elapsed:` 3.236 s instead of 2.213 s, in
+  its "full speed via keypress" part, where it switches RegularSpeed: and
+  FullSpeed: around Adv and Prt key presses. Probable cause: a key held for
+  100 ms of wall time (2.3.0's rule, until LIB-5 59's emulated-time holds,
+  ledger 59-23) is held over more emulated time when the library's full
+  speed runs several slices per host call. Not diagnosed further.
+- `historic/life.ti59`: still running after 30 minutes in both; one RAM
+  register (114) holds 2 instead of 5 at the cut. The cut falls at another
+  point of a running computation (the slice ends move).
+The same path has served Qt6 and Swift since M-33, so these differences are
+not new with M-34: M-33's planned `reference_runs_session_tests.cpp` (design
+§8) was not written then. The references are unchanged.
+
 ## Calc-U-1600 (M-31, 2026-11-15)
 
 Calc-U-1600's own `AppSession`, `MachineSession`, `Pacer`, `AudioPump`

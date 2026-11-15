@@ -6,7 +6,8 @@
 > to meet those specifications.
 
 The Swift app (`frontends/swift/App/`, `frontends/swift/Bridge/`) for macOS and iOS/iPadOS. It is a renderer
-over `app/SessionController`; everything that isn't drawing — the run
+over the library's app session with `app/TIAppPart` (through
+`frontends/swift/Bridge/TIAppSession` on `cu59::SessionThread`); everything that isn't drawing — the run
 loop, keys, presets, cards, the printer strip, the debugger, the rules the
 views draw with — is in `app/` and documented in `SharedArchitecture.md`.
 
@@ -41,7 +42,7 @@ EmulatorViewModel (@Observable, main thread)
 | File | Role |
 |---|---|
 | `Calc-U-59App.swift` | App entry; suspends on background, resumes on active; macOS Settings scene and About panel |
-| `EmulatorViewModel.swift` | The `@Observable` face of `SessionController`: forwards actions, runs the 60 Hz timer, copies what `changed` names into observable properties; `PlatformForwarder`; Swift mirrors of the debug snapshot and `ProgramSource` |
+| `EmulatorViewModel.swift` | The `@Observable` face of the app session: sends the `c59.*` commands, copies the interim `c59.*` topics into observable properties; Swift mirrors of the debug snapshot and `ProgramSource` |
 | `MachineModel.swift` | Model enum (raw values match `cu59::Model`) |
 | `ROMLoader.swift` | The ROM lookup over the bundle's resource folder (`TIRomSet`, LIB-12; a "ROMs missing" text in place of the calculator); `cuecards.txt` text and module list |
 | `CardStorage.swift` | Card folder: iCloud Documents container, else local Documents |

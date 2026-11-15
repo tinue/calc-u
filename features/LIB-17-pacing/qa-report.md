@@ -173,6 +173,19 @@ frontend, chosen here).
 
 So the Calc-U-59 column is not Done in M-33: AC-19's Web row waits for M-34.
 
+**M-34 (2026-11-15, branch `m34-web-59`): the Web row passes.** The Web
+frontend runs on the library's app session and pacer; 2.3.0's batches
+(`CooperativePacing`, `Pacing.hpp`) are gone with `SessionController`.
+`frontends/web/tests/pacing.spec.js` `a TI-59 keeps one minute` (CTest
+`CalcU59WebPacing`, Chromium, root) reads the session's `ticks` request
+through the page's engine: wall 60.0090 s, emulated 59.9937 s, −0.0153 s,
+bound 0.0417 s: **Pass**. Every row of AC-19 passes, and with AC-15 to AC-18
+the Calc-U-59 column is Done. The "before" long-run tests
+(`pacing_longrun_tests.cpp`, 2.3.0's batches) went with the batches; AC-18's
+"after" test keeps 2.3.0's rate as its formula (whole ticks per 20 ms), as
+Calc-U-1600's did in M-31. Ledger rows 59-32 and 59-33 now hold for the Web
+too.
+
 ### Deviations from the design
 
 - **`--pacing-probe` is in every build with the tests** (`CALCU_TESTS`, the

@@ -82,8 +82,8 @@ Annotated ROM listings: `rom/TI59-commented.asm`, `rom/TI58C-commented.asm`
 - **Core stays hardware-only.** File formats, run-loop pacing, key timing and
   debugger snapshots belong in `app/` (calc-u-59-shared skill).
 - **The core holds no lock, no atomic and starts no thread** (ADR 0009).
-  The app's `cu59::MachineGuard` (`app/MachineGuard.hpp`) serialises the
-  runner, UI and sequencer threads until M-33 (Qt6, Swift) / M-34 (Web).
+  Every frontend runs the machine on the one thread of its app session
+  (since M-34 also the Web); nothing serialises calls on it.
 - **Trace format:** a new `CpuFrame` field changes the binary trace format
   (`reference/DebugAPI.md`); avoid it where an accessor will do (as
   `libExecPC()` does).

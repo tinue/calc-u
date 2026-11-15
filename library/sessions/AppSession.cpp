@@ -112,6 +112,9 @@ struct AppSession::Impl final : SessionContext, SessionSetup {
     CallId currentCall() const override { return current; }
     pacing::WallTime wallTime() const override { return setup.clock ? setup.clock() : pacing::WallTime{0}; }
     bool virtualTime() const override { return setup.hosting == Hosting::VirtualTime; }
+    void tellRestarted(Restart r) override {
+        for (SessionPart* p : setup.parts) p->machineRestarted(*this, r);
+    }
     void reply(CallId call, ReplyMessage m) override {
         const auto it = deferred.find(call);
         if (it == deferred.end()) return;

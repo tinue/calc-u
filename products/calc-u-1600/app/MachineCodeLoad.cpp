@@ -24,7 +24,7 @@ ProgramChoice programChoice(const std::vector<std::uint8_t>& bytes) {
     return choice;
 }
 
-MachineCodeLoad MachineCodeLoad::plan(const MachineSession& session, const std::vector<std::uint8_t>& image) {
+MachineCodeLoad MachineCodeLoad::plan(const SharpAppPart& session, const std::vector<std::uint8_t>& image) {
     MachineCodeLoad load;
     load.m_code = machinecode::readFile(image);
     const bool isPC1600 = session.currentModel() == Model::PC1600;
@@ -108,7 +108,7 @@ MachineCodeLoad::AddressCheck MachineCodeLoad::setAddress(const std::string& tex
     return check;
 }
 
-MachineCodeLoad::Loaded MachineCodeLoad::loaded(const MachineSession& session) const {
+MachineCodeLoad::Loaded MachineCodeLoad::loaded(const SharpAppPart& session) const {
     Loaded out;
     const bool isPC1600 = m_target == machinecode::Target::PC1600;
     // The advice: NEW that keeps BASIC off the code, CALL that starts it.

@@ -96,7 +96,7 @@ qt_add_executable(CalcU1600Qt
   app/main.cpp
   app/MainWindow.cpp
   app/EmulationPacer.cpp
-  app/SyncOperations.cpp
+  app/Operations.cpp
   app/MachineController.cpp
   app/FaceplateWidget.cpp
   app/LcdWidget.cpp
@@ -139,6 +139,9 @@ endif()
 
 target_include_directories(CalcU1600Qt PRIVATE app ${CMAKE_CURRENT_BINARY_DIR}/generated)
 target_link_libraries(CalcU1600Qt PRIVATE Qt6::Widgets Qt6::Multimedia Qt6::Network)
+# Test hooks of non-release builds: --pacing-probe <s> (LIB-17 design §5,
+# AC-22; until the Qt6 frontend has harness attach).
+target_compile_definitions(CalcU1600Qt PRIVATE $<$<NOT:$<CONFIG:Release>>:CALCU1600_TEST_HOOKS>)
 
 target_link_libraries(CalcU1600Qt PRIVATE calcu_shared)
 

@@ -7,11 +7,11 @@
 // ApplePersistenceIgnoreState = YES). Call before QApplication exists.
 //
 // The app restores nothing itself, and AppKit's own "reopen windows?"
-// prompt -- shown after a run was killed -- is fatal here: it arrives with
-// the launch's open-application event, which the startup default preset's
-// synchronous load delivers while it pumps events (user input excluded).
-// The prompt's modal loop then waits for a click that can't arrive, and the
-// load waits for the prompt: a beachball.
+// prompt -- shown after a run was killed -- was fatal in 0.8.1: it arrived
+// with the launch's open-application event while the startup default
+// preset's synchronous load pumped events (user input excluded), and each
+// waited for the other. Since M-31 the start runs in parts, but the app
+// still restores nothing, so the prompt stays off.
 void macDisableWindowRestoration();
 
 // Turns off the press-and-hold accent picker for this app (registers
@@ -25,4 +25,9 @@ void macDisablePressAndHold();
 // sandboxed app): the base of the settings file on macOS (LIB-9 AC-2).
 // Empty if macOS gives none.
 std::string macApplicationSupportFolder();
+
+// Keeps App Nap from stretching the timers of the process while its window
+// is not in front (the --pacing-probe test hook: LIB-17 AC-22 measures the
+// pacing, not the platform's throttling of a background app).
+void macKeepTimersPrecise();
 #endif

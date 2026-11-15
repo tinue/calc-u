@@ -9,7 +9,7 @@
 #include "DapSession.hpp"
 #include "Machine/LegacyCalls.hpp"
 #include "MachineController.hpp"
-#include "SyncOperations.hpp"
+#include "Operations.hpp"
 
 DebugController::DebugController(MachineController* machines, QObject* parent)
     : QObject(parent), m_machines(machines) {
@@ -40,7 +40,7 @@ void DebugController::drainQueue() {
     finishTeardown();
 }
 
-bool DebugController::appBusy() const { return m_machines->app().busy(); }
+bool DebugController::appBusy() const { return m_machines->busy(); }
 
 void DebugController::setAppBusy(bool busy) {
     if (!busy && (!m_queued.empty() || m_teardownPending))
@@ -186,8 +186,8 @@ std::vector<debug::BreakpointStatus> DebugController::rebindListings() {
     return changed;
 }
 
-void DebugController::setSyncOperations(SyncOperations* sync) {
-    m_sync = sync;
+void DebugController::setOperations(Operations* ops) {
+    m_sync = ops;
 }
 
 bool DebugController::loadPreset(const QString& path, QString* error, bool armOnly) {
@@ -195,7 +195,8 @@ bool DebugController::loadPreset(const QString& path, QString* error, bool armOn
         *error = tr("Presets can't be loaded from the debugger here");
         return false;
     }
-    const bool ok = m_sync->loadPreset(path, error, armOnly);
+    const bool ok = m_sync->runAndWait(tr("Load Preset"), shared::commands::kLoadPreset,
+                                       calcu::sessions::Value::object({{"path", path.toStdString()}, {"armOnly", armOnly}}), error);
     // The preset rebuilt the machine and the target rebound to it; it stays
     // paused, as a fresh session is -- the caller re-binds the listings.
     m_replacedPending = false;
@@ -210,16 +211,22 @@ bool DebugController::cleanStart(const QString& preset, QString* how, QString* e
     bool ok = false;
     if (!preset.isEmpty()) {
         *how = tr("preset %1").arg(preset);
-        ok = m_sync->loadPreset(preset, error);
+        ok = m_sync->runAndWait(tr("Load Preset"), shared::commands::kLoadPreset,
+                                calcu::sessions::Value::object({{"path", preset.toStdString()}}), error);
     } else if (const QString path = AppSettings::defaultPresetPath(m_machines->currentModel());
                !path.isEmpty()) {
         // As the app applies it: refused if it's for another model.
         *how = tr("default preset %1").arg(path);
-        ok = m_sync->loadDefaultPreset(path, m_machines->currentModel(), error);
+        ok = m_sync->runAndWait(
+            tr("Default Preset"), shared::commands::kLoadDefaultPreset,
+            calcu::sessions::Value::object({{"path", path.toStdString()},
+                                            {"model", shared::settingsModelName(m_machines->currentModel())}}),
+            error);
     } else {
         // No preset: the machine as Reset All leaves it, booted to the prompt.
         *how = tr("All Reset (no default preset for this model)");
-        ok = m_sync->resetToPrompt(/*allReset=*/true, error);
+        ok = m_sync->runAndWait(tr("Reset All"), shared::commands::kReset, calcu::sessions::Value::object({{"all", true}}),
+                                error);
     }
     // A rebuilt machine stays paused, as a fresh session is -- the caller
     // re-binds the listings.
@@ -234,16 +241,13 @@ debug::LoadResult DebugController::loadProgram(const debug::LoadRequest& request
         r.error = "no machine";
         return r;
     }
-    QString error;
-    m_sync->run(tr("Load Program"), [this, &r, &request] {
-        calcu::machine::Machine* machine = m_machines->machine();
-        if (!machine) {
-            r.error = "no machine";
-            return shared::OpResult::fail(r.error);
-        }
-        r = sharp::legacy::loadProgram(*machine, request, m_map, *m_target);
-        return r.ok ? shared::OpResult{} : shared::OpResult::fail(r.error);
-    }, &error);
+    // An instant load into the running machine, between two host calls.
+    calcu::machine::Machine* machine = m_machines->machine();
+    if (!machine || appBusy()) {
+        r.error = machine ? "an operation is running" : "no machine";
+        return r;
+    }
+    r = sharp::legacy::loadProgram(*machine, request, m_map, *m_target);
     if (!r.ok) return r;
     if (after == After::None) return r;
     if (!command.empty()) r.callCommand = command;
@@ -269,12 +273,13 @@ bool DebugController::resetMachine(bool allReset, bool stop, QString* error) {
     }
     // Without the boot run (ROM research starts at the vector), but like
     // any reset: timer stopped meanwhile, clock re-seeded after.
-    if (!m_sync->run(allReset ? tr("Reset All") : tr("Reset"), [this, allReset] {
-            m_machines->cancelPaste();
-            m_target->reset(allReset);
-            return shared::OpResult{};
-        }, error))
+    if (appBusy()) {
+        *error = tr("Another operation is running.");
         return false;
+    }
+    m_machines->cancelPaste();
+    m_target->reset(allReset);
+    m_machines->app().seedClockFromHost();
     if (stop) m_run->pause(debug::DebugEvent::Entry);
     else m_run->resume();
     return true;

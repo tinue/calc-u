@@ -13,9 +13,7 @@ QVector<MemoryModuleManager::ModuleEntry> toQt(const std::vector<shared::ModuleB
 MemoryModuleManager::MemoryModuleManager(MachineController* controller, QObject* parent)
     : QObject(parent), m_bay(&controller->app().modules()) {
     connect(controller, &MachineController::bayModuleChanged, this, &MemoryModuleManager::moduleChanged);
-    connect(controller, &MachineController::bayErrorMessage, this, [this](shared::Bay bay, const QString& text) {
-        if (bay == shared::Bay::Modules) emit errorMessage(text);
-    });
+    // A bay's error is a notice of the session now (MainWindow shows notices).
 }
 
 MemoryModuleManager::ModuleLists MemoryModuleManager::moduleLists(CardHost host) const {

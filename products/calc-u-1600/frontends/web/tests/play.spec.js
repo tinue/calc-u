@@ -29,6 +29,10 @@ async function pickModel(page, index) {
   await page.getByLabel('Model', { exact: true }).selectOption(String(index));
   await expect(page.locator(`.calcu-face[data-model="${index}"]`)).toHaveCount(1, { timeout: 30000 });
   await expect(page.locator('.calcu-busy')).toHaveCount(0, { timeout: 30000 });
+  // The model switch is an operation; keys typed while it runs are dropped
+  // (ledger 1600-9), and the busy indicator shows only after a moment.
+  await expect.poll(() => page.evaluate(() => document.querySelector('.calcu-client').calcuEngine.getState().busy),
+    { timeout: 30000 }).toBe(false);
 }
 
 // A window tall enough that the panels fit below the full-width faceplate.

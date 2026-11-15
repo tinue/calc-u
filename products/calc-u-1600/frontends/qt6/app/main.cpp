@@ -17,6 +17,11 @@
 #include "debug/DebugController.hpp"
 #include "screenshots/ShotRunner.hpp"
 #include "screenshots/ShotScenario.hpp"
+#include "MachineController.hpp"
+#include "sessions/LibraryTopics.hpp"
+#include <QElapsedTimer>
+#include <QTimer>
+#include <cmath>
 
 namespace {
 
@@ -47,6 +52,49 @@ private:
     std::function<void(const QString&)> m_onFileOpen;
     QStringList m_pending;
 };
+
+#ifdef CALCU1600_TEST_HOOKS
+// --pacing-probe <s> (LIB-17 AC-22; design §5, adapter until the Qt6
+// frontend gets attach): once the start is over, `s` seconds of wall time at
+// regular speed; then the session's request for emulated time (the one the
+// harness's `ticks` uses), printed with the wall time. Exit 0 when the two
+// grew alike within the bound of AC-1 (one host call of 16.7 ms plus the
+// last instruction; 25 ms here), else 1.
+int runPacingProbe(QApplication& app, double seconds) {
+    MainWindow window;
+    window.show();
+    MachineController* c = window.controller();
+    QElapsedTimer wall;
+    double t0 = -1;
+    auto emulatedSeconds = [c] {
+        const auto r = c->host().ask(calcu::sessions::kTicksRequest);
+        const auto* t = r.done ? calcu::sessions::payloadAs<calcu::sessions::EmulatedTimeReply>(r.result) : nullptr;
+        return t ? t->seconds : -1.0;
+    };
+    QTimer poll;
+    int result = 1;
+    QObject::connect(&poll, &QTimer::timeout, &app, [&] {
+        if (t0 < 0) {
+            if (c->busy() || !c->hasLiveMachine()) return;
+            t0 = emulatedSeconds();
+            wall.start();
+            return;
+        }
+        if (wall.elapsed() < static_cast<qint64>(seconds * 1000)) return;
+        const double w = static_cast<double>(wall.nsecsElapsed()) * 1e-9;
+        const double e = emulatedSeconds() - t0;
+        result = std::fabs(e - w) <= 0.025 ? 0 : 1;
+        std::printf("pacing-probe: wall %.3f s, emulated %.3f s, difference %+.4f s, %llu host calls, longest gap %.1f ms, %.1f ms in calls: %s\n",
+                    w, e, e - w, static_cast<unsigned long long>(c->calls()), c->longestGapMs(), c->callMs(),
+                    result == 0 ? "ok" : "beyond the bound");
+        poll.stop();
+        app.quit();
+    });
+    poll.start(5);
+    app.exec();
+    return result;
+}
+#endif
 
 }  // namespace
 
@@ -85,12 +133,34 @@ int main(int argc, char** argv) {
                                        QStringLiteral("Accept a debugger on 127.0.0.1:<port> for this run (Settings unchanged)."),
                                        QStringLiteral("port"));
     parser.addOptions({shotsOption, shotsOutOption, shotsOnlyOption, shotsFailFastOption, dapOption});
+#ifdef CALCU1600_TEST_HOOKS
+    const QCommandLineOption pacingProbeOption(QStringLiteral("pacing-probe"),
+                                               QStringLiteral("Test hook: check the pacing over <s> seconds, then quit."),
+                                               QStringLiteral("s"));
+    parser.addOption(pacingProbeOption);
+#endif
     // parse(), not process(): a normal launch must survive whatever extra
     // arguments macOS or an IDE add (`-NSDocumentRevisionsDebugMode YES`).
     const bool parsed = parser.parse(QCoreApplication::arguments());
 
     if (parser.isSet(dapOption)) DebugController::setCommandLinePort(parser.value(dapOption).toInt());
 
+#ifdef CALCU1600_TEST_HOOKS
+    if (parser.isSet(pacingProbeOption)) {
+        // Isolated as the --shots runner: the user's settings are not used.
+        QTemporaryDir probeHome;
+        calcu::settings::HostDirs dirs;
+        dirs.frontend = calcu::settings::FrontendKind::Qt6;
+        dirs.home = probeHome.filePath(QStringLiteral("home")).toStdString();
+        dirs.settingsBase = probeHome.filePath(QStringLiteral("settings")).toStdString();
+        AppPaths::useHostDirs(dirs);
+        AppSettings::setStartupModelPreference(QStringLiteral("PC-1600"));   // AC-22: a PC-1600
+#ifdef __APPLE__
+        macKeepTimersPrecise();
+#endif
+        return runPacingProbe(app, parser.value(pacingProbeOption).toDouble());
+    }
+#endif
     if (!parser.isSet(shotsOption)) {
         MainWindow window;
         window.show();

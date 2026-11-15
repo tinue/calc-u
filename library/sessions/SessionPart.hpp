@@ -44,6 +44,11 @@ public:
     // nothing while an operation runs (D-6).
     virtual pacing::Speed commandedSpeed() const = 0;
     virtual void setCommandedSpeed(pacing::Speed) = 0;
+    // The display as the `display` topic holds it now (read in this host
+    // call before afterCall), or nullptr: for a part that sends the display
+    // in a product's own form (Calc-U-1600's Web page, M-31). Nobody else
+    // reads the machine's display (LIB-1 §3.5: one reader).
+    virtual const machine::DisplayOutput* display() const { return nullptr; }
 
 protected:
     ~SessionContext() = default;

@@ -58,6 +58,10 @@ job::Task<PresetLoadResult> applyPresetJob(calcu::machine::Machine&, PresetFile 
                                            std::string traceDir, std::string moduleDir, PresetBootedFn onBooted,
                                            PresetRoms presetRoms, std::vector<std::string> extraModuleDirs,
                                            PresetArmedFn onArmed, PresetSaveAsFn onSaveAs);
+// What the preset loader plugged in so far, read back into plugged() (from
+// its onArmed, so that the armed machine's peripherals -- a plotter's paper
+// -- are seen while the preset still runs; LIB-3 AC-35, M-31).
+void syncPlugged(calcu::machine::Machine&);
 
 // ---- Running to the prompt (M-46, LIB-18 1600) ----
 // A power cycle under way runs to its end, a phase at a time; then the

@@ -134,3 +134,23 @@ cooperative half of `EmulationRunner`), whose real-clock form now pumps at
   Swift and Qt6 from M-33 and for the Web from M-34.
 - **`SliceRequest::due`** reaches the KeySequencer through the
   `TIKeySequencerHook` (a `SliceHook` that acts once per slice end).
+## Calc-U-1600 (M-31, 2026-11-15)
+
+`shared::Pacer` is gone; the library's machine session paces the Sharp
+machines with the profiles of `products/calc-u-1600/app/PacingProfiles.*`.
+
+| AC | Result | Evidence |
+|---|---|---|
+| AC-20 | Pass | `app/tests/shared_pacing_tests.cpp` `lib17_ac20_pacing_profiles_sharp` |
+| AC-21 | Pass | `tests/pacing_longrun_tests.cpp` `lib17_ac21_pacing_longrun_scripted_pc1500a`, `_pc1600` (Frequent; 120 s scripted each, ±4 ms jitter, an oversleep every 900 calls, a 5 s stall, switched off by OFF half way): worst \|emulated − wall\| after a call 1.2 ms, rate over a stretch 0.0 and 0.7 ppm (bound 100 ppm). 0.8.1's measured drift (first step 14: +0.0037 % on, +0.21 % off) is gone, as the decision log expects. The real-clock runs (Checkpoint, `CalcU1600PacingRealClock`) were not run in this step |
+| AC-22 | Pass | Qt6: `CalcU1600Qt --pacing-probe 60` (CTest `CalcU1600QtPacingProbe`, Checkpoint): a PC-1600, wall 60.002 s, emulated 59.993 s. Web: `frontends/web/tests/session.spec.js` `lib17_ac22` with `CALCU1600_WEB_PACING=1`: wall 60.003 s, emulated 60.001 s |
+
+Notes:
+- **macOS App Nap** stretched the probe's frame timer once its window was
+  not in front (33 host calls a second after about 30 s; emulated 32 s in
+  60). The probe holds an `NSProcessInfo` activity (`macKeepTimersPrecise`);
+  the app does not, as 0.8.1 did not. **For the user:** whether the app
+  should hold one while it runs in the background (it keeps running there,
+  LIB-3 AC-36).
+- The "before" test of M-10 ran on 0.8.1's pacer, which is gone; the file
+  now holds the "after" test only.

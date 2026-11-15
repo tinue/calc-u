@@ -8,7 +8,7 @@
 #include "Connector/FloppyImageFile.hpp"
 #include "Machine/SharpProductKinds.hpp"
 #include "app/AppPaths.hpp"
-#include "app/MachineSession.hpp"
+#include "app/SharpAppPart.hpp"
 #include "app/Text.hpp"
 #include "app/Utf8Path.hpp"
 
@@ -20,7 +20,7 @@ std::vector<FloppyCatalogEntry> scanDisks(const std::string& dir) { return scanF
 
 } // namespace
 
-FloppyBay::FloppyBay(MachineSession& session, const AppPaths& paths, Events events)
+FloppyBay::FloppyBay(SharpAppPart& session, const AppPaths& paths, Events events)
     : m_session(session), m_paths(paths), m_events(std::move(events)) {}
 
 sharp::FloppyDriveAccess* FloppyBay::drive() const { return m_session.floppyDrive(); }

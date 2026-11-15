@@ -1,5 +1,5 @@
 #include "MainWindow.hpp"
-#include "SyncOperations.hpp"
+#include "Operations.hpp"
 #include "FaceplateWidget.hpp"
 #include "LcdWidget.hpp"
 #include "ControlBar.hpp"
@@ -124,7 +124,8 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
 
     connect(m_controlBar, &ControlBar::modelSelected, this, &MainWindow::applyModelSelection);
     connect(m_controlBar, &ControlBar::moduleSelected, this, [this](int slot, QString moduleNameOrEmpty) {
-        m_sync->run(tr("Memory Module"), m_controller->app().selectModuleJob(slot, moduleNameOrEmpty.toStdString()));
+        m_sync->run(tr("Memory Module"), shared::commands::kSelectModule,
+                    calcu::sessions::Value::object({{"slot", slot}, {"name", moduleNameOrEmpty.toStdString()}}));
     });
     connect(m_controlBar, &ControlBar::nameAndSaveRequested, this, [this](int slot) {
         // The name, plus -- for a card with a write-protect switch (CE-161)
@@ -216,15 +217,11 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
             [this] { togglePeripheral(shared::Peripheral::CE1600P); });
     connect(m_controlBar, &ControlBar::ce158ToggleRequested, this,
             [this] { togglePeripheral(shared::Peripheral::CE158); });
-    // Queued: the failure is reported from inside the power cycle, and the
-    // dialog should appear once the machine is back on, not block it off.
-    connect(
-        m_controller.get(), &MachineController::peripheralAttachFailed, this,
-        [this](const QString& device, const QString& reason) {
-            const auto message = shared::AppSession::attachFailedText(device.toStdString(), reason.toStdString());
-            QMessageBox::warning(this, QString::fromStdString(message.title), QString::fromStdString(message.text));
-        },
-        Qt::QueuedConnection);
+    // A notice of the session (LIB-3 AC-10): a refused attach, a bay's
+    // error, a failed operation. Queued by the controller: it appears once
+    // the call it came from is over.
+    connect(m_controller.get(), &MachineController::noticeShown, this,
+            [this](const QString& sentence) { QMessageBox::warning(this, tr("Calc-U-1600"), sentence); });
     connect(m_faceplate, &FaceplateWidget::keyPressed, this, [this](QString name) {
         const std::string key = name.toStdString();
         if (key == "on") {
@@ -255,21 +252,12 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
     // The sink is a child of the window, so it outlives m_controller (and
     // with it the session's audio pump).
     m_audio = new AudioOutput(this);
-    m_controller->app().attachAudio(m_audio->sink(), [](const std::string& text) {
-        qWarning().noquote() << QString::fromStdString(text);
-    });
     // Pay the audio backend's first-start cost right after startup.
-    QTimer::singleShot(0, this, [this] { m_controller->app().warmUpAudio(); });
+    QTimer::singleShot(0, this, [this] { m_controller->attachAudio(m_audio->sink()); });
     m_pacer = new EmulationPacer(m_controller.get(), [this] { refreshViewsAfterAdvance(); }, this);
-    m_sync = new SyncOperations(
-        this, m_controller.get(), m_pacer,
-        [this] {
-            m_faceplate->lcdWidget()->setFrame(m_controller->currentDisplay());
-            m_faceplate->lcdWidget()->update();
-        },
-        this);
+    m_sync = new Operations(this, m_controller.get(), this);
     // The debugger's clean starts and loads go through the same service.
-    m_controller->debugController()->setSyncOperations(m_sync);
+    m_controller->debugController()->setOperations(m_sync);
 
     // MachineController's constructor already booted whatever model the
     // "Startup device" setting picked (see AppSettings::startupModelPreference()),
@@ -281,11 +269,10 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
     resize(AppSettings::windowSize());
     setFocus();
 
-    // Starting up selects the startup model too -- apply its default preset
-    // once the event loop runs, so the window is already up while a preset
-    // with long `wait:` steps plays out.
+    // The session's start (MachineController) boots the startup model and
+    // then applies its default preset, as an operation: the window is
+    // already up while a preset with long `wait:` steps plays out.
     QTimer::singleShot(0, this, [this] {
-        applyDefaultPreset();
         m_startupDone = true;
         drainPendingDrop();
     });
@@ -327,7 +314,7 @@ void MainWindow::closeEvent(QCloseEvent* event) {
 }
 
 void MainWindow::syncControlBarForModel() {
-    const shared::ControlState state = m_controller->app().controlState();
+    const shared::ControlState state = m_controller->controlState();
     m_controlBar->setSlot2Visible(state.slotCount >= 2);
     m_controlBar->setCe150Visible(state.ce150.onControlBar);
     m_controlBar->setCe158Visible(state.ce158.onControlBar);
@@ -340,7 +327,12 @@ void MainWindow::syncControlBarForModel() {
     syncHostDriveActions(state);
 }
 
-void MainWindow::resetMachine(bool allReset) { m_sync->resetToPrompt(allReset); }
+void MainWindow::resetMachine(bool allReset) {
+    // Boot flat out to the prompt (incl. a plotter's power-on init); the
+    // clock is set from the host after.
+    m_sync->run(allReset ? tr("Reset All") : tr("Reset"), shared::commands::kReset,
+                calcu::sessions::Value::object({{"all", allReset}}));
+}
 
 bool MainWindow::isLoading() const { return m_sync && m_sync->busy(); }
 
@@ -356,12 +348,12 @@ void MainWindow::mountHostDirectory() {
     if (dir.isEmpty()) return;
     AppSettings::rememberOpenDir(AppSettings::OpenFolder::HostDrive, dir);
     // A power cycle if no drive is attached yet, else a live directory swap.
-    m_sync->run(title, m_controller->app().mountHostDriveJob(dir.toStdString()));
+    m_sync->run(title, shared::commands::kMountHostDrive, calcu::sessions::Value::object({{"dir", dir.toStdString()}}));
 }
 
 void MainWindow::unmountHostDirectory() {
     if (!m_controller->hostDriveAttached()) return;
-    m_sync->run(tr("Unmount Directory"), m_controller->app().mountHostDriveJob({}));
+    m_sync->run(tr("Unmount Directory"), shared::commands::kMountHostDrive, calcu::sessions::Value::object({{"dir", ""}}));
 }
 
 // Control bar > Tape: picking a tape puts it in to play (CLOAD), rewound;
@@ -443,7 +435,8 @@ void MainWindow::loadBasicProgramFile(const QString& path) {
     AppSettings::rememberOpenFile(AppSettings::OpenFolder::Basic, path);
     std::optional<std::vector<uint8_t>> bytes = readProgramFile(path, title);
     if (!bytes) return;
-    m_sync->run(title, [this, &bytes, &path] { return m_controller->app().loadBasicProgram(*bytes, path.toStdString()); });
+    m_sync->run(title, shared::commands::kLoadBasic,
+                calcu::sessions::Value::object({{"bytes", calcu::sessions::Value::Bytes(*bytes)}, {"path", path.toStdString()}}));
 }
 
 void MainWindow::loadMachineCodeFile(const QString& path) {
@@ -461,8 +454,16 @@ void MainWindow::loadMachineCodeFile(const QString& path) {
         MachineCodeLoadDialog dialog(this, load);
         if (dialog.exec() != QDialog::Accepted) return;
     }
-    if (!m_sync->run(title, [this, &load] { return m_controller->app().loadMachineCode(load.request()); })) return;
+    const shared::MachineCodeLoadRequest& request = load.request();
+    const calcu::sessions::Value args = calcu::sessions::Value::object(
+        {{"bytes", calcu::sessions::Value::Bytes(request.payload)}, {"addr", static_cast<std::int64_t>(request.addr)},
+         {"slot", request.slot}, {"bank", request.bank}});
+    m_sync->run(title, shared::commands::kLoadMachineCode, args, [this, load](bool ok, const QString&) {
+        if (ok) showMachineCodeLoaded(load);
+    });
+}
 
+void MainWindow::showMachineCodeLoaded(const shared::MachineCodeLoad& load) {
     const shared::MachineCodeLoad::Loaded loaded = load.loaded(m_controller->session());
     const machinecode::Advice& advice = loaded.advice;
     QString html = QStringLiteral("<p>%1.</p>").arg(QString::fromStdString(loaded.summary).toHtmlEscaped());
@@ -487,11 +488,12 @@ void MainWindow::loadMachineCodeFile(const QString& path) {
 void MainWindow::togglePeripheral(shared::Peripheral p) {
     // Flat out, like Reset: the pin header's power-on rotation isn't worth
     // watching, and the clock is re-injected afterwards.
-    m_sync->run(tr("Plotter"), m_controller->app().togglePeripheralJob(p));
+    const char* name = p == shared::Peripheral::CE150 ? "CE-150" : p == shared::Peripheral::CE1600P ? "CE-1600P" : "CE-158";
+    m_sync->run(tr("Plotter"), shared::commands::kTogglePeripheral, calcu::sessions::Value::object({{"peripheral", name}}));
 }
 
 void MainWindow::syncPeripherals() {
-    const shared::ControlState state = m_controller->app().controlState();
+    const shared::ControlState state = m_controller->controlState();
     auto sync = [this](QAction* action, void (ControlBar::*setState)(bool, bool), const shared::PeripheralState& p) {
         (m_controlBar->*setState)(p.attached, p.enabled);
         action->setChecked(p.attached);
@@ -526,21 +528,10 @@ void MainWindow::setDockedPane(QWidget* pane, bool show) {
 }
 
 void MainWindow::onPresetArmed() {
-    // The preset attached its plotter directly on the Core machine, bypassing
-    // the control bar's toggles entirely -- the plotter
-    // resync inside this picks that up from the machine's actual state.
+    // The control state changed while an operation runs (a preset armed
+    // its machine, attached its plotter): every surface shows it now; the
+    // operation goes on in the host calls that follow (LIB-3 AC-15).
     syncUiFromController();
-    // Force a repaint of the armed-but-off state now, before control
-    // returns into Core's (possibly many-seconds-long) boot + preset
-    // script -- otherwise nothing would reach the screen until the whole
-    // preset had run. The setModel()/refreshModuleCombos() calls above only
-    // *request* a repaint (QWidget::update(), queued); repaint() forces an
-    // immediate, synchronous one, and processEvents() additionally drains
-    // any other pending GUI event so the window is fully up to date before
-    // this call returns into the blocking preset script below (user input
-    // excluded, as in SyncOperations' own pump).
-    repaint();
-    QCoreApplication::processEvents(QEventLoop::ExcludeUserInputEvents);
 }
 
 // Every UI surface that mirrors machine state, pulled from the controller:
@@ -622,7 +613,7 @@ void MainWindow::keyPressEvent(QKeyEvent* event) {
 
     // After resolve(), so bare modifiers -- the Cmd of a second Cmd-V,
     // Cmd-Tab -- don't stop a paste.
-    if (m_controller->session().hostKeyDown(*resolved, /*physical=*/true))
+    if (m_controller->app().typing().hostKeyDown(*resolved, /*physical=*/true))
         m_physicalKeysDown.insert(physicalKeyId(event), resolved->baseKey);  // released on its .up event
     event->accept();
 }
@@ -636,7 +627,7 @@ void MainWindow::inputMethodEvent(QInputMethodEvent* event) {
     const bool isPC1600 = m_controller->currentModel() == Model::PC1600;
     for (const QChar c : event->commitString()) {
         auto resolved = PC1500KeyboardMap::resolve(Qt::Key_unknown, Qt::NoModifier, QString(c), isPC1600);
-        if (resolved) m_controller->session().hostKeyDown(*resolved, /*physical=*/false);
+        if (resolved) m_controller->app().typing().hostKeyDown(*resolved, /*physical=*/false);
     }
     event->accept();
 }
@@ -712,7 +703,7 @@ void MainWindow::keyReleaseEvent(QKeyEvent* event) {
         const bool tapped = m_shiftTapArmed && m_shiftTapClock.elapsed() <= kShiftTapMaxMs;
         disarmShiftTap();
         if (tapped) {
-            m_controller->session().hostShiftTap();
+            m_controller->app().typing().hostShiftTap();
             event->accept();
             return;
         }
@@ -723,7 +714,7 @@ void MainWindow::keyReleaseEvent(QKeyEvent* event) {
         QWidget::keyReleaseEvent(event);
         return;
     }
-    m_controller->session().hostKeyUp(it.value());
+    m_controller->app().typing().hostKeyUp(it.value());
     m_physicalKeysDown.erase(it);
     event->accept();
 }
@@ -734,7 +725,7 @@ void MainWindow::changeEvent(QEvent* event) {
 }
 
 void MainWindow::releaseHeldKeys() {
-    for (const std::string& key : std::as_const(m_physicalKeysDown)) m_controller->session().hostKeyUp(key);
+    for (const std::string& key : std::as_const(m_physicalKeysDown)) m_controller->app().typing().hostKeyUp(key);
     m_physicalKeysDown.clear();
     disarmShiftTap(); // the Shift release may land elsewhere
 }
@@ -836,16 +827,17 @@ void MainWindow::refreshViewsAfterAdvance() {
     m_faceplate->lcdWidget()->setFrame(frame);
     m_faceplate->lcdWidget()->update();
 
-    // (Card/disk autosave and the tape bay run in AppSession::frameDuties().)
+    // (Card/disk autosave and the tape bay run in SharpAppPart::afterCall().)
     m_controlBar->setFloppyMotorOn(m_floppyManager->motorOn());
-    m_controlBar->setTapeStatus(m_controller->app().tapeStatus());
+    m_controlBar->setTapeStatus(m_controller->tapeStatus());
     m_debugPanel->onFrameTick();
     if (m_debugRowLayout->indexOf(m_plotterPaper) >= 0) m_plotterPaper->onFrameTick();
     if (m_debugRowLayout->indexOf(m_ce158Printer) >= 0) m_ce158Printer->onFrameTick();
 }
 
 bool MainWindow::loadPresetForShots(const QString& path, QString* error) {
-    const bool ok = m_sync->loadPreset(path, error);
+    const bool ok = m_sync->runAndWait(tr("Load Preset"), shared::commands::kLoadPreset,
+                                       calcu::sessions::Value::object({{"path", path.toStdString()}}), error);
     // Frozen emulation means no frame tick will show the end state -- the
     // LCD would keep the load's last throttled repaint, the paper its
     // pre-plot points.
@@ -1020,23 +1012,26 @@ void MainWindow::applyModelSelection(Model model) {
     // that is already checked; re-picking it must not cold-rebuild.
     if (model == m_controller->currentModel()) return;
     // A fresh default machine; its default preset customises it.
-    m_sync->run(tr("Machine"), m_controller->app().pickModelJob(model));
+    m_sync->run(tr("Machine"), shared::commands::kPickModel,
+                calcu::sessions::Value::object({{"model", shared::settingsModelName(model)}}));
 }
 
 void MainWindow::applyDefaultPreset() {
     if (AppSettings::defaultPresetPath(m_controller->currentModel()).isEmpty()) return;
-    m_sync->run(tr("Default Preset"), m_controller->app().defaultPresetJob());
+    m_sync->run(tr("Default Preset"), shared::commands::kDefaultPreset);
 }
 
 void MainWindow::applyRomRevisionSelection(PC1500RomRevision revision) {
     if (revision == m_controller->pc1500RomRevision()) return; // see applyModelSelection()
-    m_sync->run(tr("ROM"), m_controller->app().selectPC1500RomJob(revision)); // rebuilds the machine
+    const char* rev = revision == PC1500RomRevision::A01 ? "A01" : revision == PC1500RomRevision::A03 ? "A03" : "A04";
+    m_sync->run(tr("ROM"), shared::commands::kPC1500Rom, calcu::sessions::Value::object({{"revision", rev}}));   // rebuilds the machine
 }
 
 void MainWindow::applyPC1600RomVersionSelection(PC1600RomVersion version) {
     if (version == m_controller->pc1600RomVersion()) return; // see applyModelSelection()
     // Rebuilds a PC-1600; the menu shows New if the old ROM failed to load.
-    m_sync->run(tr("ROM"), m_controller->app().selectPC1600RomJob(version));
+    m_sync->run(tr("ROM"), shared::commands::kPC1600Rom,
+                calcu::sessions::Value::object({{"version", version == PC1600RomVersion::Old ? "old" : "new"}}));
 }
 
 void MainWindow::applyCE1600PRomVersionSelection(CE1600PRomVersion version) {
@@ -1045,7 +1040,8 @@ void MainWindow::applyCE1600PRomVersionSelection(CE1600PRomVersion version) {
     // inside an OFF/ON cycle (no rebuild, RAM survives); otherwise it just
     // records the choice for the next attach.
     // The menu shows New if the old ROM failed to load.
-    m_sync->run(tr("Plotter"), m_controller->app().selectCE1600PRomJob(version));
+    m_sync->run(tr("Plotter"), shared::commands::kCE1600PRom,
+                calcu::sessions::Value::object({{"version", version == CE1600PRomVersion::Old ? "old" : "new"}}));
 }
 
 void MainWindow::syncMachineMenuFromCE1600PRomVersion(CE1600PRomVersion version) {

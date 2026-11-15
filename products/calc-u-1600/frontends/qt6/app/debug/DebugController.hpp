@@ -18,7 +18,7 @@
 class DapServer;
 class DapSession;
 class MachineController;
-class SyncOperations;
+class Operations;
 
 // The app side of the debugger. Owns the DAP server (enabled in Settings)
 // and, while a client is attached, the Core debug objects for the live
@@ -69,10 +69,11 @@ public:
     /// breakpoints; returns the breakpoint statuses that changed.
     std::vector<debug::BreakpointStatus> rebindListings();
 
-    /// The app's synchronous operations: presets, resets and loads from the
-    /// debugger run through them like the menu's, and DAP messages wait
-    /// while any of them runs (it pumps the event loop).
-    void setSyncOperations(SyncOperations* sync);
+    /// The window's operations: presets and resets from the debugger run
+    /// through them like the menu's (a request waits for the operation's
+    /// end in a nested event loop, adapter until M-45), and DAP messages
+    /// wait while any operation runs.
+    void setOperations(Operations* ops);
     /// Loads a preset the way File > Load Preset does; `armOnly` stops
     /// before the boot (PresetFile::armOnly).
     bool loadPreset(const QString& path, QString* error, bool armOnly = false);
@@ -102,8 +103,8 @@ signals:
     void pausedChanged(bool paused);
 
 private:
-    /// A synchronous operation is running (SyncOperations): the machine is
-    /// being rebuilt or driven directly, so DAP messages wait until it is done.
+    /// An operation of the session runs: the machine is being rebuilt or
+    /// driven by it, so DAP messages wait until it is done.
     bool appBusy() const;
     /// MachineController::appBusyChanged: drains what waited once it is done.
     void setAppBusy(bool busy);
@@ -132,5 +133,5 @@ private:
     std::vector<QJsonObject> m_queued;
     bool m_teardownPending = false; // client gone, session not yet ended
     std::vector<std::unique_ptr<DapSession>> m_retiredSessions; // detached, maybe still on the stack
-    SyncOperations* m_sync = nullptr; // not owned
+    Operations* m_sync = nullptr; // not owned
 };

@@ -14,7 +14,7 @@
 namespace shared {
 
 class AppPaths;
-class MachineSession;
+class SharpAppPart;
 
 // ── ModuleBay: the memory-module slots ───────────────────────────────────
 //
@@ -27,7 +27,7 @@ class MachineSession;
 // rebuild constructs a fresh machine and calls attachAllToFreshMachine()
 // right after loading ROMs, before the reset. To change a slot's module,
 // selectModule() (state only), then rebuild
-// (MachineSession::switchModel(currentModel(), true)).
+// (SharpAppPart::switchModelJob(currentModel(), true)).
 //
 // Battery cards loaded from a saved instance autosave in place: tick(),
 // called once per frame, writes a card kPersistDebounceSeconds after its
@@ -63,7 +63,7 @@ public:
 
     static constexpr double kPersistDebounceSeconds = 0.5;
 
-    ModuleBay(MachineSession& session, const AppPaths& paths, Events events);
+    ModuleBay(SharpAppPart& session, const AppPaths& paths, Events events);
 
     // The catalogue for `host`.
     ModuleLists moduleLists(CardHost host) const;
@@ -85,7 +85,7 @@ public:
         return !st.moduleName.empty() && st.isTemplate && st.battery;
     }
 
-    // MachineSession::Bays::attachModulesToFreshMachine().
+    // SharpAppPart::switchModelJob(), before the cold boot.
     void attachAllToFreshMachine();
     // Plugs the selected module of `slot` in (a module change: the session
     // detached the old one; a power cycle follows, behaviour change 1600-4).
@@ -156,7 +156,7 @@ private:
         if (m_events.error) m_events.error(text);
     }
 
-    MachineSession& m_session;
+    SharpAppPart& m_session;
     const AppPaths& m_paths;
     Events m_events;
     SlotState m_slots[2];  // index 0 = slot 1, index 1 = slot 2

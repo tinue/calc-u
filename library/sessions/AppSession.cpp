@@ -102,6 +102,11 @@ struct AppSession::Impl final : SessionContext, SessionSetup {
     void setCommandedSpeed(Speed sp) override {
         if (!running) commanded = sp;   // D-6
     }
+    const machine::DisplayOutput* display() const override {
+        const auto* d = payloadAs<DisplayState>(this->displayTopic());
+        return d ? &d->output : nullptr;
+    }
+    const PayloadPtr& displayTopic() const { return displayState->current(); }
 
     // SessionSetup
     StateTopic& stateTopic(TopicName) override;
@@ -130,7 +135,7 @@ struct AppSession::Impl final : SessionContext, SessionSetup {
     std::deque<StateTopic> states;    // deque: references stay valid
     std::deque<StreamTopic> streams;
     std::vector<TopicEntry> declared;
-    StateTopic* display = nullptr;
+    StateTopic* displayState = nullptr;
     StateTopic* busyTopic = nullptr;
     StreamTopic* notices = nullptr;
     StreamTopic* logTopic = nullptr;
@@ -161,7 +166,7 @@ struct AppSession::Impl final : SessionContext, SessionSetup {
 };
 
 AppSession::Impl::Impl(AppSessionSetup s) : setup(std::move(s)), ms(setup.clock, setup.jitterSeed) {
-    display = &stateTopic(kDisplayTopic);
+    displayState = &stateTopic(kDisplayTopic);
     busyTopic = &stateTopic(kBusyTopic);
     notices = &streamTopic(kNoticesTopic, History::None);
     logTopic = &streamTopic(kLogTopic, History::SinceReset);
@@ -341,7 +346,7 @@ void AppSession::Impl::stepOperation(pacing::PaceResult& res) {
 // ── Machine output, sound and the flush ─────────────────────────────────
 
 void AppSession::Impl::readDisplay() {
-    if (machine::Machine* m = ms.machine()) display->set(std::make_shared<DisplayState>(m->readDisplay()));
+    if (machine::Machine* m = ms.machine()) displayState->set(std::make_shared<DisplayState>(m->readDisplay()));
 }
 
 void AppSession::Impl::syncMachine() {

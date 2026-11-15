@@ -106,3 +106,38 @@ Test files are `library/web/tests/`; "all projects" means `root`,
   the next start, not over a running page). M-29 names no ledger row and
   no product uses the shell yet; the rows belong with M-31 (Calc-U-1600)
   and M-34 (Calc-U-59).
+
+## Calc-U-1600 (M-31, 2026-11-15)
+
+The Calc-U-1600 Web frontend runs on the library's shell: the product's
+`calc-engine-worker.js` is the configuration of the library's worker,
+`frontends/web/bindings.cpp` is the factory of the app session
+(`CALCU_WEB_PRODUCT(CalcU1600Host, …)`); `WebController`, `WebAudioSink`,
+the product's app page, service worker, worker entry and audio worklet are
+gone (the library's are used), and `build.js` uses
+`library/web/build/dist.js`. What the page draws comes as product topics,
+commands and requests of `app/SharpWebPart` (`c1600.ui`, `c1600.lcd`,
+`c1600.lamps`, `c1600.paper`, `c1600.printer`; W16-1 `c1600.faceplate`,
+`c1600.lcd-constants`).
+
+| AC | Result | Evidence |
+|---|---|---|
+| AC-24 | Pass | `frontends/web/tests/session.spec.js` `ac24` (`?model=PC-1500`); `index.html` takes the model's name |
+| AC-25 | Pass | `session.spec.js` `ac25`: `/persist/settings/Calc-U-1600/Calc-U-1600.ini` and `/persist/Calc-U-1600/Kept.card.yaml` in IndexedDB `/persist` (0.8.x's store and place), listed after a reload; `play.spec.js` keeps the no-`localStorage` check |
+| AC-26 | Pass | `session.spec.js` `ac26`: sound messages at regular speed, none at full speed, none while a reset runs |
+| AC-27 | Pass | `session.spec.js` `ac27`: page → worker only `listen`, `command`, `request`, `answer`; worker → page only LIB-3 kinds |
+| AC-28 | Pass | `play.spec.js`, `offline.spec.js`, `prerender.spec.js`, `rom-missing.spec.js` kept: 52 passed, 2 skipped (Chromium root and sub-path, offline in Chromium and WebKit) |
+
+Decided in the step:
+- **`src/engine.js` stays, as a translator** over `createShell()` (the
+  components' `engine.call("pickModel", 2)` → `c1600.pick-model`, the
+  topics → the slices they read), instead of rewriting every component on
+  `useTopic()` before LIB-14 1600 (M-49) rewrites them anyway. It decides
+  nothing.
+- **The page is ready once the start operation is over** (keys during an
+  operation are dropped, ledger 1600-9); `play.spec.js`'s `pickModel` waits
+  for the end of the operation, not only for the busy indicator.
+- **`calc.css` is scoped** (every selector under `.calcu-client`, AC-17);
+  `build.js` fails on an unscoped one.
+- AC-16's bundle-file clause stays with M-46 (design D-4); the column is
+  Done there.

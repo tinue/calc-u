@@ -82,6 +82,10 @@ job::Task<PresetLoadResult> applyPresetJob(Machine& m, PresetFile preset, Preset
     co_return result;
 }
 
+void syncPlugged(Machine& m) {
+    if (SharpMachine* s = sharpOf(m)) s->syncFromCore();
+}
+
 job::Task<void> runToPromptJob(Machine& m) {
     SharpMachine* s = sharpOf(m);
     if (!s) co_return;

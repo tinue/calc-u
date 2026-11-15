@@ -4,6 +4,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <functional>
+#include <map>
 #include <memory>
 #include <string>
 #include <utility>
@@ -13,12 +14,12 @@
 #include "Debug/Inspect/Inspector.hpp"
 #include "Display/LcdScreenshot.hpp"
 #include "Display/LcdText.hpp"
-#include "KeyPaste.hpp"
 #include "Tape/TapeDeck.hpp"
 #include "TraceTypes.hpp"
+#include "app/AudioSink.hpp"
 #include "app/MachineModel.hpp"
-#include "app/AppSession.hpp"
-#include "app/MachineSession.hpp"
+#include "app/SharpHost.hpp"
+#include "sessions/AppSession.hpp"
 
 class MemoryModuleManager;
 class DebugController;
@@ -42,102 +43,157 @@ bool withQtError(QString* error, Op&& op) {
     return ok;
 }
 
-// The Qt side of shared::AppSession (Shared/AppSession.hpp and
-// Shared/MachineSession.hpp have the behaviour and the docs): owns the
-// app session, turns its Platform calls into signals, message boxes and
-// the debugger hooks, and keeps the QString-typed calls the widgets use.
-// The machine is session(), the rest app().
-class MachineController : public QObject, private shared::AppSession::Platform {
+// ── MachineController: the Qt6 frontend's host of the app session ────────
+//
+// Hosts the library's app session on the GUI thread (LIB-3 AC-34; FE-3),
+// through shared::SharpHost with Calc-U-1600's part (app/SharpAppPart.hpp).
+// It is the session's listener: it keeps the last message of each topic and
+// turns them into Qt signals; it sends commands (an operation's reply comes
+// later, LIB-3 AC-18); it feeds the sound to the audio sink (AC-37); and it
+// calls the session from the 60 Hz frame timer (EmulationPacer). It never
+// sends suspend: the Qt6 frontend keeps running in the background (AC-36).
+//
+// Until their steps, the widgets still reach the product's part directly
+// for what has no topic yet (the bays, the debug panel, the plotters, the
+// keys through SharpTypingHook; LIB-3 design §5).
+class MachineController : public QObject, private shared::SharpDebugger {
     Q_OBJECT
 public:
     explicit MachineController(QObject* parent = nullptr);
     ~MachineController() override;
 
-    shared::AppSession& app() { return *m_app; }
-    shared::MachineSession& session() { return m_app->machine(); }
-    const shared::MachineSession& session() const { return m_app->machine(); }
+    shared::SharpHost& host() { return *m_host; }
+    shared::SharpAppPart& app() { return m_host->part(); }
+    shared::SharpAppPart& session() { return m_host->part(); }
+    const shared::SharpAppPart& session() const { return m_host->part(); }
 
-    // ---- Forwarded unchanged (see MachineSession) ----
+    // ---- The session ----
+    // One host call (the frame timer).
+    void call();
+    // Host calls so far and the longest gap between two (the pacing probe).
+    std::uint64_t calls() const { return m_calls; }
+    double longestGapMs() const { return m_longestGapMs; }
+    double callMs() const { return m_callMs; }   // host time spent inside the calls
+    using Reply = std::function<void(const calcu::sessions::ReplyMessage&)>;
+    // Sends a command; `done` gets its reply -- at once for a command that
+    // starts no operation, at the operation's end otherwise (LIB-3 D-2).
+    void send(const calcu::sessions::CommandName& name, calcu::sessions::Value args = {}, Reply done = {});
+    // An operation runs (the busy topic).
+    bool busy() const { return m_busy; }
+    // The busy topic says the running operation is at full speed now.
+    bool operationAtFullSpeed() const { return m_busy && m_busyFull; }
+    // Frozen (the --shots runner): no frame timer; emulated time moves only
+    // through runFor() / runUntilTyped() and the operations run to their end
+    // on a clock of their own, so a capture is the same run to run.
+    void setFrozen(bool frozen);
+    bool frozen() const { return m_frozen; }
+    // Frozen only: `seconds` of host calls at 60 Hz on the frozen clock.
+    void runFor(double seconds);
+    // Frozen only: until the typing hook has typed everything, at most
+    // `capSeconds`; false if it still types.
+    bool runUntilTyped(double capSeconds);
+    // Frozen only: host calls until no operation runs.
+    void finishOperation();
+    // The sound messages go to `sink` from now on; the platform's audio
+    // backend is started once now (its first start can block).
+    void attachAudio(shared::AudioSink& sink);
+
+    // ---- Forwarded (SharpAppPart, its typing hook) ----
     Model currentModel() const { return session().currentModel(); }
     PC1500RomRevision pc1500RomRevision() const { return session().pc1500RomRevision(); }
     PC1600RomVersion pc1600RomVersion() const { return session().pc1600RomVersion(); }
     CE1600PRomVersion ce1600pRomVersion() const { return session().ce1600pRomVersion(); }
-    void seedClockFromHost() { session().seedClockFromHost(); }
 
-    void pressKey(const std::string& name) { session().pressKey(name); }
-    void releaseKey(const std::string& name) { session().releaseKey(name); }
-    void setOnKeyPressed(bool pressed) { session().setOnKeyPressed(pressed); }
-    void pasteText(const std::string& text) { session().pasteText(text); }
-    void typeCommand(const std::string& line) { session().typeCommand(line); }
-    void cancelPaste() { session().cancelPaste(); }
+    void pressKey(const std::string& name) { app().typing().pressKey(name); }
+    void releaseKey(const std::string& name) { app().typing().releaseKey(name); }
+    void setOnKeyPressed(bool pressed) { app().typing().setOnKeyPressed(pressed); }
+    void pasteText(const std::string& text) { app().typing().pasteText(text); }
+    void typeCommand(const std::string& line) { app().typing().typeCommand(line); }
+    void cancelPaste() { app().typing().cancelPaste(); }
 
-    GrayImage currentScreenImage() const { return session().currentScreenImage(); }
-    DisplayFrame currentDisplay() const { return session().currentDisplay(); }
-    bool lcdText(LcdText* out) const { return session().lcdText(out); }
+    // The display as the `display` topic last sent it.
+    GrayImage currentScreenImage() const;
+    DisplayFrame currentDisplay() const { return m_frame; }
+    bool lcdText(LcdText* out) const;
 
-    // The live machine (calcu::machine::Machine; C1600-1), or nullptr.
     calcu::machine::Machine* machine() const { return session().machine(); }
     bool hasLiveMachine() const { return session().hasLiveMachine(); }
 
     std::vector<std::string> inspectorView(inspect::View view) const { return session().inspectorView(view); }
     std::vector<inspect::MenuEntry> inspectorMenu(bool dumps) const { return session().inspectorMenu(dumps); }
-    void endTrace() { session().endTrace(); }
+    void endTrace() { app().endTrace(); }
     std::uint64_t traceBytes() const { return session().traceBytes(); }
     bool traceActive() const { return session().traceActive(); }
 
-    std::vector<std::uint8_t> drainCE158PrinterOutput() { return session().drainCE158PrinterOutput(); }
+    std::vector<std::uint8_t> drainCE158PrinterOutput() { return app().drainCE158PrinterOutput(); }
     bool hostDriveAttached() const { return session().hostDriveAttached(); }
     std::vector<AlpsPlotterMechanism::FlatPoint> plotPoints(shared::PaperKind kind) const {
         return session().plotPoints(kind);
     }
     std::uint64_t plotRevision(shared::PaperKind kind) const { return session().plotRevision(kind); }
-    void clearPaper(shared::PaperKind kind) { session().clearPaper(kind); }
+    void clearPaper(shared::PaperKind kind) { app().clearPaper(kind); }
+    shared::ControlState controlState() const;
+    TapeDeck::Status tapeStatus() const;
 
     // ---- QString translations ----
-    bool beginTrace(const QString& path) { return session().beginTrace(path.toStdString()); }
+    bool beginTrace(const QString& path) { return app().beginTrace(path.toStdString()); }
     bool tapeEject(QString* error = nullptr);
-    void refreshSerialLinkDirectory() { session().refreshSerialLinkDirectory(); }
+    void refreshSerialLinkDirectory() { app().refreshSerialLinkDirectory(); }
     QString serialLinkStatus() const { return QString::fromStdString(session().serialLinkStatus()); }
     QString ce158SerialLinkStatus() const { return QString::fromStdString(session().ce158SerialLinkStatus()); }
 
     // ---- Qt side ----
-    // The debugger (DAP server + session), see debug/DebugController.
     DebugController* debugController() const { return m_debug.get(); }
-    // Starts, stops or rebinds the DAP server after a Settings change.
     void refreshDebugServer();
 
 signals:
     void modelChanged(Model model);
-    // refreshSerialLinkDirectory() moved the PTY symlinks.
+    // The serial port files moved (c1600.serial-links).
     void serialLinksMoved();
-    // See shared::AppSession::Platform.
+    // A bay changed a slot outside the picker (c1600.machine).
     void bayModuleChanged(int slot);
+    // A recording was saved: the tape list changed (c1600.tapes).
     void tapeListChanged();
-    void bayErrorMessage(shared::Bay bay, const QString& text);
+    // The control state changed while an operation runs (a preset armed
+    // its machine): the window shows it now (LIB-3 AC-15).
     void presetWasArmed();
-    void peripheralAttachFailed(const QString& device, const QString& reason);
-    // An AppSession operation started / finished (emitted from inside it).
+    // An operation started / ended (the busy topic).
     void appBusyChanged(bool busy);
+    // The busy topic's speed changed while an operation runs.
+    void operationSpeedChanged();
+    // A notice (LIB-3 AC-10): shown as it is.
+    void noticeShown(const QString& sentence);
+    // The display topic changed.
+    void displayChanged();
 
 private:
-    // shared::AppSession::Platform
-    void romMissing(const calcu::roms::RomsMissing& missing) override;
-    void notice(shared::MachineSession::Notice notice, const std::string& detail) override;
+    // shared::SharpDebugger (SharpDebuggerGate, until M-45)
     void machineAboutToChange() override;
     void machineReplaced() override;
-    void modelSwitched(Model model) override { emit modelChanged(model); }
-    bool runDebuggerSlice(std::uint64_t cycles) override;
-    void serialLinksRelinked() override { emit serialLinksMoved(); }
-    void moduleChanged(int slot) override { emit bayModuleChanged(slot); }
-    void tapesChanged() override { emit tapeListChanged(); }
-    void bayError(shared::Bay bay, const std::string& text) override;
-    void presetArmed() override { emit presetWasArmed(); }
-    void presetLog(const std::string& line) override;
-    void attachFailed(const std::string& device, const std::string& reason) override;
-    void busyChanged(bool busy) override { emit appBusyChanged(busy); }
+    bool runDebuggerSlice(std::uint64_t ticks) override;
 
-    std::unique_ptr<shared::AppSession> m_app;
-    // Declared after the session so it goes first on destruction: its
-    // debug target still refers to the live machine.
+    void onMessage(const calcu::sessions::Message& message);
+    void onState(const calcu::sessions::TopicName& topic);
+    calcu::pacing::WallTime now();
+
+    std::unique_ptr<shared::SharpHost> m_host;
+    // Declared after the host so it goes first on destruction: its debug
+    // target still refers to the live machine.
     std::unique_ptr<DebugController> m_debug;
+    std::unique_ptr<shared::SoundFeed> m_sound;
+    std::map<calcu::sessions::CallId, Reply> m_pending;
+    std::string m_lastNotice;   // a failed operation's notice; its reply is not shown again
+
+    DisplayFrame m_frame;
+    bool m_busy = false;
+    bool m_busyFull = false;
+    shared::MachinePayload m_machine;
+    std::uint64_t m_tapeListChanges = 0;
+    std::uint64_t m_serialMoves = 0;
+    bool m_frozen = false;
+    calcu::pacing::WallTime m_frozenNow{0};
+    std::uint64_t m_calls = 0;
+    double m_longestGapMs = 0;
+    double m_callMs = 0;
+    calcu::pacing::WallTime m_lastCall{0};
 };

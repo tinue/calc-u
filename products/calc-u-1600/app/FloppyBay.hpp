@@ -13,7 +13,7 @@ namespace sharp { class FloppyDriveAccess; }
 namespace shared {
 
 class AppPaths;
-class MachineSession;
+class SharpAppPart;
 
 // ── FloppyBay: the CE-1600F disk picker ──────────────────────────────────
 //
@@ -44,7 +44,7 @@ public:
 
     static constexpr double kPersistDebounceSeconds = 0.5;
 
-    FloppyBay(MachineSession& session, const AppPaths& paths, Events events);
+    FloppyBay(SharpAppPart& session, const AppPaths& paths, Events events);
 
     DiskLists diskLists() const;
     // The bundled / save-folder disks, re-parsed only when a file changed.
@@ -66,7 +66,7 @@ public:
     // The "green lamp": the drive motor is spinning.
     bool motorOn() const;
 
-    // MachineSession::Bays::insertSelectedDisk(): loads the selected
+    // SharpAppPart (a CE-1600P attached): loads the selected
     // disk into a just-attached drive.
     void insertSelectedDisk();
     // After a preset's `floppy:` loaded a disk directly on the machine.
@@ -81,7 +81,7 @@ public:
     // Once per frame: notices a changed disk and writes it once the
     // debounce has passed.
     void tick(double nowSeconds);
-    // MachineSession::Bays::flushFloppy(), and before a select / quit.
+    // SharpAppPart before a bus change, and before a select / quit.
     void flushPendingPersist();
 
 private:
@@ -98,7 +98,7 @@ private:
         if (m_events.error) m_events.error(text);
     }
 
-    MachineSession& m_session;
+    SharpAppPart& m_session;
     const AppPaths& m_paths;
     // The bundled / save-folder disks, re-parsed only when a file changed.
     mutable DirectoryScanCache<FloppyCatalogEntry> m_bundledScan;

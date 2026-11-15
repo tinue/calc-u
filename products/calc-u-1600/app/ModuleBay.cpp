@@ -11,7 +11,7 @@
 #include "Machine/SharpRoms.hpp"
 #include "Preset/PresetRunner.hpp"
 #include "app/AppPaths.hpp"
-#include "app/MachineSession.hpp"
+#include "app/SharpAppPart.hpp"
 #include "app/Text.hpp"
 #include "app/Utf8Path.hpp"
 
@@ -23,7 +23,7 @@ ModuleBay::ModuleEntry entryFrom(const MemoryCardCatalogEntry& e) { return {e.mo
 
 } // namespace
 
-ModuleBay::ModuleBay(MachineSession& session, const AppPaths& paths, Events events)
+ModuleBay::ModuleBay(SharpAppPart& session, const AppPaths& paths, Events events)
     : m_session(session), m_paths(paths), m_events(std::move(events)) {}
 
 CardHost ModuleBay::hostFor(int slot) const { return hostForModel(slot, m_session.currentModel()); }

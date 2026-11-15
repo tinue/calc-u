@@ -2,14 +2,14 @@
 #include <QObject>
 #include <cstdint>
 
-#include "app/AudioPump.hpp"
+#include "app/AudioSink.hpp"
 
 class QAudioSink;
 class QIODevice;
 
 // The host's default audio output as a shared::AudioSink (a QAudioSink):
-// the session's AudioPump (AppSession::attachAudio()) decides what to
-// write when -- backlog, priming, idle stop, turbo (Shared/AudioPump.hpp).
+// the app session decides what is heard (LIB-3 AC-20, AC-37) and
+// MachineController's SoundFeed (app/AudioSink.hpp) writes it.
 // Must outlive the session.
 class AudioOutput : public QObject, private shared::AudioSink {
     Q_OBJECT

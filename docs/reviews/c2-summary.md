@@ -145,4 +145,4 @@ on the Qt6 faceplate; all LIB-14). Renames "Reset All" → "Cold boot",
   `c6d9e6b` (`withRunState`). Calc-U-1600's mac-aarch64 job failed at
   Apple's stapler (network lost, error 68): transient.
 - Re-run on `c6d9e6b`: Calc-U-1600 run 43775309855, Calc-U-59 run
-  43775312407 (result: see the session's final note).
+  43775312407: **both green** on every job.

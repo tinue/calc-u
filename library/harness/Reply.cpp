@@ -175,4 +175,18 @@ std::string writeJson(const Reply& r) {
     return writeJson(v) + "\n";
 }
 
+std::uint64_t ticksFor(std::int64_t microseconds, std::uint32_t rate) {
+    const auto u = static_cast<std::uint64_t>(microseconds);
+    constexpr std::uint64_t kMicro = 1'000'000;
+    return (u / kMicro) * rate + ((u % kMicro) * rate + kMicro - 1) / kMicro;
+}
+
+Reply timeReply(std::uint64_t ticks, std::uint32_t rate) {
+    const Decimal s = secondsOf(ticks, rate);
+    Value v = Value::object();
+    v.set("ticks", static_cast<unsigned long long>(ticks));
+    v.set("seconds", s);
+    return doneReply(std::move(v), {"ticks: " + std::to_string(ticks), "seconds: " + toText(s)});
+}
+
 } // namespace calcu::harness

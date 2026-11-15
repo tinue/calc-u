@@ -627,8 +627,8 @@ calcu::sessions::ProductSession<TIAppPart> makeAppSession(TIAppSetup setup, calc
                                                           std::vector<calcu::sessions::SessionPart*> before = {},
                                                           std::vector<calcu::sessions::SessionPart*> after = {});
 
-/// The steady clock as the session's wall clock, and back.
-calcu::pacing::WallTime steadyWallTime();
-std::chrono::steady_clock::time_point steadyTimeOf(calcu::pacing::WallTime);
+/// The steady clock as the session's wall clock, and back (the library's).
+using calcu::pacing::steadyTimeOf;
+using calcu::pacing::steadyWallTime;
 
 } // namespace cu59

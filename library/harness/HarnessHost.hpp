@@ -39,6 +39,8 @@ struct TopicRead {
 // A payload value in this area's Value: doubles with six decimals, bytes
 // as "0x…" (design D-10).
 Value fromSession(const sessions::Value&);
+// A payload as one line of JSON ("null" for none): `state`, attach messages.
+std::string payloadText(const sessions::PayloadPtr&);
 
 class HarnessHost final {
 public:

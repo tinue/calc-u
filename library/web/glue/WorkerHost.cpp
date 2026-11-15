@@ -127,7 +127,7 @@ void WorkerHost::receive(val message) {
             const int n = names["length"].as<int>();
             for (int i = 0; i < n; ++i)
                 if (names[i].isString())
-                    if (const auto svc = serviceNamed(names[i].as<std::string>())) services.offered.insert(*svc);
+                    if (const auto svc = sessions::serviceNamed(names[i].as<std::string>())) services.offered.insert(*svc);
         }
         listener_.onMessage = [this](const s::Message& m) { post(m); };
         listener_.listen(*session_, std::move(services));

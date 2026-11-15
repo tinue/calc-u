@@ -6,6 +6,7 @@
 #include "Tape/TapeDeck.hpp"
 #include "app/ControlState.hpp"
 #include "roms/Lookup.hpp"
+#include "sessions/LibraryTopics.hpp"
 #include "sessions/Messages.hpp"
 #include "sessions/Payload.hpp"
 
@@ -32,7 +33,7 @@ inline const calcu::sessions::TopicName kRomsMissing{"roms-missing"};
 // `c1600.reset` and `c1600.pick-model` stop a running one (LIB-18 AC-16,
 // ledger 1600-9). Arguments in braces.
 namespace commands {
-inline const calcu::sessions::CommandName kStart{"start"};                       // (op) {model?, preset?} LIB-15 N3
+inline const calcu::sessions::CommandName& kStart = calcu::sessions::kStartCommand;                       // (op) {model?, preset?} LIB-15 N3
 inline const calcu::sessions::CommandName kLoadPreset{"c1600.load-preset"};      // (op) {path, armOnly?}
 inline const calcu::sessions::CommandName kLoadDefaultPreset{"c1600.load-default-preset"};   // (op) {path, model}
 inline const calcu::sessions::CommandName kDefaultPreset{"c1600.default-preset"};            // (op)

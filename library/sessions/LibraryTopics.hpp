@@ -24,6 +24,9 @@ inline const CommandName kContinueCommand{"continue"};
 inline const CommandName kSpeedCommand{"speed"};     // {full: bool}
 inline const CommandName kKeyDownCommand{"key-down"};   // {key: string}
 inline const CommandName kKeyUpCommand{"key-up"};
+// What a host sends to start the product (the Web shell, LIB-15 N3; {model?,
+// preset?}); the product's part handles it, the library does not.
+inline const CommandName kStartCommand{"start"};
 
 inline const RequestName kTicksRequest{"ticks"};
 inline const RequestName kCapabilitiesRequest{"capabilities"};

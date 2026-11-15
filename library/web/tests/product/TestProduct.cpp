@@ -26,6 +26,7 @@
 
 #include "machine/tests/TestMachines.hpp"
 #include "sessions/AppSession.hpp"
+#include "sessions/LibraryTopics.hpp"
 #include "sessions/MachineSession.hpp"
 #include "sessions/SessionPart.hpp"
 #include "settings/Declaration.hpp"
@@ -116,7 +117,7 @@ public:
         machine_ = &setup.stateTopic(s::TopicName{"tp.machine"});
         files_ = &setup.stateTopic(s::TopicName{"tp.files"});
         answers_ = &setup.streamTopic(s::TopicName{"tp.answers"}, s::History::SinceReset);
-        setup.command(s::CommandName{"start"}, [this](const s::Value& a, s::SessionContext& c) -> s::CommandOutcome {
+        setup.command(s::kStartCommand, [this](const s::Value& a, s::SessionContext& c) -> s::CommandOutcome {
             return startMachine(a, c);
         }, true);
         setup.command(s::CommandName{"tp.write"}, [this](const s::Value& a, s::SessionContext&) -> s::CommandOutcome {
@@ -149,7 +150,7 @@ public:
         });
         setup.command(s::CommandName{"tp.ask"}, [this](const s::Value& a, s::SessionContext& c) -> s::CommandOutcome {
             const std::string name = textArg(a, "service");
-            const auto service = calcu::web::serviceNamed(name);
+            const auto service = s::serviceNamed(name);
             if (!service) return s::Refused{"No such service: " + name + "."};
             const s::Value* args = a.find("args");
             const auto id = c.askHost(*service, args ? *args : s::Value(), [this, name](const s::ServiceAnswer& ans) {
@@ -176,7 +177,7 @@ public:
             s::Value::Array names;
             for (int i = 0; i <= static_cast<int>(s::HostService::Haptics); ++i) {
                 const auto svc = static_cast<s::HostService>(i);
-                if (c.hostOffers(svc)) names.push_back(s::Value(calcu::web::serviceName(svc)));
+                if (c.hostOffers(svc)) names.push_back(s::Value(s::serviceName(svc)));
             }
             return s::replyGiven(std::make_shared<Given>(s::Value::object({{"services", s::Value(std::move(names))}})));
         });

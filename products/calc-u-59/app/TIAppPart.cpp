@@ -4,6 +4,7 @@
 #include "../core/TIAdapters.hpp"
 #include "sessions/LibraryTopics.hpp"
 #include "sessions/Operation.hpp"
+#include "sessions/Args.hpp"
 
 namespace cu59 {
 
@@ -66,16 +67,6 @@ NoticeParts splitNotice(const std::string& sentence) {
     return {sentence.substr(0, at), sentence.substr(at + 2)};
 }
 
-// ── Wall time ────────────────────────────────────────────────────────────────
-
-pacing::WallTime steadyWallTime() {
-    return std::chrono::duration_cast<pacing::WallTime>(std::chrono::steady_clock::now().time_since_epoch());
-}
-
-std::chrono::steady_clock::time_point steadyTimeOf(pacing::WallTime w) {
-    return std::chrono::steady_clock::time_point(std::chrono::duration_cast<std::chrono::steady_clock::duration>(w));
-}
-
 // ── The part ─────────────────────────────────────────────────────────────────
 
 
@@ -111,29 +102,6 @@ void TIAppPart::attach(sessions::SessionSetup& s) {
     m_asm = &s.stateTopic(topics::kDebugAsm);
     m_panel = &s.streamTopic(topics::kShowDebugPanel, History::None);
 
-    auto boolArg = [](const Value& a, const char* key) {
-        const Value* v = a.find(key);
-        return v && v->boolean() && *v->boolean();
-    };
-    auto intArg = [](const Value& a, const char* key, int64_t fallback = 0) {
-        const Value* v = a.find(key);
-        return v && v->integer() ? *v->integer() : fallback;
-    };
-    auto realArg = [](const Value& a, const char* key) {
-        const Value* v = a.find(key);
-        if (v && v->real()) return *v->real();
-        if (v && v->integer()) return static_cast<double>(*v->integer());
-        return 0.0;
-    };
-    auto strArg = [](const Value& a, const char* key) {
-        const Value* v = a.find(key);
-        return v && v->string() ? *v->string() : std::string();
-    };
-    auto bytesArg = [](const Value& a, const char* key) -> std::optional<std::vector<uint8_t>> {
-        const Value* v = a.find(key);
-        if (v && v->bytes()) return *v->bytes();
-        return std::nullopt;
-    };
     auto done = [](auto&& f) {
         return [f](const Value& a) -> CommandOutcome {
             f(a);
@@ -143,9 +111,12 @@ void TIAppPart::attach(sessions::SessionSetup& s) {
     auto flag = [](bool v) -> CommandOutcome { return Done{std::make_shared<TIFlag>(v)}; };
     TIAppPart& c = *this;
     using namespace commands;
+    using sessions::bytesArg;
+    using sessions::realArg;
+    using sessions::textArg;
 
-    add(s, kStartMachine, [&c, intArg](const Value& a) -> CommandOutcome {
-        const int64_t m = intArg(a, "model", -1);
+    add(s, kStartMachine, [&c](const Value& a) -> CommandOutcome {
+        const int64_t m = sessions::integerArg(a, "model", -1);
         if (m < 0 || m > 2) return Refused{"The model is 0 (TI-59), 1 (TI-58) or 2 (TI-58C)."};
         c.startMachine(static_cast<Model>(m));
         return Done{};
@@ -154,20 +125,20 @@ void TIAppPart::attach(sessions::SessionSetup& s) {
     add(s, kCleanReset, done([&c](const Value&) { c.cleanResetMachine(); }));
     add(s, kPersistConstantMemory, done([&c](const Value&) { c.persistConstantMemory(); }));
     // AC-32: a power cycle runs as an operation, until the ROM is ready for keys.
-    add(s, kChangeModule, [this, &c, strArg](const Value& a) -> CommandOutcome {
+    add(s, kChangeModule, [this, &c](const Value& a) -> CommandOutcome {
         const std::string before = c.moduleID();
-        c.changeModule(strArg(a, "id"));
+        c.changeModule(textArg(a, "id"));
         if (c.moduleID() == before) return Done{};
         return StartOperation{untilIdle(false)};
     });
-    add(s, kPressKey, done([&c, intArg](const Value& a) { c.pressKey(static_cast<uint8_t>(intArg(a, "code"))); }));
-    add(s, kReleaseKey, done([&c, intArg](const Value& a) { c.releaseKey(static_cast<uint8_t>(intArg(a, "code"))); }));
-    add(s, kKeyboardDown, done([&c, bytesArg](const Value& a) { c.keyboardDown(bytesArg(a, "codes").value_or(std::vector<uint8_t>{})); }));
+    add(s, kPressKey, done([&c](const Value& a) { c.pressKey(static_cast<uint8_t>(sessions::integerArg(a, "code"))); }));
+    add(s, kReleaseKey, done([&c](const Value& a) { c.releaseKey(static_cast<uint8_t>(sessions::integerArg(a, "code"))); }));
+    add(s, kKeyboardDown, done([&c](const Value& a) { c.keyboardDown(bytesArg(a, "codes").value_or(std::vector<uint8_t>{})); }));
     add(s, kKeyboardUp, done([&c](const Value&) { c.keyboardUp(); }));
     add(s, kKeyboardRelease, done([&c](const Value&) { c.keyboardRelease(); }));
-    add(s, kFullSpeed, done([&c, boolArg](const Value& a) { c.setFullSpeed(boolArg(a, "on")); }));
-    add(s, kPrinterConnected, [this, &c, boolArg](const Value& a) -> CommandOutcome {
-        const bool on = boolArg(a, "on");
+    add(s, kFullSpeed, done([&c](const Value& a) { c.setFullSpeed(sessions::flagArg(a, "on")); }));
+    add(s, kPrinterConnected, [this, &c](const Value& a) -> CommandOutcome {
+        const bool on = sessions::flagArg(a, "on");
         if (on == c.printerConnected()) return Done{};
         c.setPrinterConnected(on);
         return StartOperation{untilIdle(false)};
@@ -177,38 +148,38 @@ void TIAppPart::attach(sessions::SessionSetup& s) {
         return StartOperation{untilIdle(false)};
     });
     add(s, kTogglePrinterTrace, done([&c](const Value&) { c.togglePrinterTrace(); }));
-    add(s, kPrinterPrint, done([&c, boolArg](const Value& a) { c.pressPrinterPrint(boolArg(a, "pressed")); }));
-    add(s, kPrinterAdv, done([&c, boolArg](const Value& a) { c.pressPrinterAdv(boolArg(a, "pressed")); }));
+    add(s, kPrinterPrint, done([&c](const Value& a) { c.pressPrinterPrint(sessions::flagArg(a, "pressed")); }));
+    add(s, kPrinterAdv, done([&c](const Value& a) { c.pressPrinterAdv(sessions::flagArg(a, "pressed")); }));
     add(s, kCutPaper, done([&c](const Value&) { c.cutPaper(); }));
-    add(s, kFitCard, [&c, bytesArg, strArg, flag](const Value& a) {
-        return flag(c.fitCard(bytesArg(a, "bytes"), strArg(a, "path"), strArg(a, "name")));
+    add(s, kFitCard, [&c, flag](const Value& a) {
+        return flag(c.fitCard(bytesArg(a, "bytes"), textArg(a, "path"), textArg(a, "name")));
     });
-    add(s, kFitBlankCard, [&c, strArg, flag](const Value& a) {
-        return flag(c.fitBlankCard(strArg(a, "path"), strArg(a, "name")));
+    add(s, kFitBlankCard, [&c, flag](const Value& a) {
+        return flag(c.fitBlankCard(textArg(a, "path"), textArg(a, "name")));
     });
-    add(s, kFeedSide, [&c, intArg, flag](const Value& a) { return flag(c.feedSide(static_cast<int>(intArg(a, "side")))); });
-    add(s, kTapCard, [&c, realArg, flag](const Value& a) { return flag(c.tapCard(realArg(a, "x"), realArg(a, "y"))); });
+    add(s, kFeedSide, [&c, flag](const Value& a) { return flag(c.feedSide(static_cast<int>(sessions::integerArg(a, "side")))); });
+    add(s, kTapCard, [&c, flag](const Value& a) { return flag(c.tapCard(realArg(a, "x"), realArg(a, "y"))); });
     add(s, kEjectCard, done([&c](const Value&) { c.ejectCard(); }));
     // AC-32: a preset runs as an operation until its KEYSTROKES have played.
-    add(s, kLoadState, [this, &c, bytesArg](const Value& a) -> CommandOutcome {
+    add(s, kLoadState, [this, &c](const Value& a) -> CommandOutcome {
         c.loadStateFile(bytesArg(a, "bytes"));
         adoptMachine();
         return StartOperation{untilIdle(true)};
     });
-    add(s, kOpenDropped, [this, &c, bytesArg, strArg](const Value& a) -> CommandOutcome {
-        const std::string name = strArg(a, "name");
+    add(s, kOpenDropped, [this, &c](const Value& a) -> CommandOutcome {
+        const std::string name = textArg(a, "name");
         const bool preset = c.dropAction(name) == DropAction::LoadPreset;
-        const bool ok = c.openDroppedFile(bytesArg(a, "bytes"), strArg(a, "path"), name);
+        const bool ok = c.openDroppedFile(bytesArg(a, "bytes"), textArg(a, "path"), name);
         if (preset && ok) {
             adoptMachine();
             return StartOperation{untilIdle(true)};
         }
         return Done{std::make_shared<TIFlag>(ok)};
     });
-    add(s, kLiveDebug, done([&c, boolArg](const Value& a) { c.setLiveDebugEnabled(boolArg(a, "on")); }));
-    add(s, kCpuDebug, done([&c, boolArg](const Value& a) { c.setCpuDebugEnabled(boolArg(a, "on")); }));
-    add(s, kFreeze, done([&c, intArg](const Value& a) {
-        c.freeze(intArg(a, "owner") == 1 ? FreezeOwner::Calculator : FreezeOwner::Cpu);
+    add(s, kLiveDebug, done([&c](const Value& a) { c.setLiveDebugEnabled(sessions::flagArg(a, "on")); }));
+    add(s, kCpuDebug, done([&c](const Value& a) { c.setCpuDebugEnabled(sessions::flagArg(a, "on")); }));
+    add(s, kFreeze, done([&c](const Value& a) {
+        c.freeze(sessions::integerArg(a, "owner") == 1 ? FreezeOwner::Calculator : FreezeOwner::Cpu);
     }));
     add(s, kResume, done([&c](const Value&) { c.resume(); }));
     add(s, kArmPcChange, done([&c](const Value&) { c.armPcChange(); }));
@@ -224,19 +195,19 @@ void TIAppPart::attach(sessions::SessionSetup& s) {
     add(s, kDumpScom, done([&c](const Value&) { c.dumpScom(); }));
     add(s, kDumpProg, done([&c](const Value&) { c.dumpProg(); }));
     add(s, kDumpMemory, done([&c](const Value&) { c.dumpMemory(); }));
-    add(s, kManualTrace, done([&c, boolArg](const Value& a) { c.setManualTrace(boolArg(a, "on")); }));
-    add(s, kLoadAsm, done([&c, strArg](const Value& a) {
+    add(s, kManualTrace, done([&c](const Value& a) { c.setManualTrace(sessions::flagArg(a, "on")); }));
+    add(s, kLoadAsm, done([&c](const Value& a) {
         const Value* t = a.find("text");
         std::optional<std::string> text;
         if (t && t->string()) text = *t->string();
-        c.loadAsm(text, strArg(a, "name"));
+        c.loadAsm(text, textArg(a, "name"));
     }));
     add(s, kRunAsm, done([&c](const Value&) { c.runAsm(); }));
     add(s, kClearAsm, done([&c](const Value&) { c.clearAsm(); }));
-    s.request(kDropAction, [&c, strArg](const Value& a, sessions::SessionContext&) {
+    s.request(kDropAction, [&c](const Value& a, sessions::SessionContext&) {
         sessions::ReplyMessage r;
         r.done = true;
-        r.result = std::make_shared<TIDropAction>(c.dropAction(strArg(a, "name")));
+        r.result = std::make_shared<TIDropAction>(c.dropAction(textArg(a, "name")));
         return r;
     });
 

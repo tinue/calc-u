@@ -33,7 +33,7 @@ const version = read(path.join(REPO, "frontends", "qt6", "CMakeLists.txt")).matc
 
 const css = read(path.join(WEB, "calc.css"));
 const outside = dist.checkScopedCss(css);
-if (outside.length) console.warn(`calc.css: selectors outside .calcu-client (LIB-15 AC-17): ${outside.join(", ")}`);
+if (outside.length) throw new Error(`calc.css: selectors outside .calcu-client (LIB-15 AC-17): ${outside.join(", ")}`);
 
 // In load order; one closure, so nothing but CalcU1600 reaches the page.
 const SOURCES = ["engine.js", "painters.js", "Faceplate.jsx", "MenuBar.jsx", "ControlBar.jsx", "Panels.jsx", "Dialogs.jsx",

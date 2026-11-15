@@ -211,8 +211,12 @@ class EmulatorViewModel {
             romsMissingText = missing.text
             return
         }
+        // .latencyCritical: without it macOS coalesces the session thread's
+        // timers while the window is covered, the waits overshoot past the
+        // pacer's lag limit and the machine falls behind (C59-5 AC-9, S6:
+        // 17 s of 30 in M-33 before this option).
         appNapActivityToken = ProcessInfo.processInfo.beginActivity(
-            options: [.userInitiated, .idleSystemSleepDisabled],
+            options: [.userInitiated, .idleSystemSleepDisabled, .latencyCritical],
             reason: "TI-59 CPU emulation must keep running at real-time pace in the background"
         )
         Task { await self.start(model: AppSettings.resolvedStartupModel()) }

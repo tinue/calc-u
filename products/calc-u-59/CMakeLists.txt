@@ -204,6 +204,11 @@ if(CALCU_TESTS)
   add_test(NAME CalcU59XcodeProjectCheck COMMAND frontends/swift/check_xcode_project.sh
            WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
   set_tests_properties(CalcU59XcodeProjectCheck PROPERTIES LABELS frequent)
+  # C59-5 AC-13 (design B1): attach only in Debug builds for macOS and the
+  # simulator, in the sources that decide it.
+  add_test(NAME CalcU59NoAttachSources COMMAND sh frontends/swift/check_no_attach.sh --sources
+           WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
+  set_tests_properties(CalcU59NoAttachSources PROPERTIES LABELS frequent)
 
   # Longer: run locally before merging into main and at the end of a part.
   if(CALCU_TESTS_LONGER)
@@ -227,11 +232,28 @@ if(CALCU_TESTS)
 -testPlan UIRegressionTests -destination \"platform=iOS Simulator,id=$(bin/simulators resolve --role iphone)\""
                WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
       set_tests_properties(CalcU59UIRegression PROPERTIES LABELS longer)
+      # C59-5 S1, S2, AC-5 (D-9), AC-8: the Swift unit tests through the real
+      # bridge, in the app on the same simulator.
+      add_test(NAME CalcU59SwiftUnitTests
+               COMMAND sh -c "xcodebuild test -project frontends/swift/Calc-U-59.xcodeproj -scheme Calc-U-59 \
+-testPlan UnitTests -destination \"platform=iOS Simulator,id=$(bin/simulators resolve --role iphone)\""
+               WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
+      # C59-5 AC-13 (B1): the Release Mac app, the Release XCFramework and the
+      # Debug iOS device app have no attach; the Release app's entitlements.
+      add_test(NAME CalcU59NoAttachInRelease COMMAND sh frontends/swift/check_no_attach.sh
+               WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
+      set_tests_properties(CalcU59SwiftUnitTests CalcU59NoAttachInRelease PROPERTIES LABELS longer RUN_SERIAL TRUE)
     endif()
   endif()
 
   # Checkpoint: run before a release.
   if(CALCU_TESTS_CHECKPOINT)
+    # LIB-17 AC-19 (P59-5) on the Web: one minute, against frontends/web/dist/.
+    if(NOT WIN32)
+      add_test(NAME CalcU59WebPacing COMMAND frontends/web/run-tests.sh tests/pacing.spec.js --project root
+               WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
+      set_tests_properties(CalcU59WebPacing PROPERTIES LABELS checkpoint ENVIRONMENT CALCU59_WEB_PACING=1 TIMEOUT 300)
+    endif()
     add_test(NAME CalcU59PacingRealClock COMMAND CalcU59Tests pacing_longrun_real_clock
              WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
     set_tests_properties(CalcU59PacingRealClock PROPERTIES LABELS checkpoint
@@ -246,6 +268,22 @@ if(CALCU_TESTS)
                        -testPlan UIRegressionTests -destination platform=macOS
                WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
       set_tests_properties(CalcU59AppStoreScreenshots CalcU59UITestsMac PROPERTIES LABELS checkpoint)
+      # The Swift unit tests on macOS (C59-5 S2, macOS's services).
+      add_test(NAME CalcU59SwiftUnitTestsMac
+               COMMAND xcodebuild test -project frontends/swift/Calc-U-59.xcodeproj -scheme Calc-U-59
+                       -testPlan UnitTests -destination platform=macOS
+               WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
+      # LIB-17 AC-19 (P59-5) on the iOS simulator: one minute over attach.
+      add_test(NAME CalcU59PacingIOS
+               COMMAND sh -c "xcodebuild test -project frontends/swift/Calc-U-59.xcodeproj -scheme Calc-U-59 \
+-testPlan PacingCheckpoint -destination \"platform=iOS Simulator,id=$(bin/simulators resolve --role iphone)\""
+               WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
+      # C59-5 S6 (AC-8, AC-9, AC-10) and LIB-17 AC-19 on the Mac: the Debug app
+      # through `calcu attach`; shows a grey window over every screen for 30 s.
+      add_test(NAME CalcU59MacAttach COMMAND sh tests/mac_attach_check.sh $<TARGET_FILE:calcu>
+               WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
+      set_tests_properties(CalcU59SwiftUnitTestsMac CalcU59PacingIOS CalcU59MacAttach PROPERTIES
+                           LABELS checkpoint RUN_SERIAL TRUE TIMEOUT 1200)
     endif()
   endif()
 endif()

@@ -36,6 +36,12 @@
          <TestPlanReference
             reference = "container:Calc-U-59UITests/Screenshots.xctestplan">
          </TestPlanReference>
+         <TestPlanReference
+            reference = "container:Calc-U-59Tests/UnitTests.xctestplan">
+         </TestPlanReference>
+         <TestPlanReference
+            reference = "container:Calc-U-59UITests/PacingCheckpoint.xctestplan">
+         </TestPlanReference>
       </TestPlans>
       <Testables>
          <TestableReference
@@ -46,6 +52,17 @@
                BlueprintIdentifier = "8C7473C12FE5638A009DC59A"
                BuildableName = "Calc-U-59UITests.xctest"
                BlueprintName = "Calc-U-59UITests"
+               ReferencedContainer = "container:Calc-U-59.xcodeproj">
+            </BuildableReference>
+         </TestableReference>
+         <TestableReference
+            skipped = "NO"
+            parallelizable = "NO">
+            <BuildableReference
+               BuildableIdentifier = "primary"
+               BlueprintIdentifier = "CA1C5900000000000000B001"
+               BuildableName = "Calc-U-59Tests.xctest"
+               BlueprintName = "Calc-U-59Tests"
                ReferencedContainer = "container:Calc-U-59.xcodeproj">
             </BuildableReference>
          </TestableReference>

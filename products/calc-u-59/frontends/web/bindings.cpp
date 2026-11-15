@@ -192,6 +192,14 @@ public:
         drain();
     }
 
+    /// The machine's emulated time in seconds: LIB-17 AC-19's Playwright test
+    /// reads it (tests/pacing.spec.js, design P59-5) until M-34 puts the Web
+    /// frontend on the library's session and its emulated-time request.
+    double emulatedSeconds() const {
+        auto a = m_c->session()->access();
+        return static_cast<double>(a.machine().tickCount()) / static_cast<double>(a.machine().descriptor().tickRate);
+    }
+
     // ── Machine ──────────────────────────────────────────────────────────────
     void startMachine(int model) {
         if (model >= 0 && model <= 2 && static_cast<cu59::Model>(model) != m_c->model())
@@ -1050,6 +1058,7 @@ EMSCRIPTEN_BINDINGS(ti59_web) {
         .constructor<std::string, val, int, std::string>()
         .function("started", &WebController::started)
         .function("tick", &WebController::tick)
+        .function("emulatedSeconds", &WebController::emulatedSeconds)
         .function("startMachine", &WebController::startMachine)
         .function("resetMachine", &WebController::resetMachine)
         .function("cleanResetMachine", &WebController::cleanResetMachine)

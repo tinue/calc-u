@@ -242,6 +242,28 @@ TIChange changeOf(const cs::TopicName& t) {
     return static_cast<TIChange>(0);
 }
 
+// LIB-3 AC-26's services by name (the names of library/web/glue/MessageCodec.cpp).
+constexpr std::pair<cs::HostService, const char*> kServiceNames[] = {
+    {cs::HostService::AudioSink, "audio-sink"},       {cs::HostService::ClipboardText, "clipboard-text"},
+    {cs::HostService::ClipboardImage, "clipboard-image"}, {cs::HostService::FilePicker, "file-picker"},
+    {cs::HostService::FolderPicker, "folder-picker"}, {cs::HostService::KeepFile, "keep-file"},
+    {cs::HostService::OpenUrl, "open-url"},           {cs::HostService::Haptics, "haptics"},
+};
+
+// C59-5 AC-7: the host services of the app; no audio sink, the key click is
+// the app's own (LIB-3 AC-33).
+cs::HostServices statedServices() {
+    cs::HostServices services;
+#if TARGET_OS_OSX
+    services.offered = {cs::HostService::ClipboardText, cs::HostService::ClipboardImage, cs::HostService::FilePicker,
+                        cs::HostService::FolderPicker, cs::HostService::KeepFile, cs::HostService::OpenUrl};
+#else
+    services.offered = {cs::HostService::ClipboardText, cs::HostService::ClipboardImage, cs::HostService::FilePicker,
+                        cs::HostService::KeepFile, cs::HostService::OpenUrl, cs::HostService::Haptics};
+#endif
+    return services;
+}
+
 std::vector<cs::Value::Member> argsWithBytes(std::vector<cs::Value::Member> m, NSData* raw) {
     if (raw) m.push_back({"bytes", cs::Value(bytes(raw))});
     return m;
@@ -307,16 +329,8 @@ static cu59::SessionThread::ReplyHandler flagReply(void (^done)(BOOL)) {
         setup.trace = {std::filesystem::path(start.traceDirectory.fileSystemRepresentation), start.traceMaxBytes};
         const bool traceAvailable = start.traceAvailable == YES;
         setup.traceAvailable = [traceAvailable] { return traceAvailable; };
-        // C59-5 AC-7: the host services of the app (the session asks none of
-        // them yet); no audio sink, the key click is the app's own (LIB-3 AC-33).
-        cs::HostServices services;
-#if TARGET_OS_OSX
-        services.offered = {cs::HostService::ClipboardText, cs::HostService::ClipboardImage, cs::HostService::FilePicker,
-                            cs::HostService::FolderPicker, cs::HostService::KeepFile, cs::HostService::OpenUrl};
-#else
-        services.offered = {cs::HostService::ClipboardText, cs::HostService::ClipboardImage, cs::HostService::FilePicker,
-                            cs::HostService::KeepFile, cs::HostService::OpenUrl, cs::HostService::Haptics};
-#endif
+        // C59-5 AC-7 (the session asks none of them yet).
+        const cs::HostServices services = statedServices();
         __weak TIAppSession* weakSelf = self;
         _thread = std::make_unique<cu59::SessionThread>(
             [setup] {
@@ -413,6 +427,41 @@ static cu59::SessionThread::ReplyHandler flagReply(void (^done)(BOOL)) {
     });
     return NO;
 }
+#endif
+
++ (NSArray<NSString *> *)statedHostServices {
+    NSMutableArray* out = [NSMutableArray array];
+    const cs::HostServices s = statedServices();
+    for (const auto& [service, name] : kServiceNames)
+        if (s.offers(service)) [out addObject:@(name)];
+    return out;
+}
+
+#if DEBUG
+- (void)pressKey:(uint8_t)code completion:(void (^)(BOOL))done {
+    [self send:cu59::commands::kPressKey args:{{"code", static_cast<int>(code)}}
+         reply:[done](const cs::ReplyMessage& r) { done(r.done ? YES : NO); }];
+}
+- (void)releaseKey:(uint8_t)code completion:(void (^)(BOOL))done {
+    [self send:cu59::commands::kReleaseKey args:{{"code", static_cast<int>(code)}}
+         reply:[done](const cs::ReplyMessage& r) { done(r.done ? YES : NO); }];
+}
+- (void)offeredHostServices:(void (^)(NSArray<NSString *> *))done {
+    _thread->post([done](cu59::HostedSession& h) {
+        NSMutableArray* out = [NSMutableArray array];
+        if (auto* s = h.appSession())
+            for (const auto& [service, name] : kServiceNames)
+                if (s->context().hostOffers(service)) [out addObject:@(name)];
+        dispatch_async(dispatch_get_main_queue(), ^{ done(out); });
+    });
+}
+- (void)emulatedTime:(void (^)(uint64_t, double))done {
+    _thread->ask(cs::Request{cs::kTicksRequest, cs::Value::object({})}, [done](const cs::ReplyMessage& r) {
+        const auto* t = cs::payloadAs<cs::EmulatedTimeReply>(r.result);
+        done(t ? t->ticks : 0, t ? t->seconds : 0);
+    });
+}
+- (uint64_t)hostCallCount { return _thread->calls(); }
 #endif
 
 // ── Machine ──────────────────────────────────────────────────────────────────

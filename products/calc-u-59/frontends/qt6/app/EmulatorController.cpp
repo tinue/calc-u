@@ -150,6 +150,15 @@ cs::ReplyMessage EmulatorController::send(const cs::CommandName& name, Value arg
     return cs::ReplyMessage{id, true, "", nullptr};   // an operation: its reply comes when it ends
 }
 
+std::optional<std::pair<uint64_t, double>> EmulatorController::emulatedTime() {
+    m_lastReply.reset();
+    const cs::CallId id = m_app->session->ask(m_me, cs::Request{cs::kTicksRequest, Value::object({})});
+    if (!m_lastReply || m_lastReply->call != id) return std::nullopt;
+    const auto* t = cs::payloadAs<cs::EmulatedTimeReply>(m_lastReply->result);
+    if (!t) return std::nullopt;
+    return std::make_pair(static_cast<uint64_t>(t->ticks), t->seconds);
+}
+
 bool EmulatorController::sendFlag(const cs::CommandName& name, Value args) {
     const cs::ReplyMessage r = send(name, std::move(args));
     const auto* f = cs::payloadAs<cu59::TIFlag>(r.result);

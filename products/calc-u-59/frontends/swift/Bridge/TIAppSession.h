@@ -148,6 +148,22 @@ typedef NS_ENUM(NSInteger, TIFreezeOwner) {
 /// (AC-10). NO, and a line of the session's log, when it is not available (EC-1).
 - (BOOL)openAttachWithArguments:(NSArray<NSString *> *)arguments;
 #endif
+/// The host services this frontend states to its session (C59-5 AC-7), by
+/// the names of LIB-3 AC-26; the session is built with exactly these.
+@property (class, nonatomic, readonly) NSArray<NSString *> *statedHostServices;
+#if DEBUG
+// ── For the Swift unit tests (Calc-U-59Tests, C59-5 S1, S2) ───────────────────
+/// The reply to a key command, on the main thread (AC-6: replies in order).
+- (void)pressKey:(uint8_t)matrixCode completion:(void (^)(BOOL done))done;
+- (void)releaseKey:(uint8_t)matrixCode completion:(void (^)(BOOL done))done;
+/// The services the session sees offered by its listeners, asked on the
+/// session thread (AC-7); `done` on the main thread.
+- (void)offeredHostServices:(void (^)(NSArray<NSString *> *names))done;
+/// The session's emulated time (the request LIB-11's `ticks` uses); main thread.
+- (void)emulatedTime:(void (^)(uint64_t ticks, double seconds))done;
+/// The host calls the session thread has made (AC-4, AC-8).
+@property (nonatomic, readonly) uint64_t hostCallCount;
+#endif
 
 // ── Machine (model = MachineModel raw value) ─────────────────────────────────
 - (void)startMachine:(NSInteger)model;

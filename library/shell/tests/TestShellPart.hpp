@@ -166,7 +166,11 @@ public:
     // withRunControl = false: no scripted `run-state` topic and no `resume`
     // command, for a session that hosts LIB-10's DebuggerPart (the Web test
     // product).
-    explicit TestShellPart(bool withControlState = true, bool withRunControl = true) : runControl_(withRunControl) {
+    // withMedia = false: no scripted `media` topic and no `media.import`,
+    // for a session that hosts LIB-7's MediaPart (the Web test product
+    // Test-M, LIB-7 media.spec.js).
+    explicit TestShellPart(bool withControlState = true, bool withRunControl = true, bool withMedia = true)
+        : runControl_(withRunControl), media_(withMedia) {
         if (withControlState) values_[std::string("control-state")] = controlValue();
         if (runControl_) values_[std::string("run-state")] = Value::object({{"paused", false}});
     }
@@ -174,6 +178,7 @@ public:
     void attach(sessions::SessionSetup& s) override {
         for (const char* t : {"control-state", "run-state", "roms-missing", "media"}) {
             if (!runControl_ && std::string_view(t) == "run-state") continue;
+            if (!media_ && std::string_view(t) == "media") continue;
             topics_[t] = &s.stateTopic(sessions::TopicName{t});
         }
         for (auto& [name, v] : values_) topics_[name]->set(sessions::valuePayload(kindOf(name), v));
@@ -190,6 +195,7 @@ public:
                               "screen-key-down", "screen-key-up", "tsp.confirm"}) {
             const std::string name = n;
             if (!runControl_ && name == "resume") continue;
+            if (!media_ && name == "media.import") continue;
             s.command(sessions::CommandName{name}, [this, name](const Value& a, sessions::SessionContext&) -> sessions::CommandOutcome {
                 sent.push_back({name, a});
                 if (name == "tsp.confirm" && !a.find("confirmed")) return sessions::Refused{"asks: Replace the card?"};
@@ -275,6 +281,7 @@ private:
         return "media";
     }
     bool runControl_ = true;
+    bool media_ = true;
     std::map<std::string, Value> values_;
     std::map<std::string, sessions::StateTopic*> topics_;
 };

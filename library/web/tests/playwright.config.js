@@ -26,6 +26,9 @@ module.exports = defineConfig({
     // LIB-14: the shell of the React set, at the root, in both engines.
     { name: 'shell-chromium', testMatch: /shell\.spec\.js/, use: { ...devices['Desktop Chrome'], baseURL: `http://localhost:${PORT}/` } },
     { name: 'shell-webkit', testMatch: /shell\.spec\.js/, use: { ...devices['Desktop Safari'], baseURL: `http://localhost:${PORT}/` } },
+    // LIB-7: the media components on the test product Test-M, at the root, in both engines.
+    { name: 'media-chromium', testMatch: /media\.spec\.js/, use: { ...devices['Desktop Chrome'], baseURL: `http://localhost:${PORT}/`, acceptDownloads: true } },
+    { name: 'media-webkit', testMatch: /media\.spec\.js/, use: { ...devices['Desktop Safari'], baseURL: `http://localhost:${PORT}/`, acceptDownloads: true } },
     { name: 'prerender', testMatch: /prerender\.spec\.js/ },
     { name: 'offline-chromium', testMatch: /offline\.spec\.js/, use: { ...devices['Desktop Chrome'] } },
     { name: 'offline-webkit', testMatch: /offline\.spec\.js/, use: { ...devices['Desktop Safari'] } },

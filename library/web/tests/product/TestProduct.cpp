@@ -42,9 +42,16 @@
 // `tsp.op`, `tsp.notice`, `tsp.publish`, `tsp.plug`) and the library's
 // SettingsPart over this product's settings, with [preset] keys per model and
 // [trace] max-file-size-mb.
+// From LIB-7 (M-42, LIB-7 media.spec.js): the product named Test-M also
+// hosts LIB-7's MediaPart with the test kinds (library/media/tests/
+// TestKinds.hpp: test-card in test-seg's `reader`, test-disk in test-dot's
+// `drive`, test-module) on the save folder, its machines offering their media
+// places; its TestShellPart scripts no `media` topic then.
 
 #include "debugger/DebuggerPart.hpp"
 #include "machine/tests/TestMachines.hpp"
+#include "media/MediaPart.hpp"
+#include "media/tests/TestKinds.hpp"
 #include "paper/PaperPart.hpp"
 #include "peripherals/Controls.hpp"
 #include "peripherals/PeripheralsPart.hpp"
@@ -177,8 +184,8 @@ st::ProductDecl declFor(const std::string& product) {
 
 class TestProductPart final : public s::SessionPart {
 public:
-    explicit TestProductPart(const WebStart& w)
-        : start_(w), decl_(declFor(w.product)),
+    explicit TestProductPart(const WebStart& w, bool media = false)
+        : start_(w), media_(media), decl_(declFor(w.product)),
           settings_(st::SettingsFile::defaultsOnly(decl_)), paths_(settings_, w.dirs) {
         // Only a store that is kept is written (design §3.3); a second copy
         // works in memory and so on: the settings are read from it but the
@@ -335,6 +342,7 @@ private:
             model = decl_.isModel(fromSettings) ? fromSettings : decl_.fallbackModel;
         }
         mt::TestBuilder builder;
+        builder.media = media_;   // LIB-7: the media places, in Test-M
         const auto& cat = mt::paperTestCatalogue();
         auto built = cm::build(cat, builder, mt::requestFor(cat, cm::ModelId{model}));
         auto m = std::move(built.machine);
@@ -375,6 +383,7 @@ private:
     }
 
     WebStart start_;
+    bool media_ = false;
     st::ProductDecl decl_;
     st::SettingsFile settings_;
     st::Paths paths_;
@@ -385,10 +394,21 @@ private:
 
 // The parts the session owns: LIB-2's peripherals part, LIB-8's paper part
 // with the two test printers, the product's part.
+bool hostsMedia(const WebStart& w) { return w.product == "Test-M"; }
+
 struct Parts {
     explicit Parts(const WebStart& w)
         : paper(mt::paperTestCatalogue(), {{mt::kDotter, mt::td20Description()}, {mt::kPlotter, mt::tp4Description()}}),
-          product(w), debugger(debuggerSetup()), settings(settingsSetup(product)) {}
+          product(w, hostsMedia(w)), debugger(debuggerSetup()), settings(settingsSetup(product)),
+          shellPart(true, false, !hostsMedia(w)) {
+        if (hostsMedia(w)) {   // LIB-7 (M-42)
+            calcu::media::MediaSetup ms;
+            ms.kinds = calcu::media::test::testKinds();
+            ms.paths = &product.paths();
+            ms.catalogue = &mt::paperTestCatalogue();
+            media = std::make_unique<calcu::media::MediaPart>(std::move(ms));
+        }
+    }
     calcu::peripherals::PeripheralsPart peripherals;
     calcu::paper::PaperPart paper;
     TestProductPart product;
@@ -401,7 +421,8 @@ struct Parts {
         return s;
     }
     calcu::shell::SettingsPart settings;          // LIB-14
-    calcu::shell::test::TestShellPart shellPart{true, false};  // LIB-14; run control: the DebuggerPart's
+    calcu::shell::test::TestShellPart shellPart;   // LIB-14; run control: the DebuggerPart's
+    std::unique_ptr<calcu::media::MediaPart> media;   // LIB-7, in Test-M
 };
 
 std::unique_ptr<s::AppSession> makeTestSession(const WebStart& w) {
@@ -410,6 +431,7 @@ std::unique_ptr<s::AppSession> makeTestSession(const WebStart& w) {
     setup.clock = calcu::web::wallTimeNow;
     setup.hostTime = [] { return std::chrono::system_clock::now(); };
     setup.parts = {w.shellPart, &parts->peripherals, &parts->paper, &parts->product, &parts->debugger, &parts->settings, &parts->shellPart};
+    if (parts->media) setup.parts.push_back(parts->media.get());
     setup.hosting = s::Hosting::Paced;
     setup.owned = std::move(parts);
     return std::make_unique<s::AppSession>(std::move(setup));

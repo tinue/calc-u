@@ -19,8 +19,10 @@ frontends/web/ (React) ── frontends/web/bindings.cpp ───────�
 - **C++20, standard library only** (ADR 0005) — no Foundation, no Qt, no
   iCloud. CMake builds it as C++20, the Xcode project as gnu++20.
 - **No locations.** `app/` never resolves where files live: it takes paths
-  (`std::filesystem::path`) or a `ResourceReader` callback that returns a
-  bundled file's text by name (Swift: `Bundle.main`; Qt: the `:/roms/` qrc).
+  (`std::filesystem::path`), and ROM files only through the library's ROM
+  lookup over a `calcu::roms::Bundle` the frontend makes (Swift: the
+  bundle's resource folder; Qt: the `:/roms/` qrc, `QtResourceBundle`; Web:
+  `/roms` in Emscripten's file system; tools and tests: `roms/`).
 - **Thread-safe where called across threads** (session, runner, sequencer,
   trace writer, freeze controller); the rest is plain value code.
 - **Namespace `cu59`.** Headers include Core relatively (`../Core/...`).
@@ -57,7 +59,7 @@ wrappers in `frontends/swift/Bridge/`, which only translate types (`AppArchitect
 | `StateApplier` | Writes a parsed file into the machine; power-on, soft and clean reset |
 | `CardFile` | Magnetic card files (text 2.0 and 1.0, headered and legacy binary); which names the pickers list |
 | `ConstantMemory` | `ti58c.mem` |
-| `RomLoader` | The model's ROM files as `RomImage`s and `buildMachine` (the core decodes them; C59-1), module text dumps |
+| `ProductRoms` | The ROM lookup of Calc-U-59 (`lookUpRoms`, the full set, LIB-12), `buildMachine` from the `RomSet` (the core decodes; C59-1), a module's ROM image |
 | `ModuleCatalog` | `roms/solid-state/cuecards.txt` |
 | `CueCard` | Cue-card model, encode/parse, spans, layout, geometry, inks, which card shows |
 | **Tables and drawing rules** | |
@@ -407,11 +409,17 @@ in `DebugAPI.md`) through the platform, which decides where the file lives.
 
 ## ROM Loading
 
-`RomLoader` parses the text dumps in `roms/` (header, a `---` line, then
-`AAAA: WWWW …` rows, words masked to 13 bits) through the frontend's
-`ResourceReader`. `MachineModelInfo` names each model's files: three ROM
-chips concatenated into 6144 words and two `*-CONST-K.txt` files for the 64
-constant rows.
+A frontend looks the ROM files up once at its start (LIB-12):
+`SessionController::create(platform, bundle, …)` calls `cu59::lookUpRoms`
+(`app/ProductRoms.hpp`), the library's `calcu::roms::lookUp` over the full
+set of 24 files with the core's `TIRomReader`. Without the full set no
+controller is made and `Platform::romsMissing` gets the text to show; there
+is no other ROM error. With it, every model switch and module change takes
+its files from the `RomSet` in memory and reads no file. The catalogue's ROM
+entries (`core/TICatalogue.cpp`) name each model's files: three ROM chips
+(Datamath text dumps: header, a `---` line, then `AAAA: WWWW …` rows, words
+masked to 13 bits) concatenated into 6144 words and two `*-CONST-K.txt`
+files for the 64 constant rows.
 
 | Model | ROM chips | Constants |
 |---|---|---|
@@ -419,8 +427,10 @@ constant rows.
 | TI-58C | `CD2400.txt`, `CD2401.txt`, `TMC0573.txt` | `CD2400-CONST-K.txt`, `CD2401-CONST-K.txt` |
 
 The TI-59 image is checked against two sentinels: word 0 = `0x0A01`
-(`CLR IDL`) and word 6143 = `0x1987`. Solid State modules are
-`roms/solid-state/TMC05xx.txt`, named by `MODULE-ROM` in `cuecards.txt`.
+(`CLR IDL`) and word 6143 = `0x1987`. A Solid State module's ROM is its
+`roms/<ID>.rom.yaml` (`docs/formats/modules.md` §2, 5000 bytes, read by
+`core/ModuleFile`); the module list and the cue cards still come from
+`roms/solid-state/cuecards.txt` (until M-25 and M-55).
 
 ## Drawing Rules
 

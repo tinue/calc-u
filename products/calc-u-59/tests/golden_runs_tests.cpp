@@ -158,11 +158,11 @@ struct Run {
     void operation() { base = m->tickCount(); }
 
     void build() {
-        m = cu59::buildMachine(model, testroms::reader());
+        m = cu59::buildMachine(model, *testroms::romSet());
         if (module != "none") {
             auto cue = testroms::readFile("roms/solid-state/cuecards.txt");
             auto file = cue ? cu59::moduleRomFile(*cue, module) : std::nullopt;
-            auto lib = file ? cu59::loadModule(*file, testroms::reader()) : std::nullopt;
+            auto lib = file ? cu59::moduleImage(*testroms::romSet(), *file) : std::nullopt;
             if (!lib) { error = "module " + module + " not found"; return; }
             per(*m).loadModuleImage(lib->data(), lib->size());
         }

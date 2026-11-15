@@ -30,8 +30,9 @@ Build on `app/` (`SharedArchitecture.md`). The Qt app is the worked
 example: `frontends/qt6/app/EmulatorController` is the whole adapter, about 300 lines
 (header and source).
 
-1. **Own one `cu59::SessionController`** on your UI thread. Give it a
-   `ResourceReader` for the ROM text files in `roms/`, the text of
+1. **Own one `cu59::SessionController`** on your UI thread, made by
+   `SessionController::create` with a `calcu::roms::Bundle` of the ROM files
+   of `roms/` as your packaging holds them (LIB-12), the text of
    `roms/solid-state/cuecards.txt` and the saved module ID (plus
    `Threading::Cooperative` if your platform has no threads).
 2. **Implement `SessionController::Platform`**: queue jobs on your UI thread,
@@ -67,10 +68,10 @@ surface):
 - **No threads?** Construct the `SessionController` with
   `Threading::Cooperative`: `tick()` then runs the emulation and the key
   lanes itself (`SharedArchitecture.md` § "Cooperative mode (no threads)").
-- **Asynchronous files?** `ResourceReader` is synchronous. Fetch what start-up
-  needs before constructing the controller; the web worker reads anything
-  later (a module chosen afterwards) with a synchronous request, which a
-  worker may make.
+- **Asynchronous files?** The ROM lookup reads every file once, at the
+  start, synchronously. Fetch the full set (`cu59::fullRomSet()`) before
+  constructing the controller, as the web worker does into `/roms`; nothing
+  is read later.
 - **Pass drawing data, not drawing.** The adapter posts what `changed()`
   names as plain data — segment masks and brightness per LED cell, the cue
   card as a laid-out draw list, printer lines with their heights, debug rows

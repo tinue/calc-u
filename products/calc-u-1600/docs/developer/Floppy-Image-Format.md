@@ -28,7 +28,7 @@ CE-1600P ROM does, as on real hardware.
 
 ## 3. Syntax
 
-A small YAML subset (the one `core/Yaml.hpp` reads):
+A small YAML subset (the one `library/formats/Yaml.hpp` reads, `calcu::formats`):
 
 - block mappings by indentation (spaces only — **tabs are rejected**);
 - `#` whole-line comments and ` #` trailing comments outside quotes;

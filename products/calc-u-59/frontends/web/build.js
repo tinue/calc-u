@@ -21,7 +21,8 @@ const { execFileSync } = require("child_process");
 
 const WEB = __dirname;
 const REPO = path.join(WEB, "..", "..");  // the product directory
-const DIST = path.join(WEB, "dist");
+// CALCU59_WEB_DIST: another output folder (build.sh, tests/rom_missing_build.sh).
+const DIST = process.env.CALCU59_WEB_DIST || path.join(WEB, "dist");
 
 const read = (p) => fs.readFileSync(p, "utf8");
 const sha256 = (buf) => crypto.createHash("sha256").update(buf).digest("hex");

@@ -298,7 +298,7 @@ namespace {
 
 struct ControllerRig {
     testroms::FakePlatform p;  // tick() at 60 Hz, then the UI queue
-    SessionController c{p, testroms::reader(), testroms::readFile("roms/solid-state/cuecards.txt").value_or(""), "ML",
+    SessionController c{p, testroms::romSet(), testroms::readFile("roms/solid-state/cuecards.txt").value_or(""), "ML",
                         Threading::Cooperative};
     Clock::time_point t = Clock::time_point{} + 500ms;  // a browser's clock starts at page load
     ControllerRig() { CHECK(c.startMachine(Model::TI59)); }

@@ -91,10 +91,10 @@ version in the repository's `.github/workflows/calc-u-59.yml`, job `web`),
    `emcmake` (ADR 0003; the flags are in the product's `CMakeLists.txt`):
    single-threaded (`Threading::Cooperative` — a static host can't be relied
    on to send the COOP/COEP headers `SharedArrayBuffer` needs), with
-   `-fexceptions` (app/ reports ROM and file errors with exceptions),
-   `MODULARIZE` as `createTI59CoreModule`;
-2. copies every model's ROM and constants, `cuecards.txt` and every module
-   image from `roms/` to `dist/wasm/roms/`, and the artwork (`ti59_base`,
+   `-fwasm-exceptions` (app/ reports file errors with exceptions),
+   `MODULARIZE` as `createTI59CoreModule`, `FS` exported;
+2. copies the full set of ROM files (the 24 of `roms/fetch_roms.sh`, LIB-12
+   AC-9) and `cuecards.txt` from `roms/` to `dist/wasm/roms/`, and the artwork (`ti59_base`,
    `ti58_base` and the three cue-card templates) from `frontends/swift/App/Assets.xcassets`
    to `dist/img/`;
 3. copies the static files, React, the font and the app icon (derived from
@@ -175,8 +175,11 @@ Requirements on the host:
   as a module. It finds the rest of `dist/` from its own URL.
 - **Same origin.** The worker is started from `calc.js`'s directory, and a
   browser only starts a worker from the page's own origin.
-- **Served over HTTP(S).** The worker reads ROM files with `fetch` and
-  synchronous `XMLHttpRequest`; `file://` doesn't allow either.
+- **Served over HTTP(S).** The worker fetches every ROM file of the full
+  set at init (`romFileNames()`) into the engine's `/roms`, where the ROM
+  lookup finds them (LIB-12); `file://` doesn't allow `fetch`. A missing or
+  bad file shows the lookup's text and no calculator (worker message
+  `romsMissing`); a file that cannot be fetched is a failed start.
 
 Stable hooks a host's tests may rely on: the root element's class
 `calcu-device` with `data-layout="wide|portrait"`, the artwork canvas

@@ -7,6 +7,11 @@
 // the cue card as a draw list, printer lines with their heights, debug rows
 // formatted by Shared/DebugText.
 //
+// ROMs (LIB-12): the worker writes the full set (romFileNames()) into
+// Emscripten's file system under /roms before it makes the WebController,
+// which looks them up there (DirectoryBundle) once; without the full set it
+// posts "romsMissing" and no machine starts.
+//
 // Web-specific Platform: settings and the TI-58C constant memory are posted
 // to the page, which keeps them in localStorage; magnetic cards live in an
 // in-memory folder for the page session; traces go to Emscripten's MEMFS
@@ -28,6 +33,8 @@
 #include <string>
 
 #include "../../app/CardFile.hpp"
+#include "../../app/ProductRoms.hpp"
+#include "roms/Bundle.hpp"
 #include "../../app/DebugText.hpp"
 #include "../../app/KeyIds.hpp"
 #include "../../app/KeyboardLayout.hpp"
@@ -53,6 +60,7 @@ namespace {
 constexpr const char* kConstantMemoryKey = "ti58c.mem";
 constexpr const char* kCardScheme = "session:";
 const fs::path kTraceDir = "/traces";
+const fs::path kRomDir = "/roms";   // the full set, written by the worker (LIB-12)
 
 std::string hexColor(uint32_t rgb) {
     char buf[8];
@@ -98,17 +106,10 @@ std::optional<cu59::Model> modelNamed(const std::string& name) {
 
 class WebController : public cu59::SessionController::Platform {
 public:
-    /// `files`: {fileName: text} of the files startupPlan() named, fetched
-    /// ahead; any other ROM (a module chosen later, another model) is read
-    /// when needed through the worker's readRomFile(name) → text or null.
-    /// `settings`: the page's stored values by SettingsKeys name.
-    WebController(val files, val settings, int model, std::string moduleID) {
-        val names = val::global("Object").call<val>("keys", files);
-        const int n = names["length"].as<int>();
-        for (int i = 0; i < n; ++i) {
-            std::string name = names[i].as<std::string>();
-            m_files[name] = files[name].as<std::string>();
-        }
+    /// The ROM files are in /roms (the worker wrote them, romFileNames());
+    /// `cuecards`: roms/solid-state/cuecards.txt. `settings`: the page's
+    /// stored values by SettingsKeys name.
+    WebController(std::string cuecards, val settings, int model, std::string moduleID) {
         m_constantMemory = stored(settings, kConstantMemoryKey);
         m_traceMaxMB = keys::resolveTraceMaxMB(storedInt(settings, keys::kTraceMaxFileSizeMB));
         m_startupModel = storedInt(settings, keys::kStartupModel).value_or(keys::kStartupLastUsed);
@@ -116,13 +117,16 @@ public:
         std::error_code ec;
         fs::create_directories(kTraceDir, ec);
 
-        m_c = std::make_unique<cu59::SessionController>(
-            *this, [this](const std::string& name) { return readFile(name); }, m_files["cuecards.txt"], moduleID,
-            cu59::Threading::Cooperative);
+        m_c = cu59::SessionController::create(*this, calcu::roms::DirectoryBundle(kRomDir), std::move(cuecards), moduleID,
+                                              cu59::Threading::Cooperative);
+        if (!m_c) return;   // romsMissing() posted the text (LIB-12 AC-10)
         m_c->startMachine(static_cast<cu59::Model>(model));
         postSettings();
         drain();
     }
+
+    /// false: the ROM lookup failed; nothing else may be called.
+    bool started() const { return m_c != nullptr; }
 
     /// The 60 Hz frame: emulation, key input, display, debugger.
     void tick() {
@@ -337,14 +341,6 @@ private:
         return path.rfind(kCardScheme, 0) == 0 ? path.substr(std::strlen(kCardScheme)) : path;
     }
 
-    std::optional<std::string> readFile(const std::string& name) {
-        auto it = m_files.find(name);
-        if (it != m_files.end()) return it->second;
-        val text = val::global("readRomFile")(name);
-        if (!text.isString()) return std::nullopt;
-        return m_files[name] = text.as<std::string>();
-    }
-
     static std::vector<uint8_t> matrixCodes(int key, int produced, bool isLetter, bool shift, bool command) {
         return cu59::matrixCodesFor({static_cast<char32_t>(key), static_cast<char32_t>(produced), isLetter, shift, command});
     }
@@ -388,6 +384,11 @@ private:
     void error(const std::string& title, const std::string& message) override {
         if (!m_errors.isUndefined()) m_errors.call<void>("push", message);
         else post("error", "message", val(title + ": " + message));
+    }
+    /// LIB-12 AC-5, AC-10 (design D-8, until LIB-14 and C59-8): the page shows
+    /// the text in place of the calculator.
+    void romsMissing(const calcu::roms::RomsMissing& missing) override {
+        post("romsMissing", "message", val("Calc-U-59 cannot start.\n\n" + calcu::roms::describe(missing)));
     }
     void diagnostic(const std::string& message) override { val::global("console").call<void>("debug", message); }
     void changed(uint32_t c) override { m_changes |= c; }
@@ -813,7 +814,6 @@ private:
         post("log", "log", o);
     }
 
-    std::map<std::string, std::string> m_files;
     std::unique_ptr<cu59::SessionController> m_c;
     std::deque<std::function<void()>> m_queue;
     uint32_t m_changes = 0;
@@ -839,9 +839,7 @@ private:
 // ── Free functions ───────────────────────────────────────────────────────────
 
 /// What to start with: the model and module from the host's overrides, else
-/// the stored settings (SettingsKeys resolution), and the files to fetch
-/// before WebController can start: the model's ROM and constants and the
-/// module's image. {model, moduleID, files}.
+/// the stored settings (SettingsKeys resolution). {model, moduleID}.
 val startupPlan(val settings, std::string modelOverride, std::string moduleOverride, std::string cuecards) {
     cu59::Model model = keys::resolveStartupModel(storedInt(settings, keys::kStartupModel),
                                                   storedInt(settings, keys::kLastUsedModel));
@@ -849,17 +847,19 @@ val startupPlan(val settings, std::string modelOverride, std::string moduleOverr
     std::string moduleID = keys::resolveModuleID(stored(settings, keys::kSolidStateModuleID));
     if (!moduleOverride.empty() && cu59::moduleRomFile(cuecards, moduleOverride)) moduleID = moduleOverride;
     if (!cu59::moduleRomFile(cuecards, moduleID)) moduleID = keys::kDefaultModuleID;
-
-    val files = val::array();
-    int n = 0;
-    for (const char* f : cu59::info(model).romFiles) files.set(n++, std::string(f));
-    for (const char* f : cu59::info(model).constFiles) files.set(n++, std::string(f));
-    if (auto file = cu59::moduleRomFile(cuecards, moduleID)) files.set(n++, *file);
     val o = val::object();
     o.set("model", static_cast<int>(model));
     o.set("moduleID", moduleID);
-    o.set("files", files);
     return o;
+}
+
+/// The full set of ROM files (LIB-12 AC-9): the worker fetches every one of
+/// them into /roms at init (D-10).
+val romFileNames() {
+    val names = val::array();
+    int n = 0;
+    for (const auto& f : cu59::fullRomSet().files) names.set(n++, f.entry.fileName);
+    return names;
 }
 
 /// Everything fixed the page draws with: models, modules, the canvas layout
@@ -986,7 +986,8 @@ val ledGeometry(double w, double h) {
 
 EMSCRIPTEN_BINDINGS(ti59_web) {
     class_<WebController>("WebController")
-        .constructor<val, val, int, std::string>()
+        .constructor<std::string, val, int, std::string>()
+        .function("started", &WebController::started)
         .function("tick", &WebController::tick)
         .function("startMachine", &WebController::startMachine)
         .function("resetMachine", &WebController::resetMachine)
@@ -1045,6 +1046,7 @@ EMSCRIPTEN_BINDINGS(ti59_web) {
         .function("setCueCardSize", &WebController::setCueCardSize)
         .function("setDebugWidth", &WebController::setDebugWidth);
     function("startupPlan", &startupPlan);
+    function("romFileNames", &romFileNames);
     function("staticData", &staticData);
     function("ledGeometry", &ledGeometry);
 }

@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
 """Headless TI-59 harness: drive the TI machine from Python and capture ROM traces.
 
-Loads tools/headless/build/libti59headless.dylib (build with build.sh),
-the TI-59 ROM/constant dumps from roms/calculator/, and optionally a
-solid-state module from roms/solid-state/.
+Loads tools/headless/build/libti59headless.dylib (build with build.sh) and
+the ROM files of roms/ through the library's ROM lookup (LIB-12; another
+folder with TI59_ROMS_DIR), and optionally a solid-state module (its ROM
+from <ID>.rom.yaml, the module list from roms/solid-state/cuecards.txt).
+Without the full set of ROM files it ends with the lookup's message.
 
 Library use:
     m = Machine()            # boots to the idle loop
@@ -28,7 +30,7 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 REPO = HERE.parent.parent
-ROMS = REPO / "roms"
+ROMS = Path(os.environ.get("TI59_ROMS_DIR", REPO / "roms"))
 
 # The 45 key IDs (C59-1 AC-9) and the other spellings of docs/formats/preset.md
 # §8.1, each with its matrix code (row*10 + col, row 1-9 top to bottom, col 1-5
@@ -106,6 +108,8 @@ def _lib():
     lib.h_key_up.argtypes = [C.c_void_p, C.c_char_p]
     lib.h_load_model_roms.argtypes = [C.c_void_p, C.c_int, C.c_char_p]
     lib.h_load_module.argtypes = [C.c_void_p, C.c_char_p, C.c_char_p]
+    lib.h_error.argtypes = [C.c_void_p]
+    lib.h_error.restype = C.c_char_p
     lib.h_record.argtypes = [C.c_void_p, C.c_void_p, C.c_int, C.c_int]
     lib.h_pc.argtypes = [C.c_void_p]
     lib.h_pc.restype = C.c_uint16
@@ -167,6 +171,10 @@ def nibs(r, msd_first=True) -> str:
     return "".join(f"{x:x}" for x in (reversed(v) if msd_first else v))
 
 
+class RomsMissing(RuntimeError):
+    """A file of the full set is missing or bad; the text names them (LIB-12 AC-7)."""
+
+
 class Machine:
     def __init__(self, module: str | None = "ML", printer: bool = False, boot: bool = True,
                  variant: str = "TI59"):
@@ -174,7 +182,7 @@ class Machine:
         self.h = C.c_void_p(LIB.h_new(VARIANTS[variant]))
         roms = str(ROMS).encode()
         if LIB.h_load_model_roms(self.h, VARIANTS[variant], roms) != 0:
-            raise RuntimeError(f"cannot load the {variant} ROM from {ROMS}")
+            raise RomsMissing(LIB.h_error(self.h).decode())
         if module and LIB.h_load_module(self.h, module.encode(), roms) != 0:
             raise KeyError(module)
         LIB.h_printer(self.h, 1 if printer else 0)
@@ -428,7 +436,11 @@ def main():
     ap.add_argument("--summary", action="store_true", help="distinct PCs per key with hit counts")
     ap.add_argument("--variant", default="TI59", choices=sorted(VARIANTS))
     args = ap.parse_args()
-    m = Machine(module=args.module or None, printer=args.printer, variant=args.variant)
+    try:
+        m = Machine(module=args.module or None, printer=args.printer, variant=args.variant)
+    except RomsMissing as e:
+        print(f"ti59.py: {e}", file=sys.stderr)
+        sys.exit(1)
     labels = load_labels(args.variant)
     if args.boot:
         print("=== boot ===")

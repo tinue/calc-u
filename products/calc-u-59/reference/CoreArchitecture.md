@@ -32,7 +32,7 @@ tiCatalogue(), TIMachineBuilder (core/TICatalogue.hpp/.cpp: the three descriptor
 Since C59-1 (M-19) the only interface above the core is
 `calcu::machine::Machine` (ADR 0006): `app/` builds a `TIMachine` through
 `calcu::machine::build(tiCatalogue(), TIMachineBuilder, request)`
-(`cu59::buildMachine`, `app/RomLoader.hpp`) and reaches the model, the
+(`cu59::buildMachine`, `app/ProductRoms.hpp`, from the ROM lookup's `RomSet`, LIB-12) and reaches the model, the
 advances and tick count, Reset / power cycle / cold boot, key readiness,
 the keys and the display output through it only (C59-1 AC-17; CTest
 `CalcU59CoreSeam`). What the interface does not have yet goes through the
@@ -303,7 +303,7 @@ Each DSCOM holds 2,560 words and the BROM 1,024, so the image splits
 (BROM 6). The CPU sends the address serially on EXT every cycle, the top
 three bits as the chip select; each chip's select code is mask-programmed,
 and only the matching chip drives IRG
-(http://www.datamath.org/Chips/TMC0580.htm). The `roms/calculator` dumps
+(http://www.datamath.org/Chips/TMC0580.htm). The `roms/` dumps
 (datamath's ROM recorder, one file per chip) put 0000–09FF in CD2400 and
 0A00–13FF in CD2401. The recorder plays the CPU, so a chip read on its own
 answers only its own range; if the stacked pair was read in place, the two

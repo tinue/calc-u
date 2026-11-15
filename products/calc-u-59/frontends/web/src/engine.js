@@ -139,6 +139,7 @@ function createEngine({ model, module, workerUrl }) {
         break;
       case "dropRejected": set({ status: `${m.name}: not a .ti59, .ti58, .ti58c, .u59 or .bin file` }); break;
       case "error": set({ status: m.message }); break;
+      case "romsMissing": set({ status: m.message, romsMissing: true }); break;
       default: break;
     }
   };

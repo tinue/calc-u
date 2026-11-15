@@ -2,6 +2,8 @@
 #include "AppPaths.hpp"
 #include "AppSettings.hpp"
 #include "KeyIds.hpp"
+#include "QtResourceBundle.hpp"
+#include <QMessageBox>
 #include <QDebug>
 #include <QFile>
 #include <QFileInfo>
@@ -31,16 +33,14 @@ bool writeText(const QString& path, const std::string& text) {
     return f.commit();
 }
 
-cu59::ResourceReader romReader() {
-    return [](const std::string& name) { return readResource(QStringLiteral(":/roms/") + qs(name)); };
-}
-
 } // namespace
 
 EmulatorController::EmulatorController(QObject* parent) : QObject(parent) {
-    m_c = std::make_unique<cu59::SessionController>(static_cast<Platform&>(*this), romReader(),
-                                                    readResource(QStringLiteral(":/roms/cuecards.txt")).value_or(""),
-                                                    AppSettings::resolvedSolidStateModuleID().toStdString());
+    // The ROM lookup first (LIB-12): without the full set, romsMissing() and no controller.
+    m_c = cu59::SessionController::create(static_cast<Platform&>(*this), QtResourceBundle(),
+                                          readResource(QStringLiteral(":/roms/cuecards.txt")).value_or(""),
+                                          AppSettings::resolvedSolidStateModuleID().toStdString());
+    if (!m_c) return;
     m_frameTimer.setTimerType(Qt::PreciseTimer);
     m_frameTimer.setInterval(1000 / 60);
     connect(&m_frameTimer, &QTimer::timeout, this, [this] { m_c->tick(std::chrono::steady_clock::now()); });
@@ -116,6 +116,13 @@ void EmulatorController::saveModuleID(const std::string& moduleID) {
 
 void EmulatorController::error(const std::string& title, const std::string& message) {
     emit errorOccurred(qs(title), qs(message));
+}
+
+// LIB-12 AC-5, AC-10 (design D-8, until LIB-14 and C59-8): a dialog with the
+// lookup's text; main() then ends the app with exit code 1.
+void EmulatorController::romsMissing(const calcu::roms::RomsMissing& missing) {
+    QMessageBox::critical(nullptr, QStringLiteral("Calc-U-59: ROM files missing"),
+                          qs("Calc-U-59 cannot start.\n\n" + calcu::roms::describe(missing)));
 }
 
 void EmulatorController::diagnostic(const std::string& message) { qDebug("%s", message.c_str()); }

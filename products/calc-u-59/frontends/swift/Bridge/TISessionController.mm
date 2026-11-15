@@ -2,7 +2,9 @@
 #import "BridgeConvert.h"
 #import "TIFileFormats+Cpp.h"
 #include <calcu59/app/PrinterFont.hpp>
+#include <calcu59/app/ProductRoms.hpp>
 #include <calcu59/app/SessionController.hpp>
+#include "roms/Bundle.hpp"
 #include <memory>
 
 // ── Value objects ────────────────────────────────────────────────────────────
@@ -77,13 +79,19 @@
 
 namespace {
 
-cu59::ResourceReader readerFrom(TIResourceReader block) {
-    return [block](const std::string& name) -> std::optional<std::string> {
-        NSString* text = block(ns(name));
-        if (!text) return std::nullopt;
-        return cpp(text);
-    };
-}
+/// The bundle folder with one file left out (TIRomSet's `leavingOut`).
+class LeavingOut final : public calcu::roms::Bundle {
+public:
+    LeavingOut(const calcu::roms::Bundle& b, std::string name) : bundle_(b), name_(std::move(name)) {}
+    std::optional<std::vector<std::uint8_t>> read(std::string_view fileName) const override {
+        return fileName == name_ ? std::nullopt : bundle_.read(fileName);
+    }
+    std::string where() const override { return bundle_.where(); }
+
+private:
+    const calcu::roms::Bundle& bundle_;
+    std::string name_;
+};
 
 std::optional<std::vector<uint8_t>> optionalBytes(NSData* d) {
     return d ? std::optional<std::vector<uint8_t>>(bytes(d)) : std::nullopt;
@@ -196,22 +204,46 @@ struct PlatformAdapter : cu59::SessionController::Platform {
     void error(const std::string& title, const std::string& message) override {
         [platform showErrorTitle:ns(title) message:ns(message)];
     }
+    // Adapter A-4: not reached, the app looks the ROMs up with TIRomSet first.
+    void romsMissing(const calcu::roms::RomsMissing& missing) override {
+        [platform showErrorTitle:@"ROM files missing" message:ns(calcu::roms::describe(missing))];
+    }
     void diagnostic(const std::string& message) override { [platform diagnostic:ns(message)]; }
     void changed(uint32_t changes) override { [platform changed:static_cast<TIChange>(changes)]; }
 };
 
 } // namespace
 
+@implementation TIRomSet {
+@public
+    std::shared_ptr<const calcu::roms::RomSet> _set;
+}
+
++ (TIRomSet *)lookUpInFolder:(NSString *)folder leavingOut:(NSString *)leavingOut missing:(NSString **)missing {
+    const calcu::roms::DirectoryBundle bundle(std::filesystem::path(folder.fileSystemRepresentation));
+    const LeavingOut without(bundle, leavingOut ? cpp(leavingOut) : std::string());
+    auto r = cu59::lookUpRoms(leavingOut ? static_cast<const calcu::roms::Bundle&>(without) : bundle);
+    if (!r.ok()) {
+        if (missing) *missing = ns("Calc-U-59 cannot start.\n\n" + calcu::roms::describe(r.missing));
+        return nil;
+    }
+    TIRomSet* set = [[TIRomSet alloc] init];
+    set->_set = std::move(r.set);
+    return set;
+}
+
+@end
+
 @implementation TISessionController {
     PlatformAdapter _platform;
     std::unique_ptr<cu59::SessionController> _c;
 }
 
-- (instancetype)initWithReader:(TIResourceReader)reader cuecards:(NSString *)cuecards
-                      moduleID:(NSString *)moduleID platform:(id<TIPlatform>)platform {
+- (instancetype)initWithRoms:(TIRomSet *)roms cuecards:(NSString *)cuecards
+                    moduleID:(NSString *)moduleID platform:(id<TIPlatform>)platform {
     if ((self = [super init])) {
         _platform.platform = platform;
-        _c = std::make_unique<cu59::SessionController>(_platform, readerFrom(reader), cpp(cuecards), cpp(moduleID));
+        _c = std::make_unique<cu59::SessionController>(_platform, roms->_set, cpp(cuecards), cpp(moduleID));
     }
     return self;
 }

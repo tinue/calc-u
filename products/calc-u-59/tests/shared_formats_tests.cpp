@@ -441,8 +441,8 @@ TEST(module_catalog_from_cuecards_txt) {
     CHECK_EQ(all[1].id, std::string("LE"));  // menu sort 1; the rest are 5 (file order kept)
     for (size_t i = 1; i < all.size(); ++i) CHECK(all[i - 1].menuSort <= all[i].menuSort);
 
-    CHECK(moduleRomFile(*text, "ML") == std::optional<std::string>("TMC0541.txt"));
-    CHECK(moduleRomFile(*text, "RP") == std::optional<std::string>("TMC0555.txt"));
+    CHECK(moduleRomFile(*text, "ML") == std::optional<std::string>("ML.rom.yaml"));   // adapter A-3 (LIB-12)
+    CHECK(moduleRomFile(*text, "RP") == std::optional<std::string>("RP.rom.yaml"));
     CHECK(!moduleRomFile(*text, "XX").has_value());
 
     auto ml = moduleCards(*text, "ML");

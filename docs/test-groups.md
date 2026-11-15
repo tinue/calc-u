@@ -41,7 +41,7 @@ the `<cstdlib>` fix).
 
 | CTest entry | What | Group | Measured (M4 Pro, 2026-11-14) |
 |---|---|---|---|
-| `calcu_library_tests` | 176 `TEST`s: the library's own tests with the machines built for the tests (`library/machine/tests/TestMachines.*`) and the product declared for the settings tests (`library/settings/tests/TestProduct.hpp`), no product code (LIB-1 AC-24; LIB-1 design §2a); also run alone by the CI job `library` of both product workflows. The pacing tests run on a scripted wall clock (`library/pacing/tests/TestSliceRunner.hpp`), never the host's; so do the session tests (`library/sessions/tests/ScriptedClock.hpp`), with the test frontend and the test product part of `library/sessions/tests/` | Frequent | 0.51 s (M-22, 2026-11-14, RelWithDebInfo; most of it the five-hour scripted runs of LIB-17) |
+| `calcu_library_tests` | 204 `TEST`s: the library's own tests with the machines built for the tests (`library/machine/tests/TestMachines.*`) and the product declared for the settings tests (`library/settings/tests/TestProduct.hpp`), no product code (LIB-1 AC-24; LIB-1 design §2a); also run alone by the CI job `library` of both product workflows. The pacing tests run on a scripted wall clock (`library/pacing/tests/TestSliceRunner.hpp`), never the host's; so do the session tests (`library/sessions/tests/ScriptedClock.hpp`), with the test frontend and the test product part of `library/sessions/tests/`; the ROM lookup's tests write their ROM files into a temporary folder (`library/roms/tests/TestRomFiles.hpp`) | Frequent | 0.35 s (M-24, 2026-11-15, RelWithDebInfo; most of it the five-hour scripted runs of LIB-17) |
 | `LibraryPlatformStoreCheck` | `library/settings/tests/check_platform_stores_test.sh`: the self-test of `library/settings/check_platform_stores.sh`, the source check the products run over their frontends (LIB-9 design T-14); not registered on Windows | Frequent | 0.03 s |
 
 `calcu_library_tests` by file (`library/<area>/tests/`; every `TEST` is
@@ -79,18 +79,26 @@ Frequent):
 | `sessions/tests/suspend_tests.cpp` | 5 |
 | `sessions/tests/topic_tests.cpp` | 9 |
 | `sessions/tests/value_tests.cpp` | 1 |
+| `roms/tests/bundle_tests.cpp` | 3 (LIB-12 AC-2) |
+| `roms/tests/full_set_tests.cpp` | 4 (LIB-12 AC-1, AC-4, EC-1) |
+| `roms/tests/lookup_tests.cpp` | 9 (LIB-12 AC-3, AC-5, AC-7, EC-1, EC-2) |
+| `roms/tests/rom_set_tests.cpp` | 3 (LIB-12 AC-6) |
+| `formats/tests/yaml_tests.cpp` | 9 (the YAML reader, moved from Calc-U-1600 in M-24; no AC) |
 
 ## Calc-U-59
 
 | CTest entry | What | Group | Measured (M4 Pro, 2026-11-14) |
 |---|---|---|---|
-| `CalcU59Tests` | 188 `TEST`s: unit and ROM-driven integration tests of the core and the app layer, the machine interface (C59-1, LIB-1 59), the golden replays through it (table below) | Frequent | 7.5 s (M-19) |
+| `CalcU59Tests` | 202 `TEST`s: unit and ROM-driven integration tests of the core and the app layer, the machine interface (C59-1, LIB-1 59), the ROM lookup (LIB-12 59), the golden replays through it (table below) | Frequent | 7.2 s (M-24) |
 | `CalcU59TraceReader` | `tools/read_trace.py` reads the trace `CalcU59Tests` wrote | Frequent | 16.4 s (Python 3.15; 0.3 s in CI) |
 | `CalcU59CoreSeam` | `tests/check_core_seam.sh`: no core-internal header outside `core/` and `tests/`, no machine call in the adapters (C59-1 AC-17; M-19) | Frequent | 0.02 s |
+| `CalcU59NoOwnRomLookup` | `library/roms/tests/check_no_own_rom_lookup.sh`: no product source outside `app/ProductRoms.*`, the catalogue and the Qt6 Bundle looks for a ROM file (LIB-12 AC-2, design T7; M-24) | Frequent | 1.2 s |
 | `CalcU59HeadlessSmoke` | `tools/headless/ti59.py 5 + 7 =` against the CMake-built `ti59headless` shows 12 (C59-1 T14; M-19; with Python 3) | Frequent | 0.04 s |
-| `CalcU59XcodeProjectCheck` | `frontends/swift/check_xcode_project.sh`: Xcode compiles only Swift and the bridge and links `CalcU59.xcframework` (C59-5, ADR 0013; M-15) | Frequent | 0.02 s |
-| | **Frequent, Calc-U-59** | | **24.0 s** (M-19) |
-| `CalcU59WebPlaywright` | `frontends/web/run-tests.sh`: Playwright, Chromium (root, sub-path) and WebKit (offline) | Longer | 77.7 s |
+| `CalcU59HeadlessRomMissing` | `tests/headless_rom_tests.py`: `ti59.py` on a ROM folder without one file ends naming it, on the full set it starts (LIB-12 AC-7, AC-10; M-24; with Python 3) | Frequent | 0.15 s |
+| `CalcU59XcodeProjectCheck` | `frontends/swift/check_xcode_project.sh`: Xcode compiles only Swift and the bridge and links `CalcU59.xcframework` (C59-5, ADR 0013; M-15); the app bundles the 24 ROM files of the full set (LIB-12; M-24) | Frequent | 0.02 s |
+| | **Frequent, Calc-U-59** | | **24.0 s** (M-24) |
+| `CalcU59WebPlaywright` | `frontends/web/run-tests.sh`: Playwright, Chromium (root, sub-path) and WebKit (offline); `rom-missing.spec.js` (LIB-12 AC-10, EC-3; M-24) | Longer | 78 s (M-24) |
+| `CalcU59RomMissingBuild` | `tests/rom_missing_build.sh`: roms/ without one file (default `TMC0583.txt`); the headless library and a Web `dist/` built from it start without a calculator and name the file (LIB-12, Technical Requirements; M-24); not registered on Windows | Longer | 3 s (M-24; the Web build tree already built) |
 | `CalcU59UIRegression` | XCUITest plan `UIRegressionTests` on the `iphone` simulator | Longer | 154.5 s (iPhone 18 Pro Max, iOS 27.2) |
 | `CalcU59PacingRealClock` | `pacing_longrun_real_clock_ti` with `CALCU59_PACING_LONGRUN=600` | Checkpoint | 10 min (by design) |
 | `CalcU59AppStoreScreenshots` | `bin/run-screenshots`: the App Store set (the iPhone Duo is opened flat by hand) | Checkpoint | not measured |
@@ -107,7 +115,8 @@ Frequent except where the table says otherwise):
 | `machine_tests.cpp` | 26 (C59-1 AC-1–3, 6–16, 18, 19, EC-1–4; M-19) |
 | `pacing_longrun_tests.cpp` | 2: `pacing_longrun_scripted_ti` Frequent; `pacing_longrun_real_clock_ti` Checkpoint (returns at once without `CALCU59_PACING_LONGRUN`) |
 | `reference_runs_tests.cpp` | 1, a recorder, not a check: returns at once without `CALCU59_REFERENCE_RECORD` |
-| `shared_controller_tests.cpp` | 14 |
+| `rom_lookup_tests.cpp` | 15 (LIB-12 AC-1, AC-4, AC-6, AC-8–10, AC-14, EC-2; M-24) |
+| `shared_controller_tests.cpp` | 13 |
 | `shared_cooperative_tests.cpp` | 42 |
 | `shared_debug_tests.cpp` | 14 |
 | `shared_formats_tests.cpp` | 21 |
@@ -121,7 +130,7 @@ Frequent except where the table says otherwise):
 
 | CTest entry | What | Group | Measured (M4 Pro, 2026-11-14) |
 |---|---|---|---|
-| `CoreTests` | 811 `TEST`s: unit and integration tests of the core and the app layer (real ROMs, presets, loaders, job equivalence), the golden replays (table below) | Frequent | 38.7 s |
+| `CoreTests` | 803 `TEST`s: unit and integration tests of the core and the app layer (real ROMs, presets, loaders, job equivalence), the golden replays (table below) | Frequent | 38.7 s |
 | `CalcU1600CheckPresets` | `tools/check_presets.sh`: every preset in the repository parses | Frequent | 0.3 s |
 | | **Frequent, Calc-U-1600** | | **39.0 s** |
 | `CalcU1600WebPlaywright` | `frontends/web/run-tests.sh`: Playwright, Chromium (root, sub-path) and WebKit (offline) | Longer | 22.5 s (Homebrew Emscripten 7.0, after `<cstdlib>` was added to `core/Debug/BreakpointTable.cpp`); 31 s in CI (6.0.13) |
@@ -165,7 +174,7 @@ needs ROMs that are missing reports `SKIP`):
 | `lh5803_tests.cpp` | 8 | `app/tests/shared_pacing_tests.cpp` | 3 |
 | `listing_tests.cpp` | 10 | `app/tests/shared_preset_catalog_tests.cpp` | 4 |
 | `machine_code_file_tests.cpp` | 22 | `app/tests/shared_settings_tests.cpp` | 4 |
-| `memory_card_tests.cpp` | 55 | | |
+| `memory_card_tests.cpp` | 47 (the 8 YAML reader cases moved to the library in M-24) | | |
 | `pacing_longrun_tests.cpp` | 4: `pacing_longrun_scripted_pc1500a`, `_pc1600` Frequent; `pacing_longrun_real_clock_pc1500a`, `_pc1600` Checkpoint (return at once without `CALCU1600_PACING_LONGRUN`) | | |
 | `pc1500_tape_tests.cpp` | 2 | | |
 | `pc1600_bank_tests.cpp` | 23 | | |

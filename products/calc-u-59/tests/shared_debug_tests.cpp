@@ -160,7 +160,7 @@ TEST(program_source_decoding) {
 }
 
 TEST(module_image_program_table) {
-    auto raw = loadModule("TMC0541.txt", testroms::reader());
+    auto raw = cu59::moduleImage(*testroms::romSet(), "ML.rom.yaml");
     CHECK(raw.has_value());
     if (!raw) return;
     std::string err;
@@ -191,7 +191,7 @@ TEST(live_snapshot_and_listing) {
     testroms::mem(*m).writeDataRegister(3, reg.data());
 
     std::vector<uint8_t> romCache;
-    auto lib = ModuleImage::parse(*loadModule("TMC0541.txt", testroms::reader()));
+    auto lib = ModuleImage::parse(*cu59::moduleImage(*testroms::romSet(), "ML.rom.yaml"));
     auto b = buildLiveSnapshot(*m, lib, romCache, calcViewState(*m));
     const auto& s = b.snap;
     CHECK(s.programSource == ProgramSource::UserProgram);

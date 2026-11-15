@@ -6,7 +6,7 @@
 set -euo pipefail
 
 WEB="$(cd "$(dirname "$0")" && pwd)"
-DIST="$WEB/dist"
+DIST="${CALCU59_WEB_DIST:-$WEB/dist}"   # another dist/: tests/rom_missing_build.sh
 export CALCU_WEB_PORT="${CALCU_WEB_PORT:-8059}"
 SUBPATH_PORT=$((CALCU_WEB_PORT + 1))
 

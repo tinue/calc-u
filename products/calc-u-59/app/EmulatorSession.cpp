@@ -13,7 +13,7 @@ uint32_t traceFlagsFor(const TraceConsumers& c) {
     return flags;
 }
 
-EmulatorSession::EmulatorSession(Model model, const ResourceReader& roms, const std::optional<std::string>& moduleRomFile,
+EmulatorSession::EmulatorSession(Model model, const calcu::roms::RomSet& roms, const std::optional<std::string>& moduleRomFile,
                                  Listener& listener, Threading threading)
     : m_model(model),
       m_listener(listener),
@@ -34,8 +34,8 @@ EmulatorSession::~EmulatorSession() {
     m_runner.reset();  // joins the emulation thread
 }
 
-bool EmulatorSession::loadModule(const std::string& romFile, const ResourceReader& roms) {
-    auto image = cu59::loadModule(romFile, roms);
+bool EmulatorSession::loadModule(const std::string& romFile, const calcu::roms::RomSet& roms) {
+    auto image = cu59::moduleImage(roms, romFile);
     if (!image) return false;
     access().peripherals().loadModuleImage(image->data(), image->size());
     m_moduleImage = std::move(*image);

@@ -52,12 +52,10 @@ std::vector<ModuleMetadata> allModuleMetadata(std::string_view text) {
 }
 
 std::optional<std::string> moduleRomFile(std::string_view text, std::string_view moduleID) {
-    std::optional<std::string> current, result;
+    std::optional<std::string> result;
     forEachLine(text, [&](std::string_view line, const std::string& upper) {
-        if (result) return;
         std::string_view v;
-        if (takeValue(line, upper, "MODULE-ID:", v)) current = std::string(v);
-        else if (takeValue(line, upper, "MODULE-ROM:", v) && current == moduleID) result = std::string(v);
+        if (!result && takeValue(line, upper, "MODULE-ID:", v) && v == moduleID) result = std::string(v) + ".rom.yaml";
     });
     return result;
 }

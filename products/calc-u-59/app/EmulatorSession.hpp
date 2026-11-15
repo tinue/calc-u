@@ -5,7 +5,7 @@
 #include "KeySequencer.hpp"
 #include "MachineGuard.hpp"
 #include "MachineModelInfo.hpp"
-#include "RomLoader.hpp"
+#include "ProductRoms.hpp"
 #include "StateFile.hpp"
 #include "TraceWriter.hpp"
 #include <atomic>
@@ -94,9 +94,9 @@ public:
     };
 
     /// Build the machine through the machine interface (calcu::machine::build,
-    /// tiCatalogue()) from the model's ROM files and, if given, load a
-    /// solid-state module image. Throws RomError.
-    EmulatorSession(Model model, const ResourceReader& roms, const std::optional<std::string>& moduleRomFile,
+    /// tiCatalogue()) from the looked-up ROM set and, if given, load the
+    /// solid-state module of that file (`<ID>.rom.yaml`). Reads no file.
+    EmulatorSession(Model model, const calcu::roms::RomSet& roms, const std::optional<std::string>& moduleRomFile,
                     Listener& listener, Threading threading = Threading::Threads);
     ~EmulatorSession();
     EmulatorSession(const EmulatorSession&) = delete;
@@ -111,8 +111,8 @@ public:
     calcu::machine::Machine& machine() { return *m_machine; }
     /// The module image loaded at construction or by loadModule() (empty if none).
     const std::vector<uint8_t>& moduleImage() const { return m_moduleImage; }
-    /// Swap the solid-state module (no reset). False if the file can't be read.
-    bool loadModule(const std::string& romFile, const ResourceReader& roms);
+    /// Swap the solid-state module (no reset). False if the set has no such file.
+    bool loadModule(const std::string& romFile, const calcu::roms::RomSet& roms);
 
     // ── Run loop ─────────────────────────────────────────────────────────────
     void start() { m_runner->start(); }

@@ -749,12 +749,12 @@ TEST(test_debug_block_parses_and_resolves_paths) {
     CHECK(p.debug.isMap());
     CHECK(p.sections.size() == 1); // `keys:` after the block still parses
     std::string s;
-    const YamlNode* program = p.debug.find("program");
+    const calcu::formats::YamlNode* program = p.debug.find("program");
     CHECK(program && program->find("bin")->asString(&s, &err) && s == "/tmp/build/hello.bin");
     CHECK(program && program->find("listing")->asString(&s, &err) && s == "/abs/hello.lst");
     CHECK(program && program->find("entry")->asString(&s, &err) && s == "START");
     CHECK(program && program->find("symbols")->seq.at(0).asString(&s, &err) && s == "/tmp/hello.sym");
-    const YamlNode* listings = p.debug.find("listings");
+    const calcu::formats::YamlNode* listings = p.debug.find("listings");
     CHECK(listings && listings->seq.size() == 2);
     CHECK(listings && listings->seq[0].asString(&s, &err) && s == "/tmp/rom/b7.lst");
     CHECK(listings && listings->seq[1].find("path")->asString(&s, &err) && s == "/tmp/rom/b3.lst");

@@ -106,7 +106,7 @@ TEST(c59_1_ac9_45_key_ids_by_row_with_spellings) {
 
 TEST(c59_1_ac12_no_printer_keys) {
     for (Model model : kModels) {
-        auto m = cu59::buildMachine(model, reader());
+        auto m = cu59::buildMachine(model, *romSet());
         for (const char* k : {"PRINT", "ADV", "TRACE"}) {
             CHECK(!m->descriptor().hasKey(KeyId{k}));
             CHECK(m->keyDown(KeyId{k}) == KeyCall::UnknownKey);
@@ -296,7 +296,7 @@ TEST(c59_1_ac6_constant_memory_in_place_before_start_up) {
     CHECK_EQ(mem(*a).partitionProgramRegs(), 40);
     auto content = std::make_shared<TIConstantMemory>();
     mem(*a).serialiseRAM(content->ram.data());
-    auto b = cu59::buildMachine(Model::TI58C, reader(), content);
+    auto b = cu59::buildMachine(Model::TI58C, *romSet(), content);
     CHECK(ram(*b) == ram(*a));   // in place before the processor starts
     CHECK(runToScanLoop(*b, Model::TI58C));
     CHECK_EQ(mem(*b).partitionProgramRegs(), 40);

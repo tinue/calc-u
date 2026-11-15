@@ -120,14 +120,26 @@ typedef NS_ENUM(NSInteger, TIFreezeOwner) {
 @property (nonatomic, readonly) BOOL isCurrent;
 @end
 
+/// The ROM files of the app, looked up once at the start through the
+/// library's ROM lookup (LIB-12; app/ProductRoms.hpp).
+@interface TIRomSet : NSObject
+/// The lookup over the files directly in `folder` (the bundle's resource
+/// folder). nil when a file of the full set is missing or bad; `missing`
+/// then holds the text to show in place of the calculator (AC-5, AC-10).
+/// `leavingOut`: a file to treat as missing (DEBUG builds' UI test only).
++ (nullable TIRomSet *)lookUpInFolder:(NSString *)folder
+                           leavingOut:(nullable NSString *)leavingOut
+                              missing:(NSString *_Nullable *_Nullable)missing;
+@end
+
 @interface TISessionController : NSObject
 
-/// `platform` is held weakly.
-- (instancetype)initWithReader:(TIResourceReader)reader cuecards:(NSString *)cuecards
-                      moduleID:(NSString *)moduleID platform:(id<TIPlatform>)platform;
+/// `roms` from +[TIRomSet lookUpInFolder:…]; `platform` is held weakly.
+- (instancetype)initWithRoms:(TIRomSet *)roms cuecards:(NSString *)cuecards
+                    moduleID:(NSString *)moduleID platform:(id<TIPlatform>)platform;
 
 // ── Machine (model = MachineModel raw value) ─────────────────────────────────
-/// NO on a ROM error (reported to the platform); the previous machine keeps running.
+/// Always YES: the ROM set builds every model (LIB-12 AC-6).
 - (BOOL)startMachine:(NSInteger)model;
 @property (nonatomic, readonly) BOOL hasMachine;
 @property (nonatomic, readonly) NSInteger model;

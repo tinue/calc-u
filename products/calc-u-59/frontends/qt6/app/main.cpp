@@ -60,6 +60,7 @@ int main(int argc, char* argv[]) {
     applyDarkPalette(app);
 
     EmulatorController controller;
+    if (!controller.started()) return 1;   // the ROM files are missing (LIB-12 AC-10)
     MainWindow window(controller);
     app.window = &window;
     controller.start(AppSettings::resolvedStartupModel());

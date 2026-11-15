@@ -42,7 +42,9 @@ Never edit the calculator there — that copy is generated.
    are the contract — changing them is a change for the website too.
 6. **The client brings its own styling** (`reference/WebClient.md`). Fonts and
    React are self-hosted in `frontends/web/` (no CDN).
-7. **Assets have one source:** ROMs from `roms/`, artwork from
+7. **Assets have one source:** ROMs from `roms/` (the worker fetches all 24
+   at init into `/roms`, where the engine's ROM lookup finds them, LIB-12;
+   the service worker caches them), artwork from
    `frontends/swift/App/Assets.xcassets`, presets from `examples/` (listed in
    `presets.json`), the icon from `frontends/qt6/resources/linux/` (derived from
    `frontends/swift/App/AppIcon.icon`). `build.sh` copies them; never commit copies.

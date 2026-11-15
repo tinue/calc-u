@@ -37,9 +37,6 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic, readonly, copy) NSString *menuTitle;
 @end
 
-/// Returns a bundled resource's text by bare file name, or nil.
-typedef NSString *_Nullable (^TIResourceReader)(NSString *fileName);
-
 @interface TIFileFormats : NSObject
 
 /// Card pickers list only these (.u59 / .bin in any case, not hidden).

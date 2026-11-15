@@ -1,6 +1,6 @@
 #include "ShotScenario.hpp"
 
-#include "Yaml.hpp"
+#include "formats/Yaml.hpp"
 
 #include <QDir>
 #include <QFile>
@@ -12,7 +12,7 @@ QString lineError(int line, const QString& msg) {
     return QStringLiteral("line %1: %2").arg(line).arg(msg);
 }
 
-bool scalarString(const YamlNode& node, QString* out, QString* error) {
+bool scalarString(const calcu::formats::YamlNode& node, QString* out, QString* error) {
     std::string s, err;
     if (!node.asString(&s, &err)) {
         *error = QString::fromStdString(err);
@@ -22,7 +22,7 @@ bool scalarString(const YamlNode& node, QString* out, QString* error) {
     return true;
 }
 
-bool scalarNumber(const YamlNode& node, double* out, QString* error) {
+bool scalarNumber(const calcu::formats::YamlNode& node, double* out, QString* error) {
     QString s;
     if (!scalarString(node, &s, error)) return false;
     bool ok = false;
@@ -34,7 +34,7 @@ bool scalarNumber(const YamlNode& node, double* out, QString* error) {
     return true;
 }
 
-bool parseCapture(const YamlNode& node, double defaultScale, ShotCaptureSpec* out, QString* error) {
+bool parseCapture(const calcu::formats::YamlNode& node, double defaultScale, ShotCaptureSpec* out, QString* error) {
     // `capture: file.png` (the whole window) or a map with the options.
     if (node.isScalar()) {
         if (!scalarString(node, &out->file, error)) return false;
@@ -101,11 +101,11 @@ bool parseCapture(const YamlNode& node, double defaultScale, ShotCaptureSpec* ou
     return true;
 }
 
-bool parseStep(const YamlNode& node, const QDir& baseDir, const ShotScenario& scenario, ShotStep* out,
+bool parseStep(const calcu::formats::YamlNode& node, const QDir& baseDir, const ShotScenario& scenario, ShotStep* out,
                QString* error) {
     out->line = node.line;
     QString verb;
-    const YamlNode* value = nullptr;
+    const calcu::formats::YamlNode* value = nullptr;
     if (node.isScalar()) {
         // A bare `- close` / `- release`.
         if (!scalarString(node, &verb, error)) return false;
@@ -236,9 +236,9 @@ bool parseStep(const YamlNode& node, const QDir& baseDir, const ShotScenario& sc
     return true;
 }
 
-bool parseSize(const YamlNode& node, QSize* out, QString* error);
+bool parseSize(const calcu::formats::YamlNode& node, QSize* out, QString* error);
 
-bool parseShot(const YamlNode& node, const QDir& baseDir, const ShotScenario& scenario, Shot* out,
+bool parseShot(const calcu::formats::YamlNode& node, const QDir& baseDir, const ShotScenario& scenario, Shot* out,
                QString* error) {
     out->line = node.line;
     if (!node.isMap()) {
@@ -250,37 +250,37 @@ bool parseShot(const YamlNode& node, const QDir& baseDir, const ShotScenario& sc
         *error = QString::fromStdString(err);
         return false;
     }
-    const YamlNode* name = node.find("name");
+    const calcu::formats::YamlNode* name = node.find("name");
     if (!name || !scalarString(*name, &out->name, error) || out->name.isEmpty()) {
         if (error->isEmpty()) *error = lineError(node.line, QStringLiteral("shot needs a 'name'"));
         return false;
     }
-    if (const YamlNode* window = node.find("window")) {
+    if (const calcu::formats::YamlNode* window = node.find("window")) {
         if (!parseSize(*window, &out->windowSize, error)) return false;
     }
     // `preset:` first, then the steps, then the shot-level `capture:` --
     // sugar for a leading `- preset:` / trailing `- capture:` step.
-    if (const YamlNode* preset = node.find("preset")) {
-        YamlNode step;
-        step.type = YamlNode::Type::Map;
+    if (const calcu::formats::YamlNode* preset = node.find("preset")) {
+        calcu::formats::YamlNode step;
+        step.type = calcu::formats::YamlNode::Type::Map;
         step.line = preset->line;
         step.map.emplace_back("preset", *preset);
         ShotStep s;
         if (!parseStep(step, baseDir, scenario, &s, error)) return false;
         out->steps.append(s);
     }
-    if (const YamlNode* steps = node.find("steps")) {
+    if (const calcu::formats::YamlNode* steps = node.find("steps")) {
         if (!steps->isSeq()) {
             *error = lineError(steps->line, QStringLiteral("'steps' must be a list"));
             return false;
         }
-        for (const YamlNode& item : steps->seq) {
+        for (const calcu::formats::YamlNode& item : steps->seq) {
             ShotStep s;
             if (!parseStep(item, baseDir, scenario, &s, error)) return false;
             out->steps.append(s);
         }
     }
-    if (const YamlNode* capture = node.find("capture")) {
+    if (const calcu::formats::YamlNode* capture = node.find("capture")) {
         ShotStep s;
         s.kind = ShotStep::Kind::Capture;
         s.line = capture->line;
@@ -290,7 +290,7 @@ bool parseShot(const YamlNode& node, const QDir& baseDir, const ShotScenario& sc
     return true;
 }
 
-bool parseSize(const YamlNode& node, QSize* out, QString* error) {
+bool parseSize(const calcu::formats::YamlNode& node, QSize* out, QString* error) {
     // `window: 900x1100`
     QString s;
     if (!scalarString(node, &s, error)) return false;
@@ -313,9 +313,9 @@ bool parseShotScenario(const QString& path, ShotScenario* out, QString* error) {
     };
     QFile file(path);
     if (!file.open(QIODevice::ReadOnly)) return fail(file.errorString());
-    YamlNode root;
+    calcu::formats::YamlNode root;
     std::string err;
-    if (!parseYaml(file.readAll().toStdString(), &root, &err)) return fail(QString::fromStdString(err));
+    if (!calcu::formats::parseYaml(file.readAll().toStdString(), &root, &err)) return fail(QString::fromStdString(err));
     if (!root.isMap()) return fail(QStringLiteral("expected a map at the top level"));
     if (!root.requireOnlyKeys({"out", "window", "appearance", "scale", "settle", "shots"}, &err))
         return fail(QString::fromStdString(err));
@@ -326,32 +326,32 @@ bool parseShotScenario(const QString& path, ShotScenario* out, QString* error) {
     out->appearance = QStringLiteral("light");
 
     QString msg;
-    if (const YamlNode* n = root.find("out")) {
+    if (const calcu::formats::YamlNode* n = root.find("out")) {
         QString dir;
         if (!scalarString(*n, &dir, &msg)) return fail(msg);
         out->outDir = QDir::cleanPath(baseDir.absoluteFilePath(dir));
     }
-    if (const YamlNode* n = root.find("window")) {
+    if (const calcu::formats::YamlNode* n = root.find("window")) {
         if (!parseSize(*n, &out->windowSize, &msg)) return fail(msg);
     }
-    if (const YamlNode* n = root.find("appearance")) {
+    if (const calcu::formats::YamlNode* n = root.find("appearance")) {
         if (!scalarString(*n, &out->appearance, &msg)) return fail(msg);
         if (out->appearance != QLatin1String("light") && out->appearance != QLatin1String("dark") &&
             out->appearance != QLatin1String("system"))
             return fail(lineError(n->line, QStringLiteral("'appearance' must be light, dark or system")));
     }
-    if (const YamlNode* n = root.find("scale")) {
+    if (const calcu::formats::YamlNode* n = root.find("scale")) {
         if (!scalarNumber(*n, &out->scale, &msg)) return fail(msg);
         if (out->scale <= 0) return fail(lineError(n->line, QStringLiteral("'scale' must be positive")));
     }
-    if (const YamlNode* n = root.find("settle")) {
+    if (const calcu::formats::YamlNode* n = root.find("settle")) {
         double ms = 0;
         if (!scalarNumber(*n, &ms, &msg)) return fail(msg);
         out->settleMs = static_cast<int>(ms);
     }
-    const YamlNode* shots = root.find("shots");
+    const calcu::formats::YamlNode* shots = root.find("shots");
     if (!shots || !shots->isSeq() || shots->seq.empty()) return fail(QStringLiteral("'shots' must be a non-empty list"));
-    for (const YamlNode& item : shots->seq) {
+    for (const calcu::formats::YamlNode& item : shots->seq) {
         Shot shot;
         if (!parseShot(item, baseDir, *out, &shot, &msg)) return fail(msg);
         for (const Shot& other : out->shots) {

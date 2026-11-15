@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """TI-59/58C ROM Disassembler
 
-Reads the chip .txt files from roms/calculator/, decodes every 13-bit opcode,
+Reads the chip .txt files from roms/, decodes every 13-bit opcode,
 and writes both rom/TI59.asm (TI-58/59) and rom/TI58C.asm (TI-58C).
 
 Each calculator ROM is spread across three chips:
@@ -377,7 +377,7 @@ _ROM_META: dict[str, dict] = {
             0x0A00: "; ── TMC0583  0x0A00–0x13FF  2,560 words  (ROM chip 2) " + "─" * 20,
             0x1400: ("; ── TMC0571B 0x1400–0x17FF  1,024 words  (ROM chip 3) " + "─" * 20
                      + "\n; Executable code like chips 1–2 (printer, card reader, LRN display, …);\n"
-                     + "; the 64-entry constant table lives in TMC0582/0583 (roms/calculator/*-CONST-K)."),
+                     + "; the 64-entry constant table lives in TMC0582/0583 (roms/*-CONST-K)."),
         },
         "expected": 6144,
         "addr_range": "0x0000–0x17FF",
@@ -405,11 +405,8 @@ _SECTIONS: dict[int, str] = _ROM_META["59"]["sections"]
 # ── Main ─────────────────────────────────────────────────────────────────────
 
 def _calc_roms_dir() -> Path:
-    """Return the roms/calculator/ directory."""
-    local = ROOT / "roms" / "calculator"
-    if local.exists():
-        return local
-    return ROOT.parent / "public" / "Calc-U-59" / "roms" / "calculator"
+    """Return the roms/ directory (the dumps lie flat in it since M-24; LIB-12 D-7)."""
+    return ROOT / "roms"
 
 
 def disasm_rom(words: list[tuple[int, int]], out_path: Path, meta: dict) -> None:

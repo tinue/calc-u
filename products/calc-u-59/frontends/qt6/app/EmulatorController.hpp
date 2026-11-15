@@ -20,6 +20,8 @@ public:
 
     explicit EmulatorController(QObject* parent = nullptr);
     ~EmulatorController() override;
+    /// false: the ROM lookup failed (the dialog was shown); nothing else may be called.
+    bool started() const { return m_c != nullptr; }
 
     // ── Machine ──────────────────────────────────────────────────────────────
     void start(cu59::Model model) { m_c->startMachine(model); }
@@ -148,6 +150,7 @@ private:
     void saveLastUsedModel(cu59::Model model) override;
     void saveModuleID(const std::string& moduleID) override;
     void error(const std::string& title, const std::string& message) override;
+    void romsMissing(const calcu::roms::RomsMissing& missing) override;
     void diagnostic(const std::string& message) override;
     void changed(uint32_t changes) override;
 

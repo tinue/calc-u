@@ -1,0 +1,127 @@
+# LIB-18: QA report
+
+Results per acceptance criterion and edge case of `spec.md`, per column.
+
+## Library (M-35, 2026-11-15)
+
+Built and run on an M4 Pro, macOS 27.2, Apple clang, CMake, Ninja,
+RelWithDebInfo (`build/tests`, `-DCALCU_FRONTEND_QT=OFF`). The code is
+`library/startup/` (namespace `calcu::startup`, in `calcu_library`) and
+the harness commands in `library/harness/StartupCommands.cpp`; the tests
+are `library/startup/tests/` and `library/harness/tests/startup_commands_tests.cpp`,
+compiled into `calcu_library_tests` (Frequent). They use LIB-1's test
+machines (`test-seg`: 100,000 ticks per second, places `slot-1`,
+`printer`, `aux`, memory = key presses kept by reset and power cycle;
+`test-dot`: 1,000,000 ticks per second, variants V1 and V2, switched off by
+`off`, places `a`, `b`, `card-1`, `card-2`, a real-time clock), the new
+build option `TestStartUp` (the start-up's length, or never ready), the
+test product `TestProductMachines.hpp` (built-in defaults: test-seg with
+the test printer in `printer`, test-dot bare; a build counter; a readiness
+bound of 1 s unless set), the stand-in loader `TestPresetLoader.hpp` (the
+spec's stand-in for LIB-6: builds a scripted plan through
+`MachineControl`, or cannot read it, or fails after building) and
+`TestHook.hpp` (a `SliceHook` holding text and keys, counting `drop()`).
+Both hostings are used: the harness's virtual time (an operation in one
+go) and paced host calls on a scripted clock (an operation in parts, busy
+in between).
+
+Result of the run: `calcu_library_tests` 373 tests (62 of them LIB-18's:
+55 in `library/startup/tests/`, 4 in `startup_commands_tests.cpp`, plus
+`can_replace_answers_as_replace_does`, `ac16_ending_command_that_starts_nothing_stops_nothing`
+and `ac2_run_starts_with_the_startup_model_under_default_settings`), 3,003
+checks passed, 0 failed. The whole Frequent group passed: 28 of 28 CTest
+entries. CI was not dispatched (plan §1: at the end of the part).
+
+| ID | Result | Test case (file in `library/startup/tests/` unless named) |
+|---|---|---|
+| AC-1 | Pass | `ac1_one_build_with_model_variant_and_plugs` (one build with V2, a printer and an 8k module; the ROM images from the RomSet), `ac1_no_power_cycle_for_what_it_was_built_with`, `ac1_clock_given_host_time_at_build`, `ac1_ready_when_key_ready` (over at the first run piece after readiness), `ac1_refused_build_changes_nothing`, `refusal_names_the_refused_place` (LIB-6 AC-52), `last_build_gives_plan_and_origin`, `test_product_machines_build_each_test_model` (`build_tests.cpp`) |
+| AC-2 | Pass (Library part) | `ac2_old_machine_and_its_memory_gone`, `ac2_full_speed_and_held_keys_do_not_carry_over` (`build_tests.cpp`). The clause "what was saved as a medium stays saved" passes with LIB-7 in M-41 (design §1, D-19) |
+| AC-3 | Pass | `ac3_startup_model_named`, `ac3_last_gives_last_model`, `ac3_nothing_recorded_gives_fallback` (`last-model` written to the file) (`start_tests.cpp`) |
+| AC-4 | Pass (stand-in loader) | `ac4_startup_preset_loaded`, `ac4_no_startup_preset_builtin_default`, `ac4_no_loader_builtin_default` (D-9) (`start_tests.cpp`); with LIB-6's loader in M-38 |
+| AC-5 | Pass | `ac5_start_is_one_operation_busy_until_ready` (paced: busy at once, reply at the end, one build), `ac5_one_build_when_model_named`, `ac5_one_build_when_preset_named`, `ac5_unknown_model_notice_and_startup_model`, `ac5_second_start_refused` (D-8) (`start_tests.cpp`) |
+| AC-6 | Pass | `ac6_model_switch_from_startup_preset`, `ac6_model_switch_builtin_default` (`switch_tests.cpp`) |
+| AC-7 | Pass (Library part) | `ac7_variant_switch_keeps_plugs_in_places`, `ac7_variant_switch_memory_empty_no_preset` (`switch_tests.cpp`). The clause "the same media in them" passes with LIB-7 in M-41 |
+| AC-8 | Pass | `ac8_same_model_done_nothing_built`, `ac8_same_variant_done` (`switch_tests.cpp`) |
+| AC-9 | Pass | `ac9_last_model_after_command_preset_and_start`, `ac9_unwritable_settings_keep_it_for_the_run` (`switch_tests.cpp`) |
+| AC-10 | Pass | `ac10_attach_is_one_operation_over_at_key_readiness` (paced), `ac10_attach_named_and_default_variant`, `ac10_detach_place`, `ac10_attach_to_full_single_place_is_one_replace_one_power_cycle`, `ac10_switched_off_machine_nothing_follows` (`change_tests.cpp`) |
+| AC-11 | Pass | `ac11_memory_through_power_cycle_and_new_plug_found` (`change_tests.cpp`) |
+| AC-12 | Pass | `ac12_refusal_changes_nothing_no_power_cycle_reason` (the machine's rule `kTogether`), `ac12_full_place_refused_by_can_replace_before_the_operation` (`change_tests.cpp`); `can_replace_answers_as_replace_does` (`library/machine/tests/attach_tests.cpp`) |
+| AC-13 | Pass | `ac13_reset_cold_boot_power_cycle_are_operations_over_at_key_readiness` (paced; Reset and power cycle keep the test memory, Cold boot empties it), `ac13_plugs_stay`, `ac13_clock_given_host_time_at_end` (`reset_tests.cpp`) |
+| AC-14 | Pass (seam) | `ac14_text_and_held_keys_dropped` (`TestHook`: Reset, Cold boot, power cycle, and the power cycle after an attach) (`reset_tests.cpp`). LIB-5's typing engine implements `drop()` in M-36 |
+| AC-15 | Pass | `ac15_each_command_at_top_level_with_its_operations_reply`, `ac15_attach_variant_as_in_a_preset` (`test-module:8k`), `ac15_attach_place_path` (`a/jack`), `ac15_refusal_exits_nonzero` (one-shot) (`library/harness/tests/startup_commands_tests.cpp`) |
+| AC-16 | Pass | `ac16_reset_cold_boot_model_stop_running_operation_first`, `ac16_stopped_command_replied_stopped` (a long startup preset stopped by Reset: "Stopped."), `ac16_other_commands_refused_while_running` (`variant`, `attach`, `detach` of an empty place, `power-cycle`, `start`), `ac16_model_to_running_model_leaves_operation_running` (`running_tests.cpp`); `ac16_ending_command_that_starts_nothing_stops_nothing` (`library/sessions/tests/operation_tests.cpp`, D-6) |
+| EC-1 | Pass (stand-in loader) | `ec1_preset_gone_outdated_or_other_model_gives_default_and_notice` (`start_tests.cpp`) |
+| EC-2 | Pass (stand-in loader) | `ec2_last_built_by_preset_uses_its_startup_preset` (`start_tests.cpp`) |
+| EC-3 | Pass | `ec3_ready_at_a_prompt_ends_the_wait` (`reset_tests.cpp`); by hand in the harness: the PC-1500A's start ends at `NEW0? :CHECK` |
+| EC-4 | Pass | `ec4_text_being_typed_dropped_with_the_old_machine` (`build_tests.cpp`) |
+| EC-5 | Pass | `ec5_detach_chain_one_power_cycle`, `detach_empty_place_done` (`change_tests.cpp`) |
+| EC-6 | Pass (stand-in loader) | `ec6_preset_fails_while_running_machine_stays_notice` (`start_tests.cpp`) |
+| EC-7 | Pass | `ec7_never_ready_ends_after_bound_with_log_line_machine_left` (bound 0.01 s on test-seg, checked in ticks; "The test-seg was not ready for keys after 0.01 seconds; it is left as it is.") (`reset_tests.cpp`) |
+
+Coverage: AC-1 to AC-16 and EC-1 to EC-7 of the Library column. The
+column stays In progress (`features/INDEX.md`): AC-2's and AC-7's media
+clauses pass with LIB-7 in M-41, where the column becomes Done (D-19);
+AC-14's typing clause is tested on the seam until LIB-5 (M-36).
+
+### Harness and products (design §3.6, P59, P16)
+
+`Server::start` builds no machine itself: it adds `StartupPart` after
+`PeripheralsPart` and `MachineStatePart` and sends `start`; a start that
+is not done ends the run with its reason. `HarnessProduct::startupRequest`
+and `startUp` (LIB-11 A-1) are gone; `machines()` is new. Both product
+entries implement it with the adapter `HarnessMachines` (Calc-U-59: the
+model with the PC-100C, TRACE off, no module, the TI profile, 25 s;
+Calc-U-1600: the bare model, the Sharp profile, `kSoundRate`, 7 s / 7 s /
+27 s, and `startUp` = `SharpBuildColdBoot`).
+
+- `harness_switches_to_a_ti58` (`CalcU59Tests`): `model TI-58`, `lcd`
+  shows `0`, the PC-100C in `printer`, the TI-58 runs; `model ti-59`; an
+  unknown model refused.
+- `harness_drives_a_pc1600`, `harness_variant_switch_old` (`CoreTests`):
+  `model PC-1600`, `lcd` reads `>` with the PC-1600's font, the place
+  `host-drive`; `variant old` gives the PC-1600 `Old`.
+- `harness_drives_a_ti59` and `harness_drives_a_sharp_machine` pass
+  unchanged.
+
+### Golden runs
+
+M-35 changes no core and no frontend; both products' golden replays pass
+unchanged in Frequent.
+
+### Deviations from the design, chosen by the simpler structure
+
+- D-11 (full speed does not carry over): `SessionContext::setCommandedSpeed`
+  changes nothing while an operation runs (LIB-3 D-6), and every build of
+  LIB-18 runs inside one. `MachineControl::build` therefore sets regular
+  speed at once when no operation runs, and otherwise `StartupPart::operationEnded`
+  sets it when the operation ends (or is stopped). No LIB-3 change.
+- `MachineControl::change` returns `Task<void>` as designed; a change the
+  machine refuses although `check()` passed fails the operation with the
+  machine's reason (an exception inside the operation, caught by the
+  session). Not reachable from the commands, which ask `check()` first.
+- `MachineControl::build` checks each plug of a plan on the machine's own
+  places before the builder sees it (unknown peripheral, unknown variant,
+  no such place, does not fit), so that the refusal names the place
+  (LIB-6 AC-52); a place on a peripheral is left to the builder.
+- `start` with a named preset and no loader builds the built-in default
+  without a notice (D-9 read for the named preset too).
+- The startup tests declare their own settings product (`testDecl()` in
+  `TestProductMachines.hpp`: models `test-seg`, `test-dot`) instead of
+  `library/settings/tests/TestProduct.hpp`, whose models are not those of
+  the test catalogue.
+- The harness's test product (`library/harness/tests/TestProduct.*`)
+  declares `[startup] last-model`, and its `startModel` is the fallback
+  model of its declaration (LIB-11 AC-2, "under the default settings").
+- A settings file named with `--settings` gets `[startup] last-model`
+  written by the run, as a product writes it (AC-9; LIB-9). LIB-11's
+  `ac8_options_name_settings_save_and_output_folders` checked that the
+  file stayed unchanged; it now checks that only `last-model` was added.
+- LIB-3: `tp.stop` of the sessions' test part starts an operation that
+  ends at once (D-6: a Done handler no longer stops); `tp.stop-nothing` is
+  the Done form. `ac16_ends_running_operation_command` and LIB-2's
+  `ac23_set_from_host_at_build_and_after_operation` count the second end.
+- LIB-11's tests that read `ticks` or the display right after the start
+  (`commands_tests.cpp`, `display_text_tests.cpp`, `protocol_tests.cpp`,
+  `run_tests.cpp`, `calcu_cli.*`, `calcu_serve_python`) now see the
+  machine at key readiness: one run piece, 1,667 ticks on test-seg and
+  16,668 on test-dot (design §8).

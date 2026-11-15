@@ -17,11 +17,12 @@ A test file registers its tests with `TEST(name)` of the repository's one runner
 
 ## Harness
 
-`calcu` is the family's harness (LIB-11, `features/LIB-11-harness/` at the repository root): the product without a window, on the library's app session, in emulated time only, so two runs give the same replies. Build the target `calcu` of a root tree (`cmake --build ../../build/tests --target calcu`; the program is `build/tests/library/harness/cli/calcu`). It finds the ROMs in `roms/` through the product's lookup (`sharp::lookUpRoms`), the module definitions in `frontends/qt6/resources/cards/`, and starts the PC-1500A cold booted (no model option before LIB-18).
+`calcu` is the family's harness (LIB-11, `features/LIB-11-harness/` at the repository root): the product without a window, on the library's app session, in emulated time only, so two runs give the same replies. Build the target `calcu` of a root tree (`cmake --build ../../build/tests --target calcu`; the program is `build/tests/library/harness/cli/calcu`). It finds the ROMs in `roms/` through the product's lookup (`sharp::lookUpRoms`), the module definitions in `frontends/qt6/resources/cards/`, and starts the startup model (the PC-1500A under the default settings) cold booted, at key readiness (LIB-18).
 
 - One-shot: `calcu --product 1600 wait 2s then lcd then ticks` (commands parted by `then`; exit status 0, 1 at the first refusal, 2 when it cannot start).
 - `calcu --product 1600 serve`: one command per line on standard input, one reply per line (`done`, `done <n>` and n lines, `refused: <reason>`); `--json` gives one object `{"done","result","reason"}` per reply. From Python: `library/harness/python/calcu_serve.py`.
-- First commands: `wait <2s|500ms>`, `key-down`/`key-up <key ID>`, `lcd` (rows of text, `indicators:`, `not text:`; no cursor cell yet), `display`, `state <topic>`, `capabilities`, `ticks`, `audio <file.wav>`, `quit` (`calcu --help`). No settings or save folder of yours is touched unless `--settings`, `--save-folder`, `--output-folder` name them.
+- First commands: `wait <2s|500ms>`, `key-down`/`key-up <key ID>`, `lcd` (rows of text, `indicators:`, `not text:`; no cursor cell yet), `display`, `state <topic>`, `capabilities`, `ticks`, `audio <file.wav>`, `quit` (`calcu --help`).
+- Machine control (LIB-18): `model <PC-1500|PC-1500A|PC-1600>`, `variant <A01|A03|A04|New|Old>`, `attach <place> <peripheral>[:<variant>]` (`attach printer CE-1600P:old`), `detach <place>`, `reset`, `cold-boot`, `power-cycle`; each replies when the machine is ready for keys again. No settings or save folder of yours is touched unless `--settings`, `--save-folder`, `--output-folder` name them.
 - Not yet: `pc1600 …` commands, presets, typing, media, memory dumps (later features). Until M-51, `pc1500_cli`, `pc1600_cli` and the probes stay the tools for those.
 
 ## Core, Shared, frontends

@@ -50,7 +50,7 @@ the `<cstdlib>` fix).
 
 | CTest entry | What | Group | Measured (M4 Pro, 2026-11-14) |
 |---|---|---|---|
-| `calcu_library_tests` | 311 `TEST`s (19 of them harness attach, `library/harness/attach/tests/`, with `CALCU_ATTACH`, on by default in a POSIX tree with the tests; real sockets on 127.0.0.1 and a host loop on the real clock, about 3 s; M-33): the library's own tests with the machines built for the tests (`library/machine/tests/TestMachines.*`) and the product declared for the settings tests (`library/settings/tests/TestProduct.hpp`), no product code (LIB-1 AC-24; LIB-1 design §2a); also run alone by the CI job `library` of both product workflows. The pacing tests run on a scripted wall clock (`library/pacing/tests/TestSliceRunner.hpp`), never the host's; so do the session tests (`library/sessions/tests/ScriptedClock.hpp`), with the test frontend and the test product part of `library/sessions/tests/`. LIB-2's host links are tested here with an injected link factory (`peripherals/tests/host_links_tests.cpp`), on every platform; the ROM lookup's tests write their ROM files into a temporary folder (`library/roms/tests/TestRomFiles.hpp`); the harness tests run the product made for them (`library/harness/tests/TestProduct.*`: `test-seg` offering the machine state, `test-dot`) in virtual time, each run in a temporary run folder | Frequent | 0.64 s (M-28, 2026-11-15, RelWithDebInfo; most of it the five-hour scripted runs of LIB-17) |
+| `calcu_library_tests` | 373 `TEST`s (M-35; 19 of them harness attach, `library/harness/attach/tests/`, with `CALCU_ATTACH`, on by default in a POSIX tree with the tests; real sockets on 127.0.0.1 and a host loop on the real clock, about 3 s; M-33): the library's own tests with the machines built for the tests (`library/machine/tests/TestMachines.*`) and the product declared for the settings tests (`library/settings/tests/TestProduct.hpp`), no product code (LIB-1 AC-24; LIB-1 design §2a); also run alone by the CI job `library` of both product workflows. The pacing tests run on a scripted wall clock (`library/pacing/tests/TestSliceRunner.hpp`), never the host's; so do the session tests (`library/sessions/tests/ScriptedClock.hpp`), with the test frontend and the test product part of `library/sessions/tests/`. LIB-2's host links are tested here with an injected link factory (`peripherals/tests/host_links_tests.cpp`), on every platform; the ROM lookup's tests write their ROM files into a temporary folder (`library/roms/tests/TestRomFiles.hpp`); the harness tests run the product made for them (`library/harness/tests/TestProduct.*`: `test-seg` offering the machine state, `test-dot`) in virtual time, each run in a temporary run folder; LIB-18's tests run `library/startup/tests/TestProductMachines.hpp` (the test product, its settings and a session rig, paced and in virtual time) with the stand-in for LIB-6's loader (`TestPresetLoader.hpp`) | Frequent | 0.64 s (M-28, 2026-11-15, RelWithDebInfo; most of it the five-hour scripted runs of LIB-17) |
 | `calcu_library_pty_tests` | 4 `TEST`s of `library/peripherals/tests/pty_tests.cpp`: LIB-2's host links on real pseudo-terminals in a temporary folder for serial links (AC-18 to AC-20, EC-7); a program of its own (with the test machines), registered only where `CALCU_HAS_PTY` is set (macOS, Linux), so that it can move to Longer without a design change (LIB-2 design §8) | Frequent | 0.8 s (M-23, 2026-11-15) |
 | `calcu_cli.<case>` | LIB-11 T13: `calcu_test` (the harness with the test product only) in a process of its own, run by `library/harness/tests/cli/cli_cases.cmake` with `cmake -P`: argv, standard input and output, exit status; six entries, `ac1_product_by_name_or_short_form_any_case`, `ac2_one_shot_runs_in_order_and_exits_zero`, `ac2_first_refusal_exits_nonzero_with_reason`, `ac3_serve_one_reply_per_line_until_quit`, `ec3_serve_ends_at_end_of_input`, `ec4_unknown_product_lists_products` (M-28) | Frequent | 0.1 s, the six together |
 | `calcu_serve_python` | LIB-11 T15: `library/harness/python/tests/test_calcu_serve.py`, the Python helper for `calcu serve` against `calcu_test` (with `uv run --no-project python -I`, else Python 3; M-28) | Frequent | 0.05 s |
@@ -65,7 +65,7 @@ Frequent):
 |---|---|
 | `harness/attach/tests/attach_tests.cpp` | 17 (C59-5 AC-10–12, AC-14, EC-1–4; M-33) |
 | `harness/attach/tests/attach_cli_tests.cpp` | 2 (`calcu attach`, C59-5 AC-10, AC-11; M-33) |
-| `machine/tests/attach_tests.cpp` | 18 (LIB-2) |
+| `machine/tests/attach_tests.cpp` | 19 (LIB-2; `can_replace_answers_as_replace_does`, LIB-18 AC-12, M-35) |
 | `machine/tests/build_alone_tests.cpp` | 1 |
 | `machine/tests/build_tests.cpp` | 3 |
 | `machine/tests/capability_tests.cpp` | 6 |
@@ -90,7 +90,7 @@ Frequent):
 | `sessions/tests/host_service_tests.cpp` | 4 |
 | `sessions/tests/library_topics_tests.cpp` | 3 |
 | `sessions/tests/mirror_tests.cpp` | 1 |
-| `sessions/tests/operation_tests.cpp` | 14 |
+| `sessions/tests/operation_tests.cpp` | 15 (LIB-18 D-6, M-35) |
 | `sessions/tests/sound_tests.cpp` | 5 |
 | `sessions/tests/speed_tests.cpp` | 6 |
 | `sessions/tests/suspend_tests.cpp` | 5 |
@@ -110,13 +110,20 @@ Frequent):
 | `harness/tests/protocol_tests.cpp` | 8 (LIB-11 AC-2, AC-4, AC-5, AC-13, AC-22; M-28) |
 | `harness/tests/commands_tests.cpp` | 13 (LIB-11 AC-5, AC-7, AC-9, AC-11, EC-2, EC-5, EC-7; M-28) |
 | `harness/tests/display_text_tests.cpp` | 10 (LIB-11 AC-9, AC-10, AC-23; M-28) |
-| `harness/tests/run_tests.cpp` | 18 (LIB-11 AC-6, AC-8, AC-9, AC-21, AC-24, EC-1, EC-3, EC-6; M-28) |
+| `harness/tests/run_tests.cpp` | 19 (LIB-11 AC-2, AC-6, AC-8, AC-9, AC-21, AC-24, EC-1, EC-3, EC-6; M-28, M-35) |
+| `harness/tests/startup_commands_tests.cpp` | 4 (LIB-18 AC-15; M-35) |
+| `startup/tests/build_tests.cpp` | 11 (LIB-18 AC-1, AC-2, EC-4; M-35) |
+| `startup/tests/start_tests.cpp` | 14 (LIB-18 AC-3, AC-4, AC-5, EC-1, EC-2, EC-6; M-35) |
+| `startup/tests/switch_tests.cpp` | 10 (LIB-18 AC-6 to AC-9; M-35) |
+| `startup/tests/change_tests.cpp` | 10 (LIB-18 AC-10, AC-11, AC-12, EC-5; M-35) |
+| `startup/tests/reset_tests.cpp` | 6 (LIB-18 AC-13, AC-14, EC-3, EC-7; M-35) |
+| `startup/tests/running_tests.cpp` | 4 (LIB-18 AC-16; M-35) |
 
 ## Calc-U-59
 
 | CTest entry | What | Group | Measured (M4 Pro, 2026-11-14) |
 |---|---|---|---|
-| `CalcU59Tests` | 260 `TEST`s (M-34): unit and ROM-driven integration tests of the core and the app layer, the machine interface (C59-1, LIB-1 59), the ROM lookup (LIB-12 59), the PC-100C and the module slot (C59-6, LIB-2 59), the settings file (LIB-9 59), the golden replays through it (table below), the harness product entry (LIB-11, M-28), Calc-U-59 on the library's app session and the session thread (LIB-3 59, LIB-17 59, C59-5; M-33), the product's flows on it and the Web part (M-34) | Frequent | 13 s (M-33); 7 s (M-34, RelWithDebInfo) |
+| `CalcU59Tests` | 261 `TEST`s (M-35): unit and ROM-driven integration tests of the core and the app layer, the machine interface (C59-1, LIB-1 59), the ROM lookup (LIB-12 59), the PC-100C and the module slot (C59-6, LIB-2 59), the settings file (LIB-9 59), the golden replays through it (table below), the harness product entry (LIB-11, M-28; its model switch through LIB-18, `harness_switches_to_a_ti58`, M-35), Calc-U-59 on the library's app session and the session thread (LIB-3 59, LIB-17 59, C59-5; M-33), the product's flows on it and the Web part (M-34) | Frequent | 13 s (M-33); 7 s (M-34, RelWithDebInfo) |
 | `CalcU59TraceReader` | `tools/read_trace.py` reads the trace `CalcU59Tests` wrote | Frequent | 16.4 s (Python 3.15; 0.3 s in CI) |
 | `CalcU59NoOwnSession` | `tests/check_no_own_session.sh`: the Qt6, Swift and (M-34) Web frontends use no `EmulatorSession`, `EmulationRunner`, `TISessionController` or own `SessionController`; no `std::thread` in `app/` but `SessionThread`; the Swift bridge includes no `SessionController.hpp` and calls no tick; Qt6 sends no suspend or continue (LIB-3 AC-28, AC-31; C59-5 B2; M-33) | Frequent | 0.03 s |
 | `CalcU59CoreSeam` | `tests/check_core_seam.sh`: no core-internal header outside `core/` and `tests/`, no machine call in the adapters (C59-1 AC-17; M-19) | Frequent | 0.02 s |
@@ -175,7 +182,7 @@ Frequent except where the table says otherwise):
 
 | CTest entry | What | Group | Measured (M4 Pro, 2026-11-14) |
 |---|---|---|---|
-| `CoreTests` | 867 `TEST`s (M-31): unit and integration tests of the core and the app layer (real ROMs, presets, loaders, job equivalence), the machine interface (C1600-1, LIB-1 1600, LIB-2 1600), the settings file (LIB-9 1600), the ROM lookup (LIB-12 1600), the golden replays through it (table below), the harness product entry (LIB-11, M-28) | Frequent | 39.0 s (M-30/M-28/M-27, 2026-11-15) |
+| `CoreTests` | 869 `TEST`s (M-35): unit and integration tests of the core and the app layer (real ROMs, presets, loaders, job equivalence), the machine interface (C1600-1, LIB-1 1600, LIB-2 1600), the settings file (LIB-9 1600), the ROM lookup (LIB-12 1600), the golden replays through it (table below), the harness product entry (LIB-11, M-28; the PC-1600 and its variant through LIB-18, `harness_drives_a_pc1600`, `harness_variant_switch_old`, M-35) | Frequent | 39.0 s (M-30/M-28/M-27, 2026-11-15) |
 | `CalcU1600CheckPresets` | `tools/check_presets.sh`: every preset in the repository parses | Frequent | 0.3 s |
 | `CalcU1600MachineIncludeCheck` | `tools/check_machine_includes.sh`: no file outside `core/` (app, frontends, tools, dev) includes a machine class, directly or through a core header, or names one (C1600-1, Technical Requirements; design T13; M-26) | Frequent | 1.1 s |
 | `CalcU1600NoOwnRomLookup` | `library/roms/tests/check_no_own_rom_lookup.sh`: no product source outside `core/Machine/SharpRoms.cpp` (with the host-drive ROM, D-6), the catalogue and `app/tests/` looks for a ROM file (LIB-12 AC-2, design T7; M-27) | Frequent | 0.5 s |

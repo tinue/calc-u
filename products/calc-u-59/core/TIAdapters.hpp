@@ -1,5 +1,4 @@
 #pragma once
-#include "TIPrinterTypes.hpp"
 #include "TraceTypes.hpp"
 #include "machine/Ids.hpp"
 #include "machine/Machine.hpp"
@@ -18,16 +17,17 @@
 //
 // | Adapter               | Removed in                         |
 // |-----------------------|------------------------------------|
-// | TIPeripheralsAdapter  | M-25 (C59-6)                       |
 // | TICardReaderAdapter   | M-55 (C59-7)                       |
 // | TIMemoryAdapter       | M-54 (C59-2, C59-3)                |
 // | TIDebugTargetAdapter  | M-53 (LIB-10 59)                   |
 // | TIDebugPanelAdapter   | M-56 (C59-4)                       |
 // | TIPacingHints         | M-33 (LIB-17 59)                   |
 //
-// The core types still reachable here (CpuFrame, DebugEvent, TIStepBoundary,
-// PrinterCodeLine) go with their adapters (design D-7). The machine holds no
-// lock: the caller serialises (app/MachineGuard.hpp until M-33/M-34).
+// The core types still reachable here (CpuFrame, DebugEvent, TIStepBoundary)
+// go with their adapters (design D-7). TIPeripheralsAdapter went in M-25
+// (C59-6): the PC-100C and the module are peripherals in their places. The
+// machine holds no lock: the caller serialises (app/MachineGuard.hpp until
+// M-33/M-34).
 
 class TIMachine;
 
@@ -39,31 +39,6 @@ struct TIStepObserver {
     virtual bool stopAfter(std::uint16_t pc, bool stepBoundary, bool inScanLoop) = 0;
 };
 enum class TIStop { None, Breakpoint, Observer };
-
-/// The PC-100C and the module slot until they are peripherals (C59-6, M-25).
-class TIPeripheralsAdapter {
-public:
-    explicit TIPeripheralsAdapter(TIMachine& m) : m_(m) {}
-    /// A solid-state module image (up to 5,000 bytes), as the slot holds it.
-    void loadModuleImage(const std::uint8_t* data, std::size_t count);
-    void setPrinterConnected(bool connected);
-    bool isPrinterConnected() const;
-    void pressPrinterPrint(bool pressed);
-    void pressPrinterAdv(bool pressed);
-    void setPrinterTrace(bool enabled);
-    bool printerTrace() const;
-    std::vector<std::string> drainPrinterLines();
-    std::vector<PrinterCodeLine> drainPrinterCodeLines();
-    std::string printerBufferContent() const;
-    /// The module number SCOM holds (0 none, 1–30 for ML01–ML30).
-    int insertedModuleNumber() const;
-    /// PC-100 BUSY in instruction cycles after a printed line and a PRT.FEED.
-    static std::uint32_t printerLineCycles();
-    static std::uint32_t printerFeedCycles();
-
-private:
-    TIMachine& m_;
-};
 
 /// The card reader until it is a media place (C59-7, M-55).
 class TICardReaderAdapter {
@@ -175,13 +150,11 @@ private:
 };
 
 // The accessors (design §3.4): nullptr if `m` is not a TI machine.
-TIPeripheralsAdapter* peripheralsOf(calcu::machine::Machine&);
 TICardReaderAdapter* cardReaderOf(calcu::machine::Machine&);
 TIMemoryAdapter* memoryOf(calcu::machine::Machine&);
 TIDebugTargetAdapter* debugTargetOf(calcu::machine::Machine&);
 TIDebugPanelAdapter* debugPanelOf(calcu::machine::Machine&);
 TIPacingHints* pacingHintsOf(calcu::machine::Machine&);
-const TIPeripheralsAdapter* peripheralsOf(const calcu::machine::Machine&);
 const TICardReaderAdapter* cardReaderOf(const calcu::machine::Machine&);
 const TIMemoryAdapter* memoryOf(const calcu::machine::Machine&);
 const TIDebugTargetAdapter* debugTargetOf(const calcu::machine::Machine&);

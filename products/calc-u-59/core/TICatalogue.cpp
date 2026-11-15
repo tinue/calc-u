@@ -1,4 +1,6 @@
 #include "TICatalogue.hpp"
+#include "ModuleFile.hpp"
+#include "PC100C.hpp"
 #include "TIKeys.hpp"
 #include "TIMachine.hpp"
 #include "TIRomText.hpp"
@@ -69,9 +71,10 @@ MachineDescriptor descriptor(const char* model, TickRate rate, bool ti59, bool t
     d.places = {{PlaceName{"slot-1"}, ConnectorId{"module-slot"}, PinOutId{"module-slot"}, 1},
                 {PlaceName{"printer"}, ConnectorId{"printer-connector"}, PinOutId{"printer-connector"}, 1}};
     // Depth as the machine is built (machine.md fit table, "Depth today";
-    // ADR 0011, 0012; reference/CoreArchitecture.md § Component Overview). From
-    // C59-6 (M-25) the module and the printer interface no longer fold into
-    // TMC0501.
+    // ADR 0011, 0012; reference/CoreArchitecture.md § Component Overview).
+    // Since C59-6 (M-25) the module (with its address register) and the
+    // printer are peripherals behind the two functional connectors, no longer
+    // folded into TMC0501; their components are in their descriptors.
     const ComponentId cpu{"TMC0501"};
     d.components = {
         {cpu, "TMC0501 processor", Depth::Separate, std::nullopt},
@@ -79,8 +82,6 @@ MachineDescriptor descriptor(const char* model, TickRate rate, bool ti59, bool t
          Depth::Folded, cpu},
         {ComponentId{"ROM"}, "instruction ROM", Depth::Separate, std::nullopt},
         {ComponentId{"RAM"}, "data RAM", Depth::Separate, std::nullopt},
-        {ComponentId{"CROM"}, "Solid State ROM module interface", Depth::Folded, cpu},
-        {ComponentId{"printer-interface"}, "PC-100C interface", Depth::Folded, cpu},
         {ComponentId{"module-slot"}, "module slot", Depth::Functional, std::nullopt},
         {ComponentId{"printer-connector"}, "printer connector", Depth::Functional, std::nullopt},
     };
@@ -92,12 +93,70 @@ MachineDescriptor descriptor(const char* model, TickRate rate, bool ti59, bool t
     return d;
 }
 
+// The PC-100C (C59-6 AC-5; LIB-1 AC-32): fits the printer connector, the
+// keys PRINT and ADV and the switch TRACE, no ROM. Its paper is the
+// capability `c59.printer-output` while it is plugged in (design D-7).
+PeripheralDescriptor pc100c() {
+    PeripheralDescriptor p;
+    p.id = kPC100C;
+    p.name = "PC-100C";
+    p.fits = {PinOutId{"printer-connector"}};
+    p.controls = PC100C::controlDescriptors();
+    p.components = {{ComponentId{"PC-100C"}, "PC-100C print cradle", Depth::Functional, std::nullopt}};
+    return p;
+}
+
+// A Solid State ROM module (C59-6 AC-8; LIB-1 AC-32): fits the module slot,
+// its ROM file `<ID>.rom.yaml` (LIB-12 AC-9, AC-14), named by its
+// description.
+PeripheralDescriptor module(const TIModuleInfo& m) {
+    PeripheralDescriptor p;
+    p.id = PeripheralId{m.id};
+    p.name = m.name;
+    p.roms = {RomEntry{std::string(m.id) + ".rom.yaml", RomEncoding::Text, kModuleRomMaxBytes, ContentUnit::Bytes, m.md5}};
+    p.fits = {PinOutId{"module-slot"}};
+    p.components = {{ComponentId{m.chip}, std::string(m.chip) + " module ROM", Depth::Functional, std::nullopt}};
+    return p;
+}
+
 } // namespace
 
+const std::vector<TIModuleInfo>& tiModules() {
+    // C59-6 AC-8; the md5 values of the module files of TI-59-ROM modules/
+    // (90cd4a7), as roms/fetch_roms.sh fetches and checks them (LIB-12 AC-9).
+    static const std::vector<TIModuleInfo> m = {
+        {"ML", "Master Library", "TMC0541", "ab6db47478041bb1bd1b50b3114b8949"},
+        {"ST", "Applied Statistics", "TMC0542", "6e7e4045c9e31720dba5fbee0ace248a"},
+        {"RE", "Investment", "TMC0543", "6ea276ed76b4b67df59141d73708e6ec"},
+        {"SY", "Surveying", "TMC0544", "d87b45b1f0fc6963db7dc3e537eeaf05"},
+        {"NG", "Marine Navigation", "TMC0545", "889d6f5c516afd62f7bd7680cecf47ed"},
+        {"AV", "Aviation", "TMC0546", "84823786f1b065a74ba7b36319c05ba4"},
+        {"LE", "Leisure Library", "TMC0547", "f67efb0d1b10c46266d9a32891c9aa6c"},
+        {"SA", "Securities Analysis", "TMC0548", "f26fd2f1cbe52ec93387c76fe26122e6"},
+        {"BD", "Business Decisions", "TMC0549", "4ee8f14c5ce0f088cff3ea3f0c149f76"},
+        {"MU", "Math/Utilities", "TMC0550", "81403a7ed013e53c0334a156a7ca8c0e"},
+        {"EE", "EE Library", "TMC0551", "63fdc4324deb68025c9e98af817a91fc"},
+        {"SE", "Structural Engineering", "TMC0553", "ea082fed55d93610d95f16cf2577f1e1"},
+        {"AG", "Agriculture", "TMC0554", "4903315a721f4ff41e60b40abbaeb284"},
+        {"RP", "RPN Simulator", "TMC0555", "d62d3ea22600d0df8f24a6355ee0ea95"},
+    };
+    return m;
+}
+
+bool isTIModule(std::string_view id) {
+    for (const auto& m : tiModules())
+        if (id == m.id) return true;
+    return false;
+}
+
 const Catalogue& tiCatalogue() {
-    static const Catalogue c({descriptor("TI-59", kTI59Rate, true, false), descriptor("TI-58", kTI58Rate, false, false),
-                              descriptor("TI-58C", kTI58CRate, false, true)},
-                             {});
+    static const Catalogue c = [] {
+        std::vector<PeripheralDescriptor> peripherals{pc100c()};
+        for (const auto& m : tiModules()) peripherals.push_back(module(m));
+        return Catalogue({descriptor("TI-59", kTI59Rate, true, false), descriptor("TI-58", kTI58Rate, false, false),
+                          descriptor("TI-58C", kTI58CRate, false, true)},
+                         std::move(peripherals));
+    }();
     return c;
 }
 
@@ -118,5 +177,10 @@ BuildResult TIMachineBuilder::build(const BuildRequest& request, const Catalogue
     TIRoms decoded = decodeRomSet(v, roms, constants, error);
     if (!error.empty()) return {nullptr, {}, error};
     auto content = std::dynamic_pointer_cast<const TIConstantMemory>(request.content);
-    return {std::make_unique<TIMachine>(*d, v, decoded, v == MachineVariant::TI58C ? content : nullptr), {}, {}};
+    auto machine = std::make_unique<TIMachine>(*d, v, decoded, v == MachineVariant::TI58C ? content : nullptr);
+    // The peripherals of the request, attached at the build: the build is the
+    // start, so no power cycle follows (C59-6 design §4).
+    for (const auto& p : request.peripherals)
+        if (auto r = machine->attach(p, catalogue); r.refused) return {nullptr, {}, r.refused->reason};
+    return {std::move(machine), {}, {}};
 }

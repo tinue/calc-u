@@ -6,6 +6,8 @@
 #include "KeyboardLayout.hpp"
 #include "StateApplier.hpp"
 #include "TextUtil.hpp"
+#include "../core/PC100C.hpp"
+#include "../core/TICatalogue.hpp"
 #include <algorithm>
 
 namespace cu59 {
@@ -112,15 +114,17 @@ bool SessionController::startMachine(Model model) {
 
     const uint64_t generation = m_sessionGeneration + 1;
     auto events = std::make_unique<Events>(*this, generation);
-    auto romFile = moduleRomFile(m_cuecards, m_moduleID);
-    auto session = std::make_unique<EmulatorSession>(model, *m_roms, romFile, *events, m_threading);
+    // The places as the app session has them (C59-6): the module, the PC-100C
+    // with TRACE where it was (AC-6), attached at the build.
+    MachinePeripherals places{currentModule(), m_printerConnected, m_printerTrace};
+    auto session = std::make_unique<EmulatorSession>(model, *m_roms, places, *events, m_threading);
     m_session = std::move(session);  // the old session goes first, then its events
     m_events = std::move(events);
     m_sessionGeneration = generation;
     m_model = model;
     m_platform.saveLastUsedModel(model);
 
-    // A new machine: running, nothing armed, TRACE latch released, no card.
+    // A new machine: running, nothing armed, no card; TRACE as it was (AC-6).
     m_debugState = m_session->debugState();
     clearCardAndCue();
     m_memoryCards.clear();
@@ -136,7 +140,6 @@ bool SessionController::startMachine(Model model) {
 
     {
         auto a = m_session->access();
-        a.peripherals().setPrinterConnected(m_printerConnected);
         a.debugPanel().setDebugLevel(static_cast<uint8_t>(m_debugLevel));
         if (info(model).hasConstantMemory) {
             auto saved = loadConstantMemory();
@@ -187,8 +190,8 @@ void SessionController::adoptPresetCue(const std::optional<CueCardContent>& cue)
 void SessionController::resetMachine() {
     if (!m_session) return;
     beginReset();
-    // The printer's TRACE latch survives a reset, as on the hardware (the core
-    // keeps it). The TI-58C keeps its constant memory from the running machine
+    // TRACE survives a reset, as on the hardware (the PC-100C keeps it,
+    // C59-6 AC-6). The TI-58C keeps its constant memory from the running machine
     // (C59-1 OQ-6); the TI-59/58 keep RAM and partition (AC-6, AC-19).
     resetStopped();
     m_debug.resetHeatmapBaseline(m_session->access().machine());
@@ -223,24 +226,92 @@ void SessionController::resumeAfterSuspend() {
     m_suspendedRunning = false;
 }
 
-bool SessionController::selectModule(const std::string& moduleID) {
+// ── Places (C59-6) ───────────────────────────────────────────────────────────
+
+std::optional<std::string> SessionController::currentModule() const {
+    return isTIModule(m_moduleID) ? std::optional<std::string>(m_moduleID) : std::nullopt;
+}
+
+SessionController::PlaceChange SessionController::changePlacesNow(const std::optional<std::string>& module,
+                                                                  bool printer) {
+    using calcu::machine::AfterChange;
+    PlaceChange pc;
+    if (module != currentModule()) {
+        auto r = m_session->setModule(module, *m_roms);
+        if (r.refused) {
+            pc.refusal = r.refused->reason;
+            return pc;
+        }
+        pc.moduleChanged = true;
+        pc.powerCycle |= r.follows == AfterChange::PowerCycle;
+    }
+    if (printer != m_printerConnected) {
+        auto p = m_session->setPrinter(printer, m_printerTrace);
+        if (p.result.refused) {
+            pc.refusal = p.result.refused->reason;
+            return pc;
+        }
+        pc.printerChanged = true;
+        pc.powerCycle |= p.result.follows == AfterChange::PowerCycle;
+        pc.lines = std::move(p.lines);
+        pc.codeLines = std::move(p.codeLines);
+    }
+    return pc;
+}
+
+void SessionController::adoptPlaces(const PlaceChange& pc, const std::optional<std::string>& module, bool printer) {
+    if (pc.refusal) m_platform.diagnostic(*pc.refusal);
+    if (pc.moduleChanged) {
+        m_moduleID = module.value_or(std::string());
+        m_platform.saveModuleID(m_moduleID);
+        m_debug.moduleChanged(*m_session);
+        if (!m_debug.moduleImageError().empty()) m_platform.diagnostic(m_debug.moduleImageError());
+        auto cards = moduleCards(m_cuecards, m_moduleID);
+        m_moduleCards = std::move(cards.cards);
+        m_moduleMetadata = cards.metadata;
+        refreshCueCard();
+        emitChanged(ModelChanged);
+    }
+    if (pc.printerChanged) {
+        m_printerConnected = printer;
+        // The paper is the app session's (AC-1); what the detach handed back
+        // goes on it (EC-2).
+        m_printerLines.insert(m_printerLines.end(), pc.lines.begin(), pc.lines.end());
+        m_printerCodeLines.insert(m_printerCodeLines.end(), pc.codeLines.begin(), pc.codeLines.end());
+        emitChanged(PrinterChanged);
+    }
+}
+
+bool SessionController::changePlaces(const std::optional<std::string>& module, bool printer) {
     if (!m_session) return false;
-    auto romFile = moduleRomFile(m_cuecards, moduleID);
-    if (!romFile || !m_session->loadModule(*romFile, *m_roms)) return false;
-    m_moduleID = moduleID;
-    m_platform.saveModuleID(moduleID);
-    m_debug.moduleChanged(*m_session);
-    if (!m_debug.moduleImageError().empty()) m_platform.diagnostic(m_debug.moduleImageError());
-    auto cards = moduleCards(m_cuecards, moduleID);
-    m_moduleCards = std::move(cards.cards);
-    m_moduleMetadata = cards.metadata;
-    refreshCueCard();
-    emitChanged(ModelChanged);
+    if (module == currentModule() && printer == m_printerConnected) return true;
+    beginReset();
+    m_session->stop();
+    PlaceChange pc;
+    m_session->sync([&] {
+        pc = changePlacesNow(module, printer);
+        // The power cycle that follows (LIB-2 AC-24; row 59-11): the ROM
+        // finds what is plugged in now (AC-11).
+        if (pc.powerCycle) m_session->access().machine().powerCycle();
+    });
+    m_session->start();
+    adoptPlaces(pc, module, printer);
+    if (pc.refusal) return false;
+    m_debug.resetHeatmapBaseline(m_session->access().machine());
+    if (pc.powerCycle) log({"Calculator power cycle"});
+    emitChanged(ModelChanged | CardChanged | AsmChanged | HeatmapChanged);
     return true;
 }
 
+bool SessionController::selectModule(const std::string& moduleID) {
+    if (!m_session || !isTIModule(moduleID)) return false;
+    return changePlaces(moduleID, m_printerConnected);
+}
+
 void SessionController::changeModule(const std::string& moduleID) {
-    if (moduleID != m_moduleID && selectModule(moduleID)) resetMachine();
+    if (moduleID == m_moduleID) return;
+    if (moduleID.empty()) changePlaces(std::nullopt, m_printerConnected);
+    else selectModule(moduleID);
 }
 
 // ── TI-58C constant memory ───────────────────────────────────────────────────
@@ -363,25 +434,24 @@ void SessionController::setFullSpeed(bool on) {
 // ── Printer ──────────────────────────────────────────────────────────────────
 
 void SessionController::setPrinterConnected(bool connected) {
-    m_printerConnected = connected;
-    if (m_session) m_session->access().peripherals().setPrinterConnected(connected);
-    emitChanged(PrinterChanged);
+    if (!m_session) {
+        m_printerConnected = connected;
+        emitChanged(PrinterChanged);
+        return;
+    }
+    changePlaces(currentModule(), connected);
 }
 
-void SessionController::togglePrinterConnection() {
-    setPrinterConnected(!m_printerConnected);
-    resetMachine();
-}
+void SessionController::togglePrinterConnection() { setPrinterConnected(!m_printerConnected); }
 
 void SessionController::togglePrinterTrace() {
-    if (!m_session) return;
-    auto a = m_session->access();
-    a.peripherals().setPrinterTrace(!a.peripherals().printerTrace());
+    m_printerTrace = !m_printerTrace;
+    if (m_session) m_session->printerControl(PC100C::kTrace, m_printerTrace);
     emitChanged(PrinterChanged);
 }
 
-void SessionController::pressPrinterPrint(bool pressed) { if (m_session) m_session->access().peripherals().pressPrinterPrint(pressed); }
-void SessionController::pressPrinterAdv(bool pressed) { if (m_session) m_session->access().peripherals().pressPrinterAdv(pressed); }
+void SessionController::pressPrinterPrint(bool pressed) { if (m_session) m_session->printerControl(PC100C::kPrint, pressed); }
+void SessionController::pressPrinterAdv(bool pressed) { if (m_session) m_session->printerControl(PC100C::kAdv, pressed); }
 
 double SessionController::printerStripHeightUnits() const {
     double units = 0;
@@ -648,15 +718,28 @@ void SessionController::applyState(const LoadStateResult& parsed) {
         return;
     }
     dropPresetCards();
+    // SOLID-STATE-MODULE: and PRINTER: first, as attach and detach; the power
+    // cycle that follows is the one the state applier runs before it writes
+    // the state (C59-6 design §4). An ID that is no module keeps the module.
+    // TRACE is off after a load unless its keystrokes set it (row 59-25).
+    std::optional<std::string> module = currentModule();
+    if (parsed.solidStateModuleID && isTIModule(*parsed.solidStateModuleID)) module = *parsed.solidStateModuleID;
+    const bool printer = parsed.printerConnected.value_or(m_printerConnected);
+    m_printerTrace = false;
     m_session->stop();
     m_session->clearFreeze();
     m_activeProgram = 0;
-    m_session->sync([&] { cu59::applyState(m_session->access().machine(), parsed, m_model); });
+    PlaceChange places;
+    m_session->sync([&] {
+        places = changePlacesNow(module, printer);
+        m_session->printerControl(PC100C::kTrace, false);
+        cu59::applyState(m_session->access().machine(), parsed, m_model);
+    });
     m_debug.resetHeatmapBaseline(m_session->access().machine());  // fresh machine state: skip the power-on walk
     m_session->start();
+    adoptPlaces(places, module, printer);
     cutPaper();  // each loaded state starts with a blank strip
-    if (parsed.solidStateModuleID && *parsed.solidStateModuleID != m_moduleID) selectModule(*parsed.solidStateModuleID);
-    if (parsed.printerConnected) setPrinterConnected(*parsed.printerConnected);
+    emitChanged(PrinterChanged);
     adoptPresetCue(parsed.cueCard);
     persistConstantMemory();  // after the cue card: ti58c.mem keeps the file's card
     pullDebugState();
@@ -673,7 +756,8 @@ void SessionController::applyControl(const KeystrokeEvent& e) {
     const FreezeOwner owner = e.panel == DebugPanel::Cpu ? FreezeOwner::Cpu : FreezeOwner::Calculator;
     switch (e.kind) {
     case K::PrinterTrace:
-        m_session->access().peripherals().setPrinterTrace(e.on);
+        m_printerTrace = e.on;
+        m_session->printerControl(PC100C::kTrace, e.on);
         emitChanged(PrinterChanged);
         break;
     case K::CutPaper: cutPaper(); break;

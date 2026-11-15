@@ -4,21 +4,6 @@
 
 using calcu::machine::Machine;
 
-// ── TIPeripheralsAdapter (M-25) ───────────────────────────────────────────────
-void TIPeripheralsAdapter::loadModuleImage(const std::uint8_t* data, std::size_t count) { m_.m_hw.loadLibrary(data, count); }
-void TIPeripheralsAdapter::setPrinterConnected(bool connected) { m_.m_hw.setPrinterConnected(connected); }
-bool TIPeripheralsAdapter::isPrinterConnected() const { return m_.m_hw.isPrinterConnected(); }
-void TIPeripheralsAdapter::pressPrinterPrint(bool pressed) { m_.m_hw.pressPrinterPrint(pressed); }
-void TIPeripheralsAdapter::pressPrinterAdv(bool pressed) { m_.m_hw.pressPrinterAdv(pressed); }
-void TIPeripheralsAdapter::setPrinterTrace(bool enabled) { m_.m_hw.setPrinterTrace(enabled); }
-bool TIPeripheralsAdapter::printerTrace() const { return m_.m_hw.printerTrace(); }
-std::vector<std::string> TIPeripheralsAdapter::drainPrinterLines() { return m_.m_hw.drainPrinterLines(); }
-std::vector<PrinterCodeLine> TIPeripheralsAdapter::drainPrinterCodeLines() { return m_.m_hw.drainPrinterCodeLines(); }
-std::string TIPeripheralsAdapter::printerBufferContent() const { return m_.m_hw.printerBufferContent(); }
-int TIPeripheralsAdapter::insertedModuleNumber() const { return m_.m_hw.insertedModuleNumber(); }
-std::uint32_t TIPeripheralsAdapter::printerLineCycles() { return TMC0501::kPrinterLineCycles; }
-std::uint32_t TIPeripheralsAdapter::printerFeedCycles() { return TMC0501::kPrinterFeedCycles; }
-
 // ── TICardReaderAdapter (M-55) ────────────────────────────────────────────────
 void TICardReaderAdapter::insertCard(const std::uint8_t* data, std::size_t count) { m_.m_hw.insertCard(data, count); }
 std::vector<std::uint8_t> TICardReaderAdapter::cardEject() { return m_.m_hw.cardEject(); }
@@ -110,13 +95,11 @@ std::array<std::uint16_t, 4> TIPacingHints::idleAndKeyDetectRange(const calcu::m
 namespace {
 TIMachine* ti(Machine& m) { return m.descriptor().family == kTIFamily ? static_cast<TIMachine*>(&m) : nullptr; }
 } // namespace
-TIPeripheralsAdapter* peripheralsOf(Machine& m) { auto* t = ti(m); return t ? &t->m_peripherals : nullptr; }
 TICardReaderAdapter* cardReaderOf(Machine& m) { auto* t = ti(m); return t ? &t->m_cardReader : nullptr; }
 TIMemoryAdapter* memoryOf(Machine& m) { auto* t = ti(m); return t ? &t->m_memory : nullptr; }
 TIDebugTargetAdapter* debugTargetOf(Machine& m) { auto* t = ti(m); return t ? &t->m_debugTarget : nullptr; }
 TIDebugPanelAdapter* debugPanelOf(Machine& m) { auto* t = ti(m); return t ? &t->m_debugPanel : nullptr; }
 TIPacingHints* pacingHintsOf(Machine& m) { auto* t = ti(m); return t ? &t->m_pacing : nullptr; }
-const TIPeripheralsAdapter* peripheralsOf(const Machine& m) { return peripheralsOf(const_cast<Machine&>(m)); }
 const TICardReaderAdapter* cardReaderOf(const Machine& m) { return cardReaderOf(const_cast<Machine&>(m)); }
 const TIMemoryAdapter* memoryOf(const Machine& m) { return memoryOf(const_cast<Machine&>(m)); }
 const TIDebugTargetAdapter* debugTargetOf(const Machine& m) { return debugTargetOf(const_cast<Machine&>(m)); }

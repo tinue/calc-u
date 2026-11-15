@@ -70,6 +70,8 @@ file(CONFIGURE OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/generated/Version.iss
 
 file(GLOB SHARED_SOURCES CONFIGURE_DEPENDS ${SHARED_ROOT}/*.cpp)
 set(CORE_SOURCES
+  ${CORE_ROOT}/PC100C.cpp
+  ${CORE_ROOT}/SolidStateRomModule.cpp
   ${CORE_ROOT}/TI59Machine.cpp
   ${CORE_ROOT}/TMC0501.cpp
   ${CORE_ROOT}/ROM.cpp

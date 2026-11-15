@@ -344,7 +344,7 @@ TEST(runner_keeps_real_time) {
 
 TEST(session_plays_keystrokes_in_real_time) {
     RecordingListener listener;
-    EmulatorSession session(Model::TI59, *testroms::romSet(), std::string("ML.rom.yaml"), listener);
+    EmulatorSession session(Model::TI59, *testroms::romSet(), MachinePeripherals{std::string("ML")}, listener);
     CHECK(!session.moduleImage().empty());
     session.setFullSpeed(true);  // boot quickly; the scan loop still runs at regular speed
     session.start();
@@ -365,7 +365,7 @@ TEST(session_plays_keystrokes_in_real_time) {
 
 TEST(session_freeze_fires_through_listener) {
     RecordingListener listener;
-    EmulatorSession session(Model::TI59, *testroms::romSet(), std::nullopt, listener);
+    EmulatorSession session(Model::TI59, *testroms::romSet(), MachinePeripherals{}, listener);
     listener.session = &session;
     session.setFullSpeed(true);
     session.start();
@@ -388,7 +388,7 @@ TEST(session_freeze_fires_through_listener) {
 
 TEST(session_steps_only_when_frozen_and_arms_exclude) {
     RecordingListener listener;
-    EmulatorSession session(Model::TI59, *testroms::romSet(), std::nullopt, listener);
+    EmulatorSession session(Model::TI59, *testroms::romSet(), MachinePeripherals{}, listener);
     session.stepKeycode();  // not frozen: nothing posted
     session.sync([] {});
     CHECK_EQ(listener.freezes.load(), 0);

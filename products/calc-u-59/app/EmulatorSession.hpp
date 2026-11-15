@@ -8,6 +8,7 @@
 #include "ProductRoms.hpp"
 #include "StateFile.hpp"
 #include "TraceWriter.hpp"
+#include "peripherals/Controls.hpp"
 #include <atomic>
 #include <deque>
 #include <filesystem>
@@ -94,9 +95,10 @@ public:
     };
 
     /// Build the machine through the machine interface (calcu::machine::build,
-    /// tiCatalogue()) from the looked-up ROM set and, if given, load the
-    /// solid-state module of that file (`<ID>.rom.yaml`). Reads no file.
-    EmulatorSession(Model model, const calcu::roms::RomSet& roms, const std::optional<std::string>& moduleRomFile,
+    /// tiCatalogue()) from the looked-up ROM set, with `peripherals` in its
+    /// places (C59-6). Reads no file. A module ID the set has no file for
+    /// leaves the slot empty.
+    EmulatorSession(Model model, const calcu::roms::RomSet& roms, MachinePeripherals peripherals,
                     Listener& listener, Threading threading = Threading::Threads);
     ~EmulatorSession();
     EmulatorSession(const EmulatorSession&) = delete;
@@ -109,10 +111,29 @@ public:
     /// The machine without the guard: for code on the one thread that runs
     /// it (a test, a sync() job that takes access() itself).
     calcu::machine::Machine& machine() { return *m_machine; }
-    /// The module image loaded at construction or by loadModule() (empty if none).
+    /// The bytes of the module plugged into `slot-1` (empty if none), kept for
+    /// the debugger (adapter until M-53, C59-6 design §5).
     const std::vector<uint8_t>& moduleImage() const { return m_moduleImage; }
-    /// Swap the solid-state module (no reset). False if the set has no such file.
-    bool loadModule(const std::string& romFile, const calcu::roms::RomSet& roms);
+
+    // ── Places (C59-6; adapters until M-54, design §5) ───────────────────────
+    // Each changes the place under the guard, between two advances, and
+    // returns what follows (the power cycle of the pin-out, which the caller
+    // runs, LIB-2 AC-24) or the refusal. Nothing changes on a refusal.
+    /// The module of that ID into `slot-1` (a replace if one is there), or
+    /// the slot emptied (std::nullopt).
+    calcu::machine::ChangeResult setModule(const std::optional<std::string>& moduleID, const calcu::roms::RomSet& roms);
+    /// The PC-100C attached with TRACE at `trace`, or detached. Before a
+    /// detach the line being printed ends where the head is, and what is on
+    /// the paper and not yet taken is handed back (EC-2).
+    struct PrinterChange {
+        calcu::machine::ChangeResult result;
+        std::vector<std::string> lines;
+        std::vector<PrinterCodeLine> codeLines;
+    };
+    PrinterChange setPrinter(bool connected, bool trace);
+    /// A control of the PC-100C under the guard: a key down or up, the switch
+    /// on or off (C59-6 AC-5). False without a PC-100C.
+    bool printerControl(const calcu::machine::ControlId& id, bool on);
 
     // ── Run loop ─────────────────────────────────────────────────────────────
     void start() { m_runner->start(); }

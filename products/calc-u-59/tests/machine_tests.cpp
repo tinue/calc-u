@@ -296,7 +296,7 @@ TEST(c59_1_ac6_constant_memory_in_place_before_start_up) {
     CHECK_EQ(mem(*a).partitionProgramRegs(), 40);
     auto content = std::make_shared<TIConstantMemory>();
     mem(*a).serialiseRAM(content->ram.data());
-    auto b = cu59::buildMachine(Model::TI58C, *romSet(), content);
+    auto b = cu59::buildMachine(Model::TI58C, *romSet(), {}, content);
     CHECK(ram(*b) == ram(*a));   // in place before the processor starts
     CHECK(runToScanLoop(*b, Model::TI58C));
     CHECK_EQ(mem(*b).partitionProgramRegs(), 40);
@@ -354,8 +354,7 @@ TEST(c59_1_ac19_restored_before_key_readiness) {
 TEST(c59_1_ac18_key_ready_in_scan_loop_each_model_with_and_without_printer) {
     for (Model model : kModels) {
         for (bool printer : {false, true}) {
-            auto m = makeMachine(model);
-            per(*m).setPrinterConnected(printer);
+            auto m = makeMachine(model, printer);
             CHECK(runToScanLoop(*m, model));
             run(*m, 1000);
             bool steady = true;
@@ -373,8 +372,7 @@ TEST(c59_1_ac18_not_key_ready_while_a_program_runs) {
     const std::vector<std::vector<uint8_t>> programs = {{76, 11, 61, 11}, {76, 11, 66, 61, 11}, {76, 11, 99, 61, 11}};
     for (Model model : kModels) {
         for (size_t p = 0; p < programs.size(); ++p) {
-            auto m = makeMachine(model);
-            per(*m).setPrinterConnected(p == 2);
+            auto m = makeMachine(model, p == 2);
             runToScanLoop(*m, model);
             mem(*m).writeProgram(programs[p].data(), static_cast<int>(programs[p].size()));
             press(*m, 11);

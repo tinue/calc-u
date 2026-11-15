@@ -44,9 +44,6 @@ NS_ASSUME_NONNULL_BEGIN
 /// ".U59" appended when the name has no extension.
 + (NSString *)withDefaultCardExtension:(NSString *)name;
 
-// ── cuecards.txt ─────────────────────────────────────────────────────────────
-+ (NSArray<TIModuleMetadata *> *)allModuleMetadata:(NSString *)cuecardsTxt;
-
 @end
 
 NS_ASSUME_NONNULL_END

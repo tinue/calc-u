@@ -202,6 +202,13 @@ TIModuleFile readModuleFile(std::string_view text, std::string& error) {
     }
     if (!scalar(root, "module-name", out.moduleName, error)) return {};
     if (!scalar(root, "description", out.description, error)) return {};
+    // Optional (docs/formats/modules.md §2.4): the title and the picker's order.
+    if (root.find("title") && !scalar(root, "title", out.title, error)) return {};
+    if (const YamlNode* sort = root.find("menu-sort")) {
+        long v = 0;
+        if (!sort->asInt(&v, &error)) return {};
+        out.menuSort = static_cast<int>(v);
+    }
     const YamlNode* rom = root.find("rom");
     if (!rom || !rom->isMap()) {
         error = "missing 'rom'";

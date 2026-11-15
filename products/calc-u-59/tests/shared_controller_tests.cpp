@@ -125,7 +125,9 @@ TEST(controller_model_switch_keeps_printer_and_log_resets_freeze) {
     c.armPcChange();
     CHECK(c.debugState().pcChangeArmed);
     CHECK(c.startMachine(Model::TI58));
-    CHECK(!testroms::per(c.session()->access().machine()).isPrinterConnected());
+    CHECK(!c.printerConnected());
+    CHECK(testroms::moduleIn(c.session()->access().machine()) == "ML");
+    CHECK_EQ(c.session()->access().machine().plugged().byPlace.size(), size_t{1});   // the module only
     CHECK(!c.debugState().pcChangeArmed && !c.isFrozen());
     CHECK(c.logText().find("──") != std::string::npos);  // the dump survived the switch
     CHECK(c.cardState() == SessionController::CardState::NoCard);
@@ -246,5 +248,107 @@ TEST(controller_threaded_reload_and_memory_card) {
     CHECK(waitForScanLoop(c));
     CHECK_EQ(testroms::mem(c.session()->access().machine()).readDataReg(0), 42.0);
     CHECK_EQ(int(testroms::mem(c.session()->access().machine()).readProgramStep(2)), 47);  // part 2 is in
+    CHECK(p.errors.empty());
+}
+
+// ── C59-6 (design T7, T10): the app session's part of the places ────────────
+
+namespace {
+// TRACE as the PC-100C in the machine has it; nullopt without a PC-100C.
+std::optional<bool> traceSwitch(SessionController& c) {
+    auto a = c.session()->access();
+    auto* controls = testroms::printerControls(a.machine());
+    if (!controls) return std::nullopt;
+    for (const auto& i : controls->list())
+        if (i.id == PC100C::kTrace) return i.on;
+    return std::nullopt;
+}
+} // namespace
+
+TEST(c59_6_ac6_trace_kept_by_app_session) {
+    FakePlatform p;
+    SessionController c(p, testroms::romSet(), catalog(), "ML");
+    CHECK(c.startMachine(Model::TI59));
+    CHECK(!c.printerTrace());                       // off when the product starts
+    CHECK(traceSwitch(c) == std::optional<bool>(false));
+    c.togglePrinterTrace();
+    CHECK(c.printerTrace() && traceSwitch(c) == std::optional<bool>(true));
+    c.resetMachine();
+    CHECK(c.printerTrace() && traceSwitch(c) == std::optional<bool>(true));
+    c.cleanResetMachine();
+    CHECK(c.printerTrace() && traceSwitch(c) == std::optional<bool>(true));
+    CHECK(c.startMachine(Model::TI58C));           // a model switch: a new machine, the same switch
+    CHECK(c.printerTrace() && traceSwitch(c) == std::optional<bool>(true));
+    c.setPrinterConnected(false);                  // detached: the position stays with the PC-100C
+    CHECK(c.printerTrace() && !traceSwitch(c));
+    c.setPrinterConnected(true);
+    CHECK(c.printerTrace() && traceSwitch(c) == std::optional<bool>(true));
+    // Not saved: the Platform has no setting for it; a new app session starts off.
+    SessionController again(p, testroms::romSet(), catalog(), "ML");
+    CHECK(again.startMachine(Model::TI59));
+    CHECK(!again.printerTrace());
+}
+
+TEST(c59_6_ac6_state_file_sets_trace_off_unless_it_sets_it) {
+    FakePlatform p;
+    SessionController c(p, testroms::romSet(), catalog(), "ML");
+    CHECK(c.startMachine(Model::TI59));
+    c.togglePrinterTrace();
+    CHECK(c.printerTrace());
+    c.loadStateFile(bytes("REGISTERS:\n01 = 1\n"));
+    CHECK(!c.printerTrace() && traceSwitch(c) == std::optional<bool>(false));
+    c.loadStateFile(bytes("KEYSTROKES:\nPrinterTrace: on\n"));
+    CHECK(pumpUntil(p, [&] { c.tick(std::chrono::steady_clock::now()); return c.printerTrace(); }, 5000ms));
+    CHECK(traceSwitch(c) == std::optional<bool>(true));
+}
+
+TEST(c59_6_ac1_paper_kept_across_detach_and_attach) {
+    FakePlatform p;
+    SessionController c(p, testroms::romSet(), catalog(), "ML");
+    CHECK(c.startMachine(Model::TI59));
+    CHECK(c.printerConnected());
+    c.loadStateFile(bytes("KEYSTROKES:\n82 21 94\n"));   // 1 2nd Prt
+    CHECK(pumpUntil(p, [&] { c.tick(std::chrono::steady_clock::now()); return !c.printerLines().empty() && !c.keystrokesPlaying(); },
+                    5000ms));
+    const auto lines = c.printerLines();
+    CHECK(lines.size() == 1 && lines[0] == "          1.        ");
+    c.setPrinterConnected(false);
+    CHECK(!c.printerConnected());
+    CHECK(testroms::paper(c.session()->access().machine()) == nullptr);
+    CHECK(c.printerLines() == lines);
+    c.setPrinterConnected(true);
+    CHECK(testroms::paper(c.session()->access().machine()) != nullptr);
+    CHECK(c.printerLines() == lines);              // the paper is back with the PC-100C
+    CHECK(c.startMachine(Model::TI58));
+    CHECK(c.printerLines() == lines);              // and through a model switch
+}
+
+TEST(c59_6_ac11_change_module_power_cycles) {
+    FakePlatform p;
+    SessionController c(p, testroms::romSet(), catalog(), "ML");
+    CHECK(c.startMachine(Model::TI59));
+    CHECK(waitForScanLoop(c));
+    const uint8_t marked[16] = {1, 2, 3};
+    uint8_t reg[16];
+    c.session()->access().memory().writeRAMReg(90, marked);
+    c.changeModule("LE");
+    CHECK_EQ(c.moduleID(), std::string("LE"));
+    CHECK(testroms::moduleIn(c.session()->access().machine()) == "LE");
+    CHECK(c.session()->moduleImage() == *cu59::moduleImage(*testroms::romSet(), "LE.rom.yaml"));
+    // The power cycle: the TI-59 loses its program and registers (row 59-11).
+    CHECK(waitForScanLoop(c));
+    c.session()->access().memory().copyRAMReg(90, reg);
+    CHECK_EQ(int(reg[0]), 0);
+    // The printer too.
+    c.session()->access().memory().writeRAMReg(90, marked);
+    c.setPrinterConnected(false);
+    CHECK(waitForScanLoop(c));
+    c.session()->access().memory().copyRAMReg(90, reg);
+    CHECK_EQ(int(reg[0]), 0);
+    // An empty slot.
+    c.changeModule("");
+    CHECK(c.moduleID().empty() && testroms::moduleIn(c.session()->access().machine()).empty());
+    CHECK(c.session()->moduleImage().empty());
+    CHECK(waitForScanLoop(c));
     CHECK(p.errors.empty());
 }

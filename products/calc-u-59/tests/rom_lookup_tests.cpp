@@ -80,7 +80,7 @@ const FileProblem* problemOf(const RomsMissing& m, const std::string& name) {
 
 std::vector<std::string> moduleIds() {
     std::vector<std::string> ids;
-    for (const auto& m : cu59::allModuleMetadata(testroms::readFile("roms/solid-state/cuecards.txt").value_or("")))
+    for (const auto& m : cu59::allModuleMetadata(*testroms::romSet()))
         ids.push_back(m.id);
     return ids;
 }
@@ -269,11 +269,11 @@ TEST(lib12_ac4_every_model_and_module_needs_only_set_files) {
     const auto ids = moduleIds();
     CHECK_EQ(ids.size(), size_t{14});
     for (const auto& id : ids) {
-        auto file = cu59::moduleRomFile(cuecards(), id);   // adapter A-3
+        auto file = cu59::moduleRomFile(id);
         CHECK(file && *file == id + ".rom.yaml");
         CHECK(file && inSet(*file));
     }
-    CHECK(!cu59::moduleRomFile(cuecards(), "ZZ"));
+    CHECK(!cu59::moduleRomFile("ZZ"));
 }
 
 // ── P3: the module files (AC-14) ────────────────────────────────────────────

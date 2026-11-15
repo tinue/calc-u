@@ -1,5 +1,8 @@
 #include "EmulatorSession.hpp"
 #include "KeyIds.hpp"
+#include "ModuleCatalog.hpp"
+#include "../core/PrinterOutput.hpp"
+#include "../core/TICatalogue.hpp"
 #include <algorithm>
 #include <cmath>
 #include <cstdio>
@@ -13,14 +16,31 @@ uint32_t traceFlagsFor(const TraceConsumers& c) {
     return flags;
 }
 
-EmulatorSession::EmulatorSession(Model model, const calcu::roms::RomSet& roms, const std::optional<std::string>& moduleRomFile,
+namespace {
+const calcu::machine::PlacePath kSlot{{kTIModulePlace}};
+const calcu::machine::PlacePath kPrinter{{kTIPrinterPlace}};
+
+// A module ID the set holds the file of, or none (an empty slot).
+std::optional<std::string> knownModule(const std::optional<std::string>& id, const calcu::roms::RomSet& roms) {
+    if (!id) return std::nullopt;
+    auto file = moduleRomFile(*id);
+    return file && roms.bytes(*file) ? id : std::nullopt;
+}
+MachinePeripherals checked(MachinePeripherals p, const calcu::roms::RomSet& roms) {
+    p.module = knownModule(p.module, roms);
+    return p;
+}
+} // namespace
+
+EmulatorSession::EmulatorSession(Model model, const calcu::roms::RomSet& roms, MachinePeripherals peripherals,
                                  Listener& listener, Threading threading)
     : m_model(model),
       m_listener(listener),
-      m_machine(buildMachine(model, roms)),
+      m_machine(buildMachine(model, roms, checked(peripherals, roms))),
       m_manualTrace(model),
       m_scriptedTrace(model) {
-    if (moduleRomFile) loadModule(*moduleRomFile, roms);
+    if (auto id = knownModule(peripherals.module, roms))
+        m_moduleImage = cu59::moduleImage(roms, *moduleRomFile(*id)).value_or(std::vector<uint8_t>{});
 
     EmulationRunner::Callbacks cb;
     cb.freezeFired = [this](FreezeOwner owner) { onFreezeFired(owner); };
@@ -34,12 +54,57 @@ EmulatorSession::~EmulatorSession() {
     m_runner.reset();  // joins the emulation thread
 }
 
-bool EmulatorSession::loadModule(const std::string& romFile, const calcu::roms::RomSet& roms) {
-    auto image = cu59::moduleImage(roms, romFile);
-    if (!image) return false;
-    access().peripherals().loadModuleImage(image->data(), image->size());
-    m_moduleImage = std::move(*image);
-    return true;
+calcu::machine::ChangeResult EmulatorSession::setModule(const std::optional<std::string>& moduleID,
+                                                        const calcu::roms::RomSet& roms) {
+    using namespace calcu::machine;
+    auto a = access();
+    Machine& m = a.machine();
+    std::optional<PeripheralId> now;
+    for (const auto& e : m.plugged().byPlace)
+        if (e.place == kSlot) now = e.peripheral;
+    ChangeResult r;
+    if (!moduleID) {
+        if (now) r = m.detach(kSlot, *now, tiCatalogue());
+    } else {
+        PeripheralRequest req = moduleRequest(*moduleID, roms);
+        r = now ? m.replace(*now, std::move(req), tiCatalogue()) : m.attach(std::move(req), tiCatalogue());
+    }
+    if (!r.refused) {
+        m_moduleImage.clear();
+        if (moduleID) m_moduleImage = cu59::moduleImage(roms, *moduleRomFile(*moduleID)).value_or(std::vector<uint8_t>{});
+    }
+    return r;
+}
+
+EmulatorSession::PrinterChange EmulatorSession::setPrinter(bool connected, bool trace) {
+    using namespace calcu::machine;
+    auto a = access();
+    Machine& m = a.machine();
+    PrinterChange out;
+    auto* paper = capabilityAs<PrinterOutput>(m, CapabilityId{"printer/c59.printer-output"});
+    if (connected == (paper != nullptr)) return out;   // as it is: nothing changes, nothing follows
+    if (connected) {
+        out.result = m.attach(printerRequest(trace), tiCatalogue());
+    } else {
+        paper->endLineHere();
+        out.lines = paper->takeLines();
+        out.codeLines = paper->takeCodeLines();
+        out.result = m.detach(kPrinter, kPC100C, tiCatalogue());
+    }
+    return out;
+}
+
+bool EmulatorSession::printerControl(const calcu::machine::ControlId& id, bool on) {
+    auto a = access();
+    auto* c = calcu::machine::capabilityAs<calcu::peripherals::Controls>(a.machine(),
+                                                                         calcu::machine::CapabilityId{"printer/controls"});
+    if (!c) return false;
+    for (const auto& info : c->list()) {
+        if (info.id != id) continue;
+        if (info.form == calcu::machine::ControlForm::Switch) return c->set(id, on) == calcu::peripherals::ControlCall::Done;
+        return (on ? c->press(id) : c->release(id)) == calcu::peripherals::ControlCall::Done;
+    }
+    return false;
 }
 
 // Key input advances after every batch, at the time the batch ends, so a

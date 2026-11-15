@@ -434,16 +434,11 @@ TEST(module_catalog_from_cuecards_txt) {
     auto text = testroms::readFile("roms/solid-state/cuecards.txt");
     CHECK(text.has_value());
     if (!text) return;
-    auto all = allModuleMetadata(*text);
-    CHECK_EQ(static_cast<int>(all.size()), 14);
-    CHECK_EQ(all[0].id, std::string("ML"));
-    CHECK_EQ(all[0].menuTitle, std::string("Master Library"));
-    CHECK_EQ(all[1].id, std::string("LE"));  // menu sort 1; the rest are 5 (file order kept)
-    for (size_t i = 1; i < all.size(); ++i) CHECK(all[i - 1].menuSort <= all[i].menuSort);
-
-    CHECK(moduleRomFile(*text, "ML") == std::optional<std::string>("ML.rom.yaml"));   // adapter A-3 (LIB-12)
-    CHECK(moduleRomFile(*text, "RP") == std::optional<std::string>("RP.rom.yaml"));
-    CHECK(!moduleRomFile(*text, "XX").has_value());
+    // The module list comes from the module files since M-25 (C59-6 AC-8,
+    // peripherals_tests.cpp); cuecards.txt keeps the cue cards.
+    CHECK(moduleRomFile("ML") == std::optional<std::string>("ML.rom.yaml"));
+    CHECK(moduleRomFile("RP") == std::optional<std::string>("RP.rom.yaml"));
+    CHECK(!moduleRomFile("XX").has_value());
 
     auto ml = moduleCards(*text, "ML");
     CHECK_EQ(static_cast<int>(ml.cards.size()), 25);

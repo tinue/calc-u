@@ -143,6 +143,7 @@ public:
     void resetMachine() { m_c->resetMachine(); drain(); }
     void cleanResetMachine() { m_c->cleanResetMachine(); drain(); }
     void changeModule(std::string id) { m_c->changeModule(id); drain(); }
+    std::vector<cu59::ModuleMetadata> modules() const { return m_c->allModules(); }
     void suspend() { m_c->suspend(); drain(); }
     void resume() { m_c->resumeAfterSuspend(); drain(); }
 
@@ -840,13 +841,13 @@ private:
 
 /// What to start with: the model and module from the host's overrides, else
 /// the stored settings (SettingsKeys resolution). {model, moduleID}.
-val startupPlan(val settings, std::string modelOverride, std::string moduleOverride, std::string cuecards) {
+val startupPlan(val settings, std::string modelOverride, std::string moduleOverride, std::string /*cuecards*/) {
     cu59::Model model = keys::resolveStartupModel(storedInt(settings, keys::kStartupModel),
                                                   storedInt(settings, keys::kLastUsedModel));
     if (auto m = modelNamed(modelOverride)) model = *m;
     std::string moduleID = keys::resolveModuleID(stored(settings, keys::kSolidStateModuleID));
-    if (!moduleOverride.empty() && cu59::moduleRomFile(cuecards, moduleOverride)) moduleID = moduleOverride;
-    if (!cu59::moduleRomFile(cuecards, moduleID)) moduleID = keys::kDefaultModuleID;
+    if (!moduleOverride.empty() && cu59::moduleRomFile(moduleOverride)) moduleID = moduleOverride;
+    if (!cu59::moduleRomFile(moduleID)) moduleID = keys::kDefaultModuleID;
     val o = val::object();
     o.set("model", static_cast<int>(model));
     o.set("moduleID", moduleID);
@@ -864,8 +865,9 @@ val romFileNames() {
 
 /// Everything fixed the page draws with: models, modules, the canvas layout
 /// (KeyboardLayout, canvas-normalized), the printer's geometry and font, the
-/// heatmap's grid and colours.
-val staticData(std::string cuecards) {
+/// heatmap's grid and colours. The modules come from the module files of
+/// the controller's ROM set (C59-6 AC-8).
+val staticData(WebController& controller) {
     val o = val::object();
     val models = val::array();
     for (int raw = 0; raw <= 2; ++raw) {
@@ -877,7 +879,7 @@ val staticData(std::string cuecards) {
         models.set(raw, m);
     }
     o.set("models", models);
-    o.set("modules", array(cu59::allModuleMetadata(cuecards), [](const cu59::ModuleMetadata& m) {
+    o.set("modules", array(controller.modules(), [](const cu59::ModuleMetadata& m) {
         val v = val::object();
         v.set("id", m.id);
         v.set("menuTitle", m.menuTitle);

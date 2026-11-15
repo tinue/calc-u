@@ -65,7 +65,7 @@ cu59::CueCardContent CueCardFrom(TICueCard* t) {
 @implementation TIModuleMetadata
 @end
 
-static TIModuleMetadata* metadataFrom(const cu59::ModuleMetadata& m) {
+TIModuleMetadata* TIModuleMetadataFrom(const cu59::ModuleMetadata& m) {
     TIModuleMetadata* t = [[TIModuleMetadata alloc] init];
     t.title = ns(m.title);
     t.moduleID = ns(m.id);
@@ -79,11 +79,5 @@ static TIModuleMetadata* metadataFrom(const cu59::ModuleMetadata& m) {
 
 + (BOOL)isCardFileName:(NSString *)name { return cu59::isCardFileName(cpp(name)); }
 + (NSString *)withDefaultCardExtension:(NSString *)name { return ns(cu59::withDefaultCardExtension(cpp(name))); }
-
-+ (NSArray<TIModuleMetadata *> *)allModuleMetadata:(NSString *)cuecardsTxt {
-    NSMutableArray* out = [NSMutableArray array];
-    for (const auto& m : cu59::allModuleMetadata(cpp(cuecardsTxt))) [out addObject:metadataFrom(m)];
-    return out;
-}
 
 @end

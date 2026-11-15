@@ -1,13 +1,14 @@
-// LIB-1, Calc-U-59 column, the M-19 part (LIB-1 design §1; C59-1 design T2,
-// T13): the catalogue's three descriptors (AC-26 to AC-31) and a running
-// machine of each model against its descriptor, without peripherals (AC-33;
-// the media place clause passes in M-55, LIB-1 D-1; AC-32 and AC-33 with
-// peripherals in M-25).
+// LIB-1, Calc-U-59 column (LIB-1 design §1; C59-1 design T2, T13; C59-6
+// design T1, T11): the catalogue's three descriptors (AC-26 to AC-31), its
+// peripherals (AC-32, M-25) and a running machine of each model against its
+// descriptor, without peripherals and with the PC-100C and a module (AC-33;
+// the media place clause passes in M-55, LIB-1 D-1).
 
 #include "TestHarness.hpp"
 #include "TestRoms.hpp"
 #include "../core/TIKeys.hpp"
 #include "machine/Conformance.hpp"
+#include "../core/PrinterOutput.hpp"
 #include <algorithm>
 
 using namespace calcu::machine;
@@ -123,10 +124,11 @@ TEST(lib1_ac31_components_and_depth) {
         const auto& d = model(m);
         const auto* cpu = component(d, "TMC0501");
         CHECK(cpu && cpu->depth == Depth::Separate);
-        for (const char* folded : {"SCOM", "CROM", "printer-interface"}) {
-            const auto* c = component(d, folded);
-            CHECK(c && c->depth == Depth::Folded && c->foldedInto && c->foldedInto->value == "TMC0501");
-        }
+        const auto* scom = component(d, "SCOM");
+        CHECK(scom && scom->depth == Depth::Folded && scom->foldedInto && scom->foldedInto->value == "TMC0501");
+        // Since C59-6 the module and the printer are peripherals, no longer
+        // folded into TMC0501 (machine.md fit table; ADR 0011).
+        for (const char* gone : {"CROM", "printer-interface"}) CHECK(component(d, gone) == nullptr);
         for (const char* separate : {"ROM", "RAM"}) {
             const auto* c = component(d, separate);
             CHECK(c && c->depth == Depth::Separate && !c->foldedInto);
@@ -143,7 +145,8 @@ TEST(lib1_ac31_components_and_depth) {
 
 TEST(lib1_ac33_machine_conforms_without_peripherals) {
     for (const char* m : kModels) {
-        auto machine = cu59::buildMachine(*cu59::modelFrom(ModelId{m}), *testroms::romSet());
+        auto machine = cu59::buildMachine(*cu59::modelFrom(ModelId{m}), *testroms::romSet(),
+                                          cu59::MachinePeripherals{std::nullopt, false, false});
         const auto diffs = checkAgainstDescriptor(*machine, tiCatalogue());
         for (const auto& d : diffs) std::printf("  %s: %s\n", m, d.c_str());
         CHECK(diffs.empty());
@@ -151,5 +154,56 @@ TEST(lib1_ac33_machine_conforms_without_peripherals) {
         CHECK(machine->descriptor().tickRate == model(m).tickRate);
         CHECK(machine->plugged().byPlace.empty());
         CHECK(machine->capabilities().empty());   // the card reader's media place: M-55 (LIB-1 D-1)
+    }
+}
+
+TEST(lib1_ac32_pc100c_and_14_modules) {
+    const auto& c = tiCatalogue();
+    CHECK_EQ(c.peripherals().size(), size_t{15});
+    const auto* p = c.peripheral(kPC100C);
+    CHECK(p != nullptr);
+    if (p) {
+        CHECK(p->fits == (std::vector<PinOutId>{PinOutId{"printer-connector"}}));
+        CHECK(p->roms.empty());
+        std::vector<std::string> ids;
+        for (const auto& k : p->controls) ids.push_back(k.id.value + (k.form == ControlForm::Key ? ":key" : ":switch"));
+        CHECK(ids == (std::vector<std::string>{"PRINT:key", "ADV:key", "TRACE:switch"}));
+        CHECK(!p->components.empty() && p->components[0].depth == Depth::Functional);
+    }
+    // Its paper: the capability while it is plugged in (C59-6 design D-7).
+    auto with = cu59::buildMachine(cu59::Model::TI59, *testroms::romSet(), cu59::MachinePeripherals{std::nullopt, true, false});
+    CHECK_EQ(with->capabilities(PrinterOutput::kKind).size(), size_t{1});
+    for (const auto& m : tiModules()) {
+        const auto* d = c.peripheral(PeripheralId{m.id});
+        CHECK(d != nullptr);
+        if (!d) continue;
+        CHECK_EQ(d->name, std::string(m.name));
+        CHECK(d->fits == (std::vector<PinOutId>{PinOutId{"module-slot"}}));
+        CHECK_EQ(d->roms.size(), size_t{1});
+        if (d->roms.empty()) continue;
+        CHECK_EQ(d->roms[0].fileName, std::string(m.id) + ".rom.yaml");
+        CHECK_EQ(d->roms[0].md5.size(), size_t{32});
+        CHECK(d->roms[0].unit == ContentUnit::Bytes && d->roms[0].decodedAmount == 5000);
+        CHECK(!d->components.empty() && d->components[0].id.value == m.chip);
+        CHECK(d->controls.empty());
+    }
+}
+
+TEST(lib1_ac33_machine_conforms_with_printer_and_module) {
+    for (const char* m : kModels) {
+        for (bool with : {true, false}) {
+            const cu59::MachinePeripherals places{with ? std::optional<std::string>("ML") : std::nullopt, with, false};
+            auto machine = cu59::buildMachine(*cu59::modelFrom(ModelId{m}), *testroms::romSet(), places);
+            const auto diffs = checkAgainstDescriptor(*machine, tiCatalogue());
+            for (const auto& d : diffs) std::printf("  %s: %s\n", m, d.c_str());
+            CHECK(diffs.empty());
+            CHECK_EQ(machine->plugged().byPlace.size(), size_t{with ? 2u : 0u});
+            CHECK_EQ(machine->capabilities().size(), size_t{with ? 2u : 0u});
+            for (const auto& e : machine->capabilities()) {
+                const auto* owner = std::get_if<PeripheralOwner>(&e.owner);
+                CHECK(owner && owner->peripheral == kPC100C);
+                CHECK(machine->capability(e.id) != nullptr && machine->capability(e.id)->kind() == e.kind);
+            }
+        }
     }
 }

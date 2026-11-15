@@ -38,7 +38,9 @@ wrappers in `frontends/swift/Bridge/`, which only translate types (`AppArchitect
 | **Orchestration and runtime** | |
 | `SessionController` | Everything a frontend does with a calculator that isn't drawing (below) |
 | `EmulatorSession` | One running calculator: machine, run loop, freeze state, key input, frame sampler, trace writers |
-| `EmulationRunner` | The emulation thread: a serial job queue whose long-running job is the paced loop |
+| `CooperativePacing` | What remains of 2.3.0's `EmulationRunner`: a serial job queue whose long-running job is the run loop, on the session's thread; hosted, the run flag pauses the machine session and `advanceHosted` is its freeze gate (until M-34) |
+| `TIAppPart`, `TIFileAccess`, `PacingProfiles` | Calc-U-59 in the library's app session: the part, the interim topics and commands, `makeAppSession`; the card and `ti58c.mem` files; the TI pacing profiles (M-33) |
+| `SessionThread` | The Swift frontend's session thread and its two queues (C59-5) |
 | `Pacing` | 20 ms cycle-weighted batches with carry; the full-speed sleep rule |
 | `FreezeController` | The two armed freezes, checked per instruction from the run loop |
 | `KeySequencer` | 100 ms taps that wait for the scan loop, physical-key holds, KEYSTROKES playback |
@@ -79,27 +81,39 @@ wrappers in `frontends/swift/Bridge/`, which only translate types (`AppArchitect
 Each header's top comment says what the module is and where its format or
 rules are documented.
 
-## `SessionController`
+## The app session (`TIAppPart`) and `SessionController`
 
-Each GUI owns one `SessionController` on its UI thread and is otherwise a
-renderer: the Qt app through `EmulatorController`, the Swift app through
-`EmulatorViewModel` and `frontends/swift/Bridge/TISessionController`. The controller owns the
-`EmulatorSession` (rebuilt on a model switch) and the `DebugModel`, and runs
-the flows all GUIs share: starting and switching machines, presets, the
+Since M-33 the Swift and Qt6 frontends host the library's app session
+(`calcu::sessions::AppSession`, LIB-3) made by `cu59::makeAppSession`
+(`app/TIAppPart.hpp`); the Web frontend follows in M-34. The session holds
+the machine session (the machine, LIB-17's pacer with the TI profiles of
+`app/PacingProfiles.hpp`) and Calc-U-59's part, `cu59::TIAppPart`. A
+frontend sends commands (`cu59::commands`, `c59.*`, and the library's
+`speed`, `suspend`, `continue`, …) and gets messages: the library's topics
+(`display`, `busy`, `notices`, `log`) and the interim `c59.*` topics
+(`c59.model`, `c59.led`, `c59.printer`, `c59.card-reader`, `c59.run-state`,
+`c59.debug.*`, …; each the snapshot of one of today's change flags, until
+the feature that owns it, LIB-3 59 design §5). Qt6 calls the session on its
+GUI thread; Swift on `cu59::SessionThread` (§ "Threads").
+
+`TIAppPart` runs the flows on a `SessionController` in `Threading::Hosted`
+(an adapter until M-34). The controller owns the `EmulatorSession` (rebuilt
+on a model switch) and the `DebugModel`, and runs the flows all GUIs share:
+starting and switching machines, presets (an operation, LIB-3 AC-32), the
 TI-58C memory file, the card reader, the printer strip, the cue card shown,
-freeze and step, traces, the ASM overlay and the LOG tab.
+freeze and step, traces, the ASM overlay and the LOG tab. Hosted, the
+`EmulatorSession` hands its machine to the machine session; its freeze
+checks run inside each slice's advance (`CooperativePacing::advanceHosted`,
+the `TIFreezeGate`), its key sequencer at each slice end with the slice's
+wall time (`TIKeySequencerHook`), and a frozen controller pauses the
+machine session. The part is the controller's `Platform`: an error is a
+notice ("title: message"), a diagnostic a log line, the card and
+`ti58c.mem` files go through `TIFileAccess` in the save folder,
+`runOnUiThread` queues on the session's own thread.
 
-The app implements `SessionController::Platform`: `runOnUiThread`, reading
-and writing `ti58c.mem` and card files, `cardFilePath` (a preset card's file in
-the card folder), `showDebugPanel`, the trace location (and whether it
-is available, asked only when a manual trace opens), saving the last model
-and module, error alerts, diagnostics, and `changed(mask)` — the `Change`
-bits name what to redraw. The app calls `tick(now)` at 60 Hz, and
-`suspend()` / `resumeAfterSuspend()` when it goes to the background.
-
-Session events hop to the UI thread through `Platform::runOnUiThread` and
-are dropped there if their session has since been replaced (each session
-has a generation) or the controller is gone.
+The Web frontend (and the controller's tests) still own a
+`SessionController` in `Threading::Cooperative` and call its
+`tick(now)` at 60 Hz; its `Platform` is `frontends/web/bindings.cpp`.
 
 ### The 60 Hz tick
 
@@ -120,40 +134,34 @@ One `tick(now)`:
 
 ## Threads
 
-| Thread | What runs there |
+The app layer has no thread of its own but one host adapter:
+
+| Frontend | Where the session runs |
 |---|---|
-| Frontend UI thread | `SessionController`: `tick()`, every user action, arming freezes; drawing |
-| Emulation thread (`EmulationRunner`, one per session) | The paced run loop, and every job posted with `post()` / `sync()` — warm-up, freeze-to-keycode, steps, state application, ASM entry — always after the loop has exited |
-| Key sequencer lanes (`KeySequencer`) | KEYSTROKES playback and physical-keyboard taps: two independent lanes, so a key press never cancels a script |
-| Key sequencer timer | Deferred releases (a key let go before its 100 ms minimum hold) |
+| Swift | `cu59::SessionThread` (`app/SessionThread.*`): builds, calls about 60 times a second and destroys the session on one thread (QoS user-initiated). Posts in one FIFO, messages out in one FIFO to the main thread, one wake per batch (C59-5). In Debug builds for macOS and the simulator it also hosts harness attach (`library/harness/attach/`) |
+| Qt6 | the GUI thread: a 60 Hz `QTimer` calls the session |
+| Web (until M-34) | `SessionController::tick()` on the worker, `Threading::Cooperative` |
 
-`EmulatorSession::Listener` callbacks arrive on the emulation or sequencer
-threads; `SessionController` hops them to the UI thread.
+`MachineGuard` and `EmulatorSession`'s mutexes stay until M-34; nothing
+contends for them any more.
 
-### Cooperative mode (no threads)
+### Cooperative mode (Web, until M-34)
 
 `Threading::Cooperative` (`app/Threading.hpp`, the last argument of
-`SessionController`, `EmulatorSession`, `EmulationRunner` and `KeySequencer`)
-runs all of the above on the frontend's UI thread instead. The web client
-uses it — a static host can't be relied on to allow threads (no
-`SharedArrayBuffer` without COOP/COEP headers) — and so do the tests on virtual time
-(`tests/shared_cooperative_tests.cpp`). The apps use `Threading::Threads`.
+`SessionController` and `EmulatorSession`) runs everything on the caller's
+thread with 2.3.0's batches (`CooperativePacing`, what remains of
+`EmulationRunner`):
 
 - `SessionController::tick(now)` first calls `EmulatorSession::pump(now)`.
-- `EmulationRunner::pump` runs the 20 ms batches due by `now` on the same
-  absolute schedule as the thread (a lag over 100 ms restarts it); at full
-  speed it runs batches back to back for at most 10 ms of wall clock. Jobs
-  queued behind a stopped loop run at the end of the pump; `sync()` runs the
-  queue, then the job, inline.
-- `KeySequencer` scripts and taps are resumable tasks in both modes — the
-  same state machine, which says when it next wants to run. Threaded, each
-  lane's thread sleeps until then; cooperatively, the session advances the
-  lanes after every batch, at the time that batch ends, so a 100 ms hold is
-  five batches and the scan-loop wait is checked at each batch boundary.
-
-`sync()` waits for the job; call `stop()` first, or it waits for the run
-loop. Key playback reads the session's frozen state, so it stops waiting for
-an idle CPU that will never come.
+- `CooperativePacing::pump` runs the 20 ms batches due by `now` on an
+  absolute schedule (a lag over 100 ms restarts it); at full speed it runs
+  batches back to back for at most 10 ms of wall clock. Jobs queued behind
+  a stopped loop run at the end of the pump; `sync()` runs the queue, then
+  the job, inline.
+- `KeySequencer` scripts and taps are resumable tasks that say when they
+  next want to run; the session advances them after every batch (hosted:
+  after every slice), at the time it ends, so a 100 ms hold spans several
+  batches and the scan-loop wait is checked at each boundary.
 
 The session owns the debugger's freeze state and the core's trace flags.
 Freeze, step and their threading: `DebugAPI.md` § "Freeze / Step Controls".
@@ -161,26 +169,21 @@ Core locking: `CoreArchitecture.md` § "Threading Model".
 
 ## Emulation Loop and Timing
 
-`EmulationRunner` runs `Pacing::runBatch` in a loop:
+Swift and Qt6 (M-33): LIB-17's pacer in the machine session, with the TI
+profiles (`app/PacingProfiles.hpp`): a fixed 20 ms slice of the model's
+tick rate, jittered slice ends (the TI-58's error blink, AC-17), and full
+speed paced at regular speed while the machine waits for input (key
+readiness, or on the TI-59 a `Write` waiting for a card; a printer wait
+does not count). A call drops a lag over 100 ms; full speed runs at most
+14 ms of host time per call. The long-run rate is exact (LIB-17 AC-18:
+0.13 % / 0.10 % faster than 2.3.0 on the TI-59 / TI-58C, ledger 59-33).
 
-1. Call `step()` and add up the returned cycle weights until they reach the
-   batch target: the model's instruction rate (`CoreArchitecture.md`) × 20 ms:
-   284 on the TI-59, 240 on the TI-58, 246 on the TI-58C.
-   The overshoot carries into
-   the next batch, so the long-term rate stays exact. Each batch ends at a
-   random offset of 0 to half a batch past its grid point (`BatchJitter`:
-   batch n runs target + rₙ − rₙ₋₁, so the offsets never accumulate). The
-   frontends sample the CPU between batches; with fixed batches a ROM loop
-   whose length divides the target is caught at the same instruction every
-   frame — the TI-58's 80-step error-blink dark pass in 240 froze the CPU panel
-   (`cooperative_runner_batch_ends_do_not_lock_onto_a_loop`).
-2. Sleep until the batch's deadline. Deadlines are absolute, each 20 ms after
-   the previous, so oversleep is paid back in the next batch. A lag over
-   100 ms, or a batch that doesn't sleep, restarts the schedule. Timing
-   each batch from a fresh `now()` instead runs about 17 % slow on macOS
-   (`runner_keeps_real_time` in `tests/shared_runtime_tests.cpp`).
-3. Full speed skips the sleep, except while the PC is in the model's
-   scan/key-detect range or the batch polled hardware (`shouldSleep`).
+The Web (until M-34): `CooperativePacing` runs `Pacing::runBatch` batches of
+the instruction rate × 20 ms, cut to whole cycles (284 on the TI-59, 240 on
+the TI-58, 246 on the TI-58C), each ending at a random offset of 0 to half
+a batch past its grid point (`BatchJitter`); full speed skips the wait
+except in the scan/key-detect range or after a confirmed hardware poll
+(`shouldSleep`).
 
 `step()` returns the cycle weight in the low 8 bits (`kWeightMask`). Bit 29
 marks a step boundary (the CALCULATOR freeze stops on it). Bit 30 marks a confirmed
@@ -341,7 +344,7 @@ reference order: `StateFileFormat.md`.
    target model's limits. Parse errors are reported and the load continues.
 2. `MODEL:` names another model → `startMachine(target)` first. Then the
    partition check (`stateFilePartitionError`) aborts the load.
-3. `dropPresetCards`, stop the loop, unfreeze, and on the emulation thread
+3. `dropPresetCards`, stop the loop, unfreeze, and on the session's thread
    `applyState` (`StateApplier`). Then reset the heatmap baseline, start the
    loop, and apply the rest on the UI thread.
 4. Persist `ti58c.mem`, then play `KEYSTROKES:`.
@@ -357,7 +360,7 @@ into the keystroke events (`shared_ptr`). This is the order of operations:
 3. A reload hops to the UI thread (`Listener::reloadRequested`). There
    `SessionController::applyReloadStage` stops the loop, runs `applyReload`
    (only the listed steps and registers)
-   on the emulation thread, restarts the loop (unless frozen), and updates
+   on the session's thread, restarts the loop (unless frozen), and updates
    the cue card. It then calls `hostDone()`. A posted job would not do: it
    runs only after the run loop exits.
 4. `ArmCard` and `InsertCard` queue their card in the session (`QueuedCard`,

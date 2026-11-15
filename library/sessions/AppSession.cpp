@@ -98,6 +98,10 @@ struct AppSession::Impl final : SessionContext, SessionSetup {
     std::chrono::system_clock::time_point hostTime() const override {
         return setup.hostTime ? setup.hostTime() : std::chrono::system_clock::now();
     }
+    Speed commandedSpeed() const override { return commanded; }
+    void setCommandedSpeed(Speed sp) override {
+        if (!running) commanded = sp;   // D-6
+    }
     const machine::DisplayOutput* display() const override {
         const auto* d = payloadAs<DisplayState>(this->displayTopic());
         return d ? &d->output : nullptr;

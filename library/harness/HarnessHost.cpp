@@ -39,8 +39,14 @@ Value fromSession(const sessions::Value& v) {
     return out;
 }
 
+HarnessHost::HarnessHost(sessions::AppSession& s, HarnessProduct& p, Attached,
+                         std::function<void(const sessions::Message&)> tap)
+    : onMessage(std::move(tap)), session_(s), product_(p) {
+    me_ = session_.listen(*this, sessions::HostServices{});   // no host services (C59-5 AC-12)
+}
+
 HarnessHost::HarnessHost(sessions::AppSession& s, HarnessProduct& p, const RunSetup& r)
-    : session_(s), product_(p), setup_(r) {
+    : session_(s), product_(p), setup_(&r) {
     me_ = session_.listen(*this, sessions::HostServices{});
     // The replay of a listener that starts late marks every stream with a
     // reset; for the harness nothing has started over before its first read.
@@ -56,6 +62,7 @@ void HarnessHost::deliver(const Message& m) {
         return;
     }
     mirror_.deliver(m);
+    if (onMessage) onMessage(m);
 }
 
 ReplyMessage HarnessHost::takeReply(sessions::CallId id) {
@@ -68,7 +75,22 @@ ReplyMessage HarnessHost::takeReply(sessions::CallId id) {
     return ReplyMessage{id, false, "The session gave no reply.", nullptr};
 }
 
-ReplyMessage HarnessHost::command(sessions::Command c) { return takeReply(session_.send(me_, std::move(c))); }
+std::optional<ReplyMessage> HarnessHost::takeReplyIfAny(sessions::CallId id) {
+    for (auto it = replies_.begin(); it != replies_.end(); ++it)
+        if (it->call == id) {
+            ReplyMessage r = std::move(*it);
+            replies_.erase(it);
+            return r;
+        }
+    return std::nullopt;
+}
+
+ReplyMessage HarnessHost::command(sessions::Command c) {
+    const sessions::CallId id = lastCall_ = session_.send(me_, std::move(c));
+    if (!attached()) return takeReply(id);
+    if (auto r = takeReplyIfAny(id)) return *r;
+    return ReplyMessage{id, false, kPendingReply, nullptr};
+}
 
 ReplyMessage HarnessHost::ask(sessions::Request q) { return takeReply(session_.ask(me_, std::move(q))); }
 
@@ -128,7 +150,7 @@ void HarnessHost::SoundSink::deliver(const Message& m) {
 
 Reply HarnessHost::record(const std::string& path) {
     // What the machine made before the command is not part of the file.
-    session_.advanceUnpaced(0);
+    if (!attached()) session_.advanceUnpaced(0);
     if (soundListener_) {
         session_.stopListening(*soundListener_);
         soundListener_.reset();
@@ -149,7 +171,7 @@ void HarnessHost::finish() {
     if (finished_) return;
     finished_ = true;
     if (soundListener_) {
-        session_.advanceUnpaced(0);   // the sound of the last operation
+        if (!attached()) session_.advanceUnpaced(0);   // the sound of the last operation
         session_.stopListening(*soundListener_);
         soundListener_.reset();
     }

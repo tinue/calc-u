@@ -691,9 +691,13 @@ void SessionController::loadStateFile(const std::optional<std::vector<uint8_t>>&
 // ── Dropped files (reference/SharedArchitecture.md § "Dropped Files") ──────────
 
 SessionController::DropAction SessionController::dropAction(const std::string& fileName) const {
+    return dropActionFor(fileName, m_model);
+}
+
+SessionController::DropAction SessionController::dropActionFor(const std::string& fileName, Model model) {
     if (isStateFileName(fileName)) return DropAction::LoadPreset;
     if (!isCardFileName(fileName)) return DropAction::NotAccepted;
-    return info(m_model).hasCardReader ? DropAction::FitCard : DropAction::Ignore;
+    return info(model).hasCardReader ? DropAction::FitCard : DropAction::Ignore;
 }
 
 bool SessionController::openDroppedFile(const std::optional<std::vector<uint8_t>>& raw, const std::string& path,

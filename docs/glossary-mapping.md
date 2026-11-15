@@ -49,9 +49,9 @@ parenthesis is removed with it.
 
 | Glossary term | Calc-U-59 | Calc-U-1600 |
 |---|---|---|
-| App session | `SessionController` | done (M-31): the library's `calcu::sessions::AppSession`; the product's part `shared::SharpAppPart` |
-| Machine session | `EmulatorSession` | done (M-31): the library's `calcu::sessions::MachineSession` |
-| Frontend interface | `Platform` (`cu59::SessionController`) | done (M-31): messages of the app session (topics, commands, host services) |
+| App session | `calcu::sessions::AppSession` with `cu59::TIAppPart` (Swift, Qt6, since M-33); `SessionController` (Web until M-34, and inside `TIAppPart`) | done (M-31): the library's `calcu::sessions::AppSession`; the product's part `shared::SharpAppPart` |
+| Machine session | `calcu::sessions::MachineSession` (Swift, Qt6, since M-33); `EmulatorSession` (Web until M-34) | done (M-31): the library's `calcu::sessions::MachineSession` |
+| Frontend interface | messages and commands of the app session (Swift, Qt6, since M-33; `TIAppSession` is the Swift bridge, was `TISessionController`); `Platform` (`cu59::SessionController`, Web until M-34) | done (M-31): messages of the app session (topics, commands, host services) |
 | App layer | `Shared/` | `Shared/` |
 | Machine | `TIMachine` (`calcu::machine::Machine`, C59-1) | `PC1500InterfaceMachine`, `PC1600InterfaceMachine` (`calcu::machine::Machine`, C1600-1; built by `SharpMachineBuilder` from `sharp::sharpCatalogue()`); `PC1500Machine`, `PC1600Machine` core-internal |
 | Model | `ModelId` (descriptor, `tiCatalogue()`); `cu59::Model` kept as the app enum (`modelId`, `modelFrom`), `ModelInfo` for file-format facts (no ROM file names since M-24); `MachineVariant` core-internal | `calcu::machine::ModelId` (descriptor, `sharpCatalogue()`); `shared::Model` kept as the app enum until M-49 (`modelIdOf`, `modelOf`, `variantIdOf` in `app/MachineModel.hpp`); model (`startup/modelPreference`) |

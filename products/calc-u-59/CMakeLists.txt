@@ -61,11 +61,15 @@ target_include_directories(calcu59_core PUBLIC ${CORE_ROOT})
 target_compile_options(calcu59_core PRIVATE ${CALCU59_WARNINGS})
 set_target_properties(calcu59_core PROPERTIES POSITION_INDEPENDENT_CODE ON)
 # The core holds no lock and starts no thread (ADR 0009); the app layer's
-# runner thread needs Threads (until M-33).
+# one thread is the Swift frontend's session thread (SessionThread, C59-5).
 target_link_libraries(calcu59_core PUBLIC calcu_library)
 
 file(GLOB SHARED_SOURCES CONFIGURE_DEPENDS ${SHARED_ROOT}/*.cpp)
 list(REMOVE_ITEM SHARED_SOURCES ${SHARED_ROOT}/HarnessProduct.cpp)   # calcu59_harness below
+if(EMSCRIPTEN)
+  # The Swift frontend's session thread (C59-5): never in the Web engine.
+  list(REMOVE_ITEM SHARED_SOURCES ${SHARED_ROOT}/SessionThread.cpp)
+endif()
 add_library(calcu59_shared STATIC ${SHARED_SOURCES})
 target_include_directories(calcu59_shared PUBLIC ${SHARED_ROOT})
 find_package(Threads REQUIRED)
@@ -159,6 +163,11 @@ if(CALCU_TESTS)
   # C59-1 AC-17: the app layer reaches the machine through the interface only.
   add_test(NAME CalcU59CoreSeam COMMAND sh tests/check_core_seam.sh WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
   set_tests_properties(CalcU59CoreSeam PROPERTIES LABELS frequent)
+  # LIB-3 AC-28, C59-5 AC-4 (design P59-1, B2): the Qt6 and Swift frontends use
+  # none of the product's own session classes; no thread in app/ but the
+  # session thread; the bridge only through it.
+  add_test(NAME CalcU59NoOwnSession COMMAND sh tests/check_no_own_session.sh WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
+  set_tests_properties(CalcU59NoOwnSession PROPERTIES LABELS frequent)
   # LIB-12 AC-2: no product source looks for a ROM file outside the lookup
   # (library/roms/tests/check_no_own_rom_lookup.sh; design T7). Allowed: the
   # product's lookUpRoms(), the catalogue's ROM entries, the Qt6 Bundle.

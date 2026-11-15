@@ -5,19 +5,9 @@ namespace cu59 {
 
 // ── Lane ─────────────────────────────────────────────────────────────────────
 
-KeySequencer::Lane::Lane(KeySequencer& owner, Threading threading) : m_owner(owner) {
-    if (threading == Threading::Threads) m_thread = std::thread([this] { run(); });
-}
+KeySequencer::Lane::Lane(KeySequencer& owner) : m_owner(owner) {}
 
-KeySequencer::Lane::~Lane() {
-    {
-        std::lock_guard<std::mutex> lock(m_mutex);
-        m_quit = true;
-        ++m_generation;
-    }
-    m_cv.notify_all();
-    if (m_thread.joinable()) m_thread.join();
-}
+KeySequencer::Lane::~Lane() { ++m_generation; }
 
 void KeySequencer::Lane::post(Task task) {
     {
@@ -25,7 +15,6 @@ void KeySequencer::Lane::post(Task task) {
         task.generation = m_generation.load();
         m_tasks.push_back(std::move(task));
     }
-    m_cv.notify_all();
 }
 
 void KeySequencer::Lane::cancel() {
@@ -34,7 +23,6 @@ void KeySequencer::Lane::cancel() {
         ++m_generation;
         m_tasks.clear();
     }
-    m_cv.notify_all();
 }
 
 // A task cancelled before it started never runs (no playbackStarted).
@@ -45,22 +33,6 @@ bool KeySequencer::Lane::takeNext(Task& task) {
         if (!cancelled(task.generation)) return true;
     }
     return false;
-}
-
-// A task in progress runs to its end, even on quit: a held key comes up.
-void KeySequencer::Lane::run() {
-    for (;;) {
-        auto wake = advance(Clock::now());
-        std::unique_lock<std::mutex> lock(m_mutex);
-        if (!wake) {
-            if (m_quit) return;
-            m_cv.wait(lock, [this] { return m_quit || !m_tasks.empty(); });
-        } else if (m_current->phase == Task::Phase::Holding) {
-            m_cv.wait_until(lock, *wake);  // a hold runs to its end; step() sleeps again if woken early
-        } else {
-            m_cv.wait_until(lock, *wake, [&] { return m_quit || cancelled(m_current->generation); });
-        }
-    }
 }
 
 std::optional<KeySequencer::Clock::time_point> KeySequencer::Lane::advance(Clock::time_point now) {
@@ -84,34 +56,16 @@ std::optional<KeySequencer::Clock::time_point> KeySequencer::Lane::advance(Clock
 
 // ── KeySequencer ─────────────────────────────────────────────────────────────
 
-KeySequencer::KeySequencer(Host& host, Threading threading)
-    : m_host(host), m_threading((requireThreadSupport(threading), threading)),
-      m_script(*this, threading), m_keys(*this, threading) {
-    if (threading == Threading::Threads) m_timer = std::thread([this] { timerLoop(); });
-}
+KeySequencer::KeySequencer(Host& host) : m_host(host), m_script(*this), m_keys(*this) {}
 
 KeySequencer::~KeySequencer() {
     m_script.cancel();
     m_keys.cancel();
-    {
-        std::lock_guard<std::mutex> lock(m_timerMutex);
-        m_timerQuit = true;
-    }
-    m_timerCv.notify_all();
-    if (m_timer.joinable()) m_timer.join();
-}
-
-KeySequencer::Clock::time_point KeySequencer::now() const {
-    return m_threading == Threading::Threads ? Clock::now() : m_now;
 }
 
 void KeySequencer::advance(Clock::time_point now) {
-    if (m_threading != Threading::Cooperative) return;
     m_now = std::max(m_now, now);
-    {
-        std::unique_lock<std::mutex> lock(m_timerMutex);
-        releaseDue(m_now, lock);
-    }
+    releaseDue(m_now);
     m_script.advance(m_now);
     m_keys.advance(m_now);
 }
@@ -305,33 +259,15 @@ void KeySequencer::releaseAll() {
     m_host.heldKeyChanged(-1);
 }
 
-void KeySequencer::releaseAt(uint8_t code, Clock::time_point when) {
-    {
-        std::lock_guard<std::mutex> lock(m_timerMutex);
-        m_releases.emplace_back(when, code);
-    }
-    m_timerCv.notify_all();
-}
+void KeySequencer::releaseAt(uint8_t code, Clock::time_point when) { m_releases.emplace_back(when, code); }
 
-std::optional<KeySequencer::Clock::time_point> KeySequencer::releaseDue(Clock::time_point now,
-                                                                       std::unique_lock<std::mutex>& lock) {
+void KeySequencer::releaseDue(Clock::time_point now) {
     for (;;) {
         auto it = std::min_element(m_releases.begin(), m_releases.end());
-        if (it == m_releases.end()) return std::nullopt;
-        if (now < it->first) return it->first;
+        if (it == m_releases.end() || now < it->first) return;
         uint8_t code = it->second;
         m_releases.erase(it);
-        lock.unlock();
         m_host.releaseKey(code);
-        lock.lock();
-    }
-}
-
-void KeySequencer::timerLoop() {
-    std::unique_lock<std::mutex> lock(m_timerMutex);
-    while (!m_timerQuit) {
-        if (auto next = releaseDue(Clock::now(), lock)) m_timerCv.wait_until(lock, *next);
-        else m_timerCv.wait(lock, [this] { return m_timerQuit || !m_releases.empty(); });
     }
 }
 

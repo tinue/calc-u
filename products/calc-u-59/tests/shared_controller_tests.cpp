@@ -10,7 +10,6 @@
 #include <chrono>
 #include <deque>
 #include <mutex>
-#include <thread>
 
 using namespace cu59;
 using namespace std::chrono_literals;
@@ -18,14 +17,29 @@ using testroms::FakePlatform;
 
 namespace {
 
-template <class F> bool pumpUntil(FakePlatform& p, F cond, std::chrono::milliseconds timeout = 3000ms) {
-    auto end = std::chrono::steady_clock::now() + timeout;
-    while (std::chrono::steady_clock::now() < end) {
-        p.pump();
-        if (cond()) return true;
-        std::this_thread::sleep_for(5ms);
-    }
+// The controllers run cooperatively (M-33: the threaded runner is gone):
+// the test is their host and ticks them at 60 Hz on a clock of its own.
+std::chrono::steady_clock::time_point g_now = std::chrono::steady_clock::time_point{} + std::chrono::hours(1);
+constexpr auto kFrame = std::chrono::microseconds(16'667);
+
+void frame(SessionController& c, FakePlatform& p) {
+    g_now += kFrame;
+    c.tick(g_now);
     p.pump();
+}
+
+void runFor(SessionController& c, FakePlatform& p, std::chrono::milliseconds d) {
+    const auto end = g_now + d;
+    while (g_now < end) frame(c, p);
+}
+
+template <class F> bool pumpUntil(SessionController& c, FakePlatform& p, F cond, std::chrono::milliseconds timeout = 3000ms) {
+    const auto end = g_now + timeout;
+    p.pump();
+    while (g_now < end) {
+        if (cond()) return true;
+        frame(c, p);
+    }
     return cond();
 }
 
@@ -33,12 +47,8 @@ std::string catalog() { return testroms::readFile("roms/solid-state/cuecards.txt
 
 std::vector<uint8_t> bytes(const std::string& s) { return std::vector<uint8_t>(s.begin(), s.end()); }
 
-bool waitForScanLoop(SessionController& c) {
-    for (int i = 0; i < 600; ++i) {
-        if (c.session()->access().machine().isKeyReady()) return true;
-        std::this_thread::sleep_for(5ms);
-    }
-    return false;
+bool waitForScanLoop(SessionController& c, FakePlatform& p) {
+    return pumpUntil(c, p, [&] { return c.session()->access().machine().isKeyReady(); });
 }
 
 } // namespace
@@ -72,7 +82,7 @@ TEST(controller_load_while_frozen_ends_running_without_tracing) {
     CHECK(c.startMachine(Model::TI59));
     c.freeze(FreezeOwner::Calculator);
     CHECK(c.isFrozen());
-    CHECK(pumpUntil(p, [&] { return !c.debug().cpuHistory().empty(); }));
+    CHECK(pumpUntil(c, p, [&] { return !c.debug().cpuHistory().empty(); }));
     c.loadStateFile(bytes("REGISTERS:\n01 = 7\n"));
     CHECK(!c.isFrozen());
     CHECK(!c.session()->debugState().frozen);
@@ -89,7 +99,7 @@ TEST(controller_keystroke_controls_drive_the_gui) {
                           "KEYSTROKES:\nPrinterTrace: on\nCutPaper:\nDebugPanel: CPU\n"
                           "FreezeOnStart: Calculator\n11\n"));
     auto tick = [&](auto cond) {
-        return pumpUntil(p, [&] { c.tick(std::chrono::steady_clock::now()); return cond(); }, 10000ms);
+        return pumpUntil(c, p, [&] { return cond(); }, 10000ms);
     };
     CHECK(tick([&] { return c.isFrozen(); }));
     CHECK(c.printerTrace());
@@ -108,7 +118,7 @@ TEST(controller_constant_memory_keeps_the_loaded_card) {
     CHECK(p.mem && p.mem->find("KEEP ME") != std::string::npos);
     // Unchanged RAM: the debounced persist does not write again.
     int writes = p.memWrites;
-    auto t = std::chrono::steady_clock::now();
+    auto t = g_now;
     c.session()->stop();
     c.session()->sync([] {});
     c.tick(t);
@@ -137,16 +147,16 @@ TEST(controller_reset_keeps_the_memory_and_clean_reset_clears_it) {
     FakePlatform p;
     SessionController c(p, testroms::romSet(), catalog(), "ML");
     CHECK(c.startMachine(Model::TI59));
-    CHECK(waitForScanLoop(c));
+    CHECK(waitForScanLoop(c, p));
     const uint8_t marked[16] = {1, 2, 3};
     uint8_t reg[16];
     c.session()->access().memory().writeRAMReg(90, marked);
     c.resetMachine();
-    CHECK(waitForScanLoop(c));
+    CHECK(waitForScanLoop(c, p));
     c.session()->access().memory().copyRAMReg(90, reg);
     CHECK(std::equal(std::begin(marked), std::end(marked), reg));
     c.cleanResetMachine();
-    CHECK(pumpUntil(p, [&] {
+    CHECK(pumpUntil(c, p, [&] {
         c.session()->access().memory().copyRAMReg(90, reg);
         return reg[0] == 0;
     }));
@@ -160,15 +170,15 @@ TEST(controller_cpu_freeze_on_start_sees_reset_and_clean_reset) {
     FakePlatform p;
     SessionController c(p, testroms::romSet(), catalog(), "ML");
     CHECK(c.startMachine(Model::TI59));
-    CHECK(waitForScanLoop(c));
+    CHECK(waitForScanLoop(c, p));
     for (bool clean : {false, true}) {
         c.armScanLoopExit();
-        std::this_thread::sleep_for(50ms);  // the armed freeze sees the scan loop
+        runFor(c, p, 50ms);  // the armed freeze sees the scan loop
         if (clean) c.cleanResetMachine(); else c.resetMachine();
-        CHECK(pumpUntil(p, [&] { return c.isFrozen(); }));
+        CHECK(pumpUntil(c, p, [&] { return c.isFrozen(); }));
         CHECK(c.debugState().owner == FreezeOwner::Cpu);
         c.resume();
-        CHECK(waitForScanLoop(c));
+        CHECK(waitForScanLoop(c, p));
     }
 }
 
@@ -187,7 +197,7 @@ TEST(controller_resume_before_the_frozen_view_drops_it) {
     CHECK(c.startMachine(Model::TI59));
     c.freeze(FreezeOwner::Cpu);
     c.resume();  // before the frozen view arrives
-    std::this_thread::sleep_for(200ms);  // the freeze job ran (it is queued before the loop)
+    runFor(c, p, 200ms);  // the freeze job ran (it is queued before the loop)
     p.changes = 0;
     p.pump();
     CHECK(!c.isFrozen());
@@ -219,7 +229,7 @@ TEST(controller_asm_overlay) {
     CHECK_EQ(c.asmStatus(), std::string("Could not read ASM file."));
     c.loadAsm(std::string("HEX:\n0x0A01 0x0A01\n"), "a.asm");
     CHECK_EQ(c.asmStatus(), std::string("Loaded 2 word(s) at 0x1800."));
-    CHECK(waitForScanLoop(c));
+    CHECK(waitForScanLoop(c, p));
     c.armScanLoopExit();
     c.runAsm();
     CHECK(c.asmActive());
@@ -231,7 +241,7 @@ TEST(controller_asm_overlay) {
     CHECK_EQ(c.asmStatus(), std::string("ASM overlay cleared."));
 }
 
-TEST(controller_threaded_reload_and_memory_card) {
+TEST(controller_reload_and_memory_card) {
     FakePlatform p;
     SessionController c(p, testroms::romSet(), catalog(), "ML");
     CHECK(c.startMachine(Model::TI59));
@@ -241,11 +251,11 @@ TEST(controller_threaded_reload_and_memory_card) {
                           "PROGRAM:\n76 11 47 04 22 96 43 00 91\n"           // Lbl A CMs 4 INV Write RCL 00 R/S
                           "KEYSTROKES:\nArmCard: mem:M\n11\n"));
     auto tickUntil = [&](auto cond) {
-        return pumpUntil(p, [&] { c.tick(std::chrono::steady_clock::now()); return cond(); }, 20000ms);
+        return pumpUntil(c, p, [&] { return cond(); }, 20000ms);
     };
     CHECK(tickUntil([&] { return c.keystrokesPlaying(); }));
     CHECK(tickUntil([&] { return !c.keystrokesPlaying(); }));
-    CHECK(waitForScanLoop(c));
+    CHECK(waitForScanLoop(c, p));
     CHECK_EQ(testroms::mem(c.session()->access().machine()).readDataReg(0), 42.0);
     CHECK_EQ(int(testroms::mem(c.session()->access().machine()).readProgramStep(2)), 47);  // part 2 is in
     CHECK(p.errors.empty());
@@ -298,7 +308,7 @@ TEST(c59_6_ac6_state_file_sets_trace_off_unless_it_sets_it) {
     c.loadStateFile(bytes("REGISTERS:\n01 = 1\n"));
     CHECK(!c.printerTrace() && traceSwitch(c) == std::optional<bool>(false));
     c.loadStateFile(bytes("KEYSTROKES:\nPrinterTrace: on\n"));
-    CHECK(pumpUntil(p, [&] { c.tick(std::chrono::steady_clock::now()); return c.printerTrace(); }, 5000ms));
+    CHECK(pumpUntil(c, p, [&] { return c.printerTrace(); }, 5000ms));
     CHECK(traceSwitch(c) == std::optional<bool>(true));
 }
 
@@ -308,7 +318,7 @@ TEST(c59_6_ac1_paper_kept_across_detach_and_attach) {
     CHECK(c.startMachine(Model::TI59));
     CHECK(c.printerConnected());
     c.loadStateFile(bytes("KEYSTROKES:\n82 21 94\n"));   // 1 2nd Prt
-    CHECK(pumpUntil(p, [&] { c.tick(std::chrono::steady_clock::now()); return !c.printerLines().empty() && !c.keystrokesPlaying(); },
+    CHECK(pumpUntil(c, p, [&] { return !c.printerLines().empty() && !c.keystrokesPlaying(); },
                     5000ms));
     const auto lines = c.printerLines();
     CHECK(lines.size() == 1 && lines[0] == "          1.        ");
@@ -327,7 +337,7 @@ TEST(c59_6_ac11_change_module_power_cycles) {
     FakePlatform p;
     SessionController c(p, testroms::romSet(), catalog(), "ML");
     CHECK(c.startMachine(Model::TI59));
-    CHECK(waitForScanLoop(c));
+    CHECK(waitForScanLoop(c, p));
     const uint8_t marked[16] = {1, 2, 3};
     uint8_t reg[16];
     c.session()->access().memory().writeRAMReg(90, marked);
@@ -336,19 +346,19 @@ TEST(c59_6_ac11_change_module_power_cycles) {
     CHECK(testroms::moduleIn(c.session()->access().machine()) == "LE");
     CHECK(c.session()->moduleImage() == *cu59::moduleImage(*testroms::romSet(), "LE.rom.yaml"));
     // The power cycle: the TI-59 loses its program and registers (row 59-11).
-    CHECK(waitForScanLoop(c));
+    CHECK(waitForScanLoop(c, p));
     c.session()->access().memory().copyRAMReg(90, reg);
     CHECK_EQ(int(reg[0]), 0);
     // The printer too.
     c.session()->access().memory().writeRAMReg(90, marked);
     c.setPrinterConnected(false);
-    CHECK(waitForScanLoop(c));
+    CHECK(waitForScanLoop(c, p));
     c.session()->access().memory().copyRAMReg(90, reg);
     CHECK_EQ(int(reg[0]), 0);
     // An empty slot.
     c.changeModule("");
     CHECK(c.moduleID().empty() && testroms::moduleIn(c.session()->access().machine()).empty());
     CHECK(c.session()->moduleImage().empty());
-    CHECK(waitForScanLoop(c));
+    CHECK(waitForScanLoop(c, p));
     CHECK(p.errors.empty());
 }

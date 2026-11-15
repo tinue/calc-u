@@ -9,18 +9,22 @@
 #include <algorithm>
 #include <chrono>
 #include <cmath>
-#include <thread>
 
 using namespace cu59;
 using namespace std::chrono_literals;
 
 namespace {
 
-template <class F> bool waitFor(F cond, std::chrono::milliseconds timeout) {
-    auto end = std::chrono::steady_clock::now() + timeout;
-    while (std::chrono::steady_clock::now() < end) {
+// The sessions run cooperatively (M-33: the threaded runner is gone): the
+// test pumps them at 60 Hz on a clock of its own.
+std::chrono::steady_clock::time_point g_now = std::chrono::steady_clock::time_point{} + std::chrono::hours(1);
+
+template <class F> bool waitFor(EmulatorSession& s, F cond, std::chrono::milliseconds timeout) {
+    const auto end = g_now + timeout;
+    while (g_now < end) {
         if (cond()) return true;
-        std::this_thread::sleep_for(5ms);
+        g_now += std::chrono::microseconds(16'667);
+        s.pump(g_now);
     }
     return cond();
 }
@@ -301,45 +305,24 @@ TEST(runner_post_and_sync_are_serial) {
     FreezeController freeze;
     testroms::dbg(*m).setRunControl(&freeze);
     MachineGuard guard(*m);
-    EmulationRunner runner(guard, Model::TI59, freeze, {});
+    CooperativePacing runner(guard, Model::TI59, freeze, {});
     std::vector<int> order;
-    std::mutex mu;
-    runner.post([&] { std::lock_guard<std::mutex> l(mu); order.push_back(1); });
-    runner.sync([&] { std::lock_guard<std::mutex> l(mu); order.push_back(2); });
+    runner.post([&] { order.push_back(1); });
+    runner.sync([&] { order.push_back(2); });
     CHECK(order == (std::vector<int>{1, 2}));
     runner.start();
     CHECK(runner.isRunning());
-    std::this_thread::sleep_for(100ms);
+    runner.post([&] { order.push_back(3); });   // behind the running loop
+    auto t = g_now;
+    for (int i = 0; i < 6; ++i) runner.pump(t += std::chrono::microseconds(16'667), nullptr);
+    CHECK_EQ(order.size(), size_t{2});
     runner.stop();
     uint64_t ticks = 0;
-    runner.sync([&] { ticks = ((*m).tickCount() / 32); });  // runs after the loop exited
+    runner.sync([&] { ticks = ((*m).tickCount() / 32); });  // runs after the loop stopped
+    CHECK(order == (std::vector<int>{1, 2, 3}));
     CHECK(!runner.isRunning());
     // ~0.1 s at 14218.75 Hz plus the boot burst being paced too.
     CHECK(ticks > 500 && ticks < 14219 / 2);
-}
-
-// The run loop must deliver emulated time at the real rate even when every
-// batch costs extra (oversleep, the batchDone callback). Pacing each batch
-// from a fresh now() lost that time — 0.83× real time on macOS, which made the
-// TI-59 error blink 1.07 s instead of the measured 0.90 s.
-TEST(runner_keeps_real_time) {
-    auto m = testroms::makeMachine(Model::TI59);
-    testroms::runToScanLoop(*m, Model::TI59);
-    FreezeController freeze;
-    testroms::dbg(*m).setRunControl(&freeze);
-    EmulationRunner::Callbacks cb;
-    cb.batchDone = [] { std::this_thread::sleep_for(2ms); };  // a slow UI callback
-    MachineGuard guard(*m);
-    EmulationRunner runner(guard, Model::TI59, freeze, cb);
-    uint64_t t0 = guard.access().machine().tickCount() / 32;
-    auto w0 = std::chrono::steady_clock::now();
-    runner.start();
-    std::this_thread::sleep_for(1500ms);
-    uint64_t t1 = guard.access().machine().tickCount() / 32;   // the runner is running: under the guard
-    double wall = std::chrono::duration<double>(std::chrono::steady_clock::now() - w0).count();
-    runner.stop();
-    double ratio = double(t1 - t0) / testroms::instructionHz(Model::TI59) / wall;
-    CHECK(ratio > 0.95 && ratio < 1.05);
 }
 
 TEST(session_plays_keystrokes_in_real_time) {
@@ -348,11 +331,11 @@ TEST(session_plays_keystrokes_in_real_time) {
     CHECK(!session.moduleImage().empty());
     session.setFullSpeed(true);  // boot quickly; the scan loop still runs at regular speed
     session.start();
-    CHECK(waitFor([&] { return session.access().machine().isKeyReady(); }, 5000ms));
+    CHECK(waitFor(session, [&] { return session.access().machine().isKeyReady(); }, 5000ms));
     session.setFullSpeed(false);
     auto r = parseStateFile("KEYSTROKES:\n25 83 85 84 95\nZeroElapseTime:\nWait: 50ms\nReportElapseTime:\n");
     session.playKeystrokes(r.keystrokes);
-    CHECK(waitFor([&] { return listener.playbackDone.load() == 1; }, 8000ms));
+    CHECK(waitFor(session, [&] { return listener.playbackDone.load() == 1; }, 8000ms));
     CHECK_EQ(testroms::displayText(session.access().machine()), std::string("5"));
     {
         std::lock_guard<std::mutex> lock(listener.mutex);
@@ -369,12 +352,12 @@ TEST(session_freeze_fires_through_listener) {
     listener.session = &session;
     session.setFullSpeed(true);
     session.start();
-    CHECK(waitFor([&] { return session.access().machine().isKeyReady(); }, 5000ms));
+    CHECK(waitFor(session, [&] { return session.access().machine().isKeyReady(); }, 5000ms));
     session.armScanLoopExit();
     CHECK(session.debugState().scanLoopExitArmed);
     CHECK(testroms::dbg(session.access().machine()).traceFlags() != TRACE_NONE);  // an armed freeze needs the trace ring
     session.keyboardDown({83});
-    CHECK(waitFor([&] { return listener.freezes.load() == 1; }, 2000ms));
+    CHECK(waitFor(session, [&] { return listener.freezes.load() == 1; }, 2000ms));
     CHECK(listener.frozenWhenFired.load());
     DebugState s = session.debugState();
     CHECK(s.frozen && s.owner == FreezeOwner::Cpu && !s.scanLoopExitArmed);
@@ -399,12 +382,12 @@ TEST(session_steps_only_when_frozen_and_arms_exclude) {
     CHECK(!session.debugState().scanLoopExitArmed && session.debugState().pcChangeArmed);
     session.start();
     session.freeze(FreezeOwner::Calculator);
-    CHECK(waitFor([&] { return listener.freezes.load() == 1; }, 2000ms));
+    CHECK(waitFor(session, [&] { return listener.freezes.load() == 1; }, 2000ms));
     DebugState s = session.debugState();
     CHECK(s.frozen && s.owner == FreezeOwner::Calculator && !s.pcChangeArmed);
     session.stepInstruction();
     session.stepKeycode();
-    CHECK(waitFor([&] { return listener.freezes.load() == 3; }, 2000ms));
+    CHECK(waitFor(session, [&] { return listener.freezes.load() == 3; }, 2000ms));
     CHECK(!session.isRunning());
     uint64_t before = session.debugState().generation;
     session.resume();

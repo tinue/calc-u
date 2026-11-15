@@ -4,12 +4,15 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
-// Swift face of Shared/SessionController: the calculator, presets, cards,
-// printer, cue card, debugger and traces both apps drive the same way. Type
-// translation only. Main thread only; the platform delegate is called on the
-// main thread.
+// Swift face of the library's app session (C59-5 design §3.3): Calc-U-59's
+// session runs on a thread of its own (cu59::SessionThread, AC-4); this
+// bridge posts commands to it and hands the messages it sends to the main
+// thread, one batch at a time and in order (AC-5, AC-6). It translates types
+// only (ADR 0014): what it returns is the last message of a topic, kept on
+// the main thread for the view model. Main thread only.
 
-/// SessionController::Change bits (Shared/SessionController.hpp).
+/// The topics a batch of messages changed (the interim c59.* topics, LIB-3 59
+/// design §5; until their owners' steps).
 typedef NS_OPTIONS(uint32_t, TIChange) {
     TIChangeModel     NS_SWIFT_NAME(model)     = 1u << 0,
     TIChangeDisplay   NS_SWIFT_NAME(display)   = 1u << 1,
@@ -34,27 +37,26 @@ typedef NS_ENUM(NSInteger, TIFreezeOwner) {
     TIFreezeOwnerCalculator = 1,
 };
 
-/// SessionController::Platform, implemented by the app (main thread).
-@protocol TIPlatform <NSObject>
-- (nullable NSString *)readConstantMemory;
-- (void)writeConstantMemory:(NSString *)text;
-- (BOOL)writeCard:(NSString *)text toPath:(NSString *)path;
-/// The path of card file `fileName` in the card folder (it may not exist).
-- (NSString *)cardFilePath:(NSString *)fileName;
-/// The card file at `path` (coordinated read); nil if it is missing or can't be read.
-- (nullable NSData *)readCardFile:(NSString *)path;
-/// Whether there is a card file at `path`, downloaded or not.
-- (BOOL)cardFileExists:(NSString *)path;
-/// KEYSTROKES DebugPanel:: 0 CALCULATOR, 1 CPU, 2 LOG.
-- (void)showDebugPanel:(NSInteger)panel;
-@property (nonatomic, readonly) NSString *traceDirectory;
-@property (nonatomic, readonly) uint64_t traceMaxBytes;
-@property (nonatomic, readonly) BOOL traceAvailable;
-- (void)saveLastUsedModel:(NSInteger)model;
-- (void)saveModuleID:(NSString *)moduleID;
+/// What the session's messages ask of the app (main thread): the notices
+/// (an alert, LIB-3 AC-30), KEYSTROKES DebugPanel:, the log, and a batch's changes.
+@protocol TIAppSessionDelegate <NSObject>
+- (void)showDebugPanel:(NSInteger)panel;   ///< 0 CALCULATOR, 1 CPU, 2 LOG
 - (void)showErrorTitle:(NSString *)title message:(NSString *)message;
 - (void)diagnostic:(NSString *)message;
 - (void)changed:(TIChange)changes;
+/// A card file was written (the coordinated write succeeded).
+- (void)cardWritten;
+@end
+
+/// What the session is built with (C59-5 D-12, A-12).
+@interface TISessionStart : NSObject
+@property (nonatomic, copy) NSString *cuecards;
+@property (nonatomic, copy) NSString *moduleID;
+@property (nonatomic) NSInteger model;                ///< MachineModel raw value
+@property (nonatomic, copy) NSString *saveFolder;     ///< cards and ti58c.mem (CardStorage)
+@property (nonatomic, copy) NSString *traceDirectory;
+@property (nonatomic) uint64_t traceMaxBytes;
+@property (nonatomic) BOOL traceAvailable;
 @end
 
 /// One printed line's dot codes (Core PrinterCodeLine).
@@ -132,23 +134,26 @@ typedef NS_ENUM(NSInteger, TIFreezeOwner) {
                               missing:(NSString *_Nullable *_Nullable)missing;
 @end
 
-@interface TISessionController : NSObject
+@interface TIAppSession : NSObject
 
-/// `roms` from +[TIRomSet lookUpInFolder:…]; `platform` is held weakly.
-- (instancetype)initWithRoms:(TIRomSet *)roms cuecards:(NSString *)cuecards
-                    moduleID:(NSString *)moduleID platform:(id<TIPlatform>)platform;
+/// The session thread starts and builds the session on it; `delegate` is held weakly.
+- (instancetype)initWithRoms:(TIRomSet *)roms start:(TISessionStart *)start delegate:(id<TIAppSessionDelegate>)delegate;
+/// AC-8: suspend is carried out (the TI-58C memory written), then no more
+/// calls; `done` on the main thread once the suspend was carried out.
+- (void)suspendWithCompletion:(nullable void (^)(void))done;
+/// Calls again, then continue.
+- (void)continueSession NS_SWIFT_NAME(continueSession());
+#if DEBUG && (TARGET_OS_OSX || TARGET_OS_SIMULATOR)
+/// Harness attach on 127.0.0.1, the port `--attach-port N` names, else 59059
+/// (AC-10). NO, and a line of the session's log, when it is not available (EC-1).
+- (BOOL)openAttachWithArguments:(NSArray<NSString *> *)arguments;
+#endif
 
 // ── Machine (model = MachineModel raw value) ─────────────────────────────────
-/// Always YES: the ROM set builds every model (LIB-12 AC-6).
-- (BOOL)startMachine:(NSInteger)model;
-@property (nonatomic, readonly) BOOL hasMachine;
+- (void)startMachine:(NSInteger)model;
 @property (nonatomic, readonly) NSInteger model;
 - (void)resetMachine;
 - (void)cleanResetMachine;
-- (void)suspend;
-- (void)resumeAfterSuspend;
-/// The 60 Hz frame.
-- (void)tick;
 @property (nonatomic, readonly) NSString *moduleID;
 /// Swap to a different module and soft-reset (the Settings choice).
 - (void)changeModule:(NSString *)moduleID;
@@ -188,13 +193,15 @@ typedef NS_ENUM(NSInteger, TIFreezeOwner) {
 // ── Card reader ──────────────────────────────────────────────────────────────
 @property (nonatomic, readonly) BOOL cardSwiping;
 @property (nonatomic, readonly) NSString *cardFileName;
-/// raw nil: the file could not be read.
-- (BOOL)fitCard:(nullable NSData *)raw path:(NSString *)path fileName:(NSString *)fileName;
-- (BOOL)fitBlankCard:(NSString *)savePath fileName:(NSString *)fileName;
+/// raw nil: the file could not be read. `done(YES)` on the main thread when it was fitted.
+- (void)fitCard:(nullable NSData *)raw path:(NSString *)path fileName:(NSString *)fileName
+     completion:(nullable void (^)(BOOL fitted))done;
+- (void)fitBlankCard:(NSString *)savePath fileName:(NSString *)fileName completion:(nullable void (^)(BOOL fitted))done;
 @property (nonatomic, readonly) BOOL cardFitted;
 /// The side whose corner is lit (0 left, 1 right), -1 if none.
 @property (nonatomic, readonly) NSInteger litCardCorner;
-/// A press at canvas position (x, y), each 0…1: YES if it hit a corner of the fitted card.
+/// A press at canvas position (x, y), each 0…1: YES if it hit a corner of the
+/// fitted card on show (a view rule, C59-5 D-5); the side is then fed.
 - (BOOL)tapCardAtX:(double)x y:(double)y;
 - (void)ejectCard;
 
@@ -204,8 +211,9 @@ typedef NS_ENUM(NSInteger, TIFreezeOwner) {
 // ── Dropped files ────────────────────────────────────────────────────────────
 /// dropAction: the file's name makes it a preset, or a card this model can fit.
 - (BOOL)acceptsDroppedFile:(NSString *)fileName;
-/// raw nil: the file could not be read. NO: nothing was done.
-- (BOOL)openDroppedFile:(nullable NSData *)raw path:(NSString *)path fileName:(NSString *)fileName;
+/// raw nil: the file could not be read. `done(NO)`: nothing was done.
+- (void)openDroppedFile:(nullable NSData *)raw path:(NSString *)path fileName:(NSString *)fileName
+             completion:(nullable void (^)(BOOL opened))done;
 
 // ── Debugger ─────────────────────────────────────────────────────────────────
 - (void)setLiveDebugEnabled:(BOOL)on;

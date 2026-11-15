@@ -1,7 +1,6 @@
 #pragma once
 #include "MachineModelInfo.hpp"
 #include "StateFile.hpp"
-#include "Threading.hpp"
 #include <atomic>
 #include <chrono>
 #include <condition_variable>
@@ -11,7 +10,6 @@
 #include <mutex>
 #include <optional>
 #include <string>
-#include <thread>
 #include <vector>
 
 // Timed key input: KEYSTROKES playback and the physical keyboard.
@@ -39,11 +37,10 @@
 // Playback and keyboard taps run on two independent lanes, as two separate
 // tasks would: a key press cancels earlier keyboard taps, never a running
 // script. Each script or tap is a resumable task — a small state machine that
-// says when it next wants to run. With Threading::Threads each lane is a thread
-// that sleeps until then (deferred releases on a timer thread), and Host
-// callbacks arrive on those threads and must be thread-safe. With
-// Threading::Cooperative there are no threads: advance(now) runs whatever is
-// due, on the caller's thread.
+// says when it next wants to run. There are no threads: advance(now) runs
+// whatever is due, on the caller's thread (the session's: the machine
+// session's slice ends, LIB-3 59's TIKeySequencerHook, or the Web's
+// cooperative pump).
 
 namespace cu59 {
 
@@ -81,7 +78,7 @@ public:
     static constexpr std::chrono::milliseconds kHold{100};
     static constexpr std::chrono::microseconds kScanPoll{1500};
 
-    KeySequencer(Host& host, Threading threading = Threading::Threads);
+    explicit KeySequencer(Host& host);
     ~KeySequencer();
     KeySequencer(const KeySequencer&) = delete;
     KeySequencer& operator=(const KeySequencer&) = delete;
@@ -93,6 +90,8 @@ public:
     void cancel();
 
     bool isPlaying() const { return m_playing.load(); }
+    /// A script plays, or one is queued.
+    bool scriptPending() const { return m_playing.load() || m_script.busy(); }
 
     // Physical keyboard
     void keyDown(const std::vector<uint8_t>& codes);
@@ -100,7 +99,7 @@ public:
     /// Force-release whatever is held (focus lost, view torn down).
     void releaseAll();
 
-    /// Cooperative only: run the lanes and deferred releases due at `now`.
+    /// Run the lanes and deferred releases due at `now`.
     void advance(std::chrono::steady_clock::time_point now);
 
     /// row×5 + col identifier the keyboard view highlights for a matrix code.
@@ -131,29 +130,28 @@ private:
     };
 
     /// A serial queue of tasks; cancel() bumps the generation, which drops
-    /// queued tasks and ends a waiting one. Threaded: a thread calls advance()
-    /// and sleeps until the time it returns. Cooperative: the owner calls it.
+    /// queued tasks and ends a waiting one. The owner calls advance().
     class Lane {
     public:
-        Lane(KeySequencer& owner, Threading threading);
+        explicit Lane(KeySequencer& owner);
         ~Lane();
         void post(Task task);
         void cancel();
         bool cancelled(uint64_t generation) const { return m_generation.load() != generation; }
+        bool busy() const {
+            std::lock_guard<std::mutex> lock(m_mutex);
+            return m_current.has_value() || !m_tasks.empty();
+        }
         /// Run what is due at `now`; when the task in progress next wants to
         /// run, nullopt when the lane is idle.
         std::optional<Clock::time_point> advance(Clock::time_point now);
     private:
-        void run();
         bool takeNext(Task& task);  // under m_mutex
         KeySequencer& m_owner;
         std::atomic<uint64_t> m_generation{0};
-        std::mutex m_mutex;
-        std::condition_variable m_cv;
+        mutable std::mutex m_mutex;
         std::deque<Task> m_tasks;
         std::optional<Task> m_current;  ///< the task in progress
-        bool m_quit = false;
-        std::thread m_thread;
     };
 
     /// Run `task` at `now` until it waits: when it next wants to run, or
@@ -161,30 +159,22 @@ private:
     std::optional<Clock::time_point> step(Lane& lane, Task& task, Clock::time_point now);
     void finish(Task& task);
     void releaseAt(uint8_t code, Clock::time_point when);
-    /// Release every key due by `now`; when the next is due, nullopt for none.
-    /// `lock` holds m_timerMutex (dropped while a key is released).
-    std::optional<Clock::time_point> releaseDue(Clock::time_point now, std::unique_lock<std::mutex>& lock);
-    void timerLoop();
-    Clock::time_point now() const;
+    /// Release every key due by `now`.
+    void releaseDue(Clock::time_point now);
+    Clock::time_point now() const { return m_now; }
 
     Host& m_host;
-    const Threading m_threading;
     std::atomic<bool> m_playing{false};
-    Clock::time_point m_now{};  ///< cooperative: the last advance() time
+    Clock::time_point m_now{};  ///< the last advance() time
 
     // Physical keyboard: the single code held down, and since when.
     std::mutex m_keyMutex;
     std::optional<uint8_t> m_heldCode;
     Clock::time_point m_heldSince;
 
-    // Deferred releases (threaded: on the timer thread).
-    std::mutex m_timerMutex;
-    std::condition_variable m_timerCv;
+    // Deferred releases.
     std::vector<std::pair<Clock::time_point, uint8_t>> m_releases;
-    bool m_timerQuit = false;
-    std::thread m_timer;
 
-    // Declared last: destroyed (joined) first, while the members above live.
     Lane m_script;
     Lane m_keys;
 };

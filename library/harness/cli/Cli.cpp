@@ -1,6 +1,7 @@
 #include "Cli.hpp"
 #include "harness/Commands.hpp"
 #include "harness/Run.hpp"
+#include "harness/attach/AttachClient.hpp"
 
 namespace calcu::harness::cli {
 
@@ -16,6 +17,7 @@ std::string usageText(const std::vector<std::unique_ptr<HarnessProduct>>& produc
     std::string s =
         "usage: calcu --product <name> [options] <command> [then <command> ...]\n"
         "       calcu --product <name> [options] serve\n"
+        "       calcu attach [--port N] [--json] [--messages]   (a running app's session, C59-5)\n"
         "options:\n"
         "  --product <name>          the product, by name or short form, any case\n"
         "  --json                    each reply as one JSON object on one line\n"
@@ -36,6 +38,8 @@ std::string usageText(const std::vector<std::unique_ptr<HarnessProduct>>& produc
 } // namespace
 
 int run(const std::vector<std::string>& args, const Io& io, std::vector<std::unique_ptr<HarnessProduct>> products) {
+    if (!args.empty() && args[0] == "attach")
+        return runAttach(std::vector<std::string>(args.begin() + 1, args.end()), io.readLine, io.out, io.err);
     RunOptions options;
     std::optional<std::string> productName;
     std::vector<std::string> words;

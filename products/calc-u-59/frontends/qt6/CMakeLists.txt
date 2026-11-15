@@ -69,6 +69,7 @@ file(CONFIGURE OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/generated/Version.iss
      CONTENT "#define APP_VERSION \"@APP_VERSION@\"\n" @ONLY)
 
 file(GLOB SHARED_SOURCES CONFIGURE_DEPENDS ${SHARED_ROOT}/*.cpp)
+list(REMOVE_ITEM SHARED_SOURCES ${SHARED_ROOT}/HarnessProduct.cpp)   # the harness entry (calcu59_harness), not the app
 set(CORE_SOURCES
   ${CORE_ROOT}/PC100C.cpp
   ${CORE_ROOT}/SolidStateRomModule.cpp

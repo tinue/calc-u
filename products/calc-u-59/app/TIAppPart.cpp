@@ -89,7 +89,6 @@ TIAppPart::~TIAppPart() {
     // Before the session: the TI-58C's memory is written while the machine
     // session still holds the machine.
     persistConstantMemory();
-    if (m_session) m_session->stop();
     m_session.reset();
     m_queue.clear();
 }
@@ -316,7 +315,7 @@ void TIAppPart::settle() {
     adoptMachine();
     syncSpeed();
     publish(std::exchange(m_changes, 0u));
-    if (m_ms && m_session) m_ms->setPaused(!m_session->isRunning());
+    if (m_ms && m_session) m_ms->setPaused(m_session->halted());
 }
 
 void TIAppPart::adoptMachine() {

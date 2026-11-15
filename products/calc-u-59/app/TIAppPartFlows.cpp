@@ -30,10 +30,7 @@ void TIAppPart::later(uint64_t sessionGeneration, std::function<void()> f) {
 
 bool TIAppPart::startMachine(Model model) {
     persistConstantMemory();  // save TI-58C RAM before switching away
-    if (m_session) {
-        m_session->stop();
-        m_session->sync([] {});  // the old session's jobs have run
-    }
+    if (m_session) m_session->runQueuedSteps();  // on the old machine, before it goes
     setManualTrace(false);
 
     const uint64_t generation = m_sessionGeneration + 1;
@@ -78,7 +75,7 @@ bool TIAppPart::startMachine(Model model) {
     m_session->setCpuPanelVisible(m_cpuDebugEnabled);
     m_debug.resetHeatmapBaseline(m_session->access().machine());
     refreshCueCard();
-    m_session->start();
+    m_session->setHalted(false);
     emitChanged(ModelChanged | RunStateChanged | CardChanged | PrinterChanged | CueCardChanged | LiveChanged |
                 CpuChanged | HeatmapChanged | AsmChanged | TraceChanged);
     return true;
@@ -123,9 +120,9 @@ void TIAppPart::resetMachine() {
 }
 
 void TIAppPart::resetStopped() {
-    m_session->stop();
-    m_session->sync([&] { m_session->access().machine().reset(); });
-    m_session->start();
+    m_session->runQueuedSteps();
+    m_session->access().machine().reset();
+    m_session->setHalted(false);
 }
 
 void TIAppPart::cleanResetMachine() {
@@ -197,15 +194,12 @@ bool TIAppPart::changePlaces(const std::optional<std::string>& module, bool prin
     if (!m_session) return false;
     if (module == currentModule() && printer == m_printerConnected) return true;
     beginReset();
-    m_session->stop();
-    PlaceChange pc;
-    m_session->sync([&] {
-        pc = changePlacesNow(module, printer);
-        // The power cycle that follows (LIB-2 AC-24; row 59-11): the ROM
-        // finds what is plugged in now (AC-11).
-        if (pc.powerCycle) m_session->access().machine().powerCycle();
-    });
-    m_session->start();
+    m_session->runQueuedSteps();
+    PlaceChange pc = changePlacesNow(module, printer);
+    // The power cycle that follows (LIB-2 AC-24; row 59-11): the ROM finds
+    // what is plugged in now (AC-11).
+    if (pc.powerCycle) m_session->access().machine().powerCycle();
+    m_session->setHalted(false);
     adoptPlaces(pc, module, printer);
     if (pc.refusal) return false;
     m_debug.resetHeatmapBaseline(m_session->access().machine());
@@ -637,17 +631,14 @@ void TIAppPart::applyState(const LoadStateResult& parsed) {
     if (parsed.solidStateModuleID && isTIModule(*parsed.solidStateModuleID)) module = *parsed.solidStateModuleID;
     const bool printer = parsed.printerConnected.value_or(m_printerConnected);
     m_printerTrace = false;
-    m_session->stop();
     m_session->clearFreeze();
     m_activeProgram = 0;
-    PlaceChange places;
-    m_session->sync([&] {
-        places = changePlacesNow(module, printer);
-        m_session->printerControl(PC100C::kTrace, false);
-        cu59::applyState(m_session->access().machine(), parsed, m_model);
-    });
+    m_session->runQueuedSteps();
+    PlaceChange places = changePlacesNow(module, printer);
+    m_session->printerControl(PC100C::kTrace, false);
+    cu59::applyState(m_session->access().machine(), parsed, m_model);
     m_debug.resetHeatmapBaseline(m_session->access().machine());  // fresh machine state: skip the power-on walk
-    m_session->start();
+    m_session->setHalted(false);
     adoptPlaces(places, module, printer);
     cutPaper();  // each loaded state starts with a blank strip
     emitChanged(PrinterChanged);
@@ -709,9 +700,10 @@ void TIAppPart::applyReloadStage(const ReloadStage& stage) {
              mi.displayName + " maximum (" + std::to_string(mi.maxStep()) + ")"});
     } else {
         bool frozen = m_session->frozen();
-        m_session->stop();
-        m_session->sync([&] { applyReload(m_session->access().machine(), stage, m_model); });
-        if (!frozen) m_session->start();
+        m_session->setHalted(true);
+        m_session->runQueuedSteps();
+        applyReload(m_session->access().machine(), stage, m_model);
+        if (!frozen) m_session->setHalted(false);
         if (stage.cueCard) adoptPresetCue(stage.cueCard);
         persistConstantMemory();
         emitChanged(RunStateChanged);
@@ -885,12 +877,13 @@ void TIAppPart::runAsm() {
         return;
     }
     const bool freezeOnStart = m_session->debugState().scanLoopExitArmed;
-    m_session->stop();
+    m_session->setHalted(true);
     m_session->disarmPcChange();
     m_session->disarmScanLoopExit();
     m_session->clearFreeze();
     AsmRunResult r;
-    m_session->sync([&] { r = runAsmOverlay(m_session->access().machine(), m_asmWords); });
+    m_session->runQueuedSteps();
+    r = runAsmOverlay(m_session->access().machine(), m_asmWords);
     uint32_t changes = AsmChanged;
     if (!r.loaded) {
         m_asmStatus = "ASM program exceeds overlay range 0x1800-0x1FFF.";
@@ -904,7 +897,7 @@ void TIAppPart::runAsm() {
             DebugModel::Update u = m_debug.frozenView(m_session->access().machine(), FrozenViewReason::Freeze);
             changes |= changeIf(u.live, LiveChanged) | changeIf(u.listing, ListingChanged) | changeIf(u.cpu, CpuChanged);
         } else {
-            m_session->start();
+            m_session->setHalted(false);
         }
     } else {
         m_asmStatus = "ASM entry failed after " + std::to_string(r.steps) + " step(s).";

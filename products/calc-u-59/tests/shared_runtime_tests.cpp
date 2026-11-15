@@ -24,7 +24,7 @@ std::chrono::steady_clock::time_point g_now = std::chrono::steady_clock::time_po
 
 void hostCall(EmulatorSession& s) {
     g_now += std::chrono::microseconds(16'667);
-    if (s.isRunning()) {
+    if (!s.halted()) {
         bool stopped = false;
         s.advanceHosted(s.access().machine().descriptor().tickRate / 50, stopped);
         if (!stopped) s.sliceEnded(g_now);
@@ -288,27 +288,27 @@ TEST(display_pov_error_blink_is_steady) {
     }
 }
 
-// The job queue behind the run mark (2.3.0's EmulationRunner queue, kept in
-// EmulatorSession since M-34): a job posted while the machine runs waits
-// until it stops; sync runs the queue, then its job.
-TEST(session_post_and_sync_are_serial) {
+// The debugger's steps wait for the host call: a freeze halts at once and
+// steps to the keycode boundary at the next pump(); a flow that changes the
+// machine runs a queued step first (runQueuedSteps).
+TEST(session_queued_steps_run_after_the_host_call) {
     RecordingListener listener;
     EmulatorSession session(Model::TI59, *testroms::romSet(), MachinePeripherals{}, listener);
-    std::vector<int> order;
-    session.post([&] { order.push_back(1); });
-    session.sync([&] { order.push_back(2); });
-    CHECK(order == (std::vector<int>{1, 2}));
-    session.start();
-    CHECK(session.isRunning());
-    session.post([&] { order.push_back(3); });   // behind the run mark
-    for (int i = 0; i < 6; ++i) hostCall(session);
-    CHECK_EQ(order.size(), size_t{2});
-    session.stop();
-    uint64_t ticks = 0;
-    session.sync([&] { ticks = session.access().machine().tickCount() / 32; });  // runs after the machine stopped
-    CHECK(order == (std::vector<int>{1, 2, 3}));
-    CHECK(!session.isRunning());
-    CHECK(ticks > 500 && ticks < 14219 / 2);   // six 20 ms slices at 14218.75 Hz
+    CHECK(session.halted());   // a machine starts halted
+    session.setFullSpeed(true);
+    session.setHalted(false);
+    CHECK(waitFor(session, [&] { return session.access().machine().isKeyReady(); }, 5000ms));
+    session.freeze(FreezeOwner::Calculator);
+    CHECK(session.halted());
+    CHECK_EQ(listener.freezes, 0);   // queued
+    session.runQueuedSteps();
+    CHECK_EQ(listener.freezes, 1);
+    hostCall(session);
+    CHECK_EQ(listener.freezes, 1);   // ran once
+    session.stepKeycode();
+    hostCall(session);               // the pump runs it
+    CHECK_EQ(listener.freezes, 2);
+    CHECK(session.halted());
 }
 
 TEST(session_plays_keystrokes_in_real_time) {
@@ -316,7 +316,7 @@ TEST(session_plays_keystrokes_in_real_time) {
     EmulatorSession session(Model::TI59, *testroms::romSet(), MachinePeripherals{std::string("ML")}, listener);
     CHECK(!session.moduleImage().empty());
     session.setFullSpeed(true);  // boot quickly; the scan loop still runs at regular speed
-    session.start();
+    session.setHalted(false);
     CHECK(waitFor(session, [&] { return session.access().machine().isKeyReady(); }, 5000ms));
     session.setFullSpeed(false);
     auto r = parseStateFile("KEYSTROKES:\n25 83 85 84 95\nZeroElapseTime:\nWait: 50ms\nReportElapseTime:\n");
@@ -326,7 +326,7 @@ TEST(session_plays_keystrokes_in_real_time) {
     CHECK_EQ(listener.logs.size(), size_t{1});
     if (!listener.logs.empty()) CHECK(listener.logs[0].rfind("Elapsed: 0:00.", 0) == 0);
     CHECK(!session.isFullSpeed());
-    session.stop();
+    session.setHalted(true);
 }
 
 TEST(session_freeze_fires_through_listener) {
@@ -334,7 +334,7 @@ TEST(session_freeze_fires_through_listener) {
     EmulatorSession session(Model::TI59, *testroms::romSet(), MachinePeripherals{}, listener);
     listener.session = &session;
     session.setFullSpeed(true);
-    session.start();
+    session.setHalted(false);
     CHECK(waitFor(session, [&] { return session.access().machine().isKeyReady(); }, 5000ms));
     session.armScanLoopExit();
     CHECK(session.debugState().scanLoopExitArmed);
@@ -344,26 +344,26 @@ TEST(session_freeze_fires_through_listener) {
     CHECK(listener.frozenWhenFired);
     DebugState s = session.debugState();
     CHECK(s.frozen && s.owner == FreezeOwner::Cpu && !s.scanLoopExitArmed);
-    CHECK(!session.isRunning());
+    CHECK(session.halted());
     session.keyboardRelease();
     session.resume();
-    CHECK(!session.debugState().frozen && session.isRunning());
+    CHECK(!session.debugState().frozen && !session.halted());
     CHECK_EQ(testroms::dbg(session.access().machine()).traceFlags(), static_cast<uint32_t>(TRACE_NONE));
-    session.stop();
+    session.setHalted(true);
 }
 
 TEST(session_steps_only_when_frozen_and_arms_exclude) {
     RecordingListener listener;
     EmulatorSession session(Model::TI59, *testroms::romSet(), MachinePeripherals{}, listener);
-    session.stepKeycode();  // not frozen: nothing posted
-    session.sync([] {});
+    session.stepKeycode();  // not frozen: nothing queued
+    session.runQueuedSteps();
     CHECK_EQ(listener.freezes, 0);
     session.armPcChange();
     session.armScanLoopExit();
     CHECK(session.debugState().scanLoopExitArmed && !session.debugState().pcChangeArmed);
     session.armPcChange();
     CHECK(!session.debugState().scanLoopExitArmed && session.debugState().pcChangeArmed);
-    session.start();
+    session.setHalted(false);
     session.freeze(FreezeOwner::Calculator);
     CHECK(waitFor(session, [&] { return listener.freezes == 1; }, 2000ms));
     DebugState s = session.debugState();
@@ -371,11 +371,11 @@ TEST(session_steps_only_when_frozen_and_arms_exclude) {
     session.stepInstruction();
     session.stepKeycode();
     CHECK(waitFor(session, [&] { return listener.freezes == 3; }, 2000ms));
-    CHECK(!session.isRunning());
+    CHECK(session.halted());
     uint64_t before = session.debugState().generation;
     session.resume();
     CHECK(session.debugState().generation != before);  // views built for the freeze are now stale
-    session.stop();
+    session.setHalted(true);
 }
 
 TEST(trace_flags_for_consumers) {

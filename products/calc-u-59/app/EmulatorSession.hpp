@@ -19,7 +19,7 @@
 #include <vector>
 
 // One running calculator: the machine plus the runtime around it that every
-// frontend shares — the run flag and the job queue behind it, the debugger's
+// frontend shares — the halt flag and the debugger's queued steps, its
 // freeze state (frozen, owner, armed freezes, stepping), the trace flags,
 // timed key input and KEYSTROKES playback, the 60 Hz frame sampler and the
 // two binary trace writers (manual and scripted). One per machine (a model
@@ -151,23 +151,20 @@ public:
     /// on or off (C59-6 AC-5). False without a PC-100C.
     bool printerControl(const calcu::machine::ControlId& id, bool on);
 
-    // ── Run flag and jobs ────────────────────────────────────────────────────
-    /// The machine may run (the machine session is not paused); queues the
-    /// mark behind which posted jobs wait until stop().
-    void start();
-    void stop() { m_running = false; }
-    bool isRunning() const { return m_running; }
-    /// Queue a job: it runs at the next pump() or sync() once the machine is
-    /// stopped (everything that steps the machine while it isn't running —
-    /// freeze-to-keycode, single steps).
-    void post(std::function<void()> job) { m_jobs.push_back(std::move(job)); }
-    /// Stop first, or the jobs behind the run mark stay queued: runs the
-    /// queued jobs, then `job`.
-    void sync(const std::function<void()>& job);
+    // ── Halt and the debugger's steps ────────────────────────────────────────
+    /// Halted: the machine session is paused (TIAppPart::settle). A freeze or
+    /// a breakpoint halts; a flow that changes the machine halts it and lets
+    /// it run again afterwards. A machine starts halted.
+    void setHalted(bool halted) { m_halted = halted; }
+    bool halted() const { return m_halted; }
+    /// The steps a freeze or STEP queued (the machine is halted then) run at
+    /// the next pump(), after the host call; a flow that changes the machine
+    /// runs them first, so they step the machine as it was.
+    void runQueuedSteps();
     void setFullSpeed(bool on) override;
     bool isFullSpeed() const { return m_fullSpeed; }
-    /// After a host call: the jobs, and the key input at `now` when no slice
-    /// ended since the last pump.
+    /// After a host call: the queued steps, and the key input at `now` when no
+    /// slice ended since the last pump.
     void pump(std::chrono::steady_clock::time_point now);
 
     // ── The machine session's slices (TIFreezeGate, TIKeySequencerHook) ──────
@@ -258,8 +255,6 @@ private:
     void scriptedTrace(const std::optional<std::string>& fileName) override;
     void zeroElapseTime() override { m_elapseBaseline = access().machine().tickCount(); }
     void onFreezeFired(FreezeOwner owner);
-    /// Run the queued jobs up to the run mark while running.
-    void drainJobs();
     /// Set the frozen state (and owner, generation); disarms both armed freezes when freezing.
     uint64_t setFrozenState(bool frozen, std::optional<FreezeOwner> owner);
     void applyTraceFlags();
@@ -279,10 +274,9 @@ private:
     std::unique_ptr<calcu::machine::Machine> m_machine;
     calcu::machine::Machine& m_machineRef{*m_machine};
     bool m_sliceRan = false;   ///< a slice ended since the last pump
-    bool m_running = false;
+    bool m_halted = true;
     bool m_fullSpeed = false;
-    bool m_draining = false;
-    std::deque<std::function<void()>> m_jobs;   ///< an empty job is the run mark
+    std::deque<std::function<void()>> m_steps;   ///< runQueuedSteps()
     std::vector<uint8_t> m_moduleImage;
     FreezeController m_freeze;
     FrameSampler m_sampler;

@@ -212,7 +212,7 @@ int TMC0501::getStepWeight() const {
 
 // ── Display read-out ──────────────────────────────────────────────────────────
 //
-// Called by the UI thread at ~60 Hz.  Integrates what the multiplex drove
+// Called at ~60 Hz (FrameSampler, on the app session's thread).  Integrates what the multiplex drove
 // since the previous call into per-position duty cycles and resets the window.
 // A position that was not driven reads as dark; persistence of vision is the
 // frontend's job (Shared/DisplayPov).

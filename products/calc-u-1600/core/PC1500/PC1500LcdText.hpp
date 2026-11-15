@@ -28,7 +28,7 @@
 inline LcdFont pc1500LcdFont(const PC1500Machine& machine) {
     LcdFont font;
     font.cellHeight = 7;
-    const PC1500Memory& mem = machine.memory(); // ROM: never written, safe unlocked
+    const PC1500Memory& mem = machine.memory(); // ROM: never written
     for (int code = 0x20; code < 0x80; ++code) {
         LcdCell cell{};
         for (int i = 0; i < 5; ++i) cell[i] = mem.peek(uint16_t(0xFCA0 + (code - 0x20) * 5 + i));
@@ -41,8 +41,8 @@ inline LcdFont pc1500LcdFont(const PC1500Machine& machine) {
     return font;
 }
 
-/// Thread-safe: RAM through the locked debugPeek(), the screen through the
-/// locked display() snapshot.
+/// RAM through debugPeek() (no side effects), the screen through the
+/// display() snapshot.
 inline LcdText pc1500LcdText(const PC1500Machine& machine) {
     const LcdFont font = pc1500LcdFont(machine);
     // The cell's position is only kept as a display-RAM address

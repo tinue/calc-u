@@ -20,7 +20,7 @@ std::optional<std::string> stateFilePartitionError(const LoadStateResult& r, Mod
 /// partition (default 239 on the TI-58/58C when the file gives none), clear
 /// RAM (keeping the TI-58C's extra registers, whose RAM[60] the ROM needs),
 /// write the program zero-padded to the model's physical capacity, then the
-/// registers. Run on the emulation thread with the run loop stopped.
+/// registers. Run between two advances (the machine session paused).
 void applyState(calcu::machine::Machine& m, const LoadStateResult& r, Model model);
 
 /// A reload during KEYSTROKES playback, as if the user keyed the changes in:

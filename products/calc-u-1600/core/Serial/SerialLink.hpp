@@ -10,12 +10,11 @@
 // RxD never has data), so every existing test and headless probe is
 // unaffected.
 //
-// **Threading.** Every method here is called only from the emulation
-// thread, from inside the UART's tick / register-write paths (which the
-// GUI runs under the owning machine's `m_mutex`). An implementation
-// that talks to the host -- a pseudo-terminal, a socket -- does its own
-// internal locking between those calls and its I/O threads, exactly like
-// the CPU trace rings. It must never call back into Core.
+// **Threading.** Every method here is called only on the machine's
+// thread (the app session's), from inside the UART's tick / register-write
+// paths. An implementation that talks to the host -- a pseudo-terminal, a
+// socket -- does its own internal locking between those calls and its I/O
+// threads. It must never call back into Core.
 //
 // **Flow control.** XON/XOFF and SHIFT-IN/SHIFT-OUT are in-band bytes and
 // ride the ordinary `poll()`/`send()` stream -- a link does nothing

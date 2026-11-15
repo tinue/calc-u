@@ -51,7 +51,6 @@ std::string TraceWriter::baseFileName(Model model) {
 }
 
 bool TraceWriter::open(const std::filesystem::path& path, uint64_t maxBytes) {
-    std::lock_guard<std::mutex> lock(m_mutex);
     if (m_file) return true;
     // Fresh file: never append to a previous session.
     std::error_code ec;
@@ -85,11 +84,6 @@ bool TraceWriter::open(const std::filesystem::path& path, uint64_t maxBytes) {
 }
 
 void TraceWriter::close() {
-    std::lock_guard<std::mutex> lock(m_mutex);
-    closeLocked();
-}
-
-void TraceWriter::closeLocked() {
     if (!m_file) return;
     Buf end;
     end.u32(m_eventCount);
@@ -100,12 +94,10 @@ void TraceWriter::closeLocked() {
 }
 
 bool TraceWriter::isOpen() const {
-    std::lock_guard<std::mutex> lock(m_mutex);
     return m_file != nullptr;
 }
 
 bool TraceWriter::write(const CpuFrame& f) {
-    std::lock_guard<std::mutex> lock(m_mutex);
     if (!m_file) return true;
 
     // Every frame is written, no deduplication, to keep the exact execution trace.
@@ -146,14 +138,13 @@ bool TraceWriter::write(const CpuFrame& f) {
 
     // Auto-stop at the size limit (protects iCloud quota / disk).
     if (m_bytesWritten >= m_maxBytes) {
-        closeLocked();
+        close();
         return false;
     }
     return true;
 }
 
 void TraceWriter::writeLostGap(uint32_t count) {
-    std::lock_guard<std::mutex> lock(m_mutex);
     if (!m_file) return;
     Buf p;
     p.u32(count);
@@ -166,7 +157,6 @@ void TraceWriter::writeCardInsert()                      { writeUserEvent(kCardI
 void TraceWriter::writeCardEject()                       { writeUserEvent(kCardEject, 0, 0); }
 
 void TraceWriter::writeUserEvent(uint8_t kind, uint8_t p1, uint8_t p2) {
-    std::lock_guard<std::mutex> lock(m_mutex);
     if (!m_file) return;
     const uint8_t p[4] = {kind, p1, p2, 0};  // param3 reserved
     writeRecord(kUserEvent, p, 4);

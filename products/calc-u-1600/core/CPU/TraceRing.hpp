@@ -1,15 +1,14 @@
 #pragma once
 
 #include <algorithm>
-#include <atomic>
 #include <cstdint>
-#include <mutex>
 #include <vector>
 
-// Fixed-size instruction-trace ring shared by the CPU cores. The emulation
-// thread push()es one frame per traced instruction; a consumer (GUI, CLI)
-// drain()s them in order or peek()s the most recent without consuming.
-// N must be a power of two.
+// Fixed-size instruction-trace ring shared by the CPU cores. The CPU
+// push()es one frame per traced instruction; a consumer (the debug panel,
+// a CLI) drain()s them in order or peek()s the most recent without
+// consuming. Single-threaded, like the machine (ADR 0009). N must be a
+// power of two.
 template <typename Frame, uint32_t N>
 class TraceRing {
     static_assert(N != 0 && (N & (N - 1)) == 0, "TraceRing size must be a power of two");
@@ -18,7 +17,6 @@ public:
     static constexpr uint32_t kSize = N;
 
     void push(const Frame& f) {
-        std::lock_guard<std::mutex> lock(m_mutex);
         m_ring[m_totalWritten & kMask] = f;
         m_totalWritten++;
     }
@@ -27,7 +25,6 @@ public:
     /// them. `*outLost` (if given) receives how many were overwritten
     /// before they could be drained.
     uint32_t drain(Frame* out, uint32_t max, uint32_t* outLost) {
-        std::lock_guard<std::mutex> lock(m_mutex);
         uint32_t available = m_totalWritten - m_drainCursor;
         uint32_t lost = 0;
         if (available > N) {
@@ -47,7 +44,6 @@ public:
     /// Copies the most recent `max` frames (oldest of those first) without
     /// consuming anything -- the drain cursor is untouched.
     uint32_t peek(Frame* out, uint32_t max) const {
-        std::lock_guard<std::mutex> lock(m_mutex);
         uint32_t available = std::min(m_totalWritten, N);
         uint32_t n = std::min(max, available);
         uint32_t start = m_totalWritten - n;
@@ -62,5 +58,4 @@ private:
     Frame m_ring[N]{};
     uint32_t m_drainCursor{0};   // next read index
     uint32_t m_totalWritten{0};  // write count so far; also gives the next write index and overflow accounting
-    mutable std::mutex m_mutex;
 };

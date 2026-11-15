@@ -21,5 +21,5 @@ inline LcdBitmap pc1600LcdBitmap(const PC1600DisplaySnapshot& snap) {
     return bitmap;
 }
 
-/// Thread-safe: goes through the locked displaySnapshot().
+/// Goes through the displaySnapshot().
 inline LcdBitmap pc1600LcdBitmap(const PC1600Machine& machine) { return pc1600LcdBitmap(machine.displaySnapshot()); }

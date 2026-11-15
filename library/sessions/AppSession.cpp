@@ -569,6 +569,11 @@ Ticks AppSession::advanceUnpaced(Ticks ticks) {
     const bool changed = s.ms.generation() != s.seenGeneration;
     s.syncMachine();
     if (!changed && ran > 0) s.readDisplay();
+    // The parts' per-call duties, as call() runs them (LIB-8 A-6). A host in
+    // virtual time has no wall clock to read (LIB-11 AC-6).
+    const pacing::WallTime now = s.setup.hosting == Hosting::VirtualTime ? pacing::WallTime{0} : s.wallTime();
+    for (SessionPart* p : s.setup.parts) p->afterCall(s, now);
+    s.syncMachine();
     s.sound(true);   // not real time: only a recorder gets it
     s.flush();
     return ran;

@@ -4,6 +4,7 @@
 #include "harness/Commands.hpp"
 #include "harness/Product.hpp"
 #include "harness/Run.hpp"
+#include "paper/PaperPart.hpp"
 #include "presets/Source.hpp"
 #include "sessions/SessionPart.hpp"
 #include <memory>
@@ -23,7 +24,9 @@
 // typed text 10 ms down and 5 ms up, no readiness wait); the
 // full ROM set of the test catalogue in a temporary bundle; from LIB-6
 // (M-38) the preset rules of library/presets/tests/TestPresetRules.hpp and
-// bundled presets (`examples:startup/seg.test-seg`, `examples:basic/two.test-seg`).
+// bundled presets (`examples:startup/seg.test-seg`, `examples:basic/two.test-seg`);
+// from LIB-8 (M-39) the test printers TD-20 and TP-4 (the paper test
+// catalogue) with a PaperPart, and the settings keys [preset] per model.
 // Used by the library tests and by `calcu_test`, never product code (LIB-1 AC-24).
 
 namespace calcu::presets::test {
@@ -44,7 +47,8 @@ public:
     std::string_view shortName() const override { return "test"; }
     std::string_view commandWord() const override { return "test"; }
     std::string_view version() const override { return version_; }
-    const machine::Catalogue& catalogue() const override { return machine::test::testCatalogue(); }
+    // LIB-8: the test catalogue with the test printers TD-20 and TP-4.
+    const machine::Catalogue& catalogue() const override { return machine::test::paperTestCatalogue(); }
     machine::MachineBuilder& builder() override { return builder_; }
     const settings::ProductDecl& settingsDecl() const override;
     roms::LookupResult lookUpRoms() const override;
@@ -55,6 +59,7 @@ public:
     presets::ProductRules* presetRules() override;
     const presets::PresetBundle* presetBundle() const override { return bundle_.get(); }
     typing::TypingPart* typingPart() override;
+    paper::PaperPart* paperPart() override { return paper_.get(); }
 
     // For the tests: the bundle folder (a file can be removed: EC-1), the
     // model to start with under the default settings (the fallback model of
@@ -92,6 +97,7 @@ private:
     Machines machines_{*this};
     std::unique_ptr<Part> part_;
     std::unique_ptr<Typing> typing_;
+    std::unique_ptr<paper::PaperPart> paper_;
     std::unique_ptr<presets::test::TestPresetRules> presetRules_;
     roms::test::TempFolder presetFolder_{"calcu-test-presets"};
     std::unique_ptr<presets::DirectoryPresetBundle> bundle_;

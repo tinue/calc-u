@@ -1,0 +1,34 @@
+         30.     STO
+         33.     STO
+         34.     STO
+         35.     STO
+         36.     STO
+         37.     STO
+         38.     STO
+         39.     STO
+          3.     HIR
+          4.     HIR
+          5.     HIR
+          6.     HIR
+          7.     HIR
+          0.    FLAG
+          1.    FLAG
+          2.    FLAG
+          3.    FLAG
+          4.    FLAG
+          5.    FLAG
+          6.    FLAG
+          7.    DATA
+DATA AREA NOT  EMPTY
+DESTRUCT = ST FLG 8 
+
+
+         0.2     O.K
+         20.        
+        400.        
+         40.        
+       1600.        
+         60.        
+       3600.        
+          3.    DONE
+GOOD-BYE FROM PDCM  

@@ -5,6 +5,9 @@
 // answers, all as text and data- attributes. `window.calcuTestShells` holds
 // each mounted component's shell, for the tests to send commands and
 // requests (the products' hooks stay per product, spec Out of Scope).
+// From LIB-8 (M-39): the paper panel of the React component set, with its
+// owner and controls from `tp.printer`, and buttons that attach and detach
+// the test printers TD-20 and TP-4 and press a machine key.
 
 const CALCU_PRODUCT = "__CALCU_PRODUCT__";
 
@@ -20,6 +23,7 @@ function CalcUTest(props) {
   const storage = useTopic(shell, "web.storage");
   const notices = useStream(shell, "notices");
   const answers = useStream(shell, "tp.answers");
+  const printer = useTopic(shell, "tp.printer");
 
   React.useEffect(() => {
     if (!shell || typeof window === "undefined") return undefined;
@@ -50,6 +54,19 @@ function CalcUTest(props) {
         <button type="button" className="calcu-test-copy" onClick={() => ask("clipboard-text", { text: "calcu copied" })}>Copy</button>
       </div>
       <pre className="calcu-test-answers">{JSON.stringify(answers)}</pre>
+      <div className="calcu-test-paper-buttons">
+        <button type="button" className="calcu-test-attach-td20"
+          onClick={() => shell && shell.send("tp.attach", { place: "printer", peripheral: "test-dotter", online: true })}>TD-20</button>
+        <button type="button" className="calcu-test-attach-tp4"
+          onClick={() => shell && shell.send("tp.attach", { place: "aux", peripheral: "test-plotter" })}>TP-4</button>
+        <button type="button" className="calcu-test-detach"
+          onClick={() => { if (shell) { shell.send("tp.detach", { place: "printer" }); shell.send("tp.detach", { place: "aux" }); } }}>Detach</button>
+        <button type="button" className="calcu-test-press" onClick={() => shell && shell.send("tp.press", { key: "1" })}>Press 1</button>
+      </div>
+      <div className="calcu-test-paper">
+        <CalcuPaperPanel shell={shell} owner={(printer && printer.owner) || null}
+          controls={(printer && printer.controls) || []} />
+      </div>
     </div>
   );
 }

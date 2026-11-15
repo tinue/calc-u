@@ -27,6 +27,9 @@ class PresetBundle;
 namespace calcu::typing {
 class TypingPart;
 }
+namespace calcu::paper {
+class PaperPart;
+}
 
 namespace calcu::harness {
 
@@ -68,6 +71,10 @@ public:
     virtual const presets::PresetBundle* presetBundle() const { return nullptr; }
     // LIB-5's part among sessionParts(), for the preset steps `key` and `type`.
     virtual typing::TypingPart* typingPart() { return nullptr; }
+    // LIB-8's part among sessionParts(), when the product has printers: the
+    // harness hands it the machine control (the origin of a build, A-3) and
+    // adds the step `cut-paper` to the preset vocabulary (A-2).
+    virtual paper::PaperPart* paperPart() { return nullptr; }
 };
 
 using ProductFactory = std::unique_ptr<HarnessProduct> (*)();

@@ -95,7 +95,12 @@ not named here adds a folder in the same pattern.
   - `presets`: `machine`, `formats`, `sessions`, `peripherals`, `typing`,
     `startup` (LIB-6 design D-1; M-38). Nothing includes it but `harness`
     and the products; `startup` declares the loader `presets` implements;
-  - `harness`: any area but `web`;
+  - `paper`: `machine`, `sessions`, `formats`, `presets`, `startup`
+    (LIB-8 design §2; M-39). Nothing includes it but `harness`, `qt6`
+    and the products;
+  - `harness`: any area but `web` and `qt6`;
+  - `qt6` (the Qt6 component set, its own target, below): any area but
+    `harness` and `web`, and Qt;
   - `web` (C++ glue): `sessions`, `settings`.
   Review checks it; a new include against it is a finding.
 - **Exceptions to the one target, and only these:**
@@ -106,7 +111,19 @@ not named here adds a folder in the same pattern.
     with its own flags (LIB-15 §3.6);
   - the attach endpoint `library/harness/attach/` (C59-5) is compiled
     into `calcu_library` only with the CMake option `CALCU_ATTACH`
-    (default OFF; on in Debug builds of the Swift app).
+    (default OFF; on in Debug builds of the Swift app);
+  - `calcu_qt6`, the Qt6 component set in `library/qt6/` (namespace
+    `calcu::qt6`; LIB-8 D-1, LIB-14 D-1, D-16; created in M-39): a static
+    library on `Qt6::Widgets` and `calcu_library`, defined only with
+    `CALCU_FRONTEND_QT` when `find_package(Qt6 COMPONENTS Widgets)`
+    succeeds, never in an Emscripten or iOS tree, so that `calcu_library`
+    stays free of Qt for the Web and Swift builds. Its tests are one
+    program, `calcu_qt6_tests` (`library/qt6/tests/*_tests.cpp` with
+    `QtTestMain.cpp`, the one runner's `TEST`s under a `QApplication`),
+    Frequent, offscreen. The components of LIB-7, LIB-10 and LIB-14 are
+    added to the same folder, target and program. The React component
+    set is JavaScript in `library/web/components/` (`COMPONENT_SOURCES`
+    of `library/web/build/dist.js`), not a C++ target.
 - Library code throws no exceptions across its interface, needs no RTTI,
   starts no thread and takes no lock, except a host adapter at the
   boundary of ADR 0009 (the host link of a serial port, an audio
@@ -166,8 +183,11 @@ not named here adds a folder in the same pattern.
 | the YAML reader (Calc-U-1600's `core/Yaml.hpp`, moved in M-24, LIB-12 D-4); flow values and durations (M-28, LIB-11) | `library/formats/` | `calcu::formats` | LIB-12, LIB-11 designs |
 | LIB-12 ROM lookup | `library/roms/` | `calcu::roms` | LIB-12 design |
 | LIB-15 Web frontend shell (JavaScript in `library/web/src/`, tests in `library/web/tests/`; C++ glue in `library/web/glue/`, `calcu_web_glue`) | `library/web/` | `calcu::web` (C++ only) | LIB-15 design |
+| LIB-8 paper output: the kind, the paper, the picture, the replies, the session part (M-39); the PNG writer in `library/formats/Png.*` | `library/paper/` | `calcu::paper` | LIB-8 design |
+| the Qt6 component set (`calcu_qt6`; LIB-8's paper panel from M-39, then LIB-10, LIB-7, LIB-14) | `library/qt6/` | `calcu::qt6` | LIB-8 D-1, LIB-14 §2.2 |
+| the React component set (classic scripts in `COMPONENT_SOURCES`, names prefixed `Calcu`/`calcu`/`Shell`; LIB-8's paper panel from M-39) | `library/web/components/` | (JavaScript) | LIB-8 D-1, LIB-14 §2.3 |
 
-(Table reconciled with the C1 designs, 2026-11-14.)
+(Table reconciled with the C1 designs, 2026-11-14; the C2 rows from M-39.)
 
 The C2 designs are expected to follow the same pattern (new folders in
 `calcu_library`): `library/typing/`

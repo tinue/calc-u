@@ -142,3 +142,18 @@ TEST(ac4_at_once_and_queued_give_same_messages_in_same_order) {
     CHECK_EQ(atOnce.size(), queued.size());
     CHECK(atOnce == queued);
 }
+
+// LIB-8 A-6 (design T8): a virtual-time host's advance runs the parts'
+// per-call duties before its flush, as a host call does, so that what a part
+// sends from afterCall (the paper's new marks) goes out with the harness's
+// `wait`.
+TEST(advance_unpaced_runs_parts_after_call) {
+    RigOptions o;
+    o.hosting = Hosting::VirtualTime;
+    Rig r(o);
+    r.build();
+    const int before = r.part.afterCalls;
+    r.session->advanceUnpaced(1'000);
+    CHECK_EQ(r.part.afterCalls, before + 1);
+    CHECK_EQ(r.part.beforeCalls, 0);   // no host call was made
+}

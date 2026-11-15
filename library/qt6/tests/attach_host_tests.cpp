@@ -149,7 +149,7 @@ TEST(qt_attach_host_wait_on_app_clock) {
     const auto r = c.reply();
     const double wall = std::chrono::duration<double>(std::chrono::steady_clock::now() - w0).count();
     CHECK(r.size() == 3 && r[0] == "done 2");
-    CHECK(wall >= 0.19);   // the app's own host calls let the time pass; the harness never advances it
+    CHECK(wall >= 0.1);   // the app's own host calls let the time pass (a late timer catches up); the harness never advances it
     CHECK(app.ticks() - t0 >= 20'000);
 }
 

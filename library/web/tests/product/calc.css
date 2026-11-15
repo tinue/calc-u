@@ -17,6 +17,11 @@
 /* LIB-8: the paper panel's place in the test product. */
 .calcu-client .calcu-test-paper { display: flex; flex-direction: column; height: 200px; }
 .calcu-client .calcu-test-paper .calcu-paper-panel { flex: 1 1 auto; }
+/* LIB-14: the shell in the test product (shell=1); the modal frame and
+   "Loading…" stand over it. */
+.calcu-client .calcu-test-shell { position: relative; min-height: 600px; }
+.calcu-client .calcu-test-faceplate { width: 200px; height: 120px; background: #d0d0d0; margin: 8px; touch-action: none; }
+.calcu-client .calcu-test-shell .calcu-shell-panels { height: 160px; }
 @media (prefers-color-scheme: dark) {
   .calcu-client.calcu-test { background: #2a2a2a; color: #eee; }
 }

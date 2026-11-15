@@ -171,6 +171,12 @@ public:
         s.request(sessions::RequestName{"preset-list"}, [this](const Value&, sessions::SessionContext&) {
             return sessions::replyGiven(sessions::valuePayload("preset-list", presets));
         });
+        // What the shell sent, for the Web tests: {sent: [{command, args}]}.
+        s.request(sessions::RequestName{"tsp.sent"}, [this](const Value&, sessions::SessionContext&) {
+            Value::Array list;
+            for (const auto& x : sent) list.push_back(Value::object({{"command", x.command}, {"args", x.args}}));
+            return sessions::replyGiven(sessions::valuePayload("tsp.sent", Value::object({{"sent", Value(std::move(list))}})));
+        });
         for (const char* n : {"model", "variant", "attach", "detach", "load-preset", "resume", "paste", "media.import",
                               "screen-key-down", "screen-key-up", "tsp.confirm"}) {
             const std::string name = n;
@@ -197,7 +203,7 @@ public:
         // An operation at full speed until a Reset (AC-15, AC-16).
         s.command(sessions::CommandName{"tsp.op"}, [this](const Value& a, sessions::SessionContext&) -> sessions::CommandOutcome {
             sent.push_back({"tsp.op", a});
-            const auto ticks = static_cast<m::Ticks>(read::integer(a, "ticks", 1'000'000'000));
+            const auto ticks = static_cast<m::Ticks>(read::integer(a, "ticks", 1'000'000'000'000));
             return sessions::StartOperation{[ticks](sessions::OperationContext& c) { return runFor(c, ticks); }};
         });
         s.command(sessions::CommandName{"tsp.notice"}, [](const Value& a, sessions::SessionContext& c) -> sessions::CommandOutcome {

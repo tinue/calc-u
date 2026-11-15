@@ -32,6 +32,12 @@
 //   tp.press         {key}: the machine key down and up again
 //   tp.printer       state: {owner, name, controls: [{id, form, on}]}, the
 //                    printer plugged in first (owner null when none)
+// From LIB-14 (M-43): the shell's test part (library/shell/tests/
+// TestShellPart.hpp: a scripted control state, run state, roms-missing and
+// media, the preset list made for the tests, the shell's commands recorded,
+// `tsp.op`, `tsp.notice`, `tsp.publish`, `tsp.plug`) and the library's
+// SettingsPart over this product's settings, with [preset] keys per model and
+// [trace] max-file-size-mb.
 
 #include "machine/tests/TestMachines.hpp"
 #include "paper/PaperPart.hpp"
@@ -44,6 +50,8 @@
 #include "settings/Declaration.hpp"
 #include "settings/Paths.hpp"
 #include "settings/SettingsFile.hpp"
+#include "shell/SettingsPart.hpp"
+#include "shell/tests/TestShellPart.hpp"
 #include "web/glue/Bind.hpp"
 #include "web/glue/MessageCodec.hpp"
 #include <algorithm>
@@ -111,7 +119,8 @@ st::ProductDecl declFor(const std::string& product) {
     d.productName = product;
     d.models = {mt::kSeg.value, mt::kDot.value};
     d.fallbackModel = mt::kSeg.value;
-    d.keys = {st::family::startupModel(), st::family::startupLastModel()};
+    d.keys = {st::family::startupModel(), st::family::startupLastModel(), st::family::presetFor(mt::kSeg.value),
+              st::family::presetFor(mt::kDot.value), st::family::traceMaxFileSizeMb()};
     return d;
 }
 
@@ -242,6 +251,10 @@ public:
         publishPrinter(c);
     }
 
+    // LIB-14: the library's SettingsPart reads and writes them.
+    st::SettingsFile& settingsFile() { return settings_; }
+    const st::Paths& paths() const { return paths_; }
+
 private:
     s::CommandOutcome startMachine(const s::Value& a, s::SessionContext& c) {
         std::string model = textArg(a, "model");
@@ -322,10 +335,19 @@ private:
 struct Parts {
     explicit Parts(const WebStart& w)
         : paper(mt::paperTestCatalogue(), {{mt::kDotter, mt::td20Description()}, {mt::kPlotter, mt::tp4Description()}}),
-          product(w) {}
+          product(w), settings(settingsSetup(product)) {}
+    static calcu::shell::SettingsPartSetup settingsSetup(TestProductPart& p) {
+        calcu::shell::SettingsPartSetup s;
+        s.file = &p.settingsFile();
+        s.paths = &p.paths();
+        s.frontend = st::FrontendKind::Web;
+        return s;
+    }
     calcu::peripherals::PeripheralsPart peripherals;
     calcu::paper::PaperPart paper;
     TestProductPart product;
+    calcu::shell::SettingsPart settings;          // LIB-14
+    calcu::shell::test::TestShellPart shellPart;  // LIB-14
 };
 
 std::unique_ptr<s::AppSession> makeTestSession(const WebStart& w) {
@@ -333,7 +355,7 @@ std::unique_ptr<s::AppSession> makeTestSession(const WebStart& w) {
     s::AppSessionSetup setup;
     setup.clock = calcu::web::wallTimeNow;
     setup.hostTime = [] { return std::chrono::system_clock::now(); };
-    setup.parts = {w.shellPart, &parts->peripherals, &parts->paper, &parts->product};
+    setup.parts = {w.shellPart, &parts->peripherals, &parts->paper, &parts->product, &parts->settings, &parts->shellPart};
     setup.hosting = s::Hosting::Paced;
     setup.owned = std::move(parts);
     return std::make_unique<s::AppSession>(std::move(setup));

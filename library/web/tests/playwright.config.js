@@ -20,6 +20,9 @@ module.exports = defineConfig({
     // LIB-8: the paper panel, at the root, in both engines.
     { name: 'paper-chromium', testMatch: /paper\.spec\.js/, use: { ...devices['Desktop Chrome'], baseURL: `http://localhost:${PORT}/` } },
     { name: 'paper-webkit', testMatch: /paper\.spec\.js/, use: { ...devices['Desktop Safari'], baseURL: `http://localhost:${PORT}/` } },
+    // LIB-14: the shell of the React set, at the root, in both engines.
+    { name: 'shell-chromium', testMatch: /shell\.spec\.js/, use: { ...devices['Desktop Chrome'], baseURL: `http://localhost:${PORT}/` } },
+    { name: 'shell-webkit', testMatch: /shell\.spec\.js/, use: { ...devices['Desktop Safari'], baseURL: `http://localhost:${PORT}/` } },
     { name: 'prerender', testMatch: /prerender\.spec\.js/ },
     { name: 'offline-chromium', testMatch: /offline\.spec\.js/, use: { ...devices['Desktop Chrome'] } },
     { name: 'offline-webkit', testMatch: /offline\.spec\.js/, use: { ...devices['Desktop Safari'] } },

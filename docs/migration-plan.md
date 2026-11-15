@@ -818,7 +818,7 @@ with a row, or worked together with it).
 #### M-37 LIB-4 Library
 - **Does:** the control state from the descriptors and the live machine.
 - **Completes:** LIB-4 L. **Tests from:** LIB-4 AC-1–9; EC-1, EC-3–5.
-- **Waits for:** M-22, M-23.
+- **Waits for:** M-22, M-23, M-35.
 - **Green after:** default.
 - **Knowledge, ledger:** none.
 - **Exit check:** library tests.
@@ -839,7 +839,8 @@ with a row, or worked together with it).
 
 #### M-39 LIB-8 Library
 - **Does:** one paper output kind (marks and a text layer), the paper
-  panel, Copy and Cut, `cut-paper`; a reference picture per printer.
+  panel (it creates the Qt6 and React component sets, `library/qt6/`
+  with `calcu_qt6` and `library/web/components/`; LIB-8 D-1), Copy and Cut, `cut-paper`; a reference picture per printer.
 - **Completes:** LIB-8 L. **Tests from:** LIB-8 AC-1–9, AC-12–23, AC-39
   (from the references of M-4 and M-9); EC-1–8.
 - **Waits for:** M-38, M-4, M-9.
@@ -852,7 +853,7 @@ with a row, or worked together with it).
   trace session, the run-control buttons, the steps and commands.
 - **Completes:** LIB-10 L. **Tests from:** LIB-10 AC-1–26, AC-45–51;
   EC-1–9.
-- **Waits for:** M-3 (C-1 of FS 5: AC-13), M-38.
+- **Waits for:** M-3 (C-1 of FS 5: AC-13), M-36, M-38, M-39.
 - **Green after:** default.
 - **Knowledge, ledger:** none yet.
 - **Exit check:** library tests.
@@ -862,7 +863,7 @@ with a row, or worked together with it).
   collisions, outdated files, preset-named media, in-file magnetic cards,
   the media steps and commands, the module and media pickers.
 - **Completes:** LIB-7 L. **Tests from:** LIB-7 AC-1–31, AC-46; EC-1–9.
-- **Waits for:** M-37, M-38.
+- **Waits for:** M-35, M-37, M-38, M-39.
 - **Green after:** default.
 - **Knowledge, ledger:** none yet.
 - **Exit check:** library tests.
@@ -878,8 +879,8 @@ with a row, or worked together with it).
 
 #### M-43 LIB-14 Library
 - **Does:** the family menu and control-bar structure, the settings
-  dialog, "Loading…", notices, About and Help, the shells of the Qt6 and
-  React component sets, the hit test by one rule (AC-24); Qt6 harness
+  dialog, "Loading…", notices, About and Help, the shells in the Qt6 and
+  React component sets (created in M-39), the hit test by one rule (AC-24); Qt6 harness
   attach for development builds (AC-44, built here, used by
   Calc-U-1600's scenarios in M-49).
 - **Completes:** LIB-14 L. **Tests from:** LIB-14 AC-1–25, AC-42–43;
@@ -1262,9 +1263,9 @@ qa-report can show every criterion passing (§1).
 | LIB-2 | 1–23, 35: M-23 / M-23 | 24–27: M-25 / M-25 | 28–34: M-26, M-31, M-47 / M-47 | 1–7: M-23 |
 | LIB-3 | 1–27, 39: M-22 / M-22 | 28–33: M-33, M-34 / M-58 | 34–38: M-31 / M-49 | 1–6: M-22 |
 | LIB-4 | 1–9: M-37 / M-37 | 10–15: M-57, M-58 / M-58 | 16–20: M-49 / M-49 | 1, 3–5: M-37 |
-| LIB-5 | 1–19, 38–39: M-36 / M-36 | 20–27: M-36 / M-36 | 28–37, 40–41: M-36 / M-36 | 1–6: M-36 |
-| LIB-6 | 1–34, 52–53, 55–66: M-38 / M-38 | 35–43, 68: M-54 / M-54 | 44–51, 54, 67: M-46 / M-46 | 1–10: M-38 |
-| LIB-7 | 1–31, 46: M-41 / M-41 | 32–36, 47: M-55 / M-55 | 37–45: M-47 / M-47 | 1–9: M-41 |
+| LIB-5 | 1–19, 38–39: M-36 / M-38 | 20–27: M-36 / M-54 | 28–37, 40–41: M-36 / M-46 | 1–6: M-36 |
+| LIB-6 | 1–34, 52–53, 55–66: M-38 / M-41 | 35–43, 68: M-54 / M-54 | 44–51, 54, 67: M-46 / M-46 | 1–10: M-38 |
+| LIB-7 | 1–31, 46: M-41 / M-43 | 32–36, 47: M-55 / M-55 | 37–45: M-47 / M-47 | 1–9: M-41 |
 | LIB-8 | 1–9, 12–23, 39: M-39 / M-39 | 24–31: M-53 / M-53 | 32–38: M-45 / M-46 | 1–8: M-39 |
 | LIB-9 | 1–18, 33: M-20 / M-20 | 19–25, 34–35: M-32, M-34 / M-34 | 26–32: M-30 / M-30 | 1–10: M-20 |
 | LIB-10 | 1–26, 45–51: M-40 / M-40 | 28–35: M-53 / M-53 or M-58 | 36–44, 52: M-45 / M-46 | 1–9: M-40 |
@@ -1275,7 +1276,7 @@ qa-report can show every criterion passing (§1).
 | LIB-15 | 1–18: M-29 / M-29 | 19–23: M-34 / M-55 | 24–28: M-31 / M-46 | 1–5: M-29 |
 | LIB-16 | 1–8, 14–15: M-52 / M-52 | 9–10, 16: M-60 / M-64 | 11–13: M-52 / M-61 | 1–3: M-52 |
 | LIB-17 | 1–14: M-21 / M-21 | 15–19: M-33 / M-33 | 20–22: M-31 / M-31 | 1–6: M-21 |
-| LIB-18 | 1–16: M-35 / M-35 | 17–24: M-54 / M-54 | 25–33: M-46 / M-46 | 1–7: M-35 |
+| LIB-18 | 1–16: M-35 / M-41 | 17–24: M-54 / M-54 | 25–33: M-46 / M-46 | 1–7: M-35 |
 | LIB-19 | 1–5, 15: M-62 / M-62 | 6–10: M-65 / M-65 | 11–14: M-62 / M-62 | 1–4: M-62 |
 
 | Row | Tested in | Done in | ACs | ECs |

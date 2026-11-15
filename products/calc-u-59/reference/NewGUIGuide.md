@@ -55,7 +55,8 @@ example: `frontends/qt6/app/EmulatorController` is the whole adapter, about 300 
    `RomHeatmap` for the debugger.
 
 What stays per GUI: widgets and painting (glow, fonts), file dialogs and
-storage locations, settings storage (with the `SettingsKeys` names),
+the host folders it passes to the library (the settings file and the save
+folder, `calcu::settings::HostDirs`; the keys are `app/Settings.hpp`'s),
 packaging.
 
 ## If it can't call C++

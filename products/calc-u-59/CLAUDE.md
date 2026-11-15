@@ -89,7 +89,9 @@ landscape on a large screen) — its column in
 - **`app/` never resolves locations.** It takes paths, and ROM files only
   through the library's ROM lookup (a `calcu::roms::Bundle` the frontend
   makes; LIB-12, `app/ProductRoms.hpp`);
-  iCloud lives only in `frontends/swift/App/CardStorage.swift` (and `AppSettings.traceDirectory()`).
+  iCloud lives only in `frontends/swift/App/CardStorage.swift`; the frontend
+  passes that folder in, and every other place (the settings file, traces)
+  comes from the library's `calcu::settings::Paths` (LIB-9).
 - **A user-visible change in one GUI needs the matching change in the others
   on the same branch** — or a `Pending (Qt)` / `Pending (Swift)` /
   `Pending (Web)` row with a reason in `reference/FrontendParity.md`. Features
@@ -107,8 +109,14 @@ landscape on a large screen) — its column in
   `frontends/web/build.sh && frontends/web/run-tests.sh` (`frontends/web/dist/` is gitignored; CI builds it).
   `app/` is C++20 (ADR 0005) and standard-library-only, and must work without threads
   (`Threading::Cooperative`, used by the web build).
-- **Settings both apps store** (key names, defaults, resolution) live in
-  `app/SettingsKeys.hpp`; `frontends/swift/App/AppSettings.swift` and `frontends/qt6/app/AppSettings.hpp` use them.
+- **Settings** are declared once, in `app/Settings.hpp` (`settingsDecl()`:
+  section, key, default, accepted values; typed calls over the library's
+  `calcu::settings::SettingsFile`, LIB-9), and live in `Calc-U-59.ini`.
+  `frontends/swift/App/AppSettings.swift` (through `Bridge/TISettings`),
+  `frontends/qt6/app/AppSettings.hpp` and `frontends/web/bindings.cpp` use
+  them; no frontend keeps a setting in UserDefaults, QSettings or
+  `localStorage` (CTest `CalcU59NoPlatformSettings`, allow-list
+  `tools/platform_stores_allowed.txt`).
 - **Assets have one source:** ROMs in `roms/`, artwork in `frontends/swift/App/Assets.xcassets`,
   the icon in `frontends/swift/App/AppIcon.icon` (`tools/gen_qt_icons.sh` derives the Qt icons;
   `frontends/web/build.sh` copies the Linux one), presets the web offers in `examples/`.

@@ -45,8 +45,7 @@ MainWindow::MainWindow(EmulatorController& controller, QWidget* parent) : QMainW
             [this](const QString& title, const QString& message) { QMessageBox::warning(this, title, message); });
 
     buildMenus();
-    if (!restoreGeometry(AppSettings::value<QByteArray>(AppSettings::kWindowGeometry, QByteArray()))) resize(1280, 860);
-    m_splitter->restoreState(AppSettings::value<QByteArray>(AppSettings::kSplitterState, QByteArray()));
+    restoreWindowState();
     m_keyboard = calculator->keyboard();
     m_keyboard->setFocus();
 }
@@ -109,10 +108,38 @@ void MainWindow::selectAsmFile() {
 }
 
 void MainWindow::closeEvent(QCloseEvent* e) {
-    AppSettings::setValue(AppSettings::kWindowGeometry, saveGeometry());
-    AppSettings::setValue(AppSettings::kSplitterState, m_splitter->saveState());
+    saveWindowState();
     m_controller.persistConstantMemory();
     QMainWindow::closeEvent(e);
+}
+
+// [window] as plain numbers (LIB-9 AC-35, design D-7): the normal geometry
+// (a maximised window comes back at its last normal size) and the widths
+// of the three panels.
+void MainWindow::restoreWindowState() {
+    const cu59::settings::WindowState w = AppSettings::settings().windowState();
+    resize(static_cast<int>(w.width), static_cast<int>(w.height));
+    if (w.x && w.y) move(static_cast<int>(*w.x), static_cast<int>(*w.y));
+    if (w.calculatorWidth && w.printerWidth && w.debugWidth)
+        m_splitter->setSizes({static_cast<int>(*w.calculatorWidth), static_cast<int>(*w.printerWidth),
+                              static_cast<int>(*w.debugWidth)});
+}
+
+void MainWindow::saveWindowState() {
+    const QRect g = normalGeometry();
+    const QPoint at = isMaximized() || isFullScreen() ? g.topLeft() : pos();
+    cu59::settings::WindowState w;
+    w.x = at.x();
+    w.y = at.y();
+    w.width = g.width();
+    w.height = g.height();
+    const QList<int> sizes = m_splitter->sizes();
+    if (sizes.size() == 3) {
+        w.calculatorWidth = sizes[0];
+        w.printerWidth = sizes[1];
+        w.debugWidth = sizes[2];
+    }
+    AppSettings::settings().setWindowState(w);
 }
 
 void MainWindow::dragEnterEvent(QDragEnterEvent* e) {

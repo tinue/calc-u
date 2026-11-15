@@ -31,7 +31,7 @@ the named one still to do (the Notes say why); `Swift only` / `Qt only` /
 | Cue card: 3 templates, `\blank` spans, shrink-to-fit, inks | `CueCardView` | `CueCardRenderer` | `painters.js`, `WebController` (draw list) | `CueCard` (layout, geometry, inks) | All | |
 | Module program cards (SCOM[9]), user cards | `EmulatorViewModel` | `EmulatorController` | `WebController` | `SessionController`, `CueCard` resolveCueCard | All | |
 | Solid State module selection | `SettingsView` | `SettingsDialog` | `Dialogs` (Settings) | `ModuleCatalog` | All | soft reset on change |
-| Startup calculator (model / last used) | `SettingsView` | `SettingsDialog` | `Dialogs` (Settings) | `SettingsKeys` | All | web: `localStorage`; the `model` prop overrides it |
+| Startup calculator (model / last used) | `SettingsView` | `SettingsDialog` | `Dialogs` (Settings) | `Settings` | All | `Calc-U-59.ini` everywhere; web: the file's text in one `localStorage` entry until M-34; the `model` prop overrides it |
 
 ## Files
 
@@ -80,7 +80,7 @@ the named one still to do (the Notes say why); `Swift only` / `Qt only` /
 | Feature | Swift | Qt | Web | Shared | Status | Notes |
 |---|---|---|---|---|---|---|
 | About (version, links) | `AppInfo` | `AboutDialog` | `Dialogs` (About) | — | All | |
-| Settings | `SettingsView` | `SettingsDialog` | `Dialogs` (Settings) | `SettingsKeys` | All | Qt: preset, card and trace folders instead of the trace location; Swift: Keyboard Feedback and Debug Page in Portrait on iOS only; web: no folders, no segment style, Keyboard Feedback in portrait and the PWA only, Maximum Trace File Size whenever the pages sit side by side (the wide layout, the PWA in landscape) |
+| Settings | `SettingsView` | `SettingsDialog` | `Dialogs` (Settings) | `Settings` | All | Qt: preset, card and trace folders instead of the trace location; Swift: Keyboard Feedback and Debug Page in Portrait on iOS only; web: no folders, no segment style, Keyboard Feedback in portrait and the PWA only, Maximum Trace File Size whenever the pages sit side by side (the wide layout, the PWA in landscape) |
 | Help (user guide link) | — | Help menu | `Dialogs` (Settings, About) | — | Pending (Swift) | opens `https://calc-u.org/59/`; the Swift app has no Help command yet |
 | iOS layouts (portrait pages, iPhone; side by side, iPad and iPhone Duo), haptics, click sound | `CalculatorView`, `KeyboardView` | — | `PlayCalculator` (portrait layout; the PWA's `auto` layout, keyboard feedback) | `DebugText` (`mobileLayout`) | Swift only / Web only | Swift: iOS only: pages when tall or folded; side by side when wide: calculator and printer, plus the debugger on iPad and iPhone Duo; web: the PWA picks the same layouts by the window's size (no fold), click via WebAudio only (no haptics in a browser) |
 | UI test automation hooks | `CalculatorView` | — | — | — | Swift only | |

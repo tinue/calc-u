@@ -20,9 +20,10 @@ The installable PWA (`app/`) picks between them by the window's size.
 
 Deliberately different from the apps: the LED is Classic only; magnetic
 cards live in an in-memory folder for the page session (upload one to fit
-it, download one to keep it); settings and the TI-58C constant memory are
-kept in `localStorage` (keys prefixed `calcu59/`: settings named as in
-`app/SettingsKeys.hpp`, the TI-58C memory as `ti58c.mem`); traces are written to Emscripten's MEMFS
+it, download one to keep it); the settings are `Calc-U-59.ini` (LIB-9),
+whose text the page keeps in `localStorage` as `calcu59/Calc-U-59.ini`
+until M-34 moves it to IndexedDB, and the TI-58C memory as
+`calcu59/ti58c.mem`; traces are written to Emscripten's MEMFS
 (`/traces`) and handed to the page as downloads. Like the apps, it starts
 with the PC-100C connected.
 

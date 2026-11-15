@@ -31,6 +31,10 @@ struct ModuleMetadata {
 /// file's `description`, `title` its `title`.
 std::vector<ModuleMetadata> allModuleMetadata(const calcu::roms::RomSet& roms);
 
+/// The module in the slot at a start: no setting remembers the module
+/// (LIB-9 AC-22, behaviour change 59-9), so it is the Master Library.
+inline constexpr const char* kStartModuleID = "ML";
+
 /// The module file of a module ID of the catalogue ("ML" → "ML.rom.yaml");
 /// std::nullopt for another ID.
 std::optional<std::string> moduleRomFile(std::string_view moduleID);

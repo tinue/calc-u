@@ -25,14 +25,15 @@ final class ScreenshotTests: XCTestCase {
     // MARK: - Helpers
 
     /// The app settings the screenshots show, as launch arguments, so a new
-    /// simulator needs no setup by hand. They take effect for this launch only
-    /// and aren't saved on the simulator. Numbers need the plist form: plain
-    /// "1" arrives as a string, which the app's `as? Int` lookups don't accept.
+    /// simulator needs no setup by hand. Under --UITesting the app's settings
+    /// file is in memory only (LIB-9 AC-18): these values take effect for this
+    /// launch and are never saved. The module is no setting (AC-22): it is a
+    /// launch value of its own.
     private static let settingsArguments = [
-        "-portraitDebugPage", "YES",
-        "-ledFontStyle", "<integer>1</integer>",   // classic
-        "-solidStateModuleID", "LE",
-        "-lastUsedModel", "<integer>0</integer>",  // TI-59
+        "--setting", "window.portrait-debug-page=true",
+        "--setting", "display.led-style=classic",
+        "--setting", "startup.last-model=TI-59",
+        "--module", "LE",
     ]
 
     @discardableResult

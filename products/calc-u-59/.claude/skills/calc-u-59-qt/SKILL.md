@@ -38,8 +38,11 @@ Everything that isn't drawing: `reference/SharedArchitecture.md`.
 4. **Assets have one source:** ROMs from `roms/` and artwork from
    `frontends/swift/App/Assets.xcassets` are compiled in as Qt resources by `frontends/qt6/CMakeLists.txt`;
    icons come from `frontends/swift/App/AppIcon.icon` via `tools/gen_qt_icons.sh`. Never copy them.
-5. **Settings keys** both apps store come from `app/SettingsKeys.hpp`;
-   only the Qt-only folder and window keys live in `frontends/qt6/app/AppSettings.hpp`.
+5. **Settings** are declared in `app/Settings.hpp` and live in
+   `Calc-U-59.ini` (LIB-9); `frontends/qt6/app/AppSettings.hpp` only wraps
+   them in QString calls, and `AppPaths.cpp` opens the file and takes every
+   folder from `calcu::settings::Paths`. No QSettings. The window is
+   `[window]` numbers (`cu59::settings::WindowState`).
 6. **Compile, don't run.** Build with the commands below. To check rendering
    without showing a window: `QT_QPA_PLATFORM=offscreen ../../build/app-59/products/calc-u-59/frontends/qt6/Calc-U-59.app/Contents/MacOS/Calc-U-59 [state-file] --grab out.png --after 3000`
    (an offscreen screen may clamp the window size). Ask the user to try the app itself.

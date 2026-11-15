@@ -45,7 +45,7 @@ EmulatorViewModel (@Observable, main thread)
 | `MachineModel.swift` | Model enum (raw values match `cu59::Model`) |
 | `ROMLoader.swift` | The ROM lookup over the bundle's resource folder (`TIRomSet`, LIB-12; a "ROMs missing" text in place of the calculator); `cuecards.txt` text and module list |
 | `CardStorage.swift` | Card folder: iCloud Documents container, else local Documents |
-| `AppSettings.swift` | UserDefaults keys and resolution: shared keys from `TISettings`, plus the Swift-only trace location, keyboard feedback and portrait debug page |
+| `AppSettings.swift` | `SettingsModel`, the observable face of `Calc-U-59.ini` over `TISettings` (views bind to it); the trace folder from `calcu::settings::Paths`; the security-scoped bookmark of a chosen trace folder, the one value kept in UserDefaults (LIB-9 AC-34) |
 | `AppInfo.swift` | Version and About panel content |
 | `CueCardContent.swift` | Swift cue-card value type and its `TICueCard` conversion |
 | `Views/CalculatorView.swift` | Root view; macOS side-by-side and iOS layouts — pages, or side by side with or without the debugger, as `TIViewRules.mobileLayout` (Shared `mobileLayout`) says for the window's size and an active fold (iPhone Duo), with the printer's width (`mobilePrinterWidth`) and a top margin for windows without a top inset (`mobileTopMargin`); Reset / Clean (Cmd held; iOS: 1 s long press); preset and ASM file importer; UI-test hooks (`--UITesting`) |
@@ -118,7 +118,7 @@ imports the public ones.
 | `TISharedTables.{h,mm}` | `KeyboardMap`, `SevenSegment`, `PrinterFont` (font rows), `KeyboardLayout`, `KeyIds` |
 | `TIViewRules.{h,mm}` | `CueCard` (spans, geometry, inks), `LedGeometry`, `PrinterFont` (`PrinterGeometry`), `RomHeatmap`, `ModuleImage` (program source), `DebugText` (incl. the iOS `mobileLayout`, `mobilePrinterWidth`, `compactPrinterBar`, `mobileTopMargin`) |
 | `TIFileFormats.{h,mm}` | `TICueCard`, card file names (`CardFile`), `cuecards.txt` module list (`ModuleCatalog`) |
-| `TISettings.{h,mm}` | `SettingsKeys` |
+| `TISettings.{h,mm}` | `Settings` (`app/Settings.hpp`) over a `calcu::settings::SettingsFile`; the trace folder from `calcu::settings::Paths` |
 | `TITypes.h` | `TIDisplaySnapshot` (mirrors `LedFrame`: the glyph's segments A–G and brightness 0–255 per digit and decimal point) and `TICpuFrame` (mirrors `CpuFrame`) |
 | `BridgeConvert.h` | ObjC++-only: string / data conversions; `static_assert`s that `TICpuFrame` matches `CpuFrame` field for field, so a frame converts with one `memcpy` |
 | `TIFileFormats+Cpp.h` | ObjC++-only: `TICueCard` ↔ `CueCardContent` |

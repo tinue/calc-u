@@ -12,7 +12,7 @@
 
 namespace cu59 {
 
-enum class LedStyle { Modernized = 0, Classic = 1 };  ///< settings value "ledFontStyle"
+enum class LedStyle { Modernized = 0, Classic = 1 };  ///< [display] led-style (app/Settings.hpp)
 
 struct LedPoint { double x, y; };
 

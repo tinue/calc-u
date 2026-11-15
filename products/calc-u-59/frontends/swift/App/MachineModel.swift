@@ -21,7 +21,7 @@ enum MachineModel: Int, CaseIterable, Identifiable {
         }
     }
 
-    /// TI-58C only: RAM contents survive power-off (persisted to UserDefaults).
+    /// TI-58C only: RAM contents survive power-off (persisted to ti58c.mem).
     /// Also governs MEMRD/MEMWR instruction decoding and ROM loading.
     var hasConstantMemory: Bool { self == .ti58c }
 

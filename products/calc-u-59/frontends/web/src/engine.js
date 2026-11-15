@@ -2,8 +2,9 @@
 // keeps what it posts in a small store the components subscribe to — the
 // web's Qt6/app/EmulatorController. Display frames bypass the store: the
 // LED canvas repaints from `frames`, once per animation frame, without a
-// React render. Settings and the
-// TI-58C constant memory the worker asks to keep go to localStorage.
+// React render. The settings file's text (Calc-U-59.ini, LIB-9; adapter A-5
+// until LIB-15 59) and the TI-58C constant memory the worker asks to keep go
+// to the page's storage, one entry each; no other entry is read.
 // Created in an effect only (the website prerenders without a Worker).
 
 // The directory calc.js was loaded from: the worker, the engine, the
@@ -27,15 +28,17 @@ function storageSet(key, value) {
   try { window.localStorage.setItem(STORAGE_PREFIX + key, value); } catch (e) { /* private mode */ }
 }
 
+// The entries the worker starts from (adapter A-5): the settings file's text
+// and the constant memory. Absent ones (a first start, private mode) give
+// the defaults.
+const STORED_ENTRIES = ["Calc-U-59.ini", "ti58c.mem"];
+
 function storedSettings() {
   const out = {};
-  try {
-    const ls = window.localStorage;
-    for (let i = 0; i < ls.length; i++) {
-      const k = ls.key(i);
-      if (k && k.startsWith(STORAGE_PREFIX)) out[k.slice(STORAGE_PREFIX.length)] = ls.getItem(k);
-    }
-  } catch (e) { /* private mode: defaults */ }
+  for (const key of STORED_ENTRIES) {
+    const value = storageGet(key);
+    if (value !== null) out[key] = value;
+  }
   return out;
 }
 

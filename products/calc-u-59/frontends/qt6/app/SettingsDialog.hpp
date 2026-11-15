@@ -22,7 +22,6 @@ private:
     void addFolderRow(QGridLayout* grid, const QString& label, const QString& dialogTitle,
                       std::function<QString()> display, std::function<QString()> startDir,
                       std::function<bool()> isOverridden, std::function<void(const QString&)> set);
-    static void setOverride(const char* key, const QString& dir);
 
     EmulatorController& m_controller;
     QComboBox* m_startup;

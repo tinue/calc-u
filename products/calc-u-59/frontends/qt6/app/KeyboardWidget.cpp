@@ -36,8 +36,7 @@ KeyboardWidget::KeyboardWidget(EmulatorController& controller, QWidget* parent)
 }
 
 void KeyboardWidget::reloadSettings() {
-    m_ledStyle = static_cast<cu59::LedStyle>(
-        AppSettings::value<int>(AppSettings::kLedFontStyle, cu59::settings::kDefaultLedFontStyle));
+    m_ledStyle = AppSettings::settings().ledStyle();
     update();
 }
 

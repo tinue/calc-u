@@ -8,7 +8,6 @@
 #include "../app/CardFile.hpp"
 #include "../app/ConstantMemory.hpp"
 #include "../app/ModuleCatalog.hpp"
-#include "../app/SettingsKeys.hpp"
 #include "../app/StateFile.hpp"
 #include "../app/TextUtil.hpp"
 #include <cstdio>
@@ -460,20 +459,6 @@ TEST(card_file_names) {
     CHECK(!isCardFileName("a.txt") && !isCardFileName("u59") && !isCardFileName(".a.u59.icloud") && !isCardFileName(".hidden.u59"));
     CHECK_EQ(withDefaultCardExtension("prog"), std::string("prog.U59"));
     CHECK_EQ(withDefaultCardExtension("prog.bin"), std::string("prog.bin"));
-}
-
-TEST(settings_resolve) {
-    using namespace cu59::settings;
-    CHECK(resolveStartupModel(std::nullopt, std::nullopt) == Model::TI59);
-    CHECK(resolveStartupModel(2, 1) == Model::TI58C);
-    CHECK(resolveStartupModel(-1, 1) == Model::TI58);   // last used
-    CHECK(resolveStartupModel(7, 2) == Model::TI58C);   // out of range → last used
-    CHECK(resolveStartupModel(-1, 9) == Model::TI59);
-    CHECK_EQ(resolveTraceMaxMB(std::nullopt), 50);
-    CHECK_EQ(resolveTraceMaxMB(0), 50);
-    CHECK_EQ(resolveTraceMaxMB(12), 12);
-    CHECK_EQ(resolveModuleID(std::nullopt), std::string("ML"));
-    CHECK_EQ(resolveModuleID(std::string("LE")), std::string("LE"));
 }
 
 TEST(cue_card_geometry) {

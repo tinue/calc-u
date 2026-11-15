@@ -41,7 +41,7 @@ struct KeyboardView: View {
         }
     }
 
-    @AppStorage(SettingsKey.ledFontStyle) private var ledFontStyleRaw: Int = LEDFontStyle.modernized.rawValue
+    private var ledFontStyleRaw: Int { SettingsModel.shared.ledFontStyleRaw }
 
     private var fontStyle: LEDFontStyle {
         LEDFontStyle(rawValue: ledFontStyleRaw) ?? .modernized

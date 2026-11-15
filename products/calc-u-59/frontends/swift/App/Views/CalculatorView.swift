@@ -38,7 +38,7 @@ struct CalculatorView: View {
     #else
     enum PortraitPage { case calc, printer, debug }
     @State private var portraitPage: PortraitPage = .calc
-    @AppStorage(SettingsKey.portraitDebugPage) private var debugPageEnabled: Bool = false
+    private var debugPageEnabled: Bool { SettingsModel.shared.portraitDebugPage }
     @State private var showingSettings = false
     @State private var resetLongPressTriggered = false
     #endif

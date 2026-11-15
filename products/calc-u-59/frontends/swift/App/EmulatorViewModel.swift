@@ -56,7 +56,7 @@ enum ProgramSource: Equatable {
 }
 /// The SwiftUI face of Shared/SessionController (the Qt app's is
 /// Qt6/app/EmulatorController): implements its platform — the main thread,
-/// iCloud card storage and ti58c.mem, UserDefaults, error alerts — runs its
+/// iCloud card storage and ti58c.mem, the settings file, error alerts — runs its
 /// 60 Hz tick and copies what changed into observable properties. Everything
 /// that isn't UI state lives in Shared/ — see CLAUDE.md § "Frontend Parity".
 @Observable
@@ -173,7 +173,9 @@ class EmulatorViewModel {
     var cueCardContent: CueCardContent? = nil
     /// The fitted card's corner lit while that side is read: 0 left, 1 right.
     var litCardCorner: Int? = nil
-    var selectedModuleID: String = AppSettings.resolvedSolidStateModuleID()
+    /// The module at a start: not remembered (LIB-9 AC-22, behaviour change
+    /// 59-9); UI tests may name one with `--module <id>`.
+    var selectedModuleID: String = EmulatorViewModel.startModuleID
 
     /// The key a physical-keyboard press is holding down (`row * 5 + col`), so
     /// `KeyboardView` shows it depressed as for a pointer press.
@@ -189,7 +191,12 @@ class EmulatorViewModel {
     private(set) var romsMissingText: String? = nil
     @ObservationIgnored private lazy var controller = TISessionController(
         roms: romSet!, cuecards: ROMLoader.cuecardsText,
-        moduleID: AppSettings.resolvedSolidStateModuleID(), platform: platform)
+        moduleID: EmulatorViewModel.startModuleID, platform: platform)
+    fileprivate static var startModuleID: String {
+        let args = ProcessInfo.processInfo.arguments
+        if args.contains("--UITesting"), let i = args.firstIndex(of: "--module"), i + 1 < args.count { return args[i + 1] }
+        return "ML"
+    }
     private var displayTimer: Timer?
     /// Held for the app's lifetime so macOS never App-Naps the background emulation
     /// queue while the window is unfocused/occluded — App Nap can otherwise stall the
@@ -575,8 +582,9 @@ final class PlatformForwarder: NSObject, TIPlatform {
     var traceMaxBytes: UInt64 { UInt64(AppSettings.resolvedTraceMaxMB()) * 1_000_000 }
     var traceAvailable: Bool { AppSettings.traceLocationAvailable() }
 
-    func saveLastUsedModel(_ model: Int) { UserDefaults.standard.set(model, forKey: SettingsKey.lastUsedModel) }
-    func saveModuleID(_ moduleID: String) { UserDefaults.standard.set(moduleID, forKey: SettingsKey.solidStateModuleID) }
+    func saveLastUsedModel(_ model: Int) { SettingsModel.shared.saveLastUsedModel(model) }
+    /// Adapter A-6 (LIB-9 design §5, until M-33): the module is not remembered (AC-22).
+    func saveModuleID(_ moduleID: String) {}
     func showErrorTitle(_ title: String, message: String) { target?.showError(title: title, message: message) }
     func diagnostic(_ message: String) { EmulatorViewModel.diagnostic(message) }
     func changed(_ changes: TIChange) { target?.apply(changes) }

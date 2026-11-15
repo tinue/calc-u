@@ -94,19 +94,74 @@ builds in `build/web` for Calc-U-1600's `calcu_web` (Homebrew Emscripten,
 - `TestProduct.hpp` is included as `settings/tests/TestProduct.hpp` (rooted
   at `library/`), so `calcu_library_tests` needs no new include folder.
 
-## Calc-U-59 (M-32; AC-23 in M-34)
+## Calc-U-59 (M-32, 2026-11-15; AC-23 in M-34)
 
-| ID | Result | Step |
+Built and run on an M4 Pro, macOS 27.2, Apple clang 21, CMake 4.5, Ninja.
+The product's declaration is `cu59::settings::settingsDecl()` in
+`products/calc-u-59/app/Settings.hpp/.cpp`, with typed calls
+(`cu59::settings::Settings`) over a `calcu::settings::SettingsFile&`;
+`app/SettingsKeys.hpp` is deleted. Qt6 opens `Calc-U-59.ini` in the
+platform's settings folder (`frontends/qt6/app/AppPaths.cpp`: on macOS
+`~/Library/Application Support`, the development build being unsandboxed;
+`%APPDATA%` on Windows; `$XDG_CONFIG_HOME` or `~/.config` on Linux) and
+takes the save and trace folders from `calcu::settings::Paths` (adapter
+A-2); the Swift frontend opens it in its Application Support folder through
+`Bridge/TISettings` and the observable `SettingsModel`
+(`App/AppSettings.swift`), and under `--UITesting` uses a file in memory with
+the `--setting` launch values; the Web frontend opens it at
+`/settings/Calc-U-59/Calc-U-59.ini` in Emscripten's file system, filled from
+and mirrored to the page's `localStorage` entry `calcu59/Calc-U-59.ini`
+(adapter A-5). `saveModuleID` is a no-op in all three (adapter A-6). Tests in
+`products/calc-u-59/tests/shared_settings_tests.cpp` (in `CalcU59Tests`,
+Frequent). Result of the run: `CalcU59Tests` 234 tests, 36598 checks
+passed, 0 failed, 8.8 s; `CalcU59NoPlatformSettings` passed; the full
+Frequent run of `build/tests` passed, 16 of 16 entries. Golden runs:
+`golden_runs_tests.cpp` passed unchanged (740 checks). Built once: the Qt6 app
+(`tools/build_qt.sh`), the XCFramework and the Swift app for macOS and the iOS
+simulator (`xcodebuild … build`), the Web frontend (`frontends/web/build.sh`);
+`CalcU59WebPlaywright` 67 passed, 3 skipped (the existing conditional ones),
+with the new case. The Qt6 app ran twice with `--grab` on a temporary
+`$HOME` (the user's settings were not touched): the first start wrote a
+fresh `Calc-U-59.ini` with its version and every key (the exit check), the
+quit wrote `[startup] last-model` and the `[window]` numbers, the second start
+read them. The Swift app was built, not run (its settings file would be the
+user's own; `--UITesting` runs use the file in memory).
+
+| ID | Result | Test case |
 |---|---|---|
-| AC-19 | Later | M-32 |
-| AC-20 | Later | M-32 |
-| AC-21 | Later | M-32 (`CalcU59NoPlatformSettings` over `check_platform_stores.sh`) |
-| AC-22 | Later | M-32 |
-| AC-23 | Later | M-34 (prepared in M-32, adapter A-5) |
-| AC-24 | Later | M-32 |
-| AC-25 | Later | M-32 |
-| AC-34 | Later | M-32 |
-| AC-35 | Later | M-32 |
+| AC-19 | Pass | `lib9_ac19_declaration`: every key in order with its default, the app-written ones, the accepted values of `[startup] model`, `led-style`, `feedback`, `location`; the typed calls over those keys, `[folders]` (fixed, last used, Reset; `other` declared, D-1) |
+| AC-20 | Pass | `lib9_ac20_startup_last_without_last_model_is_ti59` (also EC-1 and AC-9: a value that is neither `last` nor a model) |
+| AC-21 | Pass | `lib9_ac21_first_start_defaults_and_writes_file` (the file at its place with its version and every key, written at the first open; a change read again at the next start); CTest `CalcU59NoPlatformSettings` (allow-list `tools/platform_stores_allowed.txt`: the bookmark key, the page's two entries until M-34, the Playwright check); Longer: Playwright `lib9_ac21_settings_in_the_ini_file_survive_a_reload` (2.3.0's `calcu59/startupModel` is not read; the INI text is stored and a change survives a reload) |
+| AC-22 | Pass | `lib9_ac22_no_key_holds_a_module`; no frontend stores or reads the module (`saveModuleID` no-op, A-6; the start module is `cu59::kStartModuleID`) |
+| AC-23 | Later | M-34 (prepared: settings through `SettingsFile`, adapter A-5) |
+| AC-24 | Pass | `lib9_ac24_trace_location_app_support_icloud_folder` (on `Paths` with `FrontendKind::Swift`) |
+| AC-25 | Pass | `lib9_ac25_one_declaration_for_every_frontend` (keys another frontend has no use for are kept on write; the launch values of the UI tests); the three frontends build against the one declaration |
+| AC-34 | Pass | the bookmark is the only allowed platform-store use (`CalcU59NoPlatformSettings`); `AppSettings.traceDirectory()` resolves it and passes its folder as `HostDirs::chosenTraceFolder` (`lib9_ac24_…` covers the rule) |
+| AC-35 | Pass | `lib9_ac35_window_numbers_round_trip`; the Qt6 run above wrote and read `[window]` |
+
+Exit check: a first start writes a fresh INI file (`lib9_ac21_…`; the Qt6
+run above; on the Web the Playwright case).
+
+### Deviations and notes
+
+- The Qt6 window keys are those of D-7; `x`, `y` and the three panel widths
+  have no default (empty until the app writes them: the window system places
+  the window, the splitter splits by its rules). A maximised window comes
+  back at its last normal size (row 59-37).
+- `[folders]` (D-2) as in Calc-U-1600: a pick while a fixed folder is set is
+  not remembered, and Reset starts in the former fixed folder (row 59-36).
+- iOS: the settings screen no longer forces the trace location to iCloud; the
+  default is Application Support (row 59-30, D-8). iOS still has no picker for
+  it.
+- The UI tests' module (`LE` in `ScreenshotTests`) is no setting (AC-22): it
+  is a launch value of its own, `--module <id>`, read only under
+  `--UITesting`.
+- On the Web the INI is created at the first start and its text posted to the
+  page at once; in private mode (no `localStorage`) every load starts at the
+  defaults, as today.
+- `reference/WebClient.md` already says where the Web settings are now
+  (it named `SettingsKeys.hpp`, which is gone); its full update stays with
+  M-34.
 
 ## Calc-U-1600 (M-30, 2026-11-15)
 

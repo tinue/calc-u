@@ -37,6 +37,9 @@ struct YamlNode {
     std::vector<YamlNode> seq;
     std::vector<std::pair<std::string, YamlNode>> map;  // ordered
     int line = 0;                                       // 1-based, for errors
+    // A raw value (YamlOptions::rawStepVerbs): `scalar` is the text after
+    // the colon as written, quotes and `#` included (LIB-6 D-4).
+    bool rawLine = false;
 
     bool isNull() const { return type == Type::Null; }
     bool isScalar() const { return type == Type::Scalar; }
@@ -61,6 +64,17 @@ struct YamlNode {
 };
 
 bool parseYaml(const std::string& text, YamlNode* out, std::string* error);
+
+// Options of a format that needs them (LIB-6 D-4; the default is the reader
+// above, for every other format).
+struct YamlOptions {
+    // A top-level key may repeat (a preset's sections); the map keeps each.
+    bool repeatTopLevelKeys = false;
+    // The verbs whose step `- <verb>: <text>` takes the rest of the line as
+    // written (docs/formats/README.md §1: a preset's `type:` and `expect:`).
+    std::vector<std::string> rawStepVerbs;
+};
+bool parseYaml(const std::string& text, YamlNode* out, std::string* error, const YamlOptions& options);
 
 // The `format-version` every file format of the app carries: required, and
 // a version this build doesn't know is refused rather than guessed. Check it
@@ -157,9 +171,22 @@ struct Line {
     int lineNo = 0;
     std::string content;  // comment-stripped, right-trimmed; never empty
     std::string raw;      // original (for block scalars)
+    bool rawStep = false; // `- <raw verb>: …`: content is not comment-stripped
 };
 
-inline bool tokenize(const std::string& text, std::vector<Line>* out, std::string* error) {
+// Whether the line (after its indent) is `- <verb>:` of a raw verb.
+inline bool isRawStep(const std::string& afterIndent, const std::vector<std::string>& verbs) {
+    if (afterIndent.size() < 3 || afterIndent[0] != '-' || afterIndent[1] != ' ') return false;
+    const std::string rest = trim(afterIndent.substr(2));
+    for (const auto& v : verbs)
+        if (rest.size() > v.size() && rest.compare(0, v.size(), v) == 0 && rest[v.size()] == ':' &&
+            (rest.size() == v.size() + 1 || rest[v.size() + 1] == ' '))
+            return true;
+    return false;
+}
+
+inline bool tokenize(const std::string& text, std::vector<Line>* out, std::string* error,
+                     const std::vector<std::string>& rawVerbs = {}) {
     size_t pos = 0;
     int lineNo = 0;
     while (pos <= text.size()) {
@@ -173,7 +200,9 @@ inline bool tokenize(const std::string& text, std::vector<Line>* out, std::strin
             *error = errAt(lineNo, "tab character (use spaces)");
             return false;
         }
-        std::string noComment = stripComment(raw);
+        size_t lead = raw.find_first_not_of(' ');
+        const bool rawStep = lead != std::string::npos && !rawVerbs.empty() && isRawStep(raw.substr(lead), rawVerbs);
+        std::string noComment = rawStep ? raw : stripComment(raw);
         // right-trim
         size_t end = noComment.find_last_not_of(' ');
         std::string content = (end == std::string::npos) ? "" : noComment.substr(0, end + 1);
@@ -185,6 +214,7 @@ inline bool tokenize(const std::string& text, std::vector<Line>* out, std::strin
         ln.lineNo = lineNo;
         ln.content = content.substr(indent);
         ln.raw = raw;
+        ln.rawStep = rawStep;
         out->push_back(std::move(ln));
     }
     return true;
@@ -312,7 +342,7 @@ inline void parseBlockScalar(const std::vector<Line>& L, size_t& i, int keyInden
 }
 
 inline bool parseMapBody(const std::vector<Line>& L, size_t& i, int mapIndent, YamlNode* out,
-                         std::string* error) {
+                         std::string* error, bool allowRepeat = false) {
     out->type = YamlNode::Type::Map;
     out->line = L[i].lineNo;
     while (i < L.size() && L[i].indent == mapIndent) {
@@ -329,7 +359,7 @@ inline bool parseMapBody(const std::vector<Line>& L, size_t& i, int mapIndent, Y
         std::string key = unquote(ln.content.substr(0, c));
         std::string rest = trim(ln.content.substr(c + 1));
         for (const auto& kv : out->map) {
-            if (kv.first == key) {
+            if (kv.first == key && !allowRepeat) {
                 *error = errAt(ln.lineNo, "duplicate key '" + key + "'");
                 return false;
             }
@@ -381,7 +411,13 @@ inline bool parseSeq(const std::vector<Line>& L, size_t& i, int seqIndent, YamlN
             std::string key = unquote(rest.substr(0, c));
             std::string vrest = trim(rest.substr(c + 1));
             YamlNode value;
-            if (vrest == "|") {
+            if (ln.rawStep) {   // the rest of the line as written (YamlOptions::rawStepVerbs)
+                i++;
+                value.type = vrest.empty() ? YamlNode::Type::Null : YamlNode::Type::Scalar;
+                value.scalar = vrest;
+                value.rawLine = true;
+                value.line = ln.lineNo;
+            } else if (vrest == "|") {
                 i++;
                 parseBlockScalar(L, i, keyCol, &value);
             } else if (!vrest.empty()) {
@@ -440,8 +476,12 @@ inline bool parseNode(const std::vector<Line>& L, size_t& i, int parentIndent, Y
 }  // namespace yaml_detail
 
 inline bool parseYaml(const std::string& text, YamlNode* out, std::string* error) {
+    return parseYaml(text, out, error, YamlOptions{});
+}
+
+inline bool parseYaml(const std::string& text, YamlNode* out, std::string* error, const YamlOptions& options) {
     std::vector<yaml_detail::Line> lines;
-    if (!yaml_detail::tokenize(text, &lines, error)) return false;
+    if (!yaml_detail::tokenize(text, &lines, error, options.rawStepVerbs)) return false;
     if (lines.empty()) {
         out->type = YamlNode::Type::Null;
         return true;
@@ -451,7 +491,13 @@ inline bool parseYaml(const std::string& text, YamlNode* out, std::string* error
         return false;
     }
     size_t i = 0;
-    if (!yaml_detail::parseNode(lines, i, -1, out, error)) return false;
+    const bool topMap = !(lines.front().content[0] == '-' &&
+                          (lines.front().content.size() == 1 || lines.front().content[1] == ' '));
+    if (options.repeatTopLevelKeys && topMap) {
+        if (!yaml_detail::parseMapBody(lines, i, 0, out, error, true)) return false;
+    } else if (!yaml_detail::parseNode(lines, i, -1, out, error)) {
+        return false;
+    }
     if (i != lines.size()) {
         *error = yaml_detail::errAt(lines[i].lineNo, "unexpected content (bad indentation?)");
         return false;

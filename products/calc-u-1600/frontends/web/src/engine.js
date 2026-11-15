@@ -1,75 +1,90 @@
-// The engine: owns calc-engine-worker.js (the WASM AppSession) and keeps
-// what it posts in a small store the components subscribe to -- the web's
-// Qt6/app/MachineController. LCD frames bypass the store: the LCD canvas
-// repaints from `frames`, once per animation frame, without a React render.
-// The settings are the worker's (Calc-U-1600.ini in /persist); the buzzer
-// plays through an AudioWorklet. Created in an effect only (a host page may
-// prerender without a Worker).
+// The components' view of the library's Web shell (LIB-15 1600, M-31):
+// createShell() starts the library's worker, which hosts the app session
+// (frontends/web/bindings.cpp, app/SharpAppPart, app/SharpWebPart); this file
+// only translates -- a component's call or request to a LIB-3 command or
+// request of the session, and the topics the session sends to the slices
+// the components read (spec AC-27). It decides nothing. Until LIB-14 1600
+// (M-49) rewrites the components on the family's component set, they keep
+// the names they had (engine.call("pickModel", 2)).
+//
+// The LCD canvas repaints from `frames` (the `c1600.lcd` topic), once per
+// animation frame, without a React render. Created in an effect only (a host
+// page may prerender without a Worker).
 
-// The directory calc.js was loaded from: the worker, the engine, the
-// artwork and the presets sit beside it, wherever the client is hosted.
-// Captured while the script runs (document.currentScript is null
-// afterwards); without one -- a server-side prerender -- relative to the
-// page, which a render never uses.
-const CALC_BASE = (() => {
-  const script = typeof document !== "undefined" ? document.currentScript : null;
-  if (script && script.src) return new URL(".", script.src).href;
-  return typeof location !== "undefined" ? new URL(".", location.href).href : "";
-})();
+const MODEL_IDS = ["PC-1500", "PC-1500A", "PC-1600"];
+const PERIPHERALS = ["CE-150", "CE-1600P", "CE-158"];
+const ROM_VERSIONS = ["new", "old"];
 
-function downloadBytes(name, bytes, type) {
-  const url = URL.createObjectURL(new Blob([bytes], { type: type || "application/octet-stream" }));
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = name;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  setTimeout(() => URL.revokeObjectURL(url), 1000);
+function downloadBytes(name, bytes, type) { calcuDownload(name, bytes, type); }
+
+// A picked/dropped File's bytes.
+function fileBytes(file) {
+  return file.arrayBuffer().then((b) => new Uint8Array(b));
 }
 
-// ── Buzzer audio ───────────────────────────────────────────────────────
-// The worker sends PCM as the emulation makes it; an AudioWorklet plays it
-// from a ring buffer. Browsers only start audio from a user gesture, so the
-// context is created on the first key or click (unlock()); until then the
-// samples are dropped.
-function createAudio() {
-  let context = null;
-  let node = null;
-  let rate = 48000;
-  let starting = null;
-
-  const unlock = () => {
-    if (context || starting || typeof AudioContext === "undefined") {
-      if (context && context.state === "suspended") context.resume();
-      return;
-    }
-    const ctx = new AudioContext({ latencyHint: "interactive" });
-    starting = ctx.audioWorklet.addModule(`${CALC_BASE}audio-worklet.js`).then(() => {
-      node = new AudioWorkletNode(ctx, "calcu-buzzer", { outputChannelCount: [1] });
-      node.connect(ctx.destination);
-      node.port.postMessage({ rate });
-      context = ctx;
-    }).catch(() => { /* no audio */ }).finally(() => { starting = null; });
-  };
-
-  const message = (m) => {
-    if (m.op === "start") {
-      rate = m.rate;
-      if (node) node.port.postMessage({ rate });
-    } else if (m.op === "data" && node) {
-      node.port.postMessage({ pcm: m.pcm }, [m.pcm.buffer]);
-    }
-  };
-
-  const close = () => {
-    if (context) context.close();
-    context = null;
-    node = null;
-  };
-
-  return { unlock, message, close };
+// The plotter strokes come as bytes (float32 x,y pairs, uint32 starts).
+function typedStrokes(pens) {
+  return (pens || []).map((p) => ({
+    coords: new Float32Array(p.coords.slice().buffer),
+    starts: new Uint32Array(p.starts.slice().buffer),
+  }));
 }
+
+const errorText = (r) => (r.done ? "" : r.reason || "Refused.");
+const value = (r) => r.value;
+
+// Each method of 0.8.1's engine: [kind, LIB-3 name, args → object, reply → result].
+const METHODS = {
+  presetExamples: ["request", "c1600.preset-examples", () => null, value],
+  upload: ["command", "c1600.upload", (name, bytes) => ({ name, bytes }), value],
+  loadPreset: ["command", "c1600.load-preset", (path) => ({ path }), null],
+  openProgram: ["command", "c1600.open-program", (name, bytes) => ({ name, bytes }), value],
+  loadBasic: ["command", "c1600.load-basic-picked", (index) => ({ index }), errorText],
+  planMachineCode: ["command", "c1600.plan-machine-code", (index) => ({ index }), value],
+  checkAddress: ["command", "c1600.check-address", (text) => ({ text }), value],
+  loadMachineCode: ["command", "c1600.load-planned-machine-code", () => null,
+    (r) => (r.done ? r.value : { error: r.reason })],
+  pasteText: ["command", "c1600.paste", (text) => ({ text }), null],
+  dropTarget: ["request", "c1600.drop-target", (name, bytes) => ({ name, bytes }), value],
+  importMedia: ["command", "c1600.import-media", (name, bytes) => ({ name, bytes }), errorText],
+  nameAndSaveCard: ["command", "c1600.name-save-card", (slot, name, writeProtect) => ({ slot, name, writeProtect: !!writeProtect }), errorText],
+  nameAndSaveDisk: ["command", "c1600.name-save-disk", (name) => ({ name }), errorText],
+  selectTape: ["command", "c1600.select-tape", (name) => ({ name }), errorText],
+  tapeExists: ["request", "c1600.tape-exists", (name) => ({ name }), value],
+  recordTape: ["command", "c1600.record-tape", (name) => ({ name }), errorText],
+  screenImage: ["request", "c1600.screen-image", () => null, value],
+  lcdText: ["request", "c1600.lcd-text", () => null, value],
+  togglePeripheral: ["command", "c1600.toggle-peripheral", (p) => ({ peripheral: PERIPHERALS[p] }), null],
+  pickModel: ["command", "c1600.pick-model", (m) => ({ model: MODEL_IDS[m] }), null],
+  selectPC1500Rom: ["command", "c1600.pc1500-rom", (i) => ({ revision: ["A01", "A03", "A04"][i] }), null],
+  selectPC1600Rom: ["command", "c1600.pc1600-rom", (i) => ({ version: ROM_VERSIONS[i] }), null],
+  selectCE1600PRom: ["command", "c1600.ce1600p-rom", (i) => ({ version: ROM_VERSIONS[i] }), null],
+  reset: ["command", "c1600.reset", (all) => ({ all: !!all }), null],
+  hostKeyDown: ["command", "c1600.host-key-down",
+    (code, key, shift, control, alt, meta, macHost) => ({ code, key, shift, control, alt, meta, macHost }),
+    (r) => (r.done ? r.value : "")],
+  hostKeyUp: ["command", "c1600.host-key-up", (key) => ({ key }), null],
+  hostShiftTap: ["command", "c1600.host-shift-tap", () => null, null],
+  selectModule: ["command", "c1600.select-module", (slot, name) => ({ slot, name }), null],
+  selectDisk: ["command", "c1600.select-disk", (name) => ({ name }), null],
+  toggleDiskSide: ["command", "c1600.toggle-disk-side", () => null, null],
+  settingsState: ["request", "c1600.settings-state", () => null, value],
+  setStartupModel: ["command", "c1600.set-startup-model", (model) => ({ model }), null],
+  setDefaultPreset: ["command", "c1600.set-default-preset", (model, path) => ({ model, path }), null],
+  mediaItems: ["request", "c1600.media-items", () => null, value],
+  exportMedia: ["request", "c1600.export-media", (path) => ({ path }), (r) => (r.done ? r.value : null)],
+  removeMedia: ["command", "c1600.remove-media", (path) => ({ path }), errorText],
+  inspectorView: ["request", "c1600.inspector-view", (view) => ({ view }), value],
+  inspectorMenu: ["request", "c1600.inspector-menu", (dumps) => ({ dumps: !!dumps }), value],
+  cardYaml: ["request", "c1600.card-yaml", () => null, value],
+  setPaperWidth: ["command", "c1600.paper-width", (width) => ({ width }), null],
+  paperExport: ["request", "c1600.paper-export", () => null,
+    (r) => (r.done && r.value ? { ...r.value, strokes: typedStrokes(r.value.strokes) } : null)],
+  clearPaper: ["command", "c1600.clear-paper", () => null, null],
+  faceKeyDown: ["command", "c1600.face-key", (name) => ({ name, down: true }), null],
+  faceKeyUp: ["command", "c1600.face-key", (name) => ({ name, down: false }), null],
+  setTurbo: ["command", "speed", (full) => ({ full: !!full }), null],
+};
 
 const INITIAL_STATE = {
   ready: false,
@@ -77,7 +92,7 @@ const INITIAL_STATE = {
   persistent: true,
   faceplates: null,   // per model: {width, height, lcd, keys} in art pixels
   lcd: null,          // LcdLayout constants and colours
-  ui: null,           // control state, pickers (bindings.cpp postUi())
+  ui: null,           // control state, pickers (c1600.ui)
   lamps: { floppyMotor: false, tapeMode: "", tapeMotor: false, tapeSeconds: 0, tapeFile: "" },
   busy: false,
   notices: [],        // [{title, text}], shown one at a time
@@ -86,96 +101,124 @@ const INITIAL_STATE = {
   log: [],            // preset step lines, for the inspector
 };
 
-// model (0-2) and preset (a path under presets/) start the engine with them.
+// model (an index 0-2 or a model's name) and preset (a path under presets/)
+// start the session with them (the `start` command, LIB-15 N3).
 function createEngine({ workerUrl, model, preset }) {
+  const modelName = model === undefined || model === null || model === "" ? ""
+    : Number.isInteger(Number(model)) ? (MODEL_IDS[Number(model)] || "") : String(model);
+  const shell = createShell({
+    product: "Calc-U-1600",
+    workerUrl,
+    start: { model: modelName, preset: preset ? `examples:${preset}` : "" },
+  });
   let state = INITIAL_STATE;
   const listeners = new Set();
   const frames = { display: null, onFrame: null };
   let framePending = false;
-  const replyWaiters = new Map();
-  let lastRequest = 0;
-  const audio = createAudio();
+  let statics = null;          // {faceplates, lcd}
+  let staticsAsked = false;
+  let started = false;
+  let seen = { notices: 0, printer: 0 };   // what the page dismissed or cleared
+  let lastShell = null;
 
-  const set = (patch) => {
-    state = { ...state, ...patch };
+  const derive = () => {
+    const s = shell.getState();
+    const t = s.topics;
+    const streams = s.streams;
+    const missing = t["roms-missing"];
+    const fatal = s.start === "failed" ? s.failure : (missing && missing.text) || "";
+    const notices = (streams.notices || []).slice(seen.notices)
+      .map((n) => ({ title: "Calc-U-1600", text: n.sentence }));
+    const printed = (streams["c1600.printer"] || []).slice(seen.printer);
+    const paper = t["c1600.paper"];
+    const busyState = t.busy;
+    // Ready once the start (an operation: the model, then its preset) is
+    // over: keys pressed while an operation runs are dropped (ledger 1600-9).
+    if (!started && t["c1600.ui"] && busyState && !busyState.operationRuns) started = true;
+    return {
+      ready: s.start === "running" && !!statics && started,
+      fatal,
+      persistent: !t["web.storage"] || t["web.storage"].mode === "kept",
+      faceplates: statics ? statics.faceplates : null,
+      lcd: statics ? statics.lcd : null,
+      ui: t["c1600.ui"] || null,
+      lamps: t["c1600.lamps"] || INITIAL_STATE.lamps,
+      busy: !!(busyState && busyState.operationRuns),
+      notices,
+      paper: paper ? { ...paper, strokes: typedStrokes(paper.strokes) } : null,
+      printer: { text: printed.map((p) => p.text).join(""), chunks: printed.map((p) => p.bytes) },
+      log: (streams.log || []).map((l) => l.text),
+    };
+  };
+  const update = () => {
+    state = derive();
     listeners.forEach((l) => l());
   };
 
-  const worker = new Worker(workerUrl || `${CALC_BASE}calc-engine-worker.js`);
-  const post = (msg, transfer) => worker.postMessage(msg, transfer || []);
-
-  worker.onmessage = (e) => {
-    const m = e.data;
-    switch (m.type) {
-      case "ready":
-        set({ ready: true, faceplates: m.faceplates, lcd: m.lcd, persistent: m.persistent });
-        break;
-      case "display":
-        frames.display = m;
-        if (!framePending) {
-          framePending = true;
-          requestAnimationFrame(() => {
-            framePending = false;
-            if (frames.onFrame) frames.onFrame();
-          });
-        }
-        break;
-      case "ui": set({ ui: m }); break;
-      case "lamps": set({ lamps: m }); break;
-      case "busy": set({ busy: m.busy }); break;
-      case "paper": set({ paper: m }); break;
-      case "printer":
-        set({ printer: { text: state.printer.text + m.text, chunks: state.printer.chunks.concat([m.bytes]) } });
-        break;
-      case "notice": set({ notices: state.notices.concat([{ title: m.title, text: m.text }]) }); break;
-      case "log": set({ log: state.log.concat([m.text]).slice(-500) }); break;
-      case "audio": audio.message(m); break;
-      case "fatal": set({ fatal: m.message }); break;
-      case "reply": {
-        const w = replyWaiters.get(m.id);
-        replyWaiters.delete(m.id);
-        if (w) w.resolve(m.value);
-        break;
-      }
-      case "replyError": {
-        const w = replyWaiters.get(m.id);
-        replyWaiters.delete(m.id);
-        if (w) w.reject(new Error(m.message));
-        break;
-      }
-      default: break;
-    }
+  const askStatics = () => {
+    if (staticsAsked) return;
+    staticsAsked = true;
+    Promise.all([
+      Promise.all([0, 1, 2].map((m) => shell.request("c1600.faceplate", { model: m }).then(value))),
+      shell.request("c1600.lcd-constants", null).then(value),
+    ]).then(([faceplates, lcd]) => {
+      statics = { faceplates, lcd };
+      update();
+    });
   };
-  worker.onerror = (e) => set({ fatal: e.message || "The emulator could not start." });
 
-  post({
-    type: "init",
-    model: Number.isInteger(Number(model)) && model !== null && model !== "" ? Number(model) : -1,
-    preset: preset ? `examples:${preset}` : "",
+  const unsubscribe = shell.subscribe(() => {
+    const s = shell.getState();
+    if (s.start === "running") askStatics();
+    const lcd = s.topics["c1600.lcd"];
+    if (lcd && lcd !== frames.display) {
+      frames.display = lcd;
+      if (!framePending && typeof requestAnimationFrame !== "undefined") {
+        framePending = true;
+        requestAnimationFrame(() => {
+          framePending = false;
+          if (frames.onFrame) frames.onFrame();
+        });
+      }
+    }
+    // Only a change the components read renders them again.
+    const topics = s.topics, streams = s.streams;
+    const key = lastShell;
+    if (key && key.start === s.start && key.ui === topics["c1600.ui"] && key.lamps === topics["c1600.lamps"] &&
+        key.busy === topics.busy && key.paper === topics["c1600.paper"] && key.notices === streams.notices &&
+        key.printer === streams["c1600.printer"] && key.log === streams.log && key.missing === topics["roms-missing"] &&
+        key.storage === topics["web.storage"]) return;
+    lastShell = { start: s.start, ui: topics["c1600.ui"], lamps: topics["c1600.lamps"], busy: topics.busy,
+      paper: topics["c1600.paper"], notices: streams.notices, printer: streams["c1600.printer"], log: streams.log,
+      missing: topics["roms-missing"], storage: topics["web.storage"] };
+    update();
   });
 
-  const onVisibility = () => post({ type: document.hidden ? "pause" : "resume" });
-  document.addEventListener("visibilitychange", onVisibility);
+  const invoke = (method, args) => {
+    const m = METHODS[method];
+    if (!m) return Promise.reject(new Error(`unknown method ${method}`));
+    const [kind, name, toArgs, out] = m;
+    const p = kind === "command" ? shell.send(name, toArgs(...args)) : shell.request(name, toArgs(...args));
+    return p.then((r) => (out ? out(r) : r));
+  };
 
   return {
     frames,
     getState: () => state,
     subscribe: (l) => { listeners.add(l); return () => listeners.delete(l); },
-    /// A WebController method (bindings.cpp), result not wanted.
-    call: (method, ...args) => post({ type: "call", method, args }),
-    /// A WebController method whose result is wanted.
-    request: (method, ...args) => new Promise((resolve, reject) => {
-      const id = ++lastRequest;
-      replyWaiters.set(id, { resolve, reject });
-      post({ type: "call", method, args, id });
-    }),
-    unlockAudio: audio.unlock,
-    dismissNotice: () => set({ notices: state.notices.slice(1) }),
-    clearPrinter: () => set({ printer: { text: "", chunks: [] } }),
+    /// A command or request, result not wanted.
+    call: (method, ...args) => { invoke(method, args).catch(() => {}); },
+    /// A command or request whose result is wanted.
+    request: (method, ...args) => invoke(method, args),
+    unlockAudio: shell.unlockAudio,
+    dismissNotice: () => { seen = { ...seen, notices: seen.notices + 1 }; update(); },
+    clearPrinter: () => {
+      seen = { ...seen, printer: (shell.getState().streams["c1600.printer"] || []).length };
+      update();
+    },
     destroy: () => {
-      document.removeEventListener("visibilitychange", onVisibility);
-      worker.terminate();
-      audio.close();
+      unsubscribe();
+      shell.destroy();
     },
   };
 }
@@ -185,9 +228,4 @@ const NO_ENGINE = { getState: () => INITIAL_STATE, subscribe: () => () => {} };
 function useEngine(engine, select) {
   const e = engine || NO_ENGINE;
   return React.useSyncExternalStore(e.subscribe, () => select(e.getState()), () => select(INITIAL_STATE));
-}
-
-// A picked/dropped File's bytes.
-function fileBytes(file) {
-  return file.arrayBuffer().then((b) => new Uint8Array(b));
 }

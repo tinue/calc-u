@@ -6,6 +6,7 @@
 // draws). Built by frontends/web/build.sh (CMake target calcu_web) into
 // dist/wasm/.
 
+#include <filesystem>
 #include <memory>
 #include <string>
 
@@ -35,7 +36,7 @@ struct WebKeep {
 
 calcu::web::WebSession makeWebAppSession(const calcu::web::WebStart& start) {
     calcu::settings::HostDirs dirs = start.dirs;
-    if (dirs.home.empty()) dirs.home = dirs.saveFolder;
+    if (dirs.home.empty()) dirs.home = std::filesystem::path(dirs.saveFolder).parent_path().generic_string();   // /persist
     auto keep = std::make_shared<WebKeep>(calcu::settings::SettingsFile::open(
         shared::settingsDecl(), calcu::settings::settingsFilePath(shared::settingsDecl(), dirs)));
     keep->paths = std::make_unique<shared::AppPaths>(keep->settings, dirs,

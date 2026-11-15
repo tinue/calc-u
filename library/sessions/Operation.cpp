@@ -28,11 +28,26 @@ Task<Ticks> OperationContext::run(Ticks ticks) {
     while (total < ticks) {
         const machine::Machine* m = ms.machine();
         if (!m) throw std::runtime_error(kNoMachine);
+        if (ms.paused()) {   // LIB-10 G12: see below
+            co_await yieldToHost();
+            co_return total;
+        }
         const Ticks piece = std::min<Ticks>(ticks - total, runPiece(m->descriptor().tickRate));
         const Ticks ran = co_await request([&ms, piece] {
             bool stopped = false;
             return ms.advance(piece, stopped);
         });
+        if (ran == 0 && ms.machine() && ms.paused()) {
+            // LIB-10 G12: the run control paused the machine (a
+            // pause-on-start, a pause-at-start). The run gives the host its
+            // call and ends with what ran, so that the caller looks at its
+            // own state again (a key that came up on the paused machine,
+            // LIB-5 AC-20); what needs the machine then waits until it runs.
+            // In virtual time no call comes: the operation does not finish
+            // (LIB-10 D-8).
+            co_await yieldToHost();
+            co_return total;
+        }
         if (ran == 0) throw std::runtime_error(kNoMachine);
         total += ran;
     }

@@ -158,7 +158,10 @@ DisplayOutput PC1600InterfaceMachine::readDisplay() {
     for (int row = 0; row < PC1600Display::kHeight; ++row)
         for (int col = 0; col < PC1600Display::kWidth; ++col)
             dots[static_cast<std::size_t>(row) * PC1600Display::kWidth + col] = snap.pixels[row][col] ? 1 : 0;
-    return sharp::displayOutput(descriptor(), snap.clockEnabled, PC1600Display::kWidth, PC1600Display::kHeight,
+    // The display is on while CK0 runs and the system has power: the sub-CPU
+    // cutting power leaves CK0 as it was (C1600-1 AC-3).
+    const bool on = snap.clockEnabled && !m_core->isPoweredOff();
+    return sharp::displayOutput(descriptor(), on, PC1600Display::kWidth, PC1600Display::kHeight,
                                 std::move(dots), snap.statusLine);
 }
 

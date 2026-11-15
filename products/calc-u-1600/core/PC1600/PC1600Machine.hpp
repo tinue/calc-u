@@ -4,7 +4,6 @@
 #include <cstdio>
 #include <functional>
 #include <memory>
-#include <mutex>
 #include <string>
 #include <utility>
 #include <vector>
@@ -182,7 +181,7 @@ public:
     /// touching them directly races the emulation loop.
     CE1600PCard* ce1600pCard() { return m_ce1600pCard.get(); }
 
-    /// GUI-safe (take m_mutex, like displaySnapshot()). Empty when no
+    /// GUI-safe). Empty when no
     /// plotter is attached.
     std::vector<AlpsPlotterMechanism::FlatPoint> ce1600pPlotPoints() const;
     /// O(1) change token for the plot geometry (0 when no plotter attached).
@@ -237,7 +236,7 @@ public:
     // bus. Attach/detach like any peripheral with the machine off -- the
     // ROM's SCANMODS only finds the module at power-on/reset. Changing the
     // directory of an attached drive is a live media swap. All GUI-safe
-    // (take m_mutex: the card runs inside step()).
+    //).
     bool attachHostDrive(const uint8_t* rom, size_t romSize, const std::filesystem::path& dir);
     void detachHostDrive();
 
@@ -339,7 +338,6 @@ public:
     /// OFF / auto power-off sequence). Only the always-on parts advance:
     /// the sub-CPU's clock and timers, the LCD and RAM contents stay.
     bool isPoweredOff() const {
-        std::lock_guard<std::mutex> lock(m_mutex);
         return !m_z80Mem.subCpu().systemOn();
     }
     /// A point-in-time copy of the display's pixel state -- safe to read on
@@ -352,14 +350,25 @@ public:
     /// PC1600Memory::m_opc. drainAudio() moves up to `max` of the oldest
     /// samples into `out`. Both take m_mutex.
     size_t drainAudio(int16_t* out, size_t max) {
-        std::lock_guard<std::mutex> lock(m_mutex);
         return m_z80Mem.piezo().drain(out, max);
     }
     void discardAudio() {
-        std::lock_guard<std::mutex> lock(m_mutex);
         m_z80Mem.piezo().discard();
     }
     int audioSampleRate() const { return PiezoSampler::kDefaultSampleRate; }
+
+    /// T-states consumed since the machine was built (both CPUs and the
+    /// switched-off time alike); no reset clears it. The tick count of the
+    /// machine interface (C1600-1 AC-1).
+    uint64_t elapsedTStates() const { return m_elapsedTStates; }
+
+    /// Key readiness (C1600-1 AC-21, design D-3): the last
+    /// kReadyFramesNeeded whole 60 Hz frames (counted from the build) were
+    /// each ready as waitForKeyboardScanLoopJob() decides it -- CK0 on, and
+    /// the SC7852 in the BASIC command loop or the key matrix read in the
+    /// frame -- and the system is on. Any reset starts the count again.
+    static constexpr int kReadyFramesNeeded = 15;
+    bool keyReady() const { return m_z80Mem.subCpu().systemOn() && m_readyFrames >= kReadyFramesNeeded; }
 
     // ── Memory-slot connectors ───────────────────────────────────────
     // A card plugs in pin-for-pin; MemorySlotConnector drives the PC-1600
@@ -414,7 +423,7 @@ public:
 
     /// Loader writes regardless of the current page-C bank state, for the
     /// fast loaders that scatter a program across module banks + internal
-    /// RAM. GUI-safe (take m_mutex, like pokeMemory()). Return false,
+    /// RAM. GUI-safe). Return false,
     /// writing nothing, unless every byte lands in RAM.
     /// debugWriteInternalRam(): `off` 0..kInternalRamSize into the internal
     /// RAM's backing store. debugWriteSlotBus(): Z-80 `addr` ($8000-$BFFF)
@@ -482,7 +491,6 @@ public:
     /// never a locked debug*() call, which would deadlock.
     template <class F>
     auto debugInspect(F&& view) const {
-        std::lock_guard<std::mutex> lock(m_mutex);
         return view(*this);
     }
 
@@ -509,7 +517,6 @@ public:
     uint64_t cpuTraceBytes() const { return m_traceFile ? m_traceFile->bytesWritten() : 0; }
 
 private:
-    mutable std::mutex m_mutex; // guards step()/reset()/pressKey/releaseKey/setOnKeyPressed/displaySnapshot
 
     // See setYieldHook(). m_yieldCountdown only runs down while a hook is set.
     std::function<void()> m_yieldHook;
@@ -539,6 +546,13 @@ private:
 
     TapeDeck m_tapeDeck{double(kPC1600TStateHz)}; // see tapePlay()
     std::unique_ptr<CE1600PCard> m_ce1600pCard; // see attachCE1600P()
+    uint64_t m_elapsedTStates{0};                 // see elapsedTStates()
+    // keyReady(): the frame grid since the build, the scan count at the last
+    // frame end, and how many frames in a row were ready.
+    static constexpr int kReadyFrameTStates = static_cast<int>(kTStateHz / 60);
+    int m_readyFrameAccum{0};
+    uint64_t m_readyLastScan{0};
+    int m_readyFrames{0};
     std::unique_ptr<CE1600FCard> m_ce1600fCard; // union-attached with m_ce1600pCard
     std::unique_ptr<PC1600HostDriveCard> m_hostDriveCard; // see attachHostDrive()
     std::vector<std::unique_ptr<SystemBusCard>> m_busRoms; // see attachBusRom()

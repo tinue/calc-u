@@ -208,3 +208,7 @@ bool Upd1990ac::consumeRisingEdge() {
     tpEdgePending_ = false;
     return edge;
 }
+
+Upd1990ac::Fields Upd1990ac::fields() const {
+    return Fields{clkMonth_, bcdUnpack(clkDay_), clkDow_, bcdUnpack(clkHour_), bcdUnpack(clkMin_), bcdUnpack(clkSec_)};
+}

@@ -1,0 +1,154 @@
+#pragma once
+#include <functional>
+#include <memory>
+#include <optional>
+#include <string>
+#include <utility>
+#include <vector>
+
+#include "../Connector/ExpansionCard.hpp"
+#include "Machine/PowerCycleSequence.hpp"
+#include "machine/Machine.hpp"
+#include "machine/ProductData.hpp"
+#include "peripherals/Controls.hpp"
+
+// What the two Sharp machines behind the machine interface share (C1600-1
+// design §3.2-§3.4): the tick count, the power cycle sequence, the keys,
+// places and attach, the capability list. PC1500InterfaceMachine and
+// PC1600InterfaceMachine fill in the model's part over the old class each
+// owns. Nothing above the core names any of these classes: they are
+// reached as calcu::machine::Machine (C1600-1, Technical Requirements).
+//
+// Attach on a running machine (design D-2): plugged() and the capabilities
+// show the change at once; the bus changes at the off point of the power
+// cycle that follows, as today's powerCycleAround did. On a machine that is
+// switched off, or not yet started (just built), the change is made at
+// once and nothing follows. A reset or cold boot makes a waiting change
+// first.
+
+namespace sharp {
+
+// A module handed in with its card already built (the module bay's own
+// instance, read from its file): PeripheralRequest::content. The card is
+// taken out when the module is plugged in.
+class ModuleCard final : public calcu::machine::ProductData {
+public:
+    explicit ModuleCard(std::unique_ptr<ExpansionCard> c) : card(std::move(c)) {}
+    mutable std::unique_ptr<ExpansionCard> card;
+};
+
+// The host drive's folder (UTF-8): PeripheralRequest::content of the host drive.
+class HostDriveRequest final : public calcu::machine::ProductData {
+public:
+    explicit HostDriveRequest(std::string f) : folder(std::move(f)) {}
+    std::string folder;
+};
+
+// The image of the `index`-th ROM entry of the request's variant, or nullptr.
+const std::vector<std::uint8_t>* romImageOf(const calcu::machine::PeripheralRequest&,
+                                            const calcu::machine::PeripheralDescriptor&, std::size_t index);
+// The card of a module request: the one handed in (ModuleCard), or one
+// built from the descriptor's module definition; nullptr if neither.
+std::unique_ptr<ExpansionCard> moduleCardOf(const calcu::machine::PeripheralRequest&,
+                                            const calcu::machine::PeripheralDescriptor&);
+
+class SharpMachine : public calcu::machine::Machine, private PowerCycleSequence::Actions {
+public:
+    const calcu::machine::MachineDescriptor& descriptor() const override { return m_descriptor; }
+    std::optional<calcu::machine::VariantId> variant() const override { return m_variant; }
+    calcu::machine::Ticks advance(calcu::machine::Ticks atLeast) override;
+    void reset() override;
+    void powerCycle() override;
+    void coldBoot() override;
+    bool isKeyReady() const override { return !m_sequence.active() && coreKeyReady(); }
+    calcu::machine::KeyCall keyDown(const calcu::machine::KeyId&) override;
+    calcu::machine::KeyCall keyUp(const calcu::machine::KeyId&) override;
+    calcu::machine::Plugged plugged() const override;
+    std::vector<calcu::machine::CapabilityEntry> capabilities() const override;
+    calcu::machine::Capability* capability(const calcu::machine::CapabilityId&) override;
+    std::vector<calcu::machine::DebugTargetId> debugTargets() const override { return m_descriptor.debugTargets; }
+
+    // ---- For the core's adapters (LegacyCalls) ----
+    bool powerCycleActive() const { return m_sequence.active(); }
+    // Ticks to the sequence's next phase change: an advance of exactly this
+    // runs the phase as one run of the core, as today's job did.
+    calcu::machine::Ticks powerCyclePhaseTicks() const { return m_sequence.remaining(); }
+    // Runs `f` at the off point of the coming power cycle, after its
+    // changes, or now when no change waits (LegacyCalls::atOffPoint).
+    void atOffPoint(std::function<void()> f);
+    // What is plugged in, read again from the core (after a preset loader
+    // changed it on the old class; LegacyCalls::applyPresetJob).
+    void syncFromCore();
+
+protected:
+    SharpMachine(calcu::machine::MachineDescriptor d, std::optional<calcu::machine::VariantId> v)
+        : m_descriptor(std::move(d)), m_variant(std::move(v)) {}
+
+    // ---- The model's part ----
+    virtual calcu::machine::Ticks runCore(calcu::machine::Ticks) = 0;
+    virtual bool coreSwitchedOff() const = 0;
+    virtual bool coreKeyReady() const = 0;
+    virtual void coreKey(const std::string& keyId, bool down) = 0;   // a key of the matrix
+    virtual void coreOnKey(bool down) = 0;
+    virtual void coreReset() = 0;
+    virtual void coreColdBoot() = 0;   // the machine's own memory empty
+    // The card in a module slot, or nullptr.
+    virtual ExpansionCard* moduleIn(const calcu::machine::PlaceName&) = 0;
+    // The electrical change on the core.
+    virtual void corePlug(const calcu::machine::PeripheralRequest&, const calcu::machine::PeripheralDescriptor&) = 0;
+    virtual void coreUnplug(const calcu::machine::PlaceName&, const calcu::machine::PeripheralId&) = 0;
+    // What the core has plugged in now (syncFromCore()).
+    virtual std::vector<calcu::machine::PlugEntry> coreHasPlugged() const = 0;
+    // The capabilities of the model, present now (`plugged` is what plugged() gives).
+    struct Offered {
+        calcu::machine::CapabilityEntry entry;
+        calcu::machine::Capability* capability;
+    };
+    virtual void offer(std::vector<Offered>& out, const std::vector<calcu::machine::PlugEntry>& plugged) = 0;
+    // The rule of a product kind that is the model's own (CE-1600P with CE-158).
+    virtual std::optional<std::string> modelRefusal(const calcu::machine::PeripheralRequest&,
+                                                    const std::optional<calcu::machine::PeripheralId>&) const {
+        return std::nullopt;
+    }
+
+    // ---- calcu::machine::Machine hooks (SharpPlaces.cpp) ----
+    std::optional<std::string> productRefusal(const calcu::machine::PeripheralRequest&,
+                                              const std::optional<calcu::machine::PeripheralId>&) const override;
+    void plug(calcu::machine::PeripheralRequest, const calcu::machine::PeripheralDescriptor&,
+              calcu::machine::TickRate) override;
+    void unplug(const calcu::machine::PlacePath&, const calcu::machine::PeripheralId&) override;
+    calcu::machine::AfterChange followsNow(const calcu::machine::PinOutDescriptor&) const override;
+
+    // A peripheral plugged in at `place` now (by plugged()), or nullptr.
+    const calcu::machine::PlugEntry* at(const char* place) const;
+    // A capability owned by a component: ID "<component>/<kind>".
+    static Offered byComponent(const char* component, calcu::machine::Capability& c);
+    // A capability owned by the peripheral at `place`: ID "<place>/<kind>".
+    static Offered byPeripheral(const calcu::machine::PlugEntry& e, calcu::machine::Capability& c);
+    // The write-protect switch of the module at a slot (LIB-2 AC-32), made
+    // when the module is plugged in.
+    calcu::peripherals::ControlTable* switchesAt(const calcu::machine::PlaceName&);
+
+private:
+    // The machine has run and is not switched off: a change waits for the
+    // off point and a power cycle follows.
+    bool running() const;
+    void makeWaitingChanges();
+    void makeSwitches(const calcu::machine::PlaceName&, const std::vector<calcu::machine::SwitchPosition>&);
+
+    // PowerCycleSequence::Actions
+    void offKey(bool down) override { coreKey("off", down); }
+    void onKey(bool down) override { coreOnKey(down); }
+    bool switchedOff() const override { return coreSwitchedOff(); }
+    void atOffPoint() override { makeWaitingChanges(); }
+
+    const calcu::machine::MachineDescriptor m_descriptor;
+    const std::optional<calcu::machine::VariantId> m_variant;
+    PowerCycleSequence m_sequence;
+    std::vector<calcu::machine::PlugEntry> m_plugged;   // what plugged() gives, by place
+    std::vector<std::function<void()>> m_waiting;       // changes for the off point (D-2)
+    std::vector<std::function<void()>> m_afterWaiting;  // atOffPoint()
+    std::vector<std::pair<calcu::machine::PlaceName, std::unique_ptr<calcu::peripherals::ControlTable>>> m_switches;
+};
+
+} // namespace sharp

@@ -4,7 +4,6 @@
 #include <deque>
 #include <functional>
 #include <memory>
-#include <mutex>
 #include <string>
 #include <vector>
 
@@ -29,12 +28,9 @@
 // The ON key isn't in the named-key vocabulary: it is wired to the CPU's
 // BFI power-on latch, not the matrix (setOnKeyPressed()).
 //
-// Thread safety: every method that touches CPU/memory state (step,
-// runCycles, pressKey, releaseKey, reset, display) takes m_mutex, so the
-// machine can be stepped on one thread and read from another. LH5801's
-// own trace-ring mutex is separate. cpu()/memory() return unlocked
-// references, for single-threaded use (tests, the CLIs) and one-off debug
-// peeks.
+// Threading (ADR 0009): single-threaded, no lock. Everything above the
+// core reaches it through PC1500InterfaceMachine (calcu::machine::Machine,
+// C1600-1); this class stays the core's own, for the core and its tests.
 class PC1500Machine {
 public:
     /// LH5801 cycles per second -- the unit runCycles() counts (PC1500Clocks.hpp).
@@ -122,7 +118,6 @@ public:
     /// 0x4C) without ever executing RDP first. So this is off whenever
     /// either signal says the backplate isn't being driven.
     bool isDisplayOn() const {
-        std::lock_guard<std::mutex> lock(m_mutex);
         return m_cpu.displayOn() && !m_cpu.poweredOff();
     }
 
@@ -130,17 +125,27 @@ public:
     /// the PC6 drive line as emulated time advances -- see PiezoSampler.
     /// drainAudio() moves up to `max` of the oldest samples into `out`.
     size_t drainAudio(int16_t* out, size_t max) {
-        std::lock_guard<std::mutex> lock(m_mutex);
         return m_memory.piezo().drain(out, max);
     }
     void discardAudio() {
-        std::lock_guard<std::mutex> lock(m_mutex);
         m_memory.piezo().discard();
     }
     int audioSampleRate() const { return PiezoSampler::kDefaultSampleRate; }
+
+    /// LH5801 cycles consumed since the machine was built (step() and
+    /// runCycles() alike, halted and powered-off time included); no reset
+    /// clears it. The tick count of the machine interface (C1600-1 AC-1).
+    uint64_t elapsedCycles() const { return m_elapsedCycles; }
+
+    /// Key readiness (C1600-1 AC-21; first step 15): the CPU is in the
+    /// ROM's key wait WAIT_4_KB (E243-E33D) with bit 0 of CURS_CTRL (7B0E)
+    /// clear, and not powered off.
+    bool keyReady() const {
+        const uint16_t pc = m_cpu.pc();
+        return !m_cpu.poweredOff() && pc >= 0xE243 && pc <= 0xE33D && (m_memory.peek(0x7B0E) & 0x01) == 0;
+    }
     /// Buzzer line level changes so far (PiezoSampler::edgeCount()).
     uint64_t buzzerEdgeCount() {
-        std::lock_guard<std::mutex> lock(m_mutex);
         return m_memory.piezo().edgeCount();
     }
 
@@ -149,11 +154,9 @@ public:
     // gate at 0x7B0EH, or the BREAK_LINE pointer at 0x78AEH/0x78AFH) right
     // alongside its own key-event logs, for direct correlation.
     uint8_t debugPeek(uint16_t addr) const {
-        std::lock_guard<std::mutex> lock(m_mutex);
         return m_memory.peek(addr);
     }
     uint16_t debugPC() const {
-        std::lock_guard<std::mutex> lock(m_mutex);
         return m_cpu.pc();
     }
 
@@ -168,7 +171,6 @@ public:
     /// call, which would deadlock.
     template <class F>
     auto debugInspect(F&& view) const {
-        std::lock_guard<std::mutex> lock(m_mutex);
         return view(*this);
     }
 
@@ -185,7 +187,6 @@ public:
     /// single-slot semantics -- see ExpansionConnector::attach()). Takes
     /// m_mutex: the emulation thread dispatches bus accesses to the card.
     void attachExpansionCard(std::unique_ptr<ExpansionCard> card) {
-        std::lock_guard<std::mutex> lock(m_mutex);
         m_memory.expansionConnector().attach(card.get());
         m_attachedExpansionCard = std::move(card); // old card freed only after it's unplugged
     }
@@ -217,7 +218,7 @@ public:
     // The recorder outlives attach/detach of the interface: arm it with a
     // WAV to play (CLOAD) or a file to record into (CSAVE); it moves only
     // while a CE-150 REMOTE relay runs it, in emulated time. A recording is
-    // saved each time the motor stops. All GUI-safe (take m_mutex).
+    // saved each time the motor stops. All GUI-safe.
     bool tapePlay(const std::string& path, std::string& error);
     void tapeRecord(const std::string& path);
     bool tapeEject(std::string* error = nullptr);
@@ -249,7 +250,7 @@ public:
     /// Unlocked direct access -- headless/tests only (see ce150Card()).
     Ce158Card* ce158Card() { return m_ce158.card(); }
     /// Non-owning; the caller keeps `link` alive until it sets another one
-    /// (or nullptr) or destroys the machine. GUI-safe (takes m_mutex).
+    /// (or nullptr) or destroys the machine. GUI-safe.
     void setCE158SerialLink(SerialLink* link);
     /// GUI-safe: the bytes printed on the Centronics port since the last
     /// call. Empty when no CE-158 is attached.
@@ -308,7 +309,7 @@ private:
     std::unique_ptr<Ce150Card> m_ce150Card;                 // see attachCE150()
     Ce158Port m_ce158;                                      // see attachCE158()
     std::vector<std::unique_ptr<BusRomCard>> m_busRoms;     // see attachBusRom()
-    mutable std::mutex m_mutex;
+    uint64_t m_elapsedCycles{0};                            // see elapsedCycles()
 
     // See setYieldHook(). m_yieldCountdown only runs down while a hook is set.
     std::function<void()> m_yieldHook;

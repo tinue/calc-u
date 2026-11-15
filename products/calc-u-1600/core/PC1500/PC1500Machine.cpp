@@ -12,7 +12,6 @@ bool PC1500Machine::loadROMFile(const std::string& path) {
 }
 
 void PC1500Machine::reset() {
-    std::lock_guard<std::mutex> lock(m_mutex);
     m_memory.reset();
     m_memory.keyboard().releaseAll();
     // Keys still queued by enqueueKey() belong to the session being reset;
@@ -33,7 +32,6 @@ void PC1500Machine::reset() {
 
 void PC1500Machine::allReset() {
     {
-        std::lock_guard<std::mutex> lock(m_mutex);
         m_memory.clearRam();
     }
     reset();
@@ -43,7 +41,6 @@ bool PC1500Machine::attachCE150(const uint8_t* rom, size_t romSize) {
     if (romSize != Ce150Card::kRomSize) return false;
     auto card = std::make_unique<Ce150Card>();
     if (!card->loadRom(rom, romSize)) return false;
-    std::lock_guard<std::mutex> lock(m_mutex);
     detachCE150Locked();
     card->reset();
     card->connectRecorder(&m_tapeDeck);
@@ -53,32 +50,26 @@ bool PC1500Machine::attachCE150(const uint8_t* rom, size_t romSize) {
 }
 
 bool PC1500Machine::tapePlay(const std::string& path, std::string& error) {
-    std::lock_guard<std::mutex> lock(m_mutex);
     return m_tapeDeck.loadForPlay(path, error);
 }
 
 void PC1500Machine::tapeRecord(const std::string& path) {
-    std::lock_guard<std::mutex> lock(m_mutex);
     m_tapeDeck.armRecord(path);
 }
 
 bool PC1500Machine::tapeEject(std::string* error) {
-    std::lock_guard<std::mutex> lock(m_mutex);
     return m_tapeDeck.eject(error);
 }
 
 TapeDeck::Status PC1500Machine::tapeStatus() const {
-    std::lock_guard<std::mutex> lock(m_mutex);
     return m_tapeDeck.status();
 }
 
 std::string PC1500Machine::tapeTakeLastError() {
-    std::lock_guard<std::mutex> lock(m_mutex);
     return m_tapeDeck.takeLastError();
 }
 
 void PC1500Machine::detachCE150() {
-    std::lock_guard<std::mutex> lock(m_mutex);
     detachCE150Locked();
 }
 
@@ -89,7 +80,6 @@ void PC1500Machine::detachCE150Locked() {
 }
 
 bool PC1500Machine::attachCE158(const uint8_t* rom, size_t romSize) {
-    std::lock_guard<std::mutex> lock(m_mutex);
     auto card = m_ce158.build(rom, romSize, Ce158Card::kCpuHz);
     if (!card) return false;
     detachCE158Locked();
@@ -99,13 +89,11 @@ bool PC1500Machine::attachCE158(const uint8_t* rom, size_t romSize) {
 }
 
 void PC1500Machine::attachBusRom(std::unique_ptr<BusRomCard> card) {
-    std::lock_guard<std::mutex> lock(m_mutex);
     m_memory.systemBus().attachFirst(card.get());
     m_busRoms.push_back(std::move(card));
 }
 
 void PC1500Machine::detachCE158() {
-    std::lock_guard<std::mutex> lock(m_mutex);
     detachCE158Locked();
 }
 
@@ -116,40 +104,32 @@ void PC1500Machine::detachCE158Locked() {
 }
 
 void PC1500Machine::setCE158SerialLink(SerialLink* link) {
-    std::lock_guard<std::mutex> lock(m_mutex);
     m_ce158.setSerialLink(link);
 }
 
 std::vector<uint8_t> PC1500Machine::drainCE158ParallelOutput() {
-    std::lock_guard<std::mutex> lock(m_mutex);
     return m_ce158.drainParallelOutput();
 }
 
-// The four below take m_mutex so the GUI thread can read/clear the plotter
-// mechanism while the emulation loop runs -- the mechanism's stroke and
-// event containers are mutated from inside step()/runCycles() on every
-// motor write. Mirrors PC1600Machine's CE-1600P plot accessors.
+// The four below read and clear the plotter mechanism, whose stroke and
+// event containers step()/runCycles() change on every motor write.
 
 std::vector<AlpsPlotterMechanism::FlatPoint> PC1500Machine::ce150PlotPoints() const {
-    std::lock_guard<std::mutex> lock(m_mutex);
     if (!m_ce150Card) return {};
     return m_ce150Card->mechanism().flatPoints();
 }
 
 uint64_t PC1500Machine::ce150PlotRevision() const {
-    std::lock_guard<std::mutex> lock(m_mutex);
     if (!m_ce150Card) return 0;
     return m_ce150Card->mechanism().revision();
 }
 
 std::vector<std::string> PC1500Machine::drainCE150Events() {
-    std::lock_guard<std::mutex> lock(m_mutex);
     if (!m_ce150Card) return {};
     return m_ce150Card->mechanism().drainEvents();
 }
 
 void PC1500Machine::clearCE150Paper() {
-    std::lock_guard<std::mutex> lock(m_mutex);
     if (m_ce150Card) m_ce150Card->mechanism().clearPaper();
 }
 
@@ -161,12 +141,10 @@ void PC1500Machine::seedClock(int year, int month, int day, int hour, int minute
     int y = (month < 3) ? year - 1 : year;
     int dow = (y + y / 4 - y / 100 + y / 400 + t[month - 1] + day) % 7;
 
-    std::lock_guard<std::mutex> lock(m_mutex);
     m_memory.seedClock(year, month, day, hour, minute, second, dow, millisecond);
 }
 
 int PC1500Machine::step() {
-    std::lock_guard<std::mutex> lock(m_mutex);
     int c = m_cpu.step();
     if (c == 0 && m_cpu.breakpointsEnabled() && m_cpu.consumeBreakpointHit()) m_debugStop.latch(DebugStop::Breakpoint, 1);
     if (m_watches && m_watches->hitPending()) m_debugStop.latch(DebugStop::Watch, 1);
@@ -184,6 +162,7 @@ int PC1500Machine::step() {
 }
 
 void PC1500Machine::advancePeripherals(uint32_t cycles) {
+    m_elapsedCycles += cycles;  // every cycle step() and runCycles() consume passes here
     // The uPD1990AC RTC's TP output is defined in real time, not CPU
     // cycles (it has its own independent crystal) -- this Core has no
     // other notion of elapsed time to drive it from, so it advances here,
@@ -199,28 +178,24 @@ void PC1500Machine::advancePeripherals(uint32_t cycles) {
 }
 
 void PC1500Machine::setYieldHook(std::function<void()> hook, uint64_t intervalCycles) {
-    std::lock_guard<std::mutex> lock(m_mutex);
     m_yieldHook = std::move(hook);
     m_yieldInterval = intervalCycles;
     m_yieldCountdown = intervalCycles;
 }
 
 uint64_t PC1500Machine::runCycles(uint64_t maxCycles) {
-    std::unique_lock<std::mutex> lock(m_mutex);
     uint64_t consumed = 0;
     uint64_t yieldAccounted = 0;
     while (consumed < maxCycles) {
         // See setYieldHook(). Checked at the top of the loop so the halted
-        // branch's `continue` below is covered too; the hook runs unlocked.
+        // branch's `continue` below is covered too.
         if (m_yieldHook) {
             const uint64_t ran = consumed - yieldAccounted;
             yieldAccounted = consumed;
             if (ran >= m_yieldCountdown) {
                 m_yieldCountdown = m_yieldInterval;
                 const std::function<void()> hook = m_yieldHook;
-                lock.unlock();
                 hook();
-                lock.lock();
             } else {
                 m_yieldCountdown -= ran;
             }
@@ -265,7 +240,6 @@ uint64_t PC1500Machine::runCycles(uint64_t maxCycles) {
 }
 
 bool PC1500Machine::beginCpuTrace(std::FILE* handle, uint32_t flags) {
-    std::lock_guard<std::mutex> lock(m_mutex);
     if (!handle || m_traceFile) return false;
     m_traceFile = std::make_unique<PC1500TraceFile>(handle);
     m_traceDrainCounter = 0;
@@ -280,7 +254,6 @@ bool PC1500Machine::beginCpuTrace(std::FILE* handle, uint32_t flags) {
 }
 
 void PC1500Machine::endCpuTrace() {
-    std::lock_guard<std::mutex> lock(m_mutex);
     if (!m_traceFile) return;
     pumpTraceFile();
     m_traceFile->finish();
@@ -290,8 +263,7 @@ void PC1500Machine::endCpuTrace() {
 }
 
 void PC1500Machine::pumpTraceFile() {
-    // Caller holds m_mutex. drainTraceEvents() takes LH5801's own,
-    // independent ring mutex -- no lock-ordering concern.
+    // drainTraceEvents() takes LH5801's own ring mutex.
     uint32_t lost = 0;
     uint32_t n = m_cpu.drainTraceEvents(m_traceDrainBuf, kTraceDrainBufFrames, &lost);
     if (lost) m_traceFile->writeGap(lost);
@@ -299,15 +271,12 @@ void PC1500Machine::pumpTraceFile() {
 }
 
 void PC1500Machine::pressKey(const std::string& name) {
-    std::lock_guard<std::mutex> lock(m_mutex);
     m_memory.keyboard().setKeyState(PC1500Keyboard::keyFromName(name), true);
 }
 void PC1500Machine::releaseKey(const std::string& name) {
-    std::lock_guard<std::mutex> lock(m_mutex);
     m_memory.keyboard().setKeyState(PC1500Keyboard::keyFromName(name), false);
 }
 void PC1500Machine::setOnKeyPressed(bool pressed) {
-    std::lock_guard<std::mutex> lock(m_mutex);
     bool risingEdge = m_memory.setOnKeyPressed(pressed);
     // m_memory.setOnKeyPressed() above only latches the pollable IF bit 1
     // (for BREAK, which needs the CPU already running to poll it) -- a
@@ -341,7 +310,6 @@ void PC1500Machine::setOnKeyPressed(bool pressed) {
 
 void PC1500Machine::enqueueKey(const std::string& name) {
     if (PC1500Keyboard::keyFromName(name) == PC1500Keyboard::Key::Unknown) return; // matches pressKey()'s own silent no-op
-    std::lock_guard<std::mutex> lock(m_mutex);
     if (m_keyQueue.size() >= kKeyQueueCapacity) return; // dropped, see doc comment
     m_keyQueue.push_back(name);
 }
@@ -377,6 +345,5 @@ void PC1500Machine::advanceKeyQueue(uint32_t cycles) {
 }
 
 PC1500Display PC1500Machine::display() const {
-    std::lock_guard<std::mutex> lock(m_mutex);
     return PC1500Display(m_memory);
 }

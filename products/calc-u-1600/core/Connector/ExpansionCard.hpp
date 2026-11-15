@@ -163,6 +163,11 @@ public:
     virtual bool hasWriteProtectSwitch() const { return false; }
     virtual bool writeProtected() const { return false; }
     virtual void setWriteProtected(bool /*protect*/) {}
+
+    /// The machine lost power for good (a Cold boot, C1600-1 AC-6): a module
+    /// without a battery of its own forgets its RAM, as the real device
+    /// would (behaviour change 1600-16). Default: nothing.
+    virtual void powerLoss() {}
 };
 
 // A card on a connector numbered with PinState's 40-pin contacts.

@@ -29,17 +29,7 @@ public:
             RegionState st;
             st.def = &r;
             st.backing.resize(r.capacity);
-            for (uint32_t b = 0; b < r.banking.bankCount; b++) {
-                auto it = r.initialContentByBank.find(b);
-                if (it != r.initialContentByBank.end()) {
-                    std::copy(it->second.begin(), it->second.end(),
-                              st.backing.begin() + size_t(b) * r.banking.bankSize);
-                } else {
-                    uint8_t fill = r.contentForBank(b).powerUpFill;
-                    std::fill_n(st.backing.begin() + size_t(b) * r.banking.bankSize,
-                               r.banking.bankSize, fill);
-                }
-            }
+            fillAsBuilt(st);
             m_regions.push_back(std::move(st));
         }
         // One switch for the whole module: any content that declares
@@ -120,6 +110,19 @@ public:
         return region < m_regions.size() && m_regions[region].flash == FlashDecoderState::Idle;
     }
     const MemoryCardDefinition& definition() const { return m_def; }
+
+    /// A module without `battery: true` (CE-151, CE-155) comes back as its
+    /// definition builds it: RAM at its power-up fill, ROM as it was
+    /// (C1600-1 AC-6; behaviour change 1600-16). A battery-backed one keeps
+    /// its content.
+    void powerLoss() override {
+        if (m_def.battery) return;
+        for (RegionState& st : m_regions) {
+            fillAsBuilt(st);
+            st.bank = 0;
+        }
+        ++m_contentRevision;
+    }
 
     std::string moduleName() const override { return m_def.moduleName; }
 
@@ -210,6 +213,21 @@ private:
         int bank = 0;
         FlashDecoderState flash = FlashDecoderState::Idle;
     };
+
+    // The content of every bank as the definition gives it at power-up.
+    static void fillAsBuilt(RegionState& st) {
+        const Region& r = *st.def;
+        for (uint32_t b = 0; b < r.banking.bankCount; b++) {
+            auto it = r.initialContentByBank.find(b);
+            if (it != r.initialContentByBank.end()) {
+                std::copy(it->second.begin(), it->second.end(), st.backing.begin() + size_t(b) * r.banking.bankSize);
+            } else {
+                uint8_t fill = r.contentForBank(b).powerUpFill;
+                std::fill_n(st.backing.begin() + size_t(b) * r.banking.bankSize, r.banking.bankSize, fill);
+            }
+        }
+    }
+
 
     // Shared region-selection rule for the debugCurrentBank()/debugBankCount()
     // pair above: whichever region is the first banked one, or nullptr if

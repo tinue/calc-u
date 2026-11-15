@@ -411,7 +411,7 @@ struct SegmentPosition { std::vector<bool> lit;                      // per Segm
                          std::vector<std::optional<float>> segmentBrightness; };  // set for ownBrightness segments
 struct SegmentFrame   { std::vector<SegmentPosition> positions; };   // order: the product's (C59-1 AC-13)
 struct DotMatrixFrame { int width, height; std::vector<std::uint8_t> dots; };   // row-major, 0/1; cells from the descriptor
-struct IndicatorOutput { std::string_view name; bool on; std::optional<float> brightness; };  // name views into the descriptor
+struct IndicatorOutput { std::string name; bool on; std::optional<float> brightness; };  // name copied: the display topic's payload outlives the machine (C1 simplification, 2026-11-15)
 struct DisplayOutput  { bool on; std::variant<SegmentFrame, DotMatrixFrame> frame; std::vector<IndicatorOutput> indicators; };
 ```
 

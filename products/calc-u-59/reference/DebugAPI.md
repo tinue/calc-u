@@ -88,7 +88,7 @@ components and calls `resume()` `resumeFrozen` there.
 Arming one freeze disarms the other; freezing disarms both. The controller
 reports changes as `RunStateChanged`.
 
-### `EmulatorSession` methods (UI thread)
+### `EmulatorSession` methods (the session's thread)
 
 | Method | Effect |
 |---|---|

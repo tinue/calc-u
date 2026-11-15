@@ -1,5 +1,4 @@
 #pragma once
-#include <atomic>
 #include <cstdint>
 
 #include "../../TraceTypes.hpp"
@@ -172,10 +171,10 @@ public:
     void requestNMI();
 
     // ── Trace API ─────────
-    // Zero overhead when disabled: step() hot path costs one atomic load;
+    // Zero overhead when disabled: step() hot path costs one load;
     // falls through with no extra work when traceFlags() == TRACE_NONE.
-    void     setTraceFlags(uint32_t flags) { m_traceFlags.store(flags, std::memory_order_relaxed); }
-    uint32_t traceFlags() const { return m_traceFlags.load(std::memory_order_relaxed); }
+    void     setTraceFlags(uint32_t flags) { m_traceFlags = flags; }
+    uint32_t traceFlags() const { return m_traceFlags; }
 
     uint32_t drainTraceEvents(Z80CpuFrame* out, uint32_t max, uint32_t* outLost) { return m_trace.drain(out, max, outLost); }
 
@@ -291,7 +290,7 @@ private:
     int serviceInterrupt(bool takeInt);
 
     // ── Trace state ──
-    std::atomic<uint32_t> m_traceFlags{TRACE_NONE};
+    uint32_t m_traceFlags = TRACE_NONE;
     uint32_t m_traceSeqno{0};
     // Large relative to the LH5801's ring: Z80 instructions are short
     // (~4-20 T-states), so one drain interval covers many more of them.

@@ -14,12 +14,9 @@ class PC1500Memory;
 // layer on top of it.
 //
 // This is a genuine value-type snapshot, copied once at construction, not
-// a live view: PC1500Machine::display() is meant to be safely readable
-// from a UI thread after PC1500Machine's internal lock has already been
-// released (the lock only needs to cover the copy itself, not every pixel
-// read the caller makes afterward). Holding a live `const PC1500Memory&`
-// instead would race with the CPU thread's ongoing writes to display RAM
-// for every pixel/icon read made after construction.
+// a live view: a caller may keep it across advances of the machine.
+// Holding a live `const PC1500Memory&` instead would see the CPU's later
+// writes to display RAM in every pixel/icon read made after construction.
 class PC1500Display {
 public:
     static constexpr int kCols = 156;

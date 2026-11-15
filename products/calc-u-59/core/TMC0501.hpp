@@ -236,7 +236,7 @@ public:
     /// and control codes, each position's driven duty cycle (how bright it
     /// looks is left to the frontend) and the C indicator's duty cycle.
     /// Resets the integration window, so a core has one display consumer
-    /// (FrameSampler, ~60 Hz on the UI thread).
+    /// (FrameSampler, ~60 Hz on the app session's thread).
     DisplaySnapshot takeDisplay();
 
     uint16_t pc()       const { return addr; }

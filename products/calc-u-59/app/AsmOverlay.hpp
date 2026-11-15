@@ -28,8 +28,8 @@ struct AsmRunResult {
 };
 
 /// Park the CPU at a keycode boundary (so the digit counter is mid-cycle),
-/// load the overlay and enter it at 0x1800. Run on the emulation thread with
-/// the run loop stopped.
+/// load the overlay and enter it at 0x1800. Run between two advances of the
+/// machine (the machine session paused).
 AsmRunResult runAsmOverlay(calcu::machine::Machine& m, const std::vector<uint16_t>& words);
 
 } // namespace cu59

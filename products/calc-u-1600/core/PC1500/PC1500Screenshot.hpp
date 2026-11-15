@@ -21,7 +21,7 @@ inline LcdBitmap pc1500LcdBitmap(const PC1500Display& disp, bool poweredOn) {
     return bitmap;
 }
 
-/// Thread-safe: goes through the locked display() snapshot.
+/// Goes through the display() snapshot.
 inline LcdBitmap pc1500LcdBitmap(const PC1500Machine& machine) {
     return pc1500LcdBitmap(machine.display(), machine.isDisplayOn());
 }

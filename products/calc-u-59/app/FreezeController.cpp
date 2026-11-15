@@ -22,11 +22,11 @@ void FreezeController::disarmScanLoopExit() {
 void FreezeController::disarmPcChange() { m_pcArmed = false; }
 
 std::optional<FreezeOwner> FreezeController::checkStep(uint16_t pc, bool stepBoundary, bool inScanLoop) {
-    if (stepBoundary && m_pcArmed.load(std::memory_order_relaxed)) {
+    if (stepBoundary && m_pcArmed) {
         m_pcArmed = false;
         return FreezeOwner::Calculator;
     }
-    if (!m_scanArmed.load(std::memory_order_relaxed)) return std::nullopt;
+    if (!m_scanArmed) return std::nullopt;
     if (inScanLoop) {
         m_seenLoop = true;
         return std::nullopt;

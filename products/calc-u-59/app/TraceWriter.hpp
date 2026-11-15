@@ -4,7 +4,6 @@
 #include <cstdint>
 #include <cstdio>
 #include <filesystem>
-#include <mutex>
 #include <string>
 
 // Binary CPU trace file writer (format v2, documented in reference/DebugAPI.md;
@@ -12,8 +11,7 @@
 // 16-byte file header, then records of [type u8][length u16 LE][payload].
 // Where the file goes is the frontend's choice — the Swift app resolves its
 // trace directory (iCloud, local or a custom folder), the Qt app a local one.
-// Thread-safe: frames (emulation side) and key/card events (UI side) may
-// arrive from different threads.
+// Single-threaded: used on the app session's thread.
 
 namespace cu59 {
 
@@ -50,12 +48,10 @@ public:
     void writeCardEject();
 
 private:
-    void closeLocked();
     void writeRecord(uint8_t type, const uint8_t* payload, uint16_t length);
     void writeUserEvent(uint8_t kind, uint8_t p1, uint8_t p2);
 
     const Model m_model;
-    mutable std::mutex m_mutex;
     std::FILE* m_file = nullptr;
     uint32_t m_eventCount = 0;
     uint64_t m_maxBytes = 0;

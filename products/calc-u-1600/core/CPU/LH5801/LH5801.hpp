@@ -1,5 +1,4 @@
 #pragma once
-#include <atomic>
 #include <cstdint>
 
 #include "../../TraceTypes.hpp"
@@ -165,10 +164,10 @@ public:
     void wakeFromHalt();
 
     // ── Trace / debug API ─────────────────────────────────────────────────
-    // Zero overhead when disabled: step() hot path costs one atomic load;
+    // Zero overhead when disabled: step() hot path costs one load;
     // falls through with no extra work when traceFlags() == TRACE_NONE.
-    void     setTraceFlags(uint32_t flags) { m_traceFlags.store(flags, std::memory_order_relaxed); }
-    uint32_t traceFlags() const { return m_traceFlags.load(std::memory_order_relaxed); }
+    void     setTraceFlags(uint32_t flags) { m_traceFlags = flags; }
+    uint32_t traceFlags() const { return m_traceFlags; }
 
     /// Drain up to `max` frames from the ring (oldest first since the last
     /// drain). If frames were overwritten before being drained, *outLost is
@@ -307,7 +306,7 @@ private:
     uint32_t m_timerCycleAccumulator{0}; // cycles accumulated toward the next LFSR step
 
     // ── Trace / debug state ──────────────────────────────────────────────
-    std::atomic<uint32_t> m_traceFlags{TRACE_NONE};
+    uint32_t m_traceFlags = TRACE_NONE;
     uint32_t m_traceSeqno{0};
     TraceRing<CpuFrame, 512> m_trace;
     BreakpointSet m_breakpoints;

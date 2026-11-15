@@ -1,5 +1,6 @@
 #include "KeySequencer.hpp"
 #include <algorithm>
+#include <utility>
 
 namespace cu59 {
 
@@ -10,19 +11,13 @@ KeySequencer::Lane::Lane(KeySequencer& owner) : m_owner(owner) {}
 KeySequencer::Lane::~Lane() { ++m_generation; }
 
 void KeySequencer::Lane::post(Task task) {
-    {
-        std::lock_guard<std::mutex> lock(m_mutex);
-        task.generation = m_generation.load();
-        m_tasks.push_back(std::move(task));
-    }
+    task.generation = m_generation;
+    m_tasks.push_back(std::move(task));
 }
 
 void KeySequencer::Lane::cancel() {
-    {
-        std::lock_guard<std::mutex> lock(m_mutex);
-        ++m_generation;
-        m_tasks.clear();
-    }
+    ++m_generation;
+    m_tasks.clear();
 }
 
 // A task cancelled before it started never runs (no playbackStarted).
@@ -39,10 +34,7 @@ std::optional<KeySequencer::Clock::time_point> KeySequencer::Lane::advance(Clock
     for (;;) {
         if (!m_current) {
             Task task;
-            {
-                std::lock_guard<std::mutex> lock(m_mutex);
-                if (!takeNext(task)) return std::nullopt;
-            }
+            if (!takeNext(task)) return std::nullopt;
             m_current = std::move(task);
         }
         auto wake = m_owner.step(*this, *m_current, now);
@@ -213,11 +205,8 @@ void KeySequencer::keyDown(const std::vector<uint8_t>& codes) {
     keyUp();
     m_keys.cancel();
     if (codes.size() == 1) {
-        {
-            std::lock_guard<std::mutex> lock(m_keyMutex);
-            m_heldCode = codes[0];
-            m_heldSince = now();
-        }
+        m_heldCode = codes[0];
+        m_heldSince = now();
         m_host.heldKeyChanged(highlightID(codes[0]));
         m_host.pressKey(codes[0]);
         return;
@@ -232,15 +221,10 @@ void KeySequencer::keyDown(const std::vector<uint8_t>& codes) {
 }
 
 void KeySequencer::keyUp() {
-    uint8_t code;
-    Clock::time_point since;
-    {
-        std::lock_guard<std::mutex> lock(m_keyMutex);
-        if (!m_heldCode) return;
-        code = *m_heldCode;
-        since = m_heldSince;
-        m_heldCode.reset();
-    }
+    if (!m_heldCode) return;
+    const uint8_t code = *m_heldCode;
+    const Clock::time_point since = m_heldSince;
+    m_heldCode.reset();
     m_host.heldKeyChanged(-1);
     auto earliest = since + kHold;
     if (now() >= earliest) m_host.releaseKey(code);
@@ -249,12 +233,7 @@ void KeySequencer::keyUp() {
 
 void KeySequencer::releaseAll() {
     m_keys.cancel();
-    std::optional<uint8_t> code;
-    {
-        std::lock_guard<std::mutex> lock(m_keyMutex);
-        code = m_heldCode;
-        m_heldCode.reset();
-    }
+    const std::optional<uint8_t> code = std::exchange(m_heldCode, std::nullopt);
     if (code) m_host.releaseKey(*code);
     m_host.heldKeyChanged(-1);
 }

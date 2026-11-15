@@ -61,8 +61,8 @@ inline LcdFont pc1600LcdFont(const PC1600Machine& machine) {
     return font;
 }
 
-/// Thread-safe: RAM through the locked debugPeek(), the screen through the
-/// locked displaySnapshot(), the font from ROM.
+/// RAM through debugPeek() (no side effects), the screen through the
+/// displaySnapshot(), the font from ROM.
 inline LcdText pc1600LcdText(PC1600Machine& machine) {
     std::optional<LcdCursor> cursor;
     if (machine.debugPeek(0xF05E) & 0x01) {

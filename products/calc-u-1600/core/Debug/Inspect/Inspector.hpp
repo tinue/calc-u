@@ -7,7 +7,7 @@
 // INSPECTOR (Qt6's DebugPanel) shows the machine's state as text: the
 // work-area pointers, tables of what memory exists and where each CPU sees
 // it, and hex dumps of the areas BASIC and the file system use. The views
-// are built here in Core, from one locked snapshot of the machine
+// are built here in Core, from one snapshot of the machine
 // (PC1500Machine/PC1600Machine::debugInspect()), so they are unit-tested
 // and every read is free of side effects. PC1500Inspector.hpp /
 // PC1600Inspector.hpp build them; this header names them.

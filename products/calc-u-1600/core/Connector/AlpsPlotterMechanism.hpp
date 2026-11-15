@@ -147,14 +147,13 @@ public:
     /// `m_penDown` is true, since a new Stroke is opened the instant the pen
     /// goes down (see stepZ()).
     ///
-    /// Reference into live mutable state -- callers crossing a thread
-    /// boundary must not use this; use `flatPoints()` (a value copy) via
-    /// `PC1600Machine`'s locked accessor instead.
+    /// Reference into live mutable state: valid until the next advance; a
+    /// caller that keeps the points uses `flatPoints()` (a value copy).
     const std::vector<Stroke>& strokes() const { return m_strokes; }
 
     /// Bumped every time the plotted geometry changes -- a stroke opened, a
-    /// point appended, or the paper cleared. A GUI-thread caller polls this
-    /// O(1) value (under `PC1600Machine::m_mutex`) and only pays for
+    /// point appended, or the paper cleared. A caller polls this
+    /// O(1) value and only pays for
     /// `flatPoints()`'s full copy + the downstream GUI-widget repaint when
     /// it has actually moved. Monotonic across `clearPaper()` too, so "same
     /// point count after a cut" still reads as a change.
@@ -162,8 +161,7 @@ public:
 
     /// One point of every stroke, flattened, with `newStroke = 1` on each
     /// stroke's first point. A self-contained value copy -- this is what a
-    /// GUI-thread caller reads (under `PC1600Machine::m_mutex`), never the
-    /// live `strokes()` above.
+    /// caller that keeps the points reads, never the live `strokes()` above.
     struct FlatPoint {
         int32_t x = 0;
         int32_t y = 0;

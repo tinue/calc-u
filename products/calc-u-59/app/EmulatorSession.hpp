@@ -79,10 +79,10 @@ class EmulatorSession : private KeySequencer::Host {
 public:
     struct Listener {
         virtual ~Listener() = default;
-        /// debugState() changed off the caller's thread (an armed freeze fired).
+        /// debugState() changed inside an advance (an armed freeze fired).
         virtual void debugStateChanged() {}
-        /// The machine is stopped at a point to show (after beginNextStep); on
-        /// the emulation thread. Ignore it if debugState().generation moved on.
+        /// The machine is stopped at a point to show (after beginNextStep).
+        /// Ignore it if debugState().generation moved on.
         virtual void frozenViewReady(uint64_t /*generation*/, FrozenViewReason) {}
         virtual void heldKeyChanged(int /*highlightID*/) {}
         virtual void fullSpeedChanged(bool) {}
@@ -183,7 +183,7 @@ public:
     /// Since the last call: a batch ran (TI-58C RAM may have changed).
     bool takeRamDirty() { return std::exchange(m_ramDirty, false); }
 
-    // ── Debugger: freeze and step (UI thread) ────────────────────────────────
+    // ── Debugger: freeze and step ────────────────────────────────────────────
     DebugState debugState() const;
     bool frozen() const { return m_state.frozen; }
     /// Stop, freeze for `owner`, disarm both armed freezes; the machine runs on

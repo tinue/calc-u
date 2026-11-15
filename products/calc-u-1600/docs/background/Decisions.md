@@ -735,7 +735,8 @@ authentic speed for the span that matters.
   Calc-U-59's Shared layer, nothing here runs on a worker thread: the app
   has always run the emulation on its GUI thread, and a browser can't share
   memory with a worker without COOP/COEP headers. Everything long is a
-  resumable job instead. Core's machine mutexes stay (uncontended).
+  resumable job instead. Core holds no lock (ADR 0009: the machine mutexes are
+  gone, the trace ring's went in the C1 simplification).
 - **Long machine work is C++20 coroutines, not hand-written state
   machines.** `co_await job::run(machine, n)` keeps each typer, boot and
   preset step exactly as the blocking code read, which is why the project

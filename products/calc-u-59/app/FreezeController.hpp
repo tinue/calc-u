@@ -1,6 +1,5 @@
 #pragma once
 #include "../core/TIAdapters.hpp"
-#include <atomic>
 #include <cstdint>
 #include <optional>
 #include <utility>
@@ -10,11 +9,11 @@
 //    scan loop — a key press, or a reset (PC jumps to 0000) while running.
 //  - Freeze on the next step (CALCULATOR tab): fires at the next step
 //    boundary, where a debugger STEP stops too.
-// The two are mutually exclusive: arming one disarms the other. Arming happens
-// on the UI thread, checking on the emulation thread: the run loop sets it as
-// the machine's run-control hook (TIDebugTargetAdapter::setRunControl), which
-// asks it after every instruction inside Machine::advance() (until LIB-10's run
-// control, M-53).
+// The two are mutually exclusive: arming one disarms the other. Arming and
+// checking both happen on the app session's thread: the EmulatorSession sets
+// it as the machine's run-control hook (TIDebugTargetAdapter::setRunControl),
+// which asks it after every instruction inside Machine::advance() (until
+// LIB-10's run control, M-53).
 
 namespace cu59 {
 
@@ -31,8 +30,8 @@ public:
     void disarmScanLoopExit();
     void disarmPcChange();
 
-    bool scanLoopExitArmed() const { return m_scanArmed.load(); }
-    bool pcChangeArmed() const { return m_pcArmed.load(); }
+    bool scanLoopExitArmed() const { return m_scanArmed; }
+    bool pcChangeArmed() const { return m_pcArmed; }
 
     /// Per instruction, with the PC of the next one and whether it is a step
     /// boundary (a per-batch check lands hundreds of instructions late). The
@@ -45,11 +44,11 @@ public:
     std::optional<FreezeOwner> takeFired() { return std::exchange(m_fired, std::nullopt); }
 
 private:
-    std::optional<FreezeOwner> m_fired;   // emulation thread
-    std::atomic<bool> m_scanArmed{false};
-    std::atomic<bool> m_seenLoop{false};
-    std::atomic<uint16_t> m_armPC{0xFFFF};
-    std::atomic<bool> m_pcArmed{false};
+    std::optional<FreezeOwner> m_fired;
+    bool m_scanArmed = false;
+    bool m_seenLoop = false;
+    uint16_t m_armPC = 0xFFFF;
+    bool m_pcArmed = false;
 };
 
 } // namespace cu59

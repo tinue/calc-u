@@ -1,13 +1,11 @@
 #pragma once
 #include "MachineModelInfo.hpp"
 #include "StateFile.hpp"
-#include <atomic>
 #include <chrono>
 #include <condition_variable>
 #include <cstdint>
 #include <deque>
 #include <functional>
-#include <mutex>
 #include <optional>
 #include <string>
 #include <vector>
@@ -88,9 +86,9 @@ public:
     /// Cancel playback (a key being tapped is still released).
     void cancel();
 
-    bool isPlaying() const { return m_playing.load(); }
+    bool isPlaying() const { return m_playing; }
     /// A script plays, or one is queued.
-    bool scriptPending() const { return m_playing.load() || m_script.busy(); }
+    bool scriptPending() const { return m_playing || m_script.busy(); }
 
     // Physical keyboard
     void keyDown(const std::vector<uint8_t>& codes);
@@ -136,19 +134,15 @@ private:
         ~Lane();
         void post(Task task);
         void cancel();
-        bool cancelled(uint64_t generation) const { return m_generation.load() != generation; }
-        bool busy() const {
-            std::lock_guard<std::mutex> lock(m_mutex);
-            return m_current.has_value() || !m_tasks.empty();
-        }
+        bool cancelled(uint64_t generation) const { return m_generation != generation; }
+        bool busy() const { return m_current.has_value() || !m_tasks.empty(); }
         /// Run what is due at `now`; when the task in progress next wants to
         /// run, nullopt when the lane is idle.
         std::optional<Clock::time_point> advance(Clock::time_point now);
     private:
-        bool takeNext(Task& task);  // under m_mutex
+        bool takeNext(Task& task);
         KeySequencer& m_owner;
-        std::atomic<uint64_t> m_generation{0};
-        mutable std::mutex m_mutex;
+        uint64_t m_generation = 0;
         std::deque<Task> m_tasks;
         std::optional<Task> m_current;  ///< the task in progress
     };
@@ -163,11 +157,10 @@ private:
     Clock::time_point now() const { return m_now; }
 
     Host& m_host;
-    std::atomic<bool> m_playing{false};
+    bool m_playing = false;
     Clock::time_point m_now{};  ///< the last advance() time
 
     // Physical keyboard: the single code held down, and since when.
-    std::mutex m_keyMutex;
     std::optional<uint8_t> m_heldCode;
     Clock::time_point m_heldSince;
 

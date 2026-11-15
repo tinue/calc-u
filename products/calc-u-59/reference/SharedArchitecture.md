@@ -23,8 +23,8 @@ frontends/web/ (React) ── frontends/web/bindings.cpp ───────�
   lookup over a `calcu::roms::Bundle` the frontend makes (Swift: the
   bundle's resource folder; Qt: the `:/roms/` qrc, `QtResourceBundle`; Web:
   `/roms` in Emscripten's file system; tools and tests: `roms/`).
-- **Thread-safe where called across threads** (session, runner, sequencer,
-  trace writer, freeze controller); the rest is plain value code.
+- **One thread.** Everything runs on the app session's thread; only
+  `SessionThread` (the Swift frontend's host adapter) has a lock.
 - **Namespace `cu59`.** Headers include Core relatively (`../Core/...`).
 
 The Qt app calls `app/` directly. The Swift app goes through the ObjC++
@@ -136,7 +136,9 @@ The app layer has no thread of its own but one host adapter:
 | Qt6 | the GUI thread: a 60 Hz `QTimer` calls the session |
 | Web | the library's Web Worker (`library/web/src/worker.js`): a 60 Hz `setInterval` calls the session through the library's `WorkerHost` (LIB-15) |
 
-Nothing in `EmulatorSession` or `TIAppPart` locks (ADR 0009).
+Nothing else in the app layer locks (ADR 0009): `EmulatorSession`,
+`TIAppPart`, `KeySequencer`, `FreezeController` and `TraceWriter` are
+single-threaded.
 
 ### Key input
 
@@ -320,9 +322,9 @@ reference order: `StateFileFormat.md`.
    target model's limits. Parse errors are reported and the load continues.
 2. `MODEL:` names another model → `startMachine(target)` first. Then the
    partition check (`stateFilePartitionError`) aborts the load.
-3. `dropPresetCards`, stop the loop, unfreeze, and on the session's thread
-   `applyState` (`StateApplier`). Then reset the heatmap baseline, start the
-   loop, and apply the rest on the UI thread.
+3. `dropPresetCards`, stop the loop, unfreeze, and `applyState`
+   (`StateApplier`). Then reset the heatmap baseline, start the loop, and
+   apply the rest.
 4. Persist `ti58c.mem`, then play `KEYSTROKES:`.
 
 **Reloads and preset cards during playback** (`StateFileFormat.md` §
@@ -333,14 +335,14 @@ into the keystroke events (`shared_ptr`). This is the order of operations:
    then calls a `KeySequencer::Host` hook (`EmulatorSession`), which raises
    the session's host-pending count.
 2. The sequencer waits until that count drops.
-3. A reload hops to the UI thread (`Listener::reloadRequested`). There
+3. A reload waits in the part's queue until after the call
+   (`Listener::reloadRequested`). There
    `TIAppPart::applyReloadStage` stops the loop, runs `applyReload`
    (only the listed steps and registers)
    on the session's thread, restarts the loop (unless frozen), and updates
    the cue card. It then calls `hostDone()`. A posted job would not do: it
    runs only after the run loop exits.
-4. `ArmCard` and `InsertCard` queue their card in the session (`QueuedCard`,
-   under a mutex).
+4. `ArmCard` and `InsertCard` queue their card in the session (`QueuedCard`).
 5. On each 60 Hz `tick()` with an empty reader, `takeQueuedCard()` hands out
    the first card of the matching kind (the two kinds don't block each
    other):
@@ -362,8 +364,8 @@ into the keystroke events (`shared_ptr`). This is the order of operations:
 
 **Controls** (`PrinterTrace:`, `CutPaper:`, `DebugPanel:`, `Freeze:`,
 `FreezeOnStart:`, `Step:`, `Resume:`) take the
-same host-pending path. `Host::control` hops to the UI thread
-(`Listener::controlRequested`), where `TIAppPart::applyControl` calls
+same host-pending path. `Host::control` waits in the part's queue
+until after the call (`Listener::controlRequested`), where `TIAppPart::applyControl` calls
 what the GUI's button calls (`freeze`, `armPcChange`, `stepKeycode`, …), or
 the `c59.show-debug-panel` topic for the tab, which is GUI state. While frozen, a
 script's keys, reloads and inserted cards wait (`WaitingToPress` /

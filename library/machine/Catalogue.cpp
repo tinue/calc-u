@@ -17,19 +17,35 @@ const PeripheralDescriptor* Catalogue::peripheral(const PeripheralId& id) const 
     return nullptr;
 }
 
-std::optional<PlaceInfo> Catalogue::place(const ModelId& modelId, const PlaceName& name) const {
-    const MachineDescriptor* m = model(modelId);
-    const PlaceDescriptor* p = m ? m->place(name) : nullptr;
-    const ConnectorDescriptor* c = p ? m->connector(p->connector) : nullptr;
+namespace {
+template <class D>
+std::optional<PlaceInfo> placeOf(const D* d, const PlaceName& name, const std::vector<PeripheralDescriptor>& all) {
+    if (!d) return std::nullopt;
+    const PlaceDescriptor* p = nullptr;
+    for (const auto& x : d->places)
+        if (x.name == name) p = &x;
+    const ConnectorDescriptor* c = nullptr;
+    if (p)
+        for (const auto& x : d->connectors)
+            if (x.id == p->connector) c = &x;
     if (!c) return std::nullopt;
     const PinOutDescriptor* pinOut = nullptr;
     for (const auto& o : c->pinOuts)
         if (o.id == p->pinOut) pinOut = &o;
     if (!pinOut) return std::nullopt;
     PlaceInfo info{p, c, pinOut, {}};
-    for (const auto& per : peripherals_)
+    for (const auto& per : all)
         if (per.fitsPinOut(p->pinOut)) info.fitting.push_back(per.id);
     return info;
+}
+} // namespace
+
+std::optional<PlaceInfo> Catalogue::place(const ModelId& modelId, const PlaceName& name) const {
+    return placeOf(model(modelId), name, peripherals_);
+}
+
+std::optional<PlaceInfo> Catalogue::place(const PeripheralId& id, const PlaceName& name) const {
+    return placeOf(peripheral(id), name, peripherals_);
 }
 
 void Catalogue::addPeripheral(PeripheralDescriptor p) { peripherals_.push_back(std::move(p)); }

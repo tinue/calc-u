@@ -59,7 +59,7 @@ TEST(ac21_capabilities_listed_with_kind_id_owner) {
     CHECK(m && twin);
     if (!m || !twin) return;
     const auto caps = m->capabilities();
-    CHECK_EQ(caps.size(), std::size_t{2});
+    CHECK_EQ(caps.size(), std::size_t{3});   // with LIB-2's controls of the printer
     std::set<std::string> ids;
     for (const auto& e : caps) ids.insert(e.id.value);
     CHECK_EQ(ids.size(), caps.size());   // unique within the machine
@@ -88,7 +88,7 @@ TEST(ac22_peripheral_capabilities_only_with_peripheral) {
     CHECK_EQ(capabilitiesOf<TestCounter>(*with).size(), std::size_t{1});
     CHECK_EQ(capabilitiesOf<TestCounter>(*without).size(), std::size_t{0});
     CHECK(capabilityAs<TestCounter>(*without, CapabilityId{"printer/test.counter"}) == nullptr);
-    CHECK_EQ(with->capabilities().size(), without->capabilities().size() + 1);
+    CHECK_EQ(with->capabilities().size(), without->capabilities().size() + 2);   // the counter and LIB-2's controls
 }
 
 TEST(ac23_product_kind_handed_out_like_generic) {

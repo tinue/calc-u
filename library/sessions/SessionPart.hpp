@@ -66,6 +66,9 @@ public:
     virtual void beforeCall(SessionContext&, pacing::WallTime) {}
     virtual void afterCall(SessionContext&, pacing::WallTime) {}   // per-call duties
     virtual void machineChanged(SessionContext&) {}
+    // An operation ended or was stopped (AC-18); e.g. LIB-2's real-time
+    // clocks set from the host (LIB-2 AC-23).
+    virtual void operationEnded(SessionContext&) {}
     virtual void suspending(SessionContext&) {}
 
 protected:

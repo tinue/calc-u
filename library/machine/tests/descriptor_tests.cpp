@@ -89,12 +89,12 @@ TEST(ac2_machine_descriptor_states_every_part) {
 
 TEST(ac3_peripheral_descriptor_and_one_added_later) {
     Catalogue cat = makeTestCatalogue();
-    CHECK_EQ(cat.peripherals().size(), std::size_t{2});
+    CHECK_EQ(cat.peripherals().size(), std::size_t{4});   // with LIB-2's hub and UART
     const PeripheralDescriptor* printer = cat.peripheral(kPrinter);
     const PeripheralDescriptor* module = cat.peripheral(kModule);
     CHECK(printer && printer->name == "Test printer" && printer->variants.empty() && printer->roms.empty());
-    CHECK(printer && printer->fits == std::vector<PinOutId>{PinOutId{"test.bus"}});
-    CHECK(printer && printer->controls.size() == 1 && printer->controls[0].form == ControlForm::Switch);
+    CHECK(printer && printer->fits.size() == 3 && printer->fits[0] == PinOutId{"test.bus"});
+    CHECK(printer && printer->controls.size() == 3 && printer->controls[0].form == ControlForm::Switch);
     CHECK(printer && printer->components.size() == 1 && printer->components[0].depth == Depth::Functional);
     CHECK(printer && printer->connectors.empty() && printer->places.empty() && printer->mediaPlaces.empty());
     CHECK(module && module->defaultVariant == VariantId{"4k"} && module->variants.size() == 2);

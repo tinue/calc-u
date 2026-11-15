@@ -85,7 +85,7 @@ TEST(ac39_capabilities_request_gives_kind_id_owner_places_plugged) {
     const auto* o = payloadAs<MachineOffer>(r.fe.reply(id)->result);
     CHECK(o != nullptr);
     if (!o) return;
-    CHECK_EQ(o->capabilities.size(), std::size_t(2));
+    CHECK_EQ(o->capabilities.size(), std::size_t(3));   // with LIB-2's controls of the printer
     const auto counter = std::find_if(o->capabilities.begin(), o->capabilities.end(),
                                       [](const auto& c) { return c.kind == mt::TestCounter::kKind; });
     CHECK(counter != o->capabilities.end());
@@ -100,7 +100,7 @@ TEST(ac39_capabilities_request_gives_kind_id_owner_places_plugged) {
     CHECK(o->plugged.byPlace[0].peripheral == mt::kPrinter);
     // A translating host gets the same as a value.
     const Value v = o->toValue();
-    CHECK(v.find("capabilities") && v.find("capabilities")->elements()->size() == 2);
+    CHECK(v.find("capabilities") && v.find("capabilities")->elements()->size() == 3);
 }
 
 TEST(topics_request_lists_declared_topics) {

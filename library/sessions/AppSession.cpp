@@ -311,6 +311,7 @@ void AppSession::Impl::endOperation() {
     if (!res.ok) notice(res.message);
     ms.setReportsWaiting(true);
     ms.startAfresh();
+    for (SessionPart* p : setup.parts) p->operationEnded(*this);
 }
 
 void AppSession::Impl::stopOperation() {   // LIB-18 AC-16, D-7
@@ -318,6 +319,7 @@ void AppSession::Impl::stopOperation() {   // LIB-18 AC-16, D-7
     reply(r->listener, r->call, false, kStopped);
     ms.setReportsWaiting(true);
     ms.startAfresh();
+    for (SessionPart* p : setup.parts) p->operationEnded(*this);
 }
 
 // One part of the running operation (AC-14): the pacer at the operation's

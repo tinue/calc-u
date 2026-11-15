@@ -129,3 +129,20 @@ AC-33 in M-55 (D-1); the column stays In progress until then.
 | AC-30 | Pass | `lib1_ac30_card_reader_on_ti59_only` (pass-through, sides 0 and 1) |
 | AC-31 | Pass | `lib1_ac31_components_and_depth` (TMC0501, ROM, RAM separate; SCOM, CROM, printer interface and, on the TI-59, the card reader folded into TMC0501; module slot and printer connector functional) |
 | AC-33 | Pass (without peripherals) | `lib1_ac33_machine_conforms_without_peripherals` (`checkAgainstDescriptor` empty for the three models; nothing plugged; no capability before M-55) |
+
+## Calc-U-59, the M-25 part (2026-11-15, branch `m25-connectors`)
+
+With C59-6 (its qa-report has the run and the golden runs). Tests in
+`products/calc-u-59/tests/descriptor_tests.cpp`, program `CalcU59Tests`
+(label `frequent`): 9 tests, all passed. The media place clause of AC-33
+passes in M-55 (D-1); the column stays In progress until then.
+
+| ID | Result | Test case |
+|---|---|---|
+| AC-31 | Pass (updated) | `lib1_ac31_components_and_depth`: since C59-6 `CROM` and `printer-interface` are no longer components of the machine (the module and the printer are peripherals); SCOM and, on the TI-59, the card reader folded into TMC0501; module slot and printer connector functional |
+| AC-32 | Pass | `lib1_ac32_pc100c_and_14_modules` (15 peripheral descriptors: the PC-100C fits the printer connector, no ROM, controls PRINT and ADV keys and TRACE switch, its paper the capability `c59.printer-output` when plugged in; each of the 14 modules fits the module slot with its one ROM file `<ID>.rom.yaml`, 5000 bytes, md5) |
+| AC-33 | Pass (with and without the PC-100C and a module); media place clause: M-55 | `lib1_ac33_machine_conforms_with_printer_and_module` (every model with ML and the PC-100C, and empty: `checkAgainstDescriptor` empty, the plug entries, the two capabilities owned by the PC-100C and reachable), `lib1_ac33_machine_conforms_without_peripherals` (now built with nothing plugged) |
+
+Deviation: the 14 module descriptors are static in `tiCatalogue()` rather
+than added from the module files (C59-6 qa-report, "Deviations").
+

@@ -134,3 +134,21 @@ and takes locks (the host adapter of ADR 0009).
 
 Not done in M-23 (other columns): AC-24 to AC-27 (Calc-U-59, M-25) and
 AC-28 to AC-34 (Calc-U-1600, M-26, M-31, M-47).
+
+## Calc-U-59 (M-25, 2026-11-15, branch `m25-connectors`)
+
+With C59-6 (its qa-report has the run, the golden runs and the
+deviations). The PC-100C and the Solid State ROM modules are plugged by
+`TIMachine::plug()`/`unplug()` through `Machine::attach`, `detach` and
+`replace`; the PC-100C's controls are a `ControlTable`. Tests in
+`products/calc-u-59/tests/peripherals_tests.cpp` (LIB-2 design P1–P4),
+`CalcU59Tests`, Frequent; all pass.
+
+| ID | Result | Test case |
+|---|---|---|
+| AC-24 | Pass | `lib2_ac24_places_functional_power_cycle_follows` (every model: `slot-1` and `printer` functional, one at a time, a power cycle follows; 14 modules fit the slot, the PC-100C the printer place; on a running TI-59 each attach and detach answers `PowerCycle`) |
+| AC-25 | Pass | `lib2_ac25_second_module_refused_until_detached` ("slot-1 already holds the Master Library.", then a detach and the attach of LE), `lib2_ac25_empty_slot_machine_runs` (each model with nothing in `slot-1` calculates) |
+| AC-26 | Pass | `lib2_ac26_pc100c_print_adv_trace` (`printer/controls`, owned by the PC-100C at `printer`: PRINT and ADV keys, TRACE switch; a switch pressed and a key set refused, PAPER unknown), `lib2_ac26_no_pc100c_no_controls` (no machine lists them without a PC-100C); what they do: C59-6 AC-5 |
+| AC-27 | Pass | `lib2_ac27_no_serial_port_no_clock` (no `serial-port` and no `real-time-clock` capability on any model, with or without the PC-100C; no such component) |
+
+The Calc-U-59 column is Done.

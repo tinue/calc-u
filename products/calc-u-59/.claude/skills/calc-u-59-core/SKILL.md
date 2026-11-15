@@ -57,13 +57,24 @@ Annotated ROM listings: `rom/TI59-commented.asm`, `rom/TI58C-commented.asm`
   Model, advances and tick count, Reset/power cycle/cold boot, key readiness,
   keys (key IDs) and the display output go through it only. What it does not
   have yet goes through the adapters of `core/TIAdapters.hpp`, each until its
-  removal step: `TIPeripheralsAdapter` (M-25), `TICardReaderAdapter` (M-55),
+  removal step: `TICardReaderAdapter` (M-55),
   `TIMemoryAdapter` (M-54), `TIDebugTargetAdapter` (M-53),
   `TIDebugPanelAdapter` (M-56), `TIPacingHints` (M-33). `TI59Machine`,
   `TMC0501`, `MachineVariant`, `TIKeys`, `TIRomRanges` are core-internal; the
   CTest `CalcU59CoreSeam` (`tests/check_core_seam.sh`) fails on an include of
   them outside `core/` and `tests/`. Don't add a call to an adapter that the
   interface has (C59-1 AC-17); a new need goes to the feature that owns it.
+- **Peripherals (C59-6):** the PC-100C (`core/PC100C.*`) and a Solid State
+  ROM module (`core/SolidStateRomModule.*`) are peripherals in the places
+  `printer` and `slot-1`, plugged by `TIMachine::plug/unplug` through
+  `Machine::attach/detach/replace` (LIB-2); a change is followed by a power
+  cycle the caller runs. `TMC0501` sees only their functional pin-outs
+  (`core/PrinterPinOut.hpp`, `core/ModuleSlotPinOut.hpp`, wired with
+  `TiConnectors`) and holds no printer state and no module image; the
+  `libExecPC` latch stays in the CPU. The PC-100C's controls (PRINT, ADV,
+  TRACE) and its paper (`c59.printer-output`, `core/PrinterOutput.hpp`) are
+  capabilities; `CoreArchitecture.md` § "Component Overview", "Printer
+  (PC-100C)", "Solid-State Library Module".
 - **Ticks:** one instruction is 32 ticks, 128 in IDLE on the TI-59/58; the
   tick count is monotonic across every operation (`TIMachine::cpuReset`).
   Every path that runs an instruction goes through `TIMachine::stepOne()`

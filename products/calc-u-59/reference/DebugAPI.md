@@ -36,7 +36,7 @@ with the run loop stopped (`EmulatorSession::sync`), as
 | `partitionProgramRegs()` / `setPartitionProgramRegs(n)` | RAM registers given to the program, a multiple of 10 in [0, 120] |
 | `snapshotCPU()` | A `CpuFrame` of the CPU now; safe while running. Its identity fields are not meaningful |
 | `lastStepBoundary()` | The CPU state latched at the last step boundary or idle entry (see below) |
-| `printerBufferContent()` | Characters in the printer accumulator not yet printed |
+| `TIMachine::printerBufferContent()` | Characters in the PC-100C's buffer not yet printed (`PC100C::bufferContent()`; empty without a PC-100C; no caller above the core) |
 
 Helpers in `app/DebugSnapshots.hpp`: `programSteps(m)` (the partition's
 steps, clamped to physical RAM), `romKeycodes(m)` (the 384 constant-ROM

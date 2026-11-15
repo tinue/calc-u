@@ -24,9 +24,13 @@ calcu::machine::Machine     (library/machine/Machine.hpp: the machine interface)
       ├─ TI59Machine        (core/TI59Machine.hpp/.cpp, core-internal)
       │   ├─ ROM            (core/ROM.hpp/.cpp)
       │   ├─ RAM            (core/RAM.hpp/.cpp)
-      │   └─ TMC0501        (core/TMC0501.hpp/.cpp; references ROM & RAM, uses TraceTypes)
+      │   └─ TMC0501        (core/TMC0501.hpp/.cpp; references ROM & RAM, uses TraceTypes;
+      │                      sees the PC-100C and the module through their pin-outs only)
+      ├─ PC100C             (core/PC100C.hpp/.cpp: the PC-100C in the place `printer`)
+      ├─ SolidStateRomModule (core/SolidStateRomModule.hpp/.cpp: a module in `slot-1`)
       └─ the adapters       (core/TIAdapters.hpp/.cpp, until their removal steps)
-tiCatalogue(), TIMachineBuilder (core/TICatalogue.hpp/.cpp: the three descriptors)
+tiCatalogue(), TIMachineBuilder (core/TICatalogue.hpp/.cpp: the three descriptors,
+                             the PC-100C and the 14 modules)
 ```
 
 Since C59-1 (M-19) the only interface above the core is
@@ -36,14 +40,32 @@ Since C59-1 (M-19) the only interface above the core is
 advances and tick count, Reset / power cycle / cold boot, key readiness,
 the keys and the display output through it only (C59-1 AC-17; CTest
 `CalcU59CoreSeam`). What the interface does not have yet goes through the
-adapters of `core/TIAdapters.hpp` (`peripheralsOf(machine)` …), each with
-its removal step: `TIPeripheralsAdapter` (module image, printer; M-25),
-`TICardReaderAdapter` (M-55), `TIMemoryAdapter` (program, registers,
+adapters of `core/TIAdapters.hpp` (`memoryOf(machine)` …), each with
+its removal step: `TICardReaderAdapter` (M-55), `TIMemoryAdapter` (program, registers,
 partition, RAM; M-54), `TIDebugTargetAdapter` (steps, trace ring,
 breakpoints, run control; M-53), `TIDebugPanelAdapter` (ASM overlay, debug
 events; M-56), `TIPacingHints` (polled hardware, idle range; M-33).
 `TI59Machine` is the core-internal facade over the three hardware
 components. The core holds no lock (see "Threading Model").
+
+**Places (C59-6, M-25).** The PC-100C and the Solid State ROM modules are
+peripherals in the places `printer` and `slot-1`, attached and detached
+through `Machine::attach/detach/replace` (LIB-2; `TIMachine::plug/unplug`)
+or with the build request's `peripherals` (attached at the build, no power
+cycle). Both pin-outs are functional and take one peripheral; an attach or
+a detach answers that a power cycle follows, which the caller runs
+(`AfterChange::PowerCycle`; ledger row 59-11). `TMC0501` holds a
+`TiConnectors` (`wire()`): a `PrinterPinOut*` with the digit its D0 pad is
+on, and a `ModuleSlotPinOut*`; nullptr when nothing is plugged in. It keeps
+no printer state and no module image. With the PC-100C the machine lists
+two capabilities, `printer/controls` (the library's `Controls`: PRINT and
+ADV keys, TRACE switch) and `printer/c59.printer-output` (the product kind
+`PrinterOutput`, `core/PrinterOutput.hpp`: the text and code lines; an
+adapter for LIB-8's paper until M-53). TRACE's position comes with the
+attach request (`PeripheralRequest::switches`) and stays through reset,
+power cycle and cold boot; the app session keeps it across a model switch
+and a detach (C59-6 AC-6). The machine tells both peripherals of each
+reset, power cycle and cold boot (`TIMachine::cpuReset`).
 
 **Ticks, operations, keys and display (C59-1).** One instruction is 32
 ticks of the tick rate (455,000 / 384,000 / 394,000 per second, the
@@ -66,10 +88,14 @@ brightness and the indicator C (`core/TISegments.hpp`).
 |---|---|---|
 | `ROM.hpp/.cpp` | TMC0582/0583/0571B, CD2400/2401/TMC0573 | Instruction ROM (13-bit words) plus the debug overlay |
 | `RAM.hpp/.cpp` | TMC0598 | User RAM (120 × 16 BCD nibbles) |
-| `TMC0501.hpp/.cpp` | TMC0501 + SCOM + CROM, card reader, printer | CPU and every peripheral; full instruction execution |
+| `TMC0501.hpp/.cpp` | TMC0501 + SCOM, card reader | CPU; full instruction execution; the printer and module words go to the pin-outs |
+| `PrinterPinOut.hpp`, `ModuleSlotPinOut.hpp` | — | The printer connector's and the module slot's functional pin-outs (C59-6) |
+| `PC100C.hpp/.cpp` | PC-100C | The print cradle: character tables, buffer, busy count, dot timing, PRINT/ADV/TRACE |
+| `SolidStateRomModule.hpp/.cpp` | TMC0540 family (TMC0541 …) | A module: 5000-byte image, address register |
+| `PrinterOutput.hpp` | — | The product kind `c59.printer-output` (until M-53) |
 | `TI59Machine.hpp/.cpp` | — | Core-internal facade; variant setup |
 | `TIMachine.hpp/.cpp` | — | `calcu::machine::Machine`: ticks, operations, Reset restore, key readiness, keys, display output |
-| `TICatalogue.hpp/.cpp` | — | `tiCatalogue()`, `TIMachineBuilder`, `TIConstantMemory` |
+| `TICatalogue.hpp/.cpp` | — | `tiCatalogue()` (models, PC-100C, 14 modules with their `<ID>.rom.yaml`), `TIMachineBuilder`, `TIConstantMemory` |
 | `TIAdapters.hpp/.cpp` | — | The adapters of C59-1 design §5 and their accessors |
 | `TIKeys.hpp/.cpp`, `TISegments.hpp`, `TIRomRanges.hpp`, `TIRomText.hpp/.cpp` | — | Key IDs; glyph rules; scan-loop, idle and card-wait ranges; ROM text decoding |
 | `TIPrinterTypes.hpp` | — | `PrinterCodeLine` (until M-53) |
@@ -487,8 +513,11 @@ counts as "no jump" (see `rom/TI58C-ROM-Guide.md` § "Emulator issues found").
 
 ## Execution Flow (`TMC0501::step()`)
 
-1. **Printer countdown** — decrement `m_prnBusyCycles`; at zero clear
-   `FLG_BUSY` and commit the line with all 7 dot rows.
+1. **Printer countdown** — with a PC-100C, one Φ1 on the printer connector
+   (`PrinterPinOut::instructionCycle`): the PC-100C decrements its busy
+   count and at zero commits the line with all 7 dot rows; the CPU copies
+   the connector's Busy into `FLG_BUSY` (kept in the flags word for the
+   trace format).
 2. **`beginNextStep()`** — fetch the opcode, restore COND after a branch
    chain, patch the previous trace frame to post-execution state, start the
    new frame (breakpoint check).
@@ -651,7 +680,14 @@ discard the hit (multi-key rejection).
 | 12 | KN | Printer ADV button | Ordinary scan hit at row 12 |
 | 15 | KP | Printer TRACE switch (latch) | Above the scan window; polled in the keystroke/print path |
 
-The TRACE latch survives a CPU reset (`TI59Machine` re-applies it).
+Since C59-6 (M-25) these printer lines are not in the key matrix: they are
+the PC-100C's (`PrinterPinOut::keyLines` at the pads D0, D12, D15), and
+`TMC0501::keyRow(digit)` ORs them into the row it scans, at digit 0 for D0
+on the TI-59/58 and at digit 10 on the TI-58C (the TI machine maps the pad;
+the PC-100C does not know the host). The multi-key rejection runs on the
+combined row, as before. A reset releases PRINT and ADV (the PC-100C is
+told of the operation, as 2.3.0's wipe of `key[]` did); TRACE keeps its
+position.
 
 ---
 
@@ -681,20 +717,30 @@ Bank format and the firmware's checks: `rom/TI59-ROM-Guide.md` §
 ## Solid-State Library Module (TMC0540 CROM)
 
 A 5,000 × 8-bit keycode memory with its **own address counter**, read
-serially over the EXT line. Modelled as `m_libData[5000]` and `m_libAddr`
-in `TMC0501`.
+serially over the EXT line. Since C59-6 (M-25) a peripheral in the place
+`slot-1`: `SolidStateRomModule` (`core/SolidStateRomModule.hpp`) holds the
+image and the address register; `TMC0501` passes the four module words to
+the module slot's pin-out (`ModuleSlotPinOut::word`) and takes the EXT it
+drives. Its bytes come in with the attach, the module file `<ID>.rom.yaml`
+as bundled (LIB-12), decoded with `core/ModuleFile`. An empty slot is no
+object: every module word reads EXT = 0, as 2.3.0's image of zeros did
+(the golden runs `ti59-no-module`, `ti58-no-module` pass unchanged, so the
+address register an empty slot reads back as 0 makes no difference). The
+14 modules are the catalogue's (`tiModules()`, `core/TICatalogue.hpp`);
+`CpuFrame::m_libAddr` and `m_libAddrReadPos` read the module's register
+(0 with an empty slot).
 
 ### Module commands (control class 0xA, low nibble 0xE)
 
 | Mnemonic | Hardware command | Effect |
 |---|---|---|
-| `LIB.IN` | FETCH | `EXT = m_libData[m_libAddr++] << 4`; wraps at 5000 |
+| `LIB.IN` | FETCH | `EXT = data[addr++] << 4`; wraps at 5000 |
 | `LIB.HI` | FETCH HIGH | High nibble of the current byte; no advance |
-| `LIB.PC` | LOAD PC | `m_libAddr = m_libAddr/10 + KR[7:4]·1000`; four calls load a 4-digit BCD address, LSD first |
-| `LIB.PC.IN` | UNLOAD PC | One BCD digit of `m_libAddr` per call (`m_libAddrReadPos` 0–3); no change |
+| `LIB.PC` | LOAD PC | `addr = addr/10 + KR[7:4]·1000`; four calls load a 4-digit BCD address, LSD first |
+| `LIB.PC.IN` | UNLOAD PC | One BCD digit of `addr` per call (read position 0–3); no change |
 
-`m_libAddrWasWriting` resets the digit position when the ROM switches
-between LOAD PC and UNLOAD PC. Every fetch is preceded by a `LIB.HI` of the
+The module resets the digit position when the ROM switches between LOAD PC
+and UNLOAD PC (`SolidStateRomModule`). An address of 5000 or more reads 0. Every fetch is preceded by a `LIB.HI` of the
 same byte.
 
 ### Module image layout
@@ -715,8 +761,8 @@ start and never leaves the program. `app/ModuleImage` parses the header
 ### The user-visible module step (`libExecPC`)
 
 The module's counter is also moved by header reads and label searches, so
-the core keeps a separate latch, `m_libExecPC`. The `LIB.IN` handler copies
-the pre-increment `m_libAddr` into it only when the fetch comes from the
+the CPU keeps a separate latch, `m_libExecPC`. The `LIB.IN` handler copies
+the module's pre-increment address (`ModuleSlotPinOut::address()`) into it only when the fetch comes from the
 interpreter's execution site, `libExecFetchPC()`:
 
 | Main-ROM address | Purpose |
@@ -730,7 +776,8 @@ interpreter's execution site, `libExecFetchPC()`:
 So the step holds steady during label searches, which a taken label branch
 repeats in full on every pass. `fA`/`fB` cannot tell execution from search
 fetches (verified by trace), hence the address check. The latch starts at
-`kLibExecPCNone` (0xFFFF) and is reset by `reset()` and `loadLibrary()`. It
+`kLibExecPCNone` (0xFFFF) and is reset by `reset()`, so also by the power
+cycle that follows a module change. It
 is exposed as `TICardReaderAdapter::libExecPC()`, not as a `CpuFrame`
 field, so the trace format did not change. `ModuleImage::libraryStep` turns
 it into program number and program-relative step.
@@ -764,6 +811,16 @@ level before fetching resumes.
 
 ## Printer (PC-100C)
 
+Since C59-6 (M-25) the PC-100C is a peripheral in the place `printer`:
+`PC100C` (`core/PC100C.hpp`) holds the buffer, the ready gate, the busy
+count, the pending code line and the PRINT, ADV and TRACE controls.
+`TMC0501` passes the six printer words to the printer connector
+(`PrinterPinOut::word` with KR as data) and reads Busy for `TST.BUSY`;
+without a PC-100C the words reach nothing. The first step 8 showed that the
+ROM then executes one `PRT.STEP` and no `PRT.GO`, `PRT.OUT` or `PRT.FEED`,
+so a program takes as long without a printer as in 2.3.0 (C59-6 AC-7;
+golden run `ti59-print-without-printer`).
+
 A 20-character buffer filled right to left; `PRT.GO` reverses it into a
 left-to-right line.
 
@@ -773,12 +830,13 @@ left-to-right line.
 | `PRT.OUT` | Store one character (6-bit code from `KR[9:4]`) |
 | `PRT.FUNC` | Store a 3-character function mnemonic (`PRN_STR` table) |
 | `PRT.STEP` | Store a blank |
-| `PRT.GO` | Print the line; `FLG_BUSY` for `kPrinterLineCycles` (4165) |
-| `PRT.FEED` | Half a line of paper; `FLG_BUSY` for `kPrinterFeedCycles` (1370) |
+| `PRT.GO` | Print the line; Busy for `PC100C::kLineInstructions` (4165) |
+| `PRT.FEED` | Half a line of paper; Busy for `PC100C::kFeedInstructions` (1370) |
 
 **Timing.** The PC-100 runs on the calculator's PHI clock (PHI1 is on the
 printer connector), so its BUSY times are instruction cycles, the same on
-every model, counted down once per `step()`. A TI-59 in IDLE still gets 16
+every model, counted down once per `step()` (one Φ1 on the connector per
+instruction). A TI-59 in IDLE still gets 16
 PHI1 pulses per instruction, so the per-step count holds there too. On the
 TI-59 (14,219/s) a printed line takes 293 ms and a feed 96 ms; on the TI-58C
 (12,312.5/s) 338 and 111 ms. Adv (calculator key, printer button or program
@@ -787,6 +845,10 @@ TI-58C, the same loop at `0F38` on the TI-59). The ROM does not wait after a
 print: it carries on (the next program steps, the next List line) and polls
 `TST.BUSY` right before its next print operation, so ROM work overlaps the
 printer's cycle.
+
+Every printer timing here was measured on a PC-100A, not on a PC-100C; no
+difference between the two is expected (user, 2026-11-11; C59-6 AC-4), and
+the PC-100C keeps these numbers.
 
 Measured from audio recordings of a PC-100A (2026-10-24), one unit each of
 TI-59 (453.5 kHz) and TI-58C (≈394.3 kHz). The loop period minus the ROM's
@@ -811,15 +873,17 @@ paper advance to the next line. Of the measured 4165–4168 for a printed
 line, 4165 is used: the TI-59 printer-interrupt lines below fit it and not
 4168 (see "Dot timing within a line").
 
-Text lines are queued at once (`drainPrinterLines()`); the dot-matrix line
-(`PrinterCodeLine`, `drainPrinterCodeLines()`) is committed when BUSY
-expires, with `rowCount` = 7. A `PRT.GO` while a line is printing is the
+Text lines are queued at once (`PrinterOutput::takeLines()`, the
+capability `printer/c59.printer-output`); the dot-matrix line
+(`PrinterCodeLine`, `takeCodeLines()`) is committed when Busy expires, with `rowCount` = 7. A `PRT.GO` while a line is printing is the
 **printer interrupt** (during a feed's BUSY it prints normally): the line
 in progress is committed with what is on paper so far, and the new print
 is ignored. Firmware side and the
 1F keycode that triggers it: `rom/printerinterrupt.md`. A `PRT.FEED` during
 a print commits the pending line first, cut short at that moment like an
-interrupt, so lines keep their order; `reset()` does the same.
+interrupt, so lines keep their order; a reset, power cycle or cold boot
+does the same (`PC100C::operation()`), and so does a detach
+(`endLineHere()`, C59-6 EC-2): the rows printed stay on the paper.
 
 **Dot timing within a line.** A stroke fires the 5 dot columns of all 20
 characters one column at a time, right to left. Column c (5 = rightmost) of
@@ -879,7 +943,8 @@ decide.
 The core holds no lock, no atomic and starts no thread (ADR 0009; C59-1):
 a machine is used from one thread at a time, and the caller serialises.
 2.3.0's four mutexes (`m_keyMutex` in `TI59Machine`, `m_displayMutex`,
-`m_prnMutex`, `m_traceMutex` in `TMC0501`) and the atomics of the trace
+`m_prnMutex`, `m_traceMutex` in `TMC0501`; the printer state they guarded
+is the PC-100C's since C59-6) and the atomics of the trace
 flags and counters have no successor in the core. Until the session runs on
 one thread (M-33 for Qt6 and Swift, M-34 for the Web), the app layer's
 `cu59::MachineGuard` (`app/MachineGuard.hpp`) is that caller: the run loop

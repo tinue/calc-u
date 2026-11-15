@@ -29,7 +29,7 @@ CalcU59App                    (Calc-U-59App.swift: scene, background/active, mac
     └─ SettingsView
 
 EmulatorViewModel (@Observable, main thread)
-├─ TISessionController        (frontends/swift/Bridge/ → app/SessionController)
+├─ TIAppSession               (frontends/swift/Bridge/ → app/SessionThread, app/TIAppPart)
 ├─ PlatformForwarder          (TIPlatform: files, trace location, settings, alerts, changes)
 └─ displayTimer               (60 Hz Timer → controller.tick())
 ```
@@ -67,27 +67,36 @@ EmulatorViewModel (@Observable, main thread)
 
 | Thread | What runs there |
 |---|---|
-| Main | SwiftUI, the 60 Hz `tick()`, every `TISessionController` call, `PlatformForwarder` callbacks, all `@Observable` writes |
-| `app/` threads | Emulation thread, key sequencer lanes and timer (`SharedArchitecture.md` § "Threads") |
-| Global utility queue | `CardStorage.warmUp()` before the first machine starts — `url(forUbiquityContainerIdentifier:)` blocks and returns nil on the main thread |
-| Global background queue | Writing `ti58c.mem` (iCloud writes can block) |
+| Main | SwiftUI, every `TIAppSession` call (each posts a command and returns at once), `SessionDelegate` callbacks, all `@Observable` writes |
+| Session thread (`cu59::SessionThread`) | The app session: built, called about 60 times a second, destroyed there; the machine, the presets, the card and `ti58c.mem` files (through `NSFileCoordinator`) — C59-5 |
+| Attach I/O thread (Debug, macOS and simulator) | `calcu::harness::AttachEndpoint`: the socket on 127.0.0.1; lines go to the session thread |
+| Global utility queue | `CardStorage.warmUp()` before the session is made — `url(forUbiquityContainerIdentifier:)` blocks and returns nil on the main thread |
 
-`TISessionController` implements `runOnUiThread` with
-`dispatch_async(dispatch_get_main_queue())`. The view model holds an App Nap
-activity token for its lifetime, so macOS never stalls the emulation thread
-while the window is hidden.
+The view model holds an App Nap activity token for its lifetime, so macOS
+never stalls the session thread while the window is covered (C59-5 AC-9).
 
-### 60 Hz refresh
+### Messages, not a refresh timer
 
-`startDisplayRefresh()` adds a 1/60 s `Timer` to the main run loop (common
-modes) that calls `controller.tick()`. Changes arrive through
-`TIPlatform.changed(_:)`; `apply(_:)` reads only the named values and
-assigns a property only when it differs, because `@Observable` notifies on
-equal writes too.
+There is no display timer. The session thread wakes the main thread once
+per batch of messages (`dispatch_async`); `TIAppSession` keeps the last
+message of each topic and tells the view model which topics changed
+(`TIAppSessionDelegate.changed(_:)`, `TIChange`). `apply(_:)` reads only
+those and assigns a property only when it differs, because `@Observable`
+notifies on equal writes too.
 
-On `.background` the app calls `controller.suspend()` (persists `ti58c.mem`,
-stops the loop) and stops the timer; on `.active` it restarts both. A debug
-freeze survives.
+On `.background` the app sends suspend (`suspend(completion:)`: carried out
+— the TI-58C's memory written — then the thread stops calling; on iOS inside
+a background task); on `.active` it sends continue. A debug freeze survives.
+
+### Harness attach (Debug)
+
+A Debug build for macOS or the simulator opens its session to the harness
+on 127.0.0.1, the port of the launch argument `--attach-port N`, else
+59059 (`openAttach(withArguments:)`); `calcu attach [--port N]` on the Mac
+drives it, and `Calc-U-59UITests/HarnessClient.swift` from an XCUITest.
+Only the Debug configuration has `com.apple.security.network.server`
+(`Calc-U-59-Debug.entitlements`); Release and device builds have no attach
+(C59-5 AC-13).
 
 ---
 
@@ -114,7 +123,7 @@ imports the public ones.
 
 | Wrapper | Wraps |
 |---|---|
-| `TISessionController.{h,mm}` | `SessionController`; its `Platform` as the `TIPlatform` protocol (held weakly); `TIChange` = `Change` bits; value objects `TILiveDebugSnapshot`, `TIStepEntry`, `TIRegEntry`, `TIInspectorEntry`, `TIPrinterLine`, built when Swift reads them after a change |
+| `TIAppSession.{h,mm}` | The app session on `cu59::SessionThread`: commands (`c59.*`) out, messages in on the main thread (the last of each topic kept); `TIAppSessionDelegate` (alerts, `DebugPanel:`, diagnostics, `changed`), `TISessionStart`, `TIRomSet`; the coordinated card files (`cu59::FileIO`); value objects `TILiveDebugSnapshot`, `TIStepEntry`, `TIRegEntry`, `TIInspectorEntry`, `TIPrinterLine`, built when Swift reads them |
 | `TISharedTables.{h,mm}` | `KeyboardMap`, `SevenSegment`, `PrinterFont` (font rows), `KeyboardLayout`, `KeyIds` |
 | `TIViewRules.{h,mm}` | `CueCard` (spans, geometry, inks), `LedGeometry`, `PrinterFont` (`PrinterGeometry`), `RomHeatmap`, `ModuleImage` (program source), `DebugText` (incl. the iOS `mobileLayout`, `mobilePrinterWidth`, `compactPrinterBar`, `mobileTopMargin`) |
 | `TIFileFormats.{h,mm}` | `TICueCard`, card file names (`CardFile`), `cuecards.txt` module list (`ModuleCatalog`) |

@@ -137,3 +137,58 @@ model-specific type. `library/sessions/` includes only `machine`,
 
 Not done in M-22 (other columns): AC-28 to AC-33 (Calc-U-59, M-33, M-34)
 and AC-34 to AC-38 (Calc-U-1600, M-31).
+
+## Calc-U-59 (M-33, 2026-11-15, branch `m33-sessions-59`)
+
+Built and run on an M4 Pro, macOS 27.2, RelWithDebInfo `build/tests`; the
+Qt6 app (`build/qt`, Homebrew Qt 6) and the Swift app (Xcode, Debug) built.
+The code is `products/calc-u-59/app/TIAppPart.*` (`cu59::TIAppPart`,
+`makeAppSession`, the interim topics and commands), `TIFileAccess.*`,
+`PacingProfiles.hpp`; the tests are `products/calc-u-59/tests/session_tests.cpp`
+(with `AppSessionRig.hpp`: a test frontend with a topic mirror, a test
+clock that moves 1 ms at every reading, a temporary save folder). The
+whole Frequent group passes (26 of 26).
+
+| ID | Result | How it was checked |
+|---|---|---|
+| AC-28 | Pass | Qt6: `EmulatorController` hosts `makeAppSession()` on the GUI thread (a 60 Hz timer), sends `c59.*` commands and reads a `TopicMirror`; run offscreen with a temporary `$HOME` and a preset `1 + 1 =`: the window shows 2 (`--grab`). `CalcU59NoOwnSession` (P59-1): no `EmulatorSession`, `EmulationRunner`, `TISessionController` or own `SessionController` in the Qt6 and Swift sources; no `std::thread` in `app/` but `SessionThread` |
+| AC-29 | Pass | `lib3_ac29_mirror_holds_every_change_flag` (each of the fourteen flags' actions moves its interim topic) |
+| AC-30 | Pass | `lib3_ac30_error_is_notice_diagnostic_is_log`, `lib3_ac30_card_and_constant_memory_files_without_frontend`, `lib3_ac30_module_id_not_saved`, `lib3_ac30_show_debug_panel_is_product_message` |
+| AC-31 | M-34 (Qt6 part checked) | `CalcU59NoOwnSession` checks that Qt6 sends no suspend or continue; Swift: C59-5 AC-8; Web in M-34 |
+| AC-32 | Pass | `lib3_ac32_preset_load_is_busy_and_refuses_second`, `lib3_ac32_printer_toggle_is_operation`, `lib3_ac32_updates_during_preset` |
+| AC-33 | Pass | `lib3_ac33_no_sound_messages_and_no_sink_stated` (a frontend offering an audio sink gets no sound and no ask) |
+
+### Deviations from the design
+
+- **`TIAppPart` hosts `SessionController` instead of taking its flows
+  apart** (design §2, §4). The controller runs in `Threading::Hosted`: the
+  machine is released to the machine session (`EmulatorSession::releaseMachine`),
+  which paces it; `CooperativePacing::advanceHosted` is `TIFreezeGate`, the
+  KeySequencer runs at each slice end (`TIKeySequencerHook`), the card wait
+  is a `WaitProbe` (`TICardWaitAdapter`), the controller's freeze stops the
+  machine session through `setPaused`. Its `Platform` is the part: errors
+  are notices ("title: message", split again by the frontends for today's
+  alert), diagnostics log lines, the files `TIFileAccess`, the UI-thread
+  queue a queue that runs on the session's thread. The change flags become
+  snapshot payloads of the interim topics (equal when they are the same set,
+  so EC-2 does not hold for them). So the behaviour is 2.3.0's by
+  construction; M-34 takes the controller apart when the Web moves.
+- **Interim topics:** `c59.model`, `c59.led` (the frame the frontends draw;
+  the library's `display` topic carries the machine's output too),
+  `c59.cue-card`, `c59.printer` (a state snapshot, not yet LIB-8's stream),
+  `c59.card-reader`, `c59.run-state`, `c59.trace`, `c59.debug.live`,
+  `c59.debug.cpu`, `c59.debug.heatmap`, `c59.debug.log`, `c59.debug.asm`,
+  `c59.show-debug-panel` (stream); request `c59.drop-action`.
+- **`SessionContext::commandedSpeed()` / `setCommandedSpeed()`** are new in
+  the library: the part keeps the session's speed and the controller's full
+  speed (KEYSTROKES `FullSpeed:`, the display press) in step. The frontends
+  send `c59.full-speed`, which an operation follows too (a preset's playback
+  at the speed the user or the preset sets, as today).
+- **The preset operation** runs until the KEYSTROKES script has played
+  (`KeySequencer::scriptPending`); the power-cycle operation until the ROM is
+  ready for keys (at most 10 s of emulated time); both at the speed of the
+  controller's full-speed flag, so a preset still runs at regular speed
+  unless it asks (ledger 59-5 is LIB-6 59's).
+- **`Threading::Threads` is gone, the file `Threading.hpp` stays** with
+  `Cooperative` (Web, the controller's tests) and `Hosted`. `MachineGuard`
+  and the session's mutexes stay until M-34 (never contended now).

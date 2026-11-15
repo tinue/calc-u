@@ -19,8 +19,21 @@ This skill covers all work inside `frontends/swift/App/`, `frontends/swift/App/V
 
 1. **No non-GUI logic in Swift.** Parsing, file formats, timing, key
    sequencing, snapshot building and the numbers the views draw with belong
-   in `app/`, reached through `EmulatorViewModel` → `TISessionController`
-   or a `frontends/swift/Bridge/` wrapper. Views are thin bindings over `EmulatorViewModel`.
+   in `app/`, reached through `EmulatorViewModel` → `TIAppSession` (the app
+   session) or a `frontends/swift/Bridge/` wrapper. Views are thin bindings
+   over `EmulatorViewModel`.
+   **The session runs on its own thread** (`cu59::SessionThread`, C59-5):
+   the bridge posts commands (`c59.*`, `app/TIAppPart.hpp`) and hands each
+   batch of messages to the main thread; `EmulatorViewModel.apply` copies
+   what a batch changed. Nothing in Swift reads the session or runs the
+   machine; a result comes back as a reply (a completion block) or a topic.
+   A new value the views need is a field of an interim topic payload in
+   `TIAppPart` plus a getter in `TIAppSession` that reads the last message.
+   **Harness attach (Debug, macOS and simulator only):** the app opens its
+   session on 127.0.0.1, port `--attach-port N`, else 59059; `calcu attach
+   [--port N]` drives it (`library/harness/attach/`; one port per simulator).
+   Release and device builds have no attach (`CALCU_ATTACH` off;
+   `Calc-U-59-Debug.entitlements` is the Debug configuration's only).
 2. **Parity.** A user-visible change here needs the matching Qt change, and
    the web change if the feature is in the web's scope, on the same branch —
    or a `Pending (Qt)` / `Pending (Web)` row in `reference/FrontendParity.md`.

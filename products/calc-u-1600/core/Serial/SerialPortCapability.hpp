@@ -10,7 +10,7 @@
 // (calcu::peripherals::SerialPortQueues). No host, no thread, no lock: a
 // host link (calcu::peripherals::HostLinks) moves the bytes between two
 // advances. The port counts as used from the UART's first poll, send or
-// status call, as today's LazySerialLink opened its terminal (LIB-2 D-5).
+// status call, as the former LazySerialLink opened its terminal (LIB-2 D-5).
 class SerialPortCapability final : public SerialLink {
 public:
     calcu::peripherals::SerialPortQueues& port() { return m_queues; }

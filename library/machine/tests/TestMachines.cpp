@@ -206,6 +206,98 @@ const Catalogue& paperTestCatalogue() {
     return c;
 }
 
+Catalogue makeMediaTestCatalogue() {
+    std::vector<PeripheralDescriptor> ps = peripherals();
+    PeripheralDescriptor mm;
+    mm.id = kMemoryModule;
+    mm.name = "Test memory module";
+    mm.fits = {PinOutId{"test.slot"}, PinOutId{"test.card"}};
+    mm.controls = {ControlDescriptor{media::kWriteProtect, ControlForm::Switch}};
+    ps.push_back(mm);
+    PeripheralDescriptor rom;   // a second module that is not a medium (AC-8: the listing order)
+    rom.id = kRomModule;
+    rom.name = "Test ROM module";
+    rom.fits = {PinOutId{"test.slot"}};
+    ps.push_back(rom);
+    return Catalogue({segModel(), dotModel()}, ps);
+}
+
+const Catalogue& mediaTestCatalogue() {
+    static const Catalogue c = makeMediaTestCatalogue();
+    return c;
+}
+
+// ── LIB-7: media places and the memory module ─────────────────────────────
+
+media::MediaPlace::Inserted TestMediaPlace::insert(media::Content c, int side) {
+    if (refuse) return Inserted{false, *refuse};
+    if (!std::dynamic_pointer_cast<const TestMediumContent>(c)) return Inserted{false, "The test place does not take this medium."};
+    ++inserts;
+    content_ = std::move(c);
+    side_ = side;
+    given_.reset();
+    if (passThrough()) left_ = kPassTicks;
+    return Inserted{};
+}
+
+media::Content TestMediaPlace::eject() {
+    media::Content c = std::move(content_);
+    content_.reset();
+    side_.reset();
+    left_ = 0;
+    return c;
+}
+
+bool TestMediaPlace::write(std::string bytes) {
+    if (!side_) return false;
+    if (passThrough()) {
+        writeOnPass = std::move(bytes);
+        return true;
+    }
+    content_ = std::make_shared<TestMediumContent>(std::move(bytes));
+    ++revision_;
+    return true;
+}
+
+void TestMediaPlace::advance(Ticks ran) {
+    if (!passThrough() || !side_ || left_ == 0 || holdsBack) return;
+    left_ -= std::min(left_, ran);
+    if (left_ > 0) return;
+    GivenBack back;
+    back.content = content_;
+    if (writeOnPass) {
+        back.content = std::make_shared<TestMediumContent>(*writeOnPass);
+        back.written = true;
+        writeOnPass.reset();
+        ++revision_;
+    }
+    given_ = std::move(back);
+    content_.reset();
+    side_.reset();
+}
+
+std::string TestMediaPlace::bytes() const {
+    const auto* c = dynamic_cast<const TestMediumContent*>(content_.get());
+    return c ? c->bytes : std::string();
+}
+
+TestModuleMedium::TestModuleMedium(media::Content c, const peripherals::ControlTable* controls)
+    : content_(std::dynamic_pointer_cast<const TestMediumContent>(c) ? std::move(c)
+                                                                     : std::make_shared<TestMediumContent>("")),
+      controls_(controls) {}
+
+bool TestModuleMedium::write(std::string bytes) {
+    if (controls_ && controls_->on(media::kWriteProtect)) return false;
+    content_ = std::make_shared<TestMediumContent>(std::move(bytes));
+    ++revision_;
+    return true;
+}
+
+std::string TestModuleMedium::bytes() const {
+    const auto* c = dynamic_cast<const TestMediumContent*>(content_.get());
+    return c ? c->bytes : std::string();
+}
+
 namespace {
 constexpr paper::Rgb kPens[4] = {{0, 0, 0}, {0, 0, 255}, {0, 128, 0}, {255, 0, 0}};
 constexpr Ticks kRowTicks = 20, kPenTicks = 10;
@@ -345,6 +437,7 @@ BuildResult TestBuilder::build(const BuildRequest& req, const Catalogue& cat) {
     const MachineDescriptor* d = cat.model(req.model);
     if (!d) return BuildResult{nullptr, {}, "unknown model"};
     auto m = std::make_unique<TestMachine>(*d, req.variant, req.soundRate);
+    if (media) m->enableMedia();   // LIB-7
     if (auto s = std::dynamic_pointer_cast<const TestStartUp>(req.content)) m->setStartUp(s->ticks);
     if (auto t = std::dynamic_pointer_cast<const TestSegTiming>(req.content); t && req.model == kSeg)
         m->setTiming(std::move(t));
@@ -444,7 +537,9 @@ Ticks TestMachine::advance(Ticks atLeast) {
     for (auto& p : plugs_) {
         if (p->uart) p->uart->advance(ran);
         if (p->printer) p->printer->advance(ran);   // LIB-8
+        if (p->place) p->place->advance(ran);       // LIB-7
     }
+    for (auto& p : places_) p->advance(ran);
     if (clock_) clock_->advance(ran);
     if (desc_.hasSound && soundRate_ > 0) {
         // Sample n stands at tick n * rate / soundRate; its value is a square
@@ -594,9 +689,22 @@ std::vector<TestMachine::CapRef> TestMachine::capRefs() const {
         out.push_back(CapRef{CapabilityEntry{peripherals::RealTimeClock::kKind, CapabilityId{"rtc/real-time-clock"},
                                              ComponentOwner{ComponentId{"rtc"}}},
                              clock_.get()});
+    for (const auto& p : places_)   // LIB-7
+        out.push_back(CapRef{CapabilityEntry{media::MediaPlace::kKind,
+                                             CapabilityId{p->id().value + "/" + std::string(media::MediaPlace::kKind.value)},
+                                             ComponentOwner{cpu}},
+                             p.get()});
     for (const auto& st : plugs_) {
         const std::string at = placeText(st->entry.place);
         const PeripheralOwner owner{st->entry.peripheral, st->entry.place};
+        if (st->place)
+            out.push_back(CapRef{CapabilityEntry{media::MediaPlace::kKind,
+                                                 CapabilityId{at + "/" + std::string(media::MediaPlace::kKind.value)}, owner},
+                                 st->place.get()});
+        if (st->module)
+            out.push_back(CapRef{CapabilityEntry{media::ModuleMedium::kKind,
+                                                 CapabilityId{at + "/" + std::string(media::ModuleMedium::kKind.value)}, owner},
+                                 st->module.get()});
         if (st->entry.peripheral == kPrinter)
             out.push_back(CapRef{
                 CapabilityEntry{TestCounter::kKind, CapabilityId{at + "/" + std::string(TestCounter::kKind.value)}, owner},
@@ -655,6 +763,8 @@ void TestMachine::plug(PeripheralRequest req, const PeripheralDescriptor& d, Tic
     if (d.id == kDotter || d.id == kPlotter)
         st->printer = std::make_unique<TestPaperPrinter>(d.id == kPlotter, st->controls.get());
     if (d.id == kUart) st->uart = std::make_unique<TestUart>(hostRate);
+    if (media_ && !d.mediaPlaces.empty()) st->place = std::make_unique<TestMediaPlace>(d.mediaPlaces.front());   // LIB-7
+    if (d.id == kMemoryModule) st->module = std::make_unique<TestModuleMedium>(req.content, st->controls.get());
     plugs_.push_back(std::move(st));
 }
 
@@ -704,6 +814,27 @@ const TestMachine::PlugState* TestMachine::stateAt(const PlacePath& place) const
     for (const auto& s : plugs_)
         if (s->entry.place == place) return s.get();
     return nullptr;
+}
+
+void TestMachine::enableMedia() {
+    if (media_) return;
+    media_ = true;
+    for (const auto& d : desc_.mediaPlaces) places_.push_back(std::make_unique<TestMediaPlace>(d));
+}
+
+TestMediaPlace* TestMachine::mediaPlace(const std::string& id, const PlacePath& owner) {
+    if (owner.steps.empty()) {
+        for (auto& p : places_)
+            if (p->id().value == id) return p.get();
+        return nullptr;
+    }
+    PlugState* s = stateAt(owner);
+    return s && s->place && s->place->id().value == id ? s->place.get() : nullptr;
+}
+
+TestModuleMedium* TestMachine::moduleAt(const PlacePath& place) {
+    PlugState* s = stateAt(place);
+    return s ? s->module.get() : nullptr;
 }
 
 TestPaperPrinter* TestMachine::printerAt(const PlacePath& place) {

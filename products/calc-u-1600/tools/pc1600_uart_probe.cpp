@@ -2,7 +2,8 @@
 // operation on a CE-1601M (see docs/developer/PC1600-Core-Limitations.md's
 // bank-switching section for the required INIT order of operations).
 //
-// Boots the full dual-CPU PC1600Machine with a CE-1601M in Slot 2, runs to
+// Boots the full dual-CPU PC-1600 with a CE-1601M in Slot 2, built through
+// the machine interface (C1600-1 design §7), runs to
 // idle, then types a BASIC line (default: INIT "S2:","M"), presses ENTER
 // INSIDE the recording window, and reports: every IN/OUT to 20-27H + 33H and
 // every sub-CPU command byte with the PC of each access; the LCD rendered as
@@ -21,6 +22,14 @@
 // Build: tools/build_pc1600_uart_probe.sh
 // Run:   ./pc1600_uart_probe [roms-dir] ['BASIC LINE']
 //        PC1600_PCSET=<file> to dump every visited (cpu, bank, PC)
+//
+// A step is advance(1), counted in the T-states it took; the CPUs and banks
+// are read through sharp::legacy::coreParts, the typed line goes through
+// sharp::legacy::typeLine, memory through c1600.loader-memory, the slot
+// image through c1600.inspector (until the probes go, M-51). The serial
+// port is the RS-232C's serial port capability, its host side a
+// pseudo-terminal (calcu::peripherals::openHostLink), the bytes moved
+// between steps.
 
 #include <algorithm>
 #include <chrono>
@@ -35,31 +44,25 @@
 #include <unordered_map>
 #include <vector>
 
+#include "../core/CPU/LH5803/LH5803.hpp"
 #include "../core/CPU/SC7852/SC7852.hpp"
 #include "../core/Connector/MemoryCardDefinition.hpp"
 #include "../core/Connector/SoftwareDefinedCard.hpp"
-#include "../core/PC1600/PC1600BasicTyper.hpp"
-#include "../core/PC1600/PC1600Machine.hpp"
-#include "../core/Resources/BundledRomCatalog.hpp"
+#include "../core/Machine/LegacyCalls.hpp"
+#include "../core/Machine/SharpMachine.hpp"
+#include "../core/PC1600/PC1600Bank.hpp"
+#include "../core/PC1600/PC1600BusArbiter.hpp"
 #include "../core/PC1600/PC1600PowerProbe.hpp"
-#include "../core/Serial/PtySerialLink.hpp"
-
-namespace {
-
-} // namespace
+#include "CliCommon.hpp"
+#include "peripherals/HostLink.hpp"
+#include "peripherals/RealTimeClock.hpp"
+#include "peripherals/SerialPort.hpp"
 
 int main(int argc, char** argv) {
     const std::string dir = (argc >= 2) ? argv[1] : "roms";
     const std::string line = (argc >= 3) ? argv[2] : "INIT \"S2:\",\"M\"";
 
-    PC1600Machine m;
-    std::string romErr;
-    if (!BundledRoms::loadPC1600RomSet(m, {dir}, "new", &romErr)) {
-        std::fprintf(stderr, "could not load the PC-1600 ROM set from '%s': %s\n", dir.c_str(), romErr.c_str());
-        return 1;
-    }
-
-    // CE-1601M into Slot 2 (the RAM disk lives here).
+    // CE-1601M into Slot 2 (the RAM disk lives here), plugged in at the build.
     std::string err;
     auto card = makeSoftwareDefinedCard("frontends/qt6/resources/cards/ce1601m.card.yaml",
                                         CardHost::PC1600Slot2, &err);
@@ -67,10 +70,33 @@ int main(int argc, char** argv) {
         std::fprintf(stderr, "CE-1601M card build failed: %s\n", err.c_str());
         return 1;
     }
-    m.attachSlot2Card(std::move(card));
-
-    m.allReset();
-    m.seedClock(2026, 9, 2, 12, 0, 0);
+    calcu::machine::Catalogue catalogue = sharp::sharpCatalogue();
+    const MemoryCardDefinition def = static_cast<const SoftwareDefinedCard&>(*card).definition();
+    catalogue.addPeripheral(sharp::moduleDescriptor(def));
+    calcu::machine::BuildRequest req;
+    req.model = calcu::machine::ModelId{sharp::kPC1600};
+    req.variant = calcu::machine::VariantId{"New"};
+    req.soundRate = sharp::kSoundRate;
+    std::string romErr;
+    if (!sharp::modelRomImages(catalogue, req.model, req.variant, {dir}, &req.roms, &romErr)) {
+        std::fprintf(stderr, "could not load the PC-1600 ROM set from '%s': %s\n", dir.c_str(), romErr.c_str());
+        return 1;
+    }
+    req.peripherals.push_back({calcu::machine::PlacePath{{calcu::machine::PlaceName{sharp::kSlot2}}},
+                               calcu::machine::PeripheralId{def.moduleName}, std::nullopt, {},
+                               std::make_shared<sharp::ModuleCard>(std::move(card)), {}});
+    sharp::SharpMachineBuilder builder;
+    calcu::machine::BuildResult built = calcu::machine::build(catalogue, builder, req);
+    if (!built.machine) {
+        std::fprintf(stderr, "could not build the PC-1600: %s\n", built.refusal.c_str());
+        return 1;
+    }
+    cli::Machine& m = *built.machine;
+    const sharp::legacy::CoreParts core = sharp::legacy::coreParts(m);
+    const uint64_t kTStateHz = m.descriptor().tickRate;
+    m.coldBoot();
+    calcu::peripherals::setClocksFromHost(m, calcu::peripherals::HostDateTime{2026, 9, 2, 3, 12, 0, 0, 0});
+    sharp::LoaderMemory& memory = *sharp::firstOf<sharp::LoaderMemory>(m);
 
     // PC1600_SERIAL=1 attaches a host pseudo-terminal to the TC8576F so a
     // Mac serial app (SharpDataExchange, screen, cat) can exchange bytes
@@ -78,45 +104,58 @@ int main(int argc, char** argv) {
     // probe then holds ~PC1600_SERIAL_SECONDS (default 180) of real time
     // so the transfer can happen. Drive the emulated side with e.g.
     //   SETCOM"COM1:",9600,8,N,1,X,N : INIT"COM1:",4096 : SAVE"COM1:"
-    std::unique_ptr<PtySerialLink> serial;
+    std::unique_ptr<calcu::peripherals::HostLink> serial;
+    calcu::peripherals::SerialPort* port = nullptr;
     if (std::getenv("PC1600_SERIAL")) {
-        serial = std::make_unique<PtySerialLink>();
-        if (!serial->isOpen()) {
-            std::fprintf(stderr, "PC1600_SERIAL: %s\n", serial->lastError().c_str());
+        serial = calcu::peripherals::openHostLink(std::nullopt, "calcu1600-rs232c.serial");
+        if (!serial) {
+            std::fprintf(stderr, "PC1600_SERIAL: no pseudo-terminal on this host\n");
             return 1;
         }
-        m.setSerialLink(serial.get());
-        std::fprintf(stderr,
-                     "\n*** serial port ready ***\n  slave : %s\n  stable: %s\n\n",
-                     serial->slavePath().c_str(),
-                     serial->stablePath().empty() ? "(none)" : serial->stablePath().c_str());
+        // The RS-232C's port (owner: the component rs232c); taking it gives
+        // the UART its peer.
+        for (const auto& e : m.capabilities(calcu::peripherals::SerialPort::kKind))
+            if (const auto* o = std::get_if<calcu::machine::ComponentOwner>(&e.owner); o && o->component.value == "rs232c")
+                port = calcu::machine::capabilityAs<calcu::peripherals::SerialPort>(m, e.id);
+        std::fprintf(stderr, "\n*** serial port ready ***\n  port  : %s\n\n", serial->path().c_str());
     }
+    // Between steps: what the machine sent to the terminal, what it received in.
+    std::vector<uint8_t> serialPending;
+    auto pumpSerial = [&]() {
+        if (!serial || !port) return;
+        uint8_t buf[1024];
+        for (size_t n; (n = port->takeSent(buf)) > 0;) serial->write(std::span<const uint8_t>(buf, n));
+        for (size_t n; serialPending.size() < calcu::peripherals::SerialPortQueues::kReceiveLimit &&
+                       (n = serial->read(buf)) > 0;)
+            serialPending.insert(serialPending.end(), buf, buf + n);
+        serialPending.erase(serialPending.begin(),
+                            serialPending.begin() + static_cast<std::ptrdiff_t>(port->putReceived(serialPending)));
+        port->setPeerLines({true, true, serial->peerOpen(), false});
+    };
 
     uint64_t tstates = 0, steps = 0;
     auto stepOnce = [&]() {
-        const bool z80 = m.sc7852Owns();
+        const bool z80 = core.arbiter->sc7852Owns();
         pc1600probe::g_ownsSc7852 = z80;
-        pc1600probe::g_pc = z80 ? m.sc7852().pc() : static_cast<uint16_t>(m.lh5803().pc());
-        const int c = m.step();
-        const uint64_t cyc = static_cast<uint64_t>(c > 0 ? c : SC7852::kHaltTickCycles);
-        tstates += PC1600Machine::toTStates(cyc, z80);
+        pc1600probe::g_pc = z80 ? core.sc7852->pc() : static_cast<uint16_t>(core.lh5803->pc());
+        tstates += m.advance(1);
         steps++;
+        if ((steps & 0xFFF) == 0) pumpSerial();
     };
 
     // Render the dot-matrix as ASCII art -- the only unambiguous way to tell
     // whether typed characters actually reached BASIC, and whether the command
     // printed an error or just returned to a fresh '>' prompt.
     auto dumpDisplay = [&](const char* when) {
-        auto s = m.displaySnapshot();
+        const calcu::machine::DisplayOutput out = m.readDisplay();
+        const auto& f = std::get<calcu::machine::DotMatrixFrame>(out.frame);
         int lit = 0;
-        for (int y = 0; y < PC1600Display::kHeight; y++)
-            for (int x = 0; x < PC1600Display::kWidth; x++)
-                if (s.pixels[y][x]) lit++;
-        std::fprintf(stderr, "\n--- display (%s): %d lit pixels ---\n", when, lit);
-        for (int y = 0; y < PC1600Display::kHeight; y++) {
+        for (auto d : f.dots) lit += d;
+        std::fprintf(stderr, "\n--- display (%s): %d lit pixels%s ---\n", when, lit, out.on ? "" : " (display off)");
+        for (int y = 0; y < f.height; y++) {
             std::fprintf(stderr, "  |");
-            for (int x = 0; x < PC1600Display::kWidth; x++)
-                std::fputc(s.pixels[y][x] ? '#' : '.', stderr);
+            for (int x = 0; x < f.width; x++)
+                std::fputc(f.dots[static_cast<size_t>(y) * f.width + x] ? '#' : '.', stderr);
             std::fprintf(stderr, "|\n");
         }
     };
@@ -124,18 +163,18 @@ int main(int argc, char** argv) {
     auto dumpWorkArea = [&](const char* when) {
         std::fprintf(stderr, "\n--- IOCS work area (%s) ---\n", when);
         std::fprintf(stderr, "  F05D = %02X   (b0=%d b1=%d b2=%d b4=%d)\n",
-                     m.memory().peek(0xF05D),
-                     (m.memory().peek(0xF05D) >> 0) & 1, (m.memory().peek(0xF05D) >> 1) & 1,
-                     (m.memory().peek(0xF05D) >> 2) & 1, (m.memory().peek(0xF05D) >> 4) & 1);
+                     memory.peek(0xF05D),
+                     (memory.peek(0xF05D) >> 0) & 1, (memory.peek(0xF05D) >> 1) & 1,
+                     (memory.peek(0xF05D) >> 2) & 1, (memory.peek(0xF05D) >> 4) & 1);
         // NB: F083 is the last translated KEY CHARACTER (romIII-3 4900 is the
         // key-code->character translator), not a resolved device or sub-CPU
         // command -- 22h after typing a line ending in '"', 0Dh after ENTER.
         // F05D is a keyboard mode flags byte, likewise not device state.
         std::fprintf(stderr, "  F083 = %02X   (last translated key character)\n",
-                     m.memory().peek(0xF083));
+                     memory.peek(0xF083));
         std::fprintf(stderr, "  F084..F08C =");
         for (uint16_t a = 0xF084; a <= 0xF08C; a++)
-            std::fprintf(stderr, " %02X", m.memory().peek(a));
+            std::fprintf(stderr, " %02X", memory.peek(a));
         std::fprintf(stderr, "\n");
     };
 
@@ -155,7 +194,7 @@ int main(int argc, char** argv) {
         pc1600probe::g_verbose = false;
         pc1600probe::g_active = true;
     }
-    const uint64_t kSettle = static_cast<uint64_t>(PC1600Machine::kTStateHz) * 4;
+    const uint64_t kSettle = kTStateHz * 4;
     while (tstates < kSettle) stepOnce();
     std::fprintf(stderr, "boot settle: %llu steps, %llu T-states\n",
                  (unsigned long long)steps, (unsigned long long)tstates);
@@ -183,8 +222,8 @@ int main(int argc, char** argv) {
     // window that opens afterwards captures nothing but the idle loop (that is
     // exactly why an earlier pass measured an INIT run whose visited-PC set was
     // byte-identical to a do-nothing control run).
-    const uint64_t kFrame = PC1600Machine::kTStateHz / 60;
-    const uint64_t kRun = static_cast<uint64_t>(PC1600Machine::kTStateHz) * 30;
+    const uint64_t kFrame = kTStateHz / 60;
+    const uint64_t kRun = kTStateHz * 30;
     const uint64_t tStart = tstates;
     // Hold by ELAPSED TIME, not step count: the ROM samples the keyboard off
     // the 1/64 s tick, so the press has to span several frames.
@@ -229,7 +268,8 @@ int main(int argc, char** argv) {
                 unsigned a = 0, v = 0;
                 const char* q = pk;
                 while (std::sscanf(q, "%x:%x", &a, &v) == 2) {
-                    m.memory().poke((uint16_t)a, (uint8_t)v);
+                    const uint8_t byte = (uint8_t)v;
+                    memory.poke((uint16_t)a, &byte, 1);
                     std::fprintf(stderr, "  [POKE] %04X <- %02X\n", a, v);
                     const char* c = std::strchr(q, ',');
                     if (!c) break;
@@ -237,16 +277,16 @@ int main(int argc, char** argv) {
                 }
             }
             std::string e;
-            if (!typeLine(m, lines[nextLine], /*pressEnter=*/false, &e))
+            if (!sharp::legacy::typeLine(m, lines[nextLine], /*pressEnter=*/false, &e))
                 std::fprintf(stderr, "typeLine failed: %s\n", e.c_str());
             std::fprintf(stderr, "\n=== submitting: %s ===\n", lines[nextLine].c_str());
-            m.pressKey("enter");
+            m.keyDown(calcu::machine::KeyId{"enter"});
             phase = 1;
             phaseUntil = tstates + kFrame * 4;
         } else if (phase == 1) {
-            m.releaseKey("enter");
+            m.keyUp(calcu::machine::KeyId{"enter"});
             phase = 2;
-            phaseUntil = tstates + PC1600Machine::kTStateHz * 2; // 2 s to run
+            phaseUntil = tstates + kTStateHz * 2; // 2 s to run
         } else {
             dumpDisplay(("after: " + lines[nextLine]).c_str());
             dumpWorkArea(("after: " + lines[nextLine]).c_str());
@@ -272,19 +312,19 @@ int main(int argc, char** argv) {
         return true;
     };
     while (tstates - tStart < kRun) {
-        const bool z80 = m.sc7852Owns();
-        const uint16_t pc = z80 ? m.sc7852().pc() : static_cast<uint16_t>(m.lh5803().pc());
+        const bool z80 = core.arbiter->sc7852Owns();
+        const uint16_t pc = z80 ? core.sc7852->pc() : static_cast<uint16_t>(core.lh5803->pc());
         // Tag the PC with the bank actually mapped under it: page B (4000-7FFF)
         // can be romIII-3, the hidden rom3b, or RAM, and page C (8000-BFFF) is
         // bank-selected too -- a bare 16-bit PC is ambiguous across all three.
         uint32_t bankTag = 0;
         if (pc >= 0x4000 && pc <= 0x7FFF)
-            bankTag = (uint32_t)m.bank().pageBBank() |
-                      (m.bank().hiddenBasicRomSelected() ? 0x08u : 0u);
+            bankTag = (uint32_t)core.bank->pageBBank() |
+                      (core.bank->hiddenBasicRomSelected() ? 0x08u : 0u);
         else if (pc >= 0x8000 && pc <= 0xBFFF)
-            bankTag = 0x10u | m.bank().pageCBank();
+            bankTag = 0x10u | core.bank->pageCBank();
         else if (pc >= 0x0000 && pc <= 0x3FFF)
-            bankTag = 0x20u | m.bank().pageABank();
+            bankTag = 0x20u | core.bank->pageABank();
         const uint32_t key = (z80 ? 0u : 0x10000u) | (bankTag << 20) | pc;
         if (pcHist.find(key) == pcHist.end()) {
             pcFirst[key] = steps;
@@ -341,7 +381,8 @@ int main(int argc, char** argv) {
 
     // ── Did INIT format vbank 1? (boot sector byte 0 == 0x55) ──────────
     {
-        auto img = m.debugSlotImage(2);
+        int banks = -1;
+        auto img = sharp::firstOf<sharp::InspectorViews>(m)->slotImage(2, &banks);
         std::fprintf(stderr, "\n=== Slot 2 image: %zu bytes ===\n", img.size());
         for (size_t base = 0; base + 16 <= img.size(); base += 0x4000) {
             std::fprintf(stderr, "  @%06zX:", base);
@@ -355,19 +396,19 @@ int main(int argc, char** argv) {
     if (serial) {
         const char* s = std::getenv("PC1600_SERIAL_SECONDS");
         const double secs = s ? std::atof(s) : 180.0;
-        const std::string& port = serial->preferredPath();
+        const std::string portPath = serial->path();
         std::fprintf(stderr,
                      "\n=== serial hold: ~%.0fs real-time for a transfer ===\n"
                      "  e.g.  java -jar SharpDataExchange.jar get -p %s\n",
-                     secs, port.c_str());
+                     secs, portPath.c_str());
         const auto t0 = std::chrono::steady_clock::now();
         const std::chrono::duration<double> budget(secs);
         while (std::chrono::steady_clock::now() - t0 < budget) {
             const uint64_t before = tstates;
-            while (tstates - before < PC1600Machine::kTStateHz / 100) stepOnce();
+            while (tstates - before < kTStateHz / 100) stepOnce();
+            pumpSerial();
             std::this_thread::sleep_for(std::chrono::milliseconds(10));
         }
-        m.setSerialLink(nullptr);
     }
 
     return 0;

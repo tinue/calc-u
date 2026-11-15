@@ -55,6 +55,13 @@
 //   --ce158-tx <file> write every byte the CE-158 sends to <file>.
 // Anything printed on the Centronics port is dumped after the run.
 
+//
+// The machine is built through the machine interface (sharpCatalogue(),
+// SharpMachineBuilder; C1600-1 design §7); what the interface lacks (the
+// preset loader, the CPU's registers and trace ring for the report below)
+// goes through sharp::legacy until the tools go (M-51). The run loop's
+// step is advance(1): one instruction, or one halted tick.
+
 #include <array>
 #include <cstdio>
 #include <cstdlib>
@@ -64,13 +71,12 @@
 #include <vector>
 
 #include "../core/Audio/WavFile.hpp"
-#include "../core/Debug/Inspect/PC1500Inspector.hpp"
-#include "../core/PC1500/PC1500Machine.hpp"
+#include "../core/CPU/LH5801/LH5801.hpp"
+#include "../core/Display/DisplayOutputText.hpp"
+#include "../core/Display/LcdScreenshot.hpp"
+#include "../core/Machine/LegacyCalls.hpp"
 #include "../core/Preset/PresetFile.hpp"
 #include "../core/Preset/PresetMedia.hpp"
-#include "../core/PC1500/PC1500PresetLoader.hpp"
-#include "../core/PC1500/PC1500LcdText.hpp"
-#include "../core/PC1500/PC1500Screenshot.hpp"
 #include "Ce158CliPeer.hpp"
 #include "CliCommon.hpp"
 
@@ -143,10 +149,8 @@ int main(int argc, char** argv) {
     uint64_t maxCycles = 2'000'000ull;
     bool usingPreset = std::string(argv[1]) == "--preset";
 
-    // Parsed before the machine is constructed (--preset only) so the
-    // machine can be built with the preset's own model/variant -- variant
-    // is fixed at PC1500Machine construction, not settable afterward (see
-    // PC1500Memory.hpp).
+    // Parsed before the machine is built (--preset only) so the machine is
+    // the preset's own model.
     PresetFile preset;
     if (usingPreset) {
         if (argc < 3) {
@@ -162,30 +166,60 @@ int main(int argc, char** argv) {
             return 1;
         }
     }
-    PC1500Machine machine(usingPreset ? preset.variant : PC1500Variant::PC1500A);
+
+    // The machine: for a preset its model with the bundled ROM of the
+    // default variant (the preset loader loads the preset's own ROM); else a
+    // PC-1500A with the ROM file given.
+    std::unique_ptr<cli::Machine> built;
+    std::string buildError;
+    if (usingPreset) {
+        built = cli::buildMachine(preset.variant == PC1500Variant::PC1500A ? sharp::kPC1500A : sharp::kPC1500,
+                                  std::nullopt, {"roms"}, &buildError);
+    } else {
+        if (argc >= 3) maxCycles = std::strtoull(argv[2], nullptr, 10);
+        calcu::machine::BuildRequest req;
+        req.model = calcu::machine::ModelId{sharp::kPC1500A};
+        req.soundRate = sharp::kSoundRate;
+        calcu::machine::RomImage rom{"PC-1500_A04.ROM", {}};
+        if (!cli::readFileExact(argv[1], 16384, &rom.bytes)) {
+            std::fprintf(stderr, "failed to load ROM: %s (expected exactly 16384 bytes)\n", argv[1]);
+            return 1;
+        }
+        req.roms.push_back(std::move(rom));
+        sharp::SharpMachineBuilder builder;
+        calcu::machine::BuildResult r = calcu::machine::build(sharp::sharpCatalogue(), builder, req);
+        built = std::move(r.machine);
+        buildError = r.refusal;
+    }
+    if (!built) {
+        std::fprintf(stderr, "could not build the machine: %s (run from repo root)\n", buildError.c_str());
+        return 1;
+    }
+    cli::Machine& machine = *built;
+    LH5801& cpu = *sharp::legacy::coreParts(machine).lh5801;
 
     // Enabled before either branch below (not just before the tail run
     // loop) so a --preset run's own script -- typing the program, RUN,
     // BREAK, and any post-load-keys -- is traced too, not just whatever
     // the tail loop executes afterward. That script is usually the whole
     // point of a debug preset.
-    machine.setTraceFlags(TRACE_PC | TRACE_REGS_LIGHT);
+    cpu.setTraceFlags(TRACE_PC | TRACE_REGS_LIGHT);
 
     // --wav: drain the buzzer audio as the run goes (the sampler only
-    // buffers ~1 s). The yield hook covers the preset script's own
-    // runCycles(); the tail loop below drains explicitly.
+    // buffers ~1 s). The core's yield hook covers the preset script's own
+    // long runs; the tail loop below drains explicitly.
     std::vector<int16_t> wav;
     auto drainWav = [&] {
         int16_t chunk[4096];
         size_t n;
-        while ((n = machine.drainAudio(chunk, 4096)) > 0) wav.insert(wav.end(), chunk, chunk + n);
+        while ((n = machine.takeSound(chunk)) > 0) wav.insert(wav.end(), chunk, chunk + n);
     };
-    if (!wavPath.empty()) machine.setYieldHook(drainWav, PC1500Machine::kCpuHz / 20);
+    if (!wavPath.empty()) sharp::legacy::setYieldHook(machine, drainWav, machine.descriptor().tickRate / 20);
 
-    // The CE-158's serial peer. Set before the preset attaches the card --
-    // attachCE158() picks up whatever link the machine already holds.
-    if (!ce158Peer.attach(machine)) return 1;
+    // The CE-158's serial peer, pumped between slices of the run.
+    if (!ce158Peer.open()) return 1;
     if (!tape.arm(machine)) return 1;
+    const auto pump = [&] { ce158Peer.pump(machine); };
 
     if (usingPreset) {
         std::string presetPath = argv[2];
@@ -193,16 +227,15 @@ int main(int argc, char** argv) {
         PresetLoadResult armedResult;
         const auto onArmed = [&armedResult](const PresetLoadResult& r) { armedResult = r; };
         const PresetSaveAsFn onSaveAs = [&](const PresetSaveAsRequest& request, std::string* err) {
-            PresetMedia media;
-            media.slots[0] = {machine.expansionConnector().attachedCard(), armedResult.slot1ResolvedPath,
-                              armedResult.slot1RomFile};
-            return savePresetMedia(request, {moduleDir, saveDir}, media, err);
+            return savePresetMedia(request, {moduleDir, saveDir}, sharp::legacy::presetMedia(machine, armedResult, request),
+                                   err);
         };
-        PresetLoadResult loaded = applyPC1500Preset(
-            machine, preset,
-            [](const std::string& line) { std::fprintf(stderr, "[preset] %s\n", line.c_str()); },
-            /*traceDir=*/".",  // a `- trace: name.bin` step writes ./name.bin (same cwd convention as roms/)
-            moduleDir, /*onBooted=*/{}, /*romDirs=*/{"roms"}, extraModuleDirs, onArmed, onSaveAs);
+        PresetLoadResult loaded = cli::runSliced(
+            sharp::legacy::applyPresetJob(
+                machine, preset, [](const std::string& line) { std::fprintf(stderr, "[preset] %s\n", line.c_str()); },
+                /*traceDir=*/".",  // a `- trace: name.bin` step writes ./name.bin (same cwd convention as roms/)
+                moduleDir, /*onBooted=*/{}, /*romDirs=*/{"roms"}, extraModuleDirs, onArmed, onSaveAs),
+            machine.descriptor().tickRate / 100, pump);
         for (const std::string& rejected : loaded.rejectedBasicLines) {
             std::fprintf(stderr, "preset: ROM rejected BASIC line: %s\n", rejected.c_str());
         }
@@ -212,14 +245,8 @@ int main(int argc, char** argv) {
         }
         std::printf("Preset '%s' applied successfully.\n", presetPath.c_str());
     } else {
-        std::string romPath = argv[1];
-        if (argc >= 3) maxCycles = std::strtoull(argv[2], nullptr, 10);
-        if (!machine.loadROMFile(romPath)) {
-            std::fprintf(stderr, "failed to load ROM: %s (expected exactly 16384 bytes)\n", romPath.c_str());
-            return 1;
-        }
         machine.reset();
-        std::printf("Reset vector -> P=0x%04X\n", machine.cpu().pc());
+        std::printf("Reset vector -> P=0x%04X\n", cpu.pc());
     }
 
     // PC space is a fixed 64K, so a flat array beats a map for this: O(1)
@@ -229,57 +256,63 @@ int main(int argc, char** argv) {
     uint64_t consumed = 0;
     uint64_t steps = 0;
     while (consumed < maxCycles) {
-        uint16_t pcBefore = machine.cpu().pc();
-        int c = machine.step();
+        const uint16_t pcBefore = cpu.pc();
+        const bool idleBefore = cpu.halted() || cpu.poweredOff();
+        const uint64_t ran = machine.advance(1);
+        // A halted or switched-off CPU idles one tick without executing: the
+        // old step() reported 0 cycles for it.
+        const bool idled = idleBefore && (cpu.halted() || cpu.poweredOff()) && cpu.pc() == pcBefore;
+        const uint64_t c = idled ? 0 : ran;
         if (c == 0) {
-            if (machine.cpu().halted()) {
+            if (cpu.halted()) {
                 std::printf("CPU halted (HLT) at PC=0x%04X after %llu cycles with no pending interrupt\n", pcBefore, (unsigned long long)consumed);
                 break;
             }
         }
-        if (machine.cpu().consumeIllegalOpcodeHit()) {
+        if (cpu.consumeIllegalOpcodeHit()) {
             std::printf("illegal opcode 0x%04X at PC=0x%04X after %llu cycles\n",
-                        machine.cpu().lastIllegalOpcode(), machine.cpu().lastIllegalOpcodePC(), (unsigned long long)consumed);
+                        cpu.lastIllegalOpcode(), cpu.lastIllegalOpcodePC(), (unsigned long long)consumed);
         }
         pcHistogram[pcBefore]++;
-        consumed += static_cast<uint64_t>(c);
+        consumed += c;
         steps++;
-        if (!wavPath.empty() && (steps & 0x3FFF) == 0) drainWav();
+        if ((steps & 0x3FFF) == 0) {
+            if (!wavPath.empty()) drainWav();
+            pump();
+        }
     }
+    pump();
     if (!wavPath.empty()) {
-        machine.setYieldHook({}, 0);
+        sharp::legacy::setYieldHook(machine, {}, 0);
         drainWav();
-        if (!writeWavMono16(wavPath, wav, machine.audioSampleRate())) {
+        if (!writeWavMono16(wavPath, wav, sharp::kSoundRate)) {
             std::fprintf(stderr, "failed to write '%s'\n", wavPath.c_str());
             return 1;
         }
         std::printf("Wrote %zu samples (%.2f s) of buzzer audio to %s\n", wav.size(),
-                    static_cast<double>(wav.size()) / machine.audioSampleRate(), wavPath.c_str());
+                    static_cast<double>(wav.size()) / sharp::kSoundRate, wavPath.c_str());
     }
 
     std::printf("Ran %llu instructions, %llu cycles\n", (unsigned long long)steps, (unsigned long long)consumed);
     if (!tape.finish(machine)) return 1;
     cli::printMemDumps(machine, memDumps);
-    cli::printInspect(machine, inspectViews, inspect::pc1500View);
+    cli::printInspect(machine, inspectViews);
     if (!lcdPng.empty()) {
         std::string pngError;
-        if (!writeLcdScreenshotPng(pc1500LcdBitmap(machine), kPC1500ScreenMm, lcdPng, &pngError)) {
+        if (!writeLcdScreenshotPng(lcdBitmapOf(machine.readDisplay()), kPC1500ScreenMm, lcdPng, &pngError)) {
             std::fprintf(stderr, "failed to write '%s': %s\n", lcdPng.c_str(), pngError.c_str());
             return 1;
         }
     }
+    const LcdText lcd = displayText(machine);
     if (!lcdTextPath.empty()) {
         std::string textError;
-        if (!writeLcdTextReport(pc1500LcdText(machine), lcdTextPath, &textError)) {
+        if (!writeLcdTextReport(lcd, lcdTextPath, &textError)) {
             std::fprintf(stderr, "failed to write '%s': %s\n", lcdTextPath.c_str(), textError.c_str());
             return 1;
         }
     }
-    if (const char* paperPath = std::getenv("CALCU_PAPER_OUT")) {
-        std::string paper;
-        if (machine.ce150Attached()) cli::appendPlotPoints(&paper, "CE-150", machine.ce150PlotPoints());
-        if (!cli::writeFile(paperPath, paper)) return 1;
-    }
+    if (!cli::writePaperIfAsked(machine)) return 1;
 
     // Convergence signal: an idle loop revisits a small set of addresses a
     // large number of times. Report the most-visited PC and how many
@@ -299,10 +332,8 @@ int main(int argc, char** argv) {
     }
 
     std::printf("Final registers: A=0x%02X X=0x%04X Y=0x%04X U=0x%04X S=0x%04X P=0x%04X T=0x%02X (C=%d IE=%d Z=%d V=%d H=%d)\n",
-                machine.cpu().a(), machine.cpu().x(), machine.cpu().y(), machine.cpu().u(),
-                machine.cpu().sp(), machine.cpu().pc(), machine.cpu().statusReg(),
-                machine.cpu().flagC(), machine.cpu().flagIE(), machine.cpu().flagZ(),
-                machine.cpu().flagV(), machine.cpu().flagH());
+                cpu.a(), cpu.x(), cpu.y(), cpu.u(), cpu.sp(), cpu.pc(), cpu.statusReg(),
+                cpu.flagC(), cpu.flagIE(), cpu.flagZ(), cpu.flagV(), cpu.flagH());
 
     // Drain trace ring buffer and print the last few instructions executed.
     // The ring only ever retains its own fixed capacity (512, see
@@ -314,7 +345,7 @@ int main(int argc, char** argv) {
     // keypress) rather than some arbitrary earlier slice of it.
     CpuFrame frames[512];
     uint32_t lost = 0;
-    uint32_t n = machine.drainTraceEvents(frames, 512, &lost);
+    uint32_t n = cpu.drainTraceEvents(frames, 512, &lost);
     std::printf("Drained %u trace frames (%u lost to overflow before this drain)\n", n, lost);
     for (uint32_t i = n >= 32 ? n - 32 : 0; i < n; i++) {
         std::printf("  seq=%u pc=0x%04X opcode=0x%04X cycles=%u A=0x%02X T=0x%02X\n",
@@ -330,28 +361,25 @@ int main(int argc, char** argv) {
     // (see preset_file_format.md's own "check" step doc for that
     // distinction) -- still useful here since PRO-mode Up/Down is a line-
     // editor navigation key, which is exactly what this buffer reflects.
-    PC1500Display display = machine.display();
     std::string statusText;
-    for (const std::string& word : statusWords(display.statusLine())) statusText += " " + word;
+    for (const std::string& word : lcd.status) statusText += " " + word;
     std::printf("Display status:%s\n", statusText.c_str());
     static constexpr uint16_t kDisplayTextBufBase = 0x7BB0;
     static constexpr int kDisplayTextBufLen = 80;
-    std::string displayText;
+    std::string inputLine;
     for (int i = 0; i < kDisplayTextBufLen; i++) {
-        uint8_t b = machine.memory().peek(static_cast<uint16_t>(kDisplayTextBufBase + i));
+        uint8_t b = cli::peek(machine, static_cast<uint16_t>(kDisplayTextBufBase + i));
         if (b == 0x0D) break;
-        displayText += (b >= 0x20 && b < 0x7F) ? static_cast<char>(b) : '?';
+        inputLine += (b >= 0x20 && b < 0x7F) ? static_cast<char>(b) : '?';
     }
-    std::printf("Display input-line text: \"%s\"\n", displayText.c_str());
+    std::printf("Display input-line text: \"%s\"\n", inputLine.c_str());
 
     if (dumpBasic) {
         // Read-only oracle for the fast BASIC loader: dump the
         // BASIC program pointers and the raw bytes the ROM's line editor
         // actually laid down, so a direct-poke loader can reproduce them.
-        auto be16 = [&](uint16_t a) {
-            return static_cast<uint16_t>((machine.memory().peek(a) << 8) |
-                                         machine.memory().peek(static_cast<uint16_t>(a + 1)));
-        };
+        auto pk = [&](uint16_t a) { return cli::peek(machine, a); };
+        auto be16 = [&](uint16_t a) { return static_cast<uint16_t>((pk(a) << 8) | pk(static_cast<uint16_t>(a + 1))); };
         uint16_t st = be16(0x7865), end = be16(0x7867), edt = be16(0x7869);
         uint16_t varStart = be16(0x7899), dataPtr = be16(0x78BE);
         std::printf("--- BASIC pointers ---\n");
@@ -360,16 +388,15 @@ int main(int argc, char** argv) {
         std::printf("BASPRG_EDT $7869 = $%04X\n", edt);
         std::printf("VAR_START  $7899 = $%04X\n", varStart);
         std::printf("DATA_PTR   $78BE = $%04X\n", dataPtr);
-        std::printf("RAM_END    $7864 = $%02X (page)   WARM_START $7A20 = $%02X\n",
-                    machine.memory().peek(0x7864), machine.memory().peek(0x7A20));
+        std::printf("RAM_END    $7864 = $%02X (page)   WARM_START $7A20 = $%02X\n", pk(0x7864), pk(0x7A20));
         std::printf("--- program area $%04X..$%04X+16 ---\n", st, end);
         uint16_t lo = st, hi = static_cast<uint16_t>(end + 16);
         for (uint16_t a = lo; a <= hi && a >= lo; a += 16) {
             std::printf("%04X: ", a);
-            for (int i = 0; i < 16; i++) std::printf("%02X ", machine.memory().peek(static_cast<uint16_t>(a + i)));
+            for (int i = 0; i < 16; i++) std::printf("%02X ", pk(static_cast<uint16_t>(a + i)));
             std::printf(" |");
             for (int i = 0; i < 16; i++) {
-                uint8_t b = machine.memory().peek(static_cast<uint16_t>(a + i));
+                uint8_t b = pk(static_cast<uint16_t>(a + i));
                 std::printf("%c", (b >= 0x20 && b < 0x7F) ? static_cast<char>(b) : '.');
             }
             std::printf("|\n");

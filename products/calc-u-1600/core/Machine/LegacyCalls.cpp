@@ -1,6 +1,7 @@
 #include "Machine/LegacyCalls.hpp"
 
 #include "../Debug/MachineDebugTargets.hpp"
+#include "../PC1600/PC1600PresetMedia.hpp"
 #include "../PC1500/PC1500BasicLoader.hpp"
 #include "../PC1500/PC1500BasicTyper.hpp"
 #include "../PC1500/PC1500MachineCodeLoader.hpp"
@@ -93,14 +94,51 @@ job::Task<void> runToPromptJob(Machine& m) {
 void runToPrompt(Machine& m) { job::runToCompletion(runToPromptJob(m)); }
 
 const ExpansionCard* moduleIn(Machine& m, int slot) {
-    if (PC1600Machine* p = pc1600Of(m)) return slot == 1 || slot == 2 ? p->memory().slotCard(slot) : nullptr;
-    if (PC1500Machine* p = pc1500Of(m)) return slot == 1 ? p->memory().expansionConnector().attachedCard() : nullptr;
+    // What the slot shows now: a module still waiting for the off point too.
+    if (slot == 2 && pc1500Of(m)) return nullptr;   // the PC-1500 has one slot
+    if (SharpMachine* s = sharpOf(m))
+        return slot == 1 || slot == 2 ? s->moduleNow(calcu::machine::PlaceName{slot == 2 ? kSlot2 : kSlot1}) : nullptr;
     return nullptr;
 }
 
 void atOffPoint(Machine& m, std::function<void()> f) {
     if (SharpMachine* s = sharpOf(m)) s->atOffPoint(std::move(f));
     else f();
+}
+
+CoreParts coreParts(Machine& m) {
+    CoreParts p;
+    if (PC1600Machine* c = pc1600Of(m)) {
+        p.sc7852 = &c->sc7852();
+        p.lh5803 = &c->lh5803();
+        p.bank = &c->bank();
+        p.arbiter = &c->busArbiter();
+        p.ce158 = c->ce158Card();
+        p.ce1600p = c->ce1600pCard();
+    } else if (PC1500Machine* c = pc1500Of(m)) {
+        p.lh5801 = &c->cpu();
+        p.ce158 = c->ce158Card();
+    }
+    return p;
+}
+
+void setYieldHook(Machine& m, std::function<void()> hook, std::uint64_t intervalTicks) {
+    if (PC1600Machine* c = pc1600Of(m)) c->setYieldHook(std::move(hook), intervalTicks);
+    else if (PC1500Machine* c = pc1500Of(m)) c->setYieldHook(std::move(hook), intervalTicks);
+}
+
+PresetMedia presetMedia(Machine& m, const PresetLoadResult& armed, const PresetSaveAsRequest& request) {
+    if (PC1600Machine* c = pc1600Of(m)) return pc1600PresetMedia(*c, armed, request);
+    PresetMedia media;
+    if (PC1500Machine* c = pc1500Of(m))
+        media.slots[0] = {c->expansionConnector().attachedCard(), armed.slot1ResolvedPath, armed.slot1RomFile};
+    return media;
+}
+
+bool typeLine(Machine& m, const std::string& line, bool pressEnter, std::string* error) {
+    if (PC1600Machine* c = pc1600Of(m)) return ::typeLine(*c, line, pressEnter, error);
+    if (PC1500Machine* c = pc1500Of(m)) return ::typeLine(*c, line, pressEnter, error);
+    return false;
 }
 
 } // namespace sharp::legacy

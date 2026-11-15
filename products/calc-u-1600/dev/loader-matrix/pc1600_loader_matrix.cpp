@@ -14,6 +14,10 @@
 // (16 bytes PC-1600, 27 bytes CE-158) at full speed, a 300 ms pause, then
 // the payload a byte at a time with 1 ms between bytes.
 //
+// The machine is built through the machine interface (C1600-1 design §7;
+// LoaderMatrixCommon.hpp); the serial peer works on the serial port
+// capability of COM1: (the component rs232c) or of the CE-158.
+//
 // Build: dev/loader-matrix/build_pc1600.sh. Run from the repo root.
 
 #include <algorithm>
@@ -27,14 +31,11 @@
 #include <string>
 #include <vector>
 
-#include "../../core/PC1600/PC1600LcdText.hpp"
-#include "../../core/PC1600/PC1600Machine.hpp"
-#include "../../core/PC1600/PC1600PresetLoader.hpp"
-#include "../../core/Preset/PresetFile.hpp"
-#include "../../core/Resources/BundledRomCatalog.hpp"
-#include "../../core/Serial/SerialLink.hpp"
+#include "LoaderMatrixCommon.hpp"
 
 namespace {
+
+using matrix::Machine;
 
 constexpr const char* kScratchDir = "headless/loader-matrix";
 
@@ -52,29 +53,6 @@ const Span kPointers[] = {
     {0xFE3C, 0xFE41, "PRGADR"},
 };
 
-// What `sde put` does: header, HEADER_PAUSE (300 ms), then BYTE_DELAY (1 ms)
-// after each payload byte. poll() is called once per character time.
-class SdeLink final : public SerialLink {
-public:
-    std::vector<uint8_t> rx;
-    size_t headerLen = 0;
-    size_t pos = 0;
-    long pausePolls = 0;   // the header pause, in character times
-    long gapPolls = 0;     // idle character times after each payload byte
-    long gapLeft = 0;
-    bool armed = false;
-    bool poll(uint8_t& out) override {
-        if (!armed || pos >= rx.size()) return false;
-        if (pos == headerLen && pausePolls > 0) { --pausePolls; return false; }
-        if (gapLeft > 0) { --gapLeft; return false; }
-        out = rx[pos++];
-        if (pos > headerLen) gapLeft = gapPolls;
-        return true;
-    }
-    void send(uint8_t) override {}
-    bool done() const { return pos >= rx.size(); }
-};
-
 struct Config {
     int mode = 0;
     std::string slot1, slot2;
@@ -82,30 +60,19 @@ struct Config {
     bool ml = false;
 };
 
-bool readFile(const std::string& path, std::vector<uint8_t>* out) {
-    std::ifstream in(path, std::ios::binary);
-    if (!in) return false;
-    out->assign(std::istreambuf_iterator<char>(in), {});
-    return true;
-}
-
-std::string lcd(PC1600Machine& m) {
-    std::string t = pc1600LcdText(m).plainText();
-    for (char& c : t) if (c == '\n') c = '|';
-    return t;
-}
-
 struct Snapshot {
     std::vector<uint8_t> ram;          // Z-80 $C000-$FFFF (LH5803 $4000-$7FFF)
     std::vector<uint8_t> slot1, slot2; // the cards' backing stores
 };
 
-Snapshot snapshot(PC1600Machine& m) {
+Snapshot snapshot(Machine& m) {
     Snapshot s;
     s.ram.resize(0x4000);
-    for (uint32_t a = 0; a < 0x4000; ++a) s.ram[a] = m.memory().peek(uint16_t(0xC000 + a));
-    s.slot1 = m.memory().slot1CardImage();
-    s.slot2 = m.memory().slot2CardImage();
+    for (uint32_t a = 0; a < 0x4000; ++a) s.ram[a] = cli::peek(m, uint16_t(0xC000 + a));
+    const sharp::InspectorViews* inspector = sharp::firstOf<sharp::InspectorViews>(m);
+    int banks = -1;
+    s.slot1 = inspector->slotImage(1, &banks);
+    s.slot2 = inspector->slotImage(2, &banks);
     return s;
 }
 
@@ -116,9 +83,10 @@ std::string absPath(const std::string& p) {
 
 // Builds and applies the preset: CE-158, the slot cards, MODE, PRO mode,
 // NEW0, then `extraKeys`, then `program: file:` if `loaderFile` is set.
-std::unique_ptr<PC1600Machine> applyPreset(const Config& c, SerialLink* com1, SerialLink* ce158,
-                                           const std::vector<std::string>& extraKeys,
-                                           const std::string& loaderFile, PresetLoadResult* res) {
+// `com1`: the RS-232C gets its peer before the preset runs (the CE-158's
+// port exists once the preset has plugged it in).
+std::unique_ptr<Machine> applyPreset(const Config& c, bool com1, const std::vector<std::string>& extraKeys,
+                                     const std::string& loaderFile, PresetLoadResult* res) {
     std::string yaml = "format-version: 1\nmodel: PC-1600\ninterface: CE-158\n";
     if (!c.slot1.empty()) yaml += "slot-1: " + c.slot1 + "\n";
     if (!c.slot2.empty()) yaml += "slot-2: " + c.slot2 + "\n";
@@ -129,23 +97,7 @@ std::unique_ptr<PC1600Machine> applyPreset(const Config& c, SerialLink* com1, Se
     if (!loaderFile.empty()) yaml += "program:\n  file: " + absPath(loaderFile) + "\n";
     const std::string path = std::string(kScratchDir) + "/run.pc1600";
     std::ofstream(path) << yaml;
-    PresetFile preset;
-    std::string err;
-    if (!parsePresetFile(path, &preset, &err)) {
-        res->ok = false;
-        res->error = "preset: " + err;
-        return nullptr;
-    }
-    auto m = std::make_unique<PC1600Machine>();
-    if (!BundledRoms::loadPC1600RomSet(*m, {"roms"}, preset.romVariant, &err)) {
-        res->ok = false;
-        res->error = "ROM set: " + err;
-        return nullptr;
-    }
-    m->setSerialLink(com1);
-    m->setCE158SerialLink(ce158);
-    *res = applyPC1600Preset(*m, preset, {}, ".", "frontends/qt6/resources/cards", {}, {"roms"});
-    return m;
+    return matrix::applyPreset(path, com1, res);
 }
 
 std::vector<std::string> serialSetup(const Config& c) {
@@ -161,45 +113,49 @@ struct Run {
 
 Run runRom(const Config& c, const std::vector<uint8_t>& stream) {
     Run r;
-    SdeLink link;
+    matrix::SdeFeeder link;
     link.rx = stream;
     link.headerLen = c.com1 ? 16 : 27;
     const int baud = c.com1 ? 9600 : 1200;
-    link.pausePolls = long(0.3 * baud / 10 + 0.5);
-    link.gapPolls = c.com1 ? 1 : 0; // 1 ms is about one character time at 9600, < one at 1200
+    link.pauseChars = long(0.3 * baud / 10 + 0.5);
+    link.gapChars = c.com1 ? 1 : 0; // 1 ms is about one character time at 9600, < one at 1200
     std::vector<std::string> keys = serialSetup(c);
     if (c.com1) keys.push_back(c.ml ? "BLOAD \"COM1:\"" : "LOAD \"COM1:\"");
     else keys.push_back(c.ml ? "CLOAD M" : "CLOAD");
     PresetLoadResult res;
-    auto m = applyPreset(c, c.com1 ? &link : nullptr, c.com1 ? nullptr : &link, keys, "", &res);
+    auto m = applyPreset(c, c.com1, keys, "", &res);
     if (!m || !res.ok) {
         r.note = "preset failed: " + res.error;
         return r;
     }
+    calcu::peripherals::SerialPortQueues* port =
+        c.com1 ? matrix::serialPort(*m, "rs232c", nullptr) : matrix::serialPort(*m, nullptr, sharp::kCE158);
     link.armed = true;
-    const uint64_t chunk = PC1600Machine::kTStateHz / 10;
-    const double secs = 30 + stream.size() * (10.0 / baud) * (1 + link.gapPolls) * 1.5;
-    uint64_t budget = uint64_t(secs * PC1600Machine::kTStateHz);
-    while (!link.done() && budget > chunk) { m->runCycles(chunk); budget -= chunk; }
-    m->runCycles(PC1600Machine::kTStateHz * 2);
-    const std::string screen = lcd(*m);
-    r.ok = link.done() && screen.find("ERROR") == std::string::npos;
-    r.note = (link.done() ? "" : "stream not consumed (" + std::to_string(link.pos) + "/" +
-                                 std::to_string(stream.size()) + "); ") + "lcd=[" + screen + "]";
+    const uint64_t hz = m->descriptor().tickRate;
+    const uint64_t charTicks = hz * 10 / static_cast<uint64_t>(baud);   // the peer acts once per character time
+    const double secs = 30 + stream.size() * (10.0 / baud) * (1 + link.gapChars) * 1.5;
+    uint64_t budget = uint64_t(secs * static_cast<double>(hz));
+    while (port && !link.done(port) && budget > charTicks) {
+        budget -= std::min(budget, m->advance(charTicks));
+        link.pump(*port);
+    }
+    m->advance(hz * 2);
+    const std::string screen = matrix::lcd(*m);
+    r.ok = link.done(port) && screen.find("ERROR") == std::string::npos;
+    r.note = (link.done(port) ? "" : "stream not consumed (" + std::to_string(link.pos) + "/" +
+                                         std::to_string(stream.size()) + "); ") + "lcd=[" + screen + "]";
     r.mem = snapshot(*m);
-    m->setSerialLink(nullptr);
-    m->setCE158SerialLink(nullptr);
     return r;
 }
 
 Run runLoader(const Config& c, const std::string& loaderFile) {
     Run r;
     PresetLoadResult res;
-    auto m = applyPreset(c, nullptr, nullptr, serialSetup(c), loaderFile, &res);
+    auto m = applyPreset(c, false, serialSetup(c), loaderFile, &res);
     if (!m) { r.note = res.error; return r; }
-    m->runCycles(PC1600Machine::kTStateHz / 2);
+    m->advance(m->descriptor().tickRate / 2);
     r.ok = res.ok;
-    r.note = (res.ok ? "" : "error: " + res.error + "; ") + "lcd=[" + lcd(*m) + "]";
+    r.note = (res.ok ? "" : "error: " + res.error + "; ") + "lcd=[" + matrix::lcd(*m) + "]";
     r.mem = snapshot(*m);
     return r;
 }
@@ -237,13 +193,13 @@ uint16_t be16(const std::vector<uint8_t>& ram, uint16_t z80) {
 
 int probe(const Config& c) {
     PresetLoadResult res;
-    auto m = applyPreset(c, nullptr, nullptr, {"MEM"}, "", &res);
+    auto m = applyPreset(c, false, {"MEM"}, "", &res);
     if (!m || !res.ok) {
         std::fprintf(stderr, "preset failed: %s\n", res.error.c_str());
         return 2;
     }
     const Snapshot s = snapshot(*m);
-    std::string screen = lcd(*m);
+    std::string screen = matrix::lcd(*m);
     long mem = -1;
     for (size_t i = screen.find("MEM"); i != std::string::npos && i < screen.size(); ++i) {
         if (isdigit(static_cast<unsigned char>(screen[i]))) { mem = std::strtol(screen.c_str() + i, nullptr, 10); break; }
@@ -284,7 +240,7 @@ int main(int argc, char** argv) {
 
     std::vector<uint8_t> stream;
     const size_t headerLen = c.com1 ? 16 : 27;
-    if (!readFile(streamPath, &stream) || stream.size() <= headerLen) {
+    if (!matrix::readFile(streamPath, &stream) || stream.size() <= headerLen) {
         std::fprintf(stderr, "cannot read stream %s\n", streamPath.c_str());
         return 2;
     }

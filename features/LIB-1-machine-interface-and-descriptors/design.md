@@ -74,7 +74,7 @@ not named here adds a folder in the same pattern.
 - **One folder per area**, headers and sources together, file names in
   PascalCase (`Machine.hpp`), as in both products: `library/machine/`,
   `peripherals/`, `sessions/`, `settings/`, `pacing/`, `harness/`,
-  `roms/`, `formats/`, `typing/`, `web/`.
+  `roms/`, `formats/`, `typing/`, `shell/`, `web/`.
 - Namespace `calcu::<area>`. Nothing at namespace `calcu` itself.
 - Includes are rooted at `library/`: `#include "machine/Machine.hpp"`.
   `calcu_library` exports `${PROJECT_SOURCE_DIR}/library` as its PUBLIC
@@ -98,9 +98,15 @@ not named here adds a folder in the same pattern.
   - `paper`: `machine`, `sessions`, `formats`, `presets`, `startup`
     (LIB-8 design §2; M-39). Nothing includes it but `harness`, `qt6`
     and the products;
-  - `harness`: any area but `web` and `qt6`;
+  - `harness`: any area but `web`, `qt6` and `shell`;
+  - `shell`: `machine`, `pacing`, `sessions`, `settings` (LIB-14 design
+    §2.1; M-43). It reads the topics of LIB-4, LIB-6, LIB-7, LIB-10 and
+    LIB-12 in their Value form (LIB-14 D-2), so it includes none of their
+    areas; its tests build those Values from `control` and `presets`
+    payloads. Nothing includes it but `qt6` and the products;
   - `qt6` (the Qt6 component set, its own target, below): any area but
-    `harness` and `web`, and Qt;
+    `web`, and Qt; `harness` only for harness attach
+    (`SessionHost::openAttach`, LIB-14 §3.9, with `CALCU_ATTACH`);
   - `web` (C++ glue): `sessions`, `settings`.
   Review checks it; a new include against it is a finding.
 - **Exceptions to the one target, and only these:**
@@ -121,7 +127,10 @@ not named here adds a folder in the same pattern.
     program, `calcu_qt6_tests` (`library/qt6/tests/*_tests.cpp` with
     `QtTestMain.cpp`, the one runner's `TEST`s under a `QApplication`),
     Frequent, offscreen. The components of LIB-7, LIB-10 and LIB-14 are
-    added to the same folder, target and program. The React component
+    added to the same folder, target and program; LIB-14 (M-43) adds the
+    shell (`SessionHost`, `Shell` and its widgets), a second program
+    `calcu_qt6_scenarios` (its AC-25 scenarios) and, with `CALCU_ATTACH`,
+    the harness's test product to the test programs. The React component
     set is JavaScript in `library/web/components/` (`COMPONENT_SOURCES`
     of `library/web/build/dist.js`), not a C++ target.
 - Library code throws no exceptions across its interface, needs no RTTI,

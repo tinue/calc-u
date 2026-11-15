@@ -64,7 +64,7 @@ passed, 0 failed, 3.6 s wall time. The whole Frequent group passed (30 of
 | AC-16 | Pass | `ac16_full_speed_while_built_and_carried_out` (paced: the busy topic says full speed throughout; 2 s of emulated time in under 60 host calls) |
 | AC-17 | Pass | `ac17_failure_stops_machine_as_is_reply_notice_line`, `ac57_timeout_fails_the_item_at_both_speeds` (`waits_tests.cpp`) |
 | AC-18 | Pass | `ac18_log_lines_file_machine_peripherals_items_end`, `ac18_failure_line_holds_the_error` (`log_tests.cpp`) |
-| AC-19 | Pass (library part) | `ac19_key_waits_until_running_frontend_step_goes_on`, `ac19_wait_passes_in_host_time_while_paused` (paced), `ac19_wait_ends_at_once_in_virtual_time`, `ac19_implicit_wait_and_timeout_stand_still_while_paused`, `ac19_preset_that_ends_paused_stays_paused` (`pause_tests.cpp`; the pause by `MachineSession::setPaused`); `host_wait_passes_in_wall_time_while_paused`, `host_wait_ends_at_once_in_virtual_time` (`sessions/tests/operation_tests.cpp`). The debugger steps are LIB-10's (M-40) |
+| AC-19 | Pass (library part) | `ac19_key_waits_until_running_frontend_step_goes_on`, `ac19_wait_passes_in_host_time_while_paused` (paced), `ac19_wait_ends_at_once_in_virtual_time`, `ac19_implicit_wait_and_timeout_stand_still_while_paused`, `ac19_preset_that_ends_paused_stays_paused` (`pause_tests.cpp`; the pause by `MachineSession::setPaused`); `host_wait_passes_in_wall_time_while_paused`, `host_wait_ends_at_once_in_virtual_time` (`sessions/tests/operation_tests.cpp`). The debugger steps (LIB-10, M-40): `ac19_no_step_waits_for_a_running_machine` (every debugger step carried out on a machine paused by the run control, in virtual time), `ac13_armed_start_fires_in_operation` (a pause-on-start fired inside a load; a `wait:` then passes in host time and the preset ends paused), `ec7_preset_ends_paused_stays_paused` (`library/debugger/tests/steps_tests.cpp`, `run_control_tests.cpp`) |
 | AC-20 | Pass | `ac20_wait_durations_in_emulated_time`, `ac20_wait_without_unit_refused` (`steps_tests.cpp`), `ac56_wait_runs_at_the_speed_in_force` |
 | AC-21 | Pass | `ac21_wait_without_value_refused` |
 | AC-22 | Pass | `ac22_regular_speed_busy_says_so_last_counts`, `ac22_ends_at_regular_speed_whatever_before`; `ac60_last_item_not_waited_for_regular_speed_after` |
@@ -90,7 +90,7 @@ passed, 0 failed, 3.6 s wall time. The whole Frequent group passed (30 of
 | AC-60 | Pass | `ac60_last_item_not_waited_for_regular_speed_after` (the program runs on; regular speed after, also after a failure, D-19) |
 | AC-61 | Pass | `ac61_speed_command_changes_nothing_while_it_runs` (paced); live keys dropped in `ac12_busy_live_input_dropped_second_load_refused` |
 | AC-62 | Pass | `ac62_keyword_not_for_model_refused`, `ac62_undefined_keyword_refused`, `ac2_place_keys_from_the_descriptor`, `ac27_syncclock_refused_where_not_applies` |
-| AC-63 | Pass (library part) | `ac63_frontend_step_never_fails_passed_over_without_panel`, `ac19_key_waits_until_running_frontend_step_goes_on`; `debug-panel:` is LIB-10's (M-40) |
+| AC-63 | Pass (library part) | `ac63_frontend_step_never_fails_passed_over_without_panel`, `ac19_key_waits_until_running_frontend_step_goes_on`; `debug-panel:` (LIB-10, M-40): `ac19_debug_panel_is_a_frontend_step`, `ac19_each_step_does_what_its_ac_says` (`library/debugger/tests/steps_tests.cpp`) |
 | AC-64 | Pass | `ac64_elapsed_is_compute_holds_gaps_waits` (bound of D-9: compute + holds + the wait, at most a gap per press and one idle stretch per waited item more; paced and in virtual time the same line). The bounds against the products' examples come with the reference runs (B-10; M-46, M-54) |
 | AC-65 | Pass | `ac65_absent_keyword_default_nothing_carried_over` (the test printer's `trace` switch off, the memory zero) |
 | AC-66 | Pass | `ac66_not_expect_passes_and_fails`, `ec7_expect_display_off_fails` (D-14), `ac34_expect_and_not_expect_refused_with_display` |
@@ -116,7 +116,8 @@ in by `fixtures/fill.cmake`). LIB-18's start with the real loader (L15):
 Column status: every criterion and edge case of the column passes in its
 library part. Clauses that name a feature built later pass in its step
 (design §1, D-29): AC-3's module by `file:` (M-41, LIB-7), AC-19's
-debugger steps and AC-63's `debug-panel:` (M-40, LIB-10); the products'
+debugger steps and AC-63's `debug-panel:` (M-40, LIB-10; pass since M-40,
+see the rows above); the products'
 clauses of AC-24, AC-25, AC-31, AC-34 and AC-53 are tested again with the
 product rows (M-46, M-54). The Library column stays **In progress**; it
 becomes Done in M-41 (D-29).

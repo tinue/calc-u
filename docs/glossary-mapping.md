@@ -69,7 +69,7 @@ parenthesis is removed with it.
 | Host key | done (M-36): `calcu::typing::HostKeyEvent` | done (M-36): `calcu::typing::HostKeyEvent`, `NamedKey`, `Modifiers`; was `HostKey`, `HostModifiers` |
 | Full speed | `FullSpeed:` (preset directive) | the `speed {full}` command (M-31); `setTurbo`, `turboRequested` in the frontends |
 | Regular speed | `RegularSpeed:` (preset directive) | — |
-| Pause | `freeze`, `FreezeController`, `FreezeOwner` | `paused` (`DebugController`) |
+| Pause | `freeze`, `FreezeController`, `FreezeOwner` (the library's side from M-40: `calcu::debugger::RunControl`, the `run-state` topic; the TI moves onto it in M-53) | `paused` (`DebugController`) (the library's side from M-40: `calcu::debugger::RunControl`; the Sharp machines move onto it in M-45) |
 | Cold boot | `Machine::coldBoot()` (was `cleanReset`) | `Machine::coldBoot()` (was `resetJob(allReset = true)`, `allReset()`) |
 | Reset | `Machine::reset()` (was `softReset`) | `Machine::reset()` (was `resetJob(allReset = false)`) |
 | Power cycle | `Machine::powerCycle()` (2.3.0's core reset) | `Machine::powerCycle()` (was `MachineSession::powerCycleAround`; the sequence `core/Machine/PowerCycleSequence`) |

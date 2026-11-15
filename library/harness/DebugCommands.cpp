@@ -16,6 +16,7 @@
 #include "harness/Run.hpp"
 #include "sessions/LibraryTopics.hpp"
 #include <algorithm>
+#include <cctype>
 #include <cstdio>
 #include <filesystem>
 #include <fstream>

@@ -72,6 +72,8 @@ public:
     // media places; off by default, so that the other tests' lists stay.
     std::vector<media::KindDecl> mediaKinds() override;
     bool media = false;
+    // LIB-13 (M-42): `open` takes the extensions of the bundled presets.
+    std::vector<std::string> presetExtensions() const override { return {".test-seg", ".test-dot"}; }
 
     // For the tests: the bundle folder (a file can be removed: EC-1), the
     // model to start with under the default settings (the fallback model of

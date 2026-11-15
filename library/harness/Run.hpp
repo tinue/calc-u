@@ -4,6 +4,8 @@
 #include "harness/HarnessHost.hpp"
 #include "harness/Product.hpp"
 #include "media/MediaPart.hpp"
+#include "opening/LibraryOpeners.hpp"
+#include "opening/OpenPart.hpp"
 #include "peripherals/PeripheralsPart.hpp"
 #include "presets/PresetsPart.hpp"
 #include "sessions/AppSession.hpp"
@@ -125,6 +127,9 @@ private:
     std::unique_ptr<control::ControlPart> control_;
     std::unique_ptr<settings::Paths> mediaPaths_;    // LIB-7: the run's save folder
     std::unique_ptr<media::MediaPart> media_;        // LIB-7: when the product has kinds of medium
+    std::unique_ptr<opening::PresetsOpener> presetsOpener_;   // LIB-13: over presets_
+    std::unique_ptr<opening::MediaOpener> mediaOpener_;       // LIB-13: over media_
+    std::unique_ptr<opening::OpenPart> open_;                 // LIB-13: `open` (AC-9)
     std::unique_ptr<sessions::AppSession> session_;
     std::unique_ptr<HarnessHost> host_;
     CommandRegistry registry_;

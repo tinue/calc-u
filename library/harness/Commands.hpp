@@ -82,5 +82,9 @@ void addDebugCommands(CommandRegistry&);
 // (MediaCommands.cpp) on the run's media part; refused without one. The
 // media steps come with addPresetCommands.
 void addMediaCommands(CommandRegistry&, media::MediaPart*);
+// LIB-13 AC-9 (design §7, D-10): `open <path>` (OpenCommands.cpp), the
+// session command `open` with the file's bytes and path, way `harness`; the
+// reply says what it was opened as (AC-3).
+void addOpenCommand(CommandRegistry&);
 
 } // namespace calcu::harness

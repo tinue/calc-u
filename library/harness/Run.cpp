@@ -223,12 +223,30 @@ std::unique_ptr<Server> Server::start(HarnessProduct& product, const RunOptions&
         s->media_->setControl(&s->startup_->control());
         if (s->presets_) media::addMediaToPresets(s->presets_->vocabulary(), *s->media_);
     }
+    // LIB-13 §7: `open` over the run's LIB-6 and LIB-7 parts, with the
+    // product's file kinds and limits; no upload folder.
+    {
+        opening::OpenSetup os;
+        os.productName = std::string(product.name());
+        if (s->presets_) {
+            s->presetsOpener_ = std::make_unique<opening::PresetsOpener>(*s->presets_, product.presetExtensions());
+            os.presets = s->presetsOpener_.get();
+        }
+        if (s->media_) {
+            s->mediaOpener_ = std::make_unique<opening::MediaOpener>(*s->media_);
+            os.media = s->mediaOpener_.get();
+        }
+        os.kinds = product.fileKinds();
+        os.maxBytes = product.openLimits();
+        s->open_ = std::make_unique<opening::OpenPart>(std::move(os));
+    }
     setup.parts = {s->peripherals_.get(), s->state_.get()};
     if (s->presets_) setup.parts.push_back(s->presets_.get());
     for (sessions::SessionPart* p : {static_cast<sessions::SessionPart*>(s->startup_.get()),
                                      static_cast<sessions::SessionPart*>(s->control_.get())})
         setup.parts.push_back(p);
     if (s->media_) setup.parts.push_back(s->media_.get());
+    setup.parts.push_back(s->open_.get());
     for (sessions::SessionPart* p : product.sessionParts()) setup.parts.push_back(p);
     s->session_ = std::make_unique<sessions::AppSession>(std::move(setup));
     s->host_ = std::make_unique<HarnessHost>(*s->session_, product, *s->setup_);
@@ -245,6 +263,7 @@ std::unique_ptr<Server> Server::start(HarnessProduct& product, const RunOptions&
     addPaperCommands(s->registry_);
     addDebugCommands(s->registry_);
     addMediaCommands(s->registry_, s->media_.get());
+    addOpenCommand(s->registry_);
     product.addCommands(s->registry_);
     return s;
 }

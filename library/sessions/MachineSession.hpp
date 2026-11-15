@@ -20,6 +20,9 @@ class SliceHook {
 public:
     virtual machine::Ticks nextDue(machine::Ticks now) const = 0;   // kNever when idle
     virtual void act(machine::Machine&, machine::Ticks now, pacing::WallTime due) = 0;
+    // LIB-18 design §3.4, D-12: drop the text still waiting and release the
+    // keys held (before a build, Reset, Cold boot, power cycle).
+    virtual void drop() {}
 
 protected:
     ~SliceHook() = default;
@@ -70,6 +73,7 @@ public:
     void addHook(SliceHook& h) { hooks_.push_back(&h); }
     void addWaitProbe(WaitProbe& p) { probes_.push_back(&p); }
     void setGate(AdvanceGate* g) { gate_ = g; }
+    void dropInput();   // LIB-18 §3.4: drop() on every hook
 
     void setSuspended(bool);   // AC-24; false starts afresh
     bool suspended() const { return suspended_; }

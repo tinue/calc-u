@@ -119,7 +119,7 @@ jobs:
         run: ctest --test-dir build/library --output-on-failure
 
   # Core + Shared built for WebAssembly with Emscripten, and a node smoke
-  # test running presets cooperatively through shared::AppSession (no
+  # test running presets cooperatively through the library's app session (no
   # threads, no blocking) -- keeps the frontend-neutral layers portable to
   # a web GUI. Both build in build/web of the root CMake project (ADR 0003).
   # Then the web client itself (frontends/web/build.sh), its Playwright

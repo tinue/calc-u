@@ -1,5 +1,6 @@
 #include "harness/StatePart.hpp"
 #include "machine/Machine.hpp"
+#include <cstddef>
 #include "sessions/LibraryTopics.hpp"
 
 namespace calcu::harness {

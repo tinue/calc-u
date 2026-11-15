@@ -15,6 +15,15 @@ cmake --build ../../build/debug --target CoreTests
 
 A test file registers its tests with `TEST(name)` of the repository's one runner, `library/testing/TestHarness.hpp` (ADR 0038; `CHECK`, `CHECK_EQ`, `SKIP_UNLESS` for a missing ROM); there is no list of tests to keep. `tools/run_tests.sh <substring>` runs the tests whose name contains it. Every CTest entry is in a test group (ADR 0031; `docs/test-groups.md` at the repository root): a tree has the Frequent group (`CoreTests`, `CalcU1600CheckPresets`; ≤ 60 s), and with `-DCALCU_TESTS_LONGER=ON` / `-DCALCU_TESTS_CHECKPOINT=ON` also the Longer and Checkpoint ones (`ctest -L longer`).
 
+## Harness
+
+`calcu` is the family's harness (LIB-11, `features/LIB-11-harness/` at the repository root): the product without a window, on the library's app session, in emulated time only, so two runs give the same replies. Build the target `calcu` of a root tree (`cmake --build ../../build/tests --target calcu`; the program is `build/tests/library/harness/cli/calcu`). It finds the ROMs in `roms/` and `firmware/pc1600-hostdrive/`, the module definitions in `frontends/qt6/resources/cards/`, and starts the PC-1500A cold booted (no model option before LIB-18).
+
+- One-shot: `calcu --product 1600 wait 2s then lcd then ticks` (commands parted by `then`; exit status 0, 1 at the first refusal, 2 when it cannot start).
+- `calcu --product 1600 serve`: one command per line on standard input, one reply per line (`done`, `done <n>` and n lines, `refused: <reason>`); `--json` gives one object `{"done","result","reason"}` per reply. From Python: `library/harness/python/calcu_serve.py`.
+- First commands: `wait <2s|500ms>`, `key-down`/`key-up <key ID>`, `lcd` (rows of text, `indicators:`, `not text:`; no cursor cell yet), `display`, `state <topic>`, `capabilities`, `ticks`, `audio <file.wav>`, `quit` (`calcu --help`). No settings or save folder of yours is touched unless `--settings`, `--save-folder`, `--output-folder` name them.
+- Not yet: `pc1600 …` commands, presets, typing, media, memory dumps (later features). Until M-51, `pc1500_cli`, `pc1600_cli` and the probes stay the tools for those.
+
 ## Core, Shared, frontends
 
 Three layers (docs/developer/Shared-Architecture.md): `core/` is the hardware, `app/` all app logic that isn't drawing, `frontends/qt6/app/` the desktop GUI, `frontends/web/` the WebAssembly browser GUI.

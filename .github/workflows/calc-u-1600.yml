@@ -211,7 +211,7 @@ jobs:
           -DCALCU_PRODUCT_59=OFF -DCALCU_TESTS=OFF
 
       - name: Build
-        run: cmake --build ${{ env.RELEASE_BUILD }} --target CalcU1600Qt
+        run: cmake --build ${{ env.RELEASE_BUILD }} --target CalcU1600Qt calcu
 
       - name: Build AppImage
         env:
@@ -360,7 +360,7 @@ jobs:
           -DCALCU_PRODUCT_59=OFF -DCALCU_TESTS=OFF
 
       - name: Build
-        run: cmake --build ${{ env.RELEASE_BUILD }} --target CalcU1600Qt
+        run: cmake --build ${{ env.RELEASE_BUILD }} --target CalcU1600Qt calcu
 
       # See linux-x86_64's identical step for what each part of this does.
       - name: Build AppImage
@@ -456,7 +456,7 @@ jobs:
 
       - name: Build
         # Produces a real .app bundle (frontends/qt6/CMakeLists.txt's MACOSX_BUNDLE).
-        run: cmake --build $RELEASE_BUILD --target CalcU1600Qt
+        run: cmake --build $RELEASE_BUILD --target CalcU1600Qt calcu
 
       - name: Embed Qt frameworks (macdeployqt)
         # Without this the .app links Qt via an absolute Homebrew path
@@ -614,7 +614,7 @@ jobs:
           -DCALCU_PRODUCT_59=OFF -DCALCU_TESTS=OFF
 
       - name: Build
-        run: cmake --build ${{ env.RELEASE_BUILD }} --target CalcU1600Qt
+        run: cmake --build ${{ env.RELEASE_BUILD }} --target CalcU1600Qt calcu
 
       - name: Stage standalone-runnable folder
         shell: pwsh
@@ -698,7 +698,7 @@ jobs:
           -DCALCU_PRODUCT_59=OFF -DCALCU_TESTS=OFF
 
       - name: Build
-        run: cmake --build ${{ env.RELEASE_BUILD }} --target CalcU1600Qt
+        run: cmake --build ${{ env.RELEASE_BUILD }} --target CalcU1600Qt calcu
 
       - name: Stage standalone-runnable folder
         shell: pwsh

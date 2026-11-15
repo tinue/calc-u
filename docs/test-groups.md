@@ -41,8 +41,10 @@ the `<cstdlib>` fix).
 
 | CTest entry | What | Group | Measured (M4 Pro, 2026-11-14) |
 |---|---|---|---|
-| `calcu_library_tests` | 240 `TEST`s: the library's own tests with the machines built for the tests (`library/machine/tests/TestMachines.*`) and the product declared for the settings tests (`library/settings/tests/TestProduct.hpp`), no product code (LIB-1 AC-24; LIB-1 design §2a); also run alone by the CI job `library` of both product workflows. The pacing tests run on a scripted wall clock (`library/pacing/tests/TestSliceRunner.hpp`), never the host's; so do the session tests (`library/sessions/tests/ScriptedClock.hpp`), with the test frontend and the test product part of `library/sessions/tests/`. LIB-2's host links are tested here with an injected link factory (`peripherals/tests/host_links_tests.cpp`), on every platform; the ROM lookup's tests write their ROM files into a temporary folder (`library/roms/tests/TestRomFiles.hpp`) | Frequent | 0.50 s (M-23/M-24, 2026-11-15, RelWithDebInfo; most of it the five-hour scripted runs of LIB-17) |
+| `calcu_library_tests` | 292 `TEST`s: the library's own tests with the machines built for the tests (`library/machine/tests/TestMachines.*`) and the product declared for the settings tests (`library/settings/tests/TestProduct.hpp`), no product code (LIB-1 AC-24; LIB-1 design §2a); also run alone by the CI job `library` of both product workflows. The pacing tests run on a scripted wall clock (`library/pacing/tests/TestSliceRunner.hpp`), never the host's; so do the session tests (`library/sessions/tests/ScriptedClock.hpp`), with the test frontend and the test product part of `library/sessions/tests/`. LIB-2's host links are tested here with an injected link factory (`peripherals/tests/host_links_tests.cpp`), on every platform; the ROM lookup's tests write their ROM files into a temporary folder (`library/roms/tests/TestRomFiles.hpp`); the harness tests run the product made for them (`library/harness/tests/TestProduct.*`: `test-seg` offering the machine state, `test-dot`) in virtual time, each run in a temporary run folder | Frequent | 0.64 s (M-28, 2026-11-15, RelWithDebInfo; most of it the five-hour scripted runs of LIB-17) |
 | `calcu_library_pty_tests` | 4 `TEST`s of `library/peripherals/tests/pty_tests.cpp`: LIB-2's host links on real pseudo-terminals in a temporary folder for serial links (AC-18 to AC-20, EC-7); a program of its own (with the test machines), registered only where `CALCU_HAS_PTY` is set (macOS, Linux), so that it can move to Longer without a design change (LIB-2 design §8) | Frequent | 0.8 s (M-23, 2026-11-15) |
+| `calcu_cli.<case>` | LIB-11 T13: `calcu_test` (the harness with the test product only) in a process of its own, run by `library/harness/tests/cli/cli_cases.cmake` with `cmake -P`: argv, standard input and output, exit status; six entries, `ac1_product_by_name_or_short_form_any_case`, `ac2_one_shot_runs_in_order_and_exits_zero`, `ac2_first_refusal_exits_nonzero_with_reason`, `ac3_serve_one_reply_per_line_until_quit`, `ec3_serve_ends_at_end_of_input`, `ec4_unknown_product_lists_products` (M-28) | Frequent | 0.1 s, the six together |
+| `calcu_serve_python` | LIB-11 T15: `library/harness/python/tests/test_calcu_serve.py`, the Python helper for `calcu serve` against `calcu_test` (with `uv run --no-project python -I`, else Python 3; M-28) | Frequent | 0.05 s |
 | `LibraryPlatformStoreCheck` | `library/settings/tests/check_platform_stores_test.sh`: the self-test of `library/settings/check_platform_stores.sh`, the source check the products run over their frontends (LIB-9 design T-14); not registered on Windows | Frequent | 0.03 s |
 
 `calcu_library_tests` by file (`library/<area>/tests/`; every `TEST` is
@@ -91,12 +93,17 @@ Frequent):
 | `roms/tests/lookup_tests.cpp` | 9 (LIB-12 AC-3, AC-5, AC-7, EC-1, EC-2) |
 | `roms/tests/rom_set_tests.cpp` | 3 (LIB-12 AC-6) |
 | `formats/tests/yaml_tests.cpp` | 9 (the YAML reader, moved from Calc-U-1600 in M-24; no AC) |
+| `formats/tests/formats_tests.cpp` | 3 (LIB-11 AC-12, AC-22, EC-2; M-28) |
+| `harness/tests/protocol_tests.cpp` | 8 (LIB-11 AC-2, AC-4, AC-5, AC-13, AC-22; M-28) |
+| `harness/tests/commands_tests.cpp` | 13 (LIB-11 AC-5, AC-7, AC-9, AC-11, EC-2, EC-5, EC-7; M-28) |
+| `harness/tests/display_text_tests.cpp` | 10 (LIB-11 AC-9, AC-10, AC-23; M-28) |
+| `harness/tests/run_tests.cpp` | 18 (LIB-11 AC-6, AC-8, AC-9, AC-21, AC-24, EC-1, EC-3, EC-6; M-28) |
 
 ## Calc-U-59
 
 | CTest entry | What | Group | Measured (M4 Pro, 2026-11-14) |
 |---|---|---|---|
-| `CalcU59Tests` | 228 `TEST`s: unit and ROM-driven integration tests of the core and the app layer, the machine interface (C59-1, LIB-1 59), the ROM lookup (LIB-12 59), the PC-100C and the module slot (C59-6, LIB-2 59), the golden replays through it (table below) | Frequent | 8.4 s (M-25) |
+| `CalcU59Tests` | 229 `TEST`s: unit and ROM-driven integration tests of the core and the app layer, the machine interface (C59-1, LIB-1 59), the ROM lookup (LIB-12 59), the PC-100C and the module slot (C59-6, LIB-2 59), the golden replays through it (table below), the harness product entry (LIB-11, M-28) | Frequent | 8.6 s (M-28) |
 | `CalcU59TraceReader` | `tools/read_trace.py` reads the trace `CalcU59Tests` wrote | Frequent | 16.4 s (Python 3.15; 0.3 s in CI) |
 | `CalcU59CoreSeam` | `tests/check_core_seam.sh`: no core-internal header outside `core/` and `tests/`, no machine call in the adapters (C59-1 AC-17; M-19) | Frequent | 0.02 s |
 | `CalcU59NoOwnRomLookup` | `library/roms/tests/check_no_own_rom_lookup.sh`: no product source outside `app/ProductRoms.*`, the catalogue and the Qt6 Bundle looks for a ROM file (LIB-12 AC-2, design T7; M-24) | Frequent | 1.2 s |
@@ -118,6 +125,7 @@ Frequent except where the table says otherwise):
 |---|---|
 | `core_tests.cpp` | 17 (C59-1 AC-5; C59-6 AC-4, AC-5, M-25) |
 | `descriptor_tests.cpp` | 9 (LIB-1 AC-26–33; M-19, M-25) |
+| `harness_tests.cpp` | 1 (`harness_drives_a_ti59`: the exit check of M-28, LIB-11 T14; `SKIP` without the ROMs) |
 | `golden_runs_tests.cpp` | 1 (the 18 golden replays through the machine interface and, since M-25, the places, C59-1 AC-4, C59-6 AC-3, AC-7, AC-9, AC-10; `CALCU59_GOLDEN_RECORD=1` records a missing reference only) |
 | `machine_tests.cpp` | 26 (C59-1 AC-1–3, 6–16, 18, 19, EC-1–4; M-19) |
 | `peripherals_tests.cpp` | 20 (C59-6 AC-1, 2, 4–6, 8–11, EC-1–3; LIB-2 AC-24–27; M-25) |
@@ -138,7 +146,7 @@ Frequent except where the table says otherwise):
 
 | CTest entry | What | Group | Measured (M4 Pro, 2026-11-14) |
 |---|---|---|---|
-| `CoreTests` | 850 `TEST`s: unit and integration tests of the core and the app layer (real ROMs, presets, loaders, job equivalence), the machine interface (C1600-1, LIB-1 1600, LIB-2 1600), the golden replays through it (table below) | Frequent | 38.1 s (M-26, 2026-11-15) |
+| `CoreTests` | 851 `TEST`s: unit and integration tests of the core and the app layer (real ROMs, presets, loaders, job equivalence), the machine interface (C1600-1, LIB-1 1600, LIB-2 1600), the golden replays through it (table below), the harness product entry (LIB-11, M-28) | Frequent | 39.0 s (M-28, 2026-11-15) |
 | `CalcU1600CheckPresets` | `tools/check_presets.sh`: every preset in the repository parses | Frequent | 0.3 s |
 | `CalcU1600MachineIncludeCheck` | `tools/check_machine_includes.sh`: no file outside `core/` (app, frontends, tools, dev) includes a machine class, directly or through a core header, or names one (C1600-1, Technical Requirements; design T13; M-26) | Frequent | 1.1 s |
 | | **Frequent, Calc-U-1600** | | **39.3 s** (M-26) |
@@ -174,6 +182,7 @@ needs ROMs that are missing reports `SKIP`):
 | `descriptor_tests.cpp` | 8 (LIB-1 AC-34–41; M-26) | `presetloader_trace_tests.cpp` | 7 |
 | `disasm_tests.cpp` | 15 | `program_file_tests.cpp` | 11 |
 | `golden_runs_tests.cpp` | 1 (the golden replays through the machine interface; `CALCU1600_GOLDEN_RECORD=1` records new references only) | `run_control_tests.cpp` | 6 |
+| `harness_tests.cpp` | 1 (`harness_drives_a_sharp_machine`: the exit check of M-28, LIB-11 T14, D-1; `SKIP` without the ROMs) | | |
 | `host_directory_drive_tests.cpp` | 25 | `sc7852_tests.cpp` | 39 |
 | `inspector_tests.cpp` | 13 | `sharp_machine_tests.cpp` | 28 (C1600-1 AC-1–21, EC-1–3; M-26) |
 | `job_tests.cpp` | 2 | `tape_deck_tests.cpp` | 11 |
@@ -193,6 +202,8 @@ needs ROMs that are missing reports `SKIP`):
 Tools and one-time checks, not tests that run again (the inventories,
 `docs/inventory/calc-u-59.md` and `calc-u-1600.md`, "Tests"):
 
+- The harness `calcu` itself (`library/harness/cli/`; LIB-11): a tool, tested
+  through `calcu_test` and the product entries above.
 - Calc-U-59: the goldens generator `tools/goldens/` (regenerated when a
   driver changes), `tools/headless/`, `tools/agentic/` (harnesses),
   `tools/check_parity.sh` (a branch check), Qt `--grab` (by hand).

@@ -146,7 +146,7 @@ jobs:
           cmake -S ../.. -B $RELEASE_BUILD -G Ninja -DCMAKE_BUILD_TYPE=Release
           -DCALCU_PRODUCT_1600=OFF -DCALCU_TESTS=OFF
       - name: Build
-        run: cmake --build $RELEASE_BUILD --target CalcU59Qt
+        run: cmake --build $RELEASE_BUILD --target CalcU59Qt calcu
       - name: Build AppImage
         env:
           QMAKE: /usr/lib/qt6/bin/qmake6
@@ -238,7 +238,7 @@ jobs:
           cmake -S ../.. -B ${{ env.RELEASE_BUILD }} -G Ninja -DCMAKE_BUILD_TYPE=Release
           -DCALCU_PRODUCT_1600=OFF -DCALCU_TESTS=OFF
       - name: Build
-        run: cmake --build ${{ env.RELEASE_BUILD }} --target CalcU59Qt
+        run: cmake --build ${{ env.RELEASE_BUILD }} --target CalcU59Qt calcu
       - name: Stage the app folder
         shell: pwsh
         run: |

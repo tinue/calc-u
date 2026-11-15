@@ -46,6 +46,13 @@ CommandOutcome fromResult(const RunControl::Result& r, sessions::PayloadPtr stat
     return Done{std::move(state)};
 }
 
+// The reply with the run state as it is after the call: the call is made
+// before this runs (argument order is unspecified, so the state must not be
+// a second argument evaluated beside the call).
+CommandOutcome withRunState(const RunControl::Result& r, const RunControl& rc) {
+    return fromResult(r, runStatePayload(rc));
+}
+
 // The target by name (exact, then in any case), or none.
 std::optional<std::size_t> findTarget(const machine::Debugging& d, const std::string& name) {
     if (auto i = targetIndex(d, DebugTargetId{name})) return i;
@@ -182,10 +189,10 @@ void DebuggerPart::addCommands(sessions::SessionSetup& s) {
     };
 
     s.command(kPauseCommand, [&rc, levelOf](const Value& a, SessionContext& c) -> CommandOutcome {
-        return fromResult(rc.pause(levelOf(a), c.currentCall()), runStatePayload(rc));
+        return withRunState(rc.pause(levelOf(a), c.currentCall()), rc);
     });
     s.command(kResumeCommand, [&rc](const Value&, SessionContext&) -> CommandOutcome {
-        return fromResult(rc.resume(), runStatePayload(rc));
+        return withRunState(rc.resume(), rc);
     });
     s.command(kStepCommand, [&rc, levelOf](const Value& a, SessionContext& c) -> CommandOutcome {
         const std::int64_t count = sessions::integerArg(a, "count", 1);
@@ -200,8 +207,7 @@ void DebuggerPart::addCommands(sessions::SessionSetup& s) {
                 else return Refused{"The machine has no debug target " + t + "."};
             }
         }
-        return fromResult(rc.step(levelOf(a), static_cast<std::uint64_t>(count), target, kind, c.currentCall()),
-                          runStatePayload(rc));
+        return withRunState(rc.step(levelOf(a), static_cast<std::uint64_t>(count), target, kind, c.currentCall()), rc);
     });
     s.command(kPauseOnStartCommand, [&rc](const Value& a, SessionContext&) -> CommandOutcome {
         const std::string l = lower(sessions::textArg(a, "level"));

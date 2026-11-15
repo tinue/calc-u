@@ -1,5 +1,5 @@
 # LIB-10 Debugger core: design
-Status: approved by the user at the Part C1/C2 boundary (2026-11-15)
+Status: Library column approved at the Part C1/C2 boundary (2026-11-15); Calc-U-1600 column: draft for the Part C2/D boundary review (2026-11-16)
 
 ## 1. Scope
 
@@ -706,3 +706,401 @@ stay scripts and read the unchanged formats (AC-33, AC-42).
   (key readiness left after it was seen) is what FS 15 found on the
   PC-1500 and PC-1500A, or whether Sharp rules are needed, is settled
   in M-45 from the research of M-5.
+
+## 10. Part D: the Calc-U-1600 column
+
+Status of this section: draft for the Part C2/D boundary review
+(2026-11-16). §1 to §9 above are the approved Library column and are not
+changed. Where M-40's code differs from them, the LIB-10 qa-report's
+"Deviations" is the record, and this section builds on the code. §4's
+outline for Calc-U-1600 and §5's Calc-U-1600 rows are replaced by this
+section; where it departs from them, it says so (D-15, D-16).
+
+### 10.1 Scope
+
+| Column | Step | Tests from (plan §3) | Done in (plan §5.1) |
+|---|---|---|---|
+| Calc-U-1600 | M-45 (with LIB-8 1600) | AC-36–44, AC-52 (AC-38 per FS 15) | M-46 |
+
+- M-45 waits for M-40 (the library's debugger), M-31 (the product on the
+  library's sessions), M-5 (FS 15: key readiness on the PC-1500) and
+  M-44 (C1600-2). It builds on `main` after M-43.
+- "Done in M-46": three clauses name format 2 presets, which Calc-U-1600
+  reads from M-46 (LIB-6 1600): AC-40's "the preset steps `pause:`,
+  `pause-on-start:`, `step:`, `resume:` and `debug-panel:` are refused
+  when a preset is read" and "`trace:` fails in the Web frontend"; and
+  AC-43 for a preset's `trace:` step. In M-45 the version 1 presets' trace
+  key runs through the library's trace session by an adapter (L-A3), so
+  AC-43 is tested on version 1 in M-45 and on format 2 in M-46. Every
+  other criterion passes in M-45.
+- The edge cases EC-1 to EC-9 belong to the Library column (M-40).
+- Not here: the DAP server, its source lines, listings bound to loads,
+  conditions, hit counts, log messages and expressions (C1600-3, M-50;
+  `features/C1600-3-dap-in-the-app-layer/design.md`). M-45 builds two
+  pieces of C1600-3 early, without the server (D-15). The INSPECTOR
+  stays as it is; only its TRACE button changes (AC-23).
+- The open point at the end of §9 (AC-38) is settled here: D-17.
+
+### 10.2 What the code is today (main, `60e5b09`)
+
+- The gate: `app/SharpMachineParts.hpp:14-37`, `.cpp:11-19`
+  (`SharpDebugger`, `SharpDebuggerGate`); `SharpAppPart::setDebugger`
+  (`app/SharpAppPart.hpp:116`); `m_ms->setGate(&m_gate)`
+  (`SharpAppPart.cpp:189`); `machineReplaced`, `machineAboutToChange`
+  (`:629, 697`). `MachineController` is the `SharpDebugger`
+  (`frontends/qt6/app/MachineController.cpp:38-39, 250-263`).
+- The core's debugger: `core/Debug/DebugTarget.hpp/.cpp` (threads,
+  registers by name, `peek`/`poke` per thread and space, `bankAt`,
+  `bankState`, `BankKey`, history, breakpoints, watches, `arm`,
+  `runMachine`, `stepMachine`, `resumeFromStop`, `reset`),
+  `MachineDebugTargets.hpp/.cpp` (`PC1500DebugTarget`, `PC1600DebugTarget`,
+  `makeDebugTarget`), `CpuViews.hpp`, `CpuRegisters.*`, `RunControl.*`
+  (frame slices, line and instruction steps, over and out),
+  `BreakpointTable.*` (the client's breakpoints with conditions, hit
+  conditions and log messages). In the CPUs: `core/CPU/BreakpointSet.hpp`,
+  `WatchSet.hpp`, `DebugStop.hpp`, `HistoryRing.hpp` (32 entries).
+- `LegacyCalls::makeDebugTarget` and `loadProgram(…, const
+  debug::DebugTarget&)` (`core/Machine/LegacyCalls.hpp:44-47`).
+- The Qt debugger: `frontends/qt6/app/debug/DebugController.*`
+  (`runSlice`, `createTarget`, `resetMachine`, `machineAboutToChange`,
+  `machineReplaced`, `DebugController.cpp:122-303`), `DapSession.*`,
+  `DapServer.*`. The title "Calc-U-1600 — Paused (debugger)"
+  (`MainWindow.cpp:240-241`).
+- Traces: the adapter kind `c1600.trace` (`SharpProductKinds.hpp:88-98`,
+  offered at `PC1500InterfaceMachine.cpp:52-59, 156` and
+  `PC1600InterfaceMachine.cpp:61-67, 248`); `SharpAppPart::beginTrace`,
+  `endTrace`, `traceBytes`, `traceActive` (`SharpAppPart.cpp:823-845`).
+  The cores write the file themselves (`PC1500Machine::beginCpuTrace`,
+  `endCpuTrace`, `pumpTraceFile`, `PC1500Machine.cpp:235-262`;
+  `PC1600Machine.cpp:667-690`; `PC1500TraceFile.*`), draining the CPUs'
+  rings every 256 instructions. The version 1 preset key `trace` opens the
+  file in the core's runner (`core/Preset/PresetRunner.cpp:110-131`) and
+  closes it at the end (`:316-323`, `TraceCloser`). The INSPECTOR's TRACE
+  button and its limit of `maxMB × 1'000'000` bytes
+  (`frontends/qt6/app/DebugPanel.cpp:239-272`). The Web's trace place is
+  LIB-9 A-3 (`app/AppPaths.cpp:100-101`).
+- The library after M-40 (qa-report, "Deviations"): restarts are told
+  through `SessionContext::tellRestarted`, carried out by LIB-18's
+  `StartupPart`; run-control commands on a machine whose `debugging()` is
+  `nullptr` are refused "The machine offers no debug target."; the
+  harness forms `step <level> [<count>]`; `TraceRecorder::machineGone()`;
+  `DebuggerSetup` with `TraceSetup`, the symbol readers, the per-model
+  steps and the panel's views.
+
+### 10.3 Modules and files (M-45)
+
+| File | Change |
+|---|---|
+| `core/Debug/SharpDebugging.hpp/.cpp` (new) | `sharp::SharpDebugging : calcu::machine::Debugging` for each model, and `SharpDebugTarget : calcu::machine::DebugTarget`, one per CPU, over today's `CpuView`s and the machines' memory access (§10.4, §10.5). They take over what `PC1500DebugTarget` and `PC1600DebugTarget` did |
+| `core/Debug/DebugTarget.hpp/.cpp`, `MachineDebugTargets.hpp/.cpp` | deleted. `Register`, `BankField`, `HistoryEntry`, `CpuKind`, `flagNames` and `statusFlags`, which the disassembler, the expressions and the DAP use, move to `core/Debug/CpuRegisters.hpp` |
+| `core/Debug/RunControl.hpp/.cpp` | deleted: instruction steps, over and out are the library's (G4, G5); source-line steps move to `app/dap/DapStepping` (D-15) |
+| `core/Debug/BreakpointTable.hpp/.cpp` | moved to `app/dap/DapBreakpoints.hpp/.cpp` on the library's `BreakpointTable` with the setter `dap` and `HitTest` (D-15) |
+| `core/CPU/LH5801/*`, `core/CPU/SC7852/*`, `core/PC1600/PC1600Memory.*` | the `-written` views (AC-52): the value last written to each ME1 cell that reads back unreadable, and to each `io` port of the SC7852, kept since the machine was built; reading them has no effect |
+| `core/Machine/SharpMachine.hpp/.cpp` | `debugging()` returns the model's `SharpDebugging`. `advance(atLeast)` honours the `Checks` (§10.5) |
+| `core/PC1500/PC1500InterfaceMachine.*`, `core/PC1600/PC1600InterfaceMachine.*` | own the `SharpDebugging`; the `Trace` adapter goes; the product kind of the trace records is offered instead (§10.7) |
+| `core/Machine/SharpProductKinds.hpp` | `CpuTrace` (`c1600.trace`) goes. New product kind `sharp::TraceRecords` (`c1600.trace-records`, owner: the main CPU, which stays): `begin()`, `take(std::vector<std::uint8_t>&, budget) → bool`, `endRecord()`, `end()` (D-18) |
+| `core/PC1500/PC1500TraceFile.*`, `PC1500Machine.*`, `PC1600Machine.*` | the trace writer writes whole records into a byte buffer instead of a `FILE*`; `beginCpuTrace(FILE*, …)` and `pumpTraceFile` become `beginTraceRecords()` and the drain into the buffer. The format and its version 3 do not change (AC-42) |
+| `core/Machine/LegacyCalls.hpp/.cpp` | `makeDebugTarget` goes. `loadProgram` takes `const calcu::machine::Debugging&` until it goes in M-50 (C1600-3, on C1600-2's loader) |
+| `core/Preset/PresetRunner.*`, `LegacyCalls::applyPresetJob` | the `trace` key calls a `PresetTraceFn` the app hands in, instead of opening a file (L-A3); `TraceCloser` goes (the operation's end ends the trace, T3) |
+| `app/SharpTraceRecorder.hpp/.cpp` (new) | `shared::SharpTraceRecorder : calcu::debugger::TraceRecorder` on `c1600.trace-records`; `buttonFileName()` is `TRACE.bin` (AC-42) |
+| `app/SharpDebuggerSetup.hpp/.cpp` (new) | `shared::sharpDebuggerSetup(const AppPaths&, const Settings&, bool hasTraceFolder)`: `CpuOnlyRules` (D-17); `TraceSetup` with `SharpTraceRecorder`, `traceFolderOf(paths)` where the host has a trace folder, `[trace] max-file-size-mb`, `handOver = false` (LIB-10 D-10: the Web fails `trace:`, AC-40); `runControlSteps` false for the three models (AC-19); no panel views; the symbol readers of §10.8 |
+| `app/SharpSymbolReaders.hpp/.cpp` (new) | `calcu::debugger::SymbolReader`s for sdas `.lst`/`.rst`, zasm `.lst` and a `.SYMBOLS:` table, over `core/Debug/Listing/` (LIB-10 D-5; AC-51 for Calc-U-1600) |
+| `app/SharpMachineParts.hpp/.cpp` | deleted (`SharpDebugger`, `SharpDebuggerGate`) |
+| `app/SharpAppPart.hpp/.cpp` | a member `calcu::debugger::DebuggerPart m_debugger{sharpDebuggerSetup(…)}` among `sessionParts()` (LIB-8 §10.3 gives the order); `setDebugger`, `m_gate`, `beginTrace`, `endTrace`, `traceBytes`, `traceActive` and the debugger calls in `installMachine`/`discardMachine` go; `resetJob`, `resetToPromptJob` and `selectModelJob` tell `tellRestarted` (L-A2); the version 1 preset's trace through `m_debugger.traceSession()` (L-A3) |
+| `app/HarnessProduct.cpp` | a `DebuggerPart` on `sharpDebuggerSetup(…)` among `sessionParts()`, returned by `debuggerPart()`, so `targets`, `pause`, `break`, `watch`, `trace`, `symbols` and the rest of AC-20 work for Calc-U-1600 |
+| `frontends/web/bindings.cpp`, `app/AppPaths.cpp` | the Web builds `SharpAppPart` with `hasTraceFolder = false`, so its `DebuggerPart` has no trace folder; `app/AppPaths.cpp:100-101` (LIB-9 A-3) goes |
+| `app/dap/DapBreakpoints.hpp/.cpp`, `app/dap/DapStepping.hpp/.cpp`, `app/dap/DapTargets.hpp/.cpp` (new; C1600-3's folder, D-15) | the client's breakpoints and watches on the library's table (setter `dap`); source-line steps on the library's `step` with a test (D-16); threads, frames, registers by name with their halves and flags, banks and memory references over `machine::DebugTarget`. No Qt type |
+| `frontends/qt6/app/debug/DebugController.*`, `DapSession.*` | call `app/dap/` and the `DebuggerPart` instead of `debug::DebugTarget`, `debug::RunControl` and `debug::BreakpointTable`; `runSlice`, `createTarget`, `machineAboutToChange` and `machineReplaced` go; `pausedChanged` comes from the `run-state` topic. They stay in the Qt frontend until M-50 (L-A1) |
+| `frontends/qt6/app/MachineController.*` | no longer a `SharpDebugger`; `runDebuggerSlice` goes; it relays `run-state` and `trace` to `MainWindow` and `DebugPanel` |
+| `frontends/qt6/app/MainWindow.cpp` | the title "Calc-U-1600 — Paused (debugger)" while `run-state` says paused, whoever paused it; Machine ▸ Resume, enabled while paused, sends `resume` (AC-41; L-A4) |
+| `frontends/qt6/app/DebugPanel.cpp` | the TRACE button sends `trace {button: true}` and `trace {off: true}`, and shows its state from the `trace` topic; its own limit and its INSPECTOR lines (`:239-272`) go: the library ends the trace and gives the notice (AC-23, AC-24, AC-43) |
+| `frontends/web/src/MenuBar.jsx`, `engine.js` | Machine ▸ Resume, enabled while `run-state` says paused (AC-41; L-A4) |
+| `library/debugger/RunControl.hpp/.cpp` (changed) | `step` takes an optional `StepTest until`: after each counted step the run control asks it, and goes on while it says so, up to the count (D-16) |
+| `tests/debug_target_tests.cpp`, `tests/run_control_tests.cpp`, `tests/presetloader_trace_tests.cpp`, `tests/debugger_tests.cpp` (new), `tests/dap_layer_tests.cpp` (new), `tests/harness_tests.cpp` | §10.10 |
+| `tests/gui/lib10-ac41.shots.yaml` (new) | the Qt6 check scenario `CalcU1600Shots.lib10-ac41` (Longer) |
+| `frontends/web/tests/play.spec.js` | §10.10 |
+
+### 10.4 The Sharp debug targets (AC-36, AC-37, AC-52)
+
+| | LH5801 (PC-1500, PC-1500A) | SC7852 (PC-1600, the Z-80) | LH5803 (PC-1600) |
+|---|---|---|---|
+| Name (C1600-1 descriptor, `SharpCatalogue.cpp:93, 132`) | `LH5801` | `SC7852` | `LH5803` |
+| Registers | today's (`CpuRegisters.cpp:34-227`), each with its width (8, 16, 1) and whether it is written | the same | the same |
+| Spaces | `me0`, `me1`, `me1-written` | `memory`, `io`, `io-written` | `me0`, `me1`, `me1-written` |
+| Code space (a breakpoint's address) | `me0` | `memory` | `me0` |
+| Offers | watches, step over and out, decoding, history 32 | the same | the same |
+| Qualifier fields | `me`, `pu`, `pv` | `bank` (`0` to `7`) | `me`, `pu`, `pv` |
+
+- **Cells.** Every space has 8-bit cells. `me0`, `me1` and `memory` have
+  65536 cells. `io` has as many as the SC7852's I/O map has, from
+  C1600-1's memory map (`features/C1600-1-sharp-machines-on-the-machine-interface/design.md`
+  and the research skill `PC1500`); this design restates no number.
+- **Reading and writing (AC-37)**, as today
+  (`MachineDebugTargets.cpp:68-105`): ROM, cells where nothing is and
+  I/O refuse a write; `me1` is never written; a cell of `me1` whose
+  reading would disturb a device reads as unreadable; on the PC-1600 the
+  LH5803's memory is written only where it is RAM. `io` is read only
+  where reading has no effect, and is never written through the target.
+- **`-written` views (AC-48, AC-52).** For the cells that read back as
+  unreadable, the value last written by the processor since the machine
+  was built, or none.
+- **Banks (AC-49, AC-52).** The `BankWindow`s are the banked ranges of
+  C1600-1's memory map: the PC-1600's banks, those of the modules in its
+  slots, and the vertical banks of a module in Slot 2. `peek` and `poke`
+  with `bank=`/`vbank=` go through the cores' own bank access, as the
+  INSPECTOR's slot images do (`InspectorViews::slotImage`), and switch no
+  bank.
+- **Qualifier.** `qualifierMatches` is today's `bankMatches`
+  (`DebugTarget::bankMatches`, `BankKey`). `qualifierNow` gives the bank
+  of the page the program counter is in (SC7852), and `me`, `pu`, `pv`
+  (LH580x).
+- **History.** 32 entries per CPU (`LH5801.hpp:189`), newest first, each
+  with the registers before it and its text from the disassembler.
+- **Flow and depth (AC-8).** `flowAt` from the disassembler's kind of
+  instruction (call, vector call, return); `callDepth` is `0x10000 − sp`
+  (both stacks grow downwards), so a VMJ whose inline parameters move the
+  return address is stepped over as today (`RunControl.cpp:107-157`).
+
+### 10.5 How a Sharp machine advances under the run control (AC-5, AC-39)
+
+- **All checks off** (no breakpoint, no watch, no observer): `advance`
+  takes today's path. The golden runs see no change (§10.11).
+- **Breakpoints and watches** on: the CPUs' own lists are armed
+  (`BreakpointSet`, `WatchSet`), as `DebugTarget::arm(true)` did inside
+  `runSlice`. The core runs as today and ends the advance at the latched
+  stop (`DebugStop`). `takeStop()` turns the latch into a `DebugStop`.
+  While an operation runs the library leaves them off (G1), which is
+  today's "armed only inside `runSlice()`" rule
+  (`docs/developer/Debugger-Internals.md`, "Arming").
+- **Observer** on (a step, a pause that waits, an armed start, the
+  profile): the machine runs one machine step at a time, as
+  `stepMachine()` did (the bus owner carries out one instruction, or idles
+  one halted tick), and calls the observer after each instruction with
+  the index of the CPU that carried it out.
+- **Two CPUs (AC-39, AC-14).** `current()` is the bus owner
+  (`PC1600DebugTarget::busOwner`). `passOnce(t)` is today's skip-once of
+  the CPU `t` alone (`DebugTarget::resumeFromStop`,
+  `debug_target_tests.cpp:464`).
+
+### 10.6 Levels (AC-38)
+
+`cpu` only. A pause lands before the next instruction. `pause-on-start
+cpu` (a harness command; the step is refused on the Sharp models, AC-19)
+fires on the first instruction after which `Machine::isKeyReady()` is
+false, once it was seen true: the library's default rule. FS 15 found key
+readiness on the PC-1500 and PC-1500A (`docs/walkthroughs/first-steps.md`
+§15), and `SharpMachine::isKeyReady()` already models it on all three
+models since M-36 (LIB-5 AC-31). So `CpuOnlyRules` suffice (D-17).
+
+### 10.7 Traces (AC-22–25, AC-42, AC-43)
+
+- **One trace session.** The library's `TraceSession` starts, limits and
+  ends every trace: the step and the command (`trace <file>`), the
+  INSPECTOR's button (`TRACE.bin`, AC-23), and the version 1 preset key
+  through L-A3. One trace at a time; a new machine ends it with a log line;
+  the limit ends it with the library's notice (LIB-10 D-11).
+- **The records are the core's.** `SharpTraceRecorder::begin` writes the
+  header and the session start and turns the core's recording on; `pump`
+  moves whole records from the core's buffer, at most the budget; `end`
+  writes the session end. The bytes are those of today's file: header
+  `PC15` and version 3; the records of both CPUs of a PC-1600 in one file;
+  gap records where a ring overflowed (`PC1500TraceFile.cpp:9-144`).
+  `tools/read_trace.py` reads them unchanged.
+- **The limit** is `[trace] max-file-size-mb` MiB (LIB-10 T2), for every
+  trace (AC-43). Today the button's limit counts 1'000'000 bytes per MB and
+  a preset's trace has none (`DebugPanel.cpp:251-252`).
+- **Where.** Qt6 and the harness: the trace folder (LIB-9). Web: no trace
+  folder and no hand-over, so a trace fails with the reason (AC-40, EC-8).
+
+### 10.8 The run control in the hosts (AC-40, AC-41)
+
+- **Qt6.** `SharpAppPart`'s `DebuggerPart` is the machine session's
+  gate whether or not a DAP client is attached. Pause, step and resume
+  reach it from the DAP (setter `dap`), from the harness attached to a
+  development build (M-49 wires attach for Calc-U-1600; until then the
+  session commands from a test host) and from Machine ▸ Resume.
+- **The harness.** `calcu --product 1600` has the `DebuggerPart`, so
+  every command of AC-20, AC-50 and AC-51 works on the Sharp targets;
+  `symbols` reads the Sharp listings (§10.3).
+- **Web.** The same part in the worker; Machine ▸ Resume in the page.
+  The page has no harness, so the Playwright case sends `pause` and
+  `resume` as session commands (D-19).
+- **The DAP in M-45 to M-50.** The Qt `DapSession` keeps its requests and
+  its JSON, and reaches the machine only through `app/dap/` and the
+  `DebuggerPart`: breakpoints and watches with the setter `dap` and their
+  tests (conditions, hit counts, log messages), line steps by D-16,
+  threads and memory by `machine::DebugTarget`. `stopped` events come from
+  the `run-state` changes. `tools/dap_smoke.py` passes against the Qt app
+  as before (§10.11). C1600-3 (M-50) then moves the server, the session
+  and the queue out of the Qt frontend.
+
+### 10.9 Adapters
+
+Removed in M-45 (LIB-10 §5's Calc-U-1600 rows):
+
+| Adapter | Where |
+|---|---|
+| `SharpDebuggerGate`, `SharpDebugger` | `app/SharpMachineParts.*`, `MachineController::runDebuggerSlice` |
+| `LegacyCalls::makeDebugTarget` | `core/Machine/LegacyCalls.*` |
+| `c1600.trace` (`CpuTrace`) | `core/Machine/SharpProductKinds.hpp`, the interface machines |
+| LIB-9 A-3 (the Web's trace place) | `app/AppPaths.cpp:100-101` |
+
+New in M-45, each with the step that removes it:
+
+| Adapter | Where | Wraps | Removed in |
+|---|---|---|---|
+| L-A1 Qt DAP | `frontends/qt6/app/debug/DapServer.*`, `DapSession.*`, `DebugController.*` | the server, its requests in `QJsonObject` and the message queue, now on `app/dap/` and the `DebuggerPart` | M-50 (C1600-3) |
+| L-A2 restart call | `SharpAppPart::resetJob`, `resetToPromptJob`, the DAP's reset | `tellRestarted(Reset/ColdBoot)` from the product's own Reset and Cold boot (LIB-10 §3.11) | M-46 (LIB-18 1600: `StartupPart::restart` tells it) |
+| L-A3 preset trace hook | `PresetRunner`'s `trace` key, `LegacyCalls::applyPresetJob`, `SharpAppPart::loadPresetJob` | a version 1 preset's trace started and ended through `TraceSession::start(…, ofOperation = true)` | M-46 (LIB-6 1600: the step `trace:`) |
+| L-A4 Resume and title | `MainWindow.cpp`, `MenuBar.jsx` | Machine ▸ Resume and the title in today's menus and window | M-49 (LIB-14 1600: the shell's Machine menu, LIB-14 AC-1) |
+| `LegacyCalls::loadProgram` (changed signature) | `core/Machine/LegacyCalls.*` | Build & Load on the old loader | M-50 (C1600-3 on C1600-2's loader) |
+
+LIB-10 §5 named a `DapRunControlBridge` in `frontends/qt6/app/debug/`
+for M-45 to M-50. D-15 puts its content in `app/dap/` instead, as code
+of C1600-3 that M-50 keeps; the adapter is L-A1 only.
+
+### 10.10 Tasks (AC → task → test)
+
+Cases in `products/calc-u-1600/tests/` are in `CoreTests` (Frequent)
+unless named otherwise. Session cases use `app/tests/SessionFixture.hpp`
+with `SharpAppPart`. Tests come before the code of each task. Names are
+`lib10_acN_…`; the ported cases keep today's names after the prefix.
+
+| Task | What | AC | Test (file: cases; group) |
+|---|---|---|---|
+| D16-1 | `SharpDebugging`, targets | AC-36 | `debug_target_tests.cpp`: `lib10_ac36_pc1500_and_pc1500a_have_the_lh5801`, `lib10_ac36_pc1600_has_the_sc7852_and_the_lh5803`, `lib10_ac36_registers_spaces_offers_history_32`, `lib10_ac36_qualifier_fields_bank_me_pu_pv`, `lib10_ac36_conformance_on_every_model` (`checkDebugging` on PC-1500 A01/A03/A04, PC-1500A, PC-1600 New/Old); Frequent |
+| D16-2 | Reading and writing | AC-37 | `debug_target_tests.cpp`: `lib10_ac37_rom_empty_cells_and_io_refuse_a_write`, `lib10_ac37_me1_never_written_device_cells_unreadable`, `lib10_ac37_lh5803_written_only_in_ram`, `lib10_ac37_refused_poke_changes_nothing`; Frequent |
+| D16-3 | Banks, `io`, `-written` | AC-52 | `debug_target_tests.cpp`: `lib10_ac52_sc7852_io_space`, `lib10_ac52_written_views_of_me1_and_io`, `lib10_ac52_every_bank_of_the_pc1600_and_its_modules`, `lib10_ac52_vertical_banks_of_a_slot_2_module`; `harness_tests.cpp`: `lib10_ac52_harness_peek_bank_and_vbank`; Frequent |
+| D16-4 | The advance with checks | AC-39, AC-5 | `debugger_tests.cpp`: `lib10_ac39_step_of_one_target_other_runs_with_the_bus`, `lib10_ac39_only_the_target_about_to_run_passes_its_breakpoint`, `lib10_checks_off_take_the_old_path` (tick counts equal with and without the part); Frequent |
+| D16-5 | Level `cpu`, pause-on-start | AC-38 | `debugger_tests.cpp`: `lib10_ac38_cpu_only_pause_lands_before_the_next_instruction`, `lib10_ac38_program_level_refused`, `lib10_ac38_pause_on_start_fires_leaving_key_readiness_pc1500`, `_pc1500a`, `_pc1600`; Frequent |
+| D16-6 | The run control in the hosts | AC-40 | `harness_tests.cpp`: `lib10_ac40_harness_pause_step_resume`, `lib10_ac40_harness_breakpoint_and_watch`; session: `lib10_ac40_run_control_without_a_debugger` (Qt6's part, no DAP client); Web: `play.spec.js` `lib10_ac40 run control pauses and resumes the web machine`; Frequent, Longer. In M-46: `lib10_ac40_debugger_steps_refused_at_read`, `lib10_ac40_trace_step_fails_on_the_web` (format 2) |
+| D16-7 | Title and Resume | AC-41 | Qt6: `CalcU1600Shots.lib10-ac41` (a session `pause`, `expect-title: "Calc-U-1600 — Paused (debugger)"`, `action: Machine > Resume`, `expect-title: "Calc-U-1600"`); Web: `play.spec.js` `lib10_ac41 machine resume`; Longer |
+| D16-8 | Trace format | AC-42, AC-23 | `presetloader_trace_tests.cpp` ported to the trace session: `lib10_ac42_trace_step_produces_wellformed_file`, `_left_open_is_closed_at_the_end`, `_z80_frame_shares_one_file_with_lh5801_frame`, `_pc1600_trace_step_produces_wellformed_file`, `_pc1600_left_open_is_closed`; `debugger_tests.cpp`: `lib10_ac42_bytes_equal_the_recorded_reference` (§10.11), `lib10_ac23_button_trace_is_trace_bin`; CTest `CalcU1600ReadTrace` (new: the harness writes a short PC-1600 trace, `tools/read_trace.py` reads it; Frequent if under 2 s, else Longer) |
+| D16-9 | The size limit | AC-43, AC-24 | `debugger_tests.cpp`: `lib10_ac43_preset_trace_ends_at_the_limit_with_a_notice` (version 1 through L-A3; again on format 2 in M-46), `lib10_ac43_button_trace_ends_at_the_limit_with_a_notice`; Frequent |
+| D16-10 | Today's tests ported | AC-44 | `debug_target_tests.cpp:111-613` onto `machine::DebugTarget` and the run control (`lib10_ac44_z80_breakpoint_and_skip_once`, `_not_between_prefix_and_opcode`, `_skip_is_tied_to_its_address`, `_keeps_ei_shadow`, `_lh5801_skip_once`, `_breakpoint_set`, `_trace_flags_leave_breakpoints_alone`, `_reset_clears_breakpoint_state`, `_lh5801_watches_skip_fetches`, `_z80_watches`, `_pc1500_target`, `_pc1600_target`, `_pc1600_lh5803_thread`, `_pc1600_skip_only_for_the_running_cpu`, `_machine_step_latches_stops`, `_cpu_views`, `_register_reads`, `_watch_set`); `run_control_tests.cpp:152-235` (`lib10_ac44_step_over_a_call`, `_data_breakpoint_and_pause`); Frequent. The cases with source lines, conditions, hit counts, log messages and expressions (`run_control_tests.cpp:115-150, 171-211, 236-290`; `debug_target_tests.cpp:84, 637-732`) move to `tests/dap_layer_tests.cpp` as `c1600_3_ac23_…` (C1600-3 AC-23, D-15) |
+| D16-11 | `step` with a test | (library, D-16) | `library/debugger/tests/run_control_tests.cpp`: `step_until_goes_on_while_the_test_says_so`, `step_until_ends_at_a_breakpoint`; `calcu_library_tests`, Frequent |
+| D16-12 | The DAP on the new layer | (C1600-3 AC-20 at its old host) | `CalcU1600DapSmoke` (Longer): `tools/dap_smoke.py --app` against the Qt app, every scenario passing as at the pin |
+| R-1 | Golden and reference runs, speed | §10.11 | `golden_runs_tests.cpp` (Frequent); `lib10_speed_pc1600_full_speed_with_a_breakpoint` (prints, for the qa-report; Longer) |
+
+Coverage: AC-36 to AC-44 and AC-52, 10 of 10; AC-40's and AC-43's format
+2 parts in M-46.
+
+### 10.11 Golden and reference runs
+
+- **Before the core is touched**, M-45 records one reference trace with
+  today's file path: a PC-1600 of the golden run `pc1600-basic` traced for
+  its first 200000 instructions, and a PC-1500A for 100000, into
+  `tests/golden-runs/pc1600-basic.trace`, `pc1500a-basic.trace`. After the
+  change, D16-8 compares the trace session's file with them byte for
+  byte. A difference is a finding.
+- **Golden runs** (M-8): with all checks off the cores run as today, so
+  every `.golden` must replay unchanged.
+- **Reference runs** of the 32 examples (M-4): compared at the idle
+  machine in M-46.
+- **Speed.** LIB-10 §8 asks for a PC-1600 at full speed with a breakpoint
+  set against 0.8.1: R-1 measures it; the qa-report gives both numbers.
+
+### 10.12 Agent knowledge (in M-45)
+
+- `products/calc-u-1600/CLAUDE.md`: "the debugger reaches the machine
+  through the adapter of `app/SharpMachineParts` until M-45" becomes "the
+  debugger is the library's `DebuggerPart` (LIB-10); the DAP's layer is in
+  `app/dap/`, its server in the Qt frontend until M-50"; the harness's
+  "Not yet" list loses the debugger.
+- `products/calc-u-1600/docs/developer/Debugger-Internals.md`: "Run
+  control" (no `runSlice()`), "Where the code is" (`core/Debug/SharpDebugging`,
+  `app/dap/`, `app/SharpTraceRecorder`; `DebugTarget`, `RunControl`,
+  `BreakpointTable` gone), "Hooks elsewhere" (no `SharpDebuggerGate`),
+  "Arming" (the library's rule G1).
+- `products/calc-u-1600/docs/developer/Shared-Architecture.md` (the
+  `SharpMachineParts` row; the adapter kind `c1600.trace` replaced by the
+  product kind `c1600.trace-records`); `docs/Debugger.md` (the trace's
+  size limit and its notice).
+- `docs/glossary-mapping.md`, row "Pause": `paused` (`DebugController`) →
+  the `run-state` topic of `calcu::debugger::RunControl`.
+- `docs/test-groups.md`: the new and renamed cases, `CalcU1600ReadTrace`,
+  `CalcU1600Shots.lib10-ac41`.
+- Memory: `calc-u-1600/project_dap_debugger_plan.md` ("CPU-owned
+  breakpoint enable", `CpuViews + MachineDebugTarget<Machine>`,
+  `frontends/qt6/app/debug` as the place: now the library's run control,
+  `SharpDebugging`, `app/dap/`) and its line in `calc-u-1600-memories.md`.
+- No skill: Calc-U-1600 has none.
+
+### 10.13 Ledger rows
+
+- 1600-14, visible in M-45: the size limit for a preset's trace (version
+  1 now, format 2 in M-46), the notice when it ends a trace, the run
+  control in both frontends, Machine ▸ Resume.
+- Proposed addition to 1600-14: "The limit counts MiB (today the
+  INSPECTOR's limit counts 1'000'000 bytes per MB)."
+- 1600-14's "Copied to clipboard" is LIB-8's (§10.9 there).
+
+### 10.14 Risks
+
+- **Speed of the observer path.** A step, an armed start and the profile
+  run the machine one instruction at a time with a virtual call each.
+  Today's line steps also go one machine step at a time
+  (`RunControl::slice`, at most 20000 per frame), so a step is no slower;
+  the profile is new. R-1 measures the breakpoint case.
+- **The skip-once of two CPUs.** Today's skip lives in the CPUs and in
+  `resumeFromStop`. If `passOnce` cannot be told per CPU through the
+  latch, D16-4 shows it; the fallback is a step of the target over its
+  breakpoint before the resume.
+- **The trace buffer.** Records now wait in a buffer between pumps (at
+  most 1/60 s of emulated time, G1). A PC-1600 at full speed writes some
+  megabytes per second, so the buffer holds a few hundred kilobytes.
+- **Qt DAP on new ground.** `DapSession` changes its calls in M-45 and
+  moves in M-50. `CalcU1600DapSmoke` (Longer) runs in M-45; the open
+  finding of `docs/test-groups.md` (no `stopped` after the first `stepIn`,
+  timing-dependent) may show again: if it does, it is the old finding,
+  checked against the pin.
+
+### 10.15 Decided (best guess)
+
+- **D-15 (the DAP's layer is built in `app/dap/` in M-45).** The DAP's
+  breakpoints with their tests, its line steps and its view of threads
+  and memory are needed the day `debug::RunControl` and
+  `debug::BreakpointTable` go. They are written once, without Qt, in
+  C1600-3's folder, with C1600-3's design (approved at the same
+  boundary) and the tests of C1600-3 AC-23. M-50 then moves only the
+  server, the requests and the queue. LIB-10 §5's `DapRunControlBridge`
+  in the Qt frontend is not built; see the question below.
+- **D-16 (a step with a test).** `RunControl::step` takes an optional
+  `StepTest` (`std::function<bool(const machine::DebugTarget&)>`, true:
+  go on). A line step is `step(cpu, a large count, thread, in|over, until
+  the source line changes)`, so it runs in the gate's pieces and ends at a
+  breakpoint, as today. A library change of a few lines with its own
+  tests (D16-11).
+- **D-17 (AC-38, the open point of §9).** `CpuOnlyRules`: the default
+  rule is what FS 15 found; no Sharp rules.
+- **D-18 (the trace records are a product kind).** `c1600.trace-records`
+  stays a product kind, owned by the main CPU, as the INSPECTOR's is: the
+  file's content is the product's (ADR 0037), and the app reaches the core
+  only through the machine's capabilities (C1600-1).
+- **D-19 (AC-40, "work in both").** Read as: in the harness of
+  Calc-U-1600, and in the Qt6 and Web sessions; the Web has no harness,
+  so its case sends the same session commands from the page.
+- **D-20 (Banks scope, for C1600-3).** The SC7852's qualifier has one
+  field `bank`; the DAP's Banks scope shows the bank of each of the four
+  pages by asking `qualifierMatches` at each page's start, as today
+  (`PC1600DebugTarget::bankState`).
+
+### 10.16 Plan notes
+
+- Plan M-45, "Does": add "the DAP's breakpoints and line steps in
+  `app/dap/` (C1600-3, D-15)" and "Machine ▸ Resume in both frontends".
+  "Tests from": add C1600-3 AC-23 (its ported cases, D16-10).
+- Plan §5.1, LIB-10's Calc-U-1600 row: unchanged (M-45 / M-46). LIB-10
+  §4 put the Web's Resume with LIB-14 1600 in M-49; L-A4 does it in M-45,
+  so AC-41 passes in M-45 and "Done in M-46" holds.
+- Plan M-45, "Knowledge, ledger": add the product's `CLAUDE.md`,
+  `Shared-Architecture.md`, `docs/Debugger.md` and the memory file
+  `project_dap_debugger_plan`.
+
+### 10.17 Questions for the user
+
+1. **Q-1 (D-15).** LIB-10 §5 planned a throwaway `DapRunControlBridge` in
+   the Qt frontend for M-45 to M-50. This design builds the DAP's
+   breakpoints and line steps once in `app/dap/` in M-45 instead (C1600-3
+   code, a step early), so M-50 only moves the server. Agreed?
+   Recommendation: yes.

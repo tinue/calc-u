@@ -1,4 +1,5 @@
 #include "shell/Notices.hpp"
+#include "sessions/LibraryTopics.hpp"
 
 namespace calcu::shell {
 
@@ -14,7 +15,8 @@ void NoticeQueue::refusal(std::string reason, sessions::Command sent) {
         queue_.push_back(Shown{std::move(question), true, std::move(sent)});
         return;
     }
-    if (reason.empty() || reason == last_) return;   // D-7
+    // D-7; a stopped operation is the user's own doing (Reset, a model switch).
+    if (reason.empty() || reason == last_ || reason == sessions::kStopped) return;
     push(std::move(reason));
 }
 

@@ -106,6 +106,7 @@ TEST(refusal_equal_to_last_notice_not_repeated) {
     q.refusal("Another operation is running.");
     CHECK_EQ(q.waiting(), std::size_t{2});
     q.refusal("");   // no reason: nothing
+    q.refusal("Stopped.");   // an operation the user stopped with Reset
     CHECK_EQ(q.waiting(), std::size_t{2});
 }
 

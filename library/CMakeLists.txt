@@ -132,6 +132,8 @@ if(CALCU_TESTS AND NOT EMSCRIPTEN)
     add_test(NAME LibraryPlatformStoreCheck
              COMMAND bash ${CMAKE_CURRENT_SOURCE_DIR}/settings/tests/check_platform_stores_test.sh)
     set_tests_properties(LibraryPlatformStoreCheck PROPERTIES LABELS frequent)
+    # LIB-14 L11: no product code in the shell and the component sets (AC-22).
+    calcu_add_test(LibraryShellNoProduct frequent COMMAND bash ${CMAKE_CURRENT_SOURCE_DIR}/qt6/tests/check_no_product_code.sh)
   endif()
 endif()
 

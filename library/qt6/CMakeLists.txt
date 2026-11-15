@@ -8,7 +8,8 @@
 #
 # Its tests: one program, calcu_qt6_tests, every library/qt6/tests/*_tests.cpp
 # on the repository's one runner (ADR 0038) with a QApplication; Frequent, on
-# the offscreen platform.
+# the offscreen platform. LIB-14 adds calcu_qt6_scenarios (the scenarios of
+# its AC-25 on the test window) beside it.
 find_package(Qt6 QUIET COMPONENTS Widgets)
 if(NOT Qt6_FOUND)
   message(STATUS "Qt6 not found: no library Qt6 component set (calcu_qt6)")
@@ -19,16 +20,55 @@ add_library(calcu_qt6 STATIC
   ${CMAKE_CURRENT_SOURCE_DIR}/PaperPanel.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/PaperPainter.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/ClipboardService.cpp)
+# LIB-14 (M-43): the shell.
+target_sources(calcu_qt6 PRIVATE
+  ${CMAKE_CURRENT_SOURCE_DIR}/SessionHost.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/Shell.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/ShellMenus.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/ShellControlBar.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/ShellSettingsDialog.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/ShellLoading.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/ShellNotices.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/ShellAbout.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/PanelArea.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/FaceplateInput.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/RomsMissingView.cpp)
 set_target_properties(calcu_qt6 PROPERTIES AUTOMOC ON)
 target_link_libraries(calcu_qt6 PUBLIC calcu_library Qt6::Widgets PRIVATE calcu_warnings)
 target_include_directories(calcu_qt6 PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/..)
 target_compile_features(calcu_qt6 PUBLIC cxx_std_20)
 
 if(CALCU_TESTS)
+  # LIB-14: QTest's key and mouse clicks for the shortcut cases (AC-4); a Qt
+  # without the Test module skips them.
+  find_package(Qt6 QUIET COMPONENTS Test)
+  # LIB-14's test window over TestShellPart (library/shell/tests/) and, with
+  # CALCU_ATTACH, the harness's test product for the attach host (L8).
+  set(CALCU_QT6_TEST_SUPPORT ${CMAKE_CURRENT_SOURCE_DIR}/tests/TestWindow.cpp)
+  if(CALCU_ATTACH)
+    list(APPEND CALCU_QT6_TEST_SUPPORT ${CMAKE_CURRENT_SOURCE_DIR}/../harness/tests/TestProduct.cpp)
+  endif()
+  function(calcu_qt6_test_program name)
+    add_executable(${name} ${CMAKE_CURRENT_SOURCE_DIR}/tests/QtTestMain.cpp ${CALCU_QT6_TEST_SUPPORT} ${ARGN})
+    target_link_libraries(${name} PRIVATE calcu_qt6 calcu_test_machines calcu_warnings)
+    target_include_directories(${name} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../testing
+                                               ${CMAKE_CURRENT_SOURCE_DIR}/../shell/tests ${CMAKE_CURRENT_SOURCE_DIR}/tests)
+    set_target_properties(${name} PROPERTIES AUTOMOC ON)
+    if(TARGET Qt6::Test)
+      target_link_libraries(${name} PRIVATE Qt6::Test)
+      target_compile_definitions(${name} PRIVATE CALCU_QT_TEST=1)
+    endif()
+  endfunction()
+
   file(GLOB CALCU_QT6_TEST_SOURCES CONFIGURE_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/tests/*_tests.cpp)
-  add_executable(calcu_qt6_tests ${CMAKE_CURRENT_SOURCE_DIR}/tests/QtTestMain.cpp ${CALCU_QT6_TEST_SOURCES})
-  target_link_libraries(calcu_qt6_tests PRIVATE calcu_qt6 calcu_test_machines calcu_warnings)
-  target_include_directories(calcu_qt6_tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../testing)
+  if(NOT CALCU_ATTACH)
+    list(REMOVE_ITEM CALCU_QT6_TEST_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/tests/attach_host_tests.cpp)
+  endif()
+  calcu_qt6_test_program(calcu_qt6_tests ${CALCU_QT6_TEST_SOURCES})
   calcu_add_test(calcu_qt6_tests frequent COMMAND calcu_qt6_tests
+                 PROPERTIES ENVIRONMENT QT_QPA_PLATFORM=offscreen)
+  # LIB-14 L10: the scenarios of AC-25 under their IDs (ADR 0032).
+  calcu_qt6_test_program(calcu_qt6_scenarios ${CMAKE_CURRENT_SOURCE_DIR}/tests/shell_scenarios.cpp)
+  calcu_add_test(calcu_qt6_scenarios frequent COMMAND calcu_qt6_scenarios
                  PROPERTIES ENVIRONMENT QT_QPA_PLATFORM=offscreen)
 endif()

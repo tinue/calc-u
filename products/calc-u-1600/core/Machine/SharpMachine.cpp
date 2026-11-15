@@ -52,6 +52,9 @@ Ticks SharpMachine::advance(Ticks atLeast) {
         if (r == 0) return ran;   // a debugger stop: nothing ran
     }
     if (ran < atLeast) ran += runCore(atLeast - ran);
+    // Switched off by its own ROM (the `off` key, auto power-off): that is
+    // an off point too, and the waiting changes reach the bus.
+    if (!m_waiting.empty() && !m_sequence.active() && coreSwitchedOff()) makeWaitingChanges();
     return ran;
 }
 
@@ -154,6 +157,7 @@ AfterChange SharpMachine::followsNow(const PinOutDescriptor& p) const {
 
 void SharpMachine::plug(PeripheralRequest req, const PeripheralDescriptor& d, TickRate) {
     const PlaceName place = req.place.steps.at(0);
+    if (!running()) makeWaitingChanges();   // off: at an off point, in order
     m_plugged.push_back(PlugEntry{req.place, req.peripheral, req.variant});
     if (isSlot(place) && !d.controls.empty()) {
         std::vector<SwitchPosition> positions = req.switches;
@@ -185,6 +189,7 @@ void SharpMachine::unplug(const PlacePath& path, const PeripheralId& id) {
                                    [&](const PlugEntry& e) { return e.place == path && e.peripheral == id; }),
                     m_plugged.end());
     const PlaceName place = path.steps.at(0);
+    if (!running()) makeWaitingChanges();   // off: at an off point, in order
     m_switches.erase(std::remove_if(m_switches.begin(), m_switches.end(), [&](const auto& s) { return s.first == place; }),
                      m_switches.end());
     if (isSlot(place) && running()) m_waitingModules.emplace_back(place, nullptr);

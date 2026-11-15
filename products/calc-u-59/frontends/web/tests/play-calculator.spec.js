@@ -103,19 +103,25 @@ test('a press just outside a key hits it (widened hit test)', async ({ page }) =
 test('dragging moves the press to the key under the pointer', async ({ page }) => {
   await gotoReady(page);
   const eight = await showing(page, ['8']);
+  const sevenEight = await showing(page, ['7', '8']);
   await pressKey(page, 'CLR');
+  await settledLed(page);
   const a = await keyRect(page, '7'), b = await keyRect(page, '8');
   await page.mouse.move(a.x + a.width / 2, a.y + a.height / 2);
   await page.mouse.down();
   await page.waitForTimeout(30);
   await page.mouse.move(b.x + b.width / 2, b.y + b.height / 2, { steps: 4 });
-  await page.waitForTimeout(250);
+  // Hold 8 until the ROM has taken it, not for a fixed time: on a slow runner
+  // the scan after 7 can take longer than any fixed hold (CI, 2026-11-15).
+  const led = page.locator('canvas.calcu-led');
+  await expect.poll(async () => [eight, sevenEight].includes(await led.evaluate((c) => c.toDataURL())),
+    { timeout: 5000 }).toBe(true);
   await page.mouse.up();
   // 7 was let go before the ROM's debounce took it: only 8 is entered... or 7
   // then 8. Either way the last digit entered is 8, and the drag ended on it.
   await expect(page.getByRole('button', { name: '8', exact: true })).toHaveAttribute('aria-pressed', 'false');
   const shown = await settledLed(page);
-  expect([eight, await showing(page, ['7', '8'])]).toContain(shown);
+  expect([eight, sevenEight]).toContain(shown);
 });
 
 test('holding the display runs at full speed', async ({ page }) => {

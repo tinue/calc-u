@@ -116,7 +116,10 @@ Reset, power cycle, cold boot
   the PC-1600 leaves it, and a cold boot of the PC-1600 lets the ROM
   clear it, as today (`Core/PC1500/PC1500Memory.cpp:56`,
   `Core/PC1600/PC1600Machine.cpp:14-62`); it is set from the host
-  afterwards by whoever ran the operation (LIB-2 AC-23).
+  afterwards by whoever ran the operation (LIB-2 AC-23). A PC-1600 clock
+  just set from the host is kept through the next boot, as today's seed
+  guard does: a cold boot right after a set leaves it, the one after that
+  clears it.
 
 Keys
 - [ ] **AC-9** — Given a PC-1500 or PC-1500A, then its 65 keys have
@@ -315,3 +318,5 @@ One seam
 | Presets and the harness match key names without regard to case and take `break` for `on`; `ent` goes; the machine takes exactly its key IDs | LIB-5 OQ-6 (user, 2026-11-10, batch 4 gate); OQ-5 | 2026-11-10 |
 | The cassette of a CE-150 on a PC-1600 is not specified: it should work, and may not be tested yet (AC-16) | user, 2026-11-13 (LIB-7 OQ-9, §5.4 of `docs/walkthroughs/presets.md`): "should work, but might not be tested yet. The spec must not care here" | 2026-11-13 |
 | The PC-1500's key readiness is `WAIT_4_KB` (E243-E33D) with 7B0E bit 0 clear (AC-21) | user, 2026-11-14 (first step 15, `docs/walkthroughs/first-steps.md`) | 2026-11-14 |
+| AC-8: a clock just set from the host survives the next PC-1600 boot, as today (the core's seed guard); a cold boot right after a set does not clear it | user, 2026-11-15 (M-26 open point): keep today's | 2026-11-15 |
+| Golden runs: the status words of a record taken while the display is off are not compared (`> reset` in `pc1500a-reset-allreset`, `pc1600-reset-allreset`); the old reader read the indicator RAM of a dark display, LIB-1 AC-43 shows nothing there; not re-recorded | user, 2026-11-15 (M-26 finding, option a) | 2026-11-15 |

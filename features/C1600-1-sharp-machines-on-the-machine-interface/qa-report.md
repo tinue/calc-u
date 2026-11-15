@@ -125,6 +125,10 @@ Other checks of the step (design T14):
 
 ## Open (for the user)
 
+Ruled 2026-11-15 (user): the status-words exception is accepted (option a,
+not re-recorded); AC-8 keeps today's behaviour (spec text and decision
+log updated). Both items below are settled.
+
 - **Golden runs, status words while the display is off (AC-4).** In
   `pc1500a-reset-allreset` and `pc1600-reset-allreset` the record after
   `> reset` is taken while the display is off. The old text readers read

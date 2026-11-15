@@ -115,7 +115,7 @@ instruction, an idle one included (AC-4).
   (`real_hardware_timing.md`, `printer_timing_audio.md`).
 - Ledger: rows 59-11 and 59-25 are visible from this step; row 59-25 now
   also names the model switch (AC-6 lists it; today a new machine set TRACE
-  off).
+  off). Confirmed by the user, 2026-11-15.
 
 ### Adapters
 

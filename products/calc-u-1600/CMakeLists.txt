@@ -144,6 +144,11 @@ if(CALCU_TESTS)
            WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
   set_tests_properties(CalcU1600CheckPresets PROPERTIES LABELS frequent
                        ENVIRONMENT PC1600_CLI=$<TARGET_FILE:pc1600_cli>)
+  # No file above the core includes or names a machine class (C1600-1,
+  # Technical Requirements; design T13). CI runs it with the core tests.
+  add_test(NAME CalcU1600MachineIncludeCheck COMMAND sh tools/check_machine_includes.sh
+           WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
+  set_tests_properties(CalcU1600MachineIncludeCheck PROPERTIES LABELS frequent)
 
   # Longer: run locally before merging into main and at the end of a part.
   if(CALCU_TESTS_LONGER)

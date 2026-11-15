@@ -15,6 +15,7 @@
 #include "../core/PC1600/PC1600Machine.hpp"
 #include "TestCards.hpp"
 #include "TestRoms.hpp"
+#include "FakeSerialLink.hpp"
 #include "TestHarness.hpp"
 
 namespace {
@@ -908,24 +909,11 @@ TEST(test_rom_auto_power_off_resumes) {
 // SETCOM, OPEN, PRINT#, CLOSE. Exercises the CPC as the ROM programs it:
 // PR7/PR1:PR0 baud, the serial command shadow (TxEN), and the CS/CD/DR
 // status polarity the ROM checks before it sends (Ref/PC-1600/PC-1600-CPC-TC8576.md §9).
-struct RecordingLink : SerialLink {
-    std::vector<uint8_t> tx;
-    std::deque<uint8_t> rx;
-    uint32_t baud = 0;
-    bool poll(uint8_t& out) override {
-        if (rx.empty()) return false;
-        out = rx.front(); rx.pop_front(); return true;
-    }
-    void send(uint8_t b) override { tx.push_back(b); }
-    void onBaud(uint32_t b, int) override { baud = b; }
-    Lines lines;
-    void getStatus(Lines& in) override { in = lines; }
-};
 
 TEST(test_rom_com1_print_reaches_the_peer) {
     PC1600Machine m;
     SKIP_UNLESS(bootPC1600(m), "PC-1600 ROM images not found");
-    RecordingLink link;
+    FakeSerialLink link;
     m.setSerialLink(&link);
     tapKey(m, "mode"); waitIdle(m, PC1600Machine::kTStateHz);
     tapKey(m, "mode"); waitIdle(m, PC1600Machine::kTStateHz);
@@ -939,7 +927,7 @@ TEST(test_rom_com1_print_reaches_the_peer) {
                           "OPEN \"COM1:\" FOR OUTPUT AS #1", "PRINT #1,\"HELLO\"", "CLOSE #1"})
         type(l);
     m.runCycles(PC1600Machine::kTStateHz);
-    CHECK(link.baud == 9600);
+    CHECK(link.lastBaud == 9600);
     CHECK(std::string(link.tx.begin(), link.tx.end()).find("HELLO") != std::string::npos);
 
     // CS off: the ROM holds the data back (P2-B6 A524H gating) and times out.

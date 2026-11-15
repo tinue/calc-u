@@ -22,6 +22,7 @@
 #include "../core/PC1600/PC1600Machine.hpp"
 #include "../core/PC1600/PC1600PresetLoader.hpp"
 #include "TestRoms.hpp"
+#include "FakeSerialLink.hpp"
 #include "TestHarness.hpp"
 
 namespace {
@@ -48,24 +49,6 @@ std::vector<uint8_t> fakeRom() {
     for (size_t i = 0; i < rom.size(); ++i) rom[i] = uint8_t(i * 13 + (i >> 13) * 5 + 1);
     return rom;
 }
-
-struct FakeLink : SerialLink {
-    std::deque<uint8_t> rx;
-    std::vector<uint8_t> tx;
-    bool armed = true;          // false: the peer stays silent
-    Lines lines;
-    int controlCalls = 0;
-    bool lastDtr = false, lastRts = false;
-    bool poll(uint8_t& out) override {
-        if (!armed || rx.empty()) return false;
-        out = rx.front();
-        rx.pop_front();
-        return true;
-    }
-    void send(uint8_t b) override { tx.push_back(b); }
-    void getStatus(Lines& in) override { in = lines; }
-    void setControl(bool dtr, bool rts) override { ++controlCalls; lastDtr = dtr; lastRts = rts; }
-};
 
 // A card with its ROM loaded and reset, as PC1500Machine::attachCE158 leaves it.
 Ce158Card& freshCard(Ce158Card& card) {
@@ -103,7 +86,7 @@ TEST(test_rom_window_pv_gated_and_pu_banked) {
 TEST(test_port_a_modem_lines_and_strap) {
     Ce158Card card;
     freshCard(card);
-    FakeLink link;
+    FakeSerialLink link;
     card.setSerialLink(&link);
 
     // All inputs after reset: PA2-PA4 asserted (low), low-battery OK (low),
@@ -180,7 +163,7 @@ TEST(test_baud_codes_from_rom_table) {
 TEST(test_uart_transmit_paced_by_baud) {
     Ce158Card card;
     freshCard(card);
-    FakeLink link;
+    FakeSerialLink link;
     card.setSerialLink(&link);
     wr(card, 0xD00C, 0xC0);
     wr(card, 0xD008, 0x80 | 0x20); wr(card, 0xD00E, 0x80); // 2400 baud
@@ -206,7 +189,7 @@ TEST(test_uart_transmit_paced_by_baud) {
 TEST(test_uart_receive_never_overruns) {
     Ce158Card card;
     freshCard(card);
-    FakeLink link;
+    FakeSerialLink link;
     card.setSerialLink(&link);
     link.rx = {'a', 'b', 'c'};
     const uint64_t charCycles = 1300000 * 10 / 300; // default 300 baud
@@ -372,7 +355,7 @@ TEST(test_rom_serial_lprint_and_input) {
         "keys:\n  - key: cl\n  - key: mode\n  - type: RUN\n",
         &preset));
     PC1500Machine machine(preset.variant);
-    FakeLink link;
+    FakeSerialLink link;
     link.armed = false;
     link.rx = {'A', 'B', 'C', '1', '2', '3', '\r'};
     machine.setCE158SerialLink(&link);
@@ -473,7 +456,7 @@ TEST(test_pc1600_rom_mode1_printing) {
     PC1600Machine machine;
     std::string romErr;
     CHECK(presetroms::loadPC1600RomSet(machine, testPresetRoms(), "new", &romErr));
-    FakeLink link;
+    FakeSerialLink link;
     machine.setCE158SerialLink(&link);
     PresetLoadResult res = applyPC1600Preset(machine, preset, {}, ".", ".", {}, testPresetRoms());
     if (!res.ok) std::fprintf(stderr, "preset error: %s\n", res.error.c_str());
@@ -495,7 +478,7 @@ TEST(test_pc1600_rom_mode1_rinkey) {
     PC1600Machine machine;
     std::string romErr;
     CHECK(presetroms::loadPC1600RomSet(machine, testPresetRoms(), "new", &romErr));
-    FakeLink link;
+    FakeSerialLink link;
     link.armed = false;
     link.rx = {'A'};
     machine.setCE158SerialLink(&link);

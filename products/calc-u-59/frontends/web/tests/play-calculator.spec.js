@@ -202,13 +202,37 @@ test('switching models: TI-58C has no card reader and keeps its constant memory'
   expect(await showing(page, ['RCL', '1', '2'])).toBe(seven);
 });
 
-test('Settings: startup model and module are kept', async ({ page }) => {
+test('Settings: the startup model is kept', async ({ page }) => {
   await gotoReady(page);
   await page.getByRole('button', { name: 'Settings' }).click();
   await page.getByLabel('Startup Calculator').selectOption({ label: 'TI-58' });
   await page.getByRole('button', { name: 'Done' }).click();
   await gotoReady(page);
   await expect(page.getByLabel('Calculator model')).toHaveValue('1');
+});
+
+// LIB-9 AC-21, AC-25 (design T-28; adapter A-5 until M-34): the settings are
+// Calc-U-59.ini, whose text the page keeps in one entry; 2.3.0's entries are
+// not read, and a reload keeps a change.
+test('lib9_ac21_settings_in_the_ini_file_survive_a_reload', async ({ page }) => {
+  await page.goto('./?layout=wide');
+  await page.evaluate(() => {
+    window.localStorage.clear();
+    window.localStorage.setItem('calcu59/startupModel', '2');   // 2.3.0: TI-58C
+    window.localStorage.setItem('calcu59/lastUsedModel', '2');
+  });
+  await gotoReady(page);
+  await expect(page.getByLabel('Calculator model')).toHaveValue('0');   // the defaults: TI-59
+  const fresh = await page.evaluate(() => window.localStorage.getItem('calcu59/Calc-U-59.ini'));
+  expect(fresh).toMatch(/^format-version = 1\n/);
+  expect(fresh).toContain('model = last');
+  await page.getByRole('button', { name: 'Settings' }).click();
+  await page.getByLabel('Startup Calculator').selectOption({ label: 'TI-58C' });
+  await page.getByRole('button', { name: 'Done' }).click();
+  const ini = await page.evaluate(() => window.localStorage.getItem('calcu59/Calc-U-59.ini'));
+  expect(ini).toContain('model = TI-58C');
+  await gotoReady(page);
+  await expect(page.getByLabel('Calculator model')).toHaveValue('2');
 });
 
 // ── Presets ──────────────────────────────────────────────────────────────

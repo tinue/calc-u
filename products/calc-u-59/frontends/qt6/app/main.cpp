@@ -63,7 +63,7 @@ int main(int argc, char* argv[]) {
     if (!controller.started()) return 1;   // the ROM files are missing (LIB-12 AC-10)
     MainWindow window(controller);
     app.window = &window;
-    controller.start(AppSettings::resolvedStartupModel());
+    controller.start(AppSettings::settings().startupModel());
     window.show();
 
     // Developer option: --grab <file.png> [--after <ms>] saves a screenshot of the

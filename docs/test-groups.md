@@ -106,14 +106,15 @@ Frequent):
 
 | CTest entry | What | Group | Measured (M4 Pro, 2026-11-14) |
 |---|---|---|---|
-| `CalcU59Tests` | 229 `TEST`s: unit and ROM-driven integration tests of the core and the app layer, the machine interface (C59-1, LIB-1 59), the ROM lookup (LIB-12 59), the PC-100C and the module slot (C59-6, LIB-2 59), the golden replays through it (table below), the harness product entry (LIB-11, M-28) | Frequent | 8.6 s (M-28) |
+| `CalcU59Tests` | 235 `TEST`s: unit and ROM-driven integration tests of the core and the app layer, the machine interface (C59-1, LIB-1 59), the ROM lookup (LIB-12 59), the PC-100C and the module slot (C59-6, LIB-2 59), the settings file (LIB-9 59), the golden replays through it (table below), the harness product entry (LIB-11, M-28) | Frequent | 8.8 s (M-32) |
 | `CalcU59TraceReader` | `tools/read_trace.py` reads the trace `CalcU59Tests` wrote | Frequent | 16.4 s (Python 3.15; 0.3 s in CI) |
 | `CalcU59CoreSeam` | `tests/check_core_seam.sh`: no core-internal header outside `core/` and `tests/`, no machine call in the adapters (C59-1 AC-17; M-19) | Frequent | 0.02 s |
 | `CalcU59NoOwnRomLookup` | `library/roms/tests/check_no_own_rom_lookup.sh`: no product source outside `app/ProductRoms.*`, the catalogue and the Qt6 Bundle looks for a ROM file (LIB-12 AC-2, design T7; M-24) | Frequent | 1.2 s |
+| `CalcU59NoPlatformSettings` | `library/settings/check_platform_stores.sh` over `frontends/` with `tools/platform_stores_allowed.txt`: no setting in UserDefaults, `@AppStorage`, QSettings or `localStorage`; allowed: the trace folder's bookmark (AC-34) and, until M-34, the page's two entries (LIB-9 AC-21, design T-24; M-32); not registered on Windows | Frequent | 0.02 s |
 | `CalcU59HeadlessSmoke` | `tools/headless/ti59.py 5 + 7 =` against the CMake-built `ti59headless` shows 12 (C59-1 T14; M-19; with Python 3) | Frequent | 0.04 s |
 | `CalcU59HeadlessRomMissing` | `tests/headless_rom_tests.py`: `ti59.py` on a ROM folder without one file ends naming it, on the full set it starts (LIB-12 AC-7, AC-10; M-24; with Python 3) | Frequent | 0.15 s |
 | `CalcU59XcodeProjectCheck` | `frontends/swift/check_xcode_project.sh`: Xcode compiles only Swift and the bridge and links `CalcU59.xcframework` (C59-5, ADR 0013; M-15); the app bundles the 24 ROM files of the full set (LIB-12; M-24) | Frequent | 0.02 s |
-| | **Frequent, Calc-U-59** | | **25.4 s** (M-25) |
+| | **Frequent, Calc-U-59** | | **25.9 s** (M-32) |
 | `CalcU59WebPlaywright` | `frontends/web/run-tests.sh`: Playwright, Chromium (root, sub-path) and WebKit (offline); `rom-missing.spec.js` (LIB-12 AC-10, EC-3; M-24) | Longer | 78 s (M-24) |
 | `CalcU59RomMissingBuild` | `tests/rom_missing_build.sh`: roms/ without one file (default `TMC0583.txt`); the headless library and a Web `dist/` built from it start without a calculator and name the file (LIB-12, Technical Requirements; M-24); not registered on Windows | Longer | 3 s (M-24; the Web build tree already built) |
 | `CalcU59UIRegression` | XCUITest plan `UIRegressionTests` on the `iphone` simulator | Longer | 154.5 s (iPhone 18 Pro Max, iOS 27.2) |
@@ -138,8 +139,9 @@ Frequent except where the table says otherwise):
 | `shared_controller_tests.cpp` | 17 (C59-6 AC-1, AC-6, AC-11: 4 of them, M-25) |
 | `shared_cooperative_tests.cpp` | 42 |
 | `shared_debug_tests.cpp` | 14 |
-| `shared_formats_tests.cpp` | 21 |
+| `shared_formats_tests.cpp` | 20 (`settings_resolve` went with `SettingsKeys.hpp`, M-32) |
 | `shared_preset_stages_tests.cpp` | 7 |
+| `shared_settings_tests.cpp` | 7 (LIB-9 AC-19–22, AC-24, AC-25, AC-35; M-32) |
 | `shared_runtime_tests.cpp` | 18 |
 | `shared_state_applier_tests.cpp` | 8 |
 | `shared_tables_tests.cpp` | 8 |

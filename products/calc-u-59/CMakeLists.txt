@@ -162,6 +162,16 @@ if(CALCU_TESTS)
                    frontends/qt6/app/QtResourceBundle.cpp
            WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
   set_tests_properties(CalcU59NoOwnRomLookup PROPERTIES LABELS frequent)
+  # No frontend keeps a setting in a platform store (UserDefaults,
+  # @AppStorage, QSettings, localStorage; LIB-9 AC-21, AC-34, design T-24).
+  # Needs bash: not on Windows, like the library's own check.
+  if(NOT WIN32)
+    add_test(NAME CalcU59NoPlatformSettings
+             COMMAND bash ${CMAKE_SOURCE_DIR}/library/settings/check_platform_stores.sh frontends
+                     tools/platform_stores_allowed.txt
+             WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
+    set_tests_properties(CalcU59NoPlatformSettings PROPERTIES LABELS frequent)
+  endif()
   if(Python3_FOUND)
     # tools/headless/ on the machine interface (C59-1 design T14): 5 + 7 = shows 12.
     add_test(NAME CalcU59HeadlessSmoke COMMAND ${Python3_EXECUTABLE} tools/headless/ti59.py 5 + 7 = --summary

@@ -2,6 +2,7 @@
 #include "AppPaths.hpp"
 #include "AppSettings.hpp"
 #include "KeyIds.hpp"
+#include "ModuleCatalog.hpp"
 #include "QtResourceBundle.hpp"
 #include <QMessageBox>
 #include <QDebug>
@@ -39,7 +40,7 @@ EmulatorController::EmulatorController(QObject* parent) : QObject(parent) {
     // The ROM lookup first (LIB-12): without the full set, romsMissing() and no controller.
     m_c = cu59::SessionController::create(static_cast<Platform&>(*this), QtResourceBundle(),
                                           readResource(QStringLiteral(":/roms/cuecards.txt")).value_or(""),
-                                          AppSettings::resolvedSolidStateModuleID().toStdString());
+                                          cu59::kStartModuleID);
     if (!m_c) return;
     m_frameTimer.setTimerType(Qt::PreciseTimer);
     m_frameTimer.setInterval(1000 / 60);
@@ -103,16 +104,14 @@ EmulatorController::CardRead EmulatorController::readCard(const std::string& pat
 }
 
 cu59::SessionController::TraceLocation EmulatorController::traceLocation() {
-    return {AppPaths::toFsPath(AppPaths::traceDir()), static_cast<uint64_t>(AppSettings::resolvedTraceMaxMB()) * 1'000'000};
+    return {AppPaths::toFsPath(AppPaths::traceDir()), static_cast<uint64_t>(AppSettings::settings().traceMaxFileSizeMB()) * 1'000'000};
 }
 
-void EmulatorController::saveLastUsedModel(cu59::Model model) {
-    AppSettings::setValue(AppSettings::kLastUsedModel, static_cast<int>(model));
-}
+void EmulatorController::saveLastUsedModel(cu59::Model model) { AppSettings::settings().setLastUsedModel(model); }
 
-void EmulatorController::saveModuleID(const std::string& moduleID) {
-    AppSettings::setValue(AppSettings::kSolidStateModuleID, qs(moduleID));
-}
+// Adapter A-6 (LIB-9 design §5, until M-33): the module is not remembered
+// (AC-22, behaviour change 59-9).
+void EmulatorController::saveModuleID(const std::string&) {}
 
 void EmulatorController::error(const std::string& title, const std::string& message) {
     emit errorOccurred(qs(title), qs(message));

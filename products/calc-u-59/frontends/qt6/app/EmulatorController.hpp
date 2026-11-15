@@ -9,7 +9,7 @@
 
 // The Qt face of Shared/SessionController (the Swift app's is
 // App/EmulatorViewModel.swift): implements its Platform — the GUI thread,
-// files in AppPaths, QSettings, error alerts — runs its 60 Hz tick and turns
+// files in AppPaths, the settings file (AppSettings), error alerts — runs its 60 Hz tick and turns
 // its change notifications into signals. Everything that isn't UI state
 // lives in Shared/ — see CLAUDE.md § "Frontend Parity".
 class EmulatorController : public QObject, private cu59::SessionController::Platform {

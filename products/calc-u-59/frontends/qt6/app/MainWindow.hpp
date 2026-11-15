@@ -22,6 +22,8 @@ protected:
 
 private:
     void buildMenus();
+    void restoreWindowState();
+    void saveWindowState();
     void openPreset();
     void loadCard();
     void newCard();

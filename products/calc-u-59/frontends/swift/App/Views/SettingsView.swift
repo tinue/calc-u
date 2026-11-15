@@ -10,16 +10,8 @@ struct SettingsView: View {
 
     var viewModel: EmulatorViewModel
 
-    // -1 = last used; 0/1/2 = specific MachineModel.rawValue
-    @AppStorage(SettingsKey.startupModel)    private var startupModelRaw: Int = TISettings.startupLastUsed
-    @AppStorage(SettingsKey.traceLocation)   private var traceLocationRaw: Int = TraceLocation.iCloud.rawValue
-    @AppStorage(SettingsKey.traceCustomPath) private var traceCustomPath: String = ""
-    @AppStorage(SettingsKey.traceMaxFileSizeMB) private var traceMaxFileSizeMB: Int = TISettings.defaultTraceMaxMB
-    @AppStorage(SettingsKey.keyboardFeedback) private var keyboardFeedbackRaw: Int = KeyboardFeedbackType.off.rawValue
-    @AppStorage(SettingsKey.ledFontStyle) private var ledFontStyleRaw: Int = LEDFontStyle.modernized.rawValue
-    #if os(iOS)
-    @AppStorage(SettingsKey.portraitDebugPage) private var portraitDebugPage: Bool = false
-    #endif
+    /// The settings file (Calc-U-59.ini, LIB-9); every change is written through.
+    @Bindable private var settings = SettingsModel.shared
 
     @State private var allModules: [ModuleMetadata] = []
     @State private var pendingModuleID: String = ""
@@ -51,8 +43,6 @@ struct SettingsView: View {
         }
         .frame(maxHeight: .infinity)
         .onAppear {
-            // Force iCloud on iOS/iPadOS
-            traceLocationRaw = TraceLocation.iCloud.rawValue
             allModules = viewModel.allModules()
             pendingModuleID = viewModel.selectedModuleID
         }
@@ -63,7 +53,7 @@ struct SettingsView: View {
     private var settingsForm: some View {
         Form {
             Section("General") {
-                Picker("Startup Calculator", selection: $startupModelRaw) {
+                Picker("Startup Calculator", selection: $settings.startupModelRaw) {
                     ForEach(MachineModel.allCases) { m in
                         Text(m.displayName).tag(m.rawValue)
                     }
@@ -79,12 +69,12 @@ struct SettingsView: View {
 
                 // Keyboard feedback and portrait layout only on iOS
                 #if os(iOS)
-                Picker("Keyboard Feedback", selection: $keyboardFeedbackRaw) {
+                Picker("Keyboard Feedback", selection: $settings.keyboardFeedbackRaw) {
                     ForEach(KeyboardFeedbackType.allCases) { feedback in
                         Text(feedback.displayName).tag(feedback.rawValue)
                     }
                 }
-                Toggle("Debug Page in Portrait", isOn: $portraitDebugPage)
+                Toggle("Debug Page in Portrait", isOn: $settings.portraitDebugPage)
                 #endif
 
                 HStack {
@@ -96,7 +86,7 @@ struct SettingsView: View {
             }
 
             Section("Display") {
-                Picker("Segment Style", selection: $ledFontStyleRaw) {
+                Picker("Segment Style", selection: $settings.ledFontStyleRaw) {
                     ForEach(LEDFontStyle.allCases) { style in
                         Text(style.displayName).tag(style.rawValue)
                     }
@@ -105,14 +95,14 @@ struct SettingsView: View {
 
             Section("Trace File") {
                 #if os(macOS)
-                Picker("Save Location", selection: $traceLocationRaw) {
+                Picker("Save Location", selection: $settings.traceLocationRaw) {
                     Text(TraceLocation.local.displayName).tag(TraceLocation.local.rawValue)
                     Text(TraceLocation.iCloud.displayName).tag(TraceLocation.iCloud.rawValue)
                     Text(TraceLocation.custom.displayName).tag(TraceLocation.custom.rawValue)
                 }
-                if traceLocationRaw == TraceLocation.custom.rawValue {
+                if settings.traceLocationRaw == TraceLocation.custom.rawValue {
                     HStack {
-                        Text(traceCustomPath.isEmpty ? "No folder chosen" : traceCustomPath)
+                        Text(settings.traceCustomPath.isEmpty ? "No folder chosen" : settings.traceCustomPath)
                             .foregroundStyle(.secondary)
                             .lineLimit(1)
                             .truncationMode(.head)
@@ -136,7 +126,7 @@ struct SettingsView: View {
                     Text("Maximum File Size")
                     Spacer()
                     HStack(spacing: 4) {
-                        TextField("", value: $traceMaxFileSizeMB, format: .number)
+                        TextField("", value: $settings.traceMaxFileSizeMB, format: .number)
                             .textFieldStyle(.roundedBorder)
                             .frame(width: 90)
                         Text("MB")
@@ -157,11 +147,8 @@ struct SettingsView: View {
         panel.message = "Choose a folder for CALCU59_TRACE.bin"
         if panel.runModal() == .OK, let url = panel.url {
             print("[SettingsView] User selected folder: \(url.path)")
-            // Use AppSettings to save with security-scoped bookmark
-            // This must be done BEFORE updating the @AppStorage property
+            // [trace] folder, and the security-scoped bookmark (AC-34)
             AppSettings.setCustomTraceDirectory(url)
-            // Now update the UI binding (which will also update UserDefaults via @AppStorage)
-            traceCustomPath = url.path
             print("[SettingsView] Folder saved with bookmark")
             // Trigger refresh of warning so it disappears if bookmark was successful
             authRefreshTrigger = UUID()

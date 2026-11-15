@@ -73,7 +73,7 @@ wrappers in `frontends/swift/Bridge/`, which only translate types (`AppArchitect
 | `LedGeometry` | Segment polygons (modernized), dot grids (classic), decimal point, style parameters |
 | `PrinterFont` | PC-100C 5×7 font and paper geometry (`PrinterGeometry`) |
 | `Bcd` | Register BCD encoding, register lines |
-| `SettingsKeys` | Settings both apps store: key names, defaults, resolution |
+| `Settings` | The settings file `Calc-U-59.ini` (LIB-9): `settingsDecl()` with every key, default and accepted value, and typed calls over the library's `calcu::settings::SettingsFile` |
 | `TextUtil` | Foundation-compatible string helpers, so ported parsers keep their edge cases |
 
 Each header's top comment says what the module is and where its format or

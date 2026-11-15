@@ -12,8 +12,11 @@
 // which looks them up there (DirectoryBundle) once; without the full set it
 // posts "romsMissing" and no machine starts.
 //
-// Web-specific Platform: settings and the TI-58C constant memory are posted
-// to the page, which keeps them in localStorage; magnetic cards live in an
+// Web-specific Platform: the settings are Calc-U-59.ini (LIB-9), a
+// calcu::settings::SettingsFile in Emscripten's file system, whose text the
+// page keeps in one entry of its storage until LIB-15 59 (adapter A-5); the
+// TI-58C constant memory is posted to the page, which keeps it in
+// its storage too; magnetic cards live in an
 // in-memory folder for the page session; traces go to Emscripten's MEMFS
 // (/traces) and are handed to the page as downloads.
 //
@@ -30,6 +33,8 @@
 #include <fstream>
 #include <iterator>
 #include <map>
+#include <memory>
+#include <optional>
 #include <string>
 
 #include "../../app/CardFile.hpp"
@@ -45,14 +50,18 @@
 #include "../../app/PrinterFont.hpp"
 #include "../../app/RomHeatmap.hpp"
 #include "../../app/SessionController.hpp"
-#include "../../app/SettingsKeys.hpp"
+#include "../../app/Settings.hpp"
 #include "../../app/SevenSegment.hpp"
 #include "../../app/StateFile.hpp"
 #include "../../app/TraceWriter.hpp"
+#include "settings/HostDirs.hpp"
+#include "settings/PlatformBase.hpp"
+#include "settings/SettingsFile.hpp"
 
 using namespace emscripten;
 namespace fs = std::filesystem;
-namespace keys = cu59::settings;
+namespace cs = calcu::settings;
+namespace s59 = cu59::settings;
 
 namespace {
 
@@ -90,10 +99,61 @@ std::optional<std::string> stored(val settings, const char* key) {
     return v.as<std::string>();
 }
 
-std::optional<int> storedInt(val settings, const char* key) {
-    auto s = stored(settings, key);
-    if (!s) return std::nullopt;
-    try { return std::stoi(*s); } catch (...) { return std::nullopt; }
+void postStore(const char* key, const std::string& value) {
+    val msg = val::object();
+    msg.set("type", val("store"));
+    msg.set("key", val(key));
+    msg.set("value", val(value));
+    val::global("postMessage")(msg);
+}
+
+// ── Settings (LIB-9; adapter A-5 until M-34) ─────────────────────────────────
+// The page's stored entry `calcu59/Calc-U-59.ini` holds the file's
+// text. At the start it is written to /settings/Calc-U-59/Calc-U-59.ini and
+// opened there (once: read at the start only, AC-6); after each change the
+// file's text goes back to the page. Without an entry the file is created
+// with every default (AC-5, AC-21) and its text is posted at once.
+constexpr const char* kSettingsKey = "Calc-U-59.ini";
+
+struct WebSettings {
+    cs::SettingsFile file;
+    s59::Settings settings{file};
+    explicit WebSettings(cs::SettingsFile f) : file(std::move(f)) {}
+};
+
+std::unique_ptr<WebSettings>& webSettingsSlot() {
+    static std::unique_ptr<WebSettings> slot;
+    return slot;
+}
+
+/// The file's text back to the page (A-5).
+void mirrorSettings() {
+    const auto& w = webSettingsSlot();
+    if (!w || !w->file.writable()) return;
+    std::ifstream in(w->file.path(), std::ios::binary);
+    if (!in) return;
+    postStore(kSettingsKey, std::string((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>()));
+}
+
+/// The settings, opened from the page's stored values at the first call.
+s59::Settings& webSettings(val stored) {
+    auto& slot = webSettingsSlot();
+    if (slot) return slot->settings;
+    cs::HostDirs dirs;
+    dirs.frontend = cs::FrontendKind::Web;
+    dirs.settingsBase = "/settings";
+    const std::string path = cs::settingsFilePath(s59::settingsDecl(), dirs);
+    std::error_code ec;
+    fs::create_directories(fs::path(path).parent_path(), ec);
+    if (!stored.isUndefined() && !stored.isNull()) {
+        val text = stored[kSettingsKey];
+        if (text.isString()) std::ofstream(path, std::ios::binary) << text.as<std::string>();
+    }
+    slot = std::make_unique<WebSettings>(cs::SettingsFile::open(s59::settingsDecl(), path));
+    if (!slot->file.problem().empty())
+        val::global("console").call<void>("warn", std::string("Settings: ") + slot->file.problem());
+    if (slot->file.outcome() == cs::Outcome::Created) mirrorSettings();
+    return slot->settings;
 }
 
 /// "TI-59" / "TI-58" / "TI-58C" (or a raw value) to a model.
@@ -108,12 +168,10 @@ class WebController : public cu59::SessionController::Platform {
 public:
     /// The ROM files are in /roms (the worker wrote them, romFileNames());
     /// `cuecards`: roms/solid-state/cuecards.txt. `settings`: the page's
-    /// stored values by SettingsKeys name.
-    WebController(std::string cuecards, val settings, int model, std::string moduleID) {
+    /// stored entries, the settings file's text and the constant memory.
+    WebController(std::string cuecards, val settings, int model, std::string moduleID)
+        : m_settings(webSettings(settings)) {
         m_constantMemory = stored(settings, kConstantMemoryKey);
-        m_traceMaxMB = keys::resolveTraceMaxMB(storedInt(settings, keys::kTraceMaxFileSizeMB));
-        m_startupModel = storedInt(settings, keys::kStartupModel).value_or(keys::kStartupLastUsed);
-        m_keyboardFeedback = storedInt(settings, keys::kKeyboardFeedback).value_or(keys::kDefaultKeyboardFeedback);
         std::error_code ec;
         fs::create_directories(kTraceDir, ec);
 
@@ -136,7 +194,7 @@ public:
 
     // ── Machine ──────────────────────────────────────────────────────────────
     void startMachine(int model) {
-        if (cu59::settings::isModelRaw(model) && static_cast<cu59::Model>(model) != m_c->model())
+        if (model >= 0 && model <= 2 && static_cast<cu59::Model>(model) != m_c->model())
             m_c->startMachine(static_cast<cu59::Model>(model));
         drain();
     }
@@ -148,19 +206,24 @@ public:
     void resume() { m_c->resumeAfterSuspend(); drain(); }
 
     // ── Settings the page can't resolve itself ───────────────────────────────
+    /// -1: last used; else a model's raw value.
     void setStartupModel(int raw) {
-        m_startupModel = raw;
-        store(keys::kStartupModel, std::to_string(raw));
+        m_settings.setStartupModelChoice(raw >= 0 && raw <= 2 ? std::optional<cu59::Model>(static_cast<cu59::Model>(raw))
+                                                              : std::nullopt);
+        mirrorSettings();
         postSettings();
     }
     void setTraceMaxMB(int mb) {
-        m_traceMaxMB = keys::resolveTraceMaxMB(mb);
-        store(keys::kTraceMaxFileSizeMB, std::to_string(m_traceMaxMB));
+        m_settings.setTraceMaxFileSizeMB(mb);
+        mirrorSettings();
         postSettings();
     }
+    /// 0 off, 1 haptic, 2 click.
     void setKeyboardFeedback(int mode) {
-        m_keyboardFeedback = mode;
-        store(keys::kKeyboardFeedback, std::to_string(mode));
+        m_settings.setKeyboardFeedback(mode == 1   ? s59::KeyboardFeedback::Haptic
+                                       : mode == 2 ? s59::KeyboardFeedback::Click
+                                                   : s59::KeyboardFeedback::Off);
+        mirrorSettings();
         postSettings();
     }
 
@@ -378,10 +441,14 @@ private:
     }
     void showDebugPanel(cu59::DebugPanel panel) override { post("debugPanel", "panel", val(static_cast<int>(panel))); }
     cu59::SessionController::TraceLocation traceLocation() override {
-        return {kTraceDir, static_cast<uint64_t>(m_traceMaxMB) * 1'000'000};
+        return {kTraceDir, static_cast<uint64_t>(m_settings.traceMaxFileSizeMB()) * 1'000'000};
     }
-    void saveLastUsedModel(cu59::Model m) override { store(keys::kLastUsedModel, std::to_string(static_cast<int>(m))); }
-    void saveModuleID(const std::string& id) override { store(keys::kSolidStateModuleID, id); }
+    void saveLastUsedModel(cu59::Model m) override {
+        m_settings.setLastUsedModel(m);
+        mirrorSettings();
+    }
+    /// Adapter A-6 (LIB-9 design §5, until M-34): the module is not remembered (AC-22).
+    void saveModuleID(const std::string&) override {}
     void error(const std::string& title, const std::string& message) override {
         if (!m_errors.isUndefined()) m_errors.call<void>("push", message);
         else post("error", "message", val(title + ": " + message));
@@ -394,13 +461,7 @@ private:
     void diagnostic(const std::string& message) override { val::global("console").call<void>("debug", message); }
     void changed(uint32_t c) override { m_changes |= c; }
 
-    void store(const char* key, const std::string& value) {
-        val msg = val::object();
-        msg.set("type", val("store"));
-        msg.set("key", val(key));
-        msg.set("value", val(value));
-        val::global("postMessage")(msg);
-    }
+    void store(const char* key, const std::string& value) { postStore(key, value); }
 
     /// UI jobs queued by the session, then one post per kind of change.
     void drain() {
@@ -465,9 +526,10 @@ private:
 
     void postSettings() {
         val o = val::object();
-        o.set("startupModel", m_startupModel);
-        o.set("traceMaxMB", m_traceMaxMB);
-        o.set("keyboardFeedback", m_keyboardFeedback);
+        const auto chosen = m_settings.startupModelChoice();
+        o.set("startupModel", chosen ? static_cast<int>(*chosen) : -1);
+        o.set("traceMaxMB", m_settings.traceMaxFileSizeMB());
+        o.set("keyboardFeedback", static_cast<int>(m_settings.keyboardFeedback()));
         post("settings", "settings", o);
     }
 
@@ -821,9 +883,7 @@ private:
     val m_errors = val::undefined();
 
     std::optional<std::string> m_constantMemory;
-    int m_traceMaxMB = keys::kDefaultTraceMaxMB;
-    int m_keyboardFeedback = keys::kDefaultKeyboardFeedback;
-    int m_startupModel = keys::kStartupLastUsed;
+    s59::Settings& m_settings;
 
     std::map<std::string, std::string> m_cards;
     bool m_cardsChanged = false;
@@ -840,14 +900,13 @@ private:
 // ── Free functions ───────────────────────────────────────────────────────────
 
 /// What to start with: the model and module from the host's overrides, else
-/// the stored settings (SettingsKeys resolution). {model, moduleID}.
+/// the settings file (the startup model, LIB-9 AC-20); the module is the
+/// Master Library unless the host names one (AC-22). {model, moduleID}.
 val startupPlan(val settings, std::string modelOverride, std::string moduleOverride, std::string /*cuecards*/) {
-    cu59::Model model = keys::resolveStartupModel(storedInt(settings, keys::kStartupModel),
-                                                  storedInt(settings, keys::kLastUsedModel));
+    cu59::Model model = webSettings(settings).startupModel();
     if (auto m = modelNamed(modelOverride)) model = *m;
-    std::string moduleID = keys::resolveModuleID(stored(settings, keys::kSolidStateModuleID));
+    std::string moduleID = cu59::kStartModuleID;
     if (!moduleOverride.empty() && cu59::moduleRomFile(moduleOverride)) moduleID = moduleOverride;
-    if (!cu59::moduleRomFile(moduleID)) moduleID = keys::kDefaultModuleID;
     val o = val::object();
     o.set("model", static_cast<int>(model));
     o.set("moduleID", moduleID);

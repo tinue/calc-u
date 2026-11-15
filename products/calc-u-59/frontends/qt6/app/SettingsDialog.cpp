@@ -29,9 +29,13 @@ SettingsDialog::SettingsDialog(EmulatorController& controller, QWidget* parent) 
     m_startup->addItem(QStringLiteral("TI-58C"), 2);
     m_startup->insertSeparator(3);
     m_startup->addItem(QStringLiteral("Last Used"), -1);
-    m_startup->setCurrentIndex(m_startup->findData(AppSettings::value<int>(AppSettings::kStartupModel, cu59::settings::kStartupLastUsed)));
-    connect(m_startup, qOverload<int>(&QComboBox::activated), this,
-            [this] { AppSettings::setValue(AppSettings::kStartupModel, m_startup->currentData().toInt()); });
+    const auto chosen = AppSettings::settings().startupModelChoice();
+    m_startup->setCurrentIndex(m_startup->findData(chosen ? static_cast<int>(*chosen) : -1));
+    connect(m_startup, qOverload<int>(&QComboBox::activated), this, [this] {
+        const int raw = m_startup->currentData().toInt();
+        AppSettings::settings().setStartupModelChoice(raw < 0 ? std::nullopt
+                                                              : std::optional<cu59::Model>(static_cast<cu59::Model>(raw)));
+    });
     gf->addRow(QStringLiteral("Startup Calculator"), m_startup);
 
     m_module = new QComboBox(general);
@@ -47,9 +51,10 @@ SettingsDialog::SettingsDialog(EmulatorController& controller, QWidget* parent) 
     m_style = new QComboBox(display);
     m_style->addItem(QStringLiteral("Modernized"), 0);
     m_style->addItem(QStringLiteral("Classic"), 1);
-    m_style->setCurrentIndex(AppSettings::value<int>(AppSettings::kLedFontStyle, cu59::settings::kDefaultLedFontStyle) == 1 ? 1 : 0);
-    connect(m_style, qOverload<int>(&QComboBox::activated), this,
-            [this] { AppSettings::setValue(AppSettings::kLedFontStyle, m_style->currentData().toInt()); });
+    m_style->setCurrentIndex(AppSettings::settings().ledStyle() == cu59::LedStyle::Classic ? 1 : 0);
+    connect(m_style, qOverload<int>(&QComboBox::activated), this, [this] {
+        AppSettings::settings().setLedStyle(static_cast<cu59::LedStyle>(m_style->currentData().toInt()));
+    });
     df->addRow(QStringLiteral("Segment Style"), m_style);
     col->addWidget(display);
 
@@ -69,20 +74,21 @@ SettingsDialog::SettingsDialog(EmulatorController& controller, QWidget* parent) 
                  [](const QString& dir) { AppSettings::setOpenDir(AppSettings::OpenFolder::Presets, dir); });
     addFolderRow(grid, QStringLiteral("Card Folder"), QStringLiteral("Folder for cards and ti58c.mem"),
                  [] { return AppPaths::displayPath(AppPaths::cardDir()); }, [] { return AppPaths::cardDir(); },
-                 [] { return !AppSettings::value<QString>(AppSettings::kCardDirOverride, QString()).isEmpty(); },
+                 [] { return !AppSettings::saveFolderOverride().isEmpty(); },
                  [this](const QString& dir) {
-                     setOverride(AppSettings::kCardDirOverride, dir);
+                     AppSettings::setSaveFolderOverride(dir);
                      m_controller.persistConstantMemory();  // the running TI-58C keeps its memory in the new folder
                  });
     addFolderRow(grid, QStringLiteral("Trace Folder"), QStringLiteral("Folder for CALCU59_TRACE.bin"),
                  [] { return AppPaths::displayPath(AppPaths::traceDir()); }, [] { return AppPaths::traceDir(); },
-                 [] { return !AppSettings::value<QString>(AppSettings::kTraceDirOverride, QString()).isEmpty(); },
-                 [](const QString& dir) { setOverride(AppSettings::kTraceDirOverride, dir); });
+                 [] { return !AppSettings::traceFolderOverride().isEmpty(); },
+                 [](const QString& dir) { AppSettings::setTraceFolderOverride(dir); });
     m_maxMB = new QSpinBox(files);
     m_maxMB->setRange(1, 100000);
     m_maxMB->setSuffix(QStringLiteral(" MB"));
-    m_maxMB->setValue(AppSettings::resolvedTraceMaxMB());
-    connect(m_maxMB, qOverload<int>(&QSpinBox::valueChanged), this, [](int v) { AppSettings::setValue(AppSettings::kTraceMaxFileSizeMB, v); });
+    m_maxMB->setValue(AppSettings::settings().traceMaxFileSizeMB());
+    connect(m_maxMB, qOverload<int>(&QSpinBox::valueChanged), this,
+            [](int v) { AppSettings::settings().setTraceMaxFileSizeMB(v); });
     const int row = grid->rowCount();
     grid->addWidget(new QLabel(QStringLiteral("Maximum Trace File Size"), files), row, 0);
     grid->addWidget(m_maxMB, row, 1, Qt::AlignLeft);
@@ -91,11 +97,6 @@ SettingsDialog::SettingsDialog(EmulatorController& controller, QWidget* parent) 
     auto* buttons = new QDialogButtonBox(QDialogButtonBox::Close, this);
     connect(buttons, &QDialogButtonBox::rejected, this, &QDialog::reject);
     col->addWidget(buttons);
-}
-
-void SettingsDialog::setOverride(const char* key, const QString& dir) {
-    if (dir.isEmpty()) AppSettings::store().remove(QLatin1String(key));
-    else AppSettings::setValue(key, dir);
 }
 
 void SettingsDialog::addFolderRow(QGridLayout* grid, const QString& label, const QString& dialogTitle,

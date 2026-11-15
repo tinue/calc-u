@@ -21,6 +21,10 @@
 //   run <seconds>                      advance emulated time
 //   reset                              the machine's reset()
 //   allreset                           the machine's allReset() and the boot run
+//   powercycle [attach <peripheral>]   0.8.1's power cycle (MachineSession::powerCycleAround):
+//                                      off down 4 frames, released, up to 180 frames until
+//                                      the machine is off, the attach (if any), on down
+//                                      4 frames, released, the boot run (C1600-1 T0, D-8)
 // After every line the run records the display as text with its status
 // symbols, the buzzer (samples, edges, a checksum), the plotters' paper
 // (points and a checksum); at the end a checksum of the memory.
@@ -130,6 +134,36 @@ struct Run {
         else { m15->enqueueKey(name); advance(0.2); }
     }
 
+    bool poweredOn() const { return is1600() ? !m16->isPoweredOff() : !m15->cpu().poweredOff(); }
+    uint64_t runRaw(uint64_t n) { return is1600() ? m16->runCycles(n) : m15->runCycles(n); }
+
+    // The sequence of 0.8.1's MachineSession::powerCycleAround, recorded
+    // before the core is changed (C1600-1 design §3.3, D-8). Like boot and
+    // allreset, its ticks are not added to `cycles`.
+    void powerCycle(const std::string& attach) {
+        const std::vector<std::string> dirs = {"roms"};
+        std::string err;
+        auto change = [&] {
+            if (attach.empty()) return;
+            bool ok = false;
+            if (attach == "ce150") ok = is1600() ? BundledRoms::attachCE150(*m16, dirs, &err) : BundledRoms::attachCE150(*m15, dirs, &err);
+            else if (attach == "ce158") ok = is1600() ? BundledRoms::attachCE158(*m16, dirs, &err) : BundledRoms::attachCE158(*m15, dirs, &err);
+            else if (attach == "ce1600p" && is1600()) ok = BundledRoms::attachCE1600P(*m16, dirs, "new", &err);
+            if (!ok) error = "attach " + attach + ": " + err;
+        };
+        if (!poweredOn()) { change(); return; }
+        const auto frame = static_cast<uint64_t>(hz() / 60);
+        key("off", true);
+        runRaw(frame * 4);
+        key("off", false);
+        for (int i = 0; i < 180 && poweredOn(); ++i) runRaw(frame);
+        change();
+        if (is1600()) m16->setOnKeyPressed(true); else m15->setOnKeyPressed(true);
+        runRaw(frame * 4);
+        if (is1600()) m16->setOnKeyPressed(false); else m15->setOnKeyPressed(false);
+        if (is1600()) runBootToPrompt(*m16); else runBootToPrompt(*m15);
+    }
+
     void record(const std::string& line) {
         out += "> " + line + "\n";
         if (!m15 && !m16) return;
@@ -184,6 +218,13 @@ struct Run {
         else if (cmd == "press" || cmd == "release") { std::string k; in >> k; key(k, cmd == "press"); }
         else if (cmd == "run") { double s = 0; in >> s; advance(s); }
         else if (cmd == "reset") { if (is1600()) m16->reset(); else m15->reset(); }
+        else if (cmd == "powercycle") {
+            std::string word, p;
+            in >> word >> p;
+            if (!word.empty() && word != "attach") { error = "powercycle [attach <peripheral>]"; return; }
+            powerCycle(p);
+            if (!error.empty()) return;
+        }
         else if (cmd == "allreset") {
             if (is1600()) { m16->allReset(); runBootToPrompt(*m16); } else { m15->allReset(); runBootToPrompt(*m15); }
         }

@@ -137,9 +137,10 @@ Frequent except where the table says otherwise):
 
 | CTest entry | What | Group | Measured (M4 Pro, 2026-11-14) |
 |---|---|---|---|
-| `CoreTests` | 803 `TEST`s: unit and integration tests of the core and the app layer (real ROMs, presets, loaders, job equivalence), the golden replays (table below) | Frequent | 38.7 s |
+| `CoreTests` | 850 `TEST`s: unit and integration tests of the core and the app layer (real ROMs, presets, loaders, job equivalence), the machine interface (C1600-1, LIB-1 1600, LIB-2 1600), the golden replays through it (table below) | Frequent | 38.1 s (M-26, 2026-11-15) |
 | `CalcU1600CheckPresets` | `tools/check_presets.sh`: every preset in the repository parses | Frequent | 0.3 s |
-| | **Frequent, Calc-U-1600** | | **39.0 s** |
+| `CalcU1600MachineIncludeCheck` | `tools/check_machine_includes.sh`: no file outside `core/` (app, frontends, tools, dev) includes a machine class, directly or through a core header, or names one (C1600-1, Technical Requirements; design T13; M-26) | Frequent | 1.1 s |
+| | **Frequent, Calc-U-1600** | | **39.3 s** (M-26) |
 | `CalcU1600WebPlaywright` | `frontends/web/run-tests.sh`: Playwright, Chromium (root, sub-path) and WebKit (offline) | Longer | 22.5 s (Homebrew Emscripten 7.0, after `<cstdlib>` was added to `core/Debug/BreakpointTable.cpp`); 31 s in CI (6.0.13) |
 | `CalcU1600WasmSmoke` | `tools/build_wasm_check.sh`: core and app layer under node | Longer | 5.1 s locally without the build; 44 s in CI with the build |
 | `CalcU1600Shots.<scenario>` | the nine screenshot scenarios of `docs/developer/screenshots/guide/` run as checks, into the build tree | Longer | 39.6 s, the nine together (2.2–9.2 s each), all passed |
@@ -153,38 +154,38 @@ needs ROMs that are missing reports `SKIP`):
 
 | File | `TEST`s | File | `TEST`s |
 |---|---|---|---|
-| `basic_fastloader_tests.cpp` | 8 | `pc1600_basicloader_tests.cpp` | 11 |
-| `basic_program_source_tests.cpp` | 8 | `pc1600_basictyper_tests.cpp` | 12 |
-| `basictyper_tests.cpp` | 8 | `pc1600_ce150_tests.cpp` | 5 |
-| `battery_card_instance_tests.cpp` | 19 | `pc1600_host_drive_tests.cpp` | 7 |
-| `ce150_tests.cpp` | 9 | `pc1600_keyboard_display_tests.cpp` | 38 |
-| `ce151_tests.cpp` | 3 | `pc1600_machine_tests.cpp` | 33 |
-| `ce155_tests.cpp` | 3 | `pc1600_phase54_tests.cpp` | 3 |
-| `ce158_tests.cpp` | 17 | `pc1600_preset_tests.cpp` | 39 |
-| `ce1600f_tests.cpp` | 24 | `pc1600_program_placement_tests.cpp` | 12 |
-| `ce1600p_tests.cpp` | 5 | `pc1600_slot_module_tests.cpp` | 13 |
-| `ce161_tests.cpp` | 4 | `pc1600_slot_ram_tests.cpp` | 5 |
-| `ce1638_tests.cpp` | 2 | `pc1600_tape_tests.cpp` | 3 |
-| `ce163f_tests.cpp` | 12 | `piezo_sampler_tests.cpp` | 12 |
-| `ce502b_tests.cpp` | 2 | `preset_tests.cpp` | 44 |
-| `connector_tests.cpp` | 14 | `presetloader_trace_tests.cpp` | 7 |
-| `debug_target_tests.cpp` | 22 | `program_file_tests.cpp` | 11 |
-| `disasm_tests.cpp` | 15 | `run_control_tests.cpp` | 6 |
-| `golden_runs_tests.cpp` | 1 (the golden replays; `CALCU1600_GOLDEN_RECORD=1` records new references only) | `sc7852_tests.cpp` | 39 |
-| `host_directory_drive_tests.cpp` | 25 | `tape_deck_tests.cpp` | 11 |
-| `inspector_tests.cpp` | 13 | `tc8576f_tests.cpp` | 20 |
-| `job_tests.cpp` | 2 | `app/tests/shared_app_session_tests.cpp` | 13 |
-| `key_paste_tests.cpp` | 13 | `app/tests/shared_bay_tests.cpp` | 4 |
-| `lcd_screenshot_tests.cpp` | 5 | `app/tests/shared_geometry_tests.cpp` | 5 |
-| `lcd_text_tests.cpp` | 21 | `app/tests/shared_host_key_map_tests.cpp` | 4 |
-| `lh5801_tests.cpp` | 57 | `app/tests/shared_machine_session_tests.cpp` | 7 |
-| `lh5803_tests.cpp` | 8 | `app/tests/shared_pacing_tests.cpp` | 3 |
-| `listing_tests.cpp` | 10 | `app/tests/shared_preset_catalog_tests.cpp` | 4 |
-| `machine_code_file_tests.cpp` | 22 | `app/tests/shared_settings_tests.cpp` | 4 |
-| `memory_card_tests.cpp` | 47 (the 8 YAML reader cases moved to the library in M-24) | | |
-| `pacing_longrun_tests.cpp` | 4: `pacing_longrun_scripted_pc1500a`, `_pc1600` Frequent; `pacing_longrun_real_clock_pc1500a`, `_pc1600` Checkpoint (return at once without `CALCU1600_PACING_LONGRUN`) | | |
-| `pc1500_tape_tests.cpp` | 2 | | |
-| `pc1600_bank_tests.cpp` | 23 | | |
+| `basic_fastloader_tests.cpp` | 8 | `pc1600_bank_tests.cpp` | 23 |
+| `basic_program_source_tests.cpp` | 8 | `pc1600_basicloader_tests.cpp` | 11 |
+| `basictyper_tests.cpp` | 8 | `pc1600_basictyper_tests.cpp` | 12 |
+| `battery_card_instance_tests.cpp` | 19 | `pc1600_ce150_tests.cpp` | 5 |
+| `ce150_tests.cpp` | 9 | `pc1600_host_drive_tests.cpp` | 7 |
+| `ce151_tests.cpp` | 3 | `pc1600_keyboard_display_tests.cpp` | 38 |
+| `ce155_tests.cpp` | 3 | `pc1600_machine_tests.cpp` | 33 |
+| `ce158_tests.cpp` | 17 | `pc1600_phase54_tests.cpp` | 3 |
+| `ce1600f_tests.cpp` | 24 | `pc1600_preset_tests.cpp` | 39 |
+| `ce1600p_tests.cpp` | 5 | `pc1600_program_placement_tests.cpp` | 12 |
+| `ce161_tests.cpp` | 4 | `pc1600_slot_module_tests.cpp` | 13 |
+| `ce1638_tests.cpp` | 2 | `pc1600_slot_ram_tests.cpp` | 5 |
+| `ce163f_tests.cpp` | 12 | `pc1600_tape_tests.cpp` | 3 |
+| `ce502b_tests.cpp` | 2 | `peripherals_tests.cpp` | 8 (LIB-2 AC-28–32, AC-34; M-26) |
+| `connector_tests.cpp` | 14 | `piezo_sampler_tests.cpp` | 12 |
+| `debug_target_tests.cpp` | 22 | `preset_tests.cpp` | 44 |
+| `descriptor_tests.cpp` | 8 (LIB-1 AC-34–41; M-26) | `presetloader_trace_tests.cpp` | 7 |
+| `disasm_tests.cpp` | 15 | `program_file_tests.cpp` | 11 |
+| `golden_runs_tests.cpp` | 1 (the golden replays through the machine interface; `CALCU1600_GOLDEN_RECORD=1` records new references only) | `run_control_tests.cpp` | 6 |
+| `host_directory_drive_tests.cpp` | 25 | `sc7852_tests.cpp` | 39 |
+| `inspector_tests.cpp` | 13 | `sharp_machine_tests.cpp` | 28 (C1600-1 AC-1–21, EC-1–3; M-26) |
+| `job_tests.cpp` | 2 | `tape_deck_tests.cpp` | 11 |
+| `key_paste_tests.cpp` | 13 | `tc8576f_tests.cpp` | 20 |
+| `lcd_screenshot_tests.cpp` | 5 | `app/tests/serial_links_tests.cpp` | 2 (LIB-2 AC-33; M-26) |
+| `lcd_text_tests.cpp` | 21 | `app/tests/shared_app_session_tests.cpp` | 14 |
+| `lh5801_tests.cpp` | 57 | `app/tests/shared_bay_tests.cpp` | 4 |
+| `lh5803_tests.cpp` | 8 | `app/tests/shared_geometry_tests.cpp` | 5 |
+| `listing_tests.cpp` | 10 | `app/tests/shared_host_key_map_tests.cpp` | 4 |
+| `machine_code_file_tests.cpp` | 22 | `app/tests/shared_machine_session_tests.cpp` | 7 |
+| `memory_card_tests.cpp` | 47 (the 8 YAML reader cases moved to the library in M-24) | `app/tests/shared_pacing_tests.cpp` | 3 |
+| `pacing_longrun_tests.cpp` | 4: `pacing_longrun_scripted_pc1500a`, `_pc1600` Frequent; `pacing_longrun_real_clock_pc1500a`, `_pc1600` Checkpoint (return at once without `CALCU1600_PACING_LONGRUN`) | `app/tests/shared_preset_catalog_tests.cpp` | 4 |
+| `pc1500_tape_tests.cpp` | 2 | `app/tests/shared_settings_tests.cpp` | 4 |
 
 ## Not in a group
 

@@ -134,3 +134,26 @@ and takes locks (the host adapter of ADR 0009).
 
 Not done in M-23 (other columns): AC-24 to AC-27 (Calc-U-59, M-25) and
 AC-28 to AC-34 (Calc-U-1600, M-26, M-31, M-47).
+
+## Calc-U-1600, the M-26 part (2026-11-15, branch `m26-sharp-interface`)
+
+With C1600-1 (its qa-report has the run, the deviations and the open
+points). Tests in `products/calc-u-1600/tests/peripherals_tests.cpp` and
+`products/calc-u-1600/app/tests/serial_links_tests.cpp`,
+`shared_app_session_tests.cpp`, program `CoreTests` (label `frequent`):
+11 tests, 188 checks passed, 0 failed. The column is Done in M-47
+(plan §2.1; it also waits for M-31, the library's sessions), so it stays
+In progress.
+
+| ID | Result | Test case |
+|---|---|---|
+| AC-28 | Pass | `lib2_ac28_slots_one_chain_contact_level_power_cycle` (module slots take one, the 60-pin connector a chain, all contact level with a power cycle after an attach or detach; an attach on a running machine waits for the off point, design D-2, also the one the ROM reaches by itself; row 1600-4 in effect) |
+| AC-29 | Pass | `lib2_ac29_second_printer_refused` (a CE-150 or CE-1600P in `printer`, another printer refused: the place takes one), `lib2_ac29_ce1600p_ce158_refused_both_ways` ("The CE-1600P and the CE-158 cannot be used together."; row 1600-22 in effect) |
+| AC-30 | Pass | `lib2_ac30_ce150_and_ce158_together` |
+| AC-31 | Pass | `lib2_ac31_ce158_same_emulated_time_pc1500_pc1600` |
+| AC-32 | Pass | `lib2_ac32_ce161_switch_blocks_writes` (the controls capability and the write block; the save that sets the switch is LIB-7's, M-47) |
+| AC-33 | Pass | `lib2_ac33_pc1600_rs232c_file`, `lib2_ac33_ce158_file_on_first_use_all_models` (`app/tests/serial_links_tests.cpp`, through the session's `HostLinks`, the product-held adapter until M-31) |
+| AC-34 | Pass | `lib2_ac34_rtc_on_three_models`, `lib2_ac34_clock_runs_on_emulated_time` (`peripherals_tests.cpp`), `lib2_ac34_set_at_build_and_after_operation` (`app/tests/shared_app_session_tests.cpp`) |
+
+Not here: what the C1600-1 design (§1) gives the column's later steps,
+M-31 (the library's sessions) and M-47 (media places).

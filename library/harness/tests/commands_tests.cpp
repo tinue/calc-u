@@ -152,6 +152,26 @@ TEST(ac9_capabilities_with_kind_id_owner_and_places) {
     CHECK(r.find("{\"place\":\"card-1\",\"plugged\":[]}") != std::string::npos);
 }
 
+// LIB-4 L12 (LIB-4 AC-9): the control state read like any other state topic.
+TEST(ac9_state_control_state_reads_the_topic) {
+    TestRun run;   // test-seg; HarnessProduct::controlSetup() by default: no printers, no rules
+    CHECK(run.server != nullptr);
+    if (!run.server) return;
+    const std::string bare = run.line("state control-state");
+    CHECK(bare.rfind("done 1\n{\"models\":[{\"id\":\"test-seg\",\"available\":true},{\"id\":\"test-dot\",\"available\":true}],"
+                     "\"model\":\"test-seg\",",
+                     0) == 0);
+    CHECK(bare.find("\"panels\":[]") != std::string::npos);
+    CHECK(bare.find("\"product\":{}") != std::string::npos);
+    CHECK_EQ(run.line("attach printer test-printer"), std::string("done\n"));
+    const std::string after = run.line("state control-state");
+    CHECK(after.find("{\"id\":\"test-printer\",\"name\":\"Test printer\",\"plugged\":true,\"variants\":[],"
+                     "\"available\":true}") != std::string::npos);
+    CHECK(after.find("{\"id\":\"test-uart\",\"name\":\"Test UART\",\"plugged\":false,\"variants\":[],\"available\":true}") !=
+          std::string::npos);   // a replace of the printer
+    CHECK(after.find("\"reason\":\"The test printer and the test UART cannot be used together.\"") != std::string::npos);
+}
+
 TEST(ac9_quit_ends_serve) {
     TestRun run;
     CHECK(run.server != nullptr);

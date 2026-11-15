@@ -1,4 +1,5 @@
 #pragma once
+#include "control/ControlPart.hpp"
 #include "harness/Commands.hpp"
 #include "harness/HarnessHost.hpp"
 #include "harness/Product.hpp"
@@ -118,6 +119,7 @@ private:
     std::unique_ptr<peripherals::PeripheralsPart> peripherals_;
     std::unique_ptr<MachineStatePart> state_;
     std::unique_ptr<startup::StartupPart> startup_;
+    std::unique_ptr<control::ControlPart> control_;
     std::unique_ptr<sessions::AppSession> session_;
     std::unique_ptr<HarnessHost> host_;
     CommandRegistry registry_;

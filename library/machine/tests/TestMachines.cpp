@@ -122,6 +122,7 @@ std::vector<PeripheralDescriptor> peripherals() {
                                           {PinOutDescriptor{PinOutId{"test.jack"}, PinOutLevel::Functional,
                                                             Takes::Chain, AfterChange::Nothing}}}};
     hub.places = {PlaceDescriptor{PlaceName{"jack"}, ConnectorId{"jack"}, PinOutId{"test.jack"}, 2}};
+    hub.mediaPlaces = {MediaPlaceDescriptor{MediaPlaceId{"hub-disk"}, "test-disk", MediaPassage::Holding, {0}}};   // LIB-4 EC-4
 
     PeripheralDescriptor uart;
     uart.id = kUart;

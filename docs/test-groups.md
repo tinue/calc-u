@@ -50,7 +50,7 @@ the `<cstdlib>` fix).
 
 | CTest entry | What | Group | Measured (M4 Pro, 2026-11-14) |
 |---|---|---|---|
-| `calcu_library_tests` | 373 `TEST`s (M-35; 19 of them harness attach, `library/harness/attach/tests/`, with `CALCU_ATTACH`, on by default in a POSIX tree with the tests; real sockets on 127.0.0.1 and a host loop on the real clock, about 3 s; M-33): the library's own tests with the machines built for the tests (`library/machine/tests/TestMachines.*`) and the product declared for the settings tests (`library/settings/tests/TestProduct.hpp`), no product code (LIB-1 AC-24; LIB-1 design §2a); also run alone by the CI job `library` of both product workflows. The pacing tests run on a scripted wall clock (`library/pacing/tests/TestSliceRunner.hpp`), never the host's; so do the session tests (`library/sessions/tests/ScriptedClock.hpp`), with the test frontend and the test product part of `library/sessions/tests/`. LIB-2's host links are tested here with an injected link factory (`peripherals/tests/host_links_tests.cpp`), on every platform; the ROM lookup's tests write their ROM files into a temporary folder (`library/roms/tests/TestRomFiles.hpp`); the harness tests run the product made for them (`library/harness/tests/TestProduct.*`: `test-seg` offering the machine state, `test-dot`) in virtual time, each run in a temporary run folder; LIB-18's tests run `library/startup/tests/TestProductMachines.hpp` (the test product, its settings and a session rig, paced and in virtual time) with the stand-in for LIB-6's loader (`TestPresetLoader.hpp`) | Frequent | 0.64 s (M-28, 2026-11-15, RelWithDebInfo; most of it the five-hour scripted runs of LIB-17) |
+| `calcu_library_tests` | 405 `TEST`s (M-37; 19 of them harness attach, `library/harness/attach/tests/`, with `CALCU_ATTACH`, on by default in a POSIX tree with the tests; real sockets on 127.0.0.1 and a host loop on the real clock, about 3 s; M-33): the library's own tests with the machines built for the tests (`library/machine/tests/TestMachines.*`) and the product declared for the settings tests (`library/settings/tests/TestProduct.hpp`), no product code (LIB-1 AC-24; LIB-1 design §2a); also run alone by the CI job `library` of both product workflows. The pacing tests run on a scripted wall clock (`library/pacing/tests/TestSliceRunner.hpp`), never the host's; so do the session tests (`library/sessions/tests/ScriptedClock.hpp`), with the test frontend and the test product part of `library/sessions/tests/`. LIB-2's host links are tested here with an injected link factory (`peripherals/tests/host_links_tests.cpp`), on every platform; the ROM lookup's tests write their ROM files into a temporary folder (`library/roms/tests/TestRomFiles.hpp`); the harness tests run the product made for them (`library/harness/tests/TestProduct.*`: `test-seg` offering the machine state, `test-dot`) in virtual time, each run in a temporary run folder; LIB-18's tests run `library/startup/tests/TestProductMachines.hpp` (the test product, its settings and a session rig, paced and in virtual time) with the stand-in for LIB-6's loader (`TestPresetLoader.hpp`) | Frequent | 0.64 s (M-28, 2026-11-15, RelWithDebInfo; most of it the five-hour scripted runs of LIB-17) |
 | `calcu_library_pty_tests` | 4 `TEST`s of `library/peripherals/tests/pty_tests.cpp`: LIB-2's host links on real pseudo-terminals in a temporary folder for serial links (AC-18 to AC-20, EC-7); a program of its own (with the test machines), registered only where `CALCU_HAS_PTY` is set (macOS, Linux), so that it can move to Longer without a design change (LIB-2 design §8) | Frequent | 0.8 s (M-23, 2026-11-15) |
 | `calcu_cli.<case>` | LIB-11 T13: `calcu_test` (the harness with the test product only) in a process of its own, run by `library/harness/tests/cli/cli_cases.cmake` with `cmake -P`: argv, standard input and output, exit status; six entries, `ac1_product_by_name_or_short_form_any_case`, `ac2_one_shot_runs_in_order_and_exits_zero`, `ac2_first_refusal_exits_nonzero_with_reason`, `ac3_serve_one_reply_per_line_until_quit`, `ec3_serve_ends_at_end_of_input`, `ec4_unknown_product_lists_products` (M-28) | Frequent | 0.1 s, the six together |
 | `calcu_serve_python` | LIB-11 T15: `library/harness/python/tests/test_calcu_serve.py`, the Python helper for `calcu serve` against `calcu_test` (with `uv run --no-project python -I`, else Python 3; M-28) | Frequent | 0.05 s |
@@ -94,7 +94,7 @@ Frequent):
 | `sessions/tests/sound_tests.cpp` | 5 |
 | `sessions/tests/speed_tests.cpp` | 6 |
 | `sessions/tests/suspend_tests.cpp` | 5 |
-| `sessions/tests/topic_tests.cpp` | 9 |
+| `sessions/tests/topic_tests.cpp` | 10 (`before_flush_runs_at_every_flush`, LIB-4 L3, M-37) |
 | `sessions/tests/value_tests.cpp` | 1 |
 | `peripherals/tests/controls_tests.cpp` | 6 |
 | `peripherals/tests/host_links_tests.cpp` | 2 |
@@ -108,7 +108,7 @@ Frequent):
 | `formats/tests/yaml_tests.cpp` | 9 (the YAML reader, moved from Calc-U-1600 in M-24; no AC) |
 | `formats/tests/formats_tests.cpp` | 3 (LIB-11 AC-12, AC-22, EC-2; M-28) |
 | `harness/tests/protocol_tests.cpp` | 8 (LIB-11 AC-2, AC-4, AC-5, AC-13, AC-22; M-28) |
-| `harness/tests/commands_tests.cpp` | 13 (LIB-11 AC-5, AC-7, AC-9, AC-11, EC-2, EC-5, EC-7; M-28) |
+| `harness/tests/commands_tests.cpp` | 14 (LIB-11 AC-5, AC-7, AC-9, AC-11, EC-2, EC-5, EC-7; M-28; LIB-4 AC-9, M-37) |
 | `harness/tests/display_text_tests.cpp` | 10 (LIB-11 AC-9, AC-10, AC-23; M-28) |
 | `harness/tests/run_tests.cpp` | 19 (LIB-11 AC-2, AC-6, AC-8, AC-9, AC-21, AC-24, EC-1, EC-3, EC-6; M-28, M-35) |
 | `harness/tests/startup_commands_tests.cpp` | 4 (LIB-18 AC-15; M-35) |
@@ -118,6 +118,9 @@ Frequent):
 | `startup/tests/change_tests.cpp` | 10 (LIB-18 AC-10, AC-11, AC-12, EC-5; M-35) |
 | `startup/tests/reset_tests.cpp` | 6 (LIB-18 AC-13, AC-14, EC-3, EC-7; M-35) |
 | `startup/tests/running_tests.cpp` | 4 (LIB-18 AC-16; M-35) |
+| `control/tests/control_state_tests.cpp` | 14 (LIB-4 AC-1, AC-5, EC-1, EC-3, EC-4; M-37) |
+| `control/tests/availability_tests.cpp` | 11 (LIB-4 AC-2, AC-3, AC-7, EC-5; M-37) |
+| `control/tests/control_part_tests.cpp` | 4 (LIB-4 AC-4, AC-6, AC-8; M-37) |
 
 ## Calc-U-59
 

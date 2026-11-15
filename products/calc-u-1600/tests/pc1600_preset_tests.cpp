@@ -15,8 +15,8 @@
 #include <string>
 #include <vector>
 
-#include <unistd.h> // mkdtemp
 
+#include "TempFolder.hpp"
 #include "../core/Connector/CE1600FCard.hpp"
 #include "../core/Connector/FloppyImageFile.hpp"
 #include "../core/PC1600/PC1600BusDrive.hpp"
@@ -813,11 +813,8 @@ TEST(test_parser_floppy_file_and_host_drive) {
 // mounts S3: before the boot, and `saveas: template ... file:` writes
 // template files through savePresetMedia() (Core/Preset/PresetMedia.hpp).
 TEST(test_loader_host_drive_floppy_file_and_template_saves) {
-    char tmpl[] = "/tmp/pc1600_preset_media_XXXXXX";
-    const char* dir = mkdtemp(tmpl);
-    CHECK(dir != nullptr);
-    if (!dir) return;
-    const std::string d(dir);
+    const calcu::testing::TempFolder tmp("calcu1600-pc1600-preset-media");
+    const std::string d = tmp.str();
     std::filesystem::create_directories(d + "/S3");
     const std::string presetPath = d + "/make.pc1600";
     const std::string floppyPath = std::filesystem::absolute("frontends/qt6/resources/cards/formatted.floppy.yaml").string();
@@ -875,11 +872,8 @@ TEST(test_loader_host_drive_floppy_file_and_template_saves) {
 // bus ROM hides the drive from the module scan, so the SAVE lands nowhere.
 TEST(test_loader_bus_rom_shadows_the_host_drive_rom) {
     for (const bool blank : {false, true}) {
-        char tmpl[] = "/tmp/pc1600_bus_rom_XXXXXX";
-        const char* dir = mkdtemp(tmpl);
-        CHECK(dir != nullptr);
-        if (!dir) return;
-        const std::string d(dir);
+        const calcu::testing::TempFolder tmp("calcu1600-pc1600-bus-rom");
+        const std::string d = tmp.str();
         std::filesystem::create_directories(d + "/S3");
         std::vector<char> rom(0x4000, char(0xFF));
         if (!blank) {

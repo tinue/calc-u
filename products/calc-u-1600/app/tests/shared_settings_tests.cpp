@@ -9,6 +9,8 @@
 #include <utility>
 #include <vector>
 
+#include "Files.hpp"
+#include "TempFolder.hpp"
 #include "TestSettings.hpp"
 #include "app/AppPaths.hpp"
 #include "settings/Paths.hpp"
@@ -23,22 +25,9 @@ namespace cs = calcu::settings;
 using shared::Model;
 using shared::OpenFolder;
 
-std::string readAll(const fs::path& p) {
-    std::ifstream in(p, std::ios::binary);
-    return std::string((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>());
-}
+using calcu::testing::readText;
 
-void writeAll(const fs::path& p, const std::string& text) {
-    fs::create_directories(p.parent_path());
-    std::ofstream(p, std::ios::binary) << text;
-}
-
-// A temporary folder of its own, removed afterwards.
-struct TempDir {
-    fs::path root;
-    explicit TempDir(const char* name) : root(fs::temp_directory_path() / name) { fs::remove_all(root); }
-    ~TempDir() { fs::remove_all(root); }
-};
+using TempDir = calcu::testing::TempFolder;
 
 // AC-26: the file is Calc-U-1600.ini and holds these keys with these defaults.
 TEST(lib9_ac26_declaration) {
@@ -171,7 +160,7 @@ TEST(lib9_ac29_folders_four_kinds) {
 // AC-30: [window] keeps the size the user gave; without it 900 x 500.
 TEST(lib9_ac30_window_size_default_900x500_and_kept) {
     TempDir tmp("calcu1600-lib9-window");
-    const std::string path = (tmp.root / "Calc-U-1600.ini").generic_string();
+    const std::string path = (tmp.path() / "Calc-U-1600.ini").generic_string();
     {
         cs::SettingsFile file = cs::SettingsFile::open(shared::settingsDecl(), path);
         shared::Settings s(file);
@@ -181,7 +170,7 @@ TEST(lib9_ac30_window_size_default_900x500_and_kept) {
     cs::SettingsFile again = cs::SettingsFile::open(shared::settingsDecl(), path);
     shared::Settings s(again);
     CHECK(s.windowWidth() == 1024 && s.windowHeight() == 640);
-    const std::string text = readAll(path);
+    const std::string text = readText(path);
     CHECK(text.find("width = 1024") != std::string::npos && text.find("height = 640") != std::string::npos);
 }
 
@@ -190,15 +179,15 @@ TEST(lib9_ac30_window_size_default_900x500_and_kept) {
 // platform store (that no frontend uses one: CTest CalcU1600NoPlatformSettings).
 TEST(lib9_ac31_first_start_defaults_and_writes_file) {
     TempDir tmp("calcu1600-lib9-first-start");
-    cs::HostDirs dirs = testHostDirs((tmp.root / "home").generic_string());
+    cs::HostDirs dirs = testHostDirs((tmp.path() / "home").generic_string());
     const std::string path = cs::settingsFilePath(shared::settingsDecl(), dirs);
-    CHECK(path == (tmp.root / "home" / "settings" / "Calc-U-1600" / "Calc-U-1600.ini").generic_string());
+    CHECK(path == (tmp.path() / "home" / "settings" / "Calc-U-1600" / "Calc-U-1600.ini").generic_string());
     CHECK(!fs::exists(path));
 
     cs::SettingsFile file = cs::SettingsFile::open(shared::settingsDecl(), path);
     CHECK(file.outcome() == cs::Outcome::Created);
     CHECK(fs::exists(path));
-    const std::string text = readAll(path);
+    const std::string text = readText(path);
     CHECK(text == cs::SettingsFile::defaultText(shared::settingsDecl()));
     CHECK(text.rfind("format-version = 1\n", 0) == 0);
     for (const char* line : {"model = last", "last-model =", "PC-1500 =", "PC-1500A =", "PC-1600 =", "save-folder =",
@@ -212,8 +201,8 @@ TEST(lib9_ac31_first_start_defaults_and_writes_file) {
     CHECK(s.windowWidth() == 900 && s.dapPort() == 32168 && s.traceMaxFileSizeMB() == 50);
 
     // The save folder is ~/Calc-U-1600 on Qt6 (LIB-9 AC-13).
-    shared::AppPaths paths(s, dirs, shared::BundleDirs{(tmp.root / "bundle").generic_string(), {}});
-    CHECK(paths.instanceDir() == (tmp.root / "home" / "Calc-U-1600").generic_string());
+    shared::AppPaths paths(s, dirs, shared::BundleDirs{(tmp.path() / "bundle").generic_string(), {}});
+    CHECK(paths.instanceDir() == (tmp.path() / "home" / "Calc-U-1600").generic_string());
     CHECK(paths.places().settingsFile() == path);
 }
 
@@ -234,7 +223,7 @@ TEST(lib9_ac32_web_and_qt6_share_declaration) {
 // AC-32: the keys the Web has no use for are kept in the file and ignored.
 TEST(lib9_ac32_web_keeps_and_ignores_dap_serial_window_folders) {
     TempDir tmp("calcu1600-lib9-web-keeps");
-    const fs::path ini = tmp.root / "settings" / "Calc-U-1600" / "Calc-U-1600.ini";
+    const fs::path ini = tmp.path() / "settings" / "Calc-U-1600" / "Calc-U-1600.ini";
     std::string text = cs::SettingsFile::defaultText(shared::settingsDecl());
     auto put = [&](const std::string& from, const std::string& to) {
         const auto at = text.find(from);
@@ -247,17 +236,17 @@ TEST(lib9_ac32_web_keeps_and_ignores_dap_serial_window_folders) {
     put("width = 900", "width = 1200");
     put("host-drive =", "host-drive = fixed:/drive");
     text += "\n[unknown]\nkept = yes\n";
-    writeAll(ini, text);
+    calcu::testing::writeText(ini, text);
 
     cs::HostDirs web;
     web.frontend = cs::FrontendKind::Web;
-    web.home = (tmp.root / "persist").generic_string();
-    web.settingsBase = (tmp.root / "settings").generic_string();
-    web.saveFolder = (tmp.root / "persist" / "Calc-U-1600").generic_string();
+    web.home = (tmp.path() / "persist").generic_string();
+    web.settingsBase = (tmp.path() / "settings").generic_string();
+    web.saveFolder = (tmp.path() / "persist" / "Calc-U-1600").generic_string();
     cs::SettingsFile file = cs::SettingsFile::open(shared::settingsDecl(), ini.generic_string());
     CHECK(file.outcome() == cs::Outcome::Read);
     shared::Settings s(file);
-    shared::AppPaths paths(s, web, shared::BundleDirs{(tmp.root / "bundle").generic_string(), {}});
+    shared::AppPaths paths(s, web, shared::BundleDirs{(tmp.path() / "bundle").generic_string(), {}});
     // Ignored: the save folder override, the serial link folder (Qt6 only).
     CHECK(paths.instanceDir() == web.saveFolder);
     CHECK(paths.serialLinkDir() == web.saveFolder);
@@ -266,7 +255,7 @@ TEST(lib9_ac32_web_keeps_and_ignores_dap_serial_window_folders) {
     // A change the Web makes keeps them.
     s.setStartupModelPreference("PC-1600");
     s.setDefaultPresetPath(Model::PC1500, "examples:x.pc1500");
-    const std::string after = readAll(ini);
+    const std::string after = readText(ini);
     for (const char* line : {"dap-enabled = true", "link-folder = /links", "save-folder = /elsewhere",
                              "width = 1200", "host-drive = fixed:/drive", "kept = yes", "model = PC-1600",
                              "PC-1500 = examples:x.pc1500"})
@@ -275,7 +264,7 @@ TEST(lib9_ac32_web_keeps_and_ignores_dap_serial_window_folders) {
 
 TEST(test_app_paths) {
     TempDir tmp("calcu-shared-paths-test");
-    const fs::path& root = tmp.root;
+    const fs::path& root = tmp.path();
     const std::string home = (root / "home").generic_string();
     TestSettings t;
     shared::Settings& s = t.settings;

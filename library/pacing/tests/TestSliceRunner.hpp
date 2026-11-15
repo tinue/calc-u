@@ -1,6 +1,7 @@
 #pragma once
 #include "TestMachines.hpp"
 #include "pacing/Pacer.hpp"
+#include "ScriptedClock.hpp"
 #include <cstdint>
 #include <functional>
 #include <vector>
@@ -15,14 +16,7 @@ namespace calcu::pacing::test {
 using machine::Ticks;
 using machine::test::TestMachine;
 
-// The wall clock of a test: it moves only when the test or the runner moves
-// it. Any epoch will do; it starts at one hour.
-struct ScriptedClock {
-    WallTime now = std::chrono::hours(1);
-    WallClock fn() {
-        return [this] { return now; };
-    }
-};
+using ScriptedClock = calcu::testing::ScriptedClock;   // no step: the runner moves it
 
 struct SliceRecord {
     SliceRequest request;

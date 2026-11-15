@@ -18,6 +18,15 @@
 
 namespace calcu::sessions::test {
 
+using namespace std::chrono_literals;
+
+// The session tests' wall clock: library/testing/'s, 1 ms at every reading
+// (no slice runner moves it; the pacer's full speed runs until its allowance
+// is used up on this clock).
+struct ScriptedClock : ::calcu::testing::ScriptedClock {
+    ScriptedClock() { step = 1ms; }
+};
+
 using machine::Ticks;
 using machine::test::TestMachine;
 using namespace std::chrono_literals;

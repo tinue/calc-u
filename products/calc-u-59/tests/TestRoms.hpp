@@ -9,10 +9,9 @@
 #include "machine/Machine.hpp"
 #include "peripherals/Controls.hpp"
 #include "roms/Bundle.hpp"
+#include "TempFolder.hpp"
 #include <cstdio>
 #include <cstdlib>
-#include <atomic>
-#include <chrono>
 #include <filesystem>
 #include <fstream>
 #include <memory>
@@ -35,28 +34,8 @@ inline std::optional<std::string> readFile(const std::string& path) {
     return ss.str();
 }
 
-/// A fresh folder under the system's temporary folder, removed with the object.
-struct TempDir {
-    std::filesystem::path path;
-    TempDir() {
-        static std::atomic<int> n{0};
-        path = std::filesystem::temp_directory_path() /
-               ("calcu59-test-" + std::to_string(std::chrono::steady_clock::now().time_since_epoch().count()) + "-" +
-                std::to_string(n++));
-        std::filesystem::create_directories(path);
-    }
-    ~TempDir() {
-        std::error_code ec;
-        std::filesystem::remove_all(path, ec);
-    }
-    TempDir(const TempDir&) = delete;
-    TempDir& operator=(const TempDir&) = delete;
-    /// Every file of roms/ (no subfolders) copied in.
-    void copyRoms() const {
-        for (const auto& e : std::filesystem::directory_iterator("roms"))
-            if (e.is_regular_file()) std::filesystem::copy_file(e.path(), path / e.path().filename());
-    }
-};
+/// A fresh folder of the test, removed with the object (library/testing/).
+using TempDir = calcu::testing::TempFolder;
 
 /// The ROM set of roms/ (fetch_roms.sh), through the lookup as the apps get
 /// it (LIB-12): looked up once per test program. A missing or bad file ends

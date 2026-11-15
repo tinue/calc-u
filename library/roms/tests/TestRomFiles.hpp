@@ -1,6 +1,7 @@
 #pragma once
 #include "TestMachines.hpp"
 #include "roms/Lookup.hpp"
+#include "TempFolder.hpp"
 #include <atomic>
 #include <chrono>
 #include <cstdint>
@@ -22,31 +23,7 @@ namespace fs = std::filesystem;
 using namespace calcu::machine;
 using namespace calcu::machine::test;
 
-// A fresh folder under the system's temporary folder, removed with the object.
-class TempFolder {
-public:
-    TempFolder() {
-        static std::atomic<int> n{0};
-        const auto stamp = std::chrono::steady_clock::now().time_since_epoch().count();
-        path_ = fs::temp_directory_path() / ("calcu-roms-test-" + std::to_string(stamp) + "-" + std::to_string(n++));
-        fs::create_directories(path_);
-    }
-    ~TempFolder() {
-        std::error_code ec;
-        fs::remove_all(path_, ec);
-    }
-    TempFolder(const TempFolder&) = delete;
-    TempFolder& operator=(const TempFolder&) = delete;
-    const fs::path& path() const { return path_; }
-    void write(const std::string& name, std::string_view bytes) const {
-        std::ofstream f(path_ / name, std::ios::binary);
-        f.write(bytes.data(), static_cast<std::streamsize>(bytes.size()));
-    }
-    void remove(const std::string& name) const { fs::remove(path_ / name); }
-
-private:
-    fs::path path_;
-};
+using calcu::testing::TempFolder;
 
 // The text reader of the tests: a row is a non-empty line; a line ending
 // in \n, \r\n or \r is one line (EC-2). A line "bad" cannot be read.

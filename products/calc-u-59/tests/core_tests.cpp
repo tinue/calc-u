@@ -49,7 +49,7 @@ TEST(rom_missing_file_throws) {
     // start: there is no ROM set, so no machine can be built (name kept from
     // 2.3.0, C59-1 AC-5).
     testroms::TempDir dir;
-    auto r = cu59::lookUpRoms(calcu::roms::DirectoryBundle(dir.path));
+    auto r = cu59::lookUpRoms(calcu::roms::DirectoryBundle(dir.path()));
     CHECK(!r.ok());
     CHECK(r.set == nullptr);
     CHECK_EQ(r.missing.files.size(), size_t{24});

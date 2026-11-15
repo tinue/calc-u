@@ -1,4 +1,6 @@
 #pragma once
+#include "Files.hpp"
+#include "TempFolder.hpp"
 #include "settings/Declaration.hpp"
 #include <atomic>
 #include <chrono>
@@ -10,7 +12,8 @@
 
 // A product declared for the settings tests (LIB-9 design §2): `Test-Product`,
 // models `Model-A` and `Model-B`, fallback `Model-B`, the family keys and one
-// key of each other kind. And a temporary folder that removes itself.
+// key of each other kind; the temporary folder and the file helpers of
+// library/testing/.
 
 namespace calcu::settings::test {
 
@@ -65,41 +68,10 @@ inline const ProductDecl& testProduct() {
     return decl;
 }
 
-// A new, empty folder under the system's temporary folder, removed with
-// everything in it when the object goes.
-class TempDir {
-public:
-    TempDir() {
-        static std::atomic<int> counter{0};
-        const auto stamp = std::chrono::steady_clock::now().time_since_epoch().count();
-        path_ = std::filesystem::temp_directory_path() /
-                ("calcu-settings-test-" + std::to_string(stamp) + "-" + std::to_string(counter++));
-        std::filesystem::create_directories(path_);
-    }
-    ~TempDir() {
-        std::error_code ec;
-        std::filesystem::remove_all(path_, ec);
-    }
-    TempDir(const TempDir&) = delete;
-    TempDir& operator=(const TempDir&) = delete;
+using TempDir = calcu::testing::TempFolder;
 
-    std::string str() const { return path_.generic_string(); }
-    std::string operator/(const std::string& name) const { return (path_ / name).generic_string(); }
-
-private:
-    std::filesystem::path path_;
-};
-
-inline void writeText(const std::string& path, const std::string& text) {
-    std::filesystem::create_directories(std::filesystem::path(path).parent_path());
-    std::ofstream out(path, std::ios::binary | std::ios::trunc);
-    out << text;
-}
-
-inline std::string readText(const std::string& path) {
-    std::ifstream in(path, std::ios::binary);
-    return std::string(std::istreambuf_iterator<char>(in), std::istreambuf_iterator<char>());
-}
+inline void writeText(const std::string& path, const std::string& text) { calcu::testing::writeText(path, text); }
+using calcu::testing::readText;
 
 inline bool exists(const std::string& path) { return std::filesystem::exists(path); }
 

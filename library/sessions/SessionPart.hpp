@@ -83,6 +83,12 @@ public:
     virtual void attach(SessionSetup&) = 0;
     virtual void beforeCall(SessionContext&, pacing::WallTime) {}
     virtual void afterCall(SessionContext&, pacing::WallTime) {}   // per-call duties
+    // At the start of every flush (the end of every host call, command,
+    // request and service answer, of advanceUnpaced and of listen), after the
+    // parts' afterCall, on the session's thread: a state computed from the
+    // whole session, set on its topic here (LIB-4's control state, LIB-4
+    // design §3.5). It sets topics only and calls nothing of the session.
+    virtual void beforeFlush(SessionContext&) {}
     virtual void machineChanged(SessionContext&) {}
     // An operation ended or was stopped (AC-18); e.g. LIB-2's real-time
     // clocks set from the host (LIB-2 AC-23).

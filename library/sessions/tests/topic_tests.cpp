@@ -161,3 +161,48 @@ TEST(ac6_late_listener_gets_log_since_reset_and_no_notices) {
     for (const auto& m : late.log)
         if (const auto* s = std::get_if<StreamMessage>(&m)) CHECK(s->topic != kNoticesTopic);
 }
+
+// LIB-4 L3 (LIB-4 design §3.5): SessionPart::beforeFlush runs at the start of
+// every flush, after the parts' afterCall.
+namespace {
+struct FlushCounter final : SessionPart {
+    void attach(SessionSetup&) override {}
+    void beforeFlush(SessionContext&) override {
+        ++flushes;
+        if (test) afterCallsSeen = test->afterCalls;
+    }
+    const TestPart* test = nullptr;
+    int flushes = 0, afterCallsSeen = -1;
+};
+} // namespace
+
+TEST(before_flush_runs_at_every_flush) {
+    FlushCounter counter;
+    RigOptions o;
+    o.services.offered = {HostService::FilePicker};
+    o.extraParts = {&counter};
+    Rig r(o);
+    counter.test = &r.part;
+    CHECK(counter.flushes >= 1);   // the session's first flush and the listen
+    r.build();
+    const int n = counter.flushes;
+    r.call();   // a host call
+    CHECK_EQ(counter.flushes, n + 1);
+    CHECK_EQ(counter.afterCallsSeen, r.part.afterCalls);   // after the parts' afterCall
+    r.send("tp.set", valueArg(1));   // a command
+    CHECK_EQ(counter.flushes, n + 2);
+    r.ask("tp.echo", valueArg(2));   // a request
+    CHECK_EQ(counter.flushes, n + 3);
+    const CallId cmd = r.send("tp.ask", Value::object({{"service", static_cast<int>(HostService::FilePicker)}}));
+    CHECK_EQ(counter.flushes, n + 4);
+    CHECK(r.fe.reply(cmd) && r.fe.reply(cmd)->done);
+    if (!r.fe.reply(cmd) || !r.fe.reply(cmd)->result) return;
+    const CallId askId = static_cast<CallId>(payloadAs<TestValue>(r.fe.reply(cmd)->result)->v);
+    r.session->answer(askId, ServiceAnswer{true, Value(), ""});   // a service answer
+    CHECK_EQ(counter.flushes, n + 5);
+    r.session->advanceUnpaced(100);
+    CHECK_EQ(counter.flushes, n + 6);
+    TestFrontend late;
+    r.session->listen(late);
+    CHECK_EQ(counter.flushes, n + 7);
+}

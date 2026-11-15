@@ -983,17 +983,17 @@ messages), 1600-33 ("Loading…" without a title; controls disabled while
 something loads). New rows M-49 adds to `docs/behaviour-changes.md` in
 the same step, consequences of the spec that the ledger lacks:
 
-- **1600-34.** Web: the page binds no shortcut to a menu item: ⌘R /
+- **1600-35.** Web: the page binds no shortcut to a menu item: ⌘R /
   Ctrl+R, ⌘⇧R, ⌘, and ⌘C no longer act there (they are the browser's);
   pasting still types (the browser's paste). Qt6: Ctrl+O (⌘O) is Load
   Preset…. The startup model is chosen by the model's name ("PC-1500";
   today "PC-1500 (ROM A04)"). Sources: LIB-14 AC-4, AC-11; D-30.
-- **1600-35.** When a ROM file is missing, the Qt6 window opens and
+- **1600-36.** When a ROM file is missing, the Qt6 window opens and
   shows which files are missing in place of the calculator, and Help and
   About work (today a message box, then the app quits). On the Web the
   same text stands in place of the calculator, without the title
   "Calc-U-1600 stopped". Sources: LIB-14 AC-19, LIB-12 AC-5.
-- **1600-36.** A mouse click in the gap between two keys, within 24
+- **1600-37.** A mouse click in the gap between two keys, within 24
   pixels of a key, presses that key, as a touch does on the Web today
   (today a click must hit the key); the Qt6 faceplate also takes touch.
   Sources: LIB-14 AC-24, D-8. OQ-5 called such a change too small to
@@ -1065,7 +1065,7 @@ the same step, consequences of the spec that the ledger lacks:
   do not appear twice once the CE-1600P is plugged in.
 - **D-30 (AC-4).** The Web page drops all its menu shortcuts, ⌘C
   included; the paste event stays (LIB-5, not a menu binding). Ledger
-  1600-34.
+  1600-35.
 - **D-31 (D-22).** The Web's static faceplate data is one product
   request, `c1600.faceplate-map {model}`: the shell's hit map, the
   LCD's place and the layout of its indicators, from the tables Qt6
@@ -1087,7 +1087,7 @@ the same step, consequences of the spec that the ledger lacks:
   Part D, O-2); `shared::Model` gone (C1600-1 §5). "Completes" gains
   LIB-3 1600 and C1600-2, which §5.1 already has Done in M-49.
 - M-49 "Knowledge, ledger" gains the memory files of D.10 and the new
-  rows 1600-34 to 1600-36.
+  rows 1600-35 to 1600-37.
 
 ### D.14 Questions for the user
 

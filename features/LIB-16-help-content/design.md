@@ -213,7 +213,7 @@ peripheral, no window picture; Mermaid where a diagram helps (AC-4).
 
 Converted from `products/calc-u-1600/docs/` (AC-11), rewritten where
 the rows of Part D changed what they describe (AC-3; the ledger's rows
-1600-1 to 1600-36 are the list of such places) and renamed by
+1600-1 to 1600-37 are the list of such places) and renamed by
 `docs/glossary-mapping.md`'s visible renames ("memory card" → memory
 module, "custom memory cards" → module definitions, "Reset All" → Cold
 boot, "Default presets" → Startup presets, "Battery-card saves" → Save

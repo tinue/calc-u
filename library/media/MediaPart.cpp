@@ -66,8 +66,8 @@ void MediaPart::setControl(startup::MachineControl* c) {
             ModuleMedium* mm = moduleCap(m, p);
             if (it == bindings_.end() || !mm) return;
             r.content = mm->content();
-            if (const auto* c = peripherals::controlsCapability(m, machine::PeripheralOwner{e.peripheral, e.place}))
-                for (const auto& info : c->list())
+            if (const auto* ctl = peripherals::controlsCapability(m, machine::PeripheralOwner{e.peripheral, e.place}))
+                for (const auto& info : ctl->list())
                     if (info.form == machine::ControlForm::Switch)
                         r.switches.push_back(machine::SwitchPosition{info.id, info.on});
             registerModule(r.content, it->second);

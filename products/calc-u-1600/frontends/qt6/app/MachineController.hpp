@@ -121,7 +121,7 @@ signals:
 
 private:
     // shared::AppSession::Platform
-    void romMissing(const std::string& error, const std::string& searchedIn) override;
+    void romMissing(const calcu::roms::RomsMissing& missing) override;
     void notice(shared::MachineSession::Notice notice, const std::string& detail) override;
     void machineAboutToChange() override;
     void machineReplaced() override;

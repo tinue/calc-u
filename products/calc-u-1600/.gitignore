@@ -79,6 +79,3 @@ roms/*.bin
 /dev/**/*.rst
 /dev/**/*.sym
 /examples/machine-code/memtest.bin
-
-# Fetched by roms/fetch_roms.sh until M-27 (ROM bytes, ADR 0034).
-frontends/qt6/resources/cards/ce502b.card.yaml

@@ -11,7 +11,7 @@
 #include "Machine/SharpBuilder.hpp"
 #include "Machine/SharpCatalogue.hpp"
 #include "Machine/SharpMachine.hpp"
-#include "Machine/SharpRomImages.hpp"
+#include "Machine/SharpRoms.hpp"
 #include "PC1500/PC1500TypedInput.hpp"
 #include "PC1600/PC1600TypedInput.hpp"
 #include "app/Utf8Path.hpp"
@@ -85,7 +85,16 @@ MachineSession::MachineSession(Settings& settings, const AppPaths& paths, Listen
       m_bays(bays),
       m_catalogue(sharp::sharpCatalogue()),
       m_hostTime([] { return std::chrono::system_clock::now(); }),
-      m_hostLinks(serialFileFor, folderOrNone(paths.serialLinkDir())) {}
+      m_hostLinks(serialFileFor, folderOrNone(paths.serialLinkDir())) {
+    // The one lookup, at the start (LIB-12 AC-4, AC-13): the whole full set
+    // or nothing. The host drive's ROM is bundled beside it (roms.md Q-1).
+    calcu::roms::LookupResult found = sharp::lookUpRoms(calcu::roms::DirectoryBundle(toPath(paths.bundledResourcesDir())));
+    m_roms = std::move(found.set);
+    m_romsMissing = std::move(found.missing);
+    if (m_roms) sharp::addModuleDefinitions(m_catalogue, *m_roms);
+    if (auto rom = sharp::readHostDriveRom({paths.bundledResourcesDir()}))
+        m_hostDriveRom = std::make_shared<const std::vector<std::uint8_t>>(std::move(*rom));
+}
 
 MachineSession::~MachineSession() = default;
 
@@ -95,9 +104,9 @@ void MachineSession::resetRomSelectionsToDefault() {
     m_ce1600pRomVersion = CE1600PRomVersion::New;
 }
 
-void MachineSession::romMissing(const std::string& error) {
-    m_listener.romMissing(error, m_paths.bundledResourcesDir());
-    throw std::runtime_error(error);
+void MachineSession::romMissing() {
+    m_listener.romMissing(m_romsMissing);
+    throw std::runtime_error(calcu::roms::describe(m_romsMissing));
 }
 
 void MachineSession::switchModel(Model model, bool keepPeripherals) {
@@ -149,33 +158,39 @@ job::Task<void> MachineSession::setPC1500RomRevisionJob(PC1500RomRevision revisi
     if (m_model != Model::PC1600) co_await switchModelJob(m_model, /*keepPeripherals=*/true); // rebuild with the new ROM
 }
 
-std::vector<std::string> MachineSession::bundledRomDirs() const { return {m_paths.bundledResourcesDir()}; }
-
 void MachineSession::buildMachine(Model model) {
+    if (!m_roms) romMissing();   // no machine without the full set (AC-5)
+    BuildRequest req;
+    req.model = ModelId{modelIdOf(model)};
+    req.soundRate = sharp::kSoundRate;
+    if (model == Model::PC1600) req.variant = VariantId{m_pc1600RomVersion == PC1600RomVersion::Old ? "Old" : "New"};
+    else req.variant = VariantId{pc1500RomVariantName(m_pc1500RomRevision)};
+    req.roms = m_roms->imagesFor(*m_catalogue.model(req.model), req.variant);
     sharp::SharpMachineBuilder builder;
-    for (;;) {
-        BuildRequest req;
-        req.model = ModelId{modelIdOf(model)};
-        req.soundRate = sharp::kSoundRate;
-        if (model == Model::PC1600) req.variant = VariantId{m_pc1600RomVersion == PC1600RomVersion::Old ? "Old" : "New"};
-        else req.variant = VariantId{pc1500RomVariantName(m_pc1500RomRevision)};
-        std::string err;
-        bool ok = sharp::modelRomImages(m_catalogue, req.model, req.variant, bundledRomDirs(), &req.roms, &err);
-        if (ok) {
-            BuildResult built = build(m_catalogue, builder, req);
-            if (built.machine) {
-                m_machine = std::move(built.machine);
-                return;
-            }
-            err = built.refusal;
+    BuildResult built = build(m_catalogue, builder, req);
+    // The set holds every file of every variant (AC-6): no ROM set is used
+    // in place of another (AC-13), and a refusal here is a programming error.
+    if (!built.machine) throw std::logic_error("the ROM set did not build " + req.model.value + ": " + built.refusal);
+    m_machine = std::move(built.machine);
+}
+
+bool MachineSession::peripheralImages(const PeripheralRequest& req, std::vector<RomImage>* out, std::string* error) const {
+    const PeripheralDescriptor* d = m_catalogue.peripheral(req.peripheral);
+    if (!d || d->romsFor(req.variant).empty()) return true;
+    if (req.peripheral.value == sharp::kHostDrive) {
+        if (!m_hostDriveRom) {
+            if (error) *error = "the host drive's ROM " + d->roms.at(0).fileName + " is not bundled";
+            return false;
         }
-        // Only the old PC-1600 ROM set is optional (its dump may be missing
-        // or incomplete): fall back to the new ROM and retry once -- a
-        // new-ROM failure ends the session.
-        if (model != Model::PC1600 || m_pc1600RomVersion != PC1600RomVersion::Old) romMissing(err);
-        m_listener.notice(Notice::OldPC1600RomUnavailable, err);
-        m_pc1600RomVersion = PC1600RomVersion::New;
+        out->push_back({d->roms.at(0).fileName, *m_hostDriveRom});
+        return true;
     }
+    if (!m_roms) {
+        if (error) *error = calcu::roms::describe(m_romsMissing);
+        return false;
+    }
+    *out = m_roms->imagesFor(*d, req.variant);
+    return true;
 }
 
 Machine& MachineSession::resetBareForPreset(Model model, PC1600RomVersion version, CE1600PRomVersion ce1600pVersion) {
@@ -686,12 +701,7 @@ bool MachineSession::attachAt(const char* place, const char* peripheral, std::op
                               std::shared_ptr<const ProductData> content, std::string* error) {
     if (!m_machine) return false;
     PeripheralRequest req{PlacePath{{PlaceName{place}}}, PeripheralId{peripheral}, std::move(variant), {}, std::move(content), {}};
-    std::string err;
-    if (m_catalogue.peripheral(req.peripheral) && !m_catalogue.peripheral(req.peripheral)->romsFor(req.variant).empty() &&
-        !sharp::peripheralRomImages(m_catalogue, req.peripheral, req.variant, bundledRomDirs(), &req.roms, &err)) {
-        if (error) *error = err;
-        return false;
-    }
+    if (!peripheralImages(req, &req.roms, error)) return false;
     const ChangeResult r = m_machine->attach(std::move(req), m_catalogue);
     if (r.refused) {
         if (error) *error = r.refused->reason;
@@ -750,20 +760,6 @@ VariantId ce1600pVariant(CE1600PRomVersion v) { return VariantId{v == CE1600PRom
 
 bool MachineSession::attachCE1600P(std::string* error) {
     if (!isPC1600()) return false;
-    std::string err;
-    std::vector<RomImage> probe;
-    if (!sharp::peripheralRomImages(m_catalogue, PeripheralId{sharp::kCE1600P}, ce1600pVariant(m_ce1600pRomVersion),
-                                    bundledRomDirs(), &probe, &err)) {
-        // Like the PC-1600's own old ROM: the old set is optional (its dump
-        // may be missing), so fall back to the new one. A failing new set
-        // just leaves the plotter detached.
-        if (m_ce1600pRomVersion != CE1600PRomVersion::Old) {
-            if (error) *error = err;
-            return false;
-        }
-        m_listener.notice(Notice::OldCE1600PRomUnavailable, err);
-        m_ce1600pRomVersion = CE1600PRomVersion::New;
-    }
     if (!attachAt(sharp::kPrinter, sharp::kCE1600P, ce1600pVariant(m_ce1600pRomVersion), nullptr, error)) return false;
     // The disk goes in when the CE-1600F is on the bus: at the off point of
     // the power cycle that follows, as in 0.8.1 (adapter, M-47).
@@ -785,21 +781,7 @@ bool MachineSession::swapCE1600PRom(CE1600PRomVersion version, std::string* erro
     setCE1600PRomVersion(version);
     PeripheralRequest req{PlacePath{{PlaceName{sharp::kPrinter}}}, PeripheralId{sharp::kCE1600P}, ce1600pVariant(version), {},
                           nullptr, {}};
-    std::string err;
-    if (!sharp::peripheralRomImages(m_catalogue, req.peripheral, req.variant, bundledRomDirs(), &req.roms, &err)) {
-        if (version != CE1600PRomVersion::Old) {
-            if (error) *error = err;
-            return false;
-        }
-        m_listener.notice(Notice::OldCE1600PRomUnavailable, err);
-        m_ce1600pRomVersion = CE1600PRomVersion::New;
-        req.variant = ce1600pVariant(CE1600PRomVersion::New);
-        req.roms.clear();
-        if (!sharp::peripheralRomImages(m_catalogue, req.peripheral, req.variant, bundledRomDirs(), &req.roms, &err)) {
-            if (error) *error = err;
-            return false;
-        }
-    }
+    if (!peripheralImages(req, &req.roms, error)) return false;
     // One replace: the other variant in the same place, one power cycle
     // (C1600-1 AC-18, design D-5).
     const ChangeResult r = m_machine->replace(PeripheralId{sharp::kCE1600P}, std::move(req), m_catalogue);
@@ -840,11 +822,6 @@ bool MachineSession::hostDriveAttached() const { return pluggedAt(sharp::kHostDr
 MachineSession::NoticeText MachineSession::noticeText(Notice notice, const std::string& detail) {
     const std::string why = detail.empty() ? "" : ":\n\n" + detail;
     switch (notice) {
-        case Notice::OldPC1600RomUnavailable:
-            return {"Old ROM unavailable", "The old PC-1600 ROM could not be loaded" + why + "\n\nUsing the new ROM instead."};
-        case Notice::OldCE1600PRomUnavailable:
-            return {"Old CE-1600P ROM unavailable",
-                    "The old CE-1600P ROM could not be loaded" + why + "\n\nUsing the new ROM instead."};
         case Notice::TapeSaveFailed: return {"Tape", "The tape recording could not be saved" + why};
     }
     return {};

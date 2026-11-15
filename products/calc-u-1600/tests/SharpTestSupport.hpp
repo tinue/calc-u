@@ -12,36 +12,73 @@
 #include "../core/Machine/SharpCatalogue.hpp"
 #include "../core/Machine/SharpCores.hpp"
 #include "../core/Machine/SharpProductKinds.hpp"
-#include "../core/Machine/SharpRomImages.hpp"
 #include "TestCards.hpp"
+#include "TestRoms.hpp"
 #include "TestHarness.hpp"
 
 // Sharp machines built through the machine interface for the M-26 tests
 // (sharp_machine_tests, descriptor_tests, peripherals_tests). Run from
-// products/calc-u-1600 (CoreTests' working directory). A helper returns
-// null / false when a ROM image is missing, so a test can SKIP.
+// products/calc-u-1600 (CoreTests' working directory). The ROM images come
+// from the ROM set of roms/ (testRomSet(), LIB-12); a helper returns null /
+// false when a file of the full set is missing, so a test can SKIP.
 
 namespace sharptest {
 
 using namespace calcu::machine;
 
-inline const std::vector<std::string>& romDirs() {
-    static const std::vector<std::string> dirs = {"roms", "firmware/pc1600-hostdrive"};
-    return dirs;
-}
 inline const char* cardsDir() { return "frontends/qt6/resources/cards"; }
 
-// The catalogue with the bundled module definitions added.
+// The images of a model's variant from the test ROM set; false with `error`
+// without the set.
+inline bool modelImages(const Catalogue& cat, const ModelId& model, const std::optional<VariantId>& v,
+                        std::vector<RomImage>* out, std::string* error) {
+    const MachineDescriptor* d = cat.model(model);
+    if (!testRomSet() || !d) {
+        if (error) *error = "no ROM set in roms/ (or no model " + model.value + ")";
+        return false;
+    }
+    *out = testRomSet()->imagesFor(*d, v);
+    return true;
+}
+// The images of a peripheral's variant: from the test ROM set, the host
+// drive's from firmware/pc1600-hostdrive/ (roms.md Q-1).
+inline bool peripheralImages(const Catalogue& cat, const PeripheralId& id, const std::optional<VariantId>& v,
+                             std::vector<RomImage>* out, std::string* error) {
+    const PeripheralDescriptor* d = cat.peripheral(id);
+    if (!d) {
+        if (error) *error = id.value + " is not a known peripheral";
+        return false;
+    }
+    if (d->romsFor(v).empty()) return true;
+    if (id.value == sharp::kHostDrive) {
+        if (!testPresetRoms().hostDrive) {
+            if (error) *error = "no host drive ROM";
+            return false;
+        }
+        out->push_back({d->roms.at(0).fileName, *testPresetRoms().hostDrive});
+        return true;
+    }
+    if (!testRomSet()) {
+        if (error) *error = "no ROM set in roms/";
+        return false;
+    }
+    *out = testRomSet()->imagesFor(*d, v);
+    return true;
+}
+
+// The catalogue with the bundled module definitions added: the folder's,
+// and the ROM set's (the CE-502B, LIB-12 AC-14).
 inline Catalogue catalogueWithModules() {
     Catalogue c = sharp::sharpCatalogue();
     sharp::addModuleDefinitions(c, cardsDir());
+    if (testRomSet()) sharp::addModuleDefinitions(c, *testRomSet());
     return c;
 }
 
 inline bool haveModelRoms(const char* model, const std::optional<VariantId>& v = std::nullopt) {
     std::vector<RomImage> images;
     std::string error;
-    return sharp::modelRomImages(sharp::sharpCatalogue(), ModelId{model}, v, romDirs(), &images, &error);
+    return modelImages(sharp::sharpCatalogue(), ModelId{model}, v, &images, &error);
 }
 
 inline PlacePath place(const char* p) { return PlacePath{{PlaceName{p}}}; }
@@ -51,7 +88,7 @@ inline PeripheralRequest request(const Catalogue& cat, const char* id, const cha
                                  std::optional<VariantId> variant = std::nullopt, bool* ok = nullptr) {
     PeripheralRequest r{place(where), PeripheralId{id}, std::move(variant), {}, nullptr, {}};
     std::string error;
-    const bool got = sharp::peripheralRomImages(cat, r.peripheral, r.variant, romDirs(), &r.roms, &error);
+    const bool got = peripheralImages(cat, r.peripheral, r.variant, &r.roms, &error);
     if (ok) *ok = got;
     return r;
 }
@@ -77,7 +114,7 @@ inline std::unique_ptr<Machine> buildSharp(const Catalogue& cat, const char* mod
     req.soundRate = sharp::kSoundRate;
     req.peripherals = std::move(peripherals);
     std::string error;
-    if (!sharp::modelRomImages(cat, req.model, req.variant, romDirs(), &req.roms, &error)) return nullptr;
+    if (!modelImages(cat, req.model, req.variant, &req.roms, &error)) return nullptr;
     sharp::SharpMachineBuilder builder;
     BuildResult r = build(cat, builder, req);
     if (refusal) *refusal = r.refusal;

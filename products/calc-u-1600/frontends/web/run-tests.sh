@@ -6,7 +6,7 @@
 set -euo pipefail
 
 WEB="$(cd "$(dirname "$0")" && pwd)"
-DIST="$WEB/dist"
+DIST="${CALCU1600_WEB_DIST:-$WEB/dist}"
 export CALCU_WEB_PORT="${CALCU_WEB_PORT:-8160}"
 SUBPATH_PORT=$((CALCU_WEB_PORT + 1))
 

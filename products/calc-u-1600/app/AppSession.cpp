@@ -194,12 +194,11 @@ job::Task<OpResult> AppSession::loadPresetJob(std::string ref, bool armOnly) {
     if (!parsePresetFile(path, &preset, &parseError)) co_return OpResult::fail(parseError);
     preset.armOnly = armOnly;
 
-    // Bundled catalog first, then the save folder -- the same order the
-    // module bay uses, so a preset's `slot-N: <name>` resolves like the
-    // picker. The bundled folder also holds the ROMs BundledRomCatalog
-    // finds by name.
+    // The ROM modules of the set (the CE-502B), then the bundled catalog,
+    // then the save folder -- the same order the module bay uses, so a
+    // preset's `slot-N: <name>` resolves like the picker. Every ROM comes
+    // from the session's ROM set (LIB-12).
     const std::string bundled = m_paths.bundledResourcesDir();
-    const std::vector<std::string> romDirs = {bundled};
     const std::vector<std::string> extraModuleDirs = {m_paths.instanceDir()};
     // `- trace:` and `- screenshot:` write into the trace folder.
     const std::string traceDir = m_paths.traceDir();
@@ -241,7 +240,7 @@ job::Task<OpResult> AppSession::loadPresetJob(std::string ref, bool armOnly) {
     };
     // The model's preset loader on the old class (adapter until M-46).
     result = co_await sharp::legacy::applyPresetJob(machine, preset, log, traceDir, bundled,
-                                                    [this] { m_machine->seedClockFromHost(); }, romDirs,
+                                                    [this] { m_machine->seedClockFromHost(); }, m_machine->presetRoms(),
                                                     extraModuleDirs, onArmed, onSaveAs);
     if (!result.ok) co_return OpResult::fail(result.error);
     co_return OpResult{};

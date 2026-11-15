@@ -34,9 +34,9 @@ class PC1600Machine;
 ///     `--modules-dir`s, the GUI its bundled cards and then its save
 ///     folder. A missing extra directory is skipped. `slot-N-file:` is
 ///     resolved by the parser and never looks here.
-///   - `romDirs`: where a `plotter:`'s bundled ROM is found by name
-///     (BundledRomCatalog); the GUI passes its resources folder, the CLI
-///     `roms/`. A preset with a plotter but no matching ROM fails.
+///   - `presetRoms`: the ROM set of the start's lookup (LIB-12), with a
+///     `plotter:`'s and `interface:`'s ROMs, and the host drive's own ROM
+///     beside it. A preset whose ROM is not there fails.
 /// `onArmed` fires right before the cold boot, once cards/plotter are
 /// attached but the machine is still powered off -- see PresetArmedFn.
 /// `onSaveAs` fires for each `saveas:` step -- see PresetSaveAsFn.
@@ -44,7 +44,7 @@ class PC1600Machine;
 /// job, so it may outlive them.
 job::Task<PresetLoadResult> applyPC1600PresetJob(PC1600Machine& machine, PresetFile preset, PresetLogFn log = {},
                                               std::string traceDir = ".", std::string moduleDir = ".",
-                                              PresetBootedFn onBooted = {}, std::vector<std::string> romDirs = {},
+                                              PresetBootedFn onBooted = {}, PresetRoms presetRoms = {},
                                               std::vector<std::string> extraModuleDirs = {},
                                               PresetArmedFn onArmed = {}, PresetSaveAsFn onSaveAs = {});
 PresetLoadResult applyPC1600Preset(PC1600Machine& machine, const PresetFile& preset,
@@ -52,7 +52,7 @@ PresetLoadResult applyPC1600Preset(PC1600Machine& machine, const PresetFile& pre
                                    const std::string& traceDir = ".",
                                    const std::string& moduleDir = ".",
                                    const PresetBootedFn& onBooted = {},
-                                   const std::vector<std::string>& romDirs = {},
+                                   const PresetRoms& presetRoms = {},
                                    const std::vector<std::string>& extraModuleDirs = {},
                                    const PresetArmedFn& onArmed = {},
                                    const PresetSaveAsFn& onSaveAs = {});

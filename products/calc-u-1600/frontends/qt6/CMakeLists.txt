@@ -181,16 +181,19 @@ endif()
 set_target_properties(CalcU1600Qt PROPERTIES OUTPUT_NAME "Calc-U-1600")
 
 # ---- Memory-card resource files, and bundled ROMs (loose, NOT .qrc --
-# Core's scanMemoryCardDirectory()/BundledRomCatalog read a real filesystem
-# directory via std::ifstream/std::filesystem, so these must be real files
-# on disk) ----
+# Core's scanMemoryCardDirectory() and the ROM lookup (DirectoryBundle,
+# LIB-12) read a real filesystem directory, so these must be real files on
+# disk) ----
 set(CARD_RESOURCES_SRC_DIR ${CMAKE_CURRENT_SOURCE_DIR}/resources/cards)
 file(GLOB CARD_YAML_FILES ${CARD_RESOURCES_SRC_DIR}/*.card.yaml)
 # Bundled CE-1600F floppy disks (*.floppy.yaml, Connector/FloppyImageFile.hpp)
 # -- listed in the disk picker ahead of the user's saved ones.
 file(GLOB FLOPPY_FILES ${CARD_RESOURCES_SRC_DIR}/*.floppy.yaml)
 set(ROM_RESOURCES_SRC_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../../roms)
-file(GLOB BUNDLED_ROM_FILES ${ROM_RESOURCES_SRC_DIR}/*.ROM ${ROM_RESOURCES_SRC_DIR}/*.bin)
+# The ROM full set as roms/fetch_roms.sh fetches it: the dumps and the
+# CE-502B's module definition (LIB-12 AC-12, AC-14).
+file(GLOB BUNDLED_ROM_FILES ${ROM_RESOURCES_SRC_DIR}/*.ROM ${ROM_RESOURCES_SRC_DIR}/*.bin
+     ${ROM_RESOURCES_SRC_DIR}/*.card.yaml)
 # Calc-U-1600's own PC-1600 host-directory drive ROM: tracked in the repo
 # (roms/ holds only the gitignored original dumps).
 list(APPEND BUNDLED_ROM_FILES

@@ -196,7 +196,7 @@ TEST(test_pc1600_font_from_both_roms) {
     for (const char* version : {"new", "old"}) {
         PC1600Machine m;
         std::string error;
-        if (!BundledRoms::loadPC1600RomSet(m, {"roms"}, version, &error)) {
+        if (!presetroms::loadPC1600RomSet(m, testPresetRoms(), version, &error)) {
             std::fprintf(stderr, "SKIP test_pc1600_font_from_both_roms (%s): %s\n", version, error.c_str());
             continue;
         }
@@ -373,7 +373,7 @@ TEST(test_expect_pc1600) {
             std::fprintf(stderr, "SKIP test_expect_pc1600: PC-1600 ROMs not found\n");
             return;
         }
-        const PresetLoadResult r = applyPC1600Preset(m, p, {}, "/tmp", ".", {}, {"roms"});
+        const PresetLoadResult r = applyPC1600Preset(m, p, {}, "/tmp", ".", {}, testPresetRoms());
         if (!r.ok && r.error.find("ROM") != std::string::npos && r.error.find("expect") == std::string::npos) {
             std::fprintf(stderr, "SKIP test_expect_pc1600: %s\n", r.error.c_str());
             return;
@@ -390,7 +390,7 @@ TEST(test_expect_pc1500) {
     CHECK(parsePresetString("format-version: 1\nmodel: PC-1500\nkeys:\n  - key: mode\n  - type: PRINT 12345*-2\n  - expect: -24690\n",
                             "/tmp/lcd_text_tests_scratch.pc1500", &p, &err));
     PC1500Machine m;
-    const PresetLoadResult r = applyPC1500Preset(m, p, {}, "/tmp", ".", {}, {"roms"});
+    const PresetLoadResult r = applyPC1500Preset(m, p, {}, "/tmp", ".", {}, testPresetRoms());
     if (!r.ok && r.error.find("ROM") != std::string::npos && r.error.find("expect") == std::string::npos) {
         std::fprintf(stderr, "SKIP test_expect_pc1500: %s\n", r.error.c_str());
         return;

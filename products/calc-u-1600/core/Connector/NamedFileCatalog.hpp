@@ -5,6 +5,7 @@
 #include <fstream>
 #include <sstream>
 #include <string>
+#include <string_view>
 #include <system_error>
 #include <vector>
 
@@ -60,9 +61,11 @@ inline std::string namedFileName(const std::string& name, const std::string& suf
 // (newline-separated) -- one bad file never hides the rest. A missing /
 // unreadable directory yields an empty list and sets `*error`. Entries come
 // back sorted by `nameOf(entry)`. `kind` names the file type in errors.
+// `skip`, if given, passes over a file by its name without reading it.
 template <typename Entry, typename ParseFn, typename NameOf>
 std::vector<Entry> scanNamedFiles(const std::string& dir, const std::string& suffix, const std::string& kind,
-                                  ParseFn parse, NameOf nameOf, std::string* error) {
+                                  ParseFn parse, NameOf nameOf, std::string* error,
+                                  bool (*skip)(std::string_view) = nullptr) {
     std::vector<Entry> out;
     auto appendErr = [&](const std::string& msg) {
         if (!error) return;
@@ -87,6 +90,7 @@ std::vector<Entry> scanNamedFiles(const std::string& dir, const std::string& suf
         // ".yaml", so match the filename tail directly.
         const std::string name = p.filename().string();
         if (!named_file_detail::hasSuffix(name, suffix)) continue;
+        if (skip && skip(name)) continue;
 
         std::string text, parseErr;
         if (!named_file_detail::readTextFile(p.string(), &text)) {

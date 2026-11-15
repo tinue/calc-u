@@ -24,8 +24,8 @@ namespace {
 // "../Resources"), or a "resources" folder next to the binary on
 // Windows/Linux (matching windeployqt's and AppImage's flat-next-to-binary
 // convention). Read-only bundled content -- never created if missing; a
-// missing/unreadable directory is tolerated by scanMemoryCardDirectory()/
-// BundledRomCatalog (empty catalogue / resolve failure).
+// missing/unreadable directory is tolerated by scanMemoryCardDirectory()
+// (an empty catalogue); the ROM lookup then names every file missing.
 QString bundledResourcesDir() {
     const QString exeDir = QCoreApplication::applicationDirPath();
 #if defined(Q_OS_MACOS)

@@ -38,7 +38,7 @@ std::vector<uint8_t> readFile(const char* path) {
 
 bool bootWithCE1600P(PC1600Machine& m) {
     std::string error;
-    if (!loadPC1600Roms(m) || !BundledRoms::attachCE1600P(m, {"roms"}, "new", &error)) return false;
+    if (!loadPC1600Roms(m) || !presetroms::attachCE1600P(m, testPresetRoms(), "new", &error)) return false;
     m.allReset();
     runBootToPrompt(m);
     tapKey(m, "mode"); // RUN -> PRO

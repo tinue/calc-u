@@ -390,6 +390,31 @@ private:
     bool m_writeProtected = false;         // the switch position (see setWriteProtected())
 };
 
+/// Build the universal card from a definition's text (`label` names it in
+/// errors: its file) for a specific target host -- e.g. a module definition
+/// of the ROM set (sharp::romSetModules()). Returns nullptr and fills
+/// `error` on a parse failure or when its `compatible-hosts` does not list
+/// `targetHost`. `romOverride`, if given, replaces the ROM of a ROM module
+/// (replaceRomContent()).
+inline std::unique_ptr<ExpansionCard> makeSoftwareDefinedCardFromText(const std::string& text,
+                                                                      const std::string& label,
+                                                                      CardHost targetHost,
+                                                                      std::string* error,
+                                                                      const std::vector<uint8_t>* romOverride = nullptr) {
+    MemoryCardDefinition def;
+    if (!parseMemoryCardDefinition(text, &def, error)) {
+        *error = "module spec '" + label + "': " + *error;
+        return nullptr;
+    }
+    if (!def.compatibleWith(targetHost)) {
+        *error = "module '" + def.moduleName + "' (" + label +
+                 ") is not compatible with " + cardHostToken(targetHost);
+        return nullptr;
+    }
+    if (romOverride && !replaceRomContent(&def, *romOverride, error)) return nullptr;
+    return std::make_unique<SoftwareDefinedCard>(std::move(def));
+}
+
 /// Build the universal card from a definition file for a specific target
 /// host. Returns nullptr and fills `error` on a read/parse failure or when
 /// the file's `compatible-hosts` does not list `targetHost`
@@ -407,17 +432,5 @@ inline std::unique_ptr<ExpansionCard> makeSoftwareDefinedCard(const std::string&
     }
     std::stringstream ss;
     ss << in.rdbuf();
-
-    MemoryCardDefinition def;
-    if (!parseMemoryCardDefinition(ss.str(), &def, error)) {
-        *error = "module spec '" + specPath + "': " + *error;
-        return nullptr;
-    }
-    if (!def.compatibleWith(targetHost)) {
-        *error = "module '" + def.moduleName + "' (" + specPath +
-                 ") is not compatible with " + cardHostToken(targetHost);
-        return nullptr;
-    }
-    if (romOverride && !replaceRomContent(&def, *romOverride, error)) return nullptr;
-    return std::make_unique<SoftwareDefinedCard>(std::move(def));
+    return makeSoftwareDefinedCardFromText(ss.str(), specPath, targetHost, error, romOverride);
 }

@@ -10,7 +10,7 @@
 
 #include "../Connector/FloppyImageFile.hpp"
 #include "../Preset/PresetInterface.hpp"
-#include "../Resources/BundledRomCatalog.hpp"
+#include "../Preset/PresetRoms.hpp"
 #include "PC1600BasicLoader.hpp"
 #include "PC1600BasicTyper.hpp"
 #include "PC1600Keyboard.hpp"
@@ -53,7 +53,7 @@ std::string stepTag(PC1600Machine& machine) {
 // set on any problem.
 bool attachPresetPlotter(PC1600Machine& machine, const std::string& plotter,
                          const std::string& ce1600pRom, const std::string& floppy, const std::string& floppyFile,
-                         int floppySide, const std::vector<std::string>& romDirs,
+                         int floppySide, const PresetRoms& presetRoms,
                          const std::vector<std::string>& moduleDirs, const PresetLogFn& log,
                          PresetLoadResult* result) {
     if (plotter.empty()) return true;
@@ -80,7 +80,7 @@ bool attachPresetPlotter(PC1600Machine& machine, const std::string& plotter,
         result->floppyResolvedPath = floppyFile;
     }
 
-    if (!BundledRoms::attachPlotterByName(machine, plotter, romDirs, &result->error, &result->ce150Attached,
+    if (!presetroms::attachPlotterByName(machine, plotter, presetRoms, &result->error, &result->ce150Attached,
                                           ce1600pRom)) {
         return false;
     }
@@ -98,7 +98,7 @@ bool attachPresetPlotter(PC1600Machine& machine, const std::string& plotter,
 
 // `host-drive:` -- mount the directory as S3: / Y: before the cold boot,
 // so the ROM's module scan finds the drive (docs/PC1600-Host-Drive.md).
-bool attachPresetHostDrive(PC1600Machine& machine, const std::string& dir, const std::vector<std::string>& romDirs,
+bool attachPresetHostDrive(PC1600Machine& machine, const std::string& dir, const PresetRoms& presetRoms,
                            const PresetLogFn& log, PresetLoadResult* result) {
     if (dir.empty()) return true;
     std::error_code ec;
@@ -107,7 +107,7 @@ bool attachPresetHostDrive(PC1600Machine& machine, const std::string& dir, const
         return false;
     }
     std::string err;
-    if (!BundledRoms::attachHostDrive(machine, romDirs, dir, &err)) {
+    if (!presetroms::attachHostDrive(machine, presetRoms, dir, &err)) {
         result->error = "host-drive: " + err;
         return false;
     }
@@ -190,7 +190,7 @@ public:
 
 job::Task<PresetLoadResult> applyPC1600PresetJob(PC1600Machine& machine, PresetFile preset, PresetLogFn log,
                                                  std::string traceDir, std::string moduleDir, PresetBootedFn onBooted,
-                                                 std::vector<std::string> romDirs,
+                                                 PresetRoms presetRoms,
                                                  std::vector<std::string> extraModuleDirs, PresetArmedFn onArmed,
                                                  PresetSaveAsFn onSaveAs) {
     PresetLoadResult result;
@@ -203,7 +203,7 @@ job::Task<PresetLoadResult> applyPC1600PresetJob(PC1600Machine& machine, PresetF
         CardHost host = (slot == 1) ? CardHost::PC1600Slot1 : CardHost::PC1600Slot2;
         std::string err, specPath;
         std::unique_ptr<ExpansionCard> card =
-            makePresetModuleCard(specFile, specName, romFile, moduleDirs, host, &specPath, &err);
+            makePresetModuleCard(specFile, specName, romFile, moduleDirs, host, &specPath, &err, presetRoms.set.get());
         if (!card) {
             result.error = "slot-" + std::to_string(slot) + ": " + err;
             return false;
@@ -230,9 +230,9 @@ job::Task<PresetLoadResult> applyPC1600PresetJob(PC1600Machine& machine, PresetF
     const bool armed = plug(preset.slot1ModuleSpecFile, preset.slot1ModuleSpecName, preset.slot1RomFile, 1) &&
                        plug(preset.slot2ModuleSpecFile, preset.slot2ModuleSpecName, preset.slot2RomFile, 2) &&
                        attachPresetPlotter(machine, preset.plotter, preset.ce1600pRomVariant, preset.floppy,
-                                           preset.floppyFile, preset.floppySide, romDirs, moduleDirs, log, &result) &&
-                       attachPresetInterface(machine, preset.interfaceName, romDirs, log, &result) &&
-                       attachPresetHostDrive(machine, preset.hostDrive, romDirs, log, &result) &&
+                                           preset.floppyFile, preset.floppySide, presetRoms, moduleDirs, log, &result) &&
+                       attachPresetInterface(machine, preset.interfaceName, presetRoms, log, &result) &&
+                       attachPresetHostDrive(machine, preset.hostDrive, presetRoms, log, &result) &&
                        attachPresetBusRoms(machine, preset.busRoms, log, &result);
 
     // Machine is now armed (model/cards/plotter wired) but still powered
@@ -262,9 +262,9 @@ job::Task<PresetLoadResult> applyPC1600PresetJob(PC1600Machine& machine, PresetF
 
 PresetLoadResult applyPC1600Preset(PC1600Machine& machine, const PresetFile& preset, const PresetLogFn& log,
                                    const std::string& traceDir, const std::string& moduleDir,
-                                   const PresetBootedFn& onBooted, const std::vector<std::string>& romDirs,
+                                   const PresetBootedFn& onBooted, const PresetRoms& presetRoms,
                                    const std::vector<std::string>& extraModuleDirs, const PresetArmedFn& onArmed,
                                    const PresetSaveAsFn& onSaveAs) {
-    return job::runToCompletion(applyPC1600PresetJob(machine, preset, log, traceDir, moduleDir, onBooted, romDirs,
+    return job::runToCompletion(applyPC1600PresetJob(machine, preset, log, traceDir, moduleDir, onBooted, presetRoms,
                                                      extraModuleDirs, onArmed, onSaveAs));
 }

@@ -9,7 +9,7 @@
 #include "../core/PC1500/PC1500Keyboard.hpp"
 #include "../core/PC1600/PC1600BasicTyper.hpp"
 #include "../core/PC1600/PC1600Keyboard.hpp"
-#include "../core/Resources/BundledRomCatalog.hpp"
+#include "TestRoms.hpp"
 #include "SharpTestSupport.hpp"
 #include "peripherals/RealTimeClock.hpp"
 
@@ -475,8 +475,8 @@ TEST(c1600_1_ac21_pc1600_ready_after_15_ready_frames) {
     bool ok = false;
     PC1600Machine old;
     std::string err;
-    CHECK(BundledRoms::loadPC1600RomSet(old, {"roms"}, "new", &err));
-    CHECK(BundledRoms::attachCE1600P(old, {"roms"}, "new", &err));
+    CHECK(presetroms::loadPC1600RomSet(old, testPresetRoms(), "new", &err));
+    CHECK(presetroms::attachCE1600P(old, testPresetRoms(), "new", &err));
     // The old class: the first part of runBootToPromptJob, then
     // waitForKeyboardScanLoopJob, whose return is the moment to match.
     old.allReset();
@@ -536,7 +536,7 @@ TEST(c1600_1_ac14_buzzer_48000_mono_same_at_any_slicing) {
     {   // Another rate is refused at build (design D-6).
         BuildRequest req{ModelId{"PC-1600"}, std::nullopt, {}, {}, 44100, nullptr};
         std::string error;
-        CHECK(sharp::modelRomImages(c, req.model, std::nullopt, romDirs(), &req.roms, &error));
+        CHECK(modelImages(c, req.model, std::nullopt, &req.roms, &error));
         sharp::SharpMachineBuilder b;
         const BuildResult r = build(c, b, req);
         CHECK(!r.machine && !r.refusal.empty());

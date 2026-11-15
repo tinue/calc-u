@@ -22,7 +22,7 @@
 #include "../core/PC1600/PC1600Machine.hpp"
 #include "../core/PC1600/PC1600PresetLoader.hpp"
 #include "../core/Preset/PresetFile.hpp"
-#include "../core/Resources/BundledRomCatalog.hpp"
+#include "TestRoms.hpp"
 #include "TestHarness.hpp"
 
 namespace {
@@ -141,7 +141,6 @@ std::uint64_t fingerprint(PC1500Machine& m) {
     return h;
 }
 
-const std::vector<std::string> kRomDirs = {"roms"};
 const std::string kCardDir = "frontends/qt6/resources/cards";
 
 // `budgetSeed` 0: straight through; otherwise sliced at random budgets.
@@ -183,12 +182,12 @@ void equivalence_pc1600(const char* presetPath) {
         return;
     }
     auto make = [&](PC1600Machine& m, PresetLogFn log) {
-        return applyPC1600PresetJob(m, preset, std::move(log), ".", kCardDir, {}, kRomDirs);
+        return applyPC1600PresetJob(m, preset, std::move(log), ".", kCardDir, {}, testPresetRoms());
     };
     Outcome results[2];
     for (int i = 0; i < 2; ++i) {
         PC1600Machine m;
-        CHECK(BundledRoms::loadPC1600RomSet(m, kRomDirs, preset.romVariant == "old" ? "old" : "new", &err));
+        CHECK(presetroms::loadPC1600RomSet(m, testPresetRoms(), preset.romVariant == "old" ? "old" : "new", &err));
         results[i] = runPreset(m, make, i == 0 ? 0u : 4711u, PC1600Machine::kTStateHz / 60.0);
     }
     checkEquivalent(presetPath, results[0], results[1]);
@@ -203,7 +202,7 @@ void equivalence_pc1500(const char* presetPath) {
         return;
     }
     auto make = [&](PC1500Machine& m, PresetLogFn log) {
-        return applyPC1500PresetJob(m, preset, std::move(log), ".", kCardDir, {}, kRomDirs);
+        return applyPC1500PresetJob(m, preset, std::move(log), ".", kCardDir, {}, testPresetRoms());
     };
     Outcome results[2];
     for (int i = 0; i < 2; ++i) {

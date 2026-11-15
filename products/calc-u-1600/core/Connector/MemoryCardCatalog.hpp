@@ -1,10 +1,17 @@
 #pragma once
 #include <algorithm>
 #include <string>
+#include <string_view>
 #include <vector>
 
 #include "MemoryCardDefinition.hpp"
 #include "NamedFileCatalog.hpp"
+
+namespace sharp {
+// core/Machine/SharpRoms.hpp: a file of the ROM full set (the CE-502B's
+// definition) is read by the ROM lookup only (LIB-12 AC-14, I-2).
+bool isFullSetFile(std::string_view fileName);
+}  // namespace sharp
 
 constexpr const char* kCardFileSuffix = ".card.yaml";
 
@@ -41,7 +48,9 @@ struct MemoryCardCatalogEntry {
 // parse is skipped, with "<filename>: <error>" appended to `*error`
 // (newline-separated) -- one malformed file never hides the rest. A
 // missing / unreadable directory yields an empty list and sets `*error`.
-// Entries come back sorted by `moduleName` for a stable GUI order.
+// Entries come back sorted by `moduleName` for a stable GUI order. A file of
+// the ROM full set is passed over: its definition comes from the RomSet
+// (sharp::romSetModules()).
 namespace memory_card_catalog_detail {
 
 inline bool parseEntry(const std::string& text, const std::string& path, MemoryCardCatalogEntry* out,
@@ -58,7 +67,7 @@ inline std::vector<MemoryCardCatalogEntry> scanMemoryCardDirectory(const std::st
                                                                    std::string* error) {
     return scanNamedFiles<MemoryCardCatalogEntry>(
         dir, kCardFileSuffix, "module", memory_card_catalog_detail::parseEntry,
-        [](const MemoryCardCatalogEntry& e) { return e.moduleName; }, error);
+        [](const MemoryCardCatalogEntry& e) { return e.moduleName; }, error, sharp::isFullSetFile);
 }
 
 // The catalogue entry for one `.card.yaml` file -- e.g. to classify the

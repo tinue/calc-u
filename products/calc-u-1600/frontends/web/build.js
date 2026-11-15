@@ -23,7 +23,7 @@ const { execFileSync } = require("child_process");
 
 const WEB = __dirname;
 const REPO = path.join(WEB, "..", "..");  // the product directory
-const DIST = path.join(WEB, "dist");
+const DIST = process.env.CALCU1600_WEB_DIST || path.join(WEB, "dist");
 
 const read = (p) => fs.readFileSync(p, "utf8");
 const sha256 = (buf) => crypto.createHash("sha256").update(buf).digest("hex");

@@ -10,6 +10,7 @@
 #include <fstream>
 #include <string>
 
+#include "Machine/SharpRoms.hpp"
 #include "app/AppSession.hpp"
 #include "app/Pacer.hpp"
 #include "app/tests/TestSettings.hpp"
@@ -20,8 +21,8 @@ namespace fs = std::filesystem;
 
 class ConsolePlatform : public shared::AppSession::Platform {
 public:
-    void romMissing(const std::string& error, const std::string& searchedIn) override {
-        std::fprintf(stderr, "ROM missing: %s (searched %s)\n", error.c_str(), searchedIn.c_str());
+    void romMissing(const calcu::roms::RomsMissing& missing) override {
+        std::fprintf(stderr, "%s\n", calcu::roms::describe(missing).c_str());
     }
     void bayError(shared::Bay, const std::string& text) override { std::fprintf(stderr, "bay: %s\n", text.c_str()); }
     void attachFailed(const std::string& device, const std::string& reason) override {
@@ -58,8 +59,8 @@ bool runPreset(shared::AppSession& app, const std::string& path, int* ticks) {
 } // namespace
 
 int main() {
-    if (!std::ifstream("roms/PC1600-P0-B0-new.bin").good() || !std::ifstream("roms/PC-1500_A04.ROM").good()) {
-        std::printf("wasm_smoke: SKIP (no ROMs in roms/; run from the repo root)\n");
+    if (!sharp::lookUpRoms(calcu::roms::DirectoryBundle("roms")).ok()) {
+        std::printf("wasm_smoke: SKIP (not the full ROM set in roms/; run roms/fetch_roms.sh, run from the product folder)\n");
         return 2;
     }
     // A bundle folder like the app's: ROMs and the bundled cards/disks.

@@ -18,6 +18,7 @@
 #include "../core/PC1500/PC1500PresetLoader.hpp"
 #include "../core/Preset/PresetFile.hpp"
 #include "TestHarness.hpp"
+#include "TestRoms.hpp"
 
 namespace {
 
@@ -285,7 +286,7 @@ TEST(test_preset_plotter_ce150_attaches_before_reset) {
     CHECK(preset.plotter == "ce150");
 
     PC1500Machine machine(preset.variant);
-    PresetLoadResult res = applyPC1500Preset(machine, preset, {}, ".", ".", {}, {"roms"});
+    PresetLoadResult res = applyPC1500Preset(machine, preset, {}, ".", ".", {}, testPresetRoms());
     CHECK(res.ok);
     CHECK(res.ce150Attached);
     CHECK(machine.ce150Attached());

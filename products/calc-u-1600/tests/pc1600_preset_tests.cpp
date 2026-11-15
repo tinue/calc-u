@@ -612,7 +612,7 @@ TEST(test_loader_ce150_plotter_attaches_with_rom_path) {
 
     PC1600Machine m;
     loadPC1600Roms(m);  // optional: an empty bus boots too, only slower
-    PresetLoadResult r = applyPC1600Preset(m, p, {}, ".", ".", {}, {"roms"});
+    PresetLoadResult r = applyPC1600Preset(m, p, {}, ".", ".", {}, testPresetRoms());
     if (!r.ok) {
         // Skip gracefully if the ROM asset isn't reachable from the cwd.
         std::fprintf(stderr, "SKIP test_loader_ce150_plotter_attaches_with_rom_path: %s\n",
@@ -692,7 +692,7 @@ TEST(test_loader_ce1600p_with_no_floppy_key_leaves_drive_empty) {
 
     PC1600Machine m;
     loadPC1600Roms(m);  // optional: an empty bus boots too, only slower
-    PresetLoadResult r = applyPC1600Preset(m, p, {}, ".", ".", {}, {"roms"});
+    PresetLoadResult r = applyPC1600Preset(m, p, {}, ".", ".", {}, testPresetRoms());
     if (!r.ok) {
         std::fprintf(stderr, "SKIP test_loader_ce1600p_with_no_floppy_key_leaves_drive_empty: %s\n", r.error.c_str());
         return;
@@ -714,7 +714,7 @@ TEST(test_loader_floppy_key_loads_named_disk_image) {
 
     PC1600Machine m;
     loadPC1600Roms(m);  // optional: an empty bus boots too, only slower
-    PresetLoadResult r = applyPC1600Preset(m, p, {}, ".", "/tmp", {}, {"roms"});
+    PresetLoadResult r = applyPC1600Preset(m, p, {}, ".", "/tmp", {}, testPresetRoms());
     if (!r.ok) {
         std::fprintf(stderr, "SKIP test_loader_floppy_key_loads_named_disk_image: %s\n", r.error.c_str());
         return;
@@ -741,7 +741,7 @@ TEST(test_loader_floppy_key_side_suffix_selects_side_b) {
 
     PC1600Machine m;
     loadPC1600Roms(m);  // optional: an empty bus boots too, only slower
-    PresetLoadResult r = applyPC1600Preset(m, p, {}, ".", "/tmp", {}, {"roms"});
+    PresetLoadResult r = applyPC1600Preset(m, p, {}, ".", "/tmp", {}, testPresetRoms());
     if (!r.ok) {
         std::fprintf(stderr, "SKIP test_loader_floppy_key_side_suffix_selects_side_b: %s\n", r.error.c_str());
         return;
@@ -758,7 +758,7 @@ TEST(test_loader_floppy_key_missing_file_is_an_error) {
     CHECK(parse("format-version: 1\nmodel: PC-1600\nplotter: CE-1600P\nfloppy: nosuchdisk\n", &p, &err));
 
     PC1600Machine m;
-    PresetLoadResult r = applyPC1600Preset(m, p, {}, ".", "/tmp", {}, {"roms"});
+    PresetLoadResult r = applyPC1600Preset(m, p, {}, ".", "/tmp", {}, testPresetRoms());
     CHECK(!r.ok);
     CHECK(r.error.find("nosuchdisk") != std::string::npos);
     CHECK(!m.ce1600fAttached());
@@ -899,7 +899,7 @@ TEST(test_loader_host_drive_floppy_file_and_template_saves) {
         return savePresetMedia(request, {"frontends/qt6/resources/cards", ""}, pc1600PresetMedia(m, armedResult, request), e);
     };
     PresetLoadResult r = applyPC1600Preset(m, p, {}, ".", "frontends/qt6/resources/cards", {},
-                                           {"roms", "firmware/pc1600-hostdrive"}, {}, onArmed, onSaveAs);
+                                           testPresetRoms(), {}, onArmed, onSaveAs);
     CHECK(r.ok);
     if (!r.ok) std::fprintf(stderr, "  error: %s\n", r.error.c_str());
     CHECK(m.hostDriveAttached());
@@ -960,7 +960,7 @@ TEST(test_loader_bus_rom_shadows_the_host_drive_rom) {
             return;
         }
         const PresetLoadResult r = applyPC1600Preset(m, p, {}, ".", "frontends/qt6/resources/cards", {},
-                                                     {"roms", "firmware/pc1600-hostdrive"});
+                                                     testPresetRoms());
         CHECK(r.ok);
         if (!r.ok) std::fprintf(stderr, "  error: %s\n", r.error.c_str());
         CHECK(std::filesystem::exists(d + "/S3/T.BAS") == !blank);

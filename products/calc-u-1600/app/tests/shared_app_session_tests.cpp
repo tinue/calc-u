@@ -35,7 +35,7 @@ struct RecordingPlatform : AppSession::Platform {
     std::vector<bool> busy;
     std::vector<std::string> attachFailures;
     int logLines = 0;
-    void romMissing(const std::string& error, const std::string&) override { missing = error; }
+    void romMissing(const calcu::roms::RomsMissing& m) override { missing = calcu::roms::describe(m); }
     void presetArmed() override { ++armed; }
     void busyChanged(bool b) override { busy.push_back(b); }
     void presetLog(const std::string&) override { ++logLines; }

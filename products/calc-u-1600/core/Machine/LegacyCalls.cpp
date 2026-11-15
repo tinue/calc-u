@@ -62,18 +62,18 @@ debug::LoadResult loadProgram(Machine& m, const debug::LoadRequest& request, deb
 
 job::Task<PresetLoadResult> applyPresetJob(Machine& m, PresetFile preset, PresetLogFn log, std::string traceDir,
                                            std::string moduleDir, PresetBootedFn onBooted,
-                                           std::vector<std::string> romDirs, std::vector<std::string> extraModuleDirs,
+                                           PresetRoms presetRoms, std::vector<std::string> extraModuleDirs,
                                            PresetArmedFn onArmed, PresetSaveAsFn onSaveAs) {
     PresetLoadResult result;
     if (PC1600Machine* p = pc1600Of(m)) {
         static_cast<PC1600InterfaceMachine&>(m).notePresetCe1600pVariant(
             calcu::machine::VariantId{preset.ce1600pRomVariant == "old" ? "Old" : "New"});
         result = co_await applyPC1600PresetJob(*p, std::move(preset), std::move(log), std::move(traceDir),
-                                               std::move(moduleDir), std::move(onBooted), std::move(romDirs),
+                                               std::move(moduleDir), std::move(onBooted), std::move(presetRoms),
                                                std::move(extraModuleDirs), std::move(onArmed), std::move(onSaveAs));
     } else if (PC1500Machine* p = pc1500Of(m)) {
         result = co_await applyPC1500PresetJob(*p, std::move(preset), std::move(log), std::move(traceDir),
-                                               std::move(moduleDir), std::move(onBooted), std::move(romDirs),
+                                               std::move(moduleDir), std::move(onBooted), std::move(presetRoms),
                                                std::move(extraModuleDirs), std::move(onArmed), std::move(onSaveAs));
     } else {
         result.error = "not a Sharp machine";

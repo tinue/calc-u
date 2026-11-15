@@ -56,7 +56,7 @@ debug::LoadResult loadProgram(calcu::machine::Machine&, const debug::LoadRequest
 // plugs in is read back into plugged() when it is done.
 job::Task<PresetLoadResult> applyPresetJob(calcu::machine::Machine&, PresetFile preset, PresetLogFn log,
                                            std::string traceDir, std::string moduleDir, PresetBootedFn onBooted,
-                                           std::vector<std::string> romDirs, std::vector<std::string> extraModuleDirs,
+                                           PresetRoms presetRoms, std::vector<std::string> extraModuleDirs,
                                            PresetArmedFn onArmed, PresetSaveAsFn onSaveAs);
 
 // ---- Running to the prompt (M-46, LIB-18 1600) ----

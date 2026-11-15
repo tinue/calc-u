@@ -27,7 +27,7 @@ using shared::Model;
 
 struct QuietListener : MachineSession::Listener {
     std::string missing;
-    void romMissing(const std::string& error, const std::string&) override { missing = error; }
+    void romMissing(const calcu::roms::RomsMissing& m) override { missing = calcu::roms::describe(m); }
 };
 
 bool romsPresent() {

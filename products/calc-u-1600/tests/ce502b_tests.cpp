@@ -1,7 +1,7 @@
 // Headless C++ tests for the CE-502B (Statistics) program module -- a 16 KB
-// mask ROM -- run against the bundled definition
-// Qt6/resources/cards/ce502b.card.yaml (SoftwareDefinedCard, `content:
-// rom`). Same no-framework, assert-and-tally style as the other Core tests.
+// mask ROM -- run against its definition from the ROM set of roms/
+// (`CE-502B.card.yaml`, fetched from PC-1500-ROM; LIB-12 AC-14;
+// SoftwareDefinedCard, `content: rom`). Same no-framework, assert-and-tally style as the other Core tests.
 //
 // Build & run: see tools/run_tests.sh
 
@@ -10,14 +10,15 @@
 
 #include "../core/PC1500/PC1500Machine.hpp"
 #include "TestCards.hpp"
+#include "TestRoms.hpp"
 #include "TestHarness.hpp"
 
 namespace {
 
-// The definition ships in the repo, so a missing or unloadable one fails.
+// The CE-502B from the ROM set; null (SKIP) without the set.
 std::unique_ptr<SoftwareDefinedCard> ce502b(CardHost host) {
-    auto c = bundledCard("ce502b.card.yaml", host);
-    CHECK(c != nullptr);
+    auto c = romSetCard("CE-502B", host);
+    if (!c) std::fprintf(stderr, "  SKIP: no ROM set in roms/\n");
     return c;
 }
 
@@ -28,7 +29,7 @@ TEST(test_ce502b_is_a_16k_rom_module) {
     CHECK(card->definition().isRom());
     CHECK(card->debugImage().size() == 0x4000);
     // Not offered on the PC-1600: it's a PC-1500 program module.
-    CHECK(bundledCard("ce502b.card.yaml", CardHost::PC1600Slot1) == nullptr);
+    CHECK(romSetCard("CE-502B", CardHost::PC1600Slot1) == nullptr);
 }
 
 TEST(test_ce502b_end_to_end_via_machine) {

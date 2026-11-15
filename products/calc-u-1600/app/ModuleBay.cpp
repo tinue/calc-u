@@ -1,5 +1,6 @@
 #include "app/ModuleBay.hpp"
 
+#include <algorithm>
 #include <filesystem>
 #include <set>
 #include <system_error>
@@ -7,6 +8,7 @@
 #include "Connector/MediaSave.hpp"
 #include "Connector/MemoryCardCatalog.hpp"
 #include "Connector/SoftwareDefinedCard.hpp"
+#include "Machine/SharpRoms.hpp"
 #include "Preset/PresetRunner.hpp"
 #include "app/AppPaths.hpp"
 #include "app/MachineSession.hpp"
@@ -32,8 +34,19 @@ CardHost ModuleBay::hostForModel(int slot, Model model) {
 }
 
 const std::vector<MemoryCardCatalogEntry>& ModuleBay::bundledCards() const {
-    return m_bundledScan.get(m_paths.bundledResourcesDir(),
-                             [](const std::string& dir) { return scanMemoryCardDirectory(dir, nullptr); });
+    // The folder's definitions (the scan passes over the ROM set's files)
+    // and the ROM modules of the set: the CE-502B (LIB-12 AC-14).
+    return m_bundledScan.get(m_paths.bundledResourcesDir(), [this](const std::string& dir) {
+        std::vector<MemoryCardCatalogEntry> cards = scanMemoryCardDirectory(dir, nullptr);
+        if (const auto& roms = m_session.romSet())
+            for (const sharp::RomSetModule& m : sharp::romSetModules(*roms)) {
+                const MemoryCardDefinition& d = m.definition;
+                cards.push_back({d.moduleName, d.description, d.compatibleHosts, {}, d.battery, d.isRom(), d.isTemplate});
+            }
+        std::sort(cards.begin(), cards.end(),
+                  [](const MemoryCardCatalogEntry& a, const MemoryCardCatalogEntry& b) { return a.moduleName < b.moduleName; });
+        return cards;
+    });
 }
 
 const std::vector<MemoryCardCatalogEntry>& ModuleBay::instanceCards() const {
@@ -70,7 +83,9 @@ void ModuleBay::attachOneSlot(int slot) {
         // A preset's ROM module under development: the same file and ROM
         // again (read anew), never autosaved.
         std::string resolved, err;
-        std::unique_ptr<ExpansionCard> card = makePresetModuleCard(st.sourcePath, {}, st.romFile, {}, host, &resolved, &err);
+        std::unique_ptr<ExpansionCard> card =
+            makePresetModuleCard(st.sourcePath, st.sourcePath.empty() ? st.moduleName : std::string(), st.romFile, {},
+                                 host, &resolved, &err, m_session.romSet().get());
         if (card) {
             m_session.attachSlotCard(slot, std::move(card));
             return;
@@ -80,6 +95,21 @@ void ModuleBay::attachOneSlot(int slot) {
         return;
     }
     std::string path, err;
+    // A ROM module of the set (the CE-502B): from its bytes in the set, a
+    // template that is never saved.
+    if (const auto& roms = m_session.romSet()) {
+        if (auto m = sharp::romSetModule(*roms, st.moduleName)) {
+            if (auto card = makeSoftwareDefinedCardFromText(m->text, m->fileName, host, &err)) {
+                classifySlot(st, {});
+                st.isTemplate = m->definition.isTemplate;
+                m_session.attachSlotCard(slot, std::move(card));
+                return;
+            }
+            reportError("Couldn't attach " + inQuotes(st.moduleName) + ": " + err);
+            st = SlotState{};
+            return;
+        }
+    }
     if (resolveModuleSpecByName({m_paths.bundledResourcesDir(), m_paths.instanceDir()}, st.moduleName, &path, &err)) {
         auto card = makeSoftwareDefinedCard(path, host, &err);
         if (card) {
@@ -182,7 +212,11 @@ bool ModuleBay::saveSlotAs(int slot, const std::string& instanceName, bool fromP
         return false;
     }
     std::string newPath;
-    const MediaSaveRefusal refusal = m_paths.planNamedSave(MediaKind::Card, name, filePath, asTemplate, &newPath);
+    MediaSaveRefusal refusal = m_paths.planNamedSave(MediaKind::Card, name, filePath, asTemplate, &newPath);
+    // A ROM module of the set is bundled too, if not in the bundled folder's scan.
+    if (refusal == MediaSaveRefusal::None && filePath.empty() && m_session.romSet() &&
+        sharp::romSetModule(*m_session.romSet(), name))
+        refusal = MediaSaveRefusal::TemplateName;
     if (refusal != MediaSaveRefusal::None) {
         *error = mediaSaveRefusalMessage(refusal, name, newPath);
         return false;

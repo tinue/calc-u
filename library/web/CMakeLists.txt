@@ -38,6 +38,7 @@ if(EMSCRIPTEN)
   calcu_web_engine(calcu_web_test_product
                    SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/tests/product/TestProduct.cpp
                            ${CMAKE_CURRENT_SOURCE_DIR}/../machine/tests/TestMachines.cpp
+                           ${CMAKE_CURRENT_SOURCE_DIR}/../machine/tests/TestCpu.cpp
                    OUTPUT calcutest-core EXPORT createCalcUTestModule ENVIRONMENT worker
                    LINK -sEXPORTED_RUNTIME_METHODS=FS,IDBFS)
   target_link_libraries(calcu_web_test_product PRIVATE calcu_warnings)

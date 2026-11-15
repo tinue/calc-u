@@ -9,4 +9,12 @@ std::vector<CapabilityEntry> Machine::capabilities(const KindId& kind) const {
     return out;
 }
 
+DebugTarget* Machine::debugTarget(const DebugTargetId& id) {
+    Debugging* d = debugging();
+    if (!d) return nullptr;
+    for (std::size_t i = 0; i < d->targetCount(); ++i)
+        if (d->target(i).info().name == id) return &d->target(i);
+    return nullptr;
+}
+
 } // namespace calcu::machine

@@ -350,6 +350,7 @@ BuildResult TestBuilder::build(const BuildRequest& req, const Catalogue& cat) {
         m->setTiming(std::move(t));
     if (auto p = std::dynamic_pointer_cast<const TestSegProgram>(req.content); p && req.model == kSeg)
         m->setProgram(p->length);
+    if (auto p = std::dynamic_pointer_cast<const TestProgram>(req.content)) m->enableCpu(*p);   // LIB-10
     std::vector<PlaceName> taken;
     for (const auto& p : req.peripherals) {
         if (p.place.steps.size() != 1) return BuildResult{nullptr, {}, "no such place"};
@@ -428,6 +429,7 @@ Ticks TestMachine::advance(Ticks atLeast) {
     const bool printer = hasPrinter();
     Ticks ran = 0;
     while (ran < atLeast) {
+        if (cpu_ && !cpu_->before()) break;   // LIB-10: a breakpoint stops before the instruction
         const Ticks len = isDot() ? 4 : timing_ ? timing_->instructionLength : (generic_.instructions % 2 == 0 ? 3 : 5);
         ran += len;
         ++generic_.instructions;
@@ -437,10 +439,18 @@ Ticks TestMachine::advance(Ticks atLeast) {
             innerCycles_ += innerRest_ / 8;
             innerRest_ %= 8;
         }
+        if (cpu_) {   // LIB-10: the observer sees the machine as it is after each instruction
+            ticks_ += len;
+            sinceStart_ += len;
+            programLeft_ -= std::min(programLeft_, len);
+            if (cpu_->execute()) break;   // a watch or the observer: the advance ends after it
+        }
     }
-    ticks_ += ran;
-    sinceStart_ += ran;
-    programLeft_ -= std::min(programLeft_, ran);
+    if (!cpu_) {
+        ticks_ += ran;
+        sinceStart_ += ran;
+        programLeft_ -= std::min(programLeft_, ran);
+    }
     for (auto& p : plugs_) {
         if (p->uart) p->uart->advance(ran);
         if (p->printer) p->printer->advance(ran);   // LIB-8
@@ -464,12 +474,14 @@ void TestMachine::tellOperation() {
 
 void TestMachine::reset() {
     tellOperation();
+    if (cpu_) cpu_->reset();
     programLeft_ = 0;
     startUp();
 }
 
 void TestMachine::powerCycle() {
     tellOperation();
+    if (cpu_) cpu_->reset();
     programLeft_ = 0;
     displayOn_ = true;
     startUp();
@@ -477,6 +489,7 @@ void TestMachine::powerCycle() {
 
 void TestMachine::coldBoot() {
     tellOperation();
+    if (cpu_) cpu_->coldBoot();
     presses_ = 0;
     programLeft_ = 0;
     memory_.bytes.assign(memory_.bytes.size(), 0);

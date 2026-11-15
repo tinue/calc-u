@@ -161,6 +161,10 @@ Task<OperationResult> StartupPart::restart(OperationContext& c, Restart what) {
     case Restart::ColdBoot: m->coldBoot(); break;
     case Restart::PowerCycle: m->powerCycle(); break;
     }
+    // LIB-10 §3.11: the parts are told of a Reset and a Cold boot before the
+    // run to key readiness (the run control's pause-at-start holds it).
+    if (what == Restart::Reset) c.session().tellRestarted(sessions::Restart::Reset);
+    if (what == Restart::ColdBoot) c.session().tellRestarted(sessions::Restart::ColdBoot);
     co_await control_.untilKeyReady(c);   // AC-13; the clocks: PeripheralsPart::operationEnded
     co_return OperationResult{};
 }

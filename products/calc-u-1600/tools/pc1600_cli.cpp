@@ -71,6 +71,7 @@
 #include "../core/PC1600/PC1600Bank.hpp"
 #include "../core/PC1600/PC1600Memory.hpp"
 #include "../core/Preset/PresetFile.hpp"
+#include "../core/Preset/PresetMedia.hpp"
 #include "Ce158CliPeer.hpp"
 #include "CliCommon.hpp"
 

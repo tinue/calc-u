@@ -12,7 +12,6 @@
 #include "../Job.hpp"
 #include "../KeyPaste.hpp"
 #include "../MachineCodeFile.hpp"
-#include "../Preset/PresetMedia.hpp"
 #include "../Preset/PresetRunner.hpp"
 #include "machine/Machine.hpp"
 
@@ -28,6 +27,9 @@ class PC1600Bank;
 class PC1600BusArbiter;
 class Ce158Card;
 class CE1600PCard;
+// Not included: PresetMedia.hpp has a member `slots`, which Qt's macro of
+// that name breaks in the Qt frontend's sources that include this header.
+struct PresetMedia;
 
 namespace sharp::legacy {
 

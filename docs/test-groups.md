@@ -24,8 +24,9 @@ ctest --test-dir build/groups -L longer        # or -L frequent, -L checkpoint
 ctest --test-dir build/groups/products/calc-u-1600 -L longer   # one product
 ```
 
-Prerequisites outside the tree: the Playwright entries test a built
-`frontends/web/dist/` (`frontends/web/build.sh`); the WASM smoke builds
+Prerequisites outside the tree: the products' Playwright entries test a built
+`frontends/web/dist/` (`frontends/web/build.sh`); the library's builds its
+test product itself (Emscripten, `build/web`); the WASM smoke builds
 `build/web` with Emscripten itself; the XCUITest entries need the
 simulators of `bin/simulators.yaml` (`bin/simulators setup`); the
 Calc-U-1600 screenshot and DAP entries need the Qt app in the tree.
@@ -44,6 +45,8 @@ the `<cstdlib>` fix).
 | `calcu_library_tests` | 240 `TEST`s: the library's own tests with the machines built for the tests (`library/machine/tests/TestMachines.*`) and the product declared for the settings tests (`library/settings/tests/TestProduct.hpp`), no product code (LIB-1 AC-24; LIB-1 design §2a); also run alone by the CI job `library` of both product workflows. The pacing tests run on a scripted wall clock (`library/pacing/tests/TestSliceRunner.hpp`), never the host's; so do the session tests (`library/sessions/tests/ScriptedClock.hpp`), with the test frontend and the test product part of `library/sessions/tests/`. LIB-2's host links are tested here with an injected link factory (`peripherals/tests/host_links_tests.cpp`), on every platform; the ROM lookup's tests write their ROM files into a temporary folder (`library/roms/tests/TestRomFiles.hpp`) | Frequent | 0.50 s (M-23/M-24, 2026-11-15, RelWithDebInfo; most of it the five-hour scripted runs of LIB-17) |
 | `calcu_library_pty_tests` | 4 `TEST`s of `library/peripherals/tests/pty_tests.cpp`: LIB-2's host links on real pseudo-terminals in a temporary folder for serial links (AC-18 to AC-20, EC-7); a program of its own (with the test machines), registered only where `CALCU_HAS_PTY` is set (macOS, Linux), so that it can move to Longer without a design change (LIB-2 design §8) | Frequent | 0.8 s (M-23, 2026-11-15) |
 | `LibraryPlatformStoreCheck` | `library/settings/tests/check_platform_stores_test.sh`: the self-test of `library/settings/check_platform_stores.sh`, the source check the products run over their frontends (LIB-9 design T-14); not registered on Windows | Frequent | 0.03 s |
+| `LibraryWebNodeTests` | `node --test library/web/tests/build.test.js`: 4 tests of the Web frontend shell's build functions (`library/web/build/dist.js`: MANIFEST, `files.json`, the service worker stamp, one global in `calc.js`, the CSS scope check; LIB-15 AC-14, AC-15, AC-17; M-29); registered when `node` is found; also run by the CI job `library` | Frequent | 0.2 s (M-29, 2026-11-15) |
+| `LibraryWebPlaywright` | `library/web/tests/run-tests.sh`: builds the product made for the tests (`library/web/tests/product/build.sh`: `calcu_web_test_product` in `build/web`, then `Test-A`, `Test-B` and a second release of `Test-A` in `build/web/library/web/test-dist/`), then Playwright: `hosting`, `storage`, `embed` in Chromium (root, sub-path) and WebKit (root), `offline` in Chromium and WebKit, `prerender` in Node (LIB-15 AC-1 to AC-18, EC-1 to EC-5; M-29); 76 cases, 2 skipped (`ec1` runs in the Chromium root project only); not registered on Windows; in CI in the `web` job of both product workflows, with each one's Emscripten (LIB-15 D-8) | Longer | 35 s, plus 10 s for the build with `build/web` built (M-29, Homebrew Emscripten 7.0) |
 
 `calcu_library_tests` by file (`library/<area>/tests/`; every `TEST` is
 Frequent):

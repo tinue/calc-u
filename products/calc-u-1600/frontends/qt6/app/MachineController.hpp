@@ -21,6 +21,7 @@
 #include "app/SharpSession.hpp"
 #include "sessions/AppSession.hpp"
 #include "sessions/Listener.hpp"
+#include "typing/HostKey.hpp"
 
 class MemoryModuleManager;
 class DebugController;
@@ -105,12 +106,20 @@ public:
     PC1600RomVersion pc1600RomVersion() const { return session().pc1600RomVersion(); }
     CE1600PRomVersion ce1600pRomVersion() const { return session().ce1600pRomVersion(); }
 
-    void pressKey(const std::string& name) { app().typing().pressKey(name); }
-    void releaseKey(const std::string& name) { app().typing().releaseKey(name); }
-    void setOnKeyPressed(bool pressed) { app().typing().setOnKeyPressed(pressed); }
-    void pasteText(const std::string& text) { app().typing().pasteText(text); }
-    void typeCommand(const std::string& line) { app().typing().typeCommand(line); }
-    void cancelPaste() { app().typing().cancelPaste(); }
+    // ---- Keys and typing: the library's typing part (LIB-5) ----
+    // A faceplate key by key ID (`on` too: the ON/BREAK line), one pointer.
+    void pressKey(const std::string& name);
+    void releaseKey(const std::string& name);
+    void hostKeyDown(const calcu::typing::HostKeyEvent& e);
+    void hostKeyUp(const std::string& physical);
+    void hostText(const std::string& utf8);   // the input method's commit (EC-4)
+    void focusLost();                         // AC-10
+    void pasteText(const std::string& text);  // Edit > Paste Text (AC-12, AC-34)
+    // The debugger's auto-start: `line`, then ENTER, through the engine (not
+    // a user key: not dropped while busy; a character without a key is left out).
+    void typeCommand(const std::string& line);
+    // What is still waiting goes (a reset from the debugger).
+    void cancelPaste();
 
     // The display as the `display` topic last sent it.
     GrayImage currentScreenImage() const;

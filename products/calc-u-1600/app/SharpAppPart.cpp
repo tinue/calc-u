@@ -171,7 +171,7 @@ SharpAppPart::~SharpAppPart() {
     }
 }
 
-std::vector<sessions::SessionPart*> SharpAppPart::sessionParts() { return {&m_peripherals, this}; }
+std::vector<sessions::SessionPart*> SharpAppPart::sessionParts() { return {&m_typingPart, &m_peripherals, this}; }
 
 void SharpAppPart::notice(const std::string& sentence) {
     if (m_ctx) m_ctx->notice(sentence);
@@ -186,8 +186,6 @@ void SharpAppPart::log(const std::string& line) {
 void SharpAppPart::attach(sessions::SessionSetup& setup) {
     m_ctx = &setup.context();
     m_ms = &m_ctx->machineSession();
-    m_typing = std::make_unique<SharpTypingHook>(*m_ms, [this] { return m_ctx && m_ctx->busy(); });
-    m_ms->addHook(*m_typing);
     m_ms->setGate(&m_gate);
 
     m_controlTopic = &setup.stateTopic(topics::kControlState);
@@ -700,7 +698,7 @@ void SharpAppPart::discardMachine() {
     std::string tapeError;
     if (!tapeEject(&tapeError)) log("Tape: the tape recording could not be saved: " + tapeError);   // a recording goes to its file
     endTrace();
-    if (m_typing) m_typing->machineGone();
+    m_ms->dropInput();   // EC-5: the keys it held come up, nothing waits
     m_ms->takeMachine();
     m_peripherals.hostLinks().machineGone();
 }
@@ -712,7 +710,7 @@ void SharpAppPart::seedClockFromHost() {
 }
 
 job::Task<void> SharpAppPart::resetToPromptJob(bool allReset) {
-    if (m_typing) m_typing->cancelPaste();
+    if (m_ms) m_ms->dropInput();   // EC-5
     Machine* m = machine();
     if (!m) co_return;
     if (allReset) m->coldBoot();
@@ -728,7 +726,7 @@ job::Task<void> SharpAppPart::powerCycleAroundJob(std::function<void()> change) 
     change();
     Machine* m = machine();
     if (!m_powerCycleFollows || !m) co_return;
-    if (m_typing) m_typing->cancelPaste();
+    m_ms->dropInput();   // EC-5
     m->powerCycle();
     co_await sharp::legacy::runToPromptJob(*m);
 }

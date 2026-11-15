@@ -14,12 +14,6 @@ bool PC1500Machine::loadROMFile(const std::string& path) {
 void PC1500Machine::reset() {
     m_memory.reset();
     m_memory.keyboard().releaseAll();
-    // Keys still queued by enqueueKey() belong to the session being reset;
-    // typing them into the rebooting ROM would feed its NEW0?/CHECK prompt.
-    m_keyQueue.clear();
-    m_keyQueuePhase = KeyQueuePhase::Idle;
-    m_keyQueueCurrentKey.clear();
-    m_keyQueuePhaseCyclesRemaining = 0;
     m_cpu.reset();
     m_debugStop.clear();
     // A chip reset re-anchors an attached CE-150 (LH5810 latches cleared,
@@ -169,7 +163,6 @@ void PC1500Machine::advancePeripherals(uint32_t cycles) {
     // once per instruction, the same way LH5801's own internal timer
     // advances via tickTimer().
     m_memory.advanceRtc(cycles);
-    advanceKeyQueue(cycles);
     // Per-step hook for an attached CE-150 (no-op today -- the plotter is
     // fully reactive; see Ce150Card::tick()).
     if (m_ce150Card) m_ce150Card->tick(cycles);
@@ -305,42 +298,6 @@ void PC1500Machine::setOnKeyPressed(bool pressed) {
     if (risingEdge) {
         if (m_cpu.poweredOff()) m_cpu.powerOn();
         else m_cpu.wakeFromHalt();
-    }
-}
-
-void PC1500Machine::enqueueKey(const std::string& name) {
-    if (PC1500Keyboard::keyFromName(name) == PC1500Keyboard::Key::Unknown) return; // matches pressKey()'s own silent no-op
-    if (m_keyQueue.size() >= kKeyQueueCapacity) return; // dropped, see doc comment
-    m_keyQueue.push_back(name);
-}
-
-void PC1500Machine::advanceKeyQueue(uint32_t cycles) {
-    // Same cadence as PC1500BasicTyper.cpp's tapKey() -- see this
-    // method's own header doc comment for why it's duplicated here
-    // rather than shared.
-    constexpr uint64_t kTapCycles = kPC1500CyclesPerFrame * 4;  // kTapFrames
-    constexpr uint64_t kGapCycles = kPC1500CyclesPerFrame * 4;  // kIdleFrames
-
-    if (m_keyQueuePhase == KeyQueuePhase::Idle) {
-        if (m_keyQueue.empty()) return;
-        m_keyQueueCurrentKey = m_keyQueue.front();
-        m_keyQueue.pop_front();
-        m_memory.keyboard().setKeyState(PC1500Keyboard::keyFromName(m_keyQueueCurrentKey), true);
-        m_keyQueuePhase = KeyQueuePhase::Holding;
-        m_keyQueuePhaseCyclesRemaining = kTapCycles;
-        return;
-    }
-    if (cycles < m_keyQueuePhaseCyclesRemaining) {
-        m_keyQueuePhaseCyclesRemaining -= cycles;
-        return;
-    }
-    if (m_keyQueuePhase == KeyQueuePhase::Holding) {
-        m_memory.keyboard().setKeyState(PC1500Keyboard::keyFromName(m_keyQueueCurrentKey), false);
-        m_keyQueuePhase = KeyQueuePhase::Gap;
-        m_keyQueuePhaseCyclesRemaining = kGapCycles;
-    } else { // Gap elapsed -- back to Idle, picked up by the next call
-        m_keyQueuePhase = KeyQueuePhase::Idle;
-        m_keyQueuePhaseCyclesRemaining = 0;
     }
 }
 

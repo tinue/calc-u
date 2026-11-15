@@ -30,7 +30,7 @@ ProgramChoice programChoice(const std::vector<std::uint8_t>& bytes);
 //    setAddress() (hint, valid) and enabling Load on `valid`.
 // 3. SharpAppPart::loadMachineCode(request()) (the c1600.load-machine-code command).
 // 4. loaded(): what to show (where it went, NEW / CALL); the frontend then
-//    types the CALL (SharpTypingHook::pasteText) for the user to ENTER.
+//    types the CALL (the `paste` command, LIB-5) for the user to ENTER.
 class MachineCodeLoad {
 public:
     static MachineCodeLoad plan(const SharpAppPart& session, const std::vector<std::uint8_t>& image);

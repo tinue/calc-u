@@ -10,7 +10,6 @@
 #include "../Connector/ExpansionCard.hpp"
 #include "../Debug/ProgramLoader.hpp"
 #include "../Job.hpp"
-#include "../KeyPaste.hpp"
 #include "../MachineCodeFile.hpp"
 #include "../Preset/PresetRunner.hpp"
 #include "machine/Machine.hpp"
@@ -32,10 +31,6 @@ class CE1600PCard;
 struct PresetMedia;
 
 namespace sharp::legacy {
-
-// ---- Typing support (M-36, LIB-5 AC-35) ----
-// The PC-1600's SHIFT and KBII latches; none on the PC-1500.
-KeyLatches readLatches(calcu::machine::Machine&);
 
 // ---- Loaders (M-44, C1600-2) ----
 BasicLoadResult loadBasicProgram(calcu::machine::Machine&, const std::vector<std::uint8_t>& file);

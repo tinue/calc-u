@@ -4,6 +4,8 @@
 #include "../Debug/Inspect/PC1500Inspector.hpp"
 #include "../Machine/SharpCatalogue.hpp"
 #include "../Machine/SharpDisplayOutput.hpp"
+#include "PC1500TypedInput.hpp"
+#include "typing/TypingSupport.hpp"
 
 using namespace calcu::machine;
 
@@ -17,7 +19,7 @@ PC1500Variant modelOf(const MachineDescriptor& d) {
 
 // The capability objects, each over the core (C1600-1 §3.6; design §5).
 struct PC1500InterfaceMachine::Kinds {
-    explicit Kinds(PC1500Machine& m) : memory(m), inspector(m), keyQueue(m), trace(m), tape(m), clock(m), paper(m), printerPort(m) {}
+    explicit Kinds(PC1500Machine& m) : memory(m), inspector(m), support(m), trace(m), tape(m), clock(m), paper(m), printerPort(m) {}
 
     struct Memory final : sharp::LoaderMemory {
         explicit Memory(PC1500Machine& m) : m(m) {}
@@ -41,15 +43,12 @@ struct PC1500InterfaceMachine::Kinds {
         }
         PC1500Machine& m;
     } inspector;
-    struct Queue final : sharp::KeyQueue {
-        explicit Queue(PC1500Machine& m) : m(m) {}
-        bool enqueue(const std::string& id) override {
-            if (id == "on" || PC1500Keyboard::keyFromName(id) == PC1500Keyboard::Key::Unknown) return false;
-            m.enqueueKey(id);
-            return true;
-        }
+    // LIB-5 AC-35: typing support, prompt readiness (no latches, no sample count).
+    struct Support final : calcu::typing::TypingSupport {
+        explicit Support(PC1500Machine& m) : m(m) {}
+        std::optional<bool> promptReady() const override { return pc1500AtBasicPrompt(m); }
         PC1500Machine& m;
-    } keyQueue;
+    } support;
     struct Trace final : sharp::CpuTrace {
         explicit Trace(PC1500Machine& m) : m(m) {}
         bool begin(std::FILE* f, std::uint32_t flags) override { return m.beginCpuTrace(f, flags); }
@@ -153,7 +152,7 @@ void PC1500InterfaceMachine::offer(std::vector<Offered>& out, const std::vector<
     Kinds& k = *m_kinds;
     out.push_back(byComponent("LH5801", k.memory));
     out.push_back(byComponent("LH5801", k.inspector));
-    out.push_back(byComponent("LH5801", k.keyQueue));
+    out.push_back(byComponent("LH5801", k.support));
     out.push_back(byComponent("LH5801", k.trace));
     out.push_back(byComponent("LH5801", k.tape));
     out.push_back(byComponent(sharp::kRtcComponent, k.clock));

@@ -124,11 +124,15 @@ Things that are only in the Qt app, or that a browser can't do:
 - **Pointer.** One key per pointer, so a tablet can hold SHIFT and a
   key with two fingers. Holding the LCD runs turbo.
 - **Keyboard.** `KeyboardEvent.code` / `.key` go to
-  `shared::resolveHostKey`. A bare Shift tapped within 400 ms is SHIFT.
+  the library's `host-key-down` / `host-key-up` (src/engine.js turns the
+  event into the command's fields; the product's keyboard map in the
+  engine decides). A bare Shift tapped within 400 ms is one screen press
+  of SHIFT.
   Auto-repeat is ignored and held keys are released on blur. The web keeps
-  no hold of its own: `SharpTypingHook::releaseKey()` holds every key at
-  least 2 emulated frames and a following press waits for it, so a press
-  and release in one frame are still scanned.
+  no hold of its own: the typing engine holds every key at least 4
+  emulated frames and a following press waits for it, so a press and
+  release in one frame are still scanned. Faceplate keys are
+  `screen-key-down` / `screen-key-up`.
 - **Clipboard.** ⌘/Ctrl+C copies the screen; ⌘/Ctrl+V pastes text (the
   browser's paste event).
 - **Drag and drop.** One file of up to 1 MB, routed by

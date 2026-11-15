@@ -22,6 +22,8 @@
 #include "app/SharpSession.hpp"
 #include "sessions/Listener.hpp"
 #include "sessions/LibraryTopics.hpp"
+#include "typing/HostKey.hpp"
+#include "typing/TypingTopics.hpp"
 
 namespace sessionfixture {
 
@@ -135,15 +137,37 @@ struct SessionFixture {
         const int n = static_cast<int>(seconds * 60);
         for (int i = 0; i < n; ++i) call();
     }
-    // Until the typing hook has typed everything, at most `capSeconds`.
+    // Until the typing engine has typed everything, at most `capSeconds`.
     bool runUntilTyped(double capSeconds) {
         const int n = static_cast<int>(capSeconds * 60);
         for (int i = 0; i < n; ++i) {
-            if (part().typing().idle()) return true;
+            if (part().typingPart().engine().idle()) return true;
             call();
         }
-        return part().typing().idle();
+        return part().typingPart().engine().idle();
     }
+    // ---- Typing (LIB-5): the typing part's commands, as a frontend sends them ----
+    sessions::CallId screenDown(const std::string& key, int pointer = 0) {
+        return send(calcu::typing::kScreenKeyDown, sessions::Value::object({{"key", key}, {"pointer", pointer}}));
+    }
+    sessions::CallId screenUp(const std::string& key, int pointer = 0) {
+        return send(calcu::typing::kScreenKeyUp, sessions::Value::object({{"key", key}, {"pointer", pointer}}));
+    }
+    // A tap: down and up at once (held its minimum by the engine).
+    void tap(const std::string& key) {
+        screenDown(key);
+        screenUp(key);
+    }
+    sessions::CallId hostDown(const calcu::typing::HostKeyEvent& e) { return send(calcu::typing::kHostKeyDown, calcu::typing::toValue(e)); }
+    sessions::CallId hostUp(const std::string& physical) {
+        return send(calcu::typing::kHostKeyUp, sessions::Value::object({{"physical", physical}}));
+    }
+    sessions::CallId paste(const std::string& text) { return send(calcu::typing::kPaste, sessions::Value::object({{"text", text}})); }
+    // The debugger's line (MachineController::typeCommand): the text and ENTER.
+    void typeLine(const std::string& line) {
+        part().typingPart().engine().typeText(line, true, false, calcu::typing::Origin::Typed);
+    }
+    calcu::typing::TypingEngine& engine() { return part().typingPart().engine(); }
     std::string screen() {
         LcdText text;
         const calcu::machine::DisplayOutput* d = listener.display();

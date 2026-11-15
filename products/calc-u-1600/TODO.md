@@ -588,17 +588,6 @@ somewhere else doesn't count (see docs/background/plans/Code-Cleanup-Plan.md).
   **Do this before** the feature ideas that build on this layer: viewing
   a module's or diskette's contents, and watching `.floppy.yaml` for
   outside changes.
-- **PC-1600 live typing rides on the paste feeder.** `app/SharpMachineParts` (`SharpTypingHook`)
-  runs PC-1600 live keys through the paste `KeyPasteFeeder` with a
-  `m_liveTyping` flag that changes what `pasteActive()` means; every paste
-  entry point (`enqueueTyped`, `cancelPaste`, `discardMachine`,
-  `interruptPaste`) has to reset it. The PC-1500 has a Core key queue
-  (`PC1500Machine::enqueueKey`). Fix: the same queue on `PC1600Machine`,
-  expanding KBII there with `kbiiSequence()`; then the feeder loses its
-  PC-1600-only `KbiiChar` action, `closesKbii` and `m_kbiiLatched`.
-  **Before fixing:** the interrupt-a-paste-mid-KBII behaviour
-  (`cancel(..., finishKbii)`) must survive the move; check it against the
-  KBII entry in docs/background/Decisions.md.
 - **`MachineCodeLoad::setAddress()` repeats `planLoad()`'s PC-1600
   steps** (`Shared/MachineCodeLoad.cpp`: the LH5803 range check,
   `lh5803ToZ80`, `pc1600TargetFor`). Fix: call `planLoad()` with the

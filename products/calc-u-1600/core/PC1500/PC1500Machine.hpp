@@ -84,22 +84,6 @@ public:
     void releaseKey(const std::string& name);
     void setOnKeyPressed(bool pressed);
 
-    /// Queues a keystroke to be tapped (pressed, held, released, then
-    /// idled) at real hardware's own key-scan cadence -- see
-    /// advanceKeyQueue()'s doc comment. Unlike pressKey()/releaseKey(),
-    /// the caller never has to also deliver a matching release; the queue
-    /// owns the whole press/hold/release/idle cycle internally, once per
-    /// step()/runCycles() call, so a UI event source that can't reliably
-    /// guarantee delivering a matching "key up" (a fast/overlapping tap, a
-    /// focus change mid-press) can never leave a key stuck down in the
-    /// matrix, which would wedge the ROM's own debounce and stop any
-    /// further keystroke from being recognized. An unmapped `name` is
-    /// silently ignored, matching pressKey()'s own convention. If the
-    /// queue is already at capacity (kKeyQueueCapacity), the new keystroke
-    /// is silently dropped -- matching real hardware's own behavior when
-    /// typed faster than its key-scan loop can keep up, not a bug to work
-    /// around.
-    void enqueueKey(const std::string& name);
 
     /// A snapshot of the display, built from the display RAM.
     PC1500Display display() const;
@@ -341,27 +325,4 @@ private:
             m_traceDrainCounter = 0;
         }
     }
-
-    // ── Paced keystroke queue -- see enqueueKey()'s doc comment ──────────
-    static constexpr size_t kKeyQueueCapacity = 16;
-    std::deque<std::string> m_keyQueue;
-    enum class KeyQueuePhase { Idle, Holding, Gap };
-    KeyQueuePhase m_keyQueuePhase{KeyQueuePhase::Idle};
-    std::string   m_keyQueueCurrentKey;
-    uint64_t      m_keyQueuePhaseCyclesRemaining{0};
-
-    /// Advances the keystroke queue's press/hold/release/idle state
-    /// machine by `cycles` (the same cycle count step()/runCycles() just
-    /// consumed) -- called from both, the same way advanceRtc()/
-    /// updatePUPV() already are, so live interactive typing (runCycles(),
-    /// the GUI's own background loop) and single-instruction stepping
-    /// (step(), headless tests) both pace queued keys identically. Uses
-    /// PC1500BasicTyper.cpp's own tapKey() cadence (kTapFrames=4 hold +
-    /// kIdleFrames=4 idle @ 60fps, ~67ms each) -- the confirmed real-
-    /// hardware key-scan timing already proven reliable there for
-    /// preset/BASIC-program typing; duplicated locally (not shared via a
-    /// header) matching this project's existing convention for small,
-    /// stable, cross-file timing constants. Directly manipulates m_memory.keyboard() rather
-    /// than going through pressKey()/releaseKey().
-    void advanceKeyQueue(uint32_t cycles);
 };

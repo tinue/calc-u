@@ -1,56 +1,68 @@
-// Headless C++ tests for Core/KeyPaste (the GUI's Edit > Paste Text
-// feeder): step building, the frame-paced state machine, and -- ROM-gated
-// -- pasted text actually reaching each model's ROM without a lost
-// character. ROM-gated tests SKIP (not fail) when the images are absent.
-//
-// Build & run: see tools/run_tests.sh
+// Edit > Paste Text and typed text on the Sharp models (LIB-5 AC-30, AC-34,
+// AC-35, AC-37; ported in M-36 from 0.8.1's KeyPaste feeder tests): the keys
+// a character gives by the model's typing profile (app/SharpTyping), the
+// KBII sequences and the latches, and -- ROM-gated -- a paste through the
+// library's typing engine reaching each model's ROM without a lost
+// character, and no ENTER. ROM-gated tests SKIP when the images are absent.
 
 #include <cstdint>
 #include <cstdio>
-#include <fstream>
-#include <iterator>
 #include <string>
 #include <vector>
 
+#include "../app/tests/SessionFixture.hpp"
 #include "../core/KeyPaste.hpp"
-#include "../core/PC1500/PC1500BasicTyper.hpp"
-#include "../core/PC1500/PC1500Machine.hpp"
-#include "../core/PC1500/PC1500TypedInput.hpp"
-#include "../core/PC1600/PC1600BasicTyper.hpp"
-#include "../core/PC1600/PC1600Machine.hpp"
 #include "../core/PC1600/PC1600TypedInput.hpp"
-#include "TestRoms.hpp"
+#include "Machine/SharpCatalogue.hpp"
+#include "Machine/SharpProductKinds.hpp"
 #include "TestHarness.hpp"
+#include "app/SharpTyping.hpp"
+#include "typing/TypingEngine.hpp"
+#include "typing/TypingSupport.hpp"
 
 namespace {
 
-std::string tapsAsText(const std::vector<PasteStep>& steps) {
+using calcu::machine::ModelId;
+using calcu::typing::Press;
+using sessionfixture::SessionFixture;
+using sessionfixture::romsPresent;
+
+const ModelId kPC1500{sharp::kPC1500A};
+const ModelId kPC1600{sharp::kPC1600};
+
+// What a text types, as 0.8.1's tests wrote steps: "^" for a shift press,
+// "~" before each press of an accent's KBII sequence, "_" for space; a
+// character without a key is left out (as a paste does, AC-12).
+std::string typed(const ModelId& m, const std::string& text, const calcu::typing::TypingSupport* s = nullptr) {
+    const calcu::typing::TypingProfile* p = shared::typingProfile(m);
     std::string out;
-    for (const PasteStep& s : steps) {
-        if (s.needsKbii) out += "~";
-        if (s.needsShift) out += "^";
-        out += s.key == "space" ? std::string("_") : s.key;
-        out += ' ';
+    for (char32_t c : calcu::typing::decodeUtf8(text)) {
+        if (c < 0x20 || c == 0x7F) continue;
+        const auto keys = p->charKeys(c, s);
+        if (!keys) continue;
+        for (const Press& k : *keys) out += (k.key.value == "space" ? std::string("_") : k.key.value) + (k.mustFinish ? "!" : "") + " ";
+        out += "| ";
     }
     return out;
 }
 
-TEST(test_build_steps_shift_and_skip) {
-    // Lowercase + '"' + ':' + '#' need SHIFT; tab and a UTF-8 'é' are skipped.
-    const std::vector<PasteStep> steps = buildPasteSteps("aB\"\t:#\xC3\xA9 1", pc1600ResolveTypedChar);
-    CHECK(tapsAsText(steps) == "^A B ^f2 ^* ^f3 _ 1 ");
+struct Latches final : calcu::typing::TypingSupport {
+    bool shift = false, kbii = false;
+    std::vector<std::pair<std::string, bool>> latches() const override { return {{"shift", shift}, {"kbii", kbii}}; }
+};
+
+TEST(lib5_ac30_shift_and_skip) {
+    // Lowercase + '"' + ':' + '#' need SHIFT; tab and 'é' (on the PC-1500) are left out.
+    CHECK_EQ(typed(kPC1500, "aB\"\t:#\xC3\xA9 1"), std::string("shift a | b | shift f2 | shift * | shift f3 | _ | 1 | "));
+    CHECK_EQ(typed(kPC1600, "aB\"\t:# 1"), std::string("shift a | b | shift f2 | shift * | shift f3 | _ | 1 | "));
 }
 
-TEST(test_build_steps_kbii_case_exact) {
+TEST(lib5_ac30_kbii_case_exact) {
     // é/É: SHIFT+KBII S / KBII S. Ë has no uppercase in the ROM -> ë (W).
-    // û only exists as SHIFT+KBII. ß has no key and is skipped.
-    const std::string text = "m\xC3\xA9rci \xC3\x89\xC3\x8B\xC3\xAB\xC3\xBB\xC3\x9B\xC3\x9F";
-    CHECK(tapsAsText(buildPasteSteps(text, pc1600ResolveTypedChar, pc1600ResolveKbiiChar)) ==
-          "^M ~^S ^R ^C ^I _ ~S ~W ~W ~^B ~^B ");
-    // Without a KBII resolver (the PC-1500) non-ASCII is skipped.
-    CHECK(tapsAsText(buildPasteSteps(text, pc1500ResolveTypedChar)) == "^M ^R ^C ^I _ ");
-    // A malformed byte is skipped, the rest still typed.
-    CHECK(tapsAsText(buildPasteSteps("A\xC3" "B\xFF", pc1600ResolveTypedChar, pc1600ResolveKbiiChar)) == "A B ");
+    // û only exists as SHIFT+KBII. ß has no key and is left out.
+    const std::string text = "\xC3\xA9\xC3\x89\xC3\x8B\xC3\xBB\xC3\x9F";
+    CHECK_EQ(typed(kPC1600, text), std::string("kbii shift s kbii! | kbii s kbii! | kbii w kbii! | kbii shift b kbii! | "));
+    CHECK_EQ(typed(kPC1500, text), std::string(""));   // the PC-1500 has no KBII
 }
 
 TEST(test_kbii_resolver) {
@@ -67,184 +79,55 @@ TEST(test_kbii_resolver) {
     CHECK(!pc1600ResolveKbiiChar(U'ß', &key, &shift));                        // ß
 }
 
-TEST(test_build_steps_line_breaks) {
-    // Only the first line is typed; ENTER is never pressed.
-    CHECK(tapsAsText(buildPasteSteps("A1\r\nB\rC\n", pc1500ResolveTypedChar)) == "A 1 ");
-    CHECK(tapsAsText(buildPasteSteps("A\rB", pc1500ResolveTypedChar)) == "A ");
-    CHECK(tapsAsText(buildPasteSteps("A\n\n", pc1500ResolveTypedChar)) == "A ");
-    CHECK(buildPasteSteps("\nB", pc1500ResolveTypedChar).empty());
-}
-
-TEST(test_build_steps_pc1500_lacks_digit_row_legends) {
+TEST(test_pc1500_lacks_digit_row_legends) {
     // '[' only exists on the PC-1600 keyboard (SHIFT + 2).
-    CHECK(tapsAsText(buildPasteSteps("[", pc1500ResolveTypedChar)).empty());
-    CHECK(tapsAsText(buildPasteSteps("[", pc1600ResolveTypedChar)) == "^2 ");
+    CHECK_EQ(typed(kPC1500, "["), std::string(""));
+    CHECK_EQ(typed(kPC1600, "["), std::string("shift 2 | "));
 }
 
-struct Recorder {
-    std::vector<std::string> events; // "+key" / "-key", tagged with the frame
-    int frame = 0;
-    KeyPasteFeeder::KeyFn press() {
-        return [this](const std::string& k) { events.push_back(std::to_string(frame) + "+" + k); };
-    }
-    KeyPasteFeeder::KeyFn release() {
-        return [this](const std::string& k) { events.push_back(std::to_string(frame) + "-" + k); };
-    }
-};
-
-TEST(test_feeder_cadence) {
-    KeyPasteFeeder f;
-    f.setPacing(pc1600PastePacing());
-    f.append(buildPasteSteps("a1", pc1600ResolveTypedChar));
-    Recorder r;
-    for (r.frame = 0; r.frame < 100 && f.active(); ++r.frame) f.onFrame(r.press(), r.release());
-    // shift: 4 held + 4 gap, 6-frame shift gap, A: 4+4, then 1: 4+4.
-    const std::vector<std::string> expected = {"0+shift", "4-shift", "14+A", "18-A", "22+1", "26-1"};
-    CHECK(r.events == expected);
-    CHECK(!f.active());
+// AC-34: what the user has latched shapes (or drops) an accented
+// character's sequence; with no typing support it is as with none latched,
+// and "has a key" never depends on the latches (D-14).
+TEST(lib5_ac34_kbii_respects_latches) {
+    Latches l;
+    const std::string oe = "\xC3\x96";   // Ö
+    CHECK_EQ(typed(kPC1600, oe, &l), std::string("kbii r kbii! | "));
+    l.shift = true;
+    CHECK_EQ(typed(kPC1600, oe, &l), std::string("shift kbii r kbii! | "));   // SHIFT un-latched first
+    l.shift = false;
+    l.kbii = true;
+    CHECK_EQ(typed(kPC1600, oe, &l), std::string("| "));   // KBII on: left out, but it has a key
+    CHECK(shared::typingProfile(kPC1600)->charKeys(U'Ö', &l).has_value());
+    CHECK_EQ(typed(kPC1600, oe, nullptr), std::string("kbii r kbii! | "));
 }
 
-TEST(test_feeder_kbii_sequence) {
-    KeyPasteFeeder f;
-    f.setPacing(pc1600PastePacing());
-    f.append(buildPasteSteps("\xC3\xA9", pc1600ResolveTypedChar, pc1600ResolveKbiiChar)); // é
-    Recorder r;
-    for (r.frame = 0; r.frame < 200 && f.active(); ++r.frame) f.onFrame(r.press(), r.release());
-    // kbii 4+4 +6, shift 4+4 +6, S 4+4, kbii 4+4 +6.
-    const std::vector<std::string> expected = {"0+kbii", "4-kbii", "14+shift", "18-shift",
-                                               "28+S",   "32-S",   "36+kbii",  "40-kbii"};
-    CHECK(r.events == expected);
-}
-
-// What the user has latched on the machine shapes (or drops) an accented
-// character's sequence -- read when it starts, not when it's queued.
-TEST(test_feeder_kbii_respects_latches) {
-    auto run = [](const KeyLatches& latched) {
-        KeyPasteFeeder f;
-        f.setPacing(pc1600PastePacing());
-        f.append(buildPasteSteps("\xC3\x96" "A", pc1600ResolveTypedChar, pc1600ResolveKbiiChar)); // Ö A
-        std::string keys;
-        auto press = [&keys](const std::string& k) { keys += k + " "; };
-        auto release = [](const std::string&) {};
-        bool first = true;
-        auto latches = [&] {
-            const KeyLatches l = first ? latched : KeyLatches{};
-            first = false;
-            return l;
-        };
-        for (int frame = 0; frame < 200 && f.active(); ++frame) f.onFrame(press, release, latches);
-        return keys;
-    };
-    CHECK(run(KeyLatches{}) == "kbii R kbii A ");
-    CHECK(run(KeyLatches{true, false}) == "shift kbii R kbii A ");  // SHIFT un-latched first
-    CHECK(run(KeyLatches{false, true}) == "A ");                    // KBII on: dropped
-    CHECK(run(KeyLatches{true, true}) == "A ");
-}
-
-TEST(test_feeder_cancel_closes_kbii) {
-    const std::string text = "\xC3\x84" "B"; // Ä then B
-    // Cancelled while the letter is held: release it, then only the closing KBII tap.
-    {
-        KeyPasteFeeder f;
-        f.setPacing(pc1600PastePacing());
-        f.append(buildPasteSteps(text, pc1600ResolveTypedChar, pc1600ResolveKbiiChar));
-        Recorder r;
-        for (r.frame = 0; r.frame <= 14; ++r.frame) f.onFrame(r.press(), r.release()); // Q pressed at 14, cancel at 15
-        f.cancel(r.release(), /*finishKbii=*/true);
-        for (; r.frame < 100 && f.active(); ++r.frame) f.onFrame(r.press(), r.release());
-        const std::vector<std::string> expected = {"0+kbii", "4-kbii", "14+Q", "15-Q", "15+kbii", "19-kbii"};
-        CHECK(r.events == expected);
-    }
-    // Cancelled while the opening KBII is still held: it runs to the end, then closes.
-    {
-        KeyPasteFeeder f;
-        f.setPacing(pc1600PastePacing());
-        f.append(buildPasteSteps(text, pc1600ResolveTypedChar, pc1600ResolveKbiiChar));
-        Recorder r;
-        f.onFrame(r.press(), r.release()); // kbii pressed at frame 0
-        f.cancel(r.release(), /*finishKbii=*/true);
-        for (r.frame = 1; r.frame < 100 && f.active(); ++r.frame) f.onFrame(r.press(), r.release());
-        const std::vector<std::string> expected = {"0+kbii", "4-kbii", "8+kbii", "12-kbii"};
-        CHECK(r.events == expected);
-    }
-    // Cancelled after the closing tap: nothing left to do.
-    {
-        KeyPasteFeeder f;
-        f.setPacing(pc1600PastePacing());
-        f.append(buildPasteSteps(text, pc1600ResolveTypedChar, pc1600ResolveKbiiChar));
-        Recorder r;
-        for (r.frame = 0; r.frame <= 38; ++r.frame) f.onFrame(r.press(), r.release()); // B held (36-40)
-        f.cancel(r.release(), /*finishKbii=*/true);
-        CHECK(!f.active());
-    }
-    // A reset-style cancel drops everything, KBII sequence or not.
-    {
-        KeyPasteFeeder f;
-        f.setPacing(pc1600PastePacing());
-        f.append(buildPasteSteps(text, pc1600ResolveTypedChar, pc1600ResolveKbiiChar));
-        Recorder r;
-        for (r.frame = 0; r.frame <= 14; ++r.frame) f.onFrame(r.press(), r.release());
-        f.cancel(r.release());
-        CHECK(!f.active());
-    }
-}
-
-TEST(test_feeder_cancel_releases_held_key) {
-    KeyPasteFeeder f;
-    f.append(buildPasteSteps("AB", pc1500ResolveTypedChar));
-    Recorder r;
-    f.onFrame(r.press(), r.release()); // A pressed
-    f.cancel(r.release());
-    CHECK(!f.active());
-    CHECK((r.events == std::vector<std::string>{"0+A", "0-A"}));
-}
-
-bool bootPC1500(PC1500Machine& m) {
-    if (!m.loadROMFile("roms/PC-1500_A04.ROM")) return false;
-    m.reset();
-    m.runCycles(static_cast<uint64_t>(1300000.0 * 2));
-    waitIdle(m, static_cast<uint64_t>(1300000.0 * 5));
-    return true;
-}
-
-// Drives the feeder the way MachineController::advance() does: one frame
-// of emulated time, then onFrame(). Returns how many ENTERs it pressed.
-template <typename Machine>
-int pasteInto(Machine& m, uint64_t frameCycles, const PastePacing& pacing, TypedCharResolver resolve,
-              const std::string& text) {
-    KeyPasteFeeder f;
-    f.setPacing(pacing);
-    f.append(buildPasteSteps(text, resolve));
-    int enters = 0;
-    auto press = [&](const std::string& k) { if (k == "enter") ++enters; m.pressKey(k); };
-    auto release = [&](const std::string& k) { m.releaseKey(k); };
-    for (int frame = 0; frame < 60 * 120 && f.active(); ++frame) {
-        m.runCycles(frameCycles);
-        f.onFrame(press, release);
-    }
-    return enters;
-}
-
-uint16_t readBE16(PC1600Machine& m, uint16_t addr) {
-    return static_cast<uint16_t>((m.memory().peek(addr) << 8) | m.memory().peek(static_cast<uint16_t>(addr + 1)));
-}
-
-// The motivating example: a listing line pasted verbatim, no ENTER sent.
-// It only reaches the console input buffer (FBB0H) on commit, so the test
-// taps ENTER itself afterwards and checks the characters made it.
-TEST(test_pc1600_paste_line_no_enter) {
-    PC1600Machine m;
-    SKIP_UNLESS(bootPC1600(m), "PC-1600 ROM images not found");
-    const std::string line = "OPEN \"X:ATLANTIS.PUN\"FOR INPUT AS #1";
-    const int enters = pasteInto(m, PC1600Machine::kTStateHz / 60, pc1600PastePacing(), pc1600ResolveTypedChar,
-                                 line);
-    CHECK(enters == 0);
-    tapKey(m, "enter");
-    waitIdle(m, PC1600Machine::kTStateHz);
+// The line buffer of the PC-1600's console input (FBB0H), through the
+// loader memory (the Z-80 view).
+std::string pc1600LineBuffer(SessionFixture& f) {
     std::string buf;
-    for (uint16_t a = 0xFBB0; a <= 0xFBFF; ++a) buf.push_back(static_cast<char>(m.memory().read(a)));
-    // The ROM keyword-tokenises on commit (OPEN/FOR/INPUT/AS become
-    // tokens), so check the literal parts between the keywords.
+    auto* mem = sharp::firstOf<sharp::LoaderMemory>(*f.part().machine());
+    for (std::uint16_t a = 0xFBB0; mem && a <= 0xFBFF; ++a) buf.push_back(static_cast<char>(mem->peek(a)));
+    return buf;
+}
+
+std::uint16_t peekBE16(SessionFixture& f, std::uint16_t addr) {
+    auto* mem = sharp::firstOf<sharp::LoaderMemory>(*f.part().machine());
+    return mem ? static_cast<std::uint16_t>((mem->peek(addr) << 8) | mem->peek(static_cast<std::uint16_t>(addr + 1))) : 0;
+}
+
+// The motivating example: a listing line pasted verbatim, no ENTER sent;
+// it reaches the console input buffer on commit, so the test taps ENTER
+// itself afterwards and checks the characters made it.
+TEST(lib5_ac34_pc1600_paste_line_no_enter) {
+    SKIP_UNLESS(romsPresent(), "no ROMs in roms/");
+    SessionFixture f;
+    CHECK(f.start("PC-1600"));
+    f.paste("OPEN \"X:ATLANTIS.PUN\"FOR INPUT AS #1");
+    CHECK(f.runUntilTyped(60));
+    f.tap("enter");
+    f.runFor(1.0);
+    const std::string buf = pc1600LineBuffer(f);
+    // The ROM keyword-tokenises on commit, so check the literal parts.
     CHECK(buf.find("\"X:ATLANTIS.PUN\"") != std::string::npos);
     CHECK(buf.find("#1") != std::string::npos);
 }
@@ -252,62 +135,59 @@ TEST(test_pc1600_paste_line_no_enter) {
 // Only the first line is pasted, and never entered: in PRO mode nothing is
 // stored (BASPRG_END, F867H big-endian, stays put) until ENTER is tapped by
 // hand, and then exactly that one line.
-TEST(test_pc1600_paste_multiline_types_first_line) {
-    PC1600Machine m;
-    SKIP_UNLESS(bootPC1600(m), "PC-1600 ROM images not found");
-    tapKey(m, "mode"); // RUN -> PRO
-    m.runCycles(PC1600Machine::kTStateHz / 2);
-    const uint16_t before = readBE16(m, 0xF867);
-    const int enters = pasteInto(m, PC1600Machine::kTStateHz / 60, pc1600PastePacing(), pc1600ResolveTypedChar,
-                                 "10 PRINT \"Hi\"\n20 A=1\n30 END");
-    CHECK(enters == 0);
-    m.runCycles(PC1600Machine::kTStateHz / 2);
-    CHECK(readBE16(m, 0xF867) == before);
-    tapKey(m, "enter");
-    m.runCycles(PC1600Machine::kTStateHz / 2);
-    const uint16_t afterOne = readBE16(m, 0xF867);
+TEST(lib5_ac12_pc1600_paste_multiline_types_first_line) {
+    SKIP_UNLESS(romsPresent(), "no ROMs in roms/");
+    SessionFixture f;
+    CHECK(f.start("PC-1600"));
+    f.tap("mode");   // RUN -> PRO
+    f.runFor(0.5);
+    const std::uint16_t before = peekBE16(f, 0xF867);
+    f.paste("10 PRINT \"Hi\"\n20 A=1\n30 END");
+    CHECK(f.runUntilTyped(60));
+    f.runFor(0.5);
+    CHECK(peekBE16(f, 0xF867) == before);
+    f.tap("enter");
+    f.runFor(0.5);
+    const std::uint16_t afterOne = peekBE16(f, 0xF867);
     CHECK(afterOne > before);
-    tapKey(m, "enter"); // an empty line stores nothing more
-    m.runCycles(PC1600Machine::kTStateHz / 2);
-    CHECK(readBE16(m, 0xF867) == afterOne);
+    f.tap("enter");   // an empty line stores nothing more
+    f.runFor(0.5);
+    CHECK(peekBE16(f, 0xF867) == afterOne);
 }
 
-bool memoryContains(PC1500Machine& m, const std::string& needle) {
-    for (uint32_t a = 0x4000; a + needle.size() <= 0x8000; ++a) {
+bool memoryContains(SessionFixture& f, const std::string& needle) {
+    auto* mem = sharp::firstOf<sharp::LoaderMemory>(*f.part().machine());
+    for (std::uint32_t a = 0x4000; mem && a + needle.size() <= 0x8000; ++a) {
         bool match = true;
-        for (std::size_t i = 0; i < needle.size() && match; ++i) {
-            match = m.memory().peek(static_cast<uint16_t>(a + i)) == static_cast<uint8_t>(needle[i]);
-        }
+        for (std::size_t i = 0; i < needle.size() && match; ++i)
+            match = mem->peek(static_cast<std::uint16_t>(a + i)) == static_cast<std::uint8_t>(needle[i]);
         if (match) return true;
     }
     return false;
 }
 
-TEST(test_pc1500_paste_multiline_types_first_line) {
-    PC1500Machine m;
-    SKIP_UNLESS(bootPC1500(m), "roms/PC-1500_A04.ROM not found");
-    // A cold-booted PC-1500 needs CL + NEW0 before it stores program lines
-    // (the preamble a preset's keys: gives typeBasicProgramText()).
-    tapKey(m, "cl");
-    waitIdle(m, static_cast<uint64_t>(1300000.0 * 2));
-    std::string err;
-    CHECK(typeLine(m, "NEW0", /*pressEnter=*/true, &err));
-    const int enters = pasteInto(m, static_cast<uint64_t>(1300000.0 / 60), pc1500PastePacing(),
-                                 pc1500ResolveTypedChar, "10 PRINT \"Paste: ok\"\n20 REM Tail#x");
-    CHECK(enters == 0);
-    CHECK(memoryContains(m, "Paste: ok")); // case kept via the SHIFT taps
-    CHECK(!memoryContains(m, "Tail#x"));   // the second line is never typed
+TEST(lib5_ac12_pc1500_paste_multiline_types_first_line) {
+    SKIP_UNLESS(romsPresent(), "no ROMs in roms/");
+    SessionFixture f;
+    CHECK(f.start("PC-1500A"));
+    // A cold-booted PC-1500 needs CL + NEW0 before it stores program lines.
+    f.tap("cl");
+    f.runFor(0.5);
+    f.typeLine("NEW0");
+    CHECK(f.runUntilTyped(30));
+    f.runFor(1.0);
+    f.paste("10 PRINT \"Paste: ok\"\n20 REM Tail#x");
+    CHECK(f.runUntilTyped(60));
+    CHECK(memoryContains(f, "Paste: ok"));   // case kept via the SHIFT presses
+    CHECK(!memoryContains(f, "Tail#x"));     // the second line is never typed
     // No ENTER: BASPRG_END ($7867, big-endian) only moves once the line is
-    // committed by hand. (Its text already sits in the line buffer, so a
-    // plain memory search can't tell.)
-    auto programEnd = [&m] { return (m.memory().peek(0x7867) << 8) | m.memory().peek(0x7868); };
-    const int endBeforeEnter = programEnd();
-    m.runCycles(static_cast<uint64_t>(1300000.0 / 2));
-    CHECK(programEnd() == endBeforeEnter);
-    tapKey(m, "enter");
-    settleUntilIdle(m, static_cast<uint64_t>(1300000.0 * 2));
-    m.runCycles(static_cast<uint64_t>(1300000.0 / 2));
-    CHECK(programEnd() > endBeforeEnter);
+    // committed by hand.
+    const int endBeforeEnter = peekBE16(f, 0x7867);
+    f.runFor(0.5);
+    CHECK(peekBE16(f, 0x7867) == endBeforeEnter);
+    f.tap("enter");
+    f.runFor(2.0);
+    CHECK(peekBE16(f, 0x7867) > endBeforeEnter);
 }
 
 } // namespace

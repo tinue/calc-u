@@ -20,7 +20,6 @@
 //   c1600.ce158-printer-port   bytes sent to the CE-158's printer port (owner: the CE-158)
 //   c1600.host-drive-folder    the host drive's folder (owner: the host drive)
 // Adapter kinds, each removed by the step named (design §5):
-//   c1600.key-queue      the PC-1500's paced keystroke queue (M-36, LIB-5)
 //   c1600.plotter-paper  CE-150 / CE-1600P paper (M-45, LIB-8)
 //   c1600.trace          the CPU trace file (M-45, LIB-10)
 //   c1600.tape-deck      the cassette recorder (M-47, LIB-7)
@@ -74,16 +73,6 @@ public:
 };
 
 // ---- Adapter kinds ----
-
-class KeyQueue : public calcu::machine::Capability {
-public:
-    static constexpr calcu::machine::KindId kKind{"c1600.key-queue"};
-    calcu::machine::KindId kind() const override { return kKind; }
-
-    // A tap at the ROM's own key-scan cadence (PC1500Machine::enqueueKey);
-    // false for an ID that is not a key of the matrix.
-    virtual bool enqueue(const std::string& keyId) = 0;
-};
 
 class PlotterPaper : public calcu::machine::Capability {
 public:

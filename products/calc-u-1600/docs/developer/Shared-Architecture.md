@@ -60,14 +60,15 @@ WebAssembly check.
 | File | What it is |
 |---|---|
 | `SharpAppPart` | Calc-U-1600's part of the library's app session (a `calcu::sessions::SessionPart`): the live PC-1500/1500A/1600 as one `calcu::machine::Machine` handed to the machine session, model and ROM switches, memory-module slots, peripherals, tape, host drive, trace, inspector; the bays; the Sharp operations as `c1600.*` commands; the interim topics `c1600.control-state`, `c1600.machine`, `c1600.tapes`, `c1600.serial-links` and LIB-12's `roms-missing` (`SharpTopics.hpp`; see "The machine" below) |
-| `SharpMachineParts` | The adapters around the machine session: `SharpTypingHook` (host keys, `hostKeyDown`, the paste queue, timed taps; until M-36) and `SharpDebuggerGate` (the debugger's run control; until M-45) |
+| `SharpMachineParts` | The adapter around the machine session: `SharpDebuggerGate` (the debugger's run control; until M-45) |
+| `SharpTyping` | Typing on the library's typing engine (LIB-5, `library/typing/`): the typing profile per model (`typingProfile`: 4 + 4 frames, 6 more after SHIFT and KBII on the PC-1600, readiness rules, the characters, the `key` names), the keyboard map per model (`SharpKeyboardMap`), `typingProduct()` for the session's `TypingPart` |
 | `SharpSession` | `makeSharpSession()`: the library's app session with the part, which the session owns (Qt6, tests, `tools/wasm_smoke`); a host talks to it through the library's `calcu::sessions::Listener` |
 | `SharpWebPart` | What the Web page draws, as product topics, commands and requests (`c1600.ui`, `c1600.lcd`, …; LIB-15 1600) |
 | `ModuleBay`, `FloppyBay`, `TapeBay` | The control bar's slots, disk and tape: catalogues, attach, Name & Save, preset `saveas:`, debounced autosave |
 | `PresetCatalog` | The bundled presets of `examples/bundled.yaml` (`defaults`, `examples`) and any preset's short name and description; `examples:` refs resolve through `AppPaths` |
 | `PacingProfiles`, `AudioSink` | The Sharp pacing profiles (LIB-17 AC-20: the slice is the call, no jitter, full speed never paced); the host's audio output and `SoundFeed`, which plays the session's sound messages into it |
 | `Settings`, `AppPaths`, `Utf8Path` | Every settings key with its default (the declaration of `Calc-U-1600.ini`); the save/tapes/bundle folders and by-name save paths |
-| `HostKeyMap`, `KeyLayout/`, `LcdLayout`, `PlotterPaper`, `Rgb` | Host keys → calculator keys; key hit-regions and the faceplate fit; LCD geometry, colours and status indicators (`lcd::indicators()`); plotter-paper geometry |
+| `KeyLayout/`, `LcdLayout`, `PlotterPaper`, `Rgb` | Key hit-regions and the faceplate fit; LCD geometry, colours and status indicators (`lcd::indicators()`); plotter-paper geometry |
 | `MachineModel` | The `Model` and ROM-version enums |
 | `ControlState` | What the pickers, menus and panels offer right now: every rule about which control a model has and which peripheral excludes which |
 | `MediaLibrary` | The save folder's cards, disks and tapes as items to list, export, import and delete (the web's Saved Media…) |
@@ -99,8 +100,10 @@ file in `app/`, `frontends/`, `tools/` or `dev/` includes or names one.
 - **Operations and keys.** `reset()`, `coldBoot()`, `powerCycle()` (the
   off / on sequence now runs inside the core, `core/Machine/PowerCycleSequence`),
   then `sharp::legacy::runToPromptJob` (until M-46). Keys are key IDs
-  (`keyDown`/`keyUp`; `on` is one of them); the PC-1500's paced keystroke
-  queue is the `c1600.key-queue` kind.
+  (`keyDown`/`keyUp`; `on` is one of them). Typing (holds, gaps, key
+  readiness, Paste Text) is the library's typing engine; the machines offer
+  the generic kind `typing-support` (prompt readiness; on the PC-1600 the
+  SHIFT and KBII latches).
 - **Peripherals** are `attach`/`detach`/`replace` in the places `slot-1`,
   `slot-2`, `printer`, `interface`, `host-drive`; a change on a running
   machine reaches the bus at the off point of the power cycle that follows.
@@ -143,10 +146,12 @@ messages: it sends commands and requests, and keeps what the topics send.
    display is held), or one part of the running operation; the parts do
    their per-call duties (autosave, tape); the topics that changed go out.
    Repaint from the `display` topic (`displayFrameOf`, `lcd::indicators()`).
-4. Resolve host keys with `resolveHostKey()` and hand them to
-   `part().typing().hostKeyDown()` (adapter until M-36); release what it
-   asks to with `hostKeyUp()`. Keys pressed while an operation runs are
-   dropped (behaviour change 1600-9).
+4. Send keys as the library's typing commands (LIB-5): a host key as
+   `host-key-down` / `host-key-up` with what the host reported (the
+   product's keyboard map in the session decides), an on-screen key as
+   `screen-key-down` / `screen-key-up`, Paste Text as `paste`, focus loss
+   as `focus-lost`. Keys pressed while an operation runs are dropped
+   (behaviour change 1600-9).
 5. Start operations with their commands (`c1600.load-preset`,
    `c1600.reset`, `c1600.pick-model`, `c1600.toggle-peripheral`, …;
    `SharpTopics.hpp`). The reply comes when the operation ends; the `busy`

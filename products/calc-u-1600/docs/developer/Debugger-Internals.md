@@ -44,7 +44,7 @@ and [../background/plans/Debugger-Use-Cases-Plan.md](../background/plans/Debugge
     machine session goes through `runSlice()` while attached
     (`SharpDebugger::runDebuggerSlice()`, answered by `MachineController`; adapter until M-45);
   - `SharpAppPart`'s machine rebuilds: `machineAboutToChange()` / `machineReplaced()`;
-  - `SharpTypingHook::typeCommand()`;
+  - `MachineController::typeCommand()` (the library's typing engine, `typeText` with ENTER);
   - `frontends/qt6/app/Operations`: presets and resets from the debugger are the session's
     operations; a DAP request waits for the reply in a nested event loop (`runAndWait`),
     the frame timer goes on; the busy topic drives the DAP queue;
@@ -62,7 +62,7 @@ and [../background/plans/Debugger-Use-Cases-Plan.md](../background/plans/Debugge
   `busy` topic). An attach handled during the
   startup preset would rebuild the machine under the running loader.
 - **Typing:** the GUI paste never presses ENTER; that's deliberate. Tools
-  use `typeCommand()`, which does. `enqueueKey()` is PC-1500 only.
+  use `typeCommand()`, which does (on every model).
 - **Build & Load order:** clean start (the configuration's `preset`, else
   the model's default preset, else All Reset), then a direct load (no
   dialog or popup), then auto-start. `cleanStart: false` skips the clean

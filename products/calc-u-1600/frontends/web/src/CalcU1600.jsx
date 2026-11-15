@@ -13,6 +13,7 @@ const BAR_HEIGHT = 40;
 const PANEL_MIN = 220;          // the least room below the faceplate worth a panels' row
 const INSPECTOR_MIN_WIDTH = 700; // narrower: the inspector only when no other panel is shown
 const SHIFT_TAP_MS = 400;
+const SHIFT_TAP_POINTER = 1000;   // the screen press a SHIFT tap is sent as (no pointer of the faceplate)
 const MAX_DROP_BYTES = 1 << 20;
 const IS_MAC = typeof navigator !== "undefined" && /Mac|iPhone|iPad|iPod/.test(navigator.platform || navigator.userAgent);
 
@@ -299,7 +300,7 @@ function CalcU1600(props) {
 
   // ── Keyboard (MainWindow::keyPressEvent / keyReleaseEvent) ──────────
   const releaseHeldKeys = () => {
-    for (const { base } of heldKeys.current.values()) base.then((b) => { if (b) engine.call("hostKeyUp", b); });
+    if (engine) engine.call("focusLost");   // LIB-5 AC-10: every held key comes up
     heldKeys.current.clear();
     shiftTap.current = null;
   };
@@ -325,9 +326,8 @@ function CalcU1600(props) {
     if (/^F([7-9]|1\d)$/.test(e.key)) return;
     e.preventDefault();
     if (heldKeys.current.has(e.code)) return;
-    const base = engine.request("hostKeyDown", e.code, e.key, e.shiftKey, e.ctrlKey, e.altKey, e.metaKey, IS_MAC)
-      .catch(() => "");
-    heldKeys.current.set(e.code, { base });
+    engine.call("hostKeyDown", e.code, e.key, e.shiftKey, e.ctrlKey, e.altKey, e.metaKey, IS_MAC);
+    heldKeys.current.set(e.code, true);
   };
 
   const onKeyUp = (e) => {
@@ -335,14 +335,17 @@ function CalcU1600(props) {
     if (e.key === "Shift") {
       const tapped = shiftTap.current !== null && performance.now() - shiftTap.current <= SHIFT_TAP_MS;
       shiftTap.current = null;
-      if (tapped) engine.call("hostShiftTap");
+      // AC-33: a SHIFT tap is one press of the machine's shift key (the
+      // wall-time rule stays here, D-12; the engine holds it its minimum).
+      if (tapped) {
+        engine.call("faceKeyDown", "shift", SHIFT_TAP_POINTER);
+        engine.call("faceKeyUp", "shift", SHIFT_TAP_POINTER);
+      }
     }
-    const held = heldKeys.current.get(e.code);
-    if (!held) return;
+    if (!heldKeys.current.has(e.code)) return;
     heldKeys.current.delete(e.code);
-    // The engine keeps a quick tap down long enough to be scanned
-    // (SharpTypingHook::releaseKey()).
-    held.base.then((b) => { if (b) engine.call("hostKeyUp", b); });
+    // The engine keeps a quick tap down long enough to be scanned (LIB-5 AC-1).
+    engine.call("hostKeyUp", e.code);
   };
 
   // ── Layout ──────────────────────────────────────────────────────────

@@ -76,8 +76,8 @@ int main() {
             std::printf("%s %s\n%s\n", ok && seen ? "ok  " : "FAIL", c.preset, lcd.c_str());
             if (!ok || !seen) ++failures;
         }
-        // Typing through the input queue (SharpTypingHook), in emulated time.
-        part.typing().typeCommand("PRINT 6*7");
+        // Typing through the library's typing engine (LIB-5), in emulated time.
+        part.typingPart().engine().typeText("PRINT 6*7", true, false, calcu::typing::Origin::Typed);
         app.session->advanceUnpaced(static_cast<calcu::machine::Ticks>(4.0 * part.clockHz()));
         const bool typed = screen(host, part).find("42") != std::string::npos;
         std::printf("%s PRINT 6*7\n%s\n", typed ? "ok  " : "FAIL", screen(host, part).c_str());

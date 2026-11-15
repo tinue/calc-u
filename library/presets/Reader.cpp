@@ -3,6 +3,9 @@
 #include <algorithm>
 #include <cstdlib>
 #include <cctype>
+#include <filesystem>
+#include <fstream>
+#include <iterator>
 #include <set>
 
 namespace calcu::presets {
@@ -220,7 +223,23 @@ std::optional<PlaceRequest> readPlace(const std::string& key, const YamlNode& v,
             ctx.error(line, key + ": a reference has exactly one of name: and file:.");
             return std::nullopt;
         }
-        if (file) {   // D-22: until LIB-7 registers its resolver (M-41)
+        if (file && !rule.byFile) {
+            ctx.error(line, key + ": does not take a reference by file:.");
+            return std::nullopt;
+        }
+        // LIB-7 (M-41): a module that is a medium, by its name tag or its file.
+        if (const PlaceResolver& resolve = ctx.vocabulary().placeResolver()) {
+            PlaceResolution res = resolve(place, v, line, ctx);
+            if (res.how == PlaceResolution::How::Error) return std::nullopt;
+            if (res.how == PlaceResolution::How::Done) {
+                PlaceRequest r;
+                r.line = line;
+                r.request = std::move(res.request);
+                r.request.place = machine::PlacePath{{place}};
+                return r;
+            }
+        }
+        if (file) {   // D-22: without LIB-7's resolver
             ctx.error(line, key + ": a reference by file: is not read by this release; use name:.");
             return std::nullopt;
         }
@@ -539,8 +558,12 @@ std::unique_ptr<Item> readStep(std::string_view verb, const YamlNode& value, con
         std::string stem() const override { return {}; }
         std::optional<std::string> text() const override { return std::string(); }
         std::string readError() const override { return {}; }
+        // LIB-7 (M-41; LIB-11 AC-22): a file a step's reference names
+        // (`floppy { file: … }`), absolute or relative to the current folder.
         std::variant<std::vector<std::uint8_t>, std::string> readNamed(std::string_view p) const override {
-            return "The file " + std::string(p) + " cannot be read by a step on its own.";
+            std::ifstream in(std::filesystem::path(std::u8string(p.begin(), p.end())), std::ios::binary);
+            if (!in) return "The file " + std::string(p) + " cannot be read.";
+            return std::vector<std::uint8_t>(std::istreambuf_iterator<char>(in), std::istreambuf_iterator<char>());
         }
         std::string resolvedName(std::string_view p) const override { return std::string(p); }
     } source;

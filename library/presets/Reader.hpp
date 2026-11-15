@@ -71,6 +71,7 @@ class ReadContext {
 public:
     ReadContext(const ReadSetup&, const PresetSource&, const machine::MachineDescriptor&);
     const machine::Catalogue& catalogue() const { return setup_.catalogue; }
+    const Vocabulary& vocabulary() const { return setup_.vocabulary; }
     const machine::MachineDescriptor& model() const { return model_; }   // known before every keyword but format-version and model
     ModelRules& rules() { return *rules_; }
     const typing::TypingProfile* typingProfile() const;
@@ -82,6 +83,12 @@ public:
     std::optional<std::vector<std::uint8_t>> readFile(std::string_view path, int line);
     const PresetSource& source() const { return source_; }
     void keep(std::string key, std::shared_ptr<const ProductValue>);
+    // What was kept under `key` in this read so far, or nullptr (LIB-7: the
+    // in-file media a header key and the steps of one preset share).
+    std::shared_ptr<const ProductValue> kept(const std::string& key) const {
+        const auto it = kept_.find(key);
+        return it == kept_.end() ? nullptr : it->second;
+    }
     void error(int line, std::string message);   // collected; the lowest line wins
 
     // The reader's and run-step's own.

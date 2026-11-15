@@ -5,8 +5,10 @@
 #include "sessions/SessionPart.hpp"
 #include "startup/MachinePlan.hpp"
 #include "startup/ProductMachines.hpp"
+#include <functional>
 #include <memory>
 #include <optional>
+#include <vector>
 
 // Machine control (LIB-18 design §3.4; spec AC-1, AC-2, AC-7, AC-10 to
 // AC-14, EC-3 to EC-5, EC-7): builds a plan into the session, changes a
@@ -49,6 +51,11 @@ public:
     // AC-7: the plan of the running machine in another variant: carried()
     // for each plug of Machine::plugged() in place order; no content.
     MachinePlan variantPlan(machine::Machine&, machine::VariantId);
+    // LIB-7 (M-41; LIB-18 §3.4, LIB-7 S-7a): what a part adds to the request
+    // of a plug variantPlan carries over (a module medium's content), after
+    // ProductMachines::carried, in the order added.
+    using Carry = std::function<void(machine::PeripheralRequest&, const machine::PlugEntry&, machine::Machine&)>;
+    void addCarry(Carry c) { carries_.push_back(std::move(c)); }
 
     ProductMachines& product() { return product_; }
     // D-11: a build inside an operation asked for regular speed at its end.
@@ -65,6 +72,7 @@ private:
     std::shared_ptr<const roms::RomSet> roms_;
     std::optional<BuiltWith> lastBuild_;
     bool regularDue_ = false;
+    std::vector<Carry> carries_;
 };
 
 } // namespace calcu::startup

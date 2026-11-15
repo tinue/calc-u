@@ -1,5 +1,6 @@
 #include "harness/Run.hpp"
 #include "debugger/DebuggerPart.hpp"
+#include "media/PresetMedia.hpp"
 #include "harness/StatePart.hpp"
 #include "paper/PaperPart.hpp"
 #include "sessions/LibraryTopics.hpp"
@@ -207,11 +208,27 @@ std::unique_ptr<Server> Server::start(HarnessProduct& product, const RunOptions&
     }
     // LIB-4 §7: the control state, among the library's parts.
     s->control_ = std::make_unique<control::ControlPart>(product.controlSetup());
+    // LIB-7 §3.11: the media part on the run's save folder (LIB-11 AC-8),
+    // the product's bundled media always there; the media steps on LIB-6's place.
+    if (std::vector<media::KindDecl> kinds = product.mediaKinds(); !kinds.empty()) {
+        settings::HostDirs dirs = s->setup_->hostDirs();
+        dirs.frontend = settings::FrontendKind::Swift;   // the save folder as the run passes it
+        s->mediaPaths_ = std::make_unique<settings::Paths>(s->setup_->settings(), dirs);
+        media::MediaSetup ms;
+        ms.kinds = std::move(kinds);
+        ms.paths = s->mediaPaths_.get();
+        ms.listing = product.moduleListing();
+        ms.catalogue = &product.catalogue();
+        s->media_ = std::make_unique<media::MediaPart>(std::move(ms));
+        s->media_->setControl(&s->startup_->control());
+        if (s->presets_) media::addMediaToPresets(s->presets_->vocabulary(), *s->media_);
+    }
     setup.parts = {s->peripherals_.get(), s->state_.get()};
     if (s->presets_) setup.parts.push_back(s->presets_.get());
     for (sessions::SessionPart* p : {static_cast<sessions::SessionPart*>(s->startup_.get()),
                                      static_cast<sessions::SessionPart*>(s->control_.get())})
         setup.parts.push_back(p);
+    if (s->media_) setup.parts.push_back(s->media_.get());
     for (sessions::SessionPart* p : product.sessionParts()) setup.parts.push_back(p);
     s->session_ = std::make_unique<sessions::AppSession>(std::move(setup));
     s->host_ = std::make_unique<HarnessHost>(*s->session_, product, *s->setup_);
@@ -227,6 +244,7 @@ std::unique_ptr<Server> Server::start(HarnessProduct& product, const RunOptions&
     addPresetCommands(s->registry_, s->presets_ ? &s->presets_->vocabulary() : nullptr);
     addPaperCommands(s->registry_);
     addDebugCommands(s->registry_);
+    addMediaCommands(s->registry_, s->media_.get());
     product.addCommands(s->registry_);
     return s;
 }
@@ -238,6 +256,7 @@ void Server::finish() {
     finished_ = true;
     if (host_) host_->finish();
     host_.reset();
+    if (session_) session_->close();   // LIB-7 AC-13: the parts write what they have to save
     session_.reset();
     setup_.reset();   // removes the run folder
 }

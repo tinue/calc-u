@@ -5,7 +5,7 @@
 # The C++ areas, once: their sources, their tests (<area>/tests/*.cpp) and the
 # tests' include folders all come from this list. (web/ is the Web shell's,
 # harness/cli/ and harness/attach/ are added below.)
-set(CALCU_LIBRARY_AREAS machine settings pacing sessions peripherals roms formats control startup typing presets paper debugger harness)
+set(CALCU_LIBRARY_AREAS machine settings pacing sessions peripherals roms formats control startup typing presets paper debugger media harness)
 set(CALCU_LIBRARY_SOURCES "")
 foreach(area ${CALCU_LIBRARY_AREAS})
   file(GLOB area_sources CONFIGURE_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/${area}/*.cpp)
@@ -82,9 +82,10 @@ if(CALCU_TESTS AND NOT EMSCRIPTEN)
   # TestParts.hpp, TestRomFiles.hpp, the harness's TestProduct.hpp; not
   # settings/tests, whose TestProduct.hpp is its own) and of library/testing/.
   add_library(calcu_test_machines OBJECT ${CMAKE_CURRENT_SOURCE_DIR}/machine/tests/TestMachines.cpp
-                                         ${CMAKE_CURRENT_SOURCE_DIR}/machine/tests/TestCpu.cpp)
+                                         ${CMAKE_CURRENT_SOURCE_DIR}/machine/tests/TestCpu.cpp
+                                         ${CMAKE_CURRENT_SOURCE_DIR}/media/tests/TestKinds.cpp)
   target_link_libraries(calcu_test_machines PUBLIC calcu_library PRIVATE calcu_warnings)
-  foreach(area machine sessions roms typing startup presets paper debugger harness)
+  foreach(area machine sessions roms typing startup presets paper debugger media harness)
     target_include_directories(calcu_test_machines PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/${area}/tests)
   endforeach()
   target_include_directories(calcu_test_machines PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/testing)
@@ -98,7 +99,8 @@ if(CALCU_TESTS AND NOT EMSCRIPTEN)
     list(APPEND CALCU_LIBRARY_TEST_SOURCES ${area_tests})
   endforeach()
   list(REMOVE_ITEM CALCU_LIBRARY_TEST_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/machine/tests/TestMachines.cpp
-                                              ${CMAKE_CURRENT_SOURCE_DIR}/machine/tests/TestCpu.cpp)
+                                              ${CMAKE_CURRENT_SOURCE_DIR}/machine/tests/TestCpu.cpp
+                                              ${CMAKE_CURRENT_SOURCE_DIR}/media/tests/TestKinds.cpp)
   if(CALCU_ATTACH)
     file(GLOB CALCU_ATTACH_TEST_SOURCES CONFIGURE_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/harness/attach/tests/*.cpp)
     list(APPEND CALCU_LIBRARY_TEST_SOURCES ${CALCU_ATTACH_TEST_SOURCES})

@@ -57,11 +57,11 @@ struct ExpectReading {
 };
 
 // The forms a place key takes (D-22): `<ID>[:<variant>]`, `{ name: <ID> }`,
-// `{ file: … }` (refused until LIB-7, M-41).
+// `{ file: … }` (read by LIB-7's resolver from M-41; refused without one).
 struct PlaceKeyRule {
     bool bare = true;
     bool byName = true;
-    bool byFile = false;
+    bool byFile = true;
 };
 
 class ModelRules {

@@ -13,6 +13,10 @@
 // its own area (key, type: LIB-5; preset, expect, screenshot, the bare
 // wait: LIB-6; ...).
 
+namespace calcu::media {
+class MediaPart;
+}
+
 namespace calcu::harness {
 
 class HarnessHost;
@@ -74,5 +78,9 @@ void addPaperCommands(CommandRegistry&);
 // DebuggerPart with the setter `harness`; refused with "The machine offers
 // no debug target." in a product without a DebuggerPart.
 void addDebugCommands(CommandRegistry&);
+// LIB-7 AC-28 (design §3.11): media, media import, media export, media delete
+// (MediaCommands.cpp) on the run's media part; refused without one. The
+// media steps come with addPresetCommands.
+void addMediaCommands(CommandRegistry&, media::MediaPart*);
 
 } // namespace calcu::harness

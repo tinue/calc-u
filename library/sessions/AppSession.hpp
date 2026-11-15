@@ -55,6 +55,11 @@ public:
     CallId ask(ListenerId, Request);
     void answer(CallId ask, ServiceAnswer);    // AC-27
     machine::Ticks advanceUnpaced(machine::Ticks);   // virtual-time hosts (LIB-11 `wait`)
+    // LIB-7 AC-13 (design §3.12): the product quits or the window closes.
+    // Every part's closing() once (a part writes what it has to save); no
+    // message goes out after it. The host calls it while its parts are
+    // there, before it destroys the session; the destructor calls no part.
+    void close();
 
     // The session's context, for a host's own lines and checks: a log line
     // about its setup, what a listener offers (debug builds), tests.

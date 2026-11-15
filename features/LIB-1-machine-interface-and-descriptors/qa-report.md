@@ -164,3 +164,14 @@ until then.
 | AC-39 | Pass | `lib1_ac39_peripheral_descriptors` (nine modules, CE-150, CE-158, CE-1600P New/Old with the CE-1600F, host drive; the CE-161's switch as a control) |
 | AC-40 | Pass (without the media place clause) | `lib1_ac40_machines_conform` (`checkAgainstDescriptor` empty for each model and variant, bare and with each peripheral of AC-39 plugged in where it fits; the media place capabilities come with LIB-7, M-47, D-1) |
 | AC-41 | Pass | `lib1_ac41_module_fit_table` |
+
+### M-41 (LIB-7): the media place check (D-1)
+
+The check of one `MediaPlace` capability per media place of the descriptor
+and of each plugged peripheral is `media::checkMediaPlaces(Machine&, const
+Catalogue&)` in `library/media/Conformance.*` (the machine area names no
+kind; LIB-1 design §3.10), tested on the test machines by
+`ac40_media_place_capability_per_media_place`
+(`library/media/tests/place_tests.cpp`). The products call it beside
+`checkAgainstDescriptor` when their media places offer the kind (AC-40's
+media place clause, M-47 and M-55).

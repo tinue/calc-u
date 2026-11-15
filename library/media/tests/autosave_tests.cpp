@@ -1,0 +1,259 @@
+#include "MediaFixture.hpp"
+#include "TestHarness.hpp"
+#include "settings/AtomicFile.hpp"
+
+// LIB-7 L6 (design §6): autosave and the writes that do not wait (AC-11 to
+// AC-15, EC-1, EC-2, EC-8).
+
+using namespace calcu;
+using namespace calcu::media;
+using namespace calcu::media::test;
+
+namespace {
+
+FixtureOptions dot(sessions::Hosting h = sessions::Hosting::Paced) {
+    FixtureOptions o;
+    o.model = "test-dot";
+    o.hosting = h;
+    o.prepare = [](auto& s, auto& b) {
+        b.write("disks/Formatted.testdisk.yaml", disk("Formatted", "").text());
+        s.write("Work.testdisk.yaml", disk("Work", "w").text());
+        s.write("Mine.testdisk.yaml", disk("Mine", "t", true).text());
+    };
+    return o;
+}
+
+Value choose(const std::string& place, const std::string& entry) { return Value::object({{"place", place}, {"entry", entry}}); }
+
+std::string content(MediaFixture& f, const std::string& file = "Work.testdisk.yaml") { return field(f.saved(file), "content"); }
+
+int savedLines(const std::vector<std::string>& lines) {
+    return static_cast<int>(std::count_if(lines.begin(), lines.end(), [](const std::string& l) { return l.rfind("Saved ", 0) == 0; }));
+}
+
+} // namespace
+
+TEST(ac11_written_within_half_a_second_at_60_hz) {
+    for (int at = 0; at < 30; at += 7) {   // the change at different points of the 60 Hz rhythm
+        MediaFixture f(dot());
+        CHECK(f.ok("media.choose", choose("disk", "saved:Work.testdisk.yaml")));
+        for (int i = 0; i < at; ++i) f.call(16'667us);
+        const pacing::WallTime before = f.clock.now;   // the change comes in the next call's span
+        f.drive()->write("changed");
+        pacing::WallTime written{0};
+        for (int i = 0; i < 60 && written == pacing::WallTime{0}; ++i) {
+            f.call(16'667us);
+            if (content(f) == "changed") written = f.clock.now;
+        }
+        CHECK(written != pacing::WallTime{0});
+        CHECK(written - before <= 500ms + 16'667us);   // at the latest half a second after the change
+        CHECK(written - before >= 400ms);              // and not at once
+    }
+}
+
+TEST(ac11_not_written_while_nothing_changes) {
+    MediaFixture f(dot());
+    CHECK(f.ok("media.choose", choose("disk", "saved:Work.testdisk.yaml")));
+    f.logLines();
+    for (int i = 0; i < 120; ++i) f.call(16'667us);
+    CHECK_EQ(savedLines(f.logLines()), 0);
+    f.drive()->write("once");
+    for (int i = 0; i < 120; ++i) f.call(16'667us);
+    CHECK_EQ(savedLines(f.logLines()), 1);
+}
+
+TEST(ac11_harness_written_at_end_of_command) {
+    MediaFixture f(dot(sessions::Hosting::VirtualTime));
+    CHECK(f.ok("media.choose", choose("disk", "saved:Work.testdisk.yaml")));
+    f.drive()->write("by the ROM");
+    CHECK_EQ(content(f), std::string("w"));
+    f.session->advanceUnpaced(10);   // the harness's `wait`: its command ends here
+    CHECK_EQ(content(f), std::string("by the ROM"));
+    f.drive()->write("again");
+    CHECK(f.ok("media.refresh"));
+    CHECK_EQ(content(f), std::string("again"));
+}
+
+TEST(ac12_pass_through_written_when_given_back_if_written) {
+    FixtureOptions o;
+    o.prepare = [](auto& s, auto&) { s.write("Prog.testcard.yaml", card("Prog", "p").text()); };
+    MediaFixture f(o);
+    f.logLines();
+    f.reader()->writeOnPass = "written";
+    CHECK(f.done(f.step("test-card", "{ name: Prog, side: 1 }")));
+    CHECK_EQ(field(f.saved("Prog.testcard.yaml"), "content"), std::string("written"));
+    CHECK_EQ(savedLines(f.logLines()), 1);
+    CHECK(f.done(f.step("test-card", "{ name: Prog }")));   // read only: not written
+    CHECK_EQ(savedLines(f.logLines()), 0);
+    CHECK(f.place("reader")->holds && f.place("reader")->holds->name == "Prog");
+}
+
+TEST(ac13_written_before_leaving_place) {
+    MediaFixture f(dot());
+    CHECK(f.ok("media.choose", choose("disk", "saved:Work.testdisk.yaml")));
+    f.drive()->write("leaving");
+    CHECK(f.ok("media.eject", Value::object({{"place", "disk"}})));
+    CHECK_EQ(content(f), std::string("leaving"));
+    CHECK(!f.place("disk")->holds);
+}
+
+TEST(ac13_written_before_operation) {
+    MediaFixture f(dot());
+    CHECK(f.ok("media.choose", choose("disk", "saved:Work.testdisk.yaml")));
+    f.drive()->write("before reset");
+    const CallId c = f.send("reset");
+    CHECK(f.session->busy());   // the operation has started, not ended
+    CHECK_EQ(content(f), std::string("before reset"));
+    f.callWhileBusy();
+    CHECK(f.done(c));
+}
+
+TEST(ac13_written_before_machine_change) {
+    MediaFixture f(dot());
+    CHECK(f.ok("media.choose", choose("disk", "saved:Work.testdisk.yaml")));
+    f.drive()->write("before the build");
+    auto old = f.session->machineSession().takeMachine();   // MachineSession: before the machine goes
+    CHECK_EQ(content(f), std::string("before the build"));
+    MediaFixture g(dot());
+    CHECK(g.ok("media.choose", choose("disk", "saved:Work.testdisk.yaml")));
+    g.drive()->write("before the attach");
+    const CallId c = g.send("attach", Value::object({{"place", "a"}, {"peripheral", "test-hub"}}));
+    g.callWhileBusy();
+    CHECK(g.done(c));
+    CHECK_EQ(content(g), std::string("before the attach"));
+}
+
+TEST(ac13_written_on_suspend) {
+    MediaFixture f(dot());
+    CHECK(f.ok("media.choose", choose("disk", "saved:Work.testdisk.yaml")));
+    f.drive()->write("hidden tab");
+    CHECK(f.ok("suspend"));
+    CHECK_EQ(content(f), std::string("hidden tab"));
+}
+
+TEST(ac13_written_on_close) {
+    MediaFixture f(dot());
+    CHECK(f.ok("media.choose", choose("disk", "saved:Work.testdisk.yaml")));
+    f.drive()->write("quit");
+    f.session->close();   // the window closes (the host, before it destroys the session)
+    CHECK_EQ(content(f), std::string("quit"));
+}
+
+TEST(ac14_failed_write_one_notice_until_success) {
+    MediaFixture f(dot(sessions::Hosting::VirtualTime));
+    CHECK(f.ok("media.choose", choose("disk", "saved:Work.testdisk.yaml")));
+    f.notices();
+    settings::testing::failBeforeRename(true);
+    f.drive()->write("one");
+    f.ok("media.refresh");
+    f.drive()->write("two");
+    f.ok("media.refresh");
+    auto n = f.notices();
+    CHECK(n.size() == 1 && n[0].rfind("The test disk “Work” could not be saved: ", 0) == 0);
+    settings::testing::failBeforeRename(false);
+    f.drive()->write("three");
+    f.ok("media.refresh");
+    CHECK_EQ(content(f), std::string("three"));
+    settings::testing::failBeforeRename(true);
+    f.drive()->write("four");
+    f.ok("media.refresh");
+    settings::testing::failBeforeRename(false);
+    CHECK_EQ(f.notices().size(), std::size_t(1));   // again, after a write succeeded
+}
+
+TEST(ac14_next_change_tries_again) {
+    MediaFixture f(dot(sessions::Hosting::VirtualTime));
+    CHECK(f.ok("media.choose", choose("disk", "saved:Work.testdisk.yaml")));
+    settings::testing::failBeforeRename(true);
+    f.drive()->write("lost for now");
+    f.ok("media.refresh");
+    settings::testing::failBeforeRename(false);
+    f.logLines();
+    f.ok("media.refresh");
+    CHECK_EQ(savedLines(f.logLines()), 0);   // no change, no retry
+    f.drive()->write("next");
+    f.ok("media.refresh");
+    CHECK_EQ(content(f), std::string("next"));
+}
+
+TEST(ac15_picker_template_not_written_lives_in_place) {
+    MediaFixture f(dot(sessions::Hosting::VirtualTime));
+    const std::string before = f.saved("Mine.testdisk.yaml");
+    CHECK(f.ok("media.choose", choose("disk", "saved:Mine.testdisk.yaml")));
+    f.drive()->write("lives here");
+    f.ok("media.refresh");
+    CHECK_EQ(f.saved("Mine.testdisk.yaml"), before);
+    CHECK(f.place("disk")->holds->unsaved && f.place("disk")->nameAndSave);
+    CHECK_EQ(f.drive()->bytes(), std::string("lives here"));
+    CHECK(f.ok("media.eject", Value::object({{"place", "disk"}})));   // it leaves: what it held is gone
+    CHECK(f.ok("media.choose", choose("disk", "saved:Mine.testdisk.yaml")));
+    CHECK_EQ(f.drive()->bytes(), std::string("t"));
+}
+
+TEST(ac15_preset_named_template_not_written) {
+    MediaFixture f(dot(sessions::Hosting::VirtualTime));
+    const std::string before = f.saved("Mine.testdisk.yaml");
+    CHECK(f.done(f.load(header("test-dot") + "keys:\n  - test-disk: { file: " + (f.saveRoot / "Mine.testdisk.yaml") + " }\n")));
+    f.drive()->write("by the preset's machine");
+    f.ok("media.refresh");
+    CHECK_EQ(f.saved("Mine.testdisk.yaml"), before);
+    CHECK(f.done(f.load(header("test-dot") + "keys:\n  - test-disk: { name: Formatted }\n")));
+    f.drive()->write("on a bundled template");
+    f.ok("media.refresh");
+    CHECK_EQ(field(calcu::testing::readText(f.bundled.path() / "disks/Formatted.testdisk.yaml"), "content"), std::string(""));
+}
+
+TEST(ac15_in_file_medium_not_written_unless_saveas) {
+    MediaFixture f;
+    CHECK(f.done(f.load(header() + "test-cards:\n  - { name: A, content: abc }\nkeys:\n  - test-card: { mem: A }\n")));
+    CHECK_EQ(contentOf(f.media->bindingOf("reader")->content), std::string("abc"));
+    f.reader()->writeOnPass = "first";
+    CHECK(f.done(f.step("test-card", "{ mem: A }")));
+    CHECK(!f.exists("A.testcard.yaml"));
+    // The store kept what was written: the next pass reads it.
+    CHECK(f.done(f.step("test-card", "{ mem: A }")));
+    CHECK_EQ(contentOf(f.media->bindingOf("reader")->content), std::string("first"));
+    CHECK(f.done(f.step("saveas", "{ test-card: A, as: live, name: Card A }")));
+    CHECK_EQ(field(f.saved("Card A.testcard.yaml"), "content"), std::string("first"));
+    f.reader()->writeOnPass = "second";
+    CHECK(f.done(f.step("test-card", "{ mem: A }")));   // that instance from then on
+    CHECK_EQ(field(f.saved("Card A.testcard.yaml"), "content"), std::string("second"));
+}
+
+TEST(ec1_save_folder_made_at_first_write) {
+    FixtureOptions o = dot(sessions::Hosting::VirtualTime);
+    o.saveFolderMissing = true;
+    o.prepare = [](auto&, auto& b) { b.write("disks/Formatted.testdisk.yaml", disk("Formatted", "").text()); };
+    MediaFixture f(o);
+    CHECK(!std::filesystem::exists(f.saveRoot.path() / "not-yet"));
+    CHECK(f.ok("media.choose", choose("disk", "bundled:Formatted.testdisk.yaml")));
+    CHECK(f.ok("media.name-and-save", Value::object({{"place", "disk"}, {"name", "First"}})));
+    CHECK(std::filesystem::exists(f.saveRoot.path() / "not-yet" / "First.testdisk.yaml"));
+}
+
+TEST(ec2_outside_change_overwritten_not_merged) {
+    MediaFixture f(dot(sessions::Hosting::VirtualTime));
+    CHECK(f.ok("media.choose", choose("disk", "saved:Work.testdisk.yaml")));
+    TestFile outside = disk("Work", "from outside");
+    outside.description = "edited by hand";
+    f.saveFile("Work.testdisk.yaml", outside);
+    f.drive()->write("product");
+    f.ok("media.refresh");
+    CHECK_EQ(content(f), std::string("product"));
+    CHECK(f.saved("Work.testdisk.yaml").find("from outside") == std::string::npos);
+}
+
+TEST(ec8_suspend_writes_every_pending_change) {
+    MediaFixture f(dot());
+    CHECK(f.ok("attach", Value::object({{"place", "a"}, {"peripheral", "test-hub"}})));
+    f.saveFile("Two.testdisk.yaml", disk("Two", "2"));
+    CHECK(f.ok("media.refresh"));
+    CHECK(f.ok("media.choose", choose("drive", "saved:Work.testdisk.yaml")));
+    CHECK(f.ok("media.choose", choose("hub-disk", "saved:Two.testdisk.yaml")));
+    f.drive()->write("one pending");
+    f.machine()->mediaPlace("hub-disk", startup::test::at({"a"}))->write("two pending");
+    f.call(16'667us);
+    CHECK(f.ok("suspend"));
+    CHECK_EQ(content(f), std::string("one pending"));
+    CHECK_EQ(content(f, "Two.testdisk.yaml"), std::string("two pending"));
+}

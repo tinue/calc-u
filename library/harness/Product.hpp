@@ -5,6 +5,7 @@
 #include "machine/Catalogue.hpp"
 #include "machine/Descriptor.hpp"
 #include "machine/Display.hpp"
+#include "media/Kind.hpp"
 #include "roms/Lookup.hpp"
 #include "roms/RomSet.hpp"
 #include "sessions/SessionPart.hpp"
@@ -82,6 +83,12 @@ public:
     // trace folder and limit and adds the debugger's steps to the preset
     // vocabulary. None until the product's column (M-45, M-53).
     virtual debugger::DebuggerPart* debuggerPart() { return nullptr; }
+    // LIB-7 (design §3.11): the product's kinds of medium, with their bundled
+    // folders, and the listing of its modules that are not media; the harness
+    // puts a MediaPart on the run's save folder into the session when there
+    // are kinds. None until the product's column (M-47, M-55).
+    virtual std::vector<media::KindDecl> mediaKinds() { return {}; }
+    virtual media::ModuleListing moduleListing() const { return {}; }
 };
 
 using ProductFactory = std::unique_ptr<HarnessProduct> (*)();

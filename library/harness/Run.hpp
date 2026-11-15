@@ -3,6 +3,7 @@
 #include "harness/Commands.hpp"
 #include "harness/HarnessHost.hpp"
 #include "harness/Product.hpp"
+#include "media/MediaPart.hpp"
 #include "peripherals/PeripheralsPart.hpp"
 #include "presets/PresetsPart.hpp"
 #include "sessions/AppSession.hpp"
@@ -122,6 +123,8 @@ private:
     std::unique_ptr<presets::PresetsPart> presets_;   // LIB-6: when the product has preset rules
     std::unique_ptr<startup::StartupPart> startup_;
     std::unique_ptr<control::ControlPart> control_;
+    std::unique_ptr<settings::Paths> mediaPaths_;    // LIB-7: the run's save folder
+    std::unique_ptr<media::MediaPart> media_;        // LIB-7: when the product has kinds of medium
     std::unique_ptr<sessions::AppSession> session_;
     std::unique_ptr<HarnessHost> host_;
     CommandRegistry registry_;

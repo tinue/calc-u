@@ -1,0 +1,160 @@
+#include "MediaFixture.hpp"
+#include "TestHarness.hpp"
+
+// LIB-7 L2 (design §6): kinds and the shelf (AC-1, AC-5, AC-46, EC-3).
+
+using namespace calcu;
+using namespace calcu::media;
+using namespace calcu::media::test;
+
+namespace {
+
+FixtureOptions onDot(std::function<void(calcu::testing::TempFolder&, calcu::testing::TempFolder&)> prepare = {}) {
+    FixtureOptions o;
+    o.model = "test-dot";
+    o.prepare = std::move(prepare);
+    return o;
+}
+
+Value choose(const std::string& place, const std::string& entry) {
+    return Value::object({{"place", place}, {"entry", entry}});
+}
+
+const KindDecl& kindOf(MediaFixture& f, const char* id) { return *f.media->kind(id); }
+
+} // namespace
+
+TEST(ac1_bundled_is_template_and_never_written) {
+    MediaFixture f(onDot([](auto&, auto& b) { b.write("disks/Formatted.testdisk.yaml", disk("Formatted", "empty").text()); }));
+    const std::string before = calcu::testing::readText(f.bundled.path() / "disks/Formatted.testdisk.yaml");
+    const ShelfEntry* e = f.media->shelf().find(kindOf(f, "test-disk"), "Formatted");
+    CHECK(e && e->isTemplate && e->origin == Origin::Bundled);   // its file does not say so: bundled decides
+    CHECK(f.ok("media.choose", choose("disk", "bundled:Formatted.testdisk.yaml")));
+    f.drive()->write("written");
+    f.ok("media.refresh");
+    CHECK_EQ(calcu::testing::readText(f.bundled.path() / "disks/Formatted.testdisk.yaml"), before);
+    CHECK(f.place("disk")->holds && f.place("disk")->holds->unsaved);
+}
+
+TEST(ac1_user_template_by_its_file) {
+    MediaFixture f(onDot([](auto& s, auto&) { s.write("Mine.testdisk.yaml", disk("Mine", "t", true).text()); }));
+    const std::string before = f.saved("Mine.testdisk.yaml");
+    const ShelfEntry* e = f.media->shelf().find(kindOf(f, "test-disk"), "Mine");
+    CHECK(e && e->isTemplate && e->origin == Origin::Saved);
+    CHECK(f.ok("media.choose", choose("disk", "saved:Mine.testdisk.yaml")));
+    f.drive()->write("changed");
+    f.ok("media.refresh");
+    CHECK_EQ(f.saved("Mine.testdisk.yaml"), before);   // only a save as a template writes it (AC-17)
+}
+
+TEST(ac1_instance_in_save_folder) {
+    MediaFixture f(onDot([](auto& s, auto&) { s.write("Work.testdisk.yaml", disk("Work", "a").text()); }));
+    const ShelfEntry* e = f.media->shelf().find(kindOf(f, "test-disk"), "Work");
+    CHECK(e && !e->isTemplate);
+    CHECK(f.ok("media.choose", choose("disk", "saved:Work.testdisk.yaml")));
+    f.drive()->write("b");
+    f.ok("media.refresh");
+    CHECK_EQ(field(f.saved("Work.testdisk.yaml"), "content"), std::string("b"));
+}
+
+TEST(ac5_bundled_first_then_save_folder) {
+    MediaFixture f(onDot([](auto& s, auto& b) {
+        b.write("disks/Shared.testdisk.yaml", disk("Shared", "bundled").text());
+        s.write("Own.testdisk.yaml", disk("Own", "saved").text());
+    }));
+    const auto entries = f.media->shelf().entries(kindOf(f, "test-disk"));
+    CHECK(entries.size() == 2 && entries[0]->origin == Origin::Bundled && entries[1]->origin == Origin::Saved);
+    const ShelfEntry* e = f.media->shelf().find(kindOf(f, "test-disk"), "shared");
+    CHECK(e && e->origin == Origin::Bundled);
+    CHECK(f.done(f.load(header("test-dot") + "keys:\n  - test-disk: { name: Shared }\n")));
+    CHECK_EQ(f.drive()->bytes(), std::string("bundled"));
+}
+
+TEST(ac5_two_files_one_name_both_listed_and_found_by_rule) {
+    MediaFixture f(onDot([](auto& s, auto&) {
+        s.write("a.testdisk.yaml", disk("Twin", "a").text());
+        s.write("Twin.testdisk.yaml", disk("Twin", "own").text());
+        s.write("c.testdisk.yaml", disk("Pair", "c").text());
+        s.write("b.testdisk.yaml", disk("Pair", "b").text());
+    }));
+    const KindState* k = f.state()->kindState("test-disk");
+    CHECK(k && k->instances.size() == 4);   // both are listed
+    CHECK_EQ(f.media->shelf().find(kindOf(f, "test-disk"), "Twin")->fileName, std::string("Twin.testdisk.yaml"));
+    CHECK_EQ(f.media->shelf().find(kindOf(f, "test-disk"), "Pair")->fileName, std::string("b.testdisk.yaml"));
+    // A save by that name replaces the one the rule finds (OQ-1).
+    CHECK(f.done(f.load(header("test-dot") + "keys:\n  - test-disk: { name: Pair }\n"
+                        "  - saveas: { place: disk, as: live, name: Twin }\n")));
+    CHECK_EQ(field(f.saved("Twin.testdisk.yaml"), "content"), std::string("b"));
+    CHECK_EQ(field(f.saved("a.testdisk.yaml"), "content"), std::string("a"));
+}
+
+TEST(ac5_saved_file_with_bundled_name_not_listed_and_logged) {
+    MediaFixture f(onDot([](auto& s, auto& b) {
+        b.write("disks/Formatted.testdisk.yaml", disk("Formatted", "bundled").text());
+        s.write("copy.testdisk.yaml", disk("formatted", "copy").text());
+    }));
+    const KindState* k = f.state()->kindState("test-disk");
+    CHECK(k && k->instances.empty() && k->templates.size() == 1);
+    CHECK(hasLine(f.logLines(), "copy.testdisk.yaml carries the name of a bundled test disk"));
+}
+
+TEST(ac5_module_slot_one_list_of_names) {
+    MediaFixture f(FixtureOptions{});
+    f.saveFile("Bank.testmodule.yaml", moduleFile("Bank", "m"));
+    CHECK(f.ok("media.refresh"));
+    const PlaceState* slot = f.place("slot-1");
+    CHECK(slot && slot->slot);
+    std::vector<std::string> labels;
+    for (const auto& e : slot->picker) labels.push_back(e.label);
+    // The module medium's template, the saved instance and the module that is not a medium: one list.
+    CHECK(std::find(labels.begin(), labels.end(), "Bank") != labels.end());
+    CHECK(std::find(labels.begin(), labels.end(), "Test module") != labels.end());
+    CHECK(std::find(labels.begin(), labels.end(), "Test memory module") != labels.end());
+    CHECK(f.done(f.load(header() + "slot-1: { name: Bank }\n")));
+    CHECK(f.module() && f.module()->bytes() == "m");
+    CHECK(f.done(f.load(header() + "slot-1: { name: test-module }\n")));
+    CHECK(!f.module() && f.machine()->plugged().byPlace.size() == 1);
+}
+
+TEST(ac46_codec_gives_all_the_library_knows) {
+    MediaFixture f(FixtureOptions{});
+    TestFile t = moduleFile("Info", "abc+def", true, true);
+    t.description = "Described";
+    t.companion = "Info.dat";
+    t.content = "abc";
+    f.writeSaved("Info.testmodule.yaml", t.text());
+    f.writeSaved("Info.dat", "def");
+    CHECK(f.ok("media.refresh"));
+    const ShelfEntry* e = f.media->shelf().find(kindOf(f, "test-module"), "Info");
+    CHECK(e != nullptr);
+    if (!e) return;
+    CHECK_EQ(e->info.name, std::string("Info"));
+    CHECK_EQ(e->info.description, std::string("Described"));
+    CHECK(e->info.isTemplate && e->info.hasWriteProtect && e->info.writeProtected);
+    CHECK_EQ(e->info.formatVersion, 2);
+    CHECK(e->info.companions == std::vector<std::string>{"Info.dat"});
+    CHECK_EQ(contentOf(e->info.content), std::string("abc+def"));
+}
+
+TEST(ac46_content_handed_through_unread) {
+    MediaFixture f(onDot([](auto& s, auto&) { s.write("Work.testdisk.yaml", disk("Work", "payload").text()); }));
+    CHECK(f.ok("media.choose", choose("disk", "saved:Work.testdisk.yaml")));
+    const auto* c = dynamic_cast<const mt::TestMediumContent*>(f.drive()->content().get());
+    CHECK(c && c->bytes == "payload");   // the codec's object, as the product's core gets it
+    f.drive()->write("new");
+    f.ok("media.refresh");
+    CHECK_EQ(field(f.saved("Work.testdisk.yaml"), "content"), std::string("new"));
+}
+
+TEST(ec3_unreadable_not_listed_one_log_line_per_start) {
+    MediaFixture f(onDot([](auto& s, auto&) {
+        s.write("Broken.testdisk.yaml", "this is no medium\n");
+        s.write("Good.testdisk.yaml", disk("Good", "g").text());
+    }));
+    const KindState* k = f.state()->kindState("test-disk");
+    CHECK(k && k->instances.size() == 1 && k->instances[0].name == "Good");
+    const auto lines = f.logLines();
+    CHECK(hasLine(lines, "The test disk file Broken.testdisk.yaml cannot be read: It is not a test-disk file."));
+    CHECK(f.ok("media.refresh"));
+    CHECK(!hasLine(f.logLines(), "Broken.testdisk.yaml"));   // D-12: once per start
+}

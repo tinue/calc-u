@@ -2,6 +2,7 @@
 #include "machine/Machine.hpp"
 #include "pacing/Pacer.hpp"
 #include <cstdint>
+#include <functional>
 #include <limits>
 #include <memory>
 #include <optional>
@@ -71,6 +72,15 @@ public:
     const machine::Machine* machine() const { return machine_.get(); }
     int soundRate() const { return soundRate_; }
     std::uint64_t generation() const { return generation_; }   // grows with every setMachine/takeMachine
+    // LIB-7 AC-13 (design §3.12): called before the machine or a peripheral of
+    // it changes, while the old one is still there: by setMachine and
+    // takeMachine when a machine runs, and by LIB-18's MachineControl before
+    // an attach, detach or replace. The app session calls its parts'
+    // beforeMachineChange from it.
+    void setAboutToChange(std::function<void()> f) { aboutToChange_ = std::move(f); }
+    void aboutToChange() {
+        if (aboutToChange_ && machine_) aboutToChange_();
+    }
 
     void addHook(SliceHook& h) { hooks_.push_back(&h); }
     // LIB-18 AC-2, AC-14, EC-4: SliceHook::drop() on every hook.
@@ -112,6 +122,7 @@ private:
     std::vector<SliceHook*> hooks_;
     std::vector<WaitProbe*> probes_;
     AdvanceGate* gate_ = nullptr;
+    std::function<void()> aboutToChange_;
     SliceSource* source_ = nullptr;
     bool suspended_ = false, paused_ = false, reportsWaiting_ = true;
     pacing::WallTime due_{0};

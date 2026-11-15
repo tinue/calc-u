@@ -74,7 +74,7 @@ TEST(ac3_module_by_name_reference) {
     CHECK(hasLine({rd.error(header() + "slot-1: test-module\n")}, "slot-1: takes a reference"));
 }
 
-TEST(ac3_module_by_file_refused_until_lib7) {
+TEST(ac3_module_by_file_refused_without_a_resolver) {
     Reading rd;
     CHECK_EQ(rd.error(header() + "slot-1: { file: cards/m.card.yaml }\n"),
              std::string("t.test-seg, line 3: slot-1: a reference by file: is not read by this release; use name:."));

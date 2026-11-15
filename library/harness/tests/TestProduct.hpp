@@ -67,6 +67,11 @@ public:
     typing::TypingPart* typingPart() override;
     paper::PaperPart* paperPart() override { return paper_.get(); }
     debugger::DebuggerPart* debuggerPart() override;
+    // LIB-7 (M-41): with `media`, the kinds of library/media/tests/TestKinds.hpp
+    // (a bundled disk template `Formatted`) and machines that offer their
+    // media places; off by default, so that the other tests' lists stay.
+    std::vector<media::KindDecl> mediaKinds() override;
+    bool media = false;
 
     // For the tests: the bundle folder (a file can be removed: EC-1), the
     // model to start with under the default settings (the fallback model of
@@ -112,6 +117,7 @@ private:
     std::unique_ptr<Debug> debug_;
     std::unique_ptr<presets::test::TestPresetRules> presetRules_;
     roms::test::TempFolder presetFolder_{"calcu-test-presets"};
+    roms::test::TempFolder mediaFolder_{"calcu-test-media"};   // LIB-7: the bundled media
     std::unique_ptr<presets::DirectoryPresetBundle> bundle_;
 };
 
@@ -123,8 +129,9 @@ struct TestRun {
     TestProduct product;
     std::unique_ptr<Server> server;
     std::string error;
-    explicit TestRun(RunOptions options = {}, std::optional<machine::ModelId> model = std::nullopt) {
+    explicit TestRun(RunOptions options = {}, std::optional<machine::ModelId> model = std::nullopt, bool media = false) {
         product.startModel = std::move(model);
+        product.media = media;   // LIB-7
         server = Server::start(product, options, &error);
     }
     // The reply to one line, as written.

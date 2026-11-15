@@ -63,6 +63,26 @@ column stays In progress (`features/INDEX.md`): AC-2's and AC-7's media
 clauses pass with LIB-7 in M-41, where the column becomes Done (D-19);
 AC-14's typing clause is tested on the seam until LIB-5 (M-36).
 
+### The clauses that passed later (M-36, M-38, M-41; design §1, D-19)
+
+Checked again on 2026-11-15 on branch `m41-media` (`calcu_library_tests`
+729 tests, 0 failed; Frequent 30 of 30 in `build/tests`, 31 of 31 in
+`build/qt`):
+
+| ID | Clause | Result | Test case |
+|---|---|---|---|
+| AC-2 | "what was saved as a medium stays saved (LIB-7)" | Pass (M-41) | `lib18_ac2_what_was_saved_as_a_medium_stays_saved` (a disk's unsaved change written before the build, there after two model switches) (`library/media/tests/preset_media_tests.cpp`) |
+| AC-7 | "the same media in them" | Pass (M-41) | `lib18_ac7_variant_switch_keeps_the_media` (a disk in the drive and a module medium in `card-1` of test-dot carried to V2 with their unsaved content, still bound to their instances; `MachineControl::addCarry`, LIB-7 S-7a) (same file) |
+| AC-14 | "the keys the typing engine holds" | Pass (M-36) | LIB-5's `ec5_reset_power_cycle_cold_boot_replace_all_up_nothing_waits` (`library/typing/tests/reset_tests.cpp`: the engine's `drop()` through `dropInput`) |
+| AC-4, EC-1, EC-6 | "loading a preset (LIB-6)" | Pass (M-38) | `startup_preset_built_by_the_loader`, `startup_preset_outdated_gives_default_and_notice`, `startup_preset_failing_while_run_keeps_machine` (`library/presets/tests/startup_tests.cpp`); AC-6 and EC-2 with the stand-in loader the spec allows (above) |
+
+With M-41, `build` and `change` call `SessionPart::beforeMachineChange`
+through `MachineSession::aboutToChange` (LIB-7 §3.12; `setMachine` and
+`takeMachine` call it, `change` before an attach, detach or replace), and
+`MachineControl::addCarry` adds to a carried plug's request. Every criterion
+and edge case of the Library column passes: the column is **Done**
+(`features/INDEX.md`; D-19).
+
 ### Harness and products (design §3.6, P59, P16)
 
 `Server::start` builds no machine itself: it adds `StartupPart` after

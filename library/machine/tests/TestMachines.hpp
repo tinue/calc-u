@@ -5,6 +5,7 @@
 #include "machine/Catalogue.hpp"
 #include "harness/MachineState.hpp"
 #include "machine/Machine.hpp"
+#include "media/MediaPlace.hpp"
 #include "paper/PaperOutput.hpp"
 #include "peripherals/Controls.hpp"
 #include "peripherals/RealTimeClock.hpp"
@@ -89,6 +90,17 @@
 //   `test-cpu`, test-dot's `main` and `inner` by turns. debugging() is
 //   nullptr without it, so the other areas' tests stay as they are.
 
+// For LIB-7 (design §2, §6), switched on by TestBuilder::media (off by
+//   default, so that the other areas' capability lists stay as they are):
+//   each media place of a descriptor offers a MediaPlace (test-seg `reader`:
+//   pass-through, sides 0 and 1; test-dot `drive` and test-hub `hub-disk`:
+//   holding, side 0) over TestMediumContent, read and written through test
+//   hooks; a card pushed through the reader passes in kPassTicks ticks. In a
+//   catalogue of its own, mediaTestCatalogue() (the test catalogue plus it):
+//   test-memory-module  name "Test memory module"; fits test.slot and
+//             test.card; the switch `write-protect` (controls kind); a
+//             ModuleMedium over the content of its request.
+//   test-rom-module  name "Test ROM module"; fits test.slot; not a medium.
 namespace calcu::machine::test {
 
 inline constexpr TickRate kSegRate = 100'000;
@@ -103,6 +115,9 @@ inline const PeripheralId kHub{"test-hub"};
 inline const PeripheralId kUart{"test-uart"};
 inline const PeripheralId kDotter{"test-dotter"};     // LIB-8: TD-20
 inline const PeripheralId kPlotter{"test-plotter"};   // LIB-8: TP-4
+inline const PeripheralId kMemoryModule{"test-memory-module"};   // LIB-7
+inline const PeripheralId kRomModule{"test-rom-module"};         // LIB-7: not a medium
+inline constexpr Ticks kPassTicks = 200;                          // LIB-7: a card passes the reader
 inline const char* const kTogether = "The test printer and the test UART cannot be used together.";
 
 // The product kind of the tests: the instructions run while the printer is
@@ -127,6 +142,72 @@ public:
 struct TestModuleDefinition : ProductData {
     explicit TestModuleDefinition(std::string t) : text(std::move(t)) {}
     std::string text;
+};
+
+// LIB-7: the content of a medium of the test kinds (media/tests/TestKinds.hpp).
+struct TestMediumContent : ProductData {
+    explicit TestMediumContent(std::string b) : bytes(std::move(b)) {}
+    std::string bytes;
+};
+
+// LIB-7: a media place of a test machine.
+class TestMediaPlace final : public media::MediaPlace {
+public:
+    explicit TestMediaPlace(MediaPlaceDescriptor d) : d_(std::move(d)) {}
+    MediaPlaceId id() const override { return d_.id; }
+    Inserted insert(media::Content, int side) override;
+    media::Content eject() override;
+    std::optional<int> side() const override { return side_; }
+    media::Content content() const override { return content_; }
+    std::uint64_t revision() const override { return revision_; }
+    bool waitsForMedium() const override { return waits; }
+    std::optional<GivenBack> takeGivenBack() override {
+        std::optional<GivenBack> back = std::move(given_);
+        given_.reset();
+        return back;
+    }
+    bool takeWriteNow() override {
+        const bool w = writeNow_;
+        writeNow_ = false;
+        return w;
+    }
+
+    // Test hooks: the "ROM" writes (a holding place: at once; a pass-through
+    // place: `writeOnPass` as the medium passes); a write moment (D-11).
+    bool write(std::string bytes);
+    void requestWriteNow() { writeNow_ = true; }
+    void advance(Ticks ran);
+    std::string bytes() const;   // "" when empty
+    bool passThrough() const { return d_.passage == MediaPassage::PassThrough; }
+    bool waits = false;
+    std::optional<std::string> writeOnPass;
+    std::optional<std::string> refuse;   // insert refused with this reason
+    bool holdsBack = false;              // a pass-through medium never passes
+    int inserts = 0;
+
+private:
+    MediaPlaceDescriptor d_;
+    std::optional<int> side_;
+    media::Content content_;
+    std::uint64_t revision_ = 0;
+    Ticks left_ = 0;
+    std::optional<GivenBack> given_;
+    bool writeNow_ = false;
+};
+
+// LIB-7: the module medium of test-memory-module.
+class TestModuleMedium final : public media::ModuleMedium {
+public:
+    TestModuleMedium(media::Content c, const peripherals::ControlTable* controls);
+    media::Content content() const override { return content_; }
+    std::uint64_t revision() const override { return revision_; }
+    bool write(std::string bytes);   // false while the write-protect switch is on
+    std::string bytes() const;
+
+private:
+    media::Content content_;
+    const peripherals::ControlTable* controls_;
+    std::uint64_t revision_ = 0;
 };
 
 // The build option of test-seg for the pacing tests (LIB-1 D-8), handed in
@@ -166,6 +247,9 @@ const Catalogue& testCatalogue();   // one shared copy; a test that adds to it m
 // LIB-8: the test catalogue plus test-dotter and test-plotter.
 Catalogue makePaperTestCatalogue();
 const Catalogue& paperTestCatalogue();
+// LIB-7: the test catalogue plus test-memory-module.
+Catalogue makeMediaTestCatalogue();
+const Catalogue& mediaTestCatalogue();
 paper::PaperDescription td20Description();
 paper::PaperDescription tp4Description();
 
@@ -208,6 +292,7 @@ class TestBuilder : public MachineBuilder {
 public:
     BuildResult build(const BuildRequest&, const Catalogue&) override;
     int builds = 0;   // the machines built (LIB-18 AC-5)
+    bool media = false;   // LIB-7: the machines offer their media places
 };
 
 // The test UART: one byte every 10 ms of the emulated time since it was
@@ -310,6 +395,10 @@ public:
     std::uint64_t loopPosition() const { return timing_ ? generic_.instructions % timing_->loopLength : 0; }
     // LIB-11 AC-24: the machine-state capability (not by default).
     void offerState(bool on) { offersState_ = on; }
+    // LIB-7: the media places as MediaPlace capabilities (not by default).
+    void enableMedia();
+    TestMediaPlace* mediaPlace(const std::string& id, const PlacePath& owner = {});
+    TestModuleMedium* moduleAt(const PlacePath&);
 
 protected:
     std::optional<std::string> productRefusal(const PeripheralRequest&,
@@ -326,6 +415,8 @@ private:
         std::unique_ptr<peripherals::ControlTable> controls;
         std::unique_ptr<TestUart> uart;
         std::unique_ptr<TestPaperPrinter> printer;   // LIB-8
+        std::unique_ptr<TestMediaPlace> place;       // LIB-7
+        std::unique_ptr<TestModuleMedium> module;    // LIB-7
         std::uint64_t operations = 0;
     };
     struct CapRef {
@@ -372,6 +463,8 @@ private:
     };
     State state_{*this};
     bool offersState_ = false;
+    bool media_ = false;
+    std::vector<std::unique_ptr<TestMediaPlace>> places_;   // LIB-7
     std::shared_ptr<const TestSegTiming> timing_;
     std::unique_ptr<TestCpu> cpu_;   // LIB-10
 };

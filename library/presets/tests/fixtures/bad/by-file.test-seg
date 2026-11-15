@@ -1,0 +1,4 @@
+# error: line 4: slot-1: a reference by file: is not read by this release
+format-version: 2
+model: test-seg
+slot-1: { file: m.card.yaml }

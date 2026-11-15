@@ -49,10 +49,10 @@ Frequent group passed (28 of 28).
 | AC-11 | Pass | `ac11_text_typed_with_profile_cadence` (`queue_tests.cpp`) |
 | AC-12 | Pass | `ac12_paste_first_line_skips_unknown_no_enter` (`text_tests.cpp`) |
 | AC-13 | Pass | `ac13_latched_key_released_first_or_skipped` (with the latches read when the character's first press is due, E13), `char_keys_without_support_same_has_a_key_answer` (D-14) (`text_tests.cpp`) |
-| AC-14 | Pass (engine part) | `ac14_first_press_rule_inside_an_operation`, `ac14_first_press_at_once_overrides_the_rule` (`operation_tests.cpp`), `ec3_first_press_bound_starts_all_the_same` (`queue_tests.cpp`); the Sharp models in the Calc-U-1600 column; in presets with LIB-6 (M-38, M-46) |
-| AC-15 | Pass (commands; the preset read: M-38) | `ac15_key_names_refused_nothing_typed_screen_key_unknown` (`part_tests.cpp`), `ac15_key_names_and_refusal` (`harness/tests/commands_tests.cpp`). "In a preset this is found when the preset is read" is LIB-6 L's loader (design D-1) |
+| AC-14 | Pass | `ac14_first_press_rule_inside_an_operation`, `ac14_first_press_at_once_overrides_the_rule` (`operation_tests.cpp`), `ec3_first_press_bound_starts_all_the_same` (`queue_tests.cpp`); in a preset (M-38): `lib5_ac14_first_press_after_skip_wait_at_once` (`library/presets/tests/typing_tests.cpp`: right after `skip-wait:` the first press goes down at once, the later ones wait for key readiness, and without it the step waits). The Sharp models in the Calc-U-1600 column |
+| AC-15 | Pass | `ac15_key_names_refused_nothing_typed_screen_key_unknown` (`part_tests.cpp`), `ac15_key_names_and_refusal` (`harness/tests/commands_tests.cpp`); in a preset, found when it is read, before anything is built (M-38): `lib5_ac15_key_name_refused_when_read_before_build` (`library/presets/tests/typing_tests.cpp`), `ac7_keys_text_places_and_files_checked_before_build` (LIB-6) |
 | AC-16 | Pass | `ac16_type_text_and_enter_refuses_unknown_nothing_typed` (`text_tests.cpp`), `ac16_type_absent_without_char_profile` (`part_tests.cpp`, D-8), `ac16_type_presses_enter_refuses_unknown_char` (`harness/tests/commands_tests.cpp`) |
-| AC-17 | Pass (harness; in a preset: LIB-6) | `ac17_key_replies_when_last_key_up_not_idle`, `ac17_type_replies_when_enter_up`, `harness_key_gives_up_after_an_hour` (`harness/tests/commands_tests.cpp`); `type_and_wait_same_log_as_outside` (`operation_tests.cpp`); `deferred_reply_comes_later_and_not_busy` (`sessions/tests/command_tests.cpp`) |
+| AC-17 | Pass | `ac17_key_replies_when_last_key_up_not_idle`, `ac17_type_replies_when_enter_up`, `harness_key_gives_up_after_an_hour` (`harness/tests/commands_tests.cpp`); `type_and_wait_same_log_as_outside` (`operation_tests.cpp`); `deferred_reply_comes_later_and_not_busy` (`sessions/tests/command_tests.cpp`); in a preset the step has finished only when the machine is idle as well (M-38): `lib5_ac17_key_step_finishes_at_idle_command_at_key_up` (`library/presets/tests/typing_tests.cpp`), `ac28_key_and_type_finish_at_idle` (LIB-6) |
 | AC-18 | Pass | `ac18_live_dropped_while_busy_not_pressed_after` (`part_tests.cpp`) |
 | AC-19 | Pass | `ac19_held_keys_lists_live_only` (`part_tests.cpp`) |
 | AC-38 | Pass | `ac38_key_and_type_not_busy_stopped_by_live` (`part_tests.cpp`) |
@@ -68,6 +68,12 @@ Frequent group passed (28 of 28).
 Column status: every criterion of the column that can be tested without a
 preset of format 2 passes; AC-15's "found when the preset is read" passes
 with LIB-6 L (M-38), as design D-1 plans. The column stays In progress.
+
+**M-38 (2026-11-15, branch `m38-presets`).** The preset parts of AC-14,
+AC-15 and AC-17 pass with LIB-6's loader (rows above; the cases in
+`library/presets/tests/typing_tests.cpp`, `calcu_library_tests`, 575
+`TEST`s, 0 failed; the Frequent group 30 of 30). Every criterion and edge
+case of the Library column passes: the Library column is Done.
 
 ### Deviations (Library)
 

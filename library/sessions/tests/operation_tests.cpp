@@ -341,3 +341,45 @@ TEST(ac19_one_go_equals_parts) {
     db = parts.fe.state<DisplayState>(kDisplayTopic);
     CHECK(da && db && sameDisplay(da->output, db->output));
 }
+
+// LIB-6 D-17: OperationContext::hostWait, the one wall time of an operation
+// (a preset's `wait:` while the machine is paused, LIB-6 AC-19).
+namespace {
+Task<OperationResult> waitInHostTime(OperationContext& c, WallTime d, bool* waited) {
+    *waited = co_await c.hostWait(d);
+    c.session().log("waited");
+    co_return OperationResult{};
+}
+} // namespace
+
+TEST(host_wait_passes_in_wall_time_while_paused) {
+    Rig r;
+    r.build();
+    r.session->machineSession().setPaused(true);
+    bool waited = false;
+    r.part.operation = [&waited](OperationContext& c) { return waitInHostTime(c, 100ms, &waited); };
+    const CallId id = r.send("tp.op");
+    const Ticks t0 = r.ticks();
+    for (int i = 0; i < 3; ++i) r.call();   // about 50 ms of wall time
+    CHECK(r.session->busy());
+    for (int i = 0; i < 10 && r.session->busy(); ++i) r.call();
+    CHECK(!r.session->busy());
+    CHECK(waited);
+    CHECK(r.fe.reply(id) && r.fe.reply(id)->done);
+    CHECK_EQ(r.ticks(), t0);   // no emulated time passed
+    CHECK(r.session->machineSession().paused());
+}
+
+TEST(host_wait_ends_at_once_in_virtual_time) {
+    RigOptions o;
+    o.hosting = Hosting::VirtualTime;
+    Rig r(o);
+    r.build();
+    r.session->machineSession().setPaused(true);
+    bool waited = true;
+    r.part.operation = [&waited](OperationContext& c) { return waitInHostTime(c, std::chrono::seconds(5), &waited); };
+    const CallId id = r.send("tp.op");
+    CHECK(!r.session->busy());
+    CHECK(!waited);
+    CHECK(r.fe.reply(id) && r.fe.reply(id)->done);
+}

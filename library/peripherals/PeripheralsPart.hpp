@@ -11,9 +11,15 @@
 //   machine changes (AC-20).
 // - The real-time clocks are set from the session's host-time source when a
 //   machine is built and at the end of every operation (AC-23).
+// - The command `set-control {peripheral, place?, control, on}` (LIB-6
+//   D-16): a switch of a plugged peripheral set, or a key of it pressed
+//   (`on: true`) or released, through the controls capability (AC-16); the
+//   harness's `switch` and LIB-8's paper panel send it.
 // A product without serial ports passes no rules.
 
 namespace calcu::peripherals {
+
+inline const sessions::CommandName kSetControlCommand{"set-control"};
 
 class PeripheralsPart final : public sessions::SessionPart {
 public:
@@ -22,7 +28,7 @@ public:
 
     HostLinks& hostLinks() { return links_; }
 
-    void attach(sessions::SessionSetup&) override {}
+    void attach(sessions::SessionSetup&) override;
     void beforeCall(sessions::SessionContext&, pacing::WallTime) override;
     void afterCall(sessions::SessionContext&, pacing::WallTime) override;
     void machineChanged(sessions::SessionContext&) override;

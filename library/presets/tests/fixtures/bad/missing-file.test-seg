@@ -1,0 +1,4 @@
+# error: no-such-file.bin cannot be read.
+format-version: 2
+model: test-seg
+test-memory: { at: 0, file: no-such-file.bin }

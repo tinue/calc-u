@@ -20,6 +20,14 @@
 // a factory with calcu_harness_add_product() (§3.7), and the harness runs
 // the library's app session on the product's machine through it (§4).
 
+namespace calcu::presets {
+class ProductRules;
+class PresetBundle;
+} // namespace calcu::presets
+namespace calcu::typing {
+class TypingPart;
+}
+
 namespace calcu::harness {
 
 class CommandRegistry;
@@ -53,6 +61,13 @@ public:
     // The product's app layer in the session: its parts, after the
     // library's (LIB-3 AC-12). Owned by the product.
     virtual std::vector<sessions::SessionPart*> sessionParts() { return {}; }
+    // LIB-6 (design §2): the product's preset rules and bundled presets; the
+    // harness puts a PresetsPart into the session when there are rules. None
+    // until the product's column (M-46, M-54): `preset` is refused then.
+    virtual presets::ProductRules* presetRules() { return nullptr; }
+    virtual const presets::PresetBundle* presetBundle() const { return nullptr; }
+    // LIB-5's part among sessionParts(), for the preset steps `key` and `type`.
+    virtual typing::TypingPart* typingPart() { return nullptr; }
 };
 
 using ProductFactory = std::unique_ptr<HarnessProduct> (*)();

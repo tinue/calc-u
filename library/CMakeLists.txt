@@ -5,7 +5,7 @@
 # The C++ areas, once: their sources, their tests (<area>/tests/*.cpp) and the
 # tests' include folders all come from this list. (web/ is the Web shell's,
 # harness/cli/ and harness/attach/ are added below.)
-set(CALCU_LIBRARY_AREAS machine settings pacing sessions peripherals roms formats control startup typing harness)
+set(CALCU_LIBRARY_AREAS machine settings pacing sessions peripherals roms formats control startup typing presets harness)
 set(CALCU_LIBRARY_SOURCES "")
 foreach(area ${CALCU_LIBRARY_AREAS})
   file(GLOB area_sources CONFIGURE_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/${area}/*.cpp)
@@ -58,6 +58,9 @@ if(EMSCRIPTEN)
   target_compile_options(calcu_library PRIVATE -fwasm-exceptions)
 endif()
 
+# LIB-6: calcu_add_preset_check() for the suite checks of presets (AC-43, AC-51).
+include(${CMAKE_CURRENT_SOURCE_DIR}/presets/PresetChecks.cmake)
+
 # The one C++ test runner (ADR 0038): testing/TestHarness.hpp (TEST, CHECK,
 # CHECK_EQ, SKIP_UNLESS) and the main() that runs every registered TEST. A
 # test program links calcu_test_runner.
@@ -74,7 +77,7 @@ if(CALCU_TESTS AND NOT EMSCRIPTEN)
   # settings/tests, whose TestProduct.hpp is its own) and of library/testing/.
   add_library(calcu_test_machines OBJECT ${CMAKE_CURRENT_SOURCE_DIR}/machine/tests/TestMachines.cpp)
   target_link_libraries(calcu_test_machines PUBLIC calcu_library PRIVATE calcu_warnings)
-  foreach(area machine sessions roms typing harness)
+  foreach(area machine sessions roms typing startup presets harness)
     target_include_directories(calcu_test_machines PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/${area}/tests)
   endforeach()
   target_include_directories(calcu_test_machines PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/testing)
@@ -95,6 +98,8 @@ if(CALCU_TESTS AND NOT EMSCRIPTEN)
   list(REMOVE_ITEM CALCU_LIBRARY_TEST_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/peripherals/tests/pty_tests.cpp)
   add_executable(calcu_library_tests ${CALCU_LIBRARY_TEST_SOURCES})
   target_link_libraries(calcu_library_tests PRIVATE calcu_test_machines calcu_test_runner calcu_warnings)
+  # LIB-6: the fixtures of the preset tests.
+  target_compile_definitions(calcu_library_tests PRIVATE CALCU_PRESET_FIXTURES="${CMAKE_CURRENT_SOURCE_DIR}/presets/tests/fixtures")
   add_test(NAME calcu_library_tests COMMAND calcu_library_tests)
   set_tests_properties(calcu_library_tests PROPERTIES LABELS frequent)
 
@@ -106,6 +111,12 @@ if(CALCU_TESTS AND NOT EMSCRIPTEN)
     add_test(NAME calcu_library_pty_tests COMMAND calcu_library_pty_tests)
     set_tests_properties(calcu_library_pty_tests PROPERTIES LABELS frequent)
   endif()
+
+  # LIB-6 L14: the suite check of presets with calcu_test (Frequent): the
+  # good fixtures and a template filled in by a fill script.
+  calcu_add_preset_check(LibraryPresetFixtures PRODUCT test
+                         FILES presets/tests/fixtures/good/* presets/tests/fixtures/fill/*.in
+                         FILL presets/tests/fixtures/fill.cmake)
 
   # LIB-9 T-14: the self-test of the platform-store source check the
   # products run over their frontends (Frequent).

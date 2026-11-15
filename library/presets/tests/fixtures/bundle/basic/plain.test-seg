@@ -1,0 +1,4 @@
+format-version: 2
+model: test-seg
+keys:
+  - key: 3

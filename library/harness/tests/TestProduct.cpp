@@ -1,4 +1,5 @@
 #include "TestProduct.hpp"
+#include "TestPresetRules.hpp"
 #include "formats/Flow.hpp"
 #include "roms/FullSet.hpp"
 #include "sessions/LibraryTopics.hpp"
@@ -114,9 +115,24 @@ GlyphFont testFont() {
     return f;
 }
 
-TestProduct::TestProduct() : part_(std::make_unique<Part>()), typing_(std::make_unique<Typing>(*this)) {
+TestProduct::TestProduct()
+    : part_(std::make_unique<Part>()), typing_(std::make_unique<Typing>(*this)),
+      presetRules_(std::make_unique<presets::test::TestPresetRules>()) {
     roms::test::writeFullSet(roms_, roms::fullSet(catalogue()));
+    // LIB-6: the bundled presets of the test product.
+    presetFolder_.write("bundle.yaml", "format: example-bundle\nformat-version: 1\n"
+                                       "startup:\n  - preset: { file: startup/seg.test-seg }\n"
+                                       "groups:\n  - group: Basic\n    examples:\n"
+                                       "      - preset: { file: basic/two.test-seg }\n");
+    presetFolder_.write("startup/seg.test-seg", "format-version: 2\nmodel: test-seg\npreset-name: Seg\n");
+    presetFolder_.write("basic/two.test-seg", "format-version: 2\nmodel: test-seg\npreset-name: Two\n"
+                                              "description: Presses 2\nkeys:\n  - key: 2\n");
+    bundle_ = std::make_unique<presets::DirectoryPresetBundle>(presetFolder_.path());
 }
+
+presets::ProductRules* TestProduct::presetRules() { return presetRules_.get(); }
+
+typing::TypingPart* TestProduct::typingPart() { return &typing_->part; }
 
 TestProduct::~TestProduct() = default;
 

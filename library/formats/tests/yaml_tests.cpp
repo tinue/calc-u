@@ -2,7 +2,9 @@
 // LIB-12 design D-4): the cases Calc-U-1600's tests/memory_card_tests.cpp
 // had for it, moved with the reader in M-24 (support, no AC).
 #include "TestHarness.hpp"
+#include "formats/Number.hpp"
 #include "formats/Yaml.hpp"
+#include <optional>
 #include <string>
 
 using namespace calcu::formats;
@@ -104,4 +106,35 @@ TEST(test_yaml_format_version_required_and_checked) {
     CHECK(parseYaml("format: x\n", &bare, &err));
     err.clear();
     CHECK(!requireFormatVersion(bare, 1, "module", &err) && err == "missing 'format-version'");
+}
+
+// LIB-6 D-4: the options of a preset; the default reader is unchanged.
+TEST(test_yaml_options_raw_step_verbs_and_repeated_top_level_keys) {
+    YamlNode n;
+    std::string err;
+    YamlOptions o;
+    o.rawStepVerbs = {"type", "expect"};
+    o.repeatTopLevelKeys = true;
+    CHECK(parseYaml("keys:\n  - type: \"a\" # b\n  - key: x # c\nkeys:\n  - expect: {1}\n", &n, &err, o));
+    CHECK(n.map.size() == 2);
+    const YamlNode& t = n.map[0].second.seq[0].map[0].second;
+    CHECK(t.rawLine && t.scalar == "\"a\" # b");
+    const YamlNode& k = n.map[0].second.seq[1].map[0].second;
+    CHECK(!k.rawLine && k.scalar == "x");
+    const YamlNode& e = n.map[1].second.seq[0].map[0].second;
+    CHECK(e.isScalar() && e.scalar == "{1}");
+    CHECK(!parseYaml("keys:\n  - type: a\nkeys:\n  - type: b\n", &n, &err));   // the default: a key once
+}
+
+TEST(test_number_forms) {
+    CHECK(calcu::formats::parseNumber("&1F") == std::optional<std::int64_t>(31));
+    CHECK(calcu::formats::parseNumber("0x1f") == std::optional<std::int64_t>(31));
+    CHECK(calcu::formats::parseNumber("$10") == std::optional<std::int64_t>(16));
+    CHECK(calcu::formats::parseNumber("-12") == std::optional<std::int64_t>(-12));
+    CHECK(calcu::formats::parseNumber("12") == std::optional<std::int64_t>(12));
+    CHECK(!calcu::formats::parseNumber("1F"));    // hex needs its mark
+    CHECK(!calcu::formats::parseNumber("12 x"));  // the whole value
+    CHECK(!calcu::formats::parseNumber(""));
+    CHECK(!calcu::formats::parseNumber("&"));
+    CHECK(!calcu::formats::parseNumber("99999999999999999999"));
 }

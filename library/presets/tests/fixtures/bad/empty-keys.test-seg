@@ -1,0 +1,4 @@
+# error: line 4: keys: has no steps.
+format-version: 2
+model: test-seg
+keys:

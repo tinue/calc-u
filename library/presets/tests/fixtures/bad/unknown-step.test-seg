@@ -1,0 +1,5 @@
+# error: line 5: Unknown step jump.
+format-version: 2
+model: test-seg
+keys:
+  - jump: 1

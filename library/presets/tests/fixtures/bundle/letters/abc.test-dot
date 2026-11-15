@@ -1,0 +1,6 @@
+format-version: 2
+model: test-dot
+preset-name: ABC
+description: Types abc
+keys:
+  - type: abc

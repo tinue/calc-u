@@ -13,6 +13,15 @@ Ticks OperationContext::runPiece(machine::TickRate rate) { return std::max<Ticks
 
 void OperationContext::setReportsWaiting(bool r) { session_->machineSession().setReportsWaiting(r); }
 
+Task<bool> OperationContext::hostWait(pacing::WallTime d) {
+    if (session_->virtualTime()) co_return false;
+    const pacing::WallTime end = session_->wallTime() + d;
+    do {   // at least one host call: a loop of short waits never holds the host
+        co_await yieldToHost();
+    } while (session_->wallTime() < end);
+    co_return true;
+}
+
 Task<Ticks> OperationContext::run(Ticks ticks) {
     MachineSession& ms = session_->machineSession();
     Ticks total = 0;

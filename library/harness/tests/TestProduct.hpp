@@ -4,6 +4,7 @@
 #include "harness/Commands.hpp"
 #include "harness/Product.hpp"
 #include "harness/Run.hpp"
+#include "presets/Source.hpp"
 #include "sessions/SessionPart.hpp"
 #include <memory>
 #include <optional>
@@ -20,8 +21,14 @@
 // typing part (LIB-5) with a profile per model (test-seg: the digits 0-3,
 // `clr` as ENTER; test-dot: a-c, `on` as ENTER; a minimum hold of 10 ms,
 // typed text 10 ms down and 5 ms up, no readiness wait); the
-// full ROM set of the test catalogue in a temporary bundle. Used by the
-// library tests and by `calcu_test`, never product code (LIB-1 AC-24).
+// full ROM set of the test catalogue in a temporary bundle; from LIB-6
+// (M-38) the preset rules of library/presets/tests/TestPresetRules.hpp and
+// bundled presets (`examples:startup/seg.test-seg`, `examples:basic/two.test-seg`).
+// Used by the library tests and by `calcu_test`, never product code (LIB-1 AC-24).
+
+namespace calcu::presets::test {
+class TestPresetRules;
+}
 
 namespace calcu::harness::test {
 
@@ -45,6 +52,9 @@ public:
     DisplayText readDisplay(const machine::DisplayOutput&, const machine::MachineDescriptor&) override;
     void addCommands(CommandRegistry&) override;
     std::vector<sessions::SessionPart*> sessionParts() override;
+    presets::ProductRules* presetRules() override;
+    const presets::PresetBundle* presetBundle() const override { return bundle_.get(); }
+    typing::TypingPart* typingPart() override;
 
     // For the tests: the bundle folder (a file can be removed: EC-1), the
     // model to start with under the default settings (the fallback model of
@@ -82,6 +92,9 @@ private:
     Machines machines_{*this};
     std::unique_ptr<Part> part_;
     std::unique_ptr<Typing> typing_;
+    std::unique_ptr<presets::test::TestPresetRules> presetRules_;
+    roms::test::TempFolder presetFolder_{"calcu-test-presets"};
+    std::unique_ptr<presets::DirectoryPresetBundle> bundle_;
 };
 
 // The test product as the CLI's factory gives it.

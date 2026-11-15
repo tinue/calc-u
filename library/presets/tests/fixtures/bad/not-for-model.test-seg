@@ -1,0 +1,5 @@
+# error: line 5: syncclock is not available on the test-seg.
+format-version: 2
+model: test-seg
+keys:
+  - syncclock:

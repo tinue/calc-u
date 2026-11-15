@@ -4,6 +4,7 @@
 #include "harness/HarnessHost.hpp"
 #include "harness/Product.hpp"
 #include "peripherals/PeripheralsPart.hpp"
+#include "presets/PresetsPart.hpp"
 #include "sessions/AppSession.hpp"
 #include "settings/HostDirs.hpp"
 #include "settings/SettingsFile.hpp"
@@ -118,6 +119,7 @@ private:
     std::shared_ptr<int> clockReads_ = std::make_shared<int>(0);
     std::unique_ptr<peripherals::PeripheralsPart> peripherals_;
     std::unique_ptr<MachineStatePart> state_;
+    std::unique_ptr<presets::PresetsPart> presets_;   // LIB-6: when the product has preset rules
     std::unique_ptr<startup::StartupPart> startup_;
     std::unique_ptr<control::ControlPart> control_;
     std::unique_ptr<sessions::AppSession> session_;

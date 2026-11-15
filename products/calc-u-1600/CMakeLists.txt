@@ -11,38 +11,25 @@ cmake_minimum_required(VERSION 3.21)
 # engine (calcu_web) and the wasm_smoke check (frontends/web/build.sh,
 # tools/build_wasm_check.sh; both build in the root's build/web).
 #
-# Options (besides the root ones):
-#   CALCU_TESTS_DEBUG  build core/ and the tests at -O0 for stepping through
+# CALCU_TESTS_DEBUG (the root's) builds core/ and the tests at -O0 for
+# stepping through.
 
 if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
   message(FATAL_ERROR "products/calc-u-1600 is part of the root CMake project (ADR 0003): "
                       "configure the repository root, e.g. cmake -S ../.. -B ../../build/all")
 endif()
 
-set(CMAKE_OSX_DEPLOYMENT_TARGET "15.8" CACHE STRING "Minimum macOS version")
-
-if(APPLE)
-  project(Calc-U-1600 LANGUAGES CXX OBJCXX)
-else()
-  project(Calc-U-1600 LANGUAGES CXX)
-endif()
-
-set(CMAKE_CXX_STANDARD 20)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
-
-# No find_package(Qt6) here: only frontends/qt6/CMakeLists.txt needs Qt.
+# The macOS minimum (15.8, libsharpdx) and OBJCXX for the Qt6 app's .mm
+# sources are the root project's. No find_package(Qt6) here: only
+# frontends/qt6/CMakeLists.txt needs Qt.
 
 set(TOOLS_ROOT ${CMAKE_CURRENT_SOURCE_DIR}/tools)
 
 # The suite runs ~3x faster at -O1 than at -O0, so a Debug build compiles
-# Core and the tests at -O1 (CI builds RelWithDebInfo). To step through a
-# failing test, configure a separate full-debug tree:
+# Core and the tests at -O1 (calcu_debug_o1; CI builds RelWithDebInfo). To
+# step through a failing test, configure a separate full-debug tree:
 #   cmake -S ../.. -B ../../build/debug -G Ninja -DCMAKE_BUILD_TYPE=Debug \
 #         -DCALCU_FRONTEND_QT=OFF -DCALCU_TESTS_DEBUG=ON
-option(CALCU_TESTS_DEBUG "Build Core and CoreTests at -O0 for debugging" OFF)
-if(NOT CALCU_TESTS_DEBUG)
-  set(CALCU_CORE_DEBUG_O1 ON)
-endif()
 include(cmake/CalcU.cmake)
 
 # -----------------------------------------------------------------------------
@@ -65,18 +52,13 @@ if(EMSCRIPTEN)
                       -sENVIRONMENT=node -sEXIT_RUNTIME=1)
 
   # The web client's engine (frontends/web/build.sh copies it into
-  # frontends/web/dist/wasm/):
-  # Shared/ behind Web/bindings.cpp, for a Web Worker. No -pthread: a static
-  # host can't be relied on for the COOP/COEP headers threads need. IDBFS
-  # keeps the save folder in IndexedDB (mounted by the worker).
-  add_executable(calcu_web ${CMAKE_CURRENT_SOURCE_DIR}/frontends/web/bindings.cpp)
-  target_link_libraries(calcu_web PRIVATE calcu_shared calcu_web_glue)
-  set_target_properties(calcu_web PROPERTIES OUTPUT_NAME calcu1600-core)
-  target_link_options(calcu_web PRIVATE -fwasm-exceptions -lembind -lidbfs.js -sMODULARIZE=1
-                      -sEXPORT_NAME=createCalcU1600Module -sENVIRONMENT=worker -sALLOW_MEMORY_GROWTH=1
-                      -sSTACK_SIZE=1MB
-                      -sEXPORTED_RUNTIME_METHODS=FS,IDBFS,getExceptionMessage,decrementExceptionRefcount)
-  target_compile_options(calcu_web PRIVATE -fwasm-exceptions)
+  # frontends/web/dist/wasm/): app/ behind frontends/web/bindings.cpp, for
+  # the library's Web Worker (calcu_web_engine(), library/web/).
+  calcu_web_engine(calcu_web SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/frontends/web/bindings.cpp
+                   OUTPUT calcu1600-core EXPORT createCalcU1600Module ENVIRONMENT worker
+                   LINK -sSTACK_SIZE=1MB
+                        -sEXPORTED_RUNTIME_METHODS=FS,IDBFS,getExceptionMessage,decrementExceptionRefcount)
+  target_link_libraries(calcu_web PRIVATE calcu_shared)
   return()
 endif()
 
@@ -120,7 +102,7 @@ target_link_libraries(pc1600_plotter_probe PRIVATE calcu_core)
 # (LIB-11 design §8).
 add_library(calcu1600_harness STATIC ${CMAKE_CURRENT_SOURCE_DIR}/app/HarnessProduct.cpp)
 target_link_libraries(calcu1600_harness PUBLIC calcu_shared)
-target_compile_options(calcu1600_harness PRIVATE ${CALCU_WARNINGS})
+target_link_libraries(calcu1600_harness PRIVATE calcu_warnings)
 # The state-file header's version is the app's one: APP_VERSION of the Qt
 # build (user, 2026-11-15).
 file(STRINGS ${CMAKE_CURRENT_SOURCE_DIR}/frontends/qt6/CMakeLists.txt
@@ -128,9 +110,7 @@ file(STRINGS ${CMAKE_CURRENT_SOURCE_DIR}/frontends/qt6/CMakeLists.txt
 string(REGEX REPLACE ".*\"([0-9.]+)\".*" "\\1" CALCU1600_VERSION "${CALCU1600_VERSION_LINE}")
 target_compile_definitions(calcu1600_harness PRIVATE "CALCU1600_DIR=\"${CMAKE_CURRENT_SOURCE_DIR}\""
                                                      "CALCU1600_VERSION=\"${CALCU1600_VERSION}\"")
-if(COMMAND calcu_harness_add_product)
-  calcu_harness_add_product(calcu1600_harness shared::makeHarnessProduct)
-endif()
+calcu_harness_add_product(calcu1600_harness shared::makeHarnessProduct)
 
 # -----------------------------------------------------------------------------
 # Test Suite target (CALCU_TESTS; the release packaging turns it off, which
@@ -146,114 +126,71 @@ if(CALCU_TESTS)
 
   add_executable(CoreTests ${TEST_SOURCES})
   # The one test runner (ADR 0038): library/testing/, its main() included.
-  target_link_libraries(CoreTests PRIVATE calcu1600_harness calcu_test_runner ZLIB::ZLIB)
-  target_compile_options(CoreTests PRIVATE ${CALCU_WARNINGS})
-  if(NOT CALCU_TESTS_DEBUG AND NOT MSVC)
-    target_compile_options(CoreTests PRIVATE $<$<CONFIG:Debug>:-O1>)
-  endif()
+  target_link_libraries(CoreTests PRIVATE calcu1600_harness calcu_test_runner calcu_warnings ZLIB::ZLIB)
+  calcu_debug_o1(CoreTests)
 
-  enable_testing()
-  # Test groups (ADR 0031, docs/test-groups.md): labels frequent, longer,
-  # checkpoint; the last two only with CALCU_TESTS_LONGER / _CHECKPOINT.
-  add_test(NAME CoreTests COMMAND CoreTests WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
-  set_tests_properties(CoreTests PROPERTIES LABELS frequent)
+  # Test groups (ADR 0031, docs/test-groups.md; calcu_add_test of the root
+  # CMakeLists.txt): Frequent always, Longer and Checkpoint only with
+  # CALCU_TESTS_LONGER / _CHECKPOINT; every entry runs in this directory.
+  calcu_add_test(CoreTests frequent COMMAND CoreTests)
   # Every preset in the repository parses (nothing is booted).
-  add_test(NAME CalcU1600CheckPresets COMMAND tools/check_presets.sh
-           WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
-  set_tests_properties(CalcU1600CheckPresets PROPERTIES LABELS frequent
-                       ENVIRONMENT PC1600_CLI=$<TARGET_FILE:pc1600_cli>)
+  calcu_add_test(CalcU1600CheckPresets frequent COMMAND tools/check_presets.sh
+                 PROPERTIES ENVIRONMENT PC1600_CLI=$<TARGET_FILE:pc1600_cli>)
   # No file above the core includes or names a machine class (C1600-1,
   # Technical Requirements; design T13). CI runs it with the core tests.
-  add_test(NAME CalcU1600MachineIncludeCheck COMMAND sh tools/check_machine_includes.sh
-           WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
-  set_tests_properties(CalcU1600MachineIncludeCheck PROPERTIES LABELS frequent)
-  # LIB-12 AC-2: no product source looks for a ROM file outside the lookup
-  # (library/roms/tests/check_no_own_rom_lookup.sh; design T7). Allowed: the
-  # lookup's product side with the one listed exception, the host drive's
-  # own ROM (core/Machine/SharpRoms.cpp; D-6) and the catalogue's ROM entries.
-  add_test(NAME CalcU1600NoOwnRomLookup
-           COMMAND sh ${CMAKE_SOURCE_DIR}/library/roms/tests/check_no_own_rom_lookup.sh .
-                   core/Machine/SharpRoms.cpp core/Machine/SharpCatalogue.cpp
-           WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
-  set_tests_properties(CalcU1600NoOwnRomLookup PROPERTIES LABELS frequent)
+  calcu_add_test(CalcU1600MachineIncludeCheck frequent COMMAND sh tools/check_machine_includes.sh)
+  # LIB-12 AC-2, LIB-9 AC-31 (calcu_product_source_checks, library/): the ROM
+  # lookup's allowed files are the host drive's own ROM
+  # (core/Machine/SharpRoms.cpp; D-6) and the catalogue's ROM entries.
+  calcu_product_source_checks(PREFIX CalcU1600 ROM_ALLOW core/Machine/SharpRoms.cpp core/Machine/SharpCatalogue.cpp)
   # LIB-3 AC-34, AC-36 (design §6 P16-1, P16-3): no session class of the
   # product's own; the Qt6 frontend hosts the library's app session and
   # sends no suspend.
-  add_test(NAME CalcU1600NoOwnSession COMMAND ${CMAKE_COMMAND} -P tools/check_no_own_session.cmake
-           WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
-  set_tests_properties(CalcU1600NoOwnSession PROPERTIES LABELS frequent)
+  calcu_add_test(CalcU1600NoOwnSession frequent COMMAND ${CMAKE_COMMAND} -P tools/check_no_own_session.cmake)
   # LIB-12 AC-13 (design Q2): pc1600_cli with a roms/ that lacks one file
   # exits 1 naming it; with the full set it runs.
-  add_test(NAME CalcU1600CliRomLookup COMMAND sh tests/cli_rom_tests.sh
-           WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
-  set_tests_properties(CalcU1600CliRomLookup PROPERTIES LABELS frequent
-                       ENVIRONMENT PC1600_CLI=$<TARGET_FILE:pc1600_cli>)
-  # No frontend keeps a setting in a platform store (QSettings,
-  # localStorage, UserDefaults; LIB-9 AC-31, design T-19). Needs bash: not
-  # on Windows, like the library's own check.
-  if(NOT WIN32)
-    add_test(NAME CalcU1600NoPlatformSettings
-             COMMAND bash ${CMAKE_SOURCE_DIR}/library/settings/check_platform_stores.sh frontends
-                     tools/platform_stores_allowed.txt
-             WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
-    set_tests_properties(CalcU1600NoPlatformSettings PROPERTIES LABELS frequent)
-  endif()
+  calcu_add_test(CalcU1600CliRomLookup frequent COMMAND sh tests/cli_rom_tests.sh
+                 PROPERTIES ENVIRONMENT PC1600_CLI=$<TARGET_FILE:pc1600_cli>)
 
   # Longer: run locally before merging into main and at the end of a part.
-  if(CALCU_TESTS_LONGER)
-    # Against frontends/web/dist/ (frontends/web/build.sh first); the WASM
-    # smoke builds in build/web itself (Emscripten).
-    add_test(NAME CalcU1600WebPlaywright COMMAND frontends/web/run-tests.sh
-             WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
-    add_test(NAME CalcU1600WasmSmoke COMMAND tools/build_wasm_check.sh
-             WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
-    set_tests_properties(CalcU1600WebPlaywright CalcU1600WasmSmoke PROPERTIES LABELS longer)
-    # LIB-12 (Technical Requirements, design Q5): a Web dist/ built from a
-    # ROM folder without one file names it and starts no calculator.
-    if(NOT WIN32)
-      add_test(NAME CalcU1600RomMissingBuild COMMAND sh tests/rom_missing_build.sh
-               WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
-      set_tests_properties(CalcU1600RomMissingBuild PROPERTIES LABELS longer RUN_SERIAL TRUE)
-    endif()
-    if(TARGET CalcU1600Qt)
-      # The screenshot scenarios run as checks: every shot is taken, into
-      # the build tree, not docs/images/.
-      file(GLOB CALCU1600_SCENARIOS ${CMAKE_CURRENT_SOURCE_DIR}/docs/developer/screenshots/guide/*.shots.yaml)
-      foreach(scenario ${CALCU1600_SCENARIOS})
-        get_filename_component(name ${scenario} NAME_WE)
-        add_test(NAME CalcU1600Shots.${name}
-                 COMMAND CalcU1600Qt --shots ${scenario} --shots-out ${CMAKE_CURRENT_BINARY_DIR}/shots-check/${name}
-                 WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
-        set_tests_properties(CalcU1600Shots.${name} PROPERTIES LABELS longer RUN_SERIAL TRUE)
-      endforeach()
-      find_package(Python3 COMPONENTS Interpreter)
-      if(Python3_FOUND)
-        add_test(NAME CalcU1600DapSmoke
-                 COMMAND ${Python3_EXECUTABLE} tools/dap_smoke.py --app $<TARGET_FILE:CalcU1600Qt>
-                 WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
-        set_tests_properties(CalcU1600DapSmoke PROPERTIES LABELS longer RUN_SERIAL TRUE)
-      endif()
+  # Against frontends/web/dist/ (frontends/web/build.sh first); the WASM
+  # smoke builds in build/web itself (Emscripten).
+  calcu_add_test(CalcU1600WebPlaywright longer COMMAND frontends/web/run-tests.sh)
+  calcu_add_test(CalcU1600WasmSmoke longer COMMAND tools/build_wasm_check.sh)
+  # LIB-12 (Technical Requirements, design Q5): a Web dist/ built from a
+  # ROM folder without one file names it and starts no calculator.
+  if(NOT WIN32)
+    calcu_add_test(CalcU1600RomMissingBuild longer COMMAND sh tests/rom_missing_build.sh PROPERTIES RUN_SERIAL TRUE)
+  endif()
+  if(TARGET CalcU1600Qt)
+    # The screenshot scenarios run as checks: every shot is taken, into
+    # the build tree, not docs/images/.
+    file(GLOB CALCU1600_SCENARIOS ${CMAKE_CURRENT_SOURCE_DIR}/docs/developer/screenshots/guide/*.shots.yaml)
+    foreach(scenario ${CALCU1600_SCENARIOS})
+      get_filename_component(name ${scenario} NAME_WE)
+      calcu_add_test(CalcU1600Shots.${name} longer
+                     COMMAND CalcU1600Qt --shots ${scenario} --shots-out ${CMAKE_CURRENT_BINARY_DIR}/shots-check/${name}
+                     PROPERTIES RUN_SERIAL TRUE)
+    endforeach()
+    find_package(Python3 COMPONENTS Interpreter)
+    if(Python3_FOUND)
+      calcu_add_test(CalcU1600DapSmoke longer
+                     COMMAND ${Python3_EXECUTABLE} tools/dap_smoke.py --app $<TARGET_FILE:CalcU1600Qt>
+                     PROPERTIES RUN_SERIAL TRUE)
     endif()
   endif()
 
   # Checkpoint: run before a release.
-  if(CALCU_TESTS_CHECKPOINT)
-    # Ten minutes per model on the real clock (PC-1500A, then PC-1600).
-    add_test(NAME CalcU1600PacingRealClock COMMAND CoreTests pacing_longrun_real_clock
-             WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
-    set_tests_properties(CalcU1600PacingRealClock PROPERTIES LABELS checkpoint
-                         ENVIRONMENT CALCU1600_PACING_LONGRUN=600 TIMEOUT 1500)
-    if(TARGET CalcU1600Qt)
-      # LIB-17 AC-22 (design §6 P16-3): a PC-1600 keeps one minute in the Qt6
-      # frontend (the --pacing-probe test hook of non-release builds).
-      add_test(NAME CalcU1600QtPacingProbe COMMAND CalcU1600Qt --pacing-probe 60
-               WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
-      set_tests_properties(CalcU1600QtPacingProbe PROPERTIES LABELS checkpoint RUN_SERIAL TRUE TIMEOUT 300)
-      # The User Guide screenshots into docs/images/ (tools/make_screenshots.sh
-      # builds the app in build/app-1600).
-      add_test(NAME CalcU1600GuideScreenshots COMMAND tools/make_screenshots.sh
-               WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
-      set_tests_properties(CalcU1600GuideScreenshots PROPERTIES LABELS checkpoint RUN_SERIAL TRUE)
-    endif()
+  # Ten minutes per model on the real clock (PC-1500A, then PC-1600).
+  calcu_add_test(CalcU1600PacingRealClock checkpoint COMMAND CoreTests pacing_longrun_real_clock
+                 PROPERTIES ENVIRONMENT CALCU1600_PACING_LONGRUN=600 TIMEOUT 1500)
+  if(TARGET CalcU1600Qt)
+    # LIB-17 AC-22 (design §6 P16-3): a PC-1600 keeps one minute in the Qt6
+    # frontend (the --pacing-probe test hook of non-release builds).
+    calcu_add_test(CalcU1600QtPacingProbe checkpoint COMMAND CalcU1600Qt --pacing-probe 60
+                   PROPERTIES RUN_SERIAL TRUE TIMEOUT 300)
+    # The User Guide screenshots into docs/images/ (tools/make_screenshots.sh
+    # builds the app in build/app-1600).
+    calcu_add_test(CalcU1600GuideScreenshots checkpoint COMMAND tools/make_screenshots.sh PROPERTIES RUN_SERIAL TRUE)
   endif()
 endif()

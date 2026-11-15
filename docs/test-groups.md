@@ -13,8 +13,13 @@ products use one runner, `library/testing/TestHarness.hpp` (ADR 0038).
 | Checkpoint | `checkpoint` | none | with `-DCALCU_TESTS_CHECKPOINT=ON` | before a release |
 
 A plain `ctest` in a tree without the two options is the Frequent run, so
-the CI jobs and `tools/run_tests.sh` need no filter. A tree with both
-options and the Qt apps:
+the CI jobs and `tools/run_tests.sh` need no filter. A product registers
+each entry with `calcu_add_test(<name> <group> COMMAND …)` (the root
+`CMakeLists.txt`): the group is its label, a Longer or Checkpoint entry is
+registered only with its option, and it runs in the product directory;
+the source checks both products run (`<Product>NoOwnRomLookup`,
+`<Product>NoPlatformSettings`) come from `calcu_product_source_checks()`
+(`library/CMakeLists.txt`). A tree with both options and the Qt apps:
 
 ```sh
 cmake -S . -B build/groups -G Ninja -DCMAKE_BUILD_TYPE=Release \

@@ -51,12 +51,7 @@ set(CALCU_HARNESS_BIN_DIR ${CMAKE_CURRENT_BINARY_DIR} CACHE INTERNAL "")
 function(calcu_harness_cli_target name)
   add_executable(${name} ${CALCU_HARNESS_CLI_DIR}/Main.cpp ${CALCU_HARNESS_CLI_DIR}/Cli.cpp ${ARGN})
   target_include_directories(${name} PRIVATE ${CALCU_HARNESS_CLI_DIR})
-  target_link_libraries(${name} PRIVATE calcu_library)
-  if(MSVC)
-    target_compile_options(${name} PRIVATE /W4 /utf-8)
-  else()
-    target_compile_options(${name} PRIVATE -Wall -Wextra)
-  endif()
+  target_link_libraries(${name} PRIVATE calcu_library calcu_warnings)
 endfunction()
 
 calcu_harness_write_products(${CMAKE_CURRENT_BINARY_DIR}/Products.cpp)   # none until the deferred call
@@ -78,18 +73,19 @@ if(CALCU_TESTS)
   calcu_harness_write_products(${CMAKE_CURRENT_BINARY_DIR}/TestProducts.cpp
                                "test|calcu::harness::test::makeTestProduct")
   calcu_harness_cli_target(calcu_test ${CMAKE_CURRENT_BINARY_DIR}/TestProducts.cpp
-                           ${lib}/harness/tests/TestProduct.cpp ${lib}/machine/tests/TestMachines.cpp)
-  target_include_directories(calcu_test PRIVATE ${lib}/machine/tests ${lib}/roms/tests ${lib}/harness/tests ${lib}/testing)
+                           ${lib}/harness/tests/TestProduct.cpp)
+  target_link_libraries(calcu_test PRIVATE calcu_test_machines)
 
   # T13: the program in a process of its own (argv, stdin, exit status),
-  # run with cmake -P (Frequent; docs/test-groups.md).
-  foreach(case
-      ac1_product_by_name_or_short_form_any_case
-      ac2_one_shot_runs_in_order_and_exits_zero
-      ac2_first_refusal_exits_nonzero_with_reason
-      ac3_serve_one_reply_per_line_until_quit
-      ec3_serve_ends_at_end_of_input
-      ec4_unknown_product_lists_products)
+  # run with cmake -P (Frequent; docs/test-groups.md); one entry per case of
+  # cli_cases.cmake, read from its `CASE STREQUAL "<case>"` branches.
+  file(STRINGS ${lib}/harness/tests/cli/cli_cases.cmake case_lines REGEX "CASE STREQUAL \"[a-z0-9_]+\"")
+  set(cases "")
+  foreach(line ${case_lines})
+    string(REGEX REPLACE ".*CASE STREQUAL \"([a-z0-9_]+)\".*" "\\1" c "${line}")
+    list(APPEND cases ${c})
+  endforeach()
+  foreach(case ${cases})
     add_test(NAME calcu_cli.${case}
              COMMAND ${CMAKE_COMMAND} -DCALCU=$<TARGET_FILE:calcu_test> -DCASE=${case}
                      -DWORK=${CMAKE_CURRENT_BINARY_DIR}/work-${case}

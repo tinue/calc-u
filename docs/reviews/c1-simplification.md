@@ -185,7 +185,8 @@ and both Web frontends, `CalcU59UIRegression`, `CalcU59SwiftUnitTests`,
 `CalcU59NoAttachInRelease`, both ROM-missing builds, the WASM smoke, the
 nine `CalcU1600Shots`, `CalcU1600DapSmoke`); `CalcU59ReferenceRuns`
 differs in 34 of 57 examples, as after M-34 (§8, item 3). CI on `main`:
-43739798405 (Calc-U-59), 43739801132 (Calc-U-1600).
+Calc-U-1600 43739801132 green; Calc-U-59 43739798405 red in `web` only
+(§8, item 4), then 43740758795 green after the test fix.
 
 ## 5. The three large changes, and what came of them
 
@@ -238,6 +239,9 @@ differs in 34 of 57 examples, as after M-34 (§8, item 3). CI on `main`:
 - LIB-5 (C2 draft): two mentions of the rigs updated.
 
 ## 8. Questions and findings for the user
+
+Agreed by the user on 2026-11-15, all items as written; item 2 is fixed
+in Part C2.
 
 1. `products/calc-u-1600/docs/background/Decisions.md` said the core's
    machine mutexes stay; they no longer exist, and the line now says the

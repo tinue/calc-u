@@ -39,7 +39,7 @@ constexpr double kBoundSeconds = 0.035;
 
 const char* nameOf(Model m) { return m == Model::TI59 ? "TI-59" : m == Model::TI58 ? "TI-58" : "TI-58C"; }
 
-std::unique_ptr<TIAppSession> session(Model model, calcu::pacing::WallClock clock) {
+calcu::sessions::ProductSession<TIAppPart> session(Model model, calcu::pacing::WallClock clock) {
     TIAppSetup s;
     s.roms = testroms::romSet();
     s.cuecards = testroms::readFile("roms/solid-state/cuecards.txt").value_or("");
@@ -54,9 +54,9 @@ TEST(lib17_ac18_pacing_longrun_scripted_ti) {
     for (Model model : {Model::TI59, Model::TI58, Model::TI58C}) {
         WallTime now{std::chrono::hours(2)};
         auto app = session(model, [&] { return now; });
-        auto& ms = app->session->machineSession();
+        auto& ms = app.session->machineSession();
         const double tps = ms.machine()->descriptor().tickRate;
-        for (int i = 0; i < 600 && !ms.machine()->isKeyReady(); ++i) app->session->call(now += std::chrono::microseconds(16'667));
+        for (int i = 0; i < 600 && !ms.machine()->isKeyReady(); ++i) app.session->call(now += std::chrono::microseconds(16'667));
 
         uint32_t lcg = 12345;
         auto rnd = [&] { lcg = lcg * 1664525u + 1013904223u; return (lcg >> 8) / double(1u << 24); };
@@ -71,13 +71,13 @@ TEST(lib17_ac18_pacing_longrun_scripted_ti) {
                 wallSum += std::chrono::duration<double>(now - begin).count();
                 emulatedSum += (ms.machine()->tickCount() - ticks0) / tps;
                 now += std::chrono::seconds(5);
-                app->session->call(now);   // the lag is dropped, not caught up
+                app.session->call(now);   // the lag is dropped, not caught up
                 begin = now;
                 ticks0 = ms.machine()->tickCount();
                 continue;
             }
             now += d;
-            app->session->call(now);
+            app.session->call(now);
             const double dev = std::fabs(std::chrono::duration<double>(now - begin).count() -
                                          (ms.machine()->tickCount() - ticks0) / tps);
             worst = std::max(worst, dev);
@@ -102,15 +102,15 @@ TEST(lib17_ac18_pacing_longrun_real_clock_ti) {
     const double seconds = std::atof(env);
     for (Model model : {Model::TI59, Model::TI58, Model::TI58C}) {
         auto app = session(model, steadyWallTime);
-        auto& ms = app->session->machineSession();
+        auto& ms = app.session->machineSession();
         const double tps = ms.machine()->descriptor().tickRate;
         const auto t0 = ms.machine()->tickCount();
         const auto w0 = Clock::now();
         while (Clock::now() - w0 < std::chrono::duration<double>(seconds)) {
-            app->session->call(steadyWallTime());
+            app.session->call(steadyWallTime());
             std::this_thread::sleep_for(std::chrono::microseconds(16'667));
         }
-        app->session->call(steadyWallTime());
+        app.session->call(steadyWallTime());
         const double wall = std::chrono::duration<double>(Clock::now() - w0).count();
         const double emulated = (ms.machine()->tickCount() - t0) / tps;
         std::printf("  pacing after, real clock %s: wall %.3f s, emulated %.3f s, difference %.4f s\n", nameOf(model),

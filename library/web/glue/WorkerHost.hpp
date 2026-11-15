@@ -1,12 +1,12 @@
 #pragma once
 #include "sessions/AppSession.hpp"
+#include "sessions/Listener.hpp"
 #include "sessions/Messages.hpp"
 #include "sessions/Payload.hpp"
 #include "sessions/SessionPart.hpp"
 #include "settings/HostDirs.hpp"
 #include <emscripten/val.h>
 #include <functional>
-#include <map>
 #include <memory>
 #include <set>
 #include <string>
@@ -41,19 +41,15 @@ struct WebStart {
     sessions::SessionPart* shellPart = nullptr;
 };
 
-// The session and what it needs to live: the product's parts and settings
-// are kept in `keep`, which is destroyed after the session.
-struct WebSession {
-    std::shared_ptr<void> keep;
-    std::unique_ptr<sessions::AppSession> session;
-};
-using AppSessionFactory = std::function<WebSession(const WebStart&)>;   // Hosting::Paced
+// The product's session (Hosting::Paced); it owns the product's parts and
+// what they need (AppSessionSetup::owned).
+using AppSessionFactory = std::function<std::unique_ptr<sessions::AppSession>(const WebStart&)>;
 
 // The worker's wall clock (performance.now()), the one the host call passes:
 // a factory gives it to AppSessionSetup::clock.
 pacing::WallTime wallTimeNow();
 
-class WorkerHost final : public sessions::MessageSink {
+class WorkerHost final {
 public:
     // `start`: {product, dirs: {settingsBase, saveFolder, home}, storage:
     // {mode, sentence}, post: function(message, transfer)}.
@@ -66,28 +62,19 @@ public:
     std::string failure() const { return failure_; }
     void receive(emscripten::val message);   // listen, command, request, answer
     void call();                             // the host call, with the wall time now
-    void deliver(const sessions::Message&) override;
 
 private:
     class ShellPart;
-    struct Held {
-        emscripten::val message, transfer;
-    };
 
-    void post(emscripten::val message, emscripten::val transfer);
-    void flushHeld(sessions::CallId sessionCall, double pageCall);
+    void post(const sessions::Message&, double pageCall = 0);
     void answerFilePicker(sessions::CallId ask, emscripten::val message);
 
     std::unique_ptr<ShellPart> part_;
     WebStart start_;
-    WebSession app_;
+    std::unique_ptr<sessions::AppSession> session_;
+    sessions::Listener listener_;   // stops listening before the session goes
     emscripten::val post_;
     std::string failure_;
-    sessions::ListenerId listener_ = 0;
-    bool listening_ = false;
-    bool holding_ = false;
-    std::vector<Held> held_;
-    std::map<sessions::CallId, double> pageCalls_;   // the session's call id → the page's
     std::set<sessions::CallId> filePickerAsks_;
 };
 

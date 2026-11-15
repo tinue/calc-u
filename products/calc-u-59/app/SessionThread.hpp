@@ -1,5 +1,6 @@
 #pragma once
 #include "sessions/AppSession.hpp"
+#include "sessions/Listener.hpp"
 #include "sessions/HostServices.hpp"
 #include "sessions/Messages.hpp"
 #include "pacing/WallClock.hpp"
@@ -9,7 +10,6 @@
 #include <cstdint>
 #include <deque>
 #include <functional>
-#include <map>
 #include <memory>
 #include <mutex>
 #include <thread>
@@ -37,34 +37,6 @@ namespace cu59 {
 
 namespace sessions = calcu::sessions;
 
-/// What the thread drives: the library's app session, or one made for a test.
-class HostedSession {
-public:
-    virtual ~HostedSession() = default;
-    virtual sessions::ListenerId listen(sessions::MessageSink&, sessions::HostServices) = 0;
-    virtual sessions::CallId send(sessions::ListenerId, sessions::Command) = 0;
-    virtual sessions::CallId ask(sessions::ListenerId, sessions::Request) = 0;
-    virtual void answer(sessions::CallId, sessions::ServiceAnswer) = 0;
-    virtual void call(calcu::pacing::WallTime now) = 0;
-    virtual sessions::AppSession* appSession() = 0;   // for attach; nullptr in a test session
-};
-
-/// HostedSession over a library app session the host owns through `owner`.
-class AppSessionHost final : public HostedSession {
-public:
-    AppSessionHost(sessions::AppSession& s, std::shared_ptr<void> owner) : s_(s), owner_(std::move(owner)) {}
-    sessions::ListenerId listen(sessions::MessageSink& m, sessions::HostServices h) override { return s_.listen(m, std::move(h)); }
-    sessions::CallId send(sessions::ListenerId l, sessions::Command c) override { return s_.send(l, std::move(c)); }
-    sessions::CallId ask(sessions::ListenerId l, sessions::Request r) override { return s_.ask(l, std::move(r)); }
-    void answer(sessions::CallId id, sessions::ServiceAnswer a) override { s_.answer(id, std::move(a)); }
-    void call(calcu::pacing::WallTime now) override { s_.call(now); }
-    sessions::AppSession* appSession() override { return &s_; }
-
-private:
-    sessions::AppSession& s_;
-    std::shared_ptr<void> owner_;
-};
-
 /// One item the frontend drains: a message, and for the reply to a command
 /// it sent with a handler, that handler (run by the frontend, on its thread).
 struct Delivery {
@@ -74,7 +46,9 @@ struct Delivery {
 
 class SessionThread {
 public:
-    using Factory = std::function<std::unique_ptr<HostedSession>()>;   // runs on the thread
+    /// The session the thread hosts (makeAppSession(...).session; a test's
+    /// own); runs on the thread.
+    using Factory = std::function<std::unique_ptr<sessions::AppSession>()>;
     using ReplyHandler = std::function<void(const sessions::ReplyMessage&)>;
     static constexpr std::chrono::microseconds kPeriod{16'667};          // AC-4
     static constexpr std::chrono::milliseconds kMaxBehind{100};
@@ -92,7 +66,7 @@ public:
     void ask(sessions::Request, ReplyHandler onReply = {});
     void answer(sessions::CallId, sessions::ServiceAnswer);
     /// A job on the session thread (tests; the host's own adapters).
-    void post(std::function<void(HostedSession&)> job);
+    void post(std::function<void(sessions::AppSession&)> job);
     /// AC-8: the suspend command is carried out, then the thread stops calling.
     void suspendCalls();
     /// Calling again, then the continue command.
@@ -111,10 +85,11 @@ public:
     std::thread::id threadId() const { return thread_.get_id(); }
 
 private:
-    struct Listener;
     struct Attach;
+    using Job = std::function<void(sessions::Listener&)>;
+    void enqueue(Job);
     void run(Factory);
-    void stage(sessions::Message);
+    sessions::Listener::ReplyHandler stageReply(ReplyHandler onReply);
     void publish();
 
     sessions::HostServices services_;
@@ -125,15 +100,13 @@ private:
 
     mutable std::mutex mutex_;
     std::condition_variable cv_;
-    std::deque<std::function<void(HostedSession&)>> inbox_;
+    std::deque<Job> inbox_;
     std::deque<Delivery> outbox_;
     bool quit_ = false;
 
     // The session thread's own (no lock).
     std::vector<Delivery> staged_;
-    std::map<sessions::CallId, ReplyHandler> handlers_;
     std::unique_ptr<Attach> attach_;
-    sessions::ListenerId frontend_ = 0;
 
     std::thread thread_;
 };

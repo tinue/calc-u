@@ -24,14 +24,16 @@ constexpr std::chrono::nanoseconds kFrame{16'666'667};
 } // namespace
 
 MachineController::MachineController(QObject* parent) : QObject(parent) {
-    shared::SharpHost::Options options;
+    shared::SharpSessionOptions options;
     options.clock = [this] { return now(); };
-    options.hostDirectories = true;   // a folder picker: File ▸ Mount Directory
-    options.services.offered = {sessions::HostService::AudioSink, sessions::HostService::ClipboardText,
-                                sessions::HostService::ClipboardImage, sessions::HostService::FilePicker,
-                                sessions::HostService::KeepFile, sessions::HostService::OpenUrl};
-    m_host = std::make_unique<shared::SharpHost>(AppSettings::settings(), AppPaths::paths(), std::move(options));
-    m_host->onMessage = [this](const sessions::Message& m) { onMessage(m); };
+    m_app = shared::makeSharpSession(AppSettings::settings(), AppPaths::paths(), std::move(options));
+    m_listener.onMessage = [this](const sessions::Message& m) { onMessage(m); };
+    sessions::HostServices services;
+    services.offered = {sessions::HostService::AudioSink,     sessions::HostService::ClipboardText,
+                        sessions::HostService::ClipboardImage, sessions::HostService::FilePicker,
+                        sessions::HostService::FolderPicker,   // File ▸ Mount Directory
+                        sessions::HostService::KeepFile,       sessions::HostService::OpenUrl};
+    m_listener.listen(*m_app.session, std::move(services));
     m_debug = std::make_unique<DebugController>(this);
     app().setDebugger(this);
     // The start: the startup model of the settings, then its default preset
@@ -42,7 +44,7 @@ MachineController::MachineController(QObject* parent) : QObject(parent) {
     // of MainWindow, which is not set up to unwind from here.
     send(shared::commands::kStart, {}, [this](const sessions::ReplyMessage& r) {
         if (r.done) return;
-        if (const auto* missing = m_host->state<shared::RomsMissingPayload>(shared::topics::kRomsMissing)) {
+        if (const auto* missing = m_listener.state<shared::RomsMissingPayload>(shared::topics::kRomsMissing)) {
             QMessageBox::critical(nullptr, QObject::tr("Calc-U-1600 cannot start"),
                                   QString::fromStdString(calcu::roms::describe(missing->missing)));
             std::exit(1);
@@ -55,8 +57,8 @@ MachineController::~MachineController() {
     // The debugger goes first: its target refers to the live machine.
     app().setDebugger(nullptr);
     m_debug.reset();
-    m_host->onMessage = {};
-    m_host.reset();
+    m_listener.stop();
+    m_app = {};
 }
 
 calcu::pacing::WallTime MachineController::now() {
@@ -73,17 +75,24 @@ void MachineController::call() {
     const calcu::pacing::WallTime t = now();
     if (m_calls++ > 0) m_longestGapMs = std::max(m_longestGapMs, std::chrono::duration<double, std::milli>(t - m_lastCall).count());
     m_lastCall = t;
-    m_host->session().call(t);
+    m_app.session->call(t);
     m_callMs += std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now().time_since_epoch() - t).count();
 }
 
 void MachineController::send(const sessions::CommandName& name, sessions::Value args, Reply done) {
-    const sessions::CallId id = m_host->send(name, std::move(args));
-    if (auto r = m_host->takeReply(id)) {   // a command that started no operation: replied at once
-        if (done) done(*r);
+    const auto sent = m_listener.send(name, std::move(args));
+    if (sent.reply) {   // a command that started no operation: replied at once
+        if (done) done(*sent.reply);
         return;
     }
-    if (done) m_pending[id] = std::move(done);
+    // An operation: its reply when it ends, shown after the host call.
+    m_listener.onReply(sent.call, [this, done = std::move(done)](const sessions::ReplyMessage& r) {
+        if (!done) return;
+        sessions::ReplyMessage reply = r;
+        // A failed operation's reason was a notice already (LIB-3 AC-18).
+        if (!reply.done && reply.reason == m_lastNotice) reply.reason.clear();
+        QTimer::singleShot(0, this, [done, reply] { done(reply); });
+    });
     if (m_frozen) finishOperation();
 }
 
@@ -95,7 +104,7 @@ void MachineController::setFrozen(bool frozen) {
 }
 
 void MachineController::finishOperation() {
-    while (m_host->busy()) {
+    while (m_app.session->busy()) {
         m_frozenNow += kFrame;
         call();
     }
@@ -139,17 +148,9 @@ void MachineController::onMessage(const sessions::Message& m) {
                 qDebug().noquote() << "[log]" << QString::fromStdString(l->text);
             }
         }
-        (void)m_host->mirror().takeAppended(st->topic);   // kept here only
-    } else if (const auto* r = std::get_if<sessions::ReplyMessage>(&m)) {
-        const auto it = m_pending.find(r->call);
-        if (it == m_pending.end()) return;
-        Reply done = std::move(it->second);
-        m_pending.erase(it);
-        (void)m_host->takeReply(r->call);
-        sessions::ReplyMessage reply = *r;
-        // A failed operation's reason was a notice already (LIB-3 AC-18).
-        if (!reply.done && reply.reason == m_lastNotice) reply.reason.clear();
-        QTimer::singleShot(0, this, [done = std::move(done), reply] { done(reply); });
+        (void)m_listener.mirror().takeAppended(st->topic);   // kept here only
+    } else if (std::holds_alternative<sessions::ReplyMessage>(m)) {
+        // every reply has its handler (send())
     } else if (m_sound) {
         m_sound->deliver(m);   // SoundStart, SoundSamples, SoundStop (LIB-3 AC-20, AC-37)
     }
@@ -157,10 +158,10 @@ void MachineController::onMessage(const sessions::Message& m) {
 
 void MachineController::onState(const sessions::TopicName& topic) {
     if (topic == sessions::kDisplayTopic) {
-        if (const auto* d = m_host->display()) m_frame = shared::displayFrameOf(*d);
+        if (const auto* d = m_listener.display()) m_frame = shared::displayFrameOf(*d);
         emit displayChanged();
     } else if (topic == sessions::kBusyTopic) {
-        const auto* b = m_host->state<sessions::BusyState>(sessions::kBusyTopic);
+        const auto* b = m_listener.state<sessions::BusyState>(sessions::kBusyTopic);
         if (!b) return;
         const bool full = b->speed == calcu::pacing::Speed::Full;
         const bool was = m_busy, wasFull = m_busyFull;
@@ -169,7 +170,7 @@ void MachineController::onState(const sessions::TopicName& topic) {
         if (was != m_busy) QTimer::singleShot(0, this, [this, busy = m_busy] { emit appBusyChanged(busy); });
         else if (m_busy && wasFull != full) emit operationSpeedChanged();
     } else if (topic == shared::topics::kMachine) {
-        const auto* p = m_host->state<shared::MachinePayload>(topic);
+        const auto* p = m_listener.state<shared::MachinePayload>(topic);
         if (!p) return;
         const shared::MachinePayload before = m_machine;
         m_machine = *p;
@@ -178,13 +179,13 @@ void MachineController::onState(const sessions::TopicName& topic) {
             if (slot < before.moduleChanges.size() && before.moduleChanges[slot] != p->moduleChanges[slot])
                 emit bayModuleChanged(static_cast<int>(slot));
     } else if (topic == shared::topics::kTapes) {
-        const auto* p = m_host->state<shared::TapesPayload>(topic);
+        const auto* p = m_listener.state<shared::TapesPayload>(topic);
         if (p && p->listChanges != m_tapeListChanges) {
             m_tapeListChanges = p->listChanges;
             emit tapeListChanged();
         }
     } else if (topic == shared::topics::kSerialLinks) {
-        const auto* p = m_host->state<shared::SerialLinksPayload>(topic);
+        const auto* p = m_listener.state<shared::SerialLinksPayload>(topic);
         if (p && p->moves != m_serialMoves) {
             m_serialMoves = p->moves;
             emit serialLinksMoved();
@@ -195,22 +196,22 @@ void MachineController::onState(const sessions::TopicName& topic) {
 }
 
 shared::ControlState MachineController::controlState() const {
-    const auto* p = m_host->state<shared::ControlStatePayload>(shared::topics::kControlState);
+    const auto* p = m_listener.state<shared::ControlStatePayload>(shared::topics::kControlState);
     return p ? p->state : session().controlState();
 }
 
 TapeDeck::Status MachineController::tapeStatus() const {
-    const auto* p = m_host->state<shared::TapesPayload>(shared::topics::kTapes);
+    const auto* p = m_listener.state<shared::TapesPayload>(shared::topics::kTapes);
     return p ? p->status : TapeDeck::Status{};
 }
 
 GrayImage MachineController::currentScreenImage() const {
-    const auto* d = m_host->display();
+    const auto* d = m_listener.display();
     return d ? session().screenImage(*d) : GrayImage{};
 }
 
 bool MachineController::lcdText(LcdText* out) const {
-    const auto* d = m_host->display();
+    const auto* d = m_listener.display();
     return d && session().lcdText(*d, out);
 }
 

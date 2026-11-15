@@ -295,12 +295,6 @@ std::vector<cs::Value::Member> argsWithBytes(std::vector<cs::Value::Member> m, N
 @implementation TISessionStart
 @end
 
-// The last message of a topic (null before the first).
-template <class P> static const P* lastOf(const cs::TopicMirror& m, const cs::TopicName& t) {
-    const cs::PayloadPtr* p = m.state(t);
-    return p ? cs::payloadAs<P>(*p) : nullptr;
-}
-
 static cu59::SessionThread::ReplyHandler flagReply(void (^done)(BOOL)) {
     if (!done) return {};
     return [done](const cs::ReplyMessage& r) {
@@ -333,11 +327,7 @@ static cu59::SessionThread::ReplyHandler flagReply(void (^done)(BOOL)) {
         const cs::HostServices services = statedServices();
         __weak TIAppSession* weakSelf = self;
         _thread = std::make_unique<cu59::SessionThread>(
-            [setup] {
-                auto app = cu59::makeAppSession(setup, cu59::steadyWallTime);
-                auto* s = app->session.get();
-                return std::make_unique<cu59::AppSessionHost>(*s, std::shared_ptr<cu59::TIAppSession>(std::move(app)));
-            },
+            [setup] { return cu59::makeAppSession(setup, cu59::steadyWallTime).session; },
             services, cu59::steadyWallTime,
             // One hop to the main thread per batch (FS 3); a batch that comes
             // after the bridge is gone is dropped.
@@ -348,13 +338,13 @@ static cu59::SessionThread::ReplyHandler flagReply(void (^done)(BOOL)) {
 
 - (void)dealloc { _thread.reset(); }
 
-- (const cu59::TIPrinterState *)printer { return lastOf<cu59::TIPrinterState>(_mirror, cu59::topics::kPrinter); }
-- (const cu59::TIRunState *)run { return lastOf<cu59::TIRunState>(_mirror, cu59::topics::kRunState); }
-- (const cu59::TICardReaderState *)card { return lastOf<cu59::TICardReaderState>(_mirror, cu59::topics::kCardReader); }
-- (const cu59::TIDebugLiveState *)live { return lastOf<cu59::TIDebugLiveState>(_mirror, cu59::topics::kDebugLive); }
-- (const cu59::TIDebugLogState *)logState { return lastOf<cu59::TIDebugLogState>(_mirror, cu59::topics::kDebugLog); }
-- (const cu59::TIDebugAsmState *)asmState { return lastOf<cu59::TIDebugAsmState>(_mirror, cu59::topics::kDebugAsm); }
-- (const cu59::TIModelState *)modelState { return lastOf<cu59::TIModelState>(_mirror, cu59::topics::kModel); }
+- (const cu59::TIPrinterState *)printer { return _mirror.stateOf<cu59::TIPrinterState>(cu59::topics::kPrinter); }
+- (const cu59::TIRunState *)run { return _mirror.stateOf<cu59::TIRunState>(cu59::topics::kRunState); }
+- (const cu59::TICardReaderState *)card { return _mirror.stateOf<cu59::TICardReaderState>(cu59::topics::kCardReader); }
+- (const cu59::TIDebugLiveState *)live { return _mirror.stateOf<cu59::TIDebugLiveState>(cu59::topics::kDebugLive); }
+- (const cu59::TIDebugLogState *)logState { return _mirror.stateOf<cu59::TIDebugLogState>(cu59::topics::kDebugLog); }
+- (const cu59::TIDebugAsmState *)asmState { return _mirror.stateOf<cu59::TIDebugAsmState>(cu59::topics::kDebugAsm); }
+- (const cu59::TIModelState *)modelState { return _mirror.stateOf<cu59::TIModelState>(cu59::topics::kModel); }
 
 - (void)drain {
     TIChange changes = static_cast<TIChange>(0);
@@ -405,7 +395,7 @@ static cu59::SessionThread::ReplyHandler flagReply(void (^done)(BOOL)) {
 
 - (void)suspendWithCompletion:(void (^)(void))done {
     _thread->suspendCalls();
-    if (done) _thread->post([done](cu59::HostedSession&) { dispatch_async(dispatch_get_main_queue(), done); });
+    if (done) _thread->post([done](cs::AppSession&) { dispatch_async(dispatch_get_main_queue(), done); });
 }
 - (void)continueSession { _thread->continueCalls(); }
 
@@ -422,9 +412,7 @@ static cu59::SessionThread::ReplyHandler flagReply(void (^done)(BOOL)) {
     }
     // EC-1: the app runs on; a line of the session's log says why.
     const std::string line = "Attach is not available on port " + std::to_string(port) + ": " + problem + ".";
-    _thread->post([line](cu59::HostedSession& h) {
-        if (auto* s = h.appSession()) s->context().log(line);
-    });
+    _thread->post([line](cs::AppSession& s) { s.context().log(line); });
     return NO;
 }
 #endif
@@ -447,11 +435,10 @@ static cu59::SessionThread::ReplyHandler flagReply(void (^done)(BOOL)) {
          reply:[done](const cs::ReplyMessage& r) { done(r.done ? YES : NO); }];
 }
 - (void)offeredHostServices:(void (^)(NSArray<NSString *> *))done {
-    _thread->post([done](cu59::HostedSession& h) {
+    _thread->post([done](cs::AppSession& s) {
         NSMutableArray* out = [NSMutableArray array];
-        if (auto* s = h.appSession())
-            for (const auto& [service, name] : kServiceNames)
-                if (s->context().hostOffers(service)) [out addObject:@(name)];
+        for (const auto& [service, name] : kServiceNames)
+            if (s.context().hostOffers(service)) [out addObject:@(name)];
         dispatch_async(dispatch_get_main_queue(), ^{ done(out); });
     });
 }
@@ -483,7 +470,7 @@ static cu59::SessionThread::ReplyHandler flagReply(void (^done)(BOOL)) {
 
 - (TIDisplaySnapshot)display {
     TIDisplaySnapshot d{};
-    if (const auto* l = lastOf<cu59::TILedState>(_mirror, cu59::topics::kLed)) {
+    if (const auto* l = _mirror.stateOf<cu59::TILedState>(cu59::topics::kLed)) {
         memcpy(d.segments, l->led.segments, sizeof d.segments);
         memcpy(d.digitLevel, l->led.digitLevel, sizeof d.digitLevel);
         memcpy(d.dpLevel, l->led.dpLevel, sizeof d.dpLevel);
@@ -491,7 +478,7 @@ static cu59::SessionThread::ReplyHandler flagReply(void (^done)(BOOL)) {
     return d;
 }
 - (double)calcIndicatorOpacity {
-    const auto* l = lastOf<cu59::TILedState>(_mirror, cu59::topics::kLed);
+    const auto* l = _mirror.stateOf<cu59::TILedState>(cu59::topics::kLed);
     return l ? l->calcIndicatorOpacity : 0;
 }
 - (void)pressKey:(uint8_t)code { [self send:cu59::commands::kPressKey args:{{"code", static_cast<int>(code)}}]; }
@@ -507,7 +494,7 @@ static cu59::SessionThread::ReplyHandler flagReply(void (^done)(BOOL)) {
 // ── Cue card, printer ────────────────────────────────────────────────────────
 
 - (TICueCard *)cueCard {
-    const auto* c = lastOf<cu59::TICueCardState>(_mirror, cu59::topics::kCueCard);
+    const auto* c = _mirror.stateOf<cu59::TICueCardState>(cu59::topics::kCueCard);
     return c && c->card ? TICueCardFrom(*c->card) : nil;
 }
 - (NSInteger)printerLineCount { const auto* p = [self printer]; return p ? static_cast<NSInteger>(p->lines.size()) : 0; }
@@ -614,11 +601,11 @@ static cu59::SessionThread::ReplyHandler flagReply(void (^done)(BOOL)) {
 - (NSInteger)programListingSource { const auto* l = [self live]; return l ? static_cast<NSInteger>(l->listingSource) : 0; }
 - (NSInteger)programListingCurrentIndex { const auto* l = [self live]; return l ? l->listingCurrentIndex : -1; }
 - (NSArray<TIInspectorEntry *> *)cpuHistory {
-    const auto* c = lastOf<cu59::TIDebugCpuState>(_mirror, cu59::topics::kDebugCpu);
+    const auto* c = _mirror.stateOf<cu59::TIDebugCpuState>(cu59::topics::kDebugCpu);
     return c ? inspectorEntries(c->history) : @[];
 }
 - (NSData *)heatmapCounts {
-    const auto* h = lastOf<cu59::TIDebugHeatmapState>(_mirror, cu59::topics::kDebugHeatmap);
+    const auto* h = _mirror.stateOf<cu59::TIDebugHeatmapState>(cu59::topics::kDebugHeatmap);
     if (!h) return [NSMutableData dataWithLength:0x1400 * sizeof(uint32_t)];
     return [NSData dataWithBytes:h->counts.data() length:h->counts.size() * sizeof(uint32_t)];
 }
@@ -634,7 +621,7 @@ static cu59::SessionThread::ReplyHandler flagReply(void (^done)(BOOL)) {
 - (void)dumpMemory { [self send:cu59::commands::kDumpMemory]; }
 
 - (BOOL)manualTrace {
-    const auto* t = lastOf<cu59::TITraceState>(_mirror, cu59::topics::kTrace);
+    const auto* t = _mirror.stateOf<cu59::TITraceState>(cu59::topics::kTrace);
     return t && t->manualTrace;
 }
 - (void)setManualTrace:(BOOL)on { [self send:cu59::commands::kManualTrace args:{{"on", on == YES}}]; }

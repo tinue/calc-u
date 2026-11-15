@@ -200,10 +200,10 @@ The owner is written `component:<id>` or `peripheral:<id>@<place path>`.
 ### 3.4 The harness host (AC-5–7, AC-11, AC-21; I-1)
 
 ```cpp
-class HarnessHost : public sessions::MessageSink {    // LIB-3's listener interface (LIB-3 §3.2)
+class HarnessHost {    // talks to the session through a sessions::Listener (LIB-3 §3.10; C1 simplification)
 public:
-  // session: built with AppSessionSetup{hosting = Hosting::VirtualTime, parts}; the host calls
-  // session.listen(*this, HostServices{}) once (no services stated: LIB-3 A-2)
+  // session: built with AppSessionSetup{hosting = Hosting::VirtualTime, parts}; the host's
+  // listener listens once (no services stated: LIB-3 A-2)
   HarnessHost(sessions::AppSession&, HarnessProduct&, const RunSetup&);
   Reply command(sessions::Command);               // session.send(me, cmd); in VirtualTime an operation it
                                                   // starts runs to its end inside send() (LIB-3 §3.5, AC-19),

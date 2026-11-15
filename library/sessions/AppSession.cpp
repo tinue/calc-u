@@ -109,6 +109,7 @@ struct AppSession::Impl final : SessionContext, SessionSetup {
     const PayloadPtr& displayTopic() const { return displayState->current(); }
 
     // SessionSetup
+    SessionContext& context() override { return *this; }
     StateTopic& stateTopic(TopicName) override;
     StreamTopic& streamTopic(TopicName, History) override;
     void command(CommandName name, Handler h, bool ends = false) override { commands[name] = CommandEntry{std::move(h), ends}; }
@@ -172,7 +173,7 @@ AppSession::Impl::Impl(AppSessionSetup s) : setup(std::move(s)), ms(setup.clock,
     logTopic = &streamTopic(kLogTopic, History::SinceReset);
     registerLibraryCommands();
     for (SessionPart* p : setup.parts) p->attach(*this);
-    seenGeneration = ms.generation();
+    syncMachine();   // a machine a part set at attach
     flush();
 }
 
@@ -443,7 +444,9 @@ void AppSession::Impl::deliver(const Out& o) {
 // ── AppSession ──────────────────────────────────────────────────────────
 
 AppSession::AppSession(AppSessionSetup s) : impl_(std::make_unique<Impl>(std::move(s))) {}
-AppSession::~AppSession() = default;
+AppSession::~AppSession() {
+    impl_->setup.owned.reset();   // the parts first, while the machine is there
+}
 
 ListenerId AppSession::listen(MessageSink& sink, HostServices services) {
     Impl& s = *impl_;

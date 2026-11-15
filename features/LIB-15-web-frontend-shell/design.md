@@ -48,7 +48,7 @@ because each Web engine compiles it itself. Tests in `library/web/tests/`.
 | File | Holds |
 |---|---|
 | `library/web/CMakeLists.txt` | Under Emscripten: the INTERFACE target `calcu_web_glue` (its sources are compiled by each consumer, §3.6) and the test product `calcu_web_test_product`. Natively: the CTest entries `LibraryWebNodeTests` (`frequent`, when `node` is found) and, with `CALCU_TESTS_LONGER`, `LibraryWebPlaywright` (`longer`). Both are entries of their own beside `calcu_library_tests` because they run Node and browsers, not C++ |
-| `library/web/glue/WorkerHost.hpp/.cpp` | `calcu::web::WorkerHost`: owns one app session in the worker, is its listener (a `calcu::sessions::MessageSink`), host call, message in and out (§3.6) |
+| `library/web/glue/WorkerHost.hpp/.cpp` | `calcu::web::WorkerHost`: owns one app session in the worker (which owns the product's parts, LIB-3 §3.9), listens through a `calcu::sessions::Listener`, host call, message in and out (§3.6) |
 | `library/web/glue/MessageCodec.hpp/.cpp` | a LIB-3 `Message` ↔ a JS object, through `Payload::toValue()` and `Value`; the sound messages (`SoundStart`, `SoundSamples`, `SoundStop`) as `Int16Array` (§3.6). Replaces Calc-U-1600's `WebAudioSink` (`bindings.cpp:133-191`) |
 | `library/web/glue/Bind.hpp` | `CALCU_WEB_PRODUCT(name, factory)`: the embind registration a product's `bindings.cpp` makes |
 | `library/web/src/base.js` | `CALC_BASE` (from both `src/engine.js:14-18`): every URL relative to `calc.js` (AC-13) |

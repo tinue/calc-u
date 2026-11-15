@@ -54,24 +54,24 @@ TEST(test_cooperative_preset) {
 
     // The default PC-1600 preset (CE-1600P + floppy, two slot cards, a
     // dozen typed lines), a host call at a time.
-    const sessions::CallId id = f.host->send(c::kLoadPreset, preset("tests/fixtures/presets/startup-pc1600.pc1600"));
-    CHECK(f.host->busy());
+    const sessions::CallId id = f.send(c::kLoadPreset, preset("tests/fixtures/presets/startup-pc1600.pc1600"));
+    CHECK(f.busy());
     // A second operation is refused while one runs.
-    const sessions::CallId second = f.host->send(c::kDefaultPreset);
-    const auto refused = f.host->takeReply(second);
+    const sessions::CallId second = f.send(c::kDefaultPreset);
+    const auto refused = f.takeReply(second);
     CHECK(refused && !refused->done && refused->reason == sessions::kAnotherOperationRuns);
     int calls = 0;
     std::optional<sessions::ReplyMessage> r;
-    while (!(r = f.host->takeReply(id)) && calls < 100000) {
+    while (!(r = f.takeReply(id)) && calls < 100000) {
         f.call();
         ++calls;
     }
     CHECK(r && r->done);
     if (r && !r->done) std::fprintf(stderr, "  preset: %s\n", r->reason.c_str());
     CHECK(calls > 10);   // it really ran in parts
-    CHECK(!f.host->busy());
+    CHECK(!f.busy());
     CHECK(busyMessages(f, true) == 1 && busyMessages(f, false) == 1);
-    CHECK(f.host->mirror().takeAppended(sessions::kLogTopic).size() > 10);   // the preset's step log
+    CHECK(f.listener.mirror().takeAppended(sessions::kLogTopic).size() > 10);   // the preset's step log
     CHECK(f.part().currentModel() == Model::PC1600);
     CHECK(f.part().ce1600pAttached());
     CHECK(f.part().modules().selectedModuleName(1) == "CE-1600M");

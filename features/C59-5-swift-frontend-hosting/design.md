@@ -45,7 +45,7 @@ namespace `cu59`, product style; D-11):
 |---|---|
 | `app/Mailbox.hpp/.cpp` | the two queues between the frontend's thread and the session thread: posts in (FIFO), messages out (FIFO per listener), a wake callback on empty → non-empty |
 | `app/SessionThread.hpp/.cpp` | the thread that owns a hosted session: builds it on the thread, drains the inbox, calls it about 60 times a second, stops calling while suspended; implements the library's `calcu::harness::AttachInbox` (§3.2) |
-| `app/HostedSession.hpp` | the interface the thread drives (§3), and `AppSessionHost`, its implementation over LIB-3's app session, built by `cu59::makeAppSession` (D-12) |
+| ~~`app/HostedSession.hpp`~~ | gone in the C1 simplification: the thread drives the library's `calcu::sessions::AppSession` itself (made by `cu59::makeAppSession(...).session`, D-12) through a `calcu::sessions::Listener`; the H2 tests use the library's session with a test part |
 | `tests/mailbox_tests.cpp` | AC-5, AC-6, in the product test program `CalcU59Tests` |
 | `tests/session_thread_tests.cpp` | AC-4, AC-5, AC-8, same program |
 
@@ -109,8 +109,9 @@ using calcu::sessions::Command;         // A-2: owning value types, movable
 using calcu::sessions::Message;
 namespace sessions = calcu::sessions;  namespace pacing = calcu::pacing;
 
-// What the thread drives. AppSessionHost implements it over sessions::AppSession;
-// tests implement it with a session whose calls take as long as they want (AC-5).
+// What the thread drives (as drafted; since the C1 simplification the thread
+// drives sessions::AppSession directly, through a sessions::Listener, and the
+// tests use a session with a test part whose calls take as long as they want).
 class HostedSession {
 public:
     virtual ListenerId listen(sessions::MessageSink&, HostServices) = 0;  // LIB-3 AC-6, AC-26
@@ -140,7 +141,7 @@ public:
 
 class SessionThread : public calcu::harness::AttachInbox {
 public:
-    using Factory = std::function<std::unique_ptr<HostedSession>()>;  // runs on the thread
+    using Factory = std::function<std::unique_ptr<sessions::AppSession>()>;  // runs on the thread (was HostedSession)
     static constexpr std::chrono::microseconds kPeriod{16'667};       // AC-4
 
     SessionThread(Factory, HostServices frontendServices, pacing::WallClock clock);
@@ -378,7 +379,8 @@ end. M-59 checks it.
 
 Tests come before the code. Groups as in `docs/test-groups.md`.
 The session thread's tests (H1–H3) are in `products/calc-u-59/tests/`,
-program `CalcU59Tests`, with a `HostedSession` made for the test. The
+program `CalcU59Tests`, with the library's session and a part made for
+the test. The
 attach tests (A1–A5) are in `calcu_library_tests` with `CALCU_ATTACH` on
 and use LIB-1's test machines (`library/machine/tests/TestMachines.hpp`)
 in a LIB-3 session. Case names carry the row: `TEST(c59_5_ac6_…)`
@@ -513,8 +515,9 @@ No memory file names `UITesting`, `TISessionController` or
 - **D-10 (was OQ-10; AC-8 on macOS).** The Mac app suspends when SwiftUI
   reports `.background`, as the code does today; S6 records when macOS
   reports it.
-- **D-11 (hosting in the product).** The session thread, the mailbox and
-  `HostedSession` are `cu59` code in `products/calc-u-59/app/`. The
+- **D-11 (hosting in the product).** The session thread and the mailbox
+  are `cu59` code in `products/calc-u-59/app/` (`HostedSession` went in
+  the C1 simplification). The
   library's attach endpoint depends on no product: it posts
   `AttachEvent`s to an `AttachInbox` that `cu59::SessionThread`
   implements, keeps its own outgoing line queue, and `AttachedHarness`
@@ -522,8 +525,8 @@ No memory file names `UITesting`, `TISessionController` or
 - **D-12 (was A-8).** The factory is `cu59::makeAppSession(...)`; the
   `SessionThread` factory calls it on the session thread.
 - **Not verified.** That LIB-1's test machines can make a slice take
-  200 ms. H2 uses a `HostedSession` made for the test, so the slow call
-  does not depend on them.
+  200 ms. H2 uses a session part made for the test (its `beforeCall`
+  takes the 200 ms), so the slow call does not depend on them.
 
 **What this design assumes of the designs drafted at the same time**
 (for the orchestrator to reconcile):
@@ -574,7 +577,7 @@ LIB-3's names; A-8 is D-12; A-9 is LIB-11's.)
   picker arrives as the answer to the host service.
 
 Names other designs must match: Calc-U-59 `products/calc-u-59/app/`
-(`cu59::SessionThread`, `Mailbox`, `HostedSession`, `makeAppSession`,
+(`cu59::SessionThread`, `Mailbox`, `makeAppSession`,
 `FileIO`); `library/harness/attach/` (`AttachEndpoint`, `AttachInbox`,
 `AttachEvent`, `AttachedHarness`, `attachPort`, `kDefaultAttachPort`),
 in `calcu_library` with the CMake option `CALCU_ATTACH`;

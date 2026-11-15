@@ -21,7 +21,8 @@
 #include "Machine/SharpCatalogue.hpp"
 #include "Connector/MemoryCardCatalog.hpp"
 #include "Machine/SharpRoms.hpp"
-#include "app/SharpHost.hpp"
+#include "app/SharpSession.hpp"
+#include "sessions/Listener.hpp"
 #include "machine/Build.hpp"
 #include "roms/Bundle.hpp"
 #include "roms/Lookup.hpp"
@@ -107,14 +108,17 @@ struct Session {
     fs::path home = fs::temp_directory_path() / "calcu1600-rom-lookup-home";
     shared::AppPaths paths;
     calcu::pacing::WallTime now{0};
-    shared::SharpHost host;
+    calcu::sessions::ProductSession<shared::SharpAppPart> app;
     shared::SharpAppPart& session;
+    calcu::sessions::Listener host;
     explicit Session(const fs::path& bundle)
         : paths(testSettings.settings, testHostDirs(home.generic_string()), shared::BundleDirs{bundle.generic_string(), {}}),
-          host(testSettings.settings, paths, options()),
-          session(host.part()) {}
-    shared::SharpHost::Options options() {
-        shared::SharpHost::Options o;
+          app(shared::makeSharpSession(testSettings.settings, paths, options())),
+          session(*app.part) {
+        host.listen(*app.session, calcu::sessions::HostServices{{calcu::sessions::HostService::FolderPicker}});
+    }
+    shared::SharpSessionOptions options() {
+        shared::SharpSessionOptions o;
         o.clock = [this] { return now; };
         return o;
     }

@@ -81,8 +81,8 @@ DisplayFrame displayFrameOf(const calcu::machine::DisplayOutput& output);
 //   links) and LIB-12's `roms-missing`;
 // - the adapters SharpTypingHook (the input queue) and SharpDebuggerGate.
 //
-// The host builds it, hands sessionParts() to its AppSessionSetup, then
-// calls bind() with the session, then sends `start`. Single-threaded: on
+// The host builds it, hands sessionParts() to its AppSessionSetup (and the
+// part to AppSessionSetup::owned), then sends `start`. Single-threaded: on
 // the session's thread.
 class SharpAppPart final : public calcu::sessions::SessionPart {
 public:
@@ -94,14 +94,6 @@ public:
     // The parts of the session, in order: LIB-2's peripherals part (the
     // host links of the serial ports, the real-time clocks) and this one.
     std::vector<calcu::sessions::SessionPart*> sessionParts();
-    // Once, after the session exists.
-    void bind(calcu::sessions::AppSession& session);
-    // The session was destroyed before this part (the Web worker's keep):
-    // nothing of it is touched again.
-    void forgetSession() {
-        m_ms = nullptr;
-        m_ctx = nullptr;
-    }
     // The real-time clocks of a machine built inside the start or an
     // operation are set from this; tests pin it.
     using HostTime = std::function<std::chrono::system_clock::time_point()>;

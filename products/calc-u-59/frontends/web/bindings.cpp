@@ -12,6 +12,7 @@
 // the save folder Calc-U-59/ (cards, ti58c.mem; LIB-15 AC-20). Traces go to
 // MEMFS /traces (LIB-9 A-3, until M-53).
 
+#include <chrono>
 #include <filesystem>
 #include <memory>
 #include <stdexcept>
@@ -31,25 +32,23 @@ namespace {
 
 namespace s59 = cu59::settings;
 
-// What the session of one worker keeps alive: destroyed after the session
-// (WebSession), so the part lets go of it first.
-struct WebKeep {
+// The parts of one worker's session and what they need; the session owns it
+// (AppSessionSetup::owned) and lets it go first. The Web part goes before the
+// product's part (it tells the part), the settings last.
+struct WebParts {
     calcu::settings::SettingsFile file;
     s59::Settings settings{file};
-    std::unique_ptr<cu59::TIAppSession> app;   // its session is the WebSession's
-    std::unique_ptr<cu59::TIWebPart> web;      // destroyed first: it tells the part
-    explicit WebKeep(calcu::settings::SettingsFile f) : file(std::move(f)) {}
-    ~WebKeep() {
-        if (app && app->part) app->part->forgetSession();   // the session is gone already
-    }
+    std::unique_ptr<cu59::TIAppPart> app;
+    std::unique_ptr<cu59::TIWebPart> web;
+    explicit WebParts(calcu::settings::SettingsFile f) : file(std::move(f)) {}
 };
 
-calcu::web::WebSession makeWebAppSession(const calcu::web::WebStart& start) {
+std::unique_ptr<calcu::sessions::AppSession> makeWebAppSession(const calcu::web::WebStart& start) {
     // LIB-12: the full set or no session; the worker shows why (LIB-15 AC-3).
     auto roms = cu59::lookUpRoms(calcu::roms::DirectoryBundle(start.bundleDir));
     if (!roms.ok()) throw std::runtime_error(calcu::roms::describe(roms.missing));
 
-    auto keep = std::make_shared<WebKeep>(calcu::settings::SettingsFile::open(
+    auto parts = std::make_shared<WebParts>(calcu::settings::SettingsFile::open(
         s59::settingsDecl(), calcu::settings::settingsFilePath(s59::settingsDecl(), start.dirs)));
     std::error_code ec;
     std::filesystem::create_directories(start.dirs.saveFolder, ec);
@@ -58,19 +57,22 @@ calcu::web::WebSession makeWebAppSession(const calcu::web::WebStart& start) {
     cu59::TIAppSetup setup;
     setup.roms = roms.set;
     setup.cuecards = calcu::settings::readWholeFile(start.bundleDir + "/cuecards.txt").value_or("");
-    setup.startModel = keep->settings.startupModel();
+    setup.startModel = parts->settings.startupModel();
     setup.saveFolder = start.dirs.saveFolder;
-    setup.trace = {traces, static_cast<uint64_t>(keep->settings.traceMaxFileSizeMB()) * 1'000'000};
-    keep->web = std::make_unique<cu59::TIWebPart>(keep->settings, start.presetsDir, traces);
-    keep->app = cu59::makeAppSession(std::move(setup), &calcu::web::wallTimeNow, std::nullopt, {start.shellPart},
-                                     {keep->web.get()});
-    keep->web->bind(*keep->app->part);
+    setup.trace = {traces, static_cast<uint64_t>(parts->settings.traceMaxFileSizeMB()) * 1'000'000};
+    parts->app = std::make_unique<cu59::TIAppPart>(std::move(setup));
+    parts->web = std::make_unique<cu59::TIWebPart>(parts->settings, start.presetsDir, traces);
+    parts->web->bind(*parts->app);
 
-    calcu::web::WebSession out;
-    out.session = std::move(keep->app->session);
-    if (!keep->file.problem().empty()) out.session->context().log("Settings: " + keep->file.problem());
-    out.keep = std::move(keep);
-    return out;
+    calcu::sessions::AppSessionSetup s;
+    s.clock = &calcu::web::wallTimeNow;
+    s.hostTime = [] { return std::chrono::system_clock::now(); };
+    s.parts = {start.shellPart, parts->app.get(), parts->web.get()};
+    const std::string problem = parts->file.problem();
+    s.owned = std::move(parts);
+    auto session = std::make_unique<calcu::sessions::AppSession>(std::move(s));
+    if (!problem.empty()) session->context().log("Settings: " + problem);
+    return session;
 }
 
 } // namespace

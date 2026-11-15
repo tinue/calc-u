@@ -1,20 +1,23 @@
 #pragma once
 // A test frontend for Calc-U-1600 on the library's app session (LIB-3
-// AC-29's kind): the product's part through SharpHost, a scripted wall
-// clock, the topics kept in a TopicMirror, and helpers that run a command
-// to its end one host call at a time. ROMs and the bundled cards are
+// AC-29's kind): the product's session (makeSharpSession), a scripted wall
+// clock, a Listener that keeps the topics, the replies by call, and helpers
+// that run a command to its end one host call at a time. ROMs and the bundled cards are
 // copied into a temporary bundle folder; nothing of the user's is touched.
 
 #include <chrono>
 #include <cstdio>
 #include <filesystem>
 #include <fstream>
+#include <map>
 #include <memory>
+#include <optional>
 #include <string>
 #include <vector>
 
 #include "TestSettings.hpp"
-#include "app/SharpHost.hpp"
+#include "app/SharpSession.hpp"
+#include "sessions/Listener.hpp"
 #include "sessions/LibraryTopics.hpp"
 
 namespace sessionfixture {
@@ -30,8 +33,10 @@ struct SessionFixture {
     shared::Settings& settings = testSettings.settings;
     std::unique_ptr<shared::AppPaths> paths;
     calcu::pacing::WallTime now{1'000'000'000'000LL};
-    std::unique_ptr<shared::SharpHost> host;
+    sessions::ProductSession<shared::SharpAppPart> app;
+    sessions::Listener listener;               // stops listening before the session goes
     std::vector<sessions::Message> messages;   // every message, in order
+    std::map<sessions::CallId, sessions::ReplyMessage> replies;   // not taken yet
     std::chrono::system_clock::time_point fixedTime{};
     bool fixedHostTime = false;
     bool hostDirectories = true;
@@ -56,14 +61,15 @@ struct SessionFixture {
             shared::BundleDirs{bundle.generic_string(), fs::absolute("examples").generic_string()});
     }
     ~SessionFixture() {
-        host.reset();
+        listener.stop();
+        app = {};
         std::error_code ec;
         fs::remove_all(root, ec);
     }
 
     // Builds the session (not yet started).
     void open() {
-        shared::SharpHost::Options o;
+        shared::SharpSessionOptions o;
         o.clock = [this] {
             now += readCost;
             return now;
@@ -72,14 +78,36 @@ struct SessionFixture {
             const auto t = fixedTime;
             o.hostTime = [t] { return t; };
         }
-        o.hostDirectories = hostDirectories;
-        o.services = services;
-        host = std::make_unique<shared::SharpHost>(settings, *paths, std::move(o));
-        host->onMessage = [this](const sessions::Message& m) { messages.push_back(m); };
+        app = shared::makeSharpSession(settings, *paths, std::move(o));
+        listener.onMessage = [this](const sessions::Message& m) {
+            messages.push_back(m);
+            if (const auto* r = std::get_if<sessions::ReplyMessage>(&m)) replies[r->call] = *r;
+        };
+        sessions::HostServices offered = services;
+        if (hostDirectories) offered.offered.insert(sessions::HostService::FolderPicker);   // File ▸ Mount Directory
+        listener.listen(*app.session, std::move(offered));
     }
 
-    shared::SharpAppPart& part() { return host->part(); }
-    sessions::AppSession& session() { return host->session(); }
+    shared::SharpAppPart& part() { return *app.part; }
+    sessions::AppSession& session() { return *app.session; }
+    bool busy() const { return app.session->busy(); }
+
+    // A command; its reply, once it came, from takeReply().
+    sessions::CallId send(const sessions::CommandName& name, sessions::Value args = {}) {
+        auto sent = listener.send(name, std::move(args));
+        if (sent.reply) {
+            messages.push_back(*sent.reply);
+            replies[sent.call] = *sent.reply;
+        }
+        return sent.call;
+    }
+    std::optional<sessions::ReplyMessage> takeReply(sessions::CallId call) {
+        const auto it = replies.find(call);
+        if (it == replies.end()) return std::nullopt;
+        sessions::ReplyMessage r = std::move(it->second);
+        replies.erase(it);
+        return r;
+    }
 
     // One host call, `ms` of wall time after the last.
     void call(double ms = 1000.0 / 60) {
@@ -89,7 +117,7 @@ struct SessionFixture {
     }
     // A command run to its end, one host call at a time.
     sessions::ReplyMessage run(const sessions::CommandName& name, sessions::Value args = {}) {
-        return host->runToEnd(name, std::move(args), [this] { call(); });
+        return listener.runToEnd(name, std::move(args), [this] { call(); });
     }
     bool ok(const sessions::CommandName& name, sessions::Value args = {}) {
         const sessions::ReplyMessage r = run(name, std::move(args));
@@ -99,7 +127,7 @@ struct SessionFixture {
     // Opens the session and starts `model` (a settings name: "PC-1500A").
     bool start(const char* model = nullptr) {
         if (model) settings.setStartupModelPreference(model);
-        if (!host) open();
+        if (!app.session) open();
         return ok(shared::commands::kStart);
     }
     // `seconds` of wall time at regular speed.
@@ -118,13 +146,13 @@ struct SessionFixture {
     }
     std::string screen() {
         LcdText text;
-        const calcu::machine::DisplayOutput* d = host->display();
+        const calcu::machine::DisplayOutput* d = listener.display();
         return d && part().lcdText(*d, &text) ? text.text() : std::string();
     }
-    template <class P> const P* state(const sessions::TopicName& t) const { return host->state<P>(t); }
+    template <class P> const P* state(const sessions::TopicName& t) const { return listener.state<P>(t); }
     std::vector<std::string> notices() {
         std::vector<std::string> out;
-        for (const auto& p : host->mirror().takeAppended(sessions::kNoticesTopic))
+        for (const auto& p : listener.mirror().takeAppended(sessions::kNoticesTopic))
             if (const auto* n = sessions::payloadAs<sessions::Notice>(p)) out.push_back(n->sentence);
         return out;
     }

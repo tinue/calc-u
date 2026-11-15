@@ -187,14 +187,6 @@ SharpAppPart::~SharpAppPart() {
 
 std::vector<sessions::SessionPart*> SharpAppPart::sessionParts() { return {&m_peripherals, this}; }
 
-void SharpAppPart::bind(sessions::AppSession& session) {
-    m_ctx = &session.context();
-    m_ms = &session.machineSession();
-    m_typing = std::make_unique<SharpTypingHook>(*m_ms, [this] { return m_ctx && m_ctx->busy(); });
-    m_ms->addHook(*m_typing);
-    m_ms->setGate(&m_gate);
-}
-
 void SharpAppPart::notice(const std::string& sentence) {
     if (m_ctx) m_ctx->notice(sentence);
 }
@@ -206,6 +198,12 @@ void SharpAppPart::log(const std::string& line) {
 // ── SessionPart ─────────────────────────────────────────────────────────
 
 void SharpAppPart::attach(sessions::SessionSetup& setup) {
+    m_ctx = &setup.context();
+    m_ms = &m_ctx->machineSession();
+    m_typing = std::make_unique<SharpTypingHook>(*m_ms, [this] { return m_ctx && m_ctx->busy(); });
+    m_ms->addHook(*m_typing);
+    m_ms->setGate(&m_gate);
+
     m_controlTopic = &setup.stateTopic(topics::kControlState);
     m_machineTopic = &setup.stateTopic(topics::kMachine);
     m_tapesTopic = &setup.stateTopic(topics::kTapes);

@@ -5,7 +5,7 @@
 #include "machine/Display.hpp"
 #include "sessions/AppSession.hpp"
 #include "sessions/LibraryTopics.hpp"
-#include "sessions/TopicMirror.hpp"
+#include "sessions/Listener.hpp"
 #include <memory>
 #include <optional>
 #include <string>
@@ -40,13 +40,13 @@ struct TopicRead {
 // as "0x…" (design D-10).
 Value fromSession(const sessions::Value&);
 
-class HarnessHost final : public sessions::MessageSink {
+class HarnessHost final {
 public:
     HarnessHost(sessions::AppSession&, HarnessProduct&, const RunSetup&);
     // Attached to a running app (C59-5, library/harness/attach/): the
     // session is the app's, paced on its wall clock; there is no run setup.
     // A command whose reply does not come at once (an operation) gives the
-    // reply kPendingReply; the attach end waits for it (takeReply()).
+    // reply kPendingReply; the attach end waits for it (takeReplyIfAny()).
     struct Attached {};
     HarnessHost(sessions::AppSession&, HarnessProduct&, Attached,
                 std::function<void(const sessions::Message&)> onMessage);
@@ -80,22 +80,17 @@ public:
     HarnessProduct& product() { return product_; }
     const RunSetup& setup() const { return *setup_; }
 
-    void deliver(const sessions::Message&) override;
-
 private:
     struct SoundSink final : sessions::MessageSink {
         WavRecorder wav;
         void deliver(const sessions::Message&) override;
     };
-    sessions::ReplyMessage takeReply(sessions::CallId);
-
     sessions::AppSession& session_;
     HarnessProduct& product_;
     const RunSetup* setup_ = nullptr;
     sessions::CallId lastCall_ = 0;
-    sessions::TopicMirror mirror_;
-    sessions::ListenerId me_ = 0;
-    std::vector<sessions::ReplyMessage> replies_;
+    sessions::Listener listener_;
+    std::vector<sessions::ReplyMessage> replies_;   // attached: the replies of operations that ended
     std::unique_ptr<SoundSink> sound_;
     std::optional<sessions::ListenerId> soundListener_;
     bool finished_ = false;

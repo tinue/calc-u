@@ -25,7 +25,7 @@ void test_switch_and_paste(Model model) {
     const auto* machine = f.state<shared::MachinePayload>(shared::topics::kMachine);
     CHECK(machine && machine->model == model && machine->builds == 1 && machine->modelSwitches == 1);
     CHECK(f.settings.lastUsedModel() == model);
-    CHECK(f.host->display() && f.host->display()->on);
+    CHECK(f.listener.display() && f.listener.display()->on);
     CHECK(f.part().slotCount() == (model == Model::PC1600 ? 2 : 1));
     CHECK(f.part().slotCard(1) == nullptr && f.part().slotCard(2) == nullptr && f.part().slotCard(3) == nullptr);
 

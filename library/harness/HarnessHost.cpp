@@ -42,38 +42,22 @@ Value fromSession(const sessions::Value& v) {
 HarnessHost::HarnessHost(sessions::AppSession& s, HarnessProduct& p, Attached,
                          std::function<void(const sessions::Message&)> tap)
     : onMessage(std::move(tap)), session_(s), product_(p) {
-    me_ = session_.listen(*this, sessions::HostServices{});   // no host services (C59-5 AC-12)
+    listener_.onMessage = [this](const Message& m) {   // every message but a reply
+        if (onMessage && !std::holds_alternative<ReplyMessage>(m)) onMessage(m);
+    };
+    listener_.listen(session_);   // no host services (C59-5 AC-12)
 }
 
 HarnessHost::HarnessHost(sessions::AppSession& s, HarnessProduct& p, const RunSetup& r)
     : session_(s), product_(p), setup_(&r) {
-    me_ = session_.listen(*this, sessions::HostServices{});
+    listener_.listen(session_);
     // The replay of a listener that starts late marks every stream with a
     // reset; for the harness nothing has started over before its first read.
     for (const auto& t : topics())
-        if (t.stream) mirror_.takeReset(t.name);
+        if (t.stream) listener_.mirror().takeReset(t.name);
 }
 
 HarnessHost::~HarnessHost() { finish(); }
-
-void HarnessHost::deliver(const Message& m) {
-    if (const auto* r = std::get_if<ReplyMessage>(&m)) {
-        replies_.push_back(*r);
-        return;
-    }
-    mirror_.deliver(m);
-    if (onMessage) onMessage(m);
-}
-
-ReplyMessage HarnessHost::takeReply(sessions::CallId id) {
-    for (auto it = replies_.begin(); it != replies_.end(); ++it)
-        if (it->call == id) {
-            ReplyMessage r = std::move(*it);
-            replies_.erase(it);
-            return r;
-        }
-    return ReplyMessage{id, false, "The session gave no reply.", nullptr};
-}
 
 std::optional<ReplyMessage> HarnessHost::takeReplyIfAny(sessions::CallId id) {
     for (auto it = replies_.begin(); it != replies_.end(); ++it)
@@ -85,14 +69,20 @@ std::optional<ReplyMessage> HarnessHost::takeReplyIfAny(sessions::CallId id) {
     return std::nullopt;
 }
 
+// Run in VirtualTime, every command replies at once: an operation runs to its
+// end inside send() (AC-7). Attached, an operation's reply is kept for
+// takeReplyIfAny().
 ReplyMessage HarnessHost::command(sessions::Command c) {
-    const sessions::CallId id = lastCall_ = session_.send(me_, std::move(c));
-    if (!attached()) return takeReply(id);
-    if (auto r = takeReplyIfAny(id)) return *r;
-    return ReplyMessage{id, false, kPendingReply, nullptr};
+    sessions::Listener::ReplyHandler later;
+    if (attached()) later = [this](const ReplyMessage& r) { replies_.push_back(r); };
+    const auto sent = listener_.send(c.name, std::move(c.args), std::move(later));
+    lastCall_ = sent.call;
+    if (sent.reply) return *sent.reply;
+    if (!attached()) return ReplyMessage{sent.call, false, "The session gave no reply.", nullptr};
+    return ReplyMessage{sent.call, false, kPendingReply, nullptr};
 }
 
-ReplyMessage HarnessHost::ask(sessions::Request q) { return takeReply(session_.ask(me_, std::move(q))); }
+ReplyMessage HarnessHost::ask(sessions::Request q) { return listener_.ask(q.name, std::move(q.args)); }
 
 machine::Ticks HarnessHost::advance(machine::Ticks n) { return session_.advanceUnpaced(n); }
 
@@ -109,9 +99,9 @@ std::optional<TopicRead> HarnessHost::readTopic(std::string_view name) {
         out.topic = t.name.value;
         out.stream = t.stream;
         if (t.stream) {
-            out.reset = mirror_.takeReset(t.name);
-            out.items = mirror_.takeAppended(t.name);
-        } else if (const sessions::PayloadPtr* p = mirror_.state(t.name)) {
+            out.reset = listener_.mirror().takeReset(t.name);
+            out.items = listener_.mirror().takeAppended(t.name);
+        } else if (const sessions::PayloadPtr* p = listener_.mirror().state(t.name)) {
             out.state = *p;
         }
         return out;
@@ -119,15 +109,10 @@ std::optional<TopicRead> HarnessHost::readTopic(std::string_view name) {
     return std::nullopt;
 }
 
-const machine::DisplayOutput* HarnessHost::display() const {
-    const sessions::PayloadPtr* p = mirror_.state(sessions::kDisplayTopic);
-    if (!p) return nullptr;
-    const auto* d = sessions::payloadAs<sessions::DisplayState>(*p);
-    return d ? &d->output : nullptr;
-}
+const machine::DisplayOutput* HarnessHost::display() const { return listener_.display(); }
 
 const machine::MachineDescriptor* HarnessHost::descriptor() {
-    machine::Machine* m = session_.context().machine();
+    const machine::Machine* m = session_.machineSession().machine();
     return m ? &m->descriptor() : nullptr;
 }
 
@@ -176,7 +161,7 @@ void HarnessHost::finish() {
         soundListener_.reset();
     }
     if (sound_) sound_->wav.close();
-    session_.stopListening(me_);
+    listener_.stop();
 }
 
 } // namespace calcu::harness

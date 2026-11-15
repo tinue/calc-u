@@ -270,6 +270,7 @@ std::string play(const std::string& script, std::string* error, std::vector<size
 
 TEST(c1600_1_ac4_golden_runs_through_the_interface) {
     const fs::path dir = "tests/golden-runs";
+    SKIP_UNLESS(testRomSet() != nullptr, "no full ROM set in roms/");
     const bool recording = std::getenv("CALCU1600_GOLDEN_RECORD") != nullptr;
     std::vector<fs::path> scripts;
     for (const auto& e : fs::directory_iterator(dir))

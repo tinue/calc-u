@@ -4,6 +4,7 @@
 #include <utility>
 
 #include "MachineController.hpp"
+#include "sessions/LibraryTopics.hpp"
 
 namespace {
 // ~60 Hz.
@@ -15,7 +16,6 @@ EmulationPacer::EmulationPacer(MachineController* controller, std::function<void
     m_timer = new QTimer(this);
     m_timer->setTimerType(Qt::PreciseTimer);
     connect(m_timer, &QTimer::timeout, this, &EmulationPacer::onTick);
-    restart();
     resume();
 }
 
@@ -25,35 +25,33 @@ void EmulationPacer::resume() {
     if (!m_frozen) m_timer->start(kFrameIntervalMs);
 }
 
-void EmulationPacer::restart() {
-    m_controller->seedClockFromHost();
-    m_controller->app().pacer().restart();
+void EmulationPacer::setTurbo(bool active) {
+    m_controller->send(calcu::sessions::kSpeedCommand, calcu::sessions::Value::object({{"full", active}}));
 }
-
-void EmulationPacer::setTurbo(bool active) { m_controller->app().pacer().setTurbo(active); }
 
 void EmulationPacer::setFrozen(bool frozen) {
     m_frozen = frozen;
+    m_controller->setFrozen(frozen);
     if (frozen) {
         m_timer->stop();
+        m_refreshViews();
         return;
     }
-    restart();
     resume();
 }
 
 void EmulationPacer::onTick() {
-    m_controller->app().tick();
+    m_controller->call();
     m_refreshViews();
 }
 
 void EmulationPacer::runFor(double seconds) {
-    m_controller->app().runFor(seconds);
+    m_controller->runFor(seconds);
     m_refreshViews();
 }
 
 bool EmulationPacer::runUntilPasteDone(double capSeconds) {
-    const bool done = m_controller->app().runUntilPasteDone(capSeconds);
+    const bool done = m_controller->runUntilTyped(capSeconds);
     m_refreshViews();
     return done;
 }

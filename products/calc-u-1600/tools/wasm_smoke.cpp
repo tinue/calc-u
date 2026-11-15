@@ -1,9 +1,10 @@
 // WebAssembly smoke test for Core + Shared (tools/build_wasm_check.sh):
-// built with Emscripten, run under node from the repo root (NODERAWFS, so
-// roms/ and the bundled cards are read straight from disk). Boots both
-// models through shared::AppSession and runs each default preset the way a
-// browser frontend would -- start() it, then tick() until done, no
-// blocking -- and checks the LCD. Exit 0 = pass; 2 = no ROMs (skip).
+// built with Emscripten, run under node from the product folder (NODERAWFS,
+// so roms/ and the bundled cards are read straight from disk). Starts the
+// library's app session with Calc-U-1600's part in virtual-time hosting
+// (LIB-3 design §7; the operations run in one go) and runs presets through
+// its commands, then types through the input queue, and checks the LCD.
+// Exit 0 = pass; 2 = no ROMs (skip).
 
 #include <cstdio>
 #include <filesystem>
@@ -11,49 +12,25 @@
 #include <string>
 
 #include "Machine/SharpRoms.hpp"
-#include "app/AppSession.hpp"
-#include "app/Pacer.hpp"
+#include "app/SharpHost.hpp"
 #include "app/tests/TestSettings.hpp"
 
 namespace {
 
 namespace fs = std::filesystem;
+namespace sessions = calcu::sessions;
 
-class ConsolePlatform : public shared::AppSession::Platform {
-public:
-    void romMissing(const calcu::roms::RomsMissing& missing) override {
-        std::fprintf(stderr, "%s\n", calcu::roms::describe(missing).c_str());
-    }
-    void bayError(shared::Bay, const std::string& text) override { std::fprintf(stderr, "bay: %s\n", text.c_str()); }
-    void attachFailed(const std::string& device, const std::string& reason) override {
-        std::fprintf(stderr, "attach %s: %s\n", device.c_str(), reason.c_str());
-    }
-};
-
-std::string screen(shared::AppSession& app) {
+std::string screen(shared::SharpHost& host) {
     LcdText text;
-    return app.machine().lcdText(&text) ? text.text() : std::string();
+    const calcu::machine::DisplayOutput* d = host.display();
+    return d && host.part().lcdText(*d, &text) ? text.text() : std::string();
 }
 
-// Runs a preset cooperatively; false if it failed or never finished.
-bool runPreset(shared::AppSession& app, const std::string& path, int* ticks) {
-    bool finished = false;
-    shared::OpResult result;
-    if (!app.start(app.loadPresetJob(path), [&](const shared::OpResult& r) {
-            finished = true;
-            result = r;
-        })) {
-        std::fprintf(stderr, "could not start %s\n", path.c_str());
-        return false;
-    }
-    *ticks = 0;
-    while (!finished && *ticks < 1000000) {
-        app.tick();
-        ++*ticks;
-    }
-    if (!finished) return false;
-    if (!result.ok) std::fprintf(stderr, "%s: %s\n", path.c_str(), result.error.c_str());
-    return result.ok;
+bool run(shared::SharpHost& host, const sessions::CommandName& name, sessions::Value args = {}) {
+    const sessions::CallId id = host.send(name, std::move(args));
+    const auto r = host.takeReply(id);   // virtual time: the operation ran to its end inside send()
+    if (!r || !r->done) std::fprintf(stderr, "%s: %s\n", name.value.c_str(), r ? r->reason.c_str() : "no reply");
+    return r && r->done;
 }
 
 } // namespace
@@ -71,35 +48,38 @@ int main() {
         for (const auto& f : fs::directory_iterator(dir))
             if (f.is_regular_file()) fs::copy_file(f.path(), root / "bundle" / f.path().filename());
 
-    TestSettings testSettings;
-    shared::Settings& settings = testSettings.settings;
-    shared::AppPaths paths(settings, testHostDirs((root / "home").generic_string()), shared::BundleDirs{(root / "bundle").generic_string(), {}});
-    ConsolePlatform platform;
-    shared::AppSession app(settings, paths, platform);
-    app.start();
-
     int failures = 0;
-    struct Case {
-        const char* preset;
-        const char* expect;
-    };
-    for (const Case& c : {Case{"tests/fixtures/presets/startup-pc1600.pc1600", "Memory:"},
-                          Case{"tests/fixtures/presets/hanoi.pc1600", ""},
-                          Case{"tests/fixtures/presets/startup-pc1500a.pc1500a", ""}}) {
-        int ticks = 0;
-        const bool ok = runPreset(app, c.preset, &ticks);
-        const std::string lcd = screen(app);
-        const bool seen = lcd.find(c.expect) != std::string::npos;
-        std::printf("%s %s (%d ticks)\n%s\n", ok && seen ? "ok  " : "FAIL", c.preset, ticks, lcd.c_str());
-        if (!ok || !seen) ++failures;
-    }
-    // Typing through the paste queue, in paced frames.
-    app.machine().typeCommand("PRINT 6*7");
-    shared::runEmulatedSeconds(app.machine(), 4.0);
-    const bool typed = screen(app).find("42") != std::string::npos;
-    std::printf("%s PRINT 6*7\n%s\n", typed ? "ok  " : "FAIL", screen(app).c_str());
-    if (!typed) ++failures;
+    {
+        TestSettings testSettings;
+        shared::Settings& settings = testSettings.settings;
+        shared::AppPaths paths(settings, testHostDirs((root / "home").generic_string()),
+                               shared::BundleDirs{(root / "bundle").generic_string(), {}});
+        shared::SharpHost::Options options;
+        options.hosting = sessions::Hosting::VirtualTime;
+        options.clock = [] { return calcu::pacing::WallTime{0}; };
+        shared::SharpHost host(settings, paths, std::move(options));
+        if (!run(host, shared::commands::kStart)) ++failures;
 
+        struct Case {
+            const char* preset;
+            const char* expect;
+        };
+        for (const Case& c : {Case{"tests/fixtures/presets/startup-pc1600.pc1600", "Memory:"},
+                              Case{"tests/fixtures/presets/hanoi.pc1600", ""},
+                              Case{"tests/fixtures/presets/startup-pc1500a.pc1500a", ""}}) {
+            const bool ok = run(host, shared::commands::kLoadPreset, sessions::Value::object({{"path", c.preset}}));
+            const std::string lcd = screen(host);
+            const bool seen = lcd.find(c.expect) != std::string::npos;
+            std::printf("%s %s\n%s\n", ok && seen ? "ok  " : "FAIL", c.preset, lcd.c_str());
+            if (!ok || !seen) ++failures;
+        }
+        // Typing through the input queue (SharpTypingHook), in emulated time.
+        host.part().typing().typeCommand("PRINT 6*7");
+        host.session().advanceUnpaced(static_cast<calcu::machine::Ticks>(4.0 * host.part().clockHz()));
+        const bool typed = screen(host).find("42") != std::string::npos;
+        std::printf("%s PRINT 6*7\n%s\n", typed ? "ok  " : "FAIL", screen(host).c_str());
+        if (!typed) ++failures;
+    }
     fs::remove_all(root);
     std::printf("wasm_smoke: %s\n", failures == 0 ? "all passed" : "FAILED");
     return failures == 0 ? 0 : 1;

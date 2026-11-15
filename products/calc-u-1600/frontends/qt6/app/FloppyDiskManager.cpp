@@ -13,9 +13,7 @@ QVector<FloppyDiskManager::DiskEntry> toQt(const std::vector<shared::FloppyBay::
 
 FloppyDiskManager::FloppyDiskManager(MachineController* controller, QObject* parent)
     : QObject(parent), m_bay(&controller->app().floppy()) {
-    connect(controller, &MachineController::bayErrorMessage, this, [this](shared::Bay bay, const QString& text) {
-        if (bay == shared::Bay::Floppy) emit errorMessage(text);
-    });
+    // A bay's error is a notice of the session now (MainWindow shows notices).
 }
 
 FloppyDiskManager::DiskLists FloppyDiskManager::diskLists() const {

@@ -11,6 +11,7 @@
 #include <vector>
 
 #include "MachineController.hpp" // Model, PC1500RomRevision
+#include "app/MachineCodeLoad.hpp"
 
 class QTimer;
 class QKeyEvent;
@@ -26,7 +27,7 @@ class QActionGroup;
 class FaceplateWidget;
 class ControlBar;
 class DebugPanel;
-class SyncOperations;
+class Operations;
 class PlotterPaperWidget;
 class Ce158PrinterWidget;
 class MemoryModuleManager;
@@ -119,7 +120,7 @@ private:
     QHBoxLayout* m_debugRowLayout = nullptr;
     AudioOutput* m_audio = nullptr;
     EmulationPacer* m_pacer = nullptr; // owns the frame timer; calls refreshViewsAfterAdvance()
-    SyncOperations* m_sync = nullptr;  // every synchronous load/reset (see SyncOperations)
+    Operations* m_sync = nullptr;  // every operation: a load, a reset, a switch (see Operations)
 
     void buildMenuBar();
 
@@ -140,6 +141,7 @@ private:
     // At startup: the startup model's default preset, if one is set (a
     // model pick loads it inside AppSession::pickModelJob()).
     void applyDefaultPreset();
+    void showMachineCodeLoaded(const shared::MachineCodeLoad& load);
 
     // Re-checks the Machine menu's model/ROM QActions to match `model`/
     // `revision` without themselves triggering another applyModelSelection/

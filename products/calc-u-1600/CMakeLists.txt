@@ -176,6 +176,12 @@ if(CALCU_TESTS)
                    core/Machine/SharpRoms.cpp core/Machine/SharpCatalogue.cpp app/tests
            WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
   set_tests_properties(CalcU1600NoOwnRomLookup PROPERTIES LABELS frequent)
+  # LIB-3 AC-34, AC-36 (design §6 P16-1, P16-3): no session class of the
+  # product's own; the Qt6 frontend hosts the library's app session and
+  # sends no suspend.
+  add_test(NAME CalcU1600NoOwnSession COMMAND ${CMAKE_COMMAND} -P tools/check_no_own_session.cmake
+           WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
+  set_tests_properties(CalcU1600NoOwnSession PROPERTIES LABELS frequent)
   # LIB-12 AC-13 (design Q2): pc1600_cli with a roms/ that lacks one file
   # exits 1 naming it; with the full set it runs.
   add_test(NAME CalcU1600CliRomLookup COMMAND sh tests/cli_rom_tests.sh
@@ -238,6 +244,11 @@ if(CALCU_TESTS)
     set_tests_properties(CalcU1600PacingRealClock PROPERTIES LABELS checkpoint
                          ENVIRONMENT CALCU1600_PACING_LONGRUN=600 TIMEOUT 1500)
     if(TARGET CalcU1600Qt)
+      # LIB-17 AC-22 (design §6 P16-3): a PC-1600 keeps one minute in the Qt6
+      # frontend (the --pacing-probe test hook of non-release builds).
+      add_test(NAME CalcU1600QtPacingProbe COMMAND CalcU1600Qt --pacing-probe 60
+               WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
+      set_tests_properties(CalcU1600QtPacingProbe PROPERTIES LABELS checkpoint RUN_SERIAL TRUE TIMEOUT 300)
       # The User Guide screenshots into docs/images/ (tools/make_screenshots.sh
       # builds the app in build/app-1600).
       add_test(NAME CalcU1600GuideScreenshots COMMAND tools/make_screenshots.sh

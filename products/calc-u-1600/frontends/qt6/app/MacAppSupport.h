@@ -25,4 +25,9 @@ void macDisablePressAndHold();
 // sandboxed app): the base of the settings file on macOS (LIB-9 AC-2).
 // Empty if macOS gives none.
 std::string macApplicationSupportFolder();
+
+// Keeps App Nap from stretching the timers of the process while its window
+// is not in front (the --pacing-probe test hook: LIB-17 AC-22 measures the
+// pacing, not the platform's throttling of a background app).
+void macKeepTimersPrecise();
 #endif

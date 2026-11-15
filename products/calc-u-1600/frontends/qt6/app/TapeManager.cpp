@@ -4,9 +4,7 @@
 TapeManager::TapeManager(MachineController* controller, QObject* parent)
     : QObject(parent), m_bay(&controller->app().tapes()) {
     connect(controller, &MachineController::tapeListChanged, this, &TapeManager::tapesChanged);
-    connect(controller, &MachineController::bayErrorMessage, this, [this](shared::Bay bay, const QString& text) {
-        if (bay == shared::Bay::Tape) emit errorMessage(text);
-    });
+    // A failed automatic save is a notice of the session (MainWindow shows notices).
 }
 
 QStringList TapeManager::pickerNames() const {

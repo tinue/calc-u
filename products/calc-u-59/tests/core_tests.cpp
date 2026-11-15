@@ -26,7 +26,7 @@ TEST(rom_sentinels_and_sizes) {
     // The five files per model decode into 6144 words and 64 constant rows
     // inside the core (LIB-1 D-4); a TI-59 image with a wrong sentinel is refused.
     for (Model m : {Model::TI59, Model::TI58, Model::TI58C}) {
-        auto images = cu59::loadRomImages(m, reader());
+        auto images = romSet()->imagesFor(*tiCatalogue().model(cu59::modelId(m)), std::nullopt);
         CHECK_EQ(images.size(), size_t{5});
         std::vector<std::string_view> roms, constants;
         for (size_t i = 0; i < images.size(); ++i)
@@ -45,15 +45,18 @@ TEST(rom_sentinels_and_sizes) {
 }
 
 TEST(rom_missing_file_throws) {
-    bool threw = false;
-    try {
-        cu59::buildMachine(Model::TI59, [](const std::string&) { return std::optional<std::string>(); });
-    } catch (const cu59::RomError&) { threw = true; }
-    CHECK(threw);
+    // Since M-24 (LIB-12 AC-5) a missing file is found by the lookup at the
+    // start: there is no ROM set, so no machine can be built (name kept from
+    // 2.3.0, C59-1 AC-5).
+    testroms::TempDir dir;
+    auto r = cu59::lookUpRoms(calcu::roms::DirectoryBundle(dir.path));
+    CHECK(!r.ok());
+    CHECK(r.set == nullptr);
+    CHECK_EQ(r.missing.files.size(), size_t{24});
 }
 
 TEST(module_master_library_parses) {
-    auto lib = cu59::loadModule("TMC0541.txt", testroms::reader());
+    auto lib = cu59::moduleImage(*testroms::romSet(), "ML.rom.yaml");
     CHECK(lib.has_value());
     if (lib) CHECK(lib->size() > 4000 && lib->size() <= 5000);
 }

@@ -43,7 +43,7 @@ std::string record(const fs::path& example) {
     const std::string ext = example.extension().string();
     const Model start = ext == ".ti58" ? Model::TI58 : ext == ".ti58c" ? Model::TI58C : Model::TI59;
     testroms::FakePlatform p;
-    SessionController c{p, testroms::reader(), testroms::readFile("roms/solid-state/cuecards.txt").value_or(""), "ML",
+    SessionController c{p, testroms::romSet(), testroms::readFile("roms/solid-state/cuecards.txt").value_or(""), "ML",
                         Threading::Cooperative};
     Clock::time_point t = Clock::time_point{} + 500ms;
     auto run = [&](Clock::duration d) {

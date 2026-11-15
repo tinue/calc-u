@@ -54,13 +54,14 @@ parenthesis is removed with it.
 | Frontend interface | `Platform` (`cu59::SessionController`) | `Platform` (`shared::AppSession::Platform`) |
 | App layer | `Shared/` | `Shared/` |
 | Machine | `TIMachine` (`calcu::machine::Machine`, C59-1) | — |
-| Model | `ModelId` (descriptor, `tiCatalogue()`); `cu59::Model` kept as the app enum (`modelId`, `modelFrom`), `ModelInfo` for file-format facts; `MachineVariant` core-internal | model (`startup/modelPreference`) |
+| Model | `ModelId` (descriptor, `tiCatalogue()`); `cu59::Model` kept as the app enum (`modelId`, `modelFrom`), `ModelInfo` for file-format facts (no ROM file names since M-24); `MachineVariant` core-internal | model (`startup/modelPreference`) |
 | Startup model | `startupModel`, `lastUsedModel` | `startup/modelPreference`, `startup/lastUsedModel` |
 | Preset, preset format | `StateFile`, "state file" | preset, `PresetFile` |
 | Peripheral, module | — | `CardBase`, `ExpansionCard`, "card" |
 | Memory module | — | `SoftwareDefinedCard`, `BatteryCardInstance` |
 | Module definition | — | `MemoryCardDefinition`, `.card.yaml` |
 | Solid State ROM module | `ModuleCatalog`, `ModuleImage`, `solidStateModuleID` | — |
+| ROM lookup | `calcu::roms::lookUp` (library, LIB-12), through `cu59::lookUpRoms` (`app/ProductRoms`); the full set `cu59::fullRomSet()`, the files read `calcu::roms::RomSet`, the reader `TIRomReader` (M-24; was `RomLoader`, `ResourceReader`) | `BundledRomCatalog`, `romDirs` (until M-27) |
 | Magnetic card | `CardDocument`, `CardFile`, `.u59` | — |
 | Keyboard map | `KeyboardMap`, `KeySequencer` | `HostKeyMap`, `PC1500KeyboardMap` |
 | Host key | — | `HostKey` |

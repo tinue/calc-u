@@ -43,7 +43,7 @@ EmulatorViewModel (@Observable, main thread)
 | `Calc-U-59App.swift` | App entry; suspends on background, resumes on active; macOS Settings scene and About panel |
 | `EmulatorViewModel.swift` | The `@Observable` face of `SessionController`: forwards actions, runs the 60 Hz timer, copies what `changed` names into observable properties; `PlatformForwarder`; Swift mirrors of the debug snapshot and `ProgramSource` |
 | `MachineModel.swift` | Model enum (raw values match `cu59::Model`) |
-| `ROMLoader.swift` | `ResourceReader` over the app bundle; `cuecards.txt` text and module list |
+| `ROMLoader.swift` | The ROM lookup over the bundle's resource folder (`TIRomSet`, LIB-12; a "ROMs missing" text in place of the calculator); `cuecards.txt` text and module list |
 | `CardStorage.swift` | Card folder: iCloud Documents container, else local Documents |
 | `AppSettings.swift` | UserDefaults keys and resolution: shared keys from `TISettings`, plus the Swift-only trace location, keyboard feedback and portrait debug page |
 | `AppInfo.swift` | Version and About panel content |
@@ -117,7 +117,7 @@ imports the public ones.
 | `TISessionController.{h,mm}` | `SessionController`; its `Platform` as the `TIPlatform` protocol (held weakly); `TIChange` = `Change` bits; value objects `TILiveDebugSnapshot`, `TIStepEntry`, `TIRegEntry`, `TIInspectorEntry`, `TIPrinterLine`, built when Swift reads them after a change |
 | `TISharedTables.{h,mm}` | `KeyboardMap`, `SevenSegment`, `PrinterFont` (font rows), `KeyboardLayout`, `KeyIds` |
 | `TIViewRules.{h,mm}` | `CueCard` (spans, geometry, inks), `LedGeometry`, `PrinterFont` (`PrinterGeometry`), `RomHeatmap`, `ModuleImage` (program source), `DebugText` (incl. the iOS `mobileLayout`, `mobilePrinterWidth`, `compactPrinterBar`, `mobileTopMargin`) |
-| `TIFileFormats.{h,mm}` | `TICueCard`, card file names (`CardFile`), `cuecards.txt` module list (`ModuleCatalog`); `TIResourceReader` |
+| `TIFileFormats.{h,mm}` | `TICueCard`, card file names (`CardFile`), `cuecards.txt` module list (`ModuleCatalog`) |
 | `TISettings.{h,mm}` | `SettingsKeys` |
 | `TITypes.h` | `TIDisplaySnapshot` (mirrors `LedFrame`: the glyph's segments A–G and brightness 0–255 per digit and decimal point) and `TICpuFrame` (mirrors `CpuFrame`) |
 | `BridgeConvert.h` | ObjC++-only: string / data conversions; `static_assert`s that `TICpuFrame` matches `CpuFrame` field for field, so a frame converts with one `memcpy` |

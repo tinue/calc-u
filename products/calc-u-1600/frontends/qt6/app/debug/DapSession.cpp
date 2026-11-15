@@ -180,19 +180,19 @@ namespace {
 // A `debug:` block value as the attach configuration's JSON. Bare
 // `true`/`false` become JSON booleans; every other scalar stays text.
 // Numbers are read later by numberOf(), with the preset's rule.
-QJsonValue toJson(const YamlNode& n) {
+QJsonValue toJson(const calcu::formats::YamlNode& n) {
     switch (n.type) {
-        case YamlNode::Type::Map: {
+        case calcu::formats::YamlNode::Type::Map: {
             QJsonObject o;
             for (const auto& kv : n.map) o.insert(QString::fromStdString(kv.first), toJson(kv.second));
             return o;
         }
-        case YamlNode::Type::Sequence: {
+        case calcu::formats::YamlNode::Type::Sequence: {
             QJsonArray a;
-            for (const YamlNode& item : n.seq) a.append(toJson(item));
+            for (const calcu::formats::YamlNode& item : n.seq) a.append(toJson(item));
             return a;
         }
-        case YamlNode::Type::Scalar: {
+        case calcu::formats::YamlNode::Type::Scalar: {
             const QString raw = QString::fromStdString(n.scalar);
             std::string text, ignored;
             n.asString(&text, &ignored);
@@ -202,7 +202,7 @@ QJsonValue toJson(const YamlNode& n) {
             if (value == QLatin1String("false")) return false;
             return value;
         }
-        case YamlNode::Type::Null: break;
+        case calcu::formats::YamlNode::Type::Null: break;
     }
     return QJsonValue();
 }

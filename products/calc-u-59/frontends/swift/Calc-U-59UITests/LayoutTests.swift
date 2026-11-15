@@ -28,6 +28,27 @@ final class LayoutTests: XCTestCase {
     }
     #endif
 
+    // MARK: - ROM files missing (LIB-12 AC-10, design D-8)
+
+    /// A file of the full set missing (the DEBUG-only launch variable
+    /// CALCU59_ROM_LEAVE_OUT leaves it out of the lookup): the window shows the
+    /// lookup's text naming it, in place of the calculator.
+    @MainActor
+    func testRomMissingShowsMessage() throws {
+        #if !os(macOS)
+        XCUIDevice.shared.orientation = .portrait
+        #endif
+        let app = XCUIApplication()
+        app.launchArguments += ["--UITesting"]
+        app.launchEnvironment["CALCU59_ROM_LEAVE_OUT"] = "TMC0583.txt"
+        app.launch()
+        let text = app.staticTexts["romsMissingText"]
+        XCTAssertTrue(text.waitForExistence(timeout: 10), "no ROMs-missing text")
+        XCTAssertTrue(text.label.contains("TMC0583.txt: missing"), "the text does not name the file: \(text.label)")
+        XCTAssertTrue(text.label.contains("The full set of ROM files is needed"))
+        XCTAssertFalse(app.buttons["btn-reset"].exists, "the calculator is shown")
+    }
+
     // MARK: - Button visibility
 
     /// The Reset button must be visible and hittable in the card reader bar.

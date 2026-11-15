@@ -47,6 +47,8 @@ struct FakePlatform : cu59::SessionController::Platform {
     void saveLastUsedModel(cu59::Model) override {}
     void saveModuleID(const std::string&) override {}
     void error(const std::string& title, const std::string& message) override { errors.push_back(title + ": " + message); }
+    std::vector<std::string> romsMissingTexts;   /// describe() of each romsMissing call (LIB-12 A-4)
+    void romsMissing(const calcu::roms::RomsMissing& m) override { romsMissingTexts.push_back(calcu::roms::describe(m)); }
     void diagnostic(const std::string&) override {}
     void changed(uint32_t c) override { changes |= c; }
 

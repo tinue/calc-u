@@ -3,7 +3,12 @@
 ROMs are not in this repository (see `.gitignore`; ADR 0034). They are
 Texas Instruments' copyrighted firmware. Run [`fetch_roms.sh`](fetch_roms.sh)
 to (re)download the full set of 24 files into this directory before building.
-It checks each file against the md5 listed in the script.
+It checks each file against the md5 listed in the script. All 24 lie directly
+in this directory (no subfolders); every frontend, the tests and
+`tools/headless/` find them through the library's ROM lookup (LIB-12,
+`library/roms/`), which checks at the start that the full set is there and
+names any file that is missing or bad. A build without them starts no
+calculator.
 
 Every file comes from the TI ROM repository
 [tinue/TI-59-ROM](https://github.com/tinue/TI-59-ROM). Its README holds the
@@ -18,4 +23,12 @@ details of each dump (chip marking, banks, date of recording).
 The calculator dumps are byte for byte the files Calc-U-59 2.3.0 had in
 `roms/calculator/`. The module files were made once from the 2.3.0 module
 dumps (`roms/solid-state/TMC05xx.txt`, which are the same as TI-59-ROM
-`dumps/modules/`) and from `roms/solid-state/cuecards.txt` (LIB-12 AC-14).
+`dumps/modules/`) and from `roms/solid-state/cuecards.txt` (LIB-12 AC-14);
+their ROM images are byte for byte the 2.3.0 ones (test
+`lib12_ac14_module_images_equal_the_2_3_0_dumps`). Since M-24 the product
+reads the module ROMs from them; the 2.3.0 dumps are no longer fetched.
+
+`solid-state/cuecards.txt` is not a ROM file and stays in the source
+repository: the module list, names and cue cards are still read from it
+until M-25 (module names from the module files, C59-6) and M-55 (cue cards,
+C59-7); then it goes.

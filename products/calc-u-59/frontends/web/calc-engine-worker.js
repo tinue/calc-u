@@ -28,6 +28,10 @@
 //   {type: "reply", id, value}
 //   {type: "geometry", geometry}
 //   {type: "cardFile" | "traceFile", name, bytes}
+//   {type: "romsMissing", message}     -- a file of the full set is missing or bad
+//                                         (LIB-12 AC-10): no calculator starts
+//   {type: "error", message}           -- also: a ROM file could not be fetched
+//                                         (LIB-12 EC-3, a failed start)
 //   and what WebController posts on its own (bindings.cpp drain()):
 //   model, display, cueCard, runState, printer, card, live, cpu, heatmap,
 //   log, asm, traces, traceReady, settings, store, debugFont, debugPanel, error.
@@ -43,22 +47,6 @@ let controller = null;
 let intervalId = null;
 const pending = [];
 
-// SessionController reads files synchronously; the start-up set is fetched
-// ahead (init), any other — a module chosen later, another model's ROM —
-// through this, a synchronous request (allowed in a worker). Offline in the
-// installed app only what the service worker precached is there; another
-// module then fails to load and is reported.
-self.readRomFile = (name) => {
-  try {
-    const xhr = new XMLHttpRequest();
-    xhr.open("GET", `${WASM_DIR}roms/${name}`, false);
-    xhr.send();
-    return xhr.status === 200 ? xhr.responseText : null;
-  } catch (e) {
-    return null;
-  }
-};
-
 function fetchText(name) {
   return fetch(`${WASM_DIR}roms/${name}`).then((r) => {
     if (!r.ok) throw new Error(`${name}: ${r.status}`);
@@ -66,11 +54,15 @@ function fetchText(name) {
   });
 }
 
-async function fetchFiles(names) {
-  const texts = await Promise.all(names.map(fetchText));
-  const files = {};
-  names.forEach((n, i) => { files[n] = texts[i]; });
-  return files;
+// Every ROM file of the full set (Module.romFileNames(), LIB-12 AC-4, D-10)
+// into Emscripten's /roms, as fetched; the WebController looks them up there.
+// A file that cannot be fetched is a failed start (EC-3). A missing file
+// (404) is written as nothing: the lookup names it.
+async function fetchRoms(names) {
+  const responses = await Promise.all(names.map((n) => fetch(`${WASM_DIR}roms/${n}`)));
+  const bytes = await Promise.all(responses.map((r) => (r.ok ? r.arrayBuffer() : null)));
+  Module.FS.mkdir("/roms");
+  names.forEach((n, i) => { if (bytes[i]) Module.FS.writeFile(`/roms/${n}`, new Uint8Array(bytes[i])); });
 }
 
 function startLoop() {
@@ -130,10 +122,11 @@ async function init({ settings, model, module }) {
   ]);
   Module = mod;
   const plan = Module.startupPlan(settings, model || "", module || "", cuecards);
-  const files = await fetchFiles(plan.files);
-  files["cuecards.txt"] = cuecards;
+  await fetchRoms(Module.romFileNames());
+  const started = new Module.WebController(cuecards, settings, plan.model, plan.moduleID);
+  if (!started.started()) return;   // it posted romsMissing
   postMessage({ type: "ready", data: Module.staticData(cuecards) });
-  controller = new Module.WebController(files, settings, plan.model, plan.moduleID);
+  controller = started;
 
   startLoop();
   while (pending.length) handle(pending.shift());

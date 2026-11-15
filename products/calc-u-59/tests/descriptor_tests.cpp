@@ -74,10 +74,6 @@ TEST(lib1_ac28_rom_entries_per_model) {
             ? std::vector<std::string>{"CD2400.txt", "CD2401.txt", "TMC0573.txt", "CD2400-CONST-K.txt", "CD2401-CONST-K.txt"}
             : std::vector<std::string>{"TMC0582.txt", "TMC0583.txt", "TMC0571B.txt", "TMC0582-CONST-K.txt", "TMC0583-CONST-K.txt"};
         CHECK(files == want);
-        // The ROM file names the app reads until M-24 (LIB-1's adapter) are the same.
-        const auto& mi = cu59::info(*cu59::modelFrom(ModelId{m}));
-        CHECK(files[0] == mi.romFiles[0] && files[1] == mi.romFiles[1] && files[2] == mi.romFiles[2]);
-        CHECK(files[3] == mi.constFiles[0] && files[4] == mi.constFiles[1]);
     }
 }
 
@@ -147,7 +143,7 @@ TEST(lib1_ac31_components_and_depth) {
 
 TEST(lib1_ac33_machine_conforms_without_peripherals) {
     for (const char* m : kModels) {
-        auto machine = cu59::buildMachine(*cu59::modelFrom(ModelId{m}), testroms::reader());
+        auto machine = cu59::buildMachine(*cu59::modelFrom(ModelId{m}), *testroms::romSet());
         const auto diffs = checkAgainstDescriptor(*machine, tiCatalogue());
         for (const auto& d : diffs) std::printf("  %s: %s\n", m, d.c_str());
         CHECK(diffs.empty());

@@ -4,6 +4,7 @@
 #include "DebugModel.hpp"
 #include "EmulatorSession.hpp"
 #include "ModuleCatalog.hpp"
+#include "ProductRoms.hpp"
 #include "StateFile.hpp"
 #include <chrono>
 #include <cstdint>
@@ -84,6 +85,10 @@ public:
         virtual void saveLastUsedModel(Model model) = 0;
         virtual void saveModuleID(const std::string& moduleID) = 0;
         virtual void error(const std::string& title, const std::string& message) = 0;
+        /// Adapter A-4 (LIB-12 design §5, until LIB-3 59): the ROM lookup
+        /// failed at the start (AC-5, AC-10). No SessionController is made;
+        /// the frontend shows describe(missing) and offers nothing else.
+        virtual void romsMissing(const calcu::roms::RomsMissing& missing) = 0;
         /// Developer diagnostics (not shown in the app).
         virtual void diagnostic(const std::string& message) = 0;
         virtual void changed(uint32_t changes) = 0;
@@ -99,16 +104,23 @@ public:
         NotAccepted,  ///< not a preset or a card
     };
 
-    /// `cuecards` is roms/solid-state/cuecards.txt; `moduleID` the saved module.
-    SessionController(Platform& platform, ResourceReader roms, std::string cuecards, std::string moduleID,
-                      Threading threading = Threading::Threads);
+    /// The start of a frontend: the ROM lookup over `bundle` (LIB-12), then
+    /// the controller. Without the full set, Platform::romsMissing and null:
+    /// no machine starts (AC-5, AC-10).
+    static std::unique_ptr<SessionController> create(Platform& platform, const calcu::roms::Bundle& bundle,
+                                                     std::string cuecards, std::string moduleID,
+                                                     Threading threading = Threading::Threads);
+    /// `roms` from lookUpRoms(); `cuecards` is roms/solid-state/cuecards.txt
+    /// (the module list and cue cards until M-25/M-55); `moduleID` the saved module.
+    SessionController(Platform& platform, std::shared_ptr<const calcu::roms::RomSet> roms, std::string cuecards,
+                      std::string moduleID, Threading threading = Threading::Threads);
     ~SessionController();
     SessionController(const SessionController&) = delete;
     SessionController& operator=(const SessionController&) = delete;
 
     // ── Machine ──────────────────────────────────────────────────────────────
-    /// Build a fresh machine of `model`. On a ROM error the previous one keeps
-    /// running and false is returned.
+    /// Build a fresh machine of `model` from the ROM set (it cannot fail for a
+    /// missing ROM, LIB-12 AC-6). Always true.
     bool startMachine(Model model);
     bool hasMachine() const { return m_session != nullptr; }
     Model model() const { return m_model; }
@@ -126,7 +138,7 @@ public:
     void tick(std::chrono::steady_clock::time_point now);
 
     const std::string& moduleID() const { return m_moduleID; }
-    /// Swap the solid-state module (no reset); false (and an error) if it can't be loaded.
+    /// Swap the solid-state module (no reset); false for an ID cuecards.txt does not list.
     bool selectModule(const std::string& moduleID);
     /// The Settings choice: swap to a different module, then soft-reset.
     void changeModule(const std::string& moduleID);
@@ -293,7 +305,7 @@ private:
 
     Platform& m_platform;
     const Threading m_threading;
-    ResourceReader m_roms;
+    std::shared_ptr<const calcu::roms::RomSet> m_roms;
     std::string m_cuecards;
     std::shared_ptr<bool> m_alive = std::make_shared<bool>(true);
     std::unique_ptr<Events> m_events;

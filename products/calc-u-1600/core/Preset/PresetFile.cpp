@@ -540,7 +540,7 @@ bool parseProgramBlock(const std::vector<RawLine>& lines, size_t& idx, const std
 // `bus-rom:`): its lines go to the YAML reader, shifted to column 0 and
 // padded so that the reader's line numbers are the file's.
 bool parseYamlBlock(const std::vector<RawLine>& lines, size_t& idx, const RawLine& keyLine, const std::string& key,
-                    YamlNode* out, std::string* error) {
+                    calcu::formats::YamlNode* out, std::string* error) {
     if (idx >= lines.size() || lines[idx].indent == 0) {
         *error = "line " + std::to_string(keyLine.lineNo) + ": '" + key + ":' is empty";
         return false;
@@ -558,7 +558,7 @@ bool parseYamlBlock(const std::vector<RawLine>& lines, size_t& idx, const RawLin
         doc += std::string(static_cast<size_t>(lines[idx].indent - indent), ' ') + lines[idx].content + '\n';
         at++;
     }
-    if (!parseYaml(doc, out, error)) {
+    if (!calcu::formats::parseYaml(doc, out, error)) {
         *error = key + ": " + *error;
         return false;
     }
@@ -573,14 +573,14 @@ bool parseYamlBlock(const std::vector<RawLine>& lines, size_t& idx, const RawLin
 //     me: 1                   # optional: ME1 (default: ME0)
 //     pv: 1                   # optional: only while PV (PU) is 0 / 1
 //     pu: 0
-bool parseBusRoms(const YamlNode& block, const std::filesystem::path& presetDir, std::vector<PresetBusRom>* out,
+bool parseBusRoms(const calcu::formats::YamlNode& block, const std::filesystem::path& presetDir, std::vector<PresetBusRom>* out,
                   std::string* error) {
     if (!block.isSeq()) {
         *error = "line " + std::to_string(block.line) + ": expected a list of ROMs ('- file: ...')";
         return false;
     }
     // Every value here is a number in the preset's one syntax (parseNumber).
-    auto number = [error](const YamlNode& n, const char* key, uint32_t* v) {
+    auto number = [error](const calcu::formats::YamlNode& n, const char* key, uint32_t* v) {
         std::string text;
         if (!n.asString(&text, error)) return false;
         if (!parseNumber(text, v)) {
@@ -589,7 +589,7 @@ bool parseBusRoms(const YamlNode& block, const std::filesystem::path& presetDir,
         }
         return true;
     };
-    for (const YamlNode& item : block.seq) {
+    for (const calcu::formats::YamlNode& item : block.seq) {
         if (!item.isMap() || !item.has("file")) {
             *error = "line " + std::to_string(item.line) + ": each ROM needs 'file'";
             return false;
@@ -599,8 +599,8 @@ bool parseBusRoms(const YamlNode& block, const std::filesystem::path& presetDir,
         if (!item.find("file")->asString(&rom.path, error)) return false;
         rom.path = resolvePath(presetDir, rom.path);
         uint32_t v = 0;
-        const YamlNode* address = item.find("address");
-        if (const YamlNode* n = item.find("bank")) {
+        const calcu::formats::YamlNode* address = item.find("address");
+        if (const calcu::formats::YamlNode* n = item.find("bank")) {
             if (!number(*n, "bank", &v)) return false;
             if (v < 4 || v > 7) {
                 *error = "line " + std::to_string(n->line) + ": 'bank' must be 4-7 (page B banks on the system bus)";
@@ -627,7 +627,7 @@ bool parseBusRoms(const YamlNode& block, const std::filesystem::path& presetDir,
         int me = 0;
         const std::pair<const char*, int*> flags[] = {{"me", &me}, {"pv", &rom.pv}, {"pu", &rom.pu}};
         for (const auto& [flag, dest] : flags)
-            if (const YamlNode* n = item.find(flag)) {
+            if (const calcu::formats::YamlNode* n = item.find(flag)) {
                 if (!number(*n, flag, &v)) return false;
                 if (v != 0 && v != 1) {
                     *error = "line " + std::to_string(n->line) + ": '" + flag + "' must be 0 or 1";
@@ -839,7 +839,7 @@ bool parsePresetFile(const std::string& path, PresetFile* out, std::string* erro
             }
             if (floppyIsFile) floppy = resolvePath(presetDir, floppy);
         } else {  // `debug:` / `bus-rom:`
-            YamlNode yamlBlock;
+            calcu::formats::YamlNode yamlBlock;
             if (!parseYamlBlock(lines, idx, line, key, &yamlBlock, error)) return false;
             if (key == "debug") {
                 if (!parsePresetDebugBlock(&yamlBlock, presetDir, error)) {

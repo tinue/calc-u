@@ -7,7 +7,7 @@
 
 #include "../MachineCodeFile.hpp"
 #include "../PC1500/PC1500Variant.hpp"
-#include "../Yaml.hpp"
+#include "formats/Yaml.hpp"
 
 // ── Preset file model + parser ───────────────────────────────────────────
 //
@@ -17,7 +17,7 @@
 // ("Preset format") says why it is shaped the way it is. YAML-shaped, not
 // YAML: flat `key: value` fields, `- verb: value` steps, one `text: |`
 // block, and `type:` typed exactly as written. Only `debug:` and
-// `bus-rom:` are YAML proper (Core/Yaml.hpp).
+// `bus-rom:` are YAML proper (library/formats/Yaml.hpp).
 //
 // Preset loading is three parts:
 //   1. this file -- parsePresetFile() opens and parses the file and
@@ -259,7 +259,7 @@ struct PresetFile {
     // `debug:` -- the debugger's attach settings for a project preset
     // (Core/Preset/PresetDebugBlock.hpp), paths already resolved. Null when
     // the preset has none. Loading the preset ignores it.
-    YamlNode debug;
+    calcu::formats::YamlNode debug;
 };
 
 /// Parses the preset file at `path` into `out`. File paths inside the

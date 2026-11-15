@@ -10,9 +10,16 @@ struct CalcU59App: App {
 
     var body: some Scene {
         WindowGroup {
-            CalculatorView()
-                .environment(viewModel)
-                .preferredColorScheme(.dark)
+            if let text = viewModel.romsMissingText {
+                // LIB-12 AC-10 (design D-8, until C59-8): the lookup's text in
+                // place of the calculator; nothing else is offered.
+                RomsMissingView(text: text)
+                    .preferredColorScheme(.dark)
+            } else {
+                CalculatorView()
+                    .environment(viewModel)
+                    .preferredColorScheme(.dark)
+            }
         }
         .onChange(of: scenePhase) { _, newPhase in
             switch newPhase {
@@ -36,5 +43,21 @@ struct CalcU59App: App {
             }
         }
         #endif
+    }
+}
+
+/// The ROM files are missing or bad (LIB-12 AC-5): what the lookup says.
+struct RomsMissingView: View {
+    let text: String
+
+    var body: some View {
+        ScrollView {
+            Text(text)
+                .font(.body.monospaced())
+                .textSelection(.enabled)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding()
+                .accessibilityIdentifier("romsMissingText")
+        }
     }
 }

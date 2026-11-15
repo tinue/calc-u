@@ -8,6 +8,7 @@ file(GLOB CALCU_LIBRARY_SOURCES CONFIGURE_DEPENDS
   ${CMAKE_CURRENT_SOURCE_DIR}/pacing/*.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/sessions/*.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/peripherals/*.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/roms/*.cpp
 )
 # LIB-2: a host link of a serial port is a pseudo-terminal on macOS and Linux
 # (PtyHostLink.cpp); elsewhere there is none (NoHostLink.cpp).
@@ -55,6 +56,8 @@ if(CALCU_TESTS AND NOT EMSCRIPTEN)
     ${CMAKE_CURRENT_SOURCE_DIR}/pacing/tests/*.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/sessions/tests/*.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/peripherals/tests/*.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/roms/tests/*.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/formats/tests/*.cpp
   )
   list(REMOVE_ITEM CALCU_LIBRARY_TEST_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/peripherals/tests/pty_tests.cpp)
   add_executable(calcu_library_tests ${CALCU_LIBRARY_TEST_SOURCES})

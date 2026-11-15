@@ -3,7 +3,7 @@
 #include <string>
 #include <vector>
 
-#include "../Yaml.hpp"
+#include "formats/Yaml.hpp"
 #include "BatteryCardInstance.hpp"   // formatAddressedHexLines, currentIso8601Timestamp
 #include "CE1600FCard.hpp"
 #include "MemoryCardDefinition.hpp"  // mcd_detail::parseAddressedHex
@@ -62,22 +62,22 @@ constexpr const char* kSideKeys[2] = {"a", "b"};
 
 // Checks `format`/`format-version` and reads `disk-name`, `description`
 // and `template` from a parsed file.
-inline bool readHeader(const YamlNode& root, std::string* diskName, std::string* description, bool* isTemplate,
+inline bool readHeader(const calcu::formats::YamlNode& root, std::string* diskName, std::string* description, bool* isTemplate,
                        std::string* error) {
     if (!root.isMap()) {
         *error = "not a floppy-disk file (expected a YAML mapping)";
         return false;
     }
     std::string format;
-    const YamlNode* formatNode = root.find("format");
+    const calcu::formats::YamlNode* formatNode = root.find("format");
     if (!formatNode || !formatNode->asString(&format, error) || format != kFormatTag) {
         *error = std::string("not a floppy-disk file (expected 'format: ") + kFormatTag + "')";
         return false;
     }
-    if (!requireFormatVersion(root, kFloppyFormatVersion, "floppy", error)) return false;
+    if (!calcu::formats::requireFormatVersion(root, kFloppyFormatVersion, "floppy", error)) return false;
     if (!root.requireOnlyKeys({"format", "format-version", "disk-name", "description", "template", "saved", "sides"}, error))
         return false;
-    const YamlNode* nameNode = root.find("disk-name");
+    const calcu::formats::YamlNode* nameNode = root.find("disk-name");
     if (!nameNode) {
         *error = "missing 'disk-name'";
         return false;
@@ -88,11 +88,11 @@ inline bool readHeader(const YamlNode& root, std::string* diskName, std::string*
         return false;
     }
     description->clear();
-    if (const YamlNode* descriptionNode = root.find("description")) {
+    if (const calcu::formats::YamlNode* descriptionNode = root.find("description")) {
         if (!descriptionNode->asString(description, error)) return false;
     }
     *isTemplate = false;
-    if (const YamlNode* templateNode = root.find("template")) {
+    if (const calcu::formats::YamlNode* templateNode = root.find("template")) {
         if (!templateNode->asBool(isTemplate, error)) return false;
     }
     return true;
@@ -137,10 +137,10 @@ inline std::string formatFloppyFile(const std::string& diskName, const std::vect
 }
 
 inline bool parseFloppyFile(const std::string& text, FloppyFile* out, std::string* error) {
-    YamlNode root;
-    if (!parseYaml(text, &root, error)) return false;
+    calcu::formats::YamlNode root;
+    if (!calcu::formats::parseYaml(text, &root, error)) return false;
     if (!floppy_detail::readHeader(root, &out->diskName, &out->description, &out->isTemplate, error)) return false;
-    const YamlNode* sides = root.find("sides");
+    const calcu::formats::YamlNode* sides = root.find("sides");
     if (!sides || !sides->isMap()) {
         *error = "missing 'sides' mapping";
         return false;
@@ -150,15 +150,15 @@ inline bool parseFloppyFile(const std::string& text, FloppyFile* out, std::strin
     out->image.reserve(CE1600FCard::kImageSize);
     for (const char* key : floppy_detail::kSideKeys) {
         const std::string where = std::string("side '") + key + "': ";
-        const YamlNode* side = sides->find(key);
+        const calcu::formats::YamlNode* side = sides->find(key);
         if (!side || !side->isMap()) {
             *error = where + "missing";
             return false;
         }
         if (!side->requireOnlyKeys({"encoding", "bytes"}, error)) return false;
         std::string encoding, bytesText;
-        const YamlNode* encNode = side->find("encoding");
-        const YamlNode* bytesNode = side->find("bytes");
+        const calcu::formats::YamlNode* encNode = side->find("encoding");
+        const calcu::formats::YamlNode* bytesNode = side->find("bytes");
         if (!encNode || !encNode->asString(&encoding, error) || encoding != "addressed-hex") {
             *error = where + "expected 'encoding: addressed-hex'";
             return false;
@@ -205,8 +205,8 @@ namespace floppy_detail {
 inline bool parseCatalogEntry(const std::string& text, const std::string& path, FloppyCatalogEntry* out,
                               std::string* err) {
     const size_t sides = text.find("\nsides:");
-    YamlNode root;
-    if (!parseYaml(text.substr(0, sides), &root, err) || !readHeader(root, &out->diskName, &out->description, &out->isTemplate, err))
+    calcu::formats::YamlNode root;
+    if (!calcu::formats::parseYaml(text.substr(0, sides), &root, err) || !readHeader(root, &out->diskName, &out->description, &out->isTemplate, err))
         return false;
     out->filePath = path;
     return true;

@@ -1,15 +1,21 @@
 #pragma once
 #include "../app/KeyIds.hpp"
-#include "../app/RomLoader.hpp"
+#include "../app/ProductRoms.hpp"
 #include "../core/TIAdapters.hpp"
 #include "../core/TICatalogue.hpp"
 #include "../core/TISegments.hpp"
 #include "machine/Machine.hpp"
+#include "roms/Bundle.hpp"
+#include <cstdio>
+#include <cstdlib>
+#include <atomic>
+#include <chrono>
+#include <filesystem>
 #include <fstream>
 #include <memory>
 #include <sstream>
 
-// Test fixtures: read roms/ from the working directory (the product directory
+// Test fixtures: look up roms/ in the working directory (the product directory
 // under CTest) and build a machine the way the apps do, through the machine
 // interface (C59-1). Instruction counts stay exact: one advance(1) runs one
 // instruction.
@@ -26,8 +32,43 @@ inline std::optional<std::string> readFile(const std::string& path) {
     return ss.str();
 }
 
-/// ResourceReader over roms/calculator and roms/solid-state.
-inline cu59::ResourceReader reader() { return cu59::directoryReader({"roms/calculator", "roms/solid-state"}); }
+/// A fresh folder under the system's temporary folder, removed with the object.
+struct TempDir {
+    std::filesystem::path path;
+    TempDir() {
+        static std::atomic<int> n{0};
+        path = std::filesystem::temp_directory_path() /
+               ("calcu59-test-" + std::to_string(std::chrono::steady_clock::now().time_since_epoch().count()) + "-" +
+                std::to_string(n++));
+        std::filesystem::create_directories(path);
+    }
+    ~TempDir() {
+        std::error_code ec;
+        std::filesystem::remove_all(path, ec);
+    }
+    TempDir(const TempDir&) = delete;
+    TempDir& operator=(const TempDir&) = delete;
+    /// Every file of roms/ (no subfolders) copied in.
+    void copyRoms() const {
+        for (const auto& e : std::filesystem::directory_iterator("roms"))
+            if (e.is_regular_file()) std::filesystem::copy_file(e.path(), path / e.path().filename());
+    }
+};
+
+/// The ROM set of roms/ (fetch_roms.sh), through the lookup as the apps get
+/// it (LIB-12): looked up once per test program. A missing or bad file ends
+/// the program with the lookup's message.
+inline std::shared_ptr<const calcu::roms::RomSet> romSet() {
+    static const std::shared_ptr<const calcu::roms::RomSet> set = [] {
+        auto r = cu59::lookUpRoms(calcu::roms::DirectoryBundle("roms"));
+        if (!r.ok()) {
+            std::fprintf(stderr, "%s\n", calcu::roms::describe(r.missing).c_str());
+            std::exit(1);
+        }
+        return r.set;
+    }();
+    return set;
+}
 
 // The adapters of a TI machine (C59-1 design §5).
 inline TIMemoryAdapter& mem(Machine& m) { return *memoryOf(m); }
@@ -43,8 +84,8 @@ inline double instructionHz(cu59::Model model) {
 
 /// Build a machine with ROM and constants and the Master Library, as the apps do.
 inline std::unique_ptr<Machine> makeMachine(cu59::Model model) {
-    auto m = cu59::buildMachine(model, reader());
-    if (auto lib = cu59::loadModule("TMC0541.txt", reader())) per(*m).loadModuleImage(lib->data(), lib->size());
+    auto m = cu59::buildMachine(model, *romSet());
+    if (auto lib = cu59::moduleImage(*romSet(), "ML.rom.yaml")) per(*m).loadModuleImage(lib->data(), lib->size());
     return m;
 }
 

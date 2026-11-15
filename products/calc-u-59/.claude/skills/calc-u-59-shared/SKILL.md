@@ -16,8 +16,14 @@ drawing rules: `reference/SharedArchitecture.md`. Don't restate them here.
    or the web client's JS, it belongs here instead (CLAUDE.md § "Frontend Parity").
 2. **C++20, standard library only** (ADR 0005). No Foundation, Qt or
    platform APIs. CMake builds it as C++20, Xcode as gnu++20.
-3. **No locations.** Take `std::filesystem::path` or a `ResourceReader`;
-   never look up iCloud, Documents, bundles or qrc.
+3. **No locations.** Take `std::filesystem::path`, never look up iCloud,
+   Documents, bundles or qrc. ROM files come only through the library's ROM
+   lookup (LIB-12): a frontend makes a `calcu::roms::Bundle` of its packaging
+   and calls `SessionController::create` (or `cu59::lookUpRoms`,
+   `app/ProductRoms.hpp`) once at its start; the app layer then builds and
+   loads modules from the `RomSet` and reads no ROM file. Nothing else opens
+   a ROM file (CTest `CalcU59NoOwnRomLookup`). Without the full set no
+   controller is made and `Platform::romsMissing` shows the text.
 4. **All builds before every commit** (commands: CLAUDE.md § "Frontend Parity").
    (The Qt app builds as part of the product's CMake build when Qt is installed;
    the web build needs `emcc` — calc-u-59-web skill.)

@@ -49,6 +49,7 @@ step. Label and menu renames are not repeated here; they are in
 | 59-32 | Full speed in the Swift and Qt6 frontends is paced at the host's tick, so its top speed is a little lower; on the Web its allowance per tick goes from 10 to 14 ms. A held key's release-gate spin is no longer paced as waiting (waiting means key readiness). | `features/LIB-17-pacing/design.md` D-3, D-6; LIB-17 AC-5, AC-15, AC-16; design, 2026-11-14 (best guess, user: few decisions) |
 | 59-33 | At regular speed the TI-59 and TI-58C no longer run 0.13 % / 0.10 % slow: slices are no longer cut to whole steps. | `features/LIB-17-pacing/design.md` D-6; LIB-17 AC-18; design, 2026-11-14 (best guess, user: few decisions) |
 | 59-34 | On the TI-59 and TI-58 an armed CPU FREEZE ON START also fires on a Reset, not only on Clean (Cold boot): the ROM's start-up after a Reset now runs in the run loop. | `features/C59-1-ti-machines-on-the-machine-interface/qa-report.md`; C59-1 AC-6; design, 2026-11-14 |
+| 59-35 | On the Web the client fetches all 24 ROM files at its start (today the model's files and the module's, the rest when chosen); the installed app had them cached already. A module or model chosen later is no longer fetched then, so it is never missing offline. | `features/LIB-12-rom-lookup/design.md` D-10; LIB-12 AC-4; design, 2026-11-14 (best guess, user: few decisions) |
 
 ## Calc-U-1600 (against 0.8.1)
 

@@ -51,6 +51,8 @@ add_library(calcu59_core STATIC
   ${CORE_ROOT}/TIKeys.cpp
   ${CORE_ROOT}/TIMachine.cpp
   ${CORE_ROOT}/TIRomText.cpp
+  ${CORE_ROOT}/TIRomReader.cpp
+  ${CORE_ROOT}/ModuleFile.cpp
 )
 target_include_directories(calcu59_core PUBLIC ${CORE_ROOT})
 target_compile_options(calcu59_core PRIVATE ${CALCU59_WARNINGS})
@@ -91,7 +93,8 @@ if(EMSCRIPTEN)
   set_target_properties(calcu59_web PROPERTIES OUTPUT_NAME ti59-core)
   target_link_options(calcu59_web PRIVATE -fwasm-exceptions -lembind -sMODULARIZE=1
                       -sEXPORT_NAME=createTI59CoreModule -sENVIRONMENT=web,worker
-                      -sALLOW_MEMORY_GROWTH=1 -sNO_EXIT_RUNTIME=1)
+                      -sALLOW_MEMORY_GROWTH=1 -sNO_EXIT_RUNTIME=1
+                      -sEXPORTED_RUNTIME_METHODS=FS)
   return()
 endif()
 
@@ -137,6 +140,15 @@ if(CALCU_TESTS)
   # C59-1 AC-17: the app layer reaches the machine through the interface only.
   add_test(NAME CalcU59CoreSeam COMMAND sh tests/check_core_seam.sh WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
   set_tests_properties(CalcU59CoreSeam PROPERTIES LABELS frequent)
+  # LIB-12 AC-2: no product source looks for a ROM file outside the lookup
+  # (library/roms/tests/check_no_own_rom_lookup.sh; design T7). Allowed: the
+  # product's lookUpRoms(), the catalogue's ROM entries, the Qt6 Bundle.
+  add_test(NAME CalcU59NoOwnRomLookup
+           COMMAND sh ${CMAKE_SOURCE_DIR}/library/roms/tests/check_no_own_rom_lookup.sh .
+                   app/ProductRoms.cpp app/ProductRoms.hpp core/TICatalogue.cpp
+                   frontends/qt6/app/QtResourceBundle.cpp
+           WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
+  set_tests_properties(CalcU59NoOwnRomLookup PROPERTIES LABELS frequent)
   if(Python3_FOUND)
     # tools/headless/ on the machine interface (C59-1 design T14): 5 + 7 = shows 12.
     add_test(NAME CalcU59HeadlessSmoke COMMAND ${Python3_EXECUTABLE} tools/headless/ti59.py 5 + 7 = --summary
@@ -144,6 +156,11 @@ if(CALCU_TESTS)
     set_tests_properties(CalcU59HeadlessSmoke PROPERTIES LABELS frequent
                          ENVIRONMENT TI59HEADLESS_LIB=$<TARGET_FILE:ti59headless>
                          PASS_REGULAR_EXPRESSION "display: \\[ *12\\.? *\\]" DEPENDS CalcU59Tests)
+    # LIB-12 AC-7, AC-10 (design P5): ti59.py without one ROM file ends naming it.
+    add_test(NAME CalcU59HeadlessRomMissing COMMAND ${Python3_EXECUTABLE} tests/headless_rom_tests.py
+             WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
+    set_tests_properties(CalcU59HeadlessRomMissing PROPERTIES LABELS frequent
+                         ENVIRONMENT TI59HEADLESS_LIB=$<TARGET_FILE:ti59headless> DEPENDS CalcU59Tests)
   endif()
   # The Xcode project compiles only Swift and the bridge (C59-5, ADR 0013).
   add_test(NAME CalcU59XcodeProjectCheck COMMAND frontends/swift/check_xcode_project.sh
@@ -156,6 +173,14 @@ if(CALCU_TESTS)
     add_test(NAME CalcU59WebPlaywright COMMAND frontends/web/run-tests.sh
              WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
     set_tests_properties(CalcU59WebPlaywright PROPERTIES LABELS longer)
+    # LIB-12, Technical Requirements (design P6): a build with one ROM file
+    # taken away starts in neither headless nor the web client, naming it.
+    if(NOT WIN32)
+      add_test(NAME CalcU59RomMissingBuild COMMAND sh tests/rom_missing_build.sh
+               WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
+      set_tests_properties(CalcU59RomMissingBuild PROPERTIES LABELS longer
+                           ENVIRONMENT TI59HEADLESS_LIB=$<TARGET_FILE:ti59headless>)
+    endif()
     if(APPLE)
       # XCUITest UIRegressionTests on one simulator (the iphone role of
       # bin/simulators.yaml).

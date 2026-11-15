@@ -9,7 +9,7 @@
 #include <utility>
 #include <vector>
 
-#include "../Yaml.hpp"
+#include "formats/Yaml.hpp"
 
 // ── Parsed + validated memory-card definition ─────────────────────────
 //
@@ -285,7 +285,7 @@ inline int busBit(const std::string& name, bool wantData) {
     return (v <= max) ? v : -1;
 }
 
-inline bool getInt(const YamlNode& n, const char* what, long* out, std::string* error) {
+inline bool getInt(const calcu::formats::YamlNode& n, const char* what, long* out, std::string* error) {
     if (!n.asInt(out, error)) {
         *error = *error + " (" + what + ")";
         return false;
@@ -294,7 +294,7 @@ inline bool getInt(const YamlNode& n, const char* what, long* out, std::string* 
 }
 
 // Collect signal names from a scalar or a sequence-of-scalars term.
-inline bool collectSignals(const YamlNode& n, std::vector<std::string>* out, std::string* error) {
+inline bool collectSignals(const calcu::formats::YamlNode& n, std::vector<std::string>* out, std::string* error) {
     if (n.isScalar()) {
         std::string s;
         if (!n.asString(&s, error)) return false;
@@ -329,7 +329,7 @@ inline bool resolveInto(CardHost term, const std::vector<std::string>& names,
 
 // Parse one enable group. `gateOnly` forbids span/maps-to (a banked
 // region's own addressing is a pure gate).
-inline bool parseGroup(const YamlNode& g, CardHost term, bool gateOnly, EnableGroup* out,
+inline bool parseGroup(const calcu::formats::YamlNode& g, CardHost term, bool gateOnly, EnableGroup* out,
                        std::string* error) {
     if (!g.isMap()) {
         *error = "line " + std::to_string(g.line) + ": addressing group must be a mapping";
@@ -341,8 +341,8 @@ inline bool parseGroup(const YamlNode& g, CardHost term, bool gateOnly, EnableGr
         return false;
 
     // Terms live either under `all-of:` or directly on the group map.
-    std::vector<const YamlNode*> termMaps;
-    if (const YamlNode* allOf = g.find("all-of")) {
+    std::vector<const calcu::formats::YamlNode*> termMaps;
+    if (const calcu::formats::YamlNode* allOf = g.find("all-of")) {
         if (!allOf->isSeq()) {
             *error = "line " + std::to_string(allOf->line) + ": 'all-of' must be a list";
             return false;
@@ -362,26 +362,26 @@ inline bool parseGroup(const YamlNode& g, CardHost term, bool gateOnly, EnableGr
     }
     termMaps.push_back(&g);  // also read term keys sitting directly on the group
 
-    for (const YamlNode* tm : termMaps) {
-        if (const YamlNode* cs = tm->find("chip-select")) {
+    for (const calcu::formats::YamlNode* tm : termMaps) {
+        if (const calcu::formats::YamlNode* cs = tm->find("chip-select")) {
             std::vector<std::string> names;
             if (!collectSignals(*cs, &names, error) ||
                 !resolveInto(term, names, &out->requireHigh, error))
                 return false;
         }
-        if (const YamlNode* sg = tm->find("signal")) {
+        if (const calcu::formats::YamlNode* sg = tm->find("signal")) {
             std::vector<std::string> names;
             if (!collectSignals(*sg, &names, error) ||
                 !resolveInto(term, names, &out->requireHigh, error))
                 return false;
         }
-        if (const YamlNode* sn = tm->find("signal-negated")) {
+        if (const calcu::formats::YamlNode* sn = tm->find("signal-negated")) {
             std::vector<std::string> names;
             if (!collectSignals(*sn, &names, error) ||
                 !resolveInto(term, names, &out->requireLow, error))
                 return false;
         }
-        if (const YamlNode* ab = tm->find("address-bits")) {
+        if (const calcu::formats::YamlNode* ab = tm->find("address-bits")) {
             if (!ab->isMap()) {
                 *error = "line " + std::to_string(ab->line) + ": 'address-bits' must be a mapping";
                 return false;
@@ -402,9 +402,9 @@ inline bool parseGroup(const YamlNode& g, CardHost term, bool gateOnly, EnableGr
                 out->addrBits.push_back({bit, static_cast<int>(level)});
             }
         }
-        if (const YamlNode* mr = tm->find("memory-range")) {
-            const YamlNode* from = mr->find("from");
-            const YamlNode* to = mr->find("to");
+        if (const calcu::formats::YamlNode* mr = tm->find("memory-range")) {
+            const calcu::formats::YamlNode* from = mr->find("from");
+            const calcu::formats::YamlNode* to = mr->find("to");
             if (!mr->isMap() || !from || !to) {
                 *error = "line " + std::to_string(mr->line) +
                          ": 'memory-range' needs { from, to }";
@@ -451,11 +451,11 @@ inline bool parseGroup(const YamlNode& g, CardHost term, bool gateOnly, EnableGr
 
 // `total` is the byte size the groups must tile (capacity or bank-size).
 // `gateOnly` builds a pure gate (no tiling check, span/maps-to forbidden).
-inline bool parseAddressing(const YamlNode& node, CardHost term, bool gateOnly, uint32_t total,
+inline bool parseAddressing(const calcu::formats::YamlNode& node, CardHost term, bool gateOnly, uint32_t total,
                             Addressing* out, std::string* error) {
-    std::vector<const YamlNode*> groupNodes;
+    std::vector<const calcu::formats::YamlNode*> groupNodes;
     if (node.isMap() && node.has("any-of")) {
-        const YamlNode* anyOf = node.find("any-of");
+        const calcu::formats::YamlNode* anyOf = node.find("any-of");
         if (!node.requireOnlyKeys({"any-of"}, error)) return false;
         if (!anyOf->isSeq() || anyOf->seq.empty()) {
             *error = "line " + std::to_string(anyOf->line) + ": 'any-of' must be a non-empty list";
@@ -467,7 +467,7 @@ inline bool parseAddressing(const YamlNode& node, CardHost term, bool gateOnly, 
     }
 
     uint32_t nextOffset = 0;
-    for (const YamlNode* gn : groupNodes) {
+    for (const calcu::formats::YamlNode* gn : groupNodes) {
         EnableGroup grp;
         bool hadMapsTo = gn->isMap() && gn->has("maps-to");
         if (!parseGroup(*gn, term, gateOnly, &grp, error)) return false;
@@ -509,7 +509,7 @@ inline bool parseAddressing(const YamlNode& node, CardHost term, bool gateOnly, 
 
 // Parses `protocol:` for `content: { kind: flash, ... }` -- every field a
 // "chip/firmware property" per spec §5, so none of it is inferred/defaulted.
-inline bool parseFlashProtocol(const YamlNode& node, FlashProtocol* out, std::string* error) {
+inline bool parseFlashProtocol(const calcu::formats::YamlNode& node, FlashProtocol* out, std::string* error) {
     if (!node.isMap() ||
         !node.requireOnlyKeys({"unlock-sequence", "byte-program-command", "erase-setup-command",
                                 "sector-erase-command", "chip-erase-command", "sector-size",
@@ -517,7 +517,7 @@ inline bool parseFlashProtocol(const YamlNode& node, FlashProtocol* out, std::st
                                error))
         return false;
 
-    const YamlNode* us = node.find("unlock-sequence");
+    const calcu::formats::YamlNode* us = node.find("unlock-sequence");
     if (!us || !us->isSeq() || us->seq.size() != 2) {
         *error = "line " + std::to_string(node.line) +
                  ": protocol needs 'unlock-sequence' with exactly 2 steps";
@@ -530,8 +530,8 @@ inline bool parseFlashProtocol(const YamlNode& node, FlashProtocol* out, std::st
                          ": unlock-sequence step must be a mapping with address/data";
             return false;
         }
-        const YamlNode* a = step.find("address");
-        const YamlNode* d = step.find("data");
+        const calcu::formats::YamlNode* a = step.find("address");
+        const calcu::formats::YamlNode* d = step.find("data");
         if (!a || !d) {
             *error = "line " + std::to_string(step.line) + ": unlock-sequence step needs address and data";
             return false;
@@ -543,7 +543,7 @@ inline bool parseFlashProtocol(const YamlNode& node, FlashProtocol* out, std::st
     }
 
     auto reqByte = [&](const char* key, uint8_t* dst) {
-        const YamlNode* n = node.find(key);
+        const calcu::formats::YamlNode* n = node.find(key);
         if (!n) {
             *error = "line " + std::to_string(node.line) + ": protocol needs '" + key + "'";
             return false;
@@ -559,7 +559,7 @@ inline bool parseFlashProtocol(const YamlNode& node, FlashProtocol* out, std::st
     if (!reqByte("chip-erase-command", &out->chipEraseCommand)) return false;
     if (!reqByte("reset-command", &out->resetCommand)) return false;
 
-    const YamlNode* ss = node.find("sector-size");
+    const calcu::formats::YamlNode* ss = node.find("sector-size");
     if (!ss) {
         *error = "line " + std::to_string(node.line) + ": protocol needs 'sector-size'";
         return false;
@@ -572,7 +572,7 @@ inline bool parseFlashProtocol(const YamlNode& node, FlashProtocol* out, std::st
     }
     out->sectorSize = static_cast<uint32_t>(ssv);
 
-    if (const YamlNode* mask = node.find("command-address-mask")) {
+    if (const calcu::formats::YamlNode* mask = node.find("command-address-mask")) {
         long mv = 0;
         if (!getInt(*mask, "command-address-mask", &mv, error)) return false;
         out->commandAddressMask = static_cast<uint32_t>(mv);
@@ -583,13 +583,13 @@ inline bool parseFlashProtocol(const YamlNode& node, FlashProtocol* out, std::st
 // Parses one content entry -- either a whole region's `content:` or one
 // `by-bank:` list entry (which additionally carries `banks:`, ignored
 // here -- the caller consumes it before/after calling this).
-inline bool parseContent(const YamlNode& node, RegionContent* out, std::string* error) {
+inline bool parseContent(const calcu::formats::YamlNode& node, RegionContent* out, std::string* error) {
     std::string kind;
-    const YamlNode* body = nullptr;
+    const calcu::formats::YamlNode* body = nullptr;
     if (node.isScalar()) {
         if (!node.asString(&kind, error)) return false;
     } else if (node.isMap()) {
-        const YamlNode* k = node.find("kind");
+        const calcu::formats::YamlNode* k = node.find("kind");
         if (!k) {
             *error = "line " + std::to_string(node.line) + ": 'content' mapping needs 'kind'";
             return false;
@@ -621,7 +621,7 @@ inline bool parseContent(const YamlNode& node, RegionContent* out, std::string* 
         out->kind = ContentKind::Flash;
         out->writable = false;  // meaningless here -- gated by the command decoder, not this flag
         out->powerUpFill = 0xFF;  // erased, unless `power-up-fill` below says otherwise
-        if (const YamlNode* pf = body->find("power-up-fill")) {
+        if (const calcu::formats::YamlNode* pf = body->find("power-up-fill")) {
             long v = 0;
             if (!getInt(*pf, "power-up-fill", &v, error)) return false;
             out->powerUpFill = static_cast<uint8_t>(v);
@@ -637,15 +637,15 @@ inline bool parseContent(const YamlNode& node, RegionContent* out, std::string* 
         if (!body->requireOnlyKeys({"kind", "writable", "power-up-fill", "write-protect", "banks"},
                                    error))
             return false;
-        if (const YamlNode* w = body->find("writable")) {
+        if (const calcu::formats::YamlNode* w = body->find("writable")) {
             if (!w->asBool(&out->writable, error)) return false;
         }
-        if (const YamlNode* pf = body->find("power-up-fill")) {
+        if (const calcu::formats::YamlNode* pf = body->find("power-up-fill")) {
             long v = 0;
             if (!getInt(*pf, "power-up-fill", &v, error)) return false;
             out->powerUpFill = static_cast<uint8_t>(v);
         }
-        if (const YamlNode* wp = body->find("write-protect")) {
+        if (const calcu::formats::YamlNode* wp = body->find("write-protect")) {
             std::string pos;
             if (!wp->asString(&pos, error)) return false;
             if (pos == "protected") out->writeProtected = true;
@@ -660,14 +660,14 @@ inline bool parseContent(const YamlNode& node, RegionContent* out, std::string* 
     return true;
 }
 
-inline bool parseBanking(const YamlNode& node, CardHost term, Banking* out, std::string* error) {
+inline bool parseBanking(const calcu::formats::YamlNode& node, CardHost term, Banking* out, std::string* error) {
     if (!node.isMap() ||
         !node.requireOnlyKeys({"latch", "bank-count", "bank-size", "bank-window"}, error))
         return false;
-    const YamlNode* latch = node.find("latch");
-    const YamlNode* bc = node.find("bank-count");
-    const YamlNode* bs = node.find("bank-size");
-    const YamlNode* bw = node.find("bank-window");
+    const calcu::formats::YamlNode* latch = node.find("latch");
+    const calcu::formats::YamlNode* bc = node.find("bank-count");
+    const calcu::formats::YamlNode* bs = node.find("bank-size");
+    const calcu::formats::YamlNode* bw = node.find("bank-window");
     if (!latch || !bc || !bs || !bw) {
         *error = "line " + std::to_string(node.line) +
                  ": banking needs latch, bank-count, bank-size, bank-window";
@@ -679,7 +679,7 @@ inline bool parseBanking(const YamlNode& node, CardHost term, Banking* out, std:
         return false;
 
     std::string type;
-    const YamlNode* typeN = latch->find("type");
+    const calcu::formats::YamlNode* typeN = latch->find("type");
     if (!typeN || !typeN->asString(&type, error)) {
         if (error->empty()) *error = "line " + std::to_string(latch->line) + ": latch needs 'type'";
         return false;
@@ -694,15 +694,15 @@ inline bool parseBanking(const YamlNode& node, CardHost term, Banking* out, std:
         return false;
     }
 
-    const YamlNode* trig = latch->find("trigger");
+    const calcu::formats::YamlNode* trig = latch->find("trigger");
     if (!trig || !trig->isMap() || !trig->requireOnlyKeys({"pin", "io-port"}, error)) {
         if (error->empty())
             *error = "line " + std::to_string(latch->line) +
                      ": trigger-based latch needs trigger: { pin: N } or { io-port: 0xNN }";
         return false;
     }
-    const YamlNode* pinN = trig->find("pin");
-    const YamlNode* portN = trig->find("io-port");
+    const calcu::formats::YamlNode* pinN = trig->find("pin");
+    const calcu::formats::YamlNode* portN = trig->find("io-port");
     if ((pinN && portN) || (!pinN && !portN)) {
         *error = "line " + std::to_string(trig->line) +
                  ": trigger needs exactly one of 'pin' or 'io-port'";
@@ -729,7 +729,7 @@ inline bool parseBanking(const YamlNode& node, CardHost term, Banking* out, std:
     }
 
     std::string domain;
-    const YamlNode* dom = latch->find("source-domain");
+    const calcu::formats::YamlNode* dom = latch->find("source-domain");
     if (!dom || !dom->asString(&domain, error)) {
         if (error->empty())
             *error = "line " + std::to_string(latch->line) + ": latch needs 'source-domain'";
@@ -742,7 +742,7 @@ inline bool parseBanking(const YamlNode& node, CardHost term, Banking* out, std:
         return false;
     }
 
-    const YamlNode* sl = latch->find("sampled-lines");
+    const calcu::formats::YamlNode* sl = latch->find("sampled-lines");
     if (!sl || !sl->isSeq() || sl->seq.empty()) {
         *error = "line " + std::to_string(latch->line) +
                  ": trigger-based latch needs a non-empty 'sampled-lines' list";
@@ -823,7 +823,7 @@ inline bool parseBankRangeToken(const std::string& s, uint32_t* lo, uint32_t* hi
 // (handled by parseContent) or a `by-bank:` list (spec §5's split-content
 // note) -- `bankCount` is 0 for an unbanked region, where by-bank is a
 // hard error (there is only ever one "bank").
-inline bool parseContentSpec(const YamlNode& node, uint32_t bankCount, RegionContent* singleOut,
+inline bool parseContentSpec(const calcu::formats::YamlNode& node, uint32_t bankCount, RegionContent* singleOut,
                              std::vector<BankContentRange>* byBankOut, std::string* error) {
     if (!(node.isMap() && node.has("by-bank"))) return parseContent(node, singleOut, error);
 
@@ -833,7 +833,7 @@ inline bool parseContentSpec(const YamlNode& node, uint32_t bankCount, RegionCon
                  ": 'by-bank' content needs a banked region";
         return false;
     }
-    const YamlNode* list = node.find("by-bank");
+    const calcu::formats::YamlNode* list = node.find("by-bank");
     if (!list->isSeq() || list->seq.empty()) {
         *error = "line " + std::to_string(list->line) + ": 'by-bank' must be a non-empty list";
         return false;
@@ -843,7 +843,7 @@ inline bool parseContentSpec(const YamlNode& node, uint32_t bankCount, RegionCon
             *error = "line " + std::to_string(entry.line) + ": by-bank entry must be a mapping";
             return false;
         }
-        const YamlNode* banksN = entry.find("banks");
+        const calcu::formats::YamlNode* banksN = entry.find("banks");
         if (!banksN) {
             *error = "line " + std::to_string(entry.line) + ": by-bank entry needs 'banks'";
             return false;
@@ -1067,7 +1067,7 @@ inline bool parseAddressedHex(const std::string& text, uint32_t blockLength,
 // bank (unbanked regions use key 0) into a full bank-size/`capacity`-length
 // byte buffer, starting from that bank's power-up-fill and overlaying each
 // block's bytes at its offset.
-inline bool parseInitialContent(const YamlNode& node, const Region& regionSoFar,
+inline bool parseInitialContent(const calcu::formats::YamlNode& node, const Region& regionSoFar,
                                 std::unordered_map<uint32_t, std::vector<uint8_t>>* out,
                                 std::unordered_map<uint32_t, std::vector<bool>>* coveredOut,
                                 std::string* error) {
@@ -1075,14 +1075,14 @@ inline bool parseInitialContent(const YamlNode& node, const Region& regionSoFar,
 
     bool hasFillOverride = false;
     uint8_t fillOverride = 0;
-    if (const YamlNode* f = node.find("fill")) {
+    if (const calcu::formats::YamlNode* f = node.find("fill")) {
         long v = 0;
         if (!getInt(*f, "fill", &v, error)) return false;
         fillOverride = static_cast<uint8_t>(v);
         hasFillOverride = true;
     }
 
-    const YamlNode* blocksN = node.find("blocks");
+    const calcu::formats::YamlNode* blocksN = node.find("blocks");
     if (!blocksN || !blocksN->isSeq() || blocksN->seq.empty()) {
         *error = "line " + std::to_string(node.line) + ": 'initial-content' needs a non-empty 'blocks' list";
         return false;
@@ -1098,7 +1098,7 @@ inline bool parseInitialContent(const YamlNode& node, const Region& regionSoFar,
             return false;
 
         uint32_t bank = 0;
-        const YamlNode* bankN = entry.find("bank");
+        const calcu::formats::YamlNode* bankN = entry.find("bank");
         if (bankN) {
             if (!regionSoFar.banked) {
                 *error = "line " + std::to_string(bankN->line) +
@@ -1120,7 +1120,7 @@ inline bool parseInitialContent(const YamlNode& node, const Region& regionSoFar,
         }
 
         long offV = 0;
-        if (const YamlNode* offN = entry.find("offset")) {
+        if (const calcu::formats::YamlNode* offN = entry.find("offset")) {
             if (!getInt(*offN, "offset", &offV, error)) return false;
         }
         if (offV < 0 || static_cast<uint32_t>(offV) > bankSize) {
@@ -1130,7 +1130,7 @@ inline bool parseInitialContent(const YamlNode& node, const Region& regionSoFar,
         uint32_t offset = static_cast<uint32_t>(offV);
 
         std::string encoding;
-        const YamlNode* encN = entry.find("encoding");
+        const calcu::formats::YamlNode* encN = entry.find("encoding");
         if (!encN || !encN->asString(&encoding, error)) {
             if (error->empty())
                 *error = "line " + std::to_string(entry.line) + ": block needs 'encoding'";
@@ -1139,7 +1139,7 @@ inline bool parseInitialContent(const YamlNode& node, const Region& regionSoFar,
 
         std::vector<uint8_t> bytes;
         if (encoding == "addressed-hex") {
-            const YamlNode* bN = entry.find("bytes");
+            const calcu::formats::YamlNode* bN = entry.find("bytes");
             if (!bN) {
                 *error = "line " + std::to_string(entry.line) + ": 'addressed-hex' needs 'bytes'";
                 return false;
@@ -1151,7 +1151,7 @@ inline bool parseInitialContent(const YamlNode& node, const Region& regionSoFar,
                 return false;
             }
         } else if (encoding == "hex") {
-            const YamlNode* bN = entry.find("bytes");
+            const calcu::formats::YamlNode* bN = entry.find("bytes");
             if (!bN) {
                 *error = "line " + std::to_string(entry.line) + ": 'hex' needs 'bytes'";
                 return false;
@@ -1163,7 +1163,7 @@ inline bool parseInitialContent(const YamlNode& node, const Region& regionSoFar,
                 return false;
             }
         } else if (encoding == "base64") {
-            const YamlNode* bN = entry.find("bytes");
+            const calcu::formats::YamlNode* bN = entry.find("bytes");
             if (!bN) {
                 *error = "line " + std::to_string(entry.line) + ": 'base64' needs 'bytes'";
                 return false;
@@ -1207,15 +1207,15 @@ inline bool parseInitialContent(const YamlNode& node, const Region& regionSoFar,
     return true;
 }
 
-inline bool parseRegion(const YamlNode& node, CardHost term, Region* out, std::string* error) {
+inline bool parseRegion(const calcu::formats::YamlNode& node, CardHost term, Region* out, std::string* error) {
     if (!node.isMap() ||
         !node.requireOnlyKeys({"name", "addressing", "content", "banking", "capacity",
                                "initial-content", "pc1600-module-class"},
                               error))
         return false;
 
-    const YamlNode* initialContentN = node.find("initial-content");
-    if (const YamlNode* cls = node.find("pc1600-module-class")) {
+    const calcu::formats::YamlNode* initialContentN = node.find("initial-content");
+    if (const calcu::formats::YamlNode* cls = node.find("pc1600-module-class")) {
         std::string s;
         if (!cls->asString(&s, error)) return false;
         if (s != "plain-ram-no-header" && !initialContentN) {
@@ -1225,10 +1225,10 @@ inline bool parseRegion(const YamlNode& node, CardHost term, Region* out, std::s
         }
     }
 
-    const YamlNode* nameN = node.find("name");
-    const YamlNode* addrN = node.find("addressing");
-    const YamlNode* contN = node.find("content");
-    const YamlNode* bankN = node.find("banking");
+    const calcu::formats::YamlNode* nameN = node.find("name");
+    const calcu::formats::YamlNode* addrN = node.find("addressing");
+    const calcu::formats::YamlNode* contN = node.find("content");
+    const calcu::formats::YamlNode* bankN = node.find("banking");
     if (!nameN || !addrN || !contN || !bankN) {
         *error = "line " + std::to_string(node.line) +
                  ": region needs name, addressing, content, banking";
@@ -1260,7 +1260,7 @@ inline bool parseRegion(const YamlNode& node, CardHost term, Region* out, std::s
         if (!parseAddressing(*addrN, term, /*gateOnly=*/true, 0, &out->addressing, error))
             return false;
     } else {
-        const YamlNode* capN = node.find("capacity");
+        const calcu::formats::YamlNode* capN = node.find("capacity");
         if (!capN) {
             *error = "line " + std::to_string(node.line) +
                      ": an unbanked region needs 'capacity'";
@@ -1344,36 +1344,36 @@ inline bool parseRegion(const YamlNode& node, CardHost term, Region* out, std::s
 
 inline bool parseMemoryCardDefinition(const std::string& yamlText, MemoryCardDefinition* out,
                                       std::string* error) {
-    YamlNode root;
-    if (!parseYaml(yamlText, &root, error)) return false;
+    calcu::formats::YamlNode root;
+    if (!calcu::formats::parseYaml(yamlText, &root, error)) return false;
     if (!root.isMap()) {
         *error = "card definition must be a mapping";
         return false;
     }
-    if (!requireFormatVersion(root, kCardFormatVersion, "card", error)) return false;
+    if (!calcu::formats::requireFormatVersion(root, kCardFormatVersion, "card", error)) return false;
     if (!root.requireOnlyKeys(
             {"format-version", "module-name", "description", "compatible-hosts", "definition-terminology", "regions",
              "notes", "battery", "template"},
             error))
         return false;
 
-    const YamlNode* nameN = root.find("module-name");
-    const YamlNode* hostsN = root.find("compatible-hosts");
-    const YamlNode* termN = root.find("definition-terminology");
-    const YamlNode* regionsN = root.find("regions");
+    const calcu::formats::YamlNode* nameN = root.find("module-name");
+    const calcu::formats::YamlNode* hostsN = root.find("compatible-hosts");
+    const calcu::formats::YamlNode* termN = root.find("definition-terminology");
+    const calcu::formats::YamlNode* regionsN = root.find("regions");
     if (!nameN || !hostsN || !termN || !regionsN) {
         *error = "card definition needs module-name, compatible-hosts, definition-terminology, regions";
         return false;
     }
     if (!nameN->asString(&out->moduleName, error)) return false;
-    if (const YamlNode* descriptionN = root.find("description")) {
+    if (const calcu::formats::YamlNode* descriptionN = root.find("description")) {
         if (!descriptionN->asString(&out->description, error)) return false;
     }
 
-    if (const YamlNode* batteryN = root.find("battery")) {
+    if (const calcu::formats::YamlNode* batteryN = root.find("battery")) {
         if (!batteryN->asBool(&out->battery, error)) return false;
     }
-    if (const YamlNode* templateN = root.find("template")) {
+    if (const calcu::formats::YamlNode* templateN = root.find("template")) {
         if (!templateN->asBool(&out->isTemplate, error)) return false;
     }
 

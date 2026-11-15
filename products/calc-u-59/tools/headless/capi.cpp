@@ -11,11 +11,14 @@
 
 #include "../../app/MachineModelInfo.hpp"
 #include "../../app/ModuleCatalog.hpp"
-#include "../../app/RomLoader.hpp"
+#include "../../app/ProductRoms.hpp"
 #include "../../core/TIAdapters.hpp"
 #include "../../core/TICatalogue.hpp"
 #include "machine/Machine.hpp"
+#include "roms/Bundle.hpp"
 #include <cstring>
+#include <fstream>
+#include <sstream>
 #include <memory>
 #include <string>
 #include <variant>
@@ -46,15 +49,14 @@ void fill(HRec& r, uint16_t pc, uint16_t op, const CpuFrame& f, int w) {
     memcpy(r.SCOM, f.SCOM, sizeof(r.SCOM));
 }
 
-// The roms/ text dumps, as the apps bundle them: calculator/ then solid-state/.
-cu59::ResourceReader romReader(const std::string& romsDir) {
-    return cu59::directoryReader({romsDir + "/calculator", romsDir + "/solid-state"});
-}
-
-// A handle: the model until h_load_model_roms has built the machine.
+// A handle: the model until h_load_model_roms has built the machine, and the
+// ROM set of the folder it was given, looked up once (LIB-12; ADR 0035).
 struct Handle {
     cu59::Model model;
     std::unique_ptr<Machine> machine;
+    std::string romsDir;
+    std::shared_ptr<const calcu::roms::RomSet> roms;
+    std::string error;   // describe() of a failed lookup (LIB-12 AC-7)
 };
 Machine& M(void* h) { return *static_cast<Handle*>(h)->machine; }
 TIDebugTargetAdapter& debug(void* h) { return *debugTargetOf(M(h)); }
@@ -96,38 +98,45 @@ void h_idle_range(int model, int* out) {
 }
 
 // Model: 0 TI-59, 1 TI-58, 2 TI-58C (cu59::Model).
-void* h_new(int model) { return new Handle{static_cast<cu59::Model>(model), nullptr}; }
+void* h_new(int model) { return new Handle{static_cast<cu59::Model>(model), nullptr, {}, nullptr, {}}; }
 void  h_free(void* h) { delete static_cast<Handle*>(h); }
 
-// Build the machine of `model` from its ROM files in `romsDir`, through the
-// machine interface like the apps (the state after a cold boot). 0 on
-// success, -1 on a missing or bad file.
+// Build the machine of `model` from the ROM set of `romsDir` (the lookup
+// over DirectoryBundle(romsDir), LIB-12), through the machine interface like
+// the apps (the state after a cold boot). 0 on success; -1 when a file of the
+// full set is missing or bad: h_error() then names the files (AC-7).
 int h_load_model_roms(void* hv, int model, const char* romsDir) {
     auto* h = static_cast<Handle*>(hv);
-    try {
-        h->model = static_cast<cu59::Model>(model);
-        h->machine = cu59::buildMachine(h->model, romReader(romsDir));
-        return 0;
-    } catch (const std::exception&) {
-        return -1;
+    if (!h->roms || h->romsDir != romsDir) {
+        auto r = cu59::lookUpRoms(calcu::roms::DirectoryBundle(romsDir));
+        h->romsDir = romsDir;
+        h->roms = r.set;
+        h->error = r.ok() ? std::string() : calcu::roms::describe(r.missing);
+        if (!r.ok()) return -1;
     }
+    h->model = static_cast<cu59::Model>(model);
+    h->machine = cu59::buildMachine(h->model, *h->roms);
+    return 0;
 }
 
-// A solid-state module by its cuecards.txt id.
-int h_load_module(void* h, const char* moduleID, const char* romsDir) {
-    auto read = romReader(romsDir);
-    auto catalog = read("cuecards.txt");
-    if (!catalog) return -1;
-    auto file = cu59::moduleRomFile(*catalog, moduleID);
+// Why the last h_load_model_roms failed ("" after a success).
+const char* h_error(void* h) { return static_cast<Handle*>(h)->error.c_str(); }
+
+// A solid-state module by its cuecards.txt id (romsDir/solid-state/cuecards.txt,
+// the module list until M-25), its ROM from the set (`<ID>.rom.yaml`).
+int h_load_module(void* hv, const char* moduleID, const char* romsDir) {
+    auto* h = static_cast<Handle*>(hv);
+    if (!h->roms || !h->machine) return -1;
+    std::ifstream f(std::string(romsDir) + "/solid-state/cuecards.txt", std::ios::binary);
+    if (!f) return -1;
+    std::ostringstream catalog;
+    catalog << f.rdbuf();
+    auto file = cu59::moduleRomFile(catalog.str(), moduleID);
     if (!file) return -1;
-    try {
-        auto image = cu59::loadModule(*file, read);
-        if (!image) return -1;
-        peripherals(h).loadModuleImage(image->data(), image->size());
-        return 0;
-    } catch (const std::exception&) {
-        return -1;
-    }
+    auto image = cu59::moduleImage(*h->roms, *file);
+    if (!image) return -1;
+    peripherals(h).loadModuleImage(image->data(), image->size());
+    return 0;
 }
 
 // 2.3.0's core reset: a power cycle (C59-1 AC-6).

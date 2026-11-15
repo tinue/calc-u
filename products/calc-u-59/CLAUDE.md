@@ -62,7 +62,9 @@ landscape on a large screen) — its column in
   in `app/` and call it (frontends/swift/Bridge/ wrapper for Swift, directly from Qt,
   `frontends/web/bindings.cpp` for the web).
 - **`frontends/swift/Bridge/`, the Qt adapters and `frontends/web/bindings.cpp` translate types only.**
-- **`app/` never resolves locations.** It takes paths or a ResourceReader;
+- **`app/` never resolves locations.** It takes paths, and ROM files only
+  through the library's ROM lookup (a `calcu::roms::Bundle` the frontend
+  makes; LIB-12, `app/ProductRoms.hpp`);
   iCloud lives only in `frontends/swift/App/CardStorage.swift` (and `AppSettings.traceDirectory()`).
 - **A user-visible change in one GUI needs the matching change in the others
   on the same branch** — or a `Pending (Qt)` / `Pending (Swift)` /

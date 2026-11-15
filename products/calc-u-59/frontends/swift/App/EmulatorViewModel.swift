@@ -181,8 +181,14 @@ class EmulatorViewModel {
 
     // ── The calculator (Shared/SessionController via Bridge/TISessionController)
     @ObservationIgnored private lazy var platform = PlatformForwarder(self)
+    /// The ROM files, looked up once at the start (LIB-12). nil: a file of the
+    /// full set is missing or bad, and `romsMissingText` says which; then no
+    /// controller is made and the window shows the text in place of the
+    /// calculator (AC-10; design D-8, until C59-8).
+    @ObservationIgnored private let romSet: TIRomSet?
+    private(set) var romsMissingText: String? = nil
     @ObservationIgnored private lazy var controller = TISessionController(
-        reader: ROMLoader.bundleReader, cuecards: ROMLoader.cuecardsText,
+        roms: romSet!, cuecards: ROMLoader.cuecardsText,
         moduleID: AppSettings.resolvedSolidStateModuleID(), platform: platform)
     private var displayTimer: Timer?
     /// Held for the app's lifetime so macOS never App-Naps the background emulation
@@ -195,6 +201,14 @@ class EmulatorViewModel {
     }
 
     init() {
+        switch ROMLoader.lookUp() {
+        case .success(let set):
+            romSet = set
+        case .failure(let missing):
+            romSet = nil
+            romsMissingText = missing.text
+            return
+        }
         appNapActivityToken = ProcessInfo.processInfo.beginActivity(
             options: [.userInitiated, .idleSystemSleepDisabled],
             reason: "TI-59 CPU emulation must keep running at real-time pace in the background"
@@ -202,8 +216,9 @@ class EmulatorViewModel {
         Task { await self.start(model: AppSettings.resolvedStartupModel()) }
     }
 
-    /// Build a fresh machine of `model` (the previous one keeps running on a ROM error).
+    /// Build a fresh machine of `model` from the ROM set.
     func start(model: MachineModel) async {
+        guard romSet != nil else { return }
         await withCheckedContinuation { continuation in
             DispatchQueue.global(qos: .utility).async {
                 CardStorage.warmUp()
@@ -229,13 +244,14 @@ class EmulatorViewModel {
     /// Suspend emulation when the app enters the background (persists TI-58C RAM);
     /// a debug freeze survives.
     func suspendForBackground() {
+        guard romSet != nil else { return }
         controller.suspend()
         displayTimer?.invalidate()
         displayTimer = nil
     }
 
     func resumeFromBackground() {
-        guard controller.hasMachine else { return }
+        guard romSet != nil, controller.hasMachine else { return }
         startDisplayRefresh()
         controller.resumeAfterSuspend()
     }
@@ -270,7 +286,10 @@ class EmulatorViewModel {
     // MARK: - Module, reset
 
     /// Change the solid-state module and perform a soft reset (preserves RAM); no-op if unchanged.
-    func changeModule(id: String) { controller.changeModule(id) }
+    func changeModule(id: String) {
+        guard romSet != nil else { return }
+        controller.changeModule(id)
+    }
 
     func resetMachine() { controller.resetMachine() }
     /// Clean reset (all models): zero all RAM, then reset.

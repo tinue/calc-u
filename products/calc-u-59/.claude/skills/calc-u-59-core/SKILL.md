@@ -41,10 +41,19 @@ Annotated ROM listings: `rom/TI59-commented.asm`, `rom/TI58C-commented.asm`
 
 ## Rules for Core changes
 
+- **ROM files are read by the library's lookup only** (LIB-12; ADR 0035).
+  The core supplies the reader: `core/TIRomReader` decodes each file for its
+  amount (`TIRomText` for the Datamath dumps, `core/ModuleFile` for a
+  module's `<ID>.rom.yaml`, `docs/formats/modules.md` §2) and adds the set's
+  checks (6144 words, 64 rows, the TI-59 sentinels). The core opens no file;
+  the machine gets the files as bundled in `RomImage`s. The 24 files are
+  flat in `roms/` (`roms/README.md`, `roms/fetch_roms.sh`).
+
 - **`calcu::machine::Machine` is the only public interface** (C59-1,
   ADR 0006): `TIMachine` (`core/TIMachine.hpp`), built with
   `calcu::machine::build(tiCatalogue(), TIMachineBuilder, …)`
-  (`core/TICatalogue.hpp`; `cu59::buildMachine` in `app/RomLoader.hpp`).
+  (`core/TICatalogue.hpp`; `cu59::buildMachine` in `app/ProductRoms.hpp`,
+  from the `RomSet` of the ROM lookup, LIB-12).
   Model, advances and tick count, Reset/power cycle/cold boot, key readiness,
   keys (key IDs) and the display output go through it only. What it does not
   have yet goes through the adapters of `core/TIAdapters.hpp`, each until its

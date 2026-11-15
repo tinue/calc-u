@@ -8,8 +8,11 @@
 
 // ── Minimal YAML-subset reader ─────────────────────────────────────────
 //
-// Just enough YAML for the memory-card definition format
-// (docs/Memory-Card-Definition-Format.md). NOT general YAML. Supported:
+// Moved from Calc-U-1600's core/Yaml.hpp into the library (LIB-12 design
+// D-4, M-24): the reader of the own file formats of both products
+// (docs/formats/; Calc-U-1600's memory cards, floppies and presets,
+// Calc-U-59's Solid State ROM modules). Header only, namespace
+// calcu::formats. NOT general YAML. Supported:
 //   * indent-based block mappings (`key: value`, or `key:` + nested block)
 //   * `- ` block sequences; an item is a scalar, a flow collection, or a
 //     mapping (`- key: v` then more keys aligned under the first)
@@ -22,8 +25,10 @@
 // Not supported: anchors/aliases, tags, `>`, multiple documents, complex
 // keys, flow scalars spanning lines. Tabs are rejected, as in PresetFile.
 //
-// Error convention matches the rest of Core: `bool` return + `std::string*
-// error` (1-based line number where possible), never exceptions.
+// Error convention: `bool` return + `std::string* error` (1-based line
+// number where possible), never exceptions (LIB-1 design §2a).
+
+namespace calcu::formats {
 
 struct YamlNode {
     enum class Type { Null, Scalar, Sequence, Map };
@@ -538,3 +543,5 @@ inline bool requireFormatVersion(const YamlNode& root, long expected, const char
     }
     return true;
 }
+
+}  // namespace calcu::formats

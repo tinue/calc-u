@@ -19,5 +19,13 @@ fail() { echo "FAIL: $1"; status=1; }
   fail "the bridge includes from the source tree, not from the XCFramework"
 ls Bridge App 2>/dev/null | /usr/bin/grep -E '\.(cpp|cc|cxx)$' && fail "a C++ source file in Bridge/ or App/"
 
-[ $status = 0 ] && echo "ok: the Xcode project compiles only Swift and the bridge and links CalcU59.xcframework"
+# LIB-12 (M-24): the ROM resources are the full set, flat in roms/: the ten
+# calculator dumps and the 14 module files, none of the 2.3.0 module dumps.
+/usr/bin/grep -nE 'roms/(solid-state/TMC05|calculator/)' "$PBX" && fail "$PBX bundles a 2.3.0 ROM path (roms/calculator/, roms/solid-state/TMC05xx)"
+n=$(/usr/bin/grep -cE '/\* roms/[A-Z]{2}\.rom\.yaml in Resources \*/,' "$PBX")
+[ "$n" = 14 ] || fail "$PBX bundles $n module files, not the 14 .rom.yaml"
+n=$(/usr/bin/grep -cE '/\* roms/[A-Z0-9-]+\.txt in Resources \*/,' "$PBX")
+[ "$n" = 10 ] || fail "$PBX bundles $n calculator ROM files, not 10"
+
+[ $status = 0 ] && echo "ok: the Xcode project compiles only Swift and the bridge, links CalcU59.xcframework and bundles the 24 ROM files"
 exit $status

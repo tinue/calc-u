@@ -70,8 +70,20 @@ private:
     }
 };
 
-SessionController::SessionController(Platform& platform, ResourceReader roms, std::string cuecards, std::string moduleID,
-                                     Threading threading)
+std::unique_ptr<SessionController> SessionController::create(Platform& platform, const calcu::roms::Bundle& bundle,
+                                                             std::string cuecards, std::string moduleID,
+                                                             Threading threading) {
+    auto roms = lookUpRoms(bundle);
+    if (!roms.ok()) {
+        platform.romsMissing(roms.missing);
+        return nullptr;
+    }
+    return std::make_unique<SessionController>(platform, std::move(roms.set), std::move(cuecards), std::move(moduleID),
+                                               threading);
+}
+
+SessionController::SessionController(Platform& platform, std::shared_ptr<const calcu::roms::RomSet> roms,
+                                     std::string cuecards, std::string moduleID, Threading threading)
     : m_platform(platform), m_threading(threading), m_roms(std::move(roms)), m_cuecards(std::move(cuecards)), m_moduleID(std::move(moduleID)) {}
 
 SessionController::~SessionController() {
@@ -101,14 +113,7 @@ bool SessionController::startMachine(Model model) {
     const uint64_t generation = m_sessionGeneration + 1;
     auto events = std::make_unique<Events>(*this, generation);
     auto romFile = moduleRomFile(m_cuecards, m_moduleID);
-    std::unique_ptr<EmulatorSession> session;
-    try {
-        session = std::make_unique<EmulatorSession>(model, m_roms, romFile, *events, m_threading);
-    } catch (const std::exception& e) {
-        m_platform.error("ROM load error", e.what());
-        if (m_session && !m_debugState.frozen) m_session->start();  // keep the calculator we had
-        return false;
-    }
+    auto session = std::make_unique<EmulatorSession>(model, *m_roms, romFile, *events, m_threading);
     m_session = std::move(session);  // the old session goes first, then its events
     m_events = std::move(events);
     m_sessionGeneration = generation;
@@ -126,8 +131,6 @@ bool SessionController::startMachine(Model model) {
     auto cards = moduleCards(m_cuecards, m_moduleID);
     m_moduleCards = std::move(cards.cards);
     m_moduleMetadata = cards.metadata;
-    if (!romFile || m_session->moduleImage().empty())
-        m_platform.diagnostic("Solid-state module library was not loaded; continuing without library data");
     m_debug.attach(*m_session);
     if (!m_debug.moduleImageError().empty()) m_platform.diagnostic(m_debug.moduleImageError());
 
@@ -223,10 +226,7 @@ void SessionController::resumeAfterSuspend() {
 bool SessionController::selectModule(const std::string& moduleID) {
     if (!m_session) return false;
     auto romFile = moduleRomFile(m_cuecards, moduleID);
-    if (!romFile || !m_session->loadModule(*romFile, m_roms)) {
-        m_platform.error("Module error", "Failed to load module ROM: " + moduleID);
-        return false;
-    }
+    if (!romFile || !m_session->loadModule(*romFile, *m_roms)) return false;
     m_moduleID = moduleID;
     m_platform.saveModuleID(moduleID);
     m_debug.moduleChanged(*m_session);

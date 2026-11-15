@@ -3,7 +3,7 @@
 #include <string>
 
 #include "../Debug/AttachKeys.hpp"
-#include "../Yaml.hpp"
+#include "formats/Yaml.hpp"
 #include "PresetFile.hpp"
 
 // ── A preset's `debug:` block ────────────────────────────────────────────
@@ -35,10 +35,10 @@ namespace preset_debug {
 
 using namespace debug::attach;
 
-inline bool resolvePathScalar(YamlNode* node, const std::filesystem::path& dir, std::string* error) {
+inline bool resolvePathScalar(calcu::formats::YamlNode* node, const std::filesystem::path& dir, std::string* error) {
     std::string value;
     if (!node->isScalar()) {
-        *error = yaml_detail::errAt(node->line, "expected a path");
+        *error = calcu::formats::yaml_detail::errAt(node->line, "expected a path");
         return false;
     }
     if (!node->asString(&value, error)) return false;
@@ -46,33 +46,33 @@ inline bool resolvePathScalar(YamlNode* node, const std::filesystem::path& dir, 
     return true;
 }
 
-inline bool checkMap(YamlNode* map, const Table& table, const std::filesystem::path& dir, std::string* error);
+inline bool checkMap(calcu::formats::YamlNode* map, const Table& table, const std::filesystem::path& dir, std::string* error);
 
 // One value in the shape its key takes; paths resolved against `dir`.
-inline bool checkValue(const std::string& name, const Key& key, YamlNode* v, const std::filesystem::path& dir,
+inline bool checkValue(const std::string& name, const Key& key, calcu::formats::YamlNode* v, const std::filesystem::path& dir,
                        std::string* error) {
     switch (key.kind) {
         case Kind::Map:
             if (!v->isMap()) {
-                *error = yaml_detail::errAt(v->line, "'" + name + ":' takes a block of settings");
+                *error = calcu::formats::yaml_detail::errAt(v->line, "'" + name + ":' takes a block of settings");
                 return false;
             }
             if (!checkMap(v, kProgramKeys, dir, error)) return false;
             if (!v->has("bin")) {
-                *error = yaml_detail::errAt(v->line, "'" + name + ":' needs at least 'bin'");
+                *error = calcu::formats::yaml_detail::errAt(v->line, "'" + name + ":' needs at least 'bin'");
                 return false;
             }
             return true;
         case Kind::FileList:
             if (!v->isSeq()) {
-                *error = yaml_detail::errAt(v->line, "'" + name + ":' expects a list");
+                *error = calcu::formats::yaml_detail::errAt(v->line, "'" + name + ":' expects a list");
                 return false;
             }
-            for (YamlNode& item : v->seq) {
+            for (calcu::formats::YamlNode& item : v->seq) {
                 if (item.isScalar()) {
                     if (!resolvePathScalar(&item, dir, error)) return false;
                 } else if (!item.isMap() || !item.has("path")) {
-                    *error = yaml_detail::errAt(item.line, "expected a path, or a map with 'path'");
+                    *error = calcu::formats::yaml_detail::errAt(item.line, "expected a path, or a map with 'path'");
                     return false;
                 } else if (!checkMap(&item, itemKeys(key), dir, error)) {
                     return false;
@@ -81,10 +81,10 @@ inline bool checkValue(const std::string& name, const Key& key, YamlNode* v, con
             return true;
         case Kind::PathList:
             if (!v->isSeq()) {
-                *error = yaml_detail::errAt(v->line, "'" + name + ":' expects a list of paths");
+                *error = calcu::formats::yaml_detail::errAt(v->line, "'" + name + ":' expects a list of paths");
                 return false;
             }
-            for (YamlNode& item : v->seq)
+            for (calcu::formats::YamlNode& item : v->seq)
                 if (!resolvePathScalar(&item, dir, error)) return false;
             return true;
         case Kind::Path: return resolvePathScalar(v, dir, error);
@@ -92,7 +92,7 @@ inline bool checkValue(const std::string& name, const Key& key, YamlNode* v, con
     }
     std::string text, why;
     if (!v->isScalar()) {
-        *error = yaml_detail::errAt(v->line, "'" + name + "' takes a single value");
+        *error = calcu::formats::yaml_detail::errAt(v->line, "'" + name + "' takes a single value");
         return false;
     }
     if (!v->asString(&text, error)) return false;
@@ -100,18 +100,18 @@ inline bool checkValue(const std::string& name, const Key& key, YamlNode* v, con
     const bool quotedBool = key.kind == Kind::Bool && text != v->scalar;
     if (quotedBool || !checkScalar(key, text, &why)) {
         if (quotedBool) why = "true or false, without quotes";
-        *error = yaml_detail::errAt(v->line, "'" + name + "' is " + why + ", not '" + text + "'");
+        *error = calcu::formats::yaml_detail::errAt(v->line, "'" + name + "' is " + why + ", not '" + text + "'");
         return false;
     }
     return true;
 }
 
 // Only the keys of `table`, each in its shape.
-inline bool checkMap(YamlNode* map, const Table& table, const std::filesystem::path& dir, std::string* error) {
+inline bool checkMap(calcu::formats::YamlNode* map, const Table& table, const std::filesystem::path& dir, std::string* error) {
     for (auto& kv : map->map) {
         const Key* key = find(table, kv.first);
         if (!key) {
-            *error = yaml_detail::errAt(map->line, "unknown key '" + kv.first + "'");
+            *error = calcu::formats::yaml_detail::errAt(map->line, "unknown key '" + kv.first + "'");
             return false;
         }
         if (!checkValue(kv.first, *key, &kv.second, dir, error)) return false;
@@ -123,9 +123,9 @@ inline bool checkMap(YamlNode* map, const Table& table, const std::filesystem::p
 
 /// Checks a parsed `debug:` block against the attach keys and resolves its
 /// paths against `presetDir`.
-inline bool parsePresetDebugBlock(YamlNode* block, const std::filesystem::path& presetDir, std::string* error) {
+inline bool parsePresetDebugBlock(calcu::formats::YamlNode* block, const std::filesystem::path& presetDir, std::string* error) {
     if (!block->isMap()) {
-        *error = yaml_detail::errAt(block->line, "'debug:' takes a block of settings");
+        *error = calcu::formats::yaml_detail::errAt(block->line, "'debug:' takes a block of settings");
         return false;
     }
     return preset_debug::checkMap(block, debug::attach::kBlockKeys, presetDir, error);

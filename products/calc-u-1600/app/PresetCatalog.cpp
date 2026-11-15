@@ -7,7 +7,7 @@
 #include "Preset/PresetFile.hpp"
 #include "app/AppPaths.hpp"
 #include "app/Utf8Path.hpp"
-#include "Yaml.hpp"
+#include "formats/Yaml.hpp"
 
 namespace shared {
 namespace {
@@ -33,22 +33,22 @@ bool readList(const std::string& path, const char* list, std::vector<ListedFile>
     }
     std::stringstream text;
     text << in.rdbuf();
-    YamlNode root;
-    if (!parseYaml(text.str(), &root, error)) return false;
-    const YamlNode* items = root.find(list);
+    calcu::formats::YamlNode root;
+    if (!calcu::formats::parseYaml(text.str(), &root, error)) return false;
+    const calcu::formats::YamlNode* items = root.find(list);
     if (!items) return true;
     if (!items->isSeq()) {
         *error = std::string("'") + list + "' must be a list";
         return false;
     }
-    for (const YamlNode& item : items->seq) {
+    for (const calcu::formats::YamlNode& item : items->seq) {
         ListedFile f;
-        const YamlNode* file = item.find("file");
+        const calcu::formats::YamlNode* file = item.find("file");
         if (!file || !file->asString(&f.file, error)) {
             *error = "line " + std::to_string(item.line) + ": an entry needs 'file:'";
             return false;
         }
-        if (const YamlNode* group = item.find("group"))
+        if (const calcu::formats::YamlNode* group = item.find("group"))
             if (!group->asString(&f.group, error)) return false;
         out->push_back(std::move(f));
     }

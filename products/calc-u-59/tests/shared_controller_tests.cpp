@@ -45,7 +45,7 @@ bool waitForScanLoop(SessionController& c) {
 
 TEST(controller_loads_a_preset_for_another_model) {
     FakePlatform p;
-    SessionController c(p, testroms::reader(), catalog(), "ML");
+    SessionController c(p, testroms::romSet(), catalog(), "ML");
     CHECK(c.startMachine(Model::TI59));
     c.loadStateFile(bytes("MODEL: TI-58\nREGISTERS:\n05 = 3.25\n"));
     CHECK(c.model() == Model::TI58);
@@ -56,7 +56,7 @@ TEST(controller_loads_a_preset_for_another_model) {
 
 TEST(controller_reports_parse_errors_and_partition_errors) {
     FakePlatform p;
-    SessionController c(p, testroms::reader(), catalog(), "ML");
+    SessionController c(p, testroms::romSet(), catalog(), "ML");
     CHECK(c.startMachine(Model::TI58));
     c.loadStateFile(bytes("PARTITION: 959\n"));  // beyond the TI-58's 479
     CHECK_EQ(p.errors.size(), size_t{1});
@@ -68,7 +68,7 @@ TEST(controller_reports_parse_errors_and_partition_errors) {
 
 TEST(controller_load_while_frozen_ends_running_without_tracing) {
     FakePlatform p;
-    SessionController c(p, testroms::reader(), catalog(), "ML");
+    SessionController c(p, testroms::romSet(), catalog(), "ML");
     CHECK(c.startMachine(Model::TI59));
     c.freeze(FreezeOwner::Calculator);
     CHECK(c.isFrozen());
@@ -82,7 +82,7 @@ TEST(controller_load_while_frozen_ends_running_without_tracing) {
 
 TEST(controller_keystroke_controls_drive_the_gui) {
     FakePlatform p;
-    SessionController c(p, testroms::reader(), catalog(), "ML");
+    SessionController c(p, testroms::romSet(), catalog(), "ML");
     CHECK(c.startMachine(Model::TI59));
     // Lbl A 1 + 1 = R/S, armed FREEZE ON START: A freezes before the program's first step.
     c.loadStateFile(bytes("PROGRAM:\n76 11 01 85 01 95 91\n"
@@ -102,7 +102,7 @@ TEST(controller_keystroke_controls_drive_the_gui) {
 
 TEST(controller_constant_memory_keeps_the_loaded_card) {
     FakePlatform p;
-    SessionController c(p, testroms::reader(), catalog(), "ML");
+    SessionController c(p, testroms::romSet(), catalog(), "ML");
     CHECK(c.startMachine(Model::TI58C));
     c.loadStateFile(bytes("CUECARD:\nTemplate: MagnetCard\nTitle: KEEP ME\nREGISTERS:\n03 = 1\n"));
     CHECK(p.mem && p.mem->find("KEEP ME") != std::string::npos);
@@ -118,7 +118,7 @@ TEST(controller_constant_memory_keeps_the_loaded_card) {
 
 TEST(controller_model_switch_keeps_printer_and_log_resets_freeze) {
     FakePlatform p;
-    SessionController c(p, testroms::reader(), catalog(), "ML");
+    SessionController c(p, testroms::romSet(), catalog(), "ML");
     CHECK(c.startMachine(Model::TI59));
     c.setPrinterConnected(false);
     c.dumpVars();
@@ -133,7 +133,7 @@ TEST(controller_model_switch_keeps_printer_and_log_resets_freeze) {
 
 TEST(controller_reset_keeps_the_memory_and_clean_reset_clears_it) {
     FakePlatform p;
-    SessionController c(p, testroms::reader(), catalog(), "ML");
+    SessionController c(p, testroms::romSet(), catalog(), "ML");
     CHECK(c.startMachine(Model::TI59));
     CHECK(waitForScanLoop(c));
     const uint8_t marked[16] = {1, 2, 3};
@@ -156,7 +156,7 @@ TEST(controller_reset_keeps_the_memory_and_clean_reset_clears_it) {
 // FREEZE ON START fires on either (reported with M-19: no ledger row yet).
 TEST(controller_cpu_freeze_on_start_sees_reset_and_clean_reset) {
     FakePlatform p;
-    SessionController c(p, testroms::reader(), catalog(), "ML");
+    SessionController c(p, testroms::romSet(), catalog(), "ML");
     CHECK(c.startMachine(Model::TI59));
     CHECK(waitForScanLoop(c));
     for (bool clean : {false, true}) {
@@ -170,33 +170,18 @@ TEST(controller_cpu_freeze_on_start_sees_reset_and_clean_reset) {
     }
 }
 
-TEST(controller_rom_failure_keeps_the_running_machine) {
-    FakePlatform p;
-    // Only the TI-58C chips are missing.
-    auto reader = [](const std::string& name) -> std::optional<std::string> {
-        if (name.rfind("CD24", 0) == 0) return std::nullopt;
-        return testroms::reader()(name);
-    };
-    SessionController c(p, reader, catalog(), "ML");
-    CHECK(c.startMachine(Model::TI59));
-    CHECK(!c.startMachine(Model::TI58C));
-    CHECK(c.model() == Model::TI59);
-    CHECK(c.hasMachine() && c.session()->isRunning());
-    CHECK_EQ(p.errors.size(), size_t{1});
-}
-
 TEST(controller_bad_module_changes_nothing) {
     FakePlatform p;
-    SessionController c(p, testroms::reader(), catalog(), "ML");
+    SessionController c(p, testroms::romSet(), catalog(), "ML");
     CHECK(c.startMachine(Model::TI59));
     CHECK(!c.selectModule("ZZ"));
     CHECK_EQ(c.moduleID(), std::string("ML"));
-    CHECK_EQ(p.errors.size(), size_t{1});
+    CHECK(p.errors.empty());   // not a ROM error: cuecards.txt lists no module ZZ (LIB-12 AC-10)
 }
 
 TEST(controller_resume_before_the_frozen_view_drops_it) {
     FakePlatform p;
-    SessionController c(p, testroms::reader(), catalog(), "ML");
+    SessionController c(p, testroms::romSet(), catalog(), "ML");
     CHECK(c.startMachine(Model::TI59));
     c.freeze(FreezeOwner::Cpu);
     c.resume();  // before the frozen view arrives
@@ -210,7 +195,7 @@ TEST(controller_resume_before_the_frozen_view_drops_it) {
 
 TEST(controller_events_of_a_replaced_machine_are_ignored) {
     FakePlatform p;
-    SessionController c(p, testroms::reader(), catalog(), "ML");
+    SessionController c(p, testroms::romSet(), catalog(), "ML");
     CHECK(c.startMachine(Model::TI59));
     c.freeze(FreezeOwner::Calculator);
     c.session()->sync([] {});  // the old machine's frozen view is queued
@@ -222,7 +207,7 @@ TEST(controller_events_of_a_replaced_machine_are_ignored) {
 
 TEST(controller_asm_overlay) {
     FakePlatform p;
-    SessionController c(p, testroms::reader(), catalog(), "ML");
+    SessionController c(p, testroms::romSet(), catalog(), "ML");
     c.runAsm();
     CHECK_EQ(c.asmStatus(), std::string("No ASM overlay loaded."));
     c.loadAsm(std::string("HEX:\n0x0A01\n"), "a.asm");
@@ -246,7 +231,7 @@ TEST(controller_asm_overlay) {
 
 TEST(controller_threaded_reload_and_memory_card) {
     FakePlatform p;
-    SessionController c(p, testroms::reader(), catalog(), "ML");
+    SessionController c(p, testroms::romSet(), catalog(), "ML");
     CHECK(c.startMachine(Model::TI59));
     // Part 1 writes R00 to a memory card; part 2, reloaded after it, reads it back.
     c.loadStateFile(bytes("PROGRAM:\n76 11 04 96 91\nREGISTERS:\n00 = 42\n"  // Lbl A 4 Write R/S

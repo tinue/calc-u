@@ -134,7 +134,7 @@ Frequent):
 
 | CTest entry | What | Group | Measured (M4 Pro, 2026-11-14) |
 |---|---|---|---|
-| `CalcU59Tests` | 261 `TEST`s (M-35): unit and ROM-driven integration tests of the core and the app layer, the machine interface (C59-1, LIB-1 59), the ROM lookup (LIB-12 59), the PC-100C and the module slot (C59-6, LIB-2 59), the settings file (LIB-9 59), the golden replays through it (table below), the harness product entry (LIB-11, M-28; its model switch through LIB-18, `harness_switches_to_a_ti58`, M-35), Calc-U-59 on the library's app session and the session thread (LIB-3 59, LIB-17 59, C59-5; M-33), the product's flows on it and the Web part (M-34) | Frequent | 13 s (M-33); 7 s (M-34, RelWithDebInfo) |
+| `CalcU59Tests` | 282 `TEST`s (M-36; `tests/typing_tests.cpp`: LIB-5 AC-20–27, T59-0): unit and ROM-driven integration tests of the core and the app layer, the machine interface (C59-1, LIB-1 59), the ROM lookup (LIB-12 59), the PC-100C and the module slot (C59-6, LIB-2 59), the settings file (LIB-9 59), the golden replays through it (table below), the harness product entry (LIB-11, M-28; its model switch through LIB-18, `harness_switches_to_a_ti58`, M-35), Calc-U-59 on the library's app session and the session thread (LIB-3 59, LIB-17 59, C59-5; M-33), the product's flows on it and the Web part (M-34) | Frequent | 13 s (M-33); 7 s (M-34, RelWithDebInfo) |
 | `CalcU59TraceReader` | `tools/read_trace.py` reads the trace `CalcU59Tests` wrote | Frequent | 16.4 s (Python 3.15; 0.3 s in CI) |
 | `CalcU59NoOwnSession` | `tests/check_no_own_session.sh`: the Qt6, Swift and (M-34) Web frontends use no `EmulatorSession`, `EmulationRunner`, `TISessionController` or own `SessionController`; no `std::thread` in `app/` but `SessionThread`; the Swift bridge includes no `SessionController.hpp` and calls no tick; Qt6 sends no suspend or continue (LIB-3 AC-28, AC-31; C59-5 B2; M-33) | Frequent | 0.03 s |
 | `CalcU59CoreSeam` | `tests/check_core_seam.sh`: no core-internal header outside `core/` and `tests/`, no machine call in the adapters (C59-1 AC-17; M-19) | Frequent | 0.02 s |
@@ -145,8 +145,8 @@ Frequent):
 | `CalcU59XcodeProjectCheck` | `frontends/swift/check_xcode_project.sh`: Xcode compiles only Swift and the bridge and links `CalcU59.xcframework` (C59-5, ADR 0013; M-15); the app bundles the 24 ROM files of the full set (LIB-12; M-24); only Debug takes incoming connections, with `Calc-U-59-Debug.entitlements` (C59-5 AC-10, AC-13; M-33); the XCFramework script phase declares its output (M-33) | Frequent | 0.02 s |
 | `CalcU59NoAttachSources` | `frontends/swift/check_no_attach.sh --sources`: attach only for the Debug `macos` and `ios-simulator` slices in `build_xcframework.sh`, the bridge's and the Swift call sites under the Debug and platform guard (C59-5 AC-13, B1; M-33). The `--binary` half runs as a build phase of every Release and device build of the app | Frequent | 0.02 s |
 | | **Frequent, Calc-U-59** | | **25.9 s** (M-32) |
-| `CalcU59WebPlaywright` | `frontends/web/run-tests.sh`: Playwright, Chromium (root, sub-path) and WebKit (offline); `rom-missing.spec.js` (LIB-12 AC-10, EC-3; M-24); since M-34 on the library's shell, with `session.spec.js` (LIB-15 AC-19, AC-22, EC-4, LIB-3 AC-31) and `storage.spec.js` (LIB-15 AC-20, AC-21, LIB-9 AC-23) | Longer | 78 s (M-24); 78 s, 85 passed, 5 skipped (M-34) |
-| `CalcU59ReferenceRuns` | `CalcU59Tests reference_runs` with `CALCU59_REFERENCE_COMPARE=1`: the 57 examples on the app session, each compared with its 2.3.0 recording of M-9 (`tests/reference/v2.3.0-examples/`); a difference is a finding (M-34) | Longer | 9 s |
+| `CalcU59WebPlaywright` | `frontends/web/run-tests.sh`: Playwright, Chromium (root, sub-path) and WebKit (offline); `rom-missing.spec.js` (LIB-12 AC-10, EC-3; M-24); since M-34 on the library's shell, with `session.spec.js` (LIB-15 AC-19, AC-22, EC-4, LIB-3 AC-31) and `storage.spec.js` (LIB-15 AC-20, AC-21, LIB-9 AC-23); `play-calculator.spec.js` host keys by the carried letter, two keys, a short click held 100 ms (LIB-5 AC-21–24; M-36) | Longer | 78 s (M-24); 78 s, 85 passed, 5 skipped (M-34); 91 passed, 5 skipped (M-36) |
+| `CalcU59ReferenceRuns` | `CalcU59Tests reference_runs` with `CALCU59_REFERENCE_COMPARE=1`: the 57 examples on the app session, each compared with its 2.3.0 recording of M-9 (`tests/reference/v2.3.0-examples/`); a difference is a finding (M-34) unless the test's table of accepted differences names it with its reason (M-36: the driver's wall time on the "recorded after N s" line; `Elapsed:` lines, row 59-23 and M-33; `historic/life.ti59`'s register at the 30-minute cut, since M-33); the references are not re-recorded (user, 2026-11-15) | Longer | 9 s |
 | `CalcU59RomMissingBuild` | `tests/rom_missing_build.sh`: roms/ without one file (default `TMC0583.txt`); the headless library and a Web `dist/` built from it start without a calculator and name the file (LIB-12, Technical Requirements; M-24); not registered on Windows | Longer | 3 s (M-24; the Web build tree already built) |
 | `CalcU59UIRegression` | XCUITest plan `UIRegressionTests` on the `iphone` simulator; since M-33 with `AttachTests` (harness attach on port 59160: C59-5 S3, S4 Home and back, S5 full speed by a press on the display); `PacingTests` and `ScreenshotTests` skipped | Longer | 178 s, 18 tests (iPhone 18 Pro Max, iOS 27.2; M-33) |
 | `CalcU59SwiftUnitTests` | `xcodebuild test -testPlan UnitTests` on the `iphone` simulator: `Calc-U-59Tests`, hosted by the app with `--UITesting`, a second session through the real bridge (C59-5 S1 `MessageOrderTests`, S2 `HostServicesTests`, `SuspendTests` AC-8, `FrameGapTests` AC-5/D-9; M-33) | Longer | 14 s of tests, about 40 s with the build (M-33) |
@@ -178,7 +178,8 @@ Frequent except where the table says otherwise):
 | `reference_runs_tests.cpp` | 1, Longer (`CalcU59ReferenceRuns`): returns at once without `CALCU59_REFERENCE_COMPARE` or `CALCU59_REFERENCE_RECORD` (the latter writes to `build/reference-runs/`, never into the references; M-34) |
 | `rom_lookup_tests.cpp` | 15 (LIB-12 AC-1, AC-4, AC-6, AC-8–10, AC-14, EC-2; M-24) |
 | `part_flows_tests.cpp` | 47: the product's flows on the app session (`SessionRig.hpp`, `PartRig`), ported in M-34 from 2.3.0's controller tests (C59-6 AC-1, AC-6, AC-11: 4 of them, M-25); the runner's three pacing tests went with `CooperativePacing` |
-| `shared_keys_tests.cpp` | 8: the key sequencer on virtual time (M-34, from the cooperative tests) |
+| `shared_keys_tests.cpp` | 6: KEYSTROKES playback (`TIKeystrokePlayback`) over the typing engine (M-36; the key cases moved to `typing_tests.cpp`) |
+| `typing_tests.cpp` | 22 (LIB-5 AC-20–27, T59-0, the printer-timing exit check; M-36) |
 | `web_part_tests.cpp` | 5 (LIB-15 AC-16, AC-20, AC-22, EC-4; LIB-9 AC-23; M-34) |
 | `shared_debug_tests.cpp` | 14 |
 | `shared_formats_tests.cpp` | 20 (`settings_resolve` went with `SettingsKeys.hpp`, M-32) |
@@ -186,14 +187,14 @@ Frequent except where the table says otherwise):
 | `shared_settings_tests.cpp` | 7 (LIB-9 AC-19–22, AC-24, AC-25, AC-35; M-32) |
 | `shared_runtime_tests.cpp` | 15 (`runner_keeps_real_time` went with the threaded runner, M-33; the two batch-rule tests with `Pacing.hpp`, M-34; the session tests host the `EmulatorSession` on a test clock) |
 | `shared_state_applier_tests.cpp` | 8 |
-| `shared_tables_tests.cpp` | 8 |
+| `shared_tables_tests.cpp` | 7 |
 | `shared_trace_tests.cpp` | 2 |
 
 ## Calc-U-1600
 
 | CTest entry | What | Group | Measured (M4 Pro, 2026-11-14) |
 |---|---|---|---|
-| `CoreTests` | 869 `TEST`s (M-35): unit and integration tests of the core and the app layer (real ROMs, presets, loaders, job equivalence), the machine interface (C1600-1, LIB-1 1600, LIB-2 1600), the settings file (LIB-9 1600), the ROM lookup (LIB-12 1600), the golden replays through it (table below), the harness product entry (LIB-11, M-28; the PC-1600 and its variant through LIB-18, `harness_drives_a_pc1600`, `harness_variant_switch_old`, M-35) | Frequent | 39.0 s (M-30/M-28/M-27, 2026-11-15) |
+| `CoreTests` | 875 `TEST`s (M-36; `tests/typing_tests.cpp`: LIB-5 AC-14, AC-28–31, AC-33–37, AC-40, AC-41; the PC-1500 key queue's tests gone): unit and integration tests of the core and the app layer (real ROMs, presets, loaders, job equivalence), the machine interface (C1600-1, LIB-1 1600, LIB-2 1600), the settings file (LIB-9 1600), the ROM lookup (LIB-12 1600), the golden replays through it (table below), the harness product entry (LIB-11, M-28; the PC-1600 and its variant through LIB-18, `harness_drives_a_pc1600`, `harness_variant_switch_old`, M-35) | Frequent | 39.0 s (M-30/M-28/M-27, 2026-11-15) |
 | `CalcU1600CheckPresets` | `tools/check_presets.sh`: every preset in the repository parses | Frequent | 0.3 s |
 | `CalcU1600MachineIncludeCheck` | `tools/check_machine_includes.sh`: no file outside `core/` (app, frontends, tools, dev) includes a machine class, directly or through a core header, or names one (C1600-1, Technical Requirements; design T13; M-26) | Frequent | 1.1 s |
 | `CalcU1600NoOwnRomLookup` | `library/roms/tests/check_no_own_rom_lookup.sh`: no product source outside `core/Machine/SharpRoms.cpp` (with the host-drive ROM, D-6), the catalogue and `app/tests/` looks for a ROM file (LIB-12 AC-2, design T7; M-27) | Frequent | 0.5 s |
@@ -201,7 +202,7 @@ Frequent except where the table says otherwise):
 | `CalcU1600NoPlatformSettings` | `library/settings/check_platform_stores.sh` over `frontends/` with `tools/platform_stores_allowed.txt`: no setting in QSettings or `localStorage` (LIB-9 AC-31, design T-19; M-30); not registered on Windows | Frequent | 0.02 s |
 | `CalcU1600NoOwnSession` | `tools/check_no_own_session.cmake` (`cmake -P`): no `AppSession`, `MachineSession` or `Pacer` class in `app/`, the Qt6 frontend includes the library's `sessions/AppSession.hpp`, sends no suspend and runs no operation to its end (LIB-3 AC-34, AC-36; design P16-1, P16-3; M-31) | Frequent | 0.05 s |
 | | **Frequent, Calc-U-1600** | | **40.4 s** (M-30) |
-| `CalcU1600WebPlaywright` | `frontends/web/run-tests.sh`: Playwright, Chromium (root, sub-path) and WebKit (offline) | Longer | 22.5 s (Homebrew Emscripten 7.0, after `<cstdlib>` was added to `core/Debug/BreakpointTable.cpp`); 31 s in CI (6.0.13) |
+| `CalcU1600WebPlaywright` | `frontends/web/run-tests.sh`: Playwright, Chromium (root, sub-path) and WebKit (offline); `typing.spec.js` (LIB-5 AC-29, AC-33, AC-36; M-36) | Longer | 55 passed, 2 skipped (M-36); 22.5 s (Homebrew Emscripten 7.0, after `<cstdlib>` was added to `core/Debug/BreakpointTable.cpp`); 31 s in CI (6.0.13) |
 | `CalcU1600RomMissingBuild` | `tests/rom_missing_build.sh`: a Web `dist/` built from `roms/` without one file (default `PC1600-P1-B3-old.bin`) shows the lookup's text naming it and no calculator (LIB-12, Technical Requirements, design Q5; M-27); not registered on Windows | Longer | 3.2 s (M-27; the Web build tree already built) |
 | `CalcU1600WasmSmoke` | `tools/build_wasm_check.sh`: core and app layer under node | Longer | 5.1 s locally without the build; 44 s in CI with the build |
 | `CalcU1600Shots.<scenario>` | the nine screenshot scenarios of `docs/developer/screenshots/guide/` run as checks, into the build tree | Longer | 39.6 s, the nine together (2.2–9.2 s each), all passed |
@@ -240,17 +241,17 @@ needs ROMs that are missing reports `SKIP`):
 | `inspector_tests.cpp` | 13 | `sharp_machine_tests.cpp` | 28 (C1600-1 AC-1–21, EC-1–3; M-26) |
 | `job_tests.cpp` | 2 | `tape_deck_tests.cpp` | 11 |
 | `session_tests.cpp` | 4 (LIB-3 AC-35, AC-37, AC-38, ledger 1600-9 on the library's app session; M-31) | | |
-| `key_paste_tests.cpp` | 13 | `tc8576f_tests.cpp` | 20 |
+| `key_paste_tests.cpp` | 8 (the typing profile and engine; M-36) | `tc8576f_tests.cpp` | 20 |
 | `lcd_screenshot_tests.cpp` | 5 | `app/tests/serial_links_tests.cpp` | 2 (LIB-2 AC-33; M-26) |
 | `lcd_text_tests.cpp` | 21 | `app/tests/shared_app_session_tests.cpp` | 13 (SharpAppPart on the library's session, M-31) |
-| `lh5801_tests.cpp` | 57 | `app/tests/shared_bay_tests.cpp` | 4 |
+| `lh5801_tests.cpp` | 54 (the key queue's three went, M-36) | `app/tests/shared_bay_tests.cpp` | 4 |
 | `lh5803_tests.cpp` | 8 | `app/tests/shared_geometry_tests.cpp` | 5 |
-| `listing_tests.cpp` | 10 | `app/tests/shared_host_key_map_tests.cpp` | 4 |
+| `listing_tests.cpp` | 10 | `app/tests/shared_host_key_map_tests.cpp` | 3 (`SharpKeyboardMap`; M-36) |
 | `machine_code_file_tests.cpp` | 22 | `app/tests/shared_machine_session_tests.cpp` | 7 |
 | `memory_card_tests.cpp` | 47 (the 8 YAML reader cases moved to the library in M-24) | `app/tests/shared_pacing_tests.cpp` | 2 (LIB-17 AC-20; the sink side of the sound; M-31) |
 | `pacing_longrun_tests.cpp` | 4, the "after" test of LIB-17 AC-21 (M-31): `lib17_ac21_pacing_longrun_scripted_pc1500a`, `_pc1600` Frequent; `lib17_ac21_pacing_longrun_real_clock_pc1500a`, `_pc1600` Checkpoint (return at once without `CALCU1600_PACING_LONGRUN`) | `app/tests/shared_preset_catalog_tests.cpp` | 4 |
 | `pc1500_tape_tests.cpp` | 2 | `app/tests/shared_settings_tests.cpp` | 8 (LIB-9 AC-26–32; M-30) |
-| `rom_lookup_tests.cpp` | 9 (LIB-12 AC-11–14, EC-1; M-27) | | |
+| `rom_lookup_tests.cpp` | 9 (LIB-12 AC-11–14, EC-1; M-27) | `typing_tests.cpp` | 15 (LIB-5, M-36) |
 
 ## Not in a group
 

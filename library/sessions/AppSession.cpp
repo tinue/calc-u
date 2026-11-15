@@ -170,6 +170,7 @@ struct AppSession::Impl final : SessionContext, SessionSetup {
     std::map<CallId, ListenerId> deferred;       // commands whose reply comes later (Deferred)
 
     Speed commanded = Speed::Regular;
+    bool closed = false;   // close() was called
     std::unique_ptr<Running> running;
     std::uint64_t seenGeneration = 0;
 
@@ -476,6 +477,7 @@ void AppSession::Impl::flush() {
 }
 
 void AppSession::Impl::deliver(const Out& o) {
+    if (closed) return;   // LIB-7: no message goes out after close()
     for (const Listener& l : listeners)
         if (!o.to || *o.to == l.id) l.sink->deliver(o.message);
 }
@@ -484,9 +486,17 @@ void AppSession::Impl::deliver(const Out& o) {
 
 AppSession::AppSession(AppSessionSetup s) : impl_(std::make_unique<Impl>(std::move(s))) {}
 AppSession::~AppSession() {
-    // LIB-7 AC-13: the parts write what they have to save; nothing is sent.
-    for (SessionPart* p : impl_->setup.parts) p->closing(*impl_);
+    // No part is called from here: a part the session does not own may be
+    // gone already (LIB-3's contract); a host calls close() first (LIB-7).
+    impl_->ms.setAboutToChange(nullptr);
     impl_->setup.owned.reset();   // the parts first, while the machine is there
+}
+
+void AppSession::close() {
+    Impl& s = *impl_;
+    if (s.closed) return;
+    for (SessionPart* p : s.setup.parts) p->closing(s);   // LIB-7 AC-13: what is to be saved, written
+    s.closed = true;
 }
 
 ListenerId AppSession::listen(MessageSink& sink, HostServices services) {

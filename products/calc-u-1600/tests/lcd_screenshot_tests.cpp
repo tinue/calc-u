@@ -159,10 +159,7 @@ TEST(test_preset_screenshot_writes_png) {
                             "/tmp/lcd_screenshot_tests_scratch.pc1500a", &p, &err));
     std::remove("/tmp/lcd_shot.png");
     const PresetLoadResult r = applyPC1500Preset(m, p, {}, "/tmp", ".", {}, testPresetRoms());
-    if (!r.ok && r.error.find("ROM") != std::string::npos) {
-        std::fprintf(stderr, "SKIP test_preset_screenshot_writes_png: %s\n", r.error.c_str());
-        return;
-    }
+    SKIP_UNLESS(!(!r.ok && r.error.find("ROM") != std::string::npos), r.error.c_str());
     CHECK(r.ok);
     std::ifstream in("/tmp/lcd_shot.png", std::ios::binary);
     const std::vector<uint8_t> png((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>());

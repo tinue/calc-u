@@ -88,19 +88,13 @@ void runEquivalenceCase(const char* label, const std::string& src) {
     std::vector<uint8_t> payload;
     uint16_t stA = 0, endA = 0;
     uint8_t markerA = 0;
-    if (!tokenizeViaOracle(src, &payload, &stA, &endA, &markerA)) {
-        std::fprintf(stderr, "SKIP basic_fastloader %s: ROM not available or typer rejected the program\n",
-                     label);
-        return;
-    }
+    SKIP_UNLESS(tokenizeViaOracle(src, &payload, &stA, &endA, &markerA),
+                (std::string(label) + ": ROM not available or typer rejected the program").c_str());
     CHECK(markerA == 0xFF);                       // typed program ends with a 0xFF
     CHECK(endA == stA + payload.size());
 
     PC1500Machine m;
-    if (!bootMachine(m)) {
-        std::fprintf(stderr, "SKIP basic_fastloader %s: roms/PC-1500_A04.ROM not found\n", label);
-        return;
-    }
+    SKIP_UNLESS(bootMachine(m), (std::string(label) + ": roms/PC-1500_A04.ROM not found").c_str());
     primeNew0(m);
     BasicLoadResult r = loadBasicProgram(m, wrapCe158(payload));
     CHECK(r.ok);
@@ -138,10 +132,7 @@ TEST(test_equivalence_rem_and_data) {
 
 TEST(test_rejects_pc1600_transfer_file) {
     PC1500Machine m;
-    if (!bootMachine(m)) {
-        std::fprintf(stderr, "SKIP basic_fastloader pc1600-reject: roms/PC-1500_A04.ROM not found\n");
-        return;
-    }
+    SKIP_UNLESS(bootMachine(m), "roms/PC-1500_A04.ROM not found");
     // Minimal PC-1600 header (FF 10 00 00, type 0x21) + a one-line payload.
     std::vector<uint8_t> payload = {0x00, 0x0A, 0x03, 0xF1, 0x8E, 0x0D};
     std::vector<uint8_t> f(16, 0x00);
@@ -166,15 +157,9 @@ TEST(test_rejects_uninitialized_basprg_st) {
     std::vector<uint8_t> payload;
     uint16_t st = 0, end = 0;
     uint8_t marker = 0;
-    if (!tokenizeViaOracle("10 PRINT \"AB\"\n", &payload, &st, &end, &marker)) {
-        std::fprintf(stderr, "SKIP basic_fastloader missing-new0: ROM not available\n");
-        return;
-    }
+    SKIP_UNLESS(tokenizeViaOracle("10 PRINT \"AB\"\n", &payload, &st, &end, &marker), "ROM not available");
     PC1500Machine m;
-    if (!bootMachine(m)) {
-        std::fprintf(stderr, "SKIP basic_fastloader missing-new0: roms/PC-1500_A04.ROM not found\n");
-        return;
-    }
+    SKIP_UNLESS(bootMachine(m), "roms/PC-1500_A04.ROM not found");
     // Deliberately do NOT primeNew0(m).
     BasicLoadResult r = loadBasicProgram(m, wrapCe158(payload));
     CHECK(!r.ok);
@@ -186,10 +171,7 @@ TEST(test_rejects_uninitialized_basprg_st) {
 // loader relies on to know how much of the resident program to erase.
 TEST(test_rejects_invalid_basprg_end) {
     PC1500Machine m;
-    if (!bootMachine(m)) {
-        std::fprintf(stderr, "SKIP basic_fastloader invalid-end: roms/PC-1500_A04.ROM not found\n");
-        return;
-    }
+    SKIP_UNLESS(bootMachine(m), "roms/PC-1500_A04.ROM not found");
     primeNew0(m);
     uint16_t st = be16(m, 0x7865);
     // Corrupt BASPRG_END to point before BASPRG_ST.
@@ -211,21 +193,10 @@ TEST(test_reload_over_shorter_program_clears_tail) {
     std::vector<uint8_t> longPayload, shortPayload;
     uint16_t stLong = 0, endLong = 0, stShort = 0, endShort = 0;
     uint8_t markerLong = 0, markerShort = 0;
-    if (!tokenizeViaOracle("10 PRINT \"HELLO WORLD\"\n20 GOTO 10\n", &longPayload, &stLong, &endLong,
-                          &markerLong) ||
-        !tokenizeViaOracle("10 END\n", &shortPayload, &stShort, &endShort, &markerShort)) {
-        std::fprintf(stderr, "SKIP basic_fastloader reload-shorter: ROM not available\n");
-        return;
-    }
-    if (longPayload.size() <= shortPayload.size()) {
-        std::fprintf(stderr, "SKIP basic_fastloader reload-shorter: fixture programs not ordered\n");
-        return;
-    }
+    SKIP_UNLESS(tokenizeViaOracle("10 PRINT \"HELLO WORLD\"\n20 GOTO 10\n", &longPayload, &stLong, &endLong, &markerLong) && tokenizeViaOracle("10 END\n", &shortPayload, &stShort, &endShort, &markerShort), "ROM not available");
+    SKIP_UNLESS(longPayload.size() > shortPayload.size(), "fixture programs not ordered");
     PC1500Machine m;
-    if (!bootMachine(m)) {
-        std::fprintf(stderr, "SKIP basic_fastloader reload-shorter: roms/PC-1500_A04.ROM not found\n");
-        return;
-    }
+    SKIP_UNLESS(bootMachine(m), "roms/PC-1500_A04.ROM not found");
     primeNew0(m);
     BasicLoadResult first = loadBasicProgram(m, wrapCe158(longPayload));
     CHECK(first.ok);

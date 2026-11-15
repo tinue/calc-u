@@ -234,10 +234,7 @@ uint16_t readBE16(PC1600Machine& m, uint16_t addr) {
 // taps ENTER itself afterwards and checks the characters made it.
 TEST(test_pc1600_paste_line_no_enter) {
     PC1600Machine m;
-    if (!bootPC1600(m)) {
-        std::fprintf(stderr, "SKIP test_pc1600_paste_line_no_enter: PC-1600 ROM images not found\n");
-        return;
-    }
+    SKIP_UNLESS(bootPC1600(m), "PC-1600 ROM images not found");
     const std::string line = "OPEN \"X:ATLANTIS.PUN\"FOR INPUT AS #1";
     const int enters = pasteInto(m, PC1600Machine::kTStateHz / 60, pc1600PastePacing(), pc1600ResolveTypedChar,
                                  line);
@@ -257,10 +254,7 @@ TEST(test_pc1600_paste_line_no_enter) {
 // hand, and then exactly that one line.
 TEST(test_pc1600_paste_multiline_types_first_line) {
     PC1600Machine m;
-    if (!bootPC1600(m)) {
-        std::fprintf(stderr, "SKIP test_pc1600_paste_multiline_types_first_line: PC-1600 ROM images not found\n");
-        return;
-    }
+    SKIP_UNLESS(bootPC1600(m), "PC-1600 ROM images not found");
     tapKey(m, "mode"); // RUN -> PRO
     m.runCycles(PC1600Machine::kTStateHz / 2);
     const uint16_t before = readBE16(m, 0xF867);
@@ -291,10 +285,7 @@ bool memoryContains(PC1500Machine& m, const std::string& needle) {
 
 TEST(test_pc1500_paste_multiline_types_first_line) {
     PC1500Machine m;
-    if (!bootPC1500(m)) {
-        std::fprintf(stderr, "SKIP test_pc1500_paste_multiline_types_first_line: roms/PC-1500_A04.ROM not found\n");
-        return;
-    }
+    SKIP_UNLESS(bootPC1500(m), "roms/PC-1500_A04.ROM not found");
     // A cold-booted PC-1500 needs CL + NEW0 before it stores program lines
     // (the preamble a preset's keys: gives typeBasicProgramText()).
     tapKey(m, "cl");

@@ -438,10 +438,7 @@ TEST(test_compat_gate_inline) {
 TEST(test_compat_gate_via_file_if_present) {
     const char* path = "frontends/qt6/resources/cards/ce155.card.yaml";
     std::ifstream probe(path);
-    if (!probe) {
-        std::fprintf(stderr, "SKIP test_compat_gate_via_file_if_present: %s not found\n", path);
-        return;
-    }
+    SKIP_UNLESS(probe, (std::string(path) + " not found").c_str());
     std::string err;
     CHECK(makeSoftwareDefinedCard(path, CardHost::PC1500, &err) != nullptr);
     err.clear();
@@ -452,10 +449,7 @@ TEST(test_compat_gate_via_file_if_present) {
 TEST(test_superram_card_yaml_if_present) {
     const char* path = "frontends/qt6/resources/cards/superram.card.yaml";
     std::ifstream probe(path);
-    if (!probe) {
-        std::fprintf(stderr, "SKIP test_superram_card_yaml_if_present: %s not found\n", path);
-        return;
-    }
+    SKIP_UNLESS(probe, (std::string(path) + " not found").c_str());
     // Slot 2 only.
     for (CardHost h : {CardHost::PC1500, CardHost::PC1500A, CardHost::PC1600Slot1}) {
         std::string err;

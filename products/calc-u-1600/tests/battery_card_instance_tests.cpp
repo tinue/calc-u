@@ -339,10 +339,7 @@ TEST(test_bundled_files_are_templates) {
     const char* dir = "frontends/qt6/resources/cards";
     std::string err;
     const auto cards = scanMemoryCardDirectory(dir, &err);
-    if (cards.empty()) {
-        std::fprintf(stderr, "SKIP test_bundled_files_are_templates: %s not found\n", dir);
-        return;
-    }
+    SKIP_UNLESS(!(cards.empty()), (std::string(dir) + " not found").c_str());
     CHECK(err.empty());
     for (const auto& e : cards) {
         if (!e.isTemplate) std::fprintf(stderr, "  not a template: %s\n", e.filePath.c_str());
@@ -395,11 +392,7 @@ TEST(test_splice_fails_without_regions) {
 TEST(test_splice_roundtrip_through_real_bundled_file_if_present) {
     const char* path = "frontends/qt6/resources/cards/ce1638.card.yaml";
     std::ifstream probe(path);
-    if (!probe) {
-        std::fprintf(stderr, "SKIP test_splice_roundtrip_through_real_bundled_file_if_present: %s not found\n",
-                      path);
-        return;
-    }
+    SKIP_UNLESS(probe, (std::string(path) + " not found").c_str());
     std::stringstream ss;
     ss << probe.rdbuf();
     const std::string sourceText = ss.str();

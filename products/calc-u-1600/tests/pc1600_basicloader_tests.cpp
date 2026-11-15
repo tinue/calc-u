@@ -97,10 +97,7 @@ TEST(test_ce1600m_module_equivalence_and_run) {
     uint16_t typedStLh = 0, typedEndLh = 0, typedVarPtrAfterRun = 0;
     {
         PC1600Machine m;
-        if (!bootIntoProNew0Slot1Ram(m, 0x8000)) {
-            std::fprintf(stderr, "SKIP pc1600_basicloader ce1600m: PC-1600 ROM set not found\n");
-            return;
-        }
+        SKIP_UNLESS(bootIntoProNew0Slot1Ram(m, 0x8000), "PC-1600 ROM set not found");
         BasicTypeResult typed = typeBasicProgramText(m, src);
         CHECK(typed.ok);
         CHECK(typed.rejectedLines.empty());
@@ -162,10 +159,7 @@ TEST(test_ce1600m_module_equivalence_and_run) {
 // would show leftover garbage from the previous program).
 TEST(test_reload_over_shorter_program_clears_tail_stock) {
     PC1600Machine m;
-    if (!bootIntoProNew0(m)) {
-        std::fprintf(stderr, "SKIP pc1600_basicloader reload-shorter: PC-1600 ROM set not found\n");
-        return;
-    }
+    SKIP_UNLESS(bootIntoProNew0(m), "PC-1600 ROM set not found");
     std::vector<uint8_t> longPayload = {0x00, 0x0A, 0x09, 0xF1, 0x22, 0x48, 0x45, 0x4C, 0x4C, 0x4F,
                                        0x22, 0x0D};
     std::vector<uint8_t> shortPayload = {0x00, 0x0A, 0x03, 0xF1, 0x30, 0x0D};
@@ -198,10 +192,7 @@ TEST(test_reload_over_shorter_program_clears_tail_stock) {
 // the loader relies on it to know how much of the resident program to erase.
 TEST(test_rejects_invalid_basprg_end) {
     PC1600Machine m;
-    if (!bootIntoProNew0(m)) {
-        std::fprintf(stderr, "SKIP pc1600_basicloader invalid-end: PC-1600 ROM set not found\n");
-        return;
-    }
+    SKIP_UNLESS(bootIntoProNew0(m), "PC-1600 ROM set not found");
     uint16_t st = be16(m, 0xF865);
     uint16_t badEnd = static_cast<uint16_t>(st - 1);
     m.memory().poke(0xF867, static_cast<uint8_t>(badEnd >> 8));
@@ -219,10 +210,7 @@ TEST(test_rejects_invalid_basprg_end) {
 // and clear it via the same scattered-placement logic used for writes.
 TEST(test_reload_over_shorter_program_clears_tail_module) {
     PC1600Machine m;
-    if (!bootIntoProNew0Slot1Ram(m, 0x8000)) {
-        std::fprintf(stderr, "SKIP pc1600_basicloader reload-shorter-module: PC-1600 ROM set not found\n");
-        return;
-    }
+    SKIP_UNLESS(bootIntoProNew0Slot1Ram(m, 0x8000), "PC-1600 ROM set not found");
     std::vector<uint8_t> longPayload = {0x00, 0x0A, 0x09, 0xF1, 0x22, 0x48, 0x45, 0x4C, 0x4C, 0x4F,
                                        0x22, 0x0D};
     std::vector<uint8_t> shortPayload = {0x00, 0x0A, 0x03, 0xF1, 0x30, 0x0D};
@@ -257,10 +245,7 @@ TEST(test_reload_over_shorter_program_clears_tail_module) {
 
 TEST(test_rejects_pc1500_transfer_file) {
     PC1600Machine m;
-    if (!bootIntoProNew0(m)) {
-        std::fprintf(stderr, "SKIP pc1600_basicloader pc1500-reject: PC-1600 ROM set not found\n");
-        return;
-    }
+    SKIP_UNLESS(bootIntoProNew0(m), "PC-1600 ROM set not found");
     // CE-158 header (0x01 .. "COM", type 0x40) + a one-line payload.
     std::vector<uint8_t> payload = {0x00, 0x0A, 0x03, 0xF1, 0x8E, 0x0D};
     std::vector<uint8_t> f(27, 0x00);
@@ -413,10 +398,7 @@ void checkTypedVsFast(const char* label, size_t slot1Ram, size_t slot2Ram, const
 
 TEST(test_work_area_matches_typed) {
     const std::vector<uint8_t> shortPayload = programPayload(kShortProgram);
-    if (shortPayload.empty()) {
-        std::fprintf(stderr, "SKIP pc1600_basicloader work-area: PC-1600 ROM set not found\n");
-        return;
-    }
+    SKIP_UNLESS(!shortPayload.empty(), "PC-1600 ROM set not found");
     const std::vector<uint8_t> longPayload = programPayload(kLongProgram);
     auto check = [&](const char* label, size_t slot1Ram, size_t slot2Ram, const std::vector<std::string>& setup,
                      int expectTitle = -1) {

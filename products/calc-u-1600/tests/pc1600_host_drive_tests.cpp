@@ -117,10 +117,7 @@ TEST(test_sequential_files_round_trip) {
     TempDir dir;
     writeFile(dir.path / "in.txt", "HELLO\r\n\x1A");
     PC1600Machine m;
-    if (!bootWithHostDrive(m, dir.path)) {
-        std::fprintf(stderr, "SKIP test_sequential_files_round_trip: PC-1600 ROM images not found\n");
-        return;
-    }
+    SKIP_UNLESS(bootWithHostDrive(m, dir.path), "PC-1600 ROM images not found");
     runProgram(m,
                "10 MAXFILES=2\n"
                "20 OPEN \"S3:IN.TXT\" FOR INPUT AS #1:INPUT #1,A$:CLOSE #1\n"
@@ -156,10 +153,7 @@ TEST(test_save_load_kill_name_copy) {
     TempDir dir;
     writeFile(dir.path / "a-long-host-name.bas", "not visible");
     PC1600Machine m;
-    if (!bootWithHostDrive(m, dir.path)) {
-        std::fprintf(stderr, "SKIP test_save_load_kill_name_copy: PC-1600 ROM images not found\n");
-        return;
-    }
+    SKIP_UNLESS(bootWithHostDrive(m, dir.path), "PC-1600 ROM images not found");
     enterProgram(m, "10 A=42\n20 PRINT A\n");
     type(m, "SAVE \"S3:T.BAS\"");
     const std::string saved = readFile(dir.path / "T.BAS");
@@ -197,10 +191,7 @@ TEST(test_protect_and_errors) {
     TempDir dir;
     writeFile(dir.path / "KEEP.TXT", "keep");
     PC1600Machine m;
-    if (!bootWithHostDrive(m, dir.path)) {
-        std::fprintf(stderr, "SKIP test_protect_and_errors: PC-1600 ROM images not found\n");
-        return;
-    }
+    SKIP_UNLESS(bootWithHostDrive(m, dir.path), "PC-1600 ROM images not found");
     type(m, "SET \"S3:KEEP.TXT\",\"P\"");
     CHECK((fs::status(dir.path / "KEEP.TXT").permissions() & fs::perms::owner_write) == fs::perms::none);
     CHECK(errorOf(m, dir.path, "KILL \"S3:KEEP.TXT\"") == 0x9F);
@@ -218,10 +209,7 @@ TEST(test_y_alias_follows_the_floppy) {
     {
         TempDir dir;
         PC1600Machine m;
-        if (!bootWithHostDrive(m, dir.path)) {
-            std::fprintf(stderr, "SKIP test_y_alias_follows_the_floppy: PC-1600 ROM images not found\n");
-            return;
-        }
+        SKIP_UNLESS(bootWithHostDrive(m, dir.path), "PC-1600 ROM images not found");
         enterProgram(m, "10 END\n");
         type(m, "SAVE \"Y:Y.BAS\"");
         CHECK(fs::exists(dir.path / "Y.BAS"));  // no CE-1600F: Y: is the host drive
@@ -229,10 +217,7 @@ TEST(test_y_alias_follows_the_floppy) {
     {
         TempDir dir;
         PC1600Machine m;
-        if (!bootWithHostDrive(m, dir.path, /*withCE1600P=*/true)) {
-            std::fprintf(stderr, "SKIP test_y_alias_follows_the_floppy (CE-1600P): ROM images not found\n");
-            return;
-        }
+        SKIP_UNLESS(bootWithHostDrive(m, dir.path, /*withCE1600P=*/true), "ROM images not found");
         enterProgram(m, "10 END\n");
         type(m, "SAVE \"S3:S.BAS\"");
         CHECK(fs::exists(dir.path / "S.BAS"));
@@ -244,10 +229,7 @@ TEST(test_y_alias_follows_the_floppy) {
 TEST(test_unmounted_drive_creates_nothing) {
     TempDir dir;
     PC1600Machine m;
-    if (!bootWithHostDrive(m, dir.path)) {
-        std::fprintf(stderr, "SKIP test_unmounted_drive_creates_nothing: PC-1600 ROM images not found\n");
-        return;
-    }
+    SKIP_UNLESS(bootWithHostDrive(m, dir.path), "PC-1600 ROM images not found");
     CHECK(m.hostDriveDirectory() == dir.path);
     // While unmounted the OPEN fails (no media, unit-tested in
     // host_directory_drive_tests) and creates nothing; the drive works
@@ -268,10 +250,7 @@ TEST(test_unmounted_drive_creates_nothing) {
 TEST(test_mep_fixed_entries) {
     TempDir dir;
     PC1600Machine m;
-    if (!bootWithHostDrive(m, dir.path)) {
-        std::fprintf(stderr, "SKIP test_mep_fixed_entries: PC-1600 ROM images not found\n");
-        return;
-    }
+    SKIP_UNLESS(bootWithHostDrive(m, dir.path), "PC-1600 ROM images not found");
     tapKey(m, "mode");  // RUN -> PRO: reserve &C0C5.. for the code
     waitIdle(m, PC1600Machine::kTStateHz);
     type(m, "NEW \"S0:\",&200");
@@ -327,10 +306,7 @@ TEST(test_cdir_and_ldir_statements) {
     TempDir dir;
     fs::create_directories(dir.path / "Sub" / "INNER");
     PC1600Machine m;
-    if (!bootWithHostDrive(m, dir.path)) {
-        std::fprintf(stderr, "SKIP test_cdir_and_ldir_statements: PC-1600 ROM images not found\n");
-        return;
-    }
+    SKIP_UNLESS(bootWithHostDrive(m, dir.path), "PC-1600 ROM images not found");
     CHECK(errorOf(m, dir.path, "CDIR \"NOPE\"") == 152);
     CHECK(errorOf(m, dir.path, "CDIR 5") == 7);
     CHECK(errorOf(m, dir.path, "CDIR \"\"") == 18);

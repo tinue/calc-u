@@ -308,8 +308,8 @@ bool fileExists(const char* p) { std::ifstream f(p); return f.good(); }
 
 bool haveRoms(const char* test) {
     if (fileExists(kSysRom) && fileExists(kCe150Rom) && fileExists(kCe158Rom)) return true;
-    std::fprintf(stderr, "SKIP %s: run from the repo root (needs %s, %s, %s)\n", test, kSysRom, kCe150Rom,
-                 kCe158Rom);
+    (void)test;
+    testharness::skip((std::string("run from the repo root (needs ") + kSysRom + ", " + kCe150Rom + ", " + kCe158Rom + ")").c_str());
     return false;
 }
 
@@ -450,7 +450,8 @@ TEST(test_pc1600_ce158_and_ce1600p_exclusive) {
 
 bool havePC1600Roms(const char* test) {
     if (fileExists("roms/PC1600-P0-B0-new.bin") && fileExists(kCe158Rom)) return true;
-    std::fprintf(stderr, "SKIP %s: run from the repo root (needs the PC-1600 ROM set + %s)\n", test, kCe158Rom);
+    (void)test;
+    testharness::skip((std::string("run from the repo root (needs the PC-1600 ROM set + ") + kCe158Rom + ")").c_str());
     return false;
 }
 

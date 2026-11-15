@@ -742,10 +742,7 @@ static int litPixels(const PC1600Machine& m) {
 // brings it back), and ON restarts it -- several times over.
 TEST(test_real_rom_off_stays_off_and_on_restarts) {
     PC1600Machine m;
-    if (!bootPC1600(m)) {
-        std::fprintf(stderr, "SKIP test_real_rom_off_stays_off_and_on_restarts: PC-1600 ROM images not found\n");
-        return;
-    }
+    SKIP_UNLESS(bootPC1600(m), "PC-1600 ROM images not found");
     const uint64_t hz = static_cast<uint64_t>(PC1600Machine::kTStateHz);
     CHECK(litPixels(m) > 0);
     for (int cycle = 0; cycle < 3; cycle++) {
@@ -777,10 +774,7 @@ void typeProgram(PC1600Machine& m, std::initializer_list<const char*> lines) {
 
 TEST(test_rom_on_time_gosub_fires) {
     PC1600Machine m;
-    if (!bootPC1600(m)) {
-        std::fprintf(stderr, "SKIP test_rom_on_time_gosub_fires: PC-1600 ROM images not found\n");
-        return;
-    }
+    SKIP_UNLESS(bootPC1600(m), "PC-1600 ROM images not found");
     tapKey(m, "mode"); // RUN -> PRO
     waitIdle(m, PC1600Machine::kTStateHz);
     typeProgram(m, {
@@ -818,10 +812,7 @@ bool runUntil(PC1600Machine& m, bool wantOff, double seconds) {
 // reset that resumes -- program kept, prompt responsive (SubCpu §4.1).
 TEST(test_rom_off_on_resumes) {
     PC1600Machine m;
-    if (!bootPC1600(m)) {
-        std::fprintf(stderr, "SKIP test_rom_off_on_resumes: PC-1600 ROM images not found\n");
-        return;
-    }
+    SKIP_UNLESS(bootPC1600(m), "PC-1600 ROM images not found");
     tapKey(m, "mode"); // RUN -> PRO
     waitIdle(m, PC1600Machine::kTStateHz);
     typeProgram(m, {"10 PRINT 1"});
@@ -857,10 +848,7 @@ TEST(test_rom_off_on_resumes) {
 // ROM separates the command with ':' (romIII-3 6E23H compares 3AH).
 TEST(test_rom_wake_runs_command_at_the_set_time) {
     PC1600Machine m;
-    if (!bootPC1600(m)) {
-        std::fprintf(stderr, "SKIP test_rom_wake_runs_command_at_the_set_time: PC-1600 ROM images not found\n");
-        return;
-    }
+    SKIP_UNLESS(bootPC1600(m), "PC-1600 ROM images not found");
     tapKey(m, "mode"); // RUN -> PRO -> RUN, as after any ALL RESET here
     waitIdle(m, PC1600Machine::kTStateHz);
     tapKey(m, "mode");
@@ -891,10 +879,7 @@ TEST(test_rom_wake_runs_command_at_the_set_time) {
 // 04B0H reload after the resume.
 TEST(test_rom_auto_power_off_resumes) {
     PC1600Machine m;
-    if (!bootPC1600(m)) {
-        std::fprintf(stderr, "SKIP test_rom_auto_power_off_resumes: PC-1600 ROM images not found\n");
-        return;
-    }
+    SKIP_UNLESS(bootPC1600(m), "PC-1600 ROM images not found");
     tapKey(m, "mode"); waitIdle(m, PC1600Machine::kTStateHz);
     tapKey(m, "mode"); waitIdle(m, PC1600Machine::kTStateHz);
     auto apoCount = [&] { return m.memory().read(0xF0AC) | (m.memory().read(0xF0AD) << 8); };
@@ -939,10 +924,7 @@ struct RecordingLink : SerialLink {
 
 TEST(test_rom_com1_print_reaches_the_peer) {
     PC1600Machine m;
-    if (!bootPC1600(m)) {
-        std::fprintf(stderr, "SKIP test_rom_com1_print_reaches_the_peer: PC-1600 ROM images not found\n");
-        return;
-    }
+    SKIP_UNLESS(bootPC1600(m), "PC-1600 ROM images not found");
     RecordingLink link;
     m.setSerialLink(&link);
     tapKey(m, "mode"); waitIdle(m, PC1600Machine::kTStateHz);

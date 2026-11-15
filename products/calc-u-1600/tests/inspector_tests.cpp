@@ -61,7 +61,7 @@ bool enabled1600(const PC1600Machine& m, inspect::View v) {
 /// Applies a PC-1600 preset; false (test skipped) without the ROM images.
 bool preset1600(PC1600Machine& m, const std::string& yaml) {
     if (!loadPC1600Roms(m)) {
-        std::fprintf(stderr, "SKIP inspector preset test: PC-1600 ROM images not found\n");
+        testharness::skip("PC-1600 ROM images not found");
         return false;
     }
     PresetFile p;
@@ -285,10 +285,7 @@ TEST(test_pc1500_views) {
     CHECK(parsePresetString("format-version: 1\nmodel: PC-1500A\nkeys:\n  - type: NEW0\n",
                             "/tmp/inspector_tests_scratch.pc1500a", &p, &err));
     const PresetLoadResult r = applyPC1500Preset(m, p, {}, ".", "frontends/qt6/resources/cards", {}, testPresetRoms());
-    if (!r.ok) {
-        std::fprintf(stderr, "SKIP test_pc1500_views: %s\n", r.error.c_str());
-        return;
-    }
+    SKIP_UNLESS(r.ok, r.error.c_str());
     const auto view = [&](inspect::View v) {
         return m.debugInspect([&](const PC1500Machine& x) { return inspect::pc1500View(x, v); });
     };

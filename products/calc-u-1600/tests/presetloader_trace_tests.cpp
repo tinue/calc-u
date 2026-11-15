@@ -98,11 +98,7 @@ std::string makeTempDir() {
 // A preset that explicitly starts and stops a trace produces a complete
 // stream: SESSION_START ... TRACE_EVENT(s) ... SESSION_END.
 TEST(test_trace_step_produces_wellformed_file) {
-    if (!romPresent()) {
-        std::fprintf(stderr, "SKIP test_trace_step_produces_wellformed_file: %s not found "
-                              "relative to cwd (run tests from the repo root)\n", kRomPath);
-        return;
-    }
+    SKIP_UNLESS(romPresent(), (std::string(kRomPath) + " not found relative to cwd (run tests from the repo root)").c_str());
     std::string dir = makeTempDir();
     CHECK(!dir.empty());
     if (dir.empty()) return;
@@ -139,10 +135,7 @@ TEST(test_trace_step_produces_wellformed_file) {
 // A trace left running at the end of the preset is still finalised
 // (SESSION_END written, file closed) by runPresetSections()' TraceCloser guard.
 TEST(test_trace_left_open_is_auto_closed) {
-    if (!romPresent()) {
-        std::fprintf(stderr, "SKIP test_trace_left_open_is_auto_closed: %s not found\n", kRomPath);
-        return;
-    }
+    SKIP_UNLESS(romPresent(), (std::string(kRomPath) + " not found").c_str());
     std::string dir = makeTempDir();
     CHECK(!dir.empty());
     if (dir.empty()) return;
@@ -236,10 +229,7 @@ TEST(test_z80_frame_shares_one_file_with_lh5801_frame) {
 // TRACE_EVENT_Z80 (0x04) in the one file.
 TEST(test_pc1600_trace_step_produces_wellformed_file) {
     PC1600Machine machine;
-    if (!loadPC1600Roms(machine)) {
-        std::fprintf(stderr, "SKIP test_pc1600_trace_step_produces_wellformed_file: PC-1600 ROM images not found\n");
-        return;
-    }
+    SKIP_UNLESS(loadPC1600Roms(machine), "PC-1600 ROM images not found");
     std::string dir = makeTempDir();
     CHECK(!dir.empty());
     if (dir.empty()) return;
@@ -281,10 +271,7 @@ TEST(test_pc1600_trace_step_produces_wellformed_file) {
 // by applyPC1600Preset()'s TraceCloser guard.
 TEST(test_pc1600_trace_left_open_is_auto_closed) {
     PC1600Machine machine;
-    if (!loadPC1600Roms(machine)) {
-        std::fprintf(stderr, "SKIP test_pc1600_trace_left_open_is_auto_closed: PC-1600 ROM images not found\n");
-        return;
-    }
+    SKIP_UNLESS(loadPC1600Roms(machine), "PC-1600 ROM images not found");
     std::string dir = makeTempDir();
     CHECK(!dir.empty());
     if (dir.empty()) return;
@@ -317,10 +304,7 @@ TEST(test_pc1600_trace_left_open_is_auto_closed) {
 // machine-code `program:` block that isn't all RAM, or runs past &FFFF, fails the
 // preset instead of dropping or wrapping bytes and reporting success.
 TEST(test_binary_program_outside_ram_fails) {
-    if (!romPresent()) {
-        std::fprintf(stderr, "SKIP test_binary_program_outside_ram_fails: %s not found\n", kRomPath);
-        return;
-    }
+    SKIP_UNLESS(romPresent(), (std::string(kRomPath) + " not found").c_str());
     std::string dir = makeTempDir();
     CHECK(!dir.empty());
     if (dir.empty()) return;
@@ -351,10 +335,7 @@ TEST(test_binary_program_outside_ram_fails) {
 // 27 header bytes) lands at the header's load address, with no `address:`.
 // A headerless file without `address:` is refused at load time.
 TEST(test_binary_program_ce158_header) {
-    if (!romPresent()) {
-        std::fprintf(stderr, "SKIP test_binary_program_ce158_header: %s not found\n", kRomPath);
-        return;
-    }
+    SKIP_UNLESS(romPresent(), (std::string(kRomPath) + " not found").c_str());
     std::string dir = makeTempDir();
     CHECK(!dir.empty());
     if (dir.empty()) return;

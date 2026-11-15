@@ -74,10 +74,7 @@ std::vector<float> asPlayback(const std::vector<int16_t>& recording) {
 TEST(test_cload_bin2wav_tape) {
     const std::vector<uint8_t> image = readFile(kFixtureImg);
     PC1600Machine m;
-    if (image.empty() || !bootWithCE1600P(m)) {
-        std::fprintf(stderr, "SKIP test_cload_bin2wav_tape: PC-1600 ROM images or fixture not found\n");
-        return;
-    }
+    SKIP_UNLESS(!image.empty() && bootWithCE1600P(m), "PC-1600 ROM images or fixture not found");
     type(m, "NEW0");
     std::string error;
     CHECK(m.tapePlay(kFixtureWav, error));
@@ -100,10 +97,7 @@ TEST(test_cload_bin2wav_tape) {
 TEST(test_csave_cload_round_trip) {
     const std::vector<uint8_t> image = readFile(kFixtureImg);
     PC1600Machine a;
-    if (image.empty() || !bootWithCE1600P(a)) {
-        std::fprintf(stderr, "SKIP test_csave_cload_round_trip: PC-1600 ROM images or fixture not found\n");
-        return;
-    }
+    SKIP_UNLESS(!image.empty() && bootWithCE1600P(a), "PC-1600 ROM images or fixture not found");
     type(a, "NEW0");
     std::string error;
     CHECK(a.tapePlay(kFixtureWav, error));
@@ -161,10 +155,7 @@ std::vector<int16_t> csaveInSlices(uint64_t slice) {
 
 TEST(test_recording_independent_of_pacing) {
     const std::vector<int16_t> small = csaveInSlices(997);
-    if (small.empty()) {
-        std::fprintf(stderr, "SKIP test_recording_independent_of_pacing: PC-1600 ROM images not found\n");
-        return;
-    }
+    SKIP_UNLESS(!small.empty(), "PC-1600 ROM images not found");
     const std::vector<int16_t> large = csaveInSlices(kSecond / 3);
     CHECK(small.size() > 5 * TapeDeck::kRecordSampleRate);
     const size_t n = std::min(small.size(), large.size());

@@ -211,10 +211,7 @@ TEST(test_slot2_plain_card_ignores_vertical_bank_through_connector) {
 // -- verified separately against the documented real-hardware figure.)
 TEST(test_boot_with_ce155_in_slot1_is_stable) {
     PC1600Machine m;
-    if (!loadPC1600Roms(m)) {
-        std::fprintf(stderr, "SKIP test_boot_with_ce155_in_slot1_is_stable: PC-1600 ROM images not found\n");
-        return;
-    }
+    SKIP_UNLESS(loadPC1600Roms(m), "PC-1600 ROM images not found");
     auto ce155 = card("ce155.card.yaml", CardHost::PC1600Slot1);
     if (!ce155) return;
     m.attachSlot1Card(std::move(ce155));
@@ -240,10 +237,7 @@ TEST(test_boot_with_ce155_in_slot1_is_stable) {
 // RAM-base/size work-area pointer moves by exactly 8192.
 TEST(test_ce155_contributes_full_8k_to_mem) {
     auto m0 = bootWithCard(1, nullptr), m1 = bootWithCard(1, "ce155.card.yaml");
-    if (!m0 || !m1) {
-        std::fprintf(stderr, "SKIP test_ce155_contributes_full_8k_to_mem: PC-1600 ROM images not found\n");
-        return;
-    }
+    SKIP_UNLESS(m0 && m1, "PC-1600 ROM images not found");
     // The BASIC program start (C0C5H stock).
     CHECK(programStart(*m0) == 0xC0C5);
     CHECK(programStart(*m1) == 0xA0C5); // stock - 8192, program area start A0C5H
@@ -259,10 +253,7 @@ TEST(test_ce155_contributes_full_8k_to_mem) {
 TEST(test_ce151_fills_b000_bfff_in_slot1) {
     auto m0 = bootWithCard(1, nullptr), m1 = bootWithCard(1, "ce151.card.yaml"),
          m5 = bootWithCard(1, "ce155.card.yaml");
-    if (!m0 || !m1 || !m5) {
-        std::fprintf(stderr, "SKIP test_ce151_fills_b000_bfff_in_slot1: PC-1600 ROM images not found\n");
-        return;
-    }
+    SKIP_UNLESS(m0 && m1 && m5, "PC-1600 ROM images not found");
     CHECK(m0->memory().read(0xF08D) == 0x1B);
     CHECK(m1->memory().read(0xF08D) == 0x1A);
     CHECK(m5->memory().read(0xF08D) == 0x5B);
@@ -287,10 +278,7 @@ TEST(test_ce151_fills_b000_bfff_in_slot1) {
 TEST(test_ce161_contributes_full_16k_in_both_slots) {
     auto m0 = bootWithCard(1, nullptr), m1 = bootWithCard(1, "ce161.card.yaml"),
          m2 = bootWithCard(2, "ce161.card.yaml");
-    if (!m0 || !m1 || !m2) {
-        std::fprintf(stderr, "SKIP test_ce161_contributes_full_16k_in_both_slots: PC-1600 ROM images not found\n");
-        return;
-    }
+    SKIP_UNLESS(m0 && m1 && m2, "PC-1600 ROM images not found");
     CHECK(programStart(*m1) == 0x80C5);
     CHECK(programStart(*m2) == 0x80C5);
     CHECK(int(rd16(*m0, 0xF89D)) - int(rd16(*m1, 0xF89D)) == 16384);
@@ -399,10 +387,7 @@ TEST(test_trigger_latch_modules_in_slot2_contribute_full_16k) {
     if (!c1 || !c2) return;
     auto m1 = boot(std::move(c1));
     auto m2 = boot(std::move(c2));
-    if (!m0 || !m1 || !m2) {
-        std::fprintf(stderr, "SKIP test_trigger_latch_modules_in_slot2_contribute_full_16k: PC-1600 ROM images not found\n");
-        return;
-    }
+    SKIP_UNLESS(m0 && m1 && m2, "PC-1600 ROM images not found");
     CHECK(programStart(*m0) == 0xC0C5);
     CHECK(programStart(*m1) == 0x80C5); // CE-1638:  stock - 16384
     CHECK(programStart(*m2) == 0x80C5); // CE-163F:  stock - 16384
@@ -423,10 +408,7 @@ TEST(test_mode1_xpeek_maps_program_bank_via_lh5803_p_bank) {
     if (!ce163f) return;
     PC1600Machine m;
     m.attachSlot2Card(std::move(ce163f));
-    if (!bootPC1600(m)) {
-        std::fprintf(stderr, "SKIP test_mode1_xpeek_maps_program_bank_via_lh5803_p_bank: PC-1600 ROM images not found\n");
-        return;
-    }
+    SKIP_UNLESS(bootPC1600(m), "PC-1600 ROM images not found");
     for (const char* line : {"MODE 1", "XPOKE&C5,&55", "A=XPEEK&C5", "XPOKE&C6,A"}) {
         std::string err;
         CHECK(typeLine(m, line, /*pressEnter=*/true, &err));

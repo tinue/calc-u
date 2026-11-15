@@ -27,6 +27,10 @@ std::unique_ptr<machine::Machine> MachineSession::takeMachine() {
     return std::move(machine_);
 }
 
+void MachineSession::dropInput() {
+    for (SliceHook* h : hooks_) h->drop();
+}
+
 void MachineSession::setSuspended(bool s) {
     const bool was = suspended_;
     suspended_ = s;

@@ -52,6 +52,14 @@ test('the installed app starts without a connection and runs every model', async
   await expect(page.locator('.calcu-key')).toHaveCount(45, { timeout: 30000 });
   await page.evaluate(() => navigator.serviceWorker.ready);
   await page.close();
+  // The closed page's worker lets go of the save folder's lock a little
+  // later (slow WebKit runners: seconds). A page started before that is a
+  // second copy (row 59-8) and says so, which is right but not this test.
+  const probe = await context.newPage();
+  await probe.goto(`http://localhost:${server.address().port}${PREFIX}`);
+  await expect.poll(() => probe.evaluate(async () =>
+    navigator.locks ? (await navigator.locks.query()).held.length : 0), { timeout: 30000 }).toBe(0);
+  await probe.close();
   await stop(server);
 
   const app = await context.newPage();

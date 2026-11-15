@@ -249,7 +249,12 @@ differs in 34 of 57 examples, as after M-34 (§8, item 3). CI on `main`:
    recorded with P-5b's branch and with `main` before it are the same; the
    M-34 finding (34 of 57 differ from the M-9 references, printer timing at
    full speed) is unchanged and stays with M-36.
-4. No spec change is wanted for any of the above.
+4. CI's Calc-U-59 `web` job failed `offline.spec.js` in WebKit, as it did
+   in the M-34 run (43725665788): the test opened its second page before
+   the closed page's worker had let go of the save folder's lock, so the
+   page rightly said it was a second copy (row 59-8). The test now waits
+   until the origin holds no lock (`c1s-offline-lock`); no product change.
+5. No spec change is wanted for any of the above.
 
 ## 9. Line counts
 

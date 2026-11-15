@@ -118,7 +118,7 @@ TEST(test_trace_step_produces_wellformed_file) {
         dir + "/scratch.pc1500", &preset, &err));
 
     PC1500Machine machine(preset.variant);
-    PresetLoadResult res = applyPC1500Preset(machine, preset, {}, dir, ".", {}, {"roms"});
+    PresetLoadResult res = applyPC1500Preset(machine, preset, {}, dir, ".", {}, testPresetRoms());
     CHECK(res.ok);
 
     TraceSummary s = readTrace(dir + "/t.bin");
@@ -157,7 +157,7 @@ TEST(test_trace_left_open_is_auto_closed) {
         dir + "/scratch.pc1500", &preset, &err));
 
     PC1500Machine machine(preset.variant);
-    PresetLoadResult res = applyPC1500Preset(machine, preset, {}, dir, ".", {}, {"roms"});
+    PresetLoadResult res = applyPC1500Preset(machine, preset, {}, dir, ".", {}, testPresetRoms());
     CHECK(res.ok);
 
     TraceSummary s = readTrace(dir + "/t2.bin");
@@ -335,7 +335,7 @@ TEST(test_binary_program_outside_ram_fails) {
                                             "  address: ") + address + "\n",
                                 dir + "/scratch.pc1500a", &preset, &err));
         PC1500Machine machine(preset.variant);
-        return applyPC1500Preset(machine, preset, {}, dir, ".", {}, {"roms"});
+        return applyPC1500Preset(machine, preset, {}, dir, ".", {}, testPresetRoms());
     };
     PresetLoadResult rom = run("0xC000");
     CHECK(!rom.ok && rom.error.find("not RAM") != std::string::npos);
@@ -379,7 +379,7 @@ TEST(test_binary_program_ce158_header) {
         CHECK(parsePresetString(std::string("format-version: 1\nmodel: PC-1500A\nprogram:\n  file: ") + file + "\n",
                                 dir + "/scratch.pc1500a", &preset, &err));
         PC1500Machine machine(preset.variant);
-        PresetLoadResult res = applyPC1500Preset(machine, preset, {}, dir, ".", {}, {"roms"});
+        PresetLoadResult res = applyPC1500Preset(machine, preset, {}, dir, ".", {}, testPresetRoms());
         return std::make_pair(res, std::vector<uint8_t>{machine.debugPeek(0x7C10), machine.debugPeek(0x7C13)});
     };
     auto [loaded, bytes] = run("ce158.bin");

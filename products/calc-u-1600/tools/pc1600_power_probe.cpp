@@ -47,7 +47,7 @@ int main(int argc, char** argv) {
     const std::string dir = (argc >= 2) ? argv[1] : "roms";
 
     std::string romErr;
-    std::unique_ptr<cli::Machine> built = cli::buildMachine(sharp::kPC1600, "New", {dir}, &romErr);
+    std::unique_ptr<cli::Machine> built = cli::buildMachine(sharp::kPC1600, "New", dir, &romErr);
     if (!built) {
         std::fprintf(stderr, "could not load the PC-1600 ROM set from '%s': %s\n", dir.c_str(), romErr.c_str());
         return 1;

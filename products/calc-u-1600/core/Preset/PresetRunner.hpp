@@ -15,6 +15,7 @@
 #include "../Job.hpp"
 #include "../MachineCodeFile.hpp"
 #include "PresetFile.hpp"
+#include "PresetRomSet.hpp"
 
 // ── The model-independent half of applying a preset ─────────────────────
 //
@@ -190,11 +191,14 @@ std::vector<std::string> presetModuleDirs(const std::string& moduleDir,
 /// `slot-N:` name (`specName`, looked up in `moduleDirs`) names, for
 /// `host`. A `slot-N-rom:` file (`romFile`, read here on every call) replaces
 /// the ROM of a ROM module. Returns null with `error` set on failure;
-/// `resolvedPath` receives the spec file used.
+/// `resolvedPath` receives the spec file used. A `slot-N:` name of a module
+/// of the ROM set (`romSet`, the CE-502B; LIB-12 AC-14) is taken from the
+/// set before the folders; `resolvedPath` is then empty.
 std::unique_ptr<ExpansionCard> makePresetModuleCard(const std::string& specFile, const std::string& specName,
                                                     const std::string& romFile,
                                                     const std::vector<std::string>& moduleDirs, CardHost host,
-                                                    std::string* resolvedPath, std::string* error);
+                                                    std::string* resolvedPath, std::string* error,
+                                                    const calcu::roms::RomSet* romSet = nullptr);
 
 /// Walks `preset.sections` in file order on the already-booted `machine`:
 /// each `keys:` block's steps, each `program:` block's load. On success sets

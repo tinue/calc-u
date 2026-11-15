@@ -45,7 +45,7 @@ std::string diskDescription(const shared::FloppyBay& bay, const std::string& nam
 
 struct Listener : shared::MachineSession::Listener {
     std::string missing;
-    void romMissing(const std::string& error, const std::string&) override { missing = error; }
+    void romMissing(const calcu::roms::RomsMissing& m) override { missing = calcu::roms::describe(m); }
 };
 
 // The app's wiring of the session's bay hooks.

@@ -21,6 +21,7 @@
 #include "../core/PC1500/PC1500Screenshot.hpp"
 #include "PresetTestSupport.hpp"
 #include "TestHarness.hpp"
+#include "TestRoms.hpp"
 
 namespace {
 
@@ -157,7 +158,7 @@ TEST(test_preset_screenshot_writes_png) {
     CHECK(parsePresetString("format-version: 1\nmodel: PC-1500A\nkeys:\n  - type: PRINT 12345\n  - screenshot: lcd_shot.png\n",
                             "/tmp/lcd_screenshot_tests_scratch.pc1500a", &p, &err));
     std::remove("/tmp/lcd_shot.png");
-    const PresetLoadResult r = applyPC1500Preset(m, p, {}, "/tmp", ".", {}, {"roms"});
+    const PresetLoadResult r = applyPC1500Preset(m, p, {}, "/tmp", ".", {}, testPresetRoms());
     if (!r.ok && r.error.find("ROM") != std::string::npos) {
         std::fprintf(stderr, "SKIP test_preset_screenshot_writes_png: %s\n", r.error.c_str());
         return;

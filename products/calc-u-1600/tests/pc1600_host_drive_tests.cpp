@@ -24,7 +24,6 @@ namespace {
 
 namespace fs = std::filesystem;
 
-const std::vector<std::string> kHostDriveRomDirs = {"firmware/pc1600-hostdrive"};
 
 struct TempDir {
     fs::path path;
@@ -58,12 +57,12 @@ std::string readFile(const fs::path& p) {
 bool bootWithHostDrive(PC1600Machine& m, const fs::path& dir, bool withCE1600P = false) {
     std::string error;
     if (!loadPC1600Roms(m)) return false;
-    if (!BundledRoms::attachHostDrive(m, kHostDriveRomDirs, dir, &error)) {
+    if (!presetroms::attachHostDrive(m, testPresetRoms(), dir, &error)) {
         std::fprintf(stderr, "FAIL host drive attach: %s\n", error.c_str());
         testharness::failCount()++;
         return false;
     }
-    if (withCE1600P && !BundledRoms::attachCE1600P(m, {"roms"}, "new", &error)) return false;
+    if (withCE1600P && !presetroms::attachCE1600P(m, testPresetRoms(), "new", &error)) return false;
     m.allReset();
     runBootToPrompt(m);
     tapKey(m, "mode"); waitIdle(m, PC1600Machine::kTStateHz);  // as the COM1 test: settle

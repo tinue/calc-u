@@ -151,12 +151,15 @@ Frequent except where the table says otherwise):
 
 | CTest entry | What | Group | Measured (M4 Pro, 2026-11-14) |
 |---|---|---|---|
-| `CoreTests` | 856 `TEST`s: unit and integration tests of the core and the app layer (real ROMs, presets, loaders, job equivalence), the machine interface (C1600-1, LIB-1 1600, LIB-2 1600), the settings file (LIB-9 1600), the golden replays through it (table below), the harness product entry (LIB-11, M-28) | Frequent | 39.0 s (M-30/M-28, 2026-11-15) |
+| `CoreTests` | 865 `TEST`s: unit and integration tests of the core and the app layer (real ROMs, presets, loaders, job equivalence), the machine interface (C1600-1, LIB-1 1600, LIB-2 1600), the settings file (LIB-9 1600), the ROM lookup (LIB-12 1600), the golden replays through it (table below), the harness product entry (LIB-11, M-28) | Frequent | 39.0 s (M-30/M-28/M-27, 2026-11-15) |
 | `CalcU1600CheckPresets` | `tools/check_presets.sh`: every preset in the repository parses | Frequent | 0.3 s |
 | `CalcU1600MachineIncludeCheck` | `tools/check_machine_includes.sh`: no file outside `core/` (app, frontends, tools, dev) includes a machine class, directly or through a core header, or names one (C1600-1, Technical Requirements; design T13; M-26) | Frequent | 1.1 s |
+| `CalcU1600NoOwnRomLookup` | `library/roms/tests/check_no_own_rom_lookup.sh`: no product source outside `core/Machine/SharpRoms.cpp` (with the host-drive ROM, D-6), the catalogue and `app/tests/` looks for a ROM file (LIB-12 AC-2, design T7; M-27) | Frequent | 0.5 s |
+| `CalcU1600CliRomLookup` | `tests/cli_rom_tests.sh`: `pc1600_cli --preset` with a `roms/` without one file exits 1 naming it, with the full set it runs (LIB-12 AC-13, design Q2; M-27) | Frequent | 0.2 s |
 | `CalcU1600NoPlatformSettings` | `library/settings/check_platform_stores.sh` over `frontends/` with `tools/platform_stores_allowed.txt`: no setting in QSettings or `localStorage` (LIB-9 AC-31, design T-19; M-30); not registered on Windows | Frequent | 0.02 s |
 | | **Frequent, Calc-U-1600** | | **40.4 s** (M-30) |
 | `CalcU1600WebPlaywright` | `frontends/web/run-tests.sh`: Playwright, Chromium (root, sub-path) and WebKit (offline) | Longer | 22.5 s (Homebrew Emscripten 7.0, after `<cstdlib>` was added to `core/Debug/BreakpointTable.cpp`); 31 s in CI (6.0.13) |
+| `CalcU1600RomMissingBuild` | `tests/rom_missing_build.sh`: a Web `dist/` built from `roms/` without one file (default `PC1600-P1-B3-old.bin`) shows the lookup's text naming it and no calculator (LIB-12, Technical Requirements, design Q5; M-27); not registered on Windows | Longer | 3.2 s (M-27; the Web build tree already built) |
 | `CalcU1600WasmSmoke` | `tools/build_wasm_check.sh`: core and app layer under node | Longer | 5.1 s locally without the build; 44 s in CI with the build |
 | `CalcU1600Shots.<scenario>` | the nine screenshot scenarios of `docs/developer/screenshots/guide/` run as checks, into the build tree | Longer | 39.6 s, the nine together (2.2–9.2 s each), all passed |
 | `CalcU1600DapSmoke` | `tools/dap_smoke.py --app`: the DAP requests VS Code uses | Longer | 24.7 s; failed 3/3 earlier on 2026-11-14 and at the pin (no `stopped` event after the first `stepIn`), passed in the Part B run: possibly timing-dependent, open finding |
@@ -202,6 +205,7 @@ needs ROMs that are missing reports `SKIP`):
 | `memory_card_tests.cpp` | 47 (the 8 YAML reader cases moved to the library in M-24) | `app/tests/shared_pacing_tests.cpp` | 3 |
 | `pacing_longrun_tests.cpp` | 4: `pacing_longrun_scripted_pc1500a`, `_pc1600` Frequent; `pacing_longrun_real_clock_pc1500a`, `_pc1600` Checkpoint (return at once without `CALCU1600_PACING_LONGRUN`) | `app/tests/shared_preset_catalog_tests.cpp` | 4 |
 | `pc1500_tape_tests.cpp` | 2 | `app/tests/shared_settings_tests.cpp` | 8 (LIB-9 AC-26–32; M-30) |
+| `rom_lookup_tests.cpp` | 9 (LIB-12 AC-11–14, EC-1; M-27) | | |
 
 ## Not in a group
 

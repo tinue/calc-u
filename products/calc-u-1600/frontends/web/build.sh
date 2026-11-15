@@ -13,7 +13,7 @@ set -euo pipefail
 WEB="$(cd "$(dirname "$0")" && pwd)"
 REPO="$(cd "$WEB/../.." && pwd)"  # the product directory
 ROOT="$(cd "$REPO/../.." && pwd)"  # the repository's root CMake project
-DIST="$WEB/dist"
+DIST="${CALCU1600_WEB_DIST:-$WEB/dist}"
 BUILD="$ROOT/build/web"
 
 for tool in emcmake cmake ninja node; do
@@ -22,7 +22,7 @@ for tool in emcmake cmake ninja node; do
     exit 1
   fi
 done
-if ! ls "$REPO"/roms/*.bin >/dev/null 2>&1; then
+if ! ls "${CALCU1600_ROMS_DIR:-$REPO/roms}"/*.bin >/dev/null 2>&1; then
   echo "error: no ROMs in roms/ -- run roms/fetch_roms.sh." >&2
   exit 1
 fi
@@ -37,9 +37,12 @@ mkdir -p "$DIST/wasm" "$DIST/bundle" "$DIST/img" "$DIST/app" "$DIST/vendor"
 
 cp "$BUILD/products/calc-u-1600/calcu1600-core.js" "$BUILD/products/calc-u-1600/calcu1600-core.wasm" "$DIST/wasm/"
 # What the engine reads as bundled resources (AppPaths::bundledResourcesDir):
-# every ROM image and the bundled card and disk templates. The host-drive
-# ROM stays out: the web has no host drive.
-find "$REPO/roms" -maxdepth 1 -type f \( -iname '*.bin' -o -iname '*.rom' \) -exec cp {} "$DIST/bundle/" \;
+# the ROM full set (the dumps and the CE-502B's module definition; LIB-12
+# AC-12, AC-14) and the bundled card and disk templates. The host-drive ROM
+# stays out: the web has no host drive. CALCU1600_ROMS_DIR: another ROM
+# folder (tests/rom_missing_build.sh).
+ROMS="${CALCU1600_ROMS_DIR:-$REPO/roms}"
+find "$ROMS" -maxdepth 1 -type f \( -iname '*.bin' -o -iname '*.rom' -o -name '*.card.yaml' \) -exec cp {} "$DIST/bundle/" \;
 cp "$REPO"/frontends/qt6/resources/cards/*.yaml "$DIST/bundle/"
 
 cp "$REPO"/frontends/qt6/resources/faceplates/*.png "$DIST/img/"

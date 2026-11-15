@@ -607,10 +607,12 @@ public:
     }
 
     // ── AppSession::Platform ─────────────────────────────────────────────
-    void romMissing(const std::string& error, const std::string& searchedIn) override {
+    // A file of the ROM full set is missing or bad (LIB-12 AC-5, AC-13): the
+    // page shows the lookup's message and no calculator.
+    void romMissing(const calcu::roms::RomsMissing& missing) override {
         val m = obj();
         m.set("type", "fatal");
-        m.set("message", error + " (searched " + searchedIn + ")");
+        m.set("message", calcu::roms::describe(missing));
         post(m);
     }
     void notice(shared::MachineSession::Notice n, const std::string& detail) override {

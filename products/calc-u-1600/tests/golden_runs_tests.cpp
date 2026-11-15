@@ -53,7 +53,7 @@
 #include "../core/Machine/SharpCatalogue.hpp"
 #include "../core/Machine/SharpMachine.hpp"
 #include "../core/Machine/SharpProductKinds.hpp"
-#include "../core/Machine/SharpRomImages.hpp"
+#include "SharpTestSupport.hpp"
 #include "TestCards.hpp"
 #include "TestHarness.hpp"
 
@@ -84,11 +84,9 @@ std::string plotSummary(const std::string& name, const std::vector<AlpsPlotterMe
     return "  paper " + name + " points=" + std::to_string(pts.size()) + " sum=" + f.hex() + "\n";
 }
 
-const std::vector<std::string> kRomDirs = {"roms"};
-
 PeripheralRequest busRequest(const Catalogue& cat, const char* id, const char* place, std::string* error) {
     PeripheralRequest r{PlacePath{{PlaceName{place}}}, PeripheralId{id}, std::nullopt, {}, nullptr, {}};
-    if (!sharp::peripheralRomImages(cat, r.peripheral, std::nullopt, kRomDirs, &r.roms, error)) *error = id + (": " + *error);
+    if (!sharptest::peripheralImages(cat, r.peripheral, std::nullopt, &r.roms, error)) *error = id + (": " + *error);
     return r;
 }
 
@@ -122,7 +120,7 @@ struct Run {
         req.variant = variant();
         req.soundRate = sharp::kSoundRate;
         std::string err;
-        if (!sharp::modelRomImages(catalogue, req.model, req.variant, kRomDirs, &req.roms, &err)) { error = err; return; }
+        if (!sharptest::modelImages(catalogue, req.model, req.variant, &req.roms, &err)) { error = err; return; }
         // The order of the recorder: CE-150, CE-158, CE-1600P, then the modules.
         if (ce150) req.peripherals.push_back(busRequest(catalogue, sharp::kCE150, sharp::kPrinter, &err));
         if (ce158) req.peripherals.push_back(busRequest(catalogue, sharp::kCE158, sharp::kInterface, &err));

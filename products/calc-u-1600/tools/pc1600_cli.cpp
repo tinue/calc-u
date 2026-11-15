@@ -110,9 +110,9 @@ int runPreset(const std::string& presetPath, uint64_t maxCycles, bool dumpBasic,
     if (romVersion != "new" && romVersion != "old")
         romSetError = "unknown PC-1600 ROM version '" + romVersion + "' (expected new or old)";
     else
-        built = cli::buildMachine(sharp::kPC1600, romVersion == "old" ? "Old" : "New", {"roms"}, &romSetError);
+        built = cli::buildMachine(sharp::kPC1600, romVersion == "old" ? "Old" : "New", "roms", &romSetError);
     if (!built) {
-        std::fprintf(stderr, "could not load the PC-1600 ROM set: %s (run from repo root)\n", romSetError.c_str());
+        std::fprintf(stderr, "could not load the PC-1600 ROM set (run from products/calc-u-1600): %s\n", romSetError.c_str());
         return 1;
     }
     cli::Machine& machine = *built;
@@ -144,7 +144,7 @@ int runPreset(const std::string& presetPath, uint64_t maxCycles, bool dumpBasic,
         sharp::legacy::applyPresetJob(
             machine, preset, [](const std::string& line) { std::fprintf(stderr, "[preset] %s\n", line.c_str()); },
             ".", moduleDir,
-            /*onBooted=*/{}, /*romDirs=*/{"roms", "firmware/pc1600-hostdrive"}, extraModuleDirs, onArmed, onSaveAs),
+            /*onBooted=*/{}, cli::presetRoms("roms", {"roms", "firmware/pc1600-hostdrive"}), extraModuleDirs, onArmed, onSaveAs),
         slice, pump);
     for (const std::string& r : loaded.rejectedBasicLines)
         std::fprintf(stderr, "preset: rejected BASIC line: %s\n", r.c_str());

@@ -158,7 +158,7 @@ TEST(lib1_ac39_peripheral_descriptors) {
     auto p = [&](const char* id) { return c.peripheral(PeripheralId{id}); };
     for (const char* m : {"CE-151", "CE-155", "CE-161", "CE-1638", "CE-163F", "CE-1600M", "CE-1601M", "superRAM"})
         CHECK(p(m) != nullptr);
-    const bool ce502b = std::filesystem::exists(std::string(cardsDir()) + "/ce502b.card.yaml");
+    const bool ce502b = testRomSet() != nullptr;   // from the ROM set (LIB-12 AC-14)
     if (ce502b) CHECK(p("CE-502B") != nullptr);
     CHECK_EQ(c.peripherals().size(), std::size_t(ce502b ? 13 : 12));   // 4 + the nine modules
 
@@ -196,7 +196,7 @@ TEST(lib1_ac39_peripheral_descriptors) {
 }
 
 TEST(lib1_ac41_module_fit_table) {
-    SKIP_UNLESS(std::filesystem::exists(std::string(cardsDir()) + "/ce502b.card.yaml"), "ce502b.card.yaml missing (fetched)");
+    SKIP_UNLESS(testRomSet() != nullptr, "no ROM set in roms/ (the CE-502B is fetched)");
     const Catalogue c = catalogueWithModules();
     struct Row { const char* module; bool p15, s1, s2; };
     const Row rows[] = {{"CE-151", true, true, false},   {"CE-155", true, true, false},  {"CE-161", true, true, true},

@@ -20,6 +20,7 @@
 
 #include <ctime>
 #include "TestHarness.hpp"
+#include "TestRoms.hpp"
 
 namespace {
 
@@ -944,7 +945,7 @@ TEST(test_preset_syncclock_reseeds_rtc) {
         localtime_r(&bootNow, &b);
         machine.seedClock(2000, (b.tm_mon + 6) % 12 + 1, 1, (b.tm_hour + 12) % 24, 0, 0);
     };
-    const PresetLoadResult res = applyPC1500Preset(machine, preset, {}, ".", ".", hostOnBoot, {"roms"});
+    const PresetLoadResult res = applyPC1500Preset(machine, preset, {}, ".", ".", hostOnBoot, testPresetRoms());
     if (!res.ok) {
         std::fprintf(stderr, "SKIP test_preset_syncclock_reseeds_rtc: %s\n", res.error.c_str());
         return;

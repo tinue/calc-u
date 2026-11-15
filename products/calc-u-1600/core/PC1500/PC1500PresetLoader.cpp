@@ -4,7 +4,7 @@
 #include <cstdio>
 
 #include "../Preset/PresetInterface.hpp"
-#include "../Resources/BundledRomCatalog.hpp"
+#include "../Preset/PresetRoms.hpp"
 #include "PC1500BasicLoader.hpp"
 #include "PC1500BasicTyper.hpp"
 #include "PC1500LcdText.hpp"
@@ -83,7 +83,7 @@ public:
 
 job::Task<PresetLoadResult> applyPC1500PresetJob(PC1500Machine& machine, PresetFile preset, PresetLogFn log,
                                                  std::string traceDir, std::string moduleDir, PresetBootedFn onBooted,
-                                                 std::vector<std::string> romDirs,
+                                                 PresetRoms presetRoms,
                                                  std::vector<std::string> extraModuleDirs, PresetArmedFn onArmed,
                                                  PresetSaveAsFn onSaveAs) {
     PresetLoadResult result;
@@ -92,7 +92,7 @@ job::Task<PresetLoadResult> applyPC1500PresetJob(PC1500Machine& machine, PresetF
     // Arm the machine: ROM, module, peripherals -- everything that must be
     // in place before power-on. Stops at the first failure.
     const bool armed = [&] {
-        if (!BundledRoms::loadPC1500Rom(machine, preset.romVariant, romDirs, &result.error)) {
+        if (!presetroms::loadPC1500Rom(machine, preset.romVariant, presetRoms, &result.error)) {
             if (log) log("ROM load FAILED: " + result.error);
             return false;
         }
@@ -106,7 +106,8 @@ job::Task<PresetLoadResult> applyPC1500PresetJob(PC1500Machine& machine, PresetF
             std::string err, specPath;
             auto card = makePresetModuleCard(preset.slot1ModuleSpecFile,
                                              preset.slot1ModuleSpecName, preset.slot1RomFile,
-                                             presetModuleDirs(moduleDir, extraModuleDirs), host, &specPath, &err);
+                                             presetModuleDirs(moduleDir, extraModuleDirs), host, &specPath, &err,
+                                             presetRoms.set.get());
             if (!card) {
                 result.error = "slot-1: " + err;
                 if (log) log("slot-1 FAILED: " + err);
@@ -122,14 +123,14 @@ job::Task<PresetLoadResult> applyPC1500PresetJob(PC1500Machine& machine, PresetF
         // physically present at power-on, so the boot ROM's peripheral scan
         // recognises it (the same ordering the CE-1600P uses on the PC-1600).
         if (preset.plotter == "ce150") {
-            if (!BundledRoms::attachCE150(machine, romDirs, &result.error)) {
+            if (!presetroms::attachCE150(machine, presetRoms, &result.error)) {
                 if (log) log(result.error);
                 return false;
             }
             result.ce150Attached = true;
             if (log) log("plotter: CE-150 attached");
         }
-        if (!attachPresetInterface(machine, preset.interfaceName, romDirs, log, &result)) return false;
+        if (!attachPresetInterface(machine, preset.interfaceName, presetRoms, log, &result)) return false;
         // `bank` is PC-1600 only (the parser refuses it here).
         return preset_bus_rom::attachAll(
             preset.busRoms,
@@ -176,9 +177,9 @@ job::Task<PresetLoadResult> applyPC1500PresetJob(PC1500Machine& machine, PresetF
 
 PresetLoadResult applyPC1500Preset(PC1500Machine& machine, const PresetFile& preset, const PresetLogFn& log,
                                    const std::string& traceDir, const std::string& moduleDir,
-                                   const PresetBootedFn& onBooted, const std::vector<std::string>& romDirs,
+                                   const PresetBootedFn& onBooted, const PresetRoms& presetRoms,
                                    const std::vector<std::string>& extraModuleDirs, const PresetArmedFn& onArmed,
                                    const PresetSaveAsFn& onSaveAs) {
-    return job::runToCompletion(applyPC1500PresetJob(machine, preset, log, traceDir, moduleDir, onBooted, romDirs,
+    return job::runToCompletion(applyPC1500PresetJob(machine, preset, log, traceDir, moduleDir, onBooted, presetRoms,
                                                      extraModuleDirs, onArmed, onSaveAs));
 }

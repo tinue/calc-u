@@ -19,6 +19,7 @@
 #include "KeyPaste.hpp"
 #include "Machine/SharpProductKinds.hpp"
 #include "PC1500/PC1500Variant.hpp"
+#include "Preset/PresetRomSet.hpp"
 #include "Tape/TapeDeck.hpp"
 #include "TraceTypes.hpp"
 #include "app/AppPaths.hpp"
@@ -30,6 +31,7 @@
 #include "machine/Catalogue.hpp"
 #include "machine/Machine.hpp"
 #include "peripherals/HostLinks.hpp"
+#include "roms/Lookup.hpp"
 
 class ExpansionCard;
 
@@ -55,10 +57,6 @@ class MachineSession {
 public:
     // Something worth telling the user that doesn't stop the session.
     enum class Notice {
-        // The old PC-1600 ROM set could not be loaded; the new one is used.
-        OldPC1600RomUnavailable,
-        // The old CE-1600P ROM could not be loaded; the new one is used.
-        OldCE1600PRomUnavailable,
         // Ejecting the tape before a rebuild failed to save the recording.
         TapeSaveFailed,
     };
@@ -72,11 +70,14 @@ public:
     class Listener {
     public:
         virtual ~Listener() = default;
-        // A bundled ROM the active model needs is missing: the install is
-        // broken and there is no machine to fall back to. Expected not to
-        // return (the Qt app reports and exits); if it does, the session
-        // throws std::runtime_error.
-        virtual void romMissing(const std::string& error, const std::string& searchedIn) = 0;
+        // The ROM lookup at the start found a file of the full set missing
+        // or bad (LIB-12 AC-5, AC-13): no machine is built, and
+        // calcu::roms::describe() of `missing` is the message. Called at
+        // the first build, the start's model switch; expected not to return
+        // (the Qt app reports and exits); if it does, the session throws
+        // std::runtime_error. (Adapter A-5 until M-31: the "ROMs missing"
+        // topic of LIB-3.)
+        virtual void romMissing(const calcu::roms::RomsMissing& missing) = 0;
         virtual void notice(Notice, const std::string& /*detail*/) {}
 
         // The live machine is about to be destroyed / a new one was just
@@ -110,6 +111,9 @@ public:
         virtual void insertSelectedDisk() = 0;
     };
 
+    // Looks up the ROMs once, in the bundled resources folder
+    // (sharp::lookUpRoms, LIB-12): every machine and peripheral is then
+    // built from that set, and no ROM file is read again (AC-6).
     MachineSession(Settings& settings, const AppPaths& paths, Listener& listener, Bays* bays = nullptr);
     ~MachineSession();
     MachineSession(const MachineSession&) = delete;
@@ -265,8 +269,12 @@ public:
     // The session's catalogue: sharpCatalogue() and the module definitions
     // attached so far (LIB-1 AC-3).
     const calcu::machine::Catalogue& catalogue() const { return m_catalogue; }
-    // Where the bundled ROM files are (SharpRomImages, until M-27).
-    std::vector<std::string> bundledRomDirs() const;
+    // The ROM set of the start's lookup; null when a file of the full set
+    // is missing or bad (then romsMissing() says which).
+    const std::shared_ptr<const calcu::roms::RomSet>& romSet() const { return m_roms; }
+    const calcu::roms::RomsMissing& romsMissing() const { return m_romsMissing; }
+    // What the preset loaders get: the set and the host drive's own ROM.
+    PresetRoms presetRoms() const { return {m_roms, m_hostDriveRom}; }
     // The CE-1600F of an attached CE-1600P, or nullptr.
     sharp::FloppyDriveAccess* floppyDrive() const;
 
@@ -285,8 +293,7 @@ public:
     // ---- Preset loaders ----
     // Replaces the live machine with a fresh one of `model` holding its ROM
     // set (the PC-1500 A04 -- the preset loader loads the preset's own; the
-    // PC-1600 `version`, an unavailable old set falling back to the new
-    // one), with nothing attached and no reset: the preset loader
+    // PC-1600 `version`), with nothing attached and no reset: the preset loader
     // (sharp::legacy::applyPresetJob) does the rest.
     calcu::machine::Machine& resetBareForPreset(Model model, PC1600RomVersion version, CE1600PRomVersion ce1600pVersion);
     // Call once the preset loader returns, success or failure alike.
@@ -306,7 +313,7 @@ public:
 
     // ---- Peripherals ----
     // Attach and detach in their places (run them inside
-    // powerCycleAround()). ROMs come from the bundled resources. What
+    // powerCycleAround()). ROMs come from the ROM set. What
     // cannot be plugged in together is refused with its reason in `error`
     // (one printer; the CE-1600P with the CE-158, LIB-2 AC-29).
     bool attachCE150(std::string* error = nullptr);
@@ -379,6 +386,9 @@ private:
     CE1600PRomVersion m_ce1600pRomVersion = CE1600PRomVersion::New;
 
     calcu::machine::Catalogue m_catalogue;
+    std::shared_ptr<const calcu::roms::RomSet> m_roms;
+    calcu::roms::RomsMissing m_romsMissing;
+    std::shared_ptr<const std::vector<std::uint8_t>> m_hostDriveRom;   // roms.md Q-1: not looked up
     HostTime m_hostTime;
     // The links outlive the machines (a stable serial port file shouldn't
     // come and go with a model switch), so they're declared first and
@@ -442,10 +452,13 @@ private:
         if (m_bays && ce1600pAttached()) m_bays->flushFloppy();
         return std::forward<F>(change)();
     }
-    [[noreturn]] void romMissing(const std::string& error);
+    [[noreturn]] void romMissing();
+    // The ROM images of a peripheral's variant: from the set, the host
+    // drive's from m_hostDriveRom. False with `error` when one is missing.
+    bool peripheralImages(const calcu::machine::PeripheralRequest& req, std::vector<calcu::machine::RomImage>* out,
+                          std::string* error) const;
     // Replaces the machine with a fresh `model` holding its ROM set (the
-    // PC-1500: m_pc1500RomRevision; the PC-1600: m_pc1600RomVersion, a
-    // missing old set falling back to -- and remembering -- the new one).
+    // PC-1500: m_pc1500RomRevision; the PC-1600: m_pc1600RomVersion).
     void buildMachine(Model model);
     // Attach and detach in a place, through the machine interface; `error`
     // gets a refusal's reason.

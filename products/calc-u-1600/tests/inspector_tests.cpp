@@ -284,7 +284,7 @@ TEST(test_pc1500_views) {
     std::string err;
     CHECK(parsePresetString("format-version: 1\nmodel: PC-1500A\nkeys:\n  - type: NEW0\n",
                             "/tmp/inspector_tests_scratch.pc1500a", &p, &err));
-    const PresetLoadResult r = applyPC1500Preset(m, p, {}, ".", "frontends/qt6/resources/cards", {}, {"roms"});
+    const PresetLoadResult r = applyPC1500Preset(m, p, {}, ".", "frontends/qt6/resources/cards", {}, testPresetRoms());
     if (!r.ok) {
         std::fprintf(stderr, "SKIP test_pc1500_views: %s\n", r.error.c_str());
         return;

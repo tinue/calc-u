@@ -9,8 +9,8 @@
 // the one place that tells the library where this host's folders are and
 // where bundled resources (*.card.yaml templates AND ROM images, side by
 // side) live. Bundled resources ship as loose files next to the executable
-// (not Qt's .qrc embedding, since Core's scanMemoryCardDirectory()/
-// BundledRomCatalog read a real filesystem directory). The places the app
+// (not Qt's .qrc embedding, since Core's scanMemoryCardDirectory() and
+// the ROM lookup read a real filesystem directory). The places the app
 // writes to come from the library (calcu::settings::Paths, LIB-9): the
 // save folder defaults to ~/Calc-U-1600 on every platform (not
 // QStandardPaths::AppDataLocation, no iCloud); the settings file,

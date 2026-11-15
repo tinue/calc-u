@@ -2,7 +2,7 @@
 #include <string>
 #include <vector>
 
-#include "../Resources/BundledRomCatalog.hpp"
+#include "../Preset/PresetRoms.hpp"
 #include "PresetRunner.hpp"
 
 /// A preset's `interface:` key: attaches the CE-158 (both models share
@@ -11,10 +11,10 @@
 /// for no interface.
 template <class Machine>
 bool attachPresetInterface(Machine& machine, const std::string& interfaceName,
-                           const std::vector<std::string>& romDirs, const PresetLogFn& log,
+                           const PresetRoms& presetRoms, const PresetLogFn& log,
                            PresetLoadResult* result) {
     if (interfaceName != "ce158") return true;
-    if (!BundledRoms::attachCE158(machine, romDirs, &result->error)) {
+    if (!presetroms::attachCE158(machine, presetRoms, &result->error)) {
         if (log) log(result->error);
         return false;
     }

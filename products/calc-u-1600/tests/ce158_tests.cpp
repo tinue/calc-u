@@ -21,7 +21,7 @@
 #include "../core/Preset/PresetFile.hpp"
 #include "../core/PC1600/PC1600Machine.hpp"
 #include "../core/PC1600/PC1600PresetLoader.hpp"
-#include "../core/Resources/BundledRomCatalog.hpp"
+#include "TestRoms.hpp"
 #include "TestHarness.hpp"
 
 namespace {
@@ -348,7 +348,7 @@ TEST(test_rom_lprint_centronics_with_ce150_chained) {
         "keys:\n  - key: cl\n  - key: mode\n  - type: RUN\n  - wait:\n",
         &preset));
     PC1500Machine machine(preset.variant);
-    PresetLoadResult res = applyPC1500Preset(machine, preset, {}, ".", ".", {}, {"roms"});
+    PresetLoadResult res = applyPC1500Preset(machine, preset, {}, ".", ".", {}, testPresetRoms());
     CHECK(res.ok);
     CHECK(res.ce150Attached && res.ce158Attached);
     const std::string printed = text(machine.drainCE158ParallelOutput());
@@ -377,7 +377,7 @@ TEST(test_rom_serial_lprint_and_input) {
     link.armed = false;
     link.rx = {'A', 'B', 'C', '1', '2', '3', '\r'};
     machine.setCE158SerialLink(&link);
-    PresetLoadResult res = applyPC1500Preset(machine, preset, {}, ".", ".", {}, {"roms"});
+    PresetLoadResult res = applyPC1500Preset(machine, preset, {}, ".", ".", {}, testPresetRoms());
     CHECK(res.ok);
     machine.runCycles(1300000); // let INPUT start waiting
     CHECK(text(link.tx) == "SERIAL OUT\r");
@@ -472,10 +472,10 @@ TEST(test_pc1600_rom_mode1_printing) {
                      &preset));
     PC1600Machine machine;
     std::string romErr;
-    CHECK(BundledRoms::loadPC1600RomSet(machine, {"roms"}, "new", &romErr));
+    CHECK(presetroms::loadPC1600RomSet(machine, testPresetRoms(), "new", &romErr));
     FakeLink link;
     machine.setCE158SerialLink(&link);
-    PresetLoadResult res = applyPC1600Preset(machine, preset, {}, ".", ".", {}, {"roms"});
+    PresetLoadResult res = applyPC1600Preset(machine, preset, {}, ".", ".", {}, testPresetRoms());
     if (!res.ok) std::fprintf(stderr, "preset error: %s\n", res.error.c_str());
     CHECK(res.ok);
     CHECK(res.ce158Attached);
@@ -494,12 +494,12 @@ TEST(test_pc1600_rom_mode1_rinkey) {
                      &preset));
     PC1600Machine machine;
     std::string romErr;
-    CHECK(BundledRoms::loadPC1600RomSet(machine, {"roms"}, "new", &romErr));
+    CHECK(presetroms::loadPC1600RomSet(machine, testPresetRoms(), "new", &romErr));
     FakeLink link;
     link.armed = false;
     link.rx = {'A'};
     machine.setCE158SerialLink(&link);
-    PresetLoadResult res = applyPC1600Preset(machine, preset, {}, ".", ".", {}, {"roms"});
+    PresetLoadResult res = applyPC1600Preset(machine, preset, {}, ".", ".", {}, testPresetRoms());
     if (!res.ok) std::fprintf(stderr, "preset error: %s\n", res.error.c_str());
     CHECK(res.ok);
     machine.runCycles(PC1600Machine::kTStateHz);
@@ -519,8 +519,8 @@ TEST(test_pc1600_lhnmio_trap_runs_ce158_shift) {
     if (!havePC1600Roms(__func__)) return;
     PC1600Machine m;
     std::string err;
-    CHECK(BundledRoms::loadPC1600RomSet(m, {"roms"}, "new", &err));
-    CHECK(BundledRoms::attachCE158(m, {"roms"}, &err));
+    CHECK(presetroms::loadPC1600RomSet(m, testPresetRoms(), "new", &err));
+    CHECK(presetroms::attachCE158(m, testPresetRoms(), &err));
     m.allReset();
     m.runCycles(PC1600Machine::kTStateHz); // LCD on
     auto& mem = m.lh5803Memory();

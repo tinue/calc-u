@@ -329,7 +329,7 @@ error.
 | `Qt6/resources/cards/ce1601m.card.yaml` | CE-1601M, 64 KB | Trigger-based vertical banking — `trigger: { io-port: 0x28 }`, `source-domain: data` (the byte written by `OUT (28H)`); `bank-window` nesting the `PVOUT` half-select (spec §4/§9). |
 | `Qt6/resources/cards/superram.card.yaml` | superRAM, 512 KB | The CE-1601M mechanism with a 4-bit (`D0`–`D3`) `OUT (28H)` latch and all 16 × 32 KB vertical banks fitted; PC-1600 Slot 2 only (spec §6/§9's "maxed-out Slot 2" row). |
 | `Qt6/resources/cards/ce1638.card.yaml` | CE-1638, 128 KB | A single-kind banked region — trigger-based, address-domain, 8 banks sampling `A0`-`A2`. |
-| `Qt6/resources/cards/ce502b.card.yaml` | CE-502B, 16 KB ROM | `content: rom` with one `addressed-hex` block covering the whole region: a Sharp program module (ROM header at &0000, BASIC program from &00C5) on Y0. |
+| `roms/CE-502B.card.yaml` (fetched with the ROMs, LIB-12 AC-14) | CE-502B, 16 KB ROM | `content: rom` with one `addressed-hex` block covering the whole region: a Sharp program module (ROM header at &0000, BASIC program from &00C5) on Y0. |
 | `Qt6/resources/cards/ce163f.card.yaml` | CE-163F, 256 KB | `content: by-bank:` (§4) splitting one 16-bank region into Regular (0-7) and Flash (8-15) content, and a `flash` `protocol:` block including `command-address-mask` for its real low-11-bit command decode quirk. |
 
 ---

@@ -5,10 +5,12 @@
 #include <cstring>
 #include <fstream>
 #include <iterator>
+#include <optional>
 
 #include "../Connector/MemoryCardCatalog.hpp"
 #include "../Connector/SoftwareDefinedCard.hpp"
 #include "../FileIO.hpp"
+#include "../Machine/SharpRoms.hpp"
 #include "../TraceTypes.hpp"
 
 std::vector<std::string> presetModuleDirs(const std::string& moduleDir,
@@ -21,15 +23,21 @@ std::vector<std::string> presetModuleDirs(const std::string& moduleDir,
 std::unique_ptr<ExpansionCard> makePresetModuleCard(const std::string& specFile, const std::string& specName,
                                                     const std::string& romFile,
                                                     const std::vector<std::string>& moduleDirs, CardHost host,
-                                                    std::string* resolvedPath, std::string* error) {
+                                                    std::string* resolvedPath, std::string* error,
+                                                    const calcu::roms::RomSet* romSet) {
     std::string specPath = specFile;
-    if (specPath.empty() && !resolveModuleSpecByName(moduleDirs, specName, &specPath, error)) return nullptr;
+    std::optional<sharp::RomSetModule> fromSet;
+    if (specPath.empty() && romSet) fromSet = sharp::romSetModule(*romSet, specName);
+    if (specPath.empty() && !fromSet && !resolveModuleSpecByName(moduleDirs, specName, &specPath, error)) return nullptr;
     std::vector<uint8_t> rom;
     if (!romFile.empty() && !readWholeFile(romFile, &rom)) {
         *error = "could not read " + romFile;
         return nullptr;
     }
-    std::unique_ptr<ExpansionCard> card = makeSoftwareDefinedCard(specPath, host, error, romFile.empty() ? nullptr : &rom);
+    const std::vector<uint8_t>* romOverride = romFile.empty() ? nullptr : &rom;
+    std::unique_ptr<ExpansionCard> card =
+        fromSet ? makeSoftwareDefinedCardFromText(fromSet->text, fromSet->fileName, host, error, romOverride)
+                : makeSoftwareDefinedCard(specPath, host, error, romOverride);
     if (!card) {
         if (!romFile.empty()) *error = romFile + ": " + *error;
         return nullptr;

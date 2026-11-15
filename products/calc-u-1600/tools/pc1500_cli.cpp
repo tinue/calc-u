@@ -174,7 +174,7 @@ int main(int argc, char** argv) {
     std::string buildError;
     if (usingPreset) {
         built = cli::buildMachine(preset.variant == PC1500Variant::PC1500A ? sharp::kPC1500A : sharp::kPC1500,
-                                  std::nullopt, {"roms"}, &buildError);
+                                  std::nullopt, "roms", &buildError);
     } else {
         if (argc >= 3) maxCycles = std::strtoull(argv[2], nullptr, 10);
         calcu::machine::BuildRequest req;
@@ -192,7 +192,7 @@ int main(int argc, char** argv) {
         buildError = r.refusal;
     }
     if (!built) {
-        std::fprintf(stderr, "could not build the machine: %s (run from repo root)\n", buildError.c_str());
+        std::fprintf(stderr, "could not build the machine (run from products/calc-u-1600): %s\n", buildError.c_str());
         return 1;
     }
     cli::Machine& machine = *built;
@@ -234,7 +234,7 @@ int main(int argc, char** argv) {
             sharp::legacy::applyPresetJob(
                 machine, preset, [](const std::string& line) { std::fprintf(stderr, "[preset] %s\n", line.c_str()); },
                 /*traceDir=*/".",  // a `- trace: name.bin` step writes ./name.bin (same cwd convention as roms/)
-                moduleDir, /*onBooted=*/{}, /*romDirs=*/{"roms"}, extraModuleDirs, onArmed, onSaveAs),
+                moduleDir, /*onBooted=*/{}, cli::presetRoms("roms", {}), extraModuleDirs, onArmed, onSaveAs),
             machine.descriptor().tickRate / 100, pump);
         for (const std::string& rejected : loaded.rejectedBasicLines) {
             std::fprintf(stderr, "preset: ROM rejected BASIC line: %s\n", rejected.c_str());

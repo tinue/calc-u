@@ -166,6 +166,22 @@ if(CALCU_TESTS)
   add_test(NAME CalcU1600MachineIncludeCheck COMMAND sh tools/check_machine_includes.sh
            WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
   set_tests_properties(CalcU1600MachineIncludeCheck PROPERTIES LABELS frequent)
+  # LIB-12 AC-2: no product source looks for a ROM file outside the lookup
+  # (library/roms/tests/check_no_own_rom_lookup.sh; design T7). Allowed: the
+  # lookup's product side with the one listed exception, the host drive's
+  # own ROM (core/Machine/SharpRoms.cpp; D-6), the catalogue's ROM entries,
+  # and the app layer's tests (their SKIP probes).
+  add_test(NAME CalcU1600NoOwnRomLookup
+           COMMAND sh ${CMAKE_SOURCE_DIR}/library/roms/tests/check_no_own_rom_lookup.sh .
+                   core/Machine/SharpRoms.cpp core/Machine/SharpCatalogue.cpp app/tests
+           WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
+  set_tests_properties(CalcU1600NoOwnRomLookup PROPERTIES LABELS frequent)
+  # LIB-12 AC-13 (design Q2): pc1600_cli with a roms/ that lacks one file
+  # exits 1 naming it; with the full set it runs.
+  add_test(NAME CalcU1600CliRomLookup COMMAND sh tests/cli_rom_tests.sh
+           WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
+  set_tests_properties(CalcU1600CliRomLookup PROPERTIES LABELS frequent
+                       ENVIRONMENT PC1600_CLI=$<TARGET_FILE:pc1600_cli>)
   # No frontend keeps a setting in a platform store (QSettings,
   # localStorage, UserDefaults; LIB-9 AC-31, design T-19). Needs bash: not
   # on Windows, like the library's own check.
@@ -186,6 +202,13 @@ if(CALCU_TESTS)
     add_test(NAME CalcU1600WasmSmoke COMMAND tools/build_wasm_check.sh
              WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
     set_tests_properties(CalcU1600WebPlaywright CalcU1600WasmSmoke PROPERTIES LABELS longer)
+    # LIB-12 (Technical Requirements, design Q5): a Web dist/ built from a
+    # ROM folder without one file names it and starts no calculator.
+    if(NOT WIN32)
+      add_test(NAME CalcU1600RomMissingBuild COMMAND sh tests/rom_missing_build.sh
+               WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
+      set_tests_properties(CalcU1600RomMissingBuild PROPERTIES LABELS longer RUN_SERIAL TRUE)
+    endif()
     if(TARGET CalcU1600Qt)
       # The screenshot scenarios run as checks: every shot is taken, into
       # the build tree, not docs/images/.

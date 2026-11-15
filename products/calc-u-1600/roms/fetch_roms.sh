@@ -143,9 +143,4 @@ fetch_ce1600p new PC1600-P1-B5-CE1600P-OR-F  a675c6dbdf7dc4c10e8d96891e196f8f
 fetch_ce1600p old PC1600-P1-B4-CE1600P       df41b050acbc29c83214cbaaf29bee91
 fetch_ce1600p old PC1600-P1-B5-CE1600P-OR-F  33f3ef7207eac06587cc4c6d70c6cbd0
 
-# Until M-27 of docs/migration-plan.md: 0.8.1's code reads the CE-502B
-# definition from the Qt6 card resources (frontends/qt6/resources/cards/,
-# where the file is git-ignored). PC-1500-ROM's copy differs only in comments.
-cp -p "$ROMS_DIR/CE-502B.card.yaml" ../frontends/qt6/resources/cards/ce502b.card.yaml
-
 log "done"

@@ -112,7 +112,7 @@ TEST(test_ce1600p_rom_attach_and_open_bus) {
     CHECK(m.sc7852().a() == 0xFF); // detached: open bus again
 }
 
-// BundledRoms::attachCE1600P picks the new or old ROM pair by version,
+// presetroms::attachCE1600P picks the new or old ROM pair by version,
 // independently of the PC-1600's own ROM, and rejects an unknown version.
 TEST(test_ce1600p_rom_version_selection) {
     std::vector<uint8_t> newB4, newB5, oldB4, oldB5;
@@ -133,7 +133,7 @@ TEST(test_ce1600p_rom_version_selection) {
     for (const char* version : {"new", "old"}) {
         PC1600Machine m;
         std::string error;
-        CHECK(BundledRoms::attachCE1600P(m, {"roms"}, version, &error));
+        CHECK(presetroms::attachCE1600P(m, testPresetRoms(), version, &error));
         CHECK(m.ce1600pAttached());
         const auto& b5 = std::string(version) == "old" ? oldB5 : newB5;
 
@@ -149,11 +149,11 @@ TEST(test_ce1600p_rom_version_selection) {
 
     PC1600Machine m;
     std::string error;
-    CHECK(!BundledRoms::attachCE1600P(m, {"roms"}, "bogus", &error));
+    CHECK(!presetroms::attachCE1600P(m, testPresetRoms(), "bogus", &error));
     CHECK(error.find("new or old") != std::string::npos);
     CHECK(!m.ce1600pAttached());
     // The plotter-by-name entry point threads the version through.
-    CHECK(BundledRoms::attachPlotterByName(m, "ce1600p", {"roms"}, &error, nullptr, "old"));
+    CHECK(presetroms::attachPlotterByName(m, "ce1600p", testPresetRoms(), &error, nullptr, "old"));
     CHECK(m.ce1600pAttached());
 }
 

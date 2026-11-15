@@ -24,25 +24,18 @@ MachineController::~MachineController() {
     m_app.reset();
 }
 
-// A missing/unreadable bundled ROM means the install is broken -- there's
-// no usable machine to fall back to (this is reached both at startup and
-// from a later model switch, and either way the app can't proceed without
-// its firmware). Show the user what's wrong and where Calc-U-1600 looked,
-// then exit: an abort (qFatal) would be a silent crash for an app not
-// launched from a terminal. std::exit() (not returning to unwind the call
-// stack) is deliberate: this can be reached mid-construction of
+// A file of the ROM full set is missing or bad (the start's lookup, LIB-12
+// AC-5, AC-13; design D-8): no machine starts. Show the lookup's message --
+// every file and its problem, the folder, that the full set is needed and
+// how to fetch it -- then exit: an abort (qFatal) would be a silent crash
+// for an app not launched from a terminal. std::exit() (not returning to
+// unwind the call stack) is deliberate: this is reached mid-construction of
 // MainWindow/MachineController, which aren't set up to unwind safely from
 // here, and terminating the process reclaims everything the OS owns
 // regardless.
-void MachineController::romMissing(const std::string& error, const std::string& searchedIn) {
-    const QString message =
-        QObject::tr("Calc-U-1600 could not start:\n\n%1\n\nSearched in: %2\n\n"
-                     "If you built this from source, run tools/fetch_roms.sh to "
-                     "download the required ROM files. If you're running an "
-                     "installed copy, the app's ROM files may be missing or "
-                     "corrupted -- try reinstalling.")
-            .arg(QString::fromStdString(error), QString::fromStdString(searchedIn));
-    QMessageBox::critical(nullptr, QObject::tr("Missing ROM File"), message);
+void MachineController::romMissing(const calcu::roms::RomsMissing& missing) {
+    QMessageBox::critical(nullptr, QObject::tr("Calc-U-1600 cannot start"),
+                          QString::fromStdString(calcu::roms::describe(missing)));
     std::exit(1);
 }
 

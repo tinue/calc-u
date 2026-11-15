@@ -28,7 +28,7 @@
 #include "../core/PC1500/PC1500Machine.hpp"
 #include "../core/PC1600/PC1600BasicTyper.hpp"
 #include "../core/PC1600/PC1600Machine.hpp"
-#include "../core/Resources/BundledRomCatalog.hpp"
+#include "TestRoms.hpp"
 #include "TestHarness.hpp"
 
 namespace {
@@ -57,14 +57,14 @@ bool build(bool pc1600, Machines* out) {
     std::string err;
     if (pc1600) {
         out->m16 = std::make_unique<PC1600Machine>();
-        if (!BundledRoms::loadPC1600RomSet(*out->m16, {"roms"}, "new", &err)) return false;
+        if (!presetroms::loadPC1600RomSet(*out->m16, testPresetRoms(), "new", &err)) return false;
         out->m16->allReset();
         runBootToPrompt(*out->m16);
         out->hz = PC1600Machine::kTStateHz;
         out->name = "PC-1600";
     } else {
         out->m15 = std::make_unique<PC1500Machine>(PC1500Variant::PC1500A);
-        if (!BundledRoms::loadPC1500Rom(*out->m15, "A04", {"roms"}, &err)) return false;
+        if (!presetroms::loadPC1500Rom(*out->m15, "A04", testPresetRoms(), &err)) return false;
         out->m15->reset();
         runBootToPrompt(*out->m15);
         out->hz = PC1500Machine::kCpuHz;

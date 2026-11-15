@@ -33,7 +33,7 @@ int main(int argc, char** argv) {
         return 1;
     }
     std::string romErr;
-    std::unique_ptr<cli::Machine> built = cli::buildMachine(sharp::kPC1600, "New", {"roms"}, &romErr);
+    std::unique_ptr<cli::Machine> built = cli::buildMachine(sharp::kPC1600, "New", "roms", &romErr);
     if (!built) {
         std::fprintf(stderr, "could not load roms/ ROM set (run from repo root): %s\n", romErr.c_str());
         return 1;
@@ -49,7 +49,7 @@ int main(int argc, char** argv) {
             if (CE1600PCard* card = sharp::legacy::coreParts(machine).ce1600p)
                 for (const auto& e : card->mechanism().drainEvents()) std::fprintf(stderr, "    <evt> %s\n", e.c_str());
         },
-        ".", ".", {}, {"roms"}, {}, {}, {}));
+        ".", ".", {}, cli::presetRoms("roms", {}), {}, {}, {}));
     if (!res.ok) {
         std::fprintf(stderr, "preset apply failed: %s\n", res.error.c_str());
         return 1;

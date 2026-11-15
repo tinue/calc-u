@@ -78,10 +78,12 @@ int main(int argc, char** argv) {
     req.variant = calcu::machine::VariantId{"New"};
     req.soundRate = sharp::kSoundRate;
     std::string romErr;
-    if (!sharp::modelRomImages(catalogue, req.model, req.variant, {dir}, &req.roms, &romErr)) {
+    const auto roms = cli::romSet(dir, &romErr);
+    if (!roms) {
         std::fprintf(stderr, "could not load the PC-1600 ROM set from '%s': %s\n", dir.c_str(), romErr.c_str());
         return 1;
     }
+    req.roms = roms->imagesFor(*catalogue.model(req.model), req.variant);
     req.peripherals.push_back({calcu::machine::PlacePath{{calcu::machine::PlaceName{sharp::kSlot2}}},
                                calcu::machine::PeripheralId{def.moduleName}, std::nullopt, {},
                                std::make_shared<sharp::ModuleCard>(std::move(card)), {}});

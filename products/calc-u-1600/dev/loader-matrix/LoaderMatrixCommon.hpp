@@ -99,7 +99,7 @@ inline std::unique_ptr<Machine> applyPreset(const std::string& presetPath, bool 
     } else {
         model = preset.variant == PC1500Variant::PC1500A ? sharp::kPC1500A : sharp::kPC1500;
     }
-    std::unique_ptr<Machine> m = cli::buildMachine(model, variant, {"roms"}, &err);
+    std::unique_ptr<Machine> m = cli::buildMachine(model, variant, "roms", &err);
     if (!m) {
         res->ok = false;
         res->error = "ROM set: " + err;
@@ -107,7 +107,7 @@ inline std::unique_ptr<Machine> applyPreset(const std::string& presetPath, bool 
     }
     if (takeRs232c) serialPort(*m, "rs232c", nullptr);
     *res = job::runToCompletion(sharp::legacy::applyPresetJob(*m, preset, {}, ".", "frontends/qt6/resources/cards", {},
-                                                              {"roms"}, {}, {}, {}));
+                                                              cli::presetRoms("roms", {}), {}, {}, {}));
     return m;
 }
 

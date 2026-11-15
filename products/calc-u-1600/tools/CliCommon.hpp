@@ -27,7 +27,8 @@
 #include "../core/Machine/SharpBuilder.hpp"
 #include "../core/Machine/SharpCatalogue.hpp"
 #include "../core/Machine/SharpProductKinds.hpp"
-#include "../core/Machine/SharpRomImages.hpp"
+#include "../core/Machine/SharpRoms.hpp"
+#include "../core/Preset/PresetRomSet.hpp"
 #include "machine/Build.hpp"
 #include "machine/Machine.hpp"
 
@@ -35,18 +36,50 @@ namespace cli {
 
 using calcu::machine::Machine;
 
+/// The ROM set of the folder `romFolder` (the tools' `roms`, relative to
+/// the working directory), through the library's lookup (LIB-12; LIB-11
+/// AC-20): the folder is the tool's, the looking is the library's. Null
+/// with `error` the lookup's message (every file missing or bad) when a
+/// file of the full set is missing or bad. Looked up once per folder.
+inline std::shared_ptr<const calcu::roms::RomSet> romSet(const std::string& romFolder, std::string* error) {
+    static std::string folder;
+    static calcu::roms::LookupResult found;
+    if (!found.ok() || folder != romFolder) {
+        found = sharp::lookUpRoms(calcu::roms::DirectoryBundle(romFolder));
+        folder = romFolder;
+    }
+    if (!found.ok() && error) *error = calcu::roms::describe(found.missing);
+    return found.set;
+}
+
+/// What the preset loaders get: the set of `romFolder` and the host drive's
+/// own ROM from the first of `hostDriveFolders` that has it (roms.md Q-1).
+inline PresetRoms presetRoms(const std::string& romFolder, const std::vector<std::string>& hostDriveFolders) {
+    PresetRoms roms;
+    roms.set = romSet(romFolder, nullptr);
+    if (auto rom = sharp::readHostDriveRom(hostDriveFolders))
+        roms.hostDrive = std::make_shared<const std::vector<uint8_t>>(std::move(*rom));
+    return roms;
+}
+
 /// A machine of `model` ("PC-1500", "PC-1500A", "PC-1600") and `variant`
-/// (std::nullopt: the default), built from the catalogue with the ROM
-/// images of `romDirs`, nothing plugged in, not booted. Null with `error`
-/// set when a ROM is missing or the build is refused.
+/// (std::nullopt: the default), built from the catalogue with the images of
+/// the ROM set of `romFolder` (romSet()), nothing plugged in, not booted.
+/// Null with `error` set when the lookup fails or the build is refused.
 inline std::unique_ptr<Machine> buildMachine(const std::string& model, const std::optional<std::string>& variant,
-                                             const std::vector<std::string>& romDirs, std::string* error) {
+                                             const std::string& romFolder, std::string* error) {
     calcu::machine::BuildRequest req;
     req.model = calcu::machine::ModelId{model};
     if (variant) req.variant = calcu::machine::VariantId{*variant};
     req.soundRate = sharp::kSoundRate;
-    if (!sharp::modelRomImages(sharp::sharpCatalogue(), req.model, req.variant, romDirs, &req.roms, error))
+    const auto roms = romSet(romFolder, error);
+    if (!roms) return nullptr;
+    const calcu::machine::MachineDescriptor* d = sharp::sharpCatalogue().model(req.model);
+    if (!d) {
+        *error = "unknown model " + model;
         return nullptr;
+    }
+    req.roms = roms->imagesFor(*d, req.variant);
     sharp::SharpMachineBuilder builder;
     calcu::machine::BuildResult built = calcu::machine::build(sharp::sharpCatalogue(), builder, req);
     if (!built.machine) *error = built.refusal;

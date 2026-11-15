@@ -116,7 +116,83 @@ Other checks of the step:
 ### Open
 
 - LIB-12 Library: AC-7's harness clause (M-28, D-1). Calc-U-1600 column:
-  M-27.
+  M-27 (below).
+
+## M-27 (2026-11-15, branch `m27-rom-lookup-1600`): Calc-U-1600
+
+Built and run on an M4 Pro, macOS 27.2, Apple clang 21, CMake 4.5, Ninja,
+RelWithDebInfo (`build/tests`, Qt off), the Qt6 frontend (`build/all`,
+Homebrew Qt) and the Web client (Homebrew `emcc`). Cases are in
+`products/calc-u-1600/tests/rom_lookup_tests.cpp` (`CoreTests`). Frequent:
+17 of 17 CTest entries pass; `CoreTests` 864 `TEST`s, 0 failed, 0 skipped,
+the nine LIB-12 cases 193 checks. Longer, run by hand: `CalcU1600WebPlaywright`
+47 passed, 1 skipped (the `taken_away` case, which only
+`rom_missing_build.sh` runs); `CalcU1600RomMissingBuild` passed;
+`CalcU1600WasmSmoke` passed.
+
+| ID | Result | Test case |
+|---|---|---|
+| AC-11 | Pass | `lib12_ac11_binary_dumps_checked_by_byte_size` (a 16383-byte `PC-1500_A01.ROM` is the one bad file; the fetched folder passes) |
+| AC-12 | Pass | `lib12_ac12_full_set_is_the_21_files_and_ce502b` (the spec's table copied into the test: names, bytes, md5, binary; the CE-502B a text entry of 16384 bytes; the host-drive ROM not in the set; the md5 of every fetched file), `lib12_ac12_fetch_script_has_the_same_names_and_md5` (parses `roms/fetch_roms.sh`: 22 files, no copy into the Qt6 resources) |
+| AC-13 | Pass | `lib12_ac13_missing_old_set_does_not_start` (a `MachineSession` over a folder without `PC1600-P0-B0-old.bin` builds no machine, also no PC-1500A; `romMissing` once with the file, who needs it and the folder; no notice), `lib12_ac13_missing_ce1600p_old_file_does_not_start` (and a missing New file alike), `lib12_ac13_no_rom_read_during_session` (the bundle folder removed after the start; the three PC-1500 revisions, CE-150, CE-158, PC-1600 Old/New, CE-1600P Old and the swap to New all work). CLIs: `CalcU1600CliRomLookup` (`tests/cli_rom_tests.sh`: `pc1600_cli --preset` without `PC1600-P1-B3-old.bin` exits 1 naming it; with the full set it runs). `CalcU1600NoOwnRomLookup` (T7). Web: `lib12_ac13_bad_rom_file_shows_the_text_and_no_calculator` (a truncated CE-1600P Old file), `lib12_ac13_missing_rom_file_shows_the_text_and_no_calculator` (the CE-502B left out of `files.json`), Playwright, Longer. Qt6, by hand (D-8): with the full set the built app runs the screenshot scenario `02-getting-started` offscreen (6 shots, exit 0); with `PC1600-P1-B3-old.bin` removed from the bundle's `Resources/` it stops before any machine in the modal dialog (offscreen: no shot, still waiting after 15 s). The dialog's text is `describe()` (tested above); the dialog itself was not seen on screen |
+| AC-14 (CE-502B) | Pass | `lib12_ac14_ce502b_definition_from_the_set` (the definition from the set: `format-version: 1`, `module-name: CE-502B`, a ROM module; its content yields 16384 bytes, so design §9's "not verified" is settled; a definition that does not parse is a bad file; the session's catalogue has it from the set), `lib12_ac14_ce502b_not_in_qt6_resources` (no `ce502b.card.yaml` in the Qt6 resources or `.gitignore`; the card scans pass over the set's file); `ce502b_tests.cpp` and `descriptor_tests.cpp` take it from the set |
+| EC-1 | Pass | `lib12_ec1_ce1600p_b5_file_once_in_set_and_message` (each B5 file once in the full set; without the Old one the message names it once, needed by "CE-1600P (variant Old)") |
+| Technical Requirements: a build with one ROM file taken away | Pass | `tests/rom_missing_build.sh` (CTest `CalcU1600RomMissingBuild`, Longer): a Web `dist/` built from `roms/` without `PC1600-P1-B3-old.bin` (the build succeeds, D-5) shows the text naming it and no calculator; the CLI side is `CalcU1600CliRomLookup`, Qt6 by hand as in AC-13 |
+
+Golden runs: all 23 of `products/calc-u-1600/tests/golden-runs/` pass
+unchanged with the images from the ROM set (`golden_runs_tests.cpp`, through
+`sharptest::modelImages` / `peripheralImages` over `testRomSet()`). No
+reference was re-recorded.
+
+Other checks of the step: the Qt6 frontend builds and its bundle has
+`CE-502B.card.yaml` beside the ROMs and no `ce502b.card.yaml`;
+`frontends/web/build.sh` builds; `tools/build_wasm_check.sh` passes.
+
+### Deviations from the design
+
+- **Where the lookup lives.** `sharp::fullRomSet()`, `sharp::lookUpRoms()`
+  are in `core/Machine/SharpRoms.{hpp,cpp}`, not `app/ProductRoms`: the
+  CLIs and probes link the core only, the probes a copy of their own
+  (`calcu_core_probe`), so an `app/` function could not reach them. The
+  reader is `core/SharpRomReader` as designed.
+- **Who makes the Bundle.** Both frontends' bundles are the bundled
+  resources folder, so `MachineSession` makes the `DirectoryBundle` of
+  `AppPaths::bundledResourcesDir()` and looks up once in its constructor;
+  `romMissing` (A-5, now `romMissing(const RomsMissing&)`) comes at the
+  start's model switch, then the session throws as before. The tools make
+  `DirectoryBundle("roms")` (`cli::romSet`, `tools/CliCommon.hpp`).
+- **Preset loaders** take `PresetRoms` (`core/Preset/PresetRomSet.hpp`):
+  the `RomSet` and, beside it, the host-drive ROM, which a preset's
+  `host-drive:` needs and which is not in the set (Q-1). The loading
+  helpers that were `BundledRoms::` are `presetroms::` in
+  `core/Preset/PresetRoms.*`, taking the files from the catalogue's entries.
+- **Host-drive ROM** (D-6): read by `sharp::readHostDriveRom()` in
+  `core/Machine/SharpRoms.cpp` (the listed exception of
+  `CalcU1600NoOwnRomLookup`), from the bundled resources folder in the app
+  and from `roms/` or `firmware/pc1600-hostdrive/` in the tools.
+- **The CE-502B from the set, not the folder scan.** `scanMemoryCardDirectory`
+  passes over a file of the full set (`sharp::isFullSetFile`; a new
+  optional `skip` of `scanNamedFiles`), because in the Qt6 bundle the ROMs
+  and the card templates share one folder. `ModuleBay` lists the set's ROM
+  modules with the folder's cards and attaches the CE-502B from its text
+  (`makeSoftwareDefinedCardFromText`); a preset's `slot-1: CE-502B` takes it
+  from the set first (`makePresetModuleCard`); Name & Save refuses its name
+  as a bundled one, as before.
+- **Tests' ROMs.** `tests/TestRoms.hpp` has `testRomSet()` and
+  `testPresetRoms()`; the tests that called `BundledRoms::` call
+  `presetroms::` with them. A ROM test now needs the full set in `roms/`.
+- **The "Missing ROM File" dialog** of 0.8.1 named a stale
+  `tools/fetch_roms.sh`; it is "Calc-U-1600 cannot start" with `describe()`.
+  No ledger row (D-8: a release cannot reach this state); likewise for the
+  removed New-for-Old substitution and its two notices.
+- `tests/rom_lookup_tests.cpp` uses Calc-U-59's test MD5
+  (`products/calc-u-59/tests/Md5.hpp`) by relative include rather than a copy.
+
+### Open
+
+- None for the Calc-U-1600 column. LIB-12 Library: AC-7's harness clause
+  passed in M-28 (section below); all three columns are Done.
+
 
 ## M-28 (2026-11-15, branch `m28-harness`): AC-7's harness clause
 

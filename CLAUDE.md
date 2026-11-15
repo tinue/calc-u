@@ -9,8 +9,11 @@ One repository for the Calc-U products, released separately
 ## Current phase: 6, migration and code
 
 - Work follows `docs/migration-plan.md` in its order of steps (`M-n`).
-  A step is a merge into `main` that is green by the automated checks
-  (build, Frequent tests, CI); no approval is asked between steps. The
+  A step is a merge into `main` that is green by the local checks
+  (build, Frequent tests); no approval is asked between steps. CI runs
+  are slow: dispatch them only at the end of a part, before a release,
+  or when a step changes the workflows, packaging or platform-specific
+  code (user, 2026-11-15; plan §1). The
   user approves at the part boundaries only (A, B, C1, C2, D, E; plan
   §1): the review of the part that ends and the `design.md` files of the
   part that starts. Between boundaries ask only what cannot wait (a first

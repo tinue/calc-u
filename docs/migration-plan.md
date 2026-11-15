@@ -32,8 +32,8 @@ Each step `M-n` has six fields:
 - **Exit check:** what the user or a test sees when it is done.
 
 **Steps and parts** (user, 2026-11-14). A step `M-n` is the order of
-the work and a merge into `main` that is green by the automated checks
-(build, Frequent, CI); no approval is asked between steps, and several
+the work and a merge into `main` that is green by the local checks
+(build, Frequent); no approval is asked between steps, and several
 steps may be done in one session or branch. The user approves at the
 boundaries of the parts only:
 
@@ -51,8 +51,11 @@ At a boundary the user reviews the part that ends (a summary, its
 `qa-report.md` files, the results of its first steps, the release-point
 status) and approves the designs of the part that starts: one
 `design.md` per feature, covering every column the part works on. The
-Longer group runs at the end of a part and before a release; Frequent
-and CI at every merge. Between boundaries the user is asked only what
+Longer group and CI run at the end of a part and before a release;
+Frequent at every merge. CI runs in between only when a step changes
+the workflows, packaging or platform-specific code (user, 2026-11-15:
+CI runs are slow); a CI failure at the end of a part is fixed on `main`
+before the boundary review. Between boundaries the user is asked only what
 cannot wait: a first step that turns out the other way, a spec that
 reads two ways, a user-visible change not in the ledger.
 

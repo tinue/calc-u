@@ -66,7 +66,12 @@ test('the installed app starts without a connection and runs every model', async
     await app.waitForTimeout(500);
     await expect(app.locator('.calcu-key')).toHaveCount(45);
   }
-  await expect(app.locator('.calcu-status, [role=status]')).toHaveCount(0);
+  // A switch shows "Starting Calc-U-59…" until the new model runs (row 59-38):
+  // on a slow runner that outlasts the 500 ms above. Nothing may stay; a failure
+  // names the text that did.
+  const status = app.locator('.calcu-status, [role=status]');
+  await expect.poll(async () => (await status.count()) ? await status.allTextContents() : [],
+    { timeout: 30000 }).toEqual([]);
 
   await app.getByRole('button', { name: 'Settings' }).click();
   await app.getByLabel('Solid State Module').selectOption({ label: 'Applied Statistics' });

@@ -4,10 +4,10 @@
 // SessionController tests (shared_controller_tests.cpp and the controller
 // half of shared_cooperative_tests.cpp, a FakePlatform and the controller's
 // cooperative batches): the same checks, on the part as every frontend hosts
-// it (PartRig.hpp), paced by the library's pacer.
+// it (SessionRig.hpp, PartRig), paced by the library's pacer.
 
 #include "TestHarness.hpp"
-#include "PartRig.hpp"
+#include "SessionRig.hpp"
 #include "TestRoms.hpp"
 #include "../app/CardFile.hpp"
 #include "../app/KeyboardLayout.hpp"
@@ -83,7 +83,7 @@ TEST(part_keystroke_controls_drive_the_gui) {
     CHECK(r.runUntil([&] { return c.isFrozen(); }, 10000ms));
     CHECK(c.printerTrace());
     r.run(20ms);
-    CHECK(r.panels == (std::vector<DebugPanel>{DebugPanel::Cpu}));
+    CHECK(r.panels() == (std::vector<DebugPanel>{DebugPanel::Cpu}));
     CHECK(r.runUntil([&] { return !c.keystrokesPlaying(); }, 10000ms));
     c.loadStateFile(bytes("SKIP-RESET: on\n"));  // retired: an error, then a normal load
     CHECK(!r.errors().empty() && r.errors().back().find("SKIP-RESET: no longer exists") != std::string::npos);
@@ -170,11 +170,12 @@ TEST(part_resume_before_the_frozen_view_drops_it) {
     c.freeze(FreezeOwner::Cpu);
     c.resume();  // before the frozen view arrives
     r.run(200ms);  // the freeze job ran (it is queued before the run mark)
-    r.stateSets.clear();
+    const std::size_t mark = r.fe.log.size();
     r.run(50ms);
     CHECK(!c.isFrozen());
     CHECK(c.debug().cpuHistory().empty());
-    CHECK(std::find(r.stateSets.begin(), r.stateSets.end(), topics::kDebugCpu) == r.stateSets.end());
+    const auto sets = r.stateSets(mark);
+    CHECK(std::find(sets.begin(), sets.end(), topics::kDebugCpu) == sets.end());
 }
 
 TEST(part_events_of_a_replaced_machine_are_ignored) {

@@ -5,7 +5,7 @@
 // folder, a dropped file, and the topics the page reads (AC-22).
 
 #include "TestHarness.hpp"
-#include "AppSessionRig.hpp"
+#include "SessionRig.hpp"
 #include "../app/TIWebPart.hpp"
 #include "settings/AtomicFile.hpp"
 #include "settings/HostDirs.hpp"
@@ -20,62 +20,44 @@ namespace fs = std::filesystem;
 
 namespace {
 
-// The Web engine's session (bindings.cpp's makeWebAppSession), natively.
-struct WebRig : MessageSink {
-    testroms::TempFolder folder;
+// What the Web engine makes before the session (bindings.cpp's
+// makeWebAppSession): the folders, the settings file, the Web part.
+struct WebPieces {
+    calcu::testing::TempFolder webFolder{"calcu59-web"};
     calcu::settings::HostDirs dirs;
     std::unique_ptr<calcu::settings::SettingsFile> file;
     std::unique_ptr<settings::Settings> settings;
     std::unique_ptr<TIWebPart> web;
-    calcu::sessions::ProductSession<TIAppPart> app;
-    calcu::pacing::WallTime now{std::chrono::hours(1)};
-    TopicMirror mirror;
-    std::vector<std::string> notices;
-    ListenerId me = 0;
-
-    WebRig() {
+    WebPieces() {
         dirs.frontend = calcu::settings::FrontendKind::Web;
-        dirs.settingsBase = (folder.path / "settings").string();
-        dirs.saveFolder = (folder.path / "Calc-U-59").string();
+        dirs.settingsBase = (webFolder.path() / "settings").string();
+        dirs.saveFolder = (webFolder.path() / "Calc-U-59").string();
         fs::create_directories(dirs.saveFolder);
-        fs::create_directories(folder.path / "presets");
-        std::ofstream(folder.path / "presets" / "one.ti59") << "MODEL: TI-58\nREGISTERS:\n05 = 3.25\n";
+        webFolder.write("presets/one.ti59", "MODEL: TI-58\nREGISTERS:\n05 = 3.25\n");
         file = std::make_unique<calcu::settings::SettingsFile>(calcu::settings::SettingsFile::open(
             settings::settingsDecl(), calcu::settings::settingsFilePath(settings::settingsDecl(), dirs)));
         settings = std::make_unique<settings::Settings>(*file);
-        web = std::make_unique<TIWebPart>(*settings, (folder.path / "presets").string(), folder.path / "traces");
-        TIAppSetup s;
-        s.roms = testroms::romSet();
-        s.cuecards = testroms::catalog();
-        s.startModel = settings->startupModel();
-        s.saveFolder = dirs.saveFolder;
-        s.trace = {folder.path / "traces", 1'000'000};
-        app = makeAppSession(std::move(s), [this] { return now += 1ms; }, 59u, {}, {web.get()});
-        web->bind(*app.part);
-        me = app.session->listen(*this, {});
+        web = std::make_unique<TIWebPart>(*settings, (webFolder.path() / "presets").string(), webFolder.path() / "traces");
     }
-    ~WebRig() {
-        web.reset();   // first: it tells the part it goes
-        app = {};
+};
+
+// The Web engine's session, natively: the Web part behind the product's.
+struct WebRig : WebPieces, testroms::SessionRig {
+    WebRig()
+        : SessionRig(testroms::RigOptions{.model = settings->startupModel(), .after = {web.get()},
+                                          .saveFolder = dirs.saveFolder, .traceFolder = webFolder.path() / "traces"}) {
+        web->bind(part());
     }
-    void deliver(const Message& m) override {
-        mirror.deliver(m);
-        if (const auto* s = std::get_if<StreamMessage>(&m); s && s->topic == kNoticesTopic)
-            for (const auto& n : s->appended)
-                if (const auto* x = payloadAs<Notice>(n)) notices.push_back(x->sentence);
-    }
+    ~WebRig() { web.reset(); }   // first: it tells the part it goes
     void send(const char* name, Value args = Value::object({})) {
-        app.session->send(me, Command{CommandName{name}, std::move(args)});
-        app.session->call(now);
+        post(CommandName{name}, std::move(args));
+        session().call(now);
     }
-    void run(std::chrono::milliseconds d) {
-        for (auto end = now + d; now < end;) app.session->call(now += std::chrono::microseconds(16'667));
-    }
+    void run(std::chrono::milliseconds d) { runFor(d); }
     Value state(const TopicName& t) const {
-        const PayloadPtr* p = mirror.state(t);
+        const PayloadPtr* p = fe.mirror.state(t);
         return p && *p ? (*p)->toValue() : Value();
     }
-    TIAppPart& part() { return *app.part; }
 };
 
 } // namespace
@@ -88,7 +70,7 @@ TEST(lib15_ac16_start_takes_the_model_by_name_and_a_bundled_preset) {
     r.run(500ms);
     CHECK(r.part().model() == Model::TI58);
     CHECK_EQ(testroms::mem(r.part().emulator()->machine()).readDataReg(5), 3.25);
-    CHECK(r.notices.empty());
+    CHECK(r.notices().empty());
 }
 
 TEST(lib15_ec4_unknown_model_and_preset_are_notices) {
@@ -96,10 +78,10 @@ TEST(lib15_ec4_unknown_model_and_preset_are_notices) {
     r.send("start", Value::object({{"model", "TI-99"}, {"preset", "../one.ti59"}}));
     r.run(100ms);
     CHECK(r.part().model() == Model::TI59);
-    CHECK_EQ(r.notices.size(), size_t{2});
-    if (r.notices.size() == 2) {
-        CHECK(r.notices[0].find("has no model TI-99") != std::string::npos);
-        CHECK(r.notices[1].find("../one.ti59 is not a bundled preset") != std::string::npos);
+    CHECK_EQ(r.notices().size(), size_t{2});
+    if (r.notices().size() == 2) {
+        CHECK(r.notices()[0].find("has no model TI-99") != std::string::npos);
+        CHECK(r.notices()[1].find("../one.ti59 is not a bundled preset") != std::string::npos);
     }
 }
 
@@ -136,7 +118,7 @@ TEST(lib15_ac22_the_page_topics_are_there) {
     r.run(1s);
     for (const auto* t : {&topics::kWebModel, &topics::kWebDisplay, &topics::kWebRunState, &topics::kWebPrinter,
                           &topics::kWebCard, &topics::kWebLog, &topics::kWebSettings, &topics::kWebTraces})
-        CHECK(r.mirror.state(*t) != nullptr);
+        CHECK(r.fe.mirror.state(*t) != nullptr);
     const Value display = r.state(topics::kWebDisplay);
     CHECK(display.bytes() && display.bytes()->size() == 36 * sizeof(float));
     const Value model = r.state(topics::kWebModel);

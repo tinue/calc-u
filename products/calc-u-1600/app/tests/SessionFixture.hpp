@@ -3,18 +3,21 @@
 // AC-29's kind): the product's session (makeSharpSession), a scripted wall
 // clock, a Listener that keeps the topics, the replies by call, and helpers
 // that run a command to its end one host call at a time. ROMs and the bundled cards are
-// copied into a temporary bundle folder; nothing of the user's is touched.
+// copied into a temporary bundle folder of the fixture's own (library/testing/
+// TempFolder: a unique name, so parallel runs do not collide); nothing of the
+// user's is touched.
 
 #include <chrono>
 #include <cstdio>
 #include <filesystem>
-#include <fstream>
 #include <map>
 #include <memory>
 #include <optional>
 #include <string>
 #include <vector>
 
+#include "TempFolder.hpp"
+#include "TestFrontend.hpp"
 #include "TestSettings.hpp"
 #include "app/SharpSession.hpp"
 #include "sessions/Listener.hpp"
@@ -25,10 +28,11 @@ namespace sessionfixture {
 namespace fs = std::filesystem;
 namespace sessions = calcu::sessions;
 
-inline bool romsPresent() { return std::ifstream("roms/PC1600-P0-B0-new.bin").good(); }
+inline bool romsPresent() { return fullRomSetPresent(); }
 
 struct SessionFixture {
-    fs::path root;
+    calcu::testing::TempFolder folder;
+    fs::path root = folder.path();
     TestSettings testSettings;
     shared::Settings& settings = testSettings.settings;
     std::unique_ptr<shared::AppPaths> paths;
@@ -48,9 +52,7 @@ struct SessionFixture {
     // allowance pass on this clock: the fixture sets 100 us by default.
     std::chrono::nanoseconds readCost{100'000};
 
-    explicit SessionFixture(const char* name = "calcu-session-test")
-        : root(fs::temp_directory_path() / name) {
-        fs::remove_all(root);
+    explicit SessionFixture(const char* name = "calcu-session-test") : folder(name) {
         const fs::path bundle = root / "bundle";
         fs::create_directories(bundle);
         for (const auto& dir : {fs::path("roms"), fs::path("frontends/qt6/resources/cards")})
@@ -63,8 +65,6 @@ struct SessionFixture {
     ~SessionFixture() {
         listener.stop();
         app = {};
-        std::error_code ec;
-        fs::remove_all(root, ec);
     }
 
     // Builds the session (not yet started).
@@ -150,12 +150,7 @@ struct SessionFixture {
         return d && part().lcdText(*d, &text) ? text.text() : std::string();
     }
     template <class P> const P* state(const sessions::TopicName& t) const { return listener.state<P>(t); }
-    std::vector<std::string> notices() {
-        std::vector<std::string> out;
-        for (const auto& p : listener.mirror().takeAppended(sessions::kNoticesTopic))
-            if (const auto* n = sessions::payloadAs<sessions::Notice>(p)) out.push_back(n->sentence);
-        return out;
-    }
+    std::vector<std::string> notices() { return sessions::test::noticeSentences(listener.mirror()); }
 };
 
 } // namespace sessionfixture

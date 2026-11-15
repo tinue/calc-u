@@ -6,7 +6,7 @@
 // clock the driver supplied (60 Hz ticks): tests/reference/v2.3.0-examples/.
 //
 // Since M-34 the driver runs the product as every frontend hosts it: the
-// library's app session with cu59::TIAppPart (PartRig.hpp), called at 60 Hz
+// library's app session with cu59::TIAppPart (SessionRig.hpp, PartRig), called at 60 Hz
 // on the driver's clock; the example goes in as the frontends load a preset
 // (the command c59.load-state, an operation). SessionController went in M-34.
 //
@@ -22,7 +22,7 @@
 // `mem:` cards), the log and the whole RAM (program steps and registers).
 
 #include "TestHarness.hpp"
-#include "PartRig.hpp"
+#include "SessionRig.hpp"
 #include "TestRoms.hpp"
 #include <algorithm>
 #include <chrono>

@@ -2,7 +2,7 @@
 // the library's pacer, through the app session as the frontends host it.
 
 #include "TestHarness.hpp"
-#include "AppSessionRig.hpp"
+#include "SessionRig.hpp"
 #include "../app/PacingProfiles.hpp"
 #include <algorithm>
 

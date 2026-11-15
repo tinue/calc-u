@@ -97,7 +97,7 @@ A new area of `calcu_library` (LIB-1 §2a). It includes `machine`,
 | `products/calc-u-59/frontends/web/src/PlayCalculator.jsx`, `bindings.cpp` | the same on the Web; `KeyboardEvent.key` of a letter, lowered, is the letter the key carries (AC-21, OQ-2) |
 | `products/calc-u-59/tests/typing_tests.cpp` (new) | AC-20, AC-21, AC-23–27 (§6) |
 | `products/calc-u-59/tests/shared_keys_tests.cpp`, `shared_tables_tests.cpp` | the key cases move to `typing_tests.cpp` (AC-27); the playback cases (`keys_reload_…`, `keys_arm_card_…`, `keys_script_waits_out_a_freeze_…`, `keys_wait_runs_at_the_speed_…`) stay on `TIKeystrokePlayback` |
-| `products/calc-u-59/tests/AppSessionRig.hpp`, `PartRig.hpp` | `kKeyboardDown` → the library's `screen-key-down`/`-up` |
+| `products/calc-u-59/tests/SessionRig.hpp` | `kKeyboardDown` → the library's `screen-key-down`/`-up` |
 | `products/calc-u-59/frontends/swift/Calc-U-59Tests/FrameGapTests.swift`, `MessageOrderTests.swift` | `pressKey`/`releaseKey` → LIB-3's raw `key-down`/`key-up` (they test message order, not typing; AC-39) |
 | `products/calc-u-59/frontends/web/tests/play-calculator.spec.js` | the physical-keyboard cases follow AC-21 (letters by the carried letter) |
 
@@ -509,7 +509,7 @@ them uses `KeySequencer`, `SharpTypingHook` or the PC-1500 key queue
   (`library/pacing/Pacer.cpp:121`), and since M-33 the key-detect spin
   during a hold is not paced (LIB-17 D-3, row 59-32). One hold therefore
   spans many slices and a held Adv repeats. The test driver adds 1 ms
-  per clock read (`tests/PartRig.hpp:57`), so a hold is about 300 ms of
+  per clock read (`tests/SessionRig.hpp`, `SessionRig`'s clock), so a hold is about 300 ms of
   emulated time there: the two feeds and the +1.02 s. 2.3.0 passed the
   pump's fixed `now` (`Shared/EmulationRunner.cpp:168`) and paced the
   key-detect range (`Shared/Pacing.cpp:26-29`).

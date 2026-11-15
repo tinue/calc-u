@@ -10,7 +10,7 @@
 // CALCU59_PACING_LONGRUN=<seconds>.
 
 #include "TestHarness.hpp"
-#include "TestRoms.hpp"
+#include "SessionRig.hpp"
 #include "../app/TIAppPart.hpp"
 #include <chrono>
 #include <cmath>
@@ -40,12 +40,8 @@ constexpr double kBoundSeconds = 0.035;
 const char* nameOf(Model m) { return m == Model::TI59 ? "TI-59" : m == Model::TI58 ? "TI-58" : "TI-58C"; }
 
 calcu::sessions::ProductSession<TIAppPart> session(Model model, calcu::pacing::WallClock clock) {
-    TIAppSetup s;
-    s.roms = testroms::romSet();
-    s.cuecards = testroms::readFile("roms/solid-state/cuecards.txt").value_or("");
-    s.startModel = model;
-    s.saveFolder = (std::filesystem::temp_directory_path() / "calcu59-longrun").string();
-    return makeAppSession(std::move(s), std::move(clock), 59u);
+    static const calcu::testing::TempFolder folder("calcu59-longrun");
+    return makeAppSession(testroms::appSetup(model, folder.path()), std::move(clock), 59u);
 }
 
 } // namespace

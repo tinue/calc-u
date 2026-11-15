@@ -170,11 +170,10 @@ if(CALCU_TESTS)
   # LIB-12 AC-2: no product source looks for a ROM file outside the lookup
   # (library/roms/tests/check_no_own_rom_lookup.sh; design T7). Allowed: the
   # lookup's product side with the one listed exception, the host drive's
-  # own ROM (core/Machine/SharpRoms.cpp; D-6), the catalogue's ROM entries,
-  # and the app layer's tests (their SKIP probes).
+  # own ROM (core/Machine/SharpRoms.cpp; D-6) and the catalogue's ROM entries.
   add_test(NAME CalcU1600NoOwnRomLookup
            COMMAND sh ${CMAKE_SOURCE_DIR}/library/roms/tests/check_no_own_rom_lookup.sh .
-                   core/Machine/SharpRoms.cpp core/Machine/SharpCatalogue.cpp app/tests
+                   core/Machine/SharpRoms.cpp core/Machine/SharpCatalogue.cpp
            WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
   set_tests_properties(CalcU1600NoOwnRomLookup PROPERTIES LABELS frequent)
   # LIB-3 AC-34, AC-36 (design §6 P16-1, P16-3): no session class of the

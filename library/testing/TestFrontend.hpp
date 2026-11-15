@@ -6,7 +6,8 @@
 #include <string>
 #include <vector>
 
-// The test frontend (LIB-3 design §2, §6): a TopicMirror, the raw message
+// The test frontend (LIB-3 design §2, §6; in library/testing/ for the
+// library's tests and both products'): a TopicMirror, the raw message
 // log and two delivery modes, at once (the caller's thread) and through a
 // queue (another thread, a Web Worker), pumped by the test.
 
@@ -38,6 +39,14 @@ inline std::string describe(const Message& m) {
         std::string operator()(const SoundStop&) const { return "sound-stop"; }
     };
     return std::visit(V{}, m);
+}
+
+// The notices a mirror got since the last take, as their sentences.
+inline std::vector<std::string> noticeSentences(TopicMirror& mirror) {
+    std::vector<std::string> out;
+    for (const auto& p : mirror.takeAppended(kNoticesTopic))
+        if (const auto* n = payloadAs<Notice>(p)) out.push_back(n->sentence);
+    return out;
 }
 
 class TestFrontend : public MessageSink {
@@ -92,12 +101,7 @@ public:
         return p ? payloadAs<P>(*p) : nullptr;
     }
     const BusyState* busy() const { return state<BusyState>(kBusyTopic); }
-    std::vector<std::string> noticeSentences() {
-        std::vector<std::string> out;
-        for (const auto& p : mirror.takeAppended(kNoticesTopic))
-            if (const auto* n = payloadAs<Notice>(p)) out.push_back(n->sentence);
-        return out;
-    }
+    std::vector<std::string> noticeSentences() { return test::noticeSentences(mirror); }
 
     Delivery delivery;
     TopicMirror mirror;

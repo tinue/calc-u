@@ -4,7 +4,6 @@
 namespace calcu::harness {
 
 void CommandRegistry::add(std::string name, Handler h, std::string usage) {
-    if (!common_.count(name)) order_.push_back(name);
     usage_.push_back(usage);
     common_[std::move(name)] = Entry{std::move(h), std::move(usage)};
 }
@@ -31,7 +30,6 @@ const Handler* CommandRegistry::find(const std::vector<std::string>& path) const
 bool CommandRegistry::isProductWord(const std::string& word) const { return product_.count(word) != 0; }
 bool CommandRegistry::isCommand(const std::string& name) const { return common_.count(name) != 0; }
 std::vector<std::string> CommandRegistry::usage() const { return usage_; }
-std::vector<std::string> CommandRegistry::commandNames() const { return order_; }
 
 // ── Protocol ────────────────────────────────────────────────────────────
 

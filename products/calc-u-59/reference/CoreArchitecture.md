@@ -44,7 +44,8 @@ adapters of `core/TIAdapters.hpp` (`memoryOf(machine)` …), each with
 its removal step: `TICardReaderAdapter` (M-55), `TIMemoryAdapter` (program, registers,
 partition, RAM; M-54), `TIDebugTargetAdapter` (steps, trace ring,
 breakpoints, run control; M-53), `TIDebugPanelAdapter` (ASM overlay, debug
-events; M-56), `TIPacingHints` (polled hardware, idle range; M-33).
+events; M-56); `idleAndKeyDetectRange()` gives a model's scan/detect range
+(for `tools/headless/` and the tests).
 `TI59Machine` is the core-internal facade over the three hardware
 components. The core holds no lock (see "Threading Model").
 

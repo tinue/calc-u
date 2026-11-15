@@ -5,7 +5,7 @@
 // ROM address ranges the machine keys off (C59-1 AC-18; was
 // app/MachineModelInfo.hpp at 2.3.0). Core-internal: above the core, key
 // readiness is Machine::isKeyReady(), the idle/key-detect range is
-// TIPacingHints and the card wait is TICardReaderAdapter (C59-1 design §5).
+// idleAndKeyDetectRange() (TIAdapters.hpp) and the card wait is TICardReaderAdapter (C59-1 design §5).
 
 /// Inclusive ROM address range, with an optional second span.
 struct PcRange {

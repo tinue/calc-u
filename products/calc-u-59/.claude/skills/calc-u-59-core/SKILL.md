@@ -59,7 +59,8 @@ Annotated ROM listings: `rom/TI59-commented.asm`, `rom/TI58C-commented.asm`
   have yet goes through the adapters of `core/TIAdapters.hpp`, each until its
   removal step: `TICardReaderAdapter` (M-55),
   `TIMemoryAdapter` (M-54), `TIDebugTargetAdapter` (M-53),
-  `TIDebugPanelAdapter` (M-56), `TIPacingHints` (M-33). `TI59Machine`,
+  `TIDebugPanelAdapter` (M-56); `idleAndKeyDetectRange()` is the scan/detect
+  range for `tools/headless/` and the tests. `TI59Machine`,
   `TMC0501`, `MachineVariant`, `TIKeys`, `TIRomRanges` are core-internal; the
   CTest `CalcU59CoreSeam` (`tests/check_core_seam.sh`) fails on an include of
   them outside `core/` and `tests/`. Don't add a call to an adapter that the

@@ -110,7 +110,7 @@ uint32_t h_printer_busy_cycles(int feed) {
 }
 // The idle/key-detect range: out = {lo, hi, extraLo, extraHi} (extra empty when lo > hi).
 void h_idle_range(int model, int* out) {
-    const auto r = TIPacingHints::idleAndKeyDetectRange(cu59::modelId(static_cast<cu59::Model>(model)));
+    const auto r = idleAndKeyDetectRange(cu59::modelId(static_cast<cu59::Model>(model)));
     for (int i = 0; i < 4; ++i) out[i] = r[static_cast<size_t>(i)];
 }
 

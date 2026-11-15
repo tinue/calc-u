@@ -6,7 +6,8 @@
 #include "Machine/SharpBuilder.hpp"
 #include "Machine/SharpCatalogue.hpp"
 #include "roms/Bundle.hpp"
-#include "roms/FullSet.hpp"
+#include "Machine/SharpRoms.hpp"
+#include "app/Settings.hpp"
 #include "sessions/SessionPart.hpp"
 #include "settings/Startup.hpp"
 
@@ -20,21 +21,6 @@ namespace shared {
 namespace {
 
 using namespace calcu;
-
-// The bundled folders the tests read ROM files from (tests/SharpTestSupport.hpp),
-// in order; the first that has a file gives it.
-class FoldersBundle final : public roms::Bundle {
-public:
-    FoldersBundle() : roms_(std::string(CALCU1600_DIR) + "/roms"), firmware_(std::string(CALCU1600_DIR) + "/firmware/pc1600-hostdrive") {}
-    std::optional<std::vector<std::uint8_t>> read(std::string_view name) const override {
-        if (auto b = roms_.read(name)) return b;
-        return firmware_.read(name);
-    }
-    std::string where() const override { return roms_.where() + " and " + firmware_.where(); }
-
-private:
-    roms::DirectoryBundle roms_, firmware_;
-};
 
 // A cell of the ROM font as the harness reads it, in the encoding of
 // --lcd-text's rows: printable ASCII as is, `\` as `\\`, other codes `\xHH`.
@@ -80,21 +66,10 @@ public:
     const machine::Catalogue& catalogue() const override { return catalogue_; }
     machine::MachineBuilder& builder() override { return builder_; }
 
-    const settings::ProductDecl& settingsDecl() const override {   // A-3
-        static const settings::ProductDecl decl = [] {
-            settings::ProductDecl d;
-            d.productName = "Calc-U-1600";
-            d.models = {sharp::kPC1500, sharp::kPC1500A, sharp::kPC1600};
-            d.fallbackModel = sharp::kPC1500A;
-            d.keys = {settings::family::startupModel()};
-            return d;
-        }();
-        return decl;
-    }
+    const settings::ProductDecl& settingsDecl() const override { return shared::settingsDecl(); }
 
     roms::LookupResult lookUpRoms() const override {
-        static const roms::FullSet set = roms::fullSet(sharp::sharpCatalogue());
-        return roms::lookUp(set, FoldersBundle(), nullptr);
+        return sharp::lookUpRoms(roms::DirectoryBundle(std::string(CALCU1600_DIR) + "/roms"));
     }
 
     machine::BuildRequest startupRequest(const settings::SettingsFile& s, const roms::RomSet& set) override {   // A-1

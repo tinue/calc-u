@@ -234,7 +234,6 @@ public:
 
     // ── Traces ───────────────────────────────────────────────────────────────
     TraceWriter& manualTrace() { return m_manualTrace; }
-    TraceWriter& scriptedTrace() { return m_scriptedTrace; }
     /// The manual ("C" indicator) trace: a fresh file at `path`.
     bool openManualTrace(const std::filesystem::path& path, uint64_t maxBytes);
     /// Drain what is left and close it.

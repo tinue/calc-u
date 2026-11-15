@@ -23,7 +23,6 @@ TIMachine::TIMachine(const MachineDescriptor& d, MachineVariant v, const TIRoms&
 
 std::uint32_t TIMachine::stepOne() {
     const std::uint32_t r = m_hw.step();
-    if (r & TI59Machine::kPolledHardware) m_polledHardware = true;
     if (m_restore && m_ranges.scanLoop.contains(m_hw.pc())) {
         // AC-19: the ROM's start-up is over; the RAM and the partition go back
         // before key readiness is reported (D-5).

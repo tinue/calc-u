@@ -68,16 +68,13 @@ private:
     friend class TIMemoryAdapter;
     friend class TIDebugTargetAdapter;
     friend class TIDebugPanelAdapter;
-    friend class TIPacingHints;
     friend struct TIMachineTesting;
     friend TICardReaderAdapter* cardReaderOf(calcu::machine::Machine&);
     friend TIMemoryAdapter* memoryOf(calcu::machine::Machine&);
     friend TIDebugTargetAdapter* debugTargetOf(calcu::machine::Machine&);
     friend TIDebugPanelAdapter* debugPanelOf(calcu::machine::Machine&);
-    friend TIPacingHints* pacingHintsOf(calcu::machine::Machine&);
 
-    /// One instruction; then the pending Reset restore and the polled-hardware
-    /// bit. Every path that runs an instruction goes through here.
+    /// One instruction; then the pending Reset restore. Every path that runs an instruction goes through here.
     std::uint32_t stepOne();
     /// The processor reset (TI59Machine::reset), with the tick count carried;
     /// the peripherals are told of it (LIB-2 AC-10).
@@ -98,7 +95,6 @@ private:
     std::optional<SavedMemory> m_restore;   ///< AC-19: RAM and partition until key readiness
     TIStepObserver* m_observer = nullptr;
     TIStop m_stop = TIStop::None;
-    bool m_polledHardware = false;
 
     std::unique_ptr<PC100C> m_printer;
     std::unique_ptr<SolidStateRomModule> m_module;
@@ -107,5 +103,4 @@ private:
     TIMemoryAdapter m_memory{*this};
     TIDebugTargetAdapter m_debugTarget{*this};
     TIDebugPanelAdapter m_debugPanel{*this};
-    TIPacingHints m_pacing{*this};
 };

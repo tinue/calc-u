@@ -7,8 +7,9 @@
 // own session classes are not used; its app layer joins in M-33 (D-6).
 // Adapters (design §5): A-1, the start (TI-59 unless [startup] model names
 // another, its default variant, the PC-100C plugged in, no module, as
-// 2.3.0's core); A-3, a settings declaration of [startup] model only, until
-// LIB-9 59 (M-32). No product commands until C59-9 (M-59).
+// 2.3.0's core). The settings declaration and the ROM lookup are the
+// product's (app/Settings.hpp, app/ProductRoms.hpp). No product commands
+// until C59-9 (M-59).
 
 namespace cu59 {
 

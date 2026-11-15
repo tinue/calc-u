@@ -14,24 +14,12 @@ endif()
 # CMakeLists.txt, the libraries the tests and the Swift app's XCFramework
 # are built from. No GUI-independent
 # logic lives in frontends/qt6/app; see CLAUDE.md § "Frontend Parity".
-set(CMAKE_OSX_DEPLOYMENT_TARGET "15.6" CACHE STRING "Minimum macOS version")
+# The macOS minimum, C++20 and Homebrew's Qt prefix are the root project's.
 project(CalcU59Qt LANGUAGES CXX)
 
-set(CMAKE_CXX_STANDARD 20)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 set(CMAKE_AUTOUIC OFF)
-
-# Find Homebrew's Qt on macOS if no prefix is configured.
-if(APPLE AND NOT DEFINED CMAKE_PREFIX_PATH)
-  foreach(prefix /opt/homebrew/opt/qt /usr/local/opt/qt)
-    if(EXISTS ${prefix})
-      list(APPEND CMAKE_PREFIX_PATH ${prefix})
-      break()
-    endif()
-  endforeach()
-endif()
 
 find_package(Qt6 REQUIRED COMPONENTS Widgets)
 qt_standard_project_setup()
@@ -147,16 +135,12 @@ if(CALCU_TESTS)
   if(CALCU_TESTS_CHECKPOINT)
     set(PROBE_HOME ${CMAKE_CURRENT_BINARY_DIR}/pacing-probe-home)
     file(MAKE_DIRECTORY ${PROBE_HOME})
-    add_test(NAME CalcU59QtPacingProbe COMMAND $<TARGET_FILE:CalcU59Qt> --pacing-probe 60)
-    set_tests_properties(CalcU59QtPacingProbe PROPERTIES LABELS checkpoint TIMEOUT 120
-                         ENVIRONMENT "QT_QPA_PLATFORM=offscreen;HOME=${PROBE_HOME}")
+    calcu_add_test(CalcU59QtPacingProbe checkpoint COMMAND $<TARGET_FILE:CalcU59Qt> --pacing-probe 60
+                   WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR} PROPERTIES TIMEOUT 120)
+    set_tests_properties(CalcU59QtPacingProbe PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen;HOME=${PROBE_HOME}")
   endif()
 endif()
-if(MSVC)
-  target_compile_options(CalcU59Qt PRIVATE /W4 /utf-8)  # UTF-8 literals in Shared/
-else()
-  target_compile_options(CalcU59Qt PRIVATE -Wall -Wextra)
-endif()
+target_link_libraries(CalcU59Qt PRIVATE calcu_warnings)   # MSVC: /utf-8 for app/'s UTF-8 literals
 
 if(WIN32)
   target_sources(CalcU59Qt PRIVATE resources/windows/calc-u-59.rc)

@@ -2,16 +2,15 @@
 # library, calcu_library, with one folder per area (library/<area>/,
 # namespace calcu::<area>; LIB-1 design §2a). Includes are rooted at
 # library/: #include "machine/Machine.hpp". The products link calcu_library.
-file(GLOB CALCU_LIBRARY_SOURCES CONFIGURE_DEPENDS
-  ${CMAKE_CURRENT_SOURCE_DIR}/machine/*.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/settings/*.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/pacing/*.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/sessions/*.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/peripherals/*.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/roms/*.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/formats/*.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/harness/*.cpp
-)
+# The C++ areas, once: their sources, their tests (<area>/tests/*.cpp) and the
+# tests' include folders all come from this list. (web/ is the Web shell's,
+# harness/cli/ and harness/attach/ are added below.)
+set(CALCU_LIBRARY_AREAS machine settings pacing sessions peripherals roms formats harness)
+set(CALCU_LIBRARY_SOURCES "")
+foreach(area ${CALCU_LIBRARY_AREAS})
+  file(GLOB area_sources CONFIGURE_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/${area}/*.cpp)
+  list(APPEND CALCU_LIBRARY_SOURCES ${area_sources})
+endforeach()
 # C59-5: harness attach (library/harness/attach/). attachPort() is always in
 # (the client `calcu attach` uses it); the endpoint and the attached harness
 # only with CALCU_ATTACH: POSIX, never Emscripten, never for an iOS device
@@ -52,11 +51,7 @@ endif()
 target_compile_features(calcu_library PUBLIC cxx_std_20)  # ADR 0005
 # Calc-U-59's static libraries end up in a shared object (ti59headless).
 set_target_properties(calcu_library PROPERTIES POSITION_INDEPENDENT_CODE ON)
-if(MSVC)
-  target_compile_options(calcu_library PRIVATE /W4 /utf-8)
-else()
-  target_compile_options(calcu_library PRIVATE -Wall -Wextra)
-endif()
+target_link_libraries(calcu_library PRIVATE calcu_warnings)
 if(EMSCRIPTEN)
   # One build/web tree serves both Web engines with native wasm exceptions
   # (LIB-1 design §2a, D-6).
@@ -71,47 +66,43 @@ if(CALCU_TESTS AND NOT EMSCRIPTEN)
   target_include_directories(calcu_test_runner PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/testing)
   target_compile_features(calcu_test_runner PUBLIC cxx_std_20)
 
+  # What the library's test programs share (calcu_library_tests,
+  # calcu_library_pty_tests, the harness's calcu_test): the machines built for
+  # the tests (machine/tests/TestMachines.cpp, compiled once) and the include
+  # folders of the test stand-ins other areas' tests use (TestMachines.hpp,
+  # TestParts.hpp, TestRomFiles.hpp, the harness's TestProduct.hpp; not
+  # settings/tests, whose TestProduct.hpp is its own) and of library/testing/.
+  add_library(calcu_test_machines OBJECT ${CMAKE_CURRENT_SOURCE_DIR}/machine/tests/TestMachines.cpp)
+  target_link_libraries(calcu_test_machines PUBLIC calcu_library PRIVATE calcu_warnings)
+  foreach(area machine sessions roms harness)
+    target_include_directories(calcu_test_machines PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/${area}/tests)
+  endforeach()
+  target_include_directories(calcu_test_machines PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/testing)
+
   # The library's own tests (Frequent; docs/test-groups.md): machines built
   # for the tests, never product code (LIB-1 AC-24). Sources:
   # library/<area>/tests/*.cpp.
-  file(GLOB CALCU_LIBRARY_TEST_SOURCES CONFIGURE_DEPENDS
-    ${CMAKE_CURRENT_SOURCE_DIR}/machine/tests/*.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/settings/tests/*.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/pacing/tests/*.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/sessions/tests/*.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/peripherals/tests/*.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/roms/tests/*.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/formats/tests/*.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/harness/tests/*.cpp
-  )
+  set(CALCU_LIBRARY_TEST_SOURCES "")
+  foreach(area ${CALCU_LIBRARY_AREAS})
+    file(GLOB area_tests CONFIGURE_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/${area}/tests/*.cpp)
+    list(APPEND CALCU_LIBRARY_TEST_SOURCES ${area_tests})
+  endforeach()
+  list(REMOVE_ITEM CALCU_LIBRARY_TEST_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/machine/tests/TestMachines.cpp)
   if(CALCU_ATTACH)
     file(GLOB CALCU_ATTACH_TEST_SOURCES CONFIGURE_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/harness/attach/tests/*.cpp)
     list(APPEND CALCU_LIBRARY_TEST_SOURCES ${CALCU_ATTACH_TEST_SOURCES})
   endif()
   list(REMOVE_ITEM CALCU_LIBRARY_TEST_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/peripherals/tests/pty_tests.cpp)
   add_executable(calcu_library_tests ${CALCU_LIBRARY_TEST_SOURCES})
-  target_include_directories(calcu_library_tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/machine/tests
-                                                         ${CMAKE_CURRENT_SOURCE_DIR}/sessions/tests
-                                                         ${CMAKE_CURRENT_SOURCE_DIR}/roms/tests
-                                                         ${CMAKE_CURRENT_SOURCE_DIR}/harness/tests)
-  target_link_libraries(calcu_library_tests PRIVATE calcu_library calcu_test_runner)
-  if(MSVC)
-    target_compile_options(calcu_library_tests PRIVATE /utf-8)
-  else()
-    target_compile_options(calcu_library_tests PRIVATE -Wall -Wextra)
-  endif()
+  target_link_libraries(calcu_library_tests PRIVATE calcu_test_machines calcu_test_runner calcu_warnings)
   add_test(NAME calcu_library_tests COMMAND calcu_library_tests)
   set_tests_properties(calcu_library_tests PROPERTIES LABELS frequent)
 
   # LIB-2 T8: the host links on real pseudo-terminals (Frequent; macOS and
   # Linux only), a program of their own so that they can move to Longer.
   if(CALCU_HAS_PTY)
-    add_executable(calcu_library_pty_tests ${CMAKE_CURRENT_SOURCE_DIR}/peripherals/tests/pty_tests.cpp
-                                           ${CMAKE_CURRENT_SOURCE_DIR}/machine/tests/TestMachines.cpp)
-    target_include_directories(calcu_library_pty_tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/machine/tests
-                                                               ${CMAKE_CURRENT_SOURCE_DIR}/sessions/tests)
-    target_link_libraries(calcu_library_pty_tests PRIVATE calcu_library calcu_test_runner)
-    target_compile_options(calcu_library_pty_tests PRIVATE -Wall -Wextra)
+    add_executable(calcu_library_pty_tests ${CMAKE_CURRENT_SOURCE_DIR}/peripherals/tests/pty_tests.cpp)
+    target_link_libraries(calcu_library_pty_tests PRIVATE calcu_test_machines calcu_test_runner calcu_warnings)
     add_test(NAME calcu_library_pty_tests COMMAND calcu_library_pty_tests)
     set_tests_properties(calcu_library_pty_tests PROPERTIES LABELS frequent)
   endif()
@@ -124,6 +115,27 @@ if(CALCU_TESTS AND NOT EMSCRIPTEN)
     set_tests_properties(LibraryPlatformStoreCheck PROPERTIES LABELS frequent)
   endif()
 endif()
+
+# calcu_product_source_checks(PREFIX <CalcU59> ROM_ALLOW <path>…): the source
+# checks every product runs over its own tree with the library's scripts
+# (Frequent; docs/test-groups.md). <PREFIX>NoOwnRomLookup: no source looks for
+# a ROM file outside the lookup but the files ROM_ALLOW names (LIB-12 AC-2;
+# library/roms/tests/check_no_own_rom_lookup.sh, design T7).
+# <PREFIX>NoPlatformSettings: no frontend keeps a setting in a platform store
+# (UserDefaults, @AppStorage, QSettings, localStorage; LIB-9 AC-21, AC-31,
+# AC-34; allow-list tools/platform_stores_allowed.txt). Needs bash: not on
+# Windows, like the library's own check.
+set(CALCU_LIBRARY_DIR ${CMAKE_CURRENT_SOURCE_DIR} CACHE INTERNAL "")
+function(calcu_product_source_checks)
+  cmake_parse_arguments(C "" "PREFIX" "ROM_ALLOW" ${ARGN})
+  calcu_add_test(${C_PREFIX}NoOwnRomLookup frequent
+                 COMMAND sh ${CALCU_LIBRARY_DIR}/roms/tests/check_no_own_rom_lookup.sh . ${C_ROM_ALLOW})
+  if(NOT WIN32)
+    calcu_add_test(${C_PREFIX}NoPlatformSettings frequent
+                   COMMAND bash ${CALCU_LIBRARY_DIR}/settings/check_platform_stores.sh frontends
+                           tools/platform_stores_allowed.txt)
+  endif()
+endfunction()
 
 # LIB-15: the Web frontend shell (library/web/).
 add_subdirectory(web)

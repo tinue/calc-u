@@ -5,33 +5,19 @@
 #   calcu_shared  Shared/ -- everything above Core that isn't drawing
 #                 (docs/developer/Shared-Architecture.md); links calcu_core
 #
-# Included by the product's CMakeLists.txt (a subdirectory of the
-# repository's root CMake project, ADR 0003) and by frontends/qt6/
-# CMakeLists.txt, its subdirectory. The NOT TARGET guard makes the second
-# include a no-op.
+# Included once, by the product's CMakeLists.txt (a subdirectory of the
+# repository's root CMake project, ADR 0003).
 #
 # The source lists are globbed: every core/**/*.cpp except core/tests/ and
 # every app/**/*.cpp except app/tests/. calcu_add_core() makes a further
 # copy of the core for the probes, which need PC1600_POWER_PROBE.
 #
-# Options the including file may set before include():
-#   CALCU_CORE_DEBUG_O1  compile calcu_core at -O1 in Debug (the test suite
-#                        runs ~3x faster); the root build sets it unless
-#                        CALCU_TESTS_DEBUG is ON.
-
-if(TARGET calcu_core)
-  return()
-endif()
+# calcu_core (and the probes' copy) is compiled at -O1 in Debug unless
+# CALCU_TESTS_DEBUG is ON (calcu_debug_o1, the root CMakeLists.txt).
 
 get_filename_component(CALCU_ROOT ${CMAKE_CURRENT_LIST_DIR} DIRECTORY)
 set(CALCU_CORE_ROOT ${CALCU_ROOT}/core)
 set(CALCU_SHARED_ROOT ${CALCU_ROOT}/app)
-
-if(MSVC)
-  set(CALCU_WARNINGS "")
-else()
-  set(CALCU_WARNINGS -Wall -Wextra)
-endif()
 
 # ---- libsharpdx: every program loader needs it (Core/Basic/vendor/sharpdx/README.md)
 #  - macOS: libsharpdx.a is committed (tools/refresh_sharpdx.sh).
@@ -100,7 +86,7 @@ function(calcu_add_core name)
   add_library(${name} STATIC ${CALCU_CORE_SOURCES})
   target_include_directories(${name} PUBLIC ${CALCU_CORE_ROOT})
   target_compile_features(${name} PUBLIC cxx_std_20)
-  target_compile_options(${name} PRIVATE ${CALCU_WARNINGS})
+  target_link_libraries(${name} PRIVATE calcu_warnings)
   # The sources are UTF-8 without a BOM (U'á' literals, PC1600TypedInput.hpp);
   # MSVC would read them in the ANSI codepage (C2015). Targets linking Qt got
   # /utf-8 from Qt6::Platform; core/ and app/ don't link Qt, so set it here --
@@ -112,9 +98,7 @@ function(calcu_add_core name)
   # The library (the root project's calcu_library): the machine interface,
   # the settings file (LIB-9). Products do not configure on their own.
   target_link_libraries(${name} PUBLIC calcu_library)
-  if(CALCU_CORE_DEBUG_O1 AND NOT MSVC)
-    target_compile_options(${name} PRIVATE $<$<CONFIG:Debug>:-O1>)
-  endif()
+  calcu_debug_o1(${name})
 endfunction()
 calcu_add_core(calcu_core)
 
@@ -130,5 +114,5 @@ list(FILTER CALCU_SHARED_SOURCES EXCLUDE REGEX "^${CALCU_SHARED_ROOT}/tests/")
 list(FILTER CALCU_SHARED_SOURCES EXCLUDE REGEX "/app/HarnessProduct\\.cpp$")
 add_library(calcu_shared STATIC ${CALCU_SHARED_SOURCES})
 target_include_directories(calcu_shared PUBLIC ${CALCU_ROOT})
-target_compile_options(calcu_shared PRIVATE ${CALCU_WARNINGS})
+target_link_libraries(calcu_shared PRIVATE calcu_warnings)
 target_link_libraries(calcu_shared PUBLIC calcu_core)

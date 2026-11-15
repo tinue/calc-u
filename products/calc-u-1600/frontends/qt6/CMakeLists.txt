@@ -6,11 +6,10 @@ if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
   message(FATAL_ERROR "frontends/qt6 is part of the root CMake project (ADR 0003): "
                       "configure the repository root, e.g. cmake -S ../../../.. -B ../../../../build/all")
 endif()
-# Minimum macOS for the .app (must precede project()). Without it the
-# compiler defaults to the build host's OS version, so the minimum silently
-# follows whatever runner/Mac built it. Matches the vendored libsharpdx
-# (SharpDataExchange's .cargo/config.toml) and tools/refresh_sharpdx.sh.
-set(CMAKE_OSX_DEPLOYMENT_TARGET "15.8" CACHE STRING "Minimum macOS version")
+# The minimum macOS for the .app is the root project's
+# CMAKE_OSX_DEPLOYMENT_TARGET (15.8, set before its project()): it matches
+# the vendored libsharpdx (SharpDataExchange's .cargo/config.toml) and
+# tools/refresh_sharpdx.sh. C++20 and Homebrew's Qt prefix are the root's too.
 if(APPLE)
   # MacClipboardImage.mm needs Objective-C++ -- see its own doc comment for
   # why the plotter-paper clipboard export can't use Qt's cross-platform
@@ -20,20 +19,9 @@ else()
   project(CalcU1600Qt CXX)
 endif()
 
-set(CMAKE_CXX_STANDARD 20)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 set(CMAKE_AUTOUIC OFF)
-
-# Ensure Qt6 is found automatically in standard macOS Homebrew locations if not explicitly configured
-if(APPLE AND NOT DEFINED CMAKE_PREFIX_PATH)
-  if(EXISTS "/opt/homebrew/opt/qt")
-    list(APPEND CMAKE_PREFIX_PATH "/opt/homebrew/opt/qt")
-  elseif(EXISTS "/usr/local/opt/qt")
-    list(APPEND CMAKE_PREFIX_PATH "/usr/local/opt/qt")
-  endif()
-endif()
 
 find_package(Qt6 REQUIRED COMPONENTS Widgets Multimedia Network)
 qt_standard_project_setup()
@@ -76,10 +64,9 @@ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/app/Version.h.in
 file(CONFIGURE OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/generated/Version.iss
      CONTENT "#define APP_VERSION \"@APP_VERSION@\"\n" @ONLY)
 
-# Core/ and Shared/ as the calcu_core / calcu_shared static libraries, plus
-# libsharpdx, which classifies and tokenizes every program the loaders read
-# (see the comments in cmake/CalcU.cmake).
-include(${CMAKE_CURRENT_SOURCE_DIR}/../../cmake/CalcU.cmake)
+# Core/ and Shared/ are the calcu_core / calcu_shared static libraries the
+# product's CMakeLists.txt makes (cmake/CalcU.cmake), with libsharpdx, which
+# classifies and tokenizes every program the loaders read.
 
 # MACOSX_BUNDLE: build a real .app on macOS (Contents/MacOS + Contents/
 # Resources), not a bare executable -- needed both for normal macOS app

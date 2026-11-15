@@ -20,21 +20,11 @@ endif()
 
 project(Calc-U-59 LANGUAGES CXX)
 
-# C++20 for the whole repository (ADR 0005).
-set(CMAKE_CXX_STANDARD 20)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(CMAKE_CXX_EXTENSIONS OFF)
-set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
-
+# C++20 (ADR 0005) comes with calcu_library (cxx_std_20, PUBLIC); the
+# warnings with calcu_warnings (the root CMakeLists.txt; MSVC's /utf-8 for
+# app/'s UTF-8 literals: cue-card math tokens, mnemonics).
 set(CORE_ROOT   ${CMAKE_CURRENT_SOURCE_DIR}/core)
 set(SHARED_ROOT ${CMAKE_CURRENT_SOURCE_DIR}/app)
-
-if(MSVC)
-  # /utf-8: Shared/ has UTF-8 string literals (cue-card math tokens, mnemonics).
-  set(CALCU59_WARNINGS /W4 /utf-8)
-else()
-  set(CALCU59_WARNINGS -Wall -Wextra)
-endif()
 
 # -----------------------------------------------------------------------------
 # Core (hardware emulation) and Shared (frontend-neutral logic above it)
@@ -58,7 +48,7 @@ add_library(calcu59_core STATIC
   ${CORE_ROOT}/ModuleFile.cpp
 )
 target_include_directories(calcu59_core PUBLIC ${CORE_ROOT})
-target_compile_options(calcu59_core PRIVATE ${CALCU59_WARNINGS})
+target_link_libraries(calcu59_core PRIVATE calcu_warnings)
 set_target_properties(calcu59_core PROPERTIES POSITION_INDEPENDENT_CODE ON)
 # The core holds no lock and starts no thread (ADR 0009); the app layer's
 # one thread is the Swift frontend's session thread (SessionThread, C59-5).
@@ -74,7 +64,7 @@ add_library(calcu59_shared STATIC ${SHARED_SOURCES})
 target_include_directories(calcu59_shared PUBLIC ${SHARED_ROOT})
 find_package(Threads REQUIRED)
 target_link_libraries(calcu59_shared PUBLIC calcu59_core Threads::Threads)
-target_compile_options(calcu59_shared PRIVATE ${CALCU59_WARNINGS})
+target_link_libraries(calcu59_shared PRIVATE calcu_warnings)
 # Both static libraries end up in the ti59headless shared object: on Linux
 # that needs -fPIC (macOS always builds position-independent code).
 set_target_properties(calcu59_shared PROPERTIES POSITION_INDEPENDENT_CODE ON)
@@ -83,28 +73,22 @@ set_target_properties(calcu59_shared PROPERTIES POSITION_INDEPENDENT_CODE ON)
 # Web engine (emcmake; frontends/web/build.sh copies it into
 # frontends/web/dist/wasm/, reference/WebClient.md): core/ + app/ behind
 # frontends/web/bindings.cpp, the factory of the app session the library's
-# Web Worker host runs (calcu_web_glue, LIB-15). Single-threaded (no
-# -pthread): a static host can't be relied on to send the headers
-# SharedArrayBuffer needs. IDBFS keeps the persistent file system in
-# IndexedDB (mounted by the library's worker). -fwasm-exceptions: app/
-# reports ROM and file errors with exceptions; native wasm exceptions, as
-# Calc-U-1600's engine and calcu_library use, so one build/web tree holds
-# both engines (C59-1, since M-19; LIB-1 design §2a, D-6). -UNDEBUG: the
-# core's asserts stay on, as in the em++ build this replaces (-O3 without
-# -DNDEBUG).
+# Web Worker host runs (calcu_web_glue and calcu_web_engine(), LIB-15).
+# -fwasm-exceptions: app/ reports ROM and file errors with exceptions;
+# native wasm exceptions, as Calc-U-1600's engine and calcu_library use
+# (C59-1, since M-19; LIB-1 design §2a, D-6). -UNDEBUG: the core's asserts
+# stay on, as in the em++ build this replaces (-O3 without -DNDEBUG).
 # -----------------------------------------------------------------------------
 if(EMSCRIPTEN)
   foreach(target calcu59_core calcu59_shared)
     target_compile_options(${target} PRIVATE -fwasm-exceptions -UNDEBUG)
   endforeach()
-  add_executable(calcu59_web ${CMAKE_CURRENT_SOURCE_DIR}/frontends/web/bindings.cpp)
-  target_link_libraries(calcu59_web PRIVATE calcu59_shared calcu_web_glue)
-  target_compile_options(calcu59_web PRIVATE -fwasm-exceptions -UNDEBUG)
-  set_target_properties(calcu59_web PROPERTIES OUTPUT_NAME ti59-core)
-  target_link_options(calcu59_web PRIVATE -fwasm-exceptions -lembind -lidbfs.js -sMODULARIZE=1
-                      -sEXPORT_NAME=createTI59CoreModule -sENVIRONMENT=web,worker
-                      -sALLOW_MEMORY_GROWTH=1 -sNO_EXIT_RUNTIME=1 -sSTACK_SIZE=1MB
-                      -sEXPORTED_RUNTIME_METHODS=FS,IDBFS,getExceptionMessage,decrementExceptionRefcount)
+  calcu_web_engine(calcu59_web SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/frontends/web/bindings.cpp
+                   OUTPUT ti59-core EXPORT createTI59CoreModule ENVIRONMENT web,worker
+                   LINK -sNO_EXIT_RUNTIME=1 -sSTACK_SIZE=1MB
+                        -sEXPORTED_RUNTIME_METHODS=FS,IDBFS,getExceptionMessage,decrementExceptionRefcount)
+  target_link_libraries(calcu59_web PRIVATE calcu59_shared)
+  target_compile_options(calcu59_web PRIVATE -UNDEBUG)
   return()
 endif()
 
@@ -120,7 +104,7 @@ target_link_libraries(ti59headless PRIVATE calcu59_shared)
 # finds the ROMs in the folder the tests use (LIB-11 design §8).
 add_library(calcu59_harness STATIC ${SHARED_ROOT}/HarnessProduct.cpp)
 target_link_libraries(calcu59_harness PUBLIC calcu59_shared)
-target_compile_options(calcu59_harness PRIVATE ${CALCU59_WARNINGS})
+target_link_libraries(calcu59_harness PRIVATE calcu_warnings)
 # The state-file header's version is the apps' one: the Xcode project's
 # MARKETING_VERSION, as the Qt and Web builds read it (user, 2026-11-15).
 file(STRINGS ${CMAKE_CURRENT_SOURCE_DIR}/frontends/swift/Calc-U-59.xcodeproj/project.pbxproj
@@ -134,164 +118,115 @@ calcu_harness_add_product(calcu59_harness cu59::makeHarnessProduct)
 # Tests (CALCU_TESTS): run from the product directory so they can read roms/
 # and examples/
 # -----------------------------------------------------------------------------
-if(NOT MSVC)
-  # The ROM-driven tests run millions of steps; keep Debug builds usable.
-  target_compile_options(calcu59_core PRIVATE $<$<CONFIG:Debug>:-O1>)
-endif()
+# The ROM-driven tests run millions of steps; keep Debug builds usable.
+calcu_debug_o1(calcu59_core)
 if(CALCU_TESTS)
   file(GLOB TEST_SOURCES CONFIGURE_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/tests/*.cpp)
   add_executable(CalcU59Tests ${TEST_SOURCES})
   # The one test runner (ADR 0038): library/testing/, its main() included.
-  target_link_libraries(CalcU59Tests PRIVATE calcu59_harness calcu_test_runner)
-  target_compile_options(CalcU59Tests PRIVATE ${CALCU59_WARNINGS})
-  if(NOT MSVC)
-    target_compile_options(CalcU59Tests PRIVATE $<$<CONFIG:Debug>:-O1>)
-  endif()
+  target_link_libraries(CalcU59Tests PRIVATE calcu59_harness calcu_test_runner calcu_warnings)
+  calcu_debug_o1(CalcU59Tests)
 
-  enable_testing()
   file(MAKE_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/build)  # scratch files written by the tests
-  # Test groups (ADR 0031, docs/test-groups.md): labels frequent, longer,
-  # checkpoint; the last two only with CALCU_TESTS_LONGER / _CHECKPOINT.
-  add_test(NAME CalcU59Tests COMMAND CalcU59Tests WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
-  set_tests_properties(CalcU59Tests PROPERTIES LABELS frequent)
+  # Test groups (ADR 0031, docs/test-groups.md; calcu_add_test of the root
+  # CMakeLists.txt): Frequent always, Longer and Checkpoint only with
+  # CALCU_TESTS_LONGER / _CHECKPOINT; every entry runs in this directory.
+  calcu_add_test(CalcU59Tests frequent COMMAND CalcU59Tests)
   # tools/read_trace.py must read the trace CalcU59Tests wrote with Shared/TraceWriter.
   find_package(Python3 COMPONENTS Interpreter)
   if(Python3_FOUND)
-    add_test(NAME CalcU59TraceReader
-             COMMAND ${Python3_EXECUTABLE} tools/read_trace.py --json build/trace-test.bin
-             WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
-    set_tests_properties(CalcU59TraceReader PROPERTIES DEPENDS CalcU59Tests LABELS frequent)
+    calcu_add_test(CalcU59TraceReader frequent
+                   COMMAND ${Python3_EXECUTABLE} tools/read_trace.py --json build/trace-test.bin
+                   PROPERTIES DEPENDS CalcU59Tests)
   endif()
   # C59-1 AC-17: the app layer reaches the machine through the interface only.
-  add_test(NAME CalcU59CoreSeam COMMAND sh tests/check_core_seam.sh WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
-  set_tests_properties(CalcU59CoreSeam PROPERTIES LABELS frequent)
+  calcu_add_test(CalcU59CoreSeam frequent COMMAND sh tests/check_core_seam.sh)
   # LIB-3 AC-28, C59-5 AC-4 (design P59-1, B2): the Qt6 and Swift frontends use
   # none of the product's own session classes; no thread in app/ but the
   # session thread; the bridge only through it.
-  add_test(NAME CalcU59NoOwnSession COMMAND sh tests/check_no_own_session.sh WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
-  set_tests_properties(CalcU59NoOwnSession PROPERTIES LABELS frequent)
-  # LIB-12 AC-2: no product source looks for a ROM file outside the lookup
-  # (library/roms/tests/check_no_own_rom_lookup.sh; design T7). Allowed: the
-  # product's lookUpRoms(), the catalogue's ROM entries, the Qt6 Bundle.
-  add_test(NAME CalcU59NoOwnRomLookup
-           COMMAND sh ${CMAKE_SOURCE_DIR}/library/roms/tests/check_no_own_rom_lookup.sh .
-                   app/ProductRoms.cpp app/ProductRoms.hpp core/TICatalogue.cpp
-                   frontends/qt6/app/QtResourceBundle.cpp
-           WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
-  set_tests_properties(CalcU59NoOwnRomLookup PROPERTIES LABELS frequent)
-  # No frontend keeps a setting in a platform store (UserDefaults,
-  # @AppStorage, QSettings, localStorage; LIB-9 AC-21, AC-34, design T-24).
-  # Needs bash: not on Windows, like the library's own check.
-  if(NOT WIN32)
-    add_test(NAME CalcU59NoPlatformSettings
-             COMMAND bash ${CMAKE_SOURCE_DIR}/library/settings/check_platform_stores.sh frontends
-                     tools/platform_stores_allowed.txt
-             WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
-    set_tests_properties(CalcU59NoPlatformSettings PROPERTIES LABELS frequent)
-  endif()
+  calcu_add_test(CalcU59NoOwnSession frequent COMMAND sh tests/check_no_own_session.sh)
+  # LIB-12 AC-2, LIB-9 AC-21/AC-34 (calcu_product_source_checks, library/):
+  # the ROM lookup's allowed files are the product's lookUpRoms(), the
+  # catalogue's ROM entries and the Qt6 Bundle.
+  calcu_product_source_checks(PREFIX CalcU59
+                              ROM_ALLOW app/ProductRoms.cpp app/ProductRoms.hpp core/TICatalogue.cpp
+                                        frontends/qt6/app/QtResourceBundle.cpp)
   if(Python3_FOUND)
     # tools/headless/ on the machine interface (C59-1 design T14): 5 + 7 = shows 12.
-    add_test(NAME CalcU59HeadlessSmoke COMMAND ${Python3_EXECUTABLE} tools/headless/ti59.py 5 + 7 = --summary
-             WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
-    set_tests_properties(CalcU59HeadlessSmoke PROPERTIES LABELS frequent
-                         ENVIRONMENT TI59HEADLESS_LIB=$<TARGET_FILE:ti59headless>
-                         PASS_REGULAR_EXPRESSION "display: \\[ *12\\.? *\\]" DEPENDS CalcU59Tests)
+    calcu_add_test(CalcU59HeadlessSmoke frequent
+                   COMMAND ${Python3_EXECUTABLE} tools/headless/ti59.py 5 + 7 = --summary
+                   PROPERTIES ENVIRONMENT TI59HEADLESS_LIB=$<TARGET_FILE:ti59headless>
+                              PASS_REGULAR_EXPRESSION "display: \\[ *12\\.? *\\]" DEPENDS CalcU59Tests)
     # LIB-12 AC-7, AC-10 (design P5): ti59.py without one ROM file ends naming it.
-    add_test(NAME CalcU59HeadlessRomMissing COMMAND ${Python3_EXECUTABLE} tests/headless_rom_tests.py
-             WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
-    set_tests_properties(CalcU59HeadlessRomMissing PROPERTIES LABELS frequent
-                         ENVIRONMENT TI59HEADLESS_LIB=$<TARGET_FILE:ti59headless> DEPENDS CalcU59Tests)
+    calcu_add_test(CalcU59HeadlessRomMissing frequent COMMAND ${Python3_EXECUTABLE} tests/headless_rom_tests.py
+                   PROPERTIES ENVIRONMENT TI59HEADLESS_LIB=$<TARGET_FILE:ti59headless> DEPENDS CalcU59Tests)
   endif()
   # The Xcode project compiles only Swift and the bridge (C59-5, ADR 0013).
-  add_test(NAME CalcU59XcodeProjectCheck COMMAND frontends/swift/check_xcode_project.sh
-           WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
-  set_tests_properties(CalcU59XcodeProjectCheck PROPERTIES LABELS frequent)
+  calcu_add_test(CalcU59XcodeProjectCheck frequent COMMAND frontends/swift/check_xcode_project.sh)
   # C59-5 AC-13 (design B1): attach only in Debug builds for macOS and the
   # simulator, in the sources that decide it.
-  add_test(NAME CalcU59NoAttachSources COMMAND sh frontends/swift/check_no_attach.sh --sources
-           WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
-  set_tests_properties(CalcU59NoAttachSources PROPERTIES LABELS frequent)
+  calcu_add_test(CalcU59NoAttachSources frequent COMMAND sh frontends/swift/check_no_attach.sh --sources)
 
   # Longer: run locally before merging into main and at the end of a part.
-  if(CALCU_TESTS_LONGER)
-    # Against frontends/web/dist/ (frontends/web/build.sh first).
-    add_test(NAME CalcU59WebPlaywright COMMAND frontends/web/run-tests.sh
-             WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
-    set_tests_properties(CalcU59WebPlaywright PROPERTIES LABELS longer)
-    # The reference runs of M-9 on the app session (tests/reference_runs_tests.cpp):
-    # each example compared with its 2.3.0 recording; a difference is a finding.
-    add_test(NAME CalcU59ReferenceRuns COMMAND CalcU59Tests reference_runs
-             WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
-    set_tests_properties(CalcU59ReferenceRuns PROPERTIES LABELS longer ENVIRONMENT CALCU59_REFERENCE_COMPARE=1)
-    # LIB-12, Technical Requirements (design P6): a build with one ROM file
-    # taken away starts in neither headless nor the web client, naming it.
-    if(NOT WIN32)
-      add_test(NAME CalcU59RomMissingBuild COMMAND sh tests/rom_missing_build.sh
-               WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
-      set_tests_properties(CalcU59RomMissingBuild PROPERTIES LABELS longer
-                           ENVIRONMENT TI59HEADLESS_LIB=$<TARGET_FILE:ti59headless>)
-    endif()
-    if(APPLE)
-      # XCUITest UIRegressionTests on one simulator (the iphone role of
-      # bin/simulators.yaml).
-      add_test(NAME CalcU59UIRegression
-               COMMAND sh -c "xcodebuild test -project frontends/swift/Calc-U-59.xcodeproj -scheme Calc-U-59 \
--testPlan UIRegressionTests -destination \"platform=iOS Simulator,id=$(bin/simulators resolve --role iphone)\""
-               WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
-      set_tests_properties(CalcU59UIRegression PROPERTIES LABELS longer)
-      # C59-5 S1, S2, AC-5 (D-9), AC-8: the Swift unit tests through the real
-      # bridge, in the app on the same simulator.
-      add_test(NAME CalcU59SwiftUnitTests
-               COMMAND sh -c "xcodebuild test -project frontends/swift/Calc-U-59.xcodeproj -scheme Calc-U-59 \
--testPlan UnitTests -destination \"platform=iOS Simulator,id=$(bin/simulators resolve --role iphone)\""
-               WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
-      # C59-5 AC-13 (B1): the Release Mac app, the Release XCFramework and the
-      # Debug iOS device app have no attach; the Release app's entitlements.
-      add_test(NAME CalcU59NoAttachInRelease COMMAND sh frontends/swift/check_no_attach.sh
-               WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
-      set_tests_properties(CalcU59SwiftUnitTests CalcU59NoAttachInRelease PROPERTIES LABELS longer RUN_SERIAL TRUE)
-    endif()
+  # Against frontends/web/dist/ (frontends/web/build.sh first).
+  calcu_add_test(CalcU59WebPlaywright longer COMMAND frontends/web/run-tests.sh)
+  # The reference runs of M-9 on the app session (tests/reference_runs_tests.cpp):
+  # each example compared with its 2.3.0 recording; a difference is a finding.
+  calcu_add_test(CalcU59ReferenceRuns longer COMMAND CalcU59Tests reference_runs
+                 PROPERTIES ENVIRONMENT CALCU59_REFERENCE_COMPARE=1)
+  # LIB-12, Technical Requirements (design P6): a build with one ROM file
+  # taken away starts in neither headless nor the web client, naming it.
+  if(NOT WIN32)
+    calcu_add_test(CalcU59RomMissingBuild longer COMMAND sh tests/rom_missing_build.sh
+                   PROPERTIES ENVIRONMENT TI59HEADLESS_LIB=$<TARGET_FILE:ti59headless>)
+  endif()
+  if(APPLE)
+    set(iphone "platform=iOS Simulator,id=$(bin/simulators resolve --role iphone)")   # bin/simulators.yaml
+    # XCUITest UIRegressionTests on one simulator (the iphone role).
+    calcu_add_test(CalcU59UIRegression longer
+                   COMMAND sh -c "xcodebuild test -project frontends/swift/Calc-U-59.xcodeproj -scheme Calc-U-59 \
+-testPlan UIRegressionTests -destination \"${iphone}\"")
+    # C59-5 S1, S2, AC-5 (D-9), AC-8: the Swift unit tests through the real
+    # bridge, in the app on the same simulator.
+    calcu_add_test(CalcU59SwiftUnitTests longer
+                   COMMAND sh -c "xcodebuild test -project frontends/swift/Calc-U-59.xcodeproj -scheme Calc-U-59 \
+-testPlan UnitTests -destination \"${iphone}\""
+                   PROPERTIES RUN_SERIAL TRUE)
+    # C59-5 AC-13 (B1): the Release Mac app, the Release XCFramework and the
+    # Debug iOS device app have no attach; the Release app's entitlements.
+    calcu_add_test(CalcU59NoAttachInRelease longer COMMAND sh frontends/swift/check_no_attach.sh
+                   PROPERTIES RUN_SERIAL TRUE)
   endif()
 
   # Checkpoint: run before a release.
-  if(CALCU_TESTS_CHECKPOINT)
-    # LIB-17 AC-19 (P59-5) on the Web: one minute, against frontends/web/dist/.
-    if(NOT WIN32)
-      add_test(NAME CalcU59WebPacing COMMAND frontends/web/run-tests.sh tests/pacing.spec.js --project root
-               WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
-      set_tests_properties(CalcU59WebPacing PROPERTIES LABELS checkpoint ENVIRONMENT CALCU59_WEB_PACING=1 TIMEOUT 300)
-    endif()
-    add_test(NAME CalcU59PacingRealClock COMMAND CalcU59Tests pacing_longrun_real_clock
-             WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
-    set_tests_properties(CalcU59PacingRealClock PROPERTIES LABELS checkpoint
-                         ENVIRONMENT CALCU59_PACING_LONGRUN=600 TIMEOUT 900)
-    if(APPLE)
-      # The App Store set into appstore/screenshots (the iPhone Duo is opened
-      # flat by hand) and the XCUITests on macOS.
-      add_test(NAME CalcU59AppStoreScreenshots COMMAND bin/run-screenshots
-               WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
-      add_test(NAME CalcU59UITestsMac
-               COMMAND xcodebuild test -project frontends/swift/Calc-U-59.xcodeproj -scheme Calc-U-59
-                       -testPlan UIRegressionTests -destination platform=macOS
-               WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
-      set_tests_properties(CalcU59AppStoreScreenshots CalcU59UITestsMac PROPERTIES LABELS checkpoint)
-      # The Swift unit tests on macOS (C59-5 S2, macOS's services).
-      add_test(NAME CalcU59SwiftUnitTestsMac
-               COMMAND xcodebuild test -project frontends/swift/Calc-U-59.xcodeproj -scheme Calc-U-59
-                       -testPlan UnitTests -destination platform=macOS
-               WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
-      # LIB-17 AC-19 (P59-5) on the iOS simulator: one minute over attach.
-      add_test(NAME CalcU59PacingIOS
-               COMMAND sh -c "xcodebuild test -project frontends/swift/Calc-U-59.xcodeproj -scheme Calc-U-59 \
--testPlan PacingCheckpoint -destination \"platform=iOS Simulator,id=$(bin/simulators resolve --role iphone)\""
-               WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
-      # C59-5 S6 (AC-8, AC-9, AC-10) and LIB-17 AC-19 on the Mac: the Debug app
-      # through `calcu attach`; shows a grey window over every screen for 30 s.
-      add_test(NAME CalcU59MacAttach COMMAND sh tests/mac_attach_check.sh $<TARGET_FILE:calcu>
-               WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
-      set_tests_properties(CalcU59SwiftUnitTestsMac CalcU59PacingIOS CalcU59MacAttach PROPERTIES
-                           LABELS checkpoint RUN_SERIAL TRUE TIMEOUT 1200)
-    endif()
+  # LIB-17 AC-19 (P59-5) on the Web: one minute, against frontends/web/dist/.
+  if(NOT WIN32)
+    calcu_add_test(CalcU59WebPacing checkpoint COMMAND frontends/web/run-tests.sh tests/pacing.spec.js --project root
+                   PROPERTIES ENVIRONMENT CALCU59_WEB_PACING=1 TIMEOUT 300)
+  endif()
+  calcu_add_test(CalcU59PacingRealClock checkpoint COMMAND CalcU59Tests pacing_longrun_real_clock
+                 PROPERTIES ENVIRONMENT CALCU59_PACING_LONGRUN=600 TIMEOUT 900)
+  if(APPLE)
+    # The App Store set into appstore/screenshots (the iPhone Duo is opened
+    # flat by hand) and the XCUITests on macOS.
+    calcu_add_test(CalcU59AppStoreScreenshots checkpoint COMMAND bin/run-screenshots)
+    calcu_add_test(CalcU59UITestsMac checkpoint
+                   COMMAND xcodebuild test -project frontends/swift/Calc-U-59.xcodeproj -scheme Calc-U-59
+                           -testPlan UIRegressionTests -destination platform=macOS)
+    # The Swift unit tests on macOS (C59-5 S2, macOS's services).
+    calcu_add_test(CalcU59SwiftUnitTestsMac checkpoint
+                   COMMAND xcodebuild test -project frontends/swift/Calc-U-59.xcodeproj -scheme Calc-U-59
+                           -testPlan UnitTests -destination platform=macOS
+                   PROPERTIES RUN_SERIAL TRUE TIMEOUT 1200)
+    # LIB-17 AC-19 (P59-5) on the iOS simulator: one minute over attach.
+    calcu_add_test(CalcU59PacingIOS checkpoint
+                   COMMAND sh -c "xcodebuild test -project frontends/swift/Calc-U-59.xcodeproj -scheme Calc-U-59 \
+-testPlan PacingCheckpoint -destination \"${iphone}\""
+                   PROPERTIES RUN_SERIAL TRUE TIMEOUT 1200)
+    # C59-5 S6 (AC-8, AC-9, AC-10) and LIB-17 AC-19 on the Mac: the Debug app
+    # through `calcu attach`; shows a grey window over every screen for 30 s.
+    calcu_add_test(CalcU59MacAttach checkpoint COMMAND sh tests/mac_attach_check.sh $<TARGET_FILE:calcu>
+                   PROPERTIES RUN_SERIAL TRUE TIMEOUT 1200)
   endif()
 endif()
 

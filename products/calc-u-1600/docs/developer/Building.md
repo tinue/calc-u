@@ -244,9 +244,11 @@ ctest --test-dir ../../build/tests --output-on-failure
 ```
 
 The tests are always built optimized: `CoreTests` and `calcu_core` compile
-at `-O1` in a Debug build (which is what `tools/run_tests.sh` uses) — the suite runs about three times
+at `-O1` in a Debug build (which is what `tools/run_tests.sh` uses; the root
+`CMakeLists.txt`'s `calcu_debug_o1`, which Calc-U-59's core and tests use
+too) — the suite runs about three times
 faster than at `-O0`. To step through a failing test, build a separate
-full-debug tree with `CALCU_TESTS_DEBUG=ON` (Core and the tests at `-O0`) (in CLion: add the option to a
+full-debug tree with the root option `CALCU_TESTS_DEBUG=ON` (the cores and the tests at `-O0`) (in CLion: add the option to a
 CMake profile's options):
 
 ```sh

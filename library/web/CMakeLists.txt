@@ -16,15 +16,31 @@ if(EMSCRIPTEN)
     ${CMAKE_CURRENT_SOURCE_DIR}/glue/WorkerHost.cpp)
   target_link_libraries(calcu_web_glue INTERFACE calcu_library)
 
-  add_executable(calcu_web_test_product
-    ${CMAKE_CURRENT_SOURCE_DIR}/tests/product/TestProduct.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/../machine/tests/TestMachines.cpp)
-  target_link_libraries(calcu_web_test_product PRIVATE calcu_web_glue)
-  target_compile_options(calcu_web_test_product PRIVATE -fwasm-exceptions -Wall -Wextra)
-  set_target_properties(calcu_web_test_product PROPERTIES OUTPUT_NAME calcutest-core)
-  target_link_options(calcu_web_test_product PRIVATE -fwasm-exceptions -lembind -lidbfs.js -sMODULARIZE=1
-                      -sEXPORT_NAME=createCalcUTestModule -sENVIRONMENT=worker -sALLOW_MEMORY_GROWTH=1
-                      -sEXPORTED_RUNTIME_METHODS=FS,IDBFS)
+  # calcu_web_engine(<target> SOURCES <file>… OUTPUT <name> EXPORT <factory>
+  #                  ENVIRONMENT <env> [LINK <option>…]): a Web engine for the
+  # library's worker: the sources with the glue, native wasm exceptions (one
+  # build/web tree holds every engine; LIB-1 design §2a, D-6), embind, IDBFS
+  # for the persistent file system (mounted by the worker), a modularised
+  # <name>.js whose factory is <factory>, a growing memory. No -pthread: a
+  # static host can't be relied on to send the headers SharedArrayBuffer
+  # needs. LINK adds the engine's own options.
+  function(calcu_web_engine target)
+    cmake_parse_arguments(W "" "OUTPUT;EXPORT;ENVIRONMENT" "SOURCES;LINK" ${ARGN})
+    add_executable(${target} ${W_SOURCES})
+    target_link_libraries(${target} PRIVATE calcu_web_glue)
+    target_compile_options(${target} PRIVATE -fwasm-exceptions)
+    set_target_properties(${target} PROPERTIES OUTPUT_NAME ${W_OUTPUT})
+    target_link_options(${target} PRIVATE -fwasm-exceptions -lembind -lidbfs.js -sMODULARIZE=1
+                        -sEXPORT_NAME=${W_EXPORT} -sENVIRONMENT=${W_ENVIRONMENT} -sALLOW_MEMORY_GROWTH=1
+                        ${W_LINK})
+  endfunction()
+
+  calcu_web_engine(calcu_web_test_product
+                   SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/tests/product/TestProduct.cpp
+                           ${CMAKE_CURRENT_SOURCE_DIR}/../machine/tests/TestMachines.cpp
+                   OUTPUT calcutest-core EXPORT createCalcUTestModule ENVIRONMENT worker
+                   LINK -sEXPORTED_RUNTIME_METHODS=FS,IDBFS)
+  target_link_libraries(calcu_web_test_product PRIVATE calcu_warnings)
   return()
 endif()
 

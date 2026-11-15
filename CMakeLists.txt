@@ -21,6 +21,8 @@ cmake_minimum_required(VERSION 3.21)
 #                           the WASM smoke, XCUITest, screenshot scenarios, DAP
 #   CALCU_TESTS_CHECKPOINT  also the Checkpoint group's tests: the screenshot
 #                           sets and the ten-minute pacing runs
+#   CALCU_TESTS_DEBUG   the cores and test programs at -O0 in a Debug tree
+#                       (else -O1: calcu_debug_o1 below), for stepping through
 #
 # Test groups (ADR 0031): every CTest entry carries the label frequent,
 # longer or checkpoint. Without the two options a tree has only the
@@ -54,8 +56,53 @@ option(CALCU_TESTS "Build the products' test suites" ON)
 option(CALCU_TESTS_LONGER "Also register the Longer group's tests (ADR 0031)" OFF)
 option(CALCU_TESTS_CHECKPOINT "Also register the Checkpoint group's tests (ADR 0031)" OFF)
 
+option(CALCU_TESTS_DEBUG "Build the cores and the test programs at -O0 in Debug, for stepping through" OFF)
+
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 enable_testing()
+
+# calcu_add_test(<name> <group> COMMAND <command…> [WORKING_DIRECTORY <dir>]
+#                [PROPERTIES <property> <value> …])
+# A CTest entry in its test group (ADR 0031): <group> is frequent, longer
+# or checkpoint, and becomes its label; a Longer or Checkpoint entry is
+# registered only with CALCU_TESTS_LONGER / CALCU_TESTS_CHECKPOINT. It runs
+# in the calling directory's source folder (the product directory) unless
+# WORKING_DIRECTORY says otherwise.
+function(calcu_add_test name group)
+  cmake_parse_arguments(T "" "WORKING_DIRECTORY" "COMMAND;PROPERTIES" ${ARGN})
+  if(NOT group MATCHES "^(frequent|longer|checkpoint)$")
+    message(FATAL_ERROR "calcu_add_test(${name}): group ${group} is not frequent, longer or checkpoint")
+  endif()
+  if((group STREQUAL "longer" AND NOT CALCU_TESTS_LONGER) OR (group STREQUAL "checkpoint" AND NOT CALCU_TESTS_CHECKPOINT))
+    return()
+  endif()
+  if(NOT DEFINED T_WORKING_DIRECTORY)
+    set(T_WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
+  endif()
+  add_test(NAME ${name} COMMAND ${T_COMMAND} WORKING_DIRECTORY ${T_WORKING_DIRECTORY})
+  set_tests_properties(${name} PROPERTIES LABELS ${group} ${T_PROPERTIES})
+endfunction()
+
+# The warnings of every target the repository compiles (linked PRIVATE):
+# -Wall -Wextra, or MSVC's /W4 with /utf-8 (the sources are UTF-8 without a
+# BOM; MSVC would read them in the ANSI code page).
+add_library(calcu_warnings INTERFACE)
+if(MSVC)
+  target_compile_options(calcu_warnings INTERFACE /W4 /utf-8)
+else()
+  target_compile_options(calcu_warnings INTERFACE -Wall -Wextra)
+endif()
+
+# calcu_debug_o1(<target>…): a core or a test program at -O1 in Debug, so
+# that the ROM-driven tests stay usable (about three times faster than -O0);
+# CALCU_TESTS_DEBUG keeps -O0 for stepping through a failing test.
+function(calcu_debug_o1)
+  if(NOT MSVC AND NOT CALCU_TESTS_DEBUG)
+    foreach(t ${ARGN})
+      target_compile_options(${t} PRIVATE $<$<CONFIG:Debug>:-O1>)
+    endforeach()
+  endif()
+endfunction()
 
 if(CALCU_FRONTEND_QT AND APPLE AND NOT DEFINED CMAKE_PREFIX_PATH)
   # Homebrew's Qt, for both products' frontends.

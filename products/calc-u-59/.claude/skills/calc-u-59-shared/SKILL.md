@@ -38,7 +38,9 @@ drawing rules: `reference/SharedArchitecture.md`. Don't restate them here.
    `app/TIAppPart.hpp`; the Web page's `c59.web.*`, `app/TIWebPart.hpp`).
    The flows are `TIAppPart`'s own (`TIAppPartFlows.cpp`; 2.3.0's
    `SessionController` was taken apart into it in M-34); tests drive them
-   on the session (`tests/PartRig.hpp`, `tests/AppSessionRig.hpp`).
+   on the session (`tests/SessionRig.hpp`: `SessionRig`, and `PartRig` with
+   the card files in memory; on the library's `TestFrontend` and `Pump`,
+   `library/testing/`).
 6. **Test every module** in `tests/` (the repository's one runner,
    `library/testing/TestHarness.hpp`: `TEST`/`CHECK`/`SKIP_UNLESS`, ADR 0038;
    `TestRoms.hpp` boots machines from `roms/`). Tests run from the product

@@ -3,7 +3,7 @@
 // as it wants, on the real clock.
 
 #include "TestHarness.hpp"
-#include "AppSessionRig.hpp"
+#include "SessionRig.hpp"
 #include "../app/SessionThread.hpp"
 #include "sessions/LibraryTopics.hpp"
 #include <atomic>
@@ -253,11 +253,8 @@ TEST(c59_5_ac8_continue_calls_again_and_session_got_continue) {
 
 // The real session on the thread: Calc-U-59 runs, and a key reaches it.
 TEST(c59_5_ac4_ti59_on_the_session_thread) {
-    TIAppSetup setup;
-    setup.roms = testroms::romSet();
-    setup.cuecards = testroms::catalog();
-    testroms::TempFolder folder;
-    setup.saveFolder = folder.path.string();
+    calcu::testing::TempFolder folder;
+    const TIAppSetup setup = testroms::appSetup(Model::TI59, folder.path());
     std::atomic<std::uint64_t> ticks{0};
     auto t = std::make_unique<SessionThread>(
         [setup] { return makeAppSession(setup, steadyWallTime).session; },

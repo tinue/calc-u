@@ -5,7 +5,7 @@
 #include "Md5.hpp"
 #include "Files.hpp"
 #include "TestHarness.hpp"
-#include "TestRoms.hpp"
+#include "SessionRig.hpp"
 #include "../app/ModuleCatalog.hpp"
 #include "../app/ProductRoms.hpp"
 #include "../app/TIAppPart.hpp"
@@ -329,10 +329,10 @@ std::optional<calcu::sessions::ProductSession<cu59::TIAppPart>> startFrom(const 
         missingTexts.push_back(describe(roms.missing));
         return std::nullopt;
     }
-    cu59::TIAppSetup s;
+    static const calcu::testing::TempFolder folder("calcu59-romlookup");
+    cu59::TIAppSetup s = testroms::appSetup(cu59::Model::TI59, folder.path());
     s.roms = roms.set;
     s.cuecards = cuecards();
-    s.saveFolder = (fs::temp_directory_path() / "calcu59-romlookup").string();
     auto t = std::make_shared<calcu::pacing::WallTime>(std::chrono::hours(1));
     return cu59::makeAppSession(std::move(s), [t] { return *t += std::chrono::milliseconds(1); }, 59u);
 }

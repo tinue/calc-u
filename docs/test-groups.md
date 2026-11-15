@@ -154,7 +154,7 @@ Frequent except where the table says otherwise):
 | `session_thread_tests.cpp` | 10 (C59-5 AC-4–6, AC-8, H1–H3; real clock, about 4 s; M-33) |
 | `reference_runs_tests.cpp` | 1, Longer (`CalcU59ReferenceRuns`): returns at once without `CALCU59_REFERENCE_COMPARE` or `CALCU59_REFERENCE_RECORD` (the latter writes to `build/reference-runs/`, never into the references; M-34) |
 | `rom_lookup_tests.cpp` | 15 (LIB-12 AC-1, AC-4, AC-6, AC-8–10, AC-14, EC-2; M-24) |
-| `part_flows_tests.cpp` | 47: the product's flows on the app session (`PartRig.hpp`), ported in M-34 from 2.3.0's controller tests (C59-6 AC-1, AC-6, AC-11: 4 of them, M-25); the runner's three pacing tests went with `CooperativePacing` |
+| `part_flows_tests.cpp` | 47: the product's flows on the app session (`SessionRig.hpp`, `PartRig`), ported in M-34 from 2.3.0's controller tests (C59-6 AC-1, AC-6, AC-11: 4 of them, M-25); the runner's three pacing tests went with `CooperativePacing` |
 | `shared_keys_tests.cpp` | 8: the key sequencer on virtual time (M-34, from the cooperative tests) |
 | `web_part_tests.cpp` | 5 (LIB-15 AC-16, AC-20, AC-22, EC-4; LIB-9 AC-23; M-34) |
 | `shared_debug_tests.cpp` | 14 |

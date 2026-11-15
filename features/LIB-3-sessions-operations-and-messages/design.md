@@ -49,9 +49,9 @@ and `pacing`. Its tests are compiled into `calcu_library_tests`.
 | `SessionPart.hpp` | `SessionPart`, `SessionSetup`, `SessionContext`: what a library feature or a product's app layer plugs in (§3.8) |
 | `AppSession.hpp/.cpp` | `AppSession`, `AppSessionSetup`, `Hosting` (§3.9) |
 | `TopicMirror.hpp/.cpp` | `TopicMirror`: a `MessageSink` that keeps the last message of each state topic and what each stream topic appended. It serves the test frontend, the Qt6 frontends and the harness (§3.10) |
-| `tests/TestFrontend.hpp` | the test frontend: a `TopicMirror`, the raw message log, scripted host-service answers, two delivery modes (at once, through a queue) |
+| `library/testing/TestFrontend.hpp` | the test frontend: a `TopicMirror`, the raw message log, scripted host-service answers, two delivery modes (at once, through a queue); in `library/testing/` (with `ScriptedClock.hpp`, `Pump.hpp`, `TempFolder.hpp`) so that both products' tests use it too (C1 simplification, 2026-11-15) |
 | `tests/TestParts.hpp` | a test product part: one product topic of each shape, one product command that starts an operation, one that does not, one product request |
-| `tests/ScriptedClock.hpp` | a wall clock the test advances (if LIB-17's tests already have one, reuse it) |
+| `library/testing/ScriptedClock.hpp` | a wall clock the test advances, shared with LIB-17's tests (C1 simplification) |
 | `tests/*_tests.cpp` | one file per area (§6) |
 | `library/CMakeLists.txt` (changed) | the sources of `library/sessions/` and its tests added to `calcu_library` and `calcu_library_tests`; the entries in `docs/test-groups.md` |
 

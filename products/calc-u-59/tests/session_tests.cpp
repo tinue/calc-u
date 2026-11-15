@@ -2,7 +2,7 @@
 // library's app session, driven as a frontend drives it (AppSessionRig.hpp).
 
 #include "TestHarness.hpp"
-#include "AppSessionRig.hpp"
+#include "SessionRig.hpp"
 #include <fstream>
 
 using namespace cu59;
@@ -13,7 +13,7 @@ using testroms::SessionRig;
 namespace {
 
 bool hasNotice(SessionRig& r, const std::string& sentence) {
-    for (const auto& m : r.messages)
+    for (const auto& m : r.fe.log)
         if (const auto* s = std::get_if<StreamMessage>(&m); s && s->topic == kNoticesTopic)
             for (const auto& p : s->appended)
                 if (const auto* n = payloadAs<Notice>(p); n && n->sentence == sentence) return true;
@@ -21,7 +21,7 @@ bool hasNotice(SessionRig& r, const std::string& sentence) {
 }
 
 bool hasLog(SessionRig& r, const std::string& line) {
-    for (const auto& m : r.messages)
+    for (const auto& m : r.fe.log)
         if (const auto* s = std::get_if<StreamMessage>(&m); s && s->topic == kLogTopic)
             for (const auto& p : s->appended)
                 if (const auto* n = payloadAs<LogLine>(p); n && n->text == line) return true;
@@ -29,7 +29,7 @@ bool hasLog(SessionRig& r, const std::string& line) {
 }
 
 std::uint64_t serialOf(SessionRig& r, const TopicName& t) {
-    const PayloadPtr* p = r.mirror.state(t);
+    const PayloadPtr* p = r.fe.mirror.state(t);
     if (!p || !*p) return 0;
     // Every interim payload is a TISnapshot: the serial says which set it was.
     if (const auto* x = payloadAs<TIModelState>(*p)) return x->serial;
@@ -56,7 +56,7 @@ TEST(lib3_ac29_mirror_holds_every_change_flag) {
     for (const auto* t : {&topics::kModel, &topics::kLed, &topics::kCueCard, &topics::kPrinter, &topics::kCardReader,
                           &topics::kRunState, &topics::kTrace, &topics::kDebugLive, &topics::kDebugCpu,
                           &topics::kDebugHeatmap, &topics::kDebugAsm})
-        CHECK(r.mirror.state(*t) != nullptr);
+        CHECK(r.fe.mirror.state(*t) != nullptr);
     CHECK(r.state<TIModelState>(topics::kModel)->model == Model::TI59);
     CHECK_EQ(r.state<TIModelState>(topics::kModel)->moduleID, std::string("ML"));
     CHECK(r.until([&] { return r.machine().isKeyReady(); }));
@@ -75,7 +75,7 @@ TEST(lib3_ac29_mirror_holds_every_change_flag) {
     // CueCardChanged, CardChanged
     CHECK(moves(topics::kCueCard, [&] { r.send(commands::kStartMachine, Value::object({{"model", 0}})); }));
     CHECK(moves(topics::kCardReader, [&] {
-        r.send(commands::kFitBlankCard, Value::object({{"path", (r.folder.path / "a.u59").string()}, {"name", "a.u59"}}));
+        r.send(commands::kFitBlankCard, Value::object({{"path", (r.folder.path() / "a.u59").string()}, {"name", "a.u59"}}));
     }));
     CHECK(r.state<TICardReaderState>(topics::kCardReader)->fitted);
     // PrinterChanged, PaperCut
@@ -127,10 +127,10 @@ TEST(lib3_ac30_card_and_constant_memory_files_without_frontend) {
     SessionRig r(Model::TI58C);
     r.send(commands::kLoadState, Value::object({{"bytes", r.bytes("REGISTERS:\n03 = 7\n")}}));
     r.until([&] { return !r.busy(); });
-    const auto mem = r.folder.path / TIFileAccess::kConstantMemoryFile;
+    const auto mem = r.folder.path() / TIFileAccess::kConstantMemoryFile;
     CHECK(testroms::fs::exists(mem));
     TIFileAccess& p = r.part().files();
-    CHECK_EQ(p.cardFilePath("x.u59"), (r.folder.path / "x.u59").string());
+    CHECK_EQ(p.cardFilePath("x.u59"), (r.folder.path() / "x.u59").string());
     CHECK(!p.readCard(p.cardFilePath("x.u59")).raw);
     CHECK(p.writeCard(p.cardFilePath("x.u59"), "CARD"));
     CHECK(p.readCard(p.cardFilePath("x.u59")).raw == std::optional<std::vector<uint8_t>>(std::vector<uint8_t>{'C', 'A', 'R', 'D'}));
@@ -142,7 +142,7 @@ TEST(lib3_ac30_module_id_not_saved) {
     r.send(commands::kChangeModule, Value::object({{"id", "LE"}}));
     r.until([&] { return !r.busy(); });
     CHECK_EQ(r.state<TIModelState>(topics::kModel)->moduleID, std::string("LE"));
-    CHECK(testroms::fs::is_empty(r.folder.path));   // nothing written for it
+    CHECK(testroms::fs::is_empty(r.folder.path()));   // nothing written for it
 }
 
 // AC-30: KEYSTROKES DebugPanel: is a product message.
@@ -151,7 +151,7 @@ TEST(lib3_ac30_show_debug_panel_is_product_message) {
     r.send(commands::kLoadState, Value::object({{"bytes", r.bytes("KEYSTROKES:\nDebugPanel: CPU\n")}}));
     std::vector<PayloadPtr> got;
     CHECK(r.until([&] {
-        for (auto& p : r.mirror.takeAppended(topics::kShowDebugPanel)) got.push_back(p);
+        for (auto& p : r.fe.mirror.takeAppended(topics::kShowDebugPanel)) got.push_back(p);
         return !got.empty();
     }));
     CHECK(!got.empty() && payloadAs<TIShowDebugPanel>(got[0])->panel == DebugPanel::Cpu);
@@ -212,7 +212,7 @@ TEST(lib3_ac33_no_sound_messages_and_no_sink_stated) {
     CHECK(!r.machine().descriptor().hasSound);
     r.tap(83);
     r.runFor(1s);
-    for (const auto& m : r.messages) {
+    for (const auto& m : r.fe.log) {
         CHECK(!std::holds_alternative<SoundStart>(m));
         CHECK(!std::holds_alternative<SoundSamples>(m));
         CHECK(!std::holds_alternative<ServiceAsk>(m));
@@ -223,7 +223,7 @@ TEST(lib3_ac33_no_sound_messages_and_no_sink_stated) {
 TEST(c59_5_ac8_suspend_persists_and_stops_continue_runs) {
     SessionRig r(Model::TI58C);
     CHECK(r.until([&] { return r.machine().isKeyReady(); }));
-    const auto mem = r.folder.path / TIFileAccess::kConstantMemoryFile;
+    const auto mem = r.folder.path() / TIFileAccess::kConstantMemoryFile;
     testroms::fs::remove(mem);
     r.part().emulator()->access().memory();   // the machine is there
     r.tap(83);

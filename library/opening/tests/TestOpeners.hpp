@@ -4,6 +4,7 @@
 #include "opening/FileKind.hpp"
 #include "opening/OpenPart.hpp"
 #include "opening/Openers.hpp"
+#include <filesystem>
 #include <fstream>
 #include <map>
 #include <memory>

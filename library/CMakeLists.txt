@@ -5,7 +5,7 @@
 # The C++ areas, once: their sources, their tests (<area>/tests/*.cpp) and the
 # tests' include folders all come from this list. (web/ is the Web shell's,
 # harness/cli/ and harness/attach/ are added below.)
-set(CALCU_LIBRARY_AREAS machine settings pacing sessions peripherals roms formats control startup harness)
+set(CALCU_LIBRARY_AREAS machine settings pacing sessions peripherals roms formats control startup typing harness)
 set(CALCU_LIBRARY_SOURCES "")
 foreach(area ${CALCU_LIBRARY_AREAS})
   file(GLOB area_sources CONFIGURE_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/${area}/*.cpp)
@@ -74,7 +74,7 @@ if(CALCU_TESTS AND NOT EMSCRIPTEN)
   # settings/tests, whose TestProduct.hpp is its own) and of library/testing/.
   add_library(calcu_test_machines OBJECT ${CMAKE_CURRENT_SOURCE_DIR}/machine/tests/TestMachines.cpp)
   target_link_libraries(calcu_test_machines PUBLIC calcu_library PRIVATE calcu_warnings)
-  foreach(area machine sessions roms harness)
+  foreach(area machine sessions roms typing harness)
     target_include_directories(calcu_test_machines PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/${area}/tests)
   endforeach()
   target_include_directories(calcu_test_machines PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/testing)

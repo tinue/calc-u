@@ -118,7 +118,7 @@ TEST(lib3_ac37_buzzer_heard_at_regular_speed_only) {
 
     // Regular speed: heard, through a SoundStart with the machine's rate.
     std::size_t mark = f.messages.size();
-    f.part().typing().typeCommand("BEEP 3");
+    f.typeLine("BEEP 3");
     f.runFor(4.0);
     CHECK(startedFrom(mark));
     CHECK(samplesFrom(mark) > 0);
@@ -128,7 +128,7 @@ TEST(lib3_ac37_buzzer_heard_at_regular_speed_only) {
     // Full speed (the display held): nothing.
     f.readCost = std::chrono::milliseconds(1);   // a call at full speed runs until its allowance is used
     CHECK(f.ok(sessions::kSpeedCommand, Value::object({{"full", true}})));
-    f.part().typing().typeCommand("BEEP 3");
+    f.typeLine("BEEP 3");
     f.call();
     mark = f.messages.size();
     for (int i = 0; i < 60; ++i) f.call();
@@ -268,14 +268,14 @@ TEST(ledger_1600_9_keys_dropped_and_reset_stops_an_operation) {
     const sessions::CallId preset = f.send(c::kLoadPreset, Value::object({{"path", "tests/fixtures/presets/startup-pc1600.pc1600"}}));
     f.call();
     CHECK(f.busy());
-    f.part().typing().pasteText("PRINT 1");
-    CHECK(!f.part().typing().pasteActive());   // dropped
+    f.paste("PRINT 1");
+    CHECK(f.engine().idle());   // dropped (LIB-5 AC-36)
     const sessions::ReplyMessage reset = f.run(c::kReset, Value::object({{"all", true}}));
     CHECK(reset.done);
     const auto stopped = f.takeReply(preset);
     CHECK(stopped && !stopped->done && stopped->reason == sessions::kStopped);
-    f.part().typing().pasteText("PRINT 1");
-    CHECK(f.part().typing().pasteActive());   // taken again
+    f.paste("PRINT 1");
+    CHECK(!f.engine().idle());   // taken again
 }
 
 } // namespace

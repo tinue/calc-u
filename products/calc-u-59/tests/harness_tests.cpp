@@ -55,3 +55,25 @@ TEST(harness_switches_to_a_ti58) {
     CHECK_EQ(reply("model TI-99"), std::string("refused: There is no model \"TI-99\".\n"));
     server->finish();
 }
+
+// LIB-5 (design §6, L12 on a TI; AC-15, AC-16, AC-17, AC-26; D-8): `key`
+// presses the names of preset.md §8.1 as the app types them and replies when
+// the last key is up; a TI model has no `type`.
+TEST(lib5_harness_key_on_a_ti59) {
+    SKIP_UNLESS(std::filesystem::exists("roms/TMC0571B.txt"), "the ROMs are not fetched (roms/fetch_roms.sh)");
+    auto product = cu59::makeHarnessProduct();
+    std::string error;
+    auto server = Server::start(*product, {}, &error);
+    CHECK(server != nullptr);
+    if (!server) return;
+    auto reply = [&](const std::string& l) { return server->line(l).text; };
+    CHECK_EQ(reply("key 2 x^2"), std::string("done\n"));
+    reply("wait 300ms");
+    CHECK_EQ(reply("lcd"), std::string("done 2\n          4. \nindicators:\n"));   // a result: x² of 2
+    CHECK_EQ(reply("key 1 S+"), std::string("refused: Unknown key: S+.\n"));   // AC-26: an old name; nothing typed
+    CHECK_EQ(reply("key CLR 2nd pi"), std::string("done\n"));                  // 2nd before a second function: once
+    reply("wait 300ms");
+    CHECK(reply("lcd").find("3.14159265") != std::string::npos);
+    CHECK_EQ(reply("type 12"), std::string("refused: Unknown command: type.\n"));   // D-8
+    server->finish();
+}

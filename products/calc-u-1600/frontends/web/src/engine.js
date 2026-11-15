@@ -30,6 +30,29 @@ function typedStrokes(pens) {
   }));
 }
 
+// KeyboardEvent.code of the keys a keyboard map may name (calcu::typing::NamedKey).
+const NAMED_KEYS = {
+  Escape: "escape", Backspace: "backspace", Enter: "return", NumpadEnter: "enter", Tab: "tab", Delete: "delete",
+  ArrowUp: "up", ArrowDown: "down", ArrowLeft: "left", ArrowRight: "right",
+  F1: "f1", F2: "f2", F3: "f3", F4: "f4", F5: "f5", F6: "f6",
+  ScrollLock: "scroll-lock", Insert: "insert", Home: "home", End: "end", PageUp: "page-up", PageDown: "page-down",
+};
+
+// The command `host-key-down` of a browser key event: which key, which
+// modifiers, the one character it produced (0 for none or more).
+function hostKeyEvent(code, key, shift, control, alt, meta, macHost) {
+  const chars = [...(key || "")];
+  const produced = chars.length === 1 ? chars[0].codePointAt(0) : 0;
+  const letter = chars.length === 1 && chars[0].toLowerCase() !== chars[0].toUpperCase()
+    ? chars[0].toLowerCase().codePointAt(0) : 0;
+  return {
+    physical: code, named: NAMED_KEYS[code] || "", produced, carried: letter,
+    shift: !!shift, alt: !!alt, "mac-host": !!macHost,
+    // By what the user pressed: on a Mac the browser's metaKey is Command.
+    command: macHost ? !!meta : false, control: !!control, meta: macHost ? false : !!meta,
+  };
+}
+
 const errorText = (r) => (r.done ? "" : r.reason || "Refused.");
 const value = (r) => r.value;
 
@@ -44,7 +67,7 @@ const METHODS = {
   checkAddress: ["command", "c1600.check-address", (text) => ({ text }), value],
   loadMachineCode: ["command", "c1600.load-planned-machine-code", () => null,
     (r) => (r.done ? r.value : { error: r.reason })],
-  pasteText: ["command", "c1600.paste", (text) => ({ text }), null],
+  pasteText: ["command", "paste", (text) => ({ text }), null],   // LIB-5 AC-12, AC-34
   dropTarget: ["request", "c1600.drop-target", (name, bytes) => ({ name, bytes }), value],
   importMedia: ["command", "c1600.import-media", (name, bytes) => ({ name, bytes }), errorText],
   nameAndSaveCard: ["command", "c1600.name-save-card", (slot, name, writeProtect) => ({ slot, name, writeProtect: !!writeProtect }), errorText],
@@ -61,11 +84,11 @@ const METHODS = {
   selectPC1600Rom: ["command", "c1600.pc1600-rom", (i) => ({ version: ROM_VERSIONS[i] }), null],
   selectCE1600PRom: ["command", "c1600.ce1600p-rom", (i) => ({ version: ROM_VERSIONS[i] }), null],
   reset: ["command", "c1600.reset", (all) => ({ all: !!all }), null],
-  hostKeyDown: ["command", "c1600.host-key-down",
-    (code, key, shift, control, alt, meta, macHost) => ({ code, key, shift, control, alt, meta, macHost }),
-    (r) => (r.done ? r.value : "")],
-  hostKeyUp: ["command", "c1600.host-key-up", (key) => ({ key }), null],
-  hostShiftTap: ["command", "c1600.host-shift-tap", () => null, null],
+  // LIB-5 (AC-7, AC-29): the host key as the browser reports it; the
+  // product's keyboard map in the engine decides what it types.
+  hostKeyDown: ["command", "host-key-down", hostKeyEvent, null],
+  hostKeyUp: ["command", "host-key-up", (code) => ({ physical: code }), null],
+  focusLost: ["command", "focus-lost", () => null, null],
   selectModule: ["command", "c1600.select-module", (slot, name) => ({ slot, name }), null],
   selectDisk: ["command", "c1600.select-disk", (name) => ({ name }), null],
   toggleDiskSide: ["command", "c1600.toggle-disk-side", () => null, null],
@@ -82,8 +105,9 @@ const METHODS = {
   paperExport: ["request", "c1600.paper-export", () => null,
     (r) => (r.done && r.value ? { ...r.value, strokes: typedStrokes(r.value.strokes) } : null)],
   clearPaper: ["command", "c1600.clear-paper", () => null, null],
-  faceKeyDown: ["command", "c1600.face-key", (name) => ({ name, down: true }), null],
-  faceKeyUp: ["command", "c1600.face-key", (name) => ({ name, down: false }), null],
+  // On-screen keys (LIB-5 AC-4, EC-6): by key ID and pointer.
+  faceKeyDown: ["command", "screen-key-down", (key, pointer) => ({ key, pointer: pointer || 0 }), null],
+  faceKeyUp: ["command", "screen-key-up", (key, pointer) => ({ key, pointer: pointer || 0 }), null],
   setTurbo: ["command", "speed", (full) => ({ full: !!full }), null],
 };
 

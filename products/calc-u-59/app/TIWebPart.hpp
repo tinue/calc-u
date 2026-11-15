@@ -23,8 +23,8 @@
 //   settings, debug-font; stream `c59.web.trace-ready` (a manual trace ended);
 //   the debugger tab KEYSTROKES asks for is TIAppPart's `c59.show-debug-panel`;
 // - the command `start` (LIB-15 N3: {model, preset}); commands `c59.web.*` for
-//   the pointer and the host keys (KeyboardLayout's PointerTracker,
-//   KeyboardMap), the three settings the page offers, cards from the save
+//   the pointer and the page's key grid (KeyboardLayout's PointerTracker; on-
+//   screen keys of the library's typing, LIB-5), the three settings the page offers, cards from the save
 //   folder, a dropped file, the sizes the page draws at; every other command
 //   is TIAppPart's (`c59.*`);
 // - requests for card and trace files (downloads) and the fresh card name;
@@ -73,6 +73,9 @@ private:
     /// Once per call: one set per topic of what changed since the last call.
     void drain(calcu::sessions::SessionContext&);
     void apply(const PointerTracker::Change& c);
+    void screenKey(int index, bool down, std::uint32_t pointer);
+    int heldKey() const;   ///< the last key live input holds (row × 5 + col), -1 none
+    static constexpr std::uint32_t kCanvasPointer = 1, kButtonPointer = 2;
     Value cueCard() const;
     Value printer(bool cut);
     Value live() const;
@@ -89,6 +92,8 @@ private:
     std::string m_presetsDir;
     std::filesystem::path m_traceDir;
     TIAppPart* m_app = nullptr;
+    calcu::sessions::SessionContext* m_ctx = nullptr;
+    int m_lastHeld = -1;
     uint32_t m_changes = 0;
     bool m_settingsDirty = true, m_cardsDirty = true, m_cueDirty = true, m_debugFontDirty = false;
     bool m_liveWasOn = false, m_cpuWasOn = false, m_postedFrozen = false, m_traceWasOn = false;

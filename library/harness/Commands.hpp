@@ -47,6 +47,8 @@ private:
 // key-down, key-up, lcd, display, state, capabilities, ticks, audio,
 // state-save, state-restore, quit.
 void addFirstCommands(CommandRegistry&);
+// LIB-5: key, type (TypingCommands.cpp); called by addFirstCommands.
+void addTypingCommands(CommandRegistry&);
 
 // LIB-18 AC-15 (design §3.6): model, variant, attach, detach, reset,
 // cold-boot and power-cycle at the top level, each sent as the session

@@ -15,7 +15,9 @@
 //   attach ce150|ce158|ce1600p         a peripheral of the BuildRequest
 //   card <file> [slot 1|2]             a bundled module, a peripheral of the BuildRequest
 //   boot                               build(), coldBoot(), the boot run (LegacyCalls::runToPrompt)
-//   keys <name> ...                    taps: PC-1500 through c1600.key-queue, then 200 ms;
+//   keys <name> ...                    taps: PC-1500 through the typing engine with the
+//                                      PC-1500 profile (LIB-5, M-36; 4 frames down, 4 up),
+//                                      the 200 ms in all from the tap's start;
 //                                      PC-1600 keyDown, 80 ms, keyUp, 80 ms
 //   type <text>                        taps for each character (space = space)
 //   press <name> / release <name>      keyDown / keyUp
@@ -53,7 +55,9 @@
 #include "../core/Machine/SharpCatalogue.hpp"
 #include "../core/Machine/SharpMachine.hpp"
 #include "../core/Machine/SharpProductKinds.hpp"
+#include "../app/SharpTyping.hpp"
 #include "SharpTestSupport.hpp"
+#include "typing/TypingEngine.hpp"
 #include "TestCards.hpp"
 #include "TestHarness.hpp"
 
@@ -148,11 +152,37 @@ struct Run {
         // An ID the machine lacks was ignored by the old classes too.
         if (down) m->keyDown(KeyId{name}); else m->keyUp(KeyId{name});
     }
-    // A tap as 0.8.1 types it: on the PC-1500 through its key queue (4 frames
-    // down, 4 up), on the PC-1600 as a press held for 80 ms.
+    // A tap as 0.8.1 types it: on the PC-1500 (its key queue until M-36) a
+    // `key` of the typing engine with the model's profile, 4 frames down and
+    // 4 up, the machine advanced in pieces cut where the engine is due, as the
+    // machine session does (LIB-3 §3.7); on the PC-1600 a press held 80 ms.
     void tap(const std::string& name) {
-        if (is1600()) { key(name, true); advance(0.08); key(name, false); advance(0.08); }
-        else { sharp::firstOf<sharp::KeyQueue>(*m)->enqueue(name); advance(0.2); }
+        if (is1600()) { key(name, true); advance(0.08); key(name, false); advance(0.08); return; }
+        // 0.8.1's queue pressed the key after the first instruction of the
+        // 200 ms advance; the engine presses where it is told to.
+        const Ticks end = m->tickCount() + static_cast<Ticks>(static_cast<double>(m->descriptor().tickRate) * 0.2);
+        cycles += m->advance(1);
+        // The PC-1500 profile as 0.8.1's queue typed: without the wait for key
+        // readiness of AC-31 (row 1600-8). With it, pc1500a-ce150 differs in
+        // two cycle counts and one audio sample count after `type lprint 123`
+        // (display, paper and memory the same): a press waited for readiness
+        // there. Finding of M-36, LIB-5 qa-report; the core is unchanged.
+        static const calcu::typing::TypingProfile asQueued = [] {
+            calcu::typing::TypingProfile p = *shared::typingProfile(ModelId{sharp::kPC1500A});   // the PC-1500's is the same
+            p.queuedWaitsForReadiness = false;
+            return p;
+        }();
+        calcu::typing::TypingEngine engine;
+        engine.setMachine(m.get(), &asQueued, nullptr);
+        engine.typeKeys({calcu::typing::Press{KeyId{name}}}, calcu::typing::Origin::Typed);
+        for (Ticks now = m->tickCount(); now < end; now = m->tickCount()) {
+            if (engine.nextDue(now) <= now) engine.act(*m, now, {});
+            Ticks piece = end - now;
+            const Ticks due = engine.nextDue(now);
+            if (due != calcu::sessions::kNever && due > now) piece = std::min(piece, due - now);
+            cycles += m->advance(piece);
+        }
+        if (engine.nextDue(m->tickCount()) <= m->tickCount()) engine.act(*m, m->tickCount(), {});
     }
 
     void powerCycle(const std::string& attach) {

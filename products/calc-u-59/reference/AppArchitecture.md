@@ -125,7 +125,7 @@ imports the public ones.
 | Wrapper | Wraps |
 |---|---|
 | `TIAppSession.{h,mm}` | The app session on `cu59::SessionThread`: commands (`c59.*`) out, messages in on the main thread (the last of each topic kept); `TIAppSessionDelegate` (alerts, `DebugPanel:`, diagnostics, `changed`), `TISessionStart`, `TIRomSet`; the coordinated card files (`cu59::FileIO`); value objects `TILiveDebugSnapshot`, `TIStepEntry`, `TIRegEntry`, `TIInspectorEntry`, `TIPrinterLine`, built when Swift reads them |
-| `TISharedTables.{h,mm}` | `KeyboardMap`, `SevenSegment`, `PrinterFont` (font rows), `KeyboardLayout`, `KeyIds` |
+| `TISharedTables.{h,mm}` | `SevenSegment`, `PrinterFont` (font rows), `KeyboardLayout`, `KeyIds` |
 | `TIViewRules.{h,mm}` | `CueCard` (spans, geometry, inks), `LedGeometry`, `PrinterFont` (`PrinterGeometry`), `RomHeatmap`, `ModuleImage` (program source), `DebugText` (incl. the iOS `mobileLayout`, `mobilePrinterWidth`, `compactPrinterBar`, `mobileTopMargin`) |
 | `TIFileFormats.{h,mm}` | `TICueCard`, card file names (`CardFile`), `cuecards.txt` module list (`ModuleCatalog`) |
 | `TISettings.{h,mm}` | `Settings` (`app/Settings.hpp`) over a `calcu::settings::SettingsFile`; the trace folder from `calcu::settings::Paths` |

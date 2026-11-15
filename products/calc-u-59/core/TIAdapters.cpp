@@ -1,4 +1,5 @@
 #include "TIAdapters.hpp"
+#include "TIKeys.hpp"
 #include "TIMachine.hpp"
 #include <utility>
 
@@ -7,6 +8,12 @@ using calcu::machine::Machine;
 // ── TICardReaderAdapter (M-55) ────────────────────────────────────────────────
 void TICardReaderAdapter::insertCard(const std::uint8_t* data, std::size_t count) { m_.m_hw.insertCard(data, count); }
 std::vector<std::uint8_t> TICardReaderAdapter::cardEject() { return m_.m_hw.cardEject(); }
+std::optional<std::uint64_t> TITypingSupport::samples(const calcu::machine::KeyId& id) const {
+    const TIKey* k = tiKeyById(id.value);
+    if (!k) return std::nullopt;
+    return m_.m_hw.keySamples(kTIKeyLineBits[k->col], k->row);
+}
+
 bool TICardReaderAdapter::isCardPresent() const { return m_.m_hw.isCardPresent(); }
 int TICardReaderAdapter::cardMode() const { return m_.m_hw.cardMode(); }
 bool TICardReaderAdapter::isWaitingForCard() const { return m_.m_hw.isWaitingForCard(); }

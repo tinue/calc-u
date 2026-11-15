@@ -44,12 +44,18 @@ example: `frontends/qt6/app/EmulatorController` is the whole adapter, about 300 
    Show `notices` as alerts.
 3. **Call it about 60 times a second** (`AppSession::call(now)`); redraw
    only the topics that came.
-4. **Forward input** as the `c59.*` commands (`cu59::commands`): `pressKey`/`releaseKey` with matrix codes (hit test with
-   `KeyboardLayout`, convert with `matrixCode`; `PointerTracker` turns
-   pointer moves into presses, releases and full speed), `keyboardDown`/`keyboardUp`
-   with `KeyboardMap` codes, `keyboardRelease` on focus loss, `setFullSpeed`
-   while the display is held, `tapCard` on a press (not a drag) over a fitted
-   card, and the file, printer and debugger actions.
+4. **Forward input**: keys as the library's typing commands (LIB-5,
+   `library/typing/TypingTopics.hpp`): `screen-key-down`/`screen-key-up`
+   `{key, pointer}` for an on-screen key (hit test with `KeyboardLayout`,
+   key ID with `keyIdAt(matrixCode(...))`; `PointerTracker` turns pointer
+   moves into presses, releases and full speed), `host-key-down` with what
+   the host reported (`calcu::typing::HostKeyEvent`: the physical key, a
+   name for Escape/Return/Enter, the character produced, the letter the key
+   carries, the modifiers; the frontend maps nothing) and `host-key-up
+   {physical}`, `focus-lost` on focus loss; draw the pressed key from the
+   `held-keys` topic. The rest as the `c59.*` commands (`cu59::commands`):
+   `setFullSpeed` while the display is held, `tapCard` on a press (not a
+   drag) over a fitted card, and the file, printer and debugger actions.
 5. **Draw** with the shared rules (`SharedArchitecture.md` § "Drawing
    Rules"): `SevenSegment` + `LedGeometry` for the LED — never a font, no
    font reproduces the hardware's lit segments — `CueCard` for cue cards

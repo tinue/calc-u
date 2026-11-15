@@ -10,7 +10,6 @@
 #include "DropFile.hpp"
 #include "Utf8.hpp"
 #include "app/CardYamlDump.hpp"
-#include "app/HostKeyMap.hpp"
 #include "app/KeyLayout/FaceplateLayout.hpp"
 #include "app/LcdLayout.hpp"
 #include "app/PlotterPaper.hpp"
@@ -84,26 +83,6 @@ Value strokes(const PaperStrokes& s) {
         pens.push_back(Value::object({{"coords", Value(rawBytes(coords))}, {"starts", Value(rawBytes(starts))}}));
     }
     return Value(std::move(pens));
-}
-
-HostKey hostKeyFromCode(const std::string& code) {
-    using K = HostKey;
-    static const std::map<std::string, K> keys = {
-        {"Backspace", K::Backspace}, {"Enter", K::Return}, {"NumpadEnter", K::Enter}, {"Tab", K::Tab},
-        {"Delete", K::Delete},       {"ArrowUp", K::Up},   {"ArrowDown", K::Down},    {"ArrowLeft", K::Left},
-        {"ArrowRight", K::Right},    {"F1", K::F1},        {"F2", K::F2},             {"F3", K::F3},
-        {"F4", K::F4},               {"F5", K::F5},        {"F6", K::F6},             {"ScrollLock", K::ScrollLock},
-        {"Insert", K::Insert},       {"Home", K::Home},    {"End", K::End},           {"PageUp", K::PageUp},
-        {"PageDown", K::PageDown},
-    };
-    const auto it = keys.find(code);
-    return it == keys.end() ? K::Other : it->second;
-}
-
-char32_t singleCodePoint(const std::string& utf8) {
-    std::size_t i = 0;
-    char32_t cp = 0;
-    return decodeUtf8(utf8, i, cp) && i == utf8.size() ? cp : 0;
 }
 
 Value presetEntry(const PresetEntry& e) {
@@ -181,47 +160,8 @@ void SharpWebPart::attach(sessions::SessionSetup& setup) {
         return Refused{error};
     };
 
-    // ── Keys and typing (SharpTypingHook) ───────────────────────────────
-    cmd("c1600.face-key", [this](const Value& a, SessionContext&) -> CommandOutcome {
-        const std::string name = textArg(a, "name");
-        const bool down = flagArg(a, "down");
-        if (name == "on") m_app.typing().setOnKeyPressed(down);
-        else if (down) m_app.typing().pressKey(name);
-        else m_app.typing().releaseKey(name);
-        return Done{};
-    });
-    // A host key down: the calculator key the page must release on its keyup
-    // ("" when nothing needs releasing).
-    cmd("c1600.host-key-down", [this](const Value& a, SessionContext&) -> CommandOutcome {
-        HostModifiers mods;
-        mods.shift = flagArg(a, "shift");
-        mods.alt = flagArg(a, "alt");
-        const bool mac = flagArg(a, "macHost");
-        if (mac) {
-            mods.command = flagArg(a, "meta");
-            mods.control = flagArg(a, "control");
-        } else {
-            mods.control = flagArg(a, "control");
-            mods.meta = flagArg(a, "meta");
-        }
-        const auto resolved = resolveHostKey(hostKeyFromCode(textArg(a, "code")), mods, singleCodePoint(textArg(a, "key")),
-                                             m_app.currentModel() == Model::PC1600, mac);
-        std::string release;
-        if (resolved && m_app.typing().hostKeyDown(*resolved, /*physical=*/true)) release = resolved->baseKey;
-        return result("c1600.key", Value(release));
-    });
-    cmd("c1600.host-key-up", [this](const Value& a, SessionContext&) -> CommandOutcome {
-        m_app.typing().hostKeyUp(textArg(a, "key"));
-        return Done{};
-    });
-    cmd("c1600.host-shift-tap", [this](const Value&, SessionContext&) -> CommandOutcome {
-        m_app.typing().hostShiftTap();
-        return Done{};
-    });
-    cmd("c1600.paste", [this](const Value& a, SessionContext&) -> CommandOutcome {
-        m_app.typing().pasteText(textArg(a, "text"));
-        return Done{};
-    });
+    // Keys and typing are the library's typing part's commands (LIB-5:
+    // host-key-down/up, screen-key-down/up, focus-lost, paste).
 
     // ── Opening files ───────────────────────────────────────────────────
     // A file the user picked or dropped goes to the uploads folder first (a

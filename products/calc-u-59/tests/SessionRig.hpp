@@ -1,6 +1,8 @@
 #pragma once
 #include "TestRoms.hpp"
+#include "../app/KeyIds.hpp"
 #include "../app/TIAppPart.hpp"
+#include "typing/TypingTopics.hpp"
 #include "Pump.hpp"
 #include "TestFrontend.hpp"
 #include "sessions/LibraryTopics.hpp"
@@ -141,11 +143,13 @@ struct SessionRig {
         return out;
     }
 
-    /// A key tapped as the on-screen keyboard does (100 ms held at least).
+    /// A key tapped as the on-screen keyboard does (the library's
+    /// screen-key-down / -up, LIB-5; 100 ms held at least).
     void tap(int code) {
-        post(cu59::commands::kKeyboardDown, Value::object({{"codes", Value(Value::Bytes{static_cast<uint8_t>(code)})}}));
+        const std::string key = cu59::keyIdAt(static_cast<uint8_t>(code)).value_or(calcu::machine::KeyId{}).value;
+        post(calcu::typing::kScreenKeyDown, Value::object({{"key", key}, {"pointer", 1}}));
         runFor(std::chrono::milliseconds(150));
-        post(cu59::commands::kKeyboardUp);
+        post(calcu::typing::kScreenKeyUp, Value::object({{"key", key}, {"pointer", 1}}));
         runFor(std::chrono::milliseconds(150));
     }
     Value bytes(const std::string& s) { return Value(Value::Bytes(s.begin(), s.end())); }

@@ -51,7 +51,7 @@ parenthesis is removed with it.
 |---|---|---|
 | App session | done (M-33, M-34): `calcu::sessions::AppSession` with `cu59::TIAppPart` (every frontend; `SessionController` taken apart into `TIAppPart` in M-34) | done (M-31): the library's `calcu::sessions::AppSession`; the product's part `shared::SharpAppPart` |
 | Listener | done (C1 simplification): `calcu::sessions::Listener` in the Qt6 `EmulatorController`, on the Swift `SessionThread` (was its own sink and reply map, `HostedSession`/`AppSessionHost`), the harness and the tests | done (C1 simplification): `calcu::sessions::Listener` in the Qt6 `MachineController`, `tools/wasm_smoke` and the tests (was `SharpHost`; the session is made by `makeSharpSession`) |
-| Machine session | done (M-33, M-34): `calcu::sessions::MachineSession` (every frontend; `EmulatorSession` keeps the TI runtime around the machine, adapters `TIFreezeGate`, `TIKeySequencerHook`) | done (M-31): the library's `calcu::sessions::MachineSession` |
+| Machine session | done (M-33, M-34): `calcu::sessions::MachineSession` (every frontend; `EmulatorSession` keeps the TI runtime around the machine, adapters `TIFreezeGate`, `TIKeystrokePlayback` (was `TIKeySequencerHook`, M-36)) | done (M-31): the library's `calcu::sessions::MachineSession` |
 | Frontend interface | done (M-33, M-34): messages and commands of the app session (every frontend; `TIAppSession` is the Swift bridge, was `TISessionController`; the Web's through the library's `WorkerHost`) | done (M-31): messages of the app session (topics, commands, host services) |
 | App layer | `Shared/` | `Shared/` |
 | Machine | `TIMachine` (`calcu::machine::Machine`, C59-1) | `PC1500InterfaceMachine`, `PC1600InterfaceMachine` (`calcu::machine::Machine`, C1600-1; built by `SharpMachineBuilder` from `sharp::sharpCatalogue()`); `PC1500Machine`, `PC1600Machine` core-internal |
@@ -64,8 +64,9 @@ parenthesis is removed with it.
 | Solid State ROM module | `SolidStateRomModule` (the peripheral in `slot-1`, C59-6), `ModuleCatalog`, `ModuleImage`, `solidStateModuleID`; the printer: `PC100C` (the peripheral in `printer`, C59-6) | — |
 | ROM lookup | `calcu::roms::lookUp` (library, LIB-12), through `cu59::lookUpRoms` (`app/ProductRoms`); the full set `cu59::fullRomSet()`, the files read `calcu::roms::RomSet`, the reader `TIRomReader` (M-24; was `RomLoader`, `ResourceReader`) | `calcu::roms::lookUp` through `sharp::lookUpRoms` (`core/Machine/SharpRoms`); the full set `sharp::fullRomSet()`, `calcu::roms::RomSet`, the reader `SharpRomReader` (the CE-502B's module definition); the preset loaders' `PresetRoms` (M-27; was `BundledRomCatalog`, `SharpRomImages`, `romDirs`) |
 | Magnetic card | `CardDocument`, `CardFile`, `.u59` | — |
-| Keyboard map | `KeyboardMap`, `KeySequencer` | `HostKeyMap`, `PC1500KeyboardMap` |
-| Host key | — | `HostKey` |
+| Keyboard map | done (M-36): `cu59::TIKeyboardMap` (`app/TITyping`), a `calcu::typing::KeyboardMap`; was `KeyboardMap`, `matrixCodesFor` | done (M-36): `shared::SharpKeyboardMap` (`app/SharpTyping`), a `calcu::typing::KeyboardMap`; was `HostKeyMap`, `resolveHostKey` (`PC1500KeyboardMap` is the faceplate's key layout, not a keyboard map) |
+| Typing engine | done (M-36): `calcu::typing::TypingEngine` in `calcu::typing::TypingPart`, with `cu59::typingProfile`; was `KeySequencer` (its KEYSTROKES lane is the adapter `TIKeystrokePlayback` until M-54) | done (M-36): `calcu::typing::TypingEngine` with `shared::typingProfile`; was `SharpTypingHook`, `KeyPasteFeeder`, the PC-1500 key queue (`c1600.key-queue`, `enqueueKey`) |
+| Host key | done (M-36): `calcu::typing::HostKeyEvent` | done (M-36): `calcu::typing::HostKeyEvent`, `NamedKey`, `Modifiers`; was `HostKey`, `HostModifiers` |
 | Full speed | `FullSpeed:` (preset directive) | the `speed {full}` command (M-31); `setTurbo`, `turboRequested` in the frontends |
 | Regular speed | `RegularSpeed:` (preset directive) | — |
 | Pause | `freeze`, `FreezeController`, `FreezeOwner` | `paused` (`DebugController`) |

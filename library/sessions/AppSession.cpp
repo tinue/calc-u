@@ -8,6 +8,7 @@
 #include <limits>
 #include <map>
 #include <span>
+#include <utility>
 
 namespace calcu::sessions {
 
@@ -107,6 +108,15 @@ struct AppSession::Impl final : SessionContext, SessionSetup {
         return d ? &d->output : nullptr;
     }
     const PayloadPtr& displayTopic() const { return displayState->current(); }
+    CallId currentCall() const override { return current; }
+    void reply(CallId call, ReplyMessage m) override {
+        const auto it = deferred.find(call);
+        if (it == deferred.end()) return;
+        const ListenerId l = it->second;
+        deferred.erase(it);
+        m.call = call;
+        replies.push_back(Out{l, std::move(m)});
+    }
 
     // SessionSetup
     SessionContext& context() override { return *this; }
@@ -153,6 +163,8 @@ struct AppSession::Impl final : SessionContext, SessionSetup {
     CallId nextCall = 0;
     std::vector<Out> outbox, replies, asks;
     std::map<CallId, std::function<void(const ServiceAnswer&)>> waiting;   // asks without an answer yet
+    CallId current = 0;                          // the command whose handler runs (currentCall)
+    std::map<CallId, ListenerId> deferred;       // commands whose reply comes later (Deferred)
 
     Speed commanded = Speed::Regular;
     std::unique_ptr<Running> running;
@@ -270,15 +282,26 @@ void AppSession::Impl::runCommand(ListenerId l, CallId id, const Command& c) {
         return;
     }
     CommandOutcome outcome;
+    // A handler may reply to its own call before it returns Deferred (a key
+    // that is up at once): the call is known as deferred from the start.
+    deferred[id] = l;
+    const CallId outer = std::exchange(current, id);
     try {
         outcome = it->second.handler(c.args, *this);
     } catch (const std::exception& e) {
+        current = outer;
+        deferred.erase(id);
         reply(l, id, false, e.what());
         return;
     } catch (...) {
+        current = outer;
+        deferred.erase(id);
         reply(l, id, false, "The command failed.");
         return;
     }
+    current = outer;
+    if (std::holds_alternative<Deferred>(outcome)) return;   // replied later (or already)
+    deferred.erase(id);
     if (auto* d = std::get_if<Done>(&outcome)) reply(l, id, true, {}, std::move(d->result));
     else if (auto* r = std::get_if<Refused>(&outcome)) reply(l, id, false, std::move(r->reason));
     else {

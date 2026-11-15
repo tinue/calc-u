@@ -4,6 +4,8 @@
 #include "sessions/LibraryTopics.hpp"
 #include "sessions/Operation.hpp"
 #include "settings/Startup.hpp"
+#include "typing/TypingPart.hpp"
+#include <algorithm>
 #include <cstdlib>
 
 namespace calcu::harness::test {
@@ -71,6 +73,37 @@ struct TestProduct::Part final : SessionPart {
     }
 };
 
+// LIB-5: typing on the test machines.
+struct TestProduct::Typing final : typing::TypingProduct, typing::PauseProbe {
+    TestProduct& product;
+    typing::TypingProfile seg, dot;
+    typing::TypingPart part;
+    explicit Typing(TestProduct& p) : product(p), seg(profileFor(machine::test::kSegRate, '3', "clr")),
+                                      dot(profileFor(machine::test::kDotRate, 'c', "on")),
+                                      part(*this, sessions::Hosting::VirtualTime) {
+        part.setPauseProbe(this);
+    }
+    static typing::TypingProfile profileFor(TickRate rate, char last, const char* enter) {
+        typing::TypingProfile p;
+        p.minHold = typing::ticksOf(0.010, rate);
+        p.typed = typing::Cadence{typing::ticksOf(0.010, rate), typing::ticksOf(0.005, rate)};
+        p.readinessPoll = std::max<Ticks>(1, rate / 1000);
+        const char first = last == 'c' ? 'a' : '0';
+        p.charKeys = [first, last](char32_t c, const typing::TypingSupport*) -> std::optional<std::vector<typing::Press>> {
+            if (c < static_cast<char32_t>(first) || c > static_cast<char32_t>(last)) return std::nullopt;
+            return std::vector<typing::Press>{typing::Press{KeyId{std::string(1, static_cast<char>(c))}}};
+        };
+        p.enter = KeyId{enter};
+        return p;
+    }
+    const typing::TypingProfile* profile(const ModelId& m) const override {
+        return m == machine::test::kDot ? &dot : &seg;
+    }
+    const typing::KeyboardMap* keyboardMap(const ModelId&) const override { return nullptr; }
+    bool typesText() const override { return true; }
+    bool paused(SessionContext& c) const override { return product.typingPaused || c.machineSession().paused(); }
+};
+
 GlyphFont testFont() {
     GlyphFont f;
     f.cellWidth = 6;
@@ -81,7 +114,7 @@ GlyphFont testFont() {
     return f;
 }
 
-TestProduct::TestProduct() : part_(std::make_unique<Part>()) {
+TestProduct::TestProduct() : part_(std::make_unique<Part>()), typing_(std::make_unique<Typing>(*this)) {
     roms::test::writeFullSet(roms_, roms::fullSet(catalogue()));
 }
 
@@ -153,7 +186,7 @@ void TestProduct::addCommands(CommandRegistry& r) {
     }, "count                    the operations run");
 }
 
-std::vector<SessionPart*> TestProduct::sessionParts() { return {part_.get()}; }
+std::vector<SessionPart*> TestProduct::sessionParts() { return {&typing_->part, part_.get()}; }
 
 std::unique_ptr<HarnessProduct> makeTestProduct() { return std::make_unique<TestProduct>(); }
 

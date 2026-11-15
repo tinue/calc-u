@@ -15,7 +15,6 @@
 
 class QTimer;
 class QKeyEvent;
-namespace shared { struct ResolvedKey; }
 class QCloseEvent;
 class QDragEnterEvent;
 class QDragMoveEvent;
@@ -44,7 +43,7 @@ class EmulationPacer;
 // is attached (a fixed 2:1 split, full width when the paper widget is
 // absent). Owns the MachineController and the single ~60Hz frame timer that
 // both advances emulation and repaints the LCD. Also owns physical-keyboard
-// capture -- see PC1500KeyboardMap.hpp.
+// capture -- see HostKeyEvents.hpp.
 //
 // The menu bar (buildMenuBar()) duplicates ControlBar's model picker,
 // peripheral toggles and Reset/Reset All as QActions; the ROM pickers and
@@ -240,14 +239,13 @@ private:
     // MainWindow.cpp.
     void resetMachine(bool allReset);
 
-    // Physical host key (physicalKeyId()) -> the logical calculator key
-    // name that was pressed for it, so releaseEvent always releases exactly
-    // what pressEvent pressed even with multiple physical keys held.
+    // Physical host key (physicalKeyId()) -> the `physical` identity sent
+    // with its host-key-down, so the key-up always pairs with it even with
+    // multiple physical keys held (LIB-5 EC-1).
     // Keyed by the physical key, not Qt::Key: key() follows the modifier
     // state, so on e.g. a Swiss layout Shift+3 presses as Key_Asterisk but,
     // with Shift let go first, releases as Key_3 -- the release would miss
-    // and leave "*" held in the machine's matrix. Only the presses
-    // SharpTypingHook::hostKeyDown() asks to release are entered here.
+    // and leave "*" held in the machine's matrix.
     QHash<quint32, std::string> m_physicalKeysDown;
     // Releases everything in m_physicalKeysDown. Used whenever the window
     // stops receiving key events (deactivation, focus moving to another

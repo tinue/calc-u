@@ -74,7 +74,7 @@ not named here adds a folder in the same pattern.
 - **One folder per area**, headers and sources together, file names in
   PascalCase (`Machine.hpp`), as in both products: `library/machine/`,
   `peripherals/`, `sessions/`, `settings/`, `pacing/`, `harness/`,
-  `roms/`, `formats/`, `web/`.
+  `roms/`, `formats/`, `typing/`, `web/`.
 - Namespace `calcu::<area>`. Nothing at namespace `calcu` itself.
 - Includes are rooted at `library/`: `#include "machine/Machine.hpp"`.
   `calcu_library` exports `${PROJECT_SOURCE_DIR}/library` as its PUBLIC
@@ -91,6 +91,7 @@ not named here adds a folder in the same pattern.
   - `sessions`: `machine`, `pacing`;
   - `roms`: `machine`, `sessions` (the `roms-missing` topic);
   - `control`: `machine`, `sessions` (LIB-4 design §2; M-37);
+  - `typing`: `machine`, `pacing`, `sessions` (LIB-5, M-36);
   - `harness`: any area but `web`;
   - `web` (C++ glue): `sessions`, `settings`.
   Review checks it; a new include against it is a finding.

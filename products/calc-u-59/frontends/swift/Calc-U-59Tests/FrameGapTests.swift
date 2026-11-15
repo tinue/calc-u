@@ -75,9 +75,9 @@ final class FrameGapTests: XCTestCase {
         t.session.loadStateFile(Data(Self.busyLoop.utf8))
         TestSession.run(1)
         let a = TISharedTables.matrixCode(row: 0, col: 0)   // A: starts the loop
-        t.session.pressKey(a)
+        t.session.rawKeyDown(a) { _ in }
         TestSession.run(0.15)
-        t.session.releaseKey(a)
+        t.session.rawKeyUp(a) { _ in }
         TestSession.run(0.5)
         let w0 = Date(), e0 = t.time(self).seconds
         let regular = measure("program running, regular speed", seconds: 2)
@@ -96,7 +96,7 @@ final class FrameGapTests: XCTestCase {
             let e = expectation(description: "reply \(i)")
             let sent = Date()
             let done: (Bool) -> Void = { _ in latencies.append(Date().timeIntervalSince(sent) * 1000); e.fulfill() }
-            if i % 2 == 0 { t.session.pressKey(code, completion: done) } else { t.session.releaseKey(code, completion: done) }
+            if i % 2 == 0 { t.session.rawKeyDown(code, completion: done) } else { t.session.rawKeyUp(code, completion: done) }
             wait(for: [e], timeout: 5)
         }
         let fullRate = (t.time(self).seconds - e1) / Date().timeIntervalSince(w1)

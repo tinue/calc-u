@@ -5,7 +5,9 @@
 #include "../Debug/Inspect/PC1600Inspector.hpp"
 #include "../Machine/SharpCatalogue.hpp"
 #include "../Machine/SharpDisplayOutput.hpp"
+#include "PC1600TypedInput.hpp"
 #include "peripherals/RealTimeClock.hpp"
+#include "typing/TypingSupport.hpp"
 
 using namespace calcu::machine;
 
@@ -21,7 +23,7 @@ std::string utf8Of(const std::filesystem::path& p) {
 
 struct PC1600InterfaceMachine::Kinds {
     explicit Kinds(PC1600Machine& m)
-        : memory(m), inspector(m), trace(m), tape(m), clock(m), ce150Paper(m), ce1600pPaper(m), floppy(m), printerPort(m),
+        : memory(m), inspector(m), support(m), trace(m), tape(m), clock(m), ce150Paper(m), ce1600pPaper(m), floppy(m), printerPort(m),
           hostDrive(m) {}
 
     struct Memory final : sharp::LoaderMemory {
@@ -46,6 +48,16 @@ struct PC1600InterfaceMachine::Kinds {
         }
         PC1600Machine& m;
     } inspector;
+    // LIB-5 AC-35: typing support, prompt readiness and the SHIFT and KBII latches.
+    struct Support final : calcu::typing::TypingSupport {
+        explicit Support(PC1600Machine& m) : m(m) {}
+        std::optional<bool> promptReady() const override { return pc1600AtBasicPrompt(m); }
+        std::vector<std::pair<std::string, bool>> latches() const override {
+            const KeyLatches l = pc1600ReadLatches(m);
+            return {{"shift", l.shift}, {"kbii", l.kbii}};
+        }
+        PC1600Machine& m;
+    } support;
     struct Trace final : sharp::CpuTrace {
         explicit Trace(PC1600Machine& m) : m(m) {}
         bool begin(std::FILE* f, std::uint32_t flags) override { return m.beginCpuTrace(f, flags); }
@@ -238,6 +250,7 @@ void PC1600InterfaceMachine::offer(std::vector<Offered>& out, const std::vector<
     Kinds& k = *m_kinds;
     out.push_back(byComponent("SC7852", k.memory));
     out.push_back(byComponent("SC7852", k.inspector));
+    out.push_back(byComponent("SC7852", k.support));
     out.push_back(byComponent("SC7852", k.trace));
     out.push_back(byComponent("SC7852", k.tape));
     out.push_back(byComponent(sharp::kRtcComponent, k.clock));

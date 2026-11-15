@@ -12,7 +12,9 @@
 //
 // CALCU59_REFERENCE_COMPARE=1: each example is run and compared with its
 // recorded file; a difference is a finding (CLAUDE.md: never a new
-// reference), printed with the first lines that differ. Longer group (CTest
+// reference), printed with the first lines that differ. The differences
+// accepted (user, 2026-11-15: the references are not re-recorded) are named
+// below in kAccepted, each with its reason; any other difference fails. Longer group (CTest
 // CalcU59ReferenceRuns). CALCU59_REFERENCE_RECORD=1 (or =<folder>) writes
 // what the runs give to build/reference-runs/ (or that folder), never into
 // the references; both are slow. Each example: the model its extension names is started, the file is
@@ -31,6 +33,8 @@
 #include <filesystem>
 #include <fstream>
 #include <sstream>
+#include <string>
+#include <vector>
 
 using namespace cu59;
 namespace fs = std::filesystem;
@@ -108,6 +112,75 @@ std::string referenceName(const fs::path& ex) {
     return name + ".txt";
 }
 
+// The differences from the 2.3.0 recordings that are accepted, by example,
+// each with its reason (LIB-5 design §8, R-1; qa-report). A line that differs
+// passes only when a row names its example and its kind of line.
+//  - Every example: the `playback:` line's driver wall time ("recorded after
+//    N s"): the driver's clock moves 1 ms per reading, and since M-33 (LIB-17)
+//    and M-36 (LIB-5: the session cuts its advances at the typing engine's
+//    due ticks) a run reads it more often; it is no emulated quantity.
+struct Accepted {
+    const char* example;
+    const char* linePrefix;   // the kind of line ("Elapsed: ", "114 ", "playback: ")
+    const char* reason;
+};
+constexpr Accepted kAccepted[] = {
+    {"debug_printer-timing.ti59.txt", "Elapsed: ",
+     "row 59-23 (LIB-5 AC-20): a KEYSTROKES key is held 100 ms of emulated time and until the ROM read it, at "
+     "every speed; 2.3.0 held it 100 ms of wall time, so the full-speed parts' Elapsed: lines differ. The paper "
+     "(104 lines) is the recording's (the M-34 finding of 106 lines is fixed)"},
+    {"calendar_calendar-01-Weinberger.ti59.txt", "Elapsed: ", "time lines since M-33 (LIB-17 D-3, row 59-32) and row 59-23"},
+    {"calendar_calendar-02-cargile.ti59.txt", "Elapsed: ", "time lines since M-33 (LIB-17 D-3, row 59-32) and row 59-23"},
+    {"calendar_calendar-03-vanderburgh.ti59.txt", "Elapsed: ", "time lines since M-33 (LIB-17 D-3, row 59-32) and row 59-23"},
+    {"calendar_calendar-04-skillman.ti59.txt", "Elapsed: ", "time lines since M-33 (LIB-17 D-3, row 59-32) and row 59-23"},
+    {"calendar_calendar-05-vanderburgh.ti59.txt", "Elapsed: ", "time lines since M-33 (LIB-17 D-3, row 59-32) and row 59-23"},
+    {"calendar_calendar-06-cargile.ti59.txt", "Elapsed: ", "time lines since M-33 (LIB-17 D-3, row 59-32) and row 59-23"},
+    {"calendar_calendar-07-calidas.ti59.txt", "Elapsed: ", "time lines since M-33 (LIB-17 D-3, row 59-32) and row 59-23"},
+    {"calendar_calendar-08-acosta.ti59.txt", "Elapsed: ", "time lines since M-33 (LIB-17 D-3, row 59-32) and row 59-23"},
+    {"calendar_calendar-09-dispatch.ti59.txt", "Elapsed: ", "time lines since M-33 (LIB-17 D-3, row 59-32) and row 59-23"},
+    {"debug_selftest-speed-check.ti59.txt", "Elapsed: ", "time lines since M-33 (LIB-17 D-3, row 59-32) and row 59-23"},
+    {"globe-print.ti59.txt", "Elapsed: ", "time lines since M-33 (LIB-17 D-3, row 59-32) and row 59-23"},
+    {"picard.ti59.txt", "Elapsed: ", "time lines since M-33 (LIB-17 D-3, row 59-32) and row 59-23"},
+    {"historic_life.ti59.txt", "114 ",
+     "the example runs until the 30-minute cut of the driver's wall time; register 114 counts what it reached by "
+     "then, which follows the full-speed time per driver second (LIB-5 §8, inference); differs since M-33, the "
+     "same before and after M-36"},
+    {"screentest_test_58_glyphs.ti58.txt", "playback: ",
+     "finding, since M-34, the same before and after M-36: the preset ends frozen (its FreezeOnStart: fires), and "
+     "the app session steps a running operation only while the machine runs, so the preset's operation never "
+     "ends (the freeze becomes the session's pause with LIB-10 59, M-53)"},
+    {"screentest_test_cdebug.ti59.txt", "playback: ",
+     "finding, since M-34, the same before and after M-36: as screentest_test_58_glyphs.ti58 (FreezeOnStart: "
+     "at the end of the preset)"},
+};
+
+bool startsWith(const std::string& s, const char* p) { return s.rfind(p, 0) == 0; }
+
+// The line as compared: the playback line without its driver wall time.
+std::string comparable(const std::string& line) {
+    if (!startsWith(line, "playback: ")) return line;
+    const auto at = line.find(", recorded after ");
+    return at == std::string::npos ? line : line.substr(0, at);
+}
+
+/// Whether `got` equals `want` but for accepted differences; the reasons used go to `used`.
+bool sameButAccepted(const std::string& name, const std::string& want, const std::string& got,
+                     std::vector<const Accepted*>& used) {
+    std::istringstream w(want), g(got);
+    std::string lw, lg;
+    for (;;) {
+        const bool hw = static_cast<bool>(std::getline(w, lw)), hg = static_cast<bool>(std::getline(g, lg));
+        if (!hw && !hg) return true;
+        if (hw != hg) return false;
+        if (comparable(lw) == comparable(lg)) continue;
+        const Accepted* hit = nullptr;
+        for (const auto& a : kAccepted)
+            if (name == a.example && startsWith(lw, a.linePrefix) && startsWith(lg, a.linePrefix)) hit = &a;
+        if (!hit) return false;
+        if (std::find(used.begin(), used.end(), hit) == used.end()) used.push_back(hit);
+    }
+}
+
 /// The first lines where `a` and `b` differ.
 std::string firstDifference(const std::string& want, const std::string& got) {
     std::istringstream w(want), g(got);
@@ -135,7 +208,7 @@ TEST(reference_runs_of_the_examples) {
     const fs::path outDir = recordTo && *recordTo && std::string(recordTo) != "1" ? fs::path(recordTo) : fs::path("build/reference-runs");
     const auto all = examples();
     CHECK(all.size() == 57);
-    int differ = 0;
+    int differ = 0, accepted = 0;
     for (const auto& ex : all) {
         const std::string name = referenceName(ex);
         const std::string got = record(ex);
@@ -149,9 +222,18 @@ TEST(reference_runs_of_the_examples) {
             std::printf("  same %s\n", name.c_str());
             continue;
         }
+        std::vector<const Accepted*> used;
+        if (!want.empty() && sameButAccepted(name, want, got, used)) {
+            std::printf("  same %s%s\n", name.c_str(), used.empty() ? " (but the driver's wall time)" : ", accepted:");
+            for (const Accepted* a : used) std::printf("    \"%s\" lines: %s\n", a->linePrefix, a->reason);
+            ++accepted;
+            continue;
+        }
         ++differ;
         std::printf("  DIFFERS %s\n%s", name.c_str(), firstDifference(want, got).c_str());
     }
-    if (compare) std::printf("  %d of %zu examples differ from the reference\n", differ, all.size());
+    if (compare)
+        std::printf("  %d of %zu examples differ from the reference; %d differ only as accepted\n", differ, all.size(),
+                    accepted);
     CHECK_EQ(differ, 0);
 }

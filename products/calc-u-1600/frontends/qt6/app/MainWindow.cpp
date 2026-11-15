@@ -8,7 +8,7 @@
 #include "MemoryModuleManager.hpp"
 #include "FloppyDiskManager.hpp"
 #include "TapeManager.hpp"
-#include "PC1500KeyboardMap.hpp"
+#include "HostKeyEvents.hpp"
 #include "PlotterPaperWidget.hpp"
 #include "Ce158PrinterWidget.hpp"
 #include "SettingsDialog.hpp"
@@ -224,19 +224,11 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
             [this](const QString& sentence) { QMessageBox::warning(this, tr("Calc-U-1600"), sentence); });
     connect(m_faceplate, &FaceplateWidget::keyPressed, this, [this](QString name) {
         const std::string key = name.toStdString();
-        if (key == "on") {
-            m_controller->setOnKeyPressed(true);
-        } else {
-            m_controller->pressKey(key);
-        }
+        m_controller->pressKey(key);   // `on` too: the ON/BREAK line
     });
     connect(m_faceplate, &FaceplateWidget::keyReleased, this, [this](QString name) {
         const std::string key = name.toStdString();
-        if (key == "on") {
-            m_controller->setOnKeyPressed(false);
-        } else {
-            m_controller->releaseKey(key);
-        }
+        m_controller->releaseKey(key);
     });
     // A key held while focus moves to another widget (a combo box, a
     // dialog) releases there, not here -- let go of it now instead.
@@ -602,33 +594,34 @@ void MainWindow::keyPressEvent(QKeyEvent* event) {
     }
     disarmShiftTap();
 
-    const bool isPC1600 = m_controller->currentModel() == Model::PC1600;
-    auto resolved = PC1500KeyboardMap::resolve(static_cast<Qt::Key>(event->key()),
-                                                event->modifiers(), event->text(), isPC1600,
-                                                event->nativeVirtualKey());
-    if (!resolved) {
+    // A bare modifier (the Cmd of a second Cmd-V, Cmd-Tab) is no key: it
+    // does not stop a paste.
+    const Qt::Key key = static_cast<Qt::Key>(event->key());
+    if (key == Qt::Key_Control || key == Qt::Key_Meta || key == Qt::Key_Alt || key == Qt::Key_AltGr) {
         QWidget::keyPressEvent(event);
         return;
     }
-
-    // After resolve(), so bare modifiers -- the Cmd of a second Cmd-V,
-    // Cmd-Tab -- don't stop a paste.
-    if (m_controller->app().typing().hostKeyDown(*resolved, /*physical=*/true))
-        m_physicalKeysDown.insert(physicalKeyId(event), resolved->baseKey);  // released on its .up event
+    // The host key as Qt reports it; the product's keyboard map in the
+    // session decides what it types (LIB-5 AC-7, AC-29).
+    const std::string physical = std::to_string(physicalKeyId(event));
+    m_controller->hostKeyDown(QtHostKeys::hostKeyEvent(key, event->modifiers(), event->text(),
+                                                       event->nativeVirtualKey(), physical));
+    m_physicalKeysDown.insert(physicalKeyId(event), physical);   // its key-up goes to the session
+    if (QtHostKeys::commandModifier(event->modifiers())) {   // a shortcut no action claimed
+        QWidget::keyPressEvent(event);
+        return;
+    }
     event->accept();
 }
 
 void MainWindow::inputMethodEvent(QInputMethodEvent* event) {
     // The preedit (a pending ¨) isn't shown -- the calculator shows nothing
-    // until the letter either. Each committed character is typed as a tap,
-    // resolved like a key press's text; one with no key is dropped (a bare
-    // ¨ after dead key + Space, ...).
+    // until the letter either. The committed text goes to the session, which
+    // types each character as a press of the minimum hold by the keyboard
+    // map; one with no key is dropped (a bare ¨ after dead key + Space, ...;
+    // LIB-5 EC-4).
     disarmShiftTap();
-    const bool isPC1600 = m_controller->currentModel() == Model::PC1600;
-    for (const QChar c : event->commitString()) {
-        auto resolved = PC1500KeyboardMap::resolve(Qt::Key_unknown, Qt::NoModifier, QString(c), isPC1600);
-        if (resolved) m_controller->app().typing().hostKeyDown(*resolved, /*physical=*/false);
-    }
+    if (!event->commitString().isEmpty()) m_controller->hostText(event->commitString().toStdString());
     event->accept();
 }
 
@@ -703,7 +696,10 @@ void MainWindow::keyReleaseEvent(QKeyEvent* event) {
         const bool tapped = m_shiftTapArmed && m_shiftTapClock.elapsed() <= kShiftTapMaxMs;
         disarmShiftTap();
         if (tapped) {
-            m_controller->app().typing().hostShiftTap();
+            // AC-33: one press of the machine's shift key (the wall-time
+            // rule stays here, D-12); the engine holds it its minimum.
+            m_controller->pressKey("shift");
+            m_controller->releaseKey("shift");
             event->accept();
             return;
         }
@@ -714,7 +710,7 @@ void MainWindow::keyReleaseEvent(QKeyEvent* event) {
         QWidget::keyReleaseEvent(event);
         return;
     }
-    m_controller->app().typing().hostKeyUp(it.value());
+    m_controller->hostKeyUp(it.value());
     m_physicalKeysDown.erase(it);
     event->accept();
 }
@@ -725,7 +721,7 @@ void MainWindow::changeEvent(QEvent* event) {
 }
 
 void MainWindow::releaseHeldKeys() {
-    for (const std::string& key : std::as_const(m_physicalKeysDown)) m_controller->app().typing().hostKeyUp(key);
+    if (m_controller) m_controller->focusLost();   // LIB-5 AC-10: every held key comes up, what waits goes (none while the window is torn down)
     m_physicalKeysDown.clear();
     disarmShiftTap(); // the Shift release may land elsewhere
 }

@@ -42,7 +42,8 @@ wrappers in `frontends/swift/Bridge/`, which only translate types (`AppArchitect
 | `EmulatorSession` | One running calculator around the machine the machine session owns: the halt flag and the debugger's queued steps, the freeze-checked advance of a slice, freeze state, key input, frame sampler, trace writers |
 | `SessionThread` | The Swift frontend's session thread and its two queues (C59-5) |
 | `FreezeController` | The two armed freezes, checked per instruction inside the advance |
-| `KeySequencer` | 100 ms taps that wait for the scan loop, physical-key holds, KEYSTROKES playback |
+| `TIKeystrokePlayback` | KEYSTROKES playback of format 1 (LIB-5 adapter until M-54): its keys go to the library's typing engine, its `Wait:` in wall time |
+| `TITyping` | The TI typing profile per model (100 ms of emulated time, held until the ROM read it), the keyboard map (`TIKeyboardMap`), the names `key` takes; handed to the library's `TypingPart` (LIB-5) |
 | `FrameSampler` | The 60 Hz frame: display, C indicator, printer, log, card auto-eject |
 | `DisplayPov` | LED brightness per position from the core's duty cycles (persistence of vision) |
 | **Debugger** | |
@@ -66,7 +67,6 @@ wrappers in `frontends/swift/Bridge/`, which only translate types (`AppArchitect
 | `MachineModelInfo` | Per-model facts: `Model` ↔ `ModelId`, RAM, card reader, ROM files (the tick rate is the descriptor's, key readiness the machine's: C59-1) |
 | `KeyIds` | Matrix code ↔ key ID of the machine's descriptor (C59-1 AC-10) |
 | `KeyboardLayout` | Canvas geometry, key rects, widened hit test; `PointerTracker` (hold the display for full speed, one held key, drag between keys — Qt and web) |
-| `KeyboardMap` | Computer keyboard → matrix codes |
 | `KeyNames` | Keycode mnemonics, operand-step grammar |
 | `SevenSegment` | 7-segment pattern of every display glyph |
 | `LedGeometry` | Segment polygons (modernized), dot grids (classic), decimal point, style parameters |
@@ -103,9 +103,13 @@ presets (an operation, LIB-3 AC-32), the TI-58C memory file, the card
 reader, the printer strip, the cue card shown, freeze and step, traces,
 the ASM overlay and the LOG tab. The `EmulatorSession` hands its machine to
 the machine session; its freeze checks run inside each slice's advance
-(`EmulatorSession::advanceHosted`, the `TIFreezeGate`), its key sequencer at
-each slice end with the slice's wall time (`TIKeySequencerHook`), and a
-frozen machine pauses the machine session. An error is a notice ("title:
+(`EmulatorSession::advanceHosted`, the `TIFreezeGate`), KEYSTROKES playback
+at each slice end with the slice's wall time (`TIKeystrokePlayback`), and a
+frozen machine pauses the machine session. Keys are the library's typing
+(`library/typing/`, LIB-5): its `TypingPart` goes in front of `TIAppPart` in
+every session, with `cu59::typingProduct()`; the TI freeze is its pause
+(`TIFreezeProbe`), and the manual trace records its keys
+(`TIKeyTraceObserver`, until M-53). An error is a notice ("title:
 message"), a diagnostic a log line, the card and `ti58c.mem` files go
 through `TIFileAccess` in the save folder; what the `EmulatorSession`
 reports waits in the part's queue and runs on the session's thread after
@@ -139,16 +143,20 @@ The app layer has no thread of its own but one host adapter:
 | Web | the library's Web Worker (`library/web/src/worker.js`): a 60 Hz `setInterval` calls the session through the library's `WorkerHost` (LIB-15) |
 
 Nothing else in the app layer locks (ADR 0009): `EmulatorSession`,
-`TIAppPart`, `KeySequencer`, `FreezeController` and `TraceWriter` are
+`TIAppPart`, `TIKeystrokePlayback`, `FreezeController` and `TraceWriter` are
 single-threaded.
 
 ### Key input
 
-`KeySequencer` scripts and taps are resumable tasks that say when they next
-want to run; the `EmulatorSession` advances them at the end of every slice
-of the machine session, at the time the slice was due, so a 100 ms hold
-spans several slices and the scan-loop wait is checked at each boundary;
-with no slice (frozen), at the time of the call.
+Every key goes through the library's typing engine (`library/typing/`,
+LIB-5): host keys (`host-key-down`/`-up` with what the host reported),
+on-screen keys (`screen-key-down`/`-up`), focus loss (`focus-lost`), the
+harness's `key`. The engine is a slice hook of the machine session, so its
+holds and waits are counted in emulated time and land on their tick
+whatever the pacing. `TIKeystrokePlayback` scripts are resumable tasks that
+the `EmulatorSession` advances at the end of every slice (with no slice,
+frozen, at the time of the call); a `Key` event is one press of the engine
+(origin Preset), and the script waits until the engine is idle again.
 
 The session owns the debugger's freeze state and the core's trace flags.
 Freeze, step and their threading: `DebugAPI.md` § "Freeze / Step Controls".
@@ -217,6 +225,9 @@ only second functions a keyboard reaches are A′–E′.
    character, never by scan code, so non-US layouts work wherever they put
    these characters.
 4. With Command, Control or Option/Alt held, no key is the calculator's.
+5. A letter is the letter the key carries on the user's layout, in every
+   frontend (LIB-5 OQ-2); the frontend sends what the host reported and the
+   map (`TIKeyboardMap`, `app/TITyping.cpp`) decides.
 
 ### The table
 
@@ -238,19 +249,26 @@ multiplication.
 
 `key[]` is a wire level, not an event; the ROM accepts a key only when two
 scans one display sweep apart see it, and drops a shorter press as bounce
-(`ideas/KeypressLatch.md`). Every frontend uses `KeySequencer`:
+(`ideas/KeypressLatch.md`). Every frontend goes through the library's typing
+engine with the TI profile (`app/TITyping.hpp`; LIB-5 AC-20):
 
-- A press is held at least 100 ms. A key-up that comes sooner defers the
-  release; it is never dropped. The web client sends on-screen clicks
-  this way too, so a click shorter than that still registers.
-- A tap waits for the steady scan loop before it presses, and again after it
+- A press is held at least 100 ms of emulated time, and until the ROM's key
+  scan has read it once (at most 1 s: a printing loop reads R/S rarely;
+  measured in `tests/typing_tests.cpp`, T59-0). A key-up that comes sooner
+  defers the release; it is never dropped. On-screen keys of every frontend
+  go this way, so a click shorter than that still registers.
+- A live key goes down at once, whatever the machine does (R/S and GTO on a
+  running program); a press that waits (a two-code binding, a KEYSTROKES
+  key) waits for the steady scan loop before it presses, and again after it
   releases, so a key never lands in the ROM's release gate or debounce.
-- One key at a time: a key-down while another is held releases the first.
-- OS auto-repeat is ignored. A held key can never re-trigger, so repeats
-  would only cause spurious releases.
-- A two-code binding is one action played as two full taps; its key-up is
-  ignored, because the ROM must see 2nd released and rescanned first.
-- Losing focus releases the held key.
+- Two keys held together are both down (behaviour change 59-13). Two keys of
+  one matrix row are rejected by the ROM, which reads neither.
+- OS auto-repeat is ignored.
+- A two-code binding is one action played as two full presses; its key-up is
+  ignored, because the ROM must see 2nd released and rescanned first. A new
+  key drops the second press when it has not started.
+- Losing focus releases the held keys, after their minimum hold.
+- The pressed key is drawn from the library's `held-keys` topic.
 
 ### Focus
 
@@ -334,9 +352,9 @@ reference order: `StateFileFormat.md`.
 into the keystroke events (`shared_ptr`). This is the order of operations:
 
 1. A `Reload` or `InsertCard` event waits for the scan loop like a key. It
-   then calls a `KeySequencer::Host` hook (`EmulatorSession`), which raises
+   then calls a `TIKeystrokePlayback::Host` hook (`EmulatorSession`), which raises
    the session's host-pending count.
-2. The sequencer waits until that count drops.
+2. Playback waits until that count drops.
 3. A reload waits in the part's queue until after the call
    (`Listener::reloadRequested`). There
    `TIAppPart::applyReloadStage` halts the machine, runs `applyReload`

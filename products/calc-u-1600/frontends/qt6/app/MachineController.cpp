@@ -1,4 +1,5 @@
 #include "MachineController.hpp"
+#include "typing/TypingTopics.hpp"
 
 #include <QDebug>
 #include <QMessageBox>
@@ -118,14 +119,46 @@ void MachineController::runFor(double seconds) {
     }
 }
 
+namespace {
+bool typingIdle(sessions::Listener& l) {   // the request `typing` (LIB-5 §3.5)
+    const sessions::ReplyMessage r = l.ask(calcu::typing::kTypingRequest);
+    const auto* st = sessions::payloadAs<calcu::typing::TypingState>(r.result);
+    return !st || st->idle;
+}
+} // namespace
+
 bool MachineController::runUntilTyped(double capSeconds) {
     const int frames = static_cast<int>(capSeconds * 60);
-    for (int i = 0; i < frames && !app().typing().idle(); ++i) {
+    for (int i = 0; i < frames && !typingIdle(m_listener); ++i) {
         m_frozenNow += kFrame;
         call();
     }
-    return app().typing().idle();
+    return typingIdle(m_listener);
 }
+
+void MachineController::pressKey(const std::string& name) {
+    send(calcu::typing::kScreenKeyDown, sessions::Value::object({{"key", name}, {"pointer", 0}}));
+}
+void MachineController::releaseKey(const std::string& name) {
+    send(calcu::typing::kScreenKeyUp, sessions::Value::object({{"key", name}, {"pointer", 0}}));
+}
+void MachineController::hostKeyDown(const calcu::typing::HostKeyEvent& e) {
+    send(calcu::typing::kHostKeyDown, calcu::typing::toValue(e));
+}
+void MachineController::hostKeyUp(const std::string& physical) {
+    send(calcu::typing::kHostKeyUp, sessions::Value::object({{"physical", physical}}));
+}
+void MachineController::hostText(const std::string& utf8) {
+    send(calcu::typing::kHostText, sessions::Value::object({{"text", utf8}}));
+}
+void MachineController::focusLost() { send(calcu::typing::kFocusLost); }
+void MachineController::pasteText(const std::string& text) {
+    send(calcu::typing::kPaste, sessions::Value::object({{"text", text}}));
+}
+void MachineController::typeCommand(const std::string& line) {
+    app().typingPart().engine().typeText(line, /*enter=*/true, /*refuseUnknown=*/false, calcu::typing::Origin::Typed);
+}
+void MachineController::cancelPaste() { app().typingPart().engine().focusLost(); }
 
 void MachineController::attachAudio(shared::AudioSink& sink) {
     m_sound = std::make_unique<shared::SoundFeed>(sink, [](const std::string& text) {

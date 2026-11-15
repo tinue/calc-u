@@ -160,3 +160,60 @@ TEST(ac12_unknown_topic_ignored_by_mirror) {
     CHECK(changed == (std::vector<std::string>{"busy", "c77.unknown", "c77.stream"}));
     CHECK(mirror.state(TopicName{"display"}) == nullptr);
 }
+
+// LIB-5 design §3.5, D-4 (L12): a command whose reply comes later, once,
+// while the session is not busy.
+namespace {
+struct DeferPart final : SessionPart {
+    SessionContext* ctx = nullptr;
+    std::vector<CallId> pending;
+    void attach(SessionSetup& s) override {
+        ctx = &s.context();
+        s.command(CommandName{"tp.later"}, [this](const Value&, SessionContext& c) -> CommandOutcome {
+            pending.push_back(c.currentCall());
+            return Deferred{};
+        });
+        s.command(CommandName{"tp.now-and-later"}, [](const Value&, SessionContext& c) -> CommandOutcome {
+            c.reply(c.currentCall(), ReplyMessage{0, true, {}, nullptr});   // replied inside its own handler
+            return Deferred{};
+        });
+    }
+    void afterCall(SessionContext& c, calcu::pacing::WallTime) override {
+        for (CallId id : pending) {
+            c.reply(id, ReplyMessage{0, false, "Later.", nullptr});
+            c.reply(id, ReplyMessage{0, true, {}, nullptr});   // a second reply is ignored
+        }
+        pending.clear();
+    }
+};
+} // namespace
+
+TEST(deferred_reply_comes_later_and_not_busy) {
+    DeferPart p;
+    RigOptions o;
+    o.extraParts = {&p};
+    Rig r(o);
+    r.build();
+    const CallId id = r.send("tp.later");
+    CHECK_EQ(r.fe.replies(id), 0);
+    CHECK(!r.session->busy());
+    CHECK(r.fe.busy() && !r.fe.busy()->operationRuns);
+    CHECK_EQ(p.ctx->currentCall(), CallId(0));   // outside a handler
+    r.call();
+    CHECK_EQ(r.fe.replies(id), 1);
+    CHECK(r.fe.reply(id) && !r.fe.reply(id)->done && r.fe.reply(id)->reason == "Later.");
+    r.call();
+    CHECK_EQ(r.fe.replies(id), 1);
+    p.ctx->reply(id, ReplyMessage{0, true, {}, nullptr});      // after the reply: ignored
+    p.ctx->reply(12345, ReplyMessage{0, true, {}, nullptr});   // not a deferred call: ignored
+    r.call();
+    CHECK_EQ(r.fe.replies(id), 1);
+    const CallId both = r.send("tp.now-and-later");
+    CHECK_EQ(r.fe.replies(both), 1);
+    CHECK(r.fe.reply(both) && r.fe.reply(both)->done);
+    const CallId done = r.send("tp.set", Value::object({{"value", 1}}));   // other commands as before
+    CHECK_EQ(r.fe.replies(done), 1);
+    p.ctx->reply(done, ReplyMessage{0, false, "x", nullptr});
+    r.call();
+    CHECK_EQ(r.fe.replies(done), 1);
+}

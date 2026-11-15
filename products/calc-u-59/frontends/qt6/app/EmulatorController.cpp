@@ -6,6 +6,7 @@
 #include "ProductRoms.hpp"
 #include "QtResourceBundle.hpp"
 #include "sessions/LibraryTopics.hpp"
+#include "typing/TypingTopics.hpp"
 #include <QDebug>
 #include <QFile>
 #include <QFileInfo>
@@ -129,7 +130,7 @@ void EmulatorController::topicChanged(const cs::TopicName& t) {
         emit printerChanged();
     } else if (t == T::kCardReader) {
         emit cardStateChanged();
-    } else if (t == T::kRunState) {
+    } else if (t == T::kRunState || t == calcu::typing::kHeldKeysTopic) {
         emit runStateChanged();
     } else if (t == T::kDebugLive) {
         emit liveSnapshotChanged();
@@ -194,16 +195,27 @@ const std::optional<cu59::CueCardContent>& EmulatorController::cueCard() const {
 
 // ── Keys ─────────────────────────────────────────────────────────────────────
 
-void EmulatorController::pressKey(int row, int col) {
-    send(cu59::commands::kPressKey, Value::object({{"code", static_cast<int>(cu59::matrixCode(row, col))}}));
+void EmulatorController::screenKeyDown(int row, int col) {
+    const auto id = cu59::keyIdAt(cu59::matrixCode(row, col));
+    if (!id) return;
+    send(calcu::typing::kScreenKeyDown, Value::object({{"key", id->value}, {"pointer", 1}}));
 }
-void EmulatorController::releaseKey(int row, int col) {
-    send(cu59::commands::kReleaseKey, Value::object({{"code", static_cast<int>(cu59::matrixCode(row, col))}}));
+void EmulatorController::screenKeyUp() {
+    send(calcu::typing::kScreenKeyUp, Value::object({{"key", ""}, {"pointer", 1}}));
 }
-void EmulatorController::keyboardDown(const std::vector<uint8_t>& codes) {
-    send(cu59::commands::kKeyboardDown, Value::object({{"codes", Value(Value::Bytes(codes))}}));
+void EmulatorController::hostKeyDown(const calcu::typing::HostKeyEvent& e) {
+    send(calcu::typing::kHostKeyDown, calcu::typing::toValue(e));
 }
-int EmulatorController::keyboardHeldKey() const { return orNone(state<cu59::TIRunState>(cu59::topics::kRunState), kNoRun).heldKey; }
+void EmulatorController::hostKeyUp(const std::string& physical) {
+    send(calcu::typing::kHostKeyUp, Value::object({{"physical", physical}}));
+}
+void EmulatorController::focusLost() { send(calcu::typing::kFocusLost); }
+int EmulatorController::keyboardHeldKey() const {
+    const auto* h = state<calcu::typing::HeldKeys>(calcu::typing::kHeldKeysTopic);
+    if (!h || h->live.empty()) return -1;
+    const auto code = cu59::matrixCodeOf(h->live.back());
+    return code ? (*code / 10 - 1) * 5 + (*code % 10 - 1) : -1;
+}
 
 // ── Printer ──────────────────────────────────────────────────────────────────
 

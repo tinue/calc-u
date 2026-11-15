@@ -1,8 +1,9 @@
 // The machine side of SharpAppPart on the library's app session (ported
 // from 0.8.1's MachineSession tests in M-31): model switches, typing through
-// SharpTypingHook, peripherals kept over a rebuild. Against the real ROMs
+// the library's typing engine (LIB-5), peripherals kept over a rebuild. Against the real ROMs
 // (roms/, run from the product folder); SKIP without them.
 
+#include <cctype>
 #include <cstdio>
 #include <string>
 
@@ -29,115 +30,127 @@ void test_switch_and_paste(Model model) {
     CHECK(f.part().slotCount() == (model == Model::PC1600 ? 2 : 1));
     CHECK(f.part().slotCard(1) == nullptr && f.part().slotCard(2) == nullptr && f.part().slotCard(3) == nullptr);
 
-    shared::SharpTypingHook& t = f.part().typing();
     // A cold PC-1500 shows "NEW0? :CHECK": CL, then NEW0.
     if (model != Model::PC1600) {
-        t.tapKey("cl");
+        f.tap("cl");
         f.runFor(0.5);
-        t.typeCommand("NEW0");
+        f.typeLine("NEW0");
         f.runFor(2.0);
     }
-    t.typeCommand("PRINT 6*7");
-    CHECK(t.pasteActive());
+    f.typeLine("PRINT 6*7");
+    CHECK(!f.engine().idle());
     f.runFor(4.0);
-    CHECK(!t.pasteActive());
+    CHECK(f.engine().idle());
     const std::string text = f.screen();
     CHECK(text.find("42") != std::string::npos);
     if (text.find("42") == std::string::npos) std::fprintf(stderr, "  screen: %s\n", text.c_str());
 }
 
+// LIB-5 AC-37 (instant press and release is one key): a tap on the PC-1600
+// presses now and releases after the minimum hold: one "A" on the input
+// line. A key never released would repeat.
 TEST(test_timed_tap_pc1600) {
     SKIP_UNLESS(romsPresent(), "no ROMs in roms/");
     SessionFixture f;
     CHECK(f.start("PC-1600"));
-    // tapKey on the PC-1600 presses now and releases 30 ms of emulated time
-    // later: one "A" on the input line. A key never released would repeat.
-    f.part().typing().tapKey("a");
+    f.tap("a");
     f.runFor(1.5);
     const std::string text = f.screen();
     CHECK(text.find('A') != std::string::npos);
     CHECK(text.find("AA") == std::string::npos);
-    // tapShiftedKey: SHIFT latched, then the base key -- shifted "1" is "'".
-    f.part().typing().tapShiftedKey("1");
+    // A shifted host key: SHIFT, then the base key -- shifted "1" is "'".
+    calcu::typing::HostKeyEvent e;
+    e.physical = "Quote";
+    e.produced = '\'';
+    f.hostDown(e);
+    f.hostUp("Quote");
     f.runFor(1.0);
     CHECK(f.screen().find("A'") != std::string::npos);
 }
 
-// A key released before the key scan could see it (both events between two
-// host calls) stays down for the minimum hold: still exactly one key.
+// AC-37: a key released before the key scan could see it (both events
+// between two host calls) stays down for the minimum hold: still exactly
+// one key; a double tap is two; a fast sequence comes out in order.
 void test_minimum_key_hold(Model model) {
     SessionFixture f;
     CHECK(f.start(settingsName(model)));
-    shared::SharpTypingHook& t = f.part().typing();
     if (model != Model::PC1600) {
-        t.tapKey("cl");
+        f.tap("cl");
         f.runFor(0.5);
     }
-    t.pressKey("a");
-    t.releaseKey("a");
+    f.tap("a");
     f.runFor(1.5);
     std::string text = f.screen();
     CHECK(text.find('A') != std::string::npos);
     CHECK(text.find("AA") == std::string::npos);
     // A quick double tap: two taps, the second not cut short by the first's release.
-    t.pressKey("b");
-    t.releaseKey("b");
-    t.pressKey("b");
+    f.screenDown("b");
+    f.screenUp("b");
+    f.screenDown("b");
     f.call(20);
-    t.releaseKey("b");
+    f.screenUp("b");
     f.runFor(1.5);
     text = f.screen();
     CHECK(text.find("ABB") != std::string::npos);
     CHECK(text.find("BBB") == std::string::npos);
     if (text.find("ABB") == std::string::npos) std::fprintf(stderr, "  screen: %s\n", text.c_str());
     // A fast typist: the next key waits for the last one's deferred release.
-    for (const char* k : {"c", "d", "d", "e"}) {
-        t.pressKey(k);
-        t.releaseKey(k);
-    }
+    for (const char* k : {"c", "d", "d", "e"}) f.tap(k);
     f.runFor(1.5);
     text = f.screen();
     CHECK(text.find("ABBCDDE") != std::string::npos);
     if (text.find("ABBCDDE") == std::string::npos) std::fprintf(stderr, "  screen: %s\n", text.c_str());
 }
 
-// hostKeyDown() routes a host key the way the model needs.
+namespace {
+calcu::typing::HostKeyEvent hostChar(char32_t c, const char* physical) {
+    calcu::typing::HostKeyEvent e;
+    e.physical = physical;
+    e.produced = c;
+    if (c < 0x80 && std::isalpha(static_cast<int>(c))) e.carried = static_cast<char32_t>(std::tolower(static_cast<int>(c)));
+    return e;
+}
+} // namespace
+
+// Host keys through the product's keyboard map the way the model needs.
 TEST(test_host_keys) {
     SKIP_UNLESS(romsPresent(), "no ROMs in roms/");
-    using shared::ResolvedKey;
     {
         SessionFixture f;
         CHECK(f.start("PC-1600"));
-        shared::SharpTypingHook& t = f.part().typing();
-        CHECK(t.hostKeyDown(ResolvedKey{"a"}, /*physical=*/true));
+        f.hostDown(hostChar('a', "KeyA"));   // held until let go
         f.runFor(0.1);
-        t.hostKeyUp("a");
-        CHECK(!t.hostKeyDown(ResolvedKey{"b"}, /*physical=*/false));
+        CHECK(!f.engine().liveHeld().empty());
+        f.hostUp("KeyA");
+        f.hostDown(hostChar('b', "KeyB"));
+        f.hostUp("KeyB");
         f.runFor(0.5);
-        CHECK(!t.hostKeyDown(ResolvedKey{"1", /*needsShift=*/true}, /*physical=*/true));
+        f.hostDown(hostChar('\'', "Quote"));   // shift, then 1
         f.runFor(1.0);
         CHECK(f.screen().find("AB'") != std::string::npos);
-        CHECK(!t.hostKeyDown(ResolvedKey{"e", false, /*needsKbii=*/true}, /*physical=*/true));
-        CHECK(t.liveTypingActive());
-        CHECK(!t.hostKeyDown(ResolvedKey{"a"}, /*physical=*/true));
+        f.hostDown(hostChar(U'\u00e9', "KeyE"));   // é: KBII, E, KBII
+        CHECK(!f.engine().idle());
     }
     {
         SessionFixture g("calcu-session-test-g");
         CHECK(g.start("PC-1600"));
-        g.part().typing().typeCommand("PRINT 123456789");
-        CHECK(g.part().typing().pasteActive());
-        g.part().typing().hostShiftTap();   // a key stops a paste
-        CHECK(!g.part().typing().pasteActive());
+        g.paste("PRINT 123456789");
+        CHECK(!g.engine().idle());
+        g.runFor(0.1);
+        g.screenDown("shift");   // a key stops a paste
+        g.screenUp("shift");
+        CHECK(g.engine().waiting() <= 1);
     }
     {
         SessionFixture f;
         CHECK(f.start("PC-1500A"));
-        shared::SharpTypingHook& t = f.part().typing();
-        CHECK(t.hostKeyDown(ResolvedKey{"left"}, /*physical=*/true));
-        t.hostKeyUp("left");
-        CHECK(!t.hostKeyDown(ResolvedKey{"left"}, /*physical=*/false));
-        CHECK(!t.hostKeyDown(ResolvedKey{"a"}, /*physical=*/true));
-        CHECK(!t.hostKeyDown(ResolvedKey{"1", /*needsShift=*/true}, /*physical=*/true));
+        calcu::typing::HostKeyEvent left;
+        left.physical = "ArrowLeft";
+        left.named = calcu::typing::NamedKey::Left;
+        f.hostDown(left);   // held: the ROM's own repeat (AC-31)
+        CHECK(f.engine().liveHeld().size() == 1);
+        f.hostUp("ArrowLeft");
+        CHECK(f.engine().liveHeld().empty());
     }
 }
 

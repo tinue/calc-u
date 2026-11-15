@@ -1,6 +1,8 @@
 #pragma once
 #include "KeyboardLayout.hpp"
 #include "LedGeometry.hpp"
+#include "typing/HostKey.hpp"
+#include <optional>
 #include <QPixmap>
 #include <QWidget>
 
@@ -9,7 +11,8 @@ class EmulatorController;
 // The calculator canvas: base artwork (2064×4075) with the LED display and cue
 // card painted over it, key hit-testing with the widened rects from
 // Shared/KeyboardLayout, the pressed-key effect, press-and-hold on the display
-// for full speed, and the physical keyboard via Shared/KeyboardMap. The
+// for full speed, and the physical keyboard as the library's host keys (the
+// product's keyboard map, app/TITyping, decides; LIB-5 AC-7). The
 // counterpart of App/Views/KeyboardView.swift.
 class KeyboardWidget : public QWidget {
     Q_OBJECT
@@ -37,7 +40,9 @@ private:
     QPointF normalized(const QPointF& pos) const;  ///< widget position → canvas fractions
     void pointer(const QPointF& pos);
     void apply(const cu59::PointerTracker::Change& c);
-    std::vector<uint8_t> matrixCodes(const QKeyEvent* e) const;
+    /// The host key event of `e`, or nullopt for a key the calculator does
+    /// not claim (a command chord, a key without text or name).
+    std::optional<calcu::typing::HostKeyEvent> hostKey(const QKeyEvent* e) const;
 
     EmulatorController& m_controller;
     QPixmap m_base;

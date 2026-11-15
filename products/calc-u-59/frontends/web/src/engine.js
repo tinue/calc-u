@@ -32,10 +32,10 @@ const METHODS = {
   pointerUp: ["command", "c59.web.pointer-up", () => null],
   keyButtonDown: ["command", "c59.web.key-button-down", (row, col) => ({ row, col })],
   keyButtonUp: ["command", "c59.web.key-button-up", () => null],
-  keyDown: ["command", "c59.web.key-down",
-    (key, produced, isLetter, shift, command) => ({ key, produced, isLetter, shift, command })],
-  keyUp: ["command", "c59.web.key-up",
-    (key, produced, isLetter, shift, command) => ({ key, produced, isLetter, shift, command })],
+  // LIB-5: the host key as the browser reports it; the worker's keyboard
+  // map (app/TITyping) decides what it presses.
+  keyDown: ["command", "host-key-down", (event) => event],
+  keyUp: ["command", "host-key-up", (physical) => ({ physical })],
   blur: ["command", "c59.web.blur", () => null],
   fitCard: ["command", "c59.web.fit-card", (name, bytes) => (bytes ? { name, bytes } : { name }), flagOf],
   fitBlankCard: ["command", "c59.web.fit-blank-card", (name) => ({ name }), flagOf],

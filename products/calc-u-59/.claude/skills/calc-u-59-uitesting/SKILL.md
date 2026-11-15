@@ -30,7 +30,7 @@ This skill covers all work inside `frontends/swift/Calc-U-59UITests/`.
 The Swift unit tests are a target of their own, `Calc-U-59Tests/` (plan
 `UnitTests`, hosted by the app with `--UITesting`): a second session through
 the real bridge (`TestSession.swift`), the bridge's Debug-only test hooks
-(`pressKey:completion:`, `offeredHostServices:`, `emulatedTime:`,
+(`rawKeyDown:completion:` and `rawKeyUp:completion:` (LIB-3's raw key-down/key-up, no typing), `offeredHostServices:`, `emulatedTime:`,
 `hostCallCount`). `xcodebuild test … -testPlan UnitTests` on a simulator or
 `-destination platform=macOS`; no runner permission is needed on the Mac.
 

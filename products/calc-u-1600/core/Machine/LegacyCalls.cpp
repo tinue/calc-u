@@ -17,11 +17,6 @@ using calcu::machine::Machine;
 
 namespace sharp::legacy {
 
-KeyLatches readLatches(Machine& m) {
-    if (PC1600Machine* p = pc1600Of(m)) return pc1600ReadLatches(*p);
-    return KeyLatches{};
-}
-
 BasicLoadResult loadBasicProgram(Machine& m, const std::vector<std::uint8_t>& file) {
     if (PC1600Machine* p = pc1600Of(m)) return ::loadBasicProgram(*p, file);
     if (PC1500Machine* p = pc1500Of(m)) return ::loadBasicProgram(*p, file);

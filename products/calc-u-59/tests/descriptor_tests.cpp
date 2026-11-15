@@ -5,6 +5,7 @@
 // the media place clause passes in M-55, LIB-1 D-1).
 
 #include "TestHarness.hpp"
+#include "typing/TypingSupport.hpp"
 #include "TestRoms.hpp"
 #include "../core/TIKeys.hpp"
 #include "machine/Conformance.hpp"
@@ -153,7 +154,9 @@ TEST(lib1_ac33_machine_conforms_without_peripherals) {
         CHECK(machine->model().value == m);
         CHECK(machine->descriptor().tickRate == model(m).tickRate);
         CHECK(machine->plugged().byPlace.empty());
-        CHECK(machine->capabilities().empty());   // the card reader's media place: M-55 (LIB-1 D-1)
+        // Typing support only (LIB-5 §3.4); the card reader's media place: M-55 (LIB-1 D-1).
+        CHECK_EQ(machine->capabilities().size(), std::size_t{1});
+        CHECK_EQ(machine->capabilities(calcu::typing::TypingSupport::kKind).size(), std::size_t{1});
     }
 }
 
@@ -198,11 +201,16 @@ TEST(lib1_ac33_machine_conforms_with_printer_and_module) {
             for (const auto& d : diffs) std::printf("  %s: %s\n", m, d.c_str());
             CHECK(diffs.empty());
             CHECK_EQ(machine->plugged().byPlace.size(), size_t{with ? 2u : 0u});
-            CHECK_EQ(machine->capabilities().size(), size_t{with ? 2u : 0u});
+            CHECK_EQ(machine->capabilities().size(), size_t{with ? 3u : 1u});   // + typing support (LIB-5)
             for (const auto& e : machine->capabilities()) {
+                CHECK(machine->capability(e.id) != nullptr && machine->capability(e.id)->kind() == e.kind);
+                if (e.kind == calcu::typing::TypingSupport::kKind) {
+                    const auto* c = std::get_if<ComponentOwner>(&e.owner);
+                    CHECK(c && c->component.value == "TMC0501" && e.id.value == "TMC0501/typing-support");
+                    continue;
+                }
                 const auto* owner = std::get_if<PeripheralOwner>(&e.owner);
                 CHECK(owner && owner->peripheral == kPC100C);
-                CHECK(machine->capability(e.id) != nullptr && machine->capability(e.id)->kind() == e.kind);
             }
         }
     }

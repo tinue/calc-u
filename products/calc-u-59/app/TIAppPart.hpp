@@ -7,6 +7,7 @@
 #include "ProductRoms.hpp"
 #include "StateFile.hpp"
 #include "TIFileAccess.hpp"
+#include "TITyping.hpp"
 #include "sessions/AppSession.hpp"
 #include "sessions/MachineSession.hpp"
 #include "sessions/Payload.hpp"
@@ -33,9 +34,12 @@
 // and switching machines, presets, the TI-58C constant memory, the card
 // reader, the printer strip, the cue card shown, freeze and step, traces,
 // the ASM overlay and the LOG tab. Adapters (design §5): the machine is the
-// machine session's; the KeySequencer runs at its slice ends
-// (TIKeySequencerHook), the freeze checks inside its advance (TIFreezeGate),
-// the card wait is a WaitProbe (TICardWaitAdapter). Errors are notices,
+// machine session's; KEYSTROKES playback runs at its slice ends
+// (TIKeystrokePlayback), the freeze checks inside its advance (TIFreezeGate),
+// the card wait is a WaitProbe (TICardWaitAdapter), the freeze is the
+// typing part's pause (TIFreezeProbe). Keys are the library's typing (LIB-5:
+// TypingPart goes in front of this part; host-key-down, screen-key-down, …,
+// held-keys). Errors are notices,
 // diagnostics log lines, the files TIFileAccess; what the EmulatorSession
 // reports waits in a queue of this part that runs on the session's thread
 // after the call. What 2.3.0's change flags announced arrives as the interim
@@ -129,7 +133,6 @@ struct TIRunState final : TISnapshot<TIRunState> {
     DebugState debug;
     bool fullSpeed = false;
     bool keystrokesPlaying = false;
-    int heldKey = -1;
     calcu::sessions::Value toValue() const override;
 };
 struct TITraceState final : TISnapshot<TITraceState> {
@@ -207,11 +210,6 @@ inline const CommandName kReset{"c59.reset"};
 inline const CommandName kCleanReset{"c59.clean-reset"};
 inline const CommandName kPersistConstantMemory{"c59.persist-constant-memory"};
 inline const CommandName kChangeModule{"c59.change-module"};     // {id} (empty: the slot emptied); an operation
-inline const CommandName kPressKey{"c59.press-key"};             // {code: matrix code}
-inline const CommandName kReleaseKey{"c59.release-key"};         // {code}
-inline const CommandName kKeyboardDown{"c59.keyboard-down"};     // {codes: bytes}
-inline const CommandName kKeyboardUp{"c59.keyboard-up"};
-inline const CommandName kKeyboardRelease{"c59.keyboard-release"};
 inline const CommandName kFullSpeed{"c59.full-speed"};           // {on}
 inline const CommandName kPrinterConnected{"c59.printer-connected"};   // {on}; an operation
 inline const CommandName kTogglePrinterConnection{"c59.toggle-printer-connection"};   // an operation
@@ -307,12 +305,11 @@ public:
     // Display, keys, speed
     const LedFrame& display() const { return m_display; }
     double calcIndicatorOpacity() const { return m_calcOpacity; }
-    void pressKey(uint8_t matrixCode);
-    void releaseKey(uint8_t matrixCode);
-    void keyboardDown(const std::vector<uint8_t>& codes);
-    void keyboardUp();
-    void keyboardRelease();
-    int heldKey() const { return m_heldKey; }  ///< row×5 + col shown pressed, -1 none
+    /// The library's typing part of the session (makeAppSession sets it
+    /// before the session is built): KEYSTROKES' keys go to its engine, the
+    /// TI freeze is its pause, the manual trace records its keys.
+    void setTyping(calcu::typing::TypingPart* typing);
+    calcu::typing::TypingPart* typing() const { return m_typing; }
     void setFullSpeed(bool on);
     bool fullSpeed() const { return m_fullSpeed; }
     bool keystrokesPlaying() const { return m_keystrokesPlaying; }
@@ -424,7 +421,7 @@ public:
         PrinterChanged = 1u << 3,   ///< lines, connection, TRACE latch
         PaperCut = 1u << 4,         ///< the strip was cleared
         CardChanged = 1u << 5,      ///< card reader state or file name
-        RunStateChanged = 1u << 6,  ///< freeze, armed freezes, full speed, playback, held key
+        RunStateChanged = 1u << 6,  ///< freeze, armed freezes, full speed, playback
         LiveChanged = 1u << 7,      ///< CALCULATOR tab snapshot
         CpuChanged = 1u << 8,       ///< CPU tab history
         HeatmapChanged = 1u << 9,
@@ -456,6 +453,7 @@ private:
 
     struct Hooks;
     struct Events;
+    struct FreezeProbe;
     using Handler = std::function<calcu::sessions::CommandOutcome(const calcu::sessions::Value&)>;
     void add(calcu::sessions::SessionSetup&, const calcu::sessions::CommandName&, Handler);
     /// After everything a flow did: the queue, the machine, the speed, the topics.
@@ -536,6 +534,8 @@ private:
     calcu::sessions::SessionContext* m_ctx = nullptr;
     calcu::sessions::MachineSession* m_ms = nullptr;
     std::unique_ptr<Hooks> m_hooks;
+    std::unique_ptr<FreezeProbe> m_freezeProbe;
+    calcu::typing::TypingPart* m_typing = nullptr;
     std::function<void(uint32_t)> m_observer;
     std::deque<std::function<void()>> m_queue;
     uint32_t m_changes = 0;
@@ -559,7 +559,6 @@ private:
     double m_calcOpacity = 0;
     bool m_fullSpeed = false;
     bool m_keystrokesPlaying = false;
-    int m_heldKey = -1;
 
     std::vector<std::string> m_printerLines;
     std::vector<PrinterCodeLine> m_printerCodeLines;
@@ -616,8 +615,8 @@ private:
 };
 
 /// The session of a native frontend (C59-5 D-12): the library's app session
-/// with the part, which the session owns (AppSessionSetup::owned) and lets go
-/// first, paced on `clock` (the host's wall clock; the steady clock's time
+/// with the library's typing part (LIB-5) and the part, which the session
+/// owns (AppSessionSetup::owned) and lets go first, paced on `clock` (the host's wall clock; the steady clock's time
 /// since its epoch in the apps). `before`: parts of the host's that go in
 /// front of the product's (tests); `after`: parts behind it (tests of
 /// TIWebPart; the Web engine builds its own, frontends/web/bindings.cpp).

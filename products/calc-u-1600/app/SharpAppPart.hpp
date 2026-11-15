@@ -31,6 +31,7 @@
 #include "app/Settings.hpp"
 #include "app/SharpMachineParts.hpp"
 #include "app/SharpTopics.hpp"
+#include "app/SharpTyping.hpp"
 #include "machine/Catalogue.hpp"
 #include "machine/Machine.hpp"
 #include "peripherals/PeripheralsPart.hpp"
@@ -79,7 +80,8 @@ DisplayFrame displayFrameOf(const calcu::machine::DisplayOutput& output);
 //   that start an operation of the session;
 // - the interim product topics (control state, machine, tapes, serial
 //   links) and LIB-12's `roms-missing`;
-// - the adapters SharpTypingHook (the input queue) and SharpDebuggerGate.
+// - the library's typing part (LIB-5) with the Sharp profiles and maps
+//   (app/SharpTyping), first in sessionParts(); the adapter SharpDebuggerGate.
 //
 // The host builds it, hands sessionParts() to its AppSessionSetup (and the
 // part to AppSessionSetup::owned), then sends `start`. Single-threaded: on
@@ -106,9 +108,10 @@ public:
     const ModuleBay& modules() const { return *m_modules; }
     const FloppyBay& floppy() const { return *m_floppy; }
     const TapeBay& tapes() const { return *m_tapes; }
-    // The input queue (adapter SharpTypingHook, until M-36): the frontend's
-    // keys and typing.
-    SharpTypingHook& typing() { return *m_typing; }
+    // The typing part (LIB-5): frontends send its commands (host-key-down,
+    // screen-key-down, paste, ...); the debugger's auto-start types its line
+    // through the engine directly (not a user key, so not dropped while busy).
+    calcu::typing::TypingPart& typingPart() { return m_typingPart; }
     // The debugger (adapter SharpDebuggerGate, until M-45).
     void setDebugger(SharpDebugger* d) { m_gate.setDebugger(d); }
 
@@ -288,7 +291,7 @@ private:
     calcu::peripherals::PeripheralsPart m_peripherals;
     calcu::sessions::SessionContext* m_ctx = nullptr;
     calcu::sessions::MachineSession* m_ms = nullptr;
-    std::unique_ptr<SharpTypingHook> m_typing;
+    calcu::typing::TypingPart m_typingPart{typingProduct()};
     SharpDebuggerGate m_gate;
     bool m_powerCycleFollows = false;
 

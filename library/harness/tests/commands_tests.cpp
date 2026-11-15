@@ -202,3 +202,73 @@ TEST(ac7_operation_runs_to_its_end_before_the_reply) {
     CHECK_EQ(run.line("state busy"), std::string("done 1\n{\"operationRuns\":false,\"speed\":\"regular\"}\n"));
     CHECK_EQ(run.line("ticks"), std::string("done 2\nticks: 2016668\nseconds: 2.016668000\n"));
 }
+
+// ── key, type (LIB-5 design §6, L12) ───────────────────────────────────
+
+namespace {
+std::string keyLog(const mt::TestMachine& m) {
+    std::string out;
+    for (const auto& e : m.keyEvents()) out += e.key.value + (e.down ? "+" : "-");
+    return out;
+}
+} // namespace
+
+TEST(ac15_key_names_and_refusal) {
+    TestRun run;   // test-seg: 0-3, clr (other spellings CLR, clear)
+    CHECK(run.server != nullptr);
+    if (!run.server) return;
+    run.line("wait 1ms");
+    CHECK_EQ(run.line("key 1 2 Clear"), std::string("done\n"));
+    CHECK_EQ(keyLog(run.machine()), std::string("1+1-2+2-clr+clr-"));
+    CHECK_EQ(run.line("key 1 x"), std::string("refused: Unknown key: x.\n"));   // nothing typed
+    CHECK_EQ(keyLog(run.machine()), std::string("1+1-2+2-clr+clr-"));
+    CHECK(run.line("key").rfind("refused: usage: key", 0) == 0);
+}
+
+TEST(ac16_type_presses_enter_refuses_unknown_char) {
+    TestRun run;
+    CHECK(run.server != nullptr);
+    if (!run.server) return;
+    CHECK_EQ(run.line("type 1203"), std::string("done\n"));
+    CHECK_EQ(keyLog(run.machine()), std::string("1+1-2+2-0+0-3+3-clr+clr-"));   // ENTER is clr here
+    CHECK_EQ(run.line("type 19"), std::string("refused: No key types the character \"9\".\n"));
+    CHECK_EQ(keyLog(run.machine()), std::string("1+1-2+2-0+0-3+3-clr+clr-"));
+}
+
+TEST(ac17_key_replies_when_last_key_up_not_idle) {
+    TestRun run;
+    CHECK(run.server != nullptr);
+    if (!run.server) return;
+    run.line("wait 1ms");
+    const auto before = run.machine().tickCount();
+    CHECK_EQ(run.line("key 1 2"), std::string("done\n"));
+    const auto& ev = run.machine().keyEvents();
+    CHECK_EQ(ev.size(), std::size_t{4});
+    if (ev.size() != 4) return;
+    // 10 ms down, 5 ms up, 10 ms down: the reply at the last key-up, within
+    // one instruction; no wait after it.
+    CHECK(ev[3].tick >= before + 2500 && ev[3].tick < before + 2520);
+    CHECK(run.machine().tickCount() - ev[3].tick < 8);
+}
+
+TEST(ac17_type_replies_when_enter_up) {
+    TestRun run;
+    CHECK(run.server != nullptr);
+    if (!run.server) return;
+    CHECK_EQ(run.line("type 3"), std::string("done\n"));
+    const auto& ev = run.machine().keyEvents();
+    CHECK(ev.size() == 4 && ev[3].key.value == "clr" && !ev[3].down);
+    CHECK(ev.size() == 4 && run.machine().tickCount() - ev[3].tick < 8);
+}
+
+TEST(harness_key_gives_up_after_an_hour) {
+    TestRun run;
+    CHECK(run.server != nullptr);
+    if (!run.server) return;
+    run.product.typingPaused = true;   // the press waits for the machine to run, for ever
+    const auto before = run.machine().tickCount();
+    CHECK_EQ(run.line("key 1"), std::string("refused: The keys were not taken within an hour.\n"));
+    const auto ran = run.machine().tickCount() - before;
+    CHECK(ran >= 3600ull * 100'000 && ran < 3600ull * 100'000 + 2000);
+    CHECK(run.machine().keyEvents().empty());
+}

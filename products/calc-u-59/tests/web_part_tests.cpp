@@ -124,3 +124,32 @@ TEST(lib15_ac22_the_page_topics_are_there) {
     const Value model = r.state(topics::kWebModel);
     CHECK(model.find("moduleID") && model.find("moduleID")->string() && *model.find("moduleID")->string() == "ML");
 }
+
+// LIB-5 (AC-21, AC-24, AC-10): the page's key grid and the host keys go
+// through the library's typing; the key the page draws pressed is the one
+// live input holds (c59.web.run-state heldKey).
+TEST(lib5_ac24_web_keys_through_the_typing_engine) {
+    WebRig r;
+    r.run(1s);
+    auto held = [&] {
+        const Value v = r.state(topics::kWebRunState);
+        const Value* h = v.find("heldKey");
+        return h && h->integer() ? *h->integer() : -2;
+    };
+    r.send("c59.web.key-button-down", Value::object({{"row", 6}, {"col", 2}}));   // 5
+    CHECK_EQ(held(), std::int64_t(32));
+    r.send("c59.web.key-button-up");
+    CHECK_EQ(held(), std::int64_t(-1));
+    r.run(300ms);
+    CHECK_EQ(testroms::displayText(r.machine()), std::string("5"));
+    calcu::typing::HostKeyEvent e;
+    e.physical = "KeyQ";
+    e.carried = 'a';   // AZERTY: the key at Q carries A
+    e.produced = 'a';
+    r.send("host-key-down", calcu::typing::toValue(e));
+    CHECK_EQ(held(), std::int64_t(0));
+    r.send("c59.web.blur");   // focus lost: released after its minimum
+    r.run(300ms);
+    CHECK_EQ(held(), std::int64_t(-1));
+    CHECK(r.part().typing()->engine().down().empty());
+}

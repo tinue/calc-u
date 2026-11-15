@@ -17,6 +17,9 @@
 // `test.count`; the commands `test mapping` (echoes its parsed value), `test
 // operation <ticks>` (an operation of that length), `test fail` (a notice
 // that names a file in the save folder, then refused) and `test count`; the
+// typing part (LIB-5) with a profile per model (test-seg: the digits 0-3,
+// `clr` as ENTER; test-dot: a-c, `on` as ENTER; a minimum hold of 10 ms,
+// typed text 10 ms down and 5 ms up, no readiness wait); the
 // full ROM set of the test catalogue in a temporary bundle. Used by the
 // library tests and by `calcu_test`, never product code (LIB-1 AC-24).
 
@@ -49,6 +52,9 @@ public:
     const roms::test::TempFolder& romFolder() const { return roms_; }
     std::optional<machine::ModelId> startModel;
     std::string version_ = "1.0-test";
+    // LIB-5: the typing part's machine counts as paused (a press that waits
+    // never starts; the `key` command gives up after an hour).
+    bool typingPaused = false;
 
 private:
     struct Builder final : machine::MachineBuilder {
@@ -56,6 +62,7 @@ private:
         machine::BuildResult build(const machine::BuildRequest&, const machine::Catalogue&) override;
     };
     struct Part;
+    struct Typing;
     // LIB-18's ProductMachines over the test machines: the bare model, no
     // sound on test-seg, 8000 samples a second on test-dot, a bound of 1 s.
     struct Machines final : startup::ProductMachines {
@@ -74,6 +81,7 @@ private:
     Builder builder_;
     Machines machines_{*this};
     std::unique_ptr<Part> part_;
+    std::unique_ptr<Typing> typing_;
 };
 
 // The test product as the CLI's factory gives it.

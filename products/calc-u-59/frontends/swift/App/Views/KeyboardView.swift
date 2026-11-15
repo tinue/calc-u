@@ -228,8 +228,7 @@ struct KeyboardView: View {
         .physicalKeyboard(viewModel: viewModel, focus: $isKeyboardFocused)
         .onDisappear {
             // If this view is torn down mid-gesture (e.g. rapid panel switching),
-            // the DragGesture's onEnded never fires. Force-release any held key
-            // so its matrix bit doesn't stay stuck set in the emulator core.
+            // the DragGesture's onEnded never fires: let go of any held key.
             releaseHeldKey()
             viewModel.keyboardRelease()
             viewModel.isDisplayPressed = false
@@ -276,19 +275,31 @@ private struct PhysicalKeyboardModifier: ViewModifier {
 
     private var isFocused: Bool { focus.wrappedValue }
 
-    /// One or two matrix codes for a key press, or empty if unbound. The
-    /// mapping and its rules live in Shared/KeyboardMap.hpp; this only
-    /// translates SwiftUI's KeyPress into its neutral form.
-    private func matrixCodes(for keyPress: KeyPress) -> [UInt8] {
+    /// The host key event of a key press, or nil for a key the calculator
+    /// does not claim (a command chord, a key with no character or name).
+    /// The mapping lives in app/TITyping (the library's typing, LIB-5); this
+    /// only translates SwiftUI's KeyPress into the library's form.
+    private struct HostKey {
+        let physical: String, named: String
+        let produced: UInt32, carried: UInt32
+        let shift: Bool, control: Bool, option: Bool, command: Bool
+    }
+    private func hostKey(for keyPress: KeyPress) -> HostKey? {
         let key = keyPress.key.character
         let modifiers = keyPress.modifiers
-        let data = TISharedTables.matrixCodes(
-            forKey: key.unicodeScalars.first?.value ?? 0,
-            produced: keyPress.characters.unicodeScalars.first?.value ?? 0,
-            isLetter: key.isLetter,
-            shift: modifiers.contains(.shift),
-            command: modifiers.contains(.command) || modifiers.contains(.control) || modifiers.contains(.option))
-        return [UInt8](data)
+        let command = modifiers.contains(.command), control = modifiers.contains(.control)
+        let option = modifiers.contains(.option)
+        if command || control || option { return nil }   // menus and the system
+        var named = ""
+        if keyPress.key == .escape { named = "escape" }
+        else if keyPress.key == .return { named = "return" }
+        else if key == "\u{3}" { named = "enter" }   // the number pad's Enter
+        let produced = keyPress.characters.unicodeScalars.count == 1 ? keyPress.characters.unicodeScalars.first!.value : 0
+        // The letter the key carries on the user's layout (AC-21, OQ-2).
+        let carried: UInt32 = key.isLetter && key.isASCII ? (key.lowercased().unicodeScalars.first?.value ?? 0) : 0
+        if named.isEmpty && produced == 0 && carried == 0 { return nil }
+        return HostKey(physical: String(key).lowercased(), named: named, produced: produced, carried: carried,
+                       shift: modifiers.contains(.shift), control: control, option: option, command: command)
     }
 
     func body(content: Content) -> some View {
@@ -298,23 +309,21 @@ private struct PhysicalKeyboardModifier: ViewModifier {
             .focused(focus)
             .onAppear { focus.wrappedValue = true }
             .onChange(of: isFocused) { _, focused in
-                // Losing focus mid-press would otherwise leave the matrix bit set.
+                // Every key held comes up, after its minimum hold (AC-10).
                 if !focused { viewModel.keyboardRelease() }
             }
-            // Subscribing to .down and .up only — auto-repeat arrives as .repeat
-            // and is dropped here, which is what we want: the matrix bit is a
-            // level, so a held key can never re-trigger and repeats would only
-            // produce spurious releases.
+            // Subscribing to .down and .up only — the host's auto-repeat
+            // arrives as .repeat and is dropped here (the engine ignores it
+            // too, LIB-5 AC-4).
             .onKeyPress(phases: [.down, .up]) { keyPress in
+                guard let k = hostKey(for: keyPress) else { return .ignored }
                 switch keyPress.phase {
                 case .down:
-                    let codes = matrixCodes(for: keyPress)
-                    guard !codes.isEmpty else { return .ignored }
-                    viewModel.keyboardKeyDown(codes)
+                    viewModel.hostKeyDown(physical: k.physical, named: k.named, produced: k.produced, carried: k.carried,
+                                          shift: k.shift, control: k.control, option: k.option, command: k.command)
                     return .handled
                 case .up:
-                    guard !matrixCodes(for: keyPress).isEmpty else { return .ignored }
-                    viewModel.keyboardKeyUp()
+                    viewModel.hostKeyUp(physical: k.physical)
                     return .handled
                 default:
                     return .ignored

@@ -1,11 +1,11 @@
-// Shared/ data tables: key names (against the Swift golden), keyboard map,
+// Shared/ data tables: key names (against the Swift golden) (the keyboard
+// map's rules moved to typing_tests.cpp, lib5_ac27_map_rules),
 // 7-segment patterns, printer font, key layout and model info.
 
 #include "TestHarness.hpp"
 #include "TestRoms.hpp"
 #include "../app/KeyNames.hpp"
 #include "../app/KeyboardLayout.hpp"
-#include "../app/KeyboardMap.hpp"
 #include "../app/PrinterFont.hpp"
 #include "../app/SevenSegment.hpp"
 #include "../core/TIRomRanges.hpp"
@@ -39,28 +39,6 @@ TEST(keynames_match_swift_golden) {
         }
     }
     CHECK(lines > 400);
-}
-
-TEST(keyboard_map_rules) {
-    auto codes = [](char32_t key, char32_t produced, bool letter, bool shift = false, bool cmd = false) {
-        return matrixCodesFor({key, produced, letter, shift, cmd});
-    };
-    using V = std::vector<uint8_t>;
-    CHECK(codes('a', 'a', true) == V{11});
-    CHECK(codes('a', 'A', true, true) == (V{21, 11}));        // Shift+A → 2nd A = A′
-    CHECK(codes('E', 'E', true, true) == (V{21, 15}));
-    CHECK(codes('f', 'f', true).empty());                      // unbound letter
-    CHECK(codes('x', 'x', true) == V{65});                     // × via x
-    CHECK(codes('x', 'X', true, true) == (V{21, 65}));         // Shift rule applies to every bound letter
-    CHECK(codes('.', '>', false, true) == V{52});              // Shift+. → '>' → EE
-    CHECK(codes(',', '<', false, true) == V{94});              // Shift+, → '<' → +/−
-    CHECK(codes('8', '*', false, true) == V{65});              // produced char wins
-    CHECK(codes(kKeyEscape, 0, false) == V{25});
-    CHECK(codes(kKeyReturn, 0, false) == V{95});
-    CHECK(codes(kKeyEnter, 0, false) == V{95});
-    CHECK(codes('5', '5', false) == V{73});
-    CHECK(codes('a', 'a', true, false, true).empty());         // Command chords never reach the calculator
-    CHECK(codes(0x00E4, 0x00E4, true).empty());                // non-ASCII letter
 }
 
 TEST(seven_segment_decode) {

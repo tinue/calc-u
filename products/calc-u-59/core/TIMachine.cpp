@@ -67,6 +67,7 @@ const PlacePath kPrinterPath{{kTIPrinterPlace}};
 const PlacePath kSlotPath{{kTIModulePlace}};
 const CapabilityId kControlsId{"printer/controls"};
 const CapabilityId kPaperId{"printer/c59.printer-output"};
+const CapabilityId kTypingId{"TMC0501/typing-support"};
 } // namespace
 
 void TIMachine::rewire() {
@@ -117,12 +118,16 @@ Plugged TIMachine::plugged() const {
 }
 
 std::vector<CapabilityEntry> TIMachine::capabilities() const {
-    if (!m_printer) return {};
+    std::vector<CapabilityEntry> out{{calcu::typing::TypingSupport::kKind, kTypingId, ComponentOwner{ComponentId{"TMC0501"}}}};
+    if (!m_printer) return out;
     const PeripheralOwner owner{kPC100C, kPrinterPath};
-    return {{calcu::peripherals::Controls::kKind, kControlsId, owner}, {PrinterOutput::kKind, kPaperId, owner}};
+    out.push_back({calcu::peripherals::Controls::kKind, kControlsId, owner});
+    out.push_back({PrinterOutput::kKind, kPaperId, owner});
+    return out;
 }
 
 Capability* TIMachine::capability(const CapabilityId& id) {
+    if (id == kTypingId) return &m_typing;
     if (!m_printer) return nullptr;
     if (id == kControlsId) return &m_printer->controls();
     if (id == kPaperId) return static_cast<PrinterOutput*>(m_printer.get());

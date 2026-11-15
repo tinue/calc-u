@@ -33,6 +33,7 @@ public:
     void pressKey(int row, int col);
     void releaseKey(int row, int col);
     uint8_t keyLinesForTest(int col) const { return m_cpu.keyLines(col); }
+    uint64_t keySamples(int row, int col) const { return m_cpu.keySamples(row, col); }
 
     /// Display since the previous call; it restarts the integration window:
     /// one consumer per machine (see TMC0501).

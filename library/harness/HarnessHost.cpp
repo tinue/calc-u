@@ -2,8 +2,12 @@
 #include "harness/Product.hpp"
 #include "harness/Run.hpp"
 #include "sessions/MachineSession.hpp"
+#include "sessions/Operation.hpp"
+#include <algorithm>
 #include <cmath>
 #include <cstdio>
+#include <memory>
+#include <optional>
 
 namespace calcu::harness {
 
@@ -74,14 +78,39 @@ std::optional<ReplyMessage> HarnessHost::takeReplyIfAny(sessions::CallId id) {
 // Run in VirtualTime, every command replies at once: an operation runs to its
 // end inside send() (AC-7). Attached, an operation's reply is kept for
 // takeReplyIfAny().
-ReplyMessage HarnessHost::command(sessions::Command c) {
-    sessions::Listener::ReplyHandler later;
-    if (attached()) later = [this](const ReplyMessage& r) { replies_.push_back(r); };
-    const auto sent = listener_.send(c.name, std::move(c.args), std::move(later));
+ReplyMessage HarnessHost::command(sessions::Command c, std::string_view giveUp) {
+    if (attached()) {
+        const auto sent =
+            listener_.send(c.name, std::move(c.args), [this](const ReplyMessage& r) { replies_.push_back(r); });
+        lastCall_ = sent.call;
+        if (sent.reply) return *sent.reply;
+        return ReplyMessage{sent.call, false, kPendingReply, nullptr};
+    }
+    // A reply that does not come at once is a deferred one (an operation ran
+    // to its end inside send()): emulated time passes until it comes (D-5).
+    auto got = std::make_shared<std::optional<ReplyMessage>>();
+    const auto sent = listener_.send(c.name, std::move(c.args), [got](const ReplyMessage& r) { *got = r; });
     lastCall_ = sent.call;
     if (sent.reply) return *sent.reply;
-    if (!attached()) return ReplyMessage{sent.call, false, "The session gave no reply.", nullptr};
-    return ReplyMessage{sent.call, false, kPendingReply, nullptr};
+    if (const machine::Machine* m = session_.machineSession().machine()) {
+        const machine::TickRate rate = m->descriptor().tickRate;
+        const machine::Ticks piece = sessions::OperationContext::runPiece(rate);
+        const machine::Ticks limit = static_cast<machine::Ticks>(rate) * 3600;
+        for (machine::Ticks ran = 0; !*got && ran < limit;) {
+            // Up to the next tick a hook is due at, so the reply comes at
+            // the key-up that carries it out, not a piece later.
+            machine::Ticks step = piece;
+            const machine::Ticks due = session_.machineSession().nextDue();
+            const machine::Ticks now = session_.machineSession().machine() ? session_.machineSession().machine()->tickCount() : 0;
+            if (due != sessions::kNever && due > now) step = std::min(step, due - now);
+            const machine::Ticks r = session_.advanceUnpaced(step);
+            if (r == 0) break;   // the machine does not run (paused, gone)
+            ran += r;
+        }
+    }
+    if (*got) return **got;
+    return ReplyMessage{sent.call, false, giveUp.empty() ? std::string("The session gave no reply.") : std::string(giveUp),
+                        nullptr};
 }
 
 ReplyMessage HarnessHost::ask(sessions::Request q) { return listener_.ask(q.name, std::move(q.args)); }

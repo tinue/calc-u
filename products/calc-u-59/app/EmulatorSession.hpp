@@ -1,12 +1,13 @@
 #pragma once
 #include "FrameSampler.hpp"
 #include "FreezeController.hpp"
-#include "KeySequencer.hpp"
+#include "TIKeystrokePlayback.hpp"
 #include "MachineModelInfo.hpp"
 #include "ProductRoms.hpp"
 #include "StateFile.hpp"
 #include "TraceWriter.hpp"
 #include "machine/Machine.hpp"
+#include "typing/TypingEngine.hpp"
 #include "peripherals/Controls.hpp"
 #include <chrono>
 #include <deque>
@@ -27,8 +28,10 @@
 // session runs and owns the machine (releaseMachine()); this keeps using it
 // on the session's one thread (ADR 0009): advanceHosted() is the one advance
 // of the machine session's slices with the freeze checks inside it (adapter
-// TIFreezeGate, until M-53), sliceEnded() moves the key input on
-// (TIKeySequencerHook, until M-36/M-54). See reference/SharedArchitecture.md.
+// TIFreezeGate, until M-53), sliceEnded() moves KEYSTROKES playback on
+// (TIKeystrokePlayback, until M-54). Keys go through the library's typing
+// engine (LIB-5); the manual trace records them through TIKeyTraceObserver
+// (until M-53). See reference/SharedArchitecture.md.
 
 namespace cu59 {
 
@@ -75,7 +78,19 @@ struct QueuedCard {
     int side = 0;                                     ///< side of a card file (0 or 1)
 };
 
-class EmulatorSession : private KeySequencer::Host {
+/// The manual trace's key records (LIB-5 adapter, design §5, D-13; removed in
+/// M-53, row 59-19): the typing engine's key-downs and key-ups as
+/// TraceWriter::writeKeyDown/Up.
+class TIKeyTraceObserver final : public calcu::typing::KeyObserver {
+public:
+    explicit TIKeyTraceObserver(TraceWriter& w) : m_w(w) {}
+    void keyChanged(const calcu::machine::KeyId&, bool down, calcu::machine::Ticks) override;
+
+private:
+    TraceWriter& m_w;
+};
+
+class EmulatorSession : private TIKeystrokePlayback::Host {
 public:
     struct Listener {
         virtual ~Listener() = default;
@@ -84,7 +99,6 @@ public:
         /// The machine is stopped at a point to show (after beginNextStep).
         /// Ignore it if debugState().generation moved on.
         virtual void frozenViewReady(uint64_t /*generation*/, FrozenViewReason) {}
-        virtual void heldKeyChanged(int /*highlightID*/) {}
         virtual void fullSpeedChanged(bool) {}
         virtual void playbackStarted() {}
         virtual void playbackFinished() {}
@@ -163,18 +177,18 @@ public:
     void runQueuedSteps();
     void setFullSpeed(bool on) override;
     bool isFullSpeed() const { return m_fullSpeed; }
-    /// After a host call: the queued steps, and the key input at `now` when no
+    /// After a host call: the queued steps, and the playback at `now` when no
     /// slice ended since the last pump.
     void pump(std::chrono::steady_clock::time_point now);
 
-    // ── The machine session's slices (TIFreezeGate, TIKeySequencerHook) ──────
+    // ── The machine session's slices (TIFreezeGate, TIKeystrokePlayback) ──────
     /// One advance of at least `atLeast` ticks with the freeze and breakpoint
     /// checks inside it (C59-1 §4); a stop ends the run and sets `stopped`.
     calcu::machine::Ticks advanceHosted(calcu::machine::Ticks atLeast, bool& stopped);
-    /// A slice ended at wall time `due`: key input advances to it.
+    /// A slice ended at wall time `due`: playback advances to it.
     void sliceEnded(std::chrono::steady_clock::time_point due) {
         m_sliceRan = true;
-        m_keys->advance(due);
+        m_playback.advance(due);
     }
 
     /// Since the last call: a batch ran (TI-58C RAM may have changed).
@@ -206,17 +220,15 @@ public:
     void setCpuPanelVisible(bool visible);
 
     // ── Keys ─────────────────────────────────────────────────────────────────
-    /// Press / release a matrix code (logged to the manual trace).
-    void pressKey(uint8_t matrixCode) override;
-    void releaseKey(uint8_t matrixCode) override;
-    void keyboardDown(const std::vector<uint8_t>& codes) { m_keys->keyDown(codes); }
-    void keyboardUp() { m_keys->keyUp(); }
-    void keyboardRelease() { m_keys->releaseAll(); }
-    void playKeystrokes(std::vector<KeystrokeEvent> events) { m_keys->play(std::move(events)); }
-    void cancelKeystrokes() { m_keys->cancel(); }
-    bool keystrokesPlaying() const { return m_keys->isPlaying(); }
+    /// The typing engine KEYSTROKES' keys go to (LIB-5); null: none.
+    void setTyping(calcu::typing::TypingEngine* engine) { m_typing = engine; }
+    /// The manual trace's key records, for the typing engine's observer.
+    calcu::typing::KeyObserver& keyTrace() { return m_keyTrace; }
+    void playKeystrokes(std::vector<KeystrokeEvent> events) { m_playback.play(std::move(events)); }
+    void cancelKeystrokes() { m_playback.cancel(); }
+    bool keystrokesPlaying() const { return m_playback.isPlaying(); }
     /// A script plays or waits to play (LIB-3 59: the preset operation's end).
-    bool keystrokesPending() const { return m_keys->scriptPending(); }
+    bool keystrokesPending() const { return m_playback.pending(); }
     /// The next queued card the machine takes where it stands: the first
     /// InsertCard card in the idle scan loop, the first ArmCard card in the
     /// card wait of Write / INV Write (TICardReaderAdapter::isInCardWait).
@@ -248,10 +260,11 @@ public:
     std::string elapsedReport() const;
 
 private:
-    // KeySequencer::Host (pressKey, releaseKey and setFullSpeed are public above)
+    // TIKeystrokePlayback::Host (setFullSpeed is public above)
+    bool typeKey(uint8_t matrixCode) override;
+    bool typingIdle() override { return !m_typing || m_typing->idle(); }
     bool isKeyReady() override { return access().machine().isKeyReady(); }
     bool isFrozen() override { return m_state.frozen; }
-    void heldKeyChanged(int id) override { m_listener.heldKeyChanged(id); }
     void scriptedTrace(const std::optional<std::string>& fileName) override;
     void zeroElapseTime() override { m_elapseBaseline = access().machine().tickCount(); }
     void onFreezeFired(FreezeOwner owner);
@@ -291,7 +304,9 @@ private:
     uint64_t m_elapseBaseline = 0;
     std::deque<QueuedCard> m_queuedCards;
     int m_hostPending = 0;   ///< reloads and InsertCard cards not done yet
-    std::unique_ptr<KeySequencer> m_keys;   ///< last: a held key comes up first
+    calcu::typing::TypingEngine* m_typing = nullptr;
+    TIKeyTraceObserver m_keyTrace{m_manualTrace};
+    TIKeystrokePlayback m_playback{*this};
 };
 
 } // namespace cu59

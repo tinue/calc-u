@@ -3,16 +3,10 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
-/// Swift face of the Shared/ data tables (keyboard map, 7-segment
+/// Swift face of the Shared/ data tables (7-segment
 /// patterns, printer font, canvas/key layout, matrix codes). Type
 /// translation only — the tables and rules live in Shared/.
 @interface TISharedTables : NSObject
-
-// ── Physical keyboard (Shared/KeyboardMap.hpp) ──────────────────────────────
-/// One or two matrix codes for a key press; empty if unbound.
-/// `command` = any of Command / Control / Option held.
-+ (NSData *)matrixCodesForKey:(uint32_t)key produced:(uint32_t)produced
-                     isLetter:(BOOL)isLetter shift:(BOOL)shift command:(BOOL)command;
 
 // ── LED display (Shared/SevenSegment.hpp) ───────────────────────────────────
 /// What cell `index` (0 = rightmost) shows: segments and opacity 0–1 (cu59::ledCell).

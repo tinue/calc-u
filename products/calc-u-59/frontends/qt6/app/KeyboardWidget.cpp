@@ -2,7 +2,6 @@
 #include "AppSettings.hpp"
 #include "CueCardRenderer.hpp"
 #include "EmulatorController.hpp"
-#include "KeyboardMap.hpp"
 #include "LedRenderer.hpp"
 #include <QKeyEvent>
 #include <QMouseEvent>
@@ -114,64 +113,70 @@ void KeyboardWidget::pointer(const QPointF& pos) {
 
 void KeyboardWidget::apply(const cu59::PointerTracker::Change& c) {
     if (c.fullSpeed) m_controller.setFullSpeed(*c.fullSpeed);
-    if (c.release >= 0) m_controller.releaseKey(c.release / 5, c.release % 5);
-    if (c.press >= 0) m_controller.pressKey(c.press / 5, c.press % 5);
+    if (c.release >= 0) m_controller.screenKeyUp();
+    if (c.press >= 0) m_controller.screenKeyDown(c.press / 5, c.press % 5);
     if (c.release >= 0 || c.press >= 0) update();
 }
 
-std::vector<uint8_t> KeyboardWidget::matrixCodes(const QKeyEvent* e) const {
-    cu59::KeyPress k;
-    Qt::KeyboardModifiers mods = e->modifiers();
-    // Command / Control / Option(Alt) chords belong to menus and the system.
-    k.command = mods & (Qt::ControlModifier | Qt::MetaModifier | Qt::AltModifier);
-    k.shift = mods & Qt::ShiftModifier;
+std::optional<calcu::typing::HostKeyEvent> KeyboardWidget::hostKey(const QKeyEvent* e) const {
+    calcu::typing::HostKeyEvent k;
+    const Qt::KeyboardModifiers mods = e->modifiers();
+    // By what the user pressed: Qt on macOS calls Command "Control" and Control "Meta".
+#ifdef Q_OS_MACOS
+    k.mods.macHost = true;
+    k.mods.command = mods & Qt::ControlModifier;
+    k.mods.control = mods & Qt::MetaModifier;
+#else
+    k.mods.control = mods & Qt::ControlModifier;
+    k.mods.meta = mods & Qt::MetaModifier;
+#endif
+    k.mods.alt = mods & Qt::AltModifier;
+    k.mods.shift = mods & Qt::ShiftModifier;
+    // Command / Control / Option(Alt) / Windows chords belong to menus and the system.
+    if (k.mods.command || k.mods.control || k.mods.alt || k.mods.meta) return std::nullopt;
     switch (e->key()) {
-    case Qt::Key_Escape: k.key = cu59::kKeyEscape; break;
-    case Qt::Key_Return: k.key = cu59::kKeyReturn; break;
-    case Qt::Key_Enter: k.key = cu59::kKeyEnter; break;
+    case Qt::Key_Escape: k.named = calcu::typing::NamedKey::Escape; break;
+    case Qt::Key_Return: k.named = calcu::typing::NamedKey::Return; break;
+    case Qt::Key_Enter: k.named = calcu::typing::NamedKey::Enter; break;
     default:
-        if (e->key() >= Qt::Key_A && e->key() <= Qt::Key_Z) {
-            k.key = static_cast<char32_t>('a' + (e->key() - Qt::Key_A));
-            k.isLetter = true;
-        } else {
-            QString t = e->text();
-            if (!t.isEmpty()) k.key = t.toUcs4().value(0);
-        }
+        // Qt's letter keys follow the layout: the letter the key carries (OQ-2).
+        if (e->key() >= Qt::Key_A && e->key() <= Qt::Key_Z) k.carried = static_cast<char32_t>('a' + (e->key() - Qt::Key_A));
     }
-    QString t = e->text();
-    if (!t.isEmpty()) k.produced = t.toUcs4().value(0);
-    return cu59::matrixCodesFor(k);
+    const QString t = e->text();
+    if (!t.isEmpty() && t.toUcs4().size() == 1) k.produced = t.toUcs4().value(0);
+    if (k.named == calcu::typing::NamedKey::None && !k.produced && !k.carried) return std::nullopt;
+    // The physical key pairs down and up (EC-1); offscreen there is no scan code.
+    k.physical = std::to_string(e->nativeScanCode() ? e->nativeScanCode() : static_cast<quint32>(e->key()));
+    k.autoRepeat = e->isAutoRepeat();
+    return k;
 }
 
 void KeyboardWidget::keyPressEvent(QKeyEvent* e) {
-    // Auto-repeat is ignored: the matrix bit is a level; repeats would only
-    // produce spurious releases.
-    if (e->isAutoRepeat()) return;
-    auto codes = matrixCodes(e);
-    if (codes.empty()) {
+    const auto k = hostKey(e);
+    if (!k) {
         QWidget::keyPressEvent(e);
         return;
     }
-    m_controller.keyboardDown(codes);
+    if (!k->autoRepeat) m_controller.hostKeyDown(*k);   // the host's repeat: ignored (AC-4)
 }
 
 void KeyboardWidget::keyReleaseEvent(QKeyEvent* e) {
     if (e->isAutoRepeat()) return;
-    if (matrixCodes(e).empty()) {
+    const auto k = hostKey(e);
+    if (!k) {
         QWidget::keyReleaseEvent(e);
         return;
     }
-    m_controller.keyboardUp();
+    m_controller.hostKeyUp(k->physical);
 }
 
 void KeyboardWidget::focusOutEvent(QFocusEvent* e) {
-    // Losing focus mid-press would otherwise leave the matrix bit set.
-    m_controller.keyboardRelease();
+    m_controller.focusLost();   // every key held comes up, after its minimum (AC-10)
     QWidget::focusOutEvent(e);
 }
 
 void KeyboardWidget::hideEvent(QHideEvent* e) {
     apply(m_pointer.up());
-    m_controller.keyboardRelease();
+    m_controller.focusLost();
     QWidget::hideEvent(e);
 }

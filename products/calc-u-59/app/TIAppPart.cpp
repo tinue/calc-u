@@ -42,8 +42,7 @@ Value TICardReaderState::toValue() const {
 Value TIRunState::toValue() const {
     return Value::object({{"frozen", debug.frozen},
                           {"full-speed", fullSpeed},
-                          {"keystrokes-playing", keystrokesPlaying},
-                          {"held-key", heldKey}});
+                          {"keystrokes-playing", keystrokesPlaying}});
 }
 Value TITraceState::toValue() const { return Value::object({{"manual-trace", manualTrace}}); }
 Value TIDebugLiveState::toValue() const {
@@ -74,14 +73,24 @@ TIAppPart::TIAppPart(TIAppSetup setup)
     : m_setup(std::move(setup)),
       m_files(m_setup.saveFolder, m_setup.fileIO),
       m_hooks(std::make_unique<Hooks>(*this)),
+      m_freezeProbe(std::make_unique<FreezeProbe>(*this)),
       m_moduleID(m_setup.moduleID) {}
 
 TIAppPart::~TIAppPart() {
     // Before the session: the TI-58C's memory is written while the machine
     // session still holds the machine.
     persistConstantMemory();
+    if (m_typing) {
+        m_typing->engine().setObserver(nullptr);
+        m_typing->setPauseProbe(nullptr);
+    }
     m_session.reset();
     m_queue.clear();
+}
+
+void TIAppPart::setTyping(calcu::typing::TypingPart* typing) {
+    m_typing = typing;
+    if (m_typing) m_typing->setPauseProbe(m_freezeProbe.get());
 }
 
 void TIAppPart::attach(sessions::SessionSetup& s) {
@@ -131,11 +140,6 @@ void TIAppPart::attach(sessions::SessionSetup& s) {
         if (c.moduleID() == before) return Done{};
         return StartOperation{untilIdle(false)};
     });
-    add(s, kPressKey, done([&c](const Value& a) { c.pressKey(static_cast<uint8_t>(sessions::integerArg(a, "code"))); }));
-    add(s, kReleaseKey, done([&c](const Value& a) { c.releaseKey(static_cast<uint8_t>(sessions::integerArg(a, "code"))); }));
-    add(s, kKeyboardDown, done([&c](const Value& a) { c.keyboardDown(bytesArg(a, "codes").value_or(std::vector<uint8_t>{})); }));
-    add(s, kKeyboardUp, done([&c](const Value&) { c.keyboardUp(); }));
-    add(s, kKeyboardRelease, done([&c](const Value&) { c.keyboardRelease(); }));
     add(s, kFullSpeed, done([&c](const Value& a) { c.setFullSpeed(sessions::flagArg(a, "on")); }));
     add(s, kPrinterConnected, [this, &c](const Value& a) -> CommandOutcome {
         const bool on = sessions::flagArg(a, "on");
@@ -362,7 +366,6 @@ void TIAppPart::publish(uint32_t c) {
         p->debug = k.debugState();
         p->fullSpeed = k.fullSpeed();
         p->keystrokesPlaying = k.keystrokesPlaying();
-        p->heldKey = k.heldKey();
         m_run->set(std::move(p));
     }
     if (c & S::TraceChanged) {
@@ -422,18 +425,25 @@ calcu::sessions::ProductSession<TIAppPart> makeAppSession(TIAppSetup setup, paci
                                                           std::optional<std::uint32_t> jitterSeed,
                                                           std::vector<sessions::SessionPart*> before,
                                                           std::vector<sessions::SessionPart*> after) {
-    auto part = std::make_shared<TIAppPart>(std::move(setup));
+    struct Parts {
+        calcu::typing::TypingPart typing{typingProduct()};
+        TIAppPart app;
+        explicit Parts(TIAppSetup s) : app(std::move(s)) { app.setTyping(&typing); }
+    };
+    auto parts = std::make_shared<Parts>(std::move(setup));
+    TIAppPart* part = &parts->app;
     sessions::AppSessionSetup s;
     s.clock = std::move(clock);
     s.hostTime = [] { return std::chrono::system_clock::now(); };
     s.parts = std::move(before);
-    s.parts.push_back(part.get());
+    s.parts.insert(s.parts.begin(), &parts->typing);   // LIB-5: before the product's (LIB-3 AC-12)
+    s.parts.push_back(part);
     for (sessions::SessionPart* p : after) s.parts.push_back(p);
     s.hosting = sessions::Hosting::Paced;
     s.jitterSeed = jitterSeed;
     calcu::sessions::ProductSession<TIAppPart> out;
-    out.part = part.get();
-    s.owned = std::move(part);
+    out.part = part;
+    s.owned = std::move(parts);
     out.session = std::make_unique<sessions::AppSession>(std::move(s));
     return out;
 }

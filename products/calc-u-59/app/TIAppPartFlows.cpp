@@ -31,6 +31,8 @@ void TIAppPart::later(uint64_t sessionGeneration, std::function<void()> f) {
 bool TIAppPart::startMachine(Model model) {
     persistConstantMemory();  // save TI-58C RAM before switching away
     if (m_session) m_session->runQueuedSteps();  // on the old machine, before it goes
+    if (m_ms) m_ms->dropInput();   // LIB-5 EC-5: the keys the engine holds come up first
+    if (m_typing) m_typing->engine().setObserver(nullptr);
     setManualTrace(false);
 
     const uint64_t generation = m_sessionGeneration + 1;
@@ -50,7 +52,10 @@ bool TIAppPart::startMachine(Model model) {
     m_memoryCards.clear();
     m_keystrokesPlaying = false;
     m_fullSpeed = false;
-    m_heldKey = -1;
+    if (m_typing) {
+        m_session->setTyping(&m_typing->engine());
+        m_typing->engine().setObserver(&m_session->keyTrace());
+    }
 
     auto cards = moduleCards(m_setup.cuecards, m_moduleID);
     m_moduleCards = std::move(cards.cards);
@@ -83,6 +88,7 @@ bool TIAppPart::startMachine(Model model) {
 
 void TIAppPart::beginReset() {
     m_session->cancelKeystrokes();
+    if (m_ms) m_ms->dropInput();   // LIB-5 EC-5 (LIB-18 §3.4): reset, cold boot, power cycle
     resume();
     m_asmActive = false;
     clearCardAndCue();
@@ -323,11 +329,6 @@ void TIAppPart::refreshCueCard() {
 
 // ── Keys and speed ───────────────────────────────────────────────────────────
 
-void TIAppPart::pressKey(uint8_t code) { if (m_session) m_session->pressKey(code); }
-void TIAppPart::releaseKey(uint8_t code) { if (m_session) m_session->releaseKey(code); }
-void TIAppPart::keyboardDown(const std::vector<uint8_t>& codes) { if (m_session) m_session->keyboardDown(codes); }
-void TIAppPart::keyboardUp() { if (m_session) m_session->keyboardUp(); }
-void TIAppPart::keyboardRelease() { if (m_session) m_session->keyboardRelease(); }
 
 void TIAppPart::setFullSpeed(bool on) {
     if (m_fullSpeed == on) return;

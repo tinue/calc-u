@@ -2,7 +2,8 @@
 #include "CardFile.hpp"
 #include "DebugText.hpp"
 #include "KeyIds.hpp"
-#include "KeyboardMap.hpp"
+#include "KeyIds.hpp"
+#include "typing/TypingTopics.hpp"
 #include "PrinterFont.hpp"
 #include "RomHeatmap.hpp"
 #include "SevenSegment.hpp"
@@ -47,11 +48,6 @@ ReplyMessage answer(std::string_view kind, Value v) {
     r.done = true;
     r.result = webPayload(kind, std::move(v));
     return r;
-}
-
-std::vector<uint8_t> matrixCodes(const Value& a) {
-    return matrixCodesFor({static_cast<char32_t>(truncatedIntegerArg(a, "key")), static_cast<char32_t>(truncatedIntegerArg(a, "produced")),
-                           flagArg(a, "isLetter"), flagArg(a, "shift"), flagArg(a, "command")});
 }
 
 // A file name inside a folder, never a path out of it.
@@ -99,6 +95,7 @@ void TIWebPart::attach(sessions::SessionSetup& s) {
     m_settingsTopic = &s.stateTopic(topics::kWebSettings);
     m_font = &s.stateTopic(topics::kWebDebugFont);
     m_traceReady = &s.streamTopic(topics::kWebTraceReady, History::None);
+    m_ctx = &s.context();
 
     auto cmd = [&s](const char* name, std::function<CommandOutcome(const Value&, SessionContext&)> f) {
         s.command(sessions::CommandName{name}, std::move(f));
@@ -148,21 +145,21 @@ void TIWebPart::attach(sessions::SessionSetup& s) {
     }));
     cmd("c59.web.pointer-move", done([this](const Value& a) { apply(m_pointer.move(realArg(a, "x"), realArg(a, "y"))); }));
     cmd("c59.web.pointer-up", done([this](const Value&) { apply(m_pointer.up()); }));
+    // The page's own key grid (the portrait layout's buttons): an on-screen
+    // key of the library's typing (LIB-5 AC-24). Host keys are the library's
+    // commands host-key-down / host-key-up, which the page sends itself.
     cmd("c59.web.key-button-down", done([this](const Value& a) {
-        if (m_app) m_app->keyboardDown({matrixCode(static_cast<int>(truncatedIntegerArg(a, "row")), static_cast<int>(truncatedIntegerArg(a, "col")))});
+        screenKey(static_cast<int>(truncatedIntegerArg(a, "row")) * 5 + static_cast<int>(truncatedIntegerArg(a, "col")), true,
+                  kButtonPointer);
     }));
-    cmd("c59.web.key-button-up", done([this](const Value&) { if (m_app) m_app->keyboardUp(); }));
-    cmd("c59.web.key-down", done([this](const Value& a) {
-        auto codes = matrixCodes(a);
-        if (!codes.empty() && m_app) m_app->keyboardDown(codes);
-    }));
-    cmd("c59.web.key-up", done([this](const Value& a) {
-        if (!matrixCodes(a).empty() && m_app) m_app->keyboardUp();
-    }));
+    cmd("c59.web.key-button-up", done([this](const Value&) { screenKey(-1, false, kButtonPointer); }));
+    // The page lost the focus: the pointer's full speed goes, every key held comes up (AC-10).
     cmd("c59.web.blur", done([this](const Value&) {
         if (!m_app) return;
-        if (auto full = m_pointer.up().fullSpeed) m_app->setFullSpeed(*full);
-        m_app->keyboardRelease();
+        const auto c = m_pointer.up();
+        if (c.fullSpeed) m_app->setFullSpeed(*c.fullSpeed);
+        if (c.release >= 0) screenKey(-1, false, kCanvasPointer);
+        if (auto* t = m_app->typing()) t->engine().focusLost();
     }));
 
     // The settings the page offers (Calc-U-59.ini, LIB-9).
@@ -261,8 +258,31 @@ void TIWebPart::attach(sessions::SessionSetup& s) {
 void TIWebPart::apply(const PointerTracker::Change& c) {
     if (!m_app) return;
     if (c.fullSpeed) m_app->setFullSpeed(*c.fullSpeed);
-    if (c.release >= 0) m_app->keyboardUp();
-    if (c.press >= 0) m_app->keyboardDown({matrixCode(c.press / 5, c.press % 5)});
+    if (c.release >= 0) screenKey(c.release, false, kCanvasPointer);
+    if (c.press >= 0) screenKey(c.press, true, kCanvasPointer);
+}
+
+// An on-screen key by its index (row × 5 + column) through the typing
+// engine; a press is dropped while an operation runs (LIB-5 E11), a release
+// always passes.
+void TIWebPart::screenKey(int index, bool down, std::uint32_t pointer) {
+    calcu::typing::TypingPart* t = m_app ? m_app->typing() : nullptr;
+    if (!t) return;
+    if (!down) {
+        t->engine().screenKeyUp(calcu::machine::KeyId{}, pointer);
+        return;
+    }
+    if (index < 0 || index >= 45 || (m_ctx && m_ctx->busy())) return;
+    if (const auto id = keyIdAt(matrixCode(index / 5, index % 5))) t->engine().screenKeyDown(*id, pointer);
+}
+
+int TIWebPart::heldKey() const {
+    calcu::typing::TypingPart* t = m_app ? m_app->typing() : nullptr;
+    if (!t) return -1;
+    const auto held = t->engine().liveHeld();
+    if (held.empty()) return -1;
+    const auto code = matrixCodeOf(held.back());
+    return code ? (*code / 10 - 1) * 5 + (*code % 10 - 1) : -1;
 }
 
 void TIWebPart::afterCall(SessionContext& ctx, calcu::pacing::WallTime) { drain(ctx); }
@@ -270,8 +290,12 @@ void TIWebPart::afterCall(SessionContext& ctx, calcu::pacing::WallTime) { drain(
 // One post per kind of change, as 2.3.0's WebController::drain().
 void TIWebPart::drain(SessionContext&) {
     if (!m_app) return;
-    const uint32_t c = std::exchange(m_changes, 0u);
+    uint32_t c = std::exchange(m_changes, 0u);
     using S = TIAppPart;
+    if (const int h = heldKey(); h != m_lastHeld) {   // the key drawn pressed: the typing's held-keys
+        m_lastHeld = h;
+        c |= S::RunStateChanged;
+    }
     auto set = [](sessions::StateTopic* t, std::string_view kind, Value v) { t->set(webPayload(kind, std::move(v))); };
 
     if (c & S::ModelChanged) {
@@ -358,7 +382,7 @@ Value TIWebPart::runState() const {
                           {"pcArmed", d.pcChangeArmed},
                           {"scanArmed", d.scanLoopExitArmed},
                           {"fullSpeed", m_app->fullSpeed()},
-                          {"heldKey", m_app->heldKey()},
+                          {"heldKey", heldKey()},
                           {"asmActive", m_app->asmActive()}});
 }
 

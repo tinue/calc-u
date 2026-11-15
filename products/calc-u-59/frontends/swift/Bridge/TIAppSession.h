@@ -153,9 +153,10 @@ typedef NS_ENUM(NSInteger, TIFreezeOwner) {
 @property (class, nonatomic, readonly) NSArray<NSString *> *statedHostServices;
 #if DEBUG
 // ── For the Swift unit tests (Calc-U-59Tests, C59-5 S1, S2) ───────────────────
-/// The reply to a key command, on the main thread (AC-6: replies in order).
-- (void)pressKey:(uint8_t)matrixCode completion:(void (^)(BOOL done))done;
-- (void)releaseKey:(uint8_t)matrixCode completion:(void (^)(BOOL done))done;
+/// The reply to LIB-3's raw key-down / key-up (no typing: these test the
+/// message order, LIB-5 AC-39), on the main thread (AC-6: replies in order).
+- (void)rawKeyDown:(uint8_t)matrixCode completion:(void (^)(BOOL done))done;
+- (void)rawKeyUp:(uint8_t)matrixCode completion:(void (^)(BOOL done))done;
 /// The services the session sees offered by its listeners, asked on the
 /// session thread (AC-7); `done` on the main thread.
 - (void)offeredHostServices:(void (^)(NSArray<NSString *> *names))done;
@@ -179,12 +180,18 @@ typedef NS_ENUM(NSInteger, TIFreezeOwner) {
 // ── Display, keys, speed ─────────────────────────────────────────────────────
 @property (nonatomic, readonly) TIDisplaySnapshot display;
 @property (nonatomic, readonly) double calcIndicatorOpacity;
-- (void)pressKey:(uint8_t)matrixCode;
-- (void)releaseKey:(uint8_t)matrixCode;
-- (void)keyboardDown:(NSData *)codes;
-- (void)keyboardUp;
-- (void)keyboardRelease;
-@property (nonatomic, readonly) NSInteger heldKey;   ///< row×5 + col, -1 none
+// Keys are the library's typing (LIB-5): on-screen keys by matrix code, host
+// keys as the host reports them (the product's keyboard map, app/TITyping,
+// decides), focus loss.
+- (void)screenKeyDown:(uint8_t)matrixCode;
+- (void)screenKeyUp;
+- (void)hostKeyDownPhysical:(NSString *)physical named:(NSString *)named produced:(uint32_t)produced
+                    carried:(uint32_t)carried shift:(BOOL)shift control:(BOOL)control alt:(BOOL)alt
+                    command:(BOOL)command;
+- (void)hostKeyUpPhysical:(NSString *)physical;
+- (void)focusLost;
+/// The key drawn pressed (the last one live input holds, `held-keys`): row×5 + col, -1 none.
+@property (nonatomic, readonly) NSInteger heldKey;
 @property (nonatomic) BOOL fullSpeed;
 @property (nonatomic, readonly) BOOL keystrokesPlaying;
 

@@ -2,8 +2,8 @@
 // what it posts in a small store the components subscribe to -- the web's
 // Qt6/app/MachineController. LCD frames bypass the store: the LCD canvas
 // repaints from `frames`, once per animation frame, without a React render.
-// Settings the worker asks to keep go to localStorage; the buzzer plays
-// through an AudioWorklet. Created in an effect only (a host page may
+// The settings are the worker's (Calc-U-1600.ini in /persist); the buzzer
+// plays through an AudioWorklet. Created in an effect only (a host page may
 // prerender without a Worker).
 
 // The directory calc.js was loaded from: the worker, the engine, the
@@ -16,27 +16,6 @@ const CALC_BASE = (() => {
   if (script && script.src) return new URL(".", script.src).href;
   return typeof location !== "undefined" ? new URL(".", location.href).href : "";
 })();
-
-const STORAGE_PREFIX = "calcu1600/";
-
-function storageSet(key, value) {
-  try {
-    if (value === null) window.localStorage.removeItem(STORAGE_PREFIX + key);
-    else window.localStorage.setItem(STORAGE_PREFIX + key, value);
-  } catch (e) { /* private mode */ }
-}
-
-function storedSettings() {
-  const out = {};
-  try {
-    const ls = window.localStorage;
-    for (let i = 0; i < ls.length; i++) {
-      const k = ls.key(i);
-      if (k && k.startsWith(STORAGE_PREFIX)) out[k.slice(STORAGE_PREFIX.length)] = ls.getItem(k);
-    }
-  } catch (e) { /* private mode: defaults */ }
-  return out;
-}
 
 function downloadBytes(name, bytes, type) {
   const url = URL.createObjectURL(new Blob([bytes], { type: type || "application/octet-stream" }));
@@ -150,7 +129,6 @@ function createEngine({ workerUrl, model, preset }) {
         break;
       case "notice": set({ notices: state.notices.concat([{ title: m.title, text: m.text }]) }); break;
       case "log": set({ log: state.log.concat([m.text]).slice(-500) }); break;
-      case "store": storageSet(m.key, m.value); break;
       case "audio": audio.message(m); break;
       case "fatal": set({ fatal: m.message }); break;
       case "reply": {
@@ -172,7 +150,6 @@ function createEngine({ workerUrl, model, preset }) {
 
   post({
     type: "init",
-    settings: storedSettings(),
     model: Number.isInteger(Number(model)) && model !== null && model !== "" ? Number(model) : -1,
     preset: preset ? `examples:${preset}` : "",
   });

@@ -13,7 +13,7 @@
 #include <string>
 #include <vector>
 
-#include "MemorySettingsStore.hpp"
+#include "TestSettings.hpp"
 #include "Machine/SharpProductKinds.hpp"
 #include "peripherals/RealTimeClock.hpp"
 #include "app/AppSession.hpp"
@@ -46,8 +46,8 @@ struct RecordingPlatform : AppSession::Platform {
 
 struct Fixture {
     fs::path root = fs::temp_directory_path() / "calcu-shared-app-test";
-    MemorySettingsStore store;
-    shared::Settings settings{store};
+    TestSettings testSettings;
+    shared::Settings& settings = testSettings.settings;
     std::unique_ptr<shared::AppPaths> paths;
     RecordingPlatform platform;
     std::unique_ptr<AppSession> app;
@@ -60,8 +60,8 @@ struct Fixture {
             for (const auto& f : fs::directory_iterator(dir))
                 if (f.is_regular_file()) fs::copy_file(f.path(), bundle / f.path().filename());
         paths = std::make_unique<shared::AppPaths>(
-            settings, shared::HostDirs{(root / "home").generic_string(), bundle.generic_string(),
-                                       fs::absolute("examples").generic_string()});
+            settings, testHostDirs((root / "home").generic_string()),
+            shared::BundleDirs{bundle.generic_string(), fs::absolute("examples").generic_string()});
         app = std::make_unique<AppSession>(settings, *paths, platform);
     }
     ~Fixture() {
@@ -78,7 +78,7 @@ std::string screen(AppSession& app) {
 TEST(test_cooperative_preset) {
     SKIP_UNLESS(std::ifstream("roms/PC1600-P0-B0-new.bin").good(), "no ROMs in roms/");
     Fixture f;
-    f.settings.setStartupModelPreference("PC1500A");
+    f.settings.setStartupModelPreference("PC-1500A");
     f.app->start();
     CHECK(f.platform.missing.empty());
     CHECK(f.app->machine().currentModel() == Model::PC1500A);
@@ -124,7 +124,7 @@ TEST(test_run_now_and_selection) {
     CHECK(r.ok);
     CHECK(pumps > 0);
     CHECK(f.app->machine().currentModel() == Model::PC1600);
-    CHECK(f.settings.lastUsedModel() == static_cast<int>(Model::PC1600));
+    CHECK(f.settings.lastUsedModel() == Model::PC1600);
 
     r = f.app->runNow(f.app->togglePeripheralJob(shared::Peripheral::CE1600P));
     CHECK(r.ok && f.app->machine().ce1600pAttached());
@@ -146,7 +146,7 @@ TEST(test_run_now_and_selection) {
 TEST(test_tape_status_follows_frames) {
     SKIP_UNLESS(std::ifstream("roms/PC1600-P0-B0-new.bin").good(), "no ROMs in roms/");
     Fixture f;
-    f.settings.setStartupModelPreference("PC1500A");
+    f.settings.setStartupModelPreference("PC-1500A");
     f.app->start();
     CHECK(f.app->runNow(f.app->togglePeripheralJob(shared::Peripheral::CE150)).ok);
     CHECK(f.app->machine().tapeInterfaceAttached());
@@ -167,7 +167,7 @@ TEST(test_tape_status_follows_frames) {
 TEST(test_control_state) {
     SKIP_UNLESS(std::ifstream("roms/PC1600-P0-B0-new.bin").good(), "no ROMs in roms/");
     Fixture f;
-    f.settings.setStartupModelPreference("PC1500");
+    f.settings.setStartupModelPreference("PC-1500");
     f.app->start();
     shared::ControlState s = f.app->controlState();
     CHECK(s.model == Model::PC1500 && s.slotCount == 1);
@@ -204,7 +204,7 @@ TEST(test_control_state_without_host_directories) {
     NoDirsPlatform platform;
     f.app.reset();
     f.app = std::make_unique<AppSession>(f.settings, *f.paths, platform);
-    f.settings.setStartupModelPreference("PC1600");
+    f.settings.setStartupModelPreference("PC-1600");
     f.app->start();
     CHECK(!f.app->controlState().hostDriveOffered);
     f.app.reset();
@@ -256,7 +256,7 @@ TEST(test_program_choice) {
 TEST(test_machine_code_load) {
     SKIP_UNLESS(std::ifstream("roms/PC1600-P0-B0-new.bin").good(), "no ROMs in roms/");
     Fixture f;
-    f.settings.setStartupModelPreference("PC1500A");
+    f.settings.setStartupModelPreference("PC-1500A");
     f.app->start();
     const std::vector<std::uint8_t> code = {0x9A, 0x9A, 0x9A, 0x9A};  // RTN x4
     shared::MachineCodeLoad load = shared::MachineCodeLoad::plan(f.app->machine(), code);
@@ -301,7 +301,7 @@ const shared::MediaItem* findItem(const std::vector<shared::MediaItem>& items, c
 TEST(test_media_library) {
     SKIP_UNLESS(std::ifstream("roms/PC1600-P0-B0-new.bin").good(), "no ROMs in roms/");
     Fixture f;
-    f.settings.setStartupModelPreference("PC1600");
+    f.settings.setStartupModelPreference("PC-1600");
     f.app->start();
     shared::MediaLibrary library(*f.app);
     CHECK(library.items().empty());
@@ -348,7 +348,7 @@ TEST(test_media_library) {
 TEST(test_card_write_protect) {
     SKIP_UNLESS(std::ifstream("roms/PC1600-P0-B0-new.bin").good(), "no ROMs in roms/");
     Fixture f;
-    f.settings.setStartupModelPreference("PC1500");
+    f.settings.setStartupModelPreference("PC-1500");
     f.app->start();
     CHECK(f.app->runNow(f.app->selectModuleJob(1, "CE-161")).ok);
     CHECK(f.app->modules().canNameAndSave(1));
@@ -390,7 +390,7 @@ TEST(test_card_write_protect) {
 TEST(test_card_yaml_dump) {
     SKIP_UNLESS(std::ifstream("roms/PC1600-P0-B0-new.bin").good(), "no ROMs in roms/");
     Fixture f;
-    f.settings.setStartupModelPreference("PC1600");
+    f.settings.setStartupModelPreference("PC-1600");
     f.app->start();
     std::vector<std::string> dump = shared::cardYamlDump(*f.app);
     CHECK(dump.size() == 1 && dump[0].find("no card attached") != std::string::npos);
@@ -404,7 +404,7 @@ TEST(test_card_yaml_dump) {
 TEST(test_pick_model) {
     SKIP_UNLESS(std::ifstream("roms/PC1600-P0-B0-new.bin").good(), "no ROMs in roms/");
     Fixture f;
-    f.settings.setStartupModelPreference("PC1500A");
+    f.settings.setStartupModelPreference("PC-1500A");
     f.app->start();
     CHECK(f.app->runNow(f.app->defaultPresetJob()).ok);  // none set
     f.settings.setDefaultPresetPath(Model::PC1600, "tests/fixtures/presets/startup-pc1600.pc1600");
@@ -421,7 +421,7 @@ TEST(test_pick_model) {
 TEST(test_example_ref_default_preset) {
     SKIP_UNLESS(std::ifstream("roms/PC1600-P0-B0-new.bin").good(), "no ROMs in roms/");
     Fixture f;
-    f.settings.setStartupModelPreference("PC1500A");
+    f.settings.setStartupModelPreference("PC-1500A");
     f.app->start();
     f.settings.setDefaultPresetPath(Model::PC1500A, "examples:startup/default-pc1500a.pc1500a");
     const OpResult r = f.app->runNow(f.app->defaultPresetJob());
@@ -449,7 +449,7 @@ TEST(test_audio_follows_tick) {
     Fixture f;
     CountingSink sink;
     f.app->attachAudio(sink, {});
-    f.settings.setStartupModelPreference("PC1600");
+    f.settings.setStartupModelPreference("PC-1600");
     f.app->start();
     f.app->machine().typeCommand("BEEP 50");
     CHECK(f.app->runUntilPasteDone(5.0));

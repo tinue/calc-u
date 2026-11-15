@@ -91,8 +91,10 @@ attaches it as `Calc-U-1600-web.zip`.
 
 ## Storage
 
-- Settings: `localStorage`, keys prefixed `calcu1600/` (the names of
-  `app/Settings.hpp`).
+- Settings: `Calc-U-1600.ini` at `/persist/settings/Calc-U-1600/`, in the
+  same IDBFS mount as the save folder (the keys of `app/Settings.hpp`, the
+  same as Qt6's; the ones the Web has no use for are kept and ignored).
+  Nothing is kept in `localStorage`.
 - The save folder (`AppPaths` home `/persist`): saved cards, disks, tapes.
   It is an IDBFS mount with `autoPersist`, so every write, rename and
   delete reaches IndexedDB without help. The embedded client and the app

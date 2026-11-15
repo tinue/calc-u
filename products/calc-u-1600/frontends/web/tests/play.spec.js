@@ -84,6 +84,21 @@ test('a default preset is picked by description and shown by name', async ({ pag
   expect(examples.find((e) => e.ref === 'examples:basic/hanoi.pc1600').name).toBe('Hanoi');
 });
 
+// LIB-9 AC-32, AC-31: the settings are Calc-U-1600.ini in the persistent
+// file system, not localStorage; a reload keeps them.
+test('settings survive a reload', async ({ page }) => {
+  await gotoReady(page);
+  expect((await request(page, 'settingsState')).startupModel).toBe('last');
+  await page.evaluate(() => document.querySelector('.calcu-client').calcuEngine.call('setStartupModel', 'PC-1600'));
+  await expect.poll(async () => (await request(page, 'settingsState')).startupModel).toBe('PC-1600');
+  await page.reload();
+  await expect(page.locator('.calcu-client[data-ready=true]')).toHaveCount(1, { timeout: 30000 });
+  await expect(page.locator('.calcu-face[data-model="2"]')).toHaveCount(1, { timeout: 30000 });
+  expect((await request(page, 'settingsState')).startupModel).toBe('PC-1600');
+  const keys = await page.evaluate(() => Object.keys(window.localStorage));
+  expect(keys.filter((k) => k.startsWith('calcu1600/'))).toEqual([]);
+});
+
 test('the panels take only the room a full-width faceplate leaves', async ({ page }) => {
   // A phone in landscape: the calculator alone, as large as it fits.
   await page.setViewportSize({ width: 844, height: 390 });

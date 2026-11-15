@@ -108,14 +108,61 @@ builds in `build/web` for Calc-U-1600's `calcu_web` (Homebrew Emscripten,
 | AC-34 | Later | M-32 |
 | AC-35 | Later | M-32 |
 
-## Calc-U-1600 (M-30)
+## Calc-U-1600 (M-30, 2026-11-15)
 
-| ID | Result | Step |
+Built and run on an M4 Pro, macOS 27.2, Apple clang 21, CMake 4.5, Ninja.
+The product's declaration is `shared::settingsDecl()` in
+`products/calc-u-1600/app/Settings.hpp/.cpp`; `shared::Settings` keeps its
+accessor names over a `calcu::settings::SettingsFile&`, and
+`shared::AppPaths` takes its places from `calcu::settings::Paths` (adapter
+A-1). Qt6 opens `Calc-U-1600.ini` in the platform's settings folder
+(`AppPaths.cpp`: Application Support from `MacAppSupport.mm` on macOS,
+`%APPDATA%` on Windows, `$XDG_CONFIG_HOME` or `~/.config` on Linux); the Web
+frontend at `/persist/settings/Calc-U-1600/Calc-U-1600.ini`. Tests in
+`products/calc-u-1600/app/tests/shared_settings_tests.cpp` (in `CoreTests`,
+Frequent). Result of the run: `CoreTests` 855 tests, 63275 checks passed,
+0 failed, 39.0 s; `CalcU1600NoPlatformSettings` passed; the full Frequent run
+of `build/tests` passed, 14 of 14 entries. Golden runs: `golden_runs_tests.cpp`
+passed unchanged (Calc-U-1600 and Calc-U-59). Longer, run once: the Web
+frontend built (`frontends/web/build.sh`), `CalcU1600WebPlaywright` 45 of 45
+passed (with the new case), `tools/build_wasm_check.sh` passed; the Qt6 app
+built (`tools/build_app.sh`) and the screenshot scenarios
+`02-getting-started`, `07-com-ports` and `09-appendix` ran through (`--shots`
+on its own temporary home and settings folder; the user's Application
+Support folder was not touched).
+
+| ID | Result | Test case |
 |---|---|---|
-| AC-26 | Later | M-30 |
-| AC-27 | Later | M-30 |
-| AC-28 | Later | M-30 |
-| AC-29 | Later | M-30 (the library part, `[folders]` with `fixed:`, passes now: `ac29_open_folder_fixed_else_last_used_else_home`, `startup_tests.cpp`) |
-| AC-30 | Later | M-30 |
-| AC-31 | Later | M-30 (`CalcU1600NoPlatformSettings` over `check_platform_stores.sh`) |
-| AC-32 | Later | M-30 |
+| AC-26 | Pass | `lib9_ac26_declaration`: every key in order with its default, the app-written ones, `[startup] model` accepting `last` and the three models, the typed calls over those keys |
+| AC-27 | Pass | `lib9_ac27_startup_last_without_last_model_is_pc1500a` (also EC-1: a last model that is not one of the product's) |
+| AC-28 | Pass | `lib9_ac28_dap_port_outside_range_is_32168` (also not a number) |
+| AC-29 | Pass | `lib9_ac29_folders_four_kinds`: per kind the folder last used, a fixed folder (`fixed:`) that picks do not change, Reset back to "last used"; the library part `ac29_open_folder_fixed_else_last_used_else_home` |
+| AC-30 | Pass | `lib9_ac30_window_size_default_900x500_and_kept` (written, read again from the file) |
+| AC-31 | Pass | `lib9_ac31_first_start_defaults_and_writes_file` (the file at its place, with its version and every key, written at the first open); CTest `CalcU1600NoPlatformSettings` (`library/settings/check_platform_stores.sh` over `frontends/`, allow-list `tools/platform_stores_allowed.txt`: AppKit's two registered defaults and the Playwright check itself); Longer: Playwright "settings survive a reload" finds no `calcu1600/` key in `localStorage` |
+| AC-32 | Pass | `lib9_ac32_web_and_qt6_share_declaration`, `lib9_ac32_web_keeps_and_ignores_dap_serial_window_folders`; Longer: `CalcU1600WebPlaywright` "settings survive a reload" (root and sub-path) |
+
+Exit check: a first start writes a fresh INI file (`lib9_ac31_…`; in the
+app, the first read of a setting opens the file, `AppPaths.cpp`).
+
+### Deviations and notes
+
+- The startup model's values are the glossary's model names in the file and
+  in both settings dialogs (`PC-1500`, `PC-1500A`, `PC-1600`; today
+  `PC1500`, …), as AC-26 says. The Web's `settingsState().defaultPresets` keeps
+  its `PC1500`-style object keys (not a stored value).
+- `[folders]` (D-2): today a pick was remembered even while a fixed folder was
+  set, and Reset went back to it. With one key, a pick while a folder is fixed
+  is not remembered; Reset makes the fixed folder the "last used" one, so the
+  dialog starts where it did before Reset (closest to today; nothing else
+  changes).
+- `shared::HostDirs` became `calcu::settings::HostDirs` (host folders) plus
+  `shared::BundleDirs` (the two bundle folders), as design §4 says.
+  `MemorySettingsStore` is replaced by `app/tests/TestSettings.hpp`, a
+  `SettingsFile::defaultsOnly` over the product's declaration (nothing read
+  or written, AC-18), instead of a file in a temporary folder; the tests that
+  need the file itself open one in a temporary folder.
+- A settings file that cannot be read, or has no or another version, goes to
+  the log (Qt6: `qWarning`; Web: the inspector's log), as EC-6 asks; no
+  notice is shown.
+- `cmake/CalcU.cmake`: `calcu_core` links `calcu_library` without the
+  `if(TARGET calcu_library)` guard (design §8).

@@ -138,10 +138,11 @@ Frequent except where the table says otherwise):
 
 | CTest entry | What | Group | Measured (M4 Pro, 2026-11-14) |
 |---|---|---|---|
-| `CoreTests` | 850 `TEST`s: unit and integration tests of the core and the app layer (real ROMs, presets, loaders, job equivalence), the machine interface (C1600-1, LIB-1 1600, LIB-2 1600), the golden replays through it (table below) | Frequent | 38.1 s (M-26, 2026-11-15) |
+| `CoreTests` | 855 `TEST`s: unit and integration tests of the core and the app layer (real ROMs, presets, loaders, job equivalence), the machine interface (C1600-1, LIB-1 1600, LIB-2 1600), the settings file (LIB-9 1600), the golden replays through it (table below) | Frequent | 39.0 s (M-30, 2026-11-15) |
 | `CalcU1600CheckPresets` | `tools/check_presets.sh`: every preset in the repository parses | Frequent | 0.3 s |
 | `CalcU1600MachineIncludeCheck` | `tools/check_machine_includes.sh`: no file outside `core/` (app, frontends, tools, dev) includes a machine class, directly or through a core header, or names one (C1600-1, Technical Requirements; design T13; M-26) | Frequent | 1.1 s |
-| | **Frequent, Calc-U-1600** | | **39.3 s** (M-26) |
+| `CalcU1600NoPlatformSettings` | `library/settings/check_platform_stores.sh` over `frontends/` with `tools/platform_stores_allowed.txt`: no setting in QSettings or `localStorage` (LIB-9 AC-31, design T-19; M-30); not registered on Windows | Frequent | 0.02 s |
+| | **Frequent, Calc-U-1600** | | **40.4 s** (M-30) |
 | `CalcU1600WebPlaywright` | `frontends/web/run-tests.sh`: Playwright, Chromium (root, sub-path) and WebKit (offline) | Longer | 22.5 s (Homebrew Emscripten 7.0, after `<cstdlib>` was added to `core/Debug/BreakpointTable.cpp`); 31 s in CI (6.0.13) |
 | `CalcU1600WasmSmoke` | `tools/build_wasm_check.sh`: core and app layer under node | Longer | 5.1 s locally without the build; 44 s in CI with the build |
 | `CalcU1600Shots.<scenario>` | the nine screenshot scenarios of `docs/developer/screenshots/guide/` run as checks, into the build tree | Longer | 39.6 s, the nine together (2.2–9.2 s each), all passed |
@@ -186,7 +187,7 @@ needs ROMs that are missing reports `SKIP`):
 | `machine_code_file_tests.cpp` | 22 | `app/tests/shared_machine_session_tests.cpp` | 7 |
 | `memory_card_tests.cpp` | 47 (the 8 YAML reader cases moved to the library in M-24) | `app/tests/shared_pacing_tests.cpp` | 3 |
 | `pacing_longrun_tests.cpp` | 4: `pacing_longrun_scripted_pc1500a`, `_pc1600` Frequent; `pacing_longrun_real_clock_pc1500a`, `_pc1600` Checkpoint (return at once without `CALCU1600_PACING_LONGRUN`) | `app/tests/shared_preset_catalog_tests.cpp` | 4 |
-| `pc1500_tape_tests.cpp` | 2 | `app/tests/shared_settings_tests.cpp` | 4 |
+| `pc1500_tape_tests.cpp` | 2 | `app/tests/shared_settings_tests.cpp` | 8 (LIB-9 AC-26–32; M-30) |
 
 ## Not in a group
 

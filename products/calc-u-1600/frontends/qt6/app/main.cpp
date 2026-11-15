@@ -110,16 +110,19 @@ int main(int argc, char** argv) {
         std::fprintf(stderr, "[shots] %s\n", qPrintable(error));
         return 2;
     }
-    // A throwaway settings store and card/disk folder: the user's own
-    // settings (default presets, last model, folders, saved cards) must not
-    // show up in the images, and the run must not change them.
+    // A throwaway home and settings folder: the user's own settings
+    // (default presets, last model, folders) and saved cards must not show
+    // up in the images, and the run must not change them (LIB-9 AC-18).
     QTemporaryDir isolated;
     if (!isolated.isValid()) {
         std::fprintf(stderr, "[shots] could not create a temporary directory\n");
         return 2;
     }
-    AppSettings::isolatedStorePath() = isolated.filePath(QStringLiteral("settings.ini"));
-    AppPaths::setIsolatedInstanceDir(isolated.filePath(QStringLiteral("instances")));
+    calcu::settings::HostDirs shotDirs;
+    shotDirs.frontend = calcu::settings::FrontendKind::Qt6;
+    shotDirs.home = isolated.filePath(QStringLiteral("home")).toStdString();
+    shotDirs.settingsBase = isolated.filePath(QStringLiteral("settings")).toStdString();
+    AppPaths::useHostDirs(shotDirs);
     // Qt's own file/color dialogs are widgets the script can capture and
     // close; the native ones are not.
     QApplication::setAttribute(Qt::AA_DontUseNativeDialogs);

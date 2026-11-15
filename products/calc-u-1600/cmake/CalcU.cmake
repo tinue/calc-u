@@ -109,9 +109,9 @@ function(calcu_add_core name)
     target_compile_options(${name} PUBLIC /utf-8)
   endif()
   target_link_libraries(${name} PUBLIC calcu_sharpdx)
-  if(TARGET calcu_library)  # absent when frontends/qt6 configures on its own
-    target_link_libraries(${name} PUBLIC calcu_library)
-  endif()
+  # The library (the root project's calcu_library): the machine interface,
+  # the settings file (LIB-9). Products do not configure on their own.
+  target_link_libraries(${name} PUBLIC calcu_library)
   if(CALCU_CORE_DEBUG_O1 AND NOT MSVC)
     target_compile_options(${name} PRIVATE $<$<CONFIG:Debug>:-O1>)
   endif()

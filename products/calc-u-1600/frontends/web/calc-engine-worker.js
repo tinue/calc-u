@@ -10,14 +10,15 @@
 //   /bundle   ROMs and the bundled cards / disks (files.json "bundle")
 //   /presets  the bundled example presets with their files ("presets")
 //   /uploads  files the user opened
-//   /persist  the save folder (cards, disks, tapes): IndexedDB (IDBFS).
+//   /persist  the save folder (cards, disks, tapes) and the settings file
+//             (settings/Calc-U-1600/Calc-U-1600.ini): IndexedDB (IDBFS).
 //             One tab at a time writes it (Web Locks); another tab gets a
 //             copy that isn't saved, and says so.
 //
 // Protocol, main thread -> worker:
-//   {type: "init", settings, model, preset}
-//                                       first: stored settings by key, and
-//                                       the start model (-1 none) and preset
+//   {type: "init", model, preset}
+//                                       first: the start model (-1 none)
+//                                       and preset
 //   {type: "call", method, args, id}    a WebController method; with an id,
 //                                       its result comes back as reply
 //   {type: "pause"} / {type: "resume"}  document.visibilitychange
@@ -26,7 +27,7 @@
 //   {type: "reply", id, value} / {type: "replyError", id, message}
 //   {type: "fatal", message}
 //   and what WebController posts itself (bindings.cpp): ui, display, lamps,
-//   paper, printer, busy, notice, log, store, audio.
+//   paper, printer, busy, notice, log, audio.
 
 const ROOT = self.CALC_ROOT || "";
 const WASM_DIR = `${ROOT}wasm/`;
@@ -127,7 +128,7 @@ function syncFromStorage(FS) {
   return new Promise((resolve) => FS.syncfs(true, (err) => resolve(err)));
 }
 
-async function init({ settings, model, preset }) {
+async function init({ model, preset }) {
   const manifest = JSON.parse(new TextDecoder().decode(await fetchBytes("files.json")));
   const fetchAll = (dir, names) => Promise.all(names.map(async (n) => [n, await fetchBytes(`${dir}/${n}`)]));
   const [mod, bundle, presets, persistent] = await Promise.all([
@@ -155,7 +156,7 @@ async function init({ settings, model, preset }) {
     lcd: Module.WebController.lcdConstants(),
     faceplates: [0, 1, 2].map((m) => Module.WebController.faceplate(m)),
   });
-  controller = new Module.WebController(settings);
+  controller = new Module.WebController();
   try {
     controller.start(model, preset);
   } catch (e) {

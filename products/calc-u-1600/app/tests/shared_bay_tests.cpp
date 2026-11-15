@@ -8,7 +8,7 @@
 #include <memory>
 #include <string>
 
-#include "MemorySettingsStore.hpp"
+#include "TestSettings.hpp"
 #include "Machine/SharpProductKinds.hpp"
 #include "app/DirectoryScanCache.hpp"
 #include "app/FloppyBay.hpp"
@@ -65,8 +65,8 @@ struct BayHooks : shared::MachineSession::Bays {
 
 struct Fixture {
     fs::path root = fs::temp_directory_path() / "calcu-shared-bay-test";
-    MemorySettingsStore store;
-    shared::Settings settings{store};
+    TestSettings testSettings;
+    shared::Settings& settings = testSettings.settings;
     std::unique_ptr<shared::AppPaths> paths;
     Listener listener;
     BayHooks bays;
@@ -83,7 +83,7 @@ struct Fixture {
             for (const auto& f : fs::directory_iterator(dir))
                 if (f.is_regular_file()) fs::copy_file(f.path(), bundle / f.path().filename());
         paths = std::make_unique<shared::AppPaths>(
-            settings, shared::HostDirs{(root / "home").generic_string(), bundle.generic_string(), {}});
+            settings, testHostDirs((root / "home").generic_string()), shared::BundleDirs{bundle.generic_string(), {}});
         session = std::make_unique<shared::MachineSession>(settings, *paths, listener, &bays);
         auto onError = [this](const std::string& e) { errors.push_back(e); };
         modules = std::make_unique<shared::ModuleBay>(*session, *paths, shared::ModuleBay::Events{{}, onError});

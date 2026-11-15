@@ -1,0 +1,14 @@
+# Uses of a platform store in frontends/ that are not settings (LIB-9
+# AC-31; library/settings/check_platform_stores.sh, CTest
+# CalcU1600NoPlatformSettings). One entry per line: `<path under
+# frontends/>: <text of the line>`.
+
+# AppKit's own defaults for this app, registered (never stored) at every
+# start: no window restoration, no press-and-hold accent picker
+# (MacAppSupport.h says why). They are not the user's settings.
+qt6/app/MacAppSupport.mm: registerDefaults:@{@"ApplePersistenceIgnoreState" : @YES}
+qt6/app/MacAppSupport.mm: registerDefaults:@{@"ApplePressAndHoldEnabled" : @NO}
+
+# The Playwright test that checks that no setting is in localStorage (AC-31).
+web/tests/play.spec.js: // file system, not localStorage; a reload keeps them.
+web/tests/play.spec.js: Object.keys(window.localStorage)

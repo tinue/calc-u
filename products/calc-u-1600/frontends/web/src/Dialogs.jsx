@@ -151,7 +151,7 @@ function LoadedDialog({ result, done }) {
 }
 
 const STARTUP_CHOICES = [
-  ["last", "Last used"], ["PC1500", "PC-1500"], ["PC1500A", "PC-1500A"], ["PC1600", "PC-1600"],
+  ["last", "Last used"], ["PC-1500", "PC-1500"], ["PC-1500A", "PC-1500A"], ["PC-1600", "PC-1600"],
 ];
 const MODEL_KEYS = ["PC1500", "PC1500A", "PC1600"];
 

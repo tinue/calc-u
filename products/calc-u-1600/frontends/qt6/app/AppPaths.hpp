@@ -3,35 +3,43 @@
 #include <string>
 
 #include "app/AppPaths.hpp"
+#include "settings/HostDirs.hpp"
 
 // Path resolution for bundled resources and the memory-module feature --
-// the one place that knows where bundled resources (*.card.yaml templates
-// AND ROM images, side by side) and user-writable battery-card instances
-// live on each platform. Bundled resources ship as loose files next to the
-// executable (not Qt's .qrc embedding, since Core's
-// scanMemoryCardDirectory()/BundledRomCatalog read a real filesystem
-// directory), and the writable instance directory defaults to
-// ~/Calc-U-1600 on every platform (not QStandardPaths::AppDataLocation, no
-// iCloud).
+// the one place that tells the library where this host's folders are and
+// where bundled resources (*.card.yaml templates AND ROM images, side by
+// side) live. Bundled resources ship as loose files next to the executable
+// (not Qt's .qrc embedding, since Core's scanMemoryCardDirectory()/
+// BundledRomCatalog read a real filesystem directory). The places the app
+// writes to come from the library (calcu::settings::Paths, LIB-9): the
+// save folder defaults to ~/Calc-U-1600 on every platform (not
+// QStandardPaths::AppDataLocation, no iCloud); the settings file,
+// Calc-U-1600.ini, is in the platform's settings folder (Application
+// Support on macOS, %APPDATA% on Windows, $XDG_CONFIG_HOME or ~/.config on
+// Linux).
 namespace AppPaths {
 
-// The shared::AppPaths every call below forwards to (Shared/AppPaths.hpp
+// The host folders of this platform: home, and the settings base of LIB-9
+// AC-2.
+calcu::settings::HostDirs platformHostDirs();
+
+// Folders of its own for this run instead of the platform's (screenshot
+// runs, `--shots`, main.cpp: a throwaway home and settings base, so the
+// user's settings and saved cards/disks neither show in the pictures nor
+// change; LIB-9 AC-18). Call before anything reads a setting or a path.
+void useHostDirs(const calcu::settings::HostDirs& dirs);
+
+// The shared::AppPaths every call below forwards to (app/AppPaths.hpp
 // has the rules); built on first use from the bundled resources folder
-// next to the executable and the home folder.
+// next to the executable and the host folders.
 shared::AppPaths& paths();
 
-// ~/Calc-U-1600 (home dir, non-dotted) -- or, in a screenshot run, the
-// throwaway folder set by setIsolatedInstanceDir() -- created if missing.
+// ~/Calc-U-1600 (home dir, non-dotted), created if missing.
 QString defaultInstanceDir();
-
-// Screenshot runs (`--shots`, main.cpp) make a throwaway folder the
-// default storage root, so the user's saved cards/disks stay out of the
-// pictures and untouched. Not a setting.
-void setIsolatedInstanceDir(const QString& dir);
 
 // `path` the way every label shows one: under defaultInstanceDir() as
 // "~/Calc-U-1600/...", else under the home folder as "~/...", else as is.
-// A screenshot run's throwaway root thus reads like a fresh install's.
+// A screenshot run's throwaway home thus reads like a fresh install's.
 QString displayPath(const QString& path);
 
 // AppSettings::instanceDirOverride() if non-empty, else

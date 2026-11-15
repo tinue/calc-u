@@ -1,52 +1,18 @@
 #pragma once
 #include <QDir>
-#include <QSettings>
 #include <QSize>
 #include <QString>
 
 #include "app/Settings.hpp"
 
 // The app's settings: key names, defaults and resolution live in
-// Shared/Settings.hpp; this file supplies the QSettings storage and keeps
-// the QString-typed calls the widgets use. The QSettings namespace uses the
-// app's own name for both organization and application, avoiding an
-// unrelated-looking reverse-DNS identifier.
+// app/Settings.hpp; the file itself is Calc-U-1600.ini, which AppPaths.cpp
+// opens on first use at the place the library gives for this platform
+// (LIB-9). This file keeps the QString-typed calls the widgets use.
 namespace AppSettings {
 
-// Non-empty: an INI file every read/write goes to instead of the user's
-// real settings. Set once at startup for scripted screenshot runs
-// (`--shots`, see main.cpp) so the user's default presets, last model,
-// folders etc. neither leak into the images nor get overwritten.
-inline QString& isolatedStorePath() {
-    static QString path;
-    return path;
-}
-
-inline QSettings backingStore() {
-    if (!isolatedStorePath().isEmpty()) return QSettings(isolatedStorePath(), QSettings::IniFormat);
-    return QSettings(QStringLiteral("Calc-U-1600"), QStringLiteral("Calc-U-1600"));
-}
-
-// shared::SettingsStore over QSettings. Opens the backing store per call,
-// so a switch to isolatedStorePath() takes effect immediately.
-class QtSettingsStore : public shared::SettingsStore {
-public:
-    std::optional<std::string> get(const std::string& key) const override {
-        const QVariant v = backingStore().value(QString::fromStdString(key));
-        if (!v.isValid()) return std::nullopt;
-        return v.toString().toStdString();
-    }
-    void set(const std::string& key, const std::string& value) override {
-        backingStore().setValue(QString::fromStdString(key), QString::fromStdString(value));
-    }
-    void remove(const std::string& key) override { backingStore().remove(QString::fromStdString(key)); }
-};
-
-inline shared::Settings& settings() {
-    static QtSettingsStore store;
-    static shared::Settings s(store);
-    return s;
-}
+// The settings over the product's settings file (defined in AppPaths.cpp).
+shared::Settings& settings();
 
 inline QString q(const std::string& s) { return QString::fromStdString(s); }
 inline std::string s(const QString& q) { return q.toStdString(); }

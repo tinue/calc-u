@@ -127,7 +127,7 @@ job::Task<void> MachineSession::switchModelJob(Model model, bool keepPeripherals
     co_await resetToPromptJob(/*allReset=*/model == Model::PC1600);
     discardAudio(); // whatever the flat-out boot beeped is stale
 
-    m_settings.setLastUsedModel(static_cast<int>(m_model));
+    m_settings.setLastUsedModel(m_model);
     m_listener.modelSwitched(m_model);
 }
 
@@ -194,7 +194,7 @@ Machine& MachineSession::resetBareForPreset(Model model, PC1600RomVersion versio
 
 void MachineSession::finishPresetLoad(Model model) {
     m_model = model;
-    m_settings.setLastUsedModel(static_cast<int>(m_model));
+    m_settings.setLastUsedModel(m_model);
     m_listener.modelSwitched(m_model);
 }
 

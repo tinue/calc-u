@@ -15,6 +15,8 @@
 #include "../core/Connector/CE1600FCard.hpp"
 #include "../core/Connector/FloppyImageFile.hpp"
 #include "../core/PC1600/PC1600BusDrive.hpp"
+#include "Files.hpp"
+#include "TempFolder.hpp"
 #include "TestHarness.hpp"
 
 namespace {
@@ -478,14 +480,12 @@ TEST(test_floppy_file_rejects_wrong_side_size) {
     CHECK(!parseFloppyFile(noB, &f, &err));
 }
 
-void writeText(const std::filesystem::path& p, const std::string& text) {
-    std::ofstream(p, std::ios::binary) << text;
-}
+using calcu::testing::writeText;
 
 TEST(test_floppy_directory_resolution_prefers_first_dir) {
     namespace fs = std::filesystem;
-    const fs::path root = fs::temp_directory_path() / "calcu_floppy_resolve_test";
-    fs::remove_all(root);
+    const calcu::testing::TempFolder tmp("calcu1600-floppy-resolve");
+    const fs::path& root = tmp.path();
     fs::create_directories(root / "bundled");
     fs::create_directories(root / "saves");
     const std::vector<uint8_t> blank(CE1600FCard::kImageSize, 0);

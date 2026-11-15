@@ -7,6 +7,7 @@
 #include <fstream>
 #include <set>
 
+#include "TempFolder.hpp"
 #include "TestSettings.hpp"
 #include "app/AppPaths.hpp"
 #include "app/PresetCatalog.hpp"
@@ -72,11 +73,11 @@ TEST(test_describe) {
     CHECK(f.paths.resolvePresetRef("/x/y.pc1600") == "/x/y.pc1600");
 
     // A preset without a name of its own: the file name stands in.
-    const fs::path plain = fs::temp_directory_path() / "calcu-catalog-plain.pc1500a";
+    const calcu::testing::TempFolder tmp("calcu1600-catalog");
+    const fs::path plain = tmp.path() / "calcu-catalog-plain.pc1500a";
     std::ofstream(plain) << "format-version: 1\nmodel: PC-1500A\n";
     const auto e = f.catalog.describe(plain.generic_string());
     CHECK(e && e->name == "calcu-catalog-plain" && !e->hasName && e->description.empty());
-    fs::remove(plain);
     CHECK(!f.catalog.describe("examples:no/such.pc1600"));
 }
 

@@ -304,10 +304,9 @@ const char* kSysRom = "roms/PC-1500_A04.ROM";
 const char* kCe150Rom = "roms/CE-150.ROM";
 const char* kCe158Rom = "roms/CE-158.ROM";
 
-bool fileExists(const char* p) { std::ifstream f(p); return f.good(); }
 
 bool haveRoms(const char* test) {
-    if (fileExists(kSysRom) && fileExists(kCe150Rom) && fileExists(kCe158Rom)) return true;
+    if (testRomSet()) return true;   // the one lookup (LIB-12)
     (void)test;
     testharness::skip((std::string("run from the repo root (needs ") + kSysRom + ", " + kCe150Rom + ", " + kCe158Rom + ")").c_str());
     return false;
@@ -449,7 +448,7 @@ TEST(test_pc1600_ce158_and_ce1600p_exclusive) {
 }
 
 bool havePC1600Roms(const char* test) {
-    if (fileExists("roms/PC1600-P0-B0-new.bin") && fileExists(kCe158Rom)) return true;
+    if (testRomSet()) return true;
     (void)test;
     testharness::skip((std::string("run from the repo root (needs the PC-1600 ROM set + ") + kCe158Rom + ")").c_str());
     return false;

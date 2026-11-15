@@ -24,11 +24,6 @@ namespace {
 namespace fs = std::filesystem;
 using shared::Model;
 
-bool romsPresent() {
-    return std::ifstream("roms/PC-1500_A04.ROM").good() && std::ifstream("roms/PC1600-P0-B0-new.bin").good() &&
-           std::ifstream("roms/CE-158.ROM").good();
-}
-
 struct Fixture : sessionfixture::SessionFixture {
     fs::path links = root / "links";
     Fixture() : SessionFixture("calcu-serial-links-test") {
@@ -45,7 +40,7 @@ bool linkExists(const fs::path& p) {
 #if SERIAL_TESTS_HAVE_PTY
 
 TEST(lib2_ac33_pc1600_rs232c_file) {
-    SKIP_UNLESS(romsPresent(), "no ROMs in roms/");
+    SKIP_UNLESS(fullRomSetPresent(), "no ROMs in roms/");
     Fixture f;
     CHECK(f.start("PC-1600"));
     // At once when a PC-1600 exists, before anything uses the port.
@@ -57,7 +52,7 @@ TEST(lib2_ac33_pc1600_rs232c_file) {
 }
 
 TEST(lib2_ac33_ce158_file_on_first_use_all_models) {
-    SKIP_UNLESS(romsPresent(), "no ROMs in roms/");
+    SKIP_UNLESS(fullRomSetPresent(), "no ROMs in roms/");
     for (Model model : {Model::PC1500, Model::PC1500A, Model::PC1600}) {
         Fixture f;
         CHECK(f.start(shared::settingsModelName(model)));

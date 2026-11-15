@@ -3,6 +3,8 @@
 
 #include "app/AppPaths.hpp"
 #include "app/Settings.hpp"
+#include "Machine/SharpRoms.hpp"
+#include "roms/Bundle.hpp"
 #include "settings/HostDirs.hpp"
 #include "settings/SettingsFile.hpp"
 
@@ -25,4 +27,11 @@ inline calcu::settings::HostDirs testHostDirs(const std::string& home) {
     dirs.home = home;
     dirs.settingsBase = home + "/settings";
     return dirs;
+}
+
+// The full ROM set is in roms/ (the product directory): through the one
+// lookup (LIB-12), looked up once; the tests that boot a machine skip without it.
+inline bool fullRomSetPresent() {
+    static const bool ok = sharp::lookUpRoms(calcu::roms::DirectoryBundle("roms")).ok();
+    return ok;
 }

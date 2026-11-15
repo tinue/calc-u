@@ -359,7 +359,7 @@ TEST(test_expect_pc1600) {
         PC1600Machine m;
         SKIP_UNLESS(loadPC1600Roms(m), "PC-1600 ROMs not found");   // the preset loader boots whatever ROMs are loaded
         const PresetLoadResult r = applyPC1600Preset(m, p, {}, "/tmp", ".", {}, testPresetRoms());
-        SKIP_UNLESS(!(!r.ok && r.error.find("ROM") != std::string::npos && r.error.find("expect") == std::string::npos), r.error.c_str());
+        SKIP_UNLESS(r.ok || r.error.find("ROM") == std::string::npos || r.error.find("expect") != std::string::npos, r.error.c_str());
         CHECK(r.ok == c.ok);
         if (!c.ok) CHECK(r.error.find("11834") != std::string::npos); // the failure shows the screen
         if (r.ok != c.ok) std::fprintf(stderr, "  %s-> %s\n", c.text, r.error.c_str());
@@ -373,7 +373,7 @@ TEST(test_expect_pc1500) {
                             "/tmp/lcd_text_tests_scratch.pc1500", &p, &err));
     PC1500Machine m;
     const PresetLoadResult r = applyPC1500Preset(m, p, {}, "/tmp", ".", {}, testPresetRoms());
-    SKIP_UNLESS(!(!r.ok && r.error.find("ROM") != std::string::npos && r.error.find("expect") == std::string::npos), r.error.c_str());
+    SKIP_UNLESS(r.ok || r.error.find("ROM") == std::string::npos || r.error.find("expect") != std::string::npos, r.error.c_str());
     CHECK(r.ok);
     if (!r.ok) std::fprintf(stderr, "  %s\n", r.error.c_str());
 }

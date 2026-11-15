@@ -195,7 +195,8 @@ bool writeTextFile(const std::string& path, const std::string& text) {
 TEST(test_loader_machine_binary_header) {
     PC1600Machine m;
     SKIP_UNLESS(loadPC1600Roms(m), "PC-1600 ROM images not found");
-    const std::string bin = "/tmp/pc1600_ml_header.bin";
+    const calcu::testing::TempFolder tmp("calcu1600-ml");
+    const std::string bin = tmp / "pc1600_ml_header.bin";
     CHECK(writeFile(bin, mlFile({0xC9, 0x3E, 0xC9}, /*load=*/0xD000, /*autorun=*/0, /*declared=*/3)));
 
     PresetFile p;
@@ -216,7 +217,8 @@ TEST(test_loader_machine_binary_length_mismatch) {
     PC1600Machine m;
     SKIP_UNLESS(loadPC1600Roms(m), "PC-1600 ROM images not found");
     // Header claims 1 payload byte; the file actually carries 4.
-    const std::string bin = "/tmp/pc1600_ml_mismatch.bin";
+    const calcu::testing::TempFolder tmp("calcu1600-ml");
+    const std::string bin = tmp / "pc1600_ml_mismatch.bin";
     CHECK(writeFile(bin, mlFile({0x11, 0x22, 0x33, 0x44}, 0xD100, 0, /*declared=*/1)));
 
     PresetFile p;
@@ -244,7 +246,8 @@ TEST(test_loader_machine_binary_length_mismatch) {
 TEST(test_loader_machine_binary_headerless) {
     PC1600Machine m;
     SKIP_UNLESS(loadPC1600Roms(m), "PC-1600 ROM images not found");
-    const std::string bin = "/tmp/pc1600_ml_raw.bin";
+    const calcu::testing::TempFolder tmp("calcu1600-ml");
+    const std::string bin = tmp / "pc1600_ml_raw.bin";
     CHECK(writeFile(bin, {0xAA, 0xBB, 0xCC, 0xDD}));
 
     PresetFile p;
@@ -272,7 +275,8 @@ TEST(test_loader_machine_binary_headerless) {
 TEST(test_loader_machine_binary_headerless_address_only_and_ce158) {
     PC1600Machine m;
     SKIP_UNLESS(loadPC1600Roms(m), "PC-1600 ROM images not found");
-    const std::string bin = "/tmp/pc1600_ml_raw_addr.bin";
+    const calcu::testing::TempFolder tmp("calcu1600-ml");
+    const std::string bin = tmp / "pc1600_ml_raw_addr.bin";
     CHECK(writeFile(bin, {0x12, 0x34, 0x56}));
     PresetFile p;
     std::string err;
@@ -291,7 +295,7 @@ TEST(test_loader_machine_binary_headerless_address_only_and_ce158) {
         ce158.push_back(static_cast<uint8_t>(v & 0xFF));
     }
     ce158.push_back(0x9A);
-    const std::string ce158Bin = "/tmp/pc1600_ml_ce158.bin";
+    const std::string ce158Bin = tmp / "pc1600_ml_ce158.bin";
     CHECK(writeFile(ce158Bin, ce158));
     PC1600Machine m2;
     loadPC1600Roms(m2);
@@ -310,7 +314,8 @@ TEST(test_loader_machine_binary_headerless_address_only_and_ce158) {
 TEST(test_loader_machine_binary_autorun) {
     PC1600Machine m;
     SKIP_UNLESS(loadPC1600Roms(m), "PC-1600 ROM images not found");
-    const std::string bin = "/tmp/pc1600_ml_autorun.bin";
+    const calcu::testing::TempFolder tmp("calcu1600-ml");
+    const std::string bin = tmp / "pc1600_ml_autorun.bin";
     CHECK(writeFile(bin, mlFile({0xC9}, /*load=*/0xD300, /*autorun=*/0xD300, /*declared=*/1)));
 
     PresetFile p;
@@ -330,7 +335,8 @@ TEST(test_loader_machine_binary_autorun) {
 TEST(test_loader_machine_binary_autorun_slot2) {
     PC1600Machine m;
     SKIP_UNLESS(loadPC1600Roms(m), "PC-1600 ROM images not found");
-    const std::string bin = "/tmp/pc1600_ml_autorun_s2.bin";
+    const calcu::testing::TempFolder tmp("calcu1600-ml");
+    const std::string bin = tmp / "pc1600_ml_autorun_s2.bin";
     // LD A,5AH / LD (D300H),A / RET
     CHECK(writeFile(bin, mlFile({0x3E, 0x5A, 0x32, 0x00, 0xD3, 0xC9}, /*load=*/0x8100, /*autorun=*/0x8100,
                                 /*declared=*/6)));
@@ -355,7 +361,8 @@ TEST(test_loader_machine_binary_autorun_slot2) {
 TEST(test_loader_machine_binary_mode1) {
     PC1600Machine m;
     SKIP_UNLESS(loadPC1600Roms(m), "PC-1600 ROM images not found");
-    const std::string bin = "/tmp/pc1600_ml_mode1.bin";
+    const calcu::testing::TempFolder tmp("calcu1600-ml");
+    const std::string bin = tmp / "pc1600_ml_mode1.bin";
     CHECK(writeFile(bin, {0x5A, 0xA5}));
     std::vector<uint8_t> ce158 = {0x01, 0x42, 'C', 'O', 'M'};
     ce158.resize(5 + 16, 0);
@@ -364,7 +371,7 @@ TEST(test_loader_machine_binary_mode1) {
         ce158.push_back(static_cast<uint8_t>(v & 0xFF));
     }
     ce158.push_back(0x9A);
-    const std::string ce158Bin = "/tmp/pc1600_ml_mode1_ce158.bin";
+    const std::string ce158Bin = tmp / "pc1600_ml_mode1_ce158.bin";
     CHECK(writeFile(ce158Bin, ce158));
     PresetFile p;
     std::string err;
@@ -382,7 +389,8 @@ TEST(test_loader_machine_binary_mode1) {
 TEST(test_loader_machine_binary_title_s1) {
     PC1600Machine m;
     SKIP_UNLESS(loadPC1600Roms(m), "PC-1600 ROM images not found");
-    const std::string bin = "/tmp/pc1600_ml_title_s1.bin";
+    const calcu::testing::TempFolder tmp("calcu1600-ml");
+    const std::string bin = tmp / "pc1600_ml_title_s1.bin";
     CHECK(writeFile(bin, {0x11, 0x22, 0x33}));
     PresetFile p;
     std::string err;

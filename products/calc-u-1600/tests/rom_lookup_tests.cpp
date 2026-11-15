@@ -17,6 +17,8 @@
 #include <vector>
 
 #include "../../calc-u-59/tests/Md5.hpp"   // the test MD5 of LIB-12 (test code only)
+#include "Files.hpp"
+#include "TempFolder.hpp"
 #include "../app/tests/TestSettings.hpp"
 #include "Machine/SharpCatalogue.hpp"
 #include "Connector/MemoryCardCatalog.hpp"
@@ -72,12 +74,7 @@ const std::vector<Row> kAc12 = {
 constexpr const char* kCe502bFile = "CE-502B.card.yaml";
 constexpr const char* kCe502bMd5 = "7c7af4b7adab69b5e75297bc1c3d7279";
 
-std::string readText(const fs::path& p) {
-    std::ifstream f(p, std::ios::binary);
-    std::ostringstream ss;
-    ss << f.rdbuf();
-    return ss.str();
-}
+using calcu::testing::readText;
 
 const FileProblem* problemOf(const RomsMissing& m, const std::string& name) {
     for (const auto& f : m.files)
@@ -88,17 +85,12 @@ const FileProblem* problemOf(const RomsMissing& m, const std::string& name) {
 // A copy of roms/ in a folder of its own (the files of the full set only),
 // for a bundle with one file taken away or changed.
 struct BundleCopy {
-    fs::path dir;
-    explicit BundleCopy(const std::string& tag) : dir(fs::temp_directory_path() / ("calcu1600-roms-" + tag)) {
-        fs::remove_all(dir);
-        fs::create_directories(dir);
+    calcu::testing::TempFolder folder;
+    fs::path dir = folder.path();
+    explicit BundleCopy(const std::string& tag) : folder("calcu1600-roms-" + tag) {
         for (const auto& f : sharp::fullRomSet().files) fs::copy_file(fs::path("roms") / f.entry.fileName, dir / f.entry.fileName);
     }
-    ~BundleCopy() {
-        std::error_code ec;
-        fs::remove_all(dir, ec);
-    }
-    void remove(const std::string& file) const { fs::remove(dir / file); }
+    void remove(const std::string& file) const { folder.remove(file); }
 };
 
 // The library's app session with Calc-U-1600's part, its bundled resources

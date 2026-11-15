@@ -93,3 +93,6 @@ if(CALCU_TESTS AND NOT EMSCRIPTEN)
     set_tests_properties(LibraryPlatformStoreCheck PROPERTIES LABELS frequent)
   endif()
 endif()
+
+# LIB-15: the Web frontend shell (library/web/).
+add_subdirectory(web)

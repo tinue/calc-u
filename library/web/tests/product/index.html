@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>CalcUTest host page</title>
+<!-- A host page as calc-u-site writes one (LIB-15 AC-15): React 18 as a
+     global, calc.css, calc.js as a classic script, the component mounted.
+     Its own styles are the host's (AC-17). Query: model, preset, width,
+     height, keyboard=0, worker (a workerUrl), twice=1 (two components on
+     one page, AC-8), fill=1 (a parent of 400 x 300 and no size props). -->
+<style>
+  body { margin: 8px; font-family: Georgia, serif; color: rgb(1, 2, 3); }
+  button { color: rgb(4, 5, 6); }
+  .host-title { color: rgb(7, 8, 9); }
+  .host-box { width: 400px; height: 300px; }
+</style>
+<link rel="stylesheet" href="calc.css">
+</head>
+<body>
+<h1 class="host-title">Host page</h1>
+<button type="button" class="host-button">Host button</button>
+<div id="root"></div>
+<script src="vendor/react.production.min.js"></script>
+<script src="vendor/react-dom.production.min.js"></script>
+<script src="calc.js"></script>
+<script>
+  const q = new URLSearchParams(location.search);
+  const base = {};
+  if (q.has("model")) base.model = q.get("model");
+  if (q.has("preset")) base.preset = q.get("preset");
+  if (q.has("width")) base.width = Number(q.get("width"));
+  if (q.has("height")) base.height = Number(q.get("height"));
+  if (q.get("keyboard") === "0") base.keyboard = false;
+  if (q.has("worker")) base.workerUrl = new URL(q.get("worker"), location.href).href;
+  const fill = q.get("fill") === "1";
+  if (!fill && !("width" in base)) { base.width = 480; base.height = 320; }
+  const root = ReactDOM.createRoot(document.getElementById("root"));
+  window.calcuRender = (extra) => {
+    const props = { ...base, ...(extra || {}) };
+    const one = (key) => React.createElement(CalcUTest, { key, ...props });
+    const children = q.get("twice") === "1" ? [one("a"), one("b")] : [one("a")];
+    root.render(fill ? React.createElement("div", { className: "host-box" }, children) : children);
+  };
+  window.calcuRender();
+</script>
+</body>
+</html>

@@ -112,6 +112,11 @@ struct AppSession::Impl final : SessionContext, SessionSetup {
     CallId currentCall() const override { return current; }
     pacing::WallTime wallTime() const override { return setup.clock ? setup.clock() : pacing::WallTime{0}; }
     bool virtualTime() const override { return setup.hosting == Hosting::VirtualTime; }
+    bool startOperation(Operation op) override {
+        if (running) return false;
+        start(0, 0, std::move(op));   // call 0: no reply (endOperation)
+        return true;
+    }
     void tellRestarted(Restart r) override {
         for (SessionPart* p : setup.parts) p->machineRestarted(*this, r);
     }
@@ -337,7 +342,8 @@ void AppSession::Impl::start(ListenerId l, CallId id, Operation op) {
     try {
         r->job = Job<OperationResult>(r->op(*r->ctx));
     } catch (const std::exception& e) {
-        reply(l, id, false, e.what());
+        if (id) reply(l, id, false, e.what());
+        else notice(e.what());
         return;
     }
     running = std::move(r);
@@ -356,7 +362,7 @@ void AppSession::Impl::endOperation() {
     std::unique_ptr<Running> r = std::move(running);
     OperationResult res = r->result();
     if (!res.ok && res.message.empty()) res.message = "The operation failed.";
-    reply(r->listener, r->call, res.ok, res.ok ? std::string() : res.message);
+    if (r->call) reply(r->listener, r->call, res.ok, res.ok ? std::string() : res.message, res.ok ? res.result : nullptr);
     if (!res.ok) notice(res.message);
     ms.setReportsWaiting(true);
     ms.startAfresh();
@@ -365,7 +371,7 @@ void AppSession::Impl::endOperation() {
 
 void AppSession::Impl::stopOperation() {   // LIB-18 AC-16, D-7
     std::unique_ptr<Running> r = std::move(running);
-    reply(r->listener, r->call, false, kStopped);
+    if (r->call) reply(r->listener, r->call, false, kStopped);
     ms.setReportsWaiting(true);
     ms.startAfresh();
     for (SessionPart* p : setup.parts) p->operationEnded(*this);

@@ -86,6 +86,9 @@ public:
     // The one advance: in pieces cut at each hook's nextDue, through the gate
     // when one is set; at least `atLeast` ticks unless the gate stops.
     machine::Ticks advance(machine::Ticks atLeast, bool& stoppedEarly);
+    // The earliest tick a hook is due at from now (kNever: none): a host
+    // that waits for a hook's work ends its advances there (LIB-5 D-5).
+    machine::Ticks nextDue() const;
     // AC-22: key readiness or a waiting media place, unless switched off.
     bool waitsForInput() const;
     void setReportsWaiting(bool r) { reportsWaiting_ = r; }

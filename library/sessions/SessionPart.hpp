@@ -23,7 +23,11 @@ class MachineSession;
 struct Done { PayloadPtr result; };
 struct Refused { std::string reason; };   // a refused command changes nothing (AC-13)
 struct StartOperation { Operation op; };  // refused while another runs (AC-16)
-using CommandOutcome = std::variant<Done, Refused, StartOperation>;
+// The reply comes later, through SessionContext::reply(currentCall(), …),
+// once; the session is not busy meanwhile (LIB-5 design §3.5, D-4: `key`
+// and `type`; LIB-10's `pause` and `step` from M-40).
+struct Deferred {};
+using CommandOutcome = std::variant<Done, Refused, StartOperation, Deferred>;
 
 // What parts, handlers and operations see, on the session's thread.
 class SessionContext {
@@ -49,6 +53,11 @@ public:
     // in a product's own form (Calc-U-1600's Web page, M-31). Nobody else
     // reads the machine's display (LIB-1 §3.5: one reader).
     virtual const machine::DisplayOutput* display() const { return nullptr; }
+    // A deferred reply (LIB-5 §3.5): the call of the command whose handler
+    // runs now (0 outside one), and its reply later, once; a second reply,
+    // or one to a call that did not defer, is ignored.
+    virtual CallId currentCall() const { return 0; }
+    virtual void reply(CallId, ReplyMessage) {}
 
 protected:
     ~SessionContext() = default;

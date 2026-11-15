@@ -86,6 +86,14 @@ Ticks MachineSession::advance(Ticks atLeast, bool& stoppedEarly) {
     return ran;
 }
 
+Ticks MachineSession::nextDue() const {
+    if (!machine_) return kNever;
+    const Ticks now = machine_->tickCount();
+    Ticks due = kNever;
+    for (const SliceHook* h : hooks_) due = std::min(due, h->nextDue(now));
+    return due;
+}
+
 bool MachineSession::waitsForInput() const {
     if (!reportsWaiting_ || !machine_) return false;
     if (machine_->isKeyReady()) return true;

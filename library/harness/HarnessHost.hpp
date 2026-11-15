@@ -64,8 +64,11 @@ public:
     HarnessHost& operator=(const HarnessHost&) = delete;
 
     // session.send(me, cmd): an operation it starts runs to its end inside
-    // send() (VirtualTime), so the reply is that of its end (AC-7).
-    sessions::ReplyMessage command(sessions::Command);
+    // send() (VirtualTime), so the reply is that of its end (AC-7). A
+    // deferred reply (LIB-5 §3.5, D-5: `key`, `type`) is waited for in
+    // virtual time, in pieces of 1/60 s, at most one hour of emulated time;
+    // then the reply is "not done" with `giveUp`.
+    sessions::ReplyMessage command(sessions::Command, std::string_view giveUp = {});
     sessions::ReplyMessage ask(sessions::Request);
     machine::Ticks advance(machine::Ticks);       // AC-6, AC-9: session.advanceUnpaced
     std::optional<TopicRead> readTopic(std::string_view name);   // AC-11, EC-5

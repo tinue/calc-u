@@ -47,5 +47,7 @@ private:
 // key-down, key-up, lcd, display, state, capabilities, ticks, audio,
 // state-save, state-restore, quit.
 void addFirstCommands(CommandRegistry&);
+// LIB-5: key, type (TypingCommands.cpp); called by addFirstCommands.
+void addTypingCommands(CommandRegistry&);
 
 } // namespace calcu::harness

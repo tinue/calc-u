@@ -200,6 +200,7 @@ void addFirstCommands(CommandRegistry& r) {
     r.add("wait", waitCmd, "wait <duration>          let emulated time pass: 2s, 1.5s, 500ms");
     r.add("key-down", keyCmd(true), "key-down <key ID>        the key down");
     r.add("key-up", keyCmd(false), "key-up <key ID>          the key up");
+    addTypingCommands(r);
     r.add("lcd", lcdCmd, "lcd                      the display as text");
     r.add("display", displayCmd, "display                  the display output as the machine gives it");
     r.add("state", stateCmd, "state <topic>            the state of a topic, or what a stream appended");

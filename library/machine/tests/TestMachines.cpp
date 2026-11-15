@@ -178,6 +178,7 @@ BuildResult TestBuilder::build(const BuildRequest& req, const Catalogue& cat) {
     const MachineDescriptor* d = cat.model(req.model);
     if (!d) return BuildResult{nullptr, {}, "unknown model"};
     auto m = std::make_unique<TestMachine>(*d, req.variant, req.soundRate);
+    if (auto s = std::dynamic_pointer_cast<const TestStartUp>(req.content)) m->setStartUp(s->ticks);
     if (auto t = std::dynamic_pointer_cast<const TestSegTiming>(req.content); t && req.model == kSeg)
         m->setTiming(std::move(t));
     std::vector<PlaceName> taken;
@@ -192,6 +193,7 @@ BuildResult TestBuilder::build(const BuildRequest& req, const Catalogue& cat) {
         taken.push_back(p.place.steps[0]);
         m->plugAtBuild(p, cat);
     }
+    ++builds;
     return BuildResult{std::move(m), {}, {}};
 }
 

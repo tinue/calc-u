@@ -65,8 +65,9 @@ public:
 
     virtual StateTopic& stateTopic(TopicName) = 0;
     virtual StreamTopic& streamTopic(TopicName, History) = 0;
-    // endsRunningOperation: the command first stops a running operation
-    // (Reset, Cold boot, a model switch; LIB-18 AC-16).
+    // endsRunningOperation: when its handler starts an operation, the
+    // command first stops a running one (Reset, Cold boot, a model switch;
+    // LIB-18 AC-16, D-6); a handler that gives Done or Refused stops nothing.
     virtual void command(CommandName, Handler, bool endsRunningOperation = false) = 0;
     virtual void request(RequestName, RequestHandler) = 0;
 

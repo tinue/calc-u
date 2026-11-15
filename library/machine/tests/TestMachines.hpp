@@ -97,6 +97,16 @@ struct TestModuleDefinition : ProductData {
 
 // The build option of test-seg for the pacing tests (LIB-1 D-8), handed in
 // as BuildRequest::content.
+// The build option of both models for LIB-18's tests (design §2): the
+// start-up after a build, reset, power cycle and cold boot lasts `ticks`
+// instead of kStartUpTicks; kNever: the machine never reports key readiness
+// (EC-7). Handed in as BuildRequest::content.
+struct TestStartUp : ProductData {
+    static constexpr Ticks kNever = ~Ticks{0};
+    explicit TestStartUp(Ticks t) : ticks(t) {}
+    Ticks ticks;
+};
+
 struct TestSegTiming : ProductData {
     TestSegTiming(Ticks length, std::uint64_t loop) : instructionLength(length), loopLength(loop) {}
     Ticks instructionLength;   // ticks of every instruction, at least 1
@@ -116,6 +126,7 @@ PeripheralRequest peripheralAt(const Catalogue&, const std::string& place, const
 class TestBuilder : public MachineBuilder {
 public:
     BuildResult build(const BuildRequest&, const Catalogue&) override;
+    int builds = 0;   // the machines built (LIB-18 AC-5)
 };
 
 // The test UART: one byte every 10 ms of the emulated time since it was
@@ -178,7 +189,7 @@ public:
     void reset() override;
     void powerCycle() override;
     void coldBoot() override;
-    bool isKeyReady() const override { return sinceStart_ >= kStartUpTicks; }
+    bool isKeyReady() const override { return sinceStart_ >= startUpTicks_; }
     KeyCall keyDown(const KeyId&) override;
     KeyCall keyUp(const KeyId&) override;
     DisplayOutput readDisplay() override;
@@ -204,6 +215,8 @@ public:
     std::uint64_t instructionsRun() const { return generic_.instructions; }
     std::uint64_t innerCycles() const { return innerCycles_; }
     void setTiming(std::shared_ptr<const TestSegTiming> t) { timing_ = std::move(t); }
+    void setStartUp(Ticks t) { startUpTicks_ = t; }   // TestStartUp
+    std::uint64_t presses() const { return presses_; }   // the machine's memory
     // The instruction of the loop the machine is at (0 without a timing).
     std::uint64_t loopPosition() const { return timing_ ? generic_.instructions % timing_->loopLength : 0; }
     // LIB-11 AC-24: the machine-state capability (not by default).
@@ -243,6 +256,7 @@ private:
     int soundRate_;
     Ticks ticks_ = 0;
     Ticks sinceStart_ = 0;
+    Ticks startUpTicks_ = kStartUpTicks;
     std::uint64_t presses_ = 0;   // the machine's memory: a cold boot clears it
     bool displayOn_ = true;
     std::uint64_t innerCycles_ = 0, innerRest_ = 0;

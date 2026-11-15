@@ -46,6 +46,9 @@ if(CALCU_HAS_PTY OR CALCU_ATTACH)
   target_link_libraries(calcu_library PUBLIC Threads::Threads)
 endif()
 target_include_directories(calcu_library PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+if(CALCU_ATTACH)
+  target_compile_definitions(calcu_library PUBLIC CALCU_ATTACH=1)
+endif()
 target_compile_features(calcu_library PUBLIC cxx_std_20)  # ADR 0005
 # Calc-U-59's static libraries end up in a shared object (ti59headless).
 set_target_properties(calcu_library PROPERTIES POSITION_INDEPENDENT_CODE ON)

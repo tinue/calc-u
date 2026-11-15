@@ -61,11 +61,15 @@ target_include_directories(calcu59_core PUBLIC ${CORE_ROOT})
 target_compile_options(calcu59_core PRIVATE ${CALCU59_WARNINGS})
 set_target_properties(calcu59_core PROPERTIES POSITION_INDEPENDENT_CODE ON)
 # The core holds no lock and starts no thread (ADR 0009); the app layer's
-# runner thread needs Threads (until M-33).
+# one thread is the Swift frontend's session thread (SessionThread, C59-5).
 target_link_libraries(calcu59_core PUBLIC calcu_library)
 
 file(GLOB SHARED_SOURCES CONFIGURE_DEPENDS ${SHARED_ROOT}/*.cpp)
 list(REMOVE_ITEM SHARED_SOURCES ${SHARED_ROOT}/HarnessProduct.cpp)   # calcu59_harness below
+if(EMSCRIPTEN)
+  # The Swift frontend's session thread (C59-5): never in the Web engine.
+  list(REMOVE_ITEM SHARED_SOURCES ${SHARED_ROOT}/SessionThread.cpp)
+endif()
 add_library(calcu59_shared STATIC ${SHARED_SOURCES})
 target_include_directories(calcu59_shared PUBLIC ${SHARED_ROOT})
 find_package(Threads REQUIRED)

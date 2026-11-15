@@ -121,6 +121,23 @@ clauses of AC-24, AC-25, AC-31, AC-34 and AC-53 are tested again with the
 product rows (M-46, M-54). The Library column stays **In progress**; it
 becomes Done in M-41 (D-29).
 
+### The clauses that passed in M-41 (LIB-7; design §1, D-29)
+
+Checked on 2026-11-15 on branch `m41-media` (`calcu_library_tests` 729
+tests, 0 failed):
+
+| ID | Clause | Result | Test case |
+|---|---|---|---|
+| AC-3 | a module by `file:` | Pass (M-41) | `lib6_ac3_module_by_file_reference` (`library/media/tests/preset_media_tests.cpp`: `slot-1: { file: … }` resolved by LIB-7's resolver, `Vocabulary::setPlaceResolver`; a file that is no module medium refused at its line); without a resolver `file:` is refused as before: `ac3_module_by_file_refused_without_a_resolver` (renamed from `ac3_module_by_file_refused_until_lib7`, `header_tests.cpp`) |
+| (bundle.md §3) | `checkBundle` accepts a file a preset names that is a bundled medium or module of the product | Pass (M-41) | `lib6_check_bundle_accepts_bundled_media` (same file; `Vocabulary::setBundledMedium`) |
+
+`PlaceKeyRule::byFile` is on by default now; a product narrows a place
+with `placeKey()` as before. A step on its own (`run-step`, the harness's
+step commands) reads the file its reference names, absolute or relative to
+the current folder (LIB-11 AC-22; it was refused). The column stays **In
+progress**: AC-19's debugger steps and AC-63's `debug-panel:` pass with
+LIB-10 in M-40 (D-29).
+
 ### Exit check of M-38
 
 Library tests with sections built for the tests: the 105 cases of

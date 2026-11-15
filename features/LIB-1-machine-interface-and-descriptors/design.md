@@ -98,6 +98,10 @@ not named here adds a folder in the same pattern.
   - `paper`: `machine`, `sessions`, `formats`, `presets`, `startup`
     (LIB-8 design §2; M-39). Nothing includes it but `harness`, `qt6`
     and the products;
+  - `media`: `machine`, `formats`, `settings`, `sessions`, `peripherals`,
+    `presets`, `startup` (LIB-7 design §2; M-41; `control` not needed: the
+    part computes what fits from the catalogue, its S-1 fallback). Nothing
+    includes it but `harness`, `qt6` and the products;
   - `harness`: any area but `web` and `qt6`;
   - `qt6` (the Qt6 component set, its own target, below): any area but
     `harness` and `web`, and Qt;
@@ -184,7 +188,8 @@ not named here adds a folder in the same pattern.
 | LIB-12 ROM lookup | `library/roms/` | `calcu::roms` | LIB-12 design |
 | LIB-15 Web frontend shell (JavaScript in `library/web/src/`, tests in `library/web/tests/`; C++ glue in `library/web/glue/`, `calcu_web_glue`) | `library/web/` | `calcu::web` (C++ only) | LIB-15 design |
 | LIB-8 paper output: the kind, the paper, the picture, the replies, the session part (M-39); the PNG writer in `library/formats/Png.*` | `library/paper/` | `calcu::paper` | LIB-8 design |
-| the Qt6 component set (`calcu_qt6`; LIB-8's paper panel from M-39, then LIB-10, LIB-7, LIB-14) | `library/qt6/` | `calcu::qt6` | LIB-8 D-1, LIB-14 §2.2 |
+| LIB-7 media and save folder: the kinds behind one seam, names, the media kind (`MediaPlace`, `ModuleMedium`), the shelf, the save rules, the media part and topic, media in presets, the media place check of LIB-1 D-1 (`Conformance.*`; M-41) | `library/media/` | `calcu::media` | LIB-7 design |
+| the Qt6 component set (`calcu_qt6`; LIB-8's paper panel from M-39, LIB-7's media picker and Name & Save dialog from M-41, then LIB-10, LIB-14) | `library/qt6/` | `calcu::qt6` | LIB-8 D-1, LIB-14 §2.2 |
 | the React component set (classic scripts in `COMPONENT_SOURCES`, names prefixed `Calcu`/`calcu`/`Shell`; LIB-8's paper panel from M-39) | `library/web/components/` | (JavaScript) | LIB-8 D-1, LIB-14 §2.3 |
 
 (Table reconciled with the C1 designs, 2026-11-14; the C2 rows from M-39.)
@@ -514,7 +519,9 @@ positions × segments or width × height, indicator names), that
 `keyDown`/`keyUp` take every descriptor key and refuse a made-up one,
 the places in `plugged()` and the fit of each peripheral
 (`Catalogue::place`) and `debugTargets()`. LIB-7 adds the check of one
-capability of the media place kind per media place in M-41 (D-1). Every key it presses it releases
+capability of the media place kind per media place in M-41 (D-1), as
+`media::checkMediaPlaces(Machine&, const Catalogue&)` in `library/media/`
+(the machine area names no kind); product tests call both. Every key it presses it releases
 again. Product tests call it for every model and variant.
 
 ## 4. Product side

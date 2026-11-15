@@ -547,7 +547,7 @@ static cu59::SessionThread::ReplyHandler flagReply(void (^done)(BOOL)) {
 
 // ── Card reader ──────────────────────────────────────────────────────────────
 
-- (BOOL)cardSwiping { const auto* c = [self card]; return c && c->state == cu59::SessionController::CardState::Swiping; }
+- (BOOL)cardSwiping { const auto* c = [self card]; return c && c->state == cu59::CardState::Swiping; }
 - (NSString *)cardFileName { const auto* c = [self card]; return c ? ns(c->fileName) : @"card.U59"; }
 - (void)fitCard:(NSData *)raw path:(NSString *)path fileName:(NSString *)fileName completion:(void (^)(BOOL))done {
     [self send:cu59::commands::kFitCard args:argsWithBytes({{"path", cpp(path)}, {"name", cpp(fileName)}}, raw)
@@ -575,8 +575,8 @@ static cu59::SessionThread::ReplyHandler flagReply(void (^done)(BOOL)) {
 // ── Dropped files ────────────────────────────────────────────────────────────
 
 - (BOOL)acceptsDroppedFile:(NSString *)fileName {
-    using Drop = cu59::SessionController::DropAction;
-    const Drop a = cu59::SessionController::dropActionFor(cpp(fileName), static_cast<cu59::Model>(self.model));
+    using Drop = cu59::DropAction;
+    const Drop a = cu59::dropActionFor(cpp(fileName), static_cast<cu59::Model>(self.model));
     return a == Drop::LoadPreset || a == Drop::FitCard ? YES : NO;
 }
 - (void)openDroppedFile:(NSData *)raw path:(NSString *)path fileName:(NSString *)fileName completion:(void (^)(BOOL))done {

@@ -1,4 +1,5 @@
 #include "TIAppPart.hpp"
+#include "TIAppPartInternal.hpp"
 #include "PacingProfiles.hpp"
 #include "../core/TIAdapters.hpp"
 #include "sessions/LibraryTopics.hpp"
@@ -32,7 +33,7 @@ Value TIPrinterState::toValue() const {
     return Value::object({{"connected", connected}, {"trace", trace}, {"lines", Value(std::move(l))}});
 }
 Value TICardReaderState::toValue() const {
-    return Value::object({{"swiping", state == SessionController::CardState::Swiping},
+    return Value::object({{"swiping", state == CardState::Swiping},
                           {"file", fileName},
                           {"fitted", fitted},
                           {"lit-corner", litCorner ? Value(*litCorner) : Value()}});
@@ -75,46 +76,22 @@ std::chrono::steady_clock::time_point steadyTimeOf(pacing::WallTime w) {
     return std::chrono::steady_clock::time_point(std::chrono::duration_cast<std::chrono::steady_clock::duration>(w));
 }
 
-// ── The machine session's adapters (LIB-3 59 design §5) ──────────────────────
-
-struct TIAppPart::Hooks final : sessions::SliceHook, sessions::AdvanceGate, sessions::WaitProbe {
-    TIAppPart& part;
-    machine::Ticks last = 0;
-    explicit Hooks(TIAppPart& p) : part(p) {}
-
-    // TIKeySequencerHook: the KeySequencer at each slice end, with the wall
-    // time the slice was due at (LIB-17 adapter SliceRequest::due).
-    machine::Ticks nextDue(machine::Ticks now) const override { return now > last ? now : sessions::kNever; }
-    void act(machine::Machine&, machine::Ticks now, pacing::WallTime due) override {
-        last = now;
-        if (EmulatorSession* s = part.m_c->session()) s->sliceEnded(steadyTimeOf(due));
-    }
-    // TIFreezeGate: the freeze and breakpoint checks inside the advance.
-    machine::Ticks advance(machine::Machine&, machine::Ticks atLeast, bool& stoppedEarly) override {
-        EmulatorSession* s = part.m_c->session();
-        if (!s) {
-            stoppedEarly = true;
-            return 0;
-        }
-        return s->advanceHosted(atLeast, stoppedEarly);
-    }
-    // TICardWaitAdapter: the TI-59 needs a card now (LIB-17 AC-16).
-    bool waitsForMedium(const machine::Machine& m) const override {
-        const auto* r = cardReaderOf(const_cast<machine::Machine&>(m));
-        return r && r->isInCardWait() && r->isWaitingForCard();   // the idle loop polls the switch too
-    }
-};
-
 // ── The part ─────────────────────────────────────────────────────────────────
 
+
 TIAppPart::TIAppPart(TIAppSetup setup)
-    : m_setup(std::move(setup)), m_files(m_setup.saveFolder, m_setup.fileIO), m_hooks(std::make_unique<Hooks>(*this)) {
-    m_c = std::make_unique<SessionController>(static_cast<SessionController::Platform&>(*this), m_setup.roms,
-                                              m_setup.cuecards, m_setup.moduleID, Threading::Hosted);
-}
+    : m_setup(std::move(setup)),
+      m_files(m_setup.saveFolder, m_setup.fileIO),
+      m_hooks(std::make_unique<Hooks>(*this)),
+      m_moduleID(m_setup.moduleID) {}
 
 TIAppPart::~TIAppPart() {
-    m_c.reset();   // persists the TI-58C's memory, while the machine session still holds the machine
+    // Before the session: the TI-58C's memory is written while the machine
+    // session still holds the machine.
+    persistConstantMemory();
+    if (m_session) m_session->stop();
+    m_session.reset();
+    m_queue.clear();
 }
 
 TIAppSession::~TIAppSession() {
@@ -128,7 +105,7 @@ void TIAppPart::start(sessions::AppSession& s) {
     m_ms->setGate(m_hooks.get());
     m_ms->addHook(*m_hooks);
     m_ms->addWaitProbe(*m_hooks);
-    m_c->startMachine(m_setup.startModel);
+    startMachine(m_setup.startModel);
     m_changes = ~0u;
     settle();
     s.advanceUnpaced(0);   // the machine joins: the display read, everything flushed
@@ -136,7 +113,7 @@ void TIAppPart::start(sessions::AppSession& s) {
 
 void TIAppPart::attach(sessions::SessionSetup& s) {
     using sessions::History;
-    m_model = &s.stateTopic(topics::kModel);
+    m_modelTopic = &s.stateTopic(topics::kModel);
     m_led = &s.stateTopic(topics::kLed);
     m_cue = &s.stateTopic(topics::kCueCard);
     m_printer = &s.stateTopic(topics::kPrinter);
@@ -180,7 +157,7 @@ void TIAppPart::attach(sessions::SessionSetup& s) {
         };
     };
     auto flag = [](bool v) -> CommandOutcome { return Done{std::make_shared<TIFlag>(v)}; };
-    SessionController& c = *m_c;
+    TIAppPart& c = *this;
     using namespace commands;
 
     add(s, kStartMachine, [&c, intArg](const Value& a) -> CommandOutcome {
@@ -236,7 +213,7 @@ void TIAppPart::attach(sessions::SessionSetup& s) {
     });
     add(s, kOpenDropped, [this, &c, bytesArg, strArg](const Value& a) -> CommandOutcome {
         const std::string name = strArg(a, "name");
-        const bool preset = c.dropAction(name) == SessionController::DropAction::LoadPreset;
+        const bool preset = c.dropAction(name) == DropAction::LoadPreset;
         const bool ok = c.openDroppedFile(bytesArg(a, "bytes"), strArg(a, "path"), name);
         if (preset && ok) {
             adoptMachine();
@@ -299,7 +276,7 @@ sessions::Operation TIAppPart::untilIdle(bool keystrokes) {
 sessions::Task<sessions::OperationResult> TIAppPart::runUntilIdle(sessions::OperationContext& op, bool keystrokes) {
     sessions::MachineSession& ms = op.session().machineSession();
     for (int pieces = 0;; ++pieces) {
-        EmulatorSession* s = m_c->session();
+        EmulatorSession* s = m_session.get();
         const machine::Machine* m = ms.machine();
         if (!s || !m) break;
         if (keystrokes ? !s->keystrokesPending() : (s->access().machine().isKeyReady() || pieces >= 600)) break;
@@ -321,13 +298,13 @@ void TIAppPart::beforeCall(sessions::SessionContext& ctx, pacing::WallTime) {
 
 void TIAppPart::afterCall(sessions::SessionContext& ctx, pacing::WallTime now) {
     m_ctx = &ctx;
-    m_c->tick(steadyTimeOf(now));
+    frame(steadyTimeOf(now));
     settle();
 }
 
 void TIAppPart::suspending(sessions::SessionContext& ctx) {
     m_ctx = &ctx;
-    m_c->persistConstantMemory();   // as SessionController::suspend (C59-5 AC-8)
+    persistConstantMemory();   // as 2.3.0's suspend (C59-5 AC-8)
     settle();
 }
 
@@ -340,25 +317,25 @@ void TIAppPart::settle() {
     adoptMachine();
     syncSpeed();
     publish(std::exchange(m_changes, 0u));
-    if (m_ms && m_c->session()) m_ms->setPaused(!m_c->session()->isRunning());
+    if (m_ms && m_session) m_ms->setPaused(!m_session->isRunning());
 }
 
 void TIAppPart::adoptMachine() {
-    EmulatorSession* s = m_c->session();
+    EmulatorSession* s = m_session.get();
     if (!m_ms || !s || !s->ownsMachine()) return;
     m_hooks->last = 0;
     m_ms->setMachine(s->releaseMachine(), pacingProfile(s->model()), 0);   // AC-33: no sound
 }
 
 void TIAppPart::syncSpeed() {
-    EmulatorSession* s = m_c->session();
+    EmulatorSession* s = m_session.get();
     if (!m_ctx || !s) return;
     const Speed commanded = m_ctx->commandedSpeed();
     const bool full = s->isFullSpeed();
     if (commanded != m_lastCommanded) {   // the library's `speed` command
         m_lastCommanded = commanded;
         m_lastFull = commanded == Speed::Full;
-        if (full != m_lastFull) m_c->setFullSpeed(m_lastFull);
+        if (full != m_lastFull) setFullSpeed(m_lastFull);
     } else if (full != m_lastFull) {      // the controller's own (c59.full-speed, KEYSTROKES)
         m_lastFull = full;
         m_ctx->setCommandedSpeed(full ? Speed::Full : Speed::Regular);
@@ -367,9 +344,9 @@ void TIAppPart::syncSpeed() {
 }
 
 void TIAppPart::publish(uint32_t c) {
-    if (!c || !m_model) return;
-    using S = SessionController;
-    const SessionController& k = *m_c;
+    if (!c || !m_modelTopic) return;
+    using S = TIAppPart;
+    const TIAppPart& k = *this;
     auto make = [this](auto p) {
         p->serial = ++m_serial;
         return p;
@@ -379,7 +356,7 @@ void TIAppPart::publish(uint32_t c) {
         p->model = k.model();
         p->moduleID = k.moduleID();
         p->modules = k.allModules();
-        m_model->set(std::move(p));
+        m_modelTopic->set(std::move(p));
     }
     if (c & S::DisplayChanged) {
         auto p = make(std::make_shared<TILedState>());
@@ -457,11 +434,6 @@ void TIAppPart::publish(uint32_t c) {
         p->active = k.asmActive();
         m_asm->set(std::move(p));
     }
-}
-
-SessionController::Platform::CardRead TIAppPart::readCard(const std::string& path) {
-    FileIO::Read r = m_files.readCard(path);
-    return {std::move(r.raw), r.unreadable};
 }
 
 void TIAppPart::showDebugPanel(DebugPanel panel) {

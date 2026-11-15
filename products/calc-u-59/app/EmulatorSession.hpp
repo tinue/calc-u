@@ -1,33 +1,34 @@
 #pragma once
-#include "CooperativePacing.hpp"
 #include "FrameSampler.hpp"
 #include "FreezeController.hpp"
 #include "KeySequencer.hpp"
-#include "MachineGuard.hpp"
 #include "MachineModelInfo.hpp"
 #include "ProductRoms.hpp"
 #include "StateFile.hpp"
 #include "TraceWriter.hpp"
+#include "machine/Machine.hpp"
 #include "peripherals/Controls.hpp"
-#include <atomic>
+#include <chrono>
 #include <deque>
 #include <filesystem>
+#include <functional>
 #include <memory>
-#include <mutex>
 #include <optional>
 #include <string>
+#include <utility>
 #include <vector>
 
-// One running calculator: the machine plus the runtime around it that both
-// frontends share — the paced run loop and its thread, the debugger's freeze
-// state (frozen, owner, armed freezes, stepping), the trace flags, timed key
-// input and KEYSTROKES playback, the 60 Hz frame sampler and the two binary
-// trace writers (manual and scripted). One session per machine (a model
-// switch builds a new one); SessionController owns it. Everything runs on
-// the host's one thread: with Threading::Cooperative pump() runs the machine
-// (the Web); with Threading::Hosted the library's machine session does, and
-// owns the machine (releaseMachine(); LIB-3 59's TIAppPart). See
-// reference/SharedArchitecture.md.
+// One running calculator: the machine plus the runtime around it that every
+// frontend shares — the run flag and the job queue behind it, the debugger's
+// freeze state (frozen, owner, armed freezes, stepping), the trace flags,
+// timed key input and KEYSTROKES playback, the 60 Hz frame sampler and the
+// two binary trace writers (manual and scripted). One per machine (a model
+// switch builds a new one); cu59::TIAppPart owns it. The library's machine
+// session runs and owns the machine (releaseMachine()); this keeps using it
+// on the session's one thread (ADR 0009): advanceHosted() is the one advance
+// of the machine session's slices with the freeze checks inside it (adapter
+// TIFreezeGate, until M-53), sliceEnded() moves the key input on
+// (TIKeySequencerHook, until M-36/M-54). See reference/SharedArchitecture.md.
 
 namespace cu59 {
 
@@ -101,29 +102,37 @@ public:
     /// places (C59-6). Reads no file. A module ID the set has no file for
     /// leaves the slot empty.
     EmulatorSession(Model model, const calcu::roms::RomSet& roms, MachinePeripherals peripherals,
-                    Listener& listener, Threading threading = Threading::Cooperative);
+                    Listener& listener);
     ~EmulatorSession();
     EmulatorSession(const EmulatorSession&) = delete;
     EmulatorSession& operator=(const EmulatorSession&) = delete;
 
     Model model() const { return m_model; }
-    /// The machine and its adapters under MachineGuard (C59-1 design D-1):
-    /// hold it per call, never across sync() or a listener call.
-    MachineGuard::Access access() const { return m_guard.access(); }
-    /// The machine without the guard: for code on the one thread that runs
-    /// it (a test, a sync() job that takes access() itself).
+    /// The machine and its adapters (C59-1's TI adapters).
+    class Access {
+    public:
+        explicit Access(calcu::machine::Machine& m) : m_m(m) {}
+        calcu::machine::Machine& machine() { return m_m; }
+        TICardReaderAdapter& cardReader() { return *cardReaderOf(m_m); }
+        TIMemoryAdapter& memory() { return *memoryOf(m_m); }
+        TIDebugTargetAdapter& debugTarget() { return *debugTargetOf(m_m); }
+        TIDebugPanelAdapter& debugPanel() { return *debugPanelOf(m_m); }
+
+    private:
+        calcu::machine::Machine& m_m;
+    };
+    Access access() const { return Access(m_machineRef); }
     calcu::machine::Machine& machine() { return m_machineRef; }
-    /// Hosted: the machine goes to the library's machine session, which owns
-    /// it from now on; this session keeps using it until it is destroyed.
+    /// The machine goes to the library's machine session, which owns it from
+    /// now on; this session keeps using it until it is destroyed.
     std::unique_ptr<calcu::machine::Machine> releaseMachine() { return std::move(m_machine); }
-    Threading threading() const { return m_threading; }
     bool ownsMachine() const { return m_machine != nullptr; }
     /// The bytes of the module plugged into `slot-1` (empty if none), kept for
     /// the debugger (adapter until M-53, C59-6 design §5).
     const std::vector<uint8_t>& moduleImage() const { return m_moduleImage; }
 
     // ── Places (C59-6; adapters until M-54, design §5) ───────────────────────
-    // Each changes the place under the guard, between two advances, and
+    // Each changes the place between two advances, and
     // returns what follows (the power cycle of the pin-out, which the caller
     // runs, LIB-2 AC-24) or the refusal. Nothing changes on a refusal.
     /// The module of that ID into `slot-1` (a replace if one is there), or
@@ -138,28 +147,33 @@ public:
         std::vector<PrinterCodeLine> codeLines;
     };
     PrinterChange setPrinter(bool connected, bool trace);
-    /// A control of the PC-100C under the guard: a key down or up, the switch
+    /// A control of the PC-100C: a key down or up, the switch
     /// on or off (C59-6 AC-5). False without a PC-100C.
     bool printerControl(const calcu::machine::ControlId& id, bool on);
 
-    // ── Run loop ─────────────────────────────────────────────────────────────
-    void start() { m_runner->start(); }
-    void stop() { m_runner->stop(); }
-    bool isRunning() const { return m_runner->isRunning(); }
-    void post(std::function<void()> job) { m_runner->post(std::move(job)); }
-    /// Stop first, or this waits for the run loop.
-    void sync(const std::function<void()>& job) { m_runner->sync(job); }
+    // ── Run flag and jobs ────────────────────────────────────────────────────
+    /// The machine may run (the machine session is not paused); queues the
+    /// mark behind which posted jobs wait until stop().
+    void start();
+    void stop() { m_running = false; }
+    bool isRunning() const { return m_running; }
+    /// Queue a job: it runs at the next pump() or sync() once the machine is
+    /// stopped (everything that steps the machine while it isn't running —
+    /// freeze-to-keycode, single steps).
+    void post(std::function<void()> job) { m_jobs.push_back(std::move(job)); }
+    /// Stop first, or the jobs behind the run mark stay queued: runs the
+    /// queued jobs, then `job`.
+    void sync(const std::function<void()>& job);
     void setFullSpeed(bool on) override;
-    bool isFullSpeed() const { return m_runner->fullSpeed(); }
-    /// Cooperative: run the batches, key input and jobs due by `now`.
-    /// Hosted: the jobs, and the key input when no slice ran since the last pump.
+    bool isFullSpeed() const { return m_fullSpeed; }
+    /// After a host call: the jobs, and the key input at `now` when no slice
+    /// ended since the last pump.
     void pump(std::chrono::steady_clock::time_point now);
 
-    // ── Hosted (LIB-3 59: TIFreezeGate, TIKeySequencerHook) ──────────────────
-    /// One advance of a machine-session slice, with the freeze checks.
-    calcu::machine::Ticks advanceHosted(calcu::machine::Ticks atLeast, bool& stopped) {
-        return m_runner->advanceHosted(atLeast, stopped);
-    }
+    // ── The machine session's slices (TIFreezeGate, TIKeySequencerHook) ──────
+    /// One advance of at least `atLeast` ticks with the freeze and breakpoint
+    /// checks inside it (C59-1 §4); a stop ends the run and sets `stopped`.
+    calcu::machine::Ticks advanceHosted(calcu::machine::Ticks atLeast, bool& stopped);
     /// A slice ended at wall time `due`: key input advances to it.
     void sliceEnded(std::chrono::steady_clock::time_point due) {
         m_sliceRan = true;
@@ -167,19 +181,19 @@ public:
     }
 
     /// Since the last call: a batch ran (TI-58C RAM may have changed).
-    bool takeRamDirty() { return m_ramDirty.exchange(false); }
+    bool takeRamDirty() { return std::exchange(m_ramDirty, false); }
 
     // ── Debugger: freeze and step (UI thread) ────────────────────────────────
     DebugState debugState() const;
-    bool frozen() const { return m_frozen.load(); }
+    bool frozen() const { return m_state.frozen; }
     /// Stop, freeze for `owner`, disarm both armed freezes; the machine runs on
     /// to the next keycode boundary, then frozenViewReady(Freeze).
     void freeze(FreezeOwner owner);
     /// Freeze where the machine stands (stopped already), no step.
     void freezeInPlace(FreezeOwner owner);
-    /// Unfreeze and start the run loop.
+    /// Unfreeze and run.
     void resume();
-    /// Unfreeze without starting (the caller has stopped the loop to change state).
+    /// Unfreeze without starting (the caller has stopped the machine to change state).
     void clearFreeze();
     /// Freeze before the next program byte executes (CALCULATOR) or when the
     /// keyboard scan loop exits (CPU); arming one disarms the other.
@@ -208,7 +222,7 @@ public:
     bool keystrokesPending() const { return m_keys->scriptPending(); }
     /// The next queued card the machine takes where it stands: the first
     /// InsertCard card in the idle scan loop, the first ArmCard card in the
-    /// card wait of Write / INV Write (TICardReaderAdapter::isInCardWait). UI thread.
+    /// card wait of Write / INV Write (TICardReaderAdapter::isInCardWait).
     std::optional<QueuedCard> takeQueuedCard();
     /// A reload has been applied, or an InsertCard card has passed (or failed).
     void hostDone();
@@ -216,10 +230,7 @@ public:
     std::vector<std::string> clearQueuedCards();
 
     // ── Frames ───────────────────────────────────────────────────────────────
-    FrameUpdate tick(int debugLevel, bool cardSwiping) {
-        auto a = access();
-        return m_sampler.tick(a.machine(), debugLevel, cardSwiping);
-    }
+    FrameUpdate tick(int debugLevel, bool cardSwiping) { return m_sampler.tick(m_machineRef, debugLevel, cardSwiping); }
 
     // ── Traces ───────────────────────────────────────────────────────────────
     TraceWriter& manualTrace() { return m_manualTrace; }
@@ -243,11 +254,13 @@ public:
 private:
     // KeySequencer::Host (pressKey, releaseKey and setFullSpeed are public above)
     bool isKeyReady() override { return access().machine().isKeyReady(); }
-    bool isFrozen() override { return m_frozen.load(); }
+    bool isFrozen() override { return m_state.frozen; }
     void heldKeyChanged(int id) override { m_listener.heldKeyChanged(id); }
     void scriptedTrace(const std::optional<std::string>& fileName) override;
     void zeroElapseTime() override { m_elapseBaseline = access().machine().tickCount(); }
-    void onFreezeFired(FreezeOwner owner);       // emulation thread
+    void onFreezeFired(FreezeOwner owner);
+    /// Run the queued jobs up to the run mark while running.
+    void drainJobs();
     /// Set the frozen state (and owner, generation); disarms both armed freezes when freezing.
     uint64_t setFrozenState(bool frozen, std::optional<FreezeOwner> owner);
     void applyTraceFlags();
@@ -260,35 +273,32 @@ private:
         ++m_hostPending;
         m_listener.controlRequested(event);
     }
-    bool hostPending() override { return m_hostPending.load() > 0; }
+    bool hostPending() override { return m_hostPending > 0; }
 
     const Model m_model;
-    const Threading m_threading;
     Listener& m_listener;
     std::unique_ptr<calcu::machine::Machine> m_machine;
     calcu::machine::Machine& m_machineRef{*m_machine};
-    mutable MachineGuard m_guard{m_machineRef};
-    bool m_sliceRan = false;   ///< hosted: a slice ended since the last pump
+    bool m_sliceRan = false;   ///< a slice ended since the last pump
+    bool m_running = false;
+    bool m_fullSpeed = false;
+    bool m_draining = false;
+    std::deque<std::function<void()>> m_jobs;   ///< an empty job is the run mark
     std::vector<uint8_t> m_moduleImage;
     FreezeController m_freeze;
     FrameSampler m_sampler;
     TraceWriter m_manualTrace;
     TraceWriter m_scriptedTrace;
-    std::mutex m_traceMutex;           ///< serialises drainTrace with scripted open/close
     std::filesystem::path m_traceDir;
     uint64_t m_traceMaxBytes = 50'000'000;
-    std::vector<CpuFrame> m_drainBuf = std::vector<CpuFrame>(1024);  ///< drainTrace scratch, under m_traceMutex
-    mutable std::mutex m_stateMutex;   ///< m_state, m_cpuPanelVisible, trace-flag updates
+    std::vector<CpuFrame> m_drainBuf = std::vector<CpuFrame>(1024);  ///< drainTrace scratch
     DebugState m_state;
     bool m_cpuPanelVisible = false;
-    std::atomic<bool> m_frozen{false};  ///< m_state.frozen, for the key sequencer
-    std::atomic<bool> m_ramDirty{false};
-    std::atomic<uint64_t> m_elapseBaseline{0};
-    std::mutex m_cardMutex;            ///< m_queuedCards
+    bool m_ramDirty = false;
+    uint64_t m_elapseBaseline = 0;
     std::deque<QueuedCard> m_queuedCards;
-    std::atomic<int> m_hostPending{0}; ///< reloads and InsertCard cards not done yet
-    std::unique_ptr<CooperativePacing> m_runner;
-    std::unique_ptr<KeySequencer> m_keys;   ///< last: its threads stop first
+    int m_hostPending = 0;   ///< reloads and InsertCard cards not done yet
+    std::unique_ptr<KeySequencer> m_keys;   ///< last: a held key comes up first
 };
 
 } // namespace cu59

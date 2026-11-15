@@ -249,12 +249,12 @@ void EmulatorController::loadStateFile(const QString& path) {
     send(cu59::commands::kLoadState, withBytes(Value::object({}), path));
 }
 
-cu59::SessionController::DropAction EmulatorController::dropAction(const QString& path) const {
+cu59::DropAction EmulatorController::dropAction(const QString& path) const {
     const cs::CallId id = m_app->session->ask(
         m_me, cs::Request{cu59::commands::kDropAction, Value::object({{"name", QFileInfo(path).fileName().toStdString()}})});
     if (m_lastReply && m_lastReply->call == id)
         if (const auto* a = cs::payloadAs<cu59::TIDropAction>(m_lastReply->result)) return a->action;
-    return cu59::SessionController::DropAction::NotAccepted;
+    return cu59::DropAction::NotAccepted;
 }
 
 void EmulatorController::openDroppedFile(const QString& path) {

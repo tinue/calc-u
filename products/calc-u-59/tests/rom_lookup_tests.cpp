@@ -2,13 +2,12 @@
 // checks of AC-8, the full set and fetch list of AC-9, the module files of
 // AC-14, the start without the full set (AC-5, AC-10) and no ROM read while
 // running (AC-6); EC-2.
-#include "FakePlatform.hpp"
 #include "Md5.hpp"
 #include "TestHarness.hpp"
 #include "TestRoms.hpp"
 #include "../app/ModuleCatalog.hpp"
 #include "../app/ProductRoms.hpp"
-#include "../app/SessionController.hpp"
+#include "../app/TIAppPart.hpp"
 #include "../core/ModuleFile.hpp"
 #include "../core/TICatalogue.hpp"
 #include "../core/TIRomReader.hpp"
@@ -16,6 +15,7 @@
 #include "roms/Bundle.hpp"
 #include <algorithm>
 #include <cctype>
+#include <chrono>
 #include <filesystem>
 #include <fstream>
 #include <map>
@@ -325,18 +325,36 @@ TEST(lib12_ac14_unknown_format_version_is_bad) {
 
 // ── P4: the start (AC-5, AC-6, AC-10) ───────────────────────────────────────
 
+// A host's start (Qt6, Swift, the Web's makeWebAppSession): the lookup over
+// its bundle, and the app session only with the full set (2.3.0's
+// SessionController::create did both until M-34).
+namespace {
+std::unique_ptr<cu59::TIAppSession> startFrom(const Bundle& bundle, std::vector<std::string>& missingTexts) {
+    auto roms = cu59::lookUpRoms(bundle);
+    if (!roms.ok()) {
+        missingTexts.push_back(describe(roms.missing));
+        return nullptr;
+    }
+    cu59::TIAppSetup s;
+    s.roms = roms.set;
+    s.cuecards = cuecards();
+    s.saveFolder = (fs::temp_directory_path() / "calcu59-romlookup").string();
+    auto t = std::make_shared<calcu::pacing::WallTime>(std::chrono::hours(1));
+    return cu59::makeAppSession(std::move(s), [t] { return *t += std::chrono::milliseconds(1); }, 59u);
+}
+} // namespace
+
 TEST(lib12_ac10_missing_file_no_machine_and_files_named) {
     TempDir dir;
     dir.copyRoms();
     fs::remove(dir.path / "TMC0583.txt");
     fs::remove(dir.path / "MU.rom.yaml");
-    testroms::FakePlatform p;
-    auto c = cu59::SessionController::create(p, DirectoryBundle(dir.path), cuecards(), "ML", cu59::Threading::Cooperative);
-    CHECK(c == nullptr);   // no controller, so no machine
-    CHECK_EQ(p.romsMissingTexts.size(), size_t{1});
-    CHECK(p.errors.empty());
-    if (p.romsMissingTexts.empty()) return;
-    const std::string& text = p.romsMissingTexts.front();
+    std::vector<std::string> missing;
+    auto c = startFrom(DirectoryBundle(dir.path), missing);
+    CHECK(c == nullptr);   // no session, so no machine
+    CHECK_EQ(missing.size(), size_t{1});
+    if (missing.empty()) return;
+    const std::string& text = missing.front();
     CHECK(text.find("2 ROM files are missing or bad") != std::string::npos);
     CHECK(text.find("TMC0583.txt: missing; needed by TI-59, TI-58") != std::string::npos);
     CHECK(text.find("MU.rom.yaml: missing; needed by MU") != std::string::npos);
@@ -349,39 +367,38 @@ TEST(lib12_ac10_bad_file_no_machine) {
     dir.copyRoms();
     std::string text = readText(dir.path / "CD2400-CONST-K.txt");
     writeText(dir.path / "CD2400-CONST-K.txt", text.substr(0, text.size() / 2));
-    testroms::FakePlatform p;
-    auto c = cu59::SessionController::create(p, DirectoryBundle(dir.path), cuecards(), "ML", cu59::Threading::Cooperative);
+    std::vector<std::string> missing;
+    auto c = startFrom(DirectoryBundle(dir.path), missing);
     CHECK(c == nullptr);
-    CHECK_EQ(p.romsMissingTexts.size(), size_t{1});
-    if (!p.romsMissingTexts.empty())
-        CHECK(p.romsMissingTexts.front().find("CD2400-CONST-K.txt: wrong size") != std::string::npos);
-    // With the full set the same call gives a controller and no message.
-    testroms::FakePlatform ok;
-    auto good = cu59::SessionController::create(ok, DirectoryBundle("roms"), cuecards(), "ML", cu59::Threading::Cooperative);
+    CHECK_EQ(missing.size(), size_t{1});
+    if (!missing.empty()) CHECK(missing.front().find("CD2400-CONST-K.txt: wrong size") != std::string::npos);
+    // With the full set the same start gives a session and no message.
+    std::vector<std::string> none;
+    auto good = startFrom(DirectoryBundle("roms"), none);
     CHECK(good != nullptr);
-    CHECK(ok.romsMissingTexts.empty());
+    CHECK(none.empty());
 }
 
 TEST(lib12_ac6_model_and_module_changes_read_no_file) {
-    testroms::FakePlatform p;
-    std::unique_ptr<cu59::SessionController> c;
+    std::vector<std::string> missing;
+    std::unique_ptr<cu59::TIAppSession> app;
     {
         TempDir dir;
         dir.copyRoms();
-        c = cu59::SessionController::create(p, DirectoryBundle(dir.path), cuecards(), "ML", cu59::Threading::Cooperative);
+        app = startFrom(DirectoryBundle(dir.path), missing);
     }   // the bundle folder is gone
-    CHECK(c != nullptr);
-    if (!c) return;
+    CHECK(app != nullptr);
+    if (!app) return;
+    cu59::TIAppPart& c = *app->part;
     for (auto model : {cu59::Model::TI59, cu59::Model::TI58, cu59::Model::TI58C, cu59::Model::TI59}) {
-        CHECK(c->startMachine(model));
-        CHECK(c->hasMachine() && c->model() == model);
-        CHECK_EQ(c->session()->moduleImage().size(), size_t{5000});
+        CHECK(c.startMachine(model));
+        CHECK(c.hasMachine() && c.model() == model);
+        CHECK_EQ(c.emulator()->moduleImage().size(), size_t{5000});
     }
     for (const auto& id : moduleIds()) {
-        CHECK(c->selectModule(id));
-        CHECK_EQ(c->moduleID(), id);
-        CHECK(c->session()->moduleImage() == *cu59::moduleImage(*testroms::romSet(), id + ".rom.yaml"));
+        CHECK(c.selectModule(id));
+        CHECK_EQ(c.moduleID(), id);
+        CHECK(c.emulator()->moduleImage() == *cu59::moduleImage(*testroms::romSet(), id + ".rom.yaml"));
     }
-    CHECK(p.errors.empty());
-    CHECK(p.romsMissingTexts.empty());
+    CHECK(missing.empty());
 }

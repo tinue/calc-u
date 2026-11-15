@@ -2,7 +2,7 @@ import Foundation
 
 /// Resolves the folder that holds the magnetic-card files (`.U59`) and
 /// `ti58c.mem`; reading and writing them is `Shared/CardFile` via the
-/// SessionController. `hasCard` reports whether the default card (`card.U59`)
+/// app session (TIAppPart, TIFileAccess). `hasCard` reports whether the default card (`card.U59`)
 /// exists.
 ///
 /// Storage location (in priority order):

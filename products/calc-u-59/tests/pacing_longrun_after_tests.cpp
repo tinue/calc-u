@@ -1,9 +1,9 @@
 // The "after" long-run pacing tests of LIB-17 AC-18 (design §6, P59-4): the
-// library's pacer, through the app session as the Swift and Qt6 frontends
-// host it (M-33). The rate of emulated time against wall time is compared
-// with 2.3.0's, measured by the "before" test (pacing_longrun_tests.cpp, first
-// step 14): up to 0.3 % passes, 0.3 % to 1 % is printed for the user, above
-// 1 % fails.
+// library's pacer, through the app session as every frontend hosts it (M-33;
+// the Web since M-34). The rate of emulated time against wall time is
+// compared with 2.3.0's, measured by the "before" test of first step 14 (on
+// 2.3.0's batches, CooperativePacing; the test went with them in M-34): up to
+// 0.3 % passes, 0.3 % to 1 % is printed for the user, above 1 % fails.
 //
 // Scripted (Frequent): an hour per model on a clock this test supplies, the
 // same calls as the "before" test. Real clock (Checkpoint):
@@ -11,7 +11,6 @@
 
 #include "TestHarness.hpp"
 #include "TestRoms.hpp"
-#include "../app/Pacing.hpp"
 #include "../app/TIAppPart.hpp"
 #include <chrono>
 #include <cmath>
@@ -26,8 +25,10 @@ using calcu::pacing::WallTime;
 
 namespace {
 
-// 2.3.0's rate (pacing_longrun_tests.cpp): whole ticks per 20 ms batch.
+// 2.3.0's rate (the "before" test): whole ticks per 20 ms batch
+// (int(instructionHz x 20 ms), 2.3.0's app/Pacing.hpp).
 double oldRate(Model model) {
+    constexpr double kBatchSeconds = 0.020;
     const double exact = testroms::instructionHz(model) * kBatchSeconds;
     return static_cast<int32_t>(exact) / exact;
 }

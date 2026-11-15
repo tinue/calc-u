@@ -116,7 +116,7 @@ TEST(lib3_ac30_error_is_notice_diagnostic_is_log) {
     const NoticeParts n = splitNotice("State file load error: Cannot read file.");
     CHECK_EQ(n.title, std::string("State file load error"));
     CHECK_EQ(n.message, std::string("Cannot read file."));
-    r.part().platform().diagnostic("a developer line");
+    r.part().diagnostic("a developer line");
     r.frame();
     CHECK(hasLog(r, "a developer line"));
 }
@@ -129,7 +129,7 @@ TEST(lib3_ac30_card_and_constant_memory_files_without_frontend) {
     r.until([&] { return !r.busy(); });
     const auto mem = r.folder.path / TIFileAccess::kConstantMemoryFile;
     CHECK(testroms::fs::exists(mem));
-    SessionController::Platform& p = r.part().platform();
+    TIFileAccess& p = r.part().files();
     CHECK_EQ(p.cardFilePath("x.u59"), (r.folder.path / "x.u59").string());
     CHECK(!p.readCard(p.cardFilePath("x.u59")).raw);
     CHECK(p.writeCard(p.cardFilePath("x.u59"), "CARD"));
@@ -225,7 +225,7 @@ TEST(c59_5_ac8_suspend_persists_and_stops_continue_runs) {
     CHECK(r.until([&] { return r.machine().isKeyReady(); }));
     const auto mem = r.folder.path / TIFileAccess::kConstantMemoryFile;
     testroms::fs::remove(mem);
-    r.part().controller().session()->access().memory();   // the machine is there
+    r.part().emulator()->access().memory();   // the machine is there
     r.tap(83);
     r.send(kSuspendCommand);
     CHECK(testroms::fs::exists(mem));

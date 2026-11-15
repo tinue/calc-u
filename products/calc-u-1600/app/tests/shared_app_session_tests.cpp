@@ -3,6 +3,8 @@
 // without ROMs.
 
 #include <algorithm>
+#include <chrono>
+#include <ctime>
 #include <cstdio>
 #include <filesystem>
 #include <fstream>
@@ -12,8 +14,8 @@
 #include <vector>
 
 #include "MemorySettingsStore.hpp"
-#include "PC1500/PC1500Machine.hpp"
-#include "PC1600/PC1600Machine.hpp"
+#include "Machine/SharpProductKinds.hpp"
+#include "peripherals/RealTimeClock.hpp"
 #include "app/AppSession.hpp"
 #include "app/CardYamlDump.hpp"
 #include "app/MachineCodeLoad.hpp"
@@ -351,19 +353,20 @@ TEST(test_card_write_protect) {
     CHECK(f.app->runNow(f.app->selectModuleJob(1, "CE-161")).ok);
     CHECK(f.app->modules().canNameAndSave(1));
     CHECK(f.app->modules().canWriteProtect(1));
-    PC1500Machine* m = f.app->machine().pc1500();
+    sharp::LoaderMemory* m = sharp::firstOf<sharp::LoaderMemory>(*f.app->machine().machine());
     CHECK(m != nullptr);
     if (!m) return;
-    m->memory().writeME0(0x0000, 0x55);
-    CHECK(m->memory().readME0(0x0000) == 0x55);
+    const std::uint8_t b55 = 0x55, bAA = 0xAA;
+    CHECK(m->poke(0x0000, &b55, 1));
+    CHECK(m->peek(0x0000) == 0x55);
 
     std::string error;
     CHECK(f.app->modules().nameAndSave(1, "Rom", &error, /*writeProtect=*/true));
     CHECK(!f.app->modules().canWriteProtect(1));
     const ExpansionCard* card = f.app->machine().slotCard(1);
     CHECK(card && card->writeProtected());
-    m->memory().writeME0(0x0000, 0xAA);  // the switch blocks it
-    CHECK(m->memory().readME0(0x0000) == 0x55);
+    CHECK(!m->poke(0x0000, &bAA, 1));  // the switch blocks it
+    CHECK(m->peek(0x0000) == 0x55);
     std::ifstream in(fs::path(f.paths->instanceDir()) / "Rom.card.yaml");
     const std::string text((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>());
     CHECK(text.find("write-protect: protected") != std::string::npos);
@@ -371,10 +374,10 @@ TEST(test_card_write_protect) {
     // Reloaded from its file: still protected, contents kept.
     CHECK(f.app->runNow(f.app->selectModuleJob(1, "")).ok);
     CHECK(f.app->runNow(f.app->selectModuleJob(1, "Rom")).ok);
-    m = f.app->machine().pc1500();
+    m = sharp::firstOf<sharp::LoaderMemory>(*f.app->machine().machine());
     card = f.app->machine().slotCard(1);
     CHECK(m && card && card->writeProtected());
-    if (m) CHECK(m->memory().readME0(0x0000) == 0x55);
+    if (m) CHECK(m->peek(0x0000) == 0x55);
 
     CHECK(f.app->runNow(f.app->selectModuleJob(1, "CE-1638")).ok);  // battery-backed, no switch
     CHECK(!f.app->modules().canWriteProtect(1));
@@ -459,6 +462,40 @@ TEST(test_audio_follows_tick) {
     const std::size_t before = sink.written;
     for (int i = 0; i < 5; ++i) f.app->tick();
     CHECK(sink.written == before);
+}
+
+// LIB-2 AC-34 (design §6 P11): the real-time clocks are set from the
+// session's host-time source when the machine is built (start()) and at the
+// end of every operation, with the machine session's fixed source.
+TEST(lib2_ac34_set_at_build_and_after_operation) {
+    SKIP_UNLESS(std::ifstream("roms/PC1600-P0-B0-new.bin").good(), "no ROMs in roms/");
+    std::tm t{};
+    t.tm_year = 2031 - 1900;
+    t.tm_mon = 2;
+    t.tm_mday = 14;
+    t.tm_hour = 15;
+    t.tm_min = 9;
+    t.tm_sec = 26;
+    t.tm_isdst = -1;
+    const auto fixed = std::chrono::system_clock::from_time_t(std::mktime(&t));
+    for (const char* model : {"PC1500A", "PC1600"}) {
+        Fixture f;
+        f.settings.setStartupModelPreference(model);
+        f.app->machine().setHostTimeSource([fixed] { return fixed; });
+        f.app->start();
+        auto read = [&] {
+            auto* clock = sharp::firstOf<calcu::peripherals::RealTimeClock>(*f.app->machine().machine());
+            return clock ? clock->read() : calcu::peripherals::ClockFields{};
+        };
+        auto isFixed = [](const calcu::peripherals::ClockFields& c) {
+            return c.month == 3 && c.day == 14 && c.hour == 15 && c.minute == 9 && c.second == 26;
+        };
+        CHECK(isFixed(read()));
+        f.app->runFor(3.0);   // emulated time: the clock runs on it
+        CHECK(!isFixed(read()));
+        CHECK(f.app->runNow(f.app->resetJob(false)).ok);   // an operation: set again at its end
+        CHECK(isFixed(read()));
+    }
 }
 
 } // namespace

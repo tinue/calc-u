@@ -69,11 +69,10 @@ public:
 
     /// Optional host callback invoked from inside runCycles() roughly every
     /// `intervalCycles` of emulated time (counted across calls, so many
-    /// short runCycles() calls still add up). Lets a UI thread that drives
-    /// a long synchronous preset/program load keep its event loop alive
+    /// short runCycles() calls still add up). Lets a caller that drives a
+    /// long synchronous preset/program load keep its event loop alive
     /// (repaint, show a progress popup) without the loaders knowing about
-    /// it. Called with m_mutex NOT held, so the hook may safely read the
-    /// display snapshot. The hook must not drive the machine itself. An
+    /// it. The hook may read the display; it must not drive the machine. An
     /// empty function (the default) removes it.
     void setYieldHook(std::function<void()> hook, uint64_t intervalCycles);
 
@@ -102,9 +101,7 @@ public:
     /// around.
     void enqueueKey(const std::string& name);
 
-    /// Locked snapshot of the display -- safe to call from a UI thread
-    /// while another thread is mid-step(). Prefer this over cpu()/memory()
-    /// for anything shared across threads.
+    /// A snapshot of the display, built from the display RAM.
     PC1500Display display() const;
 
     /// Whether the LCD panel is actually lit -- for the app to blank the
@@ -149,8 +146,7 @@ public:
         return m_memory.piezo().edgeCount();
     }
 
-    // Locked, UI-thread-safe debug reads so the App layer can log
-    // Core-internal state (PC, and RAM bytes like the cursor-key dispatch
+    // Debug reads, so a caller can log core-internal state (PC, and RAM bytes like the cursor-key dispatch
     // gate at 0x7B0EH, or the BREAK_LINE pointer at 0x78AEH/0x78AFH) right
     // alongside its own key-event logs, for direct correlation.
     uint8_t debugPeek(uint16_t addr) const {
@@ -165,10 +161,9 @@ public:
     PC1500Memory&       memory() { return m_memory; }
     const PC1500Memory& memory() const { return m_memory; }
 
-    /// Runs `view(*this)` under the machine lock and returns its result: one
-    /// consistent snapshot for the inspector (Core/Debug/Inspect), which
-    /// reads through the const accessors only -- never a locked debug*()
-    /// call, which would deadlock.
+    /// Runs `view(*this)` and returns its result: one consistent snapshot
+    /// for the inspector (Core/Debug/Inspect), which reads through the const
+    /// accessors only.
     template <class F>
     auto debugInspect(F&& view) const {
         return view(*this);
@@ -184,8 +179,7 @@ public:
     /// ExpansionConnector -- for callers (the preset loader, the CLI) with
     /// no longer-lived object of their own to hold the card. Replaces any
     /// previously-attached owned card (matches the 40-pin connector's own
-    /// single-slot semantics -- see ExpansionConnector::attach()). Takes
-    /// m_mutex: the emulation thread dispatches bus accesses to the card.
+    /// single-slot semantics -- see ExpansionConnector::attach()).
     void attachExpansionCard(std::unique_ptr<ExpansionCard> card) {
         m_memory.expansionConnector().attach(card.get());
         m_attachedExpansionCard = std::move(card); // old card freed only after it's unplugged
@@ -202,12 +196,11 @@ public:
     bool attachCE150(const uint8_t* rom, size_t romSize);
     void detachCE150();
     bool ce150Attached() const { return m_ce150Card != nullptr; }
-    /// Unlocked direct access -- headless/tests only, same convention as
-    /// cpu()/memory(). The app uses the locked accessors below.
+    /// Direct access, like cpu()/memory(); above the core the plotter is
+    /// reached through PC1500InterfaceMachine's c1600.plotter-paper kind.
     Ce150Card* ce150Card() { return m_ce150Card.get(); }
 
-    /// GUI-safe (take m_mutex, like the CE-1600P plot accessors on
-    /// PC1600Machine). Empty / 0 when no plotter is attached.
+    /// Empty / 0 when no plotter is attached.
     std::vector<AlpsPlotterMechanism::FlatPoint> ce150PlotPoints() const;
     uint64_t ce150PlotRevision() const;
     std::vector<std::string> drainCE150Events();
@@ -218,7 +211,7 @@ public:
     // The recorder outlives attach/detach of the interface: arm it with a
     // WAV to play (CLOAD) or a file to record into (CSAVE); it moves only
     // while a CE-150 REMOTE relay runs it, in emulated time. A recording is
-    // saved each time the motor stops. All GUI-safe.
+    // saved each time the motor stops.
     bool tapePlay(const std::string& path, std::string& error);
     void tapeRecord(const std::string& path);
     bool tapeEject(std::string* error = nullptr);
@@ -226,7 +219,7 @@ public:
     /// Why the last automatic save (at a motor stop) failed, once; empty if
     /// it didn't (TapeDeck::takeLastError()).
     std::string tapeTakeLastError();
-    /// Unlocked direct access -- headless/tests only.
+    /// Direct access, for the core and its tests.
     TapeDeck& tapeDeck() { return m_tapeDeck; }
 
     // ── CE-158 RS-232C / Centronics interface (60-pin system bus) ────────
@@ -247,17 +240,17 @@ public:
     // for the machine's lifetime; a preset builds a fresh machine.
     void attachBusRom(std::unique_ptr<BusRomCard> card);
     bool ce158Attached() const { return m_ce158.attached(); }
-    /// Unlocked direct access -- headless/tests only (see ce150Card()).
+    /// Direct access (see ce150Card()).
     Ce158Card* ce158Card() { return m_ce158.card(); }
     /// Non-owning; the caller keeps `link` alive until it sets another one
-    /// (or nullptr) or destroys the machine. GUI-safe.
+    /// (or nullptr) or destroys the machine.
     void setCE158SerialLink(SerialLink* link);
-    /// GUI-safe: the bytes printed on the Centronics port since the last
+    /// The bytes printed on the Centronics port since the last
     /// call. Empty when no CE-158 is attached.
     std::vector<uint8_t> drainCE158ParallelOutput();
 
-    // Trace/breakpoint passthrough. Unlocked, like cpu()/memory() above --
-    // LH5801 guards its own trace ring/breakpoint state (see LH5801.hpp).
+    // Trace/breakpoint passthrough (LH5801 keeps its own trace ring and
+    // breakpoint state, see LH5801.hpp).
     void     setTraceFlags(uint32_t flags) { m_cpu.setTraceFlags(flags); }
     uint32_t traceFlags() const { return m_cpu.traceFlags(); }
     uint32_t drainTraceEvents(CpuFrame* out, uint32_t max, uint32_t* outLost) { return m_cpu.drainTraceEvents(out, max, outLost); }
@@ -327,24 +320,21 @@ private:
     // case (PC1500TraceFile::writeGap() covers the pathological one).
     static constexpr uint32_t kTraceDrainInterval = 256;
     CpuFrame m_traceDrainBuf[kTraceDrainBufFrames];
-    /// Bodies of the public detach calls; caller holds m_mutex. The
-    /// attach/detach calls take it because step() dispatches bus accesses
-    /// to these cards on the emulation thread.
+    /// Bodies of the public detach calls (the name is from when the class
+    /// had a lock; it has none since M-26, ADR 0009).
     void detachCE150Locked();
     void detachCE158Locked();
 
     /// Advances everything outside the CPU that runs on real time (RTC,
     /// buzzer, key queue, CE-150/CE-158) by `cycles`. The one place both
-    /// step() and runCycles() feed, so they stay in step. Caller holds
-    /// m_mutex.
+    /// step() and runCycles() feed, so they stay in step.
     void advancePeripherals(uint32_t cycles);
 
-    /// Drain the CPU trace ring into m_traceFile. Caller must hold
-    /// m_mutex; safe to call only while m_traceFile is set.
+    /// Drain the CPU trace ring into m_traceFile; only while m_traceFile is
+    /// set.
     void pumpTraceFile();
     /// step()/runCycles() hook: drain the trace ring into the file every
     /// kTraceDrainInterval instructions while a headless capture is active.
-    /// Caller must hold m_mutex.
     void maybeDrainTrace() {
         if (m_traceFile && ++m_traceDrainCounter >= kTraceDrainInterval) {
             pumpTraceFile();
@@ -372,8 +362,6 @@ private:
     /// preset/BASIC-program typing; duplicated locally (not shared via a
     /// header) matching this project's existing convention for small,
     /// stable, cross-file timing constants. Directly manipulates m_memory.keyboard() rather
-    /// than going through pressKey()/releaseKey() -- both already lock
-    /// m_mutex, and this is only ever called from within a method that's
-    /// already holding it (std::mutex isn't recursive).
+    /// than going through pressKey()/releaseKey().
     void advanceKeyQueue(uint32_t cycles);
 };

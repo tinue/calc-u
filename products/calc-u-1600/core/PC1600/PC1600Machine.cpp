@@ -145,10 +145,8 @@ std::filesystem::path PC1600Machine::hostDriveDirectory() const {
     return m_hostDriveCard ? m_hostDriveCard->drive().directory() : std::filesystem::path{};
 }
 
-// The three below read and clear the
-// plotter mechanism -- its
-// stroke and event containers are mutated from inside step() on every
-// motor write, so an unlocked reader races a vector reallocation.
+// The three below read and clear the plotter mechanism, whose stroke and
+// event containers step() changes on every motor write.
 
 std::vector<AlpsPlotterMechanism::FlatPoint> PC1600Machine::ce1600pPlotPoints() const {
     if (!m_ce1600pCard) return {};

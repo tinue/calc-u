@@ -7,10 +7,8 @@
 #include "AppSettings.hpp"
 #include "DapServer.hpp"
 #include "DapSession.hpp"
-#include "Debug/MachineDebugTargets.hpp"
+#include "Machine/LegacyCalls.hpp"
 #include "MachineController.hpp"
-#include "PC1500/PC1500Machine.hpp"
-#include "PC1600/PC1600Machine.hpp"
 #include "SyncOperations.hpp"
 
 DebugController::DebugController(MachineController* machines, QObject* parent)
@@ -124,7 +122,7 @@ void DebugController::finishTeardown() {
 void DebugController::createTarget() {
     m_run.reset();
     m_target.reset();
-    m_machines->withMachine([this](auto& machine) { m_target = debug::makeDebugTarget(machine); });
+    if (calcu::machine::Machine* machine = m_machines->machine()) m_target = sharp::legacy::makeDebugTarget(*machine);
     if (!m_target) return;
     m_target->arm(false); // armed only inside runSlice()
     m_run = std::make_unique<debug::RunControl>(*m_target, m_map, m_breakpoints);
@@ -238,7 +236,12 @@ debug::LoadResult DebugController::loadProgram(const debug::LoadRequest& request
     }
     QString error;
     m_sync->run(tr("Load Program"), [this, &r, &request] {
-        r = debug::loadProgram(m_machines->pc1500(), m_machines->pc1600(), request, m_map, *m_target);
+        calcu::machine::Machine* machine = m_machines->machine();
+        if (!machine) {
+            r.error = "no machine";
+            return shared::OpResult::fail(r.error);
+        }
+        r = sharp::legacy::loadProgram(*machine, request, m_map, *m_target);
         return r.ok ? shared::OpResult{} : shared::OpResult::fail(r.error);
     }, &error);
     if (!r.ok) return r;

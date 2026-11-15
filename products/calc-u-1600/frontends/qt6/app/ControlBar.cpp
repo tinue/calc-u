@@ -158,7 +158,7 @@ ControlBar::ControlBar(QWidget* parent) : QWidget(parent) {
     setCe1600pVisible(false);
 
     // CE-1600F floppy disk picker -- attaches as a union with CE-1600P
-    // (PC1600Machine::attachCE1600P()). Always shown on a PC-1600 (see
+    // (the CE-1600P's descriptor, sharpCatalogue()). Always shown on a PC-1600 (see
     // setFloppyVisible()'s comment) so the control bar doesn't jump around
     // as the plotter attaches/detaches; setFloppyEnabled() grays the whole
     // row out instead while the floppy isn't actually present.

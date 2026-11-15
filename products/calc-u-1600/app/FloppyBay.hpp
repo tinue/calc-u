@@ -8,7 +8,7 @@
 #include "Connector/FloppyImageFile.hpp"
 #include "app/DirectoryScanCache.hpp"
 
-class PC1600Machine;
+namespace sharp { class FloppyDriveAccess; }
 
 namespace shared {
 
@@ -85,14 +85,14 @@ public:
     void flushPendingPersist();
 
 private:
-    PC1600Machine* drive() const;  // the PC-1600 if its CE-1600F is attached
+    sharp::FloppyDriveAccess* drive() const;  // the CE-1600F, if attached
     bool saveDiskAs(const std::string& diskName, bool fromPreset, std::string* error, const std::string& filePath = {},
                     bool asTemplate = false);
     bool nameCollides(const std::string& diskName) const;
     // A template is never written; an instance autosaves in place (never
     // into the bundle).
     void classifySource(const std::string& resolvedPathOrEmpty, bool isTemplate);
-    bool loadSelectedDisk(PC1600Machine* m1600);
+    bool loadSelectedDisk(sharp::FloppyDriveAccess* drive);
     void writeInstance();
     void reportError(const std::string& text) const {
         if (m_events.error) m_events.error(text);

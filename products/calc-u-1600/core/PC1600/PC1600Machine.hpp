@@ -26,12 +26,10 @@
 #include "PC1600Clocks.hpp"
 #include "PC1600Memory.hpp"
 
-/// A genuine value-type snapshot of PC1600Display's pixel state, copied
-/// once under PC1600Machine's lock -- unlike PC1500Display (itself already
-/// a snapshot type constructed fresh from RAM bytes), PC1600Display is a
-/// live, continuously-written HD61102 controller pair, so handing out a
-/// reference to it would not be safe to read from a different thread while
-/// the emulation loop is mid-step(). Row-major ([row][col]).
+/// A value-type snapshot of PC1600Display's pixel state -- unlike
+/// PC1500Display (itself a snapshot built from RAM bytes), PC1600Display is
+/// a live, continuously-written HD61102 controller pair, so a reader gets a
+/// copy of one moment. Row-major ([row][col]).
 struct PC1600DisplaySnapshot {
     bool pixels[PC1600Display::kHeight][PC1600Display::kWidth]{};
     bool clockEnabled{false};
@@ -51,6 +49,10 @@ struct PC1600DisplaySnapshot {
 // hardware's ELH#-gated single-owner bus. reset() always starts on SC7852
 // (architecturally guaranteed, not configurable -- see
 // Ref/PC-1600/PC-1600-Machine-Overview.md §6).
+//
+// Threading (ADR 0009): single-threaded, no lock. Everything above the
+// core reaches it through PC1600InterfaceMachine (calcu::machine::Machine,
+// C1600-1); this class stays the core's own, for the core and its tests.
 class PC1600Machine {
 public:
     PC1600Machine();
@@ -138,11 +140,10 @@ public:
 
     /// Optional host callback invoked from inside runCycles() roughly every
     /// `intervalTStates` T-states of emulated time (counted across calls, so many
-    /// short runCycles() calls still add up). Lets a UI thread that drives
-    /// a long synchronous preset/program load keep its event loop alive
+    /// short runCycles() calls still add up). Lets a caller that drives a
+    /// long synchronous preset/program load keep its event loop alive
     /// (repaint, show a progress popup) without the loaders knowing about
-    /// it. Called with m_mutex NOT held, so the hook may safely read the
-    /// display snapshot. The hook must not drive the machine itself. An
+    /// it. The hook may read the display; it must not drive the machine. An
     /// empty function (the default) removes it.
     void setYieldHook(std::function<void()> hook, uint64_t intervalTStates);
 
@@ -174,15 +175,12 @@ public:
                         const uint8_t* rom2, size_t rom2Size);
     void detachCE1600P();
     bool ce1600pAttached() const { return m_ce1600pCard != nullptr; }
-    /// Unlocked direct access -- headless/tests only, same convention as
-    /// `keyboard()`/`memory()`. The app uses the three locked
-    /// accessors below instead: the mechanism's stroke/event containers are
-    /// mutated from inside `step()` (motor writes), so a GUI-thread reader
-    /// touching them directly races the emulation loop.
+    /// Direct access, like `keyboard()`/`memory()`; above the core the
+    /// paper is reached through PC1600InterfaceMachine's
+    /// c1600.plotter-paper kind, over the accessors below.
     CE1600PCard* ce1600pCard() { return m_ce1600pCard.get(); }
 
-    /// GUI-safe). Empty when no
-    /// plotter is attached.
+    /// Empty when no plotter is attached.
     std::vector<AlpsPlotterMechanism::FlatPoint> ce1600pPlotPoints() const;
     /// O(1) change token for the plot geometry (0 when no plotter attached).
     /// A GUI poll loop reads this every frame and only calls the copying
@@ -193,10 +191,9 @@ public:
 
     // ── CE-1600F floppy (attached as a union with CE-1600P, above) ──────
     //
-    // All GUI-safe (take m_mutex, mirroring the plotter accessors above --
-    // CE1600FCard's image/revision state is written from inside
-    // step() on every data-register access, same race as the plotter
-    // mechanism). No-op/empty-returning when no floppy is attached.
+    // CE1600FCard's image/revision state is written from inside step() on
+    // every data-register access. No-op/empty-returning when no floppy is
+    // attached.
     bool ce1600fAttached() const { return m_ce1600fCard != nullptr; }
     std::vector<uint8_t> ce1600fDiskImage() const;
     uint64_t ce1600fRevision() const;
@@ -217,8 +214,7 @@ public:
     // The recorder outlives attach/detach of the interface: arm it with a
     // WAV to play (CLOAD) or a file to record into (CSAVE); it moves only
     // while the interface's remote relay runs it, in emulated time. A
-    // recording is saved each time the motor stops. All GUI-safe (take
-    // m_mutex).
+    // recording is saved each time the motor stops.
     bool tapePlay(const std::string& path, std::string& error);
     void tapeRecord(const std::string& path);
     bool tapeEject(std::string* error = nullptr);
@@ -226,7 +222,7 @@ public:
     /// Why the last automatic save (at a motor stop) failed, once; empty if
     /// it didn't (TapeDeck::takeLastError()).
     std::string tapeTakeLastError();
-    /// Unlocked direct access -- headless/tests only.
+    /// Direct access, for the core and its tests.
     TapeDeck& tapeDeck() { return m_tapeDeck; }
 
     // ── Host-directory drive S3: / Y: (60-pin system bus, page-1 bank 7) ─
@@ -235,8 +231,7 @@ public:
     // as a PC-1600 file device. Independent of the CE-1600P; both share the
     // bus. Attach/detach like any peripheral with the machine off -- the
     // ROM's SCANMODS only finds the module at power-on/reset. Changing the
-    // directory of an attached drive is a live media swap. All GUI-safe
-    //).
+    // directory of an attached drive is a live media swap.
     bool attachHostDrive(const uint8_t* rom, size_t romSize, const std::filesystem::path& dir);
     void detachHostDrive();
 
@@ -265,7 +260,7 @@ public:
     bool attachCE150(const uint8_t* rom, size_t romSize); // 8192 bytes
     void detachCE150();
     bool ce150Attached() const { return m_ce150Card != nullptr; }
-    Ce150Card* ce150Card() { return m_ce150Card.get(); } // unlocked -- tests only
+    Ce150Card* ce150Card() { return m_ce150Card.get(); } // direct access -- core and tests
 
     std::vector<AlpsPlotterMechanism::FlatPoint> ce150PlotPoints() const;
     uint64_t ce150PlotRevision() const;
@@ -284,9 +279,9 @@ public:
     bool attachCE158(const uint8_t* rom, size_t romSize); // 16384 bytes
     void detachCE158();
     bool ce158Attached() const { return m_ce158.attached(); }
-    Ce158Card* ce158Card() { return m_ce158.card(); }    // unlocked -- tests only
-    void setCE158SerialLink(SerialLink* link);             // non-owning; GUI-safe
-    std::vector<uint8_t> drainCE158ParallelOutput();       // GUI-safe
+    Ce158Card* ce158Card() { return m_ce158.card(); }    // direct access -- core and tests
+    void setCE158SerialLink(SerialLink* link);             // non-owning
+    std::vector<uint8_t> drainCE158ParallelOutput();
 
     // ── Access (debug / tests) ───────────────────────────────────────────
     SC7852&       sc7852() { return m_sc7852; }
@@ -309,18 +304,17 @@ public:
     // Attach / detach the host-side peer for the PC-1600's serial port.
     // Non-owning: the caller owns the SerialLink and must keep it alive
     // until it detaches (`setSerialLink(nullptr)`) or the machine is
-    // destroyed. Locked, so the GUI can attach/detach while the emulation
-    // loop is running. `nullptr` restores the standalone no-peer
+    // destroyed. `nullptr` restores the standalone no-peer
     // behaviour. A chip/machine reset does not clear the attachment.
     void setSerialLink(SerialLink* link);
     SerialLink* serialLink() const { return m_z80Mem.uart().serialLink(); }
 
     // ── Keyboard / display ────────────────────────────────────────────
     //
-    // keyboard()/display() are unlocked direct access, for tests/headless
-    // tools only (same convention PC1500Machine's cpu()/memory() already
-    // use) -- pressKey/releaseKey/setOnKeyPressed/displaySnapshot below are
-    // the locked, cross-thread-safe surface the app uses.
+    // keyboard()/display() are direct access, for the core and its tests
+    // (like PC1500Machine's cpu()/memory()); above the core,
+    // PC1600InterfaceMachine reaches the keys and the display through
+    // pressKey/releaseKey/setOnKeyPressed/displaySnapshot below.
     PC1600Keyboard&       keyboard() { return m_z80Mem.keyboard(); }
     const PC1600Keyboard& keyboard() const { return m_z80Mem.keyboard(); }
     PC1600Display&        display() { return m_z80Mem.display(); }
@@ -348,7 +342,7 @@ public:
     /// Buzzer audio (mono int16 PCM at audioSampleRate()) produced from the
     /// OPC 18H drive line as emulated time advances. See PiezoSampler and
     /// PC1600Memory::m_opc. drainAudio() moves up to `max` of the oldest
-    /// samples into `out`. Both take m_mutex.
+    /// samples into `out`.
     size_t drainAudio(int16_t* out, size_t max) {
         return m_z80Mem.piezo().drain(out, max);
     }
@@ -391,11 +385,11 @@ public:
     /// ROM) restores the range and also returns false.
     bool pokeMemory(uint16_t address, const uint8_t* data, size_t size);
 
-    // ── Debug reads (GUI-safe: take m_mutex, like pokeMemory()) ───────────
+    // ── Debug reads ─────────────────────────────────────────────────────────
     //
-    // The unlocked memory()/bank() accessors above are "tests/headless tools
-    // only"; these are the cross-thread-safe surface the app uses for
-    // the debug panel's "Pointers" / "Dump Mem" buttons.
+    // For the debug panel's "Pointers" / "Dump Mem" buttons and the loaders
+    // (reached above the core through the c1600.inspector and
+    // c1600.loader-memory kinds).
 
     /// One byte, read through the currently-selected banks (Port 31H/28H/3DH
     /// state as-is) -- same semantics as PC1500Machine::debugPeek().
@@ -409,10 +403,8 @@ public:
 
     /// True while SC7852 owns the bus -- false means the OFF-key/auto-
     /// power-off handoff has parked the machine on the LH5803 side (see
-    /// `sc7852Owns()`, the unlocked headless-tools accessor above, whose
-    /// own state this reflects). GUI-safe locked wrapper for a caller
-    /// (the CE-1600P attach toggle) that needs to poll for the machine
-    /// having actually finished powering down.
+    /// `sc7852Owns()` above, whose state this reflects), for a caller that
+    /// polls for the machine having finished powering down.
     bool debugSc7852Owns();
 
     /// The fixed internal 16 KB RAM (page D bank 0, Z-80 C000-FFFF) copied
@@ -423,7 +415,7 @@ public:
 
     /// Loader writes regardless of the current page-C bank state, for the
     /// fast loaders that scatter a program across module banks + internal
-    /// RAM. GUI-safe). Return false,
+    /// RAM. Return false,
     /// writing nothing, unless every byte lands in RAM.
     /// debugWriteInternalRam(): `off` 0..kInternalRamSize into the internal
     /// RAM's backing store. debugWriteSlotBus(): Z-80 `addr` ($8000-$BFFF)
@@ -462,8 +454,8 @@ public:
     /// its header (which slot each page-C bank routes to, the SLOT1MAP /
     /// SLOT2MAP gate-array remap, the Slot 2 vertical bank), its per-column
     /// labels (`slotNCardBank`), and its live address-map view (`target` /
-    /// `slotmapRedirect`, one entry per CPU page A/B/C/D). A locked snapshot
-    /// of plain values, like debugPeek() -- no references into live state.
+    /// `slotmapRedirect`, one entry per CPU page A/B/C/D). A snapshot of
+    /// plain values, like debugPeek() -- no references into live state.
     struct DebugBankState {
         uint8_t port31{0};   // IOW MAP -- the page A/B/C/D bank-select register
         uint8_t port28{0};   // last OUT (28H) -- Slot 2 vertical-bank select
@@ -481,14 +473,12 @@ public:
         std::string busCard;          // page B's card when target[1] == BusCard
     };
     DebugBankState debugBankState();
-    /// debugBankState() for a caller that already holds the lock
-    /// (debugInspect()).
+    /// debugBankState() for a const caller (debugInspect()).
     DebugBankState inspectBankState() const;
 
-    /// Runs `view(*this)` under the machine lock and returns its result: one
-    /// consistent snapshot for the inspector (Core/Debug/Inspect), which
-    /// reads through the const accessors and the inspect*() calls only --
-    /// never a locked debug*() call, which would deadlock.
+    /// Runs `view(*this)` and returns its result: one consistent snapshot
+    /// for the inspector (Core/Debug/Inspect), which reads through the const
+    /// accessors and the inspect*() calls only.
     template <class F>
     auto debugInspect(F&& view) const {
         return view(*this);
@@ -523,15 +513,14 @@ private:
     uint64_t m_yieldInterval = 0;
     uint64_t m_yieldCountdown = 0;
 
-    /// Bodies of the public detach calls; caller holds m_mutex. The
-    /// attach/detach calls take it because step() dereferences these
-    /// cards (and the buses dispatch to them) on the emulation thread.
+    /// Bodies of the public detach calls (the *Locked names are from when
+    /// the class had a lock; it has none since M-26, ADR 0009).
     void detachCE1600PLocked();
     void detachHostDriveLocked();
     void detachCE150Locked();
     void detachCE158Locked();
 
-    /// Shared body of reset()/allReset(); caller holds m_mutex.
+    /// Shared body of reset()/allReset().
     void resetLocked();
 
     PC1600Bank m_bank;
@@ -574,17 +563,16 @@ private:
     /// Advance everything that runs off the shared clock regardless of
     /// which CPU owns the bus: RTC, buzzer, UART, sub-CPU, display and the
     /// CE-158. step() calls it from both branches with the T-states just
-    /// spent. Caller holds m_mutex.
+    /// spent.
     void advanceSharedClocks(int tstates);
 
-    /// Drain both CPU trace rings into m_traceFile. Caller holds m_mutex;
-    /// safe only while m_traceFile is set. Cross-ring order is per-drain,
+    /// Drain both CPU trace rings into m_traceFile; only while
+    /// m_traceFile is set. Cross-ring order is per-drain,
     /// not globally chronological -- the cpuId tag disambiguates, and
     /// tools/read_trace.py already handles the interleave.
     void pumpTraceFile();
     /// step() hook: drain the rings into the file every kTraceDrainInterval
-    /// instructions while a headless capture is active. Caller holds
-    /// m_mutex. (step() is where both step() and runCycles() converge, so
+    /// instructions while a headless capture is active. (step() is where both step() and runCycles() converge, so
     /// this one call site covers both.)
     void maybeDrainTrace() {
         if (m_traceFile && ++m_traceDrainCounter >= kTraceDrainInterval) {
@@ -620,7 +608,7 @@ private:
     // is a reset with a cause.
     static constexpr int kOffSliceTStates = 256;
     void powerOnLocked();
-    /// step() with m_mutex held; `tstates` receives what the step charged
+    /// The body of step(); `tstates` receives what the step charged
     /// the shared clocks (0 when parked on a breakpoint).
     int stepLocked(uint64_t* tstates);
 

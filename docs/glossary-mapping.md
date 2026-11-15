@@ -53,8 +53,8 @@ parenthesis is removed with it.
 | Machine session | `EmulatorSession` | `MachineSession` |
 | Frontend interface | `Platform` (`cu59::SessionController`) | `Platform` (`shared::AppSession::Platform`) |
 | App layer | `Shared/` | `Shared/` |
-| Machine | `TIMachine` (`calcu::machine::Machine`, C59-1) | — |
-| Model | `ModelId` (descriptor, `tiCatalogue()`); `cu59::Model` kept as the app enum (`modelId`, `modelFrom`), `ModelInfo` for file-format facts (no ROM file names since M-24); `MachineVariant` core-internal | model (`startup/modelPreference`) |
+| Machine | `TIMachine` (`calcu::machine::Machine`, C59-1) | `PC1500InterfaceMachine`, `PC1600InterfaceMachine` (`calcu::machine::Machine`, C1600-1; built by `SharpMachineBuilder` from `sharp::sharpCatalogue()`); `PC1500Machine`, `PC1600Machine` core-internal |
+| Model | `ModelId` (descriptor, `tiCatalogue()`); `cu59::Model` kept as the app enum (`modelId`, `modelFrom`), `ModelInfo` for file-format facts (no ROM file names since M-24); `MachineVariant` core-internal | `calcu::machine::ModelId` (descriptor, `sharpCatalogue()`); `shared::Model` kept as the app enum until M-49 (`modelIdOf`, `modelOf`, `variantIdOf` in `app/MachineModel.hpp`); model (`startup/modelPreference`) |
 | Startup model | `startupModel`, `lastUsedModel` | `startup/modelPreference`, `startup/lastUsedModel` |
 | Preset, preset format | `StateFile`, "state file" | preset, `PresetFile` |
 | Peripheral, module | — | `CardBase`, `ExpansionCard`, "card" |
@@ -68,9 +68,11 @@ parenthesis is removed with it.
 | Full speed | `FullSpeed:` (preset directive) | `setTurbo`, `turboRequested` |
 | Regular speed | `RegularSpeed:` (preset directive) | — |
 | Pause | `freeze`, `FreezeController`, `FreezeOwner` | `paused` (`DebugController`) |
-| Cold boot | `Machine::coldBoot()` (was `cleanReset`) | `resetJob(allReset = true)` |
-| Reset | `Machine::reset()` (was `softReset`) | `resetJob(allReset = false)` |
-| Power cycle | `Machine::powerCycle()` (2.3.0's core reset) | — |
+| Cold boot | `Machine::coldBoot()` (was `cleanReset`) | `Machine::coldBoot()` (was `resetJob(allReset = true)`, `allReset()`) |
+| Reset | `Machine::reset()` (was `softReset`) | `Machine::reset()` (was `resetJob(allReset = false)`) |
+| Power cycle | `Machine::powerCycle()` (2.3.0's core reset) | `Machine::powerCycle()` (was `MachineSession::powerCycleAround`; the sequence `core/Machine/PowerCycleSequence`) |
+| Host link, serial port file | — | `calcu::peripherals::PtyHostLink`, `HostLinks` (was `PtySerialLink`, `LazySerialLink`); the machine's side `SerialPortCapability` (serial port kind) |
+| Real-time clock | — | `calcu::peripherals::RealTimeClock`, `setClocksFromHost` (was `seedClock`, `seedClockFromHostTime`; `seedClock` stays core-internal) |
 | Feature ID | — | — (`KIT-n` in early docs, now `LIB-n`, `C59-n`, `C1600-n`) |
 | Harness | `tools/headless/`, `tools/agentic/` | `pc1500_cli`, `pc1600_cli`, probes |
 

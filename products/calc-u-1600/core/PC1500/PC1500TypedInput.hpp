@@ -5,15 +5,16 @@
 
 #include "../SharpShiftedSymbols.hpp"
 #include "PC1500Keyboard.hpp"
-#include "PC1500Machine.hpp"
+
+class PC1500Machine;
 
 // ── Typed-text helpers shared by every scripted PC-1500 input path ───────
 //
 // PC1500BasicTyper (preset `type:` steps, BASIC program text) and the
 // GUI's clipboard paste (Core/KeyPaste) both turn a host character into a
 // PC-1500 keystroke and both need to know when the ROM is back at its
-// BASIC prompt. Header-only so the paste path doesn't drag in
-// PC1500BasicTyper.cpp's build unit.
+// BASIC prompt. Machine-free but for pc1500AtBasicPrompt() (PC1500TypedInput.cpp), so the
+// app layer can resolve keys without a machine class (C1600-1).
 
 /// Maps a host character to the PC-1500 key that types it. `needsShift`
 /// is set when SHIFT must be tapped first (SHIFT is a one-shot latch on
@@ -48,9 +49,4 @@ inline bool pc1500ResolveTypedChar(char c, std::string* baseKey, bool* needsShif
 /// key-scan interrupt service it wakes into); a running program or CE-150
 /// plot never sits there (a pen-move busy-wait is at $F7xx). The ROM set
 /// is fixed, so the window is safe to bake in.
-inline bool pc1500AtBasicPrompt(const PC1500Machine& machine) {
-    constexpr uint16_t kPromptLoopLo = 0xE200;
-    constexpr uint16_t kPromptLoopHi = 0xE4FF;
-    const uint16_t pc = machine.debugPC();
-    return pc >= kPromptLoopLo && pc <= kPromptLoopHi;
-}
+bool pc1500AtBasicPrompt(const PC1500Machine& machine);

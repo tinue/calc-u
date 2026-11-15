@@ -176,8 +176,8 @@ configurations committed in the repository's `.run/`:
 |---|---|---|
 | `Calc-U-1600` | `CalcU1600Qt` | The Qt6 GUI app |
 | `CoreTests` | `CoreTests` | Headless test suite, also runnable via CTest |
-| `pc1500_cli`, `pc1600_cli` | same | Headless CLI harnesses |
-| `pc1600_plotter_probe`, `pc1600_power_probe`, `pc1600_uart_probe` | same | Hardware diagnostic probes |
+| `pc1500_cli`, `pc1600_cli` | same | Headless CLI harnesses; they build the machine from `sharp::sharpCatalogue()` and drive it through `calcu::machine::Machine` (presets through `sharp::legacy::applyPresetJob` until M-46) |
+| `pc1600_plotter_probe`, `pc1600_power_probe`, `pc1600_uart_probe` | same | Hardware diagnostic probes, on the machine interface too; CPU and bank state through the `c1600.inspector` and `c1600.loader-memory` kinds |
 
 All of them run and debug interactively (breakpoints, variable
 inspection, stepping) — which is the main thing this build adds over

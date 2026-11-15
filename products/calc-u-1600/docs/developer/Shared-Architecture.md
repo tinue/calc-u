@@ -53,7 +53,7 @@ WebAssembly check.
 | File | What it is |
 |---|---|
 | `AppSession` | The whole emulator behind one frontend: owns `MachineSession`, the bays, the `Pacer` and the `AudioPump`, wires them, runs operations, `tick()` |
-| `MachineSession` | The live PC-1500/1500A/1600: model and ROM switches, host keys (`hostKeyDown`) and paste queue, display, audio, memory-module slots, peripherals, tape, host drive, trace, inspector, serial links |
+| `MachineSession` | The live PC-1500/1500A/1600 as one `calcu::machine::Machine`: model and ROM switches, host keys (`hostKeyDown`) and paste queue, display, audio, memory-module slots, peripherals, tape, host drive, trace, inspector, serial links (see "The machine" below) |
 | `ModuleBay`, `FloppyBay`, `TapeBay` | The control bar's slots, disk and tape: catalogues, attach, Name & Save, preset `saveas:`, debounced autosave |
 | `PresetCatalog` | The bundled presets of `examples/bundled.yaml` (`defaults`, `examples`) and any preset's short name and description; `examples:` refs resolve through `AppPaths` |
 | `Pacer`, `AudioPump` | Frame ticks → emulated time (absolute deadline, turbo); buzzer PCM → an `AudioSink` |
@@ -64,8 +64,50 @@ WebAssembly check.
 | `MediaLibrary` | The save folder's cards, disks and tapes as items to list, export, import and delete (the web's Saved Media…) |
 | `MachineCodeLoad` | Load BASIC Program… / Load Machine Code…: a WAV's files to pick from, then the load and its advice |
 | `CardYamlDump` | The INSPECTOR's Card YAML: each slot's module RAM as an `initial-content:` block |
-| `DisplayFrame` | One model-agnostic LCD frame a renderer paints from |
+| `DisplayFrame` | One model-agnostic LCD frame a renderer paints from, made from the machine's display output (`toDisplayFrame`, an adapter until M-49) |
 | `DirectoryScanCache`, `Text` | A media folder's last parse, reused while its files are unchanged; small string helpers |
+
+## The machine
+
+`MachineSession` owns the live machine in one
+`std::unique_ptr<calcu::machine::Machine>` (C1600-1; the library's machine
+interface, `library/machine/`). Nothing in `app/` or a frontend names
+`PC1500Machine` or `PC1600Machine`: the CTest `CalcU1600MachineIncludeCheck`
+(`tools/check_machine_includes.sh`, Frequent and CI) fails the build when a
+file in `app/`, `frontends/`, `tools/` or `dev/` includes or names one.
+
+- **Building.** `calcu::machine::build(catalogue, SharpMachineBuilder, request)`
+  with a copy of `sharp::sharpCatalogue()` (the models, CE-150, CE-158,
+  CE-1600P, host drive) to which the module definitions are added
+  (`sharp::addModuleDefinitions`, `moduleDescriptor`). The ROM images come
+  through `sharp::modelRomImages` / `peripheralRomImages`
+  (`core/Machine/SharpRomImages`, an adapter until M-27). Every rebuild is
+  then a `coldBoot()`.
+- **Operations and keys.** `reset()`, `coldBoot()`, `powerCycle()` (the
+  off / on sequence now runs inside the core, `core/Machine/PowerCycleSequence`),
+  then `sharp::legacy::runToPromptJob` (until M-46). Keys are key IDs
+  (`keyDown`/`keyUp`; `on` is one of them); the PC-1500's paced keystroke
+  queue is the `c1600.key-queue` kind.
+- **Peripherals** are `attach`/`detach`/`replace` in the places `slot-1`,
+  `slot-2`, `printer`, `interface`, `host-drive`; a change on a running
+  machine reaches the bus at the off point of the power cycle that follows.
+  The CE-1600P with the CE-158, or a second printer, is refused with a
+  sentence.
+- **What only a Sharp machine has** is a capability: the product kinds
+  `c1600.loader-memory`, `c1600.inspector`, `c1600.ce158-printer-port`,
+  `c1600.host-drive-folder`, and the adapter kinds `c1600.plotter-paper`,
+  `c1600.trace`, `c1600.tape-deck`, `c1600.floppy-drive`
+  (`core/Machine/SharpProductKinds.hpp`); the library's `serial-port`,
+  `real-time-clock` and `controls` (the CE-161's write-protect switch).
+  What has no seam yet (loaders, preset loaders, the debug target, the
+  PC-1600's typing latches, the card in a slot) goes through
+  `core/Machine/LegacyCalls.hpp`, each call with the step that removes it.
+- **Serial ports and clock.** The session holds one
+  `calcu::peripherals::HostLinks` (the pseudo-terminals,
+  `calcu1600-rs232c.serial`, `calcu1600-ce158.serial`) and pumps it after
+  each slice; the clocks are set with `calcu::peripherals::setClocksFromHost`.
+- The machines hold no lock and start no thread (ADR 0009); the host links'
+  own reader and writer threads touch only their rings.
 
 ## How a frontend drives it
 
@@ -126,8 +168,8 @@ expression that created it.
 cooperatively from `tick()`, typed input. `libsharpdx-wasm.a` is the
 program loaders' Rust library built for `wasm32-unknown-emscripten`
 (`tools/build_sharpdx_wasm.sh`). Native wasm exceptions
-(`-fwasm-exceptions`), no threads; the PTY serial link compiles to its
-inert stub. The web client builds the same libraries as the `calcu_web`
+(`-fwasm-exceptions`), no threads; there are no host links there (the
+library's `NoHostLink.cpp`). The web client builds the same libraries as the `calcu_web`
 target ([Web-Client.md](Web-Client.md)).
 
 ## Not in Shared yet

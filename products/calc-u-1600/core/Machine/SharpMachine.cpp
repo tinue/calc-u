@@ -87,6 +87,7 @@ bool SharpMachine::running() const { return tickCount() > 0 && !coreSwitchedOff(
 void SharpMachine::makeWaitingChanges() {
     std::vector<std::function<void()>> changes = std::move(m_waiting);
     m_waiting.clear();
+    m_waitingModules.clear();
     for (auto& c : changes) c();
     std::vector<std::function<void()>> after = std::move(m_afterWaiting);
     m_afterWaiting.clear();
@@ -163,11 +164,17 @@ void SharpMachine::plug(PeripheralRequest req, const PeripheralDescriptor& d, Ti
     }
     auto request = std::make_shared<PeripheralRequest>(std::move(req));
     auto descriptor = std::make_shared<PeripheralDescriptor>(d);
+    if (isSlot(place) && running()) {
+        // The card is made now, so the slot shows it before the off point.
+        auto card = moduleCardOf(*request, d);
+        m_waitingModules.emplace_back(place, card.get());
+        request->content = std::make_shared<ModuleCard>(std::move(card));
+    }
     auto change = [this, request, descriptor, place] {
         corePlug(*request, *descriptor);
         // The switch's position reaches the card it belongs to.
         if (auto* table = switchesAt(place))
-            if (ExpansionCard* card = moduleIn(place)) card->setWriteProtected(table->on(ControlId{"write-protect"}));
+            if (ExpansionCard* card = moduleNow(place)) card->setWriteProtected(table->on(ControlId{"write-protect"}));
     };
     if (running()) m_waiting.push_back(std::move(change));
     else change();
@@ -180,6 +187,7 @@ void SharpMachine::unplug(const PlacePath& path, const PeripheralId& id) {
     const PlaceName place = path.steps.at(0);
     m_switches.erase(std::remove_if(m_switches.begin(), m_switches.end(), [&](const auto& s) { return s.first == place; }),
                      m_switches.end());
+    if (isSlot(place) && running()) m_waitingModules.emplace_back(place, nullptr);
     auto change = [this, place, id] { coreUnplug(place, id); };
     if (running()) m_waiting.push_back(std::move(change));
     else change();
@@ -189,10 +197,16 @@ void SharpMachine::makeSwitches(const PlaceName& place, const std::vector<Switch
     auto table = std::make_unique<calcu::peripherals::ControlTable>(
         std::vector<ControlDescriptor>{{ControlId{"write-protect"}, ControlForm::Switch}},
         [this, place](const ControlId&, bool on) {
-            if (ExpansionCard* card = moduleIn(place)) card->setWriteProtected(on);
+            if (ExpansionCard* card = moduleNow(place)) card->setWriteProtected(on);
         });
     table->restore(positions);
     m_switches.emplace_back(place, std::move(table));
+}
+
+ExpansionCard* SharpMachine::moduleNow(const PlaceName& place) {
+    for (auto it = m_waitingModules.rbegin(); it != m_waitingModules.rend(); ++it)
+        if (it->first == place) return it->second;
+    return moduleIn(place);
 }
 
 calcu::peripherals::ControlTable* SharpMachine::switchesAt(const PlaceName& place) {
@@ -204,6 +218,7 @@ calcu::peripherals::ControlTable* SharpMachine::switchesAt(const PlaceName& plac
 void SharpMachine::syncFromCore() {
     m_waiting.clear();
     m_afterWaiting.clear();
+    m_waitingModules.clear();
     m_plugged = coreHasPlugged();
     m_switches.clear();
     for (const PlugEntry& e : m_plugged) {

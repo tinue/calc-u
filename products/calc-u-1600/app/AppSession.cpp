@@ -3,15 +3,7 @@
 #include <chrono>
 #include <utility>
 
-#include "HostClock.hpp"
-#include "PC1500/PC1500BasicLoader.hpp"
-#include "PC1500/PC1500Machine.hpp"
-#include "PC1500/PC1500MachineCodeLoader.hpp"
-#include "PC1500/PC1500PresetLoader.hpp"
-#include "PC1600/PC1600BasicLoader.hpp"
-#include "PC1600/PC1600Machine.hpp"
-#include "PC1600/PC1600MachineCodeLoader.hpp"
-#include "PC1600/PC1600PresetLoader.hpp"
+#include "Machine/LegacyCalls.hpp"
 #include "Preset/PresetFile.hpp"
 
 namespace shared {
@@ -141,6 +133,7 @@ void AppSession::tick() {
         OpResult result;
         try {
             done = stepSlice(m_op);
+            m_machine->pumpSerialLinks();   // the serial ports run inside operations too
             if (done) result = takeResult(m_op);
         } catch (const std::exception& e) {
             done = true;
@@ -231,32 +224,25 @@ job::Task<OpResult> AppSession::loadPresetJob(std::string ref, bool armOnly) {
     // outcome, so the bays are synced exactly once, before any `saveas:`
     // step retargets them.
     PresetLoadResult result;
-    if (preset.isPC1600()) {
-        PC1600Machine& machine = m_machine->resetBareForPresetPC1600(
-            preset.romVariant == "old" ? PC1600RomVersion::Old : PC1600RomVersion::New,
-            preset.ce1600pRomVariant == "old" ? CE1600PRomVersion::Old : CE1600PRomVersion::New);
-        m_machine->finishPresetLoad(Model::PC1600);
-        const auto onArmed = [this](const PresetLoadResult& armedSoFar) {
-            m_modules->syncFromPresetLoad(1, armedSoFar.slot1ResolvedPath, armedSoFar.slot1RomFile);
+    const Model model = modelForPreset(preset);
+    calcu::machine::Machine& machine = m_machine->resetBareForPreset(
+        model, preset.romVariant == "old" ? PC1600RomVersion::Old : PC1600RomVersion::New,
+        preset.ce1600pRomVariant == "old" ? CE1600PRomVersion::Old : CE1600PRomVersion::New);
+    m_machine->finishPresetLoad(model);
+    const auto onArmed = [this, pc1600 = preset.isPC1600()](const PresetLoadResult& armedSoFar) {
+        m_modules->syncFromPresetLoad(1, armedSoFar.slot1ResolvedPath, armedSoFar.slot1RomFile);
+        if (pc1600) {
             m_modules->syncFromPresetLoad(2, armedSoFar.slot2ResolvedPath, armedSoFar.slot2RomFile);
             m_floppy->syncFromPresetLoad(armedSoFar.floppyImageLabel, armedSoFar.floppyResolvedPath);
-            m_platform.presetArmed();
-        };
-        result = co_await applyPC1600PresetJob(machine, preset, log, traceDir, bundled,
-                                               [&machine] { seedClockFromHostTime(machine); }, romDirs,
-                                               extraModuleDirs, onArmed, onSaveAs);
-    } else {
-        PC1500Machine& machine = m_machine->resetBareForPresetPC1500(preset.variant);
-        m_machine->finishPresetLoad(modelForPreset(preset));
-        const auto onArmed = [this](const PresetLoadResult& armedSoFar) {
-            m_modules->syncFromPresetLoad(1, armedSoFar.slot1ResolvedPath, armedSoFar.slot1RomFile);
+        } else {
             m_modules->syncFromPresetLoad(2);
-            m_platform.presetArmed();
-        };
-        result = co_await applyPC1500PresetJob(machine, preset, log, traceDir, bundled,
-                                               [&machine] { seedClockFromHostTime(machine); }, romDirs,
-                                               extraModuleDirs, onArmed, onSaveAs);
-    }
+        }
+        m_platform.presetArmed();
+    };
+    // The model's preset loader on the old class (adapter until M-46).
+    result = co_await sharp::legacy::applyPresetJob(machine, preset, log, traceDir, bundled,
+                                                    [this] { m_machine->seedClockFromHost(); }, romDirs,
+                                                    extraModuleDirs, onArmed, onSaveAs);
     if (!result.ok) co_return OpResult::fail(result.error);
     co_return OpResult{};
 }
@@ -307,7 +293,13 @@ job::Task<OpResult> AppSession::pickModelJob(Model model) {
 
 job::Task<OpResult> AppSession::selectModuleJob(int slot, std::string moduleNameOrEmpty) {
     m_modules->selectModule(slot, moduleNameOrEmpty);
-    co_await m_machine->switchModelJob(m_machine->currentModel(), /*keepPeripherals=*/true);  // rebuild -> re-attach
+    // A module change is a detach and an attach in the slot, and the power
+    // cycle that follows it: the memory is kept, and the ROM finds the
+    // changed memory (behaviour change 1600-4; LIB-2 AC-28).
+    co_await m_machine->powerCycleAroundJob([this, slot] {
+        m_machine->detachSlot(slot);
+        m_modules->attachSlot(slot);
+    });
     co_return OpResult{};
 }
 
@@ -384,27 +376,22 @@ OpResult AppSession::loadBasicProgram(const std::vector<std::uint8_t>& file, con
     // change or NEW0 -- the user has prepared the machine as they would
     // before typing LOAD. On the PC-1600 the MODE picks the keyword table
     // and the TITLE area is the target.
-    BasicLoadResult loaded;
-    if (PC1600Machine* m = m_machine->pc1600()) loaded = ::loadBasicProgram(*m, file);
-    else if (PC1500Machine* m = m_machine->pc1500()) loaded = ::loadBasicProgram(*m, file);
-    else return OpResult::fail("No machine is running.");
+    calcu::machine::Machine* m = m_machine->machine();
+    if (!m) return OpResult::fail("No machine is running.");
+    const BasicLoadResult loaded = sharp::legacy::loadBasicProgram(*m, file);
     if (!loaded.ok) return OpResult::fail(path + ": " + loaded.error);
     return OpResult{};
 }
 
 OpResult AppSession::loadMachineCode(const MachineCodeLoadRequest& request) {
-    std::string error;
-    bool ok = false;
-    if (m_machine->currentModel() == Model::PC1600) {
-        PC1600Machine* m = m_machine->pc1600();
-        if (!m) return OpResult::fail("No PC-1600 machine is running.");
-        ok = loadPC1600MachineCode(*m, request.slot, request.addr, request.payload.data(), request.payload.size(),
-                                   &error, request.bank);
-    } else {
-        PC1500Machine* m = m_machine->pc1500();
-        if (!m) return OpResult::fail("No PC-1500 machine is running.");
-        ok = loadPC1500MachineCode(*m, request.addr, request.payload.data(), request.payload.size(), &error);
+    calcu::machine::Machine* m = m_machine->machine();
+    if (!m) {
+        return OpResult::fail(m_machine->currentModel() == Model::PC1600 ? "No PC-1600 machine is running."
+                                                                         : "No PC-1500 machine is running.");
     }
+    std::string error;
+    const bool ok = sharp::legacy::loadMachineCode(*m, request.slot, request.addr, request.payload.data(),
+                                                   request.payload.size(), &error, request.bank);
     return ok ? OpResult{} : OpResult::fail(error);
 }
 

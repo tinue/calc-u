@@ -16,7 +16,8 @@ character, or it isn't text.
 | Headless CLIs | `pc1500_cli` / `pc1600_cli --preset <file> --lcd-text <out.txt>` (or `-` for stdout), next to `--lcd-png`. It writes the rows, then `status: …` and, if any, `unparsed: n`. |
 | Presets | `- expect: <text>` fails the preset unless one row contains `<text>`; the error shows the whole screen. Each step's log line carries `lcd=["row", …]` (and `input="…"`, the ROM's input-line buffer). |
 | Debug server (running app) | The `calcu1600/screen` request returns `{rows, status, unparsed, poweredOn, cursor?: {row, col}}`. It needs a machine, not a debug session. |
-| Tests | `pc1500LcdText(machine)` / `pc1600LcdText(machine)` (`core/PC1500/PC1500LcdText.hpp`, `core/PC1600/PC1600LcdText.hpp`); see `tests/lcd_text_tests.cpp`. |
+| Through the machine interface | `displayText(machine)` (`core/Display/DisplayOutputText.hpp`): the dots and indicators of `readDisplay()`, parsed with the ROM font (`sharpLcdFont`) and the cursor the ROM keeps in RAM. The app layer (Copy Screen, `lcdText`), the golden replay and the CLIs read the display this way. A display that is off gives no rows and no status words (LIB-1 AC-43). |
+| Core tests | `pc1500LcdText(machine)` / `pc1600LcdText(machine)` on the old classes (`core/PC1500/PC1500LcdText.hpp`, `core/PC1600/PC1600LcdText.hpp`); see `tests/lcd_text_tests.cpp`. They read the status line even while the display is off. |
 
 Example, the plain PC-1600 after `PRINT MEM`:
 

@@ -76,6 +76,9 @@ public:
     // Runs `f` at the off point of the coming power cycle, after its
     // changes, or now when no change waits (LegacyCalls::atOffPoint).
     void atOffPoint(std::function<void()> f);
+    // The module in a slot as plugged() shows it: one that waits for the off
+    // point already, one that waits to come out no longer (design D-2).
+    ExpansionCard* moduleNow(const calcu::machine::PlaceName&);
     // What is plugged in, read again from the core (after a preset loader
     // changed it on the old class; LegacyCalls::applyPresetJob).
     void syncFromCore();
@@ -148,6 +151,8 @@ private:
     std::vector<calcu::machine::PlugEntry> m_plugged;   // what plugged() gives, by place
     std::vector<std::function<void()>> m_waiting;       // changes for the off point (D-2)
     std::vector<std::function<void()>> m_afterWaiting;  // atOffPoint()
+    // The modules of the waiting changes, by slot (nullptr: one comes out).
+    std::vector<std::pair<calcu::machine::PlaceName, ExpansionCard*>> m_waitingModules;
     std::vector<std::pair<calcu::machine::PlaceName, std::unique_ptr<calcu::peripherals::ControlTable>>> m_switches;
 };
 

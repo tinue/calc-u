@@ -528,7 +528,7 @@ somewhere else doesn't count (see docs/background/plans/Code-Cleanup-Plan.md).
 
   Fix: one `NewOldRom` enum with to/from-string, one
   `warnOldRomFallback()`, one menu/combo builder parameterised by label and
-  slot, and one static status helper over a `PtySerialLink*`.
+  slot, and one status helper over `HostLinks::status()` (M-26).
 
   **Design constraint:** the four "already checked" guards must end up as
   *one* guard inside the shared picker (call onPick only when the value

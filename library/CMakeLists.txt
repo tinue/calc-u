@@ -5,7 +5,7 @@
 # The C++ areas, once: their sources, their tests (<area>/tests/*.cpp) and the
 # tests' include folders all come from this list. (web/ is the Web shell's,
 # harness/cli/ and harness/attach/ are added below.)
-set(CALCU_LIBRARY_AREAS machine settings pacing sessions peripherals roms formats control startup typing presets harness)
+set(CALCU_LIBRARY_AREAS machine settings pacing sessions peripherals roms formats control startup typing presets paper harness)
 set(CALCU_LIBRARY_SOURCES "")
 foreach(area ${CALCU_LIBRARY_AREAS})
   file(GLOB area_sources CONFIGURE_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/${area}/*.cpp)
@@ -40,6 +40,12 @@ else()
   list(REMOVE_ITEM CALCU_LIBRARY_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/peripherals/PtyHostLink.cpp)
 endif()
 add_library(calcu_library STATIC ${CALCU_LIBRARY_SOURCES})
+# LIB-8 §3.3 (D-7): the paper picture gives the same pixels on every
+# platform; no fused multiply-add (MSVC's /fp:precise, its default, keeps
+# them apart already).
+if(NOT MSVC)
+  set_source_files_properties(${CMAKE_CURRENT_SOURCE_DIR}/paper/Picture.cpp PROPERTIES COMPILE_OPTIONS -ffp-contract=off)
+endif()
 if(CALCU_HAS_PTY OR CALCU_ATTACH)
   find_package(Threads REQUIRED)
   target_link_libraries(calcu_library PUBLIC Threads::Threads)
@@ -77,7 +83,7 @@ if(CALCU_TESTS AND NOT EMSCRIPTEN)
   # settings/tests, whose TestProduct.hpp is its own) and of library/testing/.
   add_library(calcu_test_machines OBJECT ${CMAKE_CURRENT_SOURCE_DIR}/machine/tests/TestMachines.cpp)
   target_link_libraries(calcu_test_machines PUBLIC calcu_library PRIVATE calcu_warnings)
-  foreach(area machine sessions roms typing startup presets harness)
+  foreach(area machine sessions roms typing startup presets paper harness)
     target_include_directories(calcu_test_machines PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/${area}/tests)
   endforeach()
   target_include_directories(calcu_test_machines PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/testing)
@@ -99,7 +105,8 @@ if(CALCU_TESTS AND NOT EMSCRIPTEN)
   add_executable(calcu_library_tests ${CALCU_LIBRARY_TEST_SOURCES})
   target_link_libraries(calcu_library_tests PRIVATE calcu_test_machines calcu_test_runner calcu_warnings)
   # LIB-6: the fixtures of the preset tests.
-  target_compile_definitions(calcu_library_tests PRIVATE CALCU_PRESET_FIXTURES="${CMAKE_CURRENT_SOURCE_DIR}/presets/tests/fixtures")
+  target_compile_definitions(calcu_library_tests PRIVATE CALCU_PRESET_FIXTURES="${CMAKE_CURRENT_SOURCE_DIR}/presets/tests/fixtures"
+                                                     CALCU_PAPER_FIXTURES="${CMAKE_CURRENT_SOURCE_DIR}/paper/tests/fixtures")
   add_test(NAME calcu_library_tests COMMAND calcu_library_tests)
   set_tests_properties(calcu_library_tests PROPERTIES LABELS frequent)
 
@@ -150,6 +157,11 @@ endfunction()
 
 # LIB-15: the Web frontend shell (library/web/).
 add_subdirectory(web)
+# LIB-8 D-1, LIB-14 D-16: the Qt6 component set (library/qt6/, target
+# calcu_qt6), only with the Qt6 frontends; its CMakeLists.txt finds Qt.
+if(CALCU_FRONTEND_QT AND NOT EMSCRIPTEN AND NOT CMAKE_SYSTEM_NAME STREQUAL "iOS")
+  add_subdirectory(qt6)
+endif()
 # LIB-11: the harness `calcu` and its test form `calcu_test`
 # (library/harness/cli/), and calcu_harness_add_product() for the products.
 add_subdirectory(harness/cli)

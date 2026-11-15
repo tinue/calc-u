@@ -1,17 +1,19 @@
 #pragma once
 
-// How the runtime (EmulationRunner, KeySequencer) gets its time slices.
-// Threads: its own threads, as the Swift and Qt apps run it. Cooperative: no
-// threads at all; the frontend's 60 Hz SessionController::tick() pumps the run
-// loop and the key lanes on its own thread — the web build, which has no
-// threads (GitHub Pages can't send the headers SharedArrayBuffer needs), and
-// tests on virtual time. See reference/SharedArchitecture.md § "Threads".
+// Who runs the machine of an EmulatorSession (LIB-3 59 design §2; LIB-17
+// design §5). There are no threads in the app layer: both run on the one
+// thread of the session's host.
+// - Cooperative: the Web frontend's SessionController::tick() pumps the
+//   machine itself through CooperativePacing's own batches (2.3.0's pacer,
+//   until M-34, when the Web moves onto the library session), and the tests
+//   of SessionController.
+// - Hosted: the library's machine session runs the machine with LIB-17's
+//   pacer (cu59::TIAppPart); CooperativePacing keeps only its job queue and
+//   its run flag.
+// Goes in M-34 with the last cooperative user (LIB-15 59).
 
 namespace cu59 {
 
-enum class Threading { Threads, Cooperative };
-
-/// Throws std::logic_error when `t` is Threads in a build without threads.
-void requireThreadSupport(Threading t);
+enum class Threading { Cooperative, Hosted };
 
 } // namespace cu59

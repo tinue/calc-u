@@ -1,5 +1,5 @@
 // The long-run pacing tests of LIB-17 (Technical Requirements; AC-18), on
-// 2.3.0's pacer (EmulationRunner) before it moves to the library (first step
+// 2.3.0's pacer (CooperativePacing) before it moves to the library (first step
 // 14 of docs/walkthroughs/first-steps.md, M-10 of docs/migration-plan.md).
 //
 // Scripted (Frequent group): the cooperative runner on a wall clock this test
@@ -8,12 +8,12 @@
 // stalls, emulated time must match wall time within the bound below.
 //
 // Real clock (Checkpoint group): CALCU59_PACING_LONGRUN=<seconds> runs the
-// threaded runner, as the Swift and Qt6 apps do, on the real clock for that
-// long (600 for the checkpoint) and checks the same bound at the end.
+// old batches on the real clock for that long (600 for the checkpoint) and
+// checks the same bound at the end.
 
 #include "TestHarness.hpp"
 #include "TestRoms.hpp"
-#include "../app/EmulationRunner.hpp"
+#include "../app/CooperativePacing.hpp"
 #include "../app/FreezeController.hpp"
 #include "../app/Pacing.hpp"
 #include <chrono>
@@ -56,10 +56,10 @@ TEST(pacing_longrun_scripted_ti) {
         testroms::runToScanLoop(*m, model);
         const double tps = ticksPerSecond(model) * oldRate(model);  // emulated seconds at 2.3.0's rate
         FreezeController freeze;
-        EmulationRunner::Callbacks cb;
+        CooperativePacing::Callbacks cb;
         cb.jitterSeed = 59;
         MachineGuard guard(*m);
-    EmulationRunner runner(guard, model, freeze, cb, Threading::Cooperative);
+    CooperativePacing runner(guard, model, freeze, cb, Threading::Cooperative);
         runner.start();
         auto t = Clock::time_point{} + std::chrono::hours(2);
         runner.pump(t, nullptr);
@@ -108,13 +108,19 @@ TEST(pacing_longrun_real_clock_ti) {
         testroms::runToScanLoop(*m, model);
         const double tps = ticksPerSecond(model) * oldRate(model);
         FreezeController freeze;
-        EmulationRunner::Callbacks cb;
+        CooperativePacing::Callbacks cb;
         MachineGuard guard(*m);
-    EmulationRunner runner(guard, model, freeze, cb, Threading::Threads);
+    CooperativePacing runner(guard, model, freeze, cb);
         const uint64_t t0 = ((*m).tickCount() / 32);
         const auto w0 = Clock::now();
         runner.start();
-        std::this_thread::sleep_for(std::chrono::duration<double>(seconds));
+        // 2.3.0's batches pumped at 60 Hz on the real clock (the threaded
+        // runner went in M-33; its schedule is the same).
+        while (Clock::now() - w0 < std::chrono::duration<double>(seconds)) {
+            runner.pump(Clock::now(), nullptr);
+            std::this_thread::sleep_for(std::chrono::microseconds(16'667));
+        }
+        runner.pump(Clock::now(), nullptr);
         uint64_t ticks = 0;
         runner.stop();
         runner.sync([&] { ticks = ((*m).tickCount() / 32) - t0; });

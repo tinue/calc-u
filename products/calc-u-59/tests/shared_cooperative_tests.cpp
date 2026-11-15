@@ -5,7 +5,7 @@
 #include "TestHarness.hpp"
 #include "FakePlatform.hpp"
 #include "TestRoms.hpp"
-#include "../app/EmulationRunner.hpp"
+#include "../app/CooperativePacing.hpp"
 #include "../app/KeyboardLayout.hpp"
 #include "../app/TextUtil.hpp"
 #include "../app/KeySequencer.hpp"
@@ -76,7 +76,7 @@ struct FakeHost : KeySequencer::Host {
 struct VirtualRig {
     FakeHost host;
     Clock::time_point t = Clock::time_point{} + 1h;
-    KeySequencer keys{host, Threading::Cooperative};
+    KeySequencer keys{host};
     VirtualRig() { host.clock = [this] { return t; }; keys.advance(t); }
     void run(Clock::duration d, Clock::duration slice = 20ms) {
         auto end = t + d;
@@ -184,30 +184,6 @@ TEST(cooperative_two_code_binding_taps_both_keys) {
     CHECK(std::count(n.begin(), n.end(), "press 11") == 1);
 }
 
-TEST(threaded_and_cooperative_sequencers_agree) {
-    FakeHost host;
-    {
-        KeySequencer keys(host);
-        auto events = keyEvents({25, 83});
-        events.push_back(event(KeystrokeEvent::Kind::Wait, 0.05));
-        keys.play(events);
-        auto end = Clock::now() + 2s;
-        while (keys.isPlaying() || host.names().empty()) {
-            if (Clock::now() > end) break;
-            std::this_thread::sleep_for(5ms);
-        }
-        std::this_thread::sleep_for(20ms);
-    }
-    VirtualRig r;
-    auto events = keyEvents({25, 83});
-    events.push_back(event(KeystrokeEvent::Kind::Wait, 0.05));
-    r.keys.play(events);
-    r.run(1s);
-    CHECK(host.names() == r.host.names());
-    auto hold = host.at("release 25") - host.at("press 25");
-    CHECK(hold >= 100ms && hold < 150ms);
-}
-
 // ── Run loop ─────────────────────────────────────────────────────────────────
 
 TEST(cooperative_runner_paces_by_the_wall_clock) {
@@ -215,10 +191,10 @@ TEST(cooperative_runner_paces_by_the_wall_clock) {
     testroms::runToScanLoop(*m, Model::TI59);
     FreezeController freeze;
     int batches = 0;
-    EmulationRunner::Callbacks cb;
+    CooperativePacing::Callbacks cb;
     cb.batchDone = [&] { ++batches; };
     MachineGuard guard(*m);
-    EmulationRunner runner(guard, Model::TI59, freeze, cb, Threading::Cooperative);
+    CooperativePacing runner(guard, Model::TI59, freeze, cb, Threading::Cooperative);
     std::vector<int> order;
     runner.post([&] { order.push_back(1); });
     runner.start();
@@ -250,10 +226,10 @@ TEST(cooperative_runner_batch_ends_do_not_lock_onto_a_loop) {
     testroms::runToScanLoop(*m, Model::TI58);
     for (int k : {92, 35}) testroms::tap(*m, Model::TI58, k);  // 0 1/x: error blink
     FreezeController freeze;
-    EmulationRunner::Callbacks cb;
+    CooperativePacing::Callbacks cb;
     cb.jitterSeed = 59;
     MachineGuard guard(*m);
-    EmulationRunner runner(guard, Model::TI58, freeze, cb, Threading::Cooperative);
+    CooperativePacing runner(guard, Model::TI58, freeze, cb, Threading::Cooperative);
     std::vector<uint16_t> ends;
     runner.start();
     auto t = Clock::time_point{} + 1h;
@@ -281,11 +257,11 @@ TEST(cooperative_runner_full_speed_runs_a_slice) {
     FreezeController freeze;
     auto wall = Clock::time_point{} + 1h;
     int batches = 0;
-    EmulationRunner::Callbacks cb;
+    CooperativePacing::Callbacks cb;
     cb.batchDone = [&] { ++batches; wall += 1ms; };  // each batch "takes" 1 ms
     cb.wallClock = [&] { return wall; };
     MachineGuard guard(*m);
-    EmulationRunner runner(guard, Model::TI59, freeze, cb, Threading::Cooperative);
+    CooperativePacing runner(guard, Model::TI59, freeze, cb, Threading::Cooperative);
     runner.setFullSpeed(true);
     runner.start();
     runner.pump(Clock::time_point{} + 1h, nullptr);

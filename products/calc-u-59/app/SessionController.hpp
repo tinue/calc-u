@@ -109,12 +109,12 @@ public:
     /// no machine starts (AC-5, AC-10).
     static std::unique_ptr<SessionController> create(Platform& platform, const calcu::roms::Bundle& bundle,
                                                      std::string cuecards, std::string moduleID,
-                                                     Threading threading = Threading::Threads);
+                                                     Threading threading = Threading::Cooperative);
     /// `roms` from lookUpRoms(); `cuecards` is roms/solid-state/cuecards.txt
     /// (the cue cards until M-55); `moduleID` the saved module (an ID that is
     /// no module leaves the slot empty).
     SessionController(Platform& platform, std::shared_ptr<const calcu::roms::RomSet> roms, std::string cuecards,
-                      std::string moduleID, Threading threading = Threading::Threads);
+                      std::string moduleID, Threading threading = Threading::Cooperative);
     ~SessionController();
     SessionController(const SessionController&) = delete;
     SessionController& operator=(const SessionController&) = delete;

@@ -1,5 +1,6 @@
 #pragma once
 #include "TIAppPart.hpp"
+#include "typing/HostKey.hpp"
 #include "sessions/Listener.hpp"
 #include <QObject>
 #include <QString>
@@ -44,12 +45,15 @@ public:
     void setFullSpeed(bool on);
     const std::optional<cu59::CueCardContent>& cueCard() const;
 
-    // ── Keys (0-based row 0–8, col 0–4, or matrix codes) ─────────────────────
-    void pressKey(int row, int col);
-    void releaseKey(int row, int col);
-    void keyboardDown(const std::vector<uint8_t>& codes);
-    void keyboardUp() { send(cu59::commands::kKeyboardUp); }
-    void keyboardRelease() { send(cu59::commands::kKeyboardRelease); }
+    // ── Keys: the library's typing (LIB-5) ─────────────────────────────────
+    /// An on-screen key (0-based row 0–8, col 0–4) down, and up (the pointer's).
+    void screenKeyDown(int row, int col);
+    void screenKeyUp();
+    /// A host key as Qt reports it; the product's keyboard map decides.
+    void hostKeyDown(const calcu::typing::HostKeyEvent& e);
+    void hostKeyUp(const std::string& physical);
+    void focusLost();
+    /// The key drawn pressed (row × 5 + col; the last one live input holds), -1 none.
     int keyboardHeldKey() const;
 
     // ── Printer ──────────────────────────────────────────────────────────────

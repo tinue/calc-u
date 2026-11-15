@@ -63,14 +63,18 @@ TI-59 under the default settings) with the PC-100C, at key readiness (LIB-18).
   reply per line (`done`, `done <n>` and n lines, `refused: <reason>`);
   `--json` gives one object `{"done","result","reason"}` per reply. From
   Python: `library/harness/python/calcu_serve.py`.
-- First commands: `wait <2s|500ms>`, `key-down`/`key-up <key ID>`, `lcd`,
+- First commands: `wait <2s|500ms>`, `key-down`/`key-up <key ID>` (raw),
+  `key <name> …` (LIB-5: each pressed in turn as the app types it, 100 ms
+  and until the ROM read it; the names of `docs/formats/preset.md` §8.1,
+  `2nd Pgm`, `x^2`, `RTN`; replies when the last key is up; no `type` on a
+  TI model), `lcd`,
   `display`, `state <topic>`, `capabilities`, `ticks`, `quit`
   (`calcu --help` lists them). Machine control (LIB-18): `model <TI-59|TI-58|TI-58C>`,
   `attach <place> <peripheral>` (`attach slot-1 ML`), `detach <place>`, `reset`,
   `cold-boot`, `power-cycle`; each replies when the machine is ready for keys
   again. No settings or save folder of yours is
   touched unless `--settings`, `--save-folder`, `--output-folder` name them.
-- Not yet: `ti59 …` commands, typing, presets, traces, memory (later
+- Not yet: `ti59 …` commands, presets, traces, memory (later
   features). Until M-59, `tools/headless/` and `tools/agentic/` stay the
   tools for those.
 

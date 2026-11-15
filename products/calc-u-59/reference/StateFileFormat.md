@@ -264,9 +264,11 @@ Wait: 2s
 21 84 65 72 95   # π × 4 =
 ```
 
-**Timing.** Each key is held 100 ms, then playback waits until the CPU is
-back in the keyboard scan loop, so no key is lost to a busy calculator
-(`app/KeySequencer`). While the debugger is frozen, keys, reloads and
+**Timing.** Each key waits for the keyboard scan loop, is held 100 ms of
+emulated time (and until the ROM has read it), then playback waits until
+the CPU is back in the scan loop, so no key is lost to a busy calculator
+(`app/TIKeystrokePlayback` over the library's typing, LIB-5; the same at
+every speed, behaviour change 59-23). While the debugger is frozen, keys, reloads and
 `InsertCard:` wait until it runs again (a key pressed into a frozen machine
 would be lost); directives go on, so `Step:` and `Resume:` work.
 

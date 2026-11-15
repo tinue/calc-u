@@ -15,8 +15,8 @@ struct TIAppPart::Hooks final : calcu::sessions::SliceHook, calcu::sessions::Adv
     calcu::machine::Ticks last = 0;
     explicit Hooks(TIAppPart& p) : part(p) {}
 
-    // TIKeySequencerHook: the KeySequencer at each slice end, with the wall
-    // time the slice was due at (LIB-17 adapter SliceRequest::due).
+    // TIKeystrokePlayback at each slice end, with the wall time the slice
+    // was due at (LIB-17 adapter SliceRequest::due, until M-54).
     calcu::machine::Ticks nextDue(calcu::machine::Ticks now) const override { return now > last ? now : calcu::sessions::kNever; }
     void act(calcu::machine::Machine&, calcu::machine::Ticks now, calcu::pacing::WallTime due) override {
         last = now;
@@ -38,6 +38,16 @@ struct TIAppPart::Hooks final : calcu::sessions::SliceHook, calcu::sessions::Adv
     }
 };
 
+// TIFreezeProbe (LIB-5 §5, until M-53): the TI freeze is the typing part's
+// pause (AC-20): a held key comes up after the rest of its hold in host time.
+struct TIAppPart::FreezeProbe final : calcu::typing::PauseProbe {
+    TIAppPart& part;
+    explicit FreezeProbe(TIAppPart& p) : part(p) {}
+    bool paused(calcu::sessions::SessionContext&) const override {
+        return part.m_session && part.m_session->frozen();
+    }
+};
+
 // EmulatorSession events, inside an advance or a job; each waits for the end
 // of the call and is dropped if its EmulatorSession has been replaced meanwhile.
 struct TIAppPart::Events : EmulatorSession::Listener {
@@ -50,12 +60,6 @@ struct TIAppPart::Events : EmulatorSession::Listener {
     }
     void frozenViewReady(uint64_t freezeGeneration, FrozenViewReason reason) override {
         c.later(generation, [&c = c, freezeGeneration, reason] { c.onFrozenView(freezeGeneration, reason); });
-    }
-    void heldKeyChanged(int id) override {
-        c.later(generation, [&c = c, id] {
-            c.m_heldKey = id;
-            c.emitChanged(RunStateChanged);
-        });
     }
     void fullSpeedChanged(bool on) override {
         c.later(generation, [&c = c, on] {

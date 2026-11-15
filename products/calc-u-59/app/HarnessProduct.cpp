@@ -3,6 +3,7 @@
 #include "PacingProfiles.hpp"
 #include "ProductRoms.hpp"
 #include "Settings.hpp"
+#include "TITyping.hpp"
 #include "../core/TICatalogue.hpp"
 #include "../core/TISegments.hpp"
 #include "roms/Bundle.hpp"
@@ -59,6 +60,9 @@ public:
     roms::LookupResult lookUpRoms() const override { return cu59::lookUpRoms(roms::DirectoryBundle(CALCU59_ROM_DIR)); }
 
     startup::ProductMachines& machines() override { return machines_; }
+    // LIB-5: the library's typing with the TI profiles and map (`key`; no
+    // `type` on a TI model, D-8), in virtual time.
+    std::vector<sessions::SessionPart*> sessionParts() override { return {&typing_}; }
 
     harness::DisplayText readDisplay(const machine::DisplayOutput& o, const machine::MachineDescriptor& d) override {
         const auto* frame = std::get_if<machine::SegmentFrame>(&o.frame);
@@ -73,6 +77,7 @@ public:
 
 private:
     HarnessMachines machines_;
+    typing::TypingPart typing_{typingProduct(), sessions::Hosting::VirtualTime};
 };
 
 } // namespace

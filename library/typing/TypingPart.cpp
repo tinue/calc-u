@@ -141,6 +141,11 @@ void TypingPart::attach(sessions::SessionSetup& s) {
                       if (!p) return Refused{"Unknown key: " + n + "."};
                       presses.insert(presses.end(), p->begin(), p->end());
                   }
+                  if (const TypingProfile* prof = engine_.profile(); prof && prof->names) {
+                      auto all = prof->names(names);
+                      if (!all) return Refused{"Unknown key: " + names.front() + "."};
+                      presses = std::move(*all);
+                  }
                   return deferred(engine_.typeKeys(std::move(presses), Origin::Typed));
               }));
     if (product_.typesText())

@@ -6,6 +6,8 @@
 #include <calcu59/app/KeyboardLayout.hpp>
 #include <calcu59/app/SessionThread.hpp>
 #include <calcu59/app/TIAppPart.hpp>
+#include <calcu59/app/KeyIds.hpp>
+#include "typing/TypingTopics.hpp"
 #if DEBUG && (TARGET_OS_OSX || TARGET_OS_SIMULATOR)
 #include <calcu59/app/HarnessProduct.hpp>
 #include "harness/attach/AttachPort.hpp"
@@ -232,7 +234,7 @@ TIChange changeOf(const cs::TopicName& t) {
     if (t == T::kCueCard) return TIChangeCueCard;
     if (t == T::kPrinter) return TIChangePrinter;
     if (t == T::kCardReader) return TIChangeCard;
-    if (t == T::kRunState) return TIChangeRunState;
+    if (t == T::kRunState || t == calcu::typing::kHeldKeysTopic) return TIChangeRunState;
     if (t == T::kTrace) return TIChangeTrace;
     if (t == T::kDebugLive) return static_cast<TIChange>(TIChangeLive | TIChangeListing);
     if (t == T::kDebugCpu) return TIChangeCpu;
@@ -255,6 +257,9 @@ cs::HostServices statedServices() {
 #endif
     return services;
 }
+
+// The key ID of a matrix code (row × 10 + column), "" for none.
+std::string keyIdOf(uint8_t code) { return cu59::keyIdAt(code).value_or(calcu::machine::KeyId{}).value; }
 
 std::vector<cs::Value::Member> argsWithBytes(std::vector<cs::Value::Member> m, NSData* raw) {
     if (raw) m.push_back({"bytes", cs::Value(bytes(raw))});
@@ -384,6 +389,7 @@ static cu59::SessionThread::ReplyHandler flagReply(void (^done)(BOOL)) {
     _thread->send(cs::Command{name, cs::Value(std::move(args))});
 }
 - (void)send:(const cs::CommandName&)name { _thread->send(cs::Command{name, cs::Value::object({})}); }
+- (void)send:(const cs::CommandName&)name value:(cs::Value)args { _thread->send(cs::Command{name, std::move(args)}); }
 
 - (void)suspendWithCompletion:(void (^)(void))done {
     _thread->suspendCalls();
@@ -418,12 +424,12 @@ static cu59::SessionThread::ReplyHandler flagReply(void (^done)(BOOL)) {
 }
 
 #if DEBUG
-- (void)pressKey:(uint8_t)code completion:(void (^)(BOOL))done {
-    [self send:cu59::commands::kPressKey args:{{"code", static_cast<int>(code)}}
+- (void)rawKeyDown:(uint8_t)code completion:(void (^)(BOOL))done {
+    [self send:cs::kKeyDownCommand args:{{"key", keyIdOf(code)}}
          reply:[done](const cs::ReplyMessage& r) { done(r.done ? YES : NO); }];
 }
-- (void)releaseKey:(uint8_t)code completion:(void (^)(BOOL))done {
-    [self send:cu59::commands::kReleaseKey args:{{"code", static_cast<int>(code)}}
+- (void)rawKeyUp:(uint8_t)code completion:(void (^)(BOOL))done {
+    [self send:cs::kKeyUpCommand args:{{"key", keyIdOf(code)}}
          reply:[done](const cs::ReplyMessage& r) { done(r.done ? YES : NO); }];
 }
 - (void)offeredHostServices:(void (^)(NSArray<NSString *> *))done {
@@ -473,12 +479,35 @@ static cu59::SessionThread::ReplyHandler flagReply(void (^done)(BOOL)) {
     const auto* l = _mirror.stateOf<cu59::TILedState>(cu59::topics::kLed);
     return l ? l->calcIndicatorOpacity : 0;
 }
-- (void)pressKey:(uint8_t)code { [self send:cu59::commands::kPressKey args:{{"code", static_cast<int>(code)}}]; }
-- (void)releaseKey:(uint8_t)code { [self send:cu59::commands::kReleaseKey args:{{"code", static_cast<int>(code)}}]; }
-- (void)keyboardDown:(NSData *)codes { [self send:cu59::commands::kKeyboardDown args:{{"codes", cs::Value(bytes(codes))}}]; }
-- (void)keyboardUp { [self send:cu59::commands::kKeyboardUp]; }
-- (void)keyboardRelease { [self send:cu59::commands::kKeyboardRelease]; }
-- (NSInteger)heldKey { const auto* r = [self run]; return r ? r->heldKey : -1; }
+- (void)screenKeyDown:(uint8_t)code {
+    [self send:calcu::typing::kScreenKeyDown args:{{"key", keyIdOf(code)}, {"pointer", 1}}];
+}
+- (void)screenKeyUp { [self send:calcu::typing::kScreenKeyUp args:{{"key", ""}, {"pointer", 1}}]; }
+- (void)hostKeyDownPhysical:(NSString *)physical named:(NSString *)named produced:(uint32_t)produced
+                    carried:(uint32_t)carried shift:(BOOL)shift control:(BOOL)control alt:(BOOL)alt
+                    command:(BOOL)command {
+    calcu::typing::HostKeyEvent e;
+    e.physical = cpp(physical);
+    e.named = calcu::typing::namedKeyOf(cpp(named));
+    e.produced = produced;
+    e.carried = carried;
+    e.mods.shift = shift == YES;
+    e.mods.control = control == YES;
+    e.mods.alt = alt == YES;
+    e.mods.command = command == YES;
+    e.mods.macHost = true;
+    [self send:calcu::typing::kHostKeyDown value:calcu::typing::toValue(e)];
+}
+- (void)hostKeyUpPhysical:(NSString *)physical {
+    [self send:calcu::typing::kHostKeyUp args:{{"physical", cpp(physical)}}];
+}
+- (void)focusLost { [self send:calcu::typing::kFocusLost]; }
+- (NSInteger)heldKey {
+    const auto* h = _mirror.stateOf<calcu::typing::HeldKeys>(calcu::typing::kHeldKeysTopic);
+    if (!h || h->live.empty()) return -1;
+    const auto code = cu59::matrixCodeOf(h->live.back());
+    return code ? (*code / 10 - 1) * 5 + (*code % 10 - 1) : -1;
+}
 - (BOOL)fullSpeed { const auto* r = [self run]; return r && r->fullSpeed; }
 - (void)setFullSpeed:(BOOL)on { [self send:cu59::commands::kFullSpeed args:{{"on", on == YES}}]; }
 - (BOOL)keystrokesPlaying { const auto* r = [self run]; return r && r->keystrokesPlaying; }

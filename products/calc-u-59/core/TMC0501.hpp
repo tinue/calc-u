@@ -161,6 +161,12 @@ public:
     void releaseKey(int row, int col);
     /// The key matrix byte of digit slot `col` (bit = K-line); for tests.
     uint8_t keyLines(int col) const { return (col >= 0 && col < 16) ? key[col] : 0; }
+    /// How many keyboard-scan instructions found the key at K-line `row`,
+    /// digit slot `col` pressed (the kmask match; LIB-5 §3.4, D-3). It only
+    /// grows; it changes nothing the machine does.
+    uint64_t keySamples(int row, int col) const {
+        return (col >= 0 && col < 16 && row >= 0 && row < 8) ? m_keySamples[static_cast<size_t>(col * 8 + row)] : 0;
+    }
 
     /// The printer connector and the module slot (TIMachine, at build, attach
     /// and detach).
@@ -435,6 +441,7 @@ private:
     // hardware poll; consumed (and cleared) by the very next step() to detect a
     // backward branch retrying it — see step()'s kPolledHardware doc comment.
     bool m_lastStepWasHWPoll{false};
+    std::array<uint64_t, 16 * 8> m_keySamples{};   // keySamples(): by digit slot × K-line
 
     // Latched at each step boundary and idle entry (see step()).
     StepBoundary m_stepBoundary{};

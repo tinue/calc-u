@@ -3,6 +3,7 @@
 // batch rules (Pacing.hpp: cycle-weighted batches, the sleep rule) went with
 // CooperativePacing in M-34; the library's pacer has its own tests (LIB-17).
 
+#include "SessionRig.hpp"
 #include "TestHarness.hpp"
 #include "TestRoms.hpp"
 #include "../core/TIRomRanges.hpp"
@@ -311,22 +312,19 @@ TEST(session_queued_steps_run_after_the_host_call) {
     CHECK(session.halted());
 }
 
+// KEYSTROKES need the typing engine for their keys (LIB-5): on the
+// product's session, as a frontend hosts it.
 TEST(session_plays_keystrokes_in_real_time) {
-    RecordingListener listener;
-    EmulatorSession session(Model::TI59, *testroms::romSet(), MachinePeripherals{std::string("ML")}, listener);
-    CHECK(!session.moduleImage().empty());
-    session.setFullSpeed(true);  // boot quickly; the scan loop still runs at regular speed
-    session.setHalted(false);
-    CHECK(waitFor(session, [&] { return session.access().machine().isKeyReady(); }, 5000ms));
-    session.setFullSpeed(false);
-    auto r = parseStateFile("KEYSTROKES:\n25 83 85 84 95\nZeroElapseTime:\nWait: 50ms\nReportElapseTime:\n");
-    session.playKeystrokes(r.keystrokes);
-    CHECK(waitFor(session, [&] { return listener.playbackDone == 1; }, 8000ms));
-    CHECK_EQ(testroms::displayText(session.access().machine()), std::string("5"));
-    CHECK_EQ(listener.logs.size(), size_t{1});
-    if (!listener.logs.empty()) CHECK(listener.logs[0].rfind("Elapsed: 0:00.", 0) == 0);
-    CHECK(!session.isFullSpeed());
-    session.setHalted(true);
+    testroms::SessionRig r;
+    using Value = calcu::sessions::Value;
+    CHECK(r.until([&] { return r.machine().isKeyReady(); }));
+    r.post(commands::kLoadState,
+           Value::object({{"bytes", r.bytes("KEYSTROKES:\n25 83 85 84 95\nZeroElapseTime:\nWait: 50ms\nReportElapseTime:\n")}}));
+    CHECK(r.until([&] { return !r.busy(); }, 8s));
+    r.runFor(100ms);
+    CHECK_EQ(testroms::displayText(r.machine()), std::string("5"));
+    CHECK(r.part().logText().find("Elapsed: 0:00.") != std::string::npos);
+    CHECK(!r.part().fullSpeed());
 }
 
 TEST(session_freeze_fires_through_listener) {
@@ -339,13 +337,13 @@ TEST(session_freeze_fires_through_listener) {
     session.armScanLoopExit();
     CHECK(session.debugState().scanLoopExitArmed);
     CHECK(testroms::dbg(session.access().machine()).traceFlags() != TRACE_NONE);  // an armed freeze needs the trace ring
-    session.keyboardDown({83});
+    session.access().machine().keyDown(calcu::machine::KeyId{"2"});   // raw: this tests the freeze, not typing
     CHECK(waitFor(session, [&] { return listener.freezes == 1; }, 2000ms));
     CHECK(listener.frozenWhenFired);
     DebugState s = session.debugState();
     CHECK(s.frozen && s.owner == FreezeOwner::Cpu && !s.scanLoopExitArmed);
     CHECK(session.halted());
-    session.keyboardRelease();
+    session.access().machine().keyUp(calcu::machine::KeyId{"2"});
     session.resume();
     CHECK(!session.debugState().frozen && !session.halted());
     CHECK_EQ(testroms::dbg(session.access().machine()).traceFlags(), static_cast<uint32_t>(TRACE_NONE));

@@ -1,7 +1,6 @@
 #import "TISharedTables.h"
 #include <calcu59/app/KeyIds.hpp>
 #include <calcu59/app/KeyboardLayout.hpp>
-#include <calcu59/app/KeyboardMap.hpp>
 #include <calcu59/app/PrinterFont.hpp>
 #include <calcu59/app/SevenSegment.hpp>
 
@@ -10,12 +9,6 @@ CGRect toCG(const cu59::NRect& r) { return CGRectMake(r.x, r.y, r.w, r.h); }
 }
 
 @implementation TISharedTables
-
-+ (NSData *)matrixCodesForKey:(uint32_t)key produced:(uint32_t)produced
-                     isLetter:(BOOL)isLetter shift:(BOOL)shift command:(BOOL)command {
-    auto codes = cu59::matrixCodesFor({key, produced, isLetter == YES, shift == YES, command == YES});
-    return [NSData dataWithBytes:codes.data() length:codes.size()];
-}
 
 + (uint8_t)ledCellSegmentsAt:(NSInteger)index glyph:(uint8_t)glyph level:(uint8_t)level
                  calcOpacity:(double)calcOpacity opacity:(double *)opacity {

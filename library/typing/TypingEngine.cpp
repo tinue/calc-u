@@ -567,7 +567,8 @@ Ticks TypingEngine::nextDue(Ticks now) const {
         if (!d.releaseAsked) continue;
         const Ticks end = d.at + effHold(d.hold);
         if (end > now) due = std::min(due, end);
-        else if (profile_->holdUntilSampled) due = std::min(due, std::max(now, d.at + profile_->holdUntilSampled->maxHold));
+        else if (profile_->holdUntilSampled)   // the first look at the end of the hold, then every poll
+            due = std::min(due, pollAt_ == kNever ? now : std::max(now, d.at + profile_->holdUntilSampled->maxHold));
         else due = std::min(due, now);
     }
     if (!queue_.empty()) {

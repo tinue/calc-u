@@ -43,12 +43,23 @@ EmulatorSession::EmulatorSession(Model model, const calcu::roms::RomSet& roms, M
         m_moduleImage = cu59::moduleImage(roms, *moduleRomFile(*id)).value_or(std::vector<uint8_t>{});
 
     access().debugTarget().setRunControl(&m_freeze);
-    m_keys = std::make_unique<KeySequencer>(static_cast<KeySequencer::Host&>(*this));
 }
 
-EmulatorSession::~EmulatorSession() {
-    m_keys.reset();    // a held key comes up before the machine goes away
-    access().debugTarget().setRunControl(nullptr);
+EmulatorSession::~EmulatorSession() { access().debugTarget().setRunControl(nullptr); }
+
+void TIKeyTraceObserver::keyChanged(const calcu::machine::KeyId& id, bool down, calcu::machine::Ticks) {
+    const auto code = matrixCodeOf(id);
+    if (!code) return;
+    const auto row = static_cast<uint8_t>(*code / 10 - 1), col = static_cast<uint8_t>(*code % 10 - 1);
+    if (down) m_w.writeKeyDown(row, col);
+    else m_w.writeKeyUp(row, col);
+}
+
+// A KEYSTROKES key: one press of the typing engine, origin Preset (LIB-5 §4).
+bool EmulatorSession::typeKey(uint8_t matrixCode) {
+    const auto id = keyIdAt(matrixCode);
+    if (!id || !m_typing) return false;
+    return !m_typing->typeKeys({calcu::typing::Press{*id}}, calcu::typing::Origin::Preset).refused;
 }
 
 calcu::machine::ChangeResult EmulatorSession::setModule(const std::optional<std::string>& moduleID,
@@ -112,12 +123,12 @@ void EmulatorSession::runQueuedSteps() {
     }
 }
 
-// Key input advances at the end of every slice (sliceEnded), at the time the
-// slice was due, so a 100 ms hold spans its slices and the wait for the scan
-// loop is checked at each slice end; with no slice (frozen), at `now`.
+// Playback advances at the end of every slice (sliceEnded), at the time the
+// slice was due (its Wait: is wall time); with no slice (frozen), at `now`.
+// Its keys are held by the typing engine in emulated time (LIB-5).
 void EmulatorSession::pump(std::chrono::steady_clock::time_point now) {
     runQueuedSteps();
-    if (!m_sliceRan) m_keys->advance(now);
+    if (!m_sliceRan) m_playback.advance(now);
     m_sliceRan = false;
     runQueuedSteps();
 }
@@ -149,20 +160,6 @@ void EmulatorSession::setFullSpeed(bool on) {
     if (m_fullSpeed == on) return;
     m_fullSpeed = on;
     m_listener.fullSpeedChanged(on);
-}
-
-void EmulatorSession::pressKey(uint8_t matrixCode) {
-    auto id = keyIdAt(matrixCode);
-    if (!id) return;
-    m_manualTrace.writeKeyDown(static_cast<uint8_t>(matrixCode / 10 - 1), static_cast<uint8_t>(matrixCode % 10 - 1));
-    access().machine().keyDown(*id);
-}
-
-void EmulatorSession::releaseKey(uint8_t matrixCode) {
-    auto id = keyIdAt(matrixCode);
-    if (!id) return;
-    m_manualTrace.writeKeyUp(static_cast<uint8_t>(matrixCode / 10 - 1), static_cast<uint8_t>(matrixCode % 10 - 1));
-    access().machine().keyUp(*id);
 }
 
 // ── Debugger ─────────────────────────────────────────────────────────────────

@@ -4,6 +4,7 @@
 #include <cstdint>
 #include <functional>
 #include <optional>
+#include <string>
 #include <string_view>
 #include <vector>
 
@@ -64,6 +65,10 @@ struct TypingProfile {
     // `key` names (AC-15, AC-26, AC-41): a name → its presses; nullopt:
     // refused. Unset: the key IDs of the model as written.
     std::function<std::optional<std::vector<Press>>(std::string_view)> name;
+    // A `key` of several names, when the names act on each other (AC-26: a
+    // `2nd` written before a second function is pressed once): the presses
+    // of them all; nullopt: refused. Unset: name by name.
+    std::function<std::optional<std::vector<Press>>(const std::vector<std::string>&)> names;
 
     // The gap after a press of `key`: typed.gap and the extra one.
     machine::Ticks gapAfter(const machine::KeyId& key) const {

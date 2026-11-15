@@ -270,21 +270,27 @@ class EmulatorViewModel {
     }
 
     // MARK: - Keys
-    // Keys go through the session (Shared/KeySequencer): it logs them to the
-    // manual trace and owns the timed input — KEYSTROKES playback and the
-    // physical keyboard's hold rules.
+    // Keys go through the session: the library's typing (LIB-5) holds them in
+    // emulated time, waits for the machine, and the product's keyboard map
+    // (app/TITyping) decides what a host key presses.
 
-    func pressKey(row: Int, col: Int) { session?.pressKey(TISharedTables.matrixCode(row: row, col: col)) }
-    func releaseKey(row: Int, col: Int) { session?.releaseKey(TISharedTables.matrixCode(row: row, col: col)) }
+    /// An on-screen key down (0-based row, column) and up: at least 100 ms
+    /// of emulated time down (LIB-5 AC-24).
+    func pressKey(row: Int, col: Int) { session?.screenKeyDown(TISharedTables.matrixCode(row: row, col: col)) }
+    func releaseKey(row: Int, col: Int) { session?.screenKeyUp() }
 
-    /// A physical key went down, resolved to one or two matrix codes by
-    /// `Shared/KeyboardMap.cpp`. A single code is held until `keyboardKeyUp()`
-    /// (at least 100 ms); a 2nd + key pair plays as two taps.
-    func keyboardKeyDown(_ codes: [UInt8]) { session?.keyboardDown(Data(codes)) }
-    func keyboardKeyUp() { session?.keyboardUp() }
-    /// Force-release whatever the keyboard is holding — used when the calculator
-    /// view loses focus or is torn down, so a matrix bit can't stay stuck set.
-    func keyboardRelease() { session?.keyboardRelease() }
+    /// A physical key as the host reports it (macOS): its identity, a name for
+    /// Escape / Return / Enter, the character it produced, the letter it
+    /// carries, the modifiers. The session's keyboard map decides.
+    func hostKeyDown(physical: String, named: String, produced: UInt32, carried: UInt32,
+                     shift: Bool, control: Bool, option: Bool, command: Bool) {
+        session?.hostKeyDownPhysical(physical, named: named, produced: produced, carried: carried,
+                                     shift: shift, control: control, alt: option, command: command)
+    }
+    func hostKeyUp(physical: String) { session?.hostKeyUpPhysical(physical) }
+    /// The calculator view lost the focus or went away: every key held comes
+    /// up, after its minimum hold (LIB-5 AC-10).
+    func keyboardRelease() { session?.focusLost() }
 
     // MARK: - Printer
 

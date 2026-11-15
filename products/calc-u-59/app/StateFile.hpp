@@ -12,7 +12,7 @@
 // PARTITION, PROGRAM, REGISTERS, KEYSTROKES, CUECARD and CARD sections, reloads
 // and the SOLID-STATE-MODULE / PRINTER / MODEL directives — is specified
 // in reference/StateFileFormat.md. Applying a parsed file to a machine is
-// StateApplier's job; playing back KEYSTROKES is KeySequencer's.
+// StateApplier's job; playing back KEYSTROKES is TIKeystrokePlayback's.
 
 namespace cu59 {
 

@@ -44,7 +44,8 @@ public:
     calcu::machine::DisplayOutput readDisplay() override;
     std::size_t takeSound(std::span<std::int16_t>) override { return 0; }
     calcu::machine::Plugged plugged() const override;
-    /// With the PC-100C: `printer/controls` (PRINT, ADV, TRACE) and
+    /// Always `TMC0501/typing-support` (LIB-5 §3.4); with the PC-100C:
+    /// `printer/controls` (PRINT, ADV, TRACE) and
     /// `printer/c59.printer-output` (C59-6 AC-1, AC-5; LIB-2 AC-26). The card
     /// reader's media place comes in M-55 (LIB-1 D-1).
     std::vector<calcu::machine::CapabilityEntry> capabilities() const override;
@@ -68,6 +69,7 @@ private:
     friend class TIMemoryAdapter;
     friend class TIDebugTargetAdapter;
     friend class TIDebugPanelAdapter;
+    friend class TITypingSupport;
     friend struct TIMachineTesting;
     friend TICardReaderAdapter* cardReaderOf(calcu::machine::Machine&);
     friend TIMemoryAdapter* memoryOf(calcu::machine::Machine&);
@@ -103,4 +105,5 @@ private:
     TIMemoryAdapter m_memory{*this};
     TIDebugTargetAdapter m_debugTarget{*this};
     TIDebugPanelAdapter m_debugPanel{*this};
+    TITypingSupport m_typing{*this};
 };

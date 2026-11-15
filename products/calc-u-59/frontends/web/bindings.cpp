@@ -33,11 +33,12 @@ namespace {
 namespace s59 = cu59::settings;
 
 // The parts of one worker's session and what they need; the session owns it
-// (AppSessionSetup::owned) and lets it go first. The Web part goes before the
-// product's part (it tells the part), the settings last.
+// (AppSessionSetup::owned) and lets it go first. The library's typing part
+// goes before the product's (LIB-5), the Web part after it, the settings last.
 struct WebParts {
     calcu::settings::SettingsFile file;
     s59::Settings settings{file};
+    calcu::typing::TypingPart typing{cu59::typingProduct()};
     std::unique_ptr<cu59::TIAppPart> app;
     std::unique_ptr<cu59::TIWebPart> web;
     explicit WebParts(calcu::settings::SettingsFile f) : file(std::move(f)) {}
@@ -61,13 +62,14 @@ std::unique_ptr<calcu::sessions::AppSession> makeWebAppSession(const calcu::web:
     setup.saveFolder = start.dirs.saveFolder;
     setup.trace = {traces, static_cast<uint64_t>(parts->settings.traceMaxFileSizeMB()) * 1'000'000};
     parts->app = std::make_unique<cu59::TIAppPart>(std::move(setup));
+    parts->app->setTyping(&parts->typing);
     parts->web = std::make_unique<cu59::TIWebPart>(parts->settings, start.presetsDir, traces);
     parts->web->bind(*parts->app);
 
     calcu::sessions::AppSessionSetup s;
     s.clock = &calcu::web::wallTimeNow;
     s.hostTime = [] { return std::chrono::system_clock::now(); };
-    s.parts = {start.shellPart, parts->app.get(), parts->web.get()};
+    s.parts = {start.shellPart, &parts->typing, parts->app.get(), parts->web.get()};
     const std::string problem = parts->file.problem();
     s.owned = std::move(parts);
     auto session = std::make_unique<calcu::sessions::AppSession>(std::move(s));

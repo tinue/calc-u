@@ -28,18 +28,21 @@ function minimumWidth(portrait) {
     : FACE_MIN.wide + 2 * FACE_PADDING + PRINTER_MIN + DEBUG_MIN + SPLITTERS;
 }
 
-// A KeyboardEvent as Shared/KeyboardMap.hpp's KeyPress: the key's base
-// character (letters from the physical key, so Caps Lock and Shift don't
-// change it), the character the layout produced, and the modifiers.
-function keyPressOf(e) {
+// A KeyboardEvent as the library's host key event (LIB-5 HostKey.hpp): the
+// physical key (`code`) that pairs down and up, Escape and Enter by name, the
+// character the layout produced, and for a letter key the letter it carries
+// on the user's layout (AC-21, OQ-2: `key` lowered, not the key's position).
+function hostKeyOf(e) {
   const cp = (s) => (s && [...s].length === 1 ? s.codePointAt(0) : 0);
-  let key = 0;
-  let isLetter = false;
-  if (e.key === "Escape") key = 0x1b;
-  else if (e.key === "Enter") key = e.code === "NumpadEnter" ? 0x03 : 0x0d;
-  else if (/^Key[A-Z]$/.test(e.code)) { key = e.code.charCodeAt(3) + 32; isLetter = true; }
-  else key = cp(e.key);
-  return { key, produced: cp(e.key), isLetter, shift: e.shiftKey, command: e.ctrlKey || e.metaKey || e.altKey };
+  let named = "";
+  if (e.key === "Escape") named = "escape";
+  else if (e.key === "Enter") named = e.code === "NumpadEnter" ? "enter" : "return";
+  const letter = /^[a-zA-Z]$/.test(e.key) ? e.key.toLowerCase().codePointAt(0) : 0;
+  return {
+    physical: e.code || e.key, named, produced: cp(e.key), carried: letter,
+    shift: e.shiftKey, control: e.ctrlKey, alt: e.altKey, command: e.metaKey, meta: false,
+    "mac-host": false, "auto-repeat": e.repeat,
+  };
 }
 
 // Keyboard feedback (Settings, portrait): a short click synthesised with
@@ -224,28 +227,28 @@ function PlayCalculator(props) {
   // ── Physical keyboard ────────────────────────────────────────────────
   // Only with keyboard={true}, and only while the calculator itself has
   // focus (not a control in it): Tab keeps working as Tab. Which keys are
-  // bound is decided in the worker (Shared/KeyboardMap), so every printing
+  // bound is decided in the worker (app/TITyping's TIKeyboardMap), so every printing
   // key, Escape and Enter is claimed while focused.
   const ownsKeys = (e) => keyboard && engine && !dialog &&
     (e.target === rootRef.current || (e.target.classList && e.target.classList.contains("calcu-key")));
   // The key's KeyPress when the calculator takes it, else null.
   const claimed = (e) => {
     if (!ownsKeys(e)) return null;
-    const k = keyPressOf(e);
-    return !k.command && (k.produced !== 0 || e.key === "Escape" || e.key === "Enter") ? k : null;
+    const k = hostKeyOf(e);
+    return !(k.control || k.alt || k.command) && (k.produced !== 0 || k.named) ? k : null;
   };
   const onKeyDown = (e) => {
     const k = claimed(e);
     if (!k) return;
     e.preventDefault();
-    // e.repeat: the matrix bit is a level — a held key can never re-trigger.
-    if (!e.repeat) engine.call("keyDown", k.key, k.produced, k.isLetter, k.shift, k.command);
+    // e.repeat: the host's repeat; the engine ignores it (AC-4).
+    if (!e.repeat) engine.call("keyDown", k);
   };
   const onKeyUp = (e) => {
     const k = claimed(e);
     if (!k) return;
     e.preventDefault();
-    engine.call("keyUp", k.key, k.produced, k.isLetter, k.shift, k.command);
+    engine.call("keyUp", k.physical);
   };
   const onBlur = (e) => {
     if (e.target === rootRef.current) delete rootRef.current.dataset.pointerFocus;

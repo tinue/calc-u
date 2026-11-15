@@ -22,7 +22,7 @@ final class MessageOrderTests: XCTestCase {
                 order.append(i)
                 all.fulfill()
             }
-            if i % 2 == 0 { t.session.pressKey(code, completion: done) } else { t.session.releaseKey(code, completion: done) }
+            if i % 2 == 0 { t.session.rawKeyDown(code, completion: done) } else { t.session.rawKeyUp(code, completion: done) }
         }
         wait(for: [all], timeout: 30)
         XCTAssertEqual(order, Array(0..<500), "replies out of order")

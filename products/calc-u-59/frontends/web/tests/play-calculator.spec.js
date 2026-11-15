@@ -149,7 +149,7 @@ test('the pressed key is shown pressed', async ({ page }) => {
   await expect(page.getByRole('button', { name: '5', exact: true })).toHaveAttribute('aria-pressed', 'false');
 });
 
-// ── Physical keyboard (Shared/KeyboardMap.cpp, in the worker) ────────────
+// ── Physical keyboard (the library's typing with app/TITyping's map, in the worker) ──
 
 async function typeKeys(page, keys) {
   for (const k of keys) {
@@ -179,6 +179,46 @@ test('Shift+A sends 2nd before A', async ({ page }) => {
   await page.locator('.calcu-device').focus();
   await page.keyboard.press('Shift+A');
   await expect(page.getByRole('button', { name: '2nd', exact: true })).toHaveAttribute('aria-pressed', 'true', { timeout: 300 });
+});
+
+test('a letter counts by the letter the key carries, not its position (LIB-5 AC-21, OQ-2)', async ({ page }) => {
+  await gotoReady(page);
+  await page.locator('.calcu-device').focus();
+  // AZERTY: the key at QWERTY's Q carries A.
+  await page.locator('.calcu-device').evaluate((el) => {
+    el.dispatchEvent(new KeyboardEvent('keydown', { key: 'a', code: 'KeyQ', bubbles: true, cancelable: true }));
+  });
+  await expect(page.getByRole('button', { name: 'A', exact: true })).toHaveAttribute('aria-pressed', 'true', { timeout: 500 });
+  await page.locator('.calcu-device').evaluate((el) => {
+    el.dispatchEvent(new KeyboardEvent('keyup', { key: 'a', code: 'KeyQ', bubbles: true, cancelable: true }));
+  });
+  await expect(page.getByRole('button', { name: 'A', exact: true })).toHaveAttribute('aria-pressed', 'false', { timeout: 500 });
+});
+
+test('a held host key stays down until let go; two keys held together are both down (LIB-5 AC-4, AC-23)', async ({ page }) => {
+  await gotoReady(page);
+  await page.locator('.calcu-device').focus();
+  await page.keyboard.down('7');
+  await page.waitForTimeout(400);
+  await expect(page.getByRole('button', { name: '7', exact: true })).toHaveAttribute('aria-pressed', 'true');
+  await page.keyboard.down('1');   // the last one held is drawn pressed
+  await expect(page.getByRole('button', { name: '1', exact: true })).toHaveAttribute('aria-pressed', 'true', { timeout: 300 });
+  await page.keyboard.up('1');
+  await expect(page.getByRole('button', { name: '7', exact: true })).toHaveAttribute('aria-pressed', 'true', { timeout: 300 });
+  await page.keyboard.up('7');
+  await expect(page.getByRole('button', { name: '7', exact: true })).toHaveAttribute('aria-pressed', 'false', { timeout: 300 });
+});
+
+test('a click shorter than the debounce still types the key (LIB-5 AC-24)', async ({ page }) => {
+  await gotoReady(page);
+  const five = await showing(page, ['5']);
+  await pressKey(page, 'CLR');
+  const button = page.getByRole('button', { name: '5', exact: true });
+  const box = await button.boundingBox();
+  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+  await page.mouse.down();
+  await page.mouse.up();   // at once: the engine holds it its 100 ms of emulated time
+  expect(await settledLed(page)).toBe(five);
 });
 
 // ── Models, modules, cue cards ───────────────────────────────────────────

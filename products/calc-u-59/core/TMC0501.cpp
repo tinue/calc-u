@@ -517,6 +517,11 @@ int TMC0501::step() {
             (((opcode & 0x07u) | ((opcode >> 1) & 0x78u)) ^ 0x7Fu) & keyRow(digit));
         // Reject simultaneous multi-key presses (hardware limitation)
         if (kmask & (kmask - 1u)) kmask = 0;
+        if (kmask) {   // LIB-5 D-3: the ROM read this key now
+            uint8_t b = 0;
+            for (uint8_t m = kmask; !(m & 1u); m = static_cast<uint8_t>(m >> 1)) ++b;
+            ++m_keySamples[static_cast<size_t>((digit & 0x0Fu) * 8u + b)];
+        }
 
         if (!(opcode & 0x0008u)) {
             // Scan-all mode: hold and scan until a key is found or digit 0,

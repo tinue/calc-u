@@ -117,6 +117,7 @@ public:
     /// it from now on; this session keeps using it until it is destroyed.
     std::unique_ptr<calcu::machine::Machine> releaseMachine() { return std::move(m_machine); }
     Threading threading() const { return m_threading; }
+    bool ownsMachine() const { return m_machine != nullptr; }
     /// The bytes of the module plugged into `slot-1` (empty if none), kept for
     /// the debugger (adapter until M-53, C59-6 design §5).
     const std::vector<uint8_t>& moduleImage() const { return m_moduleImage; }
@@ -203,6 +204,8 @@ public:
     void playKeystrokes(std::vector<KeystrokeEvent> events) { m_keys->play(std::move(events)); }
     void cancelKeystrokes() { m_keys->cancel(); }
     bool keystrokesPlaying() const { return m_keys->isPlaying(); }
+    /// A script plays or waits to play (LIB-3 59: the preset operation's end).
+    bool keystrokesPending() const { return m_keys->scriptPending(); }
     /// The next queued card the machine takes where it stands: the first
     /// InsertCard card in the idle scan loop, the first ArmCard card in the
     /// card wait of Write / INV Write (TICardReaderAdapter::isInCardWait). UI thread.

@@ -90,6 +90,8 @@ public:
     void cancel();
 
     bool isPlaying() const { return m_playing.load(); }
+    /// A script plays, or one is queued.
+    bool scriptPending() const { return m_playing.load() || m_script.busy(); }
 
     // Physical keyboard
     void keyDown(const std::vector<uint8_t>& codes);
@@ -136,6 +138,10 @@ private:
         void post(Task task);
         void cancel();
         bool cancelled(uint64_t generation) const { return m_generation.load() != generation; }
+        bool busy() const {
+            std::lock_guard<std::mutex> lock(m_mutex);
+            return m_current.has_value() || !m_tasks.empty();
+        }
         /// Run what is due at `now`; when the task in progress next wants to
         /// run, nullopt when the lane is idle.
         std::optional<Clock::time_point> advance(Clock::time_point now);
@@ -143,7 +149,7 @@ private:
         bool takeNext(Task& task);  // under m_mutex
         KeySequencer& m_owner;
         std::atomic<uint64_t> m_generation{0};
-        std::mutex m_mutex;
+        mutable std::mutex m_mutex;
         std::deque<Task> m_tasks;
         std::optional<Task> m_current;  ///< the task in progress
     };

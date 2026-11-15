@@ -98,6 +98,10 @@ struct AppSession::Impl final : SessionContext, SessionSetup {
     std::chrono::system_clock::time_point hostTime() const override {
         return setup.hostTime ? setup.hostTime() : std::chrono::system_clock::now();
     }
+    Speed commandedSpeed() const override { return commanded; }
+    void setCommandedSpeed(Speed sp) override {
+        if (!running) commanded = sp;   // D-6
+    }
 
     // SessionSetup
     StateTopic& stateTopic(TopicName) override;

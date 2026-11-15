@@ -108,6 +108,17 @@ jobs:
           npx playwright install --with-deps chromium webkit
       - name: Test
         run: frontends/web/run-tests.sh
+      # The library's Web frontend shell (LIB-15 design D-8): its test product,
+      # built in the same build/web with this workflow's Emscripten, and its
+      # Playwright tests in Chromium and WebKit (library/web/package-lock.json
+      # pins its own Playwright; its browsers are installed when they differ).
+      - name: Test the library's Web frontend shell
+        working-directory: library/web
+        shell: bash
+        run: |
+          npm ci --no-audit --no-fund
+          npx playwright install --with-deps chromium webkit
+          tests/run-tests.sh --reporter=line
       - name: Zip dist/
         run: |
           set -euo pipefail

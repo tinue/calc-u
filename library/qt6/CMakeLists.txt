@@ -18,7 +18,8 @@ endif()
 add_library(calcu_qt6 STATIC
   ${CMAKE_CURRENT_SOURCE_DIR}/PaperPanel.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/PaperPainter.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/ClipboardService.cpp)
+  ${CMAKE_CURRENT_SOURCE_DIR}/ClipboardService.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/RunControlButtons.cpp)
 set_target_properties(calcu_qt6 PROPERTIES AUTOMOC ON)
 target_link_libraries(calcu_qt6 PUBLIC calcu_library Qt6::Widgets PRIVATE calcu_warnings)
 target_include_directories(calcu_qt6 PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/..)

@@ -84,4 +84,78 @@ std::vector<std::string> checkAgainstDescriptor(Machine& m, const Catalogue& cat
     return out;
 }
 
+namespace {
+bool endsWith(const std::string& s, const std::string& tail) {
+    return s.size() >= tail.size() && s.compare(s.size() - tail.size(), tail.size(), tail) == 0;
+}
+
+void checkInfo(const TargetInfo& info, std::vector<std::string>& out) {
+    const std::string t = "debug target " + q(info.name.value) + ": ";
+    for (const auto& r : info.registers)
+        if (r.name.empty() || r.bits < 1 || r.bits > 64) out.push_back(t + "register " + q(r.name) + " has " + std::to_string(r.bits) + " bits");
+    if (info.spaces.empty()) out.push_back(t + "no address space");
+    else if (info.codeSpace >= info.spaces.size()) out.push_back(t + "the code space is not one of its spaces");
+    for (const auto& sp : info.spaces) {
+        if (sp.name.empty() || sp.cellBits < 1 || sp.cellBits > 64 || sp.size == 0)
+            out.push_back(t + "space " + q(sp.name) + " is not well formed");
+        if (sp.writtenView) {
+            const bool named = endsWith(sp.name, "-written") &&
+                               std::any_of(info.spaces.begin(), info.spaces.end(), [&](const SpaceInfo& o) {
+                                   return !o.writtenView && o.name + "-written" == sp.name;
+                               });
+            if (!named) out.push_back(t + "the view " + q(sp.name) + " is not named after a space");
+        }
+        for (const auto& w : sp.banked)
+            if (w.count == 0 || w.first + w.count > sp.size || w.banks == 0)
+                out.push_back(t + "a bank window of " + q(sp.name) + " lies outside it");
+    }
+    for (const auto& f : info.offers.qualifier)
+        if (f.name.empty() || f.values.empty()) out.push_back(t + "qualifier field " + q(f.name) + " has no values");
+}
+} // namespace
+
+std::vector<std::string> checkDebugging(Machine& m) {
+    std::vector<std::string> out;
+    const std::vector<DebugTargetId> listed = m.debugTargets();
+    Debugging* d = m.debugging();
+    if (!d) {
+        if (!listed.empty()) out.push_back("debug targets: listed, but the machine offers none");
+        return out;
+    }
+    if (d->targetCount() != listed.size()) {
+        out.push_back("debug targets: " + std::to_string(d->targetCount()) + " offered, " +
+                      std::to_string(listed.size()) + " listed");
+        return out;
+    }
+    for (std::size_t i = 0; i < listed.size(); ++i) {
+        const TargetInfo& info = d->target(i).info();
+        if (info.name != listed[i]) out.push_back("debug targets: target " + std::to_string(i) + " is named " + q(info.name.value));
+        checkInfo(info, out);
+    }
+    // Reading has no effect (AC-2, I-2): the tick count, every register and
+    // every first and last cell stay as they were.
+    const Ticks ticks = m.tickCount();
+    auto snapshot = [&] {
+        std::vector<std::uint64_t> v;
+        for (std::size_t i = 0; i < d->targetCount(); ++i) {
+            const DebugTarget& t = d->target(i);
+            for (std::size_t r = 0; r < t.info().registers.size(); ++r) v.push_back(t.readRegister(r));
+            for (std::size_t s = 0; s < t.info().spaces.size(); ++s) {
+                const std::uint64_t size = t.info().spaces[s].size;
+                for (std::uint64_t a : {std::uint64_t{0}, size ? size - 1 : 0}) {
+                    const CellRead c = t.peek(s, a, {});
+                    v.push_back(static_cast<std::uint64_t>(c.kind));
+                    v.push_back(c.value);
+                }
+            }
+        }
+        return v;
+    };
+    const auto first = snapshot();
+    const auto second = snapshot();
+    if (first != second) out.push_back("debug targets: reading registers and cells changed them");
+    if (m.tickCount() != ticks) out.push_back("debug targets: reading changed the tick count");
+    return out;
+}
+
 } // namespace calcu::machine

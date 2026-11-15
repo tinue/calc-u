@@ -29,6 +29,11 @@ struct StartOperation { Operation op; };  // refused while another runs (AC-16)
 struct Deferred {};
 using CommandOutcome = std::variant<Done, Refused, StartOperation, Deferred>;
 
+// A restart of the machine that is running (LIB-10 design §3.11; LIB-18
+// §3.4): told after Machine::reset() or coldBoot(), before the run to key
+// readiness. A new machine is machineChanged, not a restart.
+enum class Restart { Reset, ColdBoot };
+
 // What parts, handlers and operations see, on the session's thread.
 class SessionContext {
 public:
@@ -63,6 +68,9 @@ public:
     // (LIB-6 D-17).
     virtual pacing::WallTime wallTime() const { return pacing::WallTime{0}; }
     virtual bool virtualTime() const { return true; }
+    // LIB-10 §3.11: SessionPart::machineRestarted on every part, in the
+    // order of the parts (LIB-18's MachineControl calls it).
+    virtual void tellRestarted(Restart) {}
 
 protected:
     ~SessionContext() = default;
@@ -104,6 +112,9 @@ public:
     // design §3.5). It sets topics only and calls nothing of the session.
     virtual void beforeFlush(SessionContext&) {}
     virtual void machineChanged(SessionContext&) {}
+    // The machine was reset or cold booted (LIB-10 §3.11: the run control's
+    // restart rules, G9, G10).
+    virtual void machineRestarted(SessionContext&, Restart) {}
     // An operation ended or was stopped (AC-18); e.g. LIB-2's real-time
     // clocks set from the host (LIB-2 AC-23).
     virtual void operationEnded(SessionContext&) {}

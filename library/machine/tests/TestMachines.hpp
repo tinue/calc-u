@@ -1,4 +1,5 @@
 #pragma once
+#include "TestCpu.hpp"
 #include "machine/Build.hpp"
 #include "machine/Capability.hpp"
 #include "machine/Catalogue.hpp"
@@ -82,6 +83,11 @@
 //             pressed on the machine draws one stroke through four
 //             positions, one per 10 ticks, from (100 + 50k, standing), in
 //             colour k mod 4 (black, blue, green, red).
+// For LIB-10 (design §6): with the build option TestProgram (or
+//   enableCpu()) the test processor of TestCpu.hpp runs the instructions,
+//   one per instruction of the model's timing: test-seg's target
+//   `test-cpu`, test-dot's `main` and `inner` by turns. debugging() is
+//   nullptr without it, so the other areas' tests stay as they are.
 
 namespace calcu::machine::test {
 
@@ -274,6 +280,9 @@ public:
     std::vector<CapabilityEntry> capabilities() const override;
     Capability* capability(const CapabilityId&) override;
     std::vector<DebugTargetId> debugTargets() const override { return desc_.debugTargets; }
+    Debugging* debugging() override { return cpu_.get(); }   // LIB-10: with TestProgram only
+    void enableCpu(const TestProgram& p) { cpu_ = std::make_unique<TestCpu>(desc_.debugTargets, p); }
+    TestCpu* cpu() { return cpu_.get(); }
 
     // At build: the builder has checked the request.
     void plugAtBuild(const PeripheralRequest&, const Catalogue&);
@@ -364,6 +373,7 @@ private:
     State state_{*this};
     bool offersState_ = false;
     std::shared_ptr<const TestSegTiming> timing_;
+    std::unique_ptr<TestCpu> cpu_;   // LIB-10
 };
 
 // Builds through calcu::machine::build() on testCatalogue(); null if refused.

@@ -98,6 +98,11 @@ not named here adds a folder in the same pattern.
   - `paper`: `machine`, `sessions`, `formats`, `presets`, `startup`
     (LIB-8 design §2; M-39). Nothing includes it but `harness`, `qt6`
     and the products;
+  - `debugger`: `machine`, `pacing`, `sessions`, `settings`, `formats`,
+    `peripherals` (AC-16's clocks only), `presets` (the step place) and,
+    through `presets`, `startup` (LIB-10 design §2; M-40). The interface a
+    machine implements (`DebugTarget.hpp`) is in `machine`. Nothing
+    includes it but `harness`, `qt6` and the products;
   - `harness`: any area but `web` and `qt6`;
   - `qt6` (the Qt6 component set, its own target, below): any area but
     `harness` and `web`, and Qt;

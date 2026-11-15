@@ -132,6 +132,25 @@ elseif(CASE STREQUAL "ac34_check_preset_exit_status")
     fail("bad: status ${r_status}: ${r_out}${r_err}")
   endif()
 
+# LIB-10 AC-50: a refused expect-register or expect-memory ends a one-shot
+# run with the exit status of a refused command, so a test can check a
+# program's result.
+elseif(CASE STREQUAL "ac50_refused_expect_ends_one_shot_nonzero")
+  run(r ARGS --product test pause then poke test-cpu memory 0x40 7 then expect-memory test-cpu memory 0x40 7)
+  if(NOT r_status EQUAL 0)
+    fail("kept: status ${r_status}: ${r_out}${r_err}")
+  endif()
+  run(r ARGS --product test pause then expect-memory test-cpu memory 0x40 7 then ticks)
+  string(FIND "${r_out}" "refused: The cell 0x40 of memory is 0x00." a)
+  string(FIND "${r_out}" "ticks:" b)
+  if(NOT r_status EQUAL 1 OR a LESS 0 OR NOT b LESS 0)
+    fail("refused: status ${r_status}: ${r_out}${r_err}")
+  endif()
+  run(r ARGS --product test pause then expect-register test-cpu sp 0x81)
+  if(NOT r_status EQUAL 1 OR NOT r_out MATCHES "refused: The register sp is 0x00[0-9a-f][0-9a-f]\\.")
+    fail("register: status ${r_status}: ${r_out}${r_err}")
+  endif()
+
 else()
   fail("unknown case")
 endif()

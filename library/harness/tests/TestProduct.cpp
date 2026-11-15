@@ -1,5 +1,6 @@
 #include "TestProduct.hpp"
 #include "TestPresetRules.hpp"
+#include "TestDebugParts.hpp"
 #include "formats/Flow.hpp"
 #include "roms/FullSet.hpp"
 #include "sessions/LibraryTopics.hpp"
@@ -105,6 +106,30 @@ struct TestProduct::Typing final : typing::TypingProduct, typing::PauseProbe {
     bool paused(SessionContext& c) const override { return product.typingPaused || c.machineSession().paused(); }
 };
 
+// LIB-10: the debugger with the test rules; its trace folder and limit are
+// the run's (Run.cpp). test-dot stands for a model without the run-control
+// steps (the Sharp models, AC-19).
+struct TestProduct::Debug {
+    debugger::test::TestLevelRules rules;
+    debugger::test::TestSymbols symbols;
+    debugger::DebuggerPart part;
+    Debug() : part(setup()) {}
+    debugger::DebuggerSetup setup() {
+        debugger::DebuggerSetup d;
+        d.rules = &rules;
+        d.trace.recorder = [](Machine& m) -> std::unique_ptr<debugger::TraceRecorder> {
+            auto* tm = dynamic_cast<machine::test::TestMachine*>(&m);
+            return tm && tm->cpu() ? std::make_unique<debugger::test::TestRecorder>(*tm) : nullptr;
+        };
+        d.symbolReaders = {&symbols};
+        d.runControlSteps = [](const ModelId& m) { return m != machine::test::kDot; };
+        d.panelViews = [](const ModelId& m) {
+            return m == machine::test::kDot ? std::vector<std::string>{} : std::vector<std::string>{"cpu", "log"};
+        };
+        return d;
+    }
+};
+
 GlyphFont testFont() {
     GlyphFont f;
     f.cellWidth = 6;
@@ -121,7 +146,7 @@ TestProduct::TestProduct()
           machine::test::paperTestCatalogue(),
           std::vector<paper::PrinterPaper>{{machine::test::kDotter, machine::test::td20Description()},
                                            {machine::test::kPlotter, machine::test::tp4Description()}})),
-      presetRules_(std::make_unique<presets::test::TestPresetRules>()) {
+      debug_(std::make_unique<Debug>()), presetRules_(std::make_unique<presets::test::TestPresetRules>()) {
     roms::test::writeFullSet(roms_, roms::fullSet(catalogue()));
     // LIB-6: the bundled presets of the test product.
     presetFolder_.write("bundle.yaml", "format: example-bundle\nformat-version: 1\n"
@@ -160,6 +185,11 @@ BuildResult TestProduct::Builder::build(const BuildRequest& req, const Catalogue
     BuildResult r = inner.build(req, cat);
     if (r.machine && req.model == machine::test::kSeg)
         static_cast<machine::test::TestMachine&>(*r.machine).offerState(true);
+    if (r.machine) {   // LIB-10
+        machine::test::TestProgram p = debugger::test::defaultProgram();
+        p.bare = bare;
+        static_cast<machine::test::TestMachine&>(*r.machine).enableCpu(p);
+    }
     return r;
 }
 
@@ -207,7 +237,11 @@ void TestProduct::addCommands(CommandRegistry& r) {
     }, "count                    the operations run");
 }
 
-std::vector<SessionPart*> TestProduct::sessionParts() { return {&typing_->part, part_.get(), paper_.get()}; }
+std::vector<SessionPart*> TestProduct::sessionParts() {
+    return {&typing_->part, part_.get(), paper_.get(), &debug_->part};
+}
+
+debugger::DebuggerPart* TestProduct::debuggerPart() { return &debug_->part; }
 
 std::unique_ptr<HarnessProduct> makeTestProduct() { return std::make_unique<TestProduct>(); }
 

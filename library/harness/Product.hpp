@@ -30,6 +30,9 @@ class TypingPart;
 namespace calcu::paper {
 class PaperPart;
 }
+namespace calcu::debugger {
+class DebuggerPart;
+}
 
 namespace calcu::harness {
 
@@ -75,6 +78,10 @@ public:
     // harness hands it the machine control (the origin of a build, A-3) and
     // adds the step `cut-paper` to the preset vocabulary (A-2).
     virtual paper::PaperPart* paperPart() { return nullptr; }
+    // LIB-10's part among sessionParts(): the harness hands it the run's
+    // trace folder and limit and adds the debugger's steps to the preset
+    // vocabulary. None until the product's column (M-45, M-53).
+    virtual debugger::DebuggerPart* debuggerPart() { return nullptr; }
 };
 
 using ProductFactory = std::unique_ptr<HarnessProduct> (*)();

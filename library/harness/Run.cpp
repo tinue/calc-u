@@ -1,4 +1,5 @@
 #include "harness/Run.hpp"
+#include "debugger/DebuggerPart.hpp"
 #include "harness/StatePart.hpp"
 #include "paper/PaperPart.hpp"
 #include "sessions/LibraryTopics.hpp"
@@ -191,6 +192,19 @@ std::unique_ptr<Server> Server::start(HarnessProduct& product, const RunOptions&
         paper->setControl(&s->startup_->control());
         if (s->presets_) paper::addPaperStep(s->presets_->vocabulary(), *paper);
     }
+    // LIB-10: the debugger's trace folder (the run's, AC-8), its limit
+    // ([trace] max-file-size-mb of the run's settings) and its steps.
+    if (debugger::DebuggerPart* dp = product.debuggerPart()) {
+        RunSetup* run = s->setup_.get();
+        dp->setTraceFolder([run]() -> std::optional<settings::Paths::Ensured> {
+            std::error_code ec;
+            fs::create_directories(pathOf(run->traceFolder()), ec);
+            if (ec) return settings::Paths::Ensured{false, run->traceFolder(), ec.message()};
+            return settings::Paths::Ensured{true, run->traceFolder(), {}};
+        });
+        dp->setTraceLimit([run] { return run->settings().integer("trace", "max-file-size-mb"); });
+        if (s->presets_) debugger::addDebuggerSteps(s->presets_->vocabulary(), *dp);
+    }
     // LIB-4 §7: the control state, among the library's parts.
     s->control_ = std::make_unique<control::ControlPart>(product.controlSetup());
     setup.parts = {s->peripherals_.get(), s->state_.get()};
@@ -212,6 +226,7 @@ std::unique_ptr<Server> Server::start(HarnessProduct& product, const RunOptions&
     addStartupCommands(s->registry_);
     addPresetCommands(s->registry_, s->presets_ ? &s->presets_->vocabulary() : nullptr);
     addPaperCommands(s->registry_);
+    addDebugCommands(s->registry_);
     product.addCommands(s->registry_);
     return s;
 }

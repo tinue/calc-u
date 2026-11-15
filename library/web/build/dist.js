@@ -33,7 +33,7 @@ const { execFileSync } = require("child_process");
 const WEB = path.join(__dirname, "..");   // library/web
 const LIBRARY_SOURCES = ["base.js", "sentences.js", "audio.js", "hostServices.js", "shell.js", "embed.js"]
   .map((n) => path.join(WEB, "src", n));
-const COMPONENT_SOURCES = ["paper.js", "PaperPanel.jsx"].map((n) => path.join(WEB, "components", n));
+const COMPONENT_SOURCES = ["paper.js", "PaperPanel.jsx", "RunControlButtons.jsx"].map((n) => path.join(WEB, "components", n));
 const COMPONENT_CSS = ["paper.css"].map((n) => path.join(WEB, "components", n));
 const WORKER_SOURCES =["sentences.js", "storage.js", "worker.js"].map((n) => path.join(WEB, "src", n));
 

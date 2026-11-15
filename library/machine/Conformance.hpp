@@ -16,4 +16,13 @@ namespace calcu::machine {
 
 std::vector<std::string> checkAgainstDescriptor(Machine&, const Catalogue&);
 
+// LIB-10 (design §2): the machine's debug targets against its list. One
+// target per listed ID, in the descriptor's order; each info() well formed
+// (registers and cells of 1 to 64 bits, a code space that exists, a
+// `-written` view named after a space, bank windows inside their space,
+// qualifier fields with values); reading every register and the first and
+// last cell of every space changes no tick count, no register and no other
+// cell. A machine without debugging() and without listed targets conforms.
+std::vector<std::string> checkDebugging(Machine&);
+
 } // namespace calcu::machine

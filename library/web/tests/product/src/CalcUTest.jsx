@@ -8,6 +8,8 @@
 // From LIB-8 (M-39): the paper panel of the React component set, with its
 // owner and controls from `tp.printer`, and buttons that attach and detach
 // the test printers TD-20 and TP-4 and press a machine key.
+// From LIB-10 (M-40): the run-control buttons of the React component set
+// for the level `cpu`, with labels of the product's.
 
 const CALCU_PRODUCT = "__CALCU_PRODUCT__";
 
@@ -63,6 +65,9 @@ function CalcUTest(props) {
           onClick={() => { if (shell) { shell.send("tp.detach", { place: "printer" }); shell.send("tp.detach", { place: "aux" }); } }}>Detach</button>
         <button type="button" className="calcu-test-press" onClick={() => shell && shell.send("tp.press", { key: "1" })}>Press 1</button>
       </div>
+      <div className="calcu-test-run-control">
+        <CalcuRunControlButtons shell={shell} level="cpu" labels={{ pause: "FREEZE", step: "STEP", resume: "RESUME" }} />
+      </div>
       <div className="calcu-test-paper">
         <CalcuPaperPanel shell={shell} owner={(printer && printer.owner) || null}
           controls={(printer && printer.controls) || []} />
@@ -72,4 +77,5 @@ function CalcUTest(props) {
 }
 
 CalcUTest.version = "__CALC_VERSION__";
+CalcUTest.buttonUse = calcuButtonUse;   // LIB-10: the buttons' rule, for the table of run-control.spec.js
 if (typeof window !== "undefined") window.CalcUTest = CalcUTest;

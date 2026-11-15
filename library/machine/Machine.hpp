@@ -2,6 +2,7 @@
 #include "machine/Attach.hpp"
 #include "machine/Capability.hpp"
 #include "machine/Catalogue.hpp"
+#include "machine/DebugTarget.hpp"
 #include "machine/Descriptor.hpp"
 #include "machine/Display.hpp"
 #include "machine/EmulatedTime.hpp"
@@ -82,6 +83,11 @@ public:
     virtual Capability* capability(const CapabilityId&) = 0;   // nullptr if not present now
     std::vector<CapabilityEntry> capabilities(const KindId&) const;   // empty if none (EC-5)
     virtual std::vector<DebugTargetId> debugTargets() const = 0;  // their interface: LIB-10
+    // LIB-10 (design §3.1, §3.2): the debug targets with the checks of the
+    // advance; nullptr: the machine offers none (the default).
+    virtual Debugging* debugging() { return nullptr; }
+    // The target of that name (LIB-1 §3.5), through debugging(); nullptr if none.
+    DebugTarget* debugTarget(const DebugTargetId&);
 
     // Attach, detach, replace (LIB-2 design §3.1; Attach.hpp). Called on the
     // session's thread between two advances, never inside one. Capability

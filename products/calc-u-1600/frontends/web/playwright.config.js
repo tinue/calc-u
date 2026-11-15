@@ -11,7 +11,7 @@ module.exports = defineConfig({
   workers: 2,
   use: { headless: true },
   projects: [
-    { name: 'root', testMatch: /play|prerender|rom-missing/, use: { ...devices['Desktop Chrome'], baseURL: `http://localhost:${PORT}/` } },
+    { name: 'root', testMatch: /play|prerender|rom-missing|session/, use: { ...devices['Desktop Chrome'], baseURL: `http://localhost:${PORT}/` } },
     { name: 'subpath', testMatch: /play/, use: { ...devices['Desktop Chrome'], baseURL: `http://localhost:${PORT + 1}/anything/calc/` } },
     // The offline start brings its own server, in both engines: an iPad's
     // installed app is WebKit.

@@ -54,6 +54,7 @@ const METHODS = {
   recordTape: ["command", "c1600.record-tape", (name) => ({ name }), errorText],
   screenImage: ["request", "c1600.screen-image", () => null, value],
   lcdText: ["request", "c1600.lcd-text", () => null, value],
+  ticks: ["request", "ticks", () => null, value],   // {ticks, seconds}: the machine's emulated time (LIB-3 AC-39)
   togglePeripheral: ["command", "c1600.toggle-peripheral", (p) => ({ peripheral: PERIPHERALS[p] }), null],
   pickModel: ["command", "c1600.pick-model", (m) => ({ model: MODEL_IDS[m] }), null],
   selectPC1500Rom: ["command", "c1600.pc1500-rom", (i) => ({ revision: ["A01", "A03", "A04"][i] }), null],

@@ -379,7 +379,7 @@ job::Task<OpResult> SharpAppPart::startJob(std::string modelOrEmpty, std::string
                                              : modelFromSettingsName(modelOrEmpty).value_or(m_settings.startupModel());
     co_await switchModelJob(model);
     if (!presetOrEmpty.empty()) co_return co_await loadPresetJob(presetOrEmpty);
-    co_return OpResult{};
+    co_return co_await defaultPresetJob();   // the model's default preset, if one is set
 }
 
 job::Task<OpResult> SharpAppPart::loadPresetJob(std::string ref, bool armOnly) {

@@ -19,6 +19,7 @@
 #include <QMenuBar>
 #include <QTimer>
 #include <QtDebug>
+#include <algorithm>
 #include <chrono>
 #include <variant>
 

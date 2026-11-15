@@ -1,0 +1,4 @@
+# error: is not UTF-8 text.
+format-version: 2
+model: test-seg
+preset-name: ÿ

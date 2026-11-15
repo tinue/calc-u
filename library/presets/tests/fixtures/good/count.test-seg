@@ -1,0 +1,17 @@
+format-version: 2
+model: test-seg
+preset-name: Count
+description: Presses a key and checks the display
+printer: test-printer
+test-memory:
+  at: &10
+  bytes: |
+    01 02 03
+keys:
+  - regular-speed:
+  - key: 2
+  - full-speed:
+  - expect: /^1/
+  - not-expect: 9
+  - printer-trace: on
+  - elapsed-time: report

@@ -1,0 +1,5 @@
+# error: line 5: test-undefined is not defined yet
+format-version: 2
+model: test-seg
+keys:
+  - test-undefined:

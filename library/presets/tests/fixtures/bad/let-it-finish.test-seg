@@ -1,0 +1,7 @@
+# error: line 6: let-it-finish: can only be the last item.
+format-version: 2
+model: test-seg
+keys:
+  - key: 1
+  - let-it-finish:
+  - key: 2

@@ -1,0 +1,5 @@
+# error: line 5: screenshot: takes a file name without a folder.
+format-version: 2
+model: test-seg
+keys:
+  - screenshot: shots/a.png

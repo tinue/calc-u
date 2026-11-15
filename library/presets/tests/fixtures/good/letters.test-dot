@@ -1,0 +1,9 @@
+format-version: 2
+model: test-dot:V2
+preset-name: Letters
+a: test-hub
+keys:
+  - type: abc
+  - wait: 1.5s
+  - syncclock:
+  - screenshot: letters.png

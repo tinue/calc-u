@@ -1,0 +1,5 @@
+# error: line 5: wait: needs a value.
+format-version: 2
+model: test-seg
+keys:
+  - wait:

@@ -28,9 +28,9 @@ ProgramChoice programChoice(const std::vector<std::uint8_t>& bytes);
 //    machine: refused (error()), ready, or asking for a start address.
 // 2. needsAddress(): the frontend asks, checking each typed text with
 //    setAddress() (hint, valid) and enabling Load on `valid`.
-// 3. AppSession::loadMachineCode(request()).
+// 3. SharpAppPart::loadMachineCode(request()) (the c1600.load-machine-code command).
 // 4. loaded(): what to show (where it went, NEW / CALL); the frontend then
-//    types the CALL (MachineSession::pasteText) for the user to ENTER.
+//    types the CALL (SharpTypingHook::pasteText) for the user to ENTER.
 class MachineCodeLoad {
 public:
     static MachineCodeLoad plan(const SharpAppPart& session, const std::vector<std::uint8_t>& image);
@@ -52,7 +52,7 @@ public:
     // one becomes the load target.
     AddressCheck setAddress(const std::string& text);
 
-    // For AppSession::loadMachineCode(); valid once there is an address.
+    // For SharpAppPart::loadMachineCode(); valid once there is an address.
     const MachineCodeLoadRequest& request() const { return m_request; }
 
     struct Loaded {

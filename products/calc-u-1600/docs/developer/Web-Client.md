@@ -19,10 +19,10 @@ printer.
 ```mermaid
 flowchart LR
     Page["Page (main thread)<br/>React: menu bar, faceplate, LCD canvas,<br/>control bar, panels, dialogs"]
-    Worker["calc-engine-worker.js (Web Worker)<br/>WebController (frontends/web/bindings.cpp)<br/>shared::AppSession, 60 Hz tick()"]
+    Worker["library worker (Web Worker)<br/>WorkerHost: the library's app session<br/>with SharpAppPart and SharpWebPart, 60 Hz host call"]
     FS["Emscripten FS<br/>/bundle /presets /uploads<br/>/persist = IndexedDB (IDBFS)"]
-    Page -- "call / request" --> Worker
-    Worker -- "ui, display, lamps, paper,<br/>printer, notice, audio, store" --> Page
+    Page -- "LIB-3 command / request / answer" --> Worker
+    Worker -- "LIB-3 state, stream, reply,<br/>ask, sound messages" --> Page
     Worker --- FS
 ```
 
@@ -30,12 +30,12 @@ flowchart LR
 
 | File | What it is |
 |---|---|
-| `bindings.cpp` | `WebController`: `AppSession` behind embind. Only translates; the decisions are Shared's |
-| `calc-engine-worker.js` | The worker: fetches the files, mounts storage, ticks, passes messages |
-| `audio-worklet.js` | The buzzer: PCM from the worker into a ring buffer |
-| `src/*.jsx`, `src/*.js` | The client, compiled into one `dist/calc.js` (one global, `CalcU1600`) |
+| `bindings.cpp` | The product's factory of the library's app session (`CALCU_WEB_PRODUCT(CalcU1600Host, …)`): `SharpAppPart`, `SharpWebPart` (app layer) and the session; the library's `WorkerHost` translates its messages |
+| `calc-engine-worker.js` | The product's entry to the library's worker (`library/web/src/worker.js`, `dist/library-worker.js`): name, wasm, mount `/persist`, lock `calcu1600-storage` |
+| `src/engine.js` | Translates the components' calls to the session's commands and requests, and its topics to their slices, over the library's `createShell()` (until LIB-14 1600, M-49) |
+| `src/*.jsx`, `src/*.js` | The client, compiled with the library's page side (`library/web/src/`) into one `dist/calc.js` (one global, `CalcU1600`) |
 | `calc.css` | Styles, all under `.calcu-client`, light and dark |
-| `app/` | The installable app: page, manifest, service worker, worker shim |
+| `app/` | The installable app's page, manifest and stylesheet; its app page, service worker and worker entry are the library's (`library/web/app/`) |
 | `build.sh`, `build.js` | The build (below) |
 | `tests/`, `run-tests.sh` | Playwright tests |
 | `vendor/` | React 18, ReactDOM, ReactDOMServer (tests), Babel (build only) |
@@ -52,8 +52,9 @@ frontends/web/run-tests.sh    # Playwright: root, sub-path, offline (Chromium, W
 engine is the CMake target `calcu_web` of the repository's root project,
 built in its `build/web` tree
 (`calcu1600-core.js` / `.wasm`): no `-pthread`, native wasm exceptions,
-`IDBFS`. `build.js` compiles the JSX with the vendored Babel (no npm
-runtime dependencies), copies the presets that
+`IDBFS`. `build.js` uses the library's build steps (`library/web/build/dist.js`):
+it compiles the JSX with the vendored Babel (no npm
+runtime dependencies), fails on a `calc.css` selector outside `.calcu-client`, copies the presets that
 [`examples/bundled.yaml`](../../examples/bundled.yaml) lists (each with its
 `examples/` folder, and the list itself) into `presets/`, writes `files.json`, stamps
 the service worker's precache list and writes `MANIFEST.json`. CI's `web`
@@ -73,7 +74,7 @@ attaches it as `Calc-U-1600-web.zip`.
   |---|---|
   | `width`, `height` | The client's size in CSS pixels (default: its parent's size) |
   | `keyboard` | Take the physical keyboard while focused (default true) |
-  | `model` | 0 PC-1500, 1 PC-1500A, 2 PC-1600: start with it (read once, at mount) |
+  | `model` | A model's name (`PC-1500`, `PC-1500A`, `PC-1600`; 0-2 still taken): start with it (read once, at mount) |
   | `preset` | A bundled preset to load at start (`plotter/lissajou-1600.pc1600`) |
   | `workerUrl` | Another worker entry (the app uses `app/engine-worker.js`) |
 
@@ -81,9 +82,10 @@ attaches it as `Calc-U-1600-web.zip`.
   and listeners start in effects (`tests/prerender.spec.js`).
 - **Scoped.** Styles are scoped to `.calcu-client`; `calc.js` adds only
   the `CalcU1600` global.
-- **Test hooks.** `.calcu-client[data-ready=true]` once the engine runs;
-  its `calcuEngine.request(method, ...args)` calls a `WebController`
-  method (`lcdText` reads the screen); `.calcu-face[data-model]`,
+- **Test hooks.** `.calcu-client[data-ready=true]` once the session's
+  start is over; its `calcuEngine.request(method, ...args)` sends the
+  command or request `src/engine.js` maps the method to (`lcdText` reads
+  the screen, `ticks` the emulated time); `.calcu-face[data-model]`,
   `.calcu-key[aria-label=<key>]`, `[data-panel=inspector|paper|printer]`
   (`data-empty`), `[data-dialog=...]`.
 - **Same origin.** The worker and the service worker must come from the
@@ -101,7 +103,9 @@ attaches it as `Calc-U-1600-web.zip`.
   on one origin share it.
 - **One writing tab.** The worker takes the Web Lock `calcu1600-storage`.
   A tab that doesn't get it reads the storage once, keeps its changes in
-  memory and shows a banner.
+  memory and shows a banner and the library's notice (`web.storage`).
+- Hidden, the page sends the session `suspend` and the worker stops
+  calling it; shown again, `continue` (LIB-3 AC-36).
 - File ▸ Import / Saved Media… reach the save folder through
   `shared::MediaLibrary`.
 
@@ -122,7 +126,7 @@ Things that are only in the Qt app, or that a browser can't do:
 - **Keyboard.** `KeyboardEvent.code` / `.key` go to
   `shared::resolveHostKey`. A bare Shift tapped within 400 ms is SHIFT.
   Auto-repeat is ignored and held keys are released on blur. The web keeps
-  no hold of its own: `MachineSession::releaseKey()` holds every key at
+  no hold of its own: `SharpTypingHook::releaseKey()` holds every key at
   least 2 emulated frames and a following press waits for it, so a press
   and release in one frame are still scanned.
 - **Clipboard.** ⌘/Ctrl+C copies the screen; ⌘/Ctrl+V pastes text (the
@@ -130,4 +134,7 @@ Things that are only in the Qt app, or that a browser can't do:
 - **Drag and drop.** One file of up to 1 MB, routed by
   `dropfile::classify`.
 - **Audio.** The AudioContext starts on the first key or click (a browser
-  rule); the worker's `AudioSink` posts the PCM to the page.
+  rule); the session sends the sound at regular speed only (LIB-3 AC-37),
+  and the library's `audio.js` plays it through its AudioWorklet.
+- **Keys during an operation** (a preset, a reset, a model switch) are
+  dropped (behaviour change 1600-9).

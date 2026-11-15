@@ -139,7 +139,7 @@ private:
     void applyPC1600RomVersionSelection(PC1600RomVersion version);
     void applyCE1600PRomVersionSelection(CE1600PRomVersion version);
     // At startup: the startup model's default preset, if one is set (a
-    // model pick loads it inside AppSession::pickModelJob()).
+    // model pick loads it inside SharpAppPart::pickModelJob()).
     void applyDefaultPreset();
     void showMachineCodeLoaded(const shared::MachineCodeLoad& load);
 
@@ -247,7 +247,7 @@ private:
     // state, so on e.g. a Swiss layout Shift+3 presses as Key_Asterisk but,
     // with Shift let go first, releases as Key_3 -- the release would miss
     // and leave "*" held in the machine's matrix. Only the presses
-    // MachineSession::hostKeyDown() asks to release are entered here.
+    // SharpTypingHook::hostKeyDown() asks to release are entered here.
     QHash<quint32, std::string> m_physicalKeysDown;
     // Releases everything in m_physicalKeysDown. Used whenever the window
     // stops receiving key events (deactivation, focus moving to another

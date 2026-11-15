@@ -341,7 +341,7 @@ function CalcU1600(props) {
     if (!held) return;
     heldKeys.current.delete(e.code);
     // The engine keeps a quick tap down long enough to be scanned
-    // (MachineSession::releaseKey()).
+    // (SharpTypingHook::releaseKey()).
     held.base.then((b) => { if (b) engine.call("hostKeyUp", b); });
   };
 

@@ -20,7 +20,8 @@ there is no enable switch, matching the real hardware's built-in port. The
 machine's side is the library's serial port kind: `core/Serial/SerialPortCapability`
 is the TC8576F's `SerialLink` over `calcu::peripherals::SerialPortQueues`
 (component `rs232c`), with no thread and no host. The host side is a host
-link: `app/MachineSession` holds one `calcu::peripherals::HostLinks`, whose
+link: LIB-2's session part (`calcu::peripherals::PeripheralsPart` in the
+library's app session) holds one `calcu::peripherals::HostLinks`, whose
 rule gives the RS-232C port `calcu1600-rs232c.serial` at once and the CE-158
 `calcu1600-ce158.serial` when it is first used; its `PtyHostLink`
 (`library/peripherals/PtyHostLink.cpp`, the former `PtySerialLink`) is the

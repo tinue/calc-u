@@ -49,9 +49,9 @@ parenthesis is removed with it.
 
 | Glossary term | Calc-U-59 | Calc-U-1600 |
 |---|---|---|
-| App session | `SessionController` | `AppSession` |
-| Machine session | `EmulatorSession` | `MachineSession` |
-| Frontend interface | `Platform` (`cu59::SessionController`) | `Platform` (`shared::AppSession::Platform`) |
+| App session | `SessionController` | done (M-31): the library's `calcu::sessions::AppSession`; the product's part `shared::SharpAppPart` |
+| Machine session | `EmulatorSession` | done (M-31): the library's `calcu::sessions::MachineSession` |
+| Frontend interface | `Platform` (`cu59::SessionController`) | done (M-31): messages of the app session (topics, commands, host services) |
 | App layer | `Shared/` | `Shared/` |
 | Machine | `TIMachine` (`calcu::machine::Machine`, C59-1) | `PC1500InterfaceMachine`, `PC1600InterfaceMachine` (`calcu::machine::Machine`, C1600-1; built by `SharpMachineBuilder` from `sharp::sharpCatalogue()`); `PC1500Machine`, `PC1600Machine` core-internal |
 | Model | `ModelId` (descriptor, `tiCatalogue()`); `cu59::Model` kept as the app enum (`modelId`, `modelFrom`), `ModelInfo` for file-format facts (no ROM file names since M-24); `MachineVariant` core-internal | `calcu::machine::ModelId` (descriptor, `sharpCatalogue()`); `shared::Model` kept as the app enum until M-49 (`modelIdOf`, `modelOf`, `variantIdOf` in `app/MachineModel.hpp`); model (`startup/modelPreference`) |
@@ -65,7 +65,7 @@ parenthesis is removed with it.
 | Magnetic card | `CardDocument`, `CardFile`, `.u59` | — |
 | Keyboard map | `KeyboardMap`, `KeySequencer` | `HostKeyMap`, `PC1500KeyboardMap` |
 | Host key | — | `HostKey` |
-| Full speed | `FullSpeed:` (preset directive) | `setTurbo`, `turboRequested` |
+| Full speed | `FullSpeed:` (preset directive) | the `speed {full}` command (M-31); `setTurbo`, `turboRequested` in the frontends |
 | Regular speed | `RegularSpeed:` (preset directive) | — |
 | Pause | `freeze`, `FreezeController`, `FreezeOwner` | `paused` (`DebugController`) |
 | Cold boot | `Machine::coldBoot()` (was `cleanReset`) | `Machine::coldBoot()` (was `resetJob(allReset = true)`, `allReset()`) |

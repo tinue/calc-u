@@ -286,9 +286,9 @@ tools/build_wasm_check.sh
 
 Builds `core/` + `app/` with Emscripten (`emcmake` on the repository
 root, into `../../build/web`, the tree `frontends/web/build.sh` uses too)
-and runs `tools/wasm_smoke.cpp` under node from the repo root: both models
-boot through `shared::AppSession` and presets run cooperatively, a slice
-per `tick()`, never blocking -- what a browser GUI will do. It keeps the
+and runs `tools/wasm_smoke.cpp` under node from the repo root: the
+library's app session with Calc-U-1600's part, in virtual time, starts a
+machine and runs presets through their commands, then types. It keeps the
 frontend-neutral layers portable ([Shared-Architecture.md](Shared-Architecture.md));
 CI runs it in the `web` job. Needs `emcc`/`emcmake` (Homebrew
 `emscripten`, or an activated emsdk; 6.0.13 matches the committed

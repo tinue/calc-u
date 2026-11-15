@@ -27,7 +27,7 @@ class SharpAppPart;
 // rebuild constructs a fresh machine and calls attachAllToFreshMachine()
 // right after loading ROMs, before the reset. To change a slot's module,
 // selectModule() (state only), then rebuild
-// (MachineSession::switchModel(currentModel(), true)).
+// (SharpAppPart::switchModelJob(currentModel(), true)).
 //
 // Battery cards loaded from a saved instance autosave in place: tick(),
 // called once per frame, writes a card kPersistDebounceSeconds after its
@@ -85,7 +85,7 @@ public:
         return !st.moduleName.empty() && st.isTemplate && st.battery;
     }
 
-    // MachineSession::Bays::attachModulesToFreshMachine().
+    // SharpAppPart::switchModelJob(), before the cold boot.
     void attachAllToFreshMachine();
     // Plugs the selected module of `slot` in (a module change: the session
     // detached the old one; a power cycle follows, behaviour change 1600-4).

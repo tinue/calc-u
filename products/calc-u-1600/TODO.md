@@ -394,7 +394,7 @@ Shared-Layer-Followup-Plan.md and Web-GUI-Plan.md.
   (vendored, header-only). `DapServer` (TCP framing) stays per frontend.
 - **CLIs on Shared.** `tools/pc1500_cli.cpp` / `pc1600_cli.cpp` build their
   own preset environment and both copy the `drainWav` yield hook; they could
-  run presets through `AppSession` (headless Platform) instead.
+  run presets through the library's app session (the harness, LIB-11) instead.
 
 ## Feature ideas
 
@@ -512,9 +512,9 @@ somewhere else doesn't count (see docs/background/plans/Code-Cleanup-Plan.md).
   the connector model; can be done any time.
   - `CE1600PRomVersion` clones `PC1600RomVersion`, and
     `BundledRoms::isCE1600PRomVersion` == `isPC1600RomVersion`.
-  - The enum↔string mapping is inlined in `Shared/MachineSession.cpp`
+  - The enum↔string mapping is inlined in `app/SharpAppPart.cpp`
     (`versionName` lambda in `attachCE1600P`,
-    `makePC1600WithRomFallback`) and `Shared/AppSession.cpp`.
+    `makePC1600WithRomFallback`) and `app/SharpAppPart.cpp`.
   - The old-ROM fallback is written twice (`makePC1600WithRomFallback`
     and `attachCE1600P`, two `Notice`s).
   - MainWindow's Machine menu has four copy-pasted action-group builders
@@ -523,7 +523,7 @@ somewhere else doesn't count (see docs/background/plans/Code-Cleanup-Plan.md).
     the four `apply*Selection` handlers (model, PC-1500 ROM, PC-1600 ROM,
     CE-1600P ROM) each carry an "already checked" guard (dff5d13). The
     ControlBar's model combo duplicates Machine > Model.
-  - `MachineSession::serialLinkStatus`/`ce158SerialLinkStatus` are a
+  - `SharpAppPart::serialLinkStatus`/`ce158SerialLinkStatus` are a
     pair.
 
   Fix: one `NewOldRom` enum with to/from-string, one
@@ -537,7 +537,7 @@ somewhere else doesn't count (see docs/background/plans/Code-Cleanup-Plan.md).
 - **Peripheral buttons are one setter per peripheral.**
   `ControlBar::setCe150State`/`setCe158State`/`setCe1600pState` (and the
   matching `set*Visible` and `*ToggleRequested` triples) and
-  `MachineSession::attachCE150/158/1600P` + `detach*` repeat the same
+  `SharpAppPart::attachCE150/158/1600P` + `detach*` repeat the same
   shape. The exclusion rules are data already (`Shared/ControlState.cpp`,
   `{offered, attached, enabled}` per peripheral, b5e553a);
   `MainWindow::syncPeripherals()` only renders them.
@@ -588,7 +588,7 @@ somewhere else doesn't count (see docs/background/plans/Code-Cleanup-Plan.md).
   **Do this before** the feature ideas that build on this layer: viewing
   a module's or diskette's contents, and watching `.floppy.yaml` for
   outside changes.
-- **PC-1600 live typing rides on the paste feeder.** `Shared/MachineSession`
+- **PC-1600 live typing rides on the paste feeder.** `app/SharpMachineParts` (`SharpTypingHook`)
   runs PC-1600 live keys through the paste `KeyPasteFeeder` with a
   `m_liveTyping` flag that changes what `pasteActive()` means; every paste
   entry point (`enqueueTyped`, `cancelPaste`, `discardMachine`,
@@ -670,11 +670,11 @@ somewhere else doesn't count (see docs/background/plans/Code-Cleanup-Plan.md).
 - **The debugger parses the project preset twice per session action.**
   Attach, restart and Build & Load call `effectiveConfig` →
   `parsePresetFile`, then `loadPreset` / `cleanStart` parse the same file
-  again by path (`parsePresetFile` in `Shared/AppSession.cpp`),
+  again by path (`parsePresetFile` in `app/SharpAppPart.cpp`),
   each time re-reading every `program: file:`. One parse per clean start
   is deliberate (docs/background/Decisions.md), two isn't. Fix: pass the
   `PresetFile` from `effectiveConfig` down (`DebugController` →
-  `SyncOperations` → `AppSession`).
+  `Operations` → the app session's `c1600.load-preset`).
 - **Small leftovers from the 2026-09-30 simplify pass.** Take them when
   the file is next touched:
   - `--lcd-png` and `--lcd-text` write-and-error blocks are the same in

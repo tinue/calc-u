@@ -10,7 +10,7 @@
 // The control bar's memory-module slots: the session's shared::ModuleBay
 // (Shared/ModuleBay.hpp has the rules -- selection, rebuild-time attach,
 // battery autosave, Name & Save, preset save-as) with Qt signals and
-// QStrings. Its autosave runs in AppSession::frameDuties().
+// QStrings. Its autosave runs in SharpAppPart::afterCall().
 class MemoryModuleManager : public QObject {
     Q_OBJECT
 public:

@@ -43,7 +43,7 @@ decisions, plans, handoffs — is in [../background/README.md](../background/REA
 ## How the emulator works
 
 - [Shared-Architecture.md](Shared-Architecture.md) — Core, Shared and the
-  frontends: the layering rules, `AppSession`, resumable jobs, the
+  frontends: the layering rules, the app session and `SharpAppPart`, resumable jobs, the
   WebAssembly check.
 - [Web-Client.md](Web-Client.md) — the WebAssembly frontend: worker and
   bindings, the `dist/` contract for embedding, the installable app,

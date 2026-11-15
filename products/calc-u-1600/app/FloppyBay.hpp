@@ -66,7 +66,7 @@ public:
     // The "green lamp": the drive motor is spinning.
     bool motorOn() const;
 
-    // MachineSession::Bays::insertSelectedDisk(): loads the selected
+    // SharpAppPart (a CE-1600P attached): loads the selected
     // disk into a just-attached drive.
     void insertSelectedDisk();
     // After a preset's `floppy:` loaded a disk directly on the machine.
@@ -81,7 +81,7 @@ public:
     // Once per frame: notices a changed disk and writes it once the
     // debounce has passed.
     void tick(double nowSeconds);
-    // MachineSession::Bays::flushFloppy(), and before a select / quit.
+    // SharpAppPart before a bus change, and before a select / quit.
     void flushPendingPersist();
 
 private:

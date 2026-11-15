@@ -137,3 +137,87 @@ model-specific type. `library/sessions/` includes only `machine`,
 
 Not done in M-22 (other columns): AC-28 to AC-33 (Calc-U-59, M-33, M-34)
 and AC-34 to AC-38 (Calc-U-1600, M-31).
+
+## Calc-U-1600 (M-31, 2026-11-15)
+
+Calc-U-1600's own `AppSession`, `MachineSession`, `Pacer`, `AudioPump`
+and the Qt6 `SyncOperations` are gone. Every frontend hosts the library's
+app session with the product's part `shared::SharpAppPart`
+(`products/calc-u-1600/app/SharpAppPart.*`: the bays, the machine, the
+Sharp operations as `c1600.*` commands, the interim topics of design §5)
+and the adapters `SharpTypingHook` and `SharpDebuggerGate`
+(`app/SharpMachineParts.*`). `core/Job.hpp` forwards onto
+`calcu::sessions` (JobForward). Qt6: `MachineController` hosts the session
+on the GUI thread through `app/SharpHost`; Web: `frontends/web/bindings.cpp`
+builds it for the library's `WorkerHost` (LIB-15 1600).
+
+| AC | Result | Evidence |
+|---|---|---|
+| AC-34 | Pass | CTest `CalcU1600NoOwnSession` (`tools/check_no_own_session.cmake`; Frequent): no `AppSession`/`MachineSession`/`Pacer` class in `app/`, `frontends/qt6` includes `sessions/AppSession.hpp`, no operation run to its end there |
+| AC-35 | Pass | `tests/session_tests.cpp` `lib3_ac35_preset_in_parts_busy_display_and_paper_update`: the Lissajous example, 474 busy host calls, 30 display messages and the armed control state during it, the paper grows while it runs, every call ≤ 17 ms (the 14 ms allowance plus the slice that crosses it); Qt6 exit check below |
+| AC-36 | Pass | Web: `frontends/web/tests/session.spec.js` `lib3_ac36 hidden tab suspends, shown continues` (Longer); Qt6: `CalcU1600NoOwnSession` (no suspend sent) |
+| AC-37 | Pass | `session_tests.cpp` `lib3_ac37_buzzer_heard_at_regular_speed_only` (SoundStart at 48,000, samples at regular speed, none at full speed or in a reset); Web: `session.spec.js` `ac26` |
+| AC-38 | Pass (against the interim names) | `session_tests.cpp` `lib3_ac38_mirror_holds_every_callback`: `romMissing` → `roms-missing` and a refused `start`; `notice`, `attachFailed`, `bayError` → notices; `machineReplaced`, `modelSwitched`, `moduleChanged` → `c1600.machine`; `tapesChanged` → `c1600.tapes`; `presetArmed` → control state during the operation; `presetLog` → log; `busyChanged` → busy; `hostDirectories` → the folder picker stated (AC-26); `serialLinksRelinked` → `c1600.serial-links`; `machineAboutToChange`, `runDebuggerSlice` → no message (the gate). Re-pointed in M-45 to M-49 |
+| ledger 1600-9 | Pass | `session_tests.cpp` `ledger_1600_9_keys_dropped_and_reset_stops_an_operation` |
+
+Ported to the library session (scripted clock, `app/tests/SessionFixture.hpp`):
+`shared_app_session_tests.cpp` (13; `test_run_now_and_selection` became
+`test_operations_and_selection`, in parts), `shared_machine_session_tests.cpp`
+(7), `shared_bay_tests.cpp` (4), `serial_links_tests.cpp` (LIB-2 AC-33,
+through LIB-2's `PeripheralsPart`), `rom_lookup_tests.cpp` (LIB-12 adapter
+A-5 gone: the `roms-missing` topic). The golden runs are unchanged and
+pass. Frequent: 26 of 26 CTest entries pass; `CoreTests` 867 tests, 38-46 s.
+
+**Exit check (Qt6 and Web run every example as before).** Qt6: the nine
+screenshot scenarios ran on a baseline build of `515e694` and on this
+branch; every step runs on both, and the failures are the same on both:
+this machine's missing Screen Recording and Automation permissions (the
+captures of the whole window and the native menus). 21 of the 22 images
+written are identical byte for byte; `07-ce158-printer` differs only in the
+serial label, which now names the CE-158's serial port file where the
+baseline said the pseudo-terminal could not be opened (the file is made on
+first use, LIB-2 AC-33, and the label follows it now). Web: Playwright 52
+passed, 2 skipped (Chromium root and sub-path, offline in Chromium and
+WebKit, prerender, ROMs missing), with the new `session.spec.js`.
+
+### Decided in the step (spec → today's behaviour → simpler structure)
+
+- **Keys while an operation runs are dropped now (ledger 1600-9),** not
+  passed on until M-36 as design §8 reads: the plan names row 1600-9 for
+  this step. `SharpTypingHook` drops a user's key while `busy()`; the
+  debugger's `typeCommand` and a release go through. Two readings; the
+  plan's is taken. **For the user.**
+- **`start` is an operation** (LIB-15 N3, in Qt6 too): the startup model,
+  then the named preset or the model's default preset, as 0.8.1's Web start
+  did. The Qt6 window shows at once and the boot runs in parts; a missing
+  ROM still ends the app with the lookup's message.
+- **A host wiring class, `shared::SharpHost`** (not a session: the part, the
+  session, one listener with a `TopicMirror`), shared by Qt6, the tests and
+  `wasm_smoke`.
+- **The debugger's preset and reset requests wait for the operation's reply
+  in a nested event loop** (`Operations::runAndWait`; the frame timer goes
+  on calling the session, so the operation runs in parts), because the DAP
+  requests answer synchronously until LIB-10 1600 (M-45). The `--shots`
+  runner drives the session on a frozen clock instead.
+- **Sound:** `AudioPump` became `SoundFeed` on the sink side (the carry-over
+  cap, D-5); open, prime, discard and silence are the session's.
+- **`SessionContext::display()`** (library, a non-pure virtual): a part can
+  read the display the session read in this call, for a product's own form
+  of it (the Web page's LCD, `SharpWebPart`); nobody reads the machine's
+  display a second time.
+- **The preset's armed peripherals are synced into `plugged()` at
+  `onArmed`** (`sharp::legacy::syncPlugged`), so the paper and the control
+  bar follow a preset while it runs (AC-35); 0.8.1 synced them at the end.
+- **Bay errors and a refused attach are notices** (AC-38's table), shown by
+  Qt6 in a box titled "Calc-U-1600": ledger row 1600-27 (new).
+
+### Not done here
+
+- The harness `calcu` has run the library's app session on the product's
+  machine since M-28; the product's part does not join it yet (the harness
+  builds the machine itself, adapter A-1). It joins with C1600-5 (M-51),
+  where the product's harness commands come (LIB-11 D-6 named M-31).
+- `tools/dap_smoke.py` (Longer) was not run: it drives the DAP debugger,
+  whose loads now wait in a nested loop; to run at the Part C1 boundary.
+- AC-38's interim topics are re-pointed in M-45 to M-49; the column is Done
+  in M-49 (design §1).

@@ -151,19 +151,21 @@ Frequent except where the table says otherwise):
 
 | CTest entry | What | Group | Measured (M4 Pro, 2026-11-14) |
 |---|---|---|---|
-| `CoreTests` | 865 `TEST`s: unit and integration tests of the core and the app layer (real ROMs, presets, loaders, job equivalence), the machine interface (C1600-1, LIB-1 1600, LIB-2 1600), the settings file (LIB-9 1600), the ROM lookup (LIB-12 1600), the golden replays through it (table below), the harness product entry (LIB-11, M-28) | Frequent | 39.0 s (M-30/M-28/M-27, 2026-11-15) |
+| `CoreTests` | 867 `TEST`s (M-31): unit and integration tests of the core and the app layer (real ROMs, presets, loaders, job equivalence), the machine interface (C1600-1, LIB-1 1600, LIB-2 1600), the settings file (LIB-9 1600), the ROM lookup (LIB-12 1600), the golden replays through it (table below), the harness product entry (LIB-11, M-28) | Frequent | 39.0 s (M-30/M-28/M-27, 2026-11-15) |
 | `CalcU1600CheckPresets` | `tools/check_presets.sh`: every preset in the repository parses | Frequent | 0.3 s |
 | `CalcU1600MachineIncludeCheck` | `tools/check_machine_includes.sh`: no file outside `core/` (app, frontends, tools, dev) includes a machine class, directly or through a core header, or names one (C1600-1, Technical Requirements; design T13; M-26) | Frequent | 1.1 s |
 | `CalcU1600NoOwnRomLookup` | `library/roms/tests/check_no_own_rom_lookup.sh`: no product source outside `core/Machine/SharpRoms.cpp` (with the host-drive ROM, D-6), the catalogue and `app/tests/` looks for a ROM file (LIB-12 AC-2, design T7; M-27) | Frequent | 0.5 s |
 | `CalcU1600CliRomLookup` | `tests/cli_rom_tests.sh`: `pc1600_cli --preset` with a `roms/` without one file exits 1 naming it, with the full set it runs (LIB-12 AC-13, design Q2; M-27) | Frequent | 0.2 s |
 | `CalcU1600NoPlatformSettings` | `library/settings/check_platform_stores.sh` over `frontends/` with `tools/platform_stores_allowed.txt`: no setting in QSettings or `localStorage` (LIB-9 AC-31, design T-19; M-30); not registered on Windows | Frequent | 0.02 s |
+| `CalcU1600NoOwnSession` | `tools/check_no_own_session.cmake` (`cmake -P`): no `AppSession`, `MachineSession` or `Pacer` class in `app/`, the Qt6 frontend includes the library's `sessions/AppSession.hpp`, sends no suspend and runs no operation to its end (LIB-3 AC-34, AC-36; design P16-1, P16-3; M-31) | Frequent | 0.05 s |
 | | **Frequent, Calc-U-1600** | | **40.4 s** (M-30) |
 | `CalcU1600WebPlaywright` | `frontends/web/run-tests.sh`: Playwright, Chromium (root, sub-path) and WebKit (offline) | Longer | 22.5 s (Homebrew Emscripten 7.0, after `<cstdlib>` was added to `core/Debug/BreakpointTable.cpp`); 31 s in CI (6.0.13) |
 | `CalcU1600RomMissingBuild` | `tests/rom_missing_build.sh`: a Web `dist/` built from `roms/` without one file (default `PC1600-P1-B3-old.bin`) shows the lookup's text naming it and no calculator (LIB-12, Technical Requirements, design Q5; M-27); not registered on Windows | Longer | 3.2 s (M-27; the Web build tree already built) |
 | `CalcU1600WasmSmoke` | `tools/build_wasm_check.sh`: core and app layer under node | Longer | 5.1 s locally without the build; 44 s in CI with the build |
 | `CalcU1600Shots.<scenario>` | the nine screenshot scenarios of `docs/developer/screenshots/guide/` run as checks, into the build tree | Longer | 39.6 s, the nine together (2.2–9.2 s each), all passed |
 | `CalcU1600DapSmoke` | `tools/dap_smoke.py --app`: the DAP requests VS Code uses | Longer | 24.7 s; failed 3/3 earlier on 2026-11-14 and at the pin (no `stopped` event after the first `stepIn`), passed in the Part B run: possibly timing-dependent, open finding |
-| `CalcU1600PacingRealClock` | `pacing_longrun_real_clock_pc1500a`, `_pc1600` with `CALCU1600_PACING_LONGRUN=600` | Checkpoint | 20 min (by design) |
+| `CalcU1600PacingRealClock` | `lib17_ac21_pacing_longrun_real_clock_pc1500a`, `_pc1600` with `CALCU1600_PACING_LONGRUN=600`, on the library's app session (M-31) | Checkpoint | 20 min (by design) |
+| `CalcU1600QtPacingProbe` | `CalcU1600Qt --pacing-probe 60` (non-release test hook): a PC-1600 keeps one minute in the Qt6 frontend (LIB-17 AC-22, P16-3; M-31). The Web half: `frontends/web/tests/session.spec.js` `lib17_ac22` with `CALCU1600_WEB_PACING=1` | Checkpoint | 1 min each; run once in M-31: Qt6 −8 ms, Web −2 ms over 60 s |
 | `CalcU1600GuideScreenshots` | `tools/make_screenshots.sh`: the User Guide images into `docs/images/` | Checkpoint | not measured |
 
 `CoreTests` by file (`products/calc-u-1600/tests/`, `app/tests/`; every
@@ -195,15 +197,16 @@ needs ROMs that are missing reports `SKIP`):
 | `host_directory_drive_tests.cpp` | 25 | `sc7852_tests.cpp` | 39 |
 | `inspector_tests.cpp` | 13 | `sharp_machine_tests.cpp` | 28 (C1600-1 AC-1–21, EC-1–3; M-26) |
 | `job_tests.cpp` | 2 | `tape_deck_tests.cpp` | 11 |
+| `session_tests.cpp` | 4 (LIB-3 AC-35, AC-37, AC-38, ledger 1600-9 on the library's app session; M-31) | | |
 | `key_paste_tests.cpp` | 13 | `tc8576f_tests.cpp` | 20 |
 | `lcd_screenshot_tests.cpp` | 5 | `app/tests/serial_links_tests.cpp` | 2 (LIB-2 AC-33; M-26) |
-| `lcd_text_tests.cpp` | 21 | `app/tests/shared_app_session_tests.cpp` | 14 |
+| `lcd_text_tests.cpp` | 21 | `app/tests/shared_app_session_tests.cpp` | 13 (SharpAppPart on the library's session, M-31) |
 | `lh5801_tests.cpp` | 57 | `app/tests/shared_bay_tests.cpp` | 4 |
 | `lh5803_tests.cpp` | 8 | `app/tests/shared_geometry_tests.cpp` | 5 |
 | `listing_tests.cpp` | 10 | `app/tests/shared_host_key_map_tests.cpp` | 4 |
 | `machine_code_file_tests.cpp` | 22 | `app/tests/shared_machine_session_tests.cpp` | 7 |
-| `memory_card_tests.cpp` | 47 (the 8 YAML reader cases moved to the library in M-24) | `app/tests/shared_pacing_tests.cpp` | 3 |
-| `pacing_longrun_tests.cpp` | 4: `pacing_longrun_scripted_pc1500a`, `_pc1600` Frequent; `pacing_longrun_real_clock_pc1500a`, `_pc1600` Checkpoint (return at once without `CALCU1600_PACING_LONGRUN`) | `app/tests/shared_preset_catalog_tests.cpp` | 4 |
+| `memory_card_tests.cpp` | 47 (the 8 YAML reader cases moved to the library in M-24) | `app/tests/shared_pacing_tests.cpp` | 2 (LIB-17 AC-20; the sink side of the sound; M-31) |
+| `pacing_longrun_tests.cpp` | 4, the "after" test of LIB-17 AC-21 (M-31): `lib17_ac21_pacing_longrun_scripted_pc1500a`, `_pc1600` Frequent; `lib17_ac21_pacing_longrun_real_clock_pc1500a`, `_pc1600` Checkpoint (return at once without `CALCU1600_PACING_LONGRUN`) | `app/tests/shared_preset_catalog_tests.cpp` | 4 |
 | `pc1500_tape_tests.cpp` | 2 | `app/tests/shared_settings_tests.cpp` | 8 (LIB-9 AC-26–32; M-30) |
 | `rom_lookup_tests.cpp` | 9 (LIB-12 AC-11–14, EC-1; M-27) | | |
 

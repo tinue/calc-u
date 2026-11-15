@@ -40,12 +40,14 @@ and [../background/plans/Debugger-Use-Cases-Plan.md](../background/plans/Debugge
   - `DapSession`: the requests;
   - `DebugController`: owned by `MachineController`.
 - **Hooks elsewhere:**
-  - `app/MachineSession::runActive()`: routes each frame through `runSlice()` while attached
-    (`Listener::runDebuggerSlice()`, answered by `MachineController`);
-  - `discardMachine()` / `wireNewMachine()`: `machineAboutToChange()` / `machineReplaced()`;
-  - `typeCommand()`;
-  - `frontends/qt6/app/SyncOperations`: every load/reset, run to completion through
-    `shared::AppSession::runNow()`; `busyChanged` drives the DAP queue;
+  - `app/SharpMachineParts`' `SharpDebuggerGate`: every advance of the library's
+    machine session goes through `runSlice()` while attached
+    (`SharpDebugger::runDebuggerSlice()`, answered by `MachineController`; adapter until M-45);
+  - `SharpAppPart`'s machine rebuilds: `machineAboutToChange()` / `machineReplaced()`;
+  - `SharpTypingHook::typeCommand()`;
+  - `frontends/qt6/app/Operations`: presets and resets from the debugger are the session's
+    operations; a DAP request waits for the reply in a nested event loop (`runAndWait`),
+    the frame timer goes on; the busy topic drives the DAP queue;
   - `main.cpp`: `--dap`, `macDisableWindowRestoration()`.
 - **`vscode/calcu1600-debug/`:** the extension. Install with `tools/install_vscode_extension.sh`.
 
@@ -56,8 +58,8 @@ and [../background/plans/Debugger-Use-Cases-Plan.md](../background/plans/Debugge
   load drives the machine directly and must never park on a breakpoint;
   those loops would hang.
 - **Queueing:** DAP messages wait while the app runs a synchronous
-  operation (`MachineController::appBusyChanged`, from `AppSession`'s
-  `busyChanged`). An attach handled during the
+  operation (`MachineController::appBusyChanged`, from the app session's
+  `busy` topic). An attach handled during the
   startup preset would rebuild the machine under the running loader.
 - **Typing:** the GUI paste never presses ENTER; that's deliberate. Tools
   use `typeCommand()`, which does. `enqueueKey()` is PC-1500 only.

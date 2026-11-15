@@ -1,0 +1,172 @@
+X-MAX               
+          4.        
+X-MIN               
+         -4.        
+Y-MAX               
+          4.        
+Y-MIN               
+         -4.        
+Z-MAX               
+         12.        
+Z-MIN               
+          0.        
+DIF-X               
+          1.        
+DIF-Y               
+          1.        
+ZEILEN              
+         80.        
+STREIFEN            
+          1.        
+X-Y-WINKEL          
+         65.        
+VERDECKT ?          
+          1.        
+F-WERTE             
+        719.        
+
+
+      419  61 GTO   
+      420  00  00   
+      421  16  16   
+      422  01  1    
+      423  00  0    
+      424  69 OP    
+      425  17  17   
+      426  25 CLR   
+      427  36 PGM   
+      428  19  19   
+      429  71 SBR   
+      430  00  00   
+      431  45  45   
+      432  37 P/R   
+      433  31 LRN   
+      434  46 INS   
+      435  31 LRN   
+      436  81 RST   
+      437  25 CLR   
+      438  61 GTO   
+      439  00  00   
+      440  24  24   
+      441  36 PGM   
+      442  19  19   
+      443  71 SBR   
+      444  00  00   
+      445  45  45   
+      446  37 P/R   
+      447  31 LRN   
+      448  46 INS   
+      449  31 LRN   
+      450  81 RST   
+      451  25 CLR   
+      452  05  5    
+      453  69 OP    
+      454  17  17   
+      455  61 GTO   
+      456  00  00   
+      457  17  17   
+      458  31 LRN   
+      459  68 NOP   
+      460  61 GTO   
+      461  02  02   
+      462  65  65   
+      463  25 CLR   
+      464  69 OP    
+      465  05  05   
+      466  31 LRN   
+      467  61 GTO   
+      468  04  04   
+      469  73  73   
+      470  31 LRN   
+      471  53  (    
+      472  00  0    
+      473  00  0    
+      474  00  0    
+      475  54  )    
+      476  61 GTO   
+      477  02  02   
+      478  88  88   
+      479  31 LRN   
+1                   
+1L                  
+11                  
+11                  
+11L                 
+111                 
+111                 
+111L                
+1L11                
+1111                
+11J1L               
+111J1               
+1JJJ1               
+1JJL1L              
+1JJ1J1              
+11JJJ1              
+1J LL1L             
+1JLLL1L             
+JJJLLLL             
+JJ L1LL             
+JJ 11L1L            
+JLL1111L            
+J1L1J1LL            
+J L1 LLL            
+J LJ 1LL            
+J LL 1LL            
+J LJ J1L            
+J L L LL            
+JLL LJ11            
+J1L L JJ            
+J L L  1L           
+J L 1  J 1          
+J L11   L L         
+J L L   1 J         
+J L 11  J   L       
+JLL 1 J J    L      
+J1L L   JL    L     
+1 L L   J  J   L    
+1 L L   J     1J    
+1 LLL   1       L   
+1J J    L      J    
+1J JJ  J       L    
+1J J J 1      L     
+11 1  JL     L      
+1J 1  1 L   L       
+1JL1  L  LJ         
+1JJ1 J   JL         
+1J L 1   L          
+1J L 1  11          
+11 LLL JJ           
+1L LJ  11           
+11J J1J L           
+11J 1J1JL           
+11L 1 L1L           
+11J L LLL           
+11JLLJJLL           
+11J1L1JLL           
+J11J 11LL           
+ 11JLL1LL           
+ J1J1LLLL           
+  LJJLLLL           
+  1JJLLLL           
+  J1J1J1L           
+   LJJJ1L           
+   1JJL1L           
+   J1JL1L           
+    L111L           
+    111LL           
+    J11LL           
+     L1LL           
+     11LL           
+     1LLL           
+     JLLL           
+      LL            
+      1L            
+      JL            
+       L            
+       1            
+       1            
+       J            
+
+
+          1.        

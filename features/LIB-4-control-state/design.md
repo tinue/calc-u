@@ -1,5 +1,5 @@
 # LIB-4 Control state: design
-Status: approved by the user at the Part C1/C2 boundary (2026-11-15)
+Status: Library column approved at the Part C1/C2 boundary (2026-11-15); Calc-U-1600 column: draft for the Part C2/D boundary review (2026-11-16)
 
 ## 1. Scope
 
@@ -482,3 +482,158 @@ unaffected.
   another place (LIB-14 AC-8, AC-9) is LIB-14's. The control state
   carries each place's connector and pin-out, and the media places of
   a slot (Sharp `slot-1`, `slot-2`), so that LIB-14 can decide.
+
+## Part D: the Calc-U-1600 column
+
+Step M-49, with LIB-14 1600. Tests from AC-16 to AC-20; Done in M-49
+(plan §5.1). The frontends that draw the control state (the menus, the
+bar, the Web page) are designed in the Part D section of LIB-14's
+design; this section holds the product's side of the control state:
+its rules and entries, the catalogue change of O-2, and what goes.
+
+### D.1 Scope and what the earlier steps leave
+
+- After M-46 (LIB-18 1600) the product's machine control is the
+  library's commands, and the CE-1600P variant chosen while it is not
+  plugged in is a product setting of the run (LIB-18 AC-31; D-10 here).
+  After M-47 (LIB-7 1600) the media places `floppy` (owner CE-1600P) and
+  `cassette` (owners CE-150, CE-1600P) are the machine's media places.
+  M-49 relies on both.
+- The interim topic `c1600.control-state` (`app/SharpTopics.hpp:26,
+  54-60`) and `app/ControlState.hpp/.cpp` live until M-49, read by the
+  Qt6 window (`MainWindow.cpp:309, 381, 488`) and by `SharpWebPart`'s
+  `c1600.ui` (`SharpWebPart.cpp:425`).
+
+### D.2 The code of C2 against the approved text
+
+From the M-37 qa-report's "Deviations", what this column relies on:
+
+- While an operation runs, a place as a whole stays available; its
+  empty choice and every peripheral and variant in it are refused
+  (AC-3). The rules are still asked for the models, `reset`,
+  `cold-boot` and the places.
+- The reason of a refused place comes before a rule on a choice in it
+  (D-5); `HarnessProduct::controlSetup()` is `const` and returns the
+  setup by value.
+- `ControlState` has the lookups `place`, `action`, `mediaPlace`,
+  `productEntry` and `choice`, which the product's tests use.
+- No product sends `control-state` from a `ControlPart` of its own yet;
+  the harness session has one with no printers and no rules (D-9).
+
+### D.3 Files
+
+| File | Change |
+|---|---|
+| `products/calc-u-1600/app/SharpControlRules.hpp/.cpp` (new) | `shared::SharpControlRules : calcu::control::ControlRules` (D.4) and `shared::controlSetup(const SharpAppPart&)`: the catalogue of the part (LIB-18's `ProductMachines::catalogue()`), `printers = {CE-150, CE-1600P}`, the rules |
+| `products/calc-u-1600/app/SharpAppPart.hpp/.cpp` | takes `SharpAppPartOptions{canMountHostFolder}` at construction (spec OQ-6; today's `hostOffers(FolderPicker)` test, `SharpAppPart.hpp:119-122`, goes); `controlState()` goes |
+| `products/calc-u-1600/app/SharpSession.cpp`, `frontends/web/bindings.cpp` | put a `calcu::control::ControlPart(controlSetup(part))` among the library's parts of the session; Qt6 passes `canMountHostFolder = true`, the Web `false` |
+| `products/calc-u-1600/app/HarnessProduct.cpp` | `controlSetup()` overridden with the printers and the rules (D-9's "products name theirs in their column steps"); the harness can mount a folder (C1600-5 AC-11) |
+| `products/calc-u-1600/app/ControlState.hpp/.cpp` | deleted |
+| `products/calc-u-1600/app/SharpTopics.hpp`, `SharpAppPart.cpp` | `ControlStatePayload`, the topic `c1600.control-state` and its `toValue` go |
+| `products/calc-u-1600/core/Machine/SharpCatalogue.cpp`, `SharpCatalogue.hpp` | the 60-pin places get one pin-out each (D.5, O-2) |
+| `products/calc-u-1600/core/Machine/SharpMachine.*` | the place rule of `productRefusal` ("The CE-158 goes in the place interface.") goes, since the pin-outs keep each peripheral to its place; the rule of ledger 1600-22 (the CE-1600P and the CE-158 not together) stays |
+| `products/calc-u-1600/tests/control_state_tests.cpp` (new) | the cases of D.6 |
+| `products/calc-u-1600/tests/descriptor_tests.cpp` | `lib1_ac36_…`, `lib1_ac39_…` and `lib1_ac41_…` follow the new pin-outs |
+
+### D.4 The product's rules and entries (AC-7, AC-17, AC-18)
+
+| Key or entry | What `SharpControlRules` gives | From today (`app/ControlState.cpp:7-48`) |
+|---|---|---|
+| `PlaceKey{host-drive}` | not available with "A host folder cannot be mounted here." when `canMountHostFolder` is false (AC-18) | `hostDriveOffered` |
+| `c1600.disk-controls` | `{shown, available, reason}`: shown on every PC-1600; available while the CE-1600P is plugged in, else the reason "The disk drive is in the CE-1600P." | `floppyShown`, `floppyEnabled` |
+| `c1600.ce158-printer-panel` | `{shown}`: while a CE-158 is plugged in | `printerShown` |
+| `c1600.host-drive-folder` | `{folder}`: the folder the host drive shows, or none (the `c1600.host-drive-folder` kind, C1600-1) | `hostDriveDir` |
+| `c1600.ce1600p-next-variant` | `{variant}`: the CE-1600P variant an attach will use while it is not plugged in (D-10; LIB-18 AC-31) | `ce1600pRomMenu` while unplugged |
+
+Everything else of today's control state is a generic entry (AC-17's
+table): models and variants from the catalogue, the places `slot-1`,
+`slot-2`, `printer`, `interface`, `host-drive` with what fits and what
+is plugged in, the CE-1600P's variants in `printer`, the media places
+`floppy` and `cassette` with their owners, and the one paper panel
+owned by the plugged-in CE-150 or CE-1600P. `onControlBar` is gone with
+no successor (LIB-14 AC-9).
+
+### D.5 The 60-pin places (O-2)
+
+Today `printer`, `interface` and, on the PC-1600, `host-drive` present
+one pin-out each model (`SharpCatalogue.cpp:80-81, 113-115`), so by
+LIB-2 AC-2 each place lists the CE-150, the CE-158, the CE-1600P and the
+host drive; the wrong ones are refused but still listed. LIB-14 AC-36
+needs buttons where one peripheral fits (PC-1500: CE-150 in `printer`,
+CE-158 in `interface`) and a printer picker of CE-150, CE-1600P and
+None on the PC-1600. The fix is descriptor data (D-11):
+
+| Model | Place | Pin-out (new ID) | Fits |
+|---|---|---|---|
+| PC-1500, PC-1500A | `printer` | `pc1500-60-pin-printer` | CE-150 |
+| PC-1500, PC-1500A | `interface` | `pc1500-60-pin-interface` | CE-158 |
+| PC-1600 | `printer` | `pc1600-60-pin-printer` | CE-150, CE-1600P |
+| PC-1600 | `interface` | `pc1600-60-pin-interface` | CE-158 |
+| PC-1600 | `host-drive` | `pc1600-60-pin-host-drive` | the host drive |
+
+The connector `60-pin` lists these pin-outs, each `Takes::One`, each with
+the power cycle after a change as today. The core's bus (which card
+answers first, C1600-1 AC-17) is not a descriptor matter and does not
+change. The IDs are names of places on one connector, not new hardware
+facts.
+
+### D.6 Tasks
+
+Tests before the code. `CoreTests` (`tests/control_state_tests.cpp`,
+Frequent) on the session of `app/tests/SessionFixture.hpp` with the
+real ROMs (`SKIP_UNLESS` they are there); names `lib4_acN_…`. The
+drawing is tested with LIB-14 1600 (its D.8).
+
+| Task | What | ACs | Test |
+|---|---|---|---|
+| T16-1 | The catalogue's pin-outs | (O-2) | `descriptor_tests.cpp`: `lib1_ac36_…`, `lib1_ac41_…` updated; `lib4_ac17_each_60_pin_place_lists_only_what_fits` |
+| T16-2 | Models and variants | AC-16 | `lib4_ac16_models_and_variants_per_model` (PC-1500: A01, A03, A04; PC-1500A: its one; PC-1600: New, Old; the running one) |
+| T16-3 | Today's fields | AC-17 | `lib4_ac17_each_field_arrives` (one block per row of the spec's table, on a PC-1500A and on a PC-1600 with and without CE-150, CE-158, CE-1600P and the host drive), `lib4_ac17_ce1600p_variants_in_printer_and_next_variant_entry` |
+| T16-4 | The host drive by frontend | AC-18 | `lib4_ac18_host_drive_refused_where_no_folder_can_be_mounted` (two sessions on the same machine, one with `canMountHostFolder = false`: their control states differ in `host-drive` and its choices only) |
+| T16-5 | Both frontends draw all | AC-19 | LIB-14 1600's `lib14_ac36_bar_pc1500_pc1500a`, `lib14_ac36_bar_pc1600` (Qt6) and `lib14_ac36 the bar per model` (Web), both from `control-state`; the deletion of `app/ControlState.*` and `c1600.ui` is the rest of the check |
+| T16-6 | While an operation runs | AC-20 | `lib4_ac20_operation_refuses_model_variant_and_place_choices` (a preset load: the variants, the places' choices, the inserts refused with "Another operation is running."; the models, `reset`, `cold-boot` available); Qt6 `lib4_ac20_qt_controls_disabled_while_loading` (`CalcU1600QtTests`), Web `lib4_ac20 peripheral buttons, disk picker and tape controls disabled while loading` (`shell.spec.js`) |
+| T16-7 | The harness | AC-9 for this product | `harness_tests.cpp`: `lib4_harness_state_control_state_has_paper_panel_and_product_entries` |
+
+Coverage: AC-16 to AC-20 (5 of 5).
+
+### D.7 Adapters, ledger, knowledge
+
+- **Adapters removed:** the interim topic `c1600.control-state` and
+  `controlStateOf` (§5); with LIB-14 1600 the `c1600.ui` topic.
+- **Ledger:** 1600-10 and 1600-33 become visible with LIB-14 1600; no
+  row of its own.
+- **Agent knowledge (same step):** `products/calc-u-1600/docs/developer/Shared-Architecture.md`
+  (`ControlState`, `controlStateOf` → `control-state`, `SharpControlRules`);
+  `docs/glossary-mapping.md` has no row for the old fields; the memory
+  file `calc-u-1600/feedback_machine_config_on_control_bar.md` (LIB-14
+  1600 D.10).
+
+### D.8 Golden runs and risks
+
+- The pin-out change is the one core change of M-49. The golden replays
+  read no descriptor beyond the model and must pass unchanged.
+- **Cost per flush** on a PC-1600 with every module definition: about
+  ten checks plus two per definition (§8); measured in M-49. If it shows
+  in the Frequent timing or a profile, the cache of D-1 is added.
+- **Presets** name places, not pin-outs (`machine.md` M-8), so no preset
+  changes; a preset that put the CE-158 into `printer` is refused, as
+  today by `productRefusal`, now by LIB-2's fit rule with its sentence.
+
+### D.9 Decided (best guess)
+
+- **D-11 (O-2).** One pin-out per 60-pin place, so that every place
+  lists exactly what fits it. The family rule of LIB-14 AC-9 then gives
+  the bars of AC-36 with no product rule.
+- **D-12 (AC-18; spec OQ-6).** "Can mount a host folder" is a
+  construction option of `SharpAppPart`, not a host service: Qt6 and the
+  harness yes, the Web no.
+- **D-13.** The library's `ControlPart` is added by the session builders
+  (`makeSharpSession`, `bindings.cpp`) and by the harness, as with the
+  other library parts; `SharpAppPart::sessionParts()` does not hold it,
+  so the harness of M-51 (which takes `SharpAppPart`'s parts) has one.
+- **D-14.** The reasons of the product's rules are one English sentence
+  each, as written in D.4.
+
+### D.10 Questions for the user
+
+None that split the design.

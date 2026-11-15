@@ -3,6 +3,9 @@
 #include <algorithm>
 #include <cstdlib>
 #include <cctype>
+#include <filesystem>
+#include <fstream>
+#include <iterator>
 #include <set>
 
 namespace calcu::presets {
@@ -555,8 +558,12 @@ std::unique_ptr<Item> readStep(std::string_view verb, const YamlNode& value, con
         std::string stem() const override { return {}; }
         std::optional<std::string> text() const override { return std::string(); }
         std::string readError() const override { return {}; }
+        // LIB-7 (M-41; LIB-11 AC-22): a file a step's reference names
+        // (`floppy { file: … }`), absolute or relative to the current folder.
         std::variant<std::vector<std::uint8_t>, std::string> readNamed(std::string_view p) const override {
-            return "The file " + std::string(p) + " cannot be read by a step on its own.";
+            std::ifstream in(std::filesystem::path(std::u8string(p.begin(), p.end())), std::ios::binary);
+            if (!in) return "The file " + std::string(p) + " cannot be read.";
+            return std::vector<std::uint8_t>(std::istreambuf_iterator<char>(in), std::istreambuf_iterator<char>());
         }
         std::string resolvedName(std::string_view p) const override { return std::string(p); }
     } source;

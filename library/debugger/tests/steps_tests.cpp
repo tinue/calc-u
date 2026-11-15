@@ -1,6 +1,6 @@
 // LIB-10 L13 (design §6): the preset steps of AC-19 on LIB-6's step place;
 // with them LIB-6 AC-19's debugger steps and AC-63's `debug-panel:`.
-#include "TestDebugParts.hpp"
+#include "DebugRig.hpp"
 #include "TestHarness.hpp"
 #include <filesystem>
 

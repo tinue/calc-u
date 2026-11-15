@@ -1,7 +1,7 @@
 // LIB-10 L11, L12 (design §6): the trace session (AC-22 to AC-26, EC-8),
 // with the test format of TestDebugParts.hpp: "TTRC", 0x01, 3 bytes per
 // instruction, 0x03.
-#include "TestDebugParts.hpp"
+#include "DebugRig.hpp"
 #include "TestHarness.hpp"
 #include <filesystem>
 #include <fstream>

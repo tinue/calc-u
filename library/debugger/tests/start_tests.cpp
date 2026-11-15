@@ -1,5 +1,5 @@
 // LIB-10 L6 (design §6): pause-on-start and pause-at-start (AC-9, AC-46).
-#include "TestDebugParts.hpp"
+#include "DebugRig.hpp"
 #include "TestHarness.hpp"
 
 using namespace calcu::debugger;

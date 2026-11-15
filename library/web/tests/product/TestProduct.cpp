@@ -32,7 +32,12 @@
 //   tp.press         {key}: the machine key down and up again
 //   tp.printer       state: {owner, name, controls: [{id, form, on}]}, the
 //                    printer plugged in first (owner null when none)
+// From LIB-10 (M-40): the machines carry the test processor
+// (machine/tests/TestCpu.hpp) and the session LIB-10's DebuggerPart with
+// `cpu` only, a trace format of the tests and no trace folder: an ended
+// trace is handed over with keep-file, a download (AC-26).
 
+#include "debugger/DebuggerPart.hpp"
 #include "machine/tests/TestMachines.hpp"
 #include "paper/PaperPart.hpp"
 #include "peripherals/Controls.hpp"
@@ -77,6 +82,52 @@ std::optional<std::string> readText(const std::string& path) {
     std::ostringstream out;
     out << in.rdbuf();
     return out.str();
+}
+
+// LIB-10: the trace format of the tests ("TTRC", 0x01, 3 bytes per
+// instruction, 0x03), as library/debugger/tests/TestDebugParts.hpp has it.
+class TraceOfTests final : public calcu::debugger::TraceRecorder {
+public:
+    explicit TraceOfTests(mt::TestMachine& m) : m_(&m) {}
+    void begin(calcu::debugger::TraceFile& f) override {
+        const std::uint8_t head[] = {'T', 'T', 'R', 'C', 0x01};
+        f.write(head);
+        m_->cpu()->recording = true;
+        m_->cpu()->recorded.clear();
+    }
+    bool pump(calcu::debugger::TraceFile& f, std::uint64_t budget) override {
+        if (!m_) return true;
+        auto& rec = m_->cpu()->recorded;
+        std::size_t n = 0;
+        for (; n < rec.size() && budget >= 3; ++n, budget -= 3) {
+            const std::uint8_t r[] = {0x02, rec[n].first, rec[n].second};
+            f.write(r);
+        }
+        const bool all = n == rec.size();
+        rec.erase(rec.begin(), rec.begin() + static_cast<std::ptrdiff_t>(n));
+        return all;
+    }
+    std::uint64_t endBytes() const override { return 1; }
+    void end(calcu::debugger::TraceFile& f) override {
+        const std::uint8_t e[] = {0x03};
+        f.write(e);
+        if (m_) m_->cpu()->recording = false;
+    }
+    std::string buttonFileName() const override { return "TEST_TRACE.bin"; }
+    void machineGone() override { m_ = nullptr; }
+
+private:
+    mt::TestMachine* m_;
+};
+
+calcu::debugger::DebuggerSetup debuggerSetup() {
+    calcu::debugger::DebuggerSetup d;
+    d.trace.recorder = [](cm::Machine& m) -> std::unique_ptr<calcu::debugger::TraceRecorder> {
+        auto* tm = dynamic_cast<mt::TestMachine*>(&m);
+        return tm && tm->cpu() ? std::make_unique<TraceOfTests>(*tm) : nullptr;
+    };
+    d.trace.handOver = true;   // no folder: kept in memory and downloaded (D-10)
+    return d;
 }
 
 struct Machine final : s::PayloadOf<Machine> {
@@ -275,6 +326,8 @@ private:
         auto built = cm::build(cat, builder, mt::requestFor(cat, cm::ModelId{model}));
         auto m = std::move(built.machine);
         if (!m) return s::Refused{"The machine could not be built."};
+        // LIB-10: the test processor; a loop of nop; ld a, #5; st a, [0x30]; jmp 0.
+        static_cast<mt::TestMachine&>(*m).enableCpu(mt::TestProgram({0x00, 0x01, 0x05, 0x03, 0x30, 0x06, 0x00}));
         c.machineSession().setMachine(std::move(m), calcu::pacing::PacingProfile{}, 8000);
         machine_->set(std::make_shared<Machine>(model, loaded));
         listFiles();
@@ -322,10 +375,11 @@ private:
 struct Parts {
     explicit Parts(const WebStart& w)
         : paper(mt::paperTestCatalogue(), {{mt::kDotter, mt::td20Description()}, {mt::kPlotter, mt::tp4Description()}}),
-          product(w) {}
+          product(w), debugger(debuggerSetup()) {}
     calcu::peripherals::PeripheralsPart peripherals;
     calcu::paper::PaperPart paper;
     TestProductPart product;
+    calcu::debugger::DebuggerPart debugger;   // LIB-10
 };
 
 std::unique_ptr<s::AppSession> makeTestSession(const WebStart& w) {
@@ -333,7 +387,7 @@ std::unique_ptr<s::AppSession> makeTestSession(const WebStart& w) {
     s::AppSessionSetup setup;
     setup.clock = calcu::web::wallTimeNow;
     setup.hostTime = [] { return std::chrono::system_clock::now(); };
-    setup.parts = {w.shellPart, &parts->peripherals, &parts->paper, &parts->product};
+    setup.parts = {w.shellPart, &parts->peripherals, &parts->paper, &parts->product, &parts->debugger};
     setup.hosting = s::Hosting::Paced;
     setup.owned = std::move(parts);
     return std::make_unique<s::AppSession>(std::move(setup));

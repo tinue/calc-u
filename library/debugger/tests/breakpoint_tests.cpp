@@ -1,7 +1,7 @@
 // LIB-10 L7, L8 (design §6): breakpoints and watches (AC-10 to AC-12,
 // AC-47, EC-3, EC-4); ports of Calc-U-1600 debug_target_tests.cpp:111-193,
 // 269-301, 464 onto the test processor.
-#include "TestDebugParts.hpp"
+#include "DebugRig.hpp"
 #include "TestHarness.hpp"
 
 using namespace calcu::debugger;

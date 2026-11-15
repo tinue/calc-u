@@ -2,7 +2,7 @@
 // session on the test processor (TestDebugParts.hpp): the gate, pause,
 // resume and the run state; steps and the level that owns the pause; step
 // over and out; operations; restarts and a new machine.
-#include "TestDebugParts.hpp"
+#include "DebugRig.hpp"
 #include "TestHarness.hpp"
 
 using namespace calcu::debugger;

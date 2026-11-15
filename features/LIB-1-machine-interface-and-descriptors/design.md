@@ -85,7 +85,9 @@ not named here adds a folder in the same pattern.
   CMake (it follows the graph of `docs/migration-plan.md` §2.1). An area
   includes only the areas it names here:
   - `machine`, `formats`, `settings`: the standard library only;
-  - `pacing`, `peripherals`: `machine`;
+  - `pacing`: `machine`;
+  - `peripherals`: `machine`, `sessions` (the host-link session part,
+    LIB-2 and LIB-3 designs; settled at M-23, 2026-11-15);
   - `sessions`: `machine`, `pacing`;
   - `roms`: `machine`, `sessions` (the `roms-missing` topic);
   - `harness`: any area but `web`;

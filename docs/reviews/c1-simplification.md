@@ -159,3 +159,23 @@ What came of each is in §5.
 
 Each: build, Frequent (golden replays included), merge `--no-ff`. At the
 end: the Longer group locally, then CI.
+
+## 4. Status (interim, 2026-11-15)
+
+All of P-1 to P-7 merged into `main` (`923cef0`), Frequent 28/28 after
+each merge, golden replays unchanged, Swift macOS build green. Also merged:
+`DisplayOutput` indicator names owned (a use-after-free found under ASan;
+LIB-1 design §3.6 amended).
+
+Line counts, before → after: `library/` 21 380 → 21 706 (without tests
+11 222 → 11 761: the Listener, Args, ValuePayload, test toolkit moved in);
+Calc-U-59 `app/` 10 689 → 10 470; Calc-U-1600 `app/` 6 510 → 6 327;
+product tests 59 7 326 → 7 226, 1600 24 692 → 24 223.
+
+Still to do: the Longer group locally, CI (P-7 changed build files), and
+the full report (§5 what came of the three changes, rejected candidates,
+departures, questions). Departures and findings so far are in the merge
+commits' branch reports: LIB-3 §3.1/§3.6/§3.8–3.10, C59-5 §2/§3, LIB-11
+§3.4, LIB-15 §2, LIB-9 D-2, LIB-1 §3.6; findings: CoreTests crashes
+without ROMs (exit 139, before this work too); 1600
+`docs/background/Decisions.md` line on machine mutexes changed (confirm).

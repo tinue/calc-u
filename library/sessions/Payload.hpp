@@ -3,6 +3,7 @@
 #include <compare>
 #include <memory>
 #include <string_view>
+#include <utility>
 
 // Payloads (LIB-3 design §3.1; frontend.md I-3, I-4; spec AC-12): what a
 // topic carries and what a reply gives. The library carries a payload
@@ -44,5 +45,24 @@ public:
         return p && static_cast<const D&>(*this).same(*p);
     }
 };
+
+// A payload that is its value (a Web page's own forms, a product's reply):
+// equal when the kind and the value are. `kind` is a literal, as every
+// PayloadKind is.
+class ValuePayload final : public Payload {
+public:
+    ValuePayload(PayloadKind k, Value v) : kind_(k), value_(std::move(v)) {}
+    PayloadKind kind() const override { return kind_; }
+    bool equals(const Payload& o) const override { return o.kind() == kind_ && o.toValue() == value_; }
+    Value toValue() const override { return value_; }
+
+private:
+    PayloadKind kind_;
+    Value value_;
+};
+
+inline PayloadPtr valuePayload(std::string_view kind, Value v) {
+    return std::make_shared<ValuePayload>(PayloadKind{kind}, std::move(v));
+}
 
 } // namespace calcu::sessions

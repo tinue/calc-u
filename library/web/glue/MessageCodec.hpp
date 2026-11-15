@@ -28,10 +28,7 @@
 
 namespace calcu::web {
 
-// "audio-sink", "clipboard-text", "clipboard-image", "file-picker",
-// "folder-picker", "keep-file", "open-url", "haptics".
-const char* serviceName(sessions::HostService);
-std::optional<sessions::HostService> serviceNamed(std::string_view);
+// Host services by name: sessions::serviceName, sessions::serviceNamed.
 
 emscripten::val toJs(const sessions::Value&, emscripten::val transfer);
 sessions::Value fromJs(const emscripten::val&);

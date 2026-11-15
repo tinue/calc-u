@@ -30,4 +30,14 @@ inline WallTime wallTimeOf(machine::Ticks ticks, machine::TickRate rate) {
     return WallTime(static_cast<WallTime::rep>((ticks / rate) * kNs + (ticks % rate) * kNs / rate));
 }
 
+// The steady clock as a wall clock (its time since its epoch), and back: the
+// clock of the native hosts (Qt6, the Swift session thread, the tests). The
+// Web's is web::wallTimeNow (performance.now()).
+inline WallTime steadyWallTime() {
+    return std::chrono::duration_cast<WallTime>(std::chrono::steady_clock::now().time_since_epoch());
+}
+inline std::chrono::steady_clock::time_point steadyTimeOf(WallTime w) {
+    return std::chrono::steady_clock::time_point(std::chrono::duration_cast<std::chrono::steady_clock::duration>(w));
+}
+
 } // namespace calcu::pacing

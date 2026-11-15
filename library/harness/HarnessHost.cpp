@@ -10,6 +10,8 @@ namespace calcu::harness {
 using sessions::Message;
 using sessions::ReplyMessage;
 
+std::string payloadText(const sessions::PayloadPtr& p) { return p ? writeJson(fromSession(p->toValue())) : "null"; }
+
 Value fromSession(const sessions::Value& v) {
     if (v.isNull()) return Value();
     if (const bool* b = v.boolean()) return Value(*b);

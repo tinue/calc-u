@@ -10,21 +10,6 @@ namespace calcu::web {
 
 namespace {
 
-struct ServiceEntry {
-    sessions::HostService service;
-    const char* name;
-};
-constexpr ServiceEntry kServices[] = {
-    {sessions::HostService::AudioSink, "audio-sink"},
-    {sessions::HostService::ClipboardText, "clipboard-text"},
-    {sessions::HostService::ClipboardImage, "clipboard-image"},
-    {sessions::HostService::FilePicker, "file-picker"},
-    {sessions::HostService::FolderPicker, "folder-picker"},
-    {sessions::HostService::KeepFile, "keep-file"},
-    {sessions::HostService::OpenUrl, "open-url"},
-    {sessions::HostService::Haptics, "haptics"},
-};
-
 val bytesToJs(const std::uint8_t* data, std::size_t n, val& transfer) {
     val array = val::global("Uint8Array").new_(n);
     if (n) array.call<void>("set", val(emscripten::typed_memory_view(n, data)));
@@ -37,18 +22,6 @@ val payloadToJs(const sessions::PayloadPtr& p, val& transfer) {
 }
 
 } // namespace
-
-const char* serviceName(sessions::HostService s) {
-    for (const auto& e : kServices)
-        if (e.service == s) return e.name;
-    return "";
-}
-
-std::optional<sessions::HostService> serviceNamed(std::string_view name) {
-    for (const auto& e : kServices)
-        if (name == e.name) return e.service;
-    return std::nullopt;
-}
 
 val toJs(const sessions::Value& v, val transfer) {
     if (v.isNull()) return val::null();
@@ -133,7 +106,7 @@ val encode(const sessions::Message& message, val transfer) {
             val o = val::object();
             o.set("kind", "ask");
             o.set("call", static_cast<double>(m.ask));
-            o.set("name", std::string(serviceName(m.service)));
+            o.set("name", std::string(sessions::serviceName(m.service)));
             o.set("value", toJs(m.args, transfer));
             return o;
         }

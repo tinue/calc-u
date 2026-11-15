@@ -242,14 +242,6 @@ TIChange changeOf(const cs::TopicName& t) {
     return static_cast<TIChange>(0);
 }
 
-// LIB-3 AC-26's services by name (the names of library/web/glue/MessageCodec.cpp).
-constexpr std::pair<cs::HostService, const char*> kServiceNames[] = {
-    {cs::HostService::AudioSink, "audio-sink"},       {cs::HostService::ClipboardText, "clipboard-text"},
-    {cs::HostService::ClipboardImage, "clipboard-image"}, {cs::HostService::FilePicker, "file-picker"},
-    {cs::HostService::FolderPicker, "folder-picker"}, {cs::HostService::KeepFile, "keep-file"},
-    {cs::HostService::OpenUrl, "open-url"},           {cs::HostService::Haptics, "haptics"},
-};
-
 // C59-5 AC-7: the host services of the app; no audio sink, the key click is
 // the app's own (LIB-3 AC-33).
 cs::HostServices statedServices() {
@@ -420,8 +412,8 @@ static cu59::SessionThread::ReplyHandler flagReply(void (^done)(BOOL)) {
 + (NSArray<NSString *> *)statedHostServices {
     NSMutableArray* out = [NSMutableArray array];
     const cs::HostServices s = statedServices();
-    for (const auto& [service, name] : kServiceNames)
-        if (s.offers(service)) [out addObject:@(name)];
+    for (cs::HostService service : cs::kHostServices)
+        if (s.offers(service)) [out addObject:@(cs::serviceName(service))];
     return out;
 }
 
@@ -437,8 +429,8 @@ static cu59::SessionThread::ReplyHandler flagReply(void (^done)(BOOL)) {
 - (void)offeredHostServices:(void (^)(NSArray<NSString *> *))done {
     _thread->post([done](cs::AppSession& s) {
         NSMutableArray* out = [NSMutableArray array];
-        for (const auto& [service, name] : kServiceNames)
-            if (s.context().hostOffers(service)) [out addObject:@(name)];
+        for (cs::HostService service : cs::kHostServices)
+            if (s.context().hostOffers(service)) [out addObject:@(cs::serviceName(service))];
         dispatch_async(dispatch_get_main_queue(), ^{ done(out); });
     });
 }

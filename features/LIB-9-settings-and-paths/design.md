@@ -389,6 +389,9 @@ Risks:
   rules. The value is the folder last used, updated on every pick; a
   fixed folder set in the settings dialog is written as `fixed:<folder>`
   and is not updated by picks. Keeps today's two behaviours in one key.
+  Clearing the fixed folder goes back to "last used", starting where the
+  fixed folder was (both products' rule, in the library since the C1
+  simplification, `fixedOpenFolder`/`setFixedOpenFolder`).
 - **D-3 (was OQ-3; EC-10, AC-6).** Merge on write: `set` re-reads the file
   and changes only this instance's keys; the file is not re-read
   otherwise.

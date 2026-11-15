@@ -123,6 +123,12 @@ using PayloadPtr = std::shared_ptr<const Payload>;
 - A payload holds no pointer into a machine. Names may view into the
   catalogue's descriptors, which live as long as the product (LIB-1
   §3.4).
+- `ValuePayload` / `valuePayload(kind, Value)` (`Payload.hpp`): a payload
+  that is its value, equal by kind and value (both Web parts' page forms,
+  product replies). `sessions/Args.hpp` reads arguments: `textArg`,
+  `integerArg` (an integer only), `realArg`, `truncatedIntegerArg` (an
+  integer, or a real truncated: what a page's commands take today),
+  `flagArg`, `bytesArg` (C1 simplification P-6, 2026-11-15).
 
 ### 3.2 Messages (AC-4, AC-5, AC-7, AC-8, AC-13)
 
@@ -255,6 +261,9 @@ struct ServiceAnswer { bool given; Value result; std::string reason; };
 std::optional<CallId> askHost(HostService, Value args, std::function<void(const ServiceAnswer&)> then);  // nullopt: nobody offers it
 ```
 
+- A translating host states them by name: `serviceName`, `serviceNamed`
+  and `kHostServices` (`HostServices.hpp`; the Web worker, the Swift
+  bridge).
 - The services are stated with `listen()` (AC-26). An ask goes to the
   first listener that offers that service, which is the app's own
   frontend, never an attached harness (C59-5 AC-12). A service nobody

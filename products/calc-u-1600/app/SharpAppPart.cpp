@@ -21,6 +21,7 @@
 #include "peripherals/RealTimeClock.hpp"
 #include "peripherals/SerialPort.hpp"
 #include "sessions/LibraryTopics.hpp"
+#include "sessions/Args.hpp"
 
 namespace shared {
 
@@ -95,25 +96,10 @@ double steadySeconds() {
 
 // ---- Command arguments ----
 
-std::string textArg(const sessions::Value& args, const char* key) {
-    const sessions::Value* v = args.find(key);
-    return v && v->string() ? *v->string() : std::string();
-}
-
-std::int64_t intArg(const sessions::Value& args, const char* key, std::int64_t fallback = 0) {
-    const sessions::Value* v = args.find(key);
-    return v && v->integer() ? *v->integer() : fallback;
-}
-
-bool boolArg(const sessions::Value& args, const char* key) {
-    const sessions::Value* v = args.find(key);
-    return v && v->boolean() && *v->boolean();
-}
-
-std::vector<std::uint8_t> bytesArg(const sessions::Value& args, const char* key) {
-    const sessions::Value* v = args.find(key);
-    return v && v->bytes() ? *v->bytes() : std::vector<std::uint8_t>{};
-}
+using sessions::bytesArg;
+using sessions::flagArg;
+using sessions::integerArg;
+using sessions::textArg;
 
 std::optional<Model> modelArg(const sessions::Value& args) {
     const std::string name = textArg(args, "model");
@@ -235,7 +221,7 @@ void SharpAppPart::attach(sessions::SessionSetup& setup) {
         /*endsRunningOperation=*/true);
     setup.command(c::kLoadPreset, [this](const Value& args, SessionContext&) -> CommandOutcome {
         const std::string path = textArg(args, "path");
-        const bool armOnly = boolArg(args, "armOnly");
+        const bool armOnly = flagArg(args, "armOnly");
         return operation([this, path, armOnly] { return loadPresetJob(path, armOnly); });
     });
     setup.command(c::kLoadDefaultPreset, [this](const Value& args, SessionContext&) -> CommandOutcome {
@@ -250,7 +236,7 @@ void SharpAppPart::attach(sessions::SessionSetup& setup) {
     setup.command(
         c::kReset,
         [this](const Value& args, SessionContext&) -> CommandOutcome {
-            const bool all = boolArg(args, "all");
+            const bool all = flagArg(args, "all");
             return operation([this, all] { return resetJob(all); });
         },
         /*endsRunningOperation=*/true);
@@ -263,7 +249,7 @@ void SharpAppPart::attach(sessions::SessionSetup& setup) {
         },
         /*endsRunningOperation=*/true);
     setup.command(c::kSelectModule, [this](const Value& args, SessionContext&) -> CommandOutcome {
-        const int slot = static_cast<int>(intArg(args, "slot", 1));
+        const int slot = static_cast<int>(integerArg(args, "slot", 1));
         const std::string name = textArg(args, "name");
         return operation([this, slot, name] { return selectModuleJob(slot, name); });
     });
@@ -297,17 +283,17 @@ void SharpAppPart::attach(sessions::SessionSetup& setup) {
         return operation([this, dir] { return mountHostDriveJob(dir); });
     });
     setup.command(c::kLoadBasic, [this](const Value& args, SessionContext&) -> CommandOutcome {
-        const OpResult r = loadBasicProgram(bytesArg(args, "bytes"), textArg(args, "path"));
+        const OpResult r = loadBasicProgram(bytesArg(args, "bytes").value_or(std::vector<std::uint8_t>{}), textArg(args, "path"));
         refreshTopics();
         if (!r.ok) return Refused{r.error};
         return Done{};
     });
     setup.command(c::kLoadMachineCode, [this](const Value& args, SessionContext&) -> CommandOutcome {
         MachineCodeLoadRequest req;
-        req.payload = bytesArg(args, "bytes");
-        req.addr = static_cast<std::uint32_t>(intArg(args, "addr"));
-        req.slot = static_cast<int>(intArg(args, "slot"));
-        req.bank = static_cast<int>(intArg(args, "bank"));
+        req.payload = bytesArg(args, "bytes").value_or(std::vector<std::uint8_t>{});
+        req.addr = static_cast<std::uint32_t>(integerArg(args, "addr"));
+        req.slot = static_cast<int>(integerArg(args, "slot"));
+        req.bank = static_cast<int>(integerArg(args, "bank"));
         const OpResult r = loadMachineCode(req);
         refreshTopics();
         if (!r.ok) return Refused{r.error};

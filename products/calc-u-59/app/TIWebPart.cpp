@@ -10,6 +10,8 @@
 #include "TraceWriter.hpp"
 #include "WebPageData.hpp"
 #include "settings/AtomicFile.hpp"
+#include "sessions/Args.hpp"
+#include "sessions/LibraryTopics.hpp"
 #include <algorithm>
 #include <cstdio>
 #include <cstring>
@@ -25,46 +27,13 @@ using sessions::SessionContext;
 using sessions::StartOperation;
 using sessions::Value;
 namespace fs = std::filesystem;
+using sessions::bytesArg;
+using sessions::flagArg;
+using sessions::realArg;
+using sessions::textArg;
+using sessions::truncatedIntegerArg;
 
 namespace {
-
-class ValuePayload final : public sessions::Payload {
-public:
-    ValuePayload(sessions::PayloadKind k, Value v) : m_kind(k), m_value(std::move(v)) {}
-    sessions::PayloadKind kind() const override { return m_kind; }
-    bool equals(const sessions::Payload& o) const override { return o.kind() == m_kind && o.toValue() == m_value; }
-    Value toValue() const override { return m_value; }
-
-private:
-    sessions::PayloadKind m_kind;
-    Value m_value;
-};
-
-std::string text(const Value& a, const char* key) {
-    const Value* v = a.find(key);
-    return v && v->string() ? *v->string() : std::string();
-}
-std::int64_t integer(const Value& a, const char* key, std::int64_t fallback = 0) {
-    const Value* v = a.find(key);
-    if (v && v->integer()) return *v->integer();
-    if (v && v->real()) return static_cast<std::int64_t>(*v->real());
-    return fallback;
-}
-double real(const Value& a, const char* key) {
-    const Value* v = a.find(key);
-    if (v && v->real()) return *v->real();
-    if (v && v->integer()) return static_cast<double>(*v->integer());
-    return 0;
-}
-bool flag(const Value& a, const char* key) {
-    const Value* v = a.find(key);
-    return v && v->boolean() && *v->boolean();
-}
-std::optional<std::vector<uint8_t>> bytesArg(const Value& a, const char* key) {
-    const Value* v = a.find(key);
-    if (v && v->bytes()) return *v->bytes();
-    return std::nullopt;
-}
 
 std::string hexColor(uint32_t rgb) {
     char buf[8];
@@ -81,8 +50,8 @@ ReplyMessage answer(std::string_view kind, Value v) {
 }
 
 std::vector<uint8_t> matrixCodes(const Value& a) {
-    return matrixCodesFor({static_cast<char32_t>(integer(a, "key")), static_cast<char32_t>(integer(a, "produced")),
-                           flag(a, "isLetter"), flag(a, "shift"), flag(a, "command")});
+    return matrixCodesFor({static_cast<char32_t>(truncatedIntegerArg(a, "key")), static_cast<char32_t>(truncatedIntegerArg(a, "produced")),
+                           flagArg(a, "isLetter"), flagArg(a, "shift"), flagArg(a, "command")});
 }
 
 // A file name inside a folder, never a path out of it.
@@ -93,9 +62,7 @@ bool plainName(const std::string& name) {
 
 } // namespace
 
-sessions::PayloadPtr webPayload(std::string_view kind, Value v) {
-    return std::make_shared<ValuePayload>(sessions::PayloadKind{kind}, std::move(v));
-}
+sessions::PayloadPtr webPayload(std::string_view kind, Value v) { return sessions::valuePayload(kind, std::move(v)); }
 
 TIWebPart::TIWebPart(settings::Settings& settings, std::string presetsDir, fs::path traceDir)
     : m_settings(settings), m_presetsDir(std::move(presetsDir)), m_traceDir(std::move(traceDir)) {
@@ -146,9 +113,9 @@ void TIWebPart::attach(sessions::SessionSetup& s) {
     // LIB-15 N3: the start, with the model by its name and a bundled preset by
     // its path in the bundle (spec AC-16); a name or path the product does
     // not have is a notice, and the start goes on as without it (EC-4).
-    cmd("start", [this](const Value& a, SessionContext& ctx) -> CommandOutcome {
+    s.command(sessions::kStartCommand, [this](const Value& a, SessionContext& ctx) -> CommandOutcome {
         if (!m_app) return Refused{"No machine is running."};
-        const std::string modelName = text(a, "model");
+        const std::string modelName = textArg(a, "model");
         if (!modelName.empty()) {
             if (auto m = modelFromName(modelName)) {
                 if (*m != m_app->model()) m_app->startMachine(*m);
@@ -157,7 +124,7 @@ void TIWebPart::attach(sessions::SessionSetup& s) {
                            std::string(info(m_app->model()).displayName) + ".");
             }
         }
-        const std::string preset = text(a, "preset");
+        const std::string preset = textArg(a, "preset");
         if (preset.empty()) return Done{};
         const bool safe = preset.find("..") == std::string::npos && preset.front() != '/' && preset.find(':') == std::string::npos;
         std::optional<std::string> file;
@@ -176,13 +143,13 @@ void TIWebPart::attach(sessions::SessionSetup& s) {
     cmd("c59.web.pointer-down", done([this](const Value& a) {
         if (!m_app) return;
         // A press, not a drag across the card, feeds a side of the fitted card.
-        if (m_app->tapCard(real(a, "x"), real(a, "y"))) return;
-        apply(m_pointer.move(real(a, "x"), real(a, "y")));
+        if (m_app->tapCard(realArg(a, "x"), realArg(a, "y"))) return;
+        apply(m_pointer.move(realArg(a, "x"), realArg(a, "y")));
     }));
-    cmd("c59.web.pointer-move", done([this](const Value& a) { apply(m_pointer.move(real(a, "x"), real(a, "y"))); }));
+    cmd("c59.web.pointer-move", done([this](const Value& a) { apply(m_pointer.move(realArg(a, "x"), realArg(a, "y"))); }));
     cmd("c59.web.pointer-up", done([this](const Value&) { apply(m_pointer.up()); }));
     cmd("c59.web.key-button-down", done([this](const Value& a) {
-        if (m_app) m_app->keyboardDown({matrixCode(static_cast<int>(integer(a, "row")), static_cast<int>(integer(a, "col")))});
+        if (m_app) m_app->keyboardDown({matrixCode(static_cast<int>(truncatedIntegerArg(a, "row")), static_cast<int>(truncatedIntegerArg(a, "col")))});
     }));
     cmd("c59.web.key-button-up", done([this](const Value&) { if (m_app) m_app->keyboardUp(); }));
     cmd("c59.web.key-down", done([this](const Value& a) {
@@ -200,16 +167,16 @@ void TIWebPart::attach(sessions::SessionSetup& s) {
 
     // The settings the page offers (Calc-U-59.ini, LIB-9).
     cmd("c59.web.set-startup-model", done([this](const Value& a) {
-        const auto raw = integer(a, "model", -1);
+        const auto raw = truncatedIntegerArg(a, "model", -1);
         m_settings.setStartupModelChoice(raw >= 0 && raw <= 2 ? std::optional<Model>(static_cast<Model>(raw)) : std::nullopt);
         m_settingsDirty = true;
     }));
     cmd("c59.web.set-trace-max-mb", done([this](const Value& a) {
-        m_settings.setTraceMaxFileSizeMB(static_cast<int>(integer(a, "mb", 50)));
+        m_settings.setTraceMaxFileSizeMB(static_cast<int>(truncatedIntegerArg(a, "mb", 50)));
         m_settingsDirty = true;
     }));
     cmd("c59.web.set-keyboard-feedback", done([this](const Value& a) {
-        const auto mode = integer(a, "mode");
+        const auto mode = truncatedIntegerArg(a, "mode");
         m_settings.setKeyboardFeedback(mode == 1   ? settings::KeyboardFeedback::Haptic
                                        : mode == 2 ? settings::KeyboardFeedback::Click
                                                    : settings::KeyboardFeedback::Off);
@@ -220,7 +187,7 @@ void TIWebPart::attach(sessions::SessionSetup& s) {
     // user's disk joins the folder once it is fitted, so a bad file never
     // replaces one there.
     cmd("c59.web.fit-card", [this](const Value& a, SessionContext&) -> CommandOutcome {
-        const std::string name = text(a, "name");
+        const std::string name = textArg(a, "name");
         if (!m_app || !plainName(name)) return Refused{"Not a card file name."};
         const std::string path = m_app->files().cardFilePath(name);
         auto uploaded = bytesArg(a, "bytes");
@@ -231,14 +198,14 @@ void TIWebPart::attach(sessions::SessionSetup& s) {
         return Done{webPayload("c59.flag", Value(ok))};
     });
     cmd("c59.web.fit-blank-card", [this](const Value& a, SessionContext&) -> CommandOutcome {
-        const std::string name = text(a, "name");
+        const std::string name = textArg(a, "name");
         if (!m_app || !plainName(name)) return Refused{"Not a card file name."};
         return Done{webPayload("c59.flag", Value(m_app->fitBlankCard(m_app->files().cardFilePath(name), name)))};
     });
     // A dropped file: a preset loads as an operation (LIB-3 AC-32), a card is
     // fitted as an opened one; anything else is refused with today's sentence.
     cmd("c59.web.drop", [this](const Value& a, SessionContext&) -> CommandOutcome {
-        const std::string name = text(a, "name");
+        const std::string name = textArg(a, "name");
         if (!m_app) return Refused{"No machine is running."};
         switch (m_app->dropAction(name)) {
             case DropAction::NotAccepted: return Refused{name + ": not a .ti59, .ti58, .ti58c, .u59 or .bin file"};
@@ -258,12 +225,12 @@ void TIWebPart::attach(sessions::SessionSetup& s) {
 
     // The sizes the page draws at.
     cmd("c59.web.cue-card-size", done([this](const Value& a) {
-        m_cardW = real(a, "width");
-        m_cardH = real(a, "height");
+        m_cardW = realArg(a, "width");
+        m_cardH = realArg(a, "height");
         m_cueDirty = true;
     }));
     cmd("c59.web.debug-width", done([this](const Value& a) {
-        m_debugFont = debugPanelFontSize(real(a, "width"));
+        m_debugFont = debugPanelFontSize(realArg(a, "width"));
         m_debugFontDirty = true;
     }));
 
@@ -272,23 +239,23 @@ void TIWebPart::attach(sessions::SessionSetup& s) {
     };
     // A file the page offers as a download (AC-9): bytes, or null.
     req("c59.web.card-bytes", [this](const Value& a) {
-        const std::string name = text(a, "name");
+        const std::string name = textArg(a, "name");
         if (!m_app || !plainName(name)) return answer("c59.file", Value());
         auto r = m_app->files().readCard(m_app->files().cardFilePath(name));
         return answer("c59.file", r.raw ? Value(*r.raw) : Value());
     });
     req("c59.web.trace-bytes", [this](const Value& a) {
-        const std::string name = text(a, "name");
+        const std::string name = textArg(a, "name");
         if (!plainName(name)) return answer("c59.file", Value());
         auto t = calcu::settings::readWholeFile((m_traceDir / name).string());
         return answer("c59.file", t ? Value(Value::Bytes(t->begin(), t->end())) : Value());
     });
-    req("c59.web.fresh-card-name", [](const Value& a) { return answer("c59.name", Value(withDefaultCardExtension(text(a, "name")))); });
+    req("c59.web.fresh-card-name", [](const Value& a) { return answer("c59.name", Value(withDefaultCardExtension(textArg(a, "name")))); });
     req("c59.static-data", [this](const Value&) {
         return answer("c59.static-data", webStaticData(m_app ? m_app->allModules() : std::vector<ModuleMetadata>{}));
     });
-    req("c59.led-geometry", [](const Value& a) { return answer("c59.led-geometry", webLedGeometry(real(a, "w"), real(a, "h"))); });
-    req("c59.mobile-rules", [](const Value& a) { return answer("c59.mobile-rules", webMobileRules(real(a, "w"), real(a, "h"))); });
+    req("c59.led-geometry", [](const Value& a) { return answer("c59.led-geometry", webLedGeometry(realArg(a, "w"), realArg(a, "h"))); });
+    req("c59.mobile-rules", [](const Value& a) { return answer("c59.mobile-rules", webMobileRules(realArg(a, "w"), realArg(a, "h"))); });
 }
 
 void TIWebPart::apply(const PointerTracker::Change& c) {

@@ -66,7 +66,7 @@ calcu::pacing::WallTime MachineController::now() {
         m_frozenNow += kFrozenReadCost;
         return m_frozenNow;
     }
-    const auto real = std::chrono::duration_cast<calcu::pacing::WallTime>(std::chrono::steady_clock::now().time_since_epoch());
+    const auto real = calcu::pacing::steadyWallTime();
     m_frozenNow = std::max(m_frozenNow, real);   // never back, also after a frozen stretch
     return m_frozenNow;
 }

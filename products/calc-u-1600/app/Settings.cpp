@@ -94,20 +94,10 @@ const char* openFolderKind(OpenFolder folder) {
     return "presets";
 }
 
-std::string Settings::openDir(OpenFolder folder) const {
-    if (!cs::hasFixedOpenFolder(m_file, openFolderKind(folder))) return {};
-    return m_file.text("folders", openFolderKind(folder)).substr(cs::kFixedPrefix.size());
-}
+std::string Settings::openDir(OpenFolder folder) const { return cs::fixedOpenFolder(m_file, openFolderKind(folder)); }
 
 void Settings::setOpenDir(OpenFolder folder, const std::string& dir) {
-    if (!dir.empty()) {
-        cs::setFixedOpenFolder(m_file, openFolderKind(folder), dir);
-        return;
-    }
-    // Reset: back to "<last used>", which starts where the fixed folder was
-    // (one key holds both, D-2; the folders picked meanwhile are not kept).
-    const std::string fixed = openDir(folder);
-    m_file.set("folders", openFolderKind(folder), fixed);
+    cs::setFixedOpenFolder(m_file, openFolderKind(folder), dir);   // "": back to the folder last used
 }
 
 std::string Settings::lastOpenDir(OpenFolder folder) const {

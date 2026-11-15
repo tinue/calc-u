@@ -91,6 +91,10 @@ struct Reply {
 };
 
 Reply doneReply(Value result = {}, std::vector<std::string> lines = {});
+// The ticks of `microseconds` at `rate`, rounded up (integers only): `wait`.
+std::uint64_t ticksFor(std::int64_t microseconds, std::uint32_t rate);
+// The reply of `wait` and `ticks`: the ticks and their seconds.
+Reply timeReply(std::uint64_t ticks, std::uint32_t rate);
 Reply refusedReply(std::string reason);
 
 // One JSON text on one line, no spaces; strings escaped (control characters

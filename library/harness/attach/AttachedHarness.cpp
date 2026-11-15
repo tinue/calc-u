@@ -10,21 +10,6 @@ using namespace sessions;
 
 namespace {
 
-machine::Ticks ticksFor(std::int64_t us, machine::TickRate rate) {
-    const auto u = static_cast<std::uint64_t>(us);
-    constexpr std::uint64_t kMicro = 1'000'000;
-    return (u / kMicro) * rate + ((u % kMicro) * rate + kMicro - 1) / kMicro;
-}
-
-// As `wait` in serve (FirstCommands.cpp): the ticks that passed and their seconds.
-Reply timeReply(machine::Ticks ticks, machine::TickRate rate) {
-    const Decimal s = secondsOf(ticks, rate);
-    harness::Value v = harness::Value::object();
-    v.set("ticks", static_cast<unsigned long long>(ticks));
-    v.set("seconds", s);
-    return doneReply(std::move(v), {"ticks: " + std::to_string(ticks), "seconds: " + toText(s)});
-}
-
 std::string escaped(const std::string& s) {
     std::string out;
     for (char c : s) {
@@ -99,7 +84,7 @@ void AttachedHarness::lines(const std::string& text) {
 void AttachedHarness::reply(const Reply& r) { lines(json_ ? writeJson(r) : writePlain(r)); }
 
 void AttachedHarness::message(const Message& m) {
-    auto text = [](const PayloadPtr& p) { return p ? writeJson(fromSession(p->toValue())) : std::string("null"); };
+    auto text = [](const PayloadPtr& p) { return payloadText(p); };
     auto one = [&](const std::string& topic, const std::string& t, harness::Value v) {
         if (json_) {
             harness::Value inner = harness::Value::object();

@@ -35,21 +35,6 @@ Reply fromSessionReply(const ReplyMessage& r) {
 
 Reply needs(const char* usage) { return refusedReply(std::string("usage: ") + usage); }
 
-// Ticks for `us` microseconds at `rate`, rounded up (integers only).
-machine::Ticks ticksFor(std::int64_t us, machine::TickRate rate) {
-    const auto u = static_cast<std::uint64_t>(us);
-    constexpr std::uint64_t kMicro = 1'000'000;
-    return (u / kMicro) * rate + ((u % kMicro) * rate + kMicro - 1) / kMicro;
-}
-
-Reply timeReply(machine::Ticks ticks, machine::TickRate rate) {
-    const Decimal s = secondsOf(ticks, rate);
-    Value v = Value::object();
-    v.set("ticks", static_cast<unsigned long long>(ticks));
-    v.set("seconds", s);
-    return doneReply(std::move(v), {"ticks: " + std::to_string(ticks), "seconds: " + toText(s)});
-}
-
 // The key as the `key` step resolves it (D-9): the key ID, then the ID in
 // any case, then one of its other spellings in any case. An unknown key
 // is passed as written, and the session refuses it.
@@ -71,8 +56,6 @@ std::string ownerText(const machine::Owner& o) {
     const auto& p = std::get<machine::PeripheralOwner>(o);
     return "peripheral:" + p.peripheral.value + "@" + machine::placeText(p.place);
 }
-
-std::string payloadText(const PayloadPtr& p) { return p ? writeJson(fromSession(p->toValue())) : "null"; }
 
 Reply waitCmd(CommandContext& c) {
     if (c.line.argText.empty()) return needs("wait <duration>, as in 2s or 500ms");

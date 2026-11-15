@@ -41,7 +41,8 @@ the `<cstdlib>` fix).
 
 | CTest entry | What | Group | Measured (M4 Pro, 2026-11-14) |
 |---|---|---|---|
-| `calcu_library_tests` | 176 `TEST`s: the library's own tests with the machines built for the tests (`library/machine/tests/TestMachines.*`) and the product declared for the settings tests (`library/settings/tests/TestProduct.hpp`), no product code (LIB-1 AC-24; LIB-1 design §2a); also run alone by the CI job `library` of both product workflows. The pacing tests run on a scripted wall clock (`library/pacing/tests/TestSliceRunner.hpp`), never the host's; so do the session tests (`library/sessions/tests/ScriptedClock.hpp`), with the test frontend and the test product part of `library/sessions/tests/` | Frequent | 0.51 s (M-22, 2026-11-14, RelWithDebInfo; most of it the five-hour scripted runs of LIB-17) |
+| `calcu_library_tests` | 212 `TEST`s: the library's own tests with the machines built for the tests (`library/machine/tests/TestMachines.*`) and the product declared for the settings tests (`library/settings/tests/TestProduct.hpp`), no product code (LIB-1 AC-24; LIB-1 design §2a); also run alone by the CI job `library` of both product workflows. The pacing tests run on a scripted wall clock (`library/pacing/tests/TestSliceRunner.hpp`), never the host's; so do the session tests (`library/sessions/tests/ScriptedClock.hpp`), with the test frontend and the test product part of `library/sessions/tests/`. LIB-2's host links are tested here with an injected link factory (`peripherals/tests/host_links_tests.cpp`), on every platform | Frequent | 0.50 s (M-23, 2026-11-15, RelWithDebInfo; most of it the five-hour scripted runs of LIB-17) |
+| `calcu_library_pty_tests` | 4 `TEST`s of `library/peripherals/tests/pty_tests.cpp`: LIB-2's host links on real pseudo-terminals in a temporary folder for serial links (AC-18 to AC-20, EC-7); a program of its own (with the test machines), registered only where `CALCU_HAS_PTY` is set (macOS, Linux), so that it can move to Longer without a design change (LIB-2 design §8) | Frequent | 0.8 s (M-23, 2026-11-15) |
 | `LibraryPlatformStoreCheck` | `library/settings/tests/check_platform_stores_test.sh`: the self-test of `library/settings/check_platform_stores.sh`, the source check the products run over their frontends (LIB-9 design T-14); not registered on Windows | Frequent | 0.03 s |
 
 `calcu_library_tests` by file (`library/<area>/tests/`; every `TEST` is
@@ -49,6 +50,7 @@ Frequent):
 
 | File | `TEST`s |
 |---|---|
+| `machine/tests/attach_tests.cpp` | 18 (LIB-2) |
 | `machine/tests/build_alone_tests.cpp` | 1 |
 | `machine/tests/build_tests.cpp` | 3 |
 | `machine/tests/capability_tests.cpp` | 6 |
@@ -79,6 +81,11 @@ Frequent):
 | `sessions/tests/suspend_tests.cpp` | 5 |
 | `sessions/tests/topic_tests.cpp` | 9 |
 | `sessions/tests/value_tests.cpp` | 1 |
+| `peripherals/tests/controls_tests.cpp` | 6 |
+| `peripherals/tests/host_links_tests.cpp` | 2 |
+| `peripherals/tests/real_time_clock_tests.cpp` | 4 |
+| `peripherals/tests/serial_port_tests.cpp` | 4 |
+| `peripherals/tests/time_tests.cpp` | 2 |
 
 ## Calc-U-59
 

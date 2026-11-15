@@ -26,6 +26,8 @@ public:
     // AC-4: the connector behind a place of a model and the peripherals that
     // fit it, including those added later.
     std::optional<PlaceInfo> place(const ModelId&, const PlaceName&) const;
+    // A place a peripheral offers (LIB-2 AC-9, P-3; D-11), the same way.
+    std::optional<PlaceInfo> place(const PeripheralId&, const PlaceName&) const;
     // A module definition read after the catalogue was built (AC-3).
     void addPeripheral(PeripheralDescriptor);
 

@@ -70,9 +70,24 @@ MachineDescriptor dotModel() {
                                   {IndicatorDef{"RUN", false}, IndicatorDef{"BUSY", false}}};
     d.hasSound = true;
     d.keys = keys({"a", "b", "c", "off", "on"});
+    d.connectors = {
+        ConnectorDescriptor{ConnectorId{"chain"}, "test 60-pin",
+                            {PinOutDescriptor{PinOutId{"test.chain"}, PinOutLevel::ContactLevel, Takes::Chain,
+                                              AfterChange::PowerCycle}}},
+        ConnectorDescriptor{ConnectorId{"card"}, "two-slot card edge",
+                            {PinOutDescriptor{PinOutId{"test.card"}, PinOutLevel::Functional, Takes::One,
+                                              AfterChange::PowerCycle}}},
+    };
+    d.places = {
+        PlaceDescriptor{PlaceName{"a"}, ConnectorId{"chain"}, PinOutId{"test.chain"}, 1},
+        PlaceDescriptor{PlaceName{"b"}, ConnectorId{"chain"}, PinOutId{"test.chain"}, 1},
+        PlaceDescriptor{PlaceName{"card-1"}, ConnectorId{"card"}, PinOutId{"test.card"}, 1},
+        PlaceDescriptor{PlaceName{"card-2"}, ConnectorId{"card"}, PinOutId{"test.card"}, 1},
+    };
     d.components = {
         ComponentDescriptor{ComponentId{"main"}, "main CPU", Depth::Separate, std::nullopt},
         ComponentDescriptor{ComponentId{"inner"}, "inner block on its own clock", Depth::Separate, std::nullopt},
+        ComponentDescriptor{ComponentId{"rtc"}, "real-time clock", Depth::Functional, std::nullopt},
     };
     d.mediaPlaces = {MediaPlaceDescriptor{MediaPlaceId{"drive"}, "test-disk", MediaPassage::Holding, {0}}};
     d.debugTargets = {DebugTargetId{"main"}, DebugTargetId{"inner"}};
@@ -83,8 +98,10 @@ std::vector<PeripheralDescriptor> peripherals() {
     PeripheralDescriptor printer;
     printer.id = kPrinter;
     printer.name = "Test printer";
-    printer.fits = {PinOutId{"test.bus"}};
-    printer.controls = {ControlDescriptor{ControlId{"online"}, ControlForm::Switch}};
+    printer.fits = {PinOutId{"test.bus"}, PinOutId{"test.chain"}, PinOutId{"test.jack"}};
+    printer.controls = {ControlDescriptor{ControlId{"online"}, ControlForm::Switch},
+                        ControlDescriptor{ControlId{"feed"}, ControlForm::Key},
+                        ControlDescriptor{ControlId{"trace"}, ControlForm::Switch}};
     printer.components = {ComponentDescriptor{ComponentId{"mech"}, "printer mechanism", Depth::Functional, std::nullopt}};
 
     PeripheralDescriptor module;
@@ -93,10 +110,24 @@ std::vector<PeripheralDescriptor> peripherals() {
     module.variants = {VariantDescriptor{VariantId{"4k"}, {rom("test-module-4k.rom", 4096)}},
                        VariantDescriptor{VariantId{"8k"}, {rom("test-module-8k.rom", 8192)}}};
     module.defaultVariant = VariantId{"4k"};
-    module.fits = {PinOutId{"test.slot"}, PinOutId{"test.bus"}};
+    module.fits = {PinOutId{"test.slot"}, PinOutId{"test.bus"}, PinOutId{"test.card"}};
     module.components = {ComponentDescriptor{ComponentId{"rom"}, "module ROM", Depth::Separate, std::nullopt}};
     module.productData = std::make_shared<TestModuleDefinition>("name: test-module\n");
-    return {printer, module};
+
+    PeripheralDescriptor hub;
+    hub.id = kHub;
+    hub.name = "Test hub";
+    hub.fits = {PinOutId{"test.chain"}};
+    hub.connectors = {ConnectorDescriptor{ConnectorId{"jack"}, "test jack",
+                                          {PinOutDescriptor{PinOutId{"test.jack"}, PinOutLevel::Functional,
+                                                            Takes::Chain, AfterChange::Nothing}}}};
+    hub.places = {PlaceDescriptor{PlaceName{"jack"}, ConnectorId{"jack"}, PinOutId{"test.jack"}, 2}};
+
+    PeripheralDescriptor uart;
+    uart.id = kUart;
+    uart.name = "Test UART";
+    uart.fits = {PinOutId{"test.bus"}, PinOutId{"test.chain"}};
+    return {printer, module, hub, uart};
 }
 
 std::vector<RomImage> imagesFor(const std::vector<RomEntry>& entries) {
@@ -159,7 +190,7 @@ BuildResult TestBuilder::build(const BuildRequest& req, const Catalogue& cat) {
         if (std::count(taken.begin(), taken.end(), p.place.steps[0]) >= info->place->takesAtOnce)
             return BuildResult{nullptr, {}, "place taken"};
         taken.push_back(p.place.steps[0]);
-        m->plug(PlugEntry{p.place, p.peripheral, p.variant});
+        m->plugAtBuild(p, cat);
     }
     return BuildResult{std::move(m), {}, {}};
 }
@@ -210,13 +241,17 @@ bool sameDisplay(const DisplayOutput& a, const DisplayOutput& b) {
 // --- TestMachine -------------------------------------------------------------
 
 TestMachine::TestMachine(const MachineDescriptor& d, std::optional<VariantId> v, int soundRate)
-    : desc_(d), variant_(std::move(v)), soundRate_(soundRate) {}
+    : desc_(d), variant_(std::move(v)), soundRate_(soundRate) {
+    if (isDot()) clock_ = std::make_unique<TestClock>(d.tickRate);
+}
 
 bool TestMachine::isDot() const { return std::holds_alternative<DotMatrixGeometry>(desc_.display.geometry); }
 
-bool TestMachine::hasPrinter() const {
-    return std::any_of(plugged_.begin(), plugged_.end(), [](const PlugEntry& e) { return e.peripheral == kPrinter; });
+bool TestMachine::has(const PeripheralId& id) const {
+    return std::any_of(plugs_.begin(), plugs_.end(), [&](const auto& p) { return p->entry.peripheral == id; });
 }
+
+bool TestMachine::hasPrinter() const { return has(kPrinter); }
 
 Ticks TestMachine::advance(Ticks atLeast) {
     const bool printer = hasPrinter();
@@ -234,6 +269,9 @@ Ticks TestMachine::advance(Ticks atLeast) {
     }
     ticks_ += ran;
     sinceStart_ += ran;
+    for (auto& p : plugs_)
+        if (p->uart) p->uart->advance(ran);
+    if (clock_) clock_->advance(ran);
     if (desc_.hasSound && soundRate_ > 0) {
         // Sample n stands at tick n * rate / soundRate; its value is a square
         // wave of that tick alone, so the slicing of the advances cannot show.
@@ -246,14 +284,23 @@ Ticks TestMachine::advance(Ticks atLeast) {
     return ran;
 }
 
-void TestMachine::reset() { startUp(); }
+void TestMachine::tellOperation() {
+    for (auto& p : plugs_) ++p->operations;
+}
+
+void TestMachine::reset() {
+    tellOperation();
+    startUp();
+}
 
 void TestMachine::powerCycle() {
+    tellOperation();
     displayOn_ = true;
     startUp();
 }
 
 void TestMachine::coldBoot() {
+    tellOperation();
     presses_ = 0;
     displayOn_ = true;
     startUp();
@@ -324,34 +371,201 @@ std::size_t TestMachine::takeSound(std::span<std::int16_t> out) {
 
 Plugged TestMachine::plugged() const {
     Plugged p;
-    p.byPlace = plugged_;
-    for (const auto& c : desc_.connectors) {
-        ConnectorPlugs cp{PlacePath{}, c.id, {}};
-        for (const auto& e : plugged_)
-            if (const PlaceDescriptor* pl = desc_.place(e.place.steps[0]); pl && pl->connector == c.id)
-                cp.plugged.push_back(e);
+    for (const auto& st : plugs_) p.byPlace.push_back(st->entry);
+    auto onConnector = [&](const PlacePath& owner, const std::vector<PlaceDescriptor>& places, const ConnectorId& c) {
+        ConnectorPlugs cp{owner, c, {}};
+        for (const auto& st : plugs_) {
+            const auto& steps = st->entry.place.steps;
+            if (steps.size() != owner.steps.size() + 1 ||
+                !std::equal(owner.steps.begin(), owner.steps.end(), steps.begin()))
+                continue;
+            for (const auto& pl : places)
+                if (pl.name == steps.back() && pl.connector == c) cp.plugged.push_back(st->entry);
+        }
         p.byConnector.push_back(std::move(cp));
-    }
+    };
+    for (const auto& c : desc_.connectors) onConnector(PlacePath{}, desc_.places, c.id);
+    for (const auto& st : plugs_)
+        for (const auto& c : st->desc.connectors) onConnector(st->entry.place, st->desc.places, c.id);
     return p;
 }
 
-std::vector<CapabilityEntry> TestMachine::capabilities() const {
+std::vector<TestMachine::CapRef> TestMachine::capRefs() const {
+    auto* self = const_cast<TestMachine*>(this);   // the capabilities are the machine's own members
     const ComponentId cpu{isDot() ? "main" : "cpu"};
-    std::vector<CapabilityEntry> out{
-        CapabilityEntry{TestGeneric::kKind, CapabilityId{cpu.value + "/" + std::string(TestGeneric::kKind.value)},
-                        ComponentOwner{cpu}}};
-    for (const auto& e : plugged_)
-        if (e.peripheral == kPrinter)
-            out.push_back(CapabilityEntry{
-                TestCounter::kKind, CapabilityId{e.place.steps[0].value + "/" + std::string(TestCounter::kKind.value)},
-                PeripheralOwner{kPrinter, e.place}});
+    std::vector<CapRef> out{
+        CapRef{CapabilityEntry{TestGeneric::kKind, CapabilityId{cpu.value + "/" + std::string(TestGeneric::kKind.value)},
+                               ComponentOwner{cpu}},
+               &self->generic_}};
+    if (clock_)
+        out.push_back(CapRef{CapabilityEntry{peripherals::RealTimeClock::kKind, CapabilityId{"rtc/real-time-clock"},
+                                             ComponentOwner{ComponentId{"rtc"}}},
+                             clock_.get()});
+    for (const auto& st : plugs_) {
+        const std::string at = placeText(st->entry.place);
+        const PeripheralOwner owner{st->entry.peripheral, st->entry.place};
+        if (st->entry.peripheral == kPrinter)
+            out.push_back(CapRef{
+                CapabilityEntry{TestCounter::kKind, CapabilityId{at + "/" + std::string(TestCounter::kKind.value)}, owner},
+                &self->printerCounter_});
+        if (st->controls)
+            out.push_back(CapRef{CapabilityEntry{peripherals::Controls::kKind,
+                                                 CapabilityId{at + "/" + std::string(peripherals::Controls::kKind.value)},
+                                                 owner},
+                                 st->controls.get()});
+        if (st->uart)
+            out.push_back(
+                CapRef{CapabilityEntry{peripherals::SerialPort::kKind,
+                                       CapabilityId{at + "/" + std::string(peripherals::SerialPort::kKind.value)}, owner},
+                       &st->uart->port});
+    }
+    return out;
+}
+
+std::vector<CapabilityEntry> TestMachine::capabilities() const {
+    std::vector<CapabilityEntry> out;
+    for (auto& r : capRefs()) out.push_back(std::move(r.entry));
     return out;
 }
 
 Capability* TestMachine::capability(const CapabilityId& id) {
-    for (const auto& e : capabilities())
-        if (e.id == id) return e.kind == TestCounter::kKind ? static_cast<Capability*>(&printerCounter_) : &generic_;
+    for (const auto& r : capRefs())
+        if (r.entry.id == id) return r.cap;
     return nullptr;
+}
+
+// --- LIB-2: plugging in -------------------------------------------------------
+
+void TestMachine::plugAtBuild(const PeripheralRequest& req, const Catalogue& cat) {
+    if (const PeripheralDescriptor* d = cat.peripheral(req.peripheral)) plug(req, *d, desc_.tickRate);
+}
+
+void TestMachine::plug(PeripheralRequest req, const PeripheralDescriptor& d, TickRate hostRate) {
+    ++plugCalls;
+    auto st = std::make_unique<PlugState>();
+    st->entry = PlugEntry{req.place, req.peripheral, req.variant};
+    st->desc = d;
+    st->roms = std::move(req.roms);
+    if (!d.controls.empty()) {
+        const PlacePath at = req.place;
+        st->controls = std::make_unique<peripherals::ControlTable>(d.controls, [this, at](const ControlId& id, bool on) {
+            controlEvents_.push_back(ControlEvent{at, id, on, ticks_});
+        });
+        st->controls->restore(req.switches);
+    }
+    if (d.id == kUart) st->uart = std::make_unique<TestUart>(hostRate);
+    plugs_.push_back(std::move(st));
+}
+
+void TestMachine::unplug(const PlacePath& place, const PeripheralId& id) {
+    ++unplugCalls;
+    const bool there = std::any_of(plugs_.begin(), plugs_.end(),
+                                   [&](const auto& s) { return s->entry.place == place && s->entry.peripheral == id; });
+    if (!there) return;
+    // The peripheral, and every one on a place it offers (EC-3).
+    auto below = [&](const PlacePath& p) {
+        return p.steps.size() > place.steps.size() && std::equal(place.steps.begin(), place.steps.end(), p.steps.begin());
+    };
+    plugs_.erase(std::remove_if(plugs_.begin(), plugs_.end(),
+                                [&](const auto& s) {
+                                    return (s->entry.place == place && s->entry.peripheral == id) || below(s->entry.place);
+                                }),
+                 plugs_.end());
+}
+
+std::optional<std::string> TestMachine::productRefusal(const PeripheralRequest& req,
+                                                       const std::optional<PeripheralId>& replacing) const {
+    auto other = [&](const PeripheralId& id) {
+        return std::any_of(plugs_.begin(), plugs_.end(), [&](const auto& s) {
+            return s->entry.peripheral == id && !(replacing && *replacing == id && s->entry.place == req.place);
+        });
+    };
+    if ((req.peripheral == kPrinter && other(kUart)) || (req.peripheral == kUart && other(kPrinter)))
+        return std::string(kTogether);
+    return std::nullopt;
+}
+
+AfterChange TestMachine::followsNow(const PinOutDescriptor& p) const {
+    if (isDot() && !displayOn_) return AfterChange::Nothing;   // switched off: its ROM finds the change at power-on
+    return p.after;
+}
+
+TestMachine::PlugState* TestMachine::stateAt(const PlacePath& place) {
+    for (auto& s : plugs_)
+        if (s->entry.place == place) return s.get();
+    return nullptr;
+}
+
+const TestMachine::PlugState* TestMachine::stateAt(const PlacePath& place) const {
+    for (const auto& s : plugs_)
+        if (s->entry.place == place) return s.get();
+    return nullptr;
+}
+
+TestUart* TestMachine::uartAt(const PlacePath& place) {
+    PlugState* s = stateAt(place);
+    return s ? s->uart.get() : nullptr;
+}
+
+const std::vector<RomImage>* TestMachine::romsAt(const PlacePath& place) const {
+    const PlugState* s = stateAt(place);
+    return s ? &s->roms : nullptr;
+}
+
+std::uint64_t TestMachine::operationsTold(const PlacePath& place) const {
+    const PlugState* s = stateAt(place);
+    return s ? s->operations : 0;
+}
+
+// --- TestUart, TestClock ----------------------------------------------------
+
+void TestUart::advance(Ticks ran) {
+    since += ran;
+    const Ticks every = rate_ / 100;   // 10 ms
+    while (every > 0 && sent < since / every) {
+        port.machineSends(static_cast<std::uint8_t>(sent & 0xFF));
+        ++sent;
+    }
+    for (std::uint8_t b; port.machineReceives(b);) received.push_back(b);
+}
+
+peripherals::ClockFields TestClock::read() const {
+    peripherals::ClockFields f;   // no year: the chip keeps none
+    f.month = month_;
+    f.day = day_;
+    f.weekday = weekday_;
+    f.hour = hour_;
+    f.minute = minute_;
+    f.second = second_;
+    return f;
+}
+
+void TestClock::set(const peripherals::ClockFields& f, int millisecond) {
+    ++setCalls;
+    if (f.month) month_ = *f.month;
+    if (f.day) day_ = *f.day;
+    if (f.weekday) weekday_ = *f.weekday;
+    if (f.hour) hour_ = *f.hour;
+    if (f.minute) minute_ = *f.minute;
+    if (f.second) second_ = *f.second;
+    rest_ = static_cast<Ticks>(millisecond) * rate_ / 1000;
+}
+
+void TestClock::advance(Ticks ran) {
+    rest_ += ran;
+    while (rest_ >= rate_) {
+        rest_ -= rate_;
+        if (++second_ < 60) continue;
+        second_ = 0;
+        if (++minute_ < 60) continue;
+        minute_ = 0;
+        if (++hour_ < 24) continue;
+        hour_ = 0;
+        weekday_ = (weekday_ + 1) % 7;
+        if (++day_ <= 30) continue;
+        day_ = 1;
+        month_ = month_ % 12 + 1;
+    }
 }
 
 } // namespace calcu::machine::test

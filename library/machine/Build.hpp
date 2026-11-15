@@ -1,4 +1,5 @@
 #pragma once
+#include "machine/Attach.hpp"
 #include "machine/Catalogue.hpp"
 #include "machine/Ids.hpp"
 #include "machine/Machine.hpp"
@@ -13,17 +14,7 @@
 
 namespace calcu::machine {
 
-struct RomImage {
-    std::string fileName;
-    std::vector<std::uint8_t> bytes;   // the file as bundled; the core decodes (D-4)
-};
-struct PeripheralRequest {
-    PlacePath place;
-    PeripheralId peripheral;
-    std::optional<VariantId> variant;
-    std::vector<RomImage> roms;
-    std::shared_ptr<const ProductData> content;
-};
+// RomImage and PeripheralRequest: Attach.hpp (LIB-2).
 struct BuildRequest {
     ModelId model;
     std::optional<VariantId> variant;          // std::nullopt: the default (or none)

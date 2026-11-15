@@ -1,5 +1,7 @@
 #pragma once
+#include "machine/Attach.hpp"
 #include "machine/Capability.hpp"
+#include "machine/Catalogue.hpp"
 #include "machine/Descriptor.hpp"
 #include "machine/Display.hpp"
 #include "machine/EmulatedTime.hpp"
@@ -8,6 +10,7 @@
 #include <cstdint>
 #include <optional>
 #include <span>
+#include <string>
 #include <vector>
 
 // The machine interface (LIB-1 design §3.5; machine.md M-1 to M-8, ADR 0006,
@@ -16,8 +19,8 @@
 // Threading and ownership (machine.md I-2, I-3; ADR 0009): a Machine is
 // owned by one std::unique_ptr and used from one thread at a time. It holds
 // no lock, starts no thread and reads no clock. Pointers from capability()
-// stay valid until the next attach or detach (LIB-2) or until the machine
-// is destroyed.
+// stay valid until the next attach, detach or replace (LIB-2) or until the
+// machine is destroyed.
 
 namespace calcu::machine {
 
@@ -79,6 +82,46 @@ public:
     virtual Capability* capability(const CapabilityId&) = 0;   // nullptr if not present now
     std::vector<CapabilityEntry> capabilities(const KindId&) const;   // empty if none (EC-5)
     virtual std::vector<DebugTargetId> debugTargets() const = 0;  // their interface: LIB-10
+
+    // Attach, detach, replace (LIB-2 design §3.1; Attach.hpp). Called on the
+    // session's thread between two advances, never inside one. Capability
+    // pointers from before a change are invalid after it.
+    //
+    // canAttach checks, in this order: the place exists (on the machine for
+    // a one-step path, on the peripheral plugged in at the path's prefix
+    // otherwise, AC-9); the peripheral is in the catalogue (AC-2); it fits
+    // the place's pin-out (EC-1); the variant belongs to it; every ROM entry
+    // of the variant has an image (EC-4); the place holds fewer than it
+    // takes, and on a Takes::One connector no other place holds one (AC-3,
+    // AC-7); productRefusal() (AC-29). attach refuses in exactly these cases
+    // with the same reason and changes nothing then (AC-6).
+    std::optional<Refusal> canAttach(const PeripheralRequest&, const Catalogue&) const;
+    ChangeResult attach(PeripheralRequest, const Catalogue&);
+    // Nothing at the place, or another peripheral there: nothing changes and
+    // nothing follows (EC-2). The peripherals plugged into it go with it, and
+    // what follows is asked once, at its place (EC-3).
+    ChangeResult detach(const PlacePath&, const PeripheralId&, const Catalogue&);
+    // `old` out of the request's place and the request's peripheral in, in one
+    // step: checked as canAttach without `old`, what follows asked once (AC-35).
+    ChangeResult replace(const PeripheralId& old, PeripheralRequest, const Catalogue&);
+
+protected:
+    // A product's rule (AC-29): the sentence of a refusal, or none. `replacing`
+    // is the peripheral a replace takes out.
+    virtual std::optional<std::string> productRefusal(const PeripheralRequest&,
+                                                      const std::optional<PeripheralId>& replacing) const;
+    // Plugs the checked request in (its variant resolved); never fails. The
+    // host's tick rate is how a peripheral learns it (P-2, AC-12).
+    virtual void plug(PeripheralRequest, const PeripheralDescriptor&, TickRate hostRate);
+    // Takes the peripheral out, and the peripherals plugged into it (EC-3).
+    virtual void unplug(const PlacePath&, const PeripheralId&);
+    // What follows a change on this pin-out now: by default its `after`; a
+    // machine that is switched off answers Nothing (AC-4).
+    virtual AfterChange followsNow(const PinOutDescriptor&) const;
+
+private:
+    std::optional<Refusal> check(const PeripheralRequest&, const Catalogue&,
+                                 const std::optional<PeripheralId>& replacing) const;
 };
 
 } // namespace calcu::machine

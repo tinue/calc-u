@@ -44,7 +44,7 @@ TEST(part_loads_a_preset_for_another_model) {
     auto& c = r.part();
     c.loadStateFile(bytes("MODEL: TI-58\nREGISTERS:\n05 = 3.25\n"));
     CHECK(c.model() == Model::TI58);
-    CHECK(c.emulator()->isRunning());
+    CHECK(!c.emulator()->halted());
     CHECK_EQ(testroms::mem(c.emulator()->access().machine()).readDataReg(5), 3.25);
     CHECK(r.errors().empty());
 }
@@ -69,7 +69,7 @@ TEST(part_load_while_frozen_ends_running_without_tracing) {
     c.loadStateFile(bytes("REGISTERS:\n01 = 7\n"));
     CHECK(!c.isFrozen());
     CHECK(!c.emulator()->debugState().frozen);
-    CHECK(c.emulator()->isRunning());
+    CHECK(!c.emulator()->halted());
     CHECK_EQ(testroms::dbg(c.emulator()->access().machine()).traceFlags(), static_cast<uint32_t>(TRACE_NONE));
 }
 
@@ -97,8 +97,8 @@ TEST(part_constant_memory_keeps_the_loaded_card) {
     CHECK(r.p.cards.count(kMem) && r.p.cards[kMem].find("KEEP ME") != std::string::npos);
     // Unchanged RAM: the debounced persist does not write again.
     const int writes = r.p.writes[kMem];
-    c.emulator()->stop();
-    c.emulator()->sync([] {});
+    c.emulator()->setHalted(true);
+    c.emulator()->runQueuedSteps();
     r.run(700ms);
     CHECK_EQ(r.p.writes[kMem], writes);
 }
@@ -181,7 +181,7 @@ TEST(part_events_of_a_replaced_machine_are_ignored) {
     PartRig r;
     auto& c = r.part();
     c.freeze(FreezeOwner::Calculator);
-    c.emulator()->sync([] {});  // the old machine's frozen view is queued
+    c.emulator()->runQueuedSteps();  // the old machine's frozen view is queued
     CHECK(c.startMachine(Model::TI58));
     r.run(20ms);
     CHECK(!c.isFrozen());
@@ -204,10 +204,10 @@ TEST(part_asm_overlay) {
     c.runAsm();
     CHECK(c.asmActive());
     CHECK(c.isFrozen() && c.debugState().owner == FreezeOwner::Cpu);
-    CHECK(!c.emulator()->isRunning());
+    CHECK(c.emulator()->halted());
     CHECK(!c.debug().cpuHistory().empty());
     c.clearAsm();
-    CHECK(!c.asmActive() && !c.isFrozen() && c.emulator()->isRunning());
+    CHECK(!c.asmActive() && !c.isFrozen() && !c.emulator()->halted());
     CHECK_EQ(c.asmStatus(), std::string("ASM overlay cleared."));
 }
 

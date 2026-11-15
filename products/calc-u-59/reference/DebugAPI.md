@@ -23,8 +23,8 @@ https://calc-u.org/59/.
 ## Calculator-level machine access
 
 The adapter calls (`core/TIAdapters.hpp`) the debugger and the state loader use. Writes are made
-with the run loop stopped (`EmulatorSession::sync`), as
-`app/StateApplier.cpp` does.
+on the session's thread between two advances, after the queued steps
+(`EmulatorSession::runQueuedSteps`), as `app/StateApplier.cpp` is used.
 
 | Call | Effect |
 |---|---|
@@ -103,8 +103,11 @@ reports changes as `RunStateChanged`.
 
 ### Threading
 
-- Freezes and steps are jobs on the session's thread. The job queue is
-  serial, so they run after the loop has exited.
+- A freeze halts the machine at once (the machine session pauses); the
+  step to the keycode boundary, and each STEP, waits in the session's
+  queue of steps and runs after the host call (`EmulatorSession::pump`). A
+  flow that changes the machine (reset, state load, ASM run) runs a queued
+  step first (`runQueuedSteps`).
 - An armed freeze fires in the run loop. The session applies it (frozen,
   owner, new generation; for a CALCULATOR freeze also `beginNextStep()`) on
   the session's thread **before** any listener runs, so the key sequencer

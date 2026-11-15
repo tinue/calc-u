@@ -39,7 +39,7 @@ wrappers in `frontends/swift/Bridge/`, which only translate types (`AppArchitect
 | `TIAppPart` (`TIAppPart.cpp`, `TIAppPartFlows.cpp`) | Calc-U-59 in the library's app session: everything a frontend does with a calculator that isn't drawing (below); the interim topics and commands, `makeAppSession` (M-33; 2.3.0's `SessionController` taken apart into it in M-34) |
 | `TIFileAccess`, `PacingProfiles` | The card and `ti58c.mem` files on the save folder; the TI pacing profiles (M-33) |
 | `TIWebPart`, `WebPageData` | What the Web page draws, as `c59.web.*` topics, commands and requests; the static page data (adapter W59-1) (LIB-15 59, M-34) |
-| `EmulatorSession` | One running calculator around the machine the machine session owns: the run flag and its job queue, the freeze-checked advance of a slice, freeze state, key input, frame sampler, trace writers |
+| `EmulatorSession` | One running calculator around the machine the machine session owns: the halt flag and the debugger's queued steps, the freeze-checked advance of a slice, freeze state, key input, frame sampler, trace writers |
 | `SessionThread` | The Swift frontend's session thread and its two queues (C59-5) |
 | `FreezeController` | The two armed freezes, checked per instruction inside the advance |
 | `KeySequencer` | 100 ms taps that wait for the scan loop, physical-key holds, KEYSTROKES playback |
@@ -339,11 +339,10 @@ into the keystroke events (`shared_ptr`). This is the order of operations:
 2. The sequencer waits until that count drops.
 3. A reload waits in the part's queue until after the call
    (`Listener::reloadRequested`). There
-   `TIAppPart::applyReloadStage` stops the loop, runs `applyReload`
+   `TIAppPart::applyReloadStage` halts the machine, runs `applyReload`
    (only the listed steps and registers)
-   on the session's thread, restarts the loop (unless frozen), and updates
-   the cue card. It then calls `hostDone()`. A posted job would not do: it
-   runs only after the run loop exits.
+   on the session's thread, lets it run again (unless frozen), and updates
+   the cue card. It then calls `hostDone()`.
 4. `ArmCard` and `InsertCard` queue their card in the session (`QueuedCard`).
 5. On each 60 Hz `tick()` with an empty reader, `takeQueuedCard()` hands out
    the first card of the matching kind (the two kinds don't block each

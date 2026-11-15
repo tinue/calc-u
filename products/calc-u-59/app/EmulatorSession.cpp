@@ -48,7 +48,6 @@ EmulatorSession::EmulatorSession(Model model, const calcu::roms::RomSet& roms, M
 
 EmulatorSession::~EmulatorSession() {
     m_keys.reset();    // a held key comes up before the machine goes away
-    m_running = false;
     access().debugTarget().setRunControl(nullptr);
 }
 
@@ -105,45 +104,27 @@ bool EmulatorSession::printerControl(const calcu::machine::ControlId& id, bool o
     return false;
 }
 
-void EmulatorSession::start() {
-    if (m_running) return;
-    m_running = true;
-    post(nullptr);
-}
-
-void EmulatorSession::sync(const std::function<void()>& job) {
-    if (!m_draining) drainJobs();
-    job();
-}
-
-void EmulatorSession::drainJobs() {
-    m_draining = true;
-    while (!m_jobs.empty()) {
-        if (!m_jobs.front()) {   // the run mark: jobs behind it wait until the machine stops
-            if (m_running) break;
-            m_jobs.pop_front();
-            continue;
-        }
-        auto job = std::move(m_jobs.front());
-        m_jobs.pop_front();
-        job();
+void EmulatorSession::runQueuedSteps() {
+    while (!m_steps.empty()) {
+        auto step = std::move(m_steps.front());
+        m_steps.pop_front();
+        step();
     }
-    m_draining = false;
 }
 
 // Key input advances at the end of every slice (sliceEnded), at the time the
 // slice was due, so a 100 ms hold spans its slices and the wait for the scan
 // loop is checked at each slice end; with no slice (frozen), at `now`.
 void EmulatorSession::pump(std::chrono::steady_clock::time_point now) {
-    drainJobs();
+    runQueuedSteps();
     if (!m_sliceRan) m_keys->advance(now);
     m_sliceRan = false;
-    drainJobs();
+    runQueuedSteps();
 }
 
 calcu::machine::Ticks EmulatorSession::advanceHosted(calcu::machine::Ticks atLeast, bool& stopped) {
     stopped = false;
-    if (!m_running) {
+    if (m_halted) {
         stopped = true;
         return 0;
     }
@@ -157,7 +138,7 @@ calcu::machine::Ticks EmulatorSession::advanceHosted(calcu::machine::Ticks atLea
     }
     m_ramDirty = true;   // TI-58C persist debounce
     if (breakpoint || fired) {
-        m_running = false;
+        m_halted = true;
         stopped = true;
         if (fired) onFreezeFired(*fired);
     }
@@ -212,10 +193,10 @@ void EmulatorSession::onFreezeFired(FreezeOwner owner) {
 }
 
 void EmulatorSession::freeze(FreezeOwner owner) {
-    stop();
+    m_halted = true;
     uint64_t generation = setFrozenState(true, owner);
-    // Runs once the machine has stopped (the job queue is serial).
-    post([this, generation] {
+    // The step to the next keycode boundary runs after the host call.
+    m_steps.push_back([this, generation] {
         {
             auto a = access();
             a.debugTarget().stepUntilNextKeycode();
@@ -229,7 +210,7 @@ void EmulatorSession::freezeInPlace(FreezeOwner owner) { setFrozenState(true, ow
 
 void EmulatorSession::resume() {
     setFrozenState(false, std::nullopt);
-    start();
+    m_halted = false;
 }
 
 void EmulatorSession::clearFreeze() { setFrozenState(false, std::nullopt); }
@@ -263,7 +244,7 @@ void EmulatorSession::disarmScanLoopExit() {
 void EmulatorSession::stepKeycode() {
     DebugState s = debugState();
     if (!s.frozen) return;
-    post([this, generation = s.generation] {
+    m_steps.push_back([this, generation = s.generation] {
         {
             auto a = access();
             a.debugTarget().stepUntilNextKeycode();
@@ -276,7 +257,7 @@ void EmulatorSession::stepKeycode() {
 void EmulatorSession::stepInstruction() {
     DebugState s = debugState();
     if (!s.frozen) return;
-    post([this, generation = s.generation] {
+    m_steps.push_back([this, generation = s.generation] {
         {
             auto a = access();
             a.debugTarget().stepInstruction();   // through a HOLD (WAIT Dn) of up to 32

@@ -148,7 +148,9 @@ TEST(ac4_at_once_and_queued_give_same_messages_in_same_order) {
 // sends from afterCall (the paper's new marks) goes out with the harness's
 // `wait`.
 TEST(advance_unpaced_runs_parts_after_call) {
-    Rig r(RigOptions{Hosting::VirtualTime});
+    RigOptions o;
+    o.hosting = Hosting::VirtualTime;
+    Rig r(o);
     r.build();
     const int before = r.part.afterCalls;
     r.session->advanceUnpaced(1'000);

@@ -145,14 +145,20 @@ void addPresetCommands(CommandRegistry& r, const presets::Vocabulary* v) {
     r.add("preset-list", presetListCmd, "preset-list              the bundled presets");
     r.add("full-speed", speedCmd(true), "full-speed               the machine at full speed");
     r.add("regular-speed", speedCmd(false), "regular-speed            the machine at regular speed");
-    r.add("switch", switchCmd, "switch <p> <control> on|off  a switch or key of a peripheral");
+    r.add("switch", switchCmd, "switch <peripheral> <control> on|off  a switch set, or a key pressed or let up");
     if (v) {
         for (const auto& d : v->steps())
             if (d.command && !r.isCommand(d.verb)) r.add(d.verb, stepCmd(d.verb), usageOf(d));
         return;
     }
-    for (const char* verb : {"elapsed-time", "expect", "not-expect", "screenshot", "syncclock"})
-        if (!r.isCommand(verb)) r.add(verb, stepCmd(verb), std::string(verb) + " ...  a preset step");
+    const std::pair<const char*, const char*> fixed[] = {
+        {"elapsed-time", "elapsed-time start|report the emulated time since start"},
+        {"expect", "expect <text>            refused unless the display shows the text"},
+        {"not-expect", "not-expect <text>        refused if the display shows the text"},
+        {"screenshot", "screenshot <file name>   a picture of the display into the output folder"},
+        {"syncclock", "syncclock                the real-time clocks set from the run's clock"}};
+    for (const auto& [verb, usage] : fixed)
+        if (!r.isCommand(verb)) r.add(verb, stepCmd(verb), usage);
 }
 
 } // namespace calcu::harness

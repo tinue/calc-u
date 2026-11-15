@@ -1,5 +1,6 @@
 #include "harness/Run.hpp"
 #include "harness/StatePart.hpp"
+#include "paper/PaperPart.hpp"
 #include "sessions/LibraryTopics.hpp"
 #include "sessions/MachineSession.hpp"
 #include <atomic>
@@ -185,6 +186,11 @@ std::unique_ptr<Server> Server::start(HarnessProduct& product, const RunOptions&
     s->startup_ = std::make_unique<startup::StartupPart>(
         startup::StartupSetup{product.machines(), roms.set, s->setup_->settings(), s->presets_.get()});
     if (s->presets_) s->presets_->setControl(&s->startup_->control());
+    // LIB-8 (A-2, A-3): the paper part's machine control and the step `cut-paper`.
+    if (paper::PaperPart* paper = product.paperPart()) {
+        paper->setControl(&s->startup_->control());
+        if (s->presets_) paper::addPaperStep(s->presets_->vocabulary(), *paper);
+    }
     // LIB-4 §7: the control state, among the library's parts.
     s->control_ = std::make_unique<control::ControlPart>(product.controlSetup());
     setup.parts = {s->peripherals_.get(), s->state_.get()};
@@ -205,6 +211,7 @@ std::unique_ptr<Server> Server::start(HarnessProduct& product, const RunOptions&
     addFirstCommands(s->registry_);
     addStartupCommands(s->registry_);
     addPresetCommands(s->registry_, s->presets_ ? &s->presets_->vocabulary() : nullptr);
+    addPaperCommands(s->registry_);
     product.addCommands(s->registry_);
     return s;
 }

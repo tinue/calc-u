@@ -64,4 +64,9 @@ void addStartupCommands(CommandRegistry&);
 // commands are refused. The bare `wait` is FirstCommands.cpp's.
 void addPresetCommands(CommandRegistry&, const presets::Vocabulary*);
 
+// LIB-8 AC-23 (design §2): cut-paper and paper text, marks, png, copy, cut
+// (PaperCommands.cpp), each the session command or request of PaperPart;
+// refused in a product without printers.
+void addPaperCommands(CommandRegistry&);
+
 } // namespace calcu::harness

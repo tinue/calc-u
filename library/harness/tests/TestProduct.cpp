@@ -117,6 +117,10 @@ GlyphFont testFont() {
 
 TestProduct::TestProduct()
     : part_(std::make_unique<Part>()), typing_(std::make_unique<Typing>(*this)),
+      paper_(std::make_unique<paper::PaperPart>(
+          machine::test::paperTestCatalogue(),
+          std::vector<paper::PrinterPaper>{{machine::test::kDotter, machine::test::td20Description()},
+                                           {machine::test::kPlotter, machine::test::tp4Description()}})),
       presetRules_(std::make_unique<presets::test::TestPresetRules>()) {
     roms::test::writeFullSet(roms_, roms::fullSet(catalogue()));
     // LIB-6: the bundled presets of the test product.
@@ -142,7 +146,8 @@ const settings::ProductDecl& TestProduct::settingsDecl() const {
     decl_.productName = "Calc-U-Test";
     decl_.models = {"test-seg", "test-dot"};
     decl_.fallbackModel = startModel ? startModel->value : "test-seg";
-    decl_.keys = {settings::family::startupModel(), settings::family::startupLastModel()};
+    decl_.keys = {settings::family::startupModel(), settings::family::startupLastModel(),
+                  settings::family::presetFor("test-seg"), settings::family::presetFor("test-dot")};
     return decl_;
 }
 
@@ -202,7 +207,7 @@ void TestProduct::addCommands(CommandRegistry& r) {
     }, "count                    the operations run");
 }
 
-std::vector<SessionPart*> TestProduct::sessionParts() { return {&typing_->part, part_.get()}; }
+std::vector<SessionPart*> TestProduct::sessionParts() { return {&typing_->part, part_.get(), paper_.get()}; }
 
 std::unique_ptr<HarnessProduct> makeTestProduct() { return std::make_unique<TestProduct>(); }
 

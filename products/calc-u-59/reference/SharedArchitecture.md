@@ -36,15 +36,13 @@ wrappers in `frontends/swift/Bridge/`, which only translate types (`AppArchitect
 | Module | What it does |
 |---|---|
 | **Orchestration and runtime** | |
-| `SessionController` | Everything a frontend does with a calculator that isn't drawing (below) |
-| `EmulatorSession` | One running calculator: machine, run loop, freeze state, key input, frame sampler, trace writers |
-| `CooperativePacing` | What remains of 2.3.0's `EmulationRunner`: a serial job queue whose long-running job is the run loop, on the session's thread; hosted, the run flag pauses the machine session and `advanceHosted` is its freeze gate (until M-34) |
-| `TIAppPart`, `TIFileAccess`, `PacingProfiles` | Calc-U-59 in the library's app session: the part, the interim topics and commands, `makeAppSession`; the card and `ti58c.mem` files; the TI pacing profiles (M-33) |
+| `TIAppPart` (`TIAppPart.cpp`, `TIAppPartFlows.cpp`) | Calc-U-59 in the library's app session: everything a frontend does with a calculator that isn't drawing (below); the interim topics and commands, `makeAppSession` (M-33; 2.3.0's `SessionController` taken apart into it in M-34) |
+| `TIFileAccess`, `PacingProfiles` | The card and `ti58c.mem` files on the save folder; the TI pacing profiles (M-33) |
+| `TIWebPart`, `WebPageData` | What the Web page draws, as `c59.web.*` topics, commands and requests; the static page data (adapter W59-1) (LIB-15 59, M-34) |
+| `EmulatorSession` | One running calculator around the machine the machine session owns: the run flag and its job queue, the freeze-checked advance of a slice, freeze state, key input, frame sampler, trace writers |
 | `SessionThread` | The Swift frontend's session thread and its two queues (C59-5) |
-| `Pacing` | 20 ms cycle-weighted batches with carry; the full-speed sleep rule |
-| `FreezeController` | The two armed freezes, checked per instruction from the run loop |
+| `FreezeController` | The two armed freezes, checked per instruction inside the advance |
 | `KeySequencer` | 100 ms taps that wait for the scan loop, physical-key holds, KEYSTROKES playback |
-| `Threading` | Threads or cooperative (no threads, pumped from `tick()`) — see § "Threads" |
 | `FrameSampler` | The 60 Hz frame: display, C indicator, printer, log, card auto-eject |
 | `DisplayPov` | LED brightness per position from the core's duty cycles (persistence of vision) |
 | **Debugger** | |
@@ -66,7 +64,6 @@ wrappers in `frontends/swift/Bridge/`, which only translate types (`AppArchitect
 | `CueCard` | Cue-card model, encode/parse, spans, layout, geometry, inks, which card shows |
 | **Tables and drawing rules** | |
 | `MachineModelInfo` | Per-model facts: `Model` ↔ `ModelId`, RAM, card reader, ROM files (the tick rate is the descriptor's, key readiness the machine's: C59-1) |
-| `MachineGuard` | The lock that serialises the runner, UI and sequencer threads on the machine until M-33/M-34 (C59-1 D-1) |
 | `KeyIds` | Matrix code ↔ key ID of the machine's descriptor (C59-1 AC-10) |
 | `KeyboardLayout` | Canvas geometry, key rects, widened hit test; `PointerTracker` (hold the display for full speed, one held key, drag between keys — Qt and web) |
 | `KeyboardMap` | Computer keyboard → matrix codes |
@@ -81,43 +78,40 @@ wrappers in `frontends/swift/Bridge/`, which only translate types (`AppArchitect
 Each header's top comment says what the module is and where its format or
 rules are documented.
 
-## The app session (`TIAppPart`) and `SessionController`
+## The app session (`TIAppPart`)
 
-Since M-33 the Swift and Qt6 frontends host the library's app session
-(`calcu::sessions::AppSession`, LIB-3) made by `cu59::makeAppSession`
-(`app/TIAppPart.hpp`); the Web frontend follows in M-34. The session holds
-the machine session (the machine, LIB-17's pacer with the TI profiles of
-`app/PacingProfiles.hpp`) and Calc-U-59's part, `cu59::TIAppPart`. A
+Every frontend hosts the library's app session (`calcu::sessions::AppSession`,
+LIB-3) made by `cu59::makeAppSession` (`app/TIAppPart.hpp`): Swift and Qt6
+since M-33, the Web since M-34 (LIB-15: `frontends/web/bindings.cpp` makes it
+for the library's Web Worker host, with `TIWebPart` behind it). The session
+holds the machine session (the machine, LIB-17's pacer with the TI profiles
+of `app/PacingProfiles.hpp`) and Calc-U-59's part, `cu59::TIAppPart`. A
 frontend sends commands (`cu59::commands`, `c59.*`, and the library's
 `speed`, `suspend`, `continue`, …) and gets messages: the library's topics
 (`display`, `busy`, `notices`, `log`) and the interim `c59.*` topics
 (`c59.model`, `c59.led`, `c59.printer`, `c59.card-reader`, `c59.run-state`,
-`c59.debug.*`, …; each the snapshot of one of today's change flags, until
+`c59.debug.*`, …; each the snapshot of one of 2.3.0's change flags, until
 the feature that owns it, LIB-3 59 design §5). Qt6 calls the session on its
-GUI thread; Swift on `cu59::SessionThread` (§ "Threads").
+GUI thread, Swift on `cu59::SessionThread`, the Web in its worker (§ "Threads").
 
-`TIAppPart` runs the flows on a `SessionController` in `Threading::Hosted`
-(an adapter until M-34). The controller owns the `EmulatorSession` (rebuilt
-on a model switch) and the `DebugModel`, and runs the flows all GUIs share:
-starting and switching machines, presets (an operation, LIB-3 AC-32), the
-TI-58C memory file, the card reader, the printer strip, the cue card shown,
-freeze and step, traces, the ASM overlay and the LOG tab. Hosted, the
-`EmulatorSession` hands its machine to the machine session; its freeze
-checks run inside each slice's advance (`CooperativePacing::advanceHosted`,
-the `TIFreezeGate`), its key sequencer at each slice end with the slice's
-wall time (`TIKeySequencerHook`), and a frozen controller pauses the
-machine session. The part is the controller's `Platform`: an error is a
-notice ("title: message"), a diagnostic a log line, the card and
-`ti58c.mem` files go through `TIFileAccess` in the save folder,
-`runOnUiThread` queues on the session's own thread.
+`TIAppPart` holds the flows all GUIs share (2.3.0's `SessionController`,
+taken apart in M-34): it owns the `EmulatorSession` (rebuilt on a model
+switch) and the `DebugModel`, and runs starting and switching machines,
+presets (an operation, LIB-3 AC-32), the TI-58C memory file, the card
+reader, the printer strip, the cue card shown, freeze and step, traces,
+the ASM overlay and the LOG tab. The `EmulatorSession` hands its machine to
+the machine session; its freeze checks run inside each slice's advance
+(`EmulatorSession::advanceHosted`, the `TIFreezeGate`), its key sequencer at
+each slice end with the slice's wall time (`TIKeySequencerHook`), and a
+frozen machine pauses the machine session. An error is a notice ("title:
+message"), a diagnostic a log line, the card and `ti58c.mem` files go
+through `TIFileAccess` in the save folder; what the `EmulatorSession`
+reports waits in the part's queue and runs on the session's thread after
+the call.
 
-The Web frontend (and the controller's tests) still own a
-`SessionController` in `Threading::Cooperative` and call its
-`tick(now)` at 60 Hz; its `Platform` is `frontends/web/bindings.cpp`.
+### The 60 Hz frame
 
-### The 60 Hz tick
-
-One `tick(now)`:
+After each host call (`TIAppPart::afterCall`):
 
 1. **Frame** (`FrameSampler`): each position's glyph and brightness
    (`DisplayPov`), the C indicator's opacity (it follows the core's drive at
@@ -130,7 +124,7 @@ One `tick(now)`:
 4. **Slower checks**: the cue card's library program (2 Hz), the LOG text
    (1 Hz), the TI-58C persist (0.5 s after a batch ran).
 
-`changed()` then names only what actually changed.
+Then only the interim topics of what changed are published.
 
 ## Threads
 
@@ -140,28 +134,17 @@ The app layer has no thread of its own but one host adapter:
 |---|---|
 | Swift | `cu59::SessionThread` (`app/SessionThread.*`): builds, calls about 60 times a second and destroys the session on one thread (QoS user-initiated). Posts in one FIFO, messages out in one FIFO to the main thread, one wake per batch (C59-5). In Debug builds for macOS and the simulator it also hosts harness attach (`library/harness/attach/`) |
 | Qt6 | the GUI thread: a 60 Hz `QTimer` calls the session |
-| Web (until M-34) | `SessionController::tick()` on the worker, `Threading::Cooperative` |
+| Web | the library's Web Worker (`library/web/src/worker.js`): a 60 Hz `setInterval` calls the session through the library's `WorkerHost` (LIB-15) |
 
-`MachineGuard` and `EmulatorSession`'s mutexes stay until M-34; nothing
-contends for them any more.
+Nothing in `EmulatorSession` or `TIAppPart` locks (ADR 0009).
 
-### Cooperative mode (Web, until M-34)
+### Key input
 
-`Threading::Cooperative` (`app/Threading.hpp`, the last argument of
-`SessionController` and `EmulatorSession`) runs everything on the caller's
-thread with 2.3.0's batches (`CooperativePacing`, what remains of
-`EmulationRunner`):
-
-- `SessionController::tick(now)` first calls `EmulatorSession::pump(now)`.
-- `CooperativePacing::pump` runs the 20 ms batches due by `now` on an
-  absolute schedule (a lag over 100 ms restarts it); at full speed it runs
-  batches back to back for at most 10 ms of wall clock. Jobs queued behind
-  a stopped loop run at the end of the pump; `sync()` runs the queue, then
-  the job, inline.
-- `KeySequencer` scripts and taps are resumable tasks that say when they
-  next want to run; the session advances them after every batch (hosted:
-  after every slice), at the time it ends, so a 100 ms hold spans several
-  batches and the scan-loop wait is checked at each boundary.
+`KeySequencer` scripts and taps are resumable tasks that say when they next
+want to run; the `EmulatorSession` advances them at the end of every slice
+of the machine session, at the time the slice was due, so a 100 ms hold
+spans several slices and the scan-loop wait is checked at each boundary;
+with no slice (frozen), at the time of the call.
 
 The session owns the debugger's freeze state and the core's trace flags.
 Freeze, step and their threading: `DebugAPI.md` § "Freeze / Step Controls".
@@ -169,7 +152,7 @@ Core locking: `CoreArchitecture.md` § "Threading Model".
 
 ## Emulation Loop and Timing
 
-Swift and Qt6 (M-33): LIB-17's pacer in the machine session, with the TI
+Every frontend (Swift and Qt6 since M-33, the Web since M-34): LIB-17's pacer in the machine session, with the TI
 profiles (`app/PacingProfiles.hpp`): a fixed 20 ms slice of the model's
 tick rate, jittered slice ends (the TI-58's error blink, AC-17), and full
 speed paced at regular speed while the machine waits for input (key
@@ -177,13 +160,6 @@ readiness, or on the TI-59 a `Write` waiting for a card; a printer wait
 does not count). A call drops a lag over 100 ms; full speed runs at most
 14 ms of host time per call. The long-run rate is exact (LIB-17 AC-18:
 0.13 % / 0.10 % faster than 2.3.0 on the TI-59 / TI-58C, ledger 59-33).
-
-The Web (until M-34): `CooperativePacing` runs `Pacing::runBatch` batches of
-the instruction rate × 20 ms, cut to whole cycles (284 on the TI-59, 240 on
-the TI-58, 246 on the TI-58C), each ending at a random offset of 0 to half
-a batch past its grid point (`BatchJitter`); full speed skips the wait
-except in the scan/key-detect range or after a confirmed hardware poll
-(`shouldSleep`).
 
 `step()` returns the cycle weight in the low 8 bits (`kWeightMask`). Bit 29
 marks a step boundary (the CALCULATOR freeze stops on it). Bit 30 marks a confirmed
@@ -304,8 +280,8 @@ controller's side:
    gives the corner to draw lit (`cardCornerGeometry`, above the wash).
 4. `tick()` sees the auto-eject and calls `ejectCard()`. A written bank goes to
    `writeFittedSide`: unless the card is fresh, it reads the file again
-   (`Platform::readCard`), so a side changed elsewhere survives, merges the side
-   and saves through `Platform::writeCard`. A file it can't read or parse is
+   (`TIFileAccess::readCard`), so a side changed elsewhere survives, merges the side
+   and saves through `TIFileAccess::writeCard`. A file it can't read or parse is
    left alone and reported. A failed write leaves the fitted card as it was.
 
 `refreshCueCard` shows `fittedCueCard()` when a card is fitted: its cue card, or
@@ -319,8 +295,8 @@ load, or a reload stage with its own cue card. The printer toggle and a module
 change power-cycle the machine, so they remove it too (until C59-7, row 59-17).
 
 Presets feed cards through the same path (`ArmCard:` / `InsertCard:`,
-§ "State File Loading"); `Platform::cardFilePath(name)` resolves a card file
-name in the frontend's card folder. `unreadable` from `Platform::readCard` means
+§ "State File Loading"); `TIFileAccess::cardFilePath(name)` resolves a card file
+name in the frontend's card folder. `unreadable` from `TIFileAccess::readCard` means
 the file exists but can't be read now, so no blank card goes in to overwrite it.
 
 ### Dropped Files
@@ -336,7 +312,7 @@ Card file formats: `StateFileFormat.md` § "Card files".
 
 ## State File Loading
 
-`SessionController::loadStateFile` writes the file's state straight into
+`TIAppPart::loadStateFile` writes the file's state straight into
 RAM; only `KEYSTROKES:` simulates key presses. Section semantics and the
 reference order: `StateFileFormat.md`.
 
@@ -358,7 +334,7 @@ into the keystroke events (`shared_ptr`). This is the order of operations:
    the session's host-pending count.
 2. The sequencer waits until that count drops.
 3. A reload hops to the UI thread (`Listener::reloadRequested`). There
-   `SessionController::applyReloadStage` stops the loop, runs `applyReload`
+   `TIAppPart::applyReloadStage` stops the loop, runs `applyReload`
    (only the listed steps and registers)
    on the session's thread, restarts the loop (unless frozen), and updates
    the cue card. It then calls `hostDone()`. A posted job would not do: it
@@ -374,7 +350,7 @@ into the keystroke events (`shared_ptr`). This is the order of operations:
 6. `feedQueuedCard` resolves the card:
    - a `mem:` card from its written bank, its `CARD:` block
      (`buildCardBank`, at the current partition), or blank;
-   - a file through `Platform::cardFilePath` and `readCard`, fitted and fed at the side the
+   - a file through `TIFileAccess::cardFilePath` and `readCard`, fitted and fed at the side the
      directive names. A file card stays fitted afterwards; a `mem:` card takes
      a fitted card out and is never fitted itself.
 
@@ -387,9 +363,9 @@ into the keystroke events (`shared_ptr`). This is the order of operations:
 **Controls** (`PrinterTrace:`, `CutPaper:`, `DebugPanel:`, `Freeze:`,
 `FreezeOnStart:`, `Step:`, `Resume:`) take the
 same host-pending path. `Host::control` hops to the UI thread
-(`Listener::controlRequested`), where `SessionController::applyControl` calls
+(`Listener::controlRequested`), where `TIAppPart::applyControl` calls
 what the GUI's button calls (`freeze`, `armPcChange`, `stepKeycode`, …), or
-`Platform::showDebugPanel` for the tab, which is GUI state. While frozen, a
+the `c59.show-debug-panel` topic for the tab, which is GUI state. While frozen, a
 script's keys, reloads and inserted cards wait (`WaitingToPress` /
 `WaitingToApply`); a keyboard tap still goes in at once.
 
@@ -398,9 +374,10 @@ display and AOS.
 
 ## TI-58C Constant Memory
 
-The TI-58C keeps its RAM through power-off. `SessionController` saves the
+The TI-58C keeps its RAM through power-off. `TIAppPart` saves the
 whole RAM and the user's cue card as `ti58c.mem` (`ConstantMemory`; format
-in `DebugAPI.md`) through the platform, which decides where the file lives.
+in `DebugAPI.md`) through `TIFileAccess`, in the save folder the frontend
+names (the Web's: the persistent file system, LIB-15 AC-20).
 
 | When | What |
 |---|---|
@@ -413,11 +390,11 @@ in `DebugAPI.md`) through the platform, which decides where the file lives.
 ## ROM Loading
 
 A frontend looks the ROM files up once at its start (LIB-12):
-`SessionController::create(platform, bundle, …)` calls `cu59::lookUpRoms`
-(`app/ProductRoms.hpp`), the library's `calcu::roms::lookUp` over the full
-set of 24 files with the core's `TIRomReader`. Without the full set no
-controller is made and `Platform::romsMissing` gets the text to show; there
-is no other ROM error. With it, every model switch and module change takes
+it calls `cu59::lookUpRoms` (`app/ProductRoms.hpp`; Qt6, the Swift bridge,
+the Web's `bindings.cpp`), the library's `calcu::roms::lookUp` over the full
+set of 24 files with the core's `TIRomReader`. Without the full set no app
+session is made and the frontend shows `describe(missing)` (the Web as its
+failed start, LIB-15 AC-3); there is no other ROM error. With it, every model switch and module change takes
 its files from the `RomSet` in memory and reads no file. The catalogue's ROM
 entries (`core/TICatalogue.cpp`) name each model's files: three ROM chips
 (Datamath text dumps: header, a `---` line, then `AAAA: WWWW …` rows, words
@@ -444,7 +421,7 @@ and `printer` (`reference/CoreArchitecture.md` § "Component Overview").
 `EmulatorSession` builds its machine with them in the build request
 (`MachinePeripherals`: the module ID, the printer, TRACE's position) and
 changes them under the guard (`setModule`, `setPrinter`,
-`printerControl`). `SessionController` owns what the app session keeps:
+`printerControl`). `TIAppPart` owns what the app session keeps:
 the module ID, whether the printer is connected, TRACE's position
 (`m_printerTrace`: off at the start, never saved, kept across Reset, power
 cycle, Cold boot, a model switch and a detach; C59-6 AC-6, row 59-25) and

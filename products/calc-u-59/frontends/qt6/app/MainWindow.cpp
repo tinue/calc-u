@@ -143,7 +143,7 @@ void MainWindow::saveWindowState() {
 }
 
 void MainWindow::dragEnterEvent(QDragEnterEvent* e) {
-    using Drop = cu59::SessionController::DropAction;
+    using Drop = cu59::DropAction;
     const auto urls = e->mimeData()->urls();
     if (urls.size() != 1) return;
     const Drop action = m_controller.dropAction(urls.first().toLocalFile());

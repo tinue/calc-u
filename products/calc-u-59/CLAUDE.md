@@ -109,12 +109,12 @@ landscape on a large screen) — its column in
   `frontends/web/build.sh && frontends/web/run-tests.sh` (`frontends/web/dist/` is gitignored; CI builds it).
   `app/` is C++20 (ADR 0005) and standard-library-only, and runs on one
   thread: the app session's (Qt6's GUI thread, the Swift frontend's
-  `SessionThread`; the Web build's `Threading::Cooperative` until M-34).
+  `SessionThread`, the Web's Worker since M-34).
 - **Settings** are declared once, in `app/Settings.hpp` (`settingsDecl()`:
   section, key, default, accepted values; typed calls over the library's
   `calcu::settings::SettingsFile`, LIB-9), and live in `Calc-U-59.ini`.
   `frontends/swift/App/AppSettings.swift` (through `Bridge/TISettings`),
-  `frontends/qt6/app/AppSettings.hpp` and `frontends/web/bindings.cpp` use
+  `frontends/qt6/app/AppSettings.hpp` and the Web's `app/TIWebPart` use
   them; no frontend keeps a setting in UserDefaults, QSettings or
   `localStorage` (CTest `CalcU59NoPlatformSettings`, allow-list
   `tools/platform_stores_allowed.txt`).

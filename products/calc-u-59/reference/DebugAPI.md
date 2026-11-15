@@ -10,9 +10,9 @@ The debugger has three layers:
 |---|---|---|
 | Core | `TIMachine` and the adapters of `core/TIAdapters.hpp` (`TIDebugTargetAdapter`, `TIDebugPanelAdapter`, `TIMemoryAdapter`; C59-1, until LIB-10 59 / C59-4 / C59-2), over `TMC0501` (`core/`) | RAM, program and SCOM access, the trace ring, step-boundary latch, debug events, the ASM overlay, breakpoints |
 | Shared | `EmulatorSession`, `DebugModel`, `DebugSnapshots`, `DebugText`, `DebugLog`, `TraceWriter`, `AsmOverlay` (`app/`) | Freeze and step, the panels' data and text, the LOG, trace files |
-| GUI | Swift: `EmulatorViewModel` → `frontends/swift/Bridge/TIAppSession` (commands and the `c59.debug.*` topics), views in `frontends/swift/App/Views/` (`DebugView`, `LiveDebugView`, `CPUInspectorView`). Qt: `EmulatorController`, widgets in `frontends/qt6/app/debug/` (`DebugPanel`, `LiveDebugWidget`, `CpuInspectorWidget`, `RomHeatmapWidget`, `AsmOverlayBox`, `LogWidget`). Web: `WebController` (`frontends/web/bindings.cpp`), `frontends/web/src/Debugger.jsx` (`LiveDebug`, `FreezeHeader`, `CpuInspector`, `Heatmap`, `AsmOverlay`, `LogTab`; wide layout only) | Drawing only |
+| GUI | Swift: `EmulatorViewModel` → `frontends/swift/Bridge/TIAppSession` (commands and the `c59.debug.*` topics), views in `frontends/swift/App/Views/` (`DebugView`, `LiveDebugView`, `CPUInspectorView`). Qt: `EmulatorController`, widgets in `frontends/qt6/app/debug/` (`DebugPanel`, `LiveDebugWidget`, `CpuInspectorWidget`, `RomHeatmapWidget`, `AsmOverlayBox`, `LogWidget`). Web: `TIWebPart` (`frontends/web/bindings.cpp`), `frontends/web/src/Debugger.jsx` (`LiveDebug`, `FreezeHeader`, `CpuInspector`, `Heatmap`, `AsmOverlay`, `LogTab`; wide layout only) | Drawing only |
 
-All three GUIs call the same `SessionController` methods; the panels draw what
+All three GUIs call the same `TIAppPart` methods; the panels draw what
 `DebugModel` holds. Which panel lives where: `FrontendParity.md`
 § "Debugger". The session and controller: `SharedArchitecture.md`. Panel
 behaviour from a user's point of view: the user guide,
@@ -59,12 +59,13 @@ writes what the ROM's Op 17 writes, with no key simulation:
 
 ## Freeze / Step Controls
 
-The freeze state lives in `EmulatorSession`; `SessionController` mirrors it
-and rebuilds the panels (`DebugModel`). The web client's `WebController`
-exposes these under the `SessionController` names, except `resume()`, which
-it calls `resumeFrozen` (its `resume` ends a page suspend).
+The freeze state lives in `EmulatorSession`; `TIAppPart` mirrors it
+and rebuilds the panels (`DebugModel`). The frontends send them as the
+`c59.*` commands of `app/TIAppPart.hpp` (`c59.freeze`, `c59.resume`, …);
+the web client's `src/engine.js` keeps 2.3.0's method names for its
+components and calls `resume()` `resumeFrozen` there.
 
-| `SessionController` | Swift `EmulatorViewModel` | Qt `EmulatorController` |
+| `TIAppPart` | Swift `EmulatorViewModel` | Qt `EmulatorController` |
 |---|---|---|
 | `freeze(owner)` | `freeze(from:)` | `freeze(owner)` |
 | `resume()` | `unfreeze()` | `unfreeze()` |
@@ -109,7 +110,7 @@ reports changes as `RunStateChanged`.
   the session's thread **before** any listener runs, so the key sequencer
   never sees a stopped machine as running. Then
   `Listener::debugStateChanged()` and `frozenViewReady(generation, FreezeFired)`.
-- `SessionController::onFrozenView` runs on the UI thread and builds the
+- `TIAppPart::onFrozenView` runs on the session's thread after the call and builds the
   view only if the session is still frozen with the same generation. A
   RESUME or new freeze in between makes the event stale and it is dropped;
   so are events from a session replaced by a model switch.
@@ -323,11 +324,11 @@ or `"BR 0x03A2"`.
 ## LOG tab
 
 The LOG is a `RingLog` (`app/DebugLog.hpp`, 2000 lines) held by
-`DebugModel` and kept across model switches. `SessionController` writes the
+`DebugModel` and kept across model switches. `TIAppPart` writes the
 dumps into it and refreshes `logText()` at 1 Hz (Swift `vm.debugDisplayText`,
 Qt `logText()`).
 
-| `SessionController` | Swift | Output |
+| `TIAppPart` | Swift | Output |
 |---|---|---|
 | `dumpVars()` | `debugDumpVars()` | Non-zero data registers of the partition, sorted: `V05 = 2.5`, TI-58C extras as `H01` |
 | `dumpScom()` | `debugDumpSCOM()` | 16 rows, nibble 15 first: `S00 0000000000000000` |
@@ -335,10 +336,10 @@ Qt `logText()`).
 | `dumpMemory()` | `debugDumpMemory()` | Every non-zero RAM register by physical index, in the `ti58c.mem` register-line format |
 | `cycleDebugLevel()`, `clearLog()` | `toggleDebug()`, `clearDebug()` | Level Off → Info → Debug → Off; clear |
 
-Qt and the web client have the same names as `SessionController` for the
+Qt and the web client have the same names as `TIAppPart` for the
 four dumps and the level. The level
 is passed to the core (`TIDebugPanelAdapter::setDebugLevel`). Shared code logs
-through `SessionController` (or `EmulatorSession::Listener::logLine`).
+through `TIAppPart` (or `EmulatorSession::Listener::logLine`).
 
 ### Core debug events
 
@@ -372,7 +373,7 @@ Runs hand-assembled TMC0501 code from a debug-only ROM region, for
 ROM-level experiments. Core: `TIDebugPanelAdapter::loadDebugOverlay`,
 `clearDebugOverlay`, `runDebugOverlay`. Shared: `cu59::parseAsmWords` and
 `runAsmOverlay` (`app/AsmOverlay.hpp`), driven by
-`SessionController::loadAsm`, `runAsm`, `clearAsm`.
+`TIAppPart::loadAsm`, `runAsm`, `clearAsm`.
 
 **Address range.** `0x1800–0x1FFF` (2048 words), outside the normal ROM.
 Words are masked to 13 bits.
@@ -496,7 +497,7 @@ the same amount.
 
 ## TI-58C Constant Memory File (`ti58c.mem`)
 
-`SessionController` reads it when a TI-58C starts and writes it when RAM or
+`TIAppPart` reads it when a TI-58C starts and writes it when RAM or
 the user's cue card changed (`app/ConstantMemory`), through
 `Platform::readConstantMemory` / `writeConstantMemory`; each app chooses
 the location. When it is written: `SharedArchitecture.md`.

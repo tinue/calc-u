@@ -133,7 +133,7 @@ user's own; `--UITesting` runs use the file in memory).
 | AC-20 | Pass | `lib9_ac20_startup_last_without_last_model_is_ti59` (also EC-1 and AC-9: a value that is neither `last` nor a model) |
 | AC-21 | Pass | `lib9_ac21_first_start_defaults_and_writes_file` (the file at its place with its version and every key, written at the first open; a change read again at the next start); CTest `CalcU59NoPlatformSettings` (allow-list `tools/platform_stores_allowed.txt`: the bookmark key, the page's two entries until M-34, the Playwright check); Longer: Playwright `lib9_ac21_settings_in_the_ini_file_survive_a_reload` (2.3.0's `calcu59/startupModel` is not read; the INI text is stored and a change survives a reload) |
 | AC-22 | Pass | `lib9_ac22_no_key_holds_a_module`; no frontend stores or reads the module (`saveModuleID` no-op, A-6; the start module is `cu59::kStartModuleID`) |
-| AC-23 | Later | M-34 (prepared: settings through `SettingsFile`, adapter A-5) |
+| AC-23 | Pass (M-34) | the Web frontend's settings are `/persist-calc-u-59/settings/Calc-U-59/Calc-U-59.ini` in its persistent file system (LIB-15 59; adapter A-5 `WebIniMirror` gone): `web_part_tests.cpp` `lib9_ac23_web_settings_in_the_ini_file` (Frequent); Playwright `storage.spec.js` `lib9_ac23 no calcu59 key read or written` (every `Storage` call of a run with a settings change and a model switch recorded: none with the prefix `calcu59/`) and `ac20 settings survive a page load, in Calc-U-59.ini` (the INI in IndexedDB holds the change, the reload starts with it) (Longer) |
 | AC-24 | Pass | `lib9_ac24_trace_location_app_support_icloud_folder` (on `Paths` with `FrontendKind::Swift`) |
 | AC-25 | Pass | `lib9_ac25_one_declaration_for_every_frontend` (keys another frontend has no use for are kept on write; the launch values of the UI tests); the three frontends build against the one declaration |
 | AC-34 | Pass | the bookmark is the only allowed platform-store use (`CalcU59NoPlatformSettings`); `AppSettings.traceDirectory()` resolves it and passes its folder as `HostDirs::chosenTraceFolder` (`lib9_ac24_…` covers the rule) |
@@ -162,6 +162,15 @@ run above; on the Web the Playwright case).
 - `reference/WebClient.md` already says where the Web settings are now
   (it named `SettingsKeys.hpp`, which is gone); its full update stays with
   M-34.
+
+**M-34 (2026-11-15, branch `m34-web-59`).** AC-23 passes (row above): the Web
+frontend runs on the library's shell, its settings file is a file of the
+persistent file system, and no frontend source reads or writes a
+`localStorage` entry (the allow-list keeps only the Playwright check that
+2.3.0's entries are not read). The Calc-U-59 column is Done: every criterion
+of it passes (AC-19–25, AC-34, AC-35). What the Web page offers of the
+settings (startup model, trace size, keyboard feedback) are `TIWebPart`'s
+commands; the last used model is written when the model changes.
 
 ## Calc-U-1600 (M-30, 2026-11-15)
 

@@ -211,9 +211,10 @@ test('Settings: the startup model is kept', async ({ page }) => {
   await expect(page.getByLabel('Calculator model')).toHaveValue('1');
 });
 
-// LIB-9 AC-21, AC-25 (design T-28; adapter A-5 until M-34): the settings are
-// Calc-U-59.ini, whose text the page keeps in one entry; 2.3.0's entries are
-// not read, and a reload keeps a change.
+// LIB-9 AC-21, AC-25 (design T-28): the settings are Calc-U-59.ini, since
+// M-34 a file of the persistent file system (LIB-9 AC-23; storage.spec.js
+// reads it there); 2.3.0's entries in the page's storage are not read, and a reload
+// keeps a change.
 test('lib9_ac21_settings_in_the_ini_file_survive_a_reload', async ({ page }) => {
   await page.goto('./?layout=wide');
   await page.evaluate(() => {
@@ -223,14 +224,10 @@ test('lib9_ac21_settings_in_the_ini_file_survive_a_reload', async ({ page }) => 
   });
   await gotoReady(page);
   await expect(page.getByLabel('Calculator model')).toHaveValue('0');   // the defaults: TI-59
-  const fresh = await page.evaluate(() => window.localStorage.getItem('calcu59/Calc-U-59.ini'));
-  expect(fresh).toMatch(/^format-version = 1\n/);
-  expect(fresh).toContain('model = last');
   await page.getByRole('button', { name: 'Settings' }).click();
   await page.getByLabel('Startup Calculator').selectOption({ label: 'TI-58C' });
   await page.getByRole('button', { name: 'Done' }).click();
-  const ini = await page.evaluate(() => window.localStorage.getItem('calcu59/Calc-U-59.ini'));
-  expect(ini).toContain('model = TI-58C');
+  await page.waitForTimeout(1000);   // kept within a second (LIB-15 AC-6)
   await gotoReady(page);
   await expect(page.getByLabel('Calculator model')).toHaveValue('2');
 });
@@ -493,7 +490,7 @@ test('the standalone app precaches all three models', async ({ page }) => {
     const name = names.find((n) => n.startsWith(`calcu59-app ${reg.scope} `));
     return name ? (await (await caches.open(name)).keys()).map((r) => r.url) : [];
   });
-  for (const f of ['../calc.js', '../wasm/ti59-core.wasm', '../img/ti58_base.png', '../wasm/roms/CD2400.txt']) {
+  for (const f of ['../calc.js', '../wasm/ti59-core.wasm', '../img/ti58_base.png', '../bundle/CD2400.txt']) {
     expect(cached).toContain(new URL(f, page.url()).href);
   }
 });

@@ -7,7 +7,7 @@
 
 // The card and constant-memory files on the session's thread (LIB-3 59
 // design §5, adapter TIFileAccess; LIB-3 AC-30): what each frontend's
-// SessionController::Platform did, now in the save folder the host names
+// 2.3.0's SessionController::Platform did, now in the save folder the host names
 // (LIB-9's Paths), through a FileIO the host hands in: plain file I/O for
 // Qt6 and the tests, the Swift bridge's coordinated I/O for iCloud (C59-5
 // D-6). Removed in M-54 (C59-3, constant memory) and M-55 (C59-7, cards).

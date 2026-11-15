@@ -8,14 +8,8 @@
 # frontend keeps outside the settings file.
 swift/App/AppSettings.swift: forKey: traceFolderBookmarkKey
 
-# Until M-34 (LIB-15 59): the page keeps two entries, the settings file's
-# text `calcu59/Calc-U-59.ini` (adapter A-5) and the TI-58C constant memory
-# `calcu59/ti58c.mem` (C59-3), through these two helpers.
-web/src/engine.js: window.localStorage.getItem(STORAGE_PREFIX + key)
-web/src/engine.js: window.localStorage.setItem(STORAGE_PREFIX + key, value)
-
 # The Playwright test that checks that 2.3.0's entries are not read and the
-# settings are in the INI file (AC-21).
+# settings are in the INI file (AC-21; since M-34 the page keeps no entry,
+# LIB-9 AC-23, LIB-15 59).
 web/tests/play-calculator.spec.js: window.localStorage.clear();
 web/tests/play-calculator.spec.js: window.localStorage.setItem('calcu59/
-web/tests/play-calculator.spec.js: window.localStorage.getItem('calcu59/Calc-U-59.ini')

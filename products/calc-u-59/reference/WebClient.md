@@ -6,9 +6,11 @@
 > the code wins where they disagree.
 
 The web client is the third GUI on `core/` + `app/`, next to the Swift
-app (`frontends/swift/App/`) and the Qt6 app (`frontends/qt6/`): the real `cu59::SessionController`
-compiled to WebAssembly and run single-threaded in a Web Worker, with React
-components that only draw what it posts and forward input to it. It has the
+app (`frontends/swift/App/`) and the Qt6 app (`frontends/qt6/`): the library's app session with
+`cu59::TIAppPart`, as every frontend hosts it, compiled to WebAssembly and run
+single-threaded in a Web Worker on the library's Web shell (`library/web/`,
+LIB-15; since M-34), with React components that only draw what it sends and
+forward input to it. It has the
 apps' features (`FrontendParity.md`, the Web column) in two layouts:
 
 - **wide** — calculator | printer | debugger, as the macOS window and the
@@ -18,14 +20,16 @@ apps' features (`FrontendParity.md`, the Web column) in two layouts:
 
 The installable PWA (`app/`) picks between them by the window's size.
 
-Deliberately different from the apps: the LED is Classic only; magnetic
-cards live in an in-memory folder for the page session (upload one to fit
-it, download one to keep it); the settings are `Calc-U-59.ini` (LIB-9),
-whose text the page keeps in `localStorage` as `calcu59/Calc-U-59.ini`
-until M-34 moves it to IndexedDB, and the TI-58C memory as
-`calcu59/ti58c.mem`; traces are written to Emscripten's MEMFS
-(`/traces`) and handed to the page as downloads. Like the apps, it starts
-with the PC-100C connected.
+Deliberately different from the apps: the LED is Classic only; the files
+it keeps are in the browser's IndexedDB, the persistent file system of the
+library's shell (database `/persist-calc-u-59`, LIB-15 AC-5, AC-20): the
+settings file `settings/Calc-U-59/Calc-U-59.ini` (LIB-9 AC-23) and the save
+folder `Calc-U-59/` with the magnetic cards (upload one to fit it, download
+one to keep a copy) and `ti58c.mem`; nothing is in `localStorage`. Only the
+first copy of the client in a browser writes them; a second tab (or a
+second client on one page) works in memory and says so (AC-8, AC-21; ledger
+59-8). Traces are written to Emscripten's MEMFS (`/traces`) and handed to
+the page as downloads. Like the apps, it starts with the PC-100C connected.
 
 It is built into a self-contained folder, `frontends/web/dist/`, that does not know
 where it is hosted. The website (https://calc-u.org/59/, repository
@@ -34,16 +38,16 @@ repository, or a local `frontends/web/dist/` for testing) and mounts the calcula
 from it. This document is the contract between the two.
 
 ```
-frontends/web/src/* ──(Babel, in Node)──▶ calc.js: PlayCalculator ─┐ postMessage
-                                                         ▼
-frontends/web/calc-engine-worker.js ── wasm/ti59-core.{js,wasm} ◀── frontends/web/bindings.cpp + app/ + core/ (emcc)
+library/web/src/* + frontends/web/src/* ──(Babel, in Node)──▶ calc.js: PlayCalculator ─┐ LIB-3 messages (postMessage)
+                                                                             ▼
+calc-engine-worker.js → library-worker.js ── wasm/ti59-core.{js,wasm} ◀── bindings.cpp + app/ + core/ + library (emcc)
 ```
 
 ## Layout of `frontends/web/`
 
 | Path | Role (Qt counterpart) |
 |---|---|
-| `src/engine.js` | Starts the worker, keeps what it posts in a store the components subscribe to (`useEngine`), writes `localStorage`, hands out downloads (`EmulatorController`) |
+| `src/engine.js` | The components' view of the library's shell (`createShell()`): translates their calls to the session's commands and requests and its topics to the slices they read (`useEngine`), hands out downloads; decides nothing (`EmulatorController`) |
 | `src/painters.js` | Canvas painting: the LED (`LedRenderer`), the cue card's draw list (`CueCardRenderer`), the printer strip (`PrinterWidget::paintStrip`) |
 | `src/CalculatorFace.jsx` | Artwork, LED and cue card overlays, pressed-key effect; pointer input; transparent key buttons for assistive technology (`KeyboardWidget`) |
 | `src/ControlBar.jsx` | Reset / clean reset, model picker, card buttons, Preset, Settings (`ControlBar`) |
@@ -51,27 +55,32 @@ frontends/web/calc-engine-worker.js ── wasm/ti59-core.{js,wasm} ◀── fr
 | `src/Printer.jsx` | The PC-100C panel (`PrinterWidget`) |
 | `src/Debugger.jsx` | CALCULATOR / CPU / LOG tabs, heatmap, ASM overlay (`debug/*`) |
 | `src/PlayCalculator.jsx` | The component: the two layouts, focus and physical keyboard, drag and drop, keyboard feedback (`MainWindow`) |
-| `calc-engine-worker.js` | The Web Worker: loads the engine and ROM files, ticks at 60 Hz, passes messages (protocol in its header) |
-| `bindings.cpp` | The adapter to `app/` (`WebController`, embind) — the web's `frontends/qt6/app/EmulatorController` |
+| `calc-engine-worker.js` | The product's configuration of the library's Web Worker (`library/web/src/worker.js`): the engine's name, its factory, the persistent mount `/persist-calc-u-59` and the lock `calcu59-storage` |
+| `bindings.cpp` | The factory of the app session (`CALCU_WEB_PRODUCT(CalcU59Host, …)`): the ROM lookup over `/bundle`, the settings file, `TIAppPart` and `TIWebPart`; the library's `WorkerHost` translates the messages |
 | `calc.css` | Tokens, fonts and every rule the client needs |
-| `fonts/` | Archivo (WOFF2, SIL OFL 1.1), for the cue card |
-| `app/` | The installable PWA: `index.html`, `app.jsx`, `app.css`, `sw.js`, `engine-worker.js`, `manifest.json` |
-| `index.html` | Demo and test page, sized to the window: `?layout=wide|portrait`, also `width`, `height`, `model`, `module`, `preset` |
+| `fonts/` | Archivo (WOFF2, SIL OFL 1.1), for the cue card, as the family `Calc-U Archivo` |
+| `app/` | The installable PWA's own files: `index.html`, `app.css`, `manifest.json`; its page, service worker and worker entry are the library's (`library/web/app/`) |
+| `index.html` | Demo and test page, sized to the window: `?layout=wide|portrait`, also `width`, `height`, `model` (by its name), `preset` (a path in `presets/`) |
 | `presets.json` | The presets the preset picker offers (file name, title): every file directly in `examples/`, none from its subdirectories. A new example there needs a line here. `build.js` copies them at build time to `dist/presets/` |
 | `vendor/` | React 18 and ReactDOM (shipped), Babel (build only), ReactDOMServer (tests only) |
 | `build.sh`, `build.js` | The build (below) |
 | `tests/`, `run-tests.sh`, `playwright.config.js`, `package.json` | Playwright tests |
 
-### What the worker posts
+### What the session sends
 
-`bindings.cpp` forwards every `SessionController` change flag
-(`Platform::changed`) as one message per kind, already in the form the page
-draws: LED cells (`ledCell`), the cue card as a draw list laid out by
-`cueCardGeometry` and friends for the size the page reports, printer lines
-with their heights (`PrinterGeometry::lineHeightUnits`) from the first one
-that changed, debug rows formatted by `DebugText`, heatmap steps
-(`heatStep`). Static data — models, modules, `KeyboardLayout` rects, the
-printer geometry and font, the heatmap colours — comes once with `ready`.
+Everything that crosses `postMessage` is a LIB-3 message in the library's
+JS form (commands, requests, replies, state and stream topics; LIB-15 AC-22).
+`app/TIWebPart` sends what changed as the `c59.web.*` topics, already in the
+form the page draws: LED cells (`ledCell`, as float32 bytes), the cue card as
+a draw list laid out by `cueCardGeometry` and friends for the size the page
+reports, printer lines with their heights (`PrinterGeometry::lineHeightUnits`)
+from the first one that changed, debug rows formatted by `DebugText`, heatmap
+steps (`heatStep`), the card files of the save folder, the settings. Static
+data — models, modules, `KeyboardLayout` rects, the printer geometry and
+font, the heatmap colours — is the request `c59.static-data`, the LED shapes
+`c59.led-geometry`, the PWA's layout rules `c59.mobile-rules` (adapter W59-1,
+`app/WebPageData`, until M-57). The start is the shell's `start` command with
+the `model` and `preset` props.
 The pointer is sent as canvas-normalized points; the hit test (widened
 rects, the display's full-speed hold, drag to another key) runs in C++ in
 `KeyboardLayout`'s `PointerTracker`, as in `frontends/qt6/app/KeyboardWidget`.
@@ -90,22 +99,26 @@ version in the repository's `.github/workflows/calc-u-59.yml`, job `web`),
 1. builds the CMake target `calcu59_web` (`core/` + `app/` + `bindings.cpp`)
    in the repository root's `build/web` tree, configured once with
    `emcmake` (ADR 0003; the flags are in the product's `CMakeLists.txt`):
-   single-threaded (`Threading::Cooperative` — a static host can't be relied
-   on to send the COOP/COEP headers `SharedArrayBuffer` needs), with
-   `-fwasm-exceptions` (app/ reports file errors with exceptions),
-   `MODULARIZE` as `createTI59CoreModule`, `FS` exported;
+   single-threaded (a static host can't be relied on to send the COOP/COEP
+   headers `SharedArrayBuffer` needs), with `-fwasm-exceptions` (app/
+   reports file errors with exceptions), `MODULARIZE` as
+   `createTI59CoreModule`, `FS` and `IDBFS` exported, the library's glue
+   (`calcu_web_glue`) linked;
 2. copies the full set of ROM files (the 24 of `roms/fetch_roms.sh`, LIB-12
-   AC-9) and `cuecards.txt` from `roms/` to `dist/wasm/roms/`, and the artwork (`ti59_base`,
+   AC-9) and `cuecards.txt` from `roms/` to `dist/bundle/`, and the artwork (`ti59_base`,
    `ti58_base` and the three cue-card templates) from `frontends/swift/App/Assets.xcassets`
    to `dist/img/`;
 3. copies the static files, React, the font and the app icon (derived from
    `frontends/swift/App/AppIcon.icon` by `tools/gen_qt_icons.sh`);
-4. runs `build.js`: compiles the sources with the vendored Babel in Node (no
-   npm dependencies) — `src/*` into one `calc.js` (in `SOURCES` order, with
-   the version stamped in), `app/app.jsx` into `app/app.js` — copies the
-   presets from `examples/`, stamps the service worker's cache name with a
-   hash of what it precaches (and fails if a precached file is missing), and
-   writes `MANIFEST.json`.
+4. runs `build.js` on the library's build steps (`library/web/build/dist.js`):
+   compiles the library's page side and `src/*` into one `calc.js` (in
+   `SOURCES` order, with the version stamped in) and the library's app page
+   with `PlayCalculator` into `app/app.js`, fails on a selector of
+   `calc.css` outside `.calcu-client` (LIB-15 AC-17), copies the library's
+   worker (`library-worker.js`), service worker and app worker entry, the
+   presets from `examples/`, writes `files.json` (what the worker loads),
+   stamps the service worker with a hash of what it precaches (and fails if
+   a precached file is missing), and writes `MANIFEST.json`.
 
 Re-run it whenever `core/`, `app/`, `roms/` or anything in `frontends/web/` changes.
 CI uploads `dist/` zipped as `Calc-U-59-web-<version>.zip` (artifact
@@ -120,8 +133,9 @@ downloads and pins.
 |---|---|
 | `calc.js` | The calculator components in one closure. Exposes one global, `PlayCalculator`. Needs a global `React` 18 loaded before it |
 | `calc.css` | Everything the calculator needs to look right: tokens, `@font-face`, cue-card rules |
-| `calc-engine-worker.js` | The engine's Web Worker |
-| `wasm/` | `ti59-core.js`, `ti59-core.wasm` and `roms/` |
+| `calc-engine-worker.js`, `library-worker.js` | The engine's Web Worker (the product's configuration, the library's worker) |
+| `wasm/` | `ti59-core.js`, `ti59-core.wasm` |
+| `bundle/`, `files.json` | The ROM full set and `cuecards.txt`; the list of what the worker loads |
 | `img/` | The calculator artwork and cue-card templates |
 | `fonts/` | The WOFF2 files `calc.css` names, with their licences |
 | `presets/` | `manifest.json` (`[{file, title}]`) and the preset files |
@@ -132,7 +146,7 @@ downloads and pins.
 
 Everything else in `dist/` is internal: a host references only `calc.js`,
 `calc.css` and the `PlayCalculator` props. The worker's message protocol,
-the file names under `wasm/`, `img/` and `presets/` may change with any build.
+the file names under `wasm/`, `bundle/`, `img/` and `presets/` and `files.json` may change with any build.
 
 ### Mounting it
 
@@ -152,12 +166,15 @@ the file names under `wasm/`, `img/` and `presets/` may change with any build.
 | `layout` | `"portrait"` | `"wide"` (calculator, printer, debugger side by side), `"portrait"` (calculator and printer pages) or `"auto"` (by the window's size, the PWA's choice: needs `width` and `height`) |
 | `width` | the parent's width | CSS px the client may take. Wide: the calculator artwork takes 40 % (at most 420 px without `height`, never below 400 px), the printer 220–320 px, the debugger the rest (at least 220 px) |
 | `height` | from the width | CSS px. Without it the height follows the artwork's aspect plus the 50 px bar; with it the artwork fits inside (the PWA passes `#root`'s content box) |
-| `keyboard` | `false` | The calculator is focusable and takes the physical keyboard while focused (`SharedArchitecture.md` § "Physical Keyboard Mapping") |
+| `keyboard` | `true` | The calculator is focusable and takes the physical keyboard while focused (`SharedArchitecture.md` § "Physical Keyboard Mapping"); `false` turns it off (LIB-15 AC-16) |
 | `settings` | `true` | Show the Settings gear |
-| `model` | stored setting | Start with this model: `"TI-59"`, `"TI-58"` or `"TI-58C"` |
-| `module` | stored setting | Start with this Solid State module id (e.g. `"ML"`) |
-| `preset` | none | Load this file from `presets/` once started |
+| `model` | stored setting | Start with this model, by its name: `"TI-59"`, `"TI-58"` or `"TI-58C"`; another name is a notice and the client starts as without it |
+| `preset` | none | Start with this bundled preset, by its path in `presets/` (`"sum.ti59"`); a path that is not there is a notice |
 | `workerUrl` | `calc-engine-worker.js` beside `calc.js` | Start the engine through this script. The PWA's, for its service worker; a host leaves it out |
+
+`model`, `preset` and `workerUrl` are read once, at mount (LIB-15 EC-5).
+2.3.0's `module` prop is gone (LIB-15 AC-19): a host page that wants
+another module names a preset that sets it.
 
 The client has a minimum size, as the apps' windows do: the narrowest
 artwork whose control bar still fits (400 px wide, 264 px portrait), plus
@@ -176,14 +193,17 @@ Requirements on the host:
   as a module. It finds the rest of `dist/` from its own URL.
 - **Same origin.** The worker is started from `calc.js`'s directory, and a
   browser only starts a worker from the page's own origin.
-- **Served over HTTP(S).** The worker fetches every ROM file of the full
-  set at init (`romFileNames()`) into the engine's `/roms`, where the ROM
-  lookup finds them (LIB-12); `file://` doesn't allow `fetch`. A missing or
-  bad file shows the lookup's text and no calculator (worker message
-  `romsMissing`); a file that cannot be fetched is a failed start.
+- **Served over HTTP(S).** The worker fetches every file of `files.json`
+  at init (the ROM full set into `/bundle`, where the ROM lookup finds them,
+  LIB-12; the presets into `/presets`); `file://` doesn't allow `fetch`. A
+  missing or bad ROM file shows the lookup's text and no calculator (the
+  failed start of LIB-15 AC-3: "Calc-U-59 could not start: …"); a file that
+  cannot be fetched is a failed start too. Over plain HTTP (not localhost)
+  every copy writes the persistent file system (LIB-15 EC-1).
 
-Stable hooks a host's tests may rely on: the root element's class
-`calcu-device` with `data-layout="wide|portrait"`, the artwork canvas
+Stable hooks a host's tests may rely on: the root element's classes
+`calcu-client calcu-device` with `data-layout="wide|portrait"` (its
+`calcuEngine` property is the product's own test hook), the artwork canvas
 `canvas.calcu-keyboard`, the LED `canvas.calcu-led`, the cue card
 `canvas.cuecard` (its `aria-label` holds the card's text), a fitted card's
 corners as the buttons `Feed card side 1` and `Feed card side 2`, the key buttons
@@ -199,10 +219,11 @@ and the `Calculator model` select.
 
 - `calc.js` captures `document.currentScript.src` while it runs and resolves
   the worker, the artwork and the presets against that directory
-  (`CALC_BASE` in `src/engine.js`).
-- The worker resolves `wasm/…` against its own URL, or `CALC_ROOT` when
-  started through `app/engine-worker.js`; the engine's `.wasm` is pointed back
-  there with `locateFile`.
+  (`CALC_BASE`, the library's `src/base.js`).
+- The worker resolves `wasm/…`, `bundle/…`, `presets/…` and `files.json`
+  against its own URL, or `CALC_ROOT` when started through
+  `app/engine-worker.js`; the engine's `.wasm` is pointed back there with
+  `locateFile`.
 - `app/` refers to `../calc.js`, `../calc.css`, `../vendor/…` relatively; its
   manifest's `start_url` and `scope` are `./`; the service worker is
   registered relative to `app/app.js` and its precache list is relative to
@@ -227,7 +248,9 @@ leaks no globals besides `PlayCalculator`.
 `calc.css` defines its tokens (the apps' dark chrome colours from
 `frontends/qt6/app/ChromeStyle.hpp`, fonts) on `.calcu-client` — the calculator's root
 element and the PWA's `<body>` — not on `:root`, so the host's own tokens
-neither leak in nor get overridden. Sizes that follow the width are inline
+neither leak in nor get overridden; every selector is under `.calcu-client`
+(LIB-15 AC-17; `build.js` fails on one that is not), and the font family is
+`Calc-U Archivo`, a name no host page uses. Sizes that follow the width are inline
 styles; the host styles only its own layout around the client.
 
 ### The PWA (`app/`)
@@ -235,13 +258,13 @@ styles; the host styles only its own layout around the client.
 `app/index.html` mounts `PlayCalculator` with `layout="auto"`, the keyboard
 and an install banner. It follows the window as the iOS app does (Shared
 `mobileLayout`, `mobilePrinterWidth`, `mobileBarLabels`, through
-`WebController::mobileRules`): pages when taller than wide; calculator,
+the request `c59.mobile-rules`): pages when taller than wide; calculator,
 printer and debugger from 820 × 560 px; calculator and printer below that
 (a phone in landscape). The manifest's orientation is `any`: Safari can't lock
 one, so the layout adapts instead. A browser can't see a fold, so a half-open
 foldable counts as its whole window. WebKit in a Home Screen app returns from landscape
 with the document scrolled by the status bar's height but drawn unscrolled, so
-touches land too low; `app.jsx` resets the scroll. Only an installed app in the
+touches land too low; the library's `app.jsx` resets the scroll. Only an installed app in the
 iOS simulator or on a device shows it, not Playwright. `#root` is fixed to the viewport and a
 `ResizeObserver` sizes the calculator to its content box (inside the safe
 area), which also catches insets arriving late; the status bar is opaque,
@@ -256,13 +279,14 @@ an embedded client starts that file directly, and stays outside this service
 worker even on an origin where the app is installed, so it never gets a cached
 engine older than its `calc.js`. `tests/offline.spec.js` starts the app with the
 server gone, in Chromium and WebKit: `context.setOffline()` isn't enough, as the
-browser's HTTP cache then answers. `build.js` adds everything in
-`wasm/roms/` and the presets (from `presets.json`) to the list. A
-model switch reads its ROM with a synchronous request from the worker, which the
-service worker answers from the cache. The cache is named
-`calcu59-app <scope> <hash>`: a new build is a new cache, and the old one of
-the same scope is deleted on activation — other caches on the origin (the
-host's, another copy of the client) are left alone.
+browser's HTTP cache then answers. The library's `stampServiceWorker` adds
+everything of `files.json` (the ROMs, the presets) to the list; the worker
+loads them all at its start. The cache is named
+`calcu59-app <scope> <hash>`: a new build is a new cache, used from the
+app's next start (ledger 59-31), and the old one of the same scope is
+deleted on activation — other caches on the origin (the host's, another
+copy of the client) are left alone. The service worker never touches the
+persistent file system (IndexedDB).
 
 ### `MANIFEST.json`
 

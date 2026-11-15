@@ -1,63 +1,85 @@
-// The engine: owns calc-engine-worker.js (the WASM SessionController) and
-// keeps what it posts in a small store the components subscribe to — the
-// web's Qt6/app/EmulatorController. Display frames bypass the store: the
-// LED canvas repaints from `frames`, once per animation frame, without a
-// React render. The settings file's text (Calc-U-59.ini, LIB-9; adapter A-5
-// until LIB-15 59) and the TI-58C constant memory the worker asks to keep go
-// to the page's storage, one entry each; no other entry is read.
-// Created in an effect only (the website prerenders without a Worker).
+// The components' view of the library's Web shell (LIB-15 59, M-34):
+// createShell() starts the library's worker, which hosts the app session
+// (frontends/web/bindings.cpp, app/TIAppPart, app/TIWebPart); this file only
+// translates -- a component's call or request to a LIB-3 command or request
+// of the session, and the topics the session sends to the slices the
+// components read (spec AC-22). It decides nothing. Until LIB-14 59 (M-57)
+// rewrites the components on the family's component set, they keep the
+// names they had (engine.call("startMachine", 1)), as Calc-U-1600's do.
+//
+// The LED canvas repaints from `frames` (the `c59.web.display` topic), once
+// per animation frame, without a React render. Created in an effect only (a
+// host page may prerender without a Worker). No entry of the page's storage (LIB-9 AC-23):
+// the settings, the cards and ti58c.mem are files of the persistent file
+// system the worker keeps (LIB-15 AC-5, AC-20).
 
-// The directory calc.js was loaded from: the worker, the engine, the
-// artwork and the presets sit beside it, wherever the client is hosted.
-// Captured while the script runs (document.currentScript is null
-// afterwards); without one — a server-side prerender — relative to the page,
-// which a render never uses.
-const CALC_BASE = (() => {
-  const script = typeof document !== "undefined" ? document.currentScript : null;
-  if (script && script.src) return new URL(".", script.src).href;
-  return typeof location !== "undefined" ? new URL(".", location.href).href : "";
-})();
+const PRODUCT = "Calc-U-59";
 
-const STORAGE_PREFIX = "calcu59/";
+const flagOf = (r) => !!(r.done && r.value);
+const valueOf = (r) => r.value;
 
-function storageGet(key) {
-  try { return window.localStorage.getItem(STORAGE_PREFIX + key); } catch (e) { return null; }
-}
-
-function storageSet(key, value) {
-  try { window.localStorage.setItem(STORAGE_PREFIX + key, value); } catch (e) { /* private mode */ }
-}
-
-// The entries the worker starts from (adapter A-5): the settings file's text
-// and the constant memory. Absent ones (a first start, private mode) give
-// the defaults.
-const STORED_ENTRIES = ["Calc-U-59.ini", "ti58c.mem"];
-
-function storedSettings() {
-  const out = {};
-  for (const key of STORED_ENTRIES) {
-    const value = storageGet(key);
-    if (value !== null) out[key] = value;
-  }
-  return out;
-}
-
-function downloadBytes(name, bytes) {
-  const url = URL.createObjectURL(new Blob([bytes], { type: "application/octet-stream" }));
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = name;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  setTimeout(() => URL.revokeObjectURL(url), 1000);
-}
+// Each method of 2.3.0's engine: [kind, LIB-3 name, args → object, reply → result].
+const METHODS = {
+  startMachine: ["command", "c59.start-machine", (model) => ({ model })],
+  resetMachine: ["command", "c59.reset", () => null],
+  cleanResetMachine: ["command", "c59.clean-reset", () => null],
+  changeModule: ["command", "c59.change-module", (id) => ({ id })],
+  setStartupModel: ["command", "c59.web.set-startup-model", (model) => ({ model })],
+  setTraceMaxMB: ["command", "c59.web.set-trace-max-mb", (mb) => ({ mb })],
+  setKeyboardFeedback: ["command", "c59.web.set-keyboard-feedback", (mode) => ({ mode })],
+  pointerDown: ["command", "c59.web.pointer-down", (x, y) => ({ x, y })],
+  pointerMove: ["command", "c59.web.pointer-move", (x, y) => ({ x, y })],
+  pointerUp: ["command", "c59.web.pointer-up", () => null],
+  keyButtonDown: ["command", "c59.web.key-button-down", (row, col) => ({ row, col })],
+  keyButtonUp: ["command", "c59.web.key-button-up", () => null],
+  keyDown: ["command", "c59.web.key-down",
+    (key, produced, isLetter, shift, command) => ({ key, produced, isLetter, shift, command })],
+  keyUp: ["command", "c59.web.key-up",
+    (key, produced, isLetter, shift, command) => ({ key, produced, isLetter, shift, command })],
+  blur: ["command", "c59.web.blur", () => null],
+  fitCard: ["command", "c59.web.fit-card", (name, bytes) => (bytes ? { name, bytes } : { name }), flagOf],
+  fitBlankCard: ["command", "c59.web.fit-blank-card", (name) => ({ name }), flagOf],
+  freshCardFileName: ["request", "c59.web.fresh-card-name", (name) => ({ name }), valueOf],
+  feedSide: ["command", "c59.feed-side", (side) => ({ side })],
+  ejectCard: ["command", "c59.eject-card", () => null],
+  togglePrinterConnection: ["command", "c59.toggle-printer-connection", () => null],
+  togglePrinterTrace: ["command", "c59.toggle-printer-trace", () => null],
+  pressPrinterPrint: ["command", "c59.printer-print", (pressed) => ({ pressed: !!pressed })],
+  pressPrinterAdv: ["command", "c59.printer-adv", (pressed) => ({ pressed: !!pressed })],
+  cutPaper: ["command", "c59.cut-paper", () => null],
+  setLiveDebugEnabled: ["command", "c59.live-debug", (on) => ({ on: !!on })],
+  setCpuDebugEnabled: ["command", "c59.cpu-debug", (on) => ({ on: !!on })],
+  freeze: ["command", "c59.freeze", (cpu) => ({ owner: cpu ? 0 : 1 })],
+  resumeFrozen: ["command", "c59.resume", () => null],
+  armPcChange: ["command", "c59.arm-pc-change", () => null],
+  armScanLoopExit: ["command", "c59.arm-scan-loop-exit", () => null],
+  disarmPcChange: ["command", "c59.disarm-pc-change", () => null],
+  disarmScanLoopExit: ["command", "c59.disarm-scan-loop-exit", () => null],
+  stepKeycode: ["command", "c59.step-keycode", () => null],
+  stepInstruction: ["command", "c59.step-instruction", () => null],
+  clearHeatmap: ["command", "c59.clear-heatmap", () => null],
+  cycleDebugLevel: ["command", "c59.cycle-debug-level", () => null],
+  clearLog: ["command", "c59.clear-log", () => null],
+  dumpVars: ["command", "c59.dump-vars", () => null],
+  dumpScom: ["command", "c59.dump-scom", () => null],
+  dumpProg: ["command", "c59.dump-prog", () => null],
+  dumpMemory: ["command", "c59.dump-memory", () => null],
+  setManualTrace: ["command", "c59.manual-trace", (on) => ({ on: !!on })],
+  loadAsm: ["command", "c59.load-asm", (text, name) => ({ text, name })],
+  runAsm: ["command", "c59.run-asm", () => null],
+  clearAsm: ["command", "c59.clear-asm", () => null],
+  setCueCardSize: ["command", "c59.web.cue-card-size", (width, height) => ({ width, height })],
+  setDebugWidth: ["command", "c59.web.debug-width", (width) => ({ width })],
+  mobileRules: ["request", "c59.mobile-rules", (w, h) => ({ w, h }), valueOf],
+  ticks: ["request", "ticks", () => null, valueOf],   // {ticks, seconds}: the machine's emulated time (LIB-3 AC-39)
+};
 
 const INITIAL_STATE = {
-  data: null,          // staticData(): models, modules, layout, printer, heatmap
-  status: "Starting the emulator…",
+  data: null,          // c59.static-data: models, modules, layout, printer, heatmap
+  status: CALCU_SENTENCES.starting(PRODUCT),
+  persistent: true,    // the persistent file system keeps what is saved (web.storage)
   model: null,         // {model, moduleID}
-  cueCard: null,       // draw list (bindings.cpp cueCard())
+  cueCard: null,       // draw list
   runState: { frozen: false, owner: null, pcArmed: false, scanArmed: false, fullSpeed: false, heldKey: -1, asmActive: false },
   printer: { lines: [], connected: false, trace: false, heightUnits: 0, copyPixelsPerUnit: 1 },
   card: { swiping: false, fileName: "card.U59", cards: [] },
@@ -73,109 +95,146 @@ const INITIAL_STATE = {
   geometry: null,
 };
 
-function createEngine({ model, module, workerUrl }) {
+const float32 = (bytes) => (bytes ? new Float32Array(bytes.buffer, bytes.byteOffset, bytes.byteLength / 4) : null);
+
+// model (its name, "TI-58C") and preset (a path under presets/) start the
+// session with them (the `start` command, LIB-15 N3).
+function createEngine({ model, preset, workerUrl }) {
+  const shell = createShell({ product: PRODUCT, workerUrl, start: { model: model || "", preset: preset || "" } });
   let state = INITIAL_STATE;
   const listeners = new Set();
   const frames = { cells: null, onFrame: null };
   let framePending = false;
-  const stateLoadedWaiters = [];
-  const replyWaiters = new Map();  // by request id
-  let lastRequest = 0;
+  let statusOverride = null;   // a sentence of the page's, or "" once dismissed
+  let seen = { notices: 0, panels: 0, traces: 0 };
+  let printerLines = [];
+  let lastPrinter = null;
+  let dataAsked = false;
+  let data = null;
+  let printer = INITIAL_STATE.printer, printerFor = null;
+  let debugPanel = INITIAL_STATE.debugPanel;
 
   const set = (patch) => {
     state = { ...state, ...patch };
     listeners.forEach((l) => l());
   };
 
-  const worker = new Worker(workerUrl || `${CALC_BASE}calc-engine-worker.js`);
-  const post = (msg) => worker.postMessage(msg);
+  const download = (name, bytes) => { if (bytes) calcuDownload(name, bytes, "application/octet-stream"); };
+  const requestFile = (kind, name) =>
+    shell.request(kind === "card" ? "c59.web.card-bytes" : "c59.web.trace-bytes", { name }).then((r) => download(name, r.value));
 
-  worker.onmessage = (e) => {
-    const m = e.data;
-    switch (m.type) {
-      case "ready": set({ data: m.data, status: "" }); break;
-      case "display":
-        frames.cells = m.cells;
-        if (!framePending) {
-          framePending = true;
-          requestAnimationFrame(() => {
-            framePending = false;
-            if (frames.onFrame) frames.onFrame();
-          });
-        }
-        break;
-      case "model": set({ model: m.model }); break;
-      case "cueCard": set({ cueCard: m.card }); break;
-      case "runState": set({ runState: m.state }); break;
-      case "printer": {
-        const p = m.printer;
-        const lines = state.printer.lines.slice(0, p.from).concat(p.lines);
-        set({ printer: { ...p, lines } });
-        break;
-      }
-      case "card": set({ card: m.card }); break;
-      case "live": set({ live: m.live }); break;
-      case "cpu": set({ cpu: m.rows }); break;
-      case "heatmap": set({ heatmap: m.steps }); break;
-      case "log": set({ log: m.log }); break;
-      case "asm": set({ asm: m.asm }); break;
-      case "traces": set({ traces: m.traces }); break;
-      case "traceReady": post({ type: "traceBytes", name: m.name }); break;
-      case "traceFile":
-      case "cardFile":
-        if (m.bytes) downloadBytes(m.name, m.bytes);
-        break;
-      case "settings": set({ settings: m.settings }); break;
-      case "store": storageSet(m.key, m.value); break;
-      case "debugFont": set({ debugFont: m.size }); break;
-      case "debugPanel": set({ debugPanel: { panel: m.panel, n: state.debugPanel.n + 1 } }); break;
-      case "geometry": set({ geometry: m.geometry }); break;
-      case "stateLoaded": {
-        set({ status: m.errors && m.errors.length ? m.errors.join("\n") : "" });
-        const resolve = stateLoadedWaiters.shift();
-        if (resolve) resolve(m.errors || []);
-        break;
-      }
-      case "reply":
-        replyWaiters.get(m.id)(m.value);
-        replyWaiters.delete(m.id);
-        break;
-      case "dropRejected": set({ status: `${m.name}: not a .ti59, .ti58, .ti58c, .u59 or .bin file` }); break;
-      case "error": set({ status: m.message }); break;
-      case "romsMissing": set({ status: m.message, romsMissing: true }); break;
-      default: break;
+  const onShell = () => {
+    const s = shell.getState();
+    const t = s.topics;
+    const streams = s.streams;
+    if (s.start === "running" && !dataAsked) {
+      dataAsked = true;
+      shell.request("c59.static-data", null).then((r) => { data = r.value; onShell(); });
     }
+    const display = t["c59.web.display"];
+    if (display && display !== frames.bytes) {
+      frames.bytes = display;
+      frames.cells = float32(display);
+      if (!framePending && typeof requestAnimationFrame !== "undefined") {
+        framePending = true;
+        requestAnimationFrame(() => {
+          framePending = false;
+          if (frames.onFrame) frames.onFrame();
+        });
+      }
+    }
+    // The printer topic carries the lines from the first one that changed.
+    const p = t["c59.web.printer"];
+    if (p && p !== lastPrinter) {
+      lastPrinter = p;
+      printerLines = printerLines.slice(0, p.from).concat(p.lines);
+    }
+    // A manual trace that ended is offered as a download.
+    const ready = streams["c59.web.trace-ready"] || [];
+    for (const r of ready.slice(seen.traces)) requestFile("trace", r.name);
+    seen.traces = ready.length;
+
+    // The status line: a failed start (AC-3), else the newest notice (an
+    // error, the storage sentence of AC-8) until it is dismissed, else
+    // "Starting…" until the page can draw.
+    const notices = streams.notices || [];
+    if (notices.length > seen.notices) {
+      statusOverride = notices[notices.length - 1].sentence;
+      seen.notices = notices.length;
+    }
+    const status = s.start === "failed" ? s.failure
+      : statusOverride !== null ? statusOverride
+      : s.start === "running" && data ? "" : INITIAL_STATE.status;
+    const panels = streams["c59.show-debug-panel"] || [];
+    if (panels.length !== seen.panels) {
+      seen.panels = panels.length;
+      debugPanel = panels.length ? { panel: panels[panels.length - 1], n: panels.length } : INITIAL_STATE.debugPanel;
+    }
+    if (p !== printerFor) {
+      printerFor = p;
+      printer = p ? { ...p, lines: printerLines } : INITIAL_STATE.printer;
+    }
+
+    const storage = t["web.storage"];
+    set({
+      data: s.start === "running" ? data : null,
+      status,
+      persistent: !storage || storage.mode === "kept",
+      model: t["c59.web.model"] || null,
+      cueCard: t["c59.web.cue-card"] === undefined ? null : t["c59.web.cue-card"],
+      runState: t["c59.web.run-state"] || INITIAL_STATE.runState,
+      printer,
+      card: t["c59.web.card"] || INITIAL_STATE.card,
+      live: t["c59.web.live"] || null,
+      cpu: t["c59.web.cpu"] || INITIAL_STATE.cpu,
+      heatmap: t["c59.web.heatmap"] || null,
+      log: t["c59.web.log"] || INITIAL_STATE.log,
+      asm: t["c59.web.asm"] || INITIAL_STATE.asm,
+      traces: t["c59.web.traces"] || INITIAL_STATE.traces,
+      settings: t["c59.web.settings"] || INITIAL_STATE.settings,
+      debugFont: t["c59.web.debug-font"] || INITIAL_STATE.debugFont,
+      debugPanel,
+    });
   };
+  const unsubscribe = shell.subscribe(onShell);
 
-  post({ type: "init", settings: storedSettings(), model: model || "", module: module || "" });
-
-  const onVisibility = () => post({ type: document.hidden ? "pause" : "resume" });
-  document.addEventListener("visibilitychange", onVisibility);
+  const invoke = (method, args) => {
+    const m = METHODS[method];
+    if (!m) return Promise.reject(new Error(`unknown method ${method}`));
+    const [kind, name, toArgs, out] = m;
+    const p = kind === "command" ? shell.send(name, toArgs(...args)) : shell.request(name, toArgs(...args));
+    return p.then((r) => (out ? out(r) : r));
+  };
+  const showRefusal = (r) => {
+    if (!r.done && r.reason) {
+      statusOverride = r.reason;
+      onShell();
+    }
+    return r;
+  };
 
   return {
     frames,
     getState: () => state,
     subscribe: (l) => { listeners.add(l); return () => listeners.delete(l); },
-    /// A WebController method (bindings.cpp).
-    call: (method, ...args) => post({ type: "call", method, args }),
-    post,
-    /// A preset's text; resolves with its errors.
-    loadState: (text) => new Promise((resolve) => {
-      stateLoadedWaiters.push(resolve);
-      post({ type: "loadState", text });
-    }),
-    /// A WebController method whose result is wanted; resolves with it.
-    request: (method, ...args) => new Promise((resolve) => {
-      const id = ++lastRequest;
-      replyWaiters.set(id, resolve);
-      post({ type: "call", method, args, id });
-    }),
-    /// A file dropped on the calculator; the worker decides what it does.
-    dropFile: (file) => post({ type: "dropFile", file }),
-    setStatus: (status) => set({ status }),
+    /// A command or request, result not wanted.
+    call: (method, ...args) => { invoke(method, args).catch(() => {}); },
+    /// A command or request whose result is wanted.
+    request: (method, ...args) => invoke(method, args),
+    /// A preset's text, as the Preset button loads it (an operation, LIB-3 AC-32).
+    loadState: (text) => shell.send("c59.load-state", { bytes: new TextEncoder().encode(text) }).then(showRefusal),
+    /// A file dropped on the calculator; the session decides what it does.
+    dropFile: (file) => file.arrayBuffer()
+      .then((b) => shell.send("c59.web.drop", { name: file.name, bytes: new Uint8Array(b) }))
+      .then(showRefusal),
+    /// The LED shapes for a w × h digit cell (W59-1).
+    geometry: (w, h) => shell.request("c59.led-geometry", { w, h }).then((r) => set({ geometry: r.value })),
+    /// A card or trace file as a download (LIB-15 AC-9).
+    download: requestFile,
+    setStatus: (status) => { statusOverride = status; onShell(); },
     destroy: () => {
-      document.removeEventListener("visibilitychange", onVisibility);
-      worker.terminate();
+      unsubscribe();
+      shell.destroy();
     },
   };
 }
@@ -187,7 +246,7 @@ function useEngine(engine, select) {
   return React.useSyncExternalStore(e.subscribe, () => select(e.getState()), () => select(INITIAL_STATE));
 }
 
-// Fetch a file next to calc.js (presets) as text.
+// Fetch a file next to calc.js (the preset list) as text.
 function fetchBesideCalc(path) {
   return fetch(`${CALC_BASE}${path}`).then((r) => {
     if (!r.ok) throw new Error(`${path}: ${r.status}`);

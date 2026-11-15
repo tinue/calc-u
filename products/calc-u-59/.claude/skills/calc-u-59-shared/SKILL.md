@@ -1,6 +1,6 @@
 ---
 name: calc-u-59-shared
-description: Use this skill when working on the shared C++ layer of Calc-U-59 (app/, tests/, the product's CMakeLists.txt, tools/goldens/) — the non-GUI logic the Swift app, the Qt6 app and the web client use: file formats, state files, cue cards, the app session's product part (TIAppPart over SessionController, makeAppSession), the Swift frontend's session thread (SessionThread), the emulator runtime (machine session, freeze state, key sequencing, frame sampling), the debugger model (DebugModel), debug snapshots, trace writer, view rules. Also trigger when adding a frontends/swift/Bridge/ wrapper for a Shared module, or when logic is about to be written in frontends/swift/App/*.swift, frontends/qt6/app/ or frontends/web/ that isn't drawing.
+description: Use this skill when working on the shared C++ layer of Calc-U-59 (app/, tests/, the product's CMakeLists.txt, tools/goldens/) — the non-GUI logic the Swift app, the Qt6 app and the web client use: file formats, state files, cue cards, the app session's product part (TIAppPart, makeAppSession; TIWebPart for the Web page), the Swift frontend's session thread (SessionThread), the emulator runtime (machine session, freeze state, key sequencing, frame sampling), the debugger model (DebugModel), debug snapshots, trace writer, view rules. Also trigger when adding a frontends/swift/Bridge/ wrapper for a Shared module, or when logic is about to be written in frontends/swift/App/*.swift, frontends/qt6/app/ or frontends/web/ that isn't drawing.
 user-invocable: true
 ---
 
@@ -27,17 +27,18 @@ drawing rules: `reference/SharedArchitecture.md`. Don't restate them here.
 4. **All builds before every commit** (commands: CLAUDE.md § "Frontend Parity").
    (The Qt app builds as part of the product's CMake build when Qt is installed;
    the web build needs `emcc` — calc-u-59-web skill.)
-5. **One thread per session, no other.** The Swift and Qt6 frontends host
-   the library's app session (`cu59::makeAppSession`; Qt6 on its GUI thread,
-   Swift on `SessionThread`, the only `std::thread` in `app/`, never in the
-   Web build). The app layer inside it is single-threaded: no thread, no
-   wait, no lock that matters (ADR 0009). Everything a frontend does is a
-   command (`cu59::commands`), everything it gets a message (the interim
-   `c59.*` topics, `app/TIAppPart.hpp`). Until M-34 the Web frontend still
-   runs `SessionController` itself in `Threading::Cooperative`
-   (`CooperativePacing`, 2.3.0's batches); `TIAppPart` runs the same
-   controller in `Threading::Hosted`. `frontends/web/bindings.cpp` is the
-   Web's adapter until then.
+5. **One thread per session, no other.** Every frontend hosts the library's
+   app session (`cu59::makeAppSession`; Qt6 on its GUI thread, Swift on
+   `SessionThread`, the only `std::thread` in `app/`, never in the Web
+   build; the Web in the library's Web Worker through
+   `frontends/web/bindings.cpp`, since M-34). The app layer inside it is
+   single-threaded: no thread, no wait, no lock (ADR 0009). Everything a
+   frontend does is a command (`cu59::commands`, the Web's `c59.web.*`),
+   everything it gets a message (the interim `c59.*` topics,
+   `app/TIAppPart.hpp`; the Web page's `c59.web.*`, `app/TIWebPart.hpp`).
+   The flows are `TIAppPart`'s own (`TIAppPartFlows.cpp`; 2.3.0's
+   `SessionController` was taken apart into it in M-34); tests drive them
+   on the session (`tests/PartRig.hpp`, `tests/AppSessionRig.hpp`).
 6. **Test every module** in `tests/` (the repository's one runner,
    `library/testing/TestHarness.hpp`: `TEST`/`CHECK`/`SKIP_UNLESS`, ADR 0038;
    `TestRoms.hpp` boots machines from `roms/`). Tests run from the product

@@ -12,7 +12,7 @@ enum FreezePanel { case cpu, calculator }
 /// selection survives navigation on iPhone (where DebugView is recreated).
 enum DebugTab { case live, cpu, log }
 
-/// SessionController::DebugLevel (cycled there).
+/// cu59::DebugLevel of app/TIAppPart.hpp (cycled there).
 enum DebugLevel: Int {
     case off   = 0
     case info  = 1

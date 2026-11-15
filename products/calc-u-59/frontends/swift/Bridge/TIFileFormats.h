@@ -5,7 +5,7 @@ NS_ASSUME_NONNULL_BEGIN
 // Swift face of the Shared/ formats the views use directly: the cue-card
 // model, cuecards.txt's module list and the card pickers' file names. Type
 // translation only — the formats live in Shared/ (CueCard, ModuleCatalog,
-// CardFile); everything else goes through TISessionController.
+// CardFile); everything else goes through TIAppSession.
 
 /// A cue card (Shared/CueCard.hpp). Enum-valued properties use the C++
 /// enumerator order: template 0 CueCard, 1 MagnetCard, 2 SolidStateCard;

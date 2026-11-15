@@ -34,7 +34,7 @@ function LedCanvas({ engine, width, height }) {
   const ready = useEngine(engine, (s) => s.data !== null);
 
   React.useEffect(() => {
-    if (engine && ready) engine.post({ type: "geometry", w: width / 12, h: height });
+    if (engine && ready) engine.geometry(width / 12, height);
   }, [engine, ready, width, height]);
 
   const paths = React.useMemo(() => (geometry ? ledPaths(width, height, geometry) : null), [geometry, width, height]);

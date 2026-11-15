@@ -269,7 +269,7 @@ function LogTab({ engine }) {
           <div className="calcu-traces" aria-label="Trace files">
             {traces.map((t) => (
               <button key={t.name} type="button" className="calcu-link" title={`Download ${t.name}`}
-                onClick={() => engine.post({ type: "traceBytes", name: t.name })}>⤓ {t.name} ({mb(t.size)})</button>
+                onClick={() => engine.download("trace", t.name)}>⤓ {t.name} ({mb(t.size)})</button>
             ))}
           </div>
         )}

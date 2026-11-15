@@ -141,3 +141,74 @@ Decided in the step:
   `build.js` fails on an unscoped one.
 - AC-16's bundle-file clause stays with M-46 (design D-4); the column is
   Done there.
+
+## Calc-U-59 (M-34, 2026-11-15, branch `m34-web-59`)
+
+The Calc-U-59 Web frontend runs on the library's shell: the product's
+`calc-engine-worker.js` is the configuration of the library's worker (mount
+`/persist-calc-u-59`, lock `calcu59-storage`), `frontends/web/bindings.cpp`
+is the factory of the app session (`CALCU_WEB_PRODUCT(CalcU59Host, …)`: the
+ROM lookup over `/bundle`, `Calc-U-59.ini` in the persistent file system,
+`TIAppPart` with its save folder there, and `app/TIWebPart`). What 2.3.0's
+`WebController` posted is `TIWebPart`'s `c59.web.*` topics, commands and
+requests in the page's own form; the static page data is adapter W59-1
+(`app/WebPageData`: `c59.static-data`, `c59.led-geometry`,
+`c59.mobile-rules`). The product's app page, service worker and worker entry
+are gone (the library's are used), `build.js` uses
+`library/web/build/dist.js`, and `src/engine.js` translates the components'
+calls over `createShell()` (as Calc-U-1600's). `SessionController`,
+`CooperativePacing` and LIB-9's adapter A-5 are gone (LIB-3's section).
+
+Built and run on an M4 Pro, macOS 27.2, Homebrew Emscripten 7.0, Playwright
+1.64.1 (the product's). `CalcU59WebPlaywright`: 85 passed, 5 skipped (the
+conditional ones: pacing ×2, prerender in sub-path, the ROM-taken-away case
+×2), in Chromium root and sub-path and offline in Chromium and WebKit;
+`CalcU59RomMissingBuild` passed; `CalcU59WebPacing` (Checkpoint) passed
+(LIB-17's report). Frequent 28 of 28 (`web_part_tests.cpp` among them).
+
+| AC | Result | Evidence |
+|---|---|---|
+| AC-19 | Pass | `session.spec.js` `ac19 PlayCalculator props, layout and settings, no module` (`?model=TI-58C` by its name; a second `PlayCalculator` mounted without `keyboard`, with 2.3.0's `module: 'ST'` and `settings: false`: it takes the keyboard, has the portrait layout and no Settings button, and starts with `ML`), `ac19 a bundled preset by its path` (`?preset=sum.ti59`: its cue card); `web_part_tests.cpp` `lib15_ac16_start_takes_the_model_by_name_and_a_bundled_preset`; `index.html` has no `?module=` |
+| AC-20 | Pass for its M-34 part | settings: `storage.spec.js` `ac20 settings survive a page load, in Calc-U-59.ini` (the INI in IndexedDB holds the change, a reload starts with it), `play-calculator.spec.js` `lib9_ac21_settings_in_the_ini_file_survive_a_reload`; `ti58c.mem` as a file of the save folder: `ac20 the TI-58C constant memory is ti58c.mem in the save folder`, and `switching models: … keeps its constant memory` (line 186) kept. Cards are files of the save folder from M-34 on (design D-9; `web_part_tests.cpp` `lib15_ac20_cards_are_files_of_the_save_folder`; the card tests of `play-calculator.spec.js` pass on them); their criteria are C59-7's in M-55, `ti58c.memory.yaml` C59-3's in M-54 |
+| AC-21 | Pass | `storage.spec.js` `ac21 a second tab says it cannot save`: the second tab's status line says "Calc-U-59 is open in another tab or window: what you save here is not kept.", the first has no notice, and the startup model the second sets does not reach the store (the exit check) |
+| AC-22 | Pass | `session.spec.js` `ac22 no message of the old protocol` (every message both ways recorded: page → worker only `listen`, `command`, `request`, `answer`; worker → page only LIB-3 kinds; no message has 2.3.0's `type` field); `web_part_tests.cpp` `lib15_ac22_the_page_topics_are_there` |
+| AC-23 | Pass | `play-calculator.spec.js` `both layouts load the engine with no console errors`, `the installed app loads any module and any preset offline` (lines 471-491 at the pin), `offline.spec.js` `the installed app starts without a connection and runs every model` (Chromium, WebKit), `prerender.spec.js`, all kept with the hooks rewritten (ROMs under `bundle/`, the precache under `calcu59-app …`) |
+| EC-4 (this product) | Pass | `session.spec.js` `ec4 an unknown model or preset gives a notice and starts without it`; `web_part_tests.cpp` `lib15_ec4_unknown_model_and_preset_are_notices` |
+
+LIB-3 AC-31's Web part and LIB-9 AC-23 are in their reports. The column
+stays In progress until M-55 (AC-20's cards, design §1).
+
+### Decided in the step (spec → today's behaviour → simpler structure)
+
+- **`TIWebPart` in the app layer, as Calc-U-1600's `SharpWebPart`**, not the
+  interim topics' `toValue()` read by the page (design §2): the page draws
+  2.3.0's forms (LED cells, the cue card's draw list at the page's size,
+  printer lines from the first that changed, debug rows), which the interim
+  payloads do not carry. `TIAppPart` tells it its change flags
+  (`setChangeObserver`); it sends its topics once per host call.
+- **`src/engine.js` stays, as a translator** (as Calc-U-1600's in M-31): the
+  components keep 2.3.0's names until LIB-14 59 (M-57) rewrites them.
+- **The status line** shows a failed start (the library's sentence), else
+  the newest notice until dismissed, else "Starting Calc-U-59…" (the
+  library's sentence) until the page can draw. A missing or bad ROM file is
+  the failed start (`bindings.cpp` throws the lookup's text). Ledger row
+  59-38 (new).
+- **`start` (N3) is `TIWebPart`'s command**: the model by its name, a
+  preset by its path under `presets/` (`presets.json`'s files, as today's
+  list; D-4: the bundle file is LIB-6's); an unknown one is a notice with
+  wording of this step ("Calc-U-59 has no model …", "… is not a bundled
+  preset: Calc-U-59 starts without it.").
+- **Cards**: a card opened from the user's disk is written into the save
+  folder once fitted (2.3.0 kept it in the page session's folder the same
+  way); the card dialog lists the card files of the save folder.
+- **The precache's id stays `calcu59`**, so 2.3.0's caches of the same
+  scope are removed at the first activation.
+- **`TIAppPart::forgetSession()`**: the library's `WebSession` destroys the
+  session before what it keeps; the part then lets its `EmulatorSession`
+  go without touching the machine (a worker ends with its page anyway).
+- **Ledger rows of design D-2** (the update rule): 59-31 already holds it.
+- **The factory is in `frontends/web/bindings.cpp`**, as Calc-U-1600's, not
+  in a new `app/WebAppSession.cpp` (design §4): it needs the library's Web
+  glue types, which only the Emscripten build has; everything it builds is
+  in `app/` and tested natively (`web_part_tests.cpp` builds the same
+  session). `run-tests.sh` keeps its own two servers, as Calc-U-1600's.

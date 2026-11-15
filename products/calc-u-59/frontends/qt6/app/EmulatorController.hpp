@@ -18,8 +18,8 @@
 class EmulatorController : public QObject, private calcu::sessions::MessageSink {
     Q_OBJECT
 public:
-    using CardState = cu59::SessionController::CardState;
-    using DebugLevel = cu59::SessionController::DebugLevel;
+    using CardState = cu59::CardState;
+    using DebugLevel = cu59::DebugLevel;
 
     explicit EmulatorController(QObject* parent = nullptr);
     ~EmulatorController() override;
@@ -76,7 +76,7 @@ public:
     void loadStateFile(const QString& path);
 
     // ── Dropped files ────────────────────────────────────────────────────────
-    cu59::SessionController::DropAction dropAction(const QString& path) const;
+    cu59::DropAction dropAction(const QString& path) const;
     void openDroppedFile(const QString& path);
 
     // ── Debugger ─────────────────────────────────────────────────────────────

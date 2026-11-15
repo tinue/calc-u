@@ -92,6 +92,9 @@ not named here adds a folder in the same pattern.
   - `roms`: `machine`, `sessions` (the `roms-missing` topic);
   - `control`: `machine`, `sessions` (LIB-4 design §2; M-37);
   - `typing`: `machine`, `pacing`, `sessions` (LIB-5, M-36);
+  - `presets`: `machine`, `formats`, `sessions`, `peripherals`, `typing`,
+    `startup` (LIB-6 design D-1; M-38). Nothing includes it but `harness`
+    and the products; `startup` declares the loader `presets` implements;
   - `harness`: any area but `web`;
   - `web` (C++ glue): `sessions`, `settings`.
   Review checks it; a new include against it is a finding.

@@ -50,9 +50,10 @@ the `<cstdlib>` fix).
 
 | CTest entry | What | Group | Measured (M4 Pro, 2026-11-14) |
 |---|---|---|---|
-| `calcu_library_tests` | 455 `TEST`s (M-37, M-36; 19 of them harness attach, `library/harness/attach/tests/`, with `CALCU_ATTACH`, on by default in a POSIX tree with the tests; real sockets on 127.0.0.1 and a host loop on the real clock, about 3 s; M-33): the library's own tests with the machines built for the tests (`library/machine/tests/TestMachines.*`) and the product declared for the settings tests (`library/settings/tests/TestProduct.hpp`), no product code (LIB-1 AC-24; LIB-1 design §2a); also run alone by the CI job `library` of both product workflows. The pacing tests run on a scripted wall clock (`library/pacing/tests/TestSliceRunner.hpp`), never the host's; so do the session tests (`library/sessions/tests/ScriptedClock.hpp`), with the test frontend and the test product part of `library/sessions/tests/`. LIB-2's host links are tested here with an injected link factory (`peripherals/tests/host_links_tests.cpp`), on every platform; the ROM lookup's tests write their ROM files into a temporary folder (`library/roms/tests/TestRomFiles.hpp`); the harness tests run the product made for them (`library/harness/tests/TestProduct.*`: `test-seg` offering the machine state, `test-dot`) in virtual time, each run in a temporary run folder; LIB-18's tests run `library/startup/tests/TestProductMachines.hpp` (the test product, its settings and a session rig, paced and in virtual time) with the stand-in for LIB-6's loader (`TestPresetLoader.hpp`); LIB-5's typing tests run `library/typing/tests/TypingRig.hpp` (`test-type`, a test-seg with a scripted key readiness, a key log and typing support, `TypingTestMachine.*`; the test profile and map, `TestProfiles.hpp`), paced and in virtual time | Frequent | 0.64 s (M-28, 2026-11-15, RelWithDebInfo; most of it the five-hour scripted runs of LIB-17) |
+| `calcu_library_tests` | 575 `TEST`s (M-38, M-37, M-36; 19 of them harness attach, `library/harness/attach/tests/`, with `CALCU_ATTACH`, on by default in a POSIX tree with the tests; real sockets on 127.0.0.1 and a host loop on the real clock, about 3 s; M-33): the library's own tests with the machines built for the tests (`library/machine/tests/TestMachines.*`) and the product declared for the settings tests (`library/settings/tests/TestProduct.hpp`), no product code (LIB-1 AC-24; LIB-1 design §2a); also run alone by the CI job `library` of both product workflows. The pacing tests run on a scripted wall clock (`library/pacing/tests/TestSliceRunner.hpp`), never the host's; so do the session tests (`library/sessions/tests/ScriptedClock.hpp`), with the test frontend and the test product part of `library/sessions/tests/`. LIB-2's host links are tested here with an injected link factory (`peripherals/tests/host_links_tests.cpp`), on every platform; the ROM lookup's tests write their ROM files into a temporary folder (`library/roms/tests/TestRomFiles.hpp`); the harness tests run the product made for them (`library/harness/tests/TestProduct.*`: `test-seg` offering the machine state, `test-dot`) in virtual time, each run in a temporary run folder; LIB-18's tests run `library/startup/tests/TestProductMachines.hpp` (the test product, its settings and a session rig, paced and in virtual time) with the stand-in for LIB-6's loader (`TestPresetLoader.hpp`); LIB-5's typing tests run `library/typing/tests/TypingRig.hpp` (`test-type`, a test-seg with a scripted key readiness, a key log and typing support, `TypingTestMachine.*`; the test profile and map, `TestProfiles.hpp`), paced and in virtual time; LIB-6's preset tests run `library/presets/tests/PresetRig.hpp` (an app session with PeripheralsPart, PresetsPart, StartupPart and TypingPart; test-seg with the program of `TestSegProgram` and the memory `test.memory`) and the rules and keywords built for the tests (`TestPresetRules.hpp`), paced and in virtual time, with presets written into temporary folders and the fixtures of `library/presets/tests/fixtures/` (`bad/`, one file per class of error; `bundle/`; `good/`) | Frequent | 0.64 s (M-28, 2026-11-15, RelWithDebInfo; most of it the five-hour scripted runs of LIB-17) |
 | `calcu_library_pty_tests` | 4 `TEST`s of `library/peripherals/tests/pty_tests.cpp`: LIB-2's host links on real pseudo-terminals in a temporary folder for serial links (AC-18 to AC-20, EC-7); a program of its own (with the test machines), registered only where `CALCU_HAS_PTY` is set (macOS, Linux), so that it can move to Longer without a design change (LIB-2 design §8) | Frequent | 0.8 s (M-23, 2026-11-15) |
-| `calcu_cli.<case>` | LIB-11 T13: `calcu_test` (the harness with the test product only) in a process of its own, run by `library/harness/tests/cli/cli_cases.cmake` with `cmake -P`: argv, standard input and output, exit status; six entries, `ac1_product_by_name_or_short_form_any_case`, `ac2_one_shot_runs_in_order_and_exits_zero`, `ac2_first_refusal_exits_nonzero_with_reason`, `ac3_serve_one_reply_per_line_until_quit`, `ec3_serve_ends_at_end_of_input`, `ec4_unknown_product_lists_products` (M-28) | Frequent | 0.1 s, the six together |
+| `calcu_cli.<case>` | LIB-11 T13: `calcu_test` (the harness with the test product only) in a process of its own, run by `library/harness/tests/cli/cli_cases.cmake` with `cmake -P`: argv, standard input and output, exit status; seven entries, `ac1_product_by_name_or_short_form_any_case`, `ac2_one_shot_runs_in_order_and_exits_zero`, `ac2_first_refusal_exits_nonzero_with_reason`, `ac3_serve_one_reply_per_line_until_quit`, `ec3_serve_ends_at_end_of_input`, `ec4_unknown_product_lists_products` (M-28), `ac34_check_preset_exit_status` (LIB-6 AC-34, M-38) | Frequent | 0.1 s, the seven together |
+| `calcu_preset_check.LibraryPresetFixtures` | LIB-6 L14 (design D-20): `calcu_add_preset_check()` (`library/presets/PresetChecks.cmake`, run by `RunPresetCheck.cmake` with `cmake -P`): `calcu_test check-preset` over `library/presets/tests/fixtures/good/*` and a template filled in by `fixtures/fill.cmake`; fails when a file fails. The products' checks of AC-43 and AC-51 use the same function from M-46 and M-54 (M-38) | Frequent | 0.05 s |
 | `calcu_serve_python` | LIB-11 T15: `library/harness/python/tests/test_calcu_serve.py`, the Python helper for `calcu serve` against `calcu_test` (with `uv run --no-project python -I`, else Python 3; M-28) | Frequent | 0.05 s |
 | `LibraryPlatformStoreCheck` | `library/settings/tests/check_platform_stores_test.sh`: the self-test of `library/settings/check_platform_stores.sh`, the source check the products run over their frontends (LIB-9 design T-14); not registered on Windows | Frequent | 0.03 s |
 | `LibraryWebNodeTests` | `node --test library/web/tests/build.test.js`: 4 tests of the Web frontend shell's build functions (`library/web/build/dist.js`: MANIFEST, `files.json`, the service worker stamp, one global in `calc.js`, the CSS scope check; LIB-15 AC-14, AC-15, AC-17; M-29); registered when `node` is found; also run by the CI job `library` | Frequent | 0.2 s (M-29, 2026-11-15) |
@@ -90,7 +91,7 @@ Frequent):
 | `sessions/tests/host_service_tests.cpp` | 4 |
 | `sessions/tests/library_topics_tests.cpp` | 3 |
 | `sessions/tests/mirror_tests.cpp` | 1 |
-| `sessions/tests/operation_tests.cpp` | 15 (LIB-18 D-6, M-35) |
+| `sessions/tests/operation_tests.cpp` | 17 (LIB-18 D-6, M-35; `OperationContext::hostWait`, LIB-6 D-17, M-38) |
 | `sessions/tests/sound_tests.cpp` | 5 |
 | `sessions/tests/speed_tests.cpp` | 6 |
 | `sessions/tests/suspend_tests.cpp` | 5 |
@@ -105,13 +106,28 @@ Frequent):
 | `roms/tests/full_set_tests.cpp` | 4 (LIB-12 AC-1, AC-4, EC-1) |
 | `roms/tests/lookup_tests.cpp` | 9 (LIB-12 AC-3, AC-5, AC-7, EC-1, EC-2) |
 | `roms/tests/rom_set_tests.cpp` | 3 (LIB-12 AC-6) |
-| `formats/tests/yaml_tests.cpp` | 9 (the YAML reader, moved from Calc-U-1600 in M-24; no AC) |
+| `formats/tests/yaml_tests.cpp` | 11 (the YAML reader, moved from Calc-U-1600 in M-24; no AC; the preset options and `parseNumber`, LIB-6 D-4, M-38) |
 | `formats/tests/formats_tests.cpp` | 3 (LIB-11 AC-12, AC-22, EC-2; M-28) |
 | `harness/tests/protocol_tests.cpp` | 8 (LIB-11 AC-2, AC-4, AC-5, AC-13, AC-22; M-28) |
 | `harness/tests/commands_tests.cpp` | 19 (LIB-11 AC-5, AC-7, AC-9, AC-11, EC-2, EC-5, EC-7; M-28; LIB-4 AC-9, M-37; `key`, `type`: LIB-5 AC-15–17, D-5, M-36) |
 | `harness/tests/display_text_tests.cpp` | 10 (LIB-11 AC-9, AC-10, AC-23; M-28) |
 | `harness/tests/run_tests.cpp` | 19 (LIB-11 AC-2, AC-6, AC-8, AC-9, AC-21, AC-24, EC-1, EC-3, EC-6; M-28, M-35) |
 | `harness/tests/startup_commands_tests.cpp` | 4 (LIB-18 AC-15; M-35) |
+| `harness/tests/preset_commands_tests.cpp` | 11 (LIB-6 AC-34; M-38) |
+| `presets/tests/reader_tests.cpp` | 13 (LIB-6 AC-1, EC-1, EC-8; M-38) |
+| `presets/tests/header_tests.cpp` | 12 (LIB-6 AC-2 to AC-5, AC-8, AC-9; M-38) |
+| `presets/tests/check_tests.cpp` | 9 (LIB-6 AC-6, AC-7, AC-30, AC-62, EC-5; the bad fixtures; M-38) |
+| `presets/tests/build_tests.cpp` | 6 (LIB-6 AC-10, AC-52, AC-55, EC-2, EC-10; M-38) |
+| `presets/tests/operation_tests.cpp` | 8 (LIB-6 AC-12, AC-13, AC-16, AC-61, EC-3, EC-4, EC-6; M-38) |
+| `presets/tests/waits_tests.cpp` | 12 (LIB-6 AC-14, AC-15, AC-17, AC-56 to AC-60; M-38) |
+| `presets/tests/log_tests.cpp` | 2 (LIB-6 AC-18; M-38) |
+| `presets/tests/pause_tests.cpp` | 5 (LIB-6 AC-19; M-38) |
+| `presets/tests/steps_tests.cpp` | 20 (LIB-6 AC-20 to AC-28, AC-63, AC-66, EC-7; M-38) |
+| `presets/tests/place_tests.cpp` | 4 (LIB-6 AC-29, AC-53, AC-65; M-38) |
+| `presets/tests/determinism_tests.cpp` | 2 (LIB-6 AC-11, AC-64; M-38) |
+| `presets/tests/list_tests.cpp` | 6 (LIB-6 AC-31 to AC-33, EC-9; M-38) |
+| `presets/tests/startup_tests.cpp` | 3 (LIB-18 AC-4, EC-1, EC-6 with the real loader; M-38) |
+| `presets/tests/typing_tests.cpp` | 3 (LIB-5 AC-14, AC-15, AC-17 in a preset; M-38) |
 | `startup/tests/build_tests.cpp` | 11 (LIB-18 AC-1, AC-2, EC-4; M-35) |
 | `startup/tests/start_tests.cpp` | 14 (LIB-18 AC-3, AC-4, AC-5, EC-1, EC-2, EC-6; M-35) |
 | `startup/tests/switch_tests.cpp` | 10 (LIB-18 AC-6 to AC-9; M-35) |

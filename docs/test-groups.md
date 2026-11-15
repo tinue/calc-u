@@ -30,6 +30,9 @@ test product itself (Emscripten, `build/web`); the WASM smoke builds
 `build/web` with Emscripten itself; the XCUITest entries need the
 simulators of `bin/simulators.yaml` (`bin/simulators setup`); the
 Calc-U-1600 screenshot and DAP entries need the Qt app in the tree.
+Run the Longer group without `-j`: the products' Playwright entries and
+their ROM-missing builds share ports 8059/8060 and `build/web`, and the
+XCUITest entries share the simulators (end of C1, 2026-11-15).
 
 A test that outgrows its group's budget moves up a group or is split
 (ADR 0031).

@@ -139,6 +139,16 @@ the current folder (LIB-11 AC-22; it was refused). The column stays **In
 progress**: AC-19's debugger steps and AC-63's `debug-panel:` pass with
 LIB-10 in M-40 (D-29).
 
+### Column status after Part C2 (2026-11-15)
+
+M-40 and M-41 were merged into `main` one after the other (`8333566`,
+`a85d5b2`); each branch still listed the other's clause as open. On
+`main` with both (`70c60a7`, `calcu_library_tests` 923 tests, 0 failed)
+AC-3's module by `file:`, AC-19's debugger steps and AC-63's
+`debug-panel:` all pass, so every Library criterion and edge case
+passes: the Library column is **Done** (D-29). The products' clauses
+are tested with M-46 and M-54.
+
 ### Exit check of M-38
 
 Library tests with sections built for the tests: the 105 cases of

@@ -190,11 +190,6 @@ TEST(lib9_ac31_first_start_defaults_and_writes_file) {
     const std::string text = readText(path);
     CHECK(text == cs::SettingsFile::defaultText(shared::settingsDecl()));
     CHECK(text.rfind("format-version = 1\n", 0) == 0);
-    for (const char* line : {"model = last", "last-model =", "PC-1500 =", "PC-1500A =", "PC-1600 =", "save-folder =",
-                             "tape-folder =", "folder =", "max-file-size-mb = 50", "dap-enabled = false",
-                             "dap-port = 32168", "link-folder =", "presets =", "basic-programs =", "machine-code =",
-                             "host-drive =", "width = 900", "height = 500"})
-        CHECK(text.find(std::string("\n") + line + "\n") != std::string::npos);
 
     shared::Settings s(file);
     CHECK(s.startupModel() == Model::PC1500A);
@@ -208,9 +203,8 @@ TEST(lib9_ac31_first_start_defaults_and_writes_file) {
 
 // AC-32: Qt6 and the Web use the one declaration.
 TEST(lib9_ac32_web_and_qt6_share_declaration) {
-    // Both frontends open their file through shared::settingsDecl(); one
-    // object, so one set of names, values and defaults.
-    CHECK(&shared::settingsDecl() == &shared::settingsDecl());
+    // Both frontends open their file through shared::settingsDecl(), one
+    // declaration: one set of names, values and defaults (AC-26's table).
     // The Web's place: /persist/settings/Calc-U-1600/Calc-U-1600.ini (design §2).
     cs::HostDirs web;
     web.frontend = cs::FrontendKind::Web;

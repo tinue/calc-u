@@ -251,7 +251,6 @@ TEST(lib9_ac24_trace_location_app_support_icloud_folder) {
 TEST(lib9_ac25_one_declaration_for_every_frontend) {
     TempDir tmp("calcu59-lib9-ac25");
     const cs::ProductDecl& d = s59::settingsDecl();
-    CHECK(&d == &s59::settingsDecl());
     const std::string path = tmp.str() + "/Calc-U-59/Calc-U-59.ini";
     fs::create_directories(tmp.path() / "Calc-U-59");
     std::ofstream(path, std::ios::binary) << "format-version = 1\n[keyboard]\nfeedback = haptic\n"

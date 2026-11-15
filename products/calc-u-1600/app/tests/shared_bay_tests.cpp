@@ -9,6 +9,8 @@
 #include <string>
 
 #include "SessionFixture.hpp"
+#include "TempFolder.hpp"
+#include "TestSettings.hpp"
 #include "Machine/SharpProductKinds.hpp"
 #include "app/DirectoryScanCache.hpp"
 #include "app/FloppyBay.hpp"
@@ -48,7 +50,7 @@ std::string diskDescription(const shared::FloppyBay& bay, const std::string& nam
 Value toggle(const char* p) { return Value::object({{"peripheral", p}}); }
 
 TEST(test_module_bay) {
-    SKIP_UNLESS(std::ifstream("roms/PC1600-P0-B0-new.bin").good(), "no ROMs in roms/");
+    SKIP_UNLESS(fullRomSetPresent(), "no ROMs in roms/");
     SessionFixture f("calcu-shared-bay-test");
     f.open();
     shared::ModuleBay* modules = &f.part().modules();
@@ -86,7 +88,7 @@ TEST(test_module_bay) {
 }
 
 TEST(test_floppy_bay) {
-    SKIP_UNLESS(std::ifstream("roms/PC1600-P0-B0-new.bin").good(), "no ROMs in roms/");
+    SKIP_UNLESS(fullRomSetPresent(), "no ROMs in roms/");
     SessionFixture f("calcu-shared-bay-test");
     f.open();
     shared::FloppyBay* floppy = &f.part().floppy();
@@ -140,7 +142,7 @@ TEST(test_floppy_bay) {
 }
 
 TEST(test_tape_bay) {
-    SKIP_UNLESS(std::ifstream("roms/PC1600-P0-B0-new.bin").good(), "no ROMs in roms/");
+    SKIP_UNLESS(fullRomSetPresent(), "no ROMs in roms/");
     SessionFixture f("calcu-shared-bay-test");
     CHECK(f.start("PC-1500A"));
     int changed = 0;
@@ -164,10 +166,9 @@ TEST(test_tape_bay) {
 // DirectoryScanCache: one parse while the files stay put; a new, grown or
 // removed file makes the next get() parse again.
 TEST(test_directory_scan_cache) {
-    SKIP_UNLESS(std::ifstream("roms/PC1600-P0-B0-new.bin").good(), "no ROMs in roms/");
-    const fs::path dir = fs::temp_directory_path() / "calcu-scan-cache-test";
-    fs::remove_all(dir);
-    fs::create_directories(dir);
+    SKIP_UNLESS(fullRomSetPresent(), "no ROMs in roms/");
+    const calcu::testing::TempFolder tmp("calcu1600-scan-cache");
+    const fs::path& dir = tmp.path();
     int scans = 0;
     auto scan = [&](const std::string& d) {
         ++scans;
@@ -186,5 +187,4 @@ TEST(test_directory_scan_cache) {
     CHECK(scans == 3);
     fs::remove(dir / "a.card.yaml");
     CHECK(cache.get(dir.string(), scan).empty() && scans == 4);
-    fs::remove_all(dir);
 }

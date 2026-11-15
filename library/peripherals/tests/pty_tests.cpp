@@ -3,6 +3,7 @@
 // entry calcu_library_pty_tests. The test plays the program on the user's
 // computer: it opens the serial port file in a temporary folder for serial
 // links.
+#include "TempFolder.hpp"
 #include "TestHarness.hpp"
 #include "TestMachines.hpp"
 #include "TestParts.hpp"
@@ -24,6 +25,7 @@ using namespace calcu::machine;
 using namespace calcu::machine::test;
 using namespace calcu::peripherals;
 namespace st = calcu::sessions::test;
+using calcu::testing::TempFolder;
 namespace fs = std::filesystem;
 
 namespace {
@@ -38,19 +40,6 @@ HostLinkRules uartRule(bool openAtOnce = true) {
         return std::nullopt;
     };
 }
-
-// A folder for serial links of its own, removed at the end.
-struct TempFolder {
-    std::string path;
-    TempFolder() {
-        std::string t = (fs::temp_directory_path() / "calcu-pty-XXXXXX").string();
-        if (::mkdtemp(t.data())) path = t;
-    }
-    ~TempFolder() {
-        std::error_code ec;
-        if (!path.empty()) fs::remove_all(path, ec);
-    }
-};
 
 // The program on the user's computer: opens the file at 9600 baud, raw, while
 // the machine set 1200 (the host link ignores the line settings, AC-18).
@@ -105,9 +94,8 @@ bool isLink(const std::string& p) {
 } // namespace
 
 TEST(ac18_bytes_both_ways_moved_between_advances) {
-    TempFolder dir;
-    SKIP_UNLESS(!dir.path.empty(), "no temporary folder");
-    PeripheralsPart part(uartRule(), dir.path);
+    TempFolder dir("calcu-pty");
+    PeripheralsPart part(uartRule(), dir.str());
     st::RigOptions o;
     o.extraParts = {&part};
     st::Rig r(o);
@@ -138,13 +126,12 @@ TEST(ac18_bytes_both_ways_moved_between_advances) {
 }
 
 TEST(ac19_fixed_name_in_the_folder) {
-    TempFolder dir;
-    SKIP_UNLESS(!dir.path.empty(), "no temporary folder");
+    TempFolder dir("calcu-pty");
     const Catalogue& cat = testCatalogue();
-    HostLinks links(uartRule(), dir.path);
+    HostLinks links(uartRule(), dir.str());
     auto m = buildTestMachine(kDot, std::nullopt, {peripheralAt(cat, "a", kUart)}, 0);
     links.machineChanged(*m);
-    const std::string want = dir.path + "/" + kFile;
+    const std::string want = dir / kFile;
     CHECK(links.status().size() == 1 && links.status()[0].path == want);
     CHECK(isLink(want));
     char target[1024] = {};
@@ -165,13 +152,12 @@ TEST(ac19_fixed_name_in_the_folder) {
 }
 
 TEST(ac20_file_outlives_port_and_reconnects) {
-    TempFolder dir;
-    SKIP_UNLESS(!dir.path.empty(), "no temporary folder");
+    TempFolder dir("calcu-pty");
     const Catalogue& cat = testCatalogue();
-    HostLinks links(uartRule(), dir.path);
+    HostLinks links(uartRule(), dir.str());
     auto m = buildTestMachine(kDot, std::nullopt, {peripheralAt(cat, "a", kUart)}, 0);
     links.machineChanged(*m);
-    const std::string file = dir.path + "/" + kFile;
+    const std::string file = dir / kFile;
     const int fd = openPeer(file);
     CHECK(fd >= 0);
     if (fd < 0) return;
@@ -204,9 +190,8 @@ TEST(ac20_file_outlives_port_and_reconnects) {
 }
 
 TEST(ec7_no_reader_machine_not_held_up) {
-    TempFolder dir;
-    SKIP_UNLESS(!dir.path.empty(), "no temporary folder");
-    HostLinks links(uartRule(), dir.path);
+    TempFolder dir("calcu-pty");
+    HostLinks links(uartRule(), dir.str());
     auto m = buildTestMachine(kDot, std::nullopt, {peripheralAt(testCatalogue(), "a", kUart)}, 0);
     links.machineChanged(*m);
     CHECK(links.status().size() == 1 && links.status()[0].open);   // nobody opens the file

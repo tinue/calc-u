@@ -13,6 +13,7 @@
 #include "../core/PC1600/PC1600SubCpu.hpp"
 #include "../core/Serial/SerialLink.hpp"
 #include "../core/PC1600/TC8576F.hpp"
+#include "FakeSerialLink.hpp"
 #include "TestHarness.hpp"
 
 namespace {
@@ -33,36 +34,6 @@ constexpr uint8_t kPsrXBUSY = 0x40;
 // One character time in T-states at 9600 baud 8N1 with the ROM's
 // prescaler: 3'580'000 * 8 * B(8) * K(2) * 10 bits / 1'228'800.
 constexpr int kDefaultCharTStates = 3729;
-
-// A minimal SerialLink test double: a queue of bytes the "peer" will
-// deliver, a log of bytes the UART sent, and settable modem lines.
-struct FakeLink : SerialLink {
-    std::deque<uint8_t> rx;      // peer -> UART
-    std::vector<uint8_t> tx;     // UART -> peer
-    Lines lines;                 // reported by getStatus()
-    bool lastDtr = false, lastRts = false;
-    int controlCalls = 0;
-    int baudCalls = 0;
-    uint32_t lastBaud = 0;
-
-    bool poll(uint8_t& out) override {
-        if (rx.empty()) return false;
-        out = rx.front();
-        rx.pop_front();
-        return true;
-    }
-    void send(uint8_t b) override { tx.push_back(b); }
-    void setControl(bool dtr, bool rts) override {
-        lastDtr = dtr;
-        lastRts = rts;
-        controlCalls++;
-    }
-    void getStatus(Lines& in) override { in = lines; }
-    void onBaud(uint32_t baud, int) override {
-        baudCalls++;
-        lastBaud = baud;
-    }
-};
 
 // What the boot code (P0-B0 078CH) does, then a 9600-baud 8N1 channel the
 // way P2-B6 A306H loads it (PR5 = CWCOM byte OR 02H AND 3FH).
@@ -208,7 +179,7 @@ TEST(test_interrupt_output_follows_tx_equation) {
     PC1600SubCpu sub;
     TC8576F uart(sub);
     uart.reset();
-    FakeLink link;
+    FakeSerialLink link;
     uart.setSerialLink(&link);
     uart.tick(1);
     CHECK(!uart.interruptOutput());       // TxEN clear after reset
@@ -225,7 +196,7 @@ TEST(test_serial_tx_fifo_drains_one_byte_per_char_time) {
     PC1600SubCpu sub;
     TC8576F uart(sub);
     bootInit(uart);
-    FakeLink link;
+    FakeSerialLink link;
     uart.setSerialLink(&link);
     uart.writeRegister(3, 0x05);          // SCR: TxEN | RxEN
     uart.writeRegister(0, 'H');           // queue two bytes
@@ -247,7 +218,7 @@ TEST(test_serial_rx_latches_and_flags_overrun) {
     PC1600SubCpu sub;
     TC8576F uart(sub);
     bootInit(uart);
-    FakeLink link;
+    FakeSerialLink link;
     link.rx = {0x41, 0x42};
     uart.setSerialLink(&link);
     uart.writeRegister(3, 0x05);          // TxEN | RxEN
@@ -273,7 +244,7 @@ TEST(test_serial_receiver_needs_rxenable) {
     PC1600SubCpu sub;
     TC8576F uart(sub);
     bootInit(uart);
-    FakeLink link;
+    FakeSerialLink link;
     link.rx = {0x55};
     uart.setSerialLink(&link);
 
@@ -295,7 +266,7 @@ TEST(test_serial_error_interrupt) {
     PC1600SubCpu sub;
     TC8576F uart(sub);
     bootInit(uart);
-    FakeLink link;
+    FakeSerialLink link;
     link.rx = {0x41, 0x42};
     uart.setSerialLink(&link);
     uart.writeRegister(3, 0xC5); uart.writeRegister(2, 0x8E); // RxINTM: only errors
@@ -312,7 +283,7 @@ TEST(test_serial_baud_divisor_sets_cadence_and_notifies_peer) {
     PC1600SubCpu sub;
     TC8576F uart(sub);
     bootInit(uart);
-    FakeLink link;
+    FakeSerialLink link;
     uart.setSerialLink(&link);
     // B = 32 at PR7 = 2 -> 1'228'800 / 2 / 8 / 32 = 2400 baud; 8 bits.
     uart.writeRegister(3, 0xC0); uart.writeRegister(2, 32);
@@ -345,7 +316,7 @@ TEST(test_serial_psr_carries_peer_modem_lines) {
     PC1600SubCpu sub;
     TC8576F uart(sub);
     bootInit(uart);
-    FakeLink link;
+    FakeSerialLink link;
     link.lines.cts = true;
     link.lines.dcd = true;
     link.lines.dsr = false;
@@ -371,7 +342,7 @@ TEST(test_serial_ci_reaches_the_subcpu) {
     PC1600SubCpu sub;
     TC8576F uart(sub);
     bootInit(uart);
-    FakeLink link;
+    FakeSerialLink link;
     uart.setSerialLink(&link);
     uart.tick(1);
     sub.strobe(0xA3);                     // SRINP
@@ -389,7 +360,7 @@ TEST(test_serial_command_register_forwards_rts_dtr) {
     PC1600SubCpu sub;
     TC8576F uart(sub);
     bootInit(uart);
-    FakeLink link;
+    FakeSerialLink link;
     uart.setSerialLink(&link);
 
     uart.writeRegister(3, 0x22);          // SCR: b1 DTR | b5 RTS
@@ -408,7 +379,7 @@ TEST(test_serial_peer_cs_does_not_gate_the_chip) {
     PC1600SubCpu sub;
     TC8576F uart(sub);
     bootInit(uart);
-    FakeLink link;
+    FakeSerialLink link;
     link.lines.cts = false;
     link.lines.dsr = true;
     uart.setSerialLink(&link);
@@ -443,7 +414,7 @@ TEST(test_chip_reset_keeps_peer_attached) {
     PC1600SubCpu sub;
     TC8576F uart(sub);
     uart.reset();
-    FakeLink link;
+    FakeSerialLink link;
     uart.setSerialLink(&link);
     CHECK(uart.serialLink() == &link);
     uart.writeRegister(3, 0xE0);          // parameter-address chip reset (D5)
@@ -458,7 +429,7 @@ TEST(test_detach_with_queued_bytes_restores_ready) {
     PC1600SubCpu sub;
     TC8576F uart(sub);
     bootInit(uart);
-    FakeLink link;
+    FakeSerialLink link;
     link.lines.dsr = true;
     uart.setSerialLink(&link);
     uart.writeRegister(3, 0x05);          // TxEN | RxEN

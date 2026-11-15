@@ -3,6 +3,7 @@
 // AC-14, the start without the full set (AC-5, AC-10) and no ROM read while
 // running (AC-6); EC-2.
 #include "Md5.hpp"
+#include "Files.hpp"
 #include "TestHarness.hpp"
 #include "TestRoms.hpp"
 #include "../app/ModuleCatalog.hpp"
@@ -60,16 +61,8 @@ const std::map<std::string, std::string> kImages230 = {
     {"AG", "0828a17a145ff50a4112e3648dc70108"}, {"RP", "935deb6933a03fef9a13ba6db6eb03a7"},
 };
 
-std::string readText(const fs::path& p) {
-    std::ifstream f(p, std::ios::binary);
-    std::ostringstream ss;
-    ss << f.rdbuf();
-    return ss.str();
-}
-void writeText(const fs::path& p, const std::string& s) {
-    std::ofstream f(p, std::ios::binary | std::ios::trunc);
-    f << s;
-}
+using calcu::testing::readText;
+using calcu::testing::writeText;
 std::string_view textOf(const std::vector<std::uint8_t>& b) { return {reinterpret_cast<const char*>(b.data()), b.size()}; }
 
 const FileProblem* problemOf(const RomsMissing& m, const std::string& name) {
@@ -159,14 +152,14 @@ TEST(lib12_ac8_ti59_first_and_last_word) {
 
 TEST(lib12_ac8_wrong_sentinel_is_bad) {
     TempDir dir;
-    dir.copyRoms();
-    std::string text = readText(dir.path / "TMC0571B.txt");
+    dir.copyFrom("roms");
+    std::string text = readText(dir.path() / "TMC0571B.txt");
     const auto at = text.rfind("1987");
     CHECK(at != std::string::npos);
     if (at == std::string::npos) return;
     text.replace(at, 4, "1986");
-    writeText(dir.path / "TMC0571B.txt", text);
-    auto r = cu59::lookUpRoms(DirectoryBundle(dir.path));
+    writeText(dir.path() / "TMC0571B.txt", text);
+    auto r = cu59::lookUpRoms(DirectoryBundle(dir.path()));
     CHECK(!r.ok());
     CHECK_EQ(r.missing.files.size(), size_t{1});
     const auto* p = problemOf(r.missing, "TMC0571B.txt");
@@ -177,25 +170,25 @@ TEST(lib12_ac8_wrong_sentinel_is_bad) {
 
 TEST(lib12_ac8_module_without_data_is_bad) {
     TempDir dir;
-    dir.copyRoms();
-    std::string text = readText(dir.path / "ST.rom.yaml");
+    dir.copyFrom("roms");
+    std::string text = readText(dir.path() / "ST.rom.yaml");
     const auto a = text.find("  bytes: |\n");
     const auto b = text.find("\ncue-cards:");
     CHECK(a != std::string::npos && b != std::string::npos);
     if (a == std::string::npos || b == std::string::npos) return;
     text = text.substr(0, a) + "  bytes: |\n" + text.substr(b);   // a ROM without a row of data
-    writeText(dir.path / "ST.rom.yaml", text);
-    auto r = cu59::lookUpRoms(DirectoryBundle(dir.path));
+    writeText(dir.path() / "ST.rom.yaml", text);
+    auto r = cu59::lookUpRoms(DirectoryBundle(dir.path()));
     CHECK(!r.ok());
     const auto* p = problemOf(r.missing, "ST.rom.yaml");
     CHECK(p && p->problem == Problem::Unreadable);
     CHECK(describe(r.missing).find("needed by ST") != std::string::npos);
     // A truncated instruction dump is bad too: its amount.
     TempDir dir2;
-    dir2.copyRoms();
-    std::string rom = readText(dir2.path / "CD2401.txt");
-    writeText(dir2.path / "CD2401.txt", rom.substr(0, rom.size() / 2));
-    r = cu59::lookUpRoms(DirectoryBundle(dir2.path));
+    dir2.copyFrom("roms");
+    std::string rom = readText(dir2.path() / "CD2401.txt");
+    writeText(dir2.path() / "CD2401.txt", rom.substr(0, rom.size() / 2));
+    r = cu59::lookUpRoms(DirectoryBundle(dir2.path()));
     CHECK(problemOf(r.missing, "CD2401.txt") && problemOf(r.missing, "CD2401.txt")->problem == Problem::WrongAmount);
 }
 
@@ -203,10 +196,10 @@ TEST(lib12_ec2_crlf_and_cr_dumps_check_alike) {
     auto lf = testroms::romSet();
     for (const char* eol : {"\r\n", "\r"}) {
         TempDir dir;
-        dir.copyRoms();
-        for (const auto& name : lf->fileNames()) writeText(dir.path / name, withLineEndings(readText(dir.path / name), eol));
-        CHECK(readText(dir.path / "TMC0582.txt") != readText("roms/TMC0582.txt"));
-        auto r = cu59::lookUpRoms(DirectoryBundle(dir.path));
+        dir.copyFrom("roms");
+        for (const auto& name : lf->fileNames()) writeText(dir.path() / name, withLineEndings(readText(dir.path() / name), eol));
+        CHECK(readText(dir.path() / "TMC0582.txt") != readText("roms/TMC0582.txt"));
+        auto r = cu59::lookUpRoms(DirectoryBundle(dir.path()));
         CHECK(r.ok());
         if (!r.ok()) {
             std::fprintf(stderr, "%s\n", describe(r.missing).c_str());
@@ -306,20 +299,20 @@ TEST(lib12_ac14_module_images_equal_the_2_3_0_dumps) {
 
 TEST(lib12_ac14_unknown_format_version_is_bad) {
     TempDir dir;
-    dir.copyRoms();
-    std::string text = readText(dir.path / "SE.rom.yaml");
+    dir.copyFrom("roms");
+    std::string text = readText(dir.path() / "SE.rom.yaml");
     text.replace(text.find("format-version: 1"), 17, "format-version: 2");
-    writeText(dir.path / "SE.rom.yaml", text);
-    auto r = cu59::lookUpRoms(DirectoryBundle(dir.path));
+    writeText(dir.path() / "SE.rom.yaml", text);
+    auto r = cu59::lookUpRoms(DirectoryBundle(dir.path()));
     CHECK(!r.ok());
     const auto* p = problemOf(r.missing, "SE.rom.yaml");
     CHECK(p && p->problem == Problem::Unreadable);
     CHECK(p && p->detail.find("unsupported") != std::string::npos);
     // A file whose module-name is not its file name is bad as well.
     TempDir dir2;
-    dir2.copyRoms();
-    fs::copy_file(dir2.path / "AG.rom.yaml", dir2.path / "RP.rom.yaml", fs::copy_options::overwrite_existing);
-    r = cu59::lookUpRoms(DirectoryBundle(dir2.path));
+    dir2.copyFrom("roms");
+    fs::copy_file(dir2.path() / "AG.rom.yaml", dir2.path() / "RP.rom.yaml", fs::copy_options::overwrite_existing);
+    r = cu59::lookUpRoms(DirectoryBundle(dir2.path()));
     CHECK(problemOf(r.missing, "RP.rom.yaml") && problemOf(r.missing, "RP.rom.yaml")->detail.find("module-name") != std::string::npos);
 }
 
@@ -347,11 +340,11 @@ std::optional<calcu::sessions::ProductSession<cu59::TIAppPart>> startFrom(const 
 
 TEST(lib12_ac10_missing_file_no_machine_and_files_named) {
     TempDir dir;
-    dir.copyRoms();
-    fs::remove(dir.path / "TMC0583.txt");
-    fs::remove(dir.path / "MU.rom.yaml");
+    dir.copyFrom("roms");
+    fs::remove(dir.path() / "TMC0583.txt");
+    fs::remove(dir.path() / "MU.rom.yaml");
     std::vector<std::string> missing;
-    auto c = startFrom(DirectoryBundle(dir.path), missing);
+    auto c = startFrom(DirectoryBundle(dir.path()), missing);
     CHECK(!c);   // no session, so no machine
     CHECK_EQ(missing.size(), size_t{1});
     if (missing.empty()) return;
@@ -360,16 +353,16 @@ TEST(lib12_ac10_missing_file_no_machine_and_files_named) {
     CHECK(text.find("TMC0583.txt: missing; needed by TI-59, TI-58") != std::string::npos);
     CHECK(text.find("MU.rom.yaml: missing; needed by MU") != std::string::npos);
     CHECK(text.find("The full set of ROM files is needed") != std::string::npos);
-    CHECK(text.find(dir.path.string()) != std::string::npos);
+    CHECK(text.find(dir.path().string()) != std::string::npos);
 }
 
 TEST(lib12_ac10_bad_file_no_machine) {
     TempDir dir;
-    dir.copyRoms();
-    std::string text = readText(dir.path / "CD2400-CONST-K.txt");
-    writeText(dir.path / "CD2400-CONST-K.txt", text.substr(0, text.size() / 2));
+    dir.copyFrom("roms");
+    std::string text = readText(dir.path() / "CD2400-CONST-K.txt");
+    writeText(dir.path() / "CD2400-CONST-K.txt", text.substr(0, text.size() / 2));
     std::vector<std::string> missing;
-    auto c = startFrom(DirectoryBundle(dir.path), missing);
+    auto c = startFrom(DirectoryBundle(dir.path()), missing);
     CHECK(!c);
     CHECK_EQ(missing.size(), size_t{1});
     if (!missing.empty()) CHECK(missing.front().find("CD2400-CONST-K.txt: wrong size") != std::string::npos);
@@ -385,8 +378,8 @@ TEST(lib12_ac6_model_and_module_changes_read_no_file) {
     std::optional<calcu::sessions::ProductSession<cu59::TIAppPart>> app;
     {
         TempDir dir;
-        dir.copyRoms();
-        app = startFrom(DirectoryBundle(dir.path), missing);
+        dir.copyFrom("roms");
+        app = startFrom(DirectoryBundle(dir.path()), missing);
     }   // the bundle folder is gone
     CHECK(app.has_value());
     if (!app) return;

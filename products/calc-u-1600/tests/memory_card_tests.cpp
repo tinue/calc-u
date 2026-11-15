@@ -19,8 +19,8 @@
 #include <memory>
 #include <string>
 
-#include <unistd.h> // mkdtemp
 
+#include "TempFolder.hpp"
 #include "../core/Connector/MemoryCardCatalog.hpp"
 #include "../core/Connector/MemoryCardDefinition.hpp"
 #include "../core/Connector/SoftwareDefinedCard.hpp"
@@ -438,10 +438,7 @@ TEST(test_compat_gate_inline) {
 TEST(test_compat_gate_via_file_if_present) {
     const char* path = "frontends/qt6/resources/cards/ce155.card.yaml";
     std::ifstream probe(path);
-    if (!probe) {
-        std::fprintf(stderr, "SKIP test_compat_gate_via_file_if_present: %s not found\n", path);
-        return;
-    }
+    SKIP_UNLESS(probe, (std::string(path) + " not found").c_str());
     std::string err;
     CHECK(makeSoftwareDefinedCard(path, CardHost::PC1500, &err) != nullptr);
     err.clear();
@@ -452,10 +449,7 @@ TEST(test_compat_gate_via_file_if_present) {
 TEST(test_superram_card_yaml_if_present) {
     const char* path = "frontends/qt6/resources/cards/superram.card.yaml";
     std::ifstream probe(path);
-    if (!probe) {
-        std::fprintf(stderr, "SKIP test_superram_card_yaml_if_present: %s not found\n", path);
-        return;
-    }
+    SKIP_UNLESS(probe, (std::string(path) + " not found").c_str());
     // Slot 2 only.
     for (CardHost h : {CardHost::PC1500, CardHost::PC1500A, CardHost::PC1600Slot1}) {
         std::string err;
@@ -547,10 +541,8 @@ TEST(test_rom_replaced_from_a_file) {
     CHECK(def.regions[0].initialContentByBank[0] == rom);
 
     // Through the card factory, read on the bus.
-    char tmpl[] = "/tmp/card_rom_XXXXXX";
-    const char* dir = mkdtemp(tmpl);
-    CHECK(dir != nullptr);
-    if (!dir) return;
+    calcu::testing::TempFolder tmp("calcu1600-card-rom");
+    const std::string dir = tmp.str();
     const std::string cardPath = std::string(dir) + "/rom.card.yaml";
     std::ofstream(cardPath) << placeholder;
     PinState p;
@@ -969,7 +961,7 @@ TEST(test_reject_initial_content_missing_bank_on_banked_region) {
 
 // ── end to end ─────────────────────────────────────────────────────────
 
-std::string makeScratchCardDir();  // defined below, in the catalogue section
+std::string makeScratchCardDir(const calcu::testing::TempFolder& tmp);  // defined below, in the catalogue section
 
 TEST(test_preset_parses_modulespec) {
     // `slot-N-file:` -- a path, resolved relative to the preset dir.
@@ -1043,7 +1035,8 @@ TEST(test_ce1601m_end_to_end_through_pc1600) {
     CHECK(byFile.slot2ModuleSpecFile == cardPath);
     run(byFile, ".");
 
-    const std::string moduleDir = makeScratchCardDir();  // writes ce1601m.card.yaml (module-name CE-1601M)
+    const calcu::testing::TempFolder moduleDirFolder("calcu1600-cards");
+    const std::string moduleDir = makeScratchCardDir(moduleDirFolder);  // writes ce1601m.card.yaml (module-name CE-1601M)
     PresetFile byName;
     CHECK(parsePresetString("format-version: 1\nmodel: PC-1600\n"
                             "slot-2: CE-1601M\n",
@@ -1056,10 +1049,8 @@ TEST(test_ce1601m_end_to_end_through_pc1600) {
 // placeholder ROM, the load result names the file (so the GUI never saves
 // the card), and a rebuilt file is read again by the next load.
 TEST(test_slot_rom_end_to_end_through_pc1600) {
-    char tmpl[] = "/tmp/slot_rom_XXXXXX";
-    const char* dir = mkdtemp(tmpl);
-    CHECK(dir != nullptr);
-    if (!dir) return;
+    calcu::testing::TempFolder tmp("calcu1600-slot-rom");
+    const std::string dir = tmp.str();
     const std::string d(dir);
     std::ofstream(d + "/module.card.yaml")
         << "format-version: 1\nmodule-name: Dev ROM\ncompatible-hosts: [PC-1600-Slot-1]\n"
@@ -1305,13 +1296,9 @@ TEST(test_slot1map_slot2map_collision_last_call_wins) {
 
 // ── catalogue: scan a directory + resolve modulespec by module-name ────
 
-// A throwaway directory of .card.yaml files for the catalogue tests.
-// Plain POSIX mkdir + `/tmp` literals, matching the other file-based tests
-// in this suite (which hardcode `/tmp/...` paths) rather than pulling
-// <filesystem> into the test.
-std::string makeScratchCardDir() {
-    const std::string dir = "/tmp/memory_card_catalog_tests";
-    std::system(("rm -rf " + dir + " && mkdir -p " + dir).c_str());
+// A throwaway directory of .card.yaml files for the catalogue tests, in `tmp`.
+std::string makeScratchCardDir(const calcu::testing::TempFolder& tmp) {
+    const std::string dir = tmp.str();
     auto put = [&](const char* file, const char* body) {
         std::ofstream(dir + "/" + file) << body;
     };
@@ -1326,7 +1313,8 @@ std::string makeScratchCardDir() {
 }
 
 TEST(test_catalog_scan_lists_and_sorts) {
-    const std::string dir = makeScratchCardDir();
+    const calcu::testing::TempFolder dirFolder("calcu1600-cards");
+    const std::string dir = makeScratchCardDir(dirFolder);
     std::string err;
     auto entries = scanMemoryCardDirectory(dir, &err);
     CHECK(entries.size() == 3);  // ce155 / ce1600m / ce1601m; notes.yaml + broken skipped
@@ -1349,7 +1337,8 @@ TEST(test_catalog_scan_missing_dir) {
 }
 
 TEST(test_resolve_modulespec_by_name) {
-    const std::string dir = makeScratchCardDir();
+    const calcu::testing::TempFolder dirFolder("calcu1600-cards");
+    const std::string dir = makeScratchCardDir(dirFolder);
     std::string path, err;
     CHECK(resolveModuleSpecByName(dir, "CE-1601M", &path, &err));
     CHECK(path.find("ce1601m.card.yaml") != std::string::npos);
@@ -1366,7 +1355,8 @@ TEST(test_resolve_modulespec_by_name) {
 }
 
 TEST(test_resolve_modulespec_ambiguous) {
-    const std::string dir = makeScratchCardDir();
+    const calcu::testing::TempFolder dirFolder("calcu1600-cards");
+    const std::string dir = makeScratchCardDir(dirFolder);
     // Second file, same module-name as ce155.card.yaml.
     { std::ofstream(dir + "/ce155-dup.card.yaml") << kCe155Yaml; }
     std::string path, err;
@@ -1379,9 +1369,10 @@ TEST(test_resolve_modulespec_ambiguous) {
 // user's saved battery-card instance named `CE-1601M - Programs.card.yaml`
 // (module-name with spaces, the exact string `slot-N:` would carry).
 TEST(test_resolve_modulespec_multi_dir) {
-    const std::string bundled = makeScratchCardDir();  // ce155 / ce1600m / ce1601m
-    const std::string instances = "/tmp/memory_card_catalog_tests_instances";
-    std::system(("rm -rf " + instances + " && mkdir -p " + instances).c_str());
+    const calcu::testing::TempFolder bundledFolder("calcu1600-cards");
+    const std::string bundled = makeScratchCardDir(bundledFolder);  // ce155 / ce1600m / ce1601m
+    const calcu::testing::TempFolder instancesFolder("calcu1600-card-instances");
+    const std::string instances = instancesFolder.str();
     // A named instance whose filename has blanks -- resolution is by the
     // `module-name:` field, so the filename shape is irrelevant.
     {

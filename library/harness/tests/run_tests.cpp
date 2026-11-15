@@ -1,6 +1,8 @@
 // LIB-11 design T9 to T12, T18: sound, the run folder and settings, the
 // clock, determinism, the machine state (AC-6, AC-8, AC-9 audio, AC-21,
 // AC-24; EC-1, EC-3, EC-6).
+#include "Files.hpp"
+#include "TempFolder.hpp"
 #include "TestHarness.hpp"
 #include "TestProduct.hpp"
 #include "harness/Run.hpp"
@@ -17,13 +19,9 @@ using namespace calcu::harness;
 using namespace calcu::harness::test;
 namespace fs = std::filesystem;
 namespace mt = calcu::machine::test;
-using calcu::roms::test::TempFolder;
+using calcu::testing::TempFolder;
 
 namespace {
-std::string readAll(const fs::path& p) {
-    std::ifstream f(p, std::ios::binary);
-    return std::string((std::istreambuf_iterator<char>(f)), std::istreambuf_iterator<char>());
-}
 std::uint32_t u32At(const std::string& s, std::size_t at) {
     std::uint32_t v = 0;
     for (int i = 3; i >= 0; --i) v = (v << 8) | static_cast<unsigned char>(s[at + std::size_t(i)]);
@@ -48,7 +46,7 @@ TEST(ac9_audio_records_all_sound_also_of_an_operation) {
         run.line("wait 5ms");
         run.server->finish();
     }
-    const std::string bytes = readAll(wav);
+    const std::string bytes = calcu::testing::readText(wav);
     CHECK_EQ(bytes.size(), std::size_t{44 + 2 * 120});   // 15 ms at 8000 a second
     if (bytes.size() < 44) return;
     CHECK(bytes.substr(0, 4) == "RIFF" && bytes.substr(8, 4) == "WAVE" && bytes.substr(36, 4) == "data");
@@ -68,7 +66,7 @@ TEST(ec3_wav_complete_when_input_ends) {
     // The header's sizes are those of the data, in both files (D-8: a second
     // audio completes the first file).
     for (const auto& [path, samples] : {std::pair{first, 8u}, std::pair{second, 16u}}) {
-        const std::string b = readAll(path);
+        const std::string b = calcu::testing::readText(path);
         CHECK_EQ(b.size(), std::size_t{44 + 2 * samples});
         if (b.size() < 44) continue;
         CHECK_EQ(u32At(b, 4), std::uint32_t(36 + 2 * samples));
@@ -134,7 +132,7 @@ TEST(ac8_options_name_settings_save_and_output_folders) {
     TempFolder mine;
     const fs::path ini = mine.path() / "Calc-U-Test.ini", save = mine.path() / "save", output = mine.path() / "out";
     { std::ofstream(ini) << "format-version = 1\n[startup]\nmodel = test-dot\n"; }
-    const std::string before = readAll(ini);
+    const std::string before = calcu::testing::readText(ini);
     RunOptions o;
     o.settingsFile = str(ini);
     o.saveFolder = str(save);
@@ -153,7 +151,7 @@ TEST(ac8_options_name_settings_save_and_output_folders) {
     }
     // The named folders are the agent's: kept, with what is in them.
     CHECK(fs::exists(save / "kept.txt") && fs::is_directory(output));
-    CHECK_EQ(readAll(ini), before);
+    CHECK_EQ(calcu::testing::readText(ini), before);
 }
 
 TEST(ac8_bundled_roms_through_the_lookup) {
@@ -317,7 +315,7 @@ TEST(ac24_restore_refused_for_other_configuration_changes_nothing) {
     CHECK(later.line("state-restore " + file).rfind("refused: The file is of another product version", 0) == 0);
     CHECK_EQ(later.line("ticks"), before);
     // Another model in the header.
-    std::string bytes = readAll(file);
+    std::string bytes = calcu::testing::readText(file);
     const auto at = bytes.find("model: test-seg");
     CHECK(at != std::string::npos);
     if (at == std::string::npos) return;
@@ -347,7 +345,7 @@ TEST(ac24_host_files_not_in_state) {
     if (!run.server) return;
     { std::ofstream(fs::path(run.server->setup().saveFolder()) / "host-file.txt") << "of the host"; }
     run.line("state-save " + file);
-    const std::string bytes = readAll(file);
+    const std::string bytes = calcu::testing::readText(file);
     CHECK(bytes.rfind("calcu-machine-state 1\nproduct: Calc-U-Test\nversion: 1.0-test\nmodel: test-seg\nvariant: -\n\n", 0) == 0);
     CHECK(bytes.find("host-file") == std::string::npos && bytes.find("of the host") == std::string::npos);
     CHECK(bytes.find(run.server->setup().saveFolder()) == std::string::npos);

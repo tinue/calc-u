@@ -1,6 +1,8 @@
 // app/Settings (LIB-9, Calc-U-59 column: AC-19 to AC-25, AC-34, AC-35):
 // the product's declaration and typed calls over the library's settings file.
 
+#include "Files.hpp"
+#include "TempFolder.hpp"
 #include "TestHarness.hpp"
 #include "../app/Settings.hpp"
 #include "settings/HostDirs.hpp"
@@ -23,18 +25,8 @@ namespace cs = calcu::settings;
 namespace s59 = cu59::settings;
 using cu59::Model;
 
-std::string readAll(const fs::path& p) {
-    std::ifstream in(p, std::ios::binary);
-    return std::string((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>());
-}
-
-// A temporary folder of its own, removed afterwards.
-struct TempDir {
-    fs::path root;
-    explicit TempDir(const char* name) : root(fs::temp_directory_path() / name) { fs::remove_all(root); }
-    ~TempDir() { fs::remove_all(root); }
-    std::string str() const { return root.string(); }
-};
+using calcu::testing::readText;
+using TempDir = calcu::testing::TempFolder;
 
 // Calc-U-59's settings over a file that is never read or written (AC-18).
 struct TestSettings {
@@ -189,7 +181,7 @@ TEST(lib9_ac21_first_start_defaults_and_writes_file) {
         CHECK(s.windowState() == s59::WindowState{});
     }
     CHECK(fs::exists(path));
-    const std::string text = readAll(path);
+    const std::string text = readText(path);
     CHECK(text.rfind("format-version = 1", 0) == 0);
     for (const cs::KeyDecl& k : d.keys)
         CHECK(text.find(k.defaultValue.empty() ? k.key + " =\n" : k.key + " = " + k.defaultValue) != std::string::npos);
@@ -259,9 +251,8 @@ TEST(lib9_ac24_trace_location_app_support_icloud_folder) {
 TEST(lib9_ac25_one_declaration_for_every_frontend) {
     TempDir tmp("calcu59-lib9-ac25");
     const cs::ProductDecl& d = s59::settingsDecl();
-    CHECK(&d == &s59::settingsDecl());
     const std::string path = tmp.str() + "/Calc-U-59/Calc-U-59.ini";
-    fs::create_directories(tmp.root / "Calc-U-59");
+    fs::create_directories(tmp.path() / "Calc-U-59");
     std::ofstream(path, std::ios::binary) << "format-version = 1\n[keyboard]\nfeedback = haptic\n"
                                              "[storage]\nsave-folder = /qt/cards\n[mine]\nnote = kept\n";
     {
@@ -275,7 +266,7 @@ TEST(lib9_ac25_one_declaration_for_every_frontend) {
         CHECK(!cs::Paths(f, web).traceFolder());
         s59::Settings(f).setLedStyle(s59::LedStyle::Classic);
     }
-    const std::string text = readAll(path);
+    const std::string text = readText(path);
     CHECK(text.find("feedback = haptic") != std::string::npos);
     CHECK(text.find("save-folder = /qt/cards") != std::string::npos);
     CHECK(text.find("note = kept") != std::string::npos);
@@ -310,7 +301,7 @@ TEST(lib9_ac35_window_numbers_round_trip) {
         CHECK(s.windowState() == s59::WindowState{});
         s.setWindowState(w);
     }
-    const std::string text = readAll(path);
+    const std::string text = readText(path);
     for (const char* line : {"x = -40", "y = 25", "width = 1500", "height = 900", "calculator-width = 420",
                              "printer-width = 300", "debug-width = 780"})
         CHECK(text.find(line) != std::string::npos);

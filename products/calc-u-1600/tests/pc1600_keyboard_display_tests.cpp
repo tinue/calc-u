@@ -888,10 +888,7 @@ TEST(test_memory_clock_enable_via_port37_write) {
 // SHIFT character.
 TEST(test_digit_row_shift_table_matches_rom_sftcdt) {
     std::ifstream in("roms/PC1600-P2-B6-new.bin", std::ios::binary);
-    if (!in) {
-        std::fprintf(stderr, "SKIP test_digit_row_shift_table_matches_rom_sftcdt: roms/PC1600-P2-B6-new.bin not found\n");
-        return;
-    }
+    SKIP_UNLESS(in, "roms/PC1600-P2-B6-new.bin not found");
     const std::vector<unsigned char> rom((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>());
     const size_t kSftcdt = 0x953F - 0x8000; // bank 6 is mapped at 8000H
     CHECK(rom.size() == 0x4000);

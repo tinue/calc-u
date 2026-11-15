@@ -14,6 +14,8 @@
 #include <string>
 #include <vector>
 
+#include "Files.hpp"
+#include "TempFolder.hpp"
 #include "../core/Connector/HostDirectoryDrive.hpp"
 #include "../core/Connector/PC1600HostDriveCard.hpp"
 #include "../core/PC1600/PC1600BusDrive.hpp"
@@ -24,32 +26,7 @@ namespace {
 namespace fs = std::filesystem;
 using Drive = HostDirectoryDrive;
 
-struct TempDir {
-    fs::path path;
-    TempDir() {
-        static int counter = 0;
-        path = fs::temp_directory_path() / ("calcu-hostdrive-" + std::to_string(::getpid()) + "-" + std::to_string(counter++));
-        fs::remove_all(path);
-        fs::create_directories(path);
-    }
-    ~TempDir() {
-        std::error_code ec;
-        fs::permissions(path, fs::perms::owner_all, fs::perm_options::add, ec);
-        for (auto& e : fs::directory_iterator(path, ec))
-            fs::permissions(e.path(), fs::perms::owner_write, fs::perm_options::add, ec);
-        fs::remove_all(path, ec);
-    }
-};
-
-void writeFile(const fs::path& p, const std::string& bytes) {
-    std::ofstream f(p, std::ios::binary);
-    f << bytes;
-}
-
-std::string readFile(const fs::path& p) {
-    std::ifstream f(p, std::ios::binary);
-    return std::string(std::istreambuf_iterator<char>(f), {});
-}
+using TempDir = calcu::testing::TempFolder;
 
 Drive::Request request(uint8_t fn, const std::string& name83, uint16_t fcbAddress = 0xF3C7) {
     Drive::Request req;
@@ -120,13 +97,13 @@ TEST(test_no_directory_is_no_media) {
 
 TEST(test_listing_filters_and_sorts) {
     TempDir dir;
-    writeFile(dir.path / "zeta.txt", "z");
-    writeFile(dir.path / "ALPHA.BAS", "a");
-    writeFile(dir.path / "a-very-long-name.bas", "x");
-    writeFile(dir.path / ".DS_Store", "x");
-    fs::create_directories(dir.path / "SUBDIR");
+    calcu::testing::writeText(dir.path() / "zeta.txt", "z");
+    calcu::testing::writeText(dir.path() / "ALPHA.BAS", "a");
+    calcu::testing::writeText(dir.path() / "a-very-long-name.bas", "x");
+    calcu::testing::writeText(dir.path() / ".DS_Store", "x");
+    fs::create_directories(dir.path() / "SUBDIR");
     Drive drive;
-    drive.setDirectory(dir.path);
+    drive.setDirectory(dir.path());
     const auto names = listNames(drive, "???????????");
     CHECK(names.size() == 2);
     CHECK(names.size() == 2 && names[0] == "ALPHA   BAS");
@@ -137,9 +114,9 @@ TEST(test_listing_filters_and_sorts) {
 
 TEST(test_directory_entry_fields) {
     TempDir dir;
-    writeFile(dir.path / "DATA.TXT", std::string(70000, 'x'));
+    calcu::testing::writeText(dir.path() / "DATA.TXT", std::string(70000, 'x'));
     Drive drive;
-    drive.setDirectory(dir.path);
+    drive.setDirectory(dir.path());
     auto r = drive.execute(request(Drive::kSearchFirst, "DATA    TXT"));
     CHECK(r.status == 0);
     CHECK(r.payload.size() == Drive::kDirEntrySize);
@@ -163,13 +140,13 @@ TEST(test_directory_entry_fields) {
 
 TEST(test_case_collision_keeps_one_file) {
     TempDir dir;
-    writeFile(dir.path / "Prog.bas", "lower");
-    writeFile(dir.path / "PROG.BAS", "upper");
+    calcu::testing::writeText(dir.path() / "Prog.bas", "lower");
+    calcu::testing::writeText(dir.path() / "PROG.BAS", "upper");
     std::error_code ec;
-    const bool caseSensitive = fs::file_size(dir.path / "Prog.bas", ec) == 5 && readFile(dir.path / "PROG.BAS") == "upper" &&
-                               readFile(dir.path / "Prog.bas") == "lower";
+    const bool caseSensitive = fs::file_size(dir.path() / "Prog.bas", ec) == 5 && calcu::testing::readText(dir.path() / "PROG.BAS") == "upper" &&
+                               calcu::testing::readText(dir.path() / "Prog.bas") == "lower";
     Drive drive;
-    drive.setDirectory(dir.path);
+    drive.setDirectory(dir.path());
     const auto names = listNames(drive, "???????????");
     CHECK(names.size() == 1);
     auto r = drive.execute(request(Drive::kOpen, "PROG    BAS"));
@@ -185,9 +162,9 @@ TEST(test_case_collision_keeps_one_file) {
 
 TEST(test_open_fills_the_fcb_like_the_floppy) {
     TempDir dir;
-    writeFile(dir.path / "prog.bas", std::string(300, 'p'));
+    calcu::testing::writeText(dir.path() / "prog.bas", std::string(300, 'p'));
     Drive drive;
-    drive.setDirectory(dir.path);
+    drive.setDirectory(dir.path());
     auto req = request(Drive::kOpen, "PROG    BAS");
     req.fcb[Drive::kFcbCount] = 0x55;
     req.fcb[Drive::kFcbRecord] = 0x12;
@@ -229,18 +206,18 @@ Drive::Response closeWithCount(Drive& drive, const std::string& name,
 TEST(test_write_then_read_records_beyond_32k) {
     TempDir dir;
     Drive drive;
-    drive.setDirectory(dir.path);
+    drive.setDirectory(dir.path());
     auto r = drive.execute(request(Drive::kCreate, "BIG     DAT"));
     CHECK(r.status == 0);
-    CHECK(fs::exists(dir.path / "BIG.DAT"));
+    CHECK(fs::exists(dir.path() / "BIG.DAT"));
     // 200 full records (51200 bytes, past the 7-bit record field) + 10 bytes.
     std::array<uint8_t, Drive::kFcbImageSize> fcb = r.fcb;
     for (int rec = 0; rec <= 200; ++rec) fcb = writeRecord(drive, "BIG     DAT", fcb, static_cast<uint8_t>(rec));
-    CHECK(fs::file_size(dir.path / "BIG.DAT") == 201 * 256);
+    CHECK(fs::file_size(dir.path() / "BIG.DAT") == 201 * 256);
     CHECK((fcb[Drive::kFcbModified] & 0x03) == 0x03);
     r = closeWithCount(drive, "BIG     DAT", fcb, 10);
     CHECK(r.status == 0);
-    CHECK(fs::file_size(dir.path / "BIG.DAT") == 200 * 256 + 10);
+    CHECK(fs::file_size(dir.path() / "BIG.DAT") == 200 * 256 + 10);
     CHECK(size32(r.fcb) == 200 * 256 + 10);
     CHECK(r.fcb[Drive::kFcbModified] == 0);
 
@@ -269,20 +246,20 @@ TEST(test_write_then_read_records_beyond_32k) {
 
 TEST(test_close_without_writes_keeps_the_file) {
     TempDir dir;
-    writeFile(dir.path / "R.TXT", std::string(300, 'r'));
+    calcu::testing::writeText(dir.path() / "R.TXT", std::string(300, 'r'));
     Drive drive;
-    drive.setDirectory(dir.path);
+    drive.setDirectory(dir.path());
     auto r = drive.execute(request(Drive::kOpen, "R       TXT"));
     r = closeWithCount(drive, "R       TXT", r.fcb, 5);  // read-only FCB: no trim
     CHECK(r.status == 0);
-    CHECK(fs::file_size(dir.path / "R.TXT") == 300);
+    CHECK(fs::file_size(dir.path() / "R.TXT") == 300);
 }
 
 TEST(test_append_rewrite_truncates_after_the_last_record) {
     TempDir dir;
-    writeFile(dir.path / "LOG.TXT", std::string("abc\x1A", 4));
+    calcu::testing::writeText(dir.path() / "LOG.TXT", std::string("abc\x1A", 4));
     Drive drive;
-    drive.setDirectory(dir.path);
+    drive.setDirectory(dir.path());
     auto r = drive.execute(request(Drive::kOpen, "LOG     TXT"));
     // BASIC's APPENDPOS rewrites record 0 with the old bytes minus the 1AH.
     auto wr = request(Drive::kSeqWrite, "LOG     TXT");
@@ -291,20 +268,20 @@ TEST(test_append_rewrite_truncates_after_the_last_record) {
     r = drive.execute(wr);
     CHECK(r.status == 0);
     r = closeWithCount(drive, "LOG     TXT", r.fcb, 3);
-    CHECK(readFile(dir.path / "LOG.TXT") == "abd");
+    CHECK(calcu::testing::readText(dir.path() / "LOG.TXT") == "abd");
 }
 
 TEST(test_create_existing_file_keeps_its_host_spelling) {
     TempDir dir;
-    writeFile(dir.path / "notes.txt", "old contents");
+    calcu::testing::writeText(dir.path() / "notes.txt", "old contents");
     Drive drive;
-    drive.setDirectory(dir.path);
+    drive.setDirectory(dir.path());
     auto r = drive.execute(request(Drive::kCreate, "NOTES   TXT"));
     CHECK(r.status == 0);
     CHECK(size32(r.fcb) == 0);
-    CHECK(fs::file_size(dir.path / "notes.txt") == 0);
+    CHECK(fs::file_size(dir.path() / "notes.txt") == 0);
     int count = 0;
-    for (auto& e : fs::directory_iterator(dir.path)) { (void)e; ++count; }
+    for (auto& e : fs::directory_iterator(dir.path())) { (void)e; ++count; }
     CHECK(count == 1);
     r = drive.execute(request(Drive::kCreate, "BAD?    TXT"));
     CHECK(r.erl == Drive::kErlWildcard);
@@ -312,10 +289,10 @@ TEST(test_create_existing_file_keeps_its_host_spelling) {
 
 TEST(test_protect_attribute_round_trips_through_permissions) {
     TempDir dir;
-    writeFile(dir.path / "KEEP.BAS", "k");
-    writeFile(dir.path / "DROP.BAS", "d");
+    calcu::testing::writeText(dir.path() / "KEEP.BAS", "k");
+    calcu::testing::writeText(dir.path() / "DROP.BAS", "d");
     Drive drive;
-    drive.setDirectory(dir.path);
+    drive.setDirectory(dir.path());
     auto set = request(Drive::kSetAttr, "KEEP    BAS", 0xF400);
     set.fcb[Drive::kFcbAttr] = Drive::kAttrArchive | Drive::kAttrProtected;
     CHECK(drive.execute(set).status == 0);
@@ -327,13 +304,13 @@ TEST(test_protect_attribute_round_trips_through_permissions) {
     r = drive.execute(request(Drive::kDelete, "????????BAS"));
     CHECK(r.erl == Drive::kErlProtected);
     CHECK(r.status == 0x48);
-    CHECK(fs::exists(dir.path / "KEEP.BAS"));
-    CHECK(!fs::exists(dir.path / "DROP.BAS"));
+    CHECK(fs::exists(dir.path() / "KEEP.BAS"));
+    CHECK(!fs::exists(dir.path() / "DROP.BAS"));
 
     set.fcb[Drive::kFcbAttr] = Drive::kAttrArchive;
     CHECK(drive.execute(set).status == 0);
     CHECK(drive.execute(request(Drive::kDelete, "KEEP    BAS")).status == 0);
-    CHECK(!fs::exists(dir.path / "KEEP.BAS"));
+    CHECK(!fs::exists(dir.path() / "KEEP.BAS"));
     CHECK(drive.execute(request(Drive::kDelete, "KEEP    BAS")).erl == Drive::kErlNotFound);
     auto wild = request(Drive::kSetAttr, "????????BAS");
     CHECK(drive.execute(wild).erl == Drive::kErlWildcard);
@@ -341,25 +318,25 @@ TEST(test_protect_attribute_round_trips_through_permissions) {
 
 TEST(test_rename) {
     TempDir dir;
-    writeFile(dir.path / "old.bas", "1");
-    writeFile(dir.path / "TAKEN.BAS", "2");
+    calcu::testing::writeText(dir.path() / "old.bas", "1");
+    calcu::testing::writeText(dir.path() / "TAKEN.BAS", "2");
     Drive drive;
-    drive.setDirectory(dir.path);
+    drive.setDirectory(dir.path());
     auto req = request(Drive::kRename, "OLD     BAS");
     std::memcpy(&req.fcb[Drive::kFcbNewName], "TAKEN   BAS", 11);
     CHECK(drive.execute(req).erl == Drive::kErlExists);
     std::memcpy(&req.fcb[Drive::kFcbNewName], "NEW     ???", 11);  // '?' keeps the old character
     CHECK(drive.execute(req).status == 0);
-    CHECK(fs::exists(dir.path / "NEW.BAS"));
-    CHECK(!fs::exists(dir.path / "old.bas"));
-    CHECK(readFile(dir.path / "NEW.BAS") == "1");
+    CHECK(fs::exists(dir.path() / "NEW.BAS"));
+    CHECK(!fs::exists(dir.path() / "old.bas"));
+    CHECK(calcu::testing::readText(dir.path() / "NEW.BAS") == "1");
     CHECK(drive.execute(req).erl == Drive::kErlNotFound);
 }
 
 TEST(test_get_alloc_fits_dskf) {
     TempDir dir;
     Drive drive;
-    drive.setDirectory(dir.path);
+    drive.setDirectory(dir.path());
     auto r = drive.execute(request(Drive::kGetAlloc, "           "));
     CHECK(r.status == 0);
     CHECK(r.bc == 512);
@@ -370,9 +347,9 @@ TEST(test_get_alloc_fits_dskf) {
 
 TEST(test_get_length_in_records) {
     TempDir dir;
-    writeFile(dir.path / "L.DAT", std::string(513, 'l'));
+    calcu::testing::writeText(dir.path() / "L.DAT", std::string(513, 'l'));
     Drive drive;
-    drive.setDirectory(dir.path);
+    drive.setDirectory(dir.path());
     auto r = drive.execute(request(Drive::kGetLength, "L       DAT"));
     CHECK(r.status == 0);
     CHECK(r.de == 0 && r.hl == 3);
@@ -380,10 +357,10 @@ TEST(test_get_length_in_records) {
 
 TEST(test_reset_ends_searches) {
     TempDir dir;
-    writeFile(dir.path / "A.TXT", "a");
-    writeFile(dir.path / "B.TXT", "b");
+    calcu::testing::writeText(dir.path() / "A.TXT", "a");
+    calcu::testing::writeText(dir.path() / "B.TXT", "b");
     Drive drive;
-    drive.setDirectory(dir.path);
+    drive.setDirectory(dir.path());
     auto r = drive.execute(request(Drive::kSearchFirst, "???????????"));
     CHECK(r.status == 0);
     drive.reset(Drive::kResetNew);
@@ -399,13 +376,13 @@ std::string promptOf(const Drive::Response& r) {
 
 TEST(test_change_directory_paths) {
     TempDir dir;
-    fs::create_directories(dir.path / "Dev" / "asm");
-    fs::create_directories(dir.path / "GAMES");
-    fs::create_directories(dir.path / "a-very-long-folder");
-    fs::create_directories(dir.path / ".hidden");
+    fs::create_directories(dir.path() / "Dev" / "asm");
+    fs::create_directories(dir.path() / "GAMES");
+    fs::create_directories(dir.path() / "a-very-long-folder");
+    fs::create_directories(dir.path() / ".hidden");
     Drive drive;
     CHECK(drive.changeDirectory("/").erl == Drive::kErlNoMedia);
-    drive.setDirectory(dir.path);
+    drive.setDirectory(dir.path());
 
     auto r = drive.changeDirectory(".");
     CHECK(r.status == 0 && promptOf(r) == "S3:/>");
@@ -438,21 +415,21 @@ TEST(test_change_directory_paths) {
 
 TEST(test_change_directory_skips_symlinks) {
     TempDir dir, outside;
-    fs::create_directories(dir.path / "IN");
+    fs::create_directories(dir.path() / "IN");
     std::error_code ec;
-    fs::create_directory_symlink(outside.path, dir.path / "OUT", ec);
+    fs::create_directory_symlink(outside.path(), dir.path() / "OUT", ec);
     if (ec) return;  // no symlinks here
     Drive drive;
-    drive.setDirectory(dir.path);
+    drive.setDirectory(dir.path());
     CHECK(drive.changeDirectory("OUT").erl == Drive::kErlNotFound);
     CHECK(drive.changeDirectory("IN").status == 0);
 }
 
 TEST(test_long_prompt_keeps_the_end) {
     TempDir dir;
-    fs::create_directories(dir.path / "AAAAAAAA" / "BBBBBBBB" / "CCCCCCCC" / "DDDDDDDD");
+    fs::create_directories(dir.path() / "AAAAAAAA" / "BBBBBBBB" / "CCCCCCCC" / "DDDDDDDD");
     Drive drive;
-    drive.setDirectory(dir.path);
+    drive.setDirectory(dir.path());
     const auto r = drive.changeDirectory("/AAAAAAAA/BBBBBBBB/CCCCCCCC/DDDDDDDD");
     CHECK(r.status == 0);
     const std::string p = promptOf(r);
@@ -463,51 +440,51 @@ TEST(test_long_prompt_keeps_the_end) {
 
 TEST(test_files_live_in_the_current_directory) {
     TempDir dir;
-    writeFile(dir.path / "ROOT.TXT", "r");
-    fs::create_directories(dir.path / "SUB");
-    writeFile(dir.path / "SUB" / "IN.TXT", "abc");
+    calcu::testing::writeText(dir.path() / "ROOT.TXT", "r");
+    fs::create_directories(dir.path() / "SUB");
+    calcu::testing::writeText(dir.path() / "SUB" / "IN.TXT", "abc");
     Drive drive;
-    drive.setDirectory(dir.path);
+    drive.setDirectory(dir.path());
     CHECK(drive.changeDirectory("SUB").status == 0);
     CHECK(listNames(drive, "???????????") == std::vector<std::string>{"IN      TXT"});
     CHECK(drive.execute(request(Drive::kOpen, "IN      TXT")).status == 0);
     CHECK(drive.execute(request(Drive::kOpen, "ROOT    TXT")).erl == Drive::kErlNotFound);
     CHECK(drive.execute(request(Drive::kCreate, "NEW     TXT")).status == 0);
-    CHECK(fs::exists(dir.path / "SUB" / "NEW.TXT"));
+    CHECK(fs::exists(dir.path() / "SUB" / "NEW.TXT"));
     auto ren = request(Drive::kRename, "NEW     TXT");
     std::memcpy(&ren.fcb[Drive::kFcbNewName], "OLD     TXT", 11);
     CHECK(drive.execute(ren).status == 0);
-    CHECK(fs::exists(dir.path / "SUB" / "OLD.TXT"));
+    CHECK(fs::exists(dir.path() / "SUB" / "OLD.TXT"));
     CHECK(drive.execute(request(Drive::kDelete, "OLD     TXT")).status == 0);
-    CHECK(!fs::exists(dir.path / "SUB" / "OLD.TXT"));
-    CHECK(fs::exists(dir.path / "ROOT.TXT"));
+    CHECK(!fs::exists(dir.path() / "SUB" / "OLD.TXT"));
+    CHECK(fs::exists(dir.path() / "ROOT.TXT"));
     // A file may not take a folder's name.
-    fs::create_directories(dir.path / "SUB" / "INNER");
+    fs::create_directories(dir.path() / "SUB" / "INNER");
     CHECK(drive.execute(request(Drive::kCreate, "INNER      ")).erl == Drive::kErlExists);
 }
 
 TEST(test_vanished_directory_fails_until_cdir) {
     TempDir dir;
-    fs::create_directories(dir.path / "GONE");
+    fs::create_directories(dir.path() / "GONE");
     Drive drive;
-    drive.setDirectory(dir.path);
+    drive.setDirectory(dir.path());
     CHECK(drive.changeDirectory("GONE").status == 0);
-    fs::remove_all(dir.path / "GONE");
+    fs::remove_all(dir.path() / "GONE");
     auto r = drive.execute(request(Drive::kCreate, "X       TXT"));
     CHECK(r.erl == Drive::kErlNotFound);
-    CHECK(!fs::exists(dir.path / "X.TXT"));  // nothing lands in the root
+    CHECK(!fs::exists(dir.path() / "X.TXT"));  // nothing lands in the root
     CHECK(drive.changeDirectory("/").status == 0);
     CHECK(drive.execute(request(Drive::kCreate, "X       TXT")).status == 0);
 }
 
 TEST(test_directory_mode_lists_subdirectories) {
     TempDir dir;
-    writeFile(dir.path / "A.TXT", "a");
-    fs::create_directories(dir.path / "zeta");
-    fs::create_directories(dir.path / "ALPHA.V1");
-    fs::create_directories(dir.path / "a-very-long-folder");
+    calcu::testing::writeText(dir.path() / "A.TXT", "a");
+    fs::create_directories(dir.path() / "zeta");
+    fs::create_directories(dir.path() / "ALPHA.V1");
+    fs::create_directories(dir.path() / "a-very-long-folder");
     Drive drive;
-    drive.setDirectory(dir.path);
+    drive.setDirectory(dir.path());
     drive.setListDirectories(true);
     CHECK(listNames(drive, "???????????") == (std::vector<std::string>{"ALPHA   V1 ", "ZETA       "}));
     auto r = drive.execute(request(Drive::kSearchFirst, "???????????"));
@@ -521,9 +498,9 @@ TEST(test_directory_mode_lists_subdirectories) {
 
 TEST(test_reset_functions) {
     TempDir dir;
-    fs::create_directories(dir.path / "SUB");
+    fs::create_directories(dir.path() / "SUB");
     Drive drive;
-    drive.setDirectory(dir.path);
+    drive.setDirectory(dir.path());
     for (uint8_t fn = 0; fn < 8; ++fn) {
         CHECK(drive.changeDirectory("/SUB").status == 0);
         drive.setListDirectories(true);
@@ -533,17 +510,17 @@ TEST(test_reset_functions) {
         CHECK(listNames(drive, "???????????").empty());  // back in file mode: SUB has no files
     }
     CHECK(drive.changeDirectory("/SUB").status == 0);
-    drive.setDirectory(dir.path);  // a new mount starts at the root
+    drive.setDirectory(dir.path());  // a new mount starts at the root
     CHECK(drive.currentDirectory().empty());
 }
 
 // The MEP fixed entries' bus protocol, as the driver ROM speaks it.
 TEST(test_card_mep_commands) {
     TempDir dir;
-    writeFile(dir.path / "A.TXT", "a");
-    fs::create_directories(dir.path / "DOCS");
+    calcu::testing::writeText(dir.path() / "A.TXT", "a");
+    fs::create_directories(dir.path() / "DOCS");
     PC1600HostDriveCard card;
-    card.drive().setDirectory(dir.path);
+    card.drive().setDirectory(dir.path());
     auto out = [&card](uint8_t port, uint8_t value) {
         CHECK(card.respondsToWrite(PC1600BusDrive::z80IoPins(port, /*forWrite=*/true), value));
     };
@@ -592,7 +569,7 @@ TEST(test_card_mep_commands) {
 TEST(test_unsupported_function) {
     TempDir dir;
     Drive drive;
-    drive.setDirectory(dir.path);
+    drive.setDirectory(dir.path());
     auto r = drive.execute(request(0x21, "           "));
     CHECK(r.status == 0x10);
     CHECK(r.erl == Drive::kErlUnsupported);

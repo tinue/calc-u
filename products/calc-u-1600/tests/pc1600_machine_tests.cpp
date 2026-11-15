@@ -15,6 +15,7 @@
 #include "../core/PC1600/PC1600Machine.hpp"
 #include "TestCards.hpp"
 #include "TestRoms.hpp"
+#include "FakeSerialLink.hpp"
 #include "TestHarness.hpp"
 
 namespace {
@@ -742,10 +743,7 @@ static int litPixels(const PC1600Machine& m) {
 // brings it back), and ON restarts it -- several times over.
 TEST(test_real_rom_off_stays_off_and_on_restarts) {
     PC1600Machine m;
-    if (!bootPC1600(m)) {
-        std::fprintf(stderr, "SKIP test_real_rom_off_stays_off_and_on_restarts: PC-1600 ROM images not found\n");
-        return;
-    }
+    SKIP_UNLESS(bootPC1600(m), "PC-1600 ROM images not found");
     const uint64_t hz = static_cast<uint64_t>(PC1600Machine::kTStateHz);
     CHECK(litPixels(m) > 0);
     for (int cycle = 0; cycle < 3; cycle++) {
@@ -777,10 +775,7 @@ void typeProgram(PC1600Machine& m, std::initializer_list<const char*> lines) {
 
 TEST(test_rom_on_time_gosub_fires) {
     PC1600Machine m;
-    if (!bootPC1600(m)) {
-        std::fprintf(stderr, "SKIP test_rom_on_time_gosub_fires: PC-1600 ROM images not found\n");
-        return;
-    }
+    SKIP_UNLESS(bootPC1600(m), "PC-1600 ROM images not found");
     tapKey(m, "mode"); // RUN -> PRO
     waitIdle(m, PC1600Machine::kTStateHz);
     typeProgram(m, {
@@ -818,10 +813,7 @@ bool runUntil(PC1600Machine& m, bool wantOff, double seconds) {
 // reset that resumes -- program kept, prompt responsive (SubCpu §4.1).
 TEST(test_rom_off_on_resumes) {
     PC1600Machine m;
-    if (!bootPC1600(m)) {
-        std::fprintf(stderr, "SKIP test_rom_off_on_resumes: PC-1600 ROM images not found\n");
-        return;
-    }
+    SKIP_UNLESS(bootPC1600(m), "PC-1600 ROM images not found");
     tapKey(m, "mode"); // RUN -> PRO
     waitIdle(m, PC1600Machine::kTStateHz);
     typeProgram(m, {"10 PRINT 1"});
@@ -857,10 +849,7 @@ TEST(test_rom_off_on_resumes) {
 // ROM separates the command with ':' (romIII-3 6E23H compares 3AH).
 TEST(test_rom_wake_runs_command_at_the_set_time) {
     PC1600Machine m;
-    if (!bootPC1600(m)) {
-        std::fprintf(stderr, "SKIP test_rom_wake_runs_command_at_the_set_time: PC-1600 ROM images not found\n");
-        return;
-    }
+    SKIP_UNLESS(bootPC1600(m), "PC-1600 ROM images not found");
     tapKey(m, "mode"); // RUN -> PRO -> RUN, as after any ALL RESET here
     waitIdle(m, PC1600Machine::kTStateHz);
     tapKey(m, "mode");
@@ -891,10 +880,7 @@ TEST(test_rom_wake_runs_command_at_the_set_time) {
 // 04B0H reload after the resume.
 TEST(test_rom_auto_power_off_resumes) {
     PC1600Machine m;
-    if (!bootPC1600(m)) {
-        std::fprintf(stderr, "SKIP test_rom_auto_power_off_resumes: PC-1600 ROM images not found\n");
-        return;
-    }
+    SKIP_UNLESS(bootPC1600(m), "PC-1600 ROM images not found");
     tapKey(m, "mode"); waitIdle(m, PC1600Machine::kTStateHz);
     tapKey(m, "mode"); waitIdle(m, PC1600Machine::kTStateHz);
     auto apoCount = [&] { return m.memory().read(0xF0AC) | (m.memory().read(0xF0AD) << 8); };
@@ -923,27 +909,11 @@ TEST(test_rom_auto_power_off_resumes) {
 // SETCOM, OPEN, PRINT#, CLOSE. Exercises the CPC as the ROM programs it:
 // PR7/PR1:PR0 baud, the serial command shadow (TxEN), and the CS/CD/DR
 // status polarity the ROM checks before it sends (Ref/PC-1600/PC-1600-CPC-TC8576.md §9).
-struct RecordingLink : SerialLink {
-    std::vector<uint8_t> tx;
-    std::deque<uint8_t> rx;
-    uint32_t baud = 0;
-    bool poll(uint8_t& out) override {
-        if (rx.empty()) return false;
-        out = rx.front(); rx.pop_front(); return true;
-    }
-    void send(uint8_t b) override { tx.push_back(b); }
-    void onBaud(uint32_t b, int) override { baud = b; }
-    Lines lines;
-    void getStatus(Lines& in) override { in = lines; }
-};
 
 TEST(test_rom_com1_print_reaches_the_peer) {
     PC1600Machine m;
-    if (!bootPC1600(m)) {
-        std::fprintf(stderr, "SKIP test_rom_com1_print_reaches_the_peer: PC-1600 ROM images not found\n");
-        return;
-    }
-    RecordingLink link;
+    SKIP_UNLESS(bootPC1600(m), "PC-1600 ROM images not found");
+    FakeSerialLink link;
     m.setSerialLink(&link);
     tapKey(m, "mode"); waitIdle(m, PC1600Machine::kTStateHz);
     tapKey(m, "mode"); waitIdle(m, PC1600Machine::kTStateHz);
@@ -957,7 +927,7 @@ TEST(test_rom_com1_print_reaches_the_peer) {
                           "OPEN \"COM1:\" FOR OUTPUT AS #1", "PRINT #1,\"HELLO\"", "CLOSE #1"})
         type(l);
     m.runCycles(PC1600Machine::kTStateHz);
-    CHECK(link.baud == 9600);
+    CHECK(link.lastBaud == 9600);
     CHECK(std::string(link.tx.begin(), link.tx.end()).find("HELLO") != std::string::npos);
 
     // CS off: the ROM holds the data back (P2-B6 A524H gating) and times out.

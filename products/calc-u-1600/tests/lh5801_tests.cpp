@@ -946,10 +946,7 @@ TEST(test_preset_syncclock_reseeds_rtc) {
         machine.seedClock(2000, (b.tm_mon + 6) % 12 + 1, 1, (b.tm_hour + 12) % 24, 0, 0);
     };
     const PresetLoadResult res = applyPC1500Preset(machine, preset, {}, ".", ".", hostOnBoot, testPresetRoms());
-    if (!res.ok) {
-        std::fprintf(stderr, "SKIP test_preset_syncclock_reseeds_rtc: %s\n", res.error.c_str());
-        return;
-    }
+    SKIP_UNLESS(res.ok, res.error.c_str());
     const std::time_t now = std::time(nullptr);
     std::tm t{};
     localtime_r(&now, &t);
@@ -1339,11 +1336,7 @@ TEST(test_display_status_icons) {
 TEST(test_boot_smoke_real_rom) {
     PC1500Machine machine;
     bool loaded = machine.loadROMFile("roms/PC-1500_A04.ROM");
-    if (!loaded) {
-        std::fprintf(stderr, "SKIP test_boot_smoke_real_rom: roms/PC-1500_A04.ROM not found "
-                              "relative to cwd (run tests from the repo root)\n");
-        return;
-    }
+    SKIP_UNLESS(loaded, "roms/PC-1500_A04.ROM not found relative to cwd (run tests from the repo root)");
     machine.reset();
     CHECK(machine.cpu().pc() == 0xE000); // confirmed reset vector target, see LH5801.cpp comment
 

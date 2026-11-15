@@ -25,13 +25,7 @@ namespace {
 TEST(test_hidden_rom_latch_via_execution) {
     PC1600Machine m;
     std::vector<uint8_t> bank3, bank3b;
-    if (!readRomImage("roms/PC1600-P1-B3-new.bin", &bank3) ||
-        !readRomImage("roms/PC1600-P1-B3B-new.bin", &bank3b)) {
-        std::fprintf(stderr, "SKIP test_hidden_rom_latch_via_execution: "
-                              "roms/PC1600-P1-B3-new.bin or PC1600-P1-B3B-new.bin not found "
-                              "relative to cwd (run tests from the repo root)\n");
-        return;
-    }
+    SKIP_UNLESS(readRomImage("roms/PC1600-P1-B3-new.bin", &bank3) && readRomImage("roms/PC1600-P1-B3B-new.bin", &bank3b), "roms/PC1600-P1-B3-new.bin or PC1600-P1-B3B-new.bin not found relative to cwd (run tests from the repo root)");
     CHECK(bank3[0] != bank3b[0]); // prerequisite for the latch to be observable at all
 
     std::vector<uint8_t> lower(16384, 0x00), upper(16384, 0x00);
@@ -63,12 +57,7 @@ TEST(test_hidden_rom_latch_via_execution) {
 TEST(test_ce1600p_rom_attach_and_open_bus) {
     PC1600Machine m;
     std::vector<uint8_t> ce1, ce2;
-    if (!readRomImage("roms/PC1600-P1-B4-CE1600P-new.bin", &ce1) ||
-        !readRomImage("roms/PC1600-P1-B5-CE1600P-OR-F-new.bin", &ce2)) {
-        std::fprintf(stderr, "SKIP test_ce1600p_rom_attach_and_open_bus: "
-                              "roms/PC1600-P1-B4-CE1600P-new.bin or PC1600-P1-B5-CE1600P-OR-F-new.bin not found\n");
-        return;
-    }
+    SKIP_UNLESS(readRomImage("roms/PC1600-P1-B4-CE1600P-new.bin", &ce1) && readRomImage("roms/PC1600-P1-B5-CE1600P-OR-F-new.bin", &ce2), "roms/PC1600-P1-B4-CE1600P-new.bin or PC1600-P1-B5-CE1600P-OR-F-new.bin not found");
 
     std::vector<uint8_t> lower(16384, 0x00), upper(16384, 0x00);
     lower[0] = 0x3A; lower[1] = 0x00; lower[2] = 0x40; // LD A,(4000H)
@@ -116,14 +105,7 @@ TEST(test_ce1600p_rom_attach_and_open_bus) {
 // independently of the PC-1600's own ROM, and rejects an unknown version.
 TEST(test_ce1600p_rom_version_selection) {
     std::vector<uint8_t> newB4, newB5, oldB4, oldB5;
-    if (!readRomImage("roms/PC1600-P1-B4-CE1600P-new.bin", &newB4) ||
-        !readRomImage("roms/PC1600-P1-B5-CE1600P-OR-F-new.bin", &newB5) ||
-        !readRomImage("roms/PC1600-P1-B4-CE1600P-old.bin", &oldB4) ||
-        !readRomImage("roms/PC1600-P1-B5-CE1600P-OR-F-old.bin", &oldB5)) {
-        std::fprintf(stderr, "SKIP test_ce1600p_rom_version_selection: "
-                              "roms/PC1600-P1-B{4,5}-CE1600P*-{new,old}.bin not found\n");
-        return;
-    }
+    SKIP_UNLESS(readRomImage("roms/PC1600-P1-B4-CE1600P-new.bin", &newB4) && readRomImage("roms/PC1600-P1-B5-CE1600P-OR-F-new.bin", &newB5) && readRomImage("roms/PC1600-P1-B4-CE1600P-old.bin", &oldB4) && readRomImage("roms/PC1600-P1-B5-CE1600P-OR-F-old.bin", &oldB5), "roms/PC1600-P1-B{4,5}-CE1600P*-{new,old}.bin not found");
     CHECK(newB4 != oldB4);  // two genuinely different versions
 
     // Bank 5's last two bytes are the version marker (PEEK #(5,&7FFE/F)).

@@ -92,10 +92,7 @@ void protectedProgramModule(PC1500Variant variant) {
     CE161_OR_FAIL(card, is1500A ? CardHost::PC1500A : CardHost::PC1500);
     PC1500Machine m(variant);
     m.attachExpansionCard(std::move(card));
-    if (!m.loadROMFile("roms/PC-1500_A04.ROM")) {
-        std::fprintf(stderr, "SKIP %s: roms/PC-1500_A04.ROM not found (run from the repo root)\n", __func__);
-        return;
-    }
+    SKIP_UNLESS(m.loadROMFile("roms/PC-1500_A04.ROM"), "roms/PC-1500_A04.ROM not found (run from the repo root)");
     m.reset();
     runBootToPrompt(m);
     auto peek16 = [&](uint16_t a) { return uint16_t(m.memory().peek(a) << 8 | m.memory().peek(a + 1)); };

@@ -15,8 +15,8 @@
 #include <string>
 #include <vector>
 
-#include <unistd.h> // mkdtemp
 
+#include "TempFolder.hpp"
 #include "../core/Connector/CE1600FCard.hpp"
 #include "../core/Connector/FloppyImageFile.hpp"
 #include "../core/PC1600/PC1600BusDrive.hpp"
@@ -194,11 +194,9 @@ bool writeTextFile(const std::string& path, const std::string& text) {
 // address.
 TEST(test_loader_machine_binary_header) {
     PC1600Machine m;
-    if (!loadPC1600Roms(m)) {
-        std::fprintf(stderr, "SKIP test_loader_machine_binary_header: PC-1600 ROM images not found\n");
-        return;
-    }
-    const std::string bin = "/tmp/pc1600_ml_header.bin";
+    SKIP_UNLESS(loadPC1600Roms(m), "PC-1600 ROM images not found");
+    const calcu::testing::TempFolder tmp("calcu1600-ml");
+    const std::string bin = tmp / "pc1600_ml_header.bin";
     CHECK(writeFile(bin, mlFile({0xC9, 0x3E, 0xC9}, /*load=*/0xD000, /*autorun=*/0, /*declared=*/3)));
 
     PresetFile p;
@@ -217,12 +215,10 @@ TEST(test_loader_machine_binary_header) {
 // error naming `length:`; supplying `length:` overrides it.
 TEST(test_loader_machine_binary_length_mismatch) {
     PC1600Machine m;
-    if (!loadPC1600Roms(m)) {
-        std::fprintf(stderr, "SKIP test_loader_machine_binary_length_mismatch: PC-1600 ROM images not found\n");
-        return;
-    }
+    SKIP_UNLESS(loadPC1600Roms(m), "PC-1600 ROM images not found");
     // Header claims 1 payload byte; the file actually carries 4.
-    const std::string bin = "/tmp/pc1600_ml_mismatch.bin";
+    const calcu::testing::TempFolder tmp("calcu1600-ml");
+    const std::string bin = tmp / "pc1600_ml_mismatch.bin";
     CHECK(writeFile(bin, mlFile({0x11, 0x22, 0x33, 0x44}, 0xD100, 0, /*declared=*/1)));
 
     PresetFile p;
@@ -249,11 +245,9 @@ TEST(test_loader_machine_binary_length_mismatch) {
 // Functional: a headerless blob needs both `address:` and `length:`.
 TEST(test_loader_machine_binary_headerless) {
     PC1600Machine m;
-    if (!loadPC1600Roms(m)) {
-        std::fprintf(stderr, "SKIP test_loader_machine_binary_headerless: PC-1600 ROM images not found\n");
-        return;
-    }
-    const std::string bin = "/tmp/pc1600_ml_raw.bin";
+    SKIP_UNLESS(loadPC1600Roms(m), "PC-1600 ROM images not found");
+    const calcu::testing::TempFolder tmp("calcu1600-ml");
+    const std::string bin = tmp / "pc1600_ml_raw.bin";
     CHECK(writeFile(bin, {0xAA, 0xBB, 0xCC, 0xDD}));
 
     PresetFile p;
@@ -280,12 +274,9 @@ TEST(test_loader_machine_binary_headerless) {
 // a CE-158 (PC-1500) file is refused rather than poked header and all.
 TEST(test_loader_machine_binary_headerless_address_only_and_ce158) {
     PC1600Machine m;
-    if (!loadPC1600Roms(m)) {
-        std::fprintf(stderr, "SKIP test_loader_machine_binary_headerless_address_only_and_ce158: "
-                             "PC-1600 ROM images not found\n");
-        return;
-    }
-    const std::string bin = "/tmp/pc1600_ml_raw_addr.bin";
+    SKIP_UNLESS(loadPC1600Roms(m), "PC-1600 ROM images not found");
+    const calcu::testing::TempFolder tmp("calcu1600-ml");
+    const std::string bin = tmp / "pc1600_ml_raw_addr.bin";
     CHECK(writeFile(bin, {0x12, 0x34, 0x56}));
     PresetFile p;
     std::string err;
@@ -304,7 +295,7 @@ TEST(test_loader_machine_binary_headerless_address_only_and_ce158) {
         ce158.push_back(static_cast<uint8_t>(v & 0xFF));
     }
     ce158.push_back(0x9A);
-    const std::string ce158Bin = "/tmp/pc1600_ml_ce158.bin";
+    const std::string ce158Bin = tmp / "pc1600_ml_ce158.bin";
     CHECK(writeFile(ce158Bin, ce158));
     PC1600Machine m2;
     loadPC1600Roms(m2);
@@ -322,11 +313,9 @@ TEST(test_loader_machine_binary_headerless_address_only_and_ce158) {
 // completes cleanly.
 TEST(test_loader_machine_binary_autorun) {
     PC1600Machine m;
-    if (!loadPC1600Roms(m)) {
-        std::fprintf(stderr, "SKIP test_loader_machine_binary_autorun: PC-1600 ROM images not found\n");
-        return;
-    }
-    const std::string bin = "/tmp/pc1600_ml_autorun.bin";
+    SKIP_UNLESS(loadPC1600Roms(m), "PC-1600 ROM images not found");
+    const calcu::testing::TempFolder tmp("calcu1600-ml");
+    const std::string bin = tmp / "pc1600_ml_autorun.bin";
     CHECK(writeFile(bin, mlFile({0xC9}, /*load=*/0xD300, /*autorun=*/0xD300, /*declared=*/1)));
 
     PresetFile p;
@@ -345,11 +334,9 @@ TEST(test_loader_machine_binary_autorun) {
 // if the right CALL ran it.
 TEST(test_loader_machine_binary_autorun_slot2) {
     PC1600Machine m;
-    if (!loadPC1600Roms(m)) {
-        std::fprintf(stderr, "SKIP test_loader_machine_binary_autorun_slot2: PC-1600 ROM images not found\n");
-        return;
-    }
-    const std::string bin = "/tmp/pc1600_ml_autorun_s2.bin";
+    SKIP_UNLESS(loadPC1600Roms(m), "PC-1600 ROM images not found");
+    const calcu::testing::TempFolder tmp("calcu1600-ml");
+    const std::string bin = tmp / "pc1600_ml_autorun_s2.bin";
     // LD A,5AH / LD (D300H),A / RET
     CHECK(writeFile(bin, mlFile({0x3E, 0x5A, 0x32, 0x00, 0xD3, 0xC9}, /*load=*/0x8100, /*autorun=*/0x8100,
                                 /*declared=*/6)));
@@ -373,11 +360,9 @@ TEST(test_loader_machine_binary_autorun_slot2) {
 // Z-80 &D000), and a CE-158 file loads at its header's LH5803 address.
 TEST(test_loader_machine_binary_mode1) {
     PC1600Machine m;
-    if (!loadPC1600Roms(m)) {
-        std::fprintf(stderr, "SKIP test_loader_machine_binary_mode1: PC-1600 ROM images not found\n");
-        return;
-    }
-    const std::string bin = "/tmp/pc1600_ml_mode1.bin";
+    SKIP_UNLESS(loadPC1600Roms(m), "PC-1600 ROM images not found");
+    const calcu::testing::TempFolder tmp("calcu1600-ml");
+    const std::string bin = tmp / "pc1600_ml_mode1.bin";
     CHECK(writeFile(bin, {0x5A, 0xA5}));
     std::vector<uint8_t> ce158 = {0x01, 0x42, 'C', 'O', 'M'};
     ce158.resize(5 + 16, 0);
@@ -386,7 +371,7 @@ TEST(test_loader_machine_binary_mode1) {
         ce158.push_back(static_cast<uint8_t>(v & 0xFF));
     }
     ce158.push_back(0x9A);
-    const std::string ce158Bin = "/tmp/pc1600_ml_mode1_ce158.bin";
+    const std::string ce158Bin = tmp / "pc1600_ml_mode1_ce158.bin";
     CHECK(writeFile(ce158Bin, ce158));
     PresetFile p;
     std::string err;
@@ -403,11 +388,9 @@ TEST(test_loader_machine_binary_mode1) {
 // TITLE "S1:": $8000-$BFFF is the S1 program module.
 TEST(test_loader_machine_binary_title_s1) {
     PC1600Machine m;
-    if (!loadPC1600Roms(m)) {
-        std::fprintf(stderr, "SKIP test_loader_machine_binary_title_s1: PC-1600 ROM images not found\n");
-        return;
-    }
-    const std::string bin = "/tmp/pc1600_ml_title_s1.bin";
+    SKIP_UNLESS(loadPC1600Roms(m), "PC-1600 ROM images not found");
+    const calcu::testing::TempFolder tmp("calcu1600-ml");
+    const std::string bin = tmp / "pc1600_ml_title_s1.bin";
     CHECK(writeFile(bin, {0x11, 0x22, 0x33}));
     PresetFile p;
     std::string err;
@@ -445,10 +428,7 @@ TEST(test_parser_accepts_basic_text_program) {
 // program loads and only the over-length line is reported.
 TEST(test_loader_reports_overlong_basic_line) {
     PC1600Machine m;
-    if (!loadPC1600Roms(m)) {
-        std::fprintf(stderr, "SKIP test_loader_reports_overlong_basic_line: PC-1600 ROM images not found\n");
-        return;
-    }
+    SKIP_UNLESS(loadPC1600Roms(m), "PC-1600 ROM images not found");
     std::string longLine = "20 REM ";
     while (longLine.size() < 100) longLine += 'X';
 
@@ -516,11 +496,7 @@ TEST(test_type_step_rejects_untypeable_char) {
 // (which would turn `INIT"S2:","M"` into `INITs2M`).
 TEST(test_type_step_shifted_punctuation_reaches_input_buffer) {
     PC1600Machine m;
-    if (!loadPC1600Roms(m)) {
-        std::fprintf(stderr,
-                     "SKIP test_type_step_shifted_punctuation_reaches_input_buffer: PC-1600 ROM images not found\n");
-        return;
-    }
+    SKIP_UNLESS(loadPC1600Roms(m), "PC-1600 ROM images not found");
     PresetFile p;
     std::string err;
     // No ENTER echo to worry about: the step appends ENTER, but we read the
@@ -551,10 +527,7 @@ TEST(test_type_step_shifted_punctuation_reaches_input_buffer) {
 // disassembly), but the load must complete cleanly with nothing rejected.
 TEST(test_loader_applies_basic_text_program) {
     PC1600Machine m;
-    if (!loadPC1600Roms(m)) {
-        std::fprintf(stderr, "SKIP test_loader_applies_basic_text_program: PC-1600 ROM images not found\n");
-        return;
-    }
+    SKIP_UNLESS(loadPC1600Roms(m), "PC-1600 ROM images not found");
     PresetFile p;
     std::string err;
     CHECK(parse(
@@ -613,12 +586,7 @@ TEST(test_loader_ce150_plotter_attaches_with_rom_path) {
     PC1600Machine m;
     loadPC1600Roms(m);  // optional: an empty bus boots too, only slower
     PresetLoadResult r = applyPC1600Preset(m, p, {}, ".", ".", {}, testPresetRoms());
-    if (!r.ok) {
-        // Skip gracefully if the ROM asset isn't reachable from the cwd.
-        std::fprintf(stderr, "SKIP test_loader_ce150_plotter_attaches_with_rom_path: %s\n",
-                     r.error.c_str());
-        return;
-    }
+    SKIP_UNLESS(r.ok, r.error.c_str());   // the ROM asset is not reachable from the cwd
     CHECK(m.ce150Attached());
 }
 
@@ -693,10 +661,7 @@ TEST(test_loader_ce1600p_with_no_floppy_key_leaves_drive_empty) {
     PC1600Machine m;
     loadPC1600Roms(m);  // optional: an empty bus boots too, only slower
     PresetLoadResult r = applyPC1600Preset(m, p, {}, ".", ".", {}, testPresetRoms());
-    if (!r.ok) {
-        std::fprintf(stderr, "SKIP test_loader_ce1600p_with_no_floppy_key_leaves_drive_empty: %s\n", r.error.c_str());
-        return;
-    }
+    SKIP_UNLESS(r.ok, r.error.c_str());
     CHECK(m.ce1600fAttached());
     CHECK(r.floppyImageLabel.empty());
     CHECK(!m.ce1600fHasDisk());
@@ -715,10 +680,7 @@ TEST(test_loader_floppy_key_loads_named_disk_image) {
     PC1600Machine m;
     loadPC1600Roms(m);  // optional: an empty bus boots too, only slower
     PresetLoadResult r = applyPC1600Preset(m, p, {}, ".", "/tmp", {}, testPresetRoms());
-    if (!r.ok) {
-        std::fprintf(stderr, "SKIP test_loader_floppy_key_loads_named_disk_image: %s\n", r.error.c_str());
-        return;
-    }
+    SKIP_UNLESS(r.ok, r.error.c_str());
     CHECK(m.ce1600fAttached());
     CHECK(r.floppyImageLabel == "mydisk");
     CHECK(r.floppyResolvedPath == "/tmp/mydisk-file.floppy.yaml");
@@ -742,10 +704,7 @@ TEST(test_loader_floppy_key_side_suffix_selects_side_b) {
     PC1600Machine m;
     loadPC1600Roms(m);  // optional: an empty bus boots too, only slower
     PresetLoadResult r = applyPC1600Preset(m, p, {}, ".", "/tmp", {}, testPresetRoms());
-    if (!r.ok) {
-        std::fprintf(stderr, "SKIP test_loader_floppy_key_side_suffix_selects_side_b: %s\n", r.error.c_str());
-        return;
-    }
+    SKIP_UNLESS(r.ok, r.error.c_str());
     CHECK(m.ce1600fAttached());
     CHECK(m.ce1600fSide() == 1);
 }
@@ -862,11 +821,8 @@ TEST(test_parser_floppy_file_and_host_drive) {
 // mounts S3: before the boot, and `saveas: template ... file:` writes
 // template files through savePresetMedia() (Core/Preset/PresetMedia.hpp).
 TEST(test_loader_host_drive_floppy_file_and_template_saves) {
-    char tmpl[] = "/tmp/pc1600_preset_media_XXXXXX";
-    const char* dir = mkdtemp(tmpl);
-    CHECK(dir != nullptr);
-    if (!dir) return;
-    const std::string d(dir);
+    const calcu::testing::TempFolder tmp("calcu1600-pc1600-preset-media");
+    const std::string d = tmp.str();
     std::filesystem::create_directories(d + "/S3");
     const std::string presetPath = d + "/make.pc1600";
     const std::string floppyPath = std::filesystem::absolute("frontends/qt6/resources/cards/formatted.floppy.yaml").string();
@@ -889,10 +845,7 @@ TEST(test_loader_host_drive_floppy_file_and_template_saves) {
     CHECK(err.empty());
 
     PC1600Machine m;
-    if (!loadPC1600Roms(m)) {
-        std::fprintf(stderr, "SKIP test_loader_host_drive_floppy_file_and_template_saves: ROM images not found\n");
-        return;
-    }
+    SKIP_UNLESS(loadPC1600Roms(m), "ROM images not found");
     PresetLoadResult armedResult;
     const PresetArmedFn onArmed = [&](const PresetLoadResult& r) { armedResult = r; };
     const PresetSaveAsFn onSaveAs = [&](const PresetSaveAsRequest& request, std::string* e) {
@@ -927,11 +880,8 @@ TEST(test_loader_host_drive_floppy_file_and_template_saves) {
 // bus ROM hides the drive from the module scan, so the SAVE lands nowhere.
 TEST(test_loader_bus_rom_shadows_the_host_drive_rom) {
     for (const bool blank : {false, true}) {
-        char tmpl[] = "/tmp/pc1600_bus_rom_XXXXXX";
-        const char* dir = mkdtemp(tmpl);
-        CHECK(dir != nullptr);
-        if (!dir) return;
-        const std::string d(dir);
+        const calcu::testing::TempFolder tmp("calcu1600-pc1600-bus-rom");
+        const std::string d = tmp.str();
         std::filesystem::create_directories(d + "/S3");
         std::vector<char> rom(0x4000, char(0xFF));
         if (!blank) {
@@ -955,10 +905,7 @@ TEST(test_loader_bus_rom_shadows_the_host_drive_rom) {
                                 d + "/p.pc1600", &p, &err));
         CHECK(p.busRoms.size() == 1 && p.busRoms[0].bank == 7 && p.busRoms[0].path == d + "/ext.bin");
         PC1600Machine m;
-        if (!loadPC1600Roms(m)) {
-            std::fprintf(stderr, "SKIP test_loader_bus_rom_shadows_the_host_drive_rom: ROM images not found\n");
-            return;
-        }
+        SKIP_UNLESS(loadPC1600Roms(m), "ROM images not found");
         const PresetLoadResult r = applyPC1600Preset(m, p, {}, ".", "frontends/qt6/resources/cards", {},
                                                      testPresetRoms());
         CHECK(r.ok);

@@ -82,10 +82,7 @@ std::vector<float> asPlayback(const std::vector<int16_t>& recording) {
 TEST(test_cload_bin2wav_tape) {
     const std::vector<uint8_t> image = readFile(kFixtureImg);
     PC1500Machine m(PC1500Variant::PC1500A);
-    if (image.empty() || !bootWithCE150(m)) {
-        std::fprintf(stderr, "SKIP test_cload_bin2wav_tape (PC-1500): ROM images or fixture not found\n");
-        return;
-    }
+    SKIP_UNLESS(!image.empty() && bootWithCE150(m), "ROM images or fixture not found");
     std::string error;
     CHECK(m.tapePlay(kFixtureWav, error));
     CHECK(!m.tapeStatus().motor);
@@ -104,10 +101,7 @@ TEST(test_cload_bin2wav_tape) {
 TEST(test_csave_cload_round_trip) {
     const std::vector<uint8_t> image = readFile(kFixtureImg);
     PC1500Machine a(PC1500Variant::PC1500A);
-    if (image.empty() || !bootWithCE150(a)) {
-        std::fprintf(stderr, "SKIP test_csave_cload_round_trip (PC-1500): ROM images or fixture not found\n");
-        return;
-    }
+    SKIP_UNLESS(!image.empty() && bootWithCE150(a), "ROM images or fixture not found");
     std::string error;
     CHECK(a.tapePlay(kFixtureWav, error));
     type(a, "CLOAD");

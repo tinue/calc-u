@@ -79,7 +79,7 @@ if(CALCU_TESTS)
                                "test|calcu::harness::test::makeTestProduct")
   calcu_harness_cli_target(calcu_test ${CMAKE_CURRENT_BINARY_DIR}/TestProducts.cpp
                            ${lib}/harness/tests/TestProduct.cpp ${lib}/machine/tests/TestMachines.cpp)
-  target_include_directories(calcu_test PRIVATE ${lib}/machine/tests ${lib}/roms/tests ${lib}/harness/tests)
+  target_include_directories(calcu_test PRIVATE ${lib}/machine/tests ${lib}/roms/tests ${lib}/harness/tests ${lib}/testing)
 
   # T13: the program in a process of its own (argv, stdin, exit status),
   # run with cmake -P (Frequent; docs/test-groups.md).

@@ -10,6 +10,7 @@
 #include <string>
 #include <vector>
 
+#include "TempFolder.hpp"
 #include "../core/Connector/BatteryCardInstance.hpp"
 #include "../core/Connector/FloppyImageFile.hpp"
 #include "../core/Connector/MemoryCardCatalog.hpp"
@@ -18,7 +19,6 @@
 #include "../core/Preset/PresetMedia.hpp"
 
 #include <filesystem>
-#include <unistd.h>  // mkdtemp
 #include "TestHarness.hpp"
 
 namespace {
@@ -339,10 +339,7 @@ TEST(test_bundled_files_are_templates) {
     const char* dir = "frontends/qt6/resources/cards";
     std::string err;
     const auto cards = scanMemoryCardDirectory(dir, &err);
-    if (cards.empty()) {
-        std::fprintf(stderr, "SKIP test_bundled_files_are_templates: %s not found\n", dir);
-        return;
-    }
+    SKIP_UNLESS(!cards.empty(), (std::string(dir) + " not found").c_str());
     CHECK(err.empty());
     for (const auto& e : cards) {
         if (!e.isTemplate) std::fprintf(stderr, "  not a template: %s\n", e.filePath.c_str());
@@ -395,11 +392,7 @@ TEST(test_splice_fails_without_regions) {
 TEST(test_splice_roundtrip_through_real_bundled_file_if_present) {
     const char* path = "frontends/qt6/resources/cards/ce1638.card.yaml";
     std::ifstream probe(path);
-    if (!probe) {
-        std::fprintf(stderr, "SKIP test_splice_roundtrip_through_real_bundled_file_if_present: %s not found\n",
-                      path);
-        return;
-    }
+    SKIP_UNLESS(probe, (std::string(path) + " not found").c_str());
     std::stringstream ss;
     ss << probe.rdbuf();
     const std::string sourceText = ss.str();
@@ -427,12 +420,6 @@ TEST(test_splice_roundtrip_through_real_bundled_file_if_present) {
 
 // ── saving under a name (Core/Connector/MediaSave.hpp) ──
 
-std::string scratchDir() {
-    char tmpl[] = "/tmp/media_save_XXXXXX";
-    const char* dir = mkdtemp(tmpl);
-    return dir ? dir : "";
-}
-
 std::string cardText(const std::string& name, bool isTemplate) {
     return "format-version: 1\nmodule-name: \"" + name + "\"\n" + (isTemplate ? "template: true\n" : "") +
            "compatible-hosts: [PC-1500]\ndefinition-terminology: PC-1500\nregions:\n"
@@ -442,9 +429,8 @@ std::string cardText(const std::string& name, bool isTemplate) {
 
 // Where a save goes, and every refusal -- the same for a card and a disk.
 TEST(test_plan_media_save) {
-    const std::string d = scratchDir();
-    CHECK(!d.empty());
-    if (d.empty()) return;
+    const calcu::testing::TempFolder tmp("calcu1600-media-save");
+    const std::string d = tmp.str();
     const MediaSaveFolders folders{d + "/bundled", d + "/saves"};
     std::filesystem::create_directories(folders.bundled);
     std::filesystem::create_directories(folders.saves);
@@ -481,9 +467,8 @@ TEST(test_plan_media_save) {
 // into the file it came from (keeping `format-version`), a slot whose ROM
 // came from `slot-N-rom:` is refused.
 TEST(test_save_preset_media) {
-    const std::string d = scratchDir();
-    CHECK(!d.empty());
-    if (d.empty()) return;
+    const calcu::testing::TempFolder tmp("calcu1600-media-save");
+    const std::string d = tmp.str();
     const MediaSaveFolders folders{d + "/bundled", d + "/saves"};
     std::filesystem::create_directories(folders.bundled);
     std::filesystem::create_directories(folders.saves);

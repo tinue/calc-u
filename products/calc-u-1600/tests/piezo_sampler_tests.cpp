@@ -259,10 +259,7 @@ std::vector<int16_t> runAndCapture(PC1500Machine& m, const std::string& line, do
 
 TEST(test_pc1500_beep) {
     PC1500Machine m;
-    if (!bootPC1500(m)) {
-        std::fprintf(stderr, "SKIP test_pc1500_beep: PC-1500 ROM image not found\n");
-        return;
-    }
+    SKIP_UNLESS(bootPC1500(m), "PC-1500 ROM image not found");
     // Measure the ROM's drive signal, not the buzzer's acoustic response.
     m.memory().piezo().setTransducer(PiezoSampler::Transducer::None);
     ToneStats t = analyse(runAndCapture(m, "BEEP 1"));
@@ -285,10 +282,7 @@ TEST(test_pc1500_beep) {
 // otherwise the next typed line lands mid-beep and is mangled.
 TEST(test_pc1500_settle_waits_for_beep) {
     PC1500Machine m;
-    if (!bootPC1500(m)) {
-        std::fprintf(stderr, "SKIP test_pc1500_settle_waits_for_beep: PC-1500 ROM image not found\n");
-        return;
-    }
+    SKIP_UNLESS(bootPC1500(m), "PC-1500 ROM image not found");
     std::string err;
     CHECK(typeLine(m, "BEEP 2,100,300", /*pressEnter=*/true, &err));
     const uint16_t pc = m.debugPC();
@@ -321,10 +315,7 @@ std::vector<int16_t> runAndCapture(PC1600Machine& m, const std::string& line, do
 
 TEST(test_pc1600_beep) {
     PC1600Machine m;
-    if (!bootPC1600(m)) {
-        std::fprintf(stderr, "SKIP test_pc1600_beep: PC-1600 ROM images not found\n");
-        return;
-    }
+    SKIP_UNLESS(bootPC1600(m), "PC-1600 ROM images not found");
     // Measure the ROM's drive signal, not the buzzer's acoustic response.
     m.memory().piezo().setTransducer(PiezoSampler::Transducer::None);
     ToneStats t = analyse(runAndCapture(m, "BEEP 1"));
@@ -369,10 +360,7 @@ TEST(test_pc1600_beep) {
 // boot's IOCS 25H probe must leave F0B8H bit 0 set (fast path).
 TEST(test_pc1600_beep_repeat_spacing) {
     PC1600Machine m;
-    if (!bootPC1600(m)) {
-        std::fprintf(stderr, "SKIP test_pc1600_beep_repeat_spacing: PC-1600 ROM images not found\n");
-        return;
-    }
+    SKIP_UNLESS(bootPC1600(m), "PC-1600 ROM images not found");
     CHECK((m.memory().read(0xF0B8) & 0x01) != 0);
     m.memory().piezo().setTransducer(PiezoSampler::Transducer::None);
 
@@ -403,10 +391,7 @@ TEST(test_pc1600_beep_repeat_spacing) {
 // phi = 1.3 MHz / 4.
 TEST(test_pc1600_f_register_modulator) {
     PC1600Machine m;
-    if (!bootPC1600(m)) {
-        std::fprintf(stderr, "SKIP test_pc1600_f_register_modulator: PC-1600 ROM images not found\n");
-        return;
-    }
+    SKIP_UNLESS(bootPC1600(m), "PC-1600 ROM images not found");
     m.memory().piezo().setTransducer(PiezoSampler::Transducer::None);
     ToneStats on = analyse(runAndCapture(m, "OUT 23,65", 3.0));
     std::printf("  PC-1600 OUT 23,65: %.1f ms at %.1f Hz\n", 1000.0 * on.audibleSamples / kRate, on.hz);

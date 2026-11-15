@@ -68,11 +68,7 @@ BasicTypeResult typeFreshProgram(PC1500Machine& machine, const std::string& text
 
 TEST(test_typeline_lowercase_via_shift) {
     PC1500Machine machine;
-    if (!bootMachine(machine)) {
-        std::fprintf(stderr, "SKIP test_typeline_lowercase_via_shift: roms/PC-1500_A04.ROM not found "
-                              "relative to cwd (run tests from the repo root)\n");
-        return;
-    }
+    SKIP_UNLESS(bootMachine(machine), "roms/PC-1500_A04.ROM not found relative to cwd (run tests from the repo root)");
 
     BasicTypeResult result = typeFreshProgram(machine, "10 PRINT \"Bank: 7\"\n");
     CHECK(result.ok);
@@ -89,11 +85,7 @@ TEST(test_typeline_lowercase_via_shift) {
 
 TEST(test_typeline_still_types_uppercase_directly) {
     PC1500Machine machine;
-    if (!bootMachine(machine)) {
-        std::fprintf(stderr, "SKIP test_typeline_still_types_uppercase_directly: roms/PC-1500_A04.ROM not found "
-                              "relative to cwd (run tests from the repo root)\n");
-        return;
-    }
+    SKIP_UNLESS(bootMachine(machine), "roms/PC-1500_A04.ROM not found relative to cwd (run tests from the repo root)");
 
     // Typing already-uppercase text (the overwhelmingly common case --
     // BASIC keywords, most preset scripts) must work unchanged: the
@@ -111,11 +103,7 @@ TEST(test_typeline_still_types_uppercase_directly) {
 // first gets rejected (the CE-163F UPDATERM.BAS DATA/POKE listing hit this).
 TEST(test_typebasicprogram_consecutive_long_lines) {
     PC1500Machine machine;
-    if (!bootMachine(machine)) {
-        std::fprintf(stderr, "SKIP test_typebasicprogram_consecutive_long_lines: roms/PC-1500_A04.ROM not found "
-                              "relative to cwd (run tests from the repo root)\n");
-        return;
-    }
+    SKIP_UNLESS(bootMachine(machine), "roms/PC-1500_A04.ROM not found relative to cwd (run tests from the repo root)");
 
     // 5 x ~72-char DATA lines back to back, same shape as the real listing.
     BasicTypeResult result = typeFreshProgram(
@@ -144,11 +132,7 @@ TEST(test_typebasicprogram_consecutive_long_lines) {
 // firmware-bootstrap preset.
 TEST(test_typebasicprogram_long_data_then_short_line_tail) {
     PC1500Machine machine;
-    if (!bootMachine(machine)) {
-        std::fprintf(stderr, "SKIP test_typebasicprogram_long_data_then_short_line_tail: roms/PC-1500_A04.ROM "
-                              "not found relative to cwd (run tests from the repo root)\n");
-        return;
-    }
+    SKIP_UNLESS(bootMachine(machine), "roms/PC-1500_A04.ROM not found relative to cwd (run tests from the repo root)");
 
     // 33 x ~72-char DATA lines, then a long DATA line, then a short REM --
     // enough preceding program that the final DATA line's link lags the
@@ -184,11 +168,7 @@ TEST(test_typebasicprogram_long_data_then_short_line_tail) {
 // line without moving BASPRG_END -- that is still a stored line.
 TEST(test_typebasicprogram_same_length_replacement_is_stored) {
     PC1500Machine machine;
-    if (!bootMachine(machine)) {
-        std::fprintf(stderr, "SKIP test_typebasicprogram_same_length_replacement_is_stored: roms/PC-1500_A04.ROM "
-                              "not found relative to cwd (run tests from the repo root)\n");
-        return;
-    }
+    SKIP_UNLESS(bootMachine(machine), "roms/PC-1500_A04.ROM not found relative to cwd (run tests from the repo root)");
     BasicTypeResult result = typeFreshProgram(machine, "10 A=1\n10 A=2\n");
     CHECK(result.ok);
     CHECK(result.rejectedLines.empty());
@@ -224,11 +204,7 @@ TEST(test_line_store_check) {
 
 TEST(test_typeline_waits_for_run_to_finish) {
     PC1500Machine machine;
-    if (!bootMachine(machine)) {
-        std::fprintf(stderr, "SKIP test_typeline_waits_for_run_to_finish: roms/PC-1500_A04.ROM not found "
-                              "relative to cwd (run tests from the repo root)\n");
-        return;
-    }
+    SKIP_UNLESS(bootMachine(machine), "roms/PC-1500_A04.ROM not found relative to cwd (run tests from the repo root)");
 
     // ~24 POKE lines into the &7C50+ ML scratch area (never touched by the
     // interpreter). Straight-line, but enough statement dispatch that RUN
@@ -264,11 +240,7 @@ TEST(test_typeline_waits_for_run_to_finish) {
 // the full hold before returning, and lands with the PC in the prompt loop.
 TEST(test_wait_until_basic_idle_confirms_prompt_loop_hold) {
     PC1500Machine machine;
-    if (!bootMachine(machine)) {
-        std::fprintf(stderr, "SKIP test_wait_until_basic_idle_confirms_prompt_loop_hold: roms/PC-1500_A04.ROM "
-                              "not found relative to cwd (run tests from the repo root)\n");
-        return;
-    }
+    SKIP_UNLESS(bootMachine(machine), "roms/PC-1500_A04.ROM not found relative to cwd (run tests from the repo root)");
     constexpr uint64_t kHz = 1300000;
     constexpr uint64_t kFrame = kHz / 60;
 

@@ -210,10 +210,7 @@ TEST(test_pc1600_font_from_both_roms) {
 
 TEST(test_pc1600_print_roundtrip) {
     PC1600Machine m;
-    if (!bootPC1600(m)) {
-        std::fprintf(stderr, "SKIP test_pc1600_print_roundtrip: PC-1600 ROMs not found\n");
-        return;
-    }
+    SKIP_UNLESS(bootPC1600(m), "PC-1600 ROMs not found");
     LcdText t = pc1600Run(m, "PRINT MEM");
     CHECK(t.contains("11834"));
     CHECK(t.unparsed == 0);
@@ -233,10 +230,7 @@ TEST(test_pc1600_print_roundtrip) {
 
 TEST(test_pc1600_graphics_is_unparsed) {
     PC1600Machine m;
-    if (!bootPC1600(m)) {
-        std::fprintf(stderr, "SKIP test_pc1600_graphics_is_unparsed: PC-1600 ROMs not found\n");
-        return;
-    }
+    SKIP_UNLESS(bootPC1600(m), "PC-1600 ROMs not found");
     const LcdText t = pc1600Run(m, "LINE (0,3)-(155,28)");
     CHECK(t.unparsed > 0);
 }
@@ -244,10 +238,7 @@ TEST(test_pc1600_graphics_is_unparsed) {
 // CP437 and backslash, as readable text.
 TEST(test_pc1600_plain_text) {
     PC1600Machine m;
-    if (!bootPC1600(m)) {
-        std::fprintf(stderr, "SKIP test_pc1600_plain_text: PC-1600 ROMs not found\n");
-        return;
-    }
+    SKIP_UNLESS(bootPC1600(m), "PC-1600 ROMs not found");
     const LcdText t = pc1600Run(m, "PRINT CHR$(142);CHR$(177);CHR$(92);CHR$(227);CHR$(127)");
     CHECK(t.contains("\\x8E\\xB1\\\\\\xE3\\x7F"));
     CHECK(t.plainText().find("\u00C4\u2592\\\u03C0\u2588") != std::string::npos);
@@ -325,10 +316,7 @@ TEST(test_pc1500_print_roundtrip) {
 // The signs CHARSET draws in place of ASCII.
 TEST(test_pc1500_plain_text) {
     PC1500Machine m;
-    if (!bootPC1500(m, "roms/PC-1500_A04.ROM")) {
-        std::fprintf(stderr, "SKIP test_pc1500_plain_text: roms/PC-1500_A04.ROM not found\n");
-        return;
-    }
+    SKIP_UNLESS(bootPC1500(m, "roms/PC-1500_A04.ROM"), "roms/PC-1500_A04.ROM not found");
     tapKey(m, "mode"); // boots in PRO
     waitIdle(m, static_cast<uint64_t>(PC1500Machine::kCpuHz * 2));
     const LcdText t = pc1500Run(m, "PRINT \"AB\";CHR$ 39;CHR$ 91;CHR$ 92;CHR$ 93");
@@ -369,15 +357,9 @@ TEST(test_expect_pc1600) {
         std::string err;
         CHECK(parsePresetString(c.text, "/tmp/lcd_text_tests_scratch.pc1600", &p, &err));
         PC1600Machine m;
-        if (!loadPC1600Roms(m)) { // the preset loader boots whatever ROMs are loaded
-            std::fprintf(stderr, "SKIP test_expect_pc1600: PC-1600 ROMs not found\n");
-            return;
-        }
+        SKIP_UNLESS(loadPC1600Roms(m), "PC-1600 ROMs not found");   // the preset loader boots whatever ROMs are loaded
         const PresetLoadResult r = applyPC1600Preset(m, p, {}, "/tmp", ".", {}, testPresetRoms());
-        if (!r.ok && r.error.find("ROM") != std::string::npos && r.error.find("expect") == std::string::npos) {
-            std::fprintf(stderr, "SKIP test_expect_pc1600: %s\n", r.error.c_str());
-            return;
-        }
+        SKIP_UNLESS(r.ok || r.error.find("ROM") == std::string::npos || r.error.find("expect") != std::string::npos, r.error.c_str());
         CHECK(r.ok == c.ok);
         if (!c.ok) CHECK(r.error.find("11834") != std::string::npos); // the failure shows the screen
         if (r.ok != c.ok) std::fprintf(stderr, "  %s-> %s\n", c.text, r.error.c_str());
@@ -391,10 +373,7 @@ TEST(test_expect_pc1500) {
                             "/tmp/lcd_text_tests_scratch.pc1500", &p, &err));
     PC1500Machine m;
     const PresetLoadResult r = applyPC1500Preset(m, p, {}, "/tmp", ".", {}, testPresetRoms());
-    if (!r.ok && r.error.find("ROM") != std::string::npos && r.error.find("expect") == std::string::npos) {
-        std::fprintf(stderr, "SKIP test_expect_pc1500: %s\n", r.error.c_str());
-        return;
-    }
+    SKIP_UNLESS(r.ok || r.error.find("ROM") == std::string::npos || r.error.find("expect") != std::string::npos, r.error.c_str());
     CHECK(r.ok);
     if (!r.ok) std::fprintf(stderr, "  %s\n", r.error.c_str());
 }
@@ -448,24 +427,21 @@ TEST(test_status_after_boot) {
         const LcdText t = pc1600LcdText(m16);
         CHECK(t.status.size() >= 3 && t.status[0] == "DEG" && t.status.back() == "I");
     } else {
-        std::fprintf(stderr, "SKIP test_status_after_boot (PC-1600): ROMs not found\n");
+        testharness::skip("PC-1600 ROMs not found");
     }
     PC1500Machine m15;
     if (bootPC1500(m15, "roms/PC-1500_A04.ROM")) {
         const LcdText t = pc1500LcdText(m15);
         CHECK(t.status.size() >= 3 && t.status[0] == "DEG" && t.status.back() == "I");
     } else {
-        std::fprintf(stderr, "SKIP test_status_after_boot (PC-1500): roms/PC-1500_A04.ROM not found\n");
+        testharness::skip("roms/PC-1500_A04.ROM not found");
     }
 }
 
 // GRAD / RADIAN on the PC-1500 write 764FH, the glass itself.
 TEST(test_status_angle_pc1500) {
     PC1500Machine m;
-    if (!bootPC1500(m, "roms/PC-1500_A04.ROM")) {
-        std::fprintf(stderr, "SKIP test_status_angle_pc1500: roms/PC-1500_A04.ROM not found\n");
-        return;
-    }
+    SKIP_UNLESS(bootPC1500(m, "roms/PC-1500_A04.ROM"), "roms/PC-1500_A04.ROM not found");
     tapKey(m, "mode");
     waitIdle(m, static_cast<uint64_t>(PC1500Machine::kCpuHz * 2));
     LcdText t = pc1500Run(m, "GRAD");
@@ -513,10 +489,7 @@ TEST(test_pc1600_mirror_unit) {
 
 TEST(test_pc1600_mirror_real_rom) {
     PC1600Machine m;
-    if (!bootPC1600(m)) {
-        std::fprintf(stderr, "SKIP test_pc1600_mirror_real_rom: PC-1600 ROMs not found\n");
-        return;
-    }
+    SKIP_UNLESS(bootPC1600(m), "PC-1600 ROMs not found");
     // DEGREE/GRAD run on the LH5803 (CD7DH) and store 764FH: the legend
     // changes at once, no scroll needed.
     pc1600Run(m, "CLS");

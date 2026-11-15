@@ -271,11 +271,7 @@ bool writeScratchPreset(const std::string& path, const std::string& body) {
 }
 
 TEST(test_preset_plotter_ce150_attaches_before_reset) {
-    if (!fileExists(kSysRom) || !fileExists(kCe150Rom)) {
-        std::fprintf(stderr, "SKIP test_preset_plotter_ce150_attaches_before_reset: "
-                              "run from the repo root (needs %s + %s)\n", kSysRom, kCe150Rom);
-        return;
-    }
+    SKIP_UNLESS(fileExists(kSysRom) && fileExists(kCe150Rom), (std::string("run from the repo root (needs ") + kSysRom + " + " + kCe150Rom + ")").c_str());
     const std::string presetPath = "/tmp/calcu1600_ce150_scratch.pc1500a";
     CHECK(writeScratchPreset(presetPath,
         "format-version: 1\nmodel: PC-1500A\nplotter: CE-150\n"));

@@ -20,6 +20,7 @@
 #include "../core/PC1500/PC1500PresetLoader.hpp"
 #include "../core/PC1500/PC1500Screenshot.hpp"
 #include "PresetTestSupport.hpp"
+#include "TempFolder.hpp"
 #include "TestHarness.hpp"
 #include "TestRoms.hpp"
 
@@ -157,14 +158,11 @@ TEST(test_preset_screenshot_writes_png) {
     std::string err;
     CHECK(parsePresetString("format-version: 1\nmodel: PC-1500A\nkeys:\n  - type: PRINT 12345\n  - screenshot: lcd_shot.png\n",
                             "/tmp/lcd_screenshot_tests_scratch.pc1500a", &p, &err));
-    std::remove("/tmp/lcd_shot.png");
-    const PresetLoadResult r = applyPC1500Preset(m, p, {}, "/tmp", ".", {}, testPresetRoms());
-    if (!r.ok && r.error.find("ROM") != std::string::npos) {
-        std::fprintf(stderr, "SKIP test_preset_screenshot_writes_png: %s\n", r.error.c_str());
-        return;
-    }
+    const calcu::testing::TempFolder tmp("calcu1600-lcd-shot");
+    const PresetLoadResult r = applyPC1500Preset(m, p, {}, tmp.str(), ".", {}, testPresetRoms());
+    SKIP_UNLESS(r.ok || r.error.find("ROM") == std::string::npos, r.error.c_str());
     CHECK(r.ok);
-    std::ifstream in("/tmp/lcd_shot.png", std::ios::binary);
+    std::ifstream in(tmp.path() / "lcd_shot.png", std::ios::binary);
     const std::vector<uint8_t> png((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>());
     const DecodedPng d = decodePng(png);
     CHECK(d.ok && d.width == 2457 && d.height == 118);

@@ -60,10 +60,7 @@ TEST(test_typebasicprogram_length_guard) {
 // BASPRG_END), and an over-length line is the only one rejected.
 TEST(test_typebasicprogram_pro_mode_load) {
     PC1600Machine m;
-    if (!bootPC1600(m)) {
-        std::fprintf(stderr, "SKIP test_typebasicprogram_pro_mode_load: PC-1600 ROM images not found\n");
-        return;
-    }
+    SKIP_UNLESS(bootPC1600(m), "PC-1600 ROM images not found");
     tapKey(m, "mode"); // RUN -> PRO
     m.runCycles(static_cast<uint64_t>(PC1600Machine::kTStateHz) / 2);
 
@@ -81,10 +78,7 @@ TEST(test_typebasicprogram_pro_mode_load) {
 // line without moving BASPRG_END -- that is still a stored line.
 TEST(test_typebasicprogram_same_length_replacement_is_stored) {
     PC1600Machine m;
-    if (!bootPC1600(m)) {
-        std::fprintf(stderr, "SKIP test_typebasicprogram_same_length_replacement_is_stored: PC-1600 ROM images not found\n");
-        return;
-    }
+    SKIP_UNLESS(bootPC1600(m), "PC-1600 ROM images not found");
     tapKey(m, "mode"); // RUN -> PRO
     m.runCycles(static_cast<uint64_t>(PC1600Machine::kTStateHz) / 2);
 
@@ -97,10 +91,7 @@ TEST(test_typebasicprogram_same_length_replacement_is_stored) {
 // nothing -- every line is reported rejected and the error names PRO mode.
 TEST(test_typebasicprogram_detects_run_mode) {
     PC1600Machine m;
-    if (!bootPC1600(m)) {
-        std::fprintf(stderr, "SKIP test_typebasicprogram_detects_run_mode: PC-1600 ROM images not found\n");
-        return;
-    }
+    SKIP_UNLESS(bootPC1600(m), "PC-1600 ROM images not found");
     BasicTypeResult r = typeBasicProgramText(m, "10 PRINT 1\n20 PRINT 2\n");
     CHECK(!r.ok);
     CHECK(r.rejectedLines.size() == 2);
@@ -115,10 +106,7 @@ TEST(test_typebasicprogram_detects_run_mode) {
 // commit (ENTER), so type WITH enter and read it back after.
 TEST(test_typeline_lowercase_reaches_input_buffer) {
     PC1600Machine m;
-    if (!bootPC1600(m)) {
-        std::fprintf(stderr, "SKIP test_typeline_lowercase_reaches_input_buffer: PC-1600 ROM images not found\n");
-        return;
-    }
+    SKIP_UNLESS(bootPC1600(m), "PC-1600 ROM images not found");
     std::string err;
     CHECK(typeLine(m, "abcXYZ", /*pressEnter=*/true, &err));
 
@@ -133,10 +121,7 @@ TEST(test_typeline_lowercase_reaches_input_buffer) {
 // byte (0x5E), same check shape as the lowercase test above.
 TEST(test_typeline_caret_reaches_input_buffer) {
     PC1600Machine m;
-    if (!bootPC1600(m)) {
-        std::fprintf(stderr, "SKIP test_typeline_caret_reaches_input_buffer: PC-1600 ROM images not found\n");
-        return;
-    }
+    SKIP_UNLESS(bootPC1600(m), "PC-1600 ROM images not found");
     std::string err;
     CHECK(typeLine(m, "X^Y", /*pressEnter=*/true, &err));
 
@@ -158,10 +143,7 @@ std::string inputBuffer(PC1600Machine& m) {
 // KBII (RAM F3C6H bit 7) is off again afterwards.
 TEST(test_typeline_kbii_chars_reach_input_buffer) {
     PC1600Machine m;
-    if (!bootPC1600(m)) {
-        std::fprintf(stderr, "SKIP test_typeline_kbii_chars_reach_input_buffer: PC-1600 ROM images not found\n");
-        return;
-    }
+    SKIP_UNLESS(bootPC1600(m), "PC-1600 ROM images not found");
     std::string err;
     CHECK(typeLine(m, "m\xC3\xA9rci\xC3\x84\xC3\xA4\xC3\x8B\xC3\xBB\xC3\x9C\xC2\xAB\xC3\x89", /*pressEnter=*/true, &err));
     CHECK(err.empty());
@@ -173,10 +155,7 @@ TEST(test_typeline_kbii_chars_reach_input_buffer) {
 // before the SML/caps bit), so a locked SML still gives the same codes.
 TEST(test_typeline_kbii_chars_ignore_sml) {
     PC1600Machine m;
-    if (!bootPC1600(m)) {
-        std::fprintf(stderr, "SKIP test_typeline_kbii_chars_ignore_sml: PC-1600 ROM images not found\n");
-        return;
-    }
+    SKIP_UNLESS(bootPC1600(m), "PC-1600 ROM images not found");
     tapKey(m, "sml");
     m.runCycles(PC1600Machine::kTStateHz / 4);
     std::string err;
@@ -190,10 +169,7 @@ TEST(test_typeline_kbii_chars_ignore_sml) {
 // F079H bit 1) end up as before.
 TEST(test_typeline_kbii_char_after_latched_shift) {
     PC1600Machine m;
-    if (!bootPC1600(m)) {
-        std::fprintf(stderr, "SKIP test_typeline_kbii_char_after_latched_shift: PC-1600 ROM images not found\n");
-        return;
-    }
+    SKIP_UNLESS(bootPC1600(m), "PC-1600 ROM images not found");
     const uint8_t click = m.memory().peek(0xF079) & 0x02;
     tapKey(m, "shift");
     m.runCycles(PC1600Machine::kTStateHz / 4);
@@ -210,10 +186,7 @@ TEST(test_typeline_kbii_char_after_latched_shift) {
 // dropped, and KBII stays on -- the next plain A types KBII A = á (A0H).
 TEST(test_typeline_kbii_char_ignored_while_kbii_latched) {
     PC1600Machine m;
-    if (!bootPC1600(m)) {
-        std::fprintf(stderr, "SKIP test_typeline_kbii_char_ignored_while_kbii_latched: PC-1600 ROM images not found\n");
-        return;
-    }
+    SKIP_UNLESS(bootPC1600(m), "PC-1600 ROM images not found");
     tapKey(m, "kbii");
     m.runCycles(PC1600Machine::kTStateHz / 4);
     CHECK((m.memory().peek(0xF3C6) & 0x80) != 0);

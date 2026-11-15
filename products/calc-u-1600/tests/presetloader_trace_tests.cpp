@@ -18,8 +18,6 @@
 #include <utility>
 #include <vector>
 
-#include <unistd.h>   // mkdtemp
-
 #include "../core/PC1500/PC1500Machine.hpp"
 #include "../core/Preset/PresetFile.hpp"
 #include "../core/PC1500/PC1500PresetLoader.hpp"
@@ -27,6 +25,7 @@
 #include "../core/PC1600/PC1600Machine.hpp"
 #include "../core/PC1600/PC1600PresetLoader.hpp"
 #include "PresetTestSupport.hpp"
+#include "TempFolder.hpp"
 #include "TestRoms.hpp"
 #include "TestHarness.hpp"
 
@@ -34,10 +33,7 @@ namespace {
 
 const char* kRomPath = "roms/PC-1500_A04.ROM";
 
-bool romPresent() {
-    std::ifstream f(kRomPath, std::ios::binary);
-    return static_cast<bool>(f);
-}
+bool romPresent() { return testRomSet() != nullptr; }   // the one lookup (LIB-12)
 
 // ── Minimal CALCU1500_TRACE reader ─────────────────────────────────────
 // Constants MUST match Core/PC1500/PC1500TraceFile.cpp.
@@ -89,23 +85,12 @@ TraceSummary readTrace(const std::string& path) {
     return s;
 }
 
-std::string makeTempDir() {
-    char tmpl[] = "/tmp/calcu1600_trace_XXXXXX";
-    char* dir = mkdtemp(tmpl);
-    return dir ? std::string(dir) : std::string();
-}
-
 // A preset that explicitly starts and stops a trace produces a complete
 // stream: SESSION_START ... TRACE_EVENT(s) ... SESSION_END.
 TEST(test_trace_step_produces_wellformed_file) {
-    if (!romPresent()) {
-        std::fprintf(stderr, "SKIP test_trace_step_produces_wellformed_file: %s not found "
-                              "relative to cwd (run tests from the repo root)\n", kRomPath);
-        return;
-    }
-    std::string dir = makeTempDir();
-    CHECK(!dir.empty());
-    if (dir.empty()) return;
+    SKIP_UNLESS(romPresent(), (std::string(kRomPath) + " not found relative to cwd (run tests from the repo root)").c_str());
+    calcu::testing::TempFolder tmp("calcu1600-trace");
+    const std::string dir = tmp.str();
 
     PresetFile preset;
     std::string err;
@@ -131,21 +116,14 @@ TEST(test_trace_step_produces_wellformed_file) {
     CHECK(s.allEventPayloads25);
     CHECK(!s.truncated);
 
-    std::remove((dir + "/t.bin").c_str());
-    std::remove((dir + "/scratch.pc1500").c_str());
-    std::remove(dir.c_str());
 }
 
 // A trace left running at the end of the preset is still finalised
 // (SESSION_END written, file closed) by runPresetSections()' TraceCloser guard.
 TEST(test_trace_left_open_is_auto_closed) {
-    if (!romPresent()) {
-        std::fprintf(stderr, "SKIP test_trace_left_open_is_auto_closed: %s not found\n", kRomPath);
-        return;
-    }
-    std::string dir = makeTempDir();
-    CHECK(!dir.empty());
-    if (dir.empty()) return;
+    SKIP_UNLESS(romPresent(), (std::string(kRomPath) + " not found").c_str());
+    calcu::testing::TempFolder tmp("calcu1600-trace");
+    const std::string dir = tmp.str();
 
     PresetFile preset;
     std::string err;
@@ -166,9 +144,6 @@ TEST(test_trace_left_open_is_auto_closed) {
     CHECK(s.lastRecordType == 0x03);   // finalised despite no `- trace: off`
     CHECK(s.traceEventCount > 0);
 
-    std::remove((dir + "/t2.bin").c_str());
-    std::remove((dir + "/scratch.pc1500").c_str());
-    std::remove(dir.c_str());
 }
 
 // PC1600Machine's trace draining writes both frame shapes into the SAME
@@ -179,9 +154,8 @@ TEST(test_trace_left_open_is_auto_closed) {
 // round trip alongside an ordinary (LH5801-shaped) TRACE_EVENT in the
 // same file, both readable by a single linear scan.
 TEST(test_z80_frame_shares_one_file_with_lh5801_frame) {
-    std::string dir = makeTempDir();
-    CHECK(!dir.empty());
-    if (dir.empty()) return;
+    calcu::testing::TempFolder tmp("calcu1600-trace");
+    const std::string dir = tmp.str();
     std::string path = dir + "/z80.bin";
 
     uint64_t counted = 0;
@@ -226,7 +200,6 @@ TEST(test_z80_frame_shares_one_file_with_lh5801_frame) {
     CHECK(sessionEnds == 1);
 
     std::remove(path.c_str());
-    std::remove(dir.c_str());
 }
 
 // ── PC-1600 `- trace:` step, end to end ────────────────────────────────
@@ -236,13 +209,9 @@ TEST(test_z80_frame_shares_one_file_with_lh5801_frame) {
 // TRACE_EVENT_Z80 (0x04) in the one file.
 TEST(test_pc1600_trace_step_produces_wellformed_file) {
     PC1600Machine machine;
-    if (!loadPC1600Roms(machine)) {
-        std::fprintf(stderr, "SKIP test_pc1600_trace_step_produces_wellformed_file: PC-1600 ROM images not found\n");
-        return;
-    }
-    std::string dir = makeTempDir();
-    CHECK(!dir.empty());
-    if (dir.empty()) return;
+    SKIP_UNLESS(loadPC1600Roms(machine), "PC-1600 ROM images not found");
+    calcu::testing::TempFolder tmp("calcu1600-trace");
+    const std::string dir = tmp.str();
 
     PresetFile preset;
     std::string err;
@@ -272,22 +241,15 @@ TEST(test_pc1600_trace_step_produces_wellformed_file) {
     CHECK(s.allZ80Payloads29);
     CHECK(!s.truncated);
 
-    std::remove((dir + "/t.bin").c_str());
-    std::remove((dir + "/scratch.pc1600").c_str());
-    std::remove(dir.c_str());
 }
 
 // A PC-1600 trace left running at the end of the preset is still finalised
 // by applyPC1600Preset()'s TraceCloser guard.
 TEST(test_pc1600_trace_left_open_is_auto_closed) {
     PC1600Machine machine;
-    if (!loadPC1600Roms(machine)) {
-        std::fprintf(stderr, "SKIP test_pc1600_trace_left_open_is_auto_closed: PC-1600 ROM images not found\n");
-        return;
-    }
-    std::string dir = makeTempDir();
-    CHECK(!dir.empty());
-    if (dir.empty()) return;
+    SKIP_UNLESS(loadPC1600Roms(machine), "PC-1600 ROM images not found");
+    calcu::testing::TempFolder tmp("calcu1600-trace");
+    const std::string dir = tmp.str();
 
     PresetFile preset;
     std::string err;
@@ -308,22 +270,15 @@ TEST(test_pc1600_trace_left_open_is_auto_closed) {
     CHECK(s.lastRecordType == 0x03);   // finalised despite no `- trace: off`
     CHECK(s.traceEventCount > 0);
 
-    std::remove((dir + "/t2.bin").c_str());
-    std::remove((dir + "/scratch.pc1600").c_str());
-    std::remove(dir.c_str());
 }
 
 // Not a trace test, but the same ROM-driven applyPC1500Preset() setup: a
 // machine-code `program:` block that isn't all RAM, or runs past &FFFF, fails the
 // preset instead of dropping or wrapping bytes and reporting success.
 TEST(test_binary_program_outside_ram_fails) {
-    if (!romPresent()) {
-        std::fprintf(stderr, "SKIP test_binary_program_outside_ram_fails: %s not found\n", kRomPath);
-        return;
-    }
-    std::string dir = makeTempDir();
-    CHECK(!dir.empty());
-    if (dir.empty()) return;
+    SKIP_UNLESS(romPresent(), (std::string(kRomPath) + " not found").c_str());
+    calcu::testing::TempFolder tmp("calcu1600-trace");
+    const std::string dir = tmp.str();
     {
         std::ofstream bin(dir + "/code.bin", std::ios::binary);
         bin.write("\x01\x02\x03\x04", 4);
@@ -343,21 +298,15 @@ TEST(test_binary_program_outside_ram_fails) {
     CHECK(!wrap.ok && wrap.error.find("past &FFFF") != std::string::npos);
     CHECK(run("0x7C01").ok);
 
-    std::remove((dir + "/code.bin").c_str());
-    std::remove(dir.c_str());
 }
 
 // A machine-code `file:` with a CE-158 header on a PC-1500: the payload (not the
 // 27 header bytes) lands at the header's load address, with no `address:`.
 // A headerless file without `address:` is refused at load time.
 TEST(test_binary_program_ce158_header) {
-    if (!romPresent()) {
-        std::fprintf(stderr, "SKIP test_binary_program_ce158_header: %s not found\n", kRomPath);
-        return;
-    }
-    std::string dir = makeTempDir();
-    CHECK(!dir.empty());
-    if (dir.empty()) return;
+    SKIP_UNLESS(romPresent(), (std::string(kRomPath) + " not found").c_str());
+    calcu::testing::TempFolder tmp("calcu1600-trace");
+    const std::string dir = tmp.str();
     {
         // CE-158 header: 01 'B' "COM", 16-byte name, then big-endian load
         // address, length - 1 and auto-run address (0 = none).
@@ -388,9 +337,6 @@ TEST(test_binary_program_ce158_header) {
     auto [headerless, unused] = run("raw.bin");
     (void)unused;
     CHECK(!headerless.ok && headerless.error.find("'address' is required") != std::string::npos);
-    std::remove((dir + "/ce158.bin").c_str());
-    std::remove((dir + "/raw.bin").c_str());
-    std::remove(dir.c_str());
 }
 
 } // namespace

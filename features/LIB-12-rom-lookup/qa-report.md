@@ -117,3 +117,9 @@ Other checks of the step:
 
 - LIB-12 Library: AC-7's harness clause (M-28, D-1). Calc-U-1600 column:
   M-27.
+
+## M-28 (2026-11-15, branch `m28-harness`): AC-7's harness clause
+
+| ID | Result | Test case |
+|---|---|---|
+| AC-7 | Pass | The harness `calcu` (LIB-11) ends at its start with the lookup's message, naming every missing or bad file: `ec1_missing_rom_ends_at_start_naming_files` (`library/harness/tests/run_tests.cpp`, `calcu_library_tests`; two files removed, both named); the CLI writes the message on standard error and exits 2 (`library/harness/cli/Cli.cpp`). With this, every criterion of the Library column passes (design D-1) |

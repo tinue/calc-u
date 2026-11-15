@@ -114,6 +114,17 @@ target_link_libraries(pc1600_uart_probe PRIVATE calcu_core_probe)
 add_executable(pc1600_plotter_probe ${TOOLS_ROOT}/pc1600_plotter_probe.cpp)
 target_link_libraries(pc1600_plotter_probe PRIVATE calcu_core)
 
+# The product entry of the harness `calcu` (LIB-11, M-28; library/harness/cli/).
+# It finds the ROMs and the module definitions in the folders the tests use
+# (LIB-11 design §8).
+add_library(calcu1600_harness STATIC ${CMAKE_CURRENT_SOURCE_DIR}/app/HarnessProduct.cpp)
+target_link_libraries(calcu1600_harness PUBLIC calcu_shared)
+target_compile_options(calcu1600_harness PRIVATE ${CALCU_WARNINGS})
+target_compile_definitions(calcu1600_harness PRIVATE "CALCU1600_DIR=\"${CMAKE_CURRENT_SOURCE_DIR}\"")
+if(COMMAND calcu_harness_add_product)
+  calcu_harness_add_product(calcu1600_harness shared::makeHarnessProduct)
+endif()
+
 # -----------------------------------------------------------------------------
 # Test Suite target (CALCU_TESTS; the release packaging turns it off, which
 # also spares the Windows runners a zlib)
@@ -128,7 +139,7 @@ if(CALCU_TESTS)
 
   add_executable(CoreTests ${TEST_SOURCES})
   # The one test runner (ADR 0038): library/testing/, its main() included.
-  target_link_libraries(CoreTests PRIVATE calcu_shared calcu_test_runner ZLIB::ZLIB)
+  target_link_libraries(CoreTests PRIVATE calcu1600_harness calcu_test_runner ZLIB::ZLIB)
   target_compile_options(CoreTests PRIVATE ${CALCU_WARNINGS})
   if(NOT CALCU_TESTS_DEBUG AND NOT MSVC)
     target_compile_options(CoreTests PRIVATE $<$<CONFIG:Debug>:-O1>)

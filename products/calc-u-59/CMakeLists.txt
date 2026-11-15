@@ -65,6 +65,7 @@ set_target_properties(calcu59_core PROPERTIES POSITION_INDEPENDENT_CODE ON)
 target_link_libraries(calcu59_core PUBLIC calcu_library)
 
 file(GLOB SHARED_SOURCES CONFIGURE_DEPENDS ${SHARED_ROOT}/*.cpp)
+list(REMOVE_ITEM SHARED_SOURCES ${SHARED_ROOT}/HarnessProduct.cpp)   # calcu59_harness below
 add_library(calcu59_shared STATIC ${SHARED_SOURCES})
 target_include_directories(calcu59_shared PUBLIC ${SHARED_ROOT})
 find_package(Threads REQUIRED)
@@ -108,6 +109,15 @@ endif()
 add_library(ti59headless SHARED ${CMAKE_CURRENT_SOURCE_DIR}/tools/headless/capi.cpp)
 target_link_libraries(ti59headless PRIVATE calcu59_shared)
 
+# The product entry of the harness `calcu` (LIB-11, M-28; library/harness/cli/):
+# not in calcu59_shared, so the Swift and Web builds carry none of it. It
+# finds the ROMs in the folder the tests use (LIB-11 design §8).
+add_library(calcu59_harness STATIC ${SHARED_ROOT}/HarnessProduct.cpp)
+target_link_libraries(calcu59_harness PUBLIC calcu59_shared)
+target_compile_options(calcu59_harness PRIVATE ${CALCU59_WARNINGS})
+target_compile_definitions(calcu59_harness PRIVATE "CALCU59_ROM_DIR=\"${CMAKE_CURRENT_SOURCE_DIR}/roms\"")
+calcu_harness_add_product(calcu59_harness cu59::makeHarnessProduct)
+
 # -----------------------------------------------------------------------------
 # Tests (CALCU_TESTS): run from the product directory so they can read roms/
 # and examples/
@@ -120,7 +130,7 @@ if(CALCU_TESTS)
   file(GLOB TEST_SOURCES CONFIGURE_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/tests/*.cpp)
   add_executable(CalcU59Tests ${TEST_SOURCES})
   # The one test runner (ADR 0038): library/testing/, its main() included.
-  target_link_libraries(CalcU59Tests PRIVATE calcu59_shared calcu_test_runner)
+  target_link_libraries(CalcU59Tests PRIVATE calcu59_harness calcu_test_runner)
   target_compile_options(CalcU59Tests PRIVATE ${CALCU59_WARNINGS})
   if(NOT MSVC)
     target_compile_options(CalcU59Tests PRIVATE $<$<CONFIG:Debug>:-O1>)

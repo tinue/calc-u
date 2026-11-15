@@ -397,6 +397,11 @@ std::vector<TestMachine::CapRef> TestMachine::capRefs() const {
         CapRef{CapabilityEntry{TestGeneric::kKind, CapabilityId{cpu.value + "/" + std::string(TestGeneric::kKind.value)},
                                ComponentOwner{cpu}},
                &self->generic_}};
+    if (offersState_)
+        out.push_back(CapRef{CapabilityEntry{harness::MachineState::kKind,
+                                             CapabilityId{cpu.value + "/" + std::string(harness::MachineState::kKind.value)},
+                                             ComponentOwner{cpu}},
+                             &self->state_});
     if (clock_)
         out.push_back(CapRef{CapabilityEntry{peripherals::RealTimeClock::kKind, CapabilityId{"rtc/real-time-clock"},
                                              ComponentOwner{ComponentId{"rtc"}}},
@@ -515,6 +520,74 @@ const std::vector<RomImage>* TestMachine::romsAt(const PlacePath& place) const {
 std::uint64_t TestMachine::operationsTold(const PlacePath& place) const {
     const PlugState* s = stateAt(place);
     return s ? s->operations : 0;
+}
+
+// --- LIB-11: the machine state ------------------------------------------------
+
+namespace {
+void put(std::vector<std::uint8_t>& out, std::uint64_t v) {
+    for (int i = 0; i < 8; ++i) out.push_back(static_cast<std::uint8_t>(v >> (8 * i)));
+}
+bool get(const std::vector<std::uint8_t>& in, std::size_t& at, std::uint64_t& v) {
+    if (at + 8 > in.size()) return false;
+    v = 0;
+    for (int i = 0; i < 8; ++i) v |= static_cast<std::uint64_t>(in[at + std::size_t(i)]) << (8 * i);
+    at += 8;
+    return true;
+}
+} // namespace
+
+// Everything that decides what follows: the counters, the keys down, the
+// sound not yet taken, the printer's counter. No host file is part of it.
+std::vector<std::uint8_t> TestMachine::State::save() const {
+    std::vector<std::uint8_t> out;
+    const TestMachine& m = m_;
+    for (std::uint64_t v : {std::uint64_t(m.ticks_), std::uint64_t(m.sinceStart_), m.presses_, std::uint64_t(m.displayOn_),
+                            m.innerCycles_, m.innerRest_, m.samplesMade_, m.generic_.instructions, m.printerCounter_.count})
+        put(out, v);
+    put(out, m.keysDown_.size());
+    for (const auto& k : m.keysDown_) {
+        put(out, k.value.size());
+        out.insert(out.end(), k.value.begin(), k.value.end());
+    }
+    put(out, m.sound_.size());
+    for (std::int16_t s : m.sound_) put(out, static_cast<std::uint16_t>(s));
+    return out;
+}
+
+std::optional<std::string> TestMachine::State::restore(const std::vector<std::uint8_t>& in) {
+    std::size_t at = 0;
+    std::uint64_t v[9], n = 0;
+    for (auto& x : v)
+        if (!get(in, at, x)) return "The state is cut short.";
+    std::vector<KeyId> keys;
+    if (!get(in, at, n)) return "The state is cut short.";
+    for (std::uint64_t i = 0; i < n; ++i) {
+        std::uint64_t len = 0;
+        if (!get(in, at, len) || at + len > in.size()) return "The state is cut short.";
+        keys.push_back(KeyId{std::string(in.begin() + std::ptrdiff_t(at), in.begin() + std::ptrdiff_t(at + len))});
+        at += len;
+    }
+    std::vector<std::int16_t> sound;
+    if (!get(in, at, n)) return "The state is cut short.";
+    for (std::uint64_t i = 0; i < n; ++i) {
+        std::uint64_t s = 0;
+        if (!get(in, at, s)) return "The state is cut short.";
+        sound.push_back(static_cast<std::int16_t>(static_cast<std::uint16_t>(s)));
+    }
+    TestMachine& m = m_;
+    m.ticks_ = v[0];
+    m.sinceStart_ = v[1];
+    m.presses_ = v[2];
+    m.displayOn_ = v[3] != 0;
+    m.innerCycles_ = v[4];
+    m.innerRest_ = v[5];
+    m.samplesMade_ = v[6];
+    m.generic_.instructions = v[7];
+    m.printerCounter_.count = v[8];
+    m.keysDown_ = std::move(keys);
+    m.sound_ = std::move(sound);
+    return std::nullopt;
 }
 
 // --- TestUart, TestClock ----------------------------------------------------

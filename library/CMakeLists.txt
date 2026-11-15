@@ -9,6 +9,8 @@ file(GLOB CALCU_LIBRARY_SOURCES CONFIGURE_DEPENDS
   ${CMAKE_CURRENT_SOURCE_DIR}/sessions/*.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/peripherals/*.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/roms/*.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/formats/*.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/harness/*.cpp
 )
 # LIB-2: a host link of a serial port is a pseudo-terminal on macOS and Linux
 # (PtyHostLink.cpp); elsewhere there is none (NoHostLink.cpp).
@@ -58,11 +60,14 @@ if(CALCU_TESTS AND NOT EMSCRIPTEN)
     ${CMAKE_CURRENT_SOURCE_DIR}/peripherals/tests/*.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/roms/tests/*.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/formats/tests/*.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/harness/tests/*.cpp
   )
   list(REMOVE_ITEM CALCU_LIBRARY_TEST_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/peripherals/tests/pty_tests.cpp)
   add_executable(calcu_library_tests ${CALCU_LIBRARY_TEST_SOURCES})
   target_include_directories(calcu_library_tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/machine/tests
-                                                         ${CMAKE_CURRENT_SOURCE_DIR}/sessions/tests)
+                                                         ${CMAKE_CURRENT_SOURCE_DIR}/sessions/tests
+                                                         ${CMAKE_CURRENT_SOURCE_DIR}/roms/tests
+                                                         ${CMAKE_CURRENT_SOURCE_DIR}/harness/tests)
   target_link_libraries(calcu_library_tests PRIVATE calcu_library calcu_test_runner)
   if(MSVC)
     target_compile_options(calcu_library_tests PRIVATE /utf-8)
@@ -96,3 +101,6 @@ endif()
 
 # LIB-15: the Web frontend shell (library/web/).
 add_subdirectory(web)
+# LIB-11: the harness `calcu` and its test form `calcu_test`
+# (library/harness/cli/), and calcu_harness_add_product() for the products.
+add_subdirectory(harness/cli)

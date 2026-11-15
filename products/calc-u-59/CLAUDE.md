@@ -46,6 +46,30 @@ key, hot steps, step costs, keycode disassembler/assembler). Read
 `tools/agentic/README.md` before measuring or comparing program speed.
 ROM-level traces of key sequences come from `tools/headless/` (its README).
 
+## Harness
+
+`calcu` is the family's harness (LIB-11, `features/LIB-11-harness/` at the
+repository root): the product without a window, on the library's app
+session, in emulated time only, so two runs give the same replies. Build
+the target `calcu` of a root tree (`cmake --build ../../build/tests --target
+calcu`; the program is `build/tests/library/harness/cli/calcu`). It finds the
+ROMs in `roms/` (`roms/fetch_roms.sh`) and starts the TI-59 with the PC-100C.
+
+- One-shot: `calcu --product 59 wait 2s then key-down 7 then wait 100ms then key-up 7 then wait 500ms then lcd`
+  (commands parted by `then`; exit status 0, 1 at the first refusal, 2 when
+  it cannot start).
+- `calcu --product 59 serve`: one command per line on standard input, one
+  reply per line (`done`, `done <n>` and n lines, `refused: <reason>`);
+  `--json` gives one object `{"done","result","reason"}` per reply. From
+  Python: `library/harness/python/calcu_serve.py`.
+- First commands: `wait <2s|500ms>`, `key-down`/`key-up <key ID>`, `lcd`,
+  `display`, `state <topic>`, `capabilities`, `ticks`, `quit`
+  (`calcu --help` lists them). No settings or save folder of yours is
+  touched unless `--settings`, `--save-folder`, `--output-folder` name them.
+- Not yet: `ti59 …` commands, typing, presets, traces, memory (later
+  features). Until M-59, `tools/headless/` and `tools/agentic/` stay the
+  tools for those.
+
 ## Frontend Parity (Swift app ↔ Qt6 app ↔ web client)
 
 Three GUIs share `core/` (hardware) and `app/` (everything else that isn't

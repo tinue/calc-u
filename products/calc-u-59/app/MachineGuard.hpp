@@ -27,7 +27,6 @@ public:
     class Access {
     public:
         calcu::machine::Machine& machine() { return m_m; }
-        TIPeripheralsAdapter& peripherals() { return *peripheralsOf(m_m); }
         TICardReaderAdapter& cardReader() { return *cardReaderOf(m_m); }
         TIMemoryAdapter& memory() { return *memoryOf(m_m); }
         TIDebugTargetAdapter& debugTarget() { return *debugTargetOf(m_m); }

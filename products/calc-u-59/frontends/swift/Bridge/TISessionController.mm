@@ -262,6 +262,11 @@ struct PlatformAdapter : cu59::SessionController::Platform {
 - (void)tick { _c->tick(std::chrono::steady_clock::now()); }
 - (NSString *)moduleID { return ns(_c->moduleID()); }
 - (void)changeModule:(NSString *)moduleID { _c->changeModule(cpp(moduleID)); }
+- (NSArray<TIModuleMetadata *> *)allModules {
+    NSMutableArray* out = [NSMutableArray array];
+    for (const auto& m : _c->allModules()) [out addObject:TIModuleMetadataFrom(m)];
+    return out;
+}
 
 // ── Display, keys, speed ─────────────────────────────────────────────────────
 

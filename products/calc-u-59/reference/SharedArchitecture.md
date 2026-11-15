@@ -60,7 +60,7 @@ wrappers in `frontends/swift/Bridge/`, which only translate types (`AppArchitect
 | `CardFile` | Magnetic card files (text 2.0 and 1.0, headered and legacy binary); which names the pickers list |
 | `ConstantMemory` | `ti58c.mem` |
 | `ProductRoms` | The ROM lookup of Calc-U-59 (`lookUpRoms`, the full set, LIB-12), `buildMachine` from the `RomSet` (the core decodes; C59-1), a module's ROM image |
-| `ModuleCatalog` | `roms/solid-state/cuecards.txt` |
+| `ModuleCatalog` | The module list from the module files (`allModuleMetadata`), a module's file name; the cue cards of `roms/solid-state/cuecards.txt` |
 | `CueCard` | Cue-card model, encode/parse, spans, layout, geometry, inks, which card shows |
 | **Tables and drawing rules** | |
 | `MachineModelInfo` | Per-model facts: `Model` ↔ `ModelId`, RAM, card reader, ROM files (the tick rate is the descriptor's, key readiness the machine's: C59-1) |
@@ -313,7 +313,7 @@ feeds it, and a write stays version 1.
 
 The fitted card goes with another fit, a reset, a model switch, a full preset
 load, or a reload stage with its own cue card. The printer toggle and a module
-change reset the machine, so they remove it too.
+change power-cycle the machine, so they remove it too (until C59-7, row 59-17).
 
 Presets feed cards through the same path (`ArmCard:` / `InsertCard:`,
 § "State File Loading"); `Platform::cardFilePath(name)` resolves a card file
@@ -429,8 +429,31 @@ files for the 64 constant rows.
 The TI-59 image is checked against two sentinels: word 0 = `0x0A01`
 (`CLR IDL`) and word 6143 = `0x1987`. A Solid State module's ROM is its
 `roms/<ID>.rom.yaml` (`docs/formats/modules.md` §2, 5000 bytes, read by
-`core/ModuleFile`); the module list and the cue cards still come from
-`roms/solid-state/cuecards.txt` (until M-25 and M-55).
+`core/ModuleFile`). Since M-25 (C59-6 AC-8) the module list comes from the
+14 module files (`allModuleMetadata(RomSet)`: `module-name`, `description`,
+`menu-sort`); the cue cards still come from `roms/solid-state/cuecards.txt`
+(until M-55).
+
+## Places: the module and the PC-100C (C59-6)
+
+The module and the PC-100C are peripherals in the machine's places `slot-1`
+and `printer` (`reference/CoreArchitecture.md` § "Component Overview").
+`EmulatorSession` builds its machine with them in the build request
+(`MachinePeripherals`: the module ID, the printer, TRACE's position) and
+changes them under the guard (`setModule`, `setPrinter`,
+`printerControl`). `SessionController` owns what the app session keeps:
+the module ID, whether the printer is connected, TRACE's position
+(`m_printerTrace`: off at the start, never saved, kept across Reset, power
+cycle, Cold boot, a model switch and a detach; C59-6 AC-6, row 59-25) and
+the paper (`m_printerLines`, kept across a detach and a model switch,
+AC-1). `changeModule`/`selectModule` and `setPrinterConnected` run the
+change, then the power cycle that follows (row 59-11). Before a detach the
+PC-100C ends the line it prints where the head is and hands its rows over
+(EC-2). A state file applies `SOLID-STATE-MODULE:` and `PRINTER:` first and
+then the state, whose start-up is the power cycle; TRACE is off after a
+load unless its keystrokes set `PrinterTrace: on`. `FrameSampler` takes the
+paper from the `c59.printer-output` capability when a PC-100C is plugged
+in.
 
 ## Drawing Rules
 

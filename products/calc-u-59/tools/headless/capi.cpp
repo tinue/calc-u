@@ -13,7 +13,10 @@
 #include "../../app/ModuleCatalog.hpp"
 #include "../../app/ProductRoms.hpp"
 #include "../../core/TIAdapters.hpp"
+#include "../../core/PC100C.hpp"
+#include "../../core/PrinterOutput.hpp"
 #include "../../core/TICatalogue.hpp"
+#include "peripherals/Controls.hpp"
 #include "machine/Machine.hpp"
 #include "roms/Bundle.hpp"
 #include <cstring>
@@ -61,7 +64,21 @@ struct Handle {
 Machine& M(void* h) { return *static_cast<Handle*>(h)->machine; }
 TIDebugTargetAdapter& debug(void* h) { return *debugTargetOf(M(h)); }
 TIMemoryAdapter& memory(void* h) { return *memoryOf(M(h)); }
-TIPeripheralsAdapter& peripherals(void* h) { return *peripheralsOf(M(h)); }
+// The PC-100C and the module in their places (C59-6, design §7): the
+// capabilities while a PC-100C is plugged in.
+PrinterOutput* paper(void* h) {
+    return calcu::machine::capabilityAs<PrinterOutput>(M(h), calcu::machine::CapabilityId{"printer/c59.printer-output"});
+}
+calcu::peripherals::Controls* printerControls(void* h) {
+    return calcu::machine::capabilityAs<calcu::peripherals::Controls>(M(h), calcu::machine::CapabilityId{"printer/controls"});
+}
+void control(void* h, const calcu::machine::ControlId& id, bool on, bool isSwitch) {
+    if (auto* c = printerControls(h)) {
+        if (isSwitch) c->set(id, on);
+        else if (on) c->press(id);
+        else c->release(id);
+    }
+}
 TICardReaderAdapter& cards(void* h) { return *cardReaderOf(M(h)); }
 
 const calcu::machine::MachineDescriptor& descriptorOf(int model) {
@@ -89,7 +106,7 @@ int h_rec_size() { return static_cast<int>(sizeof(HRec)); }
 double h_instruction_hz(int model) { return descriptorOf(model).tickRate / 32.0; }
 // Printer BUSY in instruction cycles: a printed line, or one PRT.FEED.
 uint32_t h_printer_busy_cycles(int feed) {
-    return feed ? TIPeripheralsAdapter::printerFeedCycles() : TIPeripheralsAdapter::printerLineCycles();
+    return feed ? PC100C::kFeedInstructions : PC100C::kLineInstructions;
 }
 // The idle/key-detect range: out = {lo, hi, extraLo, extraHi} (extra empty when lo > hi).
 void h_idle_range(int model, int* out) {
@@ -115,6 +132,8 @@ int h_load_model_roms(void* hv, int model, const char* romsDir) {
         if (!r.ok()) return -1;
     }
     h->model = static_cast<cu59::Model>(model);
+    // As 2.3.0's core started: the PC-100C plugged in, the slot empty; the
+    // caller plugs a module with h_load_module, the printer with h_printer.
     h->machine = cu59::buildMachine(h->model, *h->roms);
     return 0;
 }
@@ -122,21 +141,19 @@ int h_load_model_roms(void* hv, int model, const char* romsDir) {
 // Why the last h_load_model_roms failed ("" after a success).
 const char* h_error(void* h) { return static_cast<Handle*>(h)->error.c_str(); }
 
-// A solid-state module by its cuecards.txt id (romsDir/solid-state/cuecards.txt,
-// the module list until M-25), its ROM from the set (`<ID>.rom.yaml`).
-int h_load_module(void* hv, const char* moduleID, const char* romsDir) {
+// A Solid State ROM module by its ID (C59-6 AC-8) into `slot-1`, its ROM
+// from the set (`<ID>.rom.yaml`); the module there before is replaced. The
+// power cycle that follows is the caller's (ti59.py runs h_reset). `romsDir`
+// is no longer read. -1: no such module, or the attach was refused.
+int h_load_module(void* hv, const char* moduleID, const char* /*romsDir*/) {
     auto* h = static_cast<Handle*>(hv);
-    if (!h->roms || !h->machine) return -1;
-    std::ifstream f(std::string(romsDir) + "/solid-state/cuecards.txt", std::ios::binary);
-    if (!f) return -1;
-    std::ostringstream catalog;
-    catalog << f.rdbuf();
-    auto file = cu59::moduleRomFile(catalog.str(), moduleID);
-    if (!file) return -1;
-    auto image = cu59::moduleImage(*h->roms, *file);
-    if (!image) return -1;
-    peripherals(h).loadModuleImage(image->data(), image->size());
-    return 0;
+    if (!h->roms || !h->machine || !isTIModule(moduleID)) return -1;
+    auto req = cu59::moduleRequest(moduleID, *h->roms);
+    std::optional<calcu::machine::PeripheralId> old;
+    for (const auto& e : M(h).plugged().byPlace)
+        if (e.place == req.place) old = e.peripheral;
+    auto r = old ? M(h).replace(*old, std::move(req), tiCatalogue()) : M(h).attach(std::move(req), tiCatalogue());
+    return r.refused ? -1 : 0;
 }
 
 // 2.3.0's core reset: a power cycle (C59-1 AC-6).
@@ -151,10 +168,16 @@ int h_key_up(void* h, const char* name) {
     auto id = keyNamed(M(h), name);
     return id && M(h).keyUp(*id) == calcu::machine::KeyCall::Done ? 0 : -1;
 }
-void h_printer(void* h, int connected)  { peripherals(h).setPrinterConnected(connected != 0); }
-void h_trace_sw(void* h, int on)        { peripherals(h).setPrinterTrace(on != 0); }
-void h_printer_print(void* h, int down) { peripherals(h).pressPrinterPrint(down != 0); }
-void h_printer_adv(void* h, int down)   { peripherals(h).pressPrinterAdv(down != 0); }
+// The PC-100C attached or detached (no power cycle here: the caller's); its
+// TRACE switch and PRINT/ADV keys through its controls (C59-6 AC-5).
+void h_printer(void* h, int connected) {
+    const bool there = paper(h) != nullptr;
+    if (connected && !there) M(h).attach(cu59::printerRequest(false), tiCatalogue());
+    if (!connected && there) M(h).detach(calcu::machine::PlacePath{{kTIPrinterPlace}}, kPC100C, tiCatalogue());
+}
+void h_trace_sw(void* h, int on)        { control(h, PC100C::kTrace, on != 0, true); }
+void h_printer_print(void* h, int down) { control(h, PC100C::kPrint, down != 0, false); }
+void h_printer_adv(void* h, int down)   { control(h, PC100C::kAdv, down != 0, false); }
 
 // n instructions: n × advance(1), so instruction counts stay exact.
 uint32_t h_stepn(void* h, uint32_t n) {
@@ -221,7 +244,8 @@ int  h_card_waiting(void* h) { return cards(h).isWaitingForCard() ? 1 : 0; }
 // Printer output lines, joined with '\n'. Returns bytes written (truncated to cap).
 int h_printer_lines(void* h, char* out, int cap) {
     std::string s;
-    for (auto& l : peripherals(h).drainPrinterLines()) { s += l; s += '\n'; }
+    if (auto* p = paper(h))
+        for (auto& l : p->takeLines()) { s += l; s += '\n'; }
     int n = static_cast<int>(s.size()) < cap ? static_cast<int>(s.size()) : cap;
     memcpy(out, s.data(), static_cast<size_t>(n));
     return n;
@@ -234,7 +258,9 @@ int h_printer_lines(void* h, char* out, int cap) {
 // written; the queue is drained, so lines beyond cap are lost.
 int h_printer_code_lines(void* h, uint8_t* out, int cap) {
     int n = 0;
-    for (auto& l : peripherals(h).drainPrinterCodeLines()) {
+    std::vector<PrinterCodeLine> lines;
+    if (auto* p = paper(h)) lines = p->takeCodeLines();
+    for (auto& l : lines) {
         if (n == cap) break;
         memcpy(out + 23 * n, l.codes.data(), 20);
         out[23 * n + 20] = l.rowCount;

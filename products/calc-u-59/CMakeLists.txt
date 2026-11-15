@@ -40,8 +40,11 @@ endif()
 # Core (hardware emulation) and Shared (frontend-neutral logic above it)
 # -----------------------------------------------------------------------------
 # The core and the TI machine behind the machine interface (C59-1): TIMachine,
-# tiCatalogue(), the adapters of C59-1 design §5.
+# tiCatalogue(), the adapters of C59-1 design §5; the PC-100C and the Solid
+# State ROM module as peripherals (C59-6).
 add_library(calcu59_core STATIC
+  ${CORE_ROOT}/PC100C.cpp
+  ${CORE_ROOT}/SolidStateRomModule.cpp
   ${CORE_ROOT}/TI59Machine.cpp
   ${CORE_ROOT}/TMC0501.cpp
   ${CORE_ROOT}/ROM.cpp

@@ -96,14 +96,14 @@ Frequent):
 
 | CTest entry | What | Group | Measured (M4 Pro, 2026-11-14) |
 |---|---|---|---|
-| `CalcU59Tests` | 202 `TEST`s: unit and ROM-driven integration tests of the core and the app layer, the machine interface (C59-1, LIB-1 59), the ROM lookup (LIB-12 59), the golden replays through it (table below) | Frequent | 7.2 s (M-24) |
+| `CalcU59Tests` | 228 `TEST`s: unit and ROM-driven integration tests of the core and the app layer, the machine interface (C59-1, LIB-1 59), the ROM lookup (LIB-12 59), the PC-100C and the module slot (C59-6, LIB-2 59), the golden replays through it (table below) | Frequent | 8.4 s (M-25) |
 | `CalcU59TraceReader` | `tools/read_trace.py` reads the trace `CalcU59Tests` wrote | Frequent | 16.4 s (Python 3.15; 0.3 s in CI) |
 | `CalcU59CoreSeam` | `tests/check_core_seam.sh`: no core-internal header outside `core/` and `tests/`, no machine call in the adapters (C59-1 AC-17; M-19) | Frequent | 0.02 s |
 | `CalcU59NoOwnRomLookup` | `library/roms/tests/check_no_own_rom_lookup.sh`: no product source outside `app/ProductRoms.*`, the catalogue and the Qt6 Bundle looks for a ROM file (LIB-12 AC-2, design T7; M-24) | Frequent | 1.2 s |
 | `CalcU59HeadlessSmoke` | `tools/headless/ti59.py 5 + 7 =` against the CMake-built `ti59headless` shows 12 (C59-1 T14; M-19; with Python 3) | Frequent | 0.04 s |
 | `CalcU59HeadlessRomMissing` | `tests/headless_rom_tests.py`: `ti59.py` on a ROM folder without one file ends naming it, on the full set it starts (LIB-12 AC-7, AC-10; M-24; with Python 3) | Frequent | 0.15 s |
 | `CalcU59XcodeProjectCheck` | `frontends/swift/check_xcode_project.sh`: Xcode compiles only Swift and the bridge and links `CalcU59.xcframework` (C59-5, ADR 0013; M-15); the app bundles the 24 ROM files of the full set (LIB-12; M-24) | Frequent | 0.02 s |
-| | **Frequent, Calc-U-59** | | **24.0 s** (M-24) |
+| | **Frequent, Calc-U-59** | | **25.4 s** (M-25) |
 | `CalcU59WebPlaywright` | `frontends/web/run-tests.sh`: Playwright, Chromium (root, sub-path) and WebKit (offline); `rom-missing.spec.js` (LIB-12 AC-10, EC-3; M-24) | Longer | 78 s (M-24) |
 | `CalcU59RomMissingBuild` | `tests/rom_missing_build.sh`: roms/ without one file (default `TMC0583.txt`); the headless library and a Web `dist/` built from it start without a calculator and name the file (LIB-12, Technical Requirements; M-24); not registered on Windows | Longer | 3 s (M-24; the Web build tree already built) |
 | `CalcU59UIRegression` | XCUITest plan `UIRegressionTests` on the `iphone` simulator | Longer | 154.5 s (iPhone 18 Pro Max, iOS 27.2) |
@@ -116,14 +116,15 @@ Frequent except where the table says otherwise):
 
 | File | `TEST`s |
 |---|---|
-| `core_tests.cpp` | 17 (C59-1 AC-5) |
-| `descriptor_tests.cpp` | 7 (LIB-1 AC-26–31, AC-33; M-19) |
-| `golden_runs_tests.cpp` | 1 (the golden replays through the machine interface, C59-1 AC-4; `CALCU59_GOLDEN_RECORD=1` records a missing reference only) |
+| `core_tests.cpp` | 17 (C59-1 AC-5; C59-6 AC-4, AC-5, M-25) |
+| `descriptor_tests.cpp` | 9 (LIB-1 AC-26–33; M-19, M-25) |
+| `golden_runs_tests.cpp` | 1 (the 18 golden replays through the machine interface and, since M-25, the places, C59-1 AC-4, C59-6 AC-3, AC-7, AC-9, AC-10; `CALCU59_GOLDEN_RECORD=1` records a missing reference only) |
 | `machine_tests.cpp` | 26 (C59-1 AC-1–3, 6–16, 18, 19, EC-1–4; M-19) |
+| `peripherals_tests.cpp` | 20 (C59-6 AC-1, 2, 4–6, 8–11, EC-1–3; LIB-2 AC-24–27; M-25) |
 | `pacing_longrun_tests.cpp` | 2: `pacing_longrun_scripted_ti` Frequent; `pacing_longrun_real_clock_ti` Checkpoint (returns at once without `CALCU59_PACING_LONGRUN`) |
 | `reference_runs_tests.cpp` | 1, a recorder, not a check: returns at once without `CALCU59_REFERENCE_RECORD` |
 | `rom_lookup_tests.cpp` | 15 (LIB-12 AC-1, AC-4, AC-6, AC-8–10, AC-14, EC-2; M-24) |
-| `shared_controller_tests.cpp` | 13 |
+| `shared_controller_tests.cpp` | 17 (C59-6 AC-1, AC-6, AC-11: 4 of them, M-25) |
 | `shared_cooperative_tests.cpp` | 42 |
 | `shared_debug_tests.cpp` | 14 |
 | `shared_formats_tests.cpp` | 21 |

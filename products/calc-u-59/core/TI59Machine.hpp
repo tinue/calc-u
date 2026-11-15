@@ -14,7 +14,6 @@ public:
     explicit TI59Machine(MachineVariant variant);
 
     void loadROM(const uint16_t* data, size_t count);
-    void loadLibrary(const uint8_t* data, size_t count);
     void loadConstants(const uint8_t* data, size_t count);
     void reset();
 
@@ -86,15 +85,9 @@ public:
     bool isWaitingForCard() const;  ///< True while ROM is polling TST BUSY for card.
     int  cardMode()         const;  ///< 0=none, 1=read, 2=write
 
-    // ── Printer ──────────────────────────────────────────────────────────────
-    std::vector<std::string>     drainPrinterLines();
-    std::vector<PrinterCodeLine> drainPrinterCodeLines();
-    void pressPrinterPrint(bool pressed);
-    void pressPrinterAdv(bool pressed);
-    void setPrinterTrace(bool enabled);
-    bool printerTrace() const { return m_printerTrace; }  ///< the TRACE latch
-    void setPrinterConnected(bool connected);
-    bool isPrinterConnected() const { return m_printerConnected; }
+    // ── Connectors ───────────────────────────────────────────────────────────
+    /// The PC-100C and the module, as TIMachine plugs them (C59-6).
+    void wire(const TiConnectors& c) { m_cpu.wire(c); }
 
     // ── Trace / debug API ─────────────────────────────────────────────────────
     void     setTraceFlags(uint32_t flags);
@@ -172,9 +165,6 @@ public:
     /// Constant after construction.
     int  ramRegCount() const { return m_ram.size(); }
 
-    /// Content currently held in the printer character buffer (not yet printed).
-    std::string printerBufferContent() const;
-
     MachineVariant variant() const { return m_variant; }
 
 private:
@@ -185,12 +175,6 @@ private:
     ROM            m_rom;
     RAM            m_ram;
     TMC0501        m_cpu;
-    bool           m_printerConnected = true;
-    // The printer's TRACE button is a physical hardware latch: it stays pressed
-    // until physically released, so it must survive a calculator reset (which
-    // wipes key[]).  We track its state here and re-apply it in reset().  It is
-    // released only when the printer is attached or detached (setPrinterConnected).
-    bool           m_printerTrace     = false;
 
     int cardSwitchCol() const; // Digit-counter column for the card-switch key.
 };

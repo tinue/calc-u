@@ -33,7 +33,7 @@ struct SettingsView: View {
             .frame(minWidth: 460, minHeight: 540)
             .padding()
             .onAppear {
-                allModules = ROMLoader.loadAllModuleMetadata()
+                allModules = viewModel.allModules()
                 pendingModuleID = viewModel.selectedModuleID
             }
             .onDisappear { viewModel.changeModule(id: pendingModuleID) }
@@ -53,7 +53,7 @@ struct SettingsView: View {
         .onAppear {
             // Force iCloud on iOS/iPadOS
             traceLocationRaw = TraceLocation.iCloud.rawValue
-            allModules = ROMLoader.loadAllModuleMetadata()
+            allModules = viewModel.allModules()
             pendingModuleID = viewModel.selectedModuleID
         }
         .onDisappear { viewModel.changeModule(id: pendingModuleID) }

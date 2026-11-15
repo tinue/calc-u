@@ -22,78 +22,6 @@
 //          mask 6 = EXP  covers digits 1–2  (the 2-digit exponent), no constant.
 //          mask 3 = DPT #1 operates only on digit 0 and injects +1 (increment DPT).
 
-// ── Printer character and function-code tables ────────────────────────────────
-//
-// PRN_CODE[64]: maps a 6-bit code (KR bits 10:4) to a printable UTF-8 character.
-// PRN_STR[]:    maps a 7-bit function code to a 3-character mnemonic string.
-//               The strings are stored right-to-left in the buffer (hardware
-//               writes them reversed so that the print-buffer-reversal on output
-//               restores the correct reading order).
-
-static const char* const PRN_CODE[64] = {
-    " ","0","1","2","3","4","5","6",
-    "7","8","9","A","B","C","D","E",
-    "-","F","G","H","I","J","K","L",
-    "M","N","O","P","Q","R","S","T",
-    ".","U","V","W","X","Y","Z","+",
-    "x","*","√","π","e","(",")",",",
-    "↑","%","⇄","/","=","'","ˣ","x̄",
-    "²","?","÷","!","Ⅱ","▴","∏","∑"
-};
-
-// Reverse-map a single ASCII character to its PRN_CODE index (0 = space/fallback).
-// Used to recover raw codes when function-mnemonic characters are stored in m_prnBuf.
-static uint8_t prnCharToCode(char c) {
-    for (int i = 0; i < 64; i++) {
-        if (PRN_CODE[i][0] == c && PRN_CODE[i][1] == '\0')
-            return static_cast<uint8_t>(i);
-    }
-    return 0;  // space
-}
-
-static const struct { uint8_t code; char str[4]; } PRN_STR[] = {
-    {0x00, "   "},
-    {0x11, " = "},
-    {0x12, " - "},
-    {0x13, " + "},
-    {0x16, " / "},
-    {0x17, " x "},
-    {0x1A, "xsY"},
-    {0x1B, "Y^x"},
-    {0x21, "CLR"},
-    {0x22, "INV"},
-    {0x23, "DPT"},
-    {0x26, "CE "},
-    {0x27, "+/-"},
-    {0x2D, "EE "},
-    {0x31, "e^x"},
-    {0x33, "x^2"},
-    {0x36, "1/x"},
-    {0x3C, "sX "},
-    {0x3D, "X_Y"},
-    {0x51, "LNX"},
-    {0x53, "PRM"},
-    {0x54, " % "},
-    {0x56, "COS"},
-    {0x57, "SIN"},
-    {0x5D, "TAN"},
-    {0x61, "SUM"},
-    {0x66, "STO"},
-    {0x67, "pi "},
-    {0x68, "RCL"},
-    {0x69, "S+ "},
-    {0x70, "ERR"},
-    {0x71, " { "},
-    {0x72, " ) "},
-    {0x73, "LRN"},
-    {0x74, "RUN"},
-    {0x76, "HLT"},
-    {0x78, "STP"},
-    {0x7A, "GTO"},
-    {0x7C, "IF "},
-    {0x00, ""}   // sentinel
-};
-
 const TMC0501::MaskInfo TMC0501::mask_info[16] = {
     {0xFF, 0,  0,    0},   // 0: invalid — no digits updated
     {  0, 15,  0,    0},   // 1: ALL     — all 16 digits
@@ -137,7 +65,21 @@ const TMC0501::MaskInfo TMC0501::mask_info[16] = {
 
 TMC0501::TMC0501(ROM& r, RAM& m) : rom(r), ram(m) {
     memset(m_constant, 0, sizeof(m_constant));
-    for (auto& s : m_prnBuf) s = " ";
+}
+
+void TMC0501::wire(const TiConnectors& c) {
+    m_c = c;
+    syncBusy();   // no printer, no Busy
+}
+
+void TMC0501::printerWord(PrinterWord w) {
+    if (!m_c.printer) return;   // no printer: the word reaches nothing (C59-6 AC-7)
+    m_c.printer->word(w, KR);
+    syncBusy();
+}
+
+uint16_t TMC0501::moduleWord(ModuleWord w) {
+    return m_c.module ? m_c.module->word(w, KR) : 0;   // an empty slot drives nothing (AC-10)
 }
 
 void TMC0501::reset() {
@@ -146,8 +88,7 @@ void TMC0501::reset() {
     memset(SCOM, 0, sizeof(SCOM));
     memset(Sout, 0, sizeof(Sout));
     memset(key,  0, sizeof(key));
-    KR = SR = fA = fB = EXT = PREG = m_libAddr = m_libAddrReadPos = 0;
-    m_libAddrWasWriting = false;
+    KR = SR = fA = fB = EXT = PREG = 0;
     m_libExecPC = kLibExecPCNone;
     m_stepBoundary.count = 0;
     R5 = digit = RAM_ADDR = RAM_OP = REG_ADDR = 0;
@@ -171,22 +112,8 @@ void TMC0501::reset() {
     m_cardPtr         = 0;
     m_cardMode        = 0;
     m_lastWrittenBank = -1;
-    for (auto& s : m_prnBuf) s = " ";
-    m_prnPtr = 0;
-    m_prnReady = false;
-    // Flush any in-progress dot-line so nothing on paper is lost on reset
-    flushPendingIfActive();
-    m_prnBusyCycles = 0;
-}
-
-void TMC0501::loadLibrary(const uint8_t* data, size_t count) {
-    count = std::min(count, size_t{5000});
-    // Zero the full image first: a smaller module must not leave bytes of the
-    // previously loaded module beyond its own end (IN LIB wraps at 5000 and
-    // could otherwise fetch stale keycodes).
-    memset(m_libData, 0, sizeof(m_libData));
-    memcpy(m_libData, data, count);
-    m_libExecPC = kLibExecPCNone;  // stale address would point into the old module
+    // The PC-100C and the module are told of the operation by the machine
+    // (LIB-2 AC-10); their state is theirs.
 }
 
 void TMC0501::loadConstants(const uint8_t* data, size_t count) {
@@ -467,12 +394,11 @@ int TMC0501::step() {
     // One relaxed atomic load per step; falls through at zero cost when disabled.
     const uint32_t tf = m_traceFlags;
 
-    // ── Printer busy countdown ────────────────────────────────────────
-    if (m_prnBusyCycles > 0) {
-        if (--m_prnBusyCycles == 0) {
-            flags &= ~FLG_BUSY;
-            flushPendingCodeLine(kPrinterLineCycles);  // complete: all 7 dot-rows printed
-        }
+    // ── Φ1 on the printer connector: its busy count (C59-6 AC-4) ──────
+    // Once per instruction, IDLE or not, before the pre-execution phase.
+    if (m_c.printer) {
+        m_c.printer->instructionCycle();
+        syncBusy();
     }
 
     // Pre-execution phase: COND auto-restore, patch previous ring entry, capture snapshot
@@ -588,7 +514,7 @@ int TMC0501::step() {
         // active-high (bit set = key pressed), while the opcode encodes the
         // mask active-low (0 = "care about this line").
         uint8_t kmask = static_cast<uint8_t>(
-            (((opcode & 0x07u) | ((opcode >> 1) & 0x78u)) ^ 0x7Fu) & key[digit]);
+            (((opcode & 0x07u) | ((opcode >> 1) & 0x78u)) ^ 0x7Fu) & keyRow(digit));
         // Reject simultaneous multi-key presses (hardware limitation)
         if (kmask & (kmask - 1u)) kmask = 0;
 
@@ -602,7 +528,7 @@ int TMC0501::step() {
             // stand-alone (emulator 0.897 / 0.447 s). The TI-58C moved the
             // line to D10, and its ROM steps around it (rom/TI58C-commented.asm
             // at 0A25).
-            if (key[digit] & kmask) {
+            if (keyRow(digit) & kmask) {
                 uint8_t bit = 0, m2 = kmask;
                 while (!(m2 & 1)) { bit++; m2 >>= 1; }
                 flags &= ~FLG_COND;
@@ -612,7 +538,7 @@ int TMC0501::step() {
             }
         } else {
             // Test-row mode: check only the current row
-            if (key[digit] & kmask) flags &= ~FLG_COND;
+            if (keyRow(digit) & kmask) flags &= ~FLG_COND;
         }
         // Arm "this was a hardware poll" for the *next* step() to consume — see
         // step()'s doc comment in TMC0501.hpp.
@@ -752,90 +678,14 @@ int TMC0501::step() {
                     m_cardPtr  = 0;
                 }
                 break;
-            case 0x60: { // OUT PRT — load one character into print buffer
-                if (m_prnReady) {
-                    uint8_t code = static_cast<uint8_t>((KR >> 4) & 0x3Fu);
-                    uint8_t slot = m_prnPtr % 20;
-                    m_prnBuf[slot]     = PRN_CODE[code];
-                    m_prnCodeBuf[slot] = code;
-                    m_prnPtr = slot + 1;
-                }
-                break;
-            }
-            case 0x70: { // OUT PRT_FUNC — load 3-char function mnemonic (stored reversed)
-                if (m_prnReady) {
-                    uint8_t code = static_cast<uint8_t>((KR >> 4) & 0x7Fu);
-                    for (int i = 0; PRN_STR[i].str[0]; i++) {
-                        if (code == PRN_STR[i].code) {
-                            // Store chars reversed so print-reversal restores correct order
-                            for (int k = 3; k > 0; ) {
-                                --k;
-                                uint8_t slot = m_prnPtr % 20;
-                                m_prnBuf[slot]     = PRN_STR[i].str[k];
-                                m_prnCodeBuf[slot] = prnCharToCode(PRN_STR[i].str[k]);
-                                m_prnPtr = slot + 1;
-                            }
-                            break;
-                        }
-                    }
-                }
-                break;
-            }
-            case 0x80: // PRT_CLEAR — reset print buffer; arms the ready gate
-                for (auto& s : m_prnBuf) s = " ";
-                memset(m_prnCodeBuf, 0, sizeof(m_prnCodeBuf));
-                m_prnPtr = 0;
-                m_prnReady = true;
-                break;
-            case 0x90: // PRT_STEP — advance one position (blank)
-                if (m_prnReady) {
-                    uint8_t slot = m_prnPtr % 20;
-                    m_prnBuf[slot]     = " ";
-                    m_prnCodeBuf[slot] = 0;
-                    m_prnPtr = slot + 1;
-                }
-                break;
-            case 0xA0: { // PRT_PRINT — output buffer as a line
-                if (m_prnReady) {
-                    // PRT.GO while BUSY: the printer aborts the in-progress print and ignores the
-                    // new one. This is an unhandled hardware edge case (e.g. hacked "1F" keycode)
-                    // not foreseen by the ROM; there is no retry or recovery — the printer just stops.
-                    if (m_prnBusyCycles > 0 && m_prnHasPending) {
-                        flushPendingIfActive();
-                        break;  // new print is silently ignored
-                    }
-                    // Buffer is right-to-left: read from position 19 down to 0.
-                    // Text is committed immediately (always shows full content, even if aborted).
-                    std::string line;
-                    for (int i = 19; i >= 0; --i) {
-                        line += m_prnBuf[i];
-                        m_prnPending.codes[19 - i] = m_prnCodeBuf[i];
-                    }
-                    m_prnHasPending = true;
-                    {
-                        m_prnLines.push_back(std::move(line));
-                    }
-                    flags |= FLG_BUSY;
-                    m_prnBusyCycles = kPrinterLineCycles;
-                }
-                break;
-            }
-            case 0xB0: // PRT_FEED — advance paper (blank line)
-                // Half a line of paper; Adv (key, button or program step) issues two.
-                // BUSY gates the rate.
-                //
-                // If a PRT_PRINT is in progress (deferred code-line pending), flush it now
-                // so the print's code-line lands at the same index as its text line.
-                // Without this, PRT_FEED's blank code-line would steal the print's index,
-                // making the print appear to render at the ADV slot instead.
-                flushPendingIfActive();
-                {
-                    m_prnLines.emplace_back();
-                    m_prnCodeLines.emplace_back();  // zero-filled
-                }
-                flags |= FLG_BUSY;
-                m_prnBusyCycles = kPrinterFeedCycles;
-                break;
+            // The printer words go to the printer connector (PC100C); Busy
+            // comes back into FLG_BUSY.
+            case 0x60: printerWord(PrinterWord::Out); break;    // OUT PRT — one character into the buffer
+            case 0x70: printerWord(PrinterWord::Func); break;   // OUT PRT_FUNC — a 3-char function mnemonic
+            case 0x80: printerWord(PrinterWord::Clear); break;  // PRT_CLEAR — clear the buffer, arm the ready gate
+            case 0x90: printerWord(PrinterWord::Step); break;   // PRT_STEP — one position blank
+            case 0xA0: printerWord(PrinterWord::Go); break;     // PRT_PRINT — print the buffer as a line
+            case 0xB0: printerWord(PrinterWord::Feed); break;   // PRT_FEED — half a line of paper
             case 0xF0: // RAM_OP — deferred decode: next Sout encodes operation + address
                 // Deferred operation: capture operation and address from Sout.
                 // Sout[0] = opcode (0=read, 1=write, 2=clear, 4=clear×10);
@@ -858,19 +708,19 @@ int TMC0501::step() {
         case 0xB:  // TST BUSY — clear COND if printer/peripheral is busy
             // Card sensor is on bit 4 of m_cardSwitchCol.
             // ROM polls this specifically when waiting for a card.
-            if (!m_cardPresent && digit == m_cardSwitchCol && (key[digit] & (1u << 4)))
+            if (!m_cardPresent && digit == m_cardSwitchCol && (keyRow(digit) & (1u << 4)))
                 m_waitingForCard = true;
-            // Clear COND to signal "busy" to the ROM, but do NOT clear FLG_BUSY here —
-            // m_prnBusyCycles is the sole mechanism that drops FLG_BUSY after the delay.
-            if ((key[digit] & (1u << 4)) || (flags & FLG_BUSY))
+            // Clear COND to signal "busy" to the ROM: the KR line, or the
+            // printer connector's Busy.
+            if ((keyRow(digit) & (1u << 4)) || printerBusy())
                 flags &= ~FLG_COND;
             // Arm "this was a hardware poll" for the *next* step() to consume — see
             // step()'s doc comment in TMC0501.hpp — but not while the printer is
-            // busy. A print wait ends after m_prnBusyCycles emulated cycles, so full
+            // busy. A print wait ends after the PC-100C's busy count, so full
             // speed may race through it (holding the display speeds up 2nd List and
             // other printing); the KR line it may also see on the way (the card
             // switch is high whenever no card is in) is incidental there.
-            if ((key[digit] & (1u << 4)) && !(flags & FLG_BUSY)) m_lastStepWasHWPoll = true;
+            if ((keyRow(digit) & (1u << 4)) && !printerBusy()) m_lastStepWasHWPoll = true;
             break;
 
         case 0xC:  // MOV KR,EXT[4..15] — load KR upper bits from card/library read
@@ -883,46 +733,28 @@ int TMC0501::step() {
 
         case 0xE:  // Library module operations
             switch (opcode & 0x00F0u) {
-            case 0x00: // IN LIB — fetch one byte from library; advance pointer
+            // The module words go to the module slot (SolidStateRomModule),
+            // which drives EXT; an empty slot reads 0.
+            case 0x00: // IN LIB — fetch one byte from the module; its address advances
                 // Latch the pre-increment address when (and only when) the fetch
                 // comes from the interpreter's execution fetch site: that byte is
                 // the program step now being dispatched, i.e. the user-visible
                 // solid-state program counter.  Fetches from the header-read and
                 // label-search sites leave the latch untouched, so the displayed
                 // step holds steady during label lookups.
-                if (addr == libExecFetchPC()) m_libExecPC = m_libAddr;
-                EXT = static_cast<uint16_t>(m_libData[m_libAddr++]) << 4;
+                if (addr == libExecFetchPC()) m_libExecPC = m_c.module ? m_c.module->address() : 0;
+                EXT = moduleWord(ModuleWord::Fetch);
                 flags |= FLG_EXT_VALID;
-                m_libAddr %= 5000;
                 break;
-            case 0x10: // OUT LIB_PC — load library pointer digit from KR[7:4]
-                // The library address is encoded in BCD-like decimal: the ROM
-                // shifts it one decimal digit at a time using OUT LIB_PC / IN LIB_PC
-                // pairs. OUT LIB_PC shifts the address right by one nibble, then
-                // injects the new nibble into the most significant position:
-                //   new_addr = (old_addr / 10)         ← shift right (discard LSN)
-                //            + KR[7:4] * 1000          ← inject new MSN
-                // The ROM calls this instruction four times to load a full
-                // 4-digit address (once per BCD nibble, MSN first).
-                if (!m_libAddrWasWriting) m_libAddrReadPos = 0;  // Reset if switching from read to write
-                m_libAddr = static_cast<uint16_t>((m_libAddr / 10) + ((KR >> 4 & 0xFu) * 1000));
-                m_libAddrReadPos = (m_libAddrReadPos + 1) % 4;
-                m_libAddrWasWriting = true;
+            case 0x10: // OUT LIB_PC — one address digit from KR[7:4] into the module
+                (void)moduleWord(ModuleWord::AddressOut);
                 break;
-            case 0x20: // IN LIB_PC — read library pointer digit into EXT
-                // Reads the current digit of m_libAddr based on m_libAddrReadPos (0-3).
-                // Does not modify m_libAddr; only advances the read position counter.
-                {
-                    if (m_libAddrWasWriting) m_libAddrReadPos = 0;  // Reset if switching from write to read
-                    uint16_t divisors[4] = {1, 10, 100, 1000};
-                    EXT = static_cast<uint16_t>((m_libAddr / divisors[m_libAddrReadPos]) % 10) << 4;
-                    flags |= FLG_EXT_VALID;
-                    m_libAddrReadPos = (m_libAddrReadPos + 1) % 4;
-                    m_libAddrWasWriting = false;
-                }
+            case 0x20: // IN LIB_PC — one address digit from the module into EXT
+                EXT = moduleWord(ModuleWord::AddressIn);
+                flags |= FLG_EXT_VALID;
                 break;
-            case 0x30: // IN LIB_HIGH — fetch high nibble of current byte (no advance)
-                EXT = static_cast<uint16_t>(m_libData[m_libAddr] & 0xF0u);
+            case 0x30: // IN LIB_HIGH — the high nibble of the current byte (no advance)
+                EXT = moduleWord(ModuleWord::FetchHigh);
                 flags |= FLG_EXT_VALID;
                 break;
             default: break;
@@ -1223,68 +1055,6 @@ std::vector<uint8_t> TMC0501::cardEject() {
     return result;
 }
 
-// ── Printer ────────────────────────────────────────────────────────────────────
-
-std::vector<std::string> TMC0501::drainPrinterLines() {
-    return std::move(m_prnLines);
-}
-
-std::vector<PrinterCodeLine> TMC0501::drainPrinterCodeLines() {
-    return std::move(m_prnCodeLines);
-}
-
-void TMC0501::flushPendingCodeLine(uint32_t elapsed) {
-    if (!m_prnHasPending) return;
-    // Rows before the one in progress are on paper; of the row in progress,
-    // the columns that have started (right to left), and how long the last
-    // of them was heated.
-    uint32_t rows = elapsed / kPrinterRowCycles, cols = 0, heat = 0;
-    uint32_t into = elapsed % kPrinterRowCycles;
-    if (rows < 7 && into >= kPrinterRowStartCycles) {
-        uint32_t fired = into - kPrinterRowStartCycles;
-        cols = std::min<uint32_t>(5, fired / kPrinterColumnCycles + 1);
-        heat = fired - (cols - 1) * kPrinterColumnCycles;
-    }
-    m_prnPending.rowCount = static_cast<uint8_t>(std::min<uint32_t>(7, rows));
-    m_prnPending.partialColumns = static_cast<uint8_t>(cols);
-    m_prnPending.partialHeat = static_cast<uint8_t>(std::min<uint32_t>(255, heat));
-    m_prnCodeLines.push_back(m_prnPending);
-    m_prnHasPending = false;
-}
-
-void TMC0501::flushPendingIfActive() {
-    if (!m_prnHasPending) return;
-    flushPendingCodeLine(kPrinterLineCycles - m_prnBusyCycles);
-}
-
-void TMC0501::pressPrinterPrint(bool pressed) {
-    if (pressed) key[12] |=  (1u << 2);
-    else         key[12] &= ~(1u << 2);
-}
-
-void TMC0501::pressPrinterAdv(bool pressed) {
-    if (pressed) key[12] |=  (1u << 0);
-    else         key[12] &= ~(1u << 0);
-}
-
-void TMC0501::setPrinterTrace(bool enabled) {
-    if (enabled) key[15] |=  (1u << 2);
-    else         key[15] &= ~(1u << 2);
-}
-
-void TMC0501::setPrinterConnected(bool connected) {
-    // Printer-connected detection line: KP at the digit the ROM tests via
-    // test-row ?KEY.  TI-59 uses WAIT D1 + KEY FB → executes at digit 0 (KP.D0).
-    // TI-58C uses WAIT D11 + KEY FB → executes at digit 10 (KP.D10).
-    // The printer connector is physically identical on both models, but the
-    // TI-58C PCB routes the detection pin to a different digit-counter line.
-    // Both idle loops' scan-all sees the line as a key too, and steps around
-    // it (TI-59 0657–0660, TI-58C 0656–0659 → 0A25).
-    int d = hasConstantMemory(m_variant) ? 10 : 0;
-    if (connected) key[d] |=  (1u << 2);
-    else           key[d] &= ~(1u << 2);
-}
-
 // ── Trace / debug API ──────────────────────────────────────────────────────────
 
 void TMC0501::setTraceFlags(uint32_t f) {
@@ -1365,8 +1135,8 @@ void TMC0501::beginNextStep() {
             prev.EXT = EXT;
             prev.PREG = PREG;
             prev.flags = flags;
-            prev.m_libAddr = m_libAddr;
-            prev.m_libAddrReadPos = m_libAddrReadPos;
+            prev.m_libAddr = m_c.module ? m_c.module->address() : 0;
+            prev.m_libAddrReadPos = m_c.module ? m_c.module->addressReadPos() : 0;
             prev.R5 = R5;
             prev.digit = digit;
             prev.postDigit = digit;
@@ -1513,7 +1283,8 @@ void TMC0501::tracePreStep(uint32_t tf, uint16_t opcode) {
         memcpy(frame.SCOM, SCOM, sizeof(SCOM));
         memcpy(frame.Sout, Sout, 16);
         frame.EXT = EXT; frame.PREG = PREG; frame.flags = flags;
-        frame.m_libAddr = m_libAddr; frame.m_libAddrReadPos = m_libAddrReadPos;
+        frame.m_libAddr = m_c.module ? m_c.module->address() : 0;
+        frame.m_libAddrReadPos = m_c.module ? m_c.module->addressReadPos() : 0;
         frame.digit = digit;
         frame.postDigit = digit;
         frame.REG_ADDR = REG_ADDR; frame.RAM_ADDR = RAM_ADDR; frame.RAM_OP = RAM_OP;
@@ -1586,16 +1357,6 @@ uint32_t TMC0501::readCpuFrames(CpuFrame* out, uint32_t max) const {
     return count;
 }
 
-// ── printerBufferContent() ────────────────────────────────────────────────────
-
-std::string TMC0501::printerBufferContent() const {
-    // Same read order as the print routine: position 19 (leftmost) → 0 (rightmost).
-    std::string result;
-    for (int i = 19; i >= 0; --i)
-        result += m_prnBuf[i];
-    return result;
-}
-
 // ── snapshotCPU() ─────────────────────────────────────────────────────────────
 
 CpuFrame TMC0501::snapshotCPU() const {
@@ -1629,11 +1390,11 @@ CpuFrame TMC0501::snapshotCPU() const {
     frame.EXT = EXT;
     frame.PREG = PREG;
     frame.flags = flags;
-    frame.m_libAddr = m_libAddr;
+    frame.m_libAddr = m_c.module ? m_c.module->address() : 0;
     frame.REG_ADDR = REG_ADDR;
     frame.RAM_ADDR = RAM_ADDR;
     frame.RAM_OP = RAM_OP;
-    frame.m_libAddrReadPos = m_libAddrReadPos;
+    frame.m_libAddrReadPos = m_c.module ? m_c.module->addressReadPos() : 0;
     computeDisplayTraceState(frame.displayOn, frame.maxDigitDecay);
 
     return frame;

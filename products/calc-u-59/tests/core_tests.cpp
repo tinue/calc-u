@@ -114,8 +114,7 @@ TEST(c59_1_ac5_control_nibble_glyphs) {
 // re-lights the display once per lit pass; a lit phase starts at the first one
 // after a dark phase (≥ 2000 ticks without it).
 static double errorBlinkPeriod(Model model, bool printer) {
-    auto m = testroms::makeMachine(model);
-    per(*m).setPrinterConnected(printer);
+    auto m = testroms::makeMachine(model, printer);   // the PC-100C in its place or not (C59-6 AC-2)
     testroms::runToScanLoop(*m, model);
     for (int k : {kKey0, kRecip}) testroms::tap(*m, model, k);
     std::vector<uint64_t> litStarts;
@@ -157,8 +156,7 @@ TEST(c59_1_ac5_error_blink_period_ti58) {
 // instructions is fixed by the ROM path alone; a real unit's blink in seconds
 // gives that unit's clock, to which its other measurements are normalised.
 static double ti58cErrorBlinkTicks(bool printer) {
-    auto m = testroms::makeMachine(Model::TI58C);
-    per(*m).setPrinterConnected(printer);
+    auto m = testroms::makeMachine(Model::TI58C, printer);
     testroms::runToScanLoop(*m, Model::TI58C);
     for (int k : {kKey0, kRecip}) testroms::tap(*m, Model::TI58C, k);
     const double hz = instructionHz(Model::TI58C);
@@ -282,21 +280,22 @@ TEST(card_insert_and_eject) {
     CHECK_EQ(card(*m).cardMode(), 0);
 }
 
-TEST(printer_print_key_emits_line) {
+// C59-6 AC-5: PRINT held down prints the display (was printer_print_key_emits_line).
+TEST(c59_6_ac5_print_key_prints_display) {
     auto m = testroms::makeMachine(Model::TI59);
-    per(*m).setPrinterConnected(true);
     testroms::runToScanLoop(*m, Model::TI59);
     testroms::tap(*m, Model::TI59, kKey2);
-    per(*m).pressPrinterPrint(true);
+    testroms::printerControl(*m, PC100C::kPrint, true);
     run(*m, 3000);
-    per(*m).pressPrinterPrint(false);
+    testroms::printerControl(*m, PC100C::kPrint, false);
     run(*m, 200000);
-    auto lines = per(*m).drainPrinterLines();
+    auto lines = testroms::printedLines(*m);
     CHECK(!lines.empty());
+    if (!lines.empty()) CHECK_EQ(lines[0], std::string("          2.        "));
 }
 
 // The printer interrupt cuts a line mid-row: the head fires a row's columns
-// right to left, 64 cycles apart (Core/TMC0501.hpp kPrinterColumnCycles).
+// right to left, 64 instructions apart (core/PC100C.hpp kColumnInstructions).
 // examples/debug/printer-interrupt-sweep.ti58c on the TI-58C, one line per k: the
 // interrupt comes 2049 + 16·(k − 21) cycles after the print starts, roughly.
 // Expected values are what a real TI-58C + PC-100A printed (2026-10-25 scans,
@@ -304,7 +303,6 @@ TEST(printer_print_key_emits_line) {
 static PrinterCodeLine sweepLine(int k) {
     const Model model = Model::TI58C;
     auto m = testroms::makeMachine(model);
-    per(*m).setPrinterConnected(true);
     testroms::runToScanLoop(*m, model);
     // 000 INV SBR, 001–004 Nop, 005 Op 05 Int, 008 1F, 009 RTN;
     // 100: RCL 01 +/- INV log SBR 005 R/S (prints 10^-k's Int cut short).
@@ -322,11 +320,13 @@ static PrinterCodeLine sweepLine(int k) {
     mem(*m).writeRAMReg(59 - 1, k01.data());  // R01
     for (int key : {61, 82, 92, 92, 91}) testroms::tap(*m, model, key);  // GTO 100 R/S
     run(*m, static_cast<uint32_t>(instructionHz(model)));
-    auto lines = per(*m).drainPrinterCodeLines();
+    auto lines = testroms::printedCodeLines(*m);
     return lines.empty() ? PrinterCodeLine{} : lines[0];
 }
 
-TEST(printer_interrupt_partial_rows) {
+// C59-6 AC-4: a line cut short by the printer interrupt has today's partial
+// row (was printer_interrupt_partial_rows).
+TEST(c59_6_ac4_printer_interrupt_partial_rows) {
     struct Case { int k, rows, columns; };
     for (Case c : {Case{21, 4, 0}, {22, 4, 1}, {26, 4, 2}, {30, 4, 3}, {36, 4, 4}, {39, 4, 4},
                    {40, 4, 5}, {60, 5, 1}, {63, 5, 2}, {69, 5, 3}}) {

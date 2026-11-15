@@ -1,5 +1,7 @@
 #include "ModuleCatalog.hpp"
 #include "TextUtil.hpp"
+#include "../core/ModuleFile.hpp"
+#include "../core/TICatalogue.hpp"
 #include <algorithm>
 
 namespace cu59 {
@@ -27,37 +29,32 @@ int toInt(std::string_view v, int fallback) {
 
 } // namespace
 
-std::vector<ModuleMetadata> allModuleMetadata(std::string_view text) {
+std::vector<ModuleMetadata> allModuleMetadata(const calcu::roms::RomSet& roms) {
     std::vector<ModuleMetadata> all;
-    ModuleMetadata cur;
-    bool inModule = false;
-    forEachLine(text, [&](std::string_view line, const std::string& upper) {
-        std::string_view v;
-        if (takeValue(line, upper, "MODULE-ID:", v)) {
-            if (inModule && !cur.id.empty()) all.push_back(cur);
-            cur = ModuleMetadata();
-            cur.id = std::string(v);
-            inModule = true;
-            return;
+    for (const auto& m : tiModules()) {
+        ModuleMetadata md;
+        md.id = m.id;
+        md.menuTitle = m.name;
+        if (const auto* bytes = roms.bytes(std::string(m.id) + ".rom.yaml")) {
+            std::string error;
+            TIModuleFile f = readModuleFile({reinterpret_cast<const char*>(bytes->data()), bytes->size()}, error);
+            if (error.empty()) {
+                md.id = f.moduleName;
+                md.menuTitle = f.description;
+                md.title = f.title;
+                md.menuSort = f.menuSort;
+            }
         }
-        if (!inModule) return;
-        if (takeValue(line, upper, "MODULE-TITLE:", v)) cur.title = std::string(v);
-        else if (takeValue(line, upper, "MODULE-MENU-TITLE:", v)) cur.menuTitle = std::string(v);
-        else if (takeValue(line, upper, "MODULE-MENU-SORT:", v)) cur.menuSort = toInt(v, cur.menuSort);
-    });
-    if (inModule && !cur.id.empty()) all.push_back(cur);
+        all.push_back(std::move(md));
+    }
     std::stable_sort(all.begin(), all.end(),
                      [](const ModuleMetadata& a, const ModuleMetadata& b) { return a.menuSort < b.menuSort; });
     return all;
 }
 
-std::optional<std::string> moduleRomFile(std::string_view text, std::string_view moduleID) {
-    std::optional<std::string> result;
-    forEachLine(text, [&](std::string_view line, const std::string& upper) {
-        std::string_view v;
-        if (!result && takeValue(line, upper, "MODULE-ID:", v) && v == moduleID) result = std::string(v) + ".rom.yaml";
-    });
-    return result;
+std::optional<std::string> moduleRomFile(std::string_view moduleID) {
+    if (!isTIModule(moduleID)) return std::nullopt;
+    return std::string(moduleID) + ".rom.yaml";
 }
 
 ModuleCards moduleCards(std::string_view text, std::string_view moduleID) {

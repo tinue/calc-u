@@ -1,4 +1,5 @@
 #include "FrameSampler.hpp"
+#include "../core/PrinterOutput.hpp"
 #include <algorithm>
 #include <cmath>
 #include <cstring>
@@ -14,12 +15,14 @@ bool LedFrame::operator==(const LedFrame& o) const {
 FrameUpdate FrameSampler::tick(calcu::machine::Machine& m, int debugLevel, bool cardSwiping) {
     FrameUpdate u;
     u.cardAutoEjected = cardSwiping && !cardReaderOf(m)->isCardPresent();
-    u.printerLines = peripheralsOf(m)->drainPrinterLines();
+    // The paper of the PC-100C, if one is plugged in (C59-6 design §3.5).
+    auto* paper = calcu::machine::capabilityAs<PrinterOutput>(m, calcu::machine::CapabilityId{"printer/c59.printer-output"});
+    if (paper) u.printerLines = paper->takeLines();
     if (debugLevel > 0) {
         for (const auto& e : debugPanelOf(m)->drainDebugEvents())
             if (e.level <= debugLevel) u.logLines.emplace_back(e.msg);
     }
-    u.printerCodeLines = peripheralsOf(m)->drainPrinterCodeLines();
+    if (paper) u.printerCodeLines = paper->takeCodeLines();
 
     u.display = m.readDisplay();
     // The poll's length: what ran since the previous tick. With nothing run

@@ -111,7 +111,8 @@ public:
                                                      std::string cuecards, std::string moduleID,
                                                      Threading threading = Threading::Threads);
     /// `roms` from lookUpRoms(); `cuecards` is roms/solid-state/cuecards.txt
-    /// (the module list and cue cards until M-25/M-55); `moduleID` the saved module.
+    /// (the cue cards until M-55); `moduleID` the saved module (an ID that is
+    /// no module leaves the slot empty).
     SessionController(Platform& platform, std::shared_ptr<const calcu::roms::RomSet> roms, std::string cuecards,
                       std::string moduleID, Threading threading = Threading::Threads);
     ~SessionController();
@@ -138,11 +139,15 @@ public:
     void tick(std::chrono::steady_clock::time_point now);
 
     const std::string& moduleID() const { return m_moduleID; }
-    /// Swap the solid-state module (no reset); false for an ID cuecards.txt does not list.
+    /// The module of that ID into `slot-1` (a replace), then the power cycle
+    /// that follows (C59-6 AC-11; row 59-11); false for an ID that is no
+    /// module, or when the attach is refused (EC-1), and nothing changes.
     bool selectModule(const std::string& moduleID);
-    /// The Settings choice: swap to a different module, then soft-reset.
+    /// The Settings choice: a different module (empty: the slot emptied),
+    /// then the power cycle.
     void changeModule(const std::string& moduleID);
-    std::vector<ModuleMetadata> allModules() const { return allModuleMetadata(m_cuecards); }
+    /// The 14 modules from their module files, in menu order (C59-6 AC-8).
+    std::vector<ModuleMetadata> allModules() const { return allModuleMetadata(*m_roms); }
 
     // ── Display, keys, speed ─────────────────────────────────────────────────
     const LedFrame& display() const { return m_display; }
@@ -173,9 +178,14 @@ public:
     /// The strip's height in dot pitches (a text line without dot codes yet counts as complete).
     double printerStripHeightUnits() const;
     bool printerConnected() const { return m_printerConnected; }
-    bool printerTrace() const { return m_session && m_session->access().peripherals().printerTrace(); }
+    /// TRACE's position: the app session keeps it from the start (off) to the
+    /// end, through reset, power cycle, cold boot, model switch and detach;
+    /// never saved (C59-6 AC-6; row 59-25). A state file sets it off.
+    bool printerTrace() const { return m_printerTrace; }
+    /// Attach or detach the PC-100C, then the power cycle that follows (row
+    /// 59-11). The paper stays (AC-1); a line cut by the detach keeps its rows (EC-2).
     void setPrinterConnected(bool connected);
-    /// The printer panel's connect button: plug the PC-100C in or out and reset the calculator.
+    /// The printer panel's connect button: setPrinterConnected(!connected).
     void togglePrinterConnection();
     void togglePrinterTrace();
     void pressPrinterPrint(bool pressed);
@@ -330,6 +340,25 @@ private:
     std::vector<std::string> m_printerLines;
     std::vector<PrinterCodeLine> m_printerCodeLines;
     bool m_printerConnected = true;
+    bool m_printerTrace = false;   ///< C59-6 AC-6
+
+    /// What changing the places did (C59-6): on the session's thread inside
+    /// sync(), then adopted on the UI thread.
+    struct PlaceChange {
+        std::optional<std::string> refusal;
+        bool powerCycle = false;      ///< the pin-out says one follows
+        bool moduleChanged = false, printerChanged = false;
+        std::vector<std::string> lines;
+        std::vector<PrinterCodeLine> codeLines;
+    };
+    std::optional<std::string> currentModule() const;
+    /// Inside sync(): the module and the printer as asked; stops at a refusal.
+    PlaceChange changePlacesNow(const std::optional<std::string>& module, bool printer);
+    /// On the UI thread: the IDs, the cue cards, the debugger's module, the paper.
+    void adoptPlaces(const PlaceChange&, const std::optional<std::string>& module, bool printer);
+    /// The whole change as a user operation: the places, the power cycle, the
+    /// bookkeeping of an operation. False on a refusal (nothing changed).
+    bool changePlaces(const std::optional<std::string>& module, bool printer);
 
     std::string m_cardFileName = "card.U59";  ///< the fitted card's, or the last one's in the reader
     /// The card in the cutout, while it is out of its sleeve.

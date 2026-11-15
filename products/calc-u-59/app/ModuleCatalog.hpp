@@ -1,5 +1,6 @@
 #pragma once
 #include "CueCard.hpp"
+#include "roms/RomSet.hpp"
 #include <map>
 #include <optional>
 #include <string>
@@ -9,9 +10,10 @@
 // roms/solid-state/cuecards.txt: one section per Solid State Software module
 // (MODULE-ID first, then MODULE-TITLE / -SORT / -MENU-TITLE / -MENU-SORT /
 // -ROM), followed by "CUECARD: n" blocks — the cue card for library program n.
-// '#' starts a comment. It is still the module list and the cue cards (until
-// M-25 and M-55, migration plan §2.3); the module's ROM is its `<ID>.rom.yaml`
-// of the ROM set (LIB-12 AC-14), and MODULE-ROM is no longer read.
+// '#' starts a comment. It is still the cue cards (until M-55, migration plan
+// §2.3). The module list comes from the 14 module files of the ROM set since
+// M-25 (C59-6 AC-8; docs/formats/modules.md §2): the ID is `module-name`, the
+// picker shows `description` in `menu-sort` order. MODULE-ROM is not read.
 
 namespace cu59 {
 
@@ -23,12 +25,15 @@ struct ModuleMetadata {
     int menuSort = 0;
 };
 
-/// Every module's metadata in menu order (MODULE-MENU-SORT, file order on ties).
-std::vector<ModuleMetadata> allModuleMetadata(std::string_view cuecardsTxt);
+/// Every module's metadata from its module file in the set, in menu order
+/// (`menu-sort`; ties keep the catalogue's order, today's cuecards.txt
+/// order, so ST comes before RE: C59-6 design D-4). `menuTitle` is the
+/// file's `description`, `title` its `title`.
+std::vector<ModuleMetadata> allModuleMetadata(const calcu::roms::RomSet& roms);
 
-/// Adapter A-3 (LIB-12 design §5, until M-25): the module file of a module ID
-/// that cuecards.txt lists ("ML" → "ML.rom.yaml"); std::nullopt for another ID.
-std::optional<std::string> moduleRomFile(std::string_view cuecardsTxt, std::string_view moduleID);
+/// The module file of a module ID of the catalogue ("ML" → "ML.rom.yaml");
+/// std::nullopt for another ID.
+std::optional<std::string> moduleRomFile(std::string_view moduleID);
 
 struct ModuleCards {
     std::map<int, CueCardContent> cards;  ///< library program number → cue card

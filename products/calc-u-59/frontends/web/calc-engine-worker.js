@@ -125,7 +125,7 @@ async function init({ settings, model, module }) {
   await fetchRoms(Module.romFileNames());
   const started = new Module.WebController(cuecards, settings, plan.model, plan.moduleID);
   if (!started.started()) return;   // it posted romsMissing
-  postMessage({ type: "ready", data: Module.staticData(cuecards) });
+  postMessage({ type: "ready", data: Module.staticData(started) });
   controller = started;
 
   startLoop();

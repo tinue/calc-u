@@ -7,7 +7,11 @@
 // Since M-19 they replay through the machine interface (C59-1 AC-4; design
 // §8, D-3): build(), advance(), keyDown/keyUp with the key IDs of AC-9,
 // reset/powerCycle/coldBoot, readDisplay(), plus the adapters for what the
-// interface does not have yet (module, printer, card, RAM, partition, PC).
+// interface does not have yet (card, RAM, partition, PC). Since M-25 (C59-6
+// design §8) the module and the PC-100C are peripherals in their places:
+// `module` and `printer` before the first command go into the build request
+// (no power cycle is added), `trace`, `paper` and `print` are the PC-100C's
+// controls, and the printed lines come from its `c59.printer-output`.
 //
 // Each tests/golden-runs/<name>.run is a script; <name>.golden is what the
 // core did. A golden "display" line holds 2.3.0's control and digit nibbles;
@@ -63,7 +67,6 @@ namespace fs = std::filesystem;
 using calcu::machine::KeyId;
 using testroms::dbg;
 using testroms::mem;
-using testroms::per;
 
 // The scripts' key names (2.3.0's tools/headless/ti59.py names) to the key IDs
 // of C59-1 AC-9; the replay's own table (design §8).
@@ -158,15 +161,11 @@ struct Run {
     void operation() { base = m->tickCount(); }
 
     void build() {
-        m = cu59::buildMachine(model, *testroms::romSet());
-        if (module != "none") {
-            auto cue = testroms::readFile("roms/solid-state/cuecards.txt");
-            auto file = cue ? cu59::moduleRomFile(*cue, module) : std::nullopt;
-            auto lib = file ? cu59::moduleImage(*testroms::romSet(), *file) : std::nullopt;
-            if (!lib) { error = "module " + module + " not found"; return; }
-            per(*m).loadModuleImage(lib->data(), lib->size());
-        }
-        per(*m).setPrinterConnected(printer);
+        if (module != "none" && !cu59::moduleRomFile(module)) { error = "module " + module + " not found"; return; }
+        cu59::MachinePeripherals places;
+        if (module != "none") places.module = module;
+        places.printer = printer;
+        m = cu59::buildMachine(model, *testroms::romSet(), places);
         operation();
     }
 
@@ -197,8 +196,8 @@ struct Run {
         m->readDisplay();
         steps(0.03);
         out += "  segments " + segmentState(*m) + "\n";
-        for (const auto& l : per(*m).drainPrinterLines()) out += "  print |" + l + "|\n";
-        for (const auto& c : per(*m).drainPrinterCodeLines())
+        for (const auto& l : testroms::printedLines(*m)) out += "  print |" + l + "|\n";
+        for (const auto& c : testroms::printedCodeLines(*m))
             out += "  dots " + hex(c.codes.data(), c.codes.size()) + " rows=" + std::to_string(c.rowCount) +
                    " partial=" + std::to_string(c.partialColumns) + "/" + std::to_string(c.partialHeat) + "\n";
     }
@@ -214,7 +213,7 @@ struct Run {
             return;
         }
         if (cmd == "module") { module = rest(); return; }
-        if (cmd == "printer") { printer = rest() == "on"; if (m) per(*m).setPrinterConnected(printer); record(line); return; }
+        if (cmd == "printer") { printer = rest() == "on"; if (m) testroms::setPrinter(*m, printer); record(line); return; }
         if (!m) build();
         if (!error.empty()) return;
         if (cmd == "boot" || cmd == "idle") idle();
@@ -242,9 +241,9 @@ struct Run {
         }
         else if (cmd == "app-coldboot") { m->coldBoot(); operation(); }
         else if (cmd == "core-reset") { m->powerCycle(); operation(); }
-        else if (cmd == "trace") per(*m).setPrinterTrace(rest() == "on");
+        else if (cmd == "trace") testroms::printerControl(*m, PC100C::kTrace, rest() == "on");
         else if (cmd == "paper" || cmd == "print") {
-            auto press = [&](bool d) { if (cmd == "paper") per(*m).pressPrinterAdv(d); else per(*m).pressPrinterPrint(d); };
+            auto press = [&](bool d) { testroms::printerControl(*m, cmd == "paper" ? PC100C::kAdv : PC100C::kPrint, d); };
             press(true); steps(0.1); press(false); steps(0.1);
             idle();
         }
@@ -340,7 +339,7 @@ TEST(c59_1_ac4_golden_runs_through_the_machine_interface) {
     for (const auto& e : fs::directory_iterator(dir))
         if (e.path().extension() == ".run") scripts.push_back(e.path());
     std::sort(scripts.begin(), scripts.end());
-    CHECK_EQ(scripts.size(), size_t{17});
+    CHECK_EQ(scripts.size(), size_t{18});
     for (const auto& s : scripts) {
         std::string error;
         std::string got = play(testroms::readFile(s.string()).value_or(""), &error);

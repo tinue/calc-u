@@ -1,10 +1,13 @@
 #pragma once
 #include "../app/KeyIds.hpp"
 #include "../app/ProductRoms.hpp"
+#include "../core/PC100C.hpp"
+#include "../core/PrinterOutput.hpp"
 #include "../core/TIAdapters.hpp"
 #include "../core/TICatalogue.hpp"
 #include "../core/TISegments.hpp"
 #include "machine/Machine.hpp"
+#include "peripherals/Controls.hpp"
 #include "roms/Bundle.hpp"
 #include <cstdio>
 #include <cstdlib>
@@ -73,7 +76,6 @@ inline std::shared_ptr<const calcu::roms::RomSet> romSet() {
 // The adapters of a TI machine (C59-1 design §5).
 inline TIMemoryAdapter& mem(Machine& m) { return *memoryOf(m); }
 inline TIDebugTargetAdapter& dbg(Machine& m) { return *debugTargetOf(m); }
-inline TIPeripheralsAdapter& per(Machine& m) { return *peripheralsOf(m); }
 inline TICardReaderAdapter& card(Machine& m) { return *cardReaderOf(m); }
 inline TIDebugPanelAdapter& panel(Machine& m) { return *debugPanelOf(m); }
 
@@ -82,11 +84,49 @@ inline double instructionHz(cu59::Model model) {
     return tiCatalogue().model(cu59::modelId(model))->tickRate / 32.0;
 }
 
-/// Build a machine with ROM and constants and the Master Library, as the apps do.
-inline std::unique_ptr<Machine> makeMachine(cu59::Model model) {
-    auto m = cu59::buildMachine(model, *romSet());
-    if (auto lib = cu59::moduleImage(*romSet(), "ML.rom.yaml")) per(*m).loadModuleImage(lib->data(), lib->size());
-    return m;
+/// Build a machine with ROM and constants, the Master Library and the
+/// PC-100C attached at the build, as 2.3.0's apps started (C59-6).
+inline std::unique_ptr<Machine> makeMachine(cu59::Model model, bool printer = true) {
+    return cu59::buildMachine(model, *romSet(), cu59::MachinePeripherals{std::string("ML"), printer, false});
+}
+
+// The PC-100C and the module through their places and capabilities (C59-6).
+inline PrinterOutput* paper(Machine& m) {
+    return calcu::machine::capabilityAs<PrinterOutput>(m, calcu::machine::CapabilityId{"printer/c59.printer-output"});
+}
+inline calcu::peripherals::Controls* printerControls(Machine& m) {
+    return calcu::machine::capabilityAs<calcu::peripherals::Controls>(m, calcu::machine::CapabilityId{"printer/controls"});
+}
+/// The lines printed since the last call (none without a PC-100C).
+inline std::vector<std::string> printedLines(Machine& m) {
+    auto* p = paper(m);
+    return p ? p->takeLines() : std::vector<std::string>{};
+}
+inline std::vector<PrinterCodeLine> printedCodeLines(Machine& m) {
+    auto* p = paper(m);
+    return p ? p->takeCodeLines() : std::vector<PrinterCodeLine>{};
+}
+/// PRINT or ADV down/up, TRACE on/off.
+inline void printerControl(Machine& m, const calcu::machine::ControlId& id, bool on) {
+    auto* c = printerControls(m);
+    if (!c) return;
+    if (id == PC100C::kTrace) c->set(id, on);
+    else if (on) c->press(id);
+    else c->release(id);
+}
+inline const calcu::machine::PlacePath kPrinterPlace{{kTIPrinterPlace}};
+inline const calcu::machine::PlacePath kSlotPlace{{kTIModulePlace}};
+/// The PC-100C attached (TRACE at `trace`) or detached; what follows is
+/// returned, not run.
+inline calcu::machine::ChangeResult setPrinter(Machine& m, bool on, bool trace = false) {
+    if (on == (paper(m) != nullptr)) return {};
+    return on ? m.attach(cu59::printerRequest(trace), tiCatalogue()) : m.detach(kPrinterPlace, kPC100C, tiCatalogue());
+}
+/// The ID of the module in `slot-1`, or "".
+inline std::string moduleIn(const Machine& m) {
+    for (const auto& e : m.plugged().byPlace)
+        if (e.place == kSlotPlace) return e.peripheral.value;
+    return {};
 }
 
 /// `n` instructions.

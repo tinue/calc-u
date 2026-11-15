@@ -63,8 +63,8 @@ SECOND = {
     "StFlg": 81, "IfFlg": 82, "D.MS": 83, "pi": 84, "Grad": 85,
     "Write": 91, "Dsz": 92, "Adv": 93, "Prt": 94, "List": 95,
 }
-# The PC-100's own PRINT and ADV buttons (TI59Machine::pressPrinterPrint/Adv).
-PRINTER_BUTTONS = {"PRINT": "h_printer_print", "PAPER": "h_printer_adv"}
+# The PC-100C's own PRINT and ADV keys (its controls capability, C59-6 AC-5).
+PRINTER_BUTTONS = {"PRINT": "h_printer_print", "ADV": "h_printer_adv", "PAPER": "h_printer_adv"}  # PAPER: old name of ADV (C59-6 AC-5), until M-59
 
 # The TI-59's idle-loop window (TIPacingHints in core/TIAdapters.hpp); in_idle()
 # reads every model's from the library.

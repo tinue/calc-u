@@ -4,7 +4,8 @@
 #include <cstring>
 #include <string>
 #include <vector>
-#include "TIPrinterTypes.hpp"
+#include "ModuleSlotPinOut.hpp"
+#include "PrinterPinOut.hpp"
 #include "TraceTypes.hpp"
 #include "MachineVariant.hpp"
 
@@ -77,7 +78,20 @@ enum : uint16_t {
     FLG_COND      = 0x0800, // ← bit 11 — must match opcode bit 11 for the jump test
 
     // ── Miscellaneous ───────────────────────────────────────────────────
-    FLG_BUSY      = 0x8000, // Printer / peripheral busy signal; tested by TST BUSY.
+    FLG_BUSY      = 0x8000, // The printer connector's Busy line as the CPU sees it (kept in the
+                            // flags word for the trace format: tools/agentic read it).
+};
+
+// ── Connectors ────────────────────────────────────────────────────────────────
+//
+// What the TI machine wires to the CPU (C59-6 design §4): the printer
+// connector with the digit its D0 pad is on (0 on the TI-59 and TI-58, 10 on
+// the TI-58C), and the module slot. nullptr: nothing plugged in. The CPU holds
+// no printer state and no module image (C59-6, Technical Requirements).
+struct TiConnectors {
+    PrinterPinOut* printer = nullptr;
+    uint8_t d0Digit = 0;
+    ModuleSlotPinOut* module = nullptr;
 };
 
 // ── TMC0501 CPU ───────────────────────────────────────────────────────────────
@@ -116,7 +130,7 @@ public:
     /// ROM spin-wait on state whose real-world completion time doesn't depend on
     /// CPU speed (a key release, the card switch). A TST.BUSY retry counts only
     /// when the KR line is active and the printer is not busy: a print wait is
-    /// timed in emulated cycles (m_prnBusyCycles), so full speed shortens it.
+    /// timed in emulated instructions (PC100C), so full speed shortens it.
     /// Deliberately NOT
     /// set on every occurrence of these opcodes — most executions fall through
     /// (poll succeeded) as part of otherwise-productive code and don't need
@@ -148,9 +162,9 @@ public:
     /// The key matrix byte of digit slot `col` (bit = K-line); for tests.
     uint8_t keyLines(int col) const { return (col >= 0 && col < 16) ? key[col] : 0; }
 
-    /// Load a library module image (up to 5,000 bytes).
-    /// Used by the TI-59 magnetic card reader / solid-state library modules.
-    void loadLibrary(const uint8_t* data, size_t count);
+    /// The printer connector and the module slot (TIMachine, at build, attach
+    /// and detach).
+    void wire(const TiConnectors& c);
 
     /// Load constants from data (must be 1024 bytes for 64×16 rows).
     void loadConstants(const uint8_t* data, size_t count);
@@ -181,12 +195,6 @@ public:
     bool isCardPresent()    const { return m_cardPresent; }
     bool isWaitingForCard() const { return m_waitingForCard; }
     int  cardMode()         const { return m_cardMode; }  ///< 0=none, 1=read, 2=write
-
-    /// Drain all pending printer output lines (called at 60 Hz by the UI thread).
-    std::vector<std::string> drainPrinterLines();
-    /// Drain raw 6-bit character codes for dot-matrix rendering, parallel to drainPrinterLines().
-    /// Each entry is 20 codes (one per column, 0–63) plus a rowCount (1–7).  Feed lines are zero-filled.
-    std::vector<PrinterCodeLine> drainPrinterCodeLines();
 
     // ── Trace / debug API ─────────────────────────────────────────────────────
     // Zero overhead when disabled: step() hot path costs one load; falls
@@ -219,23 +227,6 @@ public:
     /// Pure function — disassembles one 13-bit opcode to a mnemonic string.
     static std::string disassemble(uint16_t pc, uint16_t opcode);
 
-    // PC-100 BUSY after PRT.GO (a printed line) and PRT.FEED (half a line; the
-    // ROM's Adv issues two). The printer runs on the calculator's PHI clock, so
-    // these are instruction cycles on every model, counted down once per step.
-    // Measured from recordings of List, Prt and Adv loops on a TI-59 and a
-    // TI-58C (reference/CoreArchitecture.md, "Printer (PC-100C)").
-    static constexpr uint32_t kPrinterLineCycles = 4165;
-    static constexpr uint32_t kPrinterFeedCycles = 1370;
-
-    // ── Printer hardware buttons ──────────────────────────────────────────────
-    void pressPrinterPrint(bool pressed);
-    void pressPrinterAdv(bool pressed);
-    void setPrinterTrace(bool enabled);
-    void setPrinterConnected(bool connected);   ///< Controls KP.D0 (printer-present sense line)
-
-    /// Return the content currently held in the printer character buffer.
-    std::string printerBufferContent() const;
-
     /// Debug-only helper: repeatedly force PREG redirect to startAddr until
     /// addr reaches startAddr. Returns true when entry succeeded.
     bool runDebugInjectedProgram(uint16_t startAddr, uint32_t maxSteps,
@@ -254,7 +245,7 @@ public:
     /// Latched solid-state library execution address: the module byte address
     /// (0–4999) of the keycode byte most recently dispatched by the main ROM's
     /// program interpreter.  kLibExecPCNone until a module keycode executes.
-    /// Unlike m_libAddr, this is NOT disturbed by header reads or label
+    /// Unlike the module's address register, this is NOT disturbed by header reads or label
     /// searches — see the IN LIB handler for the latch rule.
     uint16_t libExecPC() const { return m_libExecPC; }
 
@@ -350,11 +341,22 @@ private:
     uint8_t  RAM_OP{};    // RAM operation code from Sout[0] (0=read, 1=write, 2=clear, 4=clear×10).
     MaskInfo RAM_MASK{0xFF, 0, 0, 0};  // Field mask for current RAM read/write operation.
 
-    // ── Library module state ──────────────────────────────────────────
-    uint16_t m_libAddr{};       // Current address within the loaded library image.
-    uint8_t  m_libAddrReadPos{}; // Position counter for reading address digits (0-3, cycles).
-    bool     m_libAddrWasWriting{}; // Track direction: true=writing (OUT), false=reading (IN)
-    uint8_t  m_libData[5000]{}; // Library module byte image (up to 5,000 bytes).
+    // ── Connectors ────────────────────────────────────────────────────
+    TiConnectors m_c{};
+    // A key matrix row with the printer's key lines at its pads (KP, KN).
+    uint8_t keyRow(uint8_t d) const {
+        uint8_t row = key[d];
+        if (m_c.printer) {
+            if (d == m_c.d0Digit) row |= m_c.printer->keyLines(PrinterPad::D0);
+            else if (d == 12) row |= m_c.printer->keyLines(PrinterPad::D12);
+            else if (d == 15) row |= m_c.printer->keyLines(PrinterPad::D15);
+        }
+        return row;
+    }
+    bool printerBusy() const { return m_c.printer && m_c.printer->busy(); }
+    void printerWord(PrinterWord w);   // the word to the printer, Busy into FLG_BUSY
+    uint16_t moduleWord(ModuleWord w); // the word to the module; EXT 0 with an empty slot
+    void syncBusy() { flags = printerBusy() ? (flags | FLG_BUSY) : (flags & ~FLG_BUSY); }
 
     // ROM address of the single IN LIB instruction inside the main ROM's
     // keycode-interpreter fetch loop.  The interpreter fetches every executed
@@ -387,19 +389,6 @@ private:
     size_t               m_cardPtr{0};         // Current index in m_cardBankBuffer.
     int                  m_cardMode{0};        // 0=none, 1=read, 2=write
     int                  m_lastWrittenBank{-1};  // Bank index written by last write swipe (-1 = none).
-
-    // ── Printer state ─────────────────────────────────────────────────
-    std::string m_prnBuf[20];        // 20-slot accumulator (right-to-left on output); init to spaces in ctor/reset
-    uint8_t  m_prnCodeBuf[20]{};     // Raw 6-bit char codes, parallel to m_prnBuf
-    uint8_t  m_prnPtr{0};            // Write position in buffer
-    bool     m_prnReady{false};      // True after first PRT_CLEAR; gates OUT PRT/FUNC/STEP/PRINT
-    uint32_t m_prnBusyCycles{0};     // Countdown for FLG_BUSY assertion
-    PrinterCodeLine  m_prnPending{};      // Code-line in progress (deferred until BUSY expires or aborted)
-    bool             m_prnHasPending{false};
-    std::vector<std::string>      m_prnLines;      // Text output queue
-    std::vector<PrinterCodeLine>  m_prnCodeLines;  // Parallel raw-code queue (deferred commits)
-    void flushPendingCodeLine(uint32_t elapsed);  // commit m_prnPending cut `elapsed` cycles after PRT.GO
-    void flushPendingIfActive();                  // flush at the current BUSY count; no-op if !m_prnHasPending
 
     // ── Display state ─────────────────────────────────────────────────
     // Per-digit live buffers: updated during each digit's strobe phase when IDLE.
@@ -515,19 +504,6 @@ private:
     // Trace-facing display state: whether, and how many, positions were driven
     // in the last complete digit-counter revolution.
     void computeDisplayTraceState(uint8_t& displayOn, uint8_t& maxDigitDecay) const;
-
-    // A printed line is 7 dot-row strokes from PRT.GO on, then the paper advance.
-    // Each stroke fires the 5 dot columns of all 20 characters one column at a
-    // time, right to left: column c (5 = rightmost) of row r starts
-    // r·508 + 18 + (5 − c)·64 cycles after PRT.GO. How dark the last column
-    // of a cut comes out depends on how long it was heated (partialHeat;
-    // Shared/PrinterFont.hpp inkAlpha). Measured on a TI-58C and a TI-59
-    // with one PC-100A (examples/debug/printer-interrupt-sweep.ti58c and
-    // printer-interrupt-bits.ti59; reference/CoreArchitecture.md, "Printer
-    // (PC-100C)").
-    static constexpr uint32_t kPrinterRowCycles = 508;
-    static constexpr uint32_t kPrinterRowStartCycles = 18;
-    static constexpr uint32_t kPrinterColumnCycles = 64;
 
     int getStepWeight() const;
 };

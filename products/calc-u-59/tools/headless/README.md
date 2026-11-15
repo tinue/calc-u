@@ -26,7 +26,7 @@ Key names: the 45 key IDs of C59-1 AC-9 (`2nd`, `INV`, `lnx`, `x⇄t`, `x²`,
 `√x`, `1/x`, `yˣ`, `÷`, `×`, `+/-`, …) and their other spellings of
 `docs/formats/preset.md` §8.1 (`x<>t`, `x^2`, `sqrt`, `y^x`, `/`, `*`, …;
 `x2` is gone), a matrix code (`83`), the second functions of `SECOND`, plus
-`PRINT` / `PAPER` for the PC-100's own buttons; 2nd functions are two
+`PRINT` / `ADV` for the PC-100C's own keys (`PAPER` is an old name of `ADV`, kept until the harness replaces this tool); 2nd functions are two
 presses, as on the hardware. The library resolves a name through the
 descriptor (`h_key_down`, -1 for an unknown name). Library use:
 `from ti59 import Machine` — `Machine().key("5")` returns per-instruction

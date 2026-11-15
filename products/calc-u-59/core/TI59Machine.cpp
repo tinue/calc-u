@@ -21,15 +21,10 @@ TI59Machine::TI59Machine(MachineVariant variant)
     int col = cardSwitchCol();
     m_cpu.setCardSwitchCol(static_cast<uint8_t>(col));
     m_cpu.pressKey(4, col);
-    m_cpu.setPrinterConnected(m_printerConnected);
 }
 
 void TI59Machine::loadROM(const uint16_t* data, size_t count) {
     m_rom.load(data, count);
-}
-
-void TI59Machine::loadLibrary(const uint8_t* data, size_t count) {
-    m_cpu.loadLibrary(data, count);
 }
 
 void TI59Machine::loadConstants(const uint8_t* data, size_t count) {
@@ -39,8 +34,8 @@ void TI59Machine::loadConstants(const uint8_t* data, size_t count) {
 void TI59Machine::reset() {
     m_cpu.reset();
     m_cpu.pressKey(4, cardSwitchCol());  // restore card-absent state after key[] wipe
-    m_cpu.setPrinterConnected(m_printerConnected);
-    m_cpu.setPrinterTrace(m_printerTrace);  // TRACE is a physical latch: survives reset
+    // The PC-100C's lines (presence, PRINT, ADV, TRACE) come from the PC-100C
+    // itself through the connector (C59-6), so they need no re-application.
 }
 
 uint32_t TI59Machine::step() {
@@ -160,37 +155,6 @@ bool TI59Machine::isWaitingForCard() const {
 
 int TI59Machine::cardMode() const {
     return m_cpu.cardMode();
-}
-
-// ── Printer ────────────────────────────────────────────────────────────────────
-
-std::vector<std::string> TI59Machine::drainPrinterLines() {
-    return m_cpu.drainPrinterLines();
-}
-
-std::vector<PrinterCodeLine> TI59Machine::drainPrinterCodeLines() {
-    return m_cpu.drainPrinterCodeLines();
-}
-
-void TI59Machine::pressPrinterPrint(bool pressed) {
-    m_cpu.pressPrinterPrint(pressed);
-}
-
-void TI59Machine::pressPrinterAdv(bool pressed) {
-    m_cpu.pressPrinterAdv(pressed);
-}
-
-void TI59Machine::setPrinterTrace(bool enabled) {
-    m_printerTrace = enabled;
-    m_cpu.setPrinterTrace(enabled);
-}
-
-void TI59Machine::setPrinterConnected(bool connected) {
-    m_printerConnected = connected;
-    // Attaching or detaching the printer physically releases the TRACE latch.
-    m_printerTrace = false;
-    m_cpu.setPrinterConnected(connected);
-    m_cpu.setPrinterTrace(false);
 }
 
 // ── Trace / debug API ──────────────────────────────────────────────────────────
@@ -344,10 +308,6 @@ uint8_t TI59Machine::readROMKeycode(int addr) const {
 
 CpuFrame TI59Machine::snapshotCPU() const {
     return m_cpu.snapshotCPU();
-}
-
-std::string TI59Machine::printerBufferContent() const {
-    return m_cpu.printerBufferContent();
 }
 
 // Bounded by the physical 120-register RAM (not the per-model limit): existing

@@ -285,7 +285,13 @@ class EmulatorViewModel {
 
     // MARK: - Module, reset
 
-    /// Change the solid-state module and perform a soft reset (preserves RAM); no-op if unchanged.
+    /// The 14 Solid State ROM modules from their module files, in menu order (C59-6 AC-8).
+    func allModules() -> [ModuleMetadata] {
+        guard romSet != nil else { return [] }
+        return controller.allModules.map { ModuleMetadata($0) }
+    }
+
+    /// Change the solid-state module; the power cycle follows (row 59-11); no-op if unchanged.
     func changeModule(id: String) {
         guard romSet != nil else { return }
         controller.changeModule(id)

@@ -152,6 +152,8 @@ typedef NS_ENUM(NSInteger, TIFreezeOwner) {
 @property (nonatomic, readonly) NSString *moduleID;
 /// Swap to a different module and soft-reset (the Settings choice).
 - (void)changeModule:(NSString *)moduleID;
+/// The 14 modules from their module files, in menu order (C59-6 AC-8).
+@property (nonatomic, readonly) NSArray<TIModuleMetadata *> *allModules;
 
 // ── Display, keys, speed ─────────────────────────────────────────────────────
 @property (nonatomic, readonly) TIDisplaySnapshot display;

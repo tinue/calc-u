@@ -1,6 +1,7 @@
 #pragma once
 #include "harness/Protocol.hpp"
 #include "harness/Reply.hpp"
+#include "presets/Vocabulary.hpp"
 #include <functional>
 #include <map>
 #include <string>
@@ -54,5 +55,13 @@ void addTypingCommands(CommandRegistry&);
 // cold-boot and power-cycle at the top level, each sent as the session
 // command of LIB-18 with the reply of its operation.
 void addStartupCommands(CommandRegistry&);
+
+// LIB-6 AC-34 (design §3.9): preset, check-preset, preset-list, full-speed,
+// regular-speed, switch, and every step of the vocabulary with
+// StepDef::command (elapsed-time, expect, not-expect, screenshot, syncclock,
+// a product's printer-trace; LIB-7's media steps from M-41), each sent as
+// `run-step`. Without a vocabulary (a product without preset rules yet) the
+// commands are refused. The bare `wait` is FirstCommands.cpp's.
+void addPresetCommands(CommandRegistry&, const presets::Vocabulary*);
 
 } // namespace calcu::harness

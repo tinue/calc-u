@@ -116,6 +116,22 @@ elseif(CASE STREQUAL "ec4_unknown_product_lists_products")
     fail("without --product: status ${r_status}: ${r_err}")
   endif()
 
+# LIB-6 AC-34: check-preset, one line per file; the run ends as failed when
+# a file failed. The paths relative to the working directory.
+elseif(CASE STREQUAL "ac34_check_preset_exit_status")
+  file(WRITE ${WORK}/good.test-seg "format-version: 2\nmodel: test-seg\nkeys:\n  - key: 1\n")
+  file(WRITE ${WORK}/bad.test-seg "format-version: 2\nmodel: test-seg\nkeys:\n  - key: 9\n")
+  run(r ARGS --product test check-preset good.test-seg)
+  if(NOT r_status EQUAL 0 OR NOT r_out STREQUAL "done 1\nok good.test-seg\n")
+    fail("good: status ${r_status}: ${r_out}${r_err}")
+  endif()
+  run(r ARGS --product test check-preset good.test-seg bad.test-seg)
+  string(FIND "${r_out}" "done 2\nok good.test-seg\nFAIL " a)
+  string(FIND "${r_out}" "bad.test-seg, line 4: 9 is not a key of the test-seg.\n" b)
+  if(NOT r_status EQUAL 1 OR NOT a EQUAL 0 OR b LESS 0)
+    fail("bad: status ${r_status}: ${r_out}${r_err}")
+  endif()
+
 else()
   fail("unknown case")
 endif()

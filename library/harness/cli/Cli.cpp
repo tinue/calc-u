@@ -30,6 +30,7 @@ std::string usageText(const std::vector<std::unique_ptr<HarnessProduct>>& produc
         "commands:\n";
     CommandRegistry reg;
     addFirstCommands(reg);
+    addPresetCommands(reg, nullptr);
     for (const auto& p : products) p->addCommands(reg);
     for (const auto& u : reg.usage()) s += "  " + u + "\n";
     return s + productList(products);

@@ -165,14 +165,33 @@ std::unique_ptr<Server> Server::start(HarnessProduct& product, const RunOptions&
     };
     setup.hostTime = s->setup_->hostTime();   // AC-21 (LIB-3 A-7)
     setup.hosting = sessions::Hosting::VirtualTime;
+    // LIB-6 (design §2): the loader of preset format 2 when the product has
+    // rules, before StartupPart, with the run's folder for screenshots
+    // (LIB-11 AC-8); LIB-18's PresetLoader (LIB-18 D-9).
+    if (presets::ProductRules* rules = product.presetRules()) {
+        presets::PresetsSetup ps;
+        ps.catalogue = &product.catalogue();
+        ps.rules = rules;
+        ps.typing = product.typingPart();
+        ps.bundle = product.presetBundle();
+        ps.home = s->setup_->hostDirs().home;
+        RunSetup* run = s->setup_.get();
+        ps.screenshotFolder = [run]() -> std::optional<std::string> { return run->screenshotFolder(); };
+        s->presets_ = std::make_unique<presets::PresetsPart>(std::move(ps));
+    }
     // LIB-18 §3.6: the start is StartupPart's, after PeripheralsPart (the
-    // clocks at a build and at the end of every operation, AC-1, AC-13).
-    // No loader until LIB-6 (M-38); the run's own settings (LIB-9 AC-18).
+    // clocks at a build and at the end of every operation, AC-1, AC-13);
+    // the run's own settings (LIB-9 AC-18).
     s->startup_ = std::make_unique<startup::StartupPart>(
-        startup::StartupSetup{product.machines(), roms.set, s->setup_->settings(), nullptr});
+        startup::StartupSetup{product.machines(), roms.set, s->setup_->settings(), s->presets_.get()});
+    if (s->presets_) s->presets_->setControl(&s->startup_->control());
     // LIB-4 §7: the control state, among the library's parts.
     s->control_ = std::make_unique<control::ControlPart>(product.controlSetup());
-    setup.parts = {s->peripherals_.get(), s->state_.get(), s->startup_.get(), s->control_.get()};
+    setup.parts = {s->peripherals_.get(), s->state_.get()};
+    if (s->presets_) setup.parts.push_back(s->presets_.get());
+    for (sessions::SessionPart* p : {static_cast<sessions::SessionPart*>(s->startup_.get()),
+                                     static_cast<sessions::SessionPart*>(s->control_.get())})
+        setup.parts.push_back(p);
     for (sessions::SessionPart* p : product.sessionParts()) setup.parts.push_back(p);
     s->session_ = std::make_unique<sessions::AppSession>(std::move(setup));
     s->host_ = std::make_unique<HarnessHost>(*s->session_, product, *s->setup_);
@@ -185,6 +204,7 @@ std::unique_ptr<Server> Server::start(HarnessProduct& product, const RunOptions&
 
     addFirstCommands(s->registry_);
     addStartupCommands(s->registry_);
+    addPresetCommands(s->registry_, s->presets_ ? &s->presets_->vocabulary() : nullptr);
     product.addCommands(s->registry_);
     return s;
 }
@@ -215,7 +235,7 @@ Server::Result Server::line(std::string_view text) {
         reply = (*h)(ctx);
         quit = ctx.quit;
     }
-    res.done = reply.done;
+    res.done = reply.done && !reply.failsRun;
     res.quit = quit;
     if (!quit) res.text = setup_->scrub(setup_->options().json ? writeJson(reply) : writePlain(reply));
     return res;

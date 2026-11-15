@@ -6,6 +6,7 @@
 #include "harness/StatePart.hpp"
 #include "machine/Attach.hpp"
 #include "machine/Machine.hpp"
+#include "presets/PresetsPart.hpp"
 #include "sessions/LibraryTopics.hpp"
 #include <algorithm>
 #include <cctype>
@@ -57,8 +58,29 @@ std::string ownerText(const machine::Owner& o) {
     return "peripheral:" + p.peripheral.value + "@" + machine::placeText(p.place);
 }
 
+// LIB-6 AC-34: `wait` without a duration waits until the machine is idle,
+// at most an hour of emulated time (the counterpart of a preset's implicit wait).
+Reply waitIdle(CommandContext& c) {
+    const machine::MachineDescriptor* d = c.host.descriptor();
+    if (!d) return refusedReply(kNoMachine);
+    const machine::Machine* m = c.host.session().machineSession().machine();
+    const machine::Ticks t0 = m ? m->tickCount() : 0;
+    const ReplyMessage r = c.host.command(Command{presets::kWaitIdleCommand, {}});
+    if (!r.done) {
+        if (r.reason == "Unknown command: wait-idle.") return refusedReply("This build reads no presets of format 2 yet.");
+        return refusedReply(r.reason);
+    }
+    m = c.host.session().machineSession().machine();
+    const machine::Ticks ran = m ? m->tickCount() - t0 : 0;
+    const bool hour = ran >= static_cast<machine::Ticks>(d->tickRate) * 3600;
+    Reply reply = timeReply(ran, d->tickRate);
+    reply.result.set("hourReached", hour);
+    reply.lines.push_back(std::string("hour reached: ") + (hour ? "yes" : "no"));
+    return reply;
+}
+
 Reply waitCmd(CommandContext& c) {
-    if (c.line.argText.empty()) return needs("wait <duration>, as in 2s or 500ms");
+    if (c.line.argText.empty()) return waitIdle(c);
     std::string error;
     const auto us = formats::parseDuration(c.line.argText, &error);
     if (!us) return refusedReply(error);   // EC-2
@@ -197,7 +219,7 @@ Reply stateRestoreCmd(CommandContext& c) {
 } // namespace
 
 void addFirstCommands(CommandRegistry& r) {
-    r.add("wait", waitCmd, "wait <duration>          let emulated time pass: 2s, 1.5s, 500ms");
+    r.add("wait", waitCmd, "wait [<duration>]        let emulated time pass: 2s, 1.5s, 500ms; none: until idle");
     r.add("key-down", keyCmd(true), "key-down <key ID>        the key down");
     r.add("key-up", keyCmd(false), "key-up <key ID>          the key up");
     addTypingCommands(r);

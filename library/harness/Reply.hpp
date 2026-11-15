@@ -88,6 +88,8 @@ struct Reply {
     Value result;                      // null: the command reads nothing
     std::string reason;                // one line; empty when done
     std::vector<std::string> lines;    // the plain form of `result`, written by the command
+    // Written as done, but the run ends as failed (LIB-6 AC-34: check-preset).
+    bool failsRun = false;
 };
 
 Reply doneReply(Value result = {}, std::vector<std::string> lines = {});

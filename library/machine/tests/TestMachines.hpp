@@ -46,7 +46,8 @@
 //             year. Switched off by the key `off`, it answers Nothing.
 //   test-hub  fits test.chain; offers the place `jack` (connector jack,
 //             pin-out test.jack, functional, Takes::Chain, Nothing; two at
-//             once).
+//             once); from LIB-4 (M-37) the holding media place `hub-disk`
+//             (kind test-disk, side 0), listed with the hub as owner (EC-4).
 //   test-uart fits test.bus and test.chain; a serial port that sends one
 //             byte (0, 1, 2, ...) every 10 ms of emulated time and keeps what
 //             it receives.

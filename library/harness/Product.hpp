@@ -1,4 +1,5 @@
 #pragma once
+#include "control/Compute.hpp"
 #include "harness/DisplayText.hpp"
 #include "machine/Build.hpp"
 #include "machine/Catalogue.hpp"
@@ -41,6 +42,10 @@ public:
     // machine-control commands build with; the harness's start is LIB-18's
     // StartupPart (LIB-11 AC-2).
     virtual startup::ProductMachines& machines() = 0;
+    // LIB-4 (design §7): the printers and rules of the control state the
+    // harness session carries; by default the catalogue alone, no printers
+    // and no rules (the products name theirs in their column steps).
+    virtual control::ControlSetup controlSetup() const { return control::ControlSetup{&catalogue(), {}, {}}; }
     // AC-10: the display as text, by the product's rule or font.
     virtual DisplayText readDisplay(const machine::DisplayOutput&, const machine::MachineDescriptor&) = 0;
     // AC-13; C59-9, C1600-5.

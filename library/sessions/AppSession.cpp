@@ -419,9 +419,11 @@ void AppSession::Impl::sound(bool discard) {
     }
 }
 
-// Design §3.2: sound, then the state topics in declaration order, then the
-// stream topics, then the replies, then the asks.
+// Design §3.2: the parts' beforeFlush (LIB-4), sound, then the state topics
+// in declaration order, then the stream topics, then the replies, then the
+// asks.
 void AppSession::Impl::flush() {
+    for (SessionPart* p : setup.parts) p->beforeFlush(*this);   // LIB-4 design §3.5
     const bool runs = running != nullptr;
     const Speed speed = runs ? running->ctx->speed() : commanded;
     const auto* b = payloadAs<BusyState>(busyTopic->current());

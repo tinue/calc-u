@@ -170,7 +170,9 @@ std::unique_ptr<Server> Server::start(HarnessProduct& product, const RunOptions&
     // No loader until LIB-6 (M-38); the run's own settings (LIB-9 AC-18).
     s->startup_ = std::make_unique<startup::StartupPart>(
         startup::StartupSetup{product.machines(), roms.set, s->setup_->settings(), nullptr});
-    setup.parts = {s->peripherals_.get(), s->state_.get(), s->startup_.get()};
+    // LIB-4 §7: the control state, among the library's parts.
+    s->control_ = std::make_unique<control::ControlPart>(product.controlSetup());
+    setup.parts = {s->peripherals_.get(), s->state_.get(), s->startup_.get(), s->control_.get()};
     for (sessions::SessionPart* p : product.sessionParts()) setup.parts.push_back(p);
     s->session_ = std::make_unique<sessions::AppSession>(std::move(setup));
     s->host_ = std::make_unique<HarnessHost>(*s->session_, product, *s->setup_);

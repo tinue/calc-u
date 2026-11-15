@@ -90,6 +90,7 @@ not named here adds a folder in the same pattern.
     LIB-2 and LIB-3 designs; settled at M-23, 2026-11-15);
   - `sessions`: `machine`, `pacing`;
   - `roms`: `machine`, `sessions` (the `roms-missing` topic);
+  - `control`: `machine`, `sessions` (LIB-4 design §2; M-37);
   - `harness`: any area but `web`;
   - `web` (C++ glue): `sessions`, `settings`.
   Review checks it; a new include against it is a finding.

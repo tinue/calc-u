@@ -38,6 +38,11 @@ public:
     // when the answer arrives. std::nullopt: nobody offers it, nothing asked.
     virtual std::optional<CallId> askHost(HostService, Value args, std::function<void(const ServiceAnswer&)> then) = 0;
     virtual std::chrono::system_clock::time_point hostTime() const = 0;   // A-7
+    // The display as the `display` topic holds it now (read in this host
+    // call before afterCall), or nullptr: for a part that sends the display
+    // in a product's own form (Calc-U-1600's Web page, M-31). Nobody else
+    // reads the machine's display (LIB-1 §3.5: one reader).
+    virtual const machine::DisplayOutput* display() const { return nullptr; }
 
 protected:
     ~SessionContext() = default;

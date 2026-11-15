@@ -96,6 +96,12 @@ public:
     std::vector<calcu::sessions::SessionPart*> sessionParts();
     // Once, after the session exists.
     void bind(calcu::sessions::AppSession& session);
+    // The session was destroyed before this part (the Web worker's keep):
+    // nothing of it is touched again.
+    void forgetSession() {
+        m_ms = nullptr;
+        m_ctx = nullptr;
+    }
     // The real-time clocks of a machine built inside the start or an
     // operation are set from this; tests pin it.
     using HostTime = std::function<std::chrono::system_clock::time_point()>;

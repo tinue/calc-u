@@ -70,12 +70,13 @@ if(EMSCRIPTEN)
   # host can't be relied on for the COOP/COEP headers threads need. IDBFS
   # keeps the save folder in IndexedDB (mounted by the worker).
   add_executable(calcu_web ${CMAKE_CURRENT_SOURCE_DIR}/frontends/web/bindings.cpp)
-  target_link_libraries(calcu_web PRIVATE calcu_shared)
+  target_link_libraries(calcu_web PRIVATE calcu_shared calcu_web_glue)
   set_target_properties(calcu_web PROPERTIES OUTPUT_NAME calcu1600-core)
   target_link_options(calcu_web PRIVATE -fwasm-exceptions -lembind -lidbfs.js -sMODULARIZE=1
                       -sEXPORT_NAME=createCalcU1600Module -sENVIRONMENT=worker -sALLOW_MEMORY_GROWTH=1
                       -sSTACK_SIZE=1MB
                       -sEXPORTED_RUNTIME_METHODS=FS,IDBFS,getExceptionMessage,decrementExceptionRefcount)
+  target_compile_options(calcu_web PRIVATE -fwasm-exceptions)
   return()
 endif()
 

@@ -1,5 +1,6 @@
 #pragma once
 #include "formats/Yaml.hpp"
+#include "machine/Attach.hpp"
 #include "presets/ProductRules.hpp"
 #include "sessions/Operation.hpp"
 #include <functional>
@@ -69,6 +70,18 @@ inline constexpr const char* kKeysSection = "keys";
 inline constexpr const char* kSkipWait = "skip-wait";
 inline constexpr const char* kLetItFinish = "let-it-finish";
 
+// LIB-7 (M-41; LIB-6 AC-3, D-22): the owner of media resolves a place key's
+// reference `{ name: }` or `{ file: }` (a module that is a medium, by its
+// name tag or its file). NotMine: the reader goes on as without a resolver
+// (a `name:` is then a peripheral ID); Error: it gave the error through
+// ReadContext::error.
+struct PlaceResolution {
+    enum class How { NotMine, Done, Error } how = How::NotMine;
+    machine::PeripheralRequest request;   // Done: the place is set by the reader
+};
+using PlaceResolver =
+    std::function<PlaceResolution(const machine::PlaceName&, const formats::YamlNode& reference, int line, ReadContext&)>;
+
 class Vocabulary {
 public:
     // A name twice is a programming error: the second is not taken, and
@@ -83,6 +96,13 @@ public:
     const std::vector<std::string>& duplicates() const { return duplicates_; }
     // The verbs whose value is raw (YamlOptions::rawStepVerbs).
     std::vector<std::string> rawVerbs() const;
+    // LIB-7 (M-41): the resolver of place references, and whether a file a
+    // preset names is one of the product's bundled media (checkBundle,
+    // bundle.md §3). Unset: none.
+    void setPlaceResolver(PlaceResolver r) { placeResolver_ = std::move(r); }
+    const PlaceResolver& placeResolver() const { return placeResolver_; }
+    void setBundledMedium(std::function<bool(std::string_view named)> f) { bundledMedium_ = std::move(f); }
+    bool isBundledMedium(std::string_view named) const { return bundledMedium_ && bundledMedium_(named); }
 
 private:
     bool known(std::string_view) const;
@@ -90,6 +110,8 @@ private:
     std::vector<SectionDef> sections_;
     std::vector<StepDef> steps_;
     std::vector<std::string> duplicates_;
+    PlaceResolver placeResolver_;
+    std::function<bool(std::string_view)> bundledMedium_;
 };
 
 // This feature's keywords (§3.5): the header keys format-version, model,

@@ -220,7 +220,23 @@ std::optional<PlaceRequest> readPlace(const std::string& key, const YamlNode& v,
             ctx.error(line, key + ": a reference has exactly one of name: and file:.");
             return std::nullopt;
         }
-        if (file) {   // D-22: until LIB-7 registers its resolver (M-41)
+        if (file && !rule.byFile) {
+            ctx.error(line, key + ": does not take a reference by file:.");
+            return std::nullopt;
+        }
+        // LIB-7 (M-41): a module that is a medium, by its name tag or its file.
+        if (const PlaceResolver& resolve = ctx.vocabulary().placeResolver()) {
+            PlaceResolution res = resolve(place, v, line, ctx);
+            if (res.how == PlaceResolution::How::Error) return std::nullopt;
+            if (res.how == PlaceResolution::How::Done) {
+                PlaceRequest r;
+                r.line = line;
+                r.request = std::move(res.request);
+                r.request.place = machine::PlacePath{{place}};
+                return r;
+            }
+        }
+        if (file) {   // D-22: without LIB-7's resolver
             ctx.error(line, key + ": a reference by file: is not read by this release; use name:.");
             return std::nullopt;
         }

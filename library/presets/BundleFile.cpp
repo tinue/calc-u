@@ -159,7 +159,9 @@ std::vector<std::string> checkBundle(const PresetBundle& bundle, const ReadSetup
         }
         for (const std::string& named : source.named) {
             const std::string inBundle = named.rfind("examples:", 0) == 0 ? named.substr(9) : named;
-            if (std::find(b.files.begin(), b.files.end(), inBundle) == b.files.end())
+            // bundle.md §3: or a bundled medium or module of the product (LIB-7).
+            if (std::find(b.files.begin(), b.files.end(), inBundle) == b.files.end() &&
+                !setup.vocabulary.isBundledMedium(named))
                 problems.push_back("examples:" + b.preset + " names " + named + ", which is not listed with it.");
         }
     }

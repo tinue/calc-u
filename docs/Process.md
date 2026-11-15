@@ -203,7 +203,8 @@ Reduced by the user on 2026-11-11, after the feature specs were approved.
 - The plan starts with the first steps of
   `docs/walkthroughs/first-steps.md` (phase 5): spikes, and checks on the
   products at their pins, before anything is built on what they test.
-- Steps, each leaving every product building, testing and releasable:
+- Steps, each leaving every product building and testing (releasable
+  only at the end; user, 2026-11-15, migration plan §4):
   repository merge with history archived, CI for all products, golden tests
   as the safety net, then one capability extraction at a time.
 - Agent knowledge (briefing §1.11) is updated to the glossary terms in the

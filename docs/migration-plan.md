@@ -990,8 +990,10 @@ with a row, or worked together with it).
 #### M-51 C1600-5 and the LIB-11 Calc-U-1600 column
 - **Does:** today's CLI functions as `pc1600` commands, each with a test;
   `pc1500_cli`, `pc1600_cli`, the three probes and `dev/tape-matrix/run.py`
-  go (LIB-11 OQ-5). Then the adapter check of §1 over Calc-U-1600 and
-  the library.
+  go (LIB-11 OQ-5); the harness's Calc-U-1600 entry builds its machine
+  through `app/SharpAppPart` instead of itself (LIB-11 D-6, moved here
+  from M-31; user, 2026-11-15). Then the adapter check of §1 over
+  Calc-U-1600 and the library.
 - **Completes:** C1600-5, LIB-11 1600. **Tests from:** C1600-5 AC-1–9,
   AC-11–13, EC-2–6; LIB-11 AC-18–20.
 - **Waits for:** M-47, M-50.
@@ -1234,9 +1236,12 @@ with a row, or worked together with it).
   2026-11-14, question 14): R-1600 (M-61) and R-59 (M-64), after Parts D
   and E are complete; no release in between. `/1600/` follows in M-62,
   `/59/` in M-65.
-- Every step still leaves both products green and releasable in the sense
-  of §1.1 (building, tested, a release could be cut from `main`); no step
-  depends on a release before Part F. From the import (M-6, M-7) on the
+- Every step leaves both products building and their tests green, with
+  testable results per step; until the refactoring is complete (Part F)
+  the products need not work fully or be releasable, and a temporary gap
+  in a frontend between two steps is not a finding if the step's tests
+  and qa-report name it (user, 2026-11-15; replaces "releasable in the
+  sense of §1.1"). No step depends on a release before Part F. From the import (M-6, M-7) on the
   old repositories take no hotfix (Briefing §3), and none is planned.
 - A release cut earlier would spend ADR 0037's one-time exception
   (Briefing §1.2) without the decided changes; question 10.

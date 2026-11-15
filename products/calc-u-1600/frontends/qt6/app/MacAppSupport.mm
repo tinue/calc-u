@@ -10,7 +10,7 @@ void macKeepTimersPrecise() {
         if (activity) return;
         activity = [[NSProcessInfo processInfo]
             beginActivityWithOptions:NSActivityUserInitiatedAllowingIdleSystemSleep | NSActivityLatencyCritical
-                              reason:@"pacing probe"];
+                              reason:@"PC-1500/PC-1600 emulation keeps real-time pace in the background"];
 #if !__has_feature(objc_arc)
         [activity retain];   // without ARC the activity would end when the pool drains
 #endif

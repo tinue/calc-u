@@ -240,7 +240,7 @@ WebKit, prerender, ROMs missing), with the new `session.spec.js`.
   passed on until M-36 as design §8 reads: the plan names row 1600-9 for
   this step. `SharpTypingHook` drops a user's key while `busy()`; the
   debugger's `typeCommand` and a release go through. Two readings; the
-  plan's is taken. **For the user.**
+  plan's is taken. Accepted by the user, 2026-11-15.
 - **`start` is an operation** (LIB-15 N3, in Qt6 too): the startup model,
   then the named preset or the model's default preset, as 0.8.1's Web start
   did. The Qt6 window shows at once and the boot runs in parts; a missing
@@ -270,7 +270,8 @@ WebKit, prerender, ROMs missing), with the new `session.spec.js`.
 - The harness `calcu` has run the library's app session on the product's
   machine since M-28; the product's part does not join it yet (the harness
   builds the machine itself, adapter A-1). It joins with C1600-5 (M-51),
-  where the product's harness commands come (LIB-11 D-6 named M-31).
+  where the product's harness commands come (LIB-11 D-6 named M-31;
+  moved to M-51, user 2026-11-15; plan M-51).
 - `tools/dap_smoke.py` (Longer) was not run: it drives the DAP debugger,
   whose loads now wait in a nested loop; to run at the Part C1 boundary.
 - AC-38's interim topics are re-pointed in M-45 to M-49; the column is Done

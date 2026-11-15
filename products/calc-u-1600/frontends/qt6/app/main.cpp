@@ -103,6 +103,7 @@ int main(int argc, char** argv) {
 #ifdef __APPLE__
     macDisableWindowRestoration(); // see MacAppSupport.h: the restore prompt deadlocks the startup preset
     macDisablePressAndHold();      // see MacAppSupport.h: held letters stay held keys
+    macKeepTimersPrecise();        // see MacAppSupport.h: real-time pace in the background (row 1600-28)
 #endif
     Application app(argc, argv);
     // Without this, the running window's title-bar/taskbar icon is
@@ -155,9 +156,6 @@ int main(int argc, char** argv) {
         dirs.settingsBase = probeHome.filePath(QStringLiteral("settings")).toStdString();
         AppPaths::useHostDirs(dirs);
         AppSettings::setStartupModelPreference(QStringLiteral("PC-1600"));   // AC-22: a PC-1600
-#ifdef __APPLE__
-        macKeepTimersPrecise();
-#endif
         return runPacingProbe(app, parser.value(pacingProbeOption).toDouble());
     }
 #endif

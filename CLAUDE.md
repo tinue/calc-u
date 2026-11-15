@@ -22,7 +22,10 @@ One repository for the Calc-U products, released separately
 - No code for a feature before its `design.md` is approved; tests come
   from its acceptance criteria before the code (AC → task → test);
   `qa-report.md` reports per AC ID.
-- Every step leaves every product green and releasable. Golden runs are
+- Every step leaves every product building and its tests green, with
+  testable results per step; the products need not work fully or be
+  releasable until the refactoring is complete (user, 2026-11-15; plan
+  §4). Golden runs are
   recorded before a core is touched; a difference afterwards is a
   finding, not a new reference.
 - Specs change only where a first step turns out the other way or the

@@ -27,7 +27,8 @@ void macDisablePressAndHold();
 std::string macApplicationSupportFolder();
 
 // Keeps App Nap from stretching the timers of the process while its window
-// is not in front (the --pacing-probe test hook: LIB-17 AC-22 measures the
-// pacing, not the platform's throttling of a background app).
+// is not in front, for the whole run: the emulation keeps real-time pace in
+// the background, as Calc-U-59's Swift app does (user, 2026-11-15; ledger
+// row 1600-28). The --pacing-probe (LIB-17 AC-22) relies on it too.
 void macKeepTimersPrecise();
 #endif

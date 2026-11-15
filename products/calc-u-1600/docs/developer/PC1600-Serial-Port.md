@@ -15,11 +15,21 @@ target, so the per-run `ttysNNN` name never leaks to the user. The
 symlink's folder is **Settings ▸ Serial ports ▸ Symlink directory**
 (default `~/Calc-U-1600`).
 
-**Lifecycle: always active.** The port opens with the PC-1600 machine and
-closes with it — there is no enable switch, matching the real hardware's
-built-in port. `app/MachineSession` owns the `PtySerialLink`; a
-fresh `/dev/ttysNNN` per machine rebuild is invisible behind the stable
-symlink.
+**Lifecycle: always active.** The port exists with the PC-1600 machine —
+there is no enable switch, matching the real hardware's built-in port. The
+machine's side is the library's serial port kind: `core/Serial/SerialPortCapability`
+is the TC8576F's `SerialLink` over `calcu::peripherals::SerialPortQueues`
+(component `rs232c`), with no thread and no host. The host side is a host
+link: `app/MachineSession` holds one `calcu::peripherals::HostLinks`, whose
+rule gives the RS-232C port `calcu1600-rs232c.serial` at once and the CE-158
+`calcu1600-ce158.serial` when it is first used; its `PtyHostLink`
+(`library/peripherals/PtyHostLink.cpp`, the former `PtySerialLink`) is the
+pseudo-terminal. A link lives for the session, so the file keeps its name
+across machine rebuilds; `HostLinks::pump` moves the bytes between two
+advances (once per slice). The UART gets its peer when the port is first
+taken, which the session's `HostLinks::machineChanged` does right after a
+build, before the cold boot — as the 0.8.1 session attached its PTY;
+until then it runs standalone.
 
 **Fidelity: internal line model + software flow-through.** XON/XOFF and
 SHIFT-IN/SHIFT-OUT (`SETCOM"COM1:",…,X,N` / `…,N,S`) are in-band bytes
@@ -36,8 +46,8 @@ from the serial command register are forwarded via
 `tick()` into the parallel status register, bits 0/1/2. CS reads 0 when on,
 CD and DR read 1 (the chip inverts two of the three inputs). The peer's RI
 goes to the sub-CPU, which reports it as CI (`ON PHONE`, `WAKE$(1)`). A raw
-PTY carries no modem lines, so `PtySerialLink::getStatus()` reports CTS and
-DSR permanently asserted (DCD approximates "a peer holds the slave open").
+PTY carries no modem lines, so the host link reports CTS and DSR permanently
+asserted (DCD approximates "a program holds the serial port file open").
 The chip's own /CTS is tied to GND (Service Manual §9-5), so the peer's CS
 never holds the transmitter; it only reaches the ROM, which gates in
 software when a `SNDSTAT` value asks it to. The receiver only takes bytes while the
@@ -49,10 +59,12 @@ and, once per emulated character time (from the PR7 prescaler and the
 PR1:PR0 divisor: at the ROM's prescaler, baud = 76800 / divisor), shifts
 one queued TxD byte onto the link and pulls one
 RxD byte off it. TxRDY drops only when the 512-byte TX FIFO fills, which
-paces the ROM's transmit loop to the wire. `PtySerialLink` adds fd-level
+paces the ROM's transmit loop to the wire. `PtyHostLink` adds fd-level
 back-pressure on the RX side: its reader thread stops draining the
 master once its RX ring passes an 8 KB high-water mark, so a blocking
-sender stalls — the PTY stand-in for a real RTS drop.
+sender stalls — the PTY stand-in for a real RTS drop. The machine's received
+queue takes up to the same 8 KB (`SerialPortQueues::kReceiveLimit`); the
+rest waits in the host link.
 
 ## Calculator-side settings
 
@@ -63,8 +75,8 @@ recommends those settings:
 - **No handshake** (`SETCOM …,N,N`), because XON/XOFF bytes pass straight
   through (see *Fidelity* above).
 - **`RCVSTAT "COM1:",28`** disables the CTS/CD/DSR handshake checks
-  entirely, which is the right choice against `PtySerialLink`: a raw PTY
-  carries no real modem lines, so `getStatus()` just hardcodes CTS/DSR
+  entirely, which is the right choice against the host link: a raw PTY
+  carries no real modem lines, so it just reports CTS/DSR
   asserted -- a "must be high" check (`24`, which enables the CTS check)
   passes without testing anything. On real PC-1600 hardware talking to a
   real UART, use `24` (or the matching `SNDSTAT` value) instead, since

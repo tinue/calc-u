@@ -19,8 +19,6 @@
 #include "debug/DebugController.hpp"
 #include "AppSettings.hpp"
 #include "MacClipboardImage.h"
-#include "PC1500/PC1500Machine.hpp"
-#include "PC1600/PC1600Machine.hpp"
 #include "DropFile.hpp"
 #include "app/MachineCodeLoad.hpp"
 #include "app/PresetCatalog.hpp"

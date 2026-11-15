@@ -1,7 +1,6 @@
 #include "app/MachineCodeLoad.hpp"
 
-#include "PC1500/PC1500MachineCodeLoader.hpp"
-#include "PC1600/PC1600MachineCodeLoader.hpp"
+#include "Machine/LegacyCalls.hpp"
 #include "PC1600/PC1600ProgramPlacement.hpp"
 #include "ProgramFile.hpp"
 
@@ -33,7 +32,7 @@ MachineCodeLoad MachineCodeLoad::plan(const MachineSession& session, const std::
     // On the PC-1600 the machine's MODE and TITLE decide the address space
     // and the target (docs/background/plans/Loader-Mode-Plan.md); the loader
     // never changes them.
-    if (isPC1600 && session.pc1600()) load.m_state = pc1600LoadState(*session.pc1600());
+    if (isPC1600 && session.machine()) load.m_state = sharp::legacy::machineCodeLoadState(*session.machine());
     load.m_plan = machinecode::plan(load.m_target, load.m_code, load.m_state);
     const machinecode::Plan& plan = load.m_plan;
     load.m_request.payload = std::move(load.m_code.payload);
@@ -114,7 +113,7 @@ MachineCodeLoad::Loaded MachineCodeLoad::loaded(const MachineSession& session) c
     const bool isPC1600 = m_target == machinecode::Target::PC1600;
     // The advice: NEW that keeps BASIC off the code, CALL that starts it.
     std::uint32_t ramStart = 0, ramEnd = 0;
-    if (!isPC1600 && session.pc1500()) pc1500UserRam(*session.pc1500(), &ramStart, &ramEnd);
+    if (!isPC1600 && session.machine()) sharp::legacy::userRam(*session.machine(), &ramStart, &ramEnd);
     const std::size_t len = length();
     out.advice = machinecode::advice(m_target, slot(), m_request.bank, m_addr, len, m_code.autorunAddr, ramStart,
                                      ramEnd, m_state, m_plan.cpu);

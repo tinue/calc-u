@@ -298,8 +298,8 @@ SettingsDialog::SettingsDialog(MachineController* controller, QWidget* parent)
 
 #ifndef Q_OS_WIN
     // ── Serial port ──────────────────────────────────────────────────────
-    // PtySerialLink is POSIX-only (macOS/Linux); on Windows it's an inert
-    // stub, so this section is compiled out entirely rather than shown
+    // Host links (the library's PtyHostLink) are POSIX-only (macOS/Linux); on Windows there are none
+    // (NoHostLink), so this section is compiled out entirely rather than shown
     // disabled -- there is nothing for it to do there yet.
     // One folder for every emulated port: the PC-1600's RS-232C
     // (calcu1600-rs232c.serial) and the CE-158's (calcu1600-ce158.serial).

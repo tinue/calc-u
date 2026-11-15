@@ -107,7 +107,7 @@ entry when a primary source or a ROM trace disagrees with it.
 
 ## PC-1600 serial / UART (TC8576F)
 
-`core/PC1600/TC8576F.*`, `core/Serial/SerialLink.hpp`, `core/Serial/PtySerialLink.*`
+`core/PC1600/TC8576F.*`, `core/Serial/SerialLink.hpp`, `core/Serial/SerialPortCapability.hpp`; the host side is the library's `PtyHostLink`
 
 The register model follows Toshiba's TC8576AF data sheet
 ([Ref/PC-1600/PC-1600-CPC-TC8576.md](https://github.com/tinue/Sharp1500-1600-Ref/blob/main/PC-1600/PC-1600-CPC-TC8576.md)). Remaining gaps:
@@ -129,11 +129,17 @@ The register model follows Toshiba's TC8576AF data sheet
 - **No `SerialLink` attached** → nothing connected: modem inputs read off,
   TxD is accepted and reported "sent" immediately, RxD never has data.
   Enough for the internal handshakes the ROM runs before any medium access
-  (RAM disk, power-off) and keeps headless probes deterministic.
-- **Raw PTY carries no RS-232C modem lines** — `PtySerialLink::getStatus()`
-  reports CTS and DSR permanently asserted; DCD approximates "a peer
-  currently holds the slave open". Non-POSIX build: every operation is a
-  no-op and `isOpen()` is false.
+  (RAM disk, power-off) and keeps headless probes deterministic. Behind the
+  machine interface (`PC1600InterfaceMachine`) the UART stays like this until
+  its serial port capability is first taken (the session's host links do it
+  right after a build); the golden runs replay this standalone UART.
+- **Raw PTY carries no RS-232C modem lines** — the host link
+  (`calcu::peripherals::HostLinks::pump`) sets the port's peer lines: CTS
+  and DSR permanently asserted, DCD while a program holds the serial port
+  file open. Until the first pump the RS-232C port reports DCD off (as the
+  PTY did before a program opened it); the CE-158's port starts with all
+  inputs on, as its standalone UART did in the golden runs. Non-POSIX build: there is no host link;
+  the bytes the machine sends are dropped (LIB-2 EC-5).
 - **Still open** (see `docs/developer/PC1600-Serial-Port.md` and `TODO.md`): an
   end-to-end round-trip against real SharpDataExchange and the follow-on
   localhost-socket transport.
@@ -167,7 +173,11 @@ wildcards, the interrupt mask/pending bits and INT6, the password, the reset
 - **Response time** is one fitted figure for every command
   (`kResponseMicros`), see the timing item in `TODO.md`.
 - **Clock is never read from the host clock inside Core** — kept
-  deterministic for tests; the GUI/CLI layer injects a real "now". The
+  deterministic for tests; whoever builds the machine or ends an operation
+  sets it through the real-time clock capability (component `rtc`;
+  `calcu::peripherals::setClocksFromHost`, LIB-2 AC-23). The sub-CPU keeps
+  no year and no weekday, so the capability reads month, day, hour, minute
+  and second only. The
   emulated clock is paced off emulated time, so a seeded time drifts if the
   host cannot hold the emulation at real speed (exactly as a real PC-1600
   drifts against its own crystal).
@@ -197,6 +207,19 @@ wildcards, the interrupt mask/pending bits and INT6, the password, the reset
   from off; whether the real RESET switch powers the system on isn't
   documented (the Service Manual lists the CE-1600P's reset, KL, but not
   the RESET switch among the power-on sources).
+- **Power cycle behind the machine interface**: `Machine::powerCycle()` runs
+  0.8.1's sequence over the following advances (`off` 4 frames, up to
+  180 frames to the off point, `on` 4 frames; `core/Machine/PowerCycleSequence.hpp`).
+  An attach or detach on a running machine reaches the bus at that off
+  point; on a switched-off machine at once, and it stays off. The key
+  readiness of `isKeyReady()` is 15 whole 60 Hz frames in a row in which
+  CK0 is on and the SC7852 is in the BASIC command loop or read the key
+  matrix (`PC1600Machine::keyReady()`, the per-frame test of
+  `waitForKeyboardScanLoopJob`); the frames are counted from the build,
+  not from the call, so it can turn true a frame apart from that job.
+- **One CE-150/CE-1600P, no CE-1600P with CE-158**: refused at the attach
+  with a sentence (LIB-2 AC-29); the core's own attach still drops the
+  other one, which the refusal now never lets happen.
 - **No auto-power-off suppression / GUI affordance**: the ROM-level
   `KEYWK3` (F07BH) APO-suppress bit is not driven from Core, and there is
   no Settings toggle or OFF/ON UI control in the app layer.

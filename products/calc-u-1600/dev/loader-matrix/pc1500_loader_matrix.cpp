@@ -13,6 +13,10 @@
 // payload. --loader-file is what our loader gets (`.bas` or `.ce158.bin`).
 // --expect-refuse: the program doesn't fit; both paths must refuse it.
 //
+// The machines are built through the machine interface (C1600-1 design §7;
+// LoaderMatrixCommon.hpp); the CE-158's serial peer works on its serial
+// port capability.
+//
 // Build: dev/loader-matrix/build.sh. Run from the repo root.
 
 #include <algorithm>
@@ -26,57 +30,26 @@
 #include <string>
 #include <vector>
 
-#include "../../core/PC1500/PC1500LcdText.hpp"
-#include "../../core/PC1500/PC1500Machine.hpp"
-#include "../../core/PC1500/PC1500PresetLoader.hpp"
-#include "../../core/Preset/PresetFile.hpp"
-#include "../../core/Serial/SerialLink.hpp"
+#include "LoaderMatrixCommon.hpp"
 
 namespace {
+
+using matrix::Machine;
 
 constexpr size_t kHeaderLen = 27;                 // CE-158 header
 constexpr const char* kScratchDir = "headless/loader-matrix";
 constexpr uint16_t kRamSt = 0x7863, kRamEnd = 0x7864, kBasPrgSt = 0x7865, kBasPrgEnd = 0x7867;
 
-// What `sde put` does on a PC-1500: header at full speed, HEADER_PAUSE
-// (300 ms), then the payload. poll() is called once per character time.
-class SdeLink final : public SerialLink {
-public:
-    std::vector<uint8_t> rx;
-    size_t pos = 0;
-    long pausePolls = 0;
-    bool armed = false;
-    bool poll(uint8_t& out) override {
-        if (!armed || pos >= rx.size()) return false;
-        if (pos == kHeaderLen && pausePolls > 0) { --pausePolls; return false; }
-        out = rx[pos++];
-        return true;
-    }
-    void send(uint8_t) override {}
-    bool done() const { return pos >= rx.size(); }
-};
+uint8_t peek(Machine& m, uint16_t a) { return cli::peek(m, a); }
 
-bool readFile(const std::string& path, std::vector<uint8_t>* out) {
-    std::ifstream in(path, std::ios::binary);
-    if (!in) return false;
-    out->assign(std::istreambuf_iterator<char>(in), {});
-    return true;
+uint16_t peek16(Machine& m, uint16_t a) { // big-endian, as the ROM keeps them
+    return uint16_t(peek(m, a) << 8 | peek(m, uint16_t(a + 1)));
 }
 
-uint16_t peek16(PC1500Machine& m, uint16_t a) { // big-endian, as the ROM keeps them
-    return uint16_t(m.memory().peek(a) << 8 | m.memory().peek(uint16_t(a + 1)));
-}
-
-std::vector<uint8_t> snapshot(PC1500Machine& m) {
+std::vector<uint8_t> snapshot(Machine& m) {
     std::vector<uint8_t> mem(0x8000);
-    for (uint32_t a = 0; a < mem.size(); ++a) mem[a] = m.memory().peek(uint16_t(a));
+    for (uint32_t a = 0; a < mem.size(); ++a) mem[a] = peek(m, uint16_t(a));
     return mem;
-}
-
-std::string lcd(PC1500Machine& m) {
-    std::string t = pc1500LcdText(m).plainText();
-    for (char& c : t) if (c == '\n') c = '|';
-    return t;
 }
 
 struct Run {
@@ -87,10 +60,9 @@ struct Run {
 
 // Builds and applies a preset. `extraKeys` are typed after NEW0; `loaderFile`
 // non-empty adds `program: file:`.
-bool applyPreset(PC1500Machine** out, std::unique_ptr<PC1500Machine>* holder, SerialLink* link,
-                 const std::string& model, const std::string& card,
-                 const std::vector<std::string>& extraKeys, const std::string& loaderFile,
-                 PresetLoadResult* res) {
+std::unique_ptr<Machine> applyPreset(const std::string& model, const std::string& card,
+                                     const std::vector<std::string>& extraKeys, const std::string& loaderFile,
+                                     PresetLoadResult* res) {
     std::string yaml = "format-version: 1\nmodel: " + model + "\ninterface: CE-158\n";
     if (!card.empty()) yaml += "slot-1: " + card + "\n";
     yaml += "keys:\n  - key: cl\n  - type: NEW0\n";
@@ -98,69 +70,60 @@ bool applyPreset(PC1500Machine** out, std::unique_ptr<PC1500Machine>* holder, Se
     if (!loaderFile.empty()) yaml += "program:\n  file: " + loaderFile + "\n";
     const std::string path = std::string(kScratchDir) + "/run.pc1500";
     std::ofstream(path) << yaml;
-    PresetFile preset;
-    std::string err;
-    if (!parsePresetFile(path, &preset, &err)) {
-        res->ok = false;
-        res->error = "preset: " + err;
-        return false;
-    }
-    *holder = std::make_unique<PC1500Machine>(preset.variant);
-    PC1500Machine& m = **holder;
-    m.setCE158SerialLink(link);
-    *res = applyPC1500Preset(m, preset, {}, ".", "frontends/qt6/resources/cards", {}, {"roms"});
-    *out = &m;
-    return true;
+    return matrix::applyPreset(path, false, res);
 }
 
 const std::vector<std::string> kSerialSetup = {"SETCOM 1200", "SETDEV CI"};
 
 Run runRom(const std::string& model, const std::string& card, bool ml, const std::vector<uint8_t>& stream) {
     Run r;
-    SdeLink link;
+    matrix::SdeFeeder link;
     link.rx = stream;
-    std::unique_ptr<PC1500Machine> holder;
-    PC1500Machine* m = nullptr;
+    link.headerLen = kHeaderLen;
     PresetLoadResult res;
     std::vector<std::string> keys = kSerialSetup;
     keys.push_back(ml ? "CLOAD M" : "CLOAD");
-    if (!applyPreset(&m, &holder, &link, model, card, keys, "", &res) || !res.ok) {
+    auto m = applyPreset(model, card, keys, "", &res);
+    if (!m || !res.ok) {
         r.note = "preset failed: " + res.error;
         return r;
     }
+    calcu::peripherals::SerialPortQueues* port = matrix::serialPort(*m, nullptr, sharp::kCE158);
     // 300 ms at 1200 baud, 10 bits a character.
-    link.pausePolls = long(0.3 * 1200 / 10 + 0.5);
+    link.pauseChars = long(0.3 * 1200 / 10 + 0.5);
     link.armed = true;
-    const uint64_t chunk = PC1500Machine::kCpuHz / 10;
-    uint64_t budget = PC1500Machine::kCpuHz * (60 + stream.size() / 100); // > stream time at 1200 baud
-    while (!link.done() && budget > chunk) { m->runCycles(chunk); budget -= chunk; }
-    m->runCycles(PC1500Machine::kCpuHz * 2);
-    const std::string screen = lcd(*m);
-    r.ok = link.done() && screen.find("ERROR") == std::string::npos;
-    r.note = (link.done() ? "" : "stream not consumed (" + std::to_string(link.pos) + "/" +
-                                 std::to_string(stream.size()) + "); ") + "lcd=[" + screen + "]";
+    const uint64_t hz = m->descriptor().tickRate;
+    const uint64_t charTicks = hz * 10 / 1200;   // the peer acts once per character time
+    uint64_t budget = hz * (60 + stream.size() / 100); // > stream time at 1200 baud
+    while (port && !link.done(port) && budget > charTicks) {
+        budget -= std::min(budget, m->advance(charTicks));
+        link.pump(*port);
+    }
+    m->advance(hz * 2);
+    const std::string screen = matrix::lcd(*m);
+    r.ok = link.done(port) && screen.find("ERROR") == std::string::npos;
+    r.note = (link.done(port) ? "" : "stream not consumed (" + std::to_string(link.pos) + "/" +
+                                         std::to_string(stream.size()) + "); ") + "lcd=[" + screen + "]";
     r.mem = snapshot(*m);
-    m->setCE158SerialLink(nullptr);
     return r;
 }
 
 Run runLoader(const std::string& model, const std::string& card, const std::string& loaderFile) {
     Run r;
-    std::unique_ptr<PC1500Machine> holder;
-    PC1500Machine* m = nullptr;
     PresetLoadResult res;
     std::string abs = loaderFile;
     if (!abs.empty() && abs[0] != '/') {
         char buf[4096];
         if (realpath(loaderFile.c_str(), buf)) abs = buf;
     }
-    if (!applyPreset(&m, &holder, nullptr, model, card, kSerialSetup, abs, &res)) {
+    auto m = applyPreset(model, card, kSerialSetup, abs, &res);
+    if (!m) {
         r.note = res.error;
         return r;
     }
-    m->runCycles(PC1500Machine::kCpuHz / 2);
+    m->advance(m->descriptor().tickRate / 2);
     r.ok = res.ok;
-    r.note = (res.ok ? "" : "error: " + res.error + "; ") + "lcd=[" + lcd(*m) + "]";
+    r.note = (res.ok ? "" : "error: " + res.error + "; ") + "lcd=[" + matrix::lcd(*m) + "]";
     r.mem = snapshot(*m);
     return r;
 }
@@ -190,17 +153,16 @@ std::string ranges(const std::vector<uint8_t>& a, const std::vector<uint8_t>& b,
 }
 
 int probe(const std::string& model, const std::string& card) {
-    std::unique_ptr<PC1500Machine> holder;
-    PC1500Machine* m = nullptr;
     PresetLoadResult res;
-    if (!applyPreset(&m, &holder, nullptr, model, card, {}, "", &res) || !res.ok) {
+    auto m = applyPreset(model, card, {}, "", &res);
+    if (!m || !res.ok) {
         std::fprintf(stderr, "preset failed: %s\n", res.error.c_str());
         return 2;
     }
     const uint16_t st = peek16(*m, kBasPrgSt);
-    const uint32_t ramEnd = uint32_t(m->memory().peek(kRamEnd)) << 8;
+    const uint32_t ramEnd = uint32_t(peek(*m, kRamEnd)) << 8;
     // MEM = RAM_END*256 - (BASPRG_END + 1) - ... ; print the plain span.
-    std::printf("BASPRG_ST=%04X RAM_ST=%02X00 RAM_END=%04X span=%u\n", st, m->memory().peek(kRamSt), ramEnd,
+    std::printf("BASPRG_ST=%04X RAM_ST=%02X00 RAM_END=%04X span=%u\n", st, peek(*m, kRamSt), ramEnd,
                 unsigned(ramEnd - st));
     return 0;
 }
@@ -227,7 +189,7 @@ int main(int argc, char** argv) {
 
     const bool ml = kind == "ml";
     std::vector<uint8_t> stream;
-    if (!readFile(streamPath, &stream) || stream.size() <= kHeaderLen) {
+    if (!matrix::readFile(streamPath, &stream) || stream.size() <= kHeaderLen) {
         std::fprintf(stderr, "cannot read stream %s\n", streamPath.c_str());
         return 2;
     }

@@ -9,7 +9,7 @@
 #include <string>
 
 #include "MemorySettingsStore.hpp"
-#include "PC1600/PC1600Machine.hpp"
+#include "Machine/SharpProductKinds.hpp"
 #include "app/DirectoryScanCache.hpp"
 #include "app/FloppyBay.hpp"
 #include "app/MachineSession.hpp"
@@ -112,7 +112,7 @@ TEST(test_module_bay) {
     f.modules->selectModule(1, "CE-1600M");
     f.session->switchModel(Model::PC1600);
     CHECK(f.errors.empty());
-    CHECK(f.session->pc1600()->memory().slotModuleName(1) == "CE-1600M");
+    CHECK(f.session->slotCard(1) && f.session->slotCard(1)->moduleName() == "CE-1600M");
     CHECK(f.modules->canNameAndSave(1));
     CHECK(!f.modules->slotHasInstanceFile(1));
 
@@ -129,7 +129,7 @@ TEST(test_module_bay) {
 
     // A rebuild re-attaches the saved instance from its file.
     f.session->switchModel(Model::PC1600, /*keepPeripherals=*/true);
-    CHECK(f.session->pc1600()->memory().slotModuleName(1) == "My RAM");
+    CHECK(f.session->slotCard(1) && f.session->slotCard(1)->moduleName() == "My RAM");
     // A model switch clears the slots.
     f.modules->onModelChanged();
     f.session->switchModel(Model::PC1500A);
@@ -146,8 +146,9 @@ TEST(test_floppy_bay) {
     f.floppy->selectDisk("Formatted");  // no drive yet: selection only
     CHECK(f.floppy->selectedDiskName() == "Formatted");
     f.session->powerCycleAround([&] { CHECK(f.session->attachCE1600P()); });  // inserts the selected disk
-    PC1600Machine* m = f.session->pc1600();
-    CHECK(m->ce1600fHasDisk());
+    sharp::FloppyDriveAccess* m = f.session->floppyDrive();
+    CHECK(m && m->hasDisk());
+    if (!m) return;
     CHECK(f.floppy->canNameAndSave());
     f.floppy->toggleSide();
     CHECK(f.floppy->side() == 1);
@@ -161,9 +162,9 @@ TEST(test_floppy_bay) {
 
     // The drive writes: autosaved once the debounce has passed, not before.
     fs::remove(saved);
-    std::vector<std::uint8_t> image = m->ce1600fDiskImage();
+    std::vector<std::uint8_t> image = m->diskImage();
     image[100] ^= 0xFF;
-    m->ce1600fLoadImage(image.data(), image.size());
+    m->loadImage(image.data(), image.size());
     f.floppy->tick(10.0);
     f.floppy->tick(10.3);
     CHECK(!fs::exists(saved));
@@ -171,13 +172,18 @@ TEST(test_floppy_bay) {
     CHECK(fs::exists(saved));
     CHECK(diskDescription(*f.floppy, "Work") == "Formatted, both sides empty");  // and by the autosave
 
-    // A CE-150 taking the bus drops the CE-1600P: the disk is saved first,
-    // without waiting for the debounce.
+    // A detach of the CE-1600P saves the disk first, without waiting for the
+    // debounce. A CE-150 no longer takes its place: the printer place holds
+    // one (LIB-2 AC-29).
     fs::remove(saved);
     image[100] ^= 0xFF;
-    m->ce1600fLoadImage(image.data(), image.size());
+    m->loadImage(image.data(), image.size());
     f.floppy->tick(20.0);
-    CHECK(f.session->attachCE150());
+    std::string why;
+    CHECK(!f.session->attachCE150(&why));
+    CHECK(!why.empty());
+    CHECK(f.session->ce1600pAttached());
+    f.session->powerCycleAround([&] { f.session->detachCE1600P(); });
     CHECK(!f.session->ce1600pAttached());
     CHECK(fs::exists(saved));
 }

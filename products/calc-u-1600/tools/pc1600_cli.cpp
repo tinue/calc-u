@@ -1,5 +1,5 @@
-// Headless CLI for the PC-1600. The --preset form runs a full
-// PC1600Machine through a `.pc1600` preset (below). The plain form boots
+// Headless CLI for the PC-1600. The --preset form runs a full PC-1600
+// through the machine interface and a `.pc1600` preset (below). The plain form boots
 // only the SC7852 from romI-0 + romII-0 (no LH5803), runs a fixed cycle
 // budget and reports a PC-visit histogram that shows convergence onto a
 // small repeating loop, like pc1500_cli.
@@ -12,8 +12,8 @@
 // without booting anything; tools/check_presets.sh runs it over the repo.
 //
 // The --preset form loads the confirmed PC-1600 ROM set from roms/ (same
-// names pc1600_preset_tests.cpp uses), builds a full PC1600Machine, and
-// applies a `.pc1600` scenario via applyPC1600Preset() -- the SC7852-only
+// names pc1600_preset_tests.cpp uses), builds a PC-1600 from the catalogue, and
+// applies a `.pc1600` scenario via the core's preset loader -- the SC7852-only
 // histogram mode below is skipped. --dump-basic then prints the BASIC
 // program pointers and the raw program-area bytes (read-only), the oracle
 // the fast BASIC loader is checked against.
@@ -64,22 +64,21 @@
 #include <vector>
 
 #include "../core/Audio/WavFile.hpp"
-#include "../core/Connector/FloppyImageFile.hpp"
 #include "../core/CPU/SC7852/SC7852.hpp"
-#include "../core/Debug/Inspect/PC1600Inspector.hpp"
+#include "../core/Display/DisplayOutputText.hpp"
+#include "../core/Display/LcdScreenshot.hpp"
+#include "../core/Machine/LegacyCalls.hpp"
 #include "../core/PC1600/PC1600Bank.hpp"
-#include "../core/PC1600/PC1600Machine.hpp"
 #include "../core/PC1600/PC1600Memory.hpp"
-#include "../core/PC1600/PC1600PresetLoader.hpp"
-#include "../core/PC1600/PC1600PresetMedia.hpp"
-#include "../core/PC1600/PC1600LcdText.hpp"
-#include "../core/PC1600/PC1600Screenshot.hpp"
 #include "../core/Preset/PresetFile.hpp"
-#include "../core/Resources/BundledRomCatalog.hpp"
+#include "../core/Preset/PresetMedia.hpp"
 #include "Ce158CliPeer.hpp"
 #include "CliCommon.hpp"
 
 namespace {
+// --preset: a PC-1600 built through the machine interface (sharpCatalogue(),
+// SharpMachineBuilder; C1600-1 design §7), the preset applied by the core's
+// loader through sharp::legacy::applyPresetJob until M-46.
 int runPreset(const std::string& presetPath, uint64_t maxCycles, bool dumpBasic,
               const std::string& moduleDir, const std::vector<std::string>& extraModuleDirs,
               const std::string& wavPath, const std::string& romOverride,
@@ -99,31 +98,34 @@ int runPreset(const std::string& presetPath, uint64_t maxCycles, bool dumpBasic,
         return 1;
     }
     if (!ce1600pRomOverride.empty()) {
-        if (!BundledRoms::isCE1600PRomVersion(ce1600pRomOverride)) {
+        if (ce1600pRomOverride != "new" && ce1600pRomOverride != "old") {
             std::fprintf(stderr, "--ce1600p-rom must be new or old\n");
             return 1;
         }
         preset.ce1600pRomVariant = ce1600pRomOverride;
     }
-    PC1600Machine machine;
+    const std::string romVersion = romOverride.empty() ? preset.romVariant : romOverride;
     std::string romSetError;
-    if (!BundledRoms::loadPC1600RomSet(machine, {"roms"},
-                                        romOverride.empty() ? preset.romVariant : romOverride,
-                                        &romSetError)) {
-        std::fprintf(stderr, "could not load the PC-1600 ROM set: %s (run from repo root)\n",
-                     romSetError.c_str());
+    std::unique_ptr<cli::Machine> built;
+    if (romVersion != "new" && romVersion != "old")
+        romSetError = "unknown PC-1600 ROM version '" + romVersion + "' (expected new or old)";
+    else
+        built = cli::buildMachine(sharp::kPC1600, romVersion == "old" ? "Old" : "New", {"roms"}, &romSetError);
+    if (!built) {
+        std::fprintf(stderr, "could not load the PC-1600 ROM set: %s (run from repo root)\n", romSetError.c_str());
         return 1;
     }
-    // --wav: the sampler only buffers ~1 s, so drain it from the yield
-    // hook while the preset script runs.
+    cli::Machine& machine = *built;
+    // --wav: the sampler only buffers ~1 s, so drain it from the core's
+    // yield hook while the preset's long runs go on (sharp::legacy).
     std::vector<int16_t> wav;
     auto drainWav = [&] {
         int16_t chunk[4096];
         size_t n;
-        while ((n = machine.drainAudio(chunk, 4096)) > 0) wav.insert(wav.end(), chunk, chunk + n);
+        while ((n = machine.takeSound(chunk)) > 0) wav.insert(wav.end(), chunk, chunk + n);
     };
-    if (!wavPath.empty()) machine.setYieldHook(drainWav, PC1600Machine::kTStateHz / 20);
-    if (!ce158Peer.attach(machine)) return 1; // before the preset attaches the card
+    if (!wavPath.empty()) sharp::legacy::setYieldHook(machine, drainWav, machine.descriptor().tickRate / 20);
+    if (!ce158Peer.open()) return 1;
     if (!tape.arm(machine)) return 1;
     // `saveas:` -- the file form always works; a by-name save needs
     // --save-dir. Cards splice into the file the loader attached them from
@@ -132,19 +134,24 @@ int runPreset(const std::string& presetPath, uint64_t maxCycles, bool dumpBasic,
     const auto onArmed = [&armedResult](const PresetLoadResult& r) { armedResult = r; };
     const PresetSaveAsFn onSaveAs = [&machine, &moduleDir, &saveDir, &armedResult](const PresetSaveAsRequest& request,
                                                                        std::string* err) {
-        return savePresetMedia(request, {moduleDir, saveDir}, pc1600PresetMedia(machine, armedResult, request), err);
+        return savePresetMedia(request, {moduleDir, saveDir}, sharp::legacy::presetMedia(machine, armedResult, request),
+                               err);
     };
-    PresetLoadResult loaded = applyPC1600Preset(
-        machine, preset,
-        [](const std::string& line) { std::fprintf(stderr, "[preset] %s\n", line.c_str()); }, ".",
-        moduleDir,
-        /*onBooted=*/{}, /*romDirs=*/{"roms", "firmware/pc1600-hostdrive"}, extraModuleDirs, onArmed, onSaveAs);
+    // The CE-158's peer is pumped between slices of the preset's run.
+    const uint64_t slice = machine.descriptor().tickRate / 100;
+    const auto pump = [&] { ce158Peer.pump(machine); };
+    PresetLoadResult loaded = cli::runSliced(
+        sharp::legacy::applyPresetJob(
+            machine, preset, [](const std::string& line) { std::fprintf(stderr, "[preset] %s\n", line.c_str()); },
+            ".", moduleDir,
+            /*onBooted=*/{}, /*romDirs=*/{"roms", "firmware/pc1600-hostdrive"}, extraModuleDirs, onArmed, onSaveAs),
+        slice, pump);
     for (const std::string& r : loaded.rejectedBasicLines)
         std::fprintf(stderr, "preset: rejected BASIC line: %s\n", r.c_str());
+    auto pk = [&](uint16_t a) { return cli::peek(machine, a); };
     if (!loaded.ok && dumpBasic) {
         // Dump the pointer state even on failure so a load error can be
         // diagnosed (e.g. an unexpected BASPRG_ST with an expansion module).
-        auto pk = [&](uint16_t a) { return machine.debugPeek(a); };
         std::fprintf(stderr,
                      "[pointers] F865(BE)=$%02X%02X F867(BE)=$%02X%02X F5CF(LE)=$%02X%02X "
                      "F89E(BE)=$%02X%02X\n",
@@ -164,59 +171,48 @@ int runPreset(const std::string& presetPath, uint64_t maxCycles, bool dumpBasic,
         return 1;
     }
     std::printf("Preset '%s' applied successfully.\n", presetPath.c_str());
-    if (runAfter) machine.runCycles(runAfter);
+    if (runAfter) cli::advanceSliced(machine, runAfter, slice, pump);
     if (!lcdPng.empty()) {
         std::string pngError;
-        if (!writeLcdScreenshotPng(pc1600LcdBitmap(machine), kPC1600ScreenMm, lcdPng, &pngError)) {
+        if (!writeLcdScreenshotPng(lcdBitmapOf(machine.readDisplay()), kPC1600ScreenMm, lcdPng, &pngError)) {
             std::fprintf(stderr, "failed to write '%s': %s\n", lcdPng.c_str(), pngError.c_str());
             return 1;
         }
     }
     if (!lcdTextPath.empty()) {
         std::string textError;
-        if (!writeLcdTextReport(pc1600LcdText(machine), lcdTextPath, &textError)) {
+        if (!writeLcdTextReport(displayText(machine), lcdTextPath, &textError)) {
             std::fprintf(stderr, "failed to write '%s': %s\n", lcdTextPath.c_str(), textError.c_str());
             return 1;
         }
     }
-    if (const char* paperPath = std::getenv("CALCU_PAPER_OUT")) {
-        std::string paper;
-        if (machine.ce150Attached()) cli::appendPlotPoints(&paper, "CE-150", machine.ce150PlotPoints());
-        if (machine.ce1600pAttached()) cli::appendPlotPoints(&paper, "CE-1600P", machine.ce1600pPlotPoints());
-        if (!cli::writeFile(paperPath, paper)) return 1;
-    }
+    if (!cli::writePaperIfAsked(machine)) return 1;
     cli::printCe150Report(machine);
     if (!ce158Peer.report(machine)) return 1;
     if (!tape.finish(machine)) return 1;
 
     if (!wavPath.empty()) {
-        machine.setYieldHook({}, 0);
+        sharp::legacy::setYieldHook(machine, {}, 0);
         drainWav();
-        if (!writeWavMono16(wavPath, wav, machine.audioSampleRate())) {
+        if (!writeWavMono16(wavPath, wav, sharp::kSoundRate)) {
             std::fprintf(stderr, "failed to write '%s'\n", wavPath.c_str());
             return 1;
         }
         std::printf("Wrote %zu samples (%.2f s) of buzzer audio to %s\n", wav.size(),
-                    static_cast<double>(wav.size()) / machine.audioSampleRate(), wavPath.c_str());
+                    static_cast<double>(wav.size()) / sharp::kSoundRate, wavPath.c_str());
     }
 
     cli::printMemDumps(machine, memDumps);
-    cli::printInspect(machine, inspectViews, inspect::pc1600View);
+    cli::printInspect(machine, inspectViews);
 
     if (dumpBasic) {
-        auto be16 = [&](uint16_t a) {
-            return static_cast<uint16_t>((machine.debugPeek(a) << 8) |
-                                         machine.debugPeek(static_cast<uint16_t>(a + 1)));
-        };
-        auto le16 = [&](uint16_t a) {
-            return static_cast<uint16_t>(machine.debugPeek(a) |
-                                         (machine.debugPeek(static_cast<uint16_t>(a + 1)) << 8));
-        };
+        auto be16 = [&](uint16_t a) { return static_cast<uint16_t>((pk(a) << 8) | pk(static_cast<uint16_t>(a + 1))); };
+        auto le16 = [&](uint16_t a) { return static_cast<uint16_t>(pk(a) | (pk(static_cast<uint16_t>(a + 1)) << 8)); };
         uint16_t st = be16(0xF865), end = be16(0xF867), edt = be16(0xF869);
         // F865/F867/F869 hold LH5803-side addresses; the LH5803's
         // $0000-$7FFF aliases the SC7852's $8000-$FFFF, so the Z-80 address
-        // (debugPeek's view) is value + $8000: $C0C5 stock ($40C5), $80C5
-        // with the program in a Slot-1/Slot-2 RAM module ($00C5).
+        // (the loader memory's view) is value + $8000: $C0C5 stock ($40C5),
+        // $80C5 with the program in a Slot-1/Slot-2 RAM module ($00C5).
         auto toZ80 = [](uint16_t a) -> uint16_t {
             return a < 0x8000 ? static_cast<uint16_t>(a + 0x8000) : a;
         };
@@ -231,11 +227,10 @@ int runPreset(const std::string& presetPath, uint64_t maxCycles, bool dumpBasic,
         std::printf("--- program area $%04X..$%04X+16 ---\n", stZ, endZ);
         for (uint32_t a = stZ; a <= static_cast<uint32_t>(endZ) + 16 && a <= 0xFFFF; a += 16) {
             std::printf("%04X: ", a);
-            for (int i = 0; i < 16; i++)
-                std::printf("%02X ", machine.debugPeek(static_cast<uint16_t>(a + i)));
+            for (int i = 0; i < 16; i++) std::printf("%02X ", pk(static_cast<uint16_t>(a + i)));
             std::printf(" |");
             for (int i = 0; i < 16; i++) {
-                uint8_t b = machine.debugPeek(static_cast<uint16_t>(a + i));
+                uint8_t b = pk(static_cast<uint16_t>(a + i));
                 std::printf("%c", (b >= 0x20 && b < 0x7F) ? static_cast<char>(b) : '.');
             }
             std::printf("|\n");

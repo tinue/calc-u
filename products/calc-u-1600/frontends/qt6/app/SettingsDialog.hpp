@@ -13,7 +13,7 @@ class SettingsDialog : public QDialog {
     Q_OBJECT
 public:
     // `controller` is used for the Serial Port section only (relinking a
-    // live PtySerialLink and showing its current path). That section is
+    // live host link and showing its current path). That section is
     // compiled out on Windows entirely (see .cpp), so `controller` may be
     // null there without effect.
     explicit SettingsDialog(MachineController* controller, QWidget* parent = nullptr);

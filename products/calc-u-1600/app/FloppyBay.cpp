@@ -6,7 +6,7 @@
 
 #include "Connector/CE1600FCard.hpp"
 #include "Connector/FloppyImageFile.hpp"
-#include "PC1600/PC1600Machine.hpp"
+#include "Machine/SharpProductKinds.hpp"
 #include "app/AppPaths.hpp"
 #include "app/MachineSession.hpp"
 #include "app/Text.hpp"
@@ -23,10 +23,7 @@ std::vector<FloppyCatalogEntry> scanDisks(const std::string& dir) { return scanF
 FloppyBay::FloppyBay(MachineSession& session, const AppPaths& paths, Events events)
     : m_session(session), m_paths(paths), m_events(std::move(events)) {}
 
-PC1600Machine* FloppyBay::drive() const {
-    PC1600Machine* m = m_session.pc1600();
-    return m && m->ce1600fAttached() ? m : nullptr;
-}
+sharp::FloppyDriveAccess* FloppyBay::drive() const { return m_session.floppyDrive(); }
 
 const std::vector<FloppyCatalogEntry>& FloppyBay::bundledDisks() const {
     return m_bundledScan.get(m_paths.bundledResourcesDir(), scanDisks);
@@ -63,16 +60,16 @@ void FloppyBay::selectDisk(const std::string& diskNameOrEmpty) {
     classifySource({}, false);
     m_persistPending = false;
 
-    PC1600Machine* m1600 = drive();
-    if (!m1600) return;
-    if (!loadSelectedDisk(m1600)) {
+    sharp::FloppyDriveAccess* fdd = drive();
+    if (!fdd) return;
+    if (!loadSelectedDisk(fdd)) {
         m_diskName.clear();
-        m1600->ce1600fEject();
+        fdd->eject();
     }
-    m_lastSeenRevision = m1600->ce1600fRevision();
+    m_lastSeenRevision = fdd->revision();
 }
 
-bool FloppyBay::loadSelectedDisk(PC1600Machine* m1600) {
+bool FloppyBay::loadSelectedDisk(sharp::FloppyDriveAccess* fdd) {
     if (m_diskName.empty()) return false;  // "–empty–": no disk
     // Bundled first, then the save folder -- the order the preset loader
     // and the module bay use.
@@ -83,7 +80,7 @@ bool FloppyBay::loadSelectedDisk(PC1600Machine* m1600) {
         reportError("Couldn't load the floppy disk " + inQuotes(m_diskName) + ": " + err);
         return false;
     }
-    m1600->ce1600fLoadImage(disk.image.data(), disk.image.size());
+    fdd->loadImage(disk.image.data(), disk.image.size());
     classifySource(path, disk.isTemplate);
     m_description = disk.description;
     return true;
@@ -101,7 +98,8 @@ void FloppyBay::syncFromPresetLoad(const std::string& labelOrEmpty, const std::s
     classifySource(labelOrEmpty.empty() ? std::string() : resolvedPathOrEmpty, isTemplate);
     m_description = labelOrEmpty.empty() ? std::string() : entry.description;
     m_persistPending = false;
-    if (PC1600Machine* m1600 = m_session.pc1600()) m_lastSeenRevision = m1600->ce1600fRevision();
+    sharp::FloppyDriveAccess* fdd = drive();
+    m_lastSeenRevision = fdd ? fdd->revision() : 0;
 }
 
 bool FloppyBay::nameCollides(const std::string& diskName) const {
@@ -128,12 +126,12 @@ bool FloppyBay::saveDiskAs(const std::string& diskName, bool fromPreset, std::st
         *error = "Name cannot be empty.";
         return false;
     }
-    PC1600Machine* m1600 = drive();
-    if (!m1600) {
+    sharp::FloppyDriveAccess* fdd = drive();
+    if (!fdd) {
         *error = "No floppy attached.";
         return false;
     }
-    if (!m1600->ce1600fHasDisk()) {
+    if (!fdd->hasDisk()) {
         *error = "There's no disk in the drive.";
         return false;
     }
@@ -151,7 +149,7 @@ bool FloppyBay::saveDiskAs(const std::string& diskName, bool fromPreset, std::st
         *error = "A disk named " + inQuotes(name) + " already exists. Choose a different name.";
         return false;
     }
-    if (!atomicWriteFile(newPath, formatFloppyFile(name, m1600->ce1600fDiskImage(), asTemplate, m_description))) {
+    if (!atomicWriteFile(newPath, formatFloppyFile(name, fdd->diskImage(), asTemplate, m_description))) {
         *error = "Couldn't write " + inQuotes(newPath) + ".";
         return false;
     }
@@ -161,20 +159,20 @@ bool FloppyBay::saveDiskAs(const std::string& diskName, bool fromPreset, std::st
     m_diskName = name;
     classifySource(newPath, asTemplate);
     m_persistPending = false;
-    m_lastSeenRevision = m1600->ce1600fRevision();
+    m_lastSeenRevision = fdd->revision();
     return true;
 }
 
 void FloppyBay::writeInstance() {
     if (m_instanceFilePath.empty()) return;
-    PC1600Machine* m1600 = drive();
-    if (!m1600) return;
-    atomicWriteFile(m_instanceFilePath, formatFloppyFile(m_diskName, m1600->ce1600fDiskImage(), false, m_description));
+    sharp::FloppyDriveAccess* fdd = drive();
+    if (!fdd) return;
+    atomicWriteFile(m_instanceFilePath, formatFloppyFile(m_diskName, fdd->diskImage(), false, m_description));
 }
 
 void FloppyBay::tick(double nowSeconds) {
-    if (PC1600Machine* m1600 = drive()) {
-        const std::uint64_t rev = m1600->ce1600fRevision();
+    if (sharp::FloppyDriveAccess* fdd = drive()) {
+        const std::uint64_t rev = fdd->revision();
         if (rev != m_lastSeenRevision) {
             m_lastSeenRevision = rev;
             if (!m_instanceFilePath.empty()) m_persistPending = true;  // else nothing to autosave to yet
@@ -188,25 +186,25 @@ void FloppyBay::tick(double nowSeconds) {
 }
 
 bool FloppyBay::canNameAndSave() const {
-    PC1600Machine* m1600 = m_session.pc1600();
-    return m1600 && m1600->ce1600fHasDisk() && m_isTemplate;
+    sharp::FloppyDriveAccess* fdd = drive();
+    return fdd && fdd->hasDisk() && m_isTemplate;
 }
 
 int FloppyBay::side() const {
-    PC1600Machine* m1600 = m_session.pc1600();
-    return m1600 ? m1600->ce1600fSide() : 0;
+    sharp::FloppyDriveAccess* fdd = drive();
+    return fdd ? fdd->side() : 0;
 }
 
 void FloppyBay::toggleSide() {
-    PC1600Machine* m1600 = drive();
-    if (!m1600) return;
-    m1600->ce1600fSetSide(m1600->ce1600fSide() == 0 ? 1 : 0);
-    m_lastSeenRevision = m1600->ce1600fRevision();
+    sharp::FloppyDriveAccess* fdd = drive();
+    if (!fdd) return;
+    fdd->setSide(fdd->side() == 0 ? 1 : 0);
+    m_lastSeenRevision = fdd->revision();
 }
 
 bool FloppyBay::motorOn() const {
-    PC1600Machine* m1600 = m_session.pc1600();
-    return m1600 && m1600->ce1600fMotorOn();
+    sharp::FloppyDriveAccess* fdd = drive();
+    return fdd && fdd->motorOn();
 }
 
 void FloppyBay::flushPendingPersist() {

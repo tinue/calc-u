@@ -146,6 +146,7 @@ public:
     /// why this Core drives it from cycles rather than real wall-clock
     /// time.
     void advanceRtc(uint32_t cycles) { m_rtc.advance(cycles); }
+    const Upd1990ac& rtc() const { return m_rtc; }
 
     PiezoSampler& piezo() { return m_piezo; }
 

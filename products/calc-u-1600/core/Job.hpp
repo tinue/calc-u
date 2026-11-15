@@ -7,6 +7,8 @@
 #include <optional>
 #include <utility>
 
+#include "machine/Machine.hpp"
+
 // ── Resumable machine jobs ───────────────────────────────────────────────
 //
 // A boot, a preset, a typed program, a power cycle: sequences that drive a
@@ -154,6 +156,11 @@ struct RunAwaiter {
 template <class Machine>
 detail::RunAwaiter run(Machine& machine, std::uint64_t cycles) {
     return detail::RunAwaiter{[&machine, cycles] { return machine.runCycles(cycles); }};
+}
+
+// The same on the machine interface (C1600-1 design §2): `machine.advance(ticks)`.
+inline detail::RunAwaiter run(calcu::machine::Machine& machine, std::uint64_t ticks) {
+    return detail::RunAwaiter{[&machine, ticks] { return machine.advance(ticks); }};
 }
 
 // Drives a Task. step() makes run requests until `budget` cycles are spent

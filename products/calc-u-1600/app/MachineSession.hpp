@@ -1,10 +1,12 @@
 #pragma once
+#include <chrono>
 #include <cstddef>
 #include <cstdint>
 #include <deque>
 #include <map>
 #include <functional>
 #include <memory>
+#include <optional>
 #include <string>
 #include <utility>
 #include <vector>
@@ -15,9 +17,8 @@
 #include "Display/LcdText.hpp"
 #include "Job.hpp"
 #include "KeyPaste.hpp"
+#include "Machine/SharpProductKinds.hpp"
 #include "PC1500/PC1500Variant.hpp"
-#include "Serial/LazySerialLink.hpp"
-#include "Serial/PtySerialLink.hpp"
 #include "Tape/TapeDeck.hpp"
 #include "TraceTypes.hpp"
 #include "app/AppPaths.hpp"
@@ -26,24 +27,26 @@
 #include "app/MachineModel.hpp"
 #include "app/PlotterPaper.hpp"
 #include "app/Settings.hpp"
+#include "machine/Catalogue.hpp"
+#include "machine/Machine.hpp"
+#include "peripherals/HostLinks.hpp"
 
-class PC1500Machine;
-class PC1600Machine;
+class ExpansionCard;
 
 namespace shared {
 
 // ── MachineSession ───────────────────────────────────────────────────────
 //
-// The live calculator behind every frontend: owns whichever of
-// PC1500Machine / PC1600Machine is active for the selected model and
-// everything around it -- model and ROM switches (each a rebuild and cold
-// boot), keys and typing (paste queue, live KBII sequences, timed taps),
-// the display, audio, plotters, CE-158, tape, host drive, trace and
-// inspector reads. Deliberately NOT a shared virtual interface over the
-// two machines: they have genuinely different constructors, reset levels
-// and display shapes (see PC1600Machine.hpp's note on not reusing
-// PC1500Machine's facade); withMachine() runs a generic lambda on the
-// live one instead.
+// The live calculator behind every frontend: owns the machine of the
+// selected model, one calcu::machine::Machine built from sharpCatalogue()
+// (C1600-1; no model class is named above the core), and everything around
+// it -- model and ROM switches (each a rebuild and cold boot), keys and
+// typing (paste queue, live KBII sequences, timed taps), the display,
+// audio, plotters, CE-158, tape, host drive, trace and inspector reads.
+// What only a Sharp machine offers comes through its capabilities
+// (core/Machine/SharpProductKinds.hpp) and the adapters of
+// core/Machine/LegacyCalls.hpp. The host links of the serial ports are held
+// here until M-31 (LIB-2 design §5, "Product-held host links").
 //
 // Single-threaded: the frontend calls everything, including advance(),
 // from one thread. What the frontend must do or show comes back through
@@ -88,7 +91,7 @@ public:
         // them itself.
         virtual bool runDebuggerSlice(std::uint64_t /*cycles*/) { return false; }
 
-        // refreshSerialLinkDirectory() moved the PTY symlinks.
+        // refreshSerialLinkDirectory() moved the serial port files.
         virtual void serialLinksRelinked() {}
     };
 
@@ -100,8 +103,8 @@ public:
         // Attaches the selected modules to a machine just built, ahead of
         // the cold boot.
         virtual void attachModulesToFreshMachine() = 0;
-        // The disk drive goes away (CE-1600P detach, machine rebuild, a
-        // CE-150/CE-158 taking the bus): save the disk first.
+        // The disk drive goes away (CE-1600P detach, machine rebuild): save
+        // the disk first.
         virtual void flushFloppy() = 0;
         // A CE-1600P was just attached: put the selected disk in.
         virtual void insertSelectedDisk() = 0;
@@ -145,19 +148,26 @@ public:
     void setCE1600PRomVersion(CE1600PRomVersion version) { m_ce1600pRomVersion = version; }
     CE1600PRomVersion ce1600pRomVersion() const { return m_ce1600pRomVersion; }
 
-    // Reset (`allReset` = ALL RESET on the PC-1600; the PC-1500 has one
-    // level), then run the boot flat out until the ROM waits at the prompt
-    // -- including a plotter's power-on init. Synchronous.
+    // `allReset`: a Cold boot (Machine::coldBoot(): the machine's own memory
+    // empty, and a RAM module without a battery, C1600-1 AC-6), else a Reset
+    // (Machine::reset()); then run the boot flat out until the ROM waits at
+    // the prompt -- including a plotter's power-on init. Synchronous.
     void resetToPrompt(bool allReset);
     job::Task<void> resetToPromptJob(bool allReset);
-    // Sets the live machine's clock from the host. Called when paced
-    // emulation (re)starts: every flat-out run before it -- a boot, a
-    // preset, a power cycle -- went ahead of (or behind) the host clock.
+    // Sets the live machine's clocks from the host (calcu::peripherals::
+    // setClocksFromHost, LIB-2 AC-23). Called when paced emulation
+    // (re)starts: every flat-out run before it -- a boot, a preset, a power
+    // cycle -- went ahead of (or behind) the host clock.
     void seedClockFromHost();
-    // The attach/detach power cycle, flat out: OFF, wait for the ROM to
-    // power down, `change()` (the instantaneous attach or detach), ON, boot
-    // to the prompt (incl. a plotter's power-on init). A machine that is
-    // already off just gets `change()`.
+    // The host's time for seedClockFromHost(); tests pin it.
+    using HostTime = std::function<std::chrono::system_clock::time_point()>;
+    void setHostTimeSource(HostTime source) { m_hostTime = std::move(source); }
+    // An attach or detach and the power cycle that follows it, flat out:
+    // `change()` (attaches and detaches; on a running machine they reach
+    // the bus at the off point, C1600-1 design D-2), then
+    // Machine::powerCycle() -- OFF, the ROM powers down, the change, ON --
+    // and the boot to the prompt (incl. a plotter's power-on init). A
+    // machine that is off just gets the change.
     void powerCycleAround(const std::function<void()>& change);
     job::Task<void> powerCycleAroundJob(std::function<void()> change);
 
@@ -168,12 +178,13 @@ public:
     int slotCount() const;
     // The card in `slot`, null for an empty or missing slot.
     const ExpansionCard* slotCard(int slot) const;
-    // Moves the write-protect switch of the card in `slot` (no-op for an
-    // empty slot or a card without one).
+    // Moves the write-protect switch of the module in `slot` (the controls
+    // capability, LIB-2 AC-32; no-op for an empty slot or a module without one).
     void setSlotWriteProtected(int slot, bool protect);
     // Takes ownership of `card` and plugs it into `slot` (ignored for a
     // missing slot); detachSlots() empties every slot.
     void attachSlotCard(int slot, std::unique_ptr<ExpansionCard> card);
+    void detachSlot(int slot);
     void detachSlots();
 
     // ---- Host keyboard ----
@@ -193,13 +204,15 @@ public:
     void hostShiftTap();
 
     // ---- Keys and typing ----
-    // A frontend's own key (faceplate, physical host key). A release that
-    // comes before kMinKeyHoldFrames (2) of emulated time since the press -- a
-    // quick finger tap, both events between two advance() calls -- is
-    // deferred until then, so the ROM's key scan always sees the key; a
-    // press while such a release is still to come waits for it.
+    // A frontend's own key (faceplate, physical host key), by key ID
+    // (C1600-1 AC-9, AC-10). A release that comes before kMinKeyHoldFrames
+    // (2) of emulated time since the press -- a quick finger tap, both
+    // events between two advance() calls -- is deferred until then, so the
+    // ROM's key scan always sees the key; a press while such a release is
+    // still to come waits for it.
     void pressKey(const std::string& name);
     void releaseKey(const std::string& name);
+    // The key `on` (C1600-1 AC-11).
     void setOnKeyPressed(bool pressed);
     // PC-1600: SHIFT one-shot-latch choreography for a host character that
     // needs Shift: press shift, 30 ms, release, 100 ms, press baseName,
@@ -224,64 +237,58 @@ public:
     bool liveTypingActive() const { return m_paste.active() && m_liveTyping; }
 
     // ---- Running ----
-    // Runs `cyclesBudget` emulated cycles: in 60 Hz frames while a paste
+    // Runs `cyclesBudget` emulated ticks: in 60 Hz frames while a paste
     // types (the feeder acts at frame boundaries), through the debugger's
     // run control when one is attached; then fires due timed taps.
     void advance(std::uint64_t cyclesBudget);
-    // Cycles-per-second of the active machine.
+    // Ticks per second of the active machine (its descriptor's tick rate).
     double clockHz() const;
 
     // ---- Output ----
     DisplayFrame currentDisplay() const;
-    // The LCD as text (Core/Display/LcdText.hpp); false with no machine.
+    // The LCD as text (Core/Display/DisplayOutputText.hpp); false with no machine.
     bool lcdText(LcdText* out) const;
     // Edit > Copy Screen: the dot matrix as a physically sized greyscale
     // image (the same pixels a preset's `- screenshot:` writes).
     GrayImage currentScreenImage() const;
-    // Buzzer audio (mono int16 PCM at PiezoSampler::kDefaultSampleRate):
-    // returns how many samples it wrote into `out`.
+    // Buzzer audio (mono int16 PCM at 48,000 samples per second): returns
+    // how many samples it wrote into `out`.
     std::size_t drainAudio(std::int16_t* out, std::size_t max);
     void discardAudio();
 
-    // ---- The machines ----
-    PC1500Machine* pc1500() const { return m_pc1500.get(); }
-    PC1600Machine* pc1600() const { return m_pc1600.get(); }
-    bool hasLiveMachine() const { return m_pc1500 || m_pc1600; }
-    // True while the active machine is powered on.
+    // ---- The machine ----
+    // The live machine, or nullptr. Above the core it is only ever this.
+    calcu::machine::Machine* machine() const { return m_machine.get(); }
+    bool hasLiveMachine() const { return m_machine != nullptr; }
+    // True while the active machine's display is on (C1600-1 AC-20).
     bool isMachinePoweredOn() const;
-    // Runs `f` on whichever machine is live (both share the method names
-    // used here); the second form returns `none` when there is none.
-    template <class F>
-    void withMachine(F&& f) const {
-        if (m_pc1600) f(*m_pc1600);
-        else if (m_pc1500) f(*m_pc1500);
-    }
-    template <class R, class F>
-    R withMachine(R none, F&& f) const {
-        if (m_pc1600) return f(*m_pc1600);
-        if (m_pc1500) return f(*m_pc1500);
-        return none;
-    }
-    // Where Core's BundledRomCatalog looks for bundled ROM files.
+    // The session's catalogue: sharpCatalogue() and the module definitions
+    // attached so far (LIB-1 AC-3).
+    const calcu::machine::Catalogue& catalogue() const { return m_catalogue; }
+    // Where the bundled ROM files are (SharpRomImages, until M-27).
     std::vector<std::string> bundledRomDirs() const;
+    // The CE-1600F of an attached CE-1600P, or nullptr.
+    sharp::FloppyDriveAccess* floppyDrive() const;
 
-    // ---- Serial ports (PTYs; inert where the host has none) ----
-    // Re-reads the serial link directory setting and relinks both PTYs'
-    // stable symlinks there.
+    // ---- Serial ports (host links; none where the host has no PTYs) ----
+    // Re-reads the serial link directory setting and moves both serial
+    // port files there.
     void refreshSerialLinkDirectory();
-    // The path a serial client should open (the stable symlink, or the raw
-    // PTY), or empty while there is none.
+    // The path a serial client should open (the serial port file, or the
+    // raw PTY), or empty while there is none.
     std::string serialLinkStatus() const;
     std::string ce158SerialLinkStatus() const;
+    // Moves the serial ports' bytes to and from their host links, between
+    // two advances; advance() does it after every slice.
+    void pumpSerialLinks();
 
     // ---- Preset loaders ----
-    // Replaces the live machine with a fresh, UN-ROM'd PC1500Machine for
-    // `variant` -- the preset loader loads the ROM, attaches and resets.
-    PC1500Machine& resetBareForPresetPC1500(PC1500Variant variant);
-    // Replaces the live machine with a fresh PC1600Machine holding the ROM
-    // set of `version` (an unavailable old set falls back to the new one)
-    // but no module attach or reset.
-    PC1600Machine& resetBareForPresetPC1600(PC1600RomVersion version, CE1600PRomVersion ce1600pVersion);
+    // Replaces the live machine with a fresh one of `model` holding its ROM
+    // set (the PC-1500 A04 -- the preset loader loads the preset's own; the
+    // PC-1600 `version`, an unavailable old set falling back to the new
+    // one), with nothing attached and no reset: the preset loader
+    // (sharp::legacy::applyPresetJob) does the rest.
+    calcu::machine::Machine& resetBareForPreset(Model model, PC1600RomVersion version, CE1600PRomVersion ce1600pVersion);
     // Call once the preset loader returns, success or failure alike.
     void finishPresetLoad(Model model);
 
@@ -298,17 +305,17 @@ public:
     bool traceActive() const;
 
     // ---- Peripherals ----
-    // Live attach/detach on the running machine (run them inside
-    // powerCycleAround()). ROMs come from the bundled resources. Core
-    // enforces what shares the bus (the CE-150, CE-158 and CE-1600P on a
-    // PC-1600). Attach failures give the reason in `error`.
+    // Attach and detach in their places (run them inside
+    // powerCycleAround()). ROMs come from the bundled resources. What
+    // cannot be plugged in together is refused with its reason in `error`
+    // (one printer; the CE-1600P with the CE-158, LIB-2 AC-29).
     bool attachCE150(std::string* error = nullptr);
     void detachCE150();
     bool ce150Attached() const;
     bool attachCE1600P(std::string* error = nullptr);  // PC-1600 only
     void detachCE1600P();
-    // Swaps the attached CE-1600P for one with the `version` ROM; the disk
-    // moves over with the same side up.
+    // Swaps the attached CE-1600P for one with the `version` ROM (a
+    // replace, C1600-1 AC-18); the disk moves over with the same side up.
     bool swapCE1600PRom(CE1600PRomVersion version, std::string* error = nullptr);
     bool ce1600pAttached() const;
     bool attachCE158(std::string* error = nullptr);
@@ -343,8 +350,8 @@ public:
 private:
     // ---- Live typing (hostKeyDown()/hostShiftTap() route here) ----
     // PC-1500 live-typing keystroke buffer, so fast host typing can't
-    // outrun the ROM's key-scan loop and drop characters --
-    // PC1500Machine::enqueueKey() owns the press/hold/release/idle cycle.
+    // outrun the ROM's key-scan loop and drop characters -- the
+    // c1600.key-queue kind owns the press/hold/release/idle cycle.
     // Ignored on the PC-1600.
     void enqueueKey(const std::string& name);
     // PC-1500 equivalent of tapShiftedKey(): Shift is a one-shot latch on
@@ -359,6 +366,8 @@ private:
     // paste feeder's frame-paced cadence.
     void typeLiveStep(const PasteStep& step);
 
+    bool isPC1600() const { return m_machine && m_model == Model::PC1600; }
+
     Settings& m_settings;
     const AppPaths& m_paths;
     Listener& m_listener;
@@ -369,18 +378,17 @@ private:
     PC1600RomVersion m_pc1600RomVersion = PC1600RomVersion::New;
     CE1600PRomVersion m_ce1600pRomVersion = CE1600PRomVersion::New;
 
-    // The links outlive the machines (a stable host-visible symlink
-    // shouldn't come and go with a model switch), so they're declared
-    // first and destroyed last.
-    // The PC-1600's RS-232C PTY: created the first time a PC1600Machine
-    // exists, then kept for the session's life.
-    std::unique_ptr<PtySerialLink> m_serialLink;
-    // The CE-158's link, handed to every machine as it is built. Its PTY
-    // only opens once a CE-158 first talks to it.
-    LazySerialLink<PtySerialLink> m_ce158SerialLink;
+    calcu::machine::Catalogue m_catalogue;
+    HostTime m_hostTime;
+    // The links outlive the machines (a stable serial port file shouldn't
+    // come and go with a model switch), so they're declared first and
+    // destroyed last: the PC-1600's RS-232C one made when a PC-1600 first
+    // exists, the CE-158's when a CE-158 first uses its port (LIB-2 AC-33).
+    calcu::peripherals::HostLinks m_hostLinks;
 
-    std::unique_ptr<PC1500Machine> m_pc1500;
-    std::unique_ptr<PC1600Machine> m_pc1600;
+    std::unique_ptr<calcu::machine::Machine> m_machine;
+    // An attach or detach of powerCycleAround()'s change asked for a power cycle.
+    bool m_powerCycleFollows = false;
 
     KeyPasteFeeder m_paste;
     bool m_liveTyping = false;             // m_paste holds live keystrokes (typeLiveStep()), not a paste
@@ -414,7 +422,8 @@ private:
     // Drops the live machine before a rebuild: ejects the tape (saving a
     // recording), ends a TRACE capture, cancels typing, destroys it.
     void discardMachine();
-    // Hands a just-built machine its serial links and tells the listener.
+    // Binds a just-built machine's serial ports to their host links and
+    // tells the listener.
     void wireNewMachine();
     // What switchModelJob(keepPeripherals) carries over a rebuild.
     struct Peripherals {
@@ -426,18 +435,30 @@ private:
     Peripherals attachedPeripherals() const;
     void reattach(const Peripherals& p);
     // Every change that can take the CE-1600P (and its disk drive) off the
-    // bus -- a rebuild, its detach, a CE-150/CE-158 taking its place --
-    // runs through here: the disk is saved first.
+    // bus -- a rebuild, its detach -- runs through here: the disk is saved
+    // first.
     template <class F>
     auto busChange(F&& change) {
         if (m_bays && ce1600pAttached()) m_bays->flushFloppy();
         return std::forward<F>(change)();
     }
-    // The serial link directory setting, falling back to the save folder.
     [[noreturn]] void romMissing(const std::string& error);
-    // Replaces m_pc1600 with a fresh machine holding m_pc1600RomVersion's
-    // ROM set. A missing old set falls back to (and remembers) the new one.
-    void makePC1600WithRomFallback();
+    // Replaces the machine with a fresh `model` holding its ROM set (the
+    // PC-1500: m_pc1500RomRevision; the PC-1600: m_pc1600RomVersion, a
+    // missing old set falling back to -- and remembering -- the new one).
+    void buildMachine(Model model);
+    // Attach and detach in a place, through the machine interface; `error`
+    // gets a refusal's reason.
+    bool attachAt(const char* place, const char* peripheral, std::optional<calcu::machine::VariantId> variant,
+                  std::shared_ptr<const calcu::machine::ProductData> content, std::string* error);
+    void detachAt(const char* place, const char* peripheral);
+    void noteChange(const calcu::machine::ChangeResult& r);
+    // The peripheral at `place` now, or "".
+    std::string pluggedAt(const char* place) const;
+    // The first capability of kind K the machine has now, or nullptr.
+    template <class K> K* kind() const { return m_machine ? sharp::firstOf<K>(*m_machine) : nullptr; }
+    // The capability of kind K owned by the peripheral `peripheral`, or nullptr.
+    template <class K> K* kindOf(const char* peripheral) const;
 };
 
 } // namespace shared

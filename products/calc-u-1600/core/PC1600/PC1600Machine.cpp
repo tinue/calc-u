@@ -12,6 +12,7 @@ PC1600Machine::PC1600Machine()
 }
 
 void PC1600Machine::resetLocked() {
+    m_readyFrames = 0;  // key readiness is counted again from here (keyReady())
     m_bank.reset();
     m_z80Mem.reset();
     m_z80Mem.keyboard().releaseAll();
@@ -42,7 +43,6 @@ void PC1600Machine::powerOnLocked() {
 }
 
 void PC1600Machine::reset() {
-    std::lock_guard<std::mutex> lock(m_mutex);
     resetLocked();
     // Tell the boot ROM this was the lighter reset level: it keeps the
     // calendar clock, the internal-RAM work area and every setting.
@@ -50,7 +50,6 @@ void PC1600Machine::reset() {
 }
 
 void PC1600Machine::allReset() {
-    std::lock_guard<std::mutex> lock(m_mutex);
     // Two things make this the ALL RESET: the wiped RAM, and the reset
     // cause the sub-CPU reports. The ROM then runs full cold init --
     // clock back to 1 Jan 00:00:00 (the caller re-seeds it), work area
@@ -62,7 +61,6 @@ void PC1600Machine::allReset() {
 }
 
 void PC1600Machine::seedClock(int year, int month, int day, int hour, int minute, int second, int millisecond) {
-    std::lock_guard<std::mutex> lock(m_mutex);
     PC1600SubCpu::DateTime dt;
     dt.month  = static_cast<uint8_t>(month); // plain 1-12, as the protocol carries it
     dt.day    = PC1600SubCpu::packBcd(day);
@@ -85,7 +83,6 @@ bool PC1600Machine::attachCE1600P(const uint8_t* rom1, size_t rom1Size,
     auto card = std::make_unique<CE1600PCard>();
     if (!card->loadRom(rom1, rom1Size, rom2, rom2Size)) return false;
     auto floppy = std::make_unique<CE1600FCard>();  // drive starts empty
-    std::lock_guard<std::mutex> lock(m_mutex);
     detachCE1600PLocked();
     detachCE150Locked(); // one plotter on the bus at a time
     detachCE158Locked(); // CE-158 + CE-1600P not supported yet (TODO.md, IO7N)
@@ -98,7 +95,6 @@ bool PC1600Machine::attachCE1600P(const uint8_t* rom1, size_t rom1Size,
 }
 
 void PC1600Machine::detachCE1600P() {
-    std::lock_guard<std::mutex> lock(m_mutex);
     detachCE1600PLocked();
 }
 
@@ -116,7 +112,6 @@ bool PC1600Machine::attachHostDrive(const uint8_t* rom, size_t romSize, const st
     auto card = std::make_unique<PC1600HostDriveCard>();
     if (!card->loadRom(rom, romSize)) return false;
     card->drive().setDirectory(dir);
-    std::lock_guard<std::mutex> lock(m_mutex);
     detachHostDriveLocked();
     m_z80Mem.systemBus().attach(card.get());
     m_hostDriveCard = std::move(card);
@@ -124,13 +119,11 @@ bool PC1600Machine::attachHostDrive(const uint8_t* rom, size_t romSize, const st
 }
 
 void PC1600Machine::attachBusRom(std::unique_ptr<SystemBusCard> card) {
-    std::lock_guard<std::mutex> lock(m_mutex);
     m_z80Mem.systemBus().attachFirst(card.get());
     m_busRoms.push_back(std::move(card));
 }
 
 void PC1600Machine::detachHostDrive() {
-    std::lock_guard<std::mutex> lock(m_mutex);
     detachHostDriveLocked();
 }
 
@@ -141,116 +134,94 @@ void PC1600Machine::detachHostDriveLocked() {
 }
 
 bool PC1600Machine::hostDriveAttached() const {
-    std::lock_guard<std::mutex> lock(m_mutex);
     return m_hostDriveCard != nullptr;
 }
 
 void PC1600Machine::setHostDriveDirectory(const std::filesystem::path& dir) {
-    std::lock_guard<std::mutex> lock(m_mutex);
     if (m_hostDriveCard) m_hostDriveCard->drive().setDirectory(dir);
 }
 
 std::filesystem::path PC1600Machine::hostDriveDirectory() const {
-    std::lock_guard<std::mutex> lock(m_mutex);
     return m_hostDriveCard ? m_hostDriveCard->drive().directory() : std::filesystem::path{};
 }
 
-// The three below take m_mutex so the GUI thread can read/clear the
-// plotter mechanism while the emulation loop runs -- the mechanism's
-// stroke and event containers are mutated from inside step() on every
-// motor write, so an unlocked reader races a vector reallocation.
+// The three below read and clear the plotter mechanism, whose stroke and
+// event containers step() changes on every motor write.
 
 std::vector<AlpsPlotterMechanism::FlatPoint> PC1600Machine::ce1600pPlotPoints() const {
-    std::lock_guard<std::mutex> lock(m_mutex);
     if (!m_ce1600pCard) return {};
     return m_ce1600pCard->mechanism().flatPoints();
 }
 
 uint64_t PC1600Machine::ce1600pPlotRevision() const {
-    std::lock_guard<std::mutex> lock(m_mutex);
     if (!m_ce1600pCard) return 0;
     return m_ce1600pCard->mechanism().revision();
 }
 
 std::vector<std::string> PC1600Machine::drainCE1600PEvents() {
-    std::lock_guard<std::mutex> lock(m_mutex);
     if (!m_ce1600pCard) return {};
     return m_ce1600pCard->mechanism().drainEvents();
 }
 
 void PC1600Machine::clearCE1600PPaper() {
-    std::lock_guard<std::mutex> lock(m_mutex);
     if (m_ce1600pCard) m_ce1600pCard->mechanism().clearPaper();
 }
 
 // ── CE-1600F floppy (union-attached with CE-1600P, above) ─────────────
 
 std::vector<uint8_t> PC1600Machine::ce1600fDiskImage() const {
-    std::lock_guard<std::mutex> lock(m_mutex);
     if (!m_ce1600fCard) return {};
     return m_ce1600fCard->imageForSave();
 }
 
 uint64_t PC1600Machine::ce1600fRevision() const {
-    std::lock_guard<std::mutex> lock(m_mutex);
     return m_ce1600fCard ? m_ce1600fCard->revision() : 0;
 }
 
 void PC1600Machine::ce1600fEject() {
-    std::lock_guard<std::mutex> lock(m_mutex);
     if (m_ce1600fCard) m_ce1600fCard->ejectDisk();
 }
 
 bool PC1600Machine::ce1600fHasDisk() const {
-    std::lock_guard<std::mutex> lock(m_mutex);
     return m_ce1600fCard && m_ce1600fCard->hasDisk();
 }
 
 bool PC1600Machine::ce1600fLoadImage(const uint8_t* data, size_t size) {
-    std::lock_guard<std::mutex> lock(m_mutex);
     if (!m_ce1600fCard) return false;
     return m_ce1600fCard->loadImage(data, size);
 }
 
 int PC1600Machine::ce1600fSide() const {
-    std::lock_guard<std::mutex> lock(m_mutex);
     return m_ce1600fCard ? m_ce1600fCard->side() : 0;
 }
 
 void PC1600Machine::ce1600fSetSide(int side) {
-    std::lock_guard<std::mutex> lock(m_mutex);
     if (m_ce1600fCard) m_ce1600fCard->setSide(side);
 }
 
 bool PC1600Machine::ce1600fMotorOn() const {
-    std::lock_guard<std::mutex> lock(m_mutex);
     return m_ce1600fCard && m_ce1600fCard->motorOn();
 }
 
 // ── Cassette recorder ─────────────────────────────────────────────────
 
 bool PC1600Machine::tapePlay(const std::string& path, std::string& error) {
-    std::lock_guard<std::mutex> lock(m_mutex);
     return m_tapeDeck.loadForPlay(path, error);
 }
 
 void PC1600Machine::tapeRecord(const std::string& path) {
-    std::lock_guard<std::mutex> lock(m_mutex);
     m_tapeDeck.armRecord(path);
 }
 
 bool PC1600Machine::tapeEject(std::string* error) {
-    std::lock_guard<std::mutex> lock(m_mutex);
     return m_tapeDeck.eject(error);
 }
 
 TapeDeck::Status PC1600Machine::tapeStatus() const {
-    std::lock_guard<std::mutex> lock(m_mutex);
     return m_tapeDeck.status();
 }
 
 std::string PC1600Machine::tapeTakeLastError() {
-    std::lock_guard<std::mutex> lock(m_mutex);
     return m_tapeDeck.takeLastError();
 }
 
@@ -260,7 +231,6 @@ bool PC1600Machine::attachCE150(const uint8_t* rom, size_t romSize) {
     if (romSize != Ce150Card::kRomSize) return false;
     auto card = std::make_unique<Ce150Card>();
     if (!card->loadRom(rom, romSize)) return false;
-    std::lock_guard<std::mutex> lock(m_mutex);
     detachCE150Locked();
     detachCE1600PLocked(); // one plotter on the bus at a time
     card->reset();
@@ -270,7 +240,6 @@ bool PC1600Machine::attachCE150(const uint8_t* rom, size_t romSize) {
 }
 
 void PC1600Machine::detachCE150() {
-    std::lock_guard<std::mutex> lock(m_mutex);
     detachCE150Locked();
 }
 
@@ -283,7 +252,6 @@ void PC1600Machine::detachCE150Locked() {
 // ── CE-158 interface (LH5803 side) ─────────────────────────────────────
 
 bool PC1600Machine::attachCE158(const uint8_t* rom, size_t romSize) {
-    std::lock_guard<std::mutex> lock(m_mutex);
     auto card = m_ce158.build(rom, romSize, kTStateHz); // ticked with SC7852 T-states, see step()
     if (!card) return false;
     detachCE158Locked();
@@ -294,7 +262,6 @@ bool PC1600Machine::attachCE158(const uint8_t* rom, size_t romSize) {
 }
 
 void PC1600Machine::detachCE158() {
-    std::lock_guard<std::mutex> lock(m_mutex);
     detachCE158Locked();
 }
 
@@ -305,40 +272,33 @@ void PC1600Machine::detachCE158Locked() {
 }
 
 void PC1600Machine::setCE158SerialLink(SerialLink* link) {
-    std::lock_guard<std::mutex> lock(m_mutex);
     m_ce158.setSerialLink(link);
 }
 
 std::vector<uint8_t> PC1600Machine::drainCE158ParallelOutput() {
-    std::lock_guard<std::mutex> lock(m_mutex);
     return m_ce158.drainParallelOutput();
 }
 
 std::vector<AlpsPlotterMechanism::FlatPoint> PC1600Machine::ce150PlotPoints() const {
-    std::lock_guard<std::mutex> lock(m_mutex);
     if (!m_ce150Card) return {};
     return m_ce150Card->mechanism().flatPoints();
 }
 
 uint64_t PC1600Machine::ce150PlotRevision() const {
-    std::lock_guard<std::mutex> lock(m_mutex);
     if (!m_ce150Card) return 0;
     return m_ce150Card->mechanism().revision();
 }
 
 std::vector<std::string> PC1600Machine::drainCE150Events() {
-    std::lock_guard<std::mutex> lock(m_mutex);
     if (!m_ce150Card) return {};
     return m_ce150Card->mechanism().drainEvents();
 }
 
 void PC1600Machine::clearCE150Paper() {
-    std::lock_guard<std::mutex> lock(m_mutex);
     if (m_ce150Card) m_ce150Card->mechanism().clearPaper();
 }
 
 int PC1600Machine::step() {
-    std::lock_guard<std::mutex> lock(m_mutex);
     uint64_t tstates = 0;
     return stepLocked(&tstates);
 }
@@ -474,6 +434,20 @@ void PC1600Machine::advanceTimer64(int tstates) {
 }
 
 void PC1600Machine::advanceSharedClocks(int tstates) {
+    // Every T-state step() charges passes here, whichever CPU ran or none.
+    m_elapsedTStates += static_cast<uint64_t>(tstates);
+    m_readyFrameAccum += tstates;
+    if (m_readyFrameAccum >= kReadyFrameTStates) {
+        m_readyFrameAccum -= kReadyFrameTStates;
+        // The per-frame test of waitForKeyboardScanLoopJob() (PC1600BasicTyper.cpp).
+        const uint64_t scans = m_z80Mem.keyboard().scanCount();
+        const bool polling = scans != m_readyLastScan;
+        m_readyLastScan = scans;
+        const uint16_t pc = m_sc7852.pc();
+        const bool atPrompt = m_arbiter.sc7852Owns() && pc >= 0x9280 && pc <= 0x9300;  // pc1600AtBasicPrompt()
+        if ((atPrompt || polling) && m_z80Mem.display().clockEnabled()) ++m_readyFrames;
+        else m_readyFrames = 0;
+    }
     // LU-57813P calendar clock: one tick per emulated second, fed from
     // both bus-ownership branches of step() -- see kRtcPeriodTStates. The
     // OFF-key/auto-power-off shutdown hands the bus to the LH5803 and can
@@ -502,14 +476,12 @@ uint64_t PC1600Machine::runCycles(uint64_t maxCycles) {
         // (or none, while powered off).
         uint64_t tstates = 0;
         {
-            std::lock_guard<std::mutex> lock(m_mutex);
             stepLocked(&tstates);
         }
         if (m_debugStop.pending() == DebugStop::Breakpoint) break; // parked on a breakpoint: no time passed
         consumed += tstates;
         if (m_debugStop.pending() == DebugStop::Watch) break; // the watched access's instruction has completed
-        // See setYieldHook(). step() takes m_mutex per call, so it isn't
-        // held here.
+        // See setYieldHook().
         if (m_yieldHook) {
             if (tstates >= m_yieldCountdown) {
                 m_yieldCountdown = m_yieldInterval;
@@ -523,7 +495,6 @@ uint64_t PC1600Machine::runCycles(uint64_t maxCycles) {
 }
 
 void PC1600Machine::setYieldHook(std::function<void()> hook, uint64_t intervalTStates) {
-    std::lock_guard<std::mutex> lock(m_mutex);
     m_yieldHook = std::move(hook);
     m_yieldInterval = intervalTStates;
     m_yieldCountdown = intervalTStates;
@@ -532,17 +503,14 @@ void PC1600Machine::setYieldHook(std::function<void()> hook, uint64_t intervalTS
 void PC1600Machine::pressKey(const std::string& name) {
     PC1600Keyboard::Key key = PC1600Keyboard::keyFromName(name);
     if (key == PC1600Keyboard::Key::Unknown) return;
-    std::lock_guard<std::mutex> lock(m_mutex);
     m_z80Mem.keyboard().setKeyState(key, true);
 }
 void PC1600Machine::releaseKey(const std::string& name) {
     PC1600Keyboard::Key key = PC1600Keyboard::keyFromName(name);
     if (key == PC1600Keyboard::Key::Unknown) return;
-    std::lock_guard<std::mutex> lock(m_mutex);
     m_z80Mem.keyboard().setKeyState(key, false);
 }
 void PC1600Machine::setOnKeyPressed(bool pressed) {
-    std::lock_guard<std::mutex> lock(m_mutex);
     // The ON/BREAK line: the SC-7852 sees its debounced level on PB7 and
     // the latch at 1BH (BREAK), and the sub-CPU sees it on KH, where a
     // rising edge powers a switched-off system on (Service Manual §9-3).
@@ -552,7 +520,6 @@ void PC1600Machine::setOnKeyPressed(bool pressed) {
 }
 
 bool PC1600Machine::pokeMemory(uint16_t address, const uint8_t* data, size_t size) {
-    std::lock_guard<std::mutex> lock(m_mutex);
     // All-or-nothing: reject ROM / open bus up front, then write through
     // the host path (poke(): flash takes the byte directly instead of via
     // its command decoder). isWritable() can't see inside a card -- any
@@ -574,7 +541,6 @@ bool PC1600Machine::pokeMemory(uint16_t address, const uint8_t* data, size_t siz
 }
 
 uint8_t PC1600Machine::debugPeek(uint16_t addr) {
-    std::lock_guard<std::mutex> lock(m_mutex);
     return m_z80Mem.peek(addr);
 }
 
@@ -583,42 +549,34 @@ bool PC1600Machine::mode1() { return (debugPeek(0xF1BC) & 0x40) != 0; }
 int PC1600Machine::programAreaTitle() { return debugPeek(0xF1D5); }
 
 bool PC1600Machine::debugSc7852Owns() {
-    std::lock_guard<std::mutex> lock(m_mutex);
     return m_arbiter.sc7852Owns();
 }
 
 void PC1600Machine::setSerialLink(SerialLink* link) {
-    std::lock_guard<std::mutex> lock(m_mutex);
     m_z80Mem.uart().setSerialLink(link);
 }
 
 void PC1600Machine::debugCopyInternalRam(uint8_t* out) {
-    std::lock_guard<std::mutex> lock(m_mutex);
     m_z80Mem.debugCopyInternalRam(out);
 }
 
 bool PC1600Machine::debugWriteInternalRam(size_t off, const uint8_t* data, size_t n) {
-    std::lock_guard<std::mutex> lock(m_mutex);
     return m_z80Mem.debugWriteInternalRam(off, data, n);
 }
 
 bool PC1600Machine::debugWriteSlotBus(int bank, uint16_t addr, const uint8_t* data, size_t n) {
-    std::lock_guard<std::mutex> lock(m_mutex);
     return m_z80Mem.slotBusWrite(bank, addr, data, n);
 }
 
 bool PC1600Machine::debugSlotBusWritable(int bank, uint16_t addr, size_t n) {
-    std::lock_guard<std::mutex> lock(m_mutex);
     return m_z80Mem.slotBusWritable(bank, addr, n);
 }
 
 std::vector<uint8_t> PC1600Machine::debugSlotImage(int slot) {
-    std::lock_guard<std::mutex> lock(m_mutex);
     return slot == 1 ? m_z80Mem.slot1CardImage() : m_z80Mem.slot2CardImage();
 }
 
 PC1600Machine::DebugBankState PC1600Machine::debugBankState() {
-    std::lock_guard<std::mutex> lock(m_mutex);
     return inspectBankState();
 }
 
@@ -707,7 +665,6 @@ PC1600Machine::DebugBankState PC1600Machine::inspectBankState() const {
 }
 
 bool PC1600Machine::beginCpuTrace(std::FILE* handle, uint32_t flags) {
-    std::lock_guard<std::mutex> lock(m_mutex);
     if (!handle || m_traceFile) return false;
     m_traceFile = std::make_unique<PC1500TraceFile>(handle);
     m_traceDrainCounter = 0;
@@ -722,7 +679,6 @@ bool PC1600Machine::beginCpuTrace(std::FILE* handle, uint32_t flags) {
 }
 
 void PC1600Machine::endCpuTrace() {
-    std::lock_guard<std::mutex> lock(m_mutex);
     if (!m_traceFile) return;
     pumpTraceFile();
     m_traceFile->finish();
@@ -733,7 +689,7 @@ void PC1600Machine::endCpuTrace() {
 }
 
 void PC1600Machine::pumpTraceFile() {
-    // Caller holds m_mutex. Each CPU's drainTraceEvents() takes that core's
+    // Each CPU's drainTraceEvents() takes that core's
     // own independent ring mutex -- no lock-ordering concern.
     uint32_t lost = 0;
     uint32_t n = m_sc7852.drainTraceEvents(m_z80TraceDrainBuf, kTraceDrainBufFrames, &lost);
@@ -754,7 +710,6 @@ void PC1600Machine::pumpTraceFile() {
 }
 
 PC1600DisplaySnapshot PC1600Machine::displaySnapshot() const {
-    std::lock_guard<std::mutex> lock(m_mutex);
     PC1600DisplaySnapshot snap;
     const PC1600Display& disp = m_z80Mem.display();
     snap.clockEnabled = disp.clockEnabled();

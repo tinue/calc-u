@@ -14,16 +14,12 @@
 #include "Display/LcdScreenshot.hpp"
 #include "Display/LcdText.hpp"
 #include "KeyPaste.hpp"
-#include "Serial/LazySerialLink.hpp"
-#include "Serial/PtySerialLink.hpp"
 #include "Tape/TapeDeck.hpp"
 #include "TraceTypes.hpp"
 #include "app/MachineModel.hpp"
 #include "app/AppSession.hpp"
 #include "app/MachineSession.hpp"
 
-class PC1500Machine;
-class PC1600Machine;
 class MemoryModuleManager;
 class DebugController;
 class FloppyDiskManager;
@@ -79,13 +75,9 @@ public:
     DisplayFrame currentDisplay() const { return session().currentDisplay(); }
     bool lcdText(LcdText* out) const { return session().lcdText(out); }
 
-    PC1500Machine* pc1500() const { return session().pc1500(); }
-    PC1600Machine* pc1600() const { return session().pc1600(); }
+    // The live machine (calcu::machine::Machine; C1600-1), or nullptr.
+    calcu::machine::Machine* machine() const { return session().machine(); }
     bool hasLiveMachine() const { return session().hasLiveMachine(); }
-    template <class F>
-    void withMachine(F&& f) const { session().withMachine(std::forward<F>(f)); }
-    template <class R, class F>
-    R withMachine(R none, F&& f) const { return session().withMachine(std::move(none), std::forward<F>(f)); }
 
     std::vector<std::string> inspectorView(inspect::View view) const { return session().inspectorView(view); }
     std::vector<inspect::MenuEntry> inspectorMenu(bool dumps) const { return session().inspectorMenu(dumps); }

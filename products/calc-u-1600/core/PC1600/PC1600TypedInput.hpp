@@ -6,7 +6,8 @@
 #include "../KeyPaste.hpp"
 #include "../SharpShiftedSymbols.hpp"
 #include "PC1600Keyboard.hpp"
-#include "PC1600Machine.hpp"
+
+class PC1600Machine;
 
 // ── Typed-text helpers shared by every scripted PC-1600 input path ───────
 //
@@ -116,12 +117,7 @@ inline bool pc1600ResolveKbiiChar(char32_t cp, std::string* baseKey, bool* needs
 /// with SHIFT latched the KBII key toggles the key click instead of KBII
 /// (EDKBII 6CB3H, `bit 1,h`), and with KBII latched its taps would turn
 /// the user's KBII off and on again.
-inline KeyLatches pc1600ReadLatches(PC1600Machine& machine) {
-    KeyLatches l;
-    l.shift = (machine.memory().peek(0xF64E) & 0x02) != 0;
-    l.kbii = (machine.memory().peek(0xF3C6) & 0x80) != 0;
-    return l;
-}
+KeyLatches pc1600ReadLatches(PC1600Machine& machine);
 
 /// True when the SC7852 is in the BASIC command loop right now -- a
 /// single-frame sample; callers require it to hold for a stretch. The loop
@@ -129,9 +125,4 @@ inline KeyLatches pc1600ReadLatches(PC1600Machine& machine) {
 /// program, an INPUT wait, a plot pen-move wait and a FOR/NEXT delay all
 /// sit in other tight loops ($53xx, $AAxx, ...). The PC-1600 ROM set is
 /// fixed, so the window is stable.
-inline bool pc1600AtBasicPrompt(const PC1600Machine& machine) {
-    constexpr uint16_t kCmdLoopLo = 0x9280;
-    constexpr uint16_t kCmdLoopHi = 0x9300;
-    const uint16_t pc = machine.sc7852().pc();
-    return machine.sc7852Owns() && pc >= kCmdLoopLo && pc <= kCmdLoopHi;
-}
+bool pc1600AtBasicPrompt(const PC1600Machine& machine);

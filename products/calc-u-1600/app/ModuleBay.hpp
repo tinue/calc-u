@@ -87,6 +87,11 @@ public:
 
     // MachineSession::Bays::attachModulesToFreshMachine().
     void attachAllToFreshMachine();
+    // Plugs the selected module of `slot` in (a module change: the session
+    // detached the old one; a power cycle follows, behaviour change 1600-4).
+    void attachSlot(int slot) {
+        if (!m_slots[slot - 1].moduleName.empty()) attachOneSlot(slot);
+    }
 
     // After a preset attached its own module(s): match this bay's state to
     // the machine. The module's name is read from the slot itself; an

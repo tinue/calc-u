@@ -109,7 +109,7 @@ the media place clause of AC-33 passes in M-55 (LIB-7; design D-1).
 
 ## Calc-U-1600
 
-AC-34 to AC-41: later, M-26 (with C1600-1); the media place clause of
+AC-34 to AC-41: M-26 (with C1600-1), below; the media place clause of
 AC-40 passes in M-47 (LIB-7; design D-1).
 
 ## Calc-U-59, the M-19 part (2026-11-14, branch `m19-ti-machines`)
@@ -146,3 +146,21 @@ passes in M-55 (D-1); the column stays In progress until then.
 Deviation: the 14 module descriptors are static in `tiCatalogue()` rather
 than added from the module files (C59-6 qa-report, "Deviations").
 
+## Calc-U-1600, the M-26 part (2026-11-15, branch `m26-sharp-interface`)
+
+With C1600-1 (its qa-report has the run). Tests in
+`products/calc-u-1600/tests/descriptor_tests.cpp`, program `CoreTests`
+(label `frequent`): 8 tests, 234 checks passed, 0 failed. The media place
+clause of AC-40 is tested in M-47 (D-1); the column stays In progress
+until then.
+
+| ID | Result | Test case |
+|---|---|---|
+| AC-34 | Pass | `lib1_ac34_models_variants_rates` (PC-1500 A01/A03/A04, default A04; PC-1500A A04; PC-1600 New/Old, default New; 1,300,000 / 3,580,000) |
+| AC-35 | Pass | `lib1_ac35_dot_matrix_indicators_sound` (156 × 7 with 14 indicators, 156 × 32 with 18; sound on all three) |
+| AC-36 | Pass | `lib1_ac36_connectors_pinouts_places_debug_targets` (40-pin and 60-pin connectors, contact level; places `slot-1`, `slot-2`, `printer`, `interface`, `host-drive`; RS-232C; debug targets LH5801, SC7852, LH5803) |
+| AC-37 | Pass | `lib1_ac37_module_slots_and_components` (each module slot a holding media place in the descriptor; components and depth) |
+| AC-38 | Pass | `lib1_ac38_rom_entries_per_variant` |
+| AC-39 | Pass | `lib1_ac39_peripheral_descriptors` (nine modules, CE-150, CE-158, CE-1600P New/Old with the CE-1600F, host drive; the CE-161's switch as a control) |
+| AC-40 | Pass (without the media place clause) | `lib1_ac40_machines_conform` (`checkAgainstDescriptor` empty for each model and variant, bare and with each peripheral of AC-39 plugged in where it fits; the media place capabilities come with LIB-7, M-47, D-1) |
+| AC-41 | Pass | `lib1_ac41_module_fit_table` |

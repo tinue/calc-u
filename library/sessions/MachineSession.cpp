@@ -15,6 +15,7 @@ void MachineSession::setMachine(std::unique_ptr<machine::Machine> m, const pacin
     machine_ = std::move(m);
     soundRate_ = machine_ ? soundRate : 0;
     ++generation_;
+    paused_ = false;   // LIB-10 AC-15: a new machine is not paused
     if (machine_) {
         pacer_.setMachine(profile, machine_->descriptor().tickRate);   // starts afresh
         ++fresh_;

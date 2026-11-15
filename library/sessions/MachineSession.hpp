@@ -63,7 +63,8 @@ class MachineSession final : public pacing::SliceRunner {
 public:
     MachineSession(pacing::WallClock, std::optional<std::uint32_t> jitterSeed);   // starts afresh (AC-23)
 
-    // A new machine with its pacing profile; starts afresh (AC-23; LIB-17 AC-14).
+    // A new machine with its pacing profile; starts afresh (AC-23; LIB-17
+    // AC-14) and is not paused (LIB-10 AC-15).
     void setMachine(std::unique_ptr<machine::Machine>, const pacing::PacingProfile&, int soundRate);
     std::unique_ptr<machine::Machine> takeMachine();
     machine::Machine* machine() { return machine_.get(); }

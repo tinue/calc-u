@@ -84,10 +84,14 @@ file in `app/`, `frontends/`, `tools/` or `dev/` includes or names one.
 - **Building.** `calcu::machine::build(catalogue, SharpMachineBuilder, request)`
   with a copy of `sharp::sharpCatalogue()` (the models, CE-150, CE-158,
   CE-1600P, host drive) to which the module definitions are added
-  (`sharp::addModuleDefinitions`, `moduleDescriptor`). The ROM images come
-  through `sharp::modelRomImages` / `peripheralRomImages`
-  (`core/Machine/SharpRomImages`, an adapter until M-27). Every rebuild is
-  then a `coldBoot()`.
+  (`sharp::addModuleDefinitions`, `moduleDescriptor`; the CE-502B's from
+  the ROM set). The ROM images come from the session's ROM set: one
+  lookup at the start of `MachineSession` (`sharp::lookUpRoms`,
+  `core/Machine/SharpRoms`, LIB-12) over the bundled resources folder,
+  then `RomSet::imagesFor()` for every build and attach; the preset
+  loaders get it as `PresetRoms`. Without the full set no machine is
+  built and the listener's `romMissing(RomsMissing)` gets the lookup's
+  message. Every rebuild is then a `coldBoot()`.
 - **Operations and keys.** `reset()`, `coldBoot()`, `powerCycle()` (the
   off / on sequence now runs inside the core, `core/Machine/PowerCycleSequence`),
   then `sharp::legacy::runToPromptJob` (until M-46). Keys are key IDs

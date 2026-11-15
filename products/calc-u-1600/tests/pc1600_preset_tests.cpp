@@ -598,7 +598,7 @@ TEST(test_loader_ce150_plotter_needs_rom_path) {
     CHECK(parse("format-version: 1\nmodel: PC-1600\nplotter: CE-150\n", &p, &err));
 
     PC1600Machine m;
-    // No romDirs passed -> a clear error, not a crash / silent skip.
+    // No ROM set passed -> a clear error, not a crash / silent skip.
     PresetLoadResult r = applyPC1600Preset(m, p);
     CHECK(!r.ok);
     CHECK(r.error.find("CE-150.ROM") != std::string::npos);
@@ -628,7 +628,7 @@ TEST(test_loader_ce1600p_plotter_needs_rom_path) {
     CHECK(parse("format-version: 1\nmodel: PC-1600\nplotter: CE-1600P\n", &p, &err));
 
     PC1600Machine m;
-    // No romDirs passed -> a clear error, not a crash / silent skip.
+    // No ROM set passed -> a clear error, not a crash / silent skip.
     PresetLoadResult r = applyPC1600Preset(m, p);
     CHECK(!r.ok);
     CHECK(r.error.find("CE1600P") != std::string::npos);

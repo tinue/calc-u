@@ -301,9 +301,9 @@ TEST(test_preset_plotter_ce150_attaches_before_reset) {
     machine.memory().updatePUPV(machine.cpu().pu(), /*pv=*/false);
     CHECK(machine.memory().peek(0xA000) != 0xFF);
 
-    // Same preset, no romDirs -> a clean, specific failure. Main and
-    // plotter ROMs share one bundled directory (BundledRomCatalog), so this
-    // fails resolving the main ROM itself rather than reaching the plotter
+    // Same preset, no ROM set -> a clean, specific failure. Main and
+    // plotter ROMs come from one set (PresetRoms), so this
+    // fails on the main ROM itself rather than reaching the plotter
     // step at all -- still a clean failure, not a crash.
     PC1500Machine machine2(preset.variant);
     PresetLoadResult res2 = applyPC1500Preset(machine2, preset);

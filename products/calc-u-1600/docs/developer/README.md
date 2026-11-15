@@ -11,7 +11,9 @@ decisions, plans, handoffs — is in [../background/README.md](../background/REA
 - [Building.md](Building.md) — prerequisites, `libsharpdx`, getting the
   ROMs, per-platform builds, CLion, running the tests, packaging.
 - [roms/README.md](../../roms/README.md) — where each ROM image comes from
-  and its checksum; `roms/fetch_roms.sh` downloads them.
+  and its checksum; `roms/fetch_roms.sh` downloads them: the full set (21
+  dumps and the CE-502B's module definition) that the one ROM lookup checks
+  at every start (LIB-12; Building.md, "Get the ROMs").
 - [Cloud-Sessions.md](Cloud-Sessions.md) — how the repository is set up for
   Claude Code cloud sessions; [CLAUDE.md](../../CLAUDE.md) holds the project
   instructions for Claude Code.

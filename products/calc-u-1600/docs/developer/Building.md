@@ -72,9 +72,22 @@ Fetch and verify them before configuring:
 roms/fetch_roms.sh
 ```
 
-Skipping this step doesn't fail the build — CMake just globs an empty
-`roms/` directory — but the resulting binary ships with no firmware and
-won't boot any machine.
+It fetches the full set into `roms/`: the 21 dumps and the CE-502B's
+module definition (`CE-502B.card.yaml`, which holds the module's ROM),
+each checked against its md5. The build bundles every file of it with
+the app (the Qt6 bundle's resources folder, the Web `dist/bundle/`).
+
+Skipping this step, or a file missing from `roms/`, doesn't fail the
+build (LIB-12 design D-5), but the built product doesn't start a machine:
+at its start one ROM lookup (`sharp::lookUpRoms`, `core/Machine/SharpRoms`;
+the library's `calcu::roms::lookUp`) checks every file of the full set by
+its size, and if one is missing or bad, the Qt6 app shows a dialog naming
+each such file and exits, the Web client shows the same text instead of
+the calculator, and the CLIs and probes end with exit code 1 naming the
+files. No ROM set is used in place of another (the 0.8.x fallback from a
+missing Old ROM set to the New one is gone, LIB-12 AC-13). Only the
+host-drive ROM (`firmware/pc1600-hostdrive/`, our own) is bundled and read
+outside the lookup (`roms.md` Q-1).
 
 On Linux/Windows, fetch `libsharpdx` too (see above):
 
@@ -183,9 +196,11 @@ All of them run and debug interactively (breakpoints, variable
 inspection, stepping) — which is the main thing this build adds over
 `tools/build_*.sh` and `tools/run_tests.sh`.
 
-Run `roms/fetch_roms.sh` (step 2 above) first: `CoreTests` and the
-`pc1500_cli`/probe configurations pass paths under `roms/`, and ROMs
-aren't committed.
+Run `roms/fetch_roms.sh` (step 2 above) first: `CoreTests`, the CLIs and
+the probes look the ROMs up in `roms/` relative to their working
+directory (this directory) through the same lookup as the app, and ROMs
+aren't committed. A ROM test without the full set reports itself as
+skipped.
 
 `core/` and `app/` come from [`cmake/CalcU.cmake`](../../cmake/CalcU.cmake),
 which globs the sources into two static libraries: `calcu_core` and

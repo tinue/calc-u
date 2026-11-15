@@ -87,7 +87,21 @@ Reply waitCmd(CommandContext& c) {
     const machine::MachineDescriptor* d = c.host.descriptor();
     if (!d) return refusedReply(kNoMachine);
     const machine::Ticks ran = c.host.advance(ticksFor(*us, d->tickRate));
-    return timeReply(ran, d->tickRate);
+    Reply reply = timeReply(ran, d->tickRate);
+    // LIB-10 AC-21: a wait ends where the machine pauses, or at once on a
+    // paused machine; then the reply gives the run state too.
+    if (auto t = c.host.readTopic("run-state"); t && t->state) {
+        const sessions::Value v = t->state->toValue();
+        const sessions::Value* p = v.find("paused");
+        if (p && p->boolean() && *p->boolean()) {
+            reply.result.set("runState", fromSession(v));
+            const sessions::Value* owner = v.find("owner");
+            const sessions::Value* reason = v.find("reason");
+            reply.lines.push_back("run state: paused, owner " + (owner && owner->string() ? *owner->string() : std::string()) +
+                                  ", reason " + (reason && reason->string() ? *reason->string() : std::string()));
+        }
+    }
+    return reply;
 }
 
 Handler keyCmd(bool down) {

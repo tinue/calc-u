@@ -69,4 +69,10 @@ void addPresetCommands(CommandRegistry&, const presets::Vocabulary*);
 // refused in a product without printers.
 void addPaperCommands(CommandRegistry&);
 
+// LIB-10 AC-20, AC-50, AC-51 (design §3.9): the debugger's commands
+// (DebugCommands.cpp), each the session command or request of LIB-10's
+// DebuggerPart with the setter `harness`; refused with "The machine offers
+// no debug target." in a product without a DebuggerPart.
+void addDebugCommands(CommandRegistry&);
+
 } // namespace calcu::harness

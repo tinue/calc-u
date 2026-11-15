@@ -299,7 +299,7 @@ void DebuggerPart::addCommands(sessions::SessionSetup& s) {
             return Refused{"The register " + r->name + " cannot be written."};
         return Done{};
     });
-    s.command(kPokeCommand, [dbg](const Value& a, SessionContext& c) -> CommandOutcome {
+    s.command(kPokeCommand, [this, dbg](const Value& a, SessionContext& c) -> CommandOutcome {
         std::string why;
         machine::Debugging* d = dbg(c, &why);
         if (!d) return Refused{why};
@@ -309,9 +309,10 @@ void DebuggerPart::addCommands(sessions::SessionSetup& s) {
         const auto sp = findSpace(target.info(), sessions::textArg(a, "space"));
         if (!sp) return Refused{"The target " + target.info().name.value + " has no space " + sessions::textArg(a, "space") + "."};
         const machine::SpaceInfo& space = target.info().spaces[*sp];
-        const auto address = numberOf(a.find("address"));
+        const auto address = addressOf(a.find("address"), target.info().name, &why);
+        if (!address) return Refused{why};
         const Value* vs = a.find("values");
-        if (!address || !vs || !vs->elements() || vs->elements()->empty()) return Refused{"poke needs an address and values."};
+        if (!vs || !vs->elements() || vs->elements()->empty()) return Refused{"poke needs values."};
         const std::uint64_t count = vs->elements()->size();
         if (*address >= space.size || count > space.size - *address)   // EC-9
             return Refused{"The address is outside the space " + space.name + "."};
@@ -433,7 +434,7 @@ void DebuggerPart::addRequests(sessions::SessionSetup& s) {
         return sessions::replyGiven(sessions::valuePayload(
             "debug-registers", Value::object({{"target", target.info().name.value}, {"registers", Value(std::move(regs))}})));
     });
-    s.request(kPeekRequest, [dbg](const Value& a, SessionContext& c) {
+    s.request(kPeekRequest, [this, dbg](const Value& a, SessionContext& c) {
         std::string why;
         machine::Debugging* d = dbg(c, &why);
         if (!d) return sessions::replyRefused(why);
@@ -443,9 +444,10 @@ void DebuggerPart::addRequests(sessions::SessionSetup& s) {
         const auto sp = findSpace(target.info(), sessions::textArg(a, "space"));
         if (!sp) return sessions::replyRefused("The target " + target.info().name.value + " has no space " + sessions::textArg(a, "space") + ".");
         const machine::SpaceInfo& space = target.info().spaces[*sp];
-        const auto address = numberOf(a.find("address"));
+        const auto address = addressOf(a.find("address"), target.info().name, &why);
+        if (!address) return sessions::replyRefused(why);
         const std::uint64_t count = numberOf(a.find("count")).value_or(1);
-        if (!address || count == 0) return sessions::replyRefused("peek needs an address.");
+        if (count == 0) return sessions::replyRefused("peek needs a count of at least 1.");
         if (*address >= space.size || count > space.size - *address)   // EC-9
             return sessions::replyRefused("The address is outside the space " + space.name + ".");
         machine::BankSelect bank;

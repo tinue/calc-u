@@ -26,11 +26,17 @@
 // (M-38) the preset rules of library/presets/tests/TestPresetRules.hpp and
 // bundled presets (`examples:startup/seg.test-seg`, `examples:basic/two.test-seg`);
 // from LIB-8 (M-39) the test printers TD-20 and TP-4 (the paper test
-// catalogue) with a PaperPart, and the settings keys [preset] per model.
+// catalogue) with a PaperPart, and the settings keys [preset] per model;
+// from LIB-10 (M-40) the test processor in both models' machines
+// (TestCpu.hpp, the program of TestDebugParts.hpp) and a DebuggerPart with
+// the test rules, trace format and symbol table of TestDebugParts.hpp.
 // Used by the library tests and by `calcu_test`, never product code (LIB-1 AC-24).
 
 namespace calcu::presets::test {
 class TestPresetRules;
+}
+namespace calcu::debugger {
+class DebuggerPart;
 }
 
 namespace calcu::harness::test {
@@ -60,6 +66,7 @@ public:
     const presets::PresetBundle* presetBundle() const override { return bundle_.get(); }
     typing::TypingPart* typingPart() override;
     paper::PaperPart* paperPart() override { return paper_.get(); }
+    debugger::DebuggerPart* debuggerPart() override;
 
     // For the tests: the bundle folder (a file can be removed: EC-1), the
     // model to start with under the default settings (the fallback model of
@@ -70,14 +77,18 @@ public:
     // LIB-5: the typing part's machine counts as paused (a press that waits
     // never starts; the `key` command gives up after an hour).
     bool typingPaused = false;
+    // LIB-10: the next machines' targets offer none of the optional parts.
+    void setBareCpu(bool b) { builder_.bare = b; }
 
 private:
     struct Builder final : machine::MachineBuilder {
         machine::test::TestBuilder inner;
+        bool bare = false;
         machine::BuildResult build(const machine::BuildRequest&, const machine::Catalogue&) override;
     };
     struct Part;
     struct Typing;
+    struct Debug;
     // LIB-18's ProductMachines over the test machines: the bare model, no
     // sound on test-seg, 8000 samples a second on test-dot, a bound of 1 s.
     struct Machines final : startup::ProductMachines {
@@ -98,6 +109,7 @@ private:
     std::unique_ptr<Part> part_;
     std::unique_ptr<Typing> typing_;
     std::unique_ptr<paper::PaperPart> paper_;
+    std::unique_ptr<Debug> debug_;
     std::unique_ptr<presets::test::TestPresetRules> presetRules_;
     roms::test::TempFolder presetFolder_{"calcu-test-presets"};
     std::unique_ptr<presets::DirectoryPresetBundle> bundle_;

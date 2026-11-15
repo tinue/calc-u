@@ -1,7 +1,6 @@
 #include "TestCpu.hpp"
 #include <algorithm>
 #include <cstdio>
-#include <deque>
 
 namespace calcu::machine::test {
 
@@ -67,7 +66,7 @@ public:
     }
     void reset() {
         regs_ = {0, 0, startPc_, startSp_, 0};
-        history_.clear();
+        next_ = kept_ = 0;
     }
 
     const TargetInfo& info() const override { return info_; }
@@ -110,10 +109,10 @@ public:
     }
     std::vector<HistoryEntry> history(std::size_t count) const override {
         std::vector<HistoryEntry> out;
-        for (auto it = history_.rbegin(); it != history_.rend() && out.size() < count; ++it) {
-            HistoryEntry e = *it;
-            e.text = decode(e.address)->text;
-            out.push_back(std::move(e));
+        for (std::size_t k = 0; k < kept_ && out.size() < count; ++k) {
+            const Past& p = past_[(next_ + past_.size() - 1 - k) % past_.size()];
+            out.push_back(HistoryEntry{p.address, std::vector<std::uint64_t>(p.regs.begin(), p.regs.end()),
+                                       decode(p.address)->text});
         }
         return out;
     }
@@ -147,9 +146,11 @@ public:
 
     // One instruction; the event of it.
     InstructionEvent run(std::size_t index) {
-        HistoryEntry h{regs_[kPc], std::vector<std::uint64_t>(regs_.begin(), regs_.end()), std::nullopt};
-        history_.push_back(std::move(h));
-        while (history_.size() > info_.offers.history) history_.pop_front();
+        if (info_.offers.history) {   // a ring, no allocation per instruction
+            past_[next_] = Past{regs_[kPc], regs_};
+            next_ = (next_ + 1) % past_.size();
+            kept_ = std::min(kept_ + 1, past_.size());
+        }
         const std::uint64_t at = regs_[kPc];
         const std::uint8_t op = cpu_.readMem(at), arg = cpu_.readMem(at + 1);
         std::uint64_t next = (at + static_cast<std::uint64_t>(cellsOf(op))) & 0xff;
@@ -216,7 +217,12 @@ private:
     std::uint64_t startPc_, startSp_;
     std::array<std::uint64_t, 5> regs_{};
     std::uint64_t retired_ = 0;
-    std::deque<HistoryEntry> history_;
+    struct Past {
+        std::uint64_t address = 0;
+        std::array<std::uint64_t, 5> regs{};
+    };
+    std::array<Past, 8> past_{};
+    std::size_t next_ = 0, kept_ = 0;
     std::vector<std::uint64_t> breakpoints_;
     std::vector<WatchRange> watches_;
 };

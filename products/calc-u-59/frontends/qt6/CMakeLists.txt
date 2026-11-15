@@ -138,6 +138,20 @@ qt_add_resources(CalcU59Qt "artwork" PREFIX "/img" FILES ${ARTWORK})
 target_include_directories(CalcU59Qt PRIVATE ${CORE_ROOT} ${SHARED_ROOT} app ${CMAKE_CURRENT_BINARY_DIR}/generated)
 # The machine interface (C59-1; LIB-1 §2a): the core implements calcu::machine.
 target_link_libraries(CalcU59Qt PRIVATE Qt6::Widgets calcu_library)
+# LIB-17 AC-19 (design §5, P59-5): the test hook --pacing-probe <s> exists
+# in a build with the tests only, never in the release packaging
+# (build/release, CALCU_TESTS off). Checkpoint: CalcU59QtPacingProbe, one
+# minute offscreen with a temporary HOME (no settings of the user's).
+if(CALCU_TESTS)
+  target_compile_definitions(CalcU59Qt PRIVATE CALCU59_PACING_PROBE)
+  if(CALCU_TESTS_CHECKPOINT)
+    set(PROBE_HOME ${CMAKE_CURRENT_BINARY_DIR}/pacing-probe-home)
+    file(MAKE_DIRECTORY ${PROBE_HOME})
+    add_test(NAME CalcU59QtPacingProbe COMMAND $<TARGET_FILE:CalcU59Qt> --pacing-probe 60)
+    set_tests_properties(CalcU59QtPacingProbe PROPERTIES LABELS checkpoint TIMEOUT 120
+                         ENVIRONMENT "QT_QPA_PLATFORM=offscreen;HOME=${PROBE_HOME}")
+  endif()
+endif()
 if(MSVC)
   target_compile_options(CalcU59Qt PRIVATE /W4 /utf-8)  # UTF-8 literals in Shared/
 else()

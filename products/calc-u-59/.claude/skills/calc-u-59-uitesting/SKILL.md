@@ -20,10 +20,19 @@ This skill covers all work inside `frontends/swift/Calc-U-59UITests/`.
 | `PresetLoadTests.swift` | End-to-end load of `test_diag.ti59` via the file picker; verifies keystroke playback starts |
 | `ScreenshotTests.swift` | App Store screenshot capture (driven by `bin/run-screenshots`); writes PNGs to the dir named in `/tmp/calc-u-59-screenshot-dir` |
 | `HarnessClient.swift` | A line client for harness attach: `connect(port:)`, `command(_:)` (message lines skipped), `closedByPeer()` (C59-5) |
-| `AttachTests.swift` | Harness attach in the simulator: launch with `--attach-port 59160`, drive keys, read `lcd`, `wait` on the app's clock, `quit` (C59-5 S3; in `UIRegressionTests`) |
+| `AttachTests.swift` | Harness attach in the simulator: launch with `--attach-port 59160`, drive keys, read `lcd`, `wait` on the app's clock, `quit` (C59-5 S3); Home and back, a command refused while suspended (S4); a press on `led-display` for full speed while a program runs, R/S through `btn-key-rs` (S5). In `UIRegressionTests`; S4, S5 iOS only |
+| `PacingTests.swift` | LIB-17 AC-19: a TI-59 keeps one minute, `ticks` over attach on port 59161. Checkpoint: only in the plan `PacingCheckpoint`, skipped by `UIRegressionTests` |
 | `Calc_U_59UITestsLaunchTests.swift` | Default launch test (auto-generated, rarely edited) |
 | `UIRegressionTests.xctestplan` | Local regression test plan (no CI job runs XCUITests) |
 | `Screenshots.xctestplan` | Test plan for the screenshot run (`bin/run-screenshots`) |
+| `PacingCheckpoint.xctestplan` | `PacingTests` only (CTest `CalcU59PacingIOS`, Checkpoint) |
+
+The Swift unit tests are a target of their own, `Calc-U-59Tests/` (plan
+`UnitTests`, hosted by the app with `--UITesting`): a second session through
+the real bridge (`TestSession.swift`), the bridge's Debug-only test hooks
+(`pressKey:completion:`, `offeredHostServices:`, `emulatedTime:`,
+`hostCallCount`). `xcodebuild test … -testPlan UnitTests` on a simulator or
+`-destination platform=macOS`; no runner permission is needed on the Mac.
 
 The file-picker, preset and orientation tests are `#if !os(macOS)` guarded; `LayoutTests` also has macOS branches.
 
@@ -154,6 +163,7 @@ The iPad layout in landscape (and the iPhone Duo opened flat) shows the debug pa
 | `btn-asm-run` | Button | "Run" in ASM overlay; disabled until a file is loaded (`vm.canRunASM`) |
 | `btn-freeze` | Button | "FREEZE" in CALCULATOR debug tab (`LiveDebugView`) |
 | `btn-resume` | Button | "RESUME" in CALCULATOR debug tab (`LiveDebugView`); left of FREEZE |
+| `led-display` | Any | The LED display (`KeyboardView`); a press there is full speed while it lasts |
 
 ---
 

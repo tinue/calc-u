@@ -113,6 +113,10 @@ public:
     void dumpProg() { send(cu59::commands::kDumpProg); }
     void dumpMemory() { send(cu59::commands::kDumpMemory); }
 
+    /// The session's emulated time (the request LIB-11's `ticks` uses): ticks
+    /// and seconds; std::nullopt without a machine. For `--pacing-probe`.
+    std::optional<std::pair<uint64_t, double>> emulatedTime();
+
     bool manualTrace() const;
     void setManualTrace(bool on);
 

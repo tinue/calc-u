@@ -7,6 +7,10 @@
 #include <QPalette>
 #include <QStyleFactory>
 #include <QTimer>
+#include <chrono>
+#include <cmath>
+#include <cstdio>
+#include <memory>
 
 namespace {
 
@@ -73,8 +77,12 @@ int main(int argc, char* argv[]) {
     QString grabPath;
     int grabAfter = 3000;
     QString stateFile;
+    double probeSeconds = 0;
     for (int i = 1; i < args.size(); ++i) {
         if (args[i] == QLatin1String("--grab") && i + 1 < args.size()) grabPath = args[++i];
+#ifdef CALCU59_PACING_PROBE
+        else if (args[i] == QLatin1String("--pacing-probe") && i + 1 < args.size()) probeSeconds = args[++i].toDouble();
+#endif
         else if (args[i] == QLatin1String("--after") && i + 1 < args.size()) grabAfter = args[++i].toInt();
         else stateFile = args[i];
     }
@@ -86,5 +94,36 @@ int main(int argc, char* argv[]) {
             QApplication::quit();
         });
     }
+#ifdef CALCU59_PACING_PROBE
+    // Test hook of builds with the tests (LIB-17 design §5, P59-5; AC-19):
+    // --pacing-probe <s> reads the session's emulated time (the request
+    // LIB-11's `ticks` uses) a second after the start and again <s> seconds of
+    // wall time later, prints both and the wall time, and exits 0 when the
+    // emulated time grew by the wall time within AC-1's bound (the TI-59's
+    // slice, 20 ms, LIB-17 AC-15) plus one host call (each reading is made
+    // between two calls), else 1. Until the Qt6 frontend has attach (LIB-14).
+    if (probeSeconds > 0) {
+        using Clock = std::chrono::steady_clock;
+        struct Probe { Clock::time_point wall; std::pair<uint64_t, double> time; };
+        auto first = std::make_shared<Probe>();
+        QTimer::singleShot(1000, &window, [&controller, first, probeSeconds, &window] {
+            first->wall = Clock::now();
+            first->time = controller.emulatedTime().value_or(std::make_pair(uint64_t{0}, 0.0));
+            QTimer::singleShot(static_cast<int>(probeSeconds * 1000), &window, [&controller, first] {
+                const auto wallNow = Clock::now();
+                const auto now = controller.emulatedTime().value_or(std::make_pair(uint64_t{0}, 0.0));
+                const double wall = std::chrono::duration<double>(wallNow - first->wall).count();
+                const double emulated = now.second - first->time.second;
+                const double bound = 0.020 + 1.0 / 60;
+                const bool ok = now.first > first->time.first && std::fabs(emulated - wall) <= bound;
+                std::printf("ticks: %llu\nseconds: %.6f\nwall: %.6f\nemulated: %.6f\ndifference: %+.6f\nbound: %.6f\n%s\n",
+                            static_cast<unsigned long long>(now.first - first->time.first), now.second, wall, emulated,
+                            emulated - wall, bound, ok ? "ok" : "FAIL: emulated time did not keep wall time");
+                std::fflush(stdout);
+                QApplication::exit(ok ? 0 : 1);
+            });
+        });
+    }
+#endif
     return QApplication::exec();
 }

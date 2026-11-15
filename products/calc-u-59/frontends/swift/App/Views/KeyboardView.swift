@@ -105,6 +105,7 @@ struct KeyboardView: View {
                     fontStyle:     fontStyle
                 )
                 .equatable()
+                .accessibilityIdentifier("led-display")   // UI tests: a press here is full speed
                 .frame(width:  w * Self.displayRect.width,
                        height: h * Self.displayRect.height)
                 .position(x: w * Self.displayRect.midX,

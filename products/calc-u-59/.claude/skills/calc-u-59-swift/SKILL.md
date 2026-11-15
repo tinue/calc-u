@@ -34,6 +34,12 @@ This skill covers all work inside `frontends/swift/App/`, `frontends/swift/App/V
    [--port N]` drives it (`library/harness/attach/`; one port per simulator).
    Release and device builds have no attach (`CALCU_ATTACH` off;
    `Calc-U-59-Debug.entitlements` is the Debug configuration's only).
+   `check_no_attach.sh` checks it: `--sources` in Frequent, `--binary` as a
+   build phase of every Release and device build, the full build check in
+   Longer. The XCFramework phase must keep its declared output, or a Release
+   build after a Debug one links the Debug XCFramework (C59-5 qa-report).
+   The Mac app's App Nap activity is `.latencyCritical`: without it a covered
+   window loses emulated time (AC-9).
 2. **Parity.** A user-visible change here needs the matching Qt change, and
    the web change if the feature is in the web's scope, on the same branch —
    or a `Pending (Qt)` / `Pending (Web)` row in `reference/FrontendParity.md`.
@@ -76,3 +82,9 @@ Swift and the bridge (`reference/AppArchitecture.md` § "Build").
 
 A change to `core/` or `app/` also needs the CMake build and tests
 (calc-u-59-shared skill).
+
+Tests of the bridge and the session thread from Swift: the unit-test target
+`Calc-U-59Tests` (plan `UnitTests`, calc-u-59-uitesting skill). After a build
+that failed because the XCFramework was missing, Xcode may keep saying so
+for one test plan: delete `Build/Intermediates.noindex/XCBuildData` in the
+derived data.

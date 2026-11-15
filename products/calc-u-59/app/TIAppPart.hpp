@@ -92,6 +92,7 @@ struct TICardReaderState final : TISnapshot<TICardReaderState> {
     SessionController::CardState state = SessionController::CardState::NoCard;
     std::string fileName;
     bool fitted = false;
+    bool onShow = false;   ///< fitted and not covered by a module's cue card (the tap rule, C59-5 D-5)
     std::optional<int> litCorner;
     calcu::sessions::Value toValue() const override;
 };
@@ -114,6 +115,7 @@ struct TIDebugLiveState final : TISnapshot<TIDebugLiveState> {
     LiveDebugSnapshot live;
     std::vector<StepEntry> listing;
     ProgramSource listingSource{};
+    int listingCurrentIndex = -1;
     calcu::sessions::Value toValue() const override;
 };
 struct TIDebugCpuState final : TISnapshot<TIDebugCpuState> {

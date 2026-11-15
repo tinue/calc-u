@@ -27,5 +27,16 @@ n=$(/usr/bin/grep -cE '/\* roms/[A-Z]{2}\.rom\.yaml in Resources \*/,' "$PBX")
 n=$(/usr/bin/grep -cE '/\* roms/[A-Z0-9-]+\.txt in Resources \*/,' "$PBX")
 [ "$n" = 10 ] || fail "$PBX bundles $n calculator ROM files, not 10"
 
+# C59-5 AC-10, AC-13: only the Debug configuration may take incoming
+# connections (harness attach); Release keeps the plain entitlements.
+/usr/bin/grep -q 'com.apple.security.network.server' Calc-U-59-Debug.entitlements ||
+  fail "Calc-U-59-Debug.entitlements has no com.apple.security.network.server (attach, C59-5 AC-10)"
+/usr/bin/grep -q 'com.apple.security.network.server' Calc-U-59.entitlements &&
+  fail "Calc-U-59.entitlements (Release) has com.apple.security.network.server (C59-5 AC-13)"
+n=$(/usr/bin/grep -c 'ENABLE_INCOMING_NETWORK_CONNECTIONS = YES;' "$PBX")
+[ "$n" = 1 ] || fail "$PBX allows incoming connections in $n configurations, not in Debug only"
+/usr/bin/grep -c 'CODE_SIGN_ENTITLEMENTS = "Calc-U-59-Debug.entitlements";' "$PBX" | /usr/bin/grep -qx 1 ||
+  fail "$PBX: the Debug entitlements file is not the app's Debug configuration's alone"
+
 [ $status = 0 ] && echo "ok: the Xcode project compiles only Swift and the bridge, links CalcU59.xcframework and bundles the 24 ROM files"
 exit $status

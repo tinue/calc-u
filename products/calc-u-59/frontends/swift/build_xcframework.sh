@@ -41,27 +41,40 @@ OUT="$REPO/build/xcframework-59"
 TREES="$OUT/$CONFIG"
 XCF="$OUT/CalcU59.xcframework"
 
-slice() {  # slice <name> <cmake args...>
-  name="$1"; shift
+slice() {  # slice <name> <attach ON|OFF> <cmake args...>
+  name="$1"; attach="$2"; shift 2
   tree="$TREES/$name"
-  if [ ! -f "$tree/build.ninja" ]; then
-    cmake -S "$REPO" -B "$tree" -G Ninja -DCMAKE_BUILD_TYPE="$CONFIG" \
-      -DCALCU_PRODUCT_1600=OFF -DCALCU_TESTS=OFF -DCALCU_FRONTEND_QT=OFF "$@" >/dev/null
-  fi
-  cmake --build "$tree" --target calcu59_shared calcu59_core calcu_library
+  # Configured every time (fast when nothing changed), so a tree made before
+  # an option existed takes it too.
+  cmake -S "$REPO" -B "$tree" -G Ninja -DCMAKE_BUILD_TYPE="$CONFIG" \
+    -DCALCU_PRODUCT_1600=OFF -DCALCU_TESTS=OFF -DCALCU_FRONTEND_QT=OFF -DCALCU_ATTACH="$attach" "$@" >/dev/null
+  targets="calcu59_shared calcu59_core calcu_library"
+  # Harness attach (C59-5 AC-10, AC-13): the attached harness needs the
+  # product's harness entry (its display rule); only in the slices with attach.
+  [ "$attach" = ON ] && targets="$targets calcu59_harness"
+  cmake --build "$tree" --target $targets
   lib="$tree/libCalcU59.a"
   core="$tree/products/calc-u-59/libcalcu59_core.a"
   app="$tree/products/calc-u-59/libcalcu59_shared.a"
   library="$tree/library/libcalcu_library.a"
-  if [ ! -f "$lib" ] || [ "$core" -nt "$lib" ] || [ "$app" -nt "$lib" ] || [ "$library" -nt "$lib" ]; then
-    libtool -static -no_warning_for_no_symbols -o "$lib" "$core" "$app" "$library"
+  harness=""
+  [ "$attach" = ON ] && harness="$tree/products/calc-u-59/libcalcu59_harness.a"
+  stamp="$tree/.calcu-attach"
+  if [ ! -f "$lib" ] || [ "$core" -nt "$lib" ] || [ "$app" -nt "$lib" ] || [ "$library" -nt "$lib" ] ||
+     { [ -n "$harness" ] && [ "$harness" -nt "$lib" ]; } || [ "$(cat "$stamp" 2>/dev/null)" != "$attach" ]; then
+    libtool -static -no_warning_for_no_symbols -o "$lib" "$core" "$app" "$library" $harness
+    echo "$attach" > "$stamp"
   fi
 }
 
-slice macos -DCMAKE_OSX_ARCHITECTURES="arm64;x86_64" -DCMAKE_OSX_DEPLOYMENT_TARGET=15.6
-slice ios -DCMAKE_SYSTEM_NAME=iOS -DCMAKE_OSX_SYSROOT=iphoneos -DCMAKE_OSX_ARCHITECTURES=arm64 \
+# Attach exactly in Debug for macOS and the simulator, never for a device or
+# in Release (C59-5 AC-10, AC-13; design §3.3).
+DEV_ATTACH=OFF
+[ "$CONFIG" = Debug ] && DEV_ATTACH=ON
+slice macos "$DEV_ATTACH" -DCMAKE_OSX_ARCHITECTURES="arm64;x86_64" -DCMAKE_OSX_DEPLOYMENT_TARGET=15.6
+slice ios OFF -DCMAKE_SYSTEM_NAME=iOS -DCMAKE_OSX_SYSROOT=iphoneos -DCMAKE_OSX_ARCHITECTURES=arm64 \
   -DCMAKE_OSX_DEPLOYMENT_TARGET=18.0
-slice ios-simulator -DCMAKE_SYSTEM_NAME=iOS -DCMAKE_OSX_SYSROOT=iphonesimulator \
+slice ios-simulator "$DEV_ATTACH" -DCMAKE_SYSTEM_NAME=iOS -DCMAKE_OSX_SYSROOT=iphonesimulator \
   -DCMAKE_OSX_ARCHITECTURES="arm64;x86_64" -DCMAKE_OSX_DEPLOYMENT_TARGET=18.0
 
 # Headers: copied only when they changed, so an unchanged tree keeps the

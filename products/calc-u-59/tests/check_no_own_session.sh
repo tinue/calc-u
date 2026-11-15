@@ -19,6 +19,13 @@ if [ -n "$threads" ]; then
     echo "$threads"
     fail=1
 fi
+# The bridge reaches the session only through cu59::SessionThread (C59-5
+# design B2): it includes no SessionController.hpp and calls no tick.
+if grep -nE '#include .*SessionController\.hpp|->tick\(|\.tick\(' frontends/swift/Bridge/* >/dev/null 2>&1; then
+    echo "The Swift bridge reaches past the session thread (C59-5 B2):"
+    grep -nE '#include .*SessionController\.hpp|->tick\(|\.tick\(' frontends/swift/Bridge/*
+    fail=1
+fi
 # Qt6 sends neither suspend nor continue (LIB-3 AC-31; ODD59-25).
 if grep -rnE 'kSuspendCommand|kContinueCommand' frontends/qt6/app >/dev/null 2>&1; then
     echo "The Qt6 frontend sends suspend or continue (LIB-3 AC-31)."

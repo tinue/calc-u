@@ -406,6 +406,7 @@ void TIAppPart::publish(uint32_t c) {
         p->state = k.cardState();
         p->fileName = k.cardFileName();
         p->fitted = k.cardFitted();
+        p->onShow = k.cardOnShow();
         p->litCorner = k.litCardCorner();
         m_card->set(std::move(p));
     }
@@ -428,6 +429,7 @@ void TIAppPart::publish(uint32_t c) {
         p->live = k.debug().live();
         p->listing = k.debug().listing();
         p->listingSource = k.debug().listingSource();
+        p->listingCurrentIndex = k.debug().listingCurrentIndex();
         m_live->set(std::move(p));
     }
     if (c & S::CpuChanged) {

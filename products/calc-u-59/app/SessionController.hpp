@@ -207,6 +207,8 @@ public:
     /// the fitted card on show. True if the press hit such a corner.
     bool tapCard(double nx, double ny);
     bool cardFitted() const { return m_fitted.has_value(); }
+    /// A fitted card, not covered by a module's cue card: a tap on a corner feeds it.
+    bool cardOnShow() const { return m_fitted && m_activeProgram <= 0; }
     /// The corner to draw lit: the side of the fitted card in the reader, if that card is on show.
     std::optional<int> litCardCorner() const;
     void ejectCard();
@@ -216,8 +218,10 @@ public:
     void loadStateFile(const std::optional<std::vector<uint8_t>>& raw);
 
     // ── Dropped files (reference/SharedArchitecture.md § "Dropped Files") ───────
-    /// By the file's name and the current model.
+    /// By the file's name and the current model (dropActionFor).
     DropAction dropAction(const std::string& fileName) const;
+    /// The pure rule: by the file's name and the model (C59-5 D-5, a view rule).
+    static DropAction dropActionFor(const std::string& fileName, Model model);
     /// Load the preset or insert the card; false when nothing was done (a card
     /// is already in the reader, the file could not be read, or dropAction
     /// says no). A write to the card goes back to `path`.
@@ -292,8 +296,6 @@ private:
     bool canFit() const;
     void fit(const std::string& path, const std::string& fileName, CardDocument doc, bool fresh);
     bool feed(int side, bool queued);
-    /// A fitted card, not covered by a module's cue card.
-    bool cardOnShow() const { return m_fitted && m_activeProgram <= 0; }
     /// The machine wrote `written` to a side of the fitted card: merge and save it.
     void writeFittedSide(int side, const std::vector<uint8_t>& written, bool queued);
     /// What the cutout shows for the fitted card: its cue card with the corners' numbers.

@@ -1,7 +1,7 @@
 #pragma once
 #include <cstdint>
 #include <optional>
-#include <string_view>
+#include <string>
 #include <variant>
 #include <vector>
 
@@ -20,7 +20,7 @@ struct SegmentPosition {
 struct SegmentFrame   { std::vector<SegmentPosition> positions; };   // order: the product's
 struct DotMatrixFrame { int width = 0, height = 0; std::vector<std::uint8_t> dots; };  // row-major, 0 or 1; cells from the descriptor
 struct IndicatorOutput {
-    std::string_view name;   // views into the machine's descriptor
+    std::string name;        // a copy: a payload holds no pointer into a machine (LIB-3 design §3.1)
     bool on;
     std::optional<float> brightness;
 };

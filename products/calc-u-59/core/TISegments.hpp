@@ -74,6 +74,6 @@ inline calcu::machine::DisplayOutput toDisplayOutput(const DisplaySnapshot& d, s
     calcu::machine::DisplayOutput out;
     out.on = true;
     out.frame = std::move(frame);
-    out.indicators.push_back({indicator, d.calcIndicator > 0, d.calcIndicator / 16.0f});
+    out.indicators.push_back({std::string(indicator), d.calcIndicator > 0, d.calcIndicator / 16.0f});
     return out;
 }

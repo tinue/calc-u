@@ -149,6 +149,16 @@ if(CALCU_TESTS)
   add_test(NAME CalcU1600MachineIncludeCheck COMMAND sh tools/check_machine_includes.sh
            WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
   set_tests_properties(CalcU1600MachineIncludeCheck PROPERTIES LABELS frequent)
+  # No frontend keeps a setting in a platform store (QSettings,
+  # localStorage, UserDefaults; LIB-9 AC-31, design T-19). Needs bash: not
+  # on Windows, like the library's own check.
+  if(NOT WIN32)
+    add_test(NAME CalcU1600NoPlatformSettings
+             COMMAND bash ${CMAKE_SOURCE_DIR}/library/settings/check_platform_stores.sh frontends
+                     tools/platform_stores_allowed.txt
+             WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
+    set_tests_properties(CalcU1600NoPlatformSettings PROPERTIES LABELS frequent)
+  endif()
 
   # Longer: run locally before merging into main and at the end of a part.
   if(CALCU_TESTS_LONGER)

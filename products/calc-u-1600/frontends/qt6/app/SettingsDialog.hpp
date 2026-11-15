@@ -6,7 +6,7 @@ class MachineController;
 // Settings dialog: titled sections (General, Default presets, Storage,
 // Tracing, Serial port), one grid row per setting -- label, the *effective*
 // current value, and Change/Reset buttons (Reset is enabled only while a
-// user override is stored). QSettings-backed (see AppSettings.hpp); writes
+// user override is stored). Kept in Calc-U-1600.ini (see AppSettings.hpp); writes
 // happen immediately on each change, so there's no separate OK/Cancel
 // semantics -- just one "Close" button.
 class SettingsDialog : public QDialog {

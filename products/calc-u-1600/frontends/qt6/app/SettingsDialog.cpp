@@ -228,11 +228,11 @@ SettingsDialog::SettingsDialog(MachineController* controller, QWidget* parent)
     // Data strings match AppSettings::startupModelPreference()'s stored
     // values directly -- "last" reuses whatever model was last switched to;
     // the plain PC-1500 always boots on ROM A04 regardless (not settable
-    // here -- see AppSettings.hpp's own comment on this).
+    // here -- see app/Settings.hpp's own comment on this).
     startupModelCombo->addItem(tr("Last used"), QStringLiteral("last"));
-    startupModelCombo->addItem(tr("PC-1500 (ROM A04)"), QStringLiteral("PC1500"));
-    startupModelCombo->addItem(tr("PC-1500A"), QStringLiteral("PC1500A"));
-    startupModelCombo->addItem(tr("PC-1600"), QStringLiteral("PC1600"));
+    startupModelCombo->addItem(tr("PC-1500 (ROM A04)"), QStringLiteral("PC-1500"));
+    startupModelCombo->addItem(tr("PC-1500A"), QStringLiteral("PC-1500A"));
+    startupModelCombo->addItem(tr("PC-1600"), QStringLiteral("PC-1600"));
     const int startupIdx = startupModelCombo->findData(AppSettings::startupModelPreference());
     startupModelCombo->setCurrentIndex(startupIdx >= 0 ? startupIdx : 0);
     general->addWidget(startupModelCombo, 0, kValueColumn, Qt::AlignLeft);

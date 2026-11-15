@@ -9,7 +9,7 @@
 #include <fstream>
 #include <string>
 
-#include "MemorySettingsStore.hpp"
+#include "TestSettings.hpp"
 #include "TestHarness.hpp"
 #include "app/MachineSession.hpp"
 
@@ -36,11 +36,11 @@ bool romsPresent() {
 }
 
 struct Fixture {
-    MemorySettingsStore store;
-    shared::Settings settings{store};
+    TestSettings testSettings;
+    shared::Settings& settings = testSettings.settings;
     fs::path home = fs::temp_directory_path() / "calcu-serial-links-test";
     fs::path links = home / "links";
-    shared::AppPaths paths{settings, shared::HostDirs{home.generic_string(), "roms", {}}};
+    shared::AppPaths paths{settings, testHostDirs(home.generic_string()), shared::BundleDirs{"roms", {}}};
     QuietListener listener;
     std::unique_ptr<MachineSession> session;
     Fixture() {

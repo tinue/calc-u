@@ -7,7 +7,7 @@
 #include <fstream>
 #include <set>
 
-#include "MemorySettingsStore.hpp"
+#include "TestSettings.hpp"
 #include "app/AppPaths.hpp"
 #include "app/PresetCatalog.hpp"
 #include "TestHarness.hpp"
@@ -19,9 +19,9 @@ using shared::Model;
 using shared::PresetEntry;
 
 struct Fixture {
-    MemorySettingsStore store;
-    shared::Settings settings{store};
-    shared::AppPaths paths{settings, shared::HostDirs{fs::temp_directory_path().generic_string(), "roms", "examples"}};
+    TestSettings testSettings;
+    shared::Settings& settings = testSettings.settings;
+    shared::AppPaths paths{settings, testHostDirs(fs::temp_directory_path().generic_string()), shared::BundleDirs{"roms", "examples"}};
     shared::PresetCatalog catalog{paths};
 };
 

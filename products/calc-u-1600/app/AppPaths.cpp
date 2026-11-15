@@ -49,7 +49,7 @@ std::string joinPath(const std::string& dir, const std::string& name) {
 }
 
 std::string AppPaths::bundledExamplesDir() const {
-    return m_dirs.bundledExamples.empty() ? joinPath(m_dirs.bundledResources, "examples") : m_dirs.bundledExamples;
+    return m_bundle.bundledExamples.empty() ? joinPath(m_bundle.bundledResources, "examples") : m_bundle.bundledExamples;
 }
 
 std::string AppPaths::resolvePresetRef(const std::string& ref) const {
@@ -59,24 +59,23 @@ std::string AppPaths::resolvePresetRef(const std::string& ref) const {
 }
 
 std::string AppPaths::defaultInstanceDir() const {
-    const std::string dir =
-        m_isolatedInstanceDir.empty() ? joinPath(m_dirs.home, "Calc-U-1600") : m_isolatedInstanceDir;
+    const calcu::settings::HostDirs& host = m_paths.hostDirs();
+    const std::string dir = host.frontend == calcu::settings::FrontendKind::Qt6
+                                ? joinPath(host.home, settingsDecl().productName)
+                                : host.saveFolder;
     makeDirs(dir);
     return dir;
 }
 
 std::string AppPaths::instanceDir() const {
-    const std::string override = m_settings.instanceDirOverride();
-    if (!override.empty()) {
-        makeDirs(override);
-        return override;
-    }
-    return defaultInstanceDir();
+    const std::string dir = m_paths.saveFolder();
+    makeDirs(dir);
+    return dir;
 }
 
 std::string AppPaths::displayPath(const std::string& path) const {
     std::string shown = replacePrefix(path, defaultInstanceDir(), "~/Calc-U-1600");
-    if (shown.empty()) shown = replacePrefix(path, m_dirs.home, "~");
+    if (shown.empty()) shown = replacePrefix(path, homeDir(), "~");
     return shown.empty() ? path : shown;
 }
 
@@ -89,8 +88,7 @@ std::string AppPaths::floppyInstancePathFor(const std::string& diskName) const {
 }
 
 std::string AppPaths::tapeDir() const {
-    std::string dir = m_settings.tapeDirOverride();
-    if (dir.empty()) dir = joinPath(instanceDir(), "Tapes");
+    const std::string dir = m_paths.tapeFolder();
     makeDirs(dir);
     return dir;
 }
@@ -100,18 +98,19 @@ std::string AppPaths::tapePathFor(const std::string& tapeName) const {
 }
 
 std::string AppPaths::traceDir() const {
-    const std::string dir = m_settings.traceDirOverride();
-    return dir.empty() ? instanceDir() : dir;
+    // The Web: no trace folder (a download, LIB-10); the save folder until then (A-3).
+    if (const auto dir = m_paths.traceFolder()) return *dir;
+    return instanceDir();
 }
 
 std::string AppPaths::serialLinkDir() const {
-    const std::string dir = m_settings.serialLinkDirOverride();
-    return dir.empty() ? instanceDir() : dir;
+    if (const auto dir = m_paths.serialLinkFolder()) return *dir;
+    return instanceDir();
 }
 
 MediaSaveRefusal AppPaths::planNamedSave(MediaKind kind, const std::string& name, const std::string& explicitPath,
                                          bool asTemplate, std::string* path) const {
-    return planMediaSave(kind, name, explicitPath, asTemplate, {m_dirs.bundledResources, instanceDir()}, path);
+    return planMediaSave(kind, name, explicitPath, asTemplate, {m_bundle.bundledResources, instanceDir()}, path);
 }
 
 bool isUnderDir(const std::string& path, const std::string& dir) {

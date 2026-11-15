@@ -1,21 +1,26 @@
 #pragma once
 #include <string>
+#include <utility>
 
 #include "Connector/MediaSave.hpp"
 #include "app/Settings.hpp"
+#include "settings/HostDirs.hpp"
+#include "settings/Paths.hpp"
 
 // ── AppPaths: where the app's files live ─────────────────────────────────
 //
 // The save folder (~/Calc-U-1600 unless overridden in Settings), the
 // tapes folder, the file a by-name save of a card, disk or tape goes to,
-// and how a path is shown to the user. The frontend supplies the two
-// host-specific directories (HostDirs): the home folder and the bundled
-// resources (*.card.yaml / *.floppy.yaml templates and ROM images, read
-// only). Folders the app writes to are created when asked for.
+// and how a path is shown to the user. The places come from the library
+// (calcu::settings::Paths, LIB-9 AC-12): the frontend passes the host's
+// folders (calcu::settings::HostDirs: home, settings base, and on the Web
+// the save folder) and the bundled folders (BundleDirs: *.card.yaml /
+// *.floppy.yaml templates and ROM images, read only). Folders the app
+// writes to are created when asked for.
 namespace shared {
 
-struct HostDirs {
-    std::string home;
+// The bundled folders the frontend passes (LIB-12, LIB-6 own them later).
+struct BundleDirs {
     std::string bundledResources;
     // The bundled example presets (examples/bundled.yaml and its folders);
     // empty = "<bundledResources>/examples".
@@ -28,31 +33,31 @@ constexpr const char* kExamplePresetPrefix = "examples:";
 
 class AppPaths {
 public:
-    AppPaths(const Settings& settings, HostDirs dirs) : m_settings(settings), m_dirs(std::move(dirs)) {}
+    AppPaths(const Settings& settings, calcu::settings::HostDirs host, BundleDirs bundle)
+        : m_paths(settings.file(), std::move(host)), m_bundle(std::move(bundle)) {}
 
-    const std::string& bundledResourcesDir() const { return m_dirs.bundledResources; }
-    const std::string& homeDir() const { return m_dirs.home; }
+    const std::string& bundledResourcesDir() const { return m_bundle.bundledResources; }
+    const std::string& homeDir() const { return m_paths.hostDirs().home; }
     std::string bundledExamplesDir() const;
+    // The library's places (settings file, save folder, ...).
+    const calcu::settings::Paths& places() const { return m_paths; }
 
     // A preset reference -- a path, or an "examples:" one -- as a path.
     std::string resolvePresetRef(const std::string& ref) const;
 
-    // Screenshot runs make a throwaway folder the default storage root, so
-    // the user's saved cards/disks stay out of the pictures and untouched.
-    // Not a setting.
-    void setIsolatedInstanceDir(const std::string& dir) { m_isolatedInstanceDir = dir; }
-
-    // ~/Calc-U-1600 (home dir, non-dotted) -- or the isolated folder --
-    // created if missing.
+    // The save folder without the Settings override: ~/Calc-U-1600 (home
+    // dir, non-dotted) on Qt6, the passed one on the Web; created if
+    // missing.
     std::string defaultInstanceDir() const;
 
-    // Settings::instanceDirOverride() if set, else defaultInstanceDir().
-    // Where battery-card instances and saved disks live right now.
+    // The save folder: Settings::instanceDirOverride() if set (Qt6), else
+    // defaultInstanceDir(). Where battery-card instances and saved disks
+    // live right now. (Adapter A-1 over Paths::saveFolder(), until M-47.)
     std::string instanceDir() const;
 
     // `path` the way every label shows one: under defaultInstanceDir() as
     // "~/Calc-U-1600/...", else under the home folder as "~/...", else as
-    // is. A screenshot run's throwaway root thus reads like a fresh install's.
+    // is. A screenshot run's throwaway home thus reads like a fresh install's.
     std::string displayPath(const std::string& path) const;
 
     // Where a fresh by-name save goes: "<instanceDir>/<name>.card.yaml" /
@@ -68,7 +73,9 @@ public:
 
     // Settings::traceDirOverride() / serialLinkDirOverride() if set, else
     // instanceDir(): where TRACE.bin and preset screenshots go, and where
-    // the serial ports' PTY symlinks live.
+    // the serial ports' PTY symlinks live. The Web has no such folders in
+    // the library (a download, LIB-10/LIB-6); until then they are the save
+    // folder (adapters A-3, A-4).
     std::string traceDir() const;
     std::string serialLinkDir() const;
 
@@ -79,9 +86,8 @@ public:
                                    bool asTemplate, std::string* path) const;
 
 private:
-    const Settings& m_settings;
-    HostDirs m_dirs;
-    std::string m_isolatedInstanceDir;
+    calcu::settings::Paths m_paths;
+    BundleDirs m_bundle;
 };
 
 // A planNamedSave() refusal as a sentence for the GUI (empty for None);

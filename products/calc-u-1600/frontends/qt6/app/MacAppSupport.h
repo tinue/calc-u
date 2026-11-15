@@ -1,5 +1,7 @@
 #pragma once
 
+#include <string>
+
 #ifdef __APPLE__
 // Turns off AppKit's window restoration for this app (registers
 // ApplePersistenceIgnoreState = YES). Call before QApplication exists.
@@ -18,4 +20,9 @@ void macDisableWindowRestoration();
 // letter open the picker instead of simply being held. Call before
 // QApplication exists.
 void macDisablePressAndHold();
+
+// The app's Application Support folder (inside the sandbox container for a
+// sandboxed app): the base of the settings file on macOS (LIB-9 AC-2).
+// Empty if macOS gives none.
+std::string macApplicationSupportFolder();
 #endif

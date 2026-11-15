@@ -6,8 +6,8 @@ and the same app logic:
 
 ```mermaid
 flowchart TB
-    Qt["frontends/qt6/app/ — desktop GUI<br/>(widgets, dialogs, menus, QSettings, QAudioSink, DAP server)"]
-    Web["frontends/web/ — web client<br/>(React, canvas, localStorage, IndexedDB, AudioWorklet)"]
+    Qt["frontends/qt6/app/ — desktop GUI<br/>(widgets, dialogs, menus, QAudioSink, DAP server)"]
+    Web["frontends/web/ — web client<br/>(React, canvas, IndexedDB, AudioWorklet)"]
     Shared["app/ — app logic, no GUI<br/>AppSession, MachineSession, bays, Pacer, settings, paths, layouts"]
     Core["core/ — the hardware<br/>CPUs, machines, cards, loaders, presets, jobs"]
     Qt --> Shared
@@ -41,10 +41,15 @@ WebAssembly check.
   program, a power cycle) is a resumable job (below), never a blocking
   loop with a yield hook. There is no threaded mode (unlike Calc-U-59's
   Shared layer); see Decisions.md.
-- **Shared never decides where files live.** The frontend hands it the home
-  and bundled-resources folders (`shared::HostDirs`) and a settings store
-  (`shared::SettingsStore`); `shared::AppPaths` and `shared::Settings` do the
-  rest.
+- **Shared never decides where files live.** The frontend hands it the
+  host's folders (`calcu::settings::HostDirs`: home, the settings base of its
+  platform, on the Web the save folder) and the bundled-resources folders
+  (`shared::BundleDirs`), and opens the settings file, `Calc-U-1600.ini`
+  (`calcu::settings::SettingsFile` at `settingsFilePath()`, LIB-9); the
+  library's `calcu::settings::Paths`, `shared::AppPaths` and
+  `shared::Settings` (the declaration of every key, `settingsDecl()`) do the
+  rest. No frontend keeps a setting in QSettings or `localStorage` (CTest
+  `CalcU1600NoPlatformSettings`).
 - **Messages for the user** come back as English sentences (the app has no
   translations).
 
@@ -57,7 +62,7 @@ WebAssembly check.
 | `ModuleBay`, `FloppyBay`, `TapeBay` | The control bar's slots, disk and tape: catalogues, attach, Name & Save, preset `saveas:`, debounced autosave |
 | `PresetCatalog` | The bundled presets of `examples/bundled.yaml` (`defaults`, `examples`) and any preset's short name and description; `examples:` refs resolve through `AppPaths` |
 | `Pacer`, `AudioPump` | Frame ticks → emulated time (absolute deadline, turbo); buzzer PCM → an `AudioSink` |
-| `Settings`, `AppPaths`, `Utf8Path` | Every settings key with its default; the save/tapes/bundle folders and by-name save paths |
+| `Settings`, `AppPaths`, `Utf8Path` | Every settings key with its default (the declaration of `Calc-U-1600.ini`); the save/tapes/bundle folders and by-name save paths |
 | `HostKeyMap`, `KeyLayout/`, `LcdLayout`, `PlotterPaper`, `Rgb` | Host keys → calculator keys; key hit-regions and the faceplate fit; LCD geometry, colours and status indicators (`lcd::indicators()`); plotter-paper geometry |
 | `MachineModel` | The `Model` and ROM-version enums |
 | `ControlState` | What the pickers, menus and panels offer right now: every rule about which control a model has and which peripheral excludes which |
@@ -117,7 +122,8 @@ file in `app/`, `frontends/`, `tools/` or `dev/` includes or names one.
    errors, preset log and "armed", a failed attach, `busyChanged` (resync
    the whole UI when an operation ends). The bays' part in a rebuild
    (`MachineSession::Bays`) is AppSession's own business.
-2. Build `Settings` (over its store), `AppPaths` (with its `HostDirs`) and
+2. Open the `SettingsFile`, build `Settings` over it, `AppPaths` (with its
+   `HostDirs` and `BundleDirs`) and
    the `AppSession`; `attachAudio()` the host's `AudioSink`; call `start()`
    to boot the startup model.
 3. Call `tick()` from a ~60 Hz timer. It runs a slice of the running

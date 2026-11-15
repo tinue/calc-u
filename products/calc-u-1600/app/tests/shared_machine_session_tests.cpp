@@ -6,7 +6,7 @@
 #include <fstream>
 #include <string>
 
-#include "MemorySettingsStore.hpp"
+#include "TestSettings.hpp"
 #include "app/MachineSession.hpp"
 #include "TestHarness.hpp"
 
@@ -40,10 +40,10 @@ bool romsPresent() {
 }
 
 struct Fixture {
-    MemorySettingsStore store;
-    shared::Settings settings{store};
+    TestSettings testSettings;
+    shared::Settings& settings = testSettings.settings;
     std::filesystem::path home = std::filesystem::temp_directory_path() / "calcu-shared-session-test";
-    shared::AppPaths paths{settings, shared::HostDirs{home.generic_string(), "roms", {}}};
+    shared::AppPaths paths{settings, testHostDirs(home.generic_string()), shared::BundleDirs{"roms", {}}};
     RecordingListener listener;
     CountingBays bays;
     MachineSession session{settings, paths, listener, &bays};
@@ -68,7 +68,7 @@ void test_switch_and_paste(Model model) {
     CHECK(f.session.currentModel() == model);
     CHECK(f.listener.switched == 1 && f.listener.lastModel == model);
     CHECK(f.listener.replaced == 1 && f.bays.modulesAttached == 1);
-    CHECK(f.settings.lastUsedModel() == static_cast<int>(model));
+    CHECK(f.settings.lastUsedModel() == model);
     CHECK(f.session.isMachinePoweredOn());
     CHECK(f.session.slotCount() == (model == Model::PC1600 ? 2 : 1));
     CHECK(f.session.slotCard(1) == nullptr && f.session.slotCard(2) == nullptr && f.session.slotCard(3) == nullptr);

@@ -9,7 +9,8 @@
 // a 10 ms slice per tick() (AppSession::start()). Files live in Emscripten's
 // file system: /bundle (ROMs, bundled cards and disks), /presets (the
 // bundled examples), /uploads (files the user opened) and /persist, the
-// home folder, kept in IndexedDB by the worker (IDBFS, autoPersist).
+// home folder with the save folder and the settings file, kept in
+// IndexedDB by the worker (IDBFS, autoPersist).
 //
 // Built by Web/build.sh (CMake target calcu_web) into dist/wasm/.
 
@@ -42,6 +43,9 @@
 #include "app/PresetCatalog.hpp"
 #include "app/Text.hpp"
 #include "app/Utf8Path.hpp"
+#include "settings/HostDirs.hpp"
+#include "settings/PlatformBase.hpp"
+#include "settings/SettingsFile.hpp"
 #include "Utf8.hpp"
 
 using namespace emscripten;
@@ -50,6 +54,7 @@ namespace fs = std::filesystem;
 namespace {
 
 constexpr const char* kHomeDir = "/persist";
+constexpr const char* kSettingsBase = "/persist/settings";  // <base>/Calc-U-1600/Calc-U-1600.ini
 constexpr const char* kBundleDir = "/bundle";
 constexpr const char* kExamplesDir = "/presets";  // examples/bundled.yaml and its folders
 constexpr const char* kUploadDir = "/uploads";
@@ -190,45 +195,18 @@ private:
     double m_opened = 0;
 };
 
-// ── Settings in the page's localStorage ──────────────────────────────────
-// Seeded from what the page stored; every change is posted back.
-class WebSettingsStore : public shared::SettingsStore {
-public:
-    explicit WebSettingsStore(val stored) {
-        val keys = val::global("Object").call<val>("keys", stored);
-        const int n = keys["length"].as<int>();
-        for (int i = 0; i < n; ++i) {
-            const std::string key = keys[i].as<std::string>();
-            val v = stored[key];
-            if (v.isString()) m_values[key] = v.as<std::string>();
-        }
-    }
-    std::optional<std::string> get(const std::string& key) const override {
-        const auto it = m_values.find(key);
-        if (it == m_values.end()) return std::nullopt;
-        return it->second;
-    }
-    void set(const std::string& key, const std::string& value) override {
-        if (get(key) == value) return;
-        m_values[key] = value;
-        val m = obj();
-        m.set("type", "store");
-        m.set("key", key);
-        m.set("value", value);
-        post(m);
-    }
-    void remove(const std::string& key) override {
-        if (!m_values.erase(key)) return;
-        val m = obj();
-        m.set("type", "store");
-        m.set("key", key);
-        m.set("value", val::null());
-        post(m);
-    }
-
-private:
-    std::map<std::string, std::string> m_values;
-};
+// ── Settings ─────────────────────────────────────────────────────────────
+// Calc-U-1600.ini in /persist (LIB-9 AC-2, AC-15; LIB-15 D-6): kept in
+// IndexedDB with the save folder, read once at the start, each change
+// written through.
+calcu::settings::HostDirs webHostDirs() {
+    calcu::settings::HostDirs dirs;
+    dirs.frontend = calcu::settings::FrontendKind::Web;
+    dirs.home = kHomeDir;
+    dirs.settingsBase = calcu::settings::settingsBaseFor(calcu::settings::HostOs::Web, {}, kHomeDir, kSettingsBase);
+    dirs.saveFolder = std::string(kHomeDir) + "/Calc-U-1600";
+    return dirs;
+}
 
 // ── The controller ───────────────────────────────────────────────────────
 
@@ -241,8 +219,12 @@ job::Task<shared::OpResult> startupJob(shared::AppSession* app, int model, std::
 
 class WebController : public shared::AppSession::Platform {
 public:
-    explicit WebController(val stored)
-        : m_store(stored), m_settings(m_store), m_paths(m_settings, shared::HostDirs{kHomeDir, kBundleDir, kExamplesDir}) {
+    WebController()
+        : m_file(calcu::settings::SettingsFile::open(
+              shared::settingsDecl(), calcu::settings::settingsFilePath(shared::settingsDecl(), webHostDirs()))),
+          m_settings(m_file),
+          m_paths(m_settings, webHostDirs(), shared::BundleDirs{kBundleDir, kExamplesDir}) {
+        if (!m_file.problem().empty()) log("Settings: " + m_file.problem());
         m_app = std::make_unique<shared::AppSession>(m_settings, m_paths, *this);
         m_app->attachAudio(m_audio, [](const std::string& text) { log(text); });
         m_library = std::make_unique<shared::MediaLibrary>(*m_app);
@@ -875,7 +857,7 @@ private:
         post(m);
     }
 
-    WebSettingsStore m_store;
+    calcu::settings::SettingsFile m_file;
     shared::Settings m_settings;
     shared::AppPaths m_paths;
     WebAudioSink m_audio;
@@ -908,7 +890,7 @@ private:
 
 EMSCRIPTEN_BINDINGS(calcu1600) {
     class_<WebController>("WebController")
-        .constructor<val>()
+        .constructor<>()
         .function("start", &WebController::start)
         .function("tick", &WebController::tick)
         .function("faceKeyDown", &WebController::faceKeyDown)

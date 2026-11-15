@@ -49,7 +49,8 @@ if(CALCU_TESTS)
   find_program(CALCU_NODE node)
   if(CALCU_NODE)
     add_test(NAME LibraryWebNodeTests
-             COMMAND ${CALCU_NODE} --test ${CMAKE_CURRENT_SOURCE_DIR}/tests/build.test.js)
+             COMMAND ${CALCU_NODE} --test ${CMAKE_CURRENT_SOURCE_DIR}/tests/build.test.js
+                     ${CMAKE_CURRENT_SOURCE_DIR}/tests/shell_model.test.js)   # LIB-14: the shell's models
     set_tests_properties(LibraryWebNodeTests PROPERTIES LABELS frequent)
   endif()
   if(CALCU_TESTS_LONGER AND NOT WIN32)

@@ -14,7 +14,7 @@
 // args) defaults to shell.send. Elements carry data-calcu names for the
 // tests: run-control, run-control-pause, run-control-step, run-control-resume.
 
-const CALCU_STEP_REPEAT_MS = 250;   // four times a second (Calc-U-59 HoldRepeatButton.swift)
+const CALCU_STEP_REPEAT_MS = 250;   // four times a second (as today's Swift hold-repeat button)
 
 // The rule: which of the three buttons of `level` can be used in `state`
 // (the run-state payload, or null before the first one).

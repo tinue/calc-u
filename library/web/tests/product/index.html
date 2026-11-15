@@ -7,7 +7,8 @@
      global, calc.css, calc.js as a classic script, the component mounted.
      Its own styles are the host's (AC-17). Query: model, preset, width,
      height, keyboard=0, worker (a workerUrl), twice=1 (two components on
-     one page, AC-8), fill=1 (a parent of 400 x 300 and no size props). -->
+     one page, AC-8), fill=1 (a parent of 400 x 300 and no size props),
+     shell=1 (the component put together from LIB-14's shell). -->
 <style>
   body { margin: 8px; font-family: Georgia, serif; color: rgb(1, 2, 3); }
   button { color: rgb(4, 5, 6); }
@@ -32,6 +33,7 @@
   if (q.has("height")) base.height = Number(q.get("height"));
   if (q.get("keyboard") === "0") base.keyboard = false;
   if (q.has("worker")) base.workerUrl = new URL(q.get("worker"), location.href).href;
+  if (q.get("shell") === "1") base.shell = true;
   const fill = q.get("fill") === "1";
   if (!fill && !("width" in base)) { base.width = 480; base.height = 320; }
   const root = ReactDOM.createRoot(document.getElementById("root"));

@@ -23,6 +23,9 @@ module.exports = defineConfig({
     // LIB-10: the run-control buttons and the trace download, at the root, in both engines.
     { name: 'run-control-chromium', testMatch: /run-control\.spec\.js/, use: { ...devices['Desktop Chrome'], baseURL: `http://localhost:${PORT}/`, acceptDownloads: true } },
     { name: 'run-control-webkit', testMatch: /run-control\.spec\.js/, use: { ...devices['Desktop Safari'], baseURL: `http://localhost:${PORT}/`, acceptDownloads: true } },
+    // LIB-14: the shell of the React set, at the root, in both engines.
+    { name: 'shell-chromium', testMatch: /shell\.spec\.js/, use: { ...devices['Desktop Chrome'], baseURL: `http://localhost:${PORT}/` } },
+    { name: 'shell-webkit', testMatch: /shell\.spec\.js/, use: { ...devices['Desktop Safari'], baseURL: `http://localhost:${PORT}/` } },
     { name: 'prerender', testMatch: /prerender\.spec\.js/ },
     { name: 'offline-chromium', testMatch: /offline\.spec\.js/, use: { ...devices['Desktop Chrome'] } },
     { name: 'offline-webkit', testMatch: /offline\.spec\.js/, use: { ...devices['Desktop Safari'] } },

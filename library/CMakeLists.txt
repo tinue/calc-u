@@ -5,7 +5,7 @@
 # The C++ areas, once: their sources, their tests (<area>/tests/*.cpp) and the
 # tests' include folders all come from this list. (web/ is the Web shell's,
 # harness/cli/ and harness/attach/ are added below.)
-set(CALCU_LIBRARY_AREAS machine settings pacing sessions peripherals roms formats control startup typing presets paper debugger media harness)
+set(CALCU_LIBRARY_AREAS machine settings pacing sessions peripherals roms formats control startup typing presets paper debugger media harness shell)
 set(CALCU_LIBRARY_SOURCES "")
 foreach(area ${CALCU_LIBRARY_AREAS})
   file(GLOB area_sources CONFIGURE_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/${area}/*.cpp)
@@ -110,7 +110,8 @@ if(CALCU_TESTS AND NOT EMSCRIPTEN)
   target_link_libraries(calcu_library_tests PRIVATE calcu_test_machines calcu_test_runner calcu_warnings)
   # LIB-6: the fixtures of the preset tests.
   target_compile_definitions(calcu_library_tests PRIVATE CALCU_PRESET_FIXTURES="${CMAKE_CURRENT_SOURCE_DIR}/presets/tests/fixtures"
-                                                     CALCU_PAPER_FIXTURES="${CMAKE_CURRENT_SOURCE_DIR}/paper/tests/fixtures")
+                                                     CALCU_PAPER_FIXTURES="${CMAKE_CURRENT_SOURCE_DIR}/paper/tests/fixtures"
+                                                     CALCU_SHELL_FIXTURES="${CMAKE_CURRENT_SOURCE_DIR}/shell/tests")
   add_test(NAME calcu_library_tests COMMAND calcu_library_tests)
   set_tests_properties(calcu_library_tests PROPERTIES LABELS frequent)
 
@@ -135,6 +136,8 @@ if(CALCU_TESTS AND NOT EMSCRIPTEN)
     add_test(NAME LibraryPlatformStoreCheck
              COMMAND bash ${CMAKE_CURRENT_SOURCE_DIR}/settings/tests/check_platform_stores_test.sh)
     set_tests_properties(LibraryPlatformStoreCheck PROPERTIES LABELS frequent)
+    # LIB-14 L11: no product code in the shell and the component sets (AC-22).
+    calcu_add_test(LibraryShellNoProduct frequent COMMAND bash ${CMAKE_CURRENT_SOURCE_DIR}/qt6/tests/check_no_product_code.sh)
   endif()
 endif()
 

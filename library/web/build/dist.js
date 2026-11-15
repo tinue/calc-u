@@ -35,6 +35,11 @@ const LIBRARY_SOURCES = ["base.js", "sentences.js", "audio.js", "hostServices.js
   .map((n) => path.join(WEB, "src", n));
 const COMPONENT_SOURCES = ["paper.js", "PaperPanel.jsx", "RunControlButtons.jsx", "MediaPicker.jsx", "NameAndSaveDialog.jsx", "SavedMediaDialog.jsx"].map((n) => path.join(WEB, "components", n));
 const COMPONENT_CSS = ["paper.css", "media.css"].map((n) => path.join(WEB, "components", n));
+// LIB-14 (M-43): the shell, its models first (design §2.3).
+COMPONENT_SOURCES.push(...["shellModel.js", "useShell.jsx", "ShellModal.jsx", "ShellMenuBar.jsx", "ShellControlBar.jsx",
+  "ShellSettings.jsx", "ShellAbout.jsx", "ShellNotice.jsx", "ShellLoading.jsx", "ShellPanelArea.jsx",
+  "useShellFaceplate.jsx", "ShellRomsMissing.jsx"].map((n) => path.join(WEB, "components", n)));
+COMPONENT_CSS.push(path.join(WEB, "components", "shell.css"));
 const WORKER_SOURCES =["sentences.js", "storage.js", "worker.js"].map((n) => path.join(WEB, "src", n));
 
 const read = (p) => fs.readFileSync(p, "utf8");

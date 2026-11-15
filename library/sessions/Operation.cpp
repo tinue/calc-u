@@ -16,7 +16,9 @@ void OperationContext::setReportsWaiting(bool r) { session_->machineSession().se
 Task<bool> OperationContext::hostWait(pacing::WallTime d) {
     if (session_->virtualTime()) co_return false;
     const pacing::WallTime end = session_->wallTime() + d;
-    while (session_->wallTime() < end) co_await yieldToHost();
+    do {   // at least one host call: a loop of short waits never holds the host
+        co_await yieldToHost();
+    } while (session_->wallTime() < end);
     co_return true;
 }
 

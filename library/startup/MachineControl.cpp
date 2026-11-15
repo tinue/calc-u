@@ -143,6 +143,8 @@ sessions::Task<void> MachineControl::change(sessions::OperationContext& c, PlugC
     const machine::Plugged now = m->plugged();
     const machine::PlugEntry* at = entryAt(now, ch.place);
     const std::optional<machine::PeripheralId> there = at ? std::optional(at->peripheral) : std::nullopt;
+    // LIB-7 AC-13 (M-41): the parts write what they have to save first.
+    if (ch.kind != PlugChange::Kind::Detach || there) c.session().machineSession().aboutToChange();
     switch (ch.kind) {
     case PlugChange::Kind::Attach: r = m->attach(withRoms(ch.request), cat); break;
     case PlugChange::Kind::Replace:
@@ -186,7 +188,11 @@ MachinePlan MachineControl::variantPlan(Machine& m, machine::VariantId v) {
     MachinePlan plan;
     plan.model = m.model();
     plan.variant = std::move(v);
-    for (const auto& e : m.plugged().byPlace) plan.peripherals.push_back(product_.carried(e, m));
+    for (const auto& e : m.plugged().byPlace) {
+        machine::PeripheralRequest r = product_.carried(e, m);
+        for (const Carry& c : carries_) c(r, e, m);   // LIB-7 S-7a
+        plan.peripherals.push_back(std::move(r));
+    }
     return plan;
 }
 

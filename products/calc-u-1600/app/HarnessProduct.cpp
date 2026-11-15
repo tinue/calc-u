@@ -9,7 +9,8 @@
 #include "Machine/SharpRoms.hpp"
 #include "app/Settings.hpp"
 #include "sessions/SessionPart.hpp"
-#include "settings/Startup.hpp"
+#include "app/PacingProfiles.hpp"
+#include "startup/ProductMachines.hpp"
 
 // The product folder (design §8, O-2), set by CMake.
 #ifndef CALCU1600_DIR
@@ -54,9 +55,42 @@ struct FontPart final : sessions::SessionPart {
     }
 };
 
+Model modelOf(const machine::ModelId& id) {
+    if (id.value == "PC-1500") return Model::PC1500;
+    if (id.value == "PC-1600") return Model::PC1600;
+    return Model::PC1500A;
+}
+
+// Adapter HarnessMachines (LIB-18 design §5; the successor of LIB-11's A-1):
+// the bare model in its default variant, the Sharp pacing profile, the sound
+// rate, the bounds of LIB-18 EC-7 (7 s for the PC-1500 and PC-1500A, 27 s for
+// the PC-1600); startUp() is adapter SharpBuildColdBoot, the first cold boot
+// that SharpMachineBuilder does not make. Removed in M-46.
+class HarnessMachines final : public startup::ProductMachines {
+public:
+    explicit HarnessMachines(const machine::Catalogue& c) : catalogue_(c) {}
+    const machine::Catalogue& catalogue() const override { return catalogue_; }
+    machine::MachineBuilder& builder() override { return builder_; }
+    startup::MachinePlan builtInDefault(const machine::ModelId& model) override {
+        return startup::MachinePlan{model, std::nullopt, {}, nullptr};
+    }
+    pacing::PacingProfile pacingProfile(const machine::ModelId& model) const override {
+        return shared::pacingProfile(modelOf(model));
+    }
+    int soundRate(const machine::ModelId&) const override { return sharp::kSoundRate; }
+    machine::Seconds readinessBound(const machine::ModelId& model) const override {
+        return machine::Seconds(modelOf(model) == Model::PC1600 ? 27.0 : 7.0);
+    }
+    void startUp(machine::Machine& m) override { m.coldBoot(); }   // SharpBuildColdBoot
+
+private:
+    const machine::Catalogue& catalogue_;
+    sharp::SharpMachineBuilder builder_;
+};
+
 class SharpHarnessProduct final : public harness::HarnessProduct {
 public:
-    SharpHarnessProduct() : catalogue_(sharp::sharpCatalogue()) {
+    SharpHarnessProduct() : catalogue_(sharp::sharpCatalogue()), machines_(catalogue_) {
         sharp::addModuleDefinitions(catalogue_, std::string(CALCU1600_DIR) + "/frontends/qt6/resources/cards");
     }
     std::string_view name() const override { return "Calc-U-1600"; }
@@ -64,7 +98,7 @@ public:
     std::string_view commandWord() const override { return "pc1600"; }
     std::string_view version() const override { return CALCU1600_VERSION; }   // APP_VERSION of the Qt build (CMake)
     const machine::Catalogue& catalogue() const override { return catalogue_; }
-    machine::MachineBuilder& builder() override { return builder_; }
+    machine::MachineBuilder& builder() override { return machines_.builder(); }
 
     const settings::ProductDecl& settingsDecl() const override { return shared::settingsDecl(); }
 
@@ -72,15 +106,7 @@ public:
         return sharp::lookUpRoms(roms::DirectoryBundle(std::string(CALCU1600_DIR) + "/roms"));
     }
 
-    machine::BuildRequest startupRequest(const settings::SettingsFile& s, const roms::RomSet& set) override {   // A-1
-        machine::BuildRequest r;
-        r.model = machine::ModelId{settings::startupModel(s)};
-        if (const machine::MachineDescriptor* d = catalogue_.model(r.model)) r.roms = set.imagesFor(*d, std::nullopt);
-        r.soundRate = sharp::kSoundRate;
-        return r;
-    }
-
-    void startUp(machine::Machine& m) override { m.coldBoot(); }   // A-1: the builder runs nothing
+    startup::ProductMachines& machines() override { return machines_; }
 
     harness::DisplayText readDisplay(const machine::DisplayOutput& o, const machine::MachineDescriptor& d) override {
         const auto* f = std::get_if<machine::DotMatrixFrame>(&o.frame);
@@ -92,7 +118,7 @@ public:
 
 private:
     machine::Catalogue catalogue_;
-    sharp::SharpMachineBuilder builder_;
+    HarnessMachines machines_;
     FontPart font_;
 };
 

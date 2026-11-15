@@ -32,3 +32,26 @@ TEST(harness_drives_a_ti59) {
     CHECK_EQ(reply("audio x.wav"), std::string("refused: This machine has no sound.\n"));   // EC-6 on a TI
     server->finish();
 }
+
+// LIB-18 design P59 (LIB-11 AC-2 through a product): the harness switches
+// the model with LIB-18's `model`.
+TEST(harness_switches_to_a_ti58) {
+    SKIP_UNLESS(std::filesystem::exists("roms/TMC0571B.txt"), "the ROMs are not fetched (roms/fetch_roms.sh)");
+    auto product = cu59::makeHarnessProduct();
+    std::string error;
+    auto server = Server::start(*product, {}, &error);
+    CHECK(server != nullptr);
+    if (!server) {
+        std::fprintf(stderr, "%s\n", error.c_str());
+        return;
+    }
+    auto reply = [&](const std::string& l) { return server->line(l).text; };
+    CHECK_EQ(reply("model TI-58"), std::string("done\n"));
+    CHECK(reply("lcd").rfind("done 2\n          0 \nindicators:", 0) == 0);   // ready for keys
+    CHECK(reply("capabilities").find("place printer PC-100C\n") != std::string::npos);   // the harness's default (D-17)
+    const auto* m = server->host().session().context().machine();
+    CHECK(m && m->model().value == "TI-58");
+    CHECK_EQ(reply("model ti-59"), std::string("done\n"));
+    CHECK_EQ(reply("model TI-99"), std::string("refused: There is no model \"TI-99\".\n"));
+    server->finish();
+}

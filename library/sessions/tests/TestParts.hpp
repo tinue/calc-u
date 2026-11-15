@@ -94,8 +94,15 @@ public:
             ++opsStarted;
             return StartOperation{operation};
         });
+        // Declared endsRunningOperation: `stop` starts an operation that ends
+        // at once (Reset, Cold boot, a model switch), `stop-nothing` has
+        // nothing to do (a switch to the running model; LIB-18 D-6).
         s.command(
-            CommandName{p_ + "stop"}, [](const Value&, SessionContext&) -> CommandOutcome { return Done{}; }, true);
+            CommandName{p_ + "stop"},
+            [](const Value&, SessionContext&) -> CommandOutcome { return StartOperation{runningFor(0)}; }, true);
+        s.command(
+            CommandName{p_ + "stop-nothing"}, [](const Value&, SessionContext&) -> CommandOutcome { return Done{}; },
+            true);
         s.command(CommandName{p_ + "log"}, [](const Value& a, SessionContext& c) -> CommandOutcome {
             c.log(textArg(a, "text"));
             return Done{};

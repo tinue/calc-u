@@ -9,6 +9,7 @@
 #include "sessions/SessionPart.hpp"
 #include "settings/Declaration.hpp"
 #include "settings/SettingsFile.hpp"
+#include "startup/ProductMachines.hpp"
 #include <memory>
 #include <string_view>
 #include <vector>
@@ -36,11 +37,10 @@ public:
     // The product's lookup over its bundled ROM files, as a frontend finds
     // them (LIB-12; O-2). On failure the run does not start (EC-1).
     virtual roms::LookupResult lookUpRoms() const = 0;
-    // A-1: the request of the product's start, until LIB-18's start exists.
-    virtual machine::BuildRequest startupRequest(const settings::SettingsFile&, const roms::RomSet&) = 0;
-    // A-1: what the product does with a machine it has just built (a
-    // Sharp machine's first cold boot); nothing by default.
-    virtual void startUp(machine::Machine&) {}
+    // LIB-18 (design §3.6): what the start, the model switch and the other
+    // machine-control commands build with; the harness's start is LIB-18's
+    // StartupPart (LIB-11 AC-2).
+    virtual startup::ProductMachines& machines() = 0;
     // AC-10: the display as text, by the product's rule or font.
     virtual DisplayText readDisplay(const machine::DisplayOutput&, const machine::MachineDescriptor&) = 0;
     // AC-13; C59-9, C1600-5.

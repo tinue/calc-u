@@ -6,6 +6,7 @@
 #include "sessions/AppSession.hpp"
 #include "settings/HostDirs.hpp"
 #include "settings/SettingsFile.hpp"
+#include "startup/StartupPart.hpp"
 #include <chrono>
 #include <functional>
 #include <memory>
@@ -56,6 +57,7 @@ public:
     const std::string& screenshotFolder() const { return outputFolder_; }
     const std::string& runFolder() const { return runFolder_; }
     const settings::SettingsFile& settings() const { return *settings_; }
+    settings::SettingsFile& settings() { return *settings_; }   // LIB-18 AC-9 writes last-model
     // The host folders a feature hands to settings::Paths: all inside the
     // run folder, so nothing of the user's is reached (LIB-9 AC-18; D-11).
     const settings::HostDirs& hostDirs() const { return dirs_; }
@@ -78,7 +80,8 @@ class MachineStatePart;
 
 class Server {
 public:
-    // EC-1: the ROM full set; the build of the start. Null with `error` set.
+    // EC-1: the ROM full set; then LIB-18's start (`start`, the startup
+    // model under the run's settings, to key readiness). Null with `error` set.
     static std::unique_ptr<Server> start(HarnessProduct&, const RunOptions&, std::string* error);
     ~Server();
     Server(const Server&) = delete;
@@ -114,6 +117,7 @@ private:
     std::shared_ptr<int> clockReads_ = std::make_shared<int>(0);
     std::unique_ptr<peripherals::PeripheralsPart> peripherals_;
     std::unique_ptr<MachineStatePart> state_;
+    std::unique_ptr<startup::StartupPart> startup_;
     std::unique_ptr<sessions::AppSession> session_;
     std::unique_ptr<HarnessHost> host_;
     CommandRegistry registry_;

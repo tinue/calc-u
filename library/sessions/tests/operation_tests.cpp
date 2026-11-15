@@ -207,13 +207,29 @@ TEST(ac16_ends_running_operation_command) {
     CHECK(r.fe.reply(stop)->done);
     CHECK(!r.session->busy());
     CHECK(!r.fe.busy()->operationRuns);
-    CHECK_EQ(r.session->machineSession().freshStarts(), fresh + 1);
+    CHECK_EQ(r.session->machineSession().freshStarts(), fresh + 2);   // the stop, then the end of its own
     CHECK(r.fe.noticeSentences().empty());   // a stop is not a failure
     // The order: the stopped operation's reply before the stopping command's.
     std::vector<CallId> order;
     for (const auto& m : r.fe.log)
         if (const auto* rep = std::get_if<ReplyMessage>(&m)) order.push_back(rep->call);
     CHECK(order.size() >= 2 && order[order.size() - 2] == op && order.back() == stop);
+}
+
+// LIB-18 D-6 (design §2): a command declared endsRunningOperation whose
+// handler starts nothing (Done) or is refused leaves the operation running.
+TEST(ac16_ending_command_that_starts_nothing_stops_nothing) {
+    Rig r;
+    r.build();
+    r.part.operation = runningFor(500'000);
+    const CallId op = r.send("tp.op");
+    r.call();
+    const CallId nothing = r.send("tp.stop-nothing");
+    CHECK(r.fe.reply(nothing) && r.fe.reply(nothing)->done);
+    CHECK(r.fe.reply(op) == nullptr);   // still running, no reply yet
+    CHECK(r.session->busy());
+    r.callWhileBusy();
+    CHECK(r.fe.reply(op) && r.fe.reply(op)->done);   // it ran to its end
 }
 
 TEST(ac17_nested_operation_not_refused) {

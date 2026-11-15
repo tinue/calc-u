@@ -1,0 +1,48 @@
+#pragma once
+#include "machine/Build.hpp"
+#include "machine/Catalogue.hpp"
+#include "machine/EmulatedTime.hpp"
+#include "machine/Machine.hpp"
+#include "pacing/PacingProfile.hpp"
+#include "startup/MachinePlan.hpp"
+
+// What a product hands LIB-18 (design §3.2; spec AC-3, AC-4, AC-7, EC-7):
+// its catalogue and builder, the built-in default machine per model, the
+// pacing profile, sound rate and readiness bound per model. Implemented by
+// the product's app layer; in M-35 by the harness entries (adapter
+// HarnessMachines). The fallback model, `last` and the startup preset's key
+// are LIB-9's (settings::startupModel, startupPreset).
+
+namespace calcu::startup {
+
+class ProductMachines {
+public:
+    virtual const machine::Catalogue& catalogue() const = 0;
+    virtual machine::MachineBuilder& builder() = 0;
+    // ADR 0021: the machine of `model` when no startup preset is set or it
+    // cannot be loaded (AC-4, EC-1; AC-18, AC-19, AC-26 in the products).
+    virtual MachinePlan builtInDefault(const machine::ModelId&) = 0;
+    virtual pacing::PacingProfile pacingProfile(const machine::ModelId&) const = 0;   // LIB-17 AC-14
+    virtual int soundRate(const machine::ModelId&) const = 0;                          // BuildRequest::soundRate
+    // EC-7: the emulated time after which a wait for key readiness ends.
+    virtual machine::Seconds readinessBound(const machine::ModelId&) const = 0;
+    // AC-7: the request that plugs `entry` into the machine of the other
+    // variant. Default: its place, peripheral and variant (D-13). A product
+    // adds the content and switch positions it keeps; LIB-7 adds the media
+    // (M-41).
+    virtual machine::PeripheralRequest carried(const machine::PlugEntry& entry, machine::Machine&) {
+        machine::PeripheralRequest r;
+        r.place = entry.place;
+        r.peripheral = entry.peripheral;
+        r.variant = entry.variant;
+        return r;
+    }
+    // Adapter SharpBuildColdBoot (§5): what the product does with a machine
+    // it has just built. Nothing by default (D-3).
+    virtual void startUp(machine::Machine&) {}
+
+protected:
+    ~ProductMachines() = default;
+};
+
+} // namespace calcu::startup

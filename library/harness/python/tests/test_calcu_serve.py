@@ -20,7 +20,8 @@ def main() -> int:
             failures.append(what)
 
     with Calcu(program, "test") as c:
-        check(c.send("ticks")["result"] == {"ticks": 0, "seconds": 0}, "ticks at the start")
+        # The run starts at key readiness: one run piece of 1667 ticks (LIB-18 D-4).
+        check(c.send("ticks")["result"] == {"ticks": 1667, "seconds": 0.01667}, "ticks at the start")
         waited = c.send("wait 1ms")["result"]
         check(waited["ticks"] >= 100, "wait 1ms at 100 kHz: %r" % waited)
         lcd = c.send("lcd")["result"]
@@ -33,7 +34,7 @@ def main() -> int:
         check(c.send("state notices", check=False)["done"], "state notices")
     with Calcu(program, "test", json=False) as c:
         reply = c.send("ticks")
-        check(reply["lines"] == ["ticks: 0", "seconds: 0.000000000"], "plain: %r" % reply)
+        check(reply["lines"] == ["ticks: 1667", "seconds: 0.016670000"], "plain: %r" % reply)
         check(c.send("key-down 1")["lines"] == [], "plain done")
 
     for f in failures:

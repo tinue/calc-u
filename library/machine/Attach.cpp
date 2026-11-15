@@ -152,11 +152,15 @@ ChangeResult Machine::detach(const PlacePath& place, const PeripheralId& id, con
     return ChangeResult{std::nullopt, info ? followsNow(*info->pinOut) : AfterChange::Nothing};
 }
 
-ChangeResult Machine::replace(const PeripheralId& old, PeripheralRequest req, const Catalogue& cat) {
+std::optional<Refusal> Machine::canReplace(const PeripheralId& old, const PeripheralRequest& req,
+                                           const Catalogue& cat) const {
     if (!entryAt(plugged(), req.place, &old))
-        return ChangeResult{refusal(placeText(req.place) + " does not hold the " + nameOf(cat, old) + "."),
-                            AfterChange::Nothing};
-    if (auto r = check(req, cat, old)) return ChangeResult{std::move(r), AfterChange::Nothing};
+        return refusal(placeText(req.place) + " does not hold the " + nameOf(cat, old) + ".");
+    return check(req, cat, old);
+}
+
+ChangeResult Machine::replace(const PeripheralId& old, PeripheralRequest req, const Catalogue& cat) {
+    if (auto r = canReplace(old, req, cat)) return ChangeResult{std::move(r), AfterChange::Nothing};
     const auto place = placeAt(*this, plugged(), req.place, cat);
     const PinOutDescriptor pinOut = *place->pinOut;
     const PeripheralDescriptor& d = *cat.peripheral(req.peripheral);

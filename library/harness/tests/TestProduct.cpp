@@ -88,29 +88,18 @@ TestProduct::TestProduct() : part_(std::make_unique<Part>()) {
 TestProduct::~TestProduct() = default;
 
 const settings::ProductDecl& TestProduct::settingsDecl() const {
-    static const settings::ProductDecl decl = [] {
-        settings::ProductDecl d;
-        d.productName = "Calc-U-Test";
-        d.models = {"test-seg", "test-dot"};
-        d.fallbackModel = "test-seg";
-        d.keys = {settings::family::startupModel()};
-        return d;
-    }();
-    return decl;
+    // One declaration per product, as SettingsFile keeps a pointer to it; its
+    // fallback model is the one the tests start with (LIB-11 AC-2).
+    decl_.productName = "Calc-U-Test";
+    decl_.models = {"test-seg", "test-dot"};
+    decl_.fallbackModel = startModel ? startModel->value : "test-seg";
+    decl_.keys = {settings::family::startupModel(), settings::family::startupLastModel()};
+    return decl_;
 }
 
 roms::LookupResult TestProduct::lookUpRoms() const {
     static const roms::FullSet set = roms::fullSet(machine::test::testCatalogue());
     return roms::lookUp(set, roms::DirectoryBundle(roms_.path()), &reader_);
-}
-
-BuildRequest TestProduct::startupRequest(const settings::SettingsFile& s, const roms::RomSet& set) {
-    BuildRequest r;
-    r.model = startModel ? *startModel : ModelId{settings::startupModel(s)};
-    const MachineDescriptor* d = catalogue().model(r.model);
-    if (d) r.roms = set.imagesFor(*d, std::nullopt);
-    r.soundRate = 8000;
-    return r;
 }
 
 BuildResult TestProduct::Builder::build(const BuildRequest& req, const Catalogue& cat) {

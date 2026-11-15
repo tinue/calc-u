@@ -407,3 +407,37 @@ TEST(ec4_missing_rom_named) {
     CHECK(res.refused->missingRoms == std::vector<std::string>{"test-module-8k.rom"});
     CHECK(m->plugged().byPlace.empty());
 }
+
+// LIB-18 design L5 (AC-12; LIB-4): canReplace gives the refusal replace()
+// would give, and changes nothing.
+TEST(can_replace_answers_as_replace_does) {
+    const Catalogue& cat = testCatalogue();
+    auto make = [&] {
+        return buildTestMachine(kDot, std::nullopt, {peripheralAt(cat, "card-1", kModule), peripheralAt(cat, "b", kUart)});
+    };
+    auto m = make();
+    CHECK(m != nullptr);
+    if (!m) return;
+    const std::vector<std::pair<PeripheralId, PeripheralRequest>> cases = {
+        {kModule, request(cat, at({"card-1"}), kModule, VariantId{"8k"})},   // allowed
+        {kHub, request(cat, at({"card-1"}), kModule)},                        // not there
+        {kModule, request(cat, at({"card-1"}), kHub)},                        // does not fit
+        {kModule, request(cat, at({"card-1"}), kModule, VariantId{"2k"})},   // no such variant
+        {kUart, request(cat, at({"b"}), kPrinter)},                           // allowed: the UART goes out
+    };
+    for (const auto& [old, req] : cases) {
+        const int plugs = m->plugCalls, unplugs = m->unplugCalls;
+        const Plugged before = m->plugged();
+        const auto asked = m->canReplace(old, req, cat);
+        CHECK(samePlugged(*m, before));
+        CHECK_EQ(m->plugCalls, plugs);
+        CHECK_EQ(m->unplugCalls, unplugs);
+        auto other = make();
+        const ChangeResult done = other->replace(old, req, cat);
+        CHECK_EQ(asked.has_value(), done.refused.has_value());
+        if (asked && done.refused) CHECK_EQ(asked->reason, done.refused->reason);
+    }
+    CHECK(!m->canReplace(kModule, cases[0].second, cat));
+    const auto notThere = m->canReplace(kHub, cases[1].second, cat);
+    CHECK(notThere && notThere->reason == "card-1 does not hold the Test hub.");
+}

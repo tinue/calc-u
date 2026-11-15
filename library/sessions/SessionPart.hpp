@@ -58,6 +58,11 @@ public:
     // or one to a call that did not defer, is ignored.
     virtual CallId currentCall() const { return 0; }
     virtual void reply(CallId, ReplyMessage) {}
+    // The session's wall clock now, and whether the session is hosted in
+    // virtual time (the harness: no wall clock); OperationContext::hostWait
+    // (LIB-6 D-17).
+    virtual pacing::WallTime wallTime() const { return pacing::WallTime{0}; }
+    virtual bool virtualTime() const { return true; }
 
 protected:
     ~SessionContext() = default;

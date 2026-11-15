@@ -66,7 +66,8 @@ struct Running final : SliceSource {
         step(r.ticks);
         const bool same = ms.generation() == gen && ms.machine();
         res.ticksRun = same ? ms.machine()->tickCount() - t0 : 0;
-        res.stoppedEarly = over() || !same;
+        // A wait for the host's next call (hostWait) ends the host call too.
+        res.stoppedEarly = over() || !same || job.waitsOnHost();
         res.waitsForInput = same && ms.waitsForInput();
         return res;
     }
@@ -109,6 +110,8 @@ struct AppSession::Impl final : SessionContext, SessionSetup {
     }
     const PayloadPtr& displayTopic() const { return displayState->current(); }
     CallId currentCall() const override { return current; }
+    pacing::WallTime wallTime() const override { return setup.clock ? setup.clock() : pacing::WallTime{0}; }
+    bool virtualTime() const override { return setup.hosting == Hosting::VirtualTime; }
     void reply(CallId call, ReplyMessage m) override {
         const auto it = deferred.find(call);
         if (it == deferred.end()) return;
@@ -368,6 +371,8 @@ void AppSession::Impl::stepOperation(pacing::PaceResult& res) {
         ms.setSliceSource(running.get());
         res = ms.pace(running->ctx->speed());
         ms.setSliceSource(nullptr);
+    } else if (!running->over() && ms.machine() && running->job.waitsOnHost()) {
+        running->step(1);   // LIB-6 D-17: a host wait goes on while the machine is paused
     }
     if (running->over()) endOperation();
 }

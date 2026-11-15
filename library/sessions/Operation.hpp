@@ -1,6 +1,7 @@
 #pragma once
 #include "machine/EmulatedTime.hpp"
 #include "pacing/PacingProfile.hpp"
+#include "pacing/WallClock.hpp"
 #include <coroutine>
 #include <cstdint>
 #include <exception>
@@ -40,6 +41,7 @@ struct Pending {
     std::function<std::uint64_t()> run;   // the machine call
     std::uint64_t* result = nullptr;      // where its return value goes
     std::coroutine_handle<> resume;       // the coroutine to continue afterwards
+    bool host = false;                    // a wait for the host's next call (yieldToHost), no machine call
     explicit operator bool() const { return static_cast<bool>(resume); }
 };
 
@@ -143,10 +145,27 @@ struct RunAwaiter {
     std::uint64_t await_resume() noexcept { return result; }
 };
 
+// co_await yieldToHost(): suspends the whole job until the host's next call;
+// Job::step resumes it once and then returns.
+struct HostAwaiter {
+    bool await_ready() noexcept { return false; }
+    void await_suspend(std::coroutine_handle<> h) noexcept {
+        Pending* p = tl_pending;
+        p->run = [] { return std::uint64_t{0}; };
+        p->result = nullptr;
+        p->resume = h;
+        p->host = true;
+    }
+    void await_resume() noexcept {}
+};
+
 } // namespace detail
 
 // The awaitable form of one machine call that returns the ticks it ran.
 inline detail::RunAwaiter request(std::function<std::uint64_t()> call) { return detail::RunAwaiter{std::move(call)}; }
+// The awaitable that gives the job back to the host until its next call
+// (OperationContext::hostWait, LIB-6 D-17).
+inline detail::HostAwaiter yieldToHost() { return {}; }
 
 // Drives a Task. step() makes run requests until `budget` is spent (a
 // request is never split, so it may overshoot) or the task is done.
@@ -157,6 +176,8 @@ public:
 
     bool valid() const { return task_.handle() != nullptr; }
     bool done() const { return task_.done(); }
+    // The job waits for the host's next call (yieldToHost), not for the machine.
+    bool waitsOnHost() const { return pending_ && pending_.host; }
 
     // Returns done(). Exceptions from the task surface in result(); an
     // exception of a machine call itself leaves step().
@@ -175,6 +196,12 @@ public:
         }
         std::uint64_t spent = 0;
         while (pending_ && spent < budget) {
+            if (pending_.host) {   // the host's call has come: one resume, then back to the host
+                const std::coroutine_handle<> next = pending_.resume;
+                pending_ = Pending{};
+                next.resume();
+                break;
+            }
             const std::uint64_t ran = pending_.run();
             *pending_.result = ran;
             spent += ran == 0 ? 1 : ran;   // a stalled machine still makes progress here
@@ -223,6 +250,11 @@ public:
     void setSpeed(pacing::Speed s) { speed_ = s; }   // AC-14: a stretch at regular speed, paced as usual
     pacing::Speed speed() const { return speed_; }
     void setReportsWaiting(bool);                    // LIB-17 AC-16: false reports "not waiting"
+    // LIB-6 D-17: co_await: ends when the session's wall clock has passed
+    // `d`, looked at once per host call, also while the machine is paused (a
+    // preset's `wait:` on a paused machine, LIB-6 AC-19). True when it
+    // waited; false at once in Hosting::VirtualTime, which has no wall clock.
+    Task<bool> hostWait(pacing::WallTime d);
     SessionContext& session() { return *session_; }
 
     // kRunPiece: 1/60 s of emulated time at `rate`, at least one tick.

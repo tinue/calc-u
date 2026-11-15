@@ -8,7 +8,15 @@
 //   keep-file        {name, bytes, mediaType}: a download (AC-9)
 //   open-url         {url}: a new tab
 //   clipboard-text   {text}: copied; without text: the clipboard's text, {text}
-//   clipboard-image  {bytes}: PNG bytes copied
+//   clipboard-image  {bytes}: PNG bytes copied (as before LIB-8);
+//                    {bytes, text, name, dotsPerInch} (LIB-8 D-9, AC-21): one
+//                    clipboard entry with the picture and, with `text`, the
+//                    text. When the page armed the clipboard in the user's
+//                    gesture (armClipboard), the entry written then is
+//                    completed; else it is written now. If the browser
+//                    refuses the picture: with text, the text alone is
+//                    copied (given, {textOnly: true}); without, the PNG is
+//                    offered as a download named `name` (not given)
 //   audio-sink       the sound messages (audio.js); never asked
 
 const CALCU_WEB_SERVICES = ["audio-sink", "clipboard-text", "clipboard-image", "file-picker", "keep-file", "open-url"];
@@ -48,6 +56,79 @@ function calcuDownload(name, bytes, type) {
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
+// LIB-8 D-9: the clipboard written inside the user's gesture (a click on
+// Copy or Cut), with promises the clipboard-image answer resolves, because
+// the picture is made in the worker and its ask reaches the page after the
+// gesture (WebKit allows a write only within one). {text}: whether a text
+// entry comes too. A later arm, or calcuDisarmClipboard (the command was
+// refused), rejects the one before.
+let calcuArmedClipboard = null;
+
+function calcuDisarmClipboard() {
+  const armed = calcuArmedClipboard;
+  calcuArmedClipboard = null;
+  if (armed) armed.reject(new Error("The copy was not made."));
+}
+
+function armClipboard({ text = false } = {}) {
+  calcuDisarmClipboard();
+  const clip = typeof navigator !== "undefined" ? navigator.clipboard : null;
+  if (!clip || !clip.write || typeof ClipboardItem === "undefined") return null;
+  const deferred = () => {
+    const d = {};
+    d.promise = new Promise((resolve, reject) => { d.resolve = resolve; d.reject = reject; });
+    d.promise.catch(() => {});
+    return d;
+  };
+  const png = deferred();
+  const txt = text ? deferred() : null;
+  const items = { "image/png": png.promise };
+  if (txt) items["text/plain"] = txt.promise;
+  let written;
+  try {
+    written = Promise.resolve(clip.write([new ClipboardItem(items)]));
+  } catch (e) {
+    written = Promise.reject(e);
+  }
+  written.catch(() => {});
+  const armed = {
+    written,
+    text: !!txt,
+    resolve: (pngBlob, textBlob) => { png.resolve(pngBlob); if (txt) txt.resolve(textBlob); },
+    reject: (e) => { png.reject(e); if (txt) txt.reject(e); },
+  };
+  calcuArmedClipboard = armed;
+  return armed;
+}
+
+// LIB-8 clipboard-image with text, name, dotsPerInch (D-9, AC-21).
+async function calcuCopyPicture(a, given, refused) {
+  const pngBlob = new Blob([a.bytes || new Uint8Array(0)], { type: "image/png" });
+  const hasText = typeof a.text === "string";
+  const armed = calcuArmedClipboard;
+  calcuArmedClipboard = null;
+  try {
+    if (armed) {
+      armed.resolve(pngBlob, new Blob([hasText ? a.text : ""], { type: "text/plain" }));
+      await armed.written;
+    } else {
+      const items = { "image/png": pngBlob };
+      if (hasText) items["text/plain"] = new Blob([a.text], { type: "text/plain" });
+      await navigator.clipboard.write([new ClipboardItem(items)]);
+    }
+    return given();
+  } catch (e) {
+    if (hasText) {
+      try {
+        await navigator.clipboard.writeText(a.text);
+        return given({ textOnly: true });
+      } catch (_) { /* the download below */ }
+    }
+    calcuDownload(a.name || "paper.png", a.bytes || new Uint8Array(0), "image/png");
+    return refused("The browser did not take the picture; it is offered as a download.");
+  }
+}
+
 function calcuWebHostServices() {
   const given = (value) => ({ done: true, reason: "", value: value === undefined ? null : value });
   const refused = (reason) => ({ done: false, reason, value: null });
@@ -72,6 +153,7 @@ function calcuWebHostServices() {
         }
         return given({ text: await navigator.clipboard.readText() });
       case "clipboard-image":
+        if (typeof a.text === "string" || typeof a.name === "string") return calcuCopyPicture(a, given, refused);
         await navigator.clipboard.write([new ClipboardItem({ "image/png": new Blob([a.bytes], { type: "image/png" }) })]);
         return given();
       default:

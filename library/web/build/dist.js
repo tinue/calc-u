@@ -15,6 +15,14 @@
 //   writeManifest(dist, {name, version, commit})   MANIFEST.json (AC-14)
 //   checkScopedCss(cssText) → [selectors outside .calcu-client] (AC-17)
 //   LIBRARY_SOURCES              the page side, in load order
+//   COMPONENT_SOURCES            the React component set (library/web/components/,
+//                                LIB-14 D-16, D-17; LIB-8 D-1), in load order after
+//                                LIBRARY_SOURCES; not in compileCalcJs's default: a
+//                                product takes it in its column step (librarySources:
+//                                [...LIBRARY_SOURCES, ...COMPONENT_SOURCES]). M-40, M-41
+//                                and M-43 add their components to it
+//   COMPONENT_CSS                the component set's stylesheets (scoped under
+//                                .calcu-client), appended to a product's calc.css with it
 
 const fs = require("fs");
 const path = require("path");
@@ -25,7 +33,9 @@ const { execFileSync } = require("child_process");
 const WEB = path.join(__dirname, "..");   // library/web
 const LIBRARY_SOURCES = ["base.js", "sentences.js", "audio.js", "hostServices.js", "shell.js", "embed.js"]
   .map((n) => path.join(WEB, "src", n));
-const WORKER_SOURCES = ["sentences.js", "storage.js", "worker.js"].map((n) => path.join(WEB, "src", n));
+const COMPONENT_SOURCES = ["paper.js", "PaperPanel.jsx"].map((n) => path.join(WEB, "components", n));
+const COMPONENT_CSS = ["paper.css"].map((n) => path.join(WEB, "components", n));
+const WORKER_SOURCES =["sentences.js", "storage.js", "worker.js"].map((n) => path.join(WEB, "src", n));
 
 const read = (p) => fs.readFileSync(p, "utf8");
 const sha256 = (buf) => crypto.createHash("sha256").update(buf).digest("hex");
@@ -201,6 +211,6 @@ function checkScopedCss(cssText) {
 }
 
 module.exports = {
-  LIBRARY_SOURCES, WORKER_SOURCES, walk, compileCalcJs, compileApp, copyAppFiles, writeLibraryWorker,
+  LIBRARY_SOURCES, COMPONENT_SOURCES, COMPONENT_CSS, WORKER_SOURCES, walk, compileCalcJs, compileApp, copyAppFiles, writeLibraryWorker,
   writeFilesList, stampServiceWorker, writeManifest, checkScopedCss,
 };

@@ -17,6 +17,9 @@ module.exports = defineConfig({
     { name: 'root', testMatch: PAGES, use: { ...devices['Desktop Chrome'], baseURL: `http://localhost:${PORT}/` } },
     { name: 'subpath', testMatch: PAGES, use: { ...devices['Desktop Chrome'], baseURL: `http://localhost:${PORT + 1}/anything/calc/` } },
     { name: 'webkit', testMatch: PAGES, use: { ...devices['Desktop Safari'], baseURL: `http://localhost:${PORT}/` } },
+    // LIB-8: the paper panel, at the root, in both engines.
+    { name: 'paper-chromium', testMatch: /paper\.spec\.js/, use: { ...devices['Desktop Chrome'], baseURL: `http://localhost:${PORT}/` } },
+    { name: 'paper-webkit', testMatch: /paper\.spec\.js/, use: { ...devices['Desktop Safari'], baseURL: `http://localhost:${PORT}/` } },
     { name: 'prerender', testMatch: /prerender\.spec\.js/ },
     { name: 'offline-chromium', testMatch: /offline\.spec\.js/, use: { ...devices['Desktop Chrome'] } },
     { name: 'offline-webkit', testMatch: /offline\.spec\.js/, use: { ...devices['Desktop Safari'] } },

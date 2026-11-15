@@ -9,6 +9,10 @@
 //     send(command, args) → Promise<{done, reason, value}>,   a LIB-3 command
 //     request(name, args) → Promise<{done, reason, value}>,   a LIB-3 request
 //     frames,                                  the display topic, outside React
+//     listenStream(listener) → unsubscribe,    every stream message as it comes,
+//                                              {topic, reset, value: [item, ...]}
+//                                              (a component that keeps more than
+//                                              CALCU_STREAM_KEEP items: LIB-8's paper)
 //     unlockAudio(), destroy(),
 //   }
 //   state: {start: "starting" | "running" | "failed", failure,
@@ -24,6 +28,7 @@ const CALCU_NO_SHELL_STATE = { start: "starting", failure: "", topics: {}, strea
 function createShell({ product, workerUrl, start, services }) {
   let state = CALCU_NO_SHELL_STATE;
   const listeners = new Set();
+  const streamListeners = new Set();
   const frames = { display: null, onFrame: null };
   let framePending = false;
   const waiters = new Map();
@@ -78,6 +83,7 @@ function createShell({ product, workerUrl, start, services }) {
   const onStream = (m) => {
     const before = m.reset ? [] : state.streams[m.topic] || [];
     set({ ...state, streams: { ...state.streams, [m.topic]: before.concat(m.value || []).slice(-CALCU_STREAM_KEEP) } });
+    streamListeners.forEach((l) => l({ topic: m.topic, reset: !!m.reset, value: m.value || [] }));
   };
   const onAsk = (m) => {
     Promise.resolve()
@@ -130,6 +136,7 @@ function createShell({ product, workerUrl, start, services }) {
     frames,
     getState: () => state,
     subscribe: (l) => { listeners.add(l); return () => listeners.delete(l); },
+    listenStream: (l) => { streamListeners.add(l); return () => streamListeners.delete(l); },
     send: (name, args) => call("command", name, args),
     request: (name, args) => call("request", name, args),
     unlockAudio: audio.unlock,

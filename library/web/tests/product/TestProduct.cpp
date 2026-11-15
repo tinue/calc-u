@@ -23,8 +23,20 @@
 //   tp.services      request: {services: [...]}, what the page stated (AC-4)
 //   tp.settings      request: {model, outcome, path}
 //   tp.bundle        request {name}: {text}, a file in /bundle (AC-11)
+// From LIB-8 (M-39): the machines come from LIB-1's paper test catalogue,
+// with LIB-2's peripherals part (set-control) and LIB-8's paper part for the
+// test printers TD-20 and TP-4.
+//   tp.attach        {place, peripheral, online?}: plugs a peripheral in
+//                    (online: TD-20's switch `online` on at the plug)
+//   tp.detach        {place}: takes out what is plugged in there
+//   tp.press         {key}: the machine key down and up again
+//   tp.printer       state: {owner, name, controls: [{id, form, on}]}, the
+//                    printer plugged in first (owner null when none)
 
 #include "machine/tests/TestMachines.hpp"
+#include "paper/PaperPart.hpp"
+#include "peripherals/Controls.hpp"
+#include "peripherals/PeripheralsPart.hpp"
 #include "sessions/AppSession.hpp"
 #include "sessions/LibraryTopics.hpp"
 #include "sessions/MachineSession.hpp"
@@ -49,6 +61,7 @@ namespace fs = std::filesystem;
 namespace s = calcu::sessions;
 namespace st = calcu::settings;
 namespace mt = calcu::machine::test;
+namespace cm = calcu::machine;
 using calcu::web::WebStart;
 
 namespace {
@@ -117,6 +130,41 @@ public:
         machine_ = &setup.stateTopic(s::TopicName{"tp.machine"});
         files_ = &setup.stateTopic(s::TopicName{"tp.files"});
         answers_ = &setup.streamTopic(s::TopicName{"tp.answers"}, s::History::SinceReset);
+        printer_ = &setup.stateTopic(s::TopicName{"tp.printer"});
+        printer_->set(std::make_shared<Given>(s::Value::object({{"owner", s::Value()}, {"name", ""}, {"controls", s::Value(s::Value::Array{})}})));
+        setup.command(s::CommandName{"tp.attach"}, [this](const s::Value& a, s::SessionContext& c) -> s::CommandOutcome {
+            cm::Machine* m = c.machine();
+            if (!m) return s::Refused{"No machine."};
+            const auto& cat = mt::paperTestCatalogue();
+            cm::PeripheralRequest r = mt::peripheralAt(cat, textArg(a, "place"), cm::PeripheralId{textArg(a, "peripheral")});
+            const s::Value* online = a.find("online");
+            if (online && online->boolean() && *online->boolean()) r.switches.push_back(cm::SwitchPosition{cm::ControlId{"online"}, true});
+            const cm::ChangeResult res = m->attach(std::move(r), cat);
+            if (res.refused) return s::Refused{res.refused->reason};
+            publishPrinter(c);
+            return s::Done{};
+        });
+        setup.command(s::CommandName{"tp.detach"}, [this](const s::Value& a, s::SessionContext& c) -> s::CommandOutcome {
+            cm::Machine* m = c.machine();
+            if (!m) return s::Refused{"No machine."};
+            const cm::PlacePath place{{cm::PlaceName{textArg(a, "place")}}};
+            for (const auto& p : m->plugged().byPlace)
+                if (p.place == place) {
+                    const cm::ChangeResult res = m->detach(place, p.peripheral, mt::paperTestCatalogue());
+                    if (res.refused) return s::Refused{res.refused->reason};
+                    publishPrinter(c);
+                    return s::Done{};
+                }
+            return s::Refused{"Nothing is plugged in there."};
+        });
+        setup.command(s::CommandName{"tp.press"}, [](const s::Value& a, s::SessionContext& c) -> s::CommandOutcome {
+            cm::Machine* m = c.machine();
+            if (!m) return s::Refused{"No machine."};
+            const cm::KeyId k{textArg(a, "key")};
+            if (m->keyDown(k) != cm::KeyCall::Done) return s::Refused{"No such key."};
+            m->keyUp(k);
+            return s::Done{};
+        });
         setup.command(s::kStartCommand, [this](const s::Value& a, s::SessionContext& c) -> s::CommandOutcome {
             return startMachine(a, c);
         }, true);
@@ -189,7 +237,10 @@ public:
         });
     }
 
-    void afterCall(s::SessionContext&, calcu::pacing::WallTime) override { ++calls_; }
+    void afterCall(s::SessionContext& c, calcu::pacing::WallTime) override {
+        ++calls_;
+        publishPrinter(c);
+    }
 
 private:
     s::CommandOutcome startMachine(const s::Value& a, s::SessionContext& c) {
@@ -219,12 +270,33 @@ private:
             const std::string fromSettings = settings_.text("startup", "model");
             model = decl_.isModel(fromSettings) ? fromSettings : decl_.fallbackModel;
         }
-        auto m = mt::buildTestMachine(calcu::machine::ModelId{model});
+        mt::TestBuilder builder;
+        const auto& cat = mt::paperTestCatalogue();
+        auto built = cm::build(cat, builder, mt::requestFor(cat, cm::ModelId{model}));
+        auto m = std::move(built.machine);
         if (!m) return s::Refused{"The machine could not be built."};
         c.machineSession().setMachine(std::move(m), calcu::pacing::PacingProfile{}, 8000);
         machine_->set(std::make_shared<Machine>(model, loaded));
         listFiles();
         return s::Done{};
+    }
+
+    // The printer plugged in first (TD-20 or TP-4), and its controls.
+    void publishPrinter(s::SessionContext& c) {
+        s::Value owner, name = s::Value(std::string());
+        s::Value::Array controls;
+        if (cm::Machine* m = c.machine())
+            for (const auto& p : m->plugged().byPlace) {
+                if (p.peripheral != mt::kDotter && p.peripheral != mt::kPlotter) continue;
+                owner = s::Value(p.peripheral.value);
+                if (const auto* d = mt::paperTestCatalogue().peripheral(p.peripheral)) name = s::Value(d->name);
+                for (const auto& ci : calcu::peripherals::controlsOf(*m, cm::PeripheralOwner{p.peripheral, p.place}))
+                    controls.push_back(s::Value::object({{"id", ci.id.value},
+                                                         {"form", ci.form == cm::ControlForm::Key ? "key" : "switch"},
+                                                         {"on", ci.on}}));
+                break;
+            }
+        printer_->set(std::make_shared<Given>(s::Value::object({{"owner", owner}, {"name", name}, {"controls", s::Value(std::move(controls))}})));
     }
 
     void listFiles() {
@@ -240,19 +312,30 @@ private:
     st::ProductDecl decl_;
     st::SettingsFile settings_;
     st::Paths paths_;
-    s::StateTopic *machine_ = nullptr, *files_ = nullptr;
+    s::StateTopic *machine_ = nullptr, *files_ = nullptr, *printer_ = nullptr;
     s::StreamTopic* answers_ = nullptr;
     std::int64_t calls_ = 0;
 };
 
+// The parts the session owns: LIB-2's peripherals part, LIB-8's paper part
+// with the two test printers, the product's part.
+struct Parts {
+    explicit Parts(const WebStart& w)
+        : paper(mt::paperTestCatalogue(), {{mt::kDotter, mt::td20Description()}, {mt::kPlotter, mt::tp4Description()}}),
+          product(w) {}
+    calcu::peripherals::PeripheralsPart peripherals;
+    calcu::paper::PaperPart paper;
+    TestProductPart product;
+};
+
 std::unique_ptr<s::AppSession> makeTestSession(const WebStart& w) {
-    auto part = std::make_shared<TestProductPart>(w);
+    auto parts = std::make_shared<Parts>(w);
     s::AppSessionSetup setup;
     setup.clock = calcu::web::wallTimeNow;
     setup.hostTime = [] { return std::chrono::system_clock::now(); };
-    setup.parts = {w.shellPart, part.get()};
+    setup.parts = {w.shellPart, &parts->peripherals, &parts->paper, &parts->product};
     setup.hosting = s::Hosting::Paced;
-    setup.owned = std::move(part);
+    setup.owned = std::move(parts);
     return std::make_unique<s::AppSession>(std::move(setup));
 }
 

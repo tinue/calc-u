@@ -4,6 +4,7 @@
 #include "machine/Catalogue.hpp"
 #include "harness/MachineState.hpp"
 #include "machine/Machine.hpp"
+#include "paper/PaperOutput.hpp"
 #include "peripherals/Controls.hpp"
 #include "peripherals/RealTimeClock.hpp"
 #include "peripherals/SerialPort.hpp"
@@ -62,6 +63,25 @@
 //   of ticks during which isKeyReady() is false, the key `0` during it stops
 //   it; and a product kind "test.memory" (64 bytes, zero after a cold boot)
 //   that a preset's test section writes. Off by default.
+// For LIB-8 (design §6, "Test printers"), in a catalogue of their own,
+//   paperTestCatalogue() (the test catalogue plus these two), so that the
+//   lists other areas' tests check stay as they are:
+//   test-dotter  name TD-20; fits test.bus and test.chain; dots and a text
+//             layer (unit 1/2 mm, width 40, printable 2..38, dots of 0.8,
+//             greys {160, 0}, 300 dpi); key `feed`, switch `online`;
+//             variants r1 (default) and r2. While `online` is on, each key
+//             pressed on the machine prints a line: the text `KEY <id>`
+//             padded to 8 characters at (2, top), then 5 dot rows, one per
+//             20 ticks, a fixed pattern per character; a line takes 7
+//             units. `feed`: 4 units and an empty text line. A detach in a
+//             line ends it there, its last row with darkness 0 (EC-7).
+//   test-plotter  name TP-4; fits test.bus; pen strokes in four colours, no
+//             text layer (unit 1/10 mm, width 600, printable 50..550, stroke
+//             width 3, 254 dpi); keys `feed` (20 units) and `back` (feeds
+//             back 30). Each key k (its index among the machine's keys)
+//             pressed on the machine draws one stroke through four
+//             positions, one per 10 ticks, from (100 + 50k, standing), in
+//             colour k mod 4 (black, blue, green, red).
 
 namespace calcu::machine::test {
 
@@ -75,6 +95,8 @@ inline const PeripheralId kPrinter{"test-printer"};
 inline const PeripheralId kModule{"test-module"};
 inline const PeripheralId kHub{"test-hub"};
 inline const PeripheralId kUart{"test-uart"};
+inline const PeripheralId kDotter{"test-dotter"};     // LIB-8: TD-20
+inline const PeripheralId kPlotter{"test-plotter"};   // LIB-8: TP-4
 inline const char* const kTogether = "The test printer and the test UART cannot be used together.";
 
 // The product kind of the tests: the instructions run while the printer is
@@ -135,6 +157,39 @@ struct TestSegTiming : ProductData {
 
 Catalogue makeTestCatalogue();
 const Catalogue& testCatalogue();   // one shared copy; a test that adds to it makes its own
+// LIB-8: the test catalogue plus test-dotter and test-plotter.
+Catalogue makePaperTestCatalogue();
+const Catalogue& paperTestCatalogue();
+paper::PaperDescription td20Description();
+paper::PaperDescription tp4Description();
+
+// LIB-8: the test printers' paper output (the behaviour above).
+class TestPaperPrinter final : public paper::PaperOutputBase {
+public:
+    TestPaperPrinter(bool plotter, const peripherals::ControlTable* controls);
+    const paper::PaperDescription& description() const override { return description_; }
+    paper::Coord standing() const override { return standing_; }
+    void key(const KeyId&, std::size_t index);       // a key pressed on the machine
+    void control(const ControlId&, bool on);         // a key or switch of its own
+    void advance(Ticks ran);
+    void detaching();                                // EC-7
+    bool busy() const { return inLine_ || !queue_.empty(); }
+
+private:
+    void start();
+    void step();
+    void dotRow(std::uint8_t darkness);
+    bool plotter_;
+    const peripherals::ControlTable* controls_;
+    paper::PaperDescription description_;
+    paper::Coord standing_ = 0;
+    std::vector<std::pair<std::string, std::size_t>> queue_;   // dotter: line texts; plotter: key indexes
+    bool inLine_ = false;
+    std::string text_;
+    std::size_t index_ = 0;
+    int step_ = 0;           // dotter: the next row; plotter: the next position
+    Ticks untilNext_ = 0;
+};
 
 // A request with a ROM image for every entry the model's variant and each
 // peripheral need.
@@ -227,6 +282,7 @@ public:
     const std::vector<ControlEvent>& controlEvents() const { return controlEvents_; }
     TestUart* uartAt(const PlacePath&);
     const std::vector<RomImage>* romsAt(const PlacePath&) const;
+    TestPaperPrinter* printerAt(const PlacePath&);   // LIB-8
     std::uint64_t operationsTold(const PlacePath&) const;   // AC-10
     TestClock* clock() { return clock_.get(); }
     int plugCalls = 0, unplugCalls = 0;
@@ -260,6 +316,7 @@ private:
         std::vector<RomImage> roms;
         std::unique_ptr<peripherals::ControlTable> controls;
         std::unique_ptr<TestUart> uart;
+        std::unique_ptr<TestPaperPrinter> printer;   // LIB-8
         std::uint64_t operations = 0;
     };
     struct CapRef {

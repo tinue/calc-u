@@ -151,6 +151,172 @@ const Catalogue& testCatalogue() {
     return c;
 }
 
+// ── LIB-8: the test printers ──────────────────────────────────────────────
+
+paper::PaperDescription td20Description() {
+    paper::PaperDescription d;
+    d.unit = paper::Millimetres{1, 2};
+    d.width = paper::units(40);
+    d.printableLeft = paper::units(2);
+    d.printableWidth = paper::units(36);
+    d.form = paper::MarkForm::Dots;
+    d.dotDiameter = 8'000;   // 0.8 units
+    d.darknessGreys = {160, 0};
+    d.pictureDotsPerInch = 300;
+    d.textLayer = true;
+    return d;
+}
+
+paper::PaperDescription tp4Description() {
+    paper::PaperDescription d;
+    d.unit = paper::Millimetres{1, 10};
+    d.width = paper::units(600);
+    d.printableLeft = paper::units(50);
+    d.printableWidth = paper::units(500);
+    d.form = paper::MarkForm::PenStrokes;
+    d.strokeWidth = paper::units(3);
+    d.pictureDotsPerInch = 254;
+    d.textLayer = false;
+    return d;
+}
+
+Catalogue makePaperTestCatalogue() {
+    std::vector<PeripheralDescriptor> ps = peripherals();
+    PeripheralDescriptor dotter;
+    dotter.id = kDotter;
+    dotter.name = "TD-20";
+    dotter.variants = {VariantDescriptor{VariantId{"r1"}, {}}, VariantDescriptor{VariantId{"r2"}, {}}};
+    dotter.defaultVariant = VariantId{"r1"};
+    dotter.fits = {PinOutId{"test.bus"}, PinOutId{"test.chain"}};
+    dotter.controls = {ControlDescriptor{ControlId{"feed"}, ControlForm::Key},
+                       ControlDescriptor{ControlId{"online"}, ControlForm::Switch}};
+    PeripheralDescriptor plotter;
+    plotter.id = kPlotter;
+    plotter.name = "TP-4";
+    plotter.fits = {PinOutId{"test.bus"}};
+    plotter.controls = {ControlDescriptor{ControlId{"feed"}, ControlForm::Key},
+                        ControlDescriptor{ControlId{"back"}, ControlForm::Key}};
+    ps.push_back(dotter);
+    ps.push_back(plotter);
+    return Catalogue({segModel(), dotModel()}, ps);
+}
+
+const Catalogue& paperTestCatalogue() {
+    static const Catalogue c = makePaperTestCatalogue();
+    return c;
+}
+
+namespace {
+constexpr paper::Rgb kPens[4] = {{0, 0, 0}, {0, 0, 255}, {0, 128, 0}, {255, 0, 0}};
+constexpr Ticks kRowTicks = 20, kPenTicks = 10;
+constexpr paper::Coord kCharPitch = 45'000;   // 36 units over 8 characters
+} // namespace
+
+TestPaperPrinter::TestPaperPrinter(bool plotter, const peripherals::ControlTable* controls)
+    : plotter_(plotter), controls_(controls), description_(plotter ? tp4Description() : td20Description()) {}
+
+void TestPaperPrinter::key(const KeyId& k, std::size_t index) {
+    if (plotter_) {
+        queue_.push_back({k.value, index});
+    } else {
+        if (!controls_ || !controls_->on(ControlId{"online"})) return;
+        std::string text = "KEY " + k.value;
+        if (text.size() < 8) text.append(8 - text.size(), ' ');
+        queue_.push_back({text.substr(0, 8), index});
+    }
+    if (!inLine_) start();
+}
+
+void TestPaperPrinter::control(const ControlId& id, bool on) {
+    if (!on) return;
+    if (!plotter_ && id.value == "feed") {
+        emitTextLine("", paper::Position{paper::units(2), standing_});
+        emitFedTo(standing_ + paper::units(4));
+        standing_ += paper::units(4);
+    } else if (plotter_ && (id.value == "feed" || id.value == "back")) {
+        const paper::Coord to = standing_ + (id.value == "feed" ? paper::units(20) : -paper::units(30));
+        emitFedTo(to);
+        standing_ = to;
+    }
+}
+
+void TestPaperPrinter::start() {
+    if (queue_.empty()) return;
+    text_ = queue_.front().first;
+    index_ = queue_.front().second;
+    queue_.erase(queue_.begin());
+    inLine_ = true;
+    if (plotter_) {
+        const paper::Position p{paper::units(100 + 50 * static_cast<std::int64_t>(index_)), standing_};
+        emitPenDown(kPens[index_ % 4], p);
+        step_ = 1;
+        untilNext_ = kPenTicks;
+    } else {
+        emitTextLine(text_, paper::Position{paper::units(2), standing_});
+        step_ = 0;
+        untilNext_ = kRowTicks;
+    }
+}
+
+void TestPaperPrinter::dotRow(std::uint8_t darkness) {
+    for (std::size_t i = 0; i < text_.size(); ++i) {
+        const unsigned c = static_cast<unsigned char>(text_[i]);
+        for (int j = 0; j < 4; ++j)
+            if ((c >> ((step_ + j) % 7)) & 1u)
+                emitDot(paper::Position{paper::units(2) + kCharPitch * static_cast<paper::Coord>(i) + paper::units(j) + 5'000,
+                                        standing_ + paper::units(step_) + 5'000},
+                        darkness);
+    }
+}
+
+// The next dot row, or the next pen position.
+void TestPaperPrinter::step() {
+    if (plotter_) {
+        const paper::Position p{paper::units(100 + 50 * static_cast<std::int64_t>(index_) + 10 * step_),
+                                standing_ + paper::units(5 * (step_ % 2))};
+        emitPenTo(p);
+        if (++step_ == 4) {
+            emitPenUp();
+            inLine_ = false;
+        }
+        untilNext_ = kPenTicks;
+        return;
+    }
+    dotRow(1);
+    if (++step_ == 5) {
+        emitFedTo(standing_ + paper::units(7));
+        standing_ += paper::units(7);
+        inLine_ = false;
+    }
+    untilNext_ = kRowTicks;
+}
+
+void TestPaperPrinter::advance(Ticks ran) {
+    while (inLine_ && ran > 0) {
+        if (ran < untilNext_) {
+            untilNext_ -= ran;
+            return;
+        }
+        ran -= untilNext_;
+        step();
+        if (!inLine_) start();
+    }
+}
+
+void TestPaperPrinter::detaching() {
+    queue_.clear();
+    if (!inLine_) return;
+    inLine_ = false;
+    if (plotter_) {
+        emitPenUp();
+        return;
+    }
+    // EC-7: the row under the head, faint; the line ends there.
+    dotRow(0);
+    emitFedTo(standing_ + paper::units(step_ + 1));
+    standing_ += paper::units(step_ + 1);
+}
+
 BuildRequest requestFor(const Catalogue& cat, const ModelId& model, std::optional<VariantId> variant,
                         std::vector<PeripheralRequest> peripherals, int soundRate) {
     BuildRequest r;
@@ -275,8 +441,10 @@ Ticks TestMachine::advance(Ticks atLeast) {
     ticks_ += ran;
     sinceStart_ += ran;
     programLeft_ -= std::min(programLeft_, ran);
-    for (auto& p : plugs_)
+    for (auto& p : plugs_) {
         if (p->uart) p->uart->advance(ran);
+        if (p->printer) p->printer->advance(ran);   // LIB-8
+    }
     if (clock_) clock_->advance(ran);
     if (desc_.hasSound && soundRate_ > 0) {
         // Sample n stands at tick n * rate / soundRate; its value is a square
@@ -326,6 +494,10 @@ KeyCall TestMachine::keyDown(const KeyId& k) {
     if (k == KeyId{"on"}) displayOn_ = true;
     if (programLength_ && k == KeyId{"1"}) programLeft_ = programLength_;   // LIB-6: the program starts
     if (programLength_ && k == KeyId{"0"}) programLeft_ = 0;                // and is stopped
+    const auto at = std::find_if(desc_.keys.begin(), desc_.keys.end(), [&](const KeyDescriptor& d) { return d.id == k; });
+    const auto index = static_cast<std::size_t>(at - desc_.keys.begin());
+    for (auto& p : plugs_)
+        if (p->printer) p->printer->key(k, index);   // LIB-8
     return KeyCall::Done;
 }
 
@@ -434,6 +606,10 @@ std::vector<TestMachine::CapRef> TestMachine::capRefs() const {
                                                  CapabilityId{at + "/" + std::string(peripherals::Controls::kKind.value)},
                                                  owner},
                                  st->controls.get()});
+        if (st->printer)
+            out.push_back(CapRef{CapabilityEntry{paper::PaperOutput::kKind,
+                                                 CapabilityId{at + "/" + std::string(paper::PaperOutput::kKind.value)}, owner},
+                                 st->printer.get()});
         if (st->uart)
             out.push_back(
                 CapRef{CapabilityEntry{peripherals::SerialPort::kKind,
@@ -469,11 +645,15 @@ void TestMachine::plug(PeripheralRequest req, const PeripheralDescriptor& d, Tic
     st->roms = std::move(req.roms);
     if (!d.controls.empty()) {
         const PlacePath at = req.place;
-        st->controls = std::make_unique<peripherals::ControlTable>(d.controls, [this, at](const ControlId& id, bool on) {
+        PlugState* state = st.get();
+        st->controls = std::make_unique<peripherals::ControlTable>(d.controls, [this, at, state](const ControlId& id, bool on) {
             controlEvents_.push_back(ControlEvent{at, id, on, ticks_});
+            if (state->printer) state->printer->control(id, on);   // LIB-8
         });
         st->controls->restore(req.switches);
     }
+    if (d.id == kDotter || d.id == kPlotter)
+        st->printer = std::make_unique<TestPaperPrinter>(d.id == kPlotter, st->controls.get());
     if (d.id == kUart) st->uart = std::make_unique<TestUart>(hostRate);
     plugs_.push_back(std::move(st));
 }
@@ -487,6 +667,9 @@ void TestMachine::unplug(const PlacePath& place, const PeripheralId& id) {
     auto below = [&](const PlacePath& p) {
         return p.steps.size() > place.steps.size() && std::equal(place.steps.begin(), place.steps.end(), p.steps.begin());
     };
+    for (auto& s : plugs_)   // LIB-8 EC-7: a printer ends its line before it goes
+        if (s->printer && ((s->entry.place == place && s->entry.peripheral == id) || below(s->entry.place)))
+            s->printer->detaching();
     plugs_.erase(std::remove_if(plugs_.begin(), plugs_.end(),
                                 [&](const auto& s) {
                                     return (s->entry.place == place && s->entry.peripheral == id) || below(s->entry.place);
@@ -521,6 +704,11 @@ const TestMachine::PlugState* TestMachine::stateAt(const PlacePath& place) const
     for (const auto& s : plugs_)
         if (s->entry.place == place) return s.get();
     return nullptr;
+}
+
+TestPaperPrinter* TestMachine::printerAt(const PlacePath& place) {
+    PlugState* s = stateAt(place);
+    return s ? s->printer.get() : nullptr;
 }
 
 TestUart* TestMachine::uartAt(const PlacePath& place) {

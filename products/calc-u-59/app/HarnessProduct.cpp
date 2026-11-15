@@ -22,7 +22,7 @@ public:
     std::string_view name() const override { return "Calc-U-59"; }
     std::string_view shortName() const override { return "59"; }
     std::string_view commandWord() const override { return "ti59"; }
-    std::string_view version() const override { return "2.3.0"; }   // the pin's (CHANGELOG.md)
+    std::string_view version() const override { return CALCU59_VERSION; }   // MARKETING_VERSION (CMake)
     const machine::Catalogue& catalogue() const override { return tiCatalogue(); }
     machine::MachineBuilder& builder() override { return builder_; }
 

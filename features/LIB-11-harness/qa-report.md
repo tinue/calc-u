@@ -101,5 +101,7 @@ no core; no reference was re-recorded.
   (LIB-3 reads the display when time passes), as in today's frontends.
 - The first read of a stream topic carries no reset marker from the
   listen's replay.
-- `version()` gives the pin's version from each product's `CHANGELOG.md`
-  (2.3.0, 0.8.1); there is no version in the code yet. Open for the user.
+- `version()` gives the apps' version, read by CMake from the same single
+  source the frontends use: Calc-U-59 the Xcode project's
+  `MARKETING_VERSION` (3.0.0), Calc-U-1600 the Qt build's `APP_VERSION`
+  (0.9.0). User, 2026-11-15 (the M-28 build had the CHANGELOG versions).

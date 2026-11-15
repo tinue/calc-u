@@ -76,7 +76,7 @@ public:
     std::string_view name() const override { return "Calc-U-1600"; }
     std::string_view shortName() const override { return "1600"; }
     std::string_view commandWord() const override { return "pc1600"; }
-    std::string_view version() const override { return "0.8.1"; }   // the pin's (CHANGELOG.md)
+    std::string_view version() const override { return CALCU1600_VERSION; }   // APP_VERSION of the Qt build (CMake)
     const machine::Catalogue& catalogue() const override { return catalogue_; }
     machine::MachineBuilder& builder() override { return builder_; }
 

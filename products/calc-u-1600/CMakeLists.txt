@@ -120,7 +120,13 @@ target_link_libraries(pc1600_plotter_probe PRIVATE calcu_core)
 add_library(calcu1600_harness STATIC ${CMAKE_CURRENT_SOURCE_DIR}/app/HarnessProduct.cpp)
 target_link_libraries(calcu1600_harness PUBLIC calcu_shared)
 target_compile_options(calcu1600_harness PRIVATE ${CALCU_WARNINGS})
-target_compile_definitions(calcu1600_harness PRIVATE "CALCU1600_DIR=\"${CMAKE_CURRENT_SOURCE_DIR}\"")
+# The state-file header's version is the app's one: APP_VERSION of the Qt
+# build (user, 2026-11-15).
+file(STRINGS ${CMAKE_CURRENT_SOURCE_DIR}/frontends/qt6/CMakeLists.txt
+     CALCU1600_VERSION_LINE REGEX "^set\\(APP_VERSION \"[0-9.]+\"\\)" LIMIT_COUNT 1)
+string(REGEX REPLACE ".*\"([0-9.]+)\".*" "\\1" CALCU1600_VERSION "${CALCU1600_VERSION_LINE}")
+target_compile_definitions(calcu1600_harness PRIVATE "CALCU1600_DIR=\"${CMAKE_CURRENT_SOURCE_DIR}\""
+                                                     "CALCU1600_VERSION=\"${CALCU1600_VERSION}\"")
 if(COMMAND calcu_harness_add_product)
   calcu_harness_add_product(calcu1600_harness shared::makeHarnessProduct)
 endif()

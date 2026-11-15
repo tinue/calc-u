@@ -115,7 +115,13 @@ target_link_libraries(ti59headless PRIVATE calcu59_shared)
 add_library(calcu59_harness STATIC ${SHARED_ROOT}/HarnessProduct.cpp)
 target_link_libraries(calcu59_harness PUBLIC calcu59_shared)
 target_compile_options(calcu59_harness PRIVATE ${CALCU59_WARNINGS})
-target_compile_definitions(calcu59_harness PRIVATE "CALCU59_ROM_DIR=\"${CMAKE_CURRENT_SOURCE_DIR}/roms\"")
+# The state-file header's version is the apps' one: the Xcode project's
+# MARKETING_VERSION, as the Qt and Web builds read it (user, 2026-11-15).
+file(STRINGS ${CMAKE_CURRENT_SOURCE_DIR}/frontends/swift/Calc-U-59.xcodeproj/project.pbxproj
+     CALCU59_VERSION_LINE REGEX "MARKETING_VERSION = [0-9.]+;" LIMIT_COUNT 1)
+string(REGEX REPLACE ".*MARKETING_VERSION = ([0-9.]+).*" "\\1" CALCU59_VERSION "${CALCU59_VERSION_LINE}")
+target_compile_definitions(calcu59_harness PRIVATE "CALCU59_ROM_DIR=\"${CMAKE_CURRENT_SOURCE_DIR}/roms\""
+                                                   "CALCU59_VERSION=\"${CALCU59_VERSION}\"")
 calcu_harness_add_product(calcu59_harness cu59::makeHarnessProduct)
 
 # -----------------------------------------------------------------------------

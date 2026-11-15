@@ -187,6 +187,9 @@ AppSession::Impl::Impl(AppSessionSetup s) : setup(std::move(s)), ms(setup.clock,
     notices = &streamTopic(kNoticesTopic, History::None);
     logTopic = &streamTopic(kLogTopic, History::SinceReset);
     registerLibraryCommands();
+    ms.setAboutToChange([this] {   // LIB-7 AC-13
+        for (SessionPart* p : setup.parts) p->beforeMachineChange(*this);
+    });
     for (SessionPart* p : setup.parts) p->attach(*this);
     syncMachine();   // a machine a part set at attach
     flush();
@@ -321,6 +324,7 @@ void AppSession::Impl::start(ListenerId l, CallId id, Operation op) {
         reply(l, id, false, kAnotherOperationRuns);
         return;
     }
+    for (SessionPart* p : setup.parts) p->beforeOperation(*this);   // LIB-7 AC-13
     auto r = std::make_unique<Running>();
     r->op = std::move(op);
     r->ctx = std::make_unique<OperationContext>(*this);
@@ -480,6 +484,8 @@ void AppSession::Impl::deliver(const Out& o) {
 
 AppSession::AppSession(AppSessionSetup s) : impl_(std::make_unique<Impl>(std::move(s))) {}
 AppSession::~AppSession() {
+    // LIB-7 AC-13: the parts write what they have to save; nothing is sent.
+    for (SessionPart* p : impl_->setup.parts) p->closing(*impl_);
     impl_->setup.owned.reset();   // the parts first, while the machine is there
 }
 

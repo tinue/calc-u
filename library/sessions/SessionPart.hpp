@@ -108,6 +108,14 @@ public:
     // clocks set from the host (LIB-2 AC-23).
     virtual void operationEnded(SessionContext&) {}
     virtual void suspending(SessionContext&) {}
+    // LIB-7 AC-13 (LIB-7 design §3.12; LIB-18 §8): before an operation's
+    // first step; before the machine or a peripheral of it changes (a build,
+    // an attach, detach or replace, MachineSession::aboutToChange); and when
+    // the product quits or the window closes (the app session's destructor;
+    // no message goes out after it).
+    virtual void beforeOperation(SessionContext&) {}
+    virtual void beforeMachineChange(SessionContext&) {}
+    virtual void closing(SessionContext&) {}
 
 protected:
     ~SessionPart() = default;

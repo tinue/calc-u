@@ -12,6 +12,7 @@ MachineSession::MachineSession(pacing::WallClock clock, std::optional<std::uint3
 
 void MachineSession::setMachine(std::unique_ptr<machine::Machine> m, const pacing::PacingProfile& profile,
                                 int soundRate) {
+    aboutToChange();   // LIB-7 AC-13: the old machine is still there
     machine_ = std::move(m);
     soundRate_ = machine_ ? soundRate : 0;
     ++generation_;
@@ -22,6 +23,7 @@ void MachineSession::setMachine(std::unique_ptr<machine::Machine> m, const pacin
 }
 
 std::unique_ptr<machine::Machine> MachineSession::takeMachine() {
+    aboutToChange();
     ++generation_;
     soundRate_ = 0;
     return std::move(machine_);

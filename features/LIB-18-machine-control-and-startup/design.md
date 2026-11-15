@@ -1,5 +1,5 @@
 # LIB-18 Machine control and startup: design
-Status: approved by the user at the Part C1/C2 boundary (2026-11-15)
+Status: Library column approved at the Part C1/C2 boundary (2026-11-15); Calc-U-1600 column: draft for the Part C2/D boundary review (2026-11-16)
 
 ## 1. Scope
 
@@ -563,3 +563,220 @@ happen with the product commands in M-46 and M-54.
   `addCarry`) come with those steps (§3.4).
 - **Open point.** None of sizes or limits. The bounds of EC-7 and the
   built-in defaults are the spec's; LIB-18 takes them from the product.
+
+## 10. Part D: the Calc-U-1600 column
+
+Draft for the Part C2/D boundary review (2026-11-16). Paths without a
+prefix are under `products/calc-u-1600/`; line numbers at `60e5b09`.
+
+### 10.1 Scope
+
+| Column | Step | Tests from (plan §3) | Done in |
+|---|---|---|---|
+| Calc-U-1600 | M-46, with LIB-6 1600 (§10 of its design) and C1600-4 | AC-25–33 | M-46 (plan §5.1) |
+
+- M-46 replaces §4's first two rows: Calc-U-1600's own start, model
+  switch, resets, ROM switches and peripheral toggles become the
+  library's commands, the app layer gets its `ProductMachines`, and the
+  harness entry uses it instead of `HarnessMachines`.
+- The bays stay until M-47 (LIB-7 A-1): a module choice and the disk
+  are still `ModuleBay` and `FloppyBay`, which now hand their requests
+  to `MachineControl` (§10.3). AC-28's "the disk is in its drive again"
+  and the modules' content after a variant switch therefore pass in
+  M-46 through the bays and again in M-47 through LIB-7's carry
+  (`MachineControl::addCarry`).
+- The code built in C2 differs from §2–§9 as the qa-report's
+  "Deviations" say: `build` sets regular speed when the operation ends
+  (`StartupPart::operationEnded`); `build` checks each plug on the
+  machine's places before the builder; `start` with a named preset and
+  no loader builds the built-in default; `change` fails the operation
+  with the machine's reason. Calc-U-1600 relies on none of them beyond
+  what §3 says.
+
+### 10.2 Modules and files
+
+**New**
+
+| File | Holds |
+|---|---|
+| `app/SharpProductMachines.hpp/.cpp` | `shared::SharpProductMachines : startup::ProductMachines` (§10.3): the catalogue with the module definitions, `sharp::SharpMachineBuilder`, `builtInDefault` (AC-26), `pacingProfile` (`app/PacingProfiles`), `soundRate` (`sharp::kSoundRate`), `readinessBound` (7 s, 7 s, 27 s, as the harness entry has them), `carried` (AC-28) |
+| `tests/machine_control_tests.cpp` | AC-25–33 (§10.6) |
+
+**Changed**
+
+| File | Change |
+|---|---|
+| `app/SharpAppPart.hpp/.cpp` | the commands `start` (206-219), `c1600.reset` (234-240), `c1600.pick-model` (241-248), `c1600.pc1500-rom`, `c1600.pc1600-rom` (254-264), `c1600.toggle-peripheral` (270-278) and their jobs go: `startJob` (359-365), `resetJob` (434-438), `selectModelJob` (440-451), `pickModelJob` (460-464), `switchModelJob` (578-597), `setPC1600RomVersionJob`, `setPC1500RomRevisionJob` (599-607), `togglePeripheralJob` (502-523), `resetToPromptJob` (712-719), `powerCycleAroundJob` (721-732), `buildMachine` (609-623), `discardMachine` (695-704), `reattach` (945-952), `seedClockFromHost` (706-710; LIB-2's `PeripheralsPart` sets the clocks). Kept as product commands, each now one `MachineControl::change` inside an operation: `c1600.select-module` (until M-47: the bay's request with its card, AC-29), `c1600.mount-host-drive` (the host drive with `HostDriveRequest`, AC-30), `c1600.ce1600p-rom` (AC-31, §10.3). `machineChanged` (307-313) follows every new machine, whoever built it |
+| `app/SharpTopics.hpp:35-50` | the names of the commands that go are removed |
+| `app/Settings.hpp/.cpp:120-139` | `startupModel()`, `lastUsedModel()`, `setLastUsedModel()` go: LIB-9's `settings::startupModel` and `StartupPart::machineChanged` write `[startup] last-model`; `defaultPresetPath` (80-82) goes: `settings::startupPreset` |
+| `app/HarnessProduct.cpp:65-90` | `HarnessMachines` and `SharpBuildColdBoot` go; `machines()` returns a `SharpProductMachines` |
+| `app/SharpSession.cpp`, `frontends/web/bindings.cpp:35-60` | `StartupPart` in the parts (LIB-6 §10.2, `addLibraryParts`), with `SharpProductMachines`, the ROM set of the lookup, the settings file and `PresetsPart` as the loader |
+| `core/Machine/SharpMachineBuilder` (`core/Machine/SharpMachine.cpp`) | `build` leaves the machine as a cold boot does (LIB-1 AC-42; D-3 of this design), so `startUp` is no longer needed |
+| `core/Machine/LegacyCalls.hpp:61-65` | `runToPromptJob`, `runToPrompt` go (`untilKeyReady`); `golden_runs_tests.cpp` keeps 0.8.1's boot run as a test function of its own (§10.8) |
+| `frontends/qt6/app/MachineController.cpp:46` | `start` is now the library's (same name, same arguments) |
+| `frontends/qt6/app/MainWindow.cpp` | Reset and Cold boot (325, 996) send `reset` and `cold-boot`; the menu item "Reset All" reads "Cold boot" (`docs/glossary-mapping.md` row "Cold boot"); the model picker (1011) sends `model {name}`; the ROM pickers (1023, 1029) send `variant {name}`; the CE-1600P ROM (1039) `c1600.ce1600p-rom`; the plotter and CE-158 toggles (484) `attach {place, peripheral, variant}` and `detach {place}` |
+| `frontends/qt6/app/debug/DebugController.cpp:206-235` | the clean start without a preset sends `cold-boot` |
+| `frontends/qt6/app/screenshots/ShotScenario.hpp:35`, `ShotRunner.cpp` | the `Reset` step sends `reset` or `cold-boot` |
+| `frontends/web/src/engine.js:81-86`, `src/CalcU1600.jsx:295` | the same commands; "Reset All" reads "Cold boot" |
+| `app/ControlState.cpp` | the control state reads the CE-1600P's ROM choice from `SharpAppPart` (AC-31) |
+
+### 10.3 The product's machines and the kept commands (AC-25–33)
+
+- **AC-25, AC-26.** `builtInDefault(model)` is `{model, default variant
+  (A04, New), no peripherals}` (today `Shared/MachineSession.hpp:367-370`
+  at the pin). The startup model is LIB-9's (`[startup] model`, `last`,
+  the PC-1500A as `ProductDecl::fallbackModel`, LIB-9 AC-27). A start
+  without settings builds a PC-1500A, cold booted; its ROM shows
+  `NEW0? :CHECK`.
+- **AC-27.** `model` builds the startup preset or the built-in default:
+  nothing of the old machine is carried. The bays forget their slots at
+  `machineChanged` when the model changed (today `selectModelJob`
+  441-450: `onModelChanged`, `selectDisk({})`); the CE-1600P ROM choice
+  goes back to New (AC-31: "until … the model is switched").
+- **AC-28.** `variant` (the PC-1500's ROM A01/A03/A04, the PC-1600's
+  New/Old) builds `variantPlan`: `carried` keeps each plug's place,
+  peripheral and variant, adds the host drive's folder (`HostDriveRequest`)
+  and, until M-47, a module's card from the bay (`ModuleBay` gives the
+  slot's instance as `ModuleCard`, adapter "bays on `machineChanged`",
+  LIB-6 §10.5); the disk goes back into the new CE-1600F from the bay
+  at `machineChanged`. No startup preset is loaded (AC-7).
+- **AC-29.** `c1600.select-module {slot, name}` asks the bay for the
+  request (a template's definition or an instance's card) and runs
+  `MachineControl::check`, then `change` with `Replace` (or `Attach`,
+  `Detach` for the empty entry): one power cycle, the memory kept,
+  `NEW0? :CHECK` from the ROM (row 1600-4). M-47 replaces the command by
+  `media.choose` (LIB-7 §3.10).
+- **AC-30.** `attach`/`detach` of `printer` (CE-150, CE-1600P) and
+  `interface` (CE-158), and `c1600.mount-host-drive {dir}` (attach or
+  detach of `host-drive` with the folder; a second folder while one is
+  mounted is a `Replace`): what follows is the pin-out's (LIB-2 AC-28), a
+  power cycle with the memory kept.
+- **AC-31.** `c1600.ce1600p-rom {version}`: with a CE-1600P plugged in,
+  a `Replace` by `attach printer CE-1600P:<version>` (C1600-1 AC-18);
+  without one, the choice is kept in `SharpAppPart` and used by the next
+  `attach printer CE-1600P` that names no variant, until the product
+  quits or a model switch (D-21).
+- **AC-32.** `reset` keeps the memory; `cold-boot` empties it and a RAM
+  module without its own battery (CE-151, CE-155), a battery-backed
+  module keeps its content (C1600-1 AC-6, `CardBase::powerLoss()`, row
+  1600-16). Both end at key readiness (`untilKeyReady`), no longer
+  after `runToPromptJob`'s fixed run.
+- **AC-33.** A machine that is off: LIB-18's `change` with `followsNow`
+  `Nothing` (§3.4); the C1600-1 machine makes the change at its off
+  point (`LegacyCalls::atOffPoint`, until M-47) and stays off.
+- **Reset, Cold boot and a model switch stop what runs** (AC-16; row
+  1600-9's second sentence): `reset`, `cold-boot` and `model` are
+  `endsRunningOperation`, as today's three commands are.
+
+### 10.4 Startup presets
+
+`StartupPart` loads `settings::startupPreset(settings, model)` (`[preset]
+<model>`, a path or a bundle path) through LIB-6's `PresetsPart`. A
+version 1 file there is `CannotLoad` (the outdated hint, LIB-6 AC-8):
+the built-in default and the notice of EC-1 (row 1600-1). The key and
+its values are today's (`app/Settings.hpp:80-82`), so a user's setting
+keeps working once the file is upgraded. The bundled startup presets are
+the `Startup` entries of `preset-list` (C1600-4 §4; `default-pc1600`
+from M-47).
+
+### 10.5 Adapters
+
+| Adapter | Removed here | Was |
+|---|---|---|
+| `HarnessMachines`, `SharpBuildColdBoot` | yes | §5 |
+| the products' machine-control commands (Calc-U-1600 rows of §4) | yes, except the three of §10.3 that become `MachineControl::change` calls | §5 |
+| `LegacyCalls::runToPromptJob`, `runToPrompt` | yes | C1600-1 §5 |
+| `c1600.select-module` over the bays | M-47 (LIB-7 A-1) | — |
+| `LegacyCalls::atOffPoint`, `moduleIn` | M-47 (LIB-7 1600) | C1600-1 qa-report |
+
+New: none. The harness entry's machine still comes from its own
+`SharpProductMachines` object, not from `app/SharpAppPart`, until M-51
+(LIB-11 D-6, plan M-51).
+
+### 10.6 Tasks
+
+Tests come before the code. `CoreTests` (Frequent); ROM-gated cases
+`SKIP_UNLESS` the ROMs. The cases run the app session of
+`app/tests/SessionFixture.hpp` with the library's parts (paced and in
+virtual time where the operation matters) or the harness entry.
+Names `lib18_acN_…`.
+
+| Task | What | ACs | Test (file: cases) |
+|---|---|---|---|
+| P16-1 | Start, built-in default | AC-25, AC-26 | `machine_control_tests.cpp`: `lib18_ac25_no_settings_pc1500a_new0_check`, `lib18_ac26_builtin_default_variant_and_nothing_plugged` (each model), `lib18_ac26_version1_startup_preset_gives_default_and_notice` |
+| P16-2 | Model and variant | AC-27, AC-28 | `lib18_ac27_model_switch_keeps_no_module_or_peripheral`, `lib18_ac27_ce1600p_rom_choice_back_to_new`, `lib18_ac28_variant_switch_replugs_printer_interface_host_drive_modules`, `lib18_ac28_disk_in_drive_again_same_side`, `lib18_ac28_no_startup_preset_loaded` |
+| P16-3 | Module, peripherals, host drive | AC-29, AC-30, AC-33 | `lib18_ac29_module_replace_power_cycle_memory_kept_new0_check`, `lib18_ac30_printer_ce158_attach_detach_power_cycle_memory_kept`, `lib18_ac30_host_drive_mount_unmount_power_cycle`, `lib18_ac33_off_machine_change_nothing_follows_found_on_switch_on` |
+| P16-4 | CE-1600P ROM | AC-31 | `lib18_ac31_plugged_is_replace_by_other_variant`, `lib18_ac31_unplugged_choice_holds_for_next_attach` |
+| P16-5 | Reset, Cold boot | AC-32, AC-16 | `lib18_ac32_reset_keeps_memory`, `lib18_ac32_cold_boot_empties_memory_ce151_ce155_battery_module_kept`, `ledger_1600_9_reset_and_model_switch_stop_a_preset` (extends `session_tests.cpp`'s case) |
+| P16-6 | Harness entry | (LIB-11 AC-2) | `harness_tests.cpp`: `harness_drives_a_pc1600`, `harness_variant_switch_old` unchanged; `harness_starts_with_the_product_machines` |
+| P16-7 | Frontends | AC-25, AC-32 | Web `play.spec.js:44-47` (`NEW0? :CHECK` at the start) unchanged; `play.spec.js` `lib18_ac32 cold boot menu item` (Longer); Qt6 through the screenshot scenarios (Longer) |
+
+Coverage: P16-1 to P16-5 cover AC-25 to AC-33.
+
+### 10.7 Tools and agent knowledge (M-46)
+
+| File | Change |
+|---|---|
+| `products/calc-u-1600/CLAUDE.md` | the Harness section: "It … starts the startup model … cold booted" stays; `HarnessMachines` no longer named; the machine-control commands are the frontends' too |
+| `products/calc-u-1600/docs/developer/Shared-Architecture.md`, `Web-Client.md` | the start, switches and resets as the library's commands; `SharpProductMachines` |
+| `products/calc-u-1600/docs/User-Guide.md` | "Reset All" → "Cold boot"; "Default presets" → "Startup presets" (the visible renames of `docs/glossary-mapping.md`) |
+| `docs/glossary-mapping.md` | row "Cold boot": the Calc-U-1600 column `resetJob(allReset = true)` → the library's `cold-boot`; the visible rename "Reset All" → "Cold boot" marked done |
+| memory `calc-u-1600/feedback_machine_config_on_control_bar.md` | unchanged in substance; the model picker sends `model` |
+| `calc-u-1600-memories.md` | no change of descriptions |
+
+The memory file `calc-u-1600/feedback_paste_vs_inbound_typing.md` is
+changed with LIB-6 §10.7.
+
+**Ledger rows that become visible in M-46:** 1600-9's second sentence
+(Reset, Cold boot and a model switch stop what runs; its first sentence
+since M-36); 1600-4 and 1600-16 are in effect since M-26 and stay. No
+new row: the boot to key readiness and the cold boot at every build are
+not visible (D-23); "Reset All" → "Cold boot" is a visible rename of
+`docs/glossary-mapping.md`.
+
+### 10.8 Golden runs and risks
+
+- **Golden runs** (`tests/golden_runs_tests.cpp`, 23 runs) build through
+  the builder and boot with `coldBoot()` and `legacy::runToPrompt`
+  (`:147-148, 199, 254`). `runToPrompt` goes; the driver gets the same
+  run as a function of its own (0.8.1's boot run, unchanged), so the
+  golden runs keep 0.8.1's timing, as the driver's key taps do (LIB-6
+  §10.10, question 1). The builder now leaves a cold-boot state; the
+  driver's `coldBoot()` after `build()` then runs on a machine already
+  in that state. A difference is a finding (CLAUDE.md), not a new
+  reference.
+- **The app's boot moves.** Today a rebuild runs `runToPromptJob` and
+  the PC-1500 models get a Reset, not a Cold boot (`switchModelJob`
+  589-591, "as in 0.8.1 only the PC-1600 gets a Cold boot"). Now every
+  build is a cold boot and ends at key readiness. The PC-1500A still
+  shows `NEW0? :CHECK` (AC-25); the startup presets answer it (LIB-6
+  AC-46). The reference runs (C1600-4 AC-16) compare at the idle
+  machine, tick counts left out.
+- **Readiness bound.** 7 s and 27 s of emulated time (EC-7) as in the
+  harness since M-35; a PC-1600 cold boot with the CE-1600P takes the
+  longest. A bound hit is a log line, not a failure (D-5).
+- **Bays and `MachineControl`** (until M-47). The bays now learn of a
+  new machine only through `machineChanged`; a missed rebind would leave
+  a slot's instance unsaved. P16-2 and P16-3 check that the bay writes
+  after a variant switch and a module change.
+
+### 10.9 Decided (best guess)
+
+- **D-21 (the CE-1600P ROM while unplugged, AC-31).** A product setting
+  of the run in `SharpAppPart`, not a settings key: AC-31 says the
+  choice holds until the product quits or the model is switched.
+- **D-22 (kept product commands).** Module choice (until M-47), host
+  drive and CE-1600P ROM stay `c1600.*` commands because each needs
+  product data (a card, a folder, a remembered variant); each runs
+  `MachineControl::check` and `change`, so what follows is the
+  library's.
+- **D-23 (a cold boot at every build).** As LIB-1 AC-42 and D-3; the
+  0.8.1 rule "only the PC-1600 gets a Cold boot" at a rebuild goes. Not
+  visible: a new machine has empty memory either way.
+- **D-24 (golden boot run).** Kept in the test as 0.8.1's run, so that
+  the golden runs measure the cores and not LIB-18's readiness wait.
+
+### 10.10 Questions for the user
+
+None that splits this column. (The golden driver's key timing is LIB-6
+§10.10, question 1.)

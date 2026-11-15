@@ -1,5 +1,5 @@
 # LIB-6 Presets: design
-Status: approved by the user at the Part C1/C2 boundary (2026-11-15)
+Status: Library column approved at the Part C1/C2 boundary (2026-11-15); Calc-U-1600 column: draft for the Part C2/D boundary review (2026-11-16)
 
 ## 1. Scope
 
@@ -712,3 +712,263 @@ M-54 (plan §1). Agent knowledge per step:
   each product's preset format is described for the outdated notice
   (AC-8) is `ProductRules::formatReference()`; its text (a URL of the
   help, M-52 / M-60) is the product's and is set in M-46 and M-54.
+
+## 10. Part D: the Calc-U-1600 column
+
+Draft for the Part C2/D boundary review (2026-11-16). Paths without a
+prefix are under `products/calc-u-1600/`; line numbers at `60e5b09`.
+
+### 10.1 Scope
+
+| Column | Step | Tests from (plan §3) | Done in |
+|---|---|---|---|
+| Calc-U-1600 | M-46, with C1600-4 (`features/C1600-4-sharp-preset-content/design.md`) and LIB-18 1600 (§10 of its design) | AC-44–51, AC-54, AC-67 | M-46 (plan §5.1) |
+
+- Clauses of the Library column that are a product's and pass here
+  (§1's table): AC-24 and AC-48 the product's comparison; AC-53 the
+  idle, the after-build and the picture of the Sharp models; AC-25 the
+  save folder in Qt6 and the download on the Web; AC-31 "every
+  distribution is built from it"; AC-34 through `calcu --product 1600`.
+- Clauses of other columns that need presets of version 2 and pass
+  here: LIB-5 1600 AC-14, AC-28, AC-41 "in a preset" (LIB-5 D-1; LIB-5
+  1600 becomes Done here); LIB-15 1600 AC-16's bundle-file clause
+  (LIB-15 D-4; LIB-15 1600 Done here); the LIB-8 1600 and LIB-10 1600
+  criteria that name upgraded presets (their M-45 designs).
+- The presets that wait for M-47 and the rule: C1600-4 design §1.
+  AC-51 passes in M-46 with them left out by name, as it says.
+
+**Where the code built in C2 differs from §2–§9** (the record is the
+qa-report's "Deviations" of M-38 and M-41): `LoadPlan::items` are
+`PlannedItem`s and `keys:` is the reader's own section; `readStep` and
+`PresetSource::readError()` are new; `ReadContext` has `kept()`,
+`pluggedAny()` and `typingProfile()`; `PlaceKeyRule::byFile` is on by
+default and LIB-7's resolver reads `{ file: }`; `HarnessProduct::typingPart()`
+hands the loader LIB-5's part; `expect:` and `screenshot:` read the
+display from the machine at the step. This column builds on those
+shapes. The library's `machinePlan` (`library/presets/Engine.cpp:26-32`)
+turns only place keys into requests, and the reader takes a key under a
+place's name as a place key (`library/presets/Reader.cpp:462-472`);
+§10.3 adds what C1600-4 needs (D-31 to D-33).
+
+### 10.2 Modules and files
+
+**New**
+
+| File | Holds |
+|---|---|
+| `app/SharpPresetRules.hpp/.cpp` | `shared::SharpPresetRules : presets::ProductRules` and one `SharpModelRules : ModelRules` per model (§10.3); `productName()` "Calc-U-1600", `formatReference()` (D-30); `addKeywords` calls C1600-4's `addSharpKeywords` |
+| `app/SharpDisplayLines.hpp/.cpp` | `shared::displayLines(const DisplayOutput&, const MachineDescriptor&, const SharpFont&)`: the display as text by LIB-11 AC-10 and AC-19, one function for `expect:` and the harness's `readDisplay` (§3.4: "one function in the product") |
+| `tools/CliPresetRun.hpp/.cpp` | the adapter of the CLIs (§10.5) |
+| `tests/sharp_presets_tests.cpp` | AC-44–50, AC-67 and the LIB-5 clauses (§10.6) |
+
+**Changed**
+
+| File | Change |
+|---|---|
+| `app/SharpSession.hpp/.cpp` | `shared::addLibraryParts(AppSessionSetup&, LibraryPartsSetup)`: `PeripheralsPart`, `MachineStatePart`, `TypingPart`, `PresetsPart`, `StartupPart` (LIB-18 §10), in that order, then `SharpAppPart`; used by `makeSharpSession` and `frontends/web/bindings.cpp:35-60` |
+| `app/SharpAppPart.hpp/.cpp` | `loadPresetJob` (367-420), `loadDefaultPresetJob` (422-432), `defaultPresetJob` (453-458), `resetBareForPreset` (651-663), `finishPresetLoad` (665-669) and the commands `c1600.load-preset`, `c1600.load-default-preset`, `c1600.default-preset` (`app/SharpTopics.hpp:35-50`; registered 220-233) go: LIB-6's `load-preset` and LIB-18's start and model switch replace them. The bays (until M-47, LIB-7 A-1) bind in `machineChanged` to what a preset built (§10.5) |
+| `app/AppPaths.hpp/.cpp` | `resolvePresetRef` (46; `.cpp` 55-59) and `kExamplePresetPrefix` (32) go: `presets::sourceFor` and `parseBundlePath`; `bundledExamplesDir` (41) stays as the folder of the `DirectoryPresetBundle` |
+| `app/PresetCatalog.*` | deleted: the preset list is `preset-list` (AC-31, AC-32); `presetNameProblems` into `checkBundle` (C1600-4 AC-18) |
+| `app/SharpWebPart.cpp` | the request `c1600.preset-examples` (382) and the command `c1600.set-default-preset` (391) go: the page asks `preset-list`; the startup preset is LIB-9's key `[preset] <model>`, set with LIB-9's settings command; its choices are the `Startup` entries of `preset-list` |
+| `app/HarnessProduct.cpp` | `presetRules()` and `presetBundle()` (`library/harness/Product.hpp:81-82`); `readDisplay` (112-116) calls `displayLines` |
+| `frontends/qt6/app/MainWindow.cpp` | Load Preset… (162-167) and a dropped preset (809) send `load-preset {ref}` (AC-54: a file in its folder); the Examples menu (845-870) from `preset-list`, each item `examples:<path>`; `loadPresetForShots` (834-842) the same command |
+| `frontends/qt6/app/Operations.cpp:64-66` | `loadPreset` sends `load-preset` |
+| `frontends/qt6/app/SettingsDialog.cpp:164-177` | the startup-preset pickers from `preset-list`; "Default presets" reads "Startup presets" (`docs/glossary-mapping.md`, row "Startup preset"); applying a changed choice now sends `load-preset {ref, cause: startup}` |
+| `frontends/qt6/app/debug/DebugController.cpp:193-235` | `loadPreset` (armOnly) → `load-preset {ref, buildOnly: true}` (AC-55); `cleanStart` → `load-preset`, or LIB-18's `cold-boot` |
+| `frontends/qt6/app/debug/DapSession.cpp:212-248` | the `debug:` block through `shared::debugBlockOf` (C1600-4 §3.4) |
+| `frontends/qt6/app/screenshots/ShotScenario.cpp:142, 263`, `ShotRunner.cpp:234` | the scenario's `preset:` step sends `load-preset` |
+| `frontends/web/src/engine.js:61-137`, `src/CalcU1600.jsx:80-82, 138-147, 244-268` | the Examples menu from `preset-list`; a bundled example by `load-preset {ref: "examples:<path>"}`; an uploaded preset by `load-preset {content, name}` (AC-54, EC-5); `?preset=` as LIB-15 AC-16's bundle path |
+| `frontends/qt6/CMakeLists.txt:214-252`, `frontends/web/build.js:60-79` | bundle the files of `bundle.yaml` (C1600-4 §4) |
+| `CMakeLists.txt:137-138` | CTest `CalcU1600CheckPresets` goes; `calcu_add_preset_check(CalcU1600Presets PRODUCT 1600 FILES … EXCLUDE … FILL tests/fill_vscode_templates.cmake)` |
+| `tools/pc1500_cli.cpp:150-240`, `tools/pc1600_cli.cpp:82-258`, `tools/pc1600_plotter_probe.cpp:24-73`, `dev/loader-matrix/LoaderMatrixCommon.hpp:86-112`, `tools/wasm_smoke.cpp:70-73` | presets through `CliPresetRun` (§10.5); `--check-preset` sends `check-preset` |
+| `library/presets/Reader.cpp:462-472` | a product header key under a place's name is read as the header key (D-31) |
+| `library/presets/ProductRules.hpp:67-84`, `Reader.cpp`, `Engine.cpp:26-32` | `ModelRules::checkHeader(ReadContext&) const`, called once every header key is read (D-32), and `ModelRules::amendPlan(const LoadPlan&, startup::MachinePlan&) const`, called at the end of `machinePlan` (D-33); both empty by default, so no other product and no library test changes |
+
+**Deleted** (the reader of version 1; C1600-4 §2 names its own parts):
+`core/Preset/PresetFile.hpp/.cpp`, `PresetRunner.hpp/.cpp`,
+`PresetRoms.hpp/.cpp` (its `presetroms::` helpers go to LIB-18's
+`SharpProductMachines` and the builder), `core/PC1500/PC1500PresetLoader.*`,
+`core/PC1600/PC1600PresetLoader.*`, `core/Display/PngWriter.hpp` (D-13:
+`calcu::formats::PngWriter`), `core/HostClock.hpp` (C1600-1 qa-report:
+"stays until M-46"), `JobForward` (LIB-3 §5; LIB-5 D-2), the preset
+parts of the Sharp typers (`PC1500BasicTyper::settleUntilIdle`,
+`PC1600BasicTyper::waitUntilBasicIdle`, `tapKeyJob`, `typeLineJob`;
+what C1600-2 kept of them for typing a program in stays C1600-2's),
+`tests/PresetTestSupport.hpp`, `tools/check_presets.sh`.
+`core/DropFile.cpp:15, 28` keeps `opening::looksLikePreset`.
+
+### 10.3 The product's rules (AC-44–48, AC-53, AC-62, AC-67)
+
+```cpp
+namespace shared {
+class SharpModelRules final : public calcu::presets::ModelRules {
+public:
+    IdleRule idle() const override;                                  // AC-45: isKeyReady() for 20 frames, asked every frame
+    Task<ItemResult> afterBuild(RunContext&) override;               // AC-46
+    std::optional<std::vector<std::uint8_t>> screenshot(Machine&, const DisplayOutput&) override;   // AC-48
+    ExpectReading compare(Machine&, const DisplayOutput&, const ExpectText&) override;          // AC-48, AC-67
+    Applies applies(std::string_view keyword) const override;        // preset.md §7, the three Sharp columns
+    void checkHeader(ReadContext&) const override;                   // AC-47 (D-32)
+    void amendPlan(const LoadPlan&, startup::MachinePlan&) const override;   // C1600-4 §3.2 (D-33)
+};
+class SharpPresetRules final : public calcu::presets::ProductRules { /* a SharpModelRules per model; addKeywords */ };
+}
+```
+
+- **AC-44.** The extensions and models are the catalogue's (`.pc1500`,
+  `.pc1500a`, `.pc1600`; the variants of `core/Machine/SharpCatalogue.cpp`);
+  the model comes from `model:` only (AC-5). The place keys `slot-1`,
+  `slot-2`, `printer`, `interface` are the descriptors' (C1600-1);
+  `host-drive` is C1600-4's header key (D-31). `plotter:` is no keyword:
+  "Unknown key plotter." (row 1600-3). `ctrl`, `kbii` and `bs` are
+  refused by the typing profile's `name` (LIB-5 AC-41, `app/SharpTyping.cpp`).
+- **AC-45, AC-53 idle.** `readyNow` is `Machine::isKeyReady()`;
+  `stretch` 20 frames and `sample` one frame, frames as the cores count
+  them (`kPC1500CyclesPerFrame`; LIB-5 qa-report, deviations). First
+  step C-2 (M-4) confirmed the RESERVE mode and MODE 1.
+- **AC-46 after the build.** On the PC-1500 and the PC-1500A: while the
+  display text shows `NEW0? :CHECK`, `typeAndWait(cl)` and the idle
+  wait, at most five times (today `core/PC1500/PC1500PresetLoader.cpp:156-168`);
+  the PC-1600 presses nothing.
+- **AC-47.** A CE-1600P on a PC-1500 does not fit the place (the
+  reader's own check); a CE-158 with a CE-1600P is refused by
+  `checkHeader` with row 1600-22's sentence, at the line of the later
+  key, naming both; `slot-2:` on a PC-1500 is "not available" (AC-62).
+  A `floppy:` step without a CE-1600P is the check of LIB-7's step
+  (M-47; `applies` and `ReadContext::plugged`).
+- **AC-48 picture and text.** `screenshot` is Copy Screen's picture
+  (`core/Display/LcdScreenshot.*`, LIB-14 AC-41) written by
+  `formats::PngWriter`, on the PC-1600 the graphics area without the
+  indicator row. `compare` takes `displayLines` and finds the text in
+  one line, case and spaces as written; `\\` and `\xHH` are decoded by
+  the library's `parseExpectText`; AC-67's expression is searched in
+  each line (`std::regex_search`, ECMAScript).
+- **Screenshots** go to LIB-9's `Paths::screenshotFolder()` (the save
+  folder in Qt6; row 1600-30), on the Web to `KeepFile` (a download).
+
+### 10.4 Frontends (AC-49, AC-54)
+
+- **AC-54.** Qt6 hands a file in its folder (`load-preset {ref: path}`,
+  `folderSource`); the Web hands a bundled example by its bundle path
+  and an uploaded file by its content (`contentSource`; EC-5: a relative
+  file it names is refused). Nothing else of a load is in a frontend.
+- **AC-49.** The log lines are on the `log` topic: Qt6 writes that topic
+  to the platform log already (`frontends/qt6/app/MachineController.cpp:181`);
+  the Web keeps it in its `log` stream (`frontends/web/src/engine.js:126, 175`).
+  Where the log is shown is LIB-14's.
+- **The start** and the startup presets are LIB-18's (§10 of its
+  design); `StartupPart` calls this part's `PresetLoader::load`.
+
+### 10.5 Adapters
+
+| Adapter | File | Wraps | Removed in |
+|---|---|---|---|
+| `CliPresetRun` (new) | `tools/CliPresetRun.hpp/.cpp` | for `pc1500_cli`, `pc1600_cli`, `pc1600_plotter_probe`, the loader matrices and `wasm_smoke`: an app session in `Hosting::VirtualTime` with `addLibraryParts`, `start {preset}` run to its end, then the machine handed back for the tool's own dumps (`LegacyCalls::coreParts`) | M-51 (the CLIs and probes go) |
+| bays on `machineChanged` | `app/SharpAppPart.cpp` (`ModuleBay::syncFromPresetLoad` 155-165, `FloppyBay::syncFromPresetLoad` 93-103 called from `machineChanged` 307-313) | the bays read the slots of a machine that a preset or LIB-18 built, as templates where named by name | M-47 (LIB-7 A-1) |
+
+Removed in M-46: `LegacyCalls::applyPresetJob` and `syncPlugged`
+(`core/Machine/LegacyCalls.hpp:49-59`); `JobForward`; the `c1600.*`
+preset commands (LIB-3 §5; the adapter of §5 above); `CalcU1600CheckPresets`. The CLIs'
+`saveas:` (`LegacyCalls::presetMedia`, `core/Preset/PresetMedia.hpp`)
+waits with the presets that use it (M-47, LIB-7 A-3).
+
+### 10.6 Tasks
+
+Tests come before the code. `CoreTests` (Frequent) unless the row says
+otherwise; ROM-gated cases `SKIP_UNLESS` the ROMs. The cases run the
+product's harness entry in virtual time, or `presets::readPreset` with
+`SharpPresetRules`. Names `lib6_acN_…`, `lib5_acN_…`, `lib15_acN_…`.
+
+| Task | What | ACs | Test (file: cases, group) |
+|---|---|---|---|
+| P1 | Models, places, keys | AC-44 | `sharp_presets_tests.cpp`: `lib6_ac44_extensions_models_variants_any_case`, `lib6_ac44_place_keys_per_model`, `lib6_ac44_plotter_key_unknown`, `lib6_ac44_floppy_and_tape_not_header_keys`, `lib6_ac44_ctrl_kbii_bs_refused_in_key` |
+| P2 | Idle | AC-45, AC-53 | `lib6_ac45_idle_at_prompt_input_and_reserve`, `lib6_ac45_running_program_not_idle`, `lib6_ac53_sharp_idle_rule_values` |
+| P3 | After the build | AC-46 | `lib6_ac46_cl_at_new0_check_at_most_five_pc1500a`, `lib6_ac46_pc1600_presses_nothing` |
+| P4 | Hardware together | AC-47 | `lib6_ac47_ce1600p_on_pc1500_refused`, `lib6_ac47_ce158_with_ce1600p_names_both`, `lib6_ac47_slot2_on_pc1500_not_available` (the `floppy:` clause: LIB-7 §10.6, M-47) |
+| P5 | Picture and text | AC-48, AC-67, AC-24, AC-25 | `lib6_ac48_screenshot_is_copy_screen_picture` (byte-equal with Copy Screen's PNG; the PC-1600 without the indicator row), `lib6_ac48_expect_one_line_case_and_spaces`, `lib6_ac48_backslash_and_xhh`, `lib6_ac67_regex_error_1_not_error_10`, `lib6_ac67_bad_regex_refused_at_read`, `lib6_ac67_leading_slash_escaped_literal`, `lib6_ac25_screenshot_into_save_folder` |
+| P6 | Log | AC-49 | `lib6_ac49_log_lines_on_log_topic` (`app/tests/SessionFixture.hpp`); Web `session.spec.js` `lib6_ac49 preset log in the log stream` (Longer) |
+| P7 | Today's tests | AC-50 | the cases of AC-50's list ported onto the library's reader and steps as `lib6_ac50_<old name>` (`preset_tests.cpp`, `lcd_text_tests.cpp`, `lcd_screenshot_tests.cpp`; `job_tests.cpp:217` as "in parts against in one go"); the old cases go with the old reader |
+| P8 | The suite check | AC-51 | `calcu_preset_check.CalcU1600Presets` (Frequent): every preset of C1600-4 §2's table, the VS Code templates filled by `tests/fill_vscode_templates.cmake` (the rule of `vscode/calcu1600-debug/scaffold.js:58`, C1600-3 AC-19), `EXCLUDE` the five waiting presets; `checkBundle` over `examples/bundle.yaml` in the same entry |
+| P9 | Frontends | AC-54 | Qt6: a screenshot scenario `lib6-ac54-example-loads` run as a check (`CalcU1600Shots.lib6-ac54-example-loads`, Longer: `examples:plotter/lissajou-1600.pc1600`, then the display text and the paper); Web: `play.spec.js:208` renamed `lib6_ac54 bundled example loads and its result shows`, and `lib6_ac54 uploaded preset by its content` (Longer) |
+| P10 | Typing in a preset | LIB-5 AC-14, AC-28, AC-41 | `lib5_ac14_in_a_preset_type_at_readiness_pc1600_at_once_pc1500`, `lib5_ac28_in_a_preset_cadence`, `lib5_ac41_ent_refused_in_a_preset` |
+| P11 | Bundle path on the Web | LIB-15 AC-16 | `embed.spec.js` `lib15_ac16 preset prop takes a path of bundle.yaml` (Longer) |
+| P12 | Harness | AC-34 | `harness_tests.cpp`: `lib6_ac34_preset_wait_expect_screenshot_on_pc1600` (`calcu --product 1600 preset examples:basic/hanoi.pc1600 then wait then expect …`) |
+
+Coverage: P1–P9 cover AC-44 to AC-51, AC-54 and AC-67.
+
+### 10.7 Tools and agent knowledge (M-46)
+
+| File | Change |
+|---|---|
+| `products/calc-u-1600/CLAUDE.md` | the Harness section: presets are read ("Not yet: … presets" goes; `preset`, `check-preset`, `preset-list`, `wait` without a duration, `expect`, `screenshot` listed); "until M-51, `pc1500_cli` … stay the tools for" memory dumps and media only; the `LegacyCalls` sentence without the preset adapters |
+| `products/calc-u-1600/docs/developer/Shared-Architecture.md`, `Web-Client.md`, `Building.md` | the preset path (`load-preset`, `SharpPresetRules`, the bundle file); `check_presets.sh` → `calcu_preset_check.CalcU1600Presets` |
+| `products/calc-u-1600/docs/developer/screenshots/README.md` | presets of version 2; the `preset:` step sends `load-preset` |
+| `products/calc-u-1600/docs/background/Decisions.md` | a row on a bare `- wait:`, where there is one, points to `let-it-finish:` and the implicit wait |
+| `docs/test-groups.md` | `CalcU1600CheckPresets` out; `calcu_preset_check.CalcU1600Presets`, `CalcU1600ExampleReferences`, `CalcU1600BundledFiles` in; the new `CoreTests` files |
+| `docs/glossary-mapping.md` | row "Startup preset": "Default presets" → "Startup presets" (visible, Qt6 and Web); row "Preset, preset format": `PresetFile` → `calcu::presets`; `bundled.yaml` → `bundle.yaml`; `PresetCatalog` → the preset list |
+| memory `calc-u-1600/project_preset_parameterless_wait.md` | rewritten: the bare `- wait:` is gone; every item but the last waits until idle (20 frames of key readiness), `let-it-finish:` waits for the last; the PC-1600's `$92xx` rule is no longer used (key readiness, C1600-1 AC-21) |
+| memory `calc-u-1600/feedback_fix_loader_not_presets.md` | "the Core loader" → the product's rules and the library's engine; the rule stays (fix the rules, not the presets) |
+| memory `calc-u-1600/project_scripted_screenshots.md` | the presets are version 2 |
+| memory `calc-u-1600/feedback_paste_vs_inbound_typing.md` | step 1 "clean start from a preset" is `load-preset`, or `cold-boot` |
+| `calc-u-1600-memories.md` (index) | the descriptions of the four entries above |
+
+**Ledger rows that become visible in M-46** (with C1600-4 and LIB-18
+1600): 1600-1 (presets of version 1 refused with the hint), 1600-3
+(the syntax), 1600-11 (checked before the machine is given up),
+1600-21 (only the bundle file's files are bundled; its examples zip is
+M-61's), 1600-30 (waits, regular speed afterwards, screenshots in the
+save folder, `not-expect:` and expressions). No new row: "Default
+presets" → "Startup presets" is a visible rename of
+`docs/glossary-mapping.md`.
+
+### 10.8 Golden and reference runs, risks
+
+- **Golden runs** (`tests/golden-runs/`, `golden_runs_tests.cpp`) build
+  and drive the machine directly; this column changes no path they use.
+  LIB-18 §10.8 names what its column changes for them.
+- **Reference runs.** C1600-4 AC-16 (its design §6 T8, §8) is the check
+  of this column as well: the 28 examples upgraded in M-46 (32 less the
+  four examples that wait) go through this loader.
+- **Waits.** Every item now waits until idle (row 1600-30); a `type:`
+  that version 1 left after one second now waits for its command, so
+  a startup preset with a long `INIT` takes longer. Measured with the
+  reference runs; intended (conversion check §4).
+- **`std::regex` in the Web engine** (§8) is used by a product for the
+  first time; `tools/build_wasm_check.sh` and the Web build show the size.
+- **`CliPresetRun`** gives the CLIs the library's load, so a CLI run of
+  a preset waits as the GUI does; `dev/tape-matrix/run.py` and the loader
+  matrices are run once in the step (memory one-time verification).
+
+### 10.9 Decided (best guess)
+
+- **D-30 (`formatReference`).** "the preset format in the User Guide,
+  chapter Presets" until M-52 gives the help topic's address. Settles
+  §9's open point for Calc-U-1600.
+- **D-31 (a header key under a place's name).** The reader asks the
+  vocabulary first, then the descriptor's places; so `host-drive:` is
+  C1600-4's header key (D-22 already gives such a key to the product).
+  No other key of either product stands under a place's name.
+- **D-32 (`checkHeader`).** One product check after every header key is
+  read, for AC-47's pairs, so that the error names both keys at the
+  line of the later one.
+- **D-33 (`amendPlan`).** The product turns its kept header values into
+  requests (host drive, slot ROMs, bus ROMs; C1600-4 D-2); the reader
+  stays the only writer of a `LoadPlan`.
+- **D-34 (waiting presets).** AC-51's rule decides which presets wait,
+  not only the three names in its parenthesis (C1600-4 D-3, Plan note
+  P-1 there).
+- **D-35 (tools).** The CLIs reach the loader through one adapter that
+  hosts the product's session in virtual time, not through a copy of
+  the engine; their `saveas:` stays old until M-47.
+
+### 10.10 Questions for the user
+
+1. **The golden driver's key timing** (finding of M-36, LIB-5
+   qa-report). The Sharp golden driver taps keys with 0.8.1's queue
+   timing (one instruction before the press, the PC-1500's readiness
+   wait off). With the real PC-1500 typing profile (LIB-5 AC-31),
+   `pc1500a-ce150` differs in two cycle counts and one audio-sample
+   count; the display, the paper and the memory are equal. This design
+   keeps the driver as it is. *Keep the driver on 0.8.1's timing
+   (recommended), or move it to the real profile and record
+   `pc1500a-ce150` anew as the accepted difference?*

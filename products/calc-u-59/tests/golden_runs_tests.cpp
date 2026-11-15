@@ -340,7 +340,7 @@ TEST(c59_1_ac4_golden_runs_through_the_machine_interface) {
     for (const auto& e : fs::directory_iterator(dir))
         if (e.path().extension() == ".run") scripts.push_back(e.path());
     std::sort(scripts.begin(), scripts.end());
-    CHECK_EQ(scripts.size(), size_t{17});
+    CHECK_EQ(scripts.size(), size_t{18});
     for (const auto& s : scripts) {
         std::string error;
         std::string got = play(testroms::readFile(s.string()).value_or(""), &error);

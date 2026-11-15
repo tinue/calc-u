@@ -92,7 +92,9 @@ frontend sends commands (`cu59::commands`, `c59.*`, and the library's
 (`c59.model`, `c59.led`, `c59.printer`, `c59.card-reader`, `c59.run-state`,
 `c59.debug.*`, …; each the snapshot of one of 2.3.0's change flags, until
 the feature that owns it, LIB-3 59 design §5). Qt6 calls the session on its
-GUI thread, Swift on `cu59::SessionThread`, the Web in its worker (§ "Threads").
+GUI thread, Swift on `cu59::SessionThread`, the Web in its worker (§ "Threads");
+each talks to it through the library's `calcu::sessions::Listener`. The
+session owns the part (`AppSessionSetup::owned`) and lets it go first.
 
 `TIAppPart` holds the flows all GUIs share (2.3.0's `SessionController`,
 taken apart in M-34): it owns the `EmulatorSession` (rebuilt on a model

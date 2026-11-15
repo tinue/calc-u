@@ -54,11 +54,14 @@ protected:
     ~SessionContext() = default;
 };
 
-// At attach: what a part declares.
+// At attach: what a part declares, and the context it keeps for later (its
+// slice hook, gate and wait probe go on context().machineSession() here).
 class SessionSetup {
 public:
     using Handler = std::function<CommandOutcome(const Value& args, SessionContext&)>;
     using RequestHandler = std::function<ReplyMessage(const Value& args, SessionContext&)>;
+
+    virtual SessionContext& context() = 0;
 
     virtual StateTopic& stateTopic(TopicName) = 0;
     virtual StreamTopic& streamTopic(TopicName, History) = 0;
@@ -73,6 +76,9 @@ protected:
 
 class SessionPart {
 public:
+    // Once, while the session is built, in the order of the parts. A part may
+    // set the first machine here; the session reads its display and tells
+    // every part (machineChanged) before it is first called.
     virtual void attach(SessionSetup&) = 0;
     virtual void beforeCall(SessionContext&, pacing::WallTime) {}
     virtual void afterCall(SessionContext&, pacing::WallTime) {}   // per-call duties

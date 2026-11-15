@@ -45,7 +45,7 @@ struct SessionRig : calcu::sessions::MessageSink {
     calcu::sessions::TopicMirror mirror;
     std::vector<calcu::sessions::Message> messages;
     std::vector<calcu::sessions::ReplyMessage> replies;
-    std::unique_ptr<cu59::TIAppSession> app;
+    calcu::sessions::ProductSession<cu59::TIAppPart> app;
     calcu::sessions::ListenerId me = 0;
 
     explicit SessionRig(cu59::Model model = cu59::Model::TI59, calcu::sessions::HostServices services = {},
@@ -61,8 +61,8 @@ struct SessionRig : calcu::sessions::MessageSink {
         me = session().listen(*this, std::move(services));
     }
 
-    calcu::sessions::AppSession& session() { return *app->session; }
-    cu59::TIAppPart& part() { return *app->part; }
+    calcu::sessions::AppSession& session() { return *app.session; }
+    cu59::TIAppPart& part() { return *app.part; }
     calcu::machine::Machine& machine() { return *session().machineSession().machine(); }
 
     void deliver(const calcu::sessions::Message& m) override {

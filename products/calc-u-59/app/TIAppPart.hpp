@@ -269,11 +269,8 @@ public:
     TIAppPart(const TIAppPart&) = delete;
     TIAppPart& operator=(const TIAppPart&) = delete;
 
-    /// Once the session exists: the gate, the hook and the probe on its
-    /// machine session, then the first machine.
-    void start(calcu::sessions::AppSession&);
-
-    // SessionPart
+    // SessionPart. attach: the topics and commands, the gate, the hook and
+    // the probe on the machine session, then the first machine.
     void attach(calcu::sessions::SessionSetup&) override;
     void beforeCall(calcu::sessions::SessionContext&, calcu::pacing::WallTime) override;
     void afterCall(calcu::sessions::SessionContext&, calcu::pacing::WallTime) override;
@@ -442,10 +439,6 @@ public:
     void setChangeObserver(std::function<void(uint32_t)> observer) { m_observer = std::move(observer); }
     /// A preset's operation: it ends when its KEYSTROKES have played (AC-32);
     /// for a part that loads a preset as the start (the Web's `start`).
-    /// The session was destroyed before the part (the Web engine's
-    /// WebSession destroys the session first): the EmulatorSession, whose
-    /// machine went with it, is let go without touching it.
-    void forgetSession();
     /// The machine a load built joins the machine session first.
     calcu::sessions::Operation presetOperation();
 
@@ -622,22 +615,17 @@ private:
     calcu::sessions::StreamTopic* m_panel = nullptr;
 };
 
-/// The session of a frontend (C59-5 D-12; the Web's through
-/// makeWebAppSession, LIB-15): the library's app session with the part,
-/// paced on `clock` (the host's wall clock; the steady clock's time since its
-/// epoch in the apps). Single-threaded: built, called and destroyed on the
-/// host's session thread.
-struct TIAppSession {
-    std::unique_ptr<calcu::sessions::AppSession> session;   // destroyed after the part
-    std::unique_ptr<TIAppPart> part;
-    ~TIAppSession();
-};
-/// `before`: parts of the host's that go in front of the product's (the
-/// Web's shell part, tests); `after`: parts behind it (the Web's TIWebPart).
-std::unique_ptr<TIAppSession> makeAppSession(TIAppSetup setup, calcu::pacing::WallClock clock,
-                                             std::optional<std::uint32_t> jitterSeed = std::nullopt,
-                                             std::vector<calcu::sessions::SessionPart*> before = {},
-                                             std::vector<calcu::sessions::SessionPart*> after = {});
+/// The session of a native frontend (C59-5 D-12): the library's app session
+/// with the part, which the session owns (AppSessionSetup::owned) and lets go
+/// first, paced on `clock` (the host's wall clock; the steady clock's time
+/// since its epoch in the apps). `before`: parts of the host's that go in
+/// front of the product's (tests); `after`: parts behind it (tests of
+/// TIWebPart; the Web engine builds its own, frontends/web/bindings.cpp).
+/// Single-threaded: built, called and destroyed on the host's session thread.
+calcu::sessions::ProductSession<TIAppPart> makeAppSession(TIAppSetup setup, calcu::pacing::WallClock clock,
+                                                          std::optional<std::uint32_t> jitterSeed = std::nullopt,
+                                                          std::vector<calcu::sessions::SessionPart*> before = {},
+                                                          std::vector<calcu::sessions::SessionPart*> after = {});
 
 /// The steady clock as the session's wall clock, and back.
 calcu::pacing::WallTime steadyWallTime();

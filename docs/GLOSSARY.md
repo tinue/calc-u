@@ -213,6 +213,12 @@ One window's state around a machine session: settings, files and media,
 the debugger, and the frontend interface.
 _Avoid_: session controller, session (bare)
 
+**Listener**:
+What talks to an app session from outside: a frontend, the harness, a
+test. It is sent the topics, and the replies to its own commands and
+requests.
+_Avoid_: client, host (for this)
+
 ## Presets
 
 **Preset**:

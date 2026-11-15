@@ -50,6 +50,7 @@ parenthesis is removed with it.
 | Glossary term | Calc-U-59 | Calc-U-1600 |
 |---|---|---|
 | App session | done (M-33, M-34): `calcu::sessions::AppSession` with `cu59::TIAppPart` (every frontend; `SessionController` taken apart into `TIAppPart` in M-34) | done (M-31): the library's `calcu::sessions::AppSession`; the product's part `shared::SharpAppPart` |
+| Listener | done (C1 simplification): `calcu::sessions::Listener` in the Qt6 `EmulatorController`, on the Swift `SessionThread` (was its own sink and reply map, `HostedSession`/`AppSessionHost`), the harness and the tests | done (C1 simplification): `calcu::sessions::Listener` in the Qt6 `MachineController`, `tools/wasm_smoke` and the tests (was `SharpHost`; the session is made by `makeSharpSession`) |
 | Machine session | done (M-33, M-34): `calcu::sessions::MachineSession` (every frontend; `EmulatorSession` keeps the TI runtime around the machine, adapters `TIFreezeGate`, `TIKeySequencerHook`) | done (M-31): the library's `calcu::sessions::MachineSession` |
 | Frontend interface | done (M-33, M-34): messages and commands of the app session (every frontend; `TIAppSession` is the Swift bridge, was `TISessionController`; the Web's through the library's `WorkerHost`) | done (M-31): messages of the app session (topics, commands, host services) |
 | App layer | `Shared/` | `Shared/` |

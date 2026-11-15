@@ -55,18 +55,18 @@ TEST(lib3_ac35_preset_in_parts_busy_display_and_paper_update) {
     CHECK(f.start("PC-1500A"));
     f.readCost = std::chrono::microseconds(500);   // the host's work inside a call
     f.messages.clear();
-    const sessions::CallId id = f.host->send(c::kLoadPreset, Value::object({{"path", "examples:plotter/lissajou-1500.pc1500a"}}));
+    const sessions::CallId id = f.send(c::kLoadPreset, Value::object({{"path", "examples:plotter/lissajou-1500.pc1500a"}}));
     // What the command's own flush sent (the start of the operation, before
     // its first call): the armed machine.
     const int controlsAtSend = countState(f.messages, 0, t::kControlState);
     std::vector<CallRecord> calls;
     std::optional<sessions::ReplyMessage> reply;
-    while (!(reply = f.host->takeReply(id)) && calls.size() < 20000) {
+    while (!(reply = f.takeReply(id)) && calls.size() < 20000) {
         const std::size_t from = f.messages.size();
         const auto before = f.now + std::chrono::milliseconds(17);
         f.call(17);
         CallRecord r;
-        r.busy = f.host->busy();
+        r.busy = f.busy();
         r.displayMessages = countState(f.messages, from, sessions::kDisplayTopic);
         r.controlMessages = countState(f.messages, from, t::kControlState);
         r.wallMs = std::chrono::duration<double, std::milli>(f.now - before).count();
@@ -94,7 +94,7 @@ TEST(lib3_ac35_preset_in_parts_busy_display_and_paper_update) {
     CHECK(controls >= 1);      // the armed machine (the CE-150 attached) was shown during it
     CHECK(lastRevisionWhileBusy + 1 > firstRevision);   // the paper grew while it ran
     CHECK(worstMs <= 14.0 + 3.0);   // LIB-17 AC-5's 14 ms, plus the slice that crosses it
-    CHECK(!f.host->busy());
+    CHECK(!f.busy());
 }
 
 // LIB-3 AC-37: the buzzer through the audio sink at regular speed, nothing
@@ -140,12 +140,12 @@ TEST(lib3_ac37_buzzer_heard_at_regular_speed_only) {
 
     // An operation (a reset): nothing while it runs.
     mark = f.messages.size();
-    const sessions::CallId id = f.host->send(c::kReset, Value::object({{"all", false}}));
+    const sessions::CallId id = f.send(c::kReset, Value::object({{"all", false}}));
     std::size_t duringOp = 0;
-    while (!f.host->takeReply(id)) {
+    while (!f.takeReply(id)) {
         const std::size_t from = f.messages.size();
         f.call();
-        if (f.host->busy()) duringOp += samplesFrom(from);
+        if (f.busy()) duringOp += samplesFrom(from);
     }
     CHECK(duringOp == 0);
 }
@@ -216,15 +216,15 @@ TEST(lib3_ac38_mirror_holds_every_callback) {
     // presetLog -> log; moduleChanged -> c1600.machine.
     mark = f.messages.size();
     const auto moduleChanges = after->moduleChanges;
-    const sessions::CallId id = f.host->send(c::kLoadPreset, Value::object({{"path", "tests/fixtures/presets/startup-pc1600.pc1600"}}));
+    const sessions::CallId id = f.send(c::kLoadPreset, Value::object({{"path", "tests/fixtures/presets/startup-pc1600.pc1600"}}));
     int controlWhileBusy = countState(f.messages, mark, t::kControlState);   // the command's own flush: armed
-    while (!f.host->takeReply(id)) {
+    while (!f.takeReply(id)) {
         const std::size_t from = f.messages.size();
         f.call();
-        if (f.host->busy()) controlWhileBusy += countState(f.messages, from, t::kControlState);
+        if (f.busy()) controlWhileBusy += countState(f.messages, from, t::kControlState);
     }
     CHECK(controlWhileBusy >= 1);
-    CHECK(!f.host->mirror().takeAppended(sessions::kLogTopic).empty());
+    CHECK(!f.listener.mirror().takeAppended(sessions::kLogTopic).empty());
     CHECK(f.state<shared::MachinePayload>(t::kMachine)->moduleChanges != moduleChanges);
     CHECK(f.state<shared::ControlStatePayload>(t::kControlState)->state.ce1600p.attached);
 
@@ -265,14 +265,14 @@ TEST(ledger_1600_9_keys_dropped_and_reset_stops_an_operation) {
     SessionFixture f;
     CHECK(f.start("PC-1600"));
     f.readCost = std::chrono::milliseconds(1);
-    const sessions::CallId preset = f.host->send(c::kLoadPreset, Value::object({{"path", "tests/fixtures/presets/startup-pc1600.pc1600"}}));
+    const sessions::CallId preset = f.send(c::kLoadPreset, Value::object({{"path", "tests/fixtures/presets/startup-pc1600.pc1600"}}));
     f.call();
-    CHECK(f.host->busy());
+    CHECK(f.busy());
     f.part().typing().pasteText("PRINT 1");
     CHECK(!f.part().typing().pasteActive());   // dropped
     const sessions::ReplyMessage reset = f.run(c::kReset, Value::object({{"all", true}}));
     CHECK(reset.done);
-    const auto stopped = f.host->takeReply(preset);
+    const auto stopped = f.takeReply(preset);
     CHECK(stopped && !stopped->done && stopped->reason == sessions::kStopped);
     f.part().typing().pasteText("PRINT 1");
     CHECK(f.part().typing().pasteActive());   // taken again

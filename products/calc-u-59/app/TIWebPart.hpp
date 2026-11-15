@@ -62,7 +62,7 @@ public:
     TIWebPart(settings::Settings& settings, std::string presetsDir, std::filesystem::path traceDir);
     ~TIWebPart();
 
-    /// Once the app session and its TIAppPart exist (makeAppSession).
+    /// Once, before the session is built: the product's part it draws.
     void bind(TIAppPart& app);
 
     void attach(calcu::sessions::SessionSetup&) override;

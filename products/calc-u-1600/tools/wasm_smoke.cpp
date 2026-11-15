@@ -12,7 +12,8 @@
 #include <string>
 
 #include "Machine/SharpRoms.hpp"
-#include "app/SharpHost.hpp"
+#include "app/SharpSession.hpp"
+#include "sessions/Listener.hpp"
 #include "app/tests/TestSettings.hpp"
 
 namespace {
@@ -20,15 +21,14 @@ namespace {
 namespace fs = std::filesystem;
 namespace sessions = calcu::sessions;
 
-std::string screen(shared::SharpHost& host) {
+std::string screen(const sessions::Listener& host, const shared::SharpAppPart& part) {
     LcdText text;
     const calcu::machine::DisplayOutput* d = host.display();
-    return d && host.part().lcdText(*d, &text) ? text.text() : std::string();
+    return d && part.lcdText(*d, &text) ? text.text() : std::string();
 }
 
-bool run(shared::SharpHost& host, const sessions::CommandName& name, sessions::Value args = {}) {
-    const sessions::CallId id = host.send(name, std::move(args));
-    const auto r = host.takeReply(id);   // virtual time: the operation ran to its end inside send()
+bool run(sessions::Listener& host, const sessions::CommandName& name, sessions::Value args = {}) {
+    const auto r = host.send(name, std::move(args)).reply;   // virtual time: the operation ran to its end inside send()
     if (!r || !r->done) std::fprintf(stderr, "%s: %s\n", name.value.c_str(), r ? r->reason.c_str() : "no reply");
     return r && r->done;
 }
@@ -54,10 +54,13 @@ int main() {
         shared::Settings& settings = testSettings.settings;
         shared::AppPaths paths(settings, testHostDirs((root / "home").generic_string()),
                                shared::BundleDirs{(root / "bundle").generic_string(), {}});
-        shared::SharpHost::Options options;
+        shared::SharpSessionOptions options;
         options.hosting = sessions::Hosting::VirtualTime;
         options.clock = [] { return calcu::pacing::WallTime{0}; };
-        shared::SharpHost host(settings, paths, std::move(options));
+        auto app = shared::makeSharpSession(settings, paths, std::move(options));
+        shared::SharpAppPart& part = *app.part;
+        sessions::Listener host;
+        host.listen(*app.session, sessions::HostServices{{sessions::HostService::FolderPicker}});
         if (!run(host, shared::commands::kStart)) ++failures;
 
         struct Case {
@@ -68,16 +71,16 @@ int main() {
                               Case{"tests/fixtures/presets/hanoi.pc1600", ""},
                               Case{"tests/fixtures/presets/startup-pc1500a.pc1500a", ""}}) {
             const bool ok = run(host, shared::commands::kLoadPreset, sessions::Value::object({{"path", c.preset}}));
-            const std::string lcd = screen(host);
+            const std::string lcd = screen(host, part);
             const bool seen = lcd.find(c.expect) != std::string::npos;
             std::printf("%s %s\n%s\n", ok && seen ? "ok  " : "FAIL", c.preset, lcd.c_str());
             if (!ok || !seen) ++failures;
         }
         // Typing through the input queue (SharpTypingHook), in emulated time.
-        host.part().typing().typeCommand("PRINT 6*7");
-        host.session().advanceUnpaced(static_cast<calcu::machine::Ticks>(4.0 * host.part().clockHz()));
-        const bool typed = screen(host).find("42") != std::string::npos;
-        std::printf("%s PRINT 6*7\n%s\n", typed ? "ok  " : "FAIL", screen(host).c_str());
+        part.typing().typeCommand("PRINT 6*7");
+        app.session->advanceUnpaced(static_cast<calcu::machine::Ticks>(4.0 * part.clockHz()));
+        const bool typed = screen(host, part).find("42") != std::string::npos;
+        std::printf("%s PRINT 6*7\n%s\n", typed ? "ok  " : "FAIL", screen(host, part).c_str());
         if (!typed) ++failures;
     }
     fs::remove_all(root);

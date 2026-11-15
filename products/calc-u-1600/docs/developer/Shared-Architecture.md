@@ -61,7 +61,7 @@ WebAssembly check.
 |---|---|
 | `SharpAppPart` | Calc-U-1600's part of the library's app session (a `calcu::sessions::SessionPart`): the live PC-1500/1500A/1600 as one `calcu::machine::Machine` handed to the machine session, model and ROM switches, memory-module slots, peripherals, tape, host drive, trace, inspector; the bays; the Sharp operations as `c1600.*` commands; the interim topics `c1600.control-state`, `c1600.machine`, `c1600.tapes`, `c1600.serial-links` and LIB-12's `roms-missing` (`SharpTopics.hpp`; see "The machine" below) |
 | `SharpMachineParts` | The adapters around the machine session: `SharpTypingHook` (host keys, `hostKeyDown`, the paste queue, timed taps; until M-36) and `SharpDebuggerGate` (the debugger's run control; until M-45) |
-| `SharpHost` | The wiring every host needs: the part, the session, one listener with a `TopicMirror` and the replies (Qt6, tests, `tools/wasm_smoke`) |
+| `SharpSession` | `makeSharpSession()`: the library's app session with the part, which the session owns (Qt6, tests, `tools/wasm_smoke`); a host talks to it through the library's `calcu::sessions::Listener` |
 | `SharpWebPart` | What the Web page draws, as product topics, commands and requests (`c1600.ui`, `c1600.lcd`, …; LIB-15 1600) |
 | `ModuleBay`, `FloppyBay`, `TapeBay` | The control bar's slots, disk and tape: catalogues, attach, Name & Save, preset `saveas:`, debounced autosave |
 | `PresetCatalog` | The bundled presets of `examples/bundled.yaml` (`defaults`, `examples`) and any preset's short name and description; `examples:` refs resolve through `AppPaths` |
@@ -130,10 +130,12 @@ A frontend hosts the library's app session (LIB-3) and talks to it by
 messages: it sends commands and requests, and keeps what the topics send.
 
 1. Open the `SettingsFile`, build `Settings` over it and `AppPaths` (with
-   its `HostDirs` and `BundleDirs`), then a `SharpHost` (or, like the Web
-   engine, the part and the session by hand: the part's `sessionParts()` in
-   the `AppSessionSetup`, then `bind(session)`), stating the frontend's host
-   services (an audio sink; a folder picker offers File ▸ Mount Directory).
+   its `HostDirs` and `BundleDirs`), then the session with
+   `makeSharpSession()` (or, like the Web engine, the part and the session
+   by hand: the part's `sessionParts()` in the `AppSessionSetup`, the part
+   in its `owned`), and listen with a `calcu::sessions::Listener`, stating
+   the frontend's host services (an audio sink; a folder picker offers
+   File ▸ Mount Directory).
 2. Send `start`: the startup model (or the one named), cold booted, then
    its default preset or the preset named -- an operation.
 3. Call `session().call(now)` from a ~60 Hz timer. The library's pacer
@@ -151,8 +153,8 @@ messages: it sends commands and requests, and keeps what the topics send.
    topic says it runs and whether at full speed ("Loading…"). A failure is
    also a notice. Reset, Cold boot and a model switch stop a running one.
 
-The Qt app does this: `MachineController` hosts the session through
-`SharpHost` on the GUI thread and turns its messages into signals,
+The Qt app does this: `MachineController` hosts the session on the GUI
+thread, listens through a `Listener` and turns its messages into signals,
 `EmulationPacer` makes the host call from a QTimer, `Operations` sends the
 commands and shows "Loading…" from the busy topic, `AudioOutput` is the
 QAudioSink behind a `SoundFeed`, and `MainWindow` keeps only the

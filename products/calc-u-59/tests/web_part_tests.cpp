@@ -27,7 +27,7 @@ struct WebRig : MessageSink {
     std::unique_ptr<calcu::settings::SettingsFile> file;
     std::unique_ptr<settings::Settings> settings;
     std::unique_ptr<TIWebPart> web;
-    std::unique_ptr<TIAppSession> app;
+    calcu::sessions::ProductSession<TIAppPart> app;
     calcu::pacing::WallTime now{std::chrono::hours(1)};
     TopicMirror mirror;
     std::vector<std::string> notices;
@@ -51,12 +51,12 @@ struct WebRig : MessageSink {
         s.saveFolder = dirs.saveFolder;
         s.trace = {folder.path / "traces", 1'000'000};
         app = makeAppSession(std::move(s), [this] { return now += 1ms; }, 59u, {}, {web.get()});
-        web->bind(*app->part);
-        me = app->session->listen(*this, {});
+        web->bind(*app.part);
+        me = app.session->listen(*this, {});
     }
     ~WebRig() {
-        app.reset();
-        web.reset();
+        web.reset();   // first: it tells the part it goes
+        app = {};
     }
     void deliver(const Message& m) override {
         mirror.deliver(m);
@@ -65,17 +65,17 @@ struct WebRig : MessageSink {
                 if (const auto* x = payloadAs<Notice>(n)) notices.push_back(x->sentence);
     }
     void send(const char* name, Value args = Value::object({})) {
-        app->session->send(me, Command{CommandName{name}, std::move(args)});
-        app->session->call(now);
+        app.session->send(me, Command{CommandName{name}, std::move(args)});
+        app.session->call(now);
     }
     void run(std::chrono::milliseconds d) {
-        for (auto end = now + d; now < end;) app->session->call(now += std::chrono::microseconds(16'667));
+        for (auto end = now + d; now < end;) app.session->call(now += std::chrono::microseconds(16'667));
     }
     Value state(const TopicName& t) const {
         const PayloadPtr* p = mirror.state(t);
         return p && *p ? (*p)->toValue() : Value();
     }
-    TIAppPart& part() { return *app->part; }
+    TIAppPart& part() { return *app.part; }
 };
 
 } // namespace

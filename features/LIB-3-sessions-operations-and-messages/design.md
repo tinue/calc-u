@@ -331,6 +331,7 @@ other, so AC-25 holds by construction.
 ```cpp
 class SessionSetup {     // at attach: declare what a part brings
 public:
+  SessionContext& context();    // kept by the part; its slice hook, gate, probe go on context().machineSession() here (C1 simplification)
   StateTopic&  stateTopic(TopicName);
   StreamTopic& streamTopic(TopicName, History);
   using Handler = std::function<CommandOutcome(const Value& args, SessionContext&)>;
@@ -351,7 +352,7 @@ public:
 
 class SessionPart {      // a library feature's part (LIB-2, 4, 7, 8, 10, 12, 18) or a product's app layer
 public:
-  virtual void attach(SessionSetup&) = 0;
+  virtual void attach(SessionSetup&) = 0;   // may set the first machine: the session syncs it before its first flush
   virtual void beforeCall(SessionContext&, pacing::WallTime) {}   // e.g. LIB-2's host link queue drained
   virtual void afterCall(SessionContext&, pacing::WallTime) {}    // per-call duties: bays, debug model, 2 Hz checks
   virtual void machineChanged(SessionContext&) {}
@@ -382,7 +383,9 @@ struct AppSessionSetup {
   std::vector<SessionPart*> parts;                         // library features first, then the product's
   Hosting hosting = Hosting::Paced;
   std::optional<std::uint32_t> jitterSeed;                 // LIB-17 AC-10
+  std::shared_ptr<void> owned;                             // the parts and what they need: released first, while the machine is there
 };
+template <class Part> struct ProductSession { std::unique_ptr<AppSession> session; Part* part; };   // a product factory's result
 class AppSession {
 public:
   explicit AppSession(AppSessionSetup);
@@ -393,7 +396,7 @@ public:
   CallId ask(ListenerId, Request);
   void answer(CallId ask, ServiceAnswer);                  // AC-27
   machine::Ticks advanceUnpaced(machine::Ticks);           // VirtualTime only (LIB-11 `wait`)
-  SessionContext& context();                               // for the host's own adapters until their steps (§5)
+  SessionContext& context();                               // a host's own log line, its checks, tests
 };
 ```
 
@@ -412,19 +415,43 @@ check in `SessionController::tick`). The pacer reads the host's clock
 itself (LIB-17 §3).
 
 One window gets one app session (AC-1). Each frontend creates it and
-destroys it with the window.
+destroys it with the window. The session owns the parts a product's
+factory made (`owned`) and lets them go first, while its machine is still
+there (Calc-U-1600's part saves its bays and tape into the machine's
+files); no part needs telling that the session went.
 
-### 3.10 Topic mirror (AC-6, AC-29, AC-38)
+### 3.10 Topic mirror and listener (AC-6, AC-29, AC-38)
 
 ```cpp
 class TopicMirror : public MessageSink {
 public:
   void deliver(const Message&) override;
   const PayloadPtr* state(const TopicName&) const;                 // last of a state topic
+  template <class P> const P* stateOf(const TopicName&) const;     // the same, as P
   std::vector<PayloadPtr> takeAppended(const TopicName&);          // what a stream appended since the last take
   std::function<void(const TopicName&)> onChange;                  // a Qt frontend turns this into its repaint signals
 };
+
+class Listener : public MessageSink {   // every host's side of a session (C1 simplification)
+public:
+  void listen(AppSession&, HostServices = {});  void stop();
+  struct Sent { CallId call; std::optional<ReplyMessage> reply; };  // reply: it came at once
+  Sent send(const CommandName&, Value args = {}, ReplyHandler then = {});
+  void onReply(CallId, ReplyHandler);                              // for a reply still to come
+  ReplyMessage runToEnd(const CommandName&, Value, const std::function<void()>& step);
+  ReplyMessage ask(const RequestName&, Value = {});
+  CallId ask(const RequestName&, Value, ReplyHandler then);
+  TopicMirror& mirror();  template <class P> const P* state(const TopicName&) const;
+  const machine::DisplayOutput* display() const;
+  std::function<void(const Message&)> onMessage;                   // what went to no reply handler
+};
 ```
+
+The messages that arrive inside `send()` or `ask()` are taken once the
+call has returned, in the session's order, so the call's id is known; a
+reply handler gets its reply where it comes among them. The Qt6
+frontends, the Swift session thread, the Web worker's host, the harness
+and the products' tests talk to the session through it.
 
 ## 4. Product side
 

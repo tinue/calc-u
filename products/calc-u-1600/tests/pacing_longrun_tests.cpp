@@ -41,7 +41,7 @@ constexpr double kDefaultScriptedSeconds = 120;
 std::uint64_t ticksNow(SessionFixture& f) { return f.part().machine()->tickCount(); }
 
 void key(SessionFixture& f, const char* name, bool down) {
-    f.host->send(down ? sessions::kKeyDownCommand : sessions::kKeyUpCommand, sessions::Value::object({{"key", name}}));
+    f.send(down ? sessions::kKeyDownCommand : sessions::kKeyUpCommand, sessions::Value::object({{"key", name}}));
 }
 
 void test_scripted(const char* model) {
@@ -86,7 +86,7 @@ void test_scripted(const char* model) {
         worst = std::max(worst, d);
     }
     closeStretch();
-    const bool off = f.host->display() && !f.host->display()->on;
+    const bool off = f.listener.display() && !f.listener.display()->on;
     std::printf("  pacing %s: %.0f s scripted, %d stretches, worst |emulated - wall| %.5f s, worst rate %.1f ppm%s\n",
                 model, seconds, stretches, worst, worstRate * 1e6, off ? ", switched off" : "");
     CHECK(worst <= kBoundSeconds);

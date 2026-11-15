@@ -329,11 +329,12 @@ TEST(lib12_ac14_unknown_format_version_is_bad) {
 // its bundle, and the app session only with the full set (2.3.0's
 // SessionController::create did both until M-34).
 namespace {
-std::unique_ptr<cu59::TIAppSession> startFrom(const Bundle& bundle, std::vector<std::string>& missingTexts) {
+std::optional<calcu::sessions::ProductSession<cu59::TIAppPart>> startFrom(const Bundle& bundle,
+                                                                       std::vector<std::string>& missingTexts) {
     auto roms = cu59::lookUpRoms(bundle);
     if (!roms.ok()) {
         missingTexts.push_back(describe(roms.missing));
-        return nullptr;
+        return std::nullopt;
     }
     cu59::TIAppSetup s;
     s.roms = roms.set;
@@ -351,7 +352,7 @@ TEST(lib12_ac10_missing_file_no_machine_and_files_named) {
     fs::remove(dir.path / "MU.rom.yaml");
     std::vector<std::string> missing;
     auto c = startFrom(DirectoryBundle(dir.path), missing);
-    CHECK(c == nullptr);   // no session, so no machine
+    CHECK(!c);   // no session, so no machine
     CHECK_EQ(missing.size(), size_t{1});
     if (missing.empty()) return;
     const std::string& text = missing.front();
@@ -369,25 +370,25 @@ TEST(lib12_ac10_bad_file_no_machine) {
     writeText(dir.path / "CD2400-CONST-K.txt", text.substr(0, text.size() / 2));
     std::vector<std::string> missing;
     auto c = startFrom(DirectoryBundle(dir.path), missing);
-    CHECK(c == nullptr);
+    CHECK(!c);
     CHECK_EQ(missing.size(), size_t{1});
     if (!missing.empty()) CHECK(missing.front().find("CD2400-CONST-K.txt: wrong size") != std::string::npos);
     // With the full set the same start gives a session and no message.
     std::vector<std::string> none;
     auto good = startFrom(DirectoryBundle("roms"), none);
-    CHECK(good != nullptr);
+    CHECK(good.has_value());
     CHECK(none.empty());
 }
 
 TEST(lib12_ac6_model_and_module_changes_read_no_file) {
     std::vector<std::string> missing;
-    std::unique_ptr<cu59::TIAppSession> app;
+    std::optional<calcu::sessions::ProductSession<cu59::TIAppPart>> app;
     {
         TempDir dir;
         dir.copyRoms();
         app = startFrom(DirectoryBundle(dir.path), missing);
     }   // the bundle folder is gone
-    CHECK(app != nullptr);
+    CHECK(app.has_value());
     if (!app) return;
     cu59::TIAppPart& c = *app->part;
     for (auto model : {cu59::Model::TI59, cu59::Model::TI58, cu59::Model::TI58C, cu59::Model::TI59}) {

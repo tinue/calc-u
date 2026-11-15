@@ -41,7 +41,7 @@ struct PartRig : calcu::sessions::MessageSink {
     std::shared_ptr<MapFileIO> io = std::make_shared<MapFileIO>();
     MapFileIO& p = *io;
     calcu::pacing::WallTime now{std::chrono::hours(1)};
-    std::unique_ptr<cu59::TIAppSession> app;
+    calcu::sessions::ProductSession<cu59::TIAppPart> app;
     std::vector<std::string> notices;
     std::vector<cu59::DebugPanel> panels;                 ///< KEYSTROKES DebugPanel: (c59.show-debug-panel)
     std::vector<calcu::sessions::TopicName> stateSets;    ///< every state topic sent, in order
@@ -55,21 +55,21 @@ struct PartRig : calcu::sessions::MessageSink {
         s.fileIO = io;
         s.trace = {std::filesystem::temp_directory_path(), 1'000'000};
         app = cu59::makeAppSession(std::move(s), [this] { return now += std::chrono::milliseconds(1); }, 59u);
-        me = app->session->listen(*this, {});
+        me = app.session->listen(*this, {});
     }
     calcu::sessions::ListenerId me = 0;
     /// A command as a frontend sends it.
     calcu::sessions::CallId post(const calcu::sessions::CommandName& name,
                                  calcu::sessions::Value args = calcu::sessions::Value::object({})) {
-        return app->session->send(me, calcu::sessions::Command{name, std::move(args)});
+        return app.session->send(me, calcu::sessions::Command{name, std::move(args)});
     }
     bool busy() const {
         const auto* b = busyState.get();
         return b && b->operationRuns;
     }
     std::shared_ptr<const calcu::sessions::BusyState> busyState;
-    cu59::TIAppPart& part() { return *app->part; }
-    calcu::machine::Machine& machine() { return *app->session->machineSession().machine(); }
+    cu59::TIAppPart& part() { return *app.part; }
+    calcu::machine::Machine& machine() { return *app.session->machineSession().machine(); }
 
     void deliver(const calcu::sessions::Message& m) override {
         if (const auto* st = std::get_if<calcu::sessions::StateMessage>(&m)) {
@@ -86,14 +86,14 @@ struct PartRig : calcu::sessions::MessageSink {
     }
     /// The notices so far (what a direct call said goes out at the next call).
     const std::vector<std::string>& errors() {
-        app->session->call(now);
+        app.session->call(now);
         return notices;
     }
 
     void run(std::chrono::milliseconds d) {
         for (auto end = now + d; now < end;) {
             now += std::chrono::microseconds(16'667);
-            app->session->call(now);
+            app.session->call(now);
         }
     }
     template <class F> bool runUntil(F cond, std::chrono::milliseconds limit = std::chrono::seconds(20)) {

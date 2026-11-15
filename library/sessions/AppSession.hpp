@@ -31,6 +31,11 @@ struct AppSessionSetup {
     std::vector<SessionPart*> parts;   // library features first, then the product's
     Hosting hosting = Hosting::Paced;
     std::optional<std::uint32_t> jitterSeed;   // LIB-17 AC-10
+    // The parts and what they need (settings, paths), when the session owns
+    // them: released first when the session goes, while its machine is still
+    // there (a part saves its media into the machine's files), and never
+    // called again.
+    std::shared_ptr<void> owned;
 };
 
 class AppSession {
@@ -51,7 +56,9 @@ public:
     void answer(CallId ask, ServiceAnswer);    // AC-27
     machine::Ticks advanceUnpaced(machine::Ticks);   // virtual-time hosts (LIB-11 `wait`)
 
-    SessionContext& context();                 // for the host's own adapters until their steps
+    // The session's context, for a host's own lines and checks: a log line
+    // about its setup, what a listener offers (debug builds), tests.
+    SessionContext& context();
     MachineSession& machineSession();
     bool busy() const;
 
@@ -59,6 +66,14 @@ public:
 
 private:
     std::unique_ptr<Impl> impl_;
+};
+
+// A product's session as its factory makes it: the session, which owns the
+// product's part (AppSessionSetup::owned), and the part for the host's own
+// calls until their topics and commands exist.
+template <class Part> struct ProductSession {
+    std::unique_ptr<AppSession> session;
+    Part* part = nullptr;
 };
 
 } // namespace calcu::sessions

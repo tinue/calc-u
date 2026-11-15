@@ -20,41 +20,38 @@
 
 namespace {
 
-// What the session of one worker keeps alive: destroyed after the session
-// (WebSession), so the parts let go of it first.
-struct WebKeep {
+// The parts of one worker's session and what they need; the session owns it
+// (AppSessionSetup::owned) and lets it go first. The Web part goes before the
+// product's part, the settings last.
+struct WebParts {
     calcu::settings::SettingsFile file;
     shared::Settings settings{file};
     std::unique_ptr<shared::AppPaths> paths;
     std::unique_ptr<shared::SharpAppPart> part;
     std::unique_ptr<shared::SharpWebPart> web;
-    explicit WebKeep(calcu::settings::SettingsFile f) : file(std::move(f)) {}
-    ~WebKeep() {
-        if (part) part->forgetSession();   // the session is gone already
-    }
+    explicit WebParts(calcu::settings::SettingsFile f) : file(std::move(f)) {}
 };
 
-calcu::web::WebSession makeWebAppSession(const calcu::web::WebStart& start) {
+std::unique_ptr<calcu::sessions::AppSession> makeWebAppSession(const calcu::web::WebStart& start) {
     calcu::settings::HostDirs dirs = start.dirs;
     if (dirs.home.empty()) dirs.home = std::filesystem::path(dirs.saveFolder).parent_path().generic_string();   // /persist
-    auto keep = std::make_shared<WebKeep>(calcu::settings::SettingsFile::open(
+    auto parts = std::make_shared<WebParts>(calcu::settings::SettingsFile::open(
         shared::settingsDecl(), calcu::settings::settingsFilePath(shared::settingsDecl(), dirs)));
-    keep->paths = std::make_unique<shared::AppPaths>(keep->settings, dirs,
-                                                     shared::BundleDirs{start.bundleDir, start.presetsDir});
-    keep->part = std::make_unique<shared::SharpAppPart>(keep->settings, *keep->paths);
-    keep->web = std::make_unique<shared::SharpWebPart>(*keep->part, keep->settings, *keep->paths, start.uploadsDir);
+    parts->paths = std::make_unique<shared::AppPaths>(parts->settings, dirs,
+                                                      shared::BundleDirs{start.bundleDir, start.presetsDir});
+    parts->part = std::make_unique<shared::SharpAppPart>(parts->settings, *parts->paths);
+    parts->web = std::make_unique<shared::SharpWebPart>(*parts->part, parts->settings, *parts->paths, start.uploadsDir);
 
     calcu::sessions::AppSessionSetup setup;
     setup.clock = &calcu::web::wallTimeNow;
     setup.parts.push_back(start.shellPart);
-    for (calcu::sessions::SessionPart* p : keep->part->sessionParts()) setup.parts.push_back(p);
-    setup.parts.push_back(keep->web.get());
-    calcu::web::WebSession out;
-    out.session = std::make_unique<calcu::sessions::AppSession>(std::move(setup));
-    keep->part->bind(*out.session);
-    if (!keep->file.problem().empty()) out.session->context().log("Settings: " + keep->file.problem());
-    out.keep = std::move(keep);
-    return out;
+    for (calcu::sessions::SessionPart* p : parts->part->sessionParts()) setup.parts.push_back(p);
+    setup.parts.push_back(parts->web.get());
+    const std::string problem = parts->file.problem();
+    setup.owned = std::move(parts);
+    auto session = std::make_unique<calcu::sessions::AppSession>(std::move(setup));
+    if (!problem.empty()) session->context().log("Settings: " + problem);
+    return session;
 }
 
 } // namespace

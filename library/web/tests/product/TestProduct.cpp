@@ -48,7 +48,6 @@ namespace fs = std::filesystem;
 namespace s = calcu::sessions;
 namespace st = calcu::settings;
 namespace mt = calcu::machine::test;
-using calcu::web::WebSession;
 using calcu::web::WebStart;
 
 namespace {
@@ -245,22 +244,15 @@ private:
     std::int64_t calls_ = 0;
 };
 
-struct Kept {
-    std::unique_ptr<TestProductPart> part;
-};
-
-WebSession makeTestSession(const WebStart& w) {
-    auto kept = std::make_shared<Kept>();
-    kept->part = std::make_unique<TestProductPart>(w);
+std::unique_ptr<s::AppSession> makeTestSession(const WebStart& w) {
+    auto part = std::make_shared<TestProductPart>(w);
     s::AppSessionSetup setup;
     setup.clock = calcu::web::wallTimeNow;
     setup.hostTime = [] { return std::chrono::system_clock::now(); };
-    setup.parts = {w.shellPart, kept->part.get()};
+    setup.parts = {w.shellPart, part.get()};
     setup.hosting = s::Hosting::Paced;
-    WebSession out;
-    out.keep = kept;
-    out.session = std::make_unique<s::AppSession>(std::move(setup));
-    return out;
+    setup.owned = std::move(part);
+    return std::make_unique<s::AppSession>(std::move(setup));
 }
 
 } // namespace

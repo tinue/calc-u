@@ -1,6 +1,6 @@
 #pragma once
 #include "TIAppPart.hpp"
-#include "sessions/TopicMirror.hpp"
+#include "sessions/Listener.hpp"
 #include <QObject>
 #include <QString>
 #include <QStringList>
@@ -10,12 +10,13 @@
 
 // The Qt face of the library's app session (LIB-3 AC-28; the Swift app's is
 // App/EmulatorViewModel.swift over cu59::SessionThread): the session lives on
-// the GUI thread, called at 60 Hz by a timer; this object is its frontend.
-// Every action is a command (cu59::commands), everything shown comes from the
-// topic mirror; the mirror's changes become the signals below. It decides
+// the GUI thread, called at 60 Hz by a timer; this object is its frontend,
+// through a calcu::sessions::Listener. Every action is a command
+// (cu59::commands), everything shown comes from the listener's topic mirror;
+// the mirror's changes become the signals below. It decides
 // nothing and keeps no state of the machine (CLAUDE.md § "Frontend Parity").
 // Qt6 sends neither suspend nor continue (LIB-3 AC-31; ODD59-25).
-class EmulatorController : public QObject, private calcu::sessions::MessageSink {
+class EmulatorController : public QObject {
     Q_OBJECT
 public:
     using CardState = cu59::CardState;
@@ -24,7 +25,7 @@ public:
     explicit EmulatorController(QObject* parent = nullptr);
     ~EmulatorController() override;
     /// false: the ROM lookup failed (the dialog was shown); nothing else may be called.
-    bool started() const { return m_app != nullptr; }
+    bool started() const { return m_app.session != nullptr; }
 
     // ── Machine ──────────────────────────────────────────────────────────────
     void start(cu59::Model model);
@@ -148,17 +149,12 @@ private:
     calcu::sessions::ReplyMessage send(const calcu::sessions::CommandName& name,
                                        calcu::sessions::Value args = calcu::sessions::Value::object({}));
     bool sendFlag(const calcu::sessions::CommandName& name, calcu::sessions::Value args);
-    template <class P> const P* state(const calcu::sessions::TopicName& t) const {
-        const calcu::sessions::PayloadPtr* p = m_mirror.state(t);
-        return p ? calcu::sessions::payloadAs<P>(*p) : nullptr;
-    }
-    void deliver(const calcu::sessions::Message&) override;
+    template <class P> const P* state(const calcu::sessions::TopicName& t) const { return m_listener.state<P>(t); }
+    void onMessage(const calcu::sessions::Message&);
     void topicChanged(const calcu::sessions::TopicName&);
 
-    std::unique_ptr<cu59::TIAppSession> m_app;
-    calcu::sessions::TopicMirror m_mirror;
-    calcu::sessions::ListenerId m_me = 0;
-    mutable std::optional<calcu::sessions::ReplyMessage> m_lastReply;
+    calcu::sessions::ProductSession<cu59::TIAppPart> m_app;
+    mutable calcu::sessions::Listener m_listener;   // stops listening before the session goes
     QTimer m_frameTimer;
     QStringList m_printerLines;  ///< the paper's text lines, as Qt types
     std::optional<cu59::Model> m_savedModel;

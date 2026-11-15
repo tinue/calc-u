@@ -66,25 +66,29 @@ EmulatorController::EmulatorController(QObject* parent) : QObject(parent) {
     setup.trace = {AppPaths::toFsPath(AppPaths::traceDir()),
                    static_cast<uint64_t>(AppSettings::settings().traceMaxFileSizeMB()) * 1'000'000};
     m_app = cu59::makeAppSession(std::move(setup), cu59::steadyWallTime);
-    m_mirror.onChange = [this](const cs::TopicName& t) { topicChanged(t); };
-    m_me = m_app->session->listen(*this, cs::HostServices{});   // Qt states no host service yet (C59-8)
+    m_listener.mirror().onChange = [this](const cs::TopicName& t) { topicChanged(t); };
+    m_listener.onMessage = [this](const cs::Message& m) { onMessage(m); };
+    m_listener.listen(*m_app.session);   // Qt states no host service yet (C59-8)
     m_frameTimer.setTimerType(Qt::PreciseTimer);
     m_frameTimer.setInterval(1000 / 60);
-    connect(&m_frameTimer, &QTimer::timeout, this, [this] { m_app->session->call(cu59::steadyWallTime()); });
+    connect(&m_frameTimer, &QTimer::timeout, this, [this] { m_app.session->call(cu59::steadyWallTime()); });
     m_frameTimer.start();
 }
 
 EmulatorController::~EmulatorController() {
     m_frameTimer.stop();
-    m_app.reset();
+    m_listener.stop();
+    m_app = {};
 }
 
-void EmulatorController::deliver(const cs::Message& m) {
-    if (const auto* r = std::get_if<cs::ReplyMessage>(&m)) {
-        m_lastReply = *r;
-        return;
-    }
+// What the mirror does not keep for the views: the notices, the log and the
+// panel requests, taken from it as they come. An operation's reply is not
+// waited for.
+void EmulatorController::onMessage(const cs::Message& m) {
     if (const auto* s = std::get_if<cs::StreamMessage>(&m)) {
+        const bool handled = s->topic == cs::kNoticesTopic || s->topic == cs::kLogTopic ||
+                             s->topic == cu59::topics::kShowDebugPanel;
+        if (handled) (void)m_listener.mirror().takeAppended(s->topic);
         if (s->topic == cs::kNoticesTopic) {   // an error alert (LIB-3 AC-30), as today until C59-8
             for (const auto& p : s->appended)
                 if (const auto* n = cs::payloadAs<cs::Notice>(p)) {
@@ -104,7 +108,6 @@ void EmulatorController::deliver(const cs::Message& m) {
             return;
         }
     }
-    m_mirror.deliver(m);
 }
 
 void EmulatorController::topicChanged(const cs::TopicName& t) {
@@ -144,17 +147,14 @@ void EmulatorController::topicChanged(const cs::TopicName& t) {
 }
 
 cs::ReplyMessage EmulatorController::send(const cs::CommandName& name, Value args) {
-    m_lastReply.reset();
-    const cs::CallId id = m_app->session->send(m_me, cs::Command{name, std::move(args)});
-    if (m_lastReply && m_lastReply->call == id) return *m_lastReply;
-    return cs::ReplyMessage{id, true, "", nullptr};   // an operation: its reply comes when it ends
+    const auto sent = m_listener.send(name, std::move(args));
+    if (sent.reply) return *sent.reply;
+    return cs::ReplyMessage{sent.call, true, "", nullptr};   // an operation: its reply comes when it ends
 }
 
 std::optional<std::pair<uint64_t, double>> EmulatorController::emulatedTime() {
-    m_lastReply.reset();
-    const cs::CallId id = m_app->session->ask(m_me, cs::Request{cs::kTicksRequest, Value::object({})});
-    if (!m_lastReply || m_lastReply->call != id) return std::nullopt;
-    const auto* t = cs::payloadAs<cs::EmulatedTimeReply>(m_lastReply->result);
+    const cs::ReplyMessage r = m_listener.ask(cs::kTicksRequest, Value::object({}));
+    const auto* t = cs::payloadAs<cs::EmulatedTimeReply>(r.result);
     if (!t) return std::nullopt;
     return std::make_pair(static_cast<uint64_t>(t->ticks), t->seconds);
 }
@@ -250,10 +250,9 @@ void EmulatorController::loadStateFile(const QString& path) {
 }
 
 cu59::DropAction EmulatorController::dropAction(const QString& path) const {
-    const cs::CallId id = m_app->session->ask(
-        m_me, cs::Request{cu59::commands::kDropAction, Value::object({{"name", QFileInfo(path).fileName().toStdString()}})});
-    if (m_lastReply && m_lastReply->call == id)
-        if (const auto* a = cs::payloadAs<cu59::TIDropAction>(m_lastReply->result)) return a->action;
+    const cs::ReplyMessage r =
+        m_listener.ask(cu59::commands::kDropAction, Value::object({{"name", QFileInfo(path).fileName().toStdString()}}));
+    if (const auto* a = cs::payloadAs<cu59::TIDropAction>(r.result)) return a->action;
     return cu59::DropAction::NotAccepted;
 }
 

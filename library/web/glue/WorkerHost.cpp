@@ -87,74 +87,40 @@ WorkerHost::WorkerHost(const AppSessionFactory& factory, val start)
     start_.storageSentence = text(storage, "sentence");
     start_.shellPart = part_.get();
     try {
-        app_ = factory(start_);
+        session_ = factory(start_);
     } catch (const std::exception& e) {
         failure_ = e.what();
     } catch (...) {
         failure_ = "The session could not be built.";
     }
-    if (failure_.empty() && !app_.session) failure_ = "The session could not be built.";
+    if (failure_.empty() && !session_) failure_ = "The session could not be built.";
     if (!failure_.empty()) return;
     part_->storage->set(std::make_shared<StorageState>(start_.storage, start_.storageSentence));
     part_->start->set(std::make_shared<StartState>("running", ""));
     part_->pendingNotice = start_.storageSentence;
 }
 
-WorkerHost::~WorkerHost() {
-    if (app_.session && listening_) app_.session->stopListening(listener_);
-}
+WorkerHost::~WorkerHost() = default;
 
-void WorkerHost::post(val message, val transfer) { post_(message, transfer); }
-
-void WorkerHost::deliver(const s::Message& m) {
+// A message to the page; a reply carries the page's id of its call (0: the
+// page wanted no reply, it keeps the session's).
+void WorkerHost::post(const s::Message& m, double pageCall) {
     val transfer = val::array();
     val message = encode(m, transfer);
     if (const auto* ask = std::get_if<s::ServiceAsk>(&m); ask && ask->service == s::HostService::FilePicker)
         filePickerAsks_.insert(ask->ask);
-    if (const auto* reply = std::get_if<s::ReplyMessage>(&m)) {
-        if (holding_) {   // the page's id is known only when send() returns
-            held_.push_back(Held{message, transfer});
-            return;
-        }
-        const auto it = pageCalls_.find(reply->call);
-        if (it != pageCalls_.end()) {
-            message.set("call", it->second);
-            pageCalls_.erase(it);   // one reply per call (LIB-3 AC-8, AC-13)
-        }
-    }
-    if (holding_) held_.push_back(Held{message, transfer});
-    else post(message, transfer);
-}
-
-void WorkerHost::flushHeld(s::CallId sessionCall, double pageCall) {
-    holding_ = false;
-    bool replied = false;
-    std::vector<Held> held;
-    held.swap(held_);
-    for (Held& h : held) {
-        if (h.message["kind"].as<std::string>() == "reply") {
-            const auto call = static_cast<s::CallId>(h.message["call"].as<double>());
-            if (call == sessionCall) {
-                h.message.set("call", pageCall);
-                replied = true;
-            } else if (const auto it = pageCalls_.find(call); it != pageCalls_.end()) {
-                h.message.set("call", it->second);
-                pageCalls_.erase(it);
-            }
-        }
-        post(h.message, h.transfer);
-    }
-    if (!replied && pageCall != 0) pageCalls_[sessionCall] = pageCall;   // an operation replies when it ends (0: no reply wanted)
+    if (pageCall != 0 && std::holds_alternative<s::ReplyMessage>(m)) message.set("call", pageCall);
+    post_(message, transfer);
 }
 
 void WorkerHost::receive(val message) {
-    if (!app_.session) return;
+    if (!session_) return;
     const std::string kind = text(message, "kind");
     const val callVal = message["call"];
     const double pageCall = callVal.isNumber() ? callVal.as<double>() : 0;
 
     if (kind == "listen") {
-        if (listening_) return;
+        if (listener_.listening()) return;
         s::HostServices services;
         const val names = message["args"].isUndefined() ? val::undefined() : message["args"]["services"];
         if (!names.isUndefined() && !names.isNull()) {
@@ -163,19 +129,16 @@ void WorkerHost::receive(val message) {
                 if (names[i].isString())
                     if (const auto svc = serviceNamed(names[i].as<std::string>())) services.offered.insert(*svc);
         }
-        listening_ = true;
-        listener_ = app_.session->listen(*this, std::move(services));
+        listener_.onMessage = [this](const s::Message& m) { post(m); };
+        listener_.listen(*session_, std::move(services));
         return;
     }
-    if (!listening_) return;
+    if (!listener_.listening()) return;
     if (kind == "command" || kind == "request") {
-        holding_ = true;
-        const s::CallId id = kind == "command"
-                                 ? app_.session->send(listener_, s::Command{s::CommandName{text(message, "name")},
-                                                                            fromJs(message["args"])})
-                                 : app_.session->ask(listener_, s::Request{s::RequestName{text(message, "name")},
-                                                                           fromJs(message["args"])});
-        flushHeld(id, pageCall);
+        // One reply per call (LIB-3 AC-8, AC-13), at once or at the operation's end.
+        auto reply = [this, pageCall](const s::ReplyMessage& r) { post(r, pageCall); };
+        if (kind == "command") listener_.send(s::CommandName{text(message, "name")}, fromJs(message["args"]), reply);
+        else listener_.ask(s::RequestName{text(message, "name")}, fromJs(message["args"]), reply);
         return;
     }
     if (kind == "answer") {
@@ -188,7 +151,7 @@ void WorkerHost::receive(val message) {
         a.given = message["done"].isTrue();
         a.reason = text(message, "reason");
         a.result = fromJs(message["value"]);
-        app_.session->answer(ask, std::move(a));
+        session_->answer(ask, std::move(a));
         return;
     }
     // A message the glue cannot decode: refused with a reply when it waits for one.
@@ -199,7 +162,7 @@ void WorkerHost::receive(val message) {
         reply.set("done", false);
         reply.set("reason", "Unknown message: " + kind + ".");
         reply.set("value", val::null());
-        post(reply, val::array());
+        post_(reply, val::array());
     }
 }
 
@@ -228,7 +191,7 @@ void WorkerHost::answerFilePicker(s::CallId ask, val message) {
             }
         a.result = s::Value(std::move(paths));
     }
-    app_.session->answer(ask, std::move(a));
+    session_->answer(ask, std::move(a));
 }
 
 pacing::WallTime wallTimeNow() {
@@ -236,7 +199,7 @@ pacing::WallTime wallTimeNow() {
 }
 
 void WorkerHost::call() {
-    if (app_.session) app_.session->call(wallTimeNow());
+    if (session_) session_->call(wallTimeNow());
 }
 
 } // namespace calcu::web

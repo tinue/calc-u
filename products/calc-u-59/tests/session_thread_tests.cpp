@@ -1,5 +1,6 @@
-// The Swift frontend's session thread (C59-5 design §6, H1 to H3): a session
-// made for the test, whose calls take as long as it wants, on the real clock.
+// The Swift frontend's session thread (C59-5 design §6, H1 to H3): the
+// library's session with a part made for the test, whose calls take as long
+// as it wants, on the real clock.
 
 #include "TestHarness.hpp"
 #include "AppSessionRig.hpp"
@@ -30,34 +31,42 @@ struct Shared {
     std::vector<std::pair<std::string, int>> commandAtCall;   // command, calls made when it arrived
 };
 
-struct FakeSession final : HostedSession {
+// The commands the tests send (each a command of the test part).
+std::vector<std::string> commandNames() {
+    std::vector<std::string> out = {"key", "x", "while-suspended"};
+    for (int i = 0; i < 500; ++i) {
+        out.push_back("a" + std::to_string(i));
+        out.push_back("b" + std::to_string(i));
+    }
+    for (int i = 0; i < 100; ++i) out.push_back("k" + std::to_string(i));
+    return out;
+}
+
+// The library's app session with a part that notes what reaches it: its
+// commands, the suspend, the host calls (which take as long as the test
+// wants) and the threads it is built, called and destroyed on.
+struct RecordingPart final : calcu::sessions::SessionPart {
     Shared& s;
-    calcu::sessions::MessageSink* sink = nullptr;
-    calcu::sessions::CallId next = 0;
-    explicit FakeSession(Shared& sh) : s(sh) { note(); }
-    ~FakeSession() override { note(); }
+    explicit RecordingPart(Shared& sh) : s(sh) { note(); }
+    ~RecordingPart() { note(); }
     void note() {
         std::lock_guard<std::mutex> l(s.m);
         s.threads.insert(std::this_thread::get_id());
     }
-    calcu::sessions::ListenerId listen(calcu::sessions::MessageSink& m, calcu::sessions::HostServices) override {
-        sink = &m;
-        return 1;
-    }
-    calcu::sessions::CallId send(calcu::sessions::ListenerId, Command c) override {
+    void record(const std::string& name) {
         note();
-        {
-            std::lock_guard<std::mutex> l(s.m);
-            s.commands.push_back(c.name.value);
-            s.commandAtCall.emplace_back(c.name.value, s.calls.load());
-        }
-        const auto id = ++next;
-        sink->deliver(ReplyMessage{id, true, "", nullptr});
-        return id;
+        std::lock_guard<std::mutex> l(s.m);
+        s.commands.push_back(name);
+        s.commandAtCall.emplace_back(name, s.calls.load());
     }
-    calcu::sessions::CallId ask(calcu::sessions::ListenerId, calcu::sessions::Request) override { return ++next; }
-    void answer(calcu::sessions::CallId, calcu::sessions::ServiceAnswer) override {}
-    void call(calcu::pacing::WallTime) override {
+    void attach(calcu::sessions::SessionSetup& setup) override {
+        for (const std::string& n : commandNames())
+            setup.command(CommandName{n}, [this, n](const Value&, calcu::sessions::SessionContext&) {
+                record(n);
+                return calcu::sessions::CommandOutcome{calcu::sessions::Done{}};
+            });
+    }
+    void beforeCall(calcu::sessions::SessionContext&, calcu::pacing::WallTime) override {
         note();
         ++s.calls;
         if (s.slowCalls > 0) {
@@ -65,13 +74,21 @@ struct FakeSession final : HostedSession {
             std::this_thread::sleep_for(200ms);
         }
     }
-    calcu::sessions::AppSession* appSession() override { return nullptr; }
+    void suspending(calcu::sessions::SessionContext&) override { record("suspend"); }
 };
 
+std::unique_ptr<calcu::sessions::AppSession> recordingSession(Shared& s) {
+    auto part = std::make_shared<RecordingPart>(s);
+    calcu::sessions::AppSessionSetup setup;
+    setup.clock = steadyWallTime;
+    setup.parts = {part.get()};
+    setup.owned = std::move(part);
+    return std::make_unique<calcu::sessions::AppSession>(std::move(setup));
+}
+
 std::unique_ptr<SessionThread> thread(Shared& s, std::atomic<int>* wakes = nullptr) {
-    return std::make_unique<SessionThread>([&s] { return std::make_unique<FakeSession>(s); },
-                                           calcu::sessions::HostServices{}, steadyWallTime,
-                                           [wakes] {
+    return std::make_unique<SessionThread>([&s] { return recordingSession(s); }, calcu::sessions::HostServices{},
+                                           steadyWallTime, [wakes] {
                                                if (wakes) ++*wakes;
                                            });
 }
@@ -227,9 +244,11 @@ TEST(c59_5_ac8_continue_calls_again_and_session_got_continue) {
     CHECK(waitFor([&] { return !t->callsSuspended(); }));
     const int c0 = s.calls.load();
     std::this_thread::sleep_for(200ms);
-    CHECK(s.calls.load() - c0 >= 8);
-    std::lock_guard<std::mutex> l(s.m);
-    CHECK(s.commands.back() == "continue");
+    CHECK(s.calls.load() - c0 >= 8);   // the session calls the part again: it got continue
+    std::atomic<int> suspended{-1};
+    t->post([&](calcu::sessions::AppSession& a) { suspended = a.machineSession().suspended() ? 1 : 0; });
+    CHECK(waitFor([&] { return suspended.load() >= 0; }));
+    CHECK_EQ(suspended.load(), 0);
 }
 
 // The real session on the thread: Calc-U-59 runs, and a key reaches it.
@@ -241,14 +260,10 @@ TEST(c59_5_ac4_ti59_on_the_session_thread) {
     setup.saveFolder = folder.path.string();
     std::atomic<std::uint64_t> ticks{0};
     auto t = std::make_unique<SessionThread>(
-        [setup] {
-            auto app = makeAppSession(setup, steadyWallTime);
-            auto* s = app->session.get();
-            return std::make_unique<AppSessionHost>(*s, std::shared_ptr<TIAppSession>(std::move(app)));
-        },
+        [setup] { return makeAppSession(setup, steadyWallTime).session; },
         calcu::sessions::HostServices{}, steadyWallTime, [] {});
     std::this_thread::sleep_for(500ms);
-    t->post([&](HostedSession& h) { ticks = h.appSession()->machineSession().machine()->tickCount(); });
+    t->post([&](calcu::sessions::AppSession& a) { ticks = a.machineSession().machine()->tickCount(); });
     CHECK(waitFor([&] { return ticks.load() > 0; }));
     std::vector<Delivery> got = t->drain();
     bool led = false;

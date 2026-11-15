@@ -67,7 +67,7 @@ int runPacingProbe(QApplication& app, double seconds) {
     QElapsedTimer wall;
     double t0 = -1;
     auto emulatedSeconds = [c] {
-        const auto r = c->host().ask(calcu::sessions::kTicksRequest);
+        const auto r = c->listener().ask(calcu::sessions::kTicksRequest);
         const auto* t = r.done ? calcu::sessions::payloadAs<calcu::sessions::EmulatedTimeReply>(r.result) : nullptr;
         return t ? t->seconds : -1.0;
     };

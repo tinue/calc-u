@@ -18,8 +18,9 @@
 #include "TraceTypes.hpp"
 #include "app/AudioSink.hpp"
 #include "app/MachineModel.hpp"
-#include "app/SharpHost.hpp"
+#include "app/SharpSession.hpp"
 #include "sessions/AppSession.hpp"
+#include "sessions/Listener.hpp"
 
 class MemoryModuleManager;
 class DebugController;
@@ -46,9 +47,9 @@ bool withQtError(QString* error, Op&& op) {
 // ── MachineController: the Qt6 frontend's host of the app session ────────
 //
 // Hosts the library's app session on the GUI thread (LIB-3 AC-34; FE-3),
-// through shared::SharpHost with Calc-U-1600's part (app/SharpAppPart.hpp).
-// It is the session's listener: it keeps the last message of each topic and
-// turns them into Qt signals; it sends commands (an operation's reply comes
+// made by shared::makeSharpSession with Calc-U-1600's part
+// (app/SharpAppPart.hpp). It listens through a calcu::sessions::Listener,
+// which keeps the last message of each topic; it turns them into Qt signals; it sends commands (an operation's reply comes
 // later, LIB-3 AC-18); it feeds the sound to the audio sink (AC-37); and it
 // calls the session from the 60 Hz frame timer (EmulationPacer). It never
 // sends suspend: the Qt6 frontend keeps running in the background (AC-36).
@@ -62,10 +63,10 @@ public:
     explicit MachineController(QObject* parent = nullptr);
     ~MachineController() override;
 
-    shared::SharpHost& host() { return *m_host; }
-    shared::SharpAppPart& app() { return m_host->part(); }
-    shared::SharpAppPart& session() { return m_host->part(); }
-    const shared::SharpAppPart& session() const { return m_host->part(); }
+    calcu::sessions::Listener& listener() { return m_listener; }
+    shared::SharpAppPart& app() { return *m_app.part; }
+    shared::SharpAppPart& session() { return *m_app.part; }
+    const shared::SharpAppPart& session() const { return *m_app.part; }
 
     // ---- The session ----
     // One host call (the frame timer).
@@ -176,12 +177,12 @@ private:
     void onState(const calcu::sessions::TopicName& topic);
     calcu::pacing::WallTime now();
 
-    std::unique_ptr<shared::SharpHost> m_host;
-    // Declared after the host so it goes first on destruction: its debug
+    calcu::sessions::ProductSession<shared::SharpAppPart> m_app;
+    calcu::sessions::Listener m_listener;   // stops listening before the session goes
+    // Declared after the session so it goes first on destruction: its debug
     // target still refers to the live machine.
     std::unique_ptr<DebugController> m_debug;
     std::unique_ptr<shared::SoundFeed> m_sound;
-    std::map<calcu::sessions::CallId, Reply> m_pending;
     std::string m_lastNotice;   // a failed operation's notice; its reply is not shown again
 
     DisplayFrame m_frame;

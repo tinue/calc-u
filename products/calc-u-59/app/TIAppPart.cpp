@@ -94,25 +94,10 @@ TIAppPart::~TIAppPart() {
     m_queue.clear();
 }
 
-TIAppSession::~TIAppSession() {
-    part.reset();
-    session.reset();
-}
-
-void TIAppPart::start(sessions::AppSession& s) {
-    m_ctx = &s.context();
-    m_ms = &s.machineSession();
-    m_ms->setGate(m_hooks.get());
-    m_ms->addHook(*m_hooks);
-    m_ms->addWaitProbe(*m_hooks);
-    startMachine(m_setup.startModel);
-    m_changes = ~0u;
-    settle();
-    s.advanceUnpaced(0);   // the machine joins: the display read, everything flushed
-}
-
 void TIAppPart::attach(sessions::SessionSetup& s) {
     using sessions::History;
+    m_ctx = &s.context();
+    m_ms = &m_ctx->machineSession();
     m_modelTopic = &s.stateTopic(topics::kModel);
     m_led = &s.stateTopic(topics::kLed);
     m_cue = &s.stateTopic(topics::kCueCard);
@@ -255,6 +240,15 @@ void TIAppPart::attach(sessions::SessionSetup& s) {
         r.result = std::make_shared<TIDropAction>(c.dropAction(strArg(a, "name")));
         return r;
     });
+
+    // The adapters on the machine session, then the first machine (the
+    // session reads its display before it is first called).
+    m_ms->setGate(m_hooks.get());
+    m_ms->addHook(*m_hooks);
+    m_ms->addWaitProbe(*m_hooks);
+    startMachine(m_setup.startModel);
+    m_changes = ~0u;
+    settle();
 }
 
 void TIAppPart::add(sessions::SessionSetup& s, const sessions::CommandName& name, Handler h) {
@@ -264,13 +258,6 @@ void TIAppPart::add(sessions::SessionSetup& s, const sessions::CommandName& name
         settle();
         return out;
     });
-}
-
-void TIAppPart::forgetSession() {
-    (void)m_session.release();   // its machine is gone: nothing of it may run (the worker ends with it)
-    m_ctx = nullptr;
-    m_ms = nullptr;
-    m_queue.clear();
 }
 
 sessions::Operation TIAppPart::presetOperation() {
@@ -461,22 +448,23 @@ void TIAppPart::diagnostic(const std::string& message) {
     if (m_ctx) m_ctx->log(message);
 }
 
-std::unique_ptr<TIAppSession> makeAppSession(TIAppSetup setup, pacing::WallClock clock,
-                                             std::optional<std::uint32_t> jitterSeed,
-                                             std::vector<sessions::SessionPart*> before,
-                                             std::vector<sessions::SessionPart*> after) {
-    auto out = std::make_unique<TIAppSession>();
-    out->part = std::make_unique<TIAppPart>(std::move(setup));
+calcu::sessions::ProductSession<TIAppPart> makeAppSession(TIAppSetup setup, pacing::WallClock clock,
+                                                          std::optional<std::uint32_t> jitterSeed,
+                                                          std::vector<sessions::SessionPart*> before,
+                                                          std::vector<sessions::SessionPart*> after) {
+    auto part = std::make_shared<TIAppPart>(std::move(setup));
     sessions::AppSessionSetup s;
     s.clock = std::move(clock);
     s.hostTime = [] { return std::chrono::system_clock::now(); };
     s.parts = std::move(before);
-    s.parts.push_back(out->part.get());
+    s.parts.push_back(part.get());
     for (sessions::SessionPart* p : after) s.parts.push_back(p);
     s.hosting = sessions::Hosting::Paced;
     s.jitterSeed = jitterSeed;
-    out->session = std::make_unique<sessions::AppSession>(std::move(s));
-    out->part->start(*out->session);
+    calcu::sessions::ProductSession<TIAppPart> out;
+    out.part = part.get();
+    s.owned = std::move(part);
+    out.session = std::make_unique<sessions::AppSession>(std::move(s));
     return out;
 }
 

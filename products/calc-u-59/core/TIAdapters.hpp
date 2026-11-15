@@ -21,7 +21,6 @@
 // | TIMemoryAdapter       | M-54 (C59-2, C59-3)                |
 // | TIDebugTargetAdapter  | M-53 (LIB-10 59)                   |
 // | TIDebugPanelAdapter   | M-56 (C59-4)                       |
-// | TIPacingHints         | M-33 (LIB-17 59)                   |
 //
 // The core types still reachable here (CpuFrame, DebugEvent, TIStepBoundary)
 // go with their adapters (design D-7). TIPeripheralsAdapter went in M-25
@@ -133,28 +132,15 @@ private:
     TIMachine& m_;
 };
 
-/// What 2.3.0's full speed throttles on, until LIB-17 59 (M-33; design D-2).
-class TIPacingHints {
-public:
-    explicit TIPacingHints(TIMachine& m) : m_(m) {}
-    /// An instruction since the last call was a confirmed spin-wait retrying a
-    /// keyboard scan or card-switch poll (TMC0501::kPolledHardware); clears it.
-    bool takePolledHardware();
-    /// The PC is in the full keyboard scan/detect cycle.
-    bool inIdleAndKeyDetect() const;
-    /// That range of a model: {lo, hi, extraLo, extraHi} (extra empty when lo > hi).
-    static std::array<std::uint16_t, 4> idleAndKeyDetectRange(const calcu::machine::ModelId&);
-
-private:
-    TIMachine& m_;
-};
+/// The full keyboard scan/detect cycle of a model: {lo, hi, extraLo, extraHi}
+/// (extra empty when lo > hi), for tools/headless/ and the tests.
+std::array<std::uint16_t, 4> idleAndKeyDetectRange(const calcu::machine::ModelId&);
 
 // The accessors (design §3.4): nullptr if `m` is not a TI machine.
 TICardReaderAdapter* cardReaderOf(calcu::machine::Machine&);
 TIMemoryAdapter* memoryOf(calcu::machine::Machine&);
 TIDebugTargetAdapter* debugTargetOf(calcu::machine::Machine&);
 TIDebugPanelAdapter* debugPanelOf(calcu::machine::Machine&);
-TIPacingHints* pacingHintsOf(calcu::machine::Machine&);
 const TICardReaderAdapter* cardReaderOf(const calcu::machine::Machine&);
 const TIMemoryAdapter* memoryOf(const calcu::machine::Machine&);
 const TIDebugTargetAdapter* debugTargetOf(const calcu::machine::Machine&);

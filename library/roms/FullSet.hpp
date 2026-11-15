@@ -32,7 +32,7 @@ struct FullSet {
 
 // Every RomEntry of every model, every variant of a model, every peripheral
 // and every variant of a peripheral, in catalogue order. `extra`: entries
-// outside the catalogue (Calc-U-59's module entries until M-25, adapter A-2).
+// outside the catalogue (Calc-U-1600's CE-502B module definition).
 FullSet fullSet(const machine::Catalogue&, std::span<const FullSetEntry> extra = {});
 
 // "TI-59", "PC-1600 (variant Old)".

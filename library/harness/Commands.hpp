@@ -32,7 +32,6 @@ public:
     bool isProductWord(const std::string& word) const;
     bool isCommand(const std::string& name) const;
     std::vector<std::string> usage() const;   // for --help, in the order added
-    std::vector<std::string> commandNames() const;   // the common ones
 
 private:
     struct Entry {
@@ -42,7 +41,6 @@ private:
     std::map<std::string, Entry> common_;
     std::map<std::string, std::map<std::string, Entry>> product_;
     std::vector<std::string> usage_;
-    std::vector<std::string> order_;
 };
 
 // The first commands of AC-9 and the commands of AC-23 and AC-24: wait,

@@ -80,10 +80,8 @@ bool TIDebugPanelAdapter::runDebugOverlay(std::uint16_t startAddr, std::uint32_t
 void TIDebugPanelAdapter::setDebugLevel(std::uint8_t level) { m_.m_hw.setDebugLevel(level); }
 std::vector<DebugEvent> TIDebugPanelAdapter::drainDebugEvents() { return m_.m_hw.drainDebugEvents(); }
 
-// ── TIPacingHints (M-33) ──────────────────────────────────────────────────────
-bool TIPacingHints::takePolledHardware() { return std::exchange(m_.m_polledHardware, false); }
-bool TIPacingHints::inIdleAndKeyDetect() const { return m_.m_ranges.idleAndKeyDetect.contains(m_.m_hw.pc()); }
-std::array<std::uint16_t, 4> TIPacingHints::idleAndKeyDetectRange(const calcu::machine::ModelId& model) {
+// ── The idle/key-detect range ────────────────────────────────────────────────
+std::array<std::uint16_t, 4> idleAndKeyDetectRange(const calcu::machine::ModelId& model) {
     const MachineVariant v = model.value == "TI-58" ? MachineVariant::TI58
                              : model.value == "TI-58C" ? MachineVariant::TI58C
                                                        : MachineVariant::TI59;
@@ -99,7 +97,6 @@ TICardReaderAdapter* cardReaderOf(Machine& m) { auto* t = ti(m); return t ? &t->
 TIMemoryAdapter* memoryOf(Machine& m) { auto* t = ti(m); return t ? &t->m_memory : nullptr; }
 TIDebugTargetAdapter* debugTargetOf(Machine& m) { auto* t = ti(m); return t ? &t->m_debugTarget : nullptr; }
 TIDebugPanelAdapter* debugPanelOf(Machine& m) { auto* t = ti(m); return t ? &t->m_debugPanel : nullptr; }
-TIPacingHints* pacingHintsOf(Machine& m) { auto* t = ti(m); return t ? &t->m_pacing : nullptr; }
 const TICardReaderAdapter* cardReaderOf(const Machine& m) { return cardReaderOf(const_cast<Machine&>(m)); }
 const TIMemoryAdapter* memoryOf(const Machine& m) { return memoryOf(const_cast<Machine&>(m)); }
 const TIDebugTargetAdapter* debugTargetOf(const Machine& m) { return debugTargetOf(const_cast<Machine&>(m)); }

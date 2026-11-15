@@ -39,8 +39,7 @@
 // script. Each script or tap is a resumable task — a small state machine that
 // says when it next wants to run. There are no threads: advance(now) runs
 // whatever is due, on the caller's thread (the session's: the machine
-// session's slice ends, LIB-3 59's TIKeySequencerHook, or the Web's
-// cooperative pump).
+// session's slice ends, LIB-3 59's TIKeySequencerHook).
 
 namespace cu59 {
 

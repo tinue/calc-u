@@ -1,6 +1,7 @@
 #include "HarnessProduct.hpp"
 #include "MachineModelInfo.hpp"
 #include "ProductRoms.hpp"
+#include "Settings.hpp"
 #include "../core/TICatalogue.hpp"
 #include "../core/TISegments.hpp"
 #include "roms/Bundle.hpp"
@@ -26,23 +27,13 @@ public:
     const machine::Catalogue& catalogue() const override { return tiCatalogue(); }
     machine::MachineBuilder& builder() override { return builder_; }
 
-    const settings::ProductDecl& settingsDecl() const override {   // A-3
-        static const settings::ProductDecl decl = [] {
-            settings::ProductDecl d;
-            d.productName = "Calc-U-59";
-            d.models = {"TI-59", "TI-58", "TI-58C"};
-            d.fallbackModel = "TI-59";
-            d.keys = {settings::family::startupModel()};
-            return d;
-        }();
-        return decl;
-    }
+    const calcu::settings::ProductDecl& settingsDecl() const override { return cu59::settings::settingsDecl(); }
 
     roms::LookupResult lookUpRoms() const override { return cu59::lookUpRoms(roms::DirectoryBundle(CALCU59_ROM_DIR)); }
 
-    machine::BuildRequest startupRequest(const settings::SettingsFile& s, const roms::RomSet& set) override {   // A-1
+    machine::BuildRequest startupRequest(const calcu::settings::SettingsFile& s, const roms::RomSet& set) override {   // A-1
         machine::BuildRequest r;
-        r.model = machine::ModelId{settings::startupModel(s)};
+        r.model = machine::ModelId{calcu::settings::startupModel(s)};
         if (const machine::MachineDescriptor* d = tiCatalogue().model(r.model)) r.roms = set.imagesFor(*d, std::nullopt);
         const MachinePeripherals start;   // 2.3.0's core: the PC-100C, no module
         if (start.printer) r.peripherals.push_back(printerRequest(start.trace));

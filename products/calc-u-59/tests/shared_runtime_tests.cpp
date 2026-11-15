@@ -70,9 +70,9 @@ struct RecordingListener : EmulatorSession::Listener {
 
 } // namespace
 
-// The idle/key-detect range of TIPacingHints (the core's adapter, C59-1).
+// The idle/key-detect range of the core (TIAdapters.hpp).
 static bool inIdle(Model model, uint16_t pc) {
-    const auto r = TIPacingHints::idleAndKeyDetectRange(modelId(model));
+    const auto r = idleAndKeyDetectRange(modelId(model));
     return (pc >= r[0] && pc <= r[1]) || (pc >= r[2] && pc <= r[3]);
 }
 

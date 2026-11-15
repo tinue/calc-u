@@ -130,7 +130,9 @@ cooperative half of `EmulationRunner`), whose real-clock form now pumps at
   standalone with `Pacing.hpp`), not a library `Pacer` inside
   `CooperativePacing`: the reference runs drive `SessionController`
   cooperatively and stay byte for byte as recorded; `Pacing.hpp` and
-  `TIPacingHints` therefore stay too. Ledger rows 59-32 and 59-33 hold for
+  `TIPacingHints` therefore stay too (its per-machine part went in the
+  C1 simplification, `docs/reviews/c1-simplification.md`; the range
+  stays as `idleAndKeyDetectRange()`). Ledger rows 59-32 and 59-33 hold for
   Swift and Qt6 from M-33 and for the Web from M-34.
 - **`SliceRequest::due`** reaches the KeySequencer through the
   `TIKeySequencerHook` (a `SliceHook` that acts once per slice end).

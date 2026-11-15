@@ -17,7 +17,7 @@ A test file registers its tests with `TEST(name)` of the repository's one runner
 
 ## Harness
 
-`calcu` is the family's harness (LIB-11, `features/LIB-11-harness/` at the repository root): the product without a window, on the library's app session, in emulated time only, so two runs give the same replies. Build the target `calcu` of a root tree (`cmake --build ../../build/tests --target calcu`; the program is `build/tests/library/harness/cli/calcu`). It finds the ROMs in `roms/` and `firmware/pc1600-hostdrive/`, the module definitions in `frontends/qt6/resources/cards/`, and starts the PC-1500A cold booted (no model option before LIB-18).
+`calcu` is the family's harness (LIB-11, `features/LIB-11-harness/` at the repository root): the product without a window, on the library's app session, in emulated time only, so two runs give the same replies. Build the target `calcu` of a root tree (`cmake --build ../../build/tests --target calcu`; the program is `build/tests/library/harness/cli/calcu`). It finds the ROMs in `roms/` through the product's lookup (`sharp::lookUpRoms`), the module definitions in `frontends/qt6/resources/cards/`, and starts the PC-1500A cold booted (no model option before LIB-18).
 
 - One-shot: `calcu --product 1600 wait 2s then lcd then ticks` (commands parted by `then`; exit status 0, 1 at the first refusal, 2 when it cannot start).
 - `calcu --product 1600 serve`: one command per line on standard input, one reply per line (`done`, `done <n>` and n lines, `refused: <reason>`); `--json` gives one object `{"done","result","reason"}` per reply. From Python: `library/harness/python/calcu_serve.py`.

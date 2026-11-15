@@ -19,8 +19,7 @@
 // §3.1, D-7, D-11): one thread of its own builds, calls and destroys the app
 // session, about 60 times a second; the frontend's thread only posts and
 // drains. A host adapter at the ADR 0009 boundary (LIB-1 design §2a): the one
-// place in the app layer with a thread and locks. Never built by the Web
-// (as it never started 2.3.0's threaded runner).
+// place in the app layer with a thread and locks. Never built by the Web.
 //
 // The two queues (the Mailbox): posts in, one FIFO; messages out to the
 // frontend, one FIFO, filled only by this thread. The wake runs once per

@@ -31,7 +31,7 @@ public:
     virtual std::string_view version() const = 0;       // in the header of a state file (AC-24)
     virtual const machine::Catalogue& catalogue() const = 0;
     virtual machine::MachineBuilder& builder() = 0;
-    // A-3 (design §5) until LIB-9's product columns: a minimal declaration.
+    // The product's settings declaration (LIB-9), for --settings.
     virtual const settings::ProductDecl& settingsDecl() const = 0;
     // The product's lookup over its bundled ROM files, as a frontend finds
     // them (LIB-12; O-2). On failure the run does not start (EC-1).

@@ -70,6 +70,9 @@ public:
     ReadSetup readSetup() const;
 
     void attach(sessions::SessionSetup&) override;
+    // The command `load-preset` without its notice: a read error is the
+    // refusal only (LIB-13's opener sends the notice; LIB-13 design §3.4).
+    sessions::CommandOutcome loadPreset(const sessions::Value& args, sessions::SessionContext&);
     void operationEnded(sessions::SessionContext&) override;   // AC-22, AC-60: regular speed at the end
 
     // startup::PresetLoader (LIB-18 §3.3): a read error, an outdated file,
@@ -89,6 +92,7 @@ private:
     ElapsedBase elapsed_;
     EngineDeps deps_;
     bool regularDue_ = false;
+    bool readRefusal_ = false;   // the last loadPreset refused for a read error (noticed by the command)
 };
 
 } // namespace calcu::presets

@@ -71,6 +71,11 @@ public:
     // LIB-10 §3.11: SessionPart::machineRestarted on every part, in the
     // order of the parts (LIB-18's MachineControl calls it).
     virtual void tellRestarted(Restart) {}
+    // An operation started by a part, not by a command (LIB-13 design §3.6:
+    // a file kept for later, opened in afterCall). False, and nothing
+    // started, while one runs (AC-16). Its end sends no reply; a failure is a
+    // notice (AC-18).
+    virtual bool startOperation(Operation) { return false; }
 
 protected:
     ~SessionContext() = default;

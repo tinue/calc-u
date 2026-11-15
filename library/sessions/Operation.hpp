@@ -2,6 +2,7 @@
 #include "machine/EmulatedTime.hpp"
 #include "pacing/PacingProfile.hpp"
 #include "pacing/WallClock.hpp"
+#include "sessions/Payload.hpp"
 #include <coroutine>
 #include <cstdint>
 #include <exception>
@@ -232,8 +233,12 @@ template <class T> T runToCompletion(Task<T> task) {
 // ── Operations on the session ────────────────────────────────────────────
 
 struct OperationResult {
+    // A constructor, not an aggregate: {ok, message} stays the short form.
+    OperationResult(bool o = true, std::string m = {}, PayloadPtr r = {})
+        : ok(o), message(std::move(m)), result(std::move(r)) {}
     bool ok = true;
     std::string message;   // an English sentence; the reason when !ok
+    PayloadPtr result;     // the payload of the reply when it ends well (LIB-13 design §3.6)
 };
 
 class SessionContext;

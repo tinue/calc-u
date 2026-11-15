@@ -17,6 +17,11 @@
 // the area for panels with the paper panel, and the dialogs; the topics come
 // from library/shell/tests/TestShellPart.hpp. `window.calcuTestActs` counts
 // the product item `load-program`.
+// From LIB-7 (M-42): in the product Test-M, whose session hosts LIB-7's
+// MediaPart, the media control of the bar is the React set's media
+// components over the topic `media`: a CalcuMediaPicker per place, with a
+// Name & Save button (CalcuNameAndSaveDialog) where the place offers it;
+// File ▸ Saved Media… shows CalcuSavedMediaDialog.
 
 const CALCU_PRODUCT = "__CALCU_PRODUCT__";
 
@@ -45,6 +50,37 @@ function CalcUTestCard({ entry }) {
 }
 const CALCU_TEST_MEDIA = { "test-card": CalcUTestCard };
 
+// LIB-7 (Test-M): every place of the topic `media`, whatever the scripted
+// control state names.
+function CalcUTestMediaPlaces({ shell }) {
+  const [naming, setNaming] = React.useState(null);
+  const media = shell.inputs.media;
+  const places = (media && media.places) || [];
+  const send = (c, a) => shell.shell.send(c, a);
+  return (
+    <span className="calcu-test-media">
+      {places.map((p) => (
+        <span key={p.place}>
+          <CalcuMediaPicker place={p} send={send} />
+          {p.nameAndSave ? (
+            <button type="button" data-calcu={`media-name-and-save-${p.place}`} onClick={() => setNaming(p.place)}>Name &amp; Save</button>
+          ) : null}
+        </span>
+      ))}
+      {naming ? (
+        <CalcuNameAndSaveDialog place={places.find((p) => p.place === naming)} prompt="Instance name:" send={send}
+          onClose={() => setNaming(null)} />
+      ) : null}
+    </span>
+  );
+}
+const CALCU_TEST_MEDIA_M = { "test-card": CalcUTestMediaPlaces };
+
+function CalcUTestSavedMedia({ shell, onClose }) {
+  const media = useTopic(shell, "media");
+  return <CalcuSavedMediaDialog media={media} send={(c, a) => shell.send(c, a)} onClose={onClose} />;
+}
+
 function CalcUTestShell({ shell }) {
   const s = useCalcuShell(shell, CALCU_TEST_SHELL_PRODUCT, CALCU_SHELL_WEB_TRAITS);
   const face = React.useRef(null);
@@ -56,9 +92,10 @@ function CalcUTestShell({ shell }) {
       <div className="calcu-test-faceplate" data-calcu="test-faceplate" ref={face}
         style={{ display: s.romsMissing && !s.started ? "none" : undefined }} />
       <ShellRomsMissing shell={s} />
-      <ShellControlBar shell={s} mediaControls={CALCU_TEST_MEDIA} extra={CALCU_TEST_EXTRA} />
+      <ShellControlBar shell={s} mediaControls={CALCU_PRODUCT === "Test-M" ? CALCU_TEST_MEDIA_M : CALCU_TEST_MEDIA}
+        extra={CALCU_TEST_EXTRA} />
       <ShellPanelArea shell={s} />
-      <ShellDialogs shell={s} />
+      <ShellDialogs shell={s} savedMedia={CALCU_PRODUCT === "Test-M" ? CalcUTestSavedMedia : undefined} />
     </div>
   );
 }

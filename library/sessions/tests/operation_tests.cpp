@@ -383,3 +383,60 @@ TEST(host_wait_ends_at_once_in_virtual_time) {
     CHECK(!waited);
     CHECK(r.fe.reply(id) && r.fe.reply(id)->done);
 }
+
+// LIB-13 L2 (LIB-13 design §3.6): the payload of an operation's result in its
+// reply, and an operation a part starts without a command.
+namespace {
+Task<OperationResult> withPayload(OperationContext& c, bool ok) {
+    co_await c.run(1'000);
+    OperationResult r{ok, ok ? std::string() : std::string("It went wrong."), nullptr};
+    r.result = std::make_shared<TestValue>(42);
+    co_return r;
+}
+} // namespace
+
+TEST(operation_result_payload_in_reply) {
+    Rig r;
+    r.build();
+    r.part.operation = [](OperationContext& c) { return withPayload(c, true); };
+    const CallId id = r.send("tp.op");
+    r.callWhileBusy();
+    const auto* reply = r.fe.reply(id);
+    CHECK(reply && reply->done);
+    const auto* v = reply ? payloadAs<TestValue>(reply->result) : nullptr;
+    CHECK(v && v->v == 42);
+    r.part.operation = [](OperationContext& c) { return withPayload(c, false); };
+    const CallId bad = r.send("tp.op");
+    r.callWhileBusy();
+    CHECK(r.fe.reply(bad) && !r.fe.reply(bad)->done && !r.fe.reply(bad)->result);   // no payload with a failure
+}
+
+TEST(part_starts_operation_without_command) {
+    Rig r;
+    r.build();
+    int started = 0;
+    r.part.onAfterCall = [&](SessionContext& c, WallTime) {
+        if (started == 0 && c.startOperation([](OperationContext& oc) { return withPayload(oc, false); })) ++started;
+    };
+    r.call();
+    CHECK_EQ(started, 1);
+    r.callWhileBusy();
+    CHECK(!r.session->busy());
+    const auto n = r.fe.noticeSentences();
+    CHECK(std::find(n.begin(), n.end(), std::string("It went wrong.")) != n.end());   // a failure is a notice
+    CHECK(r.ticks() >= 1'000);
+}
+
+TEST(part_operation_refused_while_one_runs) {
+    Rig r;
+    r.build();
+    r.part.operation = runningFor(500'000);
+    const CallId id = r.send("tp.op");
+    CHECK(r.session->busy());
+    CHECK(!r.session->context().startOperation(runningFor(10)));
+    r.callWhileBusy();
+    CHECK(r.fe.reply(id) && r.fe.reply(id)->done);
+    CHECK(r.session->context().startOperation(runningFor(10)));
+    r.callWhileBusy();
+    CHECK(!r.session->busy());
+}

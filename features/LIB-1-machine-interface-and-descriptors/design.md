@@ -107,6 +107,11 @@ not named here adds a folder in the same pattern.
     `presets`, `startup` (LIB-7 design §2; M-41; `control` not needed: the
     part computes what fits from the catalogue, its S-1 fallback). Nothing
     includes it but `harness`, `qt6` and the products;
+  - `opening`: `machine`, `sessions`, `presets`, `media` (LIB-13 design
+    §2, D-1; M-42; only `LibraryOpeners.cpp` includes `presets` and
+    `media`). Its harness command lives in `harness`, so `opening` does
+    not include `harness`; nothing includes it but `harness`, `qt6` and
+    the products;
   - `harness`: any area but `web`, `qt6` and `shell`;
   - `shell`: `machine`, `pacing`, `sessions`, `settings` (LIB-14 design
     §2.1; M-43). It reads the topics of LIB-4, LIB-6, LIB-7, LIB-10 and

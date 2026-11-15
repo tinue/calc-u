@@ -1,5 +1,6 @@
 // LIB-11 design T6, T7: the harness host and the first commands (AC-5, AC-7,
 // AC-9, AC-11; EC-2, EC-5, EC-7).
+#include "TempFolder.hpp"
 #include "TestHarness.hpp"
 #include "TestProduct.hpp"
 #include <string>
@@ -271,4 +272,26 @@ TEST(harness_key_gives_up_after_an_hour) {
     const auto ran = run.machine().tickCount() - before;
     CHECK(ran >= 3600ull * 100'000 && ran < 3600ull * 100'000 + 2000);
     CHECK(run.machine().keyEvents().empty());
+}
+
+// ── LIB-13 L14: `open <path>` (LIB-13 AC-9) ────────────────────────────
+
+TEST(ac9_open_path_replies_as_command) {
+    calcu::testing::TempFolder t("calcu-harness-open");
+    t.write("game.test-dot", "format-version: 2\nmodel: test-dot\n");
+    t.write("Away.testdisk.yaml", "format: test-disk\nformat-version: 2\nname: Away\ncontent: a\n");
+    t.write("photo.jpg", "\xff\xd8\xff");
+    TestRun run({}, std::nullopt, true);   // with the test kinds of medium
+    CHECK(run.server != nullptr);
+    if (!run.server) return;
+    // A preset: loaded from its folder.
+    CHECK_EQ(run.line("open " + (t / "game.test-dot")), std::string("done 1\npreset game.test-dot\n"));
+    CHECK_EQ(run.machine().descriptor().model.value, std::string("test-dot"));
+    // A medium: used where it lies, in the drive.
+    CHECK_EQ(run.line("open " + (t / "Away.testdisk.yaml")), std::string("done 1\nmedium Away.testdisk.yaml disk\n"));
+    CHECK_EQ(run.machine().mediaPlace("drive")->bytes(), std::string("a"));
+    // Nothing the product opens, and a file that is not there.
+    CHECK_EQ(run.line("open " + (t / "photo.jpg")), std::string("refused: Calc-U-Test cannot open photo.jpg.\n"));
+    CHECK_EQ(run.line("open " + (t / "gone.test-seg")), std::string("refused: gone.test-seg could not be read.\n"));
+    CHECK(run.line("open").rfind("refused: usage: open", 0) == 0);
 }

@@ -579,3 +579,18 @@ TEST(ec4_model_switch_changes_menus_in_place) {
     CHECK(w.action("model-Model-B")->isChecked());
     CHECK(w.window.isVisible());
 }
+
+// LIB-7 AC-29 (M-42): the media items of File are the Web frontend's (LIB-14
+// AC-35); the Qt6 shell has no saved media list (LIB-7 OQ-4), so its File
+// menu has neither item, also when the product has kinds of medium.
+TEST(lib7_ac29_qt6_file_menu_without_media_items) {
+    TestWindow w;
+    w.part.publish("media", shell::test::mediaWithKind());
+    w.settle();
+    auto* file = w.find<QMenu>("menu-file");
+    CHECK(file != nullptr);
+    CHECK(w.action("import-media") == nullptr);
+    CHECK(w.action("saved-media") == nullptr);
+    CHECK(file && titles(file) == (QStringList{"item-load-preset", "item-examples-menu", "-", "item-load-program", "-",
+                                               "item-mount-drive", "-", "item-settings", "item-quit"}));
+}

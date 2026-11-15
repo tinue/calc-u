@@ -163,6 +163,8 @@ public:
     std::vector<std::string> placesFor(const OpenedMedium&, const machine::Machine&) const;
     std::vector<std::string> placesInCatalogue(const OpenedMedium&) const;
     std::optional<std::string> refusesNow(const std::string& place, const machine::Machine&) const;
+    // The command `media.open-file` (§3.6), for LIB-13's opener.
+    sessions::CommandOutcome openFile(const sessions::Value&, sessions::SessionContext&);
 
     // The topic as it would be sent now (tests, the harness's `media`).
     std::shared_ptr<const MediaState> state(sessions::SessionContext&);
@@ -209,7 +211,6 @@ private:
     sessions::CommandOutcome choose(sessions::SessionContext&, const std::string& word, const std::string& entry);
     sessions::CommandOutcome changeSlot(sessions::SessionContext&, const Place&, std::optional<machine::PeripheralRequest>,
                                         std::optional<Binding>);
-    sessions::CommandOutcome openFile(const sessions::Value&, sessions::SessionContext&);
     struct Resolved {
         std::optional<std::string> refusal;
         Binding binding;

@@ -39,9 +39,12 @@ if(EMSCRIPTEN)
                    SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/tests/product/TestProduct.cpp
                            ${CMAKE_CURRENT_SOURCE_DIR}/../machine/tests/TestMachines.cpp
                            ${CMAKE_CURRENT_SOURCE_DIR}/../machine/tests/TestCpu.cpp
+                           ${CMAKE_CURRENT_SOURCE_DIR}/../media/tests/TestKinds.cpp
                    OUTPUT calcutest-core EXPORT createCalcUTestModule ENVIRONMENT worker
                    LINK -sEXPORTED_RUNTIME_METHODS=FS,IDBFS)
   target_link_libraries(calcu_web_test_product PRIVATE calcu_warnings)
+  # TestKinds.cpp includes "TestMachines.hpp" as the library's test programs do.
+  target_include_directories(calcu_web_test_product PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../machine/tests)
   return()
 endif()
 

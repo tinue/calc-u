@@ -6,13 +6,17 @@
 #include "machine/Descriptor.hpp"
 #include "machine/Display.hpp"
 #include "media/Kind.hpp"
+#include "opening/OpenRequest.hpp"
 #include "roms/Lookup.hpp"
 #include "roms/RomSet.hpp"
 #include "sessions/SessionPart.hpp"
 #include "settings/Declaration.hpp"
 #include "settings/SettingsFile.hpp"
 #include "startup/ProductMachines.hpp"
+#include <cstdint>
+#include <map>
 #include <memory>
+#include <string>
 #include <string_view>
 #include <vector>
 
@@ -33,6 +37,9 @@ class PaperPart;
 }
 namespace calcu::debugger {
 class DebuggerPart;
+}
+namespace calcu::opening {
+class FileKind;
 }
 
 namespace calcu::harness {
@@ -89,6 +96,15 @@ public:
     // are kinds. None until the product's column (M-47, M-55).
     virtual std::vector<media::KindDecl> mediaKinds() { return {}; }
     virtual media::ModuleListing moduleListing() const { return {}; }
+    // LIB-13 (design §5, §7): what `open` takes besides presets and media.
+    // The product's preset extensions (".ti59"; none: a preset is told by
+    // its model line only), its file kinds in the order they are asked, and
+    // the largest file per way in (none: no limit). None until the
+    // product's column (M-48, M-56): `open` takes presets and media and
+    // refuses the rest.
+    virtual std::vector<std::string> presetExtensions() const { return {}; }
+    virtual std::vector<opening::FileKind*> fileKinds() { return {}; }
+    virtual std::map<opening::Way, std::uint64_t> openLimits() const { return {}; }
 };
 
 using ProductFactory = std::unique_ptr<HarnessProduct> (*)();

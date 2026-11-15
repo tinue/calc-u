@@ -1,5 +1,5 @@
 # LIB-5 Typing: design
-Status: draft for the Part C1/C2 boundary review (2026-11-15)
+Status: approved by the user at the Part C1/C2 boundary (2026-11-15)
 
 ## 1. Scope
 
@@ -523,9 +523,10 @@ them uses `KeySequencer`, `SharpTypingHook` or the PC-1500 key queue
   `printer-timing.ti59` at regular and at full speed through the
   session and check that both give the same paper (the exit check);
   compare with the reference; record the difference in the qa-report
-  as the 59-23 change. A new recording replaces the reference only with
-  the user's OK at the C2/D boundary (plan §1: a difference is a
-  finding). The stopgap of the handover (the call's start as the due
+  as the 59-23 change. The reference is not re-recorded (user,
+  2026-11-15): `CalcU59ReferenceRuns` names the examples whose
+  difference is accepted, each with its reason (this one: row 59-23),
+  and passes with the references unchanged. The stopgap of the handover (the call's start as the due
   time of unpaced slices) is not taken.
 - **`historic/life.ti59`** (one register at the 30-min cut) is
   plausibly the full-speed time per 30 min of driver time (inference,

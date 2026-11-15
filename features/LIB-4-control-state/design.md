@@ -1,5 +1,5 @@
 # LIB-4 Control state: design
-Status: draft for the Part C1/C2 boundary (2026-11-15)
+Status: approved by the user at the Part C1/C2 boundary (2026-11-15)
 
 ## 1. Scope
 
@@ -357,9 +357,10 @@ pass-through, sides 0 and 1), `test-dot` (variants V1, V2; places `a`,
 `b`, `card-1`, `card-2`; media place `drive`), `test-printer`,
 `test-module` (variants 4k, 8k), `test-hub` (place `jack`; from M-37
 the media place `hub-disk`), `test-uart`, and the rule "the test printer
-and the test UART are not used together". The session tests use LIB-3's
-`TestFrontend.hpp`, `TestParts.hpp` (its command that starts an
-operation) and `ScriptedClock.hpp`. Tests come before the code.
+and the test UART are not used together". The session tests use `library/testing/`'s
+`TestFrontend.hpp` and `ScriptedClock.hpp` and LIB-3's
+`sessions/tests/TestParts.hpp` (its command that starts an
+operation). Tests come before the code.
 
 | Task | What | ACs/ECs | Test (file: cases) |
 |---|---|---|---|

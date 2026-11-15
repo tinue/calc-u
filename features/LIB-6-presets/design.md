@@ -1,5 +1,5 @@
 # LIB-6 Presets: design
-Status: draft for the user's review at the C1/C2 boundary
+Status: approved by the user at the Part C1/C2 boundary (2026-11-15)
 
 ## 1. Scope
 

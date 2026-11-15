@@ -1,5 +1,5 @@
 # LIB-8 Paper output: design
-Status: draft for the user's review at the Part C1/C2 boundary
+Status: approved by the user at the Part C1/C2 boundary (2026-11-15)
 
 ## 1. Scope
 
@@ -555,7 +555,7 @@ moves onto `formats/Png` and it goes.
 
 Library, M-39. C++ cases are in `library/paper/tests/` (and the named
 areas), program `calcu_library_tests`, Frequent; they use the session
-test frontend (`sessions/tests/TestFrontend.hpp`), `ScriptedClock.hpp`
+test frontend (`library/testing/TestFrontend.hpp`), `library/testing/ScriptedClock.hpp`
 and the paper test catalogue. Qt6 cases are in `calcu_qt6_tests`
 (Frequent, offscreen). Playwright cases are in `LibraryWebPlaywright`
 (Longer). Tests are written before the code of each task.

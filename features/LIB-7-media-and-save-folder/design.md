@@ -1,5 +1,5 @@
 # LIB-7 Media and save folder: design
-Status: draft for the Part C1/C2 boundary review (2026-11-15)
+Status: approved by the user at the Part C1/C2 boundary (2026-11-15)
 
 ## 1. Scope
 

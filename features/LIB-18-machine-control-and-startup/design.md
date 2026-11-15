@@ -1,5 +1,5 @@
 # LIB-18 Machine control and startup: design
-Status: draft for the user's review at the Part C1/C2 boundary
+Status: approved by the user at the Part C1/C2 boundary (2026-11-15)
 
 ## 1. Scope
 
@@ -407,7 +407,7 @@ in `calcu_library_tests`, group Frequent, named `acN_`/`ecN_` (LIB-1
 power cycle, cleared by a cold boot; places `slot-1`, `printer`, `aux`)
 and `test-dot` (variants V1, V2; switched off by `off`, then a change is
 followed by nothing; `chain`, `card`, `rtc`), with `TestStartUp`,
-`TestProductMachines`, `TestPresetLoader`, `TestHook`, LIB-3's
+`TestProductMachines`, `TestPresetLoader`, `TestHook`, `library/testing/`'s
 `TestFrontend` and `ScriptedClock`, and the settings product of
 `library/settings/tests/TestProduct.hpp`. Paced and virtual-time hosting
 both, where the operation matters (LIB-3 AC-19).

@@ -1,5 +1,5 @@
 # LIB-10 Debugger core: design
-Status: draft for the Part C1/C2 boundary review (2026-11-15)
+Status: approved by the user at the Part C1/C2 boundary (2026-11-15)
 
 ## 1. Scope
 
@@ -573,7 +573,7 @@ switched on by the build option `TestProgram{program, data}`:
 - a mark bit for "program step boundary" at every `nop`, which the test
   rules of `TestDebugParts.hpp` use for their `program` level.
 
-The session tests use LIB-3's `TestFrontend` and `ScriptedClock`, with
+The session tests use `library/testing/`'s `TestFrontend` and `ScriptedClock`, with
 a test product part holding a `DebuggerPart` with `TestDebugParts`.
 
 | Task | What | ACs/ECs | Test (file: cases) |

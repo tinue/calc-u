@@ -1,5 +1,5 @@
 # LIB-13 Opening files: design
-Status: draft for the Part C1/C2 boundary (2026-11-15)
+Status: approved by the user at the Part C1/C2 boundary (2026-11-15)
 
 ## 1. Scope
 
@@ -352,8 +352,8 @@ slot `slot-1`; `test-dot`: media place `drive`, holding; two module
 places `card-1`, `card-2`), the stand-ins of `TestOpeners.hpp`
 (presets `.tseg`, `.tdot`; media `.tcard.yaml`, `.tdisk.yaml`,
 `.tmod.yaml`), the two test file kinds (`test.listing`: name `.lst`;
-`test.blob`: content that starts with `BLOB`), and LIB-3's
-`TestFrontend.hpp` and `ScriptedClock.hpp`. Tests come before the code.
+`test.blob`: content that starts with `BLOB`), and
+`library/testing/`'s `TestFrontend.hpp` and `ScriptedClock.hpp`. Tests come before the code.
 
 | Task | What | ACs/ECs | Test (file: cases) |
 |---|---|---|---|

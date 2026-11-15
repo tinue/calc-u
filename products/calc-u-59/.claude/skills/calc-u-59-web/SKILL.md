@@ -69,6 +69,9 @@ the debugger and trace download, the portrait pages, the service worker's
 precache. Key presses after a program stops can extend its last entry, as
 on the real calculator — press CLR first. `tests/prerender.spec.js` renders `calc.js`
 in Node. Ports 8059 and 8060 (`CALCU_WEB_PORT` moves both).
+`tests/pacing.spec.js` (LIB-17 AC-19, Checkpoint) is skipped unless
+`CALCU59_WEB_PACING=1`; it reads the binding `emulatedSeconds()` in the
+worker (`worker.evaluate`) for one minute.
 
 The engine's Emscripten flags live in the product's `CMakeLists.txt`
 (`calcu59_web`); the tree is configured once — delete `../../build/web`

@@ -38,5 +38,12 @@ n=$(/usr/bin/grep -c 'ENABLE_INCOMING_NETWORK_CONNECTIONS = YES;' "$PBX")
 /usr/bin/grep -c 'CODE_SIGN_ENTITLEMENTS = "Calc-U-59-Debug.entitlements";' "$PBX" | /usr/bin/grep -qx 1 ||
   fail "$PBX: the Debug entitlements file is not the app's Debug configuration's alone"
 
+# C59-5 AC-2, AC-13 (M-33): the script phase that makes the XCFramework
+# declares it as its output, so that Xcode copies it only after the script;
+# without it a Release build right after a Debug one linked the Debug
+# XCFramework, attach included.
+/usr/bin/grep -A3 'outputPaths = (' "$PBX" | /usr/bin/grep -q 'build/xcframework-59/CalcU59.xcframework"' ||
+  fail "$PBX: the phase 'Build CalcU59.xcframework' does not declare the XCFramework as its output"
+
 [ $status = 0 ] && echo "ok: the Xcode project compiles only Swift and the bridge, links CalcU59.xcframework and bundles the 24 ROM files"
 exit $status

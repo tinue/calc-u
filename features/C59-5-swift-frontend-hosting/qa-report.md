@@ -78,5 +78,76 @@ preset, file-picker and layout tests pass on the new session unchanged.
 - **Commands over attach that start an operation** reply when it ends
   through `HarnessHost`'s attached form (`kPendingReply`); the reply then has
   no result lines.
-- **Not built in M-33:** the Swift unit-test target (S1, S2), S4, S5, S6,
-  `check_no_attach.sh` (B1's Longer half; checked by hand instead). Listed for the user.
+- **Not built in the first part:** the Swift unit-test target (S1, S2), S4, S5, S6,
+  `check_no_attach.sh` (B1's Longer half; checked by hand instead). Built in
+  the second part (below).
+
+## M-33, second part (2026-11-15, branch `m33b-sessions-59`): S1, S2, S4 to S6, B1
+
+The items the first part left open. Same machine and tools; the unit tests
+and the XCUITests on the iPhone 18 Pro Max simulator (iOS 27.2) and on macOS
+27.2. The unit-test target `Calc-U-59Tests` (plan `UnitTests`) is hosted by
+the app (launched with `--UITesting`, so its settings stay in memory) and
+makes a second session through the real bridge (`TIAppSession`) with a
+temporary save folder (`Calc-U-59Tests/TestSession.swift`); the Debug-only
+test hooks of the bridge (`pressKey:completion:`, `offeredHostServices:`,
+`emulatedTime:`, `hostCallCount`) translate only.
+
+This section supersedes the rows of the first part for the criteria it lists.
+
+| AC | Result | How it was checked |
+|---|---|---|
+| AC-4 | Pass | as before; also `MessageOrderTests.testSessionThreadCallsAbout60TimesASecond` (50 to 70 calls a second through the bridge; iOS and macOS) |
+| AC-5 | Pass | as before; S5 `AttachTests.testTapsReachSessionAtFullSpeed` (a program runs; a 3 s press on the display: the machine ran at 989 to 1,246 times wall time, so the touch reached the session as full speed; after its end 0.99 to 1.01, so the end did too; then the R/S key stops the program, `lcd` shows 1). D-9, the main thread's frame gaps: `FrameGapTests` (see below) |
+| AC-6 | Pass | as before; S1 `MessageOrderTests.testMessagesArriveOnMainInOrder` (500 key commands, every reply on the main thread and in the order sent; iOS and macOS) |
+| AC-7 | Pass | S2 `HostServicesTests`: `testStatedServicesIOS` (clipboard text and image, file picker, keep file, open URL, haptics), `testStatedServicesMacOS` (clipboard text and image, file picker, folder picker, keep file, open URL), `testNoAudioSink`; each checks the list the bridge states and the services the session sees offered (`SessionContext::hostOffers`, asked on the session thread) |
+| AC-8 | Pass (iOS); macOS as D-10 records | `SuspendTests.testSuspendStopsCallsContinueCallsAgain` (after the suspend is carried out no host call and no emulated time for 0.5 s; after continue both again; iOS and macOS); S4 `AttachTests.testBackgroundSuspendsAndContinues` (Home: the next command is refused "the app is suspended"; 5.1 s of wall time from Home to back in front gave 1.8 s of emulated time, the time until the scene went to the background and after it came back; back in front `wait 500ms` passes on the app's clock). On the Mac (S6) a hidden app did not get `.background` from SwiftUI: a command while hidden was carried out (D-10: the app suspends when SwiftUI reports the background, which hiding does not) |
+| AC-9 | Pass (after a fix) | S6 `tests/mac_attach_check.sh`: the window covered by a window over every screen for 30 s: emulated 30.043 s in 30.027 s of wall time. **Found:** before the fix the covered app ran 17.1 s in 30 s (13 s lost); macOS coalesced the session thread's waits past the pacer's lag limit of 100 ms (LIB-17 AC-4), which drops the lag. The App Nap activity now also has `.latencyCritical` (`EmulatorViewModel.swift`); with it the rate held in front, behind another app and covered. Not in the ledger: it keeps 2.3.0's behaviour (first step 12) |
+| AC-10 | Pass | as before; S6: `calcu attach --port 59171` to the Debug Mac app started through Launch Services |
+| AC-13 | Pass (after a fix) | `check_no_attach.sh`: `--sources` (Frequent, `CalcU59NoAttachSources`: attach only for Debug macos and ios-simulator slices in `build_xcframework.sh`, the bridge and Swift call sites under the Debug and platform guard); `--binary`, a build phase of the app target in every Release and device build (no `AttachEndpoint` or `AttachedHarness` symbol and none of attach's texts in the executable and its `.debug.dylib`; a file it cannot read fails); the full check (Longer, `CalcU59NoAttachInRelease`: the Release Mac app, the three Release XCFramework slices, the Debug iOS device app and its slice; the signed Release app's entitlements have the sandbox and no `network.server`). **Found:** a Release build right after a Debug one linked the Debug XCFramework, with attach: the script phase that makes the XCFramework declared no output, so Xcode copied the XCFramework (`ProcessXCFramework`) while the script was still replacing it. The phase now declares the XCFramework as its output; the scenario (Debug XCFramework, fresh derived data, Release build) passed three times since. This also holds AC-2 for a change of configuration |
+
+D-9, the main thread's frame gaps (AC-5): `FrameGapTests.testMainThreadKeepsFramesWhileSessionRunsAtFullSpeed`,
+a display link (iOS) or a 60 Hz timer (macOS) in the test bundle on the
+host app's main thread, as first step 3 measured; idle, a program running at
+regular speed, the program at full speed (the session thread busy for whole
+calls: 1,279 to 1,395 times wall time), and 20 key commands sent then:
+
+| | iOS simulator | macOS |
+|---|---|---|
+| idle | p50 16.7 ms, p95 16.7 ms, max 16.7 ms | p50 16.7, p95 18.5, max 18.6 |
+| program, regular speed | 16.7 / 16.7 / 16.7 ms | 16.7 / 18.1 / 18.5 |
+| program, full speed | 16.7 / 16.7 / 16.7 ms, no gap over 25 ms | 16.7 / 17.9 / 18.6, none over 25 ms |
+| a key command's reply at full speed | at most 14.1 ms | at most 11.1 ms |
+
+As first step 3 (p95 16.7 ms on iOS) and better than its 53 ms gap on macOS.
+**Not with Instruments as D-9 says:** `xctrace record --template 'Animation
+Hitches'` against the app in the simulator ends "Hitches is not supported on
+this platform"; it needs a real iPhone. The probe is in the test bundle, not
+the app (D-9: no probe in the app). For the user, on a device: run the app
+from Xcode (Debug), Product → Profile → Animation Hitches, a program running
+(`2nd Lbl A 1 SUM 00 GTO A`, `A`) and the display held for full speed.
+
+Runs (2026-11-15): `UnitTests` 6 of 6 on the simulator and on macOS (14 s);
+`UIRegressionTests` on the simulator 18 tests, 17 passed, 1 skipped as before,
+178 s; `PacingCheckpoint` (LIB-17 AC-19) passed; `mac_attach_check.sh`
+passed; `check_no_attach.sh` (full) passed; Frequent 27 of 27.
+
+### Deviations from the design, chosen by the simpler structure
+
+- **The unit tests make their own session through the bridge** instead of
+  driving the app's: the view model has no seam for a test, and a second
+  `TIAppSession` is the same bridge and session thread.
+- **S5 has no `speed full` over attach** (LIB-11 has no such command): the
+  test holds the display, the user's way to full speed (an accessibility
+  identifier `led-display` on the display view), and taps R/S through the
+  `--UITesting` aid `btn-key-rs`.
+- **S6 and the Mac's AC-19 are one script** with `calcu attach`, not an
+  XCUITest on macOS (that needs a signed runner and the Accessibility
+  permission, `CalcU59UITestsMac`). The app is started through Launch
+  Services (`open -n`): started directly from a shell it is no regular
+  foreground app and lost 8 s a minute in front.
+- **S2 on macOS is `CalcU59SwiftUnitTestsMac`** (Checkpoint), a run of the
+  `UnitTests` plan, not part of `CalcU59UITestsMac`.
+- **EC-3 in the simulator:** a command sent right after Home is still
+  carried out until the scene has gone to the background; S4 repeats it
+  until it is refused.

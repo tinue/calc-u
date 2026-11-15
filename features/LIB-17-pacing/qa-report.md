@@ -118,7 +118,7 @@ Swift and Qt6 frontends host it (`cu59::makeAppSession`; profiles in
 | AC-16 | Pass | `lib17_ac16_full_speed_paced_at_key_readiness`, `lib17_ac16_full_speed_races_a_computation` (more than twice regular), `lib17_ac16_printer_wait_is_not_waiting` (a printing loop runs above 1.5× at full speed), `lib17_ac16_card_wait_is_waiting` (TI-59, `Write` without a card), `lib17_ac16_preset_wait_at_full_speed_on_idle_is_not_paced` (an operation that reports "not waiting": one emulated second in under 0.5 s on an idle machine) |
 | AC-17 | Pass | `lib17_ac17_ti58_error_blink_pc_varies_over_50_slice_ends` |
 | AC-18 | Pass (≤ 0.3 %) | `lib17_ac18_pacing_longrun_scripted_ti`, an hour per model, the calls of the "before" test: TI-59 rate 0.999994 against 2.3.0's 0.998681 (0.131 %), TI-58 0.999996 against 1.000000 (0.000 %), TI-58C 0.999996 against 0.998985 (0.101 %); worst \|emulated − wall\| within a stretch 0.0298 / 0.0295 / 0.0298 s. The differences are 2.3.0's cut to whole ticks (ledger 59-33). The real-clock run (Checkpoint) was not run in M-33 |
-| AC-19 | Not run (Checkpoint) | iOS and macOS read `ticks` over attach (the XCUITest's client and `calcu attach` exist; the one-minute test was not written); Qt6 `--pacing-probe` and the Web test not built |
+| AC-19 | Swift and Qt6 pass, Web fails until M-34 | see "Calc-U-59, AC-19" below (second part of M-33) |
 
 The "before" tests stay on 2.3.0's batches (`CooperativePacing`, the
 cooperative half of `EmulationRunner`), whose real-clock form now pumps at
@@ -134,3 +134,37 @@ cooperative half of `EmulationRunner`), whose real-clock form now pumps at
   Swift and Qt6 from M-33 and for the Web from M-34.
 - **`SliceRequest::due`** reaches the KeySequencer through the
   `TIKeySequencerHook` (a `SliceHook` that acts once per slice end).
+
+## Calc-U-59, AC-19 (M-33 second part, 2026-11-15, branch `m33b-sessions-59`)
+
+P59-5, Checkpoint (D-5), each run once for this report. A TI-59 at regular
+speed, idle at its keyboard scan; emulated time read twice, one minute of the
+test's wall time apart. The bound: AC-1's (the TI-59's 20 ms slice,
+AC-15) plus one host call of 1/60 s, because a reading is made between two
+calls, plus half of each reading's round trip where the reading crosses a
+connection (the reading of "within the bound of AC-1" for a running
+frontend, chosen here).
+
+| Frontend | Result | How it was checked |
+|---|---|---|
+| Swift iOS | Pass | `Calc-U-59UITests/PacingTests.testTI59KeepsOneMinute` (plan `PacingCheckpoint`, CTest `CalcU59PacingIOS`): `ticks` over harness attach, port 59161; wall 60.0326 s, emulated 60.0219 s, difference −0.0107 s, bound 0.0685 s |
+| Swift macOS | Pass | `tests/mac_attach_check.sh` (CTest `CalcU59MacAttach`): `calcu attach` to the Debug app; wall 60.0330 s, emulated 60.0396 s, +0.0066 s, bound 0.0655 s. Also covered for 30 s (C59-5 AC-9): +0.0159 s, after the fix recorded in C59-5's report |
+| Qt6 | Pass | `--pacing-probe 60` (CTest `CalcU59QtPacingProbe`, offscreen, a temporary `HOME`): the session's emulated-time request on the GUI thread; wall 59.6447 s, emulated 59.6443 s, −0.0004 s, bound 0.0367 s |
+| Web | **Fail** (until M-34) | `frontends/web/tests/pacing.spec.js` `a TI-59 keeps one minute` (CTest `CalcU59WebPacing`, Chromium, root): the binding `emulatedSeconds()` read in the engine's worker; wall 60.0035 s, emulated 59.9220 s, −0.0815 s, bound 0.0392 s. That is 0.136 % slow: 2.3.0's cut of each batch to whole steps (AC-18: 0.13 % for the TI-59; ledger 59-33), which the Web keeps until M-34 (deviation of the M-33 section above). Expected to pass once M-34 puts the Web on the library's session |
+
+So the Calc-U-59 column is not Done in M-33: AC-19's Web row waits for M-34.
+
+### Deviations from the design
+
+- **`--pacing-probe` is in every build with the tests** (`CALCU_TESTS`, the
+  define `CALCU59_PACING_PROBE`), not in "debug builds": the trees with the
+  Checkpoint group are Release or RelWithDebInfo, and the release packaging
+  (`build/release`) has the tests off. It reads the time a second after the
+  start and again `<s>` later and exits 0 or 1.
+- **macOS reads `ticks` with `calcu attach` from a script**, not an XCUITest
+  (C59-5's report, S6).
+- **The Web reads emulated time in the worker** with Playwright's
+  `worker.evaluate` on the binding, not through the page's message channel,
+  which has no request for it until M-34.
+- **The real-clock long runs** (`CalcU59PacingRealClock`, ten minutes, "before"
+  and "after") were registered in the first part and are not run here.

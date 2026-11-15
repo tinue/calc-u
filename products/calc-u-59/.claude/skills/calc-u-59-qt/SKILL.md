@@ -47,6 +47,9 @@ Everything that isn't drawing: `reference/SharedArchitecture.md`.
 6. **Compile, don't run.** Build with the commands below. To check rendering
    without showing a window: `QT_QPA_PLATFORM=offscreen ../../build/app-59/products/calc-u-59/frontends/qt6/Calc-U-59.app/Contents/MacOS/Calc-U-59 [state-file] --grab out.png --after 3000`
    (an offscreen screen may clamp the window size). Ask the user to try the app itself.
+   A build with the tests also has `--pacing-probe <s>` (LIB-17 AC-19, CTest
+   `CalcU59QtPacingProbe`): emulated against wall time over `<s>` seconds, exit 0 or 1;
+   run it offscreen with a temporary `HOME`, so no settings of the user's are touched.
 7. **Commit often, never push.**
 
 ## Class map

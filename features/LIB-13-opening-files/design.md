@@ -1,5 +1,5 @@
 # LIB-13 Opening files: design
-Status: approved by the user at the Part C1/C2 boundary (2026-11-15)
+Status: Library column approved at the Part C1/C2 boundary (2026-11-15); Calc-U-1600 column: draft for the Part C2/D boundary review (2026-11-16)
 
 ## 1. Scope
 
@@ -453,3 +453,269 @@ The harness has no upload folder. Today's tools (`tools/headless/`,
   `refusesNow` ask, and `media.open-file` takes the place, the bytes,
   `upload` and `confirmed` (LIB-7 §3.6, §3.7, D-14). Only
   `LibraryOpeners.cpp` depends on them.
+
+## Part D: the Calc-U-1600 column
+
+### D1. Scope
+
+| Column | Step | Tests from (plan §3) | Done in (plan §5.1) |
+|---|---|---|---|
+| Calc-U-1600 | M-48 | AC-17 to AC-22 | M-48 |
+
+M-48 waits for M-42 (the Library column, Done), M-44 (C1600-2: the
+loaders, the part `SharpLoaderPart` and its commands, the menu flows on
+them; `features/C1600-2-sharp-program-files/design.md`) and M-47
+(LIB-7 1600: Calc-U-1600's media kinds `.card.yaml`, `.floppy.yaml`,
+`.tape.yaml` in a `MediaPart` of the product's session). It uses M-46
+(LIB-6 1600: the product's `PresetsPart`, the preset extensions
+`.pc1500`, `.pc1500a`, `.pc1600`). The line numbers below are those of
+`main` at `60e5b09`; M-44, M-46 and M-47 change some of these files
+first, so M-48 reads them again before it changes them.
+
+The edge cases are the Library column's (EC-1 to EC-7, Done in M-42).
+Where the product's ways in must keep them (EC-2 for the drive, EC-7 for
+the folder), the tasks of D6 check them once more on the product.
+
+### D2. What the code of M-42 changed against §1 to §9
+
+The Library column was built as §3 says, with the deviations of the
+qa-report (`features/LIB-13-opening-files/qa-report.md`, "Deviations"),
+which are the record. Those that matter here:
+- `MediaOpening` names places by LIB-7's place words, and import and use
+  are one call, `importAndUse(file, place?, confirmed)`: the product
+  column builds on that form, not on §3.4's `MediaPlaceRef`.
+- `HarnessProduct::presetExtensions()` exists besides `fileKinds()` and
+  `openLimits()` (`library/harness/Product.hpp:105-107`); the product
+  sets all three here.
+- `OpenReply` carries the file's name (`file`).
+- A kept file whose opening asks gets a notice "`<name>` was not opened:
+  `<question>`".
+
+§4's table of what M-48 replaces holds; its line numbers moved: the
+request `c1600.drop-target` is at `app/SharpWebPart.cpp:179-188` (not
+`:274-282`), the Qt6 drag and drop at `frontends/qt6/app/MainWindow.cpp:749-819`,
+the Web drop at `frontends/web/src/CalcU1600.jsx:17, 68, 138-186, 390-394`.
+
+### D3. Modules and files
+
+All under `products/calc-u-1600/` unless named.
+
+| File | Change |
+|---|---|
+| `app/SharpFileKinds.hpp/.cpp` (new) | `BasicProgramKind`, `MachineCodeKind : calcu::opening::FileKind` on C1600-2's classifier (D4.1); `sharpOpenSetup(…)`: the product's `OpenSetup` (preset and media openers over its `PresetsPart` and `MediaPart`, the kinds in order, the limits, the upload folder) |
+| `app/SharpAppPart.hpp/.cpp` | owns the `OpenPart` and the two kinds; `sessionParts()` lists the `OpenPart` after the presets, media and loader parts |
+| `app/SharpTopics.hpp` | the stream topic `c1600.program-opened` (D4.2) |
+| `app/StartFile.hpp/.cpp` (new) | `startFile(arguments, exists)`: the file named at the start of the Qt6 program (D4.4); Qt-free, so CoreTests test it |
+| `app/HarnessProduct.cpp` | `presetExtensions()`, `fileKinds()` (the two kinds over the harness's own `SharpLoaderPart`), `openLimits()` (none: the harness way has no limit) |
+| `app/SharpWebPart.cpp:165-188` | `c1600.upload` and `c1600.drop-target` go |
+| `core/DropFile.hpp/.cpp` | deleted |
+| `frontends/qt6/app/MainWindow.hpp/.cpp:749-819` | the drag asks `open-would-take`; the drop sends `open {way: drop}`; `dropTargetOf`, `kMaxDropBytes`, `droppableFile`, `openDroppedFile`, `drainPendingDrop`, `m_pendingDrop` and the `m_startupDone` gate go; the topic `c1600.program-opened` runs the program flow (D4.2); `loadPresetFile`'s `rememberOpenFile` only after the dialog (EC-7) |
+| `frontends/qt6/app/main.cpp:28-54, 162-168` | the `QFileOpenEvent` handler sends `open {way: open-with}`; the start file `open {way: start}` |
+| `frontends/qt6/resources/macos/Info.plist.in:97` | `rom` goes from the document types (AC-21) |
+| `frontends/web/src/CalcU1600.jsx:17, 68, 138-186, 255, 390-394` | the drop sends `open {way: drop, upload: true}`; "Upload Preset…" sends its files as `open {way: dialog, upload: true}` (AC-8); `MAX_DROP_BYTES`, `pendingDrop`, `openDropped`, `loadPresetFiles` go; an `asks:` reply is asked and sent again with `confirmed`; the topic runs the program flow |
+| `frontends/web/src/engine.js:62, 71` | `upload`, `dropTarget` go; `open`, the topic |
+| `tests/program_file_tests.cpp:193-300` | the drop cases move to `app/tests/opening_tests.cpp` (AC-22) |
+| `app/tests/opening_tests.cpp` (new) | AC-17 to AC-20, AC-22, EC-2, EC-7 on the product's session |
+| `tools/check_open_with_types.sh` (new), `CMakeLists.txt` | the CTest `CalcU1600OpenWithTypes` (AC-21; Frequent) |
+| `frontends/web/tests/play.spec.js` | the Web cases of D6 |
+
+### D4. Seams and interfaces
+
+#### D4.1 The two file kinds (AC-17)
+
+```cpp
+namespace shared {
+class BasicProgramKind final : public calcu::opening::FileKind {    // name "basic-program"
+public:
+    explicit BasicProgramKind(SharpLoaderPart&);
+    bool takesName(std::string_view) const override;          // D4.3
+    bool takes(const calcu::opening::OpenedFile&) const override;
+    calcu::sessions::CommandOutcome open(const calcu::opening::OpenedFile&, calcu::opening::Way,
+                                         calcu::sessions::SessionContext&) override;
+};
+class MachineCodeKind final : public calcu::opening::FileKind { /* the same; name "machine-code-program" */ };
+}
+```
+
+`takes` asks `sharp::loaders::fileKind` (C1600-2 design §3.2). The kinds
+are asked in this order, BASIC first:
+
+| What C1600-2 says the file is | Taken by |
+|---|---|
+| a BASIC listing, tokenized BASIC (PC-1500 or PC-1600) | `basic-program` |
+| machine code behind a CE-158 or PC-1600 header | `machine-code-program` |
+| headerless, `looksLike` set, and the name ends in `.bin` (any case) | `machine-code-program` |
+| headerless otherwise (also `.rom`, AC-17) | neither |
+| a cassette WAV: its first readable file | the kind of that file, by the rows above |
+| a cassette WAV without a readable file | `basic-program`, so that the loader says why |
+| empty, "something else" | neither: test 5 (a model line) or 6 (refused) of AC-1 follows |
+
+These are today's rules of `dropfile::classify`
+(`core/DropFile.cpp:27-45`) without `.rom`, and without its preset test
+first: the preset extensions and the model line are the library's tests
+2 and 5 (AC-1), the media suffixes its test 3.
+
+#### D4.2 What follows when a program is opened (AC-18)
+
+- **Harness** (`way: harness`, no dialogs): the kind loads at once
+  through `SharpLoaderPart`: `basic-program` as `c1600.load-basic`,
+  `machine-code-program` as `c1600.load-code` without an address, a
+  WAV's first file. Headerless code is refused with the plan's sentence
+  (it needs an address, C1600-2 AC-8). The reply is `OpenReply{FileKind,
+  "<kind>"}`, or the refusal.
+- **Every other way** (drop, Open With, start, the Load Preset…
+  dialog): the kind sends the stream topic `c1600.program-opened {name,
+  bytes, path?}` and replies `OpenReply{FileKind, "<kind>"}`. The
+  frontend runs its program flow on it: the flows of File ▸ Load BASIC
+  Program… and Load Machine Code… (C1600-2 design §3.9) after their
+  file dialog, starting at `c1600.file-kind`. A WAV with several files
+  asks which one, and the file chosen goes to the flow of its own kind:
+  BASIC to the BASIC flow, machine code to the machine-code flow (with
+  the address dialog for headerless code). The flow came from an open,
+  so it remembers no folder (EC-7).
+- The topic is used, not the reply, because a kept file (AC-7) is opened
+  in `afterCall` and has no reply to carry it (D-11).
+
+#### D4.3 The drag (AC-6)
+
+`takesName` is true for every name: C1600-2 AC-1 has the content decide,
+never the name, and a BASIC listing or a preset may have any name. A
+drag is therefore taken unless tests 1b and 1c refuse it (larger than
+1 MiB when Qt gives the size; a hidden file) or it carries more than one
+file; the drop itself goes through all of AC-1 and refuses with a
+notice. Today the drag reads the file and refuses what loads nowhere
+(`MainWindow.cpp:757-778`). See Q-1.
+
+#### D4.4 The ways in (AC-20, AC-21)
+
+| Way | Qt6 | Web | Limit (AC-20, D-9) |
+|---|---|---|---|
+| drop | `dropEvent` reads the file (`bytes` absent if it cannot) and sends `open {files: [{name, path, bytes}], way: drop}` | `open {files: [{name, bytes}], way: drop, upload: true}` | 1 MiB |
+| Open With | macOS `QFileOpenEvent` (`main.cpp:41-49`), also at a cold launch (the session keeps it, AC-7): `open {way: open-with}` | none | 1 MiB |
+| start | `startFile(QCoreApplication::arguments(), exists)`: the last argument that names an existing file; `open {way: start}` once the window is shown (the session keeps it until the start ends, AC-7) | none | 1 MiB |
+| Load Preset… dialog | `open {way: dialog}` with the chosen file | "Upload Preset…": its files as `open {way: dialog, upload: true}`, several as one folder (AC-8; upload folder `/uploads`, `frontends/web/bindings.cpp:43`) | none |
+| harness | `open <path>` (M-42) | none | none |
+
+The menu items Load BASIC Program… and Load Machine Code… do not send
+`open` (AC-5). A refusal is the session's notice, shown as today's
+notices are (row 1600-27). The macOS document types keep the three
+preset extensions as the product's own and `.bas`, `.bbin`, `.bin` as
+Alternate; `.rom` goes (AC-21). Windows and Linux get no Open With
+(out of scope).
+
+#### D4.5 Media (AC-19)
+
+Through the library's `MediaOpener` over the product's `MediaPart`
+(M-47): in Qt6 a disk file is inserted from where it lies when the
+CE-1600F is there, and refused with a notice when it is not (EC-2); in
+the Web it is imported, then inserted when the drive is there. A module
+file is plugged in when its slot is clear from the context (the
+PC-1500's one slot, or a module that fits only one of the PC-1600's),
+else refused with the notice of AC-4; the Web imports it first. A
+`.tape.yaml` is inserted into the cassette when the model has one
+(LIB-7 AC-42). A WAV is never a tape here: it is a program file (D4.1).
+
+### D5. Adapters
+
+| Adapter | File | Removed in |
+|---|---|---|
+| `looksLikePreset` forward (M-42) | `core/DropFile.cpp:15` | M-48: `core/DropFile.*` deleted |
+| Calc-U-1600's drop flow (§5; since M-44 on C1600-2's commands, C1600-2 design §5) | `core/DropFile.*`, `app/SharpWebPart.cpp:179-188` (`c1600.drop-target`), `frontends/qt6/app/MainWindow.cpp:749-819`, `frontends/web/src/CalcU1600.jsx:17, 68, 174-186` | M-48 |
+| `c1600.upload` | `app/SharpWebPart.cpp:169-178`, `frontends/web/src/CalcU1600.jsx:138-148` | M-48: the open part's upload folder writes the files (AC-8) |
+
+None is added. After M-48 nothing in Calc-U-1600 tells a file's kind
+outside `sharp::loaders::fileKind` and the open part.
+
+### D6. Tasks
+
+Tests before code. `CoreTests` (Frequent) unless named; Web cases in
+`CalcU1600WebPlaywright` (Longer), titled with the ID. Case names
+`lib13_acN_…`. The session tests run on `app/tests/SessionFixture.hpp`
+with the product's parts, a save folder of the test's own and the real
+ROMs (`SKIP_UNLESS`).
+
+| Task | What | ACs/ECs | Test (file: cases) |
+|---|---|---|---|
+| T16-1 | The product's data, the two kinds | AC-17 | `opening_tests.cpp`: `lib13_ac17_preset_extensions_media_suffixes`, `_kinds_asked_basic_then_code`, `_listing_and_tokenized_are_basic`, `_headered_code_is_code`, `_headerless_code_only_with_bin`, `_rom_is_not_code`, `_wav_goes_to_first_files_kind`, `_unreadable_wav_goes_to_basic_loader_which_says_why`, `_empty_and_other_taken_by_neither` |
+| T16-2 | What follows | AC-18 | `opening_tests.cpp`: `lib13_ac18_gui_way_sends_program_opened_topic`, `_kept_file_also_sends_topic`; `tests/harness_tests.cpp`: `lib13_ac18_harness_open_loads_first_wav_file`, `_harness_open_refuses_headerless`, `_harness_open_preset_bas_and_headered_bin`; Web `play.spec.js`: `LIB-13 AC-18 a dropped WAV with several programs asks which one, then loads by its kind`, `LIB-13 AC-18 a dropped headerless .bin asks the address` |
+| T16-3 | Media | AC-19, EC-2 | `opening_tests.cpp`: `lib13_ac19_disk_used_where_it_lies_written_back`, `lib13_ec2_disk_without_drive_refused_with_notice`, `lib13_ac19_upload_disk_imported_then_inserted`, `_module_one_place_plugged_pc1500`, `_module_two_places_refused_pc1600`, `_tape_definition_into_cassette`, `_wav_is_never_a_tape`; Web: `LIB-13 AC-19 a dropped disk file is imported and inserted` |
+| T16-4 | Limits | AC-20 | `opening_tests.cpp`: `lib13_ac20_over_1mib_refused_drop_openwith_start`, `_dialog_and_harness_without_limit`; Web: `LIB-13 AC-20 a dropped file over 1 MiB is refused with a notice` |
+| T16-5 | The ways in | AC-21, EC-7 | `opening_tests.cpp`: `lib13_ac21_start_file_is_last_file_argument` (`startFile`), `lib13_ec7_open_by_any_way_keeps_dialog_folders`; CTest `CalcU1600OpenWithTypes` (`tools/check_open_with_types.sh` over `Info.plist.in`: the three preset extensions as Owner, `bas`, `bbin`, `bin` as Alternate, no `rom`); Web: `LIB-13 AC-8 Upload Preset opens the preset among its files`; Qt6: a drop, an open from the Dock icon and Finder's Open With, and a start argument, checked by hand on macOS and recorded in the qa-report (the attach scenarios of M-49 take them over) |
+| T16-6 | Today's tests | AC-22 | `opening_tests.cpp`: the cases of `program_file_tests.cpp:193-300` (`test_drop_targets` and the WAV cases) as `lib13_ac22_…`, through the product's open part instead of `dropfile::classify`; the `.rom` case changed by AC-17 |
+
+Coverage: AC-17 to AC-22 have a task; the column is Done in M-48.
+
+### D7. Tools and agent knowledge
+
+**Tools.** The harness's `open` takes Calc-U-1600's presets by their
+extensions, its media and its two kinds (D4.2). `pc1500_cli`,
+`pc1600_cli` and the probes open no files by drop and are unaffected.
+
+**Agent knowledge changed in M-48.**
+
+| File | Change |
+|---|---|
+| `products/calc-u-1600/CLAUDE.md` | § Harness: `open <path>` opens presets, media and program files |
+| `products/calc-u-1600/docs/developer/Shared-Architecture.md` | the open part and `SharpFileKinds` where the window's drop is described |
+| `products/calc-u-1600/docs/developer/Web-Client.md:139` | `dropfile::classify` → the session's `open` |
+| `docs/test-groups.md` | `opening_tests.cpp`, `CalcU1600OpenWithTypes` |
+| `docs/glossary-mapping.md` | a row "Open, file kind": `dropfile::classify`, `c1600.drop-target`, `openDroppedFile` → `open`, `open-would-take`, `shared::BasicProgramKind`, `MachineCodeKind` |
+
+`products/calc-u-1600/docs/background/plans/Drag-And-Drop-Plan.md`
+stays history (plan M-48). No Calc-U-1600 memory file names `DropFile`,
+the drop target or `openDroppedFile` (checked 2026-11-16 against the
+`calc-u-1600` index); none changes. The product has no skills.
+
+**Ledger.** Row 1600-15, its opening part, becomes visible: a disk file
+can be dropped and is used where it lies (Web: imported); a module file
+is plugged in when it is clear where it goes, else refused with a
+notice; `.rom` is no longer a name of a machine-code file, on a drop or
+with Open With; a file named at the start is opened; a drop no longer
+changes the folder of a file dialog; a file over 1 MiB and a file the
+product cannot open are refused with a notice.
+
+### D8. Golden runs and risks
+
+- **Golden and reference runs** are not affected: opening hands a file
+  to the preset loader, the media part and C1600-2's loaders, whose
+  steps (M-46, M-47, M-44) carry their runs.
+- **Risk: a program flow started by a topic.** The frontend now starts a
+  dialog flow on a topic, not on its own event. A topic that comes while
+  a flow's dialog is open (the dialogs are not an operation, so a second
+  drop is not kept) could start a second flow. Each frontend runs one
+  program flow at a time and drops a topic that comes meanwhile, with a
+  log line.
+- **Risk: the Web drop as an upload.** A dropped preset alone is loaded
+  as its content, as today's `loadPresetFiles([file])`; one that names
+  other files is refused when it is read (EC-3), where today it fails at
+  the missing file.
+- **The start argument on macOS.** The system or an IDE may add
+  arguments (`-NSDocumentRevisionsDebugMode YES`, `main.cpp:143-144`);
+  `startFile` takes only an argument that names an existing file.
+
+### D9. Decided (best guess)
+
+- **D-11 (AC-18).** A program file opened by a way with a window is
+  handed to the frontend's program flow by the topic
+  `c1600.program-opened`; the dialogs stay the frontends', as for the
+  menu items. In the harness the kind loads the file itself.
+- **D-12 (AC-17).** The kinds' rules are those of `dropfile::classify`
+  without `.rom` and without its preset test (D4.1).
+- **D-13 (AC-6).** `takesName` is true for every name (D4.3; Q-1).
+- **D-14 (AC-21).** The start file is the last argument that names an
+  existing file; options and words that name no file are passed over,
+  as Calc-U-59's "the last one counts" (AC-14).
+- **D-15 (AC-20).** 1 MiB for drop, Open With and start (D-9); no limit
+  for the dialog and the harness.
+
+### D10. Questions for the user
+
+- **Q-1 (the drag, AC-6).** Over the Qt6 window, a drag of any one file
+  is shown as taken, and the drop refuses with a notice a file that is
+  nothing the product opens (D4.3). Today the drag itself refuses such a
+  file, because it reads it. Taking only the names `.bas`, `.bbin`,
+  `.bin`, `.wav` and the preset and media names would keep the drag
+  strict, but a listing or a preset under another name could then no
+  longer be dropped. Is "any name at the drag, a notice at the drop"
+  right? Recommendation: yes, and row 1600-15 gets the words "a drag
+  over the window is taken for any one file".

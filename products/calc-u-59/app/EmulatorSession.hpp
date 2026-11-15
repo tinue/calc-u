@@ -1,5 +1,5 @@
 #pragma once
-#include "EmulationRunner.hpp"
+#include "CooperativePacing.hpp"
 #include "FrameSampler.hpp"
 #include "FreezeController.hpp"
 #include "KeySequencer.hpp"
@@ -23,8 +23,10 @@
 // state (frozen, owner, armed freezes, stepping), the trace flags, timed key
 // input and KEYSTROKES playback, the 60 Hz frame sampler and the two binary
 // trace writers (manual and scripted). One session per machine (a model
-// switch builds a new one); SessionController owns it. Listener events come
-// on the session's threads — with Threading::Cooperative, from pump(). See
+// switch builds a new one); SessionController owns it. Everything runs on
+// the host's one thread: with Threading::Cooperative pump() runs the machine
+// (the Web); with Threading::Hosted the library's machine session does, and
+// owns the machine (releaseMachine(); LIB-3 59's TIAppPart). See
 // reference/SharedArchitecture.md.
 
 namespace cu59 {
@@ -99,7 +101,7 @@ public:
     /// places (C59-6). Reads no file. A module ID the set has no file for
     /// leaves the slot empty.
     EmulatorSession(Model model, const calcu::roms::RomSet& roms, MachinePeripherals peripherals,
-                    Listener& listener, Threading threading = Threading::Threads);
+                    Listener& listener, Threading threading = Threading::Cooperative);
     ~EmulatorSession();
     EmulatorSession(const EmulatorSession&) = delete;
     EmulatorSession& operator=(const EmulatorSession&) = delete;
@@ -110,7 +112,12 @@ public:
     MachineGuard::Access access() const { return m_guard.access(); }
     /// The machine without the guard: for code on the one thread that runs
     /// it (a test, a sync() job that takes access() itself).
-    calcu::machine::Machine& machine() { return *m_machine; }
+    calcu::machine::Machine& machine() { return m_machineRef; }
+    /// Hosted: the machine goes to the library's machine session, which owns
+    /// it from now on; this session keeps using it until it is destroyed.
+    std::unique_ptr<calcu::machine::Machine> releaseMachine() { return std::move(m_machine); }
+    Threading threading() const { return m_threading; }
+    bool ownsMachine() const { return m_machine != nullptr; }
     /// The bytes of the module plugged into `slot-1` (empty if none), kept for
     /// the debugger (adapter until M-53, C59-6 design §5).
     const std::vector<uint8_t>& moduleImage() const { return m_moduleImage; }
@@ -144,8 +151,20 @@ public:
     void sync(const std::function<void()>& job) { m_runner->sync(job); }
     void setFullSpeed(bool on) override;
     bool isFullSpeed() const { return m_runner->fullSpeed(); }
-    /// Cooperative only: run the batches, key input and jobs due by `now`.
+    /// Cooperative: run the batches, key input and jobs due by `now`.
+    /// Hosted: the jobs, and the key input when no slice ran since the last pump.
     void pump(std::chrono::steady_clock::time_point now);
+
+    // ── Hosted (LIB-3 59: TIFreezeGate, TIKeySequencerHook) ──────────────────
+    /// One advance of a machine-session slice, with the freeze checks.
+    calcu::machine::Ticks advanceHosted(calcu::machine::Ticks atLeast, bool& stopped) {
+        return m_runner->advanceHosted(atLeast, stopped);
+    }
+    /// A slice ended at wall time `due`: key input advances to it.
+    void sliceEnded(std::chrono::steady_clock::time_point due) {
+        m_sliceRan = true;
+        m_keys->advance(due);
+    }
 
     /// Since the last call: a batch ran (TI-58C RAM may have changed).
     bool takeRamDirty() { return m_ramDirty.exchange(false); }
@@ -185,6 +204,8 @@ public:
     void playKeystrokes(std::vector<KeystrokeEvent> events) { m_keys->play(std::move(events)); }
     void cancelKeystrokes() { m_keys->cancel(); }
     bool keystrokesPlaying() const { return m_keys->isPlaying(); }
+    /// A script plays or waits to play (LIB-3 59: the preset operation's end).
+    bool keystrokesPending() const { return m_keys->scriptPending(); }
     /// The next queued card the machine takes where it stands: the first
     /// InsertCard card in the idle scan loop, the first ArmCard card in the
     /// card wait of Write / INV Write (TICardReaderAdapter::isInCardWait). UI thread.
@@ -242,9 +263,12 @@ private:
     bool hostPending() override { return m_hostPending.load() > 0; }
 
     const Model m_model;
+    const Threading m_threading;
     Listener& m_listener;
     std::unique_ptr<calcu::machine::Machine> m_machine;
-    mutable MachineGuard m_guard{*m_machine};
+    calcu::machine::Machine& m_machineRef{*m_machine};
+    mutable MachineGuard m_guard{m_machineRef};
+    bool m_sliceRan = false;   ///< hosted: a slice ended since the last pump
     std::vector<uint8_t> m_moduleImage;
     FreezeController m_freeze;
     FrameSampler m_sampler;
@@ -263,7 +287,7 @@ private:
     std::mutex m_cardMutex;            ///< m_queuedCards
     std::deque<QueuedCard> m_queuedCards;
     std::atomic<int> m_hostPending{0}; ///< reloads and InsertCard cards not done yet
-    std::unique_ptr<EmulationRunner> m_runner;
+    std::unique_ptr<CooperativePacing> m_runner;
     std::unique_ptr<KeySequencer> m_keys;   ///< last: its threads stop first
 };
 

@@ -5,4 +5,4 @@
 #import "TIFileFormats.h"
 #import "TIViewRules.h"
 #import "TISettings.h"
-#import "TISessionController.h"
+#import "TIAppSession.h"

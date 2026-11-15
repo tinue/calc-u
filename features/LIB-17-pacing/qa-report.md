@@ -103,3 +103,34 @@ includes only `machine` and the standard library (LIB-1 design §2a).
 
 Not done in M-21 (other columns): AC-15 to AC-19 (Calc-U-59, M-33) and
 AC-20 to AC-22 (Calc-U-1600, M-31).
+
+## Calc-U-59 (M-33, 2026-11-15, branch `m33-sessions-59`)
+
+The TI machines on the library's pacer through the app session as the
+Swift and Qt6 frontends host it (`cu59::makeAppSession`; profiles in
+`products/calc-u-59/app/PacingProfiles.hpp`). Tests:
+`products/calc-u-59/tests/pacing_tests.cpp`, `pacing_longrun_after_tests.cpp`
+(test clock, never the host's, except the Checkpoint run).
+
+| ID | Result | How it was checked |
+|---|---|---|
+| AC-15 | Pass | `lib17_ac15_pacing_profiles_ti` (20 ms, jitter, paced while waiting, for the three models; a TI-59 keeps 0.99 to 1.01 of wall time over 2 s) |
+| AC-16 | Pass | `lib17_ac16_full_speed_paced_at_key_readiness`, `lib17_ac16_full_speed_races_a_computation` (more than twice regular), `lib17_ac16_printer_wait_is_not_waiting` (a printing loop runs above 1.5× at full speed), `lib17_ac16_card_wait_is_waiting` (TI-59, `Write` without a card), `lib17_ac16_preset_wait_at_full_speed_on_idle_is_not_paced` (an operation that reports "not waiting": one emulated second in under 0.5 s on an idle machine) |
+| AC-17 | Pass | `lib17_ac17_ti58_error_blink_pc_varies_over_50_slice_ends` |
+| AC-18 | Pass (≤ 0.3 %) | `lib17_ac18_pacing_longrun_scripted_ti`, an hour per model, the calls of the "before" test: TI-59 rate 0.999994 against 2.3.0's 0.998681 (0.131 %), TI-58 0.999996 against 1.000000 (0.000 %), TI-58C 0.999996 against 0.998985 (0.101 %); worst \|emulated − wall\| within a stretch 0.0298 / 0.0295 / 0.0298 s. The differences are 2.3.0's cut to whole ticks (ledger 59-33). The real-clock run (Checkpoint) was not run in M-33 |
+| AC-19 | Not run (Checkpoint) | iOS and macOS read `ticks` over attach (the XCUITest's client and `calcu attach` exist; the one-minute test was not written); Qt6 `--pacing-probe` and the Web test not built |
+
+The "before" tests stay on 2.3.0's batches (`CooperativePacing`, the
+cooperative half of `EmulationRunner`), whose real-clock form now pumps at
+60 Hz instead of using the runner's thread.
+
+### Deviations from the design
+
+- **The Web keeps 2.3.0's batches until M-34** (`CooperativePacing`
+  standalone with `Pacing.hpp`), not a library `Pacer` inside
+  `CooperativePacing`: the reference runs drive `SessionController`
+  cooperatively and stay byte for byte as recorded; `Pacing.hpp` and
+  `TIPacingHints` therefore stay too. Ledger rows 59-32 and 59-33 hold for
+  Swift and Qt6 from M-33 and for the Web from M-34.
+- **`SliceRequest::due`** reaches the KeySequencer through the
+  `TIKeySequencerHook` (a `SliceHook` that acts once per slice end).

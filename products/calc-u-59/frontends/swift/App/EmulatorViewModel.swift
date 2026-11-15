@@ -54,11 +54,12 @@ enum ProgramSource: Equatable {
     var raw: Int { Self.cases.firstIndex(of: self)! }
     private static let cases: [ProgramSource] = [.userProgram, .solidState, .solidStateReturn, .fastMode, .rom]
 }
-/// The SwiftUI face of Shared/SessionController (the Qt app's is
-/// Qt6/app/EmulatorController): implements its platform — the main thread,
-/// iCloud card storage and ti58c.mem, the settings file, error alerts — runs its
-/// 60 Hz tick and copies what changed into observable properties. Everything
-/// that isn't UI state lives in Shared/ — see CLAUDE.md § "Frontend Parity".
+/// The SwiftUI face of Calc-U-59's app session (the Qt app's is
+/// frontends/qt6/app/EmulatorController): the session runs on a thread of its
+/// own behind Bridge/TIAppSession (C59-5 AC-4); this view model sends commands
+/// and copies the messages of each batch into observable properties. It never
+/// runs the machine. Everything that isn't UI state lives in app/ — see
+/// CLAUDE.md § "Frontend Parity".
 @Observable
 class EmulatorViewModel {
     private static let logger = Logger(subsystem: Bundle.main.bundleIdentifier ?? "Calc-U-59", category: "EmulatorViewModel")
@@ -75,9 +76,9 @@ class EmulatorViewModel {
     // ── Display interaction state ────────────────────────────────────────────
     var isDisplayPressed: Bool = false
     /// True while the user presses the display or a KEYSTROKES FullSpeed: window is
-    /// open; emulation runs unrestricted (Shared/Pacing.cpp shouldSleep).
+    /// open; the machine runs at full speed (LIB-17: paced while it waits for input).
     var isFullSpeedMode: Bool = false {
-        didSet { if controller.fullSpeed != isFullSpeedMode { controller.fullSpeed = isFullSpeedMode } }
+        didSet { if session?.fullSpeed != isFullSpeedMode { session?.fullSpeed = isFullSpeedMode } }
     }
     var isKeystrokesPlaying: Bool = false
 
@@ -91,9 +92,8 @@ class EmulatorViewModel {
     // ── Binary trace (the "C" indicator toggle) ──────────────────────────────
     var cIndicatorDebug: Bool = false {
         didSet {
-            guard controller.manualTrace != cIndicatorDebug else { return }
-            controller.setManualTrace(cIndicatorDebug)
-            if controller.manualTrace != cIndicatorDebug { cIndicatorDebug = controller.manualTrace }  // could not open
+            guard session?.manualTrace != cIndicatorDebug else { return }
+            session?.setManualTrace(cIndicatorDebug)   // the trace topic says whether it opened
         }
     }
     /// False if the trace location (e.g. iCloud) is unavailable at startup.
@@ -115,10 +115,10 @@ class EmulatorViewModel {
     // onAppear/onDisappear). While false the snapshots aren't built and the
     // core runs with tracing off — its zero-overhead fast path.
     var liveDebugEnabled: Bool = false {
-        didSet { if liveDebugEnabled != oldValue { controller.setLiveDebugEnabled(liveDebugEnabled) } }
+        didSet { if liveDebugEnabled != oldValue { session?.setLiveDebugEnabled(liveDebugEnabled) } }
     }
     var cpuDebugEnabled: Bool = false {
-        didSet { if cpuDebugEnabled != oldValue { controller.setCpuDebugEnabled(cpuDebugEnabled) } }
+        didSet { if cpuDebugEnabled != oldValue { session?.setCpuDebugEnabled(cpuDebugEnabled) } }
     }
     var liveDebugSnapshot: LiveDebugSnapshot = .empty
     private(set) var isFrozen: Bool = false
@@ -126,11 +126,11 @@ class EmulatorViewModel {
     /// CALCULATOR "FREEZE ON START": freeze before the next program step. Setting it to
     /// false (the ARMED button) disarms it.
     var pendingFreezeOnPCChange: Bool = false {
-        didSet { if !pendingFreezeOnPCChange && controller.pcChangeArmed { controller.disarmPcChange() } }
+        didSet { if !pendingFreezeOnPCChange && session?.pcChangeArmed == true { session?.disarmPcChange() } }
     }
     /// CPU "FREEZE ON START": freeze when the keyboard scan loop exits.
     var pendingCPUScanLoopFreeze: Bool = false {
-        didSet { if !pendingCPUScanLoopFreeze && controller.scanLoopExitArmed { controller.disarmScanLoopExit() } }
+        didSet { if !pendingCPUScanLoopFreeze && session?.scanLoopExitArmed == true { session?.disarmScanLoopExit() } }
     }
 
     /// The whole program of the source last shown (frozen PROGRAM STEPS view).
@@ -181,31 +181,26 @@ class EmulatorViewModel {
     /// `KeyboardView` shows it depressed as for a pointer press.
     var keyboardHeldKey: Int? = nil
 
-    // ── The calculator (Shared/SessionController via Bridge/TISessionController)
-    @ObservationIgnored private lazy var platform = PlatformForwarder(self)
+    // ── The calculator (the app session via Bridge/TIAppSession)
+    @ObservationIgnored private lazy var platform = SessionDelegate(self)
     /// The ROM files, looked up once at the start (LIB-12). nil: a file of the
     /// full set is missing or bad, and `romsMissingText` says which; then no
     /// controller is made and the window shows the text in place of the
     /// calculator (AC-10; design D-8, until C59-8).
     @ObservationIgnored private let romSet: TIRomSet?
     private(set) var romsMissingText: String? = nil
-    @ObservationIgnored private lazy var controller = TISessionController(
-        roms: romSet!, cuecards: ROMLoader.cuecardsText,
-        moduleID: EmulatorViewModel.startModuleID, platform: platform)
+    @ObservationIgnored private var session: TIAppSession?
+    /// The session, made once the save folder is resolved (start(model:)).
+    private var controller: TIAppSession { session! }
     fileprivate static var startModuleID: String {
         let args = ProcessInfo.processInfo.arguments
         if args.contains("--UITesting"), let i = args.firstIndex(of: "--module"), i + 1 < args.count { return args[i + 1] }
         return "ML"
     }
-    private var displayTimer: Timer?
     /// Held for the app's lifetime so macOS never App-Naps the background emulation
     /// queue while the window is unfocused/occluded — App Nap can otherwise stall the
     /// emulation thread's step() loop entirely.
     private var appNapActivityToken: NSObjectProtocol?
-    private static let constantMemoryFileName = "ti58c.mem"
-    fileprivate static var constantMemoryURL: URL {
-        CardStorage.directoryURL.appendingPathComponent(constantMemoryFileName)
-    }
 
     init() {
         switch ROMLoader.lookUp() {
@@ -223,44 +218,51 @@ class EmulatorViewModel {
         Task { await self.start(model: AppSettings.resolvedStartupModel()) }
     }
 
-    /// Build a fresh machine of `model` from the ROM set.
+    /// The session, once the save folder is resolved off the main thread (iCloud),
+    /// with a fresh machine of `model`; a later call switches the model.
     func start(model: MachineModel) async {
-        guard romSet != nil else { return }
+        guard let romSet else { return }
+        if let session {
+            session.startMachine(model.rawValue)
+            return
+        }
         await withCheckedContinuation { continuation in
             DispatchQueue.global(qos: .utility).async {
                 CardStorage.warmUp()
                 continuation.resume()
             }
         }
-        if controller.startMachine(model.rawValue) {
-            hasCardFile = CardStorage.hasCard
-        }
-        startDisplayRefresh()
+        let start = TISessionStart()
+        start.cuecards = ROMLoader.cuecardsText
+        start.moduleID = EmulatorViewModel.startModuleID
+        start.model = model.rawValue
+        start.saveFolder = CardStorage.directoryURL.path
+        start.traceDirectory = AppSettings.traceDirectory().path
+        start.traceMaxBytes = UInt64(AppSettings.resolvedTraceMaxMB()) * 1_000_000
+        start.traceAvailable = AppSettings.traceLocationAvailable()
+        session = TIAppSession(roms: romSet, start: start, delegate: platform)
+        hasCardFile = CardStorage.hasCard
+        #if DEBUG && (os(macOS) || targetEnvironment(simulator))
+        // Harness attach (C59-5 AC-10): `calcu attach`, the port of --attach-port, else 59059.
+        session?.openAttach(withArguments: ProcessInfo.processInfo.arguments)
+        #endif
     }
 
-    private func startDisplayRefresh() {
-        // On the main run loop, so the timer fires whichever thread calls this.
-        displayTimer?.invalidate()
-        let timer = Timer(timeInterval: 1.0 / 60.0, repeats: true) { [weak self] _ in
-            self?.controller.tick()
-        }
-        RunLoop.main.add(timer, forMode: .common)
-        displayTimer = timer
-    }
-
-    /// Suspend emulation when the app enters the background (persists TI-58C RAM);
-    /// a debug freeze survives.
+    /// The app goes to the background (C59-5 AC-8): suspend is carried out —
+    /// the TI-58C's memory written — and the session thread stops calling; a
+    /// debug freeze survives. On iOS inside a background task until then.
     func suspendForBackground() {
-        guard romSet != nil else { return }
-        controller.suspend()
-        displayTimer?.invalidate()
-        displayTimer = nil
+        guard let session else { return }
+        #if os(iOS)
+        let task = UIApplication.shared.beginBackgroundTask(withName: "Suspend Calc-U-59")
+        session.suspend { UIApplication.shared.endBackgroundTask(task) }
+        #else
+        session.suspend(completion: nil)
+        #endif
     }
 
     func resumeFromBackground() {
-        guard romSet != nil, controller.hasMachine else { return }
-        startDisplayRefresh()
-        controller.resumeAfterSuspend()
+        session?.continueSession()
     }
 
     // MARK: - Keys
@@ -268,45 +270,45 @@ class EmulatorViewModel {
     // manual trace and owns the timed input — KEYSTROKES playback and the
     // physical keyboard's hold rules.
 
-    func pressKey(row: Int, col: Int) { controller.pressKey(TISharedTables.matrixCode(row: row, col: col)) }
-    func releaseKey(row: Int, col: Int) { controller.releaseKey(TISharedTables.matrixCode(row: row, col: col)) }
+    func pressKey(row: Int, col: Int) { session?.pressKey(TISharedTables.matrixCode(row: row, col: col)) }
+    func releaseKey(row: Int, col: Int) { session?.releaseKey(TISharedTables.matrixCode(row: row, col: col)) }
 
     /// A physical key went down, resolved to one or two matrix codes by
     /// `Shared/KeyboardMap.cpp`. A single code is held until `keyboardKeyUp()`
     /// (at least 100 ms); a 2nd + key pair plays as two taps.
-    func keyboardKeyDown(_ codes: [UInt8]) { controller.keyboardDown(Data(codes)) }
-    func keyboardKeyUp() { controller.keyboardUp() }
+    func keyboardKeyDown(_ codes: [UInt8]) { session?.keyboardDown(Data(codes)) }
+    func keyboardKeyUp() { session?.keyboardUp() }
     /// Force-release whatever the keyboard is holding — used when the calculator
     /// view loses focus or is torn down, so a matrix bit can't stay stuck set.
-    func keyboardRelease() { controller.keyboardRelease() }
+    func keyboardRelease() { session?.keyboardRelease() }
 
     // MARK: - Printer
 
-    func pressPrinterPrint(_ pressed: Bool) { controller.pressPrinterPrint(pressed) }
-    func pressPrinterAdv(_ pressed: Bool) { controller.pressPrinterAdv(pressed) }
-    func togglePrinterTrace() { controller.togglePrinterTrace() }
-    func togglePrinterConnection() { controller.togglePrinterConnection() }
-    func cutPaper() { controller.cutPaper() }
+    func pressPrinterPrint(_ pressed: Bool) { session?.pressPrinterPrint(pressed) }
+    func pressPrinterAdv(_ pressed: Bool) { session?.pressPrinterAdv(pressed) }
+    func togglePrinterTrace() { session?.togglePrinterTrace() }
+    func togglePrinterConnection() { session?.togglePrinterConnection() }
+    func cutPaper() { session?.cutPaper() }
     /// The strip's height in dot pitches (Shared pairs text and dot lines).
-    var printerStripHeightUnits: Double { controller.printerStripHeightUnits }
+    var printerStripHeightUnits: Double { session?.printerStripHeightUnits ?? 0 }
 
     // MARK: - Module, reset
 
     /// The 14 Solid State ROM modules from their module files, in menu order (C59-6 AC-8).
     func allModules() -> [ModuleMetadata] {
         guard romSet != nil else { return [] }
-        return controller.allModules.map { ModuleMetadata($0) }
+        return session?.allModules.map { ModuleMetadata($0) } ?? []
     }
 
     /// Change the solid-state module; the power cycle follows (row 59-11); no-op if unchanged.
     func changeModule(id: String) {
         guard romSet != nil else { return }
-        controller.changeModule(id)
+        session?.changeModule(id)
     }
 
-    func resetMachine() { controller.resetMachine() }
+    func resetMachine() { session?.resetMachine() }
     /// Clean reset (all models): zero all RAM, then reset.
-    func cleanResetMachine() { controller.cleanResetMachine() }
+    func cleanResetMachine() { session?.cleanResetMachine() }
 
     // MARK: - Magnetic card reader
 
@@ -315,20 +317,22 @@ class EmulatorViewModel {
     }
 
     func fitBlankCard(savingTo url: URL) {
-        if controller.fitBlankCard(url.path, fileName: url.lastPathComponent) { releaseDroppedCardScope() }
+        session?.fitBlankCard(url.path, fileName: url.lastPathComponent) { [weak self] fitted in
+            if fitted { self?.releaseDroppedCardScope() }
+        }
     }
 
     func fitCard(from url: URL) {
         // A courtesy for URLs that may be security-scoped (our own iCloud container's aren't).
         let scoped = url.startAccessingSecurityScopedResource()
         defer { if scoped { url.stopAccessingSecurityScopedResource() } }
-        if controller.fitCard(try? Data(contentsOf: url), path: url.path, fileName: url.lastPathComponent) {
-            releaseDroppedCardScope()
+        session?.fitCard(try? Data(contentsOf: url), path: url.path, fileName: url.lastPathComponent) { [weak self] fitted in
+            if fitted { self?.releaseDroppedCardScope() }
         }
     }
 
     /// A press at canvas position (x, y), each 0…1: true if it hit a corner of the fitted card.
-    func tapCard(x: Double, y: Double) -> Bool { controller.tapCardAt(x: x, y: y) }
+    func tapCard(x: Double, y: Double) -> Bool { session?.tapCardAt(x: x, y: y) ?? false }
 
     private func releaseDroppedCardScope() {
         #if os(macOS)
@@ -337,50 +341,50 @@ class EmulatorViewModel {
         #endif
     }
 
-    func ejectCard() { controller.ejectCard() }
+    func ejectCard() { session?.ejectCard() }
 
     // MARK: - Debugger
 
-    func freeze(from panel: FreezePanel) { controller.freeze(panel == .cpu ? .cpu : .calculator) }
-    func unfreeze() { controller.resume() }
-    func freezeOnNextPCChange() { controller.armPcChange() }
-    func freezeOnScanLoopExit() { controller.armScanLoopExit() }
-    func disarmCPUScanLoopFreeze() { controller.disarmScanLoopExit() }
+    func freeze(from panel: FreezePanel) { session?.freeze(panel == .cpu ? .cpu : .calculator) }
+    func unfreeze() { session?.resume() }
+    func freezeOnNextPCChange() { session?.armPcChange() }
+    func freezeOnScanLoopExit() { session?.armScanLoopExit() }
+    func disarmCPUScanLoopFreeze() { session?.disarmScanLoopExit() }
     /// STEP in the CALCULATOR panel: one keycode.
-    func stepKeycode() { controller.stepKeycode() }
+    func stepKeycode() { session?.stepKeycode() }
     /// STEP in the CPU panel: one instruction (through a HOLD).
-    func stepFrozen() { controller.stepInstruction() }
+    func stepFrozen() { session?.stepInstruction() }
 
-    func clearRomHeatmap() { controller.clearHeatmap() }
+    func clearRomHeatmap() { session?.clearHeatmap() }
 
-    func toggleDebug() { controller.cycleDebugLevel() }
+    func toggleDebug() { session?.cycleDebugLevel() }
 
     func clearDebug() {
-        controller.clearLog()
+        session?.clearLog()
         debugClearID &+= 1
     }
 
     // Dumps for the LOG tab (formats: Shared/DebugLog.cpp).
-    func debugDumpVars() { controller.dumpVars() }
-    func debugDumpSCOM() { controller.dumpScom() }
-    func debugDumpProg() { controller.dumpProg() }
-    func debugDumpMemory() { controller.dumpMemory() }
+    func debugDumpVars() { session?.dumpVars() }
+    func debugDumpSCOM() { session?.dumpScom() }
+    func debugDumpProg() { session?.dumpProg() }
+    func debugDumpMemory() { session?.dumpMemory() }
 
     func loadASMOverlayFile(_ url: URL) {
         let scoped = url.startAccessingSecurityScopedResource()
         defer { if scoped { url.stopAccessingSecurityScopedResource() } }
-        controller.loadAsm(try? String(contentsOf: url, encoding: .utf8), fileName: url.lastPathComponent)
+        session?.loadAsm(try? String(contentsOf: url, encoding: .utf8), fileName: url.lastPathComponent)
     }
 
-    func runASMOverlay() { controller.runAsm() }
-    func clearASMOverlay() { controller.clearAsm() }
+    func runASMOverlay() { session?.runAsm() }
+    func clearASMOverlay() { session?.clearAsm() }
 
     // MARK: - State files
 
     func loadStateFile(_ url: URL) {
         let scoped = url.startAccessingSecurityScopedResource()
         defer { if scoped { url.stopAccessingSecurityScopedResource() } }
-        controller.loadStateFile(try? Data(contentsOf: url))
+        session?.loadStateFile(try? Data(contentsOf: url))
     }
 
     // MARK: - Dropped files
@@ -391,16 +395,20 @@ class EmulatorViewModel {
     /// while it is fitted, so its security scope stays open until it is replaced or gone.
     @discardableResult
     func openDroppedFile(_ url: URL) -> Bool {
-        guard controller.acceptsDroppedFile(url.lastPathComponent) else { return false }  // don't read it first
+        guard session?.acceptsDroppedFile(url.lastPathComponent) == true else { return false }  // don't read it first
         let scoped = url.startAccessingSecurityScopedResource()
-        let opened = controller.openDroppedFile(try? Data(contentsOf: url), path: url.path, fileName: url.lastPathComponent)
-        if opened && controller.cardFitted {
-            releaseDroppedCardScope()
-            if scoped { droppedCardScope = url }
-        } else if scoped {
-            url.stopAccessingSecurityScopedResource()
+        // The security scope of a dropped card stays open until the reply and
+        // the card state say it is fitted (C59-5 design §3.4).
+        session?.openDroppedFile(try? Data(contentsOf: url), path: url.path, fileName: url.lastPathComponent) { [weak self] opened in
+            guard let self else { return }
+            if opened && self.controller.cardFitted {
+                self.releaseDroppedCardScope()
+                if scoped { self.droppedCardScope = url }
+            } else if scoped {
+                url.stopAccessingSecurityScopedResource()
+            }
         }
-        return opened
+        return true
     }
     #endif
 
@@ -410,7 +418,10 @@ class EmulatorViewModel {
     /// guarded: @Observable notifies on every write, even of an identical value.
     fileprivate func apply(_ c: TIChange) {
         if c.contains(.model) {
-            if let m = MachineModel(rawValue: controller.model), m != model { model = m }
+            if let m = MachineModel(rawValue: controller.model), m != model {
+                model = m
+                SettingsModel.shared.saveLastUsedModel(m.rawValue)   // a setting the frontend writes (LIB-9; C59-5 D-3)
+            }
             if selectedModuleID != controller.moduleID { selectedModuleID = controller.moduleID }
         }
         if c.contains(.display) {
@@ -508,30 +519,15 @@ class EmulatorViewModel {
     }
 }
 
-// MARK: - Platform (Shared/SessionController ↔ app)
+// MARK: - Session delegate (Bridge/TIAppSession ↔ app)
 
-/// TIPlatform needs an NSObject; @Observable classes can't be one. All calls
-/// arrive on the main thread.
-final class PlatformForwarder: NSObject, TIPlatform {
+/// TIAppSessionDelegate needs an NSObject; @Observable classes can't be one.
+/// All calls arrive on the main thread. The card and constant-memory files are
+/// the session's own (LIB-3 AC-30), read and written by the bridge through
+/// NSFileCoordinator in the save folder (C59-5 D-6).
+final class SessionDelegate: NSObject, TIAppSessionDelegate {
     weak var target: EmulatorViewModel?
     init(_ target: EmulatorViewModel) { self.target = target }
-
-    func readConstantMemory() -> String? {
-        var data: Data?
-        var err: NSError?
-        NSFileCoordinator().coordinate(readingItemAt: EmulatorViewModel.constantMemoryURL, options: [], error: &err) { src in
-            data = try? Data(contentsOf: src)
-        }
-        return data.flatMap { String(data: $0, encoding: .utf8) }
-    }
-
-    /// Off the main thread: iCloud writes can block.
-    func writeConstantMemory(_ text: String) {
-        let url = EmulatorViewModel.constantMemoryURL
-        DispatchQueue.global(qos: .background).async {
-            try? text.write(to: url, atomically: true, encoding: .utf8)
-        }
-    }
 
     func showDebugPanel(_ panel: Int) {
         guard let vm = target else { return }
@@ -541,53 +537,10 @@ final class PlatformForwarder: NSObject, TIPlatform {
         default: vm.debugTab = .live
         }
     }
-
-    func cardFilePath(_ fileName: String) -> String {
-        CardStorage.directoryURL.appendingPathComponent(fileName).path
-    }
-
-    func readCardFile(_ path: String) -> Data? {
-        var data: Data?
-        var err: NSError?
-        NSFileCoordinator().coordinate(readingItemAt: URL(fileURLWithPath: path), options: [], error: &err) { src in
-            data = try? Data(contentsOf: src)
-        }
-        return data
-    }
-
-    func cardFileExists(_ path: String) -> Bool {
-        CardStorage.cardExists(URL(fileURLWithPath: path))
-    }
-
-    func writeCard(_ text: String, toPath path: String) -> Bool {
-        guard let fileData = text.data(using: .utf8) else { return false }
-        let url = URL(fileURLWithPath: path)
-        var coordinatorError: NSError?
-        var writeError: Error?
-        NSFileCoordinator().coordinate(writingItemAt: url, options: .forReplacing, error: &coordinatorError) { writingURL in
-            do {
-                try fileData.write(to: writingURL, options: .atomic)
-            } catch {
-                // A dropped card outside our folders: the sandbox may grant the
-                // file but not its folder, where an atomic write puts its temp file.
-                do { try fileData.write(to: writingURL) } catch { writeError = error }
-            }
-        }
-        guard coordinatorError == nil, writeError == nil else { return false }
-        target?.cardWritten()
-        return true
-    }
-
-    var traceDirectory: String { AppSettings.traceDirectory().path }
-    var traceMaxBytes: UInt64 { UInt64(AppSettings.resolvedTraceMaxMB()) * 1_000_000 }
-    var traceAvailable: Bool { AppSettings.traceLocationAvailable() }
-
-    func saveLastUsedModel(_ model: Int) { SettingsModel.shared.saveLastUsedModel(model) }
-    /// Adapter A-6 (LIB-9 design §5, until M-33): the module is not remembered (AC-22).
-    func saveModuleID(_ moduleID: String) {}
     func showErrorTitle(_ title: String, message: String) { target?.showError(title: title, message: message) }
     func diagnostic(_ message: String) { EmulatorViewModel.diagnostic(message) }
     func changed(_ changes: TIChange) { target?.apply(changes) }
+    func cardWritten() { target?.cardWritten() }
 }
 
 // ── Live Debug Snapshot ───────────────────────────────────────────────────────

@@ -12,6 +12,25 @@ file(GLOB CALCU_LIBRARY_SOURCES CONFIGURE_DEPENDS
   ${CMAKE_CURRENT_SOURCE_DIR}/formats/*.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/harness/*.cpp
 )
+# C59-5: harness attach (library/harness/attach/). attachPort() is always in
+# (the client `calcu attach` uses it); the endpoint and the attached harness
+# only with CALCU_ATTACH: POSIX, never Emscripten, never for an iOS device
+# (C59-5 AC-13). On by default in a tree with the tests on macOS and Linux,
+# so the attach tests run in Frequent and in CI; the Swift XCFramework sets
+# it per slice (frontends/swift/build_xcframework.sh: Debug macOS and the
+# simulator only).
+list(APPEND CALCU_LIBRARY_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/harness/attach/AttachPort.cpp
+                                  ${CMAKE_CURRENT_SOURCE_DIR}/harness/attach/AttachClient.cpp)
+if((APPLE OR UNIX) AND NOT EMSCRIPTEN AND NOT CMAKE_SYSTEM_NAME STREQUAL "iOS" AND CALCU_TESTS)
+  set(CALCU_ATTACH_DEFAULT ON)
+else()
+  set(CALCU_ATTACH_DEFAULT OFF)
+endif()
+option(CALCU_ATTACH "Harness attach in calcu_library (C59-5; POSIX, development builds)" ${CALCU_ATTACH_DEFAULT})
+if(CALCU_ATTACH)
+  list(APPEND CALCU_LIBRARY_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/harness/attach/AttachEndpoint.cpp
+                                    ${CMAKE_CURRENT_SOURCE_DIR}/harness/attach/AttachedHarness.cpp)
+endif()
 # LIB-2: a host link of a serial port is a pseudo-terminal on macOS and Linux
 # (PtyHostLink.cpp); elsewhere there is none (NoHostLink.cpp).
 if((APPLE OR UNIX) AND NOT EMSCRIPTEN)
@@ -22,11 +41,14 @@ else()
   list(REMOVE_ITEM CALCU_LIBRARY_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/peripherals/PtyHostLink.cpp)
 endif()
 add_library(calcu_library STATIC ${CALCU_LIBRARY_SOURCES})
-if(CALCU_HAS_PTY)
+if(CALCU_HAS_PTY OR CALCU_ATTACH)
   find_package(Threads REQUIRED)
   target_link_libraries(calcu_library PUBLIC Threads::Threads)
 endif()
 target_include_directories(calcu_library PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+if(CALCU_ATTACH)
+  target_compile_definitions(calcu_library PUBLIC CALCU_ATTACH=1)
+endif()
 target_compile_features(calcu_library PUBLIC cxx_std_20)  # ADR 0005
 # Calc-U-59's static libraries end up in a shared object (ti59headless).
 set_target_properties(calcu_library PROPERTIES POSITION_INDEPENDENT_CODE ON)
@@ -62,6 +84,10 @@ if(CALCU_TESTS AND NOT EMSCRIPTEN)
     ${CMAKE_CURRENT_SOURCE_DIR}/formats/tests/*.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/harness/tests/*.cpp
   )
+  if(CALCU_ATTACH)
+    file(GLOB CALCU_ATTACH_TEST_SOURCES CONFIGURE_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/harness/attach/tests/*.cpp)
+    list(APPEND CALCU_LIBRARY_TEST_SOURCES ${CALCU_ATTACH_TEST_SOURCES})
+  endif()
   list(REMOVE_ITEM CALCU_LIBRARY_TEST_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/peripherals/tests/pty_tests.cpp)
   add_executable(calcu_library_tests ${CALCU_LIBRARY_TEST_SOURCES})
   target_include_directories(calcu_library_tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/machine/tests

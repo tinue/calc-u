@@ -19,11 +19,20 @@ This skill covers all work inside `frontends/swift/Calc-U-59UITests/`.
 | `FilePickerTests.swift` | File picker opens; reopens after cancel (regression for iPad popover dismiss bug) |
 | `PresetLoadTests.swift` | End-to-end load of `test_diag.ti59` via the file picker; verifies keystroke playback starts |
 | `ScreenshotTests.swift` | App Store screenshot capture (driven by `bin/run-screenshots`); writes PNGs to the dir named in `/tmp/calc-u-59-screenshot-dir` |
+| `HarnessClient.swift` | A line client for harness attach: `connect(port:)`, `command(_:)` (message lines skipped), `closedByPeer()` (C59-5) |
+| `AttachTests.swift` | Harness attach in the simulator: launch with `--attach-port 59160`, drive keys, read `lcd`, `wait` on the app's clock, `quit` (C59-5 S3; in `UIRegressionTests`) |
 | `Calc_U_59UITestsLaunchTests.swift` | Default launch test (auto-generated, rarely edited) |
 | `UIRegressionTests.xctestplan` | Local regression test plan (no CI job runs XCUITests) |
 | `Screenshots.xctestplan` | Test plan for the screenshot run (`bin/run-screenshots`) |
 
 The file-picker, preset and orientation tests are `#if !os(macOS)` guarded; `LayoutTests` also has macOS branches.
+
+**Attach instead of the test aids.** A test that needs the session (a
+load's end, the display as text, emulated time) attaches: the Debug app
+listens on 127.0.0.1 at the port of `--attach-port`; the runner, in the
+same simulator, connects with `HarnessClient` and sends `calcu serve`
+commands (`wait 1s`, `key-down 1`, `lcd`, `ticks`). Each simulator needs a
+port of its own; `AttachTests` uses 59160. The aids below stay until C59-8.
 
 `launchApp()` adds the `--UITesting` launch argument. Without it `keystroke-playback-status` and `btn-key-rs` don't exist (`CalculatorView.isUITesting`, always false on macOS). Launch through the helpers.
 

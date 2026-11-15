@@ -35,6 +35,7 @@ MachinePeripherals checked(MachinePeripherals p, const calcu::roms::RomSet& roms
 EmulatorSession::EmulatorSession(Model model, const calcu::roms::RomSet& roms, MachinePeripherals peripherals,
                                  Listener& listener, Threading threading)
     : m_model(model),
+      m_threading(threading),
       m_listener(listener),
       m_machine(buildMachine(model, roms, checked(peripherals, roms))),
       m_manualTrace(model),
@@ -42,16 +43,16 @@ EmulatorSession::EmulatorSession(Model model, const calcu::roms::RomSet& roms, M
     if (auto id = knownModule(peripherals.module, roms))
         m_moduleImage = cu59::moduleImage(roms, *moduleRomFile(*id)).value_or(std::vector<uint8_t>{});
 
-    EmulationRunner::Callbacks cb;
+    CooperativePacing::Callbacks cb;
     cb.freezeFired = [this](FreezeOwner owner) { onFreezeFired(owner); };
     cb.batchDone = [this] { m_ramDirty = true; };
-    m_runner = std::make_unique<EmulationRunner>(m_guard, model, m_freeze, std::move(cb), threading);
-    m_keys = std::make_unique<KeySequencer>(static_cast<KeySequencer::Host&>(*this), threading);
+    m_runner = std::make_unique<CooperativePacing>(m_guard, model, m_freeze, std::move(cb), threading);
+    m_keys = std::make_unique<KeySequencer>(static_cast<KeySequencer::Host&>(*this));
 }
 
 EmulatorSession::~EmulatorSession() {
-    m_keys.reset();    // stop key threads before the machine they press goes away
-    m_runner.reset();  // joins the emulation thread
+    m_keys.reset();    // a held key comes up before the machine goes away
+    m_runner.reset();
 }
 
 calcu::machine::ChangeResult EmulatorSession::setModule(const std::optional<std::string>& moduleID,
@@ -111,6 +112,13 @@ bool EmulatorSession::printerControl(const calcu::machine::ControlId& id, bool o
 // 100 ms hold is five batches and the wait for the scan loop is checked at
 // each batch boundary; with the loop stopped (frozen), at `now`.
 void EmulatorSession::pump(std::chrono::steady_clock::time_point now) {
+    if (m_threading == Threading::Hosted) {
+        m_runner->pump(now, nullptr);
+        if (!m_sliceRan) m_keys->advance(now);
+        m_sliceRan = false;
+        m_runner->pump(now, nullptr);
+        return;
+    }
     bool ran = false;
     m_runner->pump(now, [&](std::chrono::steady_clock::time_point t) {
         ran = true;

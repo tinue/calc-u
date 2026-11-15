@@ -10,6 +10,7 @@
 #include <optional>
 #include <string>
 #include <string_view>
+#include <functional>
 #include <vector>
 
 // The harness's side of the app session (LIB-11 design §3.4; spec AC-5 to
@@ -42,6 +43,20 @@ Value fromSession(const sessions::Value&);
 class HarnessHost final : public sessions::MessageSink {
 public:
     HarnessHost(sessions::AppSession&, HarnessProduct&, const RunSetup&);
+    // Attached to a running app (C59-5, library/harness/attach/): the
+    // session is the app's, paced on its wall clock; there is no run setup.
+    // A command whose reply does not come at once (an operation) gives the
+    // reply kPendingReply; the attach end waits for it (takeReply()).
+    struct Attached {};
+    HarnessHost(sessions::AppSession&, HarnessProduct&, Attached,
+                std::function<void(const sessions::Message&)> onMessage);
+    static constexpr const char* kPendingReply = "\x01pending";
+    bool attached() const { return setup_ == nullptr; }
+    std::optional<sessions::ReplyMessage> takeReplyIfAny(sessions::CallId);
+    sessions::CallId lastCall() const { return lastCall_; }
+    // Attached: every message but a reply, as the listener gets it (the
+    // message lines of the attach line format, LIB-11 design §3.9).
+    std::function<void(const sessions::Message&)> onMessage;
     ~HarnessHost();
     HarnessHost(const HarnessHost&) = delete;
     HarnessHost& operator=(const HarnessHost&) = delete;
@@ -63,7 +78,7 @@ public:
 
     sessions::AppSession& session() { return session_; }
     HarnessProduct& product() { return product_; }
-    const RunSetup& setup() const { return setup_; }
+    const RunSetup& setup() const { return *setup_; }
 
     void deliver(const sessions::Message&) override;
 
@@ -76,7 +91,8 @@ private:
 
     sessions::AppSession& session_;
     HarnessProduct& product_;
-    const RunSetup& setup_;
+    const RunSetup* setup_ = nullptr;
+    sessions::CallId lastCall_ = 0;
     sessions::TopicMirror mirror_;
     sessions::ListenerId me_ = 0;
     std::vector<sessions::ReplyMessage> replies_;

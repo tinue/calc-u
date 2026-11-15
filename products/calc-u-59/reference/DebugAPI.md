@@ -10,7 +10,7 @@ The debugger has three layers:
 |---|---|---|
 | Core | `TIMachine` and the adapters of `core/TIAdapters.hpp` (`TIDebugTargetAdapter`, `TIDebugPanelAdapter`, `TIMemoryAdapter`; C59-1, until LIB-10 59 / C59-4 / C59-2), over `TMC0501` (`core/`) | RAM, program and SCOM access, the trace ring, step-boundary latch, debug events, the ASM overlay, breakpoints |
 | Shared | `EmulatorSession`, `DebugModel`, `DebugSnapshots`, `DebugText`, `DebugLog`, `TraceWriter`, `AsmOverlay` (`app/`) | Freeze and step, the panels' data and text, the LOG, trace files |
-| GUI | Swift: `EmulatorViewModel` → `frontends/swift/Bridge/TISessionController`, views in `frontends/swift/App/Views/` (`DebugView`, `LiveDebugView`, `CPUInspectorView`). Qt: `EmulatorController`, widgets in `frontends/qt6/app/debug/` (`DebugPanel`, `LiveDebugWidget`, `CpuInspectorWidget`, `RomHeatmapWidget`, `AsmOverlayBox`, `LogWidget`). Web: `WebController` (`frontends/web/bindings.cpp`), `frontends/web/src/Debugger.jsx` (`LiveDebug`, `FreezeHeader`, `CpuInspector`, `Heatmap`, `AsmOverlay`, `LogTab`; wide layout only) | Drawing only |
+| GUI | Swift: `EmulatorViewModel` → `frontends/swift/Bridge/TIAppSession` (commands and the `c59.debug.*` topics), views in `frontends/swift/App/Views/` (`DebugView`, `LiveDebugView`, `CPUInspectorView`). Qt: `EmulatorController`, widgets in `frontends/qt6/app/debug/` (`DebugPanel`, `LiveDebugWidget`, `CpuInspectorWidget`, `RomHeatmapWidget`, `AsmOverlayBox`, `LogWidget`). Web: `WebController` (`frontends/web/bindings.cpp`), `frontends/web/src/Debugger.jsx` (`LiveDebug`, `FreezeHeader`, `CpuInspector`, `Heatmap`, `AsmOverlay`, `LogTab`; wide layout only) | Drawing only |
 
 All three GUIs call the same `SessionController` methods; the panels draw what
 `DebugModel` holds. Which panel lives where: `FrontendParity.md`
@@ -91,7 +91,7 @@ reports changes as `RunStateChanged`.
 
 | Method | Effect |
 |---|---|
-| `freeze(owner)` | Stop the loop and mark frozen; on the emulation thread run to the next step boundary (`stepUntilNextKeycode`), `beginNextStep()`, then `frozenViewReady(Freeze)` |
+| `freeze(owner)` | Stop the loop and mark frozen; on the session's thread run to the next step boundary (`stepUntilNextKeycode`), `beginNextStep()`, then `frozenViewReady(Freeze)` |
 | `freezeInPlace(owner)` | Mark frozen where the stopped machine stands (the ASM overlay's entry) |
 | `resume()` | Unfreeze and start the loop |
 | `clearFreeze()` | Unfreeze without starting (the caller stopped the loop to change state) |
@@ -102,11 +102,11 @@ reports changes as `RunStateChanged`.
 
 ### Threading
 
-- Freezes and steps are jobs on the emulation thread. The job queue is
+- Freezes and steps are jobs on the session's thread. The job queue is
   serial, so they run after the loop has exited.
 - An armed freeze fires in the run loop. The session applies it (frozen,
   owner, new generation; for a CALCULATOR freeze also `beginNextStep()`) on
-  the emulation thread **before** any listener runs, so the key sequencer
+  the session's thread **before** any listener runs, so the key sequencer
   never sees a stopped machine as running. Then
   `Listener::debugStateChanged()` and `frozenViewReady(generation, FreezeFired)`.
 - `SessionController::onFrozenView` runs on the UI thread and builds the

@@ -1,6 +1,6 @@
 ---
 name: calc-u-59-qt
-description: Use this skill when working on the Qt6 desktop app of Calc-U-59 (frontends/qt6/, frontends/qt6/app/, frontends/qt6/resources/, `.github/workflows/calc-u-59.yml` (repository root), tools/build_qt.sh, build_and_run.sh, tools/gen_qt_icons.sh). Covers the class map against the Swift views, threading (the SessionController Platform's GUI-thread queue), building, packaging for Windows and Linux, and the parity rule with the Swift app. Trigger on any task that touches frontends/qt6/ or the Qt CI workflow.
+description: Use this skill when working on the Qt6 desktop app of Calc-U-59 (frontends/qt6/, frontends/qt6/app/, frontends/qt6/resources/, `.github/workflows/calc-u-59.yml` (repository root), tools/build_qt.sh, build_and_run.sh, tools/gen_qt_icons.sh). Covers the class map against the Swift views, threading (the library's app session on the GUI thread), building, packaging for Windows and Linux, and the parity rule with the Swift app. Trigger on any task that touches frontends/qt6/ or the Qt CI workflow.
 user-invocable: true
 ---
 
@@ -29,12 +29,13 @@ Everything that isn't drawing: `reference/SharedArchitecture.md`.
    Update the table either way.
 2. **No logic in `frontends/qt6/app/`.** Anything that isn't Qt widgets, painting or
    file dialogs belongs in `app/` (calc-u-59-shared skill) so the Swift app
-   gets it too. `EmulatorController` is a thin QObject adapter over
-   `cu59::SessionController`: it implements its `Platform`, ticks it at
-   60 Hz and turns `changed(mask)` into Qt signals.
-3. **Threading is the controller's.** `runOnUiThread` queues jobs with
-   `QMetaObject::invokeMethod(..., Qt::QueuedConnection)`; `SessionController`
-   hops every session event to the GUI thread itself.
+   gets it too. `EmulatorController` is a thin QObject frontend of the
+   library's app session (`cu59::makeAppSession`, LIB-3 AC-28): it calls the
+   session at 60 Hz, sends `c59.*` commands, reads a `TopicMirror` and turns
+   its topic changes into Qt signals; notices are its alerts.
+3. **One thread.** The session lives on the GUI thread; there is no
+   emulation thread and no queue to hop. Qt6 sends neither suspend nor
+   continue (LIB-3 AC-31; CTest `CalcU59NoOwnSession`).
 4. **Assets have one source:** ROMs from `roms/` and artwork from
    `frontends/swift/App/Assets.xcassets` are compiled in as Qt resources by `frontends/qt6/CMakeLists.txt`;
    icons come from `frontends/swift/App/AppIcon.icon` via `tools/gen_qt_icons.sh`. Never copy them.

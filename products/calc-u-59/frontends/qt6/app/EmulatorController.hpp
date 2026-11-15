@@ -1,5 +1,6 @@
 #pragma once
-#include "SessionController.hpp"
+#include "TIAppPart.hpp"
+#include "sessions/TopicMirror.hpp"
 #include <QObject>
 #include <QString>
 #include <QStringList>
@@ -7,12 +8,14 @@
 #include <QVector>
 #include <memory>
 
-// The Qt face of Shared/SessionController (the Swift app's is
-// App/EmulatorViewModel.swift): implements its Platform — the GUI thread,
-// files in AppPaths, the settings file (AppSettings), error alerts — runs its 60 Hz tick and turns
-// its change notifications into signals. Everything that isn't UI state
-// lives in Shared/ — see CLAUDE.md § "Frontend Parity".
-class EmulatorController : public QObject, private cu59::SessionController::Platform {
+// The Qt face of the library's app session (LIB-3 AC-28; the Swift app's is
+// App/EmulatorViewModel.swift over cu59::SessionThread): the session lives on
+// the GUI thread, called at 60 Hz by a timer; this object is its frontend.
+// Every action is a command (cu59::commands), everything shown comes from the
+// topic mirror; the mirror's changes become the signals below. It decides
+// nothing and keeps no state of the machine (CLAUDE.md § "Frontend Parity").
+// Qt6 sends neither suspend nor continue (LIB-3 AC-31; ODD59-25).
+class EmulatorController : public QObject, private calcu::sessions::MessageSink {
     Q_OBJECT
 public:
     using CardState = cu59::SessionController::CardState;
@@ -21,53 +24,53 @@ public:
     explicit EmulatorController(QObject* parent = nullptr);
     ~EmulatorController() override;
     /// false: the ROM lookup failed (the dialog was shown); nothing else may be called.
-    bool started() const { return m_c != nullptr; }
+    bool started() const { return m_app != nullptr; }
 
     // ── Machine ──────────────────────────────────────────────────────────────
-    void start(cu59::Model model) { m_c->startMachine(model); }
-    cu59::Model model() const { return m_c->model(); }
-    void resetMachine() { m_c->resetMachine(); }
-    void cleanResetMachine() { m_c->cleanResetMachine(); }
-    void persistConstantMemory() { m_c->persistConstantMemory(); }
-    QString moduleID() const { return QString::fromStdString(m_c->moduleID()); }
-    /// Swap to a different module and soft-reset (no-op if unchanged).
-    void changeModule(const QString& moduleID) { m_c->changeModule(moduleID.toStdString()); }
+    void start(cu59::Model model);
+    cu59::Model model() const;
+    void resetMachine() { send(cu59::commands::kReset); }
+    void cleanResetMachine() { send(cu59::commands::kCleanReset); }
+    void persistConstantMemory() { send(cu59::commands::kPersistConstantMemory); }
+    QString moduleID() const;
+    /// Swap to a different module and power-cycle (no-op if unchanged).
+    void changeModule(const QString& moduleID);
     QVector<cu59::ModuleMetadata> allModules() const;
 
     // ── Display ──────────────────────────────────────────────────────────────
-    const cu59::LedFrame& display() const { return m_c->display(); }
-    double calcIndicatorOpacity() const { return m_c->calcIndicatorOpacity(); }
-    void setFullSpeed(bool on) { m_c->setFullSpeed(on); }
-    const std::optional<cu59::CueCardContent>& cueCard() const { return m_c->cueCard(); }
+    const cu59::LedFrame& display() const;
+    double calcIndicatorOpacity() const;
+    void setFullSpeed(bool on);
+    const std::optional<cu59::CueCardContent>& cueCard() const;
 
     // ── Keys (0-based row 0–8, col 0–4, or matrix codes) ─────────────────────
     void pressKey(int row, int col);
     void releaseKey(int row, int col);
-    void keyboardDown(const std::vector<uint8_t>& codes) { m_c->keyboardDown(codes); }
-    void keyboardUp() { m_c->keyboardUp(); }
-    void keyboardRelease() { m_c->keyboardRelease(); }
-    int keyboardHeldKey() const { return m_c->heldKey(); }
+    void keyboardDown(const std::vector<uint8_t>& codes);
+    void keyboardUp() { send(cu59::commands::kKeyboardUp); }
+    void keyboardRelease() { send(cu59::commands::kKeyboardRelease); }
+    int keyboardHeldKey() const;
 
     // ── Printer ──────────────────────────────────────────────────────────────
     const QStringList& printerLines() const { return m_printerLines; }
-    const std::vector<PrinterCodeLine>& printerCodeLines() const { return m_c->printerCodeLines(); }
-    double printerStripHeightUnits() const { return m_c->printerStripHeightUnits(); }
-    bool printerConnected() const { return m_c->printerConnected(); }
-    bool printerTrace() const { return m_c->printerTrace(); }
-    void togglePrinterConnection() { m_c->togglePrinterConnection(); }
-    void togglePrinterTrace() { m_c->togglePrinterTrace(); }
-    void pressPrinterPrint(bool pressed) { m_c->pressPrinterPrint(pressed); }
-    void pressPrinterAdv(bool pressed) { m_c->pressPrinterAdv(pressed); }
-    void cutPaper() { m_c->cutPaper(); }
+    const std::vector<PrinterCodeLine>& printerCodeLines() const;
+    double printerStripHeightUnits() const;
+    bool printerConnected() const;
+    bool printerTrace() const;
+    void togglePrinterConnection() { send(cu59::commands::kTogglePrinterConnection); }
+    void togglePrinterTrace() { send(cu59::commands::kTogglePrinterTrace); }
+    void pressPrinterPrint(bool pressed);
+    void pressPrinterAdv(bool pressed);
+    void cutPaper() { send(cu59::commands::kCutPaper); }
 
     // ── Card reader ──────────────────────────────────────────────────────────
-    CardState cardState() const { return m_c->cardState(); }
-    QString cardFileName() const { return QString::fromStdString(m_c->cardFileName()); }
+    CardState cardState() const;
+    QString cardFileName() const;
     void fitCard(const QString& path);
     void fitBlankCard(const QString& savePath);
-    bool tapCard(double nx, double ny) { return m_c->tapCard(nx, ny); }
-    std::optional<int> litCardCorner() const { return m_c->litCardCorner(); }
-    void ejectCard() { m_c->ejectCard(); }
+    bool tapCard(double nx, double ny);
+    std::optional<int> litCardCorner() const;
+    void ejectCard() { send(cu59::commands::kEjectCard); }
 
     // ── State files ──────────────────────────────────────────────────────────
     void loadStateFile(const QString& path);
@@ -77,49 +80,49 @@ public:
     void openDroppedFile(const QString& path);
 
     // ── Debugger ─────────────────────────────────────────────────────────────
-    void setLiveDebugEnabled(bool on) { m_c->setLiveDebugEnabled(on); }
-    void setCpuDebugEnabled(bool on) { m_c->setCpuDebugEnabled(on); }
-    bool isFrozen() const { return m_c->isFrozen(); }
+    void setLiveDebugEnabled(bool on);
+    void setCpuDebugEnabled(bool on);
+    bool isFrozen() const;
     /// The panel that owns the freeze (none while running).
-    std::optional<cu59::FreezeOwner> freezeOwner() const { return m_c->debugState().owner; }
-    bool pendingFreezeOnPCChange() const { return m_c->debugState().pcChangeArmed; }
-    bool pendingCpuScanLoopFreeze() const { return m_c->debugState().scanLoopExitArmed; }
-    void freeze(cu59::FreezeOwner owner) { m_c->freeze(owner); }
-    void unfreeze() { m_c->resume(); }
-    void freezeOnNextPCChange() { m_c->armPcChange(); }
-    void freezeOnScanLoopExit() { m_c->armScanLoopExit(); }
-    void disarmPcChangeFreeze() { m_c->disarmPcChange(); }
-    void disarmScanLoopFreeze() { m_c->disarmScanLoopExit(); }
-    void stepKeycode() { m_c->stepKeycode(); }
-    void stepFrozen() { m_c->stepInstruction(); }
+    std::optional<cu59::FreezeOwner> freezeOwner() const;
+    bool pendingFreezeOnPCChange() const;
+    bool pendingCpuScanLoopFreeze() const;
+    void freeze(cu59::FreezeOwner owner);
+    void unfreeze() { send(cu59::commands::kResume); }
+    void freezeOnNextPCChange() { send(cu59::commands::kArmPcChange); }
+    void freezeOnScanLoopExit() { send(cu59::commands::kArmScanLoopExit); }
+    void disarmPcChangeFreeze() { send(cu59::commands::kDisarmPcChange); }
+    void disarmScanLoopFreeze() { send(cu59::commands::kDisarmScanLoopExit); }
+    void stepKeycode() { send(cu59::commands::kStepKeycode); }
+    void stepFrozen() { send(cu59::commands::kStepInstruction); }
 
-    const cu59::LiveDebugSnapshot& liveSnapshot() const { return m_c->debug().live(); }
-    const std::vector<cu59::StepEntry>& programListing() const { return m_c->debug().listing(); }
-    cu59::ProgramSource programListingSource() const { return m_c->debug().listingSource(); }
+    const cu59::LiveDebugSnapshot& liveSnapshot() const;
+    const std::vector<cu59::StepEntry>& programListing() const;
+    cu59::ProgramSource programListingSource() const;
     /// Running: the last 32 instructions; frozen: the whole ring plus the next.
-    const std::vector<cu59::InspectorEntry>& cpuHistory() const { return m_c->debug().cpuHistory(); }
-    const std::vector<uint32_t>& heatmapCounts() const { return m_c->debug().heatmapCounts(); }
-    void clearHeatmap() { m_c->clearHeatmap(); }
+    const std::vector<cu59::InspectorEntry>& cpuHistory() const;
+    const std::vector<uint32_t>& heatmapCounts() const;
+    void clearHeatmap() { send(cu59::commands::kClearHeatmap); }
 
-    DebugLevel debugLevel() const { return m_c->debugLevel(); }
-    void cycleDebugLevel() { m_c->cycleDebugLevel(); }
-    QString logText() const { return QString::fromStdString(m_c->logText()); }
-    void clearLog() { m_c->clearLog(); }
-    void dumpVars() { m_c->dumpVars(); }
-    void dumpScom() { m_c->dumpScom(); }
-    void dumpProg() { m_c->dumpProg(); }
-    void dumpMemory() { m_c->dumpMemory(); }
+    DebugLevel debugLevel() const;
+    void cycleDebugLevel() { send(cu59::commands::kCycleDebugLevel); }
+    QString logText() const;
+    void clearLog() { send(cu59::commands::kClearLog); }
+    void dumpVars() { send(cu59::commands::kDumpVars); }
+    void dumpScom() { send(cu59::commands::kDumpScom); }
+    void dumpProg() { send(cu59::commands::kDumpProg); }
+    void dumpMemory() { send(cu59::commands::kDumpMemory); }
 
-    bool manualTrace() const { return m_c->manualTrace(); }
-    void setManualTrace(bool on) { m_c->setManualTrace(on); }
+    bool manualTrace() const;
+    void setManualTrace(bool on);
 
-    QString asmFileName() const { return QString::fromStdString(m_c->asmFileName()); }
-    int asmWordCount() const { return m_c->asmWordCount(); }
-    QString asmStatus() const { return QString::fromStdString(m_c->asmStatus()); }
-    bool asmOverlayActive() const { return m_c->asmActive(); }
+    QString asmFileName() const;
+    int asmWordCount() const;
+    QString asmStatus() const;
+    bool asmOverlayActive() const;
     void loadAsmFile(const QString& path);
-    void runAsmOverlay() { m_c->runAsm(); }
-    void clearAsmOverlay() { m_c->clearAsm(); }
+    void runAsmOverlay() { send(cu59::commands::kRunAsm); }
+    void clearAsmOverlay() { send(cu59::commands::kClearAsm); }
 
 signals:
     void modelChanged();
@@ -138,23 +141,21 @@ signals:
     void debugPanelRequested(int tab);  ///< KEYSTROKES DebugPanel: (0 CALCULATOR, 1 CPU, 2 LOG)
 
 private:
-    // SessionController::Platform
-    void runOnUiThread(std::function<void()> job) override;
-    std::optional<std::string> readConstantMemory() override;
-    void writeConstantMemory(const std::string& text) override;
-    bool writeCard(const std::string& path, const std::string& text) override;
-    std::string cardFilePath(const std::string& fileName) override;
-    CardRead readCard(const std::string& path) override;
-    void showDebugPanel(cu59::DebugPanel panel) override { emit debugPanelRequested(static_cast<int>(panel)); }
-    cu59::SessionController::TraceLocation traceLocation() override;
-    void saveLastUsedModel(cu59::Model model) override;
-    void saveModuleID(const std::string& moduleID) override;
-    void error(const std::string& title, const std::string& message) override;
-    void romsMissing(const calcu::roms::RomsMissing& missing) override;
-    void diagnostic(const std::string& message) override;
-    void changed(uint32_t changes) override;
+    calcu::sessions::ReplyMessage send(const calcu::sessions::CommandName& name,
+                                       calcu::sessions::Value args = calcu::sessions::Value::object({}));
+    bool sendFlag(const calcu::sessions::CommandName& name, calcu::sessions::Value args);
+    template <class P> const P* state(const calcu::sessions::TopicName& t) const {
+        const calcu::sessions::PayloadPtr* p = m_mirror.state(t);
+        return p ? calcu::sessions::payloadAs<P>(*p) : nullptr;
+    }
+    void deliver(const calcu::sessions::Message&) override;
+    void topicChanged(const calcu::sessions::TopicName&);
 
-    std::unique_ptr<cu59::SessionController> m_c;
+    std::unique_ptr<cu59::TIAppSession> m_app;
+    calcu::sessions::TopicMirror m_mirror;
+    calcu::sessions::ListenerId m_me = 0;
+    mutable std::optional<calcu::sessions::ReplyMessage> m_lastReply;
     QTimer m_frameTimer;
-    QStringList m_printerLines;  ///< the controller's text lines, as Qt types
+    QStringList m_printerLines;  ///< the paper's text lines, as Qt types
+    std::optional<cu59::Model> m_savedModel;
 };

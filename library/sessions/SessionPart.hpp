@@ -38,6 +38,12 @@ public:
     // when the answer arrives. std::nullopt: nobody offers it, nothing asked.
     virtual std::optional<CallId> askHost(HostService, Value args, std::function<void(const ServiceAnswer&)> then) = 0;
     virtual std::chrono::system_clock::time_point hostTime() const = 0;   // A-7
+    // The speed outside an operation, as the `speed` command sets it (AC-21).
+    // A part sets it for a speed its product asks for itself (Calc-U-59's
+    // KEYSTROKES FullSpeed:, until LIB-6 59); like the command, it changes
+    // nothing while an operation runs (D-6).
+    virtual pacing::Speed commandedSpeed() const = 0;
+    virtual void setCommandedSpeed(pacing::Speed) = 0;
 
 protected:
     ~SessionContext() = default;

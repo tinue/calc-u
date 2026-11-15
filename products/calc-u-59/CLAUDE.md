@@ -107,8 +107,9 @@ landscape on a large screen) — its column in
   `xcodebuild -project frontends/swift/Calc-U-59.xcodeproj -scheme Calc-U-59 -destination platform=macOS build`,
   and the web client, which compiles both layers too:
   `frontends/web/build.sh && frontends/web/run-tests.sh` (`frontends/web/dist/` is gitignored; CI builds it).
-  `app/` is C++20 (ADR 0005) and standard-library-only, and must work without threads
-  (`Threading::Cooperative`, used by the web build).
+  `app/` is C++20 (ADR 0005) and standard-library-only, and runs on one
+  thread: the app session's (Qt6's GUI thread, the Swift frontend's
+  `SessionThread`; the Web build's `Threading::Cooperative` until M-34).
 - **Settings** are declared once, in `app/Settings.hpp` (`settingsDecl()`:
   section, key, default, accepted values; typed calls over the library's
   `calcu::settings::SettingsFile`, LIB-9), and live in `Calc-U-59.ini`.

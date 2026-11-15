@@ -57,6 +57,11 @@
 // For LIB-11 (design T18): with offerState(true) a machine offers the
 //   generic kind machine state (`cpu/machine-state` or `main/machine-state`),
 //   off by default so that the other areas' lists stay as they are.
+// For LIB-6 (design D-25): test-seg with the build option TestSegProgram
+//   (or setProgram()): the key `1` starts a "program" of a settable number
+//   of ticks during which isKeyReady() is false, the key `0` during it stops
+//   it; and a product kind "test.memory" (64 bytes, zero after a cold boot)
+//   that a preset's test section writes. Off by default.
 
 namespace calcu::machine::test {
 
@@ -106,6 +111,20 @@ struct TestStartUp : ProductData {
     static constexpr Ticks kNever = ~Ticks{0};
     explicit TestStartUp(Ticks t) : ticks(t) {}
     Ticks ticks;
+};
+
+// LIB-6's build option of test-seg (design D-25): a program of `length` ticks.
+struct TestSegProgram : ProductData {
+    explicit TestSegProgram(Ticks l) : length(l) {}
+    Ticks length;
+};
+
+// The memory a preset's test section writes (LIB-6), a product kind.
+class TestMemory : public Capability {
+public:
+    static constexpr KindId kKind{"test.memory"};
+    KindId kind() const override { return kKind; }
+    std::vector<std::uint8_t> bytes = std::vector<std::uint8_t>(64, 0);
 };
 
 struct TestSegTiming : ProductData {
@@ -190,7 +209,7 @@ public:
     void reset() override;
     void powerCycle() override;
     void coldBoot() override;
-    bool isKeyReady() const override { return sinceStart_ >= startUpTicks_; }
+    bool isKeyReady() const override { return sinceStart_ >= startUpTicks_ && programLeft_ == 0; }
     KeyCall keyDown(const KeyId&) override;
     KeyCall keyUp(const KeyId&) override;
     DisplayOutput readDisplay() override;
@@ -217,6 +236,10 @@ public:
     std::uint64_t innerCycles() const { return innerCycles_; }
     void setTiming(std::shared_ptr<const TestSegTiming> t) { timing_ = std::move(t); }
     void setStartUp(Ticks t) { startUpTicks_ = t; }   // TestStartUp
+    // LIB-6 (TestSegProgram): the program of `length` ticks and the memory.
+    void setProgram(Ticks length) { programLength_ = length; }
+    bool programRuns() const { return programLeft_ > 0; }
+    TestMemory* memory() { return programLength_ ? &memory_ : nullptr; }
     std::uint64_t presses() const { return presses_; }   // the machine's memory
     // The instruction of the loop the machine is at (0 without a timing).
     std::uint64_t loopPosition() const { return timing_ ? generic_.instructions % timing_->loopLength : 0; }
@@ -259,6 +282,8 @@ private:
     Ticks sinceStart_ = 0;
     Ticks startUpTicks_ = kStartUpTicks;
     std::uint64_t presses_ = 0;   // the machine's memory: a cold boot clears it
+    Ticks programLength_ = 0, programLeft_ = 0;   // LIB-6: 0 length: no program
+    TestMemory memory_;
     bool displayOn_ = true;
     std::uint64_t innerCycles_ = 0, innerRest_ = 0;
     std::vector<KeyId> keysDown_;

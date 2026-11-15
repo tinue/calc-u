@@ -182,6 +182,8 @@ BuildResult TestBuilder::build(const BuildRequest& req, const Catalogue& cat) {
     if (auto s = std::dynamic_pointer_cast<const TestStartUp>(req.content)) m->setStartUp(s->ticks);
     if (auto t = std::dynamic_pointer_cast<const TestSegTiming>(req.content); t && req.model == kSeg)
         m->setTiming(std::move(t));
+    if (auto p = std::dynamic_pointer_cast<const TestSegProgram>(req.content); p && req.model == kSeg)
+        m->setProgram(p->length);
     std::vector<PlaceName> taken;
     for (const auto& p : req.peripherals) {
         if (p.place.steps.size() != 1) return BuildResult{nullptr, {}, "no such place"};
@@ -272,6 +274,7 @@ Ticks TestMachine::advance(Ticks atLeast) {
     }
     ticks_ += ran;
     sinceStart_ += ran;
+    programLeft_ -= std::min(programLeft_, ran);
     for (auto& p : plugs_)
         if (p->uart) p->uart->advance(ran);
     if (clock_) clock_->advance(ran);
@@ -293,11 +296,13 @@ void TestMachine::tellOperation() {
 
 void TestMachine::reset() {
     tellOperation();
+    programLeft_ = 0;
     startUp();
 }
 
 void TestMachine::powerCycle() {
     tellOperation();
+    programLeft_ = 0;
     displayOn_ = true;
     startUp();
 }
@@ -305,6 +310,8 @@ void TestMachine::powerCycle() {
 void TestMachine::coldBoot() {
     tellOperation();
     presses_ = 0;
+    programLeft_ = 0;
+    memory_.bytes.assign(memory_.bytes.size(), 0);
     displayOn_ = true;
     startUp();
 }
@@ -317,6 +324,8 @@ KeyCall TestMachine::keyDown(const KeyId& k) {
     ++presses_;
     if (k == KeyId{"off"}) displayOn_ = false;
     if (k == KeyId{"on"}) displayOn_ = true;
+    if (programLength_ && k == KeyId{"1"}) programLeft_ = programLength_;   // LIB-6: the program starts
+    if (programLength_ && k == KeyId{"0"}) programLeft_ = 0;                // and is stopped
     return KeyCall::Done;
 }
 
@@ -400,6 +409,10 @@ std::vector<TestMachine::CapRef> TestMachine::capRefs() const {
         CapRef{CapabilityEntry{TestGeneric::kKind, CapabilityId{cpu.value + "/" + std::string(TestGeneric::kKind.value)},
                                ComponentOwner{cpu}},
                &self->generic_}};
+    if (programLength_)
+        out.push_back(CapRef{CapabilityEntry{TestMemory::kKind, CapabilityId{cpu.value + "/" + std::string(TestMemory::kKind.value)},
+                                             ComponentOwner{cpu}},
+                             &self->memory_});
     if (offersState_)
         out.push_back(CapRef{CapabilityEntry{harness::MachineState::kKind,
                                              CapabilityId{cpu.value + "/" + std::string(harness::MachineState::kKind.value)},

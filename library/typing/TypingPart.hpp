@@ -50,6 +50,9 @@ public:
 
     TypingEngine& engine() { return engine_; }
     const TypingEngine& engine() const { return engine_; }
+    // The product's profiles, for a model before its machine is built (LIB-6:
+    // `key` and `type` are checked when a preset is read).
+    const TypingProduct& product() const { return product_; }
     void setPauseProbe(const PauseProbe* p) { probe_ = p; }
 
     // The presses of a `key` name on the current model (AC-15), or nullopt.

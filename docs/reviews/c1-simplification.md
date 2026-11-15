@@ -1,8 +1,7 @@
 # Part C1: structural simplification before the boundary
 
-Status: survey and plan written before any code edit (2026-11-15).
-The results (changes made, line counts after, departures, questions)
-are added at the end as the commits land.
+Status: done (2026-11-15). The survey (§1) and plan (§3) were written and
+committed (`8b99976`) before any code edit; §4 to §8 report the result.
 
 Baseline: `main` at `46344b0`; Frequent 28/28 in 71 s.
 
@@ -160,22 +159,113 @@ What came of each is in §5.
 Each: build, Frequent (golden replays included), merge `--no-ff`. At the
 end: the Longer group locally, then CI.
 
-## 4. Status (interim, 2026-11-15)
 
-All of P-1 to P-7 merged into `main` (`923cef0`), Frequent 28/28 after
-each merge, golden replays unchanged, Swift macOS build green. Also merged:
-`DisplayOutput` indicator names owned (a use-after-free found under ASan;
-LIB-1 design §3.6 amended).
+## 4. Changes made
 
-Line counts, before → after: `library/` 21 380 → 21 706 (without tests
-11 222 → 11 761: the Listener, Args, ValuePayload, test toolkit moved in);
-Calc-U-59 `app/` 10 689 → 10 470; Calc-U-1600 `app/` 6 510 → 6 327;
-product tests 59 7 326 → 7 226, 1600 24 692 → 24 223.
+Every change: build, Frequent 28/28, golden replays unchanged, merged
+`--no-ff`. Lines are `git diff --shortstat` of each merge (code, tests and
+docs together).
 
-Still to do: the Longer group locally, CI (P-7 changed build files), and
-the full report (§5 what came of the three changes, rejected candidates,
-departures, questions). Departures and findings so far are in the merge
-commits' branch reports: LIB-3 §3.1/§3.6/§3.8–3.10, C59-5 §2/§3, LIB-11
-§3.4, LIB-15 §2, LIB-9 D-2, LIB-1 §3.6; findings: CoreTests crashes
-without ROMs (exit 139, before this work too); 1600
-`docs/background/Decisions.md` line on machine mutexes changed (confirm).
+| # | Change and reason | Before → after | Lines |
+|---|---|---|---|
+| P-1 | Adapters past their step, dead code | `TIPacingHints` (no caller since M-33) gone, `idleAndKeyDetectRange()` kept as a free function (headless tool); both harness products return the product's `settingsDecl()` (LIB-11 A-3, due M-30/M-32: `--settings` on a missing file now writes the product's full first-start INI); the 1600 harness uses `sharp::lookUpRoms` (its own `FoldersBundle` due to go in M-27); `scriptedTrace()`, `commandNames()` gone; stale comments | +36 −96 |
+| P-2 | Locks in classes used by one thread | `KeySequencer` (2 mutexes, 2 atomics), `FreezeController` (4 atomics), `TraceWriter` (mutex), 1600 `TraceRing` (mutex), `LH5801`/`SC7852` atomic trace flags → plain members; thread comments rewritten | +95 −148 |
+| P-3 | Large change 1: one way to host and talk to a session | `library/sessions/Listener` (send with a reply handler or an at-once reply, `ask`, `runToEnd`, mirror, `state<P>`, `display()`); `AppSessionSetup::owned` released before the session; `SessionSetup::context()` at attach; `ProductSession<Part>`. Gone: `SharpHost` (→ `makeSharpSession`, 54 lines), `SharpAppPart::bind`, `TIAppPart::start`'s hook setup, `TIAppSession`, `HostedSession`/`AppSessionHost`, both `forgetSession()`, both `WebKeep` destructors, `WorkerHost`'s own holding and call-id map, the Qt controllers' reply maps, the Swift bridge's `lastOf` | +827 −768 |
+| — | Bug: display payload pointed into a destroyed machine | `IndicatorOutput::name` `string_view` → `std::string` (ASan use-after-free in `sameDisplay` after a model switch, on `main` before this work) | +4 −4 |
+| P-4 | `EmulatorSession` without the threaded runner's run mark | `start`/`stop`/`isRunning`/`post`/`sync`/`drainJobs` → a halt flag and a FIFO of the debugger's queued steps, run after the host call as before | +104 −135 |
+| P-5a | Large change 3, first half: one test toolkit | `library/testing/TempFolder`, `Files`, `ScriptedClock` replace ~14 temp folders (fixed names, leaked `/tmp`), 8 clocks, 12 file one-liners; 93 hand-written skips → `SKIP_UNLESS` (now counted); one 1600 serial-link fake; ROM probes through the lookup; two tautological checks | +664 −1148 |
+| P-5b | Large change 3, second half | one Calc-U-59 `SessionRig` (was `PartRig` + `AppSessionRig`); `TestFrontend` in `library/testing/`; `Pump.hpp`; `testroms::appSetup` replaces six setup blocks; 1600 `SessionFixture` on a `TempFolder` (parallel runs collided); `NoOwnRomLookup` exception gone | +306 −350 |
+| P-6 | Helpers copied between products | `ValuePayload`, `sessions/Args.hpp`, `pacing::steadyWallTime`, `serviceName`/`serviceNamed`, harness `ticksFor`/`timeReply`/`payloadText`, `settings::fixedOpenFolder`, `sessions::kStartCommand`, each once | +328 −366 |
+| P-7 | CMake per product | `calcu_add_test`, `calcu_product_source_checks`, `calcu_web_engine`, `calcu_warnings` (MSVC `/W4 /utf-8` everywhere), `calcu_debug_o1` at the root, one list of library areas, `TestMachines.cpp` compiled once, CLI cases read from `cli_cases.cmake`; dead copies of root settings gone; CTest listings (28 / 46 / 59 entries) identical before and after | +334 −429 |
+
+Total: +2 698 −3 444.
+
+At the end: Longer group locally, 19 of 20 pass (Playwright of the library
+and both Web frontends, `CalcU59UIRegression`, `CalcU59SwiftUnitTests`,
+`CalcU59NoAttachInRelease`, both ROM-missing builds, the WASM smoke, the
+nine `CalcU1600Shots`, `CalcU1600DapSmoke`); `CalcU59ReferenceRuns`
+differs in 34 of 57 examples, as after M-34 (§8, item 3). CI on `main`:
+43739798405 (Calc-U-59), 43739801132 (Calc-U-1600).
+
+## 5. The three large changes, and what came of them
+
+1. **One way to host a session: done (P-3).** Six hand-written hosts
+   became one library `Listener` plus the product's part list. LIB-5
+   (M-36) adds `TypingPart` in each product's factory instead of in every
+   frontend's setup. `AppSession::context()` stays for host log lines and
+   tests (comment says so).
+2. **Calc-U-59's part on the session model: in part (P-2, P-4).** Done:
+   locks, the run mark, the gone-thread comments. Rejected: the 14 change
+   flags, the observer to `TIWebPart` and the `TISnapshot` serials. They
+   are the part's dirty tracking; replacing them by values compared each
+   call makes `TIWebPart` scan the save folder (card list) and the trace
+   folder and copy the debug listing on every host call, and M-53, M-55,
+   M-56 and M-58 replace each interim topic with its owner's topic. Also
+   kept: `EmulatorSession::Listener`/`later()` (M-36, M-53 remove them).
+3. **One test toolkit: done (P-5a, P-5b).** Not merged: the 59 rig keeps
+   its own clock (steps before it reads; `ScriptedClock` would shift every
+   reading by 1 ms and change the reference runs); 1600's pump counts
+   calls, not time; the library's CTest entries stay off
+   `calcu_add_test` (no working directory).
+
+## 6. Rejected candidates
+
+| Candidate | Reason |
+|---|---|
+| One page-form topic set per product (`SharpWebPart` 631, `TIWebPart` 663 lines duplicate the product topics) | the interim topics go with their owners (LIB-4 M-49, LIB-8 M-53, LIB-7 M-55, C59-4 M-56, LIB-14 M-49/M-57); merging now changes both pages' contract for code those steps replace |
+| A library `engine.js` skeleton for both pages | the pages move onto LIB-14's shell (M-49, M-57) |
+| Products on the library's host services (pickers, clipboard) | the services are specified (LIB-3 AC-26, AC-27); moving the pages' own pickers onto them is LIB-13/LIB-14 work (M-48, M-49, M-56, M-57), not structure |
+| 59 on 1600's part-owned `start` and `roms-missing` | LIB-18 (M-35, M-46, M-54) builds the start for both |
+| Notices without a packed title in 59 | C59-8 (M-58) changes the alerts; a split is user-visible in the alerts today |
+| `PtyHostLink` without threads (non-blocking poll) | changes its back-pressure; no measurement says it pays |
+| F23/F25 test merges (ROM lookup tests, long-run call schedule) | the product tests assert product facts; the long-run schedules replay M-10's reference |
+| Shared `textArg`/`runFor` in three library test targets | would add test include paths for ~10 lines |
+| `/tmp` paths in ~8 preset tests | the tests assert `/tmp/…` results of the preset parser's relative paths |
+
+## 7. Departures from approved `design.md` files
+
+- LIB-1 §3.6: `IndicatorOutput::name` is a `std::string`.
+- LIB-3 §3.1 (`ValuePayload`, `Args.hpp`), §3.6 (service names), §3.8 to
+  §3.10 (`SessionSetup::context()`, `owned`, `ProductSession`,
+  `TopicMirror::stateOf`, the `Listener`), §2 file table (test rig).
+- LIB-9 D-2: the reset-to-last-used rule is the library's
+  (`setFixedOpenFolder("")` keeps the fixed folder as the start; the
+  products already did this).
+- LIB-11 §3.4: `HarnessHost` holds a `Listener` instead of being a sink.
+- LIB-15 §2: `WorkerHost` row (`WebSession` gone).
+- C59-5 §2, §3, D-11, the H tests: no `HostedSession`; the thread owns the
+  library session.
+- LIB-5 (C2 draft): two mentions of the rigs updated.
+
+## 8. Questions and findings for the user
+
+1. `products/calc-u-1600/docs/background/Decisions.md` said the core's
+   machine mutexes stay; they no longer exist, and the line now says the
+   core holds no lock. It is a recorded decision: please confirm.
+2. `CoreTests` crashes (exit 139) when the ROMs are missing, early in the
+   app-layer tests (`test_describe`); it did before this work. Fix with a
+   SKIP in Part C2?
+3. No golden replay or reference run differed. The 57 TI reference runs
+   recorded with P-5b's branch and with `main` before it are the same; the
+   M-34 finding (34 of 57 differ from the M-9 references, printer timing at
+   full speed) is unchanged and stays with M-36.
+4. No spec change is wanted for any of the above.
+
+## 9. Line counts
+
+Counted by `find … | xargs cat | wc -l` over `.cpp .hpp .h .swift .js .mm
+.py CMakeLists.txt .cmake`, without `node_modules` and `dist`.
+
+| | Before (`46344b0`) | After |
+|---|---|---|
+| `library/` | 21 380 | 21 706 |
+| `library/` without tests | 11 222 | 11 761 |
+| Calc-U-59 `app/` | 10 689 | 10 470 |
+| Calc-U-1600 `app/` (without `app/tests`) | 6 510 | 6 327 |
+| Calc-U-1600 `app/tests` | 1 729 | 1 740 |
+| Calc-U-59 `tests/` | 7 326 | 7 226 |
+| Calc-U-1600 `tests/` | 24 692 | 24 223 |
+
+The library grew by what moved into it from the products (the listener,
+the argument and value helpers, the test toolkit); the products' app
+layers and tests shrank.

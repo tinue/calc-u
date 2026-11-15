@@ -1,4 +1,5 @@
 #include "TestProduct.hpp"
+#include "TestKinds.hpp"
 #include "TestPresetRules.hpp"
 #include "formats/Flow.hpp"
 #include "roms/FullSet.hpp"
@@ -154,6 +155,14 @@ const settings::ProductDecl& TestProduct::settingsDecl() const {
 roms::LookupResult TestProduct::lookUpRoms() const {
     static const roms::FullSet set = roms::fullSet(machine::test::testCatalogue());
     return roms::lookUp(set, roms::DirectoryBundle(roms_.path()), &reader_);
+}
+
+std::vector<media::KindDecl> TestProduct::mediaKinds() {
+    if (!media) return {};
+    builder_.inner.media = true;   // the machines offer their media places
+    // The bundled media are always there (LIB-7 AC-28): a disk template.
+    mediaFolder_.write("disks/Formatted.testdisk.yaml", "format: test-disk\nformat-version: 2\nname: Formatted\ncontent: \n");
+    return media::test::testKinds(media::test::TestKindFolders{mediaFolder_ / "disks", "", ""});
 }
 
 BuildResult TestProduct::Builder::build(const BuildRequest& req, const Catalogue& cat) {

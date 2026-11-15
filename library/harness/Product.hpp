@@ -5,6 +5,7 @@
 #include "machine/Catalogue.hpp"
 #include "machine/Descriptor.hpp"
 #include "machine/Display.hpp"
+#include "media/Kind.hpp"
 #include "roms/Lookup.hpp"
 #include "roms/RomSet.hpp"
 #include "sessions/SessionPart.hpp"
@@ -75,6 +76,12 @@ public:
     // harness hands it the machine control (the origin of a build, A-3) and
     // adds the step `cut-paper` to the preset vocabulary (A-2).
     virtual paper::PaperPart* paperPart() { return nullptr; }
+    // LIB-7 (design §3.11): the product's kinds of medium, with their bundled
+    // folders, and the listing of its modules that are not media; the harness
+    // puts a MediaPart on the run's save folder into the session when there
+    // are kinds. None until the product's column (M-47, M-55).
+    virtual std::vector<media::KindDecl> mediaKinds() { return {}; }
+    virtual media::ModuleListing moduleListing() const { return {}; }
 };
 
 using ProductFactory = std::unique_ptr<HarnessProduct> (*)();

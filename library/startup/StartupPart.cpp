@@ -208,7 +208,7 @@ void StartupPart::attach(sessions::SessionSetup& setup) {
         const auto v = variantNamed(m->descriptor().variants, name);
         if (!v) return Refused{"The " + m->model().value + " has no variant \"" + name + "\"."};   // D-18
         if (m->variant() == v) return Done{};   // AC-8
-        return StartOperation{[this, v = *v](OperationContext& o) { return switchVariant(o, v); }};
+        return StartOperation{[this, chosen = *v](OperationContext& o) { return switchVariant(o, chosen); }};
     });
 
     // Attach and replace (AC-10 to AC-12; D-14, D-15).

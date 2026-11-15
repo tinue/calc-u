@@ -69,10 +69,11 @@ TEST(ac10_segment_positions_left_to_right_by_product_rule) {
     TestRun run;
     CHECK(run.server != nullptr);
     if (!run.server) return;
-    run.line("wait 1ms");                // key ready: C on
+    run.line("wait 1ms");                // key ready (since the start, LIB-18): C on
     run.line("key-down 1");              // a press; a key down lights DP of position 0
     run.line("wait 1ms");                // the display topic is read when time passes
-    CHECK_EQ(run.line("lcd"), std::string("done 2\n1.01\nindicators: C\n"));
+    // Position 1 is the thousands of the tick count: 1 after the start's 1667 ticks.
+    CHECK_EQ(run.line("lcd"), std::string("done 2\n1.11\nindicators: C\n"));
 }
 
 TEST(ac10_display_off_says_so) {
@@ -114,9 +115,9 @@ TEST(ac23_dot_matrix_rows_of_ones_and_zeros) {
     CHECK(run.server != nullptr);
     if (!run.server) return;
     run.line("wait 64us");   // not a unit: refused, nothing passes
-    run.line("wait 1ms");    // 1000 ticks: row 0's dot at (1000 / 16) % 12 = 2
+    run.line("wait 1ms");    // after the start's 16 668 ticks: row 0's dot at (17 668 / 16) % 12 = 0
     const std::string r = run.line("display");
-    CHECK(r.rfind("done 11\n001000000000\n", 0) == 0);   // 8 rows, indicators, names, on
+    CHECK(r.rfind("done 11\n100000000000\n", 0) == 0);   // 8 rows, indicators, names, on
     CHECK(r.find("\n000000000000\n000000000000\n100000000000\n") != std::string::npos);   // row 3: no press yet
 }
 
@@ -124,18 +125,19 @@ TEST(ac23_segment_positions) {
     TestRun run;
     CHECK(run.server != nullptr);
     if (!run.server) return;
-    CHECK_EQ(run.line("display"), std::string("done 7\nsegments: A B C D E F G DP\n0 11111100\n1 11111100\n2 11111100\n"
-                                              "indicators: 0\nnames: C\non: true\n"));
+    // At key readiness after the start (LIB-18): C on; position 1 shows 1 (1667 ticks).
+    CHECK_EQ(run.line("display"), std::string("done 7\nsegments: A B C D E F G DP\n0 11111100\n1 01100000\n2 11111100\n"
+                                              "indicators: 1\nnames: C\non: true\n"));
 }
 
 TEST(ac23_indicator_bits_in_descriptor_order) {
     TestRun run({}, mt::kDot);
     CHECK(run.server != nullptr);
     if (!run.server) return;
-    run.line("key-down a");   // BUSY on; RUN on until key readiness
+    run.line("key-down a");   // BUSY on; RUN off: the run starts at key readiness (LIB-18)
     run.line("wait 0.001ms");   // one instruction: the display is read
     const std::string r = run.line("display");
-    CHECK(r.find("indicators: 11\nnames: RUN BUSY\non: true\n") != std::string::npos);
+    CHECK(r.find("indicators: 01\nnames: RUN BUSY\non: true\n") != std::string::npos);
 }
 
 TEST(ac23_display_off) {
@@ -155,12 +157,13 @@ TEST(ac23_json_arrays) {
     if (!run.server) return;
     CHECK_EQ(run.line("display"),
              std::string("{\"done\":true,\"result\":{\"kind\":\"segments\",\"segments\":[\"A\",\"B\",\"C\",\"D\",\"E\",\"F\",\"G\",\"DP\"],"
-                         "\"positions\":[[1,1,1,1,1,1,0,0],[1,1,1,1,1,1,0,0],[1,1,1,1,1,1,0,0]],\"indicators\":[0],"
+                         "\"positions\":[[1,1,1,1,1,1,0,0],[0,1,1,0,0,0,0,0],[1,1,1,1,1,1,0,0]],\"indicators\":[1],"
                          "\"indicatorNames\":[\"C\"],\"on\":true},\"reason\":null}\n"));
     TestRun dot(o, mt::kDot);
     CHECK(dot.server != nullptr);
     if (!dot.server) return;
     const std::string r = dot.line("display");
-    CHECK(r.find("\"kind\":\"dots\",\"rows\":[[1,0,0,0,0,0,0,0,0,0,0,0],") != std::string::npos);
-    CHECK(r.find("\"indicators\":[1,0],\"indicatorNames\":[\"RUN\",\"BUSY\"],\"on\":true") != std::string::npos);
+    // After the start's 16 668 ticks: row 0's dot at (16 668 / 16) % 12 = 9; RUN off.
+    CHECK(r.find("\"kind\":\"dots\",\"rows\":[[0,0,0,0,0,0,0,0,0,1,0,0],") != std::string::npos);
+    CHECK(r.find("\"indicators\":[0,0],\"indicatorNames\":[\"RUN\",\"BUSY\"],\"on\":true") != std::string::npos);
 }

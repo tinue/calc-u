@@ -130,7 +130,7 @@ TEST(ac13_common_command_at_top_level) {
     // The product-specific part of a common command comes from the product:
     // `lcd` of the test product reads its segments by the product's rule.
     TestRun run;
-    CHECK(run.server && run.line("lcd").rfind("done 2\n000\n", 0) == 0);
+    CHECK(run.server && run.line("lcd").rfind("done 2\n010\n", 0) == 0);   // 1667 ticks after the start (LIB-18)
 }
 
 TEST(ac22_step_becomes_command_by_dropping_dash_and_colon) {

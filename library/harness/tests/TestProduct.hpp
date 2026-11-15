@@ -38,13 +38,14 @@ public:
     machine::MachineBuilder& builder() override { return builder_; }
     const settings::ProductDecl& settingsDecl() const override;
     roms::LookupResult lookUpRoms() const override;
-    machine::BuildRequest startupRequest(const settings::SettingsFile&, const roms::RomSet&) override;
+    startup::ProductMachines& machines() override { return machines_; }
     DisplayText readDisplay(const machine::DisplayOutput&, const machine::MachineDescriptor&) override;
     void addCommands(CommandRegistry&) override;
     std::vector<sessions::SessionPart*> sessionParts() override;
 
     // For the tests: the bundle folder (a file can be removed: EC-1), the
-    // model to start with instead of the settings' (A-1), the version.
+    // model to start with under the default settings (the fallback model of
+    // the declaration, LIB-11 AC-2; test-seg unless set), the version.
     const roms::test::TempFolder& romFolder() const { return roms_; }
     std::optional<machine::ModelId> startModel;
     std::string version_ = "1.0-test";
@@ -55,9 +56,23 @@ private:
         machine::BuildResult build(const machine::BuildRequest&, const machine::Catalogue&) override;
     };
     struct Part;
+    // LIB-18's ProductMachines over the test machines: the bare model, no
+    // sound on test-seg, 8000 samples a second on test-dot, a bound of 1 s.
+    struct Machines final : startup::ProductMachines {
+        explicit Machines(TestProduct& p) : product(p) {}
+        TestProduct& product;
+        const machine::Catalogue& catalogue() const override { return product.catalogue(); }
+        machine::MachineBuilder& builder() override { return product.builder_; }
+        startup::MachinePlan builtInDefault(const machine::ModelId& m) override { return startup::MachinePlan{m, {}, {}, nullptr}; }
+        pacing::PacingProfile pacingProfile(const machine::ModelId&) const override { return {}; }
+        int soundRate(const machine::ModelId&) const override { return 8000; }
+        machine::Seconds readinessBound(const machine::ModelId&) const override { return machine::Seconds(1.0); }
+    };
+    mutable settings::ProductDecl decl_;
     roms::test::TempFolder roms_;
     roms::test::TestTextReader reader_;
     Builder builder_;
+    Machines machines_{*this};
     std::unique_ptr<Part> part_;
 };
 

@@ -1,7 +1,6 @@
 #include "harness/Run.hpp"
 #include "harness/StatePart.hpp"
-#include "machine/Build.hpp"
-#include "pacing/PacingProfile.hpp"
+#include "sessions/LibraryTopics.hpp"
 #include "sessions/MachineSession.hpp"
 #include <atomic>
 #include <cctype>
@@ -154,16 +153,6 @@ std::unique_ptr<Server> Server::start(HarnessProduct& product, const RunOptions&
         *error = roms::describe(roms.missing);
         return nullptr;
     }
-    // A-1: the product's start.
-    machine::BuildRequest request = product.startupRequest(s->setup_->settings(), *roms.set);
-    machine::BuildResult built = machine::build(product.catalogue(), product.builder(), request);
-    if (!built.machine) {
-        *error = built.missingRoms.empty() ? "The machine was not built: " + built.refusal
-                                           : "The machine was not built: a ROM file is missing: " + built.missingRoms.front();
-        return nullptr;
-    }
-    product.startUp(*built.machine);
-
     s->peripherals_ = std::make_unique<peripherals::PeripheralsPart>();
     s->state_ = std::make_unique<MachineStatePart>(std::string(product.name()), std::string(product.version()));
     sessions::AppSessionSetup setup;
@@ -176,14 +165,24 @@ std::unique_ptr<Server> Server::start(HarnessProduct& product, const RunOptions&
     };
     setup.hostTime = s->setup_->hostTime();   // AC-21 (LIB-3 A-7)
     setup.hosting = sessions::Hosting::VirtualTime;
-    setup.parts = {s->peripherals_.get(), s->state_.get()};
+    // LIB-18 §3.6: the start is StartupPart's, after PeripheralsPart (the
+    // clocks at a build and at the end of every operation, AC-1, AC-13).
+    // No loader until LIB-6 (M-38); the run's own settings (LIB-9 AC-18).
+    s->startup_ = std::make_unique<startup::StartupPart>(
+        startup::StartupSetup{product.machines(), roms.set, s->setup_->settings(), nullptr});
+    setup.parts = {s->peripherals_.get(), s->state_.get(), s->startup_.get()};
     for (sessions::SessionPart* p : product.sessionParts()) setup.parts.push_back(p);
     s->session_ = std::make_unique<sessions::AppSession>(std::move(setup));
     s->host_ = std::make_unique<HarnessHost>(*s->session_, product, *s->setup_);
-    s->session_->machineSession().setMachine(std::move(built.machine), pacing::PacingProfile{}, request.soundRate);
-    s->session_->advanceUnpaced(0);   // the machine joins: clocks set (AC-21), display read
+    // LIB-11 AC-2: the machine the product starts with, at key readiness.
+    const sessions::ReplyMessage started = s->host_->command(sessions::Command{sessions::kStartCommand, {}});
+    if (!started.done) {
+        *error = "The machine was not built: " + started.reason;
+        return nullptr;
+    }
 
     addFirstCommands(s->registry_);
+    addStartupCommands(s->registry_);
     product.addCommands(s->registry_);
     return s;
 }

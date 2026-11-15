@@ -9,7 +9,7 @@ RelWithDebInfo (`build/tests`, Qt off). Machine-level cases are in
 `products/calc-u-59/tests/peripherals_tests.cpp` (new), the app session's in
 `shared_controller_tests.cpp`, the descriptors in `descriptor_tests.cpp`, the
 golden replays in `golden_runs_tests.cpp`; all in `CalcU59Tests`, Frequent.
-Frequent: 12 of 12 CTest entries pass (`CalcU59Tests` 224 `TEST`s, 36,371
+Frequent: 12 of 12 CTest entries pass (`CalcU59Tests` 228 `TEST`s, 36,412
 checks, 0 failed).
 
 What the step built (design §2–§4): `core/PrinterPinOut.hpp` and

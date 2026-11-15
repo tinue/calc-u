@@ -95,7 +95,7 @@ PC100C::PC100C(const std::vector<calcu::machine::SwitchPosition>& switches)
 
 void PC100C::onControl(const ControlId& id, bool on) {
     // The keys and the switch close KP/KN at their strobe (AC-5).
-    auto line = [&](std::uint8_t bit) { m_d12 = on ? (m_d12 | bit) : (m_d12 & ~bit); };
+    auto line = [&](unsigned bit) { m_d12 = static_cast<std::uint8_t>(on ? (m_d12 | bit) : (m_d12 & ~bit)); };
     if (id == kPrint) line(1u << 2);
     else if (id == kAdv) line(1u << 0);
     else if (id == kTrace) m_trace = on;

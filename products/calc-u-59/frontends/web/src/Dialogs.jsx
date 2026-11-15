@@ -91,7 +91,7 @@ function CardPicker({ engine, mode, onClose }) {
               onDoubleClick={() => (save ? setName(n) : read(n))}
             >{n}</button>
             <button type="button" className="calcu-iconbutton" title={`Download ${n}`} aria-label={`Download ${n}`}
-              onClick={() => engine.post({ type: "cardBytes", name: n })}>⤓</button>
+              onClick={() => engine.download("card", n)}>⤓</button>
           </li>
         ))}
       </ul>

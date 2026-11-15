@@ -82,9 +82,11 @@ set_target_properties(calcu59_shared PROPERTIES POSITION_INDEPENDENT_CODE ON)
 # -----------------------------------------------------------------------------
 # Web engine (emcmake; frontends/web/build.sh copies it into
 # frontends/web/dist/wasm/, reference/WebClient.md): core/ + app/ behind
-# frontends/web/bindings.cpp. Single-threaded (no -pthread): a static host
-# can't be relied on to send the headers SharedArrayBuffer needs, so
-# SessionController runs in Threading::Cooperative. -fwasm-exceptions: app/
+# frontends/web/bindings.cpp, the factory of the app session the library's
+# Web Worker host runs (calcu_web_glue, LIB-15). Single-threaded (no
+# -pthread): a static host can't be relied on to send the headers
+# SharedArrayBuffer needs. IDBFS keeps the persistent file system in
+# IndexedDB (mounted by the library's worker). -fwasm-exceptions: app/
 # reports ROM and file errors with exceptions; native wasm exceptions, as
 # Calc-U-1600's engine and calcu_library use, so one build/web tree holds
 # both engines (C59-1, since M-19; LIB-1 design §2a, D-6). -UNDEBUG: the
@@ -96,13 +98,13 @@ if(EMSCRIPTEN)
     target_compile_options(${target} PRIVATE -fwasm-exceptions -UNDEBUG)
   endforeach()
   add_executable(calcu59_web ${CMAKE_CURRENT_SOURCE_DIR}/frontends/web/bindings.cpp)
-  target_link_libraries(calcu59_web PRIVATE calcu59_shared)
+  target_link_libraries(calcu59_web PRIVATE calcu59_shared calcu_web_glue)
   target_compile_options(calcu59_web PRIVATE -fwasm-exceptions -UNDEBUG)
   set_target_properties(calcu59_web PROPERTIES OUTPUT_NAME ti59-core)
-  target_link_options(calcu59_web PRIVATE -fwasm-exceptions -lembind -sMODULARIZE=1
+  target_link_options(calcu59_web PRIVATE -fwasm-exceptions -lembind -lidbfs.js -sMODULARIZE=1
                       -sEXPORT_NAME=createTI59CoreModule -sENVIRONMENT=web,worker
-                      -sALLOW_MEMORY_GROWTH=1 -sNO_EXIT_RUNTIME=1
-                      -sEXPORTED_RUNTIME_METHODS=FS)
+                      -sALLOW_MEMORY_GROWTH=1 -sNO_EXIT_RUNTIME=1 -sSTACK_SIZE=1MB
+                      -sEXPORTED_RUNTIME_METHODS=FS,IDBFS,getExceptionMessage,decrementExceptionRefcount)
   return()
 endif()
 
@@ -216,6 +218,11 @@ if(CALCU_TESTS)
     add_test(NAME CalcU59WebPlaywright COMMAND frontends/web/run-tests.sh
              WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
     set_tests_properties(CalcU59WebPlaywright PROPERTIES LABELS longer)
+    # The reference runs of M-9 on the app session (tests/reference_runs_tests.cpp):
+    # each example compared with its 2.3.0 recording; a difference is a finding.
+    add_test(NAME CalcU59ReferenceRuns COMMAND CalcU59Tests reference_runs
+             WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
+    set_tests_properties(CalcU59ReferenceRuns PROPERTIES LABELS longer ENVIRONMENT CALCU59_REFERENCE_COMPARE=1)
     # LIB-12, Technical Requirements (design P6): a build with one ROM file
     # taken away starts in neither headless nor the web client, naming it.
     if(NOT WIN32)

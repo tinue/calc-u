@@ -1,12 +1,12 @@
 #!/bin/sh
-# LIB-3 AC-28 (design P59-1; C59-5 AC-4): the Qt6 and Swift frontends host the
+# LIB-3 AC-28 (design P59-1; C59-5 AC-4): the Qt6, Swift and (since M-34) Web frontends host the
 # library's app session and use none of the product's own session classes; the
 # app layer has no thread but the Swift frontend's session thread (C59-5 D-11).
 # Run from products/calc-u-59. Exit 1 with the lines found.
 set -u
 fail=0
 found=$(grep -rnE '\b(EmulatorSession|EmulationRunner|SessionController::create|std::make_unique<(cu59::)?SessionController>|TISessionController)\b' \
-    frontends/qt6/app frontends/swift/App frontends/swift/Bridge 2>/dev/null \
+    frontends/qt6/app frontends/swift/App frontends/swift/Bridge frontends/web/bindings.cpp frontends/web/src 2>/dev/null \
     | grep -vE '^[^:]+:[0-9]+:\s*(//|\*|///)')
 if [ -n "$found" ]; then
     echo "A frontend uses the product's own session classes (LIB-3 AC-28):"

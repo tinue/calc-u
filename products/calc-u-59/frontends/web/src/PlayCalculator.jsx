@@ -176,17 +176,13 @@ function PortraitLayout({ engine, width, height, showSettings, onDialog, feedbac
   );
 }
 
-function PlayCalculator({
-  layout = "portrait",
-  width,
-  height,
-  keyboard = false,
-  settings = true,
-  model,
-  module,
-  preset,
-  workerUrl,
-}) {
+// The props (LIB-15 AC-16, AC-19): the embedding interface's width, height,
+// keyboard (on by default), model (by its name), preset (a bundled preset's
+// path) and workerUrl, and the product's own layout and settings. model and
+// preset are read once, at mount (EC-5).
+function PlayCalculator(props) {
+  const { width, height, keyboard, model, preset, workerUrl, rest } = embedProps(props);
+  const { layout = "portrait", settings = true } = rest;
   const [engine, setEngine] = React.useState(null);
   const [dialog, setDialog] = React.useState(null);
   const rootRef = React.useRef(null);
@@ -196,12 +192,10 @@ function PlayCalculator({
   const portrait = auto ? !rules || rules.paged : layout !== "wide";
 
   React.useEffect(() => {
-    const e = createEngine({ model, module, workerUrl });
+    const e = createEngine({ model, preset, workerUrl });
     setEngine(e);
-    if (preset) {
-      fetchBesideCalc(`presets/${preset}`).then((text) => e.loadState(text))
-        .catch((err) => e.setStatus(String(err.message || err)));
-    }
+    // The Playwright tests' hook: the engine on the client's element.
+    if (rootRef.current) rootRef.current.calcuEngine = e;
     return () => e.destroy();
   }, []);
 

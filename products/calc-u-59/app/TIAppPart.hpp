@@ -419,15 +419,6 @@ public:
     const std::string& asmStatus() const { return m_asmStatus; }
     bool asmActive() const { return m_asmActive; }
 
-    // What the flows report (LIB-3 AC-30)
-    /// An error: the notice "<title>: <message>" (today's alert).
-    void error(const std::string& title, const std::string& message);
-    /// Developer diagnostics: a line of the log.
-    void diagnostic(const std::string& message);
-    /// The card and constant-memory files (TIFileAccess, on the save folder).
-    TIFileAccess& files() { return m_files; }
-
-private:
     /// What changed since the last publish: each bit moves its interim topic.
     enum Change : uint32_t {
         ModelChanged = 1u << 0,     ///< model, module, machine replaced or reset (card reader emptied)
@@ -445,6 +436,28 @@ private:
         TraceChanged = 1u << 12,    ///< manual trace on/off
         ListingChanged = 1u << 13,  ///< CALCULATOR tab program listing (rebuilt when frozen)
     };
+    /// Told the changes each time the interim topics are published, on the
+    /// session's thread: another part of the same session that draws its own
+    /// form of them (the Web's TIWebPart, LIB-15 59).
+    void setChangeObserver(std::function<void(uint32_t)> observer) { m_observer = std::move(observer); }
+    /// A preset's operation: it ends when its KEYSTROKES have played (AC-32);
+    /// for a part that loads a preset as the start (the Web's `start`).
+    /// The session was destroyed before the part (the Web engine's
+    /// WebSession destroys the session first): the EmulatorSession, whose
+    /// machine went with it, is let go without touching it.
+    void forgetSession();
+    /// The machine a load built joins the machine session first.
+    calcu::sessions::Operation presetOperation();
+
+    // What the flows report (LIB-3 AC-30)
+    /// An error: the notice "<title>: <message>" (today's alert).
+    void error(const std::string& title, const std::string& message);
+    /// Developer diagnostics: a line of the log.
+    void diagnostic(const std::string& message);
+    /// The card and constant-memory files (TIFileAccess, on the save folder).
+    TIFileAccess& files() { return m_files; }
+
+private:
     static uint32_t changeIf(bool on, Change bit) { return on ? static_cast<uint32_t>(bit) : 0u; }
     void emitChanged(uint32_t c) { m_changes |= c; }
 
@@ -530,6 +543,7 @@ private:
     calcu::sessions::SessionContext* m_ctx = nullptr;
     calcu::sessions::MachineSession* m_ms = nullptr;
     std::unique_ptr<Hooks> m_hooks;
+    std::function<void(uint32_t)> m_observer;
     std::deque<std::function<void()>> m_queue;
     uint32_t m_changes = 0;
     bool m_lastFull = false;
@@ -618,10 +632,12 @@ struct TIAppSession {
     std::unique_ptr<TIAppPart> part;
     ~TIAppSession();
 };
-/// `before`: parts of the host's that go in front of the product's (tests).
+/// `before`: parts of the host's that go in front of the product's (the
+/// Web's shell part, tests); `after`: parts behind it (the Web's TIWebPart).
 std::unique_ptr<TIAppSession> makeAppSession(TIAppSetup setup, calcu::pacing::WallClock clock,
                                              std::optional<std::uint32_t> jitterSeed = std::nullopt,
-                                             std::vector<calcu::sessions::SessionPart*> before = {});
+                                             std::vector<calcu::sessions::SessionPart*> before = {},
+                                             std::vector<calcu::sessions::SessionPart*> after = {});
 
 /// The steady clock as the session's wall clock, and back.
 calcu::pacing::WallTime steadyWallTime();

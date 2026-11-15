@@ -266,6 +266,18 @@ void TIAppPart::add(sessions::SessionSetup& s, const sessions::CommandName& name
     });
 }
 
+void TIAppPart::forgetSession() {
+    (void)m_session.release();   // its machine is gone: nothing of it may run (the worker ends with it)
+    m_ctx = nullptr;
+    m_ms = nullptr;
+    m_queue.clear();
+}
+
+sessions::Operation TIAppPart::presetOperation() {
+    settle();
+    return untilIdle(true);
+}
+
 sessions::Operation TIAppPart::untilIdle(bool keystrokes) {
     return [this, keystrokes](sessions::OperationContext& op) { return runUntilIdle(op, keystrokes); };
 }
@@ -345,6 +357,7 @@ void TIAppPart::syncSpeed() {
 
 void TIAppPart::publish(uint32_t c) {
     if (!c || !m_modelTopic) return;
+    if (m_observer) m_observer(c);
     using S = TIAppPart;
     const TIAppPart& k = *this;
     auto make = [this](auto p) {
@@ -450,7 +463,8 @@ void TIAppPart::diagnostic(const std::string& message) {
 
 std::unique_ptr<TIAppSession> makeAppSession(TIAppSetup setup, pacing::WallClock clock,
                                              std::optional<std::uint32_t> jitterSeed,
-                                             std::vector<sessions::SessionPart*> before) {
+                                             std::vector<sessions::SessionPart*> before,
+                                             std::vector<sessions::SessionPart*> after) {
     auto out = std::make_unique<TIAppSession>();
     out->part = std::make_unique<TIAppPart>(std::move(setup));
     sessions::AppSessionSetup s;
@@ -458,6 +472,7 @@ std::unique_ptr<TIAppSession> makeAppSession(TIAppSetup setup, pacing::WallClock
     s.hostTime = [] { return std::chrono::system_clock::now(); };
     s.parts = std::move(before);
     s.parts.push_back(out->part.get());
+    for (sessions::SessionPart* p : after) s.parts.push_back(p);
     s.hosting = sessions::Hosting::Paced;
     s.jitterSeed = jitterSeed;
     out->session = std::make_unique<sessions::AppSession>(std::move(s));

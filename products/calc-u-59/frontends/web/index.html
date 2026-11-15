@@ -7,7 +7,7 @@
 <!-- The web client's demo and test page: PlayCalculator with the physical
      keyboard, sized to the window, in the layout the query names
      (?layout=wide|portrait, default wide; also ?width=, ?height=, ?model=,
-     ?module=, ?preset=). Every path is relative, like the rest of dist/
+     ?preset=; ?model= by its name, TI-58C). Every path is relative, like the rest of dist/
      (reference/WebClient.md). -->
 <link rel="stylesheet" href="calc.css">
 <style>
@@ -44,7 +44,7 @@
   function render() {
     reactRoot.render(React.createElement(PlayCalculator, {
       layout, keyboard: true, ...size(),
-      model: q.get("model") || undefined, module: q.get("module") || undefined, preset: q.get("preset") || undefined,
+      model: q.get("model") || undefined, preset: q.get("preset") || undefined,
     }));
   }
   new ResizeObserver(render).observe(root);

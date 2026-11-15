@@ -112,7 +112,7 @@ function paintLed(ctx, width, height, cells, g, paths) {
 
 // ── Cue card ────────────────────────────────────────────────────────────────
 
-const CARD_FONT = '"Archivo", "Helvetica Neue", Helvetica, Arial, sans-serif';
+const CARD_FONT = '"Calc-U Archivo", "Helvetica Neue", Helvetica, Arial, sans-serif';
 
 /// One line elided to `width` with "…", like SwiftUI's lineLimit(1).
 function elide(ctx, text, width) {

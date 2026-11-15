@@ -8,7 +8,7 @@
 namespace shared {
 
 class AppPaths;
-class MachineSession;
+class SharpAppPart;
 
 // ── TapeBay: the cassette bay on the control bar ─────────────────────────
 //
@@ -31,7 +31,7 @@ public:
         std::function<void(const std::string&)> error;
     };
 
-    TapeBay(MachineSession& session, const AppPaths& paths, Events events);
+    TapeBay(SharpAppPart& session, const AppPaths& paths, Events events);
 
     /// The tapes in the folder: "<name>.wav" files, sorted case-
     /// insensitively, without ".wav".
@@ -56,7 +56,7 @@ public:
     void onFrameTick(const TapeDeck::Status& status);
 
 private:
-    MachineSession& m_session;
+    SharpAppPart& m_session;
     const AppPaths& m_paths;
     Events m_events;
     bool m_recordingMotor = false;  // the motor was running on a recording

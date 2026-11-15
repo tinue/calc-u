@@ -4,7 +4,7 @@
 #include <string>
 #include <vector>
 
-#include "app/AppSession.hpp"
+#include "app/SharpAppPart.hpp"
 
 namespace shared {
 
@@ -29,7 +29,7 @@ struct MediaItem {
 
 class MediaLibrary {
 public:
-    explicit MediaLibrary(AppSession& app) : m_app(app) {}
+    explicit MediaLibrary(SharpAppPart& app) : m_app(app) {}
 
     // Cards, then disks, then tapes; each by name.
     std::vector<MediaItem> items() const;
@@ -50,7 +50,7 @@ public:
 private:
     std::optional<MediaItem> find(const std::string& path) const;
 
-    AppSession& m_app;
+    SharpAppPart& m_app;
 };
 
 } // namespace shared

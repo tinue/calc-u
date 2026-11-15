@@ -1,10 +1,10 @@
 #include "app/ControlState.hpp"
 
-#include "app/MachineSession.hpp"
+#include "app/SharpAppPart.hpp"
 
 namespace shared {
 
-ControlState controlStateOf(const MachineSession& session, bool hostDirectories) {
+ControlState controlStateOf(const SharpAppPart& session, bool hostDirectories) {
     ControlState s;
     s.model = session.currentModel();
     const bool isPC1600 = s.model == Model::PC1600;

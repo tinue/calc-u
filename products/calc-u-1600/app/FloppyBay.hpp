@@ -13,7 +13,7 @@ namespace sharp { class FloppyDriveAccess; }
 namespace shared {
 
 class AppPaths;
-class MachineSession;
+class SharpAppPart;
 
 // ── FloppyBay: the CE-1600F disk picker ──────────────────────────────────
 //
@@ -44,7 +44,7 @@ public:
 
     static constexpr double kPersistDebounceSeconds = 0.5;
 
-    FloppyBay(MachineSession& session, const AppPaths& paths, Events events);
+    FloppyBay(SharpAppPart& session, const AppPaths& paths, Events events);
 
     DiskLists diskLists() const;
     // The bundled / save-folder disks, re-parsed only when a file changed.
@@ -98,7 +98,7 @@ private:
         if (m_events.error) m_events.error(text);
     }
 
-    MachineSession& m_session;
+    SharpAppPart& m_session;
     const AppPaths& m_paths;
     // The bundled / save-folder disks, re-parsed only when a file changed.
     mutable DirectoryScanCache<FloppyCatalogEntry> m_bundledScan;

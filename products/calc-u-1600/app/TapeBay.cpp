@@ -6,7 +6,7 @@
 #include <system_error>
 
 #include "app/AppPaths.hpp"
-#include "app/MachineSession.hpp"
+#include "app/SharpAppPart.hpp"
 #include "app/Text.hpp"
 #include "app/Utf8Path.hpp"
 
@@ -22,7 +22,7 @@ std::string baseName(const fs::path& p) { return fromPath(p.stem()); }
 
 } // namespace
 
-TapeBay::TapeBay(MachineSession& session, const AppPaths& paths, Events events)
+TapeBay::TapeBay(SharpAppPart& session, const AppPaths& paths, Events events)
     : m_session(session), m_paths(paths), m_events(std::move(events)) {}
 
 std::vector<std::string> TapeBay::tapeNames() const {

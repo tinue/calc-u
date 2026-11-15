@@ -4,18 +4,18 @@
 
 #include "Connector/BatteryCardInstance.hpp"
 #include "Debug/Inspect/HexDump.hpp"
-#include "app/AppSession.hpp"
+#include "app/SharpAppPart.hpp"
 #include "app/Text.hpp"
 
 namespace shared {
 
-std::vector<std::string> cardYamlDump(AppSession& app) {
+std::vector<std::string> cardYamlDump(SharpAppPart& app) {
     using inspect::fmt;
-    const bool isPC1600 = app.machine().currentModel() == Model::PC1600;
+    const bool isPC1600 = app.currentModel() == Model::PC1600;
     std::vector<std::string> chunks;
-    for (int slot = 1; slot <= app.machine().slotCount(); ++slot) {
+    for (int slot = 1; slot <= app.slotCount(); ++slot) {
         int bankCount = 0;
-        const std::vector<std::uint8_t> image = app.machine().debugSlotCardImage(slot, &bankCount);
+        const std::vector<std::uint8_t> image = app.debugSlotCardImage(slot, &bankCount);
         // bankCount <= 0 is an unbanked card (e.g. CE-1600M): one implicit
         // bank, written without a `bank:` key.
         if (image.empty() || (bankCount > 0 && image.size() % static_cast<std::size_t>(bankCount) != 0)) continue;

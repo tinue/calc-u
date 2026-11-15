@@ -8,11 +8,10 @@
 #include <memory>
 #include <string>
 
-#include "TestSettings.hpp"
+#include "SessionFixture.hpp"
 #include "Machine/SharpProductKinds.hpp"
 #include "app/DirectoryScanCache.hpp"
 #include "app/FloppyBay.hpp"
-#include "app/MachineSession.hpp"
 #include "app/ModuleBay.hpp"
 #include "app/TapeBay.hpp"
 #include "TestHarness.hpp"
@@ -21,6 +20,9 @@ namespace {
 
 namespace fs = std::filesystem;
 using shared::Model;
+using calcu::sessions::Value;
+using sessionfixture::SessionFixture;
+namespace c = shared::commands;
 
 bool contains(const std::vector<shared::ModuleBay::ModuleEntry>& v, const std::string& name) {
     for (const auto& e : v)
@@ -43,134 +45,83 @@ std::string diskDescription(const shared::FloppyBay& bay, const std::string& nam
     return {};
 }
 
-struct Listener : shared::MachineSession::Listener {
-    std::string missing;
-    void romMissing(const calcu::roms::RomsMissing& m) override { missing = calcu::roms::describe(m); }
-};
-
-// The app's wiring of the session's bay hooks.
-struct BayHooks : shared::MachineSession::Bays {
-    shared::ModuleBay* modules = nullptr;
-    shared::FloppyBay* floppy = nullptr;
-    void attachModulesToFreshMachine() override {
-        if (modules) modules->attachAllToFreshMachine();
-    }
-    void flushFloppy() override {
-        if (floppy) floppy->flushPendingPersist();
-    }
-    void insertSelectedDisk() override {
-        if (floppy) floppy->insertSelectedDisk();
-    }
-};
-
-struct Fixture {
-    fs::path root = fs::temp_directory_path() / "calcu-shared-bay-test";
-    TestSettings testSettings;
-    shared::Settings& settings = testSettings.settings;
-    std::unique_ptr<shared::AppPaths> paths;
-    Listener listener;
-    BayHooks bays;
-    std::unique_ptr<shared::MachineSession> session;
-    std::unique_ptr<shared::ModuleBay> modules;
-    std::unique_ptr<shared::FloppyBay> floppy;
-    std::vector<std::string> errors;
-
-    Fixture() {
-        fs::remove_all(root);
-        const fs::path bundle = root / "bundle";
-        fs::create_directories(bundle);
-        for (const auto& dir : {fs::path("roms"), fs::path("frontends/qt6/resources/cards")})
-            for (const auto& f : fs::directory_iterator(dir))
-                if (f.is_regular_file()) fs::copy_file(f.path(), bundle / f.path().filename());
-        paths = std::make_unique<shared::AppPaths>(
-            settings, testHostDirs((root / "home").generic_string()), shared::BundleDirs{bundle.generic_string(), {}});
-        session = std::make_unique<shared::MachineSession>(settings, *paths, listener, &bays);
-        auto onError = [this](const std::string& e) { errors.push_back(e); };
-        modules = std::make_unique<shared::ModuleBay>(*session, *paths, shared::ModuleBay::Events{{}, onError});
-        floppy = std::make_unique<shared::FloppyBay>(*session, *paths, shared::FloppyBay::Events{onError});
-        bays.modules = modules.get();
-        bays.floppy = floppy.get();
-    }
-    ~Fixture() {
-        floppy.reset();
-        modules.reset();
-        session.reset();
-        fs::remove_all(root);
-    }
-};
+Value toggle(const char* p) { return Value::object({{"peripheral", p}}); }
 
 TEST(test_module_bay) {
     SKIP_UNLESS(std::ifstream("roms/PC1600-P0-B0-new.bin").good(), "no ROMs in roms/");
-    Fixture f;
-    const auto lists = f.modules->moduleLists(CardHost::PC1600Slot1);
+    SessionFixture f("calcu-shared-bay-test");
+    f.open();
+    shared::ModuleBay* modules = &f.part().modules();
+    const auto lists = modules->moduleLists(CardHost::PC1600Slot1);
     CHECK(contains(lists.templates, "CE-1600M"));
     for (const auto& e : lists.templates)
         if (e.moduleName == "CE-1600M") CHECK(e.description == "32 KB battery-backed RAM");
     CHECK(!contains(lists.templates, "CE-1601M"));  // Slot 2 only
     CHECK(lists.instances.empty());
 
-    f.modules->selectModule(1, "CE-1600M");
-    f.session->switchModel(Model::PC1600);
-    CHECK(f.errors.empty());
-    CHECK(f.session->slotCard(1) && f.session->slotCard(1)->moduleName() == "CE-1600M");
-    CHECK(f.modules->canNameAndSave(1));
-    CHECK(!f.modules->slotHasInstanceFile(1));
+    modules->selectModule(1, "CE-1600M");
+    CHECK(f.start("PC-1600"));
+    CHECK(f.notices().empty());
+    CHECK(f.part().slotCard(1) && f.part().slotCard(1)->moduleName() == "CE-1600M");
+    CHECK(modules->canNameAndSave(1));
+    CHECK(!modules->slotHasInstanceFile(1));
 
     std::string error;
-    CHECK(!f.modules->nameAndSave(1, "CE-1600M", &error));  // a template's name
-    CHECK(f.modules->nameAndSave(1, "My RAM", &error));
+    CHECK(!modules->nameAndSave(1, "CE-1600M", &error));  // a template's name
+    CHECK(modules->nameAndSave(1, "My RAM", &error));
     const std::string saved = f.paths->instancePathFor("My RAM");
     CHECK(fs::exists(saved));
-    CHECK(f.modules->selectedModuleName(1) == "My RAM");
-    CHECK(f.modules->slotHasInstanceFile(1));
-    CHECK(!f.modules->canNameAndSave(1));
-    CHECK(contains(f.modules->moduleLists(CardHost::PC1600Slot1).instances, "My RAM"));
-    CHECK(!f.modules->nameAndSave(1, "Other", &error));  // already saved: autosave
+    CHECK(modules->selectedModuleName(1) == "My RAM");
+    CHECK(modules->slotHasInstanceFile(1));
+    CHECK(!modules->canNameAndSave(1));
+    CHECK(contains(modules->moduleLists(CardHost::PC1600Slot1).instances, "My RAM"));
+    CHECK(!modules->nameAndSave(1, "Other", &error));  // already saved: autosave
 
     // A rebuild re-attaches the saved instance from its file.
-    f.session->switchModel(Model::PC1600, /*keepPeripherals=*/true);
-    CHECK(f.session->slotCard(1) && f.session->slotCard(1)->moduleName() == "My RAM");
+    CHECK(f.ok(c::kPC1600Rom, Value::object({{"version", "old"}})));
+    CHECK(f.part().slotCard(1) && f.part().slotCard(1)->moduleName() == "My RAM");
     // A model switch clears the slots.
-    f.modules->onModelChanged();
-    f.session->switchModel(Model::PC1500A);
-    CHECK(f.modules->selectedModuleName(1).empty());
+    CHECK(f.ok(c::kPickModel, Value::object({{"model", "PC-1500A"}})));
+    CHECK(modules->selectedModuleName(1).empty());
 }
 
 TEST(test_floppy_bay) {
     SKIP_UNLESS(std::ifstream("roms/PC1600-P0-B0-new.bin").good(), "no ROMs in roms/");
-    Fixture f;
-    const auto lists = f.floppy->diskLists();
+    SessionFixture f("calcu-shared-bay-test");
+    f.open();
+    shared::FloppyBay* floppy = &f.part().floppy();
+    const auto lists = floppy->diskLists();
     CHECK(contains(lists.templates, "Formatted"));
-    CHECK(diskDescription(*f.floppy, "Formatted") == "Formatted, both sides empty");
-    f.session->switchModel(Model::PC1600);
-    f.floppy->selectDisk("Formatted");  // no drive yet: selection only
-    CHECK(f.floppy->selectedDiskName() == "Formatted");
-    f.session->powerCycleAround([&] { CHECK(f.session->attachCE1600P()); });  // inserts the selected disk
-    sharp::FloppyDriveAccess* m = f.session->floppyDrive();
+    CHECK(diskDescription(*floppy, "Formatted") == "Formatted, both sides empty");
+    CHECK(f.start("PC-1600"));
+    floppy->selectDisk("Formatted");  // no drive yet: selection only
+    CHECK(floppy->selectedDiskName() == "Formatted");
+    CHECK(f.ok(c::kTogglePeripheral, toggle("CE-1600P")));  // inserts the selected disk
+    sharp::FloppyDriveAccess* m = f.part().floppyDrive();
     CHECK(m && m->hasDisk());
     if (!m) return;
-    CHECK(f.floppy->canNameAndSave());
-    f.floppy->toggleSide();
-    CHECK(f.floppy->side() == 1);
+    CHECK(floppy->canNameAndSave());
+    floppy->toggleSide();
+    CHECK(floppy->side() == 1);
 
     std::string error;
-    CHECK(f.floppy->nameAndSave("Work", &error));
+    CHECK(floppy->nameAndSave("Work", &error));
     const std::string saved = f.paths->floppyInstancePathFor("Work");
     CHECK(fs::exists(saved));
-    CHECK(!f.floppy->canNameAndSave());
-    CHECK(diskDescription(*f.floppy, "Work") == "Formatted, both sides empty");  // kept from the template
+    CHECK(!floppy->canNameAndSave());
+    CHECK(diskDescription(*floppy, "Work") == "Formatted, both sides empty");  // kept from the template
 
     // The drive writes: autosaved once the debounce has passed, not before.
     fs::remove(saved);
     std::vector<std::uint8_t> image = m->diskImage();
     image[100] ^= 0xFF;
     m->loadImage(image.data(), image.size());
-    f.floppy->tick(10.0);
-    f.floppy->tick(10.3);
+    floppy->tick(10.0);
+    floppy->tick(10.3);
     CHECK(!fs::exists(saved));
-    f.floppy->tick(10.6);
+    floppy->tick(10.6);
     CHECK(fs::exists(saved));
-    CHECK(diskDescription(*f.floppy, "Work") == "Formatted, both sides empty");  // and by the autosave
+    CHECK(diskDescription(*floppy, "Work") == "Formatted, both sides empty");  // and by the autosave
 
     // A detach of the CE-1600P saves the disk first, without waiting for the
     // debounce. A CE-150 no longer takes its place: the printer place holds
@@ -178,22 +129,22 @@ TEST(test_floppy_bay) {
     fs::remove(saved);
     image[100] ^= 0xFF;
     m->loadImage(image.data(), image.size());
-    f.floppy->tick(20.0);
+    floppy->tick(20.0);
     std::string why;
-    CHECK(!f.session->attachCE150(&why));
+    CHECK(!f.part().attachCE150(&why));
     CHECK(!why.empty());
-    CHECK(f.session->ce1600pAttached());
-    f.session->powerCycleAround([&] { f.session->detachCE1600P(); });
-    CHECK(!f.session->ce1600pAttached());
+    CHECK(f.part().ce1600pAttached());
+    CHECK(f.ok(c::kTogglePeripheral, toggle("CE-1600P")));
+    CHECK(!f.part().ce1600pAttached());
     CHECK(fs::exists(saved));
 }
 
 TEST(test_tape_bay) {
     SKIP_UNLESS(std::ifstream("roms/PC1600-P0-B0-new.bin").good(), "no ROMs in roms/");
-    Fixture f;
+    SessionFixture f("calcu-shared-bay-test");
+    CHECK(f.start("PC-1500A"));
     int changed = 0;
-    shared::TapeBay tapes(*f.session, *f.paths, shared::TapeBay::Events{[&] { ++changed; }, {}});
-    f.session->switchModel(Model::PC1500A);
+    shared::TapeBay tapes(f.part(), *f.paths, shared::TapeBay::Events{[&] { ++changed; }, {}});
     CHECK(tapes.tapeNames().empty());
     std::ofstream(f.paths->tapePathFor("b side")) << "x";
     std::ofstream(f.paths->tapePathFor("A side")) << "x";

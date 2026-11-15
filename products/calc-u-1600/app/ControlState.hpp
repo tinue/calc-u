@@ -6,7 +6,7 @@
 
 namespace shared {
 
-class MachineSession;
+class SharpAppPart;
 
 // The 60-pin peripherals the control bar toggles.
 enum class Peripheral { CE150, CE1600P, CE158 };
@@ -17,6 +17,7 @@ struct PeripheralState {
     bool onControlBar = false;  // a toggle on the control bar (the model's own peripherals)
     bool attached = false;
     bool enabled = false;       // may be toggled now: no attached peripheral rules it out
+    bool operator==(const PeripheralState&) const = default;
 };
 
 // ── ControlState: what the pickers, menus and panels offer right now ─────
@@ -53,10 +54,11 @@ struct ControlState {
     // The docked panels.
     PaperKind paper = PaperKind::None;
     bool printerShown = false;  // CE-158 printer output
+    bool operator==(const ControlState&) const = default;
 };
 
-// The control state of `session`'s live machine. `hostDirectories`: the
+// The control state of the live machine. `hostDirectories`: the
 // frontend can mount a host directory (a browser can't).
-ControlState controlStateOf(const MachineSession& session, bool hostDirectories);
+ControlState controlStateOf(const SharpAppPart& session, bool hostDirectories);
 
 } // namespace shared

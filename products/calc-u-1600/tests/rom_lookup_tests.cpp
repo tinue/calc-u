@@ -21,7 +21,7 @@
 #include "Machine/SharpCatalogue.hpp"
 #include "Connector/MemoryCardCatalog.hpp"
 #include "Machine/SharpRoms.hpp"
-#include "app/MachineSession.hpp"
+#include "app/SharpHost.hpp"
 #include "machine/Build.hpp"
 #include "roms/Bundle.hpp"
 #include "roms/Lookup.hpp"
@@ -35,7 +35,6 @@ namespace fs = std::filesystem;
 using calcu::roms::FileProblem;
 using calcu::roms::Problem;
 using calcu::roms::RomsMissing;
-using shared::MachineSession;
 using shared::Model;
 
 // The table of AC-12, copied from the spec: file, bytes, md5, who needs it.
@@ -101,40 +100,49 @@ struct BundleCopy {
     void remove(const std::string& file) const { fs::remove(dir / file); }
 };
 
-struct RecordingListener : MachineSession::Listener {
-    int calls = 0;
-    RomsMissing missing;
-    std::vector<MachineSession::Notice> notices;
-    void romMissing(const RomsMissing& m) override {
-        ++calls;
-        missing = m;
-    }
-    void notice(MachineSession::Notice n, const std::string&) override { notices.push_back(n); }
-};
-
-// A MachineSession whose bundled resources folder is `bundle`.
+// The library's app session with Calc-U-1600's part, its bundled resources
+// folder `bundle`, on a scripted clock (M-31; 0.8.1's MachineSession before).
 struct Session {
     TestSettings testSettings;
     fs::path home = fs::temp_directory_path() / "calcu1600-rom-lookup-home";
     shared::AppPaths paths;
-    RecordingListener listener;
-    MachineSession session;
+    calcu::pacing::WallTime now{0};
+    shared::SharpHost host;
+    shared::SharpAppPart& session;
     explicit Session(const fs::path& bundle)
         : paths(testSettings.settings, testHostDirs(home.generic_string()), shared::BundleDirs{bundle.generic_string(), {}}),
-          session(testSettings.settings, paths, listener) {}
+          host(testSettings.settings, paths, options()),
+          session(host.part()) {}
+    shared::SharpHost::Options options() {
+        shared::SharpHost::Options o;
+        o.clock = [this] { return now; };
+        return o;
+    }
     ~Session() {
         std::error_code ec;
         fs::remove_all(home, ec);
     }
-    // switchModel(); false when it threw (no machine: the full set is missing).
-    bool switchModel(Model m) {
-        try {
-            session.switchModel(m);
-            return true;
-        } catch (const std::runtime_error&) {
-            return false;
-        }
+    bool run(const calcu::sessions::CommandName& c, calcu::sessions::Value args = {}) {
+        return host.runToEnd(c, std::move(args), [this] {
+                       now += std::chrono::milliseconds(16);
+                       host.session().call(now);
+                   }).done;
     }
+    // The start (the first machine) or a model switch; false when no machine
+    // was built (the full set is missing).
+    bool switchModel(Model m) {
+        if (!session.hasLiveMachine()) {
+            testSettings.settings.setStartupModelPreference(shared::settingsModelName(m));
+            return run(shared::commands::kStart);
+        }
+        return run(shared::commands::kPickModel, calcu::sessions::Value::object({{"model", shared::settingsModelName(m)}}));
+    }
+    // LIB-12's `roms-missing` topic, or nullptr.
+    const RomsMissing* missing() const {
+        const auto* p = host.state<shared::RomsMissingPayload>(shared::topics::kRomsMissing);
+        return p ? &p->missing : nullptr;
+    }
+    bool noNotices() { return host.mirror().takeAppended(calcu::sessions::kNoticesTopic).empty(); }
 };
 
 // ---- Q1: the full set and SharpRomReader ----
@@ -284,11 +292,12 @@ TEST(lib12_ac13_missing_old_set_does_not_start) {
     // Even a PC-1500A, which never needs the file, does not start.
     CHECK(!s.switchModel(Model::PC1500A));
     CHECK(!s.session.hasLiveMachine());
-    CHECK_EQ(s.listener.calls, 1);
-    CHECK(problemOf(s.listener.missing, "PC1600-P0-B0-old.bin") != nullptr);
-    CHECK(s.listener.notices.empty());   // no "Old ROM unavailable", no New in its place
+    CHECK(s.missing() != nullptr);
+    if (!s.missing()) return;
+    CHECK(problemOf(*s.missing(), "PC1600-P0-B0-old.bin") != nullptr);
+    CHECK(s.noNotices());   // no "Old ROM unavailable", no New in its place
     CHECK(s.session.romSet() == nullptr);
-    const std::string text = calcu::roms::describe(s.listener.missing);
+    const std::string text = calcu::roms::describe(*s.missing());
     CHECK(text.find("PC1600-P0-B0-old.bin: missing; needed by PC-1600 (variant Old)") != std::string::npos);
     CHECK(text.find(copy.dir.string()) != std::string::npos);
 }
@@ -300,16 +309,15 @@ TEST(lib12_ac13_missing_ce1600p_old_file_does_not_start) {
     Session s(copy.dir);
     CHECK(!s.switchModel(Model::PC1600));
     CHECK(!s.session.hasLiveMachine());
-    CHECK_EQ(s.listener.calls, 1);
-    CHECK_EQ(s.listener.missing.files.size(), std::size_t{1});
-    CHECK(problemOf(s.listener.missing, "PC1600-P1-B4-CE1600P-old.bin") != nullptr);
-    CHECK(s.listener.notices.empty());
+    CHECK(s.missing() && s.missing()->files.size() == 1);
+    CHECK(s.missing() && problemOf(*s.missing(), "PC1600-P1-B4-CE1600P-old.bin") != nullptr);
+    CHECK(s.noNotices());
     // A missing file of the New set alike.
     BundleCopy copy2("ac13-new");
     copy2.remove("PC1600-P2-B6-new.bin");
     Session s2(copy2.dir);
     CHECK(!s2.switchModel(Model::PC1600));
-    CHECK(problemOf(s2.listener.missing, "PC1600-P2-B6-new.bin") != nullptr);
+    CHECK(s2.missing() && problemOf(*s2.missing(), "PC1600-P2-B6-new.bin") != nullptr);
 }
 
 TEST(lib12_ac13_no_rom_read_during_session) {
@@ -320,7 +328,8 @@ TEST(lib12_ac13_no_rom_read_during_session) {
     CHECK(!fs::exists(s.paths.bundledResourcesDir()));
     CHECK(s.switchModel(Model::PC1500));
     for (auto rev : {PC1500RomRevision::A01, PC1500RomRevision::A03, PC1500RomRevision::A04}) {
-        s.session.setPC1500RomRevision(rev);
+        CHECK(s.run(shared::commands::kPC1500Rom,
+                    calcu::sessions::Value::object({{"revision", rev == PC1500RomRevision::A01 ? "A01" : rev == PC1500RomRevision::A03 ? "A03" : "A04"}})));
         CHECK(s.session.hasLiveMachine());
     }
     std::string err;
@@ -328,16 +337,16 @@ TEST(lib12_ac13_no_rom_read_during_session) {
     CHECK(s.switchModel(Model::PC1500A));
     CHECK(s.session.attachCE158(&err));
     CHECK(s.switchModel(Model::PC1600));
-    s.session.setPC1600RomVersion(shared::PC1600RomVersion::Old);
+    CHECK(s.run(shared::commands::kPC1600Rom, calcu::sessions::Value::object({{"version", "old"}})));
     CHECK(s.session.pc1600RomVersion() == shared::PC1600RomVersion::Old);
     s.session.setCE1600PRomVersion(shared::CE1600PRomVersion::Old);
     CHECK(s.session.attachCE1600P(&err));
     CHECK(s.session.ce1600pAttached());
     CHECK(s.session.swapCE1600PRom(shared::CE1600PRomVersion::New, &err));
-    s.session.setPC1600RomVersion(shared::PC1600RomVersion::New);
+    CHECK(s.run(shared::commands::kPC1600Rom, calcu::sessions::Value::object({{"version", "new"}})));
     CHECK(s.session.hasLiveMachine());
-    CHECK_EQ(s.listener.calls, 0);
-    CHECK(s.listener.notices.empty());
+    CHECK(s.missing() == nullptr);
+    CHECK(s.noNotices());
 }
 
 } // namespace

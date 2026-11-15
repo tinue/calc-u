@@ -5,7 +5,7 @@
 #include <vector>
 
 #include "MachineCodeFile.hpp"
-#include "app/AppSession.hpp"
+#include "app/SharpAppPart.hpp"
 
 namespace shared {
 
@@ -33,7 +33,7 @@ ProgramChoice programChoice(const std::vector<std::uint8_t>& bytes);
 //    types the CALL (MachineSession::pasteText) for the user to ENTER.
 class MachineCodeLoad {
 public:
-    static MachineCodeLoad plan(const MachineSession& session, const std::vector<std::uint8_t>& image);
+    static MachineCodeLoad plan(const SharpAppPart& session, const std::vector<std::uint8_t>& image);
 
     const std::string& error() const { return m_plan.error; }  // non-empty: refuse
     bool needsAddress() const { return m_plan.needsAddress; }
@@ -60,7 +60,7 @@ public:
         machinecode::Advice advice;
     };
     // After a successful load: reads the live machine's RAM bounds.
-    Loaded loaded(const MachineSession& session) const;
+    Loaded loaded(const SharpAppPart& session) const;
 
 private:
     machinecode::Target m_target = machinecode::Target::PC1500;

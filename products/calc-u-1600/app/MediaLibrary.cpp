@@ -24,7 +24,7 @@ std::string fileNameOf(const std::string& path) { return fromPath(toPath(path).f
 std::vector<MediaItem> MediaLibrary::items() const {
     std::vector<MediaItem> out;
     const ModuleBay& modules = m_app.modules();
-    const int slots = m_app.machine().slotCount();
+    const int slots = m_app.slotCount();
 
     for (const auto& e : modules.instanceCards()) {
         MediaItem item{MediaType::Card, e.moduleName, e.description, fileNameOf(e.filePath), e.filePath, e.isTemplate, false};
@@ -32,7 +32,7 @@ std::vector<MediaItem> MediaLibrary::items() const {
             if (modules.selectedModuleName(slot) == e.moduleName) item.inUse = true;
         out.push_back(std::move(item));
     }
-    const bool driveOn = m_app.machine().ce1600pAttached();
+    const bool driveOn = m_app.ce1600pAttached();
     for (const auto& e : m_app.floppy().instanceDisks()) {
         MediaItem item{MediaType::Disk, e.diskName, e.description, fileNameOf(e.filePath), e.filePath, e.isTemplate, false};
         item.inUse = driveOn && m_app.floppy().selectedDiskName() == e.diskName;

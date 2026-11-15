@@ -1,67 +1,40 @@
-// Shared/Pacer, Shared/AudioPump.
+// The Sharp pacing profiles (LIB-17 AC-20) and the sink side of the sound
+// (SoundFeed). 0.8.1's Pacer tests (test_absolute_deadline,
+// test_stall_and_restart) moved to the library's pacer tests in M-31
+// (library/pacing/tests/pacer_tests.cpp: ac1_call_slice_keeps_wall_time_at_60_hz,
+// ac4_lag_over_limit_dropped_whole, ac13_start_afresh_no_lag_nothing_to_wait,
+// ac14_new_machine_new_rate_and_profile).
 
 #include <cstdio>
+#include <string>
 #include <vector>
 
-#include "Audio/PiezoSampler.hpp"
-#include "app/AudioPump.hpp"
-#include "app/Pacer.hpp"
+#include "app/AudioSink.hpp"
+#include "app/PacingProfiles.hpp"
 #include "TestHarness.hpp"
 
 namespace {
 
-constexpr std::int64_t kMs = 1000000;
-
-TEST(test_absolute_deadline) {
-    std::int64_t now = 0;
-    shared::Pacer pacer([&] { return now; });
-    const double hz = 1000000.0;  // 1 MHz: 1000 cycles per ms
-    CHECK(pacer.cyclesDue(now, hz) == 0);  // first sight of a clock rate rebases
-    // Jittery ticks (13, 19, 16, 17, 15 ms) still add up to exactly the
-    // elapsed time: no per-tick rounding or re-measuring builds up.
-    std::uint64_t total = 0;
-    for (std::int64_t step : {13, 19, 16, 17, 15}) {
-        now += step * kMs;
-        total += pacer.cyclesDue(now, hz);
+// LIB-17 AC-20: the PC-1500, PC-1500A and PC-1600 each have a profile whose
+// slice is the call, with no jitter, and full speed never paced.
+TEST(lib17_ac20_pacing_profiles_sharp) {
+    for (shared::Model m : {shared::Model::PC1500, shared::Model::PC1500A, shared::Model::PC1600}) {
+        const calcu::pacing::PacingProfile p = shared::pacingProfile(m);
+        CHECK(!p.slice.has_value());
+        CHECK(!p.jitter);
+        CHECK(!p.fullSpeedPacedWhileWaiting);
     }
-    CHECK(total == 80000);
-    // Sub-cycle steps carry over instead of being lost.
-    std::uint64_t small = 0;
-    for (int i = 0; i < 1000; ++i) {
-        now += 700;  // 0.7 cycles
-        small += pacer.cyclesDue(now, hz);
-    }
-    CHECK(small == 700);
-}
-
-TEST(test_stall_and_restart) {
-    std::int64_t now = 0;
-    shared::Pacer pacer([&] { return now; });
-    const double hz = 1000000.0;
-    pacer.cyclesDue(now, hz);
-    now += 2000 * kMs;  // a 2 s stall: one capped tick, the rest dropped
-    CHECK(pacer.cyclesDue(now, hz) == 100000);
-    now += 16 * kMs;
-    CHECK(pacer.cyclesDue(now, hz) == 16000);
-    // restart(): time spent elsewhere isn't caught up.
-    now += 500 * kMs;
-    pacer.restart();
-    now += 10 * kMs;
-    CHECK(pacer.cyclesDue(now, hz) == 10000);
-    // A clock-rate change (model switch) rebases too.
-    now += 10 * kMs;
-    CHECK(pacer.cyclesDue(now, 2000000.0) == 0);
-    now += 10 * kMs;
-    CHECK(pacer.cyclesDue(now, 2000000.0) == 20000);
 }
 
 struct FakeSink : shared::AudioSink {
     bool open = false;
     int starts = 0;
+    int rate = 0;
     std::size_t roomLeft = 100000;
     std::vector<std::int16_t> written;
-    bool start(int, int) override {
+    bool start(int r, int) override {
         open = true;
+        rate = r;
         ++starts;
         return true;
     }
@@ -74,30 +47,29 @@ struct FakeSink : shared::AudioSink {
     bool ranDry() const override { return false; }
 };
 
-TEST(test_audio_pump) {
+// The session decides what is heard (LIB-3 design §3.6); the sink side
+// opens on SoundStart at its rate, plays what it is given, keeps what the
+// device has no room for up to a cap, and closes on SoundStop.
+TEST(test_sound_feed) {
+    using namespace calcu::sessions;
     FakeSink sink;
     std::vector<std::string> warnings;
-    shared::AudioPump pump(sink, [&](const std::string& w) { warnings.push_back(w); });
-    const std::vector<std::int16_t> silence(800, 0);
+    shared::SoundFeed feed(sink, [&](const std::string& w) { warnings.push_back(w); });
     const std::vector<std::int16_t> tone(800, 5000);
 
-    pump.feed(silence.data(), silence.size());
-    CHECK(!sink.open);  // silence alone never opens the device
-    pump.feed(tone.data(), tone.size());
-    CHECK(sink.open && sink.starts == 1);
-    // Primed with 40 ms of silence, then the tone.
-    const std::size_t prime = static_cast<std::size_t>(PiezoSampler::kDefaultSampleRate * 40 / 1000);
-    CHECK(sink.written.size() == prime + tone.size());
+    feed.deliver(SoundSamples{tone});
+    CHECK(!sink.open);   // nothing before SoundStart
+    feed.deliver(SoundStart{48000});
+    CHECK(sink.open && sink.starts == 1 && sink.rate == 48000);
+    feed.deliver(SoundSamples{tone});
+    CHECK(sink.written.size() == tone.size());
 
     // No room: the backlog is trimmed once it passes 50 ms.
     sink.roomLeft = 0;
-    for (int i = 0; i < 4; ++i) pump.feed(tone.data(), tone.size());
+    for (int i = 0; i < 4; ++i) feed.deliver(SoundSamples{tone});
     CHECK(!warnings.empty());
 
-    // ~1 s of silence closes the device.
-    sink.roomLeft = 1000000;
-    const std::vector<std::int16_t> longSilence(static_cast<std::size_t>(PiezoSampler::kDefaultSampleRate), 0);
-    pump.feed(longSilence.data(), longSilence.size());
+    feed.deliver(SoundStop{});
     CHECK(!sink.open);
 }
 

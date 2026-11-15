@@ -14,7 +14,7 @@
 namespace shared {
 
 class AppPaths;
-class MachineSession;
+class SharpAppPart;
 
 // ── ModuleBay: the memory-module slots ───────────────────────────────────
 //
@@ -63,7 +63,7 @@ public:
 
     static constexpr double kPersistDebounceSeconds = 0.5;
 
-    ModuleBay(MachineSession& session, const AppPaths& paths, Events events);
+    ModuleBay(SharpAppPart& session, const AppPaths& paths, Events events);
 
     // The catalogue for `host`.
     ModuleLists moduleLists(CardHost host) const;
@@ -156,7 +156,7 @@ private:
         if (m_events.error) m_events.error(text);
     }
 
-    MachineSession& m_session;
+    SharpAppPart& m_session;
     const AppPaths& m_paths;
     Events m_events;
     SlotState m_slots[2];  // index 0 = slot 1, index 1 = slot 2

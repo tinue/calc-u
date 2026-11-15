@@ -1,0 +1,87 @@
+"""A small helper for driving `calcu serve` over a pipe (LIB-11 design D-2;
+docs/contracts/harness.md Q-2).
+
+    from calcu_serve import Calcu
+    with Calcu("/path/to/calcu", "59") as c:
+        c.send("wait 2s")
+        print(c.send("lcd")["result"]["rows"])
+
+Each send() writes one command line and reads its one reply. With
+json=True (the default) the reply is the JSON object of --json, with the
+keys "done", "result" and "reason"; with json=False it is a dict with
+"done", "lines" (the result lines) and "reason". A refused command raises
+Refused unless check=False. Standard library only.
+"""
+
+from __future__ import annotations
+
+import json
+import subprocess
+from typing import Any, Optional, Sequence
+
+
+class Refused(Exception):
+    """A command was refused; the reason is the message."""
+
+
+class Calcu:
+    def __init__(self, program: str, product: str, options: Sequence[str] = (),
+                 json: bool = True, cwd: Optional[str] = None):
+        args = [program, "--product", product, *options]
+        if json:
+            args.append("--json")
+        args.append("serve")
+        self._json = json
+        self._proc = subprocess.Popen(args, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+                                      stderr=subprocess.PIPE, text=True, encoding="utf-8",
+                                      bufsize=1, cwd=cwd)
+
+    def send(self, line: str, check: bool = True) -> dict[str, Any]:
+        """One command and its reply."""
+        if "\n" in line:
+            raise ValueError("a command is one line")
+        assert self._proc.stdin and self._proc.stdout
+        self._proc.stdin.write(line + "\n")
+        self._proc.stdin.flush()
+        first = self._proc.stdout.readline()
+        if not first:
+            err = self._proc.stderr.read() if self._proc.stderr else ""
+            raise RuntimeError("calcu ended: " + err.strip())
+        if self._json:
+            reply = json.loads(first)
+        else:
+            reply = self._plain(first.rstrip("\n"))
+        if check and not reply["done"]:
+            raise Refused(reply["reason"])
+        return reply
+
+    def _plain(self, first: str) -> dict[str, Any]:
+        if first.startswith("refused: "):
+            return {"done": False, "lines": [], "reason": first[len("refused: "):]}
+        lines: list[str] = []
+        if first.startswith("done "):
+            n = int(first[len("done "):])
+            assert self._proc.stdout
+            lines = [self._proc.stdout.readline().rstrip("\n") for _ in range(n)]
+        return {"done": True, "lines": lines, "reason": None}
+
+    def close(self) -> int:
+        """Sends quit and waits for the end; returns the exit status."""
+        if self._proc.poll() is None:
+            try:
+                assert self._proc.stdin
+                self._proc.stdin.write("quit\n")
+                self._proc.stdin.close()
+            except (BrokenPipeError, OSError):
+                pass
+        status = self._proc.wait()
+        for f in (self._proc.stdout, self._proc.stderr):
+            if f:
+                f.close()
+        return status
+
+    def __enter__(self) -> "Calcu":
+        return self
+
+    def __exit__(self, *exc: object) -> None:
+        self.close()

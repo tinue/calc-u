@@ -2,6 +2,7 @@
 #include "machine/Build.hpp"
 #include "machine/Capability.hpp"
 #include "machine/Catalogue.hpp"
+#include "harness/MachineState.hpp"
 #include "machine/Machine.hpp"
 #include "peripherals/Controls.hpp"
 #include "peripherals/RealTimeClock.hpp"
@@ -52,6 +53,9 @@
 //   Every plugged peripheral counts the operations it was told of (AC-10).
 //   A product rule: the test printer and the test UART are not used
 //   together (the library form of LIB-2 AC-29).
+// For LIB-11 (design T18): with offerState(true) a machine offers the
+//   generic kind machine state (`cpu/machine-state` or `main/machine-state`),
+//   off by default so that the other areas' lists stay as they are.
 
 namespace calcu::machine::test {
 
@@ -202,6 +206,8 @@ public:
     void setTiming(std::shared_ptr<const TestSegTiming> t) { timing_ = std::move(t); }
     // The instruction of the loop the machine is at (0 without a timing).
     std::uint64_t loopPosition() const { return timing_ ? generic_.instructions % timing_->loopLength : 0; }
+    // LIB-11 AC-24: the machine-state capability (not by default).
+    void offerState(bool on) { offersState_ = on; }
 
 protected:
     std::optional<std::string> productRefusal(const PeripheralRequest&,
@@ -249,6 +255,17 @@ private:
     std::vector<std::int16_t> sound_;
     TestGeneric generic_;
     TestCounter printerCounter_;
+    class State final : public harness::MachineState {
+    public:
+        explicit State(TestMachine& m) : m_(m) {}
+        std::vector<std::uint8_t> save() const override;
+        std::optional<std::string> restore(const std::vector<std::uint8_t>&) override;
+
+    private:
+        TestMachine& m_;
+    };
+    State state_{*this};
+    bool offersState_ = false;
     std::shared_ptr<const TestSegTiming> timing_;
 };
 

@@ -1,0 +1,171 @@
+#include "TestProduct.hpp"
+#include "formats/Flow.hpp"
+#include "roms/FullSet.hpp"
+#include "sessions/LibraryTopics.hpp"
+#include "sessions/Operation.hpp"
+#include "settings/Startup.hpp"
+#include <cstdlib>
+
+namespace calcu::harness::test {
+
+using namespace calcu::machine;
+using namespace calcu::sessions;
+
+namespace {
+constexpr std::uint8_t kDigits[10] = {0x3F, 0x06, 0x5B, 0x4F, 0x66, 0x6D, 0x7D, 0x07, 0x7F, 0x6F};
+
+struct Count final : PayloadOf<Count> {
+    static constexpr PayloadKind kKind{"test.count"};
+    explicit Count(std::int64_t n) : n(n) {}
+    std::int64_t n;
+    bool same(const Count& o) const { return n == o.n; }
+    sessions::Value toValue() const override { return sessions::Value::object({{"operations", n}}); }
+};
+
+const TopicName kCountTopic{"test.count"};
+const CommandName kOperation{"test.operation"};
+const CommandName kFail{"test.fail"};
+
+Task<OperationResult> runFor(OperationContext& c, Ticks n) {
+    co_await c.run(n);
+    co_return OperationResult{};
+}
+
+// harness Value of a parsed step value.
+harness::Value valueOf(const formats::YamlNode& n) {
+    switch (n.type) {
+    case formats::YamlNode::Type::Null: return {};
+    case formats::YamlNode::Type::Scalar: return formats::scalarText(n);
+    case formats::YamlNode::Type::Sequence: {
+        harness::Value a = harness::Value::array();
+        for (const auto& e : n.seq) a.push(valueOf(e));
+        return a;
+    }
+    case formats::YamlNode::Type::Map: break;
+    }
+    harness::Value o = harness::Value::object();
+    for (const auto& [k, v] : n.map) o.set(k, valueOf(v));
+    return o;
+}
+} // namespace
+
+struct TestProduct::Part final : SessionPart {
+    StateTopic* count = nullptr;
+    std::int64_t operations = 0;
+    void attach(SessionSetup& s) override {
+        count = &s.stateTopic(kCountTopic);
+        count->set(std::make_shared<Count>(0));
+        s.command(kOperation, [this](const sessions::Value& a, SessionContext&) -> CommandOutcome {
+            const sessions::Value* t = a.find("ticks");
+            if (!t || !t->integer() || *t->integer() < 0) return Refused{"The operation needs ticks."};
+            const Ticks n = static_cast<Ticks>(*t->integer());
+            count->set(std::make_shared<Count>(++operations));
+            return StartOperation{[n](OperationContext& c) { return runFor(c, n); }};
+        });
+        s.command(kFail, [](const sessions::Value& a, SessionContext& c) -> CommandOutcome {
+            const sessions::Value* f = a.find("file");
+            const std::string file = f && f->string() ? *f->string() : std::string("?");
+            c.notice("Cannot read " + file + ".");
+            return Refused{"Cannot read " + file + "."};
+        });
+    }
+};
+
+GlyphFont testFont() {
+    GlyphFont f;
+    f.cellWidth = 6;
+    f.cellHeight = 8;
+    f.glyphs = {Glyph{"A", {0x7E, 0x11, 0x11, 0x11, 0x7E, 0x00, 0, 0}},
+                Glyph{"B", {0x7F, 0x49, 0x49, 0x49, 0x36, 0x00, 0, 0}},
+                Glyph{"C", {0x3E, 0x41, 0x41, 0x41, 0x22, 0x00, 0, 0}}};
+    return f;
+}
+
+TestProduct::TestProduct() : part_(std::make_unique<Part>()) {
+    roms::test::writeFullSet(roms_, roms::fullSet(catalogue()));
+}
+
+TestProduct::~TestProduct() = default;
+
+const settings::ProductDecl& TestProduct::settingsDecl() const {
+    static const settings::ProductDecl decl = [] {
+        settings::ProductDecl d;
+        d.productName = "Calc-U-Test";
+        d.models = {"test-seg", "test-dot"};
+        d.fallbackModel = "test-seg";
+        d.keys = {settings::family::startupModel()};
+        return d;
+    }();
+    return decl;
+}
+
+roms::LookupResult TestProduct::lookUpRoms() const {
+    static const roms::FullSet set = roms::fullSet(machine::test::testCatalogue());
+    return roms::lookUp(set, roms::DirectoryBundle(roms_.path()), &reader_);
+}
+
+BuildRequest TestProduct::startupRequest(const settings::SettingsFile& s, const roms::RomSet& set) {
+    BuildRequest r;
+    r.model = startModel ? *startModel : ModelId{settings::startupModel(s)};
+    const MachineDescriptor* d = catalogue().model(r.model);
+    if (d) r.roms = set.imagesFor(*d, std::nullopt);
+    r.soundRate = 8000;
+    return r;
+}
+
+BuildResult TestProduct::Builder::build(const BuildRequest& req, const Catalogue& cat) {
+    BuildResult r = inner.build(req, cat);
+    if (r.machine && req.model == machine::test::kSeg)
+        static_cast<machine::test::TestMachine&>(*r.machine).offerState(true);
+    return r;
+}
+
+DisplayText TestProduct::readDisplay(const DisplayOutput& o, const MachineDescriptor& d) {
+    if (const auto* f = std::get_if<DotMatrixFrame>(&o.frame)) return readDotMatrix(*f, testFont(), o.indicators, d.display.indicators);
+    const auto& g = std::get<SegmentGeometry>(d.display.geometry);
+    SegmentRule rule = [](const SegmentPosition& p, const SegmentLayout&) {
+        std::uint8_t bits = 0;
+        for (std::size_t s = 0; s < 7 && s < p.lit.size(); ++s)
+            if (p.lit[s]) bits = static_cast<std::uint8_t>(bits | (1u << s));
+        std::string t;
+        for (int i = 0; i < 10; ++i)
+            if (bits == kDigits[i]) t = std::string(1, static_cast<char>('0' + i));
+        if (bits != 0 && t.empty()) t = "?";
+        if (p.lit.size() > 7 && p.lit[7]) t += ".";
+        return t;
+    };
+    return readSegments(std::get<SegmentFrame>(o.frame), g.layout, rule, false, o.indicators, d.display.indicators);
+}
+
+void TestProduct::addCommands(CommandRegistry& r) {
+    r.addProduct("test", "mapping", [](CommandContext& c) {
+        formats::YamlNode n;
+        std::string error;
+        if (!formats::parseValue(c.line.argText, &n, &error)) return refusedReply(error);
+        harness::Value v = valueOf(n);
+        return doneReply(v, {writeJson(v)});
+    }, "mapping <value>          echoes the value it was given");
+    r.addProduct("test", "operation", [](CommandContext& c) {
+        sessions::Value a = sessions::Value::object({{"ticks", static_cast<long long>(std::strtoll(c.line.argText.c_str(), nullptr, 10))}});
+        const ReplyMessage m = c.host.command(Command{kOperation, std::move(a)});
+        if (!m.done) return refusedReply(m.reason);
+        return doneReply();
+    }, "operation <ticks>        an operation of that many ticks");
+    r.addProduct("test", "fail", [](CommandContext& c) {
+        sessions::Value a = sessions::Value::object({{"file", c.host.setup().saveFolder() + "/missing.txt"}});
+        const ReplyMessage m = c.host.command(Command{kFail, std::move(a)});
+        return m.done ? doneReply() : refusedReply(m.reason);
+    }, "fail                     refused, with a notice naming a file in the save folder");
+    r.addProduct("test", "count", [](CommandContext& c) {
+        auto t = c.host.readTopic("test.count");
+        const auto* n = t && t->state ? payloadAs<Count>(t->state) : nullptr;
+        const std::int64_t v = n ? n->n : 0;
+        return doneReply(harness::Value(static_cast<long long>(v)), {"operations: " + std::to_string(v)});
+    }, "count                    the operations run");
+}
+
+std::vector<SessionPart*> TestProduct::sessionParts() { return {part_.get()}; }
+
+std::unique_ptr<HarnessProduct> makeTestProduct() { return std::make_unique<TestProduct>(); }
+
+} // namespace calcu::harness::test

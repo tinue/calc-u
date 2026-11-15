@@ -125,6 +125,9 @@ calcu_add_core(calcu_core)
 # and each other as "Shared/...".
 file(GLOB_RECURSE CALCU_SHARED_SOURCES CONFIGURE_DEPENDS ${CALCU_SHARED_ROOT}/*.cpp)
 list(FILTER CALCU_SHARED_SOURCES EXCLUDE REGEX "^${CALCU_SHARED_ROOT}/tests/")
+# The harness product entry (LIB-11, M-28) is a target of its own:
+# calcu1600_harness in CMakeLists.txt, not in the Qt6 and Web builds.
+list(FILTER CALCU_SHARED_SOURCES EXCLUDE REGEX "/app/HarnessProduct\\.cpp$")
 add_library(calcu_shared STATIC ${CALCU_SHARED_SOURCES})
 target_include_directories(calcu_shared PUBLIC ${CALCU_ROOT})
 target_compile_options(calcu_shared PRIVATE ${CALCU_WARNINGS})

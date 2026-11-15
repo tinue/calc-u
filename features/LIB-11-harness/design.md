@@ -1,5 +1,5 @@
 # LIB-11 Harness: design
-Status: approved by the user at the Part B/C1 boundary (2026-11-14)
+Status: Library column approved at the Part B/C1 boundary (2026-11-14); Calc-U-1600 column: draft for the Part C2/D boundary review (2026-11-16)
 
 ## 1. Scope
 
@@ -573,3 +573,248 @@ Others:
   AC-14). Decided: C59-5's `AttachedHarness` uses `CommandRegistry` and
   registers its own `wait` handler; `HarnessHost` gets no time policy
   (the smaller change). Its lines follow §3.9.
+
+## Part D: the Calc-U-1600 column
+
+Step M-51, with C1600-5 (its design holds the `pc1600` commands). Tests
+from AC-18 to AC-20; Done in M-51 (plan §5.1). M-51 also runs the
+adapter check of plan §1 over Calc-U-1600 and the library (D.7).
+
+### D.1 Scope and order
+
+M-51 has three parts, each its own commit on short branches (C1600-5
+design §1):
+1. the `pc1600` commands (C1600-5);
+2. the harness's Calc-U-1600 entry built through `app/SharpAppPart`
+   (D-6, moved here from M-31; user, 2026-11-15), `lcd` with the cursor
+   cell (AC-19, D-7), and today's tools removed (D.5);
+3. the adapter check (D.7).
+
+M-51 waits for M-47 and M-50 (plan) and uses everything of M-44 to M-50:
+by then `preset`, `check-preset`, `variant`, `screenshot`, `peek`,
+`registers`, `history`, `profile`, `paper`, `tape`, `eject` and `open`
+work on Calc-U-1600 through the harness, each from its feature's step.
+What is left here is to show the whole table of AC-18 through `calcu`
+and to take the old tools away.
+
+### D.2 The code of C1 and C2 against the approved text
+
+From the qa-report's "Deviations" (M-28, M-35) and the code on main:
+- `HarnessProduct` has `lookUpRoms()` instead of `bundle()`, a
+  `version()`, `machines()` (LIB-18's `ProductMachines`; Calc-U-1600's
+  is the adapter `HarnessMachines`, `app/HarnessProduct.cpp:63-88`,
+  removed in M-46) and `sessionParts()` instead of `addToSession()`.
+  Since C2 it also has `controlSetup()`, `presetRules()`,
+  `presetBundle()`, `typingPart()`, `paperPart()`, `debuggerPart()`,
+  `mediaKinds()`, `moduleListing()`, `presetExtensions()`, `fileKinds()`
+  and `openLimits()` (`library/harness/Product.hpp`).
+- The library's parts of a run (`StartupPart`, `ControlPart`,
+  `PresetsPart`, `MediaPart`, `OpenPart`, the peripherals and state
+  parts) are built by `Server::start` (`library/harness/Run.cpp:200-258`);
+  a product adds only its own parts.
+- The product entries are their own targets (`calcu1600_harness`,
+  `products/calc-u-1600/CMakeLists.txt:100-113`) and find the ROMs and
+  module definitions under the product folder compiled in
+  (`CALCU1600_DIR`).
+- A-4 is the `FontPart` of `app/HarnessProduct.cpp:52-58`: the font is
+  read when the machine changes; no cursor cell yet.
+
+### D.3 The entry through `SharpAppPart` (AC-20; D-6)
+
+`SharpAppPart` takes the product's `Settings&` and `AppPaths&` at
+construction (`app/SharpAppPart.hpp:91`), which in a run are the run's
+settings file and folders (AC-8). The product is made by its factory
+before the run exists, so the interface gets one hook (library, D-11):
+
+```cpp
+// library/harness/Product.hpp, added: called by Server::start after the
+// RunSetup is made and before any other member that reads the session's
+// parts; the product builds its app layer on the run's settings and folders.
+virtual void prepare(const RunSetup&) {}
+```
+
+Calc-U-1600's `prepare` makes `shared::Settings` on the run's
+`SettingsFile`, `shared::AppPaths` on the run's `HostDirs` with the
+bundled folders under `CALCU1600_DIR` (`frontends/qt6/resources`,
+`examples`), and the `SharpAppPart` with `canMountHostFolder = true`
+(LIB-4 Part D, D-12). From then on the entry's members give the part's:
+
+| Member | After M-51 |
+|---|---|
+| `machines()` | the part's `ProductMachines` (M-46) |
+| `sessionParts()` | `SharpAppPart::sessionParts()` (the peripherals part, the debugger part, the typing part, the part itself), then C1600-5's `SerialScriptsPart` and the display text part (D.4) |
+| `typingPart()`, `paperPart()`, `debuggerPart()` | the part's |
+| `presetRules()`, `presetBundle()`, `mediaKinds()`, `moduleListing()`, `fileKinds()`, `presetExtensions()`, `openLimits()` | the app layer's, as the frontends use them (M-46 to M-48 wrote them into the entry; M-51 takes them from `app/` so there is one source) |
+| `controlSetup()` | `shared::controlSetup(part)` (LIB-4 Part D) |
+| `addCommands()` | C1600-5's `addSharpHarnessCommands` |
+
+The run's library parts are `Server::start`'s and the product's parts
+hold none of them (LIB-4 D-13), so no part is in the session twice.
+AC-20: the ROMs through `sharp::lookUpRoms` and the module definitions
+through the part's catalogue, as the frontends find them (the folder of
+the source tree is the bundle of a build tree, §8 "Finding bundled
+files"), and the run is the app session with the product's app layer.
+
+### D.4 `lcd` on a Sharp machine (AC-19; D-7)
+
+The `FontPart` becomes `shared::LcdTextPart` (`app/LcdTextPart.hpp/.cpp`,
+new): at `machineChanged` it reads the font of the model's ROM
+(`sharpLcdFont`, A-4's source, which stays as the font's only source),
+and at `beforeFlush` the cursor cell as `--lcd-text` reads it today
+(`LcdCursor`, `core/Display/LcdText.hpp:108-118`, through the loader
+memory kind). `readDisplay` reads the dots with both, so the cell under
+the cursor reads as text, as `--lcd-text` does (`tools/pc1500_cli.cpp:271-277`
+at the pin). The labels stay this design's (`indicators:`, `not text:`;
+D-7). Unlike D-7's wording, the cursor is kept in the part, not in a
+topic: no frontend needs it (D-12).
+
+### D.5 Today's tools and where each goes (AC-18)
+
+Every function of AC-18's table, with the command that serves it after
+M-51 (each checked by `lib11_ac18_every_function_of_the_table`, D.6):
+
+| Today | Through `calcu --product 1600` | Feature |
+|---|---|---|
+| `--preset <file>` | `preset <file>` | LIB-6 |
+| `--check-preset <file>…`, `tools/check_presets.sh` | `check-preset <file> …`; the script calls `calcu` (if M-46 left it on `PC1600_CLI`, M-51 moves it) | LIB-6 |
+| `--rom`, `--ce1600p-rom` | `variant <name>`, `attach printer CE-1600P:<variant>` | LIB-18 |
+| `--run-after <ticks>`, the run for a number of ticks | `wait <duration>` | LIB-11 |
+| `--lcd-text <file>` | `lcd` (D.4) | LIB-11 |
+| `--lcd-png <file>` | `screenshot <file>` | LIB-6 |
+| `--wav <file>` | `audio <file>` | LIB-11 |
+| `--dump-mem <address>,<length>` | `peek <target> <space> <address> <count>` | LIB-10 |
+| `--inspect <view>` | `pc1600 inspect <view>` | C1600-5 |
+| `--dump-basic` | `pc1600 dump-basic` | C1600-5 |
+| `--tape-in <wav>`, `--tape-out <wav>` | `tape { file: … }`, `eject tape`; `pc1600 tape record <wav>`, `pc1600 tape status` | LIB-7; C1600-5 |
+| `--ce158-pty`, `--ce158-rx`, `--ce158-rx-hold`, `--ce158-tx` | `pc1600 serial ce158 link`, `feed <file> hold=<n>`, `capture <file>` | C1600-5 |
+| `--save-dir`, `--modules-dir` | `--save-folder`; the bundled module definitions (a user's module definitions in the save folder, LIB-7) | LIB-11, LIB-7 |
+| the summary after a run (registers, last instructions, where the program counter spent its time) | `registers`, `history`, `profile report` | LIB-10 |
+| the probes | not taken over (OQ-5 as amended) | — |
+| `tools/read_trace.py`, `tools/dap_smoke.py` | stay (a script of the product; C1600-3 made the second a suite test in M-50) | LIB-10, C1600-3 |
+| `--shots` | an attach client (LIB-14 1600, M-49) | LIB-14 |
+
+What the CLIs print that the table does not name, and where it goes:
+`pc1500_cli`'s "Display input-line text" (`pc1500_cli.cpp:370-375`) is
+`peek` of the ROM's input buffer; the CE-150 report
+(`CliCommon.hpp:155-166`) and `CALCU_PAPER_OUT` (`:214-234`) are
+`paper marks`; the Centronics dump is `pc1600 serial ce158 report`. The
+bare `<rom-file>` mode of `pc1500_cli` (`pc1500_cli.cpp:11, 176-191`;
+LIB-12 D-7: "stays" until the tools go) has no row in AC-18 and no
+successor: every ROM comes from the one lookup (LIB-12 AC-2) (D-13).
+
+**Removed in M-51:**
+
+| What | Where |
+|---|---|
+| the CLIs and their helpers | `products/calc-u-1600/tools/pc1500_cli.cpp`, `pc1600_cli.cpp`, `CliCommon.hpp`, `Ce158CliPeer.hpp`, `build_cli.sh`, `build_pc1600_cli.sh` |
+| the probes | `tools/pc1600_plotter_probe.cpp`, `pc1600_power_probe.cpp`, `pc1600_uart_probe.cpp`, `build_pc1600_*_probe.sh`; the target `calcu_core_probe` and `calcu_add_core(calcu_core_probe)` (`CMakeLists.txt:83-98`, `cmake/CalcU.cmake:13, 83`); the hooks `PC1600_POWER_PROBE` in `core/PC1600/PC1600Memory.cpp` (`:7, 221, 270, 302, 375`), `PC1600SubCpu.cpp` (`:7, 124`) and `core/PC1600/PC1600PowerProbe.hpp` |
+| the targets | `pc1500_cli`, `pc1600_cli` (`CMakeLists.txt:75-81`); `tools/build_tool.sh` stays only if anything is left to build with it (else it goes) |
+| the CLI's test | `tests/cli_rom_tests.sh` and the CTest `CalcU1600CliRomLookup` (`CMakeLists.txt:150-153`); LIB-12 AC-13 stays covered by the frontends' tests and `tests/rom_lookup_tests.cpp`, and the harness's missing-ROM end is LIB-11 EC-1 |
+| the one-time check | `dev/tape-matrix/` (OQ-5 as amended) |
+| the IDE run configurations | `.run/pc1500_cli.run.xml`, `pc1600_cli.run.xml`, `pc1600_plotter_probe.run.xml`, `pc1600_power_probe.run.xml`, `pc1600_uart_probe.run.xml` (repository root); a `.run/calcu-1600.run.xml` for `calcu --product 1600 serve` takes their place |
+| the adapters for the tools | the section "Today's tools" of `core/Machine/LegacyCalls.hpp:75-98` (`coreParts`, `setYieldHook`, `presetMedia`, `typeLine`); `LegacyCalls.hpp/.cpp` go whole when M-44 to M-47 have removed their sections |
+| the scratch folder's tools | `headless/README.md` keeps the folder for scratch output of `calcu` and ad hoc runs; the build lines go |
+
+Comments that name the CLIs change in the same step:
+`core/Display/LcdScreenshot.hpp:16`, `core/PC1500/PC1500BasicLoader.hpp`,
+`PC1500PresetLoader.cpp`, `PC1500Machine.cpp`, `core/PC1600/PC1600BasicTyper.cpp`,
+`PC1600Memory.hpp`, `tests/pc1600_slot_module_tests.cpp`,
+`examples/interfaces/ce158_demo.pc1500a:8`, `dev/presets/trace_demo.pc1500a:6`.
+`tests/reference/v0.8.1-examples/run.sh` stays as the record of how the
+references were made with v0.8.1's CLIs (it runs them from a v0.8.1
+tree, not from this one).
+
+### D.6 Tasks
+
+Tests before the code. `CoreTests`, Frequent; names `lib11_acN_…`.
+
+| Task | What | ACs | Test |
+|---|---|---|---|
+| H1 | `prepare`, the entry through `SharpAppPart` | AC-20 | `calcu_library_tests`: `prepare_runs_before_session_parts` (the test product records the order); `CoreTests` `tests/harness_tests.cpp`: `lib11_ac20_entry_runs_sharp_app_part` (the topics and commands of the app layer are in the run: `state control-state` with the paper panel and the product entries; `media`; `c1600.serial-links`), `lib11_ac20_roms_and_module_definitions_as_the_frontends` (the bundled modules listed as the Qt6 frontend lists them) |
+| H2 | `lcd` with the cursor | AC-19 | `lib11_ac19_lcd_rows_indicators_not_text_off` (PC-1500A and PC-1600: `NEW0? :CHECK`, the indicators, `not text: 0`; `display off` after the off key), `lib11_ac19_cursor_cell_read_as_text` (a line typed, the cursor on a character: the character, not U+FFFD; the expected rows from today's `--lcd-text` for the same keys, written out) |
+| H3 | The table of AC-18 | AC-18 | `lib11_ac18_every_function_of_the_table`: one block per row of D.5, each the commands and their expected reply, on the model the row needs (the exit check of M-51) |
+| H4 | The old tools gone | (plan M-51 "Green after") | the CTest `CalcU1600NoOldTools` (`cmake -P tools/check_no_old_tools.cmake`): no target, file or `.run` configuration of D.5's list, no `PC1600_POWER_PROBE` in `core/`; Frequent |
+| H5 | `docs/test-groups.md` | — | the entries above; `CalcU1600CliRomLookup` gone |
+
+Coverage: AC-18 to AC-20 (3 of 3). The Calc-U-59 column (AC-14 to
+AC-17) comes in M-59.
+
+### D.7 The adapter check (plan §1)
+
+After parts 1 and 2: every adapter row of every approved design whose
+"Removed in" is M-51 or earlier and is about Calc-U-1600 or the library
+is looked up in the code (the tables of §5 of LIB-1 to LIB-18, C1600-1
+to C1600-5, and the Part D sections). Each must be gone; a row that is
+still in the code is a finding, fixed in M-51 or, if its step said
+otherwise, written into the qa-report with the step that removes it. The
+library rows that are Calc-U-59's (removed in M-53 to M-59) are listed
+and left. A source search goes with it: `LegacyCalls`, `HarnessMachines`,
+`SharpBuildColdBoot`, `toDisplayFrame`, `modelIdOf`, the interim topics
+of LIB-3 §5 (`c1600.control-state`, `c1600.machine`, `c1600.tapes`), the
+adapter kinds of C1600-1 §5 (`c1600.plotter-paper`, `c1600.trace`,
+`c1600.tape-deck`, `c1600.floppy-drive`, `c1600.key-queue`). The result
+is a table in the qa-report (C1600-5 and LIB-11 1600), per row: gone,
+or the finding.
+
+### D.8 Ledger rows
+
+None: the tools are not used by end users. Their removal is in the
+product's `CHANGELOG.md` for the release (M-61).
+
+### D.9 Agent knowledge (changed in the same step)
+
+| File | Change |
+|---|---|
+| `products/calc-u-1600/CLAUDE.md` | section Harness: the `pc1600` commands (C1600-5 §7); the lines "Not yet: …" and "Until M-51, `pc1500_cli`, `pc1600_cli` and the probes stay" go |
+| `products/calc-u-1600/headless/README.md` | the folder for scratch output; the CLI build lines go |
+| `products/calc-u-1600/docs/developer/Building.md`, `README.md`, `Cloud-Sessions.md`, `LCD-Text.md`, `PC1600-Serial-Port.md` | the CLI commands become `calcu` commands |
+| `products/calc-u-1600/TODO.md` | the items on the CLIs (`:395`, `:670`) closed |
+| `docs/glossary-mapping.md` | row "Harness", Calc-U-1600: `calcu --product 1600` (was `pc1500_cli`, `pc1600_cli`, the probes) |
+| `docs/test-groups.md` | D.6 H5 |
+| memory `calc-u-1600/feedback_headless_dir_for_probe_output.md` | scratch output of `calcu` and ad hoc runs into `headless/`; the build scripts named there are gone |
+| memory `calc-u-1600/feedback_lcd_text_before_images.md` | `calcu --product 1600 … then lcd` in place of `pc1600_cli --lcd-text -`; the DAP request stays |
+| memory `calc-u-1600/project_buzzer_audio.md` | "CLIs `--wav`" becomes `calcu`'s `audio` |
+| memory `calc-u-1600/project_cassette_tape.md` | the tape matrix is gone (OQ-5 as amended); recording through `pc1600 tape record` |
+| memory `calc-u-1600/project_ce158_interface.md`, `project_pc1600_serial_port.md` | the PTY of the CLI becomes `pc1600 serial <port> link` |
+| memory `calc-u-1600/project_pc1600_ramdisk_geometry_table.md` | "headless harness" means `calcu` |
+| memory `calc-u-1600/feedback_one_time_verification_own_dir.md`, `project_loader_matrix_pc1500.md` | as the answer to the question of D.12 says |
+| memory `calc-u-1600-headless-cli.md` of the `Sharp1500-1600-Ref` project (`~/.claude/projects/-Users-me-Development-sharp-Sharp1500-1600-Ref/memory/`) | the CLI's options become `calcu` commands (plan M-51) |
+
+### D.10 Golden runs and risks
+
+- **Golden runs.** M-51 removes code that the normal builds do not
+  compile (`PC1600_POWER_PROBE`) and adds C1600-5's machine state
+  (saving only reads). The replays pass unchanged; a difference is a
+  finding.
+- **The `prepare` hook** changes the order in which `Server::start`
+  asks the product; the library's harness tests (`calcu_library_tests`,
+  `calcu_cli.*`) and Calc-U-59's entry (which does nothing in
+  `prepare`) must pass unchanged.
+- **A build tree's bundled files.** The entry reads the source tree's
+  folders as before (§8); a packaged harness is not a goal (the harness
+  is not for end users).
+- **Windows and Linux.** The harness is built in every workflow (M-28);
+  M-51 removes targets those workflows build (`pc1500_cli`, `pc1600_cli`,
+  the probes, if a job names them): the workflow is checked and changed
+  in the same step, so one CI dispatch at the merge (plan §1).
+
+### D.11 Decided (best guess)
+
+- **D-11 (AC-20, D-6).** `HarnessProduct::prepare(const RunSetup&)` is
+  the one interface change: the app layer is built on the run's
+  settings and folders before its parts are asked for.
+- **D-12 (AC-19, D-7).** The cursor cell is read by the product's
+  display text part at each flush and kept there, not sent as a topic;
+  D-7's topic had no other reader.
+- **D-13 (AC-18).** `pc1500_cli`'s bare ROM file mode is not taken
+  over: AC-18 does not list it, and LIB-12 AC-2 allows one ROM lookup.
+- **D-14.** The IDE's run configurations for the CLIs go with them; one
+  for `calcu --product 1600 serve` replaces them.
+
+### D.12 Questions for the user
+
+- **The loader matrices.** `dev/loader-matrix/` (a one-time ROM-versus-
+  loader check of 330 cells, `dev/loader-matrix/README.md`) uses the
+  adapters of `LegacyCalls` that go in M-51. Should it go like the tape
+  matrix (recommended: it was a one-time check, and C1600-2's tests
+  keep the loaders), or be moved onto `calcu serve` as a script?

@@ -1,5 +1,5 @@
 # LIB-14 Family window structure and component-set shell: design
-Status: approved by the user at the Part C1/C2 boundary (2026-11-15)
+Status: Library column approved at the Part C1/C2 boundary (2026-11-15); Calc-U-1600 column: draft for the Part C2/D boundary review (2026-11-16)
 
 ## 1. Scope
 
@@ -736,3 +736,359 @@ change in M-49 and M-57 (§5).
   and `preset-list`, LIB-10's `run-state` and `resume`, LIB-5's `paste`,
   `screen-key-down` and `screen-key-up`, LIB-7's `media` and
   `media.import`, LIB-13's `open` (the former open point P-1).
+
+## Part D: the Calc-U-1600 column
+
+Step M-49, with LIB-4 1600 (the Part D section of LIB-4's design holds
+the control state's product side; this section holds the frontends).
+Tests from LIB-14 AC-34–41, AC-44; Done in M-49 (plan §5.1). The same
+step makes LIB-3 1600 Done (its AC-38 re-pointed; §5.1, "LIB-3 1600 /
+M-49") and C1600-2 Done (its AC-15, the two File items; §5.1).
+
+### D.1 Scope, and what the earlier Part D steps leave
+
+M-49 is the step in which both Calc-U-1600 frontends are put together
+from the shell. It comes after M-44 to M-48, and this design takes what
+their designs say as done:
+
+| Step | What M-49 finds | What M-49 uses it for |
+|---|---|---|
+| M-44 (C1600-2) | the loaders on the loader memory kind and one classifier; "Load BASIC Program…" and "Load Machine Code…" with their dialogs in the product's code | the two File items as `ProductItem`s in the group FileKinds (AC-34, AC-35; C1600-2 AC-15) |
+| M-45 (LIB-8, LIB-10 1600) | the library's `PaperPanel` / `CalcuPaperPanel` in both frontends; `run-state`, `resume` and the `DebuggerPart` in the session; the Qt `DebugController` still in the frontend (until M-50) | the paper panel through `Shell::registerPanel` (its default) in the shell's panel area; Machine ▸ Resume from the shell (M7); the title "Paused (debugger)" from `run-state` |
+| M-46 (LIB-6, LIB-18, C1600-4) | the library's commands `start`, `model`, `variant`, `attach`, `detach`, `reset`, `cold-boot`, `load-preset`; `PresetsPart` and the request `preset-list`; a `ProductMachines` in `app/`; the operation commands `c1600.*` of `app/SharpTopics.hpp:36-50` gone | every menu item and bar control sends a library command (D-24); Examples ▸ from `preset-list` |
+| M-47 (LIB-7 1600) | `MediaPart` with `memory-module`, `floppy-disk` and `cassette-tape`; `MemoryModuleManager`, `FloppyDiskManager` and `TapeManager` re-pointed onto `media`; the bays gone | LIB-7's `MediaPicker` per slot (`registerSlotPicker`, its default) and per media place (`registerMediaControls`); the product's disk and tape controls (D.3) |
+| M-48 (LIB-13 1600) | `open` for drops, Open With and the pickers; `core/DropFile.*` gone | nothing new: the window's drop sends `open`; the shell's Load Preset… sends `load-preset` |
+
+What is left for M-49, in both frontends: the window structure (menus,
+bar, settings, About, Help, "Loading…", notices, the faceplate input,
+"ROMs missing"); the session host; the control state (LIB-4 1600); the
+display painted from the `display` topic (C1600-1's adapter
+`toDisplayFrame`); the app enum `shared::Model` (C1600-1's adapter
+`modelIdOf`, `modelOf`, `variantIdOf`); and AC-44's shot runner. If a
+step of M-44 to M-48 leaves one of its frontend pieces undone, M-49
+takes it over and the qa-report says so (D-25).
+
+Not in M-49: the DAP server and `DebugController` (C1600-3, M-50); the
+product commands of the harness (C1600-5, M-51); the help content and
+its pictures (LIB-16, M-52, whose AC-12 uses this step's attach).
+
+### D.2 The code of C2 against the approved text
+
+Read from `library/` on main (`60e5b09`) and from the "Deviations" of
+the M-43 qa-report. Where M-49 relies on something that differs from
+§2 to §9:
+
+- The React hook is `useCalcuShell` (`useShell` is LIB-15's). The panel
+  model is in `BarModel.*`; there is no `PanelModel.*`.
+- `SettingsPart` has the extra command `remember-folder {kind, folder}`.
+  A `[folders]` row is of kind `folder`, labelled "<Kind> folder" unless
+  the product gives its own section. Calc-U-1600 gives its own Folders
+  section (D-26).
+- `Shell` has `setChoosers()`, `sendChecked()`, `choose()` and
+  `inputs()`; `addBarControl(group, "", w)` puts `w` at the end of the
+  group. The React `extra` prop puts a product control at the end of
+  the group it names.
+- `SessionHost` answers clipboard and open-url itself unless a handler
+  is set, has `addMessageHandler()` (the product's sound feed goes there,
+  D.3), and reads `--attach-port 0` through `attachPortFrom()`.
+- **Found while writing this design.** The attached harness registers
+  only the first commands and the product's
+  (`library/harness/attach/AttachedHarness.cpp:27-28`), and it refuses
+  `wait` without a duration (`:138-139`). The serve form has the full
+  set (`library/harness/Run.cpp:260-267`). AC-44 needs `preset`, `key`,
+  `type`, `reset`, `cold-boot` and the bare `wait` through attach, so
+  M-49 widens the attached registry (D.6; a library change, D-27).
+- `library/shell/ObjectNames.hpp` holds the names of §3.10, which
+  AC-44's scenarios use.
+
+### D.3 The Qt6 frontend (`products/calc-u-1600/frontends/qt6/`)
+
+The window becomes a `QMainWindow` with a `calcu::qt6::Shell` over a
+`calcu::qt6::SessionHost`, plus the faceplate and the product's panels.
+
+| File | After M-49 |
+|---|---|
+| `app/MachineController.hpp/.cpp` | Stays as the product's glue, thinner. It makes the session (`shared::makeSharpSession`, `app/SharpSession.hpp:24`) and a `calcu::qt6::SessionHost` over it. `call()`, `send()`, `m_listener`, `now()` and the busy and display bookkeeping (`MachineController.cpp:65-98, 170-229`) go to the host. The frozen mode goes: `setFrozen`, `finishOperation`, `runFor`, `runUntilTyped` (`:100-137`; adapter of §5). The sound feed becomes a `SessionHost::addMessageHandler`. `controlState()` (`:231-234`) goes with LIB-4's interim topic. Stays until M-50: `DebugController` and the `SharpDebugger` hooks (`:251-263`), and `typeCommand` (`:158`, the debugger's auto-start) |
+| `app/MainWindow.hpp/.cpp` | `buildMenuBar` (`MainWindow.cpp:844-1004`) goes, and so do `applyModelSelection`, the `apply*RomVersionSelection` and `syncMachineMenuFrom*` functions, `syncControlBarForModel`, `syncPeripherals`, `togglePeripheral`, `syncHostDriveActions`, `onPresetArmed`, `resetMachine`, `isLoading`, `loadPresetForShots` and `resetForShots` (`:308-329, 381-389, 480-531, 834-843, 1006-1057`): the shell draws the menus and the bar from the control state. What stays: the layout of AC-40 (the faceplate, the bar, the panel row), the host keys and the input method (`:579-646, 689-750`; LIB-5), the drop through `open` (M-48), Copy Screen (`:647-688`, a product item, D-12), and the SHIFT tap (LIB-5 AC-33) |
+| `app/ControlBar.hpp/.cpp`, `app/NamedComboBox.hpp/.cpp` | deleted: the shell's bar (B1 to B7) with LIB-7's pickers |
+| `app/SettingsDialog.hpp/.cpp` | becomes `app/SharpSettingsRows.hpp/.cpp`: the product's sections of AC-37 for `ShellSettingsDialog`. Folders with its four rows and labels (D-26); Serial ports with the link folder and the two status lines; Debugger with `[debug] dap-enabled` and `dap-port`, beside which C1600-3 puts its status and Disconnect (`SettingsDialog.cpp:306-383`). The rows of General, Startup presets, Storage and Tracing are the shell's (S1 to S7) |
+| `app/AboutDialog.hpp/.cpp` | deleted; its texts (`AboutDialog.cpp:21-27`) are `ShellProduct::aboutLines` (D.5) |
+| `app/Operations.hpp/.cpp` | deleted (adapter of §5): "Loading…" is the shell's overlay (D-6), a refusal is the shell's notice (D-7). The debugger's `runAndWait` (`Operations.hpp:31-38`) becomes a reply handler on `SessionHost::send` in `DebugController`, an adapter of M-45's that M-50 removes with the DAP move |
+| `app/EmulationPacer.hpp/.cpp` | deleted: the frame timer is `SessionHost::start()`; `setTurbo` is the shell's H5 (`FaceplateInput` on the display area) |
+| `app/FaceplateWidget.hpp/.cpp` | keeps the art, the pressed-key flash (from `held-keys`, LIB-5 AC-19) and the LCD widget. `mousePressEvent` and its hit test (`FaceplateWidget.cpp:79-107`) go: `Shell::setFaceplate(widget, hitMap, scale)` with the hit map of `app/KeyLayout` and the distance 24 (D-8) |
+| `app/LcdWidget.hpp/.cpp` | paints the `display` topic's `DisplayOutput` through `app/LcdLayout` (C1600-1's adapter `toDisplayFrame` goes, D-28); `turboRequested` (`LcdWidget.cpp:48-53`) goes (H5) |
+| `app/DebugPanel.*` (the INSPECTOR), `app/Ce158PrinterWidget.*` | product panels put into `Shell::panelArea()` (AC-23, AC-42): the INSPECTOR always, the CE-158's printer panel while the product entry `c1600.ce158-printer-panel` says so (LIB-4 Part D). `setDockedPane` (`MainWindow.cpp:511-521`) becomes the product's layout of the panel row (AC-40) |
+| `app/MemoryModuleManager.*`, `app/FloppyDiskManager.*`, `app/TapeManager.*` | deleted, as far as M-47 left them as thin wrappers: the pickers are LIB-7's components, and the disk controls are a product control (below) |
+| `app/main.cpp` | `--shots*` only with `CALCU_ATTACH` (D.6); `--pacing-probe` (`main.cpp:57-99, 138-159`) becomes an attach client (D.6); `--attach-port` is read by `SessionHost` |
+| `app/screenshots/ShotRunner.*`, `ShotScenario.*` | the shot runner as an attach client (D.6) |
+| `app/AppLogging.*` | the shell's G1 (`ShellOptions::logToPlatform`) routes into it as today |
+| `CMakeLists.txt` | links `calcu_qt6`; `app/screenshots/*` only `if(CALCU_ATTACH)`; the deleted files out; the new `tests/` (D.8) |
+
+**The disk and tape controls (AC-36, AC-42).** The floppy disk controls
+are shown on every PC-1600 and can be used only while the CE-1600P is
+plugged in (the product entry `c1600.disk-controls`, LIB-4 Part D). The
+shell would draw LIB-7's controls for the media place `floppy` only
+while the control state lists it (LIB-4 EC-4). So the product registers
+no shell control for the kind `floppy-disk`; it puts its own disk
+control (LIB-7's `MediaPicker` for `floppy`, the side toggle, Name &
+Save) into `BarGroup::Media` with `addBarControl`, drawn from the
+product entry and disabled with its reason while the CE-1600P is not
+plugged in (D-29). If `registerMediaControls` does not take a factory
+that gives no widget, `ShellControlBar` gets that one-line change in
+M-49. The cassette controls follow the family rule (B1): LIB-7's tape
+controls with the product's counter and motor lamp (`c1600.lamps`)
+through `registerMediaControls("cassette-tape", …)`, shown while a
+peripheral with a cassette is plugged in.
+
+### D.4 The Web frontend (`products/calc-u-1600/frontends/web/`)
+
+| File | After M-49 |
+|---|---|
+| `src/CalcU1600.jsx` | composes the React set: `useCalcuShell(shell, product, {hasQuit: false, shortcuts: false, savedMedia: true})`, `ShellMenuBar`, the faceplate with `useShellFaceplate`, `ShellControlBar` with the disk control in `extra` (Media), `ShellPanelArea` with the INSPECTOR and the CE-158's printer panel, `ShellDialogs`. Gone: the menu table (`CalcU1600.jsx:243-298`), the page's shortcuts for Reset, Cold boot, Settings and Copy Screen (`:310-321`; AC-4, D-30), the "stopped" modal (`:410-417`; AC-19) |
+| `src/MenuBar.jsx`, `src/ControlBar.jsx` | deleted |
+| `src/Dialogs.jsx` | `Modal`, `NoticeDialog`, `SettingsDialog`, `AboutDialog` and `BusyPopup` (`Dialogs.jsx:7-37, 189-251, 300-310`) give way to `ShellModal`, `ShellNotice`, `ShellSettings`, `ShellAbout` and `ShellLoading`. What stays is the product's: C1600-2's machine-code dialogs (M-44) |
+| `src/Faceplate.jsx` | keeps the art and `LcdCanvas`; its hit test and `TOUCH_SLOP_PX` (`Faceplate.jsx:18, 77-115`) give way to `useShellFaceplate` with the hit map of the request `c1600.faceplate-map` (D-31) |
+| `src/Panels.jsx` | `Inspector` and `Ce158Printer` stay as product panels in `ShellPanelArea`; `Panel` and `PillMenu` stay as their helpers |
+| `src/engine.js` | deleted (LIB-15 1600's adapter): the page talks to the shell (`createShell`, `useTopic`), sends the library's commands, and asks the product's requests by name |
+| `src/painters.js` | the LCD painter reads the `display` topic's value (dots, indicators) with the layout of `c1600.faceplate-map` |
+| `products/calc-u-1600/app/SharpWebPart.hpp/.cpp` | gone: the topic `c1600.ui` (`SharpWebPart.cpp:142, 412-425`), `c1600.lcd`, the requests `c1600.faceplate` and `c1600.lcd-constants` (`:397-402`; LIB-15's W16-1), `c1600.settings-state` and the commands `c1600.set-startup-model`, `c1600.set-default-preset` (`:367-395`; replaced by `SettingsPart`). Stay: `c1600.lamps`, `c1600.printer`, `c1600.inspector-menu`, `c1600.inspector-view`, `c1600.program` (C1600-2); new: `c1600.faceplate-map` and `c1600.shell-product` |
+| `bindings.cpp` | adds `SettingsPart` to the parts (`bindings.cpp:44-48`) and tells `SharpAppPart` that the page cannot mount a folder (LIB-4 Part D, AC-18) |
+| `tests/` | `shell.spec.js` (new, D.8); `play.spec.js`, `typing.spec.js`, `session.spec.js` and `rom-missing.spec.js` re-pointed to the object names of §3.10 |
+
+### D.5 What Calc-U-1600 gives the shell (`app/SharpShellProduct.hpp/.cpp`, new)
+
+One source for Qt6 and the Web (D-32): `shared::shellProduct()` gives
+the data of `ShellProduct`. The Qt6 frontend adds the acts of the
+product items; the page gets the data through the request
+`c1600.shell-product` and adds its own JS acts.
+
+| Field | Value |
+|---|---|
+| `name`, `version`, `build` | "Calc-U-1600", `APP_VERSION`, `APP_BUILD_ID` (Qt6); the page's version on the Web |
+| `helpUrl` | `https://calc-u.org/1600/` (AC-39) |
+| `aboutLines` | "A Sharp PC-1500/1500A/1600 pocket-computer emulator."; "See LICENSE, NOTICE and THIRD-PARTY-NOTICES.md, shipped alongside this app, for licensing details." (`AboutDialog.cpp:21-25`) |
+| `variantLabels` | `PC-1500` → "ROM Revision", `PC-1600` → "ROM Version", `CE-1600P` → "CE-1600P ROM" (AC-34) |
+| `presetFilter` | "Presets (*.pc1500 *.pc1500a *.pc1600)" |
+| `copyScreen`, `pasteText` | true, true |
+| `moduleSlotPinOuts` | the three memory slot pin-outs (`core/Machine/SharpCatalogue.cpp:77, 107-108`) |
+| `placesWithoutControl` | `host-drive` (AC-9) |
+| `items` | FileKinds: "Load BASIC Program…", "Load Machine Code…" (C1600-2); FileMedia (Qt6 only): "Mount Directory…", "Unmount" (entry `c1600.host-drive-folder`); Edit: "Copy Screen", which reads "Copy Log Selection" while text of the INSPECTOR is selected (Qt6) |
+
+`checkShellProduct()` runs in `lib14_ac34_shell_product_complete` (D.8).
+
+### D.6 Harness attach and the screenshot scenarios (AC-44)
+
+**The attached registry (library; D-27).** `AttachedHarness` registers
+the same commands as `Server::start` (`Run.cpp:260-267`) for the session
+it is attached to: the first, startup, preset, typing, paper, debug,
+media and open commands, then the product's. They find the session's
+parts (the `PresetsPart`, `MediaPart` and `TypingPart` the product
+built) through a small lookup, `harness::SessionParts`, which
+`SessionHost::openAttach` fills from the frontend's session. The bare
+`wait` (LIB-6 AC-34) becomes a pending reply on the app's clock, like
+the timed one: it ends when the busy topic and the request `typing` say
+idle, after at most one hour of emulated time. Library tests:
+`attach_registry_matches_serve`, `attach_bare_wait_ends_when_idle`
+(`library/harness/attach/tests/`), `qt_attach_host_preset_key_type`
+(`library/qt6/tests/attach_host_tests.cpp`). C59-5's Swift attach gains
+the same commands; its tests stay green.
+
+**The shot runner (`app/screenshots/ShotRunner.*`).** It opens attach
+on port 0 inside its own process (`SessionHost::openAttach(product, 0)`)
+and talks to it through a `QTcpSocket` line client
+(`app/screenshots/AttachLineClient.hpp/.cpp`, new; the serve protocol of
+LIB-11 §3.9, message lines skipped). Machine steps go through attach,
+UI steps through the widgets found by their object names:
+
+| Step (README) | Today (`ShotRunner.cpp`) | After M-49 |
+|---|---|---|
+| `preset: <file>` | `loadPresetForShots` (`:234`) | `preset <path>` |
+| `reset`, `reset: all` | `resetForShots` (`:239`) | `reset`, `cold-boot`; `reset: all` is renamed `cold-boot` in the scenarios |
+| `key: <name>` | a faceplate press and `runFor` (`:245-250`) | `key <name>` |
+| `hold-key: <name>`, `release` | a faceplate press and a frozen run (`:222-253`) | a pointer down and up on the faceplate at the key's centre in the hit map (a UI step: the shell's live input), with `wait 100ms` after the press (D-33) |
+| `type: <text>` | `pasteText`, ENTER and a run (`:255-265`) | `type <text>` |
+| `run: <seconds>` | `pacer()->runFor` (`:267`) | `wait <seconds>s` |
+| `wait-idle` (new) | — | the bare `wait`; every shot ends with it before its captures |
+| `settle`, `click`, `open`, `select`, `action`, `menu`, `close`, `choose-file`, `enter-text`, `accept`, `capture` | widgets | unchanged, with the names of §3.10 (`bar-model`, `bar-slot-slot-1`, `item-settings`, …) in place of `controlbar.model` and the like; `action: Edit > Settings…` becomes `File > Settings…` |
+
+The runner uses neither `MainWindow::pacer()` nor `controller()` nor a
+frozen mode; the CTest `CalcU1600ShotsThroughAttach` (D.8) keeps it so.
+
+**The pacing probe (LIB-17 §5).** `--pacing-probe <s>` stays as an
+option but becomes an attach client in its own process, as the runner
+is: it reads `ticks` through attach after the start and again after `s`
+seconds of wall time, and prints today's line (`main.cpp:87`). The
+Checkpoint entry `CalcU1600QtPacingProbe` is unchanged.
+
+**Builds.** The runner, the line client and the probe are compiled only
+with `CALCU_ATTACH` (POSIX trees with `CALCU_TESTS`, D-5). The tree of
+`tools/build_app.sh` (`build/app-1600`, `:20`) has it; release builds
+and Windows have neither `--shots` nor `--pacing-probe`.
+
+### D.7 Adapters removed in M-49
+
+| Adapter | Where | Named by |
+|---|---|---|
+| the `Operations` popup and the wait cursor | `frontends/qt6/app/Operations.*` | §5; LIB-3 §4 |
+| `--pacing-probe` as a test hook outside attach | `frontends/qt6/app/main.cpp:57-99` | LIB-17 §5 (it becomes an attach client) |
+| the frozen mode | `MachineController.cpp:100-137`, `EmulationPacer.*` | §5 |
+| W16-1, the page data requests `c1600.faceplate`, `c1600.lcd-constants` | `app/SharpWebPart.cpp:397-402` | LIB-15 §5 (the hit map stays, as `c1600.faceplate-map`; D-22, D-31) |
+| `src/engine.js` | `frontends/web/src/engine.js` | LIB-15 1600 |
+| the interim topic `c1600.control-state` | `app/SharpTopics.hpp:26, 54-60` | LIB-3 §5, LIB-4 §5 |
+| the settings commands of `SharpWebPart` | `app/SharpWebPart.cpp:367-395` | §5 |
+| A-4, the frontends' own "ROMs missing" | `MachineController.cpp:44-53` (a message box, then exit); the Web's "stopped" modal | LIB-12 §5 |
+| `toDisplayFrame` (`displayFrameOf`, `shared::DisplayFrame`) | `app/DisplayFrame.hpp`, `app/SharpAppPart.hpp:62` | C1600-1 §5 |
+| `modelIdOf`, `modelOf`, `variantIdOf` with `shared::Model`, `PC1600RomVersion`, `CE1600PRomVersion`, `modelKey` | `app/MachineModel.hpp` and its users (D-28) | C1600-1 §5; LIB-1 §5 |
+| what M-46 and M-47 left of the interim topic `c1600.machine` | `app/SharpTopics.hpp:62-76` | LIB-3 §5 (LIB-4 and LIB-18 1600) |
+
+### D.8 Tasks
+
+Tests come before the code. A new test program for the Qt6 frontend:
+`CalcU1600QtTests` (`frontends/qt6/tests/`, the one runner, offscreen,
+built only with Qt; Frequent, about 5 s with the 500 ms waits). It runs
+the real window with the session in `Hosting::Paced` on a scripted wall
+clock and the choosers of `Shell::setChoosers` as fakes. The Web cases
+are in `frontends/web/tests/shell.spec.js` (Chromium and WebKit; Longer,
+in `CalcU1600WebPlaywright`). Case names are `lib14_acN_…` (product
+rows, LIB-1 §2a); each Qt6 case and its Web case carry the scenario ID
+of AC-25.
+
+| Task | What | ACs | Test (program: cases) |
+|---|---|---|---|
+| Q1 | `SharpShellProduct`; the session host in `MachineController` | (support); AC-39 | `CoreTests`, `app/tests/shell_product_tests.cpp`: `lib14_ac34_shell_product_complete` (`checkShellProduct` against each model's control state), `lib14_ac39_help_address_and_about_texts` |
+| Q2 | Qt6 menus | AC-34; AC-1, AC-4, AC-6 for this product | `CalcU1600QtTests`: `lib14_ac34_qt_menus_in_family_order` (File, Edit, Machine, Help and their items per model; ROM Revision only on the PC-1500, ROM Version and CE-1600P ROM on the PC-1600; Cold boot; Resume), `lib14_ac34_copy_log_selection_while_inspector_text_selected`, `lib14_ac34_shortcuts_ctrl_o_r_shift_r`. The macOS application menu is seen in the shot `02-machine-menu` (Longer) |
+| Q3 | Web menus | AC-35 | `shell.spec.js`: `lib14_ac35 the web menus` (no Mount Directory…, Unmount, Quit; Import Media… and Saved Media…; Load Preset… and Examples ▸ as two items), `lib14_ac35 no shortcut is bound` |
+| Q4 | The bar per model | AC-36; AC-8 to AC-10 | `CalcU1600QtTests`: `lib14_ac36_bar_pc1500_pc1500a` (the model picker, the slot picker without a number and with Name & Save, the buttons CE-150 and CE-158, the tape controls only with a CE-150), `lib14_ac36_bar_pc1600` (the slot pickers "1:" and "2:"; the printer picker with None, CE-150, CE-1600P; the CE-158 button; the disk controls, disabled with the reason until the CE-1600P is plugged in; the tape controls with a cassette); `shell.spec.js`: `lib14_ac36 the bar per model` |
+| Q5 | Settings | AC-37; AC-11 to AC-13 | `CalcU1600QtTests`: `lib14_ac37_settings_sections_and_rows` (General: Startup model; Startup presets: three rows; Storage: Save folder, Tapes; Folders: four rows; Tracing: two; Serial ports: the link folder and two status lines, not on Windows; Debugger); `shell.spec.js`: `lib14_ac37 the web settings` (General, Startup presets, the sentence on saved media) |
+| Q6 | "Loading…" and notices | AC-38; AC-15 to AC-17 | `CalcU1600QtTests`: `lib14_ac38_loading_after_500_ms_blocks_nothing` (a preset at full speed: nothing at 300 ms, the overlay at 600 ms; the model picker, Reset and Cold boot enabled; Reset ends it), `lib14_ac38_notice_without_title` |
+| Q7 | Help and About | AC-39 | `CalcU1600QtTests`: `lib14_ac39_help_opens_calc_u_org_1600`, `lib14_ac39_about_as_today`; `shell.spec.js`: `lib14_ac39 help and about` |
+| Q8 | The layout | AC-40 | `CalcU1600QtTests`: `lib14_ac40_layout_faceplate_bar_panel_row` (the order; the paper panel always; the CE-158's panel only with a CE-158); `shell.spec.js`: `lib14_ac40 panels only with room` (two viewport sizes). One picture per layout (AC-25): the shots `01-app-overview` and `02-control-bar-pc1600` (Longer) |
+| Q9 | Copy Screen | AC-41 | `CalcU1600QtTests`: `lib14_ac41_copy_screen_picture_and_text` (the fake clipboard gets the PNG and the text of `LcdText::plainText`); `shell.spec.js`: `lib14_ac41 copy screen` |
+| Q10 | The faceplate's input | AC-24, AC-43 for this product | `CalcU1600QtTests`: `lib14_ac24_key_under_pointer_pc1500_pc1600` (key centres; a point in a gap within 24 px; touch with Qt Test), `lib14_ac43_display_hold_full_speed`; `shell.spec.js`: `lib14_ac24 a key under the pointer` |
+| Q11 | The attached registry, the bare `wait` | (for AC-44; library) | `calcu_library_tests`: `attach_registry_matches_serve`, `attach_bare_wait_ends_when_idle`; `calcu_qt6_tests`: `qt_attach_host_preset_key_type`; Frequent |
+| Q12 | The shot runner on attach | AC-44 | `CalcU1600QtTests`: `lib14_ac44_scenario_through_attach` (two shots with `preset`, `key`, `type`, `wait-idle` and a widget capture; nothing else steps the machine); the CTest `CalcU1600ShotsThroughAttach` (`cmake -P frontends/qt6/tests/check_shots_through_attach.cmake`: `ShotRunner.cpp` names no `controller()`, `pacer()`, `setFrozen`, `runFor`, `pasteText`; Frequent); the nine `CalcU1600Shots.*` scenarios upgraded (Longer) |
+| Q13 | ROMs missing | AC-19 for this product | `CalcU1600QtTests`: `lib14_ac19_roms_missing_in_window` (a ROM folder without one file: the text in place of the faceplate, no bar, no Machine menu, About works, the app runs on); `rom-missing.spec.js` re-pointed |
+| Q14 | LIB-3 1600 Done | LIB-3 AC-38 | `CoreTests`: `lib3_ac38_mirror_holds_every_callback` re-pointed to the owners' names (`control-state` for `presetArmed` and the model, `media`, `run-state`, `notices`, `log`, `busy`, `roms-missing`, LIB-2's serial link topic) |
+| Q15 | C1600-2 Done | C1600-2 AC-15 | `CalcU1600QtTests`: `c1600_2_ac15_file_items_and_filters` (the two items in FileKinds, the filters, the start folders of `[folders]`); `shell.spec.js`: `c1600_2_ac15 the file items` |
+
+Coverage: AC-34 to AC-41 and AC-44 in Q2 to Q12, with AC-19, AC-24 and
+AC-43 for this product. The Longer group runs at the end of Part D with
+the upgraded `CalcU1600Shots.*` and Playwright.
+
+### D.9 Ledger rows
+
+Visible from M-49: 1600-10 (menus and bar), 1600-14 (its "Copied to
+clipboard" and Resume parts), 1600-27 (the operation's title gone from
+messages), 1600-33 ("Loading…" without a title; controls disabled while
+something loads). New rows M-49 adds to `docs/behaviour-changes.md` in
+the same step, consequences of the spec that the ledger lacks:
+
+- **1600-34.** Web: the page binds no shortcut to a menu item: ⌘R /
+  Ctrl+R, ⌘⇧R, ⌘, and ⌘C no longer act there (they are the browser's);
+  pasting still types (the browser's paste). Qt6: Ctrl+O (⌘O) is Load
+  Preset…. The startup model is chosen by the model's name ("PC-1500";
+  today "PC-1500 (ROM A04)"). Sources: LIB-14 AC-4, AC-11; D-30.
+- **1600-35.** When a ROM file is missing, the Qt6 window opens and
+  shows which files are missing in place of the calculator, and Help and
+  About work (today a message box, then the app quits). On the Web the
+  same text stands in place of the calculator, without the title
+  "Calc-U-1600 stopped". Sources: LIB-14 AC-19, LIB-12 AC-5.
+- **1600-36.** A mouse click in the gap between two keys, within 24
+  pixels of a key, presses that key, as a touch does on the Web today
+  (today a click must hit the key); the Qt6 faceplate also takes touch.
+  Sources: LIB-14 AC-24, D-8. OQ-5 called such a change too small to
+  list; it is listed because it is seen with a mouse.
+
+### D.10 Tools and agent knowledge (changed in the same step)
+
+| File | Change |
+|---|---|
+| `products/calc-u-1600/docs/developer/screenshots/README.md` | the runner on attach (D.6): the step table, `cold-boot`, `wait-idle`, the object names, `File > Settings…`; "Frozen emulation" becomes "captures after the machine is idle" |
+| `products/calc-u-1600/docs/developer/screenshots/guide/*.shots.yaml` | the steps and object names as above |
+| `products/calc-u-1600/docs/developer/Shared-Architecture.md`, `Web-Client.md` | the shell, `SessionHost`, `SharpShellProduct` and the control state; `ControlState`, `controlStateOf`, `engine.js` and `Operations` gone |
+| `products/calc-u-1600/docs/background/Decisions.md` | the entry on ROMs and non-native peripherals in the Machine menu only gets a line: superseded by LIB-14 AC-9 (the bar by the family rule) |
+| `products/calc-u-1600/CLAUDE.md` | "Every frontend hosts…": the Qt6 frontend through `calcu::qt6::SessionHost` and the shell, `MachineController` as the product's glue; the Web page on the React set; `--shots` an attach client |
+| `docs/glossary-mapping.md` | visible renames for Calc-U-1600 done (Cold boot, Startup preset, Save folder, Startup model, Examples folder); code names: Model (`shared::Model` gone), Shell |
+| `docs/test-groups.md` | `CalcU1600QtTests`, `CalcU1600ShotsThroughAttach`, the new library cases, `shell.spec.js` |
+| memory `calc-u-1600/project_scripted_screenshots.md` | "frozen, byte-identical" becomes "through attach, captured after `wait-idle`"; the steps |
+| memory `calc-u-1600/feedback_machine_config_on_control_bar.md` | the bar follows LIB-14 AC-9 (the printer picker and the CE-158 on the PC-1600's bar); the 2026-10-04 exception is superseded |
+| memory `calc-u-1600/project_dap_debugger_plan.md` | "the window's Operations" becomes the shell; `runAndWait` gone |
+| memory `calc-u-1600/feedback_gui_test_launch_quit.md` | scripted launches of the GUI use `--shots` or attach; the quit rule stays until M-50 |
+| `features/LIB-1-machine-interface-and-descriptors/design.md` §2a | `harness/attach` includes the other command areas of `harness` |
+
+### D.11 Golden runs and risks
+
+- **Golden runs** run no frontend. M-49 changes no core except the
+  catalogue's pin-outs (LIB-4 Part D). The replays
+  (`c1600_1_ac4_golden_runs_through_the_interface`) pass unchanged; a
+  difference is a finding. The reference runs of M-4 are compared in
+  M-46, not here.
+- **Shots on the app's clock.** Captures are no longer byte-identical
+  from run to run (a cursor blinks, a clock runs). Every shot ends with
+  `wait-idle` before its captures; the Longer checks compare that every
+  image is written, as today. The help's pictures (LIB-16 AC-12, M-52)
+  are taken from these runs. A shot that shows a blinking cursor may
+  need a `wait` that lands on the same phase; to be seen in M-49.
+- **Run time of the scenarios** grows: a preset runs in parts on the
+  app's clock, and `run:` takes wall time. Measured in M-49 for
+  `docs/test-groups.md`; Longer has room (40 s for the nine today).
+- **The attached registry** changes C59-5's attach, which gains
+  commands. Its tests stay; the Swift XCUITests run in Part E.
+- **CI.** M-49 changes the build of the Qt6 and Web frontends (new
+  links, files gone, a new test program): one CI dispatch at the merge
+  (plan §1).
+
+### D.12 Decided (best guess)
+
+- **D-25.** M-49 takes over any frontend piece that M-44 to M-48 leave
+  undone; their designs say what they do.
+- **D-26 (AC-37).** Calc-U-1600 gives its own Folders section with
+  today's labels and "Samples" renamed: "Examples folder", "Basic
+  folder", "Assembly folder", "Host drive folder". Storage keeps "Tapes"
+  beside "Save folder".
+- **D-27 (AC-44).** The attached harness registers the serve form's
+  commands, and its bare `wait` ends at idle on the app's clock. It is a
+  library change in a product step because AC-44 is its first user.
+- **D-28 (C1600-1 §5).** `shared::Model` and its ROM version enums go:
+  `app/` uses `ModelId` and `VariantId`, the frontends the control
+  state. `KeyLayout::layoutFor`, `LcdLayout` and the faceplate art are
+  chosen by `ModelId`. The users left after M-48 change in this step;
+  today they are `app/ControlState.*`, `KeyLayout/FaceplateLayout.cpp`,
+  `LcdLayout.cpp`, `Settings.cpp`, `SharpAppPart.*`, `SharpTopics.hpp`,
+  `SharpWebPart.cpp`, `PresetCatalog.*`, `CardYamlDump.cpp`,
+  `MachineCodeLoad.cpp`, the Qt6 `ControlBar`, `DebugPanel`,
+  `FaceplateWidget`, `LcdWidget`, `MainWindow`, `SettingsDialog`,
+  `MachineController.hpp`, and the tests of `app/tests/` and `tests/`
+  that name `Model::`.
+- **D-29 (AC-36, AC-42).** The disk controls are one product control
+  on the bar of every PC-1600, not the shell's media control, so they
+  do not appear twice once the CE-1600P is plugged in.
+- **D-30 (AC-4).** The Web page drops all its menu shortcuts, ⌘C
+  included; the paste event stays (LIB-5, not a menu binding). Ledger
+  1600-34.
+- **D-31 (D-22).** The Web's static faceplate data is one product
+  request, `c1600.faceplate-map {model}`: the shell's hit map, the
+  LCD's place and the layout of its indicators, from the tables Qt6
+  uses (`app/KeyLayout`, `app/LcdLayout`).
+- **D-32.** The shell data of §3.2 is written once in C++
+  (`SharpShellProduct`) and sent to the page by `c1600.shell-product`,
+  so the two frontends cannot disagree on labels and addresses.
+- **D-33 (AC-44).** `hold-key` stays a UI step (a pointer on the
+  faceplate), because the pressed-key flash is drawn from live input;
+  the machine is stepped only through attach.
+
+### D.13 Plan notes (proposals; the plan is not edited)
+
+- M-49 "Waits for" should also name M-44, M-45 and M-48 (the File
+  items; the paper panel and Resume; `open`). Today it names M-43,
+  M-46 and M-47.
+- M-49 "Does" gains: the attached harness's full command set and the
+  bare `wait` (D-27); the Sharp 60-pin places with a pin-out each (LIB-4
+  Part D, O-2); `shared::Model` gone (C1600-1 §5). "Completes" gains
+  LIB-3 1600 and C1600-2, which §5.1 already has Done in M-49.
+- M-49 "Knowledge, ledger" gains the memory files of D.10 and the new
+  rows 1600-34 to 1600-36.
+
+### D.14 Questions for the user
+
+None that split the design.

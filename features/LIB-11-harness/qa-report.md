@@ -28,7 +28,7 @@ entries, 39 s wall time with `-j8`; Calc-U-1600's `CoreTests` 41 s).
 | ID | Result | Test case |
 |---|---|---|
 | AC-1 | Pass | `calcu_cli.ac1_product_by_name_or_short_form_any_case` (`Calc-U-Test`, `calc-u-test`, `TEST`, `test`); the products register through `calcu_harness_add_product` and the deferred table (`calcu --product 59`, `--product 1600` in one program) |
-| AC-2 | Pass | `ac2_commands_part_on_then` (`protocol_tests.cpp`); `calcu_cli.ac2_one_shot_runs_in_order_and_exits_zero`, `calcu_cli.ac2_first_refusal_exits_nonzero_with_reason` (`wait 1s then test fail then ticks`: exit 1, the reason, `ticks` not run). The clause "the machine the product starts with (LIB-18)" passes in M-35; until then the product's start (adapter A-1) |
+| AC-2 | Pass | `ac2_commands_part_on_then` (`protocol_tests.cpp`); `calcu_cli.ac2_one_shot_runs_in_order_and_exits_zero`, `calcu_cli.ac2_first_refusal_exits_nonzero_with_reason` (`wait 1s then test fail then ticks`: exit 1, the reason, `ticks` not run). The clause "the machine the product starts with (LIB-18)" passes in M-35: `ac2_run_starts_with_the_startup_model_under_default_settings` (`run_tests.cpp`; LIB-18's `StartupPart` builds the startup model and the run begins at key readiness); adapter A-1 is replaced by LIB-18's `HarnessMachines` |
 | AC-3 | Pass | `calcu_cli.ac3_serve_one_reply_per_line_until_quit` (a `\r\n` line, an empty line, a refused line, `quit`, a line after it) |
 | AC-4 | Pass | `ac4_plain_reply_is_lines`, `ac4_json_reply_has_the_three_keys_for_every_command` (every registered command, done and refused, one line each) |
 | AC-5 | Pass | `ac5_refusal_carries_the_reason`, `ac5_line_that_is_no_command_is_refused` (and serve goes on), `ac5_notices_only_through_state` |
@@ -62,7 +62,9 @@ The Python helper (D-2, no AC): `calcu_serve_python` passes
 `lcd` shows `          7 ` as `ti59.py`'s `display()` does, `ticks`) and
 `harness_drives_a_sharp_machine` (`CoreTests`; the PC-1500A of the default
 start, D-1: `NEW0? :CHECK` read from the dots with the ROM font, answered
-with keys, `display`). The PC-1600 follows in M-35 (model switch, LIB-18).
+with keys, `display`). The PC-1600 follows in M-35 (model switch, LIB-18):
+`harness_drives_a_pc1600` and `harness_variant_switch_old` (`CoreTests`;
+`model PC-1600`, `lcd` reads `>` with the PC-1600's font, `variant old`).
 By hand: `calcu --product 1600 wait 2s then lcd` shows `NEW0? :CHECK`,
 `indicators: DE G PRO I`, `not text: 0`.
 
@@ -105,3 +107,22 @@ no core; no reference was re-recorded.
   source the frontends use: Calc-U-59 the Xcode project's
   `MARKETING_VERSION` (3.0.0), Calc-U-1600 the Qt build's `APP_VERSION`
   (0.9.0). User, 2026-11-15 (the M-28 build had the CHANGELOG versions).
+
+### M-35 (LIB-18 Library, 2026-11-15)
+
+- The harness's start is LIB-18's (design §3.6): `Server::start` adds
+  `StartupPart` and sends `start`; `HarnessProduct::startupRequest` and
+  `startUp` (adapter A-1) are gone, `machines()` gives LIB-18's
+  `ProductMachines` (adapter `HarnessMachines` in both product entries,
+  with `SharpBuildColdBoot` in Calc-U-1600's; LIB-18 design §5).
+- A run now begins at key readiness, not at tick 0 after the build: the
+  expected `ticks` and display values of `commands_tests.cpp`,
+  `display_text_tests.cpp`, `protocol_tests.cpp`, `run_tests.cpp`,
+  `calcu_cli.*` and `calcu_serve_python` moved by the start-up (one run
+  piece: 1,667 ticks on test-seg, 16,668 on test-dot; LIB-18 design §8).
+- A settings file named with `--settings` gets `[startup] last-model`
+  written, as a product writes it (LIB-18 AC-9); without `--settings`
+  nothing is written (AC-8). `ac8_options_name_settings_save_and_output_folders`
+  checks that only `last-model` was added.
+- The harness has LIB-18's commands `model`, `variant`, `attach`,
+  `detach`, `reset`, `cold-boot`, `power-cycle` (LIB-18 AC-15).

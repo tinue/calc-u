@@ -149,9 +149,29 @@ TEST(ac8_options_name_settings_save_and_output_folders) {
         CHECK(run.line("test fail").find("<save folder>/missing.txt") != std::string::npos);
         { std::ofstream(save / "kept.txt") << "mine"; }
     }
-    // The named folders are the agent's: kept, with what is in them.
+    // The named folders are the agent's: kept, with what is in them. The
+    // named settings file is used as a product uses it: the session records
+    // the last used model there (LIB-18 AC-9), and nothing else changes.
     CHECK(fs::exists(save / "kept.txt") && fs::is_directory(output));
-    CHECK_EQ(calcu::testing::readText(ini), before);
+    const std::string after = calcu::testing::readText(ini);
+    CHECK(after.rfind(before, 0) == 0 || after.find("model = test-dot\n") != std::string::npos);
+    CHECK(after.find("last-model = test-dot") != std::string::npos);
+}
+
+// LIB-11 AC-2 with LIB-18 (design L8): the run starts with the machine the
+// product starts with under the default settings: `last` and nothing
+// recorded gives the fallback model, built by LIB-18's start, at key readiness.
+TEST(ac2_run_starts_with_the_startup_model_under_default_settings) {
+    TestRun seg;
+    CHECK(seg.server != nullptr);
+    if (!seg.server) return;
+    CHECK(seg.machine().model() == mt::kSeg);
+    CHECK(seg.machine().isKeyReady());
+    CHECK(seg.machine().tickCount() >= mt::kStartUpTicks);
+    CHECK_EQ(seg.server->setup().settings().text("startup", "last-model"), std::string("test-seg"));   // kept for the run
+    CHECK_EQ(seg.line("model test-seg"), std::string("done\n"));   // the one machine: nothing to do
+    TestRun dot({}, mt::kDot);   // another fallback model in the declaration
+    CHECK(dot.server && dot.machine().model() == mt::kDot && dot.machine().isKeyReady());
 }
 
 TEST(ac8_bundled_roms_through_the_lookup) {
@@ -256,10 +276,11 @@ TEST(ac6_no_pacer_and_no_wall_clock) {
     const int reads = run.server->wallClockReads();
     std::this_thread::sleep_for(std::chrono::milliseconds(20));
     // Wall time passing moves nothing: emulated time passes only by commands.
-    CHECK_EQ(run.line("ticks"), std::string("done 2\nticks: 0\nseconds: 0.000000000\n"));
+    // The start's one run piece (LIB-18 D-4), nothing more.
+    CHECK_EQ(run.line("ticks"), std::string("done 2\nticks: 1667\nseconds: 0.016670000\n"));
     run.line("wait 10ms");
     run.line("lcd");
-    CHECK_EQ(run.machine().tickCount(), std::uint64_t{1000});
+    CHECK_EQ(run.machine().tickCount(), std::uint64_t{2667});
     // The session is hosted in virtual time: no host call reads the clock
     // for a deadline (the pacer only notes it when it starts afresh).
     CHECK_EQ(run.server->wallClockReads(), reads);

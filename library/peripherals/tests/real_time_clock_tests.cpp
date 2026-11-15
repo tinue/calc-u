@@ -111,5 +111,6 @@ TEST(ac23_set_from_host_at_build_and_after_operation) {
     r.send("tp.op");
     r.call();
     r.send("tp.stop");
-    CHECK(!r.session->busy() && c->read() == host && m->clock()->setCalls == 3);
+    // (`tp.stop` starts an operation that ends at once, LIB-18 D-6: both ends set it.)
+    CHECK(!r.session->busy() && c->read() == host && m->clock()->setCalls == 4);
 }

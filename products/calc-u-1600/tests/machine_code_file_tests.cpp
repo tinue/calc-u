@@ -524,7 +524,7 @@ TEST(test_pc1600_writer) {
 
 TEST(test_pc1500_writer) {
     PC1500Machine m;
-    CHECK(m.loadROMFile("roms/PC-1500_A04.ROM"));
+    SKIP_UNLESS(m.loadROMFile("roms/PC-1500_A04.ROM"), "roms/PC-1500_A04.ROM not found");
     std::string err;
     CHECK(loadPC1500MachineCode(m, 0x40C5, kCode.data(), kCode.size(), &err));
     for (size_t i = 0; i < kCode.size(); i++) CHECK(m.memory().peek(static_cast<uint16_t>(0x40C5 + i)) == kCode[i]);
@@ -539,7 +539,7 @@ TEST(test_pc1500_writer) {
 TEST(test_pc1600_basic_areas) {
     {
         PC1600Machine m;
-        CHECK(bootPC1600(m));
+        SKIP_UNLESS(bootPC1600(m), "PC-1600 ROMs not found in roms/");
         auto areas = pc1600BasicAreas(m);
         CHECK(areas.size() == 1);
         if (!areas.empty()) CHECK(areas[0].slot == 0 && areas[0].windowBase == 0xC000);

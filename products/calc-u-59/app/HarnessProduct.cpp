@@ -1,11 +1,12 @@
 #include "HarnessProduct.hpp"
 #include "MachineModelInfo.hpp"
+#include "PacingProfiles.hpp"
 #include "ProductRoms.hpp"
 #include "Settings.hpp"
 #include "../core/TICatalogue.hpp"
 #include "../core/TISegments.hpp"
 #include "roms/Bundle.hpp"
-#include "settings/Startup.hpp"
+#include "startup/ProductMachines.hpp"
 
 // The ROM folder the product's tests use (design §8, O-2), set by CMake.
 #ifndef CALCU59_ROM_DIR
@@ -18,6 +19,32 @@ namespace {
 
 using namespace calcu;
 
+// Adapter HarnessMachines (LIB-18 design §5; the successor of LIB-11's A-1):
+// the harness's built-in default per model as 2.3.0's core gives it (the
+// model with the PC-100C, TRACE off, and no module), the TI pacing profile,
+// no sound, the 25 s bound of LIB-18 EC-7. Removed in M-54, when the app
+// layer's ProductMachines takes over (Master Library, no printer: AC-18).
+class HarnessMachines final : public startup::ProductMachines {
+public:
+    const machine::Catalogue& catalogue() const override { return tiCatalogue(); }
+    machine::MachineBuilder& builder() override { return builder_; }
+    startup::MachinePlan builtInDefault(const machine::ModelId& model) override {
+        startup::MachinePlan plan;
+        plan.model = model;
+        const MachinePeripherals start;   // 2.3.0's core: the PC-100C, no module (D-17)
+        if (start.printer) plan.peripherals.push_back(printerRequest(start.trace));
+        return plan;
+    }
+    pacing::PacingProfile pacingProfile(const machine::ModelId& model) const override {
+        return cu59::pacingProfile(modelFrom(model).value_or(Model::TI59));
+    }
+    int soundRate(const machine::ModelId&) const override { return 0; }
+    machine::Seconds readinessBound(const machine::ModelId&) const override { return machine::Seconds(25.0); }
+
+private:
+    TIMachineBuilder builder_;
+};
+
 class TIHarnessProduct final : public harness::HarnessProduct {
 public:
     std::string_view name() const override { return "Calc-U-59"; }
@@ -25,20 +52,13 @@ public:
     std::string_view commandWord() const override { return "ti59"; }
     std::string_view version() const override { return CALCU59_VERSION; }   // MARKETING_VERSION (CMake)
     const machine::Catalogue& catalogue() const override { return tiCatalogue(); }
-    machine::MachineBuilder& builder() override { return builder_; }
+    machine::MachineBuilder& builder() override { return machines_.builder(); }
 
     const calcu::settings::ProductDecl& settingsDecl() const override { return cu59::settings::settingsDecl(); }
 
     roms::LookupResult lookUpRoms() const override { return cu59::lookUpRoms(roms::DirectoryBundle(CALCU59_ROM_DIR)); }
 
-    machine::BuildRequest startupRequest(const calcu::settings::SettingsFile& s, const roms::RomSet& set) override {   // A-1
-        machine::BuildRequest r;
-        r.model = machine::ModelId{calcu::settings::startupModel(s)};
-        if (const machine::MachineDescriptor* d = tiCatalogue().model(r.model)) r.roms = set.imagesFor(*d, std::nullopt);
-        const MachinePeripherals start;   // 2.3.0's core: the PC-100C, no module
-        if (start.printer) r.peripherals.push_back(printerRequest(start.trace));
-        return r;
-    }
+    startup::ProductMachines& machines() override { return machines_; }
 
     harness::DisplayText readDisplay(const machine::DisplayOutput& o, const machine::MachineDescriptor& d) override {
         const auto* frame = std::get_if<machine::SegmentFrame>(&o.frame);
@@ -52,7 +72,7 @@ public:
     }
 
 private:
-    TIMachineBuilder builder_;
+    HarnessMachines machines_;
 };
 
 } // namespace

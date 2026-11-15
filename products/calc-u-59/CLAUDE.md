@@ -53,7 +53,8 @@ repository root): the product without a window, on the library's app
 session, in emulated time only, so two runs give the same replies. Build
 the target `calcu` of a root tree (`cmake --build ../../build/tests --target
 calcu`; the program is `build/tests/library/harness/cli/calcu`). It finds the
-ROMs in `roms/` (`roms/fetch_roms.sh`) and starts the TI-59 with the PC-100C.
+ROMs in `roms/` (`roms/fetch_roms.sh`) and starts the startup model (the
+TI-59 under the default settings) with the PC-100C, at key readiness (LIB-18).
 
 - One-shot: `calcu --product 59 wait 2s then key-down 7 then wait 100ms then key-up 7 then wait 500ms then lcd`
   (commands parted by `then`; exit status 0, 1 at the first refusal, 2 when
@@ -64,7 +65,10 @@ ROMs in `roms/` (`roms/fetch_roms.sh`) and starts the TI-59 with the PC-100C.
   Python: `library/harness/python/calcu_serve.py`.
 - First commands: `wait <2s|500ms>`, `key-down`/`key-up <key ID>`, `lcd`,
   `display`, `state <topic>`, `capabilities`, `ticks`, `quit`
-  (`calcu --help` lists them). No settings or save folder of yours is
+  (`calcu --help` lists them). Machine control (LIB-18): `model <TI-59|TI-58|TI-58C>`,
+  `attach <place> <peripheral>` (`attach slot-1 ML`), `detach <place>`, `reset`,
+  `cold-boot`, `power-cycle`; each replies when the machine is ready for keys
+  again. No settings or save folder of yours is
   touched unless `--settings`, `--save-folder`, `--output-folder` name them.
 - Not yet: `ti59 …` commands, typing, presets, traces, memory (later
   features). Until M-59, `tools/headless/` and `tools/agentic/` stay the

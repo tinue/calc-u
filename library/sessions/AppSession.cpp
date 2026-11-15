@@ -281,7 +281,6 @@ void AppSession::Impl::runCommand(ListenerId l, CallId id, const Command& c) {
         reply(l, id, false, "Unknown command: " + c.name.value + ".");
         return;
     }
-    if (it->second.endsRunningOperation && running) stopOperation();
     CommandOutcome outcome;
     // A handler may reply to its own call before it returns Deferred (a key
     // that is up at once): the call is known as deferred from the start.
@@ -305,7 +304,13 @@ void AppSession::Impl::runCommand(ListenerId l, CallId id, const Command& c) {
     deferred.erase(id);
     if (auto* d = std::get_if<Done>(&outcome)) reply(l, id, true, {}, std::move(d->result));
     else if (auto* r = std::get_if<Refused>(&outcome)) reply(l, id, false, std::move(r->reason));
-    else start(l, id, std::move(std::get<StartOperation>(outcome).op));
+    else {
+        // LIB-18 D-6: a command declared endsRunningOperation stops the
+        // running operation only when it starts one itself; Done (nothing to
+        // do) and Refused leave it running.
+        if (it->second.endsRunningOperation && running) stopOperation();
+        start(l, id, std::move(std::get<StartOperation>(outcome).op));
+    }
 }
 
 void AppSession::Impl::start(ListenerId l, CallId id, Operation op) {

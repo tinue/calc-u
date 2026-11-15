@@ -62,14 +62,17 @@ TEST(ac9_wait_reports_time_passed_within_one_instruction) {
     TestRun run;   // test-seg: 100 kHz, instructions of 3 and 5 ticks
     CHECK(run.server != nullptr);
     if (!run.server) return;
-    // 1 ms is 100 ticks; whole instructions: 104.
-    CHECK_EQ(run.line("wait 1ms"), std::string("done 2\nticks: 104\nseconds: 0.001040000\n"));
+    // The run starts at key readiness: one run piece of 1667 ticks (LIB-18
+    // D-4; LIB-11 AC-2). 1 ms is 100 ticks; whole instructions from there: 101.
+    const auto t0 = run.machine().tickCount();
+    CHECK_EQ(t0, std::uint64_t{1667});
+    CHECK_EQ(run.line("wait 1ms"), std::string("done 2\nticks: 101\nseconds: 0.001010000\n"));
     // 500 ms is 50 000 ticks; what passed exceeds it by less than one instruction.
     const std::string r = run.line("wait 500ms");
     const auto at = r.find("ticks: ");
     const long ticks = at == std::string::npos ? 0 : std::stol(r.substr(at + 7));
     CHECK(ticks >= 50'000 && ticks < 50'005);
-    CHECK_EQ(run.machine().tickCount(), std::uint64_t(104 + ticks));
+    CHECK_EQ(run.machine().tickCount(), t0 + std::uint64_t(101 + ticks));
     RunOptions o;
     o.json = true;
     TestRun json(o);
@@ -80,8 +83,9 @@ TEST(ec2_wait_without_unit_is_refused) {
     TestRun run;
     CHECK(run.server != nullptr);
     if (!run.server) return;
+    const auto t0 = run.machine().tickCount();
     CHECK_EQ(run.line("wait 2"), std::string("refused: A duration needs a unit, as in 2s, 1.5s or 500ms: 2.\n"));
-    CHECK_EQ(run.machine().tickCount(), std::uint64_t{0});   // nothing passed
+    CHECK_EQ(run.machine().tickCount(), t0);   // nothing passed
 }
 
 TEST(ac9_key_down_and_up) {
@@ -123,9 +127,10 @@ TEST(ac9_ticks_gives_count_and_seconds) {
     TestRun run({}, mt::kDot);   // 1 MHz, instructions of 4 ticks
     CHECK(run.server != nullptr);
     if (!run.server) return;
-    CHECK_EQ(run.line("ticks"), std::string("done 2\nticks: 0\nseconds: 0.000000000\n"));
+    // At key readiness: one run piece of 16 668 ticks (LIB-18 D-4).
+    CHECK_EQ(run.line("ticks"), std::string("done 2\nticks: 16668\nseconds: 0.016668000\n"));
     run.line("wait 1s");
-    CHECK_EQ(run.line("ticks"), std::string("done 2\nticks: 1000000\nseconds: 1.000000000\n"));
+    CHECK_EQ(run.line("ticks"), std::string("done 2\nticks: 1016668\nseconds: 1.016668000\n"));
 }
 
 TEST(ac9_capabilities_with_kind_id_owner_and_places) {
@@ -170,11 +175,12 @@ TEST(ac7_operation_runs_to_its_end_before_the_reply) {
     TestRun run({}, mt::kDot);
     CHECK(run.server != nullptr);
     if (!run.server) return;
+    const auto t0 = run.machine().tickCount();   // the start: 16 668 ticks
     CHECK_EQ(run.line("test operation 2000000"), std::string("done\n"));   // 2 s of emulated time
-    CHECK_EQ(run.machine().tickCount(), std::uint64_t{2'000'000});
+    CHECK_EQ(run.machine().tickCount(), t0 + 2'000'000);
     // The busy topic is idle again before the reply.
     CHECK_EQ(run.line("state busy"), std::string("done 1\n{\"operationRuns\":false,\"speed\":\"regular\"}\n"));
-    CHECK_EQ(run.line("ticks"), std::string("done 2\nticks: 2000000\nseconds: 2.000000000\n"));
+    CHECK_EQ(run.line("ticks"), std::string("done 2\nticks: 2016668\nseconds: 2.016668000\n"));
 }
 
 // ── key, type (LIB-5 design §6, L12) ───────────────────────────────────

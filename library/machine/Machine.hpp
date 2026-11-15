@@ -104,6 +104,10 @@ public:
     // `old` out of the request's place and the request's peripheral in, in one
     // step: checked as canAttach without `old`, what follows asked once (AC-35).
     ChangeResult replace(const PeripheralId& old, PeripheralRequest, const Catalogue&);
+    // The refusal replace() would give, without the change (LIB-18 AC-12;
+    // LIB-4): `old` not at the request's place, or canAttach's checks
+    // without `old`.
+    std::optional<Refusal> canReplace(const PeripheralId& old, const PeripheralRequest&, const Catalogue&) const;
 
 protected:
     // A product's rule (AC-29): the sentence of a refusal, or none. `replacing`

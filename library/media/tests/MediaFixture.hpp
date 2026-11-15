@@ -70,6 +70,8 @@ public:
     FixtureBuilder builder_;
 };
 
+class MediaFixture;
+
 struct FixtureOptions {
     sessions::Hosting hosting = sessions::Hosting::VirtualTime;
     std::string model = "test-seg";
@@ -78,6 +80,10 @@ struct FixtureOptions {
     sessions::HostServices services;
     bool saveFolderMissing = false;   // EC-1: the save folder is not made before
     ModuleListing listing;
+    // LIB-13 (M-42): the settings file the session reads (empty: defaults
+    // only), and parts after MediaPart, made once the fixture's parts are.
+    std::string settingsIni;
+    std::function<std::vector<sessions::SessionPart*>(MediaFixture&)> moreParts;
 };
 
 class MediaFixture {
@@ -86,7 +92,9 @@ public:
         : saveRoot("calcu-media-save"), bundled("calcu-media-bundled"), presetsDir("calcu-media-presets") {
         machines.defaults = o.defaults;
         saveFolder = o.saveFolderMissing ? saveRoot / "not-yet" : saveRoot.str();
-        settings = std::make_unique<settings::SettingsFile>(settings::SettingsFile::defaultsOnly(startup::test::testDecl()));
+        settings = std::make_unique<settings::SettingsFile>(
+            o.settingsIni.empty() ? settings::SettingsFile::defaultsOnly(startup::test::testDecl())
+                                  : settings::SettingsFile::open(startup::test::testDecl(), o.settingsIni));
         settings::HostDirs dirs;
         dirs.frontend = settings::FrontendKind::Swift;   // the save folder as passed (LIB-9 AC-14)
         dirs.home = saveRoot / "home";
@@ -138,6 +146,8 @@ public:
         s.clock = clock.fn();
         s.hostTime = [] { return std::chrono::system_clock::time_point(std::chrono::hours(24 * 365 * 50)); };
         s.parts = {&peripherals, presetsPart.get(), startupPart.get(), control.get(), media.get()};
+        if (o.moreParts)
+            for (sessions::SessionPart* p : o.moreParts(*this)) s.parts.push_back(p);
         s.hosting = o.hosting;
         s.jitterSeed = 1;
         session = std::make_unique<sessions::AppSession>(std::move(s));

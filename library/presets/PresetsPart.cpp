@@ -111,23 +111,30 @@ Task<OperationResult> waitIdle(OperationContext& op, IdleRule rule) {
 
 } // namespace
 
+CommandOutcome PresetsPart::loadPreset(const Value& args, SessionContext& c) {
+    readRefusal_ = false;
+    if (c.busy()) return Refused{sessions::kAnotherOperationRuns};
+    if (!setup_.rules || !setup_.catalogue) return Refused{"This build reads no presets of format 2 yet."};
+    const auto source = sourceOf(args);
+    auto read = readPreset(*source, readSetup());
+    if (auto* e = std::get_if<ReadError>(&read)) {
+        readRefusal_ = true;
+        return Refused{e->message};
+    }
+    auto plan = std::make_shared<const LoadPlan>(std::get<LoadPlan>(std::move(read)));
+    const LoadOptions o{sessions::flagArg(args, "buildOnly"), sessions::textArg(args, "cause") == "startup"};
+    return StartOperation{[this, plan, o](OperationContext& op) { return runLoad(op, plan, o); }};
+}
+
 void PresetsPart::attach(sessions::SessionSetup& s) {
     for (const auto& d : vocabulary_.duplicates())
         s.context().log("The preset keyword " + d + " was added twice; the second is not used.");
 
     // AC-6, D-6: read and checked whole before the operation starts.
     s.command(kLoadPresetCommand, [this](const Value& args, SessionContext& c) -> CommandOutcome {
-        if (c.busy()) return Refused{sessions::kAnotherOperationRuns};
-        if (!setup_.rules || !setup_.catalogue) return Refused{"This build reads no presets of format 2 yet."};
-        const auto source = sourceOf(args);
-        auto read = readPreset(*source, readSetup());
-        if (auto* e = std::get_if<ReadError>(&read)) {
-            c.notice(e->message);
-            return Refused{e->message};
-        }
-        auto plan = std::make_shared<const LoadPlan>(std::get<LoadPlan>(std::move(read)));
-        const LoadOptions o{sessions::flagArg(args, "buildOnly"), sessions::textArg(args, "cause") == "startup"};
-        return StartOperation{[this, plan, o](OperationContext& op) { return runLoad(op, plan, o); }};
+        CommandOutcome o = loadPreset(args, c);
+        if (auto* r = std::get_if<Refused>(&o); r && readRefusal_) c.notice(r->reason);
+        return o;
     });
 
     // One step against the running machine (the harness commands, D-15).

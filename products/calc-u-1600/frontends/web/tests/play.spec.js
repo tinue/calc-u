@@ -620,3 +620,89 @@ test('lib10_ac41 machine resume', async ({ page }) => {
   await menu(page, 'Machine', 'Resume');
   await expect.poll(state, { timeout: 10000 }).toBe(false);
 });
+
+// ---- LIB-13, the Calc-U-1600 column (design Part D, D6): opening a file ----
+
+// A file dropped on the client, as the browser hands it over.
+async function dropFile(page, name, buffer) {
+  await page.evaluate(([n, bytes]) => {
+    const dt = new DataTransfer();
+    dt.items.add(new File([new Uint8Array(bytes)], n));
+    document.querySelector('.calcu-client')
+      .dispatchEvent(new DragEvent('drop', { dataTransfer: dt, bubbles: true, cancelable: true }));
+  }, [name, [...buffer]]);
+}
+
+// The fixture tape twice in one WAV: its data chunk doubled.
+function doubledTape() {
+  const wav = fs.readFileSync(path.join(FIXTURES, 'pc1500_tape.wav'));
+  let at = 12;
+  while (wav.toString('ascii', at, at + 4) !== 'data') at += 8 + wav.readUInt32LE(at + 4);
+  const size = wav.readUInt32LE(at + 4);
+  const data = wav.subarray(at + 8, at + 8 + size);
+  const doubled = Buffer.concat([wav.subarray(0, at + 8 + size), data]);
+  doubled.writeUInt32LE(size * 2, at + 4);
+  doubled.writeUInt32LE(doubled.length - 8, 4);
+  return doubled;
+}
+
+test('LIB-13 AC-18 a dropped WAV with several programs asks which one, then loads by its kind', async ({ page }) => {
+  await gotoReady(page);
+  await notBusy(page);
+  await dropFile(page, 'two.wav', doubledTape());
+  const dialog = page.locator('[data-dialog=choice]');
+  await expect(dialog).toContainText('two.wav holds 2 files. Load which one?', { timeout: 30000 });
+  await expect(dialog.locator('option')).toHaveCount(2);
+  await dialog.getByRole('button', { name: 'OK' }).click();
+  await expect(dialog).toHaveCount(0);
+  // A BASIC file: the BASIC loader, which says nothing when it loads.
+  await expect(page.locator('[data-dialog=machinecode]')).toHaveCount(0);
+});
+
+test('LIB-13 AC-18 a dropped headerless .bin asks the address', async ({ page }) => {
+  await gotoReady(page);
+  await pickModel(page, 2);
+  // SharpDataExchange's Z-80 sample, eight times: headerless code by its look.
+  const block = [0x21, 0x00, 0x80, 0x06, 0x10, 0x7E, 0xFE, 0x20, 0x28, 0x01, 0x23, 0x10, 0xF8, 0xCD, 0x00, 0x10, 0xC9];
+  const code = Buffer.from(Array(8).fill(block).flat());
+  await dropFile(page, 'loop.bin', code);
+  const dialog = page.locator('[data-dialog=machinecode]');
+  await expect(dialog.locator('input')).toHaveValue('&C0C5', { timeout: 30000 });
+  await dialog.getByRole('button', { name: 'Cancel' }).click();
+  // Named .rom it is nothing the product opens (AC-17): a notice.
+  await dropFile(page, 'loop.rom', code);
+  await expect(page.locator('[data-dialog=notice]')).toContainText('Calc-U-1600 cannot open loop.rom.', { timeout: 30000 });
+});
+
+test('LIB-13 AC-19 a dropped disk file is imported and inserted', async ({ page }) => {
+  await gotoReady(page);
+  await pickModel(page, 2);
+  await page.getByRole('button', { name: 'CE-1600P' }).click();
+  await expect(page.getByLabel('Disk', { exact: true })).toBeEnabled({ timeout: 30000 });
+  const name = `Dropped ${Date.now()}`;
+  await dropFile(page, `${name}.floppy.yaml`, Buffer.from(instanceOf('formatted.floppy.yaml', 'disk-name', name)));
+  await expect(page.getByLabel('Disk', { exact: true })).toHaveValue(name, { timeout: 30000 });
+  await expect(page.locator('[data-dialog=notice]')).toHaveCount(0);
+});
+
+test('LIB-13 AC-20 a dropped file over 1 MiB is refused with a notice', async ({ page }) => {
+  await gotoReady(page);
+  await notBusy(page);
+  await dropFile(page, 'big.bas', Buffer.alloc((1 << 20) + 1, 0x20));
+  await expect(page.locator('[data-dialog=notice]')).toContainText('big.bas is larger than 1 MiB', { timeout: 30000 });
+});
+
+test('LIB-13 AC-8 Upload Preset opens the preset among its files', async ({ page }) => {
+  await gotoReady(page);
+  await notBusy(page);
+  const chooser = page.waitForEvent('filechooser');
+  await menu(page, 'File', 'Load Preset', 'Upload Preset…');
+  await (await chooser).setFiles([
+    { name: 'six.bas', mimeType: 'text/plain', buffer: Buffer.from('10 PRINT 6*7\n') },
+    { name: 'run.pc1600', mimeType: 'text/plain',
+      buffer: Buffer.from('format-version: 2\nmodel: PC-1600\nprogram: { file: six.bas }\nkeys:\n  - type: RUN\n  - expect: 42\n') },
+  ]);
+  await expect(page.locator('.calcu-face[data-model="2"]')).toHaveCount(1, { timeout: 30000 });
+  await waitForScreen(page, /42/);
+  await expect(page.locator('[data-dialog=notice]')).toHaveCount(0);
+});

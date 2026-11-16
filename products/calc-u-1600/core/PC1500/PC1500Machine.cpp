@@ -231,29 +231,6 @@ void PC1500Machine::endTraceRecords() {
     m_traceDrainCounter = 0;
 }
 
-bool PC1500Machine::beginCpuTrace(std::FILE* handle, uint32_t flags) {
-    if (!handle || m_traceFile) return false;
-    m_traceFile = std::make_unique<PC1500TraceFile>(handle);
-    m_traceDrainCounter = 0;
-    m_cpu.setTraceFlags(flags);
-    // Discard whatever is already in the ring (and its overflow
-    // accounting) so the file starts clean even if tracing was already
-    // enabled before this call (as the CLIs of the pin did for their own ring
-    // demo before applying a preset).
-    uint32_t staleLost = 0;
-    m_cpu.drainTraceEvents(m_traceDrainBuf, kTraceDrainBufFrames, &staleLost);
-    return true;
-}
-
-void PC1500Machine::endCpuTrace() {
-    if (!m_traceFile) return;
-    pumpTraceFile();
-    m_traceFile->finish();
-    m_traceFile.reset();
-    m_cpu.setTraceFlags(TRACE_NONE);
-    m_traceDrainCounter = 0;
-}
-
 void PC1500Machine::pumpTraceFile() {
     // drainTraceEvents() takes LH5801's own ring mutex.
     uint32_t lost = 0;

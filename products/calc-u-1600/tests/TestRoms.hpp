@@ -8,7 +8,7 @@
 
 #include "../core/Connector/SoftwareDefinedCard.hpp"
 #include "../core/Machine/SharpRoms.hpp"
-#include "../core/PC1600/PC1600BasicTyper.hpp"
+#include "support/PC1600BasicTyper.hpp"
 #include "../core/PC1600/PC1600Machine.hpp"
 #include "TestPresetRoms.hpp"
 

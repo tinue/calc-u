@@ -16,7 +16,7 @@
 #include <vector>
 
 #include "../core/PC1500/PC1500BasicLoader.hpp"
-#include "../core/PC1500/PC1500BasicTyper.hpp"
+#include "support/PC1500BasicTyper.hpp"
 #include "../core/PC1500/PC1500Machine.hpp"
 #include "TestHarness.hpp"
 #include "LoaderTestSupport.hpp"

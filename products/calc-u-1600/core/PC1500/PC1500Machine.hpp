@@ -234,27 +234,9 @@ public:
     // ── Headless CPU-trace file (the preset loader's `trace:` step) ──────
     //
     // Unlike the setTraceFlags()/drainTraceEvents() pair above -- which
-    // leave draining the ring to the caller -- this captures a full
-    // instruction trace to a file entirely inside the Core: step()/
-    // runCycles() drain the ring into the file themselves. Used by the
-    // GUI's TRACE button and the preset `trace:` step. Don't mix the two
-    // APIs on one machine.
-
-    /// Begin capturing to `handle` (open for binary writing; this machine
-    /// takes ownership and endCpuTrace() closes it). Sets `flags` as the
-    /// active trace level. Returns false and does nothing if `handle` is
-    /// null or a capture is already active.
-    bool beginCpuTrace(std::FILE* handle, uint32_t flags);
-
-    /// Drain what's left in the ring, write SESSION_END, close the file,
-    /// clear the trace flags. No-op if no capture is active.
-    void endCpuTrace();
-
-    // A capture to a file (today's tools); the app's records are not one.
-    bool cpuTraceActive() const { return m_traceFile && !m_traceFile->buffered(); }
-    /// Size of the active capture so far (0 when none); see
-    /// PC1500TraceFile::bytesWritten().
-    uint64_t cpuTraceBytes() const { return m_traceFile ? m_traceFile->bytesWritten() : 0; }
+    // leave draining the ring to the caller -- the trace records are
+    // captured entirely inside the Core: step()/runCycles() drain the ring
+    // into them themselves. Don't mix the two APIs on one machine.
 
     // The app's trace (LIB-10 §10.7, the c1600.trace-records kind): the same
     // records, kept in a buffer until the library's trace session takes
@@ -302,7 +284,7 @@ private:
     std::vector<std::unique_ptr<BusRomCard>> m_busRoms;     // see attachBusRom()
     uint64_t m_elapsedCycles{0};                            // see elapsedCycles()
 
-    // ── Headless CPU-trace file -- see beginCpuTrace() ───────────────────
+    // ── The trace records -- see beginTraceRecords() ─────────────────────
     std::unique_ptr<PC1500TraceFile> m_traceFile;
     uint32_t m_traceDrainCounter{0};
     // Scratch buffer for one drainTraceEvents() call -- sized to match

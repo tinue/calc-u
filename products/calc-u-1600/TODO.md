@@ -510,7 +510,7 @@ somewhere else doesn't count (see docs/background/plans/Code-Cleanup-Plan.md).
   directories: one pass could collect both. `doWrite` stats the file again
   after writing to decide on `resize_file`; the size before the write
   already tells.
-- **`PC1600BasicTyper.cpp` `codePointCount` counts UTF-8 lead bytes by
+- **`tests/support/PC1600BasicTyper.cpp` `codePointCount` counts UTF-8 lead bytes by
   hand**; count with `decodeUtf8` (Core/Utf8.hpp) so malformed bytes count
   the way the typer then types them.
 - **PC-1600 LCD / sub-CPU timing model** *(behaviour/timing)*.

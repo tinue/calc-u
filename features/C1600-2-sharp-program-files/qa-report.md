@@ -174,6 +174,10 @@ recorded again. No difference.
 8. **The address dialog says where the code goes** for every address that
    holds, the internal RAM too (today only for a module or the work area):
    ledger row 1600-38.
+9. **`typeBasicProgramTextJob` outlived M-46** (deviation 1): after the
+   CLIs went (M-51) its only users are tests (`c1600_2_ac7_memory_equals_old_typer`
+   and the golden runs). Part D (P-4, `ds-core`) moved both old typers to
+   `tests/support/`, out of `calcu_core`; their behaviour is unchanged.
 
 ### Findings for the user
 

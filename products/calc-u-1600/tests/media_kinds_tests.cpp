@@ -91,7 +91,7 @@ TEST(lib7_ac37_floppy_v2_sides_0_1_v1_outdated_with_hint) {
     std::vector<std::uint8_t> image(CE1600FCard::kImageSize, 0);
     image[3] = 0x11;
     image[CE1600FCard::kSideSize + 5] = 0x22;
-    const std::string v2 = formatFloppyFile("Disk", image);
+    const std::string v2 = formatFloppyFile("Disk", image, false, "", "2026-01-01T00:00:00Z");
     CHECK(v2.find("format-version: 2") != std::string::npos);
     CHECK(v2.find("\n  0:\n") != std::string::npos && v2.find("\n  1:\n") != std::string::npos);
     const ReadOutcome r = floppy.codec->read(v2, {});

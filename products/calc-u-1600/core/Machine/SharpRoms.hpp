@@ -19,7 +19,7 @@
 // result is the message (AC-5, AC-13).
 //
 // In the core, not in app/ as the design has it: until M-51 the CLIs and
-// probes linked the core only; the core's tests still do.
+// probes linked the core only.
 
 namespace sharp {
 

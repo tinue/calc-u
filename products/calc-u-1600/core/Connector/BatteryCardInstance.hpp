@@ -1,10 +1,8 @@
 #pragma once
 #include <algorithm>
 #include <cctype>
-#include <chrono>
 #include <cstdint>
 #include <cstdio>
-#include <ctime>
 #include <optional>
 #include <string>
 #include <vector>
@@ -26,21 +24,6 @@
 namespace mcd_detail {
 // Forward decl only -- callers that need round-trip verification include
 // MemoryCardDefinition.hpp themselves; this header doesn't depend on it.
-}
-
-inline std::string currentIso8601Timestamp() {
-    const auto now = std::chrono::system_clock::now();
-    const std::time_t t = std::chrono::system_clock::to_time_t(now);
-    std::tm tmVal{};
-#if defined(_WIN32)
-    gmtime_s(&tmVal, &t);
-#else
-    gmtime_r(&t, &tmVal);
-#endif
-    char buf[32];
-    std::snprintf(buf, sizeof(buf), "%04d-%02d-%02dT%02d:%02d:%02dZ", tmVal.tm_year + 1900,
-                  tmVal.tm_mon + 1, tmVal.tm_mday, tmVal.tm_hour, tmVal.tm_min, tmVal.tm_sec);
-    return std::string(buf);
 }
 
 // Encodes `bytes` (a whole bank) using the `addressed-hex` dialect
@@ -250,8 +233,7 @@ inline bool setWriteProtectLines(std::vector<std::string>* lines, bool protect) 
 inline bool spliceBatteryCardInstance(const std::string& sourceText, const std::string& newModuleName,
                                       const std::string& sourceModuleName,
                                       const std::vector<std::string>& contentLines, std::string* outText,
-                                      std::string* error,
-                                      const std::string& nowIso8601 = currentIso8601Timestamp(),
+                                      std::string* error, const std::string& nowIso8601,
                                       bool asTemplate = false, std::optional<bool> writeProtect = {}) {
     using namespace bci_detail;
 

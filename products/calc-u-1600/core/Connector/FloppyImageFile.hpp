@@ -4,10 +4,9 @@
 #include <vector>
 
 #include "formats/Yaml.hpp"
-#include "BatteryCardInstance.hpp"   // formatAddressedHexLines, currentIso8601Timestamp
+#include "BatteryCardInstance.hpp"   // formatAddressedHexLines
 #include "CE1600FCard.hpp"
 #include "MemoryCardDefinition.hpp"  // mcd_detail::parseAddressedHex
-#include "NamedFileCatalog.hpp"
 
 // ── CE-1600F floppy-disk file (`<name>.floppy.yaml`) ───────────────────
 //
@@ -35,11 +34,6 @@
 // `format-version` is mandatory; a reader rejects any version it doesn't
 // know rather than guessing. The file is always written whole (no splice /
 // comment preservation, unlike BatteryCardInstance.hpp's card instances).
-//
-// Directory lookup is NamedFileCatalog.hpp's, shared with memory cards: the
-// caller passes the search directories (bundled first, then the user's save
-// folder), and a name resolves to the first directory holding exactly one
-// file that declares it.
 
 constexpr const char* kFloppyFileSuffix = ".floppy.yaml";
 constexpr long kFloppyFormatVersion = 2;   // version 1 (0.8.x) named the sides a and b (outdated, preset.md §9.4)
@@ -105,10 +99,11 @@ inline bool readHeader(const calcu::formats::YamlNode& root, std::string* diskNa
 // reader does no escape processing), so it must not contain '"' or a newline.
 // `asTemplate` writes `template: true` (a preset's `saveas: template
 // floppy:...`); the app itself only ever writes instances. A non-empty
-// `description` is written too (single-quoted if it holds a '"').
+// `description` is written too (single-quoted if it holds a '"'). `saved`
+// is the time of the save, ISO 8601 UTC (the session's host time).
 inline std::string formatFloppyFile(const std::string& diskName, const std::vector<uint8_t>& image,
-                                    bool asTemplate = false, const std::string& description = {},
-                                    const std::string& saved = {}) {
+                                    bool asTemplate, const std::string& description,
+                                    const std::string& saved) {
     std::string out;
     out.reserve(4096);
     out += "# Calc-U-1600 CE-1600F floppy disk image\n";
@@ -120,7 +115,7 @@ inline std::string formatFloppyFile(const std::string& diskName, const std::vect
         out += std::string("description: ") + quote + description + quote + "\n";
     }
     if (asTemplate) out += "template: true\n";
-    out += "saved: " + (saved.empty() ? currentIso8601Timestamp() : saved) + "\n";
+    out += "saved: " + saved + "\n";
     out += "sides:\n";
     for (size_t side = 0; side < 2; ++side) {
         const auto first = image.begin() + static_cast<std::ptrdiff_t>(side * CE1600FCard::kSideSize);
@@ -177,61 +172,4 @@ inline bool parseFloppyFile(const std::string& text, FloppyFile* out, std::strin
         out->image.insert(out->image.end(), bytes.begin(), bytes.end());
     }
     return true;
-}
-
-inline bool readFloppyFile(const std::string& path, FloppyFile* out, std::string* error) {
-    std::string text;
-    if (!named_file_detail::readTextFile(path, &text)) {
-        *error = "cannot read '" + path + "'";
-        return false;
-    }
-    if (!parseFloppyFile(text, out, error)) {
-        *error = path + ": " + *error;
-        return false;
-    }
-    return true;
-}
-
-struct FloppyCatalogEntry {
-    std::string diskName;
-    std::string description;  // FloppyFile::description
-    std::string filePath;
-    bool isTemplate = false;  // FloppyFile::isTemplate
-};
-
-namespace floppy_detail {
-
-// Parses only the header (the text before the top-level `sides:` key), so
-// a large disk costs no hex decoding.
-inline bool parseCatalogEntry(const std::string& text, const std::string& path, FloppyCatalogEntry* out,
-                              std::string* err) {
-    const size_t sides = text.find("\nsides:");
-    calcu::formats::YamlNode root;
-    if (!calcu::formats::parseYaml(text.substr(0, sides), &root, err) || !readHeader(root, &out->diskName, &out->description, &out->isTemplate, err))
-        return false;
-    out->filePath = path;
-    return true;
-}
-
-}  // namespace floppy_detail
-
-// Every "*.floppy.yaml" in `dir` (non-recursive), sorted by disk name --
-// scanNamedFiles()'s contract. Header-only parse (see parseCatalogEntry()).
-inline std::vector<FloppyCatalogEntry> scanFloppyDirectory(const std::string& dir, std::string* error) {
-    return scanNamedFiles<FloppyCatalogEntry>(dir, kFloppyFileSuffix, "disk", floppy_detail::parseCatalogEntry,
-                                              [](const FloppyCatalogEntry& e) { return e.diskName; }, error);
-}
-
-// The header-only catalogue entry for one `.floppy.yaml` file -- e.g. to
-// classify the disk a preset resolved to (template or instance).
-inline bool readFloppyCatalogEntry(const std::string& path, FloppyCatalogEntry* out, std::string* error) {
-    return readNamedFile(path, floppy_detail::parseCatalogEntry, out, error);
-}
-
-// Resolves `diskName` against `dirs` in order (bundled first, then the save
-// folder) -- resolveNamedFile()'s rules, the same as memory cards.
-inline bool resolveFloppyByName(const std::vector<std::string>& dirs, const std::string& diskName,
-                                std::string* outPath, std::string* error) {
-    return resolveNamedFile(dirs, diskName, "disk", scanFloppyDirectory,
-                            [](const FloppyCatalogEntry& e) { return e.diskName; }, outPath, error);
 }

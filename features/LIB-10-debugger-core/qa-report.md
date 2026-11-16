@@ -294,7 +294,9 @@ call was not told) is fixed (`DebugController::noteRunning`).
 - **Today's tools keep their file**: `beginCpuTrace(FILE*)` stays for
   the CLIs' preset loader (without `traceHook`); `cpuTraceActive()` is
   true for a file only, so the preset runner's `TraceCloser` leaves the
-  app's records alone.
+  app's records alone. Part D (P-4, `ds-core`): the file mode and the four
+  `…CpuTrace…` functions deleted (the CLIs went in M-51);
+  `lib10_ac44_trace_flags_leave_breakpoints_alone` uses the records.
 - **The DAP's events**: `DebugController` compares the `run-state` topic
   after each host call; a resume, step or pause the session makes counts
   as running first, so a stop that lands within the next call, or a pause

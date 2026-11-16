@@ -15,7 +15,7 @@
 #include "../core/PC1500/PC1500Keyboard.hpp"
 #include "../core/PC1500/PC1500Machine.hpp"
 #include "../core/PC1500/PC1500Memory.hpp"
-#include "../core/PC1500/PC1500BasicTyper.hpp"
+#include "support/PC1500BasicTyper.hpp"
 #include "TestRoms.hpp"
 
 #include <ctime>

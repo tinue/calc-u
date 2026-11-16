@@ -3,14 +3,14 @@
 #include <cctype>
 #include <sstream>
 
-#include "../Basic/BasicLineStoreCheck.hpp"
-#include "../Display/StatusLine.hpp"
-#include "../Utf8.hpp"
-#include "PC1600Display.hpp"
-#include "PC1600Keyboard.hpp"
-#include "PC1600Machine.hpp"
-#include "PC1600ProgramPlacement.hpp"
-#include "PC1600TypedInput.hpp"
+#include "Basic/BasicLineStoreCheck.hpp"
+#include "Display/StatusLine.hpp"
+#include "Utf8.hpp"
+#include "PC1600/PC1600Display.hpp"
+#include "PC1600/PC1600Keyboard.hpp"
+#include "PC1600/PC1600Machine.hpp"
+#include "PC1600/PC1600ProgramPlacement.hpp"
+#include "PC1600/PC1600TypedInput.hpp"
 
 namespace {
 

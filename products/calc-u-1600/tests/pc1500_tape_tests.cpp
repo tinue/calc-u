@@ -17,7 +17,7 @@
 #include <string>
 #include <vector>
 
-#include "../core/PC1500/PC1500BasicTyper.hpp"
+#include "support/PC1500BasicTyper.hpp"
 #include "../core/PC1500/PC1500LcdText.hpp"
 #include "../core/PC1500/PC1500Machine.hpp"
 #include "TestRoms.hpp"

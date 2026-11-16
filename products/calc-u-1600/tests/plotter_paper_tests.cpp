@@ -13,6 +13,7 @@
 #include "../core/Connector/CE1600PCard.hpp"
 #include "../core/Connector/Ce150Card.hpp"
 #include "../core/Connector/PlotterPaperOutput.hpp"
+#include "support/RawPlotPoints.hpp"
 #include "SharpTestSupport.hpp"
 #include "TestHarness.hpp"
 #include "paper/Paper.hpp"

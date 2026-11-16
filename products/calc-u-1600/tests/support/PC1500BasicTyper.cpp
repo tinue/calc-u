@@ -3,10 +3,10 @@
 #include <cctype>
 #include <sstream>
 
-#include "../Basic/BasicLineStoreCheck.hpp"
-#include "PC1500Keyboard.hpp"
-#include "PC1500Machine.hpp"
-#include "PC1500TypedInput.hpp"
+#include "Basic/BasicLineStoreCheck.hpp"
+#include "PC1500/PC1500Keyboard.hpp"
+#include "PC1500/PC1500Machine.hpp"
+#include "PC1500/PC1500TypedInput.hpp"
 
 namespace {
 

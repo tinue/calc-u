@@ -52,6 +52,7 @@
 
 #include "../core/Connector/MemoryCardDefinition.hpp"
 #include "../core/Connector/PlotterPaperOutput.hpp"
+#include "support/RawPlotPoints.hpp"
 #include "../core/Display/DisplayOutputText.hpp"
 #include "../core/Machine/SharpBuilder.hpp"
 #include "../core/Machine/SharpCatalogue.hpp"

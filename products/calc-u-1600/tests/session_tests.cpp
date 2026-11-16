@@ -15,6 +15,7 @@
 #include "../app/tests/SessionFixture.hpp"
 #include "Machine/SharpRoms.hpp"
 #include "../core/Connector/PlotterPaperOutput.hpp"
+#include "support/RawPlotPoints.hpp"
 #include "TestHarness.hpp"
 #include "control/ControlState.hpp"
 #include "debugger/RunState.hpp"

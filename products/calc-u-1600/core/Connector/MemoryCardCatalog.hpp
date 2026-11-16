@@ -18,12 +18,9 @@ constexpr const char* kCardFileSuffix = ".card.yaml";
 // ── Catalogue of on-disk memory-card definition files ─────────────────
 //
 // Scans a directory of help/10-module-definition-format.md `.card.yaml`
-// files and indexes them by `module-name`. Two consumers:
-//   * the GUI lists every module whose `compatible-hosts` covers the open
-//     model / slot (see the control-bar module picker);
-//   * a preset's `slot-N: <module-name>` (as opposed to the by-path
-//     `slot-N-file: <path>`) resolves the name to a file here, then
-//     hands the path to makeSoftwareDefinedCard() unchanged.
+// files and indexes them by `module-name` (the catalogue's module
+// definitions, sharp::addModuleDefinitions; the media kinds' listing,
+// app/SharpMediaKinds).
 //
 // No notion of "app resource" reaches the core: the caller supplies the
 // directory (the app layer: the bundled modules folder, AppPaths).
@@ -66,31 +63,4 @@ inline std::vector<MemoryCardCatalogEntry> scanMemoryCardDirectory(const std::st
     return scanNamedFiles<MemoryCardCatalogEntry>(
         dir, kCardFileSuffix, "module", memory_card_catalog_detail::parseEntry,
         [](const MemoryCardCatalogEntry& e) { return e.moduleName; }, error, sharp::isFullSetFile);
-}
-
-// The catalogue entry for one `.card.yaml` file -- e.g. to classify the
-// file a preset's `slot-N:`/`slot-N-file:` resolved to (template or
-// instance) without scanning its whole directory.
-inline bool readMemoryCardCatalogEntry(const std::string& path, MemoryCardCatalogEntry* out, std::string* error) {
-    return readNamedFile(path, memory_card_catalog_detail::parseEntry, out, error);
-}
-
-// Ordered-search resolve of a `slot-N: <module-name>` reference to the
-// `.card.yaml` path that declares it: the FIRST directory in `dirs` holding
-// exactly one file declaring it wins. The GUI passes [bundled resources,
-// save folder], so a preset can name a bundled card or a user's saved
-// battery-card instance. A missing / unreadable directory (e.g. the save
-// folder before anything was saved) is skipped silently; only two files in
-// the SAME directory claiming one name is a hard error. Empty directory
-// strings are ignored.
-inline bool resolveModuleSpecByName(const std::vector<std::string>& dirs, const std::string& moduleName,
-                                    std::string* outPath, std::string* error) {
-    return resolveNamedFile(dirs, moduleName, "module", scanMemoryCardDirectory,
-                            [](const MemoryCardCatalogEntry& e) { return e.moduleName; }, outPath, error);
-}
-
-// Single-directory form of the above.
-inline bool resolveModuleSpecByName(const std::string& dir, const std::string& moduleName,
-                                    std::string* outPath, std::string* error) {
-    return resolveModuleSpecByName(std::vector<std::string>{dir}, moduleName, outPath, error);
 }

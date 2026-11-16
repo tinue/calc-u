@@ -14,6 +14,7 @@
 #include "../core/Connector/BatteryCardInstance.hpp"
 #include "../core/Connector/FloppyImageFile.hpp"
 #include "../core/Connector/MemoryCardCatalog.hpp"
+#include "Files.hpp"
 #include "../core/Connector/MemoryCardDefinition.hpp"
 #include "../core/Connector/SoftwareDefinedCard.hpp"
 
@@ -296,7 +297,7 @@ TEST(test_splice_drops_template_key) {
     std::vector<uint8_t> image(0x100, 0);
     std::string spliced, err;
     CHECK(spliceBatteryCardInstance(templ, "MySave", "Synthetic", formatBatteryCardInitialContentBlock(1, image),
-                                    &spliced, &err));
+                                    &spliced, &err, "2026-01-01T00:00:00Z"));
     CHECK(spliced.find("template:") == std::string::npos);
     MemoryCardDefinition def;
     CHECK(parseMemoryCardDefinition(spliced, &def, &err));
@@ -323,7 +324,7 @@ TEST(test_splice_write_protect) {
     CHECK(!def.regions.empty() && def.regions[0].contentForBank(0).writeProtected);
 
     std::string resaved;  // an autosave of the instance keeps the switch where it is
-    CHECK(spliceBatteryCardInstance(spliced, "Rom", "Rom", block, &resaved, &err));
+    CHECK(spliceBatteryCardInstance(spliced, "Rom", "Rom", block, &resaved, &err, "2026-01-01T00:00:00Z"));
     CHECK(resaved.find("write-protect: protected") != std::string::npos);
 
     CHECK(!spliceBatteryCardInstance(std::string("template: true\n") + kSyntheticCardYaml, "X", "Synthetic",
@@ -344,18 +345,17 @@ TEST(test_bundled_files_are_templates) {
         if (!e.isTemplate) std::fprintf(stderr, "  not a template: %s\n", e.filePath.c_str());
         CHECK(e.isTemplate);
     }
-    const auto disks = scanFloppyDirectory(dir, &err);
-    CHECK(!disks.empty());
-    for (const auto& e : disks) {
-        if (!e.isTemplate) std::fprintf(stderr, "  not a template: %s\n", e.filePath.c_str());
-        CHECK(e.isTemplate);
+    int disks = 0;
+    for (const auto& entry : std::filesystem::directory_iterator(dir)) {
+        const std::string path = entry.path().string();
+        if (path.size() < 12 || path.compare(path.size() - 12, 12, kFloppyFileSuffix) != 0) continue;
+        ++disks;
+        FloppyFile disk;
+        CHECK(parseFloppyFile(calcu::testing::readText(entry.path()), &disk, &err));
+        if (!disk.isTemplate) std::fprintf(stderr, "  not a template: %s\n", path.c_str());
+        CHECK(disk.isTemplate);
     }
-    MemoryCardCatalogEntry one;
-    CHECK(readMemoryCardCatalogEntry(cards.front().filePath, &one, &err));
-    CHECK(one.isTemplate && one.moduleName == cards.front().moduleName);
-    FloppyCatalogEntry disk;
-    CHECK(readFloppyCatalogEntry(disks.front().filePath, &disk, &err));
-    CHECK(disk.isTemplate && disk.diskName == disks.front().diskName);
+    CHECK(disks > 0);
 }
 
 // A saved floppy is an instance: formatFloppyFile() never writes `template:`.
@@ -363,7 +363,7 @@ TEST(test_saved_floppy_is_instance) {
     const std::vector<uint8_t> image(CE1600FCard::kImageSize, 0xE5);
     FloppyFile disk;
     std::string err;
-    CHECK(parseFloppyFile(formatFloppyFile("Mine", image), &disk, &err));
+    CHECK(parseFloppyFile(formatFloppyFile("Mine", image, false, "", "2026-01-01T00:00:00Z"), &disk, &err));
     CHECK(disk.diskName == "Mine" && !disk.isTemplate);
 }
 
@@ -374,7 +374,7 @@ TEST(test_splice_fails_without_module_name) {
         "regions:\n"
         "  - name: sram\n";
     std::string outText, err;
-    CHECK(!spliceBatteryCardInstance(noModuleName, "X", "X", {}, &outText, &err));
+    CHECK(!spliceBatteryCardInstance(noModuleName, "X", "X", {}, &outText, &err, "2026-01-01T00:00:00Z"));
     CHECK(!err.empty());
 }
 
@@ -384,7 +384,7 @@ TEST(test_splice_fails_without_regions) {
         "compatible-hosts: [PC-1500]\n"
         "definition-terminology: PC-1500\n";
     std::string outText, err;
-    CHECK(!spliceBatteryCardInstance(noRegions, "X", "X", {}, &outText, &err));
+    CHECK(!spliceBatteryCardInstance(noRegions, "X", "X", {}, &outText, &err, "2026-01-01T00:00:00Z"));
     CHECK(!err.empty());
 }
 
@@ -408,7 +408,7 @@ TEST(test_splice_roundtrip_through_real_bundled_file_if_present) {
 
     auto contentLines = formatBatteryCardInitialContentBlock(bankCount, image);
     std::string spliced;
-    CHECK(spliceBatteryCardInstance(sourceText, "MyCE1638", orig.moduleName, contentLines, &spliced, &err));
+    CHECK(spliceBatteryCardInstance(sourceText, "MyCE1638", orig.moduleName, contentLines, &spliced, &err, "2026-01-01T00:00:00Z"));
 
     MemoryCardDefinition parsed;
     CHECK(parseMemoryCardDefinition(spliced, &parsed, &err));

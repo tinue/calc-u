@@ -1,5 +1,5 @@
 # LIB-7 Media and save folder: design
-Status: Library column approved at the Part C1/C2 boundary (2026-11-15); Calc-U-1600 column: draft for the Part C2/D boundary review (2026-11-16)
+Status: Library column approved at the Part C1/C2 boundary (2026-11-15); Calc-U-1600 column approved at the Part C2/D boundary (2026-11-16)
 
 ## 1. Scope
 

@@ -1,5 +1,5 @@
 # C1600-5 Harness product commands of Calc-U-1600: design
-Status: draft for the Part C2/D boundary review (2026-11-16)
+Status: approved by the user at the Part C2/D boundary (2026-11-16)
 
 ## 1. Scope
 

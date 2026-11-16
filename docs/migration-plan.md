@@ -895,8 +895,11 @@ with a row, or worked together with it).
 #### M-44 C1600-2 Sharp program files
 - **Does:** the loaders on the loader memory access product kind:
   telling a program file's kind, BASIC, typing a program in, machine
-  code, tape fast-load; one classifier; the two menu items and their
-  dialogs in the LIB-14 shell.
+  code, tape fast-load; one classifier; a preset's typed `program:` on
+  the new typer (the old typer stays for presets until M-46 only if the
+  reference runs differ; C1600-2 §8, §11); the two menu items and their
+  dialogs on the new commands, in today's menus; in the LIB-14 shell with
+  M-49.
 - **Completes:** C1600-2. **Tests from:** C1600-2 AC-1–25, EC-1–6.
 - **Waits for:** M-4 (C-2: AC-13), M-26, M-36, M-43.
 - **Green after:** default.
@@ -907,14 +910,20 @@ with a row, or worked together with it).
 #### M-45 LIB-8 and LIB-10, Calc-U-1600 columns
 - **Does:** the CE-150 and CE-1600P on the paper output kind, the panel
   always shown; the run control in Qt6 and Web with and without a
-  debugger; the size limit for every trace. Criteria that need the
+  debugger; the size limit for every trace; Machine ▸ Resume in both
+  frontends; the DAP's breakpoints and line steps in `app/dap/` (C1600-3,
+  LIB-10 D-15; no `DapRunControlBridge`). Criteria that need the
   upgraded presets pass in M-46.
 - **Completes:** LIB-8 1600, LIB-10 1600 (Done in M-46). **Tests from:** LIB-8
-  AC-32–38; LIB-10 AC-36–44, AC-52 (AC-38 per FS 15).
+  AC-32–38; LIB-10 AC-36–44, AC-52 (AC-38 per FS 15); C1600-3 AC-12,
+  AC-14, AC-23.
 - **Waits for:** M-5, M-31, M-39, M-40.
 - **Green after:** default.
-- **Knowledge, ledger:** `docs/developer/Debugger-Internals.md`; rows
-  1600-12, 1600-14.
+- **Knowledge, ledger:** `docs/developer/Debugger-Internals.md`,
+  `Shared-Architecture.md`, `Web-Client.md`, `screenshots/README.md`,
+  `docs/Debugger.md`, the product's `CLAUDE.md`; memory files
+  `project_dap_debugger_plan`, `project_ce1600p_paper_geometry`; rows
+  1600-12, 1600-14, 1600-32, 1600-34.
 - **Exit check:** the plotter's paper survives a model switch.
 
 #### M-46 Calc-U-1600 on preset format 2 (LIB-6, C1600-4, LIB-18)
@@ -922,7 +931,9 @@ with a row, or worked together with it).
   only; the product sections and keys of C1600-4; the 32 examples, the
   test, `dev/` and docs presets, the VS Code templates and tool-written
   presets upgraded (those of the last row of C1600-4 AC-15's table in
-  M-47); `pc1500_cli` and `pc1600_cli` load presets through the library's
+  M-47: DiskWorks, `make_diskworks_media`, `pc1500-maxed-out`,
+  `startup/default-pc1600` and a test fixture, which need LIB-7's media;
+  `default-pc1600` stays out of `bundle.yaml` until then); `pc1500_cli` and `pc1600_cli` load presets through the library's
   loader; `tools/check_presets.sh` becomes the suite check of LIB-6
   AC-51; the
   bundle file; the start of the product, the model switch, the resets on
@@ -968,30 +979,38 @@ with a row, or worked together with it).
 #### M-49 LIB-4 and LIB-14, Calc-U-1600 columns
 - **Does:** the Qt6 and Web frontends on the family structure and the
   control state; the screenshot scenarios rewritten as an attach client
-  (AC-44).
-- **Completes:** LIB-4 1600, LIB-14 1600. **Tests from:** LIB-4
+  (AC-44); the attached harness widened to the serve command set and the
+  bare `wait` (LIB-14 D-27; also for C59-5's Swift attach); the Sharp
+  60-pin places with a pin-out each (LIB-4 D-11); `shared::Model` gone;
+  C1600-2's menu items in the shell, AC-20's Qt6 scenarios.
+- **Completes:** LIB-4 1600, LIB-14 1600, LIB-3 1600, C1600-2. **Tests from:** LIB-4
   AC-16–20; LIB-14 AC-34–41, AC-44.
-- **Waits for:** M-43, M-46, M-47.
+- **Waits for:** M-43, M-44, M-45, M-46, M-47, M-48.
 - **Green after:** default; the screenshot scenarios through attach.
 - **Knowledge, ledger:** `docs/developer/screenshots/README.md`; visible
-  renames of `glossary-mapping.md`; row 1600-10.
+  renames of `glossary-mapping.md`; the memory files of LIB-14 D.10 and
+  LIB-4 D.7; rows 1600-10, 1600-33, 1600-35 to 1600-37.
 - **Exit check:** the scenarios pass through attach.
 
 #### M-50 C1600-3 DAP in the app layer
 - **Does:** the DAP server out of the Qt frontend into the app layer on
   the library's debug target and run control, without Qt types; the
-  `dap_smoke.py` scenarios become suite tests.
+  `dap_smoke.py` scenarios become suite tests; `calcu serve --dap` in
+  the harness (a library serve add-on); `LegacyCalls::loadProgram` goes.
 - **Completes:** C1600-3. **Tests from:** C1600-3 AC-1–25, EC-1–7.
-- **Waits for:** M-45, M-46.
+- **Waits for:** M-44, M-45, M-46, M-49.
 - **Green after:** default; DAP tests in Frequent or Longer per budget.
 - **Knowledge, ledger:** `DAP-Debugger-Plan.md` stays history;
-  `docs/developer/Debugger-Internals.md`; row 1600-20.
+  `docs/developer/Debugger-Internals.md`, the product's `CLAUDE.md`,
+  `docs/Debugger.md`, `Building.md`, `Shared-Architecture.md`, the memory
+  files of C1600-3 §7; row 1600-20.
 - **Exit check:** VS Code debugs a program as before.
 
 #### M-51 C1600-5 and the LIB-11 Calc-U-1600 column
 - **Does:** today's CLI functions as `pc1600` commands, each with a test;
-  `pc1500_cli`, `pc1600_cli`, the three probes and `dev/tape-matrix/run.py`
-  go (LIB-11 OQ-5); the harness's Calc-U-1600 entry builds its machine
+  `pc1500_cli`, `pc1600_cli`, the three probes, `dev/tape-matrix/run.py`
+  and `dev/loader-matrix/` go (LIB-11 OQ-5; the loader matrix: user,
+  2026-11-16); the harness's Calc-U-1600 entry builds its machine
   through `app/SharpAppPart` instead of itself (LIB-11 D-6, moved here
   from M-31; user, 2026-11-15). Then the adapter check of §1 over
   Calc-U-1600 and the library.
@@ -1010,12 +1029,14 @@ with a row, or worked together with it).
 - **Does:** the help tool (`tools/help build|check`), the shared
   chapters, Calc-U-1600's chapters converted from its `docs/`, the help
   asset `Calc-U-1600-help.zip` in the release build.
-- **Completes:** LIB-16 L, LIB-16 1600 (Done in M-61, with the asset in
-  the release). **Tests from:** LIB-16 AC-1–8, AC-11–15; EC-1–3.
+- **Completes:** LIB-16 L (Done in M-60: AC-8 builds both products'
+  assets), LIB-16 1600 (Done in M-61, with the asset in the release). **Tests from:** LIB-16 AC-1–8, AC-11–15; EC-1–3.
 - **Waits for:** M-46 to M-51 (the chapters follow those specs), M-49
   (AC-12 through attach).
 - **Green after:** default; the tool's check in Frequent.
-- **Knowledge, ledger:** `docs/developer/README.md` (where help lives).
+- **Knowledge, ledger:** `docs/developer/README.md` (where help lives);
+  the files of LIB-16 §7 (root and product `CLAUDE.md`, the README, three
+  memory files). Changes the workflow and `release.yaml`: CI at its merge.
 - **Exit check:** the asset builds; every settings key is described.
 
 ### Part E — Calc-U-59
@@ -1144,7 +1165,7 @@ with a row, or worked together with it).
 #### M-60 LIB-16 Calc-U-59 column
 - **Does:** Calc-U-59's chapters, converted once from calc-u-site `/59/`
   at `acd629c` (AC-9), the six tutorial presets upgraded, the help asset.
-- **Completes:** LIB-16 59 (Done in M-64). **Tests from:** LIB-16
+- **Completes:** LIB-16 L, LIB-16 59 (Done in M-64). **Tests from:** LIB-16
   AC-9–10, AC-16.
 - **Waits for:** M-52, M-54 to M-59.
 - **Green after:** default.
@@ -1265,7 +1286,7 @@ qa-report can show every criterion passing (§1).
 | LIB-4 | 1–9: M-37 / M-37 | 10–15: M-57, M-58 / M-58 | 16–20: M-49 / M-49 | 1, 3–5: M-37 |
 | LIB-5 | 1–19, 38–39: M-36 / M-38 | 20–27: M-36 / M-54 | 28–37, 40–41: M-36 / M-46 | 1–6: M-36 |
 | LIB-6 | 1–34, 52–53, 55–66: M-38 / M-41 | 35–43, 68: M-54 / M-54 | 44–51, 54, 67: M-46 / M-46 | 1–10: M-38 |
-| LIB-7 | 1–31, 46: M-41 / M-43 | 32–36, 47: M-55 / M-55 | 37–45: M-47 / M-47 | 1–9: M-41 |
+| LIB-7 | 1–31, 46: M-41 / M-42 | 32–36, 47: M-55 / M-55 | 37–45: M-47 / M-47 | 1–9: M-41 |
 | LIB-8 | 1–9, 12–23, 39: M-39 / M-39 | 24–31: M-53 / M-53 | 32–38: M-45 / M-46 | 1–8: M-39 |
 | LIB-9 | 1–18, 33: M-20 / M-20 | 19–25, 34–35: M-32, M-34 / M-34 | 26–32: M-30 / M-30 | 1–10: M-20 |
 | LIB-10 | 1–26, 45–51: M-40 / M-40 | 28–35: M-53 / M-53 or M-58 | 36–44, 52: M-45 / M-46 | 1–9: M-40 |
@@ -1274,7 +1295,7 @@ qa-report can show every criterion passing (§1).
 | LIB-13 | 1–10: M-42 / M-42 | 11–16, 23: M-56 / M-56 | 17–22: M-48 / M-48 | 1–7: M-42 |
 | LIB-14 | 1–25, 42–43: M-43 / M-43 | 26–33: M-57 / M-57 | 34–41, 44: M-49 / M-49 | 1–8: M-43 |
 | LIB-15 | 1–18: M-29 / M-29 | 19–23: M-34 / M-55 | 24–28: M-31 / M-46 | 1–5: M-29 |
-| LIB-16 | 1–8, 14–15: M-52 / M-52 | 9–10, 16: M-60 / M-64 | 11–13: M-52 / M-61 | 1–3: M-52 |
+| LIB-16 | 1–8, 14–15: M-52 / M-60 | 9–10, 16: M-60 / M-64 | 11–13: M-52 / M-61 | 1–3: M-52 |
 | LIB-17 | 1–14: M-21 / M-21 | 15–19: M-33 / M-33 | 20–22: M-31 / M-31 | 1–6: M-21 |
 | LIB-18 | 1–16: M-35 / M-41 | 17–24: M-54 / M-54 | 25–33: M-46 / M-46 | 1–7: M-35 |
 | LIB-19 | 1–5, 15: M-62 / M-62 | 6–10: M-65 / M-65 | 11–14: M-62 / M-62 | 1–4: M-62 |
@@ -1291,7 +1312,7 @@ qa-report can show every criterion passing (§1).
 | C59-8 | M-58 | M-58 | 1–13, 15–21 (14 withdrawn) | 1–6 |
 | C59-9 | M-59 | M-59 | 1–11, 13–15 (12 withdrawn) | 2–6 |
 | C1600-1 | M-26 | M-26 | 1–21 | 1–3 |
-| C1600-2 | M-44 (AC-15 with M-49) | M-49 | 1–25 | 1–6 |
+| C1600-2 | M-44 (AC-15 and the Qt6 scenarios of AC-20 with M-49) | M-49 | 1–25 | 1–6 |
 | C1600-3 | M-50 | M-50 | 1–25 | 1–7 |
 | C1600-4 | M-46 (AC-15's disk and waiting presets M-47) | M-47 | 1–20 | 1–6 |
 | C1600-5 | M-51 | M-51 | 1–9, 11–13 (10 withdrawn) | 2–6 |
@@ -1335,9 +1356,10 @@ their specs and are placed by what they are about (§2.3).
 | 1600-5, 1600-6, 1600-13, 1600-17, 1600-18, 1600-19 | M-47 |
 | 1600-8 | M-36 (after M-5) |
 | 1600-9 | M-31 (keys dropped), M-46 (Reset and switch stop what runs) |
-| 1600-10 | M-49 |
+| 1600-10, 1600-33, 1600-35, 1600-36, 1600-37 | M-49 |
 | 1600-11, 1600-21 | M-46 (1600-21's examples zip: M-61) |
 | 1600-12, 1600-14 | M-45 (1600-14's "Copied" and Resume: with M-49) |
+| 1600-32, 1600-34 | M-45 |
 | 1600-15 | M-44 (loaders), M-48 (opening) |
 | 1600-20 | M-50 |
 

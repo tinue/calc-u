@@ -1,5 +1,5 @@
 # LIB-16 Help content: design
-Status: draft for the Part C2/D boundary review (2026-11-16)
+Status: approved by the user at the Part C2/D boundary (2026-11-16)
 
 ## 1. Scope
 

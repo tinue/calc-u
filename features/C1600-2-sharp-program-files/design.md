@@ -1,5 +1,5 @@
 # C1600-2 Sharp program files: design
-Status: draft for the Part C2/D boundary review (2026-11-16)
+Status: approved by the user at the Part C2/D boundary (2026-11-16)
 
 ## 1. Scope
 
@@ -593,3 +593,4 @@ other parts become visible in M-48.
    reference runs differ (§8). The other way is to leave presets on the
    old typer until M-46 and use the new one only for `type-basic`.
    Recommendation: M-44, as written.
+   Answered (user, 2026-11-16, with the approval of the Part D designs): M-44, as written.

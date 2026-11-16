@@ -1,5 +1,5 @@
 # LIB-11 Harness: design
-Status: Library column approved at the Part B/C1 boundary (2026-11-14); Calc-U-1600 column: draft for the Part C2/D boundary review (2026-11-16)
+Status: Library column approved at the Part B/C1 boundary (2026-11-14); Calc-U-1600 column approved at the Part C2/D boundary (2026-11-16)
 
 ## 1. Scope
 
@@ -818,3 +818,5 @@ product's `CHANGELOG.md` for the release (M-61).
   adapters of `LegacyCalls` that go in M-51. Should it go like the tape
   matrix (recommended: it was a one-time check, and C1600-2's tests
   keep the loaders), or be moved onto `calcu serve` as a script?
+  Answered (user, 2026-11-16, with the approval of the Part D designs): it goes in M-51, like the tape
+  matrix.

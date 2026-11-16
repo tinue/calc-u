@@ -1,5 +1,5 @@
 # LIB-10 Debugger core: design
-Status: Library column approved at the Part C1/C2 boundary (2026-11-15); Calc-U-1600 column: draft for the Part C2/D boundary review (2026-11-16)
+Status: Library column approved at the Part C1/C2 boundary (2026-11-15); Calc-U-1600 column approved at the Part C2/D boundary (2026-11-16)
 
 ## 1. Scope
 
@@ -709,7 +709,7 @@ stay scripts and read the unchanged formats (AC-33, AC-42).
 
 ## 10. Part D: the Calc-U-1600 column
 
-Status of this section: draft for the Part C2/D boundary review
+Status of this section: approved at the Part C2/D boundary (2026-11-16)
 (2026-11-16). §1 to §9 above are the approved Library column and are not
 changed. Where M-40's code differs from them, the LIB-10 qa-report's
 "Deviations" is the record, and this section builds on the code. §4's
@@ -1104,3 +1104,4 @@ Coverage: AC-36 to AC-44 and AC-52, 10 of 10; AC-40's and AC-43's format
    breakpoints and line steps once in `app/dap/` in M-45 instead (C1600-3
    code, a step early), so M-50 only moves the server. Agreed?
    Recommendation: yes.
+   Answered (user, 2026-11-16, with the approval of the Part D designs): yes.

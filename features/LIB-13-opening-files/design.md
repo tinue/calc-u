@@ -1,5 +1,5 @@
 # LIB-13 Opening files: design
-Status: Library column approved at the Part C1/C2 boundary (2026-11-15); Calc-U-1600 column: draft for the Part C2/D boundary review (2026-11-16)
+Status: Library column approved at the Part C1/C2 boundary (2026-11-15); Calc-U-1600 column approved at the Part C2/D boundary (2026-11-16)
 
 ## 1. Scope
 
@@ -719,3 +719,4 @@ product cannot open are refused with a notice.
   longer be dropped. Is "any name at the drag, a notice at the drop"
   right? Recommendation: yes, and row 1600-15 gets the words "a drag
   over the window is taken for any one file".
+  Answered (user, 2026-11-16, with the approval of the Part D designs): yes; row 1600-15 has the words.

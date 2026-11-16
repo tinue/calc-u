@@ -5,31 +5,34 @@
 #
 # Sequence: 1.2345678 +/- EE 90 +/-
 
-MODEL: TI-58C
+format-version: 2
+model: TI-58C
+slot-1: { name: ML }
+printer: PC-100C
 
-CUECARD:
-Template: CueCard
-PencilColor: sharpie
-Title: TI-58C Preset File Tutorial Cue Card
-Row1: Calculates the sum of 1..N the slow way
-Row1Align: left
-A: Sum 1..N
-C: Enter number, then A
-D: \blank
-E: \blank
+cue-card:
+  pencil-color: sharpie
+  title: TI-58C Preset File Tutorial Cue Card
+  row-1: Calculates the sum of 1..N the slow way
+  row-1-align: left
+  A: Sum 1..N
+  C: Enter number, then A
+  D: \blank
+  E: \blank
 
-KEYSTROKES:
-82      # 1
-93      # .
-83      # 2
-84      # 3
-72      # 4
-73      # 5
-74      # 6
-62      # 7
-63      # 8
-94      # +/-
-52      # EE
-64      # 9
-92      # 0
-94      # +/-
+keys:
+  - regular-speed:
+  - key: 1  # 1
+  - key: .  # .
+  - key: 2  # 2
+  - key: 3  # 3
+  - key: 4  # 4
+  - key: 5  # 5
+  - key: 6  # 6
+  - key: 7  # 7
+  - key: 8  # 8
+  - key: +/-  # +/-
+  - key: EE  # EE
+  - key: 9  # 9
+  - key: 0  # 0
+  - key: +/-  # +/-

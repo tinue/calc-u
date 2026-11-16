@@ -222,7 +222,7 @@ std::optional<PlaceRequest> readPlace(const std::string& key, const YamlNode& v,
             return std::nullopt;
         }
         if (file && !rule.byFile) {
-            ctx.error(line, key + ": does not take a reference by file:.");
+            ctx.error(line, rule.noFile.empty() ? key + ": does not take a reference by file:." : rule.noFile);
             return std::nullopt;
         }
         // LIB-7 (M-41): a module that is a medium, by its name tag or its file.

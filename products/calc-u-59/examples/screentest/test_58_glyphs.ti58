@@ -17,30 +17,31 @@
 # The Wait lands in the middle of the first lit phase (margin about ±125 ms).
 # The printer stays off: on the PC-100 the blink is slower.
 
-MODEL: TI-58
-SOLID-STATE-MODULE: ML
-PRINTER: off
+format-version: 2
+model: TI-58
+slot-1: { name: ML }
 
-KEYSTROKES:
-21 64   # 2nd Op
-82 74   # 1 6     → partition 239.29
-42      # STO
-92 92   # 0 0
-21 31   # 2nd Pgm
-92 82   # 0 1
-11      # A
-25      # CLR
-21 83   # 2nd D.MS
-31      # LRN
-41      # SST
-21 51   # 2nd Del
-21 51   # 2nd Del
-21 51   # 2nd Del
-21 51   # 2nd Del
-21 51   # 2nd Del
-21 51   # 2nd Del
-21 51   # 2nd Del
-21 51   # 2nd Del
-21 51   # 2nd Del (9th) → the blink starts, dark first
-Wait: 400ms
-Freeze: CPU
+keys:
+  - regular-speed:
+  - key: Op  # 2nd Op
+  - key: 1 6  # 1 6     → partition 239.29
+  - key: STO  # STO
+  - key: 0 0  # 0 0
+  - key: Pgm  # 2nd Pgm
+  - key: 0 1  # 0 1
+  - key: A  # A
+  - key: CLR  # CLR
+  - key: D.MS  # 2nd D.MS
+  - key: LRN  # LRN
+  - key: SST  # SST
+  - key: Del  # 2nd Del
+  - key: Del  # 2nd Del
+  - key: Del  # 2nd Del
+  - key: Del  # 2nd Del
+  - key: Del  # 2nd Del
+  - key: Del  # 2nd Del
+  - key: Del  # 2nd Del
+  - key: Del  # 2nd Del
+  - key: Del  # 2nd Del (9th) → the blink starts, dark first
+  - wait: 400ms
+  - pause: cpu

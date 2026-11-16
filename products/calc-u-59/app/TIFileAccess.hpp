@@ -32,12 +32,14 @@ std::shared_ptr<FileIO> plainFileIO();
 
 class TIFileAccess {
 public:
-    static constexpr const char* kConstantMemoryFile = "ti58c.mem";
+    static constexpr const char* kConstantMemoryFile = "ti58c.memory.yaml";   // C59-3 AC-3
 
     TIFileAccess(std::string saveFolder, std::shared_ptr<FileIO> io);
 
-    std::optional<std::string> readConstantMemory();
-    void writeConstantMemory(const std::string& text);
+    /// The file's text (nullopt: no file, or it cannot be read; `unreadable` says which).
+    std::optional<std::string> readConstantMemory(bool* unreadable = nullptr);
+    /// False when the write failed (C59-3 EC-4).
+    bool writeConstantMemory(const std::string& text);
     bool writeCard(const std::string& path, const std::string& text);
     /// The path of `fileName` in the save folder.
     std::string cardFilePath(const std::string& fileName) const;

@@ -17,31 +17,37 @@
 #
 # Initially this did not work on the emulator. Problem was in LIB.PC.IN (opcode 0A2E): Reading the ROM PC was destructive.
 
+format-version: 2
+model: TI-59
+slot-1: { name: ML }
+printer: PC-100C
+
 # These are the above keystrokes
-KEYSTROKES:
-21  2nd
-64  9
-64  9
-21  2nd
-31  LRN
-83  2
-72  4
-91  R/S
-Wait: 5s
-91  R/S
-Wait: 5s
-91  R/S
-Wait: 5s
-64  9
-21  2nd
-64  9
-82  1
-62  7
-61  GTO
-92  0
-91  R/S
-Wait: 1s
-21  2nd
-83  2
-Wait: 2s
-31 LRN
+keys:
+  - regular-speed:
+  # 21  2nd
+  - key: Op  # 9
+  - key: 9  # 9
+  # 21  2nd
+  - key: Pgm  # LRN
+  - key: 2  # 2
+  - key: 4  # 4
+  - key: R/S  # R/S
+  - wait: 5s
+  - key: R/S  # R/S
+  - wait: 5s
+  - key: R/S  # R/S
+  - wait: 5s
+  - key: 9  # 9
+  # 21  2nd
+  - key: Op  # 9
+  - key: 1  # 1
+  - key: 7  # 7
+  - key: GTO  # GTO
+  - key: 0  # 0
+  - key: R/S  # R/S
+  - wait: 1s
+  # 21  2nd
+  - key: D.MS  # 2
+  - wait: 2s
+  - key: LRN  # LRN

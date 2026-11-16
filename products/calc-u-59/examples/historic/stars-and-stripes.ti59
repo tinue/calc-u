@@ -28,51 +28,52 @@
 # care of that) nor in the display (it was wiped out by he CLR). OP 05 messages may
 # be printed out a second time as well this way.
 
-MODEL: TI-59
-SOLID-STATE-MODULE: ML
-PRINTER: on
-
-# Prepare the magnet card inlay
-CUECARD:
-Template: MagnetCard
-Title: Stars & Stripes
-Banks: 1,4
-E: Instructions
+format-version: 2
+model: TI-59
+slot-1: { name: ML }
+printer: PC-100C
 
 # For compactness, the program is only here as key codes. If you need the listing,
 # load the program and LIST it on the printer.
-PROGRAM:
-92 76 11 61 00 33 76 16 43 09  69 01 69 02 69 03 69 04 76 17
-25 69 05 68 74 80 00 00 00 00  00 00 06 42 14 16 43 10 69 01
-52 69 02 25 69 03 02 05 69 04  17 04 42 00 73 00 69 03 69 30
-73 00 69 04 17 97 00 00 55 08  97 14 00 53 04 00 42 00 00 69
-03 02 05 69 04 17 43 11 69 02  43 09 69 03 69 04 17 43 12 69
-02 43 13 69 03 43 10 69 04 17  97 00 01 09 16 98 92 76 15 43
-15 69 01 43 16 69 02 43 17 69  03 43 18 69 04 69 05 98 01 00
-69 17 90 25 61 00 24 36 19 71  00 45 37 31 46 31 81 25 11 98
+program:
+  keycodes: |
+    92 76 11 61 00 33 76 16 43 09 69 01 69 02 69 03 69 04 76 17
+    25 69 05 68 74 80 00 00 00 00 00 00 06 42 14 16 43 10 69 01
+    52 69 02 25 69 03 02 05 69 04 17 04 42 00 73 00 69 03 69 30
+    73 00 69 04 17 97 00 00 55 08 97 14 00 53 04 00 42 00 00 69
+    03 02 05 69 04 17 43 11 69 02 43 09 69 03 69 04 17 43 12 69
+    02 43 13 69 03 43 10 69 04 17 97 00 01 09 16 98 92 76 15 43
+    15 69 01 43 16 69 02 43 17 69 03 43 18 69 04 69 05 98 01 00
+    69 17 90 25 61 00 24 36 19 71 00 45 37 31 46 31 81 25 11 98
 
-REGISTERS:
-01 = 60006025    #  ↑ ↑J
-02 = 6000600060  # ↑ ↑ ↑
-03 = 51005125    #  * *J
-04 = 5100510051  # * * *
-05 = 6000600025  # ↑ ↑ J
-06 = 60006000    #  ↑ ↑
-07 = 5100510025  # * * J
-08 = 51005100    #  * *
-09 = 6464646464  # =====
-10 = 2605002685  # K4 K4
-11 = 26050064    #  K4 =
-12 = 26050026    #  K4 K
-13 = 500260500   # 4 K4
-14 = 6           #
-15 = 1731371735  # ENTER
-16 = 21353230    #  FROM
-17 = 26174514    # KEYB
-18 = 3213351662  # OARD⇄
+data:
+  01: 60006025  # ↑ ↑J
+  02: 6000600060  # ↑ ↑ ↑
+  03: 51005125  # * *J
+  04: 5100510051  # * * *
+  05: 6000600025  # ↑ ↑ J
+  06: 60006000  # ↑ ↑
+  07: 5100510025  # * * J
+  08: 51005100  # * *
+  09: 6464646464  # =====
+  10: 2605002685  # K4 K4
+  11: 26050064  # K4 =
+  12: 26050026  # K4 K
+  13: 500260500  # 4 K4
+  14: 6
+  15: 1731371735  # ENTER
+  16: 21353230  # FROM
+  17: 26174514  # KEYB
+  18: 3213351662  # OARD⇄
+
+# Prepare the magnet card inlay
+cue-card:
+  title: Stars & Stripes
+  E: Instructions
 
 # The printout could be fully automated here, but in spirit of the original author's intent, we print the instructions
 # instead and then let the user follow them.
-KEYSTROKES:
-FullSpeed:
-15  E
+keys:
+  - full-speed:
+  - key: E  # E
+  - let-it-finish:

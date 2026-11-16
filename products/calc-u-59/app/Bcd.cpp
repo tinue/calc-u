@@ -40,6 +40,29 @@ Nibbles16 encodeBcd(std::string_view text) {
     return n;
 }
 
+std::optional<Nibbles16> parseDecimal(std::string_view text) {
+    std::string_view t = trim(text);
+    std::size_t i = 0;
+    if (i < t.size() && (t[i] == '-' || t[i] == '+')) ++i;
+    std::size_t digits = 0;
+    while (i < t.size() && t[i] >= '0' && t[i] <= '9') ++i, ++digits;
+    if (i < t.size() && t[i] == '.') {
+        ++i;
+        while (i < t.size() && t[i] >= '0' && t[i] <= '9') ++i, ++digits;
+    }
+    if (digits == 0) return std::nullopt;
+    if (i < t.size() && (t[i] == 'e' || t[i] == 'E')) {
+        ++i;
+        if (i < t.size() && (t[i] == '-' || t[i] == '+')) ++i;
+        std::size_t ed = 0;
+        while (i < t.size() && t[i] >= '0' && t[i] <= '9') ++i, ++ed;
+        if (ed == 0) return std::nullopt;
+    }
+    if (i != t.size()) return std::nullopt;
+    if (!t.empty() && t[0] == '+') t.remove_prefix(1);
+    return encodeBcd(t);
+}
+
 Nibbles16 encodeBcd(double value) {
     Nibbles16 n{};
     if (!std::isfinite(value) || value == 0.0) return n;

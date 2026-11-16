@@ -2,11 +2,10 @@
 #include "TIAppPartInternal.hpp"
 #include "AsmOverlay.hpp"
 #include "CardFile.hpp"
-#include "ConstantMemory.hpp"
 #include "KeyboardLayout.hpp"
-#include "StateApplier.hpp"
 #include "TextUtil.hpp"
 #include "../core/PC100C.hpp"
+#include "../core/TIDebugging.hpp"
 #include "../core/TICatalogue.hpp"
 #include "../core/PC100CPaper.hpp"
 #include <algorithm>
@@ -16,238 +15,132 @@ namespace cu59 {
 using namespace std::chrono_literals;
 
 // The product's flows of cu59::TIAppPart (2.3.0's SessionController, taken
-// apart in M-34). The session plumbing is TIAppPart.cpp.
+// apart in M-34; the machine control and the presets went to the library in
+// M-54). The session plumbing is TIAppPart.cpp.
 
+// ── Machine (LIB-18 §11.3) ───────────────────────────────────────────────────
 
-void TIAppPart::later(uint64_t sessionGeneration, std::function<void()> f) {
-    m_queue.push_back([this, sessionGeneration, f = std::move(f)] {
-        if (sessionGeneration != m_sessionGeneration) return;
-        f();
-    });
-}
-
-// ── Machine ──────────────────────────────────────────────────────────────────
-
-bool TIAppPart::startMachine(Model model) {
-    persistConstantMemory();  // save TI-58C RAM before switching away
-    if (m_ms) m_ms->dropInput();   // LIB-5 EC-5: the keys the engine holds come up first
-
-    const uint64_t generation = m_sessionGeneration + 1;
-    auto events = std::make_unique<Events>(*this, generation);
-    // The places as the app session has them (C59-6): the module, the PC-100C
-    // with TRACE where it was (AC-6), attached at the build.
-    MachinePeripherals places{currentModule(), m_printerConnected, m_printerTrace};
-    auto session = std::make_unique<EmulatorSession>(model, *m_setup.roms, places, *events);
-    m_session = std::move(session);  // the old session goes first, then its events
-    m_events = std::move(events);
-    m_sessionGeneration = generation;
-    m_model = model;
-
-    // A new machine: running, nothing armed (the run control, LIB-10 G11), no
-    // card; TRACE as it was (AC-6).
+void TIAppPart::followMachine() {
+    calcu::machine::Machine* m = machine();
     m_frozenAt.reset();
-    clearCardAndCue();
-    m_memoryCards.clear();
-    m_keystrokesPlaying = false;
-    m_fullSpeed = false;
-    if (m_typing) m_session->setTyping(&m_typing->engine());
+    m_pass.reset();
+    m_fitted.reset();
+    m_activeProgram = 0;
+    if (!m) {
+        m_session.reset();
+        emitChanged(~0u);
+        return;
+    }
+    // LIB-10 §12.11: a pause or a step waiting to land runs on in the host
+    // call that asked for it (2.3.0's freeze and STEP ran there, at most
+    // 50000 weights), instead of in paced emulated time.
+    if (auto* d = m->debugging(); d && m_lib.debugger()) {
+        calcu::debugger::RunControl* rc = &m_lib.debugger()->runControl();
+        static_cast<TIDebugging*>(d)->setRunOn([rc] { return !rc->running() && !rc->paused(); });
+    }
+    m_session = std::make_unique<EmulatorSession>(*m, *m_setup.roms);
+    m_model = m_session->model();
 
-    auto cards = moduleCards(m_setup.cuecards, m_moduleID);
-    m_moduleCards = std::move(cards.cards);
-    m_moduleMetadata = cards.metadata;
+    // The own cue card (C59-2 AC-6, C59-3 AC-7, AC-8): a preset's build has
+    // none until its `cue-card:` (fitted on this machine already, when the
+    // section ran in the same call); a TI-58C built from the constant memory
+    // file gets the file's card; any other build none (LIB-18 AC-20).
+    const auto& built = m_lib.control().lastBuild();
+    m_keeper.machineBuilt(m, built);
+    using calcu::startup::BuildOrigin;
+    const BuildOrigin origin = built ? built->origin : BuildOrigin::Start;
+    const bool presetBuild = origin == BuildOrigin::Preset || origin == BuildOrigin::StartupPreset;
+    if (!(presetBuild && m_userCueCard && m_userCueCardGeneration == m_ms->generation())) {
+        m_userCueCard.reset();
+        if (m_keeper.fromFile()) m_userCueCard = m_keeper.fileCueCard();
+    }
+
+    m_moduleID.clear();
+    m_moduleCards.clear();
+    m_moduleMetadata = {};
     m_debug.attach(*m_session);
     if (!m_debug.moduleImageError().empty()) diagnostic(m_debug.moduleImageError());
-
     {
         auto a = m_session->access();
         a.debugPanel().setDebugLevel(static_cast<uint8_t>(m_debugLevel));
-        if (info(model).hasConstantMemory) {
-            auto saved = loadConstantMemory();
-            powerOn(a.machine(), model, saved ? &*saved : nullptr);
-        }
         if (!m_asmWords.empty() && !a.debugPanel().loadDebugOverlay(m_asmWords.data(), m_asmWords.size())) {
             m_asmWords.clear();
             m_asmActive = false;
             m_asmStatus = "ASM overlay cleared (incompatible after model switch).";
         }
+        a.debugPanel().setPanelTrace(m_cpuDebugEnabled);
     }
-    m_session->access().debugPanel().setPanelTrace(m_cpuDebugEnabled);
+    m_asmActive = false;
     m_debug.resetHeatmapBaseline(m_session->access().machine());
+    followPlugs(true);
     refreshCueCard();
     emitChanged(ModelChanged | RunStateChanged | CardChanged | PrinterChanged | CueCardChanged | LiveChanged |
                 CpuChanged | HeatmapChanged | AsmChanged);
-    return true;
 }
 
-void TIAppPart::beginReset() {
-    m_session->cancelKeystrokes();
-    if (m_ms) m_ms->dropInput();   // LIB-5 EC-5 (LIB-18 §3.4): reset, cold boot, power cycle
-    if (auto* rc = runControl(); rc && !rc->running()) rc->resume();   // as 2.3.0: a reset unfreezes
-    m_asmActive = false;
-    clearCardAndCue();
-    dropPresetCards();
-    refreshCueCard();
-}
-
-void TIAppPart::clearCardAndCue() {
-    m_pass.reset();
-    m_queuedCardInReader = false;
-    m_userCueCard.reset();
-    m_fitted.reset();
-    m_presetCue.reset();
-    m_activeProgram = 0;
-}
-
-void TIAppPart::adoptPresetCue(const std::optional<CueCardContent>& cue) {
-    m_userCueCard = cue;
-    m_presetCue = cue;
-    m_fitted.reset();
-    refreshCueCard();
-    emitChanged(CardChanged);
-}
-
-void TIAppPart::resetMachine() {
+void TIAppPart::followPlugs(bool newMachine) {
     if (!m_session) return;
-    beginReset();
-    // TRACE survives a reset, as on the hardware (the PC-100C keeps it,
-    // C59-6 AC-6). The TI-58C keeps its constant memory from the running machine
-    // (C59-1 OQ-6); the TI-59/58 keep RAM and partition (AC-6, AC-19).
-    resetStopped();
-    m_debug.resetHeatmapBaseline(m_session->access().machine());
-    log({"Calculator Reset"});
-    emitChanged(ModelChanged | CardChanged | AsmChanged | HeatmapChanged);
-}
-
-void TIAppPart::resetStopped() {
-    m_session->access().machine().reset();
-    if (m_ctx) m_ctx->tellRestarted(calcu::sessions::Restart::Reset);   // LIB-10 adapter L-E2 (until M-54)
-}
-
-void TIAppPart::cleanResetMachine() {
-    if (!m_session) return;
-    beginReset();
-    m_session->access().machine().coldBoot();
-    if (m_ctx) m_ctx->tellRestarted(calcu::sessions::Restart::ColdBoot);   // L-E2
-    m_debug.resetHeatmapBaseline(m_session->access().machine());
-    persistConstantMemory();  // the zeroed state, at once
-    log({"Clean Reset — all registers cleared"});
-    emitChanged(ModelChanged | CardChanged | AsmChanged | HeatmapChanged);
-}
-
-// ── Places (C59-6) ───────────────────────────────────────────────────────────
-
-std::optional<std::string> TIAppPart::currentModule() const {
-    return isTIModule(m_moduleID) ? std::optional<std::string>(m_moduleID) : std::nullopt;
-}
-
-TIAppPart::PlaceChange TIAppPart::changePlacesNow(const std::optional<std::string>& module,
-                                                                  bool printer) {
-    using calcu::machine::AfterChange;
-    PlaceChange pc;
-    if (module != currentModule()) {
-        auto r = m_session->setModule(module, *m_setup.roms);
-        if (r.refused) {
-            pc.refusal = r.refused->reason;
-            return pc;
+    // The module (D-26: what the machine says is plugged).
+    const std::string module = m_session->moduleID();
+    if (newMachine || module != m_moduleID) {
+        m_moduleID = module;
+        m_session->refreshModule();
+        if (!newMachine) {
+            m_debug.moduleChanged(*m_session);
+            if (!m_debug.moduleImageError().empty()) diagnostic(m_debug.moduleImageError());
         }
-        pc.moduleChanged = true;
-        pc.powerCycle |= r.follows == AfterChange::PowerCycle;
-    }
-    if (printer != m_printerConnected) {
-        auto r = m_session->setPrinter(printer, m_printerTrace);
-        if (r.refused) {
-            pc.refusal = r.refused->reason;
-            return pc;
-        }
-        pc.printerChanged = true;
-        pc.powerCycle |= r.follows == AfterChange::PowerCycle;
-    }
-    return pc;
-}
-
-void TIAppPart::adoptPlaces(const PlaceChange& pc, const std::optional<std::string>& module, bool printer) {
-    if (pc.refusal) diagnostic(*pc.refusal);
-    if (pc.moduleChanged) {
-        m_moduleID = module.value_or(std::string());
-        m_debug.moduleChanged(*m_session);
-        if (!m_debug.moduleImageError().empty()) diagnostic(m_debug.moduleImageError());
         auto cards = moduleCards(m_setup.cuecards, m_moduleID);
         m_moduleCards = std::move(cards.cards);
         m_moduleMetadata = cards.metadata;
         refreshCueCard();
         emitChanged(ModelChanged);
     }
-    if (pc.printerChanged) {
-        m_printerConnected = printer;   // the paper stays the PaperPart's (LIB-8 AC-8, AC-29)
+    // The printer, and TRACE (C59-6 AC-6, LIB-18 D-27): an attach puts the
+    // remembered position into the new PC-100C; otherwise the position follows
+    // what the machine's PC-100C shows (a preset's build, printer-trace:).
+    const bool plugged = m_session->printerPlugged();
+    if (plugged && !m_printerConnected && !newMachine) m_session->printerControl(PC100C::kTrace, m_printerTrace);
+    if (plugged != m_printerConnected) {
+        m_printerConnected = plugged;
         emitChanged(PrinterChanged);
     }
+    if (plugged)
+        if (const auto on = m_session->printerSwitch(PC100C::kTrace); on && *on != m_printerTrace) {
+            m_printerTrace = *on;
+            emitChanged(PrinterChanged);
+        }
 }
 
-bool TIAppPart::changePlaces(const std::optional<std::string>& module, bool printer) {
-    if (!m_session) return false;
-    if (module == currentModule() && printer == m_printerConnected) return true;
-    beginReset();
-    PlaceChange pc = changePlacesNow(module, printer);
-    // The power cycle that follows (LIB-2 AC-24; row 59-11): the ROM finds
-    // what is plugged in now (AC-11).
-    if (pc.powerCycle) m_session->access().machine().powerCycle();
-    adoptPlaces(pc, module, printer);
-    if (pc.refusal) return false;
+void TIAppPart::machineRestarted(calcu::sessions::SessionContext& ctx, calcu::sessions::Restart r) {
+    m_ctx = &ctx;
+    if (!m_session) return;
+    // LIB-18 AC-23: the paper, the plugs, TRACE and the fitted cards stay;
+    // the ASM overlay stops, as 2.3.0's beginReset.
+    m_asmActive = false;
+    m_pass.reset();
+    m_activeProgram = 0;
     m_debug.resetHeatmapBaseline(m_session->access().machine());
-    if (pc.powerCycle) log({"Calculator power cycle"});
-    emitChanged(ModelChanged | CardChanged | AsmChanged | HeatmapChanged);
-    return true;
-}
-
-bool TIAppPart::selectModule(const std::string& moduleID) {
-    if (!m_session || !isTIModule(moduleID)) return false;
-    return changePlaces(moduleID, m_printerConnected);
-}
-
-void TIAppPart::changeModule(const std::string& moduleID) {
-    if (moduleID == m_moduleID) return;
-    if (moduleID.empty()) changePlaces(std::nullopt, m_printerConnected);
-    else selectModule(moduleID);
-}
-
-// ── TI-58C constant memory ───────────────────────────────────────────────────
-
-// Requested after every batch while running (debounced); the file is only
-// written when its contents changed.
-void TIAppPart::persistConstantMemory() {
-    m_persistDue.reset();
-    if (!m_session || !info(m_model).hasConstantMemory) return;
-    std::vector<uint8_t> ram(kConstantMemoryBytes);
-    m_session->access().memory().serialiseRAM(ram.data());
-    std::string text = encodeConstantMemory(ram, m_userCueCard ? &*m_userCueCard : nullptr);
-    if (text == m_persistedText) return;
-    m_files.writeConstantMemory(text);
-    m_persistedText = std::move(text);
-}
-
-std::optional<std::vector<uint8_t>> TIAppPart::loadConstantMemory() {
-    auto text = m_files.readConstantMemory();
-    if (!text) return std::nullopt;
-    auto decoded = decodeConstantMemory(*text);
-    if (!decoded) return std::nullopt;  // invalid file: the caller keeps zeroed RAM
-    m_userCueCard = decoded->cueCard;
+    log({r == calcu::sessions::Restart::ColdBoot ? "Clean Reset — all registers cleared" : "Calculator Reset"});
     refreshCueCard();
-    return decoded->ram;
+    emitChanged(ModelChanged | CardChanged | AsmChanged | HeatmapChanged);
+}
+
+void TIAppPart::fitOwnCueCard(const CueCardContent& card) {
+    m_userCueCard = card;
+    m_userCueCardGeneration = m_ms ? m_ms->generation() : 0;
+    m_fitted.reset();
+    refreshCueCard();
+    emitChanged(CardChanged | CueCardChanged);
 }
 
 // ── 60 Hz frame ──────────────────────────────────────────────────────────────
 
 void TIAppPart::frame(Clock::time_point now) {
-    if (!m_session) return;
-    m_session->pump(now);
+    if (!m_session || !machine()) return;
     uint32_t changes = 0;
     FrameUpdate f = m_session->tick(static_cast<int>(m_debugLevel), m_pass.has_value());
     if (f.cardAutoEjected) ejectCard();  // the core ejected at CRD_OFF: save written data
-    if (!m_pass) feedQueuedCard();
     if (!f.logLines.empty()) m_debug.log().writeAll(f.logLines);
-
-    if (m_session->takeRamDirty() && info(m_model).hasConstantMemory && !m_persistDue) m_persistDue = now + 500ms;
-    if (m_persistDue && now >= *m_persistDue) persistConstantMemory();
 
     if (f.led != m_display) {
         m_display = f.led;
@@ -294,28 +187,7 @@ void TIAppPart::refreshCueCard() {
     }
 }
 
-// ── Keys and speed ───────────────────────────────────────────────────────────
-
-
-void TIAppPart::setFullSpeed(bool on) {
-    if (m_fullSpeed == on) return;
-    m_fullSpeed = on;
-    if (m_session) m_session->setFullSpeed(on);
-    emitChanged(RunStateChanged);
-}
-
 // ── Printer ──────────────────────────────────────────────────────────────────
-
-void TIAppPart::setPrinterConnected(bool connected) {
-    if (!m_session) {
-        m_printerConnected = connected;
-        emitChanged(PrinterChanged);
-        return;
-    }
-    changePlaces(currentModule(), connected);
-}
-
-void TIAppPart::togglePrinterConnection() { setPrinterConnected(!m_printerConnected); }
 
 bool TIAppPart::setPrinterControl(const std::string& control, bool on) {
     if (control == PC100C::kTrace.value) {   // C59-6 AC-6: the app session keeps TRACE
@@ -366,11 +238,11 @@ bool TIAppPart::fitBlankCard(const std::string& savePath, const std::string& fil
     return true;
 }
 
-bool TIAppPart::feedSide(int side) { return feed(side, false); }
+bool TIAppPart::feedSide(int side) { return feed(side); }
 
-bool TIAppPart::feed(int side, bool queued) {
+bool TIAppPart::feed(int side) {
     if (!m_session || !m_fitted || side < 0 || side > 1 || m_pass) return false;
-    startSwipe(m_fitted->doc.bank(side), {side, queued, std::nullopt});
+    startSwipe(m_fitted->doc.bank(side), {side});
     return true;
 }
 
@@ -383,7 +255,6 @@ bool TIAppPart::tapCard(double nx, double ny) {
 }
 
 std::optional<int> TIAppPart::litCardCorner() const {
-    // A mem: card takes the fitted card out, so with one fitted the pass is its side.
     if (!cardOnShow() || !m_pass) return std::nullopt;
     return m_pass->side;
 }
@@ -413,80 +284,11 @@ void TIAppPart::ejectCard() {
     }
     std::vector<uint8_t> written = m_session->access().cardReader().cardEject();
     const CardPass pass = *std::exchange(m_pass, std::nullopt);
-    if (!written.empty()) {
-        if (pass.memoryKey) m_memoryCards[*pass.memoryKey] = {written, m_userCueCard};
-        else if (m_fitted) writeFittedSide(pass.side, written, pass.queued);
-    }
-    queuedCardDone();
+    if (!written.empty() && m_fitted) writeFittedSide(pass.side, written);
     emitChanged(CardChanged);
 }
 
-void TIAppPart::feedQueuedCard() {
-    if (!m_session) return;
-    auto card = m_session->takeQueuedCard();
-    if (!card) return;
-    m_queuedCardInReader = card->insertNow;
-    if (isMemoryCardName(card->name)) {
-        // A bank written to it earlier in the preset, else its CARD: block, else blank.
-        std::string key(memoryCardKey(card->name));
-        std::vector<uint8_t> bank;
-        std::optional<CueCardContent> cueCard;
-        if (auto it = m_memoryCards.find(key); it != m_memoryCards.end()) {
-            bank = it->second.bank;
-            cueCard = it->second.cueCard;
-        } else if (card->definition) {
-            bank = buildCardBank(*card->definition, m_session->access().memory().partitionProgramRegs());
-            cueCard = card->definition->cueCard;
-        }
-        m_fitted.reset();  // a memory card has no file behind it: it is not fitted
-        if (cueCard) m_userCueCard = cueCard;
-        refreshCueCard();
-        m_cardFileName = card->name;
-        startSwipe(bank, {0, false, key});
-        return;
-    }
-    std::string fileName = withDefaultCardExtension(card->name);
-    const std::string path = m_files.cardFilePath(fileName);
-    FileIO::Read file = m_files.readCard(path);
-    bool fitted;
-    if (file.unreadable) {
-        error("Card load error", "Could not read card file " + fileName + ".");
-        fitted = false;
-    } else if (!file.raw) {
-        log({"KEYSTROKES: no card file " + fileName + " — a blank card goes in"});
-        fitted = fitBlankCard(path, fileName);
-        if (fitted && m_presetCue) {
-            m_fitted->doc.cueCard = m_presetCue;
-            refreshCueCard();
-        }
-    } else {
-        fitted = fitCard(file.raw, path, fileName);
-    }
-    if (!fitted) {
-        queuedCardDone();
-        return;
-    }
-    if (card->side == 1 && m_fitted->doc.version == 1)
-        log({"KEYSTROKES: card file " + fileName + " has one side — that side goes in"});
-    feed(card->side, true);
-}
-
-void TIAppPart::dropPresetCards() {
-    if (!m_session) return;
-    std::vector<std::string> lines;
-    for (const auto& name : m_session->clearQueuedCards())
-        lines.push_back("KEYSTROKES: card " + name + " was never read or written");
-    if (!lines.empty()) log(lines);
-    m_memoryCards.clear();
-}
-
-void TIAppPart::queuedCardDone() {
-    if (!m_queuedCardInReader) return;
-    m_queuedCardInReader = false;
-    m_session->hostDone();
-}
-
-void TIAppPart::writeFittedSide(int side, const std::vector<uint8_t>& written, bool queued) {
+void TIAppPart::writeFittedSide(int side, const std::vector<uint8_t>& written) {
     const std::string saveFailed = "Card save failed: " + m_fitted->path;
     CardDocument doc = m_fitted->doc;
     if (!m_fitted->fresh) {
@@ -506,7 +308,6 @@ void TIAppPart::writeFittedSide(int side, const std::vector<uint8_t>& written, b
         }
     }
     doc.setBank(side, written);
-    if (queued && m_presetCue) doc.cueCard = m_presetCue;
     if (!m_files.writeCard(m_fitted->path, encodeCardDocument(doc))) {
         error("Card save error", saveFailed);
         return;
@@ -516,166 +317,19 @@ void TIAppPart::writeFittedSide(int side, const std::vector<uint8_t>& written, b
     refreshCueCard();  // the corner shows the bank just written
 }
 
-// ── State files (reference/SharedArchitecture.md § "State File Loading") ───────
-
-void TIAppPart::loadStateFile(const std::optional<std::vector<uint8_t>>& raw) {
-    const std::string title = "State file load error";
-    if (!raw) {
-        error(title, "Cannot read file.");
-        return;
-    }
-    std::string text(raw->begin(), raw->end());
-    if (!isValidUtf8(text)) {
-        error(title, "File is not valid UTF-8 text — re-save it with UTF-8 encoding (a non-UTF-8 character, "
-                                "e.g. a curly quote or em dash from a word processor, is the usual cause).");
-        return;
-    }
-    const Model targetModel = stateFileModel(text, m_model);
-    const ModelInfo& target = info(targetModel);
-    LoadStateResult parsed = parseStateFile(text, target.maxStep(), target.hasConstantMemory);
-    if (parsed.usesCardReader && !target.hasCardReader) {
-        parsed.errors.push_back(std::string("CARD:, ArmCard: and InsertCard: need a card reader; the ") +
-                                target.displayName + " has none.");
-        auto& k = parsed.keystrokes;
-        k.erase(std::remove_if(k.begin(), k.end(), [](const KeystrokeEvent& e) {
-                    return e.kind == KeystrokeEvent::Kind::ArmCard || e.kind == KeystrokeEvent::Kind::InsertCard;
-                }), k.end());
-    }
-    if (!parsed.errors.empty()) {
-        std::string joined;
-        for (const auto& e : parsed.errors) joined += (joined.empty() ? "" : "\n") + e;
-        error(title, joined);
-    }
-    if (targetModel != m_model && !startMachine(targetModel)) return;
-    applyState(parsed);
-}
-
 // ── Dropped files (reference/SharedArchitecture.md § "Dropped Files") ──────────
 
 DropAction dropActionFor(const std::string& fileName, Model model) {
-    if (isStateFileName(fileName)) return DropAction::LoadPreset;
+    if (isPresetFileName(fileName)) return DropAction::LoadPreset;
     if (!isCardFileName(fileName)) return DropAction::NotAccepted;
     return info(model).hasCardReader ? DropAction::FitCard : DropAction::Ignore;
-}
-
-bool TIAppPart::openDroppedFile(const std::optional<std::vector<uint8_t>>& raw, const std::string& path,
-                                        const std::string& fileName) {
-    switch (dropAction(fileName)) {
-        case DropAction::LoadPreset:
-            loadStateFile(raw);
-            return raw.has_value();
-        case DropAction::FitCard:
-            return fitCard(raw, path, fileName);
-        case DropAction::Ignore:
-        case DropAction::NotAccepted:
-            return false;
-    }
-    return false;
-}
-
-void TIAppPart::applyState(const LoadStateResult& parsed) {
-    if (!m_session) return;
-    if (auto e = stateFilePartitionError(parsed, m_model)) {
-        error("State file load error", *e);
-        return;
-    }
-    dropPresetCards();
-    // SOLID-STATE-MODULE: and PRINTER: first, as attach and detach; the power
-    // cycle that follows is the one the state applier runs before it writes
-    // the state (C59-6 design §4). An ID that is no module keeps the module.
-    // TRACE is off after a load unless its keystrokes set it (row 59-25).
-    std::optional<std::string> module = currentModule();
-    if (parsed.solidStateModuleID && isTIModule(*parsed.solidStateModuleID)) module = *parsed.solidStateModuleID;
-    const bool printer = parsed.printerConnected.value_or(m_printerConnected);
-    m_printerTrace = false;
-    if (auto* rc = runControl(); rc && !rc->running()) rc->resume();   // a load unfreezes, as 2.3.0
-    m_activeProgram = 0;
-    PlaceChange places = changePlacesNow(module, printer);
-    m_session->printerControl(PC100C::kTrace, false);
-    cu59::applyState(m_session->access().machine(), parsed, m_model);
-    m_debug.resetHeatmapBaseline(m_session->access().machine());  // fresh machine state: skip the power-on walk
-    adoptPlaces(places, module, printer);
-    // LIB-8 AC-8, adapter P-E4 (until M-54): a preset that names the printer
-    // (PRINTER:) starts with empty paper; one that does not keeps it (D-29).
-    if (parsed.printerConnected && m_paperPart && m_ctx) {
-        m_paperPart->sync(*m_ctx);
-        if (auto f = m_paperPart->find(*m_ctx, std::string(kPC100C.value)); f.paper) f.paper->cut();
-    }
-    emitChanged(PrinterChanged);
-    adoptPresetCue(parsed.cueCard);
-    persistConstantMemory();  // after the cue card: ti58c.mem keeps the file's card
-    emitChanged(RunStateChanged | HeatmapChanged);
-    if (!parsed.keystrokes.empty()) m_session->playKeystrokes(parsed.keystrokes);
-}
-
-// LIB-10 adapter L-E1 (until M-54): the KEYSTROKES directives of a 2.3.0
-// preset through the run control, as the steps of AC-32 (Freeze: Calculator
-// is pause program, Freeze: CPU pause cpu, FreezeOnStart: pause-on-start,
-// Step: step, Resume: resume). Freeze: and Step: hold the playback until
-// their pause has landed, as 2.3.0 ran them before it went on.
-void TIAppPart::applyControl(const KeystrokeEvent& e) {
-    if (!m_session) return;
-    using K = KeystrokeEvent::Kind;
-    using calcu::debugger::kCpu;
-    using calcu::debugger::kProgram;
-    const calcu::debugger::LevelName level = e.panel == DebugPanel::Cpu ? kCpu : kProgram;
-    calcu::debugger::RunControl* rc = runControl();
-    bool done = true;
-    switch (e.kind) {
-    case K::PrinterTrace: setPrinterControl(PC100C::kTrace.value, e.on); break;
-    case K::CutPaper:   // LIB-8 adapter P-E5 (until M-54): the step cut-paper
-        if (m_paperPart && m_ctx) m_paperPart->cutPlugged(*m_ctx);
-        break;
-    case K::ShowPanel: showDebugPanel(e.panel); break;
-    case K::Freeze:
-        if (rc && rc->running()) {
-            m_asmActive = false;
-            emitChanged(AsmChanged);
-            done = !rc->pause(level).deferred;
-        }
-        break;
-    case K::FreezeOnStart:
-        if (rc) rc->pauseOnStart(e.on ? std::optional<calcu::debugger::LevelName>(level) : std::nullopt);
-        break;
-    case K::Step:
-        if (!rc || !rc->paused()) {
-            log({"KEYSTROKES: Step: ignored — the calculator is not frozen"});
-            break;
-        }
-        done = !rc->step(level, static_cast<std::uint64_t>(std::max(1, e.count)), std::nullopt,
-                         calcu::debugger::StepKind::In)
-                    .deferred;
-        break;
-    case K::Resume:
-        if (rc) rc->resume();
-        break;
-    default: break;
-    }
-    if (done) m_session->hostDone();
-    else m_controlWaitsForPause = true;   // hostDone when the pause lands (followRunState)
-    emitChanged(RunStateChanged);
-}
-
-void TIAppPart::applyReloadStage(const ReloadStage& stage) {
-    if (!m_session) return;
-    const ModelInfo& mi = info(m_model);
-    if (stage.partitionMaxStep && *stage.partitionMaxStep > mi.maxStep()) {
-        log({"KEYSTROKES: reload skipped — its partition (" + std::to_string(*stage.partitionMaxStep) + ") exceeds the " +
-             mi.displayName + " maximum (" + std::to_string(mi.maxStep()) + ")"});
-    } else {
-        applyReload(m_session->access().machine(), stage, m_model);
-        if (stage.cueCard) adoptPresetCue(stage.cueCard);
-        persistConstantMemory();
-        emitChanged(RunStateChanged);
-    }
-    m_session->hostDone();
 }
 
 // ── Debugger ─────────────────────────────────────────────────────────────────
 
 void TIAppPart::followRunState() {
     calcu::debugger::RunControl* rc = runControl();
-    if (!rc || !m_session) return;
+    if (!rc || !m_session || !machine()) return;
     rc->sync();   // a new machine first (G11): a pause of the old one is not shown on it
     const calcu::debugger::RunState now = rc->state();
     const bool paused = rc->paused();
@@ -695,34 +349,12 @@ void TIAppPart::followRunState() {
             if (u.diagnostic) diagnostic(*u.diagnostic);
             emitChanged(changeIf(u.live, LiveChanged) | changeIf(u.listing, ListingChanged) | changeIf(u.cpu, CpuChanged));
         }
-        if (m_controlWaitsForPause) {   // L-E1: Freeze: or Step: has landed
-            m_controlWaitsForPause = false;
-            m_session->hostDone();
-        }
     } else {
         m_frozenAt.reset();
-        if (m_controlWaitsForPause && rc->running()) {   // ended without landing (a reset, a resume)
-            m_controlWaitsForPause = false;
-            m_session->hostDone();
-        }
     }
     if (!now.same(m_seenRun)) {
         m_seenRun = now;
         emitChanged(RunStateChanged);
-    }
-}
-
-void TIAppPart::scriptedTrace(const std::optional<std::string>& fileName) {
-    if (!m_debugger || !m_ctx || !m_session) return;
-    calcu::debugger::TraceSession& t = m_debugger->traceSession();
-    if (!fileName) {
-        t.end(*m_ctx, calcu::debugger::TraceSession::Ending::Off);
-        return;
-    }
-    // LIB-10 AC-22, ledger 59-19: a trace that cannot start fails its preset.
-    if (auto why = t.start(*m_ctx, *fileName, false, true)) {
-        error("Trace error", "KEYSTROKES \"Trace: " + *fileName + "\": " + *why);
-        m_session->cancelKeystrokes();
     }
 }
 
@@ -831,9 +463,9 @@ void TIAppPart::runAsm() {
     } else if (r.entered) {
         m_asmStatus = "ASM entered at 0x1800 (" + std::to_string(r.steps) + " step(s)).";
         m_asmActive = true;
-        if (freezeOnStart && rc && m_rules) {
+        if (freezeOnStart && rc) {
             // FREEZE ON START was armed: paused in place at the 0x1800 entry.
-            m_rules->landNextPauseAtOnce();
+            m_levelRules.landNextPauseAtOnce();
             rc->pause(calcu::debugger::kCpu);
         }
     } else {
@@ -852,7 +484,8 @@ void TIAppPart::clearAsm() {
     // A running overlay would now execute the empty range: reset the machine.
     if (wasActive && m_session) {
         if (auto* rc = runControl(); rc && !rc->running()) rc->resume();
-        resetStopped();
+        m_session->access().machine().reset();
+        if (m_ctx) m_ctx->tellRestarted(calcu::sessions::Restart::Reset);
     }
     emitChanged(AsmChanged);
 }

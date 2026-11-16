@@ -1,17 +1,20 @@
 # Testfile for a SolidStateCard
 
-CUECARD:
-Template: SolidStateCard
-Title: Financial
-Id: ML-01
-IdAlign: right
-Row1: DIAGNOSTIC: SBR =
-Row1Align: center
-Row2: L.R. INIT: SBR CLR
-Row2Align: left
-Row2R: PRINT: mm STO 00
-Row2RAlign: right
+format-version: 2
+model: TI-59
+slot-1: { name: ML }
+printer: PC-100C
 
-REGISTERS:
-00 = 1000
-01 = 0.05
+data:
+  00: 1000
+  01: 0.05
+
+cue-card:
+  title: Financial
+  # id: ML-01  (a stand-alone cue card has no id; cue-card.md §3)
+  row-1: "DIAGNOSTIC: SBR ="
+  row-1-align: center
+  row-2: "L.R. INIT: SBR CLR"
+  row-2-align: left
+  row-2-r: "PRINT: mm STO 00"
+  row-2-r-align: right

@@ -1,20 +1,24 @@
 # Testfile for a CueCard
 
-CUECARD:
-Template: CueCard
-Title: Quadratic Solver
-A: solve ax^{2}+bx+c
-B: roots
-C: discriminant
-D:
-E:
-A': area
-B': perimeter
-C': volume
-D':
-E':
+format-version: 2
+model: TI-59
+slot-1: { name: ML }
+printer: PC-100C
 
-REGISTERS:
-00 = 1
-01 = 2
-02 = 3
+data:
+  00: 1
+  01: 2
+  02: 3
+
+cue-card:
+  title: Quadratic Solver
+  A: solve ax^{2}+bx+c
+  B: roots
+  C: discriminant
+  D: 
+  E: 
+  "A'": area
+  "B'": perimeter
+  "C'": volume
+  "D'": 
+  "E'": 

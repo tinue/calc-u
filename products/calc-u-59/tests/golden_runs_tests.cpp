@@ -59,7 +59,7 @@
 #include "TestHarness.hpp"
 #include "TestRoms.hpp"
 #include "../app/ModuleCatalog.hpp"
-#include "../app/StateApplier.hpp"
+#include "../app/MachineModelInfo.hpp"
 #include "../app/TITraceRecorder.hpp"
 #include "Md5.hpp"
 #include <limits>
@@ -238,7 +238,12 @@ struct Run {
         else if (cmd == "app-poweron") {
             m->powerCycle();
             operation();
-            cu59::powerOn(*m, model, savedRam.empty() ? nullptr : &savedRam);
+            // 2.3.0's StateApplier::powerOn (gone in M-54), as it was recorded: on
+            // the TI-58C the ROM's start-up for 300,000 instructions, then the RAM.
+            if (cu59::info(model).hasConstantMemory) {
+                mem(*m).runInstructions(300'000);
+                if (savedRam.size() >= 120 * 16) mem(*m).deserialiseRAM(savedRam.data());
+            }
         }
         else if (cmd == "app-reset") {
             m->reset();

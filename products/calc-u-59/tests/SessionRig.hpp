@@ -2,6 +2,9 @@
 #include "TestRoms.hpp"
 #include "../app/KeyIds.hpp"
 #include "../app/TIAppPart.hpp"
+#include "../app/Settings.hpp"
+#include "presets/PresetsPart.hpp"
+#include "startup/StartupPart.hpp"
 #include "typing/TypingTopics.hpp"
 #include "Pump.hpp"
 #include "TestFrontend.hpp"
@@ -29,12 +32,15 @@ namespace fs = std::filesystem;
 inline std::string catalog() { return readFile("roms/solid-state/cuecards.txt").value_or(""); }
 
 /// What a frontend hands the part (C59-5 D-12): the ROM set, the cue cards,
-/// `model` first, the save folder and the traces in `folder`.
-inline cu59::TIAppSetup appSetup(cu59::Model model, const fs::path& folder) {
+/// the settings (`[startup] model`: `model`, LIB-18 AC-17), the bundled
+/// examples, the save folder and the traces in `folder`.
+inline cu59::TIAppSetup appSetup(calcu::settings::SettingsFile& settings, cu59::Model model, const fs::path& folder) {
     cu59::TIAppSetup s;
     s.roms = romSet();
     s.cuecards = catalog();
-    s.startModel = model;
+    settings.set("startup", "model", cu59::modelId(model).value);
+    s.settings = &settings;
+    s.examplesFolder = "examples";
     s.saveFolder = folder.string();
     s.trace = {folder, 50'000'000};   // the apps' default limit (50 MiB for the library's trace session)
     return s;
@@ -74,12 +80,13 @@ struct SessionRig {
     using Value = calcu::sessions::Value;
     calcu::testing::TempFolder folder{"calcu59-session"};
     calcu::pacing::WallTime now{std::chrono::hours(1)};
+    calcu::settings::SettingsFile settings = calcu::settings::SettingsFile::defaultsOnly(cu59::settings::settingsDecl());
     calcu::sessions::test::TestFrontend fe;
     calcu::sessions::ProductSession<cu59::TIAppPart> app;
     calcu::sessions::ListenerId me = 0;
 
     explicit SessionRig(RigOptions o) {
-        cu59::TIAppSetup s = appSetup(o.model, folder.path());
+        cu59::TIAppSetup s = appSetup(settings, o.model, folder.path());
         if (!o.saveFolder.empty()) s.saveFolder = o.saveFolder;
         if (!o.traceFolder.empty()) s.trace.dir = o.traceFolder;
         if (o.noTraceFolder) s.trace.dir.clear();
@@ -88,6 +95,8 @@ struct SessionRig {
         app = cu59::makeAppSession(std::move(s), [this] { return now += std::chrono::milliseconds(1); }, 59u,
                                    std::move(o.before), std::move(o.after));
         me = session().listen(fe, std::move(o.services));
+        // LIB-18's start (makeAppSession sent it): until the machine is ready for keys.
+        until([this] { return session().machineSession().machine() && !session().context().busy(); });
     }
     explicit SessionRig(cu59::Model model = cu59::Model::TI59, calcu::sessions::HostServices services = {},
                         std::vector<calcu::sessions::SessionPart*> before = {})
@@ -195,8 +204,15 @@ struct PartRig : SessionRig {
     template <class F> bool runUntil(F cond, std::chrono::milliseconds limit = std::chrono::seconds(20)) {
         return until(cond, limit);
     }
-    /// A preset as the Preset button loads it (the flow, not the operation).
-    void load(const std::string& text) { part().loadStateFile(std::vector<uint8_t>(text.begin(), text.end())); }
+    /// A preset as a frontend loads one by its content (LIB-6's
+    /// `load-preset {content, name}`); the reply of the command (refused at
+    /// once with the first error, else when the preset has been carried out).
+    calcu::sessions::ReplyMessage load(const std::string& text, const std::string& name = "test.ti59") {
+        const auto id = post(calcu::presets::kLoadPresetCommand, Value::object({{"content", text}, {"name", name}}));
+        until([&] { return reply(id) != nullptr; }, std::chrono::minutes(30));
+        if (const auto* r = reply(id)) return *r;
+        return calcu::sessions::ReplyMessage{id, false, "no reply", nullptr};
+    }
 };
 
 } // namespace testroms

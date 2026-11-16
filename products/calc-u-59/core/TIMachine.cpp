@@ -99,6 +99,8 @@ const CapabilityId kControlsId{"printer/controls"};
 const CapabilityId kPaperId{"printer/paper-output"};
 const CapabilityId kTypingId{"TMC0501/typing-support"};
 const CapabilityId kTraceRecordsId{"TMC0501/c59.trace-records"};
+const CapabilityId kProgramMemoryId{"RAM/c59.program-memory"};
+const CapabilityId kConstantMemoryId{"RAM/c59.constant-memory"};
 } // namespace
 
 void TIMachine::rewire() {
@@ -153,6 +155,9 @@ std::vector<CapabilityEntry> TIMachine::capabilities() const {
     const ComponentOwner cpu{ComponentId{"TMC0501"}};
     std::vector<CapabilityEntry> out{{calcu::typing::TypingSupport::kKind, kTypingId, cpu},
                                      {TraceRecords::kKind, kTraceRecordsId, cpu}};
+    const ComponentOwner ram{ComponentId{"RAM"}};
+    out.push_back({cu59::ProgramMemory::kKind, kProgramMemoryId, ram});
+    if (hasConstantMemory(m_variant)) out.push_back({cu59::ConstantMemory::kKind, kConstantMemoryId, ram});
     if (!m_printer) return out;
     const PeripheralOwner owner{kPC100C, kPrinterPath};
     out.push_back({calcu::peripherals::Controls::kKind, kControlsId, owner});
@@ -163,6 +168,8 @@ std::vector<CapabilityEntry> TIMachine::capabilities() const {
 Capability* TIMachine::capability(const CapabilityId& id) {
     if (id == kTypingId) return &m_typing;
     if (id == kTraceRecordsId) return &m_traceRecords;
+    if (id == kProgramMemoryId) return &m_programMemory;
+    if (id == kConstantMemoryId) return hasConstantMemory(m_variant) ? &m_constantMemory : nullptr;
     if (!m_printer) return nullptr;
     if (id == kControlsId) return &m_printer->controls();
     if (id == kPaperId) return static_cast<calcu::paper::PaperOutput*>(m_printer.get());

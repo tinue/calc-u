@@ -9,19 +9,22 @@
 # check the LOG tab (DEBUG panel) for the two "Elapsed:" lines — both should
 # be close to each other and to that ~15s figure.
 
-MODEL: TI-59
-SOLID-STATE-MODULE: ML
+format-version: 2
+model: TI-59
+slot-1: { name: ML }
+printer: PC-100C
 
-KEYSTROKES:
-21 31           # 2nd Pgm
-92              # 0
-82              # 1        → Pgm 01 selected
-71              # SBR
-ZeroElapseTime:
-95              # =        → run program 01 at regular speed
-ReportElapseTime:
-FullSpeed:
-71              # SBR      → re-enter program 01 (still selected)
-ZeroElapseTime:
-95              # =        → run program 01 again, at full speed
-ReportElapseTime:
+keys:
+  - regular-speed:
+  - key: Pgm  # 2nd Pgm
+  - key: 0  # 0
+  - key: 1  # 1        → Pgm 01 selected
+  - key: SBR  # SBR
+  - elapsed-time: start
+  - key: =  # =        → run program 01 at regular speed
+  - elapsed-time: report
+  - full-speed:
+  - key: SBR  # SBR      → re-enter program 01 (still selected)
+  - elapsed-time: start
+  - key: =  # =        → run program 01 again, at full speed
+  - elapsed-time: report

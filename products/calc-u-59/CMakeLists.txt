@@ -45,6 +45,7 @@ add_library(calcu59_core STATIC
   ${CORE_ROOT}/TICatalogue.cpp
   ${CORE_ROOT}/TIKeys.cpp
   ${CORE_ROOT}/TIMachine.cpp
+  ${CORE_ROOT}/TIMemoryKinds.cpp
   ${CORE_ROOT}/TIRomText.cpp
   ${CORE_ROOT}/TIRomReader.cpp
   ${CORE_ROOT}/ModuleFile.cpp
@@ -113,6 +114,7 @@ file(STRINGS ${CMAKE_CURRENT_SOURCE_DIR}/frontends/swift/Calc-U-59.xcodeproj/pro
      CALCU59_VERSION_LINE REGEX "MARKETING_VERSION = [0-9.]+;" LIMIT_COUNT 1)
 string(REGEX REPLACE ".*MARKETING_VERSION = ([0-9.]+).*" "\\1" CALCU59_VERSION "${CALCU59_VERSION_LINE}")
 target_compile_definitions(calcu59_harness PRIVATE "CALCU59_ROM_DIR=\"${CMAKE_CURRENT_SOURCE_DIR}/roms\""
+                                                   "CALCU59_EXAMPLES_DIR=\"${CMAKE_CURRENT_SOURCE_DIR}/examples\""
                                                    "CALCU59_VERSION=\"${CALCU59_VERSION}\"")
 calcu_harness_add_product(calcu59_harness cu59::makeHarnessProduct)
 

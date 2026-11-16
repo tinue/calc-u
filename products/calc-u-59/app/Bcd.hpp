@@ -26,6 +26,13 @@ using Nibbles16 = std::array<uint8_t, 16>;
 /// other literal goes through encodeBcd(double). Unparseable text → zero.
 Nibbles16 encodeBcd(std::string_view text);
 
+/// A decimal literal as a preset's `data:` and `expect:` take it
+/// (docs/formats/preset.md §4.2; C59-2 AC-4, D-44): `[-]digits[.digits]` or
+/// `[-].digits`, with an optional exponent `e|E[±]digits`. Its register: a
+/// whole number digit for digit, cut after the 13th significant digit, any
+/// other value rounded to 13 digits (encodeBcd); nullopt for no number.
+std::optional<Nibbles16> parseDecimal(std::string_view text);
+
 /// Encode a double: 13 correctly rounded significant digits via %.12e (no
 /// iterative digit extraction, which accumulates rounding error).
 /// 0, NaN and ±Inf encode as all-zero.

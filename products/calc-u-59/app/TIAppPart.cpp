@@ -1,11 +1,15 @@
 #include "TIAppPart.hpp"
 #include "TIAppPartInternal.hpp"
 #include "PacingProfiles.hpp"
+#include "Settings.hpp"
 #include "../core/TIAdapters.hpp"
 #include "TIDebuggerSetup.hpp"
 #include "TIPrinters.hpp"
+#include "TITyping.hpp"
 #include "../core/TIDebugging.hpp"
+#include "presets/PresetsPart.hpp"
 #include "sessions/LibraryTopics.hpp"
+#include "sessions/Listener.hpp"
 #include "sessions/Operation.hpp"
 #include "sessions/Args.hpp"
 #include "../core/TICatalogue.hpp"
@@ -68,38 +72,108 @@ NoticeParts splitNotice(const std::string& sentence) {
 
 // ── The part ─────────────────────────────────────────────────────────────────
 
+namespace {
+
+std::filesystem::path pathOf(const std::string& s) { return std::filesystem::path(std::u8string(s.begin(), s.end())); }
+
+// LIB-10 §12.6: the trace folder of the host, none on the Web (hand-over).
+TIDebuggerOptions debuggerOptions(const TIAppSetup& s, std::function<void(const std::string&)> showPanel) {
+    TIDebuggerOptions o;
+    const TraceTarget t = s.trace;
+    const std::function<bool()> available = s.traceAvailable;
+    if (!t.dir.empty()) {
+        o.traceFolder = [t, available]() -> std::optional<calcu::settings::Paths::Ensured> {
+            if (available && !available()) return calcu::settings::Paths::Ensured{false, t.dir.string(), "The trace location is not available."};
+            std::error_code ec;
+            std::filesystem::create_directories(t.dir, ec);
+            if (ec) return calcu::settings::Paths::Ensured{false, t.dir.string(), ec.message()};
+            const std::u8string u = t.dir.u8string();
+            return calcu::settings::Paths::Ensured{true, std::string(u.begin(), u.end()), {}};
+        };
+    }
+    if (t.maxBytes > 0) o.traceLimitMb = [mb = static_cast<long>(std::max<uint64_t>(1, t.maxBytes / 1'000'000))] { return mb; };
+    o.handOver = t.dir.empty();
+    o.showPanel = [showPanel](sessions::SessionContext&, const std::string& view) { showPanel(view); };
+    return o;
+}
+
+} // namespace
 
 TIAppPart::TIAppPart(TIAppSetup setup)
     : m_setup(std::move(setup)),
       m_files(m_setup.saveFolder, m_setup.fileIO),
       m_hooks(std::make_unique<Hooks>(*this)),
-      m_moduleID(m_setup.moduleID) {}
+      m_keeper(m_files, [this](std::string sentence) { if (m_ctx) m_ctx->notice(std::move(sentence)); }),
+      m_machines([this] { return m_keeper.contentForBuild(); }),
+      m_rules(TIKeywordSetup{[this](sessions::SessionContext& c, const CueCardContent& card) {
+          m_ctx = &c;
+          fitOwnCueCard(card);
+      }}),
+      m_bundle(m_setup.examplesFolder.empty() ? nullptr
+                                              : std::make_unique<presets::DirectoryPresetBundle>(pathOf(m_setup.examplesFolder))),
+      m_lib(librarySetup()) {}
+
+calcu::parts::LibraryPartsSetup TIAppPart::librarySetup() {
+    if (!m_setup.settings) {
+        m_ownSettings.emplace(calcu::settings::SettingsFile::defaultsOnly(settings::settingsDecl()));
+        m_setup.settings = &*m_ownSettings;
+    }
+    calcu::parts::LibraryPartsSetup s;
+    s.catalogue = &tiCatalogue();
+    s.machines = &m_machines;
+    s.settings = m_setup.settings;
+    s.roms = m_setup.roms;
+    if (!s.roms) s.romsMissing = "The ROM files are missing.";
+    s.typing = &typingProduct();
+    s.hosting = m_setup.hosting;
+    s.presetRules = &m_rules;
+    s.bundle = m_bundle.get();
+    s.home = m_setup.home;
+    s.screenshotFolder = [this]() -> std::optional<std::string> {
+        // LIB-6 AC-25: the save folder, made when a step needs it.
+        std::optional<std::string> folder = m_setup.screenshotFolder ? m_setup.screenshotFolder()
+                                                                     : std::optional<std::string>(m_setup.saveFolder);
+        if (!folder || folder->empty()) return std::nullopt;
+        std::error_code ec;
+        std::filesystem::create_directories(pathOf(*folder), ec);
+        return folder;
+    };
+    s.papers = tiPrinterPapers();
+    s.debugger = tiDebuggerSetup(m_levelRules, debuggerOptions(m_setup, [this](const std::string& v) { showDebugPanelNamed(v); }));
+    s.productName = "Calc-U-59";
+    s.presetExtensions = {".ti59", ".ti58", ".ti58c"};
+    s.printers = {kPC100C};
+    return s;
+}
 
 TIAppPart::~TIAppPart() {
-    // Before the session: the TI-58C's memory is written while the machine
-    // session still holds the machine.
-    persistConstantMemory();
-    if (m_typing) m_typing->engine().setObserver(nullptr);
+    if (auto* t = m_lib.typing()) t->engine().setObserver(nullptr);
     m_session.reset();
-    m_queue.clear();
 }
 
-void TIAppPart::setTyping(calcu::typing::TypingPart* typing) { m_typing = typing; }
-
-void TIAppPart::setLibraryParts(calcu::paper::PaperPart* paper, calcu::debugger::DebuggerPart* debugger,
-                                TILevelRules* rules) {
-    m_paperPart = paper;
-    m_debugger = debugger;
-    m_rules = rules;
+std::vector<sessions::SessionPart*> TIAppPart::sessionParts() {
+    std::vector<sessions::SessionPart*> parts = m_lib.sessionParts();
+    parts.push_back(&m_memoryPart);
+    parts.push_back(this);
+    return parts;
 }
 
-calcu::debugger::RunControl* TIAppPart::runControl() const { return m_debugger ? &m_debugger->runControl() : nullptr; }
+calcu::machine::Machine* TIAppPart::machine() const { return m_ms ? m_ms->machine() : nullptr; }
+
+calcu::debugger::RunControl* TIAppPart::runControl() const {
+    auto* d = const_cast<TIAppPart*>(this)->m_lib.debugger();
+    return d ? &d->runControl() : nullptr;
+}
 
 calcu::debugger::RunState TIAppPart::runState() const {
-    return m_debugger ? m_debugger->runControl().state() : calcu::debugger::RunState{};
+    auto* rc = runControl();
+    return rc ? rc->state() : calcu::debugger::RunState{};
 }
 
-bool TIAppPart::isFrozen() const { return m_debugger && m_debugger->runControl().paused(); }
+bool TIAppPart::isFrozen() const {
+    auto* rc = runControl();
+    return rc && rc->paused();
+}
 
 void TIAppPart::attach(sessions::SessionSetup& s) {
     using sessions::History;
@@ -131,33 +205,7 @@ void TIAppPart::attach(sessions::SessionSetup& s) {
     using sessions::realArg;
     using sessions::textArg;
 
-    add(s, kStartMachine, [&c](const Value& a) -> CommandOutcome {
-        const int64_t m = sessions::integerArg(a, "model", -1);
-        if (m < 0 || m > 2) return Refused{"The model is 0 (TI-59), 1 (TI-58) or 2 (TI-58C)."};
-        c.startMachine(static_cast<Model>(m));
-        return Done{};
-    });
-    add(s, kReset, done([&c](const Value&) { c.resetMachine(); }));
-    add(s, kCleanReset, done([&c](const Value&) { c.cleanResetMachine(); }));
-    add(s, kPersistConstantMemory, done([&c](const Value&) { c.persistConstantMemory(); }));
-    // AC-32: a power cycle runs as an operation, until the ROM is ready for keys.
-    add(s, kChangeModule, [this, &c](const Value& a) -> CommandOutcome {
-        const std::string before = c.moduleID();
-        c.changeModule(textArg(a, "id"));
-        if (c.moduleID() == before) return Done{};
-        return StartOperation{untilIdle(false)};
-    });
     add(s, kFullSpeed, done([&c](const Value& a) { c.setFullSpeed(sessions::flagArg(a, "on")); }));
-    add(s, kPrinterConnected, [this, &c](const Value& a) -> CommandOutcome {
-        const bool on = sessions::flagArg(a, "on");
-        if (on == c.printerConnected()) return Done{};
-        c.setPrinterConnected(on);
-        return StartOperation{untilIdle(false)};
-    });
-    add(s, kTogglePrinterConnection, [this, &c](const Value&) -> CommandOutcome {
-        c.togglePrinterConnection();
-        return StartOperation{untilIdle(false)};
-    });
     // P-E2: the paper panel's controls of the PC-100C.
     add(s, kSetControl, [&c](const Value& a) -> CommandOutcome {
         const std::string peripheral = textArg(a, "peripheral");
@@ -175,21 +223,32 @@ void TIAppPart::attach(sessions::SessionSetup& s) {
     add(s, kFeedSide, [&c, flag](const Value& a) { return flag(c.feedSide(static_cast<int>(sessions::integerArg(a, "side")))); });
     add(s, kTapCard, [&c, flag](const Value& a) { return flag(c.tapCard(realArg(a, "x"), realArg(a, "y"))); });
     add(s, kEjectCard, done([&c](const Value&) { c.ejectCard(); }));
-    // AC-32: a preset runs as an operation until its KEYSTROKES have played.
-    add(s, kLoadState, [this, &c](const Value& a) -> CommandOutcome {
-        c.loadStateFile(bytesArg(a, "bytes"));
-        adoptMachine();
-        return StartOperation{untilIdle(true)};
-    });
+    // Until LIB-13 59's `open` (M-56): a dropped preset goes to LIB-6's
+    // load-preset by its content (LIB-6 §11.2); a card is fitted.
     add(s, kOpenDropped, [this, &c](const Value& a) -> CommandOutcome {
         const std::string name = textArg(a, "name");
-        const bool preset = c.dropAction(name) == DropAction::LoadPreset;
-        const bool ok = c.openDroppedFile(bytesArg(a, "bytes"), textArg(a, "path"), name);
-        if (preset && ok) {
-            adoptMachine();
-            return StartOperation{untilIdle(true)};
+        const auto bytes = bytesArg(a, "bytes");
+        switch (c.dropAction(name)) {
+        case DropAction::LoadPreset: {
+            if (!bytes) {
+                error("Preset load error", "Cannot read file.");
+                return Done{std::make_shared<TIFlag>(false)};
+            }
+            presets::PresetsPart* p = m_lib.presets();
+            if (!p || !m_ctx) return Done{std::make_shared<TIFlag>(false)};
+            const Value args = Value::object({{"content", std::string(bytes->begin(), bytes->end())}, {"name", name}});
+            CommandOutcome out = p->loadPreset(args, *m_ctx);
+            if (const auto* r = std::get_if<Refused>(&out)) {
+                if (m_ctx) m_ctx->notice(r->reason);
+                return Done{std::make_shared<TIFlag>(false)};
+            }
+            return out;
         }
-        return Done{std::make_shared<TIFlag>(ok)};
+        case DropAction::FitCard: return Done{std::make_shared<TIFlag>(c.fitCard(bytes, textArg(a, "path"), name))};
+        case DropAction::Ignore:
+        case DropAction::NotAccepted: break;
+        }
+        return Done{std::make_shared<TIFlag>(false)};
     });
     add(s, kLiveDebug, done([&c](const Value& a) { c.setLiveDebugEnabled(sessions::flagArg(a, "on")); }));
     add(s, kCpuDebug, done([&c](const Value& a) { c.setCpuDebugEnabled(sessions::flagArg(a, "on")); }));
@@ -215,12 +274,8 @@ void TIAppPart::attach(sessions::SessionSetup& s) {
         return r;
     });
 
-    // The adapters on the machine session, then the first machine (the
-    // session reads its display before it is first called). The gate is the
-    // run control's (LIB-10; without a DebuggerPart the session's own).
-    m_ms->addHook(*m_hooks);
+    // The card wait (LIB-17 AC-16). The machine comes with LIB-18's `start`.
     m_ms->addWaitProbe(*m_hooks);
-    startMachine(m_setup.startModel);
     m_changes = ~0u;
     settle();
 }
@@ -234,36 +289,6 @@ void TIAppPart::add(sessions::SessionSetup& s, const sessions::CommandName& name
     });
 }
 
-sessions::Operation TIAppPart::presetOperation() {
-    settle();
-    return untilIdle(true);
-}
-
-sessions::Operation TIAppPart::untilIdle(bool keystrokes) {
-    return [this, keystrokes](sessions::OperationContext& op) { return runUntilIdle(op, keystrokes); };
-}
-
-// A power cycle waits for the ROM's start-up, at most 10 s of emulated time;
-// a preset for its KEYSTROKES, at the speed they ask for (regular unless
-// FullSpeed:, as in 2.3.0; LIB-3 59 design §4).
-sessions::Task<sessions::OperationResult> TIAppPart::runUntilIdle(sessions::OperationContext& op, bool keystrokes) {
-    sessions::MachineSession& ms = op.session().machineSession();
-    for (int pieces = 0;; ++pieces) {
-        EmulatorSession* s = m_session.get();
-        const machine::Machine* m = ms.machine();
-        if (!s || !m) break;
-        if (keystrokes ? !s->keystrokesPending() : (s->access().machine().isKeyReady() || pieces >= 600)) break;
-        op.setSpeed(s->isFullSpeed() ? Speed::Full : Speed::Regular);
-        const machine::Ticks piece = sessions::OperationContext::runPiece(m->descriptor().tickRate);
-        sessions::MachineSession* msp = &ms;
-        co_await sessions::request([msp, piece] {
-            bool stopped = false;
-            return msp->advance(piece, stopped);
-        });
-    }
-    co_return sessions::OperationResult{};
-}
-
 void TIAppPart::beforeCall(sessions::SessionContext& ctx, pacing::WallTime) {
     m_ctx = &ctx;
     settle();
@@ -272,55 +297,61 @@ void TIAppPart::beforeCall(sessions::SessionContext& ctx, pacing::WallTime) {
 void TIAppPart::afterCall(sessions::SessionContext& ctx, pacing::WallTime now) {
     m_ctx = &ctx;
     frame(steadyTimeOf(now));
+    followPlugs(false);
+    m_keeper.afterCall(machine(), m_userCueCard, now);   // C59-3 AC-5
     settle();
 }
 
 void TIAppPart::suspending(sessions::SessionContext& ctx) {
     m_ctx = &ctx;
-    persistConstantMemory();   // as 2.3.0's suspend (C59-5 AC-8)
+    m_keeper.writeNow(machine(), m_userCueCard);   // C59-3 AC-6
+    settle();
+}
+
+void TIAppPart::closing(sessions::SessionContext& ctx) {
+    m_ctx = &ctx;
+    m_keeper.writeNow(machine(), m_userCueCard);   // C59-3 AC-6
+}
+
+void TIAppPart::beforeMachineChange(sessions::SessionContext& ctx) {
+    m_ctx = &ctx;
+    m_keeper.writeNow(machine(), m_userCueCard);   // C59-3 AC-6: before it is replaced
+}
+
+void TIAppPart::machineChanged(sessions::SessionContext& ctx) {
+    m_ctx = &ctx;
+    if (!m_ms || m_ms->generation() == m_seenGeneration) return;
+    m_seenGeneration = m_ms->generation();
+    followMachine();
+    settle();
+}
+
+void TIAppPart::operationEnded(sessions::SessionContext& ctx) {
+    m_ctx = &ctx;
+    followPlugs(false);   // an attach or a detach (LIB-18 AC-21)
     settle();
 }
 
 void TIAppPart::settle() {
-    for (int i = 0; i < 10'000 && !m_queue.empty(); ++i) {
-        auto job = std::move(m_queue.front());
-        m_queue.pop_front();
-        job();
-    }
-    adoptMachine();
     syncSpeed();
     followRunState();
     publish(std::exchange(m_changes, 0u));
 }
 
-void TIAppPart::adoptMachine() {
-    EmulatorSession* s = m_session.get();
-    if (!m_ms || !s || !s->ownsMachine()) return;
-    m_hooks->last = 0;
-    // LIB-10 §12.11: a pause or a step waiting to land runs on in the host
-    // call that asked for it (2.3.0's freeze and STEP ran there, at most
-    // 50000 weights), instead of in paced emulated time.
-    if (auto* d = s->machine().debugging(); d && m_debugger) {
-        calcu::debugger::RunControl* rc = &m_debugger->runControl();
-        static_cast<TIDebugging*>(d)->setRunOn([rc] { return !rc->running() && !rc->paused(); });
+void TIAppPart::syncSpeed() {
+    if (!m_ctx) return;
+    const bool full = m_ctx->commandedSpeed() == Speed::Full;
+    const bool runs = m_ctx->busy();
+    if (full != m_fullSpeed || runs != m_operationRuns) {
+        m_fullSpeed = full;
+        m_operationRuns = runs;
+        emitChanged(RunStateChanged);
     }
-    m_ms->setMachine(s->releaseMachine(), pacingProfile(s->model()), 0);   // AC-33: no sound
 }
 
-void TIAppPart::syncSpeed() {
-    EmulatorSession* s = m_session.get();
-    if (!m_ctx || !s) return;
-    const Speed commanded = m_ctx->commandedSpeed();
-    const bool full = s->isFullSpeed();
-    if (commanded != m_lastCommanded) {   // the library's `speed` command
-        m_lastCommanded = commanded;
-        m_lastFull = commanded == Speed::Full;
-        if (full != m_lastFull) setFullSpeed(m_lastFull);
-    } else if (full != m_lastFull) {      // the controller's own (c59.full-speed, KEYSTROKES)
-        m_lastFull = full;
-        m_ctx->setCommandedSpeed(full ? Speed::Full : Speed::Regular);
-        m_lastCommanded = m_ctx->commandedSpeed();
-    }
+void TIAppPart::setFullSpeed(bool on) {
+    if (m_ctx) m_ctx->setCommandedSpeed(on ? Speed::Full : Speed::Regular);
+    syncSpeed();
 }
 
 void TIAppPart::publish(uint32_t c) {
@@ -407,8 +438,8 @@ void TIAppPart::publish(uint32_t c) {
     }
 }
 
-// KEYSTROKES DebugPanel: and the library's `debug-panel:` step (L-E4, until
-// M-56): the overlay keeps the CPU tab (C59-4 AC-2, LIB-10 D-26).
+// The library's `debug-panel:` step (L-E4, until M-56): the overlay keeps
+// the CPU tab (C59-4 AC-2, LIB-10 D-26).
 void TIAppPart::showDebugPanel(DebugPanel panel) {
     if (m_asmActive && panel == DebugPanel::Calculator) return;
     if (m_panel) m_panel->append(std::make_shared<TIShowDebugPanel>(panel));
@@ -431,57 +462,30 @@ void TIAppPart::diagnostic(const std::string& message) {
 calcu::sessions::ProductSession<TIAppPart> makeAppSession(TIAppSetup setup, pacing::WallClock clock,
                                                           std::optional<std::uint32_t> jitterSeed,
                                                           std::vector<sessions::SessionPart*> before,
-                                                          std::vector<sessions::SessionPart*> after) {
-    struct Parts {
-        calcu::typing::TypingPart typing{typingProduct()};
-        TILevelRules rules;
-        std::unique_ptr<TIAppPart> app;
-        calcu::paper::PaperPart paper{tiCatalogue(), tiPrinterPapers()};
-        std::unique_ptr<calcu::debugger::DebuggerPart> debugger;
-        explicit Parts(TIAppSetup s) {
-            debugger = std::make_unique<calcu::debugger::DebuggerPart>(tiDebuggerSetup(rules, debuggerOptions(s)));
-            app = std::make_unique<TIAppPart>(std::move(s));
-            app->setTyping(&typing);
-            app->setLibraryParts(&paper, debugger.get(), &rules);
-        }
-        // LIB-10 §12.6: the trace folder of the host, none on the Web (hand-over).
-        TIDebuggerOptions debuggerOptions(const TIAppSetup& s) {
-            TIDebuggerOptions o;
-            const TraceTarget t = s.trace;
-            const std::function<bool()> available = s.traceAvailable;
-            if (!t.dir.empty()) {
-                o.traceFolder = [t, available]() -> std::optional<calcu::settings::Paths::Ensured> {
-                    if (available && !available()) return calcu::settings::Paths::Ensured{false, t.dir.string(), "The trace location is not available."};
-                    std::error_code ec;
-                    std::filesystem::create_directories(t.dir, ec);
-                    if (ec) return calcu::settings::Paths::Ensured{false, t.dir.string(), ec.message()};
-                    const std::u8string u = t.dir.u8string();
-                    return calcu::settings::Paths::Ensured{true, std::string(u.begin(), u.end()), {}};
-                };
-            }
-            if (t.maxBytes > 0) o.traceLimitMb = [mb = static_cast<long>(std::max<uint64_t>(1, t.maxBytes / 1'000'000))] { return mb; };
-            o.handOver = t.dir.empty();
-            o.showPanel = [this](sessions::SessionContext&, const std::string& view) { app->showDebugPanelNamed(view); };
-            return o;
-        }
-    };
-    auto parts = std::make_shared<Parts>(std::move(setup));
-    TIAppPart* part = parts->app.get();
+                                                          std::vector<sessions::SessionPart*> after, bool start) {
+    auto part = std::make_shared<TIAppPart>(std::move(setup));
     sessions::AppSessionSetup s;
     s.clock = std::move(clock);
     s.hostTime = [] { return std::chrono::system_clock::now(); };
-    s.parts = std::move(before);
-    s.parts.insert(s.parts.begin(), &parts->typing);   // LIB-5: before the product's (LIB-3 AC-12)
-    s.parts.push_back(part);
-    s.parts.push_back(&parts->paper);           // LIB-8 D-23
-    s.parts.push_back(parts->debugger.get());   // LIB-10: after the paper
+    std::vector<sessions::SessionPart*> lib = part->sessionParts();
+    // LIB-5's TypingPart first (LIB-3 AC-12: before the product's), then the host's own.
+    s.parts.push_back(lib.front());
+    for (sessions::SessionPart* p : before) s.parts.push_back(p);
+    s.parts.insert(s.parts.end(), lib.begin() + 1, lib.end());
     for (sessions::SessionPart* p : after) s.parts.push_back(p);
     s.hosting = sessions::Hosting::Paced;
     s.jitterSeed = jitterSeed;
     calcu::sessions::ProductSession<TIAppPart> out;
-    out.part = part;
-    s.owned = std::move(parts);
+    out.part = part.get();
+    s.owned = std::move(part);
     out.session = std::make_unique<sessions::AppSession>(std::move(s));
+    if (start) {
+        // LIB-18: the start, once (the startup model with its startup preset
+        // or its built-in default), sent by the factory for the native hosts.
+        sessions::Listener l;
+        l.listen(*out.session);
+        l.send(sessions::kStartCommand, Value::object({}));
+    }
     return out;
 }
 

@@ -59,7 +59,7 @@ class TIWebPart final : public calcu::sessions::SessionPart {
 public:
     /// `presetsDir`: the bundled presets (/presets). Traces are the library's,
     /// handed over with KeepFile when they end (LIB-10 AC-26; M-53).
-    TIWebPart(settings::Settings& settings, std::string presetsDir);
+    explicit TIWebPart(settings::Settings& settings);
     ~TIWebPart();
 
     /// Once, before the session is built: the product's part it draws.
@@ -87,7 +87,6 @@ private:
     std::string saveFolder() const;
 
     settings::Settings& m_settings;
-    std::string m_presetsDir;
     TIAppPart* m_app = nullptr;
     calcu::sessions::SessionContext* m_ctx = nullptr;
     int m_lastHeld = -1;
@@ -97,7 +96,6 @@ private:
     int m_debugFont = 11;
     PointerTracker m_pointer;
     double m_cardW = 0, m_cardH = 0;
-    std::optional<Model> m_savedModel;
 
     calcu::sessions::StateTopic* m_model = nullptr;
     calcu::sessions::StateTopic* m_display = nullptr;

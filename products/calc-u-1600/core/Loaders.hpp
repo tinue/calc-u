@@ -48,6 +48,7 @@ struct FileKind {
     std::optional<Header> header;
     bool damaged = false;             // EC-2
     std::vector<std::string> tapeFiles;   // AC-3: a WAV's readable files in tape order ("HELLO", "(no name)")
+    std::vector<programfile::Kind> tapeKinds;   // the kind of each of them (LIB-13 AC-18: loaded by its own loader)
 };
 FileKind fileKind(const std::vector<std::uint8_t>& bytes);
 

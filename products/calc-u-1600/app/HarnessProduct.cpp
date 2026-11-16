@@ -19,6 +19,7 @@
 #include "app/PacingProfiles.hpp"
 #include "MachineCodeFile.hpp"
 #include "app/SharpDebuggerSetup.hpp"
+#include "app/SharpFileKinds.hpp"
 #include "app/SharpLoaderPart.hpp"
 #include "app/SharpPrinters.hpp"
 #include "app/SharpTopics.hpp"
@@ -280,6 +281,12 @@ public:
     // run hands it its trace folder and limit).
     std::vector<sessions::SessionPart*> sessionParts() override { return {&typing_, &loaders_, &font_, &paper_, &debugger_}; }
     paper::PaperPart* paperPart() override { return &paper_; }
+
+    // LIB-13 (Part D, D4.2): `open` takes the presets by their extensions,
+    // the media and the two program kinds, which load at once here (no
+    // dialogs); the harness way has no limit (D-15).
+    std::vector<std::string> presetExtensions() const override { return shared::presetExtensions(); }
+    std::vector<opening::FileKind*> fileKinds() override { return {&basicKind_, &codeKind_}; }
     debugger::DebuggerPart* debuggerPart() override { return &debugger_; }
 
     // C1600-2 AC-21: the loaders under the product's word (LIB-11 AC-13).
@@ -300,6 +307,8 @@ private:
     FontPart font_;
     calcu::typing::TypingPart typing_{typingProduct(), sessions::Hosting::VirtualTime};
     SharpLoaderPart loaders_{typing_};
+    BasicProgramKind basicKind_;
+    MachineCodeKind codeKind_;
     paper::PaperPart paper_{catalogue_, sharpPrinterPapers()};
     debugger::DebuggerPart debugger_{sharpDebuggerSetup(nullptr, nullptr, /*hasTraceFolder=*/false)};
 };

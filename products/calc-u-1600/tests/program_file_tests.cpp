@@ -11,7 +11,6 @@
 #include <string>
 #include <vector>
 
-#include "../core/DropFile.hpp"
 #include "../core/ProgramFile.hpp"
 #include "TestHarness.hpp"
 
@@ -188,51 +187,8 @@ std::vector<uint8_t> readFixture(const char* path, bool* ok) {
     return std::vector<uint8_t>((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>());
 }
 
-// Core/DropFile: which loader a dropped file goes to.
-TEST(test_drop_targets) {
-    using dropfile::Target;
-    const auto drop = [](const std::vector<uint8_t>& bytes, const std::string& name = "dropped.bin") {
-        return dropfile::classify(bytes, name);
-    };
-
-    // Presets, by their top-level `model:` key.
-    CHECK(drop(text("# Hanoi\nmodel: PC-1600\nkeys:\n  - key: mode\n")) == Target::Preset);
-    CHECK(drop(text("model: PC-1500:A04\n")) == Target::Preset);
-    CHECK(drop(text("\xEF\xBB\xBFmodel: PC-1500\n")) == Target::Preset);             // BOM
-    CHECK(drop(text("# \xE2\x80\x93" "empty\xE2\x80\x93\r\nmodel: PC-1600\r\n")) == Target::Preset);  // '–', CRLF
-    CHECK(drop(text("keys:\n  model: PC-1600\n")) == Target::None);                   // indented
-    CHECK(drop(text("# model: PC-1600\nkeys:\n")) == Target::None);                    // commented
-    CHECK(drop(text("plotter: CE-150\n")) == Target::None);                             // no model
-    std::vector<uint8_t> withNul = text("model: PC-1600\n");
-    withNul.push_back(0x00);
-    CHECK(drop(withNul) != Target::Preset);
-
-    // BASIC: listings and tokenized files.
-    CHECK(drop(text("10 PRINT \"HI\"\n20 END\n")) == Target::BasicProgram);
-    CHECK(drop(ce158(basicPayload(), 0x40)) == Target::BasicProgram);
-    CHECK(drop(pc1600(basicPayload(), 0x21)) == Target::BasicProgram);
-    for (const char* path : {"tests/fixtures/basic/lissajou-1500.bas", "tests/fixtures/basic/lissajou-1600.bbin"}) {
-        bool ok = false;
-        const auto bytes = readFixture(path, &ok);
-        if (ok) CHECK(drop(bytes) == Target::BasicProgram);
-    }
-
-    // Machine code: headered, or headerless that looks like code.
-    CHECK(drop(ce158(kCode, 0x42, 0x40C5)) == Target::MachineCode);
-    CHECK(drop(pc1600(kCode, 0x10, 0xC0C5)) == Target::MachineCode);
-    CHECK(drop(z80Code()) == Target::MachineCode);
-    CHECK(drop(z80Code(), "CODE.ROM") == Target::MachineCode);
-    CHECK(drop(z80Code(), "code.jpg") == Target::None);           // headerless code needs .bin / .rom
-    CHECK(drop(z80Code(), "code") == Target::None);
-    CHECK(drop(pc1600(kCode, 0x10, 0xC0C5), "x.dat") == Target::MachineCode);  // a header needs no name
-    CHECK(drop(text("model: PC-1600\n"), "x.bin") == Target::Preset);
-
-    // Everything else is ignored.
-    CHECK(drop({}) == Target::None);
-    CHECK(drop(kCode) == Target::None);                  // too short to look like code
-    CHECK(drop(pseudoRandom(4096, 7)) == Target::None);  // data
-    CHECK(drop(text("Just some notes,\nnot a program.\n")) == Target::None);
-}
+// What a dropped or opened file is (the old test_drop_targets): LIB-13
+// AC-22, app/tests/opening_tests.cpp.
 
 // Real SharpDataExchange output. Skipped (not failed) when absent.
 TEST(test_real_sample_files) {
@@ -281,7 +237,6 @@ TEST(test_cassette_wav) {
         CHECK(f.kind == c.kind);
         CHECK(f.fromTape && !f.damaged && !f.lengthMismatch);
         CHECK(f.payload == img);
-        CHECK(dropfile::classify(wav, "tape.wav") == dropfile::Target::BasicProgram);
         const auto files = programfile::tapeFiles(wav, nullptr);
         CHECK(files.size() == 1 && classify(files[0].image).payload == img);
         CHECK(files[0].name.rfind("TAPEFIX", 0) == 0);  // bin2wav adds .BAS on the PC-1600
@@ -296,7 +251,6 @@ TEST(test_cassette_wav) {
     const auto f = classify(silent);
     CHECK(f.kind == Kind::Other && f.fromTape && f.damaged);
     CHECK(f.token.find("a cassette recording without a file that can be read") != std::string::npos);
-    CHECK(dropfile::classify(silent, "x.wav") == dropfile::Target::BasicProgram);
     std::string why;
     CHECK(programfile::tapeFiles(silent, &why).empty() && !why.empty());
 }

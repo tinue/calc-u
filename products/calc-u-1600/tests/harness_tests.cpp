@@ -341,3 +341,55 @@ TEST(c1600_2_ac21_load_code_options_and_run) {
     CHECK(server->line("lcd").text.find("CALL &C100") != std::string::npos);
     server->finish();
 }
+
+// ---- LIB-13 AC-18 (Part D, T16-2): `open` in the harness loads at once ----
+
+TEST(lib13_ac18_harness_open_loads_first_wav_file) {
+    SKIP_UNLESS(std::filesystem::exists("roms/PC-1500_A04.ROM"), "the ROMs are not fetched (roms/fetch_roms.sh)");
+    std::unique_ptr<HarnessProduct> product;
+    auto server = loaderServer(product);
+    if (!server) return;
+    server->line("key cl");
+    server->line("type NEW0");
+    server->line("wait 1s");
+    const std::string r = server->line("open tests/fixtures/tape/pc1500_tape.wav").text;
+    CHECK_EQ(r, std::string("done 1\nfile-kind pc1500_tape.wav basic-program\n"));
+    server->finish();
+}
+
+TEST(lib13_ac18_harness_open_refuses_headerless) {
+    SKIP_UNLESS(std::filesystem::exists("roms/PC-1500_A04.ROM"), "the ROMs are not fetched (roms/fetch_roms.sh)");
+    std::unique_ptr<HarnessProduct> product;
+    auto server = loaderServer(product);
+    if (!server) return;
+    static const char kBlock[] = "\x21\x00\x80\x06\x10\x7E\xFE\x20\x28\x01\x23\x10\xF8\xCD\x00\x10\xC9";
+    std::string code;
+    for (int i = 0; i < 8; i++) code += std::string(kBlock, 17);
+    const std::string bin = scratch("lib13_headerless.bin", code);
+    const std::string r = server->line("open " + bin).text;
+    CHECK(r.rfind("refused: lib13_headerless.bin: ", 0) == 0 && r.find("needs an address") != std::string::npos);
+    // `.rom` is no machine-code name (AC-17).
+    const std::string rom = scratch("lib13_headerless.rom", code);
+    CHECK_EQ(server->line("open " + rom).text, std::string("refused: Calc-U-1600 cannot open lib13_headerless.rom.\n"));
+    server->finish();
+}
+
+TEST(lib13_ac18_harness_open_preset_bas_and_headered_bin) {
+    SKIP_UNLESS(std::filesystem::exists("roms/PC-1500_A04.ROM"), "the ROMs are not fetched (roms/fetch_roms.sh)");
+    std::unique_ptr<HarnessProduct> product;
+    auto server = loaderServer(product);
+    if (!server) return;
+    server->line("key cl");
+    server->line("type NEW0");
+    server->line("wait 1s");
+    CHECK_EQ(server->line("open tests/fixtures/basic/lissajou-1500.bas").text,
+             std::string("done 1\nfile-kind lissajou-1500.bas basic-program\n"));
+    std::string ce158("\x01\x42" "COM", 5);
+    ce158 += std::string(16, '\0');
+    ce158 += std::string("\x7C\x01\x00\x01\x7C\x01\x9A\x9A", 8);
+    const std::string code = scratch("lib13_code.bin", ce158);
+    CHECK_EQ(server->line("open " + code).text, std::string("done 1\nfile-kind lib13_code.bin machine-code-program\n"));
+    CHECK_EQ(server->line("open examples/startup/default-pc1500a.pc1500a").text,
+             std::string("done 1\npreset default-pc1500a.pc1500a\n"));
+    server->finish();
+}

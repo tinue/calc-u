@@ -23,6 +23,7 @@
 #include "app/MachineModel.hpp"
 #include "app/PacingProfiles.hpp"
 #include "app/Settings.hpp"
+#include "app/SharpFileKinds.hpp"
 #include "app/SharpLoaderPart.hpp"
 #include "app/SharpPresetRules.hpp"
 #include "app/SharpProductMachines.hpp"
@@ -32,6 +33,8 @@
 #include "machine/Catalogue.hpp"
 #include "machine/Machine.hpp"
 #include "media/MediaPart.hpp"
+#include "opening/LibraryOpeners.hpp"
+#include "opening/OpenPart.hpp"
 #include "paper/PaperPart.hpp"
 #include "peripherals/PeripheralsPart.hpp"
 #include "presets/PresetsPart.hpp"
@@ -72,7 +75,10 @@ DisplayFrame displayFrameOf(const calcu::machine::DisplayOutput& output);
 //   variant switches, attach and detach, Reset, Cold boot, power cycle, on
 //   app/SharpProductMachines), the loaders' part (C1600-2), LIB-8's paper
 //   part, LIB-10's debugger part (LIB-6 §10.2, LIB-18 §10.2) and LIB-7's media
-//   part (the modules, the floppy disk and the tape; app/SharpMediaKinds);
+//   part (the modules, the floppy disk and the tape; app/SharpMediaKinds),
+//   then LIB-13's open part (the command `open` of a drop, Open With, the
+//   start argument and Load Preset…; the product's file kinds in
+//   app/SharpFileKinds);
 // - the product's commands that need its own data, each one
 //   MachineControl::change (LIB-18 D-22):
 //   `c1600.mount-host-drive`, `c1600.ce1600p-rom` (SharpTopics.hpp);
@@ -98,6 +104,9 @@ public:
     calcu::media::MediaPart& mediaPart() { return *m_media; }
     const calcu::media::MediaPart& mediaPart() const { return *m_media; }
     SharpLoaderPart& loaderPart() { return m_loaderPart; }
+    // LIB-13: `open`, `open-would-take`; a Web host sets its upload folder
+    // (setup().uploadFolder) before the session is built.
+    calcu::opening::OpenPart& openPart() { return *m_open; }
     // The typing part (LIB-5): frontends send its commands (host-key-down,
     // screen-key-down, paste, ...); the debugger's auto-start types its line
     // through the engine directly (not a user key, so not dropped while busy).
@@ -225,6 +234,13 @@ private:
     std::uint64_t m_seenGeneration = 0;
     // LIB-7 (§10.2): after StartupPart among the parts.
     std::unique_ptr<calcu::media::MediaPart> m_media;
+    // LIB-13 (Part D): the open part over the presets and the media, with
+    // the two file kinds, after the loaders among the parts.
+    std::unique_ptr<calcu::opening::PresetsOpener> m_presetsOpener;
+    std::unique_ptr<calcu::opening::MediaOpener> m_mediaOpener;
+    BasicProgramKind m_basicKind;
+    MachineCodeKind m_codeKind;
+    std::unique_ptr<calcu::opening::OpenPart> m_open;
 
     // The topics (attach).
     calcu::sessions::StateTopic* m_controlTopic = nullptr;

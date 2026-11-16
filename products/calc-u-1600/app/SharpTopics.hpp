@@ -67,6 +67,7 @@ struct FileKindReply final : calcu::sessions::PayloadOf<FileKindReply> {
     std::uint64_t length = 0;
     std::uint32_t start = 0;   // 0: none
     std::vector<std::string> tapeFiles;
+    std::vector<std::string> tapeKinds;   // the kind of each, as `kind` (LIB-13 AC-18)
     bool same(const FileKindReply& o) const { return toValue() == o.toValue(); }
     calcu::sessions::Value toValue() const override;
 };

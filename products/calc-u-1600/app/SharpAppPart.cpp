@@ -132,6 +132,17 @@ SharpAppPart::SharpAppPart(Settings& settings, AppPaths& paths)
     m_media = std::make_unique<calcu::media::MediaPart>(std::move(media));
     m_media->setControl(&m_startup.control());
     calcu::media::addMediaToPresets(m_presets.vocabulary(), *m_media);
+
+    // LIB-13 (Part D, D3): the product's open setup.
+    m_presetsOpener = std::make_unique<calcu::opening::PresetsOpener>(m_presets, presetExtensions());
+    m_mediaOpener = std::make_unique<calcu::opening::MediaOpener>(*m_media);
+    calcu::opening::OpenSetup open;
+    open.productName = "Calc-U-1600";
+    open.presets = m_presetsOpener.get();
+    open.media = m_mediaOpener.get();
+    open.kinds = {&m_basicKind, &m_codeKind};   // AC-17: BASIC first
+    open.maxBytes = openLimits();
+    m_open = std::make_unique<calcu::opening::OpenPart>(std::move(open));
 }
 
 SharpAppPart::~SharpAppPart() = default;
@@ -141,7 +152,7 @@ std::vector<sessions::SessionPart*> SharpAppPart::sessionParts() {
     // §3.5), PresetsPart before StartupPart (LIB-6 §3.8), MediaPart after
     // StartupPart (LIB-7 §3.7). The host calls AppSession::close() before
     // it ends the session: the media part writes what is pending (AC-13).
-    return {&m_typingPart, &m_peripherals, &m_presets, &m_startup, m_media.get(), &m_loaderPart, &m_paper, &m_debugger, this};
+    return {&m_typingPart, &m_peripherals, &m_presets, &m_startup, m_media.get(), &m_loaderPart, m_open.get(), &m_paper, &m_debugger, this};
 }
 
 void SharpAppPart::notice(const std::string& sentence) {
@@ -162,6 +173,10 @@ void SharpAppPart::attach(sessions::SessionSetup& setup) {
     m_machineTopic = &setup.stateTopic(topics::kMachine);
     m_serialTopic = &setup.stateTopic(topics::kSerialLinks);
     m_romsMissingTopic = &setup.stateTopic(topics::kRomsMissing);
+    // LIB-13 D4.2: a program file opened by a way with a window.
+    sessions::StreamTopic* opened = &setup.streamTopic(topics::kProgramOpened, sessions::History::None);
+    m_basicKind.setTopic(opened);
+    m_codeKind.setTopic(opened);
     // LIB-12 AC-5: without the full set no machine is built; the frontends
     // show the files.
     if (!m_roms) m_romsMissingTopic->set(std::make_shared<RomsMissingPayload>(m_romsMissing));

@@ -58,8 +58,10 @@ FileKind fileKind(const std::vector<std::uint8_t>& bytes) {
         k.header = h;
     }
     if (pf.fromTape)
-        for (const programfile::TapeFile& f : programfile::tapeFiles(bytes, nullptr))
+        for (const programfile::TapeFile& f : programfile::tapeFiles(bytes, nullptr)) {
             k.tapeFiles.push_back(f.name.empty() ? std::string("(no name)") : f.name);
+            k.tapeKinds.push_back(programfile::classify(f.image).kind);
+        }
     return k;
 }
 

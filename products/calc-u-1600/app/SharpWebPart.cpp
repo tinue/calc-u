@@ -6,7 +6,6 @@
 
 #include "Connector/Ce158Card.hpp"
 #include "Display/DisplayOutputText.hpp"
-#include "DropFile.hpp"
 #include "Utf8.hpp"
 #include "app/CardYamlDump.hpp"
 #include "app/KeyLayout/FaceplateLayout.hpp"
@@ -87,7 +86,10 @@ Value lcdConstants() {
 } // namespace
 
 SharpWebPart::SharpWebPart(SharpAppPart& app, Settings& settings, AppPaths&, std::string uploadsDir)
-    : m_app(app), m_settings(settings), m_uploadsDir(std::move(uploadsDir)) {}
+    : m_app(app), m_settings(settings), m_uploadsDir(std::move(uploadsDir)) {
+    // LIB-13 AC-8: several files of Upload Preset… become one folder here.
+    m_app.openPart().setup().uploadFolder = m_uploadsDir;
+}
 
 SharpWebPart::~SharpWebPart() = default;
 
@@ -107,8 +109,11 @@ void SharpWebPart::attach(sessions::SessionSetup& setup) {
     // host-key-down/up, screen-key-down/up, focus-lost, paste).
 
     // ── Opening files ───────────────────────────────────────────────────
-    // A file the user picked or dropped goes to the uploads folder first (a
-    // preset finds the files it names next to it); the result is its path.
+    // A drop and Upload Preset… are the library's `open` (LIB-13, the open
+    // part of SharpAppPart, with the uploads folder for several files).
+    // Import Media… puts its files into the uploads folder first, so a tape
+    // finds its WAV beside its definition (LIB-7 AC-43); the result is the
+    // path.
     cmd("c1600.upload", [this](const Value& a, SessionContext&) -> CommandOutcome {
         const std::string path = m_uploadsDir + "/" + fromPath(toPath(textArg(a, "name")).filename());
         std::error_code ec;
@@ -118,16 +123,6 @@ void SharpWebPart::attach(sessions::SessionSetup& setup) {
         out.write(reinterpret_cast<const char*>(b.data()), static_cast<std::streamsize>(b.size()));
         if (!out) return Refused{"The file could not be written: " + path};
         return result("c1600.path", Value(path));
-    });
-    req("c1600.drop-target", [](const Value& a, SessionContext&) {
-        const char* t = "";
-        switch (dropfile::classify(bytesArg(a, "bytes").value_or(std::vector<std::uint8_t>{}), textArg(a, "name"))) {
-            case dropfile::Target::Preset: t = "preset"; break;
-            case dropfile::Target::BasicProgram: t = "basic"; break;
-            case dropfile::Target::MachineCode: t = "code"; break;
-            case dropfile::Target::None: break;
-        }
-        return sessions::replyGiven(sessions::valuePayload("c1600.drop-target", Value(t)));
     });
     // Load BASIC Program / Load Machine Code: the page sends the loaders'
     // own commands (app/SharpLoaderPart, C1600-2 design §3.7).

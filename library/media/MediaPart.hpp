@@ -159,7 +159,9 @@ public:
         const KindDecl* kind = nullptr;
         bool isTemplate = false, isModule = false;
     };
-    OpenedMedium readOpened(std::string_view name, const std::string& bytes) const;
+    // `path`: where the file lies, for its companions (a tape's sound file
+    // beside it); empty for an upload.
+    OpenedMedium readOpened(std::string_view name, const std::string& bytes, const std::string& path = {}) const;
     std::vector<std::string> placesFor(const OpenedMedium&, const machine::Machine&) const;
     std::vector<std::string> placesInCatalogue(const OpenedMedium&) const;
     std::optional<std::string> refusesNow(const std::string& place, const machine::Machine&) const;

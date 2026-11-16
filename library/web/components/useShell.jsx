@@ -9,7 +9,9 @@
 //   s.started, s.romsMissing, s.open ("settings" | "about" | "saved-media" | null)
 //   s.choose(item), s.setSetting(section, key, value), s.closeNotice(yes), s.close()
 //
-// `product` is the JS form of ShellProduct (shellModel.js); `product.settingsSpec`
+// `product` is the JS form of ShellProduct (shellModel.js); `product.loadPreset`
+// (optional) replaces the shell's Load Preset… (a product that opens the picked
+// files through LIB-13's `open`); `product.settingsSpec`
 // (optional) is the dialog's spec, else the family sections of the rows the
 // `settings` topic has; `product.keysShown` limits them.
 
@@ -95,7 +97,7 @@ function useCalcuShell(shell, product, traits) {
     if (!item || item.enabled === false) return;
     if (item.command) { sendChecked(item.command, item.args); return; }
     const a = CALCU_SHELL_ACTIONS;
-    if (item.id === a.loadPreset) loadPreset();
+    if (item.id === a.loadPreset) (product.loadPreset || loadPreset)();   // a product may open the files itself (LIB-13)
     else if (item.id === a.settings) { askPresets(); setOpen("settings"); }
     else if (item.id === a.about) setOpen("about");
     else if (item.id === a.savedMedia) setOpen("saved-media");

@@ -150,6 +150,7 @@ std::vector<KindDecl> testKinds(const TestKindFolders& folders) {
     disk.id = "test-disk";
     disk.label = "test disk";
     disk.suffix = ".testdisk.yaml";
+    disk.companionSuffixes = {".dat"};   // its companion files (M-49: Import Media… takes them along)
     disk.bundledFolder = folders.disks;
     disk.codec = &codec("test-disk");
     disk.formatName = "The test disk format";

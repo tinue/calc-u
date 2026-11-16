@@ -7,6 +7,7 @@
 #include "settings/AtomicFile.hpp"
 #include <algorithm>
 #include <atomic>
+#include <cctype>
 #include <chrono>
 #include <cstdio>
 #include <filesystem>
@@ -27,6 +28,15 @@ namespace {
 constexpr pacing::WallTime kAutosaveDelay = std::chrono::milliseconds(500);   // AC-11
 
 std::string inQuotes(const std::string& s) { return "“" + s + "”"; }
+
+bool endsWithNoCase(const std::string& s, const std::string& end) {
+    if (end.size() > s.size()) return false;
+    for (std::size_t i = 0; i < end.size(); ++i)
+        if (std::tolower(static_cast<unsigned char>(s[s.size() - end.size() + i])) !=
+            std::tolower(static_cast<unsigned char>(end[i])))
+            return false;
+    return true;
+}
 
 std::string labelled(const Binding& b) { return b.kind->label + " " + inQuotes(b.name); }
 
@@ -194,15 +204,30 @@ void MediaPart::attach(sessions::SessionSetup& s) {
             return done();
         }
         std::string accept;
-        for (const KindDecl& k : kinds()) accept += (accept.empty() ? "" : ",") + k.suffix;
+        for (const KindDecl& k : kinds()) {
+            accept += (accept.empty() ? "" : ",") + k.suffix;
+            for (const std::string& s : k.companionSuffixes) accept += "," + s;
+        }
         const auto asked = c.askHost(sessions::HostService::FilePicker,
                                      Value::object({{"accept", accept}, {"multiple", true}}),
                                      [this, &c](const sessions::ServiceAnswer& ans) {
                                          if (!ans.given) return;
-                                         if (const auto* list = ans.result.elements())
-                                             for (const Value& v : *list)
-                                                 if (v.string())
-                                                     if (const Outcome r = importFile(c, *v.string()); !r.ok) c.notice(r.reason);
+                                         const auto* list = ans.result.elements();
+                                         if (!list) return;
+                                         // A companion (a tape's sound) picked with media is
+                                         // read beside them, not imported on its own.
+                                         auto companion = [this](const std::string& path) {
+                                             for (const KindDecl& k : kinds())
+                                                 for (const std::string& s : k.companionSuffixes)
+                                                     if (endsWithNoCase(path, s)) return true;
+                                             return false;
+                                         };
+                                         bool media = false;
+                                         for (const Value& v : *list) media = media || (v.string() && !companion(*v.string()));
+                                         for (const Value& v : *list) {
+                                             if (!v.string() || (media && companion(*v.string()))) continue;
+                                             if (const Outcome r = importFile(c, *v.string()); !r.ok) c.notice(r.reason);
+                                         }
                                      });
         if (!asked) return Refused{"No file picker is offered."};
         return done();

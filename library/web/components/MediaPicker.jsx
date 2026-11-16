@@ -56,10 +56,18 @@ function CalcuMediaPicker({ place, send }) {
   const entries = place.picker || [];
   const held = place.holds ? place.holds.name : null;
   let current = 0;
+  let listed = held === null;
   entries.forEach((e, i) => {
     if (!e.canChoose) return;
-    if (held !== null ? e.group !== "empty" && e.label === held : e.group === "empty") current = i;
+    if (held !== null ? e.group !== "empty" && e.label === held : e.group === "empty") {
+      current = i;
+      listed = true;
+    }
   });
+  // A medium the place holds that no entry lists (a tape started under a
+  // name, its file written at the first motor stop, LIB-7 AC-20): shown
+  // as what the place holds.
+  if (!listed) current = entries.length;
   return (
     <select className="calcu-media-picker" data-calcu={`media-picker-${place.place}`} value={String(current)}
       onChange={(ev) => {
@@ -72,6 +80,7 @@ function CalcuMediaPicker({ place, send }) {
           {calcuPickerLabel(e)}
         </option>
       ))}
+      {listed ? null : <option key="held" value={String(entries.length)} disabled>{held}</option>}
     </select>
   );
 }

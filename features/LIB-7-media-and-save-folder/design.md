@@ -1,5 +1,5 @@
 # LIB-7 Media and save folder: design
-Status: Library column approved at the Part C1/C2 boundary (2026-11-15); Calc-U-1600 column approved at the Part C2/D boundary (2026-11-16)
+Status: Library column approved at the Part C1/C2 boundary (2026-11-15); Calc-U-1600 column approved at the Part C2/D boundary (2026-11-16); Calc-U-59 column (§11): Draft for the Part D/E boundary (2026-11-16)
 
 ## 1. Scope
 
@@ -1109,3 +1109,247 @@ button asks the name first as today.
 ### 10.10 Questions for the user
 
 None that splits this column.
+
+## 11. Part E: the Calc-U-59 column
+
+Draft for the Part D/E boundary (2026-11-16). Paths without a prefix are
+under `products/calc-u-59/`; line numbers at `7bdd51c`. It replaces §4's
+Calc-U-59 table as the plan of M-55; where it differs from that table it
+says so. The card itself (its content, the card reader, the format, the
+header key `magnetic-cards:`, fitting and the cue cards) is C59-7's
+design; this section holds the media model's side and the library
+additions the product needs.
+
+### 11.1 Scope
+
+| Column | Step | Tests from (plan §3) | Done in |
+|---|---|---|---|
+| Calc-U-59 | M-55 (with C59-7) | AC-32–36, AC-47 | proposed M-57 (D-29; plan §5.1 says M-55) |
+
+- **Waits for** M-41 (Library column, Done in M-42), M-54 (LIB-6 59,
+  LIB-18 59, C59-2, C59-3: the library's loader and `MachineControl`
+  for every Calc-U-59 preset and start; `TIAppPart` filling a
+  `parts::LibraryPartsSetup`), M-3 (FS 10) and M-9 (the four card
+  examples' recordings), as the plan says. It uses M-53 (LIB-10 59).
+- **Also passes here** (plan §5.1): LIB-1 AC-33 for the TI-59's card
+  reader (one media place capability per media place, so LIB-1 59 is
+  Done here); LIB-15 AC-20's cards (LIB-15 59 Done here); C59-2 AC-10's
+  four card examples; LIB-3 AC-29's `CardChanged` row (the media
+  topic); LIB-11 AC-22's `card { mem: X, side: 0 }` on a real product.
+- **Where the library built in C2 and Part D differs from §3**, this
+  column uses the built shapes (qa-report, "Deviations"; Part D
+  simplification P-3): the binding of a pass-through place is the fitted
+  medium (D-22); `media.start-new` on a pass-through place fits the
+  medium; the slot resolver is `Vocabulary::setPlaceResolver`; the
+  markers come from `ModelRules::applies`; `closing` comes from
+  `AppSession::close()`; `addMediaCommands` takes the run's part;
+  `HarnessProduct` gives the parts through `prepare()` and
+  `libraryParts()` (LIB-11 §D.3, superseded paragraph).
+- **Kind ID.** The descriptor already names the kind
+  (`core/TICatalogue.cpp:89-90`): `magnetic-card`, the place
+  `card-reader`, pass-through, sides 0 and 1. §4's file
+  `app/TIMediaKinds.*` is C59-7's `app/TIMagneticCardKind.*`.
+
+### 11.2 Modules and files
+
+**Library additions** (each with a test in `library/media/tests/`, in
+`calcu_library_tests`; they change nothing for Calc-U-1600, whose kinds
+keep the defaults):
+
+| File | Change | For |
+|---|---|---|
+| `library/media/Kind.hpp` (`KindDecl`) | `bool rereadBeforeWrite = false`: the part reads the instance's file just before each write and hands its bytes to the codec as `Write::source` | C59-7 AC-5, EC-3 (D-27) |
+| same | `bool offersNameAndSave = true`: false, and the place's `nameAndSave` is never set for a medium of the kind | C59-7 AC-13, AC-20 (D-28) |
+| same | `std::string replaceQuestion`: the `asks:` question of AC-17 row 5 and AC-20 with `{name}` for the name; empty: the library's sentence ("A <label> named “<name>” exists. Replace it?", `library/media/SaveRules.cpp:85-86`, `MediaPart.cpp:1075`) | C59-7 AC-15 (D-31) |
+| `library/media/FileAccess.hpp` (new), `MediaPart.hpp:32-40` (`MediaSetup::files`), `Shelf.cpp`, `Writer.cpp:41-47` | `media::FileAccess { list(folder), read(path), write(path, bytes) }`, default the plain one (`std::filesystem` and `settings::writeFileAtomically`, as now); the shelf and the writer go through it | Swift's iCloud coordination (C59-5 D-6; D-30) |
+
+If M-54 made a host file seam for the constant memory file in
+`library/settings/`, `FileAccess` is that seam and `MediaSetup::files`
+takes it; no second one is made.
+
+**Product** (C59-7 §2 has the full list):
+
+| File | Change |
+|---|---|
+| `app/TIMagneticCardKind.hpp/.cpp` (new) | the `KindDecl` `magnetic-card` and the format 3 codec (C59-7 §3.3) |
+| `core/TICardReaderPlace.hpp/.cpp`, `core/TIMagneticCard.hpp/.cpp` (new) | the `MediaPlace` of the card reader; the card's content (C59-7 §3.1, §3.2) |
+| `app/TIAppPart.*` | the app layer's `LibraryPartsSetup` gets the media part's setup: the kind, the module listing (C59-6 AC-8: `description`, no tooltip, `menu-sort`), the save folder of LIB-9's `Paths`, the host's `FileAccess`; the interim card flow goes (A-4) |
+| `app/TIFileAccess.*` | the card calls go (A-5); the file goes whole when M-54 has taken the constant memory out |
+| `app/TIAppPartInternal.hpp:34-38` | `waitsForMedium` of `Hooks` goes: `MediaPart` is the `WaitProbe` (A-6; LIB-17 §5) |
+| `core/TIAdapters.hpp:43-59, 154, 158`, `.cpp` | `TICardReaderAdapter`, `cardReaderOf` go (A-6) |
+| `app/HarnessProduct.cpp` | the run's parts are the app layer's (LIB-11 §11), so `card`, `arm`, `saveas { card: … }`, `media`, `media import|export|delete` work with the kind |
+| `frontends/qt6/app/AppPaths.hpp:29-30`, `.cpp` | `cardDir()` goes (A-7) |
+| `tests/descriptor_tests.cpp:147, 195` | the `lib1_ac33_…` cases check the card reader's capability with `media::checkMediaPlaces` (LIB-1 AC-33) |
+
+### 11.3 The product's side (AC-32 to AC-35, AC-47)
+
+- **AC-32.** One kind, `magnetic-card` (`.magnetcard.yaml`, format 3);
+  one media place, the TI-59's `card-reader` (pass-through, sides 0 and
+  1); no bundled card files; one template, the implicit "Fresh card"
+  (C59-7 D-10), which has no file.
+- **AC-47.** The `slot-1` picker of every TI model is AC-8's with one
+  group: the empty slot and the 14 Solid State ROM modules (not media:
+  no kind is `HeldBy::ModuleSlot`), labelled by `description`, ordered
+  by `menu-sort` (the `ModuleListing`). Choosing sends `media.choose
+  {place: slot-1, entry}`: a replace (an attach, or a detach for the
+  empty entry) through LIB-18's `MachineControl`, followed by the power
+  cycle of LIB-18 AC-21 (rows 59-9, 59-11). The frontends' module menus
+  (the Qt6, Web and Swift settings) are filled from it in M-55 (C59-6
+  §5, the adapter "module list from module files for today's menus");
+  the control-bar picker comes with LIB-14 59 (M-57) and C59-8 (M-58).
+- **AC-34.** A card read and written through the reader is written when
+  it is given back (A3 with the place's `takeGivenBack`); what the write
+  keeps of the other side is C59-7's (the re-read of D-27).
+- **AC-35.** `card:` (with `side: 0|1`) and `arm:` (no side) take `{
+  name: }`, `{ file: }` or `{ mem: }`; a missing `name:` or `file:`
+  refuses the preset (AC-23; today a blank card goes in,
+  `app/TIAppPartFlows.cpp:500`; D-32); an undefined `mem:` is a fresh
+  in-file card; a card file is written in place unless it is a template
+  (AC-25).
+
+### 11.4 Frontends (AC-33, AC-36)
+
+- **Qt6** (C59-7 §4): the card dialogs and the control bar on the media
+  topic; the save folder is LIB-9's (`AppPaths::cardDir()` goes). No
+  saved media list (OQ-4).
+- **Web**, AC-36: the import (`media.import`, AC-30) and the saved media
+  (`CalcuSavedMediaDialog`, AC-31, wrapped as the Web test product does)
+  replace the per-card download and the upload in the card picker
+  (`frontends/web/src/Dialogs.jsx:62, 94, 100`; row 59-43). Calc-U-59's
+  page has no File menu before LIB-14 59 (M-57), so in M-55 they are
+  reached from the card dialog ("Import…", "Saved Media…"); M-57 puts
+  them into the File menu as AC-29 says (D-29). The cards are files of
+  the persistent save folder since M-34 (LIB-15 §9); the card list of
+  `TIWebPart` (`app/TIWebPart.cpp:396`) and its commands go.
+- **Swift** (named for M-58): on the media topic through the bridge in
+  M-55, so that AC-33 holds for its iCloud save folder; drawn natively
+  with the family structure in C59-8 (M-58). The coordinated file access
+  is the bridge's `TICoordinatedFiles` as the media part's `FileAccess`
+  (D-30).
+
+### 11.5 Adapters removed (M-55)
+
+| Adapter (§5) | Result |
+|---|---|
+| A-4 interim TI card flow (`c59.card-reader`, `c59.fit-card`, `c59.fit-blank-card`, `c59.eject-card`) | gone; also `c59.feed-side` and the Web's `c59.web.fit-card`, `c59.web.fit-blank-card`, `c59.web.card-bytes`, `c59.web.fresh-card-name`, `c59.web.card` |
+| A-5 `TIFileAccess` cards | gone |
+| A-6 `TICardWaitAdapter`, `TICardReaderAdapter` | gone |
+| A-7 Qt6 `AppPaths::cardDir()` | gone |
+
+No new adapter. A card file dropped before M-56 is not an adapter: the
+interim drop flow sends the library's `media.open-file` (C59-7 §3.7).
+
+### 11.6 Tasks
+
+Tests before the code. `CalcU59Tests` (Frequent) unless the row says
+otherwise, on `PartRig` with a save folder of the test's own, or the
+harness entry with `--save-folder`; `SKIP_UNLESS` the ROMs where the ROM
+runs. Names `lib7_acN_…`; the library additions `acN_…` in
+`calcu_library_tests`.
+
+| Task | What | ACs | Test (file: cases) |
+|---|---|---|---|
+| E1 | Library additions | AC-1, AC-12, AC-16, AC-17 | `library/media/tests/save_tests.cpp`: `ac17_kind_replace_question_words`, `ac16_kind_without_name_and_save_never_offers_it`; `autosave_tests.cpp`: `ac12_reread_before_write_hands_current_file_as_source`; `shelf_tests.cpp`: `ac1_shelf_and_writer_through_the_hosts_file_access` (a recording `FileAccess`) |
+| E2 | The kind on Calc-U-59 | AC-32 | `tests/media_tests.cpp` (new): `lib7_ac32_one_kind_one_place_pass_through_sides_0_1`, `lib7_ac32_no_bundled_cards_fresh_card_template_without_file` |
+| E3 | Module slot picker | AC-47 | `lib7_ac47_slot_picker_empty_and_14_modules_by_menu_sort_description_label` (each model), `lib7_ac47_choose_replaces_and_power_cycles` |
+| E4 | Save folder per frontend | AC-33 | `lib7_ac33_names_and_collisions_for_cards` (AC-1 to AC-5 on cards: template or instance by the file, the name inside, AC-3's rules, `foo-1`); Qt6: `lib7_ac33_qt6_cards_in_lib9_save_folder` (the app's paths, no window); Web: `storage.spec.js` `lib7_ac33 cards in the persistent save folder` (Longer); Swift: `Calc-U-59Tests` `lib7_ac33_swift_cards_in_icloud_save_folder` through the coordinated access (run from the main checkout) |
+| E5 | Written when given back | AC-34 | `lib7_ac34_instance_written_when_given_back`, `lib7_ac34_read_pass_writes_nothing` |
+| E6 | Presets | AC-35 | `lib7_ac35_card_and_arm_by_name_file_mem`, `lib7_ac35_missing_name_or_file_refuses`, `lib7_ac35_undefined_mem_fresh`, `lib7_ac35_card_file_written_in_place_unless_template`; the harness: `lib7_ac35_harness_card_mem_side_and_saveas_card` (LIB-11 AC-22) |
+| E7 | Web | AC-36 | `play-calculator.spec.js` (Longer): `lib7_ac36 import a card file`, `lib7_ac36 saved media lists downloads deletes after asking`, `lib7_ac36 no per card download or upload in the card picker`; `lib7_ac36 file menu has import and saved media` in M-57 |
+| E8 | LIB-1 59 | LIB-1 AC-33 | `tests/descriptor_tests.cpp:147, 195`: the two `lib1_ac33_…` cases with the card reader's media place capability (`media::checkMediaPlaces`) |
+| E9 | LIB-15 59 | LIB-15 AC-20 | `storage.spec.js`: `ac20 cards survive a page load` (a card written by a program, the page reloaded, the card dialog lists it) (Longer) |
+
+Coverage: AC-32 to AC-36 and AC-47 (6 of 6); AC-36's File menu clause
+in M-57 (D-29).
+
+### 11.7 Tools and agent knowledge (M-55)
+
+- **Today's tools.** `tools/headless/capi.cpp:82, 213, 231-242` uses
+  `TICardReaderAdapter` (`h_card_insert`, `h_card_eject`,
+  `h_card_present`, `h_card_mode`, `h_card_waiting`, `h_lib_exec_pc`).
+  By plan §1's tools rule they move in M-55: the `h_card_*` calls onto
+  the card reader's `MediaPlace` (`insert` with a content of one side,
+  `eject`, `side`, `waitsForMedium`), `h_lib_exec_pc` onto the debug
+  target, so `ti59.py`'s `card_insert`, `card_eject`, `card_present`,
+  `card_waiting` and `coverage.py`'s card scenarios
+  (`tools/headless/coverage.py:233-239`) keep working until M-59 removes
+  the tool (LIB-11 §11).
+- **Agent knowledge** (plan M-55): the `calc-u-59-statefiles` skill
+  (cards), `reference/StateFileFormat.md` (§ "Card files"), the memory
+  files on cards (`calc-u-59/card_timing_audio.md`,
+  `cuecard_template_semantics.md`, `solid_state_pc_display.md`), the
+  skills `calc-u-59-shared`, `-qt`, `-web`, `-swift`, `-core`; the
+  `docs/glossary-mapping.md` rows "Magnetic card" (`CardDocument`,
+  `CardFile`, `.u59`) and "Medium, kind of medium, media place"
+  (`CardFile`, `TIFileAccess`) marked done. C59-7 §7 lists the lines.
+- `docs/test-groups.md`: the new tests and Web cases.
+
+### 11.8 Golden and reference runs, risks
+
+- **Golden runs** do not use the media part; they pass unchanged.
+- **Reference runs** of the four card examples (C59-7 T12): the in-file
+  banks come from `MediaPart::inFileContent` instead of
+  `TIAppPart::memoryCardBanks()` (`app/TIAppPart.hpp:316-322`); a
+  difference is a finding.
+- **The re-read** (D-27) changes when a file is read, not what is
+  written for the side that passed; LIB-7's own tests keep the default.
+- **`FileAccess`** (D-30): iCloud placeholders (`.<name>.icloud`) are
+  hidden files and do not end in the kind's suffix, so the shelf passes
+  them over, as `isCardFileName` does today (`app/CardFile.hpp:95-97`).
+- **The Web without a File menu until M-57** (D-29): every function is
+  there from M-55; only AC-29's place of the two items waits.
+
+### 11.9 Decided (best guess)
+
+- **D-27 (C59-7 AC-5, EC-3; AC-12).** A kind may ask for its instance's
+  file to be read again just before each write and handed to the codec
+  as the source (`rereadBeforeWrite`); the card uses it so that a write
+  keeps the other side as the file holds it. The other kinds keep
+  today's rule (the source is the bytes last read or written).
+- **D-28 (AC-16; C59-7 AC-13, AC-20).** A kind may say that it offers no
+  Name & Save (`offersNameAndSave`); the magnetic card does not, so no
+  frontend draws it for the card reader.
+- **D-29 (AC-29, AC-36; plan §1).** Calc-U-59's Web page has no File
+  menu before M-57; in M-55 the import and the saved media are reached
+  from the card dialog, and M-57 moves them into the File menu. The
+  column is Done in M-57 (plan note); every function passes in M-55.
+- **D-30 (AC-33; C59-5 D-6).** The media part reads and writes the save
+  folder through a file access the host may hand it
+  (`MediaSetup::files`), so that Swift keeps its coordinated iCloud
+  access; the default is today's plain access.
+- **D-31 (AC-17, AC-20; C59-7 AC-15).** A kind may word the replace
+  question itself (`replaceQuestion`), because C59-7 AC-15 gives the
+  card's words.
+- **D-32 (AC-23, AC-35).** A `card:` or `arm:` step that names a card
+  file or name that does not exist refuses the preset, as AC-23 and
+  AC-35 say, where 2.3.0 put a blank card in and saved it under that
+  name; a new card in a preset is an in-file card saved by `saveas:`
+  (C59-7 AC-20, AC-30's upgrade row). Ledger row proposed (§11.10).
+
+### 11.10 Proposed ledger rows and plan notes
+
+Ledger rows that become visible in M-55 (plan §5.2): 59-1 (cards),
+59-6, 59-8 (cards kept), 59-17 (C59-7 AC-25), 59-20 (cards), 59-24,
+59-27, 59-43 (the Web's import and saved media). Proposed new rows (next
+free numbers at the merge; not written into `docs/behaviour-changes.md`
+by this design):
+- **59-new-a** — In a preset, `card:` or `arm:` with a card file or name
+  that does not exist refuses the preset (today: a blank card goes in and
+  is saved under that name at its first write); a new card in a preset
+  is an in-file card of `magnetic-cards:`, saved by `saveas:`. (LIB-7
+  AC-23, AC-35; C59-7 AC-20; D-32.)
+- **59-new-b** — (with the answer to C59-7 Q-1) The card buttons, menu
+  items and dialogs read "Arm Card" and "Arm Fresh Card" (today "Fit
+  Card", "Fit Fresh Card"). (`docs/glossary-mapping.md` row "Arm"; C59-7
+  Q-1.)
+- **59-new-c** — The card dialogs list the saved cards by the names
+  inside them (today: by file name, `card.U59` by default); a card's
+  file is named after its name (`<name>.magnetcard.yaml`). (AC-2, AC-4;
+  C59-7 AC-14.) It may be folded into 59-6.
+
+Plan notes (for the orchestrator; the plan is not edited here):
+- §5.1: LIB-7 Calc-U-59 "Done in" M-57 (D-29); C59-7 "Done in" M-58
+  (C59-7 D-11).
+- M-55 "Waits for": also M-53 (the debug target that takes over the card
+  reader adapter's `libExecPC`, C59-7 §3.6).
+- M-55 "Knowledge, ledger": add 59-43 and the proposed rows above.

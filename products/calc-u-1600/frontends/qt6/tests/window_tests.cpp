@@ -717,3 +717,22 @@ TEST(c1600_2_ac18_qt_headerless_code_asks_the_address) {
     CHECK(addressField);
     if (!addressField) std::fprintf(stderr, "  dialog: %s\n", qPrintable(title));
 }
+
+TEST(lib13_ac19_drop_disk_file_used_where_it_lies) {
+    SKIP_UNLESS_WINDOW();
+    Fixture f("PC-1600");
+    f.command("attach", Value::object({{"place", "printer"}, {"peripheral", "CE-1600P"}}));
+    const QString disk = QString::fromStdString(std::string(CALCU1600_DIR) + "/examples/dwx/Progs.floppy.yaml");
+    QMimeData mime;
+    mime.setUrls({QUrl::fromLocalFile(disk)});
+    QDragEnterEvent enter(QPoint(100, 100), Qt::CopyAction, &mime, Qt::LeftButton, Qt::NoModifier);
+    QCoreApplication::sendEvent(&f.w(), &enter);
+    CHECK(enter.isAccepted());
+    QDropEvent drop(QPointF(100, 100), Qt::CopyAction, &mime, Qt::LeftButton, Qt::NoModifier);
+    QCoreApplication::sendEvent(&f.w(), &drop);
+    // The disk in the CE-1600F, by the name of the file it lies in.
+    CHECK(f.waitFor([&] {
+        auto* picker = f.find<QComboBox>("media-picker-floppy");
+        return picker && picker->currentText().contains(QStringLiteral("Progs"));
+    }, 10000));
+}

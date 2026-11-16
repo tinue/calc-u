@@ -138,7 +138,8 @@ TEST(lib6_ac53_sharp_idle_rule_values) {
     for (const char* model : {"PC-1500", "PC-1500A", "PC-1600"}) {
         const calcu::presets::IdleRule r = rules.forModel(calcu::machine::ModelId{model}).idle();
         const auto rate = sharp::sharpCatalogue().model(calcu::machine::ModelId{model})->tickRate;
-        CHECK(!r.readyNow);   // Machine::isKeyReady()
+        // Machine::isKeyReady(); on the PC-1600 also the CE-1600F's motor off (M-47).
+        CHECK(static_cast<bool>(r.readyNow) == (std::string(model) == "PC-1600"));
         CHECK(r.stretch.count() > 0.333 && r.stretch.count() < 0.334);   // 20 frames
         CHECK_EQ(r.sample, rate / 60);                                    // asked every frame
     }

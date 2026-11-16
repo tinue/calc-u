@@ -80,7 +80,9 @@ TEST(lib18_ac26_version1_startup_preset_gives_default_and_notice) {
     SKIP_UNLESS(romsPresent(), "no ROMs in roms/");
     SessionFixture f;
     // A startup preset of format 1 (row 1600-1): the built-in default and EC-1's notice.
-    f.settings.setDefaultPresetPath(Model::PC1600, "tests/fixtures/presets/startup-pc1600.pc1600");
+    const fs::path v1 = f.root / "startup-v1.pc1600";
+    std::ofstream(v1) << "format-version: 1\nmodel: PC-1600\nplotter: CE-1600P\nfloppy: Formatted\nslot-1: CE-1600M\n";
+    f.settings.setDefaultPresetPath(Model::PC1600, v1.generic_string());
     CHECK(f.start("PC-1600"));
     CHECK(f.part().currentModel() == Model::PC1600);
     CHECK_EQ(pluggedCount(f), std::size_t{0});

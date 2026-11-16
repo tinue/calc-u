@@ -715,7 +715,8 @@ bool ShotRunner::capture(const ShotCaptureSpec& spec, QString* error) {
     QCoreApplication::processEvents(); // pending layout/paint from the last step
     // Screenshots normally show RUN mode; PRO is only right for LIST or
     // program entry, so point it out rather than fail.
-    for (const auto& ind : calcu::shell::read::elements(m_window->host().value(calcu::sessions::kDisplayTopic), "indicators"))
+    const calcu::sessions::Value display = m_window->host().value(calcu::sessions::kDisplayTopic);
+    for (const auto& ind : calcu::shell::read::elements(display, "indicators"))
         if (calcu::shell::read::text(ind, "name") == "PRO" && calcu::shell::read::flag(ind, "on"))
             log(QStringLiteral("  note: the calculator is in PRO mode"));
     // The window can't go below its layout's minimum (the PC-1600 control

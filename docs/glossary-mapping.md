@@ -26,7 +26,7 @@ parenthesis is removed with it.
 
 | Glossary term | Calc-U-59 today | Calc-U-1600 today |
 |---|---|---|
-| Cold boot | "Clean" (Reset with ⌘ held) | done (M-46): "Cold boot" (Machine menu, ⇧⌘R; Qt6 and Web); was "Reset All" |
+| Cold boot | "Clean" (Reset with ⌘ held) | done (M-46): "Cold boot" (Machine menu, ⇧⌘R; Qt6 and Web; the shell's Machine menu since M-49, no shortcut on the Web); was "Reset All" |
 | Pause / Resume | "FREEZE", "RESUME" (debug panel) | "Paused (debugger)" (title bar): unchanged |
 | Debug panel | CALCULATOR / CPU / LOG tabs: unchanged | "Inspector" (panel, User Guide §9.2) |
 | Memory module | — | "memory card", "card" in the User Guide |
@@ -37,9 +37,9 @@ parenthesis is removed with it.
 | Name & Save | — (cards written in place) | "Name & Save": unchanged |
 | Startup preset | — | done (M-46): "Startup presets" (Settings, Qt6 and Web); was "Default presets" |
 | Save folder | "Card Folder" (Settings, Qt6) | done (M-47): "Save folder:" (Settings ▸ Storage, Qt6); was "Battery-card saves:" |
-| Startup model | "Startup Calculator" (Settings) | "Startup device" (Settings) |
-| Load Preset… | "Open Preset…" (File menu, Qt6); the button "Preset" | "Load Preset…": unchanged |
-| Examples folder | — | "Samples folder" (Settings ▸ General) |
+| Startup model | "Startup Calculator" (Settings) | done (M-49): "Startup model" (Settings ▸ General, Qt6 and Web; the choices by the model's name); was "Startup device" |
+| Load Preset… | "Open Preset…" (File menu, Qt6); the button "Preset" | "Load Preset…": unchanged (Ctrl+O / ⌘O in Qt6 since M-49) |
+| Examples folder | — | done (M-49): "Examples folder" (Settings ▸ Folders, Qt6); was "Samples folder" |
 | Host drive | — | "Mount Directory…", "Host drive folder": unchanged |
 | Arm | "Fit Card" → "Arm Card", "Fit Fresh Card" → "Arm Fresh Card" | — |
 | Side | sides 1 and 2 of a magnetic card → 0 and 1 | done (M-47): sides A and B of a floppy disk → 0 and 1 (the side button, the disk file `0:`/`1:`, `floppy: { side: }`) |
@@ -49,13 +49,15 @@ parenthesis is removed with it.
 
 | Glossary term | Calc-U-59 | Calc-U-1600 |
 |---|---|---|
+| Shell | — | done (M-49): the Qt6 window from `calcu::qt6::Shell` over `calcu::qt6::SessionHost` (in `MachineController`), the Web page from the React set (`useCalcuShell`); the product's data `app/SharpShellProduct`; was `MainWindow::buildMenuBar`, `ControlBar`, `SettingsDialog`, `AboutDialog`, `Operations`, `EmulationPacer`, the Web's `MenuBar.jsx`, `ControlBar.jsx`, `engine.js` |
+| Control state | — | done (M-49): the library's `control-state` (`calcu::control::ControlPart`) with `shared::SharpControlRules` and its product entries (`c1600.disk-controls`, `c1600.ce158-printer-panel`, `c1600.host-drive-folder`, `c1600.mount-directory`, `c1600.ce1600p-next-variant`); was `shared::ControlState`, `controlStateOf`, the topics `c1600.control-state`, `c1600.machine`, `c1600.ui` |
 | App session | done (M-33, M-34): `calcu::sessions::AppSession` with `cu59::TIAppPart` (every frontend; `SessionController` taken apart into `TIAppPart` in M-34) | done (M-31): the library's `calcu::sessions::AppSession`; the product's part `shared::SharpAppPart` |
-| Listener | done (C1 simplification): `calcu::sessions::Listener` in the Qt6 `EmulatorController`, on the Swift `SessionThread` (was its own sink and reply map, `HostedSession`/`AppSessionHost`), the harness and the tests | done (C1 simplification): `calcu::sessions::Listener` in the Qt6 `MachineController`, `tools/wasm_smoke` and the tests (was `SharpHost`; the session is made by `makeSharpSession`) |
+| Listener | done (C1 simplification): `calcu::sessions::Listener` in the Qt6 `EmulatorController`, on the Swift `SessionThread` (was its own sink and reply map, `HostedSession`/`AppSessionHost`), the harness and the tests | done (C1 simplification): `calcu::sessions::Listener` in the Qt6 `calcu::qt6::SessionHost` (since M-49), `tools/wasm_smoke` and the tests (was `SharpHost`; the session is made by `makeSharpSession`) |
 | Machine session | done (M-33, M-34): `calcu::sessions::MachineSession` (every frontend; `EmulatorSession` keeps the TI runtime around the machine, adapters `TIFreezeGate`, `TIKeystrokePlayback` (was `TIKeySequencerHook`, M-36)) | done (M-31): the library's `calcu::sessions::MachineSession` |
 | Frontend interface | done (M-33, M-34): messages and commands of the app session (every frontend; `TIAppSession` is the Swift bridge, was `TISessionController`; the Web's through the library's `WorkerHost`) | done (M-31): messages of the app session (topics, commands, host services) |
 | App layer | `Shared/` | `Shared/` |
 | Machine | `TIMachine` (`calcu::machine::Machine`, C59-1) | `PC1500InterfaceMachine`, `PC1600InterfaceMachine` (`calcu::machine::Machine`, C1600-1; built by `SharpMachineBuilder` from `sharp::sharpCatalogue()`); `PC1500Machine`, `PC1600Machine` core-internal |
-| Model | `ModelId` (descriptor, `tiCatalogue()`); `cu59::Model` kept as the app enum (`modelId`, `modelFrom`), `ModelInfo` for file-format facts (no ROM file names since M-24); `MachineVariant` core-internal | `calcu::machine::ModelId` (descriptor, `sharpCatalogue()`); `shared::Model` kept as the app enum until M-49 (`modelIdOf`, `modelOf`, `variantIdOf` in `app/MachineModel.hpp`); model (`startup/modelPreference`) |
+| Model | `ModelId` (descriptor, `tiCatalogue()`); `cu59::Model` kept as the app enum (`modelId`, `modelFrom`), `ModelInfo` for file-format facts (no ROM file names since M-24); `MachineVariant` core-internal | `calcu::machine::ModelId` (descriptor, `sharpCatalogue()`); done (M-49): `app/` and the frontends name models by `ModelId` (`shared::sharpModels()`, `sharpModel()` in `app/Settings`), the frontends draw them from the control state; `shared::Model`, `PC1600RomVersion`, `CE1600PRomVersion`, `modelKey` and `app/MachineModel.hpp` gone |
 | Startup model | `startupModel`, `lastUsedModel` | `startup/modelPreference`, `startup/lastUsedModel` |
 | Preset, preset format | `StateFile`, "state file" | done (M-46): `calcu::presets` (the library's reader and engine, `PresetsPart`) with `shared::SharpPresetRules` and the keywords of `app/SharpPresetKeys`; the preset list from `examples/bundle.yaml`; was `PresetFile`, `PresetRunner`, the model's preset loaders, `PresetCatalog`, `examples/bundled.yaml` |
 | Peripheral, module | — | `CardBase`, `ExpansionCard`, "card" |

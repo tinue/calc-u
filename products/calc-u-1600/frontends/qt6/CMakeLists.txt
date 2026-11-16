@@ -76,10 +76,8 @@ file(CONFIGURE OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/generated/Version.iss
 # subsystem instead of the console one, so no terminal window opens
 # alongside the app -- see app/AppLogging.cpp for where qDebug/qWarning/
 # etc. go instead now that there's no console to print them to.
-qt_add_executable(CalcU1600Qt
-  MACOSX_BUNDLE
-  WIN32
-  app/main.cpp
+# The window's sources; the app adds main.cpp, CalcU1600QtTests its tests.
+set(CALCU1600_QT_SOURCES
   app/MainWindow.cpp
   app/MachineController.cpp
   app/FaceplateWidget.cpp
@@ -95,11 +93,18 @@ qt_add_executable(CalcU1600Qt
   app/debug/DapServer.cpp
   app/debug/DapSession.cpp
   app/debug/DebugController.cpp
-  resources/calc-u-1600.qrc
+  resources/calc-u-1600.qrc)
+if(APPLE)
+  list(APPEND CALCU1600_QT_SOURCES app/MacAppSupport.mm)
+endif()
+qt_add_executable(CalcU1600Qt
+  MACOSX_BUNDLE
+  WIN32
+  app/main.cpp
+  ${CALCU1600_QT_SOURCES}
 )
 
 if(APPLE)
-  target_sources(CalcU1600Qt PRIVATE app/MacAppSupport.mm)
   target_link_libraries(CalcU1600Qt PRIVATE "-framework Cocoa")
 endif()
 
@@ -279,4 +284,52 @@ else()
             "$<TARGET_FILE_DIR:CalcU1600Qt>/licenses"
     COMMENT "Copying license/third-party-notice files next to the executable")
   install(FILES ${LICENSE_FILES} DESTINATION licenses)
+endif()
+
+# LIB-14 Part D (D.8): CalcU1600QtTests, the window put together from the
+# shell, its session on the real ROMs (a bundle folder of the tests' own),
+# offscreen; the repository's one runner with a QApplication
+# (library/qt6/tests/QtTestMain.cpp). Longer: on the real clock it takes
+# about 25 s (the design's Frequent did not fit the budget, M-49 qa-report);
+# its ROMs-missing case and the attach check are Frequent.
+if(CALCU_TESTS)
+  find_package(Qt6 QUIET COMPONENTS Test)
+  file(GLOB CALCU1600_QT_TEST_SOURCES CONFIGURE_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/tests/*_tests.cpp)
+  add_executable(CalcU1600QtTests ${CALCU1600_QT_SOURCES} ${CALCU1600_QT_TEST_SOURCES}
+                 ${CMAKE_CURRENT_SOURCE_DIR}/tests/QtFixture.cpp
+                 ${CMAKE_CURRENT_SOURCE_DIR}/../../../../library/qt6/tests/QtTestMain.cpp)
+  if(CALCU_ATTACH)
+    target_sources(CalcU1600QtTests PRIVATE app/screenshots/AttachLineClient.cpp app/screenshots/ShotScenario.cpp
+                                            app/screenshots/ShotCapture.cpp app/screenshots/ShotRunner.cpp)
+    if(APPLE)
+      target_sources(CalcU1600QtTests PRIVATE app/screenshots/MacShotSupport.mm)
+    endif()
+    target_link_libraries(CalcU1600QtTests PRIVATE calcu1600_harness)
+  endif()
+  set_target_properties(CalcU1600QtTests PROPERTIES AUTOMOC ON AUTORCC ON)
+  calcu_qt6_moc_compat(CalcU1600QtTests)
+  target_include_directories(CalcU1600QtTests PRIVATE app tests ${CMAKE_CURRENT_BINARY_DIR}/generated
+                             ${CMAKE_CURRENT_SOURCE_DIR}/../../../../library/testing)
+  target_link_libraries(CalcU1600QtTests PRIVATE Qt6::Widgets Qt6::Multimedia Qt6::Network calcu_shared calcu_qt6)
+  if(APPLE)
+    target_link_libraries(CalcU1600QtTests PRIVATE "-framework Cocoa")
+  endif()
+  if(TARGET Qt6::Test)
+    target_link_libraries(CalcU1600QtTests PRIVATE Qt6::Test)
+    target_compile_definitions(CalcU1600QtTests PRIVATE CALCU_QT_TEST=1)
+  endif()
+  target_compile_definitions(CalcU1600QtTests PRIVATE "CALCU1600_DIR=\"${CMAKE_CURRENT_SOURCE_DIR}/../..\"")
+  calcu_add_test(CalcU1600QtTests longer COMMAND CalcU1600QtTests
+                 WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/../..
+                 PROPERTIES ENVIRONMENT QT_QPA_PLATFORM=offscreen)
+  # AC-19: a ROM folder without one file, in a process of its own (the
+  # bundle folder is chosen once per process).
+  calcu_add_test(CalcU1600QtTests.romsMissing frequent
+                 COMMAND ${CMAKE_COMMAND} -E env CALCU1600_QT_ROMS_MISSING=1 $<TARGET_FILE:CalcU1600QtTests> lib14_ac19
+                 WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/../..
+                 PROPERTIES ENVIRONMENT QT_QPA_PLATFORM=offscreen)
+  # D.8 Q12: the shot runner steps the machine through attach only.
+  calcu_add_test(CalcU1600ShotsThroughAttach frequent
+                 COMMAND ${CMAKE_COMMAND} -DSOURCE=${CMAKE_CURRENT_SOURCE_DIR}/app/screenshots/ShotRunner.cpp
+                         -P ${CMAKE_CURRENT_SOURCE_DIR}/tests/check_shots_through_attach.cmake)
 endif()

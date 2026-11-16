@@ -16,6 +16,7 @@
 #ifdef __APPLE__
 #include "MacAppSupport.h"
 #endif
+#include "FileOpenFilter.hpp"
 #include "MainWindow.hpp"
 #include "debug/DebugController.hpp"
 #include "MachineController.hpp"
@@ -30,40 +31,6 @@
 #include <memory>
 #endif
 
-namespace {
-
-// macOS hands a file dropped onto the Dock icon, or opened from Finder, to
-// the application object as a QFileOpenEvent -- at a cold launch before
-// there is a window. Kept until the window takes them; each is the session's
-// `open` with the way Open With (LIB-13 AC-21; MainWindow::openFile).
-class Application : public QApplication {
-public:
-    using QApplication::QApplication;
-
-    void setFileOpenHandler(std::function<void(const QString&)> handler) {
-        m_onFileOpen = std::move(handler);
-        for (const QString& path : std::exchange(m_pending, {})) m_onFileOpen(path);
-    }
-
-protected:
-    bool event(QEvent* event) override {
-        if (event->type() != QEvent::FileOpen) return QApplication::event(event);
-        const QString path = static_cast<QFileOpenEvent*>(event)->file();
-        if (m_onFileOpen)
-            m_onFileOpen(path);
-        else
-            m_pending.append(path);
-        return true;
-    }
-
-private:
-    std::function<void(const QString&)> m_onFileOpen;
-    QStringList m_pending;
-};
-
-
-}  // namespace
-
 int main(int argc, char** argv) {
     AppLogging::install();
 #ifdef __APPLE__
@@ -71,7 +38,9 @@ int main(int argc, char** argv) {
     macDisablePressAndHold();      // see MacAppSupport.h: held letters stay held keys
     macKeepTimersPrecise();        // see MacAppSupport.h: real-time pace in the background (row 1600-28)
 #endif
-    Application app(argc, argv);
+    QApplication app(argc, argv);
+    FileOpenFilter fileOpen;
+    app.installEventFilter(&fileOpen);
     // Without this, the running window's title-bar/taskbar icon is
     // whatever the platform defaults to (e.g. a generic AppImage icon on
     // Linux) -- the .desktop file's Icon= only covers desktop-environment
@@ -135,7 +104,7 @@ int main(int argc, char** argv) {
                                                               &window.controller()->app().mediaPart()});
 #endif
         window.start();
-        app.setFileOpenHandler([&window](const QString& path) { window.openFile(path, calcu::opening::Way::OpenWith); });
+        fileOpen.setHandler([&window](const QString& path) { window.openFile(path, calcu::opening::Way::OpenWith); });
         // LIB-13 AC-21 (OQ-2, D-14): the last argument that names a file is
         // opened; the session keeps it until the start is over (AC-7).
         std::vector<std::string> arguments;
@@ -145,7 +114,7 @@ int main(int argc, char** argv) {
             }))
             window.openFile(QString::fromStdString(*start), calcu::opening::Way::Start);
         const int result = app.exec();
-        app.setFileOpenHandler({});
+        fileOpen.setHandler({});
         return result;
     }
 

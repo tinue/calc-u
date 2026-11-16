@@ -662,7 +662,10 @@ authentic speed for the span that matters.
 - **Hardware pickers (model, memory modules) live on the control bar**, not
   in Settings. The picks reset on a model switch and aren't saved. Settings
   holds app-level preferences only.
-- **ROM versions and the "foreign" peripherals are in the Machine menu
+- *Superseded by LIB-14 AC-9 (M-49): the bar follows the family rule, a
+  button where one peripheral fits a place and a picker where several do (the
+  PC-1600's printer picker and its CE-158 button); the ROM versions stay in
+  the Machine menu.* **ROM versions and the "foreign" peripherals are in the Machine menu
   only**, to keep the control bar narrow; they rarely change. The bar has
   buttons only for each model's own peripherals (CE-150 + CE-158 on a
   PC-1500/1500A, CE-1600P on a PC-1600); Machine ▸ Peripherals has all of
@@ -796,7 +799,8 @@ authentic speed for the span that matters.
   when the web client needed it. Opening a file is the session's `open`
   (LIB-13): it decides what the file is and keeps one that comes while
   busy; only the dialogs of the program flows stay per frontend.
-- **ControlState names each control, even when two fields agree today**
+- *Superseded by M-49 (LIB-4: the library's control state; the product's
+  rules and entries in `app/SharpControlRules`).* **ControlState names each control, even when two fields agree today**
   (`pc1600RomMenu`, `floppyShown`, `ce1600p.offered` are all "is a
   PC-1600" now): a frontend asks about the control it draws, and a rule
   that changes for one of them changes in one place.

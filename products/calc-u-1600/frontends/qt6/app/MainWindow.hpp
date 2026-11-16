@@ -5,6 +5,7 @@
 #include <QImage>
 #include <QMainWindow>
 #include <QString>
+#include <functional>
 #include <memory>
 #include <optional>
 #include <string>
@@ -62,6 +63,9 @@ public:
     // came; a refusal is the session's notice. A program file comes back as
     // the topic c1600.program-opened (onProgramOpened).
     void openFile(const QString& path, calcu::opening::Way way);
+    // The tests: Copy Screen's picture and text go here, not to the
+    // platform's clipboard.
+    void setClipboardSink(std::function<void(const QImage&, const QString&)> sink) { m_clipboardSink = std::move(sink); }
 
 protected:
     void keyPressEvent(QKeyEvent* event) override;
@@ -83,6 +87,7 @@ private:
     Ce158PrinterWidget* m_ce158Printer = nullptr;
     DiskControl* m_disk = nullptr;
     AudioOutput* m_audio = nullptr;
+    std::function<void(const QImage&, const QString&)> m_clipboardSink;
     std::string m_model;   // the control state's running model (the faceplate's art)
 
     calcu::shell::ShellProduct product();

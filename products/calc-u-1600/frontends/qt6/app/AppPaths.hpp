@@ -28,6 +28,8 @@ calcu::settings::HostDirs platformHostDirs();
 // user's settings and saved cards/disks neither show in the pictures nor
 // change; LIB-9 AC-18). Call before anything reads a setting or a path.
 void useHostDirs(const calcu::settings::HostDirs& dirs);
+// The tests (CalcU1600QtTests): the bundled folders of their own, before the first use.
+void useBundleDirs(const shared::BundleDirs& dirs);
 
 // The shared::AppPaths every call below forwards to (app/AppPaths.hpp
 // has the rules); built on first use from the bundled resources folder

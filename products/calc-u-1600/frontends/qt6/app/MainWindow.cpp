@@ -287,7 +287,8 @@ void MainWindow::refreshSerialStatus() {
 void MainWindow::copyScreen() {
     const QString selection = m_inspector ? m_inspector->selectedOutputText() : QString();
     if (!selection.isEmpty()) {
-        QGuiApplication::clipboard()->setText(selection);
+        if (m_clipboardSink) m_clipboardSink(QImage(), selection);
+        else QGuiApplication::clipboard()->setText(selection);
         return;
     }
     const GrayImage screen = m_controller->currentScreenImage();
@@ -295,6 +296,10 @@ void MainWindow::copyScreen() {
     if (image.isNull()) return;
     LcdText lcd;
     const QString text = m_controller->lcdText(&lcd) ? QString::fromStdString(lcd.plainText()) : QString();
+    if (m_clipboardSink) {
+        m_clipboardSink(image, text);
+        return;
+    }
 #ifdef Q_OS_MACOS
     // Qt's QClipboard::setImage() drops the physical size on macOS (see
     // qt6/MacClipboard.h) -- go through Cocoa so a paste lands at the

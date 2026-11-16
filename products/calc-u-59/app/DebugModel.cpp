@@ -3,8 +3,8 @@
 
 namespace cu59 {
 
-void DebugModel::attach(const EmulatorSession& session) {
-    moduleChanged(session);
+void DebugModel::attach(const std::vector<uint8_t>& moduleImage) {
+    moduleChanged(moduleImage);
     m_live = {};
     m_listing.clear();
     m_listingSource = ProgramSource::UserProgram;
@@ -13,19 +13,17 @@ void DebugModel::attach(const EmulatorSession& session) {
     m_lastLibMismatch = -1;
 }
 
-void DebugModel::moduleChanged(const EmulatorSession& session) {
+void DebugModel::moduleChanged(const std::vector<uint8_t>& moduleImage) {
     m_moduleError.clear();
-    m_module = ModuleImage::parse(session.moduleImage(), &m_moduleError);
+    m_module = ModuleImage::parse(moduleImage, &m_moduleError);
     m_romCache.clear();
 }
 
 DebugModel::Update DebugModel::tick(const calcu::machine::Machine& m, bool livePanel, bool cpuPanel, bool frozen) {
     Update u;
     if (livePanel && !frozen) u |= rebuildLive(m, false);
-    if (cpuPanel || frozen) {
+    if (cpuPanel && !frozen) {
         readTraceRing(m, m_frames);
-        m_heatmap.ingest(m_frames.data(), m_frames.size());
-        u.heatmap = m_heatmap.publishTick();
         // Running: rebuild the list only when new instructions ran.
         uint32_t newest = m_frames.empty() ? 0 : m_frames.back().seqno;
         if (!frozen && newest != m_cpuHistorySeqno) {
@@ -80,12 +78,6 @@ DebugModel::Update DebugModel::captureInspector(const calcu::machine::Machine& m
 int DebugModel::listingCurrentIndex() const {
     auto it = std::find_if(m_listing.begin(), m_listing.end(), [](const StepEntry& e) { return e.isCurrent; });
     return it == m_listing.end() ? -1 : static_cast<int>(it - m_listing.begin());
-}
-
-void DebugModel::resetHeatmapBaseline(const calcu::machine::Machine& m) {
-    m_heatmap.clear();
-    auto frames = readTraceRing(m);
-    if (!frames.empty()) m_heatmap.resetBaseline(frames.back().seqno);
 }
 
 } // namespace cu59

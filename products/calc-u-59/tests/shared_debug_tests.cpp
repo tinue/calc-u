@@ -1,14 +1,12 @@
-// Shared/ debug model: program source decoding, module image, live snapshot,
-// program listing, ROM heatmap, ASM overlay parser, ring log and dumps.
+// Shared/ debug model: program source decoding, module image, X, the step
+// views; what the debug panel shows is in debug_panel_tests.cpp (C59-4).
 
 #include "TestHarness.hpp"
 #include "TestRoms.hpp"
-#include "../app/AsmOverlay.hpp"
 #include "../app/Bcd.hpp"
 #include "../app/DebugLog.hpp"
 #include "../app/DebugSnapshots.hpp"
 #include "../app/DebugText.hpp"
-#include "../app/RomHeatmap.hpp"
 #include <algorithm>
 #include <filesystem>
 
@@ -55,13 +53,12 @@ std::vector<std::string> stepThrough(const std::vector<uint8_t>& prog, int last,
     testroms::runToScanLoop(*m, model);
     testroms::mem(*m).writeProgram(prog.data(), prog.size());
     testroms::press(*m, 11);  // A
-    testroms::dbg(*m).stepUntilNextKeycode();
+    testroms::stepToBoundary(*m);
     testroms::release(*m, 11);
     std::vector<uint8_t> romCache;
     std::vector<std::string> steps;
     for (int i = 0; i < 40; ++i) {
-        testroms::dbg(*m).stepUntilNextKeycode();
-        testroms::dbg(*m).beginNextStep();
+        testroms::stepToBoundary(*m);
         auto state = calcViewState(*m);
         CHECK(state.atStep && state.cpu.pc == testroms::dbg(*m).pc());  // STEP stopped at the boundary
         auto snap = buildLiveSnapshot(*m, ModuleImage{}, romCache, state).snap;
@@ -179,127 +176,6 @@ TEST(module_image_program_table) {
     auto bad = ModuleImage::parse({0x02, 0x00, 0x00, 0x10, 0x00, 0x05, 0x00, 0x20}, &err);
     CHECK(bad.programRanges.empty());
     CHECK(!err.empty());
-}
-
-TEST(live_snapshot_and_listing) {
-    auto m = testroms::makeMachine(Model::TI59);
-    testroms::runToScanLoop(*m, Model::TI59);
-    // LBL A, STO 12, RCL 12, GTO 01 23, R/S
-    const uint8_t prog[] = {76, 11, 42, 12, 43, 12, 61, 1, 23, 91};
-    testroms::mem(*m).writeProgram(prog, sizeof prog);
-    auto reg = encodeBcd(std::string_view("2.5"));
-    testroms::mem(*m).writeDataRegister(3, reg.data());
-
-    std::vector<uint8_t> romCache;
-    auto lib = ModuleImage::parse(*cu59::moduleImage(*testroms::romSet(), "ML.rom.yaml"));
-    auto b = buildLiveSnapshot(*m, lib, romCache, calcViewState(*m));
-    const auto& s = b.snap;
-    CHECK(s.programSource == ProgramSource::UserProgram);
-    CHECK_EQ(s.currentStep, 0);
-    CHECK_EQ(static_cast<int>(s.programWindow.size()), 6);  // steps 0–5
-    CHECK_EQ(s.programWindow[1].mnemonic, std::string("A"));
-    CHECK_EQ(s.programWindow[3].mnemonic, std::string("12"));  // STO operand
-    CHECK(s.angleMode == AngleMode::Deg);
-    CHECK_EQ(static_cast<int>(s.nonZeroRegs.size()), 1);
-    if (!s.nonZeroRegs.empty()) {
-        CHECK_EQ(s.nonZeroRegs[0].num, 3);
-        CHECK_EQ(s.nonZeroRegs[0].value, 2.5);
-    }
-    for (const auto& row : s.scomRows) CHECK_EQ(row.size(), size_t{16});
-    CHECK_EQ(s.statusRegister, std::string(s.scomRows[0].rbegin(), s.scomRows[0].rend()));  // SCOM[0], nibble 15 first
-    CHECK(b.argSteps == (std::set<int>{3, 5, 7, 8}));
-
-    auto listing = programListing(b.sourceKeycodes, b.argSteps, s.currentStep);
-    CHECK_EQ(listing.size(), b.sourceKeycodes.size());
-    CHECK(listing[0].isCurrent && !listing[1].isCurrent);
-    CHECK_EQ(listing[7].mnemonic, std::string("01"));
-    CHECK_EQ(listing[9].mnemonic, std::string("R/S"));
-    CHECK(buildLiveSnapshot(*m, lib, romCache, calcViewState(*m)).snap == s);
-}
-
-TEST(rom_heatmap_counts_new_frames_once) {
-    std::vector<CpuFrame> f(3);
-    f[0].seqno = 1; f[0].pc = 0x10;
-    f[1].seqno = 2; f[1].pc = 0x10;
-    f[2].seqno = 3; f[2].pc = 0x1500;  // beyond code ROM: ignored
-    RomHeatmap h;
-    h.ingest(f.data(), f.size());
-    h.ingest(f.data(), f.size());  // same frames again: not recounted
-    CHECK_EQ(h.counts()[0x10], 2u);
-    int published = 0;
-    for (int i = 0; i < 12; ++i) published += h.publishTick();
-    CHECK_EQ(published, 1);
-    h.resetBaseline(5);
-    f[0].seqno = 5; f[1].seqno = 6;
-    h.ingest(f.data(), 2);
-    CHECK_EQ(h.counts()[0x10], 1u);
-}
-
-TEST(asm_overlay_parser) {
-    int files = 0;
-    for (const auto& e : std::filesystem::directory_iterator("examples/assembly")) {
-        if (e.path().extension() != ".asm") continue;
-        auto text = testroms::readFile(e.path().string());
-        auto words = parseAsmWords(*text);
-        CHECK(!words.empty());
-        for (uint16_t w : words) CHECK(w <= 0x1FFF);
-        ++files;
-    }
-    CHECK(files >= 1);
-    auto words = parseAsmWords("title\nHEX:\n0x0A01 1987abcd\nfoo 12 0x1FFFF000\n");
-    // "1987abcd" splits into two words; "12" is too short; words are masked to 13 bits.
-    CHECK(words == (std::vector<uint16_t>{0x0A01, 0x1987, 0xABCD & 0x1FFF, 0x1FFF, 0x1000}));
-    auto message = [](const char* t) {
-        try { parseAsmWords(t); } catch (const AsmParseError& e) { return std::string(e.what()); }
-        return std::string();
-    };
-    CHECK_EQ(message("0A01\n"), std::string("No HEX: section found in ASM file."));
-    CHECK_EQ(message("HEX:\nno words\n"), std::string("No hex opcode words found after HEX: in ASM file."));
-    CHECK_EQ(message("HEX:\n0x123\n"), std::string("Invalid token in HEX section: 123"));
-}
-
-TEST(asm_overlay_runs) {
-    auto m = testroms::makeMachine(Model::TI59);
-    testroms::runToScanLoop(*m, Model::TI59);
-    auto r = runAsmOverlay(*m, {0x0A01, 0x0A01});
-    CHECK(r.loaded);
-    CHECK(r.entered);
-    CHECK(!runAsmOverlay(*m, std::vector<uint16_t>(3000, 0)).loaded);
-}
-
-TEST(ring_log_display_pages) {
-    RingLog log;
-    CHECK_EQ(log.displayText(), std::string());
-    log.write("a");
-    log.write("b");
-    CHECK_EQ(log.displayText(), std::string("a\nb"));
-    for (int i = 0; i < 100; ++i) log.write("x" + std::to_string(i));
-    std::string page = log.displayText();  // > one page new: only the newest page
-    CHECK_EQ(std::count(page.begin(), page.end(), '\n'), 39);
-    CHECK(page.substr(page.size() - 3) == "x99");
-    log.write("y");
-    std::string slow = log.displayText();  // one new line: up to 10 pages
-    CHECK_EQ(std::count(slow.begin(), slow.end(), '\n'), 102);
-    log.clear();
-    CHECK_EQ(log.displayText(), std::string());
-}
-
-TEST(debug_dumps) {
-    auto m = testroms::makeMachine(Model::TI59);
-    testroms::runToScanLoop(*m, Model::TI59);
-    auto v = encodeBcd(std::string_view("42"));
-    testroms::mem(*m).writeDataRegister(7, v.data());
-    auto vars = dumpVars(*m);
-    CHECK(vars.size() >= 2);
-    bool found = std::find(vars.begin(), vars.end(), std::string("V07 = 42")) != vars.end();
-    if (!found) for (auto& l : vars) std::fprintf(stderr, "  vars: %s\n", l.c_str());
-    CHECK(found);
-    auto scom = dumpScom(*m);
-    CHECK_EQ(scom.size(), size_t{17});
-    CHECK_EQ(scom[1].substr(0, 4), std::string("S00 "));
-    auto mem = dumpMemory(*m);
-    CHECK(mem.size() >= 2);
-    CHECK(dumpProg(*m)[0].rfind("── Prog P000–P", 0) == 0);
 }
 
 TEST(debug_panel_text) {

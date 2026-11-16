@@ -11,8 +11,8 @@
 #include <vector>
 
 // The runtime around one running calculator that every frontend shares: the
-// 60 Hz frame sampler, the PC-100C's controls and the adapters' reads of the
-// debug panel. Since M-54 (LIB-18 §11.3, D-26) it neither builds nor owns
+// 60 Hz frame sampler and the PC-100C's controls (the debug panel's reads
+// are TIDebugPart's since M-56). Since M-54 (LIB-18 §11.3, D-26) it neither builds nor owns
 // the machine: LIB-18's machine control builds it and the library's machine
 // session holds it; cu59::TIAppPart makes a new EmulatorSession around each
 // new machine (machineChanged). It runs on the session's one thread
@@ -34,7 +34,6 @@ public:
         calcu::machine::Machine& machine() { return m_m; }
         TICardReaderAdapter& cardReader() { return *cardReaderOf(m_m); }
         TIMemoryAdapter& memory() { return *memoryOf(m_m); }
-        TIDebugPanelAdapter& debugPanel() { return *debugPanelOf(m_m); }
 
     private:
         calcu::machine::Machine& m_m;
@@ -57,7 +56,7 @@ public:
     std::optional<bool> printerSwitch(const calcu::machine::ControlId& id) const;
 
     // ── Frames ───────────────────────────────────────────────────────────────
-    FrameUpdate tick(int debugLevel, bool cardSwiping) { return m_sampler.tick(m_machine, debugLevel, cardSwiping); }
+    FrameUpdate tick(bool cardSwiping) { return m_sampler.tick(m_machine, cardSwiping); }
 
 private:
     const Model m_model;

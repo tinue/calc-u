@@ -8,14 +8,33 @@ The debugger has three layers:
 
 | Layer | Where | What |
 |---|---|---|
-| Core | `TIMachine`, its debug target `TMC0501` (`core/TIDebugging.hpp`, LIB-10 AC-28), the capability `c59.trace-records` (`core/TraceRecords.hpp`) and the adapters of `core/TIAdapters.hpp` (`TIDebugPanelAdapter`, `TIMemoryAdapter`; until C59-4 / C59-2), over `TMC0501` (`core/`) | Registers, RAM, program and SCOM access, breakpoints, the observer's marks, the trace ring, step-boundary latch, debug events, the ASM overlay |
+| Core | `TIMachine`, its debug target `TMC0501` (`core/TIDebugging.hpp`, LIB-10 AC-28), the capability `c59.trace-records` (`core/TraceRecords.hpp`), the debug panel's product kinds `c59.asm-overlay`, `c59.rom-heatmap`, `c59.calculator-state`, `c59.machine-log` (`core/TIDebugKinds.hpp`, C59-4, M-56) and `TIMemoryAdapter` (`core/TIAdapters.hpp`, until M-59), over `TMC0501` (`core/`) | Registers, RAM, program and SCOM access, breakpoints, the observer's marks, the trace ring, step-boundary latch, the machine's log lines, the heatmap's counts, the ASM overlay |
 | Library | LIB-10's `DebuggerPart` (`library/debugger/`): the run control (the machine session's gate), the topics `run-state` and `trace`, the trace session; the run-control buttons of the component sets | Pause, step, resume, pause-on-start, breakpoints, one trace at a time |
-| Shared | `TILevelRules`, `TITraceRecorder`, `TIDebuggerSetup`, `DebugModel`, `DebugSnapshots`, `DebugText`, `DebugLog`, `TraceWriter`, `AsmOverlay` (`app/`) | The TI's levels and trace records, the panels' data and text, the LOG |
-| GUI | Swift: `EmulatorViewModel` → `frontends/swift/Bridge/TIAppSession` (commands and the `c59.debug.*` topics), views in `frontends/swift/App/Views/` (`DebugView`, `LiveDebugView`, `CPUInspectorView`). Qt: `EmulatorController`, widgets in `frontends/qt6/app/debug/` (`DebugPanel`, `LiveDebugWidget`, `CpuInspectorWidget`, `RomHeatmapWidget`, `AsmOverlayBox`, `LogWidget`). Web: `TIWebPart` (`frontends/web/bindings.cpp`), `frontends/web/src/Debugger.jsx` (`LiveDebug`, `FreezeHeader`, `CpuInspector`, `Heatmap`, `AsmOverlay`, `LogTab`; wide layout only) | Drawing only |
+| Shared | `TIDebugPart` (the six product topics, the panel's commands, the product entries), `TILevelRules`, `TITraceRecorder`, `TIDebuggerSetup`, `DebugModel`, `DebugSnapshots`, `DebugText`, `DebugLog`, `TraceWriter`, `AsmOverlay` (`app/`) | The TI's levels and trace records, the panels' data and text, the dumps, the ASM overlay format |
+| GUI | Swift: `EmulatorViewModel` → `frontends/swift/Bridge/TIAppSession` (commands and the product topics), views in `frontends/swift/App/Views/` (`DebugView`, `LiveDebugView`, `CPUInspectorView`). Qt: `EmulatorController`, widgets in `frontends/qt6/app/debug/` (`DebugPanel`, `LiveDebugWidget`, `CpuInspectorWidget`, `RomHeatmapWidget`, `AsmOverlayBox`, `LogWidget`). Web: the product topics' values (`frontends/web/bindings.cpp`), `frontends/web/src/Debugger.jsx` (`LiveDebug`, `FreezeHeader`, `CpuInspector`, `Heatmap`, `AsmOverlay`, `LogTab`; wide layout only) | Drawing only |
 
 All three GUIs send the same commands (the library's for pause, step,
-resume, pause-on-start and trace; `TIAppPart`'s `c59.*` for the panels);
-the panels draw what `DebugModel` holds. Which panel lives where: `FrontendParity.md`
+resume, pause-on-start and trace; `TIDebugPart`'s `c59.*` for the panels)
+and draw the same topics (C59-4 AC-25, M-56):
+
+| Topic (state) | Payload (`app/TIDebugPart.hpp`) | Carries |
+|---|---|---|
+| `calculator-debug` | `TICalculatorDebug` | the CALCULATOR tab's snapshot (computed while a frontend shows the tab: `c59.live-debug {on}`) |
+| `program-listing` | `TIProgramListing` | the whole listing of the program that runs, its source and current index; empty while the machine runs |
+| `cpu-debug` | `TICpuDebug` | the CPU tab's instructions (while shown, `c59.cpu-debug {on}`, or paused) |
+| `heatmap` | `TIHeatmap` | the counts of 0000 to 13FF, about 10 Hz |
+| `asm-overlay` | `TIAsmOverlayState` | file name, number of instructions, status line, whether the overlay runs |
+| `debug-view` | `TIDebugView` | the tab `debug-panel:` (or Run) asked for last, a count of the requests, the machine's log level |
+
+A payload's value (`toValue`) is the form the Web page draws; the harness
+reads it with `state <topic>`. The control state (LIB-4) carries the
+product entries `c59.asm-run`, `c59.trace`, `c59.calculator-tab`, each
+`{available, reason}`. The commands: `c59.live-debug {on}`,
+`c59.cpu-debug {on}`, `c59.heatmap-reset`, `c59.log-level {level:
+off|info|debug}`, `c59.dump {what: scom|memory|prog|vars}` (replies with the
+lines), `c59.asm-load {name, text}`, `c59.asm-run`, `c59.asm-clear`; the
+harness's `ti59 asm load|run|clear`, `ti59 dump …`, `ti59 log-level …`,
+`ti59 heatmap reset` (C59-4 AC-22). Which panel lives where: `FrontendParity.md`
 § "Debugger". The session and controller: `SharedArchitecture.md`. Panel
 behaviour from a user's point of view: the user guide,
 https://calc-u.org/59/.
@@ -111,7 +130,7 @@ phase (`beginNextStep()`), so the views show the next step.
 
 - Everything runs on the session's thread. A `pause` or `step` command
   replies when the pause has landed (a deferred reply).
-- At every settle `TIAppPart::followRunState` reads the run control: a
+- At every call `TIDebugPart::follow` reads the run control: a
   pause or step that landed gets its frozen view (`DebugModel::frozenView`,
   rebuilt when the tick count moved; reason `StepInstruction` for a `cpu`
   step, else `Freeze`), and the core's frame ring is on while the CPU tab
@@ -129,9 +148,9 @@ and the CALCULATOR snapshot and listing for every reason except
 `StepInstruction` (a `cpu` step). Showing the CALCULATOR panel while frozen rebuilds its
 snapshot at once (`rebuildLive`).
 
-The full listing is built only while frozen and reported with its own bit,
-`ListingChanged`, so the 60 Hz running snapshot never carries the whole
-program. It is never rebuilt from a `SolidStateReturn` snapshot (SCOM[0]
+The full listing is built only while frozen and sent on its own topic,
+`program-listing` (emptied when the machine runs again), so the 60 Hz
+running snapshot never carries the whole program. It is never rebuilt from a `SolidStateReturn` snapshot (SCOM[0]
 then holds a raw CROM address, not a step); the previous listing is kept.
 
 ### Frozen-display semantics
@@ -164,7 +183,7 @@ and T are the state before that step. `currentStep` comes from:
 The CPU tab is instruction-level and post-execution.
 
 The frozen listing: `DebugModel::listing()`, `listingSource()`,
-`listingCurrentIndex()` (Swift `programListing`, `programListingSource`,
+`listingCurrentIndex()`, sent as `program-listing` (Swift `programListing`, `programListingSource`,
 `programListingCurrentIndex`; Qt `programListing()`,
 `programListingSource()`). The view scrolls to the current entry.
 
@@ -281,10 +300,15 @@ struct InspectorEntry {        // app/DebugSnapshots.hpp
 
 Swift receives `TIInspectorEntry` (frame as `TICpuFrame`, `frontends/swift/Bridge/TITypes.h`)
 and copies it into `vm.cpuHistory`; `vm.cpuHistoryUpdateID` changes with
-it, so `CPUInspectorView` scrolls to the current entry. The ROM heatmap
-(`DebugModel::heatmapCounts()`, `app/RomHeatmap`; Swift `vm.romHitCount`)
-is fed from the same ring reads, while the CPU panel shows or the machine
-is frozen.
+it, so `CPUInspectorView` scrolls to the current entry. The frames come
+from the core's ring through the product kind `c59.calculator-state` (they
+hold what the debug target names no register for: `Sout`, the display
+state; C59-4 D-3). The ROM heatmap is the core's own count (the product
+kind `c59.rom-heatmap`, one increment per instruction carried out while the
+CPU tab shows; C59-4 AC-8), set to zero by `c59.heatmap-reset` (the CLR
+button), when the tab comes into view, at a Reset and on a new machine; the
+topic `heatmap` carries it (`app/RomHeatmap.hpp`: the grid, steps and
+colours; Swift `vm.romHitCount`).
 
 ### CpuFrame fields
 
@@ -302,7 +326,7 @@ of the state.
 ### Trace flags
 
 `core/TraceTypes.hpp`. Since M-53 only `TIMachine` sets them: any consumer
-(the debug panel through `TIDebugPanelAdapter::setPanelTrace` — CPU tab
+(the debug panel through `c59.calculator-state`'s `setFrameRing` — CPU tab
 shown, paused, a start armed —, a trace through `c59.trace-records`, the
 run control's checks) gives `TRACE_PC | TRACE_REGS_FULL`; none gives
 `TRACE_NONE`, the fast path.
@@ -327,7 +351,7 @@ are left to the headless tools' tests.
 ### Disassembler
 
 `static std::string TIDebugging::disassemble(uint16_t pc, uint16_t opcode)`
-(also `TIDebugPanelAdapter::disassemble`; the target's `decode`) needs no
+(the target's `decode`) needs no
 machine state and returns a mnemonic such as `"ADD A, C [MANT]"`
 or `"BR 0x03A2"`.
 
@@ -335,31 +359,32 @@ or `"BR 0x03A2"`.
 
 ## LOG tab
 
-The LOG is a `RingLog` (`app/DebugLog.hpp`, 2000 lines) held by
-`DebugModel` and kept across model switches. `TIAppPart` writes the
-dumps into it and refreshes `logText()` at 1 Hz (Swift `vm.debugDisplayText`,
-Qt `logText()`).
+The log is LIB-3's `log` topic (C59-4 AC-9): the machine's own lines (the
+product kind `c59.machine-log`, at their level; the lines of one host call
+in one message, parted by `\n`) and the product's lines (a Reset, a preset's
+steps, the dumps) at every level. Each frontend keeps the tab's view, the
+last 2000 lines (`cu59::RingLog`, `app/DebugLog.hpp`, in Qt6's
+`EmulatorController` and the Swift bridge; an array in the Web page), and
+its clear button empties the view, not the log.
 
-| `TIAppPart` | Swift | Output |
-|---|---|---|
-| `dumpVars()` | `debugDumpVars()` | Non-zero data registers of the partition, sorted: `V05 = 2.5`, TI-58C extras as `H01` |
-| `dumpScom()` | `debugDumpSCOM()` | 16 rows, nibble 15 first: `S00 0000000000000000` |
-| `dumpProg()` | `debugDumpProg()` | Non-zero program registers as their 8 keycodes in step order: `P000: 76 11 …` |
-| `dumpMemory()` | `debugDumpMemory()` | Every non-zero RAM register by physical index, in the register-line format of `ti58c.memory.yaml` |
-| `cycleDebugLevel()`, `clearLog()` | `toggleDebug()`, `clearDebug()` | Level Off → Info → Debug → Off; clear |
+| `TIDebugPart` (command) | Output |
+|---|---|
+| `dump("vars")` (`c59.dump {what: vars}`) | Non-zero data registers of the partition, sorted: `V05 = 2.5`, TI-58C extras as `H01` |
+| `dump("scom")` | 16 rows, nibble 15 first: `S00 0000000000000000` |
+| `dump("prog")` | Non-zero program registers as their 8 keycodes in step order: `P000: 76 11 …` |
+| `dump("memory")` | Every non-zero RAM register by physical index, in the register-line format of `ti58c.memory.yaml` |
+| `setLogLevel` (`c59.log-level {level}`) | Level Off → Info → Debug → Off (the button cycles; `debug-view.logLevel` shows it) |
 
-Qt and the web client have the same names as `TIAppPart` for the
-four dumps and the level. The level
-is passed to the core (`TIDebugPanelAdapter::setDebugLevel`). Shared code logs
-through `TIAppPart` (or `EmulatorSession::Listener::logLine`).
+The level is passed to the core (`c59.machine-log`'s `setLevel`). Shared
+code logs through the session's `log` (`SessionContext::log`).
 
 ### Core debug events
 
 `TMC0501::emitDebug(level, fmt, …)` queues a `DebugEvent` (80-character
 message, `vsnprintf` truncates) and is a no-op above the current level, so
-it costs nothing when the LOG is off. `FrameSampler::tick` drains the queue
-every 60 Hz frame (`TIDebugPanelAdapter::drainDebugEvents`), keeps events at or
-below the level, and the controller appends them to the LOG.
+it costs nothing when the LOG is off. `TIDebugPart` takes the queue after
+every host call (`c59.machine-log`'s `take`, events at or below the level)
+and writes them into the session's log.
 
 | Level | Shown at | Use for |
 |---|---|---|
@@ -382,49 +407,54 @@ a call through `m_cpu`. `fmtNibs(d, buf, reverse)` in `TMC0501.cpp` formats
 ## ASM Overlay
 
 Runs hand-assembled TMC0501 code from a debug-only ROM region, for
-ROM-level experiments. Core: `TIDebugPanelAdapter::loadDebugOverlay`,
-`clearDebugOverlay`, `runDebugOverlay`. Shared: `cu59::parseAsmWords` and
-`runAsmOverlay` (`app/AsmOverlay.hpp`), driven by
-`TIAppPart::loadAsm`, `runAsm`, `clearAsm`.
+ROM-level experiments (C59-4 AC-13 to AC-19, AC-26). Core: the product kind
+`c59.asm-overlay` (`core/TIDebugKinds.hpp`: `load`, `clear`, `loaded`,
+`enter`, `running`). Shared: `cu59::readAsmOverlay` (`app/AsmOverlay.hpp`),
+driven by `TIDebugPart::loadAsm`, `runAsm`, `clearAsm` (the commands
+`c59.asm-load`, `c59.asm-run`, `c59.asm-clear`); an `.asm` file opened by
+any way (LIB-13's `open`) is read as by Select File.
 
-**Address range.** `0x1800–0x1FFF` (2048 words), outside the normal ROM.
-Words are masked to 13 bits.
+**Address range.** `0x1800–0x1FFF` (2048 instructions), outside the normal ROM.
 
-**File format.** Examples from Hynek Sladký's *Calculators TI-58/59 HW
-Programming Guide* are in `examples/assembly/` (its `README.md` has the
-details).
+**File format: ASM overlay format 2.0** (ADR 0037; `examples/assembly/README.md`
+until the help's reference chapter, LIB-16 AC-10).
 
 ```
+Calc-U-59 ASM 2.0
 PROGRAM:
-; listing for people, ignored by the loader
+; listing for people, not read
 1800:   01D8    MOV     A.ALL,#0
         ...
 
 HEX:
-01D8 01DB 0D00 0A37 1805 1007
+01D8 01DB 0D00 0A37 1805 1007   ; a comment
 ```
 
-Parsing starts after the `HEX:` line. Tokens are `0x…` or runs of 4 or more
-hex digits, split into 4-digit words; everything else is skipped. A token
-whose length isn't a multiple of 4, no `HEX:` line, no words, or more than
-2048 words is a load error.
+The first line is exactly `Calc-U-59 ASM 2.0`; everything up to the line
+`HEX:` is for the reader. After it a `;` starts a comment; what remains is
+runs of hex digits (each optionally after `0x`), four digits an
+instruction, 0000 to 1FFF. Refused, with a notice that says which: an older
+format (no first line, or another version), no `HEX:` line, nothing after
+it, a run not a multiple of four digits, an instruction above 1FFF, a word
+that is neither hex digits nor a comment, more than 2048 instructions.
+The instructions loaded before stay (EC-2).
 
-**Run.** Pause-on-start is disarmed, a paused machine resumes, and the
-machine runs to the next keycode boundary. The overlay is loaded, COND is
-set, and `PREG = EXT = 0x1800` is forced on every step — as the hardware's
-external debugger does — until the computed jump lands on `0x1800`
-(`TMC0501::runDebugInjectedProgram`). Not reaching it within 8192 steps
-is an error ("ASM entry failed"); reset, then Run again. If the CPU's
-FREEZE ON START was armed, the machine is paused in place at the entry
-(`TILevelRules::landNextPauseAtOnce`, then `pause cpu`; until M-56);
-otherwise it runs
-the overlay in real time. An overlay
-that loops forever runs until reset; one that ends with `0x0C00` (HOLD)
-hands control back to the ROM.
+**Run.** A paused machine resumes, and the machine runs to the next keycode
+boundary. COND is set, and `PREG = EXT = 0x1800` is forced on every step —
+as the hardware's external debugger does — until the computed jump lands
+on `0x1800` (`TMC0501::runDebugInjectedProgram`). Not reaching it within
+8192 steps is an error ("ASM entry failed after n step(s).", also a
+notice). If FREEZE ON START of the CPU tab was armed, the machine is paused
+at 1800 with the reason pause-on-start (`RunControl::fireStart`, LIB-10);
+otherwise it runs the overlay in real time, and the panel shows the CPU
+tab. Run cannot be used while an operation runs (the entry `c59.asm-run`).
 
-**Persistence.** One overlay is shared across models: it survives reset and
-is re-injected on a model switch, or dropped if it doesn't fit there.
-`clearAsm` resets the machine if the overlay was running.
+**Its life (AC-18, AC-26).** It runs from the entry until a Reset, a Cold
+boot or Clear; a FREEZE does not end it, and while it runs the CALCULATOR
+tab cannot be chosen (the entry `c59.calculator-tab`). A Reset keeps its
+instructions (Run enters them again); a Cold boot and a new machine (a
+preset, a model switch) remove them. Clear resets the machine if the
+overlay was running.
 
 ---
 

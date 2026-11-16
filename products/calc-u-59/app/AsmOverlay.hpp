@@ -1,35 +1,31 @@
 #pragma once
-#include "../core/TIAdapters.hpp"
 #include <cstdint>
-#include <stdexcept>
 #include <string>
 #include <string_view>
+#include <variant>
 #include <vector>
 
-// Debug ASM overlay: hand-assembled TMC0501 code loaded at 0x1800–0x1FFF and
-// entered from a keycode boundary (examples/assembly/*.asm). The file's
-// opcode words follow a "HEX:" line.
+// The ASM overlay format, version 2.0 (C59-4 AC-14, AC-15; ADR 0037;
+// behaviour change 59-1; examples/assembly/README.md): hand-assembled TMC0501
+// code put over the ROM at 1800 to 1FFF (the product kind c59.asm-overlay).
+//
+//   Calc-U-59 ASM 2.0          ← exactly, the first line
+//   …                          ← for the reader, not read
+//   HEX:                       ← any case, alone on its line
+//   01D8 01DB 0x0D00 ; a comment
+//   0A3718051007               ← a run of 4n digits is n instructions
+//
+// Lines end with LF or CRLF. After HEX: a `;` starts a comment to the end of
+// its line; what remains is runs of hexadecimal digits (either case, each
+// optionally after 0x) parted by spaces and line ends. Each instruction is
+// 0000 to 1FFF; the first goes to 1800.
 
 namespace cu59 {
 
-struct AsmParseError : std::runtime_error {
-    using std::runtime_error::runtime_error;
-};
+inline constexpr std::string_view kAsmOverlayFirstLine = "Calc-U-59 ASM 2.0";
 
-/// Opcode words after the "HEX:" line: tokens "0x…" or runs of 4+ hex digits,
-/// split into 4-digit words masked to 13 bits. At most 2048 words. Throws
-/// AsmParseError with a user-facing message.
-std::vector<uint16_t> parseAsmWords(std::string_view text);
-
-struct AsmRunResult {
-    bool loaded = false;    ///< false: the words exceed the overlay range
-    bool entered = false;   ///< execution reached the entry point
-    uint32_t steps = 0;
-};
-
-/// Park the CPU at a keycode boundary (so the digit counter is mid-cycle),
-/// load the overlay and enter it at 0x1800. Run between two advances of the
-/// machine (the machine session paused).
-AsmRunResult runAsmOverlay(calcu::machine::Machine& m, const std::vector<uint16_t>& words);
+/// The instructions, or the sentence of the refusal (C59-4 design §3.7, D-5),
+/// which names the file by `name`.
+std::variant<std::vector<std::uint16_t>, std::string> readAsmOverlay(std::string_view name, std::string_view text);
 
 } // namespace cu59

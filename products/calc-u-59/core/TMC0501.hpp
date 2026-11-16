@@ -211,7 +211,7 @@ public:
 
     // ── Debug event log ───────────────────────────────────────────────────────
     // The CPU emits DebugEvents for write operations when debugLevel > 0.
-    // Events are drained at 60 Hz (TIDebugPanelAdapter).
+    // Events are drained at 60 Hz (the product kind c59.machine-log).
     void setDebugLevel(uint8_t level) { m_debugLevel = level; }
     uint8_t debugLevel() const { return m_debugLevel; }
     std::vector<DebugEvent> drainDebugEvents();

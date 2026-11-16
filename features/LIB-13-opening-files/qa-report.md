@@ -245,3 +245,89 @@ session. Column status: Done (M-49, 2026-11-16).
   passes another card is refused (EC-4). The stand-in `TestMedia` no
   longer treats `reader` apart. Row AC-4 above says so; AC-12 itself is
   Calc-U-59's column (M-55).
+
+## Calc-U-59 (M-56, 2026-11-16, branch `m56-opening-debug-59`)
+
+Built and run as C59-4's M-56 section says (`build/tests`, `build/qt`
+offscreen, the Web `dist/` and Playwright; Swift type-checked only).
+
+The code (design §10.3; all under `products/calc-u-59/` unless named):
+- `app/TIFileKinds.*` (new): the kinds `asm-overlay`, `keystroke-program`,
+  `rom-module-file`, `constant-memory-file` in this order (D-16), each by its
+  name (D-20); until M-55 a fifth, `magnetic-card`, for today's `.u59` and
+  `.bin` card files (see Deviations); `tiPresetExtensions()`,
+  `programArguments()` (the Qt6 program's own options taken out, D-18);
+- `app/TIAppPart.*`, `TIAppPartFlows.cpp`: the part fills
+  `presetExtensions`, `fileKinds` of its `LibraryPartsSetup`; `DropAction`,
+  `dropActionFor`, `dropAction`, `TIDropAction`, `c59.open-dropped`,
+  `c59.drop-action` gone; `openCard` (the interim kind's flow);
+  `app/TIWebPart.cpp`: `c59.web.drop` gone; `app/HarnessProduct.cpp`: the
+  kinds, so `open <path>` takes every Calc-U-59 file;
+- Qt6: `MainWindow` (the drag asks `open-would-take`, the drop and Open
+  Preset… send `open`; the filter `Presets (*.ti59 *.ti58 *.ti58c);;All
+  files (*)`), `main.cpp` (`QFileOpenEvent` sends `open {way: open-with}`;
+  the start file by `calcu::opening::startFile(cu59::programArguments(…))`,
+  `open {way: start}`), `EmulatorController::openFile`, `wouldTake`;
+- Swift: the macOS drop and the Preset button's importer (the preset types
+  and any file) send `open` (`TIAppSession openFile:…way:`);
+  `acceptsDroppedFile`, `openDroppedFile` gone;
+- Web: the drop sends `open {way: drop, upload: true}`, the preset picker's
+  upload takes several files (`multiple`, no `accept` filter) as one `open
+  {way: dialog, upload: true}` (the open part's upload folder is the shell's
+  `uploadsDir`); `engine.dropFile` gone;
+- `tools/check_open_with_types.sh` (new) and the CTest
+  `CalcU59OpenWithTypes` (Frequent);
+- tests: `tests/opening_tests.cpp` (new, 18), the card cases of
+  `tests/part_flows_tests.cpp` through `open` (renamed `lib13_ac12_*`,
+  `lib13_ec4_*`, `lib13_ac16_*`), `tests/harness_tests.cpp`
+  `lib13_ac9_open_takes_every_calc_u_59_file`; Web cases in
+  `frontends/web/tests/play-calculator.spec.js`; Swift
+  `Calc-U-59Tests/OpeningTests.swift` (not run).
+
+| ID | Result | Test case (`tests/opening_tests.cpp` unless named) |
+|---|---|---|
+| AC-11 | Pass, except the medium `.magnetcard.yaml` (M-55) | `lib13_ac11_preset_extensions_ti59_ti58_ti58c`, `_kinds_keystrokes_and_asm_in_order`, `_no_size_limit_any_way` (4 MiB by every way), `_one_medium_magnetic_card` (until M-55: today's card files as the interim kind) |
+| AC-12 | Pass on today's card files; on `.magnetcard.yaml` and its `template: true` with M-55 | `part_flows_tests.cpp`: `lib13_ac12_card_fitted_where_it_lies_read_at_idle`, `lib13_ac12_card_fitted_where_it_lies_written_back`, `lib13_ac12_refused_on_ti58_and_ti58c_with_notice`; Web `LIB-13 AC-12 a dropped card is imported and fitted`, `LIB-13 AC-12 a card dropped on the TI-58 is refused with a notice` |
+| AC-13 | Pass | `lib13_ac13_asm_is_c59_4s_kind` |
+| AC-14 | Pass (session, CTest); Qt6 hand checks not made | `lib13_ac14_options_taken_out_before_the_rule`, `lib13_ac14_open_with_and_start_open_as_what_it_is`; CTest `CalcU59OpenWithTypes`; Qt6 builds the start file and Open With on `open` (above); a drop, Finder's Open With and a start argument on the real window were not checked by hand (no GUI app launched in this step): M-57's attach scenarios take them over |
+| AC-15 | Pass (session, Qt6 by code, Web); Swift written, not run | `lib13_ac15_refusal_notice_names_the_file`; Qt6 shows a notice as its alert (`EmulatorController::errorOccurred`); Web `LIB-13 AC-15 …` ("Calc-U-59 cannot open notes.txt."); Swift `OpeningTests.testLib13AC15RefusalIsANotice` |
+| AC-16 | Pass | `lib13_ac16_preset_by_extension_in_any_case`, `_hidden_file_refused`, `_dropped_preset_loads_as_the_dialog`; `part_flows_tests.cpp` `lib13_ac16_card_on_the_ti59_and_preset_by_content`; Web `LIB-13 AC-16 a dropped preset loads like one from the dialog` |
+| AC-23 | Pass | `lib13_ac23_keystrokes_written_from_000_without_cold_boot`, `_partition_registers_other_steps_stay` (also into a paused machine, which stays paused, D-23), `_step_beyond_last_refused`, `_unreadable_refused`, `_rom_yaml_refused_by_id_only`, `_constant_memory_file_refused` |
+| EC-4 (product) | Pass on today's card files | `part_flows_tests.cpp` `lib13_ec4_card_while_one_passes_refused_nothing_imported` |
+| EC-7 (product) | Pass | `lib13_ec7_open_by_any_way_keeps_dialog_folders`; in Qt6 only the dialogs call `rememberOpenFile` |
+
+Coverage: AC-11 to AC-16, AC-23, EC-4 and EC-7 have their tests and pass,
+with two parts that wait for M-55 (C59-7, branch `m55-cards-59`, running in
+parallel): the magnetic card as LIB-7's medium `.magnetcard.yaml` (AC-11)
+and a template card never written (AC-12). Column status: In progress; it
+becomes Done when M-55 is merged and the card cases above run on
+`.magnetcard.yaml` through LIB-7's `MediaOpener`.
+
+### Deviations from the design, chosen by the simpler structure
+
+- **Today's card files as an interim file kind until M-55.** The design
+  (§10.1, A-E2) has M-55 before M-56, so a card would go through LIB-7's
+  `MediaOpener`; the two steps ran side by side from `6a1272f`. So that the
+  drop of a card keeps working on this branch, `app/TIFileKinds` has the
+  kind `magnetic-card` for `.u59` and `.bin` (`TIAppPart::openCard`: fitted
+  where it lies on the TI-59, an upload written into the save folder,
+  refused with a notice on the TI-58/58C and while a card passes). **At the
+  merge with M-55:** remove the `CardFitter` of `TIFileKinds`, `openCard`
+  and the `magnetic-card` kind, and move the `lib13_ac12_*`, `lib13_ec4_*`
+  cases of `part_flows_tests.cpp` and the two Web cases onto
+  `.magnetcard.yaml`.
+- **Qt6 keeps its `QApplication` subclass for `QFileOpenEvent`**, sending
+  `open {way: open-with}`; no `FileOpenFilter.hpp` (M-57 brings the shell's).
+- **Swift's drop asks nothing before the drop** (design §10.9's risk):
+  SwiftUI's `.dropDestination` gives the URL at the drop only, so the drop
+  takes one file and a refusal is the notice; the bridge has `wouldOpenFile:`.
+- **The Web picker's upload has no `accept` filter**, as AC-5 asks of "the
+  file dialog … offers the preset extensions and all files".
+
+### Reference runs
+
+`CalcU59ReferenceRuns` (`CALCU59_REFERENCE_COMPARE=1 CalcU59Tests c59_2_ac11`):
+0 of 57 examples differ from their reference; the 8 findings named since M-54
+(`kFindings`) as before; 4 card examples wait for M-55. The debug examples
+(`debug_*`, `screentest_test_cdebug`) show the panel through `debug-panel:`
+and are the same.

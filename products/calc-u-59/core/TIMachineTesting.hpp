@@ -14,6 +14,17 @@ struct TIMachineTesting {
     static std::uint16_t pc(const TIMachine& m) { return m.m_hw.pc(); }
     static bool restorePending(const TIMachine& m) { return m.m_restore.has_value(); }
     static TI59Machine& hardware(TIMachine& m) { return m.m_hw; }
+    /// To the next program step boundary through TIMachine's step (at most
+    /// 50000 weighted cycles), then the next step's pre-execution phase.
+    static void stepToBoundary(TIMachine& m) {
+        std::uint32_t done = 0;
+        while (done < 50000) {
+            const std::uint32_t r = m.stepOne();
+            done += r & TI59Machine::kWeightMask;
+            if (r & TI59Machine::kStepBoundary) break;
+        }
+        m.m_hw.beginNextStep();
+    }
     /// LIB-8 adapter P-E3 (design §11.5, D-26): the code lines the PC-100C
     /// ended since the last call, for the golden runs' `dots` lines and the
     /// headless tool's printer_code_lines (until M-59). The first call turns

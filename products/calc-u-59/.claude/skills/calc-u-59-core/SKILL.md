@@ -58,8 +58,11 @@ Annotated ROM listings: `rom/TI59-commented.asm`, `rom/TI58C-commented.asm`
   keys (key IDs) and the display output go through it only. What it does not
   have yet goes through the adapters of `core/TIAdapters.hpp`, each until its
   removal step: `TICardReaderAdapter` (M-55),
-  `TIMemoryAdapter` (M-54), `TIDebugPanelAdapter` (M-56; since M-53 it
-  also holds the panel's reads, LIB-10 L-E3); `idleAndKeyDetectRange()` is
+  `TIMemoryAdapter` (M-54; its readers M-59); `idleAndKeyDetectRange()` is
+  the scan/detect range. The debug panel's reads are product kinds since
+  M-56 (`core/TIDebugKinds.hpp`: `c59.asm-overlay`, `c59.rom-heatmap`,
+  `c59.calculator-state`, `c59.machine-log`; find one with
+  `cu59::kindOf<K>(machine)`); `idleAndKeyDetectRange()` is
   the scan/detect range for `tools/headless/` and the tests. The debugger
   reaches the core through `Machine::debugging()`: the debug target
   `TMC0501` (`core/TIDebugging.hpp`; LIB-10, M-53), whose

@@ -13,6 +13,7 @@
 #include "../../app/ModuleCatalog.hpp"
 #include "../../app/ProductRoms.hpp"
 #include "../../core/TIAdapters.hpp"
+#include "../../core/TIDebugKinds.hpp"
 #include "../../core/PC100C.hpp"
 #include "../../core/TIMachineTesting.hpp"   // LIB-8 P-E3: the PC-100C's code lines (until M-59)
 #include "paper/Paper.hpp"
@@ -66,7 +67,8 @@ struct Handle {
     size_t linesTaken = 0;
 };
 Machine& M(void* h) { return *static_cast<Handle*>(h)->machine; }
-TIDebugPanelAdapter& debug(void* h) { return *debugPanelOf(M(h)); }
+// The processor frame: the product kind c59.calculator-state (C59-4, M-56).
+cu59::CalculatorState& debug(void* h) { return *cu59::kindOf<cu59::CalculatorState>(M(h)); }
 TIMemoryAdapter& memory(void* h) { return *memoryOf(M(h)); }
 // The PC-100C and the module in their places (C59-6, design §7): the
 // capabilities while a PC-100C is plugged in. Its paper output is bound to

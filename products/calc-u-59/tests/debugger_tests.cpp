@@ -28,7 +28,7 @@ namespace {
 calcu::debugger::RunControl& rc(SessionRig& r) { return r.part().debuggerPart()->runControl(); }
 bool paused(SessionRig& r) { return r.part().isFrozen(); }
 bool ready(SessionRig& r) { return r.until([&] { return r.machine().isKeyReady(); }); }
-TIDebugPanelAdapter& panel(SessionRig& r) { return testroms::dbg(r.machine()); }
+cu59::CalculatorState& panel(SessionRig& r) { return testroms::dbg(r.machine()); }
 
 // A program in program memory from step 000 (keycodes).
 void program(SessionRig& r, std::vector<uint8_t> codes) {
@@ -363,8 +363,11 @@ TEST(lib10_ac32_debug_panel_calculator_cpu_log) {
     load(r, "  - debug-panel: calculator\n  - debug-panel: cpu\n  - debug-panel: log\n");
     CHECK(r.until([&] { return !r.busy(); }, 5s));
     r.runFor(20ms);
-    CHECK(r.panels() == (std::vector<DebugPanel>{DebugPanel::Calculator, DebugPanel::Cpu, DebugPanel::Log}));
-    r.part().showDebugPanelNamed("log");
+    // The product topic debug-view (C59-4 AC-2, M-56): a state topic, so the
+    // three tabs asked in one call arrive as the last one, counted three times.
+    CHECK(!r.panels().empty() && r.panels().back() == DebugPanel::Log);
+    CHECK(r.state<TIDebugView>(topics::kDebugView) && r.state<TIDebugView>(topics::kDebugView)->requests == 3);
+    r.debug().showView(r.session().context(), "log");
     r.runFor(20ms);
     CHECK(r.panels().back() == DebugPanel::Log);
 }

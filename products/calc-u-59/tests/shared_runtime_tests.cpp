@@ -90,7 +90,7 @@ struct PovRig {
     FrameUpdate frame() {
         while (acc < hz / 60) acc += static_cast<double>(m->advance(1) / 32);   // one instruction: its weight
         acc -= hz / 60;
-        return sampler.tick(*m, 0, false);
+        return sampler.tick(*m, false);
     }
     static int brightest(const FrameUpdate& f) {
         int mx = 0;

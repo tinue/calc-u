@@ -23,6 +23,7 @@ TIMachine::TIMachine(const MachineDescriptor& d, MachineVariant v, const TIRoms&
 }
 
 std::uint32_t TIMachine::stepOne() {
+    m_heatmap.count(m_hw.pc());   // C59-4 AC-8: once per instruction, while on
     const std::uint32_t r = m_hw.step();
     ++m_retired;
     if (m_restore && m_ranges.scanLoop.contains(m_hw.pc())) {
@@ -85,6 +86,7 @@ Ticks TIMachine::tickCount() const { return m_ticksBeforeReset + kTicksPerWeight
 
 void TIMachine::cpuReset() {
     m_ticksBeforeReset = tickCount();
+    m_asmOverlay.m_running = false;   // C59-4 AC-18: a Reset ends the overlay's run
     m_hw.reset();   // clears the key matrix (AC-8), re-presses the card switch (EC-4)
     if (m_printer) m_printer->operation();
     if (m_module) m_module->operation();
@@ -101,6 +103,10 @@ const CapabilityId kTypingId{"TMC0501/typing-support"};
 const CapabilityId kTraceRecordsId{"TMC0501/c59.trace-records"};
 const CapabilityId kProgramMemoryId{"RAM/c59.program-memory"};
 const CapabilityId kConstantMemoryId{"RAM/c59.constant-memory"};
+const CapabilityId kAsmOverlayId{"TMC0501/c59.asm-overlay"};
+const CapabilityId kHeatmapId{"TMC0501/c59.rom-heatmap"};
+const CapabilityId kCalculatorStateId{"TMC0501/c59.calculator-state"};
+const CapabilityId kMachineLogId{"TMC0501/c59.machine-log"};
 } // namespace
 
 void TIMachine::rewire() {
@@ -154,7 +160,11 @@ Plugged TIMachine::plugged() const {
 std::vector<CapabilityEntry> TIMachine::capabilities() const {
     const ComponentOwner cpu{ComponentId{"TMC0501"}};
     std::vector<CapabilityEntry> out{{calcu::typing::TypingSupport::kKind, kTypingId, cpu},
-                                     {TraceRecords::kKind, kTraceRecordsId, cpu}};
+                                     {TraceRecords::kKind, kTraceRecordsId, cpu},
+                                     {cu59::AsmOverlay::kKind, kAsmOverlayId, cpu},
+                                     {cu59::RomHeatmapCounter::kKind, kHeatmapId, cpu},
+                                     {cu59::CalculatorState::kKind, kCalculatorStateId, cpu},
+                                     {cu59::MachineLog::kKind, kMachineLogId, cpu}};
     const ComponentOwner ram{ComponentId{"RAM"}};
     out.push_back({cu59::ProgramMemory::kKind, kProgramMemoryId, ram});
     if (hasConstantMemory(m_variant)) out.push_back({cu59::ConstantMemory::kKind, kConstantMemoryId, ram});
@@ -168,6 +178,10 @@ std::vector<CapabilityEntry> TIMachine::capabilities() const {
 Capability* TIMachine::capability(const CapabilityId& id) {
     if (id == kTypingId) return &m_typing;
     if (id == kTraceRecordsId) return &m_traceRecords;
+    if (id == kAsmOverlayId) return &m_asmOverlay;
+    if (id == kHeatmapId) return &m_heatmap;
+    if (id == kCalculatorStateId) return &m_calculatorState;
+    if (id == kMachineLogId) return &m_machineLog;
     if (id == kProgramMemoryId) return &m_programMemory;
     if (id == kConstantMemoryId) return hasConstantMemory(m_variant) ? &m_constantMemory : nullptr;
     if (!m_printer) return nullptr;
@@ -200,6 +214,7 @@ void TIMachine::powerCycle() {
 
 void TIMachine::coldBoot() {
     m_restore.reset();
+    m_asmOverlay.clear();   // C59-4 AC-26: a Cold boot removes the overlay
     const std::vector<std::uint8_t> zero(kRamBytes, 0);
     m_hw.deserialiseRAM(zero.data());
     cpuReset();

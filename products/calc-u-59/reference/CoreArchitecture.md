@@ -42,12 +42,17 @@ the keys and the display output through it only (C59-1 AC-17; CTest
 `CalcU59CoreSeam`). What the interface does not have yet goes through the
 adapters of `core/TIAdapters.hpp` (`memoryOf(machine)` …), each with
 its removal step: `TICardReaderAdapter` (M-55), `TIMemoryAdapter` (program, registers,
-partition, RAM; M-54), `TIDebugPanelAdapter` (ASM overlay, debug
-events, and since M-53 the reads the debug panel needs that the debug target
-does not give: `snapshotCPU`, `lastStepBoundary`, `readCpuFrames`,
-`readROMKeycode`, the panel's frame ring, the overlay's entry; LIB-10
-adapter L-E3; M-56); `idleAndKeyDetectRange()` gives a model's scan/detect
-range (for `tools/headless/` and the tests). The debugger reaches the core
+partition, RAM; M-54, its readers M-59); `idleAndKeyDetectRange()` gives a model's scan/detect
+range (for `tools/headless/` and the tests). The debug panel's
+`TIDebugPanelAdapter` went in M-56 (C59-4): what the debug target does not
+give is four product kinds of the processor (`core/TIDebugKinds.hpp`,
+`TMC0501/c59.…`): `c59.asm-overlay` (the overlay's words over 1800 to 1FFF,
+its entry with COND set, whether it runs: from the entry until a Reset, a
+Cold boot or `clear`; a Cold boot removes it), `c59.rom-heatmap` (counts
+per ROM address 0000 to 13FF in `TIMachine::stepOne`, while on),
+`c59.calculator-state` (`snapshotCPU`, `lastStepBoundary`,
+`readCpuFrames`, `readROMKeycode`, the panel's frame ring) and
+`c59.machine-log` (the debug events at their level). The debugger reaches the core
 through the debug target (`core/TIDebugging.hpp`, LIB-10 59, M-53; see
 "Debug target" below).
 `TI59Machine` is the core-internal facade over the three hardware
@@ -594,7 +599,7 @@ stops it, at most 50000 weights later, so a pause lands in the host call
 that asked for it, as 2.3.0's freeze did. The levels (`program`, `cpu`)
 and what lands where are the app's `TILevelRules`
 (`reference/SharedArchitecture.md`). The frame ring is on while the debug
-panel (`TIDebugPanelAdapter::setPanelTrace`), a trace
+panel (`c59.calculator-state`'s `setFrameRing`), a trace
 (`c59.trace-records`) or the run control's checks want it.
 
 ---
@@ -1021,7 +1026,7 @@ the lost count. Since M-53 the flags are set by `TIMachine` alone: TRACE_PC
 want the ring, else none. A trace drains the ring through the capability
 `TMC0501/c59.trace-records` (`core/TraceRecords.hpp`: `begin`, `take`,
 `end`), which the app's `TITraceRecorder` turns into records; the panel
-reads it without draining (`TIDebugPanelAdapter::readCpuFrames`). Field list and the trace file:
+reads it without draining (`c59.calculator-state`'s `readCpuFrames`). Field list and the trace file:
 `reference/DebugAPI.md` § "CPU Inspector" and § "Trace File Format". `emitDebug()` events
 (`setDebugLevel`, `drainDebugEvents`): `reference/DebugAPI.md` § "Core
 debug events".

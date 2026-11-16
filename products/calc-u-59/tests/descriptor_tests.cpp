@@ -157,8 +157,9 @@ TEST(lib1_ac33_machine_conforms_without_peripherals) {
         CHECK(machine->plugged().byPlace.empty());
         // Typing support (LIB-5 §3.4), the trace records (LIB-10 D-24), the
         // program memory (C59-2 AC-17) and on the TI-58C the constant memory
-        // (C59-3 AC-1); the card reader's media place: M-55 (LIB-1 D-1).
-        const std::size_t own = std::string(m) == "TI-58C" ? 4 : 3;
+        // (C59-3 AC-1), the debug panel's four kinds (C59-4); the card reader's
+        // media place: M-55 (LIB-1 D-1).
+        const std::size_t own = std::string(m) == "TI-58C" ? 8 : 7;
         CHECK_EQ(machine->capabilities().size(), own);
         CHECK_EQ(machine->capabilities(TraceRecords::kKind).size(), std::size_t{1});
         CHECK_EQ(machine->capabilities(calcu::typing::TypingSupport::kKind).size(), std::size_t{1});
@@ -206,14 +207,21 @@ TEST(lib1_ac33_machine_conforms_with_printer_and_module) {
             for (const auto& d : diffs) std::printf("  %s: %s\n", m, d.c_str());
             CHECK(diffs.empty());
             CHECK_EQ(machine->plugged().byPlace.size(), size_t{with ? 2u : 0u});
-            // + typing support (LIB-5), trace records (LIB-10), program memory (C59-2), constant memory (C59-3, TI-58C)
-            const std::size_t own = std::string(m) == "TI-58C" ? 4 : 3;
+            // + typing support (LIB-5), trace records (LIB-10), program memory (C59-2), constant memory (C59-3, TI-58C),
+            // the debug panel's asm-overlay, rom-heatmap, calculator-state, machine-log (C59-4)
+            const std::size_t own = std::string(m) == "TI-58C" ? 8 : 7;
             CHECK_EQ(machine->capabilities().size(), (with ? 2u : 0u) + own);
             for (const auto& e : machine->capabilities()) {
                 CHECK(machine->capability(e.id) != nullptr && machine->capability(e.id)->kind() == e.kind);
                 if (e.kind == calcu::typing::TypingSupport::kKind) {
                     const auto* c = std::get_if<ComponentOwner>(&e.owner);
                     CHECK(c && c->component.value == "TMC0501" && e.id.value == "TMC0501/typing-support");
+                    continue;
+                }
+                if (e.kind == cu59::AsmOverlay::kKind || e.kind == cu59::RomHeatmapCounter::kKind ||
+                    e.kind == cu59::CalculatorState::kKind || e.kind == cu59::MachineLog::kKind) {
+                    const auto* c = std::get_if<ComponentOwner>(&e.owner);
+                    CHECK(c && c->component.value == "TMC0501" && e.id.value == "TMC0501/" + std::string(e.kind.value));
                     continue;
                 }
                 if (e.kind == TraceRecords::kKind) {

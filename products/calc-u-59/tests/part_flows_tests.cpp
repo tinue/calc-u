@@ -9,6 +9,7 @@
 
 #include "TestHarness.hpp"
 #include "SessionRig.hpp"
+#include "opening/OpenRequest.hpp"
 #include "TestRoms.hpp"
 #include "../app/CardFile.hpp"
 #include "../app/KeyboardLayout.hpp"
@@ -47,15 +48,17 @@ std::string preset(const std::string& body, const std::string& model = "TI-59", 
     return "format-version: 2\nmodel: " + model + "\nslot-1: { name: ML }\n" + (printer ? "printer: PC-100C\n" : "") + body;
 }
 
-// A file dropped on the calculator (c59.open-dropped): its TIFlag, true for a preset that loads.
+// A file dropped on the calculator: LIB-13's `open {way: drop}` (M-56);
+// true when it was opened.
 bool drop(PartRig& r, const std::optional<std::string>& content, const std::string& path, const std::string& name) {
-    using calcu::sessions::Value;
-    Value::Object o{{"path", path}, {"name", name}};
-    if (content) o.push_back({"bytes", Value(Value::Bytes(content->begin(), content->end()))});
-    const auto reply = r.operation(commands::kOpenDropped, Value(std::move(o)));
-    if (!reply.done) return false;
-    if (const auto* f = calcu::sessions::payloadAs<TIFlag>(reply.result)) return f->value;
-    return true;   // an operation's reply: the preset was loaded
+    calcu::opening::OpenRequest q;
+    calcu::opening::OpenedFile f;
+    f.name = name;
+    if (!path.empty()) f.path = path;   // none: as its content (LIB-6 EC-5)
+    if (content) f.bytes = std::vector<std::uint8_t>(content->begin(), content->end());
+    q.files = {f};
+    q.way = calcu::opening::Way::Drop;
+    return r.operation(calcu::opening::kOpenCommand, q.toValue()).done;
 }
 
 // `n 2nd Write` through LIB-5's `key` command (as the harness's `key`): the
@@ -124,7 +127,7 @@ TEST(part_load_while_frozen_ends_running_without_tracing) {
     PartRig r;
     auto& c = r.part();
     rc(r).pause(kProgram);
-    CHECK(r.runUntil([&] { return c.isFrozen() && !c.debug().cpuHistory().empty(); }, 3000ms));
+    CHECK(r.runUntil([&] { return c.isFrozen() && !r.debug().model().cpuHistory().empty(); }, 3000ms));
     CHECK(r.load(preset("data:\n  01: 7\n")).done);
     CHECK(!c.isFrozen());
     r.run(20ms);
@@ -137,7 +140,7 @@ TEST(lib10_ac35_part_model_switch_keeps_log_resets_freeze) {
     PartRig r;
     auto& c = r.part();
     CHECK(r.attach("printer", "PC-100C").done);
-    c.dumpVars();
+    r.debug().dump("vars");
     rc(r).pauseOnStart(kProgram);
     CHECK(c.runState().armed == kProgram);
     CHECK(r.model("TI-58").done);
@@ -147,7 +150,12 @@ TEST(lib10_ac35_part_model_switch_keeps_log_resets_freeze) {
     CHECK_EQ(c.emulator()->access().machine().plugged().byPlace.size(), size_t{1});   // the module only
     r.run(20ms);
     CHECK(!c.runState().armed && !c.isFrozen());
-    CHECK(c.logText().find("──") != std::string::npos);  // the dump survived the switch
+    bool dumped = false;   // the dump is in LIB-3's log (C59-4 AC-10), which the switch keeps
+    for (const auto& m : r.fe.log)
+        if (const auto* l = std::get_if<calcu::sessions::StreamMessage>(&m); l && l->topic == calcu::sessions::kLogTopic)
+            for (const auto& p : l->appended)
+                if (const auto* x = calcu::sessions::payloadAs<calcu::sessions::LogLine>(p)) dumped = dumped || x->text.find("──") != std::string::npos;
+    CHECK(dumped);
     CHECK(c.cardState() == CardState::NoCard);
 }
 
@@ -208,9 +216,9 @@ TEST(lib10_ac35_part_resume_before_the_frozen_view_drops_it) {
     const std::size_t mark = r.fe.log.size();
     r.run(50ms);
     CHECK(!c.isFrozen());
-    CHECK(c.debug().cpuHistory().empty());
+    CHECK(r.debug().model().cpuHistory().empty());
     const auto sets = r.stateSets(mark);
-    CHECK(std::find(sets.begin(), sets.end(), topics::kDebugCpu) == sets.end());
+    CHECK(std::find(sets.begin(), sets.end(), topics::kCpuDebug) == sets.end());
 }
 
 TEST(part_pause_of_a_replaced_machine_is_dropped) {
@@ -221,30 +229,7 @@ TEST(part_pause_of_a_replaced_machine_is_dropped) {
     CHECK(r.model("TI-58").done);
     r.run(20ms);
     CHECK(!c.isFrozen());
-    CHECK(c.debug().cpuHistory().empty());
-}
-
-// The session always has a machine (the rig waits for LIB-18's start), so
-// 2.3.0's "Machine not initialized yet." before the first machine has no case here.
-TEST(part_asm_overlay) {
-    PartRig r;
-    auto& c = r.part();
-    c.runAsm();
-    CHECK_EQ(c.asmStatus(), std::string("No ASM overlay loaded."));
-    c.loadAsm(std::nullopt, "a.asm");
-    CHECK_EQ(c.asmStatus(), std::string("Could not read ASM file."));
-    c.loadAsm(std::string("HEX:\n0x0A01 0x0A01\n"), "a.asm");
-    CHECK_EQ(c.asmStatus(), std::string("Loaded 2 word(s) at 0x1800."));
-    CHECK(waitForScanLoop(r));
-    rc(r).pauseOnStart(kCpu);
-    c.runAsm();
-    CHECK(c.asmActive());
-    CHECK(c.isFrozen() && c.runState().owner == kCpu);
-    r.run(20ms);
-    CHECK(!c.debug().cpuHistory().empty());
-    c.clearAsm();
-    CHECK(!c.asmActive() && !c.isFrozen());
-    CHECK_EQ(c.asmStatus(), std::string("ASM overlay cleared."));
+    CHECK(r.debug().model().cpuHistory().empty());
 }
 
 // ── C59-6 (design T7, T10) and LIB-18 AC-21: the app session's part of the places ──
@@ -461,25 +446,8 @@ std::string writtenCard(PartRig& r) {
 }
 }  // namespace
 
-TEST(drop_action_goes_by_name_and_model) {
-    using A = DropAction;
-    PartRig r;
-    CHECK(r.part().dropAction("a.ti59") == A::LoadPreset);
-    CHECK(r.part().dropAction("a.TI58") == A::LoadPreset);
-    CHECK(r.part().dropAction("a.Ti58C") == A::LoadPreset);
-    CHECK(r.part().dropAction("a.U59") == A::FitCard);
-    CHECK(r.part().dropAction("a.bin") == A::FitCard);
-    CHECK(r.part().dropAction(".a.u59") == A::NotAccepted);
-    CHECK(r.part().dropAction("a.txt") == A::NotAccepted);
-    CHECK(r.part().dropAction("ti59") == A::NotAccepted);
-    for (const char* m : {"TI-58", "TI-58C"}) {
-        CHECK(r.model(m).done);
-        CHECK(r.part().dropAction("a.U59") == A::Ignore);
-        CHECK(r.part().dropAction("a.ti59") == A::LoadPreset);
-    }
-}
-
-TEST(dropped_card_is_fitted_and_read_at_idle) {
+// LIB-13 AC-12: fitted where it lies, read (the card files of today until M-55).
+TEST(lib13_ac12_card_fitted_where_it_lies_read_at_idle) {
     PartRig r;
     const std::string card = writtenCard(r);
     CHECK(r.load(preset("")).done);  // a fresh machine: no program
@@ -500,7 +468,8 @@ TEST(dropped_card_is_fitted_and_read_at_idle) {
     CHECK(r.errors().empty());
 }
 
-TEST(dropped_card_is_overwritten_after_write) {
+// LIB-13 AC-12: written back where it lies.
+TEST(lib13_ac12_card_fitted_where_it_lies_written_back) {
     PartRig r;
     const std::string card = writtenCard(r);
     CHECK(r.load(preset("program:\n  keycodes: |\n    76 12 04 05 06 91\n")).done);   // Lbl B …
@@ -522,7 +491,9 @@ TEST(dropped_card_is_overwritten_after_write) {
     CHECK_EQ(step(r, 1), 12);
 }
 
-TEST(dropped_card_is_ignored_without_a_reader) {
+// LIB-13 AC-12: a card on a model without a reader is refused with a
+// notice (today nothing happened and nothing was said).
+TEST(lib13_ac12_refused_on_ti58_and_ti58c_with_notice) {
     PartRig r;
     const std::string card = writtenCard(r);
     for (const char* m : {"TI-58", "TI-58C"}) {
@@ -531,10 +502,11 @@ TEST(dropped_card_is_ignored_without_a_reader) {
         r.run(500ms);
         CHECK(cardIdle(r));
     }
-    CHECK(r.errors().empty());
+    CHECK_EQ(r.errors().size(), size_t{2});
 }
 
-TEST(dropped_card_replaces_the_fitted_one_but_not_during_a_pass) {
+// LIB-13 AC-16 and EC-4: a card replaces the fitted one, but not while one passes.
+TEST(lib13_ec4_card_while_one_passes_refused_nothing_imported) {
     PartRig r;
     const std::string card = writtenCard(r);
     CHECK(drop(r, card, "one", "one.U59"));
@@ -723,14 +695,14 @@ TEST(card_corners_hit_only_the_top_corners) {
 
 // LIB-6 §11.2 (until LIB-13 59's `open`, M-56): a dropped preset is LIB-6's
 // load-preset by its content.
-TEST(dropped_preset_loads_by_its_content) {
+TEST(lib13_ac16_card_on_the_ti59_and_preset_by_content) {
     PartRig r;
-    CHECK(drop(r, preset("program:\n  keycodes: |\n    76 11\nkeys:\n  - key: CLR\n", "TI-58"), "p", "p.ti58"));
+    CHECK(drop(r, preset("program:\n  keycodes: |\n    76 11\nkeys:\n  - key: CLR\n", "TI-58"), "", "p.ti58"));
     CHECK(r.runUntil([&] { return !r.busy(); }));
     CHECK(r.part().model() == Model::TI58);
     CHECK_EQ(step(r, 1), 11);
     CHECK(r.errors().empty());
-    CHECK(!drop(r, std::nullopt, "p", "p.ti58"));
+    CHECK(!drop(r, std::nullopt, "", "p.ti58"));
     CHECK(!r.errors().empty());  // reported, as a failed Open is
 }
 

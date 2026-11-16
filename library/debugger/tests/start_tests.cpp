@@ -86,3 +86,20 @@ TEST(ac46_once_and_separate_from_pause_on_start) {
     r.send("pause-on-start", lv("cpu"));
     CHECK(!r.runState()->pauseAtStart);   // and the other way round
 }
+
+// C59-4 AC-17 (Calc-U-59's ASM overlay): an event outside an advance on which
+// an armed start fires, with the reason pause-on-start; not when unarmed or
+// armed for the other level.
+TEST(c59_4_ac17_fire_start_outside_an_advance) {
+    DebugRig r;
+    CHECK(!r.debugger.runControl().fireStart(kCpu));   // not armed
+    r.send("pause-on-start", lv("program"));
+    CHECK(!r.debugger.runControl().fireStart(kCpu));   // the other level
+    CHECK(!r.paused());
+    r.send("pause-on-start", lv("cpu"));
+    CHECK(r.debugger.runControl().fireStart(kCpu));
+    CHECK(r.paused());
+    const RunState s = r.debugger.runControl().state();
+    CHECK(s.reason == RunState::Reason::PauseOnStart && s.owner == kCpu && !s.armed);
+    CHECK(!r.debugger.runControl().fireStart(kCpu));   // fired once
+}

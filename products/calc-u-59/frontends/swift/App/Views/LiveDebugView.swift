@@ -43,8 +43,10 @@ struct LiveDebugView: View {
 
     private func liveHeader(baseFontSize: CGFloat) -> some View {
         // FREEZE, STEP, RESUME: the run-control buttons of `program` (LIB-10 AC-18, AC-34).
+        // FREEZE and FREEZE ON START: cu59::freezeButtons (C59-4 AC-5).
         let use = vm.buttons(for: .calculator)
-        let freezeEnabled = use.pause && !vm.pendingFreezeOnPCChange
+        let freeze = vm.freezeButtons(for: .calculator)
+        let freezeEnabled = freeze.freeze
         let narrow = baseFontSize < 13
         return HStack(spacing: 8) {
             Text(narrow ? "DEBUG" : "CALCULATOR DEBUG")
@@ -72,20 +74,21 @@ struct LiveDebugView: View {
             Button(narrow ? "F.START" : "FREEZE ON START") { vm.freezeOnNextPCChange() }
                 .font(.system(size: baseFontSize, weight: .bold, design: .monospaced))
                 .foregroundStyle(Color.white)
-                .opacity(freezeEnabled ? 1 : 0.4)
-                .disabled(!freezeEnabled)
+                .opacity(freeze.freezeOnStart && !freeze.armed ? 1 : 0.4)
+                .disabled(!freeze.freezeOnStart || freeze.armed)
                 .accessibilityIdentifier("btn-freeze-on-start")
 
             Button("ARMED") { vm.pendingFreezeOnPCChange.toggle() }
                 .font(.system(size: baseFontSize, weight: .bold, design: .monospaced))
                 .foregroundStyle(Color.yellow)
-                .opacity(vm.pendingFreezeOnPCChange ? 1 : 0.4)
-                .disabled(!vm.pendingFreezeOnPCChange)
+                .opacity(freeze.armed ? 1 : 0.4)
+                .disabled(!freeze.armed)
                 .accessibilityIdentifier("btn-freeze-armed")
 
             // Tap to single-step; hold to auto-step at 2 steps/second.
             HoldRepeatButton(title: "STEP", color: .cyan, baseFontSize: baseFontSize,
                              enabled: use.step) { vm.stepKeycode() }
+                .accessibilityIdentifier("btn-step")   // C59-4 AC-24
         }
         .padding(.horizontal, 10)
         .padding(.vertical, 6)

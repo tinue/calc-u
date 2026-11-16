@@ -61,19 +61,16 @@ const METHODS = {
   // LIB-10 (M-53): FREEZE ON START and ARMED as the run control's pause-on-start
   // ("program" for the CALCULATOR tab, "cpu" for the CPU tab, null: off).
   pauseOnStart: ["command", "pause-on-start", (level) => (level ? { level } : { off: true })],
-  clearHeatmap: ["command", "c59.clear-heatmap", () => null],
-  cycleDebugLevel: ["command", "c59.cycle-debug-level", () => null],
-  clearLog: ["command", "c59.clear-log", () => null],
-  dumpVars: ["command", "c59.dump-vars", () => null],
-  dumpScom: ["command", "c59.dump-scom", () => null],
-  dumpProg: ["command", "c59.dump-prog", () => null],
-  dumpMemory: ["command", "c59.dump-memory", () => null],
+  // C59-4 (M-56): the debug part's commands (app/TIDebugPart).
+  resetHeatmap: ["command", "c59.heatmap-reset", () => null],
+  setLogLevel: ["command", "c59.log-level", (level) => ({ level })],   // off | info | debug
+  dump: ["command", "c59.dump", (what) => ({ what })],                 // scom | memory | prog | vars
   // LIB-10: the TRACE button is the trace session's button (AC-23); the trace
   // is handed over with keep-file when it ends (AC-26).
   setTrace: ["command", "trace", (on) => (on ? { button: true } : { off: true })],
-  loadAsm: ["command", "c59.load-asm", (text, name) => ({ text, name })],
-  runAsm: ["command", "c59.run-asm", () => null],
-  clearAsm: ["command", "c59.clear-asm", () => null],
+  loadAsm: ["command", "c59.asm-load", (text, name) => ({ text, name })],
+  runAsm: ["command", "c59.asm-run", () => null],
+  clearAsm: ["command", "c59.asm-clear", () => null],
   setCueCardSize: ["command", "c59.web.cue-card-size", (width, height) => ({ width, height })],
   setDebugWidth: ["command", "c59.web.debug-width", (width) => ({ width })],
   mobileRules: ["request", "c59.mobile-rules", (w, h) => ({ w, h }), valueOf],
@@ -86,19 +83,22 @@ const INITIAL_STATE = {
   persistent: true,    // the persistent file system keeps what is saved (web.storage)
   model: null,         // {model, moduleID}
   cueCard: null,       // draw list
-  runState: { frozen: false, owner: null, pcArmed: false, scanArmed: false, fullSpeed: false, heldKey: -1, asmActive: false },
+  runState: { frozen: false, owner: null, pcArmed: false, scanArmed: false, fullSpeed: false, heldKey: -1 },
   printer: { connected: false, trace: false },   // the PC-100C's place and TRACE (the paper: CalcuPaperPanel)
   card: { swiping: false, fileName: "card.U59", cards: [] },
-  live: null,
-  cpu: [],
-  heatmap: null,
-  log: { text: "", level: 0 },
+  // C59-4's product topics (app/TIDebugPart; their values are the page's forms):
+  live: null,          // calculator-debug
+  listing: null,       // program-listing: the whole listing while paused
+  cpu: [],             // cpu-debug
+  heatmap: null,       // heatmap: the steps of the counts
+  log: { lines: [], level: "off" },   // LIB-3's `log` (the last 2000 lines kept here) and debug-view's logLevel
   trace: { running: false, fileName: "" },        // the library's `trace` topic
-  asm: { fileName: "", words: 0, status: "", active: false },
+  asm: { fileName: "", words: 0, status: "", active: false },   // asm-overlay
+  entries: {},         // the control state's product entries (C59-4 AC-25)
   traces: [],          // [{name, size}]: the traces handed over (keep-file), newest last (LIB-10 D-25)
   settings: { startupModel: -1, traceMaxMB: 50, keyboardFeedback: 0 },
   debugFont: 11,
-  debugPanel: { panel: 0, n: 0 },  // the debug-panel: step, the tab asked for, and how often
+  debugPanel: { panel: 0, n: 0 },  // debug-view: the tab a debug-panel: step asked for, and how often
   geometry: null,
 };
 
@@ -131,7 +131,19 @@ function createEngine({ model, preset, workerUrl }) {
   const frames = { cells: null, onFrame: null };
   let framePending = false;
   let statusOverride = null;   // a sentence of the page's, or "" once dismissed
-  let seen = { notices: 0, panels: 0 };
+  let seen = { notices: 0 };
+  // The LOG tab's view: the last 2000 lines of LIB-3's `log` (C59-4 AC-9); a
+  // message may hold several lines. Clear empties this view only.
+  const LOG_KEEP = 2000;
+  let logLines = [];
+  const unlisten = shell.listenStream((m) => {
+    if (m.topic !== "log") return;
+    if (m.reset) logLines = [];
+    const add = [];
+    for (const item of m.value) for (const line of String((item && item.text) || "").split("\n")) add.push(line);
+    if (add.length) logLines = logLines.concat(add).slice(-LOG_KEEP);
+    Promise.resolve().then(() => onShell());
+  });
   let dataAsked = false;
   let data = null;
   let debugPanel = INITIAL_STATE.debugPanel;
@@ -182,11 +194,11 @@ function createEngine({ model, preset, workerUrl }) {
     const status = s.start === "failed" ? s.failure
       : statusOverride !== null ? statusOverride
       : s.start === "running" && data ? "" : INITIAL_STATE.status;
-    const panels = streams["c59.show-debug-panel"] || [];
-    if (panels.length !== seen.panels) {
-      seen.panels = panels.length;
-      debugPanel = panels.length ? { panel: panels[panels.length - 1], n: panels.length } : INITIAL_STATE.debugPanel;
+    const view = t["debug-view"];
+    if (view && view.requests !== debugPanel.n) {
+      debugPanel = { panel: Math.max(0, ["calculator", "cpu", "log"].indexOf(view.view)), n: view.requests };
     }
+    const control = t["control-state"];
 
     const storage = t["web.storage"];
     set({
@@ -198,12 +210,15 @@ function createEngine({ model, preset, workerUrl }) {
       runState: t["c59.web.run-state"] || INITIAL_STATE.runState,
       printer: t["c59.web.printer"] || INITIAL_STATE.printer,
       card: t["c59.web.card"] || INITIAL_STATE.card,
-      live: t["c59.web.live"] || null,
-      cpu: t["c59.web.cpu"] || INITIAL_STATE.cpu,
-      heatmap: t["c59.web.heatmap"] || null,
-      log: t["c59.web.log"] || INITIAL_STATE.log,
+      live: t["calculator-debug"] || null,
+      listing: t["program-listing"] || null,
+      cpu: t["cpu-debug"] || INITIAL_STATE.cpu,
+      heatmap: t.heatmap || null,
+      log: logLines === state.log.lines && (view ? view.logLevel : "off") === state.log.level
+        ? state.log : { lines: logLines, level: view ? view.logLevel : "off" },
       trace: t.trace || INITIAL_STATE.trace,
-      asm: t["c59.web.asm"] || INITIAL_STATE.asm,
+      asm: t["asm-overlay"] || INITIAL_STATE.asm,
+      entries: (control && control.product) || INITIAL_STATE.entries,
       traces: keptList,
       settings: t["c59.web.settings"] || INITIAL_STATE.settings,
       debugFont: t["c59.web.debug-font"] || INITIAL_STATE.debugFont,
@@ -244,10 +259,15 @@ function createEngine({ model, preset, workerUrl }) {
     loadPresetContent: (text, name) => shell.send("load-preset", { content: text, name: name || "the preset" }).then(showRefusal),
     /// A bundled example by its bundle path (LIB-6 AC-33), an operation.
     loadBundledPreset: (path) => shell.send("load-preset", { ref: path }).then(showRefusal),
-    /// A file dropped on the calculator; the session decides what it does.
-    dropFile: (file) => file.arrayBuffer()
-      .then((b) => shell.send("c59.web.drop", { name: file.name, bytes: new Uint8Array(b) }))
-      .then(showRefusal),
+    /// Files handed over (LIB-13 `open`, an upload: the page cannot write them
+    /// back): one dropped on the calculator, or those picked in the preset
+    /// picker's file dialog, which become one folder (AC-8). The session
+    /// decides what each is; a refusal is its notice.
+    openFiles: (files, way) => Promise.all(Array.from(files).map((f) => f.arrayBuffer()
+      .then((b) => ({ name: f.name, bytes: new Uint8Array(b) }))))
+      .then((list) => shell.send("open", { files: list, way, upload: true })),
+    /// The LOG tab's view emptied; the session's log is not (C59-4 AC-9).
+    clearLogView: () => { logLines = []; onShell(); },
     /// The LED shapes for a w × h digit cell (W59-1).
     geometry: (w, h) => shell.request("c59.led-geometry", { w, h }).then((r) => set({ geometry: r.value })),
     /// A card file (from the save folder) or a trace the page was handed, as a download (LIB-15 AC-9).
@@ -255,6 +275,7 @@ function createEngine({ model, preset, workerUrl }) {
     setStatus: (status) => { statusOverride = status; onShell(); },
     destroy: () => {
       unsubscribe();
+      unlisten();
       shell.destroy();
     },
   };

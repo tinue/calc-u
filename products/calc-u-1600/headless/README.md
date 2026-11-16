@@ -3,7 +3,7 @@
 Scratch space for the output of `calcu --product 1600` runs and other ad
 hoc work: screenshots and traces (`--output-folder headless`), WAV files of
 `audio` and `pc1600 tape record`, captures of `pc1600 serial … capture`,
-memory images (`peek … file=`), format-utility test images, disassembly
+memory images (`peek … file=`), machine states (`state-save`), format-utility test images, disassembly
 scratch, and similar. The harness itself is the target `calcu` of a root
 CMake tree (`products/calc-u-1600/CLAUDE.md`, section Harness); the
 headless CLIs and probes that were built into this folder went in M-51.

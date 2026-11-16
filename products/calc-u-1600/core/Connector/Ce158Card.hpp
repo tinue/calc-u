@@ -240,6 +240,15 @@ public:
         return WriteResult::ignored();
     }
 
+    // C1600-5 AC-13: the LH5811, the UART, the printer port's bytes.
+    void saveState(sharp::StateWriter& w) const override { const_cast<Ce158Card*>(this)->stateIo(w); }
+    void restoreState(sharp::StateReader& r) override { stateIo(r); }
+    template <class Io>
+    void stateIo(Io& io) {
+        io(m_pio)(m_uartControl)(m_uartStatus)(m_rxData)(m_txHold)(m_txPending)(m_accum)(m_charCycles);
+        io(m_notifiedBaud)(m_cts)(m_dsr)(m_dcd)(m_lastDtr)(m_lastRts)(m_parallelOut);
+    }
+
 private:
     // LH5811 register select (RS0-3 = AD0-3), same layout as the PC-1500's
     // own LH5811: 8 PC, 9 G, A MSK, B IF, C DDA, D DDB, E PA, F PB.

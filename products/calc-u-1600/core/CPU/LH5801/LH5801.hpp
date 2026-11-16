@@ -237,6 +237,17 @@ public:
     /// stream at the GUI/tooling layer.
     void setCpuIdTag(uint8_t tag) { m_cpuIdTag = tag; }
 
+    /// The machine state (C1600-5 AC-13, Machine/StateRecords.hpp): the
+    /// registers, the timer, the latches and what ME1 was written. The
+    /// debugger's own (breakpoints, history, trace) is not the machine's.
+    template <class Io>
+    void stateIo(Io& io) {
+        io(A)(XL)(XH)(YL)(YH)(UL)(UH)(S)(P)(T)(W)(PU)(PV)(DISP)(TM);
+        io(m_halted)(m_poweredOff)(m_irqPending)(m_nmiPending)(m_timerCycleAccumulator);
+        io(m_illegalOpcodeHit)(m_lastIllegalOpcodePC)(m_lastIllegalOpcode);
+        io.fixed(m_me1Written);
+    }
+
 protected:
     /// Set by LH5803: SDP, RDP and OFF execute as NOPs (TRM §7.1.2).
     bool m_lh5803Variant{false};

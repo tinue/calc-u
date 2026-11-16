@@ -115,6 +115,14 @@ public:
     struct Fields { int month, day, dow, hour, minute, second; };
     Fields fields() const;
 
+    /// The machine state (C1600-5 AC-13, Machine/StateRecords.hpp).
+    template <class Io>
+    void stateIo(Io& io) {
+        io(mode_)(prevStb_)(prevClk_)(dataIn_)(shiftRegister_);
+        io(clkSec_)(clkMin_)(clkHour_)(clkDay_)(clkDow_)(clkMonth_)(clkYear_)(rtcAccumSeconds_)(rtcElapsedSeconds_);
+        io(tpConfigured_)(tpRateHz_)(elapsedSeconds_)(tpLevel_)(tpEdgePending_)(lastOpbSyncSeconds_)(everOpbSynced_);
+    }
+
 private:
     void syncTp();
     bool tpLevelNow() const;

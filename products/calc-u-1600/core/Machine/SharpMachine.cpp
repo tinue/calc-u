@@ -1,6 +1,7 @@
 #include "Machine/SharpMachine.hpp"
 
 #include <algorithm>
+#include <cctype>
 
 #include "../Connector/SoftwareDefinedCard.hpp"
 #include "Machine/SharpCatalogue.hpp"
@@ -284,6 +285,53 @@ Capability* SharpMachine::capability(const CapabilityId& id) {
     for (const auto& o : offered)
         if (o.entry.id == id) return o.capability;
     return nullptr;
+}
+
+// ---- The machine state (C1600-5 AC-13) ----
+
+template <class Io>
+void SharpMachine::stateIo(Io& io) {
+    io.begin("SHRP");
+    bool waiting = !m_waiting.empty() || !m_afterWaiting.empty();
+    io(waiting);
+    if constexpr (Io::kRestoring)
+        if (waiting)
+            io.fail("The state was saved while a change of the peripherals waited for the power cycle; "
+                    "save it again once the machine is ready.");
+    m_sequence.stateIo(io);
+    std::uint64_t switches = m_switches.size();
+    io(switches);
+    if constexpr (Io::kRestoring)
+        if (switches != m_switches.size()) io.fail("the state has other write-protect switches than this machine");
+    for (auto& [place, table] : m_switches) {
+        bool on = table->on(ControlId{"write-protect"});
+        io(on);
+        if constexpr (Io::kRestoring) table->restore({SwitchPosition{ControlId{"write-protect"}, on}});
+    }
+    io.end();
+    if constexpr (Io::kRestoring) coreRestoreState(io);
+    else coreSaveState(io);
+}
+
+std::vector<std::uint8_t> SharpMachine::saveState() const {
+    StateWriter w;
+    const_cast<SharpMachine*>(this)->stateIo(w);   // only reads
+    return w.take();
+}
+
+std::optional<std::string> SharpMachine::restoreState(const std::vector<std::uint8_t>& bytes) {
+    std::vector<std::uint8_t> before = saveState();
+    StateReader r(bytes);
+    stateIo(r);
+    if (r.ok() && !r.atEnd()) r.fail("the state has more records than this machine has parts");
+    if (r.ok()) return std::nullopt;
+    StateReader back(before);
+    stateIo(back);   // the machine as it was (a refused restore changes nothing)
+    std::string why = r.error();
+    if (why.rfind("The ", 0) == 0) return why;   // a sentence of its own
+    if (!why.empty() && why.back() != '.') why += '.';
+    if (!why.empty()) why[0] = static_cast<char>(std::toupper(static_cast<unsigned char>(why[0])));
+    return "The state does not fit this machine: " + why;
 }
 
 } // namespace sharp

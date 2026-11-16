@@ -141,6 +141,12 @@ public:
     /// ITA (ISKEY, E41AH).
     uint8_t readInputPort() override;
 
+    /// The machine state (C1600-5 AC-13, Machine/StateRecords.hpp).
+    template <class Io>
+    void stateIo(Io& io) {
+        io(m_dataBus)(m_pv)(m_pu);
+    }
+
 private:
     static constexpr uint16_t kRomBase = LH5803Rom::kBase;
     static constexpr uint16_t kHandoffTriggerAddr = 0xA038;

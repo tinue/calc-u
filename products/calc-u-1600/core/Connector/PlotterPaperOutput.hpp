@@ -88,6 +88,13 @@ public:
         m_penY = 0;
     }
 
+    /// The machine state (C1600-5 AC-13): where the pen stands on the
+    /// paper. The paper itself is the session's (LIB-8).
+    template <class Io>
+    void stateIo(Io& io) {
+        io(m_yBase)(m_penY)(m_down);
+    }
+
 private:
     calcu::paper::Position at(int x, int y) const {
         return calcu::paper::Position{m_description.printableLeft + calcu::paper::Coord(x) * calcu::paper::kPerUnit,

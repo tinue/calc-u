@@ -84,6 +84,15 @@ public:
     /// Throws away everything buffered (fast-forward, model switch).
     void discard() { m_head = 0; m_count = 0; }
 
+    /// The machine state (C1600-5 AC-13, Machine/StateRecords.hpp).
+    template <class Io>
+    void stateIo(Io& io) {
+        io(m_level)(m_edges)(m_phase)(m_area)(m_hpPrevIn)(m_hpPrevOut);
+        for (Biquad& b : m_stages) io(b.z1)(b.z2);
+        io.fixed(m_ring);
+        io(m_head)(m_count);
+    }
+
 private:
     // Transposed direct form II; coefficients normalized so a0 = 1.
     struct Biquad {

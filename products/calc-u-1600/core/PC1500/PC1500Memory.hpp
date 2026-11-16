@@ -205,6 +205,27 @@ public:
     bool pu() const { return m_pu; }
     bool pv() const { return m_pv; }
 
+    /// The machine state (C1600-5 AC-13, Machine/StateRecords.hpp): the
+    /// RAMs, the LH5811 with its serial block, the real-time clock and the
+    /// piezo sampler. The cards on the connectors are the machine's records.
+    template <class Io>
+    void stateIo(Io& io) {
+        io.begin("RAM0");
+        io(m_userRam)(m_displayRam)(m_systemRam);
+        io.end();
+        io.begin("5811");
+        m_keyboard.stateIo(io);
+        io(m_dda)(m_opa)(m_ddb)(m_opb)(m_onKeyPressed)(m_opc)(m_if)(m_ioScratchRegs)(m_pu)(m_pv);
+        m_serial.stateIo(io);
+        io.end();
+        io.begin("RTC0");
+        m_rtc.stateIo(io);
+        io.end();
+        io.begin("PIEZ");
+        m_piezo.stateIo(io);
+        io.end();
+    }
+
 private:
     static constexpr uint16_t kUserRamBase = 0x4000;
     static constexpr size_t   kUserRamSizeA     = 0x1800; // 6144B, S0+S1+S2 (PC-1500A)

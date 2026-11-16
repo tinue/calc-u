@@ -4,6 +4,8 @@
 #include <string>
 #include <vector>
 
+#include "../Machine/StateRecords.hpp"
+
 // Card interface + pin-state type for the 40-pin connector family
 // (ExpansionConnector on the PC-1500/1500A, MemorySlotConnector on the
 // PC-1600). The 60-pin plug has its own contacts: SystemBusCard.hpp.
@@ -110,6 +112,12 @@ struct CardMemory {
 class CardBase {
 public:
     virtual ~CardBase() = default;
+
+    /// The card's part of the machine state (C1600-5 AC-13,
+    /// Machine/StateRecords.hpp): its RAM, registers and mechanism. A card
+    /// without state writes nothing; the ROM is not state.
+    virtual void saveState(sharp::StateWriter&) const {}
+    virtual void restoreState(sharp::StateReader&) {}
 
     /// The card's memories (ROM, RAM, flash), for the inspector's
     /// inventory. Empty (the default) for a card that has none (an I/O-only

@@ -154,6 +154,16 @@ public:
         if (m_recorder) m_recorder->advance(tstates);
     }
 
+    // C1600-5 AC-13: port 82H, the relay, the mechanism.
+    void saveState(sharp::StateWriter& w) const override { const_cast<CE1600PCard*>(this)->stateIo(w); }
+    void restoreState(sharp::StateReader& r) override { stateIo(r); }
+    template <class Io>
+    void stateIo(Io& io) {
+        io(m_port82)(m_relayClosed);
+        m_mechanism.stateIo(io);
+        m_paperOutput.stateIo(io);
+    }
+
 private:
     static constexpr uint8_t kCmtInEnable = 0x80;
     static constexpr uint8_t kRemoteOff = 0x20;

@@ -10,6 +10,8 @@
 #include "../Debug/SharpDebugging.hpp"
 #include "Machine/PowerCycleSequence.hpp"
 #include "Machine/SharpMediaPlaces.hpp"
+#include "Machine/StateRecords.hpp"
+#include "harness/MachineState.hpp"
 #include "machine/Machine.hpp"
 #include "machine/ProductData.hpp"
 #include "peripherals/Controls.hpp"
@@ -98,6 +100,17 @@ public:
     calcu::machine::Debugging* debugging() override { return sharpDebugging(); }
     virtual SharpDebugging* sharpDebugging() = 0;
 
+    // ---- The machine state (C1600-5 AC-13; LIB-11 AC-24) ----
+    // The records of the whole machine (StateRecords.hpp): the power cycle
+    // under way, the write-protect switches, then the model's (the core's
+    // parts, the serial ports' lines, the cassette place). Saving only
+    // reads. A restore that does not fit puts the state from before back
+    // and gives the reason; a state saved while a change waited for the
+    // off point of a power cycle (an attach on a running machine) is
+    // refused, since the change is not a part of the machine.
+    std::vector<std::uint8_t> saveState() const;
+    std::optional<std::string> restoreState(const std::vector<std::uint8_t>&);
+
     // ---- For the core and its tests (tests/BootRun.hpp, SharpTestSupport.hpp) ----
     bool powerCycleActive() const { return m_sequence.active(); }
     // Ticks to the sequence's next phase change: an advance of exactly this
@@ -115,6 +128,13 @@ protected:
         : m_descriptor(std::move(d)), m_variant(std::move(v)),
           m_slotMedia{SlotModuleMedium([this] { return moduleNow(calcu::machine::PlaceName{"slot-1"}); }),
                       SlotModuleMedium([this] { return moduleNow(calcu::machine::PlaceName{"slot-2"}); })} {}
+
+    // The machine-state capability (LIB-11 AC-24), offered by the model on
+    // its main processor.
+    calcu::machine::Capability& stateCapability() { return m_stateKind; }
+    // The model's records (saveState()).
+    virtual void coreSaveState(StateWriter&) const = 0;
+    virtual void coreRestoreState(StateReader&) = 0;
 
     // ---- The model's part ----
     virtual calcu::machine::Ticks runCore(calcu::machine::Ticks) = 0;   // the core's own path, all checks off
@@ -192,6 +212,19 @@ private:
     // The capabilities every Sharp machine offers besides the model's: the
     // write-protect switches and the module media.
     void offerCommon(std::vector<Offered>&);
+
+    class StateKind final : public calcu::harness::MachineState {
+    public:
+        explicit StateKind(SharpMachine& m) : m_machine(m) {}
+        std::vector<std::uint8_t> save() const override { return m_machine.saveState(); }
+        std::optional<std::string> restore(const std::vector<std::uint8_t>& b) override { return m_machine.restoreState(b); }
+
+    private:
+        SharpMachine& m_machine;
+    };
+    StateKind m_stateKind{*this};
+    template <class Io>
+    void stateIo(Io& io);
 };
 
 } // namespace sharp

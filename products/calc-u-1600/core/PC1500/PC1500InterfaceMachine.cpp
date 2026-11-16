@@ -141,6 +141,7 @@ void PC1500InterfaceMachine::offer(std::vector<Offered>& out, const std::vector<
     out.push_back(byComponent("LH5801", k.support));
     out.push_back(byComponent("LH5801", k.trace));
     out.push_back(byComponent("LH5801", k.call));
+    out.push_back(byComponent("LH5801", stateCapability()));   // C1600-5 AC-13
     out.push_back(byComponent(sharp::kRtcComponent, k.clock));
     if (const PlugEntry* e = at(sharp::kPrinter); e && e->peripheral.value == sharp::kCE150) {
         // LIB-8: the plotter's paper output, once its card is on the bus.
@@ -152,4 +153,26 @@ void PC1500InterfaceMachine::offer(std::vector<Offered>& out, const std::vector<
         out.push_back(byPeripheral(*e, m_ce158Port.port()));
         out.push_back(byPeripheral(*e, k.printerPort));
     }
+}
+
+// ---- The machine state (C1600-5 AC-13) ----
+
+template <class Io>
+void PC1500InterfaceMachine::interfaceStateIo(Io& io) {
+    io.begin("LINE");
+    m_ce158Port.stateIo(io);
+    io.end();
+    io.begin("CASS");
+    m_kinds->cassette.stateIo(io);
+    io.end();
+}
+
+void PC1500InterfaceMachine::coreSaveState(sharp::StateWriter& w) const {
+    m_core->saveState(w);
+    const_cast<PC1500InterfaceMachine*>(this)->interfaceStateIo(w);   // only reads
+}
+
+void PC1500InterfaceMachine::coreRestoreState(sharp::StateReader& r) {
+    m_core->restoreState(r);
+    interfaceStateIo(r);
 }

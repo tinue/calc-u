@@ -61,6 +61,12 @@ public:
         m_switchRequestedByLH5803 = false;
     }
 
+    /// The machine state (C1600-5 AC-13, Machine/StateRecords.hpp).
+    template <class Io>
+    void stateIo(Io& io) {
+        io(m_sc7852Owns)(m_switchRequestedBySC7852)(m_switchRequestedByLH5803);
+    }
+
 private:
     bool m_sc7852Owns{true};
     bool m_switchRequestedBySC7852{false};

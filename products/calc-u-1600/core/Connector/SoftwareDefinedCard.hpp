@@ -185,6 +185,28 @@ public:
         return out;
     }
 
+    // C1600-5 AC-13: every region's memory, bank latch and flash decoder,
+    // and the write-protect switch. A restore counts as a change of the
+    // content (contentRevision()), so a module medium sees it.
+    void saveState(sharp::StateWriter& w) const override { const_cast<SoftwareDefinedCard*>(this)->stateIo(w); }
+    void restoreState(sharp::StateReader& r) override {
+        const uint64_t before = m_contentRevision;
+        stateIo(r);
+        m_contentRevision = before + 1;
+    }
+    template <class Io>
+    void stateIo(Io& io) {
+        std::uint64_t regions = m_regions.size();
+        io(regions);
+        if constexpr (Io::kRestoring)
+            if (regions != m_regions.size()) io.fail("a module of the state has other memories than this one");
+        for (RegionState& st : m_regions) {
+            io.fixed(st.backing);
+            io(st.bank)(st.flash);
+        }
+        io(m_writeProtected);
+    }
+
 private:
     // Stores `value` into a backing cell, counting it as a content change
     // only when the cell actually takes a new value (see contentRevision()).

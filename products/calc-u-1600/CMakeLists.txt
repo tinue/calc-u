@@ -96,6 +96,8 @@ if(CALCU_TESTS)
     ${CMAKE_CURRENT_SOURCE_DIR}/tests/*.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/app/tests/*.cpp
   )
+  # The machine state's tests have a program of their own (below).
+  list(REMOVE_ITEM TEST_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/tests/machine_state_tests.cpp)
 
   add_executable(CoreTests ${TEST_SOURCES})
   # The one test runner (ADR 0038): library/testing/, its main() included.
@@ -193,6 +195,15 @@ if(CALCU_TESTS)
   target_link_libraries(CalcU1600HarnessTests PRIVATE calcu1600_harness calcu_test_runner calcu_warnings)
   calcu_debug_o1(CalcU1600HarnessTests)
   calcu_add_test(CalcU1600HarnessTests longer COMMAND CalcU1600HarnessTests)
+
+  # C1600-5 T8 (AC-13): the machine state, `state-save` / `state-restore` on
+  # `calcu` runs (tests/machine_state_tests.cpp); a program of its own, so
+  # that CoreTests' budget stays. Longer.
+  add_executable(CalcU1600MachineStateTests ${CMAKE_CURRENT_SOURCE_DIR}/tests/machine_state_tests.cpp)
+  target_include_directories(CalcU1600MachineStateTests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/tests)
+  target_link_libraries(CalcU1600MachineStateTests PRIVATE calcu1600_harness calcu_test_runner calcu_warnings)
+  calcu_debug_o1(CalcU1600MachineStateTests)
+  calcu_add_test(CalcU1600MachineStateTests longer COMMAND CalcU1600MachineStateTests)
 
   # Longer: run locally before merging into main and at the end of a part.
   # Against frontends/web/dist/ (frontends/web/build.sh first); the WASM

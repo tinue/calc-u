@@ -132,6 +132,16 @@ public:
     /// The LH5810 registers: a debugger must not read them as memory.
     bool readHasSideEffects(const SystemBusPins& pins) const override { return isLh5810(pins); }
 
+    // C1600-5 AC-13: the LH5810, the relays, the mechanism.
+    void saveState(sharp::StateWriter& w) const override { const_cast<Ce150Card*>(this)->stateIo(w); }
+    void restoreState(sharp::StateReader& r) override { stateIo(r); }
+    template <class Io>
+    void stateIo(Io& io) {
+        io(m_opa)(m_opb)(m_opc)(m_dda)(m_ddb)(m_g)(m_msk)(m_if)(m_relay[0])(m_relay[1]);
+        m_mechanism.stateIo(io);
+        m_paperOutput.stateIo(io);
+    }
+
 private:
     static bool isLh5810(const SystemBusPins& p) {
         return p.pin[Contact60::kMe1] && p.address >= kIoBase && p.address <= kIoEnd;

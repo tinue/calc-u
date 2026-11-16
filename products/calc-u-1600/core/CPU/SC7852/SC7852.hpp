@@ -211,6 +211,16 @@ public:
     using History = HistoryRing<Z80HistoryFrame, 32>;
     const History& history() const { return m_history; }
 
+    /// The machine state (C1600-5 AC-13, Machine/StateRecords.hpp): the
+    /// registers, the interrupt state and what each port was written. The
+    /// debugger's own (breakpoints, history, trace) is not the machine's.
+    template <class Io>
+    void stateIo(Io& io) {
+        io(A)(F)(B)(C)(D)(E)(H)(L)(A2)(F2)(B2)(C2)(D2)(E2)(H2)(L2);
+        io(IX)(IY)(SP)(PC)(I)(R)(IFF1)(IFF2)(IM);
+        io(m_halted)(m_nmiPending)(m_pendingPrefix)(m_eiShadow)(m_im2VectorLow)(m_ioWritten);
+    }
+
 private:
     SC7852Bus& bus;
 

@@ -124,6 +124,12 @@ public:
         if (pending) onSegment(pending, level);
     }
 
+    /// The machine state (C1600-5 AC-13, Machine/StateRecords.hpp).
+    template <class Io>
+    void stateIo(Io& io) {
+        io(m_phiAccum)(m_count)(m_g)(m_f)(m_l)(m_holding)(m_shift)(m_txPhase)(m_shiftBits)(m_td);
+    }
+
 private:
     uint64_t m_cpuHz, m_phiHz;
     uint64_t m_phiAccum = 0; // phi-ticks * cpuHz not yet whole

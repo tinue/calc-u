@@ -145,3 +145,51 @@ unchanged in Frequent.
   `run_tests.cpp`, `calcu_cli.*`, `calcu_serve_python`) now see the
   machine at key readiness: one run piece, 1,667 ticks on test-seg and
   16,668 on test-dot (design §8).
+
+## Calc-U-1600 (M-46, 2026-11-16, branch `m46-presets-1600`)
+
+Built and run on an M4 Pro (macOS 27.2, Apple clang, Ninja,
+RelWithDebInfo): `build/tests` (`-DCALCU_FRONTEND_QT=OFF`, Frequent 34 of
+34, `CoreTests` 51 s), `build/qt` (`-DCALCU_FRONTEND_QT=ON
+-DCALCU_TESTS_LONGER=ON`), the Web `dist/` with Homebrew Emscripten and
+`frontends/web/run-tests.sh`.
+
+The code (design §10.3): `app/SharpProductMachines.*` (new: the
+`ProductMachines` of Calc-U-1600: the built-in default, the pacing, the
+bounds of key readiness, the carried host-drive folder, `addRoms` for the
+host-drive ROM); `SharpAppPart` owns the library's `StartupPart`; the
+start, `model`, `variant`, `attach`, `detach`, `reset`, `cold-boot` are
+its commands in every frontend and the harness; `c1600.select-module`,
+`c1600.mount-host-drive`, `c1600.ce1600p-rom` are plug changes through
+`MachineControl::change`; `c1600.pick-model`, `c1600.pc1500-rom`,
+`c1600.pc1600-rom`, `c1600.toggle-peripheral`, `c1600.reset` and the
+adapters of `LegacyCalls` for them are gone. `SharpBuilder` cold boots
+every machine it builds (D-23). Tests: `tests/machine_control_tests.cpp`.
+
+| ID | Result | Test case |
+|---|---|---|
+| AC-25 | Pass | `lib18_ac25_no_settings_pc1500a_new0_check` |
+| AC-26 | Pass | `lib18_ac26_builtin_default_variant_and_nothing_plugged`, `lib18_ac26_version1_startup_preset_gives_default_and_notice` (EC-1) |
+| AC-27 | Pass | `lib18_ac27_model_switch_keeps_no_module_or_peripheral`, `lib18_ac27_ce1600p_rom_choice_back_to_new` |
+| AC-28 | Pass | `lib18_ac28_variant_switch_replugs_printer_interface_host_drive_modules`, `lib18_ac28_disk_in_drive_again_same_side`, `lib18_ac28_no_startup_preset_loaded` |
+| AC-29 | Pass | `lib18_ac29_module_replace_power_cycle_memory_kept_new0_check` |
+| AC-30 | Pass | `lib18_ac30_printer_ce158_attach_detach_power_cycle_memory_kept`, `lib18_ac30_host_drive_mount_unmount_power_cycle` |
+| AC-31 | Pass | `lib18_ac31_plugged_is_replace_by_other_variant`, `lib18_ac31_unplugged_choice_holds_for_next_attach` |
+| AC-32 | Pass | `lib18_ac32_reset_keeps_memory`, `lib18_ac32_cold_boot_empties_memory_ce151_ce155_battery_module_kept`; Web `play.spec.js` `lib18_ac32 cold boot menu item` |
+| AC-33 | Pass | `lib18_ac33_off_machine_change_nothing_follows_found_on_switch_on` |
+| Ledger 1600-9 | Pass | `ledger_1600_9_reset_and_model_switch_stop_a_preset`, `ledger_1600_9_keys_dropped_and_reset_stops_an_operation` |
+
+Column status: every criterion of the column passes: **Done**.
+
+### Deviations and findings (Calc-U-1600)
+
+- Mounting a second host-drive folder while one is mounted is a replace
+  with a power cycle (0.8.1 swapped the folder live); ledger row 1600-39.
+- A start without a full ROM set is refused with the lookup's text
+  (`StartupSetup::romsMissing`), not started with a notice.
+- The CE-1600P ROM choice of a frontend (`m_ce1600pChoice`) lives in
+  `SharpAppPart`; `ProductMachines` carries only the host-drive folder.
+- Finding: the CE-150's power-on feeds its paper; an attach now replies
+  when the machine is ready for keys, so the paper panel is no longer empty
+  right after the attach. `tests/gui/lib8-ac36.shots.yaml` checks the name
+  only at that point.

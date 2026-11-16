@@ -60,11 +60,11 @@ struct Run {
 
 // Builds and applies a preset. `extraKeys` are typed after NEW0; `loaderFile`
 // non-empty adds `program: file:`.
-std::unique_ptr<Machine> applyPreset(const std::string& model, const std::string& card,
+matrix::Loaded applyPreset(const std::string& model, const std::string& card,
                                      const std::vector<std::string>& extraKeys, const std::string& loaderFile,
                                      PresetLoadResult* res) {
-    std::string yaml = "format-version: 1\nmodel: " + model + "\ninterface: CE-158\n";
-    if (!card.empty()) yaml += "slot-1: " + card + "\n";
+    std::string yaml = "format-version: 2\nmodel: " + model + "\ninterface: CE-158\n";
+    if (!card.empty()) yaml += "slot-1: { name: " + card + " }\n";
     yaml += "keys:\n  - key: cl\n  - type: NEW0\n";
     for (const std::string& k : extraKeys) yaml += "  - type: " + k + "\n";
     if (!loaderFile.empty()) yaml += "program:\n  file: " + loaderFile + "\n";

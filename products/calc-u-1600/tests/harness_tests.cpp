@@ -16,6 +16,40 @@
 
 using namespace calcu::harness;
 
+// LIB-6 AC-34 (design §10.6 P12): a bundled preset, the harness `wait`
+// without a duration, `expect` and `screenshot` on a PC-1600.
+TEST(lib6_ac34_preset_wait_expect_screenshot_on_pc1600) {
+    SKIP_UNLESS(std::filesystem::exists("roms/PC1600-P0-B0-new.bin"), "the ROMs are not fetched (roms/fetch_roms.sh)");
+    calcu::testing::TempFolder out("calcu1600-ac34");
+    auto product = shared::makeHarnessProduct();
+    RunOptions o;
+    o.outputFolder = out.str();
+    std::string error;
+    auto server = Server::start(*product, o, &error);
+    CHECK(server != nullptr);
+    if (!server) return;
+    auto reply = [&](const std::string& l) { return server->line(l).text; };
+    CHECK(reply("preset examples:basic/hanoi.pc1600").rfind("done", 0) == 0);
+    CHECK(reply("wait").rfind("done", 0) == 0);
+    CHECK(reply("expect Hanoy Towers").rfind("done", 0) == 0);
+    CHECK(reply("expect Not on the screen").rfind("refused: ", 0) == 0);
+    CHECK(reply("screenshot hanoi.png").rfind("done", 0) == 0);
+    CHECK(std::filesystem::exists(out.path() / "hanoi.png"));
+    server->finish();
+}
+
+// LIB-18 design P16-6: the harness entry builds with SharpProductMachines
+// (the built-in default of each model, LIB-18 AC-26; the bounds of EC-7).
+TEST(harness_starts_with_the_product_machines) {
+    auto product = shared::makeHarnessProduct();
+    calcu::startup::ProductMachines& m = product->machines();
+    for (const char* model : {"PC-1500", "PC-1500A", "PC-1600"}) {
+        const calcu::startup::MachinePlan plan = m.builtInDefault(calcu::machine::ModelId{model});
+        CHECK(plan.model.value == model && !plan.variant && plan.peripherals.empty());
+        CHECK(m.readinessBound(calcu::machine::ModelId{model}).count() == (std::string(model) == "PC-1600" ? 27.0 : 7.0));
+    }
+}
+
 TEST(harness_drives_a_sharp_machine) {
     SKIP_UNLESS(std::filesystem::exists("roms/PC-1500_A04.ROM"), "the ROMs are not fetched (roms/fetch_roms.sh)");
     auto product = shared::makeHarnessProduct();

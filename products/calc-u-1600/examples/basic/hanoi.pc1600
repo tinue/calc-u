@@ -3,7 +3,7 @@
 # Patrick Zumstein. Posted to the "Sharp PC" Facebook group, 2026-09-13:
 # https://www.facebook.com/groups/sharppc/posts/3533086636858521/
 
-format-version: 1
+format-version: 2
 preset-name: Hanoi
 description: Towers of Hanoi, up to seven bricks
 model: PC-1600

@@ -177,7 +177,7 @@ TEST(c1600_1_ac6_power_cycle_keeps_all_memory) {
         CHECK(pokePattern(*m, a));
         m->powerCycle();
         CHECK(!m->isKeyReady());
-        sharp::legacy::runToPrompt(*m);
+        sharptest::bootRun(*m);
         CHECK(runUntilKeyReady(*m));
         CHECK(m->readDisplay().on);
         CHECK(hasPattern(*m, a));
@@ -290,9 +290,9 @@ TEST(c1600_1_ac8_rtc_after_reset_and_cold_boot) {
     // today, so the clock set above survives one boot; the next cold boot
     // clears it (qa-report: question on AC-8).
     p16->coldBoot();
-    sharp::legacy::runToPrompt(*p16);
+    sharptest::bootRun(*p16);
     p16->coldBoot();
-    sharp::legacy::runToPrompt(*p16);
+    sharptest::bootRun(*p16);
     const pp::ClockFields cold = clockOf(*p16)->read();
     CHECK(cold.month == 1 && cold.day == 1 && cold.hour == 0 && cold.minute == 0);
 }
@@ -675,7 +675,7 @@ TEST(c1600_1_ac18_ce1600p_variant_keeps_memory_and_disk_side) {
         d->setSide(side);
     });
     m->powerCycle();
-    sharp::legacy::runToPrompt(*m);
+    sharptest::bootRun(*m);
     CHECK(runUntilKeyReady(*m));
     CHECK(hasPattern(*m, a));
     drive = sharp::firstOf<sharp::FloppyDriveAccess>(*m);

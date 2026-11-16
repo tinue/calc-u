@@ -26,7 +26,7 @@ parenthesis is removed with it.
 
 | Glossary term | Calc-U-59 today | Calc-U-1600 today |
 |---|---|---|
-| Cold boot | "Clean" (Reset with ⌘ held) | "Reset All" (Machine menu, ⇧⌘R) |
+| Cold boot | "Clean" (Reset with ⌘ held) | done (M-46): "Cold boot" (Machine menu, ⇧⌘R; Qt6 and Web); was "Reset All" |
 | Pause / Resume | "FREEZE", "RESUME" (debug panel) | "Paused (debugger)" (title bar): unchanged |
 | Debug panel | CALCULATOR / CPU / LOG tabs: unchanged | "Inspector" (panel, User Guide §9.2) |
 | Memory module | — | "memory card", "card" in the User Guide |
@@ -35,7 +35,7 @@ parenthesis is removed with it.
 | Full speed | "full speed": unchanged | "full speed" in the User Guide: unchanged ("turbo" is code only) |
 | Medium, media | — | "media" (e.g. "Saved Media…"): unchanged |
 | Name & Save | — (cards written in place) | "Name & Save": unchanged |
-| Startup preset | — | "Default presets" (Settings, Qt and web) |
+| Startup preset | — | done (M-46): "Startup presets" (Settings, Qt6 and Web); was "Default presets" |
 | Save folder | "Card Folder" (Settings, Qt6) | "Battery-card saves" (Settings ▸ Storage) |
 | Startup model | "Startup Calculator" (Settings) | "Startup device" (Settings) |
 | Load Preset… | "Open Preset…" (File menu, Qt6); the button "Preset" | "Load Preset…": unchanged |
@@ -57,7 +57,7 @@ parenthesis is removed with it.
 | Machine | `TIMachine` (`calcu::machine::Machine`, C59-1) | `PC1500InterfaceMachine`, `PC1600InterfaceMachine` (`calcu::machine::Machine`, C1600-1; built by `SharpMachineBuilder` from `sharp::sharpCatalogue()`); `PC1500Machine`, `PC1600Machine` core-internal |
 | Model | `ModelId` (descriptor, `tiCatalogue()`); `cu59::Model` kept as the app enum (`modelId`, `modelFrom`), `ModelInfo` for file-format facts (no ROM file names since M-24); `MachineVariant` core-internal | `calcu::machine::ModelId` (descriptor, `sharpCatalogue()`); `shared::Model` kept as the app enum until M-49 (`modelIdOf`, `modelOf`, `variantIdOf` in `app/MachineModel.hpp`); model (`startup/modelPreference`) |
 | Startup model | `startupModel`, `lastUsedModel` | `startup/modelPreference`, `startup/lastUsedModel` |
-| Preset, preset format | `StateFile`, "state file" | preset, `PresetFile` |
+| Preset, preset format | `StateFile`, "state file" | done (M-46): `calcu::presets` (the library's reader and engine, `PresetsPart`) with `shared::SharpPresetRules` and the keywords of `app/SharpPresetKeys`; the preset list from `examples/bundle.yaml`; was `PresetFile`, `PresetRunner`, the model's preset loaders, `PresetCatalog`, `examples/bundled.yaml` |
 | Peripheral, module | — | `CardBase`, `ExpansionCard`, "card" |
 | Memory module | — | `SoftwareDefinedCard`, `BatteryCardInstance` |
 | Module definition | — | `MemoryCardDefinition`, `.card.yaml` |
@@ -70,7 +70,7 @@ parenthesis is removed with it.
 | Full speed | `FullSpeed:` (preset directive) | the `speed {full}` command (M-31); `setTurbo`, `turboRequested` in the frontends |
 | Regular speed | `RegularSpeed:` (preset directive) | — |
 | Pause | `freeze`, `FreezeController`, `FreezeOwner` (the library's side from M-40: `calcu::debugger::RunControl`, the `run-state` topic; the TI moves onto it in M-53) | done (M-45): the `run-state` topic of `calcu::debugger::RunControl` (`MachineController::machinePaused()`); was `paused` (`DebugController`), `SharpDebuggerGate` |
-| Cold boot | `Machine::coldBoot()` (was `cleanReset`) | `Machine::coldBoot()` (was `resetJob(allReset = true)`, `allReset()`) |
+| Cold boot | `Machine::coldBoot()` (was `cleanReset`) | `Machine::coldBoot()`, the library's `cold-boot` command (M-46; was `resetJob(allReset = true)`, `c1600.reset {all}`, `allReset()`) |
 | Reset | `Machine::reset()` (was `softReset`) | `Machine::reset()` (was `resetJob(allReset = false)`) |
 | Power cycle | `Machine::powerCycle()` (2.3.0's core reset) | `Machine::powerCycle()` (was `MachineSession::powerCycleAround`; the sequence `core/Machine/PowerCycleSequence`) |
 | Paper, paper panel | — | done (M-45): the library's paper (`calcu::paper::Paper`, `PaperPart`) and paper panel (Qt6 `calcu::qt6::PaperPanel`, React `CalcuPaperPanel`); the plotters' `sharp::PlotterPaperOutput`; was `PlotterPaperWidget`, `PlotterPaper` (Web, `Panels.jsx`), `PaperKind`, `PaperGeometry`, the `c1600.plotter-paper` kind |

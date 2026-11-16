@@ -123,6 +123,11 @@ void PC1600Machine::attachBusRom(std::unique_ptr<SystemBusCard> card) {
     m_busRoms.push_back(std::move(card));
 }
 
+void PC1600Machine::detachBusRoms() {
+    for (auto& c : m_busRoms) m_z80Mem.systemBus().detach(c.get());
+    m_busRoms.clear();
+}
+
 void PC1600Machine::detachHostDrive() {
     detachHostDriveLocked();
 }

@@ -84,13 +84,13 @@
 # &D000 headerless and start it with CALL &D009 (skips the file loading at
 # &D003/&D0AE).
 
-format-version: 1
+format-version: 2
 preset-name: CalCula
 description: CalCula, an HP-style RPN calculator (KiKiSoft)
 model: PC-1600
 
-slot-1: CE-1600M
-slot-2: CE-1601M
+slot-1: { name: CE-1600M }
+slot-2: { name: CE-1601M }
 
 # Set the power-on title and format + split the CE-1601M as a RAM disk
 keys:

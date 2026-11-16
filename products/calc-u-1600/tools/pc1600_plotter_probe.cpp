@@ -5,8 +5,9 @@
 // can be inspected without the GUI.
 //
 // The machine is built through the machine interface (C1600-1 design §7);
-// the paper is the CE-1600P's paper-output, the preset goes through
-// sharp::legacy::applyPresetJob until M-46.
+// the paper is the CE-1600P's paper-output, the preset goes through the
+// library's loader (adapter CliPresetRun, until M-51). The events are the
+// mechanism's log once the load has ended.
 //
 // Usage: pc1600_plotter_probe <preset.pc1600> [maxSettleCycles]
 //
@@ -18,41 +19,21 @@
 
 #include "../core/Connector/CE1600PCard.hpp"
 #include "../core/Machine/LegacyCalls.hpp"
-#include "../core/Preset/PresetFile.hpp"
 #include "CliCommon.hpp"
+#include "CliPresetRun.hpp"
 
 int main(int argc, char** argv) {
     if (argc < 2) {
         std::fprintf(stderr, "usage: %s <preset.pc1600>\n", argv[0]);
         return 1;
     }
-    PresetFile preset;
     std::string err;
-    if (!parsePresetFile(argv[1], &preset, &err)) {
-        std::fprintf(stderr, "parse failed: %s\n", err.c_str());
+    std::unique_ptr<cli::CliPresetRun> run = cli::CliPresetRun::load(argv[1], &err);
+    if (!run || !run->machine()) {
+        std::fprintf(stderr, "preset apply failed: %s\n", err.c_str());
         return 1;
     }
-    std::string romErr;
-    std::unique_ptr<cli::Machine> built = cli::buildMachine(sharp::kPC1600, "New", "roms", &romErr);
-    if (!built) {
-        std::fprintf(stderr, "could not load roms/ ROM set (run from repo root): %s\n", romErr.c_str());
-        return 1;
-    }
-    cli::Machine& machine = *built;
-    PresetLoadResult res = job::runToCompletion(sharp::legacy::applyPresetJob(
-        machine, preset,
-        [&machine](const std::string& l) {
-            std::fprintf(stderr, "[preset] %s\n", l.c_str());
-            // During the load the preset's plotter is on the core only (the
-            // interface lists it when the load ends): its card directly.
-            if (CE1600PCard* card = sharp::legacy::coreParts(machine).ce1600p)
-                for (const auto& e : card->mechanism().drainEvents()) std::fprintf(stderr, "    <evt> %s\n", e.c_str());
-        },
-        ".", ".", {}, cli::presetRoms("roms", {}), {}, {}, {}));
-    if (!res.ok) {
-        std::fprintf(stderr, "preset apply failed: %s\n", res.error.c_str());
-        return 1;
-    }
+    cli::Machine& machine = *run->machine();
 
     CE1600PCard* card = sharp::legacy::coreParts(machine).ce1600p;
     if (!card || !cli::ofPeripheral<calcu::paper::PaperOutput>(machine, sharp::kCE1600P)) {

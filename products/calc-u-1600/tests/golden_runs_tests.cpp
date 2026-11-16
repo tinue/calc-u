@@ -14,7 +14,7 @@
 //   model PC-1500|PC-1500A|PC-1600     rom A01|A03|A04 (PC-1500) or new|old (PC-1600)
 //   attach ce150|ce158|ce1600p         a peripheral of the BuildRequest
 //   card <file> [slot 1|2]             a bundled module, a peripheral of the BuildRequest
-//   boot                               build(), coldBoot(), the boot run (LegacyCalls::runToPrompt)
+//   boot                               build(), coldBoot(), the boot run (sharptest::bootRun, tests/BootRun.hpp)
 //   keys <name> ...                    taps: PC-1500 through the typing engine with the
 //                                      PC-1500 profile (LIB-5, M-36; 4 frames down, 4 up),
 //                                      the 200 ms in all from the tap's start;
@@ -151,7 +151,7 @@ struct Run {
         if (!built.machine) { error = built.refusal; return; }
         m = std::move(built.machine);
         m->coldBoot();
-        sharp::legacy::runToPrompt(*m);
+        sharptest::bootRun(*m);
     }
 
     void key(const std::string& name, bool down) {
@@ -202,7 +202,7 @@ struct Run {
             cycle = r.follows == AfterChange::PowerCycle;
         }
         m->powerCycle();
-        if (cycle) sharp::legacy::runToPrompt(*m);
+        if (cycle) sharptest::bootRun(*m);
     }
 
     void record(const std::string& line) {
@@ -265,7 +265,7 @@ struct Run {
         else if (cmd == "press" || cmd == "release") { std::string k; in >> k; key(k, cmd == "press"); }
         else if (cmd == "run") { double s = 0; in >> s; advance(s); }
         else if (cmd == "reset") { m->reset(); }
-        else if (cmd == "allreset") { m->coldBoot(); sharp::legacy::runToPrompt(*m); }
+        else if (cmd == "allreset") { m->coldBoot(); sharptest::bootRun(*m); }
         else if (cmd == "powercycle") {
             std::string word, p;
             in >> word >> p;

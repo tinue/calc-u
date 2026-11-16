@@ -1,9 +1,9 @@
 # User-guide screenshots: a PC-1600 with the CE-1600P (its cassette
 # interface) and a short program in memory, back in RUN mode, ready to
 # CSAVE onto a new tape.
-format-version: 1
+format-version: 2
 model: PC-1600
-plotter: CE-1600P
+printer: CE-1600P
 keys:
   - key: mode
   - type: NEW0

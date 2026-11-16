@@ -34,12 +34,12 @@
 # strobe latch, so the real firmware's interleaved &6808/&6809 writes are
 # not reproduced here -- issue the sequences as pure &1555/&2AAA writes.
 
-format-version: 1
+format-version: 2
 preset-name: CE-163F flash
 description: Writes to the CE-163F flash at run time
 model: PC-1500A
 
-slot-1: CE-163F
+slot-1: { name: CE-163F }
 
 keys:
   - key: cl

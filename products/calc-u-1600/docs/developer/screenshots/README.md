@@ -35,7 +35,7 @@ That makes the same scenarios usable as a GUI smoke test.
   `type:` and `run:` steps advance it, in emulated time. Qt-method images
   are byte-identical from run to run.
 - **Isolated settings.** A run uses a throwaway settings file and an empty
-  card/disk folder. Your default presets, last model, folders and saved
+  card/disk folder. Your startup presets, last model, folders and saved
   cards never show up in the images, and the run never changes them. The
   Settings dialog shows the default folder (`~/Calc-U-1600`), as a fresh
   install does.
@@ -80,8 +80,8 @@ captures the whole window. More captures can go in `steps:` as
 
 | Step | What it does |
 |---|---|
-| `preset: <file>` | Load a preset, as File ▸ Load Preset… does. |
-| `reset` / `reset: all` | Machine ▸ Reset / Reset All. |
+| `preset: <file>` | Load a preset, as File ▸ Load Preset… does: the step sends `load-preset` with a file path, or with a bundled example's path `examples:<path>`. |
+| `reset` / `reset: all` | Machine ▸ Reset / Cold boot. |
 | `key: <name>` | Tap a calculator key, as a click on the faceplate does. Key names are the preset `key:` names. |
 | `hold-key: <name>` | Press a key and keep it down. The faceplate shows the press highlight. |
 | `release` | Let go of the held key. |
@@ -200,5 +200,5 @@ and so on) are garbage:
   then `key: mode`.
 - The PC-1600 boots in RUN mode, and `NEW0` is only accepted in PRO mode,
   so use `key: mode`, `type: NEW0`, then `key: mode`. They are ordinary
-presets (see [Presets](../../User-Guide.md#8-presets)) and may point at
+presets of format 2 (see [Presets](../../User-Guide.md#8-presets)) and may point at
 files elsewhere in the repo, e.g. `../../../../examples/plotter/lissajou-1600.bas`.

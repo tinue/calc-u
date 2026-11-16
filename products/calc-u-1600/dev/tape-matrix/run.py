@@ -41,7 +41,7 @@ MODELS = {
         "build": "tools/build_pc1600_cli.sh",
         "pc": "1600",
         "ext": "pc1600",
-        "header": ["format-version: 1", "model: PC-1600", "plotter: CE-1600P", "keys:", "  - key: mode", "  - type: NEW0"],
+        "header": ["format-version: 2", "model: PC-1600", "printer: CE-1600P", "keys:", "  - key: mode", "  - type: NEW0"],
         "programs": [
             "tests/fixtures/tape/pc1600_tape.bas",
             "examples/basic/old-vs-new-rom.bas",
@@ -64,7 +64,7 @@ MODELS = {
         "build": "tools/build_cli.sh",
         "pc": "1500",
         "ext": "pc1500a",
-        "header": ["format-version: 1", "model: PC-1500A", "plotter: CE-150", "keys:", "  - key: cl", "  - type: NEW0"],
+        "header": ["format-version: 2", "model: PC-1500A", "printer: CE-150", "keys:", "  - key: cl", "  - type: NEW0"],
         "programs": [
             "tests/fixtures/tape/pc1500_tape.bas",
             "examples/plotter/lissajou-1500.bas",
@@ -155,7 +155,7 @@ def main():
             wav = out / f"{stem}-{flavour}.wav"
             run([TOOLS / "bin2wav", "-p", cfg["pc"], "-s", "3", *opts, f"-n{tape_name(stem)}", img, wav], log)
             p = out / f"cload-{stem}.{ext}"
-            preset(cfg, p, ["type: CLOAD", "wait:"])
+            preset(cfg, p, ["type: CLOAD", "let-it-finish:"])
             r = run([cli, "--preset", p, "--tape-in", wav, "--dump-basic", "--lcd-text", "-"], log)
             got = basic_area(r.stdout)
             err = screen_error(r.stdout)
@@ -165,7 +165,7 @@ def main():
 
         wav = out / f"{stem}-csave.wav"
         p = out / f"csave-{stem}.{ext}"
-        preset(cfg, p, [f'type: CSAVE "{tape_name(stem)}"', "wait:"], program=src)
+        preset(cfg, p, [f'type: CSAVE "{tape_name(stem)}"', "let-it-finish:"], program=src)
         r = run([cli, "--preset", p, "--tape-out", wav, "--dump-basic", "--lcd-text", "-"], log)
         mem = basic_area(r.stdout)
         dec = out / f"{stem}-csave.img"
@@ -190,7 +190,7 @@ def main():
             run([TOOLS / "bin2wav", "-p", cfg["pc"], "-t", "bin", "-a", hex(start), "-s", "3", *opts,
                  f"-n{name.upper()}", binf, wav], log)
             p = out / f"cloadm-{name}.{ext}"
-            preset(cfg, p, ["type: CLOAD M", "wait:"])
+            preset(cfg, p, ["type: CLOAD M", "let-it-finish:"])
             r = run([cli, "--preset", p, "--tape-in", wav, "--dump-mem", f"{start:#x},{size}",
                      "--lcd-text", "-"], log)
             got = mem_area(r.stdout)
@@ -206,7 +206,7 @@ def main():
         p = out / f"csavem-{name}.{ext}"
         csave = cfg["csavem"].format(name=name.upper(), start=start, end=start + size - 1)
         preset(cfg, p, [f"type: 10 FOR I=0 TO {size - 1}:POKE {start}+I,(I*37+11) AND 255:NEXT I",
-                        "key: mode", "type: RUN", "wait:", f"type: {csave}", "wait:"])
+                        "key: mode", "type: RUN", f"type: {csave}", "let-it-finish:"])
         r = run([cli, "--preset", p, "--tape-out", wav, "--dump-mem", f"{start:#x},{size}",
                  "--lcd-text", "-"], log)
         mem = mem_area(r.stdout)

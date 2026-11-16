@@ -87,6 +87,11 @@ void PC1500Machine::attachBusRom(std::unique_ptr<BusRomCard> card) {
     m_busRoms.push_back(std::move(card));
 }
 
+void PC1500Machine::detachBusRoms() {
+    for (auto& c : m_busRoms) m_memory.systemBus().detach(c.get());
+    m_busRoms.clear();
+}
+
 void PC1500Machine::detachCE158() {
     detachCE158Locked();
 }

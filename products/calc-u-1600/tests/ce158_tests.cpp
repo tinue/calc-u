@@ -17,10 +17,8 @@
 #include "../core/Connector/Ce158Card.hpp"
 #include "../core/Connector/PC1500SignalDecode.hpp"
 #include "../core/PC1500/PC1500Machine.hpp"
-#include "../core/PC1500/PC1500PresetLoader.hpp"
-#include "../core/Preset/PresetFile.hpp"
+#include "ScriptedSetup.hpp"
 #include "../core/PC1600/PC1600Machine.hpp"
-#include "../core/PC1600/PC1600PresetLoader.hpp"
 #include "TestRoms.hpp"
 #include "FakeSerialLink.hpp"
 #include "TestHarness.hpp"
@@ -295,44 +293,28 @@ bool haveRoms(const char* test) {
     return false;
 }
 
-bool loadPreset(const std::string& body, PresetFile* preset) {
-    const std::string path = "/tmp/calcu1600_ce158_scratch.pc1500a";
-    { std::ofstream f(path); f << body; }
-    std::string err;
-    const bool ok = parsePresetFile(path, preset, &err);
-    if (!ok) std::fprintf(stderr, "preset parse error: %s\n", err.c_str());
-    return ok;
-}
-
 std::string text(const std::vector<uint8_t>& bytes) { return std::string(bytes.begin(), bytes.end()); }
-
-TEST(test_preset_parse_interface_key) {
-    PresetFile p;
-    CHECK(loadPreset("format-version: 1\nmodel: PC-1500A\ninterface: CE-158\n", &p));
-    CHECK(p.interfaceName == "ce158");
-    PresetFile none;
-    CHECK(loadPreset("format-version: 1\nmodel: PC-1500\n", &none));
-    CHECK(none.interfaceName.empty());
-    PresetFile bad;
-    CHECK(!loadPreset("format-version: 1\nmodel: PC-1500A\ninterface: ce-999\n", &bad));
-}
 
 // LPRINT to the Centronics port with the CE-150 also on the chain: the
 // CE-158 prints its line, OPN hands LPRINT back to the CE-150.
 TEST(test_rom_lprint_centronics_with_ce150_chained) {
     if (!haveRoms(__func__)) return;
-    PresetFile preset;
-    CHECK(loadPreset(
-        "format-version: 1\nmodel: PC-1500A:A04\nplotter: CE-150\ninterface: CE-158\n"
-        "keys:\n  - key: cl\n  - type: NEW0\n"
-        "program:\n  text: |\n"
-        "    10 OPN \"LPRT\"\n    20 LPRINT \"HELLO CE-158\"\n    30 OPN\n    40 LPRINT \"CE150\"\n"
-        "keys:\n  - key: cl\n  - key: mode\n  - type: RUN\n  - wait:\n",
-        &preset));
-    PC1500Machine machine(preset.variant);
-    PresetLoadResult res = applyPC1500Preset(machine, preset, {}, ".", ".", {}, testPresetRoms());
-    CHECK(res.ok);
-    CHECK(res.ce150Attached && res.ce158Attached);
+    // What the preset of 0.8.1 did (PC-1500A, CE-150, CE-158): typed on
+    // the old class (M-46).
+    PC1500Machine machine(PC1500Variant::PC1500A);
+    std::string err;
+    CHECK(presetroms::loadPC1500Rom(machine, "A04", testPresetRoms(), &err));
+    CHECK(presetroms::attachCE150(machine, testPresetRoms(), &err));
+    CHECK(presetroms::attachCE158(machine, testPresetRoms(), &err));
+    scripted::bootPC1500(machine);
+    tapKey(machine, "cl");
+    CHECK(scripted::type(machine, "NEW0"));
+    CHECK(scripted::program(machine, "10 OPN \"LPRT\"\n20 LPRINT \"HELLO CE-158\"\n30 OPN\n40 LPRINT \"CE150\"\n"));
+    tapKey(machine, "cl");
+    tapKey(machine, "mode");
+    CHECK(scripted::type(machine, "RUN"));
+    scripted::untilIdle(machine, 3600);
+    CHECK(machine.ce150Attached() && machine.ce158Attached());
     const std::string printed = text(machine.drainCE158ParallelOutput());
     // The parallel port's power-on end code is LF (CONSOLE 80,1).
     CHECK(printed == "HELLO CE-158\n");
@@ -345,22 +327,22 @@ TEST(test_rom_lprint_centronics_with_ce150_chained) {
 // the real interface).
 TEST(test_rom_serial_lprint_and_input) {
     if (!haveRoms(__func__)) return;
-    PresetFile preset;
-    CHECK(loadPreset(
-        "format-version: 1\nmodel: PC-1500A:A04\ninterface: CE-158\n"
-        "keys:\n  - key: cl\n  - type: NEW0\n"
-        "program:\n  text: |\n"
-        "    10 SETDEV PO\n    20 OUTSTAT 0\n    30 LPRINT \"SERIAL OUT\"\n"
-        "    40 SETDEV KI\n    50 INPUT A$\n    60 SETDEV\n    70 OPN \"LPRT\":LPRINT \"GOT \";A$\n"
-        "keys:\n  - key: cl\n  - key: mode\n  - type: RUN\n",
-        &preset));
-    PC1500Machine machine(preset.variant);
+    PC1500Machine machine(PC1500Variant::PC1500A);
+    std::string err;
+    CHECK(presetroms::loadPC1500Rom(machine, "A04", testPresetRoms(), &err));
+    CHECK(presetroms::attachCE158(machine, testPresetRoms(), &err));
     FakeSerialLink link;
     link.armed = false;
     link.rx = {'A', 'B', 'C', '1', '2', '3', '\r'};
     machine.setCE158SerialLink(&link);
-    PresetLoadResult res = applyPC1500Preset(machine, preset, {}, ".", ".", {}, testPresetRoms());
-    CHECK(res.ok);
+    scripted::bootPC1500(machine);
+    tapKey(machine, "cl");
+    CHECK(scripted::type(machine, "NEW0"));
+    CHECK(scripted::program(machine, "10 SETDEV PO\n20 OUTSTAT 0\n30 LPRINT \"SERIAL OUT\"\n"
+                                     "40 SETDEV KI\n50 INPUT A$\n60 SETDEV\n70 OPN \"LPRT\":LPRINT \"GOT \";A$\n"));
+    tapKey(machine, "cl");
+    tapKey(machine, "mode");
+    CHECK(typeLine(machine, "RUN", true, &err));
     machine.runCycles(1300000); // let INPUT start waiting
     CHECK(text(link.tx) == "SERIAL OUT\r");
     link.armed = true;
@@ -422,12 +404,7 @@ TEST(test_pc1600_ce158_and_ce1600p_exclusive) {
     CHECK(m.ce1600pAttached() && !m.ce158Attached());
     CHECK(m.attachCE158(rom.data(), rom.size()));
     CHECK(m.ce158Attached() && !m.ce1600pAttached());
-
-    PresetFile p;
-    CHECK(!loadPreset("format-version: 1\nmodel: PC-1600\nplotter: CE-1600P\ninterface: CE-158\n", &p));
-    PresetFile ok;
-    CHECK(loadPreset("format-version: 1\nmodel: PC-1600\nplotter: CE-150\ninterface: CE-158\n", &ok));
-    CHECK(ok.interfaceName == "ce158" && ok.plotter == "ce150");
+    // The preset side of the rule (LIB-6 AC-47): sharp_presets_tests.cpp.
 }
 
 bool havePC1600Roms(const char* test) {
@@ -437,31 +414,32 @@ bool havePC1600Roms(const char* test) {
     return false;
 }
 
-std::string pc1600Preset(const std::string& program) {
-    return "format-version: 1\nmodel: PC-1600\ninterface: CE-158\n"
-           "keys:\n  - key: mode\n  - type: NEW\n  - type: MODE1\n"
-           "program:\n  text: |\n" + program +
-           "keys:\n  - key: mode\n  - type: RUN\n";
+// A PC-1600 with the CE-158, NEW, MODE1, `program` typed, RUN: what the
+// preset of 0.8.1 did, typed on the old class (M-46).
+bool runPC1600Program(PC1600Machine& machine, const std::string& program) {
+    std::string err;
+    if (!presetroms::attachCE158(machine, testPresetRoms(), &err)) return false;
+    scripted::bootPC1600(machine);
+    tapKey(machine, "mode");
+    if (!scripted::type(machine, "NEW") || !scripted::type(machine, "MODE1")) return false;
+    if (!scripted::program(machine, program)) return false;
+    tapKey(machine, "mode");
+    return typeLine(machine, "RUN", true, &err);
 }
 
 // MODE 1: LPRINT through the CE-158's parallel port, then (SETDEV PO) its
 // serial port, from PC-1600 BASIC via the LH5803.
 TEST(test_pc1600_rom_mode1_printing) {
     if (!havePC1600Roms(__func__)) return;
-    PresetFile preset;
-    CHECK(loadPreset(pc1600Preset("    10 OPN \"LPRT\"\n    20 LPRINT \"HELLO 1600\"\n    30 OPN\n"
-                                  "    40 SETDEV PO\n    50 OUTSTAT 0\n    60 LPRINT \"SERIAL 1600\"\n") +
-                         "  - wait:\n",
-                     &preset));
     PC1600Machine machine;
     std::string romErr;
     CHECK(presetroms::loadPC1600RomSet(machine, testPresetRoms(), "new", &romErr));
     FakeSerialLink link;
     machine.setCE158SerialLink(&link);
-    PresetLoadResult res = applyPC1600Preset(machine, preset, {}, ".", ".", {}, testPresetRoms());
-    if (!res.ok) std::fprintf(stderr, "preset error: %s\n", res.error.c_str());
-    CHECK(res.ok);
-    CHECK(res.ce158Attached);
+    CHECK(runPC1600Program(machine, "10 OPN \"LPRT\"\n20 LPRINT \"HELLO 1600\"\n30 OPN\n"
+                                    "40 SETDEV PO\n50 OUTSTAT 0\n60 LPRINT \"SERIAL 1600\"\n"));
+    scripted::untilIdle(machine, 3600);
+    CHECK(machine.ce158Attached());
     CHECK(text(machine.drainCE158ParallelOutput()) == "HELLO 1600\n");
     CHECK(text(link.tx) == "SERIAL 1600\r");
     machine.setCE158SerialLink(nullptr);
@@ -471,10 +449,6 @@ TEST(test_pc1600_rom_mode1_printing) {
 // program is polling.
 TEST(test_pc1600_rom_mode1_rinkey) {
     if (!havePC1600Roms(__func__)) return;
-    PresetFile preset;
-    CHECK(loadPreset(pc1600Preset("    10 B$=RINKEY$\n    20 IF LEN(B$)=0 THEN 10\n"
-                                  "    30 OPN \"LPRT\":LPRINT ASC(B$)\n"),
-                     &preset));
     PC1600Machine machine;
     std::string romErr;
     CHECK(presetroms::loadPC1600RomSet(machine, testPresetRoms(), "new", &romErr));
@@ -482,9 +456,7 @@ TEST(test_pc1600_rom_mode1_rinkey) {
     link.armed = false;
     link.rx = {'A'};
     machine.setCE158SerialLink(&link);
-    PresetLoadResult res = applyPC1600Preset(machine, preset, {}, ".", ".", {}, testPresetRoms());
-    if (!res.ok) std::fprintf(stderr, "preset error: %s\n", res.error.c_str());
-    CHECK(res.ok);
+    CHECK(runPC1600Program(machine, "10 B$=RINKEY$\n20 IF LEN(B$)=0 THEN 10\n30 OPN \"LPRT\":LPRINT ASC(B$)\n"));
     machine.runCycles(PC1600Machine::kTStateHz);
     link.armed = true;
     machine.runCycles(PC1600Machine::kTStateHz * 3);

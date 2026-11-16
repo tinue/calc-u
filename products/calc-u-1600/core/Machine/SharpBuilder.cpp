@@ -50,10 +50,18 @@ BuildResult SharpMachineBuilder::build(const BuildRequest& req, const Catalogue&
             return {nullptr, {}, "failed to load firmware ROM: " + roms[0].fileName};
         machine = std::move(m);
     }
-    for (const PeripheralRequest& p : req.peripherals) {
-        const ChangeResult r = machine->attach(p, catalogue);
-        if (r.refused) return {nullptr, r.refused->missingRoms, r.refused->reason};
-    }
+    // The bus ROMs after everything else, in list order: each goes in front
+    // of the chain, so a later one is found before an earlier one and before
+    // a peripheral's ROM at the same place (C1600-4 AC-10, D-6).
+    for (const bool busRoms : {false, true})
+        for (const PeripheralRequest& p : req.peripherals) {
+            if ((p.peripheral.value == kBusRom) != busRoms) continue;
+            const ChangeResult r = machine->attach(p, catalogue);
+            if (r.refused) return {nullptr, r.refused->missingRoms, r.refused->reason};
+        }
+    // LIB-1 AC-42, LIB-18 D-3/D-23: a new machine is left as a cold boot
+    // leaves it (the adapter SharpBuildColdBoot goes, M-46).
+    machine->coldBoot();
     return {std::move(machine), {}, {}};
 }
 

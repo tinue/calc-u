@@ -1,8 +1,6 @@
-// Core/Job.hpp: the coroutine job driver, and the equivalence it promises
-// -- a preset run a slice at a time (random budgets, fixed seed) leaves the
-// machine exactly as the same preset run straight through: same step log
-// (which tags every step with the CPU's PC and the LCD), same result, same
-// memory, PC and LCD. ROM-gated parts SKIP without roms/.
+// Core/Job.hpp: the coroutine job driver. The equivalence of a preset run
+// in parts and in one go is LIB-6's from M-46 (sharp_presets_tests.cpp,
+// lib6_ac50_in_parts_against_in_one_go).
 
 #include <cstdint>
 #include <cstdio>
@@ -13,15 +11,11 @@
 #include <string>
 #include <vector>
 
-#include "../core/HostClock.hpp"
 #include "../core/Job.hpp"
 #include "../core/PC1500/PC1500LcdText.hpp"
 #include "../core/PC1500/PC1500Machine.hpp"
-#include "../core/PC1500/PC1500PresetLoader.hpp"
 #include "../core/PC1600/PC1600LcdText.hpp"
 #include "../core/PC1600/PC1600Machine.hpp"
-#include "../core/PC1600/PC1600PresetLoader.hpp"
-#include "../core/Preset/PresetFile.hpp"
 #include "TestRoms.hpp"
 #include "TestHarness.hpp"
 
@@ -100,129 +94,5 @@ TEST(test_driver) {
     CHECK((nested.calls == std::vector<std::uint64_t>{10, 11, 50}));
 }
 
-// ---- Equivalence over real presets ----
-
-std::uint64_t fnv(std::uint64_t h, std::uint64_t v) {
-    for (int i = 0; i < 8; ++i) {
-        h ^= (v >> (i * 8)) & 0xFF;
-        h *= 1099511628211ull;
-    }
-    return h;
-}
-
-std::uint64_t fnv(std::uint64_t h, const std::string& s) {
-    for (unsigned char c : s) h = fnv(h, c);
-    return h;
-}
-
-struct Outcome {
-    bool ok = false;
-    std::string error;
-    std::vector<std::string> log;
-    std::uint64_t fingerprint = 0;
-};
-
-std::uint64_t fingerprint(PC1600Machine& m) {
-    std::uint64_t h = 1469598103934665603ull;
-    for (std::uint32_t a = 0; a < 0x10000; ++a) h = fnv(h, m.memory().peek(static_cast<std::uint16_t>(a)));
-    h = fnv(h, m.sc7852().pc());
-    h = fnv(h, m.lh5803().pc());
-    h = fnv(h, pc1600LcdText(m).text());
-    h = fnv(h, sharp::takeRawPlotPoints(m.ce1600pPaperOutput()).size());
-    return h;
-}
-
-std::uint64_t fingerprint(PC1500Machine& m) {
-    std::uint64_t h = 1469598103934665603ull;
-    for (std::uint32_t a = 0; a < 0x10000; ++a) h = fnv(h, m.memory().peek(static_cast<std::uint16_t>(a)));
-    h = fnv(h, m.debugPC());
-    h = fnv(h, pc1500LcdText(m).text());
-    h = fnv(h, sharp::takeRawPlotPoints(m.ce150PaperOutput()).size());
-    return h;
-}
-
-const std::string kCardDir = "frontends/qt6/resources/cards";
-
-// `budgetSeed` 0: straight through; otherwise sliced at random budgets.
-template <class Machine, class MakeJob>
-Outcome runPreset(Machine& m, MakeJob makeJob, unsigned budgetSeed, double frameCycles) {
-    Outcome out;
-    auto log = [&out](const std::string& line) { out.log.push_back(line); };
-    job::Job<PresetLoadResult> j(makeJob(m, log));
-    if (budgetSeed == 0) {
-        while (!j.step(UINT64_MAX)) {
-        }
-    } else {
-        std::mt19937 rng(budgetSeed);
-        std::uniform_int_distribution<std::uint64_t> budget(1, static_cast<std::uint64_t>(frameCycles * 2));
-        while (!j.step(budget(rng))) {
-        }
-    }
-    const PresetLoadResult r = j.result();
-    out.ok = r.ok;
-    out.error = r.error;
-    out.fingerprint = fingerprint(m);
-    return out;
-}
-
-void checkEquivalent(const char* name, const Outcome& a, const Outcome& b) {
-    const bool same = a.ok == b.ok && a.error == b.error && a.log == b.log && a.fingerprint == b.fingerprint;
-    CHECK(same);
-    if (!same) std::fprintf(stderr, "  %s: sliced run differs from the straight one\n", name);
-    CHECK(a.ok);
-    if (!a.ok) std::fprintf(stderr, "  %s: %s\n", name, a.error.c_str());
-}
-
-void equivalence_pc1600(const char* presetPath) {
-    PresetFile preset;
-    std::string err;
-    if (!parsePresetFile(presetPath, &preset, &err)) {
-        CHECK(false);
-        std::fprintf(stderr, "  %s: %s\n", presetPath, err.c_str());
-        return;
-    }
-    auto make = [&](PC1600Machine& m, PresetLogFn log) {
-        return applyPC1600PresetJob(m, preset, std::move(log), ".", kCardDir, {}, testPresetRoms());
-    };
-    Outcome results[2];
-    for (int i = 0; i < 2; ++i) {
-        PC1600Machine m;
-        CHECK(presetroms::loadPC1600RomSet(m, testPresetRoms(), preset.romVariant == "old" ? "old" : "new", &err));
-        results[i] = runPreset(m, make, i == 0 ? 0u : 4711u, PC1600Machine::kTStateHz / 60.0);
-    }
-    checkEquivalent(presetPath, results[0], results[1]);
-}
-
-void equivalence_pc1500(const char* presetPath) {
-    PresetFile preset;
-    std::string err;
-    if (!parsePresetFile(presetPath, &preset, &err)) {
-        CHECK(false);
-        std::fprintf(stderr, "  %s: %s\n", presetPath, err.c_str());
-        return;
-    }
-    auto make = [&](PC1500Machine& m, PresetLogFn log) {
-        return applyPC1500PresetJob(m, preset, std::move(log), ".", kCardDir, {}, testPresetRoms());
-    };
-    Outcome results[2];
-    for (int i = 0; i < 2; ++i) {
-        PC1500Machine m(preset.variant);
-        results[i] = runPreset(m, make, i == 0 ? 0u : 4711u, PC1500Machine::kCpuHz / 60.0);
-    }
-    checkEquivalent(presetPath, results[0], results[1]);
-}
-
 } // namespace
 
-TEST(test_preset_equivalence) {
-    SKIP_UNLESS(std::ifstream("roms/PC1600-P0-B0-new.bin").good() && std::ifstream("roms/PC-1500_A04.ROM").good(),
-                "no ROMs in roms/");
-    // A pinned wall clock: `- syncclock:` must seed the same time both runs.
-    hostClockOverride() = [] { return std::chrono::system_clock::time_point(std::chrono::hours(500000)); };
-    equivalence_pc1600("tests/fixtures/presets/startup-pc1600.pc1600");
-    equivalence_pc1600("tests/fixtures/presets/maxed-out-mem.pc1600");   // typed program, keys, slot cards
-    equivalence_pc1600("tests/fixtures/presets/hanoi.pc1600");            // BASIC file + RUN
-    equivalence_pc1500("tests/fixtures/presets/startup-pc1500a.pc1500a");
-    equivalence_pc1500("tests/fixtures/presets/memtest_stock.pc1500");  // machine code + typed CALL
-    hostClockOverride() = nullptr;
-}

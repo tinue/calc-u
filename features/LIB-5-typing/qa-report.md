@@ -303,3 +303,14 @@ qa-report).
 Rows 59-13, 59-23, 59-40, 59-41, 1600-8, 1600-9 and 1600-29 of
 `docs/behaviour-changes.md` are in effect from M-36. CI was not
 dispatched (plan §1). All three INDEX columns stay In progress (D-1).
+
+### Calc-U-1600: the preset clauses (M-46, 2026-11-16, branch `m46-presets-1600`)
+
+| ID | Result | Test case |
+|---|---|---|
+| AC-14 (in a preset) | Pass | `lib5_ac14_in_a_preset_type_at_readiness_pc1600_at_once_pc1500` |
+| AC-28 (in a preset) | Pass | `lib5_ac28_in_a_preset_cadence` |
+| AC-41 (in a preset) | Pass | `lib5_ac41_ent_refused_in_a_preset`; `ctrl`, `kbii` and `bs` are no key names on the PC-1600 (`lib5_ac41_break_alias_ent_refused`, LIB-6 AC-44) |
+
+The preset clauses pass. AC-33's Qt6 test (`CalcU1600QtTyping`) is still
+not written, so the column stays **In progress**.

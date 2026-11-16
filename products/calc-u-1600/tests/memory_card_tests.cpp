@@ -24,10 +24,9 @@
 #include "../core/Connector/MemoryCardCatalog.hpp"
 #include "../core/Connector/MemoryCardDefinition.hpp"
 #include "../core/Connector/SoftwareDefinedCard.hpp"
-#include "../core/Preset/PresetFile.hpp"
 #include "../core/PC1600/PC1600Machine.hpp"
-#include "../core/PC1600/PC1600PresetLoader.hpp"
-#include "PresetTestSupport.hpp"
+#include "../core/PC1600/PC1600BasicTyper.hpp"
+#include "TestRoms.hpp"
 #include "TestRoms.hpp"
 #include "TestCards.hpp"
 #include "TestHarness.hpp"
@@ -962,137 +961,6 @@ TEST(test_reject_initial_content_missing_bank_on_banked_region) {
 // ── end to end ─────────────────────────────────────────────────────────
 
 std::string makeScratchCardDir(const calcu::testing::TempFolder& tmp);  // defined below, in the catalogue section
-
-TEST(test_preset_parses_modulespec) {
-    // `slot-N-file:` -- a path, resolved relative to the preset dir.
-    PresetFile preset;
-    std::string err;
-    CHECK(parsePresetString("format-version: 1\nmodel: PC-1500\n"
-                            "slot-1-file: /abs/path/foo.card.yaml\n",
-                            "/tmp/memory_card_tests_scratch.pc1500", &preset, &err));
-    CHECK(preset.slot1ModuleSpecFile == "/abs/path/foo.card.yaml");
-    CHECK(preset.slot1ModuleSpecName.empty());
-
-    PresetFile p2;
-    CHECK(parsePresetString("format-version: 1\nmodel: PC-1600\n"
-                            "slot-2-file: cards/x.card.yaml\n",
-                            "/tmp/memory_card_tests_scratch.pc1600", &p2, &err));
-    CHECK(p2.slot2ModuleSpecFile == "/tmp/cards/x.card.yaml");  // relative to the scratch dir
-
-    // `slot-N:` -- a bundled module-name, stored verbatim (unresolved).
-    PresetFile p3;
-    CHECK(parsePresetString("format-version: 1\nmodel: PC-1600\n"
-                            "slot-1: CE-155\n",
-                            "/tmp/memory_card_tests_scratch3.pc1600", &p3, &err));
-    CHECK(p3.slot1ModuleSpecName == "CE-155");
-    CHECK(p3.slot1ModuleSpecFile.empty());
-}
-
-TEST(test_preset_rejects_second_modulespec_item) {
-    PresetFile preset;
-    std::string err;
-    CHECK(!parsePresetString("format-version: 1\nmodel: PC-1600\n"
-                             "slot-1: CE-155\n"
-                             "  - modulespec: CE-155\n",
-                             "/tmp/memory_card_tests_scratch2.pc1600", &preset, &err));
-}
-
-TEST(test_ce1601m_end_to_end_through_pc1600) {
-    // Drive a CE-1601M through a full preset load two ways -- a
-    // `slot-2-file:` path and a `slot-N:` module-name resolved from
-    // a scratch module directory -- both exercising the OUT (28H) -> Slot 2
-    // route. `run` asserts the vertical-bank behaviour for a loaded preset.
-    auto run = [&](const PresetFile& preset, const std::string& moduleDir) {
-        PC1600Machine m;
-        loadPC1600Roms(m);  // optional: an empty bus boots too, only slower
-        PresetLoadResult r = applyPC1600Preset(m, preset, {}, ".", moduleDir);
-        CHECK(r.ok);
-        CHECK(m.slot2Attached());
-        // The slot itself reports the attached module's module-name,
-        // whichever spec form named it; slot 1 stays empty here.
-        CHECK(m.memory().slotModuleName(1).empty());
-        CHECK(m.memory().slotModuleName(2) == "CE-1601M");
-        m.memory().writeIO(0x31, static_cast<uint8_t>(2 << 4));  // page-C bank 2 -> Slot 2
-        m.memory().writeIO(0x28, 0);
-        m.memory().write(0x8000, 0xA1);
-        CHECK(m.memory().read(0x8000) == 0xA1);
-        m.memory().writeIO(0x28, 1);  // vertical bank 1 -- a different 32 KB chip
-        CHECK(m.memory().read(0x8000) == 0xFF);
-        m.memory().write(0x8000, 0xB2);
-        CHECK(m.memory().read(0x8000) == 0xB2);
-        m.memory().writeIO(0x28, 0);
-        CHECK(m.memory().read(0x8000) == 0xA1);
-    };
-
-    const std::string cardPath = "/tmp/memory_card_tests_ce1601m.card.yaml";
-    { std::ofstream f(cardPath); f << kCe1601mYaml; }
-    PresetFile byFile;
-    std::string err;
-    CHECK(parsePresetString(std::string("format-version: 1\nmodel: PC-1600\n"
-                                        "slot-2-file: ") +
-                                cardPath + "\n",
-                            "/tmp/memory_card_tests_e2e.pc1600", &byFile, &err));
-    CHECK(byFile.slot2ModuleSpecFile == cardPath);
-    run(byFile, ".");
-
-    const calcu::testing::TempFolder moduleDirFolder("calcu1600-cards");
-    const std::string moduleDir = makeScratchCardDir(moduleDirFolder);  // writes ce1601m.card.yaml (module-name CE-1601M)
-    PresetFile byName;
-    CHECK(parsePresetString("format-version: 1\nmodel: PC-1600\n"
-                            "slot-2: CE-1601M\n",
-                            "/tmp/memory_card_tests_e2e_name.pc1600", &byName, &err));
-    CHECK(byName.slot2ModuleSpecName == "CE-1601M");
-    run(byName, moduleDir);
-}
-
-// `slot-N-rom:` end to end: the preset's ROM file replaces the module's
-// placeholder ROM, the load result names the file (so the GUI never saves
-// the card), and a rebuilt file is read again by the next load.
-TEST(test_slot_rom_end_to_end_through_pc1600) {
-    calcu::testing::TempFolder tmp("calcu1600-slot-rom");
-    const std::string dir = tmp.str();
-    const std::string d(dir);
-    std::ofstream(d + "/module.card.yaml")
-        << "format-version: 1\nmodule-name: Dev ROM\ncompatible-hosts: [PC-1600-Slot-1]\n"
-           "definition-terminology: PC-1600-Slot-1\nregions:\n"
-           "  - name: rom\n    capacity: 0x1000\n    banking: none\n    content: rom\n"
-           "    addressing: { chip-select: RAM2, span: 0x1000 }\n"
-           "    initial-content:\n      blocks:\n        - offset: 0\n"
-           "          encoding: addressed-hex\n          bytes: |\n            $0000: FF...\n";
-    std::ofstream(d + "/dev.pc1600") << "format-version: 1\nmodel: PC-1600\n"
-                                        "slot-1-file: module.card.yaml\nslot-1-rom: build/module.bin\n";
-    std::filesystem::create_directories(d + "/build");
-    const auto build = [&](uint8_t first) {
-        std::string bytes(0x1000, char(0x00));
-        bytes[0] = char(first);
-        std::ofstream(d + "/build/module.bin", std::ios::binary) << bytes;
-    };
-    const auto load = [&](PresetLoadResult* r) {
-        PresetFile preset;
-        std::string err;
-        CHECK(parsePresetFile(d + "/dev.pc1600", &preset, &err));
-        auto m = std::make_unique<PC1600Machine>();
-        *r = applyPC1600Preset(*m, preset, {}, ".", ".");
-        return m;
-    };
-
-    PresetLoadResult r;
-    build(0x55);
-    auto m = load(&r);
-    CHECK(r.ok);
-    CHECK(r.slot1RomFile == d + "/build/module.bin");
-    CHECK(m->memory().slot1CardImage().size() == 0x1000 && m->memory().slot1CardImage()[0] == 0x55);
-    build(0x66);  // rebuilt: the next load has the new bytes
-    m = load(&r);
-    CHECK(r.ok && m->memory().slot1CardImage()[0] == 0x66);
-
-    // A ROM file of the wrong size stops the load, naming the file.
-    std::ofstream(d + "/build/module.bin", std::ios::binary) << std::string(0x800, char(0));
-    m = load(&r);
-    CHECK(!r.ok);
-    CHECK(r.error == "slot-1: " + d + "/build/module.bin: 2048 bytes, the module's ROM is 4096 bytes");
-    std::filesystem::remove_all(d);
-}
 
 // The SLOT2MAP gate-array remap (Port 3CH b5:b4): the firmware can make the
 // Slot 2 RAM chip-select assert for a bank-1 access outside the ordinary

@@ -20,6 +20,7 @@
 #include "app/MediaLibrary.hpp"
 #include "peripherals/RealTimeClock.hpp"
 #include "TestHarness.hpp"
+#include "presets/PresetsPart.hpp"
 
 namespace {
 
@@ -32,7 +33,7 @@ using sessions::Value;
 using shared::Model;
 
 Value toggle(const char* p) { return Value::object({{"peripheral", p}}); }
-Value preset(const char* path) { return Value::object({{"path", path}}); }
+Value preset(const char* path) { return Value::object({{"ref", path}}); }
 Value module(int slot, const char* name) { return Value::object({{"slot", slot}, {"name", name}}); }
 
 int busyMessages(const SessionFixture& f, bool runs) {
@@ -51,12 +52,12 @@ TEST(test_cooperative_preset) {
     f.messages.clear();
     f.readCost = std::chrono::milliseconds(1);   // the host's work: the allowance of a call runs out
 
-    // The default PC-1600 preset (CE-1600P + floppy, two slot cards, a
-    // dozen typed lines), a host call at a time.
-    const sessions::CallId id = f.send(c::kLoadPreset, preset("tests/fixtures/presets/startup-pc1600.pc1600"));
+    // A PC-1600 preset (two slot cards, typed commands, a typed program),
+    // a host call at a time (LIB-6 `load-preset`).
+    const sessions::CallId id = f.send(calcu::presets::kLoadPresetCommand, preset("tests/fixtures/presets/maxed-out-mem.pc1600"));
     CHECK(f.busy());
     // A second operation is refused while one runs.
-    const sessions::CallId second = f.send(c::kDefaultPreset);
+    const sessions::CallId second = f.send(calcu::presets::kLoadPresetCommand, preset("tests/fixtures/presets/hanoi.pc1600"));
     const auto refused = f.takeReply(second);
     CHECK(refused && !refused->done && refused->reason == sessions::kAnotherOperationRuns);
     int calls = 0;
@@ -72,32 +73,28 @@ TEST(test_cooperative_preset) {
     CHECK(busyMessages(f, true) == 1 && busyMessages(f, false) == 1);
     CHECK(f.listener.mirror().takeAppended(sessions::kLogTopic).size() > 10);   // the preset's step log
     CHECK(f.part().currentModel() == Model::PC1600);
-    CHECK(f.part().ce1600pAttached());
     CHECK(f.part().modules().selectedModuleName(1) == "CE-1600M");
     CHECK(f.part().modules().selectedModuleName(2) == "CE-1601M");
-    CHECK(f.part().floppy().selectedDiskName() == "Formatted");
-    CHECK(f.screen().find("Memory:") != std::string::npos);
+    // The last item (FILES) is not waited for (LIB-6 AC-60): until idle.
+    CHECK(f.ok(calcu::presets::kWaitIdleCommand));
+    CHECK(f.screen().find("LOOP") != std::string::npos);
 }
 
 TEST(test_operations_and_selection) {
     SKIP_UNLESS(romsPresent(), "no ROMs in roms/");
     SessionFixture f;
     CHECK(f.start());
-    CHECK(f.ok(c::kPickModel, Value::object({{"model", "PC-1600"}})));
+    CHECK(f.model("PC-1600"));
     CHECK(f.part().currentModel() == Model::PC1600);
     CHECK(f.settings.lastUsedModel() == Model::PC1600);
 
-    CHECK(f.ok(c::kTogglePeripheral, toggle("CE-1600P")) && f.part().ce1600pAttached());
-    CHECK(f.ok(c::kTogglePeripheral, toggle("CE-1600P")) && !f.part().ce1600pAttached());
+    CHECK(f.toggle("CE-1600P") && f.part().ce1600pAttached());
+    CHECK(f.toggle("CE-1600P") && !f.part().ce1600pAttached());
     CHECK(f.notices().empty());
 
-    // The default preset of another model is refused, touching nothing.
-    sessions::ReplyMessage r = f.run(c::kLoadDefaultPreset, Value::object({{"path", "tests/fixtures/presets/startup-pc1500a.pc1500a"},
-                                                                           {"model", "PC-1600"}}));
-    CHECK(!r.done);
+    // A preset that cannot be read: refused, and a notice.
+    sessions::ReplyMessage r = f.run(calcu::presets::kLoadPresetCommand, preset("tests/fixtures/presets/no-such.pc1600"));
     CHECK(f.part().currentModel() == Model::PC1600);
-    // A preset that doesn't parse: refused, and a notice.
-    r = f.run(c::kLoadPreset, preset("tests/fixtures/presets/no-such.pc1600"));
     CHECK(!r.done && !r.reason.empty());
     const auto n = f.notices();
     CHECK(!n.empty() && n.back() == r.reason);
@@ -109,7 +106,7 @@ TEST(test_tape_status_follows_calls) {
     SKIP_UNLESS(romsPresent(), "no ROMs in roms/");
     SessionFixture f;
     CHECK(f.start("PC-1500A"));
-    CHECK(f.ok(c::kTogglePeripheral, toggle("CE-150")));
+    CHECK(f.toggle("CE-150"));
     CHECK(f.part().tapeInterfaceAttached());
     auto tapes = [&] { return f.state<shared::TapesPayload>(shared::topics::kTapes)->status.mode; };
     CHECK(tapes() == TapeDeck::Mode::Empty);
@@ -119,7 +116,7 @@ TEST(test_tape_status_follows_calls) {
     CHECK(tapes() == TapeDeck::Mode::Record);
     std::string error;
     CHECK(f.part().tapes().selectForPlay({}, &error));
-    CHECK(f.ok(c::kReset, Value::object({{"all", false}})));
+    CHECK(f.reset());
     CHECK(tapes() == TapeDeck::Mode::Empty);
 }
 
@@ -139,18 +136,18 @@ TEST(test_control_state) {
     CHECK(!s.floppyShown && !s.tapeShown && !s.hostDriveOffered);
     CHECK(!s.paperOwner && !s.printerShown);
 
-    CHECK(f.ok(c::kTogglePeripheral, toggle("CE-150")));
+    CHECK(f.toggle("CE-150"));
     s = state();
     CHECK(s.ce150.attached && s.tapeShown && s.paperOwner && s.paperOwner->value == "CE-150");
 
-    CHECK(f.ok(c::kPickModel, Value::object({{"model", "PC-1600"}})));
+    CHECK(f.model("PC-1600"));
     s = state();
     CHECK(s.slotCount == 2 && s.floppyShown && !s.floppyEnabled);
     CHECK(s.ce1600p.offered && s.ce1600p.onControlBar && s.ce1600p.enabled);
     CHECK(!s.ce150.onControlBar && s.ce150.offered && !s.pc1500RomMenu && s.pc1600RomMenu);
     CHECK(s.hostDriveOffered && s.hostDriveDir.empty());
 
-    CHECK(f.ok(c::kTogglePeripheral, toggle("CE-1600P")));
+    CHECK(f.toggle("CE-1600P"));
     s = state();
     CHECK(s.ce1600p.attached && s.floppyEnabled && s.tapeShown && s.paperOwner && s.paperOwner->value == "CE-1600P");
     CHECK(!s.ce150.enabled && !s.ce158.enabled);
@@ -271,33 +268,34 @@ TEST(test_card_yaml_dump) {
     CHECK(dump.size() == 2 && dump[0].find("CE-1600M (Slot 2), unbanked") != std::string::npos);
 }
 
-// pick-model: a fresh machine of the model, then its default preset;
-// default-preset is done with none set.
+// `model`: a fresh machine of the model, then its startup preset (LIB-18
+// AC-6); the same model again does nothing.
 TEST(test_pick_model) {
     SKIP_UNLESS(romsPresent(), "no ROMs in roms/");
     SessionFixture f;
     CHECK(f.start("PC-1500A"));
-    CHECK(f.ok(c::kDefaultPreset));   // none set
-    f.settings.setDefaultPresetPath(Model::PC1600, "tests/fixtures/presets/startup-pc1600.pc1600");
-    CHECK(f.ok(c::kPickModel, Value::object({{"model", "PC-1600"}})));
-    CHECK(f.part().currentModel() == Model::PC1600);
-    CHECK(f.part().ce1600pAttached());   // the preset's plotter
-    CHECK(f.ok(c::kTogglePeripheral, toggle("CE-1600P")));
-    CHECK(f.ok(c::kPickModel, Value::object({{"model", "PC-1600"}})));   // re-picking does nothing
-    CHECK(!f.part().ce1600pAttached());
+    f.settings.setDefaultPresetPath(Model::PC1500, "examples:startup/default-pc1500.pc1500");
+    CHECK(f.model("PC-1500"));
+    CHECK(f.part().currentModel() == Model::PC1500);
+    CHECK(f.part().ce150Attached());   // the startup preset's plotter
+    CHECK(f.toggle("CE-150"));
+    CHECK(f.model("PC-1500"));   // re-picking does nothing
+    CHECK(!f.part().ce150Attached());
 }
 
+// A startup preset by its bundle path (LIB-18 §10.4); one of another model
+// gives the built-in default and the notice (LIB-18 EC-1).
 TEST(test_example_ref_default_preset) {
     SKIP_UNLESS(romsPresent(), "no ROMs in roms/");
     SessionFixture f;
-    CHECK(f.start("PC-1500A"));
     f.settings.setDefaultPresetPath(Model::PC1500A, "examples:startup/default-pc1500a.pc1500a");
-    CHECK(f.ok(c::kDefaultPreset));
+    f.settings.setDefaultPresetPath(Model::PC1500, "examples:basic/hanoi.pc1600");
+    CHECK(f.start("PC-1500A"));
     CHECK(f.part().ce150Attached());
-    // Another model's default is refused by its name, not its path.
-    const sessions::ReplyMessage wrong = f.run(
-        c::kLoadDefaultPreset, Value::object({{"path", "examples:startup/default-pc1600.pc1600"}, {"model", "PC-1500A"}}));
-    CHECK(!wrong.done && wrong.reason.find("\"CE-1600P + modules\"") != std::string::npos);
+    CHECK(f.model("PC-1500"));
+    CHECK(f.part().currentModel() == Model::PC1500 && !f.part().ce150Attached());
+    const auto n = f.notices();
+    CHECK(!n.empty() && n.back().find("could not be loaded") != std::string::npos);
 }
 
 // LIB-2 AC-34 (design §6 P11): the real-time clocks are set from the
@@ -329,7 +327,7 @@ TEST(lib2_ac34_set_at_build_and_after_operation) {
         CHECK(isFixed(read()));
         f.runFor(3.0);   // emulated time: the clock runs on it
         CHECK(!isFixed(read()));
-        CHECK(f.ok(c::kReset, Value::object({{"all", false}})));   // an operation: set again at its end
+        CHECK(f.reset());   // an operation: set again at its end
         CHECK(isFixed(read()));
     }
 }

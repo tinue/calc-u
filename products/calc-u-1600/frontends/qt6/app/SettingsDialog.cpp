@@ -3,7 +3,7 @@
 #include "AppSettings.hpp"
 #include "MachineController.hpp"
 #include "NamedComboBox.hpp"
-#include "app/PresetCatalog.hpp"
+#include "presets/BundleFile.hpp"
 #include "debug/DebugController.hpp"
 
 #include <QCheckBox>
@@ -160,13 +160,14 @@ void addOpenFolderRow(QGridLayout* grid, int row, QWidget* parent, SectionGrids&
     addPathRow(grid, row, parent, sections, spec);
 }
 
-// One model's "default preset" row: a pick list of the bundled default
-// presets for `model` (examples/bundled.yaml's `defaults`), "(none)", and
-// the user's own file once one is chosen. The list shows descriptions, the
-// closed combo the short name (NamedComboBox); Settings stores a bundled
-// one as its "examples:" ref. "Choose…" picks any preset file.
+// One model's "startup preset" row (LIB-18 §10.4, `[preset] <model>`): a
+// pick list of the startup presets of the preset list for `model` (LIB-6
+// AC-32, examples/bundle.yaml's `startup`), "(none)", and the user's own
+// file once one is chosen. The list shows descriptions, the closed combo
+// the short name (NamedComboBox); Settings stores a bundled one by its
+// bundle path ("examples:…"). "Choose…" picks any preset file.
 void addDefaultPresetRow(QGridLayout* grid, int row, QWidget* parent, SectionGrids& sections, const QString& label,
-                         Model model) {
+                         Model model, std::vector<calcu::presets::PresetListEntry> entries) {
     addRowLabel(grid, row, parent, sections, label);
     auto* combo = new NamedComboBox(parent);
     combo->setObjectName(QStringLiteral("dialog.settings.preset.") + modelSettingsKey(model));
@@ -174,20 +175,25 @@ void addDefaultPresetRow(QGridLayout* grid, int row, QWidget* parent, SectionGri
     auto* pickButton = makeRowButton(SettingsDialog::tr("Choose…"), parent);
     grid->addWidget(pickButton, row, kPickColumn);
 
-    const shared::PresetCatalog catalog(AppPaths::paths());
-    const auto fill = [combo, model, catalog] {
+    const auto fill = [combo, model, entries] {
         const QSignalBlocker block(combo);
         combo->clear();
         combo->addNamedItem(SettingsDialog::tr("(none)"), SettingsDialog::tr("(none)"), QString(),
                             SettingsDialog::tr("Don't load a preset for this model"));
         const QString current = AppSettings::defaultPresetPath(model);
-        for (const shared::PresetEntry& e : catalog.defaultChoices(model, current.toStdString())) {
-            const QString ref = QString::fromStdString(e.ref);
-            // A bundled one shows its description on hover, the user's own file its path.
-            const QString tip = ref.startsWith(QLatin1String(shared::kExamplePresetPrefix))
-                                    ? QString::fromStdString(e.description)
-                                    : AppPaths::displayPath(ref);
-            combo->addNamedItem(QString::fromStdString(e.label()), QString::fromStdString(e.name), ref, tip);
+        bool listed = current.isEmpty();
+        for (const calcu::presets::PresetListEntry& e : entries) {
+            if (e.kind != calcu::presets::PresetListEntry::Kind::Startup || e.model.value != shared::settingsModelName(model))
+                continue;
+            const QString ref = QString::fromStdString(e.bundlePath);
+            listed = listed || ref == current;
+            const QString name = QString::fromStdString(e.name);
+            combo->addNamedItem(e.description.empty() ? name : name + QStringLiteral(" -- ") + QString::fromStdString(e.description),
+                                name, ref, QString::fromStdString(e.description));
+        }
+        if (!listed) {   // the user's own file: its path on hover
+            const QString name = QFileInfo(current).completeBaseName();
+            combo->addNamedItem(name, name, current, AppPaths::displayPath(current));
         }
         combo->setCurrentIndex(std::max(0, combo->findData(current)));
         combo->setToolTip(combo->itemData(combo->currentIndex(), Qt::ToolTipRole).toString());
@@ -202,7 +208,7 @@ void addDefaultPresetRow(QGridLayout* grid, int row, QWidget* parent, SectionGri
     QObject::connect(pickButton, &QPushButton::clicked, parent, [parent, model, fill] {
         const QString extension = modelSettingsKey(model).toLower();
         const QString path = QFileDialog::getOpenFileName(
-            parent, SettingsDialog::tr("Choose Default Preset"), AppSettings::openStartDir(AppSettings::OpenFolder::Samples),
+            parent, SettingsDialog::tr("Choose Startup Preset"), AppSettings::openStartDir(AppSettings::OpenFolder::Samples),
             SettingsDialog::tr("Presets (*.%1);;All Files (*)").arg(extension));
         if (path.isEmpty()) return;
         AppSettings::setDefaultPresetPath(model, path);
@@ -249,15 +255,15 @@ SettingsDialog::SettingsDialog(MachineController* controller, QWidget* parent)
     addOpenFolderRow(general, 4, this, sections, tr("Host drive folder:"), tr("Choose Host Drive Folder"),
                      AppSettings::OpenFolder::HostDrive);
 
-    // ── Default presets ──────────────────────────────────────────────────
-    // Applied whenever that model gets selected (including at startup) --
-    // see MainWindow::applyDefaultPreset().
+    // ── Startup presets ──────────────────────────────────────────────────
+    // Loaded when that model starts or is switched to (LIB-18 AC-4, AC-6).
     QGridLayout* presets =
-        addSection(layout, this, sections, tr("Default presets (loaded when the model is selected)"),
+        addSection(layout, this, sections, tr("Startup presets (loaded when the model is selected)"),
                    QStringLiteral("dialog.settings.presets"));
-    addDefaultPresetRow(presets, 0, this, sections, tr("PC-1500:"), Model::PC1500);
-    addDefaultPresetRow(presets, 1, this, sections, tr("PC-1500A:"), Model::PC1500A);
-    addDefaultPresetRow(presets, 2, this, sections, tr("PC-1600:"), Model::PC1600);
+    const auto entries = controller->session().presetEntries();
+    addDefaultPresetRow(presets, 0, this, sections, tr("PC-1500:"), Model::PC1500, entries);
+    addDefaultPresetRow(presets, 1, this, sections, tr("PC-1500A:"), Model::PC1500A, entries);
+    addDefaultPresetRow(presets, 2, this, sections, tr("PC-1600:"), Model::PC1600, entries);
 
     // ── Storage ──────────────────────────────────────────────────────────
     QGridLayout* storage = addSection(layout, this, sections, tr("Storage"), QStringLiteral("dialog.settings.storage"));

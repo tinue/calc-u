@@ -22,14 +22,14 @@
 #include "../core/PC1500/PC1500Display.hpp"
 #include "../core/PC1500/PC1500Memory.hpp"
 #include "../core/PC1500/PC1500LcdText.hpp"
-#include "../core/PC1500/PC1500PresetLoader.hpp"
+#include "../core/PC1500/PC1500BasicTyper.hpp"
 #include "../core/PC1600/PC1600Bank.hpp"
 #include "../core/PC1600/PC1600BasicLoader.hpp"
 #include "../core/PC1600/PC1600BasicTyper.hpp"
 #include "../core/PC1600/PC1600Display.hpp"
 #include "../core/PC1600/PC1600LcdText.hpp"
-#include "../core/PC1600/PC1600PresetLoader.hpp"
-#include "PresetTestSupport.hpp"
+#include "../core/PC1600/PC1600BasicTyper.hpp"
+#include "TestRoms.hpp"
 #include "TestRoms.hpp"
 #include "TestHarness.hpp"
 #include "LoaderTestSupport.hpp"
@@ -326,58 +326,6 @@ TEST(test_pc1500_plain_text) {
 }
 
 // ── `expect:` preset step ───────────────────────────────────────────────
-
-TEST(test_expect_parse) {
-    PresetFile p;
-    std::string err;
-    CHECK(parsePresetString("format-version: 1\nmodel: PC-1600\nkeys:\n  - expect: ERROR 1 # not a comment\n",
-                            "/tmp/lcd_text_tests_scratch.pc1600", &p, &err));
-    CHECK(!p.sections.empty() && !p.sections[0].keys.empty() &&
-          p.sections[0].keys[0].kind == PresetStep::Kind::Expect &&
-          p.sections[0].keys[0].text == "ERROR 1 # not a comment");
-    PresetFile bad;
-    CHECK(!parsePresetString("format-version: 1\nmodel: PC-1600\nkeys:\n  - expect:\n", "/tmp/lcd_text_tests_scratch.pc1600", &bad,
-                             &err));
-}
-
-// MEM with and without the CE-1600P: the floppy module's work area (428H
-// bytes, EXROMWK) is reserved as soon as the drive answers -- and the
-// emulator attaches a CE-1600F with every CE-1600P.
-TEST(test_expect_pc1600) {
-    struct Case {
-        const char* text;
-        bool ok;
-    };
-    // Without it MEM is 11834: the failing case shows that on screen.
-    const Case cases[] = {
-        {"format-version: 1\nmodel: PC-1600\nplotter: CE-1600P\nkeys:\n  - type: PRINT MEM\n  - expect: 10810\n", true},
-        {"format-version: 1\nmodel: PC-1600\nkeys:\n  - type: PRINT MEM\n  - expect: 10810\n", false},
-    };
-    for (const Case& c : cases) {
-        PresetFile p;
-        std::string err;
-        CHECK(parsePresetString(c.text, "/tmp/lcd_text_tests_scratch.pc1600", &p, &err));
-        PC1600Machine m;
-        SKIP_UNLESS(loadPC1600Roms(m), "PC-1600 ROMs not found");   // the preset loader boots whatever ROMs are loaded
-        const PresetLoadResult r = applyPC1600Preset(m, p, {}, "/tmp", ".", {}, testPresetRoms());
-        SKIP_UNLESS(r.ok || r.error.find("ROM") == std::string::npos || r.error.find("expect") != std::string::npos, r.error.c_str());
-        CHECK(r.ok == c.ok);
-        if (!c.ok) CHECK(r.error.find("11834") != std::string::npos); // the failure shows the screen
-        if (r.ok != c.ok) std::fprintf(stderr, "  %s-> %s\n", c.text, r.error.c_str());
-    }
-}
-
-TEST(test_expect_pc1500) {
-    PresetFile p;
-    std::string err;
-    CHECK(parsePresetString("format-version: 1\nmodel: PC-1500\nkeys:\n  - key: mode\n  - type: PRINT 12345*-2\n  - expect: -24690\n",
-                            "/tmp/lcd_text_tests_scratch.pc1500", &p, &err));
-    PC1500Machine m;
-    const PresetLoadResult r = applyPC1500Preset(m, p, {}, "/tmp", ".", {}, testPresetRoms());
-    SKIP_UNLESS(r.ok || r.error.find("ROM") == std::string::npos || r.error.find("expect") != std::string::npos, r.error.c_str());
-    CHECK(r.ok);
-    if (!r.ok) std::fprintf(stderr, "  %s\n", r.error.c_str());
-}
 
 TEST(test_log_field) {
     LcdText t;

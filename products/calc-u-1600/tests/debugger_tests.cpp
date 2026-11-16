@@ -202,8 +202,8 @@ fs::path writePreset(SessionFixture& f, const std::string& name, const std::stri
 tracetest::TraceSummary sessionTrace(const char* model, const std::string& steps, const std::string& file) {
     SessionFixture f;
     CHECK(f.start(model));
-    const fs::path preset = writePreset(f, "t.preset", std::string("format-version: 1\nmodel: ") + model + "\nkeys:\n" + steps);
-    CHECK(f.ok(c::kLoadPreset, Value::object({{"path", preset.generic_string()}})));
+    const fs::path preset = writePreset(f, "t.preset", std::string("format-version: 2\nmodel: ") + model + "\nkeys:\n" + steps);
+    CHECK(f.ok(calcu::presets::kLoadPresetCommand, Value::object({{"ref", preset.generic_string()}})));
     const auto* t = f.state<dbg::TraceState>(dbg::kTraceTopic);
     CHECK(t && !t->running);   // the operation's end ends a trace left open
     return tracetest::readTrace(f.paths->traceDir() + "/" + file);
@@ -219,14 +219,14 @@ void checkWellFormed(const tracetest::TraceSummary& s) {
 
 TEST(lib10_ac42_trace_step_produces_wellformed_file) {
     SKIP_UNLESS(romsPresent(), "no ROMs in roms/");
-    const auto s = sessionTrace("PC-1500A", "  - trace: t.bin\n  - wait: 0.3\n  - trace: off\n", "t.bin");
+    const auto s = sessionTrace("PC-1500A", "  - trace: t.bin\n  - wait: 0.3s\n  - trace: off\n", "t.bin");
     checkWellFormed(s);
     CHECK(s.traceEventCount > 0);
 }
 
 TEST(lib10_ac42_trace_step_left_open_is_closed_at_the_end) {
     SKIP_UNLESS(romsPresent(), "no ROMs in roms/");
-    const auto s = sessionTrace("PC-1500A", "  - trace: t2.bin\n  - wait: 0.2\n", "t2.bin");
+    const auto s = sessionTrace("PC-1500A", "  - trace: t2.bin\n  - wait: 0.2s\n", "t2.bin");
     checkWellFormed(s);
     CHECK(s.traceEventCount > 0);
 }
@@ -234,8 +234,8 @@ TEST(lib10_ac42_trace_step_left_open_is_closed_at_the_end) {
 TEST(lib10_ac42_z80_frame_shares_one_file_with_lh5801_frame) {
     SKIP_UNLESS(romsPresent(), "no ROMs in roms/");
     // A PC-1600 with the CE-150 in MODE 1: the LH5803 drives the plotter.
-    const auto s = sessionTrace("PC-1600\nplotter: CE-150",
-                                "  - trace: t3.bin\n  - type: MODE 1\n  - type: LPRINT 1\n  - wait: 2\n  - trace: off\n",
+    const auto s = sessionTrace("PC-1600\nprinter: CE-150",
+                                "  - trace: t3.bin\n  - type: MODE 1\n  - type: LPRINT 1\n  - wait: 2s\n  - trace: off\n",
                                 "t3.bin");
     checkWellFormed(s);
     CHECK(s.z80EventCount > 0);
@@ -244,14 +244,14 @@ TEST(lib10_ac42_z80_frame_shares_one_file_with_lh5801_frame) {
 
 TEST(lib10_ac42_pc1600_trace_step_produces_wellformed_file) {
     SKIP_UNLESS(romsPresent(), "no ROMs in roms/");
-    const auto s = sessionTrace("PC-1600", "  - trace: t4.bin\n  - wait: 0.3\n  - trace: off\n", "t4.bin");
+    const auto s = sessionTrace("PC-1600", "  - trace: t4.bin\n  - wait: 0.3s\n  - trace: off\n", "t4.bin");
     checkWellFormed(s);
     CHECK(s.z80EventCount > 0);
 }
 
 TEST(lib10_ac42_pc1600_left_open_is_closed) {
     SKIP_UNLESS(romsPresent(), "no ROMs in roms/");
-    const auto s = sessionTrace("PC-1600", "  - trace: t5.bin\n  - wait: 0.2\n", "t5.bin");
+    const auto s = sessionTrace("PC-1600", "  - trace: t5.bin\n  - wait: 0.2s\n", "t5.bin");
     checkWellFormed(s);
 }
 
@@ -329,8 +329,8 @@ TEST(lib10_ac43_preset_trace_ends_at_the_limit_with_a_notice) {
     SessionFixture f;
     f.settings.setTraceMaxFileSizeMB(1);
     CHECK(f.start("PC-1600"));
-    const fs::path preset = writePreset(f, "long.pc1600", "format-version: 1\nmodel: PC-1600\nkeys:\n  - trace: long.bin\n  - wait: 8\n");
-    CHECK(f.ok(c::kLoadPreset, Value::object({{"path", preset.generic_string()}})));
+    const fs::path preset = writePreset(f, "long.pc1600", "format-version: 2\nmodel: PC-1600\nkeys:\n  - trace: long.bin\n  - wait: 8s\n");
+    CHECK(f.ok(calcu::presets::kLoadPresetCommand, Value::object({{"ref", preset.generic_string()}})));
     const std::string path = f.paths->traceDir() + "/long.bin";
     CHECK(fs::exists(path) && fs::file_size(path) <= 1024 * 1024);
     CHECK(fs::exists(path) && fs::file_size(path) > 1000 * 1000);   // MiB, not 1'000'000 bytes (ledger 1600-14)

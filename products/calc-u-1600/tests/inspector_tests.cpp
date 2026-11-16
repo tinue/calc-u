@@ -14,10 +14,11 @@
 #include "../core/Debug/Inspect/PC1600Inspector.hpp"
 #include "../core/Debug/Inspect/TextTable.hpp"
 #include "../core/PC1500/PC1500Machine.hpp"
-#include "../core/PC1500/PC1500PresetLoader.hpp"
 #include "../core/PC1600/PC1600Machine.hpp"
-#include "../core/PC1600/PC1600PresetLoader.hpp"
-#include "PresetTestSupport.hpp"
+#include "ScriptedSetup.hpp"
+#include "../core/Connector/MemoryCardCatalog.hpp"
+#include "../core/Connector/SoftwareDefinedCard.hpp"
+#include <sstream>
 #include "TestRoms.hpp"
 #include "TestHarness.hpp"
 
@@ -58,25 +59,47 @@ bool enabled1600(const PC1600Machine& m, inspect::View v) {
     return false;
 }
 
-/// Applies a PC-1600 preset; false (test skipped) without the ROM images.
+/// Sets a PC-1600 up as the version 1 preset `yaml` did -- its `slot-N:`
+/// modules, then its `- key:` and `- type:` steps -- on the old class with
+/// the typer (M-46: the version 1 loader is gone; these tests are about the
+/// views). False (test skipped) without the ROM images.
 bool preset1600(PC1600Machine& m, const std::string& yaml) {
     if (!loadPC1600Roms(m)) {
         testharness::skip("PC-1600 ROM images not found");
         return false;
     }
-    PresetFile p;
-    std::string err;
-    if (!parsePresetString(yaml, "/tmp/inspector_tests_scratch.pc1600", &p, &err)) {
-        std::fprintf(stderr, "FAIL preset parse: %s\n", err.c_str());
-        testharness::failCount()++;
-        return false;
+    std::istringstream in(yaml);
+    std::vector<std::string> steps;
+    for (std::string line; std::getline(in, line);) {
+        for (int slot : {1, 2}) {
+            const std::string key = "slot-" + std::to_string(slot) + ": ";
+            if (line.rfind(key, 0) != 0) continue;
+            std::string path, err;
+            if (!resolveModuleSpecByName(std::string("frontends/qt6/resources/cards"), line.substr(key.size()), &path, &err)) {
+                std::fprintf(stderr, "FAIL module: %s\n", err.c_str());
+                testharness::failCount()++;
+                return false;
+            }
+            auto card = makeSoftwareDefinedCard(path, slot == 1 ? CardHost::PC1600Slot1 : CardHost::PC1600Slot2, &err);
+            if (!card) {
+                std::fprintf(stderr, "FAIL card: %s\n", err.c_str());
+                testharness::failCount()++;
+                return false;
+            }
+            if (slot == 1) m.attachSlot1Card(std::move(card));
+            else m.attachSlot2Card(std::move(card));
+        }
+        if (line.rfind("  - ", 0) == 0) steps.push_back(line.substr(4));
     }
-    const PresetLoadResult r = applyPC1600Preset(m, p, nullptr, ".", "frontends/qt6/resources/cards");
-    if (!r.ok) {
-        std::fprintf(stderr, "FAIL preset: %s\n", r.error.c_str());
-        testharness::failCount()++;
+    scripted::bootPC1600(m);
+    for (const std::string& step : steps) {
+        if (step.rfind("key: ", 0) == 0) tapKey(m, step.substr(5));
+        else if (step.rfind("type: ", 0) == 0 && !scripted::type(m, step.substr(6))) {
+            testharness::failCount()++;
+            return false;
+        }
     }
-    return r.ok;
+    return true;
 }
 
 // ── Formatting ───────────────────────────────────────────────────────────
@@ -279,13 +302,12 @@ TEST(test_pc1600_lh_view_mode1_rows) {
 }
 
 TEST(test_pc1500_views) {
+    SKIP_UNLESS(testRomSet() != nullptr, "the ROMs are not fetched (roms/fetch_roms.sh)");
     PC1500Machine m(PC1500Variant::PC1500A);
-    PresetFile p;
     std::string err;
-    CHECK(parsePresetString("format-version: 1\nmodel: PC-1500A\nkeys:\n  - type: NEW0\n",
-                            "/tmp/inspector_tests_scratch.pc1500a", &p, &err));
-    const PresetLoadResult r = applyPC1500Preset(m, p, {}, ".", "frontends/qt6/resources/cards", {}, testPresetRoms());
-    SKIP_UNLESS(r.ok, r.error.c_str());
+    CHECK(presetroms::loadPC1500Rom(m, "A04", testPresetRoms(), &err));
+    scripted::bootPC1500(m);
+    CHECK(scripted::type(m, "NEW0"));
     const auto view = [&](inspect::View v) {
         return m.debugInspect([&](const PC1500Machine& x) { return inspect::pc1500View(x, v); });
     };

@@ -70,9 +70,9 @@ public:
     // Load Preset… without the file dialog, and with a failure reported
     // through `error` instead of a blocking warning box.
     bool loadPresetForShots(const QString& path, QString* error);
-    // Reset / Reset All, as the Machine menu does.
-    void resetForShots(bool allReset) {
-        resetMachine(allReset);
+    // Reset / Cold boot, as the Machine menu does.
+    void resetForShots(bool coldBoot) {
+        resetMachine(coldBoot);
         refreshViewsAfterAdvance();
     }
     // True while a synchronous operation (SyncOperations) is running: it
@@ -140,9 +140,6 @@ private:
     void applyRomRevisionSelection(PC1500RomRevision revision);
     void applyPC1600RomVersionSelection(PC1600RomVersion version);
     void applyCE1600PRomVersionSelection(CE1600PRomVersion version);
-    // At startup: the startup model's default preset, if one is set (a
-    // model pick loads it inside SharpAppPart::pickModelJob()).
-    void applyDefaultPreset();
     void showMachineCodeLoaded(const shared::CodeLoadedReply& loaded);
 
     // Re-checks the Machine menu's model/ROM QActions to match `model`/
@@ -242,7 +239,7 @@ private:
     void syncHostDriveActions(const shared::ControlState& state);
     // Reset / Reset All (control bar, Machine menu): see resetMachine() in
     // MainWindow.cpp.
-    void resetMachine(bool allReset);
+    void resetMachine(bool coldBoot);
 
     // Physical host key (physicalKeyId()) -> the `physical` identity sent
     // with its host-key-down, so the key-up always pairs with it even with

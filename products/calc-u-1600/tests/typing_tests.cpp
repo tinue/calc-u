@@ -319,11 +319,9 @@ TEST(lib5_ac36_keys_dropped_during_preset_operation) {
     SessionFixture s;
     CHECK(s.start("PC-1600"));
     s.readCost = std::chrono::milliseconds(1);
-    s.send(shared::commands::kLoadPreset, calcu::sessions::Value::object({{"path", "tests/fixtures/presets/startup-pc1600.pc1600"}}));
+    s.send(calcu::presets::kLoadPresetCommand, calcu::sessions::Value::object({{"ref", "tests/fixtures/presets/maxed-out-mem.pc1600"}}));
     s.call();
     CHECK(s.busy());
-    Log log;
-    s.engine().setObserver(&log);
     s.screenDown("a");
     s.hostDown(letter('b', "KeyB"));
     s.paste("123");
@@ -331,6 +329,10 @@ TEST(lib5_ac36_keys_dropped_during_preset_operation) {
     CHECK(s.engine().idle());
     for (int i = 0; i < 6000 && s.busy(); ++i) s.call();
     CHECK(!s.busy());
+    // The preset types through the engine too (M-46): the keys are watched
+    // from its end on.
+    Log log;
+    s.engine().setObserver(&log);
     s.runFor(0.5);   // a key still held when the operation ended is not pressed then
     CHECK(log.events.empty());
     s.screenUp("a");
@@ -384,7 +386,11 @@ TEST(lib5_ac41_break_alias_ent_refused) {
         CHECK_EQ(one("ent"), std::string("refused"));   // OQ-6
         CHECK_EQ(one("x"), std::string("x"));
         CHECK_EQ(one("nokey"), std::string("refused"));
-        CHECK_EQ(one("kbii"), m == kPC1600 ? std::string("kbii") : std::string("refused"));
+        // LIB-6 AC-44 (M-46): the PC-1600's ctrl, kbii and bs are no names
+        // (preset.md §5.1); `key-down` still presses them.
+        CHECK_EQ(one("kbii"), std::string("refused"));
+        CHECK_EQ(one("ctrl"), std::string("refused"));
+        CHECK_EQ(one("rcl"), std::string("rcl"));
     }
 }
 

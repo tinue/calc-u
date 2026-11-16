@@ -1,0 +1,14 @@
+# LIB-6 AC-54 (design §10.6 P9; ADR 0032): a bundled example is loaded by
+# its bundle path (`load-preset {ref: examples:…}`, as File ▸ Examples does)
+# and its result shows: the CE-1600P's paper with the Lissajous figure. A
+# check scenario (CalcU1600Shots.lib6-ac54, Longer); format:
+# docs/developer/screenshots/README.md.
+out: ../../build/shots-check/lib6-ac54
+window: 1430x1280
+
+shots:
+  - name: lib6-ac54
+    preset: examples:plotter/lissajou-1600.pc1600
+    steps:
+      - expect-panel: { name: paper, title: CE-1600P, empty: false }
+      - capture: { target: lcd-image, file: lib6-ac54-lcd.png }

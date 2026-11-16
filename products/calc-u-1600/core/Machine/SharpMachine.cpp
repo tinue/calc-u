@@ -19,6 +19,7 @@ const char* placeOf(const PeripheralId& id) {
     if (id.value == kCE150 || id.value == kCE1600P) return kPrinter;
     if (id.value == kCE158) return kInterface;
     if (id.value == kHostDrive) return kHostDrivePlace;
+    if (id.value == kBusRom) return kBusRomPlace;
     return nullptr;   // a module: the slots' pin-outs decide
 }
 
@@ -34,8 +35,15 @@ const std::vector<std::uint8_t>* romImageOf(const PeripheralRequest& req, const 
 
 std::unique_ptr<ExpansionCard> moduleCardOf(const PeripheralRequest& req, const PeripheralDescriptor& d) {
     if (auto* m = dynamic_cast<const ModuleCard*>(req.content.get()); m && m->card) return std::move(m->card);
-    if (auto* def = dynamic_cast<const ModuleDefinitionData*>(d.productData.get()))
+    if (auto* def = dynamic_cast<const ModuleDefinitionData*>(d.productData.get())) {
+        if (auto* rom = dynamic_cast<const SlotRomRequest*>(req.content.get())) {   // C1600-4 AC-8
+            MemoryCardDefinition withRom = def->definition;
+            std::string error;
+            if (!replaceRomContent(&withRom, rom->bytes, &error)) return nullptr;   // the reader checked the size
+            return std::make_unique<SoftwareDefinedCard>(std::move(withRom));
+        }
         return std::make_unique<SoftwareDefinedCard>(def->definition);
+    }
     return nullptr;
 }
 
@@ -160,6 +168,12 @@ std::optional<std::string> SharpMachine::productRefusal(const PeripheralRequest&
     const std::string place = req.place.steps.empty() ? std::string() : req.place.steps[0].value;
     if (const char* own = placeOf(req.peripheral); own && place != own)
         return "The " + req.peripheral.value + " goes in the place " + own + ".";
+    if (req.peripheral.value == kBusRom) {   // C1600-4 D-5
+        const auto* rom = dynamic_cast<const BusRomRequest*>(req.content.get());
+        if (!rom) return std::string("A bus ROM is plugged in by a preset only.");
+        if (rom->bank >= 0 && m_descriptor.model.value != kPC1600)
+            return "The " + m_descriptor.model.value + " takes a bus ROM at an address, not in a bank.";
+    }
     return modelRefusal(req, replacing);
 }
 

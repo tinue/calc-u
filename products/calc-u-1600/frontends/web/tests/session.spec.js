@@ -32,7 +32,7 @@ const request = (page, method, ...args) =>
   page.evaluate(([m, a]) => document.querySelector('.calcu-client').calcuEngine.request(m, ...a), [method, args]);
 const engineState = (page) => page.evaluate(() => {
   const s = document.querySelector('.calcu-client').calcuEngine.getState();
-  return { busy: s.busy, ui: s.ui };
+  return { busy: s.busy, ui: s.ui, log: s.log };
 });
 // ENTER after the typed line, once the paste is through.
 async function typedEnter(page) {
@@ -107,6 +107,44 @@ test('ac26 buzzer samples at regular speed, none at full speed or in an operatio
     return n;
   });
   expect(during).toBe(0);
+});
+
+// LIB-6 AC-49: a preset's log lines are in the engine's log stream.
+test('lib6_ac49 preset log in the log stream', async ({ page }) => {
+  await gotoReady(page);
+  await request(page, 'loadPreset', 'examples:basic/hanoi.pc1600');
+  await expect.poll(async () => (await engineState(page)).log.join('\n'), { timeout: 45000 })
+    .toContain('Preset examples:basic/hanoi.pc1600 carried out to its end.');
+});
+
+// A preset handed over as a file the page uploaded (LIB-6 AC-54: the files
+// it names go beside it).
+async function uploadPreset(page, name, text) {
+  return page.evaluate(([n, t]) => document.querySelector('.calcu-client').calcuEngine
+    .request('upload', n, new TextEncoder().encode(t)), [name, text]);
+}
+
+// LIB-6 AC-54: an uploaded preset is loaded; its result shows.
+test('lib6_ac54 uploaded preset is loaded', async ({ page }) => {
+  await gotoReady(page);
+  await notBusy(page);
+  const path = await uploadPreset(page, 'mine.pc1600',
+    'format-version: 2\nmodel: PC-1600\nkeys:\n  - type: PRINT 6*7\n  - expect: 42\n');
+  const r = await request(page, 'loadPreset', path);
+  expect(r.reason || '').toBe('');
+  expect(r.done).toBe(true);
+  await notBusy(page);
+});
+
+// LIB-10 AC-40 (EC-8; the format 2 clause, M-46): `trace:` fails in the Web frontend.
+test('lib10_ac40 trace step fails on the web', async ({ page }) => {
+  await gotoReady(page);
+  await notBusy(page);
+  const path = await uploadPreset(page, 'web.pc1600',
+    'format-version: 2\nmodel: PC-1600\nkeys:\n  - trace: t.bin\n  - wait: 1s\n');
+  const r = await request(page, 'loadPreset', path);
+  expect(r.done).toBe(false);
+  expect(r.reason).toMatch(/line 4: .*trace/i);
 });
 
 test('ac27 no message of the old protocol', async ({ page }) => {

@@ -4,15 +4,16 @@
 #include <string>
 #include <vector>
 
-#include "../PC1500/PC1500Machine.hpp"
-#include "../PC1600/PC1600Machine.hpp"
-#include "PresetRomSet.hpp"
+#include "../core/PC1500/PC1500Machine.hpp"
+#include "../core/PC1600/PC1600Machine.hpp"
+#include "TestPresetRomSet.hpp"
 #include "machine/Descriptor.hpp"
 #include <filesystem>
 #include <optional>
 
-// Loading and attaching from PresetRoms, for the preset loaders (in place of
-// the folder search they did before LIB-12).
+// Loading and attaching from PresetRoms, for the core tests that build an
+// old machine class directly (the preset loaders' helpers until M-46,
+// core/Preset/PresetRoms).
 namespace presetroms {
 
 // The images of a model's / peripheral's variant (std::nullopt: none or the

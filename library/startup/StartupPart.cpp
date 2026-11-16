@@ -176,6 +176,7 @@ void StartupPart::attach(sessions::SessionSetup& setup) {
     setup.command(sessions::kStartCommand, [this, &cat](const Value& args, SessionContext& c) -> CommandOutcome {
         if (started_) return Refused{kStartedAlready};
         if (c.busy()) return anotherRuns();
+        if (!setup_.roms && !setup_.romsMissing.empty()) return Refused{setup_.romsMissing};   // LIB-12 AC-5
         ModelId model{settings::startupModel(setup_.settings)};   // AC-3
         const std::string named = sessions::textArg(args, "model");
         if (!named.empty()) {

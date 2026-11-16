@@ -32,7 +32,7 @@ struct ShotCaptureSpec {
 struct ShotStep {
     enum class Kind {
         Preset,       // text = absolute preset path
-        Reset,        // number = 1 for Reset All
+        Reset,        // number = 1 for Cold boot
         Key,          // text = key name: tap it
         HoldKey,      // text = key name: press (with faceplate overlay) and keep down
         ReleaseKeys,  // let go of a held key

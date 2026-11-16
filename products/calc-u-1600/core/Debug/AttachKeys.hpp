@@ -4,7 +4,7 @@
 #include <string>
 #include <vector>
 
-#include "../Preset/PresetFile.hpp"
+#include "formats/Number.hpp"
 
 // ── The debugger's attach keys ───────────────────────────────────────────
 //
@@ -124,8 +124,8 @@ inline bool checkScalar(const Key& key, const std::string& text, std::string* wh
     bool ok = true;
     switch (key.kind) {
         case Kind::Number: {
-            uint32_t v = 0;
-            ok = parseNumber(text, &v) && v <= key.max;
+            const auto v = calcu::formats::parseNumber(text);
+            ok = v && *v >= 0 && *v <= static_cast<std::int64_t>(key.max);
             break;
         }
         case Kind::Choice:

@@ -9,7 +9,6 @@
 #include "Connector/MemoryCardCatalog.hpp"
 #include "Connector/SoftwareDefinedCard.hpp"
 #include "Machine/SharpRoms.hpp"
-#include "Preset/PresetRunner.hpp"
 #include "app/AppPaths.hpp"
 #include "app/SharpAppPart.hpp"
 #include "app/Text.hpp"
@@ -76,53 +75,40 @@ void ModuleBay::selectModule(int slot, const std::string& moduleNameOrEmpty) {
     m_slots[idx].moduleName = moduleNameOrEmpty;
 }
 
-void ModuleBay::attachOneSlot(int slot) {
+std::unique_ptr<ExpansionCard> ModuleBay::cardFor(int slot) {
+    flushPendingPersist();
     SlotState& st = m_slots[slot - 1];
+    if (st.moduleName.empty()) return nullptr;
     const CardHost host = hostFor(slot);
-    if (!st.romFile.empty()) {
-        // A preset's ROM module under development: the same file and ROM
-        // again (read anew), never autosaved.
-        std::string resolved, err;
-        std::unique_ptr<ExpansionCard> card =
-            makePresetModuleCard(st.sourcePath, st.sourcePath.empty() ? st.moduleName : std::string(), st.romFile, {},
-                                 host, &resolved, &err, m_session.romSet().get());
-        if (card) {
-            m_session.attachSlotCard(slot, std::move(card));
-            return;
-        }
-        reportError("Couldn't attach " + inQuotes(st.moduleName) + ": " + err);
-        st = SlotState{};
-        return;
-    }
     std::string path, err;
     // A ROM module of the set (the CE-502B): from its bytes in the set, a
     // template that is never saved.
     if (const auto& roms = m_session.romSet()) {
         if (auto m = sharp::romSetModule(*roms, st.moduleName)) {
-            if (auto card = makeSoftwareDefinedCardFromText(m->text, m->fileName, host, &err)) {
-                classifySlot(st, {});
-                st.isTemplate = m->definition.isTemplate;
-                m_session.attachSlotCard(slot, std::move(card));
-                return;
+            const std::vector<uint8_t>* rom = st.slotRom ? &st.romBytes : nullptr;
+            if (auto card = makeSoftwareDefinedCardFromText(m->text, m->fileName, host, &err, rom)) {
+                if (!st.slotRom) {
+                    classifySlot(st, {});
+                    st.isTemplate = m->definition.isTemplate;
+                }
+                return card;
             }
             reportError("Couldn't attach " + inQuotes(st.moduleName) + ": " + err);
             st = SlotState{};
-            return;
+            return nullptr;
         }
     }
     if (resolveModuleSpecByName({m_paths.bundledResourcesDir(), m_paths.instanceDir()}, st.moduleName, &path, &err)) {
-        auto card = makeSoftwareDefinedCard(path, host, &err);
-        if (card) {
-            classifySlot(st, path);
-            m_session.attachSlotCard(slot, std::move(card));
-            // Freshly loaded from the file -- identical to it until the
-            // machine writes to the card.
-            if (!st.instanceFilePath.empty()) st.persistedRevision = currentSlotRevision(slot);
-            return;
+        // A preset's ROM module under development: its ROM again, never saved.
+        const std::vector<uint8_t>* rom = st.slotRom ? &st.romBytes : nullptr;
+        if (auto card = makeSoftwareDefinedCard(path, host, &err, rom)) {
+            if (!st.slotRom) classifySlot(st, path);
+            return card;
         }
     }
     reportError("Couldn't attach " + inQuotes(st.moduleName) + ": " + err);
     st = SlotState{};
+    return nullptr;
 }
 
 void ModuleBay::classifySlot(SlotState& st, const std::string& resolvedPath) const {
@@ -141,25 +127,49 @@ void ModuleBay::classifySlot(SlotState& st, const std::string& resolvedPath) con
     if (!st.isTemplate && !isUnderDir(resolvedPath, m_paths.bundledResourcesDir())) st.instanceFilePath = resolvedPath;
 }
 
-void ModuleBay::attachAllToFreshMachine() {
-    m_session.detachSlots();  // no-op on a fresh machine; defensive/self-documenting
-    for (int slot = 1; slot <= m_session.slotCount(); ++slot)
-        if (!m_slots[slot - 1].moduleName.empty()) attachOneSlot(slot);
-}
-
 std::string ModuleBay::attachedModuleName(int slot) const {
     const ExpansionCard* card = m_session.slotCard(slot);
     return card ? card->moduleName() : std::string();
 }
 
-void ModuleBay::syncFromPresetLoad(int slot, const std::string& resolvedPathOrEmpty, const std::string& romFile) {
+void ModuleBay::followMachine(int slot) {
+    SlotState& st = m_slots[slot - 1];
+    // Freshly loaded from the file -- identical to it until the machine
+    // writes to the card.
+    if (!st.instanceFilePath.empty()) st.persistedRevision = currentSlotRevision(slot);
+    if (m_events.moduleChanged) m_events.moduleChanged(slot);
+}
+
+void ModuleBay::followCarriedMachine() {
+    for (int slot = 1; slot <= 2; ++slot) {
+        SlotState& st = m_slots[slot - 1];
+        if (st.moduleName.empty()) continue;
+        if (attachedModuleName(slot).empty()) {
+            st = SlotState{};
+            if (m_events.moduleChanged) m_events.moduleChanged(slot);
+            continue;
+        }
+        if (!st.instanceFilePath.empty()) st.persistedRevision = currentSlotRevision(slot);
+    }
+}
+
+void ModuleBay::followPreset(int slot, const std::vector<std::uint8_t>* romBytes) {
     const int idx = slot - 1;
     m_slots[idx] = SlotState{};
     m_slots[idx].moduleName = attachedModuleName(slot);
     if (!m_slots[idx].moduleName.empty()) {
-        classifySlot(m_slots[idx], resolvedPathOrEmpty);
-        m_slots[idx].romFile = romFile;
-        if (!romFile.empty()) m_slots[idx].instanceFilePath.clear();
+        std::string path, err;
+        if (resolveModuleSpecByName({m_paths.bundledResourcesDir(), m_paths.instanceDir()}, m_slots[idx].moduleName, &path,
+                                    &err))
+            classifySlot(m_slots[idx], path);
+        else
+            m_slots[idx].isTemplate = true;   // a ROM module of the set
+        if (romBytes) {
+            m_slots[idx].slotRom = true;
+            m_slots[idx].romBytes = *romBytes;
+            m_slots[idx].instanceFilePath.clear();
+        }
+        if (!m_slots[idx].instanceFilePath.empty()) m_slots[idx].persistedRevision = currentSlotRevision(slot);
     }
     if (m_events.moduleChanged) m_events.moduleChanged(slot);
 }
@@ -198,8 +208,8 @@ bool ModuleBay::saveSlotAs(int slot, const std::string& instanceName, bool fromP
         *error = "No module attached.";
         return false;
     }
-    if (!st.romFile.empty()) {
-        *error = "The ROM of " + inQuotes(st.moduleName) + " comes from " + st.romFile +
+    if (st.slotRom) {
+        *error = "The ROM of " + inQuotes(st.moduleName) + " comes from the preset's slot ROM file"
                  ", not from its module file, so it can't be saved.";
         return false;
     }

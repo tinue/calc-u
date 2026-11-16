@@ -27,6 +27,9 @@ inline constexpr const char* kCE150 = "CE-150";
 inline constexpr const char* kCE158 = "CE-158";
 inline constexpr const char* kCE1600P = "CE-1600P";
 inline constexpr const char* kHostDrive = "host-drive";
+// A ROM on the 60-pin connector that only a preset plugs in (C1600-4 AC-10,
+// OQ-2): its bytes come with the request (BusRomRequest), D-5.
+inline constexpr const char* kBusRom = "bus-rom";
 
 // Places (C1600-1 §3.4).
 inline constexpr const char* kSlot1 = "slot-1";
@@ -34,6 +37,7 @@ inline constexpr const char* kSlot2 = "slot-2";
 inline constexpr const char* kPrinter = "printer";
 inline constexpr const char* kInterface = "interface";
 inline constexpr const char* kHostDrivePlace = "host-drive";
+inline constexpr const char* kBusRomPlace = "bus-rom";   // any number, in plug order (C1600-4 D-6)
 
 // Pin-outs. Both PC-1500 models share one memory slot pin-out (LIB-1
 // AC-36); the module definition's own host list is checked at the attach

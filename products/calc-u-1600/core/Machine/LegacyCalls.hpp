@@ -9,7 +9,7 @@
 #include "../Connector/ExpansionCard.hpp"
 #include "../Debug/ProgramLoader.hpp"
 #include "../Job.hpp"
-#include "../Preset/PresetRunner.hpp"
+#include "sessions/Operation.hpp"
 #include "machine/Machine.hpp"
 
 // Adapters (C1600-1 design §5): core functions on calcu::machine::Machine&
@@ -25,9 +25,6 @@ class PC1600BusArbiter;
 class Ce150Card;
 class Ce158Card;
 class CE1600PCard;
-// Not included: PresetMedia.hpp has a member `slots`, which Qt's macro of
-// that name breaks in the Qt frontend's sources that include this header.
-struct PresetMedia;
 
 namespace sharp::legacy {
 
@@ -35,29 +32,6 @@ namespace sharp::legacy {
 // The listing is verified through the machine's debug targets (thread n:
 // target n - 1).
 debug::LoadResult loadProgram(calcu::machine::Machine&, const debug::LoadRequest&, debug::SourceMap&);
-
-// ---- Presets (M-46, LIB-6 1600 and C1600-4) ----
-// The model's preset loader on a machine just built for the preset; what it
-// plugs in is read back into plugged() when it is done. `ctx` and `engine`:
-// the typing hand-off of C1600-2 (design §3.10; removed with this adapter in
-// M-46): a typed `program:` goes through the session's typing engine inside
-// the preset's operation; without them (a CLI, a probe) the old typer.
-job::Task<PresetLoadResult> applyPresetJob(calcu::machine::Machine&, PresetFile preset, PresetLogFn log,
-                                           std::string traceDir, std::string moduleDir, PresetBootedFn onBooted,
-                                           PresetRoms presetRoms, std::vector<std::string> extraModuleDirs,
-                                           PresetArmedFn onArmed, PresetSaveAsFn onSaveAs,
-                                           calcu::sessions::OperationContext* ctx = nullptr,
-                                           calcu::typing::TypingEngine* engine = nullptr);
-// What the preset loader plugged in so far, read back into plugged() (from
-// its onArmed, so that the armed machine's peripherals -- a plotter's paper
-// -- are seen while the preset still runs; LIB-3 AC-35, M-31).
-void syncPlugged(calcu::machine::Machine&);
-
-// ---- Running to the prompt (M-46, LIB-18 1600) ----
-// A power cycle under way runs to its end, a phase at a time; then the
-// model's boot run (runBootToPromptJob of both typers).
-job::Task<void> runToPromptJob(calcu::machine::Machine&);
-void runToPrompt(calcu::machine::Machine&);
 
 // ---- Media (M-47, LIB-7 1600) ----
 // The card in a module slot (from 1), or nullptr.
@@ -87,8 +61,6 @@ CoreParts coreParts(calcu::machine::Machine&);
 // inside a long run every `intervalTicks`, e.g. to drain the sound while a
 // preset's single long run goes on; an empty function removes it.
 void setYieldHook(calcu::machine::Machine&, std::function<void()> hook, std::uint64_t intervalTicks);
-// What a preset's `saveas:` saves from the machine (savePresetMedia()).
-PresetMedia presetMedia(calcu::machine::Machine&, const PresetLoadResult& armed, const PresetSaveAsRequest& request);
 // The model's typer: types `line`, optionally ENTER (typeLine of
 // PC1500BasicTyper / PC1600BasicTyper; M-36 for the app's typing).
 bool typeLine(calcu::machine::Machine&, const std::string& line, bool pressEnter, std::string* error);

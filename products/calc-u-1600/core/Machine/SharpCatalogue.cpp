@@ -15,6 +15,9 @@ namespace sharp {
 
 namespace {
 
+// The place bus-rom takes any number of bus ROMs (C1600-4 D-6).
+constexpr int kBusRomsAtOnce = 1000;
+
 RomEntry rom(const char* file, std::uint64_t bytes, const char* md5) {
     return RomEntry{file, RomEncoding::Binary, bytes, ContentUnit::Bytes, md5};
 }
@@ -78,7 +81,8 @@ MachineDescriptor pc1500Descriptor(bool pc1500a) {
                     {ConnectorId{"60-pin"}, "60-pin system bus", {contactLevel(kPC1500BusPinOut, Takes::Chain)}}};
     d.places = {{PlaceName{kSlot1}, ConnectorId{"40-pin"}, PinOutId{kPC1500SlotPinOut}, 1},
                 {PlaceName{kPrinter}, ConnectorId{"60-pin"}, PinOutId{kPC1500BusPinOut}, 1},
-                {PlaceName{kInterface}, ConnectorId{"60-pin"}, PinOutId{kPC1500BusPinOut}, 1}};
+                {PlaceName{kInterface}, ConnectorId{"60-pin"}, PinOutId{kPC1500BusPinOut}, 1},
+                {PlaceName{kBusRomPlace}, ConnectorId{"60-pin"}, PinOutId{kPC1500BusPinOut}, kBusRomsAtOnce}};
     // Depth as the machine is built (machine.md, fit table, "Depth today").
     const ComponentId memory{"memory"};
     d.components = {{ComponentId{"LH5801"}, "LH5801 CPU", Depth::Separate, std::nullopt},
@@ -112,7 +116,8 @@ MachineDescriptor pc1600Descriptor() {
                 {PlaceName{kSlot2}, ConnectorId{"40-pin-2"}, PinOutId{kPC1600Slot2PinOut}, 1},
                 {PlaceName{kPrinter}, ConnectorId{"60-pin"}, PinOutId{kPC1600BusPinOut}, 1},
                 {PlaceName{kInterface}, ConnectorId{"60-pin"}, PinOutId{kPC1600BusPinOut}, 1},
-                {PlaceName{kHostDrivePlace}, ConnectorId{"60-pin"}, PinOutId{kPC1600BusPinOut}, 1}};
+                {PlaceName{kHostDrivePlace}, ConnectorId{"60-pin"}, PinOutId{kPC1600BusPinOut}, 1},
+                {PlaceName{kBusRomPlace}, ConnectorId{"60-pin"}, PinOutId{kPC1600BusPinOut}, kBusRomsAtOnce}};
     const ComponentId memory{"memory"};
     const ComponentId subCpu{"sub-cpu"};
     d.components = {{ComponentId{"SC7852"}, "SC7852 (Z-80) CPU", Depth::Separate, std::nullopt},
@@ -176,7 +181,14 @@ std::vector<PeripheralDescriptor> peripherals() {
     hostDrive.roms = {rom("PC1600-P1-B7-HOSTDRIVE.bin", 16384, "2aa388667706bf9bf5a707dc7b36416d")};
     hostDrive.fits = {PinOutId{kPC1600BusPinOut}};
 
-    return {ce150, ce158, ce1600p, hostDrive};
+    // C1600-4 AC-10, D-5: no ROM entry of its own; its bytes come with the
+    // request (BusRomRequest), so only a preset can plug one in.
+    PeripheralDescriptor busRom;
+    busRom.id = PeripheralId{kBusRom};
+    busRom.name = "bus ROM";
+    busRom.fits = {PinOutId{kPC1500BusPinOut}, PinOutId{kPC1600BusPinOut}};
+
+    return {ce150, ce158, ce1600p, hostDrive, busRom};
 }
 
 } // namespace

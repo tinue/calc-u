@@ -4,12 +4,12 @@
 #  X=2 (2 passes)
 #  CALL &38C5,X   -> X holds the test result when finished
 
-format-version: 1
+format-version: 2
 preset-name: Memtest CE-155
 description: Memory test with the CE-155 module
 model: PC-1500
 
-slot-1: CE-155
+slot-1: { name: CE-155 }
 
 keys:
   - key: cl
@@ -24,4 +24,4 @@ keys:
   - type: X=2
   - type: CALL&38C5,X
   - type: X
-  - wait: 5
+  - wait: 5s

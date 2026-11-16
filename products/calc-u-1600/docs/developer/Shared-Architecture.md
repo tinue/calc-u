@@ -9,14 +9,15 @@ flowchart TB
     Qt["frontends/qt6/app/ — desktop GUI<br/>(widgets, dialogs, menus, QAudioSink, DAP server)"]
     Web["frontends/web/ — web client<br/>(React, canvas, IndexedDB, AudioWorklet)"]
     Shared["app/ — app logic, no GUI<br/>SharpAppPart on the library's app session, bays, settings, paths, layouts"]
-    Core["core/ — the hardware<br/>CPUs, machines, cards, loaders, presets, jobs"]
+    Core["core/ — the hardware<br/>CPUs, machines, cards, loaders, jobs"]
     Qt --> Shared
     Web --> Shared
     Shared --> Core
 ```
 
 - **`core/`** is the emulated hardware and what drives it: CPUs, machines,
-  cards and connectors, program and preset loaders, the debugger core.
+  cards and connectors, program loaders, the debugger core. Presets are
+  the library's (LIB-6, `library/presets/`).
 - **`app/`** is everything above Core that is not drawing: the product's
   part of the library's app session (the live machine and its operations,
   the module/floppy/tape bays), the pacing profiles, settings keys, file
@@ -59,7 +60,7 @@ WebAssembly check.
 
 | File | What it is |
 |---|---|
-| `SharpAppPart` | Calc-U-1600's part of the library's app session (a `calcu::sessions::SessionPart`): the live PC-1500/1500A/1600 as one `calcu::machine::Machine` handed to the machine session, model and ROM switches, memory-module slots, peripherals, tape, host drive, trace, inspector; the bays; the Sharp operations as `c1600.*` commands; the interim topics `c1600.control-state`, `c1600.machine`, `c1600.tapes`, `c1600.serial-links` and LIB-12's `roms-missing` (`SharpTopics.hpp`; see "The machine" below) |
+| `SharpAppPart` | Calc-U-1600's part of the library's app session (a `calcu::sessions::SessionPart`): the live PC-1500/1500A/1600 as one `calcu::machine::Machine` handed to the machine session, memory-module slots, peripherals, tape, host drive, trace, inspector; the bays; the library's parts it hosts: `PresetsPart` (LIB-6: `load-preset {ref \| content,name; buildOnly}`, `check-preset`, `preset-list`, `run-step`, `wait-idle`) and `StartupPart` (LIB-18: `start`, `model {name}`, `variant {name}`, `attach {place, peripheral, variant?}`, `detach {place}`, `reset`, `cold-boot`, `power-cycle`); the product commands `c1600.select-module`, `c1600.mount-host-drive`, `c1600.ce1600p-rom` (each a LIB-18 plug change); the interim topics `c1600.control-state`, `c1600.machine`, `c1600.tapes`, `c1600.serial-links` and LIB-12's `roms-missing` (`SharpTopics.hpp`; see "The machine" below) |
 | `SharpDebuggerSetup`, `SharpTraceRecorder`, `SharpSymbolReaders` | The library's debugger for the Sharp models (LIB-10): the `DebuggerPart`'s set-up (`cpu` only, the trace session on the core's records, no run-control steps), the trace records into the trace file, the symbols of the Sharp listings |
 | `SharpPrinters` | The CE-150's and the CE-1600P's papers for the library's `PaperPart` (LIB-8) |
 | `dap/` | The DAP's layer (C1600-3): its targets, breakpoints and steps on the library's debugger; the server is in the Qt frontend until M-50 |
@@ -67,7 +68,8 @@ WebAssembly check.
 | `SharpSession` | `makeSharpSession()`: the library's app session with the part, which the session owns (Qt6, tests, `tools/wasm_smoke`); a host talks to it through the library's `calcu::sessions::Listener` |
 | `SharpWebPart` | What the Web page draws, as product topics, commands and requests (`c1600.ui`, `c1600.lcd`, …; LIB-15 1600) |
 | `ModuleBay`, `FloppyBay`, `TapeBay` | The control bar's slots, disk and tape: catalogues, attach, Name & Save, preset `saveas:`, debounced autosave |
-| `PresetCatalog` | The bundled presets of `examples/bundled.yaml` (`defaults`, `examples`) and any preset's short name and description; `examples:` refs resolve through `AppPaths` |
+| `SharpPresetRules`, `SharpPresetKeys`, `SharpDebugBlock` | The product's part of LIB-6's preset loader: its rules per model (when the machine is idle, what `expect:` reads, what `screenshot:` writes), its keys and sections (`program:`, `host-drive:`, `slot-N-rom:`, `bus-rom:`, `debug:`), and the reader of the `debug:` block (`debugBlockOf`). The bundled presets are LIB-6's preset list from `examples/bundle.yaml` (`SharpAppPart::presetEntries()`, the `preset-list` request); a bundled example is addressed as `examples:<path>` |
+| `SharpProductMachines` | The machines for LIB-18's start, model and variant switches and plug changes |
 | `PacingProfiles`, `AudioSink` | The Sharp pacing profiles (LIB-17 AC-20: the slice is the call, no jitter, full speed never paced); the host's audio output and `SoundFeed`, which plays the session's sound messages into it |
 | `Settings`, `AppPaths`, `Utf8Path` | Every settings key with its default (the declaration of `Calc-U-1600.ini`); the save/tapes/bundle folders and by-name save paths |
 | `KeyLayout/`, `LcdLayout`, `Rgb` | Key hit-regions and the faceplate fit; LCD geometry, colours and status indicators (`lcd::indicators()`) |
@@ -95,13 +97,12 @@ file in `app/`, `frontends/`, `tools/` or `dev/` includes or names one.
   the ROM set). The ROM images come from the session's ROM set: one
   lookup when `SharpAppPart` is made (`sharp::lookUpRoms`,
   `core/Machine/SharpRoms`, LIB-12) over the bundled resources folder,
-  then `RomSet::imagesFor()` for every build and attach; the preset
-  loaders get it as `PresetRoms`. Without the full set no machine is
+  then `RomSet::imagesFor()` for every build and attach. Without the full set no machine is
   built: the `start` command is refused with the lookup's message and the
   `roms-missing` topic carries it (LIB-12 AC-5). Every rebuild is then a `coldBoot()`.
 - **Operations and keys.** `reset()`, `coldBoot()`, `powerCycle()` (the
   off / on sequence now runs inside the core, `core/Machine/PowerCycleSequence`),
-  then `sharp::legacy::runToPromptJob` (until M-46). Keys are key IDs
+  driven by LIB-18's machine control until the machine is ready for keys. Keys are key IDs
   (`keyDown`/`keyUp`; `on` is one of them). Typing (holds, gaps, key
   readiness, Paste Text) is the library's typing engine; the machines offer
   the generic kind `typing-support` (prompt readiness; on the PC-1600 the
@@ -121,7 +122,7 @@ file in `app/`, `frontends/`, `tools/` or `dev/` includes or names one.
   the debug targets are the machine's `debugging()`
   (`core/Debug/SharpDebugging`). The program loaders reach memory only
   through `c1600.loader-memory` (`core/Loaders.hpp`, C1600-2). What has no
-  seam yet (preset loaders, the
+  seam yet (the
   PC-1600's typing latches, the card in a slot) goes through
   `core/Machine/LegacyCalls.hpp`, each call with the step that removes it.
 - **Serial ports and clock.** LIB-2's session part
@@ -145,8 +146,10 @@ messages: it sends commands and requests, and keeps what the topics send.
    in its `owned`), and listen with a `calcu::sessions::Listener`, stating
    the frontend's host services (an audio sink; a folder picker offers
    File ▸ Mount Directory).
-2. Send `start`: the startup model (or the one named), cold booted, then
-   its default preset or the preset named -- an operation.
+2. Send `start` (LIB-18's `StartupPart`): the startup model (or the one
+   named), cold booted, then its startup preset or the preset named; a
+   startup preset that can't be loaded gives the built-in default machine
+   and a notice -- an operation.
 3. Call `session().call(now)` from a ~60 Hz timer. The library's pacer
    runs the machine at the speed last commanded (`speed {full}` while the
    display is held), or one part of the running operation; the parts do
@@ -158,9 +161,9 @@ messages: it sends commands and requests, and keeps what the topics send.
    `screen-key-down` / `screen-key-up`, Paste Text as `paste`, focus loss
    as `focus-lost`. Keys pressed while an operation runs are dropped
    (behaviour change 1600-9).
-5. Start operations with their commands (`c1600.load-preset`,
-   `c1600.reset`, `c1600.pick-model`, `c1600.toggle-peripheral`, …;
-   `SharpTopics.hpp`). The reply comes when the operation ends; the `busy`
+5. Start operations with their commands (LIB-6's `load-preset`, LIB-18's
+   `reset`, `cold-boot`, `model`, `variant`, `attach`, `detach`, the
+   product's `c1600.select-module`, …; `SharpTopics.hpp`). The reply comes when the operation ends; the `busy`
    topic says it runs and whether at full speed ("Loading…"). A failure is
    also a notice. Reset, Cold boot and a model switch stop a running one.
 
@@ -185,9 +188,9 @@ coroutine a budget at a time (`step(cycles)`), or straight through
 calls, so the CLIs and tests didn't change).
 
 A run request is never split by the budget, so a job sliced into frame
-ticks makes exactly the machine calls of one run straight through:
-`tests/job_tests.cpp` checks five presets for identical step logs,
-results, memory, PCs and LCD both ways.
+ticks makes exactly the machine calls of one run straight through. That a
+preset run in parts equals one in one go is LIB-6's test
+(`tests/sharp_presets_tests.cpp`).
 
 Writing one: every function that (transitively) runs the machine returns
 `job::Task<T>` and awaits the ones it calls; take parameters by value
@@ -198,7 +201,7 @@ expression that created it.
 
 `tools/build_wasm_check.sh` builds Core + Shared with Emscripten and runs
 `tools/wasm_smoke.cpp` under node: the library's app session in virtual
-time, three presets through their commands, typed input. `libsharpdx-wasm.a` is the
+time, three presets through `load-preset`, typed input. `libsharpdx-wasm.a` is the
 program loaders' Rust library built for `wasm32-unknown-emscripten`
 (`tools/build_sharpdx_wasm.sh`). Native wasm exceptions
 (`-fwasm-exceptions`), no threads; there are no host links there (the
@@ -209,7 +212,8 @@ target ([Web-Client.md](Web-Client.md)).
 
 - The DAP debugger (`frontends/qt6/app/debug/`): its protocol logic is written
   against QJson and needs a JSON value type in Shared first.
-- The CLIs build their own preset environment rather than using the app
-  session (until LIB-11 replaces them, M-51).
+- The CLIs don't use the app session; they load presets through the
+  library's loader (adapter `tools/CliPresetRun.hpp`, until LIB-11's
+  harness replaces them, M-51).
 
 These are rows in [TODO.md](../../TODO.md).

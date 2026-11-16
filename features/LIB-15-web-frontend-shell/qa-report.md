@@ -212,3 +212,11 @@ stays In progress until M-55 (AC-20's cards, design §1).
   glue types, which only the Emscripten build has; everything it builds is
   in `app/` and tested natively (`web_part_tests.cpp` builds the same
   session). `run-tests.sh` keeps its own two servers, as Calc-U-1600's.
+
+### Calc-U-1600: AC-16's bundle-file clause (M-46, 2026-11-16, branch `m46-presets-1600`)
+
+| ID | Result | Test case |
+|---|---|---|
+| AC-16 (the bundle file) | Pass | `build.js` copies `examples/bundle.yaml` and exactly the files it lists into `dist/presets/` (fails on a file that is not there); the engine's Examples come from `preset-list`; `play.spec.js` `lib6_ac54 bundled example loads and its result shows`, the `preset` prop by its bundle path (`ac16 props and defaults`) |
+
+Every criterion of the column passes: **Done**.

@@ -85,11 +85,11 @@ std::string absPath(const std::string& p) {
 // NEW0, then `extraKeys`, then `program: file:` if `loaderFile` is set.
 // `com1`: the RS-232C gets its peer before the preset runs (the CE-158's
 // port exists once the preset has plugged it in).
-std::unique_ptr<Machine> applyPreset(const Config& c, bool com1, const std::vector<std::string>& extraKeys,
+matrix::Loaded applyPreset(const Config& c, bool com1, const std::vector<std::string>& extraKeys,
                                      const std::string& loaderFile, PresetLoadResult* res) {
-    std::string yaml = "format-version: 1\nmodel: PC-1600\ninterface: CE-158\n";
-    if (!c.slot1.empty()) yaml += "slot-1: " + c.slot1 + "\n";
-    if (!c.slot2.empty()) yaml += "slot-2: " + c.slot2 + "\n";
+    std::string yaml = "format-version: 2\nmodel: PC-1600\ninterface: CE-158\n";
+    if (!c.slot1.empty()) yaml += "slot-1: { name: " + c.slot1 + " }\n";
+    if (!c.slot2.empty()) yaml += "slot-2: { name: " + c.slot2 + " }\n";
     yaml += "keys:\n";
     if (c.mode == 1) yaml += "  - type: MODE 1\n";
     yaml += "  - key: mode\n  - type: NEW0\n";

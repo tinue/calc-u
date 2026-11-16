@@ -37,7 +37,7 @@ TEST(lib2_ac28_slots_one_chain_contact_level_power_cycle) {
             if (!po) continue;
             const bool slot = p.name.value.rfind("slot-", 0) == 0;
             CHECK(po->takes == (slot ? Takes::One : Takes::Chain));
-            CHECK_EQ(p.takesAtOnce, 1);
+            CHECK_EQ(p.takesAtOnce, p.name.value == "bus-rom" ? 1000 : 1);   // any number of bus ROMs (C1600-4 D-6)
             CHECK(po->level == PinOutLevel::ContactLevel);
             CHECK(po->after == AfterChange::PowerCycle);
         }

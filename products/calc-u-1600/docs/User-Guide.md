@@ -71,7 +71,7 @@ Model**:
 ![The model picker in the control bar](images/guide/02-model-picker.png)
 
 A model switch always gives you a fresh machine, with no modules and no
-peripherals. If you have set a default preset for that model (see
+peripherals. If you have set a startup preset for that model (see
 [Startup presets](#88-startup-presets)), it is applied straight after the
 switch.
 
@@ -92,13 +92,13 @@ The PC-1600 control bar:
 
 ![The PC-1600 control bar: model, two slots, CE-1600P and disk](images/guide/02-control-bar-pc1600.png)
 
-### Reset and Reset All
+### Reset and Cold boot
 
 ![The Machine menu](images/guide/02-machine-menu.png)
 
 - **Reset** (⌘R / Ctrl-R) is the real machine's reset button. Memory and the
   BASIC program are kept.
-- **Reset All** (⇧⌘R / Ctrl-Shift-R) is the PC-1600's deeper ALL RESET. The
+- **Cold boot** (⇧⌘R / Ctrl-Shift-R) is the PC-1600's deeper ALL RESET. The
   PC-1500/1500A have no ALL RESET of their own; there it clears all RAM,
   like taking the batteries out.
 
@@ -483,7 +483,7 @@ are ordinary files in the folder, stored byte for byte.
 - **Mounting:** the first mount switches the calculator off and on, as
   plugging in any peripheral does. Mounting another folder swaps it at
   once. **Unmount** unplugs the drive.
-- **In a preset:** `host-drive: <folder>` mounts a folder.
+- **In a preset:** `host-drive: { folder: <folder> }` mounts a folder.
 
 More in [PC1600-Host-Drive.md](PC1600-Host-Drive.md).
 
@@ -686,25 +686,26 @@ model, modules and peripherals, then what to type and which programs to
 load. The file extension matches the model: `.pc1500`, `.pc1500a` or
 `.pc1600`. Open one with **File ▸ Load Preset…**. The
 [examples/](../examples/) folder is full of them; the ones the app comes
-with are under **File ▸ Examples**, grouped (BASIC, Plotter, Machine
+with, as `examples/bundle.yaml` lists them, are under **File ▸ Examples**, grouped (BASIC, Plotter, Machine
 code) and listed by their description.
 
 A preset always runs in the same order:
 
 ```mermaid
 flowchart TD
-    A["build the machine: model and ROM"] --> B["plug in modules, plotter, floppy, CE-158"]
+    A["build the machine: model and ROM"] --> B["plug in modules, plotter, CE-158"]
     B --> C["cold boot to the BASIC prompt"]
     C --> D["keys: / program: blocks,<br/>top to bottom, as often as needed"]
     D --> E["ready (the app runs on from here)"]
 ```
 
-It runs at full speed, and the window shows "Loading…" while it works.
+It runs at full speed unless it says otherwise, and the window shows
+"Loading…" while it works. It always ends at regular speed.
 
 ### 8.2 The smallest preset
 
 ```yaml
-format-version: 1
+format-version: 2
 model: PC-1500A
 keys:
   - key: cl
@@ -713,11 +714,13 @@ keys:
   - type: PRINT "HELLO"
 ```
 
-`format-version:` and `model:` are required. `format-version: 1` says
+`format-version:` and `model:` are required. `format-version: 2` says
 which version of the preset format the file is written in; a newer app
-refuses a version it doesn't know rather than guess. `key:` presses one
-key by name. `type:` types a line,
-followed by ENTER.
+refuses a version it doesn't know rather than guess. A preset of version 1,
+written for an earlier release, is refused with a hint: upgrade it by hand,
+as §9.2 of the [preset format](../../../docs/formats/preset.md) lists.
+`key:` presses keys by name, one after the other (`- key: shift up up`).
+`type:` types a line, followed by ENTER.
 
 A preset can name itself, for the lists it shows up in:
 
@@ -734,19 +737,21 @@ preset reads in full and can't be mistaken for another one.
 ### 8.3 Adding hardware
 
 ```yaml
-format-version: 1
+format-version: 2
 model: PC-1600:new            # PC-1500[:A01|A03|A04] | PC-1500A | PC-1600[:new|old]
-plotter: CE-1600P:new         # CE-150 (all models) | CE-1600P[:new|old] (PC-1600)
-floppy: Formatted,A           # PC-1600 with the CE-1600P only: a disk by name, side A or B
-slot-1: CE-1600M              # a bundled or saved module, by name
-slot-2-file: my.card.yaml     # or a module definition file, next to the preset
+printer: CE-1600P:new         # CE-150 (all models) | CE-1600P[:new|old] (PC-1600)
+slot-1: { name: CE-1600M }    # a bundled or saved module, by name
 ```
 
 - **Names** are Sharp's, with the hyphen, in any case: `CE-1600P`,
   `ce-1600p`.
-- **By name or by file:** `slot-1:` names a module, `slot-1-file:` a
-  `.card.yaml` file. `floppy:` and `floppy-file:` work the same way. Paths
-  are relative to the preset; `~/` is your home folder.
+- **By name or by file:** `slot-1: { name: … }` names a module,
+  `slot-1: { file: … }` a `.card.yaml` file. Paths are relative to the
+  preset; `~/` is your home folder. A floppy disk goes into the drive with
+  a `floppy:` step.
+- **Disks and module files** in presets (`slot-1: { file: … }`,
+  `floppy:`, `saveas:`) come with the media update and are not available
+  in this build: a preset that uses them can't be loaded yet.
 - **PC-1500/1500A:** there is only `slot-1:`.
 - **CE-158:** `interface: CE-158` attaches it (not yet together with the CE-1600P).
 - **Nothing attached:** leave the key out.
@@ -754,7 +759,7 @@ slot-2-file: my.card.yaml     # or a module definition file, next to the preset
 ### 8.4 Loading a BASIC program
 
 ```yaml
-format-version: 1
+format-version: 2
 model: PC-1600
 keys:
   - key: mode
@@ -788,15 +793,34 @@ keys:
 
 ### 8.5 Waiting
 
-- `- wait: 2` runs two seconds of calculator time.
-- A bare `- wait:` waits until the calculator is idle again, for example
-  after a long program or plot:
+- **Every item but the last** waits until the calculator is idle again,
+  for example after a long program or plot, at most `timeout:` seconds of
+  calculator time (default 3600). Past that the preset stops with an error.
+- **The last item** isn't waited for: the preset ends, and what it started
+  runs on under your control. `- let-it-finish:` as the last item waits
+  for it, without a limit:
 
 ```yaml
 keys:
   - type: RUN
-  - wait:
+  - let-it-finish:
 ```
+
+- `- wait: 2s` lets two seconds of calculator time pass. The unit is
+  required: `2s`, `1.5s`, `500ms`.
+- `- skip-wait:` drops the wait after the item before it, for a step on a
+  running program, such as BREAK:
+
+```yaml
+keys:
+  - type: RUN
+  - skip-wait:
+  - wait: 2s
+  - key: break
+```
+
+- `- full-speed:` and `- regular-speed:` set the speed of the items after
+  them. A preset runs at full speed unless it says otherwise.
 
 ### 8.6 Machine code
 
@@ -823,16 +847,19 @@ program:
 
 | Step | What it does |
 |---|---|
-| `- saveas: live slot-1:My card` | Name & Save the module in slot 1 into your save folder. `slot-2:` and `floppy:` are PC-1600 only. Overwrites a file of the same name, but never takes a template's name. |
-| `- saveas: template slot-1:My card` | The same, saved as a template. Running the preset again replaces your own template of that name; a bundled name is refused. |
-| `- saveas: live protected slot-1:My ROM` | The same, with the module's write-protect switch on (a module that has one, e.g. the CE-161; not a disk). |
-| `- saveas: template slot-2:file:Card.card.yaml` | Saves to that file, next to the preset (`.card.yaml` for a card, `.floppy.yaml` for `floppy:`). The name is the file name. |
-| `- expect: 11834` | Stops the preset with an error unless one line of the display contains that text, e.g. to check a result. The rest of the line is the text, `#` included. A backslash is written `\\`, and a character outside ASCII as `\xHH` (its code). |
-| `- screenshot: shot.png` | Saves the LCD image (as Copy Screen does) in the trace directory. |
+| `- saveas: { place: slot-1, as: live, name: My card }` | Name & Save the module in slot 1 into your save folder. `slot-2` and `floppy` are PC-1600 only. Overwrites a file of the same name, but never takes a template's name. |
+| `- saveas: { place: slot-1, as: template, name: My card }` | The same, saved as a template. Running the preset again replaces your own template of that name; a bundled name is refused. |
+| `- saveas: { place: slot-1, as: live, protected: true, name: My ROM }` | The same, with the module's write-protect switch on (a module that has one, e.g. the CE-161; not a disk). |
+| `- saveas: { place: slot-2, as: template, file: Card.card.yaml }` | Saves to that file, next to the preset (`.card.yaml` for a card, `.floppy.yaml` for `place: floppy`). The name is the file name. |
+| `- expect: 11834` | Stops the preset with an error unless one line of the display contains that text, e.g. to check a result. It checks once the item before has finished: after `- type: RUN`, when the program has ended. The rest of the line is the text, `#` included. A backslash is written `\\`, and a character outside ASCII as `\xHH` (its code). |
+| `- not-expect: ERROR` | The opposite: stops the preset if one line of the display contains that text. |
+| `- expect: /ERROR 1\b/` | Between slashes, the text is a regular expression, for `expect:` and `not-expect:`. A text that begins with `/` is written `\/`. |
+| `- screenshot: shot.png` | Saves the LCD image (as Copy Screen does) in the save folder; in the Web version it is a download. |
 | `- syncclock:` | Sets the calculator's clock from your computer. Put it last, because a preset runs at full speed and the clock runs ahead. |
 | `- trace: run.bin` / `- trace: off` | Starts / stops a CPU trace (see the [Inspector](#92-inspector)). |
 
-`saveas:` needs `live` or `template` first:
+`saveas:` comes with the media update and is not available in this build.
+It needs `as: live` or `as: template`:
 - **`live`** saves an ordinary copy. Later changes are saved into it
   automatically, as after Name & Save.
 - **`template`** saves a read-only starting point. Every use starts from the
@@ -841,26 +868,31 @@ program:
 A preset that prepares a card and a floppy and saves both as templates next to
 itself, and the preset that uses them:
 [examples/dwx/make_diskworks_media.pc1600](../examples/dwx/make_diskworks_media.pc1600),
-[examples/dwx/DiskWorks.pc1600](../examples/dwx/DiskWorks.pc1600).
+[examples/dwx/DiskWorks.pc1600](../examples/dwx/DiskWorks.pc1600). Both use
+disks, so they wait for the media update too.
 
 ### 8.8 Startup presets
 
-**Settings ▸ Default presets** sets one preset per model. This is how a model
+**Settings ▸ Startup presets** sets one preset per model. It is loaded when
+the model starts or is switched to. This is how a model
 gets its usual setup, because a model switch starts with no modules and no
-peripherals. Each model's list offers the startup presets the app comes
+peripherals. A startup preset that can't be loaded gives the built-in
+default machine and a notice. Each model's list offers the startup presets the app comes
 with, by description; once one is chosen, the list shows its short name.
 **Choose…** takes any preset file of your own:
 
 ```mermaid
 flowchart LR
-    S["app starts"] --> P["default preset of that model"]
+    S["app starts"] --> P["startup preset of that model"]
     M["model switch"] --> P
-    R["Reset / Reset All"] -.->|no| P
+    R["Reset / Cold boot"] -.->|no| P
     O["ROM change"] -.->|no| P
 ```
 
 [examples/startup/default-pc1600.pc1600](../examples/startup/default-pc1600.pc1600)
-is a complete example:
+is a complete example (it puts a disk in the drive, so it waits for the
+media update; the app comes with startup presets for the PC-1500 and
+PC-1500A):
 1. It attaches the CE-1600P with a formatted disk, a CE-1600M in slot 1 and a
    CE-1601M in slot 2.
 2. It formats and splits the CE-1601M as a RAM disk
@@ -879,24 +911,26 @@ This is what it leaves on the LCD:
 
 | Key | Values |
 |---|---|
-| `format-version:` | `1` (required) |
+| `format-version:` | `2` (required) |
 | `model:` | `PC-1500[:A01\|A03\|A04]`, `PC-1500A`, `PC-1600[:new\|old]` (required) |
 | `preset-name:` | the short name a list shows once the preset is chosen; default: the file name |
 | `description:` | one line for lists, menus and tooltips |
-| `plotter:` | `CE-150`, `CE-1600P[:new\|old]` (PC-1600) |
+| `timeout:` | the longest wait for the calculator to become idle between two items, in seconds of calculator time; default `3600` |
+| `printer:` | `CE-150`, `CE-1600P[:new\|old]` (PC-1600) |
 | `interface:` | `CE-158` |
-| `floppy:` | disk name, optionally `,A` / `,B` (PC-1600 with the CE-1600P) |
-| `floppy-file:` | a `.floppy.yaml` file next to the preset instead, optionally `,A` / `,B` |
-| `host-drive:` | a folder mounted as drive `S3:` (PC-1600), relative to the preset or `~/…`; see [A folder as a drive](#a-folder-as-a-drive-pc-1600) |
-| `slot-1:`, `slot-2:` | a module by name; `slot-2:` is PC-1600 only |
-| `slot-1-file:`, `slot-2-file:` | a `.card.yaml` file next to the preset instead |
-| `slot-1-rom:`, `slot-2-rom:` | a ROM file for the ROM module in that slot, replacing the module's own ROM bytes (developing a ROM module; exact size); see [Memory-Card-Definition-Format.md](Memory-Card-Definition-Format.md) §8 |
+| `host-drive:` | `{ folder: … }`: a folder mounted as drive `S3:` (PC-1600), relative to the preset or `~/…`; see [A folder as a drive](#a-folder-as-a-drive-pc-1600) |
+| `slot-1:`, `slot-2:` | `{ name: … }`: a module by name, or `{ file: … }`: a `.card.yaml` file next to the preset (with the media update); `slot-2:` is PC-1600 only |
+| `slot-1-rom:`, `slot-2-rom:` | `{ file: … }`: a ROM file for the ROM module in that slot, replacing the module's own ROM bytes (developing a ROM module; exact size); see [Memory-Card-Definition-Format.md](Memory-Card-Definition-Format.md) §8 |
 | `keys:` | a list of steps (below); may appear any number of times |
 | `program:` | `file:` (with `address:`, `length:` for machine code, or `typed: true` for a listing) or `text: \|`; may appear any number of times |
 | `bus-rom:` | ROM files on the 60-pin bus, for developing a ROM extension: `- file:` with `bank: 4`–`7` (PC-1600 system bus) or `address:` with optional `me:`, `pv:`, `pu:` (each `0` or `1`) (PC-1500, PC-1600 LH5803 side). A bus ROM shadows a bundled ROM at the same place; see the [Debugger](Debugger.md) |
 | `debug:` | the debugger's settings for a project preset; ignored when the preset is loaded; see the [Debugger](Debugger.md) |
 
-**Steps:** `key:`, `type:`, `wait:`, `expect:`, `saveas:`, `screenshot:`, `syncclock:`, `trace:`.
+**Steps:** `key:`, `type:`, `wait:`, `skip-wait:`, `let-it-finish:`,
+`full-speed:`, `regular-speed:`, `expect:`, `not-expect:`, `screenshot:`,
+`syncclock:`, `trace:`, `elapsed-time:`, `cut-paper:`; with the media update
+`floppy:` and `saveas:`. Every step is in the
+[preset format](../../../docs/formats/preset.md).
 
 **`program: file:`** is loaded by what it holds: a BASIC listing (`.bas`),
 tokenized BASIC, or machine code with or without a header. Headerless
@@ -931,7 +965,7 @@ elsewhere. Changes apply immediately; there is only **Close**.
     Program… and Load Machine Code… open. `<last used>` by default.
   - **Host drive folder:** where Mount Directory… opens. `<last used>` (the
     directory last mounted) by default.
-- **Default presets:** one per model, see [Startup presets](#88-startup-presets).
+- **Startup presets:** one per model, see [Startup presets](#88-startup-presets).
 - **Storage ▸ Battery-card saves:** where saved modules and disks go.
 - **Storage ▸ Tapes:** the cassette tapes' folder (see
   [Cassette tape](#cassette-tape-cload-and-csave)); `Tapes` inside the save
@@ -1012,7 +1046,7 @@ why) and [Memory-Card-Definition-Format.md](Memory-Card-Definition-Format.md)
   `ce1638.card.yaml` and `ce1601m.card.yaml` are banked. The fictional
   [examples/memory/memory-cards/pc1500-maxed-out.card.yaml](../examples/memory/memory-cards/pc1500-maxed-out.card.yaml)
   shows every PC-1500 expansion pin in use, and its preset loads it with
-  `slot-1-file:`.
+  `slot-1: { file: … }` (with the media update).
 - **Make it appear in the pickers:** put a file with `format-version: 1`
   and `template: true` in the Battery-card saves folder. Like the bundled cards it is never written
   to, and Name & Save makes your own copy.

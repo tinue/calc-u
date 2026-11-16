@@ -314,3 +314,16 @@ call was not told) is fixed (`DebugController::noteRunning`).
 - The speed against 0.8.1 is not measured (above).
 - CI should be dispatched at the merge (LIB-8's macOS clipboard; the core
   and the Qt6 debugger changed throughout).
+
+### Calc-U-1600: the format 2 clauses (M-46, 2026-11-16, branch `m46-presets-1600`)
+
+| ID | Result | Test case |
+|---|---|---|
+| AC-40 (the preset clause) | Pass | `lib10_ac40_debugger_steps_refused_at_read` (`sharp_presets_tests.cpp`: a debugger step in a format 2 preset without a debugger refused when read, with its line); Web `session.spec.js` `lib10_ac40 trace step fails on the web` (EC-8) |
+| AC-43 | Pass on format 2 | `lib10_ac43_preset_trace_ends_at_the_limit_with_a_notice` (the `trace:` step of a format 2 preset), `lib10_ac43_button_trace_ends_at_the_limit_with_a_notice` |
+
+The DAP's clean start loads the attach configuration's preset or the
+model's startup preset with `load-preset {buildOnly}`, else `cold-boot`;
+its `debug:` block comes from `SharpDebugBlock::debugBlockOf` (C1600-4
+AC-12). `CalcU1600DapSmoke` passed (26 s). Every criterion of the column
+passes: **Done**.

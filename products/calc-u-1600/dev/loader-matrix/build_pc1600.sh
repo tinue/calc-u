@@ -12,10 +12,11 @@ ROOT=../..
 BUILD=${CALCU_BUILD:-$ROOT/build/tools}
 [ -f "$BUILD/CMakeCache.txt" ] || cmake -S "$ROOT" -B "$BUILD" -G Ninja -DCMAKE_BUILD_TYPE=RelWithDebInfo \
   -DCALCU_FRONTEND_QT=OFF -DCALCU_PRODUCT_59=OFF -DCALCU_TESTS=OFF
-cmake --build "$BUILD" --target calcu_core
+cmake --build "$BUILD" --target calcu1600_harness
 mkdir -p headless/loader-matrix
-clang++ -std=c++20 -Wall -Wextra -O2 -I core -I "$ROOT/library" \
+clang++ -std=c++20 -Wall -Wextra -O2 -I core -I . -I "$ROOT/library" \
   dev/loader-matrix/pc1600_loader_matrix.cpp \
+  "$BUILD/products/calc-u-1600/libcalcu1600_harness.a" "$BUILD/products/calc-u-1600/libcalcu_shared.a" \
   "$BUILD/products/calc-u-1600/libcalcu_core.a" "$BUILD/library/libcalcu_library.a" \
   core/Basic/vendor/sharpdx/libsharpdx.a \
   -o headless/loader-matrix/pc1600_loader_matrix

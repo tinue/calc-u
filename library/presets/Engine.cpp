@@ -28,6 +28,7 @@ startup::MachinePlan machinePlan(const LoadPlan& p) {
     plan.model = p.model;
     plan.variant = p.variant;
     for (const auto& r : p.places) plan.peripherals.push_back(r.request);
+    if (p.rules) p.rules->amendPlan(p, plan);   // D-33
     return plan;
 }
 

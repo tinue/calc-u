@@ -459,15 +459,17 @@ std::variant<LoadPlan, ReadError> readPreset(const PresetSource& source, const R
             }
             continue;
         }
-        if (desc->place(machine::PlaceName{c.key})) {
-            if (!once(c) || !applies(ctx, c.key, c.line)) continue;
-            if (auto r = readPlace(c.key, c.value, c.line, ctx)) plan.places.push_back(std::move(*r));
-            continue;
-        }
+        // D-31: the vocabulary first, so a product's header key may stand
+        // under a place's name (Calc-U-1600's `host-drive:`).
         if (const HeaderKeyDef* h = setup.vocabulary.header(c.key)) {
             if (!once(c) || !applies(ctx, c.key, c.line)) continue;
             if (h->afterOtherHeaderKeys) later.emplace_back(h, &c);
             else h->read(c.value, c.line, ctx);
+            continue;
+        }
+        if (desc->place(machine::PlaceName{c.key})) {
+            if (!once(c) || !applies(ctx, c.key, c.line)) continue;
+            if (auto r = readPlace(c.key, c.value, c.line, ctx)) plan.places.push_back(std::move(*r));
             continue;
         }
         if (c.key == kKeysSection || setup.vocabulary.section(c.key)) continue;   // below
@@ -478,6 +480,7 @@ std::variant<LoadPlan, ReadError> readPreset(const PresetSource& source, const R
         ctx.error(c.line, "Unknown key " + c.key + ".");   // AC-30
     }
     for (const auto& [h, c] : later) h->read(c->value, c->line, ctx);
+    if (!ctx.firstError()) ctx.rules().checkHeader(plan, ctx);   // D-32
 
     // 4. The sections and steps in file order (AC-4, AC-14, AC-15).
     std::vector<Entry> entries;

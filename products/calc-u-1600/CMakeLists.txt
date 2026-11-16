@@ -74,11 +74,11 @@ endif()
 # -----------------------------------------------------------------------------
 # pc1500_cli
 add_executable(pc1500_cli ${TOOLS_ROOT}/pc1500_cli.cpp)
-target_link_libraries(pc1500_cli PRIVATE calcu_core)
+target_link_libraries(pc1500_cli PRIVATE calcu1600_harness)
 
 # pc1600_cli
 add_executable(pc1600_cli ${TOOLS_ROOT}/pc1600_cli.cpp)
-target_link_libraries(pc1600_cli PRIVATE calcu_core)
+target_link_libraries(pc1600_cli PRIVATE calcu1600_harness)
 
 # pc1600_power_probe, pc1600_uart_probe: the throw-away ROM-path probes.
 # They need the instrumentation hooks PC1600_POWER_PROBE lights up in
@@ -95,7 +95,7 @@ target_link_libraries(pc1600_uart_probe PRIVATE calcu_core_probe)
 
 # pc1600_plotter_probe
 add_executable(pc1600_plotter_probe ${TOOLS_ROOT}/pc1600_plotter_probe.cpp)
-target_link_libraries(pc1600_plotter_probe PRIVATE calcu_core)
+target_link_libraries(pc1600_plotter_probe PRIVATE calcu1600_harness)
 
 # The product entry of the harness `calcu` (LIB-11, M-28; library/harness/cli/).
 # It finds the ROMs and the module definitions in the folders the tests use
@@ -133,9 +133,21 @@ if(CALCU_TESTS)
   # CMakeLists.txt): Frequent always, Longer and Checkpoint only with
   # CALCU_TESTS_LONGER / _CHECKPOINT; every entry runs in this directory.
   calcu_add_test(CoreTests frequent COMMAND CoreTests)
-  # Every preset in the repository parses (nothing is booted).
-  calcu_add_test(CalcU1600CheckPresets frequent COMMAND tools/check_presets.sh
-                 PROPERTIES ENVIRONMENT PC1600_CLI=$<TARGET_FILE:pc1600_cli>)
+  # LIB-6 AC-51 (design §10.6 P8; C1600-4 T7): every preset of the
+  # repository is read by the library's reader through `calcu check-preset`;
+  # the presets that wait for LIB-7's media (C1600-4 design §1, M-47) are
+  # left out by name. The VS Code templates are checked filled in.
+  set(CALCU1600_PRESET_GLOBS)
+  foreach(ext pc1500 pc1500a pc1600)
+    list(APPEND CALCU1600_PRESET_GLOBS examples/*/*.${ext} examples/*/*/*.${ext} tests/fixtures/presets/*.${ext}
+         dev/hardware-checks/*.${ext} dev/presets/*.${ext} docs/developer/screenshots/presets/*.${ext}
+         vscode/calcu1600-debug/presets/*.${ext})
+  endforeach()
+  calcu_add_preset_check(CalcU1600Presets PRODUCT 1600 FILES ${CALCU1600_PRESET_GLOBS}
+                         EXCLUDE DiskWorks.pc1600 make_diskworks_media.pc1600 pc1500-maxed-out.pc1500
+                                 default-pc1600.pc1600 startup-pc1600.pc1600 pc1600-modules.pc1600)
+  calcu_add_preset_check(CalcU1600Templates PRODUCT 1600 FILES vscode/calcu1600-debug/templates/*/debug.*
+                         FILL tests/fill_vscode_templates.cmake)
   # No file above the core includes or names a machine class (C1600-1,
   # Technical Requirements; design T13). CI runs it with the core tests.
   calcu_add_test(CalcU1600MachineIncludeCheck frequent COMMAND sh tools/check_machine_includes.sh)
@@ -164,6 +176,9 @@ if(CALCU_TESTS)
   # smoke builds in build/web itself (Emscripten).
   calcu_add_test(CalcU1600WebPlaywright longer COMMAND frontends/web/run-tests.sh)
   calcu_add_test(CalcU1600WasmSmoke longer COMMAND tools/build_wasm_check.sh)
+  # C1600-4 AC-16 (design §6 T8): the examples against their reference runs.
+  calcu_add_test(CalcU1600ExampleReferences longer COMMAND CoreTests c1600_4_ac16
+                 PROPERTIES ENVIRONMENT CALCU1600_REFERENCES=1)
   # LIB-10 R-1 (design §10.11): full speed with a breakpoint set, printed for the qa-report.
   calcu_add_test(CalcU1600DebuggerSpeed longer COMMAND CoreTests lib10_speed_pc1600_full_speed_with_a_breakpoint
                  PROPERTIES ENVIRONMENT CALCU1600_SPEED=1)

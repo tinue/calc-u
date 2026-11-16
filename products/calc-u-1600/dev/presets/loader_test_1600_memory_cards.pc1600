@@ -2,12 +2,12 @@
 # slots (CE-1600M, and the CE-1601M formatted and split as a RAM disk). It
 # loads the globe program (examples/plotter/globus.bas) and plots it on the
 # CE-1600P.
-format-version: 1
+format-version: 2
 model: PC-1600
-plotter: CE-1600P
+printer: CE-1600P
 
-slot-1: CE-1600M
-slot-2: CE-1601M
+slot-1: { name: CE-1600M }
+slot-2: { name: CE-1601M }
 
 # After reset, a NEW0 is required in PRO mode (PC-1600 starts up in RUN)
 keys:
@@ -34,4 +34,4 @@ keys:
   - type: 6
   - type: N
   - type: J
-  - wait:
+  - let-it-finish:

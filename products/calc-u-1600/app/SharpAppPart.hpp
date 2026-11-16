@@ -15,7 +15,6 @@
 #include "Job.hpp"
 #include "Machine/SharpProductKinds.hpp"
 #include "PC1500/PC1500Variant.hpp"
-#include "Preset/PresetRomSet.hpp"
 #include "Tape/TapeDeck.hpp"
 #include "TraceTypes.hpp"
 #include "app/AppPaths.hpp"
@@ -28,6 +27,8 @@
 #include "app/PacingProfiles.hpp"
 #include "app/Settings.hpp"
 #include "app/SharpLoaderPart.hpp"
+#include "app/SharpPresetRules.hpp"
+#include "app/SharpProductMachines.hpp"
 #include "debugger/DebuggerPart.hpp"
 #include "app/SharpTopics.hpp"
 #include "app/SharpTyping.hpp"
@@ -35,6 +36,9 @@
 #include "machine/Machine.hpp"
 #include "paper/PaperPart.hpp"
 #include "peripherals/PeripheralsPart.hpp"
+#include "presets/PresetsPart.hpp"
+#include "presets/Source.hpp"
+#include "startup/StartupPart.hpp"
 #include "roms/Lookup.hpp"
 #include "sessions/AppSession.hpp"
 #include "sessions/MachineSession.hpp"
@@ -59,23 +63,25 @@ DisplayFrame displayFrameOf(const calcu::machine::DisplayOutput& output);
 // ── SharpAppPart: Calc-U-1600's app layer in the library's app session ───
 //
 // The library's app session (LIB-3) holds the machine session, the pacer,
-// the operations, busy, sound and the messages. This part brings what only
-// Calc-U-1600 has (LIB-3 design §2, §4; docs/contracts/README.md L-1):
-// - the machine of the selected model, built from sharpCatalogue() with the
-//   ROM set of the one lookup at the start (LIB-12), and handed to the
-//   machine session with its pacing profile; model and ROM switches (each
-//   a rebuild and boot); the peripherals in their places; the tape deck,
-//   plotters, CE-158, host drive, trace and inspector reads (through the
-//   machine's capabilities and core/Machine/LegacyCalls.hpp);
-// - the module, floppy and tape bays and their per-call duties;
-// - the Sharp operations as product commands (`c1600.*`, SharpTopics.hpp)
-//   that start an operation of the session;
+// the operations, busy, sound and the messages. This part brings the
+// library's parts Calc-U-1600 uses and what only Calc-U-1600 has (LIB-3
+// design §2, §4; docs/contracts/README.md L-1):
+// - the library's parts, in sessionParts() order: LIB-5's typing part
+//   (the Sharp profiles and maps, app/SharpTyping), LIB-2's peripherals
+//   part (the host links of the serial ports, the real-time clocks), LIB-6's
+//   presets part (the preset loader on app/SharpPresetRules, the bundle
+//   file of examples/), LIB-18's startup part (the start, the model and
+//   variant switches, attach and detach, Reset, Cold boot, power cycle, on
+//   app/SharpProductMachines), the loaders' part (C1600-2), LIB-8's paper
+//   part and LIB-10's debugger part (LIB-6 §10.2, LIB-18 §10.2);
+// - the module, floppy and tape bays and their per-call duties; until M-47
+//   the bays follow every new machine (machineChanged) and hand a variant
+//   switch the module they hold (adapter "bays on machineChanged");
+// - the product's commands that need its own data, each one
+//   MachineControl::change (LIB-18 D-22): `c1600.select-module`,
+//   `c1600.mount-host-drive`, `c1600.ce1600p-rom` (SharpTopics.hpp);
 // - the interim product topics (control state, machine, tapes, serial
-//   links) and LIB-12's `roms-missing`;
-// - the library's typing part (LIB-5) with the Sharp profiles and maps
-//   (app/SharpTyping), first in sessionParts(); the library's paper part
-//   (LIB-8) and debugger part (LIB-10: the run control is the machine
-//   session's gate, with or without a debugger client; app/SharpDebuggerSetup).
+//   links) and LIB-12's `roms-missing`.
 //
 // The host builds it, hands sessionParts() to its AppSessionSetup (and the
 // part to AppSessionSetup::owned), then sends `start`. Single-threaded: on
@@ -87,14 +93,7 @@ public:
     SharpAppPart(const SharpAppPart&) = delete;
     SharpAppPart& operator=(const SharpAppPart&) = delete;
 
-    // The parts of the session, in order: the typing part, LIB-2's
-    // peripherals part (the host links of the serial ports, the real-time
-    // clocks), the loaders' part (C1600-2), LIB-8's paper part (the CE-150's
-    // and the CE-1600P's papers), LIB-10's debugger part and this one.
     std::vector<calcu::sessions::SessionPart*> sessionParts();
-    // The real-time clocks of a machine built inside the start or an
-    // operation are set from this; tests pin it.
-    using HostTime = std::function<std::chrono::system_clock::time_point()>;
 
     Settings& settings() { return m_settings; }
     AppPaths& paths() { return m_paths; }
@@ -115,49 +114,45 @@ public:
     // The library's debugger (LIB-10): the run control, the trace session,
     // the topics run-state and trace. The DAP's layer (app/dap/) works on it.
     calcu::debugger::DebuggerPart& debuggerPart() { return m_debugger; }
+    // LIB-6: the preset loader (load-preset, check-preset, preset-list).
+    calcu::presets::PresetsPart& presetsPart() { return m_presets; }
+    const calcu::presets::PresetBundle& presetBundle() const { return m_bundle; }
+    // The preset list (LIB-6 AC-32): what `preset-list` replies, for the
+    // menus and the Settings of a frontend on the session's thread.
+    std::vector<calcu::presets::PresetListEntry> presetEntries() const {
+        return calcu::presets::presetList(m_bundle, m_rules, m_catalogue, nullptr);
+    }
+    // LIB-18: the machine control (builds, plug changes).
+    calcu::startup::MachineControl& machineControl() { return m_startup.control(); }
 
     // File ▸ Mount Directory is offered when the frontend states a folder
     // picker (LIB-3 AC-38: 0.8.1's hostDirectories; a browser has none).
     ControlState controlState() const {
-        return controlStateOf(*this, m_ctx && m_ctx->hostOffers(calcu::sessions::HostService::FolderPicker));
+        return controlStateOf(*this, hostFolders());
     }
+    bool hostFolders() const { return m_ctx && m_ctx->hostOffers(calcu::sessions::HostService::FolderPicker); }
 
     // ---- SessionPart ----
     void attach(calcu::sessions::SessionSetup&) override;
     void afterCall(calcu::sessions::SessionContext&, calcu::pacing::WallTime) override;
+    void beforeOperation(calcu::sessions::SessionContext&) override;
+    void beforeMachineChange(calcu::sessions::SessionContext&) override;
     void machineChanged(calcu::sessions::SessionContext&) override;
     void operationEnded(calcu::sessions::SessionContext&) override;
-
-    // ---- Operations (the commands of SharpTopics.hpp start them) ----
-    job::Task<OpResult> startJob(std::string modelOrEmpty, std::string presetOrEmpty);
-    // `userLoad`: a preset the user loads (not the model's startup preset at
-    // a model switch) empties the paper of each plotter it plugs in first
-    // (adapter P-A2 of LIB-8 §10.5, until LIB-18's build origin in M-46).
-    job::Task<OpResult> loadPresetJob(std::string ref, bool armOnly = false, bool userLoad = true);
-    job::Task<OpResult> loadDefaultPresetJob(std::string ref, Model model);
-    job::Task<OpResult> resetJob(bool allReset);
-    job::Task<OpResult> selectModelJob(Model model);
-    job::Task<OpResult> defaultPresetJob();
-    job::Task<OpResult> pickModelJob(Model model);
-    job::Task<OpResult> selectModuleJob(int slot, std::string moduleNameOrEmpty);
-    job::Task<OpResult> selectPC1500RomJob(PC1500RomRevision revision);
-    job::Task<OpResult> selectPC1600RomJob(PC1600RomVersion version);
-    job::Task<OpResult> selectCE1600PRomJob(CE1600PRomVersion version);
-    job::Task<OpResult> togglePeripheralJob(Peripheral p);
-    job::Task<OpResult> mountHostDriveJob(std::string dirOrEmpty);
 
     // ---- The machine ----
     calcu::machine::Machine* machine() const { return m_ms ? m_ms->machine() : nullptr; }
     bool hasLiveMachine() const { return machine() != nullptr; }
     Model currentModel() const { return m_model; }
-    PC1500RomRevision pc1500RomRevision() const { return m_pc1500RomRevision; }
-    PC1600RomVersion pc1600RomVersion() const { return m_pc1600RomVersion; }
-    CE1600PRomVersion ce1600pRomVersion() const { return m_ce1600pRomVersion; }
+    // The variants of the running machine, and the CE-1600P's ROM: the
+    // plugged one's, else the choice kept for the next attach (AC-31, D-21).
+    PC1500RomRevision pc1500RomRevision() const;
+    PC1600RomVersion pc1600RomVersion() const;
+    CE1600PRomVersion ce1600pRomVersion() const;
     double clockHz() const;
     const calcu::machine::Catalogue& catalogue() const { return m_catalogue; }
     const std::shared_ptr<const calcu::roms::RomSet>& romSet() const { return m_roms; }
     const calcu::roms::RomsMissing& romsMissing() const { return m_romsMissing; }
-    PresetRoms presetRoms() const { return {m_roms, m_hostDriveRom}; }
     sharp::FloppyDriveAccess* floppyDrive() const;
 
     // The LCD as text and as a screen image, from a display output of the
@@ -169,9 +164,9 @@ public:
     int slotCount() const;
     const ExpansionCard* slotCard(int slot) const;
     void setSlotWriteProtected(int slot, bool protect);
-    void attachSlotCard(int slot, std::unique_ptr<ExpansionCard> card);
-    void detachSlot(int slot);
-    void detachSlots();
+    // The request that plugs `card` into `slot` (a module the catalogue does
+    // not know yet is added: a save-folder instance).
+    calcu::machine::PeripheralRequest moduleRequest(int slot, std::unique_ptr<ExpansionCard> card);
 
     // ---- Serial ports ----
     void refreshSerialLinkDirectory();
@@ -183,20 +178,11 @@ public:
     std::vector<inspect::MenuEntry> inspectorMenu(bool dumps) const;
     std::vector<std::uint8_t> debugSlotCardImage(int slot, int* bankCount) const;
 
-    // ---- Peripherals ----
-    bool attachCE150(std::string* error = nullptr);
-    void detachCE150();
+    // ---- Peripherals (what is plugged in) ----
     bool ce150Attached() const;
-    bool attachCE1600P(std::string* error = nullptr);  // PC-1600 only
-    void detachCE1600P();
-    bool swapCE1600PRom(CE1600PRomVersion version, std::string* error = nullptr);
     bool ce1600pAttached() const;
-    bool attachCE158(std::string* error = nullptr);
-    void detachCE158();
     bool ce158Attached() const;
     std::vector<std::uint8_t> drainCE158PrinterOutput();
-    bool attachHostDrive(const std::string& dir, std::string* error = nullptr);
-    void detachHostDrive();
     bool hostDriveAttached() const;
     std::string hostDriveDirectory() const;
 
@@ -208,78 +194,37 @@ public:
     TapeDeck::Status tapeStatus() const;
     std::string tapeTakeLastError();
 
-    // ---- Lower-level machine jobs (the operations above use them) ----
-    void resetRomSelectionsToDefault();
-    job::Task<void> switchModelJob(Model model, bool keepPeripherals = false);
-    job::Task<void> setPC1500RomRevisionJob(PC1500RomRevision revision);
-    job::Task<void> setPC1600RomVersionJob(PC1600RomVersion version);
-    void setCE1600PRomVersion(CE1600PRomVersion version) { m_ce1600pRomVersion = version; }
-    job::Task<void> resetToPromptJob(bool allReset);
-    job::Task<void> powerCycleAroundJob(std::function<void()> change);
-    calcu::machine::Machine& resetBareForPreset(Model model, PC1600RomVersion version, CE1600PRomVersion ce1600pVersion);
-    void finishPresetLoad(Model model);
-    void seedClockFromHost();
-
 private:
     using CommandOutcome = calcu::sessions::CommandOutcome;
-    // A Sharp job as an operation of the session: pending card and disk
-    // writes go first; the session replies at its end (LIB-3 AC-18).
-    CommandOutcome operation(std::function<job::Task<OpResult>()> make);
-    static calcu::sessions::Task<calcu::sessions::OperationResult> runOperation(SharpAppPart* self,
-                                                                               calcu::sessions::OperationContext* ctx,
-                                                                               std::function<job::Task<OpResult>()> make);
+    // A plug change of a product command as an operation (LIB-18 D-22).
+    CommandOutcome change(calcu::startup::PlugChange ch, std::function<void()> after = {});
     void refreshTopics();
     void frameDuties();
     void notice(const std::string& sentence);
     void log(const std::string& line);
-
-    // Drops the live machine before a rebuild: ejects the tape (saving a
-    // recording), ends a TRACE capture, cancels typing, takes it away.
-    void discardMachine();
-    // A just-built machine joins the session (with its pacing profile).
-    void installMachine(std::unique_ptr<calcu::machine::Machine> m);
-    void buildMachine(Model model);
-    [[noreturn]] void romMissing();
-    struct Peripherals {
-        bool ce150 = false;
-        bool ce1600p = false;
-        bool ce158 = false;
-        std::string hostDriveDir;
-    };
-    Peripherals attachedPeripherals() const;
-    void reattach(const Peripherals& p);
-    template <class F> auto busChange(F&& change) {
-        if (ce1600pAttached()) flushFloppyBay();
-        return std::forward<F>(change)();
-    }
-    void flushFloppyBay();
-    void insertSelectedDisk();
-    bool peripheralImages(const calcu::machine::PeripheralRequest& req, std::vector<calcu::machine::RomImage>* out,
-                          std::string* error) const;
-    bool attachAt(const char* place, const char* peripheral, std::optional<calcu::machine::VariantId> variant,
-                  std::shared_ptr<const calcu::machine::ProductData> content, std::string* error);
-    void detachAt(const char* place, const char* peripheral);
-    void noteChange(const calcu::machine::ChangeResult& r);
+    // The bays follow a machine LIB-18 or a preset built (adapter until M-47).
+    void followNewMachine();
     std::string pluggedAt(const char* place) const;
-    bool isPC1600() const { return machine() && m_model == Model::PC1600; }
     template <class K> K* kind() const { return machine() ? sharp::firstOf<K>(*machine()) : nullptr; }
-    template <class K> K* kindOf(const char* peripheral) const;
 
     Settings& m_settings;
     AppPaths& m_paths;
 
     Model m_model = Model::PC1500A;
-    PC1500RomRevision m_pc1500RomRevision = PC1500RomRevision::A04;
-    PC1600RomVersion m_pc1600RomVersion = PC1600RomVersion::New;
-    CE1600PRomVersion m_ce1600pRomVersion = CE1600PRomVersion::New;
+    // AC-31, D-21: the CE-1600P's ROM chosen while none is plugged in, until
+    // the product quits or the model is switched.
+    CE1600PRomVersion m_ce1600pChoice = CE1600PRomVersion::New;
 
     calcu::machine::Catalogue m_catalogue;
-    calcu::paper::PaperPart m_paper;
-    calcu::debugger::DebuggerPart m_debugger;
+    // The one lookup, at the start (LIB-12 AC-4, AC-13): the whole full set
+    // or nothing. The host drive's ROM is bundled beside it (roms.md Q-1).
+    calcu::roms::LookupResult m_found;
     std::shared_ptr<const calcu::roms::RomSet> m_roms;
     calcu::roms::RomsMissing m_romsMissing;
-    std::shared_ptr<const std::vector<std::uint8_t>> m_hostDriveRom;   // roms.md Q-1: not looked up
+    std::shared_ptr<const std::vector<std::uint8_t>> m_hostDriveRom;
 
+    calcu::paper::PaperPart m_paper;
+    calcu::debugger::DebuggerPart m_debugger;
     // LIB-2's part: the host links outlive the machines (a stable serial
     // port file doesn't come and go with a model switch).
     calcu::peripherals::PeripheralsPart m_peripherals;
@@ -288,10 +233,14 @@ private:
     calcu::typing::TypingPart m_typingPart{typingProduct()};
     // C1600-2: the loaders' commands (app/SharpLoaderPart).
     SharpLoaderPart m_loaderPart{m_typingPart};
-    // The context of the operation that runs now (runOperation), for the
-    // typing hand-off of a preset's typed program (C1600-2 design §3.10).
-    calcu::sessions::OperationContext* m_opCtx = nullptr;
-    bool m_powerCycleFollows = false;
+    // LIB-18 and LIB-6 (§10.2 of their designs).
+    SharpProductMachines m_machines;
+    SharpPresetRules m_rules;
+    calcu::presets::DirectoryPresetBundle m_bundle;
+    calcu::presets::PresetsPart m_presets;
+    calcu::startup::StartupPart m_startup;
+    std::uint64_t m_seenGeneration = 0;
+    int m_floppySide = 0;   // the disk's side up, for a new CE-1600F (AC-28)
 
     std::unique_ptr<ModuleBay> m_modules;
     std::unique_ptr<FloppyBay> m_floppy;

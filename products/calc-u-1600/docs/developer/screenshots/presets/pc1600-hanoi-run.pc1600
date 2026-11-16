@@ -1,5 +1,5 @@
 # User-guide screenshots: the Towers of Hanoi program running.
-format-version: 1
+format-version: 2
 model: PC-1600
 keys:
   - key: mode
@@ -9,4 +9,5 @@ program:
 keys:
   - key: mode
   - type: RUN
-  - wait: 3
+  - skip-wait:
+  - wait: 3s

@@ -73,6 +73,7 @@ class DebugController : public QObject {
 public:
     explicit DebugController(MachineController* machines, QObject* parent = nullptr);
     ~DebugController() override;
+    MachineController& machines() { return *m_machines; }
 
     /// Starts, stops or rebinds the server from the Settings values (or
     /// the --dap command-line port, which overrides them for the run).

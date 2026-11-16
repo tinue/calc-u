@@ -8,9 +8,8 @@
 //      (AC-15); app/app.js from the library's app page with CalcU1600.
 //   2. The library's worker, service worker template, app worker entry and
 //      audio worklet.
-//   3. examples/bundled.yaml and the presets it lists -- each with the other
-//      files of its examples/ folder, which a preset names by relative path
-//      -- into dist/presets/ (the engine's bundled examples).
+//   3. examples/bundle.yaml and the files it lists (the presets and the
+//      files each names) into dist/presets/ (the engine's bundled examples).
 //   4. dist/files.json, the service worker's precache list and stamp, and
 //      dist/MANIFEST.json (the library's).
 
@@ -65,24 +64,18 @@ dist.writeLibraryWorker(DIST);
 
 // ---- 3. Presets ---------------------------------------------------------
 
-// Only the `file:` lines of both lists are needed here.
-const bundledList = path.join(REPO, "examples", "bundled.yaml");
-const presets = read(bundledList).split("\n")
-  .map((line) => line.match(/^\s*(?:- )?file:\s*(\S.*?)\s*$/))
-  .filter(Boolean).map((m) => m[1]);
-const presetDirs = [...new Set(presets.map((f) => path.dirname(f)))];
-for (const dir of presetDirs) {
-  const from = path.join(REPO, "examples", dir);
-  for (const f of fs.readdirSync(from, { withFileTypes: true })) {
-    if (!f.isFile() || f.name.startsWith(".")) continue;
-    fs.mkdirSync(path.join(DIST, "presets", dir), { recursive: true });
-    fs.copyFileSync(path.join(from, f.name), path.join(DIST, "presets", dir, f.name));
-  }
+// C1600-4 AC-17, LIB-6 AC-31 (row 1600-21): the bundle file and exactly the
+// files it lists, each `{ file: … }` (the presets and their files).
+const bundleFile = path.join(REPO, "examples", "bundle.yaml");
+const presets = [...new Set([...read(bundleFile).matchAll(/\{\s*file:\s*([^\s}]+)\s*\}/g)].map((m) => m[1]))];
+for (const f of presets) {
+  const from = path.join(REPO, "examples", f);
+  if (!fs.existsSync(from)) throw new Error(`bundle.yaml: ${f} is not in examples/`);
+  fs.mkdirSync(path.join(DIST, "presets", path.dirname(f)), { recursive: true });
+  fs.copyFileSync(from, path.join(DIST, "presets", f));
 }
-for (const f of presets)
-  if (!fs.existsSync(path.join(DIST, "presets", f))) throw new Error(`bundled.yaml: ${f} is not in examples/`);
-fs.copyFileSync(bundledList, path.join(DIST, "presets", "bundled.yaml"));
-console.log(`presets: ${presets.length} from ${presetDirs.join(", ")}`);
+fs.copyFileSync(bundleFile, path.join(DIST, "presets", "bundle.yaml"));
+console.log(`presets: ${presets.length} files of bundle.yaml`);
 
 // ---- 4. files.json, service worker, MANIFEST.json ------------------------
 

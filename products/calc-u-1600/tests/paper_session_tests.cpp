@@ -59,24 +59,24 @@ TEST(lib8_ac36_ce150_paper_kept_through_detach_rom_module_and_model_switch) {
     SKIP_UNLESS(romsPresent(), "no ROMs in roms/");
     SessionFixture f;
     CHECK(f.start("PC-1500"));
-    CHECK(f.ok(c::kTogglePeripheral, toggle("CE-150")));
+    CHECK(f.toggle("CE-150"));
     plot(f, "LPRINT 123", 4);
     const std::size_t drawn = points(f, "CE-150");
     CHECK(drawn > 0);
     const calcu::paper::Reach first = paperOf(f, "CE-150")->reach();
 
-    CHECK(f.ok(c::kTogglePeripheral, toggle("CE-150")));   // a detach
+    CHECK(f.toggle("CE-150"));   // a detach
     CHECK_EQ(points(f, "CE-150"), drawn);
-    CHECK(f.ok(c::kPC1500Rom, Value::object({{"revision", "A03"}})));   // a change of ROM
+    CHECK(f.ok(calcu::startup::kVariantCommand, Value::object({{"name", "A03"}})));   // a change of ROM
     CHECK_EQ(points(f, "CE-150"), drawn);
     CHECK(f.ok(c::kSelectModule, Value::object({{"slot", 1}, {"name", "CE-161"}})));   // a module change
     CHECK_EQ(points(f, "CE-150"), drawn);
-    CHECK(f.ok(c::kPickModel, Value::object({{"model", "PC-1600"}})));   // a model switch
+    CHECK(f.model("PC-1600"));   // a model switch
     CHECK_EQ(points(f, "CE-150"), drawn);
 
     // The CE-150 on the PC-1600 (MODE 1) prints on, below what it drew.
     const std::size_t marksBefore = paperOf(f, "CE-150")->marks().size();
-    CHECK(f.ok(c::kTogglePeripheral, toggle("CE-150")));
+    CHECK(f.toggle("CE-150"));
     plot(f, "MODE 1", 1);
     plot(f, "LPRINT 456", 4);
     const calcu::paper::Paper* p = paperOf(f, "CE-150");
@@ -95,7 +95,7 @@ TEST(lib8_ac36_ce1600p_paper_kept_through_detach_and_its_rom_variant) {
     SKIP_UNLESS(romsPresent(), "no ROMs in roms/");
     SessionFixture f;
     CHECK(f.start("PC-1600"));
-    CHECK(f.ok(c::kTogglePeripheral, toggle("CE-1600P")));
+    CHECK(f.toggle("CE-1600P"));
     plot(f, "LPRINT 123", 8);
     const std::vector<sharp::RawPlotPoint> drawn = sharp::rawPlotPoints(*paperOf(f, "CE-1600P"));
     CHECK(!drawn.empty());
@@ -110,7 +110,7 @@ TEST(lib8_ac36_ce1600p_paper_kept_through_detach_and_its_rom_variant) {
     };
     CHECK(f.ok(c::kCE1600PRom, Value::object({{"version", "old"}})));   // its ROM variant
     CHECK(kept());
-    CHECK(f.ok(c::kTogglePeripheral, toggle("CE-1600P")));   // a detach
+    CHECK(f.toggle("CE-1600P"));   // a detach
     CHECK(kept());
     CHECK_EQ(points(f, "CE-150"), std::size_t{0});
 }
@@ -121,7 +121,7 @@ TEST(lib8_ac36_user_preset_naming_a_plotter_starts_it_empty) {
     SKIP_UNLESS(romsPresent(), "no ROMs in roms/");
     SessionFixture f;
     CHECK(f.start("PC-1500A"));
-    CHECK(f.ok(c::kTogglePeripheral, toggle("CE-150")));
+    CHECK(f.toggle("CE-150"));
     plot(f, "LPRINT 123", 4);
     const std::size_t drawn = points(f, "CE-150");
     CHECK(drawn > 0);
@@ -131,10 +131,10 @@ TEST(lib8_ac36_user_preset_naming_a_plotter_starts_it_empty) {
         std::FILE* out = std::fopen(preset.string().c_str(), "wb");
         CHECK(out != nullptr);
         if (!out) return;
-        std::fputs("format-version: 1\nmodel: PC-1500A\nplotter: CE-150\nkeys:\n  - key: cl\n  - type: LPRINT 7\n  - wait: 3\n", out);
+        std::fputs("format-version: 2\nmodel: PC-1500A\nprinter: CE-150\nkeys:\n  - key: cl\n  - type: LPRINT 7\n  - wait: 3s\n", out);
         std::fclose(out);
     }
-    CHECK(f.ok(c::kLoadPreset, Value::object({{"path", preset.generic_string()}})));
+    CHECK(f.ok(calcu::presets::kLoadPresetCommand, Value::object({{"ref", preset.generic_string()}})));
     const std::size_t after = points(f, "CE-150");
     CHECK(after > 0);
     CHECK(after < drawn);   // only the preset's own printout
@@ -146,7 +146,7 @@ TEST(lib8_ac35_copy_of_a_plotter_is_1200_dpi) {
     SKIP_UNLESS(romsPresent(), "no ROMs in roms/");
     SessionFixture f;
     CHECK(f.start("PC-1600"));
-    CHECK(f.ok(c::kTogglePeripheral, toggle("CE-1600P")));
+    CHECK(f.toggle("CE-1600P"));
     plot(f, "LPRINT 1", 4);
     const calcu::paper::Paper* p = paperOf(f, "CE-1600P");
     CHECK(p && !p->empty());

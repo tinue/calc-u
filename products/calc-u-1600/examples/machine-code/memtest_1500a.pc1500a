@@ -5,7 +5,7 @@
 #  CALL &7C01,X
 # When finished, check X for the test result.
 
-format-version: 1
+format-version: 2
 preset-name: Memory test
 description: Memory test in the machine-language area
 model: PC-1500A
@@ -23,4 +23,4 @@ keys:
   - type: X=2
   - type: CALL&7C01,X
   - type: X
-  - wait: 5
+  - wait: 5s

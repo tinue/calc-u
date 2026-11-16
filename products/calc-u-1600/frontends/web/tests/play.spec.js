@@ -69,19 +69,20 @@ test('?model= and ?preset= start with them', async ({ page }) => {
   await expect(page.locator('[data-dialog=notice]')).toHaveCount(0);
 });
 
-// Settings > Default presets: the open list shows each bundled default by
-// its description, the closed combo the chosen one's short name; a reload
-// keeps the choice (stored as its examples: ref).
-test('a default preset is picked by description and shown by name', async ({ page }) => {
+// Settings > Startup presets (LIB-18 §10.4; the startup presets of
+// examples/bundle.yaml): the open list shows each by its description, the
+// closed combo the chosen one's short name; stored by its bundle path.
+// (startup/default-pc1600 waits for M-47.)
+test('a startup preset is picked by description and shown by name', async ({ page }) => {
   await gotoReady(page);
   await menu(page, 'Edit', 'Settings');
-  const row = page.locator('[data-default-preset=PC1600]');
-  const combo = row.getByRole('button', { name: 'PC-1600 default preset' });
+  const row = page.locator('[data-default-preset=PC1500A]');
+  const combo = row.getByRole('button', { name: 'PC-1500A startup preset' });
   await expect(combo).toHaveText('None');
   await combo.click();
-  await row.locator('.calcu-menu-item', { hasText: 'PC-1600 with the CE-1600P, a floppy and two modules' }).click();
-  await expect(combo).toHaveText('CE-1600P + modules');
-  expect((await request(page, 'settingsState')).defaultPresets.PC1600).toBe('examples:startup/default-pc1600.pc1600');
+  await row.locator('.calcu-menu-item', { hasText: 'PC-1500A with the CE-150 plotter and a CE-163F' }).click();
+  await expect(combo).toHaveText('CE-150 + CE-163F');
+  expect((await request(page, 'settingsState')).defaultPresets.PC1500A).toBe('examples:startup/default-pc1500a.pc1500a');
   // The examples don't offer the default presets.
   const examples = await request(page, 'presetExamples');
   expect(examples.some((e) => e.ref.startsWith('examples:startup/'))).toBe(false);
@@ -232,6 +233,28 @@ test('lib8_ac38 plotter example shows the paper panel with marks', async ({ page
   await menu(page, 'File', 'Load Preset', 'Lissajous figure on the CE-1600P');
   await expect(page.locator('[data-panel=paper][data-empty=false]')).toHaveCount(1, { timeout: 45000 });
   await expect(page.locator('[data-panel=paper] [data-calcu=paper-owner]')).toHaveText('CE-1600P');
+});
+
+// LIB-6 AC-54 (ADR 0032): a bundled example is loaded by its bundle path,
+// and its result shows.
+test('lib6_ac54 bundled example loads and its result shows', async ({ page }) => {
+  await page.setViewportSize(TALL);
+  await gotoReady(page);
+  await menu(page, 'File', 'Load Preset', 'Towers of Hanoi, up to seven bricks');
+  await expect(page.locator('.calcu-face[data-model="2"]')).toHaveCount(1, { timeout: 30000 });
+  await waitForScreen(page, /Hanoy Towers|Bricks/, 45000);
+  await expect(page.locator('[data-dialog=notice]')).toHaveCount(0);
+});
+
+// LIB-18 AC-32 (design §10.6 P16-7): Machine ▸ Cold boot (was "Reset All").
+test('lib18_ac32 cold boot menu item', async ({ page }) => {
+  await gotoReady(page);
+  await waitForScreen(page, /NEW0\?/);
+  await page.keyboard.press('Escape');
+  await menu(page, 'Machine', 'Cold boot');
+  await expect.poll(() => page.evaluate(() => document.querySelector('.calcu-client').calcuEngine.getState().busy),
+    { timeout: 30000 }).toBe(false);
+  await waitForScreen(page, /NEW0\?/);
 });
 
 // LIB-8 AC-36: the paper panel is always shown, named while a plotter is

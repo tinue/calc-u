@@ -75,10 +75,9 @@
 #include "../core/Display/DisplayOutputText.hpp"
 #include "../core/Display/LcdScreenshot.hpp"
 #include "../core/Machine/LegacyCalls.hpp"
-#include "../core/Preset/PresetFile.hpp"
-#include "../core/Preset/PresetMedia.hpp"
 #include "Ce158CliPeer.hpp"
 #include "CliCommon.hpp"
+#include "CliPresetRun.hpp"
 
 int main(int argc, char** argv) {
     // Pull an optional `--modules-dir <dir>` out of argv up front so the
@@ -149,9 +148,12 @@ int main(int argc, char** argv) {
     uint64_t maxCycles = 2'000'000ull;
     bool usingPreset = std::string(argv[1]) == "--preset";
 
-    // Parsed before the machine is built (--preset only) so the machine is
-    // the preset's own model.
-    PresetFile preset;
+    // --preset: loaded through the library's loader (adapter CliPresetRun,
+    // until M-51), to the idle machine; the machine is the session's.
+    std::unique_ptr<cli::CliPresetRun> presetRun;
+    std::unique_ptr<cli::Machine> built;
+    std::string buildError;
+    cli::Machine* machinePtr = nullptr;
     if (usingPreset) {
         if (argc < 3) {
             std::fprintf(stderr, "usage: %s --preset <preset-file.pc1500> [maxCycles]\n", argv[0]);
@@ -159,22 +161,17 @@ int main(int argc, char** argv) {
         }
         std::string presetPath = argv[2];
         if (argc >= 4) maxCycles = std::strtoull(argv[3], nullptr, 10);
-
-        std::string error;
-        if (!parsePresetFile(presetPath, &preset, &error)) {
-            std::fprintf(stderr, "failed to parse preset '%s': %s\n", presetPath.c_str(), error.c_str());
+        presetRun = cli::CliPresetRun::load(presetPath, &buildError);
+        if (!presetRun) {
+            std::fprintf(stderr, "failed to apply preset '%s': %s\n", presetPath.c_str(), buildError.c_str());
             return 1;
         }
-    }
-
-    // The machine: for a preset its model with the bundled ROM of the
-    // default variant (the preset loader loads the preset's own ROM); else a
-    // PC-1500A with the ROM file given.
-    std::unique_ptr<cli::Machine> built;
-    std::string buildError;
-    if (usingPreset) {
-        built = cli::buildMachine(preset.variant == PC1500Variant::PC1500A ? sharp::kPC1500A : sharp::kPC1500,
-                                  std::nullopt, "roms", &buildError);
+        machinePtr = presetRun->machine();
+        if (!machinePtr || machinePtr->model().value == sharp::kPC1600) {
+            std::fprintf(stderr, "preset '%s' is not a PC-1500 or PC-1500A preset\n", presetPath.c_str());
+            return 1;
+        }
+        std::printf("Preset '%s' applied successfully.\n", presetPath.c_str());
     } else {
         if (argc >= 3) maxCycles = std::strtoull(argv[2], nullptr, 10);
         calcu::machine::BuildRequest req;
@@ -190,12 +187,13 @@ int main(int argc, char** argv) {
         calcu::machine::BuildResult r = calcu::machine::build(sharp::sharpCatalogue(), builder, req);
         built = std::move(r.machine);
         buildError = r.refusal;
+        if (!built) {
+            std::fprintf(stderr, "could not build the machine (run from products/calc-u-1600): %s\n", buildError.c_str());
+            return 1;
+        }
+        machinePtr = built.get();
     }
-    if (!built) {
-        std::fprintf(stderr, "could not build the machine (run from products/calc-u-1600): %s\n", buildError.c_str());
-        return 1;
-    }
-    cli::Machine& machine = *built;
+    cli::Machine& machine = *machinePtr;
     LH5801& cpu = *sharp::legacy::coreParts(machine).lh5801;
 
     // Enabled before either branch below (not just before the tail run
@@ -221,30 +219,7 @@ int main(int argc, char** argv) {
     if (!tape.arm(machine)) return 1;
     const auto pump = [&] { ce158Peer.pump(machine); };
 
-    if (usingPreset) {
-        std::string presetPath = argv[2];
-        // `saveas:` -- the card the loader attached, spliced into its file.
-        PresetLoadResult armedResult;
-        const auto onArmed = [&armedResult](const PresetLoadResult& r) { armedResult = r; };
-        const PresetSaveAsFn onSaveAs = [&](const PresetSaveAsRequest& request, std::string* err) {
-            return savePresetMedia(request, {moduleDir, saveDir}, sharp::legacy::presetMedia(machine, armedResult, request),
-                                   err);
-        };
-        PresetLoadResult loaded = cli::runSliced(
-            sharp::legacy::applyPresetJob(
-                machine, preset, [](const std::string& line) { std::fprintf(stderr, "[preset] %s\n", line.c_str()); },
-                /*traceDir=*/".",  // a `- trace: name.bin` step writes ./name.bin (same cwd convention as roms/)
-                moduleDir, /*onBooted=*/{}, cli::presetRoms("roms", {}), extraModuleDirs, onArmed, onSaveAs),
-            machine.descriptor().tickRate / 100, pump);
-        for (const std::string& rejected : loaded.rejectedBasicLines) {
-            std::fprintf(stderr, "preset: ROM rejected BASIC line: %s\n", rejected.c_str());
-        }
-        if (!loaded.ok) {
-            std::fprintf(stderr, "failed to apply preset '%s': %s\n", presetPath.c_str(), loaded.error.c_str());
-            return 1;
-        }
-        std::printf("Preset '%s' applied successfully.\n", presetPath.c_str());
-    } else {
+    if (!usingPreset) {
         machine.reset();
         std::printf("Reset vector -> P=0x%04X\n", cpu.pc());
     }

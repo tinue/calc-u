@@ -1,5 +1,9 @@
 #include "DebugController.hpp"
 
+#include <chrono>
+
+#include "peripherals/RealTimeClock.hpp"
+
 #include <QTimer>
 
 #include <algorithm>
@@ -237,8 +241,9 @@ bool DebugController::loadPreset(const QString& path, QString* error, bool armOn
         *error = tr("Presets can't be loaded from the debugger here");
         return false;
     }
-    const bool ok = m_sync->runAndWait(tr("Load Preset"), shared::commands::kLoadPreset,
-                                       calcu::sessions::Value::object({{"path", path.toStdString()}, {"armOnly", armOnly}}), error);
+    // LIB-6 AC-55: `buildOnly` builds the machine and starts nothing.
+    const bool ok = m_sync->runAndWait(tr("Load Preset"), calcu::presets::kLoadPresetCommand,
+                                       calcu::sessions::Value::object({{"ref", path.toStdString()}, {"buildOnly", armOnly}}), error);
     // The preset rebuilt the machine; the caller re-binds the listings.
     m_lastMachine = m_machines->machine();
     m_replacedPending = false;
@@ -253,22 +258,18 @@ bool DebugController::cleanStart(const QString& preset, QString* how, QString* e
     bool ok = false;
     if (!preset.isEmpty()) {
         *how = tr("preset %1").arg(preset);
-        ok = m_sync->runAndWait(tr("Load Preset"), shared::commands::kLoadPreset,
-                                calcu::sessions::Value::object({{"path", preset.toStdString()}}), error);
+        ok = m_sync->runAndWait(tr("Load Preset"), calcu::presets::kLoadPresetCommand,
+                                calcu::sessions::Value::object({{"ref", preset.toStdString()}}), error);
     } else if (const QString path = AppSettings::defaultPresetPath(m_machines->currentModel());
                !path.isEmpty()) {
-        // As the app applies it: refused if it's for another model.
-        *how = tr("default preset %1").arg(path);
-        ok = m_sync->runAndWait(
-            tr("Default Preset"), shared::commands::kLoadDefaultPreset,
-            calcu::sessions::Value::object({{"path", path.toStdString()},
-                                            {"model", shared::settingsModelName(m_machines->currentModel())}}),
-            error);
+        // The model's startup preset, as LIB-18 loads it.
+        *how = tr("startup preset %1").arg(path);
+        ok = m_sync->runAndWait(tr("Startup Preset"), calcu::presets::kLoadPresetCommand,
+                                calcu::sessions::Value::object({{"ref", path.toStdString()}}), error);
     } else {
-        // No preset: the machine as Reset All leaves it, booted to the prompt.
-        *how = tr("All Reset (no default preset for this model)");
-        ok = m_sync->runAndWait(tr("Reset All"), shared::commands::kReset, calcu::sessions::Value::object({{"all", true}}),
-                                error);
+        // No preset: the machine as Cold boot leaves it, at key readiness.
+        *how = tr("Cold boot (no startup preset for this model)");
+        ok = m_sync->runAndWait(tr("Cold boot"), calcu::startup::kColdBootCommand, {}, error);
     }
     // The caller re-binds the listings.
     m_lastMachine = m_machines->machine();
@@ -323,7 +324,7 @@ bool DebugController::resetMachine(bool allReset, bool stop, QString* error) {
     m_machines->cancelPaste();
     if (allReset) machine->coldBoot();
     else machine->reset();
-    m_machines->app().seedClockFromHost();
+    calcu::peripherals::setClocksFromHost(*machine, calcu::peripherals::hostDateTime(std::chrono::system_clock::now()));
     // L-A2: the restart is told, so the run control runs again.
     libraryRunControl()->restarted(allReset ? calcu::debugger::RestartKind::ColdBoot : calcu::debugger::RestartKind::Reset);
     if (stop) m_run.pause(DebugEvent::Entry);

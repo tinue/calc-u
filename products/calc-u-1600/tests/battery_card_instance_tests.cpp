@@ -14,9 +14,9 @@
 #include "../core/Connector/BatteryCardInstance.hpp"
 #include "../core/Connector/FloppyImageFile.hpp"
 #include "../core/Connector/MemoryCardCatalog.hpp"
+#include "../core/Connector/MediaSave.hpp"
 #include "../core/Connector/MemoryCardDefinition.hpp"
 #include "../core/Connector/SoftwareDefinedCard.hpp"
-#include "../core/Preset/PresetMedia.hpp"
 
 #include <filesystem>
 #include "TestHarness.hpp"
@@ -460,68 +460,6 @@ TEST(test_plan_media_save) {
     CHECK(plan(MediaKind::Floppy, "Disk", false) == MediaSaveRefusal::TemplateName);
     CHECK(plan(MediaKind::Floppy, "Bundled", false) == MediaSaveRefusal::None);  // a card's name, not a disk's
     CHECK(path == folders.saves + "/Bundled.floppy.yaml");
-    std::filesystem::remove_all(d);
-}
-
-// A preset `saveas:` without the GUI, for any model: the card is spliced
-// into the file it came from (keeping `format-version`), a slot whose ROM
-// came from `slot-N-rom:` is refused.
-TEST(test_save_preset_media) {
-    const calcu::testing::TempFolder tmp("calcu1600-media-save");
-    const std::string d = tmp.str();
-    const MediaSaveFolders folders{d + "/bundled", d + "/saves"};
-    std::filesystem::create_directories(folders.bundled);
-    std::filesystem::create_directories(folders.saves);
-    const std::string source = folders.bundled + "/ram.card.yaml";
-    std::ofstream(source) << cardText("RAM", true);
-    std::string err;
-    auto card = makeSoftwareDefinedCard(source, CardHost::PC1500, &err);
-    CHECK(card != nullptr);
-    if (!card) return;
-    PinState p;
-    p.pin[4] = true;
-    card->respondsToWrite(p, 0x5A);
-
-    PresetMedia media;
-    media.slots[0] = {card.get(), source, ""};
-    PresetSaveAsRequest request;
-    request.name = "My RAM";
-    CHECK(savePresetMedia(request, folders, media, &err));
-    MemoryCardDefinition saved;
-    std::string text;
-    CHECK(named_file_detail::readTextFile(folders.saves + "/My RAM.card.yaml", &text));
-    CHECK(text.find("\nformat-version: 1\n") != std::string::npos);
-    CHECK(parseMemoryCardDefinition(text, &saved, &err));
-    CHECK(saved.moduleName == "My RAM" && !saved.isTemplate);
-    CHECK(saved.regions[0].initialContentByBank[0][0] == 0x5A);
-
-    request.writeProtect = true;  // no switch on this card
-    request.name = "Locked";
-    CHECK(!savePresetMedia(request, folders, media, &err));
-    CHECK(err == "slot 1: RAM has no write-protect switch");
-    request.writeProtect = false;
-
-    request.name = "RAM";  // the bundled name
-    CHECK(!savePresetMedia(request, folders, media, &err));
-    CHECK(err == "'RAM' is a template's name");
-
-    media.slots[0].romFile = "build/rom.bin";
-    request.name = "Other";
-    CHECK(!savePresetMedia(request, folders, media, &err));
-    CHECK(err == "slot 1: the ROM comes from build/rom.bin, not from the module file, so it can't be saved");
-
-    request.target = PresetStep::SaveAsTarget::Slot2;
-    CHECK(!savePresetMedia(request, folders, media, &err));
-    CHECK(err == "slot 2 has no card file to save from");
-
-    request.target = PresetStep::SaveAsTarget::Floppy;
-    CHECK(!savePresetMedia(request, folders, media, &err));
-    CHECK(err == "there's no disk in the drive");
-    media.floppyImage = std::vector<uint8_t>(0x20000, 0xE5);
-    request.name = "Data";
-    CHECK(savePresetMedia(request, folders, media, &err));
-    FloppyCatalogEntry disk;
-    CHECK(readFloppyCatalogEntry(folders.saves + "/Data.floppy.yaml", &disk, &err) && disk.diskName == "Data");
     std::filesystem::remove_all(d);
 }
 

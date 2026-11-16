@@ -15,8 +15,8 @@
 #include "../core/PC1500/PC1500Keyboard.hpp"
 #include "../core/PC1500/PC1500Machine.hpp"
 #include "../core/PC1500/PC1500Memory.hpp"
-#include "../core/PC1500/PC1500PresetLoader.hpp"
-#include "PresetTestSupport.hpp"
+#include "../core/PC1500/PC1500BasicTyper.hpp"
+#include "TestRoms.hpp"
 
 #include <ctime>
 #include "TestHarness.hpp"
@@ -927,37 +927,6 @@ TEST(test_rtc_calendar_seed_and_read) {
     CHECK(rtcNibble(r, 24) == 2 && rtcNibble(r, 28) == 0); // day 02
     CHECK(rtcNibble(r, 32) == 3);                          // day-of-week (Wed)
     CHECK(rtcNibble(r, 36) == 9);                          // month (plain, not BCD)
-}
-
-// `- syncclock:` re-seeds the RTC from the host: the boot seeds a clearly
-// wrong clock (12 hours and 6 months off), and after a `- wait:` and the sync the
-// calendar reads back the host's current time. ROM-gated.
-TEST(test_preset_syncclock_reseeds_rtc) {
-    PresetFile preset;
-    std::string err;
-    CHECK(parsePresetString("format-version: 1\nmodel: PC-1500A\nkeys:\n  - wait: 1\n  - syncclock:\n",
-                            "/tmp/lh5801_tests_syncclock.pc1500a", &preset, &err));
-    PC1500Machine machine(PC1500Variant::PC1500A);
-    auto hostOnBoot = [&machine] {
-        // A clearly wrong clock to start from: 12 hours and a month off.
-        const std::time_t bootNow = std::time(nullptr);
-        std::tm b{};
-        localtime_r(&bootNow, &b);
-        machine.seedClock(2000, (b.tm_mon + 6) % 12 + 1, 1, (b.tm_hour + 12) % 24, 0, 0);
-    };
-    const PresetLoadResult res = applyPC1500Preset(machine, preset, {}, ".", ".", hostOnBoot, testPresetRoms());
-    SKIP_UNLESS(res.ok, res.error.c_str());
-    const std::time_t now = std::time(nullptr);
-    std::tm t{};
-    localtime_r(&now, &t);
-    const uint64_t r = rtcReadCalendar40(machine.memory());
-    auto bcd = [&](int shift) { return rtcNibble(r, shift + 4) * 10 + rtcNibble(r, shift); };
-    const int rtcMinutes = bcd(16) * 60 + bcd(8);
-    const int hostMinutes = t.tm_hour * 60 + t.tm_min;
-    CHECK(rtcNibble(r, 36) == t.tm_mon + 1);
-    CHECK(bcd(24) == t.tm_mday || t.tm_hour == 0);          // tolerate a midnight rollover
-    const int diff = (hostMinutes - rtcMinutes + 1440) % 1440;
-    CHECK(diff <= 1);                                         // not the boot seed
 }
 
 TEST(test_rtc_calendar_set_via_shift_and_commit) {

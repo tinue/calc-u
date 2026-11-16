@@ -7,9 +7,9 @@
 
 namespace KeyLayout {
 
-const Layout& layoutFor(shared::Model model) {
+const Layout& layoutFor(const calcu::machine::ModelId& model) {
     // PC-1500 and PC-1500A share the art apart from the model-name text.
-    return model == shared::Model::PC1600 ? pc1600Layout() : pc1500Layout();
+    return model.value == "PC-1600" ? pc1600Layout() : pc1500Layout();
 }
 
 FittedLayout fitLayout(const Layout& layout, int paneWidth, int paneHeight) {

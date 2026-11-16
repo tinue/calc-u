@@ -12,7 +12,7 @@ namespace shared {
 
 std::vector<std::string> cardYamlDump(SharpAppPart& app) {
     using inspect::fmt;
-    const bool isPC1600 = app.currentModel() == Model::PC1600;
+    const bool isPC1600 = app.isPC1600();
     std::vector<std::string> chunks;
     for (int slot = 1; slot <= app.slotCount(); ++slot) {
         int bankCount = 0;

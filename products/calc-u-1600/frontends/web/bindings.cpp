@@ -2,9 +2,12 @@
 // factory of the library's app session for the library's Web Worker host.
 // All the rest is the library's (library/web/glue/: WorkerHost translates
 // the session's messages to the page and back) and the app layer's
-// (SharpAppPart: the machine, the operations; SharpWebPart: what the page
-// draws). Built by frontends/web/build.sh (CMake target calcu_web) into
-// dist/wasm/.
+// (SharpAppPart: the machine, the operations; SharpWebPart: what only the
+// page asks for). The page is put together from the React set's shell
+// (LIB-14 Part D), so the session also has LIB-4's ControlPart (with the
+// product's rules: no host folder in a browser, AC-18) and LIB-14's
+// SettingsPart. Built by frontends/web/build.sh (CMake target calcu_web)
+// into dist/wasm/.
 
 #include <filesystem>
 #include <memory>
@@ -16,6 +19,7 @@
 #include "app/SharpWebPart.hpp"
 #include "settings/PlatformBase.hpp"
 #include "settings/SettingsFile.hpp"
+#include "shell/SettingsPart.hpp"
 #include "web/glue/Bind.hpp"
 
 namespace {
@@ -29,6 +33,7 @@ struct WebParts {
     std::unique_ptr<shared::AppPaths> paths;
     std::unique_ptr<shared::SharpAppPart> part;
     std::unique_ptr<shared::SharpWebPart> web;
+    std::unique_ptr<calcu::shell::SettingsPart> settingsPart;
     explicit WebParts(calcu::settings::SettingsFile f) : file(std::move(f)) {}
 };
 
@@ -39,12 +44,20 @@ std::unique_ptr<calcu::sessions::AppSession> makeWebAppSession(const calcu::web:
         shared::settingsDecl(), calcu::settings::settingsFilePath(shared::settingsDecl(), dirs)));
     parts->paths = std::make_unique<shared::AppPaths>(parts->settings, dirs,
                                                       shared::BundleDirs{start.bundleDir, start.presetsDir});
-    parts->part = std::make_unique<shared::SharpAppPart>(parts->settings, *parts->paths);
-    parts->web = std::make_unique<shared::SharpWebPart>(*parts->part, parts->settings, *parts->paths, start.uploadsDir);
+    parts->part = std::make_unique<shared::SharpAppPart>(parts->settings, *parts->paths,
+                                                         shared::SharpAppPartOptions{/*canMountHostFolder=*/false});
+    parts->web = std::make_unique<shared::SharpWebPart>(*parts->part, start.uploadsDir);
+    calcu::shell::SettingsPartSetup ss;
+    ss.file = &parts->file;
+    ss.paths = &parts->paths->places();
+    ss.frontend = calcu::settings::FrontendKind::Web;
+    parts->settingsPart = std::make_unique<calcu::shell::SettingsPart>(std::move(ss));
 
     calcu::sessions::AppSessionSetup setup;
     setup.clock = &calcu::web::wallTimeNow;
     setup.parts.push_back(start.shellPart);
+    setup.parts.push_back(parts->settingsPart.get());
+    setup.parts.push_back(&parts->part->controlPart());
     for (calcu::sessions::SessionPart* p : parts->part->sessionParts()) setup.parts.push_back(p);
     setup.parts.push_back(parts->web.get());
     const std::string problem = parts->file.problem();

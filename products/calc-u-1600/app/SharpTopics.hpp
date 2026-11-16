@@ -4,27 +4,24 @@
 #include <vector>
 
 #include "Tape/TapeDeck.hpp"
-#include "app/ControlState.hpp"
 #include "roms/Lookup.hpp"
 #include "sessions/LibraryTopics.hpp"
 #include "sessions/Messages.hpp"
 #include "sessions/Payload.hpp"
 
 // Calc-U-1600's topics, commands and requests on the library's app session
-// (LIB-3 design §4, §5: the interim product topics; spec AC-38). Each is
-// carried by the library unread (AC-12) and re-pointed at its owner's topic
-// in the owner's step: `c1600.control-state` LIB-4 1600 (M-49);
-// `c1600.machine` LIB-4 / LIB-18 1600 (M-49 / M-46; since M-47 with the
-// tape counter and the floppy lamp, LIB-7 1600: `c1600.tapes` went);
-// `c1600.serial-links` LIB-2 1600. `roms-missing` is
-// LIB-12's topic (LIB-12 design §3.5); its payload lives here until a
-// second product sends it.
+// (LIB-3 design §4, §5; spec AC-38). The interim topics went with their
+// owners' steps: `c1600.control-state` is LIB-4's `control-state`, the
+// model and the builds of `c1600.machine` are LIB-4's and LIB-18's (M-49).
+// What stays is the product's own: `c1600.lamps` (the tape counter and the
+// floppy lamp, LIB-7 AC-39, AC-42), `c1600.serial-links` (LIB-2's serial
+// link files). `roms-missing` is LIB-12's topic (LIB-12 design §3.5); its
+// payload lives here until a second product sends it.
 
 namespace shared {
 
 namespace topics {
-inline const calcu::sessions::TopicName kControlState{"c1600.control-state"};
-inline const calcu::sessions::TopicName kMachine{"c1600.machine"};
+inline const calcu::sessions::TopicName kLamps{"c1600.lamps"};
 inline const calcu::sessions::TopicName kSerialLinks{"c1600.serial-links"};
 inline const calcu::sessions::TopicName kRomsMissing{"roms-missing"};
 } // namespace topics
@@ -101,30 +98,18 @@ struct CodeLoadedReply final : calcu::sessions::PayloadOf<CodeLoadedReply> {
     calcu::sessions::Value toValue() const override;
 };
 
-// What the pickers, menus and panels offer now (ControlState).
-struct ControlStatePayload final : calcu::sessions::PayloadOf<ControlStatePayload> {
-    static constexpr calcu::sessions::PayloadKind kKind{"c1600.control-state"};
-    explicit ControlStatePayload(ControlState s) : state(std::move(s)) {}
-    ControlState state;
-    bool same(const ControlStatePayload& o) const { return state == o.state; }
-    calcu::sessions::Value toValue() const override;
-};
-
-// The machine: its model and how often it was rebuilt (0.8.1's
-// machineReplaced, modelSwitched); the tape counter (0.8.1's tapeStatus)
-// and the CE-1600F's lamp (LIB-7 AC-39, AC-42). The media themselves are
-// LIB-7's topic `media`.
-struct MachinePayload final : calcu::sessions::PayloadOf<MachinePayload> {
-    static constexpr calcu::sessions::PayloadKind kKind{"c1600.machine"};
-    Model model = Model::PC1500A;
-    std::uint64_t builds = 0;          // grows with every machine built
-    std::uint64_t modelSwitches = 0;   // grows with every model switch and preset load
-    TapeDeck::Status tape;             // the counter: position while playing, length while recording
-    bool floppyMotor = false;          // the drive's motor runs: the green lamp
-    bool same(const MachinePayload& o) const {
-        return model == o.model && builds == o.builds && modelSwitches == o.modelSwitches &&
-               tape.mode == o.tape.mode && tape.motor == o.tape.motor && tape.position == o.tape.position &&
-               tape.length == o.tape.length && floppyMotor == o.floppyMotor;
+// The tape counter (0.8.1's tapeStatus) with the name of the tape in, and
+// the CE-1600F's lamp (LIB-7 AC-39, AC-42). The media themselves are LIB-7's
+// topic `media`. toValue: {floppyMotor, tapeMode ("play", "record", ""),
+// tapeMotor, tapeSeconds, tapeFile}, as the Web page draws it.
+struct LampsPayload final : calcu::sessions::PayloadOf<LampsPayload> {
+    static constexpr calcu::sessions::PayloadKind kKind{"c1600.lamps"};
+    TapeDeck::Status tape;   // the counter: position while playing, length while recording
+    std::string tapeName;    // the tape in the cassette, "" none
+    bool floppyMotor = false;   // the drive's motor runs: the green lamp
+    bool same(const LampsPayload& o) const {
+        return tape.mode == o.tape.mode && tape.motor == o.tape.motor && tape.position == o.tape.position &&
+               tape.length == o.tape.length && tapeName == o.tapeName && floppyMotor == o.floppyMotor;
     }
     calcu::sessions::Value toValue() const override;
 };

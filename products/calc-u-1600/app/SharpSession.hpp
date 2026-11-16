@@ -20,6 +20,7 @@ struct SharpSessionOptions {
     calcu::sessions::Hosting hosting = calcu::sessions::Hosting::Paced;
     calcu::pacing::WallClock clock;                                      // default: the steady clock
     std::function<std::chrono::system_clock::time_point()> hostTime;    // default: the system clock
+    bool canMountHostFolder = true;                                     // LIB-4 AC-18: a browser cannot
 };
 
 calcu::sessions::ProductSession<SharpAppPart> makeSharpSession(Settings& settings, AppPaths& paths,

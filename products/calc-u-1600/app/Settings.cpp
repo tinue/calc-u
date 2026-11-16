@@ -69,18 +69,16 @@ const cs::ProductDecl& settingsDecl() {
     return decl;
 }
 
-const char* settingsModelName(Model model) {
-    switch (model) {
-        case Model::PC1500: return "PC-1500";
-        case Model::PC1500A: return "PC-1500A";
-        case Model::PC1600: return "PC-1600";
-    }
-    return "";
+const std::vector<calcu::machine::ModelId>& sharpModels() {
+    static const std::vector<calcu::machine::ModelId> models{calcu::machine::ModelId{"PC-1500"},
+                                                             calcu::machine::ModelId{"PC-1500A"},
+                                                             calcu::machine::ModelId{"PC-1600"}};
+    return models;
 }
 
-std::optional<Model> modelFromSettingsName(const std::string& name) {
-    for (Model m : {Model::PC1500, Model::PC1500A, Model::PC1600})
-        if (name == settingsModelName(m)) return m;
+std::optional<calcu::machine::ModelId> sharpModel(const std::string& name) {
+    for (const auto& m : sharpModels())
+        if (name == m.value) return m;
     return std::nullopt;
 }
 
@@ -117,8 +115,8 @@ std::string Settings::openStartDir(OpenFolder folder, const std::string& homeDir
     return cs::openStartFolder(m_file, openFolderKind(folder), homeDir);
 }
 
-Model Settings::startupModel() const {
-    return modelFromSettingsName(cs::startupModel(m_file)).value_or(Model::PC1500A);
+calcu::machine::ModelId Settings::startupModel() const {
+    return sharpModel(cs::startupModel(m_file)).value_or(calcu::machine::ModelId{"PC-1500A"});
 }
 
 } // namespace shared

@@ -18,7 +18,7 @@ namespace fs = std::filesystem;
 using sessionfixture::SessionFixture;
 using sessionfixture::romsPresent;
 using calcu::sessions::Value;
-using shared::Model;
+using Model = calcu::machine::ModelId;
 
 namespace {
 
@@ -60,7 +60,7 @@ TEST(lib18_ac25_no_settings_pc1500a_new0_check) {
     SKIP_UNLESS(romsPresent(), "no ROMs in roms/");
     SessionFixture f;
     CHECK(f.start());
-    CHECK(f.part().currentModel() == Model::PC1500A);
+    CHECK(f.part().model() == calcu::machine::ModelId{"PC-1500A"});
     CHECK(screenHas(f, "NEW0?"));
 }
 
@@ -82,9 +82,9 @@ TEST(lib18_ac26_version1_startup_preset_gives_default_and_notice) {
     // A startup preset of format 1 (row 1600-1): the built-in default and EC-1's notice.
     const fs::path v1 = f.root / "startup-v1.pc1600";
     std::ofstream(v1) << "format-version: 1\nmodel: PC-1600\nplotter: CE-1600P\nfloppy: Formatted\nslot-1: CE-1600M\n";
-    f.settings.setDefaultPresetPath(Model::PC1600, v1.generic_string());
+    f.settings.setDefaultPresetPath(calcu::machine::ModelId{"PC-1600"}, v1.generic_string());
     CHECK(f.start("PC-1600"));
-    CHECK(f.part().currentModel() == Model::PC1600);
+    CHECK(f.part().model() == calcu::machine::ModelId{"PC-1600"});
     CHECK_EQ(pluggedCount(f), std::size_t{0});
     const auto n = f.notices();
     CHECK(!n.empty() && n.back().find("could not be loaded") != std::string::npos &&
@@ -111,9 +111,9 @@ TEST(lib18_ac27_ce1600p_rom_choice_back_to_new) {
     SessionFixture f;
     CHECK(f.start("PC-1600"));
     CHECK(f.ok(shared::commands::kCE1600PRom, Value::object({{"version", "old"}})));
-    CHECK(f.part().ce1600pRomVersion() == shared::CE1600PRomVersion::Old);
+    CHECK(f.part().ce1600pVariant() == "Old");
     CHECK(f.model("PC-1500A"));
-    CHECK(f.part().ce1600pRomVersion() == shared::CE1600PRomVersion::New);
+    CHECK(f.part().ce1600pVariant() == "New");
 }
 
 TEST(lib18_ac28_variant_switch_replugs_printer_interface_host_drive_modules) {
@@ -128,7 +128,7 @@ TEST(lib18_ac28_variant_switch_replugs_printer_interface_host_drive_modules) {
     CHECK(f.choose("slot-2", "CE-1601M").done);
     CHECK(f.nameAndSave("slot-2", "Disk RAM").done);   // an instance: its content goes along
     CHECK(f.variant("Old"));
-    CHECK(f.part().pc1600RomVersion() == shared::PC1600RomVersion::Old);
+    CHECK(f.part().machine()->variant() && f.part().machine()->variant()->value == "Old");
     CHECK(plugged(f, "CE-150") && plugged(f, "CE-158") && plugged(f, "host-drive"));
     CHECK_EQ(f.part().hostDriveDirectory(), dir.generic_string());
     CHECK(f.part().slotCard(2) && f.part().slotCard(2)->moduleName() == "CE-1601M");
@@ -154,7 +154,7 @@ TEST(lib18_ac28_disk_in_drive_again_same_side) {
 TEST(lib18_ac28_no_startup_preset_loaded) {
     SKIP_UNLESS(romsPresent(), "no ROMs in roms/");
     SessionFixture f;
-    f.settings.setDefaultPresetPath(Model::PC1500, "examples:startup/default-pc1500.pc1500");
+    f.settings.setDefaultPresetPath(calcu::machine::ModelId{"PC-1500"}, "examples:startup/default-pc1500.pc1500");
     CHECK(f.start("PC-1500"));
     CHECK(plugged(f, "CE-150"));   // the startup preset's
     CHECK(f.detach("CE-150"));
@@ -244,7 +244,7 @@ TEST(lib18_ac31_plugged_is_replace_by_other_variant) {
     for (const auto& e : m->plugged().byPlace)
         old = old || (e.peripheral.value == "CE-1600P" && e.variant && e.variant->value == "Old");
     CHECK(old);
-    CHECK(f.part().ce1600pRomVersion() == shared::CE1600PRomVersion::Old);
+    CHECK(f.part().ce1600pVariant() == "Old");
 }
 
 TEST(lib18_ac31_unplugged_choice_holds_for_next_attach) {
@@ -252,11 +252,11 @@ TEST(lib18_ac31_unplugged_choice_holds_for_next_attach) {
     SessionFixture f;
     CHECK(f.start("PC-1600"));
     CHECK(f.ok(shared::commands::kCE1600PRom, Value::object({{"version", "old"}})));
-    CHECK(f.part().ce1600pRomVersion() == shared::CE1600PRomVersion::Old);
+    CHECK(f.part().ce1600pVariant() == "Old");
     // The frontends attach with the choice (MainWindow::togglePeripheral, engine.js).
-    const char* variant = f.part().ce1600pRomVersion() == shared::CE1600PRomVersion::Old ? "Old" : "New";
-    CHECK(f.attach("CE-1600P", variant));
-    CHECK(f.part().ce1600pRomVersion() == shared::CE1600PRomVersion::Old);
+    const std::string variant = f.part().ce1600pVariant();
+    CHECK(f.attach("CE-1600P", variant.c_str()));
+    CHECK(f.part().ce1600pVariant() == "Old");
 }
 
 // ── P16-5: Reset, Cold boot (AC-32, AC-16; row 1600-9) ──────────────────

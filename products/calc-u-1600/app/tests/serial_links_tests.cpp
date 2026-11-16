@@ -22,7 +22,7 @@
 namespace {
 
 namespace fs = std::filesystem;
-using shared::Model;
+using Model = calcu::machine::ModelId;
 
 struct Fixture : sessionfixture::SessionFixture {
     fs::path links = root / "links";
@@ -53,14 +53,14 @@ TEST(lib2_ac33_pc1600_rs232c_file) {
 
 TEST(lib2_ac33_ce158_file_on_first_use_all_models) {
     SKIP_UNLESS(fullRomSetPresent(), "no ROMs in roms/");
-    for (Model model : {Model::PC1500, Model::PC1500A, Model::PC1600}) {
+    for (Model model : {calcu::machine::ModelId{"PC-1500"}, calcu::machine::ModelId{"PC-1500A"}, calcu::machine::ModelId{"PC-1600"}}) {
         Fixture f;
-        CHECK(f.start(shared::settingsModelName(model)));
+        CHECK(f.start(model.value.c_str()));
         CHECK(f.part().ce158SerialLinkStatus().empty());
         CHECK(f.toggle("CE-158"));
         f.runFor(1.0);
         const bool made = !f.part().ce158SerialLinkStatus().empty();
-        if (!made) std::fprintf(stderr, "  model %d: no CE-158 serial port file\n", static_cast<int>(model));
+        if (!made) std::fprintf(stderr, "  model %s: no CE-158 serial port file\n", model.value.c_str());
         CHECK(made);
         CHECK(linkExists(f.links / "calcu1600-ce158.serial"));
     }

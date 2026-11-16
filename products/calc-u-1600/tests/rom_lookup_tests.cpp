@@ -39,7 +39,7 @@ namespace fs = std::filesystem;
 using calcu::roms::FileProblem;
 using calcu::roms::Problem;
 using calcu::roms::RomsMissing;
-using shared::Model;
+using Model = calcu::machine::ModelId;
 
 // The table of AC-12, copied from the spec: file, bytes, md5, who needs it.
 struct Row {
@@ -129,10 +129,10 @@ struct Session {
     // was built (the full set is missing).
     bool switchModel(Model m) {
         if (!session.hasLiveMachine()) {
-            testSettings.settings.setStartupModelPreference(shared::settingsModelName(m));
+            testSettings.settings.setStartupModelPreference(m.value.c_str());
             return run(shared::commands::kStart);
         }
-        return run(calcu::startup::kModelCommand, calcu::sessions::Value::object({{"name", shared::settingsModelName(m)}}));
+        return run(calcu::startup::kModelCommand, calcu::sessions::Value::object({{"name", m.value.c_str()}}));
     }
     // LIB-12's `roms-missing` topic, or nullptr.
     const RomsMissing* missing() const {
@@ -287,7 +287,7 @@ TEST(lib12_ac13_missing_old_set_does_not_start) {
     copy.remove("PC1600-P0-B0-old.bin");
     Session s(copy.dir);
     // Even a PC-1500A, which never needs the file, does not start.
-    CHECK(!s.switchModel(Model::PC1500A));
+    CHECK(!s.switchModel(calcu::machine::ModelId{"PC-1500A"}));
     CHECK(!s.session.hasLiveMachine());
     CHECK(s.missing() != nullptr);
     if (!s.missing()) return;
@@ -304,7 +304,7 @@ TEST(lib12_ac13_missing_ce1600p_old_file_does_not_start) {
     BundleCopy copy("ac13-ce1600p");
     copy.remove("PC1600-P1-B4-CE1600P-old.bin");
     Session s(copy.dir);
-    CHECK(!s.switchModel(Model::PC1600));
+    CHECK(!s.switchModel(calcu::machine::ModelId{"PC-1600"}));
     CHECK(!s.session.hasLiveMachine());
     CHECK(s.missing() && s.missing()->files.size() == 1);
     CHECK(s.missing() && problemOf(*s.missing(), "PC1600-P1-B4-CE1600P-old.bin") != nullptr);
@@ -313,7 +313,7 @@ TEST(lib12_ac13_missing_ce1600p_old_file_does_not_start) {
     BundleCopy copy2("ac13-new");
     copy2.remove("PC1600-P2-B6-new.bin");
     Session s2(copy2.dir);
-    CHECK(!s2.switchModel(Model::PC1600));
+    CHECK(!s2.switchModel(calcu::machine::ModelId{"PC-1600"}));
     CHECK(s2.missing() && problemOf(*s2.missing(), "PC1600-P2-B6-new.bin") != nullptr);
 }
 
@@ -323,7 +323,7 @@ TEST(lib12_ac13_no_rom_read_during_session) {
     Session s(copy->dir);
     copy.reset();   // the bundle folder is gone after the start
     CHECK(!fs::exists(s.paths.bundledResourcesDir()));
-    CHECK(s.switchModel(Model::PC1500));
+    CHECK(s.switchModel(calcu::machine::ModelId{"PC-1500"}));
     for (auto rev : {PC1500RomRevision::A01, PC1500RomRevision::A03, PC1500RomRevision::A04}) {
         CHECK(s.run(calcu::startup::kVariantCommand,
                     calcu::sessions::Value::object({{"name", rev == PC1500RomRevision::A01 ? "A01" : rev == PC1500RomRevision::A03 ? "A03" : "A04"}})));
@@ -333,11 +333,11 @@ TEST(lib12_ac13_no_rom_read_during_session) {
         return s.run(calcu::startup::kAttachCommand, calcu::sessions::Value::object({{"place", place}, {"peripheral", peripheral}}));
     };
     CHECK(attach("printer", "CE-150"));
-    CHECK(s.switchModel(Model::PC1500A));
+    CHECK(s.switchModel(calcu::machine::ModelId{"PC-1500A"}));
     CHECK(attach("interface", "CE-158"));
-    CHECK(s.switchModel(Model::PC1600));
+    CHECK(s.switchModel(calcu::machine::ModelId{"PC-1600"}));
     CHECK(s.run(calcu::startup::kVariantCommand, calcu::sessions::Value::object({{"name", "Old"}})));
-    CHECK(s.session.pc1600RomVersion() == shared::PC1600RomVersion::Old);
+    CHECK(s.session.machine()->variant() && s.session.machine()->variant()->value == "Old");
     CHECK(s.run(shared::commands::kCE1600PRom, calcu::sessions::Value::object({{"version", "old"}})));
     CHECK(attach("printer", "CE-1600P"));
     CHECK(s.session.ce1600pAttached());

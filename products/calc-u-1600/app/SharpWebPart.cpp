@@ -2,16 +2,12 @@
 
 #include <filesystem>
 #include <fstream>
-#include <map>
 
 #include "Connector/Ce158Card.hpp"
 #include "Display/DisplayOutputText.hpp"
 #include "Utf8.hpp"
 #include "app/CardYamlDump.hpp"
-#include "app/KeyLayout/FaceplateLayout.hpp"
-#include "app/LcdLayout.hpp"
-#include "presets/BundleFile.hpp"
-#include "presets/Source.hpp"
+#include "app/SharpShellProduct.hpp"
 #include "app/Text.hpp"
 #include "app/Utf8Path.hpp"
 #include "sessions/Args.hpp"
@@ -39,54 +35,10 @@ Value strings(const std::vector<std::string>& items) {
     return Value(std::move(out));
 }
 
-Value rgb(Rgb c) { return Value(Value::Array{Value(c.r), Value(c.g), Value(c.b)}); }
-
-
-Value presetEntry(const calcu::presets::PresetListEntry& e) {
-    return Value::object({{"group", e.group},
-                          {"ref", e.bundlePath},
-                          {"model", e.model.value},
-                          {"name", e.name},
-                          {"description", e.description},
-                          {"label", e.description.empty() ? e.name : e.description}});
-}
-
-Value faceplate(int model) {
-    const KeyLayout::Layout& layout = KeyLayout::layoutFor(static_cast<Model>(model));
-    auto rect = [](const KeyLayout::KeyRect& r) {
-        return Value::object({{"name", std::string(r.name ? r.name : "")}, {"x", r.x}, {"y", r.y}, {"w", r.w}, {"h", r.h}});
-    };
-    Value::Array keys;
-    for (std::size_t i = 0; i < layout.keyCount; ++i) keys.push_back(rect(layout.keys[i]));
-    return Value::object({{"width", layout.imageWidth},
-                          {"height", layout.imageHeight},
-                          {"lcd", rect(layout.lcdRect)},
-                          {"keys", Value(std::move(keys))}});
-}
-
-Value lcdConstants() {
-    using namespace lcd;
-    return Value::object({{"p15Background", rgb(kP15BackgroundRgb)},
-                          {"p16Background", rgb(kP16BackgroundRgb)},
-                          {"ink", rgb(kInkRgb)},
-                          {"p15IndicatorBarFraction", kP15IndicatorBarFraction},
-                          {"p15IndicatorFontHeightFraction", kP15IndicatorFontHeightFraction},
-                          {"p15IndicatorTopInsetFraction", kP15IndicatorTopInsetFraction},
-                          {"p15ContentScale", kP15ContentScale},
-                          {"p15MatrixTopGapFraction", kP15MatrixTopGapFraction},
-                          {"p16IndicatorRowTop", kP16IndicatorRowTop},
-                          {"p16LabelFontHeightFraction", kP16LabelFontHeightFraction},
-                          {"p16RowHeightFraction", kP16RowHeightFraction},
-                          {"p16MatrixLeft", kP16MatrixLeft},
-                          {"p16MatrixRight", kP16MatrixRight},
-                          {"p16MatrixTop", kP16MatrixTop},
-                          {"p16MatrixBottom", kP16MatrixBottom}});
-}
-
 } // namespace
 
-SharpWebPart::SharpWebPart(SharpAppPart& app, Settings& settings, AppPaths&, std::string uploadsDir)
-    : m_app(app), m_settings(settings), m_uploadsDir(std::move(uploadsDir)) {
+SharpWebPart::SharpWebPart(SharpAppPart& app, std::string uploadsDir, std::string version)
+    : m_app(app), m_uploadsDir(std::move(uploadsDir)), m_version(std::move(version)) {
     // LIB-13 AC-8: several files of Upload Preset… become one folder here.
     m_app.openPart().setup().uploadFolder = m_uploadsDir;
 }
@@ -94,9 +46,6 @@ SharpWebPart::SharpWebPart(SharpAppPart& app, Settings& settings, AppPaths&, std
 SharpWebPart::~SharpWebPart() = default;
 
 void SharpWebPart::attach(sessions::SessionSetup& setup) {
-    m_ui = &setup.stateTopic(topics::kWebUi);
-    m_lcd = &setup.stateTopic(topics::kWebLcd);
-    m_lamps = &setup.stateTopic(topics::kWebLamps);
     m_printer = &setup.streamTopic(topics::kWebPrinter, sessions::History::None);
 
     using H = sessions::SessionSetup::Handler;
@@ -105,8 +54,18 @@ void SharpWebPart::attach(sessions::SessionSetup& setup) {
         setup.request(sessions::RequestName{name}, std::move(h));
     };
 
-    // Keys and typing are the library's typing part's commands (LIB-5:
-    // host-key-down/up, screen-key-down/up, focus-lost, paste).
+    // ── The shell (LIB-14 Part D) ───────────────────────────────────────
+    // The product's data for the React set's shell (D-32) and the
+    // faceplate's hit map and LCD layout (D-31), from the tables Qt6 uses.
+    req("c1600.shell-product", [this](const Value&, SessionContext&) {
+        return sessions::replyGiven(
+            sessions::valuePayload("c1600.shell-product", Value::object({{"product", shellProductValue(shellProduct(m_version, "", false))}, {"settingsSpec", dialogSpecValue(settingsSpec(false, false))}})));
+    });
+    req("c1600.faceplate-map", [](const Value& a, SessionContext&) {
+        const auto model = sharpModel(textArg(a, "model"));
+        if (!model) return sessions::replyRefused("No such model: " + textArg(a, "model"));
+        return sessions::replyGiven(sessions::valuePayload("c1600.faceplate-map", faceplateMapValue(*model)));
+    });
 
     // ── Opening files ───────────────────────────────────────────────────
     // A drop and Upload Preset… are the library's `open` (LIB-13, the open
@@ -127,16 +86,9 @@ void SharpWebPart::attach(sessions::SessionSetup& setup) {
     // Load BASIC Program / Load Machine Code: the page sends the loaders'
     // own commands (app/SharpLoaderPart, C1600-2 design §3.7).
 
-    // ── Media ───────────────────────────────────────────────────────────
-    // The pickers, Name & Save, the side, the tapes, the import and the
-    // saved media are LIB-7's commands (`media.choose`, `media.turn`,
-    // `media.name-and-save`, `media.start-new`, `media.import`,
-    // `media.export`, `media.delete`; AC-43), drawn by the library's
-    // components (CalcuMediaPicker, CalcuNameAndSaveDialog,
-    // CalcuSavedMediaDialog).
     // ── Inspector ───────────────────────────────────────────────────────
     req("c1600.inspector-menu", [this](const Value& a, SessionContext&) {
-        const bool pc1500 = m_app.currentModel() != Model::PC1600;
+        const bool pc1500 = !m_app.isPC1600();
         Value::Array out;
         for (const inspect::MenuEntry& e : m_app.inspectorMenu(flagArg(a, "dumps")))
             out.push_back(Value::object({{"view", static_cast<int>(e.view)},
@@ -152,7 +104,7 @@ void SharpWebPart::attach(sessions::SessionSetup& setup) {
         return sessions::replyGiven(sessions::valuePayload("c1600.card-yaml", strings(cardYamlDump(m_app))));
     });
 
-    // ── Copy Screen ─────────────────────────────────────────────────────
+    // ── Copy Screen (LIB-14 AC-41) ──────────────────────────────────────
     req("c1600.screen-image", [this](const Value&, SessionContext& c) {
         const calcu::machine::DisplayOutput* d = c.display();
         if (!d) return sessions::replyRefused("No machine is running.");
@@ -170,138 +122,9 @@ void SharpWebPart::attach(sessions::SessionSetup& setup) {
         LcdText t;
         return sessions::replyGiven(sessions::valuePayload("c1600.lcd-text", Value(d && m_app.lcdText(*d, &t) ? t.text() : std::string())));
     });
-
-    // ── Settings ────────────────────────────────────────────────────────
-    req("c1600.settings-state", [this](const Value&, SessionContext&) {
-        // The startup presets of the preset list per model (LIB-18 §10.4),
-        // and the setting's own value when it is none of them.
-        const std::vector<calcu::presets::PresetListEntry> entries = m_app.presetEntries();
-        Value::Object presets, choices;
-        for (Model m : {Model::PC1500, Model::PC1500A, Model::PC1600}) {
-            const std::string current = m_settings.defaultPresetPath(m);
-            presets.push_back({modelKey(m), Value(current)});
-            Value::Array list;
-            bool listed = current.empty();
-            for (const auto& e : entries) {
-                if (e.kind != calcu::presets::PresetListEntry::Kind::Startup || e.model.value != settingsModelName(m)) continue;
-                listed = listed || e.bundlePath == current;
-                list.push_back(presetEntry(e));
-            }
-            if (!listed) {
-                calcu::presets::PresetListEntry own;
-                own.bundlePath = current;
-                own.name = calcu::presets::stemOf(current);
-                list.push_back(presetEntry(own));
-            }
-            choices.push_back({modelKey(m), Value(std::move(list))});
-        }
-        return sessions::replyGiven(sessions::valuePayload("c1600.settings",
-                                            Value::object({{"startupModel", m_settings.startupModelPreference()},
-                                                           {"defaultPresets", Value(std::move(presets))},
-                                                           {"presetChoices", Value(std::move(choices))}})));
-    });
-    cmd("c1600.set-startup-model", [this](const Value& a, SessionContext&) -> CommandOutcome {
-        m_settings.setStartupModelPreference(textArg(a, "model"));
-        return Done{};
-    });
-    cmd("c1600.set-default-preset", [this](const Value& a, SessionContext&) -> CommandOutcome {
-        m_settings.setDefaultPresetPath(static_cast<Model>(truncatedIntegerArg(a, "model")), textArg(a, "path"));
-        return Done{};
-    });
-
-    // ── Static data (adapter W16-1, until M-49) ─────────────────────────
-    req("c1600.faceplate", [](const Value& a, SessionContext&) {
-        return sessions::replyGiven(sessions::valuePayload("c1600.faceplate", faceplate(static_cast<int>(truncatedIntegerArg(a, "model")))));
-    });
-    req("c1600.lcd-constants", [](const Value&, SessionContext&) {
-        return sessions::replyGiven(sessions::valuePayload("c1600.lcd-constants", lcdConstants()));
-    });
 }
 
-void SharpWebPart::afterCall(SessionContext& c, calcu::pacing::WallTime) {
-    lcd(c);
-    lamps();
-    printer();
-    // The pickers read folders: twice a second, as a bay's change (a
-    // preset's save, a recording) shows up; at once after a command.
-    if (++m_calls % 30 == 0) m_ui->set(sessions::valuePayload("c1600.ui", ui()));
-}
-
-void SharpWebPart::machineChanged(SessionContext& c) { refresh(c); }
-void SharpWebPart::operationEnded(SessionContext& c) { refresh(c); }
-
-void SharpWebPart::refresh(SessionContext& c) {
-    m_ui->set(sessions::valuePayload("c1600.ui", ui()));
-    lcd(c);
-    lamps();
-}
-
-Value SharpWebPart::ui() const {
-    const ControlState s = m_app.controlState();
-    auto peripheral = [](const PeripheralState& p) {
-        return Value::object({{"offered", p.offered}, {"onControlBar", p.onControlBar}, {"attached", p.attached}, {"enabled", p.enabled}});
-    };
-    Value::Object ui{{"model", Value(static_cast<int>(s.model))},
-                     {"slotCount", Value(s.slotCount)},
-                     {"ce150", peripheral(s.ce150)},
-                     {"ce1600p", peripheral(s.ce1600p)},
-                     {"ce158", peripheral(s.ce158)},
-                     {"floppyEnabled", Value(s.floppyEnabled)},
-                     {"pc1500RomMenu", Value(s.pc1500RomMenu)},
-                     {"pc1600RomMenu", Value(s.pc1600RomMenu)},
-                     {"ce1600pRomMenu", Value(s.ce1600pRomMenu)},
-                     {"paper", Value(s.paperOwner ? s.paperOwner->value : std::string())},   // P-A1
-                     {"printerShown", Value(s.printerShown)},
-                     {"pc1500Rom", Value(static_cast<int>(m_app.pc1500RomRevision()))},
-                     {"pc1600Rom", Value(static_cast<int>(m_app.pc1600RomVersion()))},
-                     {"ce1600pRom", Value(static_cast<int>(m_app.ce1600pRomVersion()))}};
-    // The pickers of the slots, the drive and the cassette are the media
-    // part's (LIB-7: the topic `media`, the commands `media.*`); here only
-    // which of them the control bar shows.
-    ui.push_back({"floppyShown", Value(s.floppyShown)});
-    ui.push_back({"tapeShown", Value(s.tapeShown)});
-    return Value(std::move(ui));
-}
-
-// The display output as the page's LCD painter takes it: the model, the
-// dots (one byte each) and the indicators laid out (app/LcdLayout).
-void SharpWebPart::lcd(SessionContext& c) {
-    const calcu::machine::DisplayOutput* d = c.display();
-    if (!d || !m_app.hasLiveMachine()) return;
-    const DisplayFrame frame = displayFrameOf(*d);
-    const Model model = m_app.currentModel();
-    Value::Bytes dots(frame.pixels.size());
-    for (std::size_t i = 0; i < dots.size(); ++i) dots[i] = frame.pixels[i] ? 1 : 0;
-    Value::Array indicators;
-    for (const lcd::Indicator& ind : lcd::indicators(model, frame))
-        indicators.push_back(Value::object({{"text", ind.text},
-                                            {"x", ind.x},
-                                            {"scale", ind.scale},
-                                            {"style", ind.style == lcd::Indicator::Style::Inverted ? "inverted"
-                                                      : ind.style == lcd::Indicator::Style::Dot    ? "dot"
-                                                                                                   : "text"}}));
-    m_lcd->set(sessions::valuePayload("c1600.lcd", Value::object({{"model", static_cast<int>(model)},
-                                                   {"cols", frame.cols},
-                                                   {"rows", frame.rows},
-                                                   {"poweredOn", frame.poweredOn},
-                                                   {"dots", Value(std::move(dots))},
-                                                   {"indicators", Value(std::move(indicators))}})));
-}
-
-// The floppy lamp and the tape counter.
-void SharpWebPart::lamps() {
-    const ControlState state = m_app.controlState();
-    const TapeDeck::Status tape = m_app.tapeStatus();
-    const calcu::media::Binding* held = m_app.mediaPart().bindingOf("tape");
-    const std::string tapeName = held ? held->name : std::string();
-    m_lamps->set(sessions::valuePayload(
-        "c1600.lamps",
-        Value::object({{"floppyMotor", state.floppyShown && m_app.floppyMotorOn()},
-                       {"tapeMode", tape.mode == TapeDeck::Mode::Play ? "play" : tape.mode == TapeDeck::Mode::Record ? "record" : ""},
-                       {"tapeMotor", tape.motor},
-                       {"tapeSeconds", static_cast<int>(tape.position)},
-                       {"tapeFile", tapeName}})));
-}
+void SharpWebPart::afterCall(SessionContext&, calcu::pacing::WallTime) { printer(); }
 
 void SharpWebPart::printer() {
     if (!m_app.ce158Attached()) return;

@@ -242,7 +242,7 @@ TEST(lib7_ac39_lamp_while_motor_runs) {
     CHECK(f.start("PC-1600"));
     CHECK(f.attach("CE-1600P"));
     CHECK(f.choose("floppy", "Formatted").done);
-    auto lamp = [&] { return f.state<shared::MachinePayload>(shared::topics::kMachine)->floppyMotor; };
+    auto lamp = [&] { return f.state<shared::LampsPayload>(shared::topics::kLamps)->floppyMotor; };
     f.call();
     CHECK(!lamp());
     f.typeLine("A=DSKF\"X:\"");

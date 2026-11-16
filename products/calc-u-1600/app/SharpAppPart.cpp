@@ -31,14 +31,6 @@ namespace startup = calcu::startup;
 
 namespace {
 
-std::optional<Model> modelOfId(const std::string& id) {
-    if (id == sharp::kPC1500) return Model::PC1500;
-    if (id == sharp::kPC1500A) return Model::PC1500A;
-    if (id == sharp::kPC1600) return Model::PC1600;
-    return std::nullopt;
-}
-
-
 PlacePath placeOf(const char* place) { return PlacePath{{PlaceName{place}}}; }
 
 // Which serial port gets which serial port file (LIB-2 AC-33): the PC-1600's
@@ -56,7 +48,6 @@ std::optional<std::string> folderOrNone(const std::string& dir) {
 }
 
 
-VariantId ce1600pVariant(CE1600PRomVersion v) { return VariantId{v == CE1600PRomVersion::Old ? "Old" : "New"}; }
 
 calcu::roms::LookupResult lookUp(const AppPaths& paths) {
     return sharp::lookUpRoms(calcu::roms::DirectoryBundle(toPath(paths.bundledResourcesDir())));
@@ -71,25 +62,10 @@ using sessions::textArg;
 
 } // namespace
 
-DisplayFrame displayFrameOf(const DisplayOutput& out) {
-    DisplayFrame frame;
-    const LcdBitmap bitmap = lcdBitmapOf(out);
-    frame.cols = bitmap.cols;
-    frame.rows = bitmap.rows;
-    frame.pixels = bitmap.pixels;
-    frame.poweredOn = bitmap.poweredOn;
-    for (std::size_t i = 0; i < StatusLine::kCount; ++i) {
-        bool on = false;
-        for (const auto& ind : out.indicators)
-            if (ind.name == kStatusSymbolNames[i]) on = ind.on;
-        frame.statusSymbols.emplace_back(kStatusSymbolNames[i], on);
-    }
-    return frame;
-}
-
-SharpAppPart::SharpAppPart(Settings& settings, AppPaths& paths)
+SharpAppPart::SharpAppPart(Settings& settings, AppPaths& paths, SharpAppPartOptions options)
     : m_settings(settings),
       m_paths(paths),
+      m_options(options),
       m_catalogue(sharp::sharpCatalogue()),
       m_found(lookUp(paths)),
       m_roms(m_found.set),
@@ -99,7 +75,7 @@ SharpAppPart::SharpAppPart(Settings& settings, AppPaths& paths)
       m_debugger(sharpDebuggerSetup(&paths, &settings, /*hasTraceFolder=*/true)),
       m_peripherals(serialFileFor, folderOrNone(paths.serialLinkDir())),
       m_machines(m_catalogue, m_hostDriveRom),
-      m_rules(SharpKeywordSetup{[this] { return hostFolders(); }}),
+      m_rules(SharpKeywordSetup{[this] { return canMountHostFolder(); }}),
       m_bundle(toPath(paths.bundledExamplesDir())),
       m_presets(calcu::presets::PresetsSetup{&m_catalogue, &m_rules, nullptr, &m_typingPart, &m_bundle,
                                              paths.homeDir(),
@@ -111,7 +87,9 @@ SharpAppPart::SharpAppPart(Settings& settings, AppPaths& paths)
                                                  return folder;
                                              }}),
       m_startup(calcu::startup::StartupSetup{m_machines, m_roms, settings.file(), &m_presets,
-                                             m_roms ? std::string() : calcu::roms::describe(m_romsMissing)}) {
+                                             m_roms ? std::string() : calcu::roms::describe(m_romsMissing)}),
+      m_controlRules(SharpControlRules::Inputs{options.canMountHostFolder, [this] { return ce1600pVariant(); }}),
+      m_control(sharpControlSetup(m_catalogue, m_controlRules)) {
     // The module definitions: the bundled ones and the ROM modules of the set
     // (the CE-502B; LIB-12 AC-14).
     sharp::addModuleDefinitions(m_catalogue, paths.bundledResourcesDir());
@@ -169,8 +147,7 @@ void SharpAppPart::attach(sessions::SessionSetup& setup) {
     m_ctx = &setup.context();
     m_ms = &m_ctx->machineSession();
 
-    m_controlTopic = &setup.stateTopic(topics::kControlState);
-    m_machineTopic = &setup.stateTopic(topics::kMachine);
+    m_lampsTopic = &setup.stateTopic(topics::kLamps);
     m_serialTopic = &setup.stateTopic(topics::kSerialLinks);
     m_romsMissingTopic = &setup.stateTopic(topics::kRomsMissing);
     // LIB-13 D4.2: a program file opened by a way with a window.
@@ -211,19 +188,19 @@ void SharpAppPart::attach(sessions::SessionSetup& setup) {
     // choice for the next attach.
     setup.command(c::kCE1600PRom, [this, busy](const Value& args, SessionContext& s) -> CommandOutcome {
         if (s.busy()) return Refused{busy};
-        const CE1600PRomVersion v = textArg(args, "version") == "old" ? CE1600PRomVersion::Old : CE1600PRomVersion::New;
+        const std::string v = textArg(args, "version") == "old" ? "Old" : "New";
         Machine* m = machine();
         if (!m || !ce1600pAttached()) {
             m_ce1600pChoice = v;
             refreshTopics();
             return Done{};
         }
-        if (v == ce1600pRomVersion()) return Done{};
+        if (v == ce1600pVariant()) return Done{};
         m_ce1600pChoice = v;
         startup::PlugChange ch;
         ch.kind = startup::PlugChange::Kind::Replace;
         ch.place = placeOf(sharp::kPrinter);
-        ch.request = machineControl().requestFor(ch.place, PeripheralId{sharp::kCE1600P}, ce1600pVariant(v));
+        ch.request = machineControl().requestFor(ch.place, PeripheralId{sharp::kCE1600P}, VariantId{v});
         if (auto refused = machineControl().check(*m, ch)) return Refused{refused->reason};
         // The disk and the tape stay in the new CE-1600P, the disk with the
         // same side up (AC-31, as today).
@@ -271,9 +248,8 @@ void SharpAppPart::machineChanged(sessions::SessionContext&) {
 void SharpAppPart::followNewMachine() {
     const Machine* m = machine();
     if (!m) return;
-    const Model before = m_model;
-    if (auto model = modelOfId(m->descriptor().model.value)) m_model = *model;
-    ++m_machineState.builds;
+    const std::string before = m_lastModel;
+    m_lastModel = m->descriptor().model.value;
     const auto& built = machineControl().lastBuild();
     const startup::BuildOrigin origin = built ? built->origin : startup::BuildOrigin::Start;
     switch (origin) {
@@ -282,14 +258,12 @@ void SharpAppPart::followNewMachine() {
             return;
         case startup::BuildOrigin::Preset:
         case startup::BuildOrigin::StartupPreset:
-            if (before != m_model) m_ce1600pChoice = CE1600PRomVersion::New;
-            ++m_machineState.modelSwitches;
+            if (before != m_lastModel) m_ce1600pChoice = "New";
             return;
         case startup::BuildOrigin::Start:
         case startup::BuildOrigin::ModelSwitch:
             // AC-27: nothing of the old machine is kept.
-            m_ce1600pChoice = CE1600PRomVersion::New;
-            ++m_machineState.modelSwitches;
+            m_ce1600pChoice = "New";
             return;
     }
 }
@@ -300,12 +274,13 @@ void SharpAppPart::operationEnded(sessions::SessionContext&) {
 }
 
 void SharpAppPart::refreshTopics() {
-    if (!m_controlTopic) return;
-    m_controlTopic->set(std::make_shared<ControlStatePayload>(controlState()));
-    m_machineState.model = m_model;
-    m_machineState.tape = tapeStatus();
-    m_machineState.floppyMotor = floppyMotorOn();
-    m_machineTopic->set(std::make_shared<MachinePayload>(m_machineState));
+    if (!m_lampsTopic) return;
+    auto lamps = std::make_shared<LampsPayload>();
+    lamps->tape = tapeStatus();
+    const calcu::media::Binding* tape = m_media->bindingOf("tape");
+    lamps->tapeName = tape ? tape->name : std::string();
+    lamps->floppyMotor = floppyMotorOn();
+    m_lampsTopic->set(std::move(lamps));
     auto links = std::make_shared<SerialLinksPayload>();
     links->rs232c = serialLinkStatus();
     links->ce158 = ce158SerialLinkStatus();
@@ -315,24 +290,15 @@ void SharpAppPart::refreshTopics() {
 
 // ── The machine ─────────────────────────────────────────────────────────
 
-PC1500RomRevision SharpAppPart::pc1500RomRevision() const {
-    const Machine* m = machine();
-    const std::string v = m && m->variant() ? m->variant()->value : std::string("A04");
-    if (v == "A01") return PC1500RomRevision::A01;
-    if (v == "A03") return PC1500RomRevision::A03;
-    return PC1500RomRevision::A04;
+ModelId SharpAppPart::model() const {
+    if (const Machine* m = machine()) return m->descriptor().model;
+    return m_settings.startupModel();
 }
 
-PC1600RomVersion SharpAppPart::pc1600RomVersion() const {
-    const Machine* m = machine();
-    return m && m->variant() && m->variant()->value == "Old" ? PC1600RomVersion::Old : PC1600RomVersion::New;
-}
-
-CE1600PRomVersion SharpAppPart::ce1600pRomVersion() const {
+std::string SharpAppPart::ce1600pVariant() const {
     if (const Machine* m = machine())
         for (const auto& e : m->plugged().byPlace)
-            if (e.peripheral.value == sharp::kCE1600P)
-                return e.variant && e.variant->value == "Old" ? CE1600PRomVersion::Old : CE1600PRomVersion::New;
+            if (e.peripheral.value == sharp::kCE1600P) return e.variant && e.variant->value == "Old" ? "Old" : "New";
     return m_ce1600pChoice;
 }
 
@@ -362,8 +328,7 @@ std::string SharpAppPart::ce158SerialLinkStatus() const {
 
 double SharpAppPart::clockHz() const {
     if (const Machine* m = machine()) return static_cast<double>(m->descriptor().tickRate);
-    const char* id = m_model == Model::PC1500 ? sharp::kPC1500 : m_model == Model::PC1600 ? sharp::kPC1600 : sharp::kPC1500A;
-    return static_cast<double>(sharp::sharpCatalogue().model(ModelId{id})->tickRate);
+    return static_cast<double>(sharp::sharpCatalogue().model(model())->tickRate);
 }
 
 // ---- Output ----
@@ -377,7 +342,7 @@ bool SharpAppPart::lcdText(const DisplayOutput& output, LcdText* out) const {
 
 GrayImage SharpAppPart::screenImage(const DisplayOutput& output) const {
     if (!machine()) return GrayImage{};
-    return renderLcdImage(lcdBitmapOf(output), m_model == Model::PC1600 ? kPC1600ScreenMm : kPC1500ScreenMm);
+    return renderLcdImage(lcdBitmapOf(output), isPC1600() ? kPC1600ScreenMm : kPC1500ScreenMm);
 }
 
 // ---- Debug panel ----
@@ -464,42 +429,15 @@ std::string SharpAppPart::hostDriveDirectory() const {
 
 // ---- Payloads ----
 
-sessions::Value ControlStatePayload::toValue() const {
-    auto peripheral = [](const PeripheralState& p) {
-        return sessions::Value::object({{"offered", p.offered},
-                                        {"onControlBar", p.onControlBar},
-                                        {"attached", p.attached},
-                                        {"enabled", p.enabled}});
-    };
-    const ControlState& s = state;
-    return sessions::Value::object({{"model", settingsModelName(s.model)},
-                                    {"slotCount", s.slotCount},
-                                    {"ce150", peripheral(s.ce150)},
-                                    {"ce1600p", peripheral(s.ce1600p)},
-                                    {"ce158", peripheral(s.ce158)},
-                                    {"floppyShown", s.floppyShown},
-                                    {"floppyEnabled", s.floppyEnabled},
-                                    {"tapeShown", s.tapeShown},
-                                    {"pc1500RomMenu", s.pc1500RomMenu},
-                                    {"pc1600RomMenu", s.pc1600RomMenu},
-                                    {"ce1600pRomMenu", s.ce1600pRomMenu},
-                                    {"hostDriveOffered", s.hostDriveOffered},
-                                    {"hostDriveDir", s.hostDriveDir},
-                                    {"paper", s.paperOwner ? s.paperOwner->value : std::string()},
-                                    {"printerShown", s.printerShown}});
+sessions::Value LampsPayload::toValue() const {
+    return sessions::Value::object(
+        {{"floppyMotor", floppyMotor},
+         {"tapeMode", tape.mode == TapeDeck::Mode::Play ? "play" : tape.mode == TapeDeck::Mode::Record ? "record" : ""},
+         {"tapeMotor", tape.motor},
+         {"tapeSeconds", static_cast<int>(tape.position)},
+         {"tapeLength", static_cast<int>(tape.length)},
+         {"tapeFile", tapeName}});
 }
-
-sessions::Value MachinePayload::toValue() const {
-    return sessions::Value::object({{"model", settingsModelName(model)},
-                                    {"builds", static_cast<std::int64_t>(builds)},
-                                    {"modelSwitches", static_cast<std::int64_t>(modelSwitches)},
-                                    {"tape", sessions::Value::object({{"mode", static_cast<int>(tape.mode)},
-                                                                      {"motor", tape.motor},
-                                                                      {"position", tape.position},
-                                                                      {"length", tape.length}})},
-                                    {"floppyMotor", floppyMotor}});
-}
-
 sessions::Value SerialLinksPayload::toValue() const {
     return sessions::Value::object({{"rs232c", rs232c}, {"ce158", ce158}, {"moves", static_cast<std::int64_t>(moves)}});
 }

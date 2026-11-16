@@ -30,7 +30,7 @@ namespace c = shared::commands;
 using sessionfixture::SessionFixture;
 using sessionfixture::romsPresent;
 using sessions::Value;
-using shared::Model;
+using Model = calcu::machine::ModelId;
 
 Value toggle(const char* p) { return Value::object({{"peripheral", p}}); }
 Value preset(const char* path) { return Value::object({{"ref", path}}); }
@@ -47,7 +47,7 @@ TEST(test_cooperative_preset) {
     SKIP_UNLESS(romsPresent(), "no ROMs in roms/");
     SessionFixture f;
     CHECK(f.start("PC-1500A"));
-    CHECK(f.part().currentModel() == Model::PC1500A);
+    CHECK(f.part().model() == calcu::machine::ModelId{"PC-1500A"});
     f.messages.clear();
     f.readCost = std::chrono::milliseconds(1);   // the host's work: the allowance of a call runs out
 
@@ -71,7 +71,7 @@ TEST(test_cooperative_preset) {
     CHECK(!f.busy());
     CHECK(busyMessages(f, true) == 1 && busyMessages(f, false) == 1);
     CHECK(f.listener.mirror().takeAppended(sessions::kLogTopic).size() > 10);   // the preset's step log
-    CHECK(f.part().currentModel() == Model::PC1600);
+    CHECK(f.part().model() == calcu::machine::ModelId{"PC-1600"});
     CHECK(f.held("slot-1") && f.held("slot-1")->name == "CE-1600M");
     CHECK(f.held("slot-2") && f.held("slot-2")->name == "CE-1601M");
     // The last item (FILES) is not waited for (LIB-6 AC-60): until idle.
@@ -84,8 +84,8 @@ TEST(test_operations_and_selection) {
     SessionFixture f;
     CHECK(f.start());
     CHECK(f.model("PC-1600"));
-    CHECK(f.part().currentModel() == Model::PC1600);
-    CHECK(f.settings.lastUsedModel() == Model::PC1600);
+    CHECK(f.part().model() == calcu::machine::ModelId{"PC-1600"});
+    CHECK(f.settings.lastUsedModel() == calcu::machine::ModelId{"PC-1600"});
 
     CHECK(f.toggle("CE-1600P") && f.part().ce1600pAttached());
     CHECK(f.toggle("CE-1600P") && !f.part().ce1600pAttached());
@@ -93,7 +93,7 @@ TEST(test_operations_and_selection) {
 
     // A preset that cannot be read: refused, and a notice.
     sessions::ReplyMessage r = f.run(calcu::presets::kLoadPresetCommand, preset("tests/fixtures/presets/no-such.pc1600"));
-    CHECK(f.part().currentModel() == Model::PC1600);
+    CHECK(f.part().model() == calcu::machine::ModelId{"PC-1600"});
     CHECK(!r.done && !r.reason.empty());
     const auto n = f.notices();
     CHECK(!n.empty() && n.back() == r.reason);
@@ -109,7 +109,7 @@ TEST(lib7_ac44_test_tape_status_follows_calls) {
     CHECK(f.start("PC-1500A"));
     CHECK(f.toggle("CE-150"));
     CHECK(f.part().tapeInterfaceAttached());
-    auto tapes = [&] { return f.state<shared::MachinePayload>(shared::topics::kMachine)->tape.mode; };
+    auto tapes = [&] { return f.state<shared::LampsPayload>(shared::topics::kLamps)->tape.mode; };
     CHECK(tapes() == TapeDeck::Mode::Empty);
     const sessions::CallId id = f.send(calcu::media::kStartNewCommand,
                                        Value::object({{"place", "tape"}, {"template", f.entry("tape", "Empty")}, {"name", "side a"}}));
@@ -124,48 +124,6 @@ TEST(lib7_ac44_test_tape_status_follows_calls) {
     CHECK(tapes() == TapeDeck::Mode::Empty);
     // Nothing was recorded: no file (AC-20: the file at the first write).
     CHECK(!fs::exists(fs::path(f.tapeFolder()) / "side a.tape.yaml"));
-}
-
-// The control state topic: each model's own peripherals on the bar, the
-// CE-1600P excluding the CE-150 / CE-158, the floppy and tape rows
-// following the attached boxes.
-TEST(test_control_state) {
-    SKIP_UNLESS(romsPresent(), "no ROMs in roms/");
-    SessionFixture f;
-    CHECK(f.start("PC-1500"));
-    auto state = [&] { return f.state<shared::ControlStatePayload>(shared::topics::kControlState)->state; };
-    shared::ControlState s = state();
-    CHECK(s.model == Model::PC1500 && s.slotCount == 1);
-    CHECK(s.ce150.onControlBar && s.ce158.onControlBar && !s.ce1600p.offered);
-    CHECK(s.ce150.enabled && s.ce158.enabled);
-    CHECK(s.pc1500RomMenu && !s.pc1600RomMenu && !s.ce1600pRomMenu);
-    CHECK(!s.floppyShown && !s.tapeShown && !s.hostDriveOffered);
-    CHECK(!s.paperOwner && !s.printerShown);
-
-    CHECK(f.toggle("CE-150"));
-    s = state();
-    CHECK(s.ce150.attached && s.tapeShown && s.paperOwner && s.paperOwner->value == "CE-150");
-
-    CHECK(f.model("PC-1600"));
-    s = state();
-    CHECK(s.slotCount == 2 && s.floppyShown && !s.floppyEnabled);
-    CHECK(s.ce1600p.offered && s.ce1600p.onControlBar && s.ce1600p.enabled);
-    CHECK(!s.ce150.onControlBar && s.ce150.offered && !s.pc1500RomMenu && s.pc1600RomMenu);
-    CHECK(s.hostDriveOffered && s.hostDriveDir.empty());
-
-    CHECK(f.toggle("CE-1600P"));
-    s = state();
-    CHECK(s.ce1600p.attached && s.floppyEnabled && s.tapeShown && s.paperOwner && s.paperOwner->value == "CE-1600P");
-    CHECK(!s.ce150.enabled && !s.ce158.enabled);
-}
-
-// A frontend without host directories never offers the host drive.
-TEST(test_control_state_without_host_directories) {
-    SKIP_UNLESS(romsPresent(), "no ROMs in roms/");
-    SessionFixture f;
-    f.hostDirectories = false;
-    CHECK(f.start("PC-1600"));
-    CHECK(!f.state<shared::ControlStatePayload>(shared::topics::kControlState)->state.hostDriveOffered);
 }
 
 std::vector<std::uint8_t> readBytes(const char* path) {
@@ -296,9 +254,9 @@ TEST(test_pick_model) {
     SKIP_UNLESS(romsPresent(), "no ROMs in roms/");
     SessionFixture f;
     CHECK(f.start("PC-1500A"));
-    f.settings.setDefaultPresetPath(Model::PC1500, "examples:startup/default-pc1500.pc1500");
+    f.settings.setDefaultPresetPath(calcu::machine::ModelId{"PC-1500"}, "examples:startup/default-pc1500.pc1500");
     CHECK(f.model("PC-1500"));
-    CHECK(f.part().currentModel() == Model::PC1500);
+    CHECK(f.part().model() == calcu::machine::ModelId{"PC-1500"});
     CHECK(f.part().ce150Attached());   // the startup preset's plotter
     CHECK(f.toggle("CE-150"));
     CHECK(f.model("PC-1500"));   // re-picking does nothing
@@ -310,12 +268,12 @@ TEST(test_pick_model) {
 TEST(test_example_ref_default_preset) {
     SKIP_UNLESS(romsPresent(), "no ROMs in roms/");
     SessionFixture f;
-    f.settings.setDefaultPresetPath(Model::PC1500A, "examples:startup/default-pc1500a.pc1500a");
-    f.settings.setDefaultPresetPath(Model::PC1500, "examples:basic/hanoi.pc1600");
+    f.settings.setDefaultPresetPath(calcu::machine::ModelId{"PC-1500A"}, "examples:startup/default-pc1500a.pc1500a");
+    f.settings.setDefaultPresetPath(calcu::machine::ModelId{"PC-1500"}, "examples:basic/hanoi.pc1600");
     CHECK(f.start("PC-1500A"));
     CHECK(f.part().ce150Attached());
     CHECK(f.model("PC-1500"));
-    CHECK(f.part().currentModel() == Model::PC1500 && !f.part().ce150Attached());
+    CHECK(f.part().model() == calcu::machine::ModelId{"PC-1500"} && !f.part().ce150Attached());
     const auto n = f.notices();
     CHECK(!n.empty() && n.back().find("could not be loaded") != std::string::npos);
 }

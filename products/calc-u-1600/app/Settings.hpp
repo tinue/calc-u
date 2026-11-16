@@ -1,8 +1,9 @@
 #pragma once
 #include <optional>
 #include <string>
+#include <vector>
 
-#include "app/MachineModel.hpp"
+#include "machine/Ids.hpp"
 #include "settings/Declaration.hpp"
 #include "settings/SettingsFile.hpp"
 
@@ -22,11 +23,12 @@ namespace shared {
 // program.
 const calcu::settings::ProductDecl& settingsDecl();
 
-// The model's name as the settings file writes it: the glossary's
-// "PC-1500", "PC-1500A", "PC-1600" ([startup] model, last-model, the keys
-// of [preset]).
-const char* settingsModelName(Model model);
-std::optional<Model> modelFromSettingsName(const std::string& name);
+// The models in the catalogue's order. Their IDs ("PC-1500", "PC-1500A",
+// "PC-1600") are also the names the settings file writes ([startup] model,
+// last-model, the keys of [preset]); D-28 of LIB-14: no enum of its own.
+const std::vector<calcu::machine::ModelId>& sharpModels();
+// The model of that name, or none.
+std::optional<calcu::machine::ModelId> sharpModel(const std::string& name);
 
 // The folders the file-open dialogs start in, one per kind of file, each
 // shown as its own row in Settings, and one key in [folders] (AC-29):
@@ -77,9 +79,9 @@ public:
 
     // [preset] <model> -- the preset applied whenever that model gets
     // selected; empty means none (the model just boots bare).
-    std::string defaultPresetPath(Model model) const { return m_file.text("preset", settingsModelName(model)); }
-    void setDefaultPresetPath(Model model, const std::string& path) {
-        m_file.set("preset", settingsModelName(model), path);
+    std::string defaultPresetPath(const calcu::machine::ModelId& model) const { return m_file.text("preset", model.value); }
+    void setDefaultPresetPath(const calcu::machine::ModelId& model, const std::string& path) {
+        m_file.set("preset", model.value, path);
     }
 
     // [trace] folder -- empty means "write TRACE.bin under
@@ -131,12 +133,12 @@ public:
 
     // [startup] last-model -- the model last switched to. Only consulted
     // when startupModelPreference() is "last". None until a model was used.
-    std::optional<Model> lastUsedModel() const { return modelFromSettingsName(m_file.text("startup", "last-model")); }
-    void setLastUsedModel(Model model) { m_file.set("startup", "last-model", settingsModelName(model)); }
+    std::optional<calcu::machine::ModelId> lastUsedModel() const { return sharpModel(m_file.text("startup", "last-model")); }
+    void setLastUsedModel(const calcu::machine::ModelId& model) { m_file.set("startup", "last-model", model.value); }
 
     // The model to boot into: the pinned preference if it names a model,
     // else the last used one, else the PC-1500A (AC-27, EC-1).
-    Model startupModel() const;
+    calcu::machine::ModelId startupModel() const;
 
 private:
     calcu::settings::SettingsFile& m_file;

@@ -16,6 +16,7 @@
 #include "Machine/SharpRoms.hpp"
 #include "../core/Connector/PlotterPaperOutput.hpp"
 #include "TestHarness.hpp"
+#include "control/ControlState.hpp"
 #include "debugger/RunState.hpp"
 
 namespace {
@@ -27,7 +28,7 @@ namespace t = shared::topics;
 using sessionfixture::SessionFixture;
 using sessionfixture::romsPresent;
 using sessions::Value;
-using shared::Model;
+using Model = calcu::machine::ModelId;
 
 Value toggle(const char* p) { return Value::object({{"peripheral", p}}); }
 
@@ -60,7 +61,7 @@ TEST(lib3_ac35_preset_in_parts_busy_display_and_paper_update) {
     const sessions::CallId id = f.send(calcu::presets::kLoadPresetCommand, Value::object({{"ref", "examples:plotter/lissajou-1500.pc1500a"}}));
     // What the command's own flush sent (the start of the operation, before
     // its first call): the armed machine.
-    const int controlsAtSend = countState(f.messages, 0, t::kControlState);
+    const int controlsAtSend = countState(f.messages, 0, calcu::control::kControlStateTopic);
     std::vector<CallRecord> calls;
     std::optional<sessions::ReplyMessage> reply;
     while (!(reply = f.takeReply(id)) && calls.size() < 20000) {
@@ -70,7 +71,7 @@ TEST(lib3_ac35_preset_in_parts_busy_display_and_paper_update) {
         CallRecord r;
         r.busy = f.busy();
         r.displayMessages = countState(f.messages, from, sessions::kDisplayTopic);
-        r.controlMessages = countState(f.messages, from, t::kControlState);
+        r.controlMessages = countState(f.messages, from, calcu::control::kControlStateTopic);
         r.wallMs = std::chrono::duration<double, std::milli>(f.now - before).count();
         // The CE-150's paper in the session (LIB-8): its marks so far.
         r.plotRevision = 0;
@@ -157,7 +158,10 @@ TEST(lib3_ac37_buzzer_heard_at_regular_speed_only) {
 
 // LIB-3 AC-38: everything 0.8.1's callbacks announced
 // (Shared/MachineSession.hpp:69-93, Shared/AppSession.hpp:62-84) arrives
-// as messages a test frontend keeps (the interim names of design §5).
+// as messages a test frontend keeps, under the owners' names (re-pointed
+// in M-49: LIB-4's `control-state`, LIB-7's `media`, LIB-10's `run-state`,
+// LIB-3's `notices`, `log` and `busy`, LIB-12's `roms-missing`, LIB-2's
+// serial links; the product's own `c1600.lamps`).
 TEST(lib3_ac38_mirror_holds_every_callback) {
     SKIP_UNLESS(romsPresent(), "no ROMs in roms/");
 
@@ -191,13 +195,14 @@ TEST(lib3_ac38_mirror_holds_every_callback) {
         CHECK(std::find(runs.begin(), runs.end(), true) != runs.end() && runs.back() == false);
     }
 
-    // machineReplaced, modelSwitched -> c1600.machine; machineAboutToChange
-    // -> the library's run state (LIB-10, M-45: the debugger is a part).
-    const shared::MachinePayload before = *f.state<shared::MachinePayload>(t::kMachine);
+    // machineReplaced, modelSwitched -> the control state's model and a new
+    // machine (LIB-4, LIB-18); machineAboutToChange -> the library's run
+    // state (LIB-10, M-45: the debugger is a part).
+    const auto generation = f.session().machineSession().generation();
     CHECK(f.model("PC-1600"));
-    const shared::MachinePayload* after = f.state<shared::MachinePayload>(t::kMachine);
-    CHECK(after && after->model == Model::PC1600);
-    CHECK(after && after->builds == before.builds + 1 && after->modelSwitches == before.modelSwitches + 1);
+    const auto* after = f.state<calcu::control::ControlState>(calcu::control::kControlStateTopic);
+    CHECK(after && after->model == calcu::machine::ModelId{"PC-1600"});
+    CHECK(f.session().machineSession().generation() > generation);
     const auto* run = f.state<calcu::debugger::RunState>(calcu::debugger::kRunStateTopic);
     CHECK(run && !run->paused);
 
@@ -221,16 +226,21 @@ TEST(lib3_ac38_mirror_holds_every_callback) {
                "keys:\n  - key: mode\n  - type: NEW0\n  - key: mode\n  - type: PRINT MEM\n";
     }
     const sessions::CallId id = f.send(calcu::presets::kLoadPresetCommand, Value::object({{"ref", modules.generic_string()}}));
-    int controlWhileBusy = countState(f.messages, mark, t::kControlState);   // the command's own flush: armed
+    int controlWhileBusy = countState(f.messages, mark, calcu::control::kControlStateTopic);   // the command's own flush: armed
     while (!f.takeReply(id)) {
         const std::size_t from = f.messages.size();
         f.call();
-        if (f.busy()) controlWhileBusy += countState(f.messages, from, t::kControlState);
+        if (f.busy()) controlWhileBusy += countState(f.messages, from, calcu::control::kControlStateTopic);
     }
     CHECK(controlWhileBusy >= 1);
     CHECK(!f.listener.mirror().takeAppended(sessions::kLogTopic).empty());
     CHECK(f.held("slot-1") && f.held("slot-1")->name == "CE-1600M");
-    CHECK(f.state<shared::ControlStatePayload>(t::kControlState)->state.ce1600p.attached);
+    {
+        const auto* cs = f.state<calcu::control::ControlState>(calcu::control::kControlStateTopic);
+        const calcu::control::PlaceEntry* printer = cs ? cs->place(calcu::machine::PlacePath{{calcu::machine::PlaceName{"printer"}}}) : nullptr;
+        const calcu::control::PeripheralChoice* p = printer ? calcu::control::choice(*printer, calcu::machine::PeripheralId{"CE-1600P"}) : nullptr;
+        CHECK(p && p->plugged);
+    }
 
     // attachFailed -> the refusal of `attach` (LIB-18 AC-12): the CE-158
     // refused beside the CE-1600P (ledger 1600-22).
@@ -241,11 +251,11 @@ TEST(lib3_ac38_mirror_holds_every_callback) {
     (void)f.notices();
     CHECK(!f.choose("slot-1", "No such module").done);
 
-    // tapesChanged -> the topic `media`; the tape status -> c1600.machine (M-47).
+    // tapesChanged -> the topic `media`; the tape status -> c1600.lamps (M-49).
     CHECK(f.part().tapeInterfaceAttached());
     CHECK(f.run(calcu::media::kStartNewCommand, Value::object({{"place", "tape"}, {"template", f.entry("tape", "Empty")}, {"name", "ac38"}})).done);
     f.call();
-    CHECK(f.state<shared::MachinePayload>(t::kMachine)->tape.mode == TapeDeck::Mode::Record);
+    CHECK(f.state<shared::LampsPayload>(t::kLamps)->tape.mode == TapeDeck::Mode::Record);
 
     // serialLinksRelinked -> c1600.serial-links.
     const auto moves = f.state<shared::SerialLinksPayload>(t::kSerialLinks)->moves;
@@ -253,12 +263,18 @@ TEST(lib3_ac38_mirror_holds_every_callback) {
     f.call();
     CHECK(f.state<shared::SerialLinksPayload>(t::kSerialLinks)->moves == moves + 1);
 
-    // hostDirectories -> the frontend states a folder picker (AC-26).
-    CHECK(f.state<shared::ControlStatePayload>(t::kControlState)->state.hostDriveOffered);
+    // hostDirectories -> the place host-drive available or not (LIB-4 AC-18).
+    const calcu::machine::PlacePath hostDrive{{calcu::machine::PlaceName{"host-drive"}}};
+    auto hostDriveAvailable = [&](SessionFixture& s) {
+        const auto* cs = s.state<calcu::control::ControlState>(calcu::control::kControlStateTopic);
+        const calcu::control::PlaceEntry* p = cs ? cs->place(hostDrive) : nullptr;
+        return p && p->available.now;
+    };
+    CHECK(hostDriveAvailable(f));
     SessionFixture web("calcu-session-ac38-web");
     web.hostDirectories = false;
     CHECK(web.start("PC-1600"));
-    CHECK(!web.state<shared::ControlStatePayload>(t::kControlState)->state.hostDriveOffered);
+    CHECK(!hostDriveAvailable(web));
 }
 
 // Reset, Cold boot and a model switch stop what runs; keys pressed while an

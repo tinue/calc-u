@@ -3,11 +3,11 @@
 #include <string>
 #include <vector>
 
-#include "app/MachineModel.hpp"
+#include "machine/Ids.hpp"
 #include "app/Rgb.hpp"
 
-namespace shared {
-struct DisplayFrame;
+namespace calcu::machine {
+struct DisplayOutput;
 }
 
 // ── LCD panel layout ─────────────────────────────────────────────────────
@@ -89,10 +89,25 @@ struct Indicator {
     Style style = Style::Text;
 };
 
+// The indicator row of a model as a table, in drawing order, so that the
+// Web page lays it out by the same data (`c1600.faceplate-map`): Flag shows
+// `caption` while names[0] is lit; Join the lit names joined (DE, G, RAD:
+// "DEG", "GRAD"); First the first lit name; Always `caption` always.
+struct IndicatorSlot {
+    enum class Kind { Flag, Join, First, Always };
+    Kind kind = Kind::Flag;
+    std::vector<std::string> names;
+    std::string caption;
+    double x = 0;
+    double scale = 1.0;
+    Indicator::Style style = Indicator::Style::Text;
+};
+const std::vector<IndicatorSlot>& indicatorSlots(const calcu::machine::ModelId& model);
+
 // The indicators lit in `frame` on `model`'s panel, in drawing order. The
 // PC-1500 battery dot is always on (no data bit backs it); the PC-1600
 // shares one position between I/II/III (the first lit one wins).
-std::vector<Indicator> indicators(Model model, const DisplayFrame& frame);
+std::vector<Indicator> indicators(const calcu::machine::ModelId& model, const calcu::machine::DisplayOutput& frame);
 
 inline constexpr Rgb kP15BackgroundRgb{150, 158, 142};
 inline constexpr Rgb kP16BackgroundRgb{156, 168, 149};

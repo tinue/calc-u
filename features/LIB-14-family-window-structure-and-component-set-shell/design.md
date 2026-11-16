@@ -1102,3 +1102,460 @@ the same step, consequences of the spec that the ledger lacks:
 ### D.14 Questions for the user
 
 None that split the design.
+
+## 10. Part E: the Calc-U-59 column
+
+Status: Draft for the Part D/E boundary (2026-11-16)
+
+Step M-57, with LIB-4 59 (§10 of LIB-4's design holds the control
+state's product side; this section holds the frontends and what the
+library gains for them). Tests from LIB-14 AC-26–33; Done in M-57 (plan
+§5.1). The Swift frontend is C59-8 (M-58); it draws the same models
+that this section adds (the More button, the labelled choices) through
+its bridge. Paths are at `7bdd51c`; product paths are under
+`products/calc-u-59/` unless named otherwise.
+
+### 10.1 Scope, and what the earlier Part E steps leave
+
+M-57 puts both Calc-U-59 frontends together from the shell. It comes
+after M-53 to M-56 and takes what their designs say as done:
+
+| Step | What M-57 finds | What M-57 uses it for |
+|---|---|---|
+| M-53 (LIB-8, LIB-10 59) | the library's `PaperPanel` / `CalcuPaperPanel` for the PC-100C in Qt6 (in place of `frontends/qt6/app/PrinterWidget.*`) and on the Web (in place of `src/Printer.jsx`); `run-state` and the run-control buttons in the debug panel | the paper panel through `Shell::registerPanel` (its default); Machine ▸ Resume (M7) |
+| M-54 (LIB-6, LIB-18, C59-2, C59-3) | the library's commands `model`, `attach`, `detach`, `reset`, `cold-boot`, `load-preset`; `preset-list` with C59-2's examples and the three startup presets; `TIAppPart` on `parts::LibraryParts` | every menu item and bar control sends a library command (D-24); Examples ▸ and the startup preset rows from `preset-list` |
+| M-55 (LIB-7 59, C59-7) | `media` with the kind `magnetic-card`; LIB-7's `MediaPicker` with the TI labels of LIB-7 AC-8; C59-7's card controls (a Qt6 widget and a React component) and its two card items with their dialogs (today `frontends/qt6/app/CardPickerDialog.*`, `frontends/web/src/Dialogs.jsx` `CardPicker`); the Web's saved media for cards (LIB-7 AC-36) | the slot picker (`registerSlotPicker`, its default); the card controls through `registerMediaControls("magnetic-card", …)`; the card items as product items (10.6) |
+| M-56 (LIB-13 59, C59-4) | `open` for drops, Open With and the start file (`opening::startFile`, row 59-47); C59-4's debug panel with its product entries | the window's drop sends `open`; the debug panel as a product panel beside the paper (AC-33) |
+
+What is left for M-57, in both frontends: the window structure (menus,
+bar, the More button, settings, About, Help, "Loading…", notices, the
+faceplate input, "ROMs missing", the storage banner); the session host
+in Qt6; Qt6 attach and the pacing probe as an attach client; the library
+additions of 10.3. If a step of M-53 to M-56 leaves one of its frontend
+pieces undone, M-57 takes it over and the qa-report says so (D-25).
+
+Not in M-57: the Swift frontend (C59-8, M-58); the harness product
+commands (C59-9, M-59); the help (LIB-16 59, M-60).
+
+### 10.2 The library's code against the approved text
+
+Read from `library/` at `7bdd51c`. Where Calc-U-59 needs what the code
+does not have yet:
+
+1. **No model for a frontend without a menu bar.** D-15 promised the
+   More button "on the same menu model" in M-57. `Traits` has only
+   `hasQuit`, `shortcuts`, `savedMedia` (`library/shell/MenuModel.hpp:38-42`);
+   a bar control is a picker, a button or a medium
+   (`library/shell/BarModel.hpp:17-26`), and no group comes before the
+   model picker (`library/shell/ShellProduct.hpp:21`).
+2. **Choices without labels.** A choice row offers each stored value as
+   its own label (`library/shell/SettingsModel.cpp:104-106`). Calc-U-59
+   shows "Modernized", "Classic" for `modernized`, `classic`, and the
+   Web offers only "Off" and "Click Sound" of the three values of
+   `[keyboard] feedback` (`app/Settings.cpp:49-52`;
+   `frontends/web/src/Dialogs.jsx:177-183`).
+3. **The page's form of `ShellProduct`** leaves out `aboutLinks` and
+   always says `copyScreen: true` (`library/shell/ValueForms.hpp:15-20`).
+   Calc-U-59 has no Copy Screen (AC-26) and three About links (AC-32;
+   `docs/reviews/d-simplification.md` §9, M-57).
+4. **A product item always appears** (`library/shell/MenuModel.cpp:51-67`);
+   the card items must not appear on the TI-58 and TI-58C (LIB-4 AC-12).
+5. **The faceplate input** takes widget coordinates without an origin
+   and consumes every left press (`library/qt6/FaceplateInput.cpp:22-44`;
+   `library/web/components/useShellFaceplate.jsx:14`). Calc-U-59 draws
+   its faceplate centred in the widget (`frontends/qt6/app/KeyboardWidget.cpp:46-52`),
+   and a press on the fitted card feeds it before any key
+   (`KeyboardWidget.cpp:87-94`; C59-7).
+6. **About** has no icon (`library/qt6/ShellAbout.cpp`); Calc-U-59's Qt6
+   About shows the app's icon today (`frontends/qt6/app/AboutDialog.cpp:10-13`).
+7. **The storage banner** is Calc-U-1600's own sentence
+   (`products/calc-u-1600/frontends/web/src/CalcU1600.jsx:490-494`)
+   though `web.storage` carries the library's (`library/web/src/storage.js:48-53`,
+   `sentences.js:12-17`): the user's Q-4 (`docs/reviews/d-simplification.md`
+   §10), ledger 1600-48, "with M-57's banner or before M-61".
+8. Part D's D.2 holds as written (`useCalcuShell`, `remember-folder`,
+   the panel model in `BarModel.*`, the attached registry of D-27).
+
+### 10.3 What the library gains in M-57
+
+#### 10.3.1 A window without a menu bar: the More button (AC-29; C59-8 AC-5)
+
+One model for the Web's portrait layout and for iOS: the C++ model is
+what C59-8's bridge calls (C59-8 §3.1), and `shellModel.js` mirrors it
+rule by rule for the React set.
+
+```cpp
+// library/shell/MenuModel.hpp, changed
+struct Traits {
+    bool hasQuit = true, shortcuts = true, savedMedia = false;
+    bool menuBar = true;    // false: the Web's portrait layout, iOS (M13)
+    bool settings = true;   // false: the Web prop `settings` off (LIB-15 AC-19): no Settings… (M18)
+    bool about = true;      // false: iOS, which has no About (C59-8 AC-11)
+};
+struct MenuItem {
+    // … as today, and:
+    std::string confirm;        // a question asked before the item is carried out; empty: none (M15)
+    bool destructive = false;   // shown as such where the platform has it (iOS; C59-8 AC-5)
+};
+// The items of the More button, in menu order (M14).
+std::vector<MenuItem> moreItems(const std::vector<Menu>&, const ShellProduct&);
+
+// library/shell/ShellProduct.hpp, ProductItem, added
+bool onBar = false;        // the product draws its own control for it on the bar (M14)
+std::string mediaPlace;    // the item exists while this media place is listed and follows its `insert` (M17)
+
+// library/shell/BarModel.hpp, changed
+enum class BarGroup { Start, AfterModel, Slots, Places, Media, End };   // Start: before the model picker (B8)
+struct BarControl {
+    enum class Kind { ModelPicker, SlotPicker, PlaceButton, PlacePicker, Media, Action, More };
+    // … as today, and:
+    MenuItem item;            // Action: the menu item it carries out (id, label, enabled, reason, command)
+};
+std::vector<BarGroupModel> bar(const ShellInputs&, const ShellProduct&, Traits = {});
+```
+
+| # | Rule | AC |
+|---|---|---|
+| M13 | With `menuBar == false` the menus are still computed (for the More button, and for the iPad's system menu bar, C59-8 EC-6), but the frontend draws no menu bar, and the bar follows B8 | AC-29; C59-8 AC-5 |
+| M14 | `moreItems`: the items of File, Edit, Machine and Help in that order, leaving out those that have a control on a bar without a menu bar: `load-preset`, `settings`, `quit`, `reset`, the `model` submenu (the model picker), the `peripherals` submenu (the place controls) and every product item with `onBar`. Separators stay between the groups that remain, never first, last or twice. For Calc-U-59 on the Web: Examples ▸; Import Media… and Saved Media… (while `media` lists a kind, M2); Cold boot; Resume; Calc-U-59 Help; About Calc-U-59 (D-36) | AC-29 |
+| M15 | In the More menu, Cold boot carries `confirm` "Cold boot the machine? What it holds in memory is lost." and `destructive`. Choosing it shows the question with the buttons Cold boot and Cancel; Cold boot sends `cold-boot`, Cancel sends nothing (the form of N4) | AC-29; C59-8 AC-5 |
+| M16 | The items of the More menu follow availability like menu items (M9) and are computed again at every change of an input, also while the menu is open | AC-29; C59-8 EC-1 |
+| M17 | A product item with `mediaPlace` is listed only while the control state lists that media place, and is enabled exactly when its `insert` is available, with its reason (M9) | LIB-4 AC-12; AC-7 |
+| M18 | With `settings == false` there is no Settings… item and no Settings button | AC-29 |
+| B8 | With `menuBar == false`: Start holds an Action for `reset` ("Reset"); End holds the Actions `load-preset` ("Preset", today's label) and `settings` ("Settings"), then More ("More", the ellipsis) whose `choices` are `moreItems`. Each Action follows its menu item (M9). With a menu bar, B1 to B7 as before: no Start, no Action, no More | AC-29 |
+| B9 | Object names (`library/shell/ObjectNames.hpp`): `bar-action-reset`, `bar-action-load-preset`, `bar-action-settings`, `bar-more`, and `more-item-<id>` for each item of the More menu | AC-25 |
+
+Drawing in the React set: `ShellControlBar` takes a `compact` prop and
+draws an Action as a button with the set's icon for its id (↺ for
+`reset`, ▤ for `load-preset`, ⚙ for `settings`, ⋯ for More; today's
+characters, `frontends/web/src/ControlBar.jsx:68, 113, 116`) and its
+label unless `compact`; More opens `ShellMoreMenu` (new), a popup of the
+menu bar's `ShellMenuItems` (`library/web/components/ShellMenuBar.jsx:10`)
+anchored to the button; a `confirm` item opens `ShellModal` with the
+question. The Qt6 set does not draw Action or More: no Qt6 frontend is
+without a menu bar (D-35).
+
+#### 10.3.2 Labelled choices (AC-30; C59-8 AC-7)
+
+```cpp
+// library/shell/SettingsModel.hpp, DialogRow, added
+std::vector<std::pair<std::string, std::string>> choices;   // Choice: value, label; empty: every declared value as written
+```
+
+| # | Rule | AC |
+|---|---|---|
+| S8 | A choice row with `choices` offers exactly those values, with those labels, in that order; a value in the file that is not among them is shown as written, as S4 shows a startup preset that is none of the list (EC-3) | AC-30 |
+
+`toValue(DialogSpec)` writes `choices: [[value, label], …]` only when
+the list is not empty, so Calc-U-1600's `settingsSpec` reply does not
+change. `shellModel.js` (`calcuShellDialog`) and `ShellSettings.jsx`
+mirror it; `ShellSettingsDialog` fills its `QComboBox` from it.
+
+#### 10.3.3 The product's data in the page's form
+
+`library/shell/ValueForms.cpp`: `copyScreen` says whether the product
+has the item; `aboutLinks` is written when there is one; a product
+item's `onBar` and `mediaPlace` are written when set. Calc-U-1600's
+`shellProduct()` data (`products/calc-u-1600/app/SharpShellProduct.cpp`)
+gets a placeholder act for Copy Screen that each frontend replaces with
+its own, so `c1600.shell-product` stays the same byte for byte (D-37).
+
+#### 10.3.4 The faceplate's geometry
+
+```cpp
+// library/qt6/Shell.hpp, added beside today's setFaceplate (which stays, Calc-U-1600)
+struct FaceplateGeometry {
+    std::function<double()> scale;                                    // logical pixels per hit-map unit
+    std::function<QPointF()> origin = {};                             // the hit map's (0, 0) in the widget; none: (0, 0)
+    std::function<bool(double x, double y)> productFirst = {};        // a press the product takes, in hit-map units
+};
+void setFaceplate(QWidget*, shell::HitMap, FaceplateGeometry);
+```
+
+A press that `productFirst` takes is not consumed by `FaceplateInput`
+(the filter returns false), so the product's widget gets it, and the
+moves and the release of that pointer pass through as well; every other
+press goes to the hit rule (H1 to H5) after the origin is subtracted.
+The React hook takes the same as options:
+`useShellFaceplate(shell, hitMap, ref, {scale, origin, productFirst})`
+(a number or a function as the fourth argument keeps meaning `scale`).
+
+#### 10.3.5 About and the storage banner
+
+- `ShellAbout` shows `QApplication::windowIcon()` above the name when
+  the application has one; the React set shows no icon, as Calc-U-59's
+  Web About does not today (`frontends/web/src/Dialogs.jsx:200-209`; D-38).
+- `library/web/components/ShellStorageBanner.jsx` (new, in
+  `COMPONENT_SOURCES`): reads LIB-15's state topic `web.storage`
+  (`{mode, sentence}`, posted by `library/web/src/worker.js:139-141`) and
+  shows `sentence` in a `role="status"` line while `mode` is not `kept`;
+  object name `storage-banner`. Calc-U-1600's page uses it in place of
+  its own (`CalcU1600.jsx:490-494`), which puts ledger row 1600-48 in
+  effect in M-57 (D-39).
+
+#### 10.3.6 Files
+
+| File | Change |
+|---|---|
+| `library/shell/MenuModel.hpp/.cpp` | `Traits`, `MenuItem::confirm`, `destructive`, `moreItems`, M13 to M18 |
+| `library/shell/BarModel.hpp/.cpp` | `BarGroup::Start`, `Action`, `More`, `bar(…, Traits)`, B8 |
+| `library/shell/ShellProduct.hpp/.cpp` | `ProductItem::onBar`, `mediaPlace`; `checkShellProduct` also reports a `mediaPlace` that no model's control state lists |
+| `library/shell/SettingsModel.hpp/.cpp` | `DialogRow::choices`, S8 |
+| `library/shell/ValueForms.cpp` | 10.3.3 |
+| `library/shell/ObjectNames.hpp` | B9 |
+| `library/qt6/Shell.hpp/.cpp`, `FaceplateInput.hpp/.cpp` | `FaceplateGeometry` |
+| `library/qt6/ShellAbout.cpp`, `ShellSettingsDialog.cpp` | the icon; S8 |
+| `library/web/components/shellModel.js`, `useShell.jsx`, `ShellControlBar.jsx`, `ShellMenuBar.jsx`, `ShellMoreMenu.jsx` (new), `ShellSettings.jsx`, `useShellFaceplate.jsx`, `ShellStorageBanner.jsx` (new), `shell.css` | the mirrors and the drawing |
+| `library/web/build/dist.js` | the two new files in `COMPONENT_SOURCES` |
+| `products/calc-u-1600/app/SharpShellProduct.cpp`, `frontends/qt6/app/MainWindow.cpp`, `frontends/web/src/CalcU1600.jsx` | the placeholder act for Copy Screen (10.3.3); the storage banner |
+
+### 10.4 The Qt6 frontend (`frontends/qt6/`)
+
+The window becomes a `QMainWindow` with a `calcu::qt6::Shell` over a
+`calcu::qt6::SessionHost`, the faceplate, and today's three columns.
+
+| File | After M-57 |
+|---|---|
+| `app/EmulatorController.hpp/.cpp` | Stays as the product's glue, thinner. It makes the session (`cu59::makeAppSession`, `EmulatorController.cpp:62-68`) and a `SessionHost` over it, with `SettingsPart` among the parts. Gone to the host: the frame timer and the listener (`:69-75`), `send`. Gone to the shell: the ROM dialog (`:55-61`, then `main.cpp:67` quits; LIB-12's A-4) and the notice as a titled warning (`:89-99`, `cu59::splitNotice`; N1). The log lines keep going to `qDebug` (`:100-104`) as the shell's G1. The model, module, printer and reset members (`EmulatorController.hpp:32-40, 65`) go: the shell sends the library's commands. What stays: the display, the cue card, the debug panel's topics and commands as C59-4 left them |
+| `app/MainWindow.hpp/.cpp` | `buildMenus` (`MainWindow.cpp:53-76`) and `openPreset` (`:78-85`) go: the shell's menus and Load Preset… with the filter of 10.6. `loadCard` and `newCard` (`:89-99`) are C59-7's product items (10.6). The splitter layout stays (`:27-38`; AC-33): the calculator column (the faceplate and the shell's control bar), the shell's panel area holding the paper panel, and the debug panel. `restoreWindowState` and `saveWindowState` (`:119-143`) stay; the drop (`:145-156`) is M-56's `open` |
+| `app/ControlBar.hpp/.cpp` | deleted (Reset with Ctrl for Clean, the model combo, the card buttons, Preset; `ControlBar.cpp:26-101`): the shell's bar with LIB-7's slot picker, the "PC-100C" button (B3) and C59-7's card controls |
+| `app/CalculatorPanel.hpp/.cpp` | holds the faceplate and `Shell::controlBar()` (`CalculatorPanel.cpp:15-18`) |
+| `app/SettingsDialog.hpp/.cpp` | deleted: `ShellSettingsDialog` with the spec of 10.6. The constant memory written at a save folder change (`SettingsDialog.cpp:78-81`) becomes the product's `SettingsPartSetup::changed` for `[storage] save-folder`, doing what C59-3's design (M-54) names for it. The module row and its apply on close (`:41-45, 136-140`) go (row 59-9) |
+| `app/AboutDialog.hpp/.cpp` | deleted: its texts and links are `ShellProduct`'s (10.6); "Built with Qt (LGPL-3.0)." is an about line the Qt6 frontend adds (`AboutDialog.cpp:28`) |
+| `app/AppSettings.hpp`, `AppPaths.*` | the start folders and their memory (`AppSettings.hpp:21-33`) go to `SettingsPart` (`remember-folder`) and `Shell::startFolder`; the save and trace folder overrides (`:35-39`) to its folder rows. What stays: the `[window]` numbers (LIB-9 AC-35) and the paths the session is made with |
+| `app/KeyboardWidget.hpp/.cpp` | keeps the art, the LED and the cue card. The mouse handlers and `cu59::PointerTracker` (`KeyboardWidget.cpp:87-119`) go: `Shell::setFaceplate(widget, cu59::faceplateHitMap(model), {scale, origin, productFirst})`, `origin` the canvas's corner (`:46-52`), `productFirst` C59-7's card tap (`:92`). The pressed key is drawn from `held-keys` (LIB-5 AC-19) alone (`:75`). The host keys go through `calcu::qt6::HostKeys` (`:121-160`); the TI keyboard map already refuses a key with Control, Alt or Command (`app/TITyping.cpp:156`), so the frontend's own check (`KeyboardWidget.cpp:136`) goes with no change seen (D-40). The LED style is read from the `settings` topic, not from `AppSettings` (`:37-40`) |
+| `app/main.cpp` | `--pacing-probe` (`main.cpp:83-85, 97-127`) becomes an attach client (10.7); the start file is M-56's; `--grab` stays |
+| `app/HoldRepeatButton.*`, `PrinterWidget.*`, `CardPickerDialog.*` | M-53's and M-55's, as their designs say |
+| `CMakeLists.txt` | links `calcu_qt6`; `CALCU59_PACING_PROBE` gives way to `CALCU_ATTACH` (`CMakeLists.txt:129-140`); the deleted files out; `tests/` (10.9) |
+
+### 10.5 The Web frontend (`frontends/web/`)
+
+| File | After M-57 |
+|---|---|
+| `src/PlayCalculator.jsx` | Composes the React set. `useCalcuShell(shell, product, traits)` with the traits of the layout: `wide` `{hasQuit: false, shortcuts: false, savedMedia: true, menuBar: true, settings, about: true}`, `portrait` the same with `menuBar: false`; `layout="auto"` takes `portrait` while its rules are paged (`:195`). `ShellMenuBar` above the wide layout; in each `CalculatorColumn` (`:95-102`) the shell's bar in place of `ControlBar`, `compact` in portrait, with LIB-7's slot picker and C59-7's card controls; `ShellDialogs`; `ShellStorageBanner` above the layout. The status line (`:84-93`) goes: a notice is the dialog (AC-31). `hostKeyOf` and `claimed` (`:35-46, 235-239`) give way to `calcuHostKeyEvent` (`library/web/components/hostKeys.js`), with the page's own rule of which events are the calculator's (D-40). The drop (`:265-272`) is M-56's `open`. The keyboard feedback (`:48-82`) stays the product's; it reads `[keyboard] feedback` from `settings` and the held key from `held-keys` |
+| `src/ControlBar.jsx` | deleted (Reset with the long press and the modifier, the model select, the card buttons, Preset, the gear; `ControlBar.jsx:7-120`) |
+| `src/Dialogs.jsx` | `PresetPicker` (`:110-144`) gives way to the shell's Load Preset… and Examples ▸ from `preset-list`; `Settings` and `About` (`:148-209`) to `ShellSettings` and `ShellAbout`; `DialogHost` (`:212-222`) goes; the card dialogs are C59-7's (M-55) |
+| `src/CalculatorFace.jsx` | keeps the art, the LED canvas and the cue card; its hit test gives way to `useShellFaceplate` with `c59.faceplate-map`, `origin` and `productFirst` (C59-7's card tap) |
+| `src/engine.js` | deleted (LIB-15 59's translation, `engine.js:1-8` says "until LIB-14 59 (M-57)"): the page talks to the shell (`createShell`, `useTopic`), sends the library's commands and asks the product's requests by name |
+| `app/TIWebPart.hpp/.cpp` | gone: `c59.web.model` (`TIWebPart.hpp:42`), `c59.web.settings` (`:54`) and the commands of the page's settings and pointer (`c59.web.set-startup-model`, `c59.web.set-keyboard-feedback`, `c59.web.set-trace-max-mb`, `c59.web.pointer-*`) with `PointerTracker m_pointer` (`:97`); the request `c59.static-data` (`app/WebPageData.hpp:15`; LIB-15's W59-1). New: `c59.shell-product {layout}` (`{product, settingsSpec}`, 10.6) and `c59.faceplate-map {model}` (the hit map in the library's form, the display and card areas, the canvas's aspect; D-41). Stay as product material: `c59.led-geometry`, `c59.mobile-rules` (`WebPageData.hpp:18-19`), the display, cue card and debug topics |
+| `bindings.cpp` | adds `SettingsPart` to the parts (`bindings.cpp:72`) |
+| `tests/` | `shell.spec.js` (new, 10.9); `play-calculator.spec.js`, `session.spec.js`, `storage.spec.js`, `rom-missing.spec.js` re-pointed to the object names of §3.10 and B9 |
+
+### 10.6 What Calc-U-59 gives the shell (`app/TIShellProduct.hpp/.cpp`, new)
+
+One source for Qt6, the Web and, through the bridge, Swift (D-32):
+`cu59::shellProduct()` and `cu59::settingsSpec(frontend, layout)`. The
+Qt6 frontend adds the acts; the page gets the data through
+`c59.shell-product`.
+
+| Field | Value |
+|---|---|
+| `name`, `version`, `build` | "Calc-U-59", `APP_VERSION`, `APP_BUILD_ID` (Qt6, `frontends/qt6/app/Version.h.in`); the page's version on the Web |
+| `helpUrl` | `https://calc-u.org/59/` (AC-32) |
+| `aboutLines` | "Calc-U-59 Calculator Emulation"; "Cycle-accurate TI-59, TI-58, and TI-58C emulation with magnetic cards, paper tape printer, presets, and debugger tools." (`AboutDialog.cpp:22-24`, with "preset state files" in the glossary's word; D-42) |
+| `aboutLinks` | GitHub `https://github.com/tinue/Calc-U-59`, Support `https://github.com/tinue/Calc-U-59/issues`, Privacy `https://github.com/tinue/Calc-U-59/blob/main/PRIVACY.md` (`AboutDialog.cpp:25-27`) |
+| `variantLabels` | none (no model or peripheral of Calc-U-59 has variants) |
+| `presetFilter` | "Presets (*.ti59 *.ti58 *.ti58c)" (`MainWindow.cpp:81`) |
+| `copyScreen`, `pasteText` | none, false: no Edit menu (AC-26) |
+| `moduleSlotPinOuts` | `module-slot` (`core/TICatalogue.cpp:71`) |
+| `placesWithoutControl` | none |
+| `items` | FileMedia: C59-7's two card items (today "Fit Card…" and "Fit Fresh Card…", `MainWindow.cpp:56-57`), each with `mediaPlace = "card-reader"` and `onBar` (C59-7's card controls stand for them on the bar) |
+
+The settings dialog (AC-30), from `settingsSpec`:
+
+| Section | Row | Qt6 | Web wide | Web portrait |
+|---|---|---|---|---|
+| General | Startup model ("Last used", TI-59, TI-58, TI-58C) | yes | yes | yes |
+| General | a note "Version <v> (<build>)" | yes | yes | yes |
+| Startup presets | TI-59, TI-58, TI-58C (S4; "Choose…" in Qt6) | yes | yes | yes |
+| Storage | Save folder | yes | no | no |
+| Folders | the preset folder, labelled "Preset folder" | yes | no | no |
+| Tracing | Trace folder | yes | no | no |
+| Tracing | Maximum file size (MB) | yes | yes | no (today's, `PlayCalculator.jsx:296`) |
+| Display | Segment Style: `modernized` "Modernized", `classic` "Classic" | yes | no | no |
+| Keyboard | Keyboard Feedback: `off` "Off", `click` "Click Sound" | no | no | yes |
+
+The `[folders]` kinds `asm-overlays` and `other` (`app/Settings.cpp:102-104`)
+get no row, as today (D-43). With the Web prop `settings` off, neither
+the item nor the button is there (M18).
+
+### 10.7 Harness attach in Qt6 and the pacing probe
+
+The Qt6 frontend opens attach as Calc-U-1600's does (§3.9, Part D D.6):
+`SessionHost::openAttach(cu59::harnessProduct(), attachPortFrom(arguments))`,
+compiled only with `CALCU_ATTACH`. `--pacing-probe <s>` stays as an
+option but becomes an attach client in its own process: it reads
+`ticks` after the start and again after `s` seconds of wall time and
+prints today's lines (`main.cpp:119-121`). The Checkpoint entry
+`CalcU59QtPacingProbe` (`frontends/qt6/CMakeLists.txt:138`) is
+unchanged. The release tree and Windows have neither.
+
+### 10.8 Adapters removed in M-57
+
+| Adapter | Where | Named by |
+|---|---|---|
+| `--pacing-probe` outside attach | `frontends/qt6/app/main.cpp:83-85, 97-127` | LIB-17 §5; §5 |
+| W59-1, the page data request `c59.static-data` | `app/WebPageData.*`, `app/TIWebPart.cpp` | LIB-15 §5 (the hit map stays, as `c59.faceplate-map`; D-22, D-41) |
+| `src/engine.js` | `frontends/web/src/engine.js` | LIB-15 59 |
+| the interim topic `c59.web.model` | `app/TIWebPart.*` | LIB-3 §5, LIB-4 §5 |
+| the settings commands and `c59.web.settings` of `TIWebPart` | `app/TIWebPart.*` | §5 |
+| `c59.web.pointer-*` | `app/TIWebPart.*` | §5 |
+| A-4, the frontends' own "ROMs missing" | `frontends/qt6/app/EmulatorController.cpp:55-61` (a message box, then the app quits); the Web's start failure line | LIB-12 §5 |
+| `cu59::PointerTracker` in Qt6 and the Web | `app/KeyboardLayout.hpp:103-…` | §4 (it stays for the Swift bridge until M-58) |
+
+### 10.9 Tasks
+
+Tests come before the code. Library cases in `calcu_library_tests`,
+`calcu_qt6_tests` and `LibraryWebNodeTests` (Frequent) and
+`library/web/tests/shell.spec.js` (Longer), as §6. A new test program
+for Calc-U-59's Qt6 frontend: `CalcU59QtTests` (`frontends/qt6/tests/`,
+the one runner, offscreen, built only with Qt; Frequent), on the real
+window with the session in `Hosting::Paced` on a scripted wall clock and
+fake choosers, as `CalcU1600QtTests`. The Web cases are in
+`frontends/web/tests/shell.spec.js` (Chromium and WebKit; Longer, in
+`CalcU59WebPlaywright`). Product case names are `lib14_acN_…`; each Qt6
+case and its Web case carry the scenario ID of AC-25.
+
+| Task | What | ACs | Test (program: cases) |
+|---|---|---|---|
+| L12 | The More model and the bar without a menu bar | (support; AC-29) | `menu_model_tests.cpp`: `more_items_are_the_items_without_a_control`, `more_cold_boot_asks_first`, `more_follows_availability`, `media_place_item_only_with_its_media_place`, `no_settings_item_without_settings`; `bar_model_tests.cpp`: `bar_without_menu_bar_keeps_reset_preset_settings_and_more`; the same names in `shell_model.test.js` |
+| L13 | Labelled choices, value forms | (support; AC-30, AC-26, AC-32) | `settings_dialog_tests.cpp`: `choice_row_with_labels_offers_only_those`, `choice_value_not_listed_shown_as_written`; `value_forms_tests.cpp`: `shell_product_form_has_links_and_copy_screen_flag`, `calc_u_1600_forms_unchanged` (the replies of `c1600.shell-product` before and after, byte for byte); JS mirror |
+| L14 | Faceplate geometry, About icon | (support; AC-24) | `calcu_qt6_tests`: `faceplate_origin_moves_the_hit_map`, `faceplate_press_the_product_takes_passes_through`, `about_shows_the_window_icon`; `library/web/tests/shell.spec.js`: `faceplate origin and a press the product takes` |
+| L15 | The storage banner | (support; 1600-48) | `library/web/tests/shell.spec.js`: `storage banner shows the library's sentence while not kept`; Calc-U-1600 `frontends/web/tests/storage.spec.js` re-pointed to `storage-banner` and the three sentences |
+| Q1 | `TIShellProduct`; the session host in `EmulatorController` | (support); AC-32 | `CalcU59Tests`, `tests/shell_product_tests.cpp`: `lib14_ac26_shell_product_complete` (`checkShellProduct` against each model's control state), `lib14_ac32_help_address_about_texts_and_links`, `lib14_ac30_settings_spec_per_frontend_and_layout` |
+| Q2 | Qt6 menus | AC-26; AC-1, AC-4, AC-6 for this product | `CalcU59QtTests`: `lib14_ac26_qt_menus_in_family_order` (File: Load Preset…, Examples ▸, the two card items on the TI-59 only, Settings…, Quit; no Edit; Machine: Model ▸, Peripherals ▸ with the PC-100C (the module slot is the bar's picker, M6), Reset, Cold boot, Resume; Help), `lib14_ac26_shortcuts_ctrl_o_r_shift_r`, `lib14_ac26_roles_settings_about_quit` |
+| Q3 | The bar | AC-27; AC-8 to AC-10 | `CalcU59QtTests`: `lib14_ac27_bar_per_model` (the model picker; the slot picker with the 14 modules and None; the "PC-100C" button pressed while plugged in; the card controls on the TI-59 only); `shell.spec.js`: `lib14_ac27 the bar per model` |
+| Q4 | Buttons gone where there is a menu bar | AC-28 | `CalcU59QtTests`: `lib14_ac28_no_reset_preset_settings_on_the_bar`, `lib14_ac28_cold_boot_is_the_menu_item` (Ctrl held changes nothing on the bar); `shell.spec.js`: `lib14_ac28 the wide layout has the menus and no reset preset or settings on the bar` |
+| Q5 | The portrait layout | AC-29 | `shell.spec.js`: `lib14_ac29 portrait bar keeps reset preset settings and more`, `lib14_ac29 more holds examples cold boot resume and help`, `lib14_ac29 cold boot asks first`, `lib14_ac29 no long press for clean`, `lib14_ac29 settings prop off` |
+| Q6 | Settings | AC-30; AC-11 to AC-13 | `CalcU59QtTests`: `lib14_ac30_settings_sections_and_rows` (10.6's Qt6 column; no Solid State Module row; a change written at once); `shell.spec.js`: `lib14_ac30 the web settings per layout` |
+| Q7 | "Loading…" and notices | AC-31; AC-15 to AC-17 | `CalcU59QtTests`: `lib14_ac31_loading_after_500_ms_blocks_nothing` (a preset at full speed: nothing at 300 ms, the overlay at 600 ms; the model picker, Reset and Cold boot enabled), `lib14_ac31_notice_without_title`; `shell.spec.js`: `lib14_ac31 loading and the notice dialog` |
+| Q8 | Help and About | AC-32 | `CalcU59QtTests`: `lib14_ac32_help_opens_calc_u_org_59`, `lib14_ac32_about_icon_name_version_summary_links`; `shell.spec.js`: `lib14_ac32 help and about in the help menu and not in the settings` |
+| Q9 | The layouts | AC-33 | `CalcU59QtTests`: `lib14_ac33_three_columns_with_dividers` (the order; the dividers move; the paper panel always); `shell.spec.js`: `lib14_ac33 the layouts portrait wide and auto`. One picture per layout (AC-25): the Qt6 window (`QWidget::grab` into the test's output folder) and the Web's three layouts (Playwright screenshots), Longer |
+| Q10 | The faceplate's input | AC-24, AC-43 for this product | `CalcU59QtTests`: `lib14_ac24_key_under_pointer_ti59_ti58` (key centres; a point in a widened area; a point in a gap is no key, distance 0; a press on the fitted card feeds it), `lib14_ac43_display_hold_full_speed`; `shell.spec.js`: `lib14_ac24 a key under the pointer` |
+| Q11 | ROMs missing | AC-19 for this product | `CalcU59QtTests`: `lib14_ac19_roms_missing_in_window` (the text in place of the faceplate, no bar, no Machine menu, Help and About work, the app runs on); `rom-missing.spec.js` re-pointed |
+| Q12 | Qt6 attach, the probe | (LIB-17 §5) | `CalcU59QtTests`: `qt_attach_drives_calc_u_59` (`--attach-port 0`; `model`, `key`, `wait`); `CalcU59QtPacingProbe` (Checkpoint) through attach |
+
+Coverage: AC-26 to AC-33 in Q2 to Q9, with AC-1, AC-4, AC-6, AC-8,
+AC-11, AC-15, AC-17, AC-19, AC-20, AC-24 and AC-43 for this product. The
+Longer group runs at the end of Part E with Playwright and the pictures.
+
+### 10.10 Ledger rows
+
+Visible from M-57: 59-5 ("Loading…"), 59-9 and 59-14 (Qt6 and Web),
+59-44, 59-45 (Qt6 and Web), and 1600-48 (10.3.5). Rows proposed for
+`docs/behaviour-changes.md`, consequences of the spec that the ledger
+lacks (numbers given at the merge):
+
+- **59-new-A (Web).** Help and About are in the Help menu (wide) or
+  behind the More button (portrait), no longer in the settings dialog;
+  About shows the summary and the links to the source, to support and
+  to the privacy statement, as the Qt6 About does (today a line and a
+  link to calc-u.org/59). Behind the More button are also Import Media…
+  and Saved Media… (the TI-59's cards) and About, besides Examples, Cold
+  boot, Resume and Help. Sources: LIB-14 AC-29, AC-32; D-36.
+- **59-new-B (Qt6, Web).** The settings dialog: "Startup model" with
+  "Last used" first (today "Startup Calculator", "Last Used" last in
+  Qt6), "Save folder" (today "Card Folder"), the Qt6 rows grouped in
+  Storage, Folders and Tracing (today "Files"), a Startup presets
+  section, every change applied at once (today the module and, on the
+  Web, the trace size when the dialog closes), the version as a line of
+  General. Sources: LIB-14 AC-11, AC-30.
+- **59-new-C (Qt6).** When a ROM file is missing the window opens and
+  shows which files are missing in place of the calculator, and Help
+  and About work (today a message box, then the app quits). A notice is
+  shown without a title (today a title taken from the sentence). Sources:
+  LIB-14 AC-17, AC-19; LIB-12 AC-5 (as 1600-36).
+- **59-new-D (Web).** While what is saved is not kept (another tab,
+  unreadable or unavailable storage), the storage sentence stays in a
+  line above the calculator, besides its notice (today a status line
+  until it is dismissed). Sources: LIB-15 AC-8, EC-2, EC-3; D-39.
+
+### 10.11 Tools and agent knowledge (changed in the same step)
+
+| File | Change |
+|---|---|
+| `products/calc-u-59/.claude/skills/calc-u-59-qt/SKILL.md` | the class map (`:62`: `CalculatorPanel`, `ControlBar` → the faceplate and the shell's bar); hosting through `SessionHost` and the shell; attach and `--pacing-probe` as its client; `CalcU59QtTests` |
+| `products/calc-u-59/.claude/skills/calc-u-59-web/SKILL.md` | the page on the React set, the two layouts' traits, the More button, `c59.shell-product`, `c59.faceplate-map`; `engine.js` gone |
+| `products/calc-u-59/reference/NewGUIGuide.md`, `FrontendParity.md`, `WebClient.md` | the shell's menus, bar and More button as the family structure; the requests of the page; the props unchanged |
+| `products/calc-u-59/reference/SharedArchitecture.md` | `TIShellProduct`, `TIWebPart`'s topics after M-57 |
+| `products/calc-u-59/CLAUDE.md` | the Qt6 and Web frontends on the shell; a new item goes into the menu model, not into a frontend |
+| `docs/glossary-mapping.md` | visible renames for Calc-U-59 done: Cold boot (Qt6, Web), Startup model, Save folder, Load Preset… ("Open Preset…") |
+| `docs/test-groups.md` | `CalcU59QtTests`, the new library cases, `shell.spec.js` of both places |
+| `features/LIB-1-machine-interface-and-descriptors/design.md` §2a | nothing new (the areas exist) |
+
+### 10.12 Golden runs and risks
+
+- **Golden runs** run no frontend; M-57 changes no core. A difference is
+  a finding.
+- **Two frontends of Calc-U-1600 touched.** The value forms and the
+  banner change Calc-U-1600's files; L13's byte-for-byte check and its
+  Playwright and `CalcU1600QtTests` runs guard them.
+- **The More menu on small screens.** The React popup must stay inside
+  the client's width at the narrowest portrait (`FACE_MIN.portrait`,
+  `PlayCalculator.jsx:17`); checked in Q5 at 280 px.
+- **A press on the card.** `productFirst` decides before the hit rule;
+  a card area that overlaps a key would take that key's presses. The
+  card area lies above the top row of keys (`app/KeyboardLayout.hpp`,
+  `kCardRect`); Q10 checks a press on the top row with a card fitted.
+- **CI.** M-57 changes no workflow and no packaging. The local Linux CI
+  with `web-59` and `web-1600` runs at the merge; GitHub CI at the end
+  of Part E (plan §1).
+
+### 10.13 Decided (best guess)
+
+- **D-34 (AC-29; C59-8 AC-5).** The More button is a model of the
+  library (`moreItems`, B8), computed from the menu model, so the Web's
+  portrait layout and iOS show the same items from one rule; what is on
+  the bar is left out by id, not by a product list.
+- **D-35.** The Qt6 set draws no Action and no More: no Qt6 frontend is
+  without a menu bar. The C++ model serves the Swift bridge (C59-8).
+- **D-36 (AC-29, AC-32; LIB-7 AC-29, AC-36).** The More menu holds every
+  item without a control of its own, so it also holds Import Media…,
+  Saved Media… and About on the Web; AC-29's list names the items of
+  its time, and the saved media of LIB-7 AC-36 and the Web's About
+  (AC-32) would otherwise not be reachable in portrait. iOS has no About
+  (C59-8 AC-11), so `Traits::about` is false there. Ledger 59-new-A.
+- **D-37 (AC-26).** The page's form of `ShellProduct` says whether the
+  product has Copy Screen; Calc-U-1600's data names a placeholder act,
+  so its reply does not change.
+- **D-38 (AC-32).** The About icon is the application's window icon in
+  Qt6; the Web shows none, as today. `ShellProduct` gets no icon field.
+- **D-39 (Q-4; ledger 1600-48).** M-57 makes the storage banner a
+  component of the React set, from `web.storage`'s sentence, used by
+  both products; 1600-48 is in effect from M-57, not left to M-61.
+  Calc-U-59 gets the banner too (59-new-D).
+- **D-40 (LIB-5 AC-7).** Host keys go through `qt6::HostKeys` and
+  `hostKeys.js`; the TI keyboard map already refuses a key with a
+  command modifier (`app/TITyping.cpp:156`), so dropping the frontends'
+  own check changes nothing seen.
+- **D-41 (D-22).** The page's static faceplate data is one product
+  request, `c59.faceplate-map {model}`, as Calc-U-1600's D-31; the LED
+  shapes and the mobile layout rules stay product requests under their
+  names: they are drawing material of the product (ADR 0023), not data
+  a library topic carries.
+- **D-42.** The About summary is the Qt6 and Swift text of today
+  (`AboutDialog.cpp:22-24`, `App/AppInfo.swift`), one for all
+  frontends, with "presets" for "preset state files" (the glossary's
+  term).
+- **D-43 (AC-30).** Qt6 shows the one folder row of today (presets);
+  the `[folders]` kinds `asm-overlays` and `other` keep their remembered
+  folder and get no row. The Web's Maximum file size stays in the wide
+  layout only, as today.
+- **D-44 (AC-24).** The faceplate's geometry (origin, a press the
+  product takes) is a library option, so Calc-U-59 keeps its letterboxed
+  canvas and C59-7's card tap; Calc-U-1600's call is unchanged.
+
+### 10.14 Plan notes (proposals; the plan is not edited)
+
+- M-57 "Waits for" should also name M-53 (the paper panel, Resume) and
+  M-49 (the shell's Part D changes and the attached registry).
+- M-57 "Does" gains: the library's More model, labelled choices, the
+  value forms, the faceplate geometry, the About icon and the storage
+  banner (10.3), Calc-U-1600's banner on it (row 1600-48); Qt6 attach
+  and `--pacing-probe` as an attach client.
+- M-57 "Knowledge, ledger" gains the files of 10.11 and the rows
+  59-new-A to 59-new-D, 1600-48.
+
+### 10.15 Questions for the user
+
+None that split the design.

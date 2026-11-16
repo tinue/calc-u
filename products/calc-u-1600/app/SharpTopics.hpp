@@ -29,21 +29,16 @@ inline const calcu::sessions::TopicName kSerialLinks{"c1600.serial-links"};
 inline const calcu::sessions::TopicName kRomsMissing{"roms-missing"};
 } // namespace topics
 
-// The commands. Those that start an operation are marked (op); `start`,
-// `c1600.reset` and `c1600.pick-model` stop a running one (LIB-18 AC-16,
-// ledger 1600-9). Arguments in braces.
+// The commands. Those that start an operation are marked (op). Arguments in
+// braces. The start, the model and variant switches, attach, detach, Reset
+// and Cold boot are LIB-18's (`start`, `model`, `variant`, `attach`,
+// `detach`, `reset`, `cold-boot`; startup/StartupPart.hpp), presets LIB-6's
+// (`load-preset`, `preset-list`; presets/PresetsPart.hpp). These need the
+// product's data (LIB-18 D-22), each one plug change:
 namespace commands {
 inline const calcu::sessions::CommandName& kStart = calcu::sessions::kStartCommand;                       // (op) {model?, preset?} LIB-15 N3
-inline const calcu::sessions::CommandName kLoadPreset{"c1600.load-preset"};      // (op) {path, armOnly?}
-inline const calcu::sessions::CommandName kLoadDefaultPreset{"c1600.load-default-preset"};   // (op) {path, model}
-inline const calcu::sessions::CommandName kDefaultPreset{"c1600.default-preset"};            // (op)
-inline const calcu::sessions::CommandName kReset{"c1600.reset"};                 // (op) {all}
-inline const calcu::sessions::CommandName kPickModel{"c1600.pick-model"};        // (op) {model}
-inline const calcu::sessions::CommandName kSelectModule{"c1600.select-module"};  // (op) {slot, name}
-inline const calcu::sessions::CommandName kPC1500Rom{"c1600.pc1500-rom"};        // (op) {revision: A01|A03|A04}
-inline const calcu::sessions::CommandName kPC1600Rom{"c1600.pc1600-rom"};        // (op) {version: old|new}
+inline const calcu::sessions::CommandName kSelectModule{"c1600.select-module"};  // (op) {slot, name}; until M-47
 inline const calcu::sessions::CommandName kCE1600PRom{"c1600.ce1600p-rom"};      // (op) {version: old|new}
-inline const calcu::sessions::CommandName kTogglePeripheral{"c1600.toggle-peripheral"};   // (op) {peripheral}
 inline const calcu::sessions::CommandName kMountHostDrive{"c1600.mount-host-drive"};      // (op) {dir}
 // C1600-2 (app/SharpLoaderPart, design §3.7): stateless, each carries the
 // file's bytes; `file` picks a file of a cassette WAV (from 1; the first

@@ -157,20 +157,20 @@ TEST(test_host_keys) {
 TEST(test_rebuild_keeps_plotter) {
     SKIP_UNLESS(romsPresent(), "no ROMs in roms/");
     SessionFixture f;
-    CHECK(f.start("PC-1500A"));
-    CHECK(f.ok(c::kTogglePeripheral, calcu::sessions::Value::object({{"peripheral", "CE-150"}})));
-    CHECK(f.ok(c::kTogglePeripheral, calcu::sessions::Value::object({{"peripheral", "CE-158"}})));
+    CHECK(f.start("PC-1500"));
+    CHECK(f.toggle("CE-150"));
+    CHECK(f.toggle("CE-158"));
     CHECK(f.part().ce150Attached() && f.part().ce158Attached());
     const auto builds = f.state<shared::MachinePayload>(shared::topics::kMachine)->builds;
-    CHECK(f.ok(c::kPC1500Rom, calcu::sessions::Value::object({{"revision", "A03"}})));   // a rebuild (the PC-1500A stays A04)
+    CHECK(f.ok(calcu::startup::kVariantCommand, calcu::sessions::Value::object({{"name", "A03"}})));   // a rebuild
     CHECK(f.state<shared::MachinePayload>(shared::topics::kMachine)->builds == builds + 1);
     CHECK(f.part().ce150Attached() && f.part().ce158Attached());
-    CHECK(f.ok(c::kPickModel, calcu::sessions::Value::object({{"model", "PC-1600"}})));   // a model switch starts bare
+    CHECK(f.model("PC-1600"));   // a model switch starts bare
     CHECK(!f.part().ce150Attached() && !f.part().ce158Attached());
 
     // PC-1600: the CE-1600P survives a ROM rebuild.
-    CHECK(f.ok(c::kTogglePeripheral, calcu::sessions::Value::object({{"peripheral", "CE-1600P"}})));
-    CHECK(f.ok(c::kPC1600Rom, calcu::sessions::Value::object({{"version", "old"}})));
+    CHECK(f.toggle("CE-1600P"));
+    CHECK(f.ok(calcu::startup::kVariantCommand, calcu::sessions::Value::object({{"name", "Old"}})));
     CHECK(f.part().ce1600pAttached());
 }
 

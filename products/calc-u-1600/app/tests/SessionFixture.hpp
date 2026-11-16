@@ -20,6 +20,8 @@
 #include "TestFrontend.hpp"
 #include "TestSettings.hpp"
 #include "app/SharpSession.hpp"
+#include "presets/PresetsPart.hpp"
+#include "startup/StartupPart.hpp"
 #include "sessions/Listener.hpp"
 #include "sessions/LibraryTopics.hpp"
 #include "typing/HostKey.hpp"
@@ -131,6 +133,37 @@ struct SessionFixture {
         if (model) settings.setStartupModelPreference(model);
         if (!app.session) open();
         return ok(shared::commands::kStart);
+    }
+    // ---- LIB-18's machine control and LIB-6's load, as the frontends send them ----
+    bool model(const char* name) { return ok(calcu::startup::kModelCommand, sessions::Value::object({{"name", name}})); }
+    bool variant(const char* name) { return ok(calcu::startup::kVariantCommand, sessions::Value::object({{"name", name}})); }
+    bool reset() { return ok(calcu::startup::kResetCommand); }
+    bool coldBoot() { return ok(calcu::startup::kColdBootCommand); }
+    // The place of a peripheral, as the menus attach it.
+    static const char* placeOf(const std::string& peripheral) {
+        if (peripheral == "CE-158") return "interface";
+        if (peripheral == "host-drive") return "host-drive";
+        return "printer";
+    }
+    bool attach(const char* peripheral, const char* variant = nullptr) {
+        sessions::Value::Object o{{"place", sessions::Value(placeOf(peripheral))},
+                                  {"peripheral", sessions::Value(peripheral)}};
+        if (variant) o.push_back({"variant", sessions::Value(variant)});
+        return ok(calcu::startup::kAttachCommand, sessions::Value(std::move(o)));
+    }
+    bool detach(const char* peripheral) {
+        return ok(calcu::startup::kDetachCommand, sessions::Value::object({{"place", placeOf(peripheral)}}));
+    }
+    // The control bar's button: attach, or detach what is plugged in.
+    bool toggle(const char* peripheral) {
+        const calcu::machine::Machine* m = part().machine();
+        bool in = false;
+        if (m)
+            for (const auto& e : m->plugged().byPlace) in = in || e.peripheral.value == peripheral;
+        return in ? detach(peripheral) : attach(peripheral);
+    }
+    sessions::ReplyMessage loadPreset(const std::string& ref) {
+        return run(calcu::presets::kLoadPresetCommand, sessions::Value::object({{"ref", ref}}));
     }
     // `seconds` of wall time at regular speed.
     void runFor(double seconds) {

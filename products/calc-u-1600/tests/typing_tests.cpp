@@ -319,11 +319,9 @@ TEST(lib5_ac36_keys_dropped_during_preset_operation) {
     SessionFixture s;
     CHECK(s.start("PC-1600"));
     s.readCost = std::chrono::milliseconds(1);
-    s.send(shared::commands::kLoadPreset, calcu::sessions::Value::object({{"path", "tests/fixtures/presets/startup-pc1600.pc1600"}}));
+    s.send(calcu::presets::kLoadPresetCommand, calcu::sessions::Value::object({{"ref", "tests/fixtures/presets/maxed-out-mem.pc1600"}}));
     s.call();
     CHECK(s.busy());
-    Log log;
-    s.engine().setObserver(&log);
     s.screenDown("a");
     s.hostDown(letter('b', "KeyB"));
     s.paste("123");
@@ -331,6 +329,10 @@ TEST(lib5_ac36_keys_dropped_during_preset_operation) {
     CHECK(s.engine().idle());
     for (int i = 0; i < 6000 && s.busy(); ++i) s.call();
     CHECK(!s.busy());
+    // The preset types through the engine too (M-46): the keys are watched
+    // from its end on.
+    Log log;
+    s.engine().setObserver(&log);
     s.runFor(0.5);   // a key still held when the operation ended is not pressed then
     CHECK(log.events.empty());
     s.screenUp("a");

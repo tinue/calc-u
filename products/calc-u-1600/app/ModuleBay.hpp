@@ -23,11 +23,12 @@ class SharpAppPart;
 // PC-1500/1500A's single expansion connector, or PC-1600 Slot 1); slot 2
 // only on the PC-1600.
 //
-// Module (re)selection is a rebuild-time operation, not a live swap: every
-// rebuild constructs a fresh machine and calls attachAllToFreshMachine()
-// right after loading ROMs, before the reset. To change a slot's module,
-// selectModule() (state only), then rebuild
-// (SharpAppPart::switchModelJob(currentModel(), true)).
+// A module change is a plug change of LIB-18 (`c1600.select-module`):
+// selectModule() (state only), cardFor() builds the card the request
+// carries, followMachine() once it is in. Until M-47 (LIB-7 A-1) the bay
+// follows every new machine: followPreset() after a preset plugged its
+// modules in, followCarriedMachine() after a variant switch carried the
+// cards cardFor() gave, onModelChanged() after a model switch.
 //
 // Battery cards loaded from a saved instance autosave in place: tick(),
 // called once per frame, writes a card kPersistDebounceSeconds after its
@@ -85,21 +86,18 @@ public:
         return !st.moduleName.empty() && st.isTemplate && st.battery;
     }
 
-    // SharpAppPart::switchModelJob(), before the cold boot.
-    void attachAllToFreshMachine();
-    // Plugs the selected module of `slot` in (a module change: the session
-    // detached the old one; a power cycle follows, behaviour change 1600-4).
-    void attachSlot(int slot) {
-        if (!m_slots[slot - 1].moduleName.empty()) attachOneSlot(slot);
-    }
-
-    // After a preset attached its own module(s): match this bay's state to
-    // the machine. The module's name is read from the slot itself; an
-    // empty slot clears the selection. `resolvedPathOrEmpty` is the file a
-    // `slot-N:`/`slot-N-file:` reference resolved to (an instance becomes
-    // autosave-eligible, a template never does); a `slot-N-rom:` file
-    // (`romFile`) makes the slot unsaveable.
-    void syncFromPresetLoad(int slot, const std::string& resolvedPathOrEmpty = {}, const std::string& romFile = {});
+    // The card of the selected module of `slot`, read anew from its file
+    // (a pending write saved first); nullptr with the error reported.
+    std::unique_ptr<ExpansionCard> cardFor(int slot);
+    // The selected module is in the slot now (select-module).
+    void followMachine(int slot);
+    // A variant switch carried the cards cardFor() gave: each is what its
+    // file holds again.
+    void followCarriedMachine();
+    // After a preset plugged its own modules in: the module's name is read
+    // from the slot (a module by name is a template); an empty slot clears
+    // the selection; a `slot-N-rom:` (its bytes) makes the slot unsaveable.
+    void followPreset(int slot, const std::vector<std::uint8_t>* romBytes);
 
     // The Name & Save dialog may offer "write-protect": the slot's card has
     // a write-protect switch (CE-161) that is still off.
@@ -135,7 +133,8 @@ private:
         bool isTemplate = false;       // that file declares `template: true`
         bool battery = false;          // that file declares `battery: true`
         std::string instanceFilePath;  // == sourcePath for an instance (autosaved there), else empty
-        std::string romFile;           // a preset's `slot-N-rom:` file: never saved, re-read on re-attach
+        bool slotRom = false;          // a preset's `slot-N-rom:`: never saved
+        std::vector<std::uint8_t> romBytes;   // its bytes, for a variant switch
         // The card's contentRevision() when last attached from / written to
         // instanceFilePath; unset = unknown, so the next persist writes.
         std::optional<std::uint64_t> persistedRevision;
@@ -151,7 +150,6 @@ private:
     std::uint64_t currentSlotRevision(int slot) const;
     void writeInstance(int slot);
     std::string attachedModuleName(int slot) const;
-    void attachOneSlot(int slot);
     void reportError(const std::string& text) const {
         if (m_events.error) m_events.error(text);
     }

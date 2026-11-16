@@ -36,7 +36,7 @@ private:
 
 class SharpPresetRules final : public calcu::presets::ProductRules {
 public:
-    explicit SharpPresetRules(SharpKeywordSetup setup = {}) : m_setup(setup) {}
+    explicit SharpPresetRules(SharpKeywordSetup setup = {}) : m_setup(std::move(setup)) {}
     std::string_view productName() const override { return "Calc-U-1600"; }
     // D-30: until M-52 gives the help topic's address.
     std::string_view formatReference() const override { return "the chapter Presets of the User Guide"; }

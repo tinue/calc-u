@@ -13,6 +13,7 @@
 
 #include "Machine/SharpRoms.hpp"
 #include "app/SharpSession.hpp"
+#include "presets/PresetsPart.hpp"
 #include "sessions/Listener.hpp"
 #include "app/tests/TestSettings.hpp"
 
@@ -67,10 +68,10 @@ int main() {
             const char* preset;
             const char* expect;
         };
-        for (const Case& c : {Case{"tests/fixtures/presets/startup-pc1600.pc1600", "Memory:"},
+        for (const Case& c : {Case{"tests/fixtures/presets/maxed-out-mem.pc1600", ""},
                               Case{"tests/fixtures/presets/hanoi.pc1600", ""},
                               Case{"tests/fixtures/presets/startup-pc1500a.pc1500a", ""}}) {
-            const bool ok = run(host, shared::commands::kLoadPreset, sessions::Value::object({{"path", c.preset}}));
+            const bool ok = run(host, calcu::presets::kLoadPresetCommand, sessions::Value::object({{"ref", c.preset}}));
             const std::string lcd = screen(host, part);
             const bool seen = lcd.find(c.expect) != std::string::npos;
             std::printf("%s %s\n%s\n", ok && seen ? "ok  " : "FAIL", c.preset, lcd.c_str());

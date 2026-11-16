@@ -393,13 +393,13 @@ void readBusRoms(const YamlNode& n, int line, ReadContext& ctx) {
 void addSharpKeywords(calcu::presets::Vocabulary& v, const SharpKeywordSetup& setup) {
     v.add(calcu::presets::SectionDef{"program", readProgram});
 
-    const bool hostFolders = setup.hostFolders;
+    const std::function<bool()> hostFolders = setup.hostFolders;
     v.add(calcu::presets::HeaderKeyDef{
         kHostDriveKey,
         [hostFolders](const YamlNode& n, int line, ReadContext& ctx) {
             const auto folder = referenceOf(n, line, kHostDriveKey, "folder", ctx);
             if (!folder) return;
-            if (!hostFolders) {   // AC-7
+            if (hostFolders && !hostFolders()) {   // AC-7
                 ctx.error(line, "The host drive is not available in this frontend.");
                 return;
             }

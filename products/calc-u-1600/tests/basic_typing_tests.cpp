@@ -230,10 +230,10 @@ TEST(c1600_2_ac7_preset_typed_program_through_engine) {
     const fs::path preset = f.root / "typed.pc1500a";
     {
         std::ofstream out(preset);
-        out << "format-version: 1\nmodel: PC-1500A\nkeys:\n  - key: cl\n  - type: NEW0\nprogram:\n  text: |\n"
+        out << "format-version: 2\nmodel: PC-1500A\nkeys:\n  - key: cl\n  - type: NEW0\nprogram:\n  text: |\n"
                "    10 A=1\n    20 PRINT A\n    30 DATA 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20\n    40 END\n";
     }
-    CHECK(f.ok(c::kLoadPreset, Value::object({{"path", preset.generic_string()}})));
+    CHECK(f.ok(calcu::presets::kLoadPresetCommand, Value::object({{"ref", preset.generic_string()}})));
     CHECK(programBytes(memory(f)) == oldTyperBytes1500(kProgram));
 }
 

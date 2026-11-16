@@ -41,6 +41,9 @@ struct StartupSetup {
     std::shared_ptr<const roms::RomSet> roms;   // the full set (LIB-12); the caller does not start without it
     settings::SettingsFile& settings;           // [startup] model, last-model; [preset]
     PresetLoader* loader = nullptr;             // nullptr until LIB-6 (D-9)
+    // LIB-12 AC-5 (M-46): without `roms` the start is refused with this
+    // sentence (the files that are missing); a frontend shows them.
+    std::string romsMissing;
 };
 
 class StartupPart final : public sessions::SessionPart {

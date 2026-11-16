@@ -57,7 +57,7 @@ TEST(lib3_ac35_preset_in_parts_busy_display_and_paper_update) {
     CHECK(f.start("PC-1500A"));
     f.readCost = std::chrono::microseconds(500);   // the host's work inside a call
     f.messages.clear();
-    const sessions::CallId id = f.send(c::kLoadPreset, Value::object({{"path", "examples:plotter/lissajou-1500.pc1500a"}}));
+    const sessions::CallId id = f.send(calcu::presets::kLoadPresetCommand, Value::object({{"ref", "examples:plotter/lissajou-1500.pc1500a"}}));
     // What the command's own flush sent (the start of the operation, before
     // its first call): the armed machine.
     const int controlsAtSend = countState(f.messages, 0, t::kControlState);
@@ -145,7 +145,7 @@ TEST(lib3_ac37_buzzer_heard_at_regular_speed_only) {
 
     // An operation (a reset): nothing while it runs.
     mark = f.messages.size();
-    const sessions::CallId id = f.send(c::kReset, Value::object({{"all", false}}));
+    const sessions::CallId id = f.send(calcu::startup::kResetCommand);
     std::size_t duringOp = 0;
     while (!f.takeReply(id)) {
         const std::size_t from = f.messages.size();
@@ -170,7 +170,8 @@ TEST(lib3_ac38_mirror_holds_every_callback) {
         CHECK(!r.done);
         const auto* m = f.state<shared::RomsMissingPayload>(t::kRomsMissing);
         CHECK(m && !m->missing.files.empty());
-        CHECK(r.reason == calcu::roms::describe(m->missing));
+        // LIB-18's start builds nothing: its reason names the file (M-46).
+        CHECK(r.reason.find("PC1600-P2-B6-new.bin") != std::string::npos);
         CHECK(!f.part().hasLiveMachine());
     }
 
@@ -193,7 +194,7 @@ TEST(lib3_ac38_mirror_holds_every_callback) {
     // machineReplaced, modelSwitched -> c1600.machine; machineAboutToChange
     // -> the library's run state (LIB-10, M-45: the debugger is a part).
     const shared::MachinePayload before = *f.state<shared::MachinePayload>(t::kMachine);
-    CHECK(f.ok(c::kPickModel, Value::object({{"model", "PC-1600"}})));
+    CHECK(f.model("PC-1600"));
     const shared::MachinePayload* after = f.state<shared::MachinePayload>(t::kMachine);
     CHECK(after && after->model == Model::PC1600);
     CHECK(after && after->builds == before.builds + 1 && after->modelSwitches == before.modelSwitches + 1);
@@ -214,7 +215,13 @@ TEST(lib3_ac38_mirror_holds_every_callback) {
     // presetLog -> log; moduleChanged -> c1600.machine.
     mark = f.messages.size();
     const auto moduleChanges = after->moduleChanges;
-    const sessions::CallId id = f.send(c::kLoadPreset, Value::object({{"path", "tests/fixtures/presets/startup-pc1600.pc1600"}}));
+    const fs::path modules = f.root / "modules.pc1600";
+    {
+        std::ofstream out(modules);
+        out << "format-version: 2\nmodel: PC-1600\nprinter: CE-1600P\nslot-1: { name: CE-1600M }\n"
+               "keys:\n  - key: mode\n  - type: NEW0\n  - key: mode\n  - type: PRINT MEM\n";
+    }
+    const sessions::CallId id = f.send(calcu::presets::kLoadPresetCommand, Value::object({{"ref", modules.generic_string()}}));
     int controlWhileBusy = countState(f.messages, mark, t::kControlState);   // the command's own flush: armed
     while (!f.takeReply(id)) {
         const std::size_t from = f.messages.size();
@@ -226,13 +233,14 @@ TEST(lib3_ac38_mirror_holds_every_callback) {
     CHECK(f.state<shared::MachinePayload>(t::kMachine)->moduleChanges != moduleChanges);
     CHECK(f.state<shared::ControlStatePayload>(t::kControlState)->state.ce1600p.attached);
 
-    // notice, attachFailed -> notices: the CE-158 refused beside the CE-1600P (ledger 1600-22).
-    (void)f.notices();
-    CHECK(f.ok(c::kTogglePeripheral, toggle("CE-158")));
-    const auto notices = f.notices();
-    CHECK(!notices.empty() && notices.back().find("could not be attached") != std::string::npos);
+    // attachFailed -> the refusal of `attach` (LIB-18 AC-12): the CE-158
+    // refused beside the CE-1600P (ledger 1600-22).
+    const sessions::ReplyMessage ce158 = f.run(
+        calcu::startup::kAttachCommand, Value::object({{"place", "interface"}, {"peripheral", "CE-158"}}));
+    CHECK(!ce158.done && ce158.reason.find("cannot be used together") != std::string::npos);
     // bayError -> notices: a module that does not exist.
-    CHECK(f.ok(c::kSelectModule, Value::object({{"slot", 1}, {"name", "No such module"}})));
+    (void)f.notices();
+    CHECK(!f.ok(c::kSelectModule, Value::object({{"slot", 1}, {"name", "No such module"}})));
     CHECK(!f.notices().empty());
 
     // tapesChanged, tape status -> c1600.tapes.
@@ -262,12 +270,12 @@ TEST(ledger_1600_9_keys_dropped_and_reset_stops_an_operation) {
     SessionFixture f;
     CHECK(f.start("PC-1600"));
     f.readCost = std::chrono::milliseconds(1);
-    const sessions::CallId preset = f.send(c::kLoadPreset, Value::object({{"path", "tests/fixtures/presets/startup-pc1600.pc1600"}}));
+    const sessions::CallId preset = f.send(calcu::presets::kLoadPresetCommand, Value::object({{"ref", "tests/fixtures/presets/maxed-out-mem.pc1600"}}));
     f.call();
     CHECK(f.busy());
     f.paste("PRINT 1");
     CHECK(f.engine().idle());   // dropped (LIB-5 AC-36)
-    const sessions::ReplyMessage reset = f.run(c::kReset, Value::object({{"all", true}}));
+    const sessions::ReplyMessage reset = f.run(calcu::startup::kColdBootCommand);
     CHECK(reset.done);
     const auto stopped = f.takeReply(preset);
     CHECK(stopped && !stopped->done && stopped->reason == sessions::kStopped);

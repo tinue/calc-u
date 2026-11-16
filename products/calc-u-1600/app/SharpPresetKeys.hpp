@@ -1,5 +1,6 @@
 #pragma once
 #include <cstdint>
+#include <functional>
 #include <string>
 #include <vector>
 
@@ -23,7 +24,8 @@
 namespace shared {
 
 struct SharpKeywordSetup {
-    bool hostFolders = true;   // AC-7: false where the frontend mounts no folder (the Web)
+    // AC-7: false where the frontend mounts no folder (the Web); unset: true.
+    std::function<bool()> hostFolders;
 };
 
 void addSharpKeywords(calcu::presets::Vocabulary&, const SharpKeywordSetup&);

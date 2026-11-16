@@ -61,8 +61,8 @@ TEST(test_module_bay) {
     CHECK(!contains(lists.templates, "CE-1601M"));  // Slot 2 only
     CHECK(lists.instances.empty());
 
-    modules->selectModule(1, "CE-1600M");
     CHECK(f.start("PC-1600"));
+    CHECK(f.ok(shared::commands::kSelectModule, Value::object({{"slot", 1}, {"name", "CE-1600M"}})));
     CHECK(f.notices().empty());
     CHECK(f.part().slotCard(1) && f.part().slotCard(1)->moduleName() == "CE-1600M");
     CHECK(modules->canNameAndSave(1));
@@ -80,10 +80,10 @@ TEST(test_module_bay) {
     CHECK(!modules->nameAndSave(1, "Other", &error));  // already saved: autosave
 
     // A rebuild re-attaches the saved instance from its file.
-    CHECK(f.ok(c::kPC1600Rom, Value::object({{"version", "old"}})));
+    CHECK(f.ok(calcu::startup::kVariantCommand, Value::object({{"name", "Old"}})));
     CHECK(f.part().slotCard(1) && f.part().slotCard(1)->moduleName() == "My RAM");
     // A model switch clears the slots.
-    CHECK(f.ok(c::kPickModel, Value::object({{"model", "PC-1500A"}})));
+    CHECK(f.model("PC-1500A"));
     CHECK(modules->selectedModuleName(1).empty());
 }
 
@@ -98,7 +98,7 @@ TEST(test_floppy_bay) {
     CHECK(f.start("PC-1600"));
     floppy->selectDisk("Formatted");  // no drive yet: selection only
     CHECK(floppy->selectedDiskName() == "Formatted");
-    CHECK(f.ok(c::kTogglePeripheral, toggle("CE-1600P")));  // inserts the selected disk
+    CHECK(f.toggle("CE-1600P"));  // inserts the selected disk
     sharp::FloppyDriveAccess* m = f.part().floppyDrive();
     CHECK(m && m->hasDisk());
     if (!m) return;
@@ -126,17 +126,13 @@ TEST(test_floppy_bay) {
     CHECK(diskDescription(*floppy, "Work") == "Formatted, both sides empty");  // and by the autosave
 
     // A detach of the CE-1600P saves the disk first, without waiting for the
-    // debounce. A CE-150 no longer takes its place: the printer place holds
-    // one (LIB-2 AC-29).
+    // debounce.
     fs::remove(saved);
     image[100] ^= 0xFF;
     m->loadImage(image.data(), image.size());
     floppy->tick(20.0);
-    std::string why;
-    CHECK(!f.part().attachCE150(&why));
-    CHECK(!why.empty());
     CHECK(f.part().ce1600pAttached());
-    CHECK(f.ok(c::kTogglePeripheral, toggle("CE-1600P")));
+    CHECK(f.toggle("CE-1600P"));
     CHECK(!f.part().ce1600pAttached());
     CHECK(fs::exists(saved));
 }

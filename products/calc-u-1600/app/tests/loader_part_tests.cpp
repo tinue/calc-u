@@ -190,7 +190,7 @@ TEST(c1600_2_ec6_menu_and_harness_refused_while_busy) {
     SKIP_UNLESS(romsPresent(), "no ROMs in roms/");
     SessionFixture f;
     CHECK(f.start("PC-1600"));
-    f.send(c::kReset, Value::object({{"all", false}}));   // an operation of the menu
+    f.send(calcu::startup::kResetCommand);   // an operation of the menu
     CHECK(f.busy());
     const sessions::ReplyMessage p = f.listener.ask(q::kPlanCode, Value::object({{"bytes", Value::Bytes(kRtn4)}}));
     CHECK(!p.done && p.reason == sessions::kAnotherOperationRuns);
@@ -230,12 +230,14 @@ TEST(c1600_2_ac25_same_sentence_menu_harness_preset) {
     const fs::path preset = f.root / "code.pc1500a";
     {
         std::ofstream out(preset);
-        out << "format-version: 1\nmodel: PC-1500A\nprogram:\n  file: " << path << "\n";
+        out << "format-version: 2\nmodel: PC-1500A\nprogram:\n  file: " << path << "\n";
     }
-    const sessions::ReplyMessage r = f.run(c::kLoadPreset, Value::object({{"path", preset.generic_string()}}));
+    // C1600-4 AC-3: the preset fails at its section's line with the loader's reason.
+    const sessions::ReplyMessage r = f.run(calcu::presets::kLoadPresetCommand, Value::object({{"ref", preset.generic_string()}}));
     CHECK(!r.done);
-    CHECK(r.reason == "section 1/1: " + sentence);
-    if (r.reason != "section 1/1: " + sentence) std::fprintf(stderr, "  preset: %s\n  menu:   %s\n", r.reason.c_str(), sentence.c_str());
+    const std::string want = preset.generic_string() + ", line 3: " + sentence;
+    CHECK(r.reason == want);
+    if (r.reason != want) std::fprintf(stderr, "  preset: %s\n  menu:   %s\n", r.reason.c_str(), sentence.c_str());
 }
 
 // ---- AC-22: 0.8.1's app session cases ----
@@ -282,7 +284,7 @@ TEST(c1600_2_ac22_address_checked_as_typed) {
     const auto* loaded = sessions::payloadAs<shared::CodeLoadedReply>(r.result);
     CHECK(r.done && loaded && loaded->summary == "Loaded 4 bytes at &7C01–&7C04" && loaded->callCommand == "CALL &7C01");
 
-    CHECK(f.ok(c::kPickModel, Value::object({{"model", "PC-1600"}})));
+    CHECK(f.model("PC-1600"));
     p = plan("");
     CHECK(p.needsAddress && p.proposed == "&C0C5" && !p.cpuNote.empty());
     p = plan("&C0C5");

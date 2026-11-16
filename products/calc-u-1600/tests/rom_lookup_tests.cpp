@@ -30,6 +30,7 @@
 #include "roms/Lookup.hpp"
 #include "SharpTestSupport.hpp"
 #include "TestHarness.hpp"
+#include "startup/StartupPart.hpp"
 #include "TestRoms.hpp"
 
 namespace {
@@ -131,7 +132,7 @@ struct Session {
             testSettings.settings.setStartupModelPreference(shared::settingsModelName(m));
             return run(shared::commands::kStart);
         }
-        return run(shared::commands::kPickModel, calcu::sessions::Value::object({{"model", shared::settingsModelName(m)}}));
+        return run(calcu::startup::kModelCommand, calcu::sessions::Value::object({{"name", shared::settingsModelName(m)}}));
     }
     // LIB-12's `roms-missing` topic, or nullptr.
     const RomsMissing* missing() const {
@@ -324,22 +325,24 @@ TEST(lib12_ac13_no_rom_read_during_session) {
     CHECK(!fs::exists(s.paths.bundledResourcesDir()));
     CHECK(s.switchModel(Model::PC1500));
     for (auto rev : {PC1500RomRevision::A01, PC1500RomRevision::A03, PC1500RomRevision::A04}) {
-        CHECK(s.run(shared::commands::kPC1500Rom,
-                    calcu::sessions::Value::object({{"revision", rev == PC1500RomRevision::A01 ? "A01" : rev == PC1500RomRevision::A03 ? "A03" : "A04"}})));
+        CHECK(s.run(calcu::startup::kVariantCommand,
+                    calcu::sessions::Value::object({{"name", rev == PC1500RomRevision::A01 ? "A01" : rev == PC1500RomRevision::A03 ? "A03" : "A04"}})));
         CHECK(s.session.hasLiveMachine());
     }
-    std::string err;
-    CHECK(s.session.attachCE150(&err));
+    auto attach = [&](const char* place, const char* peripheral) {
+        return s.run(calcu::startup::kAttachCommand, calcu::sessions::Value::object({{"place", place}, {"peripheral", peripheral}}));
+    };
+    CHECK(attach("printer", "CE-150"));
     CHECK(s.switchModel(Model::PC1500A));
-    CHECK(s.session.attachCE158(&err));
+    CHECK(attach("interface", "CE-158"));
     CHECK(s.switchModel(Model::PC1600));
-    CHECK(s.run(shared::commands::kPC1600Rom, calcu::sessions::Value::object({{"version", "old"}})));
+    CHECK(s.run(calcu::startup::kVariantCommand, calcu::sessions::Value::object({{"name", "Old"}})));
     CHECK(s.session.pc1600RomVersion() == shared::PC1600RomVersion::Old);
-    s.session.setCE1600PRomVersion(shared::CE1600PRomVersion::Old);
-    CHECK(s.session.attachCE1600P(&err));
+    CHECK(s.run(shared::commands::kCE1600PRom, calcu::sessions::Value::object({{"version", "old"}})));
+    CHECK(attach("printer", "CE-1600P"));
     CHECK(s.session.ce1600pAttached());
-    CHECK(s.session.swapCE1600PRom(shared::CE1600PRomVersion::New, &err));
-    CHECK(s.run(shared::commands::kPC1600Rom, calcu::sessions::Value::object({{"version", "new"}})));
+    CHECK(s.run(shared::commands::kCE1600PRom, calcu::sessions::Value::object({{"version", "new"}})));
+    CHECK(s.run(calcu::startup::kVariantCommand, calcu::sessions::Value::object({{"name", "New"}})));
     CHECK(s.session.hasLiveMachine());
     CHECK(s.missing() == nullptr);
     CHECK(s.noNotices());

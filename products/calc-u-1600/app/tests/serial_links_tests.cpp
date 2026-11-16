@@ -57,7 +57,7 @@ TEST(lib2_ac33_ce158_file_on_first_use_all_models) {
         Fixture f;
         CHECK(f.start(shared::settingsModelName(model)));
         CHECK(f.part().ce158SerialLinkStatus().empty());
-        CHECK(f.ok(shared::commands::kTogglePeripheral, calcu::sessions::Value::object({{"peripheral", "CE-158"}})));
+        CHECK(f.toggle("CE-158"));
         f.runFor(1.0);
         const bool made = !f.part().ce158SerialLinkStatus().empty();
         if (!made) std::fprintf(stderr, "  model %d: no CE-158 serial port file\n", static_cast<int>(model));

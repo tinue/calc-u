@@ -202,11 +202,13 @@ TEST(qt_attach_host_preset_key_type) {
         if (r.empty() || r[0] != "done") std::fprintf(stderr, "  %s: %s\n", line, r.empty() ? "-" : r[0].c_str());
         CHECK(!r.empty() && r[0] == "done");
     }
-    // Forwarded to the session's commands (this session has no LIB-6 or LIB-18 part).
+    // The attach host names no preset vocabulary (no LIB-6 part): the preset
+    // commands are refused by the harness; LIB-18's are the session's (the
+    // test product's parts outside a run, as a frontend's).
     c.send("preset examples:none.test");
     r = c.reply();
-    CHECK(!r.empty() && r[0] == "refused: Unknown command: load-preset.");
+    CHECK(!r.empty() && r[0] == "refused: This build reads no presets of format 2 yet.");
     c.send("cold-boot");
     r = c.reply();
-    CHECK(!r.empty() && r[0] == "refused: Unknown command: cold-boot.");
+    CHECK(!r.empty() && r[0] == "done");
 }

@@ -236,6 +236,9 @@ public:
           machines_(catalogue_, harnessHostDriveRom()),
           bundle_(std::string(CALCU1600_DIR) + "/examples") {
         sharp::addModuleDefinitions(catalogue_, std::string(CALCU1600_DIR) + "/frontends/qt6/resources/cards");
+        // The ROM modules of the set (the CE-502B; LIB-12 AC-14), as the app
+        // has them: a preset names them by name (C1600-4 AC-8).
+        if (const auto found = lookUpRoms(); found.set) sharp::addModuleDefinitions(catalogue_, *found.set);
     }
     std::string_view name() const override { return "Calc-U-1600"; }
     std::string_view shortName() const override { return "1600"; }

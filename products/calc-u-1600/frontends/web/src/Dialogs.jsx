@@ -1,8 +1,10 @@
-// The dialogs, as the desktop app's: message boxes, name prompts, "Load
-// which one?", the machine-code start address and its result, Settings,
-// About, and the web's own Saved Media manager. Each is shown through
-// useDialogs()'s ask(), which resolves with the answer (null: cancelled),
-// so the flows in CalcU1600.jsx read like MainWindow's.
+// The product's own dialogs (LIB-14 Part D, D.4): those of C1600-2's flows
+// (the machine-code start address and its result, "Load which one?"), the
+// name prompts and questions of the media flows, LIB-7's Name & Save, and a
+// notice as the shell's for what a flow refuses. Settings, About, the
+// shell's notices and "Loading…" are the React set's (ShellDialogs). Each is
+// shown through useDialogs()'s ask(), which resolves with the answer (null:
+// cancelled), so the flows in CalcU1600.jsx read like MainWindow's.
 
 function Modal({ title, children, buttons, onCancel, className, name }) {
   const ref = React.useRef(null);
@@ -27,12 +29,15 @@ function Modal({ title, children, buttons, onCancel, className, name }) {
   );
 }
 
-function NoticeDialog({ title, text, done }) {
+// A notice of the product's own flows (a file that cannot be read, a
+// refused plan): as the shell's notice (LIB-14 AC-17, AC-38): the sentence
+// as it is, no title, OK.
+function NoticeDialog({ text, done }) {
   return (
-    <Modal title={title} name="notice" onCancel={() => done(true)}
-      buttons={<button type="button" className="calcu-button default" onClick={() => done(true)}>OK</button>}>
-      <p className="calcu-modal-text">{text}</p>
-    </Modal>
+    <ShellModal name="notice" onClose={() => done(true)}
+      buttons={<button type="button" data-calcu="notice-ok" autoFocus onClick={() => done(true)}>OK</button>}>
+      <p className="calcu-shell-notice-text">{text}</p>
+    </ShellModal>
   );
 }
 
@@ -99,13 +104,14 @@ function ChoiceDialog({ title, text, options, done }) {
 // Load Machine Code's start address (C1600-2 AC-18; Qt6/app/MachineCodeLoadDialog):
 // each keystroke asks the session's plan (`c1600.plan-code`) with the text;
 // Load is enabled only while it holds. Done with the text, or null.
-function AddressDialog({ engine, plan, bytes, index, done }) {
+function AddressDialog({ shell, plan, bytes, index, done }) {
   const [text, setText] = React.useState(plan.proposed || "");
   const [check, setCheck] = React.useState({ valid: false, hint: "" });
   React.useEffect(() => {
     let live = true;
-    engine.request("planCode", bytes, index, text).then((p) => {
+    shell.request("c1600.plan-code", { bytes, file: index || 0, address: text }).then((r) => {
       if (!live) return;
+      const p = r.done ? r.value : { refusal: r.reason };
       if (p.needsAddress) setCheck({ valid: false, hint: "" });
       else setCheck({ valid: !p.refusal, hint: p.refusal || p.where || "" });
     });
@@ -155,148 +161,22 @@ function LoadedDialog({ result, done }) {
   );
 }
 
-const STARTUP_CHOICES = [
-  ["last", "Last used"], ["PC-1500", "PC-1500"], ["PC-1500A", "PC-1500A"], ["PC-1600", "PC-1600"],
-];
-const MODEL_KEYS = ["PC1500", "PC1500A", "PC1600"];
-
-// A combo whose open list shows each choice's long label (a preset's
-// description) while the closed combo shows the chosen one's short name --
-// as Qt6/app/NamedComboBox; a native <select> shows the same text in both.
-// `choices`: [{value, name, description}].
-function NamedCombo({ value, choices, onChange, label }) {
-  const [open, setOpen] = React.useState(false);
-  const ref = React.useRef(null);
-  useDismiss(ref, open, () => setOpen(false));
-  const current = choices.find((c) => c.value === value) || choices[0];
-  return (
-    <span className="calcu-namedcombo" ref={ref}>
-      <button type="button" className="calcu-combo" aria-haspopup="menu" aria-expanded={open} aria-label={label}
-        title={current.description || undefined} onClick={() => setOpen(!open)}>
-        {current.name}
-      </button>
-      {open && (
-        <MenuList className="calcu-namedcombo-list" onDone={() => setOpen(false)}
-          items={choices.map((c) => ({
-            label: c.description || c.name,
-            checked: c.value === current.value,
-            onClick: () => onChange(c.value),
-          }))} />
-      )}
-    </span>
-  );
-}
-
-// Settings (Qt6/app/SettingsDialog), the parts a browser has: the startup
-// device and each model's startup preset (the startup presets of
-// examples/bundle.yaml, by short name). The save folder is this browser's
-// storage; serial ports, tracing and the debugger aren't there.
-function SettingsDialog({ engine, done }) {
-  const [state, setState] = React.useState(null);
-  const persistent = useEngine(engine, (s) => s.persistent);
-  React.useEffect(() => { engine.request("settingsState").then(setState); }, []);
-  if (!state) return null;
-  const choices = (key) => [{ value: "", name: "None", description: "Don't load a preset for this model" }].concat(
-    (state.presetChoices[key] || []).map((p) => ({ value: p.ref, name: p.name, description: p.description })));
-  return (
-    <Modal title="Settings" name="settings" onCancel={() => done(true)} className="calcu-settings"
-      buttons={<button type="button" className="calcu-button default" onClick={() => done(true)}>Close</button>}>
-      <h3 className="calcu-settings-section">General</h3>
-      <label className="calcu-form-row">
-        <span>Startup device:</span>
-        <select className="calcu-combo" value={state.startupModel}
-          onChange={(e) => {
-            engine.call("setStartupModel", e.target.value);
-            setState({ ...state, startupModel: e.target.value });
-          }}>
-          {STARTUP_CHOICES.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
-        </select>
-      </label>
-      <h3 className="calcu-settings-section">Startup presets</h3>
-      {MODEL_KEYS.map((key, model) => (
-        <div key={key} className="calcu-form-row" data-default-preset={key}>
-          <span>{MODEL_NAMES[model]}:</span>
-          <NamedCombo label={`${MODEL_NAMES[model]} startup preset`} value={state.defaultPresets[key] || ""}
-            choices={choices(key)}
-            onChange={(ref) => {
-              engine.call("setDefaultPreset", model, ref);
-              setState({ ...state, defaultPresets: { ...state.defaultPresets, [key]: ref } });
-            }} />
-        </div>
-      ))}
-      <h3 className="calcu-settings-section">Storage</h3>
-      <p className="calcu-modal-text">
-        Saved cards, disks and tapes are kept in this browser's storage for this site
-        (File ▸ Saved Media… lists them).
-        {!persistent && " This tab can't save: Calc-U-1600 is open in another tab."}
-      </p>
-    </Modal>
-  );
-}
-
-function AboutDialog({ done }) {
-  return (
-    <Modal title="About Calc-U-1600" name="about" onCancel={() => done(true)}
-      buttons={<button type="button" className="calcu-button default" onClick={() => done(true)}>OK</button>}>
-      <div className="calcu-about">
-        <img src={`${CALC_BASE}img/icon.png`} alt="" width="64" height="64" />
-        <div>
-          <p><b>Calc-U-1600</b> __CALC_VERSION__ (web)</p>
-          <p>An emulator of the Sharp PC-1500, PC-1500A and PC-1600 pocket computers and their peripherals.</p>
-          <p className="calcu-small">Free software under the GPL. The Sharp ROMs are © Sharp Corporation.</p>
-        </div>
-      </div>
-    </Modal>
-  );
-}
-
-// File ▸ Saved Media… (LIB-7 AC-31, AC-43): the library's saved media list
-// over the topic `media` -- a template and a medium in a place marked,
-// Download hands the files to the browser (`media.export`), Delete asks
-// first (`media.delete`, OQ-4) -- plus Import.
-function MediaDialog({ engine, importFiles, done }) {
-  const media = useEngine(engine, (s) => s.media);
-  const [error, setError] = React.useState("");
-  return (
-    <Modal title="Saved Media" name="media" onCancel={() => done(true)} className="calcu-media"
-      buttons={<button type="button" className="calcu-button" onClick={async () => { setError(await importFiles()); }}>Import…</button>}>
-      <CalcuSavedMediaDialog media={media} send={(c, a) => engine.send(c, a)} onClose={() => done(true)} />
-      {error && <p className="calcu-modal-text calcu-hint">{error}</p>}
-    </Modal>
-  );
-}
-
 // Name & Save (LIB-7 AC-16, AC-40; design D-25): the library's dialog with
 // today's prompt ("Instance name:" with the write-protect switch where the
 // module has one still off, "Disk name:", "Tape name:"); a name an instance
 // has asks before it is replaced.
-function NameAndSaveDialog({ engine, place, prompt, done }) {
+function NameAndSaveDialog({ shell, place, prompt, done }) {
   return (
     <Modal title="Name & Save" name="name-and-save" onCancel={() => done(null)}>
-      <CalcuNameAndSaveDialog place={place} prompt={prompt} send={(c, a) => engine.send(c, a)}
+      <CalcuNameAndSaveDialog place={place} prompt={prompt} send={(c, a) => shell.send(c, a)}
         onClose={(saved) => done(saved ? true : null)} />
     </Modal>
   );
 }
 
-// "Loading…" once an operation has run for half a second (as the desktop
-// app's SyncOperations popup).
-function BusyPopup({ engine }) {
-  const busy = useEngine(engine, (s) => s.busy);
-  const [shown, setShown] = React.useState(false);
-  React.useEffect(() => {
-    if (!busy) { setShown(false); return undefined; }
-    const t = setTimeout(() => setShown(true), 500);
-    return () => clearTimeout(t);
-  }, [busy]);
-  if (!shown) return null;
-  return <div className="calcu-busy" role="status"><span className="calcu-spinner" />Loading…</div>;
-}
-
 const DIALOGS = {
   notice: NoticeDialog, confirm: ConfirmDialog, prompt: PromptDialog, choice: ChoiceDialog,
-  address: AddressDialog, loaded: LoadedDialog, settings: SettingsDialog, about: AboutDialog, media: MediaDialog,
-  nameAndSave: NameAndSaveDialog,
+  address: AddressDialog, loaded: LoadedDialog, nameAndSave: NameAndSaveDialog,
 };
 
 // ask(kind, props) shows one dialog and resolves with its answer.

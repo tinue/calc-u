@@ -13,6 +13,9 @@ module.exports = defineConfig({
   projects: [
     { name: 'root', testMatch: /play|prerender|rom-missing|session|typing/, use: { ...devices['Desktop Chrome'], baseURL: `http://localhost:${PORT}/` } },
     { name: 'subpath', testMatch: /play/, use: { ...devices['Desktop Chrome'], baseURL: `http://localhost:${PORT + 1}/anything/calc/` } },
+    // LIB-14 1600 (M-49): the page on the React set's shell, in both engines.
+    { name: 'shell-chromium', testMatch: /shell/, use: { ...devices['Desktop Chrome'], baseURL: `http://localhost:${PORT}/` } },
+    { name: 'shell-webkit', testMatch: /shell/, use: { ...devices['Desktop Safari'], baseURL: `http://localhost:${PORT}/` } },
     // The offline start brings its own server, in both engines: an iPad's
     // installed app is WebKit.
     { name: 'offline-chromium', testMatch: /offline/, use: { ...devices['Desktop Chrome'] } },

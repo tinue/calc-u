@@ -1,60 +1,56 @@
 #include "MachineController.hpp"
-#include "typing/TypingTopics.hpp"
 
 #include <QDebug>
-#include <QMessageBox>
+#include <QEventLoop>
 #include <QTimer>
-#include <QtGlobal>
 
+#include <algorithm>
 #include <chrono>
-#include <cstdlib>
 
 #include "AppPaths.hpp"
-#include "app/SharpFileKinds.hpp"
 #include "AppSettings.hpp"
-#include "debug/DebugController.hpp"
 #include "Machine/SharpBuilder.hpp"
+#include "app/SharpFileKinds.hpp"
+#include "debug/DebugController.hpp"
 #include "debugger/RunState.hpp"
 #include "media/MediaTopics.hpp"
-#include "paper/PaperTopics.hpp"
 #include "sessions/LibraryTopics.hpp"
+#include "shell/SettingsPart.hpp"
+#include "typing/TypingTopics.hpp"
 
 namespace sessions = calcu::sessions;
 
-namespace {
-// The frozen clock: every read is this much host work, so an operation's
-// call at full speed ends at its allowance (LIB-17 AC-5) on this clock too.
-constexpr std::chrono::microseconds kFrozenReadCost{100};
-constexpr std::chrono::nanoseconds kFrame{16'666'667};
-} // namespace
-
 MachineController::MachineController(QObject* parent) : QObject(parent) {
+    // LIB-14: the settings dialog reads and writes the product's file
+    // through the session; a change the product applies at once.
+    calcu::shell::SettingsPartSetup ss;
+    ss.file = &AppSettings::settings().file();
+    ss.paths = &AppPaths::paths().places();
+    ss.frontend = calcu::settings::FrontendKind::Qt6;
+    ss.changed = [this](std::string_view section, std::string_view) {
+        if (section == "serial") app().refreshSerialLinkDirectory();
+        if (section == "debug" && m_debug) QTimer::singleShot(0, this, [this] { refreshDebugServer(); });
+    };
+    m_settingsPart = std::make_unique<calcu::shell::SettingsPart>(std::move(ss));
+
     shared::SharpSessionOptions options;
-    options.clock = [this] { return now(); };
+    options.moreParts = {m_settingsPart.get()};
     m_app = shared::makeSharpSession(AppSettings::settings(), AppPaths::paths(), std::move(options));
-    m_listener.onMessage = [this](const sessions::Message& m) { onMessage(m); };
     sessions::HostServices services;
     services.offered = {sessions::HostService::AudioSink,     sessions::HostService::ClipboardText,
                         sessions::HostService::ClipboardImage, sessions::HostService::FilePicker,
-                        sessions::HostService::FolderPicker,   // File ▸ Mount Directory
-                        sessions::HostService::KeepFile,       sessions::HostService::OpenUrl};
-    m_listener.listen(*m_app.session, std::move(services));
-    m_debug = std::make_unique<DebugController>(this);
-    // The start: the startup model of the settings, then its default preset
-    // (an operation; the window shows "Loading…" meanwhile). A file of the
-    // ROM full set missing or bad (LIB-12 AC-5): no machine starts -- the
-    // lookup's message, then exit; an abort would be a silent crash for an
-    // app not launched from a terminal, and this is reached mid-construction
-    // of MainWindow, which is not set up to unwind from here.
-    send(shared::commands::kStart, {}, [this](const sessions::ReplyMessage& r) {
-        if (r.done) return;
-        if (const auto* missing = m_listener.state<shared::RomsMissingPayload>(shared::topics::kRomsMissing)) {
-            QMessageBox::critical(nullptr, QObject::tr("Calc-U-1600 cannot start"),
-                                  QString::fromStdString(calcu::roms::describe(missing->missing)));
-            std::exit(1);
-        }
+                        sessions::HostService::FolderPicker,   sessions::HostService::KeepFile,
+                        sessions::HostService::OpenUrl};
+    m_host = std::make_unique<calcu::qt6::SessionHost>(*m_app.session, std::move(services));
+    m_host->addMessageHandler([this](const sessions::Message& m) { onMessage(m); });
+    connect(m_host.get(), &calcu::qt6::SessionHost::called, this, [this] {
+        const auto t = m_host->now();
+        if (m_calls++ > 0)
+            m_longestGapMs = std::max(m_longestGapMs, std::chrono::duration<double, std::milli>(t - m_lastCall).count());
+        m_lastCall = t;
+        if (m_debug) m_debug->afterCall();   // stops and output reach a DAP client
     });
-    m_debug->refreshServer();
+    m_debug = std::make_unique<DebugController>(this);
 }
 
 MachineController::~MachineController() {
@@ -62,84 +58,42 @@ MachineController::~MachineController() {
     m_debug.reset();
     // The product quits: what a medium still has to save is written (LIB-7
     // AC-13; the parts' `closing`, LIB-3). No message goes out after it.
+    if (m_host) m_host->stop();
     if (m_app.session) m_app.session->close();
-    m_listener.stop();
+    m_host.reset();
     m_app = {};
 }
 
-calcu::pacing::WallTime MachineController::now() {
-    if (m_frozen) {
-        m_frozenNow += kFrozenReadCost;
-        return m_frozenNow;
-    }
-    const auto real = calcu::pacing::steadyWallTime();
-    m_frozenNow = std::max(m_frozenNow, real);   // never back, also after a frozen stretch
-    return m_frozenNow;
-}
-
-void MachineController::call() {
-    const calcu::pacing::WallTime t = now();
-    if (m_calls++ > 0) m_longestGapMs = std::max(m_longestGapMs, std::chrono::duration<double, std::milli>(t - m_lastCall).count());
-    m_lastCall = t;
-    m_app.session->call(t);
-    if (m_debug) m_debug->afterCall();   // stops and output reach a DAP client
-    m_callMs += std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now().time_since_epoch() - t).count();
+void MachineController::start() {
+    m_host->start();
+    send(shared::commands::kStart);
+    m_debug->refreshServer();
 }
 
 void MachineController::send(const sessions::CommandName& name, sessions::Value args, Reply done) {
-    const auto sent = m_listener.send(name, std::move(args));
-    if (sent.reply) {   // a command that started no operation: replied at once
-        if (done) done(*sent.reply);
-        return;
-    }
-    // An operation: its reply when it ends, shown after the host call.
-    m_listener.onReply(sent.call, [this, done = std::move(done)](const sessions::ReplyMessage& r) {
-        if (!done) return;
-        sessions::ReplyMessage reply = r;
-        // A failed operation's reason was a notice already (LIB-3 AC-18).
-        if (!reply.done && reply.reason == m_lastNotice) reply.reason.clear();
-        QTimer::singleShot(0, this, [done, reply] { done(reply); });
+    m_host->send(name, std::move(args), std::move(done));
+}
+
+sessions::ReplyMessage MachineController::sendAndWait(const sessions::CommandName& name, sessions::Value args) {
+    QEventLoop loop;
+    std::optional<sessions::ReplyMessage> got;
+    m_host->send(name, std::move(args), [&](const sessions::ReplyMessage& r) {
+        got = r;
+        loop.quit();
     });
-    if (m_frozen) finishOperation();
+    if (!got) loop.exec();
+    return *got;
 }
 
-void MachineController::setFrozen(bool frozen) {
-    if (frozen == m_frozen) return;
-    now();   // the frozen clock starts at the real one
-    m_frozen = frozen;
-    if (frozen) finishOperation();
+sessions::ReplyMessage MachineController::ask(const sessions::RequestName& name, sessions::Value args) {
+    sessions::ReplyMessage got;
+    m_host->ask(name, std::move(args), [&got](const sessions::ReplyMessage& r) { got = r; });
+    return got;
 }
 
-void MachineController::finishOperation() {
-    while (m_app.session->busy()) {
-        m_frozenNow += kFrame;
-        call();
-    }
-}
-
-void MachineController::runFor(double seconds) {
-    const int frames = static_cast<int>(seconds * 60 + 0.5);
-    for (int i = 0; i < frames; ++i) {
-        m_frozenNow += kFrame;
-        call();
-    }
-}
-
-namespace {
-bool typingIdle(sessions::Listener& l) {   // the request `typing` (LIB-5 §3.5)
-    const sessions::ReplyMessage r = l.ask(calcu::typing::kTypingRequest);
-    const auto* st = sessions::payloadAs<calcu::typing::TypingState>(r.result);
-    return !st || st->idle;
-}
-} // namespace
-
-bool MachineController::runUntilTyped(double capSeconds) {
-    const int frames = static_cast<int>(capSeconds * 60);
-    for (int i = 0; i < frames && !typingIdle(m_listener); ++i) {
-        m_frozenNow += kFrame;
-        call();
-    }
-    return typingIdle(m_listener);
+bool MachineController::busy() const {
+    const auto* b = state<sessions::BusyState>(sessions::kBusyTopic);
+    return b && b->operationRuns;
 }
 
 void MachineController::pressKey(const std::string& name) {
@@ -173,125 +127,73 @@ void MachineController::attachAudio(shared::AudioSink& sink) {
     m_sound->warmUp(sharp::kSoundRate);
 }
 
-void MachineController::setPaperSink(std::function<void(const sessions::Message&)> sink) {
-    m_paperSink = std::move(sink);
-    if (!m_paperSink) return;
-    if (const sessions::PayloadPtr* papers = m_listener.mirror().state(calcu::paper::kPapersTopic))
-        m_paperSink(sessions::StateMessage{calcu::paper::kPapersTopic, *papers});
-}
-
 void MachineController::onMessage(const sessions::Message& m) {
-    if (m_paperSink) m_paperSink(m);
-    if (const auto* ask = std::get_if<sessions::ServiceAsk>(&m)) {
-        // P-A3: the clipboard, answered after the host call it came in.
-        if (calcu::qt6::ClipboardService::handles(ask->service))
-            QTimer::singleShot(0, this, [this, a = *ask] {
-                if (m_app.session) m_app.session->answer(a.ask, m_clipboard.answer(a));
-            });
+    if (const auto* s = std::get_if<sessions::StateMessage>(&m)) {
+        if (s->topic == sessions::kBusyTopic) {
+            const bool now = busy();
+            if (now != m_busy) {
+                m_busy = now;
+                emit appBusyChanged(now);
+            }
+        } else if (s->topic == calcu::debugger::kRunStateTopic) {
+            emit runStateChanged();
+        } else if (s->topic == calcu::debugger::kTraceTopic) {
+            emit traceStateChanged();
+        } else if (s->topic == shared::topics::kSerialLinks) {
+            const auto* p = state<shared::SerialLinksPayload>(s->topic);
+            if (p && p->moves != m_serialMoves) {
+                m_serialMoves = p->moves;
+                emit serialLinksMoved();
+            }
+        }
         return;
     }
-    if (const auto* s = std::get_if<sessions::StateMessage>(&m)) {
-        onState(s->topic);
-    } else if (const auto* st = std::get_if<sessions::StreamMessage>(&m)) {
-        for (const auto& p : st->appended) {
-            if (const auto* n = sessions::payloadAs<sessions::Notice>(p)) {
-                m_lastNotice = n->sentence;
-                // Queued: a notice from inside a host call is shown once the
-                // call is over, not while it runs.
-                QTimer::singleShot(0, this, [this, text = QString::fromStdString(n->sentence)] { emit noticeShown(text); });
-            } else if (const auto* o = sessions::payloadAs<shared::ProgramOpenedPayload>(p)) {
-                // Queued: the flow's dialogs open after the host call.
+    if (const auto* st = std::get_if<sessions::StreamMessage>(&m)) {
+        for (const auto& p : st->appended)
+            if (const auto* o = sessions::payloadAs<shared::ProgramOpenedPayload>(p))
+                // Queued: the flow's dialogs open after the message is handed on.
                 QTimer::singleShot(0, this, [this, name = QString::fromStdString(o->name),
                                              bytes = QByteArray(reinterpret_cast<const char*>(o->bytes.data()),
                                                                 static_cast<qsizetype>(o->bytes.size())),
                                              kind = QString::fromStdString(o->kind)] { emit programOpened(name, bytes, kind); });
-            } else if (const auto* l = sessions::payloadAs<sessions::LogLine>(p)) {
-                qDebug().noquote() << "[log]" << QString::fromStdString(l->text);
-            }
-        }
-        (void)m_listener.mirror().takeAppended(st->topic);   // kept here only
-        (void)m_listener.mirror().takeReset(st->topic);
-    } else if (std::holds_alternative<sessions::ReplyMessage>(m)) {
-        // every reply has its handler (send())
-    } else if (m_sound) {
+        return;
+    }
+    if (m_sound && !std::holds_alternative<sessions::ReplyMessage>(m) && !std::holds_alternative<sessions::ServiceAsk>(m))
         m_sound->deliver(m);   // SoundStart, SoundSamples, SoundStop (LIB-3 AC-20, AC-37)
-    }
 }
 
-void MachineController::onState(const sessions::TopicName& topic) {
-    if (topic == sessions::kDisplayTopic) {
-        if (const auto* d = m_listener.display()) m_frame = shared::displayFrameOf(*d);
-        emit displayChanged();
-    } else if (topic == sessions::kBusyTopic) {
-        const auto* b = m_listener.state<sessions::BusyState>(sessions::kBusyTopic);
-        if (!b) return;
-        const bool full = b->speed == calcu::pacing::Speed::Full;
-        const bool was = m_busy, wasFull = m_busyFull;
-        m_busy = b->operationRuns;
-        m_busyFull = full;
-        if (was != m_busy) QTimer::singleShot(0, this, [this, busy = m_busy] { emit appBusyChanged(busy); });
-        else if (m_busy && wasFull != full) emit operationSpeedChanged();
-    } else if (topic == shared::topics::kMachine) {
-        const auto* p = m_listener.state<shared::MachinePayload>(topic);
-        if (!p) return;
-        const shared::MachinePayload before = m_machine;
-        m_machine = *p;
-        if (before.model != p->model || before.modelSwitches != p->modelSwitches) emit modelChanged(p->model);
-    } else if (topic == calcu::media::kMediaTopic) {
-        // Queued: the pickers are filled after the host call it came in.
-        QTimer::singleShot(0, this, [this] { emit mediaChanged(); });
-    } else if (topic == shared::topics::kSerialLinks) {
-        const auto* p = m_listener.state<shared::SerialLinksPayload>(topic);
-        if (p && p->moves != m_serialMoves) {
-            m_serialMoves = p->moves;
-            emit serialLinksMoved();
-        }
-    } else if (topic == calcu::debugger::kRunStateTopic) {
-        QTimer::singleShot(0, this, [this] { emit runStateChanged(); });
-    } else if (topic == calcu::debugger::kTraceTopic) {
-        QTimer::singleShot(0, this, [this] { emit traceStateChanged(); });
-    } else if (topic == shared::topics::kControlState) {
-        if (m_busy) QTimer::singleShot(0, this, [this] { emit presetWasArmed(); });
-    }
-}
-
-shared::ControlState MachineController::controlState() const {
-    const auto* p = m_listener.state<shared::ControlStatePayload>(shared::topics::kControlState);
-    return p ? p->state : session().controlState();
-}
-
-TapeDeck::Status MachineController::tapeStatus() const {
-    const auto* p = m_listener.state<shared::MachinePayload>(shared::topics::kMachine);
-    return p ? p->tape : TapeDeck::Status{};
-}
-
-bool MachineController::floppyMotorOn() const {
-    const auto* p = m_listener.state<shared::MachinePayload>(shared::topics::kMachine);
-    return p && p->floppyMotor;
-}
-
-const calcu::media::MediaState* MachineController::media() const {
-    return m_listener.state<calcu::media::MediaState>(calcu::media::kMediaTopic);
+const calcu::machine::DisplayOutput* MachineController::display() const {
+    const auto* d = state<sessions::DisplayState>(sessions::kDisplayTopic);
+    return d ? &d->output : nullptr;
 }
 
 GrayImage MachineController::currentScreenImage() const {
-    const auto* d = m_listener.display();
-    return d ? session().screenImage(*d) : GrayImage{};
+    const auto* d = display();
+    return d ? app().screenImage(*d) : GrayImage{};
 }
 
 bool MachineController::lcdText(LcdText* out) const {
-    const auto* d = m_listener.display();
-    return d && session().lcdText(*d, out);
+    const auto* d = display();
+    return d && app().lcdText(*d, out);
 }
 
 bool MachineController::traceActive() const {
-    const auto* t = m_listener.state<calcu::debugger::TraceState>(calcu::debugger::kTraceTopic);
+    const auto* t = state<calcu::debugger::TraceState>(calcu::debugger::kTraceTopic);
     return t && t->running;
 }
 
 bool MachineController::machinePaused() const {
-    const auto* s = m_listener.state<calcu::debugger::RunState>(calcu::debugger::kRunStateTopic);
+    const auto* s = state<calcu::debugger::RunState>(calcu::debugger::kRunStateTopic);
     return s && s->paused;
+}
+
+shared::LampsPayload MachineController::lamps() const {
+    const auto* p = state<shared::LampsPayload>(shared::topics::kLamps);
+    return p ? *p : shared::LampsPayload{};
+}
+
+const calcu::media::MediaState* MachineController::media() const {
+    return state<calcu::media::MediaState>(calcu::media::kMediaTopic);
 }
 
 void MachineController::refreshDebugServer() { m_debug->refreshServer(); }

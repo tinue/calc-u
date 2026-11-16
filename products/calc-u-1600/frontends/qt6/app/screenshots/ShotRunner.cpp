@@ -1,13 +1,12 @@
 #include "ShotRunner.hpp"
+#include "AttachLineClient.hpp"
 #include "ShotCapture.hpp"
 #include "MacShotSupport.h"
-
 #include "../FaceplateWidget.hpp"
-#include "../EmulationPacer.hpp"
 #include "../MainWindow.hpp"
-#include "../MachineController.hpp"
-#include "Display/LcdText.hpp"
 #include "paper/PaperTopics.hpp"
+#include "sessions/LibraryTopics.hpp"
+#include "shell/Inputs.hpp"
 #include "qt6/PaperPanel.hpp"
 #include "sessions/Payload.hpp"
 
@@ -24,6 +23,7 @@
 #include <QLineEdit>
 #include <QGuiApplication>
 #include <QKeyEvent>
+#include <QMouseEvent>
 #include <QMenu>
 #include <QMenuBar>
 #include <QProcess>
@@ -46,11 +46,9 @@ constexpr int kNativeMenuSettleMs = 500;
 constexpr int kNativeMenuCloseMs = 300;
 // Before the first step: the window must be exposed and laid out.
 constexpr int kStartupDelayMs = 800;
-// Emulated time a `key:` tap holds / then lets the ROM react.
-constexpr double kKeyHoldSeconds = 0.1;
-constexpr double kKeyReactSeconds = 0.2;
-// `type:` gives up on a line still being typed after this much.
-constexpr double kTypeCapSeconds = 120.0;
+// `hold-key:`: emulated time after the press (D-33) and after the release.
+constexpr const char* kHoldWait = "wait 100ms";
+constexpr const char* kReleaseWait = "wait 200ms";
 
 // Menu titles as the user sees them: no mnemonic '&', "..." == "…".
 QString normalizedMenuText(QString text) {
@@ -83,8 +81,38 @@ QDialog* topmostDialog() {
 
 } // namespace
 
-ShotRunner::ShotRunner(MainWindow* window, ShotScenario scenario, Options options, QObject* parent)
-    : QObject(parent), m_window(window), m_scenario(std::move(scenario)), m_options(std::move(options)) {}
+ShotRunner::ShotRunner(MainWindow* window, ShotScenario scenario, Options options, std::uint16_t attachPort,
+                       QObject* parent)
+    : QObject(parent), m_window(window), m_scenario(std::move(scenario)), m_options(std::move(options)),
+      m_attachPort(attachPort) {}
+
+// A machine step: one line to attach; the next step once its reply came.
+void ShotRunner::machineStep(const QString& line, int at, std::function<void(const QStringList&)> after) {
+    m_awaiting = true;
+    m_client->send(line, [this, line, at, after = std::move(after)](const AttachLineClient::Reply& r) {
+        m_awaiting = false;
+        if (m_done) return;
+        if (!r.done) {
+            failStep(QStringLiteral("'%1' refused: %2").arg(line, r.reason()), at);
+            if (!m_done) scheduleNext(0);
+            return;
+        }
+        if (after) after(r.lines);
+        scheduleNext(m_scenario.settleMs);
+    });
+}
+
+// The pointer on the faceplate (a UI step: the shell's live input, D-33).
+void ShotRunner::pointer(bool down, const QPoint& at) {
+    FaceplateWidget* f = m_window->faceplate();
+    if (!f || down == m_pointerDown) return;
+    m_pointerDown = down;
+    if (down) m_pointerAt = at;
+    const QPointF p(m_pointerAt);
+    QMouseEvent e(down ? QEvent::MouseButtonPress : QEvent::MouseButtonRelease, p, f->mapToGlobal(p), Qt::LeftButton,
+                  down ? Qt::LeftButton : Qt::NoButton, Qt::NoModifier);
+    QCoreApplication::sendEvent(f, &e);
+}
 
 void ShotRunner::log(const QString& message) const {
     std::fprintf(stderr, "[shots] %s\n", qPrintable(message));
@@ -119,7 +147,13 @@ void ShotRunner::start() {
         QGuiApplication::styleHints()->setColorScheme(Qt::ColorScheme::Dark);
 #endif
 
-    m_window->pacer()->setFrozen(true);
+    m_client = new AttachLineClient(this);
+    if (!m_client->connectTo(m_attachPort)) {
+        log(QStringLiteral("attach is not open on port %1").arg(m_attachPort));
+        m_failures++;
+        QTimer::singleShot(0, this, [this] { finishAll(); });
+        return;
+    }
     // A fixed spot on the primary screen, so `method: system` regions and
     // popup placement are the same every run -- right under the menu bar,
     // so a menu-bar shot has no strip of desktop between the two.
@@ -141,12 +175,7 @@ void ShotRunner::scheduleNext(int delayMs) {
 
 void ShotRunner::runNextStep() {
     if (m_done) return;
-    // A preset load / power cycle pumps the event loop (and so our timers)
-    // while it runs -- never step into the middle of one.
-    if (m_window->isLoading()) {
-        scheduleNext(50);
-        return;
-    }
+    if (m_awaiting) return;   // a machine step's reply schedules the next step
     if (!nativeMenuSettled()) return;
     const Shot& shot = currentShot();
     if (m_stepIdx == 0) {
@@ -154,7 +183,7 @@ void ShotRunner::runNextStep() {
         applyWindowSize();
     }
     if (m_stepIdx >= shot.steps.size()) {
-        m_window->faceplate()->releasePressedKey();
+        pointer(false);
         if (m_hostShiftDown) sendHostKey(QStringLiteral("shift"), false);
         closeAllTransient();
         m_stepIdx = 0;
@@ -175,6 +204,7 @@ void ShotRunner::runNextStep() {
         if (!m_done) scheduleNext(0);
         return;
     }
+    if (m_awaiting) return;
     if (deferred) {
         // Next step first (non-zero delay, so it fires after `deferred`),
         // then the action that may enter a nested event loop.
@@ -210,7 +240,7 @@ void ShotRunner::failStep(const QString& message, int line) {
 void ShotRunner::finishAll() {
     if (m_done) return;
     m_done = true;
-    if (m_window->faceplate()) m_window->faceplate()->releasePressedKey();
+    pointer(false);
     closeAllTransient();
     log(QStringLiteral("%1 image(s) written, %2 failure(s)").arg(m_written).arg(m_failures));
     emit finished(m_failures > 0 ? 1 : 0);
@@ -227,10 +257,7 @@ bool ShotRunner::menuScriptError(QString* error) {
     return true;
 }
 
-void ShotRunner::releaseKey() {
-    m_window->faceplate()->releasePressedKey();
-    m_window->pacer()->runFor(kKeyReactSeconds);
-}
+void ShotRunner::releaseKey() { pointer(false); }
 
 void ShotRunner::sendHostKey(const QString& name, bool down) {
     const QEvent::Type type = down ? QEvent::KeyPress : QEvent::KeyRelease;
@@ -253,42 +280,43 @@ bool ShotRunner::runStep(const ShotStep& step, int* delayMs, std::function<void(
     if (menuScriptError(error)) return false;
     const int settle = m_scenario.settleMs;
     FaceplateWidget* faceplate = m_window->faceplate();
+    (void)settle;
     switch (step.kind) {
     case K::Preset:
-        if (!m_window->loadPresetForShots(step.text, error)) return false;
-        applyWindowSize(); // the preset may have switched model
-        *delayMs = settle;
+        machineStep(QStringLiteral("preset ") + step.text, step.line, [this](const QStringList&) {
+            applyWindowSize();   // the preset may have switched model
+        });
         return true;
     case K::Reset:
-        m_window->resetForShots(step.number == 1);
-        applyWindowSize();
-        *delayMs = settle;
+        machineStep(step.number == 1 ? QStringLiteral("cold-boot") : QStringLiteral("reset"), step.line,
+                    [this](const QStringList&) { applyWindowSize(); });
         return true;
     case K::Key:
-    case K::HoldKey:
-        if (!faceplate->pressKeyByName(step.text)) {
+        machineStep(QStringLiteral("key ") + step.text, step.line);
+        return true;
+    case K::HoldKey: {
+        const QPoint at = faceplate ? faceplate->keyCentre(step.text) : QPoint(-1, -1);
+        if (at.x() < 0) {
             *error = QStringLiteral("this model has no key named '%1'").arg(step.text);
             return false;
         }
-        m_window->pacer()->runFor(kKeyHoldSeconds);
-        if (step.kind == K::Key) releaseKey();
+        pointer(false);
+        pointer(true, at);
+        machineStep(QString::fromLatin1(kHoldWait), step.line);
         return true;
+    }
     case K::ReleaseKeys:
-        releaseKey();
+        pointer(false);
+        machineStep(QString::fromLatin1(kReleaseWait), step.line);
         return true;
     case K::Type:
-        // Paste Text types one line and never presses ENTER -- tap it here.
-        m_window->controller()->pasteText(step.text.toStdString());
-        if (!m_window->pacer()->runUntilPasteDone(kTypeCapSeconds)) {
-            *error = QStringLiteral("'type' still typing after %1 s").arg(kTypeCapSeconds);
-            return false;
-        }
-        faceplate->pressKeyByName(QStringLiteral("enter"));
-        m_window->pacer()->runFor(kKeyHoldSeconds);
-        releaseKey();
+        machineStep(QStringLiteral("type ") + step.text, step.line);
         return true;
     case K::Run:
-        m_window->pacer()->runFor(step.number);
+        machineStep(QStringLiteral("wait %1ms").arg(static_cast<qint64>(step.number * 1000 + 0.5)), step.line);
+        return true;
+    case K::WaitIdle:
+        machineStep(QStringLiteral("wait"), step.line);
         return true;
     case K::Settle:
         *delayMs = static_cast<int>(step.number);
@@ -444,45 +472,18 @@ bool ShotRunner::runStep(const ShotStep& step, int* delayMs, std::function<void(
         }
         return true;
     }
-    case K::Command: {
-        bool done = false;
-        QString reason;
-        m_window->controller()->send(calcu::sessions::CommandName{step.text.toStdString()}, {},
-                                     [&done, &reason](const calcu::sessions::ReplyMessage& r) {
-                                         done = r.done;
-                                         reason = QString::fromStdString(r.reason);
-                                     });
-        QCoreApplication::processEvents();
-        m_window->controller()->runFor(0.1);
-        QCoreApplication::processEvents();
-        if (!done && !reason.isEmpty()) {
-            *error = QStringLiteral("'%1' refused: %2").arg(step.text, reason);
-            return false;
-        }
-        *delayMs = m_scenario.settleMs;
+    case K::Command:   // a harness command (`pause`, `resume`)
+        machineStep(step.text, step.line);
         return true;
-    }
     case K::HostKeyDown:
     case K::HostKeyUp:
         // No settle: a tap's press and release are as close as a hand's.
         sendHostKey(step.text, step.kind == K::HostKeyDown);
         QCoreApplication::processEvents();
         return true;
-    case K::ExpectLcd: {
-        QCoreApplication::processEvents();
-        LcdText lcd;
-        if (!m_window->controller()->lcdText(&lcd)) {
-            *error = QStringLiteral("the LCD shows no text");
-            return false;
-        }
-        if (lcd.contains(step.text.toStdString()) != (step.number == 1)) {
-            *error = QStringLiteral("the LCD %1 '%2': %3")
-                         .arg(step.number == 1 ? "does not show" : "shows", step.text,
-                              QString::fromStdString(lcd.text()).replace(QLatin1Char('\n'), QStringLiteral(" | ")));
-            return false;
-        }
+    case K::ExpectLcd:   // the harness's `expect` / `not-expect` (LIB-6 AC-34)
+        machineStep((step.number == 1 ? QStringLiteral("expect ") : QStringLiteral("not-expect ")) + step.text, step.line);
         return true;
-    }
     case K::ExpectTitle:
         QCoreApplication::processEvents();
         if (m_window->windowTitle() != step.text) {
@@ -714,9 +715,9 @@ bool ShotRunner::capture(const ShotCaptureSpec& spec, QString* error) {
     QCoreApplication::processEvents(); // pending layout/paint from the last step
     // Screenshots normally show RUN mode; PRO is only right for LIST or
     // program entry, so point it out rather than fail.
-    for (const auto& [symbol, on] : m_window->controller()->currentDisplay().statusSymbols) {
-        if (on && symbol == "PRO") log(QStringLiteral("  note: the calculator is in PRO mode"));
-    }
+    for (const auto& ind : calcu::shell::read::elements(m_window->host().value(calcu::sessions::kDisplayTopic), "indicators"))
+        if (calcu::shell::read::text(ind, "name") == "PRO" && calcu::shell::read::flag(ind, "on"))
+            log(QStringLiteral("  note: the calculator is in PRO mode"));
     // The window can't go below its layout's minimum (the PC-1600 control
     // bar is wide) or past the screen -- say so, the framing is then not
     // what the scenario asked for.
@@ -745,15 +746,16 @@ bool ShotRunner::capture(const ShotCaptureSpec& spec, QString* error) {
         case Target::LcdImage: {
             // What Edit > Copy Screen puts on the clipboard: the dot matrix at
             // its physical size (see MainWindow::copyScreenToClipboard()).
-            const QImage image = MainWindow::toQImage(m_window->controller()->currentScreenImage());
+            const QImage image = m_window->screenImage();
             if (!ShotCapture::savePng(image, file, error)) return false;
             break;
         }
         case Target::Plot: {
             // The picture of the plotter's paper, as Copy makes it (LIB-8
             // AC-16, AC-35): the session's `paper.picture`.
-            const calcu::sessions::ReplyMessage r =
-                m_window->controller()->listener().ask(calcu::paper::kPaperPictureRequest);
+            calcu::sessions::ReplyMessage r;
+            m_window->host().ask(calcu::paper::kPaperPictureRequest, {},
+                                 [&r](const calcu::sessions::ReplyMessage& got) { r = got; });
             if (!r.done) {
                 *error = r.reason == calcu::paper::kPaperEmpty ? QStringLiteral("the plotter paper is blank")
                                                                : QString::fromStdString(r.reason);

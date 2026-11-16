@@ -9,9 +9,9 @@
 
 #include <algorithm>
 
-MachineCodeLoadDialog::MachineCodeLoadDialog(QWidget* parent, calcu::sessions::Listener& listener,
+MachineCodeLoadDialog::MachineCodeLoadDialog(QWidget* parent, Ask ask,
                                              calcu::sessions::Value args, const shared::CodePlanReply& plan)
-    : QDialog(parent), m_listener(listener), m_args(std::move(args)) {
+    : QDialog(parent), m_ask(std::move(ask)), m_args(std::move(args)) {
     setWindowTitle(tr("Load Machine Code"));
     setObjectName(QStringLiteral("dialog.machinecode"));
     // Wide enough that the wrapped notes read as sentences; the height
@@ -58,7 +58,7 @@ void MachineCodeLoadDialog::refresh() {
     calcu::sessions::Value::Object o = *m_args.members();
     o.push_back({"address", calcu::sessions::Value(text)});
     const calcu::sessions::ReplyMessage r =
-        m_listener.ask(shared::requests::kPlanCode, calcu::sessions::Value(std::move(o)));
+        m_ask(shared::requests::kPlanCode, calcu::sessions::Value(std::move(o)));
     const auto* plan = calcu::sessions::payloadAs<shared::CodePlanReply>(r.result);
     bool holds = false;
     QString hint;

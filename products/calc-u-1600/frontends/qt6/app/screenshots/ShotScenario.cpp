@@ -150,17 +150,14 @@ bool parseStep(const calcu::formats::YamlNode& node, const QDir& baseDir, const 
             *error = lineError(node.line, QStringLiteral("preset not found: %1").arg(out->text));
             return false;
         }
-    } else if (verb == QLatin1String("reset")) {
+    } else if (verb == QLatin1String("reset") || verb == QLatin1String("cold-boot")) {
+        // `reset: all` is `cold-boot` since M-49 (LIB-14 D.6).
         out->kind = K::Reset;
-        if (hasValue) {
-            QString which;
-            if (!scalarString(*value, &which, error)) return false;
-            if (which != QLatin1String("all")) {
-                *error = lineError(node.line, QStringLiteral("'reset' takes no value or 'all'"));
-                return false;
-            }
-            out->number = 1;
-        }
+        if (!noValue()) return false;
+        out->number = verb == QLatin1String("cold-boot") ? 1 : 0;
+    } else if (verb == QLatin1String("wait-idle")) {
+        out->kind = K::WaitIdle;   // the harness's bare `wait`: until the machine is idle
+        if (!noValue()) return false;
     } else if (verb == QLatin1String("key")) {
         out->kind = K::Key;
         if (!needText(&out->text)) return false;

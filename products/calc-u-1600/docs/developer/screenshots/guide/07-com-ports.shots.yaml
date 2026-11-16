@@ -6,8 +6,8 @@ shots:
     window: 1430x1000
     preset: ../presets/pc1600-ready.pc1600
     steps:
-      - action: Edit > Settings…
-    capture: { target: dialog.settings.serial, file: 07-settings-serial.png }
+      - action: File > Settings…
+    capture: { target: settings-serial, file: 07-settings-serial.png }
 
   - name: 07-ce158-printer
     window: 900x1000

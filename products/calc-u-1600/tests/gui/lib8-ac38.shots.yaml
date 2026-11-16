@@ -9,6 +9,6 @@ shots:
   - name: lib8-ac38
     preset: ../../examples/plotter/lissajou-1600.pc1600
     steps:
-      - expect-panel: { name: paper, title: CE-1600P, empty: false }
-      - capture: { target: paper, file: lib8-ac38-paper.png }
+      - expect-panel: { name: paper-panel, title: CE-1600P, empty: false }
+      - capture: { target: paper-panel, file: lib8-ac38-paper.png }
       - capture: { target: plot, file: lib8-ac38-copy.png }

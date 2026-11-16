@@ -2,8 +2,8 @@
 #include "LcdWidget.hpp"
 
 #include <QPainter>
-#include <QMouseEvent>
 #include <QResizeEvent>
+#include <algorithm>
 
 namespace {
 QRect toQRect(const KeyLayout::PaneRect& r) { return QRect(r.x, r.y, r.w, r.h); }
@@ -11,23 +11,28 @@ QRect toQRect(const KeyLayout::PaneRect& r) { return QRect(r.x, r.y, r.w, r.h); 
 
 FaceplateWidget::FaceplateWidget(QWidget* parent) : QWidget(parent) {
     m_lcd = new LcdWidget(this);
-    setModel(Model::PC1500A);
+    setModel(calcu::machine::ModelId{"PC-1500A"});
 }
 
-void FaceplateWidget::setModel(Model model) {
-    // Called after every operation (MainWindow::syncUiFromController()).
-    if (m_layout == &KeyLayout::layoutFor(model)) return;
-    switch (model) {
-    case Model::PC1500: m_pixmap.load(":/faceplates/pc1500.png"); break;
-    case Model::PC1500A: m_pixmap.load(":/faceplates/pc1500A.png"); break;
-    case Model::PC1600: m_pixmap.load(":/faceplates/pc1600.png"); break;
-    }
-    m_layout = &KeyLayout::layoutFor(model);
+void FaceplateWidget::setModel(const calcu::machine::ModelId& model) {
+    const KeyLayout::Layout* layout = &KeyLayout::layoutFor(model);
+    const QString art = model.value == "PC-1600"    ? QStringLiteral(":/faceplates/pc1600.png")
+                        : model.value == "PC-1500" ? QStringLiteral(":/faceplates/pc1500.png")
+                                                   : QStringLiteral(":/faceplates/pc1500A.png");
+    if (property("art").toString() == art) return;
+    setProperty("art", art);
+    m_pixmap.load(art);
+    m_layout = layout;
     m_lcd->setModel(model);
-    m_pressedKey.clear();
-    m_pressedIndex = -1;
+    m_held.clear();
     updateGeometry();
     relayout();
+    update();
+}
+
+void FaceplateWidget::setHeldKeys(std::vector<std::string> keys) {
+    if (keys == m_held) return;
+    m_held = std::move(keys);
     update();
 }
 
@@ -38,6 +43,18 @@ int FaceplateWidget::heightForWidth(int w) const {
 QSize FaceplateWidget::sizeHint() const {
     const int w = 800;
     return QSize(w, heightForWidth(w));
+}
+
+double FaceplateWidget::artScale() const {
+    if (!m_layout || !m_fitted.art.valid() || m_layout->imageWidth <= 0) return 1.0;
+    return m_fitted.art.w / m_layout->imageWidth;
+}
+
+QPoint FaceplateWidget::keyCentre(const QString& name) const {
+    if (!m_layout) return QPoint(-1, -1);
+    const int i = KeyLayout::keyIndex(*m_layout, name.toUtf8().constData());
+    if (i < 0 || i >= static_cast<int>(m_fitted.keys.size())) return QPoint(-1, -1);
+    return toQRect(m_fitted.keys[static_cast<std::size_t>(i)]).center();
 }
 
 void FaceplateWidget::relayout() {
@@ -56,52 +73,17 @@ void FaceplateWidget::paintEvent(QPaintEvent*) {
         painter.setRenderHint(QPainter::SmoothPixmapTransform, true);
         painter.drawPixmap(toQRect(m_fitted.art), m_pixmap);
     }
-
-    // Press-visual-feedback flash: a translucent white overlay on the
-    // pressed key's own hit-rect.
-    if (m_pressedIndex >= 0 && m_pressedIndex < static_cast<int>(m_fitted.keys.size())) {
-        painter.fillRect(toQRect(m_fitted.keys[static_cast<std::size_t>(m_pressedIndex)]), QColor(255, 255, 255, 64));
+    // The keys live input holds (LIB-5 AC-19): a translucent white overlay
+    // on each one's own area.
+    if (!m_layout) return;
+    for (const std::string& k : m_held) {
+        const int i = KeyLayout::keyIndex(*m_layout, k.c_str());
+        if (i >= 0 && i < static_cast<int>(m_fitted.keys.size()))
+            painter.fillRect(toQRect(m_fitted.keys[static_cast<std::size_t>(i)]), QColor(255, 255, 255, 64));
     }
 }
 
 void FaceplateWidget::resizeEvent(QResizeEvent* event) {
     QWidget::resizeEvent(event);
     relayout();
-}
-
-void FaceplateWidget::pressIndex(int idx) {
-    m_pressedKey = QString::fromUtf8(m_layout->keys[idx].name);
-    m_pressedIndex = idx;
-    update();
-    emit keyPressed(m_pressedKey);
-}
-
-void FaceplateWidget::mousePressEvent(QMouseEvent* event) {
-    const int idx = KeyLayout::hitTest(m_fitted, event->pos().x(), event->pos().y());
-    if (idx < 0 || !m_layout) return;
-    pressIndex(idx);
-}
-
-void FaceplateWidget::mouseReleaseEvent(QMouseEvent*) {
-    // Release whatever was pressed regardless of where the mouse ended up --
-    // a drag-off-widget release must still clear the key, or it's stuck
-    // down in the matrix.
-    releasePressedKey();
-}
-
-bool FaceplateWidget::pressKeyByName(const QString& name) {
-    if (!m_layout) return false;
-    const int idx = KeyLayout::keyIndex(*m_layout, name.toUtf8().constData());
-    if (idx < 0) return false;
-    releasePressedKey();
-    pressIndex(idx);
-    return true;
-}
-
-void FaceplateWidget::releasePressedKey() {
-    if (m_pressedKey.isEmpty()) return;
-    emit keyReleased(m_pressedKey);
-    m_pressedKey.clear();
-    m_pressedIndex = -1;
-    update();
 }

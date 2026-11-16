@@ -2,13 +2,16 @@
 #include <QElapsedTimer>
 #include <QList>
 #include <QObject>
+#include <QPoint>
 #include <QSize>
 #include <QString>
 #include <QStringList>
+#include <cstdint>
 #include <functional>
 
 #include "ShotScenario.hpp"
 
+class AttachLineClient;
 class MainWindow;
 class QAction;
 class QProcess;
@@ -22,9 +25,14 @@ class QWidget;
 // step is already scheduled, so the script carries on inside that nested
 // loop -- captures the dialog, then closes it.
 //
-// The emulator is frozen (MainWindow::setEmulationFrozen) for the whole
-// run; only `run:` / `key:` / `type:` steps (and preset loads) advance it,
-// so repeated runs give identical images.
+// The machine is a client's of harness attach (LIB-14 AC-44, D.6): the
+// steps that load a preset, let time pass, press keys and type go to the
+// app's own attach endpoint as the harness's `preset`, `wait`, `key`,
+// `type`, `reset`, `cold-boot` (AttachLineClient); the runner never steps
+// the machine itself, so the app runs on its own clock and the captures are
+// taken after `wait-idle` (the bare `wait`) where a shot asks for it. UI
+// steps (the shell's widgets by their object names, LIB-14 §3.10; a
+// pointer on the faceplate for `hold-key:`) stay widget steps.
 class ShotRunner : public QObject {
     Q_OBJECT
 public:
@@ -34,7 +42,9 @@ public:
         bool failFast = false;
     };
 
-    ShotRunner(MainWindow* window, ShotScenario scenario, Options options, QObject* parent = nullptr);
+    // `attachPort`: the app's attach endpoint (SessionHost::openAttach on port 0).
+    ShotRunner(MainWindow* window, ShotScenario scenario, Options options, std::uint16_t attachPort,
+               QObject* parent = nullptr);
 
     // Validates `only` against the scenario, applies window size and
     // appearance, then starts stepping. finished() always follows.
@@ -45,6 +55,14 @@ signals:
 
 private:
     MainWindow* m_window;
+    std::uint16_t m_attachPort = 0;
+    AttachLineClient* m_client = nullptr;
+    // A machine step's command went to attach: the next step waits for its reply.
+    bool m_awaiting = false;
+    void machineStep(const QString& line, int line_, std::function<void(const QStringList&)> after = {});
+    bool m_pointerDown = false;   // `hold-key:` holds the faceplate's pointer
+    QPoint m_pointerAt;
+    void pointer(bool down, const QPoint& at = QPoint());
     ShotScenario m_scenario;
     Options m_options;
     QString m_outDir;

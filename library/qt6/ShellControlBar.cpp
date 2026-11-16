@@ -139,6 +139,7 @@ void ShellControlBar::set(const std::vector<shell::BarGroupModel>& model) {
 void ShellControlBar::addProductControl(shell::BarGroup group, std::string after, QWidget* w) {
     const auto g = static_cast<std::size_t>(group);
     w->setParent(groups_[g]);
+    w->show();   // shown until its product hides it
     productWidgets_[g].push_back(Product{std::move(after), w});
     layoutGroup(group);
 }
@@ -160,11 +161,17 @@ void ShellControlBar::layoutGroup(shell::BarGroup group) {
         bool placed = std::find(order.begin(), order.end(), p.widget) != order.end();
         if (!placed) order.push_back(p.widget);
     }
+    bool any = false;
     for (QWidget* w : order) {
         l->addWidget(w);
-        w->show();
+        // A product's control keeps the visibility its product gives it
+        // (AC-42: shown from its own product entry); the shell's are shown.
+        const bool product = std::any_of(productWidgets_[g].begin(), productWidgets_[g].end(),
+                                         [w](const Product& p) { return p.widget == w; });
+        if (!product) w->show();
+        any = any || !w->isHidden();
     }
-    groups_[g]->setVisible(!order.empty());   // B4: no gap
+    groups_[g]->setVisible(any);   // B4: no gap
     groups_[g]->updateGeometry();             // the bar makes room for what came
 }
 

@@ -34,25 +34,21 @@ const QColor kInk = toQColor(kInkRgb);
 
 LcdWidget::LcdWidget(QWidget* parent) : QWidget(parent) {
     setAutoFillBackground(false);
+    setAttribute(Qt::WA_TransparentForMouseEvents);   // the faceplate's pointer (AC-43)
 }
 
-void LcdWidget::setModel(Model model) {
+void LcdWidget::setModel(const calcu::machine::ModelId& model) {
     m_model = model;
 }
 
-void LcdWidget::setFrame(const DisplayFrame& frame) {
-    m_frame = frame;
+void LcdWidget::setOutput(const calcu::machine::DisplayOutput& output) {
+    m_output = output;
+    m_bitmap = lcdBitmapOf(output);
+    update();
 }
 
-void LcdWidget::mousePressEvent(QMouseEvent* event) {
-    emit turboRequested(true);
-    event->accept();
-}
 
-void LcdWidget::mouseReleaseEvent(QMouseEvent* event) {
-    emit turboRequested(false);
-    event->accept();
-}
+
 
 void LcdWidget::paintEvent(QPaintEvent*) {
     QPainter painter(this);
@@ -60,7 +56,7 @@ void LcdWidget::paintEvent(QPaintEvent*) {
     // aliased at the LCD's small dot pitch.
     painter.setRenderHint(QPainter::Antialiasing, true);
 
-    if (m_model == Model::PC1600) {
+    if (m_model.value == "PC-1600") {
         paintPC1600(painter);
     } else {
         paintPC1500(painter);
@@ -68,19 +64,19 @@ void LcdWidget::paintEvent(QPaintEvent*) {
 }
 
 void LcdWidget::paintDotMatrix(QPainter& painter, const QRectF& area, const QColor& ink) {
-    if (m_frame.cols <= 0 || m_frame.rows <= 0) return;
-    if (!m_frame.poweredOn) return;
+    if (m_bitmap.cols <= 0 || m_bitmap.rows <= 0) return;
+    if (!m_bitmap.poweredOn) return;
 
-    const double dotSpacing = area.width() / m_frame.cols;
-    const double rowSpacing = area.height() / m_frame.rows;
+    const double dotSpacing = area.width() / m_bitmap.cols;
+    const double rowSpacing = area.height() / m_bitmap.rows;
     const double dotSize = std::min(dotSpacing, rowSpacing) * 0.9;
 
     painter.setPen(Qt::NoPen);
     painter.setBrush(ink);
 
-    for (int row = 0; row < m_frame.rows; ++row) {
-        for (int col = 0; col < m_frame.cols; ++col) {
-            if (!m_frame.pixels[static_cast<std::size_t>(row) * m_frame.cols + col]) continue;
+    for (int row = 0; row < m_bitmap.rows; ++row) {
+        for (int col = 0; col < m_bitmap.cols; ++col) {
+            if (!m_bitmap.pixels[static_cast<std::size_t>(row) * m_bitmap.cols + col]) continue;
             const double cx = area.left() + (col + 0.5) * dotSpacing;
             const double cy = area.top() + (row + 0.5) * rowSpacing;
             painter.drawRect(QRectF(cx - dotSize / 2, cy - dotSize / 2, dotSize, dotSize));
@@ -92,7 +88,7 @@ void LcdWidget::paintPC1500(QPainter& painter) {
     // 4px horizontal padding on the whole panel.
     const QRectF interior = rect().adjusted(4, 0, -4, 0);
     painter.fillRect(rect(), kP15Background);
-    if (!m_frame.poweredOn) return;
+    if (!m_bitmap.poweredOn) return;
 
     const double totalHeight = interior.height();
     const double totalWidth = interior.width();
@@ -110,7 +106,7 @@ void LcdWidget::paintPC1500(QPainter& painter) {
     painter.setPen(kInk);
 
     const double y = interior.top() + topInset;
-    for (const Indicator& ind : indicators(m_model, m_frame)) {
+    for (const Indicator& ind : indicators(m_model, m_output)) {
         const double x = interior.left() + ind.x * totalWidth;
         if (ind.style == Indicator::Style::Dot) {
             const double d = fontSize * 0.4;
@@ -130,7 +126,7 @@ void LcdWidget::paintPC1500(QPainter& painter) {
 
 void LcdWidget::paintPC1600(QPainter& painter) {
     painter.fillRect(rect(), kP16Background);
-    if (!m_frame.poweredOn) return;
+    if (!m_bitmap.poweredOn) return;
 
     const double totalWidth = width();
     const double totalHeight = height();
@@ -142,7 +138,7 @@ void LcdWidget::paintPC1600(QPainter& painter) {
     font.setWeight(QFont::Medium);
     font.setPixelSize(std::max(1, static_cast<int>(fontSize)));
 
-    for (const Indicator& ind : indicators(m_model, m_frame)) {
+    for (const Indicator& ind : indicators(m_model, m_output)) {
         const double x = ind.x * totalWidth;
         const QString text = QString::fromStdString(ind.text);
         QFont labelFont = font;

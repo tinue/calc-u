@@ -6,8 +6,8 @@ shots:
   - name: 02-model-picker
     preset: ../presets/pc1500a-ready.pc1500a
     steps:
-      - open: controlbar.model
-    capture: { target: controlbar, file: 02-model-picker.png, padding: 4 }
+      - open: bar-model
+    capture: { target: control-bar, file: 02-model-picker.png, padding: 4 }
 
   - name: 02-rom-menu-pc1500
     window: 900x1000
@@ -19,7 +19,7 @@ shots:
   - name: 02-control-bar-pc1600
     window: 1430x1000
     preset: ../presets/pc1600-ready.pc1600
-    capture: { target: controlbar, file: 02-control-bar-pc1600.png }
+    capture: { target: control-bar, file: 02-control-bar-pc1600.png }
 
   # Native menu bar menus (Screen Recording + Accessibility + Automation).
   - name: 02-machine-menu

@@ -1,74 +1,68 @@
 #include "MainWindow.hpp"
-#include "Operations.hpp"
-#include "FaceplateWidget.hpp"
-#include "LcdWidget.hpp"
-#include "ControlBar.hpp"
-#include "DebugPanel.hpp"
-#include "MachineController.hpp"
-#include "HostKeyEvents.hpp"
-#include "Ce158PrinterWidget.hpp"
-#include "SettingsDialog.hpp"
-#include "AboutDialog.hpp"
-#include "MachineCodeLoadDialog.hpp"
-#include "AudioOutput.hpp"
-#include "EmulationPacer.hpp"
-#include "debug/DebugController.hpp"
-#include "AppSettings.hpp"
-#include "qt6/MacClipboard.h"
-#include "qt6/PaperPanel.hpp"
-#include "debugger/RunState.hpp"
-#include "app/SharpFileKinds.hpp"
-#include "opening/OpenRequest.hpp"
-#include "presets/PresetsPart.hpp"
-#include "startup/StartupPart.hpp"
-#include "AppPaths.hpp"
-#include "media/MediaTopics.hpp"
-#include "media/SaveRules.hpp"
-#include "qt6/NameAndSaveDialog.hpp"
 
-#include <QHBoxLayout>
-#include <QInputMethodEvent>
-#include <QVBoxLayout>
-#include <QDebug>
-#include <QTimer>
-#include <QElapsedTimer>
-#include <QKeyEvent>
-#include <QCloseEvent>
-#include <QCheckBox>
-#include <QDialog>
-#include <QDialogButtonBox>
-#include <QFormLayout>
-#include <QInputDialog>
-#include <QLineEdit>
-#include <QMessageBox>
-#include <QFile>
-#include <QDir>
-#include <QMap>
-#include <QFileDialog>
-#include <QApplication>
-#include <QCoreApplication>
-#include <QMenuBar>
-#include <QMenu>
+#include "AppPaths.hpp"
+#include "AppSettings.hpp"
+#include "AudioOutput.hpp"
+#include "Ce158PrinterWidget.hpp"
+#include "DebugPanel.hpp"
+#include "FaceplateWidget.hpp"
+#include "HostKeyEvents.hpp"
+#include "LcdWidget.hpp"
+#include "MachineCodeLoadDialog.hpp"
+#include "MediaControls.hpp"
+#include "Version.h"
+#include "app/SharpControlRules.hpp"
+#include "app/SharpFileKinds.hpp"
+#include "app/SharpShellProduct.hpp"
+#include "control/ControlState.hpp"
+#include "debug/DebugController.hpp"
+#include "opening/OpenRequest.hpp"
+#include "qt6/MacClipboard.h"
+#include "qt6/PanelArea.hpp"
+#include "qt6/ShellSettingsDialog.hpp"
+#include "sessions/LibraryTopics.hpp"
+#include "shell/Inputs.hpp"
+#include "shell/ObjectNames.hpp"
+#include "typing/TypingTopics.hpp"
+
 #include <QAction>
-#include <QActionGroup>
-#include <QKeySequence>
+#include <QApplication>
+#include <QBoxLayout>
 #include <QClipboard>
-#include <QGuiApplication>
-#include <QImage>
-#include <QMimeData>
+#include <QCloseEvent>
+#include <QDebug>
+#include <QDir>
 #include <QDragEnterEvent>
 #include <QDragMoveEvent>
 #include <QDropEvent>
+#include <QFile>
 #include <QFileInfo>
+#include <QFormLayout>
+#include <QGroupBox>
+#include <QGuiApplication>
+#include <QInputDialog>
+#include <QInputMethodEvent>
+#include <QKeyEvent>
+#include <QLabel>
+#include <QMenuBar>
+#include <QMessageBox>
+#include <QMimeData>
+#include <QPushButton>
+#include <QTimer>
 #include <QUrl>
-#include <chrono>
+#include <QVBoxLayout>
 #include <cstring>
-#include <functional>
 #include <utility>
 
 namespace {
 // Longest host-Shift press still counted as a tap (see m_shiftTapArmed).
 constexpr qint64 kShiftTapMaxMs = 400;
+
+calcu::sessions::Value productEntry(const calcu::sessions::Value& controlState, const char* name) {
+    const calcu::sessions::Value* p = controlState.find("product");
+    const calcu::sessions::Value* e = p ? p->find(name) : nullptr;
+    return e ? *e : calcu::sessions::Value();
+}
 } // namespace
 
 MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
@@ -83,196 +77,97 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
 
     m_controller = std::make_unique<MachineController>(this);
 
-    // QMainWindow takes exactly one central widget; the faceplate, control
-    // bar and debug panel live in this wrapper.
+    // AC-40: the faceplate, below it the bar, below it the panel row.
     auto* central = new QWidget(this);
     m_faceplate = new FaceplateWidget(central);
-    m_controlBar = new ControlBar(central);
-    m_debugPanel = new DebugPanel(m_controller.get(), central);
-    // LIB-8 AC-36: the library's paper panel, always shown; its owner is the
-    // plotter plugged in (P-A1), its commands go to the session.
-    m_paperPanel = new calcu::qt6::PaperPanel(central);
-    m_paperPanel->setSender([this](const calcu::sessions::CommandName& name, calcu::sessions::Value args) {
-        m_controller->send(name, std::move(args));
-    });
-    m_controller->setPaperSink([this](const calcu::sessions::Message& m) {
-        if (m_paperPanel) m_paperPanel->deliver(m);
-    });
-    m_ce158Printer = new Ce158PrinterWidget(m_controller.get(), central);
-    m_ce158Printer->hide(); // added to m_debugRowLayout only once a CE-158 attaches
-    // Handles screenshot scenarios address these by
-    // (docs/developer/screenshots/README.md).
     m_faceplate->setObjectName(QStringLiteral("faceplate"));
     m_faceplate->lcdWidget()->setObjectName(QStringLiteral("lcd"));
-    m_debugPanel->setObjectName(QStringLiteral("debugpanel"));
-    m_paperPanel->setObjectName(QStringLiteral("paper"));
-    m_ce158Printer->setObjectName(QStringLiteral("ce158printer"));
+    setCentralWidget(central);
 
+    bool serialPorts = true;
+#ifdef Q_OS_WIN
+    serialPorts = false;   // no host links on Windows (AC-37)
+#endif
+    m_shell = new calcu::qt6::Shell(*this, host(), product(), shared::settingsSpec(true, serialPorts));
     auto* layout = new QVBoxLayout(central);
     layout->setContentsMargins(6, 6, 6, 4);
     layout->setSpacing(4);
     // Faceplate is stretch 0 (pinned to its own aspect-locked heightForWidth
-    // size, top-aligned) so extra vertical space goes to the debug row
-    // instead of letterboxing the calculator body -- see FaceplateWidget's
-    // own heightForWidth()/sizeHint().
-    layout->addWidget(m_faceplate, /*stretch=*/0);
-    layout->addWidget(m_controlBar, /*stretch=*/0);
+    // size, top-aligned) so extra vertical space goes to the panel row
+    // instead of letterboxing the calculator body.
+    layout->addWidget(m_faceplate, 0);
+    layout->addWidget(m_shell->romsMissingView(), 0);
+    layout->addWidget(m_shell->controlBar(), 0);
+    calcu::qt6::PanelArea* panels = m_shell->panelArea();
+    panels->setParent(central);
+    layout->addWidget(panels, 1);
+    // The INSPECTOR always, first, at 2:1 to the paper panel (AC-40); the
+    // CE-158's printer panel last, while its product entry says so.
+    m_inspector = new DebugPanel(m_controller.get(), panels);
+    m_inspector->setObjectName(QStringLiteral("debugpanel"));
+    if (auto* box = qobject_cast<QBoxLayout*>(panels->layout())) box->insertWidget(0, m_inspector, 2);
+    m_ce158Printer = new Ce158PrinterWidget(m_controller.get(), panels);
+    m_ce158Printer->setObjectName(QStringLiteral("ce158printer"));
+    m_ce158Printer->hide();
+    if (auto* box = qobject_cast<QBoxLayout*>(panels->layout())) box->addWidget(m_ce158Printer, 1);
 
-    m_debugRow = new QWidget(central);
-    m_debugRowLayout = new QHBoxLayout(m_debugRow);
-    m_debugRowLayout->setContentsMargins(0, 0, 0, 0);
-    m_debugRowLayout->setSpacing(4);
-    m_debugRowLayout->addWidget(m_debugPanel, /*stretch=*/2);
-    m_debugRowLayout->addWidget(m_paperPanel, /*stretch=*/1);
-    layout->addWidget(m_debugRow, /*stretch=*/1);
+    // The pointer on the faceplate (AC-24, AC-43): the hit map in the art's
+    // pixels, at the art's scale as shown.
+    m_shell->setFaceplate(m_faceplate, shared::faceplateHitMap(calcu::machine::ModelId{"PC-1500A"}),
+                          [this] { return m_faceplate->artScale(); });
+    // LIB-7's controls on the bar: the module slots and the cassette by the
+    // family rule; the disk controls are the product's (D-29).
+    m_shell->registerSlotPicker([this](const calcu::sessions::Value& entry, QWidget* p) -> QWidget* {
+        return new SlotControl(*m_controller, calcu::shell::read::text(entry, "place"), p);
+    });
+    m_shell->registerMediaControls("cassette", [this](const calcu::sessions::Value&, QWidget* p) -> QWidget* {
+        return new TapeControl(*m_controller, p);
+    });
+    m_disk = new DiskControl(*m_controller, nullptr);
+    m_shell->addBarControl(calcu::shell::BarGroup::Media, "", m_disk);
+    m_disk->refresh();
 
-    setCentralWidget(central);
-    buildMenuBar();
-
-    connect(m_controlBar, &ControlBar::modelSelected, this, &MainWindow::applyModelSelection);
-    // LIB-7: a module chosen in a slot's picker is `media.choose` (a
-    // replace with its power cycle, AC-38); Name & Save is the library's
-    // dialog (AC-16, AC-40).
-    connect(m_controlBar, &ControlBar::moduleSelected, this, [this](int slot, QString entry) {
-        m_sync->run(tr("Memory Module"), calcu::media::kChooseCommand,
-                    calcu::sessions::Value::object({{"place", slot == 2 ? "slot-2" : "slot-1"}, {"entry", entry.toStdString()}}));
+    connect(&host(), &calcu::qt6::SessionHost::topicChanged, this, &MainWindow::onTopic);
+    connect(&host(), &calcu::qt6::SessionHost::called, this, [this] {
+        m_inspector->onFrameTick();
+        if (m_ce158Printer->isVisible()) m_ce158Printer->onFrameTick();
+        if (auto* d = m_shell->settingsDialog(); d && d->isVisible()) refreshSerialStatus();
     });
-    connect(m_controlBar, &ControlBar::nameAndSaveRequested, this,
-            [this](int slot) { nameAndSave(slot == 2 ? "slot-2" : "slot-1", tr("Instance name:")); });
-    connect(m_controller.get(), &MachineController::mediaChanged, this, &MainWindow::refreshMediaPickers);
-    auto openSettingsDialog = [this] {
-        SettingsDialog dialog(m_controller.get(), this);
-        dialog.exec();
-    };
-    connect(m_controller.get(), &MachineController::presetWasArmed, this, &MainWindow::onPresetArmed);
-    auto openPresetDialog = [this] {
-        const QString path = QFileDialog::getOpenFileName(this, tr("Load Preset"),
-                                                            AppSettings::openStartDir(AppSettings::OpenFolder::Samples),
-                                                            tr("Presets (*.pc1500 *.pc1500a *.pc1600);;All Files (*)"));
-        if (path.isEmpty()) return;
-        // Only a file dialog remembers its folder (LIB-13 EC-7); what the
-        // file is, the session decides (AC-5).
-        AppSettings::rememberOpenFile(AppSettings::OpenFolder::Samples, path);
-        openFile(path, calcu::opening::Way::Dialog);
-    };
-    // Menu actions built in buildMenuBar() -- see its own doc comment.
-    connect(m_openPresetAction, &QAction::triggered, this, openPresetDialog);
-    connect(m_settingsAction, &QAction::triggered, this, openSettingsDialog);
-    connect(m_aboutAction, &QAction::triggered, this, [this] {
-        AboutDialog dialog(this);
-        dialog.exec();
+    connect(m_inspector, &DebugPanel::outputSelectionChanged, this, [this] { applyCopyLabel(); });
+    // LIB-10 AC-41: a paused machine shows in the title bar, whoever paused it.
+    connect(m_controller.get(), &MachineController::runStateChanged, this, [this] {
+        setWindowTitle(m_controller->machinePaused() ? tr("Calc-U-1600 — Paused (debugger)") : tr("Calc-U-1600"));
     });
-    connect(m_loadBasicProgramAction, &QAction::triggered, this, [this] {
-        // Starts in Settings' "Basic folder" (fixed or <last used>).
-        const QString path = QFileDialog::getOpenFileName(this, tr("Load BASIC Program"),
-                                                            AppSettings::openStartDir(AppSettings::OpenFolder::Basic),
-                                                            tr("BASIC Programs (*.bas *.bbin *.wav);;All Files (*)"));
-        if (path.isEmpty()) return;
-        AppSettings::rememberOpenFile(AppSettings::OpenFolder::Basic, path);
-        if (const auto bytes = readChosen(path, tr("Load BASIC Program"))) loadBasicProgram(QFileInfo(path).fileName(), *bytes);
-    });
-    connect(m_loadMachineCodeAction, &QAction::triggered, this, [this] { loadMachineCode(); });
-    connect(m_mountDirectoryAction, &QAction::triggered, this, &MainWindow::mountHostDirectory);
-    connect(m_unmountDirectoryAction, &QAction::triggered, this, &MainWindow::unmountHostDirectory);
-    // LIB-7: the disk and the tape in their places, the side turned over
-    // (AC-39), Name & Save of a disk (AC-40).
-    connect(m_controlBar, &ControlBar::floppyDiskSelected, this, [this](QString entry) {
-        m_sync->run(tr("Floppy Disk"), calcu::media::kChooseCommand,
-                    calcu::sessions::Value::object({{"place", "floppy"}, {"entry", entry.toStdString()}}));
-    });
-    connect(m_controlBar, &ControlBar::tapeSelected, this, &MainWindow::selectTape);
-    connect(m_controlBar, &ControlBar::tapeSaveRequested, this, &MainWindow::saveTape);
-    connect(m_controlBar, &ControlBar::floppySideToggleRequested, this, [this] {
-        m_sync->run(tr("Floppy Disk"), calcu::media::kTurnCommand, calcu::sessions::Value::object({{"place", "floppy"}}));
-    });
-    connect(m_controlBar, &ControlBar::floppyNameAndSaveRequested, this,
-            [this] { nameAndSave("floppy", tr("Disk name:")); });
-    connect(m_controlBar, &ControlBar::ce150ToggleRequested, this,
-            [this] { togglePeripheral(shared::Peripheral::CE150); });
-    connect(m_controlBar, &ControlBar::ce1600pToggleRequested, this,
-            [this] { togglePeripheral(shared::Peripheral::CE1600P); });
-    connect(m_controlBar, &ControlBar::ce158ToggleRequested, this,
-            [this] { togglePeripheral(shared::Peripheral::CE158); });
-    // A notice of the session (LIB-3 AC-10): a refused attach, a bay's
-    // error, a failed operation. Queued by the controller: it appears once
-    // the call it came from is over.
-    connect(m_controller.get(), &MachineController::noticeShown, this,
-            [this](const QString& sentence) { QMessageBox::warning(this, tr("Calc-U-1600"), sentence); });
-    connect(m_faceplate, &FaceplateWidget::keyPressed, this, [this](QString name) {
-        const std::string key = name.toStdString();
-        m_controller->pressKey(key);   // `on` too: the ON/BREAK line
-    });
-    connect(m_faceplate, &FaceplateWidget::keyReleased, this, [this](QString name) {
-        const std::string key = name.toStdString();
-        m_controller->releaseKey(key);
-    });
+    connect(m_controller.get(), &MachineController::programOpened, this, &MainWindow::onProgramOpened);
     // A key held while focus moves to another widget (a combo box, a
     // dialog) releases there, not here -- let go of it now instead.
     connect(qApp, &QApplication::focusChanged, this, [this] { releaseHeldKeys(); });
-    connect(m_faceplate->lcdWidget(), &LcdWidget::turboRequested, this,
-            [this](bool active) { m_pacer->setTurbo(active); });
-
-    // LIB-10 AC-41 (adapter L-A4 until LIB-14's shell, M-49): a paused
-    // machine shows in the title bar, whoever paused it (the DAP, the
-    // harness, a session command), and Machine ▸ Resume runs it again.
-    connect(m_controller.get(), &MachineController::runStateChanged, this, [this] {
-        const bool paused = m_controller->machinePaused();
-        setWindowTitle(paused ? tr("Calc-U-1600 — Paused (debugger)") : tr("Calc-U-1600"));
-        if (m_resumeAction) m_resumeAction->setEnabled(paused);
-    });
 
     // The sink is a child of the window, so it outlives m_controller (and
     // with it the session's audio pump).
     m_audio = new AudioOutput(this);
     // Pay the audio backend's first-start cost right after startup.
     QTimer::singleShot(0, this, [this] { m_controller->attachAudio(m_audio->sink()); });
-    m_pacer = new EmulationPacer(m_controller.get(), [this] { refreshViewsAfterAdvance(); }, this);
-    m_sync = new Operations(this, m_controller.get(), this);
-    // The debugger's clean starts and loads go through the same service.
-    m_controller->debugController()->setOperations(m_sync);
-
-    // MachineController's constructor already booted whatever model the
-    // "Startup device" setting picked (see AppSettings::startupModelPreference()),
-    // but the faceplate/control bar were built with their own hardcoded
-    // PC-1500A defaults -- resync them now so the visible calculator
-    // actually matches what's running underneath.
-    syncUiFromController();
 
     resize(AppSettings::windowSize());
     setFocus();
-
-    // The session's start (MachineController) boots the startup model and
-    // then applies its default preset, as an operation: the window is
-    // already up while a preset with long `wait:` steps plays out.
-    // Every operation (a menu, the control bar, the debugger, a preset --
-    // also one that failed before arming) may have rebuilt the machine or
-    // changed what is attached: resync every surface once it ends. (A file
-    // opened meanwhile is kept by the session, LIB-13 AC-7.)
-    connect(m_controller.get(), &MachineController::appBusyChanged, this, [this](bool busy) {
-        if (busy) return;
-        syncUiFromController();
-    });
-    connect(m_controller.get(), &MachineController::programOpened, this, &MainWindow::onProgramOpened);
     setAcceptDrops(true);
 }
 
 MainWindow::~MainWindow() {
-    // The child widgets hold raw MachineController pointers, and some use
-    // them on destruction (~DebugPanel ends an active TRACE session through
-    // the controller). ~QWidget only deletes children after the unique_ptr
-    // members -- m_controller included -- are gone, so tear the widget tree
-    // down here while the controller still exists.
-    m_pacer->suspend();
+    // The widgets send to the host and read the controller: they go first.
+    m_controller->host().stop();
     delete takeCentralWidget();
     m_faceplate = nullptr;
-    m_controlBar = nullptr;
-    m_debugPanel = nullptr;
-    m_controller->setPaperSink({});
-    m_paperPanel = nullptr;
+    m_inspector = nullptr;
     m_ce158Printer = nullptr;
-    m_debugRow = nullptr;
-    m_debugRowLayout = nullptr;
+    m_disk = nullptr;
+    delete m_shell;
+    m_shell = nullptr;
+    menuBar()->clear();
 }
+
+void MainWindow::start() { m_controller->start(); }
 
 void MainWindow::closeEvent(QCloseEvent* event) {
     AppSettings::setWindowSize(size());
@@ -281,104 +176,183 @@ void MainWindow::closeEvent(QCloseEvent* event) {
     QMainWindow::closeEvent(event);
 }
 
-void MainWindow::syncControlBarForModel() {
-    const shared::ControlState state = m_controller->controlState();
-    m_controlBar->setSlot2Visible(state.slotCount >= 2);
-    m_controlBar->setCe150Visible(state.ce150.onControlBar);
-    m_controlBar->setCe158Visible(state.ce158.onControlBar);
-    m_controlBar->setCe1600pVisible(state.ce1600p.onControlBar);
-    m_ce1600pAction->setVisible(state.ce1600p.offered);
-    m_ce1600pRomMenuAction->setVisible(state.ce1600pRomMenu);
-    m_controlBar->setFloppyVisible(state.floppyShown);  // its combo: syncPeripherals()
-    m_romMenuAction->setVisible(state.pc1500RomMenu);
-    m_rom1600MenuAction->setVisible(state.pc1600RomMenu);
-    syncHostDriveActions(state);
+calcu::shell::ShellProduct MainWindow::product() {
+    calcu::shell::ShellProduct p = shared::shellProduct(APP_VERSION, APP_BUILD_ID, /*withHostFolders=*/true);
+    p.copyScreen = [this] { copyScreen(); };
+    for (auto& item : p.items) {
+        if (item.id == shared::kItemLoadBasic) item.act = [this] { chooseProgram(false); };
+        else if (item.id == shared::kItemLoadCode) item.act = [this] { chooseProgram(true); };
+        else if (item.id == shared::kItemMountDirectory) item.act = [this] { mountHostDirectory(); };
+        else if (item.id == shared::kItemUnmountDirectory) item.act = [this] { unmountHostDirectory(); };
+    }
+    return p;
 }
 
-void MainWindow::resetMachine(bool coldBoot) {
-    // LIB-18 AC-13: to key readiness; the clock is set from the host after.
-    m_sync->run(coldBoot ? tr("Cold boot") : tr("Reset"),
-                coldBoot ? calcu::startup::kColdBootCommand : calcu::startup::kResetCommand);
+void MainWindow::onTopic(const QString& topic) {
+    if (topic == QLatin1String("display")) {
+        if (const auto* d = m_controller->display()) m_faceplate->lcdWidget()->setOutput(*d);
+    } else if (topic == QLatin1String("held-keys")) {
+        const auto* h = m_controller->state<calcu::typing::HeldKeys>(calcu::typing::kHeldKeysTopic);
+        std::vector<std::string> keys;
+        if (h)
+            for (const auto& k : h->live) keys.push_back(k.value);
+        m_faceplate->setHeldKeys(std::move(keys));
+    } else if (topic == QLatin1String("control-state")) {
+        followControlState();
+    }
 }
 
-bool MainWindow::isLoading() const { return m_sync && m_sync->busy(); }
+// The control state: the faceplate's art and hit map, the CE-158's printer
+// panel and the Unmount item's text from the product entries (AC-42).
+void MainWindow::followControlState() {
+    const calcu::sessions::Value cs = host().value(calcu::control::kControlStateTopic);
+    const std::string model = calcu::shell::read::text(cs, "model");
+    if (!model.empty() && model != m_model) {
+        m_model = model;
+        m_faceplate->setModel(calcu::machine::ModelId{model});
+        m_shell->setFaceplate(m_faceplate, shared::faceplateHitMap(calcu::machine::ModelId{model}),
+                              [this] { return m_faceplate->artScale(); });
+    }
+    const bool printer = calcu::shell::read::flag(productEntry(cs, shared::kCe158PrinterPanelEntry), "shown");
+    m_ce158Printer->setVisible(printer);
+    m_disk->refresh();
+    // Queued after the shell's own rebuild of the menus (it runs first).
+    QTimer::singleShot(0, this, [this] { applyCopyLabel(); });
+}
 
-// File > Mount Directory…: the host directory becomes drive S3: (alias Y:
+// Edit ▸ Copy Screen reads "Copy Log Selection" while text of the INSPECTOR
+// is selected (AC-34); File ▸ Unmount names the folder mounted.
+void MainWindow::applyCopyLabel() {
+    if (!m_inspector) return;
+    const QString copyName = QString::fromStdString(calcu::shell::names::item(calcu::shell::actions::kCopyScreen));
+    if (QAction* copy = menuBar()->findChild<QAction*>(copyName))
+        copy->setText(m_inspector->selectedOutputText().isEmpty() ? tr("Copy Screen") : tr("Copy Log Selection"));
+    const QString unmountName = QString::fromStdString(calcu::shell::names::item(shared::kItemUnmountDirectory));
+    if (QAction* unmount = menuBar()->findChild<QAction*>(unmountName)) {
+        const std::string dir = calcu::shell::read::text(
+            productEntry(host().value(calcu::control::kControlStateTopic), shared::kHostDriveFolderEntry), "folder");
+        unmount->setText(dir.empty() ? tr("Unmount") : tr("Unmount \"%1\"").arg(QDir(QString::fromStdString(dir)).dirName()));
+        unmount->setToolTip(QString::fromStdString(dir));
+    }
+}
+
+// The two status lines of Serial ports (not settings) and the debug server's
+// status with Disconnect (C1600-3's place beside Debugger), added to the
+// shell's dialog while it is open.
+void MainWindow::refreshSerialStatus() {
+    calcu::qt6::ShellSettingsDialog* d = m_shell->settingsDialog();
+    if (!d) return;
+    for (QGroupBox* box : d->findChildren<QGroupBox*>()) {
+        auto* form = qobject_cast<QFormLayout*>(box->layout());
+        if (!form) continue;
+        auto line = [&](const char* name, const QString& label) {
+            auto* l = box->findChild<QLabel*>(QString::fromLatin1(name));
+            if (!l) {
+                l = new QLabel(box);
+                l->setObjectName(QString::fromLatin1(name));
+                l->setTextInteractionFlags(Qt::TextSelectableByMouse);
+                form->addRow(label, l);
+            }
+            return l;
+        };
+        if (box->title() == QLatin1String("Serial ports")) {
+            box->setObjectName(QStringLiteral("settings-serial"));   // the scenarios' capture
+            const QString rs = m_controller->serialLinkStatus();
+            const QString ce = m_controller->ce158SerialLinkStatus();
+            const QString rsText = rs.isEmpty() ? tr("(PC-1600 not active)") : AppPaths::displayPath(rs);
+            const QString ceText = ce.isEmpty() ? tr("(CE-158 not attached)") : AppPaths::displayPath(ce);
+            if (QLabel* l = line("serial-status-rs232c", tr("PC-1600 RS-232C:")); l->text() != rsText) l->setText(rsText);
+            if (QLabel* l = line("serial-status-ce158", tr("CE-158 port:")); l->text() != ceText) l->setText(ceText);
+        } else if (box->title() == QLatin1String("Debugger")) {
+            DebugController* debug = m_controller->debugController();
+            QLabel* status = line("debug-status", tr("Status:"));
+            if (status->text() != debug->serverStatus()) status->setText(debug->serverStatus());
+            auto* disconnect = box->findChild<QPushButton*>(QStringLiteral("debug-disconnect"));
+            if (!disconnect) {
+                disconnect = new QPushButton(tr("Disconnect"), box);
+                disconnect->setObjectName(QStringLiteral("debug-disconnect"));
+                disconnect->setToolTip(tr("Drop the attached debugger; the calculator runs on"));
+                connect(disconnect, &QPushButton::clicked, debug, &DebugController::disconnectClient);
+                form->addRow(QString(), disconnect);
+            }
+            disconnect->setEnabled(debug->hasClient());
+        }
+    }
+}
+
+// The picture of the display at its physical size, plus the screen as
+// readable text (LcdText::plainText()) when any of it is text -- a text
+// editor pastes the text, an image app the dots (AC-41). While text of the
+// INSPECTOR is selected: that text (Copy Log Selection, AC-34).
+void MainWindow::copyScreen() {
+    const QString selection = m_inspector ? m_inspector->selectedOutputText() : QString();
+    if (!selection.isEmpty()) {
+        QGuiApplication::clipboard()->setText(selection);
+        return;
+    }
+    const GrayImage screen = m_controller->currentScreenImage();
+    const QImage image = toQImage(screen);
+    if (image.isNull()) return;
+    LcdText lcd;
+    const QString text = m_controller->lcdText(&lcd) ? QString::fromStdString(lcd.plainText()) : QString();
+#ifdef Q_OS_MACOS
+    // Qt's QClipboard::setImage() drops the physical size on macOS (see
+    // qt6/MacClipboard.h) -- go through Cocoa so a paste lands at the
+    // real display's size.
+    const double widthPt = screen.width * 72.0 / screen.dpi;
+    const double heightPt = screen.height * 72.0 / screen.dpi;
+    if (calcu::qt6::macSetClipboardImage(image, widthPt, heightPt, text)) return;
+#endif
+    auto* mime = new QMimeData;
+    mime->setImageData(image);
+    if (!text.isEmpty()) mime->setText(text);
+    QGuiApplication::clipboard()->setMimeData(mime);
+}
+
+QImage MainWindow::screenImage() const { return toQImage(m_controller->currentScreenImage()); }
+
+QImage MainWindow::toQImage(const GrayImage& screen) {
+    if (screen.width <= 0 || screen.height <= 0) return {};
+    QImage image(screen.width, screen.height, QImage::Format_Grayscale8);
+    for (int y = 0; y < screen.height; ++y) {
+        std::memcpy(image.scanLine(y), screen.pixels.data() + static_cast<std::size_t>(y) * screen.width,
+                    static_cast<std::size_t>(screen.width));
+    }
+    const int dotsPerMeter = static_cast<int>(screen.pixelsPerMeter());
+    image.setDotsPerMeterX(dotsPerMeter);
+    image.setDotsPerMeterY(dotsPerMeter);
+    return image;
+}
+
+// File ▸ Mount Directory…: the host directory becomes drive S3: (alias Y:
 // without a CE-1600F). The first mount plugs the host drive in, with the
 // power cycle every peripheral attach gets; mounting another directory
 // while one is mounted is a live media swap.
 void MainWindow::mountHostDirectory() {
-    const QString title = tr("Mount Directory as S3:");
-    // Starts in Settings' "Host drive folder" (fixed or <last used>).
-    const QString dir =
-        QFileDialog::getExistingDirectory(this, title, AppSettings::openStartDir(AppSettings::OpenFolder::HostDrive));
+    const QString dir = m_shell->choosers().folder(this, tr("Mount Directory as S3:"), m_shell->startFolder("host-drive"));
     if (dir.isEmpty()) return;
-    AppSettings::rememberOpenDir(AppSettings::OpenFolder::HostDrive, dir);
-    // A power cycle if no drive is attached yet, else a live directory swap.
-    m_sync->run(title, shared::commands::kMountHostDrive, calcu::sessions::Value::object({{"dir", dir.toStdString()}}));
+    host().send(calcu::shell::commands::kRememberFolder,
+                calcu::sessions::Value::object({{"kind", "host-drive"}, {"folder", dir.toStdString()}}));
+    m_shell->sendChecked(shared::commands::kMountHostDrive, calcu::sessions::Value::object({{"dir", dir.toStdString()}}));
 }
 
 void MainWindow::unmountHostDirectory() {
-    if (!m_controller->hostDriveAttached()) return;
-    m_sync->run(tr("Unmount Directory"), shared::commands::kMountHostDrive, calcu::sessions::Value::object({{"dir", ""}}));
+    m_shell->sendChecked(shared::commands::kMountHostDrive, calcu::sessions::Value::object({{"dir", ""}}));
 }
 
-// Control bar > Tape: picking a tape definition puts it in (LIB-7 AC-42): a
-// tape with sound plays (CLOAD), rewound; the empty tape records; "–empty–"
-// takes the tape out, its recording written first (AC-13).
-void MainWindow::selectTape(const QString& entry) {
-    m_sync->run(tr("Tape"), calcu::media::kChooseCommand,
-                calcu::sessions::Value::object({{"place", "tape"}, {"entry", entry.toStdString()}}));
-}
-
-// Control bar > Tape > Save: a new tape to record onto (CSAVE), named first
-// (LIB-7 AC-20, D-24: `media.start-new` on the empty tape). It keeps
-// recording -- each CSAVE appended -- until another tape goes in; its files
-// are written at each motor stop. A tape of that name: asked before it is
-// replaced.
-void MainWindow::saveTape() {
-    bool ok = false;
-    const QString name = QInputDialog::getText(this, tr("Save Tape"), tr("Tape name:"), QLineEdit::Normal,
-                                               QString(), &ok).trimmed();
-    if (!ok) return;
-    std::string empty;   // the bundled empty tape's entry
-    if (const calcu::media::PlaceState* p = mediaPlace("tape"))
-        for (const auto& e : p->picker)
-            if (e.group == calcu::media::PickerEntry::Group::BundledTemplate && e.label == "Empty") empty = e.id;
-    calcu::sessions::Value::Object args{{"place", calcu::sessions::Value("tape")},
-                                        {"template", calcu::sessions::Value(empty)},
-                                        {"name", calcu::sessions::Value(name.toStdString())}};
-    QString error;
-    if (m_sync->runAndWait(tr("Save Tape"), calcu::media::kStartNewCommand, calcu::sessions::Value(args), &error)) return;
-    const QString asks = QString::fromLatin1(calcu::media::kAsks);
-    if (!error.startsWith(asks)) {
-        QMessageBox::warning(this, tr("Save Tape"), error);
-        return;
-    }
-    if (QMessageBox::question(this, tr("Save Tape"), error.mid(asks.size())) != QMessageBox::Yes) return;
-    args.push_back({"confirmed", calcu::sessions::Value(true)});
-    m_sync->runAndWait(tr("Save Tape"), calcu::media::kStartNewCommand, calcu::sessions::Value(std::move(args)));
-}
-
-void MainWindow::refreshTapeCombo() { m_controlBar->setTapePicker(mediaPlace("tape")); }
-
-void MainWindow::syncHostDriveActions(const shared::ControlState& state) {
-    const QString dir = QString::fromStdString(state.hostDriveDir);
-    m_mountDirectoryAction->setEnabled(state.hostDriveOffered);
-    m_unmountDirectoryAction->setEnabled(state.hostDriveOffered && !dir.isEmpty());
-    m_unmountDirectoryAction->setText(dir.isEmpty() ? tr("Unmount Directory")
-                                                    : tr("Unmount \"%1\"").arg(QDir(dir).dirName()));
-    m_unmountDirectoryAction->setToolTip(dir);
-}
-
-void MainWindow::loadMachineCode() {
-    const QString title = tr("Load Machine Code");
-    const QString path = QFileDialog::getOpenFileName(this, title,
-                                                      AppSettings::openStartDir(AppSettings::OpenFolder::Assembly),
-                                                      tr("Machine Code (*.bin *.wav);;All Files (*)"));
+// File ▸ Load BASIC Program… / Load Machine Code…: the file dialog starts in
+// Settings' folder of its kind ([folders], LIB-9 AC-29), which remembers it.
+void MainWindow::chooseProgram(bool code) {
+    const QString title = code ? tr("Load Machine Code") : tr("Load BASIC Program");
+    const std::string kind = code ? "machine-code" : "basic-programs";
+    const QString filter = code ? tr("Machine Code (*.bin *.wav);;All Files (*)") : tr("BASIC Programs (*.bas *.bbin *.wav);;All Files (*)");
+    const QString path = m_shell->choosers().file(this, title, m_shell->startFolder(kind), filter);
     if (path.isEmpty()) return;
-    AppSettings::rememberOpenFile(AppSettings::OpenFolder::Assembly, path);
-    if (const auto bytes = readChosen(path, title)) loadMachineCode(QFileInfo(path).fileName(), *bytes);
+    m_shell->rememberFolder(kind, path);
+    const auto bytes = readChosen(path, title);
+    if (!bytes) return;
+    if (code) loadMachineCode(QFileInfo(path).fileName(), *bytes);
+    else loadBasicProgram(QFileInfo(path).fileName(), *bytes);
 }
 
 std::optional<QByteArray> MainWindow::readChosen(const QString& path, const QString& title) {
@@ -400,7 +374,7 @@ std::optional<calcu::sessions::Value::Object> MainWindow::programArgs(const QStr
         return args;
     }
     // C1600-2 AC-16: a WAV with several files asks which one.
-    const sessions::ReplyMessage kind = m_controller->listener().ask(
+    const sessions::ReplyMessage kind = m_controller->ask(
         shared::requests::kFileKind, sessions::Value::object({{"bytes", args.front().value}}));
     const auto* k = sessions::payloadAs<shared::FileKindReply>(kind.result);
     if (k && k->tapeFiles.size() > 1) {
@@ -421,7 +395,7 @@ void MainWindow::loadBasicProgram(const QString& name, const QByteArray& bytes, 
     const QString title = tr("Load BASIC Program");
     std::optional<calcu::sessions::Value::Object> args = programArgs(name, bytes, title, file);
     if (!args) return;
-    m_sync->run(title, shared::commands::kLoadBasic, calcu::sessions::Value(std::move(*args)));
+    m_shell->sendChecked(shared::commands::kLoadBasic, calcu::sessions::Value(std::move(*args)));
 }
 
 void MainWindow::loadMachineCode(const QString& name, const QByteArray& bytes, std::optional<int> file) {
@@ -431,7 +405,7 @@ void MainWindow::loadMachineCode(const QString& name, const QByteArray& bytes, s
     if (!args) return;
     // The one plan (C1600-2 AC-8): a refusal is the notice; headerless code
     // asks the address (AC-18).
-    const sessions::ReplyMessage planned = m_controller->listener().ask(shared::requests::kPlanCode, sessions::Value(*args));
+    const sessions::ReplyMessage planned = m_controller->ask(shared::requests::kPlanCode, sessions::Value(*args));
     const auto* plan = sessions::payloadAs<shared::CodePlanReply>(planned.result);
     if (!planned.done || !plan) {
         QMessageBox::warning(this, title, QString::fromStdString(planned.reason));
@@ -439,7 +413,7 @@ void MainWindow::loadMachineCode(const QString& name, const QByteArray& bytes, s
     }
     if (plan->needsAddress) {
         sessions::Value::Object base = *args;
-        MachineCodeLoadDialog dialog(this, m_controller->listener(), sessions::Value(std::move(base)), *plan);
+        MachineCodeLoadDialog dialog(this, [this](const sessions::RequestName& n, sessions::Value a) { return m_controller->ask(n, std::move(a)); }, sessions::Value(std::move(base)), *plan);
         if (dialog.exec() != QDialog::Accepted) return;
         args->push_back({"address", sessions::Value(dialog.address().toStdString())});
     } else if (!plan->refusal.empty()) {
@@ -475,125 +449,6 @@ void MainWindow::showMachineCodeLoaded(const shared::CodeLoadedReply& loaded) {
 
     // Type the proposed CALL, ready to run: the user presses ENTER (AC-19).
     m_controller->pasteText(loaded.callCommand);
-}
-
-void MainWindow::togglePeripheral(shared::Peripheral p) {
-    // Flat out, like Reset: the pin header's power-on rotation isn't worth
-    // watching, and the clock is re-injected afterwards.
-    // LIB-18 AC-30: attach, or detach what is plugged in; the CE-1600P with
-    // the ROM chosen in the menu (AC-31).
-    const shared::ControlState state = m_controller->controlState();
-    const char* name = p == shared::Peripheral::CE150 ? "CE-150" : p == shared::Peripheral::CE1600P ? "CE-1600P" : "CE-158";
-    const char* place = p == shared::Peripheral::CE158 ? "interface" : "printer";
-    const bool attached = p == shared::Peripheral::CE150    ? state.ce150.attached
-                          : p == shared::Peripheral::CE1600P ? state.ce1600p.attached
-                                                              : state.ce158.attached;
-    if (attached) {
-        m_sync->run(tr("Plotter"), calcu::startup::kDetachCommand, calcu::sessions::Value::object({{"place", place}}));
-        return;
-    }
-    calcu::sessions::Value::Object args{{"place", calcu::sessions::Value(place)}, {"peripheral", calcu::sessions::Value(name)}};
-    if (p == shared::Peripheral::CE1600P)
-        args.push_back({"variant", calcu::sessions::Value(m_controller->ce1600pRomVersion() == CE1600PRomVersion::Old ? "Old" : "New")});
-    m_sync->run(tr("Plotter"), calcu::startup::kAttachCommand, calcu::sessions::Value(std::move(args)));
-}
-
-void MainWindow::syncPeripherals() {
-    const shared::ControlState state = m_controller->controlState();
-    auto sync = [this](QAction* action, void (ControlBar::*setState)(bool, bool), const shared::PeripheralState& p) {
-        (m_controlBar->*setState)(p.attached, p.enabled);
-        action->setChecked(p.attached);
-        action->setEnabled(p.enabled);
-    };
-    sync(m_ce150Action, &ControlBar::setCe150State, state.ce150);
-    sync(m_ce1600pAction, &ControlBar::setCe1600pState, state.ce1600p);
-    sync(m_ce158Action, &ControlBar::setCe158State, state.ce158);
-    // Whoever attached the CE-1600F (the toggle or a preset) already put
-    // its disk in; the picker only grays in and out.
-    m_controlBar->setFloppyEnabled(state.floppyEnabled);
-    refreshFloppyCombo();
-    m_paperPanel->setOwner(state.paperOwner);   // P-A1: the plotter plugged in, or none
-    m_controlBar->setTapeVisible(state.tapeShown);
-    refreshTapeCombo();
-    setDockedPane(m_ce158Printer, state.printerShown);
-}
-
-void MainWindow::setDockedPane(QWidget* pane, bool show) {
-    const bool docked = m_debugRowLayout->indexOf(pane) >= 0;
-    if (show) {
-        if (!docked) m_debugRowLayout->addWidget(pane, 1);
-        pane->show();
-    } else if (docked) {
-        m_debugRowLayout->removeWidget(pane);
-        pane->hide();
-    }
-}
-
-void MainWindow::onPresetArmed() {
-    // The control state changed while an operation runs (a preset armed
-    // its machine, attached its plotter): every surface shows it now; the
-    // operation goes on in the host calls that follow (LIB-3 AC-15).
-    syncUiFromController();
-}
-
-// Every UI surface that mirrors machine state, pulled from the controller:
-// called after anything rebuilds or replaces the machine (startup, model
-// switch, preset load), so no call site has to know which pickers exist.
-void MainWindow::syncUiFromController() {
-    const Model model = m_controller->currentModel();
-    m_faceplate->setModel(model);
-    m_controlBar->setModel(model);
-    syncControlBarForModel();
-    syncMachineMenuFromModel(model);
-    syncMachineMenuFromRomRevision(m_controller->pc1500RomRevision());
-    syncMachineMenuFromPC1600RomVersion(m_controller->pc1600RomVersion());
-    syncMachineMenuFromCE1600PRomVersion(m_controller->ce1600pRomVersion());
-    refreshModuleCombos();
-    syncPeripherals();
-}
-
-void MainWindow::refreshModuleCombos() {
-    const int slotCount = m_controller->session().slotCount();
-    for (int slot = 1; slot <= slotCount; ++slot) {
-        const calcu::media::PlaceState* p = mediaPlace(slot == 2 ? "slot-2" : "slot-1");
-        m_controlBar->setModulePicker(slot, p);
-        m_controlBar->setSlotSaveEnabled(slot, p && p->nameAndSave);
-    }
-}
-
-void MainWindow::refreshFloppyCombo() {
-    const calcu::media::PlaceState* p = mediaPlace("floppy");
-    m_controlBar->setFloppyPicker(p);
-    m_controlBar->setFloppySide(p && p->holds && p->holds->side ? *p->holds->side : 0);
-    m_controlBar->setFloppySaveEnabled(p && p->nameAndSave);
-}
-
-void MainWindow::refreshMediaPickers() {
-    if (!m_controlBar) return;
-    refreshModuleCombos();
-    refreshFloppyCombo();
-    refreshTapeCombo();
-}
-
-const calcu::media::PlaceState* MainWindow::mediaPlace(const std::string& place) const {
-    const calcu::media::MediaState* s = m_controller->media();
-    if (!s) return nullptr;
-    for (const calcu::media::PlaceState& p : s->places)
-        if (p.place == place) return &p;
-    return nullptr;
-}
-
-void MainWindow::nameAndSave(const std::string& place, const QString& prompt) {
-    const calcu::media::PlaceState* p = mediaPlace(place);
-    if (!p) return;
-    calcu::qt6::NameAndSaveDialog dialog(this);
-    dialog.setPlace(*p);
-    dialog.setPrompt(prompt);   // AC-40: "Instance name:" (with the switch where it is off) or "Disk name:"
-    dialog.setSender([this](const calcu::sessions::CommandName& name, calcu::sessions::Value args) -> std::string {
-        QString error;   // the save with the switch on is an operation (its power cycle, AC-19)
-        return m_sync->runAndWait(tr("Name & Save"), name, std::move(args), &error) ? std::string() : error.toStdString();
-    });
-    dialog.exec();
 }
 
 namespace {
@@ -681,48 +536,6 @@ QVariant MainWindow::inputMethodQuery(Qt::InputMethodQuery query) const {
     }
 }
 
-QImage MainWindow::toQImage(const GrayImage& screen) {
-    if (screen.width <= 0 || screen.height <= 0) return {};
-    QImage image(screen.width, screen.height, QImage::Format_Grayscale8);
-    for (int y = 0; y < screen.height; ++y) {
-        std::memcpy(image.scanLine(y), screen.pixels.data() + static_cast<std::size_t>(y) * screen.width,
-                    static_cast<std::size_t>(screen.width));
-    }
-    const int dotsPerMeter = static_cast<int>(screen.pixelsPerMeter());
-    image.setDotsPerMeterX(dotsPerMeter);
-    image.setDotsPerMeterY(dotsPerMeter);
-    return image;
-}
-
-// The image, plus the screen as readable text (LcdText::plainText()) when
-// any of it is text -- a text editor pastes the text, an image app the dots.
-void MainWindow::copyScreenToClipboard() {
-    const GrayImage screen = m_controller->currentScreenImage();
-    const QImage image = toQImage(screen);
-    if (image.isNull()) return;
-    LcdText lcd;
-    const QString text = m_controller->lcdText(&lcd) ? QString::fromStdString(lcd.plainText()) : QString();
-
-#ifdef Q_OS_MACOS
-    // Qt's QClipboard::setImage() drops the physical size on macOS (see
-    // qt6/MacClipboard.h) -- go through Cocoa so a paste lands at the
-    // real display's size.
-    const double widthPt = screen.width * 72.0 / screen.dpi;
-    const double heightPt = screen.height * 72.0 / screen.dpi;
-    if (calcu::qt6::macSetClipboardImage(image, widthPt, heightPt, text)) return;
-#endif
-    auto* mime = new QMimeData;
-    mime->setImageData(image);
-    if (!text.isEmpty()) mime->setText(text);
-    QGuiApplication::clipboard()->setMimeData(mime);
-}
-
-void MainWindow::pasteClipboardText() {
-    const QMimeData* mime = QGuiApplication::clipboard()->mimeData();
-    if (!mime || !mime->hasText()) return; // images etc. are ignored
-    m_controller->pasteText(mime->text().toStdString());
-}
-
 void MainWindow::keyReleaseEvent(QKeyEvent* event) {
     if (event->isAutoRepeat()) {
         event->accept();
@@ -802,7 +615,7 @@ void MainWindow::dragEnterEvent(QDragEnterEvent* event) {
     if (path.isEmpty()) return;
     const QFileInfo info(path);
     namespace sessions = calcu::sessions;
-    const sessions::ReplyMessage r = m_controller->listener().ask(
+    const sessions::ReplyMessage r = m_controller->ask(
         calcu::opening::kWouldTakeRequest,
         sessions::Value::object({{"name", info.fileName().toStdString()}, {"size", static_cast<std::int64_t>(info.size())}}));
     const auto* w = sessions::payloadAs<calcu::opening::WouldTake>(r.result);
@@ -855,7 +668,7 @@ void MainWindow::onProgramOpened(const QString& name, const QByteArray& bytes, c
     std::optional<int> chosen;
     // C1600-2 AC-16: a WAV with several files asks which one; the file
     // chosen goes to the flow of its own kind (LIB-13 AC-18).
-    const sessions::ReplyMessage r = m_controller->listener().ask(
+    const sessions::ReplyMessage r = m_controller->ask(
         shared::requests::kFileKind,
         sessions::Value::object({{"bytes", sessions::Value(sessions::Value::Bytes(bytes.begin(), bytes.end()))}}));
     const auto* k = sessions::payloadAs<shared::FileKindReply>(r.result);
@@ -880,243 +693,3 @@ void MainWindow::onProgramOpened(const QString& name, const QByteArray& bytes, c
     m_programFlow = false;
 }
 
-void MainWindow::refreshViewsAfterAdvance() {
-    const DisplayFrame frame = m_controller->currentDisplay();
-    m_faceplate->lcdWidget()->setFrame(frame);
-    m_faceplate->lcdWidget()->update();
-
-    // (Autosave of modules, disks and tapes: the media part, LIB-7.)
-    m_controlBar->setFloppyMotorOn(m_controller->floppyMotorOn());
-    const calcu::media::PlaceState* tape = mediaPlace("tape");
-    m_controlBar->setTapeStatus(m_controller->tapeStatus(),
-                                tape && tape->holds ? QString::fromStdString(tape->holds->name) : QString());
-    m_debugPanel->onFrameTick();
-    if (m_debugRowLayout->indexOf(m_ce158Printer) >= 0) m_ce158Printer->onFrameTick();
-}
-
-bool MainWindow::loadPresetForShots(const QString& path, QString* error) {
-    const bool ok = m_sync->runAndWait(tr("Load Preset"), calcu::presets::kLoadPresetCommand,
-                                       calcu::sessions::Value::object({{"ref", path.toStdString()}}), error);
-    // Frozen emulation means no frame tick will show the end state -- the
-    // LCD would keep the load's last throttled repaint, the paper its
-    // pre-plot points.
-    refreshViewsAfterAdvance();
-    return ok;
-}
-
-void MainWindow::buildMenuBar() {
-    // File: one-shot actions -- openPresetAction/settingsAction/aboutAction
-    // are connected by the constructor, next to their handler closures.
-    QMenu* fileMenu = menuBar()->addMenu(tr("&File"));
-    m_openPresetAction = fileMenu->addAction(tr("Load Preset…"));
-    // Examples: the examples of the preset list (LIB-6 AC-32, the bundle
-    // file examples/bundle.yaml), grouped, each by its name and description;
-    // each loads by its bundle path. The startup presets are offered in
-    // Settings instead.
-    QMenu* examplesMenu = fileMenu->addMenu(tr("Examples"));
-    QMap<QString, QMenu*> groupMenus;
-    for (const calcu::presets::PresetListEntry& e : m_controller->session().presetEntries()) {
-        if (e.kind != calcu::presets::PresetListEntry::Kind::Example) continue;
-        const QString group = QString::fromStdString(e.group);
-        QMenu*& groupMenu = groupMenus[group];
-        if (!groupMenu) groupMenu = examplesMenu->addMenu(group);
-        const QString label = QString::fromStdString(e.description.empty() ? e.name : e.name + " -- " + e.description);
-        const QString ref = QString::fromStdString(e.bundlePath);
-        connect(groupMenu->addAction(label), &QAction::triggered, this, [this, ref] { m_sync->loadPreset(ref); });
-    }
-    examplesMenu->setEnabled(!groupMenus.isEmpty());
-    m_loadBasicProgramAction = fileMenu->addAction(tr("Load BASIC Program…"));
-    m_loadMachineCodeAction = fileMenu->addAction(tr("Load Machine Code…"));
-    fileMenu->addSeparator();
-    m_mountDirectoryAction = fileMenu->addAction(tr("Mount Directory…"));
-    m_unmountDirectoryAction = fileMenu->addAction(tr("Unmount Directory"));
-    fileMenu->addSeparator();
-    QAction* quitAction = fileMenu->addAction(tr("Quit"));
-    quitAction->setMenuRole(QAction::QuitRole);
-    quitAction->setShortcut(QKeySequence::Quit);
-    connect(quitAction, &QAction::triggered, this, &QWidget::close);
-
-    // Edit: Cmd-C / Cmd-V (Ctrl on other platforms). A focused text field
-    // (e.g. the debug panel's) still gets its own copy/paste first -- Qt
-    // lets a widget claim standard shortcuts via ShortcutOverride.
-    // Copy is Copy Screen, or -- while text is selected in the debug
-    // panel's output (which never takes focus) -- Copy Log Selection.
-    QMenu* editMenu = menuBar()->addMenu(tr("&Edit"));
-    QAction* copyAction = editMenu->addAction(tr("Copy Screen"));
-    copyAction->setShortcut(QKeySequence::Copy);
-    connect(copyAction, &QAction::triggered, this, [this] {
-        const QString selection = m_debugPanel->selectedOutputText();
-        if (selection.isEmpty()) {
-            copyScreenToClipboard();
-        } else {
-            QGuiApplication::clipboard()->setText(selection);
-        }
-    });
-    connect(m_debugPanel, &DebugPanel::outputSelectionChanged, copyAction, [copyAction, this](bool hasSelection) {
-        copyAction->setText(hasSelection ? tr("Copy Log Selection") : tr("Copy Screen"));
-    });
-    m_pasteAction = editMenu->addAction(tr("Paste Text"));
-    m_pasteAction->setShortcut(QKeySequence::Paste);
-    connect(m_pasteAction, &QAction::triggered, this, &MainWindow::pasteClipboardText);
-    auto refreshPasteEnabled = [this] {
-        const QMimeData* mime = QGuiApplication::clipboard()->mimeData();
-        m_pasteAction->setEnabled(mime && mime->hasText());
-    };
-    connect(QGuiApplication::clipboard(), &QClipboard::dataChanged, this, refreshPasteEnabled);
-    refreshPasteEnabled();
-    // Settings: the platform's usual place -- the application menu on macOS
-    // (PreferencesRole moves it there, as "Settings…" with Cmd-,), the end
-    // of the Edit menu elsewhere.
-    editMenu->addSeparator();
-    m_settingsAction = editMenu->addAction(tr("Settings…"));
-    m_settingsAction->setMenuRole(QAction::PreferencesRole);
-    m_settingsAction->setShortcut(QKeySequence::Preferences);
-    if (m_settingsAction->shortcut().isEmpty())
-        m_settingsAction->setShortcut(QKeySequence(Qt::ControlModifier | Qt::Key_Comma));
-
-    // Machine: duplicates ControlBar's model picker and peripheral toggles,
-    // plus the ROM pickers (checkable, exclusive per group) and Reset/Reset
-    // All, which live only here.
-    QMenu* machineMenu = menuBar()->addMenu(tr("&Machine"));
-
-    QMenu* modelMenu = machineMenu->addMenu(tr("Model"));
-    m_modelActionGroup = new QActionGroup(this);
-    m_modelActionGroup->setExclusive(true);
-    auto addModelAction = [&](Model model, const QString& label) {
-        QAction* action = modelMenu->addAction(label);
-        action->setCheckable(true);
-        m_modelActionGroup->addAction(action);
-        m_modelActions.insert(model, action);
-        connect(action, &QAction::triggered, this, [this, model] { applyModelSelection(model); });
-    };
-    addModelAction(Model::PC1500, tr("PC-1500"));
-    addModelAction(Model::PC1500A, tr("PC-1500A"));
-    addModelAction(Model::PC1600, tr("PC-1600"));
-
-    QMenu* romMenu = machineMenu->addMenu(tr("ROM Revision"));
-    m_romMenuAction = romMenu->menuAction();
-    m_romActionGroup = new QActionGroup(this);
-    m_romActionGroup->setExclusive(true);
-    auto addRomAction = [&](PC1500RomRevision revision, const QString& label) {
-        QAction* action = romMenu->addAction(label);
-        action->setCheckable(true);
-        m_romActionGroup->addAction(action);
-        m_romActions.insert(revision, action);
-        connect(action, &QAction::triggered, this, [this, revision] { applyRomRevisionSelection(revision); });
-    };
-    addRomAction(PC1500RomRevision::A01, tr("A01"));
-    addRomAction(PC1500RomRevision::A03, tr("A03"));
-    addRomAction(PC1500RomRevision::A04, tr("A04"));
-
-    QMenu* rom1600Menu = machineMenu->addMenu(tr("ROM Version"));
-    m_rom1600MenuAction = rom1600Menu->menuAction();
-    m_rom1600ActionGroup = new QActionGroup(this);
-    m_rom1600ActionGroup->setExclusive(true);
-    auto addRom1600Action = [&](PC1600RomVersion version, const QString& label) {
-        QAction* action = rom1600Menu->addAction(label);
-        action->setCheckable(true);
-        m_rom1600ActionGroup->addAction(action);
-        m_rom1600Actions.insert(version, action);
-        connect(action, &QAction::triggered, this, [this, version] { applyPC1600RomVersionSelection(version); });
-    };
-    addRom1600Action(PC1600RomVersion::New, tr("New"));
-    addRom1600Action(PC1600RomVersion::Old, tr("Old"));
-    m_rom1600MenuAction->setVisible(false);
-
-    // The CE-1600P's ROM is independent of the PC-1600's (any combination is
-    // possible); the CE-1600F in the same box follows it.
-    QMenu* ce1600pRomMenu = machineMenu->addMenu(tr("CE-1600P ROM"));
-    m_ce1600pRomMenuAction = ce1600pRomMenu->menuAction();
-    m_ce1600pRomActionGroup = new QActionGroup(this);
-    m_ce1600pRomActionGroup->setExclusive(true);
-    auto addCE1600PRomAction = [&](CE1600PRomVersion version, const QString& label) {
-        QAction* action = ce1600pRomMenu->addAction(label);
-        action->setCheckable(true);
-        m_ce1600pRomActionGroup->addAction(action);
-        m_ce1600pRomActions.insert(version, action);
-        connect(action, &QAction::triggered, this, [this, version] { applyCE1600PRomVersionSelection(version); });
-    };
-    addCE1600PRomAction(CE1600PRomVersion::New, tr("New"));
-    addCE1600PRomAction(CE1600PRomVersion::Old, tr("Old"));
-    m_ce1600pRomMenuAction->setVisible(false);
-
-    // Peripherals: checkable like the control bar's toggles; syncPeripherals()
-    // resyncs check and enabled state once the toggle has run.
-    QMenu* peripheralsMenu = machineMenu->addMenu(tr("Peripherals"));
-    auto addPeripheralAction = [&](const QString& label, shared::Peripheral p) {
-        QAction* action = peripheralsMenu->addAction(label);
-        action->setCheckable(true);
-        connect(action, &QAction::triggered, this, [this, p] { togglePeripheral(p); });
-        return action;
-    };
-    m_ce150Action = addPeripheralAction(tr("CE-150"), shared::Peripheral::CE150);
-    m_ce158Action = addPeripheralAction(tr("CE-158"), shared::Peripheral::CE158);
-    m_ce1600pAction = addPeripheralAction(tr("CE-1600P"), shared::Peripheral::CE1600P);
-    m_ce1600pAction->setVisible(false);
-
-    machineMenu->addSeparator();
-    QAction* resetAction = machineMenu->addAction(tr("Reset"));
-    resetAction->setShortcut(QKeySequence(Qt::ControlModifier | Qt::Key_R));
-    connect(resetAction, &QAction::triggered, this, [this] { resetMachine(false); });
-    QAction* resetAllAction = machineMenu->addAction(tr("Cold boot"));
-    resetAllAction->setShortcut(QKeySequence(Qt::ControlModifier | Qt::ShiftModifier | Qt::Key_R));
-    connect(resetAllAction, &QAction::triggered, this, [this] { resetMachine(true); });
-    // LIB-10 AC-41 (L-A4): Resume, while the run control says paused.
-    machineMenu->addSeparator();
-    m_resumeAction = machineMenu->addAction(tr("Resume"));
-    m_resumeAction->setEnabled(false);
-    connect(m_resumeAction, &QAction::triggered, this, [this] { m_controller->send(calcu::debugger::kResumeCommand); });
-
-    // Help
-    QMenu* helpMenu = menuBar()->addMenu(tr("&Help"));
-    m_aboutAction = helpMenu->addAction(tr("About Calc-U-1600…"));
-    m_aboutAction->setMenuRole(QAction::AboutRole);
-}
-
-void MainWindow::applyModelSelection(Model model) {
-    // The Machine menu's QActionGroup re-emits triggered() for the item
-    // that is already checked; re-picking it must not cold-rebuild.
-    if (model == m_controller->currentModel()) return;
-    // LIB-18 AC-6: its startup preset, or its built-in default machine.
-    m_sync->run(tr("Machine"), calcu::startup::kModelCommand,
-                calcu::sessions::Value::object({{"name", shared::settingsModelName(model)}}));
-}
-
-void MainWindow::applyRomRevisionSelection(PC1500RomRevision revision) {
-    if (revision == m_controller->pc1500RomRevision()) return; // see applyModelSelection()
-    const char* rev = revision == PC1500RomRevision::A01 ? "A01" : revision == PC1500RomRevision::A03 ? "A03" : "A04";
-    m_sync->run(tr("ROM"), calcu::startup::kVariantCommand, calcu::sessions::Value::object({{"name", rev}}));   // LIB-18 AC-7
-}
-
-void MainWindow::applyPC1600RomVersionSelection(PC1600RomVersion version) {
-    if (version == m_controller->pc1600RomVersion()) return; // see applyModelSelection()
-    // Rebuilds a PC-1600; the menu shows New if the old ROM failed to load.
-    m_sync->run(tr("ROM"), calcu::startup::kVariantCommand,
-                calcu::sessions::Value::object({{"name", version == PC1600RomVersion::Old ? "Old" : "New"}}));
-}
-
-void MainWindow::applyCE1600PRomVersionSelection(CE1600PRomVersion version) {
-    if (version == m_controller->ce1600pRomVersion()) return; // see applyModelSelection()
-    // The ROM is in the CE-1600P box: on an attached one this is a box swap
-    // inside an OFF/ON cycle (no rebuild, RAM survives); otherwise it just
-    // records the choice for the next attach.
-    // The menu shows New if the old ROM failed to load.
-    m_sync->run(tr("Plotter"), shared::commands::kCE1600PRom,
-                calcu::sessions::Value::object({{"version", version == CE1600PRomVersion::Old ? "old" : "new"}}));
-}
-
-void MainWindow::syncMachineMenuFromCE1600PRomVersion(CE1600PRomVersion version) {
-    if (QAction* action = m_ce1600pRomActions.value(version, nullptr)) action->setChecked(true);
-}
-
-void MainWindow::syncMachineMenuFromPC1600RomVersion(PC1600RomVersion version) {
-    if (QAction* action = m_rom1600Actions.value(version, nullptr)) action->setChecked(true);
-}
-
-void MainWindow::syncMachineMenuFromModel(Model model) {
-    if (QAction* action = m_modelActions.value(model, nullptr)) action->setChecked(true);
-}
-
-void MainWindow::syncMachineMenuFromRomRevision(PC1500RomRevision revision) {
-    if (QAction* action = m_romActions.value(revision, nullptr)) action->setChecked(true);
-}

@@ -81,33 +81,25 @@ qt_add_executable(CalcU1600Qt
   WIN32
   app/main.cpp
   app/MainWindow.cpp
-  app/EmulationPacer.cpp
-  app/Operations.cpp
   app/MachineController.cpp
   app/FaceplateWidget.cpp
   app/LcdWidget.cpp
-  app/ControlBar.cpp
   app/DebugPanel.cpp
+  app/MediaControls.cpp
   app/Ce158PrinterWidget.cpp
   app/HostKeyEvents.cpp
   app/AppPaths.cpp
   app/AppLogging.cpp
-  app/SettingsDialog.cpp
-  app/NamedComboBox.cpp
   app/MachineCodeLoadDialog.cpp
-  app/AboutDialog.cpp
   app/AudioOutput.cpp
   app/debug/DapServer.cpp
   app/debug/DapSession.cpp
   app/debug/DebugController.cpp
-  app/screenshots/ShotScenario.cpp
-  app/screenshots/ShotCapture.cpp
-  app/screenshots/ShotRunner.cpp
   resources/calc-u-1600.qrc
 )
 
 if(APPLE)
-  target_sources(CalcU1600Qt PRIVATE app/MacAppSupport.mm app/screenshots/MacShotSupport.mm)
+  target_sources(CalcU1600Qt PRIVATE app/MacAppSupport.mm)
   target_link_libraries(CalcU1600Qt PRIVATE "-framework Cocoa")
 endif()
 
@@ -121,9 +113,22 @@ endif()
 
 target_include_directories(CalcU1600Qt PRIVATE app ${CMAKE_CURRENT_BINARY_DIR}/generated)
 target_link_libraries(CalcU1600Qt PRIVATE Qt6::Widgets Qt6::Multimedia Qt6::Network)
-# Test hooks of non-release builds: --pacing-probe <s> (LIB-17 design §5,
-# AC-22; until the Qt6 frontend has harness attach).
-target_compile_definitions(CalcU1600Qt PRIVATE $<$<NOT:$<CONFIG:Release>>:CALCU1600_TEST_HOOKS>)
+# LIB-14 AC-44 (D.6): harness attach in development and test builds
+# (CALCU_ATTACH: POSIX trees with the tests), and its clients in the same
+# process: the screenshot scenarios (`--shots`) and the pacing probe
+# (`--pacing-probe <s>`, LIB-17 §5). Release builds and Windows have neither.
+if(CALCU_ATTACH)
+  target_sources(CalcU1600Qt PRIVATE
+    app/screenshots/AttachLineClient.cpp
+    app/screenshots/ShotScenario.cpp
+    app/screenshots/ShotCapture.cpp
+    app/screenshots/ShotRunner.cpp
+    app/screenshots/PacingProbe.cpp)
+  target_link_libraries(CalcU1600Qt PRIVATE calcu1600_harness)   # the product the attached harness runs
+  if(APPLE)
+    target_sources(CalcU1600Qt PRIVATE app/screenshots/MacShotSupport.mm)
+  endif()
+endif()
 
 target_link_libraries(CalcU1600Qt PRIVATE calcu_shared calcu_qt6)
 

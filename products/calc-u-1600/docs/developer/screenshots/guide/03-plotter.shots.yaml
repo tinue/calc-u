@@ -6,7 +6,7 @@ shots:
   - name: 03-paper
     preset: ../presets/pc1600-lissajou.pc1600
     steps:
-      - capture: { target: paper, file: 03-paper-panel.png }
+      - capture: { target: paper-panel, file: 03-paper-panel.png }
       # What Copy on the paper panel puts on the clipboard.
       - capture: { target: plot, file: 03-paper-copy.png }
 

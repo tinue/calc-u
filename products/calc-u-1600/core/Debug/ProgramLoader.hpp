@@ -4,7 +4,7 @@
 #include <string>
 #include <vector>
 
-#include "DebugTarget.hpp"
+#include "CpuRegisters.hpp"
 #include "SourceMap.hpp"
 
 namespace calcu::machine {
@@ -48,8 +48,9 @@ struct LoadResult {
 
 /// Plans and writes through the loaders of C1600-2 (sharp::loaders::planCode,
 /// loadCode; design §3.10). Verifies the bound listing against memory right
-/// away (`target` supplies the peek and bank state).
+/// away (`match` and `peek`: the debug targets' bank state and
+/// side-effect-free reads, by thread).
 LoadResult loadProgram(calcu::machine::Machine& machine, const LoadRequest& request, SourceMap& map,
-                       const DebugTarget& target);
+                       const BankMatch& match, const CodePeek& peek);
 
 } // namespace debug

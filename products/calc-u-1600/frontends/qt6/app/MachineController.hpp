@@ -10,7 +10,6 @@
 #include <utility>
 #include <vector>
 
-#include "Connector/AlpsPlotterMechanism.hpp"
 #include "Debug/Inspect/Inspector.hpp"
 #include "Display/LcdScreenshot.hpp"
 #include "Display/LcdText.hpp"
@@ -19,6 +18,7 @@
 #include "app/AudioSink.hpp"
 #include "app/MachineModel.hpp"
 #include "app/SharpSession.hpp"
+#include "qt6/ClipboardService.hpp"
 #include "sessions/AppSession.hpp"
 #include "sessions/Listener.hpp"
 #include "typing/HostKey.hpp"
@@ -58,7 +58,7 @@ bool withQtError(QString* error, Op&& op) {
 // Until their steps, the widgets still reach the product's part directly
 // for what has no topic yet (the bays, the debug panel, the plotters, the
 // keys through SharpTypingHook; LIB-3 design §5).
-class MachineController : public QObject, private shared::SharpDebugger {
+class MachineController : public QObject {
     Q_OBJECT
 public:
     explicit MachineController(QObject* parent = nullptr);
@@ -131,22 +131,21 @@ public:
 
     std::vector<std::string> inspectorView(inspect::View view) const { return session().inspectorView(view); }
     std::vector<inspect::MenuEntry> inspectorMenu(bool dumps) const { return session().inspectorMenu(dumps); }
-    void endTrace() { app().endTrace(); }
-    std::uint64_t traceBytes() const { return session().traceBytes(); }
-    bool traceActive() const { return session().traceActive(); }
+    // LIB-10: the library's trace session (the `trace` topic and command).
+    bool traceActive() const;
+    // The `run-state` topic: the machine is paused, whoever paused it.
+    bool machinePaused() const;
 
     std::vector<std::uint8_t> drainCE158PrinterOutput() { return app().drainCE158PrinterOutput(); }
     bool hostDriveAttached() const { return session().hostDriveAttached(); }
-    std::vector<AlpsPlotterMechanism::FlatPoint> plotPoints(shared::PaperKind kind) const {
-        return session().plotPoints(kind);
-    }
-    std::uint64_t plotRevision(shared::PaperKind kind) const { return session().plotRevision(kind); }
-    void clearPaper(shared::PaperKind kind) { app().clearPaper(kind); }
+    // The library's paper panel (LIB-8): every message of the session goes to
+    // `sink` too, first the `papers` state it has now (the panel is made
+    // after the session started).
+    void setPaperSink(std::function<void(const calcu::sessions::Message&)> sink);
     shared::ControlState controlState() const;
     TapeDeck::Status tapeStatus() const;
 
     // ---- QString translations ----
-    bool beginTrace(const QString& path) { return app().beginTrace(path.toStdString()); }
     bool tapeEject(QString* error = nullptr);
     void refreshSerialLinkDirectory() { app().refreshSerialLinkDirectory(); }
     QString serialLinkStatus() const { return QString::fromStdString(session().serialLinkStatus()); }
@@ -175,12 +174,13 @@ signals:
     void noticeShown(const QString& sentence);
     // The display topic changed.
     void displayChanged();
+    // The run-state topic changed (LIB-10: pause, step, resume from the DAP,
+    // the harness or Machine ▸ Resume).
+    void runStateChanged();
+    // The trace topic changed (a trace started or ended).
+    void traceStateChanged();
 
 private:
-    // shared::SharpDebugger (SharpDebuggerGate, until M-45)
-    void machineAboutToChange() override;
-    void machineReplaced() override;
-    bool runDebuggerSlice(std::uint64_t ticks) override;
 
     void onMessage(const calcu::sessions::Message& message);
     void onState(const calcu::sessions::TopicName& topic);
@@ -192,6 +192,10 @@ private:
     // target still refers to the live machine.
     std::unique_ptr<DebugController> m_debug;
     std::unique_ptr<shared::SoundFeed> m_sound;
+    // P-A3 (LIB-8 §10.5): `clipboard-image` and `clipboard-text` answered by
+    // the Qt6 component set's service, until LIB-14's SessionHost (M-49).
+    calcu::qt6::ClipboardService m_clipboard;
+    std::function<void(const calcu::sessions::Message&)> m_paperSink;
     std::string m_lastNotice;   // a failed operation's notice; its reply is not shown again
 
     DisplayFrame m_frame;

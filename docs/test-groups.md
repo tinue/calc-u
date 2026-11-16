@@ -255,19 +255,21 @@ Frequent except where the table says otherwise):
 
 | CTest entry | What | Group | Measured (M4 Pro, 2026-11-14) |
 |---|---|---|---|
-| `CoreTests` | 876 `TEST`s (M-39: `tests/paper_replies_tests.cpp`, LIB-8 AC-39; M-36; `tests/typing_tests.cpp`: LIB-5 AC-14, AC-28–31, AC-33–37, AC-40, AC-41; the PC-1500 key queue's tests gone): unit and integration tests of the core and the app layer (real ROMs, presets, loaders, job equivalence), the machine interface (C1600-1, LIB-1 1600, LIB-2 1600), the settings file (LIB-9 1600), the ROM lookup (LIB-12 1600), the golden replays through it (table below), the harness product entry (LIB-11, M-28; the PC-1600 and its variant through LIB-18, `harness_drives_a_pc1600`, `harness_variant_switch_old`, M-35) | Frequent | 39.0 s (M-30/M-28/M-27, 2026-11-15) |
+| `CoreTests` | 1000 `TEST`s (M-44: C1600-2 `program_files_tests.cpp`, `basic_typing_tests.cpp`, `loader_memory_tests.cpp`, `app/tests/loader_part_tests.cpp`, the C1600-2 cases of the loader, machine-code-file and harness tests; M-45: LIB-8 1600 `plotter_paper_tests.cpp`, `paper_session_tests.cpp`, the `lib8_ac37_` cases of `ce150_tests.cpp`, `ce1600p_tests.cpp`; LIB-10 1600 `debugger_tests.cpp`, the `lib10_ac36`/`ac37`/`ac44`/`ac52` cases of `debug_target_tests.cpp`, `run_control_tests.cpp`; C1600-3 `dap_layer_tests.cpp`; the harness's paper and debugger cases; M-39: `tests/paper_replies_tests.cpp`, LIB-8 AC-39; M-36; `tests/typing_tests.cpp`: LIB-5 AC-14, AC-28–31, AC-33–37, AC-40, AC-41; the PC-1500 key queue's tests gone): unit and integration tests of the core and the app layer (real ROMs, presets, loaders, job equivalence), the machine interface (C1600-1, LIB-1 1600, LIB-2 1600), the settings file (LIB-9 1600), the ROM lookup (LIB-12 1600), the golden replays through it (table below), the harness product entry (LIB-11, M-28; the PC-1600 and its variant through LIB-18, `harness_drives_a_pc1600`, `harness_variant_switch_old`, M-35) | Frequent | 39.0 s (M-30/M-28/M-27, 2026-11-15) |
 | `CalcU1600CheckPresets` | `tools/check_presets.sh`: every preset in the repository parses | Frequent | 0.3 s |
 | `CalcU1600MachineIncludeCheck` | `tools/check_machine_includes.sh`: no file outside `core/` (app, frontends, tools, dev) includes a machine class, directly or through a core header, or names one (C1600-1, Technical Requirements; design T13; M-26) | Frequent | 1.1 s |
 | `CalcU1600NoOwnRomLookup` | `library/roms/tests/check_no_own_rom_lookup.sh`: no product source outside `core/Machine/SharpRoms.cpp` (with the host-drive ROM, D-6), the catalogue and `app/tests/` looks for a ROM file (LIB-12 AC-2, design T7; M-27) | Frequent | 0.5 s |
 | `CalcU1600CliRomLookup` | `tests/cli_rom_tests.sh`: `pc1600_cli --preset` with a `roms/` without one file exits 1 naming it, with the full set it runs (LIB-12 AC-13, design Q2; M-27) | Frequent | 0.2 s |
 | `CalcU1600NoPlatformSettings` | `library/settings/check_platform_stores.sh` over `frontends/` with `tools/platform_stores_allowed.txt`: no setting in QSettings or `localStorage` (LIB-9 AC-31, design T-19; M-30); not registered on Windows | Frequent | 0.02 s |
+| `CalcU1600ReadTrace` | `tests/read_trace_check.sh`: the harness writes a short PC-1600 trace through the library's trace session, `tools/read_trace.py` reads it (LIB-10 AC-42, design D16-8; M-45); not registered on Windows or without Python | Frequent | 0.3 s |
 | `CalcU1600NoOwnSession` | `tools/check_no_own_session.cmake` (`cmake -P`): no `AppSession`, `MachineSession` or `Pacer` class in `app/`, the Qt6 frontend includes the library's `sessions/AppSession.hpp`, sends no suspend and runs no operation to its end (LIB-3 AC-34, AC-36; design P16-1, P16-3; M-31) | Frequent | 0.05 s |
-| | **Frequent, Calc-U-1600** | | **40.4 s** (M-30) |
-| `CalcU1600WebPlaywright` | `frontends/web/run-tests.sh`: Playwright, Chromium (root, sub-path) and WebKit (offline); `typing.spec.js` (LIB-5 AC-29, AC-33, AC-36; M-36) | Longer | 55 passed, 2 skipped (M-36); 22.5 s (Homebrew Emscripten 7.0, after `<cstdlib>` was added to `core/Debug/BreakpointTable.cpp`); 31 s in CI (6.0.13) |
+| | **Frequent, Calc-U-1600** | | **40.4 s** (M-30); `CoreTests` alone 47 s in M-45 (Apple M4 Pro, RelWithDebInfo) |
+| `CalcU1600WebPlaywright` | `frontends/web/run-tests.sh`: Playwright, Chromium (root, sub-path) and WebKit (offline); `typing.spec.js` (LIB-5 AC-29, AC-33, AC-36; M-36); `play.spec.js` `lib8_ac36 …`, `lib8_ac38 …` (was `a plotter preset draws on the paper`), `lib10_ac40 …`, `lib10_ac41 …` (M-45) | Longer | 55 passed, 2 skipped (M-36); 22.5 s (Homebrew Emscripten 7.0, after `<cstdlib>` was added to `core/Debug/BreakpointTable.cpp`); 31 s in CI (6.0.13) |
 | `CalcU1600RomMissingBuild` | `tests/rom_missing_build.sh`: a Web `dist/` built from `roms/` without one file (default `PC1600-P1-B3-old.bin`) shows the lookup's text naming it and no calculator (LIB-12, Technical Requirements, design Q5; M-27); not registered on Windows | Longer | 3.2 s (M-27; the Web build tree already built) |
 | `CalcU1600WasmSmoke` | `tools/build_wasm_check.sh`: core and app layer under node | Longer | 5.1 s locally without the build; 44 s in CI with the build |
-| `CalcU1600Shots.<scenario>` | the nine screenshot scenarios of `docs/developer/screenshots/guide/` run as checks, into the build tree | Longer | 39.6 s, the nine together (2.2–9.2 s each), all passed |
-| `CalcU1600DapSmoke` | `tools/dap_smoke.py --app`: the DAP requests VS Code uses | Longer | 24.7 s; failed 3/3 earlier on 2026-11-14 and at the pin (no `stopped` event after the first `stepIn`), passed in the Part B run: possibly timing-dependent, open finding |
+| `CalcU1600Shots.<scenario>` | the nine screenshot scenarios of `docs/developer/screenshots/guide/` run as checks, into the build tree; the check scenarios of `tests/gui/` (M-45): `lib8-ac36`, `lib8-ac38` (LIB-8 AC-36, AC-38), `lib10-ac41` (LIB-10 AC-41) | Longer | 39.6 s, the nine together (2.2–9.2 s each), all passed; the three of M-45 2.8, 3.6 and 1.7 s |
+| `CalcU1600DapSmoke` | `tools/dap_smoke.py --app`: the DAP requests VS Code uses (M-45: the Qt `DapSession` on `app/dap/` and the library's run control, LIB-10 D16-12) | Longer | 26 s, passed twice in M-45; failed 3/3 earlier on 2026-11-14 and at the pin (no `stopped` event after the first `stepIn`), passed in the Part B run: possibly timing-dependent, open finding |
+| `CalcU1600DebuggerSpeed` | `CoreTests lib10_speed_pc1600_full_speed_with_a_breakpoint` with `CALCU1600_SPEED=1`: a PC-1600 for 20 s of emulated time at full speed, with and without a breakpoint, printed (LIB-10 R-1; M-45) | Longer | 0.5 s (0.22 s and 0.20 s measured) |
 | `CalcU1600PacingRealClock` | `lib17_ac21_pacing_longrun_real_clock_pc1500a`, `_pc1600` with `CALCU1600_PACING_LONGRUN=600`, on the library's app session (M-31) | Checkpoint | 20 min (by design) |
 | `CalcU1600QtPacingProbe` | `CalcU1600Qt --pacing-probe 60` (non-release test hook): a PC-1600 keeps one minute in the Qt6 frontend (LIB-17 AC-22, P16-3; M-31). The Web half: `frontends/web/tests/session.spec.js` `lib17_ac22` with `CALCU1600_WEB_PACING=1` | Checkpoint | 1 min each; run once in M-31: Qt6 −8 ms, Web −2 ms over 60 s |
 | `CalcU1600GuideScreenshots` | `tools/make_screenshots.sh`: the User Guide images into `docs/images/` | Checkpoint | not measured |
@@ -295,27 +297,28 @@ needs ROMs that are missing reports `SKIP`):
 | `ce163f_tests.cpp` | 12 | `pc1600_tape_tests.cpp` | 3 |
 | `ce502b_tests.cpp` | 2 | `peripherals_tests.cpp` | 8 (LIB-2 AC-28–32, AC-34; M-26) |
 | `connector_tests.cpp` | 14 | `piezo_sampler_tests.cpp` | 12 |
-| `debug_target_tests.cpp` | 22 | `preset_tests.cpp` | 44 |
-| `descriptor_tests.cpp` | 8 (LIB-1 AC-34–41; M-26) | `presetloader_trace_tests.cpp` | 7 |
+| `debug_target_tests.cpp` | 31 (M-45: today's cases as `lib10_ac44_…` on `machine::Debugging`; `lib10_ac36_`, `ac37_`, `ac52_`; the expression cases moved to `dap_layer_tests.cpp`) | `preset_tests.cpp` | 44 |
+| `descriptor_tests.cpp` | 8 (LIB-1 AC-34–41; M-26) | `presetloader_trace_tests.cpp` | 7 (the core's file mode for today's tools, `lib10_ac42_tools_…`; M-45) |
 | `disasm_tests.cpp` | 15 | `program_file_tests.cpp` | 11 |
-| `golden_runs_tests.cpp` | 1 (the golden replays through the machine interface; `CALCU1600_GOLDEN_RECORD=1` records new references only) | `run_control_tests.cpp` | 6 |
-| `harness_tests.cpp` | 8 (`harness_drives_a_sharp_machine`: the exit check of M-28, LIB-11 T14, D-1; LIB-18's model and variant; C1600-2 AC-21, the `pc1600` loader commands, M-44; `SKIP` without the ROMs) | | |
+| `golden_runs_tests.cpp` | 1 (the golden replays through the machine interface; `CALCU1600_GOLDEN_RECORD=1` records new references only) | `run_control_tests.cpp` | 2 (`lib10_ac44_step_over_a_call`, `_data_breakpoint_and_pause` on the library's run control; M-45) |
+| `harness_tests.cpp` | 13 (`harness_drives_a_sharp_machine`: the exit check of M-28, LIB-11 T14, D-1; LIB-18's model and variant; C1600-2 AC-21, the `pc1600` loader commands, M-44; M-45: `lib8_ac32_harness_…`, `lib10_ac40_harness_…`, `lib10_ac52_harness_peek_bank_and_vbank`; `SKIP` without the ROMs) | `debugger_tests.cpp` | 19 (LIB-10 1600: AC-38, AC-39, AC-40, AC-42, AC-43, AC-23 and R-1; M-45) |
 | `host_directory_drive_tests.cpp` | 25 | `sc7852_tests.cpp` | 39 |
 | `inspector_tests.cpp` | 13 | `sharp_machine_tests.cpp` | 28 (C1600-1 AC-1–21, EC-1–3; M-26) |
 | `job_tests.cpp` | 2 | `tape_deck_tests.cpp` | 11 |
-| `session_tests.cpp` | 4 (LIB-3 AC-35, AC-37, AC-38, ledger 1600-9 on the library's app session; M-31) | | |
+| `session_tests.cpp` | 4 (LIB-3 AC-35, AC-37, AC-38, ledger 1600-9 on the library's app session; M-31) | `dap_layer_tests.cpp` | 14 (C1600-3 AC-12, AC-14, AC-23: the DAP's layer in `app/dap/`; M-45) |
 | `key_paste_tests.cpp` | 8 (the typing profile and engine; M-36) | `tc8576f_tests.cpp` | 20 |
 | `lcd_screenshot_tests.cpp` | 5 | `app/tests/serial_links_tests.cpp` | 2 (LIB-2 AC-33; M-26) |
 | `lcd_text_tests.cpp` | 21 | `app/tests/shared_app_session_tests.cpp` | 11 (SharpAppPart on the library's session, M-31; the loader cases moved to `loader_part_tests.cpp`, M-44) |
 | `lh5801_tests.cpp` | 54 (the key queue's three went, M-36) | `app/tests/shared_bay_tests.cpp` | 4 |
-| `lh5803_tests.cpp` | 8 | `app/tests/shared_geometry_tests.cpp` | 5 |
+| `lh5803_tests.cpp` | 8 | `app/tests/shared_geometry_tests.cpp` | 2 (the plotter paper's three moved to `plotter_paper_tests.cpp` as `lib8_ac37_…`, M-45) |
 | `listing_tests.cpp` | 10 | `app/tests/shared_host_key_map_tests.cpp` | 3 (`SharpKeyboardMap`; M-36) |
 | `machine_code_file_tests.cpp` | 39 (C1600-2 AC-8–12, AC-23; M-44) | `app/tests/shared_machine_session_tests.cpp` | 7 |
 | `memory_card_tests.cpp` | 47 (the 8 YAML reader cases moved to the library in M-24) | `app/tests/shared_pacing_tests.cpp` | 2 (LIB-17 AC-20; the sink side of the sound; M-31) |
 | `pacing_longrun_tests.cpp` | 4, the "after" test of LIB-17 AC-21 (M-31): `lib17_ac21_pacing_longrun_scripted_pc1500a`, `_pc1600` Frequent; `lib17_ac21_pacing_longrun_real_clock_pc1500a`, `_pc1600` Checkpoint (return at once without `CALCU1600_PACING_LONGRUN`) | `app/tests/shared_preset_catalog_tests.cpp` | 4 |
 | `pc1500_tape_tests.cpp` | 2 | `app/tests/shared_settings_tests.cpp` | 8 (LIB-9 AC-26–32; M-30) |
 | `rom_lookup_tests.cpp` | 9 (LIB-12 AC-11–14, EC-1; M-27) | `typing_tests.cpp` | 15 (LIB-5, M-36) |
-| `paper_replies_tests.cpp` | 1 (`lib8_ac39_sharp_plots_turned_into_paper_replies`: the `.paper` files of M-8 turned into `paper marks` replies, compared with the committed `*.<plotter>.paper-marks`; `CALCU1600_PAPER_REPLIES=1` writes them; LIB-8 AC-39, M-39) | | |
+| `paper_replies_tests.cpp` | 1 (`lib8_ac39_sharp_plots_turned_into_paper_replies`: the `.paper` files of M-8 turned into `paper marks` replies, compared with the committed `*.<plotter>.paper-marks`; `CALCU1600_PAPER_REPLIES=1` writes them; LIB-8 AC-39, M-39) | `plotter_paper_tests.cpp` | 9 (LIB-8 AC-32–34, AC-37; M-45) |
+| `paper_session_tests.cpp` | 6 (LIB-8 AC-35, AC-36 in the app session; M-45) | | |
 
 ## Not in a group
 

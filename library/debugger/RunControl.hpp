@@ -9,6 +9,7 @@
 #include "sessions/SessionPart.hpp"
 #include "sessions/Topics.hpp"
 #include <cstdint>
+#include <functional>
 #include <optional>
 #include <string>
 #include <vector>
@@ -28,6 +29,12 @@
 namespace calcu::debugger {
 
 enum class StepKind { In, Over, Out };
+
+// D-16 (LIB-10 design §10.15, M-45): a step's test, asked after each counted
+// step (in or over) of its target; true: go on, up to the count. The DAP's
+// source-line steps (Calc-U-1600 app/dap/) are one such step: on until the
+// source line changes, in the gate's pieces, ending at a breakpoint.
+using StepTest = std::function<bool(const machine::DebugTarget&)>;
 
 class RunControl final : public sessions::AdvanceGate, public machine::InstructionObserver {
 public:
@@ -50,7 +57,7 @@ public:
     Result pause(const LevelName&, sessions::CallId call = 0);   // G2
     Result resume();                                              // G3
     Result step(const LevelName&, std::uint64_t count, std::optional<machine::DebugTargetId> target, StepKind,
-                sessions::CallId call = 0);                       // G4, G5
+                sessions::CallId call = 0, StepTest until = {});  // G4, G5; D-16
     Result pauseOnStart(std::optional<LevelName>);                // G8; nullopt: off
     void pauseAtStart();                                          // G9
     void restarted(RestartKind);                                  // G10 (and G8, G9 at a restart)
@@ -76,6 +83,7 @@ private:
     void finishCalls();
     void publish();
     bool stepDoneAfter(const machine::InstructionEvent&);
+    bool countedStepDone(const machine::DebugTarget&);
     machine::Debugging* debugging() const;
 
     LevelRules& rules_;
@@ -98,6 +106,7 @@ private:
 
     // Stepping.
     StepKind kind_ = StepKind::In;
+    StepTest until_;
     std::size_t stepTarget_ = 0;
     std::uint64_t left_ = 0;
     int repeats_ = 0;

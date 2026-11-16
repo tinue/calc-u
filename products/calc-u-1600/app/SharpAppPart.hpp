@@ -9,7 +9,6 @@
 #include <utility>
 #include <vector>
 
-#include "Connector/AlpsPlotterMechanism.hpp"
 #include "Debug/Inspect/Inspector.hpp"
 #include "Display/LcdScreenshot.hpp"
 #include "Display/LcdText.hpp"
@@ -27,14 +26,14 @@
 #include "app/TapeBay.hpp"
 #include "app/MachineModel.hpp"
 #include "app/PacingProfiles.hpp"
-#include "app/PlotterPaper.hpp"
 #include "app/Settings.hpp"
 #include "app/SharpLoaderPart.hpp"
-#include "app/SharpMachineParts.hpp"
+#include "debugger/DebuggerPart.hpp"
 #include "app/SharpTopics.hpp"
 #include "app/SharpTyping.hpp"
 #include "machine/Catalogue.hpp"
 #include "machine/Machine.hpp"
+#include "paper/PaperPart.hpp"
 #include "peripherals/PeripheralsPart.hpp"
 #include "roms/Lookup.hpp"
 #include "sessions/AppSession.hpp"
@@ -74,7 +73,9 @@ DisplayFrame displayFrameOf(const calcu::machine::DisplayOutput& output);
 // - the interim product topics (control state, machine, tapes, serial
 //   links) and LIB-12's `roms-missing`;
 // - the library's typing part (LIB-5) with the Sharp profiles and maps
-//   (app/SharpTyping), first in sessionParts(); the adapter SharpDebuggerGate.
+//   (app/SharpTyping), first in sessionParts(); the library's paper part
+//   (LIB-8) and debugger part (LIB-10: the run control is the machine
+//   session's gate, with or without a debugger client; app/SharpDebuggerSetup).
 //
 // The host builds it, hands sessionParts() to its AppSessionSetup (and the
 // part to AppSessionSetup::owned), then sends `start`. Single-threaded: on
@@ -88,7 +89,8 @@ public:
 
     // The parts of the session, in order: the typing part, LIB-2's
     // peripherals part (the host links of the serial ports, the real-time
-    // clocks), the loaders' part (C1600-2) and this one.
+    // clocks), the loaders' part (C1600-2), LIB-8's paper part (the CE-150's
+    // and the CE-1600P's papers), LIB-10's debugger part and this one.
     std::vector<calcu::sessions::SessionPart*> sessionParts();
     // The real-time clocks of a machine built inside the start or an
     // operation are set from this; tests pin it.
@@ -107,8 +109,12 @@ public:
     // screen-key-down, paste, ...); the debugger's auto-start types its line
     // through the engine directly (not a user key, so not dropped while busy).
     calcu::typing::TypingPart& typingPart() { return m_typingPart; }
-    // The debugger (adapter SharpDebuggerGate, until M-45).
-    void setDebugger(SharpDebugger* d) { m_gate.setDebugger(d); }
+    // The papers of the two plotters (LIB-8): kept from the start of the
+    // session to its end, whatever machine runs.
+    calcu::paper::PaperPart& paperPart() { return m_paper; }
+    // The library's debugger (LIB-10): the run control, the trace session,
+    // the topics run-state and trace. The DAP's layer (app/dap/) works on it.
+    calcu::debugger::DebuggerPart& debuggerPart() { return m_debugger; }
 
     // File ▸ Mount Directory is offered when the frontend states a folder
     // picker (LIB-3 AC-38: 0.8.1's hostDirectories; a browser has none).
@@ -124,7 +130,10 @@ public:
 
     // ---- Operations (the commands of SharpTopics.hpp start them) ----
     job::Task<OpResult> startJob(std::string modelOrEmpty, std::string presetOrEmpty);
-    job::Task<OpResult> loadPresetJob(std::string ref, bool armOnly = false);
+    // `userLoad`: a preset the user loads (not the model's startup preset at
+    // a model switch) empties the paper of each plotter it plugs in first
+    // (adapter P-A2 of LIB-8 §10.5, until LIB-18's build origin in M-46).
+    job::Task<OpResult> loadPresetJob(std::string ref, bool armOnly = false, bool userLoad = true);
     job::Task<OpResult> loadDefaultPresetJob(std::string ref, Model model);
     job::Task<OpResult> resetJob(bool allReset);
     job::Task<OpResult> selectModelJob(Model model);
@@ -173,10 +182,6 @@ public:
     std::vector<std::string> inspectorView(inspect::View view) const;
     std::vector<inspect::MenuEntry> inspectorMenu(bool dumps) const;
     std::vector<std::uint8_t> debugSlotCardImage(int slot, int* bankCount) const;
-    bool beginTrace(const std::string& path);
-    void endTrace();
-    std::uint64_t traceBytes() const;
-    bool traceActive() const;
 
     // ---- Peripherals ----
     bool attachCE150(std::string* error = nullptr);
@@ -202,11 +207,6 @@ public:
     bool tapeEject(std::string* error = nullptr);
     TapeDeck::Status tapeStatus() const;
     std::string tapeTakeLastError();
-
-    // ---- Plotters ----
-    std::vector<AlpsPlotterMechanism::FlatPoint> plotPoints(PaperKind kind) const;
-    std::uint64_t plotRevision(PaperKind kind) const;
-    void clearPaper(PaperKind kind);
 
     // ---- Lower-level machine jobs (the operations above use them) ----
     void resetRomSelectionsToDefault();
@@ -274,6 +274,8 @@ private:
     CE1600PRomVersion m_ce1600pRomVersion = CE1600PRomVersion::New;
 
     calcu::machine::Catalogue m_catalogue;
+    calcu::paper::PaperPart m_paper;
+    calcu::debugger::DebuggerPart m_debugger;
     std::shared_ptr<const calcu::roms::RomSet> m_roms;
     calcu::roms::RomsMissing m_romsMissing;
     std::shared_ptr<const std::vector<std::uint8_t>> m_hostDriveRom;   // roms.md Q-1: not looked up
@@ -289,7 +291,6 @@ private:
     // The context of the operation that runs now (runOperation), for the
     // typing hand-off of a preset's typed program (C1600-2 design §3.10).
     calcu::sessions::OperationContext* m_opCtx = nullptr;
-    SharpDebuggerGate m_gate;
     bool m_powerCycleFollows = false;
 
     std::unique_ptr<ModuleBay> m_modules;

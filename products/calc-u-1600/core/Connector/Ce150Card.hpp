@@ -6,6 +6,7 @@
 #include <vector>
 
 #include "AlpsPlotterMechanism.hpp"
+#include "PlotterPaperOutput.hpp"
 #include "../Tape/TapeDeck.hpp"
 #include "SystemBusCard.hpp"
 
@@ -61,6 +62,13 @@ public:
 
     AlpsPlotterMechanism&       mechanism() { return m_mechanism; }
     const AlpsPlotterMechanism& mechanism() const { return m_mechanism; }
+
+    // The paper output (LIB-8, design §10.3): made and gone with the card
+    // (D-16), the mechanism's pen listener.
+    Ce150Card() { m_mechanism.setListener(&m_paperOutput); }
+    Ce150Card(const Ce150Card&) = delete;
+    Ce150Card& operator=(const Ce150Card&) = delete;
+    sharp::PlotterPaperOutput& paperOutput() { return m_paperOutput; }
 
     /// The loaded ROM, for the GUI debug "Dump Mem" view -- empty if no ROM
     /// is loaded (should not happen once attached).
@@ -191,6 +199,7 @@ private:
 
     std::array<uint8_t, kRomSize> m_rom{};
     bool m_romLoaded = false;
+    sharp::PlotterPaperOutput m_paperOutput{sharp::ce150PaperDescription()};
     AlpsPlotterMechanism m_mechanism;
 
     // LH5810 register file (see the register-select table above).

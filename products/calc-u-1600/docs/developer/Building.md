@@ -35,9 +35,9 @@ trees under the repository's `build/`.
   are C++20 coroutines, core/Job.hpp): Xcode clang, GCC 11+, MSVC 2019
   16.8+.
 - On macOS only: Xcode command-line tools (for the Objective-C++
-  compiler — three files need it: `MacClipboardImage.mm` for the
-  plotter-paper clipboard export, `MacAppSupport.mm` and
-  `screenshots/MacShotSupport.mm`).
+  compiler — three files need it: the library's `library/qt6/MacClipboard.mm`
+  for the clipboard pictures (the paper's Copy, Copy Screen), `MacAppSupport.mm`
+  and `screenshots/MacShotSupport.mm`).
 
 ### `libsharpdx`
 

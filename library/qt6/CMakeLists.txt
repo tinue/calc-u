@@ -36,6 +36,12 @@ target_sources(calcu_qt6 PRIVATE
   ${CMAKE_CURRENT_SOURCE_DIR}/PanelArea.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/FaceplateInput.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/RomsMissingView.cpp)
+# LIB-8 D-17 (M-45): on macOS the picture of `clipboard-image` goes through
+# Cocoa, which keeps its physical size (Qt's clipboard loses it).
+if(APPLE)
+  target_sources(calcu_qt6 PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/MacClipboard.mm)
+  target_link_libraries(calcu_qt6 PUBLIC "-framework Cocoa")
+endif()
 set_target_properties(calcu_qt6 PROPERTIES AUTOMOC ON)
 target_link_libraries(calcu_qt6 PUBLIC calcu_library Qt6::Widgets PRIVATE calcu_warnings)
 target_include_directories(calcu_qt6 PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/..)

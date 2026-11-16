@@ -8,6 +8,7 @@
 #include "DapServer.hpp"
 #include "DapSession.hpp"
 #include "Machine/LegacyCalls.hpp"
+#include "debugger/RunControl.hpp"
 #include "MachineController.hpp"
 #include "Operations.hpp"
 
@@ -48,8 +49,8 @@ void DebugController::setAppBusy(bool busy) {
 }
 
 DebugController::~DebugController() {
-    endSession();
     m_session.reset();
+    m_sessionActive = false;   // the session goes with the window: nothing to hand back
 }
 
 // ── Server ────────────────────────────────────────────────────────────────
@@ -119,70 +120,111 @@ void DebugController::finishTeardown() {
 
 // ── Session ───────────────────────────────────────────────────────────────
 
-void DebugController::createTarget() {
-    m_run.reset();
-    m_target.reset();
-    if (calcu::machine::Machine* machine = m_machines->machine()) m_target = sharp::legacy::makeDebugTarget(*machine);
-    if (!m_target) return;
-    m_target->arm(false); // armed only inside runSlice()
-    m_run = std::make_unique<debug::RunControl>(*m_target, m_map, m_breakpoints);
+calcu::debugger::RunControl* DebugController::libraryRunControl() const {
+    return &m_machines->app().debuggerPart().runControl();
+}
+
+shared::dap::DapTargets* DebugController::target() {
+    if (!m_sessionActive) return nullptr;
+    calcu::machine::Machine* m = m_machines->machine();
+    m_targets.emplace(m ? m->debugging() : nullptr);
+    return m_targets->valid() ? &*m_targets : nullptr;
+}
+
+DapRun* DebugController::runControl() { return m_sessionActive ? &m_run : nullptr; }
+
+void DebugController::applyBreakpoints() {
+    shared::dap::DapTargets* t = target();
+    m_breakpoints.apply(libraryRunControl()->table(), t ? *t : shared::dap::DapTargets(nullptr), m_symbols);
 }
 
 bool DebugController::beginSession() {
     m_map.clear();
     m_breakpoints.clear();
+    m_symbols = [this](const std::string& name, int64_t* value) {
+        uint16_t v = 0;
+        if (!m_map.symbolValue(name, &v)) return false;
+        *value = v;
+        return true;
+    };
     m_replacedPending = false;
-    createTarget();
-    m_sessionActive = m_target != nullptr;
+    m_entryPending = false;
+    m_lastMachine = m_machines->machine();
+    m_sessionActive = m_lastMachine != nullptr;
+    if (m_sessionActive) applyBreakpoints();
+    const auto* s = m_machines->listener().state<calcu::debugger::RunState>(calcu::debugger::kRunStateTopic);
+    m_lastPaused = s && s->paused;
     return m_sessionActive;
 }
 
 void DebugController::endSession() {
-    // Dropping the target clears its breakpoints and watches from the CPUs;
-    // the machine then runs on normally.
-    m_sessionActive = false;
-    m_run.reset();
-    m_target.reset();
-    m_breakpoints.clear();
-    m_map.clear();
-    if (m_lastPaused) {
-        m_lastPaused = false;
-        emit pausedChanged(false);
+    // The DAP's breakpoints and watches leave the library's table; the
+    // machine runs on as without a debugger.
+    if (m_sessionActive) {
+        m_breakpoints.clear();
+        applyBreakpoints();
+        if (libraryRunControl()->paused()) libraryRunControl()->resume();
     }
+    m_sessionActive = false;
+    m_targets.reset();
+    m_map.clear();
 }
 
 bool DebugController::attached() const { return m_sessionActive; }
 
-bool DebugController::paused() const { return m_sessionActive && m_run && m_run->paused(); }
-
-void DebugController::runSlice(std::uint64_t cycles) {
-    if (!m_sessionActive || !m_target) return;
-    if (m_replacedPending) {
-        // The machine was rebuilt since the last frame (the target bound to
-        // it then). Now that it has booted and nothing else drives it, the
-        // listings can be checked against it and the breakpoints armed.
+// After every host call: what the run control did reaches the client
+// (C1600-3 §3.6: a change to paused gives one `stopped`), the output of
+// log messages too; a machine built since has its listings checked once no
+// operation runs any more.
+void DebugController::afterCall() {
+    if (!m_sessionActive) return;
+    if (m_machines->machine() != m_lastMachine) {
+        m_lastMachine = m_machines->machine();
+        m_replacedPending = true;
+    }
+    if (m_replacedPending && !appBusy() && m_lastMachine) {
         m_replacedPending = false;
-        m_run->resume();
         if (m_session) m_session->onMachineReplaced();
     }
-    // Breakpoints and watches act only while the debugger runs the machine;
-    // a boot or load in between must not park on one.
-    m_target->arm(true);
-    const std::vector<debug::DebugEvent> events = m_run->slice(cycles);
-    m_target->arm(false);
-    if (m_session && !events.empty()) m_session->onEvents(events);
-    const bool nowPaused = m_run->paused();
-    if (nowPaused != m_lastPaused) {
-        m_lastPaused = nowPaused;
-        emit pausedChanged(nowPaused);
+    std::vector<DebugEvent> events;
+    for (std::string& line : m_breakpoints.takeOutput()) {
+        DebugEvent e;
+        e.kind = DebugEvent::Output;
+        e.text = std::move(line);
+        events.push_back(std::move(e));
     }
+    const auto* s = m_machines->listener().state<calcu::debugger::RunState>(calcu::debugger::kRunStateTopic);
+    const bool paused = s && s->paused;
+    if (paused && !m_lastPaused && s->reason) {
+        using R = calcu::debugger::RunState::Reason;
+        DebugEvent e;
+        e.kind = DebugEvent::Stopped;
+        e.breakpointIds = m_breakpoints.dapIds(s->hits);
+        switch (*s->reason) {
+        case R::Breakpoint: e.reason = m_breakpoints.entryHit(s->hits) ? DebugEvent::Entry : DebugEvent::Breakpoint; break;
+        case R::Watch: e.reason = DebugEvent::DataBreakpoint; break;
+        case R::Step: e.reason = DebugEvent::Step; break;
+        case R::Entry: e.reason = DebugEvent::Entry; break;
+        case R::Pause:
+        case R::PauseOnStart: e.reason = m_entryPending ? DebugEvent::Entry : DebugEvent::Pause; break;
+        }
+        m_entryPending = false;
+        e.thread = 1;
+        if (shared::dap::DapTargets* t = target(); t && s->target)
+            for (const auto& th : t->threads())
+                if (t->targetId(th.id) == *s->target) e.thread = th.id;
+        events.push_back(std::move(e));
+    }
+    m_lastPaused = paused;
+    if (m_session && !events.empty()) m_session->onEvents(events);
 }
 
-std::vector<debug::BreakpointStatus> DebugController::rebindListings() {
-    if (!m_run) return {};
-    for (const auto& b : m_map.bindings()) m_map.verify(b.id, m_run->bankMatch(), m_run->codePeek());
+std::vector<shared::dap::BreakpointStatus> DebugController::rebindListings() {
+    shared::dap::DapTargets* t = target();
+    if (!t) return {};
+    for (const auto& b : m_map.bindings()) m_map.verify(b.id, t->bankMatch(), t->codePeek());
     auto changed = m_breakpoints.reresolve(m_map);
-    if (m_target) m_breakpoints.apply(*m_target);
+    applyBreakpoints();
     return changed;
 }
 
@@ -197,8 +239,8 @@ bool DebugController::loadPreset(const QString& path, QString* error, bool armOn
     }
     const bool ok = m_sync->runAndWait(tr("Load Preset"), shared::commands::kLoadPreset,
                                        calcu::sessions::Value::object({{"path", path.toStdString()}, {"armOnly", armOnly}}), error);
-    // The preset rebuilt the machine and the target rebound to it; it stays
-    // paused, as a fresh session is -- the caller re-binds the listings.
+    // The preset rebuilt the machine; the caller re-binds the listings.
+    m_lastMachine = m_machines->machine();
     m_replacedPending = false;
     return ok;
 }
@@ -228,8 +270,8 @@ bool DebugController::cleanStart(const QString& preset, QString* how, QString* e
         ok = m_sync->runAndWait(tr("Reset All"), shared::commands::kReset, calcu::sessions::Value::object({{"all", true}}),
                                 error);
     }
-    // A rebuilt machine stays paused, as a fresh session is -- the caller
-    // re-binds the listings.
+    // The caller re-binds the listings.
+    m_lastMachine = m_machines->machine();
     m_replacedPending = false;
     return ok;
 }
@@ -237,7 +279,7 @@ bool DebugController::cleanStart(const QString& preset, QString* how, QString* e
 debug::LoadResult DebugController::loadProgram(const debug::LoadRequest& request, After after,
                                                const std::string& command) {
     debug::LoadResult r;
-    if (!m_target || !m_run || !m_sync) {
+    if (!target() || !m_sync) {
         r.error = "no machine";
         return r;
     }
@@ -247,7 +289,7 @@ debug::LoadResult DebugController::loadProgram(const debug::LoadRequest& request
         r.error = machine ? "an operation is running" : "no machine";
         return r;
     }
-    r = sharp::legacy::loadProgram(*machine, request, m_map, *m_target);
+    r = sharp::legacy::loadProgram(*machine, request, m_map);
     if (!r.ok) return r;
     if (after == After::None) return r;
     if (!command.empty()) r.callCommand = command;
@@ -256,9 +298,9 @@ debug::LoadResult DebugController::loadProgram(const debug::LoadRequest& request
         return r;
     }
     if (after == After::StopOnEntry) m_breakpoints.setEntry(request.thread, r.entry);
-    m_breakpoints.apply(*m_target);
+    applyBreakpoints();
     m_machines->typeCommand(r.callCommand); // typed and entered as the machine runs
-    m_run->resume();
+    m_run.resume();
     return r;
 }
 
@@ -267,39 +309,60 @@ void DebugController::typeCommand(const std::string& line) { m_machines->typeCom
 bool DebugController::lcdText(LcdText* out) const { return m_machines->lcdText(out); }
 
 bool DebugController::resetMachine(bool allReset, bool stop, QString* error) {
-    if (!m_target || !m_run || !m_sync) {
+    calcu::machine::Machine* machine = m_machines->machine();
+    if (!machine || !m_sync) {
         *error = tr("No machine is running");
         return false;
     }
     // Without the boot run (ROM research starts at the vector), but like
-    // any reset: timer stopped meanwhile, clock re-seeded after.
+    // any reset: typing dropped, clock re-seeded after (C1600-3 D-2).
     if (appBusy()) {
         *error = tr("Another operation is running.");
         return false;
     }
     m_machines->cancelPaste();
-    m_target->reset(allReset);
+    if (allReset) machine->coldBoot();
+    else machine->reset();
     m_machines->app().seedClockFromHost();
-    if (stop) m_run->pause(debug::DebugEvent::Entry);
-    else m_run->resume();
+    // L-A2: the restart is told, so the run control runs again.
+    libraryRunControl()->restarted(allReset ? calcu::debugger::RestartKind::ColdBoot : calcu::debugger::RestartKind::Reset);
+    if (stop) m_run.pause(DebugEvent::Entry);
+    else m_run.resume();
     return true;
 }
 
-void DebugController::machineAboutToChange() {
-    // The target refers to the machine that is about to go; machineReplaced()
-    // binds to its successor.
-    m_run.reset();
-    m_target.reset();
-    if (m_lastPaused) {
-        m_lastPaused = false;
-        emit pausedChanged(false);
-    }
+// ── DapRun ────────────────────────────────────────────────────────────────
+
+bool DapRun::locate(int thread, uint16_t pc, debug::SourceLocation* out) const {
+    shared::dap::DapTargets* t = m_c.target();
+    return t && m_c.sourceMap().lookup(thread, pc, t->bankMatch(), out, t->codePeek());
 }
 
-void DebugController::machineReplaced() {
-    if (!m_sessionActive) return;
-    createTarget();
-    // The new machine hasn't booted yet; the next frame resumes it and
-    // re-binds the listings (see runSlice()).
-    m_replacedPending = true;
+debug::BankMatch DapRun::bankMatch() const {
+    shared::dap::DapTargets* t = m_c.target();
+    return t ? t->bankMatch() : debug::BankMatch([](int, const debug::BankKey&, uint16_t) { return false; });
+}
+
+debug::CodePeek DapRun::codePeek() const {
+    shared::dap::DapTargets* t = m_c.target();
+    return t ? t->codePeek() : debug::CodePeek([](int, uint16_t, uint8_t*) { return false; });
+}
+
+const shared::dap::DapBreakpoints::SymbolLookup& DapRun::symbols() const { return m_c.symbols(); }
+
+void DapRun::resume() {
+    m_c.noteRunning();
+    m_c.libraryRunControl()->resume();
+}
+
+void DapRun::pause(DebugEvent::Reason reason) {
+    m_c.noteRunning();
+    if (reason == DebugEvent::Entry) m_c.expectEntry();
+    m_c.libraryRunControl()->pause(calcu::debugger::kCpu);
+}
+
+void DapRun::step(int thread, shared::dap::StepKind kind, bool line) {
+    shared::dap::DapTargets* t = m_c.target();
+    if (!t) return;
+    if (shared::dap::step(*m_c.libraryRunControl(), *t, m_c.sourceMap(), thread, kind, line).ok) m_c.noteRunning();
 }

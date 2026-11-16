@@ -687,7 +687,7 @@ int SC7852::execute(uint8_t opcode) {
         case 0xD0: if (condTrue(2)) { PC = popWord(); return 11; } return 5;
         case 0xD1: writeReg16_af(1, popWord()); return 10;
         case 0xD2: { uint16_t nn = fetch16(); if (condTrue(2)) PC = nn; return 10; }
-        case 0xD3: { uint8_t n = fetch8(); bus.writeIO(n, A); return 11; }
+        case 0xD3: { uint8_t n = fetch8(); ioWrite(n, A); return 11; }
         case 0xD4: { uint16_t nn = fetch16(); if (condTrue(2)) { pushWord(PC); PC = nn; return 17; } return 10; }
         case 0xD5: pushWord(readReg16_af(1)); return 11;
         case 0xD6: A = sub8(A, fetch8()); return 7;
@@ -808,14 +808,14 @@ int SC7852::executeED(uint8_t opcode) {
         case 0x70: { uint8_t t = bus.readIO(C); setSZP53(t); setFlagBit(kFlagH,false); setFlagBit(kFlagN,false); return 8; } // IN F,(C) / IN (C)
         case 0x78: A = bus.readIO(C); setSZP53(A); setFlagBit(kFlagH,false); setFlagBit(kFlagN,false); return 8;
 
-        case 0x41: bus.writeIO(C, B); return 8;
-        case 0x49: bus.writeIO(C, C); return 8;
-        case 0x51: bus.writeIO(C, D); return 8;
-        case 0x59: bus.writeIO(C, E); return 8;
-        case 0x61: bus.writeIO(C, H); return 8;
-        case 0x69: bus.writeIO(C, L); return 8;
-        case 0x71: bus.writeIO(C, 0); return 8; // OUT (C),0 (undocumented)
-        case 0x79: bus.writeIO(C, A); return 8;
+        case 0x41: ioWrite(C, B); return 8;
+        case 0x49: ioWrite(C, C); return 8;
+        case 0x51: ioWrite(C, D); return 8;
+        case 0x59: ioWrite(C, E); return 8;
+        case 0x61: ioWrite(C, H); return 8;
+        case 0x69: ioWrite(C, L); return 8;
+        case 0x71: ioWrite(C, 0); return 8; // OUT (C),0 (undocumented)
+        case 0x79: ioWrite(C, A); return 8;
 
         // SBC/ADC HL,rr
         case 0x42: setHL(sbc16(hl(), readReg16_sp(0))); return 11;
@@ -953,7 +953,7 @@ int SC7852::executeED(uint8_t opcode) {
         case 0xA3: case 0xB3: { // OUTI / OTIR
             uint8_t v = dataRead(hl());
             B = uint8_t(B - 1);
-            bus.writeIO(C, v);
+            ioWrite(C, v);
             setHL(uint16_t(hl()+1));
             setFlagBit(kFlagZ, B == 0);
             setFlagBit(kFlagN, true);
@@ -963,7 +963,7 @@ int SC7852::executeED(uint8_t opcode) {
         case 0xAB: case 0xBB: { // OUTD / OTDR
             uint8_t v = dataRead(hl());
             B = uint8_t(B - 1);
-            bus.writeIO(C, v);
+            ioWrite(C, v);
             setHL(uint16_t(hl()-1));
             setFlagBit(kFlagZ, B == 0);
             setFlagBit(kFlagN, true);

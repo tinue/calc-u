@@ -5,7 +5,7 @@
 // can be inspected without the GUI.
 //
 // The machine is built through the machine interface (C1600-1 design §7);
-// the paper is the CE-1600P's c1600.plotter-paper, the preset goes through
+// the paper is the CE-1600P's paper-output, the preset goes through
 // sharp::legacy::applyPresetJob until M-46.
 //
 // Usage: pc1600_plotter_probe <preset.pc1600> [maxSettleCycles]
@@ -39,7 +39,6 @@ int main(int argc, char** argv) {
         return 1;
     }
     cli::Machine& machine = *built;
-    auto paper = [&machine] { return cli::ofPeripheral<sharp::PlotterPaper>(machine, sharp::kCE1600P); };
     PresetLoadResult res = job::runToCompletion(sharp::legacy::applyPresetJob(
         machine, preset,
         [&machine](const std::string& l) {
@@ -55,15 +54,15 @@ int main(int argc, char** argv) {
         return 1;
     }
 
-    sharp::PlotterPaper* p = paper();
-    if (!p) {
+    CE1600PCard* card = sharp::legacy::coreParts(machine).ce1600p;
+    if (!card || !cli::ofPeripheral<calcu::paper::PaperOutput>(machine, sharp::kCE1600P)) {
         std::fprintf(stderr, "no CE-1600P attached by this preset\n");
         return 1;
     }
-    auto events = p->drainEvents();
+    auto events = card->mechanism().drainEvents();
     std::printf("CE-1600P events (%zu):\n", events.size());
     for (const auto& e : events) std::printf("  %s\n", e.c_str());
-    auto pts = p->points();
+    auto pts = cli::plotPointsOf(machine, sharp::kCE1600P);
     std::printf("plot points=%zu\n", pts.size());
     if (!pts.empty()) {
         std::printf("first point colour index=%d, last point colour index=%d\n",

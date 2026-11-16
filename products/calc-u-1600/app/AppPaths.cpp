@@ -98,9 +98,9 @@ std::string AppPaths::tapePathFor(const std::string& tapeName) const {
 }
 
 std::string AppPaths::traceDir() const {
-    // The Web: no trace folder (a download, LIB-10); the save folder until then (A-3).
+    // The Web has no trace folder (LIB-9 AC-17; LIB-10 D-10: a trace fails there).
     if (const auto dir = m_paths.traceFolder()) return *dir;
-    return instanceDir();
+    return {};
 }
 
 std::string AppPaths::serialLinkDir() const {

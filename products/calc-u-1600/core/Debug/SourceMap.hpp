@@ -6,7 +6,7 @@
 #include <string>
 #include <vector>
 
-#include "DebugTarget.hpp"
+#include "CpuRegisters.hpp"
 #include "Listing/Listing.hpp"
 
 // ── Source map ───────────────────────────────────────────────────────────
@@ -27,7 +27,7 @@
 namespace debug {
 
 /// Whether `key` matches the machine's state for `addr` on `thread` now
-/// (see DebugTarget::bankMatches()).
+/// (see sharp::SharpDebugTarget::bankMatches()).
 using BankMatch = std::function<bool(int thread, const BankKey& key, uint16_t addr)>;
 /// A side-effect-free code byte read; false if unreadable.
 using CodePeek = std::function<bool(int thread, uint16_t addr, uint8_t* value)>;

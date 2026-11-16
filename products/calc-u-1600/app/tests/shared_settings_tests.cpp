@@ -244,7 +244,7 @@ TEST(lib9_ac32_web_keeps_and_ignores_dap_serial_window_folders) {
     // Ignored: the save folder override, the serial link folder (Qt6 only).
     CHECK(paths.instanceDir() == web.saveFolder);
     CHECK(paths.serialLinkDir() == web.saveFolder);
-    CHECK(paths.traceDir() == web.saveFolder);  // adapter A-3 until LIB-10
+    CHECK(paths.traceDir().empty());  // no trace folder on the Web (LIB-10 D-10; A-3 went in M-45)
 
     // A change the Web makes keeps them.
     s.setStartupModelPreference("PC-1600");

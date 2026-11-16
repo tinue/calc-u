@@ -176,18 +176,13 @@ public:
     void detachCE1600P();
     bool ce1600pAttached() const { return m_ce1600pCard != nullptr; }
     /// Direct access, like `keyboard()`/`memory()`; above the core the
-    /// paper is reached through PC1600InterfaceMachine's
-    /// c1600.plotter-paper kind, over the accessors below.
+    /// paper is the card's paper-output capability (LIB-8).
     CE1600PCard* ce1600pCard() { return m_ce1600pCard.get(); }
+    /// The CE-1600P's paper output, nullptr while it is not plugged in.
+    sharp::PlotterPaperOutput* ce1600pPaperOutput();
 
     /// Empty when no plotter is attached.
-    std::vector<AlpsPlotterMechanism::FlatPoint> ce1600pPlotPoints() const;
-    /// O(1) change token for the plot geometry (0 when no plotter attached).
-    /// A GUI poll loop reads this every frame and only calls the copying
-    /// `ce1600pPlotPoints()` when it has moved (PlotterPaperWidget).
-    uint64_t ce1600pPlotRevision() const;
     std::vector<std::string> drainCE1600PEvents();
-    void clearCE1600PPaper();
 
     // ── CE-1600F floppy (attached as a union with CE-1600P, above) ──────
     //
@@ -262,10 +257,8 @@ public:
     bool ce150Attached() const { return m_ce150Card != nullptr; }
     Ce150Card* ce150Card() { return m_ce150Card.get(); } // direct access -- core and tests
 
-    std::vector<AlpsPlotterMechanism::FlatPoint> ce150PlotPoints() const;
-    uint64_t ce150PlotRevision() const;
+    sharp::PlotterPaperOutput* ce150PaperOutput();   // nullptr while not plugged in
     std::vector<std::string> drainCE150Events();
-    void clearCE150Paper();
 
     // ── CE-158 RS-232C / Centronics interface (LH5803 side, MODE 1) ──────
     //
@@ -501,10 +494,22 @@ public:
     /// clear the trace flags. No-op if no capture is active.
     void endCpuTrace();
 
-    bool cpuTraceActive() const { return m_traceFile != nullptr; }
+    // A capture to a file (today's tools); the app's records are not one.
+    bool cpuTraceActive() const { return m_traceFile && !m_traceFile->buffered(); }
     /// Size of the active capture so far (0 when none); see
     /// PC1500TraceFile::bytesWritten().
     uint64_t cpuTraceBytes() const { return m_traceFile ? m_traceFile->bytesWritten() : 0; }
+
+    // The app's trace (LIB-10 §10.7, the c1600.trace-records kind): the same
+    // records, kept in a buffer until the library's trace session takes
+    // them (whole records, at most a budget). endTraceRecord() drains what is
+    // left and writes SESSION_END; endTraceRecords() turns recording off.
+    bool beginTraceRecords(uint32_t flags);
+    bool takeTraceRecords(std::vector<uint8_t>& out, uint64_t budget) {
+        return m_traceFile ? m_traceFile->take(out, budget) : true;
+    }
+    void endTraceRecord();
+    void endTraceRecords();
 
 private:
 

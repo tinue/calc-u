@@ -98,6 +98,9 @@ captures the whole window. More captures can go in `steps:` as
 | `enter-text: <text>` | Type into the text field of the open dialog, e.g. a name in Name & Save. |
 | `accept` | Accept the open dialog (its OK button), e.g. after `enter-text`. |
 | `capture: …` | Write an image; see below. |
+| `expect-panel: { name, title, empty }` | Check a paper panel (by objectName): shown, with that title (the plotter's name; `""` none), empty or not; the shot fails otherwise. For the check scenarios in `tests/gui/`. |
+| `expect-title: <text>` | Check the window's title. |
+| `command: <name>` | Send a session command without arguments (`pause`, `resume`), as the harness would. |
 
 A dialog opened by `action:` or `click:` stays open and scriptable: the
 script carries on inside it, captures it, then `close`s it. Anything still
@@ -111,8 +114,9 @@ open when a shot ends is closed automatically, and a held key is released.
 - `target`: one of these (default `window`):
   - `window`: the main window's contents.
   - `dialog`: the open dialog.
-  - `plot`: the plotter's whole paper at physical size (up to 1200 DPI),
-    as Copy puts it on the clipboard.
+  - `plot`: the plugged-in plotter's whole paper at physical size (up to
+    1200 DPI), as Copy puts it on the clipboard: the session's
+    `paper.picture` (LIB-8).
   - `lcd-image`: the LCD dot matrix at physical size, as Edit ▸ Copy Screen
     puts it on the clipboard. (`lcd` is the on-screen LCD widget.)
   - `screen-region`: `method: system` only; see below.
@@ -168,10 +172,19 @@ Two macOS details:
 | `controlbar.floppy`, `controlbar.floppy.side`, `controlbar.floppy.save`, `controlbar.floppy.lamp` | CE-1600F disk row |
 | `controlbar.tape`, `controlbar.tape.save`, `controlbar.tape.counter` | cassette bay: tape picker, Save, counter (green while the motor runs; with a CE-150 or CE-1600P) |
 | `debugpanel`, `debugpanel.pointers`, `debugpanel.memory`, `debugpanel.dump`, `debugpanel.card`, `debugpanel.clear`, `debugpanel.trace` | Inspector panel and its buttons (`open:` on `debugpanel.memory` / `debugpanel.dump` shows the menu) |
-| `paper`, `paper.copy`, `paper.cut` | plotter paper panel |
+| `paper`, `paper-copy`, `paper-cut` | the paper panel (the library's `PaperPanel`, always there) and its buttons |
 | `ce158printer`, `ce158printer.save`, `ce158printer.clear` | CE-158 printer panel |
 | `dialog.settings`, `dialog.about`, `dialog.machinecode` | dialogs |
 | `dialog.settings.general`, `.presets`, `.storage`, `.tracing`, `.serial`, `.debugger` | one section of Settings |
+
+## Check scenarios
+
+`tests/gui/*.shots.yaml` are scenarios that check what the acceptance
+criteria of the GUI say (ADR 0032): LIB-8 AC-36 (`lib8-ac36`), AC-38
+(`lib8-ac38`), LIB-10 AC-41 (`lib10-ac41`). They run as the CTests
+`CalcU1600Shots.<name>` (Longer) with the guide's scenarios, write their
+pictures into the build tree, and use `expect-panel`, `expect-title` and
+`command`. M-49 turns them into an attach client.
 
 ## Presets
 

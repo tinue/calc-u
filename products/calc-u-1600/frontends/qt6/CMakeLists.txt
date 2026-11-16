@@ -11,9 +11,8 @@ endif()
 # the vendored libsharpdx (SharpDataExchange's .cargo/config.toml) and
 # tools/refresh_sharpdx.sh. C++20 and Homebrew's Qt prefix are the root's too.
 if(APPLE)
-  # MacClipboardImage.mm needs Objective-C++ -- see its own doc comment for
-  # why the plotter-paper clipboard export can't use Qt's cross-platform
-  # QClipboard here.
+  # MacAppSupport.mm and MacShotSupport.mm need Objective-C++ (the paper's
+  # clipboard path is the Qt6 component set's qt6/MacClipboard.mm since M-45).
   project(CalcU1600Qt CXX OBJCXX)
 else()
   project(CalcU1600Qt CXX)
@@ -89,7 +88,6 @@ qt_add_executable(CalcU1600Qt
   app/LcdWidget.cpp
   app/ControlBar.cpp
   app/DebugPanel.cpp
-  app/PlotterPaperWidget.cpp
   app/Ce158PrinterWidget.cpp
   app/HostKeyEvents.cpp
   app/AppPaths.cpp
@@ -112,7 +110,7 @@ qt_add_executable(CalcU1600Qt
 )
 
 if(APPLE)
-  target_sources(CalcU1600Qt PRIVATE app/MacClipboardImage.mm app/MacAppSupport.mm app/screenshots/MacShotSupport.mm)
+  target_sources(CalcU1600Qt PRIVATE app/MacAppSupport.mm app/screenshots/MacShotSupport.mm)
   target_link_libraries(CalcU1600Qt PRIVATE "-framework Cocoa")
 endif()
 
@@ -130,7 +128,7 @@ target_link_libraries(CalcU1600Qt PRIVATE Qt6::Widgets Qt6::Multimedia Qt6::Netw
 # AC-22; until the Qt6 frontend has harness attach).
 target_compile_definitions(CalcU1600Qt PRIVATE $<$<NOT:$<CONFIG:Release>>:CALCU1600_TEST_HOOKS>)
 
-target_link_libraries(CalcU1600Qt PRIVATE calcu_shared)
+target_link_libraries(CalcU1600Qt PRIVATE calcu_shared calcu_qt6)
 
 # ---- App icon (macOS bundle icon; Windows' equivalent is the WIN32
 # block's calc-u-1600.rc above, Linux's is the AppImage's --icon-file in

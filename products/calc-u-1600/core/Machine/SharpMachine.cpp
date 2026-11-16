@@ -41,17 +41,29 @@ std::unique_ptr<ExpansionCard> moduleCardOf(const PeripheralRequest& req, const 
 
 // ---- Emulated time and the power cycle ----
 
+// LIB-10 §10.5: with all checks off the core's own path, as before.
+Ticks SharpMachine::runChecked(Ticks n) {
+    SharpDebugging* d = sharpDebugging();
+    if (d && d->checking()) return d->run(n);
+    return runCore(n);
+}
+
+bool SharpMachine::stopPending() {
+    SharpDebugging* d = sharpDebugging();
+    return d && d->stopPending();
+}
+
 Ticks SharpMachine::advance(Ticks atLeast) {
     if (atLeast == 0) return 0;
     Ticks ran = 0;
     while (ran < atLeast && m_sequence.active()) {
         const Ticks chunk = std::min(atLeast - ran, m_sequence.remaining());
-        const Ticks r = runCore(chunk);
+        const Ticks r = runChecked(chunk);
         ran += r;
         m_sequence.consumed(r, *this);
-        if (r == 0) return ran;   // a debugger stop: nothing ran
+        if (r == 0 || stopPending()) return ran;   // a debugger stop
     }
-    if (ran < atLeast) ran += runCore(atLeast - ran);
+    if (ran < atLeast) ran += runChecked(atLeast - ran);
     // Switched off by its own ROM (the `off` key, auto power-off): that is
     // an off point too, and the waiting changes reach the bus.
     if (!m_waiting.empty() && !m_sequence.active() && coreSwitchedOff()) makeWaitingChanges();

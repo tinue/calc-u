@@ -1,5 +1,6 @@
 #pragma once
 #include <cstdint>
+#include <vector>
 
 #include "../../TraceTypes.hpp"
 #include "../HistoryRing.hpp"
@@ -191,6 +192,10 @@ public:
     /// Data breakpoints: every data access (not opcode/operand fetches) is
     /// checked against `watches` while it is non-null. Not owned.
     void setWatches(WatchSet* watches) { m_watches = watches; }
+    /// The value the CPU last wrote to ME1 cell `addr` since it was built,
+    /// or -1 (LIB-10 AC-48, AC-52: the debugger's `me1-written` view of the
+    /// cells that read back unreadable). Reading it has no effect.
+    int me1Written(uint16_t addr) const { return m_me1Written[addr] > 0xFF ? -1 : m_me1Written[addr]; }
 
     /// Continue from a breakpoint: the instruction at the current PC
     /// executes once even though it is a breakpoint. The skip is tied to
@@ -263,7 +268,11 @@ private:
     uint8_t dataME0(uint16_t a) { uint8_t v = bus.readME0(a); if (m_watches) m_watches->check(a, v, false, 0); return v; }
     uint8_t dataME1(uint16_t a) { uint8_t v = bus.readME1(a); if (m_watches) m_watches->check(a, v, false, 1); return v; }
     void storeME0(uint16_t a, uint8_t v) { if (m_watches) m_watches->check(a, v, true, 0); bus.writeME0(a, v); }
-    void storeME1(uint16_t a, uint8_t v) { if (m_watches) m_watches->check(a, v, true, 1); bus.writeME1(a, v); }
+    void storeME1(uint16_t a, uint8_t v) {
+        if (m_watches) m_watches->check(a, v, true, 1);
+        m_me1Written[a] = v;
+        bus.writeME1(a, v);
+    }
 
     // ── Fetch helpers ────────────────────────────────────────────────────
     uint8_t  fetch8();
@@ -312,6 +321,7 @@ private:
     BreakpointSet m_breakpoints;
     History m_history;
     WatchSet* m_watches{nullptr};
+    std::vector<uint16_t> m_me1Written = std::vector<uint16_t>(0x10000, 0x100);   // me1Written(); 0x100: none
     bool m_breakpointsEnabled{false};
     int32_t m_skipBreakpointAt{-1}; // resumePastBreakpoint(); -1 = none
     uint8_t m_fetchLen{0}; // bytes fetched by the current step(), mirrored into m_history.next()

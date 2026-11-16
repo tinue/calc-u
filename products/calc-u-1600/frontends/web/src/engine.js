@@ -22,14 +22,6 @@ function fileBytes(file) {
   return file.arrayBuffer().then((b) => new Uint8Array(b));
 }
 
-// The plotter strokes come as bytes (float32 x,y pairs, uint32 starts).
-function typedStrokes(pens) {
-  return (pens || []).map((p) => ({
-    coords: new Float32Array(p.coords.slice().buffer),
-    starts: new Uint32Array(p.starts.slice().buffer),
-  }));
-}
-
 // KeyboardEvent.code of the keys a keyboard map may name (calcu::typing::NamedKey).
 const NAMED_KEYS = {
   Escape: "escape", Backspace: "backspace", Enter: "return", NumpadEnter: "enter", Tab: "tab", Delete: "delete",
@@ -103,14 +95,13 @@ const METHODS = {
   inspectorView: ["request", "c1600.inspector-view", (view) => ({ view }), value],
   inspectorMenu: ["request", "c1600.inspector-menu", (dumps) => ({ dumps: !!dumps }), value],
   cardYaml: ["request", "c1600.card-yaml", () => null, value],
-  setPaperWidth: ["command", "c1600.paper-width", (width) => ({ width }), null],
-  paperExport: ["request", "c1600.paper-export", () => null,
-    (r) => (r.done && r.value ? { ...r.value, strokes: typedStrokes(r.value.strokes) } : null)],
-  clearPaper: ["command", "c1600.clear-paper", () => null, null],
   // On-screen keys (LIB-5 AC-4, EC-6): by key ID and pointer.
   faceKeyDown: ["command", "screen-key-down", (key, pointer) => ({ key, pointer: pointer || 0 }), null],
   faceKeyUp: ["command", "screen-key-up", (key, pointer) => ({ key, pointer: pointer || 0 }), null],
   setTurbo: ["command", "speed", (full) => ({ full: !!full }), null],
+  // LIB-10 (AC-40, AC-41): the library's run control, with or without a debugger.
+  pause: ["command", "pause", () => ({ level: "cpu" }), null],
+  resume: ["command", "resume", () => null, null],
 };
 
 const INITIAL_STATE = {
@@ -122,8 +113,8 @@ const INITIAL_STATE = {
   ui: null,           // control state, pickers (c1600.ui)
   lamps: { floppyMotor: false, tapeMode: "", tapeMotor: false, tapeSeconds: 0, tapeFile: "" },
   busy: false,
+  paused: false,      // the run-state topic: the machine is paused (LIB-10)
   notices: [],        // [{title, text}], shown one at a time
-  paper: null,        // {kind, empty, contentHeight, strokes}
   printer: { text: "", chunks: [] },
   log: [],            // preset step lines, for the inspector
 };
@@ -157,7 +148,6 @@ function createEngine({ workerUrl, model, preset }) {
     const notices = (streams.notices || []).slice(seen.notices)
       .map((n) => ({ title: "Calc-U-1600", text: n.sentence }));
     const printed = (streams["c1600.printer"] || []).slice(seen.printer);
-    const paper = t["c1600.paper"];
     const busyState = t.busy;
     // Ready once the start (an operation: the model, then its preset) is
     // over: keys pressed while an operation runs are dropped (ledger 1600-9).
@@ -171,8 +161,8 @@ function createEngine({ workerUrl, model, preset }) {
       ui: t["c1600.ui"] || null,
       lamps: t["c1600.lamps"] || INITIAL_STATE.lamps,
       busy: !!(busyState && busyState.operationRuns),
+      paused: !!(t["run-state"] && t["run-state"].paused),
       notices,
-      paper: paper ? { ...paper, strokes: typedStrokes(paper.strokes) } : null,
       printer: { text: printed.map((p) => p.text).join(""), chunks: printed.map((p) => p.bytes) },
       log: (streams.log || []).map((l) => l.text),
     };
@@ -212,11 +202,11 @@ function createEngine({ workerUrl, model, preset }) {
     const topics = s.topics, streams = s.streams;
     const key = lastShell;
     if (key && key.start === s.start && key.ui === topics["c1600.ui"] && key.lamps === topics["c1600.lamps"] &&
-        key.busy === topics.busy && key.paper === topics["c1600.paper"] && key.notices === streams.notices &&
+        key.busy === topics.busy && key.runState === topics["run-state"] && key.notices === streams.notices &&
         key.printer === streams["c1600.printer"] && key.log === streams.log && key.missing === topics["roms-missing"] &&
         key.storage === topics["web.storage"]) return;
-    lastShell = { start: s.start, ui: topics["c1600.ui"], lamps: topics["c1600.lamps"], busy: topics.busy,
-      paper: topics["c1600.paper"], notices: streams.notices, printer: streams["c1600.printer"], log: streams.log,
+    lastShell = { start: s.start, ui: topics["c1600.ui"], lamps: topics["c1600.lamps"], busy: topics.busy, runState: topics["run-state"],
+      notices: streams.notices, printer: streams["c1600.printer"], log: streams.log,
       missing: topics["roms-missing"], storage: topics["web.storage"] };
     update();
   });
@@ -231,6 +221,9 @@ function createEngine({ workerUrl, model, preset }) {
 
   return {
     frames,
+    // The library's shell, for the React component set's panels (LIB-8: the
+    // paper panel reads the `papers` and `paper <owner>` topics from it).
+    shell,
     getState: () => state,
     subscribe: (l) => { listeners.add(l); return () => listeners.delete(l); },
     /// A command or request, result not wanted.

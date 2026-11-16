@@ -6,7 +6,9 @@
 #include "../EmulationPacer.hpp"
 #include "../MainWindow.hpp"
 #include "../MachineController.hpp"
-#include "../PlotterPaperWidget.hpp"
+#include "paper/PaperTopics.hpp"
+#include "qt6/PaperPanel.hpp"
+#include "sessions/Payload.hpp"
 
 #include <QAbstractButton>
 #include <QAction>
@@ -23,6 +25,7 @@
 #include <QProcess>
 #include <QScreen>
 #include <QStyleHints>
+#include <QFile>
 #include <QTimer>
 #include <cstdio>
 
@@ -389,6 +392,56 @@ bool ShotRunner::runStep(const ShotStep& step, int* delayMs, std::function<void(
     }
     case K::Capture:
         return capture(step.capture, error);
+    case K::ExpectPanel: {
+        // The check scenarios (LIB-8 AC-36, AC-38): the panel shown, with
+        // the title asked for, empty or not.
+        QWidget* w = findWidget(step.text, error);
+        if (!w) return false;
+        if (!w->isVisible()) {
+            *error = QStringLiteral("'%1' is not shown").arg(step.text);
+            return false;
+        }
+        auto* panel = qobject_cast<calcu::qt6::PaperPanel*>(w);
+        if (!panel) {
+            *error = QStringLiteral("'%1' is no paper panel").arg(step.text);
+            return false;
+        }
+        const QString title = QString::fromStdString(panel->ownerName());
+        if (step.text2 != QStringLiteral("\x01") && title != step.text2) {
+            *error = QStringLiteral("'%1' shows the title '%2', not '%3'").arg(step.text, title, step.text2);
+            return false;
+        }
+        if (step.number >= 0 && panel->paperEmpty() != (step.number == 1)) {
+            *error = QStringLiteral("the paper of '%1' is %2").arg(step.text, panel->paperEmpty() ? "empty" : "not empty");
+            return false;
+        }
+        return true;
+    }
+    case K::Command: {
+        bool done = false;
+        QString reason;
+        m_window->controller()->send(calcu::sessions::CommandName{step.text.toStdString()}, {},
+                                     [&done, &reason](const calcu::sessions::ReplyMessage& r) {
+                                         done = r.done;
+                                         reason = QString::fromStdString(r.reason);
+                                     });
+        QCoreApplication::processEvents();
+        m_window->controller()->runFor(0.1);
+        QCoreApplication::processEvents();
+        if (!done && !reason.isEmpty()) {
+            *error = QStringLiteral("'%1' refused: %2").arg(step.text, reason);
+            return false;
+        }
+        *delayMs = m_scenario.settleMs;
+        return true;
+    }
+    case K::ExpectTitle:
+        QCoreApplication::processEvents();
+        if (m_window->windowTitle() != step.text) {
+            *error = QStringLiteral("the window's title is '%1', not '%2'").arg(m_window->windowTitle(), step.text);
+            return false;
+        }
+        return true;
     }
     return true;
 }
@@ -648,12 +701,27 @@ bool ShotRunner::capture(const ShotCaptureSpec& spec, QString* error) {
             if (!ShotCapture::savePng(image, file, error)) return false;
             break;
         }
-        case Target::Plot:
-            if (!ShotCapture::savePng(m_window->plotterPaper()->renderPaperImage(), file, error)) {
-                if (error->startsWith(QLatin1String("nothing"))) *error = QStringLiteral("the plotter paper is blank");
+        case Target::Plot: {
+            // The picture of the plotter's paper, as Copy makes it (LIB-8
+            // AC-16, AC-35): the session's `paper.picture`.
+            const calcu::sessions::ReplyMessage r =
+                m_window->controller()->listener().ask(calcu::paper::kPaperPictureRequest);
+            if (!r.done) {
+                *error = r.reason == calcu::paper::kPaperEmpty ? QStringLiteral("the plotter paper is blank")
+                                                               : QString::fromStdString(r.reason);
+                return false;
+            }
+            const calcu::sessions::Value v = r.result ? r.result->toValue() : calcu::sessions::Value();
+            const calcu::sessions::Value* bytes = v.find("bytes");
+            QFile out(file);
+            if (!bytes || !bytes->bytes() || !out.open(QIODevice::WriteOnly) ||
+                out.write(reinterpret_cast<const char*>(bytes->bytes()->data()),
+                          static_cast<qint64>(bytes->bytes()->size())) != static_cast<qint64>(bytes->bytes()->size())) {
+                *error = QStringLiteral("cannot write %1").arg(file);
                 return false;
             }
             break;
+        }
         case Target::Widget:
             target = findWidget(spec.objectName, error);
             if (!target) return false;

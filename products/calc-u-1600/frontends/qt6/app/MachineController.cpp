@@ -13,6 +13,8 @@
 #include "AppSettings.hpp"
 #include "debug/DebugController.hpp"
 #include "Machine/SharpBuilder.hpp"
+#include "debugger/RunState.hpp"
+#include "paper/PaperTopics.hpp"
 #include "sessions/LibraryTopics.hpp"
 
 namespace sessions = calcu::sessions;
@@ -36,7 +38,6 @@ MachineController::MachineController(QObject* parent) : QObject(parent) {
                         sessions::HostService::KeepFile,       sessions::HostService::OpenUrl};
     m_listener.listen(*m_app.session, std::move(services));
     m_debug = std::make_unique<DebugController>(this);
-    app().setDebugger(this);
     // The start: the startup model of the settings, then its default preset
     // (an operation; the window shows "Loading…" meanwhile). A file of the
     // ROM full set missing or bad (LIB-12 AC-5): no machine starts -- the
@@ -55,8 +56,7 @@ MachineController::MachineController(QObject* parent) : QObject(parent) {
 }
 
 MachineController::~MachineController() {
-    // The debugger goes first: its target refers to the live machine.
-    app().setDebugger(nullptr);
+    // The DAP's controller goes first: its session works on the live machine.
     m_debug.reset();
     m_listener.stop();
     m_app = {};
@@ -77,6 +77,7 @@ void MachineController::call() {
     if (m_calls++ > 0) m_longestGapMs = std::max(m_longestGapMs, std::chrono::duration<double, std::milli>(t - m_lastCall).count());
     m_lastCall = t;
     m_app.session->call(t);
+    if (m_debug) m_debug->afterCall();   // stops and output reach a DAP client
     m_callMs += std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now().time_since_epoch() - t).count();
 }
 
@@ -167,7 +168,23 @@ void MachineController::attachAudio(shared::AudioSink& sink) {
     m_sound->warmUp(sharp::kSoundRate);
 }
 
+void MachineController::setPaperSink(std::function<void(const sessions::Message&)> sink) {
+    m_paperSink = std::move(sink);
+    if (!m_paperSink) return;
+    if (const sessions::PayloadPtr* papers = m_listener.mirror().state(calcu::paper::kPapersTopic))
+        m_paperSink(sessions::StateMessage{calcu::paper::kPapersTopic, *papers});
+}
+
 void MachineController::onMessage(const sessions::Message& m) {
+    if (m_paperSink) m_paperSink(m);
+    if (const auto* ask = std::get_if<sessions::ServiceAsk>(&m)) {
+        // P-A3: the clipboard, answered after the host call it came in.
+        if (calcu::qt6::ClipboardService::handles(ask->service))
+            QTimer::singleShot(0, this, [this, a = *ask] {
+                if (m_app.session) m_app.session->answer(a.ask, m_clipboard.answer(a));
+            });
+        return;
+    }
     if (const auto* s = std::get_if<sessions::StateMessage>(&m)) {
         onState(s->topic);
     } else if (const auto* st = std::get_if<sessions::StreamMessage>(&m)) {
@@ -182,6 +199,7 @@ void MachineController::onMessage(const sessions::Message& m) {
             }
         }
         (void)m_listener.mirror().takeAppended(st->topic);   // kept here only
+        (void)m_listener.mirror().takeReset(st->topic);
     } else if (std::holds_alternative<sessions::ReplyMessage>(m)) {
         // every reply has its handler (send())
     } else if (m_sound) {
@@ -223,6 +241,10 @@ void MachineController::onState(const sessions::TopicName& topic) {
             m_serialMoves = p->moves;
             emit serialLinksMoved();
         }
+    } else if (topic == calcu::debugger::kRunStateTopic) {
+        QTimer::singleShot(0, this, [this] { emit runStateChanged(); });
+    } else if (topic == calcu::debugger::kTraceTopic) {
+        QTimer::singleShot(0, this, [this] { emit traceStateChanged(); });
     } else if (topic == shared::topics::kControlState) {
         if (m_busy) QTimer::singleShot(0, this, [this] { emit presetWasArmed(); });
     }
@@ -248,18 +270,14 @@ bool MachineController::lcdText(LcdText* out) const {
     return d && session().lcdText(*d, out);
 }
 
-void MachineController::machineAboutToChange() {
-    if (m_debug) m_debug->machineAboutToChange();
+bool MachineController::traceActive() const {
+    const auto* t = m_listener.state<calcu::debugger::TraceState>(calcu::debugger::kTraceTopic);
+    return t && t->running;
 }
 
-void MachineController::machineReplaced() {
-    if (m_debug) m_debug->machineReplaced();
-}
-
-bool MachineController::runDebuggerSlice(std::uint64_t ticks) {
-    if (!m_debug || !m_debug->attached()) return false;
-    m_debug->runSlice(ticks);
-    return true;
+bool MachineController::machinePaused() const {
+    const auto* s = m_listener.state<calcu::debugger::RunState>(calcu::debugger::kRunStateTopic);
+    return s && s->paused;
 }
 
 void MachineController::refreshDebugServer() { m_debug->refreshServer(); }

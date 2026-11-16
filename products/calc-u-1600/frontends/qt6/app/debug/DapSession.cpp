@@ -24,7 +24,7 @@ int frameIndex(int frameId) { return frameId % 1000; }
 QString hex(uint32_t v, int digits) { return QStringLiteral("0x") + QStringLiteral("%1").arg(v, digits, 16, QLatin1Char('0')).toUpper(); }
 
 // The condition / hit condition / log message every breakpoint kind shares.
-void readSpec(const QJsonObject& o, debug::BreakpointSpec* spec) {
+void readSpec(const QJsonObject& o, shared::dap::BreakpointSpec* spec) {
     spec->condition = o.value(QStringLiteral("condition")).toString().toStdString();
     spec->hitCondition = o.value(QStringLiteral("hitCondition")).toString().toStdString();
     spec->logMessage = o.value(QStringLiteral("logMessage")).toString().toStdString();
@@ -38,13 +38,13 @@ QString registerValue(const debug::Register& r) {
 QString displayName(const std::string& name) { return QString::fromStdString(name).toUpper(); }
 
 
-QString stopReason(debug::DebugEvent::Reason r) {
+QString stopReason(DebugEvent::Reason r) {
     switch (r) {
-        case debug::DebugEvent::Breakpoint: return QStringLiteral("breakpoint");
-        case debug::DebugEvent::DataBreakpoint: return QStringLiteral("data breakpoint");
-        case debug::DebugEvent::Step: return QStringLiteral("step");
-        case debug::DebugEvent::Pause: return QStringLiteral("pause");
-        case debug::DebugEvent::Entry: return QStringLiteral("entry");
+        case DebugEvent::Breakpoint: return QStringLiteral("breakpoint");
+        case DebugEvent::DataBreakpoint: return QStringLiteral("data breakpoint");
+        case DebugEvent::Step: return QStringLiteral("step");
+        case DebugEvent::Pause: return QStringLiteral("pause");
+        case DebugEvent::Entry: return QStringLiteral("entry");
     }
     return QStringLiteral("pause");
 }
@@ -87,7 +87,7 @@ void DapSession::handle(const QJsonObject& request) {
     const QJsonObject args = request.value(QStringLiteral("arguments")).toObject();
     QJsonObject body;
     QString error;
-    using Kind = debug::RunControl::StepKind;
+    using Kind = shared::dap::StepKind;
     if (command == QLatin1String("initialize")) initialize(args, &body, &error);
     else if (command == QLatin1String("attach") || command == QLatin1String("launch")) attach(args, &body, &error);
     else if (command == QLatin1String("configurationDone")) configurationDone(args, &body, &error);
@@ -489,7 +489,7 @@ void DapSession::restart(const QJsonObject& args, QJsonObject*, QString* error) 
         again.insert(QStringLiteral("reset"), QStringLiteral("reset"));
     m_stopOnEntry = again.value(QStringLiteral("stopOnEntry")).toBool(false);
     if (!prepare(again, error)) return;
-    if (m_stopOnEntry) m_controller->runControl()->pause(debug::DebugEvent::Entry);
+    if (m_stopOnEntry) m_controller->runControl()->pause(DebugEvent::Entry);
     else m_controller->runControl()->resume();
 }
 
@@ -509,7 +509,7 @@ void DapSession::customLoad(const QJsonObject& args, QJsonObject* body, QString*
     // `command` enters the code.
     m_stopOnEntry = m_attachConfig.value(QStringLiteral("stopOnEntry")).toBool(false);
     if (!prepare(m_attachConfig, error)) return;
-    if (m_stopOnEntry) m_controller->runControl()->pause(debug::DebugEvent::Entry);
+    if (m_stopOnEntry) m_controller->runControl()->pause(DebugEvent::Entry);
     else m_controller->runControl()->resume();
 }
 
@@ -541,7 +541,7 @@ void DapSession::customScreen(QJsonObject* body, QString* error) {
 
 void DapSession::configurationDone(const QJsonObject&, QJsonObject*, QString* error) {
     if (!ready(error)) return;
-    if (m_stopOnEntry) m_controller->runControl()->pause(debug::DebugEvent::Entry);
+    if (m_stopOnEntry) m_controller->runControl()->pause(DebugEvent::Entry);
     else m_controller->runControl()->resume();
 }
 
@@ -555,9 +555,9 @@ void DapSession::onMachineReplaced() {
     output(QStringLiteral("The machine was rebuilt; breakpoints re-applied."));
 }
 
-void DapSession::onEvents(const std::vector<debug::DebugEvent>& events) {
-    for (const debug::DebugEvent& e : events) {
-        if (e.kind == debug::DebugEvent::Output) {
+void DapSession::onEvents(const std::vector<DebugEvent>& events) {
+    for (const DebugEvent& e : events) {
+        if (e.kind == DebugEvent::Output) {
             output(QString::fromStdString(e.text));
             continue;
         }
@@ -573,7 +573,7 @@ void DapSession::onEvents(const std::vector<debug::DebugEvent>& events) {
     }
 }
 
-void DapSession::sendBreakpointChanges(const std::vector<debug::BreakpointStatus>& changed) {
+void DapSession::sendBreakpointChanges(const std::vector<shared::dap::BreakpointStatus>& changed) {
     for (const auto& st : changed)
         event(QStringLiteral("breakpoint"),
               {{QStringLiteral("reason"), QStringLiteral("changed")}, {QStringLiteral("breakpoint"), statusObject(st)}});
@@ -583,9 +583,9 @@ void DapSession::sendBreakpointChanges(const std::vector<debug::BreakpointStatus
 
 void DapSession::threads(const QJsonObject&, QJsonObject* body, QString* error) {
     if (!ready(error)) return;
-    debug::DebugTarget* t = m_controller->target();
+    shared::dap::DapTargets* t = m_controller->target();
     QJsonArray list;
-    for (const debug::Thread& th : t->threads()) {
+    for (const shared::dap::Thread& th : t->threads()) {
         QString name = QString::fromStdString(th.name);
         if (t->threads().size() > 1 && th.id == t->busOwner()) name += QStringLiteral(" [bus]");
         list.append(QJsonObject{{QStringLiteral("id"), th.id}, {QStringLiteral("name"), name}});
@@ -621,7 +621,7 @@ bool DapSession::memoryArgs(const QJsonObject& args, int* thread, uint16_t* addr
 int DapSession::threadForCpu(const QString& cpu) const {
     const QString c = cpu.toLower();
     if (c == QLatin1String("lh5803")) return 2;
-    if (const debug::DebugTarget* t = m_controller->target())
+    if (const shared::dap::DapTargets* t = m_controller->target())
         for (const auto& th : t->threads())
             if ((c == QLatin1String("z80") && th.kind == debug::CpuKind::Z80) ||
                 (c == QLatin1String("lh5801") && th.kind == debug::CpuKind::LH5801))
@@ -648,8 +648,8 @@ QJsonObject DapSession::sourceObject(const QString& path) const {
 
 void DapSession::stackTrace(const QJsonObject& args, QJsonObject* body, QString* error) {
     if (!ready(error)) return;
-    debug::DebugTarget* t = m_controller->target();
-    debug::RunControl* rc = m_controller->runControl();
+    shared::dap::DapTargets* t = m_controller->target();
+    DapRun* rc = m_controller->runControl();
     const int thread = threadOf(args);
     const int start = args.value(QStringLiteral("startFrame")).toInt(0);
     const int levels = args.value(QStringLiteral("levels")).toInt(0);
@@ -707,7 +707,7 @@ void DapSession::scopes(const QJsonObject& args, QJsonObject* body, QString* err
 }
 
 std::vector<debug::Register> DapSession::frameRegisters(int frameId) const {
-    debug::DebugTarget* t = m_controller->target();
+    shared::dap::DapTargets* t = m_controller->target();
     const int thread = frameThread(frameId), index = frameIndex(frameId);
     if (index == 0) return t->registers(thread);
     if (uint32_t(index - 1) >= t->historySize(thread)) return {};
@@ -783,7 +783,7 @@ void DapSession::variables(const QJsonObject& args, QJsonObject* body, QString* 
 }
 
 debug::ExpressionContext DapSession::frameContext(int frameId) const {
-    debug::DebugTarget* t = m_controller->target();
+    shared::dap::DapTargets* t = m_controller->target();
     const int thread = std::max(1, frameThread(frameId));
     debug::ExpressionContext ctx = t->expressionContext(thread, m_controller->runControl()->symbols());
     if (frameIndex(frameId) > 0) {
@@ -831,7 +831,7 @@ void DapSession::setVariable(const QJsonObject& args, QJsonObject* body, QString
 
 // ── Breakpoints ───────────────────────────────────────────────────────────
 
-QJsonObject DapSession::statusObject(const debug::BreakpointStatus& st) const {
+QJsonObject DapSession::statusObject(const shared::dap::BreakpointStatus& st) const {
     QJsonObject o{{QStringLiteral("id"), st.id}, {QStringLiteral("verified"), st.verified}};
     if (st.line > 0) o.insert(QStringLiteral("line"), st.line);
     if (!st.message.empty()) o.insert(QStringLiteral("message"), QString::fromStdString(st.message));
@@ -842,16 +842,16 @@ QJsonObject DapSession::statusObject(const debug::BreakpointStatus& st) const {
 void DapSession::setBreakpoints(const QJsonObject& args, QJsonObject* body, QString* error) {
     if (!ready(error)) return;
     const QString path = args.value(QStringLiteral("source")).toObject().value(QStringLiteral("path")).toString();
-    std::vector<debug::BreakpointTable::SourceRequest> requests;
+    std::vector<shared::dap::DapBreakpoints::SourceRequest> requests;
     for (const QJsonValue& v : args.value(QStringLiteral("breakpoints")).toArray()) {
         const QJsonObject o = v.toObject();
-        debug::BreakpointTable::SourceRequest r;
+        shared::dap::DapBreakpoints::SourceRequest r;
         r.line = o.value(QStringLiteral("line")).toInt();
         readSpec(o, &r);
         requests.push_back(r);
     }
     const auto statuses = m_controller->breakpoints().setSource(pathKey(path), requests, m_controller->sourceMap());
-    m_controller->breakpoints().apply(*m_controller->target());
+    m_controller->applyBreakpoints();
     QJsonArray list;
     for (const auto& st : statuses) {
         QJsonObject o = statusObject(st);
@@ -863,16 +863,16 @@ void DapSession::setBreakpoints(const QJsonObject& args, QJsonObject* body, QStr
 
 void DapSession::setFunctionBreakpoints(const QJsonObject& args, QJsonObject* body, QString* error) {
     if (!ready(error)) return;
-    std::vector<debug::BreakpointTable::FunctionRequest> requests;
+    std::vector<shared::dap::DapBreakpoints::FunctionRequest> requests;
     for (const QJsonValue& v : args.value(QStringLiteral("breakpoints")).toArray()) {
         const QJsonObject o = v.toObject();
-        debug::BreakpointTable::FunctionRequest r;
+        shared::dap::DapBreakpoints::FunctionRequest r;
         r.name = o.value(QStringLiteral("name")).toString().toStdString();
         readSpec(o, &r);
         requests.push_back(r);
     }
     const auto statuses = m_controller->breakpoints().setFunctions(requests, m_controller->sourceMap());
-    m_controller->breakpoints().apply(*m_controller->target());
+    m_controller->applyBreakpoints();
     QJsonArray list;
     for (const auto& st : statuses) list.append(statusObject(st));
     body->insert(QStringLiteral("breakpoints"), list);
@@ -880,11 +880,11 @@ void DapSession::setFunctionBreakpoints(const QJsonObject& args, QJsonObject* bo
 
 void DapSession::setInstructionBreakpoints(const QJsonObject& args, QJsonObject* body, QString* error) {
     if (!ready(error)) return;
-    std::vector<debug::BreakpointTable::InstructionRequest> requests;
+    std::vector<shared::dap::DapBreakpoints::InstructionRequest> requests;
     std::vector<bool> valid;
     for (const QJsonValue& v : args.value(QStringLiteral("breakpoints")).toArray()) {
         const QJsonObject o = v.toObject();
-        debug::BreakpointTable::InstructionRequest r;
+        shared::dap::DapBreakpoints::InstructionRequest r;
         int thread = 1;
         uint16_t addr = 0;
         bool me1 = false;
@@ -897,7 +897,7 @@ void DapSession::setInstructionBreakpoints(const QJsonObject& args, QJsonObject*
         requests.push_back(r);
     }
     const auto statuses = m_controller->breakpoints().setInstructions(requests);
-    m_controller->breakpoints().apply(*m_controller->target());
+    m_controller->applyBreakpoints();
     QJsonArray list;
     size_t next = 0;
     for (bool ok : valid) {
@@ -942,25 +942,25 @@ void DapSession::dataBreakpointInfo(const QJsonObject& args, QJsonObject* body, 
 
 void DapSession::setDataBreakpoints(const QJsonObject& args, QJsonObject* body, QString* error) {
     if (!ready(error)) return;
-    std::vector<debug::DataBreakpointSpec> requests;
+    std::vector<shared::dap::DataBreakpointSpec> requests;
     for (const QJsonValue& v : args.value(QStringLiteral("breakpoints")).toArray()) {
         const QJsonObject o = v.toObject();
         const QStringList id = o.value(QStringLiteral("dataId")).toString().split(':');
         if (id.size() != 4) continue;
-        debug::DataBreakpointSpec d;
+        shared::dap::DataBreakpointSpec d;
         d.thread = id[0].toInt();
         d.space = id[1].toInt() ? debug::kSpaceME1 : debug::kSpaceMain;
         d.addr = uint16_t(id[2].toUInt());
         d.length = uint16_t(std::max(1, id[3].toInt()));
         const QString access = o.value(QStringLiteral("accessType")).toString(QStringLiteral("write"));
-        d.access = access == QLatin1String("read") ? debug::DataAccess::Read
-                   : access == QLatin1String("readWrite") ? debug::DataAccess::ReadWrite
-                                                          : debug::DataAccess::Write;
+        d.access = access == QLatin1String("read") ? shared::dap::DataAccess::Read
+                   : access == QLatin1String("readWrite") ? shared::dap::DataAccess::ReadWrite
+                                                          : shared::dap::DataAccess::Write;
         readSpec(o, &d);
         requests.push_back(d);
     }
     const auto statuses = m_controller->breakpoints().setData(requests);
-    m_controller->breakpoints().apply(*m_controller->target());
+    m_controller->applyBreakpoints();
     QJsonArray list;
     for (const auto& st : statuses) list.append(statusObject(st));
     body->insert(QStringLiteral("breakpoints"), list);
@@ -979,7 +979,7 @@ void DapSession::pause(const QJsonObject&, QJsonObject*, QString* error) {
     m_controller->runControl()->pause();
 }
 
-void DapSession::step(const QJsonObject& args, debug::RunControl::StepKind kind, QString* error) {
+void DapSession::step(const QJsonObject& args, shared::dap::StepKind kind, QString* error) {
     if (!ready(error)) return;
     const bool instruction = args.value(QStringLiteral("granularity")).toString() == QLatin1String("instruction");
     m_controller->runControl()->step(threadOf(args), kind, !instruction);
@@ -993,8 +993,8 @@ void DapSession::disassemble(const QJsonObject& args, QJsonObject* body, QString
     uint16_t base = 0;
     bool me1 = false;
     if (!memoryArgs(args, &thread, &base, &me1, error)) return;
-    debug::DebugTarget* t = m_controller->target();
-    debug::RunControl* rc = m_controller->runControl();
+    shared::dap::DapTargets* t = m_controller->target();
+    DapRun* rc = m_controller->runControl();
     const int instructionOffset = args.value(QStringLiteral("instructionOffset")).toInt(0);
     const int count = args.value(QStringLiteral("instructionCount")).toInt(0);
 

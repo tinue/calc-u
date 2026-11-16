@@ -22,6 +22,7 @@ class LH5803;
 class SC7852;
 class PC1600Bank;
 class PC1600BusArbiter;
+class Ce150Card;
 class Ce158Card;
 class CE1600PCard;
 // Not included: PresetMedia.hpp has a member `slots`, which Qt's macro of
@@ -30,10 +31,10 @@ struct PresetMedia;
 
 namespace sharp::legacy {
 
-// ---- Debugger (M-45, LIB-10 1600) ----
-std::unique_ptr<debug::DebugTarget> makeDebugTarget(calcu::machine::Machine&);
-debug::LoadResult loadProgram(calcu::machine::Machine&, const debug::LoadRequest&, debug::SourceMap&,
-                              const debug::DebugTarget&);
+// ---- Build & Load (M-50, C1600-3 on C1600-2's loader) ----
+// The listing is verified through the machine's debug targets (thread n:
+// target n - 1).
+debug::LoadResult loadProgram(calcu::machine::Machine&, const debug::LoadRequest&, debug::SourceMap&);
 
 // ---- Presets (M-46, LIB-6 1600 and C1600-4) ----
 // The model's preset loader on a machine just built for the preset; what it
@@ -79,6 +80,7 @@ struct CoreParts {
     const PC1600BusArbiter* arbiter = nullptr;   // PC-1600
     Ce158Card* ce158 = nullptr;
     CE1600PCard* ce1600p = nullptr;           // PC-1600, also during a preset load
+    Ce150Card* ce150 = nullptr;               // the CE-150's card, for the tools' event log (M-51)
 };
 CoreParts coreParts(calcu::machine::Machine&);
 // The core's yield hook (PC1500Machine/PC1600Machine::setYieldHook): called

@@ -10,9 +10,19 @@ and [../background/plans/Debugger-Use-Cases-Plan.md](../background/plans/Debugge
 - **Transport:** the server listens on 127.0.0.1 only and takes one client
   at a time; a second one is told the debugger is busy. `--dap <port>`
   overrides Settings for one run.
-- **Run control:** while attached, every emulation frame goes through
-  `DebugController::runSlice()`: paused, running with breakpoints and
-  watches armed, or stepping in frame-sized pieces.
+- **Run control:** the library's (LIB-10, `library/debugger/`): the
+  `DebuggerPart` among `SharpAppPart`'s parts is the machine session's gate
+  whether or not a client is attached. Pause, step and resume come from
+  the DAP, the harness (`calcu --product 1600`), Machine ▸ Resume and the
+  session commands; the window's title says "Paused (debugger)" whoever
+  paused it. A DAP `stopped` comes from the `run-state` topic after the
+  host call the pause landed in (`DebugController::afterCall()`).
+- **Traces:** the library's trace session (`trace` command, the
+  INSPECTOR's TRACE button as `trace {button: true}`, a version 1
+  preset's `trace:` through `PresetFile::traceHook`) writes the core's
+  records (`c1600.trace-records`, `app/SharpTraceRecorder`) into the trace
+  folder, limits every trace to `[trace] max-file-size-mb` MiB and says so
+  in a notice. The Web has no trace folder: a trace fails there.
 - **`launch` is `attach`:** `DapSession` treats a `launch` request as
   `attach`, which the CLion recipe relies on.
 - **Installing the extension:** VS Code ignores extensions symlinked into
@@ -29,21 +39,31 @@ and [../background/plans/Debugger-Use-Cases-Plan.md](../background/plans/Debugge
   - breakpoint / skip-once / watch hooks in `LH5801` and `SC7852`.
 - **`core/Debug/`:**
   - `Disasm/`;
-  - `DebugTarget` + `CpuViews` + `MachineDebugTargets`: the machine-wide part, one view per CPU, the PC-1500 / PC-1600 adapters;
-  - `CpuRegisters`;
+  - `SharpDebugging` + `CpuViews`: the machine's `calcu::machine::Debugging`, one
+    `SharpDebugTarget` per CPU (LH5801; SC7852 and LH5803) with the spaces `me0`,
+    `me1`, `me1-written` / `memory`, `io`, `io-written`, the bank windows and the
+    qualifier fields; `SharpMachine::advance` runs it while a check is on;
+  - `CpuRegisters`: the register tables and the shared types (`Register`, `BankKey`, …);
   - `DebugExpression`;
   - `Listing/`: the `listingFormats()` table is the extension point for TASM or library listings later;
-  - `SourceMap`, `BreakpointTable`, `RunControl`;
+  - `SourceMap`;
   - `ProgramLoader`: Build & Load (planning in `core/MachineCodeFile`'s `planLoad()`).
-- **`frontends/qt6/app/debug/`:**
+- **`app/`:** `SharpDebuggerSetup` (the `DebuggerPart`'s set-up: `cpu` only, the
+  trace session, no run-control steps on the Sharp models), `SharpTraceRecorder`,
+  `SharpSymbolReaders` (sdas, zasm, `.SYMBOLS:` for `symbols`).
+- **`app/dap/`** (C1600-3's layer, built in M-45; no Qt): `DapTargets` (threads,
+  registers by name, banks, memory), `DapBreakpoints` (the client's breakpoints as
+  the library's with the setter `dap` and a test: condition, hit condition, log
+  message), `DapStepping` (`next`, `stepIn`, `stepOut`; a source-line step is one
+  library step with a test).
+- **`frontends/qt6/app/debug/`** (until M-50 moves them to `app/dap/`):
   - `DapServer`: transport;
   - `DapSession`: the requests;
-  - `DebugController`: owned by `MachineController`.
+  - `DebugController`: owned by `MachineController`; the session's source map and
+    breakpoints, and the stops from the `run-state` topic.
 - **Hooks elsewhere:**
-  - `app/SharpMachineParts`' `SharpDebuggerGate`: every advance of the library's
-    machine session goes through `runSlice()` while attached
-    (`SharpDebugger::runDebuggerSlice()`, answered by `MachineController`; adapter until M-45);
-  - `SharpAppPart`'s machine rebuilds: `machineAboutToChange()` / `machineReplaced()`;
+  - `SharpAppPart`: the `DebuggerPart` among its parts; Reset and Cold boot tell the
+    restart (`tellRestarted`, until LIB-18 1600);
   - `MachineController::typeCommand()` (the library's typing engine, `typeText` with ENTER);
   - `frontends/qt6/app/Operations`: presets and resets from the debugger are the session's
     operations; a DAP request waits for the reply in a nested event loop (`runAndWait`),
@@ -53,10 +73,9 @@ and [../background/plans/Debugger-Use-Cases-Plan.md](../background/plans/Debugge
 
 ## Design rules
 
-- **Arming:** breakpoints and watches are armed only inside
-  `DebugController::runSlice()`. A boot (`runBootToPrompt`), a preset or a
-  load drives the machine directly and must never park on a breakpoint;
-  those loops would hang.
+- **Arming:** the library's rule G1: breakpoints and watches are checked
+  only while no operation runs (`Checks`). A boot, a preset or a load is an
+  operation and never parks on a breakpoint; those loops would hang.
 - **Queueing:** DAP messages wait while the app runs a synchronous
   operation (`MachineController::appBusyChanged`, from the app session's
   `busy` topic). An attach handled during the

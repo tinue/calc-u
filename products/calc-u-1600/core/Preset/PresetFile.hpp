@@ -91,6 +91,13 @@ struct PresetSaveAsRequest {
 /// directory.
 using PresetSaveAsFn = std::function<bool(const PresetSaveAsRequest& request, std::string* error)>;
 
+/// Adapter L-A3 (LIB-10 design §10.9, until LIB-6 1600 in M-46): a `trace:`
+/// step of a version 1 preset the app loads. `name` is the trace's file
+/// name, "" for `- trace: off`; false with `error` set: the trace did not
+/// start. The app starts it through the library's trace session, which
+/// limits it and ends it at the end of the operation.
+using PresetTraceFn = std::function<bool(const std::string& name, std::string* error)>;
+
 /// Runs one `saveas:` step through `onSaveAs` (both preset loaders share
 /// this). Returns false with `*error` set ("saveas: ...") on failure.
 inline bool runPresetSaveAsStep(const PresetStep& step, const PresetSaveAsFn& onSaveAs,
@@ -255,6 +262,9 @@ struct PresetFile {
     /// run, no `keys:` / `program:` -- for a debugger that runs the boot
     /// itself (`debug: boot: debug`).
     bool armOnly = false;
+    // Set by the app: the `trace:` steps go to it instead of a file in the
+    // trace directory (adapter L-A3). Unset (today's tools): a file.
+    PresetTraceFn traceHook;
 
     // `debug:` -- the debugger's attach settings for a project preset
     // (Core/Preset/PresetDebugBlock.hpp), paths already resolved. Null when

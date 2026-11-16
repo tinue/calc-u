@@ -114,6 +114,11 @@ const PaperPanel::Shown* PaperPanel::shown() const {
     return it == papers_.end() ? nullptr : &it->second;
 }
 
+bool PaperPanel::paperEmpty() const {
+    const Shown* s = shown();
+    return !s || s->empty();
+}
+
 bool PaperPanel::showsText() const { return stack_->currentWidget() == text_; }
 
 void PaperPanel::showText(bool on) {

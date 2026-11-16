@@ -1,8 +1,7 @@
 // Canvas painters: the LCD (Qt6/app/LcdWidget.cpp's algorithm, with the
-// constants and colours of Shared/LcdLayout.hpp from the engine) and the
-// plotter paper (strokes from Shared/PlotterPaper.hpp, already in pane
-// pixels). Drawing only -- what is lit and where the strokes go comes from
-// the worker.
+// constants and colours of Shared/LcdLayout.hpp from the engine). Drawing
+// only -- what is lit comes from the worker. The plotters' paper is the
+// library's paper panel (LIB-8, M-45).
 
 const MONO_FONT = '"SF Mono", Menlo, Consolas, "DejaVu Sans Mono", "Liberation Mono", monospace';
 
@@ -126,30 +125,6 @@ function paintLcd(ctx, model, frame, width, height, L) {
   else paintLcdPC1500(ctx, frame, width, height, L);
 }
 
-// The paper: white, then each pen's polylines (1 pt, round caps and joins).
-function paintPaper(ctx, width, height, strokes, L) {
-  ctx.fillStyle = "#fff";
-  ctx.fillRect(0, 0, width, height);
-  if (!strokes || !L) return;
-  ctx.lineWidth = L.penWidth;
-  ctx.lineCap = "round";
-  ctx.lineJoin = "round";
-  strokes.forEach((pen, i) => {
-    const { coords, starts } = pen;
-    if (starts.length < 2) return;
-    ctx.strokeStyle = rgb(L.penColors[i]);
-    ctx.beginPath();
-    for (let s = 0; s + 1 < starts.length; s++) {
-      const from = starts[s], to = starts[s + 1];
-      if (to <= from) continue;
-      ctx.moveTo(coords[2 * from], coords[2 * from + 1]);
-      for (let k = from + 1; k < to; k++) ctx.lineTo(coords[2 * k], coords[2 * k + 1]);
-      if (to - from === 1) ctx.lineTo(coords[2 * from] + 0.01, coords[2 * from + 1]);
-    }
-    ctx.stroke();
-  });
-}
-
 // A PNG Blob of a canvas.
 function canvasPng(canvas) {
   return new Promise((resolve) => canvas.toBlob(resolve, "image/png"));
@@ -176,7 +151,7 @@ async function writeClipboard(items) {
   return false;
 }
 
-// Copy Screen / the paper's Copy: `items` on the clipboard, else (the
+// Copy Screen: `items` on the clipboard, else (the
 // browser refuses) its "image/png" downloaded as `fileName`.
 async function copyImageOrDownload(fileName, items) {
   if (await writeClipboard(items)) return;

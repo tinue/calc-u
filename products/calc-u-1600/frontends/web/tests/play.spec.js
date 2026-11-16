@@ -224,12 +224,31 @@ test('the control bar follows the model: peripherals, floppy, tape', async ({ pa
   await expect(page.locator('.calcu-submenu .calcu-menu-item', { hasText: 'CE-1600P' })).toHaveAttribute('aria-checked', 'true');
 });
 
-test('a plotter preset draws on the paper', async ({ page }) => {
+// LIB-8 AC-38 (ADR 0032): a plotter example is loaded, and the paper panel
+// appears under the plotter's name with marks on it.
+test('lib8_ac38 plotter example shows the paper panel with marks', async ({ page }) => {
   await page.setViewportSize(TALL);
   await gotoReady(page);
   await menu(page, 'File', 'Load Preset', 'Lissajous figure on the CE-1600P');
   await expect(page.locator('[data-panel=paper][data-empty=false]')).toHaveCount(1, { timeout: 45000 });
-  await expect(page.locator('[data-panel=paper] .calcu-panel-header')).toHaveText('CE-1600P');
+  await expect(page.locator('[data-panel=paper] [data-calcu=paper-owner]')).toHaveText('CE-1600P');
+});
+
+// LIB-8 AC-36: the paper panel is always shown, named while a plotter is
+// plugged in; a detach keeps the paper.
+test('lib8_ac36 paper panel always shown, named while a plotter is plugged in', async ({ page }) => {
+  await page.setViewportSize(TALL);
+  await gotoReady(page);
+  const panel = page.locator('[data-panel=paper]');
+  await expect(panel).toBeVisible();
+  await expect(panel.locator('[data-calcu=paper-owner]')).toHaveText('');
+  await page.getByRole('button', { name: 'CE-150' }).click();
+  await expect(page.getByRole('button', { name: 'CE-150' })).toHaveAttribute('aria-pressed', 'true', { timeout: 30000 });
+  await expect(panel.locator('[data-calcu=paper-owner]')).toHaveText('CE-150');
+  await page.getByRole('button', { name: 'CE-150' }).click();
+  await expect(page.getByRole('button', { name: 'CE-150' })).toHaveAttribute('aria-pressed', 'false', { timeout: 30000 });
+  await expect(panel).toBeVisible();
+  await expect(panel.locator('[data-calcu=paper-owner]')).toHaveText('');
 });
 
 test('Name & Save can write-protect a CE-161, and only a card with the switch', async ({ page }) => {
@@ -405,4 +424,35 @@ test('the installed app shell starts', async ({ page }) => {
   await page.goto('./app/');
   await expect(page.locator('.calcu-client[data-ready=true]')).toHaveCount(1, { timeout: 30000 });
   await expect(page.locator('.calcu-menubar')).toBeVisible();
+});
+
+// LIB-10 AC-40 (design §10.10, D16-6; D-19): the run control in the Web page
+// without a debugger -- the page has no harness, so the session commands
+// pause and resume go from the page.
+test('lib10_ac40 run control pauses and resumes the web machine', async ({ page }) => {
+  await gotoReady(page);
+  const state = () => page.evaluate(() => document.querySelector('.calcu-client').calcuEngine.getState().paused);
+  const ticks = async () => (await request(page, 'ticks')).ticks;
+  await request(page, 'pause');
+  await expect.poll(state, { timeout: 10000 }).toBe(true);
+  const t0 = await ticks();
+  await page.waitForTimeout(300);
+  expect(await ticks()).toBe(t0);   // paused: no emulated time passes
+  await request(page, 'resume');
+  await expect.poll(state, { timeout: 10000 }).toBe(false);
+  await expect.poll(ticks, { timeout: 10000 }).toBeGreaterThan(t0);
+});
+
+// LIB-10 AC-41: Machine ▸ Resume runs a paused machine again, and is there
+// only while it is paused.
+test('lib10_ac41 machine resume', async ({ page }) => {
+  await gotoReady(page);
+  const state = () => page.evaluate(() => document.querySelector('.calcu-client').calcuEngine.getState().paused);
+  await page.locator('.calcu-menubar-item > button', { hasText: 'Machine' }).click();
+  await expect(page.locator('.calcu-menu-item', { hasText: 'Resume' })).toHaveAttribute('aria-disabled', 'true');
+  await page.keyboard.press('Escape');
+  await request(page, 'pause');
+  await expect.poll(state, { timeout: 10000 }).toBe(true);
+  await menu(page, 'Machine', 'Resume');
+  await expect.poll(state, { timeout: 10000 }).toBe(false);
 });

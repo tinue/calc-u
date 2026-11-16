@@ -23,9 +23,10 @@ namespace shared {
 // in the page's own form -- the page only draws them:
 // - state topics `c1600.ui` (the control state with its pickers),
 //   `c1600.lcd` (the display output as the LCD painter takes it: dots and
-//   the indicators laid out), `c1600.lamps` (floppy lamp, tape counter),
-//   `c1600.paper` (the plotter strokes at the page's pane width); stream
-//   topic `c1600.printer` (the CE-158's printer output);
+//   the indicators laid out), `c1600.lamps` (floppy lamp, tape counter);
+//   stream topic `c1600.printer` (the CE-158's printer output). The
+//   plotters' paper is the library's paper part (LIB-8: `papers`,
+//   `paper <owner>`), shown by the library's paper panel;
 // - commands `c1600.*` for the keys, typing, the bays, the media and the
 //   settings; requests for the page's static data (adapter W16-1:
 //   `c1600.faceplate`, `c1600.lcd-constants`, until M-49) and for what a
@@ -47,7 +48,6 @@ private:
     calcu::sessions::Value ui() const;
     void lcd(calcu::sessions::SessionContext&);
     void lamps();
-    void paper(bool force);
     void printer();
 
     SharpAppPart& m_app;
@@ -59,20 +59,15 @@ private:
     calcu::sessions::StateTopic* m_ui = nullptr;
     calcu::sessions::StateTopic* m_lcd = nullptr;
     calcu::sessions::StateTopic* m_lamps = nullptr;
-    calcu::sessions::StateTopic* m_paper = nullptr;
     calcu::sessions::StreamTopic* m_printer = nullptr;
 
     std::uint64_t m_calls = 0;
-    double m_paperWidth = 0;
-    std::uint64_t m_paperRevision = UINT64_MAX;
-    PaperKind m_paperKind = PaperKind::None;
 };
 
 namespace topics {
 inline const calcu::sessions::TopicName kWebUi{"c1600.ui"};
 inline const calcu::sessions::TopicName kWebLcd{"c1600.lcd"};
 inline const calcu::sessions::TopicName kWebLamps{"c1600.lamps"};
-inline const calcu::sessions::TopicName kWebPaper{"c1600.paper"};
 inline const calcu::sessions::TopicName kWebPrinter{"c1600.printer"};
 } // namespace topics
 

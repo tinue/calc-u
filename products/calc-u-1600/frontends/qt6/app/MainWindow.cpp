@@ -9,7 +9,6 @@
 #include "FloppyDiskManager.hpp"
 #include "TapeManager.hpp"
 #include "HostKeyEvents.hpp"
-#include "PlotterPaperWidget.hpp"
 #include "Ce158PrinterWidget.hpp"
 #include "SettingsDialog.hpp"
 #include "AboutDialog.hpp"
@@ -18,7 +17,9 @@
 #include "EmulationPacer.hpp"
 #include "debug/DebugController.hpp"
 #include "AppSettings.hpp"
-#include "MacClipboardImage.h"
+#include "qt6/MacClipboard.h"
+#include "qt6/PaperPanel.hpp"
+#include "debugger/RunState.hpp"
 #include "DropFile.hpp"
 #include "app/PresetCatalog.hpp"
 #include "AppPaths.hpp"
@@ -89,8 +90,15 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
     m_faceplate = new FaceplateWidget(central);
     m_controlBar = new ControlBar(central);
     m_debugPanel = new DebugPanel(m_controller.get(), central);
-    m_plotterPaper = new PlotterPaperWidget(m_controller.get(), central);
-    m_plotterPaper->hide(); // added to m_debugRowLayout only once a plotter attaches
+    // LIB-8 AC-36: the library's paper panel, always shown; its owner is the
+    // plotter plugged in (P-A1), its commands go to the session.
+    m_paperPanel = new calcu::qt6::PaperPanel(central);
+    m_paperPanel->setSender([this](const calcu::sessions::CommandName& name, calcu::sessions::Value args) {
+        m_controller->send(name, std::move(args));
+    });
+    m_controller->setPaperSink([this](const calcu::sessions::Message& m) {
+        if (m_paperPanel) m_paperPanel->deliver(m);
+    });
     m_ce158Printer = new Ce158PrinterWidget(m_controller.get(), central);
     m_ce158Printer->hide(); // added to m_debugRowLayout only once a CE-158 attaches
     // Handles screenshot scenarios address these by
@@ -98,7 +106,7 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
     m_faceplate->setObjectName(QStringLiteral("faceplate"));
     m_faceplate->lcdWidget()->setObjectName(QStringLiteral("lcd"));
     m_debugPanel->setObjectName(QStringLiteral("debugpanel"));
-    m_plotterPaper->setObjectName(QStringLiteral("paper"));
+    m_paperPanel->setObjectName(QStringLiteral("paper"));
     m_ce158Printer->setObjectName(QStringLiteral("ce158printer"));
 
     auto* layout = new QVBoxLayout(central);
@@ -116,6 +124,7 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
     m_debugRowLayout->setContentsMargins(0, 0, 0, 0);
     m_debugRowLayout->setSpacing(4);
     m_debugRowLayout->addWidget(m_debugPanel, /*stretch=*/2);
+    m_debugRowLayout->addWidget(m_paperPanel, /*stretch=*/1);
     layout->addWidget(m_debugRow, /*stretch=*/1);
 
     setCentralWidget(central);
@@ -235,9 +244,13 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
     connect(m_faceplate->lcdWidget(), &LcdWidget::turboRequested, this,
             [this](bool active) { m_pacer->setTurbo(active); });
 
-    // The debugger's pause shows in the title bar.
-    connect(m_controller->debugController(), &DebugController::pausedChanged, this, [this](bool paused) {
+    // LIB-10 AC-41 (adapter L-A4 until LIB-14's shell, M-49): a paused
+    // machine shows in the title bar, whoever paused it (the DAP, the
+    // harness, a session command), and Machine ▸ Resume runs it again.
+    connect(m_controller.get(), &MachineController::runStateChanged, this, [this] {
+        const bool paused = m_controller->machinePaused();
         setWindowTitle(paused ? tr("Calc-U-1600 — Paused (debugger)") : tr("Calc-U-1600"));
+        if (m_resumeAction) m_resumeAction->setEnabled(paused);
     });
 
     // The sink is a child of the window, so it outlives m_controller (and
@@ -290,7 +303,8 @@ MainWindow::~MainWindow() {
     m_faceplate = nullptr;
     m_controlBar = nullptr;
     m_debugPanel = nullptr;
-    m_plotterPaper = nullptr;
+    m_controller->setPaperSink({});
+    m_paperPanel = nullptr;
     m_ce158Printer = nullptr;
     m_debugRow = nullptr;
     m_debugRowLayout = nullptr;
@@ -510,11 +524,7 @@ void MainWindow::syncPeripherals() {
     // its disk in; the picker only grays in and out.
     m_controlBar->setFloppyEnabled(state.floppyEnabled);
     refreshFloppyCombo();
-    // Re-kind on every sync, not just on a change: it also drops the paper's
-    // cached plot revision, which a rebuilt machine's plotter restarts.
-    if (state.paper != shared::PaperKind::None)
-        m_plotterPaper->setKind(state.paper);
-    setDockedPane(m_plotterPaper, state.paper != shared::PaperKind::None);
+    m_paperPanel->setOwner(state.paperOwner);   // P-A1: the plotter plugged in, or none
     m_controlBar->setTapeVisible(state.tapeShown);
     refreshTapeCombo();
     setDockedPane(m_ce158Printer, state.printerShown);
@@ -680,11 +690,11 @@ void MainWindow::copyScreenToClipboard() {
 
 #ifdef Q_OS_MACOS
     // Qt's QClipboard::setImage() drops the physical size on macOS (see
-    // MacClipboardImage.h) -- go through Cocoa so a paste lands at the
+    // qt6/MacClipboard.h) -- go through Cocoa so a paste lands at the
     // real display's size.
     const double widthPt = screen.width * 72.0 / screen.dpi;
     const double heightPt = screen.height * 72.0 / screen.dpi;
-    if (macSetClipboardImage(image, widthPt, heightPt, text)) return;
+    if (calcu::qt6::macSetClipboardImage(image, widthPt, heightPt, text)) return;
 #endif
     auto* mime = new QMimeData;
     mime->setImageData(image);
@@ -839,7 +849,6 @@ void MainWindow::refreshViewsAfterAdvance() {
     m_controlBar->setFloppyMotorOn(m_floppyManager->motorOn());
     m_controlBar->setTapeStatus(m_controller->tapeStatus());
     m_debugPanel->onFrameTick();
-    if (m_debugRowLayout->indexOf(m_plotterPaper) >= 0) m_plotterPaper->onFrameTick();
     if (m_debugRowLayout->indexOf(m_ce158Printer) >= 0) m_ce158Printer->onFrameTick();
 }
 
@@ -1008,6 +1017,11 @@ void MainWindow::buildMenuBar() {
     QAction* resetAllAction = machineMenu->addAction(tr("Reset All"));
     resetAllAction->setShortcut(QKeySequence(Qt::ControlModifier | Qt::ShiftModifier | Qt::Key_R));
     connect(resetAllAction, &QAction::triggered, this, [this] { resetMachine(true); });
+    // LIB-10 AC-41 (L-A4): Resume, while the run control says paused.
+    machineMenu->addSeparator();
+    m_resumeAction = machineMenu->addAction(tr("Resume"));
+    m_resumeAction->setEnabled(false);
+    connect(m_resumeAction, &QAction::triggered, this, [this] { m_controller->send(calcu::debugger::kResumeCommand); });
 
     // Help
     QMenu* helpMenu = menuBar()->addMenu(tr("&Help"));

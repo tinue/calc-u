@@ -128,7 +128,7 @@ std::uint64_t fingerprint(PC1600Machine& m) {
     h = fnv(h, m.sc7852().pc());
     h = fnv(h, m.lh5803().pc());
     h = fnv(h, pc1600LcdText(m).text());
-    h = fnv(h, m.ce1600pPlotRevision());
+    h = fnv(h, sharp::takeRawPlotPoints(m.ce1600pPaperOutput()).size());
     return h;
 }
 
@@ -137,7 +137,7 @@ std::uint64_t fingerprint(PC1500Machine& m) {
     for (std::uint32_t a = 0; a < 0x10000; ++a) h = fnv(h, m.memory().peek(static_cast<std::uint16_t>(a)));
     h = fnv(h, m.debugPC());
     h = fnv(h, pc1500LcdText(m).text());
-    h = fnv(h, m.ce150PlotRevision());
+    h = fnv(h, sharp::takeRawPlotPoints(m.ce150PaperOutput()).size());
     return h;
 }
 

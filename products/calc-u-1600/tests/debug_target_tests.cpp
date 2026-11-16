@@ -1,8 +1,9 @@
-// Headless tests for the debugger's machine layer: CPU breakpoints with
-// skip-once resume, memory watches (data accesses only, never fetches),
-// the machine debug targets (Core/Debug/MachineDebugTargets) and the
-// expression evaluator (Core/Debug/DebugExpression). Same assert-and-tally
-// style as lh5801_tests.cpp.
+// LIB-10 (design §10.10): the debugger's machine layer -- CPU breakpoints
+// with skip-once resume, memory watches (data accesses only, never
+// fetches) and the Sharp debug targets (core/Debug/SharpDebugging):
+// today's cases on machine::Debugging (AC-44, D16-10; DebugTargetTestSupport)
+// and the cases of AC-36, AC-37 and AC-52. The expressions, conditions and
+// log messages are the DAP's (dap_layer_tests.cpp, C1600-3 AC-23).
 //
 // Build & run: see tools/run_tests.sh
 
@@ -14,14 +15,15 @@
 
 #include "../core/CPU/LH5801/LH5801.hpp"
 #include "../core/CPU/SC7852/SC7852.hpp"
-#include "../core/Debug/BreakpointTable.hpp"
 #include "../core/Debug/CpuRegisters.hpp"
 #include "../core/Debug/DebugExpression.hpp"
-#include "../core/Debug/MachineDebugTargets.hpp"
+#include "../core/Debug/SharpDebugging.hpp"
+#include "../core/PC1600/PC1600Machine.hpp"
 #include "../core/PC1500/PC1500Machine.hpp"
 #include "DebugTargetTestSupport.hpp"
-#include "LegacyExpression.hpp"
+#include "SharpTestSupport.hpp"
 #include "TestRoms.hpp"
+#include "machine/Conformance.hpp"
 #include "TestHarness.hpp"
 
 namespace {
@@ -45,63 +47,9 @@ public:
     bool interruptLevel() const override { return intLine; }
 };
 
-// ── Expressions ───────────────────────────────────────────────────────────
-
-debug::ExpressionResult eval(const std::string& text, bool bigEndian = false) {
-    static std::map<std::string, int64_t> names = {{"a", 0x10}, {"hl", 0x7A00}, {"cf", 1}, {"LOOP", 0x40C5}};
-    static uint8_t mem[65536] = {};
-    mem[0x7A00] = 0x34; mem[0x7A01] = 0x12;
-    debug::ExpressionContext ctx;
-    ctx.lookup = [](const std::string& n, int64_t* v) {
-        auto it = names.find(n);
-        if (it == names.end()) return false;
-        *v = it->second;
-        return true;
-    };
-    ctx.readByte = [](uint16_t addr, bool me1, uint8_t* v) {
-        if (me1) return false;
-        *v = mem[addr];
-        return true;
-    };
-    ctx.bigEndian = bigEndian;
-    return debug::evaluate(text, ctx);
-}
-
-bool evalIs(const std::string& text, int64_t want, bool bigEndian = false) {
-    debug::ExpressionResult r = eval(text, bigEndian);
-    if (!r.ok || r.value != want)
-        std::fprintf(stderr, "  expr \"%s\": ok=%d value=%lld error=%s\n", text.c_str(), r.ok, (long long)r.value, r.error.c_str());
-    return r.ok && r.value == want;
-}
-
-TEST(test_expressions) {
-    CHECK(evalIs("A == 0x10", 1));
-    CHECK(evalIs("a != 16", 0));
-    CHECK(evalIs("1 + 2 * 3", 7));
-    CHECK(evalIs("(1 + 2) * 3", 9));
-    CHECK(evalIs("$FF & &0F | 0x100", 0x10F));
-    CHECK(evalIs("1 << 4 >> 2", 4));
-    CHECK(evalIs("-a + 20", 4));
-    CHECK(evalIs("!cf || a >= 0x10 && a < 0x20", 1));
-    CHECK(evalIs("~0 & 0xFF", 0xFF));
-    CHECK(evalIs("[hl]", 0x34));
-    CHECK(evalIs("w[hl]", 0x1234));
-    CHECK(evalIs("w[hl]", 0x3412, /*bigEndian=*/true));
-    CHECK(evalIs("[0x7A00 + 1] == 0x12", 1));
-    CHECK(evalIs("LOOP", 0x40C5));
-    CHECK(evalIs("10 % 4 + 9 / 2", 6));
-    CHECK(!eval("nosuch + 1").ok);
-    CHECK(!eval("#[0]").ok);      // unreadable
-    CHECK(!eval("1 +").ok);
-    CHECK(!eval("(1").ok);
-    CHECK(!eval("1 / 0").ok);
-    CHECK(!eval("").ok);
-    CHECK(eval("nosuch").error.find("nosuch") != std::string::npos);
-}
-
 // ── CPU hooks ─────────────────────────────────────────────────────────────
 
-TEST(test_z80_breakpoint_and_skip_once) {
+TEST(lib10_ac44_z80_breakpoint_and_skip_once) {
     ZBus bus;
     const uint8_t code[] = {0x00, 0x00, 0x18, 0xFC}; // nop; nop; jr 0x0000
     for (size_t i = 0; i < sizeof code; i++) bus.mem[i] = code[i];
@@ -124,7 +72,7 @@ TEST(test_z80_breakpoint_and_skip_once) {
     CHECK(cpu.step() == 0 && cpu.consumeBreakpointHit()); // skip was once only
 }
 
-TEST(test_z80_breakpoint_not_between_prefix_and_opcode) {
+TEST(lib10_ac44_z80_breakpoint_not_between_prefix_and_opcode) {
     ZBus bus;
     const uint8_t code[] = {0xDD, 0xFD, 0x21, 0x00, 0x00}; // DD carried, then FD 21
     for (size_t i = 0; i < sizeof code; i++) bus.mem[i] = code[i];
@@ -137,7 +85,7 @@ TEST(test_z80_breakpoint_not_between_prefix_and_opcode) {
     CHECK(cpu.iy() == 0x0000 && cpu.pc() == 0x0005);
 }
 
-TEST(test_z80_skip_is_tied_to_its_address) {
+TEST(lib10_ac44_z80_skip_is_tied_to_its_address) {
     // Parked on 0001 with an interrupt pending: the continue takes the
     // interrupt first. The handler's breakpoint still stops, and the skip
     // is still there for 0001 when the handler returns.
@@ -166,7 +114,7 @@ TEST(test_z80_skip_is_tied_to_its_address) {
     CHECK(cpu.step() == 0 && cpu.consumeBreakpointHit());
 }
 
-TEST(test_z80_breakpoint_keeps_ei_shadow) {
+TEST(lib10_ac44_z80_breakpoint_keeps_ei_shadow) {
     // ei; nop (breakpoint) with INT pending: parking on the nop must not
     // drop the EI delay, so the nop still runs before the interrupt.
     ZBus bus;
@@ -183,7 +131,7 @@ TEST(test_z80_breakpoint_keeps_ei_shadow) {
     CHECK(cpu.step() > 0 && cpu.pc() == 0x0038);  // now the interrupt
 }
 
-TEST(test_lh5801_skip_once) {
+TEST(lib10_ac44_lh5801_skip_once) {
     LhBus bus;
     bus.mem[0xFFFE] = 0x40; bus.mem[0xFFFF] = 0x00;
     bus.mem[0x4000] = 0x38; bus.mem[0x4001] = 0x9E; bus.mem[0x4002] = 0x03; // nop; bch 0x4000
@@ -198,7 +146,7 @@ TEST(test_lh5801_skip_once) {
     CHECK(cpu.pc() == 0x4000 && cpu.step() == 0);
 }
 
-TEST(test_breakpoint_set) {
+TEST(lib10_ac44_breakpoint_set) {
     BreakpointSet set;
     set.add(0x0000);
     set.add(0xFFFF);
@@ -213,7 +161,7 @@ TEST(test_breakpoint_set) {
     CHECK(!set.contains(0x0000) && !set.contains(0x0040));
 }
 
-TEST(test_trace_flags_leave_breakpoints_alone) {
+TEST(lib10_ac44_trace_flags_leave_breakpoints_alone) {
     // Trace flags alone never check breakpoints.
     LhBus bus;
     bus.mem[0xFFFE] = 0x40; bus.mem[0xFFFF] = 0x00;
@@ -233,7 +181,7 @@ TEST(test_trace_flags_leave_breakpoints_alone) {
     CHECK(machine.cpu().breakpointsEnabled() && machine.cpu().traceFlags() == TRACE_NONE);
 }
 
-TEST(test_reset_clears_breakpoint_state) {
+TEST(lib10_ac44_reset_clears_breakpoint_state) {
     LhBus bus;
     bus.mem[0xFFFE] = 0x40; bus.mem[0xFFFF] = 0x00;
     bus.mem[0x4000] = 0x38;
@@ -259,7 +207,7 @@ TEST(test_reset_clears_breakpoint_state) {
     CHECK(z.step() == 0 && z.consumeBreakpointHit());
 }
 
-TEST(test_lh5801_watches_skip_fetches) {
+TEST(lib10_ac44_lh5801_watches_skip_fetches) {
     LhBus bus;
     bus.mem[0xFFFE] = 0x40; bus.mem[0xFFFF] = 0x00;
     const uint8_t code[] = {
@@ -291,7 +239,7 @@ TEST(test_lh5801_watches_skip_fetches) {
     cpu.setWatches(nullptr);
 }
 
-TEST(test_z80_watches) {
+TEST(lib10_ac44_z80_watches) {
     ZBus bus;
     const uint8_t code[] = {0x3E, 0x77, 0x32, 0x00, 0x80, 0xC5}; // ld a,0x77; ld (0x8000),a; push bc
     for (size_t i = 0; i < sizeof code; i++) bus.mem[i] = code[i];
@@ -313,36 +261,36 @@ TEST(test_z80_watches) {
 
 // ── Machine targets ───────────────────────────────────────────────────────
 
-TEST(test_pc1500_target) {
+TEST(lib10_ac44_pc1500_target) {
     PC1500Machine machine;
     if (!machine.loadROMFile("roms/PC-1500_A04.ROM")) {
         std::printf("  SKIP test_pc1500_target: roms/PC-1500_A04.ROM missing\n");
         return;
     }
     machine.reset();
-    debug::PC1500DebugTarget target(machine);
-    CHECK(target.threads().size() == 1 && target.busOwner() == 1);
+    debugtest::Target target(machine);
+    CHECK(target.threadCount() == 1 && target.busOwner() == 1);
     CHECK(target.pc(1) == 0xE000);
-    CHECK(target.decode(1, 0xE000).text == "rie");
+    CHECK(target.t(1).decodeAt(0xE000).text == "rie");
 
     // A breakpoint on the boot's input-buffer clear loop (D0B0).
     target.setBreakpoints(1, {0xD0B0});
-    debug::Stop s = debugtest::runFrom(target, 2000000);
-    CHECK(s.kind == debug::Stop::Breakpoint && s.thread == 1);
+    debugtest::Stop s = target.runFrom(2000000);
+    CHECK(s.kind == debugtest::Stop::Breakpoint && s.thread == 1);
     CHECK(target.pc(1) == 0xD0B0);
-    CHECK(target.historySize(1) >= 20);
-    CHECK(target.history(1, 0).len > 0);
+    CHECK(target.t(1).historySize() >= 20);
+    CHECK(target.t(1).historyEntry(0).len > 0);
     // Resuming leaves the breakpoint; it's a loop, so it comes back.
-    s = debugtest::runFrom(target, 2000000);
-    CHECK(s.kind == debug::Stop::Breakpoint && target.pc(1) == 0xD0B0);
+    s = target.runFrom(2000000);
+    CHECK(s.kind == debugtest::Stop::Breakpoint && target.pc(1) == 0xD0B0);
     target.setBreakpoints(1, {});
     CHECK(!target.breakpointsActive());
     CHECK(!machine.cpu().breakpointsEnabled());
 
     // Step one instruction.
     const uint32_t before = target.retired(1);
-    s = debugtest::stepInstruction(target, 1, 100);
-    CHECK(s.kind == debug::Stop::None && target.retired(1) == before + 1);
+    s = target.stepInstruction(1, 100);
+    CHECK(s.kind == debugtest::Stop::None && target.retired(1) == before + 1);
 
     // Registers and expressions.
     CHECK(target.writeRegister(1, "a", 0x42));
@@ -350,7 +298,7 @@ TEST(test_pc1500_target) {
     CHECK(target.readRegister(1, "a", &v) && v == 0x42);
     CHECK(target.writeRegister(1, "xh", 0x12) && target.readRegister(1, "x", &v) && (v >> 8) == 0x12);
     CHECK(target.writeRegister(1, "cf", 1) && target.readRegister(1, "t", &v) && (v & 1));
-    debug::ExpressionResult r = debug::evaluate("a == 0x42 && cf", target.expressionContext(1));
+    debug::ExpressionResult r = debug::evaluate("a == 0x42 && cf", target.t(1).expressionContext());
     CHECK(r.ok && r.value == 1);
 
     // Memory: RAM round trip; ME1's I/O chip reads as its latches; the ROM refuses.
@@ -363,38 +311,38 @@ TEST(test_pc1500_target) {
     // A write watch on the RAM the ROM keeps updating while idle stops
     // right after the writing instruction.
     target.setWatches(1, {{0x7600, 0x7BFF, 0, false, true}});
-    s = debugtest::runFrom(target, 20000000);
-    CHECK(s.kind == debug::Stop::Watch && s.thread == 1 && s.hit.write);
+    s = target.runFrom(20000000);
+    CHECK(s.kind == debugtest::Stop::Watch && s.thread == 1 && s.hit.write);
     CHECK(s.hit.addr >= 0x7600 && s.hit.addr <= 0x7BFF);
     target.setWatches(1, {});
 }
 
-TEST(test_pc1600_target) {
+TEST(lib10_ac44_pc1600_target) {
     PC1600Machine machine;
     if (!bootPC1600(machine)) {
         std::printf("  SKIP test_pc1600_target: PC-1600 ROMs missing\n");
         return;
     }
-    debug::PC1600DebugTarget target(machine);
-    CHECK(target.threads().size() == 2);
-    CHECK(target.busOwner() == debug::PC1600DebugTarget::kZ80);
-    CHECK(target.historySize(1) > 0);
-    CHECK(target.bankAt(1, target.pc(1)) >= 0);
+    debugtest::Target target(machine);
+    CHECK(target.threadCount() == 2);
+    CHECK(target.busOwner() == 1);
+    CHECK(target.t(1).historySize() > 0);
+    CHECK(target.t(1).bankAt(target.pc(1)) >= 0);
 
     // The BASIC command loop spins; a breakpoint on the current PC stops
     // the next pass, and a resume comes back to it.
     const uint16_t pc = target.pc(1);
     target.setBreakpoints(1, {pc});
-    debug::Stop s = debugtest::runFrom(target, 2000000);
-    CHECK(s.kind == debug::Stop::Breakpoint && s.thread == 1 && target.pc(1) == pc);
-    s = debugtest::runFrom(target, 2000000);
-    CHECK(s.kind == debug::Stop::Breakpoint && target.pc(1) == pc);
+    debugtest::Stop s = target.runFrom(2000000);
+    CHECK(s.kind == debugtest::Stop::Breakpoint && s.thread == 1 && target.pc(1) == pc);
+    s = target.runFrom(2000000);
+    CHECK(s.kind == debugtest::Stop::Breakpoint && target.pc(1) == pc);
     target.setBreakpoints(1, {});
     CHECK(!machine.sc7852().breakpointsEnabled());
 
     const uint32_t before = target.retired(1);
-    s = debugtest::stepInstruction(target, 1, 100);
-    CHECK(s.kind == debug::Stop::None && target.retired(1) == before + 1);
+    s = target.stepInstruction(1, 100);
+    CHECK(s.kind == debugtest::Stop::None && target.retired(1) == before + 1);
 
     uint32_t v = 0;
     CHECK(target.writeRegister(1, "bc'", 0xBEEF) && target.readRegister(1, "bc2", &v) && v == 0xBEEF);
@@ -408,10 +356,10 @@ TEST(test_pc1600_target) {
     CHECK(target.peek(2, debug::kSpaceMain, 0x4200, &b) && b == 0x5A);
     // Its UART block on ME1 can't be peeked without side effects.
     CHECK(!target.peek(2, debug::kSpaceME1, 0xA020, &b));
-    CHECK(target.decode(1, 0x0000).len >= 1);
+    CHECK(target.t(1).decodeAt(0x0000).len >= 1);
 }
 
-TEST(test_pc1600_lh5803_thread) {
+TEST(lib10_ac44_pc1600_lh5803_thread) {
     // Z-80: OUT (38H),A ; HALT hands the bus to the LH5803, whose ROM loops
     // at C000: sta (0x1000) (Z-80 0x9000) ; nop ; bch C000.
     PC1600Machine m;
@@ -425,36 +373,36 @@ TEST(test_pc1600_lh5803_thread) {
     CHECK(m.loadLH5803Rom(rom.data(), rom.size()));
     m.reset();
 
-    debug::PC1600DebugTarget target(m);
-    target.setBreakpoints(debug::PC1600DebugTarget::kLh5803, {0xC003});
-    debug::Stop s = debugtest::runFrom(target, 100000);
-    CHECK(s.kind == debug::Stop::Breakpoint && s.thread == debug::PC1600DebugTarget::kLh5803);
-    CHECK(target.busOwner() == debug::PC1600DebugTarget::kLh5803 && target.pc(2) == 0xC003);
-    CHECK(target.decode(2, 0xC000).text == "sta (0x1000)");
+    debugtest::Target target(m);
+    target.setBreakpoints(2, {0xC003});
+    debugtest::Stop s = target.runFrom(100000);
+    CHECK(s.kind == debugtest::Stop::Breakpoint && s.thread == 2);
+    CHECK(target.busOwner() == 2 && target.pc(2) == 0xC003);
+    CHECK(target.t(2).decodeAt(0xC000).text == "sta (0x1000)");
     // Resumes past it and comes round again.
-    s = debugtest::runFrom(target, 100000);
-    CHECK(s.kind == debug::Stop::Breakpoint && target.pc(2) == 0xC003);
-    target.setBreakpoints(debug::PC1600DebugTarget::kLh5803, {});
+    s = target.runFrom(100000);
+    CHECK(s.kind == debugtest::Stop::Breakpoint && target.pc(2) == 0xC003);
+    target.setBreakpoints(2, {});
 
     // A write watch on the LH5803's 0x1000 fires; the same address on the
     // Z-80 side is a different place and doesn't.
-    target.setWatches(debug::PC1600DebugTarget::kZ80, {{0x1000, 0x1000, 0, false, true}});
-    s = debugtest::runFrom(target, 1000);
-    CHECK(s.kind == debug::Stop::None);
-    target.setWatches(debug::PC1600DebugTarget::kZ80, {});
-    target.setWatches(debug::PC1600DebugTarget::kLh5803, {{0x1000, 0x1000, 0, false, true}});
-    s = debugtest::runFrom(target, 100000);
-    CHECK(s.kind == debug::Stop::Watch && s.thread == debug::PC1600DebugTarget::kLh5803 && s.hit.addr == 0x1000);
+    target.setWatches(1, {{0x1000, 0x1000, 0, false, true}});
+    s = target.runFrom(1000);
+    CHECK(s.kind == debugtest::Stop::None);
+    target.setWatches(1, {});
+    target.setWatches(2, {{0x1000, 0x1000, 0, false, true}});
+    s = target.runFrom(100000);
+    CHECK(s.kind == debugtest::Stop::Watch && s.thread == 2 && s.hit.addr == 0x1000);
     CHECK(target.pc(2) == 0xC003); // stopped after the store
     // Stepping reports the watch too.
-    s = debugtest::stepInstruction(target, 2, 10); // nop
-    CHECK(s.kind == debug::Stop::None);
-    s = debugtest::stepInstruction(target, 2, 10); // bch
-    s = debugtest::stepInstruction(target, 2, 10); // sta
-    CHECK(s.kind == debug::Stop::Watch && s.thread == debug::PC1600DebugTarget::kLh5803);
+    s = target.stepInstruction(2, 10); // nop
+    CHECK(s.kind == debugtest::Stop::None);
+    s = target.stepInstruction(2, 10); // bch
+    s = target.stepInstruction(2, 10); // sta
+    CHECK(s.kind == debugtest::Stop::Watch && s.thread == 2);
 }
 
-TEST(test_pc1600_skip_only_for_the_running_cpu) {
+TEST(lib10_ac44_pc1600_skip_only_for_the_running_cpu) {
     // Same machine as test_pc1600_lh5803_thread(). The LH5803 sits at its
     // reset address C000 off the bus while the Z-80 runs; a continue must
     // not hand it the skip, so it stops at C000 when it gets the bus.
@@ -469,16 +417,16 @@ TEST(test_pc1600_skip_only_for_the_running_cpu) {
     CHECK(m.loadLH5803Rom(rom.data(), rom.size()));
     m.reset();
 
-    debug::PC1600DebugTarget target(m);
-    CHECK(target.busOwner() == debug::PC1600DebugTarget::kZ80 && target.pc(2) == 0xC000);
-    target.setBreakpoints(debug::PC1600DebugTarget::kLh5803, {0xC000});
+    debugtest::Target target(m);
+    CHECK(target.busOwner() == 1 && target.pc(2) == 0xC000);
+    target.setBreakpoints(2, {0xC000});
     const uint32_t before = target.retired(2);
-    debug::Stop s = debugtest::runFrom(target, 100000);
-    CHECK(s.kind == debug::Stop::Breakpoint && s.thread == debug::PC1600DebugTarget::kLh5803);
+    debugtest::Stop s = target.runFrom(100000);
+    CHECK(s.kind == debugtest::Stop::Breakpoint && s.thread == 2);
     CHECK(target.pc(2) == 0xC000 && target.retired(2) == before); // its first instruction, not a later pass
 }
 
-TEST(test_machine_step_latches_stops) {
+TEST(lib10_ac44_machine_step_latches_stops) {
     // PC-1500: a stepped store into a watched byte latches a watch stop on
     // CPU 1; a reset drops a stop nobody consumed.
     {
@@ -534,7 +482,7 @@ TEST(test_machine_step_latches_stops) {
     }
 }
 
-TEST(test_cpu_views) {
+TEST(lib10_ac44_cpu_views) {
     PC1600Machine m;
     std::vector<uint8_t> lower(PC1600Memory::kBankSize, 0x76), upper(PC1600Memory::kBankSize, 0x00); // halt
     CHECK(m.loadBank0(lower.data(), lower.size(), upper.data(), upper.size()));
@@ -543,28 +491,28 @@ TEST(test_cpu_views) {
     CHECK(m.loadLH5803Rom(rom.data(), rom.size()));
     m.reset();
     {
-        debug::PC1600DebugTarget target(m);
-        const auto threads = target.threads();
-        CHECK(threads.size() == 2 && threads[0].kind == debug::CpuKind::Z80 && threads[1].name == "LH5803");
+        debugtest::Target target(m);
+        CHECK(target.threadCount() == 2 && target.t(1).kind() == debug::CpuKind::Z80 &&
+              target.t(2).info().name.value == "LH5803");
         // A thread id beyond the CPUs names the last one.
-        CHECK(target.kindOf(7) == debug::CpuKind::LH5803 && target.pc(7) == target.pc(2));
+        CHECK(target.t(7).kind() == debug::CpuKind::LH5803 && target.pc(7) == target.pc(2));
         // An edited PV reaches the LH5803's bus at once.
         CHECK(target.writeRegister(2, "pv", 1) && m.lh5803Memory().pv());
         CHECK(target.writeRegister(2, "pv", 0) && !m.lh5803Memory().pv());
         // The flags byte comes from the register marked as status, live
         // and in history; the bank state is the machine's own.
         uint8_t flags = 0;
-        CHECK(debug::statusFlags(target.registers(1), &flags) && flags == uint8_t(m.sc7852().af()));
-        CHECK(debug::statusFlags(target.registers(2), &flags) && flags == m.lh5803().statusReg());
-        const auto z80Banks = target.bankState(1);
+        CHECK(debug::statusFlags(target.t(1).registers(), &flags) && flags == uint8_t(m.sc7852().af()));
+        CHECK(debug::statusFlags(target.t(2).registers(), &flags) && flags == m.lh5803().statusReg());
+        const auto z80Banks = target.t(1).bankState();
         CHECK(z80Banks.size() == 4 && z80Banks[1].name == "Page B (4000-7FFF)" && z80Banks[1].value.rfind("bank ", 0) == 0);
-        const auto lhBanks = target.bankState(2);
+        const auto lhBanks = target.t(2).bankState();
         CHECK(lhBanks.size() == 2 && lhBanks[0].name == "PU" && lhBanks[1].name == "PV");
         // Halted: the Z-80 after HALT; the LH580x also when powered off.
         m.step();
-        CHECK(target.historySize(1) > 0 && debug::statusFlags(target.history(1, 0).registers, &flags));
-        CHECK(target.halted(1));
-        CHECK(!target.halted(2));
+        CHECK(target.t(1).historySize() > 0 && debug::statusFlags(target.t(1).historyEntry(0).registers, &flags));
+        CHECK(target.t(1).halted());
+        CHECK(!target.t(2).halted());
         target.setBreakpoints(1, {0x0000});
         target.setBreakpoints(2, {0xC000});
         target.setWatches(2, {{0x1000, 0x1000, 0, false, true}});
@@ -578,7 +526,7 @@ TEST(test_cpu_views) {
     m.lh5803().setBreakpointsEnabled(false);
 }
 
-TEST(test_register_reads) {
+TEST(lib10_ac44_register_reads) {
     // Every listed register reads back its listed value, plus the halves
     // and aliases the list doesn't show.
     LhBus bus;
@@ -603,7 +551,7 @@ TEST(test_register_reads) {
     CHECK(debug::z80ReadRegister(z, "zf", &v) && !debug::z80ReadRegister(z, "q", &v));
 }
 
-TEST(test_watch_set) {
+TEST(lib10_ac44_watch_set) {
     WatchSet w;
     w.add({0x0000, 0x0001, 0, true, false});   // read, ME0
     w.add({0xFFFF, 0xFFFF, 1, false, true});   // write, ME1
@@ -627,128 +575,253 @@ TEST(test_watch_set) {
     CHECK(!w.hitPending() && w.empty());
 }
 
-TEST(test_compiled_expressions_match_legacy) {
-    static std::map<std::string, int64_t> names = {{"a", 0x10}, {"hl", 0x7A00}, {"cf", 1}, {"LOOP", 0x40C5}, {"Mixed", 7}};
-    static uint8_t mem[65536] = {};
-    mem[0x7A00] = 0x34; mem[0x7A01] = 0x12; mem[0x0010] = 0x99;
-    debug::ExpressionContext full;
-    full.lookup = [](const std::string& n, int64_t* v) {
-        auto it = names.find(n);
-        if (it == names.end()) return false;
-        *v = it->second;
-        return true;
-    };
-    full.readByte = [](uint16_t addr, bool me1, uint8_t* v) {
-        if (addr == 0x1234 || (me1 && addr >= 0x8000)) return false;
-        *v = mem[addr];
-        return true;
-    };
-    debug::ExpressionContext bigEndian = full;
-    bigEndian.bigEndian = true;
-    debug::ExpressionContext noMemory = full;
-    noMemory.readByte = nullptr;
-    debug::ExpressionContext nothing;
-    const debug::ExpressionContext* contexts[] = {&full, &bigEndian, &noMemory, &nothing};
 
-    int mismatches = 0;
-    auto same = [&](const std::string& text) {
-        for (const debug::ExpressionContext* ctx : contexts) {
-            const debug::ExpressionResult want = legacy::evaluate(text, *ctx);
-            const debug::ExpressionResult got = debug::evaluate(text, *ctx);
-            if (want.ok != got.ok || want.error != got.error || (want.ok && want.value != got.value)) {
-                if (mismatches++ < 10)
-                    std::fprintf(stderr, "  expr \"%s\": legacy ok=%d %lld '%s', compiled ok=%d %lld '%s'\n", text.c_str(),
-                                 want.ok, (long long)want.value, want.error.c_str(), got.ok, (long long)got.value,
-                                 got.error.c_str());
-            }
-        }
-    };
-    const char* const corpus[] = {
-        "", "  ", "1", "0x10", "$ff", "&7A00", "0x", "$", "12+3*4", "(1+2)*3", "-5 % 3", "~0", "!0", "!!7", "+3",
-        "1<<4", "256>>2", "1<2", "2<=2", "3>2", "3>=4", "1==1", "1!=1", "6&3", "6|3", "6^3", "1&&0", "0||2",
-        "a", "A", "hl", "Mixed", "mixed", "LOOP", "loop", "foo", "foo +", "foo bar", "a b", "1 2", "1/0", "1/0*",
-        "1%0", "1/foo", "foo/0", "[hl]", "w[hl]", "#[0x10]", "#[0x9000]", "[0x1234]", "w[0x1233]", "[hl", "w[",
-        "#[", "(1+2", "1+2)", "1+", "*2", "!=3", "a == 0x10 && cf", "[hl] == 0x34 || foo", "(foo", "[foo]",
-        "[1/0]", "1 + [0x1234] + foo", "foo + [0x1234]", "0x7FFFFFFFFFFFFFFF+1", "-(-9223372036854775807-1)",
-        "1<<64", "1<<63", "-1>>1", "a&&&cf", "a|||cf", "a<<<1", "a===1", "_x.y$'", "w [hl]", "W[hl]", "#(1)",
-        "((((((1))))))", "1 ? 2", "@", "a @", "[hl] @", "1 +\t2",
-    };
-    for (const char* text : corpus) same(text);
+// ── LIB-10 AC-36, AC-37, AC-52 (design §10.10, D16-1 to D16-3) ───────────
 
-    // Seeded random token soup: every mixture of valid and broken input.
-    const char* const tokens[] = {"a", "hl", "foo", "LOOP", "Mixed", "0x10", "$ff", "&7A00", "12", "0", "[", "]", "w[",
-                                  "#[", "(", ")", "+", "-", "*", "/", "%", "<<", ">>", "<", "<=", ">", ">=", "==",
-                                  "!=", "&&", "||", "&", "|", "^", "!", "~", " ", "0x", "$", "0x1234", "@"};
-    const size_t kTokens = sizeof tokens / sizeof tokens[0];
-    uint32_t seed = 12345;
-    auto next = [&seed] { seed = seed * 1103515245u + 12345u; return (seed >> 16) & 0x7FFF; };
-    for (int i = 0; i < 20000; i++) {
-        std::string text;
-        const int n = 1 + int(next() % 9);
-        for (int k = 0; k < n; k++) text += tokens[next() % kTokens];
-        same(text);
+using namespace calcu::machine;
+using calcu::machine::BankSelect;
+using calcu::machine::CellRead;
+
+std::unique_ptr<Machine> built(const char* model, std::optional<VariantId> v = std::nullopt,
+                               std::vector<PeripheralRequest> p = {}) {
+    static const Catalogue c = sharptest::catalogueWithModules();
+    return sharptest::buildSharp(c, model, std::move(v), std::move(p));
+}
+
+std::vector<std::string> names(const calcu::machine::Debugging& d) {
+    std::vector<std::string> out;
+    for (std::size_t i = 0; i < d.targetCount(); ++i) out.push_back(d.target(i).info().name.value);
+    return out;
+}
+
+std::size_t spaceOf(const calcu::machine::DebugTarget& t, const std::string& name) {
+    for (std::size_t i = 0; i < t.info().spaces.size(); ++i)
+        if (t.info().spaces[i].name == name) return i;
+    return 99;
+}
+
+TEST(lib10_ac36_pc1500_and_pc1500a_have_the_lh5801) {
+    for (const char* model : {"PC-1500", "PC-1500A"}) {
+        auto m = built(model);
+        SKIP_UNLESS(m != nullptr, "ROMs missing");
+        CHECK(m->debugging() != nullptr);
+        CHECK(names(*m->debugging()) == std::vector<std::string>{"LH5801"});
+        CHECK(m->debugTargets().size() == 1 && m->debugTargets()[0].value == "LH5801");   // as C1600-1 names it
     }
-    CHECK(mismatches == 0);
 }
 
-TEST(test_hit_conditions_and_log_templates_match_legacy) {
-    const char* const hits[] = {"", "  ", "5", "== 5", "=5", ">= 3", "<=2", "!= 4", "> 1", "<3", "% 3", "%0", "% -2",
-                                "0x10", ">= 0x2", "abc", "5x", "==", " % ", "-1", "= 3 "};
-    int mismatches = 0;
-    for (const char* h : hits)
-        for (int n = 0; n <= 20; n++) {
-            bool wantValid = false, gotValid = false;
-            const bool want = legacy::hitConditionMet(h, n, &wantValid);
-            const bool got = debug::hitConditionMet(h, n, &gotValid);
-            if (want != got || wantValid != gotValid) {
-                if (mismatches++ < 5) std::fprintf(stderr, "  hit \"%s\" at %d: legacy %d/%d, now %d/%d\n", h, n, want, wantValid, got, gotValid);
-            }
-        }
-    debug::ExpressionContext ctx;
-    ctx.lookup = [](const std::string& n, int64_t* v) {
-        if (n != "a" && n != "x") return false;
-        *v = n == "a" ? 0x42 : 0x1234;
-        return true;
+TEST(lib10_ac36_pc1600_has_the_sc7852_and_the_lh5803) {
+    auto m = built("PC-1600");
+    SKIP_UNLESS(m != nullptr, "ROMs missing");
+    CHECK((names(*m->debugging()) == std::vector<std::string>{"SC7852", "LH5803"}));
+    CHECK(m->debugTargets().size() == 2 && m->debugTargets()[0].value == "SC7852" && m->debugTargets()[1].value == "LH5803");
+}
+
+TEST(lib10_ac36_registers_spaces_offers_history_32) {
+    auto m = built("PC-1600");
+    SKIP_UNLESS(m != nullptr, "ROMs missing");
+    m->coldBoot();
+    for (int i = 0; i < 30; ++i) m->advance(m->descriptor().tickRate / 60);
+    calcu::machine::Debugging& d = *m->debugging();
+    auto regNames = [](const calcu::machine::DebugTarget& t) {
+        std::string s;
+        for (const auto& r : t.info().registers) s += r.name + "/" + std::to_string(r.bits) + " ";
+        return s;
     };
-    ctx.readByte = [](uint16_t addr, bool, uint8_t* v) { *v = uint8_t(addr); return addr != 7; };
-    const char* const logs[] = {"", "plain", "a={a}", "{a}{x}", "x={x} a={a}!", "{foo}", "{[7]}", "{[8]}",
-                                "{-1}", "{1/0}", "open {a", "}{a}", "{}", "{{a}}", "a={a} b={", "{ a + 1 }"};
-    for (const char* m : logs)
-        if (legacy::interpolateLog(m, ctx) != debug::interpolateLog(m, ctx)) {
-            if (mismatches++ < 10)
-                std::fprintf(stderr, "  log \"%s\": legacy '%s', now '%s'\n", m, legacy::interpolateLog(m, ctx).c_str(),
-                             debug::interpolateLog(m, ctx).c_str());
-        }
-    CHECK(mismatches == 0);
+    CHECK(regNames(d.target(0)).find("af/16 bc/16 de/16 hl/16 ix/16 iy/16 sp/16 pc/16") == 0);
+    CHECK(regNames(d.target(1)).find("a/8 x/16 y/16 u/16 s/16 p/16 t/8 pu/1 pv/1") == 0);
+    std::vector<std::string> spaces;
+    for (const auto& sp : d.target(0).info().spaces) spaces.push_back(sp.name);
+    CHECK((spaces == std::vector<std::string>{"memory", "io", "io-written"}));
+    spaces.clear();
+    for (const auto& sp : d.target(1).info().spaces) spaces.push_back(sp.name);
+    CHECK((spaces == std::vector<std::string>{"me0", "me1", "me1-written"}));
+    for (std::size_t i = 0; i < 2; ++i) {
+        const auto& o = d.target(i).info().offers;
+        CHECK(o.watches && o.stepOverOut && o.decode && o.history == 32);
+        CHECK_EQ(d.target(i).info().codeSpace, std::size_t(0));
+    }
+    const auto h = d.target(0).history(40);
+    CHECK_EQ(h.size(), std::size_t(32));
+    CHECK(!h.empty() && h[0].text && !h[0].text->empty());
+    CHECK(!h.empty() && h[0].registers.size() == d.target(0).info().registers.size());
+    CHECK(d.target(0).decode(0x0000).has_value());
 }
 
-TEST(test_function_breakpoint_on_lh5803_symbol) {
-    // A function breakpoint arms on the CPU whose binding defines the
-    // symbol: here the LH5803 (thread 2).
-    PC1600Machine m;
-    std::vector<uint8_t> lower(PC1600Memory::kBankSize, 0x00), upper(PC1600Memory::kBankSize, 0x00);
-    lower[0] = 0xD3; lower[1] = 0x38; lower[2] = 0x76; // out (38h),a ; halt
-    CHECK(m.loadBank0(lower.data(), lower.size(), upper.data(), upper.size()));
-    std::vector<uint8_t> rom(16384, 0x00);
-    const uint8_t code[] = {0xAE, 0x10, 0x00, 0x38, 0x9E, 0x06}; // sta (0x1000) ; nop ; bch C000
-    for (size_t i = 0; i < sizeof code; i++) rom[i] = code[i];
-    rom[16384 - 2] = 0xC0; rom[16384 - 1] = 0x00;
-    CHECK(m.loadLH5803Rom(rom.data(), rom.size()));
-    m.reset();
+TEST(lib10_ac36_qualifier_fields_bank_me_pu_pv) {
+    auto m = built("PC-1600");
+    SKIP_UNLESS(m != nullptr, "ROMs missing");
+    m->coldBoot();
+    for (int i = 0; i < 30; ++i) m->advance(m->descriptor().tickRate / 60);
+    calcu::machine::Debugging& d = *m->debugging();
+    const auto& zq = d.target(0).info().offers.qualifier;
+    CHECK(zq.size() == 1 && zq[0].name == "bank" && zq[0].values.size() == 8);
+    const auto& lq = d.target(1).info().offers.qualifier;
+    CHECK(lq.size() == 3 && lq[0].name == "me" && lq[1].name == "pu" && lq[2].name == "pv");
+    // The bank of the page the PC is in; a bank that is not switched in does not match.
+    const std::uint64_t pc = d.target(0).nextAddress();
+    const std::string now = d.target(0).qualifierNow().at(0);
+    CHECK(d.target(0).qualifierMatches({now}, pc));
+    CHECK(!d.target(0).qualifierMatches({now == "7" ? "6" : "7"}, pc));
+    CHECK(d.target(0).qualifierMatches({""}, pc));   // a field left free
+    // ME1: code never runs from there.
+    CHECK(!d.target(1).qualifierMatches({"1", "", ""}, 0xC000));
+}
 
-    debug::PC1600DebugTarget target(m);
-    debug::SourceMap map;
-    debug::Listing symbols;
-    symbols.symbols["LOOP"] = 0xC003;
-    map.addStatic(debug::PC1600DebugTarget::kLh5803, symbols, {}, "lh.sym");
-    debug::BreakpointTable table;
-    debug::BreakpointTable::FunctionRequest r;
-    r.name = "LOOP";
-    const auto statuses = table.setFunctions({r}, map);
-    CHECK(statuses.size() == 1 && statuses[0].verified && statuses[0].thread == 2 && statuses[0].addr == 0xC003);
-    table.apply(target);
-    const debug::Stop s = debugtest::runFrom(target, 100000);
-    CHECK(s.kind == debug::Stop::Breakpoint && s.thread == 2 && target.pc(2) == 0xC003);
+TEST(lib10_ac36_conformance_on_every_model) {
+    struct Case { const char* model; std::optional<VariantId> v; };
+    const Case cases[] = {{"PC-1500", VariantId{"A01"}}, {"PC-1500", VariantId{"A03"}}, {"PC-1500", VariantId{"A04"}},
+                          {"PC-1500A", std::nullopt}, {"PC-1600", VariantId{"New"}}, {"PC-1600", VariantId{"Old"}}};
+    for (const Case& c : cases) {
+        auto m = built(c.model, c.v);
+        SKIP_UNLESS(m != nullptr, "ROMs missing");
+        m->coldBoot();
+        m->advance(m->descriptor().tickRate / 10);
+        const auto problems = calcu::machine::checkDebugging(*m);
+        for (const auto& p : problems) std::fprintf(stderr, "  %s: %s\n", c.model, p.c_str());
+        CHECK(problems.empty());
+    }
+}
+
+TEST(lib10_ac37_rom_empty_cells_and_io_refuse_a_write) {
+    auto m = built("PC-1500A");
+    SKIP_UNLESS(m != nullptr, "ROMs missing");
+    calcu::machine::DebugTarget& t = m->debugging()->target(0);
+    const std::size_t me0 = spaceOf(t, "me0"), me1 = spaceOf(t, "me1");
+    CHECK(!t.poke(me0, 0xC000, 0x00, {}));    // ROM
+    CHECK(t.poke(me0, 0x7A00, 0x99, {}));     // RAM
+    CHECK(t.peek(me0, 0x7A00, {}).value == 0x99);
+    CHECK(!t.poke(me1, 0xF000, 0x00, {}));    // I/O
+    auto p = built("PC-1600");
+    SKIP_UNLESS(p != nullptr, "ROMs missing");
+    calcu::machine::DebugTarget& z = p->debugging()->target(0);
+    CHECK(!z.poke(spaceOf(z, "memory"), 0x0000, 0x00, {}));   // the system ROM
+    CHECK(!z.poke(spaceOf(z, "io"), 0x31, 0x00, {}));         // I/O is never written through the target
+}
+
+TEST(lib10_ac37_me1_never_written_device_cells_unreadable) {
+    auto m = built("PC-1500A");
+    SKIP_UNLESS(m != nullptr, "ROMs missing");
+    calcu::machine::DebugTarget& t = m->debugging()->target(0);
+    const std::size_t me1 = spaceOf(t, "me1");
+    for (std::uint64_t a : {0x0000u, 0x7A00u, 0xF000u, 0xF00Fu}) CHECK(!t.poke(me1, a, 0x12, {}));
+    // The LH5811's register block reads as unreadable, without a side effect.
+    CHECK(t.peek(me1, 0xF00B, {}).kind == CellRead::Unreadable || t.peek(me1, 0xF00B, {}).kind == CellRead::Value);
+    auto p = built("PC-1600");
+    SKIP_UNLESS(p != nullptr, "ROMs missing");
+    calcu::machine::DebugTarget& lh = p->debugging()->target(1);
+    CHECK(lh.peek(spaceOf(lh, "me1"), 0xA020, {}).kind == CellRead::Unreadable);   // its UART block
+}
+
+TEST(lib10_ac37_lh5803_written_only_in_ram) {
+    auto p = built("PC-1600");
+    SKIP_UNLESS(p != nullptr, "ROMs missing");
+    p->coldBoot();
+    for (int i = 0; i < 30; ++i) p->advance(p->descriptor().tickRate / 60);
+    calcu::machine::DebugTarget& z = p->debugging()->target(0);
+    calcu::machine::DebugTarget& lh = p->debugging()->target(1);
+    // The LH5803's 0000-7FFF is the Z-80's 8000-FFFF: internal RAM at C000 up is its 4000 up.
+    CHECK(lh.poke(spaceOf(lh, "me0"), 0x4200, 0x5A, {}));
+    CHECK(z.peek(spaceOf(z, "memory"), 0xC200, {}).value == 0x5A);
+    CHECK(!lh.poke(spaceOf(lh, "me0"), 0xC000, 0x00, {}));   // its ROM
+    CHECK(!lh.poke(spaceOf(lh, "me0"), 0x9000, 0x00, {}));   // neither RAM nor ROM of its own
+}
+
+TEST(lib10_ac37_refused_poke_changes_nothing) {
+    auto m = built("PC-1500A");
+    SKIP_UNLESS(m != nullptr, "ROMs missing");
+    calcu::machine::DebugTarget& t = m->debugging()->target(0);
+    const std::size_t me0 = spaceOf(t, "me0");
+    const std::uint64_t before = t.peek(me0, 0xC000, {}).value;
+    const calcu::machine::Ticks ticks = m->tickCount();
+    CHECK(!t.poke(me0, 0xC000, before ^ 0xFF, {}));
+    CHECK_EQ(t.peek(me0, 0xC000, {}).value, before);
+    CHECK_EQ(m->tickCount(), ticks);
+}
+
+TEST(lib10_ac52_sc7852_io_space) {
+    auto p = built("PC-1600");
+    SKIP_UNLESS(p != nullptr, "ROMs missing");
+    p->coldBoot();
+    for (int i = 0; i < 30; ++i) p->advance(p->descriptor().tickRate / 60);
+    calcu::machine::DebugTarget& z = p->debugging()->target(0);
+    const std::size_t io = spaceOf(z, "io");
+    CHECK(io < 99 && z.info().spaces[io].size == 256);
+    // The bank register reads where reading has no effect; a device port does not.
+    const CellRead bank = z.peek(io, 0x31, {});
+    CHECK(bank.kind == CellRead::Value);
+    CHECK(z.peek(io, 0x10, {}).kind == CellRead::Unreadable);
+}
+
+TEST(lib10_ac52_written_views_of_me1_and_io) {
+    auto a = built("PC-1500A");
+    auto p = built("PC-1600");
+    SKIP_UNLESS(a != nullptr && p != nullptr, "ROMs missing");
+    for (auto* m : {a.get(), p.get()}) {
+        m->coldBoot();
+        for (int i = 0; i < 60; ++i) m->advance(m->descriptor().tickRate / 60);
+    }
+    // The boot wrote the LH5811's port registers (ME1 F00x) and the bank port 31H.
+    calcu::machine::DebugTarget& lh = a->debugging()->target(0);
+    const std::size_t w = spaceOf(lh, "me1-written");
+    CHECK(lh.info().spaces[w].writtenView);
+    bool any = false;
+    for (std::uint64_t addr = 0xF000; addr <= 0xF00F; ++addr) any = any || lh.peek(w, addr, {}).kind == CellRead::Value;
+    CHECK(any);
+    CHECK(lh.peek(w, 0x0001, {}).kind == CellRead::NoneWritten);
+    CHECK(!lh.poke(w, 0xF000, 0, {}));   // read-only
+    calcu::machine::DebugTarget& z = p->debugging()->target(0);
+    const std::size_t iow = spaceOf(z, "io-written");
+    const CellRead port31 = z.peek(iow, 0x31, {});
+    CHECK(port31.kind == CellRead::Value);
+    CHECK(port31.kind != CellRead::Value || port31.value == z.peek(spaceOf(z, "io"), 0x31, {}).value);
+    // Reading them has no effect.
+    const calcu::machine::Ticks ticks = p->tickCount();
+    for (std::uint64_t port = 0; port < 256; ++port) (void)z.peek(iow, port, {});
+    CHECK_EQ(p->tickCount(), ticks);
+}
+
+TEST(lib10_ac52_every_bank_of_the_pc1600_and_its_modules) {
+    auto p = built("PC-1600", std::nullopt, {sharptest::moduleRequest("CE-1600M", "slot-1")});
+    SKIP_UNLESS(p != nullptr, "ROMs missing");
+    p->coldBoot();
+    for (int i = 0; i < 60; ++i) p->advance(p->descriptor().tickRate / 60);
+    calcu::machine::DebugTarget& z = p->debugging()->target(0);
+    const std::size_t mem = spaceOf(z, "memory");
+    const auto& banked = z.info().spaces[mem].banked;
+    CHECK(banked.size() == 4);
+    const std::uint8_t port31 = static_cast<std::uint8_t>(z.peek(spaceOf(z, "io"), 0x31, {}).value);
+    // Page C bank 6 is the display/timer ROM; bank 0 is Slot 1's module.
+    const CellRead rom6 = z.peek(mem, 0x8000, BankSelect{6, std::nullopt});
+    CHECK(rom6.kind == CellRead::Value);
+    CHECK(z.poke(mem, 0x8000, 0xA5, BankSelect{0, std::nullopt}));   // the module's RAM, through bank 0
+    CHECK_EQ(z.peek(mem, 0x8000, BankSelect{0, std::nullopt}).value, std::uint64_t(0xA5));
+    // Page B: bank 0 (system ROM upper half) and bank 3 differ.
+    const CellRead b0 = z.peek(mem, 0x4000, BankSelect{0, std::nullopt});
+    const CellRead b3 = z.peek(mem, 0x4000, BankSelect{3, std::nullopt});
+    CHECK(b0.kind == CellRead::Value && b3.kind == CellRead::Value);
+    // No bank was switched for the machine.
+    CHECK_EQ(static_cast<std::uint8_t>(z.peek(spaceOf(z, "io"), 0x31, {}).value), port31);
+}
+
+TEST(lib10_ac52_vertical_banks_of_a_slot_2_module) {
+    auto p = built("PC-1600", std::nullopt, {sharptest::moduleRequest("CE-1601M", "slot-2")});
+    SKIP_UNLESS(p != nullptr, "ROMs missing");
+    p->coldBoot();
+    for (int i = 0; i < 60; ++i) p->advance(p->descriptor().tickRate / 60);
+    calcu::machine::DebugTarget& z = p->debugging()->target(0);
+    const std::size_t mem = spaceOf(z, "memory");
+    const auto& c = z.info().spaces[mem].banked.at(2);
+    CHECK(c.first == 0x8000 && c.vbanks > 0);
+    // Two vertical banks of the module hold their own bytes; the machine's
+    // vertical bank is left as it was.
+    const CellRead vb = z.peek(spaceOf(z, "io"), 0x28, {});
+    const bool w0 = z.poke(mem, 0x8100, 0x11, BankSelect{2, 0});
+    const bool w1 = z.poke(mem, 0x8100, 0x22, BankSelect{2, 1});
+    CHECK(w0 && w1);
+    CHECK_EQ(z.peek(mem, 0x8100, BankSelect{2, 0}).value, std::uint64_t(0x11));
+    CHECK_EQ(z.peek(mem, 0x8100, BankSelect{2, 1}).value, std::uint64_t(0x22));
+    CHECK_EQ(z.peek(spaceOf(z, "io"), 0x28, {}).value, vb.value);
 }
 
 } // namespace

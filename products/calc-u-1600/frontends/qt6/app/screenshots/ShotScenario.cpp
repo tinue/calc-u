@@ -222,6 +222,49 @@ bool parseStep(const calcu::formats::YamlNode& node, const QDir& baseDir, const 
     } else if (verb == QLatin1String("enter-text")) {
         out->kind = K::EnterText;
         if (!needText(&out->text)) return false;
+    } else if (verb == QLatin1String("expect-panel")) {
+        // `expect-panel: { name: paper, title: CE-1600P, empty: false }` (a
+        // check scenario, LIB-8 AC-36, AC-38): fails the shot otherwise.
+        out->kind = K::ExpectPanel;
+        out->number = -1;
+        if (!hasValue || !value->isMap()) {
+            *error = lineError(node.line, QStringLiteral("'expect-panel' needs a map with 'name'"));
+            return false;
+        }
+        std::string err;
+        if (!value->requireOnlyKeys({"name", "title", "empty"}, &err)) {
+            *error = QString::fromStdString(err);
+            return false;
+        }
+        bool hasTitle = false;
+        for (const auto& [key, v] : value->map) {
+            QString text;
+            if (!scalarString(v, &text, error)) return false;
+            if (key == "name") out->text = text;
+            else if (key == "title") {
+                out->text2 = text;
+                hasTitle = true;
+            } else if (key == "empty") {
+                if (text != QLatin1String("true") && text != QLatin1String("false")) {
+                    *error = lineError(v.line, QStringLiteral("'empty' must be true or false"));
+                    return false;
+                }
+                out->number = text == QLatin1String("true") ? 1 : 0;
+            }
+        }
+        if (out->text.isEmpty()) {
+            *error = lineError(node.line, QStringLiteral("'expect-panel' needs a 'name'"));
+            return false;
+        }
+        if (!hasTitle) out->text2 = QStringLiteral("\x01");   // no title asked for
+    } else if (verb == QLatin1String("expect-title")) {
+        out->kind = K::ExpectTitle;
+        if (!needText(&out->text)) return false;
+    } else if (verb == QLatin1String("command")) {
+        // `- command: pause`: a session command, as the harness would send it
+        // (until the scenarios are an attach client, M-49).
+        out->kind = K::Command;
+        if (!needText(&out->text)) return false;
     } else if (verb == QLatin1String("capture")) {
         out->kind = K::Capture;
         if (!hasValue) {

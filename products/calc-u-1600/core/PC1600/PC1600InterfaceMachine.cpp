@@ -24,7 +24,7 @@ std::string utf8Of(const std::filesystem::path& p) {
 
 struct PC1600InterfaceMachine::Kinds {
     explicit Kinds(PC1600Machine& m)
-        : memory(m), inspector(m), support(m), trace(m), tape(m), clock(m), ce150Paper(m), ce1600pPaper(m), floppy(m), printerPort(m),
+        : memory(m), inspector(m), support(m), trace(m), tape(m), clock(m), floppy(m), printerPort(m),
           hostDrive(m) {}
 
     sharp::PC1600LoaderMemory memory;
@@ -49,12 +49,12 @@ struct PC1600InterfaceMachine::Kinds {
         }
         PC1600Machine& m;
     } support;
-    struct Trace final : sharp::CpuTrace {
+    struct Trace final : sharp::TraceRecords {
         explicit Trace(PC1600Machine& m) : m(m) {}
-        bool begin(std::FILE* f, std::uint32_t flags) override { return m.beginCpuTrace(f, flags); }
-        void end() override { m.endCpuTrace(); }
-        bool active() const override { return m.cpuTraceActive(); }
-        std::uint64_t bytes() const override { return m.cpuTraceBytes(); }
+        bool begin() override { return m.beginTraceRecords(TRACE_FULL); }
+        bool take(std::vector<std::uint8_t>& out, std::uint64_t budget) override { return m.takeTraceRecords(out, budget); }
+        void endRecord() override { m.endTraceRecord(); }
+        void end() override { m.endTraceRecords(); }
         PC1600Machine& m;
     } trace;
     struct Tape final : sharp::TapeDeckAccess {
@@ -87,22 +87,6 @@ struct PC1600InterfaceMachine::Kinds {
         }
         PC1600Machine& m;
     } clock;
-    struct Ce150Paper final : sharp::PlotterPaper {
-        explicit Ce150Paper(PC1600Machine& m) : m(m) {}
-        std::vector<AlpsPlotterMechanism::FlatPoint> points() const override { return m.ce150PlotPoints(); }
-        std::uint64_t revision() const override { return m.ce150PlotRevision(); }
-        std::vector<std::string> drainEvents() override { return m.drainCE150Events(); }
-        void clear() override { m.clearCE150Paper(); }
-        PC1600Machine& m;
-    } ce150Paper;
-    struct Ce1600pPaper final : sharp::PlotterPaper {
-        explicit Ce1600pPaper(PC1600Machine& m) : m(m) {}
-        std::vector<AlpsPlotterMechanism::FlatPoint> points() const override { return m.ce1600pPlotPoints(); }
-        std::uint64_t revision() const override { return m.ce1600pPlotRevision(); }
-        std::vector<std::string> drainEvents() override { return m.drainCE1600PEvents(); }
-        void clear() override { m.clearCE1600PPaper(); }
-        PC1600Machine& m;
-    } ce1600pPaper;
     struct Floppy final : sharp::FloppyDriveAccess {
         explicit Floppy(PC1600Machine& m) : m(m) {}
         std::vector<std::uint8_t> diskImage() const override { return m.ce1600fDiskImage(); }
@@ -129,7 +113,8 @@ struct PC1600InterfaceMachine::Kinds {
 };
 
 PC1600InterfaceMachine::PC1600InterfaceMachine(const MachineDescriptor& d, const VariantId& v)
-    : SharpMachine(d, v), m_core(std::make_unique<PC1600Machine>()), m_kinds(std::make_unique<Kinds>(*m_core)) {
+    : SharpMachine(d, v), m_core(std::make_unique<PC1600Machine>()), m_kinds(std::make_unique<Kinds>(*m_core)),
+      m_debugging(sharp::makeSharpDebugging(*m_core)) {
     // The RS-232C peer is attached when the port is first taken (capability()).
     m_core->setCE158SerialLink(&m_ce158Port);
 }
@@ -247,10 +232,11 @@ void PC1600InterfaceMachine::offer(std::vector<Offered>& out, const std::vector<
     out.push_back(byComponent(sharp::kRtcComponent, k.clock));
     out.push_back(byComponent(sharp::kRs232cComponent, m_rs232c.port()));
     if (const PlugEntry* e = at(sharp::kPrinter)) {
+        // LIB-8: the plotter's paper output, once its card is on the bus.
         if (e->peripheral.value == sharp::kCE150) {
-            out.push_back(byPeripheral(*e, k.ce150Paper));
+            if (calcu::paper::PaperOutput* paper = m_core->ce150PaperOutput()) out.push_back(byPeripheral(*e, *paper));
         } else if (e->peripheral.value == sharp::kCE1600P) {
-            out.push_back(byPeripheral(*e, k.ce1600pPaper));
+            if (calcu::paper::PaperOutput* paper = m_core->ce1600pPaperOutput()) out.push_back(byPeripheral(*e, *paper));
             out.push_back(byPeripheral(*e, k.floppy));
         }
     }

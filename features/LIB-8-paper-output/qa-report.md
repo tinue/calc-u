@@ -155,3 +155,94 @@ difference is a finding.
   device-less `QWheelEvent` constructor are the calls to watch.
 - **Panel empty check**: a paper that was only fed exactly to y = 0 has the
   reach 0..0 and is shown as empty by both panels; no printer does that.
+
+## Calc-U-1600 (M-45, 2026-11-16, branch `m45-paper-debugger-1600`)
+
+Built and run as the Library column was (M4 Pro, macOS 27.2, Apple
+clang, Ninja, RelWithDebInfo): `build/tests` (`-DCALCU_FRONTEND_QT=OFF`,
+Frequent 33 of 33) and `build/qt` (`-DCALCU_FRONTEND_QT=ON
+-DCALCU_TESTS_LONGER=ON`, Frequent 35 of 35, `calcu_qt6_tests` 48 cases);
+the Web `dist/` with Homebrew Emscripten and `frontends/web/run-tests.sh`
+(Playwright, Chromium and WebKit). The column is **In progress**: it is
+Done in M-46, where AC-36's preset clause is tested again on format 2
+presets (design §10.1).
+
+The code (design §10.3): `core/Connector/PlotterPaperOutput.hpp` (new: the
+descriptions, the pen colours, the mapping of §10.4, `rawPlotPoints` for
+today's summaries); `AlpsPlotterMechanism.hpp` (the strokes go; a
+`PenListener`; the event log stays); `Ce150Card.hpp`, `CE1600PCard.hpp`
+(own the output, D-16); `PC1500Machine`, `PC1600Machine` (the plot-point
+and clear calls go; `ce150PaperOutput()`, `ce1600pPaperOutput()`); the
+interface machines offer `<place>/paper-output`; `c1600.plotter-paper`
+goes; `LegacyCalls::CoreParts::ce150`; `app/SharpPrinters.*` (new),
+`app/PlotterPaper.*` deleted; `SharpAppPart` (a `PaperPart`, P-A2),
+`ControlState::paperOwner`, `SharpWebPart` (the paper topic, commands and
+request go; `ui.paper` the owner's ID); `HarnessProduct` (a `PaperPart`);
+Qt6: `PlotterPaperWidget` deleted, `MainWindow` docks `calcu::qt6::PaperPanel`
+always, `MachineController` hands it every message and answers the
+clipboard with `ClipboardService` (P-A3); `library/qt6/MacClipboard.*`
+(moved, D-17) and `ClipboardService` on Cocoa; the screenshot runner's
+`plot` target from `paper.picture`, the verbs `expect-panel`,
+`expect-title` (and `command`, for LIB-10 AC-41); Web: `build.js` takes
+the component set and its CSS, `PaperDock` shows `CalcuPaperPanel`, the
+old paper code of `Panels.jsx`, `painters.js`, `engine.js` goes; today's
+tools write `CALCU_PAPER_OUT` from a connected paper.
+
+| AC | Result | Test |
+|---|---|---|
+| AC-32 | Pass | `plotter_paper_tests.cpp`: `lib8_ac32_ce150_states_its_paper_on_every_model` (PC-1500, PC-1500A, PC-1600 with the CE-150: `checkPaperOutput`, 56 mm, 42.75 mm drawn on, the margins even, pen strokes, no text layer, 1200 dpi), `lib8_ac32_ce1600p_states_its_paper` (210 mm, 190 mm); `harness_tests.cpp`: `lib8_ac32_harness_paper_marks_of_the_ce150`, `lib8_ac32_harness_cut_paper_and_png` |
+| AC-33 | Pass | `plotter_paper_tests.cpp`: `lib8_ac33_pen_down_move_up_one_stroke_in_the_pen_colour` (both plotters, their cards), `lib8_ac33_move_with_pen_up_and_feed_give_no_mark`, `lib8_ac33_feed_without_mark_grows_the_reach` |
+| AC-34 | Pass | `lib8_ac34_four_pen_colours`; the width (one point, round ends) is the panels' (LIB-8 T13, T15) and shows in `CalcU1600Shots.lib8-ac38`'s capture |
+| AC-35 | Pass | `paper_session_tests.cpp`: `lib8_ac35_copy_of_a_plotter_is_1200_dpi` (a CE-1600P printout: 9921 pixels wide, 1200 dpi), `lib8_ac35_long_roll_lowered_by_ac17`; macOS: `calcu_qt6_tests` `ac16_mac_clipboard_keeps_physical_size` (P16-9) |
+| AC-36 | Pass (M-45); again on format 2 in M-46 | `paper_session_tests.cpp`: `lib8_ac36_papers_topic_lists_both_plotters_without_any_plugged`, `lib8_ac36_ce150_paper_kept_through_detach_rom_module_and_model_switch` (PC-1500 A04 → A03, a CE-161, a PC-1600 with the CE-150 in MODE 1: it prints on below), `lib8_ac36_ce1600p_paper_kept_through_detach_and_its_rom_variant`, `lib8_ac36_user_preset_naming_a_plotter_starts_it_empty` (version 1, P-A2); Qt6 `CalcU1600Shots.lib8-ac36`; Web `play.spec.js` `lib8_ac36 paper panel always shown, named while a plotter is plugged in` |
+| AC-37 | Pass | `ce1600p_tests.cpp`, `ce150_tests.cpp`: the cases renamed `lib8_ac37_…` on a connected paper (`_stepper_steps_become_places`, `_a_stroke_per_pen_down`, `_ce150_colour_every_third_arrival`, `_ce1600p_colour_turret` (new: the CE-1600P had no turret case), `_reset_keeps_the_paper` (also: it plots on below, D-11)); `plotter_paper_tests.cpp`: `_places_map_to_the_panel`, `_strokes_split_by_colour`, `_copied_picture_size` (they replace `shared_geometry_tests.cpp`'s three); `ce158_tests.cpp` reads the CE-150's paper |
+| AC-38 | Pass | Qt6 `CalcU1600Shots.lib8-ac38` (`plotter/lissajou-1600.pc1600`; `expect-panel { name: paper, title: CE-1600P, empty: false }`; captures of the panel and of the copy); Web `play.spec.js` `lib8_ac38 plotter example shows the paper panel with marks` |
+
+Exit check of M-45 (the plotter's paper survives a model switch):
+`lib8_ac36_ce150_paper_kept_through_detach_rom_module_and_model_switch`
+switches from a PC-1500 to a PC-1600, and the CE-150 attached there again
+prints on below its first printout.
+
+### Golden and reference runs
+
+- The 23 golden runs replay unchanged (`golden_runs_tests.cpp`, Frequent):
+  the four with a paper (`pc1500a-ce150`, `pc1600-ce150`,
+  `pc1600-ce1600p`, `pc1600-attach-ce1600p`) give their 108 and 218
+  points and sums from the marks (§10.7). No difference.
+- `lib8_ac39_sharp_plots_turned_into_paper_replies` unchanged.
+
+### Deviations
+
+- **The reach of a feed.** A feed from where the paper stands gives the
+  reach from the first place fed to, not from the place it stood before
+  (the library's `Paper::fedTo` touches the new place): a feed of 8 half
+  steps from 0 reaches 1 to 8 units (`lib8_ac33_feed_without_mark_grows_the_reach`).
+- **Where the output lives.** `ce150PaperOutput()` and
+  `ce1600pPaperOutput()` are on the core classes, and the interface
+  machines offer the output only once the card is on the bus (a plug on a
+  running machine waits for the off point, C1600-1 D-2).
+- **The test helper `takeRawPlotPoints`** (`PlotterPaperOutput.hpp`) reads
+  what a plotter kept on a paper of its own; today's tools (`printCe150Report`,
+  `CALCU_PAPER_OUT`, `pc1600_plotter_probe`) and the job tests use it.
+- **The CE-1600P's own start draws a dot.** After a rebuild (its ROM
+  variant) the plotter's start puts the pen down once below the paper; the
+  AC-36 case checks that what was drawn stays as it was, not the count.
+- **The narrow Web window.** Where only one docked panel fits (a phone in
+  portrait), the paper panel gives way to the INSPECTOR while no plotter
+  is plugged in, as the panels give way today (D-18; ledger 1600-12
+  amended). On wider windows it is always there.
+- **The macOS clipboard** goes through Cocoa only on the `cocoa` platform
+  and without a test sink: the offscreen platform of `calcu_qt6_tests`
+  keeps its own clipboard. Its test writes to a named pasteboard of its
+  own, not the user's clipboard (`macSetClipboardImage(…, pasteboard)`,
+  `macPasteboardImageSize`).
+- **`expect-panel` reads the panel's own state** (`PaperPanel::paperEmpty()`,
+  new) and the owner's name; the scenarios run in `build/.../shots-check`.
+
+### Findings
+
+- During development, one run of `calcu_qt6_tests` (before the platform
+  check above) wrote a white test picture to the general pasteboard of
+  the machine it ran on.
+- CI should be dispatched at the merge: the macOS clipboard path is
+  platform code (§10.10), and the Qt6 component set now links Cocoa.

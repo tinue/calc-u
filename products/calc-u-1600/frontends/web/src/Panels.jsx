@@ -1,8 +1,9 @@
 // The docked panels under the control bar, as in the desktop app: the
-// INSPECTOR (Qt6/app/DebugPanel, without TRACE/LOG), the plotter paper
-// (PlotterPaperWidget) and the CE-158 printer output (Ce158PrinterWidget).
-// Same chrome on all three: a header strip, the output, a button bar with
-// pill buttons, light or dark with the system.
+// INSPECTOR (Qt6/app/DebugPanel, without TRACE/LOG) and the CE-158 printer
+// output (Ce158PrinterWidget), in the same chrome: a header strip, the
+// output, a button bar with pill buttons, light or dark with the system.
+// The plotters' paper is the library's paper panel (CalcuPaperPanel, LIB-8),
+// always shown (AC-36), docked by PaperDock below.
 
 function Panel({ title, className, children, buttons, panel, empty }) {
   return (
@@ -78,70 +79,18 @@ function Inspector({ engine }) {
   );
 }
 
-const FOLLOW_THRESHOLD = 64;
-
-function PlotterPaper({ engine }) {
-  const paper = useEngine(engine, (s) => s.paper);
-  const lcd = useEngine(engine, (s) => s.lcd);
-  const kind = useEngine(engine, (s) => (s.ui ? s.ui.paper : ""));
-  const scrollRef = React.useRef(null);
-  const canvasRef = React.useRef(null);
-  const [view, setView] = React.useState({ w: 0, h: 0 });
-  const paneWidth = view.w;
-
-  // The pane width the worker lays the strokes out for.
-  React.useEffect(() => {
-    const el = scrollRef.current;
-    if (!el) return undefined;
-    const measure = () => setView({ w: el.clientWidth, h: el.clientHeight });
-    const ro = new ResizeObserver(measure);
-    ro.observe(el);
-    measure();
-    return () => ro.disconnect();
-  }, []);
-  React.useEffect(() => { if (engine && paneWidth > 0) engine.call("setPaperWidth", paneWidth); }, [engine, paneWidth, kind]);
-
-  const height = Math.max(paper ? paper.contentHeight : 0, view.h);
-
-  React.useLayoutEffect(() => {
-    const el = scrollRef.current, canvas = canvasRef.current;
-    if (!el || !canvas || paneWidth <= 0) return;
-    const nearBottom = el.scrollHeight - el.clientHeight - el.scrollTop <= FOLLOW_THRESHOLD;
-    const ctx = sizeCanvas(canvas, paneWidth, height);
-    paintPaper(ctx, paneWidth, height, paper && !paper.empty ? paper.strokes : null, lcd);
-    if (nearBottom) el.scrollTop = el.scrollHeight;
-  }, [paper, lcd, paneWidth, height]);
-
-  const empty = !paper || paper.empty;
-
-  // The paper at its physical size (1200 DPI at most), as a PNG.
-  const exportPng = async () => {
-    const ex = await engine.request("paperExport");
-    if (!ex) return null;
-    const canvas = document.createElement("canvas");
-    canvas.width = ex.width;
-    canvas.height = ex.height;
-    const ctx = canvas.getContext("2d");
-    ctx.scale(ex.scale, ex.scale);
-    paintPaper(ctx, ex.paneWidth, ex.contentHeight, ex.strokes, lcd);
-    return canvasPng(canvas);
-  };
-  const copy = () => copyImageOrDownload(`${kind || "plot"}.png`, { "image/png": exportPng() });
-
+// The library's paper panel (LIB-8 AC-36): always there, named after the
+// plotter plugged in (ui.paper, adapter P-A1 until LIB-4's panel entry).
+function PaperDock({ engine }) {
+  const owner = useEngine(engine, (s) => (s.ui && s.ui.paper ? s.ui.paper : null));
+  const papers = useCalcuPaper(engine ? engine.shell : null);
+  const entry = owner ? papers.papers.find((p) => p.printer === owner) : null;
+  const empty = !entry || papers.paper(entry.owner).empty;
   return (
-    <Panel title={kind} className="calcu-paper" panel="paper" empty={empty}
-      buttons={
-        <React.Fragment>
-          <button type="button" className="calcu-pill" disabled={empty} title="Copy the paper to the clipboard as an image."
-            onClick={copy}>Copy</button>
-          <button type="button" className="calcu-pill" disabled={empty} title="Copy the paper, then tear it off (clears the plot)."
-            onClick={async () => { await copy(); engine.call("clearPaper"); }}>Cut</button>
-        </React.Fragment>
-      }>
-      <div className="calcu-paper-scroll" ref={scrollRef}>
-        <canvas ref={canvasRef} className="calcu-paper-canvas" style={{ width: paneWidth, height }} />
-      </div>
-    </Panel>
+    <section className="calcu-panel calcu-paper" data-panel="paper" data-owner={owner || ""}
+      data-empty={empty ? "true" : "false"}>
+      <CalcuPaperPanel shell={engine ? engine.shell : null} owner={owner} />
+    </section>
   );
 }
 

@@ -246,4 +246,31 @@ HistoryEntry z80HistoryEntry(const Z80HistoryFrame& f) {
     return e;
 }
 
+// ── Shared types (were DebugTarget.cpp's) ─────────────────────────────────
+
+std::string BankKey::describe() const {
+    std::string s;
+    auto add = [&s](const std::string& part) { s += (s.empty() ? "" : ", ") + part; };
+    if (bank >= 0) add("bank " + std::to_string(bank));
+    if (me >= 0) add("me" + std::to_string(me));
+    if (pu >= 0) add("pu=" + std::to_string(pu));
+    if (pv >= 0) add("pv=" + std::to_string(pv));
+    return s;
+}
+
+bool statusFlags(const std::vector<Register>& regs, uint8_t* flags) {
+    for (const Register& r : regs)
+        if (r.status) {
+            *flags = uint8_t(r.value);
+            return true;
+        }
+    return false;
+}
+
+const std::vector<std::string>& flagNames(CpuKind kind) {
+    static const std::vector<std::string> kLh = {"c", "ie", "z", "v", "h"};
+    static const std::vector<std::string> kZ80 = {"c", "n", "pv", "", "h", "", "z", "s"};
+    return kind == CpuKind::Z80 ? kZ80 : kLh;
+}
+
 } // namespace debug

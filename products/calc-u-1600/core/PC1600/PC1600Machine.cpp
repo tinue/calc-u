@@ -145,26 +145,15 @@ std::filesystem::path PC1600Machine::hostDriveDirectory() const {
     return m_hostDriveCard ? m_hostDriveCard->drive().directory() : std::filesystem::path{};
 }
 
-// The three below read and clear the plotter mechanism, whose stroke and
-// event containers step() changes on every motor write.
-
-std::vector<AlpsPlotterMechanism::FlatPoint> PC1600Machine::ce1600pPlotPoints() const {
-    if (!m_ce1600pCard) return {};
-    return m_ce1600pCard->mechanism().flatPoints();
+sharp::PlotterPaperOutput* PC1600Machine::ce1600pPaperOutput() {
+    return m_ce1600pCard ? &m_ce1600pCard->paperOutput() : nullptr;
 }
 
-uint64_t PC1600Machine::ce1600pPlotRevision() const {
-    if (!m_ce1600pCard) return 0;
-    return m_ce1600pCard->mechanism().revision();
-}
-
+// Reads and clears the plotter mechanism's event log, which step() fills on
+// every pen change.
 std::vector<std::string> PC1600Machine::drainCE1600PEvents() {
     if (!m_ce1600pCard) return {};
     return m_ce1600pCard->mechanism().drainEvents();
-}
-
-void PC1600Machine::clearCE1600PPaper() {
-    if (m_ce1600pCard) m_ce1600pCard->mechanism().clearPaper();
 }
 
 // ── CE-1600F floppy (union-attached with CE-1600P, above) ─────────────
@@ -279,14 +268,8 @@ std::vector<uint8_t> PC1600Machine::drainCE158ParallelOutput() {
     return m_ce158.drainParallelOutput();
 }
 
-std::vector<AlpsPlotterMechanism::FlatPoint> PC1600Machine::ce150PlotPoints() const {
-    if (!m_ce150Card) return {};
-    return m_ce150Card->mechanism().flatPoints();
-}
-
-uint64_t PC1600Machine::ce150PlotRevision() const {
-    if (!m_ce150Card) return 0;
-    return m_ce150Card->mechanism().revision();
+sharp::PlotterPaperOutput* PC1600Machine::ce150PaperOutput() {
+    return m_ce150Card ? &m_ce150Card->paperOutput() : nullptr;
 }
 
 std::vector<std::string> PC1600Machine::drainCE150Events() {
@@ -294,9 +277,6 @@ std::vector<std::string> PC1600Machine::drainCE150Events() {
     return m_ce150Card->mechanism().drainEvents();
 }
 
-void PC1600Machine::clearCE150Paper() {
-    if (m_ce150Card) m_ce150Card->mechanism().clearPaper();
-}
 
 int PC1600Machine::step() {
     uint64_t tstates = 0;
@@ -662,6 +642,33 @@ PC1600Machine::DebugBankState PC1600Machine::inspectBankState() const {
     s.target[3] = (s.pageDBank == 0) ? PT::InternalRam : PT::OpenBus;
 
     return s;
+}
+
+bool PC1600Machine::beginTraceRecords(uint32_t flags) {
+    if (m_traceFile) return false;
+    m_traceFile = std::make_unique<PC1500TraceFile>();
+    m_traceDrainCounter = 0;
+    m_sc7852.setTraceFlags(flags);
+    m_lh5803.setTraceFlags(flags);
+    uint32_t staleLost = 0;
+    m_sc7852.drainTraceEvents(m_z80TraceDrainBuf, kTraceDrainBufFrames, &staleLost);
+    m_lh5803.drainTraceEvents(m_lhTraceDrainBuf, kTraceDrainBufFrames, &staleLost);
+    return true;
+}
+
+void PC1600Machine::endTraceRecord() {
+    if (!m_traceFile) return;
+    pumpTraceFile();
+    m_traceFile->finish();
+    m_sc7852.setTraceFlags(TRACE_NONE);
+    m_lh5803.setTraceFlags(TRACE_NONE);
+}
+
+void PC1600Machine::endTraceRecords() {
+    m_traceFile.reset();
+    m_sc7852.setTraceFlags(TRACE_NONE);
+    m_lh5803.setTraceFlags(TRACE_NONE);
+    m_traceDrainCounter = 0;
 }
 
 bool PC1600Machine::beginCpuTrace(std::FILE* handle, uint32_t flags) {

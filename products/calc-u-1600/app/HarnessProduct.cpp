@@ -17,11 +17,15 @@
 #include "sessions/SessionPart.hpp"
 #include "app/PacingProfiles.hpp"
 #include "MachineCodeFile.hpp"
+#include "app/SharpDebuggerSetup.hpp"
 #include "app/SharpLoaderPart.hpp"
+#include "app/SharpPrinters.hpp"
 #include "app/SharpTopics.hpp"
 #include "app/SharpTyping.hpp"
+#include "debugger/DebuggerPart.hpp"
 #include "harness/Commands.hpp"
 #include "harness/HarnessHost.hpp"
+#include "paper/PaperPart.hpp"
 #include "startup/ProductMachines.hpp"
 
 // The product folder (design §8, O-2), set by CMake.
@@ -299,8 +303,13 @@ public:
     }
 
     // LIB-5: the typing part (key, type; the Sharp profiles), the loaders
-    // (C1600-2), then the font.
-    std::vector<sessions::SessionPart*> sessionParts() override { return {&typing_, &loaders_, &font_}; }
+    // (C1600-2), the font, then LIB-8's papers of the two plotters (`paper
+    // ...`, `cut-paper`; the run hands the part its machine control, A-3) and
+    // LIB-10's debugger (pause, step, break, watch, trace, symbols, ...; the
+    // run hands it its trace folder and limit).
+    std::vector<sessions::SessionPart*> sessionParts() override { return {&typing_, &loaders_, &font_, &paper_, &debugger_}; }
+    paper::PaperPart* paperPart() override { return &paper_; }
+    debugger::DebuggerPart* debuggerPart() override { return &debugger_; }
 
     // C1600-2 AC-21: the loaders under the product's word (LIB-11 AC-13).
     void addCommands(harness::CommandRegistry& r) override {
@@ -317,6 +326,8 @@ private:
     FontPart font_;
     calcu::typing::TypingPart typing_{typingProduct(), sessions::Hosting::VirtualTime};
     SharpLoaderPart loaders_{typing_};
+    paper::PaperPart paper_{catalogue_, sharpPrinterPapers()};
+    debugger::DebuggerPart debugger_{sharpDebuggerSetup(nullptr, nullptr, /*hasTraceFolder=*/false)};
 };
 
 } // namespace

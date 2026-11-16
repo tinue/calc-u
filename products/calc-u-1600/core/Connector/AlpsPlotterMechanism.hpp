@@ -23,23 +23,33 @@
 // pen's position/state is simply the running integral of those steps. This
 // class reproduces that stepper simulation exactly (same phase table, same
 // Z-position thresholds) rather than inventing a higher-level vector
-// protocol, and turns the result into strokes: this project only wants
-// "correct lines, correctly colored, no motion animation" as output, not
-// per-step pixels.
+// protocol, and tells a PenListener what the pen does (down, moved, up,
+// the paper fed): the paper itself is the library's (LIB-8; the card's
+// PlotterPaperOutput turns these calls into marks).
 class AlpsPlotterMechanism {
 public:
     enum class PenColor : uint8_t { Black = 0, Blue = 1, Green = 2, Red = 3 };
 
     struct Point { int x = 0; int y = 0; };
 
-    // One continuous pen-down run: a polyline of step-space points, all in
-    // one color (the pen physically cannot change color without first
-    // lifting, so a color change never happens mid-stroke). Rendered as a
-    // single accumulated Path per color by the paper view.
-    struct Stroke {
-        PenColor color = PenColor::Black;
-        std::vector<Point> points;
+    // What the pen does, in the mechanism's raw steps, called as it
+    // happens (LIB-8 design §10.4): the pen put down at a place, moved
+    // while down, lifted; the paper fed to a new Y (called before penY()
+    // moves, with the pen up or down); reanchored() before reset() sets the
+    // steppers back to 0, so the listener can keep the paper where it stands.
+    class PenListener {
+    public:
+        virtual void penDown(PenColor, int x, int y) = 0;
+        virtual void penTo(int x, int y) = 0;
+        virtual void penUp() = 0;
+        virtual void fedTo(int y) = 0;
+        virtual void reanchored() = 0;
+
+    protected:
+        ~PenListener() = default;
     };
+    void setListener(PenListener* l) { m_listener = l; }
+
 
     /// Ports 0x82 (Z, low nibble) / 0x83 (X low nibble, Y high nibble) on
     /// the real CE-1600P hardware. Callers pass the already-isolated 4-bit
@@ -117,9 +127,11 @@ public:
 
     /// Re-anchor the mechanism to its power-on state: steppers to the ring
     /// phase the tests anchor on, pen up, colour Black, all turret state
-    /// cleared. Deliberately KEEPS `m_strokes` -- a chip reset is not a
-    /// fresh sheet of paper, and real ink stays put. Bumps `revision()`.
+    /// cleared. The paper is not touched -- a chip reset is not a fresh
+    /// sheet, and real ink stays put: the listener is told first
+    /// (reanchored()) and goes on below what was drawn (LIB-8 D-11).
     void reset() {
+        if (m_listener) m_listener->reanchored();
         m_motorX = Stepper{};
         m_motorY = Stepper{};
         m_motorZ = Stepper{};
@@ -132,7 +144,6 @@ public:
         m_colorRotateCount = 0;
         m_ce150StartRot = false;
         m_ce150Rot = 0;
-        ++m_revision;
     }
 
     bool penDown() const { return m_penDown; }
@@ -140,52 +151,6 @@ public:
     int penY() const { return m_penY; }
     int penZ() const { return m_penZ; } // debug/test access; 0-50, see stepZ()
     PenColor penColor() const { return m_penColor; }
-
-    /// Committed strokes plus, if a pen-down run is in progress, that run
-    /// too (so the paper view sees a line grow live rather than only on
-    /// pen-up) -- the in-progress run is always `m_strokes.back()` while
-    /// `m_penDown` is true, since a new Stroke is opened the instant the pen
-    /// goes down (see stepZ()).
-    ///
-    /// Reference into live mutable state: valid until the next advance; a
-    /// caller that keeps the points uses `flatPoints()` (a value copy).
-    const std::vector<Stroke>& strokes() const { return m_strokes; }
-
-    /// Bumped every time the plotted geometry changes -- a stroke opened, a
-    /// point appended, or the paper cleared. A caller polls this
-    /// O(1) value and only pays for
-    /// `flatPoints()`'s full copy + the downstream GUI-widget repaint when
-    /// it has actually moved. Monotonic across `clearPaper()` too, so "same
-    /// point count after a cut" still reads as a change.
-    uint64_t revision() const { return m_revision; }
-
-    /// One point of every stroke, flattened, with `newStroke = 1` on each
-    /// stroke's first point. A self-contained value copy -- this is what a
-    /// caller that keeps the points reads, never the live `strokes()` above.
-    struct FlatPoint {
-        int32_t x = 0;
-        int32_t y = 0;
-        uint8_t color = 0;
-        uint8_t newStroke = 0;
-    };
-    std::vector<FlatPoint> flatPoints() const {
-        std::vector<FlatPoint> out;
-        size_t total = 0;
-        for (const Stroke& stroke : m_strokes) total += stroke.points.size();
-        out.reserve(total);
-        for (const Stroke& stroke : m_strokes) {
-            bool first = true;
-            for (const Point& p : stroke.points) {
-                out.push_back(FlatPoint{static_cast<int32_t>(p.x), static_cast<int32_t>(p.y),
-                                        static_cast<uint8_t>(stroke.color),
-                                        static_cast<uint8_t>(first ? 1 : 0)});
-                first = false;
-            }
-        }
-        return out;
-    }
-
-    void clearPaper() { m_strokes.clear(); ++m_revision; }
 
     /// Human-readable pen-down/up/color-change events, for diagnosing a
     /// "nothing drew" report without having to reverse-engineer a raw CPU
@@ -271,7 +236,12 @@ private:
     void stepXY(Stepper& motor, uint8_t phase, bool isX) {
         const int delta = motor.sendPhase(phase & 0x0F);
         if (delta == 0) return;
-        if (isX) m_penX += delta; else m_penY -= delta;
+        if (isX) {
+            m_penX += delta;
+        } else {
+            if (m_listener) m_listener->fedTo(m_penY - delta);   // before penY() moves
+            m_penY -= delta;
+        }
         extendStroke();
     }
 
@@ -303,21 +273,22 @@ private:
         if (down == m_penDown) return;
         m_penDown = down;
         if (down) {
-            m_strokes.push_back(Stroke{m_penColor, {Point{m_penX, m_penY}}});
-            ++m_revision;
+            m_strokePoints = 1;
             logEvent("PEN DOWN @ (" + std::to_string(m_penX) + "," + std::to_string(m_penY) +
                      ") color=" + std::to_string(static_cast<int>(m_penColor)) +
-                     " stroke#" + std::to_string(m_strokes.size() - 1));
-        } else if (!m_strokes.empty()) {
-            logEvent("PEN UP stroke#" + std::to_string(m_strokes.size() - 1) +
-                     " points=" + std::to_string(m_strokes.back().points.size()));
+                     " stroke#" + std::to_string(m_strokeCount++));
+            if (m_listener) m_listener->penDown(m_penColor, m_penX, m_penY);
+        } else if (m_strokeCount > 0) {
+            logEvent("PEN UP stroke#" + std::to_string(m_strokeCount - 1) +
+                     " points=" + std::to_string(m_strokePoints));
+            if (m_listener) m_listener->penUp();
         }
     }
 
     void extendStroke() {
         if (!m_penDown) return;
-        m_strokes.back().points.push_back(Point{m_penX, m_penY});
-        ++m_revision;
+        ++m_strokePoints;
+        if (m_listener) m_listener->penTo(m_penX, m_penY);
     }
 
     void nextColor() {
@@ -349,7 +320,8 @@ private:
     // CE-150 carriage-driven turret state (unused by the CE-1600P path).
     bool m_ce150StartRot = false; // armed once the carriage passes kCE150TurretArmX
     int m_ce150Rot = 0;           // detents at the stop; 3 -> nextColor()
-    std::vector<Stroke> m_strokes;
-    uint64_t m_revision = 0; // see revision()
+    PenListener* m_listener = nullptr;
+    size_t m_strokeCount = 0;   // pen-downs so far, for the event log
+    size_t m_strokePoints = 0;  // places of the stroke under way, for the event log
     std::deque<std::string> m_events;  // see drainEvents(); a deque so the cap drops the oldest in O(1)
 };

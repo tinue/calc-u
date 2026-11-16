@@ -2,23 +2,42 @@
 
 #include <cstdint>
 #include <functional>
+#include <map>
 #include <memory>
+#include <optional>
 #include <string>
 #include <vector>
 
-#include "DebugTarget.hpp"
-#include "SourceMap.hpp"
+#include "Debug/CpuRegisters.hpp"
+#include "Debug/DebugExpression.hpp"
+#include "Debug/SourceMap.hpp"
+#include "app/dap/DapTargets.hpp"
+#include "debugger/Breakpoints.hpp"
+#include "debugger/RunState.hpp"
 
-// ── Breakpoint bookkeeping ───────────────────────────────────────────────
+namespace sharp {
+class SharpDebugTarget;
+}
+
+// ── The DAP's breakpoints (C1600-3 design §3.7, AC-14; LIB-10 design §10.3,
+// D-15; built in M-45 from core/Debug/BreakpointTable) ─────────────────────
 //
-// Everything the DAP client set -- source-line, instruction, function
+// Everything the DAP client sets -- source-line, instruction, function
 // (symbol) and data breakpoints, each with an optional condition, hit
-// condition and (not data) log message -- and what they mean for the
-// CPUs: which PC addresses to arm and which memory to watch, and whether
-// a raw hit really stops. The CPUs only know addresses; conditions, hit
-// counts, bank qualifiers and logpoints are decided here when one fires.
+// condition and (not data) log message -- as breakpoints and watches of the
+// library's table (LIB-10 AC-10, AC-11) with the setter `dap` (AC-47), the
+// qualifier of their binding, and a HitTest (AC-12) that decides here
+// whether a hit really pauses: a condition that is false, a hit condition
+// not met, a log message (its line is written, no pause) or a bank that is
+// not switched in (the library passes it, qualifierMatches) go on; a
+// condition that cannot be worked out pauses and says why.
+//
+// IDs are the DAP's own; dapIds() maps the run state's hits back. apply()
+// hands the table everything after each change (and to a new machine).
 
-namespace debug {
+namespace shared::dap {
+
+inline const calcu::debugger::Setter kDapSetter = "dap";
 
 struct BreakpointSpec {
     std::string condition;     ///< expression; empty = always
@@ -45,13 +64,13 @@ class LogTemplate {
 public:
     static LogTemplate parse(const std::string& message);
     /// Unevaluable parts become "{error}".
-    std::string render(const ExpressionContext& ctx) const;
+    std::string render(const debug::ExpressionContext& ctx) const;
 
 private:
     struct Part {
         std::string text;             ///< literal text, or the expression's source
         bool expression = false;
-        CompiledExpression compiled;
+        debug::CompiledExpression compiled;
     };
     std::vector<Part> m_parts;
 };
@@ -71,21 +90,13 @@ enum class DataAccess : uint8_t { Read, Write, ReadWrite };
 
 struct DataBreakpointSpec : BreakpointSpec {
     int thread = 1;
-    Space space = kSpaceMain;
+    debug::Space space = debug::kSpaceMain;
     uint16_t addr = 0;
     uint16_t length = 1;
     DataAccess access = DataAccess::Write;
 };
 
-/// Result of a raw hit: stop or not, which breakpoints, logpoint output.
-struct HitDecision {
-    bool stop = false;
-    bool entry = false;            ///< the one-shot entry breakpoint (reason "entry")
-    std::vector<int> ids;
-    std::vector<std::string> log;  ///< expanded log messages, in order
-};
-
-class BreakpointTable {
+class DapBreakpoints {
 public:
     using SymbolLookup = std::function<bool(const std::string& name, int64_t* value)>;
 
@@ -95,37 +106,42 @@ public:
 
     /// Replaces the breakpoints of one source file.
     std::vector<BreakpointStatus> setSource(const std::string& file, const std::vector<SourceRequest>& requests,
-                                            const SourceMap& map);
+                                            const debug::SourceMap& map);
     std::vector<BreakpointStatus> setInstructions(const std::vector<InstructionRequest>& requests);
     /// Function breakpoints resolve their name through the source map's
     /// symbols; each is armed on the CPU of the binding that defines it,
     /// with that binding's bank qualifier.
-    std::vector<BreakpointStatus> setFunctions(const std::vector<FunctionRequest>& requests, const SourceMap& map);
+    std::vector<BreakpointStatus> setFunctions(const std::vector<FunctionRequest>& requests, const debug::SourceMap& map);
     std::vector<BreakpointStatus> setData(const std::vector<DataBreakpointSpec>& requests);
     void clear();
     /// A one-shot stop at `addr` (Build & Load's stopOnEntry): it stops
-    /// once, with reason "entry", then disappears.
+    /// once (reason "entry"), then disappears.
     void setEntry(int thread, uint16_t addr);
 
     /// Re-resolves source and function breakpoints after the source map
     /// changed (a new load, a stale listing). Returns the ones whose status
     /// changed, for "breakpoint changed" events.
-    std::vector<BreakpointStatus> reresolve(const SourceMap& map);
+    std::vector<BreakpointStatus> reresolve(const debug::SourceMap& map);
 
-    /// Arms the PC breakpoints and memory watches on the target.
-    void apply(DebugTarget& target) const;
+    /// Hands the library's table every breakpoint and watch with the setter
+    /// `dap` (the ones of before go first). `symbols` for conditions and log
+    /// messages. Nothing without targets.
+    void apply(calcu::debugger::BreakpointTable& table, const DapTargets& targets, SymbolLookup symbols);
 
-    /// A CPU parked on `pc`: decides whether that is a stop.
-    HitDecision onBreakpoint(int thread, uint16_t pc, DebugTarget& target, const SymbolLookup& symbols);
-    /// A memory watch fired.
-    HitDecision onWatch(int thread, const WatchHit& hit, DebugTarget& target, const SymbolLookup& symbols);
+    /// The DAP IDs of a pause's hits with the setter `dap`, and whether the
+    /// entry stop is among them.
+    std::vector<int> dapIds(const std::vector<calcu::debugger::RunState::Hit>& hits) const;
+    bool entryHit(const std::vector<calcu::debugger::RunState::Hit>& hits) const;
+    /// The lines of log messages and of conditions that could not be worked
+    /// out, since the last call (the session sends them as `output`).
+    std::vector<std::string> takeOutput();
 
 private:
     /// A spec's condition, hit condition and log message, parsed once when
     /// the breakpoint is set; shared by every address it arms.
     struct Compiled {
         bool hasCondition = false;
-        CompiledExpression condition;
+        debug::CompiledExpression condition;
         HitCondition hit;
         bool hasLog = false;
         LogTemplate log;
@@ -136,7 +152,7 @@ private:
         int id = 0;
         int thread = 1;
         uint16_t addr = 0;
-        BankKey key;
+        debug::BankKey key;
         int hits = 0;
         std::shared_ptr<const Compiled> compiled;
     };
@@ -155,11 +171,13 @@ private:
         std::shared_ptr<const Compiled> compiled;
     };
 
-    std::vector<BreakpointStatus> resolveSource(Source& s, const SourceMap& map);
-    std::vector<BreakpointStatus> resolveFunctions(const SourceMap& map);
+    std::vector<BreakpointStatus> resolveSource(Source& s, const debug::SourceMap& map);
+    std::vector<BreakpointStatus> resolveFunctions(const debug::SourceMap& map);
     void forgetStatus(int id);
-    void passes(const BreakpointSpec& spec, const Compiled& compiled, int& hits, int thread, DebugTarget& target,
-                const SymbolLookup& symbols, HitDecision* decision, int id);
+    /// Whether a hit pauses (AC-12, AC-14): the condition, the hit count,
+    /// the log message.
+    bool passes(const BreakpointSpec& spec, const Compiled& compiled, int& hits, const sharp::SharpDebugTarget& target,
+                const SymbolLookup& symbols);
 
     std::vector<Source> m_sources;
     std::vector<Armed> m_sourceArmed;       // from m_sources
@@ -172,11 +190,15 @@ private:
     bool m_entryArmed = false;
     int m_entryThread = 1;
     uint16_t m_entryAddr = 0;
+
+    std::map<calcu::debugger::BreakpointId, int> m_dapIdOf;   // the library's ID -> the DAP's
+    std::optional<calcu::debugger::BreakpointId> m_entryId;
+    std::vector<std::string> m_output;
 };
 
 /// Hit-condition check: `hits` is the count including this hit.
 bool hitConditionMet(const std::string& hitCondition, int hits, bool* valid = nullptr);
 /// Expands {expr} in a log message; unevaluable parts become "{error}".
-std::string interpolateLog(const std::string& message, const ExpressionContext& ctx);
+std::string interpolateLog(const std::string& message, const debug::ExpressionContext& ctx);
 
-} // namespace debug
+} // namespace shared::dap

@@ -83,6 +83,7 @@ function CalcU1600(props) {
   }, [ready]);
   const ui = useEngine(engine, (s) => s.ui);
   const busy = useEngine(engine, (s) => s.busy);
+  const paused = useEngine(engine, (s) => s.paused);
   const notices = useEngine(engine, (s) => s.notices);
   const fatal = useEngine(engine, (s) => s.fatal);
   const persistent = useEngine(engine, (s) => s.persistent);
@@ -300,6 +301,9 @@ function CalcU1600(props) {
         { separator: true },
         { label: "Reset", shortcut: `${mod}R`, disabled: !ok, onClick: () => engine.call("reset", false) },
         { label: "Reset All", shortcut: `${IS_MAC ? "⇧⌘" : "Ctrl+Shift+"}R`, disabled: !ok, onClick: () => engine.call("reset", true) },
+        // LIB-10 AC-41 (adapter L-A4 until LIB-14's shell, M-49).
+        { separator: true },
+        { label: "Resume", disabled: !paused, onClick: () => engine.call("resume") },
       ],
     },
     { title: "Help", items: [{ label: "About Calc-U-1600…", onClick: () => dialogs.ask("about", {}) }] },
@@ -374,7 +378,10 @@ function CalcU1600(props) {
   const faceRoom = H - MENU_HEIGHT - BAR_HEIGHT;
   const faceWidth = Math.max(200, Math.min(W, faceRoom * aspect));
   const panelRoom = faceRoom - W / aspect >= PANEL_MIN;
-  const showPaper = panelRoom && !!(ui && ui.paper);
+  // LIB-8 AC-36: the paper panel with or without a plotter (D-18). Where only
+  // one panel fits (a narrow window), it gives way to the inspector while no
+  // plotter is plugged in, as the panels give way today (D-18; qa-report).
+  const showPaper = panelRoom && (W >= INSPECTOR_MIN_WIDTH || !!(ui && ui.paper));
   const showPrinter = panelRoom && !!(ui && ui.printerShown);
   const showInspector = panelRoom && (W >= INSPECTOR_MIN_WIDTH || !(showPaper || showPrinter));
   const anyPanel = showInspector || showPaper || showPrinter;
@@ -412,7 +419,7 @@ function CalcU1600(props) {
       {anyPanel && (
         <div className="calcu-panels">
           {showInspector && <Inspector engine={engine} />}
-          {showPaper && <PlotterPaper engine={engine} />}
+          {showPaper && <PaperDock engine={engine} />}
           {showPrinter && <Ce158Printer engine={engine} />}
         </div>
       )}

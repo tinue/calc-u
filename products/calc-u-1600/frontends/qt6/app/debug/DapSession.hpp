@@ -5,7 +5,7 @@
 
 #include <functional>
 
-#include "Debug/RunControl.hpp"
+#include "DebugController.hpp"
 
 class DapServer;
 class DebugController;
@@ -25,7 +25,7 @@ public:
 
     void handle(const QJsonObject& request);
     /// Run-control events from the frame slices.
-    void onEvents(const std::vector<debug::DebugEvent>& events);
+    void onEvents(const std::vector<DebugEvent>& events);
     /// The machine under the session was rebuilt.
     void onMachineReplaced();
     /// Sends a console line to the client.
@@ -56,7 +56,7 @@ private:
     void setDataBreakpoints(const QJsonObject& args, QJsonObject* body, QString* error);
     void continueRequest(const QJsonObject& args, QJsonObject* body, QString* error);
     void pause(const QJsonObject& args, QJsonObject* body, QString* error);
-    void step(const QJsonObject& args, debug::RunControl::StepKind kind, QString* error);
+    void step(const QJsonObject& args, shared::dap::StepKind kind, QString* error);
     void disassemble(const QJsonObject& args, QJsonObject* body, QString* error);
     void readMemory(const QJsonObject& args, QJsonObject* body, QString* error);
     void writeMemory(const QJsonObject& args, QJsonObject* body, QString* error);
@@ -78,7 +78,7 @@ private:
     bool ready(QString* error) const;
     int threadOf(const QJsonObject& args) const;
     QJsonObject sourceObject(const QString& path) const;
-    QJsonObject statusObject(const debug::BreakpointStatus& st) const;
+    QJsonObject statusObject(const shared::dap::BreakpointStatus& st) const;
     QJsonArray registerVariables(int frameId) const;
     QJsonArray flagVariables(int frameId) const;
     QJsonArray bankVariables(int frameId) const;
@@ -91,7 +91,7 @@ private:
     bool memoryArgs(const QJsonObject& args, int* thread, uint16_t* addr, bool* me1, QString* error) const;
     /// The thread a configuration's `cpu` names ("z80", "lh5801", "lh5803"); 1 by default.
     int threadForCpu(const QString& cpu) const;
-    void sendBreakpointChanges(const std::vector<debug::BreakpointStatus>& changed);
+    void sendBreakpointChanges(const std::vector<shared::dap::BreakpointStatus>& changed);
 
     DapServer* m_server;
     DebugController* m_controller;

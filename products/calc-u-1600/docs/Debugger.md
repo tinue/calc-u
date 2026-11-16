@@ -330,7 +330,7 @@ What to check:
   - **Edit** in *Replace* mode (status bar, or **Hex Editor: Switch Edit Mode**), then save (**Cmd+S**). An insert or a delete can't be saved; undo it with **File: Revert File**.
   - **Which CPU:** memory opens as the selected frame's CPU sees it. Select an LH5803 frame to see the PC-1600's LH5803 side.
   - Device registers that a read would disturb (the UART, a card's I/O window) show as unreadable.
-- **Title bar:** the app shows *Paused (debugger)* while the machine is stopped.
+- **Title bar:** the app shows *Paused (debugger)* while the machine is stopped, whoever stopped it; **Machine ▸ Resume** runs it again (also without VS Code, and in the Web version).
 
 ### Stepping
 

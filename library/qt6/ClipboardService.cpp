@@ -1,4 +1,5 @@
 #include "qt6/ClipboardService.hpp"
+#include "qt6/MacClipboard.h"
 #include "sessions/Args.hpp"
 #include <QClipboard>
 #include <QGuiApplication>
@@ -45,6 +46,21 @@ ServiceAnswer ClipboardService::answer(const ServiceAsk& ask) {
         QString problem;
         QMimeData* m = imageEntry(ask.args, &problem);
         if (!m) return ServiceAnswer{false, Value(), problem.toStdString()};
+#ifdef Q_OS_MACOS
+        // D-17: Cocoa keeps the physical size that Qt's clipboard drops. Only
+        // on the Cocoa platform (the offscreen one of the tests keeps its own
+        // clipboard) and not for a sink of the tests.
+        const double dpi = realArg(ask.args, "dotsPerInch", 0);
+        if (!sink_ && !clipboard_ && dpi > 0 && QGuiApplication::platformName() == QLatin1String("cocoa")) {
+            const QImage image = qvariant_cast<QImage>(m->imageData());
+            const QString text = m->hasText() ? m->text() : QString();
+            delete m;
+            if (macSetClipboardImage(image, image.width() * 72.0 / dpi, image.height() * 72.0 / dpi, text))
+                return ServiceAnswer{true, Value(), {}};
+            m = imageEntry(ask.args, &problem);
+            if (!m) return ServiceAnswer{false, Value(), problem.toStdString()};
+        }
+#endif
         put(m);
         return ServiceAnswer{true, Value(), {}};
     }

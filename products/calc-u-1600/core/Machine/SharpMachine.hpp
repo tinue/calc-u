@@ -7,6 +7,7 @@
 #include <vector>
 
 #include "../Connector/ExpansionCard.hpp"
+#include "../Debug/SharpDebugging.hpp"
 #include "Machine/PowerCycleSequence.hpp"
 #include "machine/Machine.hpp"
 #include "machine/ProductData.hpp"
@@ -67,6 +68,10 @@ public:
     std::vector<calcu::machine::CapabilityEntry> capabilities() const override;
     calcu::machine::Capability* capability(const calcu::machine::CapabilityId&) override;
     std::vector<calcu::machine::DebugTargetId> debugTargets() const override { return m_descriptor.debugTargets; }
+    // LIB-10 (design §10.4, §10.5): the model's debug targets; advance()
+    // honours their Checks.
+    calcu::machine::Debugging* debugging() override { return sharpDebugging(); }
+    virtual SharpDebugging* sharpDebugging() = 0;
 
     // ---- For the core's adapters (LegacyCalls) ----
     bool powerCycleActive() const { return m_sequence.active(); }
@@ -88,7 +93,7 @@ protected:
         : m_descriptor(std::move(d)), m_variant(std::move(v)) {}
 
     // ---- The model's part ----
-    virtual calcu::machine::Ticks runCore(calcu::machine::Ticks) = 0;
+    virtual calcu::machine::Ticks runCore(calcu::machine::Ticks) = 0;   // the core's own path, all checks off
     virtual bool coreSwitchedOff() const = 0;
     virtual bool coreKeyReady() const = 0;
     virtual void coreKey(const std::string& keyId, bool down) = 0;   // a key of the matrix
@@ -133,6 +138,10 @@ protected:
     calcu::peripherals::ControlTable* switchesAt(const calcu::machine::PlaceName&);
 
 private:
+    // runCore(), or the debug targets' run while a check is on (it ends
+    // early at a stop: stopPending()).
+    calcu::machine::Ticks runChecked(calcu::machine::Ticks);
+    bool stopPending();
     // The machine has run and is not switched off: a change waits for the
     // off point and a power cycle follows.
     bool running() const;

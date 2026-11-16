@@ -15,6 +15,8 @@
 #include "Preset/PresetFile.hpp"
 #include "app/FloppyBay.hpp"
 #include "app/ModuleBay.hpp"
+#include "app/SharpDebuggerSetup.hpp"
+#include "app/SharpPrinters.hpp"
 #include "app/TapeBay.hpp"
 #include "app/Utf8Path.hpp"
 #include "peripherals/Controls.hpp"
@@ -131,6 +133,8 @@ SharpAppPart::SharpAppPart(Settings& settings, AppPaths& paths)
     : m_settings(settings),
       m_paths(paths),
       m_catalogue(sharp::sharpCatalogue()),
+      m_paper(m_catalogue, sharpPrinterPapers()),
+      m_debugger(sharpDebuggerSetup(&paths, &settings, /*hasTraceFolder=*/true)),
       m_peripherals(serialFileFor, folderOrNone(paths.serialLinkDir())) {
     // The one lookup, at the start (LIB-12 AC-4, AC-13): the whole full set
     // or nothing. The host drive's ROM is bundled beside it (roms.md Q-1).
@@ -165,13 +169,14 @@ SharpAppPart::~SharpAppPart() {
     m_floppy.reset();
     m_modules.reset();
     if (m_ms) {
-        m_ms->setGate(nullptr);
         std::string ignored;
         tapeEject(&ignored);   // a recording goes to its file
     }
 }
 
-std::vector<sessions::SessionPart*> SharpAppPart::sessionParts() { return {&m_typingPart, &m_peripherals, &m_loaderPart, this}; }
+std::vector<sessions::SessionPart*> SharpAppPart::sessionParts() {
+    return {&m_typingPart, &m_peripherals, &m_loaderPart, &m_paper, &m_debugger, this};
+}
 
 void SharpAppPart::notice(const std::string& sentence) {
     if (m_ctx) m_ctx->notice(sentence);
@@ -186,7 +191,6 @@ void SharpAppPart::log(const std::string& line) {
 void SharpAppPart::attach(sessions::SessionSetup& setup) {
     m_ctx = &setup.context();
     m_ms = &m_ctx->machineSession();
-    m_ms->setGate(&m_gate);
 
     m_controlTopic = &setup.stateTopic(topics::kControlState);
     m_machineTopic = &setup.stateTopic(topics::kMachine);
@@ -349,18 +353,36 @@ job::Task<OpResult> SharpAppPart::startJob(std::string modelOrEmpty, std::string
     co_return co_await defaultPresetJob();   // the model's default preset, if one is set
 }
 
-job::Task<OpResult> SharpAppPart::loadPresetJob(std::string ref, bool armOnly) {
+job::Task<OpResult> SharpAppPart::loadPresetJob(std::string ref, bool armOnly, bool userLoad) {
     const std::string path = m_paths.resolvePresetRef(ref);
     PresetFile preset;
     std::string parseError;
     if (!parsePresetFile(path, &preset, &parseError)) co_return OpResult::fail(parseError);
     preset.armOnly = armOnly;
+    // L-A3 (LIB-10 §10.9, until LIB-6 1600 in M-46): a version 1 preset's
+    // `trace:` through the library's trace session, limited and ended with
+    // the operation (AC-43).
+    preset.traceHook = [this](const std::string& name, std::string* error) {
+        if (!m_ctx) return false;
+        calcu::debugger::TraceSession& t = m_debugger.traceSession();
+        if (name.empty()) {
+            t.end(*m_ctx, calcu::debugger::TraceSession::Ending::Off);
+            return true;
+        }
+        if (auto why = t.start(*m_ctx, name, /*button=*/false, /*ofOperation=*/true)) {
+            *error = *why;
+            return false;
+        }
+        return true;
+    };
 
     // The ROM modules of the set (the CE-502B), then the bundled catalog,
     // then the save folder -- the same order the module bay uses.
     const std::string bundled = m_paths.bundledResourcesDir();
     const std::vector<std::string> extraModuleDirs = {m_paths.instanceDir()};
-    const std::string traceDir = m_paths.traceDir();
+    // The folder of `screenshot:` steps (LIB-6 1600 moves them in M-46);
+    // `trace:` steps go to the trace session (L-A3, below).
+    const std::string traceDir = m_paths.traceDir().empty() ? m_paths.instanceDir() : m_paths.traceDir();
     const PresetLogFn presetLog = [this](const std::string& line) { log(line); };
     const PresetSaveAsFn onSaveAs = [this](const PresetSaveAsRequest& request, std::string* error) {
         switch (request.target) {
@@ -375,6 +397,13 @@ job::Task<OpResult> SharpAppPart::loadPresetJob(std::string ref, bool armOnly) {
         }
         return false;
     };
+
+    // P-A2 (LIB-8 AC-36, A-3): a preset the user loads starts the paper of
+    // the plotter it plugs in empty; the other paper stays.
+    if (userLoad && !preset.plotter.empty() && m_ctx) {
+        const std::string owner = preset.plotter == "ce150" ? sharp::kCE150 : sharp::kCE1600P;
+        if (calcu::paper::Paper* paper = m_paper.find(*m_ctx, owner).paper) paper->cut();
+    }
 
     // The model switch is announced before the preset runs, so the armed
     // machine shows its model while it is still off. Core fires onArmed on
@@ -413,7 +442,7 @@ job::Task<OpResult> SharpAppPart::loadDefaultPresetJob(std::string ref, Model mo
         co_return OpResult::fail("The default preset \"" + presetDisplayName(preset.presetName, path) +
                                  "\" is for a different model -- change it in Settings.");
     }
-    co_return co_await loadPresetJob(path);
+    co_return co_await loadPresetJob(path, false, /*userLoad=*/false);
 }
 
 job::Task<OpResult> SharpAppPart::resetJob(bool allReset) {
@@ -589,7 +618,6 @@ void SharpAppPart::installMachine(std::unique_ptr<Machine> m) {
     m_ms->setMachine(std::move(m), pacingProfile(m_model), sharp::kSoundRate);
     m_peripherals.hostLinks().machineChanged(*machine());   // the PC-1600's RS-232C gets its file now, before the boot
     ++m_machineState.builds;
-    if (SharpDebugger* d = m_gate.debugger()) d->machineReplaced();
 }
 
 bool SharpAppPart::peripheralImages(const PeripheralRequest& req, std::vector<RomImage>* out, std::string* error) const {
@@ -657,10 +685,9 @@ std::string SharpAppPart::ce158SerialLinkStatus() const {
 
 void SharpAppPart::discardMachine() {
     if (!m_ms || !m_ms->machine()) return;
-    if (SharpDebugger* d = m_gate.debugger()) d->machineAboutToChange();
     std::string tapeError;
     if (!tapeEject(&tapeError)) log("Tape: the tape recording could not be saved: " + tapeError);   // a recording goes to its file
-    endTrace();
+    // A running trace ends at the new machine (the library's trace session, G11).
     m_ms->dropInput();   // EC-5: the keys it held come up, nothing waits
     m_ms->takeMachine();
     m_peripherals.hostLinks().machineGone();
@@ -678,6 +705,9 @@ job::Task<void> SharpAppPart::resetToPromptJob(bool allReset) {
     if (!m) co_return;
     if (allReset) m->coldBoot();
     else m->reset();
+    // L-A2 (LIB-10 §10.9, until LIB-18 1600 in M-46): the restart is told to
+    // the parts, so the run control resumes and an armed start looks afresh.
+    if (m_ctx) m_ctx->tellRestarted(allReset ? sessions::Restart::ColdBoot : sessions::Restart::Reset);
     co_await sharp::legacy::runToPromptJob(*m);
 }
 
@@ -783,29 +813,6 @@ void SharpAppPart::detachSlots() {
     for (int slot = 1; slot <= slotCount(); ++slot) detachSlot(slot);
 }
 
-bool SharpAppPart::beginTrace(const std::string& path) {
-    auto* trace = kind<sharp::CpuTrace>();
-    if (!trace) return false;
-    std::FILE* handle = std::fopen(toPath(path).string().c_str(), "wb");
-    if (!handle) return false;
-    const bool ok = trace->begin(handle, TRACE_FULL);
-    if (!ok) std::fclose(handle);   // a capture was already active; ownership passes only on success
-    return ok;
-}
-
-void SharpAppPart::endTrace() {
-    if (auto* trace = kind<sharp::CpuTrace>()) trace->end();
-}
-
-std::uint64_t SharpAppPart::traceBytes() const {
-    auto* trace = kind<sharp::CpuTrace>();
-    return trace ? trace->bytes() : 0;
-}
-
-bool SharpAppPart::traceActive() const {
-    auto* trace = kind<sharp::CpuTrace>();
-    return trace && trace->active();
-}
 
 // ---- Cassette recorder ----
 
@@ -999,35 +1006,6 @@ void SharpAppPart::detachHostDrive() { detachAt(sharp::kHostDrivePlace, sharp::k
 
 bool SharpAppPart::hostDriveAttached() const { return pluggedAt(sharp::kHostDrivePlace) == sharp::kHostDrive; }
 
-namespace {
-
-const char* paperOwner(PaperKind kind) {
-    switch (kind) {
-        case PaperKind::CE150: return sharp::kCE150;
-        case PaperKind::CE1600P: return sharp::kCE1600P;
-        default: return nullptr;
-    }
-}
-
-} // namespace
-
-std::vector<AlpsPlotterMechanism::FlatPoint> SharpAppPart::plotPoints(PaperKind kind) const {
-    const char* owner = paperOwner(kind);
-    auto* paper = owner ? kindOf<sharp::PlotterPaper>(owner) : nullptr;
-    return paper ? paper->points() : std::vector<AlpsPlotterMechanism::FlatPoint>{};
-}
-
-std::uint64_t SharpAppPart::plotRevision(PaperKind kind) const {
-    const char* owner = paperOwner(kind);
-    auto* paper = owner ? kindOf<sharp::PlotterPaper>(owner) : nullptr;
-    return paper ? paper->revision() : 0;
-}
-
-void SharpAppPart::clearPaper(PaperKind kind) {
-    const char* owner = paperOwner(kind);
-    if (auto* paper = owner ? kindOf<sharp::PlotterPaper>(owner) : nullptr) paper->clear();
-}
-
 // ---- Payloads ----
 
 sessions::Value ControlStatePayload::toValue() const {
@@ -1051,7 +1029,7 @@ sessions::Value ControlStatePayload::toValue() const {
                                     {"ce1600pRomMenu", s.ce1600pRomMenu},
                                     {"hostDriveOffered", s.hostDriveOffered},
                                     {"hostDriveDir", s.hostDriveDir},
-                                    {"paper", static_cast<int>(s.paper)},
+                                    {"paper", s.paperOwner ? s.paperOwner->value : std::string()},
                                     {"printerShown", s.printerShown}});
 }
 

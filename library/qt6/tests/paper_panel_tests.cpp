@@ -9,6 +9,7 @@
 #include "paper/Picture.hpp"
 #include "peripherals/PeripheralsPart.hpp"
 #include "qt6/ClipboardService.hpp"
+#include "qt6/MacClipboard.h"
 #include "qt6/PaperPanel.hpp"
 #include "qt6/PaperPainter.hpp"
 #include "sessions/AppSession.hpp"
@@ -398,3 +399,22 @@ TEST(ac20_toast_for_1_8_seconds) {
     CHECK(!toast->isVisible());
     CHECK(t.elapsed() >= 1700);
 }
+
+#ifdef Q_OS_MACOS
+// LIB-8 design §10.6, P16-9 (AC-35, the platform part; D-17): on macOS the
+// picture goes through Cocoa with its physical size, which Qt's clipboard
+// loses. On a pasteboard of the test's own, not the user's clipboard.
+TEST(ac16_mac_clipboard_keeps_physical_size) {
+    QImage image(9921, 120, QImage::Format_RGB32);   // a CE-1600P paper, 210 mm at 1200 dpi
+    image.fill(Qt::white);
+    const char* board = "calcu.qt6.tests.mac-clipboard";
+    CHECK(calcu::qt6::macSetClipboardImage(image, 9921 * 72.0 / 1200, 120 * 72.0 / 1200, QString(), board));
+    double wPt = 0, hPt = 0;
+    int wPx = 0, hPx = 0;
+    CHECK(calcu::qt6::macPasteboardImageSize(board, &wPt, &hPt, &wPx, &hPx));
+    CHECK(std::fabs(wPt - 210.0 / 25.4 * 72.0) < 0.1);   // 210 mm in points
+    CHECK(std::fabs(hPt - 7.2) < 0.01);
+    CHECK_EQ(wPx, 9921);
+    CHECK_EQ(hPx, 120);
+}
+#endif

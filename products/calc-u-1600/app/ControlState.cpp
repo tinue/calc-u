@@ -42,7 +42,8 @@ ControlState controlStateOf(const SharpAppPart& session, bool hostDirectories) {
     s.hostDriveOffered = isPC1600 && hostDirectories;
     s.hostDriveDir = session.hostDriveDirectory();
 
-    s.paper = s.ce150.attached ? PaperKind::CE150 : s.ce1600p.attached ? PaperKind::CE1600P : PaperKind::None;
+    if (s.ce150.attached) s.paperOwner = calcu::machine::PeripheralId{"CE-150"};
+    else if (s.ce1600p.attached) s.paperOwner = calcu::machine::PeripheralId{"CE-1600P"};
     s.printerShown = s.ce158.attached;
     return s;
 }

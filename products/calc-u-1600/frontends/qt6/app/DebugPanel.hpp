@@ -78,14 +78,12 @@ private:
     void refreshDebugDisplay();
 
     // ── TRACE ─────────────────────────────────────────────────────────
-    // The capture itself runs inside Core (MachineController::beginTrace());
-    // this panel only starts/stops it and enforces the
-    // AppSettings::traceMaxFileSizeMB() cap from Core's running byte count.
-    // Whether a capture runs is MachineController::traceActive();
-    // m_traceShownActive is only what the button currently shows, so the
-    // next frame notices a capture a machine rebuild ended.
+    // The library's trace session runs the capture (LIB-10 §10.7): this
+    // panel only starts and stops it through the `trace` command. Whether
+    // one runs is the `trace` topic (MachineController::traceActive());
+    // m_traceShownActive is what the button shows, so the next frame
+    // notices a trace the session ended (its size limit, a new machine).
     bool m_traceShownActive = false;
-    std::uint64_t m_traceMaxBytes = 0;
     void setTraceEnabled(bool enabled);
     void updateTraceButtonAppearance();
 

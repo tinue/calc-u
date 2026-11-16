@@ -2,31 +2,72 @@
 #include <QObject>
 #include <QString>
 
+#include <cstdint>
 #include <functional>
 #include <memory>
+#include <optional>
+#include <string>
 #include <vector>
 
 #include <QJsonObject>
 
-#include "Debug/BreakpointTable.hpp"
-#include "Debug/DebugTarget.hpp"
 #include "Debug/ProgramLoader.hpp"
-#include "Debug/RunControl.hpp"
 #include "Debug/SourceMap.hpp"
 #include "Display/LcdText.hpp"
+#include "app/dap/DapBreakpoints.hpp"
+#include "app/dap/DapStepping.hpp"
+#include "app/dap/DapTargets.hpp"
+#include "debugger/RunState.hpp"
+#include "machine/Machine.hpp"
 
 class DapServer;
 class DapSession;
 class MachineController;
 class Operations;
+class DebugController;
 
-// The app side of the debugger. Owns the DAP server (enabled in Settings)
-// and, while a client is attached, the Core debug objects for the live
-// machine: its DebugTarget, the source map, the breakpoint table and the
-// run control. MachineController routes every frame's cycle budget through
-// runSlice() while attached, so pause/step/breakpoints act on the normal
-// paced emulation; a machine rebuild swaps the target underneath and
-// re-applies everything.
+namespace calcu::debugger {
+class RunControl;
+}
+
+// What a DAP session tells its client: a pause of the run control (with
+// its reason and the DAP's breakpoint IDs) or a line of output (a log
+// message, a condition that cannot be worked out).
+struct DebugEvent {
+    enum Kind : uint8_t { Stopped, Output };
+    Kind kind = Stopped;
+    enum Reason : uint8_t { Breakpoint, DataBreakpoint, Step, Pause, Entry };
+    Reason reason = Pause;
+    int thread = 0;
+    std::vector<int> breakpointIds;
+    std::string text;
+};
+
+// The DAP session's view of the run control (LIB-10 §10.8): the library's,
+// through the DAP's layer in app/dap/ (its steps and the source map).
+class DapRun {
+public:
+    explicit DapRun(DebugController& c) : m_c(c) {}
+    bool locate(int thread, uint16_t pc, debug::SourceLocation* out) const;
+    debug::BankMatch bankMatch() const;
+    debug::CodePeek codePeek() const;
+    const shared::dap::DapBreakpoints::SymbolLookup& symbols() const;
+    void resume();
+    // Pause (reason "entry" told for an entry stop of a reset or a load).
+    void pause(DebugEvent::Reason reason = DebugEvent::Pause);
+    void step(int thread, shared::dap::StepKind kind, bool line);
+
+private:
+    DebugController& m_c;
+};
+
+// The app side of the debugger (adapter L-A1 of LIB-10 §10.9 until C1600-3
+// moves it to app/dap/ in M-50). Owns the DAP server (enabled in Settings)
+// and, while a client is attached, the session's source map and the DAP's
+// breakpoints. The machine runs under the library's run control (the
+// DebuggerPart of SharpAppPart) whether or not a client is attached: pause,
+// step and resume are its calls; a stop reaches the client through the
+// `run-state` topic, after the host call it happened in.
 class DebugController : public QObject {
     Q_OBJECT
 public:
@@ -45,34 +86,40 @@ public:
     /// "Off".
     QString serverStatus() const;
 
-    /// A debug session is attached: the frame budget goes to runSlice().
+    /// A debug session is attached.
     bool attached() const;
-    /// Attached and stopped (window title, DebugPanel).
-    bool paused() const;
-    void runSlice(std::uint64_t cycles);
-
-    /// Called by MachineController before it destroys the live machine,
-    /// and once its successor exists.
-    void machineAboutToChange();
-    void machineReplaced();
+    /// After every host call (the frame): stops and output lines go to the
+    /// client; a new machine has its listings checked again.
+    void afterCall();
 
     // ── For DapSession ────────────────────────────────────────────────────
-    /// Creates the target / run control for the live machine; false if
-    /// there is none.
+    /// Starts a session on the live machine; false if there is none.
     bool beginSession();
     void endSession();
-    debug::DebugTarget* target() const { return m_target.get(); }
-    debug::RunControl* runControl() const { return m_run.get(); }
+    shared::dap::DapTargets* target();
+    DapRun* runControl();
+    calcu::debugger::RunControl* libraryRunControl() const;
     debug::SourceMap& sourceMap() { return m_map; }
-    debug::BreakpointTable& breakpoints() { return m_breakpoints; }
+    shared::dap::DapBreakpoints& breakpoints() { return m_breakpoints; }
+    /// Hands the library's table the DAP's breakpoints (after each change).
+    void applyBreakpoints();
+    const shared::dap::DapBreakpoints::SymbolLookup& symbols() const { return m_symbols; }
     /// Verifies every listing binding against memory and re-resolves the
     /// breakpoints; returns the breakpoint statuses that changed.
-    std::vector<debug::BreakpointStatus> rebindListings();
+    std::vector<shared::dap::BreakpointStatus> rebindListings();
+    /// The next pause is told as "entry".
+    void expectEntry() { m_entryPending = true; }
+    /// The session resumed, stepped or paused the machine: its next pause
+    /// is a new one (a `stopped`), also when it lands within the next host
+    /// call or the machine was paused already, as the client expects.
+    void noteRunning() {
+        m_lastPaused = false;
+        m_entryPending = false;
+    }
 
     /// The window's operations: presets and resets from the debugger run
-    /// through them like the menu's (a request waits for the operation's
-    /// end in a nested event loop, adapter until M-45), and DAP messages
-    /// wait while any operation runs.
+    /// through them like the menu's, and DAP messages wait while any
+    /// operation runs.
     void setOperations(Operations* ops);
     /// Loads a preset the way File > Load Preset does; `armOnly` stops
     /// before the boot (PresetFile::armOnly).
@@ -100,7 +147,6 @@ public:
 
 signals:
     void serverStatusChanged();
-    void pausedChanged(bool paused);
 
 private:
     /// An operation of the session runs: the machine is being rebuilt or
@@ -108,27 +154,29 @@ private:
     bool appBusy() const;
     /// MachineController::appBusyChanged: drains what waited once it is done.
     void setAppBusy(bool busy);
-    void createTarget();
     void onClientConnected();
     void onClientDisconnected();
     /// Ends the session of a client that disconnected, once no request or
     /// synchronous operation is running (see onClientDisconnected()).
     void finishTeardown();
+    void dispatch(const QJsonObject& message);
+    void drainQueue();
 
     MachineController* m_machines; // not owned
     DapServer* m_server = nullptr;
     std::unique_ptr<DapSession> m_session;
     QString m_serverError;
 
-    std::unique_ptr<debug::DebugTarget> m_target;
-    std::unique_ptr<debug::RunControl> m_run;
+    std::optional<shared::dap::DapTargets> m_targets;
+    DapRun m_run{*this};
     debug::SourceMap m_map;
-    debug::BreakpointTable m_breakpoints;
+    shared::dap::DapBreakpoints m_breakpoints;
+    shared::dap::DapBreakpoints::SymbolLookup m_symbols;
     bool m_sessionActive = false;
     bool m_lastPaused = false;
-    bool m_replacedPending = false; // machineReplaced(): resume + re-bind on the next frame
-    void dispatch(const QJsonObject& message);
-    void drainQueue();
+    bool m_entryPending = false;
+    calcu::machine::Machine* m_lastMachine = nullptr;
+    bool m_replacedPending = false;   // a new machine: its listings are checked once no operation runs
     bool m_busy = false;     // handling a message (which may itself load)
     std::vector<QJsonObject> m_queued;
     bool m_teardownPending = false; // client gone, session not yet ended

@@ -151,12 +151,22 @@ if(CALCU_TESTS)
   # exits 1 naming it; with the full set it runs.
   calcu_add_test(CalcU1600CliRomLookup frequent COMMAND sh tests/cli_rom_tests.sh
                  PROPERTIES ENVIRONMENT PC1600_CLI=$<TARGET_FILE:pc1600_cli>)
+  # LIB-10 AC-42 (design §10.10, D16-8): the harness writes a PC-1600 trace,
+  # tools/read_trace.py reads it unchanged (well under 2 s: Frequent).
+  find_package(Python3 COMPONENTS Interpreter)
+  if(Python3_FOUND AND NOT WIN32)
+    calcu_add_test(CalcU1600ReadTrace frequent COMMAND sh tests/read_trace_check.sh
+                   PROPERTIES ENVIRONMENT CALCU=$<TARGET_FILE:calcu>)
+  endif()
 
   # Longer: run locally before merging into main and at the end of a part.
   # Against frontends/web/dist/ (frontends/web/build.sh first); the WASM
   # smoke builds in build/web itself (Emscripten).
   calcu_add_test(CalcU1600WebPlaywright longer COMMAND frontends/web/run-tests.sh)
   calcu_add_test(CalcU1600WasmSmoke longer COMMAND tools/build_wasm_check.sh)
+  # LIB-10 R-1 (design §10.11): full speed with a breakpoint set, printed for the qa-report.
+  calcu_add_test(CalcU1600DebuggerSpeed longer COMMAND CoreTests lib10_speed_pc1600_full_speed_with_a_breakpoint
+                 PROPERTIES ENVIRONMENT CALCU1600_SPEED=1)
   # LIB-12 (Technical Requirements, design Q5): a Web dist/ built from a
   # ROM folder without one file names it and starts no calculator.
   if(NOT WIN32)
@@ -165,7 +175,10 @@ if(CALCU_TESTS)
   if(TARGET CalcU1600Qt)
     # The screenshot scenarios run as checks: every shot is taken, into
     # the build tree, not docs/images/.
-    file(GLOB CALCU1600_SCENARIOS ${CMAKE_CURRENT_SOURCE_DIR}/docs/developer/screenshots/guide/*.shots.yaml)
+    # The check scenarios of the GUI criteria (tests/gui/, ADR 0032: LIB-8
+    # AC-36, AC-38, LIB-10 AC-41) run the same way, under their IDs.
+    file(GLOB CALCU1600_SCENARIOS ${CMAKE_CURRENT_SOURCE_DIR}/docs/developer/screenshots/guide/*.shots.yaml
+                                  ${CMAKE_CURRENT_SOURCE_DIR}/tests/gui/*.shots.yaml)
     foreach(scenario ${CALCU1600_SCENARIOS})
       get_filename_component(name ${scenario} NAME_WE)
       calcu_add_test(CalcU1600Shots.${name} longer

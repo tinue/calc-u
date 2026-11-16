@@ -377,7 +377,7 @@ mirrors `run-state` and `trace`, sends `pause`, `step`, `resume`,
 | AC-31 | Pass | `harness_tests.cpp` `lib10_ac31_harness_breakpoint_pauses_the_ti` (`targets`, `registers`, `break`, `history`); `debugger_tests.cpp` `lib10_ac31_app_session_pauses_at_a_breakpoint` (setter `harness`; before the instruction; passed once at resume) |
 | AC-32 | Pass (2.3.0 directives through L-E1; format 2 in M-54) | `debugger_tests.cpp`: `lib10_ac32_freeze_calculator_is_pause_program`, `_freeze_cpu_is_pause_cpu`, `_freeze_on_start_is_pause_on_start`, `_step_and_resume` (and `Step:` while running: the log line, OQ-4), `_debug_panel_calculator_cpu_log`; `part_flows_tests.cpp` `part_keystroke_controls_drive_the_gui`; the reference run `screentest_test_cdebug.ti59` unchanged |
 | AC-33 | Pass | `trace_tests.cpp`: `lib10_ac33_header_ti59_version_2_and_model` (writes `build/trace-test.bin`, which CTest `CalcU59TraceReader` reads with `tools/read_trace.py`), `_records_session_instruction_gap` (and whole records within a budget), `_no_key_or_card_records` (the button's trace with a key and a card), `_button_names_by_model`, `_limit_ends_with_a_notice`; `golden_runs_tests.cpp` `lib10_ac33_bytes_equal_the_recorded_reference`; the exit check `lib10_ac33_exit_check_preset_and_button_traces_are_one_session` |
-| AC-34 | Pass in Qt6 and the Web; Swift not run | Qt6 `CalcU59QtTests` `lib10_ac34_qt6_calculator_and_cpu_buttons_follow_run_state`; Web `play-calculator.spec.js` `LIB-10 AC-34 FREEZE STEP RESUME of both tabs follow the run state`; Swift `Calc-U-59Tests/RunControlTests.swift` `testLib10AC34ButtonsFollowTheRule` (new; type-checked only: the Xcode build fails in the worktree) |
+| AC-34 | Pass (Qt6, Web, Swift) | Qt6 `CalcU59QtTests` `lib10_ac34_qt6_calculator_and_cpu_buttons_follow_run_state`; Web `play-calculator.spec.js` `LIB-10 AC-34 FREEZE STEP RESUME of both tabs follow the run state`; Swift `Calc-U-59Tests/RunControlTests.swift` `testLib10AC34ButtonsFollowTheRule` (passes from the main checkout after the merge, 2026-11-16) |
 | AC-35 | Pass | ported onto the run control: `debugger_tests.cpp` `lib10_ac35_session_queued_steps_run_after_the_host_call`, `_session_freeze_fires_through_listener`, `_session_steps_only_when_frozen_and_arms_exclude`, `_c59_1_runbatch_stops_at_freeze_inside_advance`; `shared_debug_tests.cpp` `lib10_ac35_step_shows_the_next_step`, `_running_view_shows_only_step_boundaries`; `part_flows_tests.cpp` `lib10_ac35_part_model_switch_keeps_printer_and_log_resets_freeze`, `_part_resume_before_the_frozen_view_drops_it`, and `part_load_while_frozen_ends_running_without_tracing`, `part_constant_memory_keeps_the_loaded_card`, `part_asm_overlay`, `part_events_of_a_replaced_machine_are_ignored` on it; `typing_tests.cpp` `lib5_ac20_freeze_inside_hold_key_up_on_frozen_machine`. `trace_flags_for_consumers` went with `TraceConsumers` |
 | AC-26 (59: the Web's hand-over) | Pass | Web `play-calculator.spec.js` `LIB-10 AC-26 a trace is downloaded when switched off` (renamed; `CALCU59_TRACE.bin`) |
 
@@ -455,6 +455,7 @@ until the preset ends.
   XCUITests that press FREEZE, STEP and RESUME
   (`ScreenshotTests.swift:150-160, 229-271`) now wait for a step to land.
 
-AC-34's Swift part is not verified in this step, so the column stays **In
-progress**; it is Done once the Swift build and its tests pass (the user's
-check of M-53).
+After the merge (`c638bc9`, 2026-11-16) the Swift app built from the main
+checkout, plan `UnitTests` (macOS, AC-34's test passes) and plan
+`UIRegressionTests` (iPhone 18 Pro Max, 18 tests, 1 skipped) passed: the
+Calc-U-59 column is **Done**.

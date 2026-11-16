@@ -173,6 +173,9 @@ Reply resumeCmd(CommandContext& c) {
     return runStateReply(send(c, dbg::kResumeCommand, {}));
 }
 
+// A count that is no number; the session command refuses one outside the range in the same words.
+Reply countRefused() { return refusedReply("step takes a count from 1 to " + std::to_string(dbg::kMaxStepCount) + "."); }
+
 // `step`, `step { level: cpu, count: 3 }`, `step cpu 3`.
 Reply stepCmd(CommandContext& c) {
     if (!hasDebugger(c)) return noTarget();
@@ -188,7 +191,7 @@ Reply stepCmd(CommandContext& c) {
             if (k == "level") level = x;
             else if (k == "count") {
                 const auto n2 = formats::parseNumber(x);
-                if (!n2) return refusedReply("step takes a count from 1 to 100000.");
+                if (!n2) return countRefused();
                 count = *n2;
             } else return refusedReply("Unknown key " + k + " in step.");
         }
@@ -198,11 +201,10 @@ Reply stepCmd(CommandContext& c) {
         if (!w.empty()) level = w[0];
         if (w.size() > 1) {
             const auto n2 = formats::parseNumber(w[1]);
-            if (!n2) return refusedReply("step takes a count from 1 to 100000.");
+            if (!n2) return countRefused();
             count = *n2;
         }
     }
-    if (count < 1 || count > 100000) return refusedReply("step takes a count from 1 to 100000.");
     return runStateReply(send(c, dbg::kStepCommand,
                               sessions::Value::object({{"level", level}, {"count", count}, {"kind", "in"}})));
 }

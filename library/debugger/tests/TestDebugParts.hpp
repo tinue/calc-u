@@ -60,35 +60,25 @@ public:
 class TestRecorder final : public TraceRecorder {
 public:
     explicit TestRecorder(mt::TestMachine& m) : m_(&m) {}
-    void begin(TraceFile& f) override {
-        const std::uint8_t head[] = {'T', 'T', 'R', 'C', 0x01};
-        f.write(head);
+    void begin(std::vector<std::uint8_t>& out) override {
+        out.insert(out.end(), {'T', 'T', 'R', 'C', 0x01});
         if (m_ && m_->cpu()) {
             m_->cpu()->recording = true;
             m_->cpu()->recorded.clear();
         }
     }
-    bool pump(TraceFile& f, std::uint64_t budget) override {
+    bool take(std::vector<std::uint8_t>& out, std::uint64_t budget) override {
         if (!m_ || !m_->cpu()) return true;
         auto& rec = m_->cpu()->recorded;
         std::size_t n = 0;
-        bool all = true;
-        for (; n < rec.size(); ++n) {
-            if (budget < 3) {
-                all = false;
-                break;
-            }
-            const std::uint8_t r[] = {0x02, rec[n].first, rec[n].second};
-            f.write(r);
-            budget -= 3;
-        }
+        for (; n < rec.size() && budget >= 3; ++n, budget -= 3) out.insert(out.end(), {0x02, rec[n].first, rec[n].second});
+        const bool all = n == rec.size();
         rec.erase(rec.begin(), rec.begin() + static_cast<std::ptrdiff_t>(n));
         return all;
     }
     std::uint64_t endBytes() const override { return 1; }
-    void end(TraceFile& f) override {
-        const std::uint8_t e[] = {0x03};
-        f.write(e);
+    void end(std::vector<std::uint8_t>& out) override {
+        out.push_back(0x03);
         if (m_ && m_->cpu()) m_->cpu()->recording = false;
     }
     std::string buttonFileName() const override { return "TEST_TRACE.bin"; }

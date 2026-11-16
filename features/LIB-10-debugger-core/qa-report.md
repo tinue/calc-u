@@ -254,8 +254,8 @@ call was not told) is fixed (`DebugController::noteRunning`).
   (a PC-1600 cold booted and run 29 frames: 204'900 instructions, 6.5 MB)
   and `pc1500a-basic.trace` (a PC-1500A, 120 frames: 70'252
   instructions, 2.0 MB). `lib10_ac42_bytes_equal_the_recorded_reference`
-  writes the same runs through `SharpTraceRecorder` and the library's
-  `TraceFile`: byte for byte equal, but for the eight bytes of the session
+  writes the same runs through `SharpTraceRecorder` (into a byte buffer since
+  P-5, design §11, as `TraceSession` takes them): byte for byte equal, but for the eight bytes of the session
   start's time (bytes 19 to 26), which the format holds and no run can
   repeat. The design named the first 200'000 and 100'000 instructions;
   the runs stop at a frame instead (the PC-1500A idles, 120 frames are

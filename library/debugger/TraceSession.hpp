@@ -15,7 +15,7 @@
 
 // The trace session (LIB-10 design §3.7; spec AC-22 to AC-26, OQ-1, OQ-3):
 // one trace at a time, started by the step `trace:`, the command or a
-// button, limited and ended by the library; what the file holds is the
+// button, limited and ended by the library; what the records are is the
 // product's (TraceRecorder, ADR 0037).
 
 namespace calcu::debugger {
@@ -39,16 +39,21 @@ private:
     std::uint64_t bytes_ = 0;
 };
 
-// The product's, one per machine (ADR 0037).
+// The product's record source, one per machine (ADR 0037): what the next
+// bytes of the file are. TraceSession writes them and keeps the size limit
+// (T2, AC-24, AC-43): it alone decides how much goes into the file.
 class TraceRecorder {
 public:
     virtual ~TraceRecorder() = default;
-    virtual void begin(TraceFile&) = 0;   // header, session start; turns on the core's recording
-    // Whole records of what ran since the last pump, at most `budget` bytes;
-    // false: there was more than the budget (the limit is reached).
-    virtual bool pump(TraceFile&, std::uint64_t budget) = 0;
-    virtual std::uint64_t endBytes() const = 0;   // the size of what end() writes
-    virtual void end(TraceFile&) = 0;             // session end; turns the core's recording off
+    // Turns the core's recording on; appends the header and the session start.
+    virtual void begin(std::vector<std::uint8_t>& out) = 0;
+    // Appends whole records of what ran since the last call, at most
+    // `budget` bytes; false: more were waiting than the budget took.
+    virtual bool take(std::vector<std::uint8_t>& out, std::uint64_t budget) = 0;
+    virtual std::uint64_t endBytes() const = 0;   // the size of the session's end record
+    // Appends the records still waiting and then the session's end record
+    // (the last endBytes() bytes); turns the core's recording off.
+    virtual void end(std::vector<std::uint8_t>& out) = 0;
     virtual std::string buttonFileName() const = 0;   // AC-23
     // The machine was replaced: the recorder may not touch its core again.
     virtual void machineGone() {}
@@ -91,10 +96,12 @@ public:
 
 private:
     void publish();
+    void write();   // buffer_ into the file
     TraceSetup setup_;
     sessions::StateTopic* topic_ = nullptr;
     std::unique_ptr<TraceRecorder> recorder_;
     std::unique_ptr<TraceFile> file_;
+    std::vector<std::uint8_t> buffer_;   // the recorder's bytes on their way to the file
     std::string name_;
     bool ofOperation_ = false;
 };

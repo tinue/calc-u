@@ -166,6 +166,7 @@ public:
         given_.reset();
         return back;
     }
+    bool writesWhenAsked() const override { return onlyWhenAsked; }
     bool takeWriteNow() override {
         const bool w = writeNow_;
         writeNow_ = false;
@@ -183,6 +184,7 @@ public:
     std::optional<std::string> writeOnPass;
     std::optional<std::string> refuse;   // insert refused with this reason
     bool holdsBack = false;              // a pass-through medium never passes
+    bool onlyWhenAsked = false;          // writesWhenAsked() (M-47: a tape)
     int inserts = 0;
 
 private:

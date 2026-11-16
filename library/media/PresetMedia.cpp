@@ -244,8 +244,35 @@ private:
     std::shared_ptr<const InFileSet> set_;
 };
 
+// LIB-6 AC-47 (M-47): a medium step needs a place of its kind -- the
+// model's own, or one of a peripheral the header (or the running machine)
+// plugs in; else the error names the peripherals that have one.
+bool placeFor(const KindDecl& k, const std::string& verb, int line, ReadContext& ctx) {
+    const machine::MachineDescriptor& model = ctx.model();
+    for (const auto& p : model.mediaPlaces)
+        if (p.mediumKind == k.id) return true;
+    std::vector<std::string> needs;
+    for (const auto& d : ctx.catalogue().peripherals()) {
+        if (std::none_of(d.mediaPlaces.begin(), d.mediaPlaces.end(), [&](const auto& p) { return p.mediumKind == k.id; }))
+            continue;
+        for (const auto& place : model.places) {
+            const auto info = ctx.catalogue().place(model.model, place.name);
+            if (!info || std::find(info->fitting.begin(), info->fitting.end(), d.id) == info->fitting.end()) continue;
+            if (ctx.plugged(place.name, d.id)) return true;
+            needs.push_back(d.name.empty() ? d.id.value : d.name);
+            break;
+        }
+    }
+    std::string list;
+    for (std::size_t i = 0; i < needs.size(); ++i) list += (i == 0 ? "" : i + 1 == needs.size() ? " or " : ", ") + needs[i];
+    ctx.error(line, verb + ": the " + model.model.value + " has no place for a " + k.label +
+                        (list.empty() ? std::string(".") : " without the " + list + "."));
+    return false;
+}
+
 std::unique_ptr<Item> readMedium(MediumItem::Does does, MediaPart& part, const KindDecl& k, const std::string& verb,
                                  const YamlNode& v, ReadContext& ctx) {
+    if (!placeFor(k, verb, v.line, ctx)) return nullptr;
     const bool sides = does == MediumItem::Does::Insert && sidesOf(ctx.catalogue(), k).size() > 1;
     auto ref = readReference(verb, v, ctx, k, sides);
     if (!ref) return nullptr;

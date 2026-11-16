@@ -180,6 +180,21 @@ TEST(lib6_ac47_ce158_with_ce1600p_names_both) {
     CHECK(has(e, ", line 5: The CE-1600P and the CE-158 cannot be used together."));
 }
 
+// The `floppy:` clause (M-47, LIB-7 1600): [1600: PC-1600 with CE-1600P];
+// `tape:` [with CE-150 or CE-1600P].
+TEST(lib6_ac47_floppy_without_ce1600p_refused) {
+    HarnessPreset h;
+    CHECK(h.ok());
+    std::string r = h.load(k1600 + "keys:\n  - floppy: { name: Formatted }\n");
+    CHECK(has(r, "floppy: the PC-1600 has no place for a floppy disk without the CE-1600P."));
+    r = h.load("format-version: 2\nmodel: PC-1500\nkeys:\n  - floppy: { name: Formatted }\n", "t.pc1500");
+    CHECK(has(r, "floppy is not available on the PC-1500."));
+    r = h.load(k1600 + "keys:\n  - tape: { name: Empty }\n");
+    CHECK(has(r, "tape: the PC-1600 has no place for a cassette tape without the CE-150 or CE-1600P."));
+    CHECK(has(h.line("check-preset " + h.write("ok.pc1600", k1600 + "printer: CE-1600P\nkeys:\n  - floppy: { name: Formatted }\n  - tape: { name: Empty }\n").generic_string()),
+              "ok "));
+}
+
 TEST(lib6_ac47_slot2_on_pc1500_not_available) {
     PresetReadRig r;
     CHECK(has(r.error("format-version: 2\nmodel: PC-1500\nslot-2: { name: CE-155 }\n"), "slot-2 is not available on the PC-1500."));

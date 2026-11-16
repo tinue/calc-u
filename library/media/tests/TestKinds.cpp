@@ -41,6 +41,10 @@ public:
         }
         r.info.formatVersion = std::atoi(f["format-version"].c_str());
         r.info.name = f["name"];
+        if (f["medium"] == "no") {   // a file of the suffix that is no medium of the kind (M-47)
+            r.status = ReadOutcome::Status::NotMedium;
+            return r;
+        }
         if (r.info.formatVersion == 1) {
             r.status = ReadOutcome::Status::Outdated;
             return r;

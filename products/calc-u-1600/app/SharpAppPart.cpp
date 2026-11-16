@@ -38,7 +38,6 @@ std::optional<Model> modelOfId(const std::string& id) {
     return std::nullopt;
 }
 
-const char* slotPlace(int slot) { return slot == 2 ? sharp::kSlot2 : sharp::kSlot1; }
 
 PlacePath placeOf(const char* place) { return PlacePath{{PlaceName{place}}}; }
 
@@ -56,9 +55,6 @@ std::optional<std::string> folderOrNone(const std::string& dir) {
     return dir.empty() ? std::nullopt : std::optional<std::string>(dir);
 }
 
-double steadySeconds() {
-    return std::chrono::duration<double>(std::chrono::steady_clock::now().time_since_epoch()).count();
-}
 
 VariantId ce1600pVariant(CE1600PRomVersion v) { return VariantId{v == CE1600PRomVersion::Old ? "Old" : "New"}; }
 
@@ -71,7 +67,6 @@ std::shared_ptr<const std::vector<std::uint8_t>> hostDriveRomOf(const AppPaths& 
     return rom ? std::make_shared<const std::vector<std::uint8_t>>(std::move(*rom)) : nullptr;
 }
 
-using sessions::integerArg;
 using sessions::textArg;
 
 } // namespace

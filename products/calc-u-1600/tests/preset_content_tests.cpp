@@ -514,11 +514,9 @@ TEST(c1600_4_ac19_test_parser_rejects_cross_model_fields) {
 // ── T7: the upgrade (AC-15) ─────────────────────────────────────────────
 
 TEST(c1600_4_ac15_no_version_1_left) {
-    // Every preset of the source repository in format 2, but the six that
-    // wait for LIB-7's media (C1600-4 design §1; M-47).
-    const std::set<std::string> waiting = {"DiskWorks.pc1600",       "make_diskworks_media.pc1600",
-                                           "pc1500-maxed-out.pc1500", "default-pc1600.pc1600",
-                                           "startup-pc1600.pc1600",   "pc1600-modules.pc1600"};
+    // Every preset of the source repository in format 2: since M-47 also the
+    // six that waited for LIB-7's media (C1600-4 design §1), without exceptions.
+    const std::set<std::string> waiting = {};
     int found = 0;
     for (const char* root : {"examples", "tests/fixtures", "dev", "docs", "vscode"})
         for (const auto& e : fs::recursive_directory_iterator(root)) {
@@ -546,9 +544,10 @@ TEST(c1600_4_ac17_bundle_lists_todays_entries) {
     if (!entries) return;
     std::vector<std::string> got;
     for (const auto& e : *entries) got.push_back((e.startup ? "startup " : e.group + " ") + e.preset);
-    // examples/bundled.yaml:12-31 of 0.8.1; startup/default-pc1600 waits for M-47.
+    // examples/bundled.yaml:12-31 of 0.8.1, startup/default-pc1600 since M-47.
     const std::vector<std::string> want = {"startup startup/default-pc1500.pc1500",
                                            "startup startup/default-pc1500a.pc1500a",
+                                           "startup startup/default-pc1600.pc1600",
                                            "BASIC basic/hanoi.pc1600",
                                            "Plotter plotter/lissajou-1500.pc1500a",
                                            "Plotter plotter/lissajou-1600.pc1600",

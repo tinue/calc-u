@@ -135,17 +135,15 @@ if(CALCU_TESTS)
   calcu_add_test(CoreTests frequent COMMAND CoreTests)
   # LIB-6 AC-51 (design §10.6 P8; C1600-4 T7): every preset of the
   # repository is read by the library's reader through `calcu check-preset`;
-  # the presets that wait for LIB-7's media (C1600-4 design §1, M-47) are
-  # left out by name. The VS Code templates are checked filled in.
+  # since M-47 (LIB-7 1600) with the six that waited for the media. The
+  # VS Code templates are checked filled in.
   set(CALCU1600_PRESET_GLOBS)
   foreach(ext pc1500 pc1500a pc1600)
     list(APPEND CALCU1600_PRESET_GLOBS examples/*/*.${ext} examples/*/*/*.${ext} tests/fixtures/presets/*.${ext}
          dev/hardware-checks/*.${ext} dev/presets/*.${ext} docs/developer/screenshots/presets/*.${ext}
          vscode/calcu1600-debug/presets/*.${ext})
   endforeach()
-  calcu_add_preset_check(CalcU1600Presets PRODUCT 1600 FILES ${CALCU1600_PRESET_GLOBS}
-                         EXCLUDE DiskWorks.pc1600 make_diskworks_media.pc1600 pc1500-maxed-out.pc1500
-                                 default-pc1600.pc1600 startup-pc1600.pc1600 pc1600-modules.pc1600)
+  calcu_add_preset_check(CalcU1600Presets PRODUCT 1600 FILES ${CALCU1600_PRESET_GLOBS})
   calcu_add_preset_check(CalcU1600Templates PRODUCT 1600 FILES vscode/calcu1600-debug/templates/*/debug.*
                          FILL tests/fill_vscode_templates.cmake)
   # No file above the core includes or names a machine class (C1600-1,

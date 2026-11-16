@@ -12,7 +12,6 @@
 #include "Debug/Inspect/Inspector.hpp"
 #include "Display/LcdScreenshot.hpp"
 #include "Display/LcdText.hpp"
-#include "Job.hpp"
 #include "Machine/SharpCatalogue.hpp"
 #include "Machine/SharpProductKinds.hpp"
 #include "PC1500/PC1500Variant.hpp"
@@ -65,6 +64,12 @@ struct OpResult {
 // host folder.
 struct SharpAppPartOptions {
     bool canMountHostFolder = true;
+    // The harness (LIB-11 D-6): typing in emulated time, no serial port file
+    // unless asked for (requestSerialLink; C1600-5 AC-9), and its own folder
+    // for screenshots (LIB-11 AC-8); empty: the save folder.
+    calcu::sessions::Hosting hosting = calcu::sessions::Hosting::Paced;
+    bool serialLinksOnRequest = false;
+    std::function<std::optional<std::string>()> screenshotFolder;
 };
 
 // ── SharpAppPart: Calc-U-1600's app layer in the library's app session ───
@@ -130,6 +135,7 @@ public:
     // LIB-6: the preset loader (load-preset, check-preset, preset-list).
     calcu::presets::PresetsPart& presetsPart() { return m_presets; }
     const calcu::presets::PresetBundle& presetBundle() const { return m_bundle; }
+    SharpPresetRules& presetRules() { return m_rules; }
     // The preset list (LIB-6 AC-32): what `preset-list` replies, for the
     // menus and the Settings of a frontend on the session's thread.
     std::vector<calcu::presets::PresetListEntry> presetEntries() const {
@@ -140,6 +146,15 @@ public:
     dap::DapPart* dapPart() { return m_dap.get(); }
     // LIB-18: the machine control (builds, plug changes).
     calcu::startup::MachineControl& machineControl() { return m_startup.control(); }
+    // The library's parts the harness takes from the app layer (LIB-11 D-6).
+    calcu::startup::StartupPart& startupPart() { return m_startup; }
+    calcu::peripherals::PeripheralsPart& peripheralsPart() { return m_peripherals; }
+    SharpProductMachines& productMachines() { return m_machines; }
+    // C1600-5 AC-7, AC-9: with serialLinksOnRequest, the serial port file of
+    // `fileName` ("calcu1600-ce158.serial", "calcu1600-rs232c.serial") is made
+    // from now on; its path, or empty where the host has no pseudo-terminals.
+    std::string requestSerialLink(const std::string& fileName);
+    bool serialLinked(const std::string& fileName) const;
 
     // LIB-4: the library's control part with the product's rules (D-13).
     calcu::control::ControlPart& controlPart() { return m_control; }
@@ -173,7 +188,8 @@ public:
 
     // ---- Expansion slots ----
     int slotCount() const;
-    const ExpansionCard* slotCard(int slot) const;
+    // The module in a slot (from 1), by its name; empty when none.
+    std::string slotModuleName(int slot) const;
 
     // ---- Serial ports ----
     void refreshSerialLinkDirectory();
@@ -234,7 +250,8 @@ private:
     calcu::peripherals::PeripheralsPart m_peripherals;
     calcu::sessions::SessionContext* m_ctx = nullptr;
     calcu::sessions::MachineSession* m_ms = nullptr;
-    calcu::typing::TypingPart m_typingPart{typingProduct()};
+    std::vector<std::string> m_requestedLinks;   // serialLinksOnRequest: the files asked for
+    calcu::typing::TypingPart m_typingPart;
     // C1600-2: the loaders' commands (app/SharpLoaderPart).
     SharpLoaderPart m_loaderPart{m_typingPart};
     // LIB-18 and LIB-6 (§10.2 of their designs).

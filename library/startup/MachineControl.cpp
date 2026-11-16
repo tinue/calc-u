@@ -95,7 +95,6 @@ std::optional<BuildRefusal> MachineControl::build(sessions::SessionContext& s, M
         }
         return BuildRefusal{std::move(why), std::nullopt};
     }
-    product_.startUp(*built.machine);
 
     sessions::MachineSession& ms = s.machineSession();
     ms.dropInput();   // AC-2, EC-4

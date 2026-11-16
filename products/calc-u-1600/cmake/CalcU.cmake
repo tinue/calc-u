@@ -9,10 +9,9 @@
 # repository's root CMake project, ADR 0003).
 #
 # The source lists are globbed: every core/**/*.cpp except core/tests/ and
-# every app/**/*.cpp except app/tests/. calcu_add_core() makes a further
-# copy of the core for the probes, which need PC1600_POWER_PROBE.
+# every app/**/*.cpp except app/tests/.
 #
-# calcu_core (and the probes' copy) is compiled at -O1 in Debug unless
+# calcu_core is compiled at -O1 in Debug unless
 # CALCU_TESTS_DEBUG is ON (calcu_debug_o1, the root CMakeLists.txt).
 
 get_filename_component(CALCU_ROOT ${CMAKE_CURRENT_LIST_DIR} DIRECTORY)
@@ -78,10 +77,8 @@ endif()
 file(GLOB_RECURSE CALCU_CORE_SOURCES CONFIGURE_DEPENDS ${CALCU_CORE_ROOT}/*.cpp)
 list(FILTER CALCU_CORE_SOURCES EXCLUDE REGEX "^${CALCU_CORE_ROOT}/tests/")
 
-# calcu_add_core(<name>): a static library of every core/ source. Called
-# once for calcu_core here, and by the product's CMakeLists.txt for the
-# probes' copy, which adds PC1600_POWER_PROBE (PUBLIC: it changes
-# PC1600Memory's layout, so everything including core/ headers needs it).
+# calcu_add_core(<name>): a static library of every core/ source (calcu_core;
+# the probes' copy with PC1600_POWER_PROBE went with the probes in M-51).
 function(calcu_add_core name)
   add_library(${name} STATIC ${CALCU_CORE_SOURCES})
   target_include_directories(${name} PUBLIC ${CALCU_CORE_ROOT})

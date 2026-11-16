@@ -198,11 +198,11 @@ TEST(c1600_1_ac6_cold_boot_empties_memory_and_ce151_ce155) {
         const std::uint16_t own = freeRam(*m);
         CHECK(scribbleModule(*m, 1));
         if (std::string(k.model) != "PC-1600") CHECK(pokePattern(*m, own));
-        CHECK(sharp::legacy::moduleIn(*m, 1)->debugImage() != fresh->debugImage());
+        CHECK(sharptest::moduleIn(*m, 1)->debugImage() != fresh->debugImage());
         m->coldBoot();
         // Before the ROM runs: the module as its definition builds it, the
         // machine's own RAM empty.
-        CHECK(sharp::legacy::moduleIn(*m, 1)->debugImage() == fresh->debugImage());
+        CHECK(sharptest::moduleIn(*m, 1)->debugImage() == fresh->debugImage());
         if (std::string(k.model) == "PC-1600") {
             const auto ram = memoryOf(*m).internalRam();
             CHECK(std::all_of(ram.begin(), ram.end(), [](std::uint8_t b) { return b == 0; }));
@@ -222,9 +222,9 @@ TEST(c1600_1_ac6_cold_boot_keeps_battery_module) {
         CHECK(m != nullptr);
         if (!m) continue;
         CHECK(scribbleModule(*m, 1));
-        const auto before = sharp::legacy::moduleIn(*m, 1)->debugImage();
+        const auto before = sharptest::moduleIn(*m, 1)->debugImage();
         m->coldBoot();
-        CHECK(sharp::legacy::moduleIn(*m, 1)->debugImage() == before);
+        CHECK(sharptest::moduleIn(*m, 1)->debugImage() == before);
     }
 }
 
@@ -680,7 +680,7 @@ TEST(c1600_1_ac18_ce1600p_variant_keeps_memory_and_disk_side) {
     const Plugged now = m->plugged();
         const PlugEntry* e = pluggedAt(now, "printer");
     CHECK(e && e->variant && e->variant->value == "Old");   // shows at once (D-2)
-    sharp::legacy::atOffPoint(*m, [&] {
+    sharp::sharpOf(*m)->atOffPoint([&] {
         if (auto* d = floppyPlace()) d->insert(std::make_shared<sharp::FloppyContent>(image), side);
     });
     m->powerCycle();
@@ -772,7 +772,7 @@ TEST(c1600_1_ac20_display_on_slots_cassette_one_way_on_every_model) {
         const Plugged now = m->plugged();
         const PlugEntry* e = pluggedAt(now, "slot-1");   // the module in a slot: plugged()
         CHECK(e && e->peripheral.value == "CE-161");
-        CHECK(sharp::legacy::moduleIn(*m, 1) != nullptr);
+        CHECK(sharptest::moduleIn(*m, 1) != nullptr);
         // The cassette is the CE-150's or CE-1600P's media place (LIB-7, M-47): none without one.
         CHECK(sharp::firstOf<sharp::TapeDeckAccess>(*m) == nullptr);
     }

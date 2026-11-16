@@ -7,7 +7,7 @@
 // time. ROM-gated cases SKIP without roms/.
 #include "../app/SharpDebugBlock.hpp"
 #include "../core/Connector/ExpansionCard.hpp"
-#include "../core/Machine/LegacyCalls.hpp"
+#include "SharpTestSupport.hpp"
 #include "../core/Machine/SharpCatalogue.hpp"
 #include "../core/Machine/SharpProductKinds.hpp"
 #include "HarnessPreset.hpp"
@@ -289,7 +289,7 @@ TEST(c1600_4_ac8_slot_rom_bytes_read_at_every_load) {
         h.write("build/rom.bin", bytes);
         CHECK(h.loadIdle(preset, "t.pc1500"));
         calcu::machine::Machine* m = h.machine();
-        const ExpansionCard* card = m ? sharp::legacy::moduleIn(*m, 1) : nullptr;
+        const ExpansionCard* card = m ? sharptest::moduleIn(*m, 1) : nullptr;
         CHECK(card && !card->debugImage().empty() && card->debugImage()[0] == first);
     }
 }

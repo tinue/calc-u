@@ -39,7 +39,7 @@ public:
     void onBaud(uint32_t baud, int bitsPerChar) override {
         calcu::peripherals::LineSettings l = m_queues.lineSettings();
         l.baud = baud;
-        l.bitsPerChar = bitsPerChar;
+        if (bitsPerChar > 0) l.bitsPerChar = bitsPerChar;   // 0: the model does not say (the CE-158)
         m_queues.machineSetsLine(l);
     }
 

@@ -53,7 +53,6 @@
 #include "../core/Connector/MemoryCardDefinition.hpp"
 #include "../core/Connector/PlotterPaperOutput.hpp"
 #include "../core/Display/DisplayOutputText.hpp"
-#include "../core/Machine/LegacyCalls.hpp"
 #include "../core/Machine/SharpBuilder.hpp"
 #include "../core/Machine/SharpCatalogue.hpp"
 #include "../core/Machine/SharpMachine.hpp"

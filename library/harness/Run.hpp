@@ -130,16 +130,24 @@ private:
     HarnessProduct* product_ = nullptr;
     std::unique_ptr<RunSetup> setup_;
     std::shared_ptr<int> clockReads_ = std::make_shared<int>(0);
-    std::unique_ptr<peripherals::PeripheralsPart> peripherals_;
-    std::unique_ptr<MachineStatePart> state_;
-    std::unique_ptr<presets::PresetsPart> presets_;   // LIB-6: when the product has preset rules
-    std::unique_ptr<startup::StartupPart> startup_;
-    std::unique_ptr<control::ControlPart> control_;
+    // The library's parts: the run's own (own*), or the product's app layer's
+    // (HarnessProduct::appLayerParts, D-6).
+    std::unique_ptr<peripherals::PeripheralsPart> ownPeripherals_;
+    std::unique_ptr<presets::PresetsPart> ownPresets_;   // LIB-6: when the product has preset rules
+    std::unique_ptr<startup::StartupPart> ownStartup_;
+    std::unique_ptr<control::ControlPart> ownControl_;
     std::unique_ptr<settings::Paths> mediaPaths_;    // LIB-7: the run's save folder
-    std::unique_ptr<media::MediaPart> media_;        // LIB-7: when the product has kinds of medium
+    std::unique_ptr<media::MediaPart> ownMedia_;     // LIB-7: when the product has kinds of medium
     std::unique_ptr<opening::PresetsOpener> presetsOpener_;   // LIB-13: over presets_
     std::unique_ptr<opening::MediaOpener> mediaOpener_;       // LIB-13: over media_
-    std::unique_ptr<opening::OpenPart> open_;                 // LIB-13: `open` (AC-9)
+    std::unique_ptr<opening::OpenPart> ownOpen_;              // LIB-13: `open` (AC-9)
+    peripherals::PeripheralsPart* peripherals_ = nullptr;
+    presets::PresetsPart* presets_ = nullptr;
+    startup::StartupPart* startup_ = nullptr;
+    control::ControlPart* control_ = nullptr;
+    media::MediaPart* media_ = nullptr;
+    opening::OpenPart* open_ = nullptr;
+    std::unique_ptr<MachineStatePart> state_;
     std::unique_ptr<sessions::AppSession> session_;
     std::unique_ptr<HarnessHost> host_;
     CommandRegistry registry_;

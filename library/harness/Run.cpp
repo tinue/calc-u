@@ -154,6 +154,8 @@ std::unique_ptr<Server> Server::start(HarnessProduct& product, const RunOptions&
     s->product_ = &product;
     s->setup_ = RunSetup::make(options, product.settingsDecl(), error);
     if (!s->setup_) return nullptr;
+    // D-11: the product's app layer on the run's settings and folders.
+    product.prepare(*s->setup_);
 
     // EC-1 (LIB-12 AC-7): the full set, or no start.
     roms::LookupResult roms = product.lookUpRoms();
@@ -161,7 +163,6 @@ std::unique_ptr<Server> Server::start(HarnessProduct& product, const RunOptions&
         *error = roms::describe(roms.missing);
         return nullptr;
     }
-    s->peripherals_ = std::make_unique<peripherals::PeripheralsPart>();
     s->state_ = std::make_unique<MachineStatePart>(std::string(product.name()), std::string(product.version()));
     sessions::AppSessionSetup setup;
     // AC-6: the wall clock of a session hosted in virtual time paces nothing;
@@ -173,33 +174,49 @@ std::unique_ptr<Server> Server::start(HarnessProduct& product, const RunOptions&
     };
     setup.hostTime = s->setup_->hostTime();   // AC-21 (LIB-3 A-7)
     setup.hosting = sessions::Hosting::VirtualTime;
-    // LIB-6 (design §2): the loader of preset format 2 when the product has
-    // rules, before StartupPart, with the run's folder for screenshots
-    // (LIB-11 AC-8); LIB-18's PresetLoader (LIB-18 D-9).
-    if (presets::ProductRules* rules = product.presetRules()) {
-        presets::PresetsSetup ps;
-        ps.catalogue = &product.catalogue();
-        ps.rules = rules;
-        ps.typing = product.typingPart();
-        ps.bundle = product.presetBundle();
-        ps.home = s->setup_->hostDirs().home;
-        RunSetup* run = s->setup_.get();
-        ps.screenshotFolder = [run]() -> std::optional<std::string> { return run->screenshotFolder(); };
-        s->presets_ = std::make_unique<presets::PresetsPart>(std::move(ps));
-    }
-    // LIB-18 §3.6: the start is StartupPart's, after PeripheralsPart (the
-    // clocks at a build and at the end of every operation, AC-1, AC-13);
-    // the run's own settings (LIB-9 AC-18).
-    s->startup_ = std::make_unique<startup::StartupPart>(
-        startup::StartupSetup{product.machines(), roms.set, s->setup_->settings(), s->presets_.get()});
-    if (s->presets_) s->presets_->setControl(&s->startup_->control());
-    // LIB-8 (A-2, A-3): the paper part's machine control and the step `cut-paper`.
-    if (paper::PaperPart* paper = product.paperPart()) {
-        paper->setControl(&s->startup_->control());
-        if (s->presets_) paper::addPaperStep(s->presets_->vocabulary(), *paper);
+    const std::optional<AppLayerParts> layer = product.appLayerParts();
+    if (layer) {
+        // D-6, D-15: the product's app layer brings the library's parts.
+        s->peripherals_ = layer->peripherals;
+        s->presets_ = layer->presets;
+        s->startup_ = layer->startup;
+        s->control_ = layer->control;
+        s->media_ = layer->media;
+        s->open_ = layer->open;
+    } else {
+        s->ownPeripherals_ = std::make_unique<peripherals::PeripheralsPart>();
+        s->peripherals_ = s->ownPeripherals_.get();
+        // LIB-6 (design §2): the loader of preset format 2 when the product has
+        // rules, before StartupPart, with the run's folder for screenshots
+        // (LIB-11 AC-8); LIB-18's PresetLoader (LIB-18 D-9).
+        if (presets::ProductRules* rules = product.presetRules()) {
+            presets::PresetsSetup ps;
+            ps.catalogue = &product.catalogue();
+            ps.rules = rules;
+            ps.typing = product.typingPart();
+            ps.bundle = product.presetBundle();
+            ps.home = s->setup_->hostDirs().home;
+            RunSetup* run = s->setup_.get();
+            ps.screenshotFolder = [run]() -> std::optional<std::string> { return run->screenshotFolder(); };
+            s->ownPresets_ = std::make_unique<presets::PresetsPart>(std::move(ps));
+            s->presets_ = s->ownPresets_.get();
+        }
+        // LIB-18 §3.6: the start is StartupPart's, after PeripheralsPart (the
+        // clocks at a build and at the end of every operation, AC-1, AC-13);
+        // the run's own settings (LIB-9 AC-18).
+        s->ownStartup_ = std::make_unique<startup::StartupPart>(
+            startup::StartupSetup{product.machines(), roms.set, s->setup_->settings(), s->presets_});
+        s->startup_ = s->ownStartup_.get();
+        if (s->presets_) s->presets_->setControl(&s->startup_->control());
+        // LIB-8 (A-2, A-3): the paper part's machine control and the step `cut-paper`.
+        if (paper::PaperPart* paper = product.paperPart()) {
+            paper->setControl(&s->startup_->control());
+            if (s->presets_) paper::addPaperStep(s->presets_->vocabulary(), *paper);
+        }
     }
     // LIB-10: the debugger's trace folder (the run's, AC-8), its limit
-    // ([trace] max-file-size-mb of the run's settings) and its steps.
+    // ([trace] max-file-size-mb of the run's settings) and, unless the
+    // product's app layer added them, its steps.
     if (debugger::DebuggerPart* dp = product.debuggerPart()) {
         RunSetup* run = s->setup_.get();
         dp->setTraceFolder([run]() -> std::optional<settings::Paths::Ensured> {
@@ -209,28 +226,30 @@ std::unique_ptr<Server> Server::start(HarnessProduct& product, const RunOptions&
             return settings::Paths::Ensured{true, run->traceFolder(), {}};
         });
         dp->setTraceLimit([run] { return run->settings().integer("trace", "max-file-size-mb"); });
-        if (s->presets_) debugger::addDebuggerSteps(s->presets_->vocabulary(), *dp);
+        if (s->presets_ && !layer) debugger::addDebuggerSteps(s->presets_->vocabulary(), *dp);
     }
-    // LIB-4 §7: the control state, among the library's parts.
-    s->control_ = std::make_unique<control::ControlPart>(product.controlSetup());
-    // LIB-7 §3.11: the media part on the run's save folder (LIB-11 AC-8),
-    // the product's bundled media always there; the media steps on LIB-6's place.
-    if (std::vector<media::KindDecl> kinds = product.mediaKinds(); !kinds.empty()) {
-        settings::HostDirs dirs = s->setup_->hostDirs();
-        dirs.frontend = settings::FrontendKind::Swift;   // the save folder as the run passes it
-        s->mediaPaths_ = std::make_unique<settings::Paths>(s->setup_->settings(), dirs);
-        media::MediaSetup ms;
-        ms.kinds = std::move(kinds);
-        ms.paths = s->mediaPaths_.get();
-        ms.listing = product.moduleListing();
-        ms.catalogue = &product.catalogue();
-        s->media_ = std::make_unique<media::MediaPart>(std::move(ms));
-        s->media_->setControl(&s->startup_->control());
-        if (s->presets_) media::addMediaToPresets(s->presets_->vocabulary(), *s->media_);
-    }
-    // LIB-13 §7: `open` over the run's LIB-6 and LIB-7 parts, with the
-    // product's file kinds and limits; no upload folder.
-    {
+    if (!layer) {
+        // LIB-4 §7: the control state, among the library's parts.
+        s->ownControl_ = std::make_unique<control::ControlPart>(product.controlSetup());
+        s->control_ = s->ownControl_.get();
+        // LIB-7 §3.11: the media part on the run's save folder (LIB-11 AC-8),
+        // the product's bundled media always there; the media steps on LIB-6's place.
+        if (std::vector<media::KindDecl> kinds = product.mediaKinds(); !kinds.empty()) {
+            settings::HostDirs dirs = s->setup_->hostDirs();
+            dirs.frontend = settings::FrontendKind::Swift;   // the save folder as the run passes it
+            s->mediaPaths_ = std::make_unique<settings::Paths>(s->setup_->settings(), dirs);
+            media::MediaSetup ms;
+            ms.kinds = std::move(kinds);
+            ms.paths = s->mediaPaths_.get();
+            ms.listing = product.moduleListing();
+            ms.catalogue = &product.catalogue();
+            s->ownMedia_ = std::make_unique<media::MediaPart>(std::move(ms));
+            s->media_ = s->ownMedia_.get();
+            s->media_->setControl(&s->startup_->control());
+            if (s->presets_) media::addMediaToPresets(s->presets_->vocabulary(), *s->media_);
+        }
+        // LIB-13 §7: `open` over the run's LIB-6 and LIB-7 parts, with the
+        // product's file kinds and limits; no upload folder.
         opening::OpenSetup os;
         os.productName = std::string(product.name());
         if (s->presets_) {
@@ -243,17 +262,24 @@ std::unique_ptr<Server> Server::start(HarnessProduct& product, const RunOptions&
         }
         os.kinds = product.fileKinds();
         os.maxBytes = product.openLimits();
-        s->open_ = std::make_unique<opening::OpenPart>(std::move(os));
+        s->ownOpen_ = std::make_unique<opening::OpenPart>(std::move(os));
+        s->open_ = s->ownOpen_.get();
     }
     // C1600-3 §3.5: the run's parts, for a product part that needs them.
-    product.runParts(RunParts{s->presets_.get(), &s->startup_->control(), &s->setup_->settings()});
-    setup.parts = {s->peripherals_.get(), s->state_.get()};
-    if (s->presets_) setup.parts.push_back(s->presets_.get());
-    for (sessions::SessionPart* p : {static_cast<sessions::SessionPart*>(s->startup_.get()),
-                                     static_cast<sessions::SessionPart*>(s->control_.get())})
-        setup.parts.push_back(p);
-    if (s->media_) setup.parts.push_back(s->media_.get());
-    setup.parts.push_back(s->open_.get());
+    product.runParts(RunParts{s->presets_, &s->startup_->control(), &s->setup_->settings()});
+    if (layer) {
+        // As the frontends' session builders: the control part first, then
+        // the product's parts (its library parts among them); the state part.
+        setup.parts = {s->control_, s->state_.get()};
+    } else {
+        setup.parts = {s->peripherals_, s->state_.get()};
+        if (s->presets_) setup.parts.push_back(s->presets_);
+        for (sessions::SessionPart* p : {static_cast<sessions::SessionPart*>(s->startup_),
+                                         static_cast<sessions::SessionPart*>(s->control_)})
+            setup.parts.push_back(p);
+        if (s->media_) setup.parts.push_back(s->media_);
+        setup.parts.push_back(s->open_);
+    }
     for (sessions::SessionPart* p : product.sessionParts()) setup.parts.push_back(p);
     s->session_ = std::make_unique<sessions::AppSession>(std::move(setup));
     s->host_ = std::make_unique<HarnessHost>(*s->session_, product, *s->setup_);
@@ -269,7 +295,7 @@ std::unique_ptr<Server> Server::start(HarnessProduct& product, const RunOptions&
     addPresetCommands(s->registry_, s->presets_ ? &s->presets_->vocabulary() : nullptr);
     addPaperCommands(s->registry_);
     addDebugCommands(s->registry_);
-    addMediaCommands(s->registry_, s->media_.get());
+    addMediaCommands(s->registry_, s->media_);
     addOpenCommand(s->registry_);
     product.addCommands(s->registry_);
     return s;

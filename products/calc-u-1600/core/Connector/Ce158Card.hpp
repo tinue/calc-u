@@ -1,4 +1,5 @@
 #pragma once
+#include "PrintableBytes.hpp"
 #include <array>
 #include <cstddef>
 #include <cstdint>
@@ -314,6 +315,13 @@ private:
 
     void updateCharCycles() {
         int baud = decodeBaud();
+        // The speed the ROM set, for the serial port's line settings (LIB-2
+        // AC-17; C1600-5 AC-7's report and feed). The word length is not
+        // known here: it stays empty.
+        if (baud != 0 && baud != m_notifiedBaud && m_link) {
+            m_notifiedBaud = baud;
+            m_link->onBaud(static_cast<uint32_t>(baud), 0);
+        }
         if (baud == 0) baud = 300; // before SETCOM / unknown code: the ROM's default
         m_charCycles = static_cast<uint64_t>(m_clockHz * 10.0 / baud);
     }
@@ -353,6 +361,7 @@ private:
     uint64_t m_charCycles = static_cast<uint64_t>(kCpuHz * 10.0 / 300);
 
     SerialLink* m_link = nullptr;
+    int m_notifiedBaud = 0;   // the speed last given to m_link->onBaud
     bool m_cts = true, m_dsr = true, m_dcd = true;
     int m_lastDtr = -1, m_lastRts = -1;
 
@@ -360,23 +369,3 @@ private:
     std::vector<uint8_t> m_parallelOut;
 };
 
-/// Renders CE-158 parallel-port (printer) bytes for display: CR dropped,
-/// LF and printable ASCII kept, anything else shown as `<XX>` (hex).
-/// Shared by the GUI printer pane and the CLIs' report.
-inline std::string ce158PrintableText(const uint8_t* bytes, size_t size) {
-    static const char kHex[] = "0123456789ABCDEF";
-    std::string text;
-    for (size_t i = 0; i < size; ++i) {
-        const uint8_t b = bytes[i];
-        if (b == '\r') continue;
-        if (b == '\n' || (b >= 0x20 && b < 0x7F)) {
-            text += static_cast<char>(b);
-        } else {
-            text += '<';
-            text += kHex[b >> 4];
-            text += kHex[b & 0x0F];
-            text += '>';
-        }
-    }
-    return text;
-}

@@ -92,7 +92,7 @@ TEST(lib7_ac44_test_module_bay) {
 
     CHECK(f.choose("slot-1", "CE-1600M").done);
     CHECK(f.notices().empty());
-    CHECK(f.part().slotCard(1) && f.part().slotCard(1)->moduleName() == "CE-1600M");
+    CHECK(f.part().slotModuleName(1) == "CE-1600M");
     CHECK(f.mediaPlace("slot-1") && f.mediaPlace("slot-1")->nameAndSave);
     CHECK(f.held("slot-1") && !f.held("slot-1")->instance());
 
@@ -106,7 +106,7 @@ TEST(lib7_ac44_test_module_bay) {
 
     // A variant switch carries the instance over, with its content.
     CHECK(f.variant("Old"));
-    CHECK(f.part().slotCard(1) && f.part().slotCard(1)->moduleName() == "CE-1600M");
+    CHECK(f.part().slotModuleName(1) == "CE-1600M");
     CHECK(f.held("slot-1") && f.held("slot-1")->name == "My RAM");
     // A model switch clears the slots.
     CHECK(f.model("PC-1500A"));
@@ -155,7 +155,7 @@ TEST(lib7_ac38_choose_is_replace_power_cycle_memory_kept) {
     f.runFor(0.5);
     const auto ticks = f.part().machine()->tickCount();
     CHECK(f.choose("slot-1", "CE-161").done);   // a replace (LIB-18 AC-29)
-    CHECK(f.part().slotCard(1) && f.part().slotCard(1)->moduleName() == "CE-161");
+    CHECK(f.part().slotModuleName(1) == "CE-161");
     CHECK(f.part().machine()->tickCount() > ticks);   // its power cycle ran
     f.runFor(0.5);
     // The memory kept: the ROM asks NEW0? (its check after the power cycle; row 1600-4).
@@ -172,11 +172,12 @@ TEST(lib7_ac38_other_slot_and_disk_untouched) {
     CHECK(f.choose("slot-1", "CE-1600M").done);
     driveWrites(f, 5000);
     const std::vector<std::uint8_t> disk = diskImage(f);
-    const ExpansionCard* slot2 = f.part().slotCard(2);
-    const auto before = slot2 ? slot2->debugImage() : std::vector<std::uint8_t>{};
+    int banks = 0;
+    const std::vector<std::uint8_t> before = f.part().debugSlotCardImage(2, &banks);
     CHECK(f.choose("slot-1", "CE-161").done);
-    CHECK(f.part().slotCard(2) == slot2);   // the same card: not read again (row 1600-13)
-    CHECK(slot2 && slot2->debugImage() == before);
+    // The same card, not read again (row 1600-13): its RAM as it was.
+    CHECK(f.part().slotModuleName(2) == "CE-1601M");
+    CHECK(!before.empty() && f.part().debugSlotCardImage(2, &banks) == before);
     CHECK(diskImage(f) == disk && f.held("floppy") && f.held("floppy")->name == "Formatted");
     CHECK(f.held("floppy") && f.held("floppy")->unsaved);   // what the template held is not lost
 }

@@ -41,7 +41,6 @@ TEST(ac1_one_build_with_model_variant_and_plugs) {
     MachinePlan plan{mt::kDot, VariantId{"V2"}, {plug("a", mt::kPrinter), plug("card-1", mt::kModule, VariantId{"8k"})}, nullptr};
     CHECK(!r.startup->control().build(r.session->context(), plan, BuildOrigin::Start));
     CHECK_EQ(r.product.builds(), 1);   // one machine with all of it, in one step
-    CHECK_EQ(r.product.startUps, 1);
     TestMachine* m = r.machine();
     CHECK(m && m->variant() == std::optional<VariantId>(VariantId{"V2"}));
     if (!m) return;

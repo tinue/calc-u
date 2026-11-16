@@ -7,7 +7,6 @@
 
 #include "Connector/SoftwareDefinedCard.hpp"
 #include "Display/DisplayOutputText.hpp"
-#include "Machine/LegacyCalls.hpp"
 #include "Machine/SharpBuilder.hpp"
 #include "Machine/SharpCatalogue.hpp"
 #include "Machine/SharpMachine.hpp"
@@ -53,11 +52,11 @@ std::optional<std::string> folderOrNone(const std::string& dir) {
 
 
 calcu::roms::LookupResult lookUp(const AppPaths& paths) {
-    return sharp::lookUpRoms(calcu::roms::DirectoryBundle(toPath(paths.bundledResourcesDir())));
+    return sharp::lookUpRoms(calcu::roms::DirectoryBundle(toPath(paths.bundledRomsDir())));
 }
 
 std::shared_ptr<const std::vector<std::uint8_t>> hostDriveRomOf(const AppPaths& paths) {
-    auto rom = sharp::readHostDriveRom({paths.bundledResourcesDir()});
+    auto rom = sharp::readHostDriveRom({paths.bundledHostDriveRomDir()});
     return rom ? std::make_shared<const std::vector<std::uint8_t>>(std::move(*rom)) : nullptr;
 }
 
@@ -76,15 +75,27 @@ SharpAppPart::SharpAppPart(Settings& settings, AppPaths& paths, SharpAppPartOpti
       m_hostDriveRom(hostDriveRomOf(paths)),
       m_paper(m_catalogue, sharpPrinterPapers()),
       m_debugger(sharpDebuggerSetup(&paths, &settings, /*hasTraceFolder=*/true)),
-      m_peripherals(serialFileFor, folderOrNone(paths.serialLinkDir())),
+      m_peripherals(
+          [this](const CapabilityEntry& e) -> std::optional<calcu::peripherals::HostLinkRule> {
+              std::optional<calcu::peripherals::HostLinkRule> rule = serialFileFor(e);
+              if (!rule || !m_options.serialLinksOnRequest) return rule;
+              // C1600-5 AC-9: only a file asked for, made at once.
+              if (std::find(m_requestedLinks.begin(), m_requestedLinks.end(), rule->fileName) == m_requestedLinks.end())
+                  return std::nullopt;
+              rule->openAtOnce = true;
+              return rule;
+          },
+          folderOrNone(paths.serialLinkDir())),
+      m_typingPart(typingProduct(), options.hosting),
       m_machines(m_catalogue, m_hostDriveRom),
       m_rules(SharpKeywordSetup{[this] { return canMountHostFolder(); }}),
       m_bundle(toPath(paths.bundledExamplesDir())),
       m_presets(calcu::presets::PresetsSetup{&m_catalogue, &m_rules, nullptr, &m_typingPart, &m_bundle,
                                              paths.homeDir(),
-                                             [&paths]() -> std::optional<std::string> {
+                                             [this, &paths]() -> std::optional<std::string> {
                                                  // LIB-6 AC-25: the save folder, made when a step needs it.
-                                                 auto folder = paths.places().screenshotFolder();
+                                                 auto folder = m_options.screenshotFolder ? m_options.screenshotFolder()
+                                                                                          : paths.places().screenshotFolder();
                                                  std::error_code ec;
                                                  if (folder) std::filesystem::create_directories(toPath(*folder), ec);
                                                  return folder;
@@ -95,7 +106,7 @@ SharpAppPart::SharpAppPart(Settings& settings, AppPaths& paths, SharpAppPartOpti
       m_control(sharpControlSetup(m_catalogue, m_controlRules)) {
     // The module definitions: the bundled ones and the ROM modules of the set
     // (the CE-502B; LIB-12 AC-14).
-    sharp::addModuleDefinitions(m_catalogue, paths.bundledResourcesDir());
+    sharp::addModuleDefinitions(m_catalogue, paths.bundledModulesDir());
     if (m_roms) sharp::addModuleDefinitions(m_catalogue, *m_roms);
     m_presets.setControl(&m_startup.control());
     m_paper.setControl(&m_startup.control());   // the origin of a build (LIB-8 A-3)
@@ -106,7 +117,7 @@ SharpAppPart::SharpAppPart(Settings& settings, AppPaths& paths, SharpAppPartOpti
     // the bundled templates beside the module definitions; a variant switch
     // carries a module's content over (S-7a), the disk and the tape too.
     calcu::media::MediaSetup media;
-    media.kinds = mediaKinds(paths.bundledResourcesDir(), m_catalogue);
+    media.kinds = mediaKinds(paths.bundledModulesDir(), m_catalogue);
     media.paths = &paths.places();
     media.listing = moduleListing();
     media.catalogue = &m_catalogue;
@@ -325,6 +336,24 @@ std::string SharpAppPart::ce1600pVariant() const {
     return m_ce1600pChoice;
 }
 
+std::string SharpAppPart::requestSerialLink(const std::string& fileName) {
+    if (std::find(m_requestedLinks.begin(), m_requestedLinks.end(), fileName) == m_requestedLinks.end())
+        m_requestedLinks.push_back(fileName);
+    if (Machine* m = machine()) m_peripherals.hostLinks().machineChanged(*m);
+    for (const auto& st : m_peripherals.hostLinks().status())
+        if (st.fileName == fileName) return st.path;
+    return {};
+}
+
+bool SharpAppPart::serialLinked(const std::string& fileName) const {
+    if (m_options.serialLinksOnRequest &&
+        std::find(m_requestedLinks.begin(), m_requestedLinks.end(), fileName) == m_requestedLinks.end())
+        return false;
+    for (const auto& st : m_peripherals.hostLinks().status())
+        if (st.fileName == fileName) return st.connected;
+    return false;
+}
+
 void SharpAppPart::refreshSerialLinkDirectory() {
     m_peripherals.hostLinks().moveTo(folderOrNone(m_paths.serialLinkDir()));
     ++m_serialMoves;
@@ -397,9 +426,15 @@ int SharpAppPart::slotCount() const {
     return n;
 }
 
-const ExpansionCard* SharpAppPart::slotCard(int slot) const {
-    Machine* m = machine();
-    return m ? sharp::legacy::moduleIn(*m, slot) : nullptr;
+std::string SharpAppPart::slotModuleName(int slot) const {
+    // What the slot shows now (plugged(): a module still waiting for the off
+    // point too); the PC-1500 has one slot.
+    const Machine* m = machine();
+    if (!m || slot < 1 || slot > slotCount()) return {};
+    const std::string place = slot == 2 ? sharp::kSlot2 : sharp::kSlot1;
+    for (const auto& e : m->plugged().byPlace)
+        if (e.place.steps.size() == 1 && e.place.steps[0].value == place) return e.peripheral.value;
+    return {};
 }
 
 // ---- Cassette recorder and CE-1600F ----

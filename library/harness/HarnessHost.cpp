@@ -78,7 +78,7 @@ std::optional<ReplyMessage> HarnessHost::takeReplyIfAny(sessions::CallId id) {
 // Run in VirtualTime, every command replies at once: an operation runs to its
 // end inside send() (AC-7). Attached, an operation's reply is kept for
 // takeReplyIfAny().
-ReplyMessage HarnessHost::command(sessions::Command c, std::string_view giveUp) {
+ReplyMessage HarnessHost::command(sessions::Command c, std::string_view giveUp, machine::Ticks within) {
     if (attached()) {
         const auto sent =
             listener_.send(c.name, std::move(c.args), [this](const ReplyMessage& r) { replies_.push_back(r); });
@@ -95,7 +95,7 @@ ReplyMessage HarnessHost::command(sessions::Command c, std::string_view giveUp) 
     if (const machine::Machine* m = session_.machineSession().machine()) {
         const machine::TickRate rate = m->descriptor().tickRate;
         const machine::Ticks piece = sessions::OperationContext::runPiece(rate);
-        const machine::Ticks limit = static_cast<machine::Ticks>(rate) * 3600;
+        const machine::Ticks limit = within ? within : static_cast<machine::Ticks>(rate) * 3600;
         for (machine::Ticks ran = 0; !*got && ran < limit;) {
             // Up to the next tick a hook is due at, so the reply comes at
             // the key-up that carries it out, not a piece later.

@@ -18,8 +18,8 @@
 // read again (AC-6); otherwise no machine starts and describe() of the
 // result is the message (AC-5, AC-13).
 //
-// In the core, not in app/ as the design has it: the tools and probes link
-// the core only (the probes a copy of their own, calcu_core_probe).
+// In the core, not in app/ as the design has it: until M-51 the CLIs and
+// probes linked the core only; the core's tests still do.
 
 namespace sharp {
 

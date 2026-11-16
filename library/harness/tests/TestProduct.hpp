@@ -84,6 +84,10 @@ public:
     // LIB-5: the typing part's machine counts as paused (a press that waits
     // never starts; the `key` command gives up after an hour).
     bool typingPaused = false;
+    // LIB-11 D-11: the members the run asked, in order ("prepare <save
+    // folder>", "lookUpRoms", "sessionParts").
+    void prepare(RunSetup&) override;
+    mutable std::vector<std::string> asked;
     // LIB-10: the next machines' targets offer none of the optional parts.
     void setBareCpu(bool b) { builder_.bare = b; }
 

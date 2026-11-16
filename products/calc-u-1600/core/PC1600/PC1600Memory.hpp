@@ -419,18 +419,11 @@ public:
     void    writeMem(uint16_t addr, uint8_t value) override { write(addr, value); }
     uint8_t readIO(uint8_t port) override;
     void    writeIO(uint8_t port, uint8_t value) override;
-#ifdef PC1600_POWER_PROBE
-    // readIO() splits into a hookable wrapper + this impl only under the
-    // throw-away power/UART probe build (tools/build_pc1600_power_probe.sh);
-    // the shipping build has the one plain readIO().
-    uint8_t readIOImpl(uint8_t port);
-#endif
 
 private:
     PC1600Bank& m_bank;
     // The two 40-pin memory-slot connectors (page C, 8000-BFFF). Owned here
-    // rather than in PC1600Machine so a standalone PC1600Memory (tests,
-    // pc1600_cli) and the LH5803 side (LH5803SharedMemory forwards +0x8000
+    // rather than in PC1600Machine so a standalone PC1600Memory (tests) and the LH5803 side (LH5803SharedMemory forwards +0x8000
     // into this same object) both go through them with no extra wiring.
     MemorySlotConnector m_slot1Conn;
     MemorySlotConnector m_slot2Conn;

@@ -1,5 +1,8 @@
 #include "Display/DisplayOutputText.hpp"
 
+#include <cstddef>
+#include <cstdint>
+#include <optional>
 #include <variant>
 
 #include "../Machine/SharpCores.hpp"
@@ -27,8 +30,52 @@ LcdFont sharpLcdFont(Machine& m) {
 }
 
 LcdText displayText(Machine& m, const DisplayOutput& output) {
+    LcdText text = parseLcdText(lcdBitmapOf(output), sharpLcdFont(m), lcdCursorOf(m));
+    text.status = statusWords(sharp::statusLineOf(output));
+    return text;
+}
+
+DotMatrixFrame uncoverCursor(DotMatrixFrame f, const LcdFont& font, const LcdCursor& cursor) {
+    const int cw = font.cellWidth, ch = font.cellHeight;
+    if (cw <= 0 || ch <= 0 || f.width <= 0 || static_cast<int>(f.dots.size()) < f.width * f.height) return f;
+    const std::uint8_t mask = static_cast<std::uint8_t>((1u << ch) - 1u);
+    auto cellAt = [&](int tr, int tc) {
+        LcdCell cell{};
+        for (int c = 0; c < cw; ++c)
+            for (int r = 0; r < ch; ++r)
+                if (f.dots[static_cast<std::size_t>(tr * ch + r) * static_cast<std::size_t>(f.width) +
+                           static_cast<std::size_t>(tc * cw + c)])
+                    cell[static_cast<std::size_t>(c)] |= static_cast<std::uint8_t>(1u << r);
+        return cell;
+    };
+    auto isCursor = [&](const LcdCell& cell) {
+        for (const LcdCell& s : font.cursorShapes) {
+            bool same = true;
+            for (int c = 0; c < 8 && same; ++c) {
+                const std::uint8_t want = c < cw ? static_cast<std::uint8_t>(s[static_cast<std::size_t>(c)] & mask) : 0;
+                same = cell[static_cast<std::size_t>(c)] == want;
+            }
+            if (same) return true;
+        }
+        return false;
+    };
+    const int rows = f.height / ch, cols = f.width / cw;
+    for (int tr = 0; tr < rows; ++tr)
+        for (int tc = 0; tc < cols; ++tc) {
+            if (cursor.row >= 0 && (tr != cursor.row || tc != cursor.col)) continue;
+            if (!isCursor(cellAt(tr, tc))) continue;
+            for (int c = 0; c < cw; ++c)
+                for (int r = 0; r < ch; ++r)
+                    f.dots[static_cast<std::size_t>(tr * ch + r) * static_cast<std::size_t>(f.width) +
+                           static_cast<std::size_t>(tc * cw + c)] = (cursor.under[static_cast<std::size_t>(c)] >> r) & 1u;
+            return f;   // the first cursor-shaped cell when the position is unknown (LcdCursor)
+        }
+    return f;
+}
+
+std::optional<LcdCursor> lcdCursorOf(Machine& m) {
     // The cursor as each model's ROM keeps it in RAM (PC1500LcdText.hpp,
-    // PC1600LcdText.hpp), read through the loader memory.
+    // PC1600LcdText.hpp).
     std::optional<LcdCursor> cursor;
     if (PC1600Machine* p = sharp::pc1600Of(m)) {
         if (p->debugPeek(0xF05E) & 0x01) {
@@ -45,9 +92,7 @@ LcdText displayText(Machine& m, const DisplayOutput& output) {
             if (code >= 0x20 && code < 0x80) cursor->under = font.glyphs[code - 0x20].cell;
         }
     }
-    LcdText text = parseLcdText(lcdBitmapOf(output), sharpLcdFont(m), cursor);
-    text.status = statusWords(sharp::statusLineOf(output));
-    return text;
+    return cursor;
 }
 
 LcdText displayText(Machine& m) { return displayText(m, m.readDisplay()); }

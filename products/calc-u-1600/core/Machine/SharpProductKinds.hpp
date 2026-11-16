@@ -19,8 +19,9 @@
 //   c1600.ce158-printer-port   bytes sent to the CE-158's printer port (owner: the CE-158)
 //   c1600.host-drive-folder    the host drive's folder (owner: the host drive)
 //   c1600.trace-records        the records of a CPU trace (owner: the main CPU; LIB-10 D-18)
-//   c1600.tape-deck      the cassette's counter and motor (owner: the CE-150 or CE-1600P)
-//   c1600.floppy-drive   the CE-1600F's lamp (owner: the CE-1600P)
+//   c1600.routine-call         a routine called from the current state (owner: the main CPU; C1600-5 AC-12)
+//   c1600.tape-deck            the cassette's counter and motor (owner: the CE-150 or CE-1600P)
+//   c1600.floppy-drive         the CE-1600F's lamp (owner: the CE-1600P)
 // The media themselves are LIB-7's kinds since M-47 (SharpMediaPlaces.hpp).
 //
 // The owner "the main CPU" (LH5801, SC7852) stands for the machine itself
@@ -120,13 +121,27 @@ public:
     virtual void end() = 0;         // recording off
 };
 
-// ---- Adapter kinds ----
+// A machine-code routine called from the current state (C1600-5 AC-12,
+// design §3.6): the processor of a debug target makes the call as its own
+// call instruction does (the LH5801's and LH5803's SJP, the Z-80's CALL):
+// the return address pushed, the program counter at `address`. The harness
+// then runs LIB-10's step-out until the routine has returned. Owner: the
+// main CPU, for every processor of the model.
+class RoutineCall : public calcu::machine::Capability {
+public:
+    static constexpr calcu::machine::KindId kKind{"c1600.routine-call"};
+    calcu::machine::KindId kind() const override { return kKind; }
 
+    // False: the model has no processor of that debug target name.
+    virtual bool call(const std::string& target, std::uint16_t address) = 0;
+};
 
 // Since M-47 (LIB-7 §10.2) the tape and the disk themselves are the media
 // places `cassette` and `floppy` (core/Machine/SharpMediaPlaces.hpp); these
-// two keep what the control bar shows: the tape counter, its motor and
-// whether it plays or records (AC-42), and the drive's lamp (AC-39).
+// two product kinds keep what the control bar shows: the tape counter, its
+// motor and whether it plays or records (AC-42), and the drive's lamp
+// (AC-39). They were adapter kinds until M-47 (C1600-1 §5); M-51's adapter
+// check keeps them as product kinds.
 class TapeDeckAccess : public calcu::machine::Capability {
 public:
     static constexpr calcu::machine::KindId kKind{"c1600.tape-deck"};

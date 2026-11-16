@@ -98,20 +98,17 @@ public:
     calcu::machine::Debugging* debugging() override { return sharpDebugging(); }
     virtual SharpDebugging* sharpDebugging() = 0;
 
-    // ---- For the core's adapters (LegacyCalls) ----
+    // ---- For the core and its tests (tests/BootRun.hpp, SharpTestSupport.hpp) ----
     bool powerCycleActive() const { return m_sequence.active(); }
     // Ticks to the sequence's next phase change: an advance of exactly this
     // runs the phase as one run of the core, as today's job did.
     calcu::machine::Ticks powerCyclePhaseTicks() const { return m_sequence.remaining(); }
     // Runs `f` at the off point of the coming power cycle, after its
-    // changes, or now when no change waits (LegacyCalls::atOffPoint).
+    // changes, or now when no change waits.
     void atOffPoint(std::function<void()> f);
     // The module in a slot as plugged() shows it: one that waits for the off
     // point already, one that waits to come out no longer (design D-2).
     ExpansionCard* moduleNow(const calcu::machine::PlaceName&);
-    // What is plugged in, read again from the core (after a preset loader
-    // changed it on the old class; LegacyCalls::applyPresetJob).
-    void syncFromCore();
 
 protected:
     SharpMachine(calcu::machine::MachineDescriptor d, std::optional<calcu::machine::VariantId> v)
@@ -132,8 +129,6 @@ protected:
     // The electrical change on the core.
     virtual void corePlug(const calcu::machine::PeripheralRequest&, const calcu::machine::PeripheralDescriptor&) = 0;
     virtual void coreUnplug(const calcu::machine::PlaceName&, const calcu::machine::PeripheralId&) = 0;
-    // What the core has plugged in now (syncFromCore()).
-    virtual std::vector<calcu::machine::PlugEntry> coreHasPlugged() const = 0;
     // The capabilities of the model, present now (`plugged` is what plugged() gives).
     struct Offered {
         calcu::machine::CapabilityEntry entry;

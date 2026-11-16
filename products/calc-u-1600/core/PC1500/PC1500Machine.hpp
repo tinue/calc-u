@@ -67,15 +67,6 @@ public:
     /// actually consumed.
     uint64_t runCycles(uint64_t maxCycles);
 
-    /// Optional host callback invoked from inside runCycles() roughly every
-    /// `intervalCycles` of emulated time (counted across calls, so many
-    /// short runCycles() calls still add up). Lets a caller that drives a
-    /// long synchronous preset/program load keep its event loop alive
-    /// (repaint, show a progress popup) without the loaders knowing about
-    /// it. The hook may read the display; it must not drive the machine. An
-    /// empty function (the default) removes it.
-    void setYieldHook(std::function<void()> hook, uint64_t intervalCycles);
-
     // Named-key vocabulary used by preset scripts and the BASIC typer. Unknown
     // names (including "on" -- see class doc comment) are silently ignored,
     // matching a real keyboard's behavior when a matrix position isn't wired
@@ -299,11 +290,6 @@ private:
     Ce158Port m_ce158;                                      // see attachCE158()
     std::vector<std::unique_ptr<BusRomCard>> m_busRoms;     // see attachBusRom()
     uint64_t m_elapsedCycles{0};                            // see elapsedCycles()
-
-    // See setYieldHook(). m_yieldCountdown only runs down while a hook is set.
-    std::function<void()> m_yieldHook;
-    uint64_t m_yieldInterval = 0;
-    uint64_t m_yieldCountdown = 0;
 
     // ── Headless CPU-trace file -- see beginCpuTrace() ───────────────────
     std::unique_ptr<PC1500TraceFile> m_traceFile;

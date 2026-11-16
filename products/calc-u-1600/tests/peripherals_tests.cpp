@@ -62,7 +62,7 @@ TEST(lib2_ac28_slots_one_chain_contact_level_power_cycle) {
         m->keyUp(KeyId{"off"});
         CHECK(runUntil(*m, [&] { return !m->readDisplay().on; }, 3));
         CHECK(m->detach(place("slot-1"), PeripheralId{"CE-161"}, c).follows == AfterChange::Nothing);
-        CHECK(sharp::legacy::moduleIn(*m, 1) == nullptr);
+        CHECK(sharptest::moduleIn(*m, 1) == nullptr);
     }
 }
 
@@ -201,7 +201,7 @@ TEST(lib2_ac32_ce161_switch_blocks_writes) {
         CHECK(controls->press(ControlId{"write-protect"}) == pp::ControlCall::WrongForm);
         CHECK(scribbleModule(*m, 1));   // off: writes land
         CHECK(controls->set(ControlId{"write-protect"}, true) == pp::ControlCall::Done);
-        CHECK(sharp::legacy::moduleIn(*m, 1)->writeProtected());
+        CHECK(sharptest::moduleIn(*m, 1)->writeProtected());
         CHECK(!scribbleModule(*m, 1));   // on: every write blocked
         CHECK(controls->set(ControlId{"write-protect"}, false) == pp::ControlCall::Done);
         CHECK(scribbleModule(*m, 1));

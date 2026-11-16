@@ -20,7 +20,7 @@ PC1500Variant modelOf(const MachineDescriptor& d) {
 
 // The capability objects, each over the core (C1600-1 §3.6; design §5).
 struct PC1500InterfaceMachine::Kinds {
-    explicit Kinds(PC1500Machine& m) : memory(m), inspector(m), support(m), trace(m), tape(m), cassette(m.tapeDeck()), clock(m), printerPort(m) {}
+    explicit Kinds(PC1500Machine& m) : memory(m), inspector(m), support(m), trace(m), tape(m), cassette(m.tapeDeck()), clock(m), printerPort(m), call(m) {}
 
     sharp::PC1500LoaderMemory memory;
     struct Inspector final : sharp::InspectorViews {
@@ -72,6 +72,16 @@ struct PC1500InterfaceMachine::Kinds {
         std::vector<std::uint8_t> drain() override { return m.drainCE158ParallelOutput(); }
         PC1500Machine& m;
     } printerPort;
+    // C1600-5 AC-12: SJP on the LH5801.
+    struct Call final : sharp::RoutineCall {
+        explicit Call(PC1500Machine& m) : m(m) {}
+        bool call(const std::string& target, std::uint16_t address) override {
+            if (target != "LH5801") return false;
+            m.cpu().callRoutine(address);
+            return true;
+        }
+        PC1500Machine& m;
+    } call;
 };
 
 PC1500InterfaceMachine::PC1500InterfaceMachine(const MachineDescriptor& d, const VariantId& v)
@@ -124,22 +134,13 @@ void PC1500InterfaceMachine::coreUnplug(const PlaceName& p, const PeripheralId& 
     else if (id.value == sharp::kBusRom) m_core->detachBusRoms();
 }
 
-std::vector<PlugEntry> PC1500InterfaceMachine::coreHasPlugged() const {
-    std::vector<PlugEntry> out;
-    if (const ExpansionCard* card = m_core->memory().expansionConnector().attachedCard())
-        out.push_back({PlacePath{{PlaceName{sharp::kSlot1}}}, PeripheralId{card->moduleName()}, std::nullopt});
-    if (m_core->ce150Attached()) out.push_back({PlacePath{{PlaceName{sharp::kPrinter}}}, PeripheralId{sharp::kCE150}, std::nullopt});
-    if (m_core->ce158Attached())
-        out.push_back({PlacePath{{PlaceName{sharp::kInterface}}}, PeripheralId{sharp::kCE158}, std::nullopt});
-    return out;
-}
-
 void PC1500InterfaceMachine::offer(std::vector<Offered>& out, const std::vector<PlugEntry>&) {
     Kinds& k = *m_kinds;
     out.push_back(byComponent("LH5801", k.memory));
     out.push_back(byComponent("LH5801", k.inspector));
     out.push_back(byComponent("LH5801", k.support));
     out.push_back(byComponent("LH5801", k.trace));
+    out.push_back(byComponent("LH5801", k.call));
     out.push_back(byComponent(sharp::kRtcComponent, k.clock));
     if (const PlugEntry* e = at(sharp::kPrinter); e && e->peripheral.value == sharp::kCE150) {
         // LIB-8: the plotter's paper output, once its card is on the bus.

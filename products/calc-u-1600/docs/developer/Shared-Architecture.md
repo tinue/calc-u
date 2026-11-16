@@ -215,8 +215,6 @@ target ([Web-Client.md](Web-Client.md)).
 
 ## Not in Shared yet
 
-- The CLIs don't use the app session; they load presets through the
-  library's loader (adapter `tools/CliPresetRun.hpp`, until LIB-11's
-  harness replaces them, M-51).
-
-These are rows in [TODO.md](../../TODO.md).
+Nothing of the tools: the harness `calcu` runs the app session with
+`SharpAppPart` (LIB-11 D-6; the CLIs went in M-51). What is left is in
+rows of [TODO.md](../../TODO.md).

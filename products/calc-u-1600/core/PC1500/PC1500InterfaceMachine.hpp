@@ -35,7 +35,6 @@ private:
     ExpansionCard* moduleIn(const calcu::machine::PlaceName&) override;
     void corePlug(const calcu::machine::PeripheralRequest&, const calcu::machine::PeripheralDescriptor&) override;
     void coreUnplug(const calcu::machine::PlaceName&, const calcu::machine::PeripheralId&) override;
-    std::vector<calcu::machine::PlugEntry> coreHasPlugged() const override;
     void offer(std::vector<Offered>&, const std::vector<calcu::machine::PlugEntry>&) override;
 
     struct Kinds;   // the capability objects (PC1500InterfaceMachine.cpp)

@@ -1,19 +1,19 @@
 # headless/
 
-Scratch space for the headless CLI harnesses and throw-away probes built
-from `tools/` (`build_cli.sh`, `build_pc1600_cli.sh`,
-`build_pc1600_power_probe.sh`, `build_pc1600_uart_probe.sh`,
-`build_pc1600_plotter_probe.sh`) and for any debug output they or an ad hoc
-CLI/preset run produce — ROM/RAM image dumps, format-utility test images,
-`TRACE.bin`-style trace captures, disassembly scratch, and similar.
+Scratch space for the output of `calcu --product 1600` runs and other ad
+hoc work: screenshots and traces (`--output-folder headless`), WAV files of
+`audio` and `pc1600 tape record`, captures of `pc1600 serial … capture`,
+memory images (`peek … file=`), format-utility test images, disassembly
+scratch, and similar. The harness itself is the target `calcu` of a root
+CMake tree (`products/calc-u-1600/CLAUDE.md`, section Harness); the
+headless CLIs and probes that were built into this folder went in M-51.
 
-Everything in here except this file is gitignored: it's all regenerable
-(rebuild the tool) or disposable (rerun the probe). Nothing durable should
+Everything in here except this file is ignored by version control: it's
+all regenerable (rerun the command) or disposable. Nothing durable should
 live here — a reusable example preset belongs in `examples/` (user-facing)
 or `dev/` (debug/regression presets, hardware checks), a written-up
 investigation belongs in `docs/`, and a permanent finding belongs in this
 project's memory.
 
-When building or running a headless tool, write its binary and any scratch
-output here rather than the repo root — the build scripts already do this
-via `-o headless/<name>`.
+When running the harness or an ad hoc check, write its scratch output here
+rather than the repo root.

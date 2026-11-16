@@ -27,6 +27,7 @@ public:
                              HostLinkFactory factory = {});
 
     HostLinks& hostLinks() { return links_; }
+    const HostLinks& hostLinks() const { return links_; }
 
     void attach(sessions::SessionSetup&) override;
     void beforeCall(sessions::SessionContext&, pacing::WallTime) override;

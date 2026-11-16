@@ -17,7 +17,7 @@ class LoaderMemory;
 // ── The loaders of Calc-U-1600 (C1600-2; design §3.2-§3.6, §3.8) ────────
 //
 // The entry points of every caller -- the menu and the harness (through
-// app/SharpLoaderPart), a preset's `program:` (core/Preset/PresetRunner),
+// app/SharpLoaderPart), a preset's `program:` (app/SharpPresetRules),
 // the debugger's Build & Load (core/Debug/ProgramLoader): what a file is,
 // loading BASIC, the one plan for machine code and its write. They reach
 // memory only through the loader memory access (sharp::LoaderMemory, the

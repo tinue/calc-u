@@ -466,23 +466,8 @@ uint64_t PC1600Machine::runCycles(uint64_t maxCycles) {
         if (m_debugStop.pending() == DebugStop::Breakpoint) break; // parked on a breakpoint: no time passed
         consumed += tstates;
         if (m_debugStop.pending() == DebugStop::Watch) break; // the watched access's instruction has completed
-        // See setYieldHook().
-        if (m_yieldHook) {
-            if (tstates >= m_yieldCountdown) {
-                m_yieldCountdown = m_yieldInterval;
-                m_yieldHook();
-            } else {
-                m_yieldCountdown -= tstates;
-            }
-        }
     }
     return consumed;
-}
-
-void PC1600Machine::setYieldHook(std::function<void()> hook, uint64_t intervalTStates) {
-    m_yieldHook = std::move(hook);
-    m_yieldInterval = intervalTStates;
-    m_yieldCountdown = intervalTStates;
 }
 
 void PC1600Machine::pressKey(const std::string& name) {

@@ -128,8 +128,8 @@ TEST(lib6_ac36_card_wait_after_write_is_idle) {
 
 TEST(lib6_ac38_2_3_0_file_refused_as_outdated_with_hint) {
     PresetRead r;
-    // An example as 2.3.0 shipped it (the four card examples wait in that format until M-55).
-    const std::string old = fileText("examples/globe-print.ti59");
+    // An example as 2.3.0 shipped it (kept as a fixture since M-55 upgraded the example).
+    const std::string old = fileText("tests/fixtures/v2.3.0/globe-print.ti59");
     const std::string e = r.error(old, "globe-print.ti59");
     CHECK(e.find("Calc-U-59") != std::string::npos);
     CHECK(e.find("the preset format in the User Guide, chapter Presets") != std::string::npos);

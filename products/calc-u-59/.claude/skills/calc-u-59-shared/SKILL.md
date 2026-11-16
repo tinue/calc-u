@@ -1,6 +1,6 @@
 ---
 name: calc-u-59-shared
-description: Use this skill when working on the shared C++ layer of Calc-U-59 (app/, tests/, the product's CMakeLists.txt, tools/goldens/) — the non-GUI logic the Swift app, the Qt6 app and the web client use: file formats, presets (the TI rules and keywords of the library's loader: TIPresetRules, TIPresetKeys, Keycodes, the ti59 commands), the TI-58C constant memory file (ConstantMemoryKeeper), cue cards, the app session's product part (TIAppPart, makeAppSession, the library's parts it owns, TIProductMachines; TIWebPart for the Web page), the Swift frontend's session thread (SessionThread), the emulator runtime (machine session, key sequencing, frame sampling), the TI's side of the library's paper (TIPrinters) and debugger (TILevelRules, TITraceRecorder, TIDebuggerSetup), the debugger model (DebugModel), debug snapshots, the trace records (TraceWriter), view rules. Also trigger when adding a frontends/swift/Bridge/ wrapper for a Shared module, or when logic is about to be written in frontends/swift/App/*.swift, frontends/qt6/app/ or frontends/web/ that isn't drawing.
+description: Use this skill when working on the shared C++ layer of Calc-U-59 (app/, tests/, the product's CMakeLists.txt, tools/goldens/) — the non-GUI logic the Swift app, the Qt6 app and the web client use: file formats, presets (the TI rules and keywords of the library's loader: TIPresetRules, TIPresetKeys, Keycodes, the ti59 commands), the TI-58C constant memory file (ConstantMemoryKeeper), magnetic cards on the library's media part (TIMagneticCardKind, TIMagneticCardsKey, the card reader place of the core), cue cards and module cue cards (ModuleCueCards), the app session's product part (TIAppPart, makeAppSession, the library's parts it owns, TIProductMachines; TIWebPart for the Web page), the Swift frontend's session thread (SessionThread), the emulator runtime (machine session, key sequencing, frame sampling), the TI's side of the library's paper (TIPrinters) and debugger (TILevelRules, TITraceRecorder, TIDebuggerSetup), the debugger model (DebugModel), debug snapshots, the trace records (TraceWriter), view rules. Also trigger when adding a frontends/swift/Bridge/ wrapper for a Shared module, or when logic is about to be written in frontends/swift/App/*.swift, frontends/qt6/app/ or frontends/web/ that isn't drawing.
 user-invocable: true
 ---
 
@@ -42,7 +42,10 @@ drawing rules: `reference/SharedArchitecture.md`. Don't restate them here.
    presets on `TIPresetRules` and the bundle of `examples/`
    (`examples/bundle.yaml`), LIB-18's start, model switch, Reset, Cold boot,
    attach and detach on `TIProductMachines`, LIB-8's `PaperPart`, LIB-10's
-   `DebuggerPart`; then `ProgramMemoryPart` (`c59.partition`,
+   `DebuggerPart`, LIB-7's `MediaPart` (the magnetic card, `app/TIMagneticCardKind`;
+   the TI-59's place `card-reader`; slot-1's module listing,
+   `tiModuleListing`; the save folder through the host's `FileIO`; since
+   M-55); then `ProgramMemoryPart` (`c59.partition`,
    `c59.program`, `c59.registers`) and the part. A frontend starts, switches,
    resets and loads with the library's commands (`start`, `model`, `reset`,
    `cold-boot`, `attach`, `detach`, `load-preset`), never with product
@@ -51,7 +54,8 @@ drawing rules: `reference/SharedArchitecture.md`. Don't restate them here.
    printer lines, no trace writer and no preset reader in `app/`
    (`reference/SharedArchitecture.md`). Tests drive them
    on the session (`tests/SessionRig.hpp`: `SessionRig`, and `PartRig` with
-   the card files in memory; `tests/AppRig.hpp` for the start and the
+   the constant memory file in memory; `tests/CardRig.hpp` for cards, with a
+   save folder of its own; `tests/AppRig.hpp` for the start and the
    constant memory; `tests/TIPresetRig.hpp` for a preset read and the
    harness entry in virtual time; on the library's `TestFrontend` and
    `Pump`, `library/testing/`).

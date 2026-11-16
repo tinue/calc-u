@@ -33,8 +33,7 @@ example: `frontends/qt6/app/EmulatorController` is the whole adapter, about 300 
 1. **Host one app session** on one thread of yours: look the ROM files up
    once (`cu59::lookUpRoms` over a `calcu::roms::Bundle` of the ROM files of
    `roms/` as your packaging holds them, LIB-12) and make the session with
-   `cu59::makeAppSession` (`app/TIAppPart.hpp`): the `RomSet`, the text of
-   `roms/solid-state/cuecards.txt`, the settings file (the startup model,
+   `cu59::makeAppSession` (`app/TIAppPart.hpp`): the `RomSet`, the settings file (the startup model,
    LIB-9), the bundled `examples/`, your save folder (cards,
    `ti58c.memory.yaml`) and trace folder (LIB-9's paths); `makeAppSession`
    sends LIB-18's `start`. Without the full
@@ -44,7 +43,9 @@ example: `frontends/qt6/app/EmulatorController` is the whole adapter, about 300 
    topics (among them LIB-8's `papers`, `paper <owner>`, `paper-copies` and
    LIB-10's `run-state`, `trace`) and the interim `c59.*` topics
    (`c59.model`, `c59.led`, `c59.printer` (the PC-100C connected and its
-   TRACE), `c59.card-reader`, `c59.run-state` (full speed, playback),
+   TRACE), `c59.cue-card` (the cue card, its corner on show and lit), `c59.run-state` (full speed, playback),
+   the library's `media` (the card reader `card-reader` and `slot-1`: what they
+   hold, the pickers; send `media.choose`, `media.start-new`, `media.eject`),
    `c59.debug.*`, …). Show `notices` as alerts. Offer `clipboard-image` and
    `clipboard-text` for Copy of the paper, and `keep-file` where a trace
    cannot go into a folder (LIB-10 AC-26).

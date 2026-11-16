@@ -79,8 +79,6 @@ std::vector<std::string> moduleIds() {
     return ids;
 }
 
-std::string cuecards() { return testroms::readFile("roms/solid-state/cuecards.txt").value_or(""); }
-
 // Every line ending of `text` replaced by `eol`.
 std::string withLineEndings(const std::string& text, const std::string& eol) {
     std::string out;

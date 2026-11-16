@@ -1,6 +1,6 @@
 ---
 name: calc-u-59-presets
-description: Use this skill when writing or editing Calc-U-59 presets of format 2 (.ti59 / .ti58 / .ti58c), keystroke program files (.keystrokes.yaml), the bundle file examples/bundle.yaml, or keys: steps with the TI key IDs. Covers where the format is specified, the keycode vs. key ID distinction, the TI sections (partition:, program:, data:, cue-card:) and how to check a preset with calcu.
+description: Use this skill when writing or editing Calc-U-59 presets of format 2 (.ti59 / .ti58 / .ti58c), keystroke program files (.keystrokes.yaml), magnetic card files (.magnetcard.yaml), the bundle file examples/bundle.yaml, or keys: steps with the TI key IDs. Covers where the format is specified, the keycode vs. key ID distinction, the TI sections (partition:, program:, data:, cue-card:), magnetic cards in presets (magnetic-cards:, card:, arm:, saveas: { card: }) and how to check a preset with calcu.
 user-invocable: true
 ---
 
@@ -12,7 +12,10 @@ sections `partition:` (§4.3), `program:` (§4.1, the keycode notation;
 §4.1.1 keystroke program files), `data:` (§4.2), `cue-card:` (§4.4), the
 steps of a `keys:` section (§5), speed and waiting (§6), which keyword
 applies to which model (§7) and the TI key IDs (§8.1). The cue card block
-is **`docs/formats/cue-card.md`**, the bundle file **`docs/formats/bundle.md`**.
+is **`docs/formats/cue-card.md`**, the bundle file **`docs/formats/bundle.md`**,
+a magnetic card file (format 3, `.magnetcard.yaml`) **`docs/formats/media.md`**
+§1; in-file cards `magnetic-cards:` are `preset.md` §3.1, the steps `card:`,
+`arm:`, `saveas: { card: }` §5.2.
 Read them before writing or editing a preset. Presets of 2.3.0 (no
 `format-version: 2`) are refused with the hint; there is no converter
 (ADR 0037).
@@ -20,8 +23,10 @@ Read them before writing or editing a preset. Presets of 2.3.0 (no
 The code: the library's loader (`library/presets/`, LIB-6) with
 Calc-U-59's rules `app/TIPresetRules` (idle, `expect:`, `screenshot:`,
 `slot-1` by `name:` only) and keywords `app/TIPresetKeys` (the four
-sections, `printer-trace:`); the keycode reader `app/Keycodes`; the cue card
-reader `app/CueCardYaml`. The code wins where it and these notes disagree;
+sections, `printer-trace:`), `app/TIMagneticCardsKey` (`magnetic-cards:`);
+the card steps are the library's media part (`library/media/PresetMedia`)
+with the kind `app/TIMagneticCardKind`; the keycode reader `app/Keycodes`;
+the cue card reader `app/CueCardYaml`. The code wins where it and these notes disagree;
 the format documents win over the code.
 
 ## Mistakes that come up most
@@ -74,9 +79,21 @@ characters has fewer digits; keep it as printed.
 - The examples are checked by `calcu_preset_check.CalcU59Presets`
   (Frequent) and against their 2.3.0 reference runs by
   `CalcU59ReferenceRuns` (Longer; `tests/reference_runs_tests.cpp`).
+- **Cards in a preset (TI-59 only).** `card: { mem: X }` (side 0 by
+  default, `side: 1`) pushes a side through the reader *now*: if the ROM
+  is waiting for a key, it reads the card at idle. A card a program asks for
+  (`n Write`, `n INV Write`) goes after the `- key:` that makes it wait (the
+  card wait counts as idle); a card the ROM does not take waits at most
+  `timeout:`, and as the last item it is not waited for. `arm:` only fits
+  the card for the user to feed by a corner. `{ mem: X }` that no item of
+  `magnetic-cards:` defines is a fresh card; a `name:` or `file:` card that
+  does not exist refuses the preset; a new card is saved by
+  `saveas: { card: X, as: live, name: X }`. A side of `magnetic-cards:` is
+  one bank (`bank:` 1–4); its bare keycodes start at the bank's first step.
 - The four examples with magnetic cards (`globe-print`,
   `historic/characters-fastmode`, `historic/pdcm-card-tricks`,
-  `historic/pdcm-make-cards`) stay in the 2.3.0 format until M-55.
+  `historic/pdcm-make-cards`) show these patterns (upgraded in M-55,
+  C59-7 AC-30).
 
 ## Transcribing magazine listings (52-Notes)
 

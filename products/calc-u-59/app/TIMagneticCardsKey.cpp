@@ -161,8 +161,9 @@ void readMagneticCards(const YamlNode& v, int line, ReadContext& ctx) {
             label->cueCard = *cue;
         }
         const YamlNode* sides = item.find("sides");
-        if (!sides || !sides->isMap() || sides->map.empty()) {
-            ctx.error(sides ? lineOf(*sides, at) : at, "magnetic-cards: " + name + ": sides: has 0, 1 or both.");
+        // A side not given is fresh (preset.md §3.1); `sides: {}`: a fresh card with a cue card.
+        if (!sides || !sides->isMap()) {
+            ctx.error(sides ? lineOf(*sides, at) : at, "magnetic-cards: " + name + ": sides: has 0, 1 or both, or {} for a fresh card.");
             continue;
         }
         for (const auto& [k, n] : sides->map) {

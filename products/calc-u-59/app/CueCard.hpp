@@ -8,8 +8,8 @@
 #include <vector>
 
 // Cue card model: the strip above the keyboard naming the A–E / A′–E′ user
-// keys. Parsed from CUECARD: sections (state files, card files, ti58c.mem,
-// roms/solid-state/cuecards.txt) and encoded back. Field grammar and
+// keys. Read from the cue card blocks of presets, card files, the constant
+// memory file and the module files (app/CueCardYaml, app/ModuleCueCards). Field grammar and
 // math-token table: docs/formats/cue-card.md. How each frontend
 // draws it: reference/SharedArchitecture.md § "Cue Card Rendering".
 

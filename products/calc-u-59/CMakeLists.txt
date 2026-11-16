@@ -172,14 +172,13 @@ if(CALCU_TESTS)
                    COMMAND ${Python3_EXECUTABLE} tools/agentic/calendar/selftest.py --calcu $<TARGET_FILE:calcu>)
   endif()
   # LIB-6 AC-43 (design §11.6 P8; C59-2 T9): `calcu --product 59 check-preset`
-  # over the examples and the startup presets; the four with magnetic cards
-  # wait for C59-7 (M-55), excluded by name (C59-2 design §1, D-13).
+  # over the examples and the startup presets, the four with magnetic cards
+  # included since M-55 (C59-7 AC-30).
   set(CALCU59_PRESET_GLOBS)
   foreach(ext ti59 ti58 ti58c)
     list(APPEND CALCU59_PRESET_GLOBS examples/*.${ext} examples/*/*.${ext})
   endforeach()
-  calcu_add_preset_check(CalcU59Presets PRODUCT 59 FILES ${CALCU59_PRESET_GLOBS}
-                         EXCLUDE globe-print.ti59 characters-fastmode.ti59 pdcm-card-tricks.ti59 pdcm-make-cards.ti59)
+  calcu_add_preset_check(CalcU59Presets PRODUCT 59 FILES ${CALCU59_PRESET_GLOBS})
   # The Xcode project compiles only Swift and the bridge (C59-5, ADR 0013).
   calcu_add_test(CalcU59XcodeProjectCheck frequent COMMAND frontends/swift/check_xcode_project.sh)
   # C59-5 AC-13 (design B1): attach only in Debug builds for macOS and the

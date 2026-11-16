@@ -36,12 +36,12 @@ parenthesis is removed with it.
 | Medium, media | — | "media" (e.g. "Saved Media…"): unchanged |
 | Name & Save | — (cards written in place) | "Name & Save": unchanged |
 | Startup preset | — | done (M-46): "Startup presets" (Settings, Qt6 and Web); was "Default presets" |
-| Save folder | "Card Folder" (Settings, Qt6) | done (M-47): "Save folder:" (Settings ▸ Storage, Qt6); was "Battery-card saves:" |
+| Save folder | "Card Folder" (Settings, Qt6) | done (M-47): "Save folder:" (Settings ▸ Storage, Qt6); was "Battery-card saves:"; done (M-55, Calc-U-59): "Save Folder" (Qt6 Settings), was "Card Folder"; `AppPaths::saveDir()`, was `cardDir()` |
 | Startup model | "Startup Calculator" (Settings) | done (M-49): "Startup model" (Settings ▸ General, Qt6 and Web; the choices by the model's name); was "Startup device" |
 | Load Preset… | "Open Preset…" (File menu, Qt6); the button "Preset" | "Load Preset…": unchanged (Ctrl+O / ⌘O in Qt6 since M-49) |
 | Examples folder | — | done (M-49): "Examples folder" (Settings ▸ Folders, Qt6); was "Samples folder" |
 | Host drive | — | "Mount Directory…", "Host drive folder": unchanged |
-| Arm | "Fit Card" → "Arm Card", "Fit Fresh Card" → "Arm Fresh Card" | — |
+| Arm | "Fit Card" → "Arm Card", "Fit Fresh Card" → "Arm Fresh Card" | done (M-55): the card buttons' names, the File menu items and the dialogs of Qt6, Web and Swift (C59-7 Q-1; row 59-50) |
 | Side | sides 1 and 2 of a magnetic card → 0 and 1 | done (M-47): sides A and B of a floppy disk → 0 and 1 (the side button, the disk file `0:`/`1:`, `floppy: { side: }`) |
 | Insert / Eject | "Eject Card": unchanged | module picker, floppy insert/eject: unchanged |
 
@@ -65,7 +65,7 @@ parenthesis is removed with it.
 | Module definition | — | `MemoryCardDefinition`, `.card.yaml` |
 | Solid State ROM module | `SolidStateRomModule` (the peripheral in `slot-1`, C59-6), `ModuleCatalog`, `ModuleImage`, `solidStateModuleID`; the printer: `PC100C` (the peripheral in `printer`, C59-6) | — |
 | ROM lookup | `calcu::roms::lookUp` (library, LIB-12), through `cu59::lookUpRoms` (`app/ProductRoms`); the full set `cu59::fullRomSet()`, the files read `calcu::roms::RomSet`, the reader `TIRomReader` (M-24; was `RomLoader`, `ResourceReader`) | `calcu::roms::lookUp` through `sharp::lookUpRoms` (`core/Machine/SharpRoms`); the full set `sharp::fullRomSet()`, `calcu::roms::RomSet`, the reader `SharpRomReader` (the CE-502B's module definition); the preset loaders' `PresetRoms` (M-27; was `BundledRomCatalog`, `SharpRomImages`, `romDirs`) |
-| Magnetic card | `CardDocument`, `CardFile`, `.u59` | — |
+| Magnetic card | `CardDocument`, `CardFile`, `.u59` | done (M-55): `TIMagneticCardData` (`core/TIMagneticCard`), the kind `magnetic-card` (`app/TIMagneticCardKind`), `.magnetcard.yaml` (format 3) |
 | Keyboard map | done (M-36): `cu59::TIKeyboardMap` (`app/TITyping`), a `calcu::typing::KeyboardMap`; was `KeyboardMap`, `matrixCodesFor` | done (M-36): `shared::SharpKeyboardMap` (`app/SharpTyping`), a `calcu::typing::KeyboardMap`; was `HostKeyMap`, `resolveHostKey` (`PC1500KeyboardMap` is the faceplate's key layout, not a keyboard map) |
 | Typing engine | done (M-36): `calcu::typing::TypingEngine` in `calcu::typing::TypingPart`, with `cu59::typingProfile`; was `KeySequencer`; done (M-54): the `key:` steps of presets go through the engine (`TIKeystrokePlayback` gone) | done (M-36): `calcu::typing::TypingEngine` with `shared::typingProfile`; was `SharpTypingHook`, `KeyPasteFeeder`, the PC-1500 key queue (`c1600.key-queue`, `enqueueKey`) |
 | Host key | done (M-36): `calcu::typing::HostKeyEvent` | done (M-36): `calcu::typing::HostKeyEvent`, `NamedKey`, `Modifiers`; was `HostKey`, `HostModifiers` |
@@ -85,7 +85,7 @@ parenthesis is removed with it.
 | Feature ID | — | — (`KIT-n` in early docs, now `LIB-n`, `C59-n`, `C1600-n`) |
 | Server, DAP session | — (no DAP, Briefing §2) | done (M-50, C1600-3): the server `shared::dap::DapPart` (`app/dap/`, a session part: the topic `c1600.dap`, the commands `c1600.dap-disconnect`, `c1600.dap-port`), one `shared::dap::DapSession` per client, its socket a host's `DapTransport` (Qt6 `DapSocket`, the harness's `serve --dap`); was `DapServer`, `DapSession` (QJson) and `DebugController` in `frontends/qt6/app/debug/` |
 | Harness | `tools/headless/`, `tools/agentic/` | done (M-51, LIB-11 1600, C1600-5): `calcu --product 1600` with the product commands under `pc1600`; was `pc1500_cli`, `pc1600_cli`, the probes (`pc1600_plotter_probe`, `pc1600_power_probe`, `pc1600_uart_probe`; not taken over) |
-| Medium, kind of medium, media place | `CardFile`, `TIFileAccess` (M-55) | done (M-47): the library's `calcu::media::MediaPart` (topic `media`, commands `media.*`) with `app/SharpMediaKinds` (kinds `battery-backed-module`, `floppy-disk`, `cassette`) and `core/Machine/SharpMediaPlaces` (`FloppyPlace`, `CassettePlace`, `SlotModuleMedium`); was `ModuleBay`, `FloppyBay`, `TapeBay`, `MediaLibrary` ("bays"), `c1600.select-module`, `MediaSave.hpp` |
+| Medium, kind of medium, media place | `CardFile`, `TIFileAccess` (M-55) | done (M-55, Calc-U-59): the media part with `app/TIMagneticCardKind` and the place `core/TICardReaderPlace` (`card-reader`); `TIFileAccess` keeps the constant memory file only; done (M-47): the library's `calcu::media::MediaPart` (topic `media`, commands `media.*`) with `app/SharpMediaKinds` (kinds `battery-backed-module`, `floppy-disk`, `cassette`) and `core/Machine/SharpMediaPlaces` (`FloppyPlace`, `CassettePlace`, `SlotModuleMedium`); was `ModuleBay`, `FloppyBay`, `TapeBay`, `MediaLibrary` ("bays"), `c1600.select-module`, `MediaSave.hpp` |
 
 ## Same word, different meaning (resolved)
 

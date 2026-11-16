@@ -32,7 +32,7 @@ struct TIModuleInfo {
     const char* chip;
     const char* md5;   // of `<ID>.rom.yaml` (LIB-12 AC-9)
 };
-/// The 14 in today's order of roms/solid-state/cuecards.txt (design D-4).
+/// The 14 in the order of 2.3.0's roms/solid-state/cuecards.txt (design D-4).
 const std::vector<TIModuleInfo>& tiModules();
 /// Whether `id` names one of the 14 modules.
 bool isTIModule(std::string_view id);

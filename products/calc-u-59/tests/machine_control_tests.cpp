@@ -51,7 +51,7 @@ TEST(lib18_ac18_builtin_default_ml_no_printer) {
 TEST(lib18_ac18_2_3_0_startup_preset_gives_default_and_notice) {
     SKIP_UNLESS(roms(), kSkip);
     Rig r("TI-59", std::make_shared<apprig::Files>(), [](calcu::settings::SettingsFile& s) {
-        s.set("preset", "TI-59", "examples/globe-print.ti59");   // still in the 2.3.0 format (M-55)
+        s.set("preset", "TI-59", "tests/fixtures/v2.3.0/globe-print.ti59");   // as 2.3.0 shipped it
     });
     CHECK_EQ(r.plugged("slot-1"), std::string("ML"));
     CHECK_EQ(r.plugged("printer"), std::string());

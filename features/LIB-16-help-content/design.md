@@ -434,7 +434,7 @@ Part D's simplification (`docs/reviews/d-simplification.md` S-6, P-9):
 
 ## 13. Part E: the Calc-U-59 column
 
-Status: Draft for the Part D/E boundary (2026-11-16)
+Status: approved by the user at the Part D/E boundary (2026-11-16)
 
 Completes §4.3. Product paths are under `products/calc-u-59/`; site
 paths are calc-u-site's at `acd629c`.

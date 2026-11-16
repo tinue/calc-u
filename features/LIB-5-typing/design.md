@@ -1,5 +1,5 @@
 # LIB-5 Typing: design
-Status: approved by the user at the Part C1/C2 boundary (2026-11-15); §10 (Calc-U-59 preset clauses): Draft for the Part D/E boundary (2026-11-16)
+Status: approved by the user at the Part C1/C2 boundary (2026-11-15); §10 (Calc-U-59 preset clauses): approved by the user at the Part D/E boundary (2026-11-16)
 
 ## 1. Scope
 
@@ -656,7 +656,7 @@ change, every sentence as before):
 
 ## 10. Part E: the Calc-U-59 column's preset clauses
 
-Draft for the Part D/E boundary (2026-11-16). Paths without a prefix are
+Approved by the user at the Part D/E boundary (2026-11-16). Paths without a prefix are
 under `products/calc-u-59/`; line numbers at `7bdd51c`. This design has
 no Part D section of its own: Calc-U-1600's preset clauses were worked
 by LIB-6 §10 (M-46) and reported in the qa-report ("Calc-U-1600: the

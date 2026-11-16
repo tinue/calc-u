@@ -1,5 +1,5 @@
 # LIB-12 ROM lookup: design
-Status: approved by the user at the Part B/C1 boundary (2026-11-14); §10 (Calc-U-59 cue cards, M-55): Draft for the Part D/E boundary (2026-11-16)
+Status: approved by the user at the Part B/C1 boundary (2026-11-14); §10 (Calc-U-59 cue cards, M-55): approved by the user at the Part D/E boundary (2026-11-16)
 
 ## 1. Scope
 
@@ -487,7 +487,7 @@ and Q5.
 
 ## 10. Part E: `cuecards.txt` leaves the source repository (M-55)
 
-Draft for the Part D/E boundary (2026-11-16). Paths without a prefix are
+Approved by the user at the Part D/E boundary (2026-11-16). Paths without a prefix are
 under `products/calc-u-59/`; line numbers at `7bdd51c`.
 
 ### 10.1 Scope

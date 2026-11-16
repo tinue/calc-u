@@ -648,7 +648,7 @@ asked in order by a test).
 
 ## 10. Part E: the Calc-U-59 column
 
-Status: Draft for the Part D/E boundary (2026-11-16)
+Status: approved by the user at the Part D/E boundary (2026-11-16)
 
 The control state's product side for Calc-U-59. Its drawing is LIB-14's
 Part E section (Qt6, Web, M-57) and C59-8's design (Swift, M-58); this

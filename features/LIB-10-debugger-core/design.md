@@ -1153,7 +1153,7 @@ and S-8's debugger bullet). No spec change, no user-visible change.
 
 ## 12. Part E: the Calc-U-59 column
 
-Status of this section: Draft for the Part D/E boundary (2026-11-16).
+Status of this section: approved by the user at the Part D/E boundary (2026-11-16).
 §1 to §11 above are approved and are not changed. This section replaces
 §4's Calc-U-59 outline and §5's Calc-U-59 rows. Where it departs from them,
 it says so. It also settles D-12. Paths are under `products/calc-u-59/`
@@ -1507,3 +1507,5 @@ format 2 in M-54.
   keeps today's behaviour, row 59-34: it fires on a Reset on every model.
   Recommendation: keep it, with a decision-log row in LIB-10's spec that
   AC-30's Reset clause is replaced by row 59-34.
+  Answered (user, 2026-11-16, with the approval of the Part E designs): kept; the
+  decision-log row is in the spec.

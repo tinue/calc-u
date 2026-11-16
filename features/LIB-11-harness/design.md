@@ -1,5 +1,5 @@
 # LIB-11 Harness: design
-Status: Library column approved at the Part B/C1 boundary (2026-11-14); Calc-U-1600 column approved at the Part C2/D boundary (2026-11-16); Calc-U-59 column (§11): Draft for the Part D/E boundary (2026-11-16)
+Status: Library column approved at the Part B/C1 boundary (2026-11-14); Calc-U-1600 column approved at the Part C2/D boundary (2026-11-16); Calc-U-59 column (§11): approved by the user at the Part D/E boundary (2026-11-16)
 
 ## 1. Scope
 
@@ -837,7 +837,7 @@ product's `CHANGELOG.md` for the release (M-61).
 
 ## 11. Part E: the Calc-U-59 column
 
-Draft for the Part D/E boundary (2026-11-16). Step M-59, with C59-9 (its
+Approved by the user at the Part D/E boundary (2026-11-16). Step M-59, with C59-9 (its
 design holds the `ti59` commands and, in its §4, the table of every
 function of today's Calc-U-59 tools). Tests from AC-14 to AC-17; Done in
 M-59 (plan §5.1). Paths without a prefix are under `products/calc-u-59/`;

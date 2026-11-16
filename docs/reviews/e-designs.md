@@ -1,5 +1,9 @@
 # Part E designs: what is open for the D/E boundary review
 
+Approved by the user 2026-11-16 ("do part e"), with every recommendation
+below (Q-1 to Q-3, §3 to §5); applied in the commit that adds this line
+(ledger rows 59-49 to 59-56; 59-48 is left to M-53).
+
 Status: for the user's review (2026-11-16). The Part E designs are drafted
 and merged into `main` as drafts ("Draft for the Part D/E boundary"). No
 Part E code is written: the user stopped the work after the designs

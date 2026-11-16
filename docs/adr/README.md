@@ -83,6 +83,7 @@ deferred until after the migration (Briefing §6).
 | [0032](0032-gui-tests-are-thin-and-share-scenario-ids.md) | GUI tests are thin and share scenario IDs |
 | [0033](0033-harness-attaches-to-running-apps-in-simulators.md) | The harness attaches to running apps in simulators |
 | [0038](0038-one-test-runner.md) | One C++ test runner: Calc-U-59's TestHarness (2026-11-10) |
+| [0039](0039-local-linux-ci-in-podman.md) | The CI's Linux jobs run locally in Podman before CI (2026-11-16) |
 
 ## ROMs
 

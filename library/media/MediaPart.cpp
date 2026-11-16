@@ -63,10 +63,8 @@ InFileDefs::InFileDefs() {
 }
 
 MediaPart::MediaPart(MediaSetup s)
-    : shelf_(s.kinds, s.paths), listing_(std::move(s.listing)), catalogue_(s.catalogue) {}
-
-void MediaPart::setControl(startup::MachineControl* c) {
-    control_ = c;
+    : shelf_(s.kinds, s.paths), listing_(std::move(s.listing)), catalogue_(s.catalogue), control_(s.control) {
+    startup::MachineControl* c = control_;
     if (!c) return;
     // S-7a: a variant switch carries a module medium's content over.
     c->addCarry([this](machine::PeripheralRequest& r, const machine::PlugEntry& e, Machine& m) {

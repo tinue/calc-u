@@ -47,7 +47,6 @@ public:
     // catalogue. `control`, for the origin of the last build (A-3), may be
     // set later (the harness builds it after the product's parts).
     PaperPart(const machine::Catalogue&, std::vector<PrinterPaper>, const startup::MachineControl* control = nullptr);
-    void setControl(const startup::MachineControl* c) { control_ = c; }
 
     void attach(sessions::SessionSetup&) override;
     void beforeCall(sessions::SessionContext&, pacing::WallTime) override;

@@ -32,9 +32,9 @@
 #include "machine/Catalogue.hpp"
 #include "machine/Machine.hpp"
 #include "media/MediaPart.hpp"
-#include "opening/LibraryOpeners.hpp"
 #include "opening/OpenPart.hpp"
 #include "paper/PaperPart.hpp"
+#include "parts/LibraryParts.hpp"
 #include "peripherals/PeripheralsPart.hpp"
 #include "presets/PresetsPart.hpp"
 #include "presets/Source.hpp"
@@ -78,26 +78,23 @@ struct SharpAppPartOptions {
 // the operations, busy, sound and the messages. This part brings the
 // library's parts Calc-U-1600 uses and what only Calc-U-1600 has (LIB-3
 // design §2, §4; docs/contracts/README.md L-1):
-// - the library's parts, in sessionParts() order: LIB-5's typing part
-//   (the Sharp profiles and maps, app/SharpTyping), LIB-2's peripherals
-//   part (the host links of the serial ports, the real-time clocks), LIB-6's
-//   presets part (the preset loader on app/SharpPresetRules, the bundle
-//   file of examples/), LIB-18's startup part (the start, the model and
-//   variant switches, attach and detach, Reset, Cold boot, power cycle, on
-//   app/SharpProductMachines), the loaders' part (C1600-2), LIB-8's paper
-//   part, LIB-10's debugger part (LIB-6 §10.2, LIB-18 §10.2) and LIB-7's media
-//   part (the modules, the floppy disk and the tape; app/SharpMediaKinds),
-//   then LIB-13's open part (the command `open` of a drop, Open With, the
-//   start argument and Load Preset…; the product's file kinds in
-//   app/SharpFileKinds);
+// - the library's parts (parts::LibraryParts, which builds, wires and
+//   orders them) on Calc-U-1600's data: the typing profiles and maps
+//   (app/SharpTyping), the serial port files, the preset rules
+//   (app/SharpPresetRules) and the bundle file of examples/, the machines
+//   (app/SharpProductMachines), the printers' papers (app/SharpPrinters), the
+//   debugger (app/SharpDebuggerSetup), the kinds of medium
+//   (app/SharpMediaKinds), the file kinds (app/SharpFileKinds), the rules of
+//   the control state (app/SharpControlRules); among them, before the open
+//   part, the loaders' part (C1600-2), and after them the DAP server
+//   (C1600-3) and this part;
 // - the product's commands that need its own data, each one
 //   MachineControl::change (LIB-18 D-22):
 //   `c1600.mount-host-drive`, `c1600.ce1600p-rom` (SharpTopics.hpp);
 // - the product's topics (`c1600.lamps`, `c1600.serial-links`) and
 //   LIB-12's `roms-missing`;
-// - the product's rules of the control state (app/SharpControlRules) for
-//   the library's ControlPart, which the session builders add among the
-//   library's parts (controlPart(); LIB-4 D-13), not sessionParts().
+// - LIB-4's ControlPart (controlPart()), which the session builders put
+//   first (LIB-4 D-13), not among sessionParts().
 //
 // The host builds it, hands the control part and sessionParts() to its
 // AppSessionSetup (and the part to AppSessionSetup::owned), then sends
@@ -116,34 +113,33 @@ public:
     AppPaths& paths() { return m_paths; }
     // LIB-7: the media (modules, disks, tapes): the topic `media`, the
     // commands `media.*`, autosave (app/SharpMediaKinds for the formats).
-    calcu::media::MediaPart& mediaPart() { return *m_media; }
-    const calcu::media::MediaPart& mediaPart() const { return *m_media; }
+    calcu::media::MediaPart& mediaPart() { return *m_lib.media(); }
     SharpLoaderPart& loaderPart() { return m_loaderPart; }
     // LIB-13: `open`, `open-would-take`; a Web host sets its upload folder
     // (setup().uploadFolder) before the session is built.
-    calcu::opening::OpenPart& openPart() { return *m_open; }
+    calcu::opening::OpenPart& openPart() { return m_lib.open(); }
     // The typing part (LIB-5): frontends send its commands (host-key-down,
     // screen-key-down, paste, ...); the debugger's auto-start types its line
     // through the engine directly (not a user key, so not dropped while busy).
-    calcu::typing::TypingPart& typingPart() { return m_typingPart; }
+    calcu::typing::TypingPart& typingPart() { return *m_lib.typing(); }
     // The papers of the two plotters (LIB-8): kept from the start of the
     // session to its end, whatever machine runs.
-    calcu::paper::PaperPart& paperPart() { return m_paper; }
+    calcu::paper::PaperPart& paperPart() { return *m_lib.paper(); }
     // The library's debugger (LIB-10): the run control, the trace session,
     // the topics run-state and trace. The DAP's layer (app/dap/) works on it.
-    calcu::debugger::DebuggerPart& debuggerPart() { return m_debugger; }
+    calcu::debugger::DebuggerPart& debuggerPart() { return *m_lib.debugger(); }
     // LIB-6: the preset loader (load-preset, check-preset, preset-list).
-    calcu::presets::PresetsPart& presetsPart() { return m_presets; }
+    calcu::presets::PresetsPart& presetsPart() { return *m_lib.presets(); }
     const calcu::presets::PresetBundle& presetBundle() const { return m_bundle; }
     SharpPresetRules& presetRules() { return m_rules; }
     // C1600-3: the DAP server (app/dap/DapPart); nullptr in a Web build,
     // which has none (AC-1). The host hands it its socket (setTransport).
     dap::DapPart* dapPart() { return m_dap.get(); }
     // LIB-18: the machine control (builds, plug changes).
-    calcu::startup::MachineControl& machineControl() { return m_startup.control(); }
-    // The library's parts the harness takes from the app layer (LIB-11 D-6).
-    calcu::startup::StartupPart& startupPart() { return m_startup; }
-    calcu::peripherals::PeripheralsPart& peripheralsPart() { return m_peripherals; }
+    calcu::startup::MachineControl& machineControl() { return m_lib.control(); }
+    // The library's parts (the harness takes them from the app layer, LIB-11 D-6).
+    calcu::parts::LibraryParts& libraryParts() { return m_lib; }
+    calcu::peripherals::PeripheralsPart& peripheralsPart() { return m_lib.peripherals(); }
     SharpProductMachines& productMachines() { return m_machines; }
     // C1600-5 AC-7, AC-9: with serialLinksOnRequest, the serial port file of
     // `fileName` ("calcu1600-ce158.serial", "calcu1600-rs232c.serial") is made
@@ -152,7 +148,7 @@ public:
     bool serialLinked(const std::string& fileName) const;
 
     // LIB-4: the library's control part with the product's rules (D-13).
-    calcu::control::ControlPart& controlPart() { return m_control; }
+    calcu::control::ControlPart& controlPart() { return m_lib.controlPart(); }
     // The place host-drive can be used (AC-18, D-12): not in a browser.
     bool canMountHostFolder() const { return m_options.canMountHostFolder; }
 
@@ -211,6 +207,7 @@ public:
 
 private:
     using CommandOutcome = calcu::sessions::CommandOutcome;
+    calcu::parts::LibraryPartsSetup librarySetup();   // the constructor's, on the members before m_lib
     // A plug change of a product command as an operation (LIB-18 D-22).
     CommandOutcome change(calcu::startup::PlugChange ch, std::function<void()> after = {});
     void refreshTopics();
@@ -230,48 +227,34 @@ private:
     // the product quits or the model is switched.
     std::string m_ce1600pChoice = "New";
 
-    calcu::machine::Catalogue m_catalogue;
     // The one lookup, at the start (LIB-12 AC-4, AC-13): the whole full set
     // or nothing. The host drive's ROM is bundled beside it (roms.md Q-1).
     calcu::roms::LookupResult m_found;
     std::shared_ptr<const calcu::roms::RomSet> m_roms;
     calcu::roms::RomsMissing m_romsMissing;
     std::shared_ptr<const std::vector<std::uint8_t>> m_hostDriveRom;
+    // The catalogue with the module definitions (the bundled ones and the
+    // set's CE-502B; LIB-12 AC-14).
+    calcu::machine::Catalogue m_catalogue;
 
-    calcu::paper::PaperPart m_paper;
-    calcu::debugger::DebuggerPart m_debugger;
-    // LIB-2's part: the host links outlive the machines (a stable serial
-    // port file doesn't come and go with a model switch).
-    calcu::peripherals::PeripheralsPart m_peripherals;
     calcu::sessions::SessionContext* m_ctx = nullptr;
     calcu::sessions::MachineSession* m_ms = nullptr;
     std::vector<std::string> m_requestedLinks;   // serialLinksOnRequest: the files asked for
-    calcu::typing::TypingPart m_typingPart;
-    // C1600-2: the loaders' commands (app/SharpLoaderPart).
-    SharpLoaderPart m_loaderPart{m_typingPart};
-    // LIB-18 and LIB-6 (§10.2 of their designs).
+    std::uint64_t m_seenGeneration = 0;
+
+    // The product's data for the library's parts.
     SharpProductMachines m_machines;
     SharpPresetRules m_rules;
     calcu::presets::DirectoryPresetBundle m_bundle;
-    calcu::presets::PresetsPart m_presets;
-    calcu::startup::StartupPart m_startup;
-    std::uint64_t m_seenGeneration = 0;
-    // LIB-7 (§10.2): after StartupPart among the parts.
-    std::unique_ptr<calcu::media::MediaPart> m_media;
-    // LIB-13 (Part D): the open part over the presets and the media, with
-    // the two file kinds, after the loaders among the parts.
-    std::unique_ptr<calcu::opening::PresetsOpener> m_presetsOpener;
-    std::unique_ptr<calcu::opening::MediaOpener> m_mediaOpener;
     BasicProgramKind m_basicKind;
     MachineCodeKind m_codeKind;
-    std::unique_ptr<calcu::opening::OpenPart> m_open;
+    SharpControlRules m_controlRules;
+    calcu::parts::LibraryParts m_lib;
+    // C1600-2: the loaders' commands (app/SharpLoaderPart).
+    SharpLoaderPart m_loaderPart{*m_lib.typing()};
     // C1600-3: the DAP server, after the debugger among the parts; not in
     // an Emscripten build.
     std::shared_ptr<dap::DapPart> m_dap;   // shared: no complete type where Emscripten leaves it out
-
-    // LIB-4 (Part D): the product's rules and the library's part.
-    SharpControlRules m_controlRules;
-    calcu::control::ControlPart m_control;
 
     // The topics (attach).
     calcu::sessions::StateTopic* m_lampsTopic = nullptr;

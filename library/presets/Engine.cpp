@@ -21,7 +21,7 @@ machine::DisplayOutput RunContext::display() {
     return off;
 }
 
-ElapsedBase& RunContext::elapsed() { return deps_.elapsed ? *deps_.elapsed : ownElapsed_; }
+ElapsedBase& RunContext::elapsed() { return *deps_.elapsed; }
 
 startup::MachinePlan machinePlan(const LoadPlan& p) {
     startup::MachinePlan plan;

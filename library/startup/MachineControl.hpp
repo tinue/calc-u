@@ -58,6 +58,7 @@ public:
     void addCarry(Carry c) { carries_.push_back(std::move(c)); }
 
     ProductMachines& product() { return product_; }
+    bool hasRoms() const { return roms_ != nullptr; }
     // D-11: a build inside an operation asked for regular speed at its end.
     bool takeRegularSpeedDue() {
         const bool due = regularDue_;

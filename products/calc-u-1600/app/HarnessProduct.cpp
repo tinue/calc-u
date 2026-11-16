@@ -213,17 +213,7 @@ public:
         return sharp::lookUpRoms(roms::DirectoryBundle(kDir + "/roms"));
     }
 
-    std::optional<harness::AppLayerParts> appLayerParts() override {
-        if (!part_) return std::nullopt;
-        harness::AppLayerParts p;
-        p.peripherals = &part_->peripheralsPart();
-        p.presets = &part_->presetsPart();
-        p.startup = &part_->startupPart();
-        p.control = &part_->controlPart();
-        p.media = &part_->mediaPart();
-        p.open = &part_->openPart();
-        return p;
-    }
+    calcu::parts::LibraryParts& libraryParts() override { return part_->libraryParts(); }
 
     // The app layer's parts (the library's among them), then the display
     // text and the serial ports' scripts (Part D, D.3).
@@ -238,23 +228,6 @@ public:
     harness::DisplayText readDisplay(const machine::DisplayOutput& o, const machine::MachineDescriptor& d) override {
         return lcd_.read(o, d);
     }
-
-    // The app layer's, as the frontends use them (one source, D.3).
-    // Attached to a frontend (no run of its own) the commands of presets are
-    // offered too: the rules alone say so (PresetCommands.cpp).
-    presets::ProductRules* presetRules() override {
-        if (part_) return &part_->presetRules();
-        return &rules_;
-    }
-    const presets::PresetBundle* presetBundle() const override { return part_ ? &part_->presetBundle() : nullptr; }
-    typing::TypingPart* typingPart() override { return part_ ? &part_->typingPart() : nullptr; }
-    paper::PaperPart* paperPart() override { return part_ ? &part_->paperPart() : nullptr; }
-    debugger::DebuggerPart* debuggerPart() override { return part_ ? &part_->debuggerPart() : nullptr; }
-    std::vector<media::KindDecl> mediaKinds() override { return shared::mediaKinds(kModules, catalogue_); }
-    media::ModuleListing moduleListing() const override { return shared::moduleListing(); }
-    std::vector<std::string> presetExtensions() const override { return shared::presetExtensions(); }
-    std::vector<opening::FileKind*> fileKinds() override { return {}; }   // the open part is the app layer's
-    control::ControlSetup controlSetup() const override { return sharpControlSetup(catalogue(), controlRules_); }
 
     std::vector<harness::ServeAddOn*> serveAddOns() override { return {&dapAddOn_}; }
 
@@ -276,8 +249,6 @@ private:
 
     machine::Catalogue catalogue_;
     SharpProductMachines machines_;
-    SharpControlRules controlRules_{SharpControlRules::Inputs{true, {}}};
-    SharpPresetRules rules_;
     // The run's app layer (prepare).
     std::unique_ptr<Settings> settings_;
     std::unique_ptr<AppPaths> paths_;

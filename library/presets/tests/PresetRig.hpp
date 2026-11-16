@@ -131,10 +131,10 @@ public:
         ps.bundle = o.bundle;
         ps.home = (folder / "home");
         if (o.screenshots) ps.screenshotFolder = [this]() -> std::optional<std::string> { return shots.str(); };
+        ps.control = &machineControl;
         presets = std::make_unique<PresetsPart>(ps);
         startupPart = std::make_unique<startup::StartupPart>(
-            startup::StartupSetup{machines, startup::test::testRoms(), *settings, presets.get()});
-        presets->setControl(&startupPart->control());
+            startup::StartupSetup{machineControl, *settings, presets.get()});
         sessions::AppSessionSetup s;
         s.clock = clock.fn();
         s.hostTime = [] { return std::chrono::system_clock::time_point(std::chrono::hours(24 * 365 * 50)); };
@@ -213,6 +213,7 @@ public:
     RigTyping typingProduct;
     typing::TypingPart typing;
     peripherals::PeripheralsPart peripherals;
+    startup::MachineControl machineControl{machines, startup::test::testRoms()};
     std::unique_ptr<PresetsPart> presets;
     std::unique_ptr<startup::StartupPart> startupPart;
     std::unique_ptr<sessions::AppSession> session;

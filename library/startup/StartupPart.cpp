@@ -93,7 +93,7 @@ Refused anotherRuns() { return Refused{sessions::kAnotherOperationRuns}; }
 
 } // namespace
 
-StartupPart::StartupPart(StartupSetup s) : setup_(s), control_(s.product, s.roms) {}
+StartupPart::StartupPart(StartupSetup s) : setup_(s) {}
 
 void StartupPart::machineChanged(SessionContext& c) {
     // AC-9, D-10: whoever built it. A file that is not writable keeps it
@@ -102,13 +102,13 @@ void StartupPart::machineChanged(SessionContext& c) {
 }
 
 void StartupPart::operationEnded(SessionContext& c) {
-    if (control_.takeRegularSpeedDue()) c.setCommandedSpeed(pacing::Speed::Regular);   // D-11
+    if (setup_.control.takeRegularSpeedDue()) c.setCommandedSpeed(pacing::Speed::Regular);   // D-11
 }
 
 Task<OperationResult> StartupPart::builtInDefault(OperationContext& c, ModelId model, BuildOrigin origin) {
-    if (auto refused = control_.build(c.session(), setup_.product.builtInDefault(model), origin))
+    if (auto refused = setup_.control.build(c.session(), setup_.control.product().builtInDefault(model), origin))
         co_return OperationResult{false, refused->reason};
-    co_await control_.untilKeyReady(c);
+    co_await setup_.control.untilKeyReady(c);
     co_return OperationResult{};
 }
 
@@ -122,7 +122,7 @@ Task<OperationResult> StartupPart::buildFor(OperationContext& c, ModelId model, 
         forModel = model;
     }
     if (preset.empty() || !loader) co_return co_await builtInDefault(c, model, origin);   // AC-4
-    const PresetLoad load = co_await loader->load(preset, forModel, control_, c);
+    const PresetLoad load = co_await loader->load(preset, forModel, setup_.control, c);
     switch (load.outcome) {
     case PresetLoad::Outcome::CannotLoad:   // EC-1
         s.notice("The startup preset of the " + model.value + " could not be loaded: " + load.reason + ". The " +
@@ -134,21 +134,21 @@ Task<OperationResult> StartupPart::buildFor(OperationContext& c, ModelId model, 
     case PresetLoad::Outcome::Built: break;
     }
     if (!s.machine()) co_return OperationResult{false, sessions::kNoMachine};
-    co_await control_.untilKeyReady(c);
+    co_await setup_.control.untilKeyReady(c);
     co_return OperationResult{};
 }
 
 Task<OperationResult> StartupPart::switchVariant(OperationContext& c, VariantId v) {
     Machine* m = c.session().machine();
     if (!m) co_return OperationResult{false, sessions::kNoMachine};
-    if (auto refused = control_.build(c.session(), control_.variantPlan(*m, std::move(v)), BuildOrigin::VariantSwitch))
+    if (auto refused = setup_.control.build(c.session(), setup_.control.variantPlan(*m, std::move(v)), BuildOrigin::VariantSwitch))
         co_return OperationResult{false, refused->reason};
-    co_await control_.untilKeyReady(c);
+    co_await setup_.control.untilKeyReady(c);
     co_return OperationResult{};
 }
 
 Task<OperationResult> StartupPart::changePlug(OperationContext& c, PlugChange ch) {
-    co_await control_.change(c, std::move(ch));
+    co_await setup_.control.change(c, std::move(ch));
     co_return OperationResult{};
 }
 
@@ -165,18 +165,18 @@ Task<OperationResult> StartupPart::restart(OperationContext& c, Restart what) {
     // run to key readiness (the run control's pause-at-start holds it).
     if (what == Restart::Reset) c.session().tellRestarted(sessions::Restart::Reset);
     if (what == Restart::ColdBoot) c.session().tellRestarted(sessions::Restart::ColdBoot);
-    co_await control_.untilKeyReady(c);   // AC-13; the clocks: PeripheralsPart::operationEnded
+    co_await setup_.control.untilKeyReady(c);   // AC-13; the clocks: PeripheralsPart::operationEnded
     co_return OperationResult{};
 }
 
 void StartupPart::attach(sessions::SessionSetup& setup) {
-    const machine::Catalogue& cat = setup_.product.catalogue();
+    const machine::Catalogue& cat = setup_.control.product().catalogue();
 
     // The start (AC-3 to AC-5): accepted once (D-8), not while an operation runs.
     setup.command(sessions::kStartCommand, [this, &cat](const Value& args, SessionContext& c) -> CommandOutcome {
         if (started_) return Refused{kStartedAlready};
         if (c.busy()) return anotherRuns();
-        if (!setup_.roms && !setup_.romsMissing.empty()) return Refused{setup_.romsMissing};   // LIB-12 AC-5
+        if (!setup_.control.hasRoms() && !setup_.romsMissing.empty()) return Refused{setup_.romsMissing};   // LIB-12 AC-5
         ModelId model{settings::startupModel(setup_.settings)};   // AC-3
         const std::string named = sessions::textArg(args, "model");
         if (!named.empty()) {
@@ -236,10 +236,10 @@ void StartupPart::attach(sessions::SessionSetup& setup) {
             if (e->peripheral == id && e->variant == resolved) return Done{};   // the same again (D-14)
         PlugChange ch;
         ch.place = place;
-        ch.request = control_.requestFor(place, id, variant);
+        ch.request = setup_.control.requestFor(place, id, variant);
         ch.kind = !there.empty() && takesAtOnce(*m, plugged, cat, place) == 1 ? PlugChange::Kind::Replace
                                                                               : PlugChange::Kind::Attach;
-        if (auto refused = control_.check(*m, ch)) return Refused{refused->reason};   // AC-12
+        if (auto refused = setup_.control.check(*m, ch)) return Refused{refused->reason};   // AC-12
         return StartOperation{[this, ch](OperationContext& o) { return changePlug(o, ch); }};
     });
 

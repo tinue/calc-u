@@ -68,11 +68,11 @@ public:
         ps.rules = &presetRules;
         ps.typing = &typing;
         ps.home = folder / "home";
+        ps.control = &machineControl;
         presetsPart = std::make_unique<presets::PresetsPart>(ps);
         addDebuggerSteps(presetsPart->vocabulary(), debugger);
         startupPart = std::make_unique<startup::StartupPart>(
-            startup::StartupSetup{machines, startup::test::testRoms(), settings, presetsPart.get()});
-        presetsPart->setControl(&startupPart->control());
+            startup::StartupSetup{machineControl, settings, presetsPart.get()});
         sessions::AppSessionSetup s;
         s.clock = clock.fn();
         s.hostTime = [this] { return hostNow; };
@@ -188,6 +188,7 @@ public:
     TestSymbols symbolReader;
     std::vector<std::string> shownViews;
     DebuggerPart debugger;
+    startup::MachineControl machineControl{machines, startup::test::testRoms()};
     std::unique_ptr<presets::PresetsPart> presetsPart;
     std::unique_ptr<startup::StartupPart> startupPart;
     std::unique_ptr<sessions::AppSession> session;

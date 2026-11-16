@@ -20,6 +20,7 @@ class MediaPart;
 namespace calcu::harness {
 
 class HarnessHost;
+class HarnessProduct;
 
 struct CommandContext {
     HarnessHost& host;
@@ -86,5 +87,11 @@ void addMediaCommands(CommandRegistry&, media::MediaPart*);
 // session command `open` with the file's bytes and path, way `harness`; the
 // reply says what it was opened as (AC-3).
 void addOpenCommand(CommandRegistry&);
+
+// D-27: every command of `calcu serve` in its order (the first commands,
+// LIB-18's, LIB-6's on `vocabulary`, LIB-8's, LIB-10's, LIB-7's on `media`,
+// LIB-13's, then the product's); the attached harness has the same.
+void addServeCommands(CommandRegistry&, const presets::Vocabulary* vocabulary, media::MediaPart* media,
+                      HarnessProduct& product);
 
 } // namespace calcu::harness

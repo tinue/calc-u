@@ -160,9 +160,10 @@ The code (all under `products/calc-u-1600/` unless named):
   five cases in `frontends/web/tests/play.spec.js`.
 
 Result of the run: `build/tests` Frequent 35 of 35 CTest entries passed
-(CoreTests 57.6 s with `-j4`, see Findings), `build/qt` Frequent 38 of 38
-(offscreen); `CalcU1600WebPlaywright` and `CalcU1600WasmSmoke` (Longer): see
-below. CI was not dispatched (plan §1).
+(CoreTests 56.5 s with `-j4`, see Findings), `build/qt` Frequent 37 of 37
+(offscreen); Longer: `CalcU1600WebPlaywright` 96 passed, 2 skipped (as
+before; 10 of them the new LIB-13 cases on the root and the sub-path),
+`CalcU1600WasmSmoke` passed. CI was not dispatched (plan §1).
 
 | ID | Result | Test case (`app/tests/opening_tests.cpp` unless named) |
 |---|---|---|
@@ -215,8 +216,8 @@ the Dock icon, Finder ▸ Open With on a `.bin`, and
   sound file … is missing"): an upload carries no WAV, and a drag of two
   files is not taken (AC-6). Import Media… with both files is the way, as
   before M-48 (a tape could not be dropped at all then).
-- **CoreTests is at 57.6 s in a `-j4` Frequent run** (54 s in M-47; the new
-  cases take 1.6 s alone), close to the 60 s budget.
+- **CoreTests is at 56.5–57.6 s in a `-j4` Frequent run** (54 s in M-47;
+  the new cases take 1.6 s alone), close to the 60 s budget.
 
 ### Not changed here
 

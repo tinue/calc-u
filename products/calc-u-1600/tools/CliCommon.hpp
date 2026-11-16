@@ -26,6 +26,9 @@
 #include "../core/FileIO.hpp"
 #include "../core/Job.hpp"
 #include "../core/Machine/LegacyCalls.hpp"
+#include "../core/Machine/SharpMediaPlaces.hpp"
+#include "../core/Audio/WavFile.hpp"
+#include "media/MediaPlace.hpp"
 #include "../core/Machine/SharpBuilder.hpp"
 #include "../core/Machine/SharpCatalogue.hpp"
 #include "../core/Machine/SharpProductKinds.hpp"
@@ -160,7 +163,7 @@ inline void printCe150Report(Machine& machine) {
 }
 
 /// --tape-in <in.wav> / --tape-out <out.wav>: a cassette for the recorder
-/// behind the tape interface (c1600.tape-deck), put in before the run and
+/// of the CE-150 or CE-1600P (the media place `cassette`), put in before the run and
 /// taken out after it.
 struct TapeOptions {
     std::string in, out;
@@ -172,32 +175,54 @@ struct TapeOptions {
         return false;
     }
 
+    // The cassette of the CE-150 or CE-1600P (LIB-7's media place, M-47).
+    static calcu::media::MediaPlace* cassette(Machine& machine) {
+        for (const auto& e : machine.capabilities(calcu::media::MediaPlace::kKind))
+            if (auto* p = calcu::machine::capabilityAs<calcu::media::MediaPlace>(machine, e.id); p && p->id().value == "cassette")
+                return p;
+        return nullptr;
+    }
+
     bool arm(Machine& machine) const {
-        sharp::TapeDeckAccess* deck = sharp::firstOf<sharp::TapeDeckAccess>(machine);
-        if (!in.empty()) {
-            std::string error;
-            if (!deck->play(in, error)) {
-                std::fprintf(stderr, "--tape-in: %s\n", error.c_str());
-                return false;
-            }
-        } else if (!out.empty()) {
-            deck->record(out);
+        if (in.empty() && out.empty()) return true;
+        calcu::media::MediaPlace* place = cassette(machine);
+        if (!place) {
+            std::fprintf(stderr, "--tape-in/--tape-out: no CE-150 or CE-1600P\n");
+            return false;
+        }
+        std::vector<uint8_t> wav;
+        if (!in.empty() && !readWholeFile(in, &wav)) {
+            std::fprintf(stderr, "--tape-in: cannot open %s\n", in.c_str());
+            return false;
+        }
+        if (in.empty()) wav = wavMono16Bytes({}, TapeDeck::kRecordSampleRate);   // a blank tape records
+        const auto r = place->insert(std::make_shared<sharp::TapeContent>(std::move(wav)), 0);
+        if (!r.ok) {
+            std::fprintf(stderr, "--tape-in: %s\n", r.refusal.c_str());
+            return false;
         }
         return true;
     }
 
-    /// Reports the tape position and ejects it, saving a recording.
+    /// Reports the tape position and ejects it, writing a recording.
     bool finish(Machine& machine) const {
         if (in.empty() && out.empty()) return true;
         sharp::TapeDeckAccess* deck = sharp::firstOf<sharp::TapeDeckAccess>(machine);
+        calcu::media::MediaPlace* place = cassette(machine);
+        if (!deck || !place) return false;
         const auto tape = deck->status();
         std::printf("Tape: %.2f s of %.2f s, motor %s\n", tape.position, tape.length, tape.motor ? "on" : "off");
-        std::string error;
-        if (!deck->eject(&error)) {
-            std::fprintf(stderr, "--tape-out: %s\n", error.c_str());
-            return false;
+        const auto content = std::dynamic_pointer_cast<const sharp::TapeContent>(place->eject());
+        if (!out.empty()) {
+            FILE* f = std::fopen(out.c_str(), "wb");
+            const bool ok = f && content && std::fwrite(content->wav.data(), 1, content->wav.size(), f) == content->wav.size();
+            if (f) std::fclose(f);
+            if (!ok) {
+                std::fprintf(stderr, "--tape-out: cannot write %s\n", out.c_str());
+                return false;
+            }
+            std::printf("Wrote %.2f s of tape to %s\n", tape.length, out.c_str());
         }
-        if (!out.empty()) std::printf("Wrote %.2f s of tape to %s\n", tape.length, out.c_str());
         return true;
     }
 };

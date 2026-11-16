@@ -69,7 +69,7 @@ TEST(lib8_ac36_ce150_paper_kept_through_detach_rom_module_and_model_switch) {
     CHECK_EQ(points(f, "CE-150"), drawn);
     CHECK(f.ok(calcu::startup::kVariantCommand, Value::object({{"name", "A03"}})));   // a change of ROM
     CHECK_EQ(points(f, "CE-150"), drawn);
-    CHECK(f.ok(c::kSelectModule, Value::object({{"slot", 1}, {"name", "CE-161"}})));   // a module change
+    CHECK(f.choose("slot-1", "CE-161").done);   // a module change
     CHECK_EQ(points(f, "CE-150"), drawn);
     CHECK(f.model("PC-1600"));   // a model switch
     CHECK_EQ(points(f, "CE-150"), drawn);

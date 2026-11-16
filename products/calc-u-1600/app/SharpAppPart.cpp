@@ -12,12 +12,11 @@
 #include "Machine/SharpCatalogue.hpp"
 #include "Machine/SharpMachine.hpp"
 #include "Machine/SharpRoms.hpp"
-#include "app/FloppyBay.hpp"
-#include "app/ModuleBay.hpp"
 #include "app/SharpDebuggerSetup.hpp"
+#include "app/SharpMediaKinds.hpp"
 #include "app/SharpPrinters.hpp"
-#include "app/TapeBay.hpp"
 #include "app/Utf8Path.hpp"
+#include "media/PresetMedia.hpp"
 #include "peripherals/Controls.hpp"
 #include "peripherals/RealTimeClock.hpp"
 #include "peripherals/SerialPort.hpp"
@@ -126,47 +125,28 @@ SharpAppPart::SharpAppPart(Settings& settings, AppPaths& paths)
     m_paper.setControl(&m_startup.control());   // the origin of a build (LIB-8 A-3)
     calcu::paper::addPaperStep(m_presets.vocabulary(), m_paper);
     calcu::debugger::addDebuggerSteps(m_presets.vocabulary(), m_debugger);
-    // A variant switch carries the module a bay holds (until M-47) and
-    // remembers which side of a disk was up.
-    m_machines.setModuleCarry([this](const PlugEntry& e, Machine&) -> std::shared_ptr<const ProductData> {
-        const int slot = e.place.steps[0].value == sharp::kSlot2 ? 2 : 1;
-        std::unique_ptr<ExpansionCard> card = m_modules->cardFor(slot);
-        return card ? std::make_shared<sharp::ModuleCard>(std::move(card)) : nullptr;
-    });
 
-    ModuleBay::Events moduleEvents;
-    moduleEvents.moduleChanged = [this](int slot) {
-        if (slot >= 0 && static_cast<std::size_t>(slot) < m_machineState.moduleChanges.size())
-            ++m_machineState.moduleChanges[static_cast<std::size_t>(slot)];
-    };
-    moduleEvents.error = [this](const std::string& text) { notice(text); };
-    m_modules = std::make_unique<ModuleBay>(*this, m_paths, std::move(moduleEvents));
-    FloppyBay::Events floppyEvents;
-    floppyEvents.error = [this](const std::string& text) { notice(text); };
-    m_floppy = std::make_unique<FloppyBay>(*this, m_paths, std::move(floppyEvents));
-    TapeBay::Events tapeEvents;
-    tapeEvents.tapesChanged = [this] { ++m_tapeListChanges; };
-    tapeEvents.error = [this](const std::string& text) { notice(text); };
-    m_tapes = std::make_unique<TapeBay>(*this, m_paths, std::move(tapeEvents));
+    // LIB-7 (§10.2): the media part on the save folder and the tape folder,
+    // the bundled templates beside the module definitions; a variant switch
+    // carries a module's content over (S-7a), the disk and the tape too.
+    calcu::media::MediaSetup media;
+    media.kinds = mediaKinds(paths.bundledResourcesDir(), m_catalogue);
+    media.paths = &paths.places();
+    media.listing = moduleListing();
+    media.catalogue = &m_catalogue;
+    m_media = std::make_unique<calcu::media::MediaPart>(std::move(media));
+    m_media->setControl(&m_startup.control());
+    calcu::media::addMediaToPresets(m_presets.vocabulary(), *m_media);
 }
 
-SharpAppPart::~SharpAppPart() {
-    // Save what's pending; the bays refer to this part.
-    if (m_modules) m_modules->flushPendingPersist();
-    if (m_floppy) m_floppy->flushPendingPersist();
-    m_tapes.reset();
-    m_floppy.reset();
-    m_modules.reset();
-    if (m_ms) {
-        std::string ignored;
-        tapeEject(&ignored);   // a recording goes to its file
-    }
-}
+SharpAppPart::~SharpAppPart() = default;
 
 std::vector<sessions::SessionPart*> SharpAppPart::sessionParts() {
     // PeripheralsPart before StartupPart (the clocks at a build, LIB-18
-    // §3.5), PresetsPart before StartupPart (LIB-6 §3.8).
-    return {&m_typingPart, &m_peripherals, &m_presets, &m_startup, &m_loaderPart, &m_paper, &m_debugger, this};
+    // §3.5), PresetsPart before StartupPart (LIB-6 §3.8), MediaPart after
+    // StartupPart (LIB-7 §3.7). The host calls AppSession::close() before
+    // it ends the session: the media part writes what is pending (AC-13).
+    return {&m_typingPart, &m_peripherals, &m_presets, &m_startup, m_media.get(), &m_loaderPart, &m_paper, &m_debugger, this};
 }
 
 void SharpAppPart::notice(const std::string& sentence) {
@@ -185,7 +165,6 @@ void SharpAppPart::attach(sessions::SessionSetup& setup) {
 
     m_controlTopic = &setup.stateTopic(topics::kControlState);
     m_machineTopic = &setup.stateTopic(topics::kMachine);
-    m_tapesTopic = &setup.stateTopic(topics::kTapes);
     m_serialTopic = &setup.stateTopic(topics::kSerialLinks);
     m_romsMissingTopic = &setup.stateTopic(topics::kRomsMissing);
     // LIB-12 AC-5: without the full set no machine is built; the frontends
@@ -199,30 +178,6 @@ void SharpAppPart::attach(sessions::SessionSetup& setup) {
     namespace c = commands;
     const char* busy = sessions::kAnotherOperationRuns;
 
-    // AC-29 (until M-47 over the module bay): a module in a slot, or none.
-    setup.command(c::kSelectModule, [this, busy](const Value& args, SessionContext& s) -> CommandOutcome {
-        if (s.busy()) return Refused{busy};
-        Machine* m = machine();
-        if (!m) return Refused{sessions::kNoMachine};
-        const int slot = static_cast<int>(integerArg(args, "slot", 1));
-        if (slot < 1 || slot > slotCount()) return Refused{"There is no slot " + std::to_string(slot) + "."};
-        const std::string name = textArg(args, "name");
-        const std::string there = pluggedAt(slotPlace(slot));
-        m_modules->selectModule(slot, name);
-        startup::PlugChange ch;
-        ch.place = placeOf(slotPlace(slot));
-        if (name.empty()) {
-            if (there.empty()) return Done{};
-            ch.kind = startup::PlugChange::Kind::Detach;
-        } else {
-            std::unique_ptr<ExpansionCard> card = m_modules->cardFor(slot);
-            if (!card) return Refused{"The module " + name + " could not be read."};
-            ch.kind = there.empty() ? startup::PlugChange::Kind::Attach : startup::PlugChange::Kind::Replace;
-            ch.request = moduleRequest(slot, std::move(card));
-        }
-        if (auto refused = machineControl().check(*m, ch)) return Refused{refused->reason};
-        return change(std::move(ch), [this, slot] { m_modules->followMachine(slot); });
-    });
     // AC-30: the host drive with its folder (a second folder: a replace), or none.
     setup.command(c::kMountHostDrive, [this, busy](const Value& args, SessionContext& s) -> CommandOutcome {
         if (s.busy()) return Refused{busy};
@@ -260,7 +215,29 @@ void SharpAppPart::attach(sessions::SessionSetup& setup) {
         ch.place = placeOf(sharp::kPrinter);
         ch.request = machineControl().requestFor(ch.place, PeripheralId{sharp::kCE1600P}, ce1600pVariant(v));
         if (auto refused = machineControl().check(*m, ch)) return Refused{refused->reason};
-        return change(std::move(ch));
+        // The disk and the tape stay in the new CE-1600P, the disk with the
+        // same side up (AC-31, as today).
+        struct Held {
+            std::string word;
+            calcu::media::Binding binding;
+            calcu::media::Content content;
+        };
+        auto held = std::make_shared<std::vector<Held>>();
+        for (const char* word : {"floppy", "tape"}) {
+            m_media->flush(s, word);
+            const calcu::media::Binding* b = m_media->bindingOf(word);
+            if (!b) continue;
+            calcu::media::Content content = b->content;
+            for (const auto& e : m->capabilities(calcu::media::MediaPlace::kKind))
+                if (auto* cap = calcu::machine::capabilityAs<calcu::media::MediaPlace>(*m, e.id);
+                    cap && cap->side() && (cap->id().value == "floppy") == (std::string(word) == "floppy"))
+                    content = cap->content();
+            held->push_back(Held{word, *b, content});
+        }
+        return change(std::move(ch), [this, held] {
+            for (Held& h : *held)
+                if (h.content && m_ctx) m_media->insert(*m_ctx, h.word, h.binding, h.content, h.binding.side.value_or(0));
+        });
     });
 }
 
@@ -272,24 +249,7 @@ sessions::CommandOutcome SharpAppPart::change(startup::PlugChange ch, std::funct
     }};
 }
 
-void SharpAppPart::afterCall(sessions::SessionContext&, calcu::pacing::WallTime) {
-    frameDuties();
-    refreshTopics();
-}
-
-void SharpAppPart::beforeOperation(sessions::SessionContext&) {
-    // Pending card and disk writes go first.
-    m_modules->flushPendingPersist();
-    m_floppy->flushPendingPersist();
-}
-
-void SharpAppPart::beforeMachineChange(sessions::SessionContext&) {
-    m_modules->flushPendingPersist();
-    m_floppy->flushPendingPersist();
-    if (sharp::FloppyDriveAccess* d = floppyDrive(); d && d->hasDisk()) m_floppySide = d->side();
-    std::string tapeError;
-    if (!tapeEject(&tapeError)) log("Tape: the tape recording could not be saved: " + tapeError);
-}
+void SharpAppPart::afterCall(sessions::SessionContext&, calcu::pacing::WallTime) { refreshTopics(); }
 
 void SharpAppPart::machineChanged(sessions::SessionContext&) {
     if (!m_ms || m_ms->generation() == m_seenGeneration) return;
@@ -308,34 +268,16 @@ void SharpAppPart::followNewMachine() {
     const startup::BuildOrigin origin = built ? built->origin : startup::BuildOrigin::Start;
     switch (origin) {
         case startup::BuildOrigin::VariantSwitch:
-            // AC-28: the plugs went along; the bays keep what they hold, and
-            // the disk goes into the new drive with the same side up.
-            m_modules->followCarriedMachine();
-            m_floppy->insertSelectedDisk();
-            if (sharp::FloppyDriveAccess* d = floppyDrive(); d && d->hasDisk() && m_floppySide != 0) d->setSide(m_floppySide);
+            // AC-28: the plugs and the media went along (the media part, S-7a).
             return;
         case startup::BuildOrigin::Preset:
         case startup::BuildOrigin::StartupPreset:
-            // What the preset plugged in (adapter "bays on machineChanged",
-            // until M-47): the modules by name are templates; a slot ROM
-            // makes its slot unsaveable.
             if (before != m_model) m_ce1600pChoice = CE1600PRomVersion::New;
-            for (int slot = 1; slot <= 2; ++slot) {
-                const std::vector<std::uint8_t>* rom = nullptr;
-                if (built)
-                    for (const PeripheralRequest& r : built->plan.peripherals)
-                        if (r.place == placeOf(slotPlace(slot)))
-                            if (const auto* s = dynamic_cast<const sharp::SlotRomRequest*>(r.content.get())) rom = &s->bytes;
-                m_modules->followPreset(slot, rom);
-            }
-            m_floppy->syncFromPresetLoad({}, {});
             ++m_machineState.modelSwitches;
             return;
         case startup::BuildOrigin::Start:
         case startup::BuildOrigin::ModelSwitch:
             // AC-27: nothing of the old machine is kept.
-            m_modules->onModelChanged();
-            m_floppy->selectDisk({});
             m_ce1600pChoice = CE1600PRomVersion::New;
             ++m_machineState.modelSwitches;
             return;
@@ -344,30 +286,16 @@ void SharpAppPart::followNewMachine() {
 
 void SharpAppPart::operationEnded(sessions::SessionContext&) {
     if (Machine* m = machine()) m_peripherals.hostLinks().machineChanged(*m);   // a CE-158 plugged in
-    // A CE-1600F plugged in now gets the disk the bay holds.
-    if (sharp::FloppyDriveAccess* d = floppyDrive(); d && !d->hasDisk() && !m_floppy->selectedDiskName().empty())
-        m_floppy->insertSelectedDisk();
-    frameDuties();   // the bays catch up with whatever the operation changed
     refreshTopics();
-}
-
-void SharpAppPart::frameDuties() {
-    const double now = steadySeconds();
-    m_modules->tick(now);
-    m_floppy->tick(now);
-    m_tapeStatus = tapeStatus();
-    m_tapes->onFrameTick(m_tapeStatus);
 }
 
 void SharpAppPart::refreshTopics() {
     if (!m_controlTopic) return;
     m_controlTopic->set(std::make_shared<ControlStatePayload>(controlState()));
     m_machineState.model = m_model;
+    m_machineState.tape = tapeStatus();
+    m_machineState.floppyMotor = floppyMotorOn();
     m_machineTopic->set(std::make_shared<MachinePayload>(m_machineState));
-    auto tapes = std::make_shared<TapesPayload>();
-    tapes->status = m_tapeStatus;
-    tapes->listChanges = m_tapeListChanges;
-    m_tapesTopic->set(std::move(tapes));
     auto links = std::make_shared<SerialLinksPayload>();
     links->rs232c = serialLinkStatus();
     links->ce158 = ce158SerialLinkStatus();
@@ -476,59 +404,13 @@ const ExpansionCard* SharpAppPart::slotCard(int slot) const {
     return m ? sharp::legacy::moduleIn(*m, slot) : nullptr;
 }
 
-void SharpAppPart::setSlotWriteProtected(int slot, bool protect) {
-    Machine* m = machine();
-    if (!m) return;
-    const Owner owner = PeripheralOwner{PeripheralId{pluggedAt(slotPlace(slot))}, PlacePath{{PlaceName{slotPlace(slot)}}}};
-    if (auto* controls = calcu::peripherals::controlsCapability(*m, owner)) controls->set(ControlId{"write-protect"}, protect);
-}
-
-
-PeripheralRequest SharpAppPart::moduleRequest(int slot, std::unique_ptr<ExpansionCard> card) {
-    const std::string name = card->moduleName();
-    if (!m_catalogue.peripheral(PeripheralId{name})) {
-        if (auto* sd = dynamic_cast<const SoftwareDefinedCard*>(card.get())) {
-            m_catalogue.addPeripheral(sharp::moduleDescriptor(sd->definition()));
-        } else {
-            // A card without a definition: it fits the slot it was made for.
-            PeripheralDescriptor d;
-            d.id = PeripheralId{name};
-            d.name = name;
-            if (const Machine* m = machine()) d.fits = {m->descriptor().place(PlaceName{slotPlace(slot)})->pinOut};
-            m_catalogue.addPeripheral(std::move(d));
-        }
-    }
-    PeripheralRequest r = machineControl().requestFor(placeOf(slotPlace(slot)), PeripheralId{name}, std::nullopt);
-    r.content = std::make_shared<sharp::ModuleCard>(std::move(card));
-    return r;
-}
-
-// ---- Cassette recorder ----
+// ---- Cassette recorder and CE-1600F ----
 
 bool SharpAppPart::tapeInterfaceAttached() const {
+    // The cassette of a CE-150 or a CE-1600P, on every model (C1600-1 AC-16,
+    // LIB-7 OQ-9).
     const std::string printer = pluggedAt(sharp::kPrinter);
-    return m_model == Model::PC1600 ? printer == sharp::kCE1600P : printer == sharp::kCE150;
-}
-
-bool SharpAppPart::tapePlay(const std::string& path, std::string* error) {
-    auto* tape = kind<sharp::TapeDeckAccess>();
-    std::string err;
-    const bool ok = tape && tape->play(path, err);
-    if (!ok && error) *error = err;
-    return ok;
-}
-
-void SharpAppPart::tapeRecord(const std::string& path) {
-    if (auto* tape = kind<sharp::TapeDeckAccess>()) tape->record(path);
-}
-
-bool SharpAppPart::tapeEject(std::string* error) {
-    auto* tape = kind<sharp::TapeDeckAccess>();
-    if (!tape) return true;
-    std::string err;
-    const bool ok = tape->eject(&err);
-    if (!ok && error) *error = err;
-    return ok;
+    return printer == sharp::kCE150 || printer == sharp::kCE1600P;
 }
 
 TapeDeck::Status SharpAppPart::tapeStatus() const {
@@ -536,9 +418,9 @@ TapeDeck::Status SharpAppPart::tapeStatus() const {
     return tape ? tape->status() : TapeDeck::Status{};
 }
 
-std::string SharpAppPart::tapeTakeLastError() {
-    auto* tape = kind<sharp::TapeDeckAccess>();
-    return tape ? tape->takeLastError() : std::string();
+bool SharpAppPart::floppyMotorOn() const {
+    auto* drive = kind<sharp::FloppyDriveAccess>();
+    return drive && drive->motorOn();
 }
 
 // ---- Peripherals ----
@@ -551,7 +433,6 @@ std::string SharpAppPart::pluggedAt(const char* place) const {
     return {};
 }
 
-sharp::FloppyDriveAccess* SharpAppPart::floppyDrive() const { return kind<sharp::FloppyDriveAccess>(); }
 
 bool SharpAppPart::ce150Attached() const { return pluggedAt(sharp::kPrinter) == sharp::kCE150; }
 
@@ -599,21 +480,14 @@ sessions::Value ControlStatePayload::toValue() const {
 }
 
 sessions::Value MachinePayload::toValue() const {
-    sessions::Value::Array modules;
-    for (auto n : moduleChanges) modules.emplace_back(static_cast<std::int64_t>(n));
     return sessions::Value::object({{"model", settingsModelName(model)},
                                     {"builds", static_cast<std::int64_t>(builds)},
                                     {"modelSwitches", static_cast<std::int64_t>(modelSwitches)},
-                                    {"moduleChanges", std::move(modules)}});
-}
-
-sessions::Value TapesPayload::toValue() const {
-    return sessions::Value::object({{"mode", static_cast<int>(status.mode)},
-                                    {"motor", status.motor},
-                                    {"position", status.position},
-                                    {"length", status.length},
-                                    {"path", status.path},
-                                    {"listChanges", static_cast<std::int64_t>(listChanges)}});
+                                    {"tape", sessions::Value::object({{"mode", static_cast<int>(tape.mode)},
+                                                                      {"motor", tape.motor},
+                                                                      {"position", tape.position},
+                                                                      {"length", tape.length}})},
+                                    {"floppyMotor", floppyMotor}});
 }
 
 sessions::Value SerialLinksPayload::toValue() const {

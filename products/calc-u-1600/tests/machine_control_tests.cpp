@@ -96,12 +96,12 @@ TEST(lib18_ac27_model_switch_keeps_no_module_or_peripheral) {
     SessionFixture f;
     CHECK(f.start("PC-1600"));
     CHECK(f.attach("CE-1600P"));
-    CHECK(f.ok(shared::commands::kSelectModule, Value::object({{"slot", 1}, {"name", "CE-1600M"}})));
+    CHECK(f.choose("slot-1", "CE-1600M").done);
     CHECK(pluggedCount(f) == 2);
     CHECK(f.model("PC-1500A"));
     CHECK(f.model("PC-1600"));
     CHECK_EQ(pluggedCount(f), std::size_t{0});
-    CHECK(f.part().modules().selectedModuleName(1).empty());
+    CHECK(f.held("slot-1") == nullptr);
 }
 
 TEST(lib18_ac27_ce1600p_rom_choice_back_to_new) {
@@ -123,15 +123,14 @@ TEST(lib18_ac28_variant_switch_replugs_printer_interface_host_drive_modules) {
     CHECK(f.attach("CE-150"));
     CHECK(f.attach("CE-158"));
     CHECK(f.ok(shared::commands::kMountHostDrive, Value::object({{"dir", dir.generic_string()}})));
-    CHECK(f.ok(shared::commands::kSelectModule, Value::object({{"slot", 2}, {"name", "CE-1601M"}})));
-    std::string error;
-    CHECK(f.part().modules().nameAndSave(2, "Disk RAM", &error));   // an instance: its content goes along
+    CHECK(f.choose("slot-2", "CE-1601M").done);
+    CHECK(f.nameAndSave("slot-2", "Disk RAM").done);   // an instance: its content goes along
     CHECK(f.variant("Old"));
     CHECK(f.part().pc1600RomVersion() == shared::PC1600RomVersion::Old);
     CHECK(plugged(f, "CE-150") && plugged(f, "CE-158") && plugged(f, "host-drive"));
     CHECK_EQ(f.part().hostDriveDirectory(), dir.generic_string());
-    CHECK(f.part().slotCard(2) && f.part().slotCard(2)->moduleName() == "Disk RAM");
-    CHECK(f.part().modules().slotHasInstanceFile(2));
+    CHECK(f.part().slotCard(2) && f.part().slotCard(2)->moduleName() == "CE-1601M");
+    CHECK(f.held("slot-2") && f.held("slot-2")->name == "Disk RAM" && f.held("slot-2")->instance());
 }
 
 TEST(lib18_ac28_disk_in_drive_again_same_side) {
@@ -139,15 +138,17 @@ TEST(lib18_ac28_disk_in_drive_again_same_side) {
     SessionFixture f;
     CHECK(f.start("PC-1600"));
     CHECK(f.attach("CE-1600P"));
-    f.part().floppy().selectDisk("Formatted");
-    f.part().floppy().toggleSide();
-    CHECK(f.part().floppyDrive() && f.part().floppyDrive()->hasDisk() && f.part().floppyDrive()->side() == 1);
+    CHECK(f.choose("floppy", "Formatted").done);
+    CHECK(f.run(calcu::media::kTurnCommand, Value::object({{"place", "floppy"}})).done);
+    auto side = [&]() -> std::optional<int> {
+        const calcu::media::PlaceState* p = f.mediaPlace("floppy");
+        return p && p->holds ? p->holds->side : std::nullopt;
+    };
+    CHECK(side() == 1);
     CHECK(f.variant("Old"));
-    sharp::FloppyDriveAccess* d = f.part().floppyDrive();
-    CHECK(d && d->hasDisk() && d->side() == 1);
-    CHECK_EQ(f.part().floppy().selectedDiskName(), std::string("Formatted"));
+    CHECK(side() == 1);
+    CHECK(f.held("floppy") && f.held("floppy")->name == "Formatted");
 }
-
 TEST(lib18_ac28_no_startup_preset_loaded) {
     SKIP_UNLESS(romsPresent(), "no ROMs in roms/");
     SessionFixture f;
@@ -166,12 +167,12 @@ TEST(lib18_ac29_module_replace_power_cycle_memory_kept_new0_check) {
     SKIP_UNLESS(romsPresent(), "no ROMs in roms/");
     SessionFixture f;
     CHECK(f.start("PC-1500A"));
-    CHECK(f.ok(shared::commands::kSelectModule, Value::object({{"slot", 1}, {"name", "CE-155"}})));
+    CHECK(f.choose("slot-1", "CE-155").done);
     CHECK(f.part().slotCard(1) && f.part().slotCard(1)->moduleName() == "CE-155");
     CHECK(screenHas(f, "NEW0?"));   // the ROM's check after the power cycle (row 1600-4)
-    CHECK(f.ok(shared::commands::kSelectModule, Value::object({{"slot", 1}, {"name", "CE-151"}})));   // a replace
+    CHECK(f.choose("slot-1", "CE-151").done);   // a replace
     CHECK(f.part().slotCard(1) && f.part().slotCard(1)->moduleName() == "CE-151");
-    CHECK(f.ok(shared::commands::kSelectModule, Value::object({{"slot", 1}, {"name", ""}})));
+    CHECK(f.choose("slot-1", "").done);
     CHECK(f.part().slotCard(1) == nullptr);
 }
 
@@ -281,7 +282,7 @@ TEST(lib18_ac32_cold_boot_empties_memory_ce151_ce155_battery_module_kept) {
     // contents: sharp_machine_tests.cpp, c1600_1_ac6_cold_boot_*). The
     // module stays in its slot.
     for (const char* name : {"CE-151", "CE-1600M"}) {
-        CHECK(f.ok(shared::commands::kSelectModule, Value::object({{"slot", 1}, {"name", name}})));
+        CHECK(f.choose("slot-1", name).done);
         CHECK(f.coldBoot());
         CHECK(f.part().slotCard(1) && f.part().slotCard(1)->moduleName() == name);
     }
@@ -316,10 +317,8 @@ TEST(c1600_4_ac8_module_with_slot_rom_never_saved) {
     const fs::path preset = f.root / "dev.pc1500";
     std::ofstream(preset) << "format-version: 2\nmodel: PC-1500\nslot-1: { name: CE-502B }\nslot-1-rom: { file: build/rom.bin }\n";
     CHECK(f.loadPreset(preset.generic_string()).done);
-    CHECK(f.part().modules().selectedModuleName(1) == "CE-502B");
-    CHECK(!f.part().modules().canNameAndSave(1));
-    CHECK(!f.part().modules().slotHasInstanceFile(1));
-    std::string error;
-    CHECK(!f.part().modules().saveAsFromPreset(1, "Copy", {}, false, &error));
-    CHECK(error.find("slot ROM") != std::string::npos);
+    CHECK(f.part().slotCard(1) && f.part().slotCard(1)->moduleName() == "CE-502B");
+    CHECK(f.held("slot-1") == nullptr);   // never a medium (LIB-7 §10.5)
+    const auto r = f.nameAndSave("slot-1", "Copy");
+    CHECK(!r.done && r.reason.find("no medium") != std::string::npos);
 }

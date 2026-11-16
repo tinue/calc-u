@@ -17,7 +17,7 @@
 #include "Machine/SharpProductKinds.hpp"
 #include "SessionFixture.hpp"
 #include "app/CardYamlDump.hpp"
-#include "app/MediaLibrary.hpp"
+#include "app/SharpMediaKinds.hpp"
 #include "peripherals/RealTimeClock.hpp"
 #include "TestHarness.hpp"
 #include "presets/PresetsPart.hpp"
@@ -34,7 +34,6 @@ using shared::Model;
 
 Value toggle(const char* p) { return Value::object({{"peripheral", p}}); }
 Value preset(const char* path) { return Value::object({{"ref", path}}); }
-Value module(int slot, const char* name) { return Value::object({{"slot", slot}, {"name", name}}); }
 
 int busyMessages(const SessionFixture& f, bool runs) {
     int n = 0;
@@ -73,8 +72,8 @@ TEST(test_cooperative_preset) {
     CHECK(busyMessages(f, true) == 1 && busyMessages(f, false) == 1);
     CHECK(f.listener.mirror().takeAppended(sessions::kLogTopic).size() > 10);   // the preset's step log
     CHECK(f.part().currentModel() == Model::PC1600);
-    CHECK(f.part().modules().selectedModuleName(1) == "CE-1600M");
-    CHECK(f.part().modules().selectedModuleName(2) == "CE-1601M");
+    CHECK(f.held("slot-1") && f.held("slot-1")->name == "CE-1600M");
+    CHECK(f.held("slot-2") && f.held("slot-2")->name == "CE-1601M");
     // The last item (FILES) is not waited for (LIB-6 AC-60): until idle.
     CHECK(f.ok(calcu::presets::kWaitIdleCommand));
     CHECK(f.screen().find("LOOP") != std::string::npos);
@@ -100,24 +99,31 @@ TEST(test_operations_and_selection) {
     CHECK(!n.empty() && n.back() == r.reason);
 }
 
-// The tape topic is what the tape bay saw at the last call -- and an
-// operation ends with one, so it is current right after.
-TEST(test_tape_status_follows_calls) {
+// The tape counter in the machine topic is what the deck had at the last
+// call -- and an operation ends with one, so it is current right after
+// (ported: the topic `c1600.tapes` went with M-47). The record button is
+// `media.start-new` on the empty tape (LIB-7 AC-20, D-24).
+TEST(lib7_ac44_test_tape_status_follows_calls) {
     SKIP_UNLESS(romsPresent(), "no ROMs in roms/");
     SessionFixture f;
     CHECK(f.start("PC-1500A"));
     CHECK(f.toggle("CE-150"));
     CHECK(f.part().tapeInterfaceAttached());
-    auto tapes = [&] { return f.state<shared::TapesPayload>(shared::topics::kTapes)->status.mode; };
+    auto tapes = [&] { return f.state<shared::MachinePayload>(shared::topics::kMachine)->tape.mode; };
     CHECK(tapes() == TapeDeck::Mode::Empty);
-    CHECK(f.part().tapes().recordNew("side a", nullptr));
+    const sessions::CallId id = f.send(calcu::media::kStartNewCommand,
+                                       Value::object({{"place", "tape"}, {"template", f.entry("tape", "Empty")}, {"name", "side a"}}));
+    const auto r = f.takeReply(id);
+    CHECK(r && r->done);
     CHECK(tapes() == TapeDeck::Mode::Empty);   // not seen yet
     f.call();
     CHECK(tapes() == TapeDeck::Mode::Record);
-    std::string error;
-    CHECK(f.part().tapes().selectForPlay({}, &error));
+    CHECK(f.held("tape") && f.held("tape")->name == "side a");
+    CHECK(f.run(calcu::media::kEjectCommand, Value::object({{"place", "tape"}})).done);
     CHECK(f.reset());
     CHECK(tapes() == TapeDeck::Mode::Empty);
+    // Nothing was recorded: no file (AC-20: the file at the first write).
+    CHECK(!fs::exists(fs::path(f.tapeFolder()) / "side a.tape.yaml"));
 }
 
 // The control state topic: each model's own peripherals on the bar, the
@@ -167,65 +173,79 @@ std::vector<std::uint8_t> readBytes(const char* path) {
     return std::vector<std::uint8_t>(std::istreambuf_iterator<char>(in), std::istreambuf_iterator<char>());
 }
 
-const shared::MediaItem* findItem(const std::vector<shared::MediaItem>& items, const std::string& name) {
-    for (const auto& item : items)
-        if (item.name == name) return &item;
+const calcu::media::KindState::Item* findItem(const calcu::media::MediaState& s, const std::string& name) {
+    for (const auto& k : s.kinds)
+        for (const auto* list : {&k.templates, &k.instances})
+            for (const auto& item : *list)
+                if (item.name == name) return &item;
     return nullptr;
 }
 
-// MediaLibrary: the save folder's cards, disks and tapes -- listed with
-// their in-use state, exported, deleted (not while in use), imported back.
-TEST(test_media_library) {
+const calcu::media::KindDecl& kindOf(SessionFixture& f, const char* id) { return *f.part().mediaPart().kind(id); }
+
+// The saved media (LIB-7 AC-30, AC-31, AC-43; ported from 0.8.1's
+// MediaLibrary test): the save folder's modules, disks and tapes -- listed
+// with the place they are in, exported, deleted after asking (not while in
+// a place), imported back.
+TEST(lib7_ac44_test_media_library) {
     SKIP_UNLESS(romsPresent(), "no ROMs in roms/");
     SessionFixture f;
     CHECK(f.start("PC-1600"));
-    shared::MediaLibrary library(f.part());
-    CHECK(library.items().empty());
+    calcu::media::MediaPart& media = f.part().mediaPart();
+    sessions::SessionContext& ctx = f.session().context();
+    CHECK(findItem(*f.media(), "Work") == nullptr);
 
-    CHECK(f.ok(c::kSelectModule, module(1, "CE-1600M")));
-    std::string error;
-    CHECK(f.part().modules().nameAndSave(1, "Work", &error));
-    std::vector<shared::MediaItem> items = library.items();
-    const shared::MediaItem* work = findItem(items, "Work");
-    CHECK(work && work->type == shared::MediaType::Card && work->inUse && !work->isTemplate);
+    CHECK(f.choose("slot-1", "CE-1600M").done);
+    CHECK(f.nameAndSave("slot-1", "Work").done);
+    auto state = f.media();
+    const calcu::media::KindState::Item* work = findItem(*state, "Work");
+    CHECK(work && !work->isTemplate && work->inPlace && *work->inPlace == "slot-1");
     CHECK(work && work->fileName == "Work.card.yaml");
-    if (!work) return;
-    const shared::MediaItem workItem = *work;
-    std::vector<std::uint8_t> bytes;
-    CHECK(library.exportBytes(workItem.path, &bytes) && !bytes.empty());
-    CHECK(!library.remove(workItem.path).ok);   // in slot 1
+    std::string reason;
+    const auto files = media.exportFiles(kindOf(f, shared::kModuleKind), "Work", &reason);
+    CHECK(files && files->size() == 1 && !files->front().bytes.empty());
+    if (!files) return;
+    const std::string bytes = files->front().bytes;
+    CHECK(!media.remove(ctx, kindOf(f, shared::kModuleKind), "Work", true).ok);   // in slot 1
 
-    CHECK(f.ok(c::kSelectModule, module(1, "")));
-    CHECK(library.remove(workItem.path).ok);
-    CHECK(library.items().empty());
-    CHECK(library.importFile("Work.card.yaml", bytes).ok);
-    CHECK(findItem(library.items(), "Work") != nullptr);
-    CHECK(!library.importFile("Work.card.yaml", bytes).ok);   // exists
-    shared::OpResult r = library.importFile("x.card.yaml", {'n', 'o', 'p', 'e'});
-    CHECK(!r.ok && r.error.find("isn't a card file") != std::string::npos);
-    std::vector<std::uint8_t> bundled = readBytes("frontends/qt6/resources/cards/ce161.card.yaml");
-    CHECK(!bundled.empty() && !library.importFile("ce161.card.yaml", bundled).ok);   // a bundled card's name
+    CHECK(f.choose("slot-1", "").done);
+    CHECK(media.remove(ctx, kindOf(f, shared::kModuleKind), "Work", false).reason.rfind("asks:", 0) == 0);   // OQ-4
+    CHECK(media.remove(ctx, kindOf(f, shared::kModuleKind), "Work", true).ok);
+    CHECK(findItem(*f.media(), "Work") == nullptr);
+    CHECK(media.importBytes(ctx, "Work.card.yaml", bytes, {}).ok);
+    CHECK(findItem(*f.media(), "Work") != nullptr);
+    CHECK(!media.importBytes(ctx, "Work.card.yaml", bytes, {}).ok);   // the name is taken
+    CHECK(!media.importBytes(ctx, "x.card.yaml", "nope", {}).ok);
+    const std::vector<std::uint8_t> bundled = readBytes("frontends/qt6/resources/cards/ce161.card.yaml");
+    CHECK(!media.importBytes(ctx, "ce161.card.yaml", std::string(bundled.begin(), bundled.end()), {}).ok);   // a bundled name
 
+    // A tape: its definition with its WAV (AC-43); a WAV alone is no medium.
     const std::vector<std::uint8_t> wav = readBytes("tests/fixtures/tape/pc1500_tape.wav");
-    CHECK(library.importFile("Side A.wav", wav).ok);
-    CHECK(!library.importFile("side a.wav", wav).ok);
-    CHECK(!library.importFile("Broken.wav", {'R', 'I', 'F', 'F'}).ok);
-    CHECK(findItem(library.items(), "Broken") == nullptr);
-    items = library.items();
-    const shared::MediaItem* tape = findItem(items, "Side A");
-    CHECK(tape && tape->type == shared::MediaType::Tape && !tape->inUse);
-    CHECK(!library.importFile("notes.txt", {'x'}).ok);
+    const std::string sound(wav.begin(), wav.end());
+    const auto companion = [&](const std::string& rel) -> std::optional<std::string> {
+        return rel == "Side A.wav" ? std::optional<std::string>(sound) : std::nullopt;
+    };
+    const std::string def = "format: cassette-tape\nformat-version: 1\ntape-name: \"Side A\"\naudio: { file: \"Side A.wav\" }\n";
+    CHECK(media.importBytes(ctx, "Side A.tape.yaml", def, companion).ok);
+    CHECK(!media.importBytes(ctx, "side a.tape.yaml", def, companion).ok);   // one name, any case
+    CHECK(!media.importBytes(ctx, "Broken.tape.yaml", def, {}).ok);          // without its WAV
+    state = f.media();
+    const calcu::media::KindState::Item* tape = findItem(*state, "Side A");
+    CHECK(tape && !tape->inPlace && fs::exists(fs::path(f.tapeFolder()) / "Side A.wav"));
+    CHECK(!media.importBytes(ctx, "Side A.wav", sound, {}).ok);
+    CHECK(!media.importBytes(ctx, "notes.txt", "x", {}).ok);
 }
 
-// Name & Save with "write-protect": the file records the switch, the live
-// card stops taking writes at once, the saved instance comes back protected.
-TEST(test_card_write_protect) {
+// Name & Save with "write-protect" (LIB-7 AC-19, AC-40; row 1600-17): the
+// file records the switch, the live card stops taking writes at once, the
+// saved instance comes back protected; a module without the switch refuses.
+TEST(lib7_ac40_write_protect_power_cycle) {
     SKIP_UNLESS(romsPresent(), "no ROMs in roms/");
     SessionFixture f;
     CHECK(f.start("PC-1500"));
-    CHECK(f.ok(c::kSelectModule, module(1, "CE-161")));
-    CHECK(f.part().modules().canNameAndSave(1));
-    CHECK(f.part().modules().canWriteProtect(1));
+    CHECK(f.choose("slot-1", "CE-161").done);
+    const calcu::media::PlaceState* p = f.mediaPlace("slot-1");
+    CHECK(p && p->nameAndSave && p->askWriteProtect);
     sharp::LoaderMemory* m = sharp::firstOf<sharp::LoaderMemory>(*f.part().machine());
     CHECK(m != nullptr);
     if (!m) return;
@@ -233,37 +253,39 @@ TEST(test_card_write_protect) {
     CHECK(m->writeBuiltIn(0x0000, &b55, 1).stored);
     CHECK(m->peek(0x0000) == 0x55);
 
-    std::string error;
-    CHECK(f.part().modules().nameAndSave(1, "Rom", &error, /*writeProtect=*/true));
-    CHECK(!f.part().modules().canWriteProtect(1));
+    CHECK(f.nameAndSave("slot-1", "Rom", /*protect=*/true).done);
+    p = f.mediaPlace("slot-1");
+    CHECK(p && !p->askWriteProtect && !p->nameAndSave);
+    m = sharp::firstOf<sharp::LoaderMemory>(*f.part().machine());
     const ExpansionCard* card = f.part().slotCard(1);
-    CHECK(card && card->writeProtected());
+    CHECK(m && card && card->writeProtected());
+    if (!m) return;
     CHECK(!m->writeBuiltIn(0x0000, &bAA, 1).stored);   // the switch blocks it
     CHECK(m->peek(0x0000) == 0x55);
-    std::ifstream in(fs::path(f.paths->instanceDir()) / "Rom.card.yaml");
+    std::ifstream in(fs::path(f.saveFolder()) / "Rom.card.yaml");
     const std::string text((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>());
     CHECK(text.find("write-protect: protected") != std::string::npos);
 
-    CHECK(f.ok(c::kSelectModule, module(1, "")));
-    CHECK(f.ok(c::kSelectModule, module(1, "Rom")));
+    CHECK(f.choose("slot-1", "").done);
+    CHECK(f.choose("slot-1", "Rom").done);
     m = sharp::firstOf<sharp::LoaderMemory>(*f.part().machine());
     card = f.part().slotCard(1);
     CHECK(m && card && card->writeProtected());
     if (m) CHECK(m->peek(0x0000) == 0x55);
 
-    CHECK(f.ok(c::kSelectModule, module(1, "CE-1638")));   // battery-backed, no switch
-    CHECK(!f.part().modules().canWriteProtect(1));
-    CHECK(!f.part().modules().nameAndSave(1, "Locked", &error, true));
-    CHECK(error == "\"CE-1638\" has no write-protect switch.");
+    CHECK(f.choose("slot-1", "CE-1638").done);   // battery-backed, no switch
+    p = f.mediaPlace("slot-1");
+    CHECK(p && !p->askWriteProtect);
+    const sessions::ReplyMessage r = f.nameAndSave("slot-1", "Locked", true);
+    CHECK(!r.done && r.reason.find("no write-protect switch") != std::string::npos);
 }
-
 TEST(test_card_yaml_dump) {
     SKIP_UNLESS(romsPresent(), "no ROMs in roms/");
     SessionFixture f;
     CHECK(f.start("PC-1600"));
     std::vector<std::string> dump = shared::cardYamlDump(f.part());
     CHECK(dump.size() == 1 && dump[0].find("no card attached") != std::string::npos);
-    CHECK(f.ok(c::kSelectModule, module(2, "CE-1600M")));
+    CHECK(f.choose("slot-2", "CE-1600M").done);
     dump = shared::cardYamlDump(f.part());
     CHECK(dump.size() == 2 && dump[0].find("CE-1600M (Slot 2), unbanked") != std::string::npos);
 }

@@ -20,9 +20,6 @@
 #include "app/AppPaths.hpp"
 #include "app/ControlState.hpp"
 #include "app/DisplayFrame.hpp"
-#include "app/FloppyBay.hpp"
-#include "app/ModuleBay.hpp"
-#include "app/TapeBay.hpp"
 #include "app/MachineModel.hpp"
 #include "app/PacingProfiles.hpp"
 #include "app/Settings.hpp"
@@ -34,6 +31,7 @@
 #include "app/SharpTyping.hpp"
 #include "machine/Catalogue.hpp"
 #include "machine/Machine.hpp"
+#include "media/MediaPart.hpp"
 #include "paper/PaperPart.hpp"
 #include "peripherals/PeripheralsPart.hpp"
 #include "presets/PresetsPart.hpp"
@@ -73,14 +71,12 @@ DisplayFrame displayFrameOf(const calcu::machine::DisplayOutput& output);
 //   file of examples/), LIB-18's startup part (the start, the model and
 //   variant switches, attach and detach, Reset, Cold boot, power cycle, on
 //   app/SharpProductMachines), the loaders' part (C1600-2), LIB-8's paper
-//   part and LIB-10's debugger part (LIB-6 §10.2, LIB-18 §10.2);
-// - the module, floppy and tape bays and their per-call duties; until M-47
-//   the bays follow every new machine (machineChanged) and hand a variant
-//   switch the module they hold (adapter "bays on machineChanged");
+//   part, LIB-10's debugger part (LIB-6 §10.2, LIB-18 §10.2) and LIB-7's media
+//   part (the modules, the floppy disk and the tape; app/SharpMediaKinds);
 // - the product's commands that need its own data, each one
-//   MachineControl::change (LIB-18 D-22): `c1600.select-module`,
+//   MachineControl::change (LIB-18 D-22):
 //   `c1600.mount-host-drive`, `c1600.ce1600p-rom` (SharpTopics.hpp);
-// - the interim product topics (control state, machine, tapes, serial
+// - the interim product topics (control state, machine, serial
 //   links) and LIB-12's `roms-missing`.
 //
 // The host builds it, hands sessionParts() to its AppSessionSetup (and the
@@ -97,12 +93,10 @@ public:
 
     Settings& settings() { return m_settings; }
     AppPaths& paths() { return m_paths; }
-    ModuleBay& modules() { return *m_modules; }
-    FloppyBay& floppy() { return *m_floppy; }
-    TapeBay& tapes() { return *m_tapes; }
-    const ModuleBay& modules() const { return *m_modules; }
-    const FloppyBay& floppy() const { return *m_floppy; }
-    const TapeBay& tapes() const { return *m_tapes; }
+    // LIB-7: the media (modules, disks, tapes): the topic `media`, the
+    // commands `media.*`, autosave (app/SharpMediaKinds for the formats).
+    calcu::media::MediaPart& mediaPart() { return *m_media; }
+    const calcu::media::MediaPart& mediaPart() const { return *m_media; }
     SharpLoaderPart& loaderPart() { return m_loaderPart; }
     // The typing part (LIB-5): frontends send its commands (host-key-down,
     // screen-key-down, paste, ...); the debugger's auto-start types its line
@@ -135,8 +129,6 @@ public:
     // ---- SessionPart ----
     void attach(calcu::sessions::SessionSetup&) override;
     void afterCall(calcu::sessions::SessionContext&, calcu::pacing::WallTime) override;
-    void beforeOperation(calcu::sessions::SessionContext&) override;
-    void beforeMachineChange(calcu::sessions::SessionContext&) override;
     void machineChanged(calcu::sessions::SessionContext&) override;
     void operationEnded(calcu::sessions::SessionContext&) override;
 
@@ -153,7 +145,6 @@ public:
     const calcu::machine::Catalogue& catalogue() const { return m_catalogue; }
     const std::shared_ptr<const calcu::roms::RomSet>& romSet() const { return m_roms; }
     const calcu::roms::RomsMissing& romsMissing() const { return m_romsMissing; }
-    sharp::FloppyDriveAccess* floppyDrive() const;
 
     // The LCD as text and as a screen image, from a display output of the
     // `display` topic (the machine supplies the font and the cursor RAM).
@@ -163,10 +154,6 @@ public:
     // ---- Expansion slots ----
     int slotCount() const;
     const ExpansionCard* slotCard(int slot) const;
-    void setSlotWriteProtected(int slot, bool protect);
-    // The request that plugs `card` into `slot` (a module the catalogue does
-    // not know yet is added: a save-folder instance).
-    calcu::machine::PeripheralRequest moduleRequest(int slot, std::unique_ptr<ExpansionCard> card);
 
     // ---- Serial ports ----
     void refreshSerialLinkDirectory();
@@ -186,23 +173,19 @@ public:
     bool hostDriveAttached() const;
     std::string hostDriveDirectory() const;
 
-    // ---- Cassette recorder ----
+    // ---- Cassette recorder and CE-1600F (the media: mediaPart()) ----
     bool tapeInterfaceAttached() const;
-    bool tapePlay(const std::string& path, std::string* error = nullptr);
-    void tapeRecord(const std::string& path);
-    bool tapeEject(std::string* error = nullptr);
-    TapeDeck::Status tapeStatus() const;
-    std::string tapeTakeLastError();
+    TapeDeck::Status tapeStatus() const;   // the counter (AC-42)
+    bool floppyMotorOn() const;            // the drive's lamp (AC-39)
 
 private:
     using CommandOutcome = calcu::sessions::CommandOutcome;
     // A plug change of a product command as an operation (LIB-18 D-22).
     CommandOutcome change(calcu::startup::PlugChange ch, std::function<void()> after = {});
     void refreshTopics();
-    void frameDuties();
     void notice(const std::string& sentence);
     void log(const std::string& line);
-    // The bays follow a machine LIB-18 or a preset built (adapter until M-47).
+    // The model and the counters of the machine topic follow a new machine.
     void followNewMachine();
     std::string pluggedAt(const char* place) const;
     template <class K> K* kind() const { return machine() ? sharp::firstOf<K>(*machine()) : nullptr; }
@@ -240,22 +223,16 @@ private:
     calcu::presets::PresetsPart m_presets;
     calcu::startup::StartupPart m_startup;
     std::uint64_t m_seenGeneration = 0;
-    int m_floppySide = 0;   // the disk's side up, for a new CE-1600F (AC-28)
-
-    std::unique_ptr<ModuleBay> m_modules;
-    std::unique_ptr<FloppyBay> m_floppy;
-    std::unique_ptr<TapeBay> m_tapes;
+    // LIB-7 (§10.2): after StartupPart among the parts.
+    std::unique_ptr<calcu::media::MediaPart> m_media;
 
     // The topics (attach).
     calcu::sessions::StateTopic* m_controlTopic = nullptr;
     calcu::sessions::StateTopic* m_machineTopic = nullptr;
-    calcu::sessions::StateTopic* m_tapesTopic = nullptr;
     calcu::sessions::StateTopic* m_serialTopic = nullptr;
     calcu::sessions::StateTopic* m_romsMissingTopic = nullptr;
     MachinePayload m_machineState;
-    std::uint64_t m_tapeListChanges = 0;
     std::uint64_t m_serialMoves = 0;
-    TapeDeck::Status m_tapeStatus;
 };
 
 } // namespace shared

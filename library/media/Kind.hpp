@@ -33,7 +33,12 @@ struct MediumInfo {                 // AC-46: all the library knows of a file
 };
 
 struct ReadOutcome {
-    enum class Status { Read, Outdated, Unreadable } status = Status::Unreadable;
+    // NotMedium: a file of the kind's suffix that is no medium of it (a
+    // Calc-U-1600 module definition without a battery: a module that is not
+    // a medium, AC-5, D-9). The shelf neither lists nor logs it; every other
+    // reader takes it as Unreadable, with the problem (M-47).
+    enum class Status { Read, Outdated, Unreadable, NotMedium } status = Status::Unreadable;
+    bool unreadable() const { return status == Status::Unreadable || status == Status::NotMedium; }
     MediumInfo info;                // Read; Outdated: name and version only
     std::string problem;            // Unreadable: why, one sentence
 };
@@ -98,6 +103,10 @@ struct KindDecl {
     // medium of this kind becomes for a place.
     std::function<bool(const machine::PeripheralDescriptor&)> isMedium;
     std::function<std::optional<machine::PeripheralRequest>(const MediumInfo&, const machine::PlacePath&)> moduleRequest;
+    // HeldBy::ModuleSlot: whether the medium fits a slot of that pin-out
+    // (AC-8 "the modules that fit the slot", Calc-U-1600 AC-38; LIB-2 AC-2).
+    // Empty: it fits every slot of its kind (M-47).
+    std::function<bool(const MediumInfo&, const machine::PinOutId&)> fitsPinOut;
     PresetWords words;
 };
 

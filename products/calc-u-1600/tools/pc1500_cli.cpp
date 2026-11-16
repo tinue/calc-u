@@ -161,7 +161,7 @@ int main(int argc, char** argv) {
         }
         std::string presetPath = argv[2];
         if (argc >= 4) maxCycles = std::strtoull(argv[3], nullptr, 10);
-        presetRun = cli::CliPresetRun::load(presetPath, &buildError);
+        presetRun = cli::CliPresetRun::load(presetPath, &buildError, saveDir);
         if (!presetRun) {
             std::fprintf(stderr, "failed to apply preset '%s': %s\n", presetPath.c_str(), buildError.c_str());
             return 1;

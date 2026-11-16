@@ -130,7 +130,7 @@ std::optional<Found> resolveByFile(MediaPart& part, const KindDecl& k, const std
         if (auto* v = std::get_if<std::vector<std::uint8_t>>(&c)) return std::string(v->begin(), v->end());
         return std::nullopt;
     });
-    if (r.status == ReadOutcome::Status::Unreadable) {
+    if (r.unreadable()) {
         ctx.error(line, verb + ": the " + k.label + " file " + file + " cannot be read" + (r.problem.empty() ? "." : ": " + r.problem));
         return std::nullopt;
     }

@@ -1,11 +1,11 @@
 # Calc-U-1600 CE-1600F floppy disk image
 format: ce1600f-floppy
-format-version: 1
+format-version: 2
 disk-name: "Progs"
 template: true
 saved: 2026-09-29T09:05:53Z
 sides:
-  a:
+  0:
     encoding: addressed-hex
     bytes: |
       $0000: 00...
@@ -706,7 +706,7 @@ sides:
       $3800: 43 20 5C 33 31 5C 4C 4F  41 44 22 58 3A 43 4F 4D
       $3810: 4D 2E 42 41 53 22 0D 0A  5E 0D 0A 1A 00 00 00 00
       $3820: 00...
-  b:
+  1:
     encoding: addressed-hex
     bytes: |
       $0000: 00...

@@ -35,6 +35,8 @@ const std::vector<std::uint8_t>* romImageOf(const PeripheralRequest& req, const 
 
 std::unique_ptr<ExpansionCard> moduleCardOf(const PeripheralRequest& req, const PeripheralDescriptor& d) {
     if (auto* m = dynamic_cast<const ModuleCard*>(req.content.get()); m && m->card) return std::move(m->card);
+    if (auto* m = dynamic_cast<const ModuleContent*>(req.content.get()))   // a module medium (LIB-7)
+        return std::make_unique<SoftwareDefinedCard>(m->definition);
     if (auto* def = dynamic_cast<const ModuleDefinitionData*>(d.productData.get())) {
         if (auto* rom = dynamic_cast<const SlotRomRequest*>(req.content.get())) {   // C1600-4 AC-8
             MemoryCardDefinition withRom = def->definition;
@@ -190,6 +192,9 @@ void SharpMachine::plug(PeripheralRequest req, const PeripheralDescriptor& d, Ti
         if (positions.empty())
             if (auto* m = dynamic_cast<const ModuleCard*>(req.content.get()); m && m->card)
                 positions.push_back({ControlId{"write-protect"}, m->card->writeProtected()});
+        if (positions.empty())
+            if (auto* m = dynamic_cast<const ModuleContent*>(req.content.get()))
+                positions.push_back({ControlId{"write-protect"}, m->writeProtected()});
         makeSwitches(place, positions);
     }
     auto request = std::make_shared<PeripheralRequest>(std::move(req));
@@ -268,18 +273,32 @@ SharpMachine::Offered SharpMachine::byComponent(const char* component, Capabilit
             &c};
 }
 
+SharpMachine::Offered SharpMachine::byPeripheral(const PlugEntry& e, Capability& c, const std::string& name) {
+    return {CapabilityEntry{c.kind(), CapabilityId{placeText(e.place) + "/" + std::string(c.kind().value) + "/" + name},
+                            PeripheralOwner{e.peripheral, e.place}},
+            &c};
+}
+
 SharpMachine::Offered SharpMachine::byPeripheral(const PlugEntry& e, Capability& c) {
     return {CapabilityEntry{c.kind(), CapabilityId{placeText(e.place) + "/" + std::string(c.kind().value)},
                             PeripheralOwner{e.peripheral, e.place}},
             &c};
 }
 
+void SharpMachine::offerCommon(std::vector<Offered>& offered) {
+    for (const PlugEntry& e : m_plugged) {
+        const PlaceName& place = e.place.steps.at(0);
+        if (auto* t = switchesAt(place)) offered.push_back(byPeripheral(e, *t));
+        SlotModuleMedium* medium = place.value == kSlot1 ? &m_slotMedia[0] : place.value == kSlot2 ? &m_slotMedia[1] : nullptr;
+        if (medium && medium->present()) offered.push_back(byPeripheral(e, *medium));   // LIB-7 D-1
+    }
+}
+
 std::vector<CapabilityEntry> SharpMachine::capabilities() const {
     std::vector<Offered> offered;
     auto* self = const_cast<SharpMachine*>(this);   // offer() hands out non-const pointers; nothing changes
     self->offer(offered, m_plugged);
-    for (const PlugEntry& e : m_plugged)
-        if (auto* t = self->switchesAt(e.place.steps.at(0))) offered.push_back(byPeripheral(e, *t));
+    self->offerCommon(offered);
     std::vector<CapabilityEntry> out;
     for (const auto& o : offered) out.push_back(o.entry);
     return out;
@@ -288,8 +307,7 @@ std::vector<CapabilityEntry> SharpMachine::capabilities() const {
 Capability* SharpMachine::capability(const CapabilityId& id) {
     std::vector<Offered> offered;
     offer(offered, m_plugged);
-    for (const PlugEntry& e : m_plugged)
-        if (auto* t = switchesAt(e.place.steps.at(0))) offered.push_back(byPeripheral(e, *t));
+    offerCommon(offered);
     for (const auto& o : offered)
         if (o.entry.id == id) return o.capability;
     return nullptr;

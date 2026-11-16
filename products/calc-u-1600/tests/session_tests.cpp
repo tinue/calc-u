@@ -212,9 +212,8 @@ TEST(lib3_ac38_mirror_holds_every_callback) {
     CHECK(f.part().machine()->tickCount() > ticks);
 
     // presetArmed -> display and control state during the operation;
-    // presetLog -> log; moduleChanged -> c1600.machine.
+    // presetLog -> log; moduleChanged -> the topic `media` (LIB-7, M-47).
     mark = f.messages.size();
-    const auto moduleChanges = after->moduleChanges;
     const fs::path modules = f.root / "modules.pc1600";
     {
         std::ofstream out(modules);
@@ -230,7 +229,7 @@ TEST(lib3_ac38_mirror_holds_every_callback) {
     }
     CHECK(controlWhileBusy >= 1);
     CHECK(!f.listener.mirror().takeAppended(sessions::kLogTopic).empty());
-    CHECK(f.state<shared::MachinePayload>(t::kMachine)->moduleChanges != moduleChanges);
+    CHECK(f.held("slot-1") && f.held("slot-1")->name == "CE-1600M");
     CHECK(f.state<shared::ControlStatePayload>(t::kControlState)->state.ce1600p.attached);
 
     // attachFailed -> the refusal of `attach` (LIB-18 AC-12): the CE-158
@@ -238,16 +237,15 @@ TEST(lib3_ac38_mirror_holds_every_callback) {
     const sessions::ReplyMessage ce158 = f.run(
         calcu::startup::kAttachCommand, Value::object({{"place", "interface"}, {"peripheral", "CE-158"}}));
     CHECK(!ce158.done && ce158.reason.find("cannot be used together") != std::string::npos);
-    // bayError -> notices: a module that does not exist.
+    // bayError -> the refusal of `media.choose`: a module that does not exist.
     (void)f.notices();
-    CHECK(!f.ok(c::kSelectModule, Value::object({{"slot", 1}, {"name", "No such module"}})));
-    CHECK(!f.notices().empty());
+    CHECK(!f.choose("slot-1", "No such module").done);
 
-    // tapesChanged, tape status -> c1600.tapes.
+    // tapesChanged -> the topic `media`; the tape status -> c1600.machine (M-47).
     CHECK(f.part().tapeInterfaceAttached());
-    CHECK(f.part().tapes().recordNew("ac38", nullptr));
+    CHECK(f.run(calcu::media::kStartNewCommand, Value::object({{"place", "tape"}, {"template", f.entry("tape", "Empty")}, {"name", "ac38"}})).done);
     f.call();
-    CHECK(f.state<shared::TapesPayload>(t::kTapes)->status.mode == TapeDeck::Mode::Record);
+    CHECK(f.state<shared::MachinePayload>(t::kMachine)->tape.mode == TapeDeck::Mode::Record);
 
     // serialLinksRelinked -> c1600.serial-links.
     const auto moves = f.state<shared::SerialLinksPayload>(t::kSerialLinks)->moves;

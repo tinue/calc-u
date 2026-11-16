@@ -2,7 +2,6 @@
 #include <string>
 #include <utility>
 
-#include "Connector/MediaSave.hpp"
 #include "app/Settings.hpp"
 #include "settings/HostDirs.hpp"
 #include "settings/Paths.hpp"
@@ -52,7 +51,7 @@ public:
 
     // The save folder: Settings::instanceDirOverride() if set (Qt6), else
     // defaultInstanceDir(). Where battery-card instances and saved disks
-    // live right now. (Adapter A-1 over Paths::saveFolder(), until M-47.)
+    // live right now (Paths::saveFolder(); the media part reads places()).
     std::string instanceDir() const;
 
     // `path` the way every label shows one: under defaultInstanceDir() as
@@ -60,16 +59,11 @@ public:
     // is. A screenshot run's throwaway home thus reads like a fresh install's.
     std::string displayPath(const std::string& path) const;
 
-    // Where a fresh by-name save goes: "<instanceDir>/<name>.card.yaml" /
-    // ".floppy.yaml" (namedFileName()'s rules strip separators etc.).
-    std::string instancePathFor(const std::string& instanceName) const;
-    std::string floppyInstancePathFor(const std::string& diskName) const;
 
     // Cassette tapes: Settings::tapeDirOverride() if set, else "Tapes"
-    // inside instanceDir(); created on demand. A tape named `tapeName` is
-    // "<tapeName>.wav" there.
+    // inside instanceDir(); created on demand. Tape definitions and their
+    // sounds live there (LIB-7 AC-42, LIB-9 AC-16).
     std::string tapeDir() const;
-    std::string tapePathFor(const std::string& tapeName) const;
 
     // Settings::traceDirOverride() / serialLinkDirOverride() if set, else
     // instanceDir(): where traces go (the library's trace session) and where
@@ -79,20 +73,12 @@ public:
     std::string traceDir() const;
     std::string serialLinkDir() const;
 
-    // A save of a card or a floppy under a name (Name & Save, a preset's
-    // `saveas:`) by the shared rules (Connector/MediaSave.hpp): the path in
-    // *path, and the refusal (None if allowed).
-    MediaSaveRefusal planNamedSave(MediaKind kind, const std::string& name, const std::string& explicitPath,
-                                   bool asTemplate, std::string* path) const;
 
 private:
     calcu::settings::Paths m_paths;
     BundleDirs m_bundle;
 };
 
-// A planNamedSave() refusal as a sentence for the GUI (empty for None);
-// Core's mediaSaveRefusalText() is the CLI/log wording.
-std::string mediaSaveRefusalMessage(MediaSaveRefusal refusal, const std::string& name, const std::string& path);
 
 // "a/b" joined the way every path here is built (forward slashes; an
 // absolute `name` wins).
@@ -103,9 +89,5 @@ std::string joinPath(const std::string& dir, const std::string& name);
 // "<dir>-backup/x" is not under "<dir>".
 bool isUnderDir(const std::string& path, const std::string& dir);
 
-// Writes `text` to `path` atomically: a temp file beside it, renamed into
-// place, so a crash never leaves a half-written card or disk. False on
-// failure.
-bool atomicWriteFile(const std::string& path, const std::string& text);
 
 } // namespace shared

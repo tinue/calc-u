@@ -16,10 +16,12 @@
 #include <string>
 #include <vector>
 
+#include "Connector/ExpansionCard.hpp"
 #include "TempFolder.hpp"
 #include "TestFrontend.hpp"
 #include "TestSettings.hpp"
 #include "app/SharpSession.hpp"
+#include "media/MediaTopics.hpp"
 #include "presets/PresetsPart.hpp"
 #include "startup/StartupPart.hpp"
 #include "sessions/Listener.hpp"
@@ -165,6 +167,36 @@ struct SessionFixture {
             for (const auto& e : m->plugged().byPlace) in = in || e.peripheral.value == peripheral;
         return in ? detach(peripheral) : attach(peripheral);
     }
+    // ---- LIB-7's media: the topic `media` and its commands, as the control bar sends them ----
+    std::shared_ptr<const calcu::media::MediaState> media() { return part().mediaPart().state(session().context()); }
+    const calcu::media::PlaceState* mediaPlace(const std::string& place) {
+        static std::shared_ptr<const calcu::media::MediaState> kept;   // the state the pointer is into
+        kept = media();
+        for (const auto& p : kept->places)
+            if (p.place == place) return &p;
+        return nullptr;
+    }
+    // The picker entry of `place` labelled `label` ("" the empty one); "?" when none.
+    std::string entry(const std::string& place, const std::string& label) {
+        const calcu::media::PlaceState* p = mediaPlace(place);
+        if (!p) return "?";
+        for (const auto& e : p->picker)
+            if (e.label == label) return e.id;
+        return "?";
+    }
+    sessions::ReplyMessage choose(const std::string& place, const std::string& label) {
+        return run(calcu::media::kChooseCommand, sessions::Value::object({{"place", place}, {"entry", entry(place, label)}}));
+    }
+    sessions::ReplyMessage nameAndSave(const std::string& place, const std::string& name, bool protect = false,
+                                       bool confirmed = false) {
+        return run(calcu::media::kNameAndSaveCommand,
+                   sessions::Value::object({{"place", place}, {"name", name}, {"protect", protect}, {"confirmed", confirmed}}));
+    }
+    // What the media part holds in `place` (nullptr: empty).
+    const calcu::media::Binding* held(const std::string& place) { return part().mediaPart().bindingOf(place); }
+    // The save folder and the tape folder of the session.
+    std::string saveFolder() const { return paths->places().saveFolder(); }
+    std::string tapeFolder() const { return paths->places().tapeFolder(); }
     sessions::ReplyMessage loadPreset(const std::string& ref) {
         return run(calcu::presets::kLoadPresetCommand, sessions::Value::object({{"ref", ref}}));
     }

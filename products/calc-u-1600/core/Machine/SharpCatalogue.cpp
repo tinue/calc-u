@@ -92,8 +92,8 @@ MachineDescriptor pc1500Descriptor(bool pc1500a) {
                     {ComponentId{"LH5811"}, "LH5811 I/O port", Depth::Folded, memory},
                     {ComponentId{"lcd"}, "LCD and its RAM", Depth::Functional, std::nullopt},
                     {ComponentId{"buzzer"}, "piezo buzzer", Depth::Functional, std::nullopt}};
-    // A battery-backed module is a medium in its slot (LIB-1 AC-37; LIB-7).
-    d.mediaPlaces = {{MediaPlaceId{kSlot1}, "battery-backed-module", MediaPassage::Holding, {}}};
+    // A battery-backed module is a medium in its slot, but the slot is no media
+    // place of the descriptor: the module is a peripheral there (LIB-7 D-1, D-22).
     d.debugTargets = {DebugTargetId{"LH5801"}};
     return d;
 }
@@ -132,8 +132,6 @@ MachineDescriptor pc1600Descriptor() {
                     {ComponentId{"keyboard"}, "key matrix", Depth::Separate, std::nullopt},
                     {ComponentId{"lcd"}, "HD61102 LCD controllers", Depth::Separate, std::nullopt},
                     {ComponentId{"buzzer"}, "piezo buzzer", Depth::Functional, std::nullopt}};
-    d.mediaPlaces = {{MediaPlaceId{kSlot1}, "battery-backed-module", MediaPassage::Holding, {}},
-                     {MediaPlaceId{kSlot2}, "battery-backed-module", MediaPassage::Holding, {}}};
     d.debugTargets = {DebugTargetId{"SC7852"}, DebugTargetId{"LH5803"}};
     return d;
 }

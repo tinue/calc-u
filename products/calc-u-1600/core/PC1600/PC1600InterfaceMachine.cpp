@@ -24,8 +24,22 @@ std::string utf8Of(const std::filesystem::path& p) {
 
 struct PC1600InterfaceMachine::Kinds {
     explicit Kinds(PC1600Machine& m)
-        : memory(m), inspector(m), support(m), trace(m), tape(m), clock(m), floppy(m), printerPort(m),
-          hostDrive(m) {}
+        : memory(m), inspector(m), support(m), trace(m), tape(m), cassette(m.tapeDeck()), clock(m), floppy(m),
+          drive(driveOf(m)), printerPort(m), hostDrive(m) {}
+
+    static sharp::FloppyPlace::Drive driveOf(PC1600Machine& m) {
+        sharp::FloppyPlace::Drive d;
+        d.attached = [&m] { return m.ce1600fAttached(); };
+        d.hasDisk = [&m] { return m.ce1600fHasDisk(); };
+        d.motorOn = [&m] { return m.ce1600fMotorOn(); };
+        d.load = [&m](const std::uint8_t* p, std::size_t n) { return m.ce1600fLoadImage(p, n); };
+        d.eject = [&m] { m.ce1600fEject(); };
+        d.image = [&m] { return m.ce1600fDiskImage(); };
+        d.revision = [&m] { return m.ce1600fRevision(); };
+        d.side = [&m] { return m.ce1600fSide(); };
+        d.setSide = [&m](int s) { m.ce1600fSetSide(s); };
+        return d;
+    }
 
     sharp::PC1600LoaderMemory memory;
     struct Inspector final : sharp::InspectorViews {
@@ -59,13 +73,10 @@ struct PC1600InterfaceMachine::Kinds {
     } trace;
     struct Tape final : sharp::TapeDeckAccess {
         explicit Tape(PC1600Machine& m) : m(m) {}
-        bool play(const std::string& p, std::string& e) override { return m.tapePlay(p, e); }
-        void record(const std::string& p) override { m.tapeRecord(p); }
-        bool eject(std::string* e) override { return m.tapeEject(e); }
         TapeDeck::Status status() const override { return m.tapeStatus(); }
-        std::string takeLastError() override { return m.tapeTakeLastError(); }
         PC1600Machine& m;
     } tape;
+    sharp::CassettePlace cassette;
     struct Clock final : calcu::peripherals::RealTimeClock {
         explicit Clock(PC1600Machine& m) : m(m) {}
         calcu::peripherals::ClockFields read() const override {
@@ -89,16 +100,10 @@ struct PC1600InterfaceMachine::Kinds {
     } clock;
     struct Floppy final : sharp::FloppyDriveAccess {
         explicit Floppy(PC1600Machine& m) : m(m) {}
-        std::vector<std::uint8_t> diskImage() const override { return m.ce1600fDiskImage(); }
-        std::uint64_t revision() const override { return m.ce1600fRevision(); }
-        void eject() override { m.ce1600fEject(); }
-        bool hasDisk() const override { return m.ce1600fHasDisk(); }
-        bool loadImage(const std::uint8_t* d, std::size_t n) override { return m.ce1600fLoadImage(d, n); }
-        int side() const override { return m.ce1600fSide(); }
-        void setSide(int s) override { m.ce1600fSetSide(s); }
         bool motorOn() const override { return m.ce1600fMotorOn(); }
         PC1600Machine& m;
     } floppy;
+    sharp::FloppyPlace drive;
     struct PrinterPort final : sharp::Ce158PrinterPort {
         explicit PrinterPort(PC1600Machine& m) : m(m) {}
         std::vector<std::uint8_t> drain() override { return m.drainCE158ParallelOutput(); }
@@ -209,8 +214,8 @@ void PC1600InterfaceMachine::corePlug(const PeripheralRequest& req, const Periph
 void PC1600InterfaceMachine::coreUnplug(const PlaceName& p, const PeripheralId& id) {
     if (p.value == sharp::kSlot1) m_core->detachSlot1();
     else if (p.value == sharp::kSlot2) m_core->detachSlot2();
-    else if (id.value == sharp::kCE150) m_core->detachCE150();
-    else if (id.value == sharp::kCE1600P) m_core->detachCE1600P();
+    else if (id.value == sharp::kCE150) { m_core->tapeEject(); m_core->detachCE150(); }   // the cassette goes with it
+    else if (id.value == sharp::kCE1600P) { m_core->tapeEject(); m_core->detachCE1600P(); }
     else if (id.value == sharp::kCE158) m_core->detachCE158();
     else if (id.value == sharp::kHostDrive) m_core->detachHostDrive();
     else if (id.value == sharp::kBusRom) m_core->detachBusRoms();
@@ -236,7 +241,6 @@ void PC1600InterfaceMachine::offer(std::vector<Offered>& out, const std::vector<
     out.push_back(byComponent("SC7852", k.inspector));
     out.push_back(byComponent("SC7852", k.support));
     out.push_back(byComponent("SC7852", k.trace));
-    out.push_back(byComponent("SC7852", k.tape));
     out.push_back(byComponent(sharp::kRtcComponent, k.clock));
     out.push_back(byComponent(sharp::kRs232cComponent, m_rs232c.port()));
     if (const PlugEntry* e = at(sharp::kPrinter)) {
@@ -246,6 +250,12 @@ void PC1600InterfaceMachine::offer(std::vector<Offered>& out, const std::vector<
         } else if (e->peripheral.value == sharp::kCE1600P) {
             if (calcu::paper::PaperOutput* paper = m_core->ce1600pPaperOutput()) out.push_back(byPeripheral(*e, *paper));
             out.push_back(byPeripheral(*e, k.floppy));
+            out.push_back(byPeripheral(*e, k.drive, "floppy"));   // LIB-7: the CE-1600F's media place
+        }
+        // LIB-7: the cassette of either interface (C1600-1 AC-16).
+        if (e->peripheral.value == sharp::kCE150 || e->peripheral.value == sharp::kCE1600P) {
+            out.push_back(byPeripheral(*e, k.cassette, "cassette"));
+            out.push_back(byPeripheral(*e, k.tape));
         }
     }
     if (const PlugEntry* e = at(sharp::kInterface)) {

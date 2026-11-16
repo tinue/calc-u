@@ -87,7 +87,6 @@ int runPreset(const std::string& presetPath, uint64_t maxCycles, bool dumpBasic,
     (void)maxCycles;
     (void)moduleDir;
     (void)extraModuleDirs;
-    (void)saveDir;
     // The ROMs are the preset's own (`model: PC-1600:old`, `printer:
     // CE-1600P:old`): an override other than the default is refused (M-46).
     if ((!romOverride.empty() && romOverride != "new") || (!ce1600pRomOverride.empty() && ce1600pRomOverride != "new")) {
@@ -98,7 +97,7 @@ int runPreset(const std::string& presetPath, uint64_t maxCycles, bool dumpBasic,
     // --preset: through the library's loader in the harness (adapter
     // CliPresetRun, until M-51), to the idle machine.
     std::string error;
-    std::unique_ptr<cli::CliPresetRun> run = cli::CliPresetRun::load(presetPath, &error);
+    std::unique_ptr<cli::CliPresetRun> run = cli::CliPresetRun::load(presetPath, &error, saveDir);
     if (!run) {
         std::fprintf(stderr, "failed to apply preset '%s': %s\n", presetPath.c_str(), error.c_str());
         return 1;

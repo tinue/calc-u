@@ -20,7 +20,7 @@ PC1500Variant modelOf(const MachineDescriptor& d) {
 
 // The capability objects, each over the core (C1600-1 §3.6; design §5).
 struct PC1500InterfaceMachine::Kinds {
-    explicit Kinds(PC1500Machine& m) : memory(m), inspector(m), support(m), trace(m), tape(m), clock(m), printerPort(m) {}
+    explicit Kinds(PC1500Machine& m) : memory(m), inspector(m), support(m), trace(m), tape(m), cassette(m.tapeDeck()), clock(m), printerPort(m) {}
 
     sharp::PC1500LoaderMemory memory;
     struct Inspector final : sharp::InspectorViews {
@@ -50,13 +50,10 @@ struct PC1500InterfaceMachine::Kinds {
     } trace;
     struct Tape final : sharp::TapeDeckAccess {
         explicit Tape(PC1500Machine& m) : m(m) {}
-        bool play(const std::string& p, std::string& e) override { return m.tapePlay(p, e); }
-        void record(const std::string& p) override { m.tapeRecord(p); }
-        bool eject(std::string* e) override { return m.tapeEject(e); }
         TapeDeck::Status status() const override { return m.tapeStatus(); }
-        std::string takeLastError() override { return m.tapeTakeLastError(); }
         PC1500Machine& m;
     } tape;
+    sharp::CassettePlace cassette;
     struct Clock final : calcu::peripherals::RealTimeClock {
         explicit Clock(PC1500Machine& m) : m(m) {}
         calcu::peripherals::ClockFields read() const override {
@@ -122,7 +119,7 @@ void PC1500InterfaceMachine::corePlug(const PeripheralRequest& req, const Periph
 
 void PC1500InterfaceMachine::coreUnplug(const PlaceName& p, const PeripheralId& id) {
     if (p.value == sharp::kSlot1) m_core->expansionConnector().detach();
-    else if (id.value == sharp::kCE150) m_core->detachCE150();
+    else if (id.value == sharp::kCE150) { m_core->tapeEject(); m_core->detachCE150(); }   // the cassette goes with it
     else if (id.value == sharp::kCE158) m_core->detachCE158();
     else if (id.value == sharp::kBusRom) m_core->detachBusRoms();
 }
@@ -143,11 +140,13 @@ void PC1500InterfaceMachine::offer(std::vector<Offered>& out, const std::vector<
     out.push_back(byComponent("LH5801", k.inspector));
     out.push_back(byComponent("LH5801", k.support));
     out.push_back(byComponent("LH5801", k.trace));
-    out.push_back(byComponent("LH5801", k.tape));
     out.push_back(byComponent(sharp::kRtcComponent, k.clock));
-    // LIB-8: the plotter's paper output, once its card is on the bus.
-    if (const PlugEntry* e = at(sharp::kPrinter); e && e->peripheral.value == sharp::kCE150)
+    if (const PlugEntry* e = at(sharp::kPrinter); e && e->peripheral.value == sharp::kCE150) {
+        // LIB-8: the plotter's paper output, once its card is on the bus.
         if (calcu::paper::PaperOutput* paper = m_core->ce150PaperOutput()) out.push_back(byPeripheral(*e, *paper));
+        out.push_back(byPeripheral(*e, k.cassette, "cassette"));   // LIB-7: the CE-150's cassette (C1600-1 AC-16)
+        out.push_back(byPeripheral(*e, k.tape));
+    }
     if (const PlugEntry* e = at(sharp::kInterface)) {
         out.push_back(byPeripheral(*e, m_ce158Port.port()));
         out.push_back(byPeripheral(*e, k.printerPort));

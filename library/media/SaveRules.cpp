@@ -115,7 +115,7 @@ ImportPlan planImport(const std::string& fileName, const std::string& bytes, con
     }
     const KindDecl& k = *out.kind;
     const ReadOutcome r = k.codec->read(bytes, companion);
-    if (r.status == ReadOutcome::Status::Unreadable) {
+    if (r.unreadable()) {
         out.plan = refused("The " + k.label + " file " + file + " cannot be read" + (r.problem.empty() ? "." : ": " + r.problem));
         return out;
     }

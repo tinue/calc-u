@@ -39,6 +39,10 @@ This skill covers all work inside `frontends/swift/App/`, `frontends/swift/App/V
    machine; a result comes back as a reply (a completion block) or a topic.
    A new value the views need is a field of an interim topic payload in
    `TIAppPart` plus a getter in `TIAppSession` that reads the last message.
+   The cards are the library's `media` topic (place `card-reader`) and
+   `media.*` commands since M-55 (`savedCards`, `armCard:`,
+   `armFreshCard:confirmed:` with the `asks:` replace question, `ejectCard`;
+   C59-7); `c59.tap-card` feeds a corner. No `.u59` card, no `cuecards.txt`.
    **Harness attach (Debug, macOS and simulator only):** the app opens its
    session on 127.0.0.1, port `--attach-port N`, else 59059; `calcu attach
    [--port N]` drives it (`library/harness/attach/`; one port per simulator).

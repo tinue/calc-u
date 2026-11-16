@@ -105,6 +105,7 @@ Task<LoadOutcome> carryOut(sessions::OperationContext& op, std::shared_ptr<const
         }
         run.setFirstPressAtOnce(atOnce);
         run.setDeadline(bound);
+        run.setNotWaitedFor(last && !plan->letItFinish);
         const ItemResult res = co_await item.carryOut(run);
         if (!res.ok) {   // AC-17: the machine stays as it is
             s.log("  line " + std::to_string(item.line) + " " + item.logText() + ": failed: " + res.reason);

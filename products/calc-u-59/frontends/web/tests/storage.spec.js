@@ -2,8 +2,8 @@ const { test, expect } = require('@playwright/test');
 
 // The persistent file system of the Calc-U-59 Web frontend (M-34): LIB-15
 // AC-20 (its settings part, and the TI-58C's constant memory as a file of
-// the save folder: ti58c.memory.yaml, C59-3 AC-3, AC-13, M-54; the cards are
-// M-55's), AC-21 (one writer), LIB-9 AC-23. The store is IndexedDB "/persist-calc-u-59" (design §3.3).
+// the save folder: ti58c.memory.yaml, C59-3 AC-3, AC-13, M-54; the magnetic
+// cards, M-55, LIB-7 AC-33), AC-21 (one writer), LIB-9 AC-23. The store is IndexedDB "/persist-calc-u-59" (design §3.3).
 
 test.describe.configure({ timeout: 30000 });
 
@@ -151,4 +151,48 @@ test('ac21 a second tab says it cannot save', async ({ page, context }, testInfo
   expect((await storedFiles(page))[INI] || '').not.toContain('model = TI-58C');
   testInfo.annotations.push({ type: 'exit check', description: 'a second tab says it cannot save' });
   await second.close();
+});
+
+// ── Magnetic cards (M-55: LIB-7 59, C59-7; LIB-15 AC-20) ──────────────────
+
+const CARDS = `${STORE}/Calc-U-59`;
+const cardFile = (name) =>
+  `format: ti59-magnetic-card\nformat-version: 3\ncard-name: "${name}"\ncue-card:\n  title: ${name}\nsides: {}\n`;
+// Lbl A 1 2 3 R/S, then CLR 1 2nd Write at regular speed: the machine waits for a card.
+const PROGRAM_WRITE = 'format-version: 2\nmodel: TI-59\nslot-1: { name: ML }\n' +
+  'program:\n  keycodes: |\n    76 11 01 02 03 91\nkeys:\n  - regular-speed:\n  - key: CLR 1 Write\n';
+
+async function listedCards(page) {
+  await page.getByRole('button', { name: 'Arm Card', exact: true }).click();
+  const names = await page.getByRole('list', { name: 'Saved cards' }).locator('button').allTextContents();
+  await page.getByRole('button', { name: 'Cancel' }).click();
+  return names;
+}
+
+// LIB-7 AC-33: a card imported is a file of the persistent save folder, named after its name.
+test('lib7_ac33 cards in the persistent save folder', async ({ page }) => {
+  await gotoReady(page);
+  await page.getByRole('button', { name: 'Arm Card', exact: true }).click();
+  const [chooser] = await Promise.all([page.waitForEvent('filechooser'), page.getByRole('button', { name: 'Import…' }).click()]);
+  await chooser.setFiles({ name: 'Saved.magnetcard.yaml', mimeType: 'application/yaml', buffer: Buffer.from(cardFile('Saved')) });
+  await page.getByRole('button', { name: 'Cancel' }).click();
+  await expect.poll(async () => Object.keys(await storedFiles(page)), { timeout: 5000 }).toContain(`${CARDS}/Saved.magnetcard.yaml`);
+  expect((await storedFiles(page))[`${CARDS}/Saved.magnetcard.yaml`]).toContain('format: ti59-magnetic-card');
+});
+
+// LIB-15 AC-20: a card written by a program, the page loaded again: the card dialog lists it.
+test('ac20 cards survive a page load', async ({ page }) => {
+  await gotoReady(page);
+  await page.getByRole('button', { name: 'Preset' }).click();
+  await page.locator('.calcu-dialog input[type=file]').setInputFiles({ name: 'w.ti59', mimeType: 'text/plain', buffer: Buffer.from(PROGRAM_WRITE) });
+  await page.waitForTimeout(1600);
+  await page.getByRole('button', { name: 'Arm Fresh Card', exact: true }).click();
+  await page.getByLabel('Card name').fill('Written');
+  await page.getByRole('button', { name: 'Arm', exact: true }).click();
+  await page.getByRole('button', { name: 'Feed card side 1' }).click();
+  await expect(page.getByRole('button', { name: 'Eject Card' })).toHaveCount(0, { timeout: 15000 });
+  await expect.poll(async () => Object.keys(await storedFiles(page)), { timeout: 5000 }).toContain(`${CARDS}/Written.magnetcard.yaml`);
+  expect((await storedFiles(page))[`${CARDS}/Written.magnetcard.yaml`]).toContain('bank: 1');
+  await gotoReady(page);
+  expect(await listedCards(page)).toEqual(['Written']);
 });

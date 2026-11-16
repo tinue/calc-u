@@ -1,6 +1,6 @@
 // The calculator's dialogs, drawn inside the client (an embedding page has
-// no window of ours to open): the card picker (Qt6/app/CardPickerDialog,
-// over the page session's card folder), the preset picker (bundled presets
+// no window of ours to open): the card picker (Qt6/app/CardPickerDialog, on
+// the library's media topic) and the saved media, the preset picker (bundled presets
 // and file upload), Settings (Qt6/app/SettingsDialog, App/Views/
 // SettingsView) and About.
 
@@ -33,74 +33,88 @@ function readFileInput(e, as) {
 }
 
 // ── Cards ───────────────────────────────────────────────────────────────────
+// The library's media part (LIB-7 59, C59-7 AC-14, AC-15): Arm Card lists the
+// saved cards of the save folder by the names inside them (an outdated one
+// cannot be chosen, its hint the tooltip) and fits the one chosen
+// (`media.choose`); Arm Fresh Card asks the name and fits a fresh card of it
+// (`media.start-new`), asking first when a card of that name is saved. The
+// cards are files of the persistent save folder (LIB-15 AC-20): Import… and
+// Saved Media… (LIB-7 AC-30, AC-31, AC-36) in place of a download per card
+// and an upload; the File menu takes them in M-57 (LIB-7 D-29).
 
-function CardPicker({ engine, mode, onClose }) {
-  const card = useEngine(engine, (s) => s.card);
+const CARD_ASKS = "asks: ";
+
+function SavedMedia({ engine, onClose }) {
+  const media = useEngine(engine, (s) => s.media);
+  return (
+    <div className="calcu-modal" onPointerDown={(e) => { if (e.target === e.currentTarget) onClose(); }}>
+      <CalcuSavedMediaDialog media={media} send={(c, a) => engine.media(c, a)} onClose={onClose} />
+    </div>
+  );
+}
+
+function CardPicker({ engine, mode, onClose, onSavedMedia }) {
+  const reader = useEngine(engine, (s) => cardReaderOf(s.media));
   const [selected, setSelected] = React.useState(null);
-  const [name, setName] = React.useState(card.fileName);
-  const save = mode === "save";
+  const [name, setName] = React.useState("");
+  const [asking, setAsking] = React.useState(null);
+  const [problem, setProblem] = React.useState("");
+  const fresh = mode === "fresh";
+  // D-10: the saved cards only; the fresh card is Arm Fresh Card's way in.
+  const saved = (reader ? reader.picker : []).filter((e) => e.id.startsWith("saved:"));
 
-  const [replacing, setReplacing] = React.useState(null);
-
-  const read = (n) => { engine.call("fitCard", n, null); onClose(); };
-  const upload = (e) => readFileInput(e, "bytes").then((f) => {
-    if (!f) return;
-    engine.call("fitCard", f.name, f.content);
-    onClose();
-  });
-  const fitBlank = (file) => { engine.call("fitBlankCard", file); onClose(); };
-  const write = () => engine.request("freshCardFileName", name.trim()).then((file) => {
-    if (card.cards.includes(file)) setReplacing(file);
-    else fitBlank(file);
-  });
+  const arm = (entry) => { engine.call("armCard", entry); onClose(); };
+  const start = (confirmed) => {
+    const args = { place: "card-reader", template: "implicit:Fresh card", name: name.trim() };
+    if (confirmed) args.confirmed = true;
+    engine.media("media.start-new", args).then((r) => {
+      if (r.done) onClose();
+      else if (r.reason && r.reason.startsWith(CARD_ASKS)) setAsking(r.reason.slice(CARD_ASKS.length));
+      else setProblem(r.reason || "");
+    });
+  };
 
   return (
     <Dialog
-      title={save ? "Fit Fresh Card" : "Fit Card"}
+      title={fresh ? "Arm Fresh Card" : "Arm Card"}
       onClose={onClose}
       footer={<>
-        <span className="calcu-dialog-note">Cards last for this page session — download one to keep it.</span>
+        <button type="button" onClick={() => engine.call("importMedia")}>Import…</button>
+        <button type="button" onClick={onSavedMedia}>Saved Media…</button>
         <button type="button" onClick={onClose}>Cancel</button>
-        {replacing
-          ? <button type="button" className="calcu-primary" onClick={() => fitBlank(replacing)}>Replace</button>
-          : <button type="button" className="calcu-primary" disabled={save ? !name.trim() : !selected}
-                    onClick={save ? write : () => read(selected)}>Fit</button>}
+        {asking
+          ? <button type="button" className="calcu-primary" onClick={() => start(true)}>Replace</button>
+          : <button type="button" className="calcu-primary" disabled={fresh ? !name.trim() : !selected}
+                    onClick={fresh ? () => start(false) : () => arm(selected)}>Arm</button>}
       </>}
     >
-      {replacing && (
-        <p role="alert">Replace card {replacing}? Its first write replaces both sides and the cue card.</p>
-      )}
-      {save && (
+      {asking && <p role="alert">{asking}</p>}
+      {problem && <p role="alert">{problem}</p>}
+      {fresh && (
         <input
           className="calcu-textfield"
           aria-label="Card name"
           value={name}
           autoFocus
-          onChange={(e) => { setName(e.target.value); setReplacing(null); }}
-          onKeyDown={(e) => { if (e.key === "Enter" && name.trim()) write(); }}
+          onChange={(e) => { setName(e.target.value); setAsking(null); setProblem(""); }}
+          onKeyDown={(e) => { if (e.key === "Enter" && name.trim()) start(false); }}
         />
       )}
-      <ul className="calcu-list" aria-label="Session cards">
-        {card.cards.length === 0 && <li className="calcu-empty">{save ? "No existing cards" : "No cards in this session"}</li>}
-        {card.cards.map((n) => (
-          <li key={n} className={selected === n ? "calcu-selected" : ""}>
+      <ul className="calcu-list" aria-label="Saved cards">
+        {saved.length === 0 && <li className="calcu-empty">No cards found</li>}
+        {saved.map((e) => (
+          <li key={e.id} className={selected === e.id ? "calcu-selected" : ""}>
             <button
               type="button"
               className="calcu-listitem"
-              onClick={() => { setSelected(n); if (save) { setName(n); setReplacing(null); } }}
-              onDoubleClick={() => (save ? setName(n) : read(n))}
-            >{n}</button>
-            <button type="button" className="calcu-iconbutton" title={`Download ${n}`} aria-label={`Download ${n}`}
-              onClick={() => engine.download("card", n)}>⤓</button>
+              disabled={!e.canChoose}
+              title={e.hint || e.tooltip || undefined}
+              onClick={() => { setSelected(e.id); if (fresh) { setName(e.label); setAsking(null); } }}
+              onDoubleClick={() => { if (!fresh && e.canChoose) arm(e.id); }}
+            >{e.canChoose ? e.label : `${e.label} (outdated)`}</button>
           </li>
         ))}
       </ul>
-      {!save && (
-        <label className="calcu-filebutton">
-          Upload card file…
-          <input type="file" accept=".u59,.U59,.bin" onChange={upload} />
-        </label>
-      )}
     </Dialog>
   );
 }
@@ -152,12 +166,20 @@ function Settings({ engine, feedbackSetting, traceSetting, onClose, onAbout }) {
   const data = useEngine(engine, (s) => s.data);
   const model = useEngine(engine, (s) => s.model);
   const settings = useEngine(engine, (s) => s.settings);
+  // LIB-7 AC-47: the modules of slot-1's picker (the module file's description, menu-sort order).
+  const slot = useEngine(engine, (s) => (s.media && s.media.places || []).find((p) => p.place === "slot-1") || null);
+  const modules = slot
+    ? slot.picker.filter((e) => e.group === "module").map((e) => ({ id: e.id.replace(/^module:/, ""), menuTitle: e.label }))
+    : (data ? data.modules : []);
   const [moduleID, setModuleID] = React.useState(model ? model.moduleID : "ML");
   const [traceMB, setTraceMB] = React.useState(settings.traceMaxMB);
 
   // The module applies when the dialog closes, as in both apps.
   const close = () => {
-    if (model && moduleID !== model.moduleID) engine.call("changeModule", moduleID);
+    if (model && moduleID !== model.moduleID) {
+      if (slot) engine.call("chooseModule", moduleID ? `module:${moduleID}` : "");
+      else engine.call("changeModule", moduleID);
+    }
     const mb = Number(traceMB);
     if (traceSetting && mb > 0 && mb !== settings.traceMaxMB) engine.call("setTraceMaxMB", mb);
     onClose();
@@ -174,7 +196,7 @@ function Settings({ engine, feedbackSetting, traceSetting, onClose, onAbout }) {
         </label>
         <label>Solid State Module
           <select value={moduleID} onChange={(e) => setModuleID(e.target.value)}>
-            {(data ? data.modules : []).map((m) => <option key={m.id} value={m.id}>{m.menuTitle}</option>)}
+            {modules.map((m) => <option key={m.id} value={m.id}>{m.menuTitle}</option>)}
           </select>
         </label>
         {feedbackSetting && (
@@ -215,8 +237,9 @@ function About({ onClose }) {
 function DialogHost({ engine, dialog, setDialog, feedbackSetting, traceSetting }) {
   const close = () => setDialog(null);
   switch (dialog) {
-    case "readCard": return <CardPicker engine={engine} mode="load" onClose={close} />;
-    case "writeCard": return <CardPicker engine={engine} mode="save" onClose={close} />;
+    case "armCard": return <CardPicker engine={engine} mode="arm" onClose={close} onSavedMedia={() => setDialog("savedMedia")} />;
+    case "armFreshCard": return <CardPicker engine={engine} mode="fresh" onClose={close} onSavedMedia={() => setDialog("savedMedia")} />;
+    case "savedMedia": return <SavedMedia engine={engine} onClose={close} />;
     case "preset": return <PresetPicker engine={engine} onClose={close} />;
     case "settings": return <Settings engine={engine} feedbackSetting={feedbackSetting} traceSetting={traceSetting} onClose={close} onAbout={() => setDialog("about")} />;
     case "about": return <About onClose={close} />;

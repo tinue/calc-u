@@ -1,9 +1,9 @@
 import Foundation
 
-/// Resolves the folder that holds the magnetic-card files (`.U59`) and
-/// `ti58c.memory.yaml` (C59-3); reading and writing them is the app layer's via the
-/// app session (TIAppPart, TIFileAccess). `hasCard` reports whether the default card (`card.U59`)
-/// exists.
+/// Resolves the save folder: the magnetic cards (`.magnetcard.yaml`, the
+/// library's media part since M-55, LIB-7 59) and `ti58c.memory.yaml`
+/// (C59-3). Reading and writing them is the app layer's via the app session
+/// (the bridge's coordinated file access, C59-5 D-6, LIB-7 D-30).
 ///
 /// Storage location (in priority order):
 ///   1. iCloud Documents container — syncs across all signed-in devices
@@ -16,20 +16,14 @@ import Foundation
 /// → iCloud → check "iCloud Documents" and set the container identifier.
 struct CardStorage {
 
-    private static let fileName = "card.U59"
-
     // Resolved once on a background thread; `url(forUbiquityContainerIdentifier:)`
     // must not be called on the main thread — it blocks and returns nil there.
     private static var _resolvedURL: URL?
 
-    static var directoryURL: URL { fileURL.deletingLastPathComponent() }
-
-    static var fileURL: URL {
+    static var directoryURL: URL {
         if let cached = _resolvedURL { return cached }
         // Fallback used only when warmUp() hasn't completed yet.
-        let localDocs = FileManager.default.urls(
-            for: .documentDirectory, in: .userDomainMask)[0]
-        return localDocs.appendingPathComponent(fileName)
+        return FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
     }
 
     /// Call once at app start off the main thread so the iCloud container
@@ -40,23 +34,9 @@ struct CardStorage {
             let docs = cloudBase.appendingPathComponent("Documents", isDirectory: true)
             try? FileManager.default.createDirectory(
                 at: docs, withIntermediateDirectories: true)
-            _resolvedURL = docs.appendingPathComponent(fileName)
+            _resolvedURL = docs
         } else {
-            let localDocs = FileManager.default.urls(
-                for: .documentDirectory, in: .userDomainMask)[0]
-            _resolvedURL = localDocs.appendingPathComponent(fileName)
+            _resolvedURL = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
         }
-    }
-
-    /// `true` when a card file is present on disk.
-    static var hasCard: Bool {
-        FileManager.default.fileExists(atPath: fileURL.path)
-    }
-
-    /// `true` when a card file is there, downloaded or not: iOS keeps a file not
-    /// yet downloaded from iCloud as a hidden ".name.icloud".
-    static func cardExists(_ url: URL) -> Bool {
-        let placeholder = url.deletingLastPathComponent().appendingPathComponent(".\(url.lastPathComponent).icloud")
-        return FileManager.default.fileExists(atPath: url.path) || FileManager.default.fileExists(atPath: placeholder.path)
     }
 }

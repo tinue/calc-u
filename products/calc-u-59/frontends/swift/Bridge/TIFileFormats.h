@@ -3,9 +3,9 @@
 NS_ASSUME_NONNULL_BEGIN
 
 // Swift face of the Shared/ formats the views use directly: the cue-card
-// model, cuecards.txt's module list and the card pickers' file names. Type
-// translation only — the formats live in Shared/ (CueCard, ModuleCatalog,
-// CardFile); everything else goes through TIAppSession.
+// model and the module list. Type translation only — the formats live in
+// app/ (CueCard, ModuleCatalog); everything else goes through TIAppSession
+// (the cards are the library's media topic since M-55).
 
 /// A cue card (Shared/CueCard.hpp). Enum-valued properties use the C++
 /// enumerator order: template 0 CueCard, 1 MagnetCard, 2 SolidStateCard;
@@ -35,15 +35,6 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic, readonly, copy) NSString *title;
 @property (nonatomic, readonly, copy) NSString *moduleID;
 @property (nonatomic, readonly, copy) NSString *menuTitle;
-@end
-
-@interface TIFileFormats : NSObject
-
-/// Card pickers list only these (.u59 / .bin in any case, not hidden).
-+ (BOOL)isCardFileName:(NSString *)name;
-/// ".U59" appended when the name has no extension.
-+ (NSString *)withDefaultCardExtension:(NSString *)name;
-
 @end
 
 NS_ASSUME_NONNULL_END

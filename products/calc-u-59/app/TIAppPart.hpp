@@ -282,6 +282,7 @@ public:
     void machineChanged(calcu::sessions::SessionContext&) override;
     void machineRestarted(calcu::sessions::SessionContext&, calcu::sessions::Restart) override;
     void operationEnded(calcu::sessions::SessionContext&) override;
+    void beforeFlush(calcu::sessions::SessionContext&) override;
     void beforeMachineChange(calcu::sessions::SessionContext&) override;
     void closing(calcu::sessions::SessionContext&) override;
 

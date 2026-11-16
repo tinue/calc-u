@@ -254,7 +254,7 @@ TEST(ac15_preset_named_template_not_written) {
 
 TEST(ac15_in_file_medium_not_written_unless_saveas) {
     MediaFixture f;
-    CHECK(f.done(f.load(header() + "test-cards:\n  - { name: A, content: abc }\nkeys:\n  - test-card: { mem: A }\n")));
+    CHECK(f.done(f.load(header() + "test-cards:\n  - { name: A, content: abc }\nkeys:\n  - test-card: { mem: A }\n  - wait: 10ms\n")));   // not last: waited for (C59-7 AC-17)
     CHECK_EQ(contentOf(f.media->bindingOf("reader")->content), std::string("abc"));
     f.reader()->writeOnPass = "first";
     CHECK(f.done(f.step("test-card", "{ mem: A }")));

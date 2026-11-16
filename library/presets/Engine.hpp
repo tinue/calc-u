@@ -61,6 +61,11 @@ public:
     // `timeout:` in ticks, for an item that waits itself (After::Own; AC-57).
     std::optional<machine::Ticks> deadline() const { return deadline_; }
     void setDeadline(std::optional<machine::Ticks> d) { deadline_ = d; }
+    // The last item of a load, without let-it-finish: (AC-60): an item that
+    // waits itself does not wait (C59-7 AC-17: a `card:` the ROM has not
+    // taken yet stays at the reader).
+    bool notWaitedFor() const { return notWaitedFor_; }
+    void setNotWaitedFor(bool b) { notWaitedFor_ = b; }
     sessions::Task<bool> untilRunning();   // AC-19
     void log(std::string line) { op_.session().log(std::move(line)); }
     typing::TypingEngine* typing() { return deps_.typing ? &deps_.typing->engine() : nullptr; }
@@ -78,6 +83,7 @@ private:
     EngineDeps& deps_;
     bool firstPressAtOnce_ = false;
     std::optional<machine::Ticks> deadline_;
+    bool notWaitedFor_ = false;
 };
 
 sessions::Task<LoadOutcome> carryOut(sessions::OperationContext&, std::shared_ptr<const LoadPlan>, LoadOptions,

@@ -3,7 +3,7 @@
 // into dist/library-worker.js), which hosts the app session of the engine
 // (frontends/web/bindings.cpp) and passes LIB-3 messages to the page.
 //
-// File system: /bundle (the ROM full set and cuecards.txt) and /presets (the
+// File system: /bundle (the ROM full set) and /presets (the
 // bundled presets) from files.json, /uploads (files the user opened), and
 // /persist-calc-u-59, the persistent file system in IndexedDB: the settings
 // file (settings/Calc-U-59/Calc-U-59.ini) and the save folder (Calc-U-59/:

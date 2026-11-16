@@ -210,7 +210,7 @@ public:
             co_return ItemResult{};
         }
         if (auto r = part_.insert(s, *word, std::move(b), std::move(content), ref_.side)) co_return failed(*r);
-        if (!kind_.words.insertNeedsTime) co_return ItemResult{};
+        if (!kind_.words.insertNeedsTime || run.notWaitedFor()) co_return ItemResult{};   // C59-7 AC-17: last, not waited for
         // A pass-through place: fitted and fed; until the medium has passed (and
         // stays fitted), within timeout: (AC-26; LIB-6 AC-57).
         machine::Machine* m = s.machine();

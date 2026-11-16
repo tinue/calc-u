@@ -2,7 +2,7 @@
 # Build the web client into frontends/web/dist/ (gitignored): the WASM
 # engine (core/ + app/ + bindings.cpp; CMake target calcu59_web of the
 # repository's root project, ADR 0003, built in build/web), the files it
-# loads (bundle/: the ROM full set and cuecards.txt), the calculator's script,
+# loads (bundle/: the ROM full set), the calculator's script,
 # stylesheet and fonts, the presets, the installable app (the library's,
 # library/web/app/) and a demo page. The worker, the service worker and the
 # page side of the shell are the library's (library/web/, LIB-15; build.js).
@@ -40,12 +40,12 @@ cmake --build "$BUILD" --target calcu59_web
 cp "$BUILD/products/calc-u-59/ti59-core.js" "$BUILD/products/calc-u-59/ti59-core.wasm" "$DIST/wasm/"
 
 # The full set of ROM files (LIB-12 AC-9: the ten calculator dumps and the 14
-# module files, as roms/fetch_roms.sh fetched them) and cuecards.txt (the
-# module list and cue cards): the library's worker writes everything in
+# module files with the module list and cue cards, as roms/fetch_roms.sh
+# fetched them): the library's worker writes everything in
 # bundle/ (files.json) into /bundle, where the lookup finds them. A missing
 # file is not copied, and the started client names it (LIB-12 AC-5;
 # tests/rom_missing_build.sh).
-cp "$ROMS"/*.txt "$ROMS"/*.rom.yaml "$REPO_ROOT"/roms/solid-state/cuecards.txt "$DIST/bundle/"
+cp "$ROMS"/*.txt "$ROMS"/*.rom.yaml "$DIST/bundle/"
 
 # The calculator artwork and the cue-card templates (one source: the Xcode
 # asset catalogue, as for the Qt app).

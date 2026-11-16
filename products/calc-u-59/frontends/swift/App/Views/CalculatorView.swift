@@ -152,14 +152,10 @@ struct CalculatorView: View {
         )) { item in
             CardPickerView(
                 mode: item.mode,
-                directory: CardStorage.directoryURL,
-                defaultFileName: viewModel.cardFileName
-            ) { url in
-                switch item.mode {
-                case .load: viewModel.fitCard(from: url)
-                case .save: viewModel.fitBlankCard(savingTo: url)
-                }
-            }
+                cards: viewModel.savedCards,
+                onArm: { viewModel.armCard($0) },
+                onArmFresh: { name, confirmed, asked in viewModel.armFreshCard(name: name, confirmed: confirmed, asked: asked) }
+            )
         }
         #if !os(macOS)
         .sheet(isPresented: $showingSettings) {
@@ -294,7 +290,7 @@ struct CalculatorView: View {
     // Identifiable wrapper so .sheet(item:) works with the enum
     private struct PickerItem: Identifiable {
         let mode: CardPickerView.Mode
-        var id: Int { mode == .load ? 0 : 1 }
+        var id: Int { mode == .arm ? 0 : 1 }
     }
 
     // MARK: - Card reader bar
@@ -346,18 +342,21 @@ struct CalculatorView: View {
 
             if viewModel.model.hasCardReader {
                 if viewModel.cardState == .noCard {
+                    // C59-7 AC-13: both read "Crd"; icon and screen-reader name differ.
                     Button("Crd", systemImage: "square.and.arrow.down") {
-                        viewModel.cardPickerMode = .load
+                        viewModel.cardPickerMode = .arm
                     }
                     .labelStyle(showLabel: showLabels)
                     .controlSize(.regular)
-                    .help("Fit a magnetic card into the calculator")
+                    .accessibilityLabel("Arm Card")
+                    .help("Arm Card: fit a saved magnetic card, to feed by a corner")
                     Button("Crd", systemImage: "plus.rectangle") {
-                        viewModel.cardPickerMode = .save
+                        viewModel.cardPickerMode = .armFresh
                     }
                     .labelStyle(showLabel: showLabels)
                     .controlSize(.regular)
-                    .help("Fit a fresh magnetic card into the calculator")
+                    .accessibilityLabel("Arm Fresh Card")
+                    .help("Arm Fresh Card: fit a fresh magnetic card under a name")
                 } else {
                     Button("Eject Card", systemImage: "eject") {
                         viewModel.ejectIfSwiping()

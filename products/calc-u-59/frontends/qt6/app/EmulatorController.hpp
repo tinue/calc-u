@@ -1,6 +1,7 @@
 #pragma once
 #include "TIAppPart.hpp"
 #include "debugger/RunState.hpp"
+#include "media/MediaTopics.hpp"
 #include "qt6/ClipboardService.hpp"
 #include "typing/HostKey.hpp"
 #include "sessions/Listener.hpp"
@@ -28,7 +29,6 @@
 class EmulatorController : public QObject {
     Q_OBJECT
 public:
-    using CardState = cu59::CardState;
     using DebugLevel = cu59::DebugLevel;
 
     explicit EmulatorController(QObject* parent = nullptr);
@@ -43,9 +43,12 @@ public:
     void resetMachine();
     void cleanResetMachine();
     QString moduleID() const;
-    /// Swap to a different module and power-cycle (no-op if unchanged).
-    void changeModule(const QString& moduleID);
-    QVector<cu59::ModuleMetadata> allModules() const;
+    /// slot-1's picker of the library's media topic (LIB-7 AC-8, AC-47): the
+    /// modules by their `description`, in `menu-sort` order (the Module group).
+    std::vector<calcu::media::PickerEntry> modulePicker() const;
+    /// A module of that picker chosen (`media.choose {place: slot-1}`): a
+    /// replace and the power cycle (no-op if it is the module plugged now).
+    void chooseModule(const QString& entryId);
 
     // ── Display ──────────────────────────────────────────────────────────────
     const cu59::LedFrame& display() const;
@@ -78,14 +81,23 @@ public:
     /// state (`papers`, `run-state`, `trace` and what the paper streams hold).
     void addMessageHandler(std::function<void(const calcu::sessions::Message&)> handler);
 
-    // ── Card reader ──────────────────────────────────────────────────────────
-    CardState cardState() const;
-    QString cardFileName() const;
-    void fitCard(const QString& path);
-    void fitBlankCard(const QString& savePath);
+    // ── Magnetic cards: the library's media topic and commands (C59-7, LIB-7 59) ──
+    /// The card reader `card-reader` (TI-59 only); nullptr without one.
+    const calcu::media::PlaceState* cardReader() const;
+    /// A card passes through the reader now (Eject Card instead of the Crd buttons, AC-13).
+    bool cardPassing() const;
+    /// The saved cards for Arm Card (AC-14): the reader's picker without the
+    /// empty entry and the implicit fresh card.
+    std::vector<calcu::media::PickerEntry> savedCards() const;
+    /// Arm Card (`media.choose`): the chosen card fitted, not fed.
+    void armCard(const QString& entryId);
+    /// Arm Fresh Card (`media.start-new`): a fresh card named `name` fitted;
+    /// the refusal, "asks: <question>" when a card of that name is saved
+    /// (send again with `confirmed`), empty when done (AC-15).
+    QString armFreshCard(const QString& name, bool confirmed);
+    void ejectCard();
     bool tapCard(double nx, double ny);
     std::optional<int> litCardCorner() const;
-    void ejectCard() { send(cu59::commands::kEjectCard); }
 
     // ── Presets: LIB-6 load-preset {ref: path} ───────────────────────────────
     void loadPreset(const QString& path);

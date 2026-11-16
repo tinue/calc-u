@@ -18,5 +18,8 @@ namespace cu59 {
 
 std::map<int, CueCardContent> moduleCueCards(const calcu::roms::RomSet&, std::string_view moduleID,
                                              const std::function<void(const std::string&)>& problem = {});
+/// The same from a module file's text (`file` names it in a problem).
+std::map<int, CueCardContent> moduleCueCardsOf(std::string_view text, const std::string& file,
+                                               const std::function<void(const std::string&)>& problem = {});
 
 } // namespace cu59

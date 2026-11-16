@@ -34,6 +34,11 @@ Never edit the calculator there — that copy is generated.
    `CalcuPaperPanel` (`src/Paper.jsx`, LIB-8) and the run-control buttons
    `CalcuRunControlButtons` (`src/Debugger.jsx`, LIB-10), on `engine.shell`.
    A trace is handed over with `keep-file` when it ends; the page lists it.
+   The magnetic cards are the library's `media` topic and `media.*`
+   commands (M-55, LIB-7 59, C59-7; `src/Dialogs.jsx`'s card picker and the
+   component set's `CalcuSavedMediaDialog`); `c59.web.card` and the
+   `c59.web.*-card` commands are gone; the corners stay `c59.tap-card`
+   (the face's pointer) and `media.feed` (assistive buttons).
    `bindings.cpp` is only the factory of the session; `src/engine.js` only
    translates the components' calls to commands and requests and the topics
    to slices (as Calc-U-1600's). No message of a protocol of its own (LIB-15
@@ -76,7 +81,9 @@ python3 -m http.server 8000 -d frontends/web/dist   # look at it: http://localho
 The tests (`tests/play-calculator.spec.js`) drive `dist/index.html` and
 `dist/app/` through the real engine: arithmetic by bitmap identity of the LED
 canvas, the hit test and drag, the physical keyboard, models and the TI-58C
-constant memory, settings, cue cards, presets, the card folder, the paper
+constant memory, settings, cue cards, presets, the magnetic cards (C59-7,
+LIB-7 59: Arm Card, Arm Fresh Card, the scenarios `C59-7 AC-12` and
+`C59-7 AC-15`, Import…, Saved Media…), the paper
 panel (`LIB-8 AC-28`, `AC-31`), the debugger's run-control buttons
 (`LIB-10 AC-34`) and the trace hand-over (`LIB-10 AC-26`), the portrait pages, the service worker's
 precache. Key presses after a program stops can extend its last entry, as

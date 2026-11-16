@@ -128,6 +128,7 @@ void TIAppPart::machineRestarted(calcu::sessions::SessionContext& ctx, calcu::se
 }
 
 void TIAppPart::fitOwnCueCard(const CueCardContent& card) {
+    refreshCueCard();   // D-6: a card fitted before this section is seen first
     m_userCueCard = card;
     m_userCueCardGeneration = m_ms ? m_ms->generation() : 0;
     m_lastFit = Fitted::Own;   // D-6: in the place of the card fitted before

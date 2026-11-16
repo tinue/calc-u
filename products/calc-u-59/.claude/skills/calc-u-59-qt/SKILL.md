@@ -11,8 +11,21 @@ by the repository's `.github/workflows/calc-u-59.yml` and attached to releases b
 `release.yaml`. The **macOS Qt build is local and for development only** —
 never shipped, never built in CI, never signed. On the Mac the Swift app is
 the product. The Qt app has no iCloud: cards, `ti58c.memory.yaml` and traces live in
-`~/Calc-U-59`, each folder (and where Open Preset starts) set in Settings, as
+the save folder `~/Calc-U-59` (`AppPaths::saveDir()`, LIB-9), each folder (and where Open Preset starts) set in Settings, as
 in Calc-U-1600 (`AppPaths`, `AppSettings::OpenFolder`).
+
+**Magnetic cards** (C59-7, LIB-7 59, M-55) are the library's media part: the
+`media` topic's place `card-reader` (what is fitted, `passing`, the picker)
+and the commands `media.choose` (Arm Card), `media.start-new` with the
+template `implicit:Fresh card` (Arm Fresh Card; a refusal `asks: …` is the
+replace question, sent again with `confirmed`), `media.eject`, through
+`EmulatorController` (`cardReader`, `savedCards`, `armCard`, `armFreshCard`,
+`ejectCard`). `ControlBar` shows the two "Crd" buttons (names "Arm Card",
+"Arm Fresh Card") or "Eject Card"; `CardPickerDialog` draws the saved cards
+it is handed and reads no folder. A corner tap is `c59.tap-card`; the lit
+corner comes from `c59.cue-card`. The Settings dialog's Solid State Module
+list is the `slot-1` picker of the same topic (`modulePicker`,
+`chooseModule` → `media.choose {place: slot-1}`).
 
 Structure follows the sibling project Calc-U-1600
 (`~/Development/sharp/Calc-U-1600/Qt6`): Widgets, AUTOMOC/AUTORCC, no `.ui`

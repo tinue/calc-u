@@ -9,18 +9,26 @@ using calcu::formats::YamlNode;
 
 std::map<int, CueCardContent> moduleCueCards(const calcu::roms::RomSet& roms, std::string_view moduleID,
                                              const std::function<void(const std::string&)>& problem) {
-    std::map<int, CueCardContent> out;
-    if (moduleID.empty()) return out;
+    if (moduleID.empty()) return {};
     const std::string file = std::string(moduleID) + ".rom.yaml";
+    const auto* bytes = roms.bytes(file);
+    if (!bytes) {
+        if (problem) problem("The cue cards of " + file + " cannot be read: the file is not in the ROM set.");
+        return {};
+    }
+    return moduleCueCardsOf(std::string_view(reinterpret_cast<const char*>(bytes->data()), bytes->size()), file, problem);
+}
+
+std::map<int, CueCardContent> moduleCueCardsOf(std::string_view text, const std::string& file,
+                                               const std::function<void(const std::string&)>& problem) {
+    std::map<int, CueCardContent> out;
     auto fail = [&](const std::string& why) {
         if (problem) problem("The cue cards of " + file + " cannot be read: " + why);
         return std::map<int, CueCardContent>{};
     };
-    const auto* bytes = roms.bytes(file);
-    if (!bytes) return fail("the file is not in the ROM set.");
     YamlNode root;
     std::string error;
-    if (!calcu::formats::parseYaml(std::string(bytes->begin(), bytes->end()), &root, &error)) return fail(error);
+    if (!calcu::formats::parseYaml(std::string(text), &root, &error)) return fail(error);
     const YamlNode* cards = root.find("cue-cards");
     if (!cards) return out;
     if (!cards->isSeq()) return fail("cue-cards: is a list.");

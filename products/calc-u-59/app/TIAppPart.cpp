@@ -365,6 +365,12 @@ void TIAppPart::operationEnded(sessions::SessionContext& ctx) {
     settle();
 }
 
+void TIAppPart::beforeFlush(sessions::SessionContext& ctx) {
+    m_ctx = &ctx;
+    refreshCueCard();   // a card fitted or fed by a library command (C59-7 AC-22)
+    settle();
+}
+
 void TIAppPart::settle() {
     syncSpeed();
     followRunState();

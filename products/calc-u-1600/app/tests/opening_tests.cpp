@@ -8,6 +8,8 @@
 // session but start no machine; the others start one (real ROMs, SKIP
 // without them).
 
+#include <algorithm>
+#include <cstddef>
 #include <cstdint>
 #include <cstdio>
 #include <filesystem>

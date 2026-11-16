@@ -5,6 +5,7 @@
 #include "harness/attach/AttachClient.hpp"
 #include "harness/attach/AttachEndpoint.hpp"
 #include <algorithm>
+#include <chrono>
 #include <deque>
 #include <memory>
 #include <mutex>
@@ -19,7 +20,12 @@ struct EchoApp final : AttachInbox {
     AttachEndpoint endpoint{*this, 0};
     std::mutex m;
     std::vector<std::string> lines;
+    int detached = 0;
     void post(AttachEvent e) override {
+        if (e.kind == AttachEvent::Kind::Detached) {
+            std::lock_guard<std::mutex> lock(m);
+            ++detached;
+        }
         if (e.kind != AttachEvent::Kind::Line) return;
         {
             std::lock_guard<std::mutex> lock(m);
@@ -27,6 +33,17 @@ struct EchoApp final : AttachInbox {
         }
         if (e.line == "json on") return endpoint.write(e.client, {"{\"done\":true,\"result\":null,\"reason\":null}"});
         endpoint.write(e.client, {"message display x", "done 1", e.line});
+    }
+    // The endpoint takes one harness at a time: before the next client
+    // connects, wait until it has dropped the one before (a race on CI).
+    void waitDetached(int count) {
+        for (int i = 0; i < 400; ++i) {
+            {
+                std::lock_guard<std::mutex> lock(m);
+                if (detached >= count) return;
+            }
+            std::this_thread::sleep_for(std::chrono::milliseconds(5));
+        }
     }
 };
 
@@ -52,11 +69,13 @@ TEST(c59_5_ac10_calcu_attach_relays_lines) {
     CHECK_EQ(status, 0);
     CHECK_EQ(out, std::string("done 1\nticks\ndone 1\nlcd\n"));   // message lines dropped (D-1)
     out.clear();
+    app.waitDetached(1);
     CHECK_EQ(runAttach({"--port", port, "--messages"}, input({"ticks"}), [&](const std::string& s) { out += s; },
                        [&](const std::string& s) { err += s; }),
              0);
     CHECK_EQ(out, std::string("message display x\ndone 1\nticks\n"));
     out.clear();
+    app.waitDetached(2);
     runAttach({"--port", port, "--json"}, input({}), [&](const std::string& s) { out += s; },
               [&](const std::string& s) { err += s; });
     std::this_thread::sleep_for(std::chrono::milliseconds(50));

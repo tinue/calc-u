@@ -46,6 +46,17 @@ set_target_properties(calcu_qt6 PROPERTIES AUTOMOC ON)
 target_link_libraries(calcu_qt6 PUBLIC calcu_library Qt6::Widgets PRIVATE calcu_warnings)
 target_include_directories(calcu_qt6 PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/..)
 target_compile_features(calcu_qt6 PUBLIC cxx_std_20)
+# Qt before 6.5 (Ubuntu 24.04's 6.4.2): its moc cannot parse `concept`, and
+# with the target's own -std=gnu++20 AutoMoc's compiler predefines make it
+# read libstdc++ 13's <concepts> (CI, M-45). Without the predefines moc skips
+# those sections, as it does for the product apps, whose predefines are
+# taken without -std.
+function(calcu_qt6_moc_compat target)
+  if(Qt6_VERSION VERSION_LESS 6.5)
+    set_target_properties(${target} PROPERTIES AUTOMOC_COMPILER_PREDEFINES OFF)
+  endif()
+endfunction()
+calcu_qt6_moc_compat(calcu_qt6)
 
 if(CALCU_TESTS)
   # LIB-14: QTest's key and mouse clicks for the shortcut cases (AC-4); a Qt
@@ -63,6 +74,7 @@ if(CALCU_TESTS)
     target_include_directories(${name} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../testing
                                                ${CMAKE_CURRENT_SOURCE_DIR}/../shell/tests ${CMAKE_CURRENT_SOURCE_DIR}/tests)
     set_target_properties(${name} PROPERTIES AUTOMOC ON)
+    calcu_qt6_moc_compat(${name})
     if(TARGET Qt6::Test)
       target_link_libraries(${name} PRIVATE Qt6::Test)
       target_compile_definitions(${name} PRIVATE CALCU_QT_TEST=1)

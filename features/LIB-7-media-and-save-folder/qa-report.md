@@ -216,3 +216,137 @@ Deviations:
 - The save folder is checked with the request `tp.read`: the topic
   `tp.files` lists the folder only after the test product's own commands.
 
+## Calc-U-1600 (M-47, 2026-11-16, branch `m47-media-1600`)
+
+Built and run on an M4 Pro, macOS 27.2, Apple clang, CMake, Ninja,
+RelWithDebInfo: `build/tests` (`-DCALCU_FRONTEND_QT=OFF`), `build/qt`
+(`-DCALCU_FRONTEND_QT=ON`, Homebrew Qt 6, `-DCALCU_TESTS_LONGER=ON`), the
+Web `dist/` (`frontends/web/build.sh`, Emscripten).
+
+The code:
+- `app/SharpMediaKinds.*`: the three kinds and their codecs (AC-37, AC-41,
+  AC-42, AC-46): `battery-backed-module` (`.card.yaml` version 1,
+  `HeldBy::ModuleSlot`; `isMedium` = a definition with `battery: true`;
+  `moduleRequest` adds a saved instance's descriptor to the session's
+  catalogue; `fitsPinOut` by `compatible-hosts`; the write is the splice of
+  `BatteryCardInstance.hpp` into the file it came from, else into the
+  bundled file of the module), `floppy-disk` (`.floppy.yaml` version 2,
+  sides `0:`/`1:`, version 1 `Outdated` with the hint; written whole, the
+  description kept), `cassette` (`.tape.yaml` version 1 with its WAV,
+  `Folder::Tapes`; the WAV beside a copy, a definition written again keeps
+  its sound file's path, D-26); `moduleListing()`.
+- `core/Machine/SharpMediaPlaces.*`: the content types `ModuleContent`,
+  `FloppyContent`, `TapeContent`; `FloppyPlace` (the CE-1600F's media
+  place `floppy`), `CassettePlace` (the media place `cassette` of a
+  CE-150 or CE-1600P: a tape without samples records, one with samples
+  plays; `takeWriteNow` at each motor stop, `writesWhenAsked`), and
+  `SlotModuleMedium` (a battery-backed module in a slot), offered by the
+  interface machines and `SharpMachine`; `TapeDeck::loadForPlayBytes`,
+  `takeStopped`; `wavMono16Bytes`, `readWavBytes`; `FloppyImageFile.hpp`
+  version 2. `c1600.tape-deck` keeps the counter, `c1600.floppy-drive` the
+  lamp; both are the interface's (no tape kind without a CE-150 or
+  CE-1600P). The slots left the descriptors' `mediaPlaces` (D-22).
+- `app/SharpAppPart`: `MediaPart` among the parts after `StartupPart`,
+  `addMediaToPresets`; `c1600.select-module`, the topic `c1600.tapes` and
+  `MachinePayload::moduleChanges` went (the counter and the floppy lamp are
+  in `c1600.machine`); the CE-1600P's ROM switch puts the disk and the tape
+  back. Deleted: `app/ModuleBay.*`, `FloppyBay.*`, `TapeBay.*`,
+  `MediaLibrary.*`, `DirectoryScanCache.hpp`, `core/Connector/MediaSave.hpp`,
+  the save helpers of `AppPaths`. `app/HarnessProduct`: `mediaKinds()`,
+  `moduleListing()`. `app/SharpWebPart`: the bay and saved-media commands
+  went.
+- Qt6: the control bar's pickers from the topic `media` (groups, disabled
+  outdated entries with their hint), `media.choose`, `media.turn`, the
+  library's `NameAndSaveDialog`, the tape's Save as `media.start-new`;
+  `MemoryModuleManager`, `FloppyDiskManager`, `TapeManager` deleted;
+  "Save folder:"; the host calls `AppSession::close()`.
+- Web: the pickers from the topic, the library's `CalcuNameAndSaveDialog`
+  and `CalcuSavedMediaDialog`, File ▸ Import Media… (a tape with its WAV).
+- `CliPresetRun` passes `--save-dir` as the run's save folder; the CLIs'
+  `--tape-in`/`--tape-out` go through the cassette's media place.
+
+Result: `CoreTests` 1004 tests (21 `lib7_` of M-47 plus the ported ones),
+Frequent 34 of 34 in `build/tests` (`CoreTests` 54 s), 36 of 36 in
+`build/qt`; `calcu_library_tests` 927 (two new of M-47); `calcu_qt6_tests`
+49 (offscreen); Web Playwright 86 passed, 2 skipped; Longer in `build/qt`:
+`CalcU1600Shots` 04 to 09 and the check scenarios (lib6, lib7, lib8, lib10)
+passed, `CalcU1600ExampleReferences` 32 of 32. CI not dispatched.
+
+| ID | Result | Test case |
+|---|---|---|
+| AC-37 | Pass | `lib7_ac37_three_kinds_suffixes_versions_name_keys`, `lib7_ac37_floppy_v2_sides_0_1_v1_outdated_with_hint`, `lib7_ac37_card_v1_read_and_written` (`tests/media_kinds_tests.cpp`); `test_floppy_file_*` of `ce1600f_tests.cpp` on version 2 |
+| AC-38 | Pass | `lib7_ac38_picker_fits_the_slot_in_ac8_order`, `lib7_ac38_choose_is_replace_power_cycle_memory_kept` (one replace, its power cycle, NEW0? :CHECK), `lib7_ac38_other_slot_and_disk_untouched` (`app/tests/media_session_tests.cpp`); `lib18_ac29_module_replace_power_cycle_memory_kept_new0_check` |
+| AC-39 | Pass | `lib7_ac39_turn_is_eject_and_insert_other_side`, `lib7_ac39_lamp_while_motor_runs`, `lib7_ac39_name_and_save_for_a_template_disk`; Web `lib7_ac44 the disk side button turns the disk over`; Qt6 shots `05-modules` (the side button reads "0") |
+| AC-40 | Pass | `lib7_ac40_instance_name_replaced_after_asking`, `lib7_ac40_name_with_slash_or_colon_refused`, `lib7_ac40_write_protect_power_cycle` (row 1600-17); `lib7_ac40_qt6_prompts_instance_and_disk_name` (`calcu_qt6_tests`); Web `lib7_ac44 Name & Save can write-protect a CE-161, and only a card with the switch` |
+| AC-41 | Pass | `lib7_ac41_card_file_kept_but_content_name_template_mark`, `lib7_ac41_disk_written_whole_description_kept`; `lib7_ac44_test_floppy_bay` (the description kept by Name & Save and autosave) |
+| AC-42 | Pass | `lib7_ac42_definition_with_wav_is_a_medium` (any relative WAV, `position` reserved, a missing WAV named), `lib7_ac42_cassette_place_blank_records_tape_with_sound_plays` (written at the motor stop), `lib7_ac42_tape_flow_through_the_harness` (the empty tape offered; a hand-written definition around the fixture's WAV CLOADs; CSAVE onto the empty tape stays in the place, unsaved; `saveas` writes `Rec.tape.yaml` and `Rec.wav` side by side; a WAV alone not listed; `tape:` and `eject: tape`; the saved tape CLOADs), `lib7_ac44_test_tape_status_follows_calls` (start-new, the counter in `c1600.machine`, no file before the first write); Qt6 shots `04-basic` (a named new tape, CSAVE, CLOAD); Web `lib7_ac44 a new tape is recorded under its name` |
+| AC-43 | Pass | Web `lib7_ac43 import card disk and tape with wav`, `lib7_ac43 saved media list`, `lib7_ac43 delete asks first`; `lib7_ac44_test_media_library` |
+| AC-44 | Pass | Today's tests on the topic and commands: `lib7_ac44_test_module_bay`, `lib7_ac44_test_floppy_bay` (`media_session_tests.cpp`, was `shared_bay_tests.cpp`; the scan cache's test went with it), `lib7_ac44_test_media_library`, `lib7_ac44_test_tape_status_follows_calls`, `lib7_ac40_write_protect_power_cycle` (was `test_card_write_protect`) (`shared_app_session_tests.cpp`); `battery_card_instance_tests.cpp` (the splice and templates; `test_plan_media_save` went with `MediaSave.hpp`: the save rules are the library's `planSave`, AC-17 of the Library column, and pass for the modules in `lib7_ac40_*`); `tape_deck_tests.cpp` unchanged; `ce1600f_tests.cpp` on version 2; Web `play.spec.js` (`lib7_ac44 …`, `a second tab says its changes are not saved`), `session.spec.js` `ac25` |
+| AC-45 | Pass | Qt6 `CalcU1600Shots.lib7-ac16-module-template-saved`, `CalcU1600Shots.lib7-ac8-picker-lists-instance` (`tests/gui/`; AC-16's "an instance afterwards" shown by the capture, the scenario language has no check of a disabled button); Web `lib7_ac16 module template saved under a name is an instance`, `lib7_ac8 picker lists it among the instances` |
+
+Every AC of the Calc-U-1600 column passes: the column is **Done**
+(`features/INDEX.md`).
+
+### Clauses of other features that pass here
+
+- C1600-4 AC-15, AC-16 (the six presets that waited; the four examples
+  against their references): its qa-report, M-47 section. C1600-4 is Done.
+- LIB-6 AC-47's `floppy:` clause (`lib6_ac47_floppy_without_ce1600p_refused`)
+  and AC-51's six presets: its qa-report. LIB-6 1600 is Done.
+- LIB-1 AC-37 (with D-22), AC-40's media place clause
+  (`lib1_ac40_one_media_place_capability_per_media_place`): LIB-1 1600 Done.
+- LIB-2 AC-32's save with the switch: LIB-2 1600 Done.
+- LIB-18 AC-28 again with the media part: `lib18_ac28_variant_switch_replugs_printer_interface_host_drive_modules`
+  (a saved instance in slot 2 carried over through `addCarry`),
+  `lib18_ac28_disk_in_drive_again_same_side` (the disk, side 1, through the
+  variant switch).
+
+### Deviations from the design, chosen by the simpler structure
+
+- **Library additions** (each with a test): `ReadOutcome::Status::NotMedium`
+  (a `.card.yaml` without a battery is a module that is not a medium: the
+  shelf neither lists nor logs it; `ec3_not_a_medium_neither_listed_nor_logged`);
+  `MediaPlace::writesWhenAsked()` (a tape is written at its motor stops and
+  at the writes that do not wait, not half a second after each sample;
+  `ac11_writes_when_asked_wait_for_the_moment`); `KindDecl::fitsPinOut`
+  (AC-8's "modules that fit the slot" for the shelf's media; computed
+  without building a request each frame); a slot's picker lists a
+  catalogue module of a bundled template's name once; a medium step needs
+  a place of its kind (`placeFor`, LIB-6 AC-47).
+- **The media place IDs.** Two media places of one peripheral (the
+  CE-1600P's cassette and drive) get distinct capability IDs
+  `printer/media-place/cassette`, `…/floppy` (`SharpMachine::byPeripheral`
+  with a name).
+- **A module keeps its card's name after Name & Save.** The machine's card
+  keeps the module name of its definition; the medium's name is the
+  binding's (the topic, the picker, the file). 0.8.1 re-read the card from
+  the saved file, so the card bore the new name; nothing user-visible
+  reads the card's name but the inspector's module dump label, which now
+  uses the binding's name.
+- **The core's catalogue scans stay.** `scanMemoryCardDirectory` (the
+  catalogue's module definitions, the card codec's bundled source),
+  `resolveModuleSpecByName`, `scanFloppyDirectory`, `resolveFloppyByName`,
+  `namedFileName` stay in `core/Connector/` for the catalogue and their
+  tests; no media code uses them (§10.2 deleted them).
+- **`legacy::moduleIn` and `atOffPoint` stay** for `SharpAppPart::slotCard`
+  (the inspector dump) and the tests; `presetMedia` was gone already.
+- **`AppPaths::instanceDir()` and `tapeDir()` stay** (the Settings dialog
+  and LIB-9's tests); the media part reads `AppPaths::places()`.
+- **The tape's record button** is `media.start-new` (D-24); the Web's and
+  Qt6's question "replace?" comes from the `asks:` reply.
+- **`c1600.machine`** carries the tape counter and the floppy lamp
+  (`tape`, `floppyMotor`); the topic `c1600.tapes` went.
+
+### Findings for the user
+
+- **PC-1600 idle and the disk (LIB-6 1600).** `INIT"X:"` and `SAVE"X:…"`
+  write for seconds while the ROM reads the keyboard; key readiness counted
+  that as idle, so a preset's next item started early (`make_diskworks_media`:
+  ERROR 164). The PC-1600's idle rule now also waits for the CE-1600F's
+  motor (ledger row 1600-43). The broader M-46 finding (BASIC running
+  counts as idle) stands: `DiskWorks`' display is excepted in AC-16.
+- **Rows 1600-40 to 1600-43** are new (the cassette with a CE-150 on the
+  PC-1600; a detached CE-1600P takes the disk out; the slot picker's
+  groups; a preset waits for the disk motor).
+- **CoreTests at 54 s** of the 60 s Frequent budget (51 s in M-46); the
+  new media tests take about 3 s.

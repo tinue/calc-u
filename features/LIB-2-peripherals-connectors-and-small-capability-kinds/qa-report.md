@@ -175,3 +175,15 @@ In progress.
 
 Not here: what the C1600-1 design (§1) gives the column's later steps,
 M-31 (the library's sessions) and M-47 (media places).
+
+## Calc-U-1600, completed (M-47, 2026-11-16, branch `m47-media-1600`)
+
+What the column waited for (M-31's sessions: Done there; M-47's media
+places): AC-32's save that sets the CE-161's switch is LIB-7's and passes
+in `lib7_ac40_write_protect_power_cycle` (`app/tests/shared_app_session_tests.cpp`:
+Name & Save with the switch, the file says `write-protect: protected`, the
+module refuses writes at once, the instance comes back protected, a module
+without the switch refuses); the module's switch is the controls kind's
+`write-protect` (D-9) through which LIB-7 sets it. The media places of the
+CE-150, the CE-1600P and the CE-1600F: LIB-1 AC-40 (above in that report).
+AC-28 to AC-34 pass (the M-26 part); the column is **Done**.

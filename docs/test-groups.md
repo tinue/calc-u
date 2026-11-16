@@ -46,6 +46,27 @@ Longer, measured locally on 2026-11-14 at the end of Part B: 291.5 s,
 within the 10 min; all entries ran (the two Calc-U-1600 web entries since
 the `<cstdlib>` fix).
 
+## Local Linux CI
+
+`ci/linux/run.sh` runs the CI's Linux jobs in Podman on Ubuntu 24.04 with
+GCC 13, natively on arm64 (ADR 0039): before dispatching CI, and after a
+change a GCC build may take differently from Apple clang. It is not a step's
+check (a step is green by the build and the Frequent group).
+
+| Job | CI job | |
+|---|---|---|
+| `library` | `library` (both workflows) | default |
+| `core-59`, `core-1600` | `core-tests`: build and the Frequent group | default |
+| `qt-59`, `qt-1600` | `linux` / `linux-*` up to the build | default |
+| `web-59`, `web-1600` | `web` up to the tests, each product's Emscripten | when named |
+
+`ci/linux/run.sh core-1600` runs one job. The working tree is copied into a
+volume without what git ignores (but the ROMs), so builds never write into
+the checkout. The image follows `ci/linux/Containerfile`, which mirrors the
+workflows' install steps and changes with them. Measured 2026-11-16 (M4 Pro,
+machine `calcu` with 12 CPUs and 16 GB): 8.7 min cold with the image build,
+1.6 min warm.
+
 ## Library
 
 | CTest entry | What | Group | Measured (M4 Pro, 2026-11-14) |

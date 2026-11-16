@@ -1,8 +1,8 @@
 # User-guide screenshots: the CE-1600P has just plotted the Lissajous demo
 # (examples/plotter/lissajou-1600.bas).
-format-version: 1
+format-version: 2
 model: PC-1600
-plotter: CE-1600P
+printer: CE-1600P
 keys:
   - key: mode
   - type: NEW0
@@ -11,4 +11,4 @@ program:
 keys:
   - key: mode
   - type: RUN
-  - wait:
+  - let-it-finish:

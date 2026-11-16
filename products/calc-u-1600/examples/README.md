@@ -8,10 +8,13 @@ loaded on its own with **File ▸ Load BASIC Program…**. See
 `docs/User-Guide.md` for the full preset format.
 
 Each preset names itself with `preset-name:` (short) and `description:`
-(one line). [bundled.yaml](bundled.yaml) lists the presets the app and the
-web client come with: `defaults` for **Settings ▸ Default presets**,
-`examples` for **File ▸ Examples**. A preset in either list must have both
-keys (the test suite checks it).
+(one line). The presets are in preset format 2 (`format-version: 2`,
+`docs/formats/preset.md` at the repository root); a file of version 1 is
+refused with a hint. [bundle.yaml](bundle.yaml) lists the presets the app
+and the web client come with, each with the files it needs: `startup` for
+**Settings ▸ Startup presets**, `groups` for **File ▸ Examples**. Only
+those files are bundled. A preset in either list must have both keys (the
+test suite checks it).
 
 ## plotter/ — CE-150 and CE-1600P
 
@@ -70,10 +73,10 @@ keys (the test suite checks it).
 | `flashtest_ce163f.pc1500a` | PC-1500A + CE-163F | How flash writes work, from BASIC POKE/PEEK |
 | `memory-cards/` | PC-1500 | A self-made YAML memory card definition and a preset that uses it |
 
-## startup/ — default presets
+## startup/ — startup presets
 
-One default preset per model, offered under **Settings ▸ Default presets**
-(bundled.yaml's `defaults`), applied whenever that model is selected.
+One startup preset per model, offered under **Settings ▸ Startup presets**
+(bundle.yaml's `startup`), applied whenever that model is selected.
 
 ## setup/ — preparation scripts
 

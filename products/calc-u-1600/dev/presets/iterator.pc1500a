@@ -1,5 +1,5 @@
 # Debug the Up/Down key issue
-format-version: 1
+format-version: 2
 model: PC-1500A
 
 keys:
@@ -16,7 +16,8 @@ program:
 keys:
   - key: mode
   - type: RUN
-  - wait: 2
+  - skip-wait:
+  - wait: 2s
   - key: break
   - key: cl
   - key: mode

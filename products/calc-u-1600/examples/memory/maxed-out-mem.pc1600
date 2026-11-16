@@ -3,13 +3,13 @@
 # sampling the data bus, plus the PVOUT 16 KB half-select nested in the
 # bank window.
 
-format-version: 1
+format-version: 2
 preset-name: Maximum memory
 description: "CE-1600M and banked CE-1601M: as much memory as it gets"
 model: PC-1600
 
-slot-1: CE-1600M
-slot-2: CE-1601M
+slot-1: { name: CE-1600M }
+slot-2: { name: CE-1601M }
 
 # Hard trial-and-error plus ROM analysis yielded that a fresh card first
 # needs to be formatted fully, with option "F". Then it can be split with

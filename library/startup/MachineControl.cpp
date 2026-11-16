@@ -62,6 +62,7 @@ MachineControl::MachineControl(ProductMachines& product, std::shared_ptr<const r
 PeripheralRequest MachineControl::withRoms(PeripheralRequest r) const {
     if (const machine::PeripheralDescriptor* d = product_.catalogue().peripheral(r.peripheral); d && roms_)
         r.roms = roms_->imagesFor(*d, r.variant);
+    product_.addRoms(r);
     return r;
 }
 

@@ -85,7 +85,8 @@ TEST(lib1_ac36_connectors_pinouts_places_debug_targets) {
         }
         CHECK(d.place(PlaceName{"slot-2"}) == nullptr);
         CHECK(d.place(PlaceName{"host-drive"}) == nullptr);
-        CHECK_EQ(d.places.size(), std::size_t{3});
+        CHECK_EQ(d.places.size(), std::size_t{4});   // and bus-rom (C1600-4 AC-10)
+        CHECK(d.place(PlaceName{"bus-rom"}) && d.place(PlaceName{"bus-rom"})->connector.value == "60-pin");
         CHECK(d.debugTargets == (std::vector<DebugTargetId>{DebugTargetId{"LH5801"}}));
     }
     const MachineDescriptor& d = model("PC-1600");
@@ -98,7 +99,8 @@ TEST(lib1_ac36_connectors_pinouts_places_debug_targets) {
         CHECK(pinOutOf(d, p) && pinOutOf(d, p)->takes == Takes::Chain && pinOutOf(d, p)->level == PinOutLevel::ContactLevel);
         CHECK(d.place(PlaceName{p})->connector.value == "60-pin");
     }
-    CHECK_EQ(d.places.size(), std::size_t{5});
+    CHECK_EQ(d.places.size(), std::size_t{6});   // and bus-rom (C1600-4 AC-10)
+    CHECK(d.place(PlaceName{"bus-rom"}) && d.place(PlaceName{"bus-rom"})->connector.value == "60-pin");
     CHECK(d.connector(ConnectorId{"rs232c"}) != nullptr);
     CHECK(d.debugTargets == (std::vector<DebugTargetId>{DebugTargetId{"SC7852"}, DebugTargetId{"LH5803"}}));
 }
@@ -160,7 +162,7 @@ TEST(lib1_ac39_peripheral_descriptors) {
         CHECK(p(m) != nullptr);
     const bool ce502b = testRomSet() != nullptr;   // from the ROM set (LIB-12 AC-14)
     if (ce502b) CHECK(p("CE-502B") != nullptr);
-    CHECK_EQ(c.peripherals().size(), std::size_t(ce502b ? 13 : 12));   // 4 + the nine modules
+    CHECK_EQ(c.peripherals().size(), std::size_t(ce502b ? 14 : 13));   // 4, the bus ROM + the nine modules
 
     const PeripheralDescriptor* ce150 = p("CE-150");
     CHECK(ce150 && ce150->roms.at(0).fileName == "CE-150.ROM");

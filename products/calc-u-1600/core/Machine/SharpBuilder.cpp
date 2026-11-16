@@ -59,6 +59,9 @@ BuildResult SharpMachineBuilder::build(const BuildRequest& req, const Catalogue&
             const ChangeResult r = machine->attach(p, catalogue);
             if (r.refused) return {nullptr, r.refused->missingRoms, r.refused->reason};
         }
+    // LIB-1 AC-42, LIB-18 D-3/D-23: a new machine is left as a cold boot
+    // leaves it (the adapter SharpBuildColdBoot goes, M-46).
+    machine->coldBoot();
     return {std::move(machine), {}, {}};
 }
 

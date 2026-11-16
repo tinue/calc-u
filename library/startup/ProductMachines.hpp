@@ -37,6 +37,9 @@ public:
         r.variant = entry.variant;
         return r;
     }
+    // A ROM image the product bundles outside the RomSet (Calc-U-1600's host
+    // drive, roms.md Q-1; M-46): added to a request's images after the set's.
+    virtual void addRoms(machine::PeripheralRequest& request) const { (void)request; }
     // Adapter SharpBuildColdBoot (§5): what the product does with a machine
     // it has just built. Nothing by default (D-3).
     virtual void startUp(machine::Machine&) {}

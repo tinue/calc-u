@@ -1,13 +1,13 @@
-# Default startup setup for the PC-1500A -- set it under Settings >
-# "PC-1500A default preset" to have it applied whenever the PC-1500A is
+# Startup preset for the PC-1500A -- choose it under Settings >
+# Startup presets (PC-1500A) to have it applied whenever the PC-1500A is
 # selected: CE-150 plotter + an unnamed CE-163F in the expansion slot.
 
-format-version: 1
+format-version: 2
 model: PC-1500A
 
-plotter: CE-150
+printer: CE-150
 
-slot-1: CE-163F
+slot-1: { name: CE-163F }
 
 # Clear memory and go to RUN mode
 keys:

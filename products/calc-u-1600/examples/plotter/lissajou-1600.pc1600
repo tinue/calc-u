@@ -1,12 +1,12 @@
 # PC-1600 plotter test -- draws a Lissajous figure on the CE-1600P.
 
-format-version: 1
+format-version: 2
 preset-name: Lissajous CE-1600P
 description: Lissajous figure on the CE-1600P
 model: PC-1600
 
 # CE-1600P pen-plotter attached.
-plotter: CE-1600P
+printer: CE-1600P
 
 # After reset, a NEW0 is required in PRO mode (PC-1600 starts up in RUN)
 keys:
@@ -22,4 +22,4 @@ program:
 keys:
   - key: mode
   - type: RUN
-  - wait:
+  - let-it-finish:

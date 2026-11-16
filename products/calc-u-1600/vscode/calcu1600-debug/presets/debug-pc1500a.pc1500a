@@ -3,10 +3,10 @@
 # then loads the assembled program at its listing's address and types its
 # CALL.
 
-format-version: 1
+format-version: 2
 model: PC-1500A
 
-slot-1: CE-163F
+slot-1: { name: CE-163F }
 
 keys:
   - key: cl

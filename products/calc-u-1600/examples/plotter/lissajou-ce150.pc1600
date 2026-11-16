@@ -1,12 +1,12 @@
 # PC-1600 plotter test -- draws a Lissajous figure on the CE-150.
 
-format-version: 1
+format-version: 2
 preset-name: Lissajous CE-150
 description: Lissajous figure on the CE-150, driven in MODE 1
 model: PC-1600
 
 # CE-150 pen-plotter attached.
-plotter: CE-150
+printer: CE-150
 
 # PRO mode, then MODE 1: the CE-150 is driven from the PC-1500 side.
 keys:
@@ -23,4 +23,4 @@ program:
 keys:
   - key: mode
   - type: RUN
-  - wait:
+  - let-it-finish:

@@ -3,7 +3,7 @@
 #  CALL &40C5,X
 # When finished, check X for the test result.
 
-format-version: 1
+format-version: 2
 preset-name: Memory test
 description: Memory test of the built-in RAM
 model: PC-1500
@@ -21,4 +21,4 @@ keys:
   - type: X=2
   - type: CALL&40C5,X
   - type: X
-  - wait: 5
+  - wait: 5s

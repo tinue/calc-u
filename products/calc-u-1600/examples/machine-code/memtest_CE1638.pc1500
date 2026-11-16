@@ -3,12 +3,12 @@
 #  CALL &C5,X
 # When finished, check X for the test result.
 
-format-version: 1
+format-version: 2
 preset-name: Memtest CE-1638
 description: Memory test with the CE-1638 module
 model: PC-1500
 
-slot-1: CE-1638
+slot-1: { name: CE-1638 }
 
 keys:
   - key: cl
@@ -23,4 +23,4 @@ keys:
   - type: X=2
   - type: CALL&C5,X
   - type: X
-  - wait: 5
+  - wait: 5s

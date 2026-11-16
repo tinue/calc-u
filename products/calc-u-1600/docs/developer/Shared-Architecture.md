@@ -120,10 +120,7 @@ file in `app/`, `frontends/`, `tools/` or `dev/` includes or names one.
   `paper-output` (the plotters, `core/Connector/PlotterPaperOutput.hpp`);
   the debug targets are the machine's `debugging()`
   (`core/Debug/SharpDebugging`). The program loaders reach memory only
-  through `c1600.loader-memory` (`core/Loaders.hpp`, C1600-2). What has no
-  seam yet (the
-  PC-1600's typing latches, the card in a slot) goes through
-  `core/Machine/LegacyCalls.hpp`, each call with the step that removes it.
+  through `c1600.loader-memory` (`core/Loaders.hpp`, C1600-2).
 - **Serial ports and clock.** LIB-2's session part
   (`calcu::peripherals::PeripheralsPart`, listed before `SharpAppPart`)
   holds the `HostLinks` (the pseudo-terminals, `calcu1600-rs232c.serial`,

@@ -78,7 +78,6 @@ public:
     bool typesText() const { return setup_.typing && setup_.typing->typesText(); }
     // What the header names (run-step: what the running machine has).
     bool plugged(const machine::PlaceName&, const machine::PeripheralId&) const;
-    bool pluggedAny(const machine::PlaceName&) const;
     // A file the preset names; the error is reported at `line` (AC-7, OQ-2, EC-5).
     std::optional<std::vector<std::uint8_t>> readFile(std::string_view path, int line);
     const PresetSource& source() const { return source_; }

@@ -418,8 +418,7 @@ void addSharpKeywords(calcu::presets::Vocabulary& v, const SharpKeywordSetup& se
             auto value = std::make_shared<HostDriveValue>();
             value->folder = resolved;
             ctx.keep(kHostDriveKey, value);
-        },
-        false});
+        }});
 
     for (const char* slot : {sharp::kSlot1, sharp::kSlot2}) {
         const std::string key = std::string(slot) + "-rom";
@@ -436,18 +435,16 @@ void addSharpKeywords(calcu::presets::Vocabulary& v, const SharpKeywordSetup& se
                 value->bytes = std::move(*bytes);
                 value->line = line;
                 ctx.keep(key, value);
-            },
-            false});
+            }});
     }
 
-    v.add(calcu::presets::HeaderKeyDef{kBusRomKey, readBusRoms, false});
+    v.add(calcu::presets::HeaderKeyDef{kBusRomKey, readBusRoms});
 
     v.add(calcu::presets::HeaderKeyDef{
         kDebugKey,
         [](const YamlNode& n, int line, ReadContext& ctx) {
             if (auto block = readDebugBlock(n, line, ctx)) ctx.keep(kDebugKey, block);
-        },
-        false});
+        }});
 }
 
 void checkSharpHeader(const calcu::presets::LoadPlan& plan, ReadContext& ctx) {

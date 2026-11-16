@@ -36,8 +36,7 @@ public:
     virtual void set(const ClockFields&, int millisecond = 0) = 0;
 };
 
-// The host's local date and time at `t` (the logic of Calc-U-1600's
-// core/HostClock.hpp).
+// The host's local date and time at `t`.
 HostDateTime hostDateTime(std::chrono::system_clock::time_point t);
 ClockFields fieldsOf(const HostDateTime&);
 // Sets every real-time clock capability of the machine (AC-23).

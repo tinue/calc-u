@@ -37,9 +37,4 @@ inline std::string lowered(std::string s) {
 // Equal ignoring ASCII case, the way names and file suffixes compare.
 inline bool sameIgnoringCase(const std::string& a, const std::string& b) { return lowered(a) == lowered(b); }
 
-// `s` ends with `tail`, ignoring ASCII case.
-inline bool endsWithIgnoringCase(const std::string& s, const std::string& tail) {
-    return s.size() >= tail.size() && sameIgnoringCase(s.substr(s.size() - tail.size()), tail);
-}
-
 } // namespace shared

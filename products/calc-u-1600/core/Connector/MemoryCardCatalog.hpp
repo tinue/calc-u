@@ -26,9 +26,7 @@ constexpr const char* kCardFileSuffix = ".card.yaml";
 //     hands the path to makeSoftwareDefinedCard() unchanged.
 //
 // No notion of "app resource" reaches the core: the caller supplies the
-// directory -- the GUI its bundled resource path, the CLIs their
-// `--modules-dir` (default the repo's Qt6/resources/cards) -- exactly as
-// it already supplies romPath / traceDir to the preset loaders.
+// directory (the app layer: the bundled modules folder, AppPaths).
 
 struct MemoryCardCatalogEntry {
     std::string moduleName;

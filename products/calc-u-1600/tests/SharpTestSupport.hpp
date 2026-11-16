@@ -121,7 +121,7 @@ inline std::unique_ptr<Machine> buildSharp(const Catalogue& cat, const char* mod
     return std::move(r.machine);
 }
 
-// Cold boot and the boot run to the prompt (today's flow, LegacyCalls).
+// Cold boot and the boot run to the prompt.
 inline void boot(Machine& m) {
     m.coldBoot();
     sharptest::bootRun(m);

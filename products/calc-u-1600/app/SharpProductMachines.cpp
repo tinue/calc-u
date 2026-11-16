@@ -33,9 +33,6 @@ PeripheralRequest SharpProductMachines::carried(const PlugEntry& entry, Machine&
     PeripheralRequest r = ProductMachines::carried(entry, m);
     if (entry.peripheral.value == sharp::kHostDrive) {   // AC-28: the folder goes along
         if (auto* f = sharp::firstOf<sharp::HostDriveFolder>(m)) r.content = std::make_shared<sharp::HostDriveRequest>(f->folder());
-    } else if (moduleCarry_ && entry.place.steps.size() == 1 &&
-               (entry.place.steps[0].value == sharp::kSlot1 || entry.place.steps[0].value == sharp::kSlot2)) {
-        r.content = moduleCarry_(entry, m);
     }
     return r;
 }

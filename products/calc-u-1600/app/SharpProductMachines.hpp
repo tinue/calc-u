@@ -27,13 +27,6 @@ public:
     SharpProductMachines(const calcu::machine::Catalogue& catalogue,
                          std::shared_ptr<const std::vector<std::uint8_t>> hostDriveRom);
 
-    // Until M-47 (LIB-7 A-1): the card of the module in a slot that a
-    // variant switch carries over (the bay's instance); nullptr: the
-    // module's definition builds it anew.
-    using ModuleCarry = std::function<std::shared_ptr<const calcu::machine::ProductData>(
-        const calcu::machine::PlugEntry&, calcu::machine::Machine&)>;
-    void setModuleCarry(ModuleCarry c) { moduleCarry_ = std::move(c); }
-
     const calcu::machine::Catalogue& catalogue() const override { return catalogue_; }
     calcu::machine::MachineBuilder& builder() override { return builder_; }
     calcu::startup::MachinePlan builtInDefault(const calcu::machine::ModelId&) override;
@@ -47,7 +40,6 @@ private:
     const calcu::machine::Catalogue& catalogue_;
     sharp::SharpMachineBuilder builder_;
     std::shared_ptr<const std::vector<std::uint8_t>> hostDriveRom_;
-    ModuleCarry moduleCarry_;
 };
 
 } // namespace shared

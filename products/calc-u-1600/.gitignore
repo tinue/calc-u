@@ -22,16 +22,14 @@ cmake-build-*/
 __pycache__/
 *.pyc
 
-# Headless CLI/probe tool builds and their throwaway debug output (ROM/RAM
-# dumps, format-utility test images, ad hoc trace captures, disassembly
+# Scratch output of `calcu` runs (ROM/RAM dumps, traces, disassembly
 # scratch, etc.) -- see headless/README.md. Everything under here is
 # regenerable or disposable; only the README is tracked.
 /headless/*
 !/headless/README.md
 
-# Debug trace captures dropped at the repo root by an ad hoc CLI/preset run
-# outside headless/ (see Core/PC1500/PC1500TraceFile.hpp for the format) --
-# root only, other .bin under subdirectories is unaffected by this rule.
+# Debug trace captures dropped at the repo root by an ad hoc run outside
+# headless/ (see core/PC1500/PC1500TraceFile.hpp for the format) -- root only, other .bin under subdirectories is unaffected by this rule.
 /*.bin
 
 # Sharp firmware ROM dumps -- ROMs are not in this repository.
@@ -49,17 +47,17 @@ roms/*.bin
 *.iws
 
 # VS Code editor settings (local/per-checkout preference, e.g. pointing
-# cmake.sourceDirectory at Qt6/)
+# cmake.sourceDirectory)
 /.vscode/
 
 
 # Non-macOS libsharpdx binaries fetched by tools/fetch_sharpdx.sh (see
-# Qt6/CMakeLists.txt) -- unlike Core/Basic/vendor/sharpdx/libsharpdx.a
+# cmake/CalcU.cmake) -- unlike core/Basic/vendor/sharpdx/libsharpdx.a
 # (macOS, committed, refreshed via tools/refresh_sharpdx.sh), these are
 # meant to stay a local/CI-only build artifact, never committed.
-/Core/Basic/vendor/sharpdx/libsharpdx-linux.a
-/Core/Basic/vendor/sharpdx/*.lib
-/Core/Basic/vendor/sharpdx/native-libs-windows.txt
+/core/Basic/vendor/sharpdx/libsharpdx-linux.a
+/core/Basic/vendor/sharpdx/*.lib
+/core/Basic/vendor/sharpdx/native-libs-windows.txt
 
 # sdas/zasm build output of the VS Code build tasks run on example sources
 # (see help/07-debugger.md). The example .bin files are tracked, except

@@ -16,7 +16,7 @@ namespace calcu::sessions {
 
 inline constexpr machine::Ticks kNever = std::numeric_limits<machine::Ticks>::max();
 
-// The input queue: LIB-5's typing engine; today's typing behind adapters.
+// The input queue: LIB-5's typing engine.
 class SliceHook {
 public:
     virtual machine::Ticks nextDue(machine::Ticks now) const = 0;   // kNever when idle
@@ -39,7 +39,7 @@ protected:
     ~WaitProbe() = default;
 };
 
-// Reserved for LIB-10's run control (pause, breakpoints).
+// LIB-10's run control (pause, breakpoints): how far a slice runs.
 class AdvanceGate {
 public:
     virtual machine::Ticks advance(machine::Machine&, machine::Ticks atLeast, bool& stoppedEarly) = 0;
@@ -90,7 +90,7 @@ public:
 
     void setSuspended(bool);   // AC-24; false starts afresh
     bool suspended() const { return suspended_; }
-    void setPaused(bool);      // reserved for LIB-10 (AC-25); false starts afresh (AC-23)
+    void setPaused(bool);      // LIB-10 (AC-25); false starts afresh (AC-23)
     bool paused() const { return paused_; }
     bool runs() const { return machine_ && !suspended_ && !paused_; }
 

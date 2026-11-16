@@ -76,7 +76,7 @@ TEST(test_typebasicprogram_pro_mode_load) {
 
 // ROM-gated: re-typing a line number with a same-length body replaces the
 // line without moving BASPRG_END -- that is still a stored line.
-TEST(test_typebasicprogram_same_length_replacement_is_stored) {
+TEST(test_pc1600_typebasicprogram_same_length_replacement_is_stored) {
     PC1600Machine m;
     SKIP_UNLESS(bootPC1600(m), "PC-1600 ROM images not found");
     tapKey(m, "mode"); // RUN -> PRO

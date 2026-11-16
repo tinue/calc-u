@@ -71,7 +71,7 @@ std::vector<float> asPlayback(const std::vector<int16_t>& recording) {
 }
 
 // A bin2wav tape CLOADs into exactly bas2img's program image.
-TEST(test_cload_bin2wav_tape) {
+TEST(test_pc1600_cload_bin2wav_tape) {
     const std::vector<uint8_t> image = readFile(kFixtureImg);
     PC1600Machine m;
     SKIP_UNLESS(!image.empty() && bootWithCE1600P(m), "PC-1600 ROM images or fixture not found");
@@ -94,7 +94,7 @@ TEST(test_cload_bin2wav_tape) {
 }
 
 // CSAVE onto a blank tape, then CLOAD that recording into a fresh machine.
-TEST(test_csave_cload_round_trip) {
+TEST(test_pc1600_csave_cload_round_trip) {
     const std::vector<uint8_t> image = readFile(kFixtureImg);
     PC1600Machine a;
     SKIP_UNLESS(!image.empty() && bootWithCE1600P(a), "PC-1600 ROM images or fixture not found");

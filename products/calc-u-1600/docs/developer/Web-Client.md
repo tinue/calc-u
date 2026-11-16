@@ -10,11 +10,13 @@ One build (`frontends/web/dist/`) serves two uses:
 It is made for landscape screens and tablets; a phone works (touch takes
 the nearest key, the menus are taller on touch screens) but gets the
 calculator alone in landscape. The calculator comes first: the faceplate is as large as the client
-allows, and the panels (inspector, plotter paper, printer) appear only when
+allows, and the panels (inspector, paper, printer) appear only when
 the faceplate spans the full width and leaves at least 220 px below it --
 in portrait and in tall windows, not on a phone in landscape or in a wide,
-short window. Narrower than 700 px, the inspector gives way to the paper or
-printer.
+short window. The paper panel is the library's (`CalcuPaperPanel`, LIB-8)
+and is always there, named after the plotter plugged in (LIB-8 AC-36).
+Narrower than 700 px, the inspector gives way to the printer, or to the
+paper while a plotter is plugged in.
 
 ```mermaid
 flowchart LR
@@ -87,7 +89,10 @@ attaches it as `Calc-U-1600-web.zip`.
   command or request `src/engine.js` maps the method to (`lcdText` reads
   the screen, `ticks` the emulated time); `.calcu-face[data-model]`,
   `.calcu-key[aria-label=<key>]`, `[data-panel=inspector|paper|printer]`
-  (`data-empty`), `[data-dialog=...]`.
+  (`data-empty`; the paper panel's own names are `[data-calcu=paper-owner]`,
+  `paper-copy`, `paper-cut`, … of `library/web/components/PaperPanel.jsx`),
+  `[data-dialog=...]`. The engine's `pause` and `resume` are the library's
+  run control (LIB-10); `getState().paused` follows the `run-state` topic.
 - **Same origin.** The worker and the service worker must come from the
   page's origin.
 

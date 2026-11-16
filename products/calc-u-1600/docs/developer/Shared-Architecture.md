@@ -60,7 +60,9 @@ WebAssembly check.
 | File | What it is |
 |---|---|
 | `SharpAppPart` | Calc-U-1600's part of the library's app session (a `calcu::sessions::SessionPart`): the live PC-1500/1500A/1600 as one `calcu::machine::Machine` handed to the machine session, model and ROM switches, memory-module slots, peripherals, tape, host drive, trace, inspector; the bays; the Sharp operations as `c1600.*` commands; the interim topics `c1600.control-state`, `c1600.machine`, `c1600.tapes`, `c1600.serial-links` and LIB-12's `roms-missing` (`SharpTopics.hpp`; see "The machine" below) |
-| `SharpMachineParts` | The adapter around the machine session: `SharpDebuggerGate` (the debugger's run control; until M-45) |
+| `SharpDebuggerSetup`, `SharpTraceRecorder`, `SharpSymbolReaders` | The library's debugger for the Sharp models (LIB-10): the `DebuggerPart`'s set-up (`cpu` only, the trace session on the core's records, no run-control steps), the trace records into the trace file, the symbols of the Sharp listings |
+| `SharpPrinters` | The CE-150's and the CE-1600P's papers for the library's `PaperPart` (LIB-8) |
+| `dap/` | The DAP's layer (C1600-3): its targets, breakpoints and steps on the library's debugger; the server is in the Qt frontend until M-50 |
 | `SharpTyping` | Typing on the library's typing engine (LIB-5, `library/typing/`): the typing profile per model (`typingProfile`: 4 + 4 frames, 6 more after SHIFT and KBII on the PC-1600, readiness rules, the characters, the `key` names), the keyboard map per model (`SharpKeyboardMap`), `typingProduct()` for the session's `TypingPart` |
 | `SharpSession` | `makeSharpSession()`: the library's app session with the part, which the session owns (Qt6, tests, `tools/wasm_smoke`); a host talks to it through the library's `calcu::sessions::Listener` |
 | `SharpWebPart` | What the Web page draws, as product topics, commands and requests (`c1600.ui`, `c1600.lcd`, …; LIB-15 1600) |
@@ -68,7 +70,7 @@ WebAssembly check.
 | `PresetCatalog` | The bundled presets of `examples/bundled.yaml` (`defaults`, `examples`) and any preset's short name and description; `examples:` refs resolve through `AppPaths` |
 | `PacingProfiles`, `AudioSink` | The Sharp pacing profiles (LIB-17 AC-20: the slice is the call, no jitter, full speed never paced); the host's audio output and `SoundFeed`, which plays the session's sound messages into it |
 | `Settings`, `AppPaths`, `Utf8Path` | Every settings key with its default (the declaration of `Calc-U-1600.ini`); the save/tapes/bundle folders and by-name save paths |
-| `KeyLayout/`, `LcdLayout`, `PlotterPaper`, `Rgb` | Key hit-regions and the faceplate fit; LCD geometry, colours and status indicators (`lcd::indicators()`); plotter-paper geometry |
+| `KeyLayout/`, `LcdLayout`, `Rgb` | Key hit-regions and the faceplate fit; LCD geometry, colours and status indicators (`lcd::indicators()`) |
 | `MachineModel` | The `Model` and ROM-version enums |
 | `ControlState` | What the pickers, menus and panels offer right now: every rule about which control a model has and which peripheral excludes which |
 | `MediaLibrary` | The save folder's cards, disks and tapes as items to list, export, import and delete (the web's Saved Media…) |
@@ -111,11 +113,13 @@ file in `app/`, `frontends/`, `tools/` or `dev/` includes or names one.
   sentence.
 - **What only a Sharp machine has** is a capability: the product kinds
   `c1600.loader-memory`, `c1600.inspector`, `c1600.ce158-printer-port`,
-  `c1600.host-drive-folder`, and the adapter kinds `c1600.plotter-paper`,
-  `c1600.trace`, `c1600.tape-deck`, `c1600.floppy-drive`
+  `c1600.host-drive-folder`, `c1600.trace-records`, and the adapter kinds
+  `c1600.tape-deck`, `c1600.floppy-drive`
   (`core/Machine/SharpProductKinds.hpp`); the library's `serial-port`,
-  `real-time-clock` and `controls` (the CE-161's write-protect switch).
-  What has no seam yet (loaders, preset loaders, the debug target, the
+  `real-time-clock`, `controls` (the CE-161's write-protect switch) and
+  `paper-output` (the plotters, `core/Connector/PlotterPaperOutput.hpp`);
+  the debug targets are the machine's `debugging()`
+  (`core/Debug/SharpDebugging`). What has no seam yet (loaders, preset loaders, the
   PC-1600's typing latches, the card in a slot) goes through
   `core/Machine/LegacyCalls.hpp`, each call with the step that removes it.
 - **Serial ports and clock.** LIB-2's session part

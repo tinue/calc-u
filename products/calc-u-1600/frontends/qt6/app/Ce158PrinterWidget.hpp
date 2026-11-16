@@ -8,8 +8,8 @@ class QPushButton;
 class MachineController;
 
 // Docked CE-158 panel: what the interface printed on its Centronics port,
-// plus the host path of its RS-232C port. A sibling of PlotterPaperWidget
-// in MainWindow's debug row -- same header, button bar and pill buttons
+// plus the host path of its RS-232C port. A sibling of the library's paper
+// panel in MainWindow's debug row -- same header, button bar and pill buttons
 // (ChromeColors / ChromeStyle) -- added while a CE-158 is attached.
 //
 // The printed bytes are kept raw for Save; the view shows them as text

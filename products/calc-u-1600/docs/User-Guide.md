@@ -33,7 +33,7 @@ stay up to date with the app.
 The window has three parts:
 - **The calculator** (faceplate and LCD) at the top.
 - **The control bar** below it: model, memory slots and peripherals.
-- **The panels** at the bottom: the Inspector, plus the plotter paper or
+- **The panels** at the bottom: the Inspector and the plotter paper, plus
   the CE-158 printer output when one is attached.
 
 Everything you can plug into a real machine, the emulator can plug in too:
@@ -219,8 +219,12 @@ sequenceDiagram
     Note over You,M: ready at the prompt, plotter live
 ```
 
-While a plotter is attached, its paper appears next to the Inspector. The
-paper scrolls, and it follows the pen as long as you are at the bottom:
+The paper panel sits next to the Inspector, with the plotter's name while
+one is attached. Each plotter keeps its own paper until you cut it or load
+a preset that attaches it: through a detach, a ROM or module change, a
+model switch, a Reset (the next plot goes on below). A paper feed shows as
+blank paper. The paper scrolls, and it follows the pen as long as you are
+at the bottom:
 
 ![The paper panel with its Copy and Cut buttons](images/guide/03-paper-panel.png)
 
@@ -231,6 +235,8 @@ paper scrolls, and it follows the pen as long as you are at the bottom:
 
 - **Cut** copies the plot, then tears off the paper, so the next plot starts
   on a clean sheet.
+
+Copy and Cut show *Copied to clipboard* (or *Copy failed*) in the panel.
 
 ---
 
@@ -930,7 +936,7 @@ elsewhere. Changes apply immediately; there is only **Close**.
 - **Storage ▸ Tapes:** the cassette tapes' folder (see
   [Cassette tape](#cassette-tape-cload-and-csave)); `Tapes` inside the save
   folder by default.
-- **Tracing:** where CPU traces go, and the size at which a trace stops.
+- **Tracing:** where CPU traces go, and the size in MiB at which a trace stops (every trace: the button's, a preset's, the harness's); a notice says when it stopped one. The Web version has no trace folder: a trace is not offered there.
 - **Serial ports:** where the serial port files go, and their current paths
   (see [COM ports](#7-com-ports)).
 - **Debugger:** lets VS Code attach on 127.0.0.1 at the given port (32168
@@ -983,7 +989,7 @@ debugger ([Debugger.md](Debugger.md)).
 - **Card YAML:** the module in each slot, as an `initial-content:` block for
   a `.card.yaml` (see below).
 - **Clear** (bin icon): empties the log.
-- **TRACE:** starts / stops a CPU instruction trace into the trace directory.
+- **TRACE:** starts / stops a CPU instruction trace into `TRACE.bin` in the trace directory.
 - **LOG:** a placeholder for now: it cycles Off / Info / Debug, but logs
   nothing yet.
 

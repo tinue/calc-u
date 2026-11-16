@@ -69,10 +69,11 @@ parenthesis is removed with it.
 | Host key | done (M-36): `calcu::typing::HostKeyEvent` | done (M-36): `calcu::typing::HostKeyEvent`, `NamedKey`, `Modifiers`; was `HostKey`, `HostModifiers` |
 | Full speed | `FullSpeed:` (preset directive) | the `speed {full}` command (M-31); `setTurbo`, `turboRequested` in the frontends |
 | Regular speed | `RegularSpeed:` (preset directive) | — |
-| Pause | `freeze`, `FreezeController`, `FreezeOwner` (the library's side from M-40: `calcu::debugger::RunControl`, the `run-state` topic; the TI moves onto it in M-53) | `paused` (`DebugController`) (the library's side from M-40: `calcu::debugger::RunControl`; the Sharp machines move onto it in M-45) |
+| Pause | `freeze`, `FreezeController`, `FreezeOwner` (the library's side from M-40: `calcu::debugger::RunControl`, the `run-state` topic; the TI moves onto it in M-53) | done (M-45): the `run-state` topic of `calcu::debugger::RunControl` (`MachineController::machinePaused()`); was `paused` (`DebugController`), `SharpDebuggerGate` |
 | Cold boot | `Machine::coldBoot()` (was `cleanReset`) | `Machine::coldBoot()` (was `resetJob(allReset = true)`, `allReset()`) |
 | Reset | `Machine::reset()` (was `softReset`) | `Machine::reset()` (was `resetJob(allReset = false)`) |
 | Power cycle | `Machine::powerCycle()` (2.3.0's core reset) | `Machine::powerCycle()` (was `MachineSession::powerCycleAround`; the sequence `core/Machine/PowerCycleSequence`) |
+| Paper, paper panel | — | done (M-45): the library's paper (`calcu::paper::Paper`, `PaperPart`) and paper panel (Qt6 `calcu::qt6::PaperPanel`, React `CalcuPaperPanel`); the plotters' `sharp::PlotterPaperOutput`; was `PlotterPaperWidget`, `PlotterPaper` (Web, `Panels.jsx`), `PaperKind`, `PaperGeometry`, the `c1600.plotter-paper` kind |
 | Host link, serial port file | — | `calcu::peripherals::PtyHostLink`, `HostLinks` (was `PtySerialLink`, `LazySerialLink`); the machine's side `SerialPortCapability` (serial port kind) |
 | Real-time clock | — | `calcu::peripherals::RealTimeClock`, `setClocksFromHost` (was `seedClock`, `seedClockFromHostTime`; `seedClock` stays core-internal) |
 | Feature ID | — | — (`KIT-n` in early docs, now `LIB-n`, `C59-n`, `C1600-n`) |

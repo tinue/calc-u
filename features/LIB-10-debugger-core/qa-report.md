@@ -184,3 +184,133 @@ unchanged.
   `run-control-webkit` in `library/web/tests/playwright.config.js`; the
   rule is reached in the page as `CalcUTest.buttonUse` (the one global of
   the test product's `calc.js`).
+
+## Calc-U-1600 (M-45, 2026-11-16, branch `m45-paper-debugger-1600`)
+
+Built and run as LIB-8's Calc-U-1600 column (same trees; Frequent 33 of
+33 in `build/tests`, 35 of 35 in `build/qt`; Longer: `CalcU1600Shots.lib10-ac41`,
+`CalcU1600DapSmoke`, `CalcU1600DebuggerSpeed`, the Web Playwright cases).
+The column is **In progress**: it is Done in M-46, where the format 2
+clauses of AC-40 and AC-43 are tested (design §10.1).
+
+The code (design §10.3):
+- `core/Debug/SharpDebugging.*` (new): `SharpDebugging` (one per model,
+  owned by the interface machine after its core) and `SharpDebugTarget`
+  (one per CPU, over the `CpuView`s); `DebugTarget.*`,
+  `MachineDebugTargets.*` deleted; their shared types are in
+  `CpuRegisters.hpp`; `SharpMachine::advance` runs `SharpDebugging::run`
+  while a check is on, the core's own path otherwise;
+- the `-written` views: `LH5801::me1Written()` (every `storeME1`),
+  `SC7852::ioWritten()` (every OUT, through `ioWrite`);
+- traces: `PC1500TraceFile` keeps whole records in a buffer (buffer mode)
+  besides its file mode (today's tools); the product kind
+  `c1600.trace-records` (`TraceRecords`) replaces `c1600.trace`;
+  `app/SharpTraceRecorder.*`; a version 1 preset's `trace:` goes to
+  `PresetFile::traceHook` (L-A3) and from there to the trace session;
+- `app/SharpDebuggerSetup.*`, `app/SharpSymbolReaders.*` (new);
+  `app/SharpMachineParts.*` deleted; `SharpAppPart` holds the
+  `DebuggerPart` (the machine session's gate), tells restarts (L-A2);
+  `HarnessProduct` holds one; `AppPaths::traceDir()` is empty on the Web
+  (LIB-9 A-3 gone);
+- `library/debugger/RunControl`: `step` takes a `StepTest` (D-16);
+- `app/dap/` (new, C1600-3's folder, D-15): `DapTargets`, `DapBreakpoints`
+  (from `core/Debug/BreakpointTable`), `DapStepping` (from
+  `core/Debug/RunControl`);
+- Qt6: `DebugController` on `app/dap/` and the library's run control
+  (`DapRun`; L-A1), stops from the `run-state` topic after each host call;
+  `DapSession` on the new types; `MachineController` is no
+  `SharpDebugger`; `MainWindow`: the title from `run-state`, Machine ▸
+  Resume (L-A4); `DebugPanel`: TRACE sends `trace {button}`/`{off}`;
+- Web: Machine ▸ Resume from `run-state` (L-A4); the engine's `pause` and
+  `resume`.
+
+| AC | Result | Test |
+|---|---|---|
+| AC-36 | Pass | `debug_target_tests.cpp`: `lib10_ac36_pc1500_and_pc1500a_have_the_lh5801`, `lib10_ac36_pc1600_has_the_sc7852_and_the_lh5803`, `lib10_ac36_registers_spaces_offers_history_32`, `lib10_ac36_qualifier_fields_bank_me_pu_pv`, `lib10_ac36_conformance_on_every_model` (`checkDebugging` on PC-1500 A01/A03/A04, PC-1500A, PC-1600 New/Old) |
+| AC-37 | Pass | `lib10_ac37_rom_empty_cells_and_io_refuse_a_write`, `lib10_ac37_me1_never_written_device_cells_unreadable`, `lib10_ac37_lh5803_written_only_in_ram`, `lib10_ac37_refused_poke_changes_nothing` |
+| AC-38 | Pass | `debugger_tests.cpp`: `lib10_ac38_cpu_only_pause_lands_before_the_next_instruction`, `lib10_ac38_program_level_refused`, `lib10_ac38_pause_on_start_fires_leaving_key_readiness_pc1500`, `_pc1500a`, `_pc1600` (D-17: `CpuOnlyRules`) |
+| AC-39 | Pass | `lib10_ac39_step_of_one_target_other_runs_with_the_bus`, `lib10_ac39_only_the_target_about_to_run_passes_its_breakpoint`; `lib10_checks_off_take_the_old_path` (AC-5: equal ticks, memory and retired count with and without the gate) |
+| AC-40 | Pass (M-45 parts); the format 2 clauses in M-46 | `harness_tests.cpp`: `lib10_ac40_harness_pause_step_resume`, `lib10_ac40_harness_breakpoint_and_watch`; `debugger_tests.cpp`: `lib10_ac40_run_control_without_a_debugger`; `session_tests.cpp` `lib3_ac38_mirror_holds_every_callback` (pause stops time, resume goes on); Web `play.spec.js` `lib10_ac40 run control pauses and resumes the web machine`. Waits for M-46: `lib10_ac40_debugger_steps_refused_at_read`, `lib10_ac40_trace_step_fails_on_the_web` (presets of format 2) |
+| AC-41 | Pass | Qt6 `CalcU1600Shots.lib10-ac41` (`command: pause`, `expect-title: Calc-U-1600 — Paused (debugger)`, `action: Machine > Resume`, `expect-title: Calc-U-1600`); Web `play.spec.js` `lib10_ac41 machine resume` |
+| AC-42 | Pass | `debugger_tests.cpp`: `lib10_ac42_trace_step_produces_wellformed_file`, `_left_open_is_closed_at_the_end`, `lib10_ac42_z80_frame_shares_one_file_with_lh5801_frame`, `lib10_ac42_pc1600_trace_step_produces_wellformed_file`, `lib10_ac42_pc1600_left_open_is_closed` (version 1 presets through the trace session), `lib10_ac42_bytes_equal_the_recorded_reference`, `lib10_ac23_button_trace_is_trace_bin`; CTest `CalcU1600ReadTrace` (Frequent, 0.3 s); `presetloader_trace_tests.cpp` keeps the core's file mode for today's tools (`lib10_ac42_tools_…`) |
+| AC-43 | Pass (version 1); again on format 2 in M-46 | `lib10_ac43_preset_trace_ends_at_the_limit_with_a_notice`, `lib10_ac43_button_trace_ends_at_the_limit_with_a_notice` (1 MiB: the file ends between 1'000'000 bytes and 1 MiB, well formed, with the notice) |
+| AC-44 | Pass | `debug_target_tests.cpp:` today's cases renamed `lib10_ac44_…` on `machine::Debugging` (`DebugTargetTestSupport.hpp`'s `Target` drives `setChecks`, `run`, `takeStop`, `passOnce` and the observer); `run_control_tests.cpp`: `lib10_ac44_step_over_a_call`, `lib10_ac44_data_breakpoint_and_pause` on the library's run control through `MemtestRig.hpp` |
+| AC-52 | Pass | `lib10_ac52_sc7852_io_space`, `lib10_ac52_written_views_of_me1_and_io`, `lib10_ac52_every_bank_of_the_pc1600_and_its_modules` (a CE-1600M in Slot 1), `lib10_ac52_vertical_banks_of_a_slot_2_module` (a CE-1601M in Slot 2); `harness_tests.cpp`: `lib10_ac52_harness_peek_bank_and_vbank` |
+
+D-16 (`step` with a test): `library/debugger/tests/run_control_tests.cpp`
+`step_until_goes_on_while_the_test_says_so`, `step_until_ends_at_a_breakpoint`
+(`calcu_library_tests`).
+
+D16-12 (the DAP on the new layer): `CalcU1600DapSmoke` (Longer) passes
+against the Qt app, every scenario, twice in a row (26 s). The old finding
+(no `stopped` after the first `stepIn`) did not show; a fault of the new
+code that looked like it did (a stop that landed within the next host
+call was not told) is fixed (`DebugController::noteRunning`).
+
+### Golden and reference runs
+
+- **Reference traces** (§10.11), recorded before the core was touched
+  (commit `3bbf639`) with today's path: `tests/golden-runs/pc1600-basic.trace`
+  (a PC-1600 cold booted and run 29 frames: 204'900 instructions, 6.5 MB)
+  and `pc1500a-basic.trace` (a PC-1500A, 120 frames: 70'252
+  instructions, 2.0 MB). `lib10_ac42_bytes_equal_the_recorded_reference`
+  writes the same runs through `SharpTraceRecorder` and the library's
+  `TraceFile`: byte for byte equal, but for the eight bytes of the session
+  start's time (bytes 19 to 26), which the format holds and no run can
+  repeat. The design named the first 200'000 and 100'000 instructions;
+  the runs stop at a frame instead (the PC-1500A idles, 120 frames are
+  70'252 instructions).
+- **Golden runs**: all 23 replay unchanged.
+- **Speed (R-1)**: `CalcU1600DebuggerSpeed` (Longer) runs a PC-1600 for 20
+  s of emulated time at full speed after its cold boot: 0.22 s without and
+  0.20 s with a breakpoint that is never reached (about 90 times real
+  time either way). 0.8.1 was not measured: its pin was not built for
+  this step (finding).
+
+### Deviations
+
+- **Bank windows (AC-49, AC-52).** The SC7852's `memory` is banked per
+  page: A and D by two banks, B and C by eight, page C also by 256
+  vertical banks (port 28H's byte; the CE-1601M fits 2, the superRAM 16).
+  A peek or poke with `bank=` sets port 31H's field of the page for the
+  access; with `vbank=` it drives OUT (28H) on the bus (the module's
+  latch) and back. The LH5801 and LH5803 bank `me0` and `me1` by PU and
+  PV (`bank` = PU × 2 + PV); there are no vertical banks on their side.
+- **The `io` space** reads only the bank registers (28H, 31H, 3CH) and
+  is unreadable at every other port; its `-written` view holds the CPU's
+  last OUT of each port. The `-written` views hold the last value written
+  to every cell (not only those that read back unreadable).
+- **Watches** on `io` and on the `-written` views are taken and never hit
+  (the CPUs watch memory and ME1 only).
+- **Registers' names** are those of `CpuRegisters.cpp` (`af'`, `bc'`, …
+  on the SC7852); every register is writable.
+- **The observer** sees the machine after each machine step; a halted
+  CPU's idle ticks are no instruction. During a power cycle's phase the
+  checks apply too (no exception for the power-cycle sequence).
+- **The trace limit.** At the limit the records waiting in the core's
+  buffer are dropped and only SESSION_END is written (the file stays
+  within the limit); its event count is the core's, which may count
+  frames that did not fit.
+- **Today's tools keep their file**: `beginCpuTrace(FILE*)` stays for
+  the CLIs' preset loader (without `traceHook`); `cpuTraceActive()` is
+  true for a file only, so the preset runner's `TraceCloser` leaves the
+  app's records alone.
+- **The DAP's events**: `DebugController` compares the `run-state` topic
+  after each host call; a resume, step or pause the session makes counts
+  as running first, so a stop that lands within the next call, or a pause
+  of a machine that was paused already (a reset's entry stop), is told
+  once, as 0.8.1 told it.
+- **The DAP's target view** casts the library's targets to
+  `sharp::SharpDebugTarget` for the registers by name, the bank state and
+  the history's bytes (design §3.6 says "over `machine::DebugTarget`").
+- **`SessionFixture`-free rig.** `tests/SharpDebugRig.hpp` builds an app
+  session with only the `DebuggerPart` around a Sharp machine the test
+  builds (a ROM-less PC-1500A for the memtest fixture, as 0.8.1's tests).
+- **GUI check verb `command`** sends a session command from a scenario
+  (until the scenarios become an attach client in M-49).
+
+### Findings
+
+- The speed against 0.8.1 is not measured (above).
+- CI should be dispatched at the merge (LIB-8's macOS clipboard; the core
+  and the Qt6 debugger changed throughout).

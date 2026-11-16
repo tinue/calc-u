@@ -4,7 +4,7 @@
 #include <QWidget>
 
 // Shared light/dark chrome palette for the docked panels beneath the
-// calculator body (DebugPanel, PlotterPaperWidget) -- factored out so "same
+// calculator body (DebugPanel, Ce158PrinterWidget) -- factored out so "same
 // backdrop color as the debug panel" is literally the same constant, not an
 // independently eyeballed copy that can drift.
 struct ChromeColors {
@@ -48,7 +48,7 @@ inline QString cssRgba(const QColor& c) {
 }
 
 // Shared stylesheet fragments built from ChromeColors, so DebugPanel and
-// PlotterPaperWidget's docked-panel chrome (header bar, button bar, pill-
+// Ce158PrinterWidget's docked-panel chrome (header bar, button bar, pill-
 // shaped buttons) can't independently drift from the same-looking backdrop.
 namespace ChromeStyle {
 

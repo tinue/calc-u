@@ -222,6 +222,7 @@ void SharpLoaderPart::attach(calcu::sessions::SessionSetup& setup) {
             auto r = planReply(p);
             r->refusal = *why;
             r->where.clear();
+            r->needsAddress = false;   // an address was given; it is no address
             return calcu::sessions::replyGiven(std::move(r));
         }
         return calcu::sessions::replyGiven(

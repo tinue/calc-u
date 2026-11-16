@@ -278,9 +278,11 @@ needs ROMs that are missing reports `SKIP`):
 
 | File | `TEST`s | File | `TEST`s |
 |---|---|---|---|
-| `basic_fastloader_tests.cpp` | 8 | `pc1600_bank_tests.cpp` | 23 |
-| `basic_program_source_tests.cpp` | 8 | `pc1600_basicloader_tests.cpp` | 11 |
+| `basic_fastloader_tests.cpp` | 12 (C1600-2 AC-4–6, EC-3, EC-5; M-44) | `pc1600_bank_tests.cpp` | 23 |
+| `basic_program_source_tests.cpp` | 8 | `pc1600_basicloader_tests.cpp` | 15 (C1600-2 AC-4–6, EC-3; M-44) |
 | `basictyper_tests.cpp` | 8 | `pc1600_basictyper_tests.cpp` | 12 |
+| `basic_typing_tests.cpp` | 11 (C1600-2 AC-7 on the typing engine, against the old typer's memory; M-44) | `loader_memory_tests.cpp` | 7 (C1600-2 AC-14; M-44) |
+| `program_files_tests.cpp` | 11 (C1600-2 AC-1–3, EC-1, EC-2, EC-4; M-44) | `app/tests/loader_part_tests.cpp` | 11 (C1600-2 AC-13, AC-22, AC-24, AC-25, EC-6; M-44) |
 | `battery_card_instance_tests.cpp` | 19 | `pc1600_ce150_tests.cpp` | 5 |
 | `ce150_tests.cpp` | 9 | `pc1600_host_drive_tests.cpp` | 7 |
 | `ce151_tests.cpp` | 3 | `pc1600_keyboard_display_tests.cpp` | 38 |
@@ -297,18 +299,18 @@ needs ROMs that are missing reports `SKIP`):
 | `descriptor_tests.cpp` | 8 (LIB-1 AC-34–41; M-26) | `presetloader_trace_tests.cpp` | 7 |
 | `disasm_tests.cpp` | 15 | `program_file_tests.cpp` | 11 |
 | `golden_runs_tests.cpp` | 1 (the golden replays through the machine interface; `CALCU1600_GOLDEN_RECORD=1` records new references only) | `run_control_tests.cpp` | 6 |
-| `harness_tests.cpp` | 1 (`harness_drives_a_sharp_machine`: the exit check of M-28, LIB-11 T14, D-1; `SKIP` without the ROMs) | | |
+| `harness_tests.cpp` | 8 (`harness_drives_a_sharp_machine`: the exit check of M-28, LIB-11 T14, D-1; LIB-18's model and variant; C1600-2 AC-21, the `pc1600` loader commands, M-44; `SKIP` without the ROMs) | | |
 | `host_directory_drive_tests.cpp` | 25 | `sc7852_tests.cpp` | 39 |
 | `inspector_tests.cpp` | 13 | `sharp_machine_tests.cpp` | 28 (C1600-1 AC-1–21, EC-1–3; M-26) |
 | `job_tests.cpp` | 2 | `tape_deck_tests.cpp` | 11 |
 | `session_tests.cpp` | 4 (LIB-3 AC-35, AC-37, AC-38, ledger 1600-9 on the library's app session; M-31) | | |
 | `key_paste_tests.cpp` | 8 (the typing profile and engine; M-36) | `tc8576f_tests.cpp` | 20 |
 | `lcd_screenshot_tests.cpp` | 5 | `app/tests/serial_links_tests.cpp` | 2 (LIB-2 AC-33; M-26) |
-| `lcd_text_tests.cpp` | 21 | `app/tests/shared_app_session_tests.cpp` | 13 (SharpAppPart on the library's session, M-31) |
+| `lcd_text_tests.cpp` | 21 | `app/tests/shared_app_session_tests.cpp` | 11 (SharpAppPart on the library's session, M-31; the loader cases moved to `loader_part_tests.cpp`, M-44) |
 | `lh5801_tests.cpp` | 54 (the key queue's three went, M-36) | `app/tests/shared_bay_tests.cpp` | 4 |
 | `lh5803_tests.cpp` | 8 | `app/tests/shared_geometry_tests.cpp` | 5 |
 | `listing_tests.cpp` | 10 | `app/tests/shared_host_key_map_tests.cpp` | 3 (`SharpKeyboardMap`; M-36) |
-| `machine_code_file_tests.cpp` | 22 | `app/tests/shared_machine_session_tests.cpp` | 7 |
+| `machine_code_file_tests.cpp` | 39 (C1600-2 AC-8–12, AC-23; M-44) | `app/tests/shared_machine_session_tests.cpp` | 7 |
 | `memory_card_tests.cpp` | 47 (the 8 YAML reader cases moved to the library in M-24) | `app/tests/shared_pacing_tests.cpp` | 2 (LIB-17 AC-20; the sink side of the sound; M-31) |
 | `pacing_longrun_tests.cpp` | 4, the "after" test of LIB-17 AC-21 (M-31): `lib17_ac21_pacing_longrun_scripted_pc1500a`, `_pc1600` Frequent; `lib17_ac21_pacing_longrun_real_clock_pc1500a`, `_pc1600` Checkpoint (return at once without `CALCU1600_PACING_LONGRUN`) | `app/tests/shared_preset_catalog_tests.cpp` | 4 |
 | `pc1500_tape_tests.cpp` | 2 | `app/tests/shared_settings_tests.cpp` | 8 (LIB-9 AC-26–32; M-30) |

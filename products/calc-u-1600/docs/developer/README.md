@@ -27,8 +27,8 @@ decisions, plans, handoffs — is in [../background/README.md](../background/REA
 
 | Folder | What's in it |
 |---|---|
-| `core/` | The emulator, free of Qt: CPUs, machines, connectors and cards, loaders, presets, resumable jobs, the debug server core; `tests/` holds the test suite |
-| `app/` | The app logic every frontend shares, free of Qt: the live machine and its operations, bays, pacing, settings, paths, layouts ([Shared-Architecture.md](Shared-Architecture.md)); `app/tests/` |
+| `core/` | The emulator, free of Qt: CPUs, machines, connectors and cards, loaders, presets, resumable jobs, the debug server core; `tests/` holds the test suite. The program loaders (C1600-2) are `core/Loaders` (what a file is, BASIC, the one machine-code plan, its write and reply, one sentence per refusal) and `core/BasicTyping` (typing a listing in through the typing engine), on the loader memory access kind (`c1600.loader-memory`, `core/Machine/SharpLoaderMemory`); `core/ProgramFile` and `core/MachineCodeFile` hold the classifier and the plan |
+| `app/` | The app logic every frontend shares, free of Qt: the live machine and its operations, bays, pacing, settings, paths, layouts ([Shared-Architecture.md](Shared-Architecture.md)); the loaders' commands in `app/SharpLoaderPart` (`c1600.file-kind`, `load-basic`, `type-basic`, `plan-code`, `load-code`; the harness's `pc1600 …`); `app/tests/` |
 | `frontends/web/` | The web client: WASM bindings, worker, React UI, installable app, Playwright tests ([Web-Client.md](Web-Client.md)) |
 | `frontends/qt6/` | The desktop app (`frontends/qt6/app/`) and its bundled resources: cards, faceplates, platform files (`frontends/qt6/resources/`) |
 | `cmake/` | `CalcU.cmake`: the `calcu_core` / `calcu_shared` libraries for every CMake build |

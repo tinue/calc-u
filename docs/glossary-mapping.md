@@ -75,6 +75,9 @@ parenthesis is removed with it.
 | Power cycle | `Machine::powerCycle()` (2.3.0's core reset) | `Machine::powerCycle()` (was `MachineSession::powerCycleAround`; the sequence `core/Machine/PowerCycleSequence`) |
 | Host link, serial port file | — | `calcu::peripherals::PtyHostLink`, `HostLinks` (was `PtySerialLink`, `LazySerialLink`); the machine's side `SerialPortCapability` (serial port kind) |
 | Real-time clock | — | `calcu::peripherals::RealTimeClock`, `setClocksFromHost` (was `seedClock`, `seedClockFromHostTime`; `seedClock` stays core-internal) |
+| Plan | — | done (M-44, C1600-2): `sharp::loaders::planCode` (`core/Loaders`) over `machinecode::planLoad`, the request `c1600.plan-code` (`app/SharpLoaderPart`); was `machinecode::plan()` / `Plan` (the menu's second plan) and `shared::MachineCodeLoad` (`app/MachineCodeLoad`, gone) |
+| Program file kind | — | done (M-44, C1600-2): `sharp::loaders::fileKind` over `programfile::classify` (`core/ProgramFile`), the request `c1600.file-kind`; was `shared::programChoice` for a WAV's files |
+| Loader memory access | — | done (M-44, C1600-2): the kind `c1600.loader-memory`, `sharp::LoaderMemory` (`peek`, `mode`, `programArea`, `writeBuiltIn`, `writeSlot`, `slotRam`, `module`; was `peek`/`poke`), over the core in `core/Machine/SharpLoaderMemory`; the adapters `legacy::loadBasicProgram`, `loadMachineCode`, `machineCodeLoadState`, `userRam` gone |
 | Feature ID | — | — (`KIT-n` in early docs, now `LIB-n`, `C59-n`, `C1600-n`) |
 | Harness | `tools/headless/`, `tools/agentic/` | `pc1500_cli`, `pc1600_cli`, probes |
 

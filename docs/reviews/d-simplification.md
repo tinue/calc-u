@@ -427,6 +427,11 @@ C2 designs are their drafts. What each needs:
   the library has the right sentence. Fix it (a ledger row)?
 - **Q-5.** `products/calc-u-1600/tools/delactions.sh` deletes the Actions
   run history of the repository it runs in, now the monorepo. Remove it?
+- **Answers (user, 2026-11-16):** Q-1 yes (LIB-13 decision log, ledger
+  59-47, M-56); Q-2 yes (LIB-7 decision log); Q-3 yes, move (LIB-16
+  decision log, M-60); Q-4 yes, fix (ledger 1600-48, with M-57 or before
+  M-61); Q-5 yes, remove. Recorded, not coded (handover "To do from the
+  D simplification").
 - **Golden and reference runs:** no golden replay differed after any
   commit; the 32 Sharp reference runs (compared at the idle machine) and
   the 57 TI reference runs: §11.

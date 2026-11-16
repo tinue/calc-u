@@ -110,13 +110,33 @@ if(CALCU_TESTS)
     calcu_debug_o1(${name})
   endfunction()
 
+  # The tests on an app session (app/tests/SessionFixture.hpp: a session
+  # and a cold boot per test, about half of the suite's time) are a program
+  # of their own, so that ctest runs them beside CoreTests (the Frequent
+  # budget, docs/test-groups.md); the support sources go into both.
+  set(SESSION_TEST_SOURCES)
+  set(SUPPORT_TEST_SOURCES)
+  foreach(f ${TEST_SOURCES})
+    if(NOT f MATCHES "_tests\\.cpp$")
+      list(APPEND SUPPORT_TEST_SOURCES ${f})
+      continue()
+    endif()
+    file(STRINGS ${f} uses REGEX "SessionFixture" LIMIT_COUNT 1)
+    if(uses)
+      list(APPEND SESSION_TEST_SOURCES ${f})
+    endif()
+  endforeach()
+  list(REMOVE_ITEM TEST_SOURCES ${SESSION_TEST_SOURCES})
+
   calcu1600_test_program(CoreTests ${TEST_SOURCES})
   target_link_libraries(CoreTests PRIVATE ZLIB::ZLIB)
+  calcu1600_test_program(CalcU1600SessionTests ${SESSION_TEST_SOURCES} ${SUPPORT_TEST_SOURCES})
 
   # Test groups (ADR 0031, docs/test-groups.md; calcu_add_test of the root
   # CMakeLists.txt): Frequent always, Longer and Checkpoint only with
   # CALCU_TESTS_LONGER / _CHECKPOINT; every entry runs in this directory.
   calcu_add_test(CoreTests frequent COMMAND CoreTests)
+  calcu_add_test(CalcU1600SessionTests frequent COMMAND CalcU1600SessionTests)
   # LIB-6 AC-51 (design §10.6 P8; C1600-4 T7): every preset of the
   # repository is read by the library's reader through `calcu check-preset`;
   # since M-47 (LIB-7 1600) with the six that waited for the media. The
@@ -213,7 +233,7 @@ if(CALCU_TESTS)
   calcu_add_test(CalcU1600ExampleReferences longer COMMAND CoreTests c1600_4_ac16
                  PROPERTIES ENVIRONMENT CALCU1600_REFERENCES=1)
   # LIB-10 R-1 (design §10.11): full speed with a breakpoint set, printed for the qa-report.
-  calcu_add_test(CalcU1600DebuggerSpeed longer COMMAND CoreTests lib10_speed_pc1600_full_speed_with_a_breakpoint
+  calcu_add_test(CalcU1600DebuggerSpeed longer COMMAND CalcU1600SessionTests lib10_speed_pc1600_full_speed_with_a_breakpoint
                  PROPERTIES ENVIRONMENT CALCU1600_SPEED=1)
   # LIB-12 (Technical Requirements, design Q5): a Web dist/ built from a
   # ROM folder without one file names it and starts no calculator.
@@ -255,7 +275,7 @@ if(CALCU_TESTS)
 
   # Checkpoint: run before a release.
   # Ten minutes per model on the real clock (PC-1500A, then PC-1600).
-  calcu_add_test(CalcU1600PacingRealClock checkpoint COMMAND CoreTests pacing_longrun_real_clock
+  calcu_add_test(CalcU1600PacingRealClock checkpoint COMMAND CalcU1600SessionTests pacing_longrun_real_clock
                  PROPERTIES ENVIRONMENT CALCU1600_PACING_LONGRUN=600 TIMEOUT 1500)
   if(TARGET CalcU1600Qt)
     # LIB-17 AC-22 (design §6 P16-3): a PC-1600 keeps one minute in the Qt6

@@ -6,7 +6,7 @@ from pathlib import Path
 from urllib.parse import unquote
 
 from . import markdown
-from .manifest import ASIDE, CHAPTERS, PICTURE_SUFFIXES
+from .manifest import ASIDE, PICTURE_SUFFIXES
 
 _SCHEME = re.compile(r"^[A-Za-z][A-Za-z0-9+.-]*:")
 _FOLLOWS = re.compile(r"^<!--\s*follows:\s*(.*?)\s*-->$")
@@ -90,26 +90,22 @@ def run(help_, report):
 
 def _c1_chapters(help_, report):
     shared_path = help_.shared_dir / "help.yaml"
-    given = [c for c in help_.shared_manifest.get("chapters") or [] if isinstance(c, dict)]
-    by_number = {c.get("number"): c for c in given}
-    for number, title, parts, _ in CHAPTERS:
-        c = by_number.get(number)
-        if c is None:
-            report.fail(shared_path, 0, f"chapter {number} ({title}) is missing")
-            continue
-        if c.get("title") != title:
-            report.fail(shared_path, 0, f"chapter {number} is titled {c.get('title')!r}, not {title!r}")
-        if tuple(c.get("parts") or ()) != parts:
-            report.fail(shared_path, 0, f"chapter {number} has the parts {c.get('parts')}, not {list(parts)}")
-    order = [c.get("number") for c in given]
-    if order != sorted(order) or len(order) != len(set(order)):
+    # AC-1's chapters are the shared manifest's: numbered 1 to n in order.
+    order = [c.number for c in help_.chapters]
+    if not all(isinstance(n, int) for n in order) or order != sorted(order) or len(order) != len(set(order)):
         report.fail(shared_path, 0, f"the chapters are not in order: {order}")
-    extra = [n for n in order if n not in {c[0] for c in CHAPTERS}]
-    if extra:
-        report.fail(shared_path, 0, f"chapters not in the ten of AC-1: {extra}")
+    else:
+        for n in sorted(set(range(1, (order[-1] if order else 0) + 1)) - set(order)):
+            report.fail(shared_path, 0, f"chapter {n} is missing")
+    for chapter in help_.chapters:
+        if not chapter.title:
+            report.fail(shared_path, 0, f"chapter {chapter.number} has no title")
+        if not chapter.parts or set(chapter.parts) - {"shared", "product"}:
+            report.fail(shared_path, 0, f"chapter {chapter.number} has the parts {list(chapter.parts)},"
+                                        " not shared, product or both")
     product_path = help_.product_dir / "help.yaml"
     for n in help_.extra_product_chapters:
-        report.fail(product_path, 0, f"chapter {n} is not one of the ten of AC-1")
+        report.fail(product_path, 0, f"chapter {n} is not one of library/help/help.yaml's (AC-1)")
     for chapter in help_.chapters:
         if "shared" in chapter.parts and not chapter.shared:
             report.fail(shared_path, 0, f"chapter {chapter.number} ({chapter.title}) has no shared part")

@@ -19,11 +19,14 @@ The product is named by its name or short form, any case (`Calc-U-1600`,
 `1600`). The help's sources:
 
 - `library/help/`: the shared parts, one file per chapter that has one;
-  `help.yaml` lists the ten chapters (LIB-16 AC-1) and their shared files;
+  `help.yaml` lists the ten chapters (LIB-16 AC-1), their parts, their
+  shared files and the specs each shared part follows (AC-3), the tool's
+  one list of them;
   `anchor_cases.txt` the headings and anchors by GitHub's rule.
 - `products/<product>/help/`: the product parts; `help.yaml` lists them per
   chapter, with the product's name, its version source (`version-from:`,
-  read as ReleaseIt reads it) and `names:`, the words no shared part may
+  read as ReleaseIt reads it: any of its presets `xcode`, `cmake`,
+  `cargo`, `regex`) and `names:`, the words no shared part may
   use; `images/` the pictures; `downloads/` files the text offers;
   `settings-keys.txt` the settings keys the product declares (written by
   a product test).

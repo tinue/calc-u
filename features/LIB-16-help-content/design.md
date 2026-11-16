@@ -66,9 +66,9 @@ documentation (D-1).
 format-version: 1
 chapters:
   - { number: 1, title: Introduction, parts: [product] }
-  - { number: 2, title: Getting started, parts: [shared, product], shared: [02-getting-started.md] }
-  - { number: 3, title: Models and machine control, parts: [shared], shared: [03-models-and-machine-control.md] }
-  # … 4 to 10 as AC-1's table
+  - { number: 2, title: Getting started, parts: [shared, product], shared: [02-getting-started.md], follows: [LIB-14, LIB-5] }
+  - { number: 3, title: Models and machine control, parts: [shared], shared: [03-models-and-machine-control.md], follows: [LIB-18, LIB-12] }
+  # … 4 to 10 as AC-1's table; `follows:` the specs of AC-3
 ```
 
 `products/calc-u-1600/help/help.yaml`:
@@ -137,7 +137,8 @@ product/downloads/<files>
 In each chapter the shared files come first, then the product's, each
 in manifest order. The version is `--version`, else the product's
 version read as ReleaseIt reads it (`release.yaml`'s `version:`; for
-Calc-U-1600 `set(APP_VERSION "…")` in `frontends/qt6/CMakeLists.txt`;
+Calc-U-1600 `set(APP_VERSION "…")` in `frontends/qt6/CMakeLists.txt`,
+for Calc-U-59 the first `MARKETING_VERSION` of its Xcode project;
 D-9). The zip's entries have a fixed time stamp and order, so two
 builds of one tree give the same bytes.
 
@@ -159,7 +160,7 @@ the exit status (0 without failures, 1 with, 2 for a usage error).
 
 | # | Check | Fails / warns | AC |
 |---|---|---|---|
-| C1 | every chapter of AC-1 is there with the parts its row names; a chapter with both parts may lack the product part (EC-1) | fails | AC-1, AC-7, EC-1 |
+| C1 | the chapters of `library/help/help.yaml` (the one list of AC-1's chapters, their parts and AC-3's specs; Part D) are numbered 1 to n in order, none missing, each with a title and the parts `shared`, `product` or both, and each has the parts its row names; a chapter with both parts may lack the product part (EC-1) | fails | AC-1, AC-7, EC-1 |
 | C2 | every relative link leads to a file of this help, every `#anchor` to a heading of that file, every picture to a file | fails | AC-7, AC-15 |
 | C3 | every `.md` and picture under the two help folders is in a manifest (the manifest, `anchor_cases.txt`, `settings-keys.txt` aside) | fails | AC-7 |
 | C4 | every picture is used by a file | fails | AC-7 |
@@ -313,7 +314,7 @@ the CTest entries of §2.1.
 
 | Task | What | ACs/ECs | Test |
 |---|---|---|---|
-| L1 | Manifests, `toc.json`, the zip | AC-1, AC-6 | `test_manifest.py`: `test_ac1_ten_chapters_in_order_with_their_parts`; `test_asset.py`: `test_ac6_zip_holds_files_pictures_downloads_toc`, `test_ac6_toc_lists_chapters_files_shared_product_version`, `test_ac6_two_builds_same_bytes`, `test_ac6_product_by_name_or_short_form` |
+| L1 | Manifests, `toc.json`, the zip | AC-1, AC-6 | `test_manifest.py`: `test_ac1_ten_chapters_in_order_with_their_parts`; `test_asset.py`: `test_ac6_zip_holds_files_pictures_downloads_toc`, `test_ac6_toc_lists_chapters_files_shared_product_version`, `test_ac6_two_builds_same_bytes`, `test_ac6_product_by_name_or_short_form`; the version presets (D-9, Part D §12): `test_d9_version_of_the_xcode_preset`, `test_d9_version_of_the_cargo_and_regex_presets_and_an_unknown_one` |
 | L2 | Anchors, links | AC-15, AC-7 (links), EC-2 | `test_anchors.py`: `test_ac15_every_line_of_anchor_cases`; `test_links.py`: `test_ac15_relative_links_rewritten_into_the_asset`, `test_ac7_link_to_missing_file_heading_picture_fails_with_place`, `test_ec2_external_link_not_followed` |
 | L3 | The other checks of AC-7 | AC-7, AC-2, EC-1 | `test_checks.py`: `test_ac7_missing_chapter_fails`, `test_ac7_file_not_in_toc_fails`, `test_ac7_unused_picture_fails`, `test_ac2_shared_part_naming_a_product_word_fails`, `test_ac2_picture_in_shared_part_fails`, `test_ec1_chapter_with_shared_part_only` |
 | L4 | Specs followed | AC-3 | `test_ac3_shared_part_names_its_specs` (C6); the content review in the qa-report: per shared file, the ACs of its specs it covers |
@@ -388,7 +389,11 @@ P3.
 - **D-8.** The old user documents are moved (history kept), not left
   beside the help; developer documents stay where they are.
 - **D-9.** The asset's version is read as ReleaseIt reads it, from the
-  product's `release.yaml`; `--version` overrides it.
+  product's `release.yaml`; `--version` overrides it. Since Part D every
+  preset of ReleaseIt (`src/version.rs`): `xcode` (the first
+  `MARKETING_VERSION = …;`, the app's; the test targets after it sit at
+  1.0), `cmake`, `cargo` (each with its default file) and `regex`
+  (`version.regex`, its first group); M-53 to M-60 need `xcode`.
 - **D-10.** Warnings (AC-5) are printed and leave the exit status alone
   (OQ-3).
 
@@ -408,3 +413,21 @@ P3.
 ## 11. Questions for the user
 
 None that split the design.
+
+## 12. Part D (departure)
+
+Part D's simplification (`docs/reviews/d-simplification.md` S-6, P-9):
+
+- The chapter list was in three places: `CHAPTERS` in `manifest.py`,
+  `library/help/help.yaml`, and C1's check that the two agree. It is in
+  `help.yaml` only: each chapter there also names the specs its shared
+  part follows (`follows:`, AC-3, for C6). C1 checks the list itself
+  (order, none missing, titles, parts); `test_ac1_ac3_the_repository_manifest_has_the_ten_chapters`
+  holds the repository's list against AC-1's table and AC-3. A retitled
+  chapter is no failure of the tool any more (`test_ac1_a_retitled_chapter_fails`
+  went; `test_ac1_a_chapter_out_of_order_or_with_other_parts_fails` came).
+  Calc-U-1600's asset is byte for byte the same.
+- `version()` reads every ReleaseIt preset (D-9), not only `cmake`:
+  `test_asset.py` `test_d9_version_of_the_xcode_preset`,
+  `test_d9_version_of_the_cargo_and_regex_presets_and_an_unknown_one`.
+  Calc-U-59's `release.yaml` (`preset: xcode`) reads 3.0.0.

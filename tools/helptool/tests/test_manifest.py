@@ -21,14 +21,30 @@ class ManifestTests(HelpTestCase):
             self.assertEqual(parts[n], ("shared", "product"))
         self.assertPasses(self.tool("check", "demo"))
 
-    def test_ac1_the_repository_manifest_is_the_contract(self):
-        data = yamlsubset.loads((REPO / "library/help/help.yaml").read_text(encoding="utf-8"))
-        given = [(c["number"], c["title"], tuple(c["parts"])) for c in data["chapters"]]
-        self.assertEqual(given, [(n, t, p) for n, t, p, _ in manifest.CHAPTERS])
+    def test_ac1_ac3_the_repository_manifest_has_the_ten_chapters(self):
+        # library/help/help.yaml is the tool's one list of the chapters; here
+        # it is held against AC-1's table and AC-3's specs.
+        help_ = manifest.load(REPO, "calc-u-1600")
+        s, p, sp = ("shared",), ("product",), ("shared", "product")
+        self.assertEqual([(c.number, c.title, c.parts, c.follows) for c in help_.chapters], [
+            (1, "Introduction", p, ()),
+            (2, "Getting started", sp, ("LIB-14", "LIB-5")),
+            (3, "Models and machine control", s, ("LIB-18", "LIB-12")),
+            (4, "Media", sp, ("LIB-7", "LIB-13")),
+            (5, "Peripherals and paper", sp, ("LIB-2", "LIB-8")),
+            (6, "Presets", sp, ("LIB-6",)),
+            (7, "Debugger", sp, ("LIB-10",)),
+            (8, "Settings", sp, ("LIB-9",)),
+            (9, "Product topics", p, ()),
+            (10, "Reference", sp, ("LIB-6", "LIB-9")),
+        ])
 
-    def test_ac1_a_retitled_chapter_fails(self):
-        self.replace(self.shared / "help.yaml", "title: Media,", "title: Cards,")
-        self.assertFailsWith(self.tool("check", "demo"), "chapter 4 is titled 'Cards'")
+    def test_ac1_a_chapter_out_of_order_or_with_other_parts_fails(self):
+        self.replace(self.shared / "help.yaml", "number: 4, title: Media, parts: [shared, product]",
+                     "number: 4, title: Media, parts: [shared, extra]")
+        self.assertFailsWith(self.tool("check", "demo"), "chapter 4 has the parts ['shared', 'extra']")
+        self.replace(self.shared / "help.yaml", "number: 4,", "number: 12,")
+        self.assertFailsWith(self.tool("check", "demo"), "the chapters are not in order")
 
     def test_ac1_a_product_part_of_a_shared_only_chapter_fails(self):
         self.write(self.product / "03-models.md", "# Models\n")

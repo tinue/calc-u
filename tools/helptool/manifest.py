@@ -6,20 +6,6 @@ from pathlib import Path
 
 from . import yamlsubset
 
-# AC-1: the ten chapters, their parts; AC-3: the specs a shared part follows.
-CHAPTERS = [
-    (1, "Introduction", ("product",), ()),
-    (2, "Getting started", ("shared", "product"), ("LIB-14", "LIB-5")),
-    (3, "Models and machine control", ("shared",), ("LIB-18", "LIB-12")),
-    (4, "Media", ("shared", "product"), ("LIB-7", "LIB-13")),
-    (5, "Peripherals and paper", ("shared", "product"), ("LIB-2", "LIB-8")),
-    (6, "Presets", ("shared", "product"), ("LIB-6",)),
-    (7, "Debugger", ("shared", "product"), ("LIB-10",)),
-    (8, "Settings", ("shared", "product"), ("LIB-9",)),
-    (9, "Product topics", ("product",), ()),
-    (10, "Reference", ("shared", "product"), ("LIB-6", "LIB-9")),
-]
-
 SHARED_DIR = Path("library/help")
 PICTURE_SUFFIXES = {".png", ".jpg", ".jpeg", ".gif", ".svg", ".webp"}
 # Files of the help folders that are no part of the asset (C3).
@@ -54,15 +40,17 @@ class Help:
         self.shared_manifest = shared_data
         self.product_manifest = data
         self.chapters = []
-        shared_chapters = {c.get("number"): c for c in shared_data.get("chapters") or [] if isinstance(c, dict)}
+        # AC-1, AC-3: the chapters, their parts and the specs a shared part
+        # follows are library/help/help.yaml's, in its order.
         product_chapters = data.get("chapters") or {}
-        for number, title, parts, follows in CHAPTERS:
-            chapter = Chapter(number, title, parts, follows)
-            s = shared_chapters.get(number) or {}
-            chapter.shared = [self.shared_dir / f for f in s.get("shared") or []]
-            chapter.product = [product_dir / f for f in product_chapters.get(number) or []]
+        for c in shared_data.get("chapters") or []:
+            if not isinstance(c, dict):
+                continue
+            chapter = Chapter(c.get("number"), c.get("title"), c.get("parts") or (), c.get("follows") or ())
+            chapter.shared = [self.shared_dir / f for f in c.get("shared") or []]
+            chapter.product = [product_dir / f for f in product_chapters.get(chapter.number) or []]
             self.chapters.append(chapter)
-        self.extra_product_chapters = [n for n in product_chapters if n not in {c[0] for c in CHAPTERS}]
+        self.extra_product_chapters = [n for n in product_chapters if n not in {c.number for c in self.chapters}]
 
     def files(self):
         """Every chapter file in table-of-contents order: (chapter, path, shared)."""
@@ -73,34 +61,72 @@ class Help:
                 yield c, f, False
 
     def version(self):
-        """The product's version as ReleaseIt reads it (design D-9)."""
+        """The product's version as ReleaseIt reads it (design D-9): the
+        first match of its preset's pattern in the `version:` file."""
         if not self.version_from:
             raise HelpError(f"{self.product_dir / 'help.yaml'}: no version-from")
         release = (self.product_dir / self.version_from).resolve()
         if not release.is_file():
             raise HelpError(f"{release}: not found (version-from)")
-        preset = file = None
-        in_version = False
-        for line in release.read_text(encoding="utf-8").splitlines():
-            if re.match(r"^version:\s*$", line):
-                in_version = True
-                continue
-            if in_version:
-                if line and not line[0].isspace():
-                    break
-                m = re.match(r"^\s+(preset|file):\s*(\S+)", line)
-                if m:
-                    if m.group(1) == "preset":
-                        preset = m.group(2)
-                    else:
-                        file = m.group(2)
-        if preset != "cmake" or not file:
-            raise HelpError(f"{release}: the version preset {preset!r} is not one the help tool reads (cmake)")
+        given = _version_block(release.read_text(encoding="utf-8"))
+        preset = given.get("preset")
+        if preset not in VERSION_PRESETS:
+            raise HelpError(f"{release}: the version preset {preset!r} is not one ReleaseIt has"
+                            f" ({', '.join(VERSION_PRESETS)})")
+        default_file, pattern = VERSION_PRESETS[preset]
+        if preset == "regex":
+            pattern = given.get("regex")
+            if not pattern:
+                raise HelpError(f"{release}: the version preset regex needs version.regex")
+        file = given.get("file") or default_file
+        if not file:
+            raise HelpError(f"{release}: the version preset {preset} needs version.file")
         source = release.parent / file
-        m = re.search(r'set\(APP_VERSION "([^"]+)"\)', source.read_text(encoding="utf-8"))
-        if not m:
-            raise HelpError(f"{source}: no set(APP_VERSION \"…\")")
-        return m.group(1)
+        if not source.is_file():
+            raise HelpError(f"{source}: not found (version.file of {release.name})")
+        try:
+            m = re.search(pattern, source.read_text(encoding="utf-8"))
+        except re.error as e:
+            raise HelpError(f"{release}: version.regex: {e}") from None
+        version = m.group(1).strip() if m and m.groups() else ""
+        if not version:
+            raise HelpError(f"{source}: no version (the {preset} preset reads {pattern})")
+        return version
+
+
+# ReleaseIt's version presets (src/version.rs): the file when release.yaml
+# names none, and the pattern whose first match's group is the version. In
+# an Xcode project several targets carry MARKETING_VERSION (test targets
+# often sit at 1.0); the first one is the app's.
+VERSION_PRESETS = {
+    "xcode": (None, r"MARKETING_VERSION = ([^;\s]+);"),
+    "cargo": ("Cargo.toml", r'(?m)^version\s*=\s*"([^"]+)"'),
+    "cmake": ("CMakeLists.txt", r'(?m)^set\(APP_VERSION "([^"]+)"\)'),
+    "regex": (None, None),
+}
+
+
+def _version_block(text):
+    """The scalars of release.yaml's `version:` mapping (preset, file, regex)."""
+    given = {}
+    in_version = False
+    for line in text.splitlines():
+        if re.match(r"^version:\s*(#.*)?$", line):
+            in_version = True
+            continue
+        if not in_version or not line.strip() or line.lstrip().startswith("#"):
+            continue
+        if not line[0].isspace():
+            break
+        m = re.match(r"^\s+(preset|file|regex):\s*(.*?)\s*$", line)
+        if m:
+            value = m.group(2)
+            if len(value) >= 2 and value[0] == value[-1] and value[0] in "'\"":
+                value = value[1:-1].replace("''", "'") if value[0] == "'" else value[1:-1]
+            else:
+                value = re.sub(r"\s+#.*$", "", value)
+            given[m.group(1)] = value
+    return given
 
 
 def _load(path):

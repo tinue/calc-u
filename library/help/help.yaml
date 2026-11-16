@@ -1,16 +1,17 @@
 # The family's help (LIB-16): the ten chapters of AC-1 in order, with
-# their parts, and the shared part of each (design §3.1). A product's
-# manifest is products/<product>/help/help.yaml. Checked and built by
-# tools/help (tools/README.md).
+# their parts, the shared part of each and the specs it follows (AC-3)
+# (design §3.1); the one list of the chapters. A product's manifest is
+# products/<product>/help/help.yaml. Checked and built by tools/help
+# (tools/README.md).
 format-version: 1
 chapters:
   - { number: 1, title: Introduction, parts: [product] }
-  - { number: 2, title: Getting started, parts: [shared, product], shared: [02-getting-started.md] }
-  - { number: 3, title: Models and machine control, parts: [shared], shared: [03-models-and-machine-control.md] }
-  - { number: 4, title: Media, parts: [shared, product], shared: [04-media.md] }
-  - { number: 5, title: Peripherals and paper, parts: [shared, product], shared: [05-peripherals-and-paper.md] }
-  - { number: 6, title: Presets, parts: [shared, product], shared: [06-presets.md] }
-  - { number: 7, title: Debugger, parts: [shared, product], shared: [07-debugger.md] }
-  - { number: 8, title: Settings, parts: [shared, product], shared: [08-settings.md] }
+  - { number: 2, title: Getting started, parts: [shared, product], shared: [02-getting-started.md], follows: [LIB-14, LIB-5] }
+  - { number: 3, title: Models and machine control, parts: [shared], shared: [03-models-and-machine-control.md], follows: [LIB-18, LIB-12] }
+  - { number: 4, title: Media, parts: [shared, product], shared: [04-media.md], follows: [LIB-7, LIB-13] }
+  - { number: 5, title: Peripherals and paper, parts: [shared, product], shared: [05-peripherals-and-paper.md], follows: [LIB-2, LIB-8] }
+  - { number: 6, title: Presets, parts: [shared, product], shared: [06-presets.md], follows: [LIB-6] }
+  - { number: 7, title: Debugger, parts: [shared, product], shared: [07-debugger.md], follows: [LIB-10] }
+  - { number: 8, title: Settings, parts: [shared, product], shared: [08-settings.md], follows: [LIB-9] }
   - { number: 9, title: Product topics, parts: [product] }
-  - { number: 10, title: Reference, parts: [shared, product], shared: [10-reference.md] }
+  - { number: 10, title: Reference, parts: [shared, product], shared: [10-reference.md], follows: [LIB-6, LIB-9] }

@@ -3,7 +3,7 @@
 # arm64, before dispatching CI (ADR 0039). GCC 13 on Ubuntu 24.04 as on the
 # runners; x86_64, Windows, macOS packaging and the AppImages stay CI-only.
 #
-#   ci/linux/run.sh                 library core-59 core-1600 qt-59 qt-1600
+#   ci/linux/run.sh                 library core-59 core-1600 qt-59 qt-1600 help-1600
 #   ci/linux/run.sh core-1600 qt-1600
 #   ci/linux/run.sh web-1600        the web job, in the larger web image
 #
@@ -23,7 +23,7 @@ HERE="$REPO/ci/linux"
 MACHINE=${CALCU_PODMAN_MACHINE:-calcu}
 pm() { podman --connection "$MACHINE" "$@"; }
 
-[ $# -gt 0 ] || set -- library core-59 core-1600 qt-59 qt-1600
+[ $# -gt 0 ] || set -- library core-59 core-1600 qt-59 qt-1600 help-1600
 # The web jobs run in the web image, the others in the base image: two runs
 # when both are named, so a base job's build tree is never configured in the
 # web image (which has node and the browsers the base image lacks).

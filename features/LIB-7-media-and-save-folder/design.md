@@ -1,5 +1,5 @@
 # LIB-7 Media and save folder: design
-Status: Library column approved at the Part C1/C2 boundary (2026-11-15); Calc-U-1600 column approved at the Part C2/D boundary (2026-11-16); Calc-U-59 column (§11): Draft for the Part D/E boundary (2026-11-16)
+Status: Library column approved at the Part C1/C2 boundary (2026-11-15); Calc-U-1600 column approved at the Part C2/D boundary (2026-11-16); Calc-U-59 column (§11): approved by the user at the Part D/E boundary (2026-11-16)
 
 ## 1. Scope
 
@@ -1112,7 +1112,7 @@ None that splits this column.
 
 ## 11. Part E: the Calc-U-59 column
 
-Draft for the Part D/E boundary (2026-11-16). Paths without a prefix are
+Approved by the user at the Part D/E boundary (2026-11-16). Paths without a prefix are
 under `products/calc-u-59/`; line numbers at `7bdd51c`. It replaces §4's
 Calc-U-59 table as the plan of M-55; where it differs from that table it
 says so. The card itself (its content, the card reader, the format, the
@@ -1330,22 +1330,21 @@ in M-57 (D-29).
 
 Ledger rows that become visible in M-55 (plan §5.2): 59-1 (cards),
 59-6, 59-8 (cards kept), 59-17 (C59-7 AC-25), 59-20 (cards), 59-24,
-59-27, 59-43 (the Web's import and saved media). Proposed new rows (next
-free numbers at the merge; not written into `docs/behaviour-changes.md`
-by this design):
-- **59-new-a** — In a preset, `card:` or `arm:` with a card file or name
+59-27, 59-43 (the Web's import and saved media). New rows (numbered and written
+into `docs/behaviour-changes.md` at the D/E boundary, 2026-11-16):
+- **59-49** — In a preset, `card:` or `arm:` with a card file or name
   that does not exist refuses the preset (today: a blank card goes in and
   is saved under that name at its first write); a new card in a preset
   is an in-file card of `magnetic-cards:`, saved by `saveas:`. (LIB-7
   AC-23, AC-35; C59-7 AC-20; D-32.)
-- **59-new-b** — (with the answer to C59-7 Q-1) The card buttons, menu
+- **59-50** — (with the answer to C59-7 Q-1: "Arm Card") The card buttons, menu
   items and dialogs read "Arm Card" and "Arm Fresh Card" (today "Fit
   Card", "Fit Fresh Card"). (`docs/glossary-mapping.md` row "Arm"; C59-7
   Q-1.)
-- **59-new-c** — The card dialogs list the saved cards by the names
+- **59-51** — The card dialogs list the saved cards by the names
   inside them (today: by file name, `card.U59` by default); a card's
   file is named after its name (`<name>.magnetcard.yaml`). (AC-2, AC-4;
-  C59-7 AC-14.) It may be folded into 59-6.
+  C59-7 AC-14.) It adds to 59-6.
 
 Plan notes (for the orchestrator; the plan is not edited here):
 - §5.1: LIB-7 Calc-U-59 "Done in" M-57 (D-29); C59-7 "Done in" M-58

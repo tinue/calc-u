@@ -1105,7 +1105,7 @@ None that split the design.
 
 ## 10. Part E: the Calc-U-59 column
 
-Status: Draft for the Part D/E boundary (2026-11-16)
+Status: approved by the user at the Part D/E boundary (2026-11-16)
 
 Step M-57, with LIB-4 59 (§10 of LIB-4's design holds the control
 state's product side; this section holds the frontends and what the
@@ -1444,28 +1444,28 @@ Longer group runs at the end of Part E with Playwright and the pictures.
 Visible from M-57: 59-5 ("Loading…"), 59-9 and 59-14 (Qt6 and Web),
 59-44, 59-45 (Qt6 and Web), and 1600-48 (10.3.5). Rows proposed for
 `docs/behaviour-changes.md`, consequences of the spec that the ledger
-lacks (numbers given at the merge):
+lacks (numbers given at the D/E boundary, 2026-11-16):
 
-- **59-new-A (Web).** Help and About are in the Help menu (wide) or
+- **59-52 (Web).** Help and About are in the Help menu (wide) or
   behind the More button (portrait), no longer in the settings dialog;
   About shows the summary and the links to the source, to support and
   to the privacy statement, as the Qt6 About does (today a line and a
   link to calc-u.org/59). Behind the More button are also Import Media…
   and Saved Media… (the TI-59's cards) and About, besides Examples, Cold
   boot, Resume and Help. Sources: LIB-14 AC-29, AC-32; D-36.
-- **59-new-B (Qt6, Web).** The settings dialog: "Startup model" with
+- **59-53 (Qt6, Web).** The settings dialog: "Startup model" with
   "Last used" first (today "Startup Calculator", "Last Used" last in
   Qt6), "Save folder" (today "Card Folder"), the Qt6 rows grouped in
   Storage, Folders and Tracing (today "Files"), a Startup presets
   section, every change applied at once (today the module and, on the
   Web, the trace size when the dialog closes), the version as a line of
   General. Sources: LIB-14 AC-11, AC-30.
-- **59-new-C (Qt6).** When a ROM file is missing the window opens and
+- **59-54 (Qt6).** When a ROM file is missing the window opens and
   shows which files are missing in place of the calculator, and Help
   and About work (today a message box, then the app quits). A notice is
   shown without a title (today a title taken from the sentence). Sources:
   LIB-14 AC-17, AC-19; LIB-12 AC-5 (as 1600-36).
-- **59-new-D (Web).** While what is saved is not kept (another tab,
+- **59-55 (Web).** While what is saved is not kept (another tab,
   unreadable or unavailable storage), the storage sentence stays in a
   line above the calculator, besides its notice (today a status line
   until it is dismissed). Sources: LIB-15 AC-8, EC-2, EC-3; D-39.
@@ -1514,7 +1514,7 @@ lacks (numbers given at the merge):
   Saved Media… and About on the Web; AC-29's list names the items of
   its time, and the saved media of LIB-7 AC-36 and the Web's About
   (AC-32) would otherwise not be reachable in portrait. iOS has no About
-  (C59-8 AC-11), so `Traits::about` is false there. Ledger 59-new-A.
+  (C59-8 AC-11), so `Traits::about` is false there. Ledger 59-52.
 - **D-37 (AC-26).** The page's form of `ShellProduct` says whether the
   product has Copy Screen; Calc-U-1600's data names a placeholder act,
   so its reply does not change.
@@ -1523,7 +1523,7 @@ lacks (numbers given at the merge):
 - **D-39 (Q-4; ledger 1600-48).** M-57 makes the storage banner a
   component of the React set, from `web.storage`'s sentence, used by
   both products; 1600-48 is in effect from M-57, not left to M-61.
-  Calc-U-59 gets the banner too (59-new-D).
+  Calc-U-59 gets the banner too (59-55).
 - **D-40 (LIB-5 AC-7).** Host keys go through `qt6::HostKeys` and
   `hostKeys.js`; the TI keyboard map already refuses a key with a
   command modifier (`app/TITyping.cpp:156`), so dropping the frontends'
@@ -1554,7 +1554,7 @@ lacks (numbers given at the merge):
   banner (10.3), Calc-U-1600's banner on it (row 1600-48); Qt6 attach
   and `--pacing-probe` as an attach client.
 - M-57 "Knowledge, ledger" gains the files of 10.11 and the rows
-  59-new-A to 59-new-D, 1600-48.
+  59-52 to 59-55, 1600-48.
 
 ### 10.15 Questions for the user
 

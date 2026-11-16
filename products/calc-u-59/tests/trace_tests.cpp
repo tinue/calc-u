@@ -151,3 +151,22 @@ TEST(lib10_ac33_limit_ends_with_a_notice) {
     CHECK(bytes.size() <= 1024u * 1024u);
     CHECK(records(bytes).whole && records(bytes).types.back() == 0x03);
 }
+
+// The exit check of M-53: a trace of a preset and the button's are one
+// session, one trace at a time (OQ-3, ledger 59-19).
+TEST(lib10_ac33_exit_check_preset_and_button_traces_are_one_session) {
+    testroms::SessionRig r;
+    CHECK(r.until([&] { return r.machine().isKeyReady(); }));
+    r.send(calcu::debugger::kTraceCommand, Value::object({{"button", true}}));
+    CHECK(r.state<calcu::debugger::TraceState>(calcu::debugger::kTraceTopic)->fileName == "CALCU59_TRACE.bin");
+    const std::string preset = "KEYSTROKES:\nTrace: preset.bin\n83\nWait: 200ms\n";
+    r.post(commands::kLoadState, Value::object({{"bytes", r.bytes(preset)}}));
+    CHECK(r.until([&] {
+        const auto* t = r.state<calcu::debugger::TraceState>(calcu::debugger::kTraceTopic);
+        return t && t->running && t->fileName == "preset.bin";
+    }, 5s));
+    CHECK(records(readBytes(r.folder.path() / "CALCU59_TRACE.bin")).types.back() == 0x03);   // the button's ended first
+    CHECK(r.until([&] { return !r.busy(); }, 10s));
+    CHECK(!r.state<calcu::debugger::TraceState>(calcu::debugger::kTraceTopic)->running);   // ends with its preset (T3)
+    CHECK(records(readBytes(r.folder.path() / "preset.bin")).whole);
+}

@@ -1,5 +1,5 @@
 # C59-4 Calc-U-59 debug panel: design
-Status: Draft for the Part D/E boundary (2026-11-16)
+Status: approved by the user at the Part D/E boundary (2026-11-16)
 
 ## 1. Scope
 

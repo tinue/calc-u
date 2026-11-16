@@ -264,7 +264,7 @@ Every criterion of the column passes: **Done**.
 
 Built and run on an M4 Pro, macOS 27.2, Apple clang, Ninja,
 RelWithDebInfo: `build/tests` (`-DCALCU_FRONTEND_QT=OFF`, Frequent
-42 of 42; `CalcU59Tests` 323 `TEST`s in 8.3 s; `CalcU59ReferenceRuns` with `CALCU59_REFERENCE_COMPARE=1`: 0 of 57 differ, 36 only as accepted), `build/qt` (`-DCALCU_FRONTEND_QT=ON`: `CalcU59QtTests`, new, 3 `TEST`s, 35 checks, 4.2 s, Frequent where Qt6 is found; the app builds without warnings; not launched), the Web `dist/`
+42 of 42; `CalcU59Tests` 324 `TEST`s in 8.3 s; `CalcU59ReferenceRuns` with `CALCU59_REFERENCE_COMPARE=1`: 0 of 57 differ, 36 only as accepted), `build/qt` (`-DCALCU_FRONTEND_QT=ON`: `CalcU59QtTests`, new, 3 `TEST`s, 35 checks, 4.2 s, Frequent where Qt6 is found; the app builds without warnings; not launched), the Web `dist/`
 through `frontends/web/build.sh` and `frontends/web/run-tests.sh`
 (Playwright 95 passed, 5 skipped (Checkpoint and pacing), 0 failed, 1.5 min). Swift: `xcodebuild` from the worktree stopped with "There is no XCFramework found" (known for worktrees under `.claude/worktrees/`); the bridge was checked with `clang++ -fsyntax-only` (macOS, and `TIAppSession.mm` for the iOS simulator) and the Swift sources with `swiftc -typecheck`; `CalcU59XcodeProjectCheck`, `CalcU59NoAttachSources` pass. The Swift build and `UIRegressionTests` are left to the user.
 

@@ -1,5 +1,5 @@
 # LIB-6 Presets: design
-Status: Library column approved at the Part C1/C2 boundary (2026-11-15); Calc-U-1600 column approved at the Part C2/D boundary (2026-11-16); Calc-U-59 column (§11): Draft for the Part D/E boundary (2026-11-16)
+Status: Library column approved at the Part C1/C2 boundary (2026-11-15); Calc-U-1600 column approved at the Part C2/D boundary (2026-11-16); Calc-U-59 column (§11): approved by the user at the Part D/E boundary (2026-11-16)
 
 ## 1. Scope
 
@@ -1015,7 +1015,7 @@ no user-visible change, every sentence as before):
 
 ## 11. Part E: the Calc-U-59 column
 
-Draft for the Part D/E boundary (2026-11-16). Paths without a prefix are
+Approved by the user at the Part D/E boundary (2026-11-16). Paths without a prefix are
 under `products/calc-u-59/`; line numbers at `7bdd51c`.
 
 ### 11.1 Scope

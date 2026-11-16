@@ -1,5 +1,5 @@
 # C59-7 Magnetic cards: design
-Status: Draft for the Part D/E boundary (2026-11-16)
+Status: approved by the user at the Part D/E boundary (2026-11-16)
 
 Paths without a prefix are under `products/calc-u-59/`; line numbers at
 `7bdd51c` (main after the Part D simplification). The spec cites
@@ -266,7 +266,7 @@ changes.
 
 | Today (`app/TIAppPart*.cpp`) | After M-55 |
 |---|---|
-| `fitCard`, `c59.fit-card` (bytes, path) | the Fit Card dialog sends `media.choose {place: card-reader, entry}` (LIB-7 D-22: fitted, not fed) |
+| `fitCard`, `c59.fit-card` (bytes, path) | the Arm Card dialog sends `media.choose {place: card-reader, entry}` (LIB-7 D-22: fitted, not fed) |
 | `fitBlankCard`, `c59.fit-blank-card` | `media.start-new {place: card-reader, template: "Fresh card", name}`; the `asks:` reply carries `replaceQuestion` (AC-15) |
 | `feedSide`, `c59.feed-side`; `tapCard`, `c59.tap-card` | `c59.tap-card {x, y}` stays (the corner rule, `app/KeyboardLayout.hpp:43`, is the product's) and sends `media.feed {place, side}`; `c59.feed-side` goes (a frontend sends `media.feed`) (D-12) |
 | `ejectCard`, `c59.eject-card` | `media.eject {place: card-reader}`: a passing card is taken out and stays fitted (LIB-7 D-22, user 2026-11-16) |
@@ -455,3 +455,5 @@ and Swift scenarios pass in M-57 and M-58 (D-11).
   magnetic card items of C59-7"), and a ledger row; the scenario IDs do
   not change. The other answer keeps "Fit Card" and strikes the mapping
   row.
+  Answered (user, 2026-11-16, with the approval of the Part E designs): "Arm Card";
+  decision-log rows in C59-7 and LIB-14, ledger row 59-50.

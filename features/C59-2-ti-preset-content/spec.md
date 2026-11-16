@@ -161,7 +161,7 @@ Commands
   `ti59 program [<step>] <keycode>…` and `ti59 registers <NN>=<value>…`;
   each is refused where the section would refuse the preset. Without a
   value they read: `ti59 partition` gives the partition, `ti59 program
-  <step> [<count>]` the keycodes, `ti59 registers <NN>…` the registers
+  <step> [count=<n>]` the keycodes, `ti59 registers <NN>…` the registers
   (LIB-11 AC-13, AC-14; today `tools/headless/ti59.py:265-266`).
 
 The shipped and hosted presets
@@ -370,3 +370,4 @@ The shipped and hosted presets
 | The keycode notation has two notations, compact and listing; a compact line holds only two-digit keycodes; no `...` gap marker; the upgrade writes one-digit keycodes with two digits and moves words and `...` into comments (AC-3, AC-10, OQ-5). Replaces "a token that is not a keycode … is a label and is passed over" | user, 2026-11-13 (C59-2 OQ-5, §5.4 of `docs/walkthroughs/presets.md`): two notations, compact (like a hex listing of a ROM, zeros spelled out, no skip indicator) and listing (like a PC-100C listing; the step number places the code, dots are only for readability, a comment in YAML); both limits agreed | 2026-11-13 |
 | Aligned with `docs/formats/` after the Q&A round of 2026-11-13: the keycode notation is as decided in OQ-5, no longer open (AC-3) | user rulings of 2026-11-13 (`docs/walkthroughs/presets.md` §5.2, §5.4); `docs/formats/` | 2026-11-13 |
 | A whole number with more than 13 significant digits is cut after the 13th, as today (AC-4; `preset.md` §4.2) | user, 2026-11-13 (consistency pass): "this needs to be a cut"; old listings do not have so many digits | 2026-11-13 |
+| The read count of `ti59 program` is written `count=<n>`, and every bare token after the step is a keycode (AC-9; was `[<count>]`) | `ti59 program 010 05` read two ways (read 5 steps or write keycode 05); `count=` as `limit=` in C59-9 AC-3; user, 2026-11-16 (Q-2 of `docs/reviews/e-designs.md`, with the approval of the Part E designs) | 2026-11-16 |

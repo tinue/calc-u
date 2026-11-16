@@ -1,5 +1,5 @@
 # C59-8 Swift frontend on the family structure: design
-Status: Draft for the Part D/E boundary (2026-11-16)
+Status: approved by the user at the Part D/E boundary (2026-11-16)
 
 ## 1. Scope
 
@@ -393,7 +393,7 @@ Swift builds and XCUITests run there.
   `CalcU59NoTestAids` in `docs/test-groups.md`; it is run from the main
   checkout for the Swift builds.
 - **Ledger.** Rows 59-9, 59-14 (Swift), 59-44 and 59-45 become visible
-  in Swift. A row is proposed (number at the merge): **59-new-E
+  in Swift. A row is proposed (numbered at the D/E boundary): **59-56
   (Swift).** A notice is an alert with only its sentence and OK, and
   several are shown one after the other (today a titled alert whose
   second replaces the first); "Loading…" is shown during a long load;

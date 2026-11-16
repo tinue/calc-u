@@ -724,7 +724,7 @@ product cannot open are refused with a notice.
 
 ## 10. Part E: the Calc-U-59 column
 
-Status of this section: Draft for the Part D/E boundary (2026-11-16).
+Status of this section: approved by the user at the Part D/E boundary (2026-11-16).
 §1 to §9 and Part D are approved and are not changed. This section
 replaces §4's Calc-U-59 sketch and §5's Calc-U-59 row. Paths are under
 `products/calc-u-59/` unless named, at `7bdd51c`.

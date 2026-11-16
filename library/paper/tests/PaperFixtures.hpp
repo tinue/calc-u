@@ -6,24 +6,21 @@
 #include <string>
 #include <vector>
 
-// The paper tests' data (LIB-8 design §2, §6): the descriptions of the three
-// products' printers as test data (AC-24, AC-32; D-15: the PC-100C's
-// printable part is its whole width until M-53 confirms it, its greys
-// today's inkAlpha of app/PrinterFont.hpp for 0 to 20 heating cycles; a
-// plotter's stroke is one point wide, as Calc-U-1600 draws it), and the
-// fixture files in library/paper/tests/fixtures/:
+// The paper tests' data (LIB-8 design §2, §6): the PC-100C's description as
+// test data (AC-24; D-15: its printable part is its whole width until M-53
+// confirms it, its greys today's inkAlpha of app/PrinterFont.hpp for 0 to 20
+// heating cycles; it moves to Calc-U-59's tests with M-53, when Calc-U-59
+// has a description of its own), and the fixture files in
+// library/paper/tests/fixtures/:
 //   pc100c.marks    the converter's reply of diag.ti59 (Calc-U-59, AC-39)
-//   ce150.marks     the converter's reply of plotter_ce150_demo (CE-150)
-//   ce1600p.marks   the strokes of plotter_ascii (CE-1600P) that stay within
-//                   140 units, so that its picture stays small; reach of those
 //   *.png           the reference pictures (§3.3, T5), made by Picture.cpp
 //                   in M-39; CALCU_PAPER_PICTURES=1 writes them anew.
+// The CE-150's and CE-1600P's reference pictures are Calc-U-1600's
+// (products/calc-u-1600/tests/plotter_paper_tests.cpp, on its descriptions).
 
 namespace calcu::paper::test {
 
 PaperDescription pc100cDescription();
-PaperDescription ce150Description();
-PaperDescription ce1600pDescription();
 
 std::string fixturePath(const std::string& name);
 std::vector<std::string> fixtureLines(const std::string& name);

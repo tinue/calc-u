@@ -24,24 +24,6 @@ PaperDescription pc100cDescription() {
     return d;
 }
 
-namespace {
-PaperDescription plotter(Coord width, Coord left, Coord printable) {
-    PaperDescription d;
-    d.unit = Millimetres{190, 1920};
-    d.width = width;
-    d.printableLeft = left;
-    d.printableWidth = printable;
-    d.form = MarkForm::PenStrokes;
-    d.strokeWidth = 35'649;   // one point, 25.4/72 mm
-    d.pictureDotsPerInch = 1200;
-    d.textLayer = false;
-    return d;
-}
-} // namespace
-
-PaperDescription ce150Description() { return plotter(5'658'947, 669'474, 4'320'000); }        // 56 mm, 42.75 drawn on
-PaperDescription ce1600pDescription() { return plotter(21'221'053, 1'010'526, 19'200'000); }  // 210 mm, 190 drawn on
-
 std::string fixturePath(const std::string& name) { return std::string(CALCU_PAPER_FIXTURES) + "/" + name; }
 
 std::vector<std::string> fixtureLines(const std::string& name) {

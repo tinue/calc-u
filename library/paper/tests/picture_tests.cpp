@@ -113,18 +113,11 @@ TEST(ac16_reference_pictures_of_the_test_printers) {
     checkReference("tp4.png", picturePng(tp4Paper(pp)));
 }
 
-TEST(ac16_reference_pictures_of_the_three_printers) {
+TEST(ac16_reference_picture_of_the_pc100c) {
     const Paper pc = fromFixture(pc100cDescription(), "pc100c.marks");
-    const Paper ce150 = fromFixture(ce150Description(), "ce150.marks");
-    const Paper ce1600p = fromFixture(ce1600pDescription(), "ce1600p.marks");
-    CHECK(!pc.empty() && !ce150.empty() && !ce1600p.empty());
-    CHECK_EQ(pictureSize(pc).width, 1311);       // AC-27: 600 dpi, about 1311 pixels
-    CHECK_EQ(pictureSize(ce1600p).width, 9921);  // AC-35: a short CE-1600P paper at 1200 dpi
-    CHECK_EQ(pictureSize(ce150).width, 2646);    // 56 mm at 1200 dpi
-    CHECK_EQ(pictureSize(ce1600p).dotsPerInch, 1200.0);
+    CHECK(!pc.empty());
+    CHECK_EQ(pictureSize(pc).width, 1311);   // AC-27: 600 dpi, about 1311 pixels
     checkReference("pc100c.png", picturePng(pc));
-    checkReference("ce150.png", picturePng(ce150));
-    checkReference("ce1600p.png", picturePng(ce1600p));
 }
 
 TEST(ac17_long_paper_lowered_to_16000_pixels_never_cropped) {
@@ -143,13 +136,18 @@ TEST(ac17_long_paper_lowered_to_16000_pixels_never_cropped) {
 }
 
 TEST(ac17_wide_long_paper_lowered_to_64_megapixels) {
-    FakePrinter pr(ce1600pDescription());
-    Paper p(ce1600pDescription());
+    // A TP-4 widened to 210 mm and drawn at 1200 dpi: 9921 pixels wide.
+    PaperDescription wide = mt::tp4Description();
+    wide.width = u(2'100);
+    wide.printableWidth = u(2'000);
+    wide.pictureDotsPerInch = 1200;
+    FakePrinter pr(wide);
+    Paper p(wide);
     p.bind(&pr);
     pr.down(Rgb{}, u(200), u(0));
     pr.to(u(300), u(10));
     pr.up();
-    pr.feedTo(u(1'500));   // 148 mm: 9921 × 7008 pixels at 1200 dpi
+    pr.feedTo(u(1'500));   // 150 mm: 9921 × 7087 pixels at 1200 dpi
     const PictureSize s = pictureSize(p);
     const std::int64_t area = std::int64_t(s.width) * s.height;
     CHECK(area <= kMaxPicturePixels);

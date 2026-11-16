@@ -48,8 +48,8 @@ The folder of `calcu_library` that LIB-1 §2a expects. It uses
 | `Replies.hpp/.cpp` | the text forms of `paper text` and `paper marks`, `numberText`, and a reader of `paper marks` for tests and the converters (§3.4) |
 | `PaperTopics.hpp/.cpp` | the payloads `PaperAppended`, `PaperList`, `CopyOutcome`; topic, command and request names (§3.5) |
 | `PaperPart.hpp/.cpp` | `PaperPart : sessions::SessionPart`: the papers of a product, the topics, Copy, Cut, the requests, the step `cut-paper` (§3.6) |
-| `tests/PaperFixtures.hpp/.cpp` | the descriptions of the three products' printers as test data (from AC-24, AC-32), the fixture reader |
-| `tests/fixtures/` | `pc100c.marks`, `ce150.marks`, `ce1600p.marks` (copied from the converters' output, §4.1) and the reference pictures `pc100c.png`, `ce150.png`, `ce1600p.png`, `td20.png`, `tp4.png` (§3.3, §8) |
+| `tests/PaperFixtures.hpp/.cpp` | the PC-100C's description as test data (from AC-24; until M-53), the fixture reader (the CE-150's and CE-1600P's went to Calc-U-1600's tests in Part D, §10.14) |
+| `tests/fixtures/` | `pc100c.marks` (copied from the converter's output, §4.1) and the reference pictures `pc100c.png`, `td20.png`, `tp4.png` (§3.3, §8); `ce150.marks`, `ce1600p.marks`, `ce150.png`, `ce1600p.png` are Calc-U-1600's since Part D (§10.14) |
 | `tests/*_tests.cpp` | one file per area (§6) |
 
 `library/formats/` (M-39), `calcu::formats`:
@@ -579,7 +579,7 @@ key `feed` feeds 20 units, `back` feeds back 30 (y below zero).
 | T2 | the kind, descriptions | AC-1 | `paper_kind_tests.cpp`: `ac1_description_states_unit_width_form_drawing_resolution_text_layer` (both test printers), `ac1_conformance_check_finds_a_different_description` |
 | T3 | `Paper`: marks, text, reach, cut | AC-2, AC-3, AC-4, AC-5, EC-1 | `paper_tests.cpp`: `ac2_marks_in_order_never_changed` (a stroke's earlier positions stay while it grows), `ac3_each_line_and_each_feed_in_the_text_layer`, `ac4_reach_from_least_to_greatest_mark_or_feed` (a feed without a mark, a feed back below zero), `ac5_cut_empties_and_next_print_starts_a_new_paper`, `ec1_cut_while_printing_puts_later_marks_on_the_new_paper` (TD-20 in a line; TP-4 in a stroke) |
 | T4 | `Replies` | AC-23, EC-2 | `replies_tests.cpp`: `ac23_numbers_whole_without_point_else_four_decimals`, `ac23_marks_reply_reach_then_dots_and_strokes`, `ac23_text_reply_one_line_per_text_line`, `ec2_empty_paper_replies_reach_0_0_and_no_lines` |
-| T5 | `Picture`, `PngWriter` | AC-16, AC-17 | `picture_tests.cpp`: `ac16_full_width_all_it_reaches_at_stated_resolution` (sizes of TD-20 and TP-4 papers), `ac16_reference_pictures_of_the_test_printers` (`td20.png`, `tp4.png`), `ac16_reference_pictures_of_the_three_printers` (`pc100c`, `ce150`, `ce1600p` fixtures: description + marks → PNG byte for byte; 1311 and 9921 pixels wide, AC-27, AC-35 as data), `ac17_long_paper_lowered_to_16000_pixels_never_cropped`, `ac17_wide_long_paper_lowered_to_64_megapixels`; `formats/tests/png_tests.cpp`: `png_rgb_bands_and_phys` |
+| T5 | `Picture`, `PngWriter` | AC-16, AC-17 | `picture_tests.cpp`: `ac16_full_width_all_it_reaches_at_stated_resolution` (sizes of TD-20 and TP-4 papers), `ac16_reference_pictures_of_the_test_printers` (`td20.png`, `tp4.png`), `ac16_reference_picture_of_the_pc100c` (`pc100c` fixture: description + marks → PNG byte for byte; 1311 pixels wide, AC-27 as data; until M-53), and in Calc-U-1600's `plotter_paper_tests.cpp` `lib8_ac16_reference_pictures_of_the_plotters` (CE-150, CE-1600P on the product's descriptions; 2646 and 9921 pixels wide, AC-35 as data; Part D, §10.14), `ac17_long_paper_lowered_to_16000_pixels_never_cropped`, `ac17_wide_long_paper_lowered_to_64_megapixels`; `formats/tests/png_tests.cpp`: `png_rgb_bands_and_phys` |
 | T6 | topics and the part | AC-6, AC-7, EC-2, EC-3, EC-4 | `paper_part_tests.cpp`: `ac6_one_stream_per_printer_type_plugged_or_not`, `ac6_message_carries_appended_marks_lines_and_reach`, `ac6_cut_sends_the_reset`, `ec3_late_listener_gets_whole_paper_once_then_appended` (both test printers), `ac7_same_commands_same_ticks_same_marks` (two sessions, `paper marks` equal), `ec2_product_without_printers_has_no_paper_topic`, `ec4_full_speed_loses_no_mark_shown_at_end_of_call` |
 | T7 | what the paper lives through | AC-8, AC-9, EC-7 | `paper_part_tests.cpp`: `ac8_reset_cold_boot_power_cycle_keep_the_paper`, `ac8_detach_keeps_attach_again_prints_on` (on `test-seg`, again on `test-dot` and in variant `r2`), `ac8_machine_replaced_without_printer_keeps_paper`, `ac8_user_preset_naming_printer_starts_empty_other_paper_stays` (A-3, a LIB-6 test preset with both test printers' places), `ac8_startup_preset_at_model_switch_keeps_paper`, `ac8_new_session_starts_with_empty_papers`, `ac9_detach_and_attach_send_nothing_for_papers`, `ac8_attach_in_place_keeps_marks_made_before_the_part_binds` (`PaperOutputBase`), `ec7_detach_in_a_line_keeps_what_was_printed` |
 | T8 | `advanceUnpaced` calls `afterCall` (A-6) | AC-6 (support) | `sessions/tests/app_session_tests.cpp`: `advance_unpaced_runs_parts_after_call` |
@@ -902,7 +902,7 @@ in M-46.
   M-46 (C1600-4 AC-16). Their reach may differ from the converted one only
   by a feed (D-14).
 - **Reference pictures.** `ce150.png` and `ce1600p.png` of M-39 are drawn
-  from the fixtures. P16-5 checks a product printout's size, not its
+  from the fixtures (in Calc-U-1600's tests since Part D, §10.14). P16-5 checks a product printout's size, not its
   bytes.
 
 ### 10.8 Agent knowledge (in M-45)
@@ -990,3 +990,31 @@ in M-46.
 ### 10.13 Questions for the user
 
 None that split this design.
+
+### 10.14 Part D: the plotters' reference pictures in Calc-U-1600 (departure)
+
+Part D's simplification (`docs/reviews/d-simplification.md` S-7, P-7)
+moves the CE-150's and CE-1600P's reference pictures (T5) out of the
+library's tests, which held copies of both products' data:
+
+- `plotter_paper_tests.cpp` `lib8_ac16_reference_pictures_of_the_plotters`
+  draws a `paper marks` reply on `sharp::ce150PaperDescription()` and
+  `sharp::ce1600pPaperDescription()` and compares the picture byte for byte
+  with `tests/fixtures/paper/ce150.png` and `ce1600p.png` (moved unchanged);
+  it also reads each reply back unchanged (AC-39's form). The CE-150's reply
+  is the reference run's `tests/reference/v0.8.1-examples/plotter_ce150_demo.pc1500a.CE-150.paper-marks`
+  (the library's `ce150.marks` was a byte-for-byte copy of it and went);
+  the CE-1600P's is `tests/fixtures/paper/ce1600p.marks` (moved). The
+  `CALCU_PAPER_PICTURES=1` switch writes them, as in the library.
+- The library's `PaperFixtures` loses `ce150Description()` and
+  `ce1600pDescription()`; `ac16_reference_pictures_of_the_three_printers`
+  becomes `ac16_reference_picture_of_the_pc100c`, and
+  `ac39_marks_reply_read_and_written_unchanged` reads `pc100c.marks` and a
+  reply with strokes written in the test;
+  `ac17_wide_long_paper_lowered_to_64_megapixels` draws on a TP-4 widened
+  to 210 mm at 1200 dpi (9921 pixels wide, as the CE-1600P's paper was).
+- The PC-100C's picture stays in the library until M-53: Calc-U-59 has no
+  paper description yet (its `PC100C` gives `c59.printer-output` lines,
+  not LIB-8's paper output), so its test would need a copy of the
+  description again. M-53 moves it to Calc-U-59's tests on the product's
+  own description.

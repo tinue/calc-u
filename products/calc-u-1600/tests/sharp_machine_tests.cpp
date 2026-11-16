@@ -13,6 +13,7 @@
 #include "SharpTestSupport.hpp"
 #include "paper/PaperOutput.hpp"
 #include "peripherals/RealTimeClock.hpp"
+#include "../core/PC1500/PC1500MachineCodeLoader.hpp"
 
 using namespace calcu::machine;
 using namespace sharptest;
@@ -24,7 +25,7 @@ bool haveAll() { return haveModelRoms("PC-1500A") && haveModelRoms("PC-1600"); }
 
 // Writes a 4-byte pattern at `addr` through the loader memory.
 const std::uint8_t kPattern[4] = {0xA5, 0x5A, 0xC3, 0x3C};
-bool pokePattern(Machine& m, std::uint16_t addr) { return memoryOf(m).poke(addr, kPattern, 4); }
+bool pokePattern(Machine& m, std::uint16_t addr) { return memoryOf(m).writeBuiltIn(addr, kPattern, 4).stored; }
 bool hasPattern(Machine& m, std::uint16_t addr) {
     for (int i = 0; i < 4; ++i)
         if (memoryOf(m).peek(static_cast<std::uint16_t>(addr + i)) != kPattern[i]) return false;
@@ -33,9 +34,10 @@ bool hasPattern(Machine& m, std::uint16_t addr) {
 // An address in free RAM that no start-up touches: the middle of the
 // PC-1500's user RAM; the PC-1600's internal RAM at E000H.
 std::uint16_t freeRam(Machine& m) {
+    if (memoryOf(m).pc1600()) return 0xE000;
     std::uint32_t start = 0, end = 0;
-    if (sharp::legacy::userRam(m, &start, &end)) return static_cast<std::uint16_t>((start + end) / 2);
-    return 0xE000;
+    pc1500UserRam(memoryOf(m), &start, &end);
+    return static_cast<std::uint16_t>((start + end) / 2);
 }
 
 pp::RealTimeClock* clockOf(Machine& m) { return sharp::firstOf<pp::RealTimeClock>(m); }
@@ -456,9 +458,9 @@ TEST(c1600_1_ac21_pc1500_not_ready_while_bit0_set_or_running) {
     CHECK(runUntilKeyReady(*m));
     const std::uint8_t old = memoryOf(*m).peek(0x7B0E);
     const std::uint8_t set = static_cast<std::uint8_t>(old | 1);
-    CHECK(memoryOf(*m).poke(0x7B0E, &set, 1));
+    CHECK(memoryOf(*m).writeBuiltIn(0x7B0E, &set, 1).stored);
     CHECK(!m->isKeyReady());
-    CHECK(memoryOf(*m).poke(0x7B0E, &old, 1));
+    CHECK(memoryOf(*m).writeBuiltIn(0x7B0E, &old, 1).stored);
     CHECK(runUntilKeyReady(*m, 1));
     // A running program: not ready.
     runProgram(*m, "10 goto 10");

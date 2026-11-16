@@ -9,8 +9,9 @@
 
 #include <algorithm>
 
-MachineCodeLoadDialog::MachineCodeLoadDialog(QWidget* parent, shared::MachineCodeLoad& load)
-    : QDialog(parent), m_load(load) {
+MachineCodeLoadDialog::MachineCodeLoadDialog(QWidget* parent, calcu::sessions::Listener& listener,
+                                             calcu::sessions::Value args, const shared::CodePlanReply& plan)
+    : QDialog(parent), m_listener(listener), m_args(std::move(args)) {
     setWindowTitle(tr("Load Machine Code"));
     setObjectName(QStringLiteral("dialog.machinecode"));
     // Wide enough that the wrapped notes read as sentences; the height
@@ -22,15 +23,14 @@ MachineCodeLoadDialog::MachineCodeLoadDialog(QWidget* parent, shared::MachineCod
     layout->addLayout(form);
 
     m_addressField = new QLineEdit(this);
-    m_addressField->setPlaceholderText(QString::fromStdString(load.addressPlaceholder()));
-    m_addressField->setText(QString::fromStdString(load.defaultAddressText()));
+    m_addressField->setPlaceholderText(QString::fromStdString(plan.placeholder));
+    m_addressField->setText(QString::fromStdString(plan.proposed));
     form->addRow(tr("Start address:"), m_addressField);
     connect(m_addressField, &QLineEdit::textChanged, this, &MachineCodeLoadDialog::refresh);
-    form->addRow(tr("Length:"), new QLabel(tr("%1 bytes").arg(load.length()), this));
+    form->addRow(tr("Length:"), new QLabel(tr("%1 bytes").arg(static_cast<qulonglong>(plan.length)), this));
 
-    const std::string cpuNote = load.cpuNote();
-    if (!cpuNote.empty()) {
-        auto* note = new QLabel(QString::fromStdString(cpuNote), this);
+    if (!plan.cpuNote.empty()) {
+        auto* note = new QLabel(QString::fromStdString(plan.cpuNote), this);
         note->setWordWrap(true);
         layout->addWidget(note);
     }
@@ -49,12 +49,28 @@ MachineCodeLoadDialog::MachineCodeLoadDialog(QWidget* parent, shared::MachineCod
     refresh();
 }
 
+QString MachineCodeLoadDialog::address() const { return m_addressField->text(); }
+
 void MachineCodeLoadDialog::refresh() {
-    const shared::MachineCodeLoad::AddressCheck check = m_load.setAddress(m_addressField->text().toStdString());
-    const QString hint = QString::fromStdString(check.hint);
+    // The plan with the typed address (C1600-2 AC-18): its refusal, or where
+    // the code would go; an empty field asks again, saying nothing.
+    const std::string text = m_addressField->text().toStdString();
+    calcu::sessions::Value::Object o = *m_args.members();
+    o.push_back({"address", calcu::sessions::Value(text)});
+    const calcu::sessions::ReplyMessage r =
+        m_listener.ask(shared::requests::kPlanCode, calcu::sessions::Value(std::move(o)));
+    const auto* plan = calcu::sessions::payloadAs<shared::CodePlanReply>(r.result);
+    bool holds = false;
+    QString hint;
+    if (!r.done) {
+        hint = QString::fromStdString(r.reason);
+    } else if (plan && !plan->needsAddress) {
+        holds = plan->refusal.empty();
+        hint = QString::fromStdString(holds ? plan->where : plan->refusal);
+    }
     m_hint->setText(hint);
     m_hint->setVisible(!hint.isEmpty());
-    m_buttons->button(QDialogButtonBox::Ok)->setEnabled(check.valid);
+    m_buttons->button(QDialogButtonBox::Ok)->setEnabled(holds);
     // Re-fit the height to the wrapped text at the current width, or a long
     // hint gets clipped.
     layout()->activate();

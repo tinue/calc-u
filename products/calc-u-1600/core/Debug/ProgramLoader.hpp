@@ -7,13 +7,14 @@
 #include "CpuRegisters.hpp"
 #include "SourceMap.hpp"
 
-class PC1500Machine;
-class PC1600Machine;
+namespace calcu::machine {
+class Machine;
+}
 
 // ── Build & Load ─────────────────────────────────────────────────────────
 //
-// Puts a freshly assembled program into the machine through the same
-// machine-code loaders as "Load Machine Code…" (no dialog: the address
+// Puts a freshly assembled program into the machine through the one plan
+// and writer of "Load Machine Code…" (no dialog: the address
 // comes from the request or the file's header) and binds its listing to
 // exactly the loaded range, replacing whatever listing an earlier load of
 // that range brought. That is how the debugger knows which listing
@@ -45,10 +46,11 @@ struct LoadResult {
     std::vector<std::string> warnings;
 };
 
-/// Exactly one of the machines is non-null. Verifies the bound listing
-/// against memory right away (`match` and `peek`: the debug targets' bank
-/// state and side-effect-free reads, by thread).
-LoadResult loadProgram(PC1500Machine* pc1500, PC1600Machine* pc1600, const LoadRequest& request, SourceMap& map,
+/// Plans and writes through the loaders of C1600-2 (sharp::loaders::planCode,
+/// loadCode; design §3.10). Verifies the bound listing against memory right
+/// away (`match` and `peek`: the debug targets' bank state and
+/// side-effect-free reads, by thread).
+LoadResult loadProgram(calcu::machine::Machine& machine, const LoadRequest& request, SourceMap& map,
                        const BankMatch& match, const CodePeek& peek);
 
 } // namespace debug

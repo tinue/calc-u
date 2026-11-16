@@ -271,7 +271,7 @@ int main(int argc, char** argv) {
                 const char* q = pk;
                 while (std::sscanf(q, "%x:%x", &a, &v) == 2) {
                     const uint8_t byte = (uint8_t)v;
-                    memory.poke((uint16_t)a, &byte, 1);
+                    memory.writeBuiltIn((uint16_t)a, &byte, 1);
                     std::fprintf(stderr, "  [POKE] %04X <- %02X\n", a, v);
                     const char* c = std::strchr(q, ',');
                     if (!c) break;

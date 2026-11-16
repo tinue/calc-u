@@ -148,24 +148,31 @@ function CalcU1600(props) {
     engine.call("loadPreset", path);
   };
 
-  // Load BASIC Program / Load Machine Code on a File.
+  // Load BASIC Program / Load Machine Code on a File (C1600-2 AC-16 to
+  // AC-19): the session's file kind, the WAV's choice, then the load.
   const openProgram = async (kind, file) => {
     const title = kind === "basic" ? "Load BASIC Program" : "Load Machine Code";
-    const { names } = await engine.request("openProgram", file.name, await fileBytes(file));
+    const bytes = await fileBytes(file);
+    const { tapeFiles } = await engine.request("fileKind", bytes);
     let index = 0;
-    if (names.length) {
-      index = await dialogs.ask("choice", { title, text: `${file.name} holds ${names.length} files. Load which one?`, options: names });
-      if (index === null) return;
+    if (tapeFiles && tapeFiles.length > 1) {
+      const names = tapeFiles.map((n, i) => `${i + 1}. ${n}`);
+      const picked = await dialogs.ask("choice", { title, text: `${file.name} holds ${names.length} files. Load which one?`, options: names });
+      if (picked === null) return;
+      index = picked + 1;
     }
     if (kind === "basic") {
-      const err = await engine.request("loadBasic", index);
+      const err = await engine.request("loadBasic", file.name, bytes, index);
       if (err) tell(title, err);
       return;
     }
-    const plan = await engine.request("planMachineCode", index);
-    if (plan.error) { tell(title, plan.error); return; }
-    if (plan.needsAddress && !(await dialogs.ask("address", { engine, plan }))) return;
-    const result = await engine.request("loadMachineCode");
+    const plan = await engine.request("planCode", bytes, index);
+    let address = "";
+    if (plan.needsAddress) {
+      address = await dialogs.ask("address", { engine, plan, bytes, index });
+      if (address === null) return;
+    } else if (plan.refusal) { tell(title, `${file.name}: ${plan.refusal}`); return; }
+    const result = await engine.request("loadCode", file.name, bytes, index, address);
     if (result.error) { tell(title, result.error); return; }
     await dialogs.ask("loaded", { result });
     // Type the proposed CALL, ready to run: the user presses ENTER.

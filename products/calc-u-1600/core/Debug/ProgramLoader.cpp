@@ -4,19 +4,26 @@
 #include <fstream>
 #include <iterator>
 
+#include <variant>
+
+#include "../Loaders.hpp"
+#include "../Machine/SharpProductKinds.hpp"
 #include "../MachineCodeFile.hpp"
-#include "../PC1500/PC1500Machine.hpp"
 #include "../PC1500/PC1500MachineCodeLoader.hpp"
-#include "../PC1600/PC1600Machine.hpp"
-#include "../PC1600/PC1600MachineCodeLoader.hpp"
 #include "../Preset/PresetFile.hpp"
 #include "Listing/Listing.hpp"
 
 namespace debug {
 
-LoadResult loadProgram(PC1500Machine* pc1500, PC1600Machine* pc1600, const LoadRequest& req, SourceMap& map,
+LoadResult loadProgram(calcu::machine::Machine& machine, const LoadRequest& req, SourceMap& map,
                        const BankMatch& match, const CodePeek& peek) {
     LoadResult r;
+    sharp::LoaderMemory* memory = sharp::loaders::memoryOf(machine);
+    if (!memory) {
+        r.error = "No machine is running.";
+        return r;
+    }
+    const bool pc1600 = memory->pc1600();
     std::ifstream in(req.bin, std::ios::binary);
     if (!in) {
         r.error = "can't read " + req.bin;
@@ -44,33 +51,26 @@ LoadResult loadProgram(PC1500Machine* pc1500, PC1600Machine* pc1600, const LoadR
     // configuration names (the toolchain knows it -- the one caller that
     // does), LH5803 code goes to the Z-80's 8000-FFFF, and the PC-1600
     // target follows the machine's MODE and TITLE like every other load.
-    machinecode::LoadOptions options;
-    options.target = pc1600 ? machinecode::Target::PC1600 : machinecode::Target::PC1500;
-    options.acceptLengthMismatch = true;
-    options.hasAddress = hasAddress;
-    options.address = address;
-    options.hasCpu = pc1600;
-    options.cpu = req.thread == 2 ? machinecode::Cpu::LH5803 : machinecode::Cpu::Z80;
-    const machinecode::PC1600State state = pc1600 ? pc1600LoadState(*pc1600) : machinecode::PC1600State{};
-    const machinecode::LoadPlan plan = machinecode::planLoad(file, options, state);
-    switch (plan.error) {
-        case machinecode::LoadError::None: break;
-        case machinecode::LoadError::Empty: r.error = req.bin + " is empty"; return r;
-        case machinecode::LoadError::NeedsAddress: r.error = "a headerless program needs an \"address\" or a listing"; return r;
-        case machinecode::LoadError::OutsideBank0:
-        case machinecode::LoadError::PastEnd: r.error = "the program doesn't fit below 0x10000"; return r;
-        case machinecode::LoadError::LhRange: r.error = "LH5803 code must sit in 0000-7FFF (the Z-80's 8000-FFFF)"; return r;
-        default: r.error = plan.detail; return r; // BadFile, HeaderMismatch, NoSlot
-    }
-
-    std::string err;
-    const bool written = pc1500 ? loadPC1500MachineCode(*pc1500, plan.busAddr, file.payload.data(), plan.len, &err)
-                                : loadPC1600MachineCode(*pc1600, int(plan.slot), plan.busAddr, file.payload.data(), plan.len, &err,
-                                                        plan.bank);
-    if (!written) {
-        r.error = err;
+    sharp::loaders::CodeRequest request;
+    if (hasAddress) request.address = address;
+    if (file.lengthMismatch) request.length = file.payload.size();
+    if (pc1600) request.cpu = req.thread == 2 ? machinecode::Cpu::LH5803 : machinecode::Cpu::Z80;
+    const sharp::loaders::CodePlan planned = sharp::loaders::planCode(*memory, bytes, request);
+    if (planned.needsAddress()) {
+        r.error = "a headerless program needs an \"address\" or a listing";
         return r;
     }
+    if (!planned.holds()) {
+        r.error = sharp::loaders::refusal(req.bin, planned.refusal);
+        return r;
+    }
+    const auto written = sharp::loaders::loadCode(*memory, bytes, request);
+    if (const std::string* refused = std::get_if<std::string>(&written)) {
+        r.error = sharp::loaders::refusal(req.bin, *refused);
+        return r;
+    }
+    const machinecode::LoadPlan& plan = planned.plan;
+    const machinecode::PC1600State& state = planned.state;
     const uint32_t addr = plan.addr;
     r.lo = uint16_t(addr);
     r.hi = uint16_t(addr + plan.len - 1);
@@ -107,13 +107,13 @@ LoadResult loadProgram(PC1500Machine* pc1500, PC1600Machine* pc1600, const LoadR
 
     // How BASIC starts it.
     uint32_t ramStart = 0, ramEnd = 0;
-    if (pc1500) pc1500UserRam(*pc1500, &ramStart, &ramEnd);
+    if (!pc1600) pc1500UserRam(*memory, &ramStart, &ramEnd);
     // advice() starts at r.entry (the `entry` override, the header's
     // auto-run address, or the load address): CALL, with the plan's bank
     // (slot 2, or a header bank), for main-CPU code; XCALL (an LH5803
     // address) for the PC-1600's LH5803.
     const bool lh5803 = req.thread == 2;
-    r.callCommand = machinecode::advice(options.target, plan.slot, plan.bank, lh5803 ? plan.addr : plan.busAddr, plan.len, r.entry,
+    r.callCommand = machinecode::advice(planned.target, plan.slot, plan.bank, lh5803 ? plan.addr : plan.busAddr, plan.len, r.entry,
                                         ramStart, ramEnd, state,
                                         lh5803 ? machinecode::Cpu::LH5803 : machinecode::Cpu::Z80)
                         .callCommand;

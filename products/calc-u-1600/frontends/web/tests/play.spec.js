@@ -313,7 +313,7 @@ test('a tape imported as WAV shows in the tape picker', async ({ page }) => {
   await expect(page.getByLabel('Tape', { exact: true }).locator('option', { hasText: name })).toHaveCount(1, { timeout: 30000 });
 });
 
-test('Load Machine Code asks for the address, then tells NEW and CALL', async ({ page }) => {
+test('C1600-2 AC-18 headerless code asks the address, then NEW and CALL', async ({ page }) => {
   await gotoReady(page);
   await pickModel(page, 2);
   const chooser = page.waitForEvent('filechooser');
@@ -333,7 +333,7 @@ test('Load Machine Code asks for the address, then tells NEW and CALL', async ({
   await waitForScreen(page, /CALL &C0C5/);
 });
 
-test('a WAV with several programs asks which one', async ({ page }) => {
+test('C1600-2 AC-16 a WAV with several programs asks which one', async ({ page }) => {
   await gotoReady(page);
   // The fixture tape twice in one WAV: its data chunk doubled.
   const wav = fs.readFileSync(path.join(FIXTURES, 'pc1500_tape.wav'));
@@ -353,6 +353,54 @@ test('a WAV with several programs asks which one', async ({ page }) => {
   await expect(dialog.locator('option')).toHaveCount(2);
   await dialog.getByRole('button', { name: 'OK' }).click();
   await expect(dialog).toHaveCount(0);
+});
+
+test('C1600-2 AC-15 the two File items and what they offer', async ({ page }) => {
+  await gotoReady(page);
+  for (const [item, accept] of [['Load BASIC Program…', '.bas,.bbin,.wav'], ['Load Machine Code…', '.bin,.wav']]) {
+    const chooser = page.waitForEvent('filechooser');
+    await menu(page, 'File', item);
+    const fc = await chooser;
+    expect(await fc.element().evaluate((e) => e.accept)).toBe(accept);
+  }
+});
+
+test('C1600-2 AC-17 a BASIC program is loaded, a refusal is a notice', async ({ page }) => {
+  await gotoReady(page);
+  await pickModel(page, 2);
+  let chooser = page.waitForEvent('filechooser');
+  await menu(page, 'File', 'Load BASIC Program…');
+  await (await chooser).setFiles({ name: 'six.bas', mimeType: 'text/plain', buffer: Buffer.from('10 PRINT 6*7\n') });
+  await expect(page.locator('[data-dialog=notice]')).toHaveCount(0);
+  await page.locator('.calcu-client').focus();
+  await page.keyboard.type('RUN', { delay: 60 });
+  await page.keyboard.press('Enter');
+  await waitForScreen(page, /42/);
+  // Machine code given to the BASIC loader: refused, as a notice (EC-5).
+  chooser = page.waitForEvent('filechooser');
+  await menu(page, 'File', 'Load BASIC Program…');
+  await (await chooser).setFiles(path.join(FIXTURES, 'rtn4.bin'));
+  const notice = page.locator('[data-dialog=notice]');
+  await expect(notice).toContainText('rtn4.bin: ');
+});
+
+test('C1600-2 AC-19 the loaded dialog and the CALL in the input line, not started', async ({ page }) => {
+  await gotoReady(page);
+  await pickModel(page, 2);
+  // A PC-1600 header: Z-80 RET at &C100, no address to start at.
+  const file = Buffer.from([0xFF, 0x10, 0x00, 0x00, 0x10, 0x01, 0x00, 0x00, 0x00, 0xC1, 0x00, 0xFF, 0xFF, 0x00, 0x00, 0x0F, 0xC9]);
+  const chooser = page.waitForEvent('filechooser');
+  await menu(page, 'File', 'Load Machine Code…');
+  await (await chooser).setFiles({ name: 'ret.bin', mimeType: 'application/octet-stream', buffer: file });
+  await expect(page.locator('[data-dialog=machinecode]')).toHaveCount(0);
+  const loaded = page.locator('[data-dialog=loaded]');
+  await expect(loaded).toContainText('Keep BASIC from overwriting it:');
+  await expect(loaded).toContainText('Start it:');
+  await expect(loaded).toContainText('CALL &C100');
+  await loaded.getByRole('button', { name: 'OK' }).click();
+  await waitForScreen(page, /CALL &C100/);
+  await page.waitForTimeout(500);
+  expect(await screen(page)).toMatch(/CALL &C100/);   // in the input line, not started
 });
 
 test('the inspector shows the pointers and the card dump', async ({ page }) => {

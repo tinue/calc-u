@@ -3,10 +3,11 @@
 #include <string>
 #include <vector>
 
-#include "../Basic/BasicProgramSource.hpp"  // basic::TransferModel
 #include "../Basic/BasicLoadResults.hpp"
 
-class PC1600Machine;
+namespace sharp {
+class LoaderMemory;
+}
 
 // ── Fast BASIC program loading for the PC-1600 ─────────────────────────
 //
@@ -37,24 +38,8 @@ class PC1600Machine;
 // Checked byte for byte against the keystroke typer's work area
 // (Core/tests/pc1600_basicloader_tests.cpp).
 
-/// The keyword table a BASIC listing is tokenized with on this machine right
-/// now: the PC-1600's in MODE 0, the PC-1500's in MODE 1
-/// (docs/background/plans/Loader-Mode-Plan.md). The loader never switches
-/// MODE itself.
-basic::TransferModel pc1600ListingModel(PC1600Machine& machine);
-
-/// Loads a BASIC program into `machine`: `file` is a `.bas` listing
-/// (tokenized with pc1600ListingModel()) or tokenized BASIC behind a
-/// PC-1600 header (both MODEs) or a CE-158 header (MODE 1 only). Requires
-/// only that the program-area pointers are valid -- no reset, mode change,
-/// or NEW0 is performed.
-BasicLoadResult loadBasicProgram(PC1600Machine& machine, const std::vector<uint8_t>& file);
-
-/// Same, for the file at `path`: Load BASIC Program and a
-/// preset's BASIC `program: file:`.
-BasicLoadResult loadBasicProgramFile(PC1600Machine& machine, const std::string& path);
-
 /// The bare tokenized payload (no header) -- the run of in-RAM line records
-/// basic::readBasicProgram() yields.
-BasicLoadResult loadBasicBinaryPayload(PC1600Machine& machine,
-                                       const std::vector<uint8_t>& payload);
+/// basic::readBasicProgram() yields -- into the program area TITLE selects,
+/// through the loader memory access (C1600-2 AC-14). sharp::loaders::loadBasic
+/// reads the file and picks the keyword table by MODE.
+BasicLoadResult pc1600LoadBasicPayload(sharp::LoaderMemory& memory, const std::vector<uint8_t>& payload);

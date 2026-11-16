@@ -46,7 +46,8 @@ job::Task<PresetLoadResult> applyPC1600PresetJob(PC1600Machine& machine, PresetF
                                               std::string traceDir = ".", std::string moduleDir = ".",
                                               PresetBootedFn onBooted = {}, PresetRoms presetRoms = {},
                                               std::vector<std::string> extraModuleDirs = {},
-                                              PresetArmedFn onArmed = {}, PresetSaveAsFn onSaveAs = {});
+                                              PresetArmedFn onArmed = {}, PresetSaveAsFn onSaveAs = {},
+                                                 PresetTyping typing = {});
 PresetLoadResult applyPC1600Preset(PC1600Machine& machine, const PresetFile& preset,
                                    const PresetLogFn& log = {},
                                    const std::string& traceDir = ".",

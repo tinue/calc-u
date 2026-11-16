@@ -11,11 +11,10 @@
 #include "../Connector/FloppyImageFile.hpp"
 #include "../Preset/PresetInterface.hpp"
 #include "../Preset/PresetRoms.hpp"
-#include "PC1600BasicLoader.hpp"
+#include "../Machine/SharpLoaderMemory.hpp"
 #include "PC1600BasicTyper.hpp"
 #include "PC1600Keyboard.hpp"
 #include "PC1600Machine.hpp"
-#include "PC1600MachineCodeLoader.hpp"
 #include "PC1600LcdText.hpp"
 #include "PC1600Screenshot.hpp"
 
@@ -167,23 +166,13 @@ public:
     }
     LcdText lcdText() override { return pc1600LcdText(m_machine); }
 
-    job::Task<BasicTypeResult> typeBasicProgram(std::string text) override {
+    sharp::LoaderMemory& loaderMemory() override { return m_memory; }
+    job::Task<BasicTypeResult> typeBasicProgramWithoutSession(std::string text) override {
         co_return co_await typeBasicProgramTextJob(m_machine, text);
     }
-    BasicLoadResult loadBasicFile(const std::string& path) override {
-        return loadBasicProgramFile(m_machine, path);
-    }
 
-    machinecode::Target codeTarget() const override { return machinecode::Target::PC1600; }
-    machinecode::PC1600State codeState() override { return pc1600LoadState(m_machine); }
-    // Linear, into the slot and bank planLoad() derived from the header's
-    // bank, MODE, TITLE and the address: S0 = internal RAM ($C000-$FFFF),
-    // S1/S2 = the $8000-$BFFF memory-slot window. Straight into the
-    // backing store, so the current bank state doesn't matter.
-    bool loadMachineCode(machinecode::Slot slot, int bank, uint32_t busAddr, const uint8_t* data, size_t len,
-                         std::string* error) override {
-        return loadPC1600MachineCode(m_machine, static_cast<int>(slot), busAddr, data, len, error, bank);
-    }
+private:
+    sharp::PC1600LoaderMemory m_memory{m_machine};
 };
 
 } // namespace
@@ -192,7 +181,7 @@ job::Task<PresetLoadResult> applyPC1600PresetJob(PC1600Machine& machine, PresetF
                                                  std::string traceDir, std::string moduleDir, PresetBootedFn onBooted,
                                                  PresetRoms presetRoms,
                                                  std::vector<std::string> extraModuleDirs, PresetArmedFn onArmed,
-                                                 PresetSaveAsFn onSaveAs) {
+                                                 PresetSaveAsFn onSaveAs, PresetTyping typing) {
     PresetLoadResult result;
     PC1600PresetMachine adapter(machine);
     const std::vector<std::string> moduleDirs = presetModuleDirs(moduleDir, extraModuleDirs);
@@ -256,7 +245,7 @@ job::Task<PresetLoadResult> applyPC1600PresetJob(PC1600Machine& machine, PresetF
     if (log) log("reset + boot settle done" + adapter.stepTag());
     if (onBooted) onBooted();
 
-    co_await runPresetSectionsJob(adapter, preset, &result, log, traceDir, onSaveAs);
+    co_await runPresetSectionsJob(adapter, preset, &result, log, traceDir, onSaveAs, typing);
     co_return result;
 }
 

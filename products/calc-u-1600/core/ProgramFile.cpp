@@ -73,7 +73,7 @@ ProgramFile classify(const std::vector<uint8_t>& bytes) {
             f = classify(first.image);
         } else {
             f.kind = Kind::Other;
-            f.token = std::string("a cassette WAV with no file that can be read safely (") + sde_last_error() + ")";
+            f.token = std::string("a cassette recording without a file that can be read (") + sde_last_error() + ")";
             f.damaged = true;
         }
         f.fromTape = true;
@@ -87,6 +87,7 @@ ProgramFile classify(const std::vector<uint8_t>& bytes) {
     f.lengthMismatch = (fi.problems & (SDE_PROBLEM_TRUNCATED | SDE_PROBLEM_TRAILING)) != 0;
     f.payload.assign(bytes.begin() + static_cast<std::ptrdiff_t>(fi.payload_offset), bytes.end());
     f.headerPayloadLen = fi.payload_len;
+    f.name = std::string(fi.name, strnlen(fi.name, sizeof(fi.name)));
     if (f.kind == Kind::CodeLH5801 || f.kind == Kind::CodeZ80) {
         f.loadAddr = fi.load_addr;
         // The library reads FFFF as "no auto-start"; 0 is none as well.
@@ -102,6 +103,41 @@ std::string describe(const std::string& token) {
     if (token == "variables-text") return "variables as text";
     if (token == "text") return "plain text";
     return token;
+}
+
+std::string refusal(const ProgramFile& f, Wanted wanted) {
+    const bool code = wanted == Wanted::Code;
+    const std::string header = headerName(f.kind);
+    switch (f.kind) {
+        case Kind::Empty:
+            return "The file is empty.";
+        case Kind::Other:
+            return "This file holds " + describe(f.token) + (code ? ", not machine code." : ", not a BASIC program.");
+        case Kind::Headerless:
+            if (f.damaged) return "The file starts like a CE-158 or PC-1600 header, but has no complete header of a known type.";
+            return code ? std::string() : "This is neither a BASIC listing nor tokenized BASIC with a CE-158 or PC-1600 header.";
+        case Kind::BasicListing:
+            return code ? "This is a BASIC listing, not machine code -- use Load BASIC Program." : std::string();
+        case Kind::BasicPC1500:
+        case Kind::BasicPC1600:
+            if (code) return "This is a tokenized " + header + " BASIC program, not machine code -- use Load BASIC Program.";
+            break;
+        case Kind::CodeLH5801:
+        case Kind::CodeZ80:
+            if (!code) return "This is machine code (" + header + " header), not a BASIC program -- use Load Machine Code.";
+            break;
+    }
+    const char* what = code ? "code" : "program";
+    if (f.lengthMismatch) {
+        // AC-8: both numbers. A truncated file's header says more than follows.
+        if (f.headerPayloadLen != f.payload.size())
+            return "The " + header + " header says " + std::to_string(f.headerPayloadLen) + " bytes of " + what +
+                   ", but " + std::to_string(f.payload.size()) + " follow it.";
+        return "The " + header + " header promises more " + what + " than the " + std::to_string(f.payload.size()) +
+               " bytes that follow it.";
+    }
+    if (f.damaged) return "The tokenized BASIC behind the " + header + " header is damaged.";
+    return {};
 }
 
 }  // namespace programfile

@@ -4,6 +4,7 @@
 #include "../Debug/Inspect/PC1500Inspector.hpp"
 #include "../Machine/SharpCatalogue.hpp"
 #include "../Machine/SharpDisplayOutput.hpp"
+#include "../Machine/SharpLoaderMemory.hpp"
 #include "PC1500TypedInput.hpp"
 #include "typing/TypingSupport.hpp"
 
@@ -21,17 +22,7 @@ PC1500Variant modelOf(const MachineDescriptor& d) {
 struct PC1500InterfaceMachine::Kinds {
     explicit Kinds(PC1500Machine& m) : memory(m), inspector(m), support(m), trace(m), tape(m), clock(m), printerPort(m) {}
 
-    struct Memory final : sharp::LoaderMemory {
-        explicit Memory(PC1500Machine& m) : m(m) {}
-        std::uint8_t peek(std::uint16_t a) const override { return m.memory().peek(a); }
-        bool poke(std::uint16_t a, const std::uint8_t* data, std::size_t n) override {
-            for (std::size_t i = 0; i < n; ++i)
-                if (!m.memory().poke(static_cast<std::uint16_t>(a + i), data[i])) return false;
-            return true;
-        }
-        std::vector<std::uint8_t> internalRam() const override { return {}; }
-        PC1500Machine& m;
-    } memory;
+    sharp::PC1500LoaderMemory memory;
     struct Inspector final : sharp::InspectorViews {
         explicit Inspector(PC1500Machine& m) : m(m) {}
         std::vector<std::string> view(inspect::View v) const override { return inspect::pc1500View(m, v); }

@@ -12,7 +12,9 @@
 // (core/PC1500/PC1500LcdText.hpp, core/PC1600/PC1600LcdText.hpp) until M-51.
 // The settings declaration and the ROM lookup are the product's
 // (app/Settings.hpp; sharp::lookUpRoms over roms/).
-// No product commands until C1600-5 (M-51); no cursor cell in `lcd` (D-7).
+// The product commands of C1600-2 (M-44): `pc1600 file-kind`, `load-basic`,
+// `type-basic`, `load-code` on app/SharpLoaderPart; the rest with C1600-5
+// (M-51). No cursor cell in `lcd` (D-7).
 
 namespace shared {
 

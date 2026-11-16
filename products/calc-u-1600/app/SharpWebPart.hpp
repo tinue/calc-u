@@ -7,7 +7,6 @@
 #include <vector>
 
 #include "app/AppPaths.hpp"
-#include "app/MachineCodeLoad.hpp"
 #include "app/MediaLibrary.hpp"
 #include "app/Settings.hpp"
 #include "app/SharpAppPart.hpp"
@@ -62,9 +61,6 @@ private:
     calcu::sessions::StateTopic* m_lamps = nullptr;
     calcu::sessions::StreamTopic* m_printer = nullptr;
 
-    ProgramChoice m_program;
-    std::string m_programName;
-    std::optional<MachineCodeLoad> m_code;
     std::uint64_t m_calls = 0;
 };
 

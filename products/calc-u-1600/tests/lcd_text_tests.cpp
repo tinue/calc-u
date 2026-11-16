@@ -32,6 +32,7 @@
 #include "PresetTestSupport.hpp"
 #include "TestRoms.hpp"
 #include "TestHarness.hpp"
+#include "LoaderTestSupport.hpp"
 
 namespace {
 
@@ -215,7 +216,7 @@ TEST(test_pc1600_print_roundtrip) {
     CHECK(t.contains("11834"));
     CHECK(t.unparsed == 0);
     const std::string program = roundtripProgram();
-    CHECK(loadBasicProgram(m, std::vector<uint8_t>(program.begin(), program.end())).ok);
+    CHECK(loadertest::loadBasic(m, std::vector<uint8_t>(program.begin(), program.end())).ok);
     const LcdFont font = pc1600LcdFont(m);
     for (int k = 0; k < kRoundtripBatches; ++k) {
         t = pc1600Run(m, "RUN " + std::to_string((k + 1) * 10));
@@ -293,7 +294,7 @@ TEST(test_pc1500_print_roundtrip) {
         std::string err;
         typeLine(m, "NEW0", /*pressEnter=*/true, &err); // boots in PRO
         const std::string program = pc1500RoundtripProgram();
-        CHECK(loadBasicProgram(m, std::vector<uint8_t>(program.begin(), program.end())).ok);
+        CHECK(loadertest::loadBasic(m, std::vector<uint8_t>(program.begin(), program.end())).ok);
         tapKey(m, "mode");
         waitIdle(m, static_cast<uint64_t>(PC1500Machine::kCpuHz * 2));
         LcdText t = pc1500Run(m, "PRINT 12345*-2");

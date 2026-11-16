@@ -11,7 +11,8 @@
 #include <vector>
 
 #include "MachineController.hpp" // Model, PC1500RomRevision
-#include "app/MachineCodeLoad.hpp"
+#include "app/SharpTopics.hpp"
+#include "sessions/Value.hpp"
 
 class QTimer;
 class QKeyEvent;
@@ -142,7 +143,7 @@ private:
     // At startup: the startup model's default preset, if one is set (a
     // model pick loads it inside SharpAppPart::pickModelJob()).
     void applyDefaultPreset();
-    void showMachineCodeLoaded(const shared::MachineCodeLoad& load);
+    void showMachineCodeLoaded(const shared::CodeLoadedReply& loaded);
 
     // Re-checks the Machine menu's model/ROM QActions to match `model`/
     // `revision` without themselves triggering another applyModelSelection/
@@ -211,20 +212,21 @@ private:
     void onPresetArmed();
 
     // File > Load Machine Code…: pick a .bin (Settings' Assembly folder),
-    // then loadMachineCodeFile(): recognise its header, ask for a start
-    // address / PC-1600 slot only when needed (MachineCodeLoadDialog), write
-    // it, then show the NEW that protects it and the CALL that starts it.
-    // Never runs the code.
+    // then loadMachineCodeFile(): the session's plan (`c1600.plan-code`,
+    // C1600-2), a start address asked only for headerless code
+    // (MachineCodeLoadDialog), the load (`c1600.load-code`), then the NEW
+    // that protects it and the CALL that starts it. Never runs the code.
     void loadMachineCode();
     // The three loaders behind the File menu's dialogs and a drop. Each
     // remembers the file's folder for its dialog.
     void loadPresetFile(const QString& path);
     void loadBasicProgramFile(const QString& path);
     void loadMachineCodeFile(const QString& path);
-    // The bytes of `path` for a loader; for a cassette WAV, the image of the
-    // file on it (several: ask which one). Empty if it can't be read (after a
-    // warning titled `title`) or the user cancels.
-    std::optional<std::vector<uint8_t>> readProgramFile(const QString& path, const QString& title);
+    // The arguments of a loader's command for `path`: its bytes and name, and
+    // for a cassette WAV with several files the one the user picks (`file`,
+    // C1600-2 AC-16). Empty if it can't be read (after a warning titled
+    // `title`) or the user cancels.
+    std::optional<calcu::sessions::Value::Object> programArgs(const QString& path, const QString& title);
     // The one local file a drag carries, if its content is something to
     // load (openDroppedFile()); empty otherwise.
     QString droppableFile(const QMimeData* mime) const;

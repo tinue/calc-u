@@ -295,7 +295,7 @@ TEST(test_cassette_wav) {
     silent.insert(silent.end(), 8000, 0x80);
     const auto f = classify(silent);
     CHECK(f.kind == Kind::Other && f.fromTape && f.damaged);
-    CHECK(f.token.find("cassette WAV") != std::string::npos);
+    CHECK(f.token.find("a cassette recording without a file that can be read") != std::string::npos);
     CHECK(dropfile::classify(silent, "x.wav") == dropfile::Target::BasicProgram);
     std::string why;
     CHECK(programfile::tapeFiles(silent, &why).empty() && !why.empty());

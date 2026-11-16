@@ -28,17 +28,49 @@
 
 namespace sharp {
 
+// The loaders' memory access (C1600-2 AC-14, design §3.1): everything the
+// BASIC and machine-code loaders read and write, and nothing more. The
+// loaders (core/Loaders.hpp) name no machine class; they reach memory only
+// through this kind. The implementations over the core are
+// core/Machine/SharpLoaderMemory.hpp.
 class LoaderMemory : public calcu::machine::Capability {
 public:
     static constexpr calcu::machine::KindId kKind{"c1600.loader-memory"};
     calcu::machine::KindId kind() const override { return kKind; }
 
-    // Through the banks selected now (PC-1500 ME0; PC-1600 the Z-80 view).
-    virtual std::uint8_t peek(std::uint16_t address) const = 0;
-    // All or nothing; false if a byte would not land in RAM.
-    virtual bool poke(std::uint16_t address, const std::uint8_t* data, std::size_t size) = 0;
+    enum class Processor { Main, Lh5803 };   // Main: the LH5801 (PC-1500) or the Z-80 (PC-1600)
+    enum class Mode { None, Mode0, Mode1 };  // None on the PC-1500 and PC-1500A
+    // All or nothing: `stored` false means nothing was written, and
+    // `firstMiss` is the first address of the range that is not RAM.
+    struct Write {
+        bool stored = false;
+        std::uint32_t firstMiss = 0;
+    };
+    struct Module {
+        bool present = false;
+        std::uint32_t size = 0;   // the module's whole image, every bank
+        int banks = 0;            // its banks; 0: unbanked
+    };
+
+    // Reads as the processor sees memory now (the banks selected now); no
+    // effect on the machine. On the PC-1500 both processors read ME0.
+    virtual std::uint8_t peek(std::uint16_t address, Processor = Processor::Main) const = 0;
+    virtual Mode mode() const = 0;
+    // The selected program area: PC-1600 0 S0, 1 S1, 2 S2 (TITLE); PC-1500 0.
+    virtual int programArea() const = 0;
+    // The built-in RAM: on the PC-1500 its ME0 (the RAM of a module there
+    // too); on the PC-1600 the internal RAM at &C000-&FFFF.
+    virtual Write writeBuiltIn(std::uint16_t address, const std::uint8_t* data, std::size_t size) = 0;
+    // PC-1600: a module's RAM in global bank 0-3 behind &8000-&BFFF,
+    // whichever bank is switched in. Not stored on the PC-1500.
+    virtual Write writeSlot(int bank, std::uint16_t address, const std::uint8_t* data, std::size_t size) = 0;
+    // Whether writeSlot would store [address, address + size).
+    virtual bool slotRam(int bank, std::uint16_t address, std::size_t size) const = 0;
+    virtual Module module(int slot) const = 0;   // slot 1 or 2
     // The PC-1600's fixed 16 KB internal RAM; empty on the PC-1500.
     virtual std::vector<std::uint8_t> internalRam() const = 0;
+
+    bool pc1600() const { return mode() != Mode::None; }
 };
 
 class InspectorViews : public calcu::machine::Capability {

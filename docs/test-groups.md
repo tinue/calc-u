@@ -255,7 +255,7 @@ Frequent except where the table says otherwise):
 
 | CTest entry | What | Group | Measured (M4 Pro, 2026-11-14) |
 |---|---|---|---|
-| `CoreTests` | 931 `TEST`s (M-45: LIB-8 1600 `plotter_paper_tests.cpp`, `paper_session_tests.cpp`, the `lib8_ac37_` cases of `ce150_tests.cpp`, `ce1600p_tests.cpp`; LIB-10 1600 `debugger_tests.cpp`, the `lib10_ac36`/`ac37`/`ac44`/`ac52` cases of `debug_target_tests.cpp`, `run_control_tests.cpp`; C1600-3 `dap_layer_tests.cpp`; the harness's paper and debugger cases; M-39: `tests/paper_replies_tests.cpp`, LIB-8 AC-39; M-36; `tests/typing_tests.cpp`: LIB-5 AC-14, AC-28–31, AC-33–37, AC-40, AC-41; the PC-1500 key queue's tests gone): unit and integration tests of the core and the app layer (real ROMs, presets, loaders, job equivalence), the machine interface (C1600-1, LIB-1 1600, LIB-2 1600), the settings file (LIB-9 1600), the ROM lookup (LIB-12 1600), the golden replays through it (table below), the harness product entry (LIB-11, M-28; the PC-1600 and its variant through LIB-18, `harness_drives_a_pc1600`, `harness_variant_switch_old`, M-35) | Frequent | 39.0 s (M-30/M-28/M-27, 2026-11-15) |
+| `CoreTests` | 1000 `TEST`s (M-44: C1600-2 `program_files_tests.cpp`, `basic_typing_tests.cpp`, `loader_memory_tests.cpp`, `app/tests/loader_part_tests.cpp`, the C1600-2 cases of the loader, machine-code-file and harness tests; M-45: LIB-8 1600 `plotter_paper_tests.cpp`, `paper_session_tests.cpp`, the `lib8_ac37_` cases of `ce150_tests.cpp`, `ce1600p_tests.cpp`; LIB-10 1600 `debugger_tests.cpp`, the `lib10_ac36`/`ac37`/`ac44`/`ac52` cases of `debug_target_tests.cpp`, `run_control_tests.cpp`; C1600-3 `dap_layer_tests.cpp`; the harness's paper and debugger cases; M-39: `tests/paper_replies_tests.cpp`, LIB-8 AC-39; M-36; `tests/typing_tests.cpp`: LIB-5 AC-14, AC-28–31, AC-33–37, AC-40, AC-41; the PC-1500 key queue's tests gone): unit and integration tests of the core and the app layer (real ROMs, presets, loaders, job equivalence), the machine interface (C1600-1, LIB-1 1600, LIB-2 1600), the settings file (LIB-9 1600), the ROM lookup (LIB-12 1600), the golden replays through it (table below), the harness product entry (LIB-11, M-28; the PC-1600 and its variant through LIB-18, `harness_drives_a_pc1600`, `harness_variant_switch_old`, M-35) | Frequent | 39.0 s (M-30/M-28/M-27, 2026-11-15) |
 | `CalcU1600CheckPresets` | `tools/check_presets.sh`: every preset in the repository parses | Frequent | 0.3 s |
 | `CalcU1600MachineIncludeCheck` | `tools/check_machine_includes.sh`: no file outside `core/` (app, frontends, tools, dev) includes a machine class, directly or through a core header, or names one (C1600-1, Technical Requirements; design T13; M-26) | Frequent | 1.1 s |
 | `CalcU1600NoOwnRomLookup` | `library/roms/tests/check_no_own_rom_lookup.sh`: no product source outside `core/Machine/SharpRoms.cpp` (with the host-drive ROM, D-6), the catalogue and `app/tests/` looks for a ROM file (LIB-12 AC-2, design T7; M-27) | Frequent | 0.5 s |
@@ -280,9 +280,11 @@ needs ROMs that are missing reports `SKIP`):
 
 | File | `TEST`s | File | `TEST`s |
 |---|---|---|---|
-| `basic_fastloader_tests.cpp` | 8 | `pc1600_bank_tests.cpp` | 23 |
-| `basic_program_source_tests.cpp` | 8 | `pc1600_basicloader_tests.cpp` | 11 |
+| `basic_fastloader_tests.cpp` | 12 (C1600-2 AC-4–6, EC-3, EC-5; M-44) | `pc1600_bank_tests.cpp` | 23 |
+| `basic_program_source_tests.cpp` | 8 | `pc1600_basicloader_tests.cpp` | 15 (C1600-2 AC-4–6, EC-3; M-44) |
 | `basictyper_tests.cpp` | 8 | `pc1600_basictyper_tests.cpp` | 12 |
+| `basic_typing_tests.cpp` | 11 (C1600-2 AC-7 on the typing engine, against the old typer's memory; M-44) | `loader_memory_tests.cpp` | 7 (C1600-2 AC-14; M-44) |
+| `program_files_tests.cpp` | 11 (C1600-2 AC-1–3, EC-1, EC-2, EC-4; M-44) | `app/tests/loader_part_tests.cpp` | 11 (C1600-2 AC-13, AC-22, AC-24, AC-25, EC-6; M-44) |
 | `battery_card_instance_tests.cpp` | 19 | `pc1600_ce150_tests.cpp` | 5 |
 | `ce150_tests.cpp` | 9 | `pc1600_host_drive_tests.cpp` | 7 |
 | `ce151_tests.cpp` | 3 | `pc1600_keyboard_display_tests.cpp` | 38 |
@@ -299,18 +301,18 @@ needs ROMs that are missing reports `SKIP`):
 | `descriptor_tests.cpp` | 8 (LIB-1 AC-34–41; M-26) | `presetloader_trace_tests.cpp` | 7 (the core's file mode for today's tools, `lib10_ac42_tools_…`; M-45) |
 | `disasm_tests.cpp` | 15 | `program_file_tests.cpp` | 11 |
 | `golden_runs_tests.cpp` | 1 (the golden replays through the machine interface; `CALCU1600_GOLDEN_RECORD=1` records new references only) | `run_control_tests.cpp` | 2 (`lib10_ac44_step_over_a_call`, `_data_breakpoint_and_pause` on the library's run control; M-45) |
-| `harness_tests.cpp` | 8 (`harness_drives_a_sharp_machine`: the exit check of M-28, LIB-11 T14, D-1; the PC-1600 and its variant; M-45: `lib8_ac32_harness_…`, `lib10_ac40_harness_…`, `lib10_ac52_harness_peek_bank_and_vbank`; `SKIP` without the ROMs) | `debugger_tests.cpp` | 19 (LIB-10 1600: AC-38, AC-39, AC-40, AC-42, AC-43, AC-23 and R-1; M-45) |
+| `harness_tests.cpp` | 13 (`harness_drives_a_sharp_machine`: the exit check of M-28, LIB-11 T14, D-1; LIB-18's model and variant; C1600-2 AC-21, the `pc1600` loader commands, M-44; M-45: `lib8_ac32_harness_…`, `lib10_ac40_harness_…`, `lib10_ac52_harness_peek_bank_and_vbank`; `SKIP` without the ROMs) | `debugger_tests.cpp` | 19 (LIB-10 1600: AC-38, AC-39, AC-40, AC-42, AC-43, AC-23 and R-1; M-45) |
 | `host_directory_drive_tests.cpp` | 25 | `sc7852_tests.cpp` | 39 |
 | `inspector_tests.cpp` | 13 | `sharp_machine_tests.cpp` | 28 (C1600-1 AC-1–21, EC-1–3; M-26) |
 | `job_tests.cpp` | 2 | `tape_deck_tests.cpp` | 11 |
 | `session_tests.cpp` | 4 (LIB-3 AC-35, AC-37, AC-38, ledger 1600-9 on the library's app session; M-31) | `dap_layer_tests.cpp` | 14 (C1600-3 AC-12, AC-14, AC-23: the DAP's layer in `app/dap/`; M-45) |
 | `key_paste_tests.cpp` | 8 (the typing profile and engine; M-36) | `tc8576f_tests.cpp` | 20 |
 | `lcd_screenshot_tests.cpp` | 5 | `app/tests/serial_links_tests.cpp` | 2 (LIB-2 AC-33; M-26) |
-| `lcd_text_tests.cpp` | 21 | `app/tests/shared_app_session_tests.cpp` | 13 (SharpAppPart on the library's session, M-31) |
+| `lcd_text_tests.cpp` | 21 | `app/tests/shared_app_session_tests.cpp` | 11 (SharpAppPart on the library's session, M-31; the loader cases moved to `loader_part_tests.cpp`, M-44) |
 | `lh5801_tests.cpp` | 54 (the key queue's three went, M-36) | `app/tests/shared_bay_tests.cpp` | 4 |
 | `lh5803_tests.cpp` | 8 | `app/tests/shared_geometry_tests.cpp` | 2 (the plotter paper's three moved to `plotter_paper_tests.cpp` as `lib8_ac37_…`, M-45) |
 | `listing_tests.cpp` | 10 | `app/tests/shared_host_key_map_tests.cpp` | 3 (`SharpKeyboardMap`; M-36) |
-| `machine_code_file_tests.cpp` | 22 | `app/tests/shared_machine_session_tests.cpp` | 7 |
+| `machine_code_file_tests.cpp` | 39 (C1600-2 AC-8–12, AC-23; M-44) | `app/tests/shared_machine_session_tests.cpp` | 7 |
 | `memory_card_tests.cpp` | 47 (the 8 YAML reader cases moved to the library in M-24) | `app/tests/shared_pacing_tests.cpp` | 2 (LIB-17 AC-20; the sink side of the sound; M-31) |
 | `pacing_longrun_tests.cpp` | 4, the "after" test of LIB-17 AC-21 (M-31): `lib17_ac21_pacing_longrun_scripted_pc1500a`, `_pc1600` Frequent; `lib17_ac21_pacing_longrun_real_clock_pc1500a`, `_pc1600` Checkpoint (return at once without `CALCU1600_PACING_LONGRUN`) | `app/tests/shared_preset_catalog_tests.cpp` | 4 |
 | `pc1500_tape_tests.cpp` | 2 | `app/tests/shared_settings_tests.cpp` | 8 (LIB-9 AC-26–32; M-30) |

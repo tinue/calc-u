@@ -153,50 +153,8 @@ void SharpWebPart::attach(sessions::SessionSetup& setup) {
         }
         return sessions::replyGiven(sessions::valuePayload("c1600.drop-target", Value(t)));
     });
-    // Load BASIC Program / Load Machine Code, step 1: the images in the file.
-    cmd("c1600.open-program", [this](const Value& a, SessionContext&) -> CommandOutcome {
-        m_program = programChoice(bytesArg(a, "bytes").value_or(std::vector<std::uint8_t>{}));
-        m_programName = textArg(a, "name");
-        return result("c1600.program", Value::object({{"names", strings(m_program.names)}}));
-    });
-    // Step 2, BASIC: the picked image (0 when there was no choice) into the running machine.
-    cmd("c1600.load-basic-picked", [this, refreshed](const Value& a, SessionContext& c) -> CommandOutcome {
-        const auto index = truncatedIntegerArg(a, "index");
-        if (index < 0 || index >= static_cast<std::int64_t>(m_program.images.size())) return Refused{"No program picked."};
-        const OpResult r = m_app.loadBasicProgram(m_program.images[static_cast<std::size_t>(index)], m_programName);
-        return refreshed(r.ok ? CommandOutcome(Done{}) : CommandOutcome(Refused{r.error}), c);
-    });
-    // Step 2, machine code: the plan.
-    cmd("c1600.plan-machine-code", [this](const Value& a, SessionContext&) -> CommandOutcome {
-        const auto index = truncatedIntegerArg(a, "index");
-        if (index < 0 || index >= static_cast<std::int64_t>(m_program.images.size()))
-            return result("c1600.plan", Value::object({{"error", "No program picked."}}));
-        m_code = MachineCodeLoad::plan(m_app, m_program.images[static_cast<std::size_t>(index)]);
-        return result("c1600.plan", Value::object({{"error", m_code->error()},
-                                                   {"needsAddress", m_code->needsAddress()},
-                                                   {"defaultAddress", m_code->defaultAddressText()},
-                                                   {"placeholder", m_code->addressPlaceholder()},
-                                                   {"cpuNote", m_code->cpuNote()},
-                                                   {"length", static_cast<double>(m_code->length())}}));
-    });
-    cmd("c1600.check-address", [this](const Value& a, SessionContext&) -> CommandOutcome {
-        if (!m_code) return result("c1600.address", Value::object({}));
-        const auto check = m_code->setAddress(textArg(a, "text"));
-        return result("c1600.address", Value::object({{"valid", check.valid}, {"hint", check.hint}}));
-    });
-    // Step 3: load it; the page shows the summary and types the CALL.
-    cmd("c1600.load-planned-machine-code", [this, refreshed](const Value&, SessionContext& c) -> CommandOutcome {
-        if (!m_code) return Refused{"No program planned."};
-        const OpResult r = m_app.loadMachineCode(m_code->request());
-        if (!r.ok) return Refused{r.error};
-        const auto loaded = m_code->loaded(m_app);
-        return refreshed(result("c1600.loaded", Value::object({{"summary", loaded.summary},
-                                                               {"newCommand", loaded.advice.newCommand},
-                                                               {"newNote", loaded.advice.newNote},
-                                                               {"callCommand", loaded.advice.callCommand},
-                                                               {"callNote", loaded.advice.callNote}})),
-                         c);
-    });
+    // Load BASIC Program / Load Machine Code: the page sends the loaders'
+    // own commands (app/SharpLoaderPart, C1600-2 design §3.7).
 
     // ── Bays ────────────────────────────────────────────────────────────
     cmd("c1600.name-save-card", [this, refreshed, errorOutcome](const Value& a, SessionContext& c) -> CommandOutcome {

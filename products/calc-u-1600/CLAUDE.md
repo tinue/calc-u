@@ -26,7 +26,8 @@ A test file registers its tests with `TEST(name)` of the repository's one runner
 - Typing (LIB-5): `key <name> ...` (key IDs and `break` for `on`, any case; replies when the last key is up) and `type <text>` (the text and ENTER; replies when ENTER is up). Neither waits until the machine is idle: `wait` does.
 - Debugger (LIB-10): `targets`, `registers`, `pause`, `step`, `step-over`, `step-out`, `resume`, `break`, `watch`, `peek`/`poke` (spaces `me0`, `me1`, `me1-written` of the LH5801/LH5803, `memory`, `io`, `io-written` of the SC7852; `bank=`, `vbank=`), `history`, `disassemble`, `trace <file>|off` (into `--output-folder`), `symbols`, `pause-on-start cpu`.
 - Paper (LIB-8): `paper marks|png <path>|copy|cut [CE-150|CE-1600P]`, `cut-paper`.
-- Not yet: `pc1600 …` commands, presets, media (later features). Until M-51, `pc1500_cli`, `pc1600_cli` and the probes stay the tools for those.
+- Program files (C1600-2): `pc1600 file-kind <file>` (what it is; a WAV's files), `pc1600 load-basic <file> [<n>]`, `pc1600 type-basic <file>` (typed through the ROM's editor; program mode first), `pc1600 load-code <file> [<n>] [address=<a>] [length=<l>] [cpu=<lh5803|z80>] [run]` (the reply: range, area, bank, NEW, the starting command, warnings). Refusals are `refused: <file>: <reason>`.
+- Not yet: the other `pc1600 …` commands, presets, media, memory dumps (later features). Until M-51, `pc1500_cli`, `pc1600_cli` and the probes stay the tools for those.
 
 ## Core, Shared, frontends
 

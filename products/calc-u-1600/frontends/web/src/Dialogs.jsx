@@ -96,17 +96,22 @@ function ChoiceDialog({ title, text, options, done }) {
   );
 }
 
-// Load Machine Code's start address (Qt6/app/MachineCodeLoadDialog): each
-// keystroke is checked by Shared's MachineCodeLoad::setAddress().
-function AddressDialog({ engine, plan, done }) {
-  const [text, setText] = React.useState(plan.defaultAddress || "");
+// Load Machine Code's start address (C1600-2 AC-18; Qt6/app/MachineCodeLoadDialog):
+// each keystroke asks the session's plan (`c1600.plan-code`) with the text;
+// Load is enabled only while it holds. Done with the text, or null.
+function AddressDialog({ engine, plan, bytes, index, done }) {
+  const [text, setText] = React.useState(plan.proposed || "");
   const [check, setCheck] = React.useState({ valid: false, hint: "" });
   React.useEffect(() => {
     let live = true;
-    engine.request("checkAddress", text).then((c) => { if (live) setCheck(c); });
+    engine.request("planCode", bytes, index, text).then((p) => {
+      if (!live) return;
+      if (p.needsAddress) setCheck({ valid: false, hint: "" });
+      else setCheck({ valid: !p.refusal, hint: p.refusal || p.where || "" });
+    });
     return () => { live = false; };
   }, [text]);
-  const ok = () => { if (check.valid) done(true); };
+  const ok = () => { if (check.valid) done(text); };
   return (
     <Modal title="Load Machine Code" name="machinecode" onCancel={() => done(null)} className="calcu-address"
       buttons={

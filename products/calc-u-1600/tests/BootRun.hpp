@@ -1,8 +1,8 @@
 #pragma once
-#include "../core/Job.hpp"
+#include "support/Job.hpp"
 #include "../core/Machine/SharpCores.hpp"
-#include "../core/PC1500/PC1500BasicTyper.hpp"
-#include "../core/PC1600/PC1600BasicTyper.hpp"
+#include "support/PC1500BasicTyper.hpp"
+#include "support/PC1600BasicTyper.hpp"
 #include "machine/Machine.hpp"
 
 // 0.8.1's boot run, kept for the tests (LIB-18 design §10.8, D-24): a power

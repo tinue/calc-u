@@ -40,12 +40,7 @@ struct ByteSink {
 
 } // namespace
 
-PC1500TraceFile::PC1500TraceFile(std::FILE* handle) : m_fh(handle) {
-    if (!m_fh) return;
-    startSession();
-}
-
-PC1500TraceFile::PC1500TraceFile() : m_buffered(true) { startSession(); }
+PC1500TraceFile::PC1500TraceFile() { startSession(); }
 
 void PC1500TraceFile::startSession() {
     uint8_t header[kHeaderSize];
@@ -55,7 +50,7 @@ void PC1500TraceFile::startSession() {
     h.u16(0);   // reserved
     h.u64(0);   // reserved for future use
     put(header, sizeof(header));
-    if (m_buffered) m_ends.push_back(m_buffer.size());
+    m_ends.push_back(m_buffer.size());
 
     uint8_t payload[8];
     ByteSink s{payload};
@@ -63,14 +58,7 @@ void PC1500TraceFile::startSession() {
     writeRecord(kRecSessionStart, payload, sizeof(payload));
 }
 
-void PC1500TraceFile::put(const uint8_t* data, size_t n) {
-    if (m_buffered) {
-        m_buffer.insert(m_buffer.end(), data, data + n);
-        m_bytesWritten += n;
-    } else if (m_fh) {
-        m_bytesWritten += std::fwrite(data, 1, n, m_fh);
-    }
-}
+void PC1500TraceFile::put(const uint8_t* data, size_t n) { m_buffer.insert(m_buffer.end(), data, data + n); }
 
 bool PC1500TraceFile::take(std::vector<uint8_t>& out, uint64_t budget) {
     uint64_t upTo = 0;
@@ -84,21 +72,17 @@ bool PC1500TraceFile::take(std::vector<uint8_t>& out, uint64_t budget) {
     return m_ends.empty();
 }
 
-PC1500TraceFile::~PC1500TraceFile() { finish(); }
-
 void PC1500TraceFile::writeRecord(uint8_t type, const uint8_t* payload, uint16_t len) {
-    if (!m_fh && !m_buffered) return;
     uint8_t recHeader[3];
     ByteSink h{recHeader};
     h.u8(type);
     h.u16(len);
     put(recHeader, sizeof(recHeader));
     if (len) put(payload, len);
-    if (m_buffered) m_ends.push_back(m_buffer.size());
+    m_ends.push_back(m_buffer.size());
 }
 
 void PC1500TraceFile::writeFrame(const CpuFrame& f) {
-    if (!m_fh && !m_buffered) return;
     // 25-byte TRACE_EVENT payload -- field order MUST match read_trace.py's
     // `<IHHB BBBBBBB HB BBB H B` unpack (trailing B = cpuId, v2).
     uint8_t payload[25];
@@ -126,7 +110,6 @@ void PC1500TraceFile::writeFrame(const CpuFrame& f) {
 }
 
 void PC1500TraceFile::writeFrame(const Z80CpuFrame& f) {
-    if (!m_fh && !m_buffered) return;
     // 29-byte TRACE_EVENT_Z80 payload -- field order MUST match
     // read_trace.py's `<IHHBB HHHHHHH BBBBB` unpack.
     uint8_t payload[29];
@@ -153,7 +136,6 @@ void PC1500TraceFile::writeFrame(const Z80CpuFrame& f) {
 }
 
 void PC1500TraceFile::writeGap(uint32_t lostFrames) {
-    if (!m_fh && !m_buffered) return;
     uint8_t payload[4];
     ByteSink s{payload};
     s.u32(lostFrames);
@@ -161,14 +143,10 @@ void PC1500TraceFile::writeGap(uint32_t lostFrames) {
 }
 
 void PC1500TraceFile::finish() {
-    if (m_finished || (!m_fh && !m_buffered)) return;
+    if (m_finished) return;
     m_finished = true;
     uint8_t payload[4];
     ByteSink s{payload};
     s.u32(m_eventCount);
     writeRecord(kRecSessionEnd, payload, sizeof(payload));
-    if (!m_fh) return;
-    std::fflush(m_fh);
-    std::fclose(m_fh);
-    m_fh = nullptr;
 }

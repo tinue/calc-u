@@ -15,7 +15,7 @@
 #include <vector>
 
 #include "../core/PC1600/PC1600BasicLoader.hpp"
-#include "../core/PC1600/PC1600BasicTyper.hpp"
+#include "support/PC1600BasicTyper.hpp"
 #include "../core/PC1600/PC1600Machine.hpp"
 #include "TestCards.hpp"
 #include "TestRoms.hpp"

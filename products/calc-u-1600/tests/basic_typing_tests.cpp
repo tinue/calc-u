@@ -9,9 +9,9 @@
 #include <string>
 #include <vector>
 
-#include "../core/PC1500/PC1500BasicTyper.hpp"
+#include "support/PC1500BasicTyper.hpp"
 #include "../core/PC1500/PC1500Machine.hpp"
-#include "../core/PC1600/PC1600BasicTyper.hpp"
+#include "support/PC1600BasicTyper.hpp"
 #include "../core/PC1600/PC1600Machine.hpp"
 #include "../core/PC1600/PC1600ProgramPlacement.hpp"
 #include "TestRoms.hpp"

@@ -180,14 +180,14 @@ runs the library's app session on the product's machine (LIB-11).
 
 ## Jobs: resumable machine work
 
-[`core/Job.hpp`](../../core/Job.hpp) turns the blocking sequences into
-C++20 coroutines; since M-31 it names the library's (`calcu::sessions::Task`,
-`Job`, `request`; adapter JobForward), so a job runs inside an operation of
-the app session. Wherever the code ran the machine — `machine.runCycles(n)`
-— it now says `co_await job::run(machine, n)`. A `job::Job` runs the
+Long machine work is a C++20 coroutine of the library
+(`calcu::sessions::Task`, `Job`, `request`, `library/sessions/Operation.hpp`)
+that runs inside an operation of the app session. A `Job` runs the
 coroutine a budget at a time (`step(cycles)`), or straight through
-(`job::runToCompletion()`, which every old blocking function name now
-calls, so the CLIs and tests didn't change).
+(`runToCompletion()`). The core's tests keep the old typers on it
+([`tests/support/`](../../tests/support/): `Job.hpp`'s `namespace job`,
+`co_await job::run(machine, n)` on an old machine class); they are not in
+`calcu_core`.
 
 A run request is never split by the budget, so a job sliced into frame
 ticks makes exactly the machine calls of one run straight through. That a

@@ -4,7 +4,7 @@
 #include <vector>
 
 // Result types shared by the per-machine BASIC loaders: the keystroke typers
-// (PC1500BasicTyper / PC1600BasicTyper, a typed `program:`) and the fast
+// (the tests' PC1500BasicTyper / PC1600BasicTyper, tests/support/) and the fast
 // tokenized loaders (PC1500BasicLoader / PC1600BasicLoader,
 // a BASIC `program: file:` and the GUI's Load BASIC Program).
 

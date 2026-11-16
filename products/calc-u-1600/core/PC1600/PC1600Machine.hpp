@@ -368,7 +368,7 @@ public:
 
     /// Writes `data` starting at `address` on the Z-80 (SC7852) side, on
     /// whichever page/bank is currently selected -- a direct, non-BASIC
-    /// memory-poke path (see PC1600BasicTyper/PC1600BasicLoader for
+    /// memory-poke path (see PC1600BasicLoader for
     /// loading a BASIC program instead). Returns false, writing nothing,
     /// if any byte in the range would land on ROM or an open-bus/
     /// unattached region -- an all-or-nothing check up front, not a
@@ -478,26 +478,8 @@ public:
 
     // ── Trace: both CPUs' rings drain into one TRACE.bin, tagged by cpuId ──
     //
-    // beginCpuTrace()/endCpuTrace() capture a full instruction trace to a
-    // file entirely inside the Core -- step() drains both rings into it.
-    // Used by the GUI's TRACE button and the preset `trace:` step.
-
-    /// Begin capturing to `handle` (open for binary writing; this machine
-    /// takes ownership and endCpuTrace() closes it). Sets `flags` as the
-    /// active trace level on BOTH CPUs; their frames land in one file,
-    /// tagged by cpuId (SC7852 / LH5803). Returns false and does nothing
-    /// if `handle` is null or a capture is already active.
-    bool beginCpuTrace(std::FILE* handle, uint32_t flags);
-
-    /// Drain what's left in both rings, write SESSION_END, close the file,
-    /// clear the trace flags. No-op if no capture is active.
-    void endCpuTrace();
-
-    // A capture to a file (today's tools); the app's records are not one.
-    bool cpuTraceActive() const { return m_traceFile && !m_traceFile->buffered(); }
-    /// Size of the active capture so far (0 when none); see
-    /// PC1500TraceFile::bytesWritten().
-    uint64_t cpuTraceBytes() const { return m_traceFile ? m_traceFile->bytesWritten() : 0; }
+    // The trace records capture a full instruction trace entirely inside
+    // the Core -- step() drains both rings into them.
 
     // The app's trace (LIB-10 §10.7, the c1600.trace-records kind): the same
     // records, kept in a buffer until the library's trace session takes
@@ -551,7 +533,7 @@ private:
     Ce158Port m_ce158;                          // see attachCE158() -- LH5803-side interface (MODE 1)
 
 
-    // ── Headless CPU-trace file -- see beginCpuTrace() ───────────────────
+    // ── The trace records -- see beginTraceRecords() ─────────────────────
     std::unique_ptr<PC1500TraceFile> m_traceFile;
     uint32_t m_traceDrainCounter{0};
     // Sized to match LH5801's 512-entry ring so one drain empties it; the

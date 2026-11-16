@@ -25,7 +25,7 @@
 #include "../core/Connector/MemoryCardDefinition.hpp"
 #include "../core/Connector/SoftwareDefinedCard.hpp"
 #include "../core/PC1600/PC1600Machine.hpp"
-#include "../core/PC1600/PC1600BasicTyper.hpp"
+#include "support/PC1600BasicTyper.hpp"
 #include "TestRoms.hpp"
 #include "TestRoms.hpp"
 #include "TestCards.hpp"
@@ -1202,87 +1202,6 @@ TEST(test_catalog_scan_missing_dir) {
     auto entries = scanMemoryCardDirectory("/no/such/module/dir", &err);
     CHECK(entries.empty());
     CHECK(!err.empty());
-}
-
-TEST(test_resolve_modulespec_by_name) {
-    const calcu::testing::TempFolder dirFolder("calcu1600-cards");
-    const std::string dir = makeScratchCardDir(dirFolder);
-    std::string path, err;
-    CHECK(resolveModuleSpecByName(dir, "CE-1601M", &path, &err));
-    CHECK(path.find("ce1601m.card.yaml") != std::string::npos);
-
-    // Round-trips through makeSoftwareDefinedCard for the right host.
-    err.clear();
-    CHECK(makeSoftwareDefinedCard(path, CardHost::PC1600Slot2, &err) != nullptr);
-
-    // Miss.
-    path.clear();
-    err.clear();
-    CHECK(!resolveModuleSpecByName(dir, "CE-9999", &path, &err));
-    CHECK(err.find("no module named") != std::string::npos);
-}
-
-TEST(test_resolve_modulespec_ambiguous) {
-    const calcu::testing::TempFolder dirFolder("calcu1600-cards");
-    const std::string dir = makeScratchCardDir(dirFolder);
-    // Second file, same module-name as ce155.card.yaml.
-    { std::ofstream(dir + "/ce155-dup.card.yaml") << kCe155Yaml; }
-    std::string path, err;
-    CHECK(!resolveModuleSpecByName(dir, "CE-155", &path, &err));
-    CHECK(err.find("more than one") != std::string::npos);
-}
-
-// The ordered multi-directory overload: bundled catalogue first, then a
-// fallback directory (the GUI's save folder) that holds a
-// user's saved battery-card instance named `CE-1601M - Programs.card.yaml`
-// (module-name with spaces, the exact string `slot-N:` would carry).
-TEST(test_resolve_modulespec_multi_dir) {
-    const calcu::testing::TempFolder bundledFolder("calcu1600-cards");
-    const std::string bundled = makeScratchCardDir(bundledFolder);  // ce155 / ce1600m / ce1601m
-    const calcu::testing::TempFolder instancesFolder("calcu1600-card-instances");
-    const std::string instances = instancesFolder.str();
-    // A named instance whose filename has blanks -- resolution is by the
-    // `module-name:` field, so the filename shape is irrelevant.
-    {
-        const std::string body = kCe1601mYaml;
-        std::ofstream(instances + "/CE-1601M - Programs.card.yaml")
-            << "format-version: 1\nmodule-name: \"CE-1601M - Programs\"\n"
-            << body.substr(body.find('\n', body.find("module-name:")) + 1);
-    }
-
-    std::string path, err;
-    // Found only in the fallback directory.
-    CHECK(resolveModuleSpecByName(std::vector<std::string>{bundled, instances},
-                                  "CE-1601M - Programs", &path, &err));
-    CHECK(path.find("CE-1601M - Programs.card.yaml") != std::string::npos);
-
-    // A bundled name still resolves with the fallback appended.
-    path.clear(); err.clear();
-    CHECK(resolveModuleSpecByName(std::vector<std::string>{bundled, instances},
-                                  "CE-1601M", &path, &err));
-    CHECK(path.find("ce1601m.card.yaml") != std::string::npos);
-
-    // A non-existent fallback directory is skipped, not an error.
-    path.clear(); err.clear();
-    CHECK(resolveModuleSpecByName(std::vector<std::string>{bundled, "/no/such/dir"},
-                                  "CE-1601M", &path, &err));
-
-    // Missing everywhere -> one aggregated "no module named" naming the
-    // directories actually searched.
-    path.clear(); err.clear();
-    CHECK(!resolveModuleSpecByName(std::vector<std::string>{bundled, instances},
-                                   "CE-9999", &path, &err));
-    CHECK(err.find("no module named") != std::string::npos);
-    CHECK(err.find(instances) != std::string::npos);
-
-    // Bundled wins when both directories declare the same name (first hit).
-    {
-        std::ofstream(instances + "/ce155-shadow.card.yaml") << kCe155Yaml;
-    }
-    path.clear(); err.clear();
-    CHECK(resolveModuleSpecByName(std::vector<std::string>{bundled, instances},
-                                  "CE-155", &path, &err));
-    CHECK(path.find(bundled) != std::string::npos);
 }
 
 }  // namespace

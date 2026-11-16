@@ -15,6 +15,7 @@
 #include <vector>
 
 #include "../core/Connector/Ce158Card.hpp"
+#include "support/RawPlotPoints.hpp"
 #include "../core/Connector/PC1500SignalDecode.hpp"
 #include "../core/PC1500/PC1500Machine.hpp"
 #include "ScriptedSetup.hpp"

@@ -11,12 +11,10 @@
 
 // ── Directory catalogues of named files ────────────────────────────────
 //
-// The shared mechanism behind memory cards (`*.card.yaml`, keyed by
-// `module-name` -- MemoryCardCatalog.hpp) and floppy disks (`*.floppy.yaml`,
-// keyed by `disk-name` -- FloppyImageFile.hpp): scan a directory for files
-// with one suffix, index them by the name each declares, and resolve a name
-// against an ordered directory list (bundled first, then the save folder).
-// Each format only supplies its suffix and a function reading the name.
+// The mechanism behind the memory-card catalogue (`*.card.yaml`, keyed by
+// `module-name` -- MemoryCardCatalog.hpp): scan a directory for files
+// with one suffix and index them by the name each declares. Each format
+// only supplies its suffix and a function reading the name.
 
 namespace named_file_detail {
 
@@ -35,25 +33,6 @@ inline bool readTextFile(const std::string& path, std::string* out) {
 }
 
 }  // namespace named_file_detail
-
-// The file name a save under the user-typed `name` gets: '/' and ':' become
-// '-' (a name can't escape its folder), whitespace is trimmed and runs of
-// it collapse to one space, an empty name is "Untitled"; then `suffix`.
-// The GUI (AppPaths) and the headless tools share it.
-inline std::string namedFileName(const std::string& name, const std::string& suffix) {
-    std::string s;
-    bool space = false;
-    for (char c : name) {
-        if (std::isspace(static_cast<unsigned char>(c))) {
-            space = !s.empty();
-            continue;
-        }
-        if (space) s += ' ';
-        space = false;
-        s += c == '/' || c == ':' ? '-' : c;
-    }
-    return (s.empty() ? "Untitled" : s) + suffix;
-}
 
 // Parses every "*<suffix>" file in `dir` (non-recursive) with
 // `parse(text, path, Entry* out, std::string* err) -> bool`. A file that
@@ -106,69 +85,4 @@ std::vector<Entry> scanNamedFiles(const std::string& dir, const std::string& suf
     }
     std::sort(out.begin(), out.end(), [&](const Entry& a, const Entry& b) { return nameOf(a) < nameOf(b); });
     return out;
-}
-
-// Reads and parses the one file `path` with `parse` (scanNamedFiles()'s
-// signature). On failure returns false with `*error` naming the file.
-template <typename Entry, typename ParseFn>
-bool readNamedFile(const std::string& path, ParseFn parse, Entry* out, std::string* error) {
-    std::string text;
-    if (!named_file_detail::readTextFile(path, &text)) {
-        if (error) *error = "cannot read '" + path + "'";
-        return false;
-    }
-    std::string err;
-    if (!parse(text, path, out, &err)) {
-        if (error) *error = path + ": " + err;
-        return false;
-    }
-    return true;
-}
-
-// Resolves `name` against `dirs` in order, via `scan(dir, std::string* err)`:
-// the first directory holding exactly one entry with that name wins; two in
-// the SAME directory is an error (an ambiguous catalogue is a setup
-// mistake, not a pick-one case). Missing directories and empty strings are
-// skipped; parse problems met on the way are reported with a not-found.
-template <typename ScanFn, typename NameOf>
-bool resolveNamedFile(const std::vector<std::string>& dirs, const std::string& name, const std::string& kind,
-                      ScanFn scan, NameOf nameOf, std::string* outPath, std::string* error) {
-    std::vector<std::string> searched;
-    std::string scanNotes;
-    for (const auto& dir : dirs) {
-        if (dir.empty()) continue;
-        searched.push_back(dir);
-
-        std::string scanErr;
-        const auto entries = scan(dir, &scanErr);
-        decltype(entries.data()) hit = nullptr;
-        for (const auto& e : entries) {
-            if (nameOf(e) != name) continue;
-            if (hit) {
-                if (error)
-                    *error = kind + " name '" + name + "' is declared by more than one file in '" + dir + "' (" +
-                             hit->filePath + ", " + e.filePath + ")";
-                return false;
-            }
-            hit = &e;
-        }
-        if (hit) {
-            if (outPath) *outPath = hit->filePath;
-            return true;
-        }
-        if (!scanErr.empty()) {
-            if (!scanNotes.empty()) scanNotes += "; ";
-            scanNotes += scanErr;
-        }
-    }
-    if (error) {
-        std::string where;
-        for (const auto& d : searched) {
-            if (!where.empty()) where += ", ";
-            where += "'" + d + "'";
-        }
-        *error = "no " + kind + " named '" + name + "' in " + (where.empty() ? "any " + kind + " directory" : where);
-        if (!scanNotes.empty()) *error += " (some files failed to parse: " + scanNotes + ")";
-    }
-    return false;
 }

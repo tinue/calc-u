@@ -3,17 +3,17 @@
 #include <string>
 #include <vector>
 
-#include "../Basic/BasicLoadResults.hpp"
-#include "../Job.hpp"
+#include "Basic/BasicLoadResults.hpp"
+#include "Job.hpp"
 
 class PC1600Machine;
 
 // ── Keystroke-injection primitives for scripted PC-1600 input ───────────
 //
-// The PC-1600 analog of Core/PC1500/PC1500BasicTyper. Shared by the
-// preset loader's `type:` steps and its typed `program:` sections
-// (PC1600PresetLoader.cpp) -- both drive the ROM's own line editor via
-// simulated keystrokes and let the ROM store the line.
+// The PC-1600 analog of PC1500BasicTyper: the tests' support (the golden
+// runs' and C1600-2 AC-7's reference typer; was core/PC1600/), driving the
+// ROM's own line editor via simulated keystrokes and letting the ROM store
+// the line.
 //
 // How the PC-1600 program path works (confirmed against the real ROM set
 // and hardware testing):
@@ -58,7 +58,7 @@ class PC1600Machine;
 /// generous -- an over-limit line just means the preset author splits it.
 inline constexpr int kMaxBasicLineLength = 79;
 
-// Each primitive below comes twice: a resumable job (Core/Job.hpp) -- the
+// Each primitive below comes twice: a resumable job (Job.hpp) -- the
 // one implementation -- and the blocking call of the same name, which runs
 // that job to completion.
 

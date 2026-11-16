@@ -12,7 +12,7 @@ class PC1600Machine;
 // ── Typed-text helpers shared by every scripted PC-1600 input path ───────
 //
 // The PC-1600 analog of Core/PC1500/PC1500TypedInput.hpp: used by
-// PC1600BasicTyper (preset `type:` steps, BASIC program text) and the
+// the tests' PC1600BasicTyper (tests/support/) and the
 // GUI's clipboard paste (Core/KeyPaste).
 
 /// Maps a host character to the PC-1600 key that types it. `needsShift`

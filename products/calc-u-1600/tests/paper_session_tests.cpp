@@ -13,6 +13,7 @@
 
 #include "../app/tests/SessionFixture.hpp"
 #include "../core/Connector/PlotterPaperOutput.hpp"
+#include "support/RawPlotPoints.hpp"
 #include "TestHarness.hpp"
 #include "TestRoms.hpp"
 #include "paper/Picture.hpp"

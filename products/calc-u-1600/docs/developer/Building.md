@@ -32,7 +32,7 @@ trees under the repository's `build/`.
   Ubuntu 22.04's packaged 6.2.4) doesn't provide
   `qt_standard_project_setup()` and won't configure.
 - A **C++20** compiler (plain portable C++; the long machine operations
-  are C++20 coroutines, core/Job.hpp): Xcode clang, GCC 11+, MSVC 2019
+  are C++20 coroutines, the library's `calcu::sessions::Task`): Xcode clang, GCC 11+, MSVC 2019
   16.8+.
 - On macOS only: Xcode command-line tools (for the Objective-C++
   compiler — three files need it: the library's `library/qt6/MacClipboard.mm`

@@ -7,7 +7,7 @@
 // Paste Text and the live keys go through the library's typing engine since
 // M-36 (LIB-5; app/SharpTyping): what remains here is the one rule for an
 // accented character on the PC-1600, which the engine's PC-1600 profile and
-// PC1600BasicTyper (presets, until M-44 / M-46) both play.
+// the tests' PC1600BasicTyper (tests/support/) both play.
 
 /// SHIFT / KBII as latched on the machine when an accented character's
 /// KBII sequence is about to start (pc1600ReadLatches, the typing support):

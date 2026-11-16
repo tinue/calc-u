@@ -327,7 +327,8 @@ Every AC of the Calc-U-1600 column passes: the column is **Done**
   catalogue's module definitions, the card codec's bundled source),
   `resolveModuleSpecByName`, `scanFloppyDirectory`, `resolveFloppyByName`,
   `namedFileName` stay in `core/Connector/` for the catalogue and their
-  tests; no media code uses them (§10.2 deleted them).
+  tests; no media code uses them (§10.2 deleted them). Part D (P-4,
+  `ds-core`): all but `scanMemoryCardDirectory` deleted with their tests.
 - **`legacy::moduleIn` and `atOffPoint` stay** for `SharpAppPart::slotCard`
   (the inspector dump) and the tests; `presetMedia` was gone already.
 - **`AppPaths::instanceDir()` and `tapeDir()` stay** (the Settings dialog

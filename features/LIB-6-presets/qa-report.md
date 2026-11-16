@@ -290,6 +290,8 @@ header.
   parts it owns. No `MachineStatePart` in the app.
 - `core/Display/PngWriter.hpp` kept (the cores' own dumps use it); the
   picture of `screenshot:` is written by the library's `formats::PngWriter`.
+  Part D (P-4, `ds-core`): deleted, no product code used it;
+  `lcd_screenshot_tests.cpp` checks the library's writer.
 - `LoaderMemory` is not used by the preset keys; `program:` goes through
   C1600-2's loaders.
 - `c1600.set-default-preset` stays as the frontends' way to write the

@@ -174,10 +174,10 @@ TEST(lib10_ac44_trace_flags_leave_breakpoints_alone) {
     // A trace capture starting and ending leaves the debugger's enable as it was.
     PC1500Machine machine;
     machine.cpu().setBreakpointsEnabled(true);
-    std::FILE* f = std::tmpfile();
-    CHECK(f && machine.beginCpuTrace(f, TRACE_FULL));
+    CHECK(machine.beginTraceRecords(TRACE_FULL));
     CHECK(machine.cpu().breakpointsEnabled());
-    machine.endCpuTrace();
+    machine.endTraceRecord();
+    machine.endTraceRecords();
     CHECK(machine.cpu().breakpointsEnabled() && machine.cpu().traceFlags() == TRACE_NONE);
 }
 

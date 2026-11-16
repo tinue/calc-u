@@ -3,8 +3,6 @@
 #include <algorithm>
 #include <cmath>
 
-#include "PngWriter.hpp"
-
 namespace {
 constexpr double kDotFill = 0.9; // matches LcdWidget::paintDotMatrix
 } // namespace
@@ -54,10 +52,4 @@ GrayImage renderLcdImage(const LcdBitmap& bitmap, ScreenSizeMm size, double dpi)
         image.pixels[i] = static_cast<uint8_t>(std::lround(255.0f * (1.0f - c)));
     }
     return image;
-}
-
-bool writeLcdScreenshotPng(const LcdBitmap& bitmap, ScreenSizeMm size, const std::string& path,
-                           std::string* error) {
-    const GrayImage image = renderLcdImage(bitmap, size);
-    return writePngGray8(path, image.pixels, image.width, image.height, image.pixelsPerMeter(), error);
 }

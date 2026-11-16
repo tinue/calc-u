@@ -7,16 +7,12 @@
 // Build & run: see tools/run_tests.sh
 
 #include <cstdio>
-#include <filesystem>
-#include <fstream>
 #include <string>
 #include <vector>
 
 #include "../core/Connector/CE1600FCard.hpp"
 #include "../core/Connector/FloppyImageFile.hpp"
 #include "../core/PC1600/PC1600BusDrive.hpp"
-#include "Files.hpp"
-#include "TempFolder.hpp"
 #include "TestHarness.hpp"
 
 namespace {
@@ -407,7 +403,7 @@ size_t countLines(const std::string& s) {
 
 TEST(test_floppy_file_round_trips_both_sides) {
     const auto image = patternedImage();
-    const std::string text = formatFloppyFile("My Disk", image);
+    const std::string text = formatFloppyFile("My Disk", image, false, "", "2026-01-01T00:00:00Z");
     CHECK(text.find("format-version: 2\n") != std::string::npos);   // LIB-7 AC-37: version 2, sides 0 and 1
     CHECK(text.find("\n  0:\n") != std::string::npos && text.find("\n  1:\n") != std::string::npos);
     FloppyFile f;
@@ -418,34 +414,31 @@ TEST(test_floppy_file_round_trips_both_sides) {
 }
 
 // `description:` is written when set (single-quoted around a '"') and read
-// back, by the full parse and by the header-only catalogue entry.
+// back.
 TEST(test_floppy_file_description_round_trips) {
     const std::vector<uint8_t> blank(CE1600FCard::kImageSize, 0);
     for (const std::string d : {std::string("Two formatted sides"), std::string("The \"Progs\" disk")}) {
-        const std::string text = formatFloppyFile("D", blank, false, d);
+        const std::string text = formatFloppyFile("D", blank, false, d, "2026-01-01T00:00:00Z");
         FloppyFile f;
         std::string err;
         CHECK(parseFloppyFile(text, &f, &err));
         CHECK(f.description == d);
-        FloppyCatalogEntry e;
-        CHECK(floppy_detail::parseCatalogEntry(text, "x", &e, &err));
-        CHECK(e.description == d);
     }
     FloppyFile f;
     std::string err;
-    CHECK(parseFloppyFile(formatFloppyFile("D", blank), &f, &err));
+    CHECK(parseFloppyFile(formatFloppyFile("D", blank, false, "", "2026-01-01T00:00:00Z"), &f, &err));
     CHECK(f.description.empty());
 }
 
 TEST(test_floppy_file_blank_disk_is_compact) {
     const std::vector<uint8_t> blank(CE1600FCard::kImageSize, 0);
-    const std::string text = formatFloppyFile("Empty", blank);
+    const std::string text = formatFloppyFile("Empty", blank, false, "", "2026-01-01T00:00:00Z");
     CHECK(text.find("      $0000: 00...\n") != std::string::npos);
     CHECK(countLines(text) < 20);
 }
 
 TEST(test_floppy_file_rejects_missing_or_unknown_version) {
-    const std::string good = formatFloppyFile("V", std::vector<uint8_t>(CE1600FCard::kImageSize, 0));
+    const std::string good = formatFloppyFile("V", std::vector<uint8_t>(CE1600FCard::kImageSize, 0), false, "", "2026-01-01T00:00:00Z");
     FloppyFile f;
     std::string err;
 
@@ -466,7 +459,7 @@ TEST(test_floppy_file_rejects_missing_or_unknown_version) {
 }
 
 TEST(test_floppy_file_rejects_wrong_side_size) {
-    const std::string good = formatFloppyFile("S", std::vector<uint8_t>(CE1600FCard::kImageSize, 0));
+    const std::string good = formatFloppyFile("S", std::vector<uint8_t>(CE1600FCard::kImageSize, 0), false, "", "2026-01-01T00:00:00Z");
     // Side 1 cut short: one explicit 16-byte row instead of a run to $10000.
     std::string shortSide = good;
     const size_t b = shortSide.find("  1:");
@@ -479,45 +472,6 @@ TEST(test_floppy_file_rejects_wrong_side_size) {
 
     std::string noB = good.substr(0, b);
     CHECK(!parseFloppyFile(noB, &f, &err));
-}
-
-using calcu::testing::writeText;
-
-TEST(test_floppy_directory_resolution_prefers_first_dir) {
-    namespace fs = std::filesystem;
-    const calcu::testing::TempFolder tmp("calcu1600-floppy-resolve");
-    const fs::path& root = tmp.path();
-    fs::create_directories(root / "bundled");
-    fs::create_directories(root / "saves");
-    const std::vector<uint8_t> blank(CE1600FCard::kImageSize, 0);
-    writeText(root / "bundled" / "fmt.floppy.yaml", formatFloppyFile("Formatted", blank));
-    writeText(root / "saves" / "other-file-name.floppy.yaml", formatFloppyFile("Formatted", blank));
-    writeText(root / "saves" / "mine.floppy.yaml", formatFloppyFile("Mine", blank));
-    writeText(root / "saves" / "broken.floppy.yaml", "not: a floppy\n");
-    writeText(root / "saves" / "ignored.card.yaml", "module-name: x\n");
-
-    std::string err;
-    const auto saves = scanFloppyDirectory((root / "saves").string(), &err);
-    CHECK(saves.size() == 2);  // broken + non-floppy skipped
-    CHECK(err.find("broken.floppy.yaml") != std::string::npos);
-    CHECK(saves.size() == 2 && saves[0].diskName == "Formatted" && saves[1].diskName == "Mine");
-
-    const std::vector<std::string> dirs = {(root / "bundled").string(), (root / "saves").string()};
-    std::string path;
-    CHECK(resolveFloppyByName(dirs, "Formatted", &path, &err));
-    CHECK(path == (root / "bundled" / "fmt.floppy.yaml").string());  // bundled wins
-    CHECK(resolveFloppyByName(dirs, "Mine", &path, &err));
-    CHECK(path == (root / "saves" / "mine.floppy.yaml").string());
-    CHECK(!resolveFloppyByName(dirs, "Nope", &path, &err));
-
-    writeText(root / "saves" / "dup.floppy.yaml", formatFloppyFile("Mine", blank));
-    CHECK(!resolveFloppyByName(dirs, "Mine", &path, &err));
-    CHECK(err.find("more than one") != std::string::npos);
-
-    FloppyFile f;
-    CHECK(readFloppyFile((root / "bundled" / "fmt.floppy.yaml").string(), &f, &err));
-    CHECK(f.image == blank);
-    fs::remove_all(root);
 }
 
 }  // namespace

@@ -36,10 +36,8 @@ inline bool sharpShiftedSymbolBaseKey(char c, std::string* base) {
 // SHIFT + base key -> the PC-1600 digit-row's own "second legend" (printed
 // above the numeric keypad's 0-9), which the PC-1500 keyboard lacks
 // entirely (confirmed against real hardware). Header-only like
-// sharpShiftedSymbolBaseKey above so it can be shared by both
-// Core/PC1600/PC1600BasicTyper.cpp (preset `type:` steps) and the Qt6 GUI's
-// interactive keyboard without pulling in PC1600BasicTyper.cpp's optional
-// (sharpdx-gated) build unit.
+// sharpShiftedSymbolBaseKey above so it can be shared by the typing
+// support and the tests' typer (tests/support/PC1600BasicTyper.cpp).
 //
 // Checked against the ROM's SHIFT-code table (SFTCDT, bank 6 @ 953FH,
 // indexed by key code - 08H; see Ref/PC-1600/PC-1600-Keyboard.md §7): 1-8 and 0 carry

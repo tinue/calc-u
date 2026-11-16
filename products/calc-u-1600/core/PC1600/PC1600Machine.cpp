@@ -426,7 +426,7 @@ void PC1600Machine::advanceSharedClocks(int tstates) {
     m_readyFrameAccum += tstates;
     if (m_readyFrameAccum >= kReadyFrameTStates) {
         m_readyFrameAccum -= kReadyFrameTStates;
-        // The per-frame test of waitForKeyboardScanLoopJob() (PC1600BasicTyper.cpp).
+        // The per-frame test of waitForKeyboardScanLoopJob() (tests/support/PC1600BasicTyper.cpp).
         const uint64_t scans = m_z80Mem.keyboard().scanCount();
         const bool polling = scans != m_readyLastScan;
         m_readyLastScan = scans;
@@ -657,30 +657,6 @@ void PC1600Machine::endTraceRecord() {
 }
 
 void PC1600Machine::endTraceRecords() {
-    m_traceFile.reset();
-    m_sc7852.setTraceFlags(TRACE_NONE);
-    m_lh5803.setTraceFlags(TRACE_NONE);
-    m_traceDrainCounter = 0;
-}
-
-bool PC1600Machine::beginCpuTrace(std::FILE* handle, uint32_t flags) {
-    if (!handle || m_traceFile) return false;
-    m_traceFile = std::make_unique<PC1500TraceFile>(handle);
-    m_traceDrainCounter = 0;
-    m_sc7852.setTraceFlags(flags);
-    m_lh5803.setTraceFlags(flags);
-    // Discard whatever is already in either ring (and its overflow
-    // accounting) so the file starts clean even if tracing was already on.
-    uint32_t staleLost = 0;
-    m_sc7852.drainTraceEvents(m_z80TraceDrainBuf, kTraceDrainBufFrames, &staleLost);
-    m_lh5803.drainTraceEvents(m_lhTraceDrainBuf, kTraceDrainBufFrames, &staleLost);
-    return true;
-}
-
-void PC1600Machine::endCpuTrace() {
-    if (!m_traceFile) return;
-    pumpTraceFile();
-    m_traceFile->finish();
     m_traceFile.reset();
     m_sc7852.setTraceFlags(TRACE_NONE);
     m_lh5803.setTraceFlags(TRACE_NONE);

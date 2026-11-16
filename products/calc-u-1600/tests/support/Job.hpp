@@ -4,14 +4,13 @@
 #include "machine/Machine.hpp"
 #include "sessions/Operation.hpp"
 
-// ── Resumable machine jobs: adapter JobForward ───────────────────────────
+// ── The tests' machine jobs (was core/Job.hpp, the adapter JobForward) ──
 //
-// The coroutine jobs of the core (a boot, a preset, a typed program, a
-// power cycle) are the library's operations (LIB-3 design §3.5, §5:
-// adapter JobForward until the last core user moves, at the latest M-46).
-// `namespace job` names calcu::sessions' Task, Job and runToCompletion, so
-// a job the core writes runs inside an operation of the app session as one
-// of its run requests -- the same thread-local hand-off, never split.
+// The old typers (PC1500BasicTyper, PC1600BasicTyper, BootRun.hpp) are the
+// tests' support, not the core's: the golden runs' and C1600-2 AC-7's
+// reference typer. `namespace job` names calcu::sessions' Task, Job and
+// runToCompletion, so a job of theirs runs as the library's run requests --
+// the same thread-local hand-off, never split.
 //
 // Rules for writing one (the library's, `sessions/Operation.hpp`):
 //  - Every function that (transitively) runs the machine is a coroutine

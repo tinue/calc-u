@@ -6,10 +6,11 @@
 #include <set>
 
 #include "../core/Connector/FloppyImageFile.hpp"
+#include "Files.hpp"
 #include "../core/Machine/SharpMediaPlaces.hpp"
 #include "media/MediaPlace.hpp"
 #include "../core/PC1500/PC1500Keyboard.hpp"
-#include "../core/PC1600/PC1600BasicTyper.hpp"
+#include "support/PC1600BasicTyper.hpp"
 #include "../core/PC1600/PC1600Keyboard.hpp"
 #include "TestRoms.hpp"
 #include "SharpTestSupport.hpp"
@@ -653,7 +654,7 @@ TEST(c1600_1_ac18_ce1600p_variant_keeps_memory_and_disk_side) {
     boot(*m);
     FloppyFile disk;
     std::string err;
-    CHECK(readFloppyFile(std::string(cardsDir()) + "/formatted.floppy.yaml", &disk, &err));
+    CHECK(parseFloppyFile(calcu::testing::readText(std::string(cardsDir()) + "/formatted.floppy.yaml"), &disk, &err));
     auto floppyPlace = [&]() -> calcu::media::MediaPlace* {   // LIB-7: the CE-1600F's media place
         for (const auto& e : m->capabilities(calcu::media::MediaPlace::kKind))
             if (auto* p = calcu::machine::capabilityAs<calcu::media::MediaPlace>(*m, e.id); p && p->id().value == "floppy")

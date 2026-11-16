@@ -194,9 +194,15 @@ if(CALCU_TESTS)
                                   ${CMAKE_CURRENT_SOURCE_DIR}/tests/gui/*.shots.yaml)
     foreach(scenario ${CALCU1600_SCENARIOS})
       get_filename_component(name ${scenario} NAME_WE)
+      # LIB-5 AC-33 (design T16-4, the design's CalcU1600QtTyping) sends
+      # host key events to the window: offscreen, no window shown.
+      set(shot_environment)
+      if(name STREQUAL "lib5-ac33")
+        set(shot_environment ENVIRONMENT QT_QPA_PLATFORM=offscreen)
+      endif()
       calcu_add_test(CalcU1600Shots.${name} longer
                      COMMAND CalcU1600Qt --shots ${scenario} --shots-out ${CMAKE_CURRENT_BINARY_DIR}/shots-check/${name}
-                     PROPERTIES RUN_SERIAL TRUE)
+                     PROPERTIES RUN_SERIAL TRUE ${shot_environment})
     endforeach()
     find_package(Python3 COMPONENTS Interpreter)
     if(Python3_FOUND)

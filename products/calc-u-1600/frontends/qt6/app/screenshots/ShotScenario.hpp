@@ -52,6 +52,9 @@ struct ShotStep {
         ExpectPanel,  // text = objectName, text2 = the title it shows, number = 1 empty / 0 not / -1 either
         ExpectTitle,  // text = the window's title
         Command,      // text = a session command without arguments (`pause`, `resume`)
+        HostKeyDown,  // text = a host key (`shift` or one character): its key press to the window
+        HostKeyUp,    // text = the same: its key release
+        ExpectLcd,    // text = text in one row of the LCD, number = 1 shown / 0 not
     };
     Kind kind = Kind::Settle;
     QString text;

@@ -250,7 +250,7 @@ own Web build); `CalcU1600RomMissingBuild` not run.
 | AC-30 | Pass | `lib5_ac30_characters_per_model`, `lib5_ac30_shift_and_skip`, `lib5_ac30_kbii_case_exact`, `test_pc1500_lacks_digit_row_legends` |
 | AC-31 | Pass | `lib5_ac31_cursor_key_held_rom_repeats_pc1500` (the exit check: Left held 2 s on the PC-1500A and the PC-1600 moves the cursor to the start of the line), `lib5_ac31_every_key_held_pc1500a`, `lib5_ac31_waiting_press_at_key_readiness_pc1500` |
 | AC-32 | Withdrawn | — |
-| AC-33 | Pass (C++, Web; Qt6 built only) | `lib5_ac33_shift_tap_is_one_shift_press`; Web "a SHIFT tap is one SHIFT press". `CalcU1600QtTyping` was not written |
+| AC-33 | Pass (C++, Web, Qt6) | `lib5_ac33_shift_tap_is_one_shift_press`; Web "a SHIFT tap is one SHIFT press"; Qt6 `CalcU1600Shots.lib5-ac33` (`tests/gui/lib5-ac33.shots.yaml`, 2026-11-16, below) |
 | AC-34 | Pass | `lib5_ac34_paste_releases_latched_shift_skips_under_kbii`, `lib5_ac34_second_paste_appended`, `lib5_ac34_kbii_respects_latches`, `lib5_ac34_pc1600_paste_line_no_enter` |
 | AC-35 | Pass | `lib5_ac35_prompt_readiness_and_latches` |
 | AC-36 | Pass | `lib5_ac36_keys_dropped_during_preset_operation`, `ledger_1600_9_keys_dropped_and_reset_stops_an_operation`; Web "keys during a load are dropped" |
@@ -314,3 +314,26 @@ dispatched (plan §1). All three INDEX columns stay In progress (D-1).
 
 The preset clauses pass. AC-33's Qt6 test (`CalcU1600QtTyping`) is still
 not written, so the column stays **In progress**.
+
+### Calc-U-1600: AC-33 in the Qt6 frontend (2026-11-16, branch `lib5-qt-typing-1600`)
+
+The design's `CalcU1600QtTyping` (T16-4) is the check scenario
+`tests/gui/lib5-ac33.shots.yaml`, CTest `CalcU1600Shots.lib5-ac33`
+(Longer, Qt trees only, offscreen; ADR 0032), like the other GUI criteria.
+The scenario runner got the steps `host-key-down`/`host-key-up` (`shift`
+or one character: the key events the window gets from a host keyboard) and
+`expect-lcd`/`expect-no-lcd` (text in one row of the LCD).
+
+| ID | Result | Test case |
+|---|---|---|
+| AC-33 | Pass | `lib5-ac33-tap` (PC-1600: SHIFT down and up, then 1, 1 shows `'1`: one SHIFT press, for the next key only); `lib5-ac33-held` (SHIFT held 600 ms: `11`, no `'`); `lib5-ac33-modifier` (SHIFT with A in between: `A1`, no `'`) |
+
+With the tap's press removed from `MainWindow::keyReleaseEvent`, the tap
+shot fails (`11`); no product change was needed. Results: `build/qt`
+(`-DCALCU_FRONTEND_QT=ON`) Frequent 36 of 36; `CalcU1600Shots.lib5-ac33`,
+`.lib8-ac36`, `.lib10-ac41` passed; `build/tests` (Qt OFF) Frequent 34 of 34.
+
+**Deviation:** the test is a check scenario named
+`CalcU1600Shots.lib5-ac33`, not an entry `CalcU1600QtTyping`.
+
+Every Calc-U-1600 criterion of LIB-5 passes: the column is **Done**.

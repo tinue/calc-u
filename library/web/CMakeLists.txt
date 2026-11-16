@@ -49,6 +49,11 @@ if(EMSCRIPTEN)
 endif()
 
 if(CALCU_TESTS)
+  # A tree configured where node was (the local Linux CI's web image) and
+  # rebuilt where it is not keeps a cached path that no longer exists.
+  if(CALCU_NODE AND NOT EXISTS "${CALCU_NODE}")
+    unset(CALCU_NODE CACHE)
+  endif()
   find_program(CALCU_NODE node)
   if(CALCU_NODE)
     add_test(NAME LibraryWebNodeTests

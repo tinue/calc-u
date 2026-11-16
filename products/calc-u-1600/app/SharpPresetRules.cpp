@@ -63,12 +63,15 @@ calcu::sessions::Task<ItemResult> SharpModelRules::afterBuild(calcu::presets::Ru
         for (const std::string& row : displayLines(*m, m->readDisplay()).rows)
             asks = asks || row.find("NEW0?") != std::string::npos;
         if (!asks) break;
-        const calcu::typing::TypeResult t =
-            co_await calcu::typing::typeAndWait(run.op(), *engine, {calcu::typing::Press{calcu::machine::KeyId{"cl"}}});
+        // Named locals, not temporaries in the co_await expressions: GCC 13
+        // ends in an internal compiler error on those (CI on 0f1d319).
+        std::vector<calcu::typing::Press> presses;
+        presses.push_back(calcu::typing::Press{calcu::machine::KeyId{"cl"}});
+        const calcu::typing::TypeResult t = co_await calcu::typing::typeAndWait(run.op(), *engine, presses);
         if (!t.done) co_return ItemResult{false, t.reason, {}};
-        co_await watch.wait(run.op(), run.machine() ? std::optional<calcu::machine::Ticks>(
-                                                           run.machine()->descriptor().tickRate * 12)
-                                                     : std::nullopt);
+        std::optional<calcu::machine::Ticks> limit;
+        if (calcu::machine::Machine* now = run.machine()) limit = now->descriptor().tickRate * 12;
+        co_await watch.wait(run.op(), limit);
     }
     co_return ItemResult{};
 }

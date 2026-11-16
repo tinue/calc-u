@@ -78,6 +78,12 @@ public:
     /// init). See PC1600PresetLoader's settle-before-keys logic.
     uint64_t scanCount() const { return m_scanCount; }
 
+    /// The machine state (C1600-5 AC-13, Machine/StateRecords.hpp).
+    template <class Io>
+    void stateIo(Io& io) {
+        io(m_keys)(m_scanCount);
+    }
+
 private:
     static constexpr int kStrobes = 9; // KS0-KS7 + PB6
     static constexpr int kSenseBits = 8;

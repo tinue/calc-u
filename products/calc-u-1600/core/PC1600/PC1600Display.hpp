@@ -1,5 +1,6 @@
 #pragma once
 #include <array>
+#include <cstddef>
 #include <cstdint>
 
 #include "PC1600Clocks.hpp"
@@ -132,6 +133,20 @@ public:
     /// `set` 0 or 1: IC3 column 63, page 7 / 6, rotated by the start line
     /// like the ROM's own symbol writer (bank 6 8220H).
     void mirrorPc1500StatusSet(int set, uint8_t value);
+
+    /// The machine state (C1600-5 AC-13, Machine/StateRecords.hpp): both
+    /// controllers with their RAM, the LCD clock, the status symbols.
+    template <class Io>
+    void stateIo(Io& io) {
+        Controller* const both[] = {&m_ic2, &m_ic3};
+        for (Controller* c : both)
+            io(c->pages)(c->addressCol)(c->addressPage)(c->addressStartLine)(c->outputReg)(c->displayOn)(c->busyUntilEdge);
+        io(m_tstates)(m_clockEnabled);
+        std::array<bool, StatusLine::kCount> symbols = m_statusLine.all();
+        io(symbols);
+        if constexpr (Io::kRestoring)
+            for (std::size_t i = 0; i < symbols.size(); ++i) m_statusLine.set(static_cast<StatusLine::Symbol>(i), symbols[i]);
+    }
 
 private:
     // Standard HD61102 geometry: 64 columns x 8 pages x 8 bits/page --

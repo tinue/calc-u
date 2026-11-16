@@ -62,6 +62,12 @@ public:
     /// a pressed key shares row r with any currently-strobed column.
     uint8_t scan(uint8_t driveLines) const;
 
+    /// The machine state (C1600-5 AC-13, Machine/StateRecords.hpp).
+    template <class Io>
+    void stateIo(Io& io) {
+        io(m_keys);
+    }
+
 private:
     static constexpr int kRows = 8;
     static constexpr int kCols = 8;

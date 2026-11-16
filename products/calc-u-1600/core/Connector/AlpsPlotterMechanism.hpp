@@ -165,6 +165,14 @@ public:
         return out;
     }
 
+    /// The machine state (C1600-5 AC-13, Machine/StateRecords.hpp): the
+    /// motors, the pen and its colour turret. The event log is the tools'.
+    template <class Io>
+    void stateIo(Io& io) {
+        io(m_motorX.currentPhase)(m_motorY.currentPhase)(m_motorZ.currentPhase)(m_penX)(m_penY)(m_penZ)(m_penDown);
+        io(m_penColor)(m_colorRotateArmed)(m_colorRotateCount)(m_ce150StartRot)(m_ce150Rot)(m_strokeCount)(m_strokePoints);
+    }
+
 private:
     // Fixed stepper phase table: each 4-bit phase write is compared against
     // the motor's last phase, yielding one of {none, ±1 half-step, ±2

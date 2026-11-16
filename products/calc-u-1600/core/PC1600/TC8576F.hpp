@@ -94,6 +94,15 @@ public:
     /// 21H write the strobe reaches the sub-CPU's KI.
     int dstbDelayTStates() const;
 
+    /// The machine state (C1600-5 AC-13, Machine/StateRecords.hpp).
+    template <class Io>
+    void stateIo(Io& io) {
+        io(m_txFifo)(m_serialAccum)(m_charTStates)(m_pr)(m_par)(m_resetHeld)(m_txEnable)(m_dtr)(m_rxEnable)(m_sendBreak)(m_rts);
+        io(m_intMask1)(m_intMask2)(m_prim)(m_xbusy)(m_intp0)(m_intp1)(m_lastSubBusy)(m_txIntMask)(m_rxIntMask)(m_errIntMask);
+        io(m_parityEnable)(m_parityEven)(m_charLength)(m_rxBreak)(m_framingError)(m_overrunError)(m_parityError);
+        io(m_txEmpty)(m_rxReady)(m_txReady)(m_rxData)(m_txData)(m_parallelIn)(m_parallelOut)(m_cts)(m_dcd)(m_dsr)(m_ci);
+    }
+
 private:
     /// The chip-level reset shared by reset() (the RESET pin) and the 23H
     /// D5 command, which also holds the chip in reset (m_resetHeld).

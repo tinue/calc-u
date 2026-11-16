@@ -1,5 +1,7 @@
 #include "PC1600Machine.hpp"
 
+#include "../Connector/CardState.hpp"
+
 #include <cstring>
 #include <vector>
 
@@ -718,3 +720,40 @@ PC1600DisplaySnapshot PC1600Machine::displaySnapshot() const {
     snap.statusLine = disp.statusLine();
     return snap;
 }
+
+// ── Machine state (C1600-5 AC-13) ────────────────────────────────────────
+
+template <class Io>
+void PC1600Machine::stateIo(Io& io) {
+    io.begin("Z80C");
+    m_sc7852.stateIo(io);
+    io.end();
+    io.begin("5803");
+    m_lh5803.stateIo(io);
+    m_lh5803Mem.stateIo(io);
+    io.end();
+    io.begin("BANK");
+    m_bank.stateIo(io);
+    io.end();
+    io.begin("ARBI");
+    m_arbiter.stateIo(io);
+    io.end();
+    m_z80Mem.stateIo(io);
+    io.begin("TIME");
+    io(m_elapsedTStates)(m_readyFrameAccum)(m_readyLastScan)(m_readyFrames);
+    io(m_timer64Accum)(m_timer64State)(m_timer64EdgeCount)(m_rtcAccum);
+    io.end();
+    io.begin("TAPE");
+    m_tapeDeck.stateIo(io);
+    io.end();
+    sharp::cardStateIo(io, "SLT1", m_z80Mem.slotCard(1));
+    sharp::cardStateIo(io, "SLT2", m_z80Mem.slotCard(2));
+    sharp::cardStateIo(io, "C16P", m_ce1600pCard.get());
+    sharp::cardStateIo(io, "C16F", m_ce1600fCard.get());
+    sharp::cardStateIo(io, "HOST", m_hostDriveCard.get());
+    sharp::cardStateIo(io, "C150", m_ce150Card.get());
+    sharp::cardStateIo(io, "C158", m_ce158.card());
+}
+
+void PC1600Machine::saveState(sharp::StateWriter& w) const { const_cast<PC1600Machine*>(this)->stateIo(w); }
+void PC1600Machine::restoreState(sharp::StateReader& r) { stateIo(r); }

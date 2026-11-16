@@ -10,6 +10,7 @@
 #include "../Connector/BusRomCard.hpp"
 #include "../CPU/DebugStop.hpp"
 #include "../CPU/LH5801/LH5801.hpp"
+#include "../Machine/StateRecords.hpp"
 #include "../Connector/Ce150Card.hpp"
 #include "../Connector/Ce158Port.hpp"
 #include "../Connector/ExpansionConnector.hpp"
@@ -265,6 +266,14 @@ public:
     }
     void endTraceRecord();
     void endTraceRecords();
+    // ── Machine state (C1600-5 AC-13, Machine/StateRecords.hpp) ─────────
+    /// The core's records: the CPU(s), the memory with its chips, the
+    /// emulated time, the cassette deck, every card. Saving only reads; a
+    /// restore that fails leaves the reader's error (the caller puts the
+    /// state from before back). The debugger's own state is not in it.
+    void saveState(sharp::StateWriter& w) const;
+    void restoreState(sharp::StateReader& r);
+
     // ── Debugger stops ────────────────────────────────────────────────────
     /// step() and runCycles() latch a stop when the CPU parks on a PC
     /// breakpoint (nothing executed) or completes an instruction whose data
@@ -280,7 +289,9 @@ public:
     }
 
 private:
-    PC1500Memory m_memory;
+    PC1500Memory m_memory;    template <class Io>
+    void stateIo(Io& io);
+
     LH5801       m_cpu;
     WatchSet*    m_watches{nullptr};
     DebugStopLatch m_debugStop;

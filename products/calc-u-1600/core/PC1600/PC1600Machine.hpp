@@ -19,6 +19,7 @@
 #include "../CPU/LH5803/LH5803SharedMemory.hpp"
 #include "../CPU/DebugStop.hpp"
 #include "../CPU/SC7852/SC7852.hpp"
+#include "../Machine/StateRecords.hpp"
 #include "../PC1500/PC1500TraceFile.hpp"
 #include "../Tape/TapeDeck.hpp"
 #include "PC1600Bank.hpp"
@@ -119,6 +120,16 @@ public:
     /// charged the shared clocks, so the budget and the clocks can't drift
     /// apart.
     uint64_t runCycles(uint64_t maxCycles);
+
+    // ── Machine state (C1600-5 AC-13, Machine/StateRecords.hpp) ─────────
+    /// The core's records: the SC7852 and the LH5803, the bank selection,
+    /// the memory with its chips, the bus arbiter, the timers, the emulated
+    /// time, the cassette deck, the modules and every card. Saving only
+    /// reads; a restore that fails leaves the reader's error (the caller
+    /// puts the state from before back). The debugger's own state is not in
+    /// it.
+    void saveState(sharp::StateWriter& w) const;
+    void restoreState(sharp::StateReader& r);
 
     // ── Debugger stops ────────────────────────────────────────────────────
     // step() and runCycles() latch a stop when either CPU parks on a PC
@@ -503,6 +514,8 @@ public:
     void endTraceRecord();
     void endTraceRecords();
 
+    template <class Io>
+    void stateIo(Io& io);
 private:
 
 

@@ -219,6 +219,17 @@ public:
     uint8_t interruptMask() const { return m_irqMask; }
     bool passwordSet() const { return m_password[0] != 0; }
 
+    /// The machine state (C1600-5 AC-13, Machine/StateRecords.hpp).
+    template <class Io>
+    void stateIo(Io& io) {
+        io(m_param)(m_paramLen)(m_result)(m_resultLen)(m_resultPos)(m_prefix)(m_password)(m_answer)(m_answerPending);
+        io(m_elapsed)(m_busyFrom)(m_busyUntil)(m_ackAt)(m_irqMask)(m_pending);
+        for (Alarm& a : m_timers) io(a.month)(a.day)(a.hour)(a.minute);
+        io(m_analog)(m_adinLow)(m_adinHigh)(m_alarmSignal)(m_powerOnMask)(m_ci)(m_systemOn)(m_powerOffCommanded);
+        io(m_powerOnCause)(m_clock.month)(m_clock.day)(m_clock.hour)(m_clock.minute)(m_clock.second);
+        io(m_hostSeedGuard)(m_resetCause);
+    }
+
 private:
     void raise(uint8_t bits) { m_pending |= bits; }
     void storeTimer(Timer t);

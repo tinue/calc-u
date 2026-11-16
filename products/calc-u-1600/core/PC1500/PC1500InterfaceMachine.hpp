@@ -36,6 +36,10 @@ private:
     void corePlug(const calcu::machine::PeripheralRequest&, const calcu::machine::PeripheralDescriptor&) override;
     void coreUnplug(const calcu::machine::PlaceName&, const calcu::machine::PeripheralId&) override;
     void offer(std::vector<Offered>&, const std::vector<calcu::machine::PlugEntry>&) override;
+    void coreSaveState(sharp::StateWriter&) const override;
+    void coreRestoreState(sharp::StateReader&) override;
+    template <class Io>
+    void interfaceStateIo(Io&);
 
     struct Kinds;   // the capability objects (PC1500InterfaceMachine.cpp)
 

@@ -1,5 +1,6 @@
 #pragma once
 #include <cstdint>
+#include <optional>
 
 #include "SerialLink.hpp"
 #include "peripherals/SerialPort.hpp"
@@ -43,6 +44,35 @@ public:
         m_queues.machineSetsLine(l);
     }
 
+    /// The machine state (C1600-5 AC-13, Machine/StateRecords.hpp): the
+    /// line settings the machine has set, the peer's lines, whether the
+    /// port was used. The bytes in the queues are on their way to or from
+    /// the host and stay with it, as a serial port file does (LIB-11 AC-24).
+    template <class Io>
+    void stateIo(Io& io) {
+        calcu::peripherals::LineSettings l = m_queues.lineSettings();
+        calcu::peripherals::PeerLines p = m_queues.peerLines();
+        bool used = m_queues.used();
+        optionalIo(io, l.baud);
+        optionalIo(io, l.bitsPerChar);
+        optionalIo(io, l.dtr);
+        optionalIo(io, l.rts);
+        io(p.cts)(p.dsr)(p.dcd)(p.ri)(used);
+        if constexpr (Io::kRestoring) {
+            m_queues.machineSetsLine(l);
+            m_queues.setPeerLines(p);
+            if (used) m_queues.markUsed();
+        }
+    }
+
 private:
     calcu::peripherals::SerialPortQueues m_queues;
+
+    template <class Io, class T>
+    static void optionalIo(Io& io, std::optional<T>& v) {
+        bool has = v.has_value();
+        T value = has ? *v : T{};
+        io(has)(value);
+        if constexpr (Io::kRestoring) v = has ? std::optional<T>(value) : std::nullopt;
+    }
 };

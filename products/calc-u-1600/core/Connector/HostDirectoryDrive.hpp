@@ -250,6 +250,31 @@ public:
         date = static_cast<uint16_t>((6 << 9) | ((tm.tm_mon + 1) << 5) | tm.tm_mday);
     }
 
+    /// The machine state (C1600-5 AC-13, Machine/StateRecords.hpp): the
+    /// open handles (the directory below the folder, the searches under
+    /// way), each host file by its path below the folder. The folder is the
+    /// host's, not the state's (LIB-11 AC-24).
+    template <class Io>
+    void stateIo(Io& io) {
+        io(m_cwd)(m_listDirectories);
+        std::uint64_t searches = m_searches.size();
+        io(searches);
+        if constexpr (Io::kRestoring) {
+            m_searches.clear();
+            for (std::uint64_t i = 0; i < searches && io.ok(); ++i) {
+                std::uint16_t key = 0;
+                io(key);
+                searchIo(io, m_searches[key]);
+            }
+        } else {
+            for (auto& [key, search] : m_searches) {
+                std::uint16_t k = key;
+                io(k);
+                searchIo(io, search);
+            }
+        }
+    }
+
 private:
     struct Entry {
         std::string fcbName;          // 11 bytes, upper case
@@ -263,6 +288,27 @@ private:
         std::vector<Entry> entries;
         size_t next = 0;
     };
+
+    template <class Io>
+    void searchIo(Io& io, Search& s) {
+        std::uint64_t n = s.entries.size();
+        io(n)(s.next);
+        if constexpr (Io::kRestoring) {
+            s.entries.clear();
+            if (n > (1u << 20)) io.fail("a search of the host drive in the state is too long");
+            if (io.ok()) s.entries.resize(static_cast<std::size_t>(n));
+        }
+        for (Entry& e : s.entries) {
+            std::string below;
+            if constexpr (!Io::kRestoring) below = e.path.lexically_relative(m_dir).generic_string();
+            std::int64_t mtime = static_cast<std::int64_t>(e.mtime);
+            io(e.fcbName)(below)(e.attr)(e.size)(mtime);
+            if constexpr (Io::kRestoring) {
+                e.path = m_dir / std::filesystem::path(below);
+                e.mtime = static_cast<std::time_t>(mtime);
+            }
+        }
+    }
 
     static char upper(char c) { return static_cast<char>(std::toupper(static_cast<unsigned char>(c))); }
 

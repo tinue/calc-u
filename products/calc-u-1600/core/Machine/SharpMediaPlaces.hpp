@@ -96,6 +96,17 @@ public:
     bool takeWriteNow() override { return m_deck.takeStopped(); }
     bool writesWhenAsked() const override { return true; }
 
+    /// The machine state (C1600-5 AC-13, StateRecords.hpp): the tape in
+    /// play mode as it came. The deck is the core's record.
+    template <class Io>
+    void stateIo(Io& io) {
+        bool has = m_played != nullptr;
+        std::vector<std::uint8_t> wav;
+        if (has && !Io::kRestoring) wav = m_played->wav;
+        io(has)(wav);
+        if constexpr (Io::kRestoring) m_played = has ? std::make_shared<const TapeContent>(std::move(wav)) : nullptr;
+    }
+
 private:
     TapeDeck& m_deck;
     std::shared_ptr<const TapeContent> m_played;   // the tape in play mode, as it came

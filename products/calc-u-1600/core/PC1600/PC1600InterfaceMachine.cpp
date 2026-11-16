@@ -238,6 +238,7 @@ void PC1600InterfaceMachine::offer(std::vector<Offered>& out, const std::vector<
     out.push_back(byComponent("SC7852", k.support));
     out.push_back(byComponent("SC7852", k.trace));
     out.push_back(byComponent("SC7852", k.call));
+    out.push_back(byComponent("SC7852", stateCapability()));   // C1600-5 AC-13
     out.push_back(byComponent(sharp::kRtcComponent, k.clock));
     out.push_back(byComponent(sharp::kRs232cComponent, m_rs232c.port()));
     if (const PlugEntry* e = at(sharp::kPrinter)) {
@@ -260,4 +261,27 @@ void PC1600InterfaceMachine::offer(std::vector<Offered>& out, const std::vector<
         out.push_back(byPeripheral(*e, k.printerPort));
     }
     if (const PlugEntry* e = at(sharp::kHostDrivePlace)) out.push_back(byPeripheral(*e, k.hostDrive));
+}
+
+// ---- The machine state (C1600-5 AC-13) ----
+
+template <class Io>
+void PC1600InterfaceMachine::interfaceStateIo(Io& io) {
+    io.begin("LINE");
+    m_ce158Port.stateIo(io);
+    m_rs232c.stateIo(io);
+    io.end();
+    io.begin("CASS");
+    m_kinds->cassette.stateIo(io);
+    io.end();
+}
+
+void PC1600InterfaceMachine::coreSaveState(sharp::StateWriter& w) const {
+    m_core->saveState(w);
+    const_cast<PC1600InterfaceMachine*>(this)->interfaceStateIo(w);   // only reads
+}
+
+void PC1600InterfaceMachine::coreRestoreState(sharp::StateReader& r) {
+    m_core->restoreState(r);
+    interfaceStateIo(r);
 }

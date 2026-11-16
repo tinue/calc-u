@@ -179,6 +179,16 @@ public:
     }
     bool atEnd() const { return m_mode == Mode::Play && sampleIndex() >= m_levels.size(); }
 
+    /// The machine state (C1600-5 AC-13, Machine/StateRecords.hpp): the
+    /// tape with its sound and position, the motor, a recording under way.
+    /// The path a recording goes to is kept as it was given.
+    template <class Io>
+    void stateIo(Io& io) {
+        io(m_mode)(m_path)(m_rate)(m_motor)(m_posCycles)(m_levels)(m_lastIn);
+        io(m_out)(m_cyclesPerSample)(m_phase)(m_area)(m_hpIn)(m_hpOut)(m_recording)(m_savedSamples);
+        io(m_lastError)(m_stopped)(m_stoppedSamples)(m_priming);
+    }
+
 private:
     double m_cpuHz;
     Mode m_mode = Mode::Empty;

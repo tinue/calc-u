@@ -185,6 +185,16 @@ public:
         return WriteResult::ignored();
     }
 
+    // C1600-5 AC-13: the disk with its side, the head, the controller.
+    void saveState(sharp::StateWriter& w) const override { const_cast<CE1600FCard*>(this)->stateIo(w); }
+    void restoreState(sharp::StateReader& r) override { stateIo(r); }
+    template <class Io>
+    void stateIo(Io& io) {
+        io(m_image)(m_sectorReg)(m_dataReg)(m_track)(m_side)(m_motorOn)(m_motorStartRemaining)(m_diskChanged);
+        io(m_diskPresent)(m_revision)(m_busy)(m_status)(m_xfer)(m_xferRemaining)(m_byteOffset)(m_xferBase);
+        io(m_busyRemaining)(m_idSector);
+    }
+
 private:
     // base+2 status bits (see the class comment).
     static constexpr uint8_t kStatusBusy = 0x81;

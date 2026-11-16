@@ -420,6 +420,35 @@ public:
     uint8_t readIO(uint8_t port) override;
     void    writeIO(uint8_t port, uint8_t value) override;
 
+    /// The machine state (C1600-5 AC-13, Machine/StateRecords.hpp): the
+    /// internal RAM, the ports and latches, the piezo sampler, the
+    /// keyboard, the LCD controllers, the sub-CPU with its clock and the
+    /// UART. The bank selection is PC1600Bank's record, the modules and the
+    /// cards on the connectors the machine's.
+    template <class Io>
+    void stateIo(Io& io) {
+        io.begin("RAM6");
+        io(m_internalRam);
+        io.end();
+        io.begin("PORT");
+        io(m_intCause)(m_intMask)(m_lhNmiLatch)(m_im2VectorLow)(m_dda)(m_opa)(m_ddb)(m_opb)(m_opc)(m_fReg)(m_sdo)(m_sdoAccum);
+        io(m_pbIn)(m_msk)(m_if);
+        m_keyboard.stateIo(io);
+        io.end();
+        io.begin("PIEZ");
+        m_piezo.stateIo(io);
+        io.end();
+        io.begin("LCD6");
+        m_display.stateIo(io);
+        io.end();
+        io.begin("SUBC");
+        m_subCpu.stateIo(io);
+        io.end();
+        io.begin("UART");
+        m_uart.stateIo(io);
+        io.end();
+    }
+
 private:
     PC1600Bank& m_bank;
     // The two 40-pin memory-slot connectors (page C, 8000-BFFF). Owned here

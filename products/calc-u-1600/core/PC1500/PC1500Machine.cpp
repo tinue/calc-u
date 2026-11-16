@@ -1,5 +1,7 @@
 #include "PC1500Machine.hpp"
 
+#include "../Connector/CardState.hpp"
+
 PC1500Machine::PC1500Machine(PC1500Variant variant)
     : m_memory(variant), m_cpu(m_memory) {}
 
@@ -301,3 +303,25 @@ void PC1500Machine::setOnKeyPressed(bool pressed) {
 PC1500Display PC1500Machine::display() const {
     return PC1500Display(m_memory);
 }
+
+// ── Machine state (C1600-5 AC-13) ────────────────────────────────────────
+
+template <class Io>
+void PC1500Machine::stateIo(Io& io) {
+    io.begin("5801");
+    m_cpu.stateIo(io);
+    io.end();
+    m_memory.stateIo(io);
+    io.begin("TIME");
+    io(m_elapsedCycles);
+    io.end();
+    io.begin("TAPE");
+    m_tapeDeck.stateIo(io);
+    io.end();
+    sharp::cardStateIo(io, "SLT1", m_memory.expansionConnector().attachedCard());
+    sharp::cardStateIo(io, "C150", m_ce150Card.get());
+    sharp::cardStateIo(io, "C158", m_ce158.card());
+}
+
+void PC1500Machine::saveState(sharp::StateWriter& w) const { const_cast<PC1500Machine*>(this)->stateIo(w); }
+void PC1500Machine::restoreState(sharp::StateReader& r) { stateIo(r); }

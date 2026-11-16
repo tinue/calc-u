@@ -51,14 +51,17 @@ test('the installed app starts without a connection and runs every model', async
   const app = await context.newPage();
   await app.goto(appUrl);
   await expect(app.locator('.calcu-client[data-ready=true]')).toHaveCount(1, { timeout: 30000 });
-  for (const model of ['2', '0', '1']) {
-    await app.getByLabel('Model', { exact: true }).selectOption(model);
+  for (const model of ['PC-1600', 'PC-1500', 'PC-1500A']) {
+    await app.locator('[data-calcu=bar-model]').selectOption({ label: model });
     await expect(app.locator(`.calcu-face[data-model="${model}"]`)).toHaveCount(1, { timeout: 30000 });
   }
-  // A bundled preset, with its program file, from the cache.
-  await app.locator('.calcu-menubar-item > button', { hasText: 'File' }).click();
-  await app.locator('.calcu-menu-item', { hasText: 'Load Preset' }).hover();
-  await app.locator('.calcu-submenu .calcu-menu-item', { hasText: 'Towers of Hanoi' }).click();
-  await expect(app.locator('.calcu-face[data-model="2"]')).toHaveCount(1, { timeout: 30000 });
-  await expect(app.locator('[role=alertdialog], [data-dialog=notice]')).toHaveCount(0);
+  // A bundled preset, with its program file, from the cache (File ▸ Examples ▸).
+  const entries = (await app.evaluate(() => document.querySelector('.calcu-client').calcuShell.request('preset-list'))).value.entries;
+  const group = entries.find((e) => e.bundlePath === 'examples:basic/hanoi.pc1600').group;
+  await app.locator('[data-calcu=menu-file]').click();
+  await app.locator('[data-calcu=item-examples]').hover();
+  if (group) await app.locator(`[data-calcu="item-examples-${group}"]`).hover();
+  await app.locator('[data-calcu="item-example-examples:basic/hanoi.pc1600"]').click();
+  await expect(app.locator('.calcu-face[data-model="PC-1600"]')).toHaveCount(1, { timeout: 30000 });
+  await expect(app.locator('[data-calcu=notice]')).toHaveCount(0);
 });

@@ -36,10 +36,10 @@ test('CalcU1600 renders server-side without fetch or Worker', async () => {
   run(path.join(WEB, 'vendor', 'react-dom-server-legacy.browser.production.min.js'));
   run(path.join(WEB, 'dist', 'calc.js'));
 
-  expect(Object.keys(ctx).filter((k) => /^(createEngine|useEngine|Faceplate|ControlBar|MenuBar|Inspector|paintLcd)$/.test(k)),
+  expect(Object.keys(ctx).filter((k) => /^(Faceplate|Inspector|paintLcd|DiskControls|TapeControls|useDialogs)$/.test(k)),
          'calc.js leaks its internals into the global scope').toEqual([]);
   const html = ctx.ReactDOMServer.renderToStaticMarkup(ctx.React.createElement(ctx.CalcU1600, { width: 1000, height: 700 }));
   expect(html).toContain('calcu-client');
-  expect(html).toContain('calcu-menubar');
+  expect(html).toContain('calcu-shell-menubar');
   expect(html).toContain('calcu-face');
 });

@@ -150,12 +150,42 @@ TEST(ac30_import_through_the_file_picker) {
     const auto a = asks(f.fe);
     CHECK(a.size() == 1 && a[0].service == sessions::HostService::FilePicker);
     if (a.size() != 1) return;
-    CHECK(*a[0].args.find("accept")->string() == ".testcard.yaml,.testdisk.yaml,.testmodule.yaml");
+    CHECK(*a[0].args.find("accept")->string() == ".testcard.yaml,.testdisk.yaml,.dat,.testmodule.yaml");
     sessions::ServiceAnswer ans;
     ans.given = true;
     ans.result = Value(Value::Array{Value(outside / "p.testdisk.yaml")});
     f.session->answer(a[0].ask, ans);
     CHECK(f.exists("Picked.testdisk.yaml"));
+}
+
+// AC-30, AC-43 (M-49): a companion picked with its medium is read beside it,
+// not imported on its own; picked alone it is refused as before.
+TEST(ac30_file_picker_takes_a_companion_along) {
+    sessions::HostServices s;
+    s.offered = {sessions::HostService::FilePicker};
+    MediaFixture f(dot(s));
+    calcu::testing::TempFolder outside("calcu-media-outside");
+    TestFile t = disk("Tape", "head");
+    t.companion = "sound.dat";
+    outside.write("in.testdisk.yaml", t.text());
+    outside.write("sound.dat", "wave");
+    auto pick = [&](Value::Array files) {
+        CHECK(f.ok("media.import"));
+        const auto a = asks(f.fe);
+        if (a.empty()) return;
+        sessions::ServiceAnswer ans;
+        ans.given = true;
+        ans.result = Value(std::move(files));
+        f.session->answer(a.back().ask, ans);
+    };
+    const auto before = f.notices().size();
+    pick(Value::Array{Value(outside / "in.testdisk.yaml"), Value(outside / "sound.dat")});
+    CHECK(f.exists("Tape.testdisk.yaml"));
+    CHECK_EQ(f.saved("sound.dat"), std::string("wave"));
+    CHECK_EQ(f.notices().size(), before);
+    pick(Value::Array{Value(outside / "sound.dat")});
+    const auto n = f.notices();
+    CHECK(n.size() == before + 1 && n.back() == "The file sound.dat is not a medium of this product.");
 }
 
 TEST(ac1_opened_file_written_where_it_lies) {

@@ -91,6 +91,10 @@ struct KindDecl {
     std::string id;                  // the descriptor's MediaPlaceDescriptor::mediumKind ("floppy-disk")
     std::string label;               // "floppy disk": notices and the log (AC-25)
     std::string suffix;              // ".floppy.yaml" (AC-4)
+    // The suffixes of the files a medium of this kind names beside it (a
+    // tape's ".wav"): Import Media… offers them in its file picker and takes
+    // them as companions of the media picked with them (AC-30, AC-43).
+    std::vector<std::string> companionSuffixes;
     settings::Folder folder = settings::Folder::Save;   // Tapes for a tape (LIB-9 AC-16)
     std::string bundledFolder;       // as the frontend or harness finds it; empty: none
     const MediumCodec* codec = nullptr;

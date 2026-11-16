@@ -23,39 +23,36 @@ async function recordMessages(page) {
   });
 }
 
-async function gotoReady(page, query = '') {
-  await page.goto(`./${query}`);
-  await expect(page.locator('.calcu-client[data-ready=true]')).toHaveCount(1, { timeout: 30000 });
-}
+const h = require('./helpers');
+const { gotoReady, notBusy } = h;
 
-const request = (page, method, ...args) =>
-  page.evaluate(([m, a]) => document.querySelector('.calcu-client').calcuEngine.request(m, ...a), [method, args]);
-const engineState = (page) => page.evaluate(() => {
-  const s = document.querySelector('.calcu-client').calcuEngine.getState();
-  return { busy: s.busy, ui: s.ui, media: s.media, log: s.log };
-});
+const send = h.send;
+const log = (page) => page.evaluate(() => (document.querySelector('.calcu-client').calcuShell.getState().streams.log || []).map((l) => l.text));
+const ticks = async (page) => (await h.ask(page, 'ticks')).value;
+const setting = async (page, section, key) => {
+  const rows = ((await h.topic(page, 'settings')) || {}).rows || [];
+  return (rows.find((r) => r.section === section && r.key === key) || {}).value;
+};
 // ENTER after the typed line, once the paste is through.
 async function typedEnter(page) {
   await page.waitForTimeout(1500);
   await page.locator('.calcu-client').focus();
   await page.keyboard.press('Enter');
 }
-const notBusy = (page) => expect.poll(async () => (await engineState(page)).busy, { timeout: 30000 }).toBe(false);
 
 test('ac24 CalcU1600 takes the AC-16 props, the model by its name', async ({ page }) => {
   await gotoReady(page, '?model=PC-1500');
-  await expect.poll(async () => ((await engineState(page)).ui || {}).model).toBe(0);
-  await expect(page.locator('.calcu-face[data-model="0"]')).toHaveCount(1);
+  await expect.poll(async () => ((await h.topic(page, 'control-state')) || {}).model).toBe('PC-1500');
+  await expect(page.locator('.calcu-face[data-model="PC-1500"]')).toHaveCount(1);
 });
 
 test('ac25 settings in Calc-U-1600.ini, media in the save folder of 0.8.x', async ({ page }) => {
   await gotoReady(page, '?model=PC-1600');
-  await request(page, 'setStartupModel', 'PC-1600');
+  expect((await send(page, 'set-setting', { section: 'startup', key: 'model', value: 'PC-1600' })).done).toBe(true);
   await notBusy(page);
-  const send = (c, a) => page.evaluate(([cc, aa]) => document.querySelector('.calcu-client').calcuEngine.send(cc, aa), [c, a]);
-  expect((await send('media.choose', { place: 'slot-1', entry: 'bundled:ce1600m.card.yaml' })).done).toBe(true);   // LIB-7 (M-47)
+  expect((await send(page, 'media.choose', { place: 'slot-1', entry: 'bundled:ce1600m.card.yaml' })).done).toBe(true);   // LIB-7 (M-47)
   await notBusy(page);
-  expect((await send('media.name-and-save', { place: 'slot-1', name: 'Kept' })).done).toBe(true);
+  expect((await send(page, 'media.name-and-save', { place: 'slot-1', name: 'Kept' })).done).toBe(true);
   // The persistent file system is IndexedDB "/persist", as 0.8.x's.
   await expect.poll(() => page.evaluate(() => new Promise((resolve) => {
     const open = indexedDB.open('/persist');
@@ -71,33 +68,32 @@ test('ac25 settings in Calc-U-1600.ini, media in the save folder of 0.8.x', asyn
     '/persist/Calc-U-1600/Kept.card.yaml',
   ]));
   await gotoReady(page);
-  await expect.poll(async () => ((await engineState(page)).media || { kinds: [] }).kinds
+  await expect.poll(async () => ((await h.topic(page, 'media')) || { kinds: [] }).kinds
     .flatMap((k) => k.instances).map((i) => i.fileName), { timeout: 10000 }).toContain('Kept.card.yaml');
-  expect((await request(page, 'settingsState')).startupModel).toBe('PC-1600');
+  expect(await setting(page, 'startup', 'model')).toBe('PC-1600');
 });
 
 test('ac26 buzzer samples at regular speed, none at full speed or in an operation', async ({ page }) => {
   await recordMessages(page);
   await gotoReady(page, '?model=PC-1600');
   const sounds = () => page.evaluate(() => window.__calcuReceived.filter((m) => m && m.kind === 'sound').length);
-  await page.evaluate(() => document.querySelector('.calcu-client').calcuEngine.call('pasteText', 'BEEP 3'));
+  await send(page, 'paste', { text: 'BEEP 3' });
   await typedEnter(page);
 
   await expect.poll(sounds, { timeout: 20000 }).toBeGreaterThan(0);
   // Full speed: nothing.
-  await request(page, 'setTurbo', true);
+  await send(page, 'speed', { full: true });
   await page.waitForTimeout(300);
-  await page.evaluate(() => document.querySelector('.calcu-client').calcuEngine.call('pasteText', 'BEEP 3'));
+  await send(page, 'paste', { text: 'BEEP 3' });
   await typedEnter(page);
   await page.waitForTimeout(300);
   const before = await sounds();
   await page.waitForTimeout(1500);
   expect(await sounds()).toBe(before);
-  await request(page, 'setTurbo', false);
+  await send(page, 'speed', { full: false });
   // An operation: nothing while it runs.
   await page.evaluate(() => { window.__calcuReceived.length = 0; });
-  const r = request(page, 'reset', true);
-  await r;
+  await send(page, 'reset');
   await notBusy(page);
   const during = await page.evaluate(() => {
     let busy = false, n = 0;
@@ -113,16 +109,17 @@ test('ac26 buzzer samples at regular speed, none at full speed or in an operatio
 // LIB-6 AC-49: a preset's log lines are in the engine's log stream.
 test('lib6_ac49 preset log in the log stream', async ({ page }) => {
   await gotoReady(page);
-  await request(page, 'loadPreset', 'examples:basic/hanoi.pc1600');
-  await expect.poll(async () => (await engineState(page)).log.join('\n'), { timeout: 45000 })
+  await send(page, 'load-preset', { ref: 'examples:basic/hanoi.pc1600' });
+  await expect.poll(async () => (await log(page)).join('\n'), { timeout: 45000 })
     .toContain('Preset examples:basic/hanoi.pc1600 carried out to its end.');
 });
 
 // A preset handed over as a file the page uploaded (LIB-6 AC-54: the files
 // it names go beside it).
 async function uploadPreset(page, name, text) {
-  return page.evaluate(([n, t]) => document.querySelector('.calcu-client').calcuEngine
-    .request('upload', n, new TextEncoder().encode(t)), [name, text]);
+  const r = await page.evaluate(([n, t]) => document.querySelector('.calcu-client').calcuShell
+    .send('c1600.upload', { name: n, bytes: new TextEncoder().encode(t) }), [name, text]);
+  return r.value;
 }
 
 // LIB-6 AC-54: an uploaded preset is loaded; its result shows.
@@ -131,7 +128,7 @@ test('lib6_ac54 uploaded preset is loaded', async ({ page }) => {
   await notBusy(page);
   const path = await uploadPreset(page, 'mine.pc1600',
     'format-version: 2\nmodel: PC-1600\nkeys:\n  - type: PRINT 6*7\n  - expect: 42\n');
-  const r = await request(page, 'loadPreset', path);
+  const r = await send(page, 'load-preset', { ref: path });
   expect(r.reason || '').toBe('');
   expect(r.done).toBe(true);
   await notBusy(page);
@@ -143,7 +140,7 @@ test('lib10_ac40 trace step fails on the web', async ({ page }) => {
   await notBusy(page);
   const path = await uploadPreset(page, 'web.pc1600',
     'format-version: 2\nmodel: PC-1600\nkeys:\n  - trace: t.bin\n  - wait: 1s\n');
-  const r = await request(page, 'loadPreset', path);
+  const r = await send(page, 'load-preset', { ref: path });
   expect(r.done).toBe(false);
   expect(r.reason).toMatch(/line 4: .*trace/i);
 });
@@ -151,8 +148,8 @@ test('lib10_ac40 trace step fails on the web', async ({ page }) => {
 test('ac27 no message of the old protocol', async ({ page }) => {
   await recordMessages(page);
   await gotoReady(page);
-  await request(page, 'presetExamples');
-  await request(page, 'lcdText');
+  await h.ask(page, 'preset-list');
+  await h.ask(page, 'c1600.lcd-text');
   const { sent, received } = await page.evaluate(() => ({
     sent: window.__calcuSent.map((m) => m && m.kind),
     received: window.__calcuReceived.map((m) => m && m.kind),
@@ -165,7 +162,7 @@ test('ac27 no message of the old protocol', async ({ page }) => {
 test('lib3_ac36 hidden tab suspends, shown continues', async ({ page }) => {
   await recordMessages(page);
   await gotoReady(page);
-  const seconds = async () => (await request(page, 'ticks')).seconds;
+  const seconds = async () => (await ticks(page)).seconds;
   const setHidden = (hidden) => page.evaluate((h) => {
     Object.defineProperty(document, 'hidden', { configurable: true, get: () => h });
     document.dispatchEvent(new Event('visibilitychange'));
@@ -188,10 +185,10 @@ test('lib17_ac22 a PC-1600 keeps one minute', async ({ page }) => {
   test.setTimeout(150000);
   await gotoReady(page, '?model=PC-1600');
   await notBusy(page);
-  const t0 = await request(page, 'ticks');
+  const t0 = await ticks(page);
   const w0 = Date.now();
   await page.waitForTimeout(60000);
-  const t1 = await request(page, 'ticks');
+  const t1 = await ticks(page);
   const wall = (Date.now() - w0) / 1000;
   const emulated = t1.seconds - t0.seconds;
   console.log(`  pacing (Web): wall ${wall.toFixed(3)} s, emulated ${emulated.toFixed(3)} s`);

@@ -1,9 +1,10 @@
-// The docked panels under the control bar, as in the desktop app: the
-// INSPECTOR (Qt6/app/DebugPanel, without TRACE/LOG) and the CE-158 printer
-// output (Ce158PrinterWidget), in the same chrome: a header strip, the
-// output, a button bar with pill buttons, light or dark with the system.
-// The plotters' paper is the library's paper panel (CalcuPaperPanel, LIB-8),
-// always shown (AC-36), docked by PaperDock below.
+// The product's panels in the shell's panel area (LIB-14 AC-23, AC-40,
+// AC-42), as in the desktop app: the INSPECTOR (Qt6/app/DebugPanel, without
+// TRACE/LOG) always, and the CE-158 printer output (Ce158PrinterWidget)
+// while the product entry `c1600.ce158-printer-panel` says so, in the same
+// chrome: a header strip, the output, a button bar with pill buttons. The
+// plotters' paper is the library's paper panel (CalcuPaperPanel, LIB-8),
+// which the shell's area draws from the control state's panel entry.
 
 function Panel({ title, className, children, buttons, panel, empty }) {
   return (
@@ -39,10 +40,13 @@ function PillMenu({ label, entries }) {
 
 const INSPECTOR_MAX_ENTRIES = 200;
 
-function Inspector({ engine }) {
+// `shell`: LIB-15's shell; the views are the product's requests
+// `c1600.inspector-menu`, `c1600.inspector-view`, `c1600.card-yaml`.
+function Inspector({ shell }) {
   const [entries, setEntries] = React.useState([]);
   const outRef = React.useRef(null);
   const add = (chunks) => setEntries((e) => e.concat(chunks).slice(-INSPECTOR_MAX_ENTRIES));
+  const ask = (name, args) => (shell ? shell.request(name, args) : Promise.resolve({ value: null })).then((r) => r.value);
 
   React.useEffect(() => {
     const el = outRef.current;
@@ -50,11 +54,11 @@ function Inspector({ engine }) {
   }, [entries]);
 
   const showView = async (view) => {
-    const text = await engine.request("inspectorView", view);
+    const text = await ask("c1600.inspector-view", { view });
     if (text) add([text]);
   };
   const menu = (dumps) => async () => {
-    const list = await engine.request("inspectorMenu", dumps);
+    const list = (await ask("c1600.inspector-menu", { dumps })) || [];
     return list.map((e) => ({ label: e.title, disabled: !e.enabled, onClick: () => showView(e.view) }));
   };
 
@@ -67,7 +71,7 @@ function Inspector({ engine }) {
           <PillMenu label="Dump" entries={menu(true)} />
           <span className="calcu-bar-stretch" />
           <button type="button" className="calcu-pill" title="The module in each slot, as initial-content: YAML for a card file"
-            onClick={async () => add(await engine.request("cardYaml"))}>Card YAML</button>
+            onClick={async () => add((await ask("c1600.card-yaml", null)) || [])}>Card YAML</button>
           <button type="button" className="calcu-pill calcu-pill-icon" title="Clear" aria-label="Clear"
             onClick={() => setEntries([])}>
             <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 4h10l-1 10H4L3 4zm2-2h6v1.5H5z" fill="currentColor" opacity="0.6" /></svg>
@@ -79,40 +83,94 @@ function Inspector({ engine }) {
   );
 }
 
-// The library's paper panel (LIB-8 AC-36): always there, named after the
-// plotter plugged in (ui.paper, adapter P-A1 until LIB-4's panel entry).
-function PaperDock({ engine }) {
-  const owner = useEngine(engine, (s) => (s.ui && s.ui.paper ? s.ui.paper : null));
-  const papers = useCalcuPaper(engine ? engine.shell : null);
+// The library's paper panel in the product's chrome (LIB-8 AC-36): always
+// there, named after the plotter the control state's panel entry names.
+function PaperDock({ shell, owner }) {
+  const papers = useCalcuPaper(shell);
   const entry = owner ? papers.papers.find((p) => p.printer === owner) : null;
   const empty = !entry || papers.paper(entry.owner).empty;
   return (
     <section className="calcu-panel calcu-paper" data-panel="paper" data-owner={owner || ""}
       data-empty={empty ? "true" : "false"}>
-      <CalcuPaperPanel shell={engine ? engine.shell : null} owner={owner} />
+      <CalcuPaperPanel shell={shell} owner={owner || null} />
     </section>
   );
 }
 
-function Ce158Printer({ engine }) {
-  const printer = useEngine(engine, (s) => s.printer);
+// The CE-158's printer output: the stream topic `c1600.printer` since the
+// last Clear.
+function Ce158Printer({ shell }) {
+  const printed = useStream(shell, "c1600.printer");
+  const [cleared, setCleared] = React.useState(0);
+  const items = printed.slice(Math.min(cleared, printed.length));
+  const text = items.map((p) => p.text).join("");
   const outRef = React.useRef(null);
   React.useLayoutEffect(() => {
     const el = outRef.current;
     if (el && el.scrollHeight - el.clientHeight - el.scrollTop <= 40) el.scrollTop = el.scrollHeight;
-  }, [printer.text]);
-  const empty = printer.chunks.length === 0;
+  }, [text]);
+  const empty = items.length === 0;
   return (
     <Panel title="CE-158" className="calcu-printer" panel="printer" empty={empty}
       buttons={
         <React.Fragment>
           <button type="button" className="calcu-pill" disabled={empty} title="Save the printed bytes, exactly as sent, to a file."
-            onClick={() => downloadBytes("ce158-printout.txt", new Blob(printer.chunks))}>Save…</button>
-          <button type="button" className="calcu-pill" disabled={empty} onClick={() => engine.clearPrinter()}>Clear</button>
+            onClick={() => downloadBytes("ce158-printout.txt", new Blob(items.map((p) => p.bytes)))}>Save…</button>
+          <button type="button" className="calcu-pill" disabled={empty} onClick={() => setCleared(printed.length)}>Clear</button>
         </React.Fragment>
       }>
       <div className="calcu-printer-serial">RS-232C: not available in the browser</div>
-      <pre className="calcu-printer-output" ref={outRef}>{printer.text}</pre>
+      <pre className="calcu-printer-output" ref={outRef}>{text}</pre>
     </Panel>
   );
+}
+
+// The pill menus' list and their dismissal (once the menu bar's, which the
+// shell's ShellMenuBar replaced).
+function MenuList({ items, onDone, className }) {
+  const [open, setOpen] = React.useState(-1);
+  return (
+    <div className={`calcu-menu ${className || ""}`} role="menu">
+      {items.filter(Boolean).map((item, i) => {
+        if (item.separator) return <div key={i} className="calcu-menu-separator" role="separator" />;
+        if (item.heading) return <div key={i} className="calcu-menu-heading">{item.heading}</div>;
+        const hasSub = !!item.submenu;
+        return (
+          <div key={i} className={`calcu-menu-item${item.disabled ? " disabled" : ""}${open === i ? " open" : ""}`}
+            role={item.checked === undefined ? "menuitem" : "menuitemcheckbox"}
+            aria-checked={item.checked === undefined ? undefined : !!item.checked}
+            aria-disabled={!!item.disabled}
+            onPointerEnter={() => setOpen(hasSub ? i : -1)}
+            onClick={(e) => {
+              e.stopPropagation();
+              if (item.disabled) return;
+              if (hasSub) { setOpen(i); return; }
+              onDone();
+              if (item.onClick) item.onClick();
+            }}>
+            <span className="calcu-menu-check">{item.checked ? "✓" : ""}</span>
+            <span className="calcu-menu-label">{item.label}</span>
+            <span className="calcu-menu-shortcut">{hasSub ? "▸" : item.shortcut || ""}</span>
+            {hasSub && open === i && !item.disabled && <MenuList items={item.submenu} onDone={onDone} className="calcu-submenu" />}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+// While `active`: a pointer down outside `ref`'s element or Escape calls
+// `close` (an open menu, the menu bar's or a pill's).
+function useDismiss(ref, active, close) {
+  React.useEffect(() => {
+    if (!active) return undefined;
+    const outside = (e) => { if (!ref.current || !ref.current.contains(e.target)) close(); };
+    const escape = (e) => { if (e.key === "Escape") close(); };
+    document.addEventListener("pointerdown", outside, true);
+    document.addEventListener("keydown", escape, true);
+    return () => {
+      document.removeEventListener("pointerdown", outside, true);
+      document.removeEventListener("keydown", escape, true);
+    };
+  }, [active]);
 }

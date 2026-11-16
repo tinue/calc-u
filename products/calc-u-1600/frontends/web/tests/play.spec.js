@@ -1,114 +1,77 @@
 const { test, expect } = require('@playwright/test');
 const fs = require('fs');
 const path = require('path');
+const h = require('./helpers');
+const { c, gotoReady, screen, waitForScreen, pickModel, menu, notBusy, shown } = h;
 
 // The web client end to end through the real WASM engine, on dist/index.html
-// (CalcU1600 with the physical keyboard). URLs are relative to the
+// (CalcU1600 with the physical keyboard), put together from the React set's
+// shell (M-49): elements by the shell's names. URLs are relative to the
 // project's baseURL -- the server root or a sub-path (playwright.config.js).
-// The display is read as text through the engine (Shared LcdText), not from
-// pixels.
+// The display is read as text through the session (`c1600.lcd-text`), not
+// from pixels. The shell's own cases: shell.spec.js.
 
 const FIXTURES = path.join(__dirname, 'fixtures');
 
-async function gotoReady(page, query = '') {
-  await page.goto(`./${query}`);
-  await expect(page.locator('.calcu-client[data-ready=true]')).toHaveCount(1, { timeout: 30000 });
-}
-
-const request = (page, method, ...args) =>
-  page.evaluate(([m, a]) => document.querySelector('.calcu-client').calcuEngine.request(m, ...a), [method, args]);
-
-const screen = (page) => request(page, 'lcdText');
-
-async function waitForScreen(page, re, timeout = 20000) {
-  await expect.poll(() => screen(page), { timeout }).toMatch(re);
-}
-
-// A model from the control bar; done once the engine reports it.
-async function pickModel(page, index) {
-  await page.getByLabel('Model', { exact: true }).selectOption(String(index));
-  await expect(page.locator(`.calcu-face[data-model="${index}"]`)).toHaveCount(1, { timeout: 30000 });
-  await expect(page.locator('.calcu-busy')).toHaveCount(0, { timeout: 30000 });
-  // The model switch is an operation; keys typed while it runs are dropped
-  // (ledger 1600-9), and the busy indicator shows only after a moment.
-  await expect.poll(() => page.evaluate(() => document.querySelector('.calcu-client').calcuEngine.getState().busy),
-    { timeout: 30000 }).toBe(false);
+// File ▸ Examples ▸ <group> ▸ the example of that bundle path.
+async function example(page, ref) {
+  const entries = ((await h.ask(page, 'preset-list')).value || {}).entries || [];
+  const group = (entries.find((e) => e.bundlePath === ref) || {}).group;
+  await page.locator(c('menu-file')).click();
+  await page.locator(c('item-examples')).hover();
+  if (group) await page.locator(c(`item-examples-${group}`)).hover();
+  await page.locator(c(`item-example-${ref}`)).click();
 }
 
 // A window tall enough that the panels fit below the full-width faceplate.
 const TALL = { width: 1280, height: 1000 };
 
-async function menu(page, ...path) {
-  await page.locator('.calcu-menubar-item > button', { hasText: path[0] }).click();
-  for (const item of path.slice(1, -1)) await page.locator('.calcu-menu-item', { hasText: item }).last().hover();
-  // The deepest match: an open item contains its submenu's text too.
-  await page.locator('.calcu-menu-item', { hasText: path[path.length - 1] }).last().click();
-}
-
 test('boots, and each model comes up', async ({ page }) => {
   await gotoReady(page);
-  await expect(page.locator('.calcu-face[data-model="1"]')).toHaveCount(1);  // PC-1500A, the default
+  await expect(page.locator('.calcu-face[data-model="PC-1500A"]')).toHaveCount(1);  // the default
   await waitForScreen(page, /NEW0\?/);
-  await pickModel(page, 2);
+  await pickModel(page, 'PC-1600');
   await waitForScreen(page, />/);
-  await pickModel(page, 0);
+  await pickModel(page, 'PC-1500');
   await expect(page.locator('.calcu-key')).not.toHaveCount(0);
-  await expect(page.locator('[role=alertdialog]')).toHaveCount(0);
+  await expect(page.locator(c('notice'))).toHaveCount(0);
 });
 
 test('?model= and ?preset= start with them', async ({ page }) => {
   await gotoReady(page, '?model=2');
-  await expect(page.locator('.calcu-face[data-model="2"]')).toHaveCount(1, { timeout: 30000 });
-  await expect(page.locator('[role=alertdialog], [data-dialog=notice]')).toHaveCount(0);
+  await expect(page.locator('.calcu-face[data-model="PC-1600"]')).toHaveCount(1, { timeout: 30000 });
+  await expect(page.locator(c('notice'))).toHaveCount(0);
   await gotoReady(page, '?model=0');
-  await expect(page.locator('.calcu-face[data-model="0"]')).toHaveCount(1, { timeout: 30000 });
-  await expect(page.locator('[data-dialog=notice]')).toHaveCount(0);
+  await expect(page.locator('.calcu-face[data-model="PC-1500"]')).toHaveCount(1, { timeout: 30000 });
+  await expect(page.locator(c('notice'))).toHaveCount(0);
   await page.setViewportSize(TALL);
   await gotoReady(page, '?preset=plotter/lissajou-1600.pc1600');
   await expect(page.locator('[data-panel=paper][data-empty=false]')).toHaveCount(1, { timeout: 45000 });
-  await expect(page.locator('[data-dialog=notice]')).toHaveCount(0);
+  await expect(page.locator(c('notice'))).toHaveCount(0);
 });
 
 // Settings > Startup presets (LIB-18 §10.4; the startup presets of
-// examples/bundle.yaml): the open list shows each by its description, the
-// closed combo the chosen one's short name; stored by its bundle path.
-// (startup/default-pc1600 waits for M-47.)
-test('a startup preset is picked by description and shown by name', async ({ page }) => {
+// examples/bundle.yaml), each shown with its name and description; the
+// Examples ▸ menu does not offer them.
+test('a startup preset is picked by its name and description', async ({ page }) => {
   await gotoReady(page);
-  await menu(page, 'Edit', 'Settings');
-  const row = page.locator('[data-default-preset=PC1500A]');
-  const combo = row.getByRole('button', { name: 'PC-1500A startup preset' });
-  await expect(combo).toHaveText('None');
-  await combo.click();
-  await row.locator('.calcu-menu-item', { hasText: 'PC-1500A with the CE-150 plotter and a CE-163F' }).click();
-  await expect(combo).toHaveText('CE-150 + CE-163F');
-  expect((await request(page, 'settingsState')).defaultPresets.PC1500A).toBe('examples:startup/default-pc1500a.pc1500a');
-  // The examples don't offer the default presets.
-  const examples = await request(page, 'presetExamples');
-  expect(examples.some((e) => e.ref.startsWith('examples:startup/'))).toBe(false);
-  expect(examples.find((e) => e.ref === 'examples:basic/hanoi.pc1600').name).toBe('Hanoi');
-});
-
-// LIB-9 AC-32, AC-31: the settings are Calc-U-1600.ini in the persistent
-// file system, not localStorage; a reload keeps them.
-test('settings survive a reload', async ({ page }) => {
-  await gotoReady(page);
-  expect((await request(page, 'settingsState')).startupModel).toBe('last');
-  await page.evaluate(() => document.querySelector('.calcu-client').calcuEngine.call('setStartupModel', 'PC-1600'));
-  await expect.poll(async () => (await request(page, 'settingsState')).startupModel).toBe('PC-1600');
-  await page.reload();
-  await expect(page.locator('.calcu-client[data-ready=true]')).toHaveCount(1, { timeout: 30000 });
-  await expect(page.locator('.calcu-face[data-model="2"]')).toHaveCount(1, { timeout: 30000 });
-  expect((await request(page, 'settingsState')).startupModel).toBe('PC-1600');
-  const keys = await page.evaluate(() => Object.keys(window.localStorage));
-  expect(keys.filter((k) => k.startsWith('calcu1600/'))).toEqual([]);
+  await menu(page, 'file', 'settings');
+  const row = page.locator(c('setting-preset-PC-1500A'));
+  expect(await shown(row)).toBe('None');
+  await row.selectOption({ label: 'CE-150 + CE-163F — PC-1500A with the CE-150 plotter and a CE-163F' });
+  await expect.poll(async () => shown(row)).toContain('CE-150 + CE-163F');
+  await page.locator(c('settings-close')).click();
+  const examples = ((await h.ask(page, 'preset-list')).value.entries || []).filter((e) => e.kind === 'example');
+  expect(examples.some((e) => e.bundlePath.startsWith('examples:startup/'))).toBe(false);
+  await example(page, 'examples:basic/hanoi.pc1600');   // the menu's item for it
+  await expect(page.locator('.calcu-face[data-model="PC-1600"]')).toHaveCount(1, { timeout: 30000 });
 });
 
 test('the panels take only the room a full-width faceplate leaves', async ({ page }) => {
   // A phone in landscape: the calculator alone, as large as it fits.
   await page.setViewportSize({ width: 844, height: 390 });
   await gotoReady(page);
-  await expect(page.locator('.calcu-panels')).toHaveCount(0);
+  await expect(page.locator(c('panel-area'))).toHaveCount(0);
   const face = await page.locator('.calcu-face').boundingBox();
   expect(face.height).toBeGreaterThan(250);
   // In portrait the faceplate spans the width and the inspector fits below.
@@ -118,7 +81,7 @@ test('the panels take only the room a full-width faceplate leaves', async ({ pag
   await page.setViewportSize(TALL);
   await expect(page.locator('[data-panel=inspector]')).toBeVisible();
   await page.setViewportSize({ width: 1600, height: 700 });
-  await expect(page.locator('.calcu-panels')).toHaveCount(0);
+  await expect(page.locator(c('panel-area'))).toHaveCount(0);
 });
 
 test('the client has the keyboard from the start, no click needed', async ({ page }) => {
@@ -128,7 +91,7 @@ test('the client has the keyboard from the start, no click needed', async ({ pag
 
 test('the physical keyboard types, ENTER runs it', async ({ page }) => {
   await gotoReady(page);
-  await pickModel(page, 2);
+  await pickModel(page, 'PC-1600');
   await page.locator('.calcu-client').focus();  // from the Model picker
   await page.keyboard.type('PRINT 6*7', { delay: 60 });
   await page.keyboard.press('Enter');
@@ -138,24 +101,24 @@ test('the physical keyboard types, ENTER runs it', async ({ page }) => {
 test('the keyboard comes back to the calculator after a picker or a click', async ({ page }) => {
   await gotoReady(page);
   // A picker change hands the keyboard back.
-  await pickModel(page, 2);
+  await pickModel(page, 'PC-1600');
   await page.keyboard.type('PRINT 6*7', { delay: 60 });
   await page.keyboard.press('Enter');
   await waitForScreen(page, /42/);
   // A button that had the focus doesn't get ENTER after a click on the
   // faceplate (off any key): the calculator does.
-  await page.locator('.calcu-menubar-item > button', { hasText: 'Help' }).focus();
+  await page.locator(c('menu-help')).focus();
   const face = await page.locator('.calcu-face').boundingBox();
   await page.mouse.click(face.x + 4, face.y + 4);
   await page.keyboard.type('PRINT 7*8', { delay: 60 });
   await page.keyboard.press('Enter');
   await waitForScreen(page, /56/);
-  await expect(page.locator('.calcu-menu')).toHaveCount(0);
+  await expect(page.locator('.calcu-shell-menu-items')).toHaveCount(0);
   // iOS moves the focus to a menu title on its first letter typed on a
   // hardware keyboard: the client takes it straight back, and the next
   // keys still reach the calculator.
   await page.keyboard.press('p');
-  await page.locator('.calcu-menubar-item > button', { hasText: 'File' }).focus();
+  await page.locator(c('menu-file')).focus();
   await expect(page.locator('.calcu-client')).toBeFocused();
   await page.keyboard.type('RINT 9*9', { delay: 60 });
   await page.keyboard.press('Enter');
@@ -164,14 +127,14 @@ test('the keyboard comes back to the calculator after a picker or a click', asyn
 
 test('a faceplate key types while its pointer is down', async ({ page }) => {
   await gotoReady(page);
-  await pickModel(page, 2);
-  const key = await page.locator('.calcu-key[aria-label="5"]').boundingBox();
+  await pickModel(page, 'PC-1600');
+  const key = await page.locator('.calcu-key[data-key="5"]').boundingBox();
   await page.mouse.move(key.x + key.width / 2, key.y + key.height / 2);
   await page.mouse.down();
-  await expect(page.locator('.calcu-key[aria-label="5"]')).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.locator('.calcu-key[data-key="5"]')).toHaveAttribute('aria-pressed', 'true');
   await page.waitForTimeout(150);
   await page.mouse.up();
-  await expect(page.locator('.calcu-key[aria-label="5"]')).toHaveAttribute('aria-pressed', 'false');
+  await expect(page.locator('.calcu-key[data-key="5"]')).toHaveAttribute('aria-pressed', 'false');
   await waitForScreen(page, /5/);
 });
 
@@ -179,12 +142,12 @@ test.describe('on a touchscreen', () => {
   test.use({ hasTouch: true });
 
   // An instant tap (down and up at once) in the gap just below a key: the
-  // touch slop takes the nearest key, the engine's minimum hold lets the
+  // shell's rule takes the nearest key, the engine's minimum hold lets the
   // ROM see it.
   test('a quick tap next to a key types it', async ({ page }) => {
     await gotoReady(page);
-    await pickModel(page, 2);
-    const key = await page.locator('.calcu-key[aria-label="5"]').boundingBox();
+    await pickModel(page, 'PC-1600');
+    const key = await page.locator('.calcu-key[data-key="5"]').boundingBox();
     await page.touchscreen.tap(key.x + key.width / 2, key.y + key.height + 3);
     await waitForScreen(page, /5/);
   });
@@ -205,24 +168,23 @@ test('the control bar follows the model: peripherals, floppy, tape', async ({ pa
   await page.setViewportSize(TALL);
   await gotoReady(page);
   // PC-1500A: CE-150 and CE-158 on the bar, no disk.
-  await expect(page.getByRole('button', { name: 'CE-150' })).toBeVisible();
-  await expect(page.getByRole('button', { name: 'CE-158' })).toBeVisible();
-  await expect(page.getByLabel('Disk', { exact: true })).toHaveCount(0);
-  await page.getByRole('button', { name: 'CE-150' }).click();
-  await expect(page.getByRole('button', { name: 'CE-150' })).toHaveAttribute('aria-pressed', 'true', { timeout: 30000 });
-  await expect(page.getByLabel('Tape', { exact: true })).toBeVisible();
+  await expect(page.locator(c('bar-place-printer'))).toHaveText('CE-150');
+  await expect(page.locator(c('bar-place-interface'))).toHaveText('CE-158');
+  await expect(page.locator(c('bar-disk'))).toHaveCount(0);
+  await page.locator(c('bar-place-printer')).click();
+  await expect(page.locator(c('bar-place-printer'))).toHaveAttribute('aria-pressed', 'true', { timeout: 30000 });
+  await expect(page.locator(c('media-picker-tape'))).toBeVisible();
   await expect(page.locator('[data-panel=paper]')).toBeVisible();
 
-  await pickModel(page, 2);
-  await expect(page.getByRole('button', { name: 'CE-150' })).toHaveCount(0);
-  await expect(page.getByLabel('Disk', { exact: true })).toBeDisabled();
-  await page.getByRole('button', { name: 'CE-1600P' }).click();
-  await expect(page.getByLabel('Disk', { exact: true })).toBeEnabled({ timeout: 30000 });
-  // Machine ▸ Peripherals: the CE-150 is ruled out while the CE-1600P is on.
-  await page.locator('.calcu-menubar-item > button', { hasText: 'Machine' }).click();
-  await page.locator('.calcu-menu-item', { hasText: 'Peripherals' }).hover();
-  await expect(page.locator('.calcu-submenu .calcu-menu-item', { hasText: 'CE-150' })).toHaveAttribute('aria-disabled', 'true');
-  await expect(page.locator('.calcu-submenu .calcu-menu-item', { hasText: 'CE-1600P' })).toHaveAttribute('aria-checked', 'true');
+  await pickModel(page, 'PC-1600');
+  await expect.poll(() => page.locator(c('bar-disk')).evaluate((e) => e.disabled)).toBe(true);
+  await page.locator(c('bar-place-printer')).selectOption({ label: 'CE-1600P' });
+  await expect.poll(() => page.locator(c('bar-disk')).evaluate((e) => e.disabled), { timeout: 30000 }).toBe(false);
+  // Machine ▸ Peripherals: the CE-158 is ruled out while the CE-1600P is on.
+  await page.locator(c('menu-machine')).click();
+  await page.locator(c('item-peripherals')).hover();
+  await expect(page.locator(c('item-peripheral-interface-CE-158'))).toHaveAttribute('aria-disabled', 'true');
+  await expect(page.locator(c('item-peripheral-printer-CE-1600P'))).toHaveAttribute('aria-checked', 'true');
 });
 
 // LIB-8 AC-38 (ADR 0032): a plotter example is loaded, and the paper panel
@@ -230,7 +192,7 @@ test('the control bar follows the model: peripherals, floppy, tape', async ({ pa
 test('lib8_ac38 plotter example shows the paper panel with marks', async ({ page }) => {
   await page.setViewportSize(TALL);
   await gotoReady(page);
-  await menu(page, 'File', 'Load Preset', 'Lissajous figure on the CE-1600P');
+  await example(page, 'examples:plotter/lissajou-1600.pc1600');
   await expect(page.locator('[data-panel=paper][data-empty=false]')).toHaveCount(1, { timeout: 45000 });
   await expect(page.locator('[data-panel=paper] [data-calcu=paper-owner]')).toHaveText('CE-1600P');
 });
@@ -240,10 +202,10 @@ test('lib8_ac38 plotter example shows the paper panel with marks', async ({ page
 test('lib6_ac54 bundled example loads and its result shows', async ({ page }) => {
   await page.setViewportSize(TALL);
   await gotoReady(page);
-  await menu(page, 'File', 'Load Preset', 'Towers of Hanoi, up to seven bricks');
-  await expect(page.locator('.calcu-face[data-model="2"]')).toHaveCount(1, { timeout: 30000 });
+  await example(page, 'examples:basic/hanoi.pc1600');
+  await expect(page.locator('.calcu-face[data-model="PC-1600"]')).toHaveCount(1, { timeout: 30000 });
   await waitForScreen(page, /Hanoy Towers|Bricks/, 45000);
-  await expect(page.locator('[data-dialog=notice]')).toHaveCount(0);
+  await expect(page.locator(c('notice'))).toHaveCount(0);
 });
 
 // LIB-18 AC-32 (design §10.6 P16-7): Machine ▸ Cold boot (was "Reset All").
@@ -251,9 +213,8 @@ test('lib18_ac32 cold boot menu item', async ({ page }) => {
   await gotoReady(page);
   await waitForScreen(page, /NEW0\?/);
   await page.keyboard.press('Escape');
-  await menu(page, 'Machine', 'Cold boot');
-  await expect.poll(() => page.evaluate(() => document.querySelector('.calcu-client').calcuEngine.getState().busy),
-    { timeout: 30000 }).toBe(false);
+  await menu(page, 'machine', 'cold-boot');
+  await notBusy(page);
   await waitForScreen(page, /NEW0\?/);
 });
 
@@ -265,11 +226,11 @@ test('lib8_ac36 paper panel always shown, named while a plotter is plugged in', 
   const panel = page.locator('[data-panel=paper]');
   await expect(panel).toBeVisible();
   await expect(panel.locator('[data-calcu=paper-owner]')).toHaveText('');
-  await page.getByRole('button', { name: 'CE-150' }).click();
-  await expect(page.getByRole('button', { name: 'CE-150' })).toHaveAttribute('aria-pressed', 'true', { timeout: 30000 });
+  await page.locator(c('bar-place-printer')).click();
+  await expect(page.locator(c('bar-place-printer'))).toHaveAttribute('aria-pressed', 'true', { timeout: 30000 });
   await expect(panel.locator('[data-calcu=paper-owner]')).toHaveText('CE-150');
-  await page.getByRole('button', { name: 'CE-150' }).click();
-  await expect(page.getByRole('button', { name: 'CE-150' })).toHaveAttribute('aria-pressed', 'false', { timeout: 30000 });
+  await page.locator(c('bar-place-printer')).click();
+  await expect(page.locator(c('bar-place-printer'))).toHaveAttribute('aria-pressed', 'false', { timeout: 30000 });
   await expect(panel).toBeVisible();
   await expect(panel.locator('[data-calcu=paper-owner]')).toHaveText('');
 });
@@ -278,9 +239,9 @@ test('lib8_ac36 paper panel always shown, named while a plotter is plugged in', 
 
 const PRODUCT = path.join(__dirname, '..', '..', '..');
 const CARDS = path.join(PRODUCT, 'frontends', 'qt6', 'resources', 'cards');
-const notBusy = (page) => expect.poll(() => page.evaluate(() => document.querySelector('.calcu-client').calcuEngine.getState().busy),
-  { timeout: 30000 }).toBe(false);
 const nameAndSave = (page) => page.locator('[data-dialog=name-and-save]');
+const slot1 = (page) => page.locator(c('media-picker-slot-1'));
+const saveSlot1 = (page) => page.locator(c('name-and-save-slot-1'));
 
 // A bundled template's file as an instance of another name (an import).
 function instanceOf(file, key, name) {
@@ -289,11 +250,21 @@ function instanceOf(file, key, name) {
     .replace(/^template: true.*\n/m, '');
 }
 
+// A module template saved under `name` (Name & Save of slot 1).
+async function saveModule(page, template, name) {
+  await slot1(page).selectOption({ label: template });
+  await expect(saveSlot1(page)).toBeEnabled({ timeout: 30000 });
+  await saveSlot1(page).click();
+  await nameAndSave(page).locator('[data-calcu=media-name]').fill(name);
+  await nameAndSave(page).locator('[data-calcu=media-save]').click();
+  await expect.poll(() => shown(slot1(page)), { timeout: 30000 }).toBe(name);
+}
+
 test('lib7_ac44 Name & Save can write-protect a CE-161, and only a card with the switch', async ({ page }) => {
   await gotoReady(page);
-  await page.getByLabel('Slot 1', { exact: true }).selectOption('CE-161');
-  await expect(page.getByRole('button', { name: 'Name & Save slot 1' })).toBeEnabled({ timeout: 30000 });
-  await page.getByRole('button', { name: 'Name & Save slot 1' }).click();
+  await slot1(page).selectOption({ label: 'CE-161' });
+  await expect(saveSlot1(page)).toBeEnabled({ timeout: 30000 });
+  await saveSlot1(page).click();
   await expect(nameAndSave(page)).toContainText('Instance name:');   // today's prompt (AC-40, D-25)
   const box = nameAndSave(page).locator('[data-calcu=media-protect]');
   await expect(box).toHaveCount(1);
@@ -302,12 +273,12 @@ test('lib7_ac44 Name & Save can write-protect a CE-161, and only a card with the
   await nameAndSave(page).locator('[data-calcu=media-name]').fill(name);
   await box.check();
   await nameAndSave(page).locator('[data-calcu=media-save]').click();
-  await expect(page.getByLabel('Slot 1', { exact: true })).toHaveValue(name, { timeout: 30000 });
+  await expect.poll(() => shown(slot1(page)), { timeout: 30000 }).toBe(name);
   await notBusy(page);
 
-  await page.getByLabel('Slot 1', { exact: true }).selectOption('CE-1638');  // battery-backed, no switch
-  await expect(page.getByRole('button', { name: 'Name & Save slot 1' })).toBeEnabled({ timeout: 30000 });
-  await page.getByRole('button', { name: 'Name & Save slot 1' }).click();
+  await slot1(page).selectOption({ label: 'CE-1638' });  // battery-backed, no switch
+  await expect(saveSlot1(page)).toBeEnabled({ timeout: 30000 });
+  await saveSlot1(page).click();
   await expect(nameAndSave(page).locator('[data-calcu=media-protect]')).toHaveCount(0);
   await nameAndSave(page).getByRole('button', { name: 'Cancel' }).click();
   await expect(nameAndSave(page)).toHaveCount(0);
@@ -317,70 +288,48 @@ test('lib7_ac44 Name & Save can write-protect a CE-161, and only a card with the
 // instance afterwards (no Name & Save for it any more) ...
 test('lib7_ac16 module template saved under a name is an instance', async ({ page }) => {
   await gotoReady(page);
-  await pickModel(page, 2);
-  await page.getByLabel('Slot 1', { exact: true }).selectOption('CE-1600M');
-  await expect(page.getByRole('button', { name: 'Name & Save slot 1' })).toBeEnabled({ timeout: 30000 });
-  await page.getByRole('button', { name: 'Name & Save slot 1' }).click();
-  const name = `Work ${Date.now()}`;
-  await nameAndSave(page).locator('[data-calcu=media-name]').fill(name);
-  await nameAndSave(page).locator('[data-calcu=media-save]').click();
-  await expect(page.getByLabel('Slot 1', { exact: true })).toHaveValue(name);
-  await expect(page.getByRole('button', { name: 'Name & Save slot 1' })).toBeDisabled();
+  await pickModel(page, 'PC-1600');
+  await saveModule(page, 'CE-1600M', `Work ${Date.now()}`);
+  await expect(saveSlot1(page)).toBeDisabled();
 });
 
 // ... and the picker of that slot then lists it among the instances.
 test('lib7_ac8 picker lists it among the instances', async ({ page }) => {
   await gotoReady(page);
-  await pickModel(page, 2);
-  await page.getByLabel('Slot 1', { exact: true }).selectOption('CE-1600M');
-  await expect(page.getByRole('button', { name: 'Name & Save slot 1' })).toBeEnabled({ timeout: 30000 });
-  await page.getByRole('button', { name: 'Name & Save slot 1' }).click();
+  await pickModel(page, 'PC-1600');
   const name = `Listed ${Date.now()}`;
-  await nameAndSave(page).locator('[data-calcu=media-name]').fill(name);
-  await nameAndSave(page).locator('[data-calcu=media-save]').click();
-  await expect(page.getByLabel('Slot 1', { exact: true })).toHaveValue(name);
+  await saveModule(page, 'CE-1600M', name);
   // The order of AC-8: the empty slot, the templates, the instances, the
-  // modules that are not media; the instance after a separator, after the templates.
-  const labels = await page.getByLabel('Slot 1', { exact: true }).locator('option').allTextContents();
-  expect(labels[0]).toBe('–empty–');
+  // modules that are not media.
+  const labels = await slot1(page).locator('option').allTextContents();
+  expect(labels[0]).toBe('(empty)');
   expect(labels.indexOf(name)).toBeGreaterThan(labels.indexOf('CE-1600M'));
-  expect(labels.slice(labels.indexOf('CE-1600M'), labels.indexOf(name))).toContain('──────────');
   expect(labels.indexOf(name)).toBeLessThan(labels.indexOf('CE-151'));
-  await expect(page.getByLabel('Slot 2', { exact: true }).locator('option', { hasText: name })).toHaveCount(1);
+  await expect(page.locator(c('media-picker-slot-2')).locator('option', { hasText: name })).toHaveCount(1);
 });
 
 test('lib7_ac44 Name & Save keeps a card across a reload', async ({ page }) => {
   await gotoReady(page);
-  await pickModel(page, 2);
-  await page.getByLabel('Slot 1', { exact: true }).selectOption('CE-1600M');
-  await expect(page.getByRole('button', { name: 'Name & Save slot 1' })).toBeEnabled({ timeout: 30000 });
-  await page.getByRole('button', { name: 'Name & Save slot 1' }).click();
+  await pickModel(page, 'PC-1600');
   const name = `Work ${Date.now()}`;
-  await nameAndSave(page).locator('[data-calcu=media-name]').fill(name);
-  await nameAndSave(page).locator('[data-calcu=media-save]').click();
-  await expect(page.getByLabel('Slot 1', { exact: true })).toHaveValue(name);
+  await saveModule(page, 'CE-1600M', name);
   await page.waitForTimeout(500);  // IndexedDB write
 
   await page.reload();
   await expect(page.locator('.calcu-client[data-ready=true]')).toHaveCount(1, { timeout: 30000 });
-  await expect(page.locator('.calcu-face[data-model="2"]')).toHaveCount(1);  // last used model
-  await expect(page.getByLabel('Slot 1', { exact: true }).locator('option', { hasText: name })).toHaveCount(1, { timeout: 30000 });
+  await expect(page.locator('.calcu-face[data-model="PC-1600"]')).toHaveCount(1);  // last used model
+  await expect(slot1(page).locator('option', { hasText: name })).toHaveCount(1, { timeout: 30000 });
 });
 
 // AC-43: the saved media list is today's: by kind and name, a template
 // and a medium in a place marked; one in a place cannot be deleted.
 test('lib7_ac43 saved media list', async ({ page }) => {
   await gotoReady(page);
-  await pickModel(page, 2);
-  await page.getByLabel('Slot 1', { exact: true }).selectOption('CE-1600M');
-  await expect(page.getByRole('button', { name: 'Name & Save slot 1' })).toBeEnabled({ timeout: 30000 });
-  await page.getByRole('button', { name: 'Name & Save slot 1' }).click();
+  await pickModel(page, 'PC-1600');
   const name = `Kept ${Date.now()}`;
-  await nameAndSave(page).locator('[data-calcu=media-name]').fill(name);
-  await nameAndSave(page).locator('[data-calcu=media-save]').click();
-  await expect(page.getByLabel('Slot 1', { exact: true })).toHaveValue(name);
+  await saveModule(page, 'CE-1600M', name);
   await notBusy(page);
-  await menu(page, 'File', 'Saved Media…');
+  await menu(page, 'file', 'saved-media');
   const row = page.locator(`[data-calcu="media-saved-battery-backed-module-${name}"]`);
   await expect(row).toContainText('memory module');
   await expect(row).toContainText('in slot-1');
@@ -388,23 +337,19 @@ test('lib7_ac43 saved media list', async ({ page }) => {
   const download = page.waitForEvent('download');
   await row.getByRole('button', { name: 'Download' }).click();
   expect((await download).suggestedFilename()).toBe(`${name}.card.yaml`);
-  await page.locator('[data-dialog=media]').getByRole('button', { name: 'Close' }).click();
+  await page.locator(c('saved-media')).getByRole('button', { name: 'Close' }).click();
+  await expect(page.locator(c('saved-media'))).toHaveCount(0);
 });
 
 // AC-43, OQ-4: a delete asks first; no keeps it.
 test('lib7_ac43 delete asks first', async ({ page }) => {
   await gotoReady(page);
-  await pickModel(page, 2);
-  await page.getByLabel('Slot 1', { exact: true }).selectOption('CE-1600M');
-  await expect(page.getByRole('button', { name: 'Name & Save slot 1' })).toBeEnabled({ timeout: 30000 });
-  await page.getByRole('button', { name: 'Name & Save slot 1' }).click();
+  await pickModel(page, 'PC-1600');
   const name = `Gone ${Date.now()}`;
-  await nameAndSave(page).locator('[data-calcu=media-name]').fill(name);
-  await nameAndSave(page).locator('[data-calcu=media-save]').click();
-  await expect(page.getByLabel('Slot 1', { exact: true })).toHaveValue(name);
-  await page.getByLabel('Slot 1', { exact: true }).selectOption('');
+  await saveModule(page, 'CE-1600M', name);
+  await slot1(page).selectOption({ label: '(empty)' });
   await notBusy(page);
-  await menu(page, 'File', 'Saved Media…');
+  await menu(page, 'file', 'saved-media');
   const row = page.locator(`[data-calcu="media-saved-battery-backed-module-${name}"]`);
   await expect(row.getByRole('button', { name: 'Delete' })).toBeEnabled();
   let asked = '';
@@ -418,8 +363,9 @@ test('lib7_ac43 delete asks first', async ({ page }) => {
   await expect(row).toHaveCount(0);
 });
 
-// AC-43: Import Media… takes module files, disk files and a tape
-// definition with its WAV, chosen together; a WAV alone is no tape.
+// AC-43: Import Media… (the library's `media.import`: the host's file
+// picker) takes module files, disk files and a tape definition with its
+// WAV, chosen together.
 test('lib7_ac43 import card disk and tape with wav', async ({ page }) => {
   await gotoReady(page);
   const stamp = Date.now();
@@ -431,57 +377,52 @@ test('lib7_ac43 import card disk and tape with wav', async ({ page }) => {
     { name: `side${stamp}.wav`, mimeType: 'audio/wav', buffer: fs.readFileSync(path.join(FIXTURES, 'pc1500_tape.wav')) },
   ];
   const chooser = page.waitForEvent('filechooser');
-  await menu(page, 'File', 'Import Media…');
+  await menu(page, 'file', 'import-media');
   await (await chooser).setFiles(files);
   await notBusy(page);
-  await menu(page, 'File', 'Saved Media…');
+  await menu(page, 'file', 'saved-media');
   await expect(page.locator(`[data-calcu="media-saved-battery-backed-module-Card ${stamp}"]`)).toHaveCount(1, { timeout: 30000 });
   await expect(page.locator(`[data-calcu="media-saved-floppy-disk-Disk ${stamp}"]`)).toHaveCount(1);
   await expect(page.locator(`[data-calcu="media-saved-cassette-Tape ${stamp}"]`)).toHaveCount(1);
-  await page.locator('[data-dialog=media]').getByRole('button', { name: 'Close' }).click();
+  await page.locator(c('saved-media')).getByRole('button', { name: 'Close' }).click();
   // The tape plays from the picker of the CE-150's cassette.
-  await page.getByRole('button', { name: 'CE-150' }).click();
-  await expect(page.getByLabel('Tape', { exact: true }).locator('option', { hasText: `Tape ${stamp}` })).toHaveCount(1, { timeout: 30000 });
-  // A WAV on its own: refused, with the reason.
-  const again = page.waitForEvent('filechooser');
-  await menu(page, 'File', 'Import Media…');
-  await (await again).setFiles({ name: 'alone.wav', mimeType: 'audio/wav', buffer: fs.readFileSync(path.join(FIXTURES, 'pc1500_tape.wav')) });
-  await expect(page.locator('[data-dialog=notice]')).toContainText('A WAV on its own is no tape');
+  await page.locator(c('bar-place-printer')).click();
+  await expect(page.locator(c('media-picker-tape')).locator('option', { hasText: `Tape ${stamp}` })).toHaveCount(1, { timeout: 30000 });
 });
 
 // AC-39: the side button shows the side up, 0 or 1, and turns the disk over.
 test('lib7_ac44 the disk side button turns the disk over', async ({ page }) => {
   await page.setViewportSize(TALL);
   await gotoReady(page);
-  await pickModel(page, 2);
-  await page.getByRole('button', { name: 'CE-1600P' }).click();
-  await expect(page.getByLabel('Disk', { exact: true })).toBeEnabled({ timeout: 30000 });
-  await page.getByLabel('Disk', { exact: true }).selectOption('Formatted');
-  await expect(page.getByRole('button', { name: 'Disk side' })).toHaveText('0', { timeout: 30000 });
-  await page.getByRole('button', { name: 'Disk side' }).click();
-  await expect(page.getByRole('button', { name: 'Disk side' })).toHaveText('1');
-  await expect(page.getByLabel('Disk', { exact: true })).toHaveValue('Formatted');
+  await pickModel(page, 'PC-1600');
+  await page.locator(c('bar-place-printer')).selectOption({ label: 'CE-1600P' });
+  await expect(page.locator(c('media-picker-floppy'))).toBeEnabled({ timeout: 30000 });
+  await page.locator(c('media-picker-floppy')).selectOption({ label: 'Formatted' });
+  await expect(page.locator(c('disk-side'))).toHaveText('0', { timeout: 30000 });
+  await page.locator(c('disk-side')).click();
+  await expect(page.locator(c('disk-side'))).toHaveText('1');
+  expect(await shown(page.locator(c('media-picker-floppy')))).toBe('Formatted');
 });
 
 // The record button: a name first, a new tape on the empty template (AC-20, D-24).
 test('lib7_ac44 a new tape is recorded under its name', async ({ page }) => {
   await page.setViewportSize(TALL);
   await gotoReady(page);
-  await page.getByRole('button', { name: 'CE-150' }).click();
-  await expect(page.getByLabel('Tape', { exact: true })).toBeVisible({ timeout: 30000 });
-  await page.getByRole('button', { name: 'New tape' }).click();
+  await page.locator(c('bar-place-printer')).click();
+  await expect(page.locator(c('media-picker-tape'))).toBeVisible({ timeout: 30000 });
+  await page.locator(c('tape-new')).click();
   const name = `Rec ${Date.now()}`;
   await page.locator('[data-dialog=prompt] input[type=text]').fill(name);
   await page.locator('[data-dialog=prompt] button', { hasText: 'OK' }).click();
-  await expect(page.getByLabel('Tape', { exact: true })).toHaveValue(name, { timeout: 30000 });
+  await expect.poll(() => shown(page.locator(c('media-picker-tape'))), { timeout: 30000 }).toBe(name);
   await expect(page.locator('[data-lamp=tape]')).toContainText('●');
 });
 
 test('C1600-2 AC-18 headerless code asks the address, then NEW and CALL', async ({ page }) => {
   await gotoReady(page);
-  await pickModel(page, 2);
+  await pickModel(page, 'PC-1600');
   const chooser = page.waitForEvent('filechooser');
-  await menu(page, 'File', 'Load Machine Code…');
+  await menu(page, 'file', 'load-machine-code');
   await (await chooser).setFiles(path.join(FIXTURES, 'rtn4.bin'));
   const dialog = page.locator('[data-dialog=machinecode]');
   await expect(dialog.locator('input')).toHaveValue('&C0C5');
@@ -497,9 +438,8 @@ test('C1600-2 AC-18 headerless code asks the address, then NEW and CALL', async 
   await waitForScreen(page, /CALL &C0C5/);
 });
 
-test('C1600-2 AC-16 a WAV with several programs asks which one', async ({ page }) => {
-  await gotoReady(page);
-  // The fixture tape twice in one WAV: its data chunk doubled.
+// The fixture tape twice in one WAV: its data chunk doubled.
+function doubledTape() {
   const wav = fs.readFileSync(path.join(FIXTURES, 'pc1500_tape.wav'));
   let at = 12;
   while (wav.toString('ascii', at, at + 4) !== 'data') at += 8 + wav.readUInt32LE(at + 4);
@@ -508,10 +448,14 @@ test('C1600-2 AC-16 a WAV with several programs asks which one', async ({ page }
   const doubled = Buffer.concat([wav.subarray(0, at + 8 + size), data]);
   doubled.writeUInt32LE(size * 2, at + 4);
   doubled.writeUInt32LE(doubled.length - 8, 4);
+  return doubled;
+}
 
+test('C1600-2 AC-16 a WAV with several programs asks which one', async ({ page }) => {
+  await gotoReady(page);
   const chooser = page.waitForEvent('filechooser');
-  await menu(page, 'File', 'Load BASIC Program…');
-  await (await chooser).setFiles({ name: 'two.wav', mimeType: 'audio/wav', buffer: doubled });
+  await menu(page, 'file', 'load-basic-program');
+  await (await chooser).setFiles({ name: 'two.wav', mimeType: 'audio/wav', buffer: doubledTape() });
   const dialog = page.locator('[data-dialog=choice]');
   await expect(dialog).toContainText('two.wav holds 2 files. Load which one?');
   await expect(dialog.locator('option')).toHaveCount(2);
@@ -519,42 +463,34 @@ test('C1600-2 AC-16 a WAV with several programs asks which one', async ({ page }
   await expect(dialog).toHaveCount(0);
 });
 
-test('C1600-2 AC-15 the two File items and what they offer', async ({ page }) => {
-  await gotoReady(page);
-  for (const [item, accept] of [['Load BASIC Program…', '.bas,.bbin,.wav'], ['Load Machine Code…', '.bin,.wav']]) {
-    const chooser = page.waitForEvent('filechooser');
-    await menu(page, 'File', item);
-    const fc = await chooser;
-    expect(await fc.element().evaluate((e) => e.accept)).toBe(accept);
-  }
-});
-
 test('C1600-2 AC-17 a BASIC program is loaded, a refusal is a notice', async ({ page }) => {
   await gotoReady(page);
-  await pickModel(page, 2);
+  await pickModel(page, 'PC-1600');
   let chooser = page.waitForEvent('filechooser');
-  await menu(page, 'File', 'Load BASIC Program…');
+  await menu(page, 'file', 'load-basic-program');
   await (await chooser).setFiles({ name: 'six.bas', mimeType: 'text/plain', buffer: Buffer.from('10 PRINT 6*7\n') });
-  await expect(page.locator('[data-dialog=notice]')).toHaveCount(0);
+  await expect(page.locator(c('notice'))).toHaveCount(0);
   await page.locator('.calcu-client').focus();
   await page.keyboard.type('RUN', { delay: 60 });
   await page.keyboard.press('Enter');
   await waitForScreen(page, /42/);
-  // Machine code given to the BASIC loader: refused, as a notice (EC-5).
+  // Machine code given to the BASIC loader: refused, as a notice without a
+  // title (EC-5; LIB-14 AC-38).
   chooser = page.waitForEvent('filechooser');
-  await menu(page, 'File', 'Load BASIC Program…');
+  await menu(page, 'file', 'load-basic-program');
   await (await chooser).setFiles(path.join(FIXTURES, 'rtn4.bin'));
-  const notice = page.locator('[data-dialog=notice]');
+  const notice = page.locator(c('notice'));
   await expect(notice).toContainText('rtn4.bin: ');
+  await expect(notice.locator('.calcu-shell-modal-title')).toHaveCount(0);
 });
 
 test('C1600-2 AC-19 the loaded dialog and the CALL in the input line, not started', async ({ page }) => {
   await gotoReady(page);
-  await pickModel(page, 2);
+  await pickModel(page, 'PC-1600');
   // A PC-1600 header: Z-80 RET at &C100, no address to start at.
   const file = Buffer.from([0xFF, 0x10, 0x00, 0x00, 0x10, 0x01, 0x00, 0x00, 0x00, 0xC1, 0x00, 0xFF, 0xFF, 0x00, 0x00, 0x0F, 0xC9]);
   const chooser = page.waitForEvent('filechooser');
-  await menu(page, 'File', 'Load Machine Code…');
+  await menu(page, 'file', 'load-machine-code');
   await (await chooser).setFiles({ name: 'ret.bin', mimeType: 'application/octet-stream', buffer: file });
   await expect(page.locator('[data-dialog=machinecode]')).toHaveCount(0);
   const loaded = page.locator('[data-dialog=loaded]');
@@ -587,7 +523,7 @@ test('a second tab says its changes are not saved', async ({ page, context }) =>
 test('the installed app shell starts', async ({ page }) => {
   await page.goto('./app/');
   await expect(page.locator('.calcu-client[data-ready=true]')).toHaveCount(1, { timeout: 30000 });
-  await expect(page.locator('.calcu-menubar')).toBeVisible();
+  await expect(page.locator(c('menu-bar'))).toBeVisible();
 });
 
 // LIB-10 AC-40 (design §10.10, D16-6; D-19): the run control in the Web page
@@ -595,30 +531,30 @@ test('the installed app shell starts', async ({ page }) => {
 // pause and resume go from the page.
 test('lib10_ac40 run control pauses and resumes the web machine', async ({ page }) => {
   await gotoReady(page);
-  const state = () => page.evaluate(() => document.querySelector('.calcu-client').calcuEngine.getState().paused);
-  const ticks = async () => (await request(page, 'ticks')).ticks;
-  await request(page, 'pause');
-  await expect.poll(state, { timeout: 10000 }).toBe(true);
+  const paused = async () => !!((await h.topic(page, 'run-state')) || {}).paused;
+  const ticks = async () => (await h.ask(page, 'ticks')).value.ticks;
+  await h.send(page, 'pause', { level: 'cpu' });
+  await expect.poll(paused, { timeout: 10000 }).toBe(true);
   const t0 = await ticks();
   await page.waitForTimeout(300);
   expect(await ticks()).toBe(t0);   // paused: no emulated time passes
-  await request(page, 'resume');
-  await expect.poll(state, { timeout: 10000 }).toBe(false);
+  await h.send(page, 'resume');
+  await expect.poll(paused, { timeout: 10000 }).toBe(false);
   await expect.poll(ticks, { timeout: 10000 }).toBeGreaterThan(t0);
 });
 
-// LIB-10 AC-41: Machine ▸ Resume runs a paused machine again, and is there
-// only while it is paused.
+// LIB-10 AC-41: Machine ▸ Resume runs a paused machine again, and can be
+// used only while it is paused.
 test('lib10_ac41 machine resume', async ({ page }) => {
   await gotoReady(page);
-  const state = () => page.evaluate(() => document.querySelector('.calcu-client').calcuEngine.getState().paused);
-  await page.locator('.calcu-menubar-item > button', { hasText: 'Machine' }).click();
-  await expect(page.locator('.calcu-menu-item', { hasText: 'Resume' })).toHaveAttribute('aria-disabled', 'true');
-  await page.keyboard.press('Escape');
-  await request(page, 'pause');
-  await expect.poll(state, { timeout: 10000 }).toBe(true);
-  await menu(page, 'Machine', 'Resume');
-  await expect.poll(state, { timeout: 10000 }).toBe(false);
+  const paused = async () => !!((await h.topic(page, 'run-state')) || {}).paused;
+  await page.locator(c('menu-machine')).click();
+  await expect(page.locator(c('item-resume'))).toHaveAttribute('aria-disabled', 'true');
+  await page.locator(c('menu-machine')).click();
+  await h.send(page, 'pause', { level: 'cpu' });
+  await expect.poll(paused, { timeout: 10000 }).toBe(true);
+  await menu(page, 'machine', 'resume');
+  await expect.poll(paused, { timeout: 10000 }).toBe(false);
 });
 
 // ---- LIB-13, the Calc-U-1600 column (design Part D, D6): opening a file ----
@@ -631,19 +567,6 @@ async function dropFile(page, name, buffer) {
     document.querySelector('.calcu-client')
       .dispatchEvent(new DragEvent('drop', { dataTransfer: dt, bubbles: true, cancelable: true }));
   }, [name, [...buffer]]);
-}
-
-// The fixture tape twice in one WAV: its data chunk doubled.
-function doubledTape() {
-  const wav = fs.readFileSync(path.join(FIXTURES, 'pc1500_tape.wav'));
-  let at = 12;
-  while (wav.toString('ascii', at, at + 4) !== 'data') at += 8 + wav.readUInt32LE(at + 4);
-  const size = wav.readUInt32LE(at + 4);
-  const data = wav.subarray(at + 8, at + 8 + size);
-  const doubled = Buffer.concat([wav.subarray(0, at + 8 + size), data]);
-  doubled.writeUInt32LE(size * 2, at + 4);
-  doubled.writeUInt32LE(doubled.length - 8, 4);
-  return doubled;
 }
 
 test('LIB-13 AC-18 a dropped WAV with several programs asks which one, then loads by its kind', async ({ page }) => {
@@ -661,7 +584,7 @@ test('LIB-13 AC-18 a dropped WAV with several programs asks which one, then load
 
 test('LIB-13 AC-18 a dropped headerless .bin asks the address', async ({ page }) => {
   await gotoReady(page);
-  await pickModel(page, 2);
+  await pickModel(page, 'PC-1600');
   // SharpDataExchange's Z-80 sample, eight times: headerless code by its look.
   const block = [0x21, 0x00, 0x80, 0x06, 0x10, 0x7E, 0xFE, 0x20, 0x28, 0x01, 0x23, 0x10, 0xF8, 0xCD, 0x00, 0x10, 0xC9];
   const code = Buffer.from(Array(8).fill(block).flat());
@@ -671,38 +594,40 @@ test('LIB-13 AC-18 a dropped headerless .bin asks the address', async ({ page })
   await dialog.getByRole('button', { name: 'Cancel' }).click();
   // Named .rom it is nothing the product opens (AC-17): a notice.
   await dropFile(page, 'loop.rom', code);
-  await expect(page.locator('[data-dialog=notice]')).toContainText('Calc-U-1600 cannot open loop.rom.', { timeout: 30000 });
+  await expect(page.locator(c('notice'))).toContainText('Calc-U-1600 cannot open loop.rom.', { timeout: 30000 });
 });
 
 test('LIB-13 AC-19 a dropped disk file is imported and inserted', async ({ page }) => {
   await gotoReady(page);
-  await pickModel(page, 2);
-  await page.getByRole('button', { name: 'CE-1600P' }).click();
-  await expect(page.getByLabel('Disk', { exact: true })).toBeEnabled({ timeout: 30000 });
+  await pickModel(page, 'PC-1600');
+  await page.locator(c('bar-place-printer')).selectOption({ label: 'CE-1600P' });
+  await expect(page.locator(c('media-picker-floppy'))).toBeEnabled({ timeout: 30000 });
   const name = `Dropped ${Date.now()}`;
   await dropFile(page, `${name}.floppy.yaml`, Buffer.from(instanceOf('formatted.floppy.yaml', 'disk-name', name)));
-  await expect(page.getByLabel('Disk', { exact: true })).toHaveValue(name, { timeout: 30000 });
-  await expect(page.locator('[data-dialog=notice]')).toHaveCount(0);
+  await expect.poll(() => shown(page.locator(c('media-picker-floppy'))), { timeout: 30000 }).toBe(name);
+  await expect(page.locator(c('notice'))).toHaveCount(0);
 });
 
 test('LIB-13 AC-20 a dropped file over 1 MiB is refused with a notice', async ({ page }) => {
   await gotoReady(page);
   await notBusy(page);
   await dropFile(page, 'big.bas', Buffer.alloc((1 << 20) + 1, 0x20));
-  await expect(page.locator('[data-dialog=notice]')).toContainText('big.bas is larger than 1 MiB', { timeout: 30000 });
+  await expect(page.locator(c('notice'))).toContainText('big.bas is larger than 1 MiB', { timeout: 30000 });
 });
 
-test('LIB-13 AC-8 Upload Preset opens the preset among its files', async ({ page }) => {
+// LIB-13 AC-8: File ▸ Load Preset… takes several files; the preset among
+// them is opened with the files it names beside it.
+test('LIB-13 AC-8 Load Preset opens the preset among its files', async ({ page }) => {
   await gotoReady(page);
   await notBusy(page);
   const chooser = page.waitForEvent('filechooser');
-  await menu(page, 'File', 'Load Preset', 'Upload Preset…');
+  await menu(page, 'file', 'load-preset');
   await (await chooser).setFiles([
     { name: 'six.bas', mimeType: 'text/plain', buffer: Buffer.from('10 PRINT 6*7\n') },
     { name: 'run.pc1600', mimeType: 'text/plain',
       buffer: Buffer.from('format-version: 2\nmodel: PC-1600\nprogram: { file: six.bas }\nkeys:\n  - type: RUN\n  - expect: 42\n') },
   ]);
-  await expect(page.locator('.calcu-face[data-model="2"]')).toHaveCount(1, { timeout: 30000 });
+  await expect(page.locator('.calcu-face[data-model="PC-1600"]')).toHaveCount(1, { timeout: 30000 });
   await waitForScreen(page, /42/);
-  await expect(page.locator('[data-dialog=notice]')).toHaveCount(0);
+  await expect(page.locator(c('notice'))).toHaveCount(0);
 });

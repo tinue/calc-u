@@ -4,6 +4,7 @@
 #include "machine/Ids.hpp"
 #include "machine/Machine.hpp"
 #include "sessions/Operation.hpp"
+#include "startup/MachinePlan.hpp"
 #include <cstdint>
 #include <functional>
 #include <optional>
@@ -21,7 +22,9 @@
 namespace calcu::presets {
 
 class RunContext;
+class ReadContext;
 class Vocabulary;
+struct LoadPlan;
 
 // The outcome of an item or of the after-build step: !ok stops the preset
 // there (AC-17). `result`: what a harness command shows (`elapsed-time
@@ -81,6 +84,15 @@ public:
         return Applies::Yes;
     }
     virtual PlaceKeyRule placeKey(const machine::PlaceName&) const { return {}; }
+    // D-32 (Calc-U-1600, M-46): one check once every header key is read
+    // (the place keys in `plan.places`, the product's in ReadContext::kept),
+    // for pairs of keys that do not go together; errors through
+    // ReadContext::error at the line of the later key.
+    virtual void checkHeader(const LoadPlan& plan, ReadContext&) const { (void)plan; }
+    // D-33 (C1600-4 D-2): the product turns its kept header values
+    // (LoadPlan::productHeader) into requests of the machine plan; called at
+    // the end of machinePlan().
+    virtual void amendPlan(const LoadPlan& plan, startup::MachinePlan&) const { (void)plan; }
 };
 
 class ProductRules {

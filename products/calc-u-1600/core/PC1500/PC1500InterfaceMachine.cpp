@@ -110,6 +110,10 @@ void PC1500InterfaceMachine::corePlug(const PeripheralRequest& req, const Periph
         if (auto card = sharp::moduleCardOf(req, d)) m_core->attachExpansionCard(std::move(card));
         return;
     }
+    if (const auto* b = dynamic_cast<const sharp::BusRomRequest*>(req.content.get())) {   // C1600-4 AC-10
+        m_core->attachBusRom(std::make_unique<BusRomCard>(b->bytes, b->address, b->me1, b->pv, b->pu, b->name));
+        return;
+    }
     const std::vector<std::uint8_t>* rom = sharp::romImageOf(req, d, 0);
     if (!rom) return;
     if (req.peripheral.value == sharp::kCE150) m_core->attachCE150(rom->data(), rom->size());
@@ -120,6 +124,7 @@ void PC1500InterfaceMachine::coreUnplug(const PlaceName& p, const PeripheralId& 
     if (p.value == sharp::kSlot1) m_core->expansionConnector().detach();
     else if (id.value == sharp::kCE150) m_core->detachCE150();
     else if (id.value == sharp::kCE158) m_core->detachCE158();
+    else if (id.value == sharp::kBusRom) m_core->detachBusRoms();
 }
 
 std::vector<PlugEntry> PC1500InterfaceMachine::coreHasPlugged() const {

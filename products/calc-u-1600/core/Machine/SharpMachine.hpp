@@ -45,6 +45,30 @@ public:
     std::string folder;
 };
 
+// A ROM on the 60-pin connector (C1600-4 AC-9, AC-10): the content of a
+// request for the peripheral bus-rom at the place bus-rom. `bank` (4-7, the
+// PC-1600's system bus) or `address` (the PC-1500's connector or the
+// PC-1600's LH5803 side) with ME1 and the PV/PU gates (-1: either).
+class BusRomRequest final : public calcu::machine::ProductData {
+public:
+    std::vector<std::uint8_t> bytes;
+    int bank = -1;
+    std::uint16_t address = 0;
+    bool me1 = false;
+    int pv = -1;
+    int pu = -1;
+    std::string name;   // the file's name, shown in the inspector
+};
+
+// The bytes that replace a ROM module's ROM (C1600-4 AC-8, `slot-N-rom:`):
+// the content of a module request; the card is built from the module's
+// definition with these bytes (moduleCardOf).
+class SlotRomRequest final : public calcu::machine::ProductData {
+public:
+    explicit SlotRomRequest(std::vector<std::uint8_t> b) : bytes(std::move(b)) {}
+    std::vector<std::uint8_t> bytes;
+};
+
 // The image of the `index`-th ROM entry of the request's variant, or nullptr.
 const std::vector<std::uint8_t>* romImageOf(const calcu::machine::PeripheralRequest&,
                                             const calcu::machine::PeripheralDescriptor&, std::size_t index);

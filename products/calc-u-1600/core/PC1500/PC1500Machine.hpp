@@ -222,6 +222,7 @@ public:
     // there, so a rebuilt ROM shadows a bundled one at the same place. Kept
     // for the machine's lifetime; a preset builds a fresh machine.
     void attachBusRom(std::unique_ptr<BusRomCard> card);
+    void detachBusRoms();
     bool ce158Attached() const { return m_ce158.attached(); }
     /// Direct access (see ce150Card()).
     Ce158Card* ce158Card() { return m_ce158.card(); }

@@ -238,6 +238,7 @@ public:
     // a bundled one (e.g. the host drive's bank 7). Kept for the machine's
     // lifetime; a preset builds a fresh machine.
     void attachBusRom(std::unique_ptr<SystemBusCard> card);
+    void detachBusRoms();
     bool hostDriveAttached() const;
     void setHostDriveDirectory(const std::filesystem::path& dir);
     std::filesystem::path hostDriveDirectory() const;

@@ -27,7 +27,7 @@
 #include "app/MachineModel.hpp"
 #include "app/PacingProfiles.hpp"
 #include "app/Settings.hpp"
-#include "app/SharpMachineParts.hpp"
+#include "debugger/DebuggerPart.hpp"
 #include "app/SharpTopics.hpp"
 #include "app/SharpTyping.hpp"
 #include "machine/Catalogue.hpp"
@@ -80,7 +80,9 @@ DisplayFrame displayFrameOf(const calcu::machine::DisplayOutput& output);
 // - the interim product topics (control state, machine, tapes, serial
 //   links) and LIB-12's `roms-missing`;
 // - the library's typing part (LIB-5) with the Sharp profiles and maps
-//   (app/SharpTyping), first in sessionParts(); the adapter SharpDebuggerGate.
+//   (app/SharpTyping), first in sessionParts(); the library's paper part
+//   (LIB-8) and debugger part (LIB-10: the run control is the machine
+//   session's gate, with or without a debugger client; app/SharpDebuggerSetup).
 //
 // The host builds it, hands sessionParts() to its AppSessionSetup (and the
 // part to AppSessionSetup::owned), then sends `start`. Single-threaded: on
@@ -94,8 +96,8 @@ public:
 
     // The parts of the session, in order: the typing part, LIB-2's
     // peripherals part (the host links of the serial ports, the real-time
-    // clocks), LIB-8's paper part (the CE-150's and the CE-1600P's papers)
-    // and this one.
+    // clocks), LIB-8's paper part (the CE-150's and the CE-1600P's papers),
+    // LIB-10's debugger part and this one.
     std::vector<calcu::sessions::SessionPart*> sessionParts();
     // The real-time clocks of a machine built inside the start or an
     // operation are set from this; tests pin it.
@@ -116,8 +118,9 @@ public:
     // The papers of the two plotters (LIB-8): kept from the start of the
     // session to its end, whatever machine runs.
     calcu::paper::PaperPart& paperPart() { return m_paper; }
-    // The debugger (adapter SharpDebuggerGate, until M-45).
-    void setDebugger(SharpDebugger* d) { m_gate.setDebugger(d); }
+    // The library's debugger (LIB-10): the run control, the trace session,
+    // the topics run-state and trace. The DAP's layer (app/dap/) works on it.
+    calcu::debugger::DebuggerPart& debuggerPart() { return m_debugger; }
 
     // File ▸ Mount Directory is offered when the frontend states a folder
     // picker (LIB-3 AC-38: 0.8.1's hostDirectories; a browser has none).
@@ -189,10 +192,6 @@ public:
     std::vector<std::string> inspectorView(inspect::View view) const;
     std::vector<inspect::MenuEntry> inspectorMenu(bool dumps) const;
     std::vector<std::uint8_t> debugSlotCardImage(int slot, int* bankCount) const;
-    bool beginTrace(const std::string& path);
-    void endTrace();
-    std::uint64_t traceBytes() const;
-    bool traceActive() const;
 
     // ---- Peripherals ----
     bool attachCE150(std::string* error = nullptr);
@@ -285,6 +284,7 @@ private:
 
     calcu::machine::Catalogue m_catalogue;
     calcu::paper::PaperPart m_paper;
+    calcu::debugger::DebuggerPart m_debugger;
     std::shared_ptr<const calcu::roms::RomSet> m_roms;
     calcu::roms::RomsMissing m_romsMissing;
     std::shared_ptr<const std::vector<std::uint8_t>> m_hostDriveRom;   // roms.md Q-1: not looked up
@@ -295,7 +295,6 @@ private:
     calcu::sessions::SessionContext* m_ctx = nullptr;
     calcu::sessions::MachineSession* m_ms = nullptr;
     calcu::typing::TypingPart m_typingPart{typingProduct()};
-    SharpDebuggerGate m_gate;
     bool m_powerCycleFollows = false;
 
     std::unique_ptr<ModuleBay> m_modules;

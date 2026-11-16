@@ -137,3 +137,64 @@ TEST(lib8_ac32_harness_cut_paper_and_png) {
     CHECK_EQ(h.reply("paper png " + png), std::string("refused: The paper is empty.\n"));
     h.server->finish();
 }
+
+// LIB-10 design §10.10, D16-6 and D16-3 (AC-40, AC-52): the harness's run
+// control and memory commands on the Sharp targets.
+TEST(lib10_ac40_harness_pause_step_resume) {
+    SKIP_UNLESS(std::filesystem::exists("roms/PC1600-P0-B0-new.bin"), "the ROMs are not fetched (roms/fetch_roms.sh)");
+    PaperHarness h;
+    CHECK(h.server != nullptr);
+    if (!h.server) return;
+    CHECK_EQ(h.reply("model PC-1600"), std::string("done\n"));
+    CHECK(h.reply("pause").find("paused, owner cpu, reason pause, target SC7852") != std::string::npos);
+    const std::string t0 = h.reply("ticks");
+    h.reply("wait 100ms");
+    CHECK_EQ(h.reply("ticks"), t0);   // paused: no emulated time passes
+    CHECK(h.reply("step { level: cpu, count: 3 }").find("reason step") != std::string::npos);
+    CHECK(h.reply("step-over").find("reason step") != std::string::npos);
+    CHECK(h.reply("resume").find("running") != std::string::npos);
+    h.reply("wait 100ms");
+    CHECK(h.reply("ticks") != t0);
+    h.server->finish();
+}
+
+TEST(lib10_ac40_harness_breakpoint_and_watch) {
+    SKIP_UNLESS(std::filesystem::exists("roms/PC-1500_A04.ROM"), "the ROMs are not fetched (roms/fetch_roms.sh)");
+    PaperHarness h;
+    CHECK(h.server != nullptr);
+    if (!h.server) return;
+    h.reply("wait 1s");
+    // The PC-1500A's ROM goes through its keyboard scan all the time.
+    const std::string hist = h.reply("pause");
+    CHECK(hist.find("paused") != std::string::npos);
+    const std::string regs = h.reply("registers");
+    const std::size_t at = regs.find("p = 0x");
+    CHECK(at != std::string::npos);
+    const std::string pc = regs.substr(at + 4, 6);
+    CHECK(h.reply("break LH5801 " + pc).rfind("done", 0) == 0);
+    CHECK(h.reply("resume").find("running") != std::string::npos);
+    h.reply("wait 1s");
+    CHECK(h.reply("state run-state").find("breakpoint") != std::string::npos);
+    CHECK(h.reply("break off").rfind("done", 0) == 0);
+    // A write watch on the RAM the ROM keeps writing while idle.
+    CHECK(h.reply("watch LH5801 me0 0x7600 0x600 write").rfind("done", 0) == 0);
+    CHECK(h.reply("resume").find("running") != std::string::npos);
+    h.reply("wait 1s");
+    CHECK(h.reply("state run-state").find("watch") != std::string::npos);
+    CHECK(h.reply("watch off").rfind("done", 0) == 0);
+    h.server->finish();
+}
+
+TEST(lib10_ac52_harness_peek_bank_and_vbank) {
+    SKIP_UNLESS(std::filesystem::exists("roms/PC1600-P0-B0-new.bin"), "the ROMs are not fetched (roms/fetch_roms.sh)");
+    PaperHarness h;
+    CHECK(h.server != nullptr);
+    if (!h.server) return;
+    CHECK_EQ(h.reply("model PC-1600"), std::string("done\n"));
+    CHECK(h.reply("peek SC7852 memory 0x8000 2 bank=6").rfind("done 2\n0x8000: 0x", 0) == 0);
+    CHECK(h.reply("peek SC7852 io-written 0x31").rfind("done 1\n0x31: 0x", 0) == 0);
+    CHECK(h.reply("peek SC7852 io 0x31").rfind("done 1\n0x31: 0x", 0) == 0);
+    CHECK(h.reply("peek LH5803 me1-written 0x0000").find("none") != std::string::npos);
+    CHECK(h.reply("peek SC7852 memory 0x8000 1 bank=2 vbank=1").rfind("done 1", 0) == 0);
+    h.server->finish();
+}

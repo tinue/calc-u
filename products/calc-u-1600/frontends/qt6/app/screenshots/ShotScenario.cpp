@@ -260,6 +260,11 @@ bool parseStep(const calcu::formats::YamlNode& node, const QDir& baseDir, const 
     } else if (verb == QLatin1String("expect-title")) {
         out->kind = K::ExpectTitle;
         if (!needText(&out->text)) return false;
+    } else if (verb == QLatin1String("command")) {
+        // `- command: pause`: a session command, as the harness would send it
+        // (until the scenarios are an attach client, M-49).
+        out->kind = K::Command;
+        if (!needText(&out->text)) return false;
     } else if (verb == QLatin1String("capture")) {
         out->kind = K::Capture;
         if (!hasValue) {

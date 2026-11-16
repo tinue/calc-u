@@ -185,10 +185,10 @@ bool RunControl::stepDoneAfter(const machine::InstructionEvent& ev) {
             return false;
         }
         repeats_ = 0;
-        return --left_ == 0;
+        return countedStepDone(t);
     case StepKind::Over:   // G5: a call is carried out with its routine
         if (overCall_ && t.callDepth() > depth0_) return false;
-        if (--left_ == 0) return true;
+        if (countedStepDone(t)) return true;
         overCall_ = t.flowAt(ev.nextAddress) == machine::Flow::Call;
         depth0_ = t.callDepth();
         return false;
@@ -196,6 +196,13 @@ bool RunControl::stepDoneAfter(const machine::InstructionEvent& ev) {
         return t.flowAt(ev.address) == machine::Flow::Return && t.callDepth() < depth0_;
     }
     return false;
+}
+
+// A counted step is over: the step ends at its count, or (D-16) when its
+// test says not to go on.
+bool RunControl::countedStepDone(const machine::DebugTarget& t) {
+    if (--left_ == 0) return true;
+    return until_ ? !until_(t) : false;
 }
 
 void RunControl::onStop(const machine::DebugStop& stop, machine::Debugging& d) {
@@ -305,7 +312,8 @@ RunControl::Result RunControl::resume() {
 }
 
 RunControl::Result RunControl::step(const LevelName& level, std::uint64_t count,
-                                    std::optional<machine::DebugTargetId> target, StepKind kind, sessions::CallId call) {
+                                    std::optional<machine::DebugTargetId> target, StepKind kind, sessions::CallId call,
+                                    StepTest until) {
     sync();
     if (auto r = refusal()) return Result{false, *r};
     if (!rules_.hasLevel(level)) return Result{false, "The machine has no level " + level.value + "."};
@@ -325,7 +333,8 @@ RunControl::Result RunControl::step(const LevelName& level, std::uint64_t count,
     level_ = level;
     kind_ = kind;
     stepTarget_ = t;
-    left_ = kind == StepKind::In ? count : 1;
+    until_ = kind == StepKind::Out ? StepTest{} : std::move(until);
+    left_ = kind == StepKind::In || until_ ? count : 1;
     repeats_ = 0;
     hits_.clear();
     const machine::DebugTarget& dt = d.target(t);

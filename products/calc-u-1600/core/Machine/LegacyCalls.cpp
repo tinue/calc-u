@@ -1,6 +1,6 @@
 #include "Machine/LegacyCalls.hpp"
 
-#include "../Debug/MachineDebugTargets.hpp"
+#include "../Debug/SharpDebugging.hpp"
 #include "../PC1600/PC1600PresetMedia.hpp"
 #include "../PC1500/PC1500BasicLoader.hpp"
 #include "../PC1500/PC1500BasicTyper.hpp"
@@ -44,15 +44,22 @@ bool userRam(Machine& m, std::uint32_t* start, std::uint32_t* end) {
     return true;
 }
 
-std::unique_ptr<debug::DebugTarget> makeDebugTarget(Machine& m) {
-    if (PC1600Machine* p = pc1600Of(m)) return debug::makeDebugTarget(*p);
-    if (PC1500Machine* p = pc1500Of(m)) return debug::makeDebugTarget(*p);
-    return nullptr;
-}
-
-debug::LoadResult loadProgram(Machine& m, const debug::LoadRequest& request, debug::SourceMap& map,
-                              const debug::DebugTarget& target) {
-    return debug::loadProgram(pc1500Of(m), pc1600Of(m), request, map, target);
+debug::LoadResult loadProgram(Machine& m, const debug::LoadRequest& request, debug::SourceMap& map) {
+    SharpMachine* s = sharpOf(m);
+    SharpDebugging* d = s ? s->sharpDebugging() : nullptr;
+    auto target = [d](int thread) -> const SharpDebugTarget* {
+        if (!d || thread < 1 || static_cast<std::size_t>(thread) > d->targetCount()) return nullptr;
+        return &d->sharpTarget(static_cast<std::size_t>(thread - 1));
+    };
+    const debug::BankMatch match = [target](int t, const debug::BankKey& k, std::uint16_t a) {
+        const SharpDebugTarget* x = target(t);
+        return x && x->bankMatches(k, a);
+    };
+    const debug::CodePeek peek = [target](int t, std::uint16_t a, std::uint8_t* v) {
+        const SharpDebugTarget* x = target(t);
+        return x && x->peekByte(debug::kSpaceMain, a, v);
+    };
+    return debug::loadProgram(pc1500Of(m), pc1600Of(m), request, map, match, peek);
 }
 
 job::Task<PresetLoadResult> applyPresetJob(Machine& m, PresetFile preset, PresetLogFn log, std::string traceDir,

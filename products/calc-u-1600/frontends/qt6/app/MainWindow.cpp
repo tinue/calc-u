@@ -19,6 +19,7 @@
 #include "AppSettings.hpp"
 #include "qt6/MacClipboard.h"
 #include "qt6/PaperPanel.hpp"
+#include "debugger/RunState.hpp"
 #include "DropFile.hpp"
 #include "app/MachineCodeLoad.hpp"
 #include "app/PresetCatalog.hpp"
@@ -244,9 +245,13 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
     connect(m_faceplate->lcdWidget(), &LcdWidget::turboRequested, this,
             [this](bool active) { m_pacer->setTurbo(active); });
 
-    // The debugger's pause shows in the title bar.
-    connect(m_controller->debugController(), &DebugController::pausedChanged, this, [this](bool paused) {
+    // LIB-10 AC-41 (adapter L-A4 until LIB-14's shell, M-49): a paused
+    // machine shows in the title bar, whoever paused it (the DAP, the
+    // harness, a session command), and Machine ▸ Resume runs it again.
+    connect(m_controller.get(), &MachineController::runStateChanged, this, [this] {
+        const bool paused = m_controller->machinePaused();
         setWindowTitle(paused ? tr("Calc-U-1600 — Paused (debugger)") : tr("Calc-U-1600"));
+        if (m_resumeAction) m_resumeAction->setEnabled(paused);
     });
 
     // The sink is a child of the window, so it outlives m_controller (and
@@ -1000,6 +1005,11 @@ void MainWindow::buildMenuBar() {
     QAction* resetAllAction = machineMenu->addAction(tr("Reset All"));
     resetAllAction->setShortcut(QKeySequence(Qt::ControlModifier | Qt::ShiftModifier | Qt::Key_R));
     connect(resetAllAction, &QAction::triggered, this, [this] { resetMachine(true); });
+    // LIB-10 AC-41 (L-A4): Resume, while the run control says paused.
+    machineMenu->addSeparator();
+    m_resumeAction = machineMenu->addAction(tr("Resume"));
+    m_resumeAction->setEnabled(false);
+    connect(m_resumeAction, &QAction::triggered, this, [this] { m_controller->send(calcu::debugger::kResumeCommand); });
 
     // Help
     QMenu* helpMenu = menuBar()->addMenu(tr("&Help"));

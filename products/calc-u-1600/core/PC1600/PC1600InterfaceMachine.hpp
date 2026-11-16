@@ -31,6 +31,7 @@ public:
 
 private:
     calcu::machine::Ticks runCore(calcu::machine::Ticks n) override { return m_core->runCycles(n); }
+    sharp::SharpDebugging* sharpDebugging() override { return m_debugging.get(); }
     bool coreSwitchedOff() const override { return m_core->isPoweredOff(); }
     bool coreKeyReady() const override { return m_core->keyReady(); }
     void coreKey(const std::string& id, bool down) override;
@@ -51,5 +52,6 @@ private:
     SerialPortCapability m_rs232c;      // the TC8576F's peer (component rs232c, LIB-2 D-11)
     SerialPortCapability m_ce158Port;   // the CE-158's UART peer; kept across detach and attach
     std::unique_ptr<Kinds> m_kinds;
+    std::unique_ptr<sharp::SharpDebugging> m_debugging;   // LIB-10: after the core, gone before it
     calcu::machine::VariantId m_presetCe1600pVariant{"New"};
 };

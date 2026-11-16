@@ -417,7 +417,26 @@ bool ShotRunner::runStep(const ShotStep& step, int* delayMs, std::function<void(
         }
         return true;
     }
+    case K::Command: {
+        bool done = false;
+        QString reason;
+        m_window->controller()->send(calcu::sessions::CommandName{step.text.toStdString()}, {},
+                                     [&done, &reason](const calcu::sessions::ReplyMessage& r) {
+                                         done = r.done;
+                                         reason = QString::fromStdString(r.reason);
+                                     });
+        QCoreApplication::processEvents();
+        m_window->controller()->runFor(0.1);
+        QCoreApplication::processEvents();
+        if (!done && !reason.isEmpty()) {
+            *error = QStringLiteral("'%1' refused: %2").arg(step.text, reason);
+            return false;
+        }
+        *delayMs = m_scenario.settleMs;
+        return true;
+    }
     case K::ExpectTitle:
+        QCoreApplication::processEvents();
         if (m_window->windowTitle() != step.text) {
             *error = QStringLiteral("the window's title is '%1', not '%2'").arg(m_window->windowTitle(), step.text);
             return false;

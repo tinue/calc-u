@@ -644,6 +644,33 @@ PC1600Machine::DebugBankState PC1600Machine::inspectBankState() const {
     return s;
 }
 
+bool PC1600Machine::beginTraceRecords(uint32_t flags) {
+    if (m_traceFile) return false;
+    m_traceFile = std::make_unique<PC1500TraceFile>();
+    m_traceDrainCounter = 0;
+    m_sc7852.setTraceFlags(flags);
+    m_lh5803.setTraceFlags(flags);
+    uint32_t staleLost = 0;
+    m_sc7852.drainTraceEvents(m_z80TraceDrainBuf, kTraceDrainBufFrames, &staleLost);
+    m_lh5803.drainTraceEvents(m_lhTraceDrainBuf, kTraceDrainBufFrames, &staleLost);
+    return true;
+}
+
+void PC1600Machine::endTraceRecord() {
+    if (!m_traceFile) return;
+    pumpTraceFile();
+    m_traceFile->finish();
+    m_sc7852.setTraceFlags(TRACE_NONE);
+    m_lh5803.setTraceFlags(TRACE_NONE);
+}
+
+void PC1600Machine::endTraceRecords() {
+    m_traceFile.reset();
+    m_sc7852.setTraceFlags(TRACE_NONE);
+    m_lh5803.setTraceFlags(TRACE_NONE);
+    m_traceDrainCounter = 0;
+}
+
 bool PC1600Machine::beginCpuTrace(std::FILE* handle, uint32_t flags) {
     if (!handle || m_traceFile) return false;
     m_traceFile = std::make_unique<PC1500TraceFile>(handle);

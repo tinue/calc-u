@@ -97,6 +97,9 @@ const METHODS = {
   faceKeyDown: ["command", "screen-key-down", (key, pointer) => ({ key, pointer: pointer || 0 }), null],
   faceKeyUp: ["command", "screen-key-up", (key, pointer) => ({ key, pointer: pointer || 0 }), null],
   setTurbo: ["command", "speed", (full) => ({ full: !!full }), null],
+  // LIB-10 (AC-40, AC-41): the library's run control, with or without a debugger.
+  pause: ["command", "pause", () => ({ level: "cpu" }), null],
+  resume: ["command", "resume", () => null, null],
 };
 
 const INITIAL_STATE = {
@@ -108,6 +111,7 @@ const INITIAL_STATE = {
   ui: null,           // control state, pickers (c1600.ui)
   lamps: { floppyMotor: false, tapeMode: "", tapeMotor: false, tapeSeconds: 0, tapeFile: "" },
   busy: false,
+  paused: false,      // the run-state topic: the machine is paused (LIB-10)
   notices: [],        // [{title, text}], shown one at a time
   printer: { text: "", chunks: [] },
   log: [],            // preset step lines, for the inspector
@@ -155,6 +159,7 @@ function createEngine({ workerUrl, model, preset }) {
       ui: t["c1600.ui"] || null,
       lamps: t["c1600.lamps"] || INITIAL_STATE.lamps,
       busy: !!(busyState && busyState.operationRuns),
+      paused: !!(t["run-state"] && t["run-state"].paused),
       notices,
       printer: { text: printed.map((p) => p.text).join(""), chunks: printed.map((p) => p.bytes) },
       log: (streams.log || []).map((l) => l.text),
@@ -195,10 +200,10 @@ function createEngine({ workerUrl, model, preset }) {
     const topics = s.topics, streams = s.streams;
     const key = lastShell;
     if (key && key.start === s.start && key.ui === topics["c1600.ui"] && key.lamps === topics["c1600.lamps"] &&
-        key.busy === topics.busy && key.notices === streams.notices &&
+        key.busy === topics.busy && key.runState === topics["run-state"] && key.notices === streams.notices &&
         key.printer === streams["c1600.printer"] && key.log === streams.log && key.missing === topics["roms-missing"] &&
         key.storage === topics["web.storage"]) return;
-    lastShell = { start: s.start, ui: topics["c1600.ui"], lamps: topics["c1600.lamps"], busy: topics.busy,
+    lastShell = { start: s.start, ui: topics["c1600.ui"], lamps: topics["c1600.lamps"], busy: topics.busy, runState: topics["run-state"],
       notices: streams.notices, printer: streams["c1600.printer"], log: streams.log,
       missing: topics["roms-missing"], storage: topics["web.storage"] };
     update();

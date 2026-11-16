@@ -58,12 +58,12 @@ struct PC1600InterfaceMachine::Kinds {
         }
         PC1600Machine& m;
     } support;
-    struct Trace final : sharp::CpuTrace {
+    struct Trace final : sharp::TraceRecords {
         explicit Trace(PC1600Machine& m) : m(m) {}
-        bool begin(std::FILE* f, std::uint32_t flags) override { return m.beginCpuTrace(f, flags); }
-        void end() override { m.endCpuTrace(); }
-        bool active() const override { return m.cpuTraceActive(); }
-        std::uint64_t bytes() const override { return m.cpuTraceBytes(); }
+        bool begin() override { return m.beginTraceRecords(TRACE_FULL); }
+        bool take(std::vector<std::uint8_t>& out, std::uint64_t budget) override { return m.takeTraceRecords(out, budget); }
+        void endRecord() override { m.endTraceRecord(); }
+        void end() override { m.endTraceRecords(); }
         PC1600Machine& m;
     } trace;
     struct Tape final : sharp::TapeDeckAccess {
@@ -122,7 +122,8 @@ struct PC1600InterfaceMachine::Kinds {
 };
 
 PC1600InterfaceMachine::PC1600InterfaceMachine(const MachineDescriptor& d, const VariantId& v)
-    : SharpMachine(d, v), m_core(std::make_unique<PC1600Machine>()), m_kinds(std::make_unique<Kinds>(*m_core)) {
+    : SharpMachine(d, v), m_core(std::make_unique<PC1600Machine>()), m_kinds(std::make_unique<Kinds>(*m_core)),
+      m_debugging(sharp::makeSharpDebugging(*m_core)) {
     // The RS-232C peer is attached when the port is first taken (capability()).
     m_core->setCE158SerialLink(&m_ce158Port);
 }

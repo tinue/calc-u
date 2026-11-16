@@ -72,10 +72,10 @@ public:
     std::string tapePathFor(const std::string& tapeName) const;
 
     // Settings::traceDirOverride() / serialLinkDirOverride() if set, else
-    // instanceDir(): where TRACE.bin and preset screenshots go, and where
-    // the serial ports' PTY symlinks live. The Web has no such folders in
-    // the library (a download, LIB-10/LIB-6); until then they are the save
-    // folder (adapters A-3, A-4).
+    // instanceDir(): where traces go (the library's trace session) and where
+    // the serial ports' PTY symlinks live. The Web has no trace folder
+    // (traceDir() is empty, LIB-10 D-10); its serial link folder is the save
+    // folder (adapter A-4).
     std::string traceDir() const;
     std::string serialLinkDir() const;
 

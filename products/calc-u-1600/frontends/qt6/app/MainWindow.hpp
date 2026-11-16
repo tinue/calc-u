@@ -170,6 +170,7 @@ private:
     QAction* m_ce150Action = nullptr;
     QAction* m_ce158Action = nullptr;
     QAction* m_ce1600pAction = nullptr; // PC-1600 only
+    QAction* m_resumeAction = nullptr;  // Machine > Resume, while paused (LIB-10 AC-41)
 
     // File/Help actions whose handlers are wired up in the constructor
     // (alongside the equivalent ControlBar signal), not inside

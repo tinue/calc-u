@@ -1,6 +1,8 @@
 #pragma once
 #include <cstdint>
 #include <cstdio>
+#include <deque>
+#include <vector>
 
 #include "../TraceTypes.hpp"
 
@@ -26,9 +28,12 @@
 // independent internal mutex, so draining both every tick can't deadlock
 // against anything.
 //
-// It is handed an already-open `FILE*` -- opened by the preset loader (CLI)
-// or by the GUI's debug panel -- and takes ownership of it: `finish()`
-// (also called by the destructor) is what `fclose`s it.
+// Two modes. Handed an already-open `FILE*` (today's tools: the CLIs'
+// preset loader), it writes there and takes ownership: `finish()` (also
+// called by the destructor) is what `fclose`s it. Made without one (the
+// app, LIB-10 §10.7: the c1600.trace-records kind), it keeps the bytes of
+// whole records until take() hands them on; the library's trace session
+// writes, limits and ends the file. The bytes are the same either way.
 //
 // Not thread-safe. `PC1500Machine` only ever touches its instance from
 // whichever thread is stepping the CPU, under the machine mutex.
@@ -40,6 +45,8 @@ public:
     /// no-op) -- callers that care should check the handle before
     /// constructing.
     explicit PC1500TraceFile(std::FILE* handle);
+    /// Buffer mode: the header and SESSION_START wait in the buffer.
+    PC1500TraceFile();
 
     PC1500TraceFile(const PC1500TraceFile&) = delete;
     PC1500TraceFile& operator=(const PC1500TraceFile&) = delete;
@@ -64,12 +71,25 @@ public:
     /// size once stdio flushes, without asking the filesystem.
     uint64_t bytesWritten() const { return m_bytesWritten; }
 
+    /// Buffer mode: appends to `out` the bytes of whole records waiting, as
+    /// many as fit in `budget`. False if records are left (the budget was
+    /// not enough).
+    bool take(std::vector<uint8_t>& out, uint64_t budget);
+    bool buffered() const { return m_buffered; }
+
     ~PC1500TraceFile();
 
 private:
     std::FILE* m_fh = nullptr;
+    bool m_buffered = false;
+    bool m_finished = false;
     uint32_t m_eventCount = 0;
     uint64_t m_bytesWritten = 0;
+    std::vector<uint8_t> m_buffer;   // buffer mode: what take() has not handed on
+    std::deque<uint64_t> m_ends;     // the end of each record in m_buffer, from its start
+
+    void put(const uint8_t* data, size_t n);
+    void startSession();
 
     void writeRecord(uint8_t type, const uint8_t* payload, uint16_t len);
 };

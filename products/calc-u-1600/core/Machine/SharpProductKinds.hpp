@@ -18,8 +18,8 @@
 //   c1600.inspector            the INSPECTOR views (owner: the main CPU)
 //   c1600.ce158-printer-port   bytes sent to the CE-158's printer port (owner: the CE-158)
 //   c1600.host-drive-folder    the host drive's folder (owner: the host drive)
+//   c1600.trace-records        the records of a CPU trace (owner: the main CPU; LIB-10 D-18)
 // Adapter kinds, each removed by the step named (design §5):
-//   c1600.trace          the CPU trace file (M-45, LIB-10)
 //   c1600.tape-deck      the cassette recorder (M-47, LIB-7)
 //   c1600.floppy-drive   the CE-1600F (M-47, LIB-7)
 //
@@ -70,19 +70,26 @@ public:
     virtual void setFolder(const std::string& folder) = 0;   // a live media swap
 };
 
-// ---- Adapter kinds ----
-
-class CpuTrace : public calcu::machine::Capability {
+// The records of a CPU trace in today's TRACE.bin format, version 3 (LIB-10
+// design §10.7, D-18; AC-42): the header and SESSION_START at begin(), the
+// instruction frames of every CPU and the gap records as the core drains
+// its rings, SESSION_END at endRecord(). The library's trace session writes
+// them into the file, at most a budget at a time (AC-24, AC-43).
+class TraceRecords : public calcu::machine::Capability {
 public:
-    static constexpr calcu::machine::KindId kKind{"c1600.trace"};
+    static constexpr calcu::machine::KindId kKind{"c1600.trace-records"};
     calcu::machine::KindId kind() const override { return kKind; }
 
-    // Takes the file on success (see PC1500Machine::beginCpuTrace).
-    virtual bool begin(std::FILE* handle, std::uint32_t flags) = 0;
-    virtual void end() = 0;
-    virtual bool active() const = 0;
-    virtual std::uint64_t bytes() const = 0;
+    virtual bool begin() = 0;   // false: a trace runs already
+    // Whole records waiting, at most `budget` bytes, appended to `out`;
+    // false: more were waiting than the budget took.
+    virtual bool take(std::vector<std::uint8_t>& out, std::uint64_t budget) = 0;
+    virtual void endRecord() = 0;   // drains what is left, SESSION_END
+    virtual void end() = 0;         // recording off
 };
+
+// ---- Adapter kinds ----
+
 
 class TapeDeckAccess : public calcu::machine::Capability {
 public:

@@ -537,3 +537,43 @@ TEST(ac15_breakpoints_rebound_by_target_name_rest_dropped) {
     CHECK(r.done(r.send("model", Value::object({{"name", "test-seg"}}))));   // main and inner are gone
     CHECK(r.debugger.runControl().table().breakpoints().empty());
 }
+
+// ── D-16 (LIB-10 design §10.15, M-45): a step with a test ─────────────────
+
+TEST(step_until_goes_on_while_the_test_says_so) {
+    DebugRig r;
+    pauseAt(r, 0x00);
+    // On while the address is below 0x07, up to 100 steps: ends at the first
+    // instruction at or past it.
+    int asked = 0;
+    const auto res = r.debugger.runControl().step(kCpu, 100, std::nullopt, StepKind::In, 0,
+                                                  [&asked](const calcu::machine::DebugTarget& t) {
+                                                      ++asked;
+                                                      return t.nextAddress() < 0x07;
+                                                  });
+    CHECK(res.ok && res.deferred);
+    r.advance(10'000);
+    CHECK(r.paused());
+    CHECK(r.runState()->reason == RunState::Reason::Step);
+    CHECK(r.pc() >= 0x07);
+    CHECK(asked > 1);
+    // Without a test the count ends it, as before.
+    const auto one = r.debugger.runControl().step(kCpu, 1, std::nullopt, StepKind::In);
+    CHECK(one.ok);
+    const std::uint64_t before = r.target().retired();
+    r.advance(1000);
+    CHECK_EQ(r.target().retired(), before + 1);
+}
+
+TEST(step_until_ends_at_a_breakpoint) {
+    DebugRig r;
+    pauseAt(r, 0x00);
+    r.breakAt(0x12);
+    const auto res = r.debugger.runControl().step(kCpu, 100'000, std::nullopt, StepKind::Over, 0,
+                                                  [](const calcu::machine::DebugTarget&) { return true; });
+    CHECK(res.ok);
+    r.advance(100'000);
+    CHECK(r.paused());
+    CHECK_EQ(r.pc(), std::uint64_t(0x12));
+    CHECK(r.runState()->reason == RunState::Reason::Breakpoint);
+}

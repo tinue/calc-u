@@ -83,6 +83,7 @@ function CalcU1600(props) {
   }, [ready]);
   const ui = useEngine(engine, (s) => s.ui);
   const busy = useEngine(engine, (s) => s.busy);
+  const paused = useEngine(engine, (s) => s.paused);
   const notices = useEngine(engine, (s) => s.notices);
   const fatal = useEngine(engine, (s) => s.fatal);
   const persistent = useEngine(engine, (s) => s.persistent);
@@ -293,6 +294,9 @@ function CalcU1600(props) {
         { separator: true },
         { label: "Reset", shortcut: `${mod}R`, disabled: !ok, onClick: () => engine.call("reset", false) },
         { label: "Reset All", shortcut: `${IS_MAC ? "⇧⌘" : "Ctrl+Shift+"}R`, disabled: !ok, onClick: () => engine.call("reset", true) },
+        // LIB-10 AC-41 (adapter L-A4 until LIB-14's shell, M-49).
+        { separator: true },
+        { label: "Resume", disabled: !paused, onClick: () => engine.call("resume") },
       ],
     },
     { title: "Help", items: [{ label: "About Calc-U-1600…", onClick: () => dialogs.ask("about", {}) }] },

@@ -112,6 +112,11 @@ list(FILTER CALCU_SHARED_SOURCES EXCLUDE REGEX "^${CALCU_SHARED_ROOT}/tests/")
 # The harness product entry (LIB-11, M-28) is a target of its own:
 # calcu1600_harness in CMakeLists.txt, not in the Qt6 and Web builds.
 list(FILTER CALCU_SHARED_SOURCES EXCLUDE REGEX "/app/HarnessProduct\\.cpp$")
+# The DAP's layer (C1600-3 §3.1): every tree but Emscripten -- the Web has
+# no debugger client.
+if(EMSCRIPTEN)
+  list(FILTER CALCU_SHARED_SOURCES EXCLUDE REGEX "/app/dap/")
+endif()
 add_library(calcu_shared STATIC ${CALCU_SHARED_SOURCES})
 target_include_directories(calcu_shared PUBLIC ${CALCU_ROOT})
 target_link_libraries(calcu_shared PRIVATE calcu_warnings)

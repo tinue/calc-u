@@ -51,6 +51,7 @@ struct ShotStep {
         Capture,      // capture
         ExpectPanel,  // text = objectName, text2 = the title it shows, number = 1 empty / 0 not / -1 either
         ExpectTitle,  // text = the window's title
+        Command,      // text = a session command without arguments (`pause`, `resume`)
     };
     Kind kind = Kind::Settle;
     QString text;

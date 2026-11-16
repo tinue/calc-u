@@ -60,7 +60,8 @@ int countLines(const std::string& text) {
 }
 
 job::Task<bool> runSteps(PresetMachine& machine, const std::vector<PresetStep>& steps, std::string* error,
-                         const PresetLogFn& log, const std::string& traceDir, const PresetSaveAsFn& onSaveAs) {
+                         const PresetLogFn& log, const std::string& traceDir, const PresetSaveAsFn& onSaveAs,
+                         const PresetTraceFn& traceHook) {
     const double hz = machine.cyclesPerSecond();
     for (const PresetStep& step : steps) {
         switch (step.kind) {
@@ -108,6 +109,17 @@ job::Task<bool> runSteps(PresetMachine& machine, const std::vector<PresetStep>& 
                 break;
             }
             case PresetStep::Kind::Trace: {
+                // L-A3: the app's trace session (LIB-10 §10.7).
+                if (traceHook) {
+                    std::string traceError;
+                    if (!traceHook(step.text, &traceError)) {
+                        *error = "trace: " + traceError;
+                        if (log) log("  trace: FAILED: " + traceError);
+                        co_return false;
+                    }
+                    if (log) log(step.text.empty() ? "  trace: stopped" : "  trace: started -> " + step.text);
+                    break;
+                }
                 // Empty text -> stop; otherwise (re)start a capture to
                 // <traceDir>/<text>. Starting a new one first closes any
                 // open one; one left running is closed
@@ -315,7 +327,8 @@ job::Task<void> runPresetSectionsJob(PresetMachine& machine, const PresetFile& p
                                      PresetLogFn log, std::string traceDir, PresetSaveAsFn onSaveAs) {
     // A trace started by a `- trace:` step and never explicitly stopped is
     // closed (SESSION_END written, file closed) when the sections are done,
-    // by ANY path.
+    // by ANY path. The app's trace (traceHook, L-A3) is the trace session's:
+    // the end of the operation ends it.
     struct TraceCloser {
         PresetMachine& m;
         ~TraceCloser() {
@@ -333,7 +346,7 @@ job::Task<void> runPresetSectionsJob(PresetMachine& machine, const PresetFile& p
         if (section.kind == PresetSection::Kind::Keys) {
             const size_t n = section.keys.size();
             if (log) log(tag + "keys (" + std::to_string(n) + (n == 1 ? " step)" : " steps)"));
-            if (!co_await runSteps(machine, section.keys, &result->error, log, traceDir, onSaveAs)) co_return;
+            if (!co_await runSteps(machine, section.keys, &result->error, log, traceDir, onSaveAs, preset.traceHook)) co_return;
             continue;
         }
         // A preceding `type:` step returns right after its ENTER, so a

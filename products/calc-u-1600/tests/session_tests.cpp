@@ -16,6 +16,7 @@
 #include "Machine/SharpRoms.hpp"
 #include "../core/Connector/PlotterPaperOutput.hpp"
 #include "TestHarness.hpp"
+#include "debugger/RunState.hpp"
 
 namespace {
 
@@ -154,17 +155,6 @@ TEST(lib3_ac37_buzzer_heard_at_regular_speed_only) {
     CHECK(duringOp == 0);
 }
 
-// The debugger's hooks as SharpDebuggerGate sees them (no message).
-struct CountingDebugger : shared::SharpDebugger {
-    int aboutToChange = 0, replaced = 0, slices = 0;
-    void machineAboutToChange() override { ++aboutToChange; }
-    void machineReplaced() override { ++replaced; }
-    bool runDebuggerSlice(std::uint64_t) override {
-        ++slices;
-        return false;   // the machine runs the slice as without a debugger
-    }
-};
-
 // LIB-3 AC-38: everything 0.8.1's callbacks announced
 // (Shared/MachineSession.hpp:69-93, Shared/AppSession.hpp:62-84) arrives
 // as messages a test frontend keeps (the interim names of design §5).
@@ -186,9 +176,7 @@ TEST(lib3_ac38_mirror_holds_every_callback) {
 
     SessionFixture f;
     f.readCost = std::chrono::microseconds(500);
-    CountingDebugger debugger;
     f.open();
-    f.part().setDebugger(&debugger);
     std::size_t mark = 0;
     CHECK(f.start("PC-1500A"));
 
@@ -203,18 +191,24 @@ TEST(lib3_ac38_mirror_holds_every_callback) {
     }
 
     // machineReplaced, modelSwitched -> c1600.machine; machineAboutToChange
-    // -> no message, the debugger's hook.
+    // -> the library's run state (LIB-10, M-45: the debugger is a part).
     const shared::MachinePayload before = *f.state<shared::MachinePayload>(t::kMachine);
     CHECK(f.ok(c::kPickModel, Value::object({{"model", "PC-1600"}})));
     const shared::MachinePayload* after = f.state<shared::MachinePayload>(t::kMachine);
     CHECK(after && after->model == Model::PC1600);
     CHECK(after && after->builds == before.builds + 1 && after->modelSwitches == before.modelSwitches + 1);
-    CHECK(debugger.aboutToChange >= 1 && debugger.replaced >= 2);
+    const auto* run = f.state<calcu::debugger::RunState>(calcu::debugger::kRunStateTopic);
+    CHECK(run && !run->paused);
 
-    // runDebuggerSlice -> no message: every advance goes through the gate.
-    const int slices = debugger.slices;
+    // runDebuggerSlice -> the run control is the gate of every advance: a
+    // pause stops emulated time, a resume lets it go on (LIB-10 AC-40).
+    CHECK(f.ok(calcu::debugger::kPauseCommand, Value::object({{"level", "cpu"}})));
+    const auto ticks = f.part().machine()->tickCount();
     f.runFor(0.5);
-    CHECK(debugger.slices > slices);
+    CHECK_EQ(f.part().machine()->tickCount(), ticks);
+    CHECK(f.ok(calcu::debugger::kResumeCommand));
+    f.runFor(0.5);
+    CHECK(f.part().machine()->tickCount() > ticks);
 
     // presetArmed -> display and control state during the operation;
     // presetLog -> log; moduleChanged -> c1600.machine.
@@ -259,7 +253,6 @@ TEST(lib3_ac38_mirror_holds_every_callback) {
     web.hostDirectories = false;
     CHECK(web.start("PC-1600"));
     CHECK(!web.state<shared::ControlStatePayload>(t::kControlState)->state.hostDriveOffered);
-    f.part().setDebugger(nullptr);
 }
 
 // Reset, Cold boot and a model switch stop what runs; keys pressed while an

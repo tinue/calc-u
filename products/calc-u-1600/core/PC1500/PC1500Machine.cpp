@@ -221,6 +221,29 @@ uint64_t PC1500Machine::runCycles(uint64_t maxCycles) {
     return consumed;
 }
 
+bool PC1500Machine::beginTraceRecords(uint32_t flags) {
+    if (m_traceFile) return false;
+    m_traceFile = std::make_unique<PC1500TraceFile>();
+    m_traceDrainCounter = 0;
+    m_cpu.setTraceFlags(flags);
+    uint32_t staleLost = 0;
+    m_cpu.drainTraceEvents(m_traceDrainBuf, kTraceDrainBufFrames, &staleLost);
+    return true;
+}
+
+void PC1500Machine::endTraceRecord() {
+    if (!m_traceFile) return;
+    pumpTraceFile();
+    m_traceFile->finish();
+    m_cpu.setTraceFlags(TRACE_NONE);
+}
+
+void PC1500Machine::endTraceRecords() {
+    m_traceFile.reset();
+    m_cpu.setTraceFlags(TRACE_NONE);
+    m_traceDrainCounter = 0;
+}
+
 bool PC1500Machine::beginCpuTrace(std::FILE* handle, uint32_t flags) {
     if (!handle || m_traceFile) return false;
     m_traceFile = std::make_unique<PC1500TraceFile>(handle);

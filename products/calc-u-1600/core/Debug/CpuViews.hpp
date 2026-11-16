@@ -8,11 +8,11 @@
 #include "../CPU/LH5801/LH5801.hpp"
 #include "../CPU/SC7852/SC7852.hpp"
 #include "CpuRegisters.hpp"
-#include "DebugTarget.hpp"
+#include "CpuRegisters.hpp"
 
 // ── One CPU as the debugger sees it ──────────────────────────────────────
 //
-// Everything DebugTarget needs per CPU: registers, history, halt state and
+// Everything a Sharp debug target needs per CPU: registers, history, halt state and
 // PC breakpoints. The machine targets hold one view per thread and add
 // only what is machine-wide (bus owner, memory mapping, banks, run/step).
 

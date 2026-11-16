@@ -1,5 +1,8 @@
 // Headless end-to-end test for the preset loader's `- trace:` step
-// (PC1500PresetLoader.cpp). Drives applyPC1500Preset() against a real ROM
+// (PC1500PresetLoader.cpp) as today's tools run it: the core writes the file
+// itself (PC1500TraceFile's file mode). The app's trace -- the same records
+// through the library's trace session (LIB-10 §10.7, L-A3) -- is
+// debugger_tests.cpp's. Drives applyPC1500Preset() against a real ROM
 // (roms/PC-1500_A04.ROM, relative to the repo root) with a preset that
 // starts a CPU instruction trace, runs a bit, and stops it, then parses
 // the produced file back with a minimal inline reader and checks it is a
@@ -28,66 +31,22 @@
 #include "TempFolder.hpp"
 #include "TestRoms.hpp"
 #include "TestHarness.hpp"
+#include "TraceFileReader.hpp"
 
 namespace {
+
+using tracetest::readTrace;
+using tracetest::TraceSummary;
+using tracetest::le16;
+using tracetest::le32;
 
 const char* kRomPath = "roms/PC-1500_A04.ROM";
 
 bool romPresent() { return testRomSet() != nullptr; }   // the one lookup (LIB-12)
 
-// ── Minimal CALCU1500_TRACE reader ─────────────────────────────────────
-// Constants MUST match Core/PC1500/PC1500TraceFile.cpp.
-struct TraceSummary {
-    bool headerOk = false;
-    int firstRecordType = -1;
-    int lastRecordType = -1;
-    int sessionStartCount = 0;
-    int traceEventCount = 0;
-    int sessionEndCount = 0;
-    int gapCount = 0;
-    int z80EventCount = 0;          // 0x04 TRACE_EVENT_Z80 (the PC-1600's SC7852)
-    bool truncated = false;
-    bool allEventPayloads25 = true; // v2: 25-byte TRACE_EVENT (added cpuId)
-    bool allZ80Payloads29 = true;   // 29-byte TRACE_EVENT_Z80
-};
-
-uint32_t le32(const uint8_t* p) {
-    return uint32_t(p[0]) | (uint32_t(p[1]) << 8) | (uint32_t(p[2]) << 16) | (uint32_t(p[3]) << 24);
-}
-uint16_t le16(const uint8_t* p) { return uint16_t(uint16_t(p[0]) | (uint16_t(p[1]) << 8)); }
-
-TraceSummary readTrace(const std::string& path) {
-    TraceSummary s;
-    std::ifstream in(path, std::ios::binary);
-    if (!in) return s;
-    std::vector<uint8_t> buf((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>());
-
-    if (buf.size() < 16) { s.truncated = true; return s; }
-    s.headerOk = (le32(buf.data()) == 0x50433135u) && (le16(buf.data() + 4) == 3);
-
-    size_t i = 16;
-    while (i + 3 <= buf.size()) {
-        uint8_t type = buf[i];
-        uint16_t len = le16(buf.data() + i + 1);
-        if (i + 3 + len > buf.size()) { s.truncated = true; break; }
-        if (s.firstRecordType < 0) s.firstRecordType = type;
-        s.lastRecordType = type;
-        switch (type) {
-            case 0x01: s.sessionStartCount++; break;
-            case 0x02: s.traceEventCount++; if (len != 25) s.allEventPayloads25 = false; break;
-            case 0x03: s.sessionEndCount++; break;
-            case 0x04: s.z80EventCount++; if (len != 29) s.allZ80Payloads29 = false; break;
-            case 0x05: s.gapCount++; break;
-            default: break;
-        }
-        i += 3 + len;
-    }
-    return s;
-}
-
 // A preset that explicitly starts and stops a trace produces a complete
 // stream: SESSION_START ... TRACE_EVENT(s) ... SESSION_END.
-TEST(test_trace_step_produces_wellformed_file) {
+TEST(lib10_ac42_tools_trace_step_produces_wellformed_file) {
     SKIP_UNLESS(romPresent(), (std::string(kRomPath) + " not found relative to cwd (run tests from the repo root)").c_str());
     calcu::testing::TempFolder tmp("calcu1600-trace");
     const std::string dir = tmp.str();
@@ -120,7 +79,7 @@ TEST(test_trace_step_produces_wellformed_file) {
 
 // A trace left running at the end of the preset is still finalised
 // (SESSION_END written, file closed) by runPresetSections()' TraceCloser guard.
-TEST(test_trace_left_open_is_auto_closed) {
+TEST(lib10_ac42_tools_trace_left_open_is_auto_closed) {
     SKIP_UNLESS(romPresent(), (std::string(kRomPath) + " not found").c_str());
     calcu::testing::TempFolder tmp("calcu1600-trace");
     const std::string dir = tmp.str();
@@ -153,7 +112,7 @@ TEST(test_trace_left_open_is_auto_closed) {
 // TRACE_EVENT_Z80 (0x04) record's 29-byte payload survives a write/read
 // round trip alongside an ordinary (LH5801-shaped) TRACE_EVENT in the
 // same file, both readable by a single linear scan.
-TEST(test_z80_frame_shares_one_file_with_lh5801_frame) {
+TEST(lib10_ac42_z80_frame_shares_one_file_with_lh5801_frame) {
     calcu::testing::TempFolder tmp("calcu1600-trace");
     const std::string dir = tmp.str();
     std::string path = dir + "/z80.bin";
@@ -207,7 +166,7 @@ TEST(test_z80_frame_shares_one_file_with_lh5801_frame) {
 // stream, and -- because both CPUs run during boot -- it carries BOTH a
 // 25-byte LH5803-shaped TRACE_EVENT (0x02) and a 29-byte SC7852-shaped
 // TRACE_EVENT_Z80 (0x04) in the one file.
-TEST(test_pc1600_trace_step_produces_wellformed_file) {
+TEST(lib10_ac42_tools_pc1600_trace_step_produces_wellformed_file) {
     PC1600Machine machine;
     SKIP_UNLESS(loadPC1600Roms(machine), "PC-1600 ROM images not found");
     calcu::testing::TempFolder tmp("calcu1600-trace");
@@ -245,7 +204,7 @@ TEST(test_pc1600_trace_step_produces_wellformed_file) {
 
 // A PC-1600 trace left running at the end of the preset is still finalised
 // by applyPC1600Preset()'s TraceCloser guard.
-TEST(test_pc1600_trace_left_open_is_auto_closed) {
+TEST(lib10_ac42_tools_pc1600_trace_left_open_is_auto_closed) {
     PC1600Machine machine;
     SKIP_UNLESS(loadPC1600Roms(machine), "PC-1600 ROM images not found");
     calcu::testing::TempFolder tmp("calcu1600-trace");

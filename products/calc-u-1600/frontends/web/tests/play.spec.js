@@ -377,3 +377,34 @@ test('the installed app shell starts', async ({ page }) => {
   await expect(page.locator('.calcu-client[data-ready=true]')).toHaveCount(1, { timeout: 30000 });
   await expect(page.locator('.calcu-menubar')).toBeVisible();
 });
+
+// LIB-10 AC-40 (design §10.10, D16-6; D-19): the run control in the Web page
+// without a debugger -- the page has no harness, so the session commands
+// pause and resume go from the page.
+test('lib10_ac40 run control pauses and resumes the web machine', async ({ page }) => {
+  await gotoReady(page);
+  const state = () => page.evaluate(() => document.querySelector('.calcu-client').calcuEngine.getState().paused);
+  const ticks = async () => (await request(page, 'ticks')).ticks;
+  await request(page, 'pause');
+  await expect.poll(state, { timeout: 10000 }).toBe(true);
+  const t0 = await ticks();
+  await page.waitForTimeout(300);
+  expect(await ticks()).toBe(t0);   // paused: no emulated time passes
+  await request(page, 'resume');
+  await expect.poll(state, { timeout: 10000 }).toBe(false);
+  await expect.poll(ticks, { timeout: 10000 }).toBeGreaterThan(t0);
+});
+
+// LIB-10 AC-41: Machine ▸ Resume runs a paused machine again, and is there
+// only while it is paused.
+test('lib10_ac41 machine resume', async ({ page }) => {
+  await gotoReady(page);
+  const state = () => page.evaluate(() => document.querySelector('.calcu-client').calcuEngine.getState().paused);
+  await page.locator('.calcu-menubar-item > button', { hasText: 'Machine' }).click();
+  await expect(page.locator('.calcu-menu-item', { hasText: 'Resume' })).toHaveAttribute('aria-disabled', 'true');
+  await page.keyboard.press('Escape');
+  await request(page, 'pause');
+  await expect.poll(state, { timeout: 10000 }).toBe(true);
+  await menu(page, 'Machine', 'Resume');
+  await expect.poll(state, { timeout: 10000 }).toBe(false);
+});

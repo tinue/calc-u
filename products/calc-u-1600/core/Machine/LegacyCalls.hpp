@@ -42,10 +42,10 @@ machinecode::PC1600State machineCodeLoadState(calcu::machine::Machine&);   // PC
 // The PC-1500's user RAM; false on the PC-1600.
 bool userRam(calcu::machine::Machine&, std::uint32_t* start, std::uint32_t* end);
 
-// ---- Debugger (M-45, LIB-10 1600) ----
-std::unique_ptr<debug::DebugTarget> makeDebugTarget(calcu::machine::Machine&);
-debug::LoadResult loadProgram(calcu::machine::Machine&, const debug::LoadRequest&, debug::SourceMap&,
-                              const debug::DebugTarget&);
+// ---- Build & Load (M-50, C1600-3 on C1600-2's loader) ----
+// The listing is verified through the machine's debug targets (thread n:
+// target n - 1).
+debug::LoadResult loadProgram(calcu::machine::Machine&, const debug::LoadRequest&, debug::SourceMap&);
 
 // ---- Presets (M-46, LIB-6 1600 and C1600-4) ----
 // The model's preset loader on a machine just built for the preset; what it

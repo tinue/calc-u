@@ -1,12 +1,18 @@
-#include "BreakpointTable.hpp"
+#include "app/dap/DapBreakpoints.hpp"
 
 #include <algorithm>
 #include <cctype>
 #include <cstdio>
 #include <cstdlib>
 #include <set>
+#include <utility>
+#include <variant>
 
-namespace debug {
+#include "Debug/SharpDebugging.hpp"
+
+namespace shared::dap {
+
+using namespace debug;
 
 namespace {
 
@@ -115,7 +121,7 @@ std::string interpolateLog(const std::string& message, const ExpressionContext& 
     return LogTemplate::parse(message).render(ctx);
 }
 
-std::shared_ptr<const BreakpointTable::Compiled> BreakpointTable::compile(const BreakpointSpec& spec) {
+std::shared_ptr<const DapBreakpoints::Compiled> DapBreakpoints::compile(const BreakpointSpec& spec) {
     auto c = std::make_shared<Compiled>();
     c->hasCondition = !trim(spec.condition).empty();
     if (c->hasCondition) c->condition = CompiledExpression::compile(spec.condition);
@@ -127,7 +133,7 @@ std::shared_ptr<const BreakpointTable::Compiled> BreakpointTable::compile(const 
 
 // ── Setting ───────────────────────────────────────────────────────────────
 
-std::vector<BreakpointStatus> BreakpointTable::resolveSource(Source& s, const SourceMap& map) {
+std::vector<BreakpointStatus> DapBreakpoints::resolveSource(Source& s, const SourceMap& map) {
     std::vector<BreakpointStatus> out;
     const std::set<int> ids(s.ids.begin(), s.ids.end());
     m_sourceArmed.erase(std::remove_if(m_sourceArmed.begin(), m_sourceArmed.end(),
@@ -165,7 +171,7 @@ std::vector<BreakpointStatus> BreakpointTable::resolveSource(Source& s, const So
     return out;
 }
 
-std::vector<BreakpointStatus> BreakpointTable::setSource(const std::string& file, const std::vector<SourceRequest>& requests,
+std::vector<BreakpointStatus> DapBreakpoints::setSource(const std::string& file, const std::vector<SourceRequest>& requests,
                                                          const SourceMap& map) {
     auto it = std::find_if(m_sources.begin(), m_sources.end(), [&file](const Source& s) { return s.file == file; });
     if (it == m_sources.end()) {
@@ -184,7 +190,7 @@ std::vector<BreakpointStatus> BreakpointTable::setSource(const std::string& file
     return out;
 }
 
-std::vector<BreakpointStatus> BreakpointTable::setInstructions(const std::vector<InstructionRequest>& requests) {
+std::vector<BreakpointStatus> DapBreakpoints::setInstructions(const std::vector<InstructionRequest>& requests) {
     m_instructionArmed.clear();
     std::vector<BreakpointStatus> out;
     for (const InstructionRequest& r : requests) {
@@ -200,7 +206,7 @@ std::vector<BreakpointStatus> BreakpointTable::setInstructions(const std::vector
     return out;
 }
 
-std::vector<BreakpointStatus> BreakpointTable::resolveFunctions(const SourceMap& map) {
+std::vector<BreakpointStatus> DapBreakpoints::resolveFunctions(const SourceMap& map) {
     m_functionArmed.clear();
     std::vector<BreakpointStatus> out;
     for (const Function& f : m_functions) {
@@ -227,7 +233,7 @@ std::vector<BreakpointStatus> BreakpointTable::resolveFunctions(const SourceMap&
     return out;
 }
 
-std::vector<BreakpointStatus> BreakpointTable::setFunctions(const std::vector<FunctionRequest>& requests,
+std::vector<BreakpointStatus> DapBreakpoints::setFunctions(const std::vector<FunctionRequest>& requests,
                                                             const SourceMap& map) {
     for (const Function& f : m_functions) forgetStatus(f.id);
     m_functions.clear();
@@ -237,7 +243,7 @@ std::vector<BreakpointStatus> BreakpointTable::setFunctions(const std::vector<Fu
     return out;
 }
 
-std::vector<BreakpointStatus> BreakpointTable::setData(const std::vector<DataBreakpointSpec>& requests) {
+std::vector<BreakpointStatus> DapBreakpoints::setData(const std::vector<DataBreakpointSpec>& requests) {
     m_data.clear();
     std::vector<BreakpointStatus> out;
     for (const DataBreakpointSpec& r : requests) {
@@ -251,19 +257,19 @@ std::vector<BreakpointStatus> BreakpointTable::setData(const std::vector<DataBre
     return out;
 }
 
-void BreakpointTable::forgetStatus(int id) {
+void DapBreakpoints::forgetStatus(int id) {
     m_lastStatus.erase(std::remove_if(m_lastStatus.begin(), m_lastStatus.end(),
                                       [id](const BreakpointStatus& s) { return s.id == id; }),
                        m_lastStatus.end());
 }
 
-void BreakpointTable::setEntry(int thread, uint16_t addr) {
+void DapBreakpoints::setEntry(int thread, uint16_t addr) {
     m_entryArmed = true;
     m_entryThread = thread;
     m_entryAddr = addr;
 }
 
-void BreakpointTable::clear() {
+void DapBreakpoints::clear() {
     m_entryArmed = false;
     m_sources.clear();
     m_sourceArmed.clear();
@@ -274,7 +280,7 @@ void BreakpointTable::clear() {
     m_lastStatus.clear();
 }
 
-std::vector<BreakpointStatus> BreakpointTable::reresolve(const SourceMap& map) {
+std::vector<BreakpointStatus> DapBreakpoints::reresolve(const SourceMap& map) {
     std::vector<BreakpointStatus> now;
     for (Source& s : m_sources) {
         std::vector<BreakpointStatus> r = resolveSource(s, map);
@@ -292,85 +298,105 @@ std::vector<BreakpointStatus> BreakpointTable::reresolve(const SourceMap& map) {
     return changed;
 }
 
-// ── Arming ────────────────────────────────────────────────────────────────
+// ── Arming (LIB-10 AC-10 to AC-12, AC-47) ────────────────────────────────
 
-void BreakpointTable::apply(DebugTarget& target) const {
-    for (const Thread& t : target.threads()) {
-        std::vector<uint16_t> addrs;
-        for (const auto* list : {&m_sourceArmed, &m_instructionArmed, &m_functionArmed})
-            for (const Armed& a : *list)
-                if (a.thread == t.id) addrs.push_back(a.addr);
-        if (m_entryArmed && m_entryThread == t.id) addrs.push_back(m_entryAddr);
-        target.setBreakpoints(t.id, addrs);
-        std::vector<WatchSet::Watch> watches;
-        for (const Data& d : m_data) {
-            if (d.thread != t.id) continue;
-            WatchSet::Watch w;
-            w.lo = d.addr;
-            w.hi = uint16_t(d.addr + (d.length ? d.length - 1 : 0));
-            w.space = d.space;
-            w.read = d.access != DataAccess::Write;
-            w.write = d.access != DataAccess::Read;
-            watches.push_back(w);
+void DapBreakpoints::apply(calcu::debugger::BreakpointTable& table, const DapTargets& targets, SymbolLookup symbols) {
+    table.remove(kDapSetter);
+    m_dapIdOf.clear();
+    m_entryId.reset();
+    calcu::machine::Debugging* d = targets.debugging();
+    if (!targets.valid()) return;
+    struct Applied {   // the targets get the table's addresses and ranges at the end
+        calcu::debugger::BreakpointTable& t;
+        calcu::machine::Debugging& d;
+        ~Applied() { t.apply(d); }
+    } applied{table, *d};
+    // A breakpoint's test finds its entry by list and place again, so a
+    // change in between (set anew, then applied anew) never reaches a stale one.
+    std::vector<Armed>* lists[3] = {&m_sourceArmed, &m_instructionArmed, &m_functionArmed};
+    for (std::vector<Armed>* list : lists) {
+        for (std::size_t i = 0; i < list->size(); ++i) {
+            const Armed& a = (*list)[i];
+            const sharp::SharpDebugTarget& t = targets.target(a.thread);
+            calcu::debugger::HitTest test = [this, list, i, id = a.id, symbols](const calcu::machine::DebugTarget& at) {
+                if (i >= list->size() || (*list)[i].id != id) return false;
+                Armed& x = (*list)[i];
+                return passes(x, *x.compiled, x.hits, static_cast<const sharp::SharpDebugTarget&>(at), symbols);
+            };
+            const auto r = table.addBreakpoint(kDapSetter, *d, t.info().name, a.addr, t.qualifierOf(a.key), std::move(test));
+            if (const auto* lib = std::get_if<calcu::debugger::BreakpointId>(&r)) m_dapIdOf[*lib] = a.id;
         }
-        target.setWatches(t.id, watches);
+    }
+    if (m_entryArmed) {
+        const sharp::SharpDebugTarget& t = targets.target(m_entryThread);
+        calcu::debugger::HitTest once = [this](const calcu::machine::DebugTarget&) {
+            if (!m_entryArmed) return false;
+            m_entryArmed = false;   // it stops once, then disappears
+            return true;
+        };
+        const auto r = table.addBreakpoint(kDapSetter, *d, t.info().name, m_entryAddr, {}, std::move(once));
+        if (const auto* lib = std::get_if<calcu::debugger::BreakpointId>(&r)) m_entryId = *lib;
+    }
+    for (std::size_t i = 0; i < m_data.size(); ++i) {
+        const Data& w = m_data[i];
+        const sharp::SharpDebugTarget& t = targets.target(w.thread);
+        calcu::machine::WatchRange range;
+        range.space = w.space == kSpaceME1 ? 1 : 0;
+        range.first = w.addr;
+        range.count = w.length ? w.length : 1;
+        range.read = w.access != DataAccess::Write;
+        range.write = w.access != DataAccess::Read;
+        calcu::debugger::HitTest test = [this, i, id = w.id, symbols](const calcu::machine::DebugTarget& at) {
+            if (i >= m_data.size() || m_data[i].id != id) return false;
+            Data& x = m_data[i];
+            return passes(x, *x.compiled, x.hits, static_cast<const sharp::SharpDebugTarget&>(at), symbols);
+        };
+        const auto r = table.addWatch(kDapSetter, *d, t.info().name, range, std::move(test));
+        if (const auto* lib = std::get_if<calcu::debugger::BreakpointId>(&r)) m_dapIdOf[*lib] = w.id;
     }
 }
 
 // ── Deciding ──────────────────────────────────────────────────────────────
 
-void BreakpointTable::passes(const BreakpointSpec& spec, const Compiled& compiled, int& hits, int thread,
-                             DebugTarget& target, const SymbolLookup& symbols, HitDecision* decision, int id) {
+bool DapBreakpoints::passes(const BreakpointSpec& spec, const Compiled& compiled, int& hits,
+                            const sharp::SharpDebugTarget& target, const SymbolLookup& symbols) {
     // Only a condition or a log message evaluates anything.
-    const ExpressionContext ctx = compiled.hasCondition || compiled.hasLog ? target.expressionContext(thread, symbols)
-                                                                           : ExpressionContext{};
+    const ExpressionContext ctx =
+        compiled.hasCondition || compiled.hasLog ? target.expressionContext(symbols) : ExpressionContext{};
     if (compiled.hasCondition) {
         const ExpressionResult r = compiled.condition.run(ctx);
         if (!r.ok) {
             // A broken condition stops, and says why, rather than silently never firing.
-            decision->log.push_back("Breakpoint condition '" + spec.condition + "': " + r.error);
-            decision->stop = true;
-            decision->ids.push_back(id);
-            return;
+            m_output.push_back("Breakpoint condition '" + spec.condition + "': " + r.error);
+            return true;
         }
-        if (r.value == 0) return;
+        if (r.value == 0) return false;
     }
     hits++;
-    if (!compiled.hit.met(hits)) return;
+    if (!compiled.hit.met(hits)) return false;
     if (compiled.hasLog) {
-        decision->log.push_back(compiled.log.render(ctx));
-        return;
+        m_output.push_back(compiled.log.render(ctx));   // a log message writes its line and does not pause
+        return false;
     }
-    decision->stop = true;
-    decision->ids.push_back(id);
+    return true;
 }
 
-HitDecision BreakpointTable::onBreakpoint(int thread, uint16_t pc, DebugTarget& target, const SymbolLookup& symbols) {
-    HitDecision d;
-    if (m_entryArmed && thread == m_entryThread && pc == m_entryAddr) {
-        m_entryArmed = false;
-        apply(target);
-        d.stop = true;
-        d.entry = true;
+std::vector<int> DapBreakpoints::dapIds(const std::vector<calcu::debugger::RunState::Hit>& hits) const {
+    std::vector<int> ids;
+    for (const auto& h : hits) {
+        if (h.setter != kDapSetter) continue;
+        const auto it = m_dapIdOf.find(h.id);
+        if (it != m_dapIdOf.end() && std::find(ids.begin(), ids.end(), it->second) == ids.end()) ids.push_back(it->second);
     }
-    for (auto* list : {&m_sourceArmed, &m_instructionArmed, &m_functionArmed})
-        for (Armed& a : *list) {
-            if (a.thread != thread || a.addr != pc) continue;
-            if (a.key.any() && !target.bankMatches(thread, a.key, pc)) continue;
-            passes(a, *a.compiled, a.hits, thread, target, symbols, &d, a.id);
-        }
-    return d;
+    return ids;
 }
 
-HitDecision BreakpointTable::onWatch(int thread, const WatchHit& hit, DebugTarget& target, const SymbolLookup& symbols) {
-    HitDecision d;
-    for (Data& w : m_data) {
-        if (w.thread != thread || w.space != hit.space) continue;
-        if (hit.addr < w.addr || hit.addr > uint16_t(w.addr + (w.length ? w.length - 1 : 0))) continue;
-        if (hit.write ? w.access == DataAccess::Read : w.access == DataAccess::Write) continue;
-        passes(w, *w.compiled, w.hits, thread, target, symbols, &d, w.id);
-    }
-    return d;
+bool DapBreakpoints::entryHit(const std::vector<calcu::debugger::RunState::Hit>& hits) const {
+    for (const auto& h : hits)
+        if (h.setter == kDapSetter && m_entryId && h.id == *m_entryId) return true;
+    return false;
 }
 
-} // namespace debug
+std::vector<std::string> DapBreakpoints::takeOutput() { return std::exchange(m_output, {}); }
+
+} // namespace shared::dap

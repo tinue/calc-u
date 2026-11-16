@@ -15,7 +15,7 @@
 namespace debug {
 
 LoadResult loadProgram(PC1500Machine* pc1500, PC1600Machine* pc1600, const LoadRequest& req, SourceMap& map,
-                       const DebugTarget& target) {
+                       const BankMatch& match, const CodePeek& peek) {
     LoadResult r;
     std::ifstream in(req.bin, std::ios::binary);
     if (!in) {
@@ -122,9 +122,7 @@ LoadResult loadProgram(PC1500Machine* pc1500, PC1600Machine* pc1600, const LoadR
     if (haveListing) {
         const std::string& name = req.listing.empty() ? req.symbols.front() : req.listing;
         r.binding = map.addLoaded(req.thread, std::move(listing), req.key, r.lo, r.hi, name);
-        const int bad = map.verify(
-            r.binding, [&target](int t, const BankKey& k, uint16_t a) { return target.bankMatches(t, k, a); },
-            [&target](int t, uint16_t a, uint8_t* v) { return target.peek(t, kSpaceMain, a, v); });
+        const int bad = map.verify(r.binding, match, peek);
         if (bad > 0)
             r.warnings.push_back(std::to_string(bad) + " listing lines don't match the loaded bytes -- is the listing from this build?");
     }

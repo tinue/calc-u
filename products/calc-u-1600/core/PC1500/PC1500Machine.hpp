@@ -257,10 +257,22 @@ public:
     /// clear the trace flags. No-op if no capture is active.
     void endCpuTrace();
 
-    bool cpuTraceActive() const { return m_traceFile != nullptr; }
+    // A capture to a file (today's tools); the app's records are not one.
+    bool cpuTraceActive() const { return m_traceFile && !m_traceFile->buffered(); }
     /// Size of the active capture so far (0 when none); see
     /// PC1500TraceFile::bytesWritten().
     uint64_t cpuTraceBytes() const { return m_traceFile ? m_traceFile->bytesWritten() : 0; }
+
+    // The app's trace (LIB-10 §10.7, the c1600.trace-records kind): the same
+    // records, kept in a buffer until the library's trace session takes
+    // them (whole records, at most a budget). endTraceRecord() drains what is
+    // left and writes SESSION_END; endTraceRecords() turns recording off.
+    bool beginTraceRecords(uint32_t flags);
+    bool takeTraceRecords(std::vector<uint8_t>& out, uint64_t budget) {
+        return m_traceFile ? m_traceFile->take(out, budget) : true;
+    }
+    void endTraceRecord();
+    void endTraceRecords();
     // ── Debugger stops ────────────────────────────────────────────────────
     /// step() and runCycles() latch a stop when the CPU parks on a PC
     /// breakpoint (nothing executed) or completes an instruction whose data

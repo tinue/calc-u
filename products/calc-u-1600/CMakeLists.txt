@@ -151,6 +151,13 @@ if(CALCU_TESTS)
   # exits 1 naming it; with the full set it runs.
   calcu_add_test(CalcU1600CliRomLookup frequent COMMAND sh tests/cli_rom_tests.sh
                  PROPERTIES ENVIRONMENT PC1600_CLI=$<TARGET_FILE:pc1600_cli>)
+  # LIB-10 AC-42 (design §10.10, D16-8): the harness writes a PC-1600 trace,
+  # tools/read_trace.py reads it unchanged (well under 2 s: Frequent).
+  find_package(Python3 COMPONENTS Interpreter)
+  if(Python3_FOUND AND NOT WIN32)
+    calcu_add_test(CalcU1600ReadTrace frequent COMMAND sh tests/read_trace_check.sh
+                   PROPERTIES ENVIRONMENT CALCU=$<TARGET_FILE:calcu>)
+  endif()
 
   # Longer: run locally before merging into main and at the end of a part.
   # Against frontends/web/dist/ (frontends/web/build.sh first); the WASM

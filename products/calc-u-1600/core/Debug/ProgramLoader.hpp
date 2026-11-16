@@ -4,7 +4,7 @@
 #include <string>
 #include <vector>
 
-#include "DebugTarget.hpp"
+#include "CpuRegisters.hpp"
 #include "SourceMap.hpp"
 
 class PC1500Machine;
@@ -46,8 +46,9 @@ struct LoadResult {
 };
 
 /// Exactly one of the machines is non-null. Verifies the bound listing
-/// against memory right away (`target` supplies the peek and bank state).
+/// against memory right away (`match` and `peek`: the debug targets' bank
+/// state and side-effect-free reads, by thread).
 LoadResult loadProgram(PC1500Machine* pc1500, PC1600Machine* pc1600, const LoadRequest& request, SourceMap& map,
-                       const DebugTarget& target);
+                       const BankMatch& match, const CodePeek& peek);
 
 } // namespace debug

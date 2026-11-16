@@ -49,12 +49,12 @@ struct PC1500InterfaceMachine::Kinds {
         std::optional<bool> promptReady() const override { return pc1500AtBasicPrompt(m); }
         PC1500Machine& m;
     } support;
-    struct Trace final : sharp::CpuTrace {
+    struct Trace final : sharp::TraceRecords {
         explicit Trace(PC1500Machine& m) : m(m) {}
-        bool begin(std::FILE* f, std::uint32_t flags) override { return m.beginCpuTrace(f, flags); }
-        void end() override { m.endCpuTrace(); }
-        bool active() const override { return m.cpuTraceActive(); }
-        std::uint64_t bytes() const override { return m.cpuTraceBytes(); }
+        bool begin() override { return m.beginTraceRecords(TRACE_FULL); }
+        bool take(std::vector<std::uint8_t>& out, std::uint64_t budget) override { return m.takeTraceRecords(out, budget); }
+        void endRecord() override { m.endTraceRecord(); }
+        void end() override { m.endTraceRecords(); }
         PC1500Machine& m;
     } trace;
     struct Tape final : sharp::TapeDeckAccess {
@@ -87,7 +87,8 @@ struct PC1500InterfaceMachine::Kinds {
 };
 
 PC1500InterfaceMachine::PC1500InterfaceMachine(const MachineDescriptor& d, const VariantId& v)
-    : SharpMachine(d, v), m_core(std::make_unique<PC1500Machine>(modelOf(d))), m_kinds(std::make_unique<Kinds>(*m_core)) {
+    : SharpMachine(d, v), m_core(std::make_unique<PC1500Machine>(modelOf(d))), m_kinds(std::make_unique<Kinds>(*m_core)),
+      m_debugging(sharp::makeSharpDebugging(*m_core)) {
     m_core->setCE158SerialLink(&m_ce158Port);
 }
 

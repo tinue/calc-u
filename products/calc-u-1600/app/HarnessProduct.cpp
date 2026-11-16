@@ -10,8 +10,10 @@
 #include "app/Settings.hpp"
 #include "sessions/SessionPart.hpp"
 #include "app/PacingProfiles.hpp"
+#include "app/SharpDebuggerSetup.hpp"
 #include "app/SharpPrinters.hpp"
 #include "app/SharpTyping.hpp"
+#include "debugger/DebuggerPart.hpp"
 #include "paper/PaperPart.hpp"
 #include "startup/ProductMachines.hpp"
 
@@ -119,9 +121,12 @@ public:
 
     // LIB-5: the typing part (key, type; the Sharp profiles), the font, then
     // LIB-8's papers of the two plotters (`paper ...`, `cut-paper`; the run
-    // hands the part its machine control, A-3).
-    std::vector<sessions::SessionPart*> sessionParts() override { return {&typing_, &font_, &paper_}; }
+    // hands the part its machine control, A-3) and LIB-10's debugger (pause,
+    // step, break, watch, trace, symbols, ...; the run hands it its trace
+    // folder and limit).
+    std::vector<sessions::SessionPart*> sessionParts() override { return {&typing_, &font_, &paper_, &debugger_}; }
     paper::PaperPart* paperPart() override { return &paper_; }
+    debugger::DebuggerPart* debuggerPart() override { return &debugger_; }
 
 private:
     machine::Catalogue catalogue_;
@@ -129,6 +134,7 @@ private:
     FontPart font_;
     calcu::typing::TypingPart typing_{typingProduct(), sessions::Hosting::VirtualTime};
     paper::PaperPart paper_{catalogue_, sharpPrinterPapers()};
+    debugger::DebuggerPart debugger_{sharpDebuggerSetup(nullptr, nullptr, /*hasTraceFolder=*/false)};
 };
 
 } // namespace

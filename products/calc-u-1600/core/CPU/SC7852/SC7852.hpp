@@ -1,4 +1,5 @@
 #pragma once
+#include <array>
 #include <cstdint>
 
 #include "../../TraceTypes.hpp"
@@ -197,6 +198,9 @@ public:
     void clearBreakpointSkip() { m_skipBreakpointAt = -1; }
     /// Data breakpoints; see LH5801::setWatches(). Not owned.
     void setWatches(WatchSet* watches) { m_watches = watches; }
+    /// The value the CPU last wrote to I/O port `port` since it was built, or
+    /// -1 (LIB-10 AC-52: the debugger's `io-written` view). No effect.
+    int ioWritten(uint8_t port) const { return m_ioWritten[port] > 0xFF ? -1 : m_ioWritten[port]; }
 
     /// The debugger's always-on history of the last retired instructions
     /// (see HistoryRing.hpp). Recorded on every step() regardless of the
@@ -223,6 +227,11 @@ private:
     // ── Data access (checked against m_watches) ──────────────────────────
     uint8_t dataRead(uint16_t a) { uint8_t v = bus.readMem(a); if (m_watches) m_watches->check(a, v, false, 0); return v; }
     void dataWrite(uint16_t a, uint8_t v) { if (m_watches) m_watches->check(a, v, true, 0); bus.writeMem(a, v); }
+    // Every OUT goes through here: ioWritten() keeps the value.
+    void ioWrite(uint8_t port, uint8_t v) {
+        m_ioWritten[port] = v;
+        bus.writeIO(port, v);
+    }
 
     // ── Fetch helpers ────────────────────────────────────────────────────
     uint8_t  fetchOpcode(); // an M1 cycle: also advances R
@@ -314,6 +323,12 @@ private:
     History m_history;
     BreakpointSet m_breakpoints;
     WatchSet* m_watches{nullptr};
+    std::array<uint16_t, 256> m_ioWritten = filledIoWritten();   // ioWritten(); 0x100: none
+    static std::array<uint16_t, 256> filledIoWritten() {
+        std::array<uint16_t, 256> a{};
+        a.fill(0x100);
+        return a;
+    }
     bool m_breakpointsEnabled{false};
     int32_t m_skipBreakpointAt{-1}; // resumePastBreakpoint(); -1 = none
     Z80HistoryFrame* m_historyFrame{&m_history.next()}; // the frame the current step() fills

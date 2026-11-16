@@ -1,4 +1,5 @@
 #include "DebugPanel.hpp"
+#include "debugger/RunState.hpp"
 
 #include <QEvent>
 #include <QFont>
@@ -141,9 +142,7 @@ QString DebugPanel::selectedOutputText() const {
     return m_output->textCursor().selectedText().replace(QChar::ParagraphSeparator, QLatin1Char('\n'));
 }
 
-DebugPanel::~DebugPanel() {
-    m_controller->endTrace();
-}
+DebugPanel::~DebugPanel() = default;
 
 bool DebugPanel::isDarkMode() const {
     return ChromeColors::isDarkMode(this);
@@ -238,37 +237,24 @@ void DebugPanel::clearDebug() {
 
 // ── TRACE ─────────────────────────────────────────────────────────────
 
+// The button sends `trace {button: true}` (the library names the file
+// TRACE.bin, AC-23) and `trace {off: true}`; the library's trace session
+// limits and ends it, with its notice (LIB-10 AC-24, AC-43).
 void DebugPanel::setTraceEnabled(bool enabled) {
     if (m_controller->traceActive() == enabled) return;
-
-    if (enabled) {
-        const QString path = AppPaths::traceDir() + "/TRACE.bin";
-        if (!m_controller->beginTrace(path)) {
-            ringWriteAll({fmt("TRACE: couldn't start a capture to %s.", path.toStdString().c_str())});
-            updateTraceButtonAppearance();
-            return;
-        }
-        const int maxMB = AppSettings::traceMaxFileSizeMB();
-        m_traceMaxBytes = static_cast<std::uint64_t>(maxMB > 0 ? maxMB : 50) * 1'000'000;
-    } else {
-        m_controller->endTrace(); // drains the rest, writes SESSION_END, closes the file
-    }
-    updateTraceButtonAppearance();
+    m_controller->send(calcu::debugger::kTraceCommand,
+                       enabled ? calcu::sessions::Value::object({{"button", true}})
+                               : calcu::sessions::Value::object({{"off", true}}),
+                       [this](const calcu::sessions::ReplyMessage& r) {
+                           if (!r.done && !r.reason.empty()) ringWriteAll({"TRACE: " + r.reason});
+                           updateTraceButtonAppearance();
+                       });
 }
 
 void DebugPanel::onFrameTick() {
-    if (!m_traceShownActive) return;
-    if (!m_controller->traceActive()) {
-        // Nothing here stopped it: a machine rebuild did.
-        ringWriteAll({"TRACE stopped: the machine was rebuilt (model, ROM, module or preset change). "
-                      "Re-enable TRACE to start a new session."});
-        updateTraceButtonAppearance();
-        return;
-    }
-    if (m_controller->traceBytes() < m_traceMaxBytes) return;
-    ringWriteAll({fmt("TRACE stopped: reached the %llu MB size limit. Re-enable TRACE to start a new session.",
-                       static_cast<unsigned long long>(m_traceMaxBytes / 1'000'000))});
-    setTraceEnabled(false);
+    // The trace topic: a trace the session ended (its limit, a new machine)
+    // shows on the button.
+    if (m_traceShownActive != m_controller->traceActive()) updateTraceButtonAppearance();
 }
 
 void DebugPanel::updateTraceButtonAppearance() {

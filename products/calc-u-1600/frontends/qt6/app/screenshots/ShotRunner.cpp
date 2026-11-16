@@ -6,6 +6,7 @@
 #include "../EmulationPacer.hpp"
 #include "../MainWindow.hpp"
 #include "../MachineController.hpp"
+#include "Display/LcdText.hpp"
 #include "paper/PaperTopics.hpp"
 #include "qt6/PaperPanel.hpp"
 #include "sessions/Payload.hpp"
@@ -20,6 +21,7 @@
 #include <QFileInfo>
 #include <QLineEdit>
 #include <QGuiApplication>
+#include <QKeyEvent>
 #include <QMenu>
 #include <QMenuBar>
 #include <QProcess>
@@ -151,6 +153,7 @@ void ShotRunner::runNextStep() {
     }
     if (m_stepIdx >= shot.steps.size()) {
         m_window->faceplate()->releasePressedKey();
+        if (m_hostShiftDown) sendHostKey(QStringLiteral("shift"), false);
         closeAllTransient();
         m_stepIdx = 0;
         if (++m_shotPos >= m_shotOrder.size()) {
@@ -225,6 +228,22 @@ bool ShotRunner::menuScriptError(QString* error) {
 void ShotRunner::releaseKey() {
     m_window->faceplate()->releasePressedKey();
     m_window->pacer()->runFor(kKeyReactSeconds);
+}
+
+void ShotRunner::sendHostKey(const QString& name, bool down) {
+    const QEvent::Type type = down ? QEvent::KeyPress : QEvent::KeyRelease;
+    if (name == QLatin1String("shift")) {
+        m_hostShiftDown = down;
+        // Qt reports Shift as its own modifier while it goes down, not
+        // while it comes up.
+        QKeyEvent event(type, Qt::Key_Shift, down ? Qt::ShiftModifier : Qt::NoModifier);
+        QCoreApplication::sendEvent(m_window, &event);
+        return;
+    }
+    const QChar c = name.at(0);
+    const QString text = m_hostShiftDown ? name.toUpper() : name;
+    QKeyEvent event(type, c.toUpper().unicode(), m_hostShiftDown ? Qt::ShiftModifier : Qt::NoModifier, text);
+    QCoreApplication::sendEvent(m_window, &event);
 }
 
 bool ShotRunner::runStep(const ShotStep& step, int* delayMs, std::function<void()>* deferred, QString* error) {
@@ -433,6 +452,27 @@ bool ShotRunner::runStep(const ShotStep& step, int* delayMs, std::function<void(
             return false;
         }
         *delayMs = m_scenario.settleMs;
+        return true;
+    }
+    case K::HostKeyDown:
+    case K::HostKeyUp:
+        // No settle: a tap's press and release are as close as a hand's.
+        sendHostKey(step.text, step.kind == K::HostKeyDown);
+        QCoreApplication::processEvents();
+        return true;
+    case K::ExpectLcd: {
+        QCoreApplication::processEvents();
+        LcdText lcd;
+        if (!m_window->controller()->lcdText(&lcd)) {
+            *error = QStringLiteral("the LCD shows no text");
+            return false;
+        }
+        if (lcd.contains(step.text.toStdString()) != (step.number == 1)) {
+            *error = QStringLiteral("the LCD %1 '%2': %3")
+                         .arg(step.number == 1 ? "does not show" : "shows", step.text,
+                              QString::fromStdString(lcd.text()).replace(QLatin1Char('\n'), QStringLiteral(" | ")));
+            return false;
+        }
         return true;
     }
     case K::ExpectTitle:

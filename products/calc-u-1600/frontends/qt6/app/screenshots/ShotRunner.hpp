@@ -92,6 +92,10 @@ private:
     // after the next step has been scheduled -- see the class comment.
     // Lets go of the held faceplate key and gives the ROM time to react.
     void releaseKey();
+    // `host-key-down` / `-up`: the key event a host keyboard gives the
+    // window (`shift` or one character), Shift held as a modifier.
+    void sendHostKey(const QString& name, bool down);
+    bool m_hostShiftDown = false;
     bool runStep(const ShotStep& step, int* delayMs, std::function<void()>* deferred, QString* error);
     void failStep(const QString& message, int line);
     // The current shot's `window:`, else the scenario's (invalid = none).

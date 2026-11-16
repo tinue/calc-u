@@ -268,6 +268,21 @@ bool parseStep(const calcu::formats::YamlNode& node, const QDir& baseDir, const 
         // (until the scenarios are an attach client, M-49).
         out->kind = K::Command;
         if (!needText(&out->text)) return false;
+    } else if (verb == QLatin1String("host-key-down") || verb == QLatin1String("host-key-up")) {
+        // `- host-key-down: shift`: a key of the host's keyboard, as the
+        // window gets it (LIB-5 AC-33); `shift` or one character.
+        out->kind = verb == QLatin1String("host-key-down") ? K::HostKeyDown : K::HostKeyUp;
+        if (!needText(&out->text)) return false;
+        if (out->text != QLatin1String("shift") && out->text.size() != 1) {
+            *error = lineError(node.line, QStringLiteral("'%1' takes 'shift' or one character").arg(verb));
+            return false;
+        }
+    } else if (verb == QLatin1String("expect-lcd") || verb == QLatin1String("expect-no-lcd")) {
+        // `- expect-lcd: "'"`: the text is in one row of the LCD (or, for
+        // expect-no-lcd, in none); the shot fails otherwise.
+        out->kind = K::ExpectLcd;
+        out->number = verb == QLatin1String("expect-lcd") ? 1 : 0;
+        if (!needText(&out->text)) return false;
     } else if (verb == QLatin1String("capture")) {
         out->kind = K::Capture;
         if (!hasValue) {

@@ -101,6 +101,8 @@ captures the whole window. More captures can go in `steps:` as
 | `expect-panel: { name, title, empty }` | Check a paper panel (by objectName): shown, with that title (the plotter's name; `""` none), empty or not; the shot fails otherwise. For the check scenarios in `tests/gui/`. |
 | `expect-title: <text>` | Check the window's title. |
 | `command: <name>` | Send a session command without arguments (`pause`, `resume`), as the harness would. |
+| `host-key-down: <key>` / `host-key-up: <key>` | A key of the host's keyboard goes down / up, as the window gets it from the keyboard: `shift` or one character (sent with Shift while `shift` is down). No settle follows, so a down and an up in a row are a tap. For LIB-5 AC-33's check scenario. |
+| `expect-lcd: <text>` / `expect-no-lcd: <text>` | Check that the text is in one row of the LCD (`--lcd-text`'s rows), or in none; the shot fails otherwise. |
 
 A dialog opened by `action:` or `click:` stays open and scriptable: the
 script carries on inside it, captures it, then `close`s it. Anything still

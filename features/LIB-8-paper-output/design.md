@@ -1021,7 +1021,7 @@ library's tests, which held copies of both products' data:
 
 ## 11. Part E: the Calc-U-59 column
 
-Status of this section: Draft for the Part D/E boundary (2026-11-16).
+Status of this section: approved by the user at the Part D/E boundary (2026-11-16).
 §1 to §10 above are approved and are not changed. This section replaces
 the Calc-U-59 outline of §4.2 and §5's Calc-U-59 rows, and closes D-15.
 Paths are under `products/calc-u-59/` unless named, at `7bdd51c`.

@@ -1052,20 +1052,30 @@ with a row, or worked together with it).
 - **Does:** the PC-100C's paper on the paper output kind, the paper
   panel empty while the printer is detached; every pause, step,
   breakpoint and trace through the run control; one trace at a time;
-  the key and card records leave the trace (AC-33). Swift parts in M-58.
+  the key and card records leave the trace (AC-33). The Swift paper strip
+  reads the library's paper topic until C59-8 (LIB-8 S-P1), and the Swift
+  debug buttons change here because the interim topics go (LIB-10 D-27,
+  LIB-8 D-27). Other Swift parts in M-58.
 - **Completes:** LIB-8 59 (its Swift part is C59-8, LIB-8, Dependencies);
-  LIB-10 59, or with M-58 if AC-34's Swift part needs C59-8's panels.
+  LIB-10 59 (D-27).
   **Tests from:** LIB-8 AC-24–31; LIB-10 AC-28–35.
-- **Waits for:** M-25, M-34, M-39, M-40.
-- **Green after:** default.
-- **Knowledge, ledger:** `reference/DebugAPI.md`, `calc-u-59-uitesting`
-  skill (traces); rows 59-18, 59-19.
+- **Waits for:** M-25, M-34, M-36 (the typing part's pause), M-39, M-40.
+- **Green after:** default; the Swift app builds and `UIRegressionTests`
+  pass (S-P1 touches Swift).
+- **Knowledge, ledger:** `reference/DebugAPI.md`, `CoreArchitecture.md`,
+  `SharedArchitecture.md`, `FrontendParity.md`, `NewGUIGuide.md`,
+  `WebClient.md`; the skills `calc-u-59-core`, `-shared`, `-qt`, `-web`,
+  `-swift`, `calc-u-59-uitesting` (traces); rows 59-18, 59-19, 59-48
+  (new: Copy of the paper, the Qt6 paper's follow, LIB-8 §11.11).
 - **Exit check:** a trace of a preset and the button's are one session.
 
 #### M-54 Calc-U-59 on preset format 2, and the TI-58C's constant memory (LIB-6, C59-2, LIB-18, C59-3)
 - **Does:** every preset of Calc-U-59 read by the library's loader only;
   the product sections (partition, program steps, registers, cue card);
-  the 57 examples upgraded (the four card examples in M-55), their
+  the 57 examples upgraded (the four card examples in M-55: `globe-print`
+  and the other three stay in the 2.3.0 format, left out by name, and
+  `globe-print` is out of `examples/bundle.yaml` until then, so the Web
+  offers nine examples between the two steps; C59-2 P-1), their
   comments and READMEs, the calendar scripts (C59-2 AC-18), the three
   startup presets; the bundle file in all three frontends; the start of
   the product with a TI-59, the Master Library module and no printer;
@@ -1075,20 +1085,25 @@ with a row, or worked together with it).
   presets of this step (§2.1): `ti58c.memory.yaml` (constant memory
   format 1), in place before the ROM starts, never written by a machine a
   preset built; the Web frontend keeps it in the save folder;
-  `ti58c.mem` ignored.
-- **Completes:** LIB-6 59, C59-2 (Done in M-65: AC-10's card examples,
-  AC-12's site copies), LIB-18 59, C59-3. **Tests from:** LIB-6
+  `ti58c.mem` ignored. The startup preset rows in the Settings come in
+  M-57 (Qt6, Web) and M-58 (Swift); until then a startup preset is set
+  in `Calc-U-59.ini` (LIB-18 P-4).
+- **Completes:** LIB-6 59 (Done in M-58: AC-42's scenario passes on the
+  Web here, in Qt6 in M-57, in Swift in M-58; LIB-6 D-36), C59-2 (Done in
+  M-65: AC-10's card examples, AC-12's site copies), LIB-18 59, C59-3. **Tests from:** LIB-6
   AC-35–43, AC-68; C59-2 AC-1–18, EC-1–6; LIB-18 AC-17–24; C59-3 AC-1–14,
   EC-1–8.
 - **Waits for:** M-3 (FS 5, FS 11), M-8 (FS 7, FS 9), M-9 (FS 6), M-25,
   M-34, M-35, M-53.
 - **Green after:** default; the 57 reference runs compared.
-- **Knowledge, ledger:** `calc-u-59-statefiles` skill,
-  `reference/StateFileFormat.md`, `prompt/ti59-agent-prompt.md`, the
-  Calc-U-59 memory file `state_vs_preset_terminology` (renames
+- **Knowledge, ledger:** the skill `calc-u-59-statefiles` renamed
+  `calc-u-59-presets` (C59-2 D-18, LIB-6 P-3),
+  `reference/StateFileFormat.md` deleted, `prompt/ti59-agent-prompt.md`,
+  the Calc-U-59 memory file `state_vs_preset_terminology` (renames
   `StateFile` → preset); rows 59-1 (presets, constant memory), 59-3,
-  59-4, 59-5, 59-10, 59-12, 59-15, 59-16, 59-17 (C59-3 AC-4, AC-11),
-  59-26.
+  59-4, 59-5, 59-10, 59-11, 59-12, 59-15 (its "to be confirmed" is
+  answered by C59-3 T2), 59-16, 59-17 (C59-3 AC-4, AC-11), 59-26, 59-39,
+  59-42; no new row.
 - **Exit check:** the examples match their references; a 2.3.0 file is
   refused with the hint; a TI-58C quit and started again shows its
   partition and display format.
@@ -1100,15 +1115,20 @@ with a row, or worked together with it).
   the cue card of the running module program, and the cue cards from the
   module files (AC-22, AC-23), so `cuecards.txt` leaves the source
   repository; `.u59` ignored; the four card examples upgraded.
-- **Completes:** LIB-7 59, C59-7. **Tests from:** LIB-7 AC-32–36, AC-47;
-  C59-7 AC-1–30, EC-1–7.
-- **Waits for:** M-3 (FS 10), M-9 (AC-30), M-41, M-54.
+- **Completes:** LIB-7 59 (Done in M-57: the Web page gets its File menu
+  there; LIB-7 D-29), C59-7 (Done in M-58: AC-28's Qt6 and Swift
+  scenarios come with attach; C59-7 D-11). **Tests from:** LIB-7
+  AC-32–36, AC-47; C59-7 AC-1–30, EC-1–7.
+- **Waits for:** M-3 (FS 10), M-9 (AC-30), M-41, M-53 (the debug target
+  that takes over the card reader adapter's `libExecPC`, C59-7 §3.6),
+  M-54.
 - (C59-2 AC-10's card examples pass here.)
 - **Green after:** default.
-- **Knowledge, ledger:** `calc-u-59-statefiles` skill (cards),
-  `reference/StateFileFormat.md`, memory files on cards
-  (`card_timing_audio` and the like); renames `CardDocument`, `CardFile`;
-  rows 59-1 (cards), 59-6, 59-8, 59-17, 59-20 (cards), 59-24, 59-27.
+- **Knowledge, ledger:** `calc-u-59-presets` skill (cards), memory
+  files on cards (`card_timing_audio` and the like); renames
+  `CardDocument`, `CardFile`; "Arm Card" for "Fit Card"; rows 59-1
+  (cards), 59-6, 59-8, 59-17, 59-20 (cards), 59-24, 59-27, 59-43, and the
+  new 59-49, 59-50, 59-51.
 - **Exit check:** a card written in a TI-59 on the web is there after a
   reload.
 
@@ -1120,24 +1140,41 @@ with a row, or worked together with it).
   the hosted copies upgraded.
 - **Completes:** LIB-13 59, C59-4. **Tests from:** LIB-13 AC-11–16,
   AC-23; C59-4 AC-1–26, EC-1–5.
-- **Waits for:** M-42, M-53, M-55.
+- **Waits for:** M-42, M-53, M-54 (`LibraryParts` and LIB-4's control
+  state in the TI session, C59-2's keystroke program reader, the format
+  2 `debug-panel:`), M-55.
 - **Green after:** default.
 - **Knowledge, ledger:** `reference/DebugAPI.md`, `FrontendParity.md`,
-  the `-qt` and `-web` skills (panel); rows 59-1 (ASM), 59-20 (files),
-  59-21, 59-28.
+  `SharedArchitecture.md`, `AppArchitecture.md`, `NewGUIGuide.md`; the
+  `-qt`, `-web` (panel), `calc-u-59-shared`, `-swift` and
+  `-uitesting` skills; `examples/assembly/README.md`,
+  `tools/agentic/asm59.py`; `docs/glossary-mapping.md`'s "Open" row;
+  rows 59-1 (ASM), 59-20 (files), 59-21, 59-28, 59-47.
 - **Exit check:** a dropped `.asm` opens; FREEZE works inside an overlay.
 
 #### M-57 LIB-4 and LIB-14, Calc-U-59 columns (Qt6, Web)
 - **Does:** Calc-U-59's Qt6 and Web frontends on the family structure and
   the control state; the module picker in the control bar; the More
-  button where there is no menu bar.
-- **Completes:** LIB-14 59 (LIB-4 59 with M-58). **Tests from:** LIB-14
-  AC-26–33; LIB-4 AC-10–15 (Qt6, Web parts).
-- **Waits for:** M-43, M-54, M-55, M-56.
+  button where there is no menu bar; the startup preset rows in the
+  Settings (LIB-18 P-4). The library additions (LIB-14 §10.3: the More
+  model, labelled choices, the value forms, the faceplate geometry and
+  origin, the media-dependent menu items, the About icon, the storage
+  banner); Calc-U-1600's storage banner on it (row 1600-48;
+  `docs/reviews/d-simplification.md` Q-4); Qt6 attach for Calc-U-59 and
+  `--pacing-probe` as an attach client.
+- **Completes:** LIB-14 59 (LIB-4 59 with M-58), LIB-7 59 (the Web
+  page's File menu). **Tests from:** LIB-14 AC-26–33; LIB-4 AC-10–15
+  (Qt6, Web parts); C59-4 AC-24 (Qt6); LIB-6 AC-42 (Qt6).
+- **Waits for:** M-43, M-49 (the shell's Part D changes and the attached
+  registry), M-53 (the paper panel and its owner, Resume), M-54, M-55,
+  M-56.
 - **Green after:** default.
 - **Knowledge, ledger:** `calc-u-59-qt`, `calc-u-59-web` skills,
-  `reference/NewGUIGuide.md`, `FrontendParity.md`; visible renames;
-  rows 59-5 ("Loading…"), 59-9, 59-14 (Qt6, Web).
+  `reference/NewGUIGuide.md`, `FrontendParity.md`, and the other files
+  of LIB-14 design §10.11; `docs/test-groups.md` gains the CTests
+  `CalcU59QtTests` and `CalcU59FrontendsDrawControlState`; visible
+  renames; rows 59-5 ("Loading…"), 59-9, 59-14, 59-44, 59-45 (Qt6, Web),
+  1600-48, and the new 59-52 to 59-55.
 - **Exit check:** the Qt6 and Web scenarios with the same IDs pass.
 
 #### M-58 C59-8 Swift frontend on the family structure
@@ -1146,12 +1183,18 @@ with a row, or worked together with it).
   panels and the same scenario IDs; the model picker moves; the Swift
   copy of the model facts goes; `--UITesting`, the hidden R/S button and
   the preset-state element go (per FS 4).
-- **Completes:** C59-8, LIB-4 59, and LIB-10 59 if it waited for it. **Tests from:** C59-8 AC-1–13, AC-15–21,
-  EC-1–6; LIB-4 AC-10–15 (Swift parts).
-- **Waits for:** M-16 (FS 3, FS 4), M-33, M-53 to M-57.
-- **Green after:** default; `UIRegressionTests` through attach.
+- **Completes:** C59-8, LIB-4 59, LIB-8 59's Swift part, C59-6, LIB-3 59,
+  LIB-5 59, LIB-6 59, C59-7. **Tests from:** C59-8 AC-1–13, AC-15–21,
+  EC-1–6; LIB-4 AC-10–15 (Swift parts); LIB-6 AC-42, LIB-5 AC-22, AC-24
+  (Swift).
+- **Waits for:** M-16 (FS 3, FS 4), M-33, M-53 to M-57 (M-57 for the
+  shell's models of LIB-14 §10.3).
+- **Green after:** default; `UIRegressionTests` through attach. Its Swift
+  builds run from the main checkout.
 - **Knowledge, ledger:** `calc-u-59-swift`, `calc-u-59-uitesting`
-  skills; rows 59-9, 59-14 (Swift).
+  skills; the memory file of C59-8 §7; `CalcU59NoTestAids` in
+  `docs/test-groups.md`; rows 59-9, 59-14, 59-44, 59-45 (Swift), and the
+  new 59-56.
 - **Exit check:** the iPhone and Mac layouts pass their scenarios.
 
 #### M-59 C59-9 and the LIB-11 Calc-U-59 column
@@ -1161,8 +1204,10 @@ with a row, or worked together with it).
   harness). Then the adapter check of §1 over Calc-U-59 and the library.
 - **Completes:** C59-9, LIB-11 59. **Tests from:** C59-9 AC-1–11,
   AC-13–15, EC-2–6; LIB-11 AC-14–17.
-- **Waits for:** M-54, M-55, M-56.
-- **Green after:** default; no old tool and no adapter left.
+- **Waits for:** M-54, M-55, M-56, M-57, M-58 (the adapter check
+  expects their rows gone).
+- **Green after:** default; no old tool and no adapter left. CI dispatch
+  (`calcu` with Calc-U-59 on Linux and Windows, LIB-11 H5).
 - **Knowledge, ledger:** `tools/agentic/README.md`,
   `tools/headless/README.md` replaced; the memory files `headless`,
   `headless_printer_lines`, `run_time_measurement`; the `ti59-research`
@@ -1171,12 +1216,16 @@ with a row, or worked together with it).
 
 #### M-60 LIB-16 Calc-U-59 column
 - **Does:** Calc-U-59's chapters, converted once from calc-u-site `/59/`
-  at `acd629c` (AC-9), the six tutorial presets upgraded, the help asset.
+  at `acd629c` (AC-9), the six tutorial presets upgraded, the help asset;
+  the ruling Q-3 of `docs/reviews/d-simplification.md` on the shared
+  chapter 2 (LIB-16 §13.5). It changes the workflow's `help` job and
+  `release.yaml`, so CI is dispatched at its merge.
 - **Completes:** LIB-16 L, LIB-16 59 (Done in M-64). **Tests from:** LIB-16
   AC-9–10, AC-16.
 - **Waits for:** M-52, M-54 to M-59.
 - **Green after:** default.
-- **Knowledge, ledger:** `calc-u-59-docs` skill.
+- **Knowledge, ledger:** `calc-u-59-docs` skill; the files of LIB-16
+  design §13.10.
 - **Exit check:** `Calc-U-59-help.zip` builds.
 
 ### Part F — the releases (the user, 2026-11-14: one release each, once everything is finished)
@@ -1291,12 +1340,12 @@ qa-report can show every criterion passing (§1).
 | LIB-2 | 1–23, 35: M-23 / M-23 | 24–27: M-25 / M-25 | 28–34: M-26, M-31, M-47 / M-47 | 1–7: M-23 |
 | LIB-3 | 1–27, 39: M-22 / M-22 | 28–33: M-33, M-34 / M-58 | 34–38: M-31 / M-49 | 1–6: M-22 |
 | LIB-4 | 1–9: M-37 / M-37 | 10–15: M-57, M-58 / M-58 | 16–20: M-49 / M-49 | 1, 3–5: M-37 |
-| LIB-5 | 1–19, 38–39: M-36 / M-38 | 20–27: M-36 / M-54 | 28–37, 40–41: M-36 / M-46 | 1–6: M-36 |
-| LIB-6 | 1–34, 52–53, 55–66: M-38 / M-41 | 35–43, 68: M-54 / M-54 | 44–51, 54, 67: M-46 / M-46 | 1–10: M-38 |
-| LIB-7 | 1–31, 46: M-41 / M-42 | 32–36, 47: M-55 / M-55 | 37–45: M-47 / M-47 | 1–9: M-41 |
+| LIB-5 | 1–19, 38–39: M-36 / M-38 | 20–27: M-36, M-54 / M-58 | 28–37, 40–41: M-36 / M-46 | 1–6: M-36 |
+| LIB-6 | 1–34, 52–53, 55–66: M-38 / M-41 | 35–43, 68: M-54 / M-58 | 44–51, 54, 67: M-46 / M-46 | 1–10: M-38 |
+| LIB-7 | 1–31, 46: M-41 / M-42 | 32–36, 47: M-55 / M-57 | 37–45: M-47 / M-47 | 1–9: M-41 |
 | LIB-8 | 1–9, 12–23, 39: M-39 / M-39 | 24–31: M-53 / M-53 | 32–38: M-45 / M-46 | 1–8: M-39 |
 | LIB-9 | 1–18, 33: M-20 / M-20 | 19–25, 34–35: M-32, M-34 / M-34 | 26–32: M-30 / M-30 | 1–10: M-20 |
-| LIB-10 | 1–26, 45–51: M-40 / M-40 | 28–35: M-53 / M-53 or M-58 | 36–44, 52: M-45 / M-46 | 1–9: M-40 |
+| LIB-10 | 1–26, 45–51: M-40 / M-40 | 28–35: M-53 / M-53 | 36–44, 52: M-45 / M-46 | 1–9: M-40 |
 | LIB-11 | 1–13, 21–24: M-28 / M-28 | 14–17: M-59 / M-59 | 18–20: M-51 / M-51 | 1–7: M-28 |
 | LIB-12 | 1–7: M-24 / M-28 | 8–10, 14 (TI): M-24 / M-24 | 11–13, 14 (CE-502B): M-27 / M-27 | 2–3: M-24; 1: M-27 |
 | LIB-13 | 1–10: M-42 / M-42 | 11–16, 23: M-56 / M-56 | 17–22: M-48 / M-48 | 1–7: M-42 |
@@ -1312,10 +1361,10 @@ qa-report can show every criterion passing (§1).
 | C59-1 | M-19 | M-19 | 1–19 | 1–4 |
 | C59-2 | M-54 (AC-10's card examples M-55, AC-12 M-65) | M-65 | 1–18 | 1–6 |
 | C59-3 | M-54 | M-54 | 1–14 | 1–8 |
-| C59-4 | M-56 (AC-20's hosted overlays M-65) | M-65 | 1–26 | 1–5 |
+| C59-4 | M-56 (AC-20's hosted overlays M-65; AC-24's Qt6 scenarios M-57) | M-65 | 1–26 | 1–5 |
 | C59-5 | M-15 (1–3), M-33 (4–14) | M-33 | 1–14 | 1–4 |
 | C59-6 | M-25 | M-58 | 1–11 | 1–3 |
-| C59-7 | M-55 | M-55 | 1–30 | 1–7 |
+| C59-7 | M-55 | M-58 | 1–30 | 1–7 |
 | C59-8 | M-58 | M-58 | 1–13, 15–21 (14 withdrawn) | 1–6 |
 | C59-9 | M-59 | M-59 | 1–11, 13–15 (12 withdrawn) | 2–6 |
 | C1600-1 | M-26 | M-26 | 1–21 | 1–3 |
@@ -1328,7 +1377,9 @@ The C1 designs (2026-11-14) moved five "Done in" entries by the rule of
 §1 (a criterion that names a later feature passes in that feature's
 step): LIB-1 59 to M-55 and 1600 to M-47 (the media place of AC-33,
 AC-40), LIB-12 L to M-28 (AC-7's harness), LIB-15 1600 to M-46 (AC-16's
-bundle file), C59-6 to M-58.
+bundle file), C59-6 to M-58. The Part E designs (approved 2026-11-16,
+`docs/reviews/e-designs.md` §3) moved LIB-5 59, LIB-6 59 and C59-7 to
+M-58, LIB-7 59 to M-57, and LIB-10 59 to M-53 alone.
 
 The ID ranges were taken from the specs with a script (2026-11-14): 891
 acceptance criteria and 202 edge cases; no ID of a spec is outside the
@@ -1354,7 +1405,11 @@ their specs and are placed by what they are about (§2.3).
 | 59-17 | M-54 (C59-3 AC-4, AC-11), M-55 (C59-7 AC-25) |
 | 59-18, 59-19 | M-53 |
 | 59-20 | M-55 (cards), M-56 (files) |
-| 59-21, 59-28 | M-56 |
+| 59-21, 59-28, 59-47 | M-56 |
+| 59-48 | M-53 |
+| 59-49, 59-50, 59-51 | M-55 |
+| 59-52, 59-53, 59-54, 59-55, 1600-48 | M-57 |
+| 59-56 | M-58 |
 | 59-22 | M-19 (or struck after M-8) |
 | 1600-1 | M-46 (presets), M-47 (disks) |
 | 1600-2 | M-30 |

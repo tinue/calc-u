@@ -1,5 +1,5 @@
 # C59-2 TI preset content: design
-Status: Draft for the Part D/E boundary (2026-11-16)
+Status: approved by the user at the Part D/E boundary (2026-11-16)
 
 ## 1. Scope
 
@@ -501,6 +501,8 @@ are upgraded").
    `limit=` in C59-9 AC-3), and every bare token after the step is a
    keycode; this design is written so (§3.4, T8). A decision-log row in
    C59-2 records it if agreed.
+   Answered (user, 2026-11-16, with the approval of the Part E designs): `count=<n>`;
+   the decision-log row is in the spec.
 
 ## 11. Proposed ledger rows and plan notes
 

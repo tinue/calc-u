@@ -1,5 +1,5 @@
 # C59-3 TI-58C constant memory: design
-Status: Draft for the Part D/E boundary (2026-11-16)
+Status: approved by the user at the Part D/E boundary (2026-11-16)
 
 ## 1. Scope
 

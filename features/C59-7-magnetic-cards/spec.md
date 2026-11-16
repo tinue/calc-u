@@ -157,18 +157,19 @@ Fitting a card
   `tests/shared_cooperative_tests.cpp:548-567, 781`).
 - [ ] **AC-13** — Given the control bar on a TI-59 (LIB-14 AC-27), then
   while no card is in the reader it has two buttons that both read "Crd"
-  and differ by their icon and their name for a screen reader, "Fit
-  Card" and "Fit Fresh Card", and while a card is in the reader it has
+  and differ by their icon and their name for a screen reader, "Arm
+  Card" and "Arm Fresh Card", and while a card is in the reader it has
   "Eject Card" in their place; where the frontend has a File menu, it
-  has "Fit Card…" and "Fit Fresh Card…" (`Qt6/app/ControlBar.cpp:55-99`,
+  has "Arm Card…" and "Arm Fresh Card…" (today "Fit Card", "Fit Fresh
+  Card"; `Qt6/app/ControlBar.cpp:55-99`,
   `Qt6/app/MainWindow.cpp:57-58`; the Swift frontend on iOS has the
   buttons only, C59-8 AC-18).
-- [ ] **AC-14** — Given "Fit Card", then a dialog lists the saved
+- [ ] **AC-14** — Given "Arm Card", then a dialog lists the saved
   magnetic cards by name, an outdated one as an entry that cannot be
   chosen (LIB-7 AC-9), and the chosen one is fitted; given none is
   saved, then it says "No cards found" (`Qt6/app/CardPickerDialog.cpp:54-66`,
   `App/Views/CardPickerView.swift:47-68`).
-- [ ] **AC-15** — Given "Fit Fresh Card", then a dialog asks for a name,
+- [ ] **AC-15** — Given "Arm Fresh Card", then a dialog asks for a name,
   shows the saved cards, and fits a fresh card of that name, whose cue
   card has the name as its title; given a card of that name is saved,
   then it asks "Replace card `<name>`?" with "Its first write replaces
@@ -306,7 +307,7 @@ Every frontend
   `tests/core_tests.cpp:257`).
 - [ ] **AC-28** — Given the GUI test of each frontend, then it has two
   scenarios under these IDs: for AC-15, a fresh card is fitted, written
-  by a program and listed by "Fit Card"; for AC-12, a card is fitted and
+  by a program and listed by "Arm Card"; for AC-12, a card is fitted and
   read when a corner is pressed (today
   `Web/tests/play-calculator.spec.js:266, 298-326`; ADR 0032).
 
@@ -406,3 +407,4 @@ Every frontend
 | Aligned with `docs/formats/` after the Q&A round of 2026-11-13: sides 0 and 1 (AC-6, AC-12); card file is magnetic card format 3, `.magnetcard.yaml` (AC-2, AC-3, AC-4); what a card file gives the media model and `saveas:` for an in-file card (AC-29); a write replaces only the written side (AC-5, EC-3); steps `card:` and `arm:` with `timeout:` (AC-17, AC-27, EC-6); in-file cards under `magnetic-cards:` (AC-18, AC-19, AC-20); constant memory file name (AC-22, AC-25); stand-in module cue card (AC-23); upgrade rows of `preset.md` §9.1 (AC-30) | user rulings of 2026-11-13 (`docs/walkthroughs/presets.md` §5.2, §5.4); `docs/formats/` | 2026-11-13 |
 | A 2.3.0 card file (`.u59`) is ignored: not listed, read or changed (AC-4) | user, 2026-11-13 (consistency pass after the Q&A round): "ignore them" | 2026-11-13 |
 | "Fit Fresh Card" asks the name first and writes the instance at the first write: Name & Save done up front (AC-15; `media.md` §1.3) | user, 2026-11-13 (consistency pass after the Q&A round): today's flow, read as Name & Save done up front | 2026-11-13 |
+| The card buttons' names, the File menu items and the dialogs read "Arm Card" and "Arm Fresh Card" (AC-13, AC-14, AC-15, AC-28; was "Fit Card", "Fit Fresh Card"); the scenario IDs do not change; behaviour change 59-50 | `docs/glossary-mapping.md` row "Arm" (2026-11-12): the glossary's word for making the card ready to feed; user, 2026-11-16 (Q-3 of `docs/reviews/e-designs.md`, with the approval of the Part E designs) | 2026-11-16 |

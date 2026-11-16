@@ -1,5 +1,5 @@
 # C59-9 Harness product commands of Calc-U-59: design
-Status: Draft for the Part D/E boundary (2026-11-16)
+Status: approved by the user at the Part D/E boundary (2026-11-16)
 
 Paths without a prefix are under `products/calc-u-59/`; line numbers at
 `7bdd51c`. The spec cites the tools at `v2.3.0`; they are the same files

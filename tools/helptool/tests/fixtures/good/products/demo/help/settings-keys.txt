@@ -1,0 +1,4 @@
+family [startup] model
+family [preset] <model>
+product [preset] DM-1
+product [debug] port

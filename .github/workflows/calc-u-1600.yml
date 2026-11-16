@@ -52,8 +52,10 @@ env:
 
 jobs:
   # The repository's root CMake project (ADR 0003) with Calc-U-1600 only and
-  # without Qt: the CLI harnesses, the probes and CoreTests on top of the
-  # calcu_core / calcu_shared libraries from cmake/CalcU.cmake. This job is
+  # without Qt: the harness `calcu` (with the product's entry) and the test
+  # programs on top of the calcu_core / calcu_shared libraries from
+  # cmake/CalcU.cmake; the help's checks (tools/help, Python 3 of the
+  # runner) run among the tests. This job is
   # the only CI run of the core/ + app/ test suite. The packaging jobs below
   # configure the root too (build/release, CALCU_TESTS off) and build only
   # the GUI app.
@@ -87,8 +89,8 @@ jobs:
           cmake -S ../.. -B ../../build/tests -G Ninja -DCMAKE_BUILD_TYPE=RelWithDebInfo
           -DCALCU_PRODUCT_59=OFF -DCALCU_FRONTEND_QT=OFF
 
-      # Builds every target the product defines without Qt -- the CLI
-      # harnesses, the probes and CoreTests -- which is the drift check.
+      # Builds every target the product defines without Qt -- the harness
+      # `calcu` and the test programs -- which is the drift check.
       - name: Build
         run: cmake --build ../../build/tests
 
@@ -191,6 +193,27 @@ jobs:
         with:
           name: Calc-U-1600-web
           path: products/calc-u-1600/Calc-U-1600-web-*.zip
+
+  # The help asset Calc-U-1600-help.zip (LIB-16 AC-6, AC-8): tools/help
+  # (Python 3, standard library only; the runner's python3) checks the help
+  # (library/help/ and help/) and builds the zip with the version of
+  # frontends/qt6/CMakeLists.txt; release.yaml attaches it.
+  help:
+    runs-on: ubuntu-24.04
+    defaults:
+      run:
+        working-directory: .
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Build the help asset
+        run: python3 tools/help build calc-u-1600 --out build/help --quiet-warnings
+
+      - name: Upload the help asset
+        uses: actions/upload-artifact@v6
+        with:
+          name: Calc-U-1600-help
+          path: build/help/Calc-U-1600-help.zip
 
   linux-x86_64:
     runs-on: ubuntu-24.04

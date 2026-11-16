@@ -544,7 +544,7 @@ TEST(c1600_5_ac11_host_drive_attach_folder_and_off) {
     CHECK_EQ(r.line("model PC-1600"), std::string("done\n"));
     CHECK_EQ(r.line("pc1600 host-drive " + one.str()), std::string("done\n"));
     CHECK(has(r.line("capabilities"), "place host-drive host-drive\n"));
-    // A listing of S3: as docs/PC1600-Host-Drive.md describes it.
+    // A listing of S3: as help/09-host-drive.md describes it.
     CHECK_EQ(r.line("type FILES \"S3:\""), std::string("done\n"));
     r.line("wait");
     CHECK(has(r.line("lcd"), "\nHELLO   .TXT,"));

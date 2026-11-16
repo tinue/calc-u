@@ -9,7 +9,7 @@
 #     samples the DATA bus (the value in A) on that write strobe and holds
 #     it until the next one. Values 0-1 are populated here; the decoder
 #     has headroom for 8 (the 256 KB Slot-2 ceiling). This is a
-#     TRIGGER-BASED latch (Memory-Card-Definition-Spec.md section 6) --
+#     TRIGGER-BASED latch (help/09-module-definitions.md section 6) --
 #     same family as the CE-163, which instead samples the ADDRESS bus on
 #     its own S3 write strobe.
 #

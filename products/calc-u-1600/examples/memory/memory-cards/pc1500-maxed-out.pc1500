@@ -1,7 +1,7 @@
 # Loads the fictional 22 KB "maxed-out" card (pc1500-maxed-out.card.yaml,
 # same directory) through the universal software-defined module, then
 # prints how much of it BASIC sees as free. Companion to
-# docs/User-Guide.md's "Custom YAML memory cards" walkthrough.
+# help/09-module-definitions.md's walkthrough.
 
 format-version: 2
 preset-name: Maxed-out card

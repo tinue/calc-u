@@ -3,7 +3,7 @@
 ; (4000H-7FFFH). Original work, part of Calc-U-1600.
 ;
 ; Build: tools/build_hostdrive_rom.sh (zasm) -> PC1600-P1-B7-HOSTDRIVE.bin,
-; committed next to this file. docs/PC1600-Host-Drive.md has the design.
+; committed next to this file. help/09-host-drive.md has the design.
 ;
 ; OVERVIEW
 ; A ROM module (ID 43H,16H) that makes a directory on the host computer a

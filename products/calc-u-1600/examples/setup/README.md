@@ -1,6 +1,6 @@
 # examples/setup
 
-See also `docs/User-Guide.md`'s "Custom memory cards" section (9.3) for
+See also `help/09-module-definitions.md` for
 the workflow below.
 
 These files are not demos to look at — they are **preparation scripts**. Each one

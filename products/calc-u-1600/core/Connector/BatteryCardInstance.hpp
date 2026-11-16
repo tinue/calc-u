@@ -44,7 +44,7 @@ inline std::string currentIso8601Timestamp() {
 }
 
 // Encodes `bytes` (a whole bank) using the `addressed-hex` dialect
-// (docs/Memory-Card-Definition-Format.md §6): 16-byte rows, or
+// (help/10-module-definition-format.md §6): 16-byte rows, or
 // "$XXXX: XX..." for a run of consecutive whole rows that all share one
 // uniform byte value -- exact, not a guess, since the run's end is always
 // the next line's address (or the end of the bank, for the last line).
@@ -97,7 +97,7 @@ inline std::vector<std::string> formatAddressedHexLines(const std::vector<uint8_
 }
 
 // Emits the `initial-content:`/`blocks:` lines (4-space region-field
-// indent, per docs/Memory-Card-Definition-Format.md), one `- bank:`/`offset:`/
+// indent, per help/10-module-definition-format.md), one `- bank:`/`offset:`/
 // `encoding: addressed-hex`/`bytes: |` entry per bank. Every bank is
 // written, including uniform ones: an omitted bank would reload at the
 // region's power-up-fill rather than the value it held (e.g. an erased

@@ -10,7 +10,7 @@
 //
 // For developing ROM extensions: a preset plugs a freshly assembled .bin in
 // where a real ROM module would sit, and the next clean start (the preset
-// applied again, a power-on) finds it. docs/Debugger.md.
+// applied again, a power-on) finds it. help/07-debugger.md.
 //
 // Both cards are ROM and nothing else: reads in their window, no writes, no
 // I/O. A device that also has I/O (the host drive, the CE-158) keeps its own

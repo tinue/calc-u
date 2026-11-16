@@ -13,7 +13,7 @@
 // Calc-U-1600's own peripheral: a host directory as file device "S3:"
 // (alias "Y:"). Real PC-1600 hardware has the same shape in the MEP rev3
 // module (ROM at page-1 bank 7, a microcontroller behind I/O port 90H); this
-// card uses the same bank and its own protocol. docs/PC1600-Host-Drive.md.
+// card uses the same bank and its own protocol. help/09-host-drive.md.
 //
 // This card claims:
 //   - Page B bank 7 ROM read window (4000-7FFF): the driver ROM

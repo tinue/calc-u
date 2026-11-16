@@ -1,0 +1,6 @@
+name: Demo-Product
+version:
+  preset: cmake
+  file: qt/CMakeLists.txt
+release:
+  latest: false

@@ -11,7 +11,7 @@
 // place `floppy`, sides 0 and 1) and the cassette tape (`.tape.yaml`,
 // version 1, with its WAV, in the tape folder; the cassette's place `tape`).
 // Their codecs read and write the files (docs/formats/media.md §2, §3,
-// docs/Memory-Card-Definition-Format.md); the content they give is
+// help/10-module-definition-format.md); the content they give is
 // core/Machine/SharpMediaPlaces.hpp's ModuleContent, FloppyContent,
 // TapeContent, which the library hands through unread.
 

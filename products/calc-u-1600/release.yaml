@@ -41,6 +41,9 @@ build:
       - { artifact: Calc-U-1600-windows-arm64,  file: Calc-U-1600-Setup-arm64.exe, as: Calc-U-1600-windows-arm64.exe }
       # The web client's dist/ (Web/build.sh): embed it in a page or install it as an app.
       - { artifact: Calc-U-1600-web,            file: "Calc-U-1600-web-*.zip",  as: Calc-U-1600-web.zip }
+      # The help (LIB-16): the Markdown chapters, their pictures and toc.json
+      # (tools/help build calc-u-1600); calc-u.org/1600/ renders it.
+      - { artifact: Calc-U-1600-help,           file: Calc-U-1600-help.zip,     as: Calc-U-1600-help.zip }
 
 # Developer ID certificates the macOS CI job signs with; rotated yearly with
 # ReleaseIt's `renew-certs` (see .github/macos-signing.md).

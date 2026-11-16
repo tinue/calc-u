@@ -71,7 +71,7 @@ under `sides:` to `0:` and `1:`; the bytes stay as they are.
 
 ## 6. `addressed-hex`
 
-As defined in `Memory-Card-Definition-Format.md` §6:
+As defined in `help/10-module-definition-format.md` §6:
 
 - `$XXXX: <1–16 space-separated hex byte pairs>` — literal bytes from that address;
 - `$XXXX: XX...` (the only token on its line) — byte `XX` repeated up to the next line's

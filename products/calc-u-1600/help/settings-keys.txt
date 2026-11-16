@@ -1,0 +1,25 @@
+# The settings keys Calc-U-1600 declares (app/Settings.cpp, settingsDecl()),
+# for tools/help's check C7 (LIB-16 AC-14): each `[section] key` is described
+# in chapter 8, the family's in library/help/08-settings.md, the product's in
+# help/08-settings.md. Written by CalcU1600HelpTests with CALCU1600_HELP_KEYS=1.
+family [startup] model
+family [startup] last-model
+family [preset] <model>
+product [preset] PC-1500
+product [preset] PC-1500A
+product [preset] PC-1600
+family [storage] save-folder
+family [storage] tape-folder
+family [trace] folder
+family [trace] max-file-size-mb
+product [debug] dap-enabled
+product [debug] dap-port
+family [serial] link-folder
+family [folders] <kind>
+product [folders] presets
+product [folders] basic-programs
+product [folders] machine-code
+product [folders] host-drive
+family [window] <key>
+product [window] width
+product [window] height

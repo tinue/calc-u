@@ -1,6 +1,6 @@
 # superRAM -- 512 KB vertically-banked SRAM module, PC-1600 Slot 2 only.
 #
-# The "maxed-out Slot 2" card the Memory-Card-Definition-Spec.md §6 / §9
+# The "maxed-out Slot 2" card the help/09-module-definitions.md §6 / §9
 # tables already name: mechanically a CE-1601M with a wider vertical-bank
 # decoder. Where the CE-1601M fits two 32 KB chips behind a 3-to-8
 # decoder/latch and only populates banks 0-1, superRAM fills the whole
@@ -12,7 +12,7 @@
 #     samples the DATA bus (the value in A) on that write strobe and holds
 #     it until the next one. superRAM samples D0-D3 (CE-1601M samples only
 #     D0-D2), so the latched bank number runs 0-15. TRIGGER-BASED latch
-#     (Memory-Card-Definition-Spec.md §6), source-domain data -- the exact
+#     (help/09-module-definitions.md §6), source-domain data -- the exact
 #     mechanism of the CE-1601M, one address line wider. PC1600Bank's
 #     Port 28H notes already anticipate this ("superRAM hardware extends
 #     this to 0-15").

@@ -66,6 +66,9 @@ One repository for the Calc-U products, released separately
   - `qa-report.md` reports results per AC ID.
   - Chain: AC → task → test. Status lives only in `features/INDEX.md`.
 - **Decisions** are recorded as ADRs in `docs/adr/`, one per decision.
+- **Help** (the user guide) is Markdown in `library/help/` (shared parts)
+  and `products/<product>/help/` (product parts), checked and built by
+  `tools/help check|build <product>` (ADR 0036, LIB-16; `tools/README.md`).
 - Phase status lives only in the table in `docs/Process.md`.
 
 ## Research

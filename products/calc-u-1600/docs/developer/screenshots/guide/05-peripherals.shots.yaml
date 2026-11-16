@@ -1,0 +1,25 @@
+# Help, chapter 5 Peripherals and paper. Format: docs/developer/screenshots/README.md.
+out: ../../../../help/images
+window: 1430x1280
+
+shots:
+  - name: 03-paper
+    preset: ../presets/pc1600-lissajou.pc1600
+    steps:
+      - capture: { target: paper-panel, file: 03-paper-panel.png }
+      # What Copy on the paper panel puts on the clipboard.
+      - capture: { target: plot, file: 03-paper-copy.png }
+
+  # Native menu bar menus (Screen Recording + Accessibility + Automation).
+  - name: 03-peripherals-menu
+    window: 1430x1000
+    preset: ../presets/pc1600-lissajou.pc1600
+    steps:
+      - menu: Machine > Peripherals
+    capture: { method: system, target: screen-region, file: 03-peripherals-menu.png, padding: 8 }
+
+  # The CE-158's printer port (formerly in the COM ports scenario).
+  - name: 07-ce158-printer
+    window: 900x1000
+    preset: ../presets/pc1500a-ce158.pc1500a
+    capture: { target: ce158printer, file: 07-ce158-printer.png }

@@ -12,7 +12,7 @@
 # the 32 KB part. That is chosen by the *host's* native Port 31H
 # remapping and reaches the module only as an ordinary address-select
 # line, with no latch and no module-side bank register: an UNBANKED
-# region (Memory-Card-Definition-Spec.md section 6), with PVOUT expressed
+# region (help/09-module-definitions.md section 6), with PVOUT expressed
 # as an AND qualifier that splits the window, not as a D4 bank latch.
 #
 # Declared for both PC-1600 slots from one file. Terminology is

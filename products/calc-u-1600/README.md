@@ -37,10 +37,10 @@ bar and panels. It is a preview, made for tablets and desktop browsers; a
 phone works, and in landscape it shows the calculator alone. The browser
 can install it as an app, which then runs offline.
 
-- **File ▸ Load Preset** has the bundled examples; **Upload Preset…** loads
-  your own.
+- The **Examples** menu has the bundled examples; **File ▸ Upload
+  Preset…** loads your own.
 - Cards, disks and tapes you save stay in the browser.
-  **File ▸ Import Card, Disk or Tape…** brings files in, **File ▸ Saved
+  **File ▸ Import Media…** brings files in, **File ▸ Saved
   Media…** downloads or deletes them. Only one tab saves; a second tab
   says so.
 - A link can choose the model (0 PC-1500, 1 PC-1500A, 2 PC-1600) and a
@@ -53,31 +53,35 @@ can install it as an app, which then runs offline.
 
 **Using the emulator**
 
-- [User Guide](docs/User-Guide.md) — start here: models, keyboard,
-  plotters, loading BASIC and machine-code programs, memory modules and
-  floppy disks, COM ports and presets. With screenshots and diagrams.
-- [Keyboard Mapping](docs/Keyboard-Mapping.md) — every host key,
-  including the PC-1600's accented characters.
-- [Host drive](docs/PC1600-Host-Drive.md) — a folder on your computer as
-  PC-1600 drive `S3:`.
+The user guide is the help: on the web at <https://calc-u.org/1600/>, and
+as Markdown in [help/](help/) (its product parts; the parts shared with
+the family's other products are in
+[library/help/](../../library/help/)). Each release carries it as
+`Calc-U-1600-help.zip`. Start with
+[Introduction](help/01-introduction.md) and
+[Getting started](help/02-getting-started.md); the
+[keyboard map](help/10-keyboard-map.md) has every host key, and
+[the host drive](help/09-host-drive.md) a folder on your computer as
+PC-1600 drive `S3:`.
+
 - [Examples](examples/README.md) — what each sample preset and program does.
 
 **Writing programs for the PC-1500 / PC-1600**
 
-- [Debugger](docs/Debugger.md) — debugging machine code (and the ROMs)
+- [Debugger](help/07-debugger.md) — debugging machine code (and the ROMs)
   from VS Code: your own programs, programs found online, ROM extensions,
   firmware analysis.
 - [VS Code extension](vscode/calcu1600-debug/README.md) — what the
   Calc-U-1600 Debugger extension provides.
-- [PC-1500 keyword modules](docs/PC1500-Keyword-Modules.md) — how a ROM
+- [PC-1500 keyword modules](help/09-keyword-modules.md) — how a ROM
   extension adds BASIC commands to the PC-1500.
 
-**Custom memory modules**
+**Module definitions**
 
-- [Memory Card Definition — Specification](docs/Memory-Card-Definition-Spec.md)
-  — what a `.card.yaml` describes, and why.
-- [Memory Card Definition — Format](docs/Memory-Card-Definition-Format.md)
-  — every key of a `.card.yaml` file.
+- [Module definitions](help/09-module-definitions.md) — what a
+  `.card.yaml` describes, and why.
+- [Module definition format](help/10-module-definition-format.md) — every
+  key of a `.card.yaml` file.
 
 ## Serial port
 
@@ -85,8 +89,8 @@ The emulated PC-1600's RS-232C port appears on your computer as a serial
 port file, `calcu1600-rs232c.serial` (the CE-158's as
 `calcu1600-ce158.serial`) — **macOS and Linux only** for now. Point any serial program at it, for example
 [SharpDataExchange](https://github.com/tinue/SharpDataExchange) to copy
-programs to and from the calculator. The User Guide's
-[COM ports](docs/User-Guide.md#7-com-ports) chapter has the settings.
+programs to and from the calculator. The help's
+[COM ports](help/09-com-ports.md) chapter has the settings.
 
 ## License
 

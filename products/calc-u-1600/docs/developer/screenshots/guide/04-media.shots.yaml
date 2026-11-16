@@ -1,0 +1,25 @@
+# Help, chapter 4 Media. Format: docs/developer/screenshots/README.md.
+out: ../../../../help/images
+window: 1430x1000
+
+shots:
+  - name: 05-slot-picker
+    preset: ../presets/pc1600-modules.pc1600
+    steps:
+      - open: media-picker-slot-1
+    capture: { target: control-bar, file: 05-slot-picker.png, padding: 4 }
+
+  - name: 05-floppy-picker
+    preset: ../presets/pc1600-modules.pc1600
+    steps:
+      - open: media-picker-floppy
+    capture: { target: control-bar, file: 05-floppy-picker.png, padding: 4 }
+
+  # Pick a battery-backed template in the control bar, then Name & Save.
+  - name: 05-name-and-save
+    preset: ../presets/pc1600-ready.pc1600
+    steps:
+      - select: media-picker-slot-1 = CE-1600M
+      - click: media-save-slot-1
+      - enter-text: My programs
+    capture: { target: dialog, file: 05-name-and-save.png }

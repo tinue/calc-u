@@ -2,6 +2,8 @@
 
 Calc-U-1600 lives in `products/calc-u-1600/` of the source repository tinue/calc-u (ADR 0002). Work happens on short branches merged into `main` (ADR 0029); a release is tagged `calc-u-1600-vX.Y.Z` (ADR 0028). The repository's `CLAUDE.md` holds the current phase and its rules; they come first.
 
+User help is `help/` (the product parts, one file or more per chapter, `help/help.yaml`) and `library/help/` at the repository root (the shared parts), checked by `tools/help check calc-u-1600` in Frequent (`CalcU1600HelpCheck`; LIB-16) and built into the release's `Calc-U-1600-help.zip`; a user-visible change updates its chapter in the same step. Developer documents stay in `docs/developer/`.
+
 Before removing, simplifying or "fixing" code in a review or cleanup, read `docs/background/Decisions.md`. It lists deliberate choices that look wrong at first sight. When a recurring review question gets settled, add it there.
 
 ## Test builds
@@ -13,7 +15,7 @@ cmake -S ../.. -B ../../build/debug -G Ninja -DCMAKE_BUILD_TYPE=Debug -DCALCU_FR
 cmake --build ../../build/debug --target CoreTests
 ```
 
-A test file registers its tests with `TEST(name)` of the repository's one runner, `library/testing/TestHarness.hpp` (ADR 0038; `CHECK`, `CHECK_EQ`, `SKIP_UNLESS` for a missing ROM); there is no list of tests to keep. `tools/run_tests.sh <substring>` runs the tests whose name contains it. Every CTest entry is in a test group (ADR 0031; `docs/test-groups.md` at the repository root): a tree has the Frequent group (`CoreTests`, `CalcU1600DapTests` (the DAP server's cases, `tests/dap/`), `calcu_preset_check.CalcU1600Presets`, `calcu_preset_check.CalcU1600Templates`; ≤ 60 s), and with `-DCALCU_TESTS_LONGER=ON` / `-DCALCU_TESTS_CHECKPOINT=ON` also the Longer and Checkpoint ones (`ctest -L longer`; among them `CalcU1600HarnessTests`, `tests/harness/`: the `pc1600` commands and the harness entry, each test on a `calcu` run).
+A test file registers its tests with `TEST(name)` of the repository's one runner, `library/testing/TestHarness.hpp` (ADR 0038; `CHECK`, `CHECK_EQ`, `SKIP_UNLESS` for a missing ROM); there is no list of tests to keep. `tools/run_tests.sh <substring>` runs the tests whose name contains it. Every CTest entry is in a test group (ADR 0031; `docs/test-groups.md` at the repository root): a tree has the Frequent group (`CoreTests`, `CalcU1600DapTests` (the DAP server's cases, `tests/dap/`), `CalcU1600HelpTests` (`tests/help/`), `CalcU1600HelpCheck`, `CalcU1600HelpBuild` (the help, LIB-16), `calcu_preset_check.CalcU1600Presets`, `calcu_preset_check.CalcU1600Templates`; ≤ 60 s), and with `-DCALCU_TESTS_LONGER=ON` / `-DCALCU_TESTS_CHECKPOINT=ON` also the Longer and Checkpoint ones (`ctest -L longer`; among them `CalcU1600HarnessTests`, `tests/harness/`: the `pc1600` commands and the harness entry, each test on a `calcu` run).
 
 ## Harness
 

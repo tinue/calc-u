@@ -2,7 +2,7 @@
 # 8 FLASH banks (Microchip SST39SF010A).
 #
 # The real module, expressed through the general software-defined system
-# (Flash content + `by-bank` split content, Memory-Card-Definition-Spec.md
+# (Flash content + `by-bank` split content, help/09-module-definitions.md
 # §5). Every Flash field was recovered from the disassembly of the real
 # CE-163F's self-update firmware.
 #

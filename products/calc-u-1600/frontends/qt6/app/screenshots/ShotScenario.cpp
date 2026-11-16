@@ -142,6 +142,9 @@ bool parseStep(const calcu::formats::YamlNode& node, const QDir& baseDir, const 
     if (verb == QLatin1String("preset")) {
         out->kind = K::Preset;
         if (!needText(&out->text)) return false;
+        // A bundle path (`examples:…`, LIB-6 AC-33) goes to `load-preset` as
+        // it is; a file is taken from the scenario's folder.
+        if (out->text.startsWith(QLatin1String("examples:"))) return true;
         out->text = QDir::cleanPath(baseDir.absoluteFilePath(out->text));
         if (!QFileInfo::exists(out->text)) {
             *error = lineError(node.line, QStringLiteral("preset not found: %1").arg(out->text));

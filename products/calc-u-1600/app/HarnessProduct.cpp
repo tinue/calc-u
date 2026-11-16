@@ -231,8 +231,9 @@ std::shared_ptr<const std::vector<std::uint8_t>> harnessHostDriveRom() {
 
 class SharpHarnessProduct final : public harness::HarnessProduct {
 public:
-    SharpHarnessProduct()
-        : catalogue_(sharp::sharpCatalogue()),
+    explicit SharpHarnessProduct(std::string romFolder = std::string(CALCU1600_DIR) + "/roms")
+        : romFolder_(std::move(romFolder)),
+          catalogue_(sharp::sharpCatalogue()),
           machines_(catalogue_, harnessHostDriveRom()),
           bundle_(std::string(CALCU1600_DIR) + "/examples") {
         sharp::addModuleDefinitions(catalogue_, std::string(CALCU1600_DIR) + "/frontends/qt6/resources/cards");
@@ -250,7 +251,7 @@ public:
     const settings::ProductDecl& settingsDecl() const override { return shared::settingsDecl(); }
 
     roms::LookupResult lookUpRoms() const override {
-        return sharp::lookUpRoms(roms::DirectoryBundle(std::string(CALCU1600_DIR) + "/roms"));
+        return sharp::lookUpRoms(roms::DirectoryBundle(romFolder_));
     }
 
     startup::ProductMachines& machines() override { return machines_; }
@@ -283,6 +284,7 @@ public:
     }
 
 private:
+    std::string romFolder_;
     machine::Catalogue catalogue_;
     SharpProductMachines machines_;
     SharpPresetRules rules_;
@@ -297,5 +299,9 @@ private:
 } // namespace
 
 std::unique_ptr<calcu::harness::HarnessProduct> makeHarnessProduct() { return std::make_unique<SharpHarnessProduct>(); }
+
+std::unique_ptr<calcu::harness::HarnessProduct> makeHarnessProduct(std::string romFolder) {
+    return std::make_unique<SharpHarnessProduct>(std::move(romFolder));
+}
 
 } // namespace shared

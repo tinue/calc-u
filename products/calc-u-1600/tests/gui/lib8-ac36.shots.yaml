@@ -12,7 +12,9 @@ shots:
       - expect-panel: { name: paper, title: "", empty: true }
       - action: Machine > Peripherals > CE-150
       - settle: 300
-      - expect-panel: { name: paper, title: CE-150, empty: true }
+      # The attach replies when the machine is ready for keys (LIB-18): by
+      # then the CE-150's power-on has fed the paper, so it is not empty.
+      - expect-panel: { name: paper, title: CE-150 }
       - key: cl
       - type: NEW0
       - type: LPRINT 123

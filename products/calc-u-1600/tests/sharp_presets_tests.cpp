@@ -377,6 +377,16 @@ TEST(lib5_ac28_in_a_preset_cadence) {
                      "t.pc1500a"));
 }
 
+// LIB-10 AC-40 (the format 2 clause, M-46): the debugger steps are not
+// defined on the Sharp models (preset.md §7) and refuse a preset when it is
+// read; `debug-panel:` is Calc-U-59's.
+TEST(lib10_ac40_debugger_steps_refused_at_read) {
+    SKIP_UNLESS(roms(), "no ROMs in roms/");
+    HarnessPreset h;
+    for (const char* step : {"pause: program", "pause-on-start: cpu", "step: { level: cpu, count: 1 }", "resume:", "debug-panel: cpu"})
+        CHECK(has(h.load(k1600 + "keys:\n  - " + step + "\n"), "refused: "));
+}
+
 TEST(lib5_ac41_ent_refused_in_a_preset) {
     PresetReadRig r;
     CHECK(!r.error(k1600 + "keys:\n  - key: ent\n").empty());

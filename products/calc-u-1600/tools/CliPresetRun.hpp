@@ -27,7 +27,7 @@ public:
     // refused or failed (its reason).
     static std::unique_ptr<CliPresetRun> load(const std::string& presetPath, std::string* error) {
         auto run = std::unique_ptr<CliPresetRun>(new CliPresetRun);
-        run->product_ = shared::makeHarnessProduct();
+        run->product_ = shared::makeHarnessProduct("roms");   // relative to where the tool runs (LIB-11 AC-20)
         calcu::harness::RunOptions options;
         options.outputFolder = ".";
         run->server_ = calcu::harness::Server::start(*run->product_, options, error);

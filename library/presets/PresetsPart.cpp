@@ -66,18 +66,25 @@ Task<OperationResult> PresetsPart::runLoad(OperationContext& op, std::shared_ptr
     co_return OperationResult{out.kind == LoadOutcome::Kind::Done, out.message};
 }
 
+std::variant<std::shared_ptr<const LoadPlan>, std::string> PresetsPart::readFor(
+    const std::string& ref, const std::optional<machine::ModelId>& forModel) const {
+    const auto source = sourceFor(ref, setup_.bundle, setup_.home);
+    auto read = readPreset(*source, readSetup());
+    if (auto* e = std::get_if<ReadError>(&read)) return e->message;
+    auto plan = std::make_shared<const LoadPlan>(std::get<LoadPlan>(std::move(read)));
+    if (forModel && plan->model != *forModel) return source->name() + " is a preset for the " + plan->model.value;
+    return plan;
+}
+
 Task<startup::PresetLoad> PresetsPart::load(std::string ref, std::optional<machine::ModelId> forModel,
                                             startup::MachineControl&, OperationContext& op) {
     using startup::PresetLoad;
-    const auto source = sourceFor(ref, setup_.bundle, setup_.home);
-    auto read = readPreset(*source, readSetup());
-    if (auto* e = std::get_if<ReadError>(&read)) co_return PresetLoad{PresetLoad::Outcome::CannotLoad, e->message};
-    auto plan = std::make_shared<LoadPlan>(std::get<LoadPlan>(std::move(read)));
-    if (forModel && plan->model != *forModel)
-        co_return PresetLoad{PresetLoad::Outcome::CannotLoad,
-                             source->name() + " is a preset for the " + plan->model.value};
+    auto read = readFor(ref, forModel);
+    if (auto* why = std::get_if<std::string>(&read)) co_return PresetLoad{PresetLoad::Outcome::CannotLoad, *why};
+    const std::shared_ptr<const LoadPlan> plan = std::get<std::shared_ptr<const LoadPlan>>(std::move(read));
+    const LoadOptions options{false, true};
     regularDue_ = true;
-    const LoadOutcome out = co_await carryOut(op, plan, LoadOptions{false, true}, deps());
+    const LoadOutcome out = co_await carryOut(op, plan, options, deps());
     switch (out.kind) {
     case LoadOutcome::Kind::NotBuilt: co_return PresetLoad{PresetLoad::Outcome::CannotLoad, out.message};
     case LoadOutcome::Kind::Failed: co_return PresetLoad{PresetLoad::Outcome::FailedWhileRunning, out.message};
@@ -88,12 +95,9 @@ Task<startup::PresetLoad> PresetsPart::load(std::string ref, std::optional<machi
 
 Task<OperationResult> PresetsPart::loadWithin(OperationContext& op, std::string ref, bool buildOnly,
                                              std::optional<machine::ModelId> forModel) {
-    const auto source = sourceFor(ref, setup_.bundle, setup_.home);
-    auto read = readPreset(*source, readSetup());
-    if (auto* e = std::get_if<ReadError>(&read)) co_return OperationResult{false, e->message};
-    auto plan = std::make_shared<const LoadPlan>(std::get<LoadPlan>(std::move(read)));
-    if (forModel && plan->model != *forModel)
-        co_return OperationResult{false, source->name() + " is a preset for the " + plan->model.value};
+    auto read = readFor(ref, forModel);
+    if (auto* why = std::get_if<std::string>(&read)) co_return OperationResult{false, *why};
+    const std::shared_ptr<const LoadPlan> plan = std::get<std::shared_ptr<const LoadPlan>>(std::move(read));
     const LoadOptions options{buildOnly, false};
     OperationResult r = co_await runLoad(op, plan, options);
     co_return r;

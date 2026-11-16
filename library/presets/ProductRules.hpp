@@ -77,7 +77,13 @@ public:
     virtual std::optional<std::vector<std::uint8_t>> screenshot(machine::Machine&, const machine::DisplayOutput&) = 0;
     // AC-24, AC-66: whether the display shows the text.
     virtual ExpectReading compare(machine::Machine&, const machine::DisplayOutput&, const ExpectText&) = 0;
-    virtual bool takesRegex() const { return true; }   // AC-68: the TI models false
+    // AC-67, AC-68: the refusal of an `expect:` / `not-expect:` text (keyword
+    // "expect:" or "not-expect:") the comparison cannot take, when the preset
+    // is read; nullopt: taken. A TI model takes a number only (AC-40).
+    virtual std::optional<std::string> checkExpect(const ExpectText&, std::string_view keyword) const {
+        (void)keyword;
+        return std::nullopt;
+    }
     // AC-62: the markers of preset.md §7 for this model.
     virtual Applies applies(std::string_view keyword) const {
         (void)keyword;
@@ -87,12 +93,10 @@ public:
     // D-32 (Calc-U-1600, M-46): one check once every header key is read
     // (the place keys in `plan.places`, the product's in ReadContext::kept),
     // for pairs of keys that do not go together; errors through
-    // ReadContext::error at the line of the later key.
+    // ReadContext::error at the line of the later key. (D-33: a header key
+    // puts its requests into the plan through ReadContext::addPeripheral and
+    // setContentAt.)
     virtual void checkHeader(const LoadPlan& plan, ReadContext&) const { (void)plan; }
-    // D-33 (C1600-4 D-2): the product turns its kept header values
-    // (LoadPlan::productHeader) into requests of the machine plan; called at
-    // the end of machinePlan().
-    virtual void amendPlan(const LoadPlan& plan, startup::MachinePlan&) const { (void)plan; }
 };
 
 class ProductRules {

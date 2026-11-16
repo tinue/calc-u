@@ -8,8 +8,8 @@
 #include "machine/Machine.hpp"
 #include "presets/PresetsPart.hpp"
 #include "sessions/LibraryTopics.hpp"
+#include "typing/KeyNames.hpp"
 #include <algorithm>
-#include <cctype>
 #include <filesystem>
 #include <fstream>
 #include <iterator>
@@ -20,12 +20,6 @@ namespace calcu::harness {
 using namespace sessions;
 
 namespace {
-
-std::string lower(std::string_view s) {
-    std::string out(s);
-    for (char& c : out) c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
-    return out;
-}
 
 std::filesystem::path pathOf(const std::string& s) { return std::filesystem::path(std::u8string(s.begin(), s.end())); }
 
@@ -40,16 +34,8 @@ Reply needs(const char* usage) { return refusedReply(std::string("usage: ") + us
 // any case, then one of its other spellings in any case. An unknown key
 // is passed as written, and the session refuses it.
 std::string resolveKey(const machine::MachineDescriptor* d, const std::string& written) {
-    if (!d) return written;
-    for (const auto& k : d->keys)
-        if (k.id.value == written) return written;
-    const std::string w = lower(written);
-    for (const auto& k : d->keys)
-        if (lower(k.id.value) == w) return k.id.value;
-    for (const auto& k : d->keys)
-        for (const auto& o : k.otherSpellings)
-            if (lower(o) == w) return k.id.value;
-    return written;
+    const machine::KeyDescriptor* k = d ? typing::keyNamed(*d, written) : nullptr;
+    return k ? k->id.value : written;
 }
 
 std::string ownerText(const machine::Owner& o) {

@@ -55,9 +55,6 @@ public:
     const TypingProduct& product() const { return product_; }
     void setPauseProbe(const PauseProbe* p) { probe_ = p; }
 
-    // The presses of a `key` name on the current model (AC-15), or nullopt.
-    std::optional<std::vector<Press>> pressesOf(std::string_view name) const;
-
     // SessionPart
     void attach(sessions::SessionSetup&) override;
     void beforeCall(sessions::SessionContext&, pacing::WallTime) override;

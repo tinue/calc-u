@@ -11,7 +11,7 @@ passed, 81 s), the Web `dist/` and `frontends/web/run-tests.sh`.
 
 The code (design §3): `app/SharpPresetKeys.*` (`program:` with `file:` and
 `text:`, `host-drive:`, `slot-1-rom:`/`slot-2-rom:`, `bus-rom:`, `debug:`;
-`checkSharpHeader`, `amendSharpPlan`), `app/SharpDebugBlock.*`
+`checkSharpHeader`, `amendSharpPlan` (gone in Part D simplification P-6: the header keys add their requests through `ReadContext`, LIB-6 D-33)), `app/SharpDebugBlock.*`
 (`readDebugBlock`, `debugBlockOf` for the DAP), the bus ROM in the core
 (`kBusRom`, `kBusRomPlace`, `BusRomRequest`, `SlotRomRequest`), the 51
 presets of the repository, the templates of the VS Code extension and
@@ -29,7 +29,7 @@ presets of the repository, the templates of the VS Code extension and
 | AC-7 | Pass | `c1600_4_ac7_refused_where_frontend_mounts_no_folder` |
 | AC-8 | Pass | `c1600_4_ac8_slot_rom_bytes_read_at_every_load`, `c1600_4_ac8_no_module_twice_unreadable_wrong_size_refused`, `c1600_4_ac8_module_with_slot_rom_never_saved` |
 | AC-9 | Pass | `c1600_4_ac9_forms_and_ranges`, `c1600_4_ac9_twice_refused` |
-| AC-10 | Pass | `c1600_4_ac10_later_rom_found_first_and_before_peripheral`, `c1600_4_ac10_listed_in_plugged_no_control`, `c1600_4_ac10_attach_command_refused` |
+| AC-10 | Pass | `c1600_4_ac10_later_rom_found_first_and_before_peripheral`, `c1600_4_ac10_header_peripherals_in_plan_order` (P-6), `c1600_4_ac10_listed_in_plugged_no_control`, `c1600_4_ac10_attach_command_refused` |
 | AC-11 | Pass | `c1600_4_ac11_keys_values_paths_from_preset_folder`, `c1600_4_ac11_unknown_key_wrong_value_refused` |
 | AC-12 | Pass | `c1600_4_ac12_load_does_nothing_with_block`, `c1600_4_ac12_debug_block_of_for_the_debugger` |
 | AC-13 | Pass | LIB-6 AC-45, AC-46, AC-48 of the Calc-U-1600 column (`features/LIB-6-presets/qa-report.md`) |

@@ -207,11 +207,6 @@ private:
 } // namespace
 
 ControlState computeControlState(const machine::Machine& m, const ControlSetup& setup, bool operationRuns) {
-    if (!setup.catalogue) {   // nothing to list the entries from: the running model alone
-        ControlState s;
-        s.model = m.model();
-        return s;
-    }
     return Computation(m, setup, operationRuns).run();
 }
 

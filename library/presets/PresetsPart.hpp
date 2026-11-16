@@ -88,6 +88,10 @@ public:
 
 private:
     std::unique_ptr<PresetSource> sourceOf(const sessions::Value& args) const;
+    // load's and loadWithin's: the plan of `ref`, or why it is not loaded (a
+    // read error, or with `forModel` a preset for another model).
+    std::variant<std::shared_ptr<const LoadPlan>, std::string> readFor(const std::string& ref,
+                                                                      const std::optional<machine::ModelId>& forModel) const;
     sessions::Task<sessions::OperationResult> runLoad(sessions::OperationContext&, std::shared_ptr<const LoadPlan>,
                                                       LoadOptions);
     EngineDeps& deps();   // refreshed for each operation (one runs at a time)

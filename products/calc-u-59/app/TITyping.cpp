@@ -1,4 +1,5 @@
 #include "TITyping.hpp"
+#include "machine/Names.hpp"
 #include "../core/TICatalogue.hpp"
 #include <algorithm>
 #include <map>
@@ -10,13 +11,6 @@ using calcu::typing::Mapped;
 using calcu::typing::Press;
 
 namespace {
-
-std::string lower(std::string_view s) {
-    std::string out(s);
-    for (char& c : out)
-        if (c >= 'A' && c <= 'Z') c = static_cast<char>(c - 'A' + 'a');
-    return out;
-}
 
 const KeyId k2nd{"2nd"};
 
@@ -49,16 +43,16 @@ const std::map<std::string, std::vector<Press>>& nameTable() {
         std::map<std::string, std::vector<Press>> t;
         const auto& keys = tiCatalogue().models().front().keys;
         for (const auto& k : keys) {   // the key IDs and their other spellings
-            t[lower(k.id.value)] = {Press{k.id}};
-            for (const auto& o : k.otherSpellings) t[lower(o)] = {Press{k.id}};
+            t[calcu::machine::lowerAscii(k.id.value)] = {Press{k.id}};
+            for (const auto& o : k.otherSpellings) t[calcu::machine::lowerAscii(o)] = {Press{k.id}};
         }
         for (const auto& s : secondFunctions())
-            for (const char* n : s.names) t[lower(n)] = {Press{k2nd}, Press{KeyId{s.key}}};
+            for (const char* n : s.names) t[calcu::machine::lowerAscii(n)] = {Press{k2nd}, Press{KeyId{s.key}}};
         auto seq = [&t](const char* name, std::initializer_list<const char*> of) {
             std::vector<Press> p;
             for (const char* n : of)
-                for (const Press& x : t.at(lower(n))) p.push_back(x);
-            t[lower(name)] = p;
+                for (const Press& x : t.at(calcu::machine::lowerAscii(n))) p.push_back(x);
+            t[calcu::machine::lowerAscii(name)] = p;
         };
         // §8.1.1: the printer names that are key sequences (merged codes).
         seq("PG*", {"Pgm", "Ind"});
@@ -136,7 +130,7 @@ const calcu::typing::TypingProfile& typingProfile(Model m) {
 
 std::optional<std::vector<Press>> tiKeyName(std::string_view name) {
     const auto& t = nameTable();
-    const auto it = t.find(lower(name));
+    const auto it = t.find(calcu::machine::lowerAscii(name));
     if (it == t.end()) return std::nullopt;
     return it->second;
 }

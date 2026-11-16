@@ -1,8 +1,9 @@
 #include "presets/Reader.hpp"
+#include "formats/Flow.hpp"
 #include "formats/Number.hpp"
+#include "machine/Names.hpp"
 #include <algorithm>
 #include <cstdlib>
-#include <cctype>
 #include <filesystem>
 #include <fstream>
 #include <iterator>
@@ -10,13 +11,8 @@
 
 namespace calcu::presets {
 
+using formats::scalarText;
 using formats::YamlNode;
-
-std::string lowerAscii(std::string_view s) {
-    std::string out(s);
-    for (char& c : out) c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
-    return out;
-}
 
 std::string errorText(const std::string& name, int line, const std::string& what) {
     if (line <= 0) return name + ": " + what;
@@ -47,6 +43,31 @@ std::optional<std::vector<std::uint8_t>> ReadContext::readFile(std::string_view 
 void ReadContext::keep(std::string key, std::shared_ptr<const ProductValue> v) { kept_[std::move(key)] = std::move(v); }
 
 void ReadContext::error(int line, std::string message) { errors_.push_back(ReadError{line, std::move(message)}); }
+
+void ReadContext::addPeripheral(machine::PeripheralRequest r) {
+    // The index of a request's place among the model's places (the last for none).
+    auto rank = [this](const machine::PeripheralRequest& x) {
+        for (std::size_t i = 0; i < model_.places.size(); ++i)
+            if (!x.place.steps.empty() && model_.places[i].name == x.place.steps.front()) return i;
+        return model_.places.size();
+    };
+    const std::size_t at = rank(r);
+    auto it = peripherals_.begin();
+    while (it != peripherals_.end() && rank(*it) <= at) ++it;
+    peripherals_.insert(it, std::move(r));
+}
+
+void ReadContext::setContentAt(const machine::PlaceName& place, std::shared_ptr<const machine::ProductData> content) {
+    contents_.emplace_back(place, std::move(content));
+}
+
+void ReadContext::completePlan(LoadPlan& plan) {
+    for (const auto& [place, content] : contents_)
+        for (PlaceRequest& r : plan.places)
+            if (r.request.place.steps.size() == 1 && r.request.place.steps.front() == place && !r.request.content)
+                r.request.content = content;
+    plan.headerPeripherals = std::move(peripherals_);
+}
 
 std::optional<ReadError> ReadContext::firstError() const {
     if (errors_.empty()) return std::nullopt;
@@ -136,12 +157,6 @@ std::vector<Chunk> splitChunks(const std::string& text, const std::vector<std::s
     return out;
 }
 
-std::string scalarText(const YamlNode& n) {
-    std::string s, e;
-    n.asString(&s, &e);
-    return s;
-}
-
 std::size_t codePoints(std::string_view s) {
     std::size_t n = 0;
     for (char c : s)
@@ -160,19 +175,6 @@ template <class D> std::string variantList(const D& d) {
     std::string out;
     for (std::size_t i = 0; i < d.variants.size(); ++i) out += (i == 0 ? "" : ", ") + d.variants[i].id.value;
     return out;
-}
-
-template <class D>
-std::optional<machine::VariantId> variantNamed(const D& d, std::string_view name) {
-    for (const auto& v : d.variants)
-        if (lowerAscii(v.id.value) == lowerAscii(name)) return v.id;
-    return std::nullopt;
-}
-
-const machine::PeripheralDescriptor* peripheralNamed(const machine::Catalogue& cat, std::string_view name) {
-    for (const auto& p : cat.peripherals())
-        if (lowerAscii(p.id.value) == lowerAscii(name)) return &p;
-    return nullptr;
 }
 
 std::string nameOf(const machine::PeripheralDescriptor& d) { return d.name.empty() ? d.id.value : d.name; }
@@ -248,7 +250,7 @@ std::optional<PlaceRequest> readPlace(const std::string& key, const YamlNode& v,
         ctx.error(line, key + ": names a peripheral.");
         return std::nullopt;
     }
-    const machine::PeripheralDescriptor* d = peripheralNamed(ctx.catalogue(), id);
+    const machine::PeripheralDescriptor* d = machine::peripheralNamed(ctx.catalogue(), id);
     if (!d) {
         ctx.error(line, "There is no peripheral " + id + ".");
         return std::nullopt;
@@ -263,7 +265,7 @@ std::optional<PlaceRequest> readPlace(const std::string& key, const YamlNode& v,
     r.request.place = machine::PlacePath{{place}};
     r.request.peripheral = d->id;
     if (!variant.empty()) {
-        r.request.variant = variantNamed(*d, variant);
+        r.request.variant = machine::variantNamed(d->variants, variant);
         if (!r.request.variant) {
             ctx.error(line, "The " + nameOf(*d) + " has no variant " + variant +
                                 (d->variants.empty() ? "." : "; its variants are " + variantList(*d) + "."));
@@ -384,9 +386,7 @@ std::variant<LoadPlan, ReadError> readPreset(const PresetSource& source, const R
     const std::string written = mc->value.isScalar() ? scalarText(mc->value) : std::string();
     const std::size_t colon = written.find(':');
     const std::string modelName = written.substr(0, colon);
-    const machine::MachineDescriptor* desc = nullptr;
-    for (const auto& m : setup.catalogue.models())
-        if (lowerAscii(m.model.value) == lowerAscii(modelName)) desc = &m;
+    const machine::MachineDescriptor* desc = machine::modelNamed(setup.catalogue, modelName);
     if (!desc)
         return ReadError{mc->line, errorText(name, mc->line,
                                              "There is no model " + modelName + " in " + product + "; its models are " +
@@ -397,7 +397,7 @@ std::variant<LoadPlan, ReadError> readPreset(const PresetSource& source, const R
     plan.modelLine = mc->line;
     if (colon != std::string::npos) {
         const std::string v = written.substr(colon + 1);
-        plan.variant = variantNamed(*desc, v);
+        plan.variant = machine::variantNamed(desc->variants, v);
         if (!plan.variant)
             return ReadError{mc->line, errorText(name, mc->line,
                                                  desc->variants.empty()
@@ -507,6 +507,7 @@ std::variant<LoadPlan, ReadError> readPreset(const PresetSource& source, const R
 
     if (auto e = ctx.firstError()) return *e;
     plan.productHeader = ctx.takeKept();
+    ctx.completePlan(plan);
     return plan;
 }
 
@@ -529,11 +530,10 @@ std::variant<PresetHeader, ReadError> readHeader(const PresetSource& source, con
         } else if (c.key == "model") {
             const std::string w = c.value.isScalar() ? scalarText(c.value) : std::string();
             const std::string m = w.substr(0, w.find(':'));
-            for (const auto& d : catalogue.models())
-                if (lowerAscii(d.model.value) == lowerAscii(m)) {
-                    h.model = d.model;
-                    model = true;
-                }
+            if (const machine::MachineDescriptor* d = machine::modelNamed(catalogue, m)) {
+                h.model = d->model;
+                model = true;
+            }
             if (!model) return ReadError{c.line, errorText(name, c.line, "There is no model " + m + ".")};
         } else if (c.key == "preset-name" && c.value.isScalar()) {
             h.name = scalarText(c.value);

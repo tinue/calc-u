@@ -2,8 +2,8 @@
 #include "sessions/Args.hpp"
 #include "sessions/LibraryTopics.hpp"
 #include "sessions/MachineSession.hpp"
+#include "typing/KeyNames.hpp"
 #include "typing/TypingTopics.hpp"
-#include <cctype>
 #include <memory>
 #include <string>
 
@@ -16,12 +16,6 @@ using sessions::SessionContext;
 using sessions::Value;
 
 namespace {
-
-std::string lower(std::string_view s) {
-    std::string out(s);
-    for (char& c : out) c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
-    return out;
-}
 
 bool hasKey(const machine::Machine& m, const machine::KeyId& k) {
     for (const auto& d : m.descriptor().keys)
@@ -55,22 +49,6 @@ std::vector<std::string> namesOf(const Value& args) {
 } // namespace
 
 TypingPart::TypingPart(const TypingProduct& p, sessions::Hosting h) : product_(p), hosting_(h) {}
-
-std::optional<std::vector<Press>> TypingPart::pressesOf(std::string_view name) const {
-    const TypingProfile* p = engine_.profile();
-    if (p && p->name) return p->name(name);
-    const machine::Machine* m = engine_.machine();
-    if (!m) return std::nullopt;
-    const std::string w = lower(name);
-    for (const auto& k : m->descriptor().keys)
-        if (k.id.value == name) return std::vector<Press>{Press{k.id}};
-    for (const auto& k : m->descriptor().keys) {
-        if (lower(k.id.value) == w) return std::vector<Press>{Press{k.id}};
-        for (const auto& o : k.otherSpellings)
-            if (lower(o) == w) return std::vector<Press>{Press{k.id}};
-    }
-    return std::nullopt;
-}
 
 void TypingPart::attach(sessions::SessionSetup& s) {
     ctx_ = &s.context();
@@ -135,18 +113,10 @@ void TypingPart::attach(sessions::SessionSetup& s) {
                   if (!engine_.machine()) return Refused{sessions::kNoMachine};
                   const std::vector<std::string> names = namesOf(a);
                   if (names.empty()) return Refused{"The key command needs names: one or more key names."};
-                  std::vector<Press> presses;
-                  for (const std::string& n : names) {   // AC-15: refused, nothing typed
-                      const auto p = pressesOf(n);
-                      if (!p) return Refused{"Unknown key: " + n + "."};
-                      presses.insert(presses.end(), p->begin(), p->end());
-                  }
-                  if (const TypingProfile* prof = engine_.profile(); prof && prof->names) {
-                      auto all = prof->names(names);
-                      if (!all) return Refused{"Unknown key: " + names.front() + "."};
-                      presses = std::move(*all);
-                  }
-                  return deferred(engine_.typeKeys(std::move(presses), Origin::Typed));
+                  // AC-15: refused, nothing typed
+                  auto presses = pressesOfNames(engine_.profile(), engine_.machine()->descriptor(), names);
+                  if (const auto* no = std::get_if<KeyNamesRefused>(&presses)) return Refused{"Unknown key: " + no->name + "."};
+                  return deferred(engine_.typeKeys(std::get<std::vector<Press>>(std::move(presses)), Origin::Typed));
               }));
     if (product_.typesText())
         s.command(kType, always([this](const Value& a) -> CommandOutcome {

@@ -1,10 +1,10 @@
 #include "startup/StartupPart.hpp"
+#include "machine/Names.hpp"
 #include "sessions/Args.hpp"
 #include "sessions/LibraryTopics.hpp"
 #include "sessions/MachineSession.hpp"
 #include "settings/Startup.hpp"
 #include <algorithm>
-#include <cctype>
 #include <string_view>
 #include <utility>
 
@@ -26,32 +26,6 @@ using sessions::Task;
 using sessions::Value;
 
 namespace {
-
-std::string lower(std::string_view s) {
-    std::string out(s);
-    for (char& c : out) c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
-    return out;
-}
-
-// D-16: names of models, variants and peripherals in any case; the
-// catalogue's spelling back.
-std::optional<ModelId> modelNamed(const machine::Catalogue& cat, std::string_view name) {
-    for (const auto& m : cat.models())
-        if (lower(m.model.value) == lower(name)) return m.model;
-    return std::nullopt;
-}
-
-std::optional<VariantId> variantNamed(const std::vector<machine::VariantDescriptor>& vs, std::string_view name) {
-    for (const auto& v : vs)
-        if (lower(v.id.value) == lower(name)) return v.id;
-    return std::nullopt;
-}
-
-machine::PeripheralId peripheralNamed(const machine::Catalogue& cat, std::string_view name) {
-    for (const auto& p : cat.peripherals())
-        if (lower(p.id.value) == lower(name)) return p.id;
-    return machine::PeripheralId{std::string(name)};
-}
 
 // "a/jack" as placeText writes it.
 PlacePath placeFrom(std::string_view text) {
@@ -180,7 +154,7 @@ void StartupPart::attach(sessions::SessionSetup& setup) {
         ModelId model{settings::startupModel(setup_.settings)};   // AC-3
         const std::string named = sessions::textArg(args, "model");
         if (!named.empty()) {
-            if (auto m = modelNamed(cat, named)) model = *m;
+            if (const auto* m = machine::modelNamed(cat, named)) model = m->model;
             else c.notice("There is no model \"" + named + "\"; the startup model is used.");   // LIB-15 EC-4
         }
         const std::string preset = sessions::textArg(args, "preset");
@@ -195,10 +169,10 @@ void StartupPart::attach(sessions::SessionSetup& setup) {
         kModelCommand,
         [this, &cat](const Value& args, SessionContext& c) -> CommandOutcome {
             const std::string name = sessions::textArg(args, "name");
-            const auto model = modelNamed(cat, name);
+            const machine::MachineDescriptor* model = machine::modelNamed(cat, name);
             if (!model) return Refused{"There is no model \"" + name + "\"."};   // D-18
-            if (const Machine* m = c.machine(); m && m->model() == *model) return Done{};   // AC-8
-            return StartOperation{[this, m = *model](OperationContext& o) {
+            if (const Machine* m = c.machine(); m && m->model() == model->model) return Done{};   // AC-8
+            return StartOperation{[this, m = model->model](OperationContext& o) {
                 return buildFor(o, m, std::string(), BuildOrigin::ModelSwitch);
             }};
         },
@@ -210,7 +184,7 @@ void StartupPart::attach(sessions::SessionSetup& setup) {
         const Machine* m = c.machine();
         if (!m) return Refused{sessions::kNoMachine};
         const std::string name = sessions::textArg(args, "name");
-        const auto v = variantNamed(m->descriptor().variants, name);
+        const auto v = machine::variantNamed(m->descriptor().variants, name);
         if (!v) return Refused{"The " + m->model().value + " has no variant \"" + name + "\"."};   // D-18
         if (m->variant() == v) return Done{};   // AC-8
         return StartOperation{[this, chosen = *v](OperationContext& o) { return switchVariant(o, chosen); }};
@@ -222,11 +196,13 @@ void StartupPart::attach(sessions::SessionSetup& setup) {
         const Machine* m = c.machine();
         if (!m) return Refused{sessions::kNoMachine};
         const PlacePath place = placeFrom(sessions::textArg(args, "place"));
-        const machine::PeripheralId id = peripheralNamed(cat, sessions::textArg(args, "peripheral"));
+        // D-16: the catalogue's spelling; an unknown name as written, which the machine refuses.
+        const std::string written = sessions::textArg(args, "peripheral");
+        const machine::PeripheralDescriptor* d = machine::peripheralNamed(cat, written);
+        const machine::PeripheralId id = d ? d->id : machine::PeripheralId{written};
         std::optional<VariantId> variant;
-        const machine::PeripheralDescriptor* d = cat.peripheral(id);
         if (const std::string v = sessions::textArg(args, "variant"); !v.empty()) {
-            variant = d ? variantNamed(d->variants, v) : std::nullopt;
+            variant = d ? machine::variantNamed(d->variants, v) : std::nullopt;
             if (!variant) variant = VariantId{v};   // the machine refuses it, with its reason
         }
         const machine::Plugged plugged = m->plugged();

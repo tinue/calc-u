@@ -1,4 +1,5 @@
 #include "presets/BundleFile.hpp"
+#include "formats/Flow.hpp"
 #include "formats/Number.hpp"
 #include "formats/Yaml.hpp"
 #include <algorithm>
@@ -6,15 +7,10 @@
 
 namespace calcu::presets {
 
+using formats::scalarText;
 using formats::YamlNode;
 
 namespace {
-
-std::string scalarText(const YamlNode& n) {
-    std::string s, e;
-    n.asString(&s, &e);
-    return s;
-}
 
 const std::string kName = std::string("examples:") + kBundleFile;
 

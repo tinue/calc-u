@@ -36,6 +36,12 @@ calcu::presets::IdleRule SharpModelRules::idle() const {
     // AC-45, AC-53: key readiness without a break for 20 frames, asked every
     // frame (a frame: 1/60 s of emulated time, as the cores count it).
     calcu::presets::IdleRule r;
+    // Key readiness as C1600-1 AC-21 built it (readyNow unset). On the
+    // PC-1600 a frame in which the key matrix is read counts; the Z-80's
+    // BASIC reads it for BREAK while a program runs, so a BASIC program that
+    // does not wait for the user counts as idle there too (M-46 finding,
+    // LIB-6 qa-report): it cannot be told from a program that waits with
+    // INKEY$, which must count as idle.
     r.stretch = calcu::machine::Seconds(20.0 / 60.0);
     const calcu::machine::TickRate rate = sharp::sharpCatalogue().model(calcu::machine::ModelId{m_model})->tickRate;
     r.sample = rate / 60;

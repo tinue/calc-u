@@ -62,6 +62,9 @@ struct SessionFixture {
         for (const auto& dir : {fs::path("roms"), fs::path("frontends/qt6/resources/cards")})
             for (const auto& f : fs::directory_iterator(dir))
                 if (f.is_regular_file()) fs::copy_file(f.path(), bundle / f.path().filename());
+        // The host drive's own ROM, bundled beside the set (roms.md Q-1).
+        const fs::path hostDrive = "firmware/pc1600-hostdrive/PC1600-P1-B7-HOSTDRIVE.bin";
+        if (fs::exists(hostDrive)) fs::copy_file(hostDrive, bundle / hostDrive.filename());
         paths = std::make_unique<shared::AppPaths>(
             settings, testHostDirs((root / "home").generic_string()),
             shared::BundleDirs{bundle.generic_string(), fs::absolute("examples").generic_string()});

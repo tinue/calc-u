@@ -109,7 +109,13 @@ SharpAppPart::SharpAppPart(Settings& settings, AppPaths& paths)
       m_bundle(toPath(paths.bundledExamplesDir())),
       m_presets(calcu::presets::PresetsSetup{&m_catalogue, &m_rules, nullptr, &m_typingPart, &m_bundle,
                                              paths.homeDir(),
-                                             [&paths] { return paths.places().screenshotFolder(); }}),
+                                             [&paths]() -> std::optional<std::string> {
+                                                 // LIB-6 AC-25: the save folder, made when a step needs it.
+                                                 auto folder = paths.places().screenshotFolder();
+                                                 std::error_code ec;
+                                                 if (folder) std::filesystem::create_directories(toPath(*folder), ec);
+                                                 return folder;
+                                             }}),
       m_startup(calcu::startup::StartupSetup{m_machines, m_roms, settings.file(), &m_presets,
                                              m_roms ? std::string() : calcu::roms::describe(m_romsMissing)}) {
     // The module definitions: the bundled ones and the ROM modules of the set

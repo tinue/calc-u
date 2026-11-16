@@ -65,6 +65,11 @@ ignored() {
     | grep -v '^products/[^/]*/roms/' | sed 's|^|/|'
 }
 
+# The copy compares contents (--checksum) and gives a copied file the time
+# of the copy (--no-times): with the source's times a file changed after an
+# earlier run's build could look older than its object, and ninja would keep
+# the stale object (2026-11-16: a link error and a crash of CoreTests that a
+# fresh volume did not have).
 # run_in <target> <job>...: the copy, then the jobs, in that target's image.
 # A web job gets its own build/web per product, since each product's
 # Emscripten differs and build.sh always uses build/web.
@@ -84,7 +89,7 @@ run_in() {
     "$image" bash -c '
       set -e
       cat > /tmp/ignored
-      rsync -a --delete --exclude-from=/tmp/ignored /src/ /work/
+      rsync -a --no-times --checksum --delete --exclude-from=/tmp/ignored /src/ /work/
       exec /work/ci/linux/jobs.sh "$@"
     ' jobs "$@"
 }

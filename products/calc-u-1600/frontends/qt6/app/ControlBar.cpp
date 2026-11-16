@@ -10,6 +10,12 @@
 #include <QSignalBlocker>
 #include <QStyle>
 #include <QStyleOptionButton>
+#include <QStandardItemModel>
+
+#include <optional>
+#include <string>
+
+#include "media/MediaTopics.hpp"
 
 namespace {
 
@@ -25,47 +31,51 @@ QFrame* addSeparator(QHBoxLayout* layout, QWidget* parent) {
     return line;
 }
 
-// A picker item: the card's / disk's name, and its `description:` as the
-// tooltip.
-struct PickerItem {
-    QString name;
-    QString description;
-};
-using PickerItems = QVector<PickerItem>;
-
 // A module/disk combo's own tooltip is its current item's description.
 void showCurrentToolTip(QComboBox* combo) {
     combo->setToolTip(combo->itemData(combo->currentIndex(), Qt::ToolTipRole).toString());
 }
 
-// Shared by the memory-slot and floppy pickers: "–empty–", the templates
-// (bundled and the user's own), then (after a separator) the user's saved
-// instances, then (after another) the ROM modules -- memory slots only.
-void fillPicker(QComboBox* combo, const PickerItems& templates, const PickerItems& saved,
-                const QString& selectedOrEmpty, const PickerItems& roms = {}) {
+// Shared by the slot, floppy and tape pickers (LIB-7 AC-8, AC-9): "–empty–",
+// the templates (bundled and the user's own), then (after a separator) the
+// saved instances, then (after another) the modules that are not media --
+// module slots only. The item data is the entry's ID; an entry that cannot
+// be chosen is disabled, its hint as its tooltip.
+void fillPicker(QComboBox* combo, const calcu::media::PlaceState* place) {
+    using G = calcu::media::PickerEntry::Group;
     const QSignalBlocker blocker(combo);
     combo->clear();
     combo->addItem(ControlBar::tr("–empty–"), QString());
-    const auto add = [combo](const PickerItems& items) {
-        for (const PickerItem& item : items) {
-            combo->addItem(item.name, item.name);
-            if (!item.description.isEmpty()) combo->setItemData(combo->count() - 1, item.description, Qt::ToolTipRole);
+    int current = 0;
+    if (place) {
+        const auto band = [](G g) { return g == G::UserTemplate ? G::BundledTemplate : g; };
+        bool first = true;
+        G last = G::Empty;
+        for (const calcu::media::PickerEntry& e : place->picker) {
+            if (e.group == G::Empty) continue;
+            if (!first && band(last) != band(e.group)) combo->insertSeparator(combo->count());
+            first = false;
+            last = e.group;
+            combo->addItem(QString::fromStdString(e.label), QString::fromStdString(e.id));
+            const int i = combo->count() - 1;
+            const std::optional<std::string>& tip = e.hint ? e.hint : e.tooltip;
+            if (tip) combo->setItemData(i, QString::fromStdString(*tip), Qt::ToolTipRole);
+            if (!e.canChoose)
+                if (auto* model = qobject_cast<QStandardItemModel*>(combo->model()))
+                    if (QStandardItem* item = model->item(i)) item->setEnabled(false);
+            if (place->holds && current == 0 && e.label == place->holds->name) current = i;
         }
-    };
-    add(templates);
-    if (!saved.isEmpty()) combo->insertSeparator(combo->count());
-    add(saved);
-    if (!roms.isEmpty()) combo->insertSeparator(combo->count());
-    add(roms);
-    const int idx = combo->findData(selectedOrEmpty);
-    combo->setCurrentIndex(idx >= 0 ? idx : 0);
-}
-
-template <typename Entry, typename NameOf>
-PickerItems itemsOf(const QVector<Entry>& entries, NameOf nameOf) {
-    PickerItems out;
-    for (const auto& e : entries) out.push_back({nameOf(e), e.description});
-    return out;
+        // Held, but no entry (a file opened from elsewhere, a medium a preset
+        // named by file): shown, not to be chosen again.
+        if (place->holds && current == 0) {
+            combo->insertSeparator(combo->count());
+            combo->addItem(QString::fromStdString(place->holds->name), QStringLiteral("held"));
+            current = combo->count() - 1;
+            if (auto* model = qobject_cast<QStandardItemModel*>(combo->model()))
+                if (QStandardItem* item = model->item(current)) item->setEnabled(false);
+        }
+    }
+    combo->setCurrentIndex(current);
 }
 
 // A running motor's lamp colour (floppy lamp, tape counter).
@@ -172,9 +182,9 @@ ControlBar::ControlBar(QWidget* parent) : QWidget(parent) {
     layout->addWidget(m_floppyCombo);
 
     // Side toggle -- the software analogue of ejecting and flipping the
-    // physical disk. Label shows "A"/"B" for whichever side currently
-    // faces the head; clicking flips it.
-    m_floppySideButton = new QPushButton(tr("A"), this);
+    // physical disk (`media.turn`). Label shows "0"/"1" for whichever side
+    // is up (LIB-7 AC-39); clicking turns it over.
+    m_floppySideButton = new QPushButton(QStringLiteral("0"), this);
     m_floppySideButton->setFocusPolicy(Qt::NoFocus);
     m_floppySideButton->setToolTip(tr("Eject and turn the disk over"));
     m_floppySideButton->setObjectName(QStringLiteral("controlbar.floppy.side"));
@@ -190,7 +200,7 @@ ControlBar::ControlBar(QWidget* parent) : QWidget(parent) {
         sideOption.rect.width() -
         style()->subElementRect(QStyle::SE_PushButtonContents, &sideOption, m_floppySideButton).width();
     const QFontMetrics metrics = m_floppySideButton->fontMetrics();
-    const int letterWidth = qMax(metrics.horizontalAdvance(tr("A")), metrics.horizontalAdvance(tr("B")));
+    const int letterWidth = qMax(metrics.horizontalAdvance(QStringLiteral("0")), metrics.horizontalAdvance(QStringLiteral("1")));
     m_floppySideButton->setFixedWidth(qMax(compactWidth, letterWidth + textInset));
     layout->addWidget(m_floppySideButton);
 
@@ -276,11 +286,8 @@ void ControlBar::setModel(Model model) {
     m_modelCombo->setCurrentIndex(static_cast<int>(model));
 }
 
-void ControlBar::setModuleCombos(int slot, const MemoryModuleManager::ModuleLists& lists,
-                                  const QString& selectedOrEmpty) {
-    const auto name = [](const MemoryModuleManager::ModuleEntry& e) { return e.moduleName; };
-    fillPicker(m_slot[slot - 1].combo, itemsOf(lists.templates, name), itemsOf(lists.instances, name), selectedOrEmpty,
-               itemsOf(lists.roms, name));
+void ControlBar::setModulePicker(int slot, const calcu::media::PlaceState* place) {
+    fillPicker(m_slot[slot - 1].combo, place);
     showCurrentToolTip(m_slot[slot - 1].combo);
 }
 
@@ -327,11 +334,8 @@ void ControlBar::setCe1600pVisible(bool visible) {
     m_ce1600pButton->setVisible(visible);
 }
 
-void ControlBar::setFloppyCombo(const QVector<FloppyDiskManager::DiskEntry>& templates,
-                                const QVector<FloppyDiskManager::DiskEntry>& instances,
-                                const QString& selectedOrEmpty) {
-    const auto name = [](const FloppyDiskManager::DiskEntry& e) { return e.diskName; };
-    fillPicker(m_floppyCombo, itemsOf(templates, name), itemsOf(instances, name), selectedOrEmpty);
+void ControlBar::setFloppyPicker(const calcu::media::PlaceState* place) {
+    fillPicker(m_floppyCombo, place);
     showCurrentToolTip(m_floppyCombo);
 }
 
@@ -353,7 +357,7 @@ void ControlBar::setFloppySaveEnabled(bool enabled) {
 }
 
 void ControlBar::setFloppySide(int side) {
-    m_floppySideButton->setText(side ? tr("B") : tr("A"));
+    m_floppySideButton->setText(side ? QStringLiteral("1") : QStringLiteral("0"));
 }
 
 // Polled every frame tick -- only restyle on an actual change, since
@@ -369,10 +373,8 @@ void ControlBar::applyLampStyle(QLabel* lamp, bool on) {
     lamp->setStyleSheet(on ? motorOnStyle() : QStringLiteral("color: #888888;"));
 }
 
-void ControlBar::setTapeCombo(const QStringList& names, const QString& selectedOrEmpty) {
-    PickerItems items;
-    for (const QString& name : names) items.push_back({name, {}});
-    fillPicker(m_tapeCombo, items, {}, selectedOrEmpty);  // keeps the combo's own tooltip
+void ControlBar::setTapePicker(const calcu::media::PlaceState* place) {
+    fillPicker(m_tapeCombo, place);   // keeps the combo's own tooltip
 }
 
 void ControlBar::setTapeVisible(bool visible) {
@@ -384,9 +386,9 @@ void ControlBar::setTapeVisible(bool visible) {
 }
 
 // "▶ 0:12" playing (position on the tape), "● 0:03" recording (recorded so
-// far), "–" empty. The file name goes in the tooltip. The counter doubles as
-// the motor lamp: green while the remote relay runs the motor.
-void ControlBar::setTapeStatus(const TapeDeck::Status& status) {
+// far), "–" empty. The tape's name goes in the tooltip. The counter doubles
+// as the motor lamp: green while the remote relay runs the motor.
+void ControlBar::setTapeStatus(const TapeDeck::Status& status, const QString& name) {
     QString text = QStringLiteral("–");
     if (status.mode != TapeDeck::Mode::Empty) {
         const int seconds = static_cast<int>(status.position);
@@ -397,7 +399,6 @@ void ControlBar::setTapeStatus(const TapeDeck::Status& status) {
     }
     if (text != m_tapeLabel->text()) {
         m_tapeLabel->setText(text);
-        const QString name = QFileInfo(QString::fromStdString(status.path)).fileName();
         const QString what = status.mode == TapeDeck::Mode::Play     ? tr("Playing %1").arg(name)
                              : status.mode == TapeDeck::Mode::Record ? tr("Recording into %1").arg(name)
                                                                      : tr("No tape");

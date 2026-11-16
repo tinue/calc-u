@@ -166,26 +166,32 @@ SHIFT symbol:
 
 ### Dropping files
 
-Drag a file onto the window to load it, on macOS, Linux and Windows. What's
-inside the file decides what happens, not its name:
+Drag a file onto the window to open it, on macOS, Linux and Windows. A preset
+and a module, disk or tape file are told by their names; for the rest, what's
+inside the file decides what happens:
 
 | The file holds | Loaded as if by |
 |---|---|
-| a preset (a line starting with `model:`) | **File ▸ Load Preset…** |
+| a preset (`.pc1500`, `.pc1500a`, `.pc1600`, or a line starting with `model:`) | **File ▸ Load Preset…** |
+| a module (`.card.yaml`), a floppy disk (`.floppy.yaml`) or a cassette tape (`.tape.yaml`) | put into its place from where it lies, as if chosen in its picker, and saved back there; a module only when it is clear which slot it goes into (the PC-1500's one slot, or a module that fits only one), a disk only while the CE-1600F is there |
 | a BASIC listing, or tokenized BASIC (`.bbin`) | **File ▸ Load BASIC Program…** ([chapter 4](#4-loading-a-basic-program)) |
 | machine code with a CE-158 or PC-1600 header | **File ▸ Load Machine Code…** ([chapter 6](#6-machine-code-programs)) |
-| machine code without a header, in a `.bin` or `.rom` file | **File ▸ Load Machine Code…** |
-| a cassette tape (WAV) of a PC-1500 (CE-150) or PC-1600 (CE-1600P) | by the file on the tape, as above ([fast-loading a tape](#fast-loading-a-cassette-wav)) |
+| machine code without a header, in a `.bin` file | **File ▸ Load Machine Code…** |
+| a cassette recording (WAV) of a PC-1500 (CE-150) or PC-1600 (CE-1600P) | by the file on the tape, as above; with several files you choose one ([fast-loading a tape](#fast-loading-a-cassette-wav)) |
 
-Anything else is ignored, and so is a drag of several files at once: the
-pointer shows that the window won't take them. A drop loads into the running
-machine, exactly like the menu item, so prepare the machine the same way
-first (`NEW0` before a BASIC program, and so on).
+Anything else, and a file over 1 MiB, is refused with a message. A drag of
+several files at once is not taken: the pointer shows it. A drop loads into
+the running machine, exactly like the menu item, so prepare the machine the
+same way first (`NEW0` before a BASIC program, and so on). A file dropped
+while a preset or another load runs is opened when it is over. **File ▸ Load
+Preset…** opens the file you choose in the same way. In the browser a module,
+disk or tape file is imported into the saved media first.
 
 On macOS you can also drop a file onto the Dock icon, or open it from Finder
 with **Open With ▸ Calc-U-1600**. Double-clicking a preset (`.pc1500`,
 `.pc1500a`, `.pc1600`) opens it in Calc-U-1600. If the app isn't running
-yet, the file is loaded after the startup preset.
+yet, the file is loaded after the startup preset. A file named when the
+program is started from a command line is opened the same way.
 
 ---
 

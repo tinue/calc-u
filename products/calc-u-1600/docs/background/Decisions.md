@@ -485,13 +485,15 @@ authentic speed for the span that matters.
   in emulated time; the two never share code. A tape with several files:
   the GUI asks which one and hands its image to the loader as bytes;
   everywhere else (presets, a drop's target) the first file counts.
-- **A dropped file's content picks the loader** (`core/DropFile`,
-  docs/background/plans/Drag-And-Drop-Plan.md). Presets are recognized by a top-level
-  `model:` line, not by extension and not by sde: a preset with a character
-  outside the Sharp set isn't `text` to sde. Headerless machine code needs
-  both the code heuristic *and* a `.bin` / `.rom` name, because the heuristic
-  alone takes JPEGs, PDFs, fonts and Mach-O binaries for code. Drops that
-  aren't recognized are ignored without a message, on purpose.
+- **An opened file's content picks the loader** (the library's open part,
+  LIB-13, with the product's file kinds in `app/SharpFileKinds`; history:
+  docs/background/plans/Drag-And-Drop-Plan.md). Presets are recognized by
+  their extension or a top-level `model:` line, not by sde: a preset with a
+  character outside the Sharp set isn't `text` to sde. Headerless machine
+  code needs both the code heuristic *and* a `.bin` name (`.rom` is none
+  since M-48, LIB-13 AC-17), because the heuristic alone takes JPEGs, PDFs,
+  fonts and Mach-O binaries for code. A file nothing opens is refused with a
+  notice (LIB-13 AC-1; until M-48 it was ignored without a message).
 - **A PC-1600 header's bank 0 means "no bank given".** Banks 1-3 are
   honoured exactly (1 = slot 1's upper 16 KB, 2/3 = slot 2), refused when
   that bank has no RAM under the code, and started with `CALL #bank,`.
@@ -791,9 +793,9 @@ authentic speed for the span that matters.
   tape choice and the Load Machine Code plan, hints and advice
   (`MachineCodeLoad`), a model pick with its default preset
   (`pickModelJob()`), the Card YAML dump: each was Qt code once and moved
-  when the web client needed it. Drop dispatch stays per frontend: Core's
-  `dropfile::classify` already decides, and holding a drop while busy is
-  event timing.
+  when the web client needed it. Opening a file is the session's `open`
+  (LIB-13): it decides what the file is and keeps one that comes while
+  busy; only the dialogs of the program flows stay per frontend.
 - **ControlState names each control, even when two fields agree today**
   (`pc1600RomMenu`, `floppyShown`, `ce1600p.offered` are all "is a
   PC-1600" now): a frontend asks about the control it draws, and a rule

@@ -1,5 +1,7 @@
 #pragma once
 #include "TIAppPart.hpp"
+#include "debugger/RunState.hpp"
+#include "qt6/ClipboardService.hpp"
 #include "typing/HostKey.hpp"
 #include "sessions/Listener.hpp"
 #include <QObject>
@@ -7,7 +9,9 @@
 #include <QStringList>
 #include <QTimer>
 #include <QVector>
+#include <functional>
 #include <memory>
+#include <vector>
 
 // The Qt face of the library's app session (LIB-3 AC-28; the Swift app's is
 // App/EmulatorViewModel.swift over cu59::SessionThread): the session lives on
@@ -17,6 +21,10 @@
 // the mirror's changes become the signals below. It decides
 // nothing and keeps no state of the machine (CLAUDE.md § "Frontend Parity").
 // Qt6 sends neither suspend nor continue (LIB-3 AC-31; ODD59-25).
+// Since M-53 it states and answers the clipboard host services with the
+// library's ClipboardService (LIB-8 adapter P-E6, until LIB-14's SessionHost
+// in M-57), and hands the library's paper and run-control topics to the
+// widgets that draw them (addMessageHandler).
 class EmulatorController : public QObject {
     Q_OBJECT
 public:
@@ -56,17 +64,19 @@ public:
     /// The key drawn pressed (row × 5 + col; the last one live input holds), -1 none.
     int keyboardHeldKey() const;
 
-    // ── Printer ──────────────────────────────────────────────────────────────
-    const QStringList& printerLines() const { return m_printerLines; }
-    const std::vector<PrinterCodeLine>& printerCodeLines() const;
-    double printerStripHeightUnits() const;
+    // ── Printer (the paper: the library's paper panel, LIB-8) ──────────────────
+    /// The PC-100C's place and TRACE (`c59.printer`, adapter P-E1 until M-57).
     bool printerConnected() const;
     bool printerTrace() const;
     void togglePrinterConnection() { send(cu59::commands::kTogglePrinterConnection); }
-    void togglePrinterTrace() { send(cu59::commands::kTogglePrinterTrace); }
-    void pressPrinterPrint(bool pressed);
-    void pressPrinterAdv(bool pressed);
-    void cutPaper() { send(cu59::commands::kCutPaper); }
+
+    // ── The library's widgets ───────────────────────────────────────────────
+    /// A command of a widget of the component set (the paper panel, the
+    /// run-control buttons): paper.copy, paper.cut, set-control, pause, step, resume.
+    void sendCommand(const calcu::sessions::CommandName& name, calcu::sessions::Value args) { send(name, std::move(args)); }
+    /// Every state and stream message from now on, after the topics' current
+    /// state (`papers`, `run-state`, `trace` and what the paper streams hold).
+    void addMessageHandler(std::function<void(const calcu::sessions::Message&)> handler);
 
     // ── Card reader ──────────────────────────────────────────────────────────
     CardState cardState() const;
@@ -87,19 +97,13 @@ public:
     // ── Debugger ─────────────────────────────────────────────────────────────
     void setLiveDebugEnabled(bool on);
     void setCpuDebugEnabled(bool on);
+    /// The run control's state (LIB-10's `run-state`); nullptr before the first.
+    const calcu::debugger::RunState* runState() const;
     bool isFrozen() const;
-    /// The panel that owns the freeze (none while running).
-    std::optional<cu59::FreezeOwner> freezeOwner() const;
-    bool pendingFreezeOnPCChange() const;
-    bool pendingCpuScanLoopFreeze() const;
-    void freeze(cu59::FreezeOwner owner);
-    void unfreeze() { send(cu59::commands::kResume); }
-    void freezeOnNextPCChange() { send(cu59::commands::kArmPcChange); }
-    void freezeOnScanLoopExit() { send(cu59::commands::kArmScanLoopExit); }
-    void disarmPcChangeFreeze() { send(cu59::commands::kDisarmPcChange); }
-    void disarmScanLoopFreeze() { send(cu59::commands::kDisarmScanLoopExit); }
-    void stepKeycode() { send(cu59::commands::kStepKeycode); }
-    void stepFrozen() { send(cu59::commands::kStepInstruction); }
+    /// Pause-on-start of the level `cpu` or `program` armed (FREEZE ON START).
+    bool startArmed(const calcu::debugger::LevelName& level) const;
+    void armStart(const calcu::debugger::LevelName& level);
+    void disarmStart();
 
     const cu59::LiveDebugSnapshot& liveSnapshot() const;
     const std::vector<cu59::StepEntry>& programListing() const;
@@ -122,8 +126,9 @@ public:
     /// and seconds; std::nullopt without a machine. For `--pacing-probe`.
     std::optional<std::pair<uint64_t, double>> emulatedTime();
 
-    bool manualTrace() const;
-    void setManualTrace(bool on);
+    /// The TRACE button's trace (LIB-10's `trace` topic and command).
+    bool traceRunning() const;
+    void setTrace(bool on);
 
     QString asmFileName() const;
     int asmWordCount() const;
@@ -139,7 +144,7 @@ signals:
     void cueCardChanged();
     void printerChanged();
     void cardStateChanged();
-    void runStateChanged();      ///< freeze, armed freezes, full speed, playback, held key
+    void runStateChanged();      ///< the run control's state, full speed, playback, held key
     void liveSnapshotChanged();
     void cpuChanged();
     void heatmapChanged();
@@ -160,6 +165,7 @@ private:
     calcu::sessions::ProductSession<cu59::TIAppPart> m_app;
     mutable calcu::sessions::Listener m_listener;   // stops listening before the session goes
     QTimer m_frameTimer;
-    QStringList m_printerLines;  ///< the paper's text lines, as Qt types
+    calcu::qt6::ClipboardService m_clipboard;
+    std::vector<std::function<void(const calcu::sessions::Message&)>> m_handlers;
     std::optional<cu59::Model> m_savedModel;
 };

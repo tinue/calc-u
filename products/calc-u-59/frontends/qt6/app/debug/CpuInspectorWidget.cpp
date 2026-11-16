@@ -2,7 +2,7 @@
 #include "ChromeStyle.hpp"
 #include "DebugText.hpp"
 #include "EmulatorController.hpp"
-#include "HoldRepeatButton.hpp"
+#include "qt6/RunControlButtons.hpp"
 #include "RomHeatmapWidget.hpp"
 #include <QHBoxLayout>
 #include <QLabel>
@@ -73,19 +73,29 @@ CpuInspectorWidget::CpuInspectorWidget(EmulatorController& controller, QWidget* 
     m_title->setSizePolicy(QSizePolicy::Ignored, QSizePolicy::Preferred);
     m_title->setMinimumWidth(40);
     hrow->addWidget(m_title, 1);  // takes the spare width; shrinks first
-    m_resume = headerButton(QStringLiteral("RESUME"), QColor(255, 149, 0), header);
-    connect(m_resume, &QToolButton::clicked, this, [this] { m_controller.unfreeze(); });
-    m_freeze = headerButton(QStringLiteral("FREEZE"), Qt::white, header);
-    connect(m_freeze, &QToolButton::clicked, this, [this] { m_controller.freeze(cu59::FreezeOwner::Cpu); });
+    // LIB-10 AC-34: FREEZE, STEP and RESUME are the library's run-control
+    // buttons of the level `cpu` (the labels are the product's); FREEZE ON
+    // START and ARMED arm and disarm its pause-on-start.
+    m_run = new calcu::qt6::RunControlButtons(calcu::debugger::kCpu,
+                                              {QStringLiteral("FREEZE"), QStringLiteral("STEP"), QStringLiteral("RESUME")}, header);
+    m_run->setSender([this](const calcu::sessions::CommandName& n, calcu::sessions::Value v) {
+        m_controller.sendCommand(n, std::move(v));
+    });
+    m_run->hide();   // its buttons go into the header row below, in today's order
+    auto styled = [](QToolButton* b, const QColor& c) {
+        b->setStyleSheet(ChromeStyle::headerButton(c));
+        b->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
+        return b;
+    };
+    QToolButton* resume = styled(m_run->resumeButton(), QColor(255, 149, 0));
+    QToolButton* pause = styled(m_run->pauseButton(), Qt::white);
+    QToolButton* step = styled(m_run->stepButton(), QColor(50, 173, 230));
     m_freezeOnStart = headerButton(QStringLiteral("FREEZE ON START"), Qt::white, header);
-    connect(m_freezeOnStart, &QToolButton::clicked, this, [this] { m_controller.freezeOnScanLoopExit(); });
+    connect(m_freezeOnStart, &QToolButton::clicked, this, [this] { m_controller.armStart(calcu::debugger::kCpu); });
     m_armed = headerButton(QStringLiteral("ARMED"), QColor(255, 204, 0), header);
-    connect(m_armed, &QToolButton::clicked, this, [this] { m_controller.disarmScanLoopFreeze(); });
-    m_step = new HoldRepeatButton(QStringLiteral("STEP"), header);
-    m_step->setStyleSheet(ChromeStyle::headerButton(QColor(50, 173, 230)));
-    m_step->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
-    connect(m_step, &HoldRepeatButton::fired, this, [this] { m_controller.stepFrozen(); });
-    for (QWidget* w : std::initializer_list<QWidget*>{m_resume, m_freeze, m_freezeOnStart, m_armed, m_step}) hrow->addWidget(w);
+    connect(m_armed, &QToolButton::clicked, this, [this] { m_controller.disarmStart(); });
+    // RESUME sits far from STEP, as today.
+    for (QWidget* w : std::initializer_list<QWidget*>{resume, pause, m_freezeOnStart, m_armed, step}) hrow->addWidget(w);
     col->addWidget(header);
 
     m_list = new QListWidget(this);
@@ -154,14 +164,10 @@ void CpuInspectorWidget::resizeEvent(QResizeEvent* e) {
 void CpuInspectorWidget::refreshHeader() {
     bool narrow = baseFontSize() < 13;
     m_freezeOnStart->setText(narrow ? QStringLiteral("F.START") : QStringLiteral("FREEZE ON START"));
-    bool frozen = m_controller.isFrozen();
-    bool owned = frozen && m_controller.freezeOwner() == cu59::FreezeOwner::Cpu;
-    bool canFreeze = !frozen && !m_controller.pendingCpuScanLoopFreeze();
-    m_resume->setEnabled(owned);
-    m_freeze->setEnabled(canFreeze);
-    m_freezeOnStart->setEnabled(canFreeze);
-    m_armed->setEnabled(m_controller.pendingCpuScanLoopFreeze());
-    m_step->setEnabled(owned);
+    m_run->setRunState(m_controller.runState());
+    const bool armed = m_controller.startArmed(calcu::debugger::kCpu);
+    m_freezeOnStart->setEnabled(!m_controller.isFrozen() && !armed);
+    m_armed->setEnabled(armed);
 }
 
 void CpuInspectorWidget::refreshList() {

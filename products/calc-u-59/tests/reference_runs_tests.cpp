@@ -79,8 +79,9 @@ std::string record(const fs::path& example) {
     out += "display: |" + testroms::displayText(m) + "|\n";
     out += "partition: " + std::to_string(testroms::mem(m).partitionProgramRegs()) + " program registers\n";
     for (const auto& e : r.errors()) out += "error: " + e + "\n";
-    out += "--- printed (" + std::to_string(c.printerLines().size()) + " lines)\n";
-    for (const auto& l : c.printerLines()) out += "|" + l + "|\n";
+    const auto printed = r.printedText();   // the text layer of the PaperPart's PC-100C paper (LIB-8, M-53)
+    out += "--- printed (" + std::to_string(printed.size()) + " lines)\n";
+    for (const auto& l : printed) out += "|" + l + "|\n";
     std::map<std::string, std::string> cards = r.p.cards;
     cards.erase("cards/ti58c.mem");   // 2.3.0's Platform kept the constant memory apart from the cards
     out += "--- cards written (" + std::to_string(cards.size()) + ")\n";
@@ -148,7 +149,9 @@ constexpr Accepted kAccepted[] = {
     {"screentest_test_58_glyphs.ti58.txt", "playback: ",
      "finding, since M-34, the same before and after M-36: the preset ends frozen (its FreezeOnStart: fires), and "
      "the app session steps a running operation only while the machine runs, so the preset's operation never "
-     "ends (the freeze becomes the session's pause with LIB-10 59, M-53)"},
+     "ends (the freeze becomes the session's pause with LIB-10 59, M-53); still so after M-53: the preset's last "
+     "key (= after FreezeOnStart:) is held by the typing engine until the ROM is ready for keys again, which the "
+     "paused machine never is, so the playback waits in its key"},
     {"screentest_test_cdebug.ti59.txt", "playback: ",
      "finding, since M-34, the same before and after M-36: as screentest_test_58_glyphs.ti58 (FreezeOnStart: "
      "at the end of the preset)"},

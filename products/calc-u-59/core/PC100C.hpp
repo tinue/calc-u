@@ -1,10 +1,10 @@
 #pragma once
-#include "PrinterOutput.hpp"
+#include "PC100CPaper.hpp"
 #include "PrinterPinOut.hpp"
-#include "TIPrinterTypes.hpp"
 #include "machine/Attach.hpp"
 #include "machine/Descriptor.hpp"
 #include "peripherals/Controls.hpp"
+#include <array>
 #include <cstdint>
 #include <string>
 #include <vector>
@@ -18,9 +18,31 @@
 // Timings: every measurement was made on a PC-100A, not on a PC-100C; no
 // difference between the two is expected (user, 2026-11-11; spec AC-4;
 // reference/CoreArchitecture.md, "Printer (PC-100C)").
+//
+// Its paper is LIB-8's paper output kind (M-53; LIB-8 design §11.4): PRT.GO
+// puts the line's 20 characters on the text layer at once, at the y where
+// the paper stands; when the line ends (the busy count runs out, a cut, a
+// feed, an operation or a detach) its dots go down and the paper is fed
+// (pc100cpaper::lineDots, lineHeight); a feed gives an empty text line and
+// 7.09 units of paper. The code lines (the 20 codes and how far the head
+// got) are kept only for the golden runs and the headless tool, while
+// recordCodeLines is on (adapter P-E3).
 
-class PC100C final : public PrinterPinOut, public PrinterOutput {
+class PC100C final : public PrinterPinOut, public calcu::paper::PaperOutputBase {
 public:
+    /// A printed line as the head left it (P-E3; was PrinterCodeLine above
+    /// the core, C59-1 D-7). rowCount is 7 for a complete line; 0–6 when the
+    /// print was cut short (a PRT.GO while busy, an operation, a detach).
+    /// The head fires a row one dot column at a time, right to left, so a cut
+    /// can also leave the rightmost partialColumns columns of the next row.
+    /// A feed records a line of zero codes (rowCount 7, as 2.3.0).
+    struct CodeLine {
+        std::array<std::uint8_t, 20> codes{};
+        std::uint8_t rowCount{7};        ///< dot rows started in full (0–7)
+        std::uint8_t partialColumns{0};  ///< columns of row rowCount started before the cut (0–5)
+        std::uint8_t partialHeat{0};     ///< cycles the leftmost of them was heated (capped at 255)
+    };
+
     /// Busy after PRT.GO (a printed line) and PRT.FEED (half a line; the
     /// ROM's Adv issues two), in instructions of the machine (AC-4).
     static constexpr std::uint32_t kLineInstructions = 4165;
@@ -49,10 +71,16 @@ public:
     bool busy() const override { return m_busy > 0; }
     std::uint8_t keyLines(PrinterPad) const override;
 
-    // PrinterOutput
-    std::vector<std::string> takeLines() override { return std::move(m_lines); }
-    std::vector<PrinterCodeLine> takeCodeLines() override { return std::move(m_codeLines); }
-    void endLineHere() override { flushPendingIfActive(); }
+    // PaperOutput (AC-24)
+    const calcu::paper::PaperDescription& description() const override { return pc100cpaper::description(); }
+    calcu::paper::Coord standing() const override { return m_standing; }
+
+    /// Before a detach (EC-7): a line being printed ends where the head is,
+    /// so its rows go onto the paper before the printer goes.
+    void endLineHere() { flushPendingIfActive(); }
+    /// P-E3: keep the code lines from now on, and take those kept.
+    void recordCodeLines(bool on) { m_recordCodes = on; }
+    std::vector<CodeLine> takeCodeLines() { return std::move(m_codeLines); }
 
     /// A reset, power cycle or cold boot of the machine (LIB-2 AC-10): the
     /// buffer and the ready gate clear, a line in progress ends at its count,
@@ -66,6 +94,7 @@ private:
     void onControl(const calcu::machine::ControlId&, bool on);
     void flushPendingCodeLine(std::uint32_t elapsed);   // the pending line cut `elapsed` instructions after PRT.GO
     void flushPendingIfActive();                         // at the current busy count; nothing if no line is pending
+    void feedTo(calcu::paper::Coord y);                  // emitFedTo, then the paper stands there
 
     calcu::peripherals::ControlTable m_controls;
     std::uint8_t m_d12 = 0;      // PRINT (KP) and ADV (KN) at D12
@@ -76,8 +105,10 @@ private:
     std::uint8_t m_ptr = 0;
     bool m_ready = false;        // after the first PRT.CLEAR; gates OUT, FUNC, STEP, GO
     std::uint32_t m_busy = 0;    // instructions until Busy drops
-    PrinterCodeLine m_pending{};
+    CodeLine m_pending{};
     bool m_hasPending = false;
-    std::vector<std::string> m_lines;
-    std::vector<PrinterCodeLine> m_codeLines;
+    calcu::paper::Coord m_standing = 0;   ///< where the paper stands (printer coordinates)
+    calcu::paper::Coord m_pendingTop = 0; ///< the top of the pending line
+    bool m_recordCodes = false;
+    std::vector<CodeLine> m_codeLines;
 };

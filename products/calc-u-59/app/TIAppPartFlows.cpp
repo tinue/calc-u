@@ -3,12 +3,12 @@
 #include "AsmOverlay.hpp"
 #include "CardFile.hpp"
 #include "ConstantMemory.hpp"
-#include "PrinterFont.hpp"
 #include "KeyboardLayout.hpp"
 #include "StateApplier.hpp"
 #include "TextUtil.hpp"
 #include "../core/PC100C.hpp"
 #include "../core/TICatalogue.hpp"
+#include "../core/PC100CPaper.hpp"
 #include <algorithm>
 
 namespace cu59 {
@@ -30,10 +30,7 @@ void TIAppPart::later(uint64_t sessionGeneration, std::function<void()> f) {
 
 bool TIAppPart::startMachine(Model model) {
     persistConstantMemory();  // save TI-58C RAM before switching away
-    if (m_session) m_session->runQueuedSteps();  // on the old machine, before it goes
     if (m_ms) m_ms->dropInput();   // LIB-5 EC-5: the keys the engine holds come up first
-    if (m_typing) m_typing->engine().setObserver(nullptr);
-    setManualTrace(false);
 
     const uint64_t generation = m_sessionGeneration + 1;
     auto events = std::make_unique<Events>(*this, generation);
@@ -46,16 +43,14 @@ bool TIAppPart::startMachine(Model model) {
     m_sessionGeneration = generation;
     m_model = model;
 
-    // A new machine: running, nothing armed, no card; TRACE as it was (AC-6).
-    m_debugState = m_session->debugState();
+    // A new machine: running, nothing armed (the run control, LIB-10 G11), no
+    // card; TRACE as it was (AC-6).
+    m_frozenAt.reset();
     clearCardAndCue();
     m_memoryCards.clear();
     m_keystrokesPlaying = false;
     m_fullSpeed = false;
-    if (m_typing) {
-        m_session->setTyping(&m_typing->engine());
-        m_typing->engine().setObserver(&m_session->keyTrace());
-    }
+    if (m_typing) m_session->setTyping(&m_typing->engine());
 
     auto cards = moduleCards(m_setup.cuecards, m_moduleID);
     m_moduleCards = std::move(cards.cards);
@@ -76,20 +71,18 @@ bool TIAppPart::startMachine(Model model) {
             m_asmStatus = "ASM overlay cleared (incompatible after model switch).";
         }
     }
-    configureTraceLocation();
-    m_session->setCpuPanelVisible(m_cpuDebugEnabled);
+    m_session->access().debugPanel().setPanelTrace(m_cpuDebugEnabled);
     m_debug.resetHeatmapBaseline(m_session->access().machine());
     refreshCueCard();
-    m_session->setHalted(false);
     emitChanged(ModelChanged | RunStateChanged | CardChanged | PrinterChanged | CueCardChanged | LiveChanged |
-                CpuChanged | HeatmapChanged | AsmChanged | TraceChanged);
+                CpuChanged | HeatmapChanged | AsmChanged);
     return true;
 }
 
 void TIAppPart::beginReset() {
     m_session->cancelKeystrokes();
     if (m_ms) m_ms->dropInput();   // LIB-5 EC-5 (LIB-18 §3.4): reset, cold boot, power cycle
-    resume();
+    if (auto* rc = runControl(); rc && !rc->running()) rc->resume();   // as 2.3.0: a reset unfreezes
     m_asmActive = false;
     clearCardAndCue();
     dropPresetCards();
@@ -126,15 +119,15 @@ void TIAppPart::resetMachine() {
 }
 
 void TIAppPart::resetStopped() {
-    m_session->runQueuedSteps();
     m_session->access().machine().reset();
-    m_session->setHalted(false);
+    if (m_ctx) m_ctx->tellRestarted(calcu::sessions::Restart::Reset);   // LIB-10 adapter L-E2 (until M-54)
 }
 
 void TIAppPart::cleanResetMachine() {
     if (!m_session) return;
     beginReset();
     m_session->access().machine().coldBoot();
+    if (m_ctx) m_ctx->tellRestarted(calcu::sessions::Restart::ColdBoot);   // L-E2
     m_debug.resetHeatmapBaseline(m_session->access().machine());
     persistConstantMemory();  // the zeroed state, at once
     log({"Clean Reset — all registers cleared"});
@@ -161,15 +154,13 @@ TIAppPart::PlaceChange TIAppPart::changePlacesNow(const std::optional<std::strin
         pc.powerCycle |= r.follows == AfterChange::PowerCycle;
     }
     if (printer != m_printerConnected) {
-        auto p = m_session->setPrinter(printer, m_printerTrace);
-        if (p.result.refused) {
-            pc.refusal = p.result.refused->reason;
+        auto r = m_session->setPrinter(printer, m_printerTrace);
+        if (r.refused) {
+            pc.refusal = r.refused->reason;
             return pc;
         }
         pc.printerChanged = true;
-        pc.powerCycle |= p.result.follows == AfterChange::PowerCycle;
-        pc.lines = std::move(p.lines);
-        pc.codeLines = std::move(p.codeLines);
+        pc.powerCycle |= r.follows == AfterChange::PowerCycle;
     }
     return pc;
 }
@@ -187,11 +178,7 @@ void TIAppPart::adoptPlaces(const PlaceChange& pc, const std::optional<std::stri
         emitChanged(ModelChanged);
     }
     if (pc.printerChanged) {
-        m_printerConnected = printer;
-        // The paper is the app session's (AC-1); what the detach handed back
-        // goes on it (EC-2).
-        m_printerLines.insert(m_printerLines.end(), pc.lines.begin(), pc.lines.end());
-        m_printerCodeLines.insert(m_printerCodeLines.end(), pc.codeLines.begin(), pc.codeLines.end());
+        m_printerConnected = printer;   // the paper stays the PaperPart's (LIB-8 AC-8, AC-29)
         emitChanged(PrinterChanged);
     }
 }
@@ -200,12 +187,10 @@ bool TIAppPart::changePlaces(const std::optional<std::string>& module, bool prin
     if (!m_session) return false;
     if (module == currentModule() && printer == m_printerConnected) return true;
     beginReset();
-    m_session->runQueuedSteps();
     PlaceChange pc = changePlacesNow(module, printer);
     // The power cycle that follows (LIB-2 AC-24; row 59-11): the ROM finds
     // what is plugged in now (AC-11).
     if (pc.powerCycle) m_session->access().machine().powerCycle();
-    m_session->setHalted(false);
     adoptPlaces(pc, module, printer);
     if (pc.refusal) return false;
     m_debug.resetHeatmapBaseline(m_session->access().machine());
@@ -259,12 +244,6 @@ void TIAppPart::frame(Clock::time_point now) {
     FrameUpdate f = m_session->tick(static_cast<int>(m_debugLevel), m_pass.has_value());
     if (f.cardAutoEjected) ejectCard();  // the core ejected at CRD_OFF: save written data
     if (!m_pass) feedQueuedCard();
-    // Text and dot lines arrive independently: the core commits a line's text
-    // at PRT_PRINT but its dot codes only when the print finishes, often a
-    // frame later — so a frame can carry codes without text.
-    m_printerLines.insert(m_printerLines.end(), f.printerLines.begin(), f.printerLines.end());
-    m_printerCodeLines.insert(m_printerCodeLines.end(), f.printerCodeLines.begin(), f.printerCodeLines.end());
-    if (!f.printerLines.empty() || !f.printerCodeLines.empty()) changes |= PrinterChanged;
     if (!f.logLines.empty()) m_debug.log().writeAll(f.logLines);
 
     if (m_session->takeRamDirty() && info(m_model).hasConstantMemory && !m_persistDue) m_persistDue = now + 500ms;
@@ -280,24 +259,12 @@ void TIAppPart::frame(Clock::time_point now) {
     }
 
     DebugModel::Update u = m_debug.tick(m_session->access().machine(), m_liveDebugEnabled, m_cpuDebugEnabled,
-                                        m_debugState.frozen);
+                                        isFrozen());
     if (u.live) changes |= LiveChanged;
     if (u.listing) changes |= ListingChanged;
     if (u.cpu) changes |= CpuChanged;
     if (u.heatmap) changes |= HeatmapChanged;
     if (u.diagnostic) diagnostic(*u.diagnostic);
-
-    if (m_session->needsDrain()) {
-        auto r = m_session->drainTrace();
-        if (r.manualLimit) {
-            m_manualTrace = false;
-            changes |= TraceChanged;
-            error("Trace stopped", "The trace file reached the " +
-                                                  std::to_string(m_setup.trace.maxBytes / 1'000'000) +
-                                                  " MB size limit.");
-        }
-        if (r.scriptedLimit) diagnostic("Scripted trace reached its size limit — trace stopped.");
-    }
 
     if (now >= m_nextProgramCheck) {  // cue-card program detection, 2 Hz
         m_nextProgramCheck = now + 500ms;
@@ -311,7 +278,7 @@ void TIAppPart::frame(Clock::time_point now) {
 }
 
 void TIAppPart::checkProgramNumber() {
-    int program = activeLibraryProgram(m_session->access().debugTarget().snapshotCPU().SCOM[9]);
+    int program = activeLibraryProgram(m_session->access().debugPanel().snapshotCPU().SCOM[9]);
     if (program != m_activeProgram) {
         m_activeProgram = program;
         refreshCueCard();
@@ -350,27 +317,18 @@ void TIAppPart::setPrinterConnected(bool connected) {
 
 void TIAppPart::togglePrinterConnection() { setPrinterConnected(!m_printerConnected); }
 
-void TIAppPart::togglePrinterTrace() {
-    m_printerTrace = !m_printerTrace;
-    if (m_session) m_session->printerControl(PC100C::kTrace, m_printerTrace);
-    emitChanged(PrinterChanged);
-}
-
-void TIAppPart::pressPrinterPrint(bool pressed) { if (m_session) m_session->printerControl(PC100C::kPrint, pressed); }
-void TIAppPart::pressPrinterAdv(bool pressed) { if (m_session) m_session->printerControl(PC100C::kAdv, pressed); }
-
-double TIAppPart::printerStripHeightUnits() const {
-    double units = 0;
-    for (size_t i = 0; i < m_printerLines.size(); ++i)
-        units += PrinterGeometry::lineHeightUnits(m_printerLines[i].empty(),
-                                                  i < m_printerCodeLines.size() ? &m_printerCodeLines[i] : nullptr);
-    return units;
-}
-
-void TIAppPart::cutPaper() {
-    m_printerLines.clear();
-    m_printerCodeLines.clear();
-    emitChanged(PrinterChanged | PaperCut);
+bool TIAppPart::setPrinterControl(const std::string& control, bool on) {
+    if (control == PC100C::kTrace.value) {   // C59-6 AC-6: the app session keeps TRACE
+        m_printerTrace = on;
+        if (m_session) m_session->printerControl(PC100C::kTrace, on);
+        emitChanged(PrinterChanged);
+        return true;
+    }
+    if (control == PC100C::kPrint.value || control == PC100C::kAdv.value) {
+        if (m_session) m_session->printerControl(calcu::machine::ControlId{control}, on);
+        return true;
+    }
+    return false;
 }
 
 // ── Card reader ──────────────────────────────────────────────────────────────
@@ -443,7 +401,6 @@ CueCardContent TIAppPart::fittedCueCard() const {
 
 void TIAppPart::startSwipe(const std::vector<uint8_t>& data, const CardPass& pass) {
     m_pass = pass;
-    m_session->manualTrace().writeCardInsert();
     m_session->access().cardReader().insertCard(data.empty() ? nullptr : data.data(), data.size());
     emitChanged(CardChanged);
 }
@@ -454,7 +411,6 @@ void TIAppPart::ejectCard() {
         emitChanged(CardChanged);
         return;
     }
-    m_session->manualTrace().writeCardEject();
     std::vector<uint8_t> written = m_session->access().cardReader().cardEject();
     const CardPass pass = *std::exchange(m_pass, std::nullopt);
     if (!written.empty()) {
@@ -632,65 +588,72 @@ void TIAppPart::applyState(const LoadStateResult& parsed) {
     if (parsed.solidStateModuleID && isTIModule(*parsed.solidStateModuleID)) module = *parsed.solidStateModuleID;
     const bool printer = parsed.printerConnected.value_or(m_printerConnected);
     m_printerTrace = false;
-    m_session->clearFreeze();
+    if (auto* rc = runControl(); rc && !rc->running()) rc->resume();   // a load unfreezes, as 2.3.0
     m_activeProgram = 0;
-    m_session->runQueuedSteps();
     PlaceChange places = changePlacesNow(module, printer);
     m_session->printerControl(PC100C::kTrace, false);
     cu59::applyState(m_session->access().machine(), parsed, m_model);
     m_debug.resetHeatmapBaseline(m_session->access().machine());  // fresh machine state: skip the power-on walk
-    m_session->setHalted(false);
     adoptPlaces(places, module, printer);
-    cutPaper();  // each loaded state starts with a blank strip
+    // LIB-8 AC-8, adapter P-E4 (until M-54): a preset that names the printer
+    // (PRINTER:) starts with empty paper; one that does not keeps it (D-29).
+    if (parsed.printerConnected && m_paperPart && m_ctx) {
+        m_paperPart->sync(*m_ctx);
+        if (auto f = m_paperPart->find(*m_ctx, std::string(kPC100C.value)); f.paper) f.paper->cut();
+    }
     emitChanged(PrinterChanged);
     adoptPresetCue(parsed.cueCard);
     persistConstantMemory();  // after the cue card: ti58c.mem keeps the file's card
-    pullDebugState();
     emitChanged(RunStateChanged | HeatmapChanged);
-    if (!parsed.keystrokes.empty()) {
-        configureTraceLocation();
-        m_session->playKeystrokes(parsed.keystrokes);
-    }
+    if (!parsed.keystrokes.empty()) m_session->playKeystrokes(parsed.keystrokes);
 }
 
+// LIB-10 adapter L-E1 (until M-54): the KEYSTROKES directives of a 2.3.0
+// preset through the run control, as the steps of AC-32 (Freeze: Calculator
+// is pause program, Freeze: CPU pause cpu, FreezeOnStart: pause-on-start,
+// Step: step, Resume: resume). Freeze: and Step: hold the playback until
+// their pause has landed, as 2.3.0 ran them before it went on.
 void TIAppPart::applyControl(const KeystrokeEvent& e) {
     if (!m_session) return;
     using K = KeystrokeEvent::Kind;
-    const FreezeOwner owner = e.panel == DebugPanel::Cpu ? FreezeOwner::Cpu : FreezeOwner::Calculator;
+    using calcu::debugger::kCpu;
+    using calcu::debugger::kProgram;
+    const calcu::debugger::LevelName level = e.panel == DebugPanel::Cpu ? kCpu : kProgram;
+    calcu::debugger::RunControl* rc = runControl();
+    bool done = true;
     switch (e.kind) {
-    case K::PrinterTrace:
-        m_printerTrace = e.on;
-        m_session->printerControl(PC100C::kTrace, e.on);
-        emitChanged(PrinterChanged);
+    case K::PrinterTrace: setPrinterControl(PC100C::kTrace.value, e.on); break;
+    case K::CutPaper:   // LIB-8 adapter P-E5 (until M-54): the step cut-paper
+        if (m_paperPart && m_ctx) m_paperPart->cutPlugged(*m_ctx);
         break;
-    case K::CutPaper: cutPaper(); break;
-    case K::ShowPanel:
-        if (!(m_asmActive && e.panel == DebugPanel::Calculator)) showDebugPanel(e.panel);  // the overlay keeps the CPU tab
-        break;
+    case K::ShowPanel: showDebugPanel(e.panel); break;
     case K::Freeze:
-        if (!m_debugState.frozen) freeze(owner);
-        break;
-    case K::FreezeOnStart:
-        if (!e.on) {
-            disarmPcChange();
-            disarmScanLoopExit();
-        } else if (owner == FreezeOwner::Cpu) {
-            armScanLoopExit();
-        } else {
-            armPcChange();
+        if (rc && rc->running()) {
+            m_asmActive = false;
+            emitChanged(AsmChanged);
+            done = !rc->pause(level).deferred;
         }
         break;
+    case K::FreezeOnStart:
+        if (rc) rc->pauseOnStart(e.on ? std::optional<calcu::debugger::LevelName>(level) : std::nullopt);
+        break;
     case K::Step:
-        if (!m_debugState.frozen) {
+        if (!rc || !rc->paused()) {
             log({"KEYSTROKES: Step: ignored — the calculator is not frozen"});
             break;
         }
-        for (int i = 0; i < e.count; ++i) owner == FreezeOwner::Cpu ? stepInstruction() : stepKeycode();
+        done = !rc->step(level, static_cast<std::uint64_t>(std::max(1, e.count)), std::nullopt,
+                         calcu::debugger::StepKind::In)
+                    .deferred;
         break;
-    case K::Resume: resume(); break;
+    case K::Resume:
+        if (rc) rc->resume();
+        break;
     default: break;
     }
-    m_session->hostDone();
+    if (done) m_session->hostDone();
+    else m_controlWaitsForPause = true;   // hostDone when the pause lands (followRunState)
+    emitChanged(RunStateChanged);
 }
 
 void TIAppPart::applyReloadStage(const ReloadStage& stage) {
@@ -700,11 +663,7 @@ void TIAppPart::applyReloadStage(const ReloadStage& stage) {
         log({"KEYSTROKES: reload skipped — its partition (" + std::to_string(*stage.partitionMaxStep) + ") exceeds the " +
              mi.displayName + " maximum (" + std::to_string(mi.maxStep()) + ")"});
     } else {
-        bool frozen = m_session->frozen();
-        m_session->setHalted(true);
-        m_session->runQueuedSteps();
         applyReload(m_session->access().machine(), stage, m_model);
-        if (!frozen) m_session->setHalted(false);
         if (stage.cueCard) adoptPresetCue(stage.cueCard);
         persistConstantMemory();
         emitChanged(RunStateChanged);
@@ -714,29 +673,63 @@ void TIAppPart::applyReloadStage(const ReloadStage& stage) {
 
 // ── Debugger ─────────────────────────────────────────────────────────────────
 
-void TIAppPart::pullDebugState() {
-    if (!m_session) return;
-    DebugState s = m_session->debugState();
-    if (s == m_debugState) return;
-    m_debugState = s;
-    emitChanged(RunStateChanged);
+void TIAppPart::followRunState() {
+    calcu::debugger::RunControl* rc = runControl();
+    if (!rc || !m_session) return;
+    rc->sync();   // a new machine first (G11): a pause of the old one is not shown on it
+    const calcu::debugger::RunState now = rc->state();
+    const bool paused = rc->paused();
+    // The CPU tab's frame ring: while it shows, while paused and while a start
+    // is armed (2.3.0's trace consumers).
+    m_session->access().debugPanel().setPanelTrace(m_cpuDebugEnabled || paused || now.armed.has_value());
+    if (paused) {
+        // A pause or a step that landed: the frozen view of where the machine
+        // stands now (LIB-10 §12.3: rebuilt when the run state changes).
+        const calcu::machine::Ticks at = m_session->access().machine().tickCount();
+        if (m_frozenAt != at || !m_seenRun.paused) {
+            m_frozenAt = at;
+            const FrozenViewReason reason = now.owner == calcu::debugger::kCpu && now.reason == calcu::debugger::RunState::Reason::Step
+                                                ? FrozenViewReason::StepInstruction
+                                                : FrozenViewReason::Freeze;
+            DebugModel::Update u = m_debug.frozenView(m_session->access().machine(), reason);
+            if (u.diagnostic) diagnostic(*u.diagnostic);
+            emitChanged(changeIf(u.live, LiveChanged) | changeIf(u.listing, ListingChanged) | changeIf(u.cpu, CpuChanged));
+        }
+        if (m_controlWaitsForPause) {   // L-E1: Freeze: or Step: has landed
+            m_controlWaitsForPause = false;
+            m_session->hostDone();
+        }
+    } else {
+        m_frozenAt.reset();
+        if (m_controlWaitsForPause && rc->running()) {   // ended without landing (a reset, a resume)
+            m_controlWaitsForPause = false;
+            m_session->hostDone();
+        }
+    }
+    if (!now.same(m_seenRun)) {
+        m_seenRun = now;
+        emitChanged(RunStateChanged);
+    }
 }
 
-void TIAppPart::onFrozenView(uint64_t freezeGeneration, FrozenViewReason reason) {
-    if (!m_session) return;
-    pullDebugState();
-    // RESUME (or a new freeze) came first: this view is stale, and the machine may be running.
-    if (!m_debugState.frozen || m_debugState.generation != freezeGeneration) return;
-    DebugModel::Update u = m_debug.frozenView(m_session->access().machine(), reason);
-    if (u.diagnostic) diagnostic(*u.diagnostic);
-    emitChanged(changeIf(u.live, LiveChanged) | changeIf(u.listing, ListingChanged) | changeIf(u.cpu, CpuChanged) |
-                RunStateChanged);
+void TIAppPart::scriptedTrace(const std::optional<std::string>& fileName) {
+    if (!m_debugger || !m_ctx || !m_session) return;
+    calcu::debugger::TraceSession& t = m_debugger->traceSession();
+    if (!fileName) {
+        t.end(*m_ctx, calcu::debugger::TraceSession::Ending::Off);
+        return;
+    }
+    // LIB-10 AC-22, ledger 59-19: a trace that cannot start fails its preset.
+    if (auto why = t.start(*m_ctx, *fileName, false, true)) {
+        error("Trace error", "KEYSTROKES \"Trace: " + *fileName + "\": " + *why);
+        m_session->cancelKeystrokes();
+    }
 }
 
 void TIAppPart::setLiveDebugEnabled(bool on) {
     m_liveDebugEnabled = on;
     // Shown while frozen: the frozen view may predate it, so build it now.
-    if (on && m_debugState.frozen && m_session) {
+    if (on && isFrozen() && m_session) {
         DebugModel::Update u = m_debug.rebuildLive(m_session->access().machine(), true);
         emitChanged(changeIf(u.live, LiveChanged) | changeIf(u.listing, ListingChanged));
     }
@@ -748,33 +741,12 @@ void TIAppPart::setCpuDebugEnabled(bool on) {
     if (!m_session) return;
     // The heatmap shows activity since the panel became visible (no tracing
     // while hidden); a frozen heatmap is static, so keep it.
-    if (on && !m_debugState.frozen) {
+    if (on && !isFrozen()) {
         m_debug.resetHeatmapBaseline(m_session->access().machine());
         emitChanged(HeatmapChanged);
     }
-    m_session->setCpuPanelVisible(on);
+    followRunState();   // the frame ring
 }
-
-void TIAppPart::freeze(FreezeOwner owner) {
-    if (!m_session) return;
-    m_asmActive = false;
-    m_session->freeze(owner);
-    pullDebugState();
-    emitChanged(AsmChanged);
-}
-
-void TIAppPart::resume() {
-    if (!m_session) return;
-    m_session->resume();
-    pullDebugState();
-}
-
-void TIAppPart::armPcChange() { if (m_session) { m_session->armPcChange(); pullDebugState(); } }
-void TIAppPart::armScanLoopExit() { if (m_session) { m_session->armScanLoopExit(); pullDebugState(); } }
-void TIAppPart::disarmPcChange() { if (m_session) { m_session->disarmPcChange(); pullDebugState(); } }
-void TIAppPart::disarmScanLoopExit() { if (m_session) { m_session->disarmScanLoopExit(); pullDebugState(); } }
-void TIAppPart::stepKeycode() { if (m_session) m_session->stepKeycode(); }
-void TIAppPart::stepInstruction() { if (m_session) m_session->stepInstruction(); }
 
 void TIAppPart::clearHeatmap() {
     m_debug.clearHeatmap();
@@ -810,39 +782,6 @@ void TIAppPart::dumpScom() { if (m_session) log(cu59::dumpScom(m_session->access
 void TIAppPart::dumpProg() { if (m_session) log(cu59::dumpProg(m_session->access().machine())); }
 void TIAppPart::dumpMemory() { if (m_session) log(cu59::dumpMemory(m_session->access().machine())); }
 
-// ── Traces ───────────────────────────────────────────────────────────────────
-
-void TIAppPart::configureTraceLocation() {
-    if (!m_session) return;
-    const TraceTarget& loc = m_setup.trace;
-    m_session->setTraceLocation(loc.dir, loc.maxBytes);
-}
-
-void TIAppPart::setManualTrace(bool on) {
-    if (on == m_manualTrace) return;
-    if (!m_session) {
-        m_manualTrace = false;
-        return;
-    }
-    if (on) {
-        if (m_setup.traceAvailable && !m_setup.traceAvailable()) {
-            error("Trace error", "The trace location is not available.");
-            return;
-        }
-        const TraceTarget& loc = m_setup.trace;
-        std::filesystem::path path = loc.dir / TraceWriter::baseFileName(m_model);
-        if (!m_session->openManualTrace(path, loc.maxBytes)) {
-            error("Trace error", "Could not create " + path.string());
-            return;
-        }
-        m_manualTrace = true;
-    } else {
-        m_manualTrace = false;
-        m_session->closeManualTrace();
-    }
-    emitChanged(TraceChanged);
-}
-
 // ── ASM overlay ──────────────────────────────────────────────────────────────
 
 void TIAppPart::loadAsm(const std::optional<std::string>& text, const std::string& fileName) {
@@ -877,14 +816,14 @@ void TIAppPart::runAsm() {
         emitChanged(AsmChanged);
         return;
     }
-    const bool freezeOnStart = m_session->debugState().scanLoopExitArmed;
-    m_session->setHalted(true);
-    m_session->disarmPcChange();
-    m_session->disarmScanLoopExit();
-    m_session->clearFreeze();
-    AsmRunResult r;
-    m_session->runQueuedSteps();
-    r = runAsmOverlay(m_session->access().machine(), m_asmWords);
+    calcu::debugger::RunControl* rc = runControl();
+    const calcu::debugger::RunState before = runState();
+    const bool freezeOnStart = before.armed == calcu::debugger::kCpu;
+    if (rc) {
+        rc->pauseOnStart(std::nullopt);
+        if (!rc->running()) rc->resume();
+    }
+    AsmRunResult r = runAsmOverlay(m_session->access().machine(), m_asmWords);
     uint32_t changes = AsmChanged;
     if (!r.loaded) {
         m_asmStatus = "ASM program exceeds overlay range 0x1800-0x1FFF.";
@@ -892,20 +831,16 @@ void TIAppPart::runAsm() {
     } else if (r.entered) {
         m_asmStatus = "ASM entered at 0x1800 (" + std::to_string(r.steps) + " step(s)).";
         m_asmActive = true;
-        if (freezeOnStart) {
-            // FREEZE ON START was armed: freeze in place at the 0x1800 entry.
-            m_session->freezeInPlace(FreezeOwner::Cpu);
-            DebugModel::Update u = m_debug.frozenView(m_session->access().machine(), FrozenViewReason::Freeze);
-            changes |= changeIf(u.live, LiveChanged) | changeIf(u.listing, ListingChanged) | changeIf(u.cpu, CpuChanged);
-        } else {
-            m_session->setHalted(false);
+        if (freezeOnStart && rc && m_rules) {
+            // FREEZE ON START was armed: paused in place at the 0x1800 entry.
+            m_rules->landNextPauseAtOnce();
+            rc->pause(calcu::debugger::kCpu);
         }
     } else {
         m_asmStatus = "ASM entry failed after " + std::to_string(r.steps) + " step(s).";
         error("ASM load error", m_asmStatus);
     }
-    pullDebugState();
-    emitChanged(changes);
+    emitChanged(changes | RunStateChanged);
 }
 
 void TIAppPart::clearAsm() {
@@ -916,7 +851,7 @@ void TIAppPart::clearAsm() {
     m_asmStatus = "ASM overlay cleared.";
     // A running overlay would now execute the empty range: reset the machine.
     if (wasActive && m_session) {
-        resume();
+        if (auto* rc = runControl(); rc && !rc->running()) rc->resume();
         resetStopped();
     }
     emitChanged(AsmChanged);

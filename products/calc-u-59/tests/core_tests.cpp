@@ -280,8 +280,10 @@ TEST(card_insert_and_eject) {
     CHECK_EQ(card(*m).cardMode(), 0);
 }
 
-// C59-6 AC-5: PRINT held down prints the display (was printer_print_key_emits_line).
-TEST(c59_6_ac5_print_key_prints_display) {
+// LIB-8 AC-30 (C59-6 AC-5): PRINT held down prints the display, on the text
+// layer and as the dots of its characters (was printer_print_key_emits_line,
+// then c59_6_ac5_print_key_prints_display).
+TEST(lib8_ac30_print_gives_a_line) {
     auto m = testroms::makeMachine(Model::TI59);
     testroms::runToScanLoop(*m, Model::TI59);
     testroms::tap(*m, Model::TI59, kKey2);
@@ -292,6 +294,15 @@ TEST(c59_6_ac5_print_key_prints_display) {
     auto lines = testroms::printedLines(*m);
     CHECK(!lines.empty());
     if (!lines.empty()) CHECK_EQ(lines[0], std::string("          2.        "));
+    // The dots: the "2" and the "." of the font, at full darkness, a complete line.
+    const auto& paper = testroms::paperTap(*m).paper;
+    std::size_t expected = 0;
+    for (int code : {3, 32})
+        for (int r = 0; r < 7; ++r)
+            for (int c = 0; c < 5; ++c) expected += (pc100cpaper::kFont[code][r] >> c) & 1u;
+    CHECK_EQ(paper.marks().size(), expected);
+    for (const auto& mk : paper.marks()) CHECK_EQ(static_cast<int>(std::get<calcu::paper::Dot>(mk).darkness), 20);
+    CHECK_EQ(paper.reach().to, pc100cpaper::kLine);
 }
 
 // The printer interrupt cuts a line mid-row: the head fires a row's columns
@@ -300,7 +311,7 @@ TEST(c59_6_ac5_print_key_prints_display) {
 // interrupt comes 2049 + 16·(k − 21) cycles after the print starts, roughly.
 // Expected values are what a real TI-58C + PC-100A printed (2026-10-25 scans,
 // reference/CoreArchitecture.md "Dot timing within a line").
-static PrinterCodeLine sweepLine(int k) {
+static PC100C::CodeLine sweepLine(int k, std::vector<calcu::paper::Mark>* marks = nullptr) {
     const Model model = Model::TI58C;
     auto m = testroms::makeMachine(model);
     testroms::runToScanLoop(*m, model);
@@ -321,18 +332,28 @@ static PrinterCodeLine sweepLine(int k) {
     for (int key : {61, 82, 92, 92, 91}) testroms::tap(*m, model, key);  // GTO 100 R/S
     run(*m, static_cast<uint32_t>(instructionHz(model)));
     auto lines = testroms::printedCodeLines(*m);
-    return lines.empty() ? PrinterCodeLine{} : lines[0];
+    if (marks) *marks = testroms::paperTap(*m).paper.marks();
+    return lines.empty() ? PC100C::CodeLine{} : lines[0];
 }
 
-// C59-6 AC-4: a line cut short by the printer interrupt has today's partial
-// row (was printer_interrupt_partial_rows).
-TEST(c59_6_ac4_printer_interrupt_partial_rows) {
+// LIB-8 AC-30 (C59-6 AC-4): a line cut short by the printer interrupt has
+// the rows of the scan of a real printout, and its marks only those rows
+// (was printer_interrupt_partial_rows, then c59_6_ac4_printer_interrupt_partial_rows).
+TEST(lib8_ac30_interrupt_rows_against_the_scan) {
     struct Case { int k, rows, columns; };
     for (Case c : {Case{21, 4, 0}, {22, 4, 1}, {26, 4, 2}, {30, 4, 3}, {36, 4, 4}, {39, 4, 4},
                    {40, 4, 5}, {60, 5, 1}, {63, 5, 2}, {69, 5, 3}}) {
-        PrinterCodeLine l = sweepLine(c.k);
+        std::vector<calcu::paper::Mark> marks;
+        PC100C::CodeLine l = sweepLine(c.k, &marks);
         CHECK_EQ(static_cast<int>(l.rowCount), c.rows);
         CHECK_EQ(static_cast<int>(l.partialColumns), c.columns);
+        // The marks of the first line: no dot below its last drawn row.
+        const int drawn = pc100cpaper::drawnRows(c.rows, c.columns);
+        for (const auto& mk : marks) {
+            const auto& d = std::get<calcu::paper::Dot>(mk);
+            if (d.at.y >= pc100cpaper::kLine) continue;   // a later line
+            CHECK(d.at.y < drawn * calcu::paper::kPerUnit);
+        }
     }
 }
 
@@ -340,9 +361,10 @@ TEST(breakpoint_sets_step_bit31) {
     auto m = testroms::makeMachine(Model::TI59);
     testroms::runToScanLoop(*m, Model::TI59);
     uint16_t target = dbg(*m).pc();
-    dbg(*m).setTraceFlags(dbg(*m).traceFlags() | TRACE_BREAKPOINTS);
-    dbg(*m).addBreakpoint(target);
+    TI59Machine& hw = testroms::hw(*m);   // the core's own breakpoints (headless tools)
+    hw.setTraceFlags(hw.traceFlags() | TRACE_BREAKPOINTS);
+    hw.addBreakpoint(target);
     bool hit = false;
-    for (int i = 0; i < 20000 && !hit; ++i) hit = (dbg(*m).step() & 0x80000000u) != 0;
+    for (int i = 0; i < 20000 && !hit; ++i) hit = (hw.step() & 0x80000000u) != 0;
     CHECK(hit);
 }

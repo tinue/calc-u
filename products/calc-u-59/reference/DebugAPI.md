@@ -8,12 +8,14 @@ The debugger has three layers:
 
 | Layer | Where | What |
 |---|---|---|
-| Core | `TIMachine` and the adapters of `core/TIAdapters.hpp` (`TIDebugTargetAdapter`, `TIDebugPanelAdapter`, `TIMemoryAdapter`; C59-1, until LIB-10 59 / C59-4 / C59-2), over `TMC0501` (`core/`) | RAM, program and SCOM access, the trace ring, step-boundary latch, debug events, the ASM overlay, breakpoints |
-| Shared | `EmulatorSession`, `DebugModel`, `DebugSnapshots`, `DebugText`, `DebugLog`, `TraceWriter`, `AsmOverlay` (`app/`) | Freeze and step, the panels' data and text, the LOG, trace files |
+| Core | `TIMachine`, its debug target `TMC0501` (`core/TIDebugging.hpp`, LIB-10 AC-28), the capability `c59.trace-records` (`core/TraceRecords.hpp`) and the adapters of `core/TIAdapters.hpp` (`TIDebugPanelAdapter`, `TIMemoryAdapter`; until C59-4 / C59-2), over `TMC0501` (`core/`) | Registers, RAM, program and SCOM access, breakpoints, the observer's marks, the trace ring, step-boundary latch, debug events, the ASM overlay |
+| Library | LIB-10's `DebuggerPart` (`library/debugger/`): the run control (the machine session's gate), the topics `run-state` and `trace`, the trace session; the run-control buttons of the component sets | Pause, step, resume, pause-on-start, breakpoints, one trace at a time |
+| Shared | `TILevelRules`, `TITraceRecorder`, `TIDebuggerSetup`, `DebugModel`, `DebugSnapshots`, `DebugText`, `DebugLog`, `TraceWriter`, `AsmOverlay` (`app/`) | The TI's levels and trace records, the panels' data and text, the LOG |
 | GUI | Swift: `EmulatorViewModel` → `frontends/swift/Bridge/TIAppSession` (commands and the `c59.debug.*` topics), views in `frontends/swift/App/Views/` (`DebugView`, `LiveDebugView`, `CPUInspectorView`). Qt: `EmulatorController`, widgets in `frontends/qt6/app/debug/` (`DebugPanel`, `LiveDebugWidget`, `CpuInspectorWidget`, `RomHeatmapWidget`, `AsmOverlayBox`, `LogWidget`). Web: `TIWebPart` (`frontends/web/bindings.cpp`), `frontends/web/src/Debugger.jsx` (`LiveDebug`, `FreezeHeader`, `CpuInspector`, `Heatmap`, `AsmOverlay`, `LogTab`; wide layout only) | Drawing only |
 
-All three GUIs call the same `TIAppPart` methods; the panels draw what
-`DebugModel` holds. Which panel lives where: `FrontendParity.md`
+All three GUIs send the same commands (the library's for pause, step,
+resume, pause-on-start and trace; `TIAppPart`'s `c59.*` for the panels);
+the panels draw what `DebugModel` holds. Which panel lives where: `FrontendParity.md`
 § "Debugger". The session and controller: `SharedArchitecture.md`. Panel
 behaviour from a user's point of view: the user guide,
 https://calc-u.org/59/.
@@ -23,8 +25,9 @@ https://calc-u.org/59/.
 ## Calculator-level machine access
 
 The adapter calls (`core/TIAdapters.hpp`) the debugger and the state loader use. Writes are made
-on the session's thread between two advances, after the queued steps
-(`EmulatorSession::runQueuedSteps`), as `app/StateApplier.cpp` is used.
+on the session's thread between two advances, as `app/StateApplier.cpp`
+is used. The debugger itself goes through the debug target `TMC0501`
+(`core/TIDebugging.hpp`) and the run control (§ "Freeze / Step Controls").
 
 | Call | Effect |
 |---|---|
@@ -59,70 +62,71 @@ writes what the ROM's Op 17 writes, with no key simulation:
 
 ## Freeze / Step Controls
 
-The freeze state lives in `EmulatorSession`; `TIAppPart` mirrors it
-and rebuilds the panels (`DebugModel`). The frontends send them as the
-`c59.*` commands of `app/TIAppPart.hpp` (`c59.freeze`, `c59.resume`, …);
-the web client's `src/engine.js` keeps 2.3.0's method names for its
-components and calls `resume()` `resumeFrozen` there.
+Since M-53 (LIB-10 59) FREEZE, STEP, RESUME and FREEZE ON START are the
+library's run control (`library/debugger/RunControl`), the machine
+session's gate; `TIAppPart` follows its state and rebuilds the panels
+(`DebugModel`). The panel's FREEZE, STEP and RESUME are the run-control
+buttons of the component sets (Qt6 `calcu::qt6::RunControlButtons`, React
+`CalcuRunControlButtons`; Swift follows `calcu::debugger::buttonUse`
+through the bridge), with the labels FREEZE, STEP and RESUME (C59-4).
 
-| `TIAppPart` | Swift `EmulatorViewModel` | Qt `EmulatorController` |
-|---|---|---|
-| `freeze(owner)` | `freeze(from:)` | `freeze(owner)` |
-| `resume()` | `unfreeze()` | `unfreeze()` |
-| `armPcChange()` / `disarmPcChange()` | `freezeOnNextPCChange()` / `pendingFreezeOnPCChange = false` | `freezeOnNextPCChange()` / `disarmPcChangeFreeze()` |
-| `armScanLoopExit()` / `disarmScanLoopExit()` | `freezeOnScanLoopExit()` / `disarmCPUScanLoopFreeze()` | `freezeOnScanLoopExit()` / `disarmScanLoopFreeze()` |
-| `stepKeycode()` | `stepKeycode()` | `stepKeycode()` |
-| `stepInstruction()` | `stepFrozen()` | `stepFrozen()` |
-| `setLiveDebugEnabled` / `setCpuDebugEnabled` | `liveDebugEnabled` / `cpuDebugEnabled` | `setLiveDebugEnabled` / `setCpuDebugEnabled` |
+| The panel | The session's command |
+|---|---|
+| CALCULATOR FREEZE | `pause {level: program}` |
+| CPU FREEZE | `pause {level: cpu}` |
+| STEP (held: every 250 ms) | `step {level, count: 1}` of the tab's level |
+| RESUME | `resume` |
+| CALCULATOR FREEZE ON START / ARMED | `pause-on-start {level: program}` / `{off: true}` |
+| CPU FREEZE ON START / ARMED | `pause-on-start {level: cpu}` / `{off: true}` |
+| TRACE | `trace {button: true}` / `{off: true}` |
+| `setLiveDebugEnabled` / `setCpuDebugEnabled` | `c59.live-debug` / `c59.cpu-debug` |
 
-### `DebugState` (`EmulatorSession::debugState()`)
+### The run state (`run-state`, `calcu::debugger::RunState`)
 
 | Field | Meaning |
 |---|---|
-| `frozen` | Emulation is halted |
-| `owner` | `FreezeOwner::Cpu` or `::Calculator`: the panel whose RESUME and STEP apply; empty while running |
-| `pcChangeArmed` | CALCULATOR FREEZE ON START: freeze at the next step boundary |
-| `scanLoopExitArmed` | CPU FREEZE ON START: freeze when the CPU leaves the keyboard scan loop (key press, clean reset, on the TI-58C any reset; a plain Reset on the TI-59/58 runs the routine with the run loop stopped) |
-| `generation` | Changes on every freeze, resume and clear |
+| `paused` | The machine is paused (no emulated time passes) |
+| `owner` | The level of the pause, `program` (the CALCULATOR tab) or `cpu` (the CPU tab): the tab whose STEP and RESUME apply (2.3.0's "owner"); a step of the other level takes it over |
+| `reason` | `pause`, `step`, `breakpoint`, `pause-on-start` |
+| `armed` | The level of pause-on-start (FREEZE ON START), or none |
 
-Arming one freeze disarms the other; freezing disarms both. The controller
-reports changes as `RunStateChanged`.
+Arming one level disarms the other; a pause disarms both. A pending pause
+or a step says running until it lands.
 
-### `EmulatorSession` methods (the session's thread)
+### The levels (`app/TILevelRules`; LIB-10 AC-29, AC-30)
 
-| Method | Effect |
-|---|---|
-| `freeze(owner)` | Stop the loop and mark frozen; on the session's thread run to the next step boundary (`stepUntilNextKeycode`), `beginNextStep()`, then `frozenViewReady(Freeze)` |
-| `freezeInPlace(owner)` | Mark frozen where the stopped machine stands (the ASM overlay's entry) |
-| `resume()` | Unfreeze and start the loop |
-| `clearFreeze()` | Unfreeze without starting (the caller stopped the loop to change state) |
-| `armPcChange()`, `armScanLoopExit()`, `disarm…()` | The armed freezes; `FreezeController::checkStep` tests them per instruction in the run loop |
-| `stepKeycode()` | While frozen: run to the next step boundary — one program byte, as SST; a jump completes in the byte that causes it — then `frozenViewReady(StepKeycode)` |
-| `stepInstruction()` | While frozen: one `step()`, repeated up to 32 times while the PC stays put (a HOLD, `WAIT Dn`), then `frozenViewReady(StepInstruction)` |
-| `setCpuPanelVisible(bool)` | The CPU panel needs the trace ring |
+| | `program` | `cpu` |
+|---|---|---|
+| Pause | lands at the next program step boundary, or after 50000 weights (IDLE instructions count 4) when none comes (waiting for a key, an ASM overlay) | the same |
+| One step | to the next step boundary — one program byte, as SST; a jump completes in the byte that causes it — or 50000 weights | one instruction, carried out again up to 32 times while the PC stays put (a HOLD, `WAIT Dn`) |
+| Pause-on-start | fires at the next step boundary | fires when the CPU leaves the keyboard scan loop after it was seen there, or jumps to 0000 (a Reset or Cold boot on every model, ledger row 59-34) |
+
+The rules read the marks of `core/TIDebugging.hpp` (boundary, scan loop,
+weight). A pause or a step waiting to land runs on inside the host call
+that asked for it (`TIDebugging::setRunOn`), as 2.3.0's freeze and STEP
+did. When it lands the core runs the next instruction's pre-execution
+phase (`beginNextStep()`), so the views show the next step.
 
 ### Threading
 
-- A freeze halts the machine at once (the machine session pauses); the
-  step to the keycode boundary, and each STEP, waits in the session's
-  queue of steps and runs after the host call (`EmulatorSession::pump`). A
-  flow that changes the machine (reset, state load, ASM run) runs a queued
-  step first (`runQueuedSteps`).
-- An armed freeze fires in the run loop. The session applies it (frozen,
-  owner, new generation; for a CALCULATOR freeze also `beginNextStep()`) on
-  the session's thread **before** any listener runs, so the key sequencer
-  never sees a stopped machine as running. Then
-  `Listener::debugStateChanged()` and `frozenViewReady(generation, FreezeFired)`.
-- `TIAppPart::onFrozenView` runs on the session's thread after the call and builds the
-  view only if the session is still frozen with the same generation. A
-  RESUME or new freeze in between makes the event stale and it is dropped;
-  so are events from a session replaced by a model switch.
+- Everything runs on the session's thread. A `pause` or `step` command
+  replies when the pause has landed (a deferred reply).
+- At every settle `TIAppPart::followRunState` reads the run control: a
+  pause or step that landed gets its frozen view (`DebugModel::frozenView`,
+  rebuilt when the tick count moved; reason `StepInstruction` for a `cpu`
+  step, else `Freeze`), and the core's frame ring is on while the CPU tab
+  shows, the machine is paused or a start is armed. A machine replaced by
+  a model switch is synced first, so its pause is never shown on the new
+  one.
+- A Reset or Cold boot resumes a paused machine (`tellRestarted`, LIB-10
+  adapter L-E2); a model switch builds a new machine (the run control
+  disarms everything).
 
 ### What a frozen view rebuilds
 
 `DebugModel::frozenView(m, reason)` rebuilds the CPU history always,
 and the CALCULATOR snapshot and listing for every reason except
-`StepInstruction`. Showing the CALCULATOR panel while frozen rebuilds its
+`StepInstruction` (a `cpu` step). Showing the CALCULATOR panel while frozen rebuilds its
 snapshot at once (`rebuildLive`).
 
 The full listing is built only while frozen and reported with its own bit,
@@ -297,11 +301,11 @@ of the state.
 
 ### Trace flags
 
-`TIDebugTargetAdapter::setTraceFlags` (`core/TraceTypes.hpp`). In the apps only
-`EmulatorSession` sets them, from `traceFlagsFor(TraceConsumers)`: any
-consumer (CPU panel visible, frozen, an armed freeze, manual or scripted
-trace) gives `TRACE_PC | TRACE_REGS_FULL`; none gives `TRACE_NONE`, the fast
-path.
+`core/TraceTypes.hpp`. Since M-53 only `TIMachine` sets them: any consumer
+(the debug panel through `TIDebugPanelAdapter::setPanelTrace` — CPU tab
+shown, paused, a start armed —, a trace through `c59.trace-records`, the
+run control's checks) gives `TRACE_PC | TRACE_REGS_FULL`; none gives
+`TRACE_NONE`, the fast path.
 
 | Flag | Cost | Records |
 |---|---|---|
@@ -312,14 +316,19 @@ path.
 
 ### Breakpoints
 
-Core breakpoints (`TIDebugTargetAdapter::addBreakpoint`, `TRACE_BREAKPOINTS`,
-`kBreakpointHit`) are used only by the headless tools (`tools/headless/`).
-No GUI sets them.
+The run control's breakpoints (LIB-10 AC-31): the debug target `TMC0501`
+(`core/TIDebugging.hpp`) stops an advance before the instruction at a
+breakpoint's ROM address while the run control's checks say so; a resume
+passes it once. They are set through the session's `break` command (the
+harness's `break TMC0501 <address>`); no GUI sets them (`debugger.md`
+DB-3). The core's own breakpoints (`TRACE_BREAKPOINTS`, `kBreakpointHit`)
+are left to the headless tools' tests.
 
 ### Disassembler
 
-`static std::string TIDebugTargetAdapter::disassemble(uint16_t pc, uint16_t opcode)`
-needs no machine state and returns a mnemonic such as `"ADD A, C [MANT]"`
+`static std::string TIDebugging::disassemble(uint16_t pc, uint16_t opcode)`
+(also `TIDebugPanelAdapter::disassemble`; the target's `decode`) needs no
+machine state and returns a mnemonic such as `"ADD A, C [MANT]"`
 or `"BR 0x03A2"`.
 
 ---
@@ -400,14 +409,15 @@ hex digits, split into 4-digit words; everything else is skipped. A token
 whose length isn't a multiple of 4, no `HEX:` line, no words, or more than
 2048 words is a load error.
 
-**Run.** The session stops, both armed freezes are disarmed and the
+**Run.** Pause-on-start is disarmed, a paused machine resumes, and the
 machine runs to the next keycode boundary. The overlay is loaded, COND is
 set, and `PREG = EXT = 0x1800` is forced on every step — as the hardware's
 external debugger does — until the computed jump lands on `0x1800`
 (`TMC0501::runDebugInjectedProgram`). Not reaching it within 8192 steps
 is an error ("ASM entry failed"); reset, then Run again. If the CPU's
-FREEZE ON START was armed, the machine freezes in place at the entry
-(`freezeInPlace(FreezeOwner::Cpu)`); otherwise the loop resumes and runs
+FREEZE ON START was armed, the machine is paused in place at the entry
+(`TILevelRules::landNextPauseAtOnce`, then `pause cpu`; until M-56);
+otherwise it runs
 the overlay in real time. An overlay
 that loops forever runs until reset; one that ends with `0x0C00` (HOLD)
 hands control back to the ROM.
@@ -420,10 +430,17 @@ is re-injected on a model switch, or dropped if it doesn't fit there.
 
 ## Trace File Format
 
-Files `CALCU59_TRACE.bin`, `CALCU58_TRACE.bin`, `CALCU58C_TRACE.bin`
-(manual trace; scripted `Trace:` files take their own name). Written by
-`app/TraceWriter`, read by `tools/read_trace.py`. Each open starts a
-fresh file and session. All multi-byte fields are little-endian.
+Files `CALCU59_TRACE.bin`, `CALCU58_TRACE.bin`, `CALCU58C_TRACE.bin` (the
+TRACE button's; a preset's `Trace:` and the harness's `trace` name their
+own). Since M-53 (LIB-10 AC-33) the library's trace session starts, limits
+and ends every trace, one at a time: the file goes into the trace folder
+(on the Web, which has none, it is handed over with `keep-file` when it
+ends), the limit is `[trace] max-file-size-mb` MiB for every trace (it ends
+the trace with a notice), and a new machine ends it with a log line.
+`app/TITraceRecorder` gives the records (`app/TraceWriter` encodes them)
+from the frames of `c59.trace-records`; `tools/read_trace.py` reads them.
+Each trace starts a fresh file and session. All multi-byte fields are
+little-endian.
 
 **Versions.** v1 (released in 1.0.0) is stable. v2 is the current writer
 and may change between v2 revisions; readers should accept both.
@@ -452,11 +469,13 @@ Unknown types are skipped.
 | 0x01 | SESSION_START | u64 Unix time (s); v2 adds u8 model |
 | 0x02 | TRACE_EVENT | One `CpuFrame`: 125 bytes (v2), 124 (v1) |
 | 0x03 | SESSION_END | u32 TRACE_EVENT count; u32 suppressed total, always 0 |
-| 0x04 | USER_EVENT | u8 kind, u8 p1, u8 p2, u8 reserved |
+| 0x04 | USER_EVENT | u8 kind, u8 p1, u8 p2, u8 reserved (no longer written, M-53) |
 | 0x05 | TRACE_GAP | u32 frames lost to ring overflow |
 
-USER_EVENT kinds: 0x01 key down, 0x02 key up (p1 = row 1–9, p2 = col
-1–5), 0x03 card insert, 0x04 card eject.
+USER_EVENT kinds, in files of 2.3.0 to M-52: 0x01 key down, 0x02 key up
+(p1 = row 1–9, p2 = col 1–5), 0x03 card insert, 0x04 card eject. Since
+M-53 a trace is the CPU's log alone: no USER_EVENT is written, whoever
+starts the trace (user, 2026-11-13; LIB-10 AC-33). The version stays 2.
 
 ### TRACE_EVENT payload (v2, 125 bytes)
 
@@ -494,7 +513,8 @@ blanked), and the registers from offset 36; `read_trace.py` derives
 
 **Ring overflow.** The core's trace ring holds 1024 frames. When the drain
 falls behind, a TRACE_GAP record gives the count lost, and `seqno` jumps by
-the same amount.
+the same amount. The trace session drains after every 1/60 s piece of the
+run control's advance.
 
 ---
 

@@ -58,9 +58,14 @@ Annotated ROM listings: `rom/TI59-commented.asm`, `rom/TI58C-commented.asm`
   keys (key IDs) and the display output go through it only. What it does not
   have yet goes through the adapters of `core/TIAdapters.hpp`, each until its
   removal step: `TICardReaderAdapter` (M-55),
-  `TIMemoryAdapter` (M-54), `TIDebugTargetAdapter` (M-53),
-  `TIDebugPanelAdapter` (M-56); `idleAndKeyDetectRange()` is the scan/detect
-  range for `tools/headless/` and the tests. `TI59Machine`,
+  `TIMemoryAdapter` (M-54), `TIDebugPanelAdapter` (M-56; since M-53 it
+  also holds the panel's reads, LIB-10 L-E3); `idleAndKeyDetectRange()` is
+  the scan/detect range for `tools/headless/` and the tests. The debugger
+  reaches the core through `Machine::debugging()`: the debug target
+  `TMC0501` (`core/TIDebugging.hpp`; LIB-10, M-53), whose
+  `InstructionEvent::marks` say step boundary, scan loop and weight; traces
+  through the capability `TMC0501/c59.trace-records`
+  (`core/TraceRecords.hpp`). `TIMachine` alone sets the trace flags. `TI59Machine`,
   `TMC0501`, `MachineVariant`, `TIKeys`, `TIRomRanges` are core-internal; the
   CTest `CalcU59CoreSeam` (`tests/check_core_seam.sh`) fails on an include of
   them outside `core/` and `tests/`. Don't add a call to an adapter that the
@@ -73,8 +78,10 @@ Annotated ROM listings: `rom/TI59-commented.asm`, `rom/TI58C-commented.asm`
   (`core/PrinterPinOut.hpp`, `core/ModuleSlotPinOut.hpp`, wired with
   `TiConnectors`) and holds no printer state and no module image; the
   `libExecPC` latch stays in the CPU. The PC-100C's controls (PRINT, ADV,
-  TRACE) and its paper (`c59.printer-output`, `core/PrinterOutput.hpp`) are
-  capabilities; `CoreArchitecture.md` § "Component Overview", "Printer
+  TRACE) and its paper (`printer/paper-output`, LIB-8's kind; the
+  description, font and dot rules in `core/PC100CPaper.hpp`) are
+  capabilities; its code lines are kept only for the golden runs and the
+  headless tool (`TIMachineTesting::printedCodeLines`, until M-59); `CoreArchitecture.md` § "Component Overview", "Printer
   (PC-100C)", "Solid-State Library Module".
 - **Ticks:** one instruction is 32 ticks, 128 in IDLE on the TI-59/58; the
   tick count is monotonic across every operation (`TIMachine::cpuReset`).

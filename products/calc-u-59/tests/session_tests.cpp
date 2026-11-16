@@ -38,7 +38,6 @@ std::uint64_t serialOf(SessionRig& r, const TopicName& t) {
     if (const auto* x = payloadAs<TIPrinterState>(*p)) return x->serial;
     if (const auto* x = payloadAs<TICardReaderState>(*p)) return x->serial;
     if (const auto* x = payloadAs<TIRunState>(*p)) return x->serial;
-    if (const auto* x = payloadAs<TITraceState>(*p)) return x->serial;
     if (const auto* x = payloadAs<TIDebugLiveState>(*p)) return x->serial;
     if (const auto* x = payloadAs<TIDebugCpuState>(*p)) return x->serial;
     if (const auto* x = payloadAs<TIDebugHeatmapState>(*p)) return x->serial;
@@ -54,7 +53,7 @@ std::uint64_t serialOf(SessionRig& r, const TopicName& t) {
 TEST(lib3_ac29_mirror_holds_every_change_flag) {
     SessionRig r;
     for (const auto* t : {&topics::kModel, &topics::kLed, &topics::kCueCard, &topics::kPrinter, &topics::kCardReader,
-                          &topics::kRunState, &topics::kTrace, &topics::kDebugLive, &topics::kDebugCpu,
+                          &topics::kRunState, &topics::kDebugLive, &topics::kDebugCpu,
                           &topics::kDebugHeatmap, &topics::kDebugAsm})
         CHECK(r.fe.mirror.state(*t) != nullptr);
     CHECK(r.state<TIModelState>(topics::kModel)->model == Model::TI59);
@@ -78,10 +77,11 @@ TEST(lib3_ac29_mirror_holds_every_change_flag) {
         r.send(commands::kFitBlankCard, Value::object({{"path", (r.folder.path() / "a.u59").string()}, {"name", "a.u59"}}));
     }));
     CHECK(r.state<TICardReaderState>(topics::kCardReader)->fitted);
-    // PrinterChanged, PaperCut
-    CHECK(moves(topics::kPrinter, [&] { r.send(commands::kTogglePrinterTrace); }));
+    // PrinterChanged (TRACE through the paper panel's set-control, LIB-8 P-E2)
+    CHECK(moves(topics::kPrinter, [&] {
+        r.send(commands::kSetControl, Value::object({{"peripheral", "PC-100C"}, {"control", "TRACE"}, {"on", true}}));
+    }));
     CHECK(r.state<TIPrinterState>(topics::kPrinter)->trace);
-    CHECK(moves(topics::kPrinter, [&] { r.send(commands::kCutPaper); }));
     // RunStateChanged
     CHECK(moves(topics::kRunState, [&] { r.send(commands::kFullSpeed, Value::object({{"on", true}})); }));
     CHECK(r.state<TIRunState>(topics::kRunState)->fullSpeed);
@@ -99,13 +99,13 @@ TEST(lib3_ac29_mirror_holds_every_change_flag) {
     }));
     // AsmChanged
     CHECK(moves(topics::kDebugAsm, [&] { r.send(commands::kClearAsm); }));
-    // TraceChanged
-    CHECK(moves(topics::kTrace, [&] { r.send(commands::kManualTrace, Value::object({{"on", true}})); }));
-    CHECK(r.state<TITraceState>(topics::kTrace)->manualTrace);
-    r.send(commands::kManualTrace, Value::object({{"on", false}}));
-    // The freeze is run state too.
-    CHECK(moves(topics::kRunState, [&] { r.send(commands::kFreeze, Value::object({{"owner", 0}})); }));
-    CHECK(r.state<TIRunState>(topics::kRunState)->debug.frozen);
+    // The trace and the pause are the library's topics since M-53 (LIB-10).
+    r.send(calcu::debugger::kTraceCommand, Value::object({{"button", true}}));
+    CHECK(r.state<calcu::debugger::TraceState>(calcu::debugger::kTraceTopic)->running);
+    r.send(calcu::debugger::kTraceCommand, Value::object({{"off", true}}));
+    r.send(calcu::debugger::kPauseCommand, Value::object({{"level", "cpu"}}));
+    CHECK(r.until([&] { return r.part().isFrozen(); }));
+    CHECK(r.state<calcu::debugger::RunState>(calcu::debugger::kRunStateTopic)->paused);
 }
 
 // AC-30: an error is a notice, a diagnostic a line of the log.
@@ -192,12 +192,20 @@ TEST(lib3_ac32_updates_during_preset) {
     CHECK(r.until([&] { return r.machine().isKeyReady(); }));
     const CallId id = r.post(commands::kLoadState, Value::object({{"bytes", r.bytes("KEYSTROKES:\n82 21 94\n83 21 94\n")}}));
     int ledSetsWhileBusy = 0, paperWhileBusy = 0;
-    std::uint64_t led = serialOf(r, topics::kLed), paper = serialOf(r, topics::kPrinter);
+    std::uint64_t led = serialOf(r, topics::kLed);
+    // The paper: the library's stream `paper PC-100C` (LIB-8, M-53).
+    auto paperMessages = [&] {
+        int n = 0;
+        for (const auto& m : r.fe.log)
+            if (const auto* x = std::get_if<StreamMessage>(&m); x && x->topic == calcu::paper::paperTopic("PC-100C")) ++n;
+        return n;
+    };
+    int paper = paperMessages();
     while (r.reply(id) == nullptr && r.now < calcu::pacing::WallTime(std::chrono::hours(2))) {
         r.frame();
         if (!r.busy()) continue;
         if (serialOf(r, topics::kLed) != led) ++ledSetsWhileBusy, led = serialOf(r, topics::kLed);
-        if (serialOf(r, topics::kPrinter) != paper) ++paperWhileBusy, paper = serialOf(r, topics::kPrinter);
+        if (paperMessages() != paper) ++paperWhileBusy, paper = paperMessages();
     }
     CHECK(ledSetsWhileBusy > 0);
     CHECK(paperWhileBusy > 0);

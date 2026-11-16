@@ -321,3 +321,7 @@ void TI59Machine::writeRAMReg(int reg, const uint8_t* nibbles16) {
     if (reg < 0 || reg >= RAM::TOTAL_REGS) return;
     m_ram.writeReg(reg, nibbles16);
 }
+
+uint16_t TI59Machine::readROMWord(uint16_t addr) const {
+    return m_rom.read(addr);
+}

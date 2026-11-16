@@ -3,6 +3,8 @@
 #include "PacingProfiles.hpp"
 #include "ProductRoms.hpp"
 #include "Settings.hpp"
+#include "TIDebuggerSetup.hpp"
+#include "TIPrinters.hpp"
 #include "TITyping.hpp"
 #include "../core/TICatalogue.hpp"
 #include "../core/TISegments.hpp"
@@ -64,12 +66,17 @@ public:
 
     startup::ProductMachines& machines() override { return machines_; }
     // The library's parts of the run: LIB-5's typing with the TI profiles and
-    // map (`key`; no `type` on a TI model, D-8), in virtual time; no presets,
-    // printers' paper, debugger or media until Calc-U-59's columns (Part E).
+    // map (`key`; no `type` on a TI model, D-8), in virtual time; the
+    // PC-100C's paper (LIB-8 59) and the debugger (LIB-10 59: the run control,
+    // traces into the run's folder) since M-53; no presets or media until
+    // their columns (M-54, M-55).
     void prepare(harness::RunSetup& r) override {
         parts_.reset();
         parts::LibraryPartsSetup s = r.partsSetup(tiCatalogue(), machines_, lookUpRoms());
         s.typing = &typingProduct();
+        s.papers = tiPrinterPapers();
+        s.printers = {kPC100C};
+        s.debugger = tiDebuggerSetup(rules_, {});
         s.productName = std::string(name());
         parts_ = std::make_unique<parts::LibraryParts>(std::move(s));
     }
@@ -89,6 +96,7 @@ public:
 
 private:
     HarnessMachines machines_;
+    TILevelRules rules_;
     std::unique_ptr<parts::LibraryParts> parts_;
 };
 

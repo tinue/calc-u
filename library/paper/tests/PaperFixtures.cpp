@@ -1,28 +1,10 @@
 #include "PaperFixtures.hpp"
 #include <algorithm>
-#include <cmath>
 #include <cstdlib>
 #include <fstream>
 #include <iterator>
 
 namespace calcu::paper::test {
-
-PaperDescription pc100cDescription() {
-    PaperDescription d;
-    d.unit = Millimetres{430, 1000};
-    d.width = 1'290'700;   // 129.07 dot pitches (AC-24)
-    d.printableLeft = 0;
-    d.printableWidth = d.width;
-    d.form = MarkForm::Dots;
-    d.dotDiameter = 7'600;   // 0.38 of the pitch as radius
-    for (int heat = 0; heat <= 20; ++heat) {
-        const double alpha = heat >= 20 ? 1.0 : 0.05 + 0.95 * std::pow(heat / 20.0, 2.5);
-        d.darknessGreys.push_back(static_cast<std::uint8_t>(std::lround(255.0 * (1.0 - alpha))));
-    }
-    d.pictureDotsPerInch = 600;
-    d.textLayer = true;
-    return d;
-}
 
 std::string fixturePath(const std::string& name) { return std::string(CALCU_PAPER_FIXTURES) + "/" + name; }
 

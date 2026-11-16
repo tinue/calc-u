@@ -12,7 +12,9 @@ NS_ASSUME_NONNULL_BEGIN
 // the main thread for the view model. Main thread only.
 
 /// The topics a batch of messages changed (the interim c59.* topics, LIB-3 59
-/// design §5; until their owners' steps).
+/// design §5, until their owners' steps; since M-53 also the library's
+/// `paper PC-100C` (printer: appended, paperCut: emptied), `run-state`
+/// (runState) and `trace` (trace)).
 typedef NS_OPTIONS(uint32_t, TIChange) {
     TIChangeModel     NS_SWIFT_NAME(model)     = 1u << 0,
     TIChangeDisplay   NS_SWIFT_NAME(display)   = 1u << 1,
@@ -30,12 +32,30 @@ typedef NS_OPTIONS(uint32_t, TIChange) {
     TIChangeListing   NS_SWIFT_NAME(listing)   = 1u << 13,
 };
 
-/// The debug panel that owns a freeze (FreezeOwner; None when running).
+/// The level that owns a pause (LIB-10 RunState::owner; None when running).
+/// Cpu is the CPU tab's, Calculator the CALCULATOR tab's (`program`).
 typedef NS_ENUM(NSInteger, TIFreezeOwner) {
     TIFreezeOwnerNone = -1,
     TIFreezeOwnerCpu = 0,
     TIFreezeOwnerCalculator = 1,
 };
+
+/// Which run-control buttons of a level can be used (LIB-10 AC-18:
+/// calcu::debugger::buttonUse, library/debugger/ButtonRule.hpp).
+typedef struct {
+    bool pause;
+    bool step;
+    bool resume;
+} TIButtonUse;
+
+/// One dot of the paper (LIB-8 S-P1, until C59-8): its centre in the
+/// printer's unit (the dot pitch), y down the paper from where it was last
+/// empty, and its ink 0–1 (the description's grey of its darkness).
+typedef struct {
+    double x;
+    double y;
+    double ink;
+} TIPaperDot;
 
 /// What the session's messages ask of the app (main thread): the notices
 /// (an alert, LIB-3 AC-30), KEYSTROKES DebugPanel:, the log, and a batch's changes.
@@ -46,6 +66,9 @@ typedef NS_ENUM(NSInteger, TIFreezeOwner) {
 - (void)changed:(TIChange)changes;
 /// A card file was written (the coordinated write succeeded).
 - (void)cardWritten;
+@optional
+/// LIB-8 AC-20: the outcome of a Copy of the paper: 0 copied, 1 text only, 2 failed.
+- (void)paperCopied:(NSInteger)outcome NS_SWIFT_NAME(paperCopied(_:));
 @end
 
 /// What the session is built with (C59-5 D-12, A-12).
@@ -57,16 +80,6 @@ typedef NS_ENUM(NSInteger, TIFreezeOwner) {
 @property (nonatomic, copy) NSString *traceDirectory;
 @property (nonatomic) uint64_t traceMaxBytes;
 @property (nonatomic) BOOL traceAvailable;
-@end
-
-/// One printed line's dot codes (Core PrinterCodeLine).
-@interface TIPrinterLine : NSObject
-@property (nonatomic, readonly, copy) NSData *codes;   ///< 20 character codes (0–63)
-@property (nonatomic, readonly) BOOL complete;        ///< all 7 rows printed, followed by the paper advance
-@property (nonatomic, readonly) NSInteger drawnRows;   ///< dot rows the line takes on paper (1–7)
-@property (nonatomic, readonly, copy) NSData *inkedColumns;  ///< 7 font-row masks: columns that got ink
-@property (nonatomic, readonly, copy) NSData *faintColumns;  ///< 7 font-row masks: faint dots (cut early)
-@property (nonatomic, readonly) CGFloat faintAlpha;          ///< ink of the faint dots (0–1)
 @end
 
 /// ProgramSource raw values follow the C++ enumerator order:
@@ -197,21 +210,26 @@ typedef NS_ENUM(NSInteger, TIFreezeOwner) {
 
 // ── Cue card, printer ────────────────────────────────────────────────────────
 @property (nonatomic, readonly, nullable) TICueCard *cueCard;
-@property (nonatomic, readonly) NSInteger printerLineCount;
-/// Lines from index `start` on (text and dot codes are parallel; codes can lag a frame).
-- (NSArray<NSString *> *)printerLinesFrom:(NSInteger)start;
-@property (nonatomic, readonly) NSInteger printerCodeLineCount;
-- (NSArray<TIPrinterLine *> *)printerCodeLinesFrom:(NSInteger)start;
-/// The strip's height in dot pitches (for copy-as-image).
-@property (nonatomic, readonly) double printerStripHeightUnits;
+// The PC-100C's paper (LIB-8 adapter S-P1, until C59-8): the library's topic
+// `paper PC-100C`, kept here as it arrives; emptied by a cut (paperCut).
+/// Its text layer: one line per printed line or feed ("" for a feed).
+@property (nonatomic, readonly) NSInteger paperLineCount;
+- (NSArray<NSString *> *)paperLinesFrom:(NSInteger)start NS_SWIFT_NAME(paperLines(from:));
+/// Its dots in the order made, from index `start` on: an array of TIPaperDot.
+@property (nonatomic, readonly) NSInteger paperDotCount;
+- (NSData *)paperDotsFrom:(NSInteger)start NS_SWIFT_NAME(paperDots(from:));
+/// How far the paper reaches, in the unit (0 while empty).
+@property (nonatomic, readonly) double paperReachUnits;
+/// Copy (the library makes the picture and asks for the clipboard) and Cut
+/// (a copy, then the paper emptied), LIB-8 AC-16, AC-18.
+- (void)copyPaper;
+- (void)cutPaper;
 @property (nonatomic, readonly) BOOL printerConnected;
 @property (nonatomic, readonly) BOOL printerTrace;
 /// The connect button: plug the PC-100C in or out and reset the calculator.
 - (void)togglePrinterConnection;
-- (void)togglePrinterTrace;
-- (void)pressPrinterPrint:(BOOL)pressed;
-- (void)pressPrinterAdv:(BOOL)pressed;
-- (void)cutPaper;
+/// PRINT, ADV (held) and TRACE (a switch) of the PC-100C (`set-control`, LIB-8 P-E2).
+- (void)setPrinterControl:(NSString *)control on:(BOOL)on NS_SWIFT_NAME(setPrinterControl(_:on:));
 
 // ── Card reader ──────────────────────────────────────────────────────────────
 @property (nonatomic, readonly) BOOL cardSwiping;
@@ -241,18 +259,21 @@ typedef NS_ENUM(NSInteger, TIFreezeOwner) {
 // ── Debugger ─────────────────────────────────────────────────────────────────
 - (void)setLiveDebugEnabled:(BOOL)on;
 - (void)setCpuDebugEnabled:(BOOL)on;
-@property (nonatomic, readonly) BOOL frozen;
+// The run control (LIB-10 59; the library's `run-state` and its commands):
+// level Cpu is `cpu`, Calculator `program`.
+@property (nonatomic, readonly) BOOL frozen;            ///< paused
 @property (nonatomic, readonly) TIFreezeOwner freezeOwner;
-@property (nonatomic, readonly) BOOL pcChangeArmed;
-@property (nonatomic, readonly) BOOL scanLoopExitArmed;
-- (void)freeze:(TIFreezeOwner)owner;
+@property (nonatomic, readonly) BOOL pcChangeArmed;     ///< pause-on-start program
+@property (nonatomic, readonly) BOOL scanLoopExitArmed; ///< pause-on-start cpu
+/// The buttons of a level by the library's rule (AC-18, AC-34).
+- (TIButtonUse)buttonUseFor:(TIFreezeOwner)level NS_SWIFT_NAME(buttonUse(for:));
+/// The rule itself, for a run state given by its fields (the unit tests).
++ (TIButtonUse)buttonUseFor:(TIFreezeOwner)level hasState:(BOOL)hasState paused:(BOOL)paused
+                      owner:(TIFreezeOwner)owner NS_SWIFT_NAME(buttonUse(for:hasState:paused:owner:));
+- (void)pause:(TIFreezeOwner)level NS_SWIFT_NAME(pause(_:));
+- (void)step:(TIFreezeOwner)level NS_SWIFT_NAME(step(_:));
 - (void)resume;
-- (void)armPcChange;
-- (void)armScanLoopExit;
-- (void)disarmPcChange;
-- (void)disarmScanLoopExit;
-- (void)stepKeycode;
-- (void)stepInstruction;
+- (void)pauseOnStart:(TIFreezeOwner)level NS_SWIFT_NAME(pause(onStart:));   ///< None: off
 @property (nonatomic, readonly) TILiveDebugSnapshot *liveSnapshot;
 @property (nonatomic, readonly) NSArray<TIStepEntry *> *programListing;
 @property (nonatomic, readonly) NSInteger programListingSource;
@@ -270,6 +291,7 @@ typedef NS_ENUM(NSInteger, TIFreezeOwner) {
 - (void)dumpProg;
 - (void)dumpMemory;
 
+/// A trace of the library's trace session runs (the TRACE button's, AC-23).
 @property (nonatomic, readonly) BOOL manualTrace;
 - (void)setManualTrace:(BOOL)on;
 

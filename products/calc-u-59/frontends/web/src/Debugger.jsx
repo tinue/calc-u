@@ -2,9 +2,11 @@
 // tabs CALCULATOR / CPU / LOG. Only the visible tab's snapshots are built
 // (setLiveDebugEnabled / setCpuDebugEnabled follow it). Rows arrive
 // formatted by Shared/DebugText (bindings.cpp postLive / postCpu); this
-// draws them with the panels' dimming and colours.
+// draws them with the panels' dimming and colours. FREEZE, STEP and RESUME
+// of each tab are the component set's run-control buttons for the level
+// `program` (CALCULATOR) and `cpu` (CPU), on the library's `run-state`
+// (LIB-10 AC-34, M-53); TRACE is the trace session's button.
 
-const STEP_REPEAT_MS = 250;
 const CURRENT_PC_RGB = [52, 199, 89];
 
 const grey = (white) => `rgba(255,255,255,${white})`;
@@ -21,41 +23,23 @@ function Section({ title, extra, children }) {
 const Run = ({ white = 0.85, color, children }) => <span style={{ color: color || grey(white) }}>{children}</span>;
 const Gap = () => <span>{"   "}</span>;
 
-/// Fires at once, then every 250 ms while held (Qt6/app/HoldRepeatButton).
-function RepeatButton({ onFire, disabled, children, className }) {
-  const timer = React.useRef(null);
-  const stop = () => { clearInterval(timer.current); timer.current = null; };
-  React.useEffect(() => stop, []);
-  React.useEffect(() => { if (disabled) stop(); }, [disabled]);
-  return (
-    <button type="button" className={className} disabled={disabled}
-      onPointerDown={() => { onFire(); stop(); timer.current = setInterval(onFire, STEP_REPEAT_MS); }}
-      onPointerUp={stop} onPointerLeave={stop} onPointerCancel={stop}
-      onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); if (!e.repeat) onFire(); } }}
-    >{children}</button>
-  );
-}
+const RUN_CONTROL_LABELS = { pause: "FREEZE", step: "STEP", resume: "RESUME" };
 
-/// RESUME / FREEZE / FREEZE ON START / ARMED / STEP for one owner.
+/// FREEZE / STEP / RESUME (the run-control buttons of the tab's level) and
+/// FREEZE ON START / ARMED for one tab.
 function FreezeHeader({ engine, title, narrowTitle, cpu, narrow }) {
   const rs = useEngine(engine, (s) => s.runState);
-  const owner = cpu ? "cpu" : "calculator";
+  const level = cpu ? "cpu" : "program";
   const armed = cpu ? rs.scanArmed : rs.pcArmed;
-  const owned = rs.frozen && rs.owner === owner;
-  const canFreeze = !rs.frozen && !armed;
+  const canArm = !rs.frozen && !armed;
   return (
     <div className="calcu-debug-header">
       <span className="calcu-debug-title">{narrow ? narrowTitle : title}</span>
-      <button type="button" className="calcu-hb calcu-hb-orange" disabled={!owned}
-        onClick={() => engine.call("resumeFrozen")}>RESUME</button>
-      <button type="button" className="calcu-hb" disabled={!canFreeze}
-        onClick={() => engine.call("freeze", cpu)}>FREEZE</button>
-      <button type="button" className="calcu-hb" disabled={!canFreeze}
-        onClick={() => engine.call(cpu ? "armScanLoopExit" : "armPcChange")}>{narrow ? "F.START" : "FREEZE ON START"}</button>
+      <CalcuRunControlButtons shell={engine ? engine.shell : null} level={level} labels={RUN_CONTROL_LABELS} />
+      <button type="button" className="calcu-hb" disabled={!canArm}
+        onClick={() => engine.call("pauseOnStart", level)}>{narrow ? "F.START" : "FREEZE ON START"}</button>
       <button type="button" className="calcu-hb calcu-hb-yellow" disabled={!armed}
-        onClick={() => engine.call(cpu ? "disarmScanLoopExit" : "disarmPcChange")}>ARMED</button>
-      <RepeatButton className="calcu-hb calcu-hb-blue" disabled={!owned}
-        onFire={() => engine.call(cpu ? "stepInstruction" : "stepKeycode")}>STEP</RepeatButton>
+        onClick={() => engine.call("pauseOnStart", null)}>ARMED</button>
     </div>
   );
 }
@@ -238,6 +222,7 @@ function CpuInspector({ engine, data, font, narrow }) {
 
 function LogTab({ engine }) {
   const log = useEngine(engine, (s) => s.log);
+  const trace = useEngine(engine, (s) => s.trace);
   const traces = useEngine(engine, (s) => s.traces);
   const ref = React.useRef(null);
   React.useLayoutEffect(() => { ref.current.scrollTop = ref.current.scrollHeight; }, [log.text]);
@@ -257,10 +242,10 @@ function LogTab({ engine }) {
             onClick={() => engine.call("clearLog")}>🗑</button>
         </div>
         <div className="calcu-buttonrow">
-          <button type="button" className="calcu-pill" aria-pressed={log.trace}
+          <button type="button" className="calcu-pill" aria-pressed={trace.running}
             title="Write every executed instruction to the binary trace file (downloaded when switched off)"
-            style={log.trace ? { color: "orange" } : undefined}
-            onClick={() => engine.call("setManualTrace", !log.trace)}>{log.trace ? "TRACE ●" : "TRACE ○"}</button>
+            style={trace.running ? { color: "orange" } : undefined}
+            onClick={() => engine.call("setTrace", !trace.running)}>{trace.running ? "TRACE ●" : "TRACE ○"}</button>
           <button type="button" className="calcu-pill" title="Core log level: off / info / debug"
             style={log.level ? { color: log.level === 1 ? "orange" : "#ff3b30" } : undefined}
             onClick={() => engine.call("cycleDebugLevel")}>{levels[log.level]}</button>

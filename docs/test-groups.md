@@ -157,7 +157,7 @@ Frequent):
 | `paper/tests/paper_kind_tests.cpp` | 3 (LIB-8 AC-1, the test printers; M-39) |
 | `paper/tests/paper_tests.cpp` | 5 (LIB-8 AC-2 to AC-5, EC-1; M-39) |
 | `paper/tests/replies_tests.cpp` | 5 (LIB-8 AC-23, AC-39, EC-2; M-39) |
-| `paper/tests/picture_tests.cpp` | 5 (LIB-8 AC-16, AC-17, the reference pictures of the test printers and the PC-100C (until M-53); M-39) |
+| `paper/tests/picture_tests.cpp` | 4 (LIB-8 AC-16, AC-17, the reference pictures of the test printers; M-39; the PC-100C's went to Calc-U-59 in M-53) |
 | `paper/tests/paper_part_tests.cpp` | 16 (LIB-8 AC-6 to AC-9, EC-2 to EC-4, EC-7; M-39) |
 | `paper/tests/copy_cut_tests.cpp` | 5 (LIB-8 AC-16, AC-18 to AC-20, EC-5; M-39) |
 | `paper/tests/paper_step_tests.cpp` | 4 (LIB-8 AC-22; M-39) |
@@ -219,8 +219,9 @@ Frequent):
 
 | CTest entry | What | Group | Measured (M4 Pro, 2026-11-14) |
 |---|---|---|---|
-| `CalcU59Tests` | 283 `TEST`s (M-39: `tests/paper_replies_tests.cpp`, LIB-8 AC-39; M-36; `tests/typing_tests.cpp`: LIB-5 AC-20–27, T59-0): unit and ROM-driven integration tests of the core and the app layer, the machine interface (C59-1, LIB-1 59), the ROM lookup (LIB-12 59), the PC-100C and the module slot (C59-6, LIB-2 59), the settings file (LIB-9 59), the golden replays through it (table below), the harness product entry (LIB-11, M-28; its model switch through LIB-18, `harness_switches_to_a_ti58`, M-35), Calc-U-59 on the library's app session and the session thread (LIB-3 59, LIB-17 59, C59-5; M-33), the product's flows on it and the Web part (M-34) | Frequent | 13 s (M-33); 7 s (M-34, RelWithDebInfo) |
-| `CalcU59TraceReader` | `tools/read_trace.py` reads the trace `CalcU59Tests` wrote | Frequent | 16.4 s (Python 3.15; 0.3 s in CI) |
+| `CalcU59Tests` | 324 `TEST`s (M-53: LIB-8 59 and LIB-10 59, `pc100c_paper_tests.cpp`, `debug_target_tests.cpp`, `debugger_tests.cpp`, `trace_tests.cpp`; M-39: `tests/paper_replies_tests.cpp`, LIB-8 AC-39; M-36; `tests/typing_tests.cpp`: LIB-5 AC-20–27, T59-0): unit and ROM-driven integration tests of the core and the app layer, the machine interface (C59-1, LIB-1 59), the ROM lookup (LIB-12 59), the PC-100C and the module slot (C59-6, LIB-2 59), the settings file (LIB-9 59), the golden replays through it (table below), the harness product entry (LIB-11, M-28; its model switch through LIB-18, `harness_switches_to_a_ti58`, M-35), Calc-U-59 on the library's app session and the session thread (LIB-3 59, LIB-17 59, C59-5; M-33), the product's flows on it and the Web part (M-34) | Frequent | 13 s (M-33); 7 s (M-34, RelWithDebInfo); 8.3 s (M-53) |
+| `CalcU59TraceReader` | `tools/read_trace.py` reads the trace `CalcU59Tests` wrote (since M-53 the trace recorder's, `lib10_ac33_header_ti59_version_2_and_model`) | Frequent | 16.4 s (Python 3.15; 0.3 s in CI) |
+| `CalcU59QtTests` | 3 `TEST`s of `products/calc-u-59/frontends/qt6/tests/qt_frontend_tests.cpp` (M-53): `lib8_ac28_qt6_print_adv_held_trace_switch_view_control` (LIB-8 E8-8: the paper pane as `MainWindow` builds it, PRINT and ADV held, TRACE a switch, the view control; detached: no owner), `lib8_ac31_qt6_print_text_cut` (E8-9: the PC-100C prints 7, the text view shows it, Cut empties the paper and is disabled), `lib10_ac34_qt6_calculator_and_cpu_buttons_follow_run_state` (LIB-10 E10-7: FREEZE, STEP, RESUME of both tabs are `RunControlButtons` of `program` and `cpu`): the app's widgets on its `EmulatorController`, the session on the real ROMs compiled in as the app has them, on the real clock; `QtTestMain.cpp`, `QT_QPA_PLATFORM=offscreen` and a `HOME` of the build tree's (no settings of the user's); registered only in a tree with `CALCU_FRONTEND_QT` where Qt6 Widgets is found | Frequent | 4.2 s (M-53; about 1 s of ROM start-up per case) |
 | `CalcU59NoOwnSession` | `tests/check_no_own_session.sh`: the Qt6, Swift and (M-34) Web frontends use no `EmulatorSession`, `EmulationRunner`, `TISessionController` or own `SessionController`; no `std::thread` in `app/` but `SessionThread`; the Swift bridge includes no `SessionController.hpp` and calls no tick; Qt6 sends no suspend or continue (LIB-3 AC-28, AC-31; C59-5 B2; M-33) | Frequent | 0.03 s |
 | `CalcU59CoreSeam` | `tests/check_core_seam.sh`: no core-internal header outside `core/` and `tests/`, no machine call in the adapters (C59-1 AC-17; M-19) | Frequent | 0.02 s |
 | `CalcU59NoOwnRomLookup` | `library/roms/tests/check_no_own_rom_lookup.sh`: no product source outside `app/ProductRoms.*`, the catalogue and the Qt6 Bundle looks for a ROM file (LIB-12 AC-2, design T7; M-24) | Frequent | 1.2 s |
@@ -250,10 +251,12 @@ Frequent except where the table says otherwise):
 
 | File | `TEST`s |
 |---|---|
-| `core_tests.cpp` | 17 (C59-1 AC-5; C59-6 AC-4, AC-5, M-25) |
+| `core_tests.cpp` | 17 (C59-1 AC-5; C59-6 AC-4, AC-5, M-25; LIB-8 AC-30 `lib8_ac30_print_gives_a_line`, `lib8_ac30_interrupt_rows_against_the_scan`, M-53) |
+| `debug_target_tests.cpp` | 6 (LIB-10 AC-28: the TMC0501 target; M-53) |
+| `debugger_tests.cpp` | 21 (LIB-10 AC-29–32, AC-35 on the run control: levels, pause-on-start, breakpoints, the KEYSTROKES directives, the freeze tests of 2.3.0 ported; M-53) |
 | `descriptor_tests.cpp` | 9 (LIB-1 AC-26–33; M-19, M-25) |
-| `harness_tests.cpp` | 1 (`harness_drives_a_ti59`: the exit check of M-28, LIB-11 T14; `SKIP` without the ROMs) |
-| `golden_runs_tests.cpp` | 1 (the 18 golden replays through the machine interface and, since M-25, the places, C59-1 AC-4, C59-6 AC-3, AC-7, AC-9, AC-10; `CALCU59_GOLDEN_RECORD=1` records a missing reference only) |
+| `harness_tests.cpp` | 6 (`harness_drives_a_ti59`: the exit check of M-28, LIB-11 T14; the model switch, LIB-18; `key`, LIB-5; M-53: LIB-8 AC-23 `paper` and `cut-paper`, LIB-10 AC-31 `break`; `SKIP` without the ROMs) |
+| `golden_runs_tests.cpp` | 2 (M-53: `lib10_ac33_bytes_equal_the_recorded_reference`, the trace recorder's file of `ti59-calculation.run` against the length and MD5 of the trace recorded on 2.3.0's path; the 18 golden replays through the machine interface and, since M-25, the places, C59-1 AC-4, C59-6 AC-3, AC-7, AC-9, AC-10; `CALCU59_GOLDEN_RECORD=1` records a missing reference only) |
 | `machine_tests.cpp` | 26 (C59-1 AC-1–3, 6–16, 18, 19, EC-1–4; M-19) |
 | `peripherals_tests.cpp` | 20 (C59-6 AC-1, 2, 4–6, 8–11, EC-1–3; LIB-2 AC-24–27; M-25) |
 | `pacing_longrun_after_tests.cpp` | 2, "after" (LIB-17 AC-18; M-33): `lib17_ac18_pacing_longrun_scripted_ti` Frequent; `lib17_ac18_pacing_longrun_real_clock_ti` Checkpoint |
@@ -263,18 +266,19 @@ Frequent except where the table says otherwise):
 | `paper_replies_tests.cpp` | 1 (`lib8_ac39_ti_printouts_turned_into_paper_replies`: the printouts of the M-9 references turned into `paper text` and `paper marks` replies and compared with the committed `.paper-text`, `.paper-marks`; `CALCU59_PAPER_REPLIES=1` writes them; LIB-8 AC-39, M-39) |
 | `reference_runs_tests.cpp` | 1, Longer (`CalcU59ReferenceRuns`): returns at once without `CALCU59_REFERENCE_COMPARE` or `CALCU59_REFERENCE_RECORD` (the latter writes to `build/reference-runs/`, never into the references; M-34) |
 | `rom_lookup_tests.cpp` | 15 (LIB-12 AC-1, AC-4, AC-6, AC-8–10, AC-14, EC-2; M-24) |
-| `part_flows_tests.cpp` | 47: the product's flows on the app session (`SessionRig.hpp`, `PartRig`), ported in M-34 from 2.3.0's controller tests (C59-6 AC-1, AC-6, AC-11: 4 of them, M-25); the runner's three pacing tests went with `CooperativePacing` |
+| `part_flows_tests.cpp` | 51 (M-53: LIB-8 AC-8, AC-22, AC-29; LIB-10 AC-30, AC-35 on the run control): the product's flows on the app session (`SessionRig.hpp`, `PartRig`), ported in M-34 from 2.3.0's controller tests (C59-6 AC-1, AC-6, AC-11: 4 of them, M-25); the runner's three pacing tests went with `CooperativePacing` |
 | `shared_keys_tests.cpp` | 6: KEYSTROKES playback (`TIKeystrokePlayback`) over the typing engine (M-36; the key cases moved to `typing_tests.cpp`) |
 | `typing_tests.cpp` | 22 (LIB-5 AC-20–27, T59-0, the printer-timing exit check; M-36) |
-| `web_part_tests.cpp` | 5 (LIB-15 AC-16, AC-20, AC-22, EC-4; LIB-9 AC-23; M-34) |
+| `web_part_tests.cpp` | 6 (LIB-15 AC-16, AC-20, AC-22, EC-4; LIB-9 AC-23; M-34) |
 | `shared_debug_tests.cpp` | 14 |
 | `shared_formats_tests.cpp` | 20 (`settings_resolve` went with `SettingsKeys.hpp`, M-32) |
 | `shared_preset_stages_tests.cpp` | 7 |
 | `shared_settings_tests.cpp` | 7 (LIB-9 AC-19–22, AC-24, AC-25, AC-35; M-32) |
-| `shared_runtime_tests.cpp` | 15 (`runner_keeps_real_time` went with the threaded runner, M-33; the two batch-rule tests with `Pacing.hpp`, M-34; the session tests host the `EmulatorSession` on a test clock) |
+| `shared_runtime_tests.cpp` | 7 (`runner_keeps_real_time` went with the threaded runner, M-33; the two batch-rule tests with `Pacing.hpp`, M-34; the freeze and queued-step tests moved to `debugger_tests.cpp` onto the run control, M-53) |
 | `shared_state_applier_tests.cpp` | 8 |
-| `shared_tables_tests.cpp` | 7 |
-| `shared_trace_tests.cpp` | 2 |
+| `shared_tables_tests.cpp` | 7 (LIB-8 AC-30 `lib8_ac30_font_shape`, `lib8_ac30_feed_complete_and_cut_short_heights`, M-53) |
+| `pc100c_paper_tests.cpp` | 10 (LIB-8 AC-24–27 and the PC-100C's reference picture, moved from the library; M-53) |
+| `trace_tests.cpp` | 6 (LIB-10 AC-33 and the exit check of M-53; replaces `shared_trace_tests.cpp`, M-53) |
 
 ## Calc-U-1600
 

@@ -35,6 +35,11 @@ bool waitForScanLoop(PartRig& r) {
 
 bool cardIdle(PartRig& r) { return r.part().cardState() == CardState::NoCard; }
 
+// The run control of the part's session (LIB-10; the freeze until M-53).
+calcu::debugger::RunControl& rc(PartRig& r) { return r.part().debuggerPart()->runControl(); }
+using calcu::debugger::kCpu;
+using calcu::debugger::kProgram;
+
 const std::string kMem = "cards/ti58c.mem";
 
 } // namespace
@@ -44,7 +49,7 @@ TEST(part_loads_a_preset_for_another_model) {
     auto& c = r.part();
     c.loadStateFile(bytes("MODEL: TI-58\nREGISTERS:\n05 = 3.25\n"));
     CHECK(c.model() == Model::TI58);
-    CHECK(!c.emulator()->halted());
+    CHECK(!c.isFrozen());
     CHECK_EQ(testroms::mem(c.emulator()->access().machine()).readDataReg(5), 3.25);
     CHECK(r.errors().empty());
 }
@@ -63,14 +68,12 @@ TEST(part_reports_parse_errors_and_partition_errors) {
 TEST(part_load_while_frozen_ends_running_without_tracing) {
     PartRig r;
     auto& c = r.part();
-    c.freeze(FreezeOwner::Calculator);
-    CHECK(c.isFrozen());
-    CHECK(r.runUntil([&] { return !c.debug().cpuHistory().empty(); }, 3000ms));
+    rc(r).pause(kProgram);
+    CHECK(r.runUntil([&] { return c.isFrozen() && !c.debug().cpuHistory().empty(); }, 3000ms));
     c.loadStateFile(bytes("REGISTERS:\n01 = 7\n"));
     CHECK(!c.isFrozen());
-    CHECK(!c.emulator()->debugState().frozen);
-    CHECK(!c.emulator()->halted());
-    CHECK_EQ(testroms::dbg(c.emulator()->access().machine()).traceFlags(), static_cast<uint32_t>(TRACE_NONE));
+    r.run(20ms);
+    CHECK_EQ(testroms::hw(c.emulator()->access().machine()).traceFlags(), static_cast<uint32_t>(TRACE_NONE));
 }
 
 TEST(part_keystroke_controls_drive_the_gui) {
@@ -97,24 +100,26 @@ TEST(part_constant_memory_keeps_the_loaded_card) {
     CHECK(r.p.cards.count(kMem) && r.p.cards[kMem].find("KEEP ME") != std::string::npos);
     // Unchanged RAM: the debounced persist does not write again.
     const int writes = r.p.writes[kMem];
-    c.emulator()->setHalted(true);
-    c.emulator()->runQueuedSteps();
+    rc(r).pause(kCpu);
+    CHECK(r.runUntil([&] { return c.isFrozen(); }, 3000ms));
     r.run(700ms);
     CHECK_EQ(r.p.writes[kMem], writes);
 }
 
-TEST(part_model_switch_keeps_printer_and_log_resets_freeze) {
+// LIB-10 AC-35 (G11): a new machine disarms pause-on-start.
+TEST(lib10_ac35_part_model_switch_keeps_printer_and_log_resets_freeze) {
     PartRig r;
     auto& c = r.part();
     c.setPrinterConnected(false);
     c.dumpVars();
-    c.armPcChange();
-    CHECK(c.debugState().pcChangeArmed);
+    rc(r).pauseOnStart(kProgram);
+    CHECK(c.runState().armed == kProgram);
     CHECK(c.startMachine(Model::TI58));
     CHECK(!c.printerConnected());
     CHECK(testroms::moduleIn(c.emulator()->access().machine()) == "ML");
     CHECK_EQ(c.emulator()->access().machine().plugged().byPlace.size(), size_t{1});   // the module only
-    CHECK(!c.debugState().pcChangeArmed && !c.isFrozen());
+    r.run(20ms);
+    CHECK(!c.runState().armed && !c.isFrozen());
     CHECK(c.logText().find("──") != std::string::npos);  // the dump survived the switch
     CHECK(c.cardState() == CardState::NoCard);
 }
@@ -140,18 +145,21 @@ TEST(part_reset_keeps_the_memory_and_clean_reset_clears_it) {
 // 2.3.0 ran a plain Reset's reset routine with the run loop stopped, so only a
 // clean reset could be frozen at its first instruction. Since C59-1 (AC-6) both
 // return at once and the ROM's start-up runs in the run loop, so an armed
-// FREEZE ON START fires on either (reported with M-19: no ledger row yet).
-TEST(part_cpu_freeze_on_start_sees_reset_and_clean_reset) {
+// FREEZE ON START fires on either (ledger row 59-34; LIB-10 Q-1, user
+// 2026-11-16: it replaces AC-30's Reset clause for Calc-U-59). Since M-53 the
+// run control's pause-on-start cpu (TILevelRules).
+TEST(lib10_ac30_part_cpu_freeze_on_start_sees_reset_and_clean_reset) {
     PartRig r;
     auto& c = r.part();
     CHECK(waitForScanLoop(r));
     for (bool clean : {false, true}) {
-        c.armScanLoopExit();
-        r.run(50ms);  // the armed freeze sees the scan loop
+        rc(r).pauseOnStart(kCpu);
+        r.run(50ms);  // the armed start sees the scan loop
         if (clean) c.cleanResetMachine(); else c.resetMachine();
         CHECK(r.runUntil([&] { return c.isFrozen(); }, 3000ms));
-        CHECK(c.debugState().owner == FreezeOwner::Cpu);
-        c.resume();
+        CHECK(c.runState().owner == kCpu);
+        CHECK(c.runState().reason == calcu::debugger::RunState::Reason::PauseOnStart);
+        rc(r).resume();
         CHECK(waitForScanLoop(r));
     }
 }
@@ -164,11 +172,12 @@ TEST(part_bad_module_changes_nothing) {
     CHECK(r.errors().empty());   // not a ROM error: cuecards.txt lists no module ZZ (LIB-12 AC-10)
 }
 
-TEST(part_resume_before_the_frozen_view_drops_it) {
+// LIB-10 AC-35: a resume before the pause landed: no pause, no frozen view.
+TEST(lib10_ac35_part_resume_before_the_frozen_view_drops_it) {
     PartRig r;
     auto& c = r.part();
-    c.freeze(FreezeOwner::Cpu);
-    c.resume();  // before the frozen view arrives
+    rc(r).pause(kCpu);
+    rc(r).resume();  // before the pause lands
     r.run(200ms);  // the freeze job ran (it is queued before the run mark)
     const std::size_t mark = r.fe.log.size();
     r.run(50ms);
@@ -181,8 +190,8 @@ TEST(part_resume_before_the_frozen_view_drops_it) {
 TEST(part_events_of_a_replaced_machine_are_ignored) {
     PartRig r;
     auto& c = r.part();
-    c.freeze(FreezeOwner::Calculator);
-    c.emulator()->runQueuedSteps();  // the old machine's frozen view is queued
+    rc(r).pause(kProgram);
+    r.run(20ms);
     CHECK(c.startMachine(Model::TI58));
     r.run(20ms);
     CHECK(!c.isFrozen());
@@ -201,14 +210,14 @@ TEST(part_asm_overlay) {
     c.loadAsm(std::string("HEX:\n0x0A01 0x0A01\n"), "a.asm");
     CHECK_EQ(c.asmStatus(), std::string("Loaded 2 word(s) at 0x1800."));
     CHECK(waitForScanLoop(r));
-    c.armScanLoopExit();
+    rc(r).pauseOnStart(kCpu);
     c.runAsm();
     CHECK(c.asmActive());
-    CHECK(c.isFrozen() && c.debugState().owner == FreezeOwner::Cpu);
-    CHECK(c.emulator()->halted());
+    CHECK(c.isFrozen() && c.runState().owner == kCpu);
+    r.run(20ms);
     CHECK(!c.debug().cpuHistory().empty());
     c.clearAsm();
-    CHECK(!c.asmActive() && !c.isFrozen() && !c.emulator()->halted());
+    CHECK(!c.asmActive() && !c.isFrozen());
     CHECK_EQ(c.asmStatus(), std::string("ASM overlay cleared."));
 }
 
@@ -247,7 +256,7 @@ TEST(c59_6_ac6_trace_kept_by_app_session) {
     auto& c = r.part();
     CHECK(!c.printerTrace());                       // off when the product starts
     CHECK(traceSwitch(c) == std::optional<bool>(false));
-    c.togglePrinterTrace();
+    c.setPrinterControl("TRACE", true);
     CHECK(c.printerTrace() && traceSwitch(c) == std::optional<bool>(true));
     c.resetMachine();
     CHECK(c.printerTrace() && traceSwitch(c) == std::optional<bool>(true));
@@ -267,7 +276,7 @@ TEST(c59_6_ac6_trace_kept_by_app_session) {
 TEST(c59_6_ac6_state_file_sets_trace_off_unless_it_sets_it) {
     PartRig r;
     auto& c = r.part();
-    c.togglePrinterTrace();
+    c.setPrinterControl("TRACE", true);
     CHECK(c.printerTrace());
     c.loadStateFile(bytes("REGISTERS:\n01 = 1\n"));
     CHECK(!c.printerTrace() && traceSwitch(c) == std::optional<bool>(false));
@@ -276,23 +285,36 @@ TEST(c59_6_ac6_state_file_sets_trace_off_unless_it_sets_it) {
     CHECK(traceSwitch(c) == std::optional<bool>(true));
 }
 
-TEST(c59_6_ac1_paper_kept_across_detach_and_attach) {
+// LIB-8 AC-29 (C59-6 AC-1): the PC-100C's paper stays the PaperPart's while
+// it is detached, and it is back, printed on below, when it is attached
+// again on another model (was c59_6_ac1_paper_kept_across_detach_and_attach).
+TEST(lib8_ac29_paper_back_on_attach_on_any_model) {
     PartRig r;
     auto& c = r.part();
     CHECK(c.printerConnected());
     c.loadStateFile(bytes("KEYSTROKES:\n82 21 94\n"));   // 1 2nd Prt
-    CHECK(r.runUntil([&] { return !c.printerLines().empty() && !c.keystrokesPlaying(); }, 5000ms));
-    const auto lines = c.printerLines();
+    CHECK(r.runUntil([&] { return !r.printedText().empty() && !c.keystrokesPlaying(); }, 5000ms));
+    const auto lines = r.printedText();
     CHECK(lines.size() == 1 && lines[0] == "          1.        ");
+    r.run(100ms);
+    const calcu::paper::Reach reach = r.pc100cPaper()->reach();
+    CHECK_EQ(reach.to, pc100cpaper::kLine);
     c.setPrinterConnected(false);
     CHECK(!c.printerConnected());
     CHECK(testroms::paper(c.emulator()->access().machine()) == nullptr);
-    CHECK(c.printerLines() == lines);
+    r.run(20ms);
+    CHECK(r.printedText() == lines);
+    CHECK(c.startMachine(Model::TI58C));
     c.setPrinterConnected(true);
     CHECK(testroms::paper(c.emulator()->access().machine()) != nullptr);
-    CHECK(c.printerLines() == lines);              // the paper is back with the PC-100C
-    CHECK(c.startMachine(Model::TI58));
-    CHECK(c.printerLines() == lines);              // and through a model switch
+    CHECK(r.printedText() == lines);              // the paper is back with the PC-100C
+    CHECK(waitForScanLoop(r));
+    c.loadStateFile(bytes("KEYSTROKES:\n83 21 94\n"));   // 2 2nd Prt; no PRINTER: line, the paper stays
+    CHECK(r.runUntil([&] { return r.printedText().size() == 2 && !c.keystrokesPlaying(); }, 5000ms));
+    r.run(100ms);
+    const auto& text = r.pc100cPaper()->text();
+    CHECK(text.size() == 2 && text[1].text == "          2.        ");
+    CHECK_EQ(text[1].at.y, pc100cpaper::kLine);   // printed on below the first line
 }
 
 TEST(c59_6_ac11_change_module_power_cycles) {
@@ -446,7 +468,7 @@ TEST(part_card_file_written_then_inserted) {
 TEST(part_fast_mode_entry_then_card_prints_the_table) {
     PartRig r;
     r.load(testroms::readFile("examples/historic/characters-fastmode.ti59").value());
-    CHECK(r.runUntil([&] { return r.part().printerLines().size() >= 8; }, 120s));
+    CHECK(r.runUntil([&] { return r.printedText().size() >= 8; }, 120s));
     CHECK(r.errors().empty());
     CHECK(testroms::mem(r.part().emulator()->machine()).readProgramStep(5) == 36);  // from the card, not the load
 }
@@ -812,3 +834,63 @@ TEST(dropped_preset_loads_as_the_button_does) {
     CHECK(!r.errors().empty());  // reported, as a failed Open is
 }
 
+
+// ── LIB-8's Calc-U-59 column in the app session (design §11.6, E8-6, E8-7) ──
+
+// AC-29: detached, the panel's owner is none (P-E1: `c59.printer` says
+// not connected) and the papers topic still lists the PC-100C's paper, empty
+// of nothing it had.
+TEST(lib8_ac29_detached_panel_owner_empty) {
+    PartRig r;
+    auto& c = r.part();
+    c.loadStateFile(bytes("KEYSTROKES:\n82 21 94\n"));   // 1 2nd Prt
+    CHECK(r.runUntil([&] { return !r.printedText().empty() && !c.keystrokesPlaying(); }, 5000ms));
+    c.setPrinterConnected(false);
+    r.run(50ms);
+    const auto* printer = r.state<TIPrinterState>(topics::kPrinter);
+    CHECK(printer && !printer->connected);
+    const auto* papers = r.state<calcu::paper::PaperList>(calcu::paper::kPapersTopic);
+    CHECK(papers && papers->papers.size() == 1 && papers->papers[0].owner == "PC-100C");
+    CHECK_EQ(r.printedText().size(), std::size_t{1});   // kept while detached
+    // Without a name the paper commands mean the printer plugged in: none (EC-8).
+    const auto reply = r.send(calcu::paper::kPaperCutCommand, calcu::sessions::Value::object({{"copy", false}}));
+    CHECK(!reply.done && reply.reason == calcu::paper::kNoPrinterPlugged);
+}
+
+// AC-8 (P-E4): a preset that names the printer starts with empty paper.
+TEST(lib8_ac8_preset_naming_printer_starts_empty) {
+    PartRig r;
+    auto& c = r.part();
+    c.loadStateFile(bytes("KEYSTROKES:\n82 21 94\n"));
+    CHECK(r.runUntil([&] { return !r.printedText().empty() && !c.keystrokesPlaying(); }, 5000ms));
+    c.loadStateFile(bytes("PRINTER: on\nREGISTERS:\n01 = 1\n"));
+    r.run(50ms);
+    CHECK(r.printedText().empty());
+    CHECK(r.pc100cPaper()->empty());
+}
+
+// AC-8 (D-29): a 2.3.0 preset without a PRINTER: line keeps the paper (ledger 59-48).
+TEST(lib8_ac8_preset_without_printer_line_keeps_paper) {
+    PartRig r;
+    auto& c = r.part();
+    c.loadStateFile(bytes("KEYSTROKES:\n82 21 94\n"));
+    CHECK(r.runUntil([&] { return !r.printedText().empty() && !c.keystrokesPlaying(); }, 5000ms));
+    c.loadStateFile(bytes("REGISTERS:\n01 = 1\n"));
+    r.run(50ms);
+    CHECK_EQ(r.printedText().size(), std::size_t{1});
+}
+
+// AC-22 (P-E5): KEYSTROKES CutPaper: is the step cut-paper: the paper of
+// the printer plugged in, without a copy.
+TEST(lib8_ac22_keystrokes_cut_paper) {
+    PartRig r;
+    auto& c = r.part();
+    c.loadStateFile(bytes("KEYSTROKES:\n82 21 94\nWait: 1s\nCutPaper:\n83 21 94\nWait: 1s\n"));
+    CHECK(r.runUntil([&] { return c.keystrokesPlaying(); }, 2000ms));
+    CHECK(r.runUntil([&] { return !c.keystrokesPlaying(); }, 8000ms));
+    r.run(300ms);
+    CHECK(r.errors().empty());
+    const auto text = r.printedText();
+    CHECK(text.size() == 1 && text[0] == "          2.        ");
+    CHECK_EQ(r.pc100cPaper()->text()[0].at.y, calcu::paper::Coord{0});   // y counts from the cut
+}

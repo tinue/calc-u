@@ -1,5 +1,7 @@
-// Shared/ runtime: armed freezes, C-indicator smoothing, the EmulatorSession's
-// job queue and a live EmulatorSession with KEYSTROKES playback. 2.3.0's
+// Shared/ runtime: C-indicator smoothing, the display as the eye sees it and
+// a live session with KEYSTROKES playback. The armed freezes, the queued
+// steps and the trace consumers went with the freeze in M-53: they are the
+// run control's, debugger_tests.cpp (LIB-10 59). 2.3.0's
 // batch rules (Pacing.hpp: cycle-weighted batches, the sleep rule) went with
 // CooperativePacing in M-34; the library's pacer has its own tests (LIB-17).
 
@@ -15,128 +17,6 @@
 
 using namespace cu59;
 using namespace std::chrono_literals;
-
-namespace {
-
-// The test is the session's host, as the library's machine session is: at
-// 60 Hz on a clock of its own it advances the machine by one 20 ms slice
-// while it runs (advanceHosted, sliceEnded), then pumps the session.
-std::chrono::steady_clock::time_point g_now = std::chrono::steady_clock::time_point{} + std::chrono::hours(1);
-
-void hostCall(EmulatorSession& s) {
-    g_now += std::chrono::microseconds(16'667);
-    if (!s.halted()) {
-        bool stopped = false;
-        s.advanceHosted(s.access().machine().descriptor().tickRate / 50, stopped);
-        if (!stopped) s.sliceEnded(g_now);
-    }
-    s.pump(g_now);
-}
-
-template <class F> bool waitFor(EmulatorSession& s, F cond, std::chrono::milliseconds timeout) {
-    const auto end = g_now + timeout;
-    while (g_now < end) {
-        if (cond()) return true;
-        hostCall(s);
-    }
-    return cond();
-}
-
-// One 20 ms advance of a bare machine with `freeze` as its run-control hook
-// (what EmulatorSession::advanceHosted does): the owner of a freeze that fired.
-std::optional<FreezeOwner> slice(calcu::machine::Machine& m, FreezeController& freeze, uint64_t ticks = 0) {
-    m.advance(ticks ? ticks : m.descriptor().tickRate / 50);
-    if (testroms::dbg(m).takeStop() == TIStop::Observer) return freeze.takeFired().value_or(FreezeOwner::Cpu);
-    return std::nullopt;
-}
-template <class Cond> std::optional<FreezeOwner> slices(calcu::machine::Machine& m, FreezeController& f, int n, Cond&& keep) {
-    std::optional<FreezeOwner> r;
-    for (int i = 0; i < n && !r && keep(); ++i) r = slice(m, f);
-    return r;
-}
-
-struct RecordingListener : EmulatorSession::Listener {
-    int freezes = 0, playbackDone = 0;
-    bool frozenWhenFired = false;
-    EmulatorSession* session = nullptr;
-    std::vector<std::string> logs;
-    void frozenViewReady(uint64_t, FrozenViewReason reason) override {
-        // The freeze is applied before any listener runs.
-        if (reason == FrozenViewReason::FreezeFired && session) frozenWhenFired = session->frozen();
-        ++freezes;
-    }
-    void playbackFinished() override { ++playbackDone; }
-    void logLine(const std::string& l) override { logs.push_back(l); }
-};
-
-} // namespace
-
-// The idle/key-detect range of the core (TIAdapters.hpp).
-static bool inIdle(Model model, uint16_t pc) {
-    const auto r = idleAndKeyDetectRange(modelId(model));
-    return (pc >= r[0] && pc <= r[1]) || (pc >= r[2] && pc <= r[3]);
-}
-
-TEST(freeze_on_scan_loop_exit_fires_on_key) {
-    auto m = testroms::makeMachine(Model::TI59);
-    testroms::runToScanLoop(*m, Model::TI59);
-    FreezeController freeze;
-    testroms::dbg(*m).setRunControl(&freeze);
-    freeze.armScanLoopExit(testroms::dbg(*m).pc());
-    CHECK(freeze.scanLoopExitArmed());
-    CHECK(!slice(*m, freeze));  // still scanning
-    testroms::press(*m, 83);
-    auto r = slices(*m, freeze, 50, [] { return true; });
-    CHECK(r == std::optional<FreezeOwner>(FreezeOwner::Cpu));
-    CHECK(!freeze.scanLoopExitArmed());
-    CHECK(!m->isKeyReady());
-}
-
-// The TI-58's idle pass detours through the card veto (0x0459–0x045B, digit 10
-// open, D7-KR asserted): it is part of the scan loop, so FREEZE ON START waits
-// for a key (2.3.0's full-speed throttle, which slept there too, is gone with
-// its batches; the library's pacer paces the scan loop by the readiness of
-// typing support, LIB-17 AC-16).
-TEST(ti58_card_veto_is_part_of_the_scan_loop) {
-    auto m = testroms::makeMachine(Model::TI58);
-    CHECK(testroms::runToScanLoop(*m, Model::TI58));
-    bool sawVeto = false, left = false;
-    for (int i = 0; i < 20'000; ++i) {
-        testroms::dbg(*m).step();
-        sawVeto = sawVeto || testroms::dbg(*m).pc() == kCardVetoLo;
-        left = left || !m->isKeyReady();
-    }
-    CHECK(sawVeto && !left);
-    CHECK(inIdle(Model::TI58, kCardVetoLo));
-    CHECK(!romRanges(MachineVariant::TI59).scanLoop.contains(kCardVetoLo));  // TI-59: card inserted
-    FreezeController freeze;
-    testroms::dbg(*m).setRunControl(&freeze);
-    freeze.armScanLoopExit(testroms::dbg(*m).pc());
-    auto r = slices(*m, freeze, 50, [] { return true; });
-    CHECK(!r);
-    testroms::press(*m, 83);
-    r = slices(*m, freeze, 50, [] { return true; });
-    CHECK(r.has_value());
-}
-
-TEST(freeze_on_pc_change_and_mutual_exclusion) {
-    auto m = testroms::makeMachine(Model::TI59);
-    testroms::runToScanLoop(*m, Model::TI59);
-    const uint8_t prog[] = {76, 11, 85, 1, 95, 61, 0, 0};  // LBL A + 1 = GTO 000
-    testroms::mem(*m).writeProgram(prog, sizeof prog);
-    FreezeController freeze;
-    testroms::dbg(*m).setRunControl(&freeze);
-    freeze.armScanLoopExit(testroms::dbg(*m).pc());
-    freeze.armPcChange();
-    CHECK(freeze.pcChangeArmed() && !freeze.scanLoopExitArmed());
-    auto r = slices(*m, freeze, 20, [] { return true; });
-    CHECK(!r);  // idle: the calculator PC doesn't move
-    testroms::press(*m, 11);  // A: runs the program
-    r = slices(*m, freeze, 50, [] { return true; });
-    testroms::release(*m, 11);
-    CHECK(r == std::optional<FreezeOwner>(FreezeOwner::Calculator));
-    CHECK(testroms::dbg(*m).lastStepBoundary().count > 0 && testroms::dbg(*m).lastStepBoundary().cpu.pc == testroms::dbg(*m).pc());  // where STEP stops
-}
 
 TEST(calc_indicator_smoothing) {
     FrameSampler s;
@@ -208,7 +88,7 @@ struct PovRig {
         m->readDisplay();
     }
     FrameUpdate frame() {
-        while (acc < hz / 60) acc += (testroms::dbg(*m).step() & 0xFFu);
+        while (acc < hz / 60) acc += static_cast<double>(m->advance(1) / 32);   // one instruction: its weight
         acc -= hz / 60;
         return sampler.tick(*m, 0, false);
     }
@@ -289,29 +169,6 @@ TEST(display_pov_error_blink_is_steady) {
     }
 }
 
-// The debugger's steps wait for the host call: a freeze halts at once and
-// steps to the keycode boundary at the next pump(); a flow that changes the
-// machine runs a queued step first (runQueuedSteps).
-TEST(session_queued_steps_run_after_the_host_call) {
-    RecordingListener listener;
-    EmulatorSession session(Model::TI59, *testroms::romSet(), MachinePeripherals{}, listener);
-    CHECK(session.halted());   // a machine starts halted
-    session.setFullSpeed(true);
-    session.setHalted(false);
-    CHECK(waitFor(session, [&] { return session.access().machine().isKeyReady(); }, 5000ms));
-    session.freeze(FreezeOwner::Calculator);
-    CHECK(session.halted());
-    CHECK_EQ(listener.freezes, 0);   // queued
-    session.runQueuedSteps();
-    CHECK_EQ(listener.freezes, 1);
-    hostCall(session);
-    CHECK_EQ(listener.freezes, 1);   // ran once
-    session.stepKeycode();
-    hostCall(session);               // the pump runs it
-    CHECK_EQ(listener.freezes, 2);
-    CHECK(session.halted());
-}
-
 // KEYSTROKES need the typing engine for their keys (LIB-5): on the
 // product's session, as a frontend hosts it.
 TEST(session_plays_keystrokes_in_real_time) {
@@ -327,85 +184,3 @@ TEST(session_plays_keystrokes_in_real_time) {
     CHECK(!r.part().fullSpeed());
 }
 
-TEST(session_freeze_fires_through_listener) {
-    RecordingListener listener;
-    EmulatorSession session(Model::TI59, *testroms::romSet(), MachinePeripherals{}, listener);
-    listener.session = &session;
-    session.setFullSpeed(true);
-    session.setHalted(false);
-    CHECK(waitFor(session, [&] { return session.access().machine().isKeyReady(); }, 5000ms));
-    session.armScanLoopExit();
-    CHECK(session.debugState().scanLoopExitArmed);
-    CHECK(testroms::dbg(session.access().machine()).traceFlags() != TRACE_NONE);  // an armed freeze needs the trace ring
-    session.access().machine().keyDown(calcu::machine::KeyId{"2"});   // raw: this tests the freeze, not typing
-    CHECK(waitFor(session, [&] { return listener.freezes == 1; }, 2000ms));
-    CHECK(listener.frozenWhenFired);
-    DebugState s = session.debugState();
-    CHECK(s.frozen && s.owner == FreezeOwner::Cpu && !s.scanLoopExitArmed);
-    CHECK(session.halted());
-    session.access().machine().keyUp(calcu::machine::KeyId{"2"});
-    session.resume();
-    CHECK(!session.debugState().frozen && !session.halted());
-    CHECK_EQ(testroms::dbg(session.access().machine()).traceFlags(), static_cast<uint32_t>(TRACE_NONE));
-    session.setHalted(true);
-}
-
-TEST(session_steps_only_when_frozen_and_arms_exclude) {
-    RecordingListener listener;
-    EmulatorSession session(Model::TI59, *testroms::romSet(), MachinePeripherals{}, listener);
-    session.stepKeycode();  // not frozen: nothing queued
-    session.runQueuedSteps();
-    CHECK_EQ(listener.freezes, 0);
-    session.armPcChange();
-    session.armScanLoopExit();
-    CHECK(session.debugState().scanLoopExitArmed && !session.debugState().pcChangeArmed);
-    session.armPcChange();
-    CHECK(!session.debugState().scanLoopExitArmed && session.debugState().pcChangeArmed);
-    session.setHalted(false);
-    session.freeze(FreezeOwner::Calculator);
-    CHECK(waitFor(session, [&] { return listener.freezes == 1; }, 2000ms));
-    DebugState s = session.debugState();
-    CHECK(s.frozen && s.owner == FreezeOwner::Calculator && !s.pcChangeArmed);
-    session.stepInstruction();
-    session.stepKeycode();
-    CHECK(waitFor(session, [&] { return listener.freezes == 3; }, 2000ms));
-    CHECK(session.halted());
-    uint64_t before = session.debugState().generation;
-    session.resume();
-    CHECK(session.debugState().generation != before);  // views built for the freeze are now stale
-    session.setHalted(true);
-}
-
-TEST(trace_flags_for_consumers) {
-    CHECK_EQ(traceFlagsFor({}), static_cast<uint32_t>(TRACE_NONE));
-    TraceConsumers c;
-    c.frozen = true;
-    CHECK_EQ(traceFlagsFor(c), static_cast<uint32_t>(TRACE_PC | TRACE_REGS_FULL));
-}
-
-// C59-1 design T11: a slice is one Machine::advance() with FreezeController as
-// the run-control hook. FREEZE ON START lands on the same instruction as
-// 2.3.0's runBatch, which stepped one instruction at a time and asked
-// FreezeController after each.
-TEST(c59_1_runbatch_stops_at_freeze_inside_advance) {
-    auto stepped = testroms::makeMachine(Model::TI59), batched = testroms::makeMachine(Model::TI59);
-    for (auto* m : {stepped.get(), batched.get()}) testroms::runToScanLoop(*m, Model::TI59);
-    // 2.3.0's way: one instruction, then checkStep.
-    FreezeController one;
-    one.armScanLoopExit(testroms::dbg(*stepped).pc());
-    testroms::press(*stepped, 83);
-    for (int i = 0; i < 100'000; ++i) {
-        const uint32_t r = testroms::dbg(*stepped).step();
-        const uint16_t pc = testroms::dbg(*stepped).pc();
-        if (one.checkStep(pc, (r & 0x2000'0000u) != 0, romRanges(MachineVariant::TI59).scanLoop.contains(pc))) break;
-    }
-    // Now: slices of one advance each.
-    FreezeController freeze;
-    testroms::dbg(*batched).setRunControl(&freeze);
-    freeze.armScanLoopExit(testroms::dbg(*batched).pc());
-    testroms::press(*batched, 83);
-    auto r = slices(*batched, freeze, 50, [] { return true; });
-    CHECK(r == std::optional<FreezeOwner>(FreezeOwner::Cpu));
-    CHECK_EQ(batched->tickCount(), stepped->tickCount());
-    CHECK_EQ(testroms::dbg(*batched).pc(), testroms::dbg(*stepped).pc());
-}

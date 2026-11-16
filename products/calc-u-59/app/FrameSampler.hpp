@@ -1,12 +1,12 @@
 #pragma once
 #include "../core/TIAdapters.hpp"
-#include "../core/TIPrinterTypes.hpp"
 #include "DisplayPov.hpp"
 #include "machine/Machine.hpp"
 #include <string>
 #include <vector>
 
-// What the UI picks up from the machine on each 60 Hz frame: printer output,
+// What the UI picks up from the machine on each 60 Hz frame (the paper is
+// LIB-8's PaperPart since M-53):
 // core log messages, whether the card reader auto-ejected, and the display —
 // each position's last glyph with its brightness as the eye sees it
 // (DisplayPov) — plus the smoothed "C" (calculating) indicator.
@@ -26,8 +26,6 @@ struct FrameUpdate {
     calcu::machine::DisplayOutput display;  ///< the machine's display output (C59-1 AC-13)
     LedFrame led;
     double calcIndicatorOpacity = 0;      ///< 0–1, see FrameSampler
-    std::vector<std::string> printerLines;
-    std::vector<PrinterCodeLine> printerCodeLines;
     std::vector<std::string> logLines;    ///< core debug messages at or below debugLevel
     /// The card was passing and the core ejected it (at CRD_OFF, as the real
     /// card leaves the reader after each pass): the frontend saves written data.

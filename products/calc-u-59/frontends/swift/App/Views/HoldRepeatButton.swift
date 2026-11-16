@@ -2,7 +2,9 @@ import SwiftUI
 
 /// A monospaced text button that fires its action once on tap and then
 /// auto-repeats while held down. Used by the debug headers' STEP button so
-/// the user can single-step by tapping or hold to step continuously.
+/// the user can single-step by tapping or hold to step continuously: every
+/// 250 ms, until release or until step cannot be used (LIB-10 AC-18,
+/// calcu::debugger::StepRepeat).
 struct HoldRepeatButton: View {
     let title: String
     let color: Color
@@ -43,6 +45,7 @@ struct HoldRepeatButton: View {
                     }
             )
             .onDisappear { stop() }
+            .onChange(of: enabled) { if !enabled { stop() } }
     }
 
     private func stop() {

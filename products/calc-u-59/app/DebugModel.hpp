@@ -17,6 +17,13 @@
 
 namespace cu59 {
 
+/// Why a paused machine is shown: a pause or a start that fired, or a
+/// `cpu` step (which leaves the CALCULATOR tab as it was).
+enum class FrozenViewReason {
+    Freeze,           ///< a pause landed, or an armed start fired
+    StepInstruction,  ///< a step of the level cpu
+};
+
 class DebugModel {
 public:
     /// What a call changed, for the panels to redraw.

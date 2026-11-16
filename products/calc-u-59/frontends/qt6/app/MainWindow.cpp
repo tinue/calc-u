@@ -7,7 +7,7 @@
 #include "ControlBar.hpp"
 #include "EmulatorController.hpp"
 #include "KeyboardWidget.hpp"
-#include "PrinterWidget.hpp"
+#include "PaperPane.hpp"
 #include "SettingsDialog.hpp"
 #include "debug/DebugPanel.hpp"
 #include <QCloseEvent>
@@ -27,7 +27,7 @@ MainWindow::MainWindow(EmulatorController& controller, QWidget* parent) : QMainW
     m_splitter = new QSplitter(Qt::Horizontal, this);
     m_splitter->setChildrenCollapsible(false);
     auto* calculator = new CalculatorPanel(controller, m_splitter);
-    auto* printer = new PrinterWidget(controller, m_splitter);
+    auto* printer = new PaperPane(controller, m_splitter);   // LIB-8: the library's paper panel (M-53)
     auto* debug = new DebugPanel(controller, m_splitter);
     m_splitter->addWidget(calculator);
     m_splitter->addWidget(printer);

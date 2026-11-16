@@ -14,7 +14,8 @@
 #include "../../app/ProductRoms.hpp"
 #include "../../core/TIAdapters.hpp"
 #include "../../core/PC100C.hpp"
-#include "../../core/PrinterOutput.hpp"
+#include "../../core/TIMachineTesting.hpp"   // LIB-8 P-E3: the PC-100C's code lines (until M-59)
+#include "paper/Paper.hpp"
 #include "../../core/TICatalogue.hpp"
 #include "peripherals/Controls.hpp"
 #include "machine/Machine.hpp"
@@ -60,14 +61,26 @@ struct Handle {
     std::string romsDir;
     std::shared_ptr<const calcu::roms::RomSet> roms;
     std::string error;   // describe() of a failed lookup (LIB-12 AC-7)
+    // The PC-100C's paper (LIB-8 59, M-53): its text layer, and the lines taken.
+    std::unique_ptr<calcu::paper::Paper> paper;
+    size_t linesTaken = 0;
 };
 Machine& M(void* h) { return *static_cast<Handle*>(h)->machine; }
-TIDebugTargetAdapter& debug(void* h) { return *debugTargetOf(M(h)); }
+TIDebugPanelAdapter& debug(void* h) { return *debugPanelOf(M(h)); }
 TIMemoryAdapter& memory(void* h) { return *memoryOf(M(h)); }
 // The PC-100C and the module in their places (C59-6, design §7): the
-// capabilities while a PC-100C is plugged in.
-PrinterOutput* paper(void* h) {
-    return calcu::machine::capabilityAs<PrinterOutput>(M(h), calcu::machine::CapabilityId{"printer/c59.printer-output"});
+// capabilities while a PC-100C is plugged in. Its paper output is bound to
+// the handle's Paper whenever a new one is there (LIB-8 AC-24).
+calcu::paper::Paper& paper(void* h) {
+    Handle& hd = *static_cast<Handle*>(h);
+    if (!hd.paper) hd.paper = std::make_unique<calcu::paper::Paper>(pc100cpaper::description());
+    auto* out = calcu::machine::capabilityAs<calcu::paper::PaperOutput>(M(h), calcu::machine::CapabilityId{"printer/paper-output"});
+    if (!out) hd.paper->release();
+    else if (out->connected() != hd.paper.get()) {
+        hd.paper->release();
+        hd.paper->bind(out);
+    }
+    return *hd.paper;
 }
 calcu::peripherals::Controls* printerControls(void* h) {
     return calcu::machine::capabilityAs<calcu::peripherals::Controls>(M(h), calcu::machine::CapabilityId{"printer/controls"});
@@ -134,7 +147,11 @@ int h_load_model_roms(void* hv, int model, const char* romsDir) {
     h->model = static_cast<cu59::Model>(model);
     // As 2.3.0's core started: the PC-100C plugged in, the slot empty; the
     // caller plugs a module with h_load_module, the printer with h_printer.
+    h->paper.reset();   // before the old machine goes: its capability with it
+    h->linesTaken = 0;
     h->machine = cu59::buildMachine(h->model, *h->roms);
+    TIMachineTesting::printedCodeLines(static_cast<TIMachine&>(*h->machine));   // the record on (P-E3)
+    paper(h);   // bound from the start, as 2.3.0 kept every line
     return 0;
 }
 
@@ -171,7 +188,8 @@ int h_key_up(void* h, const char* name) {
 // The PC-100C attached or detached (no power cycle here: the caller's); its
 // TRACE switch and PRINT/ADV keys through its controls (C59-6 AC-5).
 void h_printer(void* h, int connected) {
-    const bool there = paper(h) != nullptr;
+    paper(h);   // what was printed before a detach stays on the handle's paper
+    const bool there = printerControls(h) != nullptr;
     if (connected && !there) M(h).attach(cu59::printerRequest(false), tiCatalogue());
     if (!connected && there) M(h).detach(calcu::machine::PlacePath{{kTIPrinterPlace}}, kPC100C, tiCatalogue());
 }
@@ -194,7 +212,7 @@ uint64_t h_elapsed(void* h) { return M(h).tickCount() / 32; }
 int h_record(void* h, HRec* out, int n, int stopPC) {
     for (int i = 0; i < n; ++i) {
         CpuFrame pre = debug(h).snapshotCPU();
-        int w = static_cast<int>(debug(h).step() & 0xFF);
+        int w = static_cast<int>(M(h).advance(1) / 32);   // one instruction: its weight × 32 ticks
         CpuFrame post = debug(h).snapshotCPU();
         fill(out[i], pre.pc, pre.opcode, post, w);
         if (stopPC >= 0 && post.pc == stopPC) return i + 1;
@@ -244,8 +262,10 @@ int  h_card_waiting(void* h) { return cards(h).isWaitingForCard() ? 1 : 0; }
 // Printer output lines, joined with '\n'. Returns bytes written (truncated to cap).
 int h_printer_lines(void* h, char* out, int cap) {
     std::string s;
-    if (auto* p = paper(h))
-        for (auto& l : p->takeLines()) { s += l; s += '\n'; }
+    calcu::paper::Paper& p = paper(h);
+    Handle& hd = *static_cast<Handle*>(h);
+    for (size_t i = hd.linesTaken; i < p.text().size(); ++i) { s += p.text()[i].text; s += '\n'; }
+    hd.linesTaken = p.text().size();
     int n = static_cast<int>(s.size()) < cap ? static_cast<int>(s.size()) : cap;
     memcpy(out, s.data(), static_cast<size_t>(n));
     return n;
@@ -258,8 +278,7 @@ int h_printer_lines(void* h, char* out, int cap) {
 // written; the queue is drained, so lines beyond cap are lost.
 int h_printer_code_lines(void* h, uint8_t* out, int cap) {
     int n = 0;
-    std::vector<PrinterCodeLine> lines;
-    if (auto* p = paper(h)) lines = p->takeCodeLines();
+    std::vector<PC100C::CodeLine> lines = TIMachineTesting::printedCodeLines(static_cast<TIMachine&>(M(h)));
     for (auto& l : lines) {
         if (n == cap) break;
         memcpy(out + 23 * n, l.codes.data(), 20);
@@ -272,7 +291,7 @@ int h_printer_code_lines(void* h, uint8_t* out, int cap) {
 }
 
 int h_disasm(uint16_t pc, uint16_t op, char* out, int cap) {
-    std::string s = TIDebugTargetAdapter::disassemble(pc, op);
+    std::string s = TIDebugging::disassemble(pc, op);
     int n = static_cast<int>(s.size()) < cap - 1 ? static_cast<int>(s.size()) : cap - 1;
     memcpy(out, s.data(), static_cast<size_t>(n));
     out[n] = 0;

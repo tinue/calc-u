@@ -34,12 +34,14 @@ set(SHARED_ROOT ${CMAKE_CURRENT_SOURCE_DIR}/app)
 # State ROM module as peripherals (C59-6).
 add_library(calcu59_core STATIC
   ${CORE_ROOT}/PC100C.cpp
+  ${CORE_ROOT}/PC100CPaper.cpp
   ${CORE_ROOT}/SolidStateRomModule.cpp
   ${CORE_ROOT}/TI59Machine.cpp
   ${CORE_ROOT}/TMC0501.cpp
   ${CORE_ROOT}/ROM.cpp
   ${CORE_ROOT}/RAM.cpp
   ${CORE_ROOT}/TIAdapters.cpp
+  ${CORE_ROOT}/TIDebugging.cpp
   ${CORE_ROOT}/TICatalogue.cpp
   ${CORE_ROOT}/TIKeys.cpp
   ${CORE_ROOT}/TIMachine.cpp

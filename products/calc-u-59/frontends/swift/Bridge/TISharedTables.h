@@ -4,7 +4,8 @@
 NS_ASSUME_NONNULL_BEGIN
 
 /// Swift face of the Shared/ data tables (7-segment
-/// patterns, printer font, canvas/key layout, matrix codes). Type
+/// patterns, canvas/key layout, matrix codes; the printer font went to the
+/// core with M-53: the paper comes as dots). Type
 /// translation only — the tables and rules live in Shared/.
 @interface TISharedTables : NSObject
 
@@ -13,10 +14,6 @@ NS_ASSUME_NONNULL_BEGIN
 + (uint8_t)ledCellSegmentsAt:(NSInteger)index glyph:(uint8_t)glyph level:(uint8_t)level
                  calcOpacity:(double)calcOpacity opacity:(double *)opacity
     NS_SWIFT_NAME(ledCell(index:glyph:level:calcOpacity:opacity:));
-
-// ── PC-100C printer font (Shared/PrinterFont.hpp) ───────────────────────────
-/// Row 0–6 of a 6-bit character code: bit 4 = leftmost column.
-+ (uint8_t)printerFontRowForCode:(uint8_t)code row:(NSInteger)row;
 
 // ── Canvas / key layout (Shared/KeyboardLayout.hpp) ─────────────────────────
 @property (class, readonly) CGFloat canvasAspect;

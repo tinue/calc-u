@@ -151,6 +151,8 @@ public:
 
     /// Read a ROM keycode at address 0–383.
     uint8_t readROMKeycode(int addr) const;
+    /// A 13-bit word of the ROM (with the overlay range) as the CPU reads it (LIB-10 AC-28).
+    uint16_t readROMWord(uint16_t addr) const;
 
     /// Capture a snapshot of all CPU registers at the current instant.
     CpuFrame snapshotCPU() const;

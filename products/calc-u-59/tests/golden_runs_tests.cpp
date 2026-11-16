@@ -11,7 +11,10 @@
 // design §8) the module and the PC-100C are peripherals in their places:
 // `module` and `printer` before the first command go into the build request
 // (no power cycle is added), `trace`, `paper` and `print` are the PC-100C's
-// controls, and the printed lines come from its `c59.printer-output`.
+// controls. Since M-53 (LIB-8) the `print` lines are the text layer of a
+// calcu::paper::Paper bound to its `printer/paper-output` capability
+// (testroms::paperTap), and the `dots` lines its code lines
+// (TIMachineTesting::printedCodeLines, adapter P-E3); both as before.
 //
 // Each tests/golden-runs/<name>.run is a script; <name>.golden is what the
 // core did. A golden "display" line holds 2.3.0's control and digit nibbles;
@@ -57,6 +60,9 @@
 #include "TestRoms.hpp"
 #include "../app/ModuleCatalog.hpp"
 #include "../app/StateApplier.hpp"
+#include "../app/TITraceRecorder.hpp"
+#include "Md5.hpp"
+#include <limits>
 #include <cstdlib>
 #include <filesystem>
 #include <map>
@@ -166,6 +172,7 @@ struct Run {
         if (module != "none") places.module = module;
         places.printer = printer;
         m = cu59::buildMachine(model, *testroms::romSet(), places);
+        testroms::freshMachine(*m);   // the PC-100C's code lines kept from the build (P-E3)
         operation();
     }
 
@@ -355,4 +362,34 @@ TEST(c59_1_ac4_golden_runs_through_the_machine_interface) {
         if (!d.empty()) std::printf("  %s\n", d.c_str());
         CHECK(d.empty());
     }
+}
+
+// LIB-10 AC-33 (design §12.9, E10-6): before the core was touched, M-53
+// recorded on 2.3.0's path (TraceWriter, the frame ring drained every 256
+// instructions) a TI-59 running ti59-calculation.run with the trace on from
+// its first 256 instructions. It is kept as its length and MD5 with the
+// SESSION_START's wall-clock seconds zeroed (5.5 MB; no key or card record
+// was in it: the script presses keys on the machine, not through typing).
+// The trace recorder's file of the same run must equal it byte for byte.
+TEST(lib10_ac33_bytes_equal_the_recorded_reference) {
+    constexpr std::size_t kLength = 5'570'343;
+    const std::string kMd5 = "921b0aeb81afd89a74ff695f69803509";
+    std::unique_ptr<calcu::debugger::TraceRecorder> rec;
+    std::vector<uint8_t> out;
+    testroms::afterRun() = [&](calcu::machine::Machine& m) {
+        if (!rec) {
+            rec = cu59::makeTITraceRecorder(m, [] { return std::uint64_t{0}; });
+            rec->begin(out);
+        }
+        rec->take(out, std::numeric_limits<std::uint64_t>::max());
+    };
+    std::string error;
+    play(testroms::readFile("tests/golden-runs/ti59-calculation.run").value_or(""), &error);
+    testroms::afterRun() = nullptr;
+    CHECK(error.empty());
+    CHECK(rec != nullptr);
+    if (!rec) return;
+    rec->end(out);
+    CHECK_EQ(out.size(), kLength);
+    CHECK_EQ(testroms::md5Hex(out), kMd5);
 }

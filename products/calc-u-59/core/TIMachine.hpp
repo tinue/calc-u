@@ -3,6 +3,7 @@
 #include "SolidStateRomModule.hpp"
 #include "TI59Machine.hpp"
 #include "TIAdapters.hpp"
+#include "TIDebugging.hpp"
 #include "TICatalogue.hpp"
 #include "TIRomRanges.hpp"
 #include "TIRomText.hpp"
@@ -44,13 +45,16 @@ public:
     calcu::machine::DisplayOutput readDisplay() override;
     std::size_t takeSound(std::span<std::int16_t>) override { return 0; }
     calcu::machine::Plugged plugged() const override;
-    /// Always `TMC0501/typing-support` (LIB-5 §3.4); with the PC-100C:
+    /// Always `TMC0501/typing-support` (LIB-5 §3.4) and
+    /// `TMC0501/c59.trace-records` (LIB-10 D-24); with the PC-100C:
     /// `printer/controls` (PRINT, ADV, TRACE) and
-    /// `printer/c59.printer-output` (C59-6 AC-1, AC-5; LIB-2 AC-26). The card
+    /// `printer/paper-output` (C59-6 AC-1, AC-5; LIB-2 AC-26; LIB-8 AC-24). The card
     /// reader's media place comes in M-55 (LIB-1 D-1).
     std::vector<calcu::machine::CapabilityEntry> capabilities() const override;
     calcu::machine::Capability* capability(const calcu::machine::CapabilityId&) override;
     std::vector<calcu::machine::DebugTargetId> debugTargets() const override { return m_descriptor.debugTargets; }
+    /// LIB-10 AC-28: the one target TMC0501 (core/TIDebugging.hpp).
+    calcu::machine::Debugging* debugging() override { return &m_debugging; }
 
     /// The PC-100C's character buffer, not yet printed (debug view; empty
     /// without a PC-100C).
@@ -67,13 +71,14 @@ protected:
 private:
     friend class TICardReaderAdapter;
     friend class TIMemoryAdapter;
-    friend class TIDebugTargetAdapter;
+    friend class TIDebugTarget;
+    friend class TIDebugging;
+    friend class TITraceRecords;
     friend class TIDebugPanelAdapter;
     friend class TITypingSupport;
     friend struct TIMachineTesting;
     friend TICardReaderAdapter* cardReaderOf(calcu::machine::Machine&);
     friend TIMemoryAdapter* memoryOf(calcu::machine::Machine&);
-    friend TIDebugTargetAdapter* debugTargetOf(calcu::machine::Machine&);
     friend TIDebugPanelAdapter* debugPanelOf(calcu::machine::Machine&);
 
     /// One instruction; then the pending Reset restore. Every path that runs an instruction goes through here.
@@ -83,6 +88,9 @@ private:
     void cpuReset();
     /// The connectors to the CPU: the TI-58C has the printer's D0 pad on digit 10.
     void rewire();
+    /// The core's frame ring is on while the debug panel, a trace or the run
+    /// control's checks want it (TRACE_PC | TRACE_REGS_FULL), else off.
+    void applyTraceFlags();
 
     struct SavedMemory {
         std::vector<std::uint8_t> ram;
@@ -95,15 +103,19 @@ private:
     TI59Machine m_hw;
     calcu::machine::Ticks m_ticksBeforeReset = 0;
     std::optional<SavedMemory> m_restore;   ///< AC-19: RAM and partition until key readiness
-    TIStepObserver* m_observer = nullptr;
-    TIStop m_stop = TIStop::None;
+    std::uint64_t m_retired = 0;          ///< instructions carried out (DebugTarget::retired)
+    bool m_panelTrace = false;            ///< the debug panel wants the frame ring (TIDebugPanelAdapter)
+    bool m_recordTrace = false;           ///< a trace runs (c59.trace-records)
+    bool m_checksTrace = false;           ///< the run control's checks are set
 
     std::unique_ptr<PC100C> m_printer;
+    bool m_recordCodeLines = false;   ///< P-E3: the PC-100C keeps its code lines (TIMachineTesting)
     std::unique_ptr<SolidStateRomModule> m_module;
     calcu::machine::PeripheralId m_moduleId;
     TICardReaderAdapter m_cardReader{*this};
     TIMemoryAdapter m_memory{*this};
-    TIDebugTargetAdapter m_debugTarget{*this};
     TIDebugPanelAdapter m_debugPanel{*this};
+    TIDebugging m_debugging{*this};
+    TITraceRecords m_traceRecords{*this};
     TITypingSupport m_typing{*this};
 };

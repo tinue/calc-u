@@ -42,7 +42,9 @@ struct LiveDebugView: View {
     // MARK: - Header
 
     private func liveHeader(baseFontSize: CGFloat) -> some View {
-        let freezeEnabled = !vm.isFrozen && !vm.pendingFreezeOnPCChange
+        // FREEZE, STEP, RESUME: the run-control buttons of `program` (LIB-10 AC-18, AC-34).
+        let use = vm.buttons(for: .calculator)
+        let freezeEnabled = use.pause && !vm.pendingFreezeOnPCChange
         let narrow = baseFontSize < 13
         return HStack(spacing: 8) {
             Text(narrow ? "DEBUG" : "CALCULATOR DEBUG")
@@ -50,15 +52,14 @@ struct LiveDebugView: View {
                 .foregroundStyle(.white.opacity(0.6))
             Spacer()
 
-            let calcOwned = vm.isFrozen && vm.freezeOwner == .calculator
 
             // RESUME sits at the far left, away from STEP, to avoid accidental
             // taps while stepping.
             Button("RESUME") { vm.unfreeze() }
                 .font(.system(size: baseFontSize, weight: .bold, design: .monospaced))
                 .foregroundStyle(Color.orange)
-                .opacity(calcOwned ? 1 : 0.4)
-                .disabled(!calcOwned)
+                .opacity(use.resume ? 1 : 0.4)
+                .disabled(!use.resume)
                 .accessibilityIdentifier("btn-resume")
 
             Button("FREEZE") { vm.freeze(from: .calculator) }
@@ -84,7 +85,7 @@ struct LiveDebugView: View {
 
             // Tap to single-step; hold to auto-step at 2 steps/second.
             HoldRepeatButton(title: "STEP", color: .cyan, baseFontSize: baseFontSize,
-                             enabled: calcOwned) { vm.stepKeycode() }
+                             enabled: use.step) { vm.stepKeycode() }
         }
         .padding(.horizontal, 10)
         .padding(.vertical, 6)

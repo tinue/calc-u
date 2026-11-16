@@ -29,7 +29,11 @@ Never edit the calculator there — that copy is generated.
 1. **No logic in `frontends/web/`.** Parsing, timing, key sequencing, layout numbers,
    cue-card resolution all belong in `app/` (calc-u-59-shared skill) —
    the JS draws what the session sends: `app/TIWebPart` (the `c59.web.*`
-   topics, commands and requests) and `app/TIAppPart` (`c59.*`).
+   topics, commands and requests), `app/TIAppPart` (`c59.*`) and the
+   library's topics, which the component set draws (M-53): the paper panel
+   `CalcuPaperPanel` (`src/Paper.jsx`, LIB-8) and the run-control buttons
+   `CalcuRunControlButtons` (`src/Debugger.jsx`, LIB-10), on `engine.shell`.
+   A trace is handed over with `keep-file` when it ends; the page lists it.
    `bindings.cpp` is only the factory of the session; `src/engine.js` only
    translates the components' calls to commands and requests and the topics
    to slices (as Calc-U-1600's). No message of a protocol of its own (LIB-15
@@ -71,8 +75,9 @@ python3 -m http.server 8000 -d frontends/web/dist   # look at it: http://localho
 The tests (`tests/play-calculator.spec.js`) drive `dist/index.html` and
 `dist/app/` through the real engine: arithmetic by bitmap identity of the LED
 canvas, the hit test and drag, the physical keyboard, models and the TI-58C
-constant memory, settings, cue cards, presets, the card folder, the printer,
-the debugger and trace download, the portrait pages, the service worker's
+constant memory, settings, cue cards, presets, the card folder, the paper
+panel (`LIB-8 AC-28`, `AC-31`), the debugger's run-control buttons
+(`LIB-10 AC-34`) and the trace hand-over (`LIB-10 AC-26`), the portrait pages, the service worker's
 precache. Key presses after a program stops can extend its last entry, as
 on the real calculator — press CLR first. `tests/prerender.spec.js` renders `calc.js`
 in Node. Ports 8059 and 8060 (`CALCU_WEB_PORT` moves both).

@@ -50,11 +50,11 @@ std::vector<uint16_t> parseAsmWords(std::string_view text) {
 
 AsmRunResult runAsmOverlay(calcu::machine::Machine& m, const std::vector<uint16_t>& words) {
     AsmRunResult r;
-    debugTargetOf(m)->stepUntilNextKeycode();
+    debugPanelOf(m)->stepUntilNextKeycode();
     if (!debugPanelOf(m)->loadDebugOverlay(words.data(), words.size())) return r;
     r.loaded = true;
     r.entered = debugPanelOf(m)->runDebugOverlay(0x1800, 8192, &r.steps);
-    debugTargetOf(m)->beginNextStep();
+    debugPanelOf(m)->beginNextStep();
     return r;
 }
 

@@ -129,20 +129,11 @@
 }
 .calcu-client .calcu-printer-header > :last-child { justify-self: end; }
 .calcu-client .calcu-printer-header .calcu-pill { font-size: 12px; }
-.calcu-client .calcu-paper { position: relative; flex: 1; min-height: 0; margin: 8px; background: var(--calcu-paper); }
-.calcu-client .calcu-paper-canvas { position: absolute; inset: 0; display: block; }
-.calcu-client .calcu-paper-scroll { position: absolute; inset: 0; overflow-y: auto; }
-.calcu-client .calcu-paper-text {
-  overflow-y: auto; color: #1f1f1f; font: 13px/1.35 var(--calcu-mono); padding: 8px 6px;
-  white-space: pre; user-select: text; -webkit-user-select: text;
-}
-.calcu-client .calcu-printer-bar { height: 50px; flex: none; display: flex; align-items: center; gap: 8px; padding: 0 10px; background: var(--calcu-bar); }
-.calcu-client .calcu-printer-bar-compact { gap: 4px; padding: 0 6px; }
-.calcu-client .calcu-printer-bar-compact .calcu-pill { padding: 4px 7px; }
-.calcu-client .calcu-toast {
-  position: absolute; left: 50%; bottom: 60px; transform: translateX(-50%);
-  background: rgba(0,0,0,0.75); color: #fff; font-weight: 700; padding: 7px 14px; border-radius: 10px; white-space: nowrap;
-}
+/* The component set's paper panel below the PC-100C's connect toggle (M-53;
+   library/web/components/paper.css draws it). */
+.calcu-client .calcu-printer > .calcu-paper-panel { flex: 1; margin: 8px; }
+.calcu-client .calcu-printer .calcu-paper-header { flex-wrap: wrap; }
+.calcu-client .calcu-printer .calcu-paper-text { color: #1f1f1f; font: 13px/1.35 var(--calcu-mono); user-select: text; -webkit-user-select: text; }
 
 /* ---------- Debugger ------------------------------------------------------ */
 .calcu-client .calcu-debugger { flex: 1; min-width: 220px; display: flex; flex-direction: column; background: var(--calcu-debug-bg); }
@@ -166,6 +157,14 @@
 .calcu-client .calcu-hb-orange { color: var(--calcu-orange); }
 .calcu-client .calcu-hb-yellow { color: var(--calcu-yellow); }
 .calcu-client .calcu-hb-blue { color: var(--calcu-blue); }
+/* The run-control buttons of the component set (LIB-10 AC-34) as the header's buttons. */
+.calcu-client .calcu-debug-header .calcu-run-control { display: contents; }
+.calcu-client .calcu-debug-header .calcu-run-control button {
+  border: none; background: transparent; padding: 0; cursor: pointer; font: 700 11px var(--calcu-mono); color: #fff;
+}
+.calcu-client .calcu-debug-header .calcu-run-control button:disabled { opacity: 0.4; cursor: default; }
+.calcu-client .calcu-debug-header [data-calcu=run-control-step] { color: var(--calcu-blue); }
+.calcu-client .calcu-debug-header [data-calcu=run-control-resume] { color: var(--calcu-orange); }
 .calcu-client .calcu-debug-fixed { flex: none; padding: 4px 4px 0; }
 .calcu-client .calcu-debug-scroll { flex: 1; min-height: 0; overflow-y: auto; padding: 4px; display: flex; flex-direction: column; gap: 1px; }
 .calcu-client .calcu-section-head {

@@ -329,3 +329,132 @@ model's startup preset with `load-preset {buildOnly}`, else `cold-boot`;
 its `debug:` block comes from `SharpDebugBlock::debugBlockOf` (C1600-4
 AC-12). `CalcU1600DapSmoke` passed (26 s). Every criterion of the column
 passes: **Done**.
+
+## Calc-U-59 (M-53, 2026-11-16, branch `m53-paper-debugger-59`)
+
+Built and run as LIB-8's Calc-U-59 column (same step, same trees).
+
+The code (design §12.3): `core/TIDebugging.*` (new: `TIDebugging`, the
+target `TIDebugTarget` TMC0501, `TITraceRecords`; the marks of
+`InstructionEvent`: boundary, scan loop, weight); `core/TraceRecords.hpp`
+(new: the product kind `c59.trace-records`); `TIMachine::advance` asks the
+library's observer while Checks are set and stops before a breakpoint;
+`TIDebugTargetAdapter`, `TIStepObserver` and `TIStop` go, and the panel's
+reads move to `TIDebugPanelAdapter` (L-E3); `app/TILevelRules.*`,
+`app/TITraceRecorder.*`, `app/TIDebuggerSetup.*` (new);
+`app/TraceWriter.*` is an encoder of records only; `app/FreezeController.*`
+deleted; `EmulatorSession` keeps the playback, the places, the frame
+sampler and the queued cards (the halt flag, the queued steps, the freeze
+state, the two trace writers, `advanceHosted` and `TIKeyTraceObserver`
+go); `TIAppPart` (the `c59.freeze` … `c59.step-instruction`,
+`c59.manual-trace` commands and the `c59.trace` topic go; `c59.run-state`
+keeps `fullSpeed` and `keystrokesPlaying`, L-E5; the KEYSTROKES directives
+through the run control, L-E1; `tellRestarted` after Reset and Clean,
+L-E2; the frozen view rebuilt when the run state changes; `debug-panel:`
+views through `showDebugPanelNamed`, L-E4); `makeAppSession` owns a
+`DebuggerPart` after the `PaperPart` (LIB-8 D-23); `HarnessProduct`
+(`debugger`); `TIWebPart` (`c59.web.traces`, `c59.web.trace-ready`,
+`c59.web.trace-bytes` and the MEMFS `/traces` go; `c59.web.run-state`
+from the run state); the headless tool steps with `Machine::advance(1)`
+and reads frames through `TIDebugPanelAdapter`.
+Frontends: Qt6 `debug/LiveDebugWidget` (level `program`) and
+`debug/CpuInspectorWidget` (level `cpu`) drive FREEZE, STEP and RESUME with
+a `calcu::qt6::RunControlButtons` each, FREEZE ON START and ARMED send
+`pause-on-start`, `LogWidget`'s TRACE sends `trace {button}` and shows the
+`trace` topic, `HoldRepeatButton` deleted; Web `Debugger.jsx` with
+`CalcuRunControlButtons` per tab, TRACE on the library topic, the list of
+ended traces kept by the page from the `keep-file` hand-overs (D-25),
+`engine.js`'s freeze, step and trace methods gone; Swift: the bridge
+mirrors `run-state` and `trace`, sends `pause`, `step`, `resume`,
+`pause-on-start`, `trace`, and wraps `calcu::debugger::buttonUse`
+(D-27); `HoldRepeatButton` repeats every 250 ms while step can be used.
+
+| ID | Result | Test case |
+|---|---|---|
+| AC-28 | Pass | `debug_target_tests.cpp`: `lib10_ac28_one_target_tmc0501_on_every_model`, `_registers_of_the_processor_frame`, `_spaces_rom_ram_scom_program`, `_ram_and_program_written_rom_scom_refused`, `_history_and_decoding_no_watches_no_over_out`, `_conformance_on_every_model` (`checkDebugging`); `descriptor_tests.cpp` (the `c59.trace-records` capability) |
+| AC-29 | Pass | `debugger_tests.cpp`: `lib10_ac29_pause_lands_at_the_next_boundary`, `_waiting_for_a_key_lands_after_50000` (50000 to 50003 weights), `_in_an_overlay_lands_after_50000` (the rule without boundaries), `_program_step_is_one_program_byte_as_sst`, `_program_step_through_rom_and_module_programs` (the Master Library's program 01), `_cpu_step_repeats_a_hold_up_to_32` |
+| AC-30 | Pass, with row 59-34 in place of its Reset clause (Q-1, user 2026-11-16) | `debugger_tests.cpp`: `lib10_ac30_program_fires_at_the_next_boundary`, `_cpu_fires_leaving_key_readiness` (was `freeze_on_scan_loop_exit_fires_on_key`), `_cpu_fires_at_0000_after_reset_and_cold_boot` (Reset and Clean on the TI-59, TI-58 and TI-58C; the 0000 rule), `_arming_one_disarms_the_other` (was `freeze_on_pc_change_and_mutual_exclusion`), `_ti58_card_veto_is_part_of_the_scan_loop`; `part_flows_tests.cpp` `lib10_ac30_part_cpu_freeze_on_start_sees_reset_and_clean_reset` |
+| AC-31 | Pass | `harness_tests.cpp` `lib10_ac31_harness_breakpoint_pauses_the_ti` (`targets`, `registers`, `break`, `history`); `debugger_tests.cpp` `lib10_ac31_app_session_pauses_at_a_breakpoint` (setter `harness`; before the instruction; passed once at resume) |
+| AC-32 | Pass (2.3.0 directives through L-E1; format 2 in M-54) | `debugger_tests.cpp`: `lib10_ac32_freeze_calculator_is_pause_program`, `_freeze_cpu_is_pause_cpu`, `_freeze_on_start_is_pause_on_start`, `_step_and_resume` (and `Step:` while running: the log line, OQ-4), `_debug_panel_calculator_cpu_log`; `part_flows_tests.cpp` `part_keystroke_controls_drive_the_gui`; the reference run `screentest_test_cdebug.ti59` unchanged |
+| AC-33 | Pass | `trace_tests.cpp`: `lib10_ac33_header_ti59_version_2_and_model` (writes `build/trace-test.bin`, which CTest `CalcU59TraceReader` reads with `tools/read_trace.py`), `_records_session_instruction_gap` (and whole records within a budget), `_no_key_or_card_records` (the button's trace with a key and a card), `_button_names_by_model`, `_limit_ends_with_a_notice`; `golden_runs_tests.cpp` `lib10_ac33_bytes_equal_the_recorded_reference`; the exit check `lib10_ac33_exit_check_preset_and_button_traces_are_one_session` |
+| AC-34 | Pass in Qt6 and the Web; Swift not run | Qt6 `CalcU59QtTests` `lib10_ac34_qt6_calculator_and_cpu_buttons_follow_run_state`; Web `play-calculator.spec.js` `LIB-10 AC-34 FREEZE STEP RESUME of both tabs follow the run state`; Swift `Calc-U-59Tests/RunControlTests.swift` `testLib10AC34ButtonsFollowTheRule` (new; type-checked only: the Xcode build fails in the worktree) |
+| AC-35 | Pass | ported onto the run control: `debugger_tests.cpp` `lib10_ac35_session_queued_steps_run_after_the_host_call`, `_session_freeze_fires_through_listener`, `_session_steps_only_when_frozen_and_arms_exclude`, `_c59_1_runbatch_stops_at_freeze_inside_advance`; `shared_debug_tests.cpp` `lib10_ac35_step_shows_the_next_step`, `_running_view_shows_only_step_boundaries`; `part_flows_tests.cpp` `lib10_ac35_part_model_switch_keeps_printer_and_log_resets_freeze`, `_part_resume_before_the_frozen_view_drops_it`, and `part_load_while_frozen_ends_running_without_tracing`, `part_constant_memory_keeps_the_loaded_card`, `part_asm_overlay`, `part_events_of_a_replaced_machine_are_ignored` on it; `typing_tests.cpp` `lib5_ac20_freeze_inside_hold_key_up_on_frozen_machine`. `trace_flags_for_consumers` went with `TraceConsumers` |
+| AC-26 (59: the Web's hand-over) | Pass | Web `play-calculator.spec.js` `LIB-10 AC-26 a trace is downloaded when switched off` (renamed; `CALCU59_TRACE.bin`) |
+
+Exit check of M-53 (a trace of a preset and the button's are one
+session): `lib10_ac33_exit_check_preset_and_button_traces_are_one_session`
+starts the button's trace, then a preset's `Trace:` ends it and runs alone
+until the preset ends.
+
+### Golden and reference runs
+
+- Before the core was touched, the trace of `tests/golden-runs/
+  ti59-calculation.run` was recorded on 2.3.0's path (TraceWriter, the ring
+  drained every 256 instructions): 5,570,343 bytes, no key or card record
+  (the script presses keys on the machine). It is kept as its length and
+  MD5 (`921b0aeb…`) with the SESSION_START seconds zeroed, not as the file
+  (5.5 MB). The trace recorder's file of the same run equals it byte for
+  byte (`lib10_ac33_bytes_equal_the_recorded_reference`).
+- The 18 golden runs replay unchanged (no observer: the fast path).
+- The 57 reference runs (with `debug_*` and `screentest_test_cdebug`,
+  which freeze and step through L-E1) match their `.txt` files with
+  LIB-5's accepted differences unchanged.
+
+### Deviations
+
+- **A pause or a step that waits to land runs on in the host call that
+  asked for it** (`TIDebugging::setRunOn`, set by `TIAppPart` while the
+  run control is neither running nor paused; at most 50000 × 4 weights),
+  as 2.3.0's freeze and STEP ran there. Without it a FREEZE of the idle
+  calculator would land after about 3.4 s of paced time (50000 weights).
+  The harness has no run-on: there a pause lands in emulated time.
+- **Breakpoints are checked by `TIMachine::advance`** before each
+  instruction, not by the core's `TRACE_BREAKPOINTS` (which stops after
+  the instruction at the address); the core's breakpoints stay for the
+  headless tools (`breakpoint_sets_step_bit31`).
+- **The frame ring** is on while the debug panel wants it (the CPU tab
+  shows, paused, a start armed), while a trace runs, and while the run
+  control's checks are set (the target's history, AC-28); a trace starts
+  with the ring emptied.
+- **Pause where the machine stands.** The ASM overlay's entry with CPU
+  FREEZE ON START armed pauses in place through
+  `TILevelRules::landNextPauseAtOnce()` (2.3.0's `freezeInPlace`, until
+  C59-4 in M-56).
+- **A restart keeps what the `cpu` start has seen** (`TILevelRules::
+  startArmed` at 0000 for the level armed), so a Reset fires it as 2.3.0's
+  `FreezeController` did (row 59-34).
+- **A trace that cannot start fails its 2.3.0 preset** (L-E1): the notice
+  "Trace error: KEYSTROKES "Trace: …": <reason>" and the KEYSTROKES stop.
+- **The reference trace** is a digest (above), not `ti59-calculation.trace`.
+- **The read_trace check** stays the CTest `CalcU59TraceReader` on
+  `build/trace-test.bin`, now written by the trace recorder, instead of a
+  new `CalcU59ReadTrace` through the harness.
+- **`typing::PauseProbe`** stays in the library: the harness's test product
+  still uses it (§12.7 removes it only when no user is left).
+- **Qt6** keeps FREEZE, STEP and RESUME in the tab's header row (the
+  library widget drives them) in today's order and colours; **Web**: their
+  order is FREEZE STEP RESUME, then FREEZE ON START, ARMED (today RESUME,
+  FREEZE, FREEZE ON START, ARMED, STEP). In both FREEZE can be used while a
+  start is armed (the library's button rule; today it was disabled).
+- **Swift's test** checks a copy of the seven rows of
+  `library/debugger/tests/button_cases.json` kept in the test (the sandboxed
+  test host may not read the source tree), and the library's file when it
+  can be read.
+
+### Findings
+
+- The trace limit is `[trace] max-file-size-mb` MiB (LIB-10 T2); 2.3.0
+  counted 1,000,000 bytes per MB. Added to ledger row 59-48.
+- `screentest_test_cdebug.ti59` and `screentest_test_58_glyphs.ti58` still
+  end with their operation running (the accepted "playback:" difference of
+  M-34): the preset's last key after `FreezeOnStart:` is held by the typing
+  engine until the ROM is ready for keys, which the paused machine never is.
+  M-34 expected M-53 to end it; it does not (the reason in
+  `reference_runs_tests.cpp` says so now).
+- The Swift app was not built and `UIRegressionTests` not run (above); the
+  XCUITests that press FREEZE, STEP and RESUME
+  (`ScreenshotTests.swift:150-160, 229-271`) now wait for a step to land.
+
+AC-34's Swift part is not verified in this step, so the column stays **In
+progress**; it is Done once the Swift build and its tests pass (the user's
+check of M-53).

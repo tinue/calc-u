@@ -2,13 +2,10 @@
 #include "CardFile.hpp"
 #include "DebugText.hpp"
 #include "KeyIds.hpp"
-#include "KeyIds.hpp"
 #include "typing/TypingTopics.hpp"
-#include "PrinterFont.hpp"
 #include "RomHeatmap.hpp"
 #include "SevenSegment.hpp"
 #include "StateFile.hpp"
-#include "TraceWriter.hpp"
 #include "WebPageData.hpp"
 #include "settings/AtomicFile.hpp"
 #include "sessions/Args.hpp"
@@ -60,11 +57,8 @@ bool plainName(const std::string& name) {
 
 sessions::PayloadPtr webPayload(std::string_view kind, Value v) { return sessions::valuePayload(kind, std::move(v)); }
 
-TIWebPart::TIWebPart(settings::Settings& settings, std::string presetsDir, fs::path traceDir)
-    : m_settings(settings), m_presetsDir(std::move(presetsDir)), m_traceDir(std::move(traceDir)) {
-    std::error_code ec;
-    fs::create_directories(m_traceDir, ec);
-}
+TIWebPart::TIWebPart(settings::Settings& settings, std::string presetsDir)
+    : m_settings(settings), m_presetsDir(std::move(presetsDir)) {}
 
 TIWebPart::~TIWebPart() {
     if (m_app) m_app->setChangeObserver(nullptr);
@@ -91,10 +85,8 @@ void TIWebPart::attach(sessions::SessionSetup& s) {
     m_heatmap = &s.stateTopic(topics::kWebHeatmap);
     m_log = &s.stateTopic(topics::kWebLog);
     m_asm = &s.stateTopic(topics::kWebAsm);
-    m_traces = &s.stateTopic(topics::kWebTraces);
     m_settingsTopic = &s.stateTopic(topics::kWebSettings);
     m_font = &s.stateTopic(topics::kWebDebugFont);
-    m_traceReady = &s.streamTopic(topics::kWebTraceReady, History::None);
     m_ctx = &s.context();
 
     auto cmd = [&s](const char* name, std::function<CommandOutcome(const Value&, SessionContext&)> f) {
@@ -241,12 +233,6 @@ void TIWebPart::attach(sessions::SessionSetup& s) {
         auto r = m_app->files().readCard(m_app->files().cardFilePath(name));
         return answer("c59.file", r.raw ? Value(*r.raw) : Value());
     });
-    req("c59.web.trace-bytes", [this](const Value& a) {
-        const std::string name = textArg(a, "name");
-        if (!plainName(name)) return answer("c59.file", Value());
-        auto t = calcu::settings::readWholeFile((m_traceDir / name).string());
-        return answer("c59.file", t ? Value(Value::Bytes(t->begin(), t->end())) : Value());
-    });
     req("c59.web.fresh-card-name", [](const Value& a) { return answer("c59.name", Value(withDefaultCardExtension(textArg(a, "name")))); });
     req("c59.static-data", [this](const Value&) {
         return answer("c59.static-data", webStaticData(m_app ? m_app->allModules() : std::vector<ModuleMetadata>{}));
@@ -327,7 +313,9 @@ void TIWebPart::drain(SessionContext&) {
         set(m_cue, "c59.web.cue-card", cueCard());
     }
     if (c & (S::RunStateChanged | S::ModelChanged | S::AsmChanged)) set(m_run, "c59.web.run-state", runState());
-    if (c & (S::PrinterChanged | S::PaperCut | S::ModelChanged)) set(m_printer, "c59.web.printer", printer((c & S::PaperCut) != 0));
+    if (c & (S::PrinterChanged | S::ModelChanged))   // LIB-8 P-E1: the paper is the library's `paper PC-100C`
+        set(m_printer, "c59.web.printer",
+            Value::object({{"connected", m_app->printerConnected()}, {"trace", m_app->printerTrace()}}));
     if ((c & (S::CardChanged | S::ModelChanged)) || m_cardsDirty) {
         m_cardsDirty = false;
         set(m_card, "c59.web.card", card());
@@ -343,21 +331,11 @@ void TIWebPart::drain(SessionContext&) {
         set(m_live, "c59.web.live", live());
     if (((c & S::CpuChanged) || freezeFlipped || cpuOn) && m_app->cpuDebugEnabled()) set(m_cpu, "c59.web.cpu", cpu());
     if (((c & S::HeatmapChanged) || cpuOn) && m_app->cpuDebugEnabled()) set(m_heatmap, "c59.web.heatmap", heatmap());
-    if (c & (S::LogChanged | S::TraceChanged)) set(m_log, "c59.web.log", log());
+    if (c & S::LogChanged) set(m_log, "c59.web.log", log());
     if (c & S::AsmChanged)
         set(m_asm, "c59.web.asm",
             Value::object({{"fileName", m_app->asmFileName()}, {"words", m_app->asmWordCount()},
                            {"status", m_app->asmStatus()}, {"active", m_app->asmActive()}}));
-    if (c & S::TraceChanged) {
-        // A manual trace that just ended is offered as a download.
-        if (m_traceWasOn && !m_app->manualTrace())
-            m_traceReady->append(webPayload("c59.web.trace-ready", Value::object({{"name", TraceWriter::baseFileName(m_app->model())}})));
-        m_traceWasOn = m_app->manualTrace();
-    }
-    if ((c & (S::TraceChanged | S::RunStateChanged | S::ModelChanged)) || !m_tracesPosted) {
-        m_tracesPosted = true;
-        set(m_traces, "c59.web.traces", traces());
-    }
     if (m_settingsDirty) {
         m_settingsDirty = false;
         set(m_settingsTopic, "c59.web.settings", settingsValue());
@@ -375,12 +353,14 @@ Value TIWebPart::settingsValue() const {
                           {"keyboardFeedback", static_cast<int>(m_settings.keyboardFeedback())}});
 }
 
+// The run control's state as the page's FREEZE ON START buttons read it
+// (LIB-10: FREEZE, STEP and RESUME follow the library's `run-state`).
 Value TIWebPart::runState() const {
-    const DebugState d = m_app->debugState();
-    return Value::object({{"frozen", d.frozen},
-                          {"owner", !d.owner ? Value() : Value(*d.owner == FreezeOwner::Cpu ? "cpu" : "calculator")},
-                          {"pcArmed", d.pcChangeArmed},
-                          {"scanArmed", d.scanLoopExitArmed},
+    const calcu::debugger::RunState d = m_app->runState();
+    return Value::object({{"frozen", d.paused},
+                          {"owner", !d.owner ? Value() : Value(*d.owner == calcu::debugger::kCpu ? "cpu" : "calculator")},
+                          {"pcArmed", d.armed == calcu::debugger::kProgram},
+                          {"scanArmed", d.armed == calcu::debugger::kCpu},
                           {"fullSpeed", m_app->fullSpeed()},
                           {"heldKey", heldKey()},
                           {"asmActive", m_app->asmActive()}});
@@ -403,19 +383,8 @@ Value TIWebPart::card() const {
                           {"cards", Value(std::move(cards))}});
 }
 
-Value TIWebPart::traces() {
-    std::vector<std::pair<std::string, uintmax_t>> files;
-    std::error_code ec;
-    for (const auto& e : fs::directory_iterator(m_traceDir, ec))
-        if (e.is_regular_file(ec)) files.emplace_back(e.path().filename().string(), e.file_size(ec));
-    std::sort(files.begin(), files.end());
-    Value::Array out;
-    for (const auto& [name, size] : files) out.push_back(Value::object({{"name", name}, {"size", static_cast<double>(size)}}));
-    return Value(std::move(out));
-}
-
 Value TIWebPart::log() const {
-    return Value::object({{"text", m_app->logText()}, {"level", static_cast<int>(m_app->debugLevel())}, {"trace", m_app->manualTrace()}});
+    return Value::object({{"text", m_app->logText()}, {"level", static_cast<int>(m_app->debugLevel())}});
 }
 
 // ── Cue card: a draw list for m_cardW × m_cardH (CueCardRenderer in Qt) ──────
@@ -516,44 +485,6 @@ Value TIWebPart::cueCard() const {
                           {"height", h},
                           {"items", Value(std::move(items))},
                           {"label", label}});
-}
-
-// ── Printer: the lines from the first one that changed ───────────────────────
-Value TIWebPart::printer(bool cut) {
-    const auto& lines = m_app->printerLines();
-    const auto& codes = m_app->printerCodeLines();
-    if (cut || lines.size() < m_sentLines) m_sentLines = m_sentCodes = 0;
-    const size_t from = std::min(m_sentLines, m_sentCodes);
-    Value::Array out;
-    for (size_t i = from; i < lines.size(); ++i) {
-        const PrinterCodeLine* line = i < codes.size() ? &codes[i] : nullptr;
-        const bool feed = lines[i].empty();
-        Value::Object l{{"text", Value(lines[i])}, {"height", Value(PrinterGeometry::lineHeightUnits(feed, line))}};
-        if (line && !feed) {
-            const auto dots = PrinterGeometry::lineDots(line);
-            Value::Array inked, faint, cs;
-            for (int r = 0; r < dots.drawnRows; ++r) {
-                inked.emplace_back(dots.inked[r]);
-                faint.emplace_back(dots.faint[r]);
-            }
-            for (size_t ch = 0; ch < 20; ++ch) cs.emplace_back(line->codes[ch] & 0x3F);
-            l.push_back({"rows", Value(dots.drawnRows)});
-            l.push_back({"inked", Value(std::move(inked))});
-            l.push_back({"faint", Value(std::move(faint))});
-            l.push_back({"faintAlpha", Value(dots.faintAlpha)});
-            l.push_back({"codes", Value(std::move(cs))});
-        }
-        out.emplace_back(std::move(l));
-    }
-    m_sentLines = lines.size();
-    m_sentCodes = std::min(codes.size(), lines.size());
-    const double units = m_app->printerStripHeightUnits();
-    return Value::object({{"from", static_cast<int64_t>(from)},
-                          {"lines", Value(std::move(out))},
-                          {"connected", m_app->printerConnected()},
-                          {"trace", m_app->printerTrace()},
-                          {"heightUnits", units},
-                          {"copyPixelsPerUnit", PrinterGeometry::copyPixelsPerUnit(units)}});
 }
 
 // ── Debugger rows, formatted as Qt6/app/debug/*Widget do ─────────────────────

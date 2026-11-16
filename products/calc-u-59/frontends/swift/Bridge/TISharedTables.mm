@@ -1,7 +1,6 @@
 #import "TISharedTables.h"
 #include <calcu59/app/KeyIds.hpp>
 #include <calcu59/app/KeyboardLayout.hpp>
-#include <calcu59/app/PrinterFont.hpp>
 #include <calcu59/app/SevenSegment.hpp>
 
 namespace {
@@ -15,11 +14,6 @@ CGRect toCG(const cu59::NRect& r) { return CGRectMake(r.x, r.y, r.w, r.h); }
     cu59::LedCell cell = cu59::ledCell(static_cast<int>(index), glyph, level, calcOpacity);
     *opacity = cell.opacity;
     return cell.segments;
-}
-
-+ (uint8_t)printerFontRowForCode:(uint8_t)code row:(NSInteger)row {
-    if (code >= 64 || row < 0 || row >= 7) return 0;
-    return cu59::kPC100CFont[code][row];
 }
 
 + (CGFloat)canvasAspect   { return cu59::kCanvasAspect; }

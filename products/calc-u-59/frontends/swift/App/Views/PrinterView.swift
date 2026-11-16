@@ -1,15 +1,14 @@
 import SwiftUI
-import UniformTypeIdentifiers
-#if os(macOS)
-import AppKit
-#else
-import UIKit
-#endif
 
+// The PC-100C's paper (LIB-8 adapter S-P1, until C59-8's paper panel): drawn
+// from the marks and the text of the library's topic `paper PC-100C`, which
+// the bridge keeps; Copy and Cut are the session's commands (the library
+// makes the picture, the bridge puts it on the pasteboard).
 struct PrinterView: View {
     @Environment(EmulatorViewModel.self) var viewModel
     @State private var dotMode = true
     @State private var showCopiedToast = false
+    @State private var toastText = "Copied to clipboard"
     var portraitTopInset: CGFloat = 0
 
     var body: some View {
@@ -29,7 +28,7 @@ struct PrinterView: View {
         }
         .overlay(alignment: .bottom) {
             if showCopiedToast {
-                Text("Copied to clipboard")
+                Text(toastText)
                     .font(.caption.bold())
                     .foregroundStyle(.white)
                     .padding(.horizontal, 14)
@@ -41,6 +40,11 @@ struct PrinterView: View {
             }
         }
         .animation(.easeInOut(duration: 0.2), value: showCopiedToast)
+        .onChange(of: viewModel.paperCopySerial) {
+            toastText = viewModel.paperCopyMessage ?? "Copied to clipboard"
+            showCopiedToast = true
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.8) { showCopiedToast = false }
+        }
     }
 
     // MARK: - Header
@@ -109,20 +113,17 @@ struct PrinterView: View {
 
     // MARK: - Dot strip
 
+    /// The paper in bands of EmulatorViewModel.paperBandUnits: only the bands
+    /// in view are drawn (LazyVStack).
     private var dotStrip: some View {
         LazyVStack(spacing: 0) {
-            ForEach(viewModel.printerLines.indices, id: \.self) { i in
-                if viewModel.printerLines[i].isEmpty {
-                    // PRT_FEED: manual says "half print line", but measured hardware spacing
-                    // needs 2 dp more than the naive half-pitch — see feedHeightUnits.
-                    Color.clear.aspectRatio(PrinterDotLine.widthUnits / PrinterDotLine.feedHeightUnits, contentMode: .fit)
-                } else {
-                    PrinterDotLine(line: i < viewModel.printerCodeLines.count ? viewModel.printerCodeLines[i] : .blank)
-                }
+            ForEach(viewModel.paperBands.indices, id: \.self) { i in
+                PaperBand(index: i, dots: viewModel.paperBands[i])
             }
         }
         .padding(.horizontal, TIViewRules.printerPaperPaddingX)
         .padding(.vertical, TIViewRules.printerPaperPaddingY)
+        .id(viewModel.printerClearID)
     }
 
     // MARK: - Text strip (fallback / copy-paste mode)
@@ -173,14 +174,14 @@ struct PrinterView: View {
 
                 Spacer(minLength: 0)
 
-                Button { copyBoth() } label: {
+                Button { viewModel.copyPaper() } label: {
                     Image(systemName: "doc.on.doc")
                         .font(.system(size: 13))
                         .foregroundStyle(.white)
                 }
                 .disabled(viewModel.printerLines.isEmpty)
 
-                Button { copyBoth(); viewModel.cutPaper() } label: {
+                Button { viewModel.cutPaper() } label: {
                     Image(systemName: "scissors")
                         .font(.system(size: 13))
                         .foregroundStyle(.white)
@@ -192,56 +193,6 @@ struct PrinterView: View {
             .frame(maxWidth: .infinity)
             .frame(height: 50)
             .background(Color(white: 0.15))
-        }
-    }
-
-    // MARK: - Copy helper
-
-    private func copyBoth() {
-        let text = viewModel.printerLines.joined(separator: "\n")
-
-        // Render bitmap at physical PC-100C size: dotPitchMM → points at 72 DPI.
-        let dotPitchPt = PrinterDotLine.dotPitchMM * 72.0 / 25.4
-        let lineW = PrinterDotLine.widthUnits  * dotPitchPt
-        let feedH = PrinterDotLine.feedHeightUnits * dotPitchPt
-        let lines     = viewModel.printerLines
-        let codeLines = viewModel.printerCodeLines
-        let strip = VStack(spacing: 0) {
-            ForEach(lines.indices, id: \.self) { i in
-                if lines[i].isEmpty {
-                    Color.white.frame(width: lineW, height: feedH)
-                } else {
-                    PrinterDotLine(line: i < codeLines.count ? codeLines[i] : .blank, dotColor: .black)
-                    .background(Color.white)
-                    .frame(width: lineW)
-                }
-            }
-        }
-        .background(Color.white)
-
-        // 600 dpi, backed off for long tapes so the image fits the GPU texture limit
-        // (Shared/PrinterFont.hpp copyPixelsPerUnit); cut-short lines count their rows only.
-        let renderer = ImageRenderer(content: strip)
-        renderer.scale = TIViewRules.printerCopyPixelsPerUnit(viewModel.printerStripHeightUnits) / dotPitchPt
-
-        #if os(macOS)
-        NSPasteboard.general.clearContents()
-        var objects: [NSPasteboardWriting] = [text as NSString]
-        if let nsImage = renderer.nsImage {
-            objects.insert(nsImage, at: 0)  // image first so it is the primary item
-        }
-        NSPasteboard.general.writeObjects(objects)
-        #else
-        var pbItem: [String: Any] = [UTType.utf8PlainText.identifier: text]
-        if let image = renderer.uiImage, let png = image.pngData() {
-            pbItem[UTType.png.identifier] = png
-        }
-        UIPasteboard.general.items = [pbItem]
-        #endif
-
-        showCopiedToast = true
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.8) {
-            showCopiedToast = false
         }
     }
 
@@ -264,97 +215,31 @@ struct PrinterView: View {
     }
 }
 
-// MARK: - Dot line renderer
+// MARK: - Band renderer
 
-/// One printed line's dot codes (Bridge TIPrinterLine).
-struct PrinterCodeLine: Equatable {
-    var codes: [UInt8]         // 20 raw character codes (0–63)
-    var complete: Bool         // all 7 rows printed, followed by the paper advance
-    var drawnRows: Int         // dot rows on paper (1–7)
-    var inkedColumns: [UInt8]  // per row: font columns that got ink (Shared PrinterGeometry)
-    var faintColumns: [UInt8]  // per row: faint dots, heating cut short
-    var faintAlpha: Double     // ink of the faint dots
-
-    static let blank = PrinterCodeLine(codes: Array(repeating: 0, count: 20), complete: true, drawnRows: 7,
-                                       inkedColumns: Array(repeating: 0x1F, count: 7),
-                                       faintColumns: Array(repeating: 0, count: 7), faintAlpha: 1)
-}
-
-extension PrinterCodeLine {
-    init(_ t: TIPrinterLine) {
-        self.init(codes: [UInt8](t.codes), complete: t.complete, drawnRows: t.drawnRows,
-                  inkedColumns: [UInt8](t.inkedColumns), faintColumns: [UInt8](t.faintColumns),
-                  faintAlpha: Double(t.faintAlpha))
-    }
-}
-
-struct PrinterDotLine: View {
-    let line: PrinterCodeLine
-    private var codes: [UInt8] { line.codes }
-
-    // Physical model of the PC-100C print head (measured; derivation in
-    // Shared/PrinterFont.hpp PrinterGeometry, shared with the Qt6 app). Units
-    // are dot pitches (dp): widthUnits includes ½ dp margins each side;
-    // heightUnits is the full line pitch (7 dot rows + the stepper gap).
-    static let charGap     = TIViewRules.printerCharGap
-    static let dotPitchMM  = TIViewRules.printerDotPitchMM   // ≈ 0.430 mm — for physical-size copy
-    static let widthUnits  = TIViewRules.printerWidthUnits   // ≈ 129.1 dp
-    static let heightUnits = TIViewRules.printerHeightUnits  // 10.18 dp
-    static let aspectRatio = widthUnits / heightUnits
-
-    // A PRT_FEED blank line (one ROM-level ADV; the physical key issues two):
-    // half a line plus 2 dp, as measured on a laser-printed copy.
-    static let feedHeightUnits = TIViewRules.printerFeedHeightUnits
-
+/// One band of the paper: its dots, each a disc of the PC-100C's dot size
+/// with its ink (the grey of its darkness), across the paper's whole width.
+struct PaperBand: View {
+    let index: Int
+    let dots: [TIPaperDot]
     var dotColor: Color = Color(white: 0.12)
-    private static let dotRadiusFraction = TIViewRules.printerDotRadiusFraction  // of the dot pitch
-    private static let interLineGap      = TIViewRules.printerInterLineGap       // ≈ 3.18 dp stepper advance
 
+    private static let widthUnits = TIViewRules.printerWidthUnits
+    private static let bandUnits = EmulatorViewModel.paperBandUnits
+    private static let dotRadiusFraction = TIViewRules.printerDotRadiusFraction
 
-    // Dot-row model: each row is a separate Canvas with aspect ratio widthUnits:1
-    // (one dot-pitch tall, full line width). This gives SwiftUI a concrete height per
-    // row regardless of scroll context, avoiding the unreliable aspectRatio-on-Canvas
-    // behaviour in an unconstrained LazyVStack.
-    //
-    // Complete lines append an inter-line gap spacer (3.18 dp) after row 6, matching
-    // the stepper's paper advance. Partial lines have no spacer — the motor stopped hard.
     var body: some View {
-        VStack(spacing: 0) {
-            ForEach(0..<line.drawnRows, id: \.self) { rowIdx in
-                singleRow(rowIdx)
-            }
-            if line.complete {
-                Color.clear
-                    .aspectRatio(Self.widthUnits / Self.interLineGap, contentMode: .fit)
-            }
-        }
-    }
-
-    private func singleRow(_ rowIdx: Int) -> some View {
         Canvas { ctx, size in
-            let dotPitch = size.width / Self.widthUnits
-            let dotR     = dotPitch * Self.dotRadiusFraction
-            let charStep = (5.0 + Self.charGap) * dotPitch
-            let dotY     = size.height * 0.5  // vertically centred in the one-row canvas
-
-            // A line cut short by the printer interrupt: the row in progress has
-            // only its rightmost columns, the last of them possibly faint.
-            let inked = line.inkedColumns[rowIdx], faint = line.faintColumns[rowIdx]
-            for charIdx in 0..<min(codes.count, 20) {
-                let bits = TISharedTables.printerFontRow(forCode: codes[charIdx], row: rowIdx) & inked
-                let charX = Double(charIdx) * charStep
-                for colIdx in 0..<5 {
-                    let mask = UInt8(0x10 >> colIdx)
-                    guard bits & mask != 0 else { continue }
-                    let dotX = charX + (Double(colIdx) + 0.5) * dotPitch
-                    let rect = CGRect(x: dotX - dotR, y: dotY - dotR,
-                                      width: 2 * dotR, height: 2 * dotR)
-                    ctx.fill(Path(ellipseIn: rect),
-                             with: .color(faint & mask != 0 ? dotColor.opacity(line.faintAlpha) : dotColor))
-                }
+            let pitch = size.width / Self.widthUnits
+            let r = pitch * Self.dotRadiusFraction
+            let top = Double(index) * Self.bandUnits
+            for d in dots {
+                let x = d.x * pitch, y = (d.y - top) * pitch
+                let rect = CGRect(x: x - r, y: y - r, width: 2 * r, height: 2 * r)
+                ctx.fill(Path(ellipseIn: rect), with: .color(dotColor.opacity(d.ink)))
             }
         }
-        .aspectRatio(Self.widthUnits, contentMode: .fit)  // width:height = widthUnits:1
+        .aspectRatio(Self.widthUnits / Self.bandUnits, contentMode: .fit)
     }
 }
 
@@ -369,9 +254,7 @@ struct PrinterDotLine: View {
         "   SIN",
         "   0.",
     ]
-    // Provide zero-filled code lines so the preview renders blank dot rows
-    // (good enough to check layout; real codes come from the emulator).
-    vm.printerCodeLines = vm.printerLines.map { _ in .blank }
+    vm.paperReachUnits = 40   // blank bands: good enough to check the layout
     return PrinterView()
         .environment(vm)
         .frame(width: 220, height: 400)

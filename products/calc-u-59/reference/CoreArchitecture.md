@@ -42,10 +42,14 @@ the keys and the display output through it only (C59-1 AC-17; CTest
 `CalcU59CoreSeam`). What the interface does not have yet goes through the
 adapters of `core/TIAdapters.hpp` (`memoryOf(machine)` …), each with
 its removal step: `TICardReaderAdapter` (M-55), `TIMemoryAdapter` (program, registers,
-partition, RAM; M-54), `TIDebugTargetAdapter` (steps, trace ring,
-breakpoints, run control; M-53), `TIDebugPanelAdapter` (ASM overlay, debug
-events; M-56); `idleAndKeyDetectRange()` gives a model's scan/detect range
-(for `tools/headless/` and the tests).
+partition, RAM; M-54), `TIDebugPanelAdapter` (ASM overlay, debug
+events, and since M-53 the reads the debug panel needs that the debug target
+does not give: `snapshotCPU`, `lastStepBoundary`, `readCpuFrames`,
+`readROMKeycode`, the panel's frame ring, the overlay's entry; LIB-10
+adapter L-E3; M-56); `idleAndKeyDetectRange()` gives a model's scan/detect
+range (for `tools/headless/` and the tests). The debugger reaches the core
+through the debug target (`core/TIDebugging.hpp`, LIB-10 59, M-53; see
+"Debug target" below).
 `TI59Machine` is the core-internal facade over the three hardware
 components. The core holds no lock (see "Threading Model").
 
@@ -60,9 +64,11 @@ a detach answers that a power cycle follows, which the caller runs
 on, and a `ModuleSlotPinOut*`; nullptr when nothing is plugged in. It keeps
 no printer state and no module image. With the PC-100C the machine lists
 two capabilities, `printer/controls` (the library's `Controls`: PRINT and
-ADV keys, TRACE switch) and `printer/c59.printer-output` (the product kind
-`PrinterOutput`, `core/PrinterOutput.hpp`: the text and code lines; an
-adapter for LIB-8's paper until M-53). TRACE's position comes with the
+ADV keys, TRACE switch) and `printer/paper-output` (LIB-8's paper output
+kind, `calcu::paper::PaperOutput`; the PC-100C derives from
+`PaperOutputBase`, its description and dot rules are `core/PC100CPaper.hpp`;
+M-53). Without a PC-100C the machine lists `TMC0501/typing-support` and
+`TMC0501/c59.trace-records` only. TRACE's position comes with the
 attach request (`PeripheralRequest::switches`) and stays through reset,
 power cycle and cold boot; the app session keeps it across a model switch
 and a detach (C59-6 AC-6). The machine tells both peripherals of each
@@ -93,14 +99,15 @@ brightness and the indicator C (`core/TISegments.hpp`).
 | `PrinterPinOut.hpp`, `ModuleSlotPinOut.hpp` | — | The printer connector's and the module slot's functional pin-outs (C59-6) |
 | `PC100C.hpp/.cpp` | PC-100C | The print cradle: character tables, buffer, busy count, dot timing, PRINT/ADV/TRACE |
 | `SolidStateRomModule.hpp/.cpp` | TMC0540 family (TMC0541 …) | A module: 5000-byte image, address register |
-| `PrinterOutput.hpp` | — | The product kind `c59.printer-output` (until M-53) |
+| `PC100CPaper.hpp/.cpp` | PC-100C | Its paper: description (unit 0.430 mm, 129.07 units wide), 5×7 font, character table, dot rules of a cut-short line, placement of a line's dots (LIB-8 AC-24 to AC-27) |
+| `TIDebugging.hpp/.cpp` | — | The debug target `TMC0501` (LIB-10 AC-28), the run control's checks, `c59.trace-records` |
+| `TraceRecords.hpp` | — | The product kind `c59.trace-records`: the frame ring for a trace (LIB-10 D-24) |
 | `TI59Machine.hpp/.cpp` | — | Core-internal facade; variant setup |
 | `TIMachine.hpp/.cpp` | — | `calcu::machine::Machine`: ticks, operations, Reset restore, key readiness, keys, display output |
 | `TICatalogue.hpp/.cpp` | — | `tiCatalogue()` (models, PC-100C, 14 modules with their `<ID>.rom.yaml`), `TIMachineBuilder`, `TIConstantMemory` |
 | `TIAdapters.hpp/.cpp` | — | The adapters of C59-1 design §5 and their accessors |
 | `TIKeys.hpp/.cpp`, `TISegments.hpp`, `TIRomRanges.hpp`, `TIRomText.hpp/.cpp` | — | Key IDs; glyph rules; scan-loop, idle and card-wait ranges; ROM text decoding |
-| `TIPrinterTypes.hpp` | — | `PrinterCodeLine` (until M-53) |
-| `TIMachineTesting.hpp` | — | Test-only reads inside the core |
+| `TIMachineTesting.hpp` | — | Test-only reads inside the core; the PC-100C's code lines (`printedCodeLines`, LIB-8 adapter P-E3: the golden runs and, until M-59, `tools/headless/capi.cpp`) |
 | `MachineVariant.hpp` | — | `TI59 \| TI58 \| TI58C` (core-internal), `hasConstantMemory()`, `hasLargeMemory()` |
 | `TraceTypes.hpp` | — | `CpuFrame`, `DebugEvent`, `TIStepBoundary`, `TRACE_*` flags |
 
@@ -550,13 +557,33 @@ The return value carries the weight in `kWeightMask` and two bits:
   the debugger's CALCULATOR view (`reference/DebugAPI.md` §
   "Frozen-display semantics").
 
-`TI59Machine::step()` adds `kBreakpointHit`. `TIMachine::advance()` checks it
-and asks the run-control observer after each instruction only while a hook
-is set (`TIDebugTargetAdapter::setRunControl`; the run loop's
-`FreezeController`), and may then return early (`takeStop()`).
-`TIDebugTargetAdapter::stepUntilNextKeycode()` (the debugger's STEP) runs
-until `kStepBoundary`, a breakpoint or a cycle limit: one program byte per
-call, as SST.
+`TI59Machine::step()` adds `kBreakpointHit` (the core's own breakpoints,
+`TRACE_BREAKPOINTS`; the headless tools only).
+
+**Debug target (LIB-10 59, M-53; `core/TIDebugging.hpp`).**
+`TIMachine::debugging()` gives `TIDebugging` with one target, `TMC0501`
+(`TIDebugTarget`): the registers of the processor frame (`A`–`E` as 16
+digits, `KR`, `SR`, `fA`, `fB`, `flags`, `R5`, `digit`, `EXT`, `PREG`, `pc`;
+read only), the spaces `rom` (13-bit words with the overlay range), `ram`
+(16-digit registers), `scom` and `program` (program steps 00–99; `ram` and
+`program` take writes), a history (the frame ring, newest first) and
+decoding; no watches, no step over or out. While the run control's
+`Checks` are off, `TIMachine::advance()` takes the fast path. While they
+are set it stops before an instruction at a breakpoint (passed once after a
+pause there) and asks the observer after each instruction with
+`InstructionEvent::marks`: bit 0 the next instruction is a step boundary
+(`kStepBoundary`), bit 1 it lies in the keyboard scan loop, bits 8–15 the
+instruction's weight (1 active, 4 IDLE). When the observer stops the
+advance, the next instruction's pre-execution phase runs at once
+(`beginNextStep()`, idempotent), so the state read while paused is the next
+step's. With `setRunOn` set (the app session: while a pause or step waits
+to land), an advance goes on past the ticks asked for until the observer
+stops it, at most 50000 weights later, so a pause lands in the host call
+that asked for it, as 2.3.0's freeze did. The levels (`program`, `cpu`)
+and what lands where are the app's `TILevelRules`
+(`reference/SharedArchitecture.md`). The frame ring is on while the debug
+panel (`TIDebugPanelAdapter::setPanelTrace`), a trace
+(`c59.trace-records`) or the run control's checks want it.
 
 ---
 
@@ -874,9 +901,16 @@ paper advance to the next line. Of the measured 4165–4168 for a printed
 line, 4165 is used: the TI-59 printer-interrupt lines below fit it and not
 4168 (see "Dot timing within a line").
 
-Text lines are queued at once (`PrinterOutput::takeLines()`, the
-capability `printer/c59.printer-output`); the dot-matrix line
-(`PrinterCodeLine`, `takeCodeLines()`) is committed when Busy expires, with `rowCount` = 7. A `PRT.GO` while a line is printing is the
+The paper (LIB-8, M-53; `core/PC100CPaper.hpp`): `PRT.GO` puts the line's
+20 characters on the text layer at once, at the y where the paper stands;
+the line's dots go down when it ends (Busy expires: `rowCount` = 7), each
+character's 5×7 dots at `(i × 6.53 + c + 0.5, top + r + 0.5)` in dot pitches,
+and the paper is fed 10.18 units (a line cut short: only its drawn rows). A
+`PRT.FEED` gives an empty text line and 7.09 units. The capability is
+`printer/paper-output`; the paper itself is the session's (`PaperPart`).
+`PC100C::CodeLine` (the 20 codes, `rowCount`, `partialColumns`,
+`partialHeat`) is kept only for the golden runs and the headless tool
+(`TIMachineTesting::printedCodeLines`). A `PRT.GO` while a line is printing is the
 **printer interrupt** (during a feed's BUSY it prints normally): the line
 in progress is committed with what is on paper so far, and the new print
 is ignored. Firmware side and the
@@ -884,16 +918,18 @@ is ignored. Firmware side and the
 a print commits the pending line first, cut short at that moment like an
 interrupt, so lines keep their order; a reset, power cycle or cold boot
 does the same (`PC100C::operation()`), and so does a detach
-(`endLineHere()`, C59-6 EC-2): the rows printed stay on the paper.
+(`endLineHere()`, LIB-8 EC-7): the rows printed go onto the paper before
+the printer goes.
 
 **Dot timing within a line.** A stroke fires the 5 dot columns of all 20
 characters one column at a time, right to left. Column c (5 = rightmost) of
 row r (from 0) starts `r·508 + 18 + (5 − c)·64` cycles after `PRT.GO`, so a
 row's columns take 320 of its 508 cycles. A cut leaves `rowCount` complete
 rows and `partialColumns` (0–5) columns of the next one, the last of them
-heated `partialHeat` cycles. `PrinterGeometry` (`app/PrinterFont.hpp`)
-turns these into the dots each renderer draws; `inkAlpha` gives the last
-column's ink from its heating time (the darkness below; full from 20 cycles).
+heated `partialHeat` cycles. `core/PC100CPaper.hpp` (`inkedColumns`,
+`faintColumns`, `drawnRows`, `lineDots`) turns these into the marks on the
+paper; the faint column's darkness is its heating time (`inkAlpha` gives
+the grey of each darkness in the description; full from 20 cycles).
 
 Measured on the user's PC-100A (2026-10-25), on a TI-58C and on a TI-59.
 That unit's head has dead and flaky elements (a test line of 20 `Π`, code
@@ -967,8 +1003,13 @@ caller needs to serialise.
 
 Frames go into a 1024-entry ring (~392 bytes each) with **post-execution
 semantics**: `beginNextStep()` patches the previous frame with the state
-after its instruction. Seqno gaps mean ring overflow; `drainCpuFrames`
-reports the lost count. Field list and the trace file:
+after its instruction. Seqno gaps mean ring overflow; the drain reports
+the lost count. Since M-53 the flags are set by `TIMachine` alone: TRACE_PC
+| TRACE_REGS_FULL while the debug panel, a trace or the run control's checks
+want the ring, else none. A trace drains the ring through the capability
+`TMC0501/c59.trace-records` (`core/TraceRecords.hpp`: `begin`, `take`,
+`end`), which the app's `TITraceRecorder` turns into records; the panel
+reads it without draining (`TIDebugPanelAdapter::readCpuFrames`). Field list and the trace file:
 `reference/DebugAPI.md` § "CPU Inspector" and § "Trace File Format". `emitDebug()` events
 (`setDebugLevel`, `drainDebugEvents`): `reference/DebugAPI.md` § "Core
 debug events".

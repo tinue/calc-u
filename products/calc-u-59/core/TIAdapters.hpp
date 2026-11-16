@@ -20,25 +20,18 @@
 // |-----------------------|------------------------------------|
 // | TICardReaderAdapter   | M-55 (C59-7)                       |
 // | TIMemoryAdapter       | M-54 (C59-2, C59-3)                |
-// | TIDebugTargetAdapter  | M-53 (LIB-10 59)                   |
 // | TIDebugPanelAdapter   | M-56 (C59-4)                       |
 //
 // The core types still reachable here (CpuFrame, DebugEvent, TIStepBoundary)
-// go with their adapters (design D-7). TIPeripheralsAdapter went in M-25
+// go with their adapters (design D-7). TIDebugTargetAdapter went in M-53
+// (LIB-10 59): the debugger reaches the core through the debug target
+// (core/TIDebugging.hpp) and the panel's reads moved to TIDebugPanelAdapter
+// (adapter L-E3, until M-56). TIPeripheralsAdapter went in M-25
 // (C59-6): the PC-100C and the module are peripherals in their places. The
 // machine holds no lock: its one caller is the app session's thread
 // (ADR 0009; since M-34 on every frontend).
 
 class TIMachine;
-
-/// The run-control hook of TIDebugTargetAdapter::setRunControl: asked after
-/// every instruction with the PC of the next one, whether that is a step
-/// boundary and whether it is in the keyboard scan loop; true stops the advance.
-struct TIStepObserver {
-    virtual ~TIStepObserver() = default;
-    virtual bool stopAfter(std::uint16_t pc, bool stepBoundary, bool inScanLoop) = 0;
-};
-enum class TIStop { None, Breakpoint, Observer };
 
 /// The card reader until it is a media place (C59-7, M-55).
 class TICardReaderAdapter {
@@ -83,46 +76,25 @@ private:
     TIMachine& m_;
 };
 
-/// The debugger's calls until the debug target interface (LIB-10 59, M-53).
-class TIDebugTargetAdapter {
-public:
-    explicit TIDebugTargetAdapter(TIMachine& m) : m_(m) {}
-    /// One instruction; returns TMC0501::step()'s weight and bits. For the
-    /// headless recorder.
-    std::uint32_t step();
-    /// One instruction, stepping on through a HOLD (WAIT Dn) of up to 32.
-    void stepInstruction();
-    /// Up to the next program byte (a step boundary), a breakpoint or
-    /// maxCycles weighted cycles; returns the weighted cycles run.
-    std::uint32_t stepUntilNextKeycode(std::uint32_t maxCycles = 50000);
-    void beginNextStep();
-    CpuFrame snapshotCPU() const;
-    TIStepBoundary lastStepBoundary() const;
-    std::uint16_t pc() const;
-    void setTraceFlags(std::uint32_t flags);
-    std::uint32_t traceFlags() const;
-    std::uint32_t drainCpuFrames(CpuFrame* out, std::uint32_t max, std::uint32_t* outLost);
-    std::uint32_t readCpuFrames(CpuFrame* out, std::uint32_t max) const;
-    void addBreakpoint(std::uint16_t pc);
-    void removeBreakpoint(std::uint16_t pc);
-    void clearBreakpoints();
-    /// While set, Machine::advance() checks breakpoints and the observer after
-    /// each instruction and may return early (design D-6); nullptr clears it.
-    void setRunControl(TIStepObserver* observer);
-    /// Why the last advance stopped early, and clears it.
-    TIStop takeStop();
-    std::uint8_t readROMKeycode(int addr) const;
-    static std::string disassemble(std::uint16_t pc, std::uint16_t opcode);
-    static double decodeBCD(const std::uint8_t* nibbles16);
-
-private:
-    TIMachine& m_;
-};
-
-/// The debug panel's calls until C59-4 (M-56).
+/// The debug panel's calls until C59-4 (M-56). Since M-53 also what the
+/// CALCULATOR and CPU tabs, the dumps and the overlay's entry read that the
+/// debug target does not give (LIB-10 adapter L-E3).
 class TIDebugPanelAdapter {
 public:
     explicit TIDebugPanelAdapter(TIMachine& m) : m_(m) {}
+    std::uint16_t pc() const;
+    CpuFrame snapshotCPU() const;
+    TIStepBoundary lastStepBoundary() const;
+    /// The newest `max` frames of the ring, oldest first; not consumed.
+    std::uint32_t readCpuFrames(CpuFrame* out, std::uint32_t max) const;
+    std::uint8_t readROMKeycode(int addr) const;
+    /// The CPU tab shows the frame ring (while it shows, while paused, while a start is armed).
+    void setPanelTrace(bool on);
+    /// The overlay's entry (AsmOverlay.cpp): to the next program byte, at most 50000 weighted cycles.
+    std::uint32_t stepUntilNextKeycode(std::uint32_t maxCycles = 50000);
+    void beginNextStep();
+    static std::string disassemble(std::uint16_t pc, std::uint16_t opcode);
+    static double decodeBCD(const std::uint8_t* nibbles16);
     bool loadDebugOverlay(const std::uint16_t* data, std::size_t count);
     void clearDebugOverlay();
     bool runDebugOverlay(std::uint16_t startAddr, std::uint32_t maxSteps, std::uint32_t* outSteps);
@@ -153,8 +125,7 @@ std::array<std::uint16_t, 4> idleAndKeyDetectRange(const calcu::machine::ModelId
 // The accessors (design §3.4): nullptr if `m` is not a TI machine.
 TICardReaderAdapter* cardReaderOf(calcu::machine::Machine&);
 TIMemoryAdapter* memoryOf(calcu::machine::Machine&);
-TIDebugTargetAdapter* debugTargetOf(calcu::machine::Machine&);
 TIDebugPanelAdapter* debugPanelOf(calcu::machine::Machine&);
 const TICardReaderAdapter* cardReaderOf(const calcu::machine::Machine&);
 const TIMemoryAdapter* memoryOf(const calcu::machine::Machine&);
-const TIDebugTargetAdapter* debugTargetOf(const calcu::machine::Machine&);
+const TIDebugPanelAdapter* debugPanelOf(const calcu::machine::Machine&);

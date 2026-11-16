@@ -11,7 +11,17 @@ This skill covers all work inside `frontends/swift/App/`, `frontends/swift/App/V
 - App structure, files, threading, bridge: `reference/AppArchitecture.md`.
 - Everything that isn't drawing (run loop, keys, files, debugger, drawing
   rules): `reference/SharedArchitecture.md` and the calc-u-59-shared skill.
-- Freeze / step and the debug snapshots: `reference/DebugAPI.md`.
+- Freeze / step and the debug snapshots: `reference/DebugAPI.md`. Since
+  M-53 FREEZE, STEP, RESUME and FREEZE ON START are the library's run
+  control (`pause`, `step`, `resume`, `pause-on-start`; CALCULATOR is
+  `program`, CPU `cpu`), and the buttons follow its rule through the bridge
+  (`buttonUseFor:`, `calcu::debugger::buttonUse`; test
+  `Calc-U-59Tests/RunControlTests.swift`); TRACE is the trace session's.
+- The printer's paper (M-53, adapter S-P1 until C59-8): `PrinterView` draws
+  the library's topic `paper PC-100C` (dots and text the bridge keeps);
+  Copy and Cut are `paper.copy` / `paper.cut`, the picture the library's,
+  the pasteboard entry the bridge's (`clipboard-image`); PRINT, ADV, TRACE
+  are `set-control`. `reference/AppArchitecture.md` § "Printer".
 - TI-59 background: the calc-u-59-core skill's Domain Primer. SwiftUI
   practice: the swiftui-pro skill.
 

@@ -75,7 +75,7 @@ std::vector<std::string> stepThrough(const std::vector<uint8_t>& prog, int last,
 // Each STEP stops at the step dispatch and shows the next step, one byte at a
 // time (operands included), as LRN does after each SST: the GTO completes in
 // its last byte and lands on its target, with X intact.
-TEST(step_shows_the_next_step) {
+TEST(lib10_ac35_step_shows_the_next_step) {
     // LBL A, 1, +, GTO 00 17 (GTO at 004, operands at 005/006), Nop…, 2, =, R/S
     std::vector<uint8_t> prog = {76, 11, 1, 85, 61, 0, 17};
     prog.resize(17, 68);
@@ -100,7 +100,7 @@ TEST(step_shows_the_next_step) {
 // While a program runs, the view is built from the last latched boundary, so
 // sampling at arbitrary instructions (as the 60 Hz refresh does) never shows X
 // mid-operation; the live CPU state at those samples often would.
-TEST(running_view_shows_only_step_boundaries) {
+TEST(lib10_ac35_running_view_shows_only_step_boundaries) {
     for (Model model : {Model::TI59, Model::TI58C}) {
         auto m = testroms::makeMachine(model);
         testroms::runToScanLoop(*m, model);

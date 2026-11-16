@@ -37,7 +37,7 @@ struct WebPieces {
         file = std::make_unique<calcu::settings::SettingsFile>(calcu::settings::SettingsFile::open(
             settings::settingsDecl(), calcu::settings::settingsFilePath(settings::settingsDecl(), dirs)));
         settings = std::make_unique<settings::Settings>(*file);
-        web = std::make_unique<TIWebPart>(*settings, (webFolder.path() / "presets").string(), webFolder.path() / "traces");
+        web = std::make_unique<TIWebPart>(*settings, (webFolder.path() / "presets").string());
     }
 };
 
@@ -45,7 +45,7 @@ struct WebPieces {
 struct WebRig : WebPieces, testroms::SessionRig {
     WebRig()
         : SessionRig(testroms::RigOptions{.model = settings->startupModel(), .after = {web.get()},
-                                          .saveFolder = dirs.saveFolder, .traceFolder = webFolder.path() / "traces"}) {
+                                          .saveFolder = dirs.saveFolder, .noTraceFolder = true}) {
         web->bind(part());
     }
     ~WebRig() { web.reset(); }   // first: it tells the part it goes
@@ -117,7 +117,7 @@ TEST(lib15_ac22_the_page_topics_are_there) {
     WebRig r;
     r.run(1s);
     for (const auto* t : {&topics::kWebModel, &topics::kWebDisplay, &topics::kWebRunState, &topics::kWebPrinter,
-                          &topics::kWebCard, &topics::kWebLog, &topics::kWebSettings, &topics::kWebTraces})
+                          &topics::kWebCard, &topics::kWebLog, &topics::kWebSettings})
         CHECK(r.fe.mirror.state(*t) != nullptr);
     const Value display = r.state(topics::kWebDisplay);
     CHECK(display.bytes() && display.bytes()->size() == 36 * sizeof(float));

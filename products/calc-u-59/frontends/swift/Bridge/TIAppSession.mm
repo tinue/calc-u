@@ -1,7 +1,12 @@
 #import "TIAppSession.h"
 #import "BridgeConvert.h"
 #import "TIFileFormats+Cpp.h"
-#include <calcu59/app/PrinterFont.hpp>
+#if TARGET_OS_OSX
+#import <AppKit/AppKit.h>
+#else
+#import <UIKit/UIKit.h>
+#endif
+#include <calcu59/core/PC100CPaper.hpp>
 #include <calcu59/app/ProductRoms.hpp>
 #include <calcu59/app/KeyboardLayout.hpp>
 #include <calcu59/app/SessionThread.hpp>
@@ -12,23 +17,16 @@
 #include <calcu59/app/HarnessProduct.hpp>
 #include "harness/attach/AttachPort.hpp"
 #endif
+#include "sessions/Args.hpp"
+#include "debugger/ButtonRule.hpp"
+#include "debugger/RunState.hpp"
+#include "paper/PaperTopics.hpp"
 #include "roms/Bundle.hpp"
 #include "sessions/LibraryTopics.hpp"
 #include "sessions/TopicMirror.hpp"
 #include <memory>
 
 // ── Value objects ────────────────────────────────────────────────────────────
-
-@interface TIPrinterLine ()
-@property (nonatomic, readwrite, copy) NSData *codes;
-@property (nonatomic, readwrite) BOOL complete;
-@property (nonatomic, readwrite) NSInteger drawnRows;
-@property (nonatomic, readwrite, copy) NSData *inkedColumns;
-@property (nonatomic, readwrite, copy) NSData *faintColumns;
-@property (nonatomic, readwrite) CGFloat faintAlpha;
-@end
-@implementation TIPrinterLine
-@end
 
 @interface TIStepEntry ()
 @property (nonatomic, readwrite) NSInteger stepNum;
@@ -234,8 +232,9 @@ TIChange changeOf(const cs::TopicName& t) {
     if (t == T::kCueCard) return TIChangeCueCard;
     if (t == T::kPrinter) return TIChangePrinter;
     if (t == T::kCardReader) return TIChangeCard;
-    if (t == T::kRunState || t == calcu::typing::kHeldKeysTopic) return TIChangeRunState;
-    if (t == T::kTrace) return TIChangeTrace;
+    if (t == T::kRunState || t == calcu::typing::kHeldKeysTopic || t == calcu::debugger::kRunStateTopic)
+        return TIChangeRunState;
+    if (t == calcu::debugger::kTraceTopic) return TIChangeTrace;
     if (t == T::kDebugLive) return static_cast<TIChange>(TIChangeLive | TIChangeListing);
     if (t == T::kDebugCpu) return TIChangeCpu;
     if (t == T::kDebugHeatmap) return TIChangeHeatmap;
@@ -264,6 +263,70 @@ std::string keyIdOf(uint8_t code) { return cu59::keyIdAt(code).value_or(calcu::m
 std::vector<cs::Value::Member> argsWithBytes(std::vector<cs::Value::Member> m, NSData* raw) {
     if (raw) m.push_back({"bytes", cs::Value(bytes(raw))});
     return m;
+}
+
+const std::string kPC100COwner = "PC-100C";
+const cs::TopicName kPaper = calcu::paper::paperTopic(kPC100COwner);
+
+calcu::debugger::LevelName levelOf(TIFreezeOwner l) {
+    return l == TIFreezeOwnerCpu ? calcu::debugger::kCpu : calcu::debugger::kProgram;
+}
+
+TIButtonUse buttonUseOf(const calcu::debugger::ButtonUse& u) {
+    TIButtonUse t;
+    t.pause = u.pause;
+    t.step = u.step;
+    t.resume = u.resume;
+    return t;
+}
+
+// The host services the bridge answers (LIB-3 AC-27): the clipboard (LIB-8
+// AC-16, LIB-8 D-28: the session's Copy makes the picture; the entry is the
+// platform's). A picture keeps its physical size (`dotsPerInch`).
+cs::ServiceAnswer answerService(const cs::ServiceAsk& ask) {
+    using cs::HostService;
+    if (ask.service == HostService::ClipboardImage) {
+        const cs::Value* b = ask.args.find("bytes");
+        if (!b || !b->bytes()) return cs::ServiceAnswer{false, cs::Value(), "No picture to copy."};
+        NSData* png = [NSData dataWithBytes:b->bytes()->data() length:b->bytes()->size()];
+        const cs::Value* t = ask.args.find("text");
+        NSString* text = t && t->string() ? ns(*t->string()) : nil;
+#if TARGET_OS_OSX
+        NSImage* image = [[NSImage alloc] initWithData:png];
+        if (!image) return cs::ServiceAnswer{false, cs::Value(), "The picture cannot be read."};
+        const double dpi = cs::realArg(ask.args, "dotsPerInch", 0);
+        NSBitmapImageRep* rep = image.representations.count ? (NSBitmapImageRep*)image.representations.firstObject : nil;
+        if (dpi > 0 && rep) image.size = NSMakeSize(rep.pixelsWide * 72.0 / dpi, rep.pixelsHigh * 72.0 / dpi);
+        NSPasteboard* pb = NSPasteboard.generalPasteboard;
+        [pb clearContents];
+        NSMutableArray<id<NSPasteboardWriting>>* objects = [NSMutableArray arrayWithObject:image];   // the picture first
+        if (text) [objects addObject:text];
+        if (![pb writeObjects:objects]) return cs::ServiceAnswer{false, cs::Value(), "The clipboard refused it."};
+#else
+        NSMutableDictionary* item = [NSMutableDictionary dictionaryWithObject:png forKey:@"public.png"];
+        if (text) item[@"public.utf8-plain-text"] = text;
+        UIPasteboard.generalPasteboard.items = @[item];
+#endif
+        return cs::ServiceAnswer{true, cs::Value(), {}};
+    }
+    if (ask.service == HostService::ClipboardText) {
+        if (const cs::Value* t = ask.args.find("text"); t && t->string()) {
+#if TARGET_OS_OSX
+            [NSPasteboard.generalPasteboard clearContents];
+            [NSPasteboard.generalPasteboard setString:ns(*t->string()) forType:NSPasteboardTypeString];
+#else
+            UIPasteboard.generalPasteboard.string = ns(*t->string());
+#endif
+            return cs::ServiceAnswer{true, cs::Value(), {}};
+        }
+#if TARGET_OS_OSX
+        NSString* now = [NSPasteboard.generalPasteboard stringForType:NSPasteboardTypeString];
+#else
+        NSString* now = UIPasteboard.generalPasteboard.string;
+#endif
+        return cs::ServiceAnswer{true, cs::Value::object({{"text", now ? cpp(now) : std::string()}}), {}};
+    }
+    return cs::ServiceAnswer{false, cs::Value(), "This frontend does not answer " + std::string(cs::serviceName(ask.service)) + "."};
 }
 
 } // namespace
@@ -304,7 +367,10 @@ static cu59::SessionThread::ReplyHandler flagReply(void (^done)(BOOL)) {
     __weak id<TIAppSessionDelegate> _delegate;
     std::unique_ptr<cu59::SessionThread> _thread;
     cs::TopicMirror _mirror;
-    size_t _printerLines;
+    // The PC-100C's paper as the library's topic sent it (S-P1).
+    std::vector<std::string> _paperLines;
+    std::vector<TIPaperDot> _paperDots;
+    double _paperReach;
 }
 
 - (instancetype)initWithRoms:(TIRomSet *)roms start:(TISessionStart *)start delegate:(id<TIAppSessionDelegate>)delegate {
@@ -337,6 +403,9 @@ static cu59::SessionThread::ReplyHandler flagReply(void (^done)(BOOL)) {
 
 - (const cu59::TIPrinterState *)printer { return _mirror.stateOf<cu59::TIPrinterState>(cu59::topics::kPrinter); }
 - (const cu59::TIRunState *)run { return _mirror.stateOf<cu59::TIRunState>(cu59::topics::kRunState); }
+- (const calcu::debugger::RunState *)runControl {
+    return _mirror.stateOf<calcu::debugger::RunState>(calcu::debugger::kRunStateTopic);
+}
 - (const cu59::TICardReaderState *)card { return _mirror.stateOf<cu59::TICardReaderState>(cu59::topics::kCardReader); }
 - (const cu59::TIDebugLiveState *)live { return _mirror.stateOf<cu59::TIDebugLiveState>(cu59::topics::kDebugLive); }
 - (const cu59::TIDebugLogState *)logState { return _mirror.stateOf<cu59::TIDebugLogState>(cu59::topics::kDebugLog); }
@@ -352,7 +421,42 @@ static cu59::SessionThread::ReplyHandler flagReply(void (^done)(BOOL)) {
             if (item.onReply) item.onReply(*r);
             continue;
         }
+        if (const auto* a = std::get_if<cs::ServiceAsk>(&m)) {
+            _thread->answer(a->ask, answerService(*a));
+            continue;
+        }
         if (const auto* s = std::get_if<cs::StreamMessage>(&m)) {
+            if (s->topic == kPaper) {   // LIB-8 AC-6: the reset marker: the paper was emptied
+                if (s->reset) {
+                    _paperLines.clear();
+                    _paperDots.clear();
+                    _paperReach = 0;
+                    changes = static_cast<TIChange>(changes | TIChangePaperCut);
+                }
+                const auto& greys = pc100cpaper::description().darknessGreys;
+                for (const auto& p : s->appended) {
+                    const auto* x = cs::payloadAs<calcu::paper::PaperAppended>(p);
+                    if (!x) continue;
+                    for (const auto& l : x->lines) _paperLines.push_back(l.text);
+                    for (const auto& mark : x->marks) {
+                        const auto* dot = std::get_if<calcu::paper::Dot>(&mark);
+                        if (!dot) continue;
+                        const double grey = dot->darkness < greys.size() ? greys[dot->darkness] : 0;
+                        const double unit = static_cast<double>(calcu::paper::kPerUnit);
+                        _paperDots.push_back(TIPaperDot{dot->at.x / unit, dot->at.y / unit, 1.0 - grey / 255.0});
+                    }
+                    _paperReach = static_cast<double>(x->reach.to) / static_cast<double>(calcu::paper::kPerUnit);
+                }
+                changes = static_cast<TIChange>(changes | TIChangePrinter);
+                continue;
+            }
+            if (s->topic == calcu::paper::kPaperCopiesTopic) {   // AC-20
+                for (const auto& p : s->appended)
+                    if (const auto* o = cs::payloadAs<calcu::paper::CopyOutcome>(p);
+                        o && [d respondsToSelector:@selector(paperCopied:)])
+                        [d paperCopied:static_cast<NSInteger>(o->outcome)];
+                continue;
+            }
             if (s->topic == cs::kNoticesTopic) {
                 for (const auto& p : s->appended)
                     if (const auto* n = cs::payloadAs<cs::Notice>(p)) {
@@ -374,10 +478,6 @@ static cu59::SessionThread::ReplyHandler flagReply(void (^done)(BOOL)) {
         }
         if (const auto* st = std::get_if<cs::StateMessage>(&m)) changes = static_cast<TIChange>(changes | changeOf(st->topic));
         _mirror.deliver(m);
-    }
-    if (const auto* p = [self printer]) {
-        if (p->lines.size() < _printerLines) changes = static_cast<TIChange>(changes | TIChangePaperCut);
-        _printerLines = p->lines.size();
     }
     if (changes) [d changed:changes];
 }
@@ -518,40 +618,26 @@ static cu59::SessionThread::ReplyHandler flagReply(void (^done)(BOOL)) {
     const auto* c = _mirror.stateOf<cu59::TICueCardState>(cu59::topics::kCueCard);
     return c && c->card ? TICueCardFrom(*c->card) : nil;
 }
-- (NSInteger)printerLineCount { const auto* p = [self printer]; return p ? static_cast<NSInteger>(p->lines.size()) : 0; }
-- (NSArray<NSString *> *)printerLinesFrom:(NSInteger)start {
+- (NSInteger)paperLineCount { return static_cast<NSInteger>(_paperLines.size()); }
+- (NSArray<NSString *> *)paperLinesFrom:(NSInteger)start {
     NSMutableArray* out = [NSMutableArray array];
-    if (const auto* p = [self printer])
-        for (size_t i = static_cast<size_t>(MAX(start, 0)); i < p->lines.size(); ++i) [out addObject:ns(p->lines[i])];
+    for (size_t i = static_cast<size_t>(MAX(start, 0)); i < _paperLines.size(); ++i) [out addObject:ns(_paperLines[i])];
     return out;
 }
-- (NSInteger)printerCodeLineCount { const auto* p = [self printer]; return p ? static_cast<NSInteger>(p->codeLines.size()) : 0; }
-- (NSArray<TIPrinterLine *> *)printerCodeLinesFrom:(NSInteger)start {
-    NSMutableArray* out = [NSMutableArray array];
-    const auto* p = [self printer];
-    if (!p) return out;
-    const auto& lines = p->codeLines;
-    for (size_t i = static_cast<size_t>(MAX(start, 0)); i < lines.size(); ++i) {
-        TIPrinterLine* line = [[TIPrinterLine alloc] init];
-        line.codes = [NSData dataWithBytes:lines[i].codes.data() length:lines[i].codes.size()];
-        const auto dots = cu59::PrinterGeometry::lineDots(&lines[i]);
-        line.complete = dots.complete;
-        line.drawnRows = dots.drawnRows;
-        line.inkedColumns = [NSData dataWithBytes:dots.inked length:7];
-        line.faintColumns = [NSData dataWithBytes:dots.faint length:7];
-        line.faintAlpha = dots.faintAlpha;
-        [out addObject:line];
-    }
-    return out;
+- (NSInteger)paperDotCount { return static_cast<NSInteger>(_paperDots.size()); }
+- (NSData *)paperDotsFrom:(NSInteger)start {
+    const size_t from = std::min(static_cast<size_t>(MAX(start, 0)), _paperDots.size());
+    return [NSData dataWithBytes:_paperDots.data() + from length:(_paperDots.size() - from) * sizeof(TIPaperDot)];
 }
-- (double)printerStripHeightUnits { const auto* p = [self printer]; return p ? p->stripHeightUnits : 0; }
+- (double)paperReachUnits { return _paperReach; }
+- (void)copyPaper { [self send:calcu::paper::kPaperCopyCommand args:{{"owner", kPC100COwner}}]; }
+- (void)cutPaper { [self send:calcu::paper::kPaperCutCommand args:{{"owner", kPC100COwner}, {"copy", true}}]; }
 - (BOOL)printerConnected { const auto* p = [self printer]; return !p || p->connected; }
 - (BOOL)printerTrace { const auto* p = [self printer]; return p && p->trace; }
 - (void)togglePrinterConnection { [self send:cu59::commands::kTogglePrinterConnection]; }
-- (void)togglePrinterTrace { [self send:cu59::commands::kTogglePrinterTrace]; }
-- (void)pressPrinterPrint:(BOOL)pressed { [self send:cu59::commands::kPrinterPrint args:{{"pressed", pressed == YES}}]; }
-- (void)pressPrinterAdv:(BOOL)pressed { [self send:cu59::commands::kPrinterAdv args:{{"pressed", pressed == YES}}]; }
-- (void)cutPaper { [self send:cu59::commands::kCutPaper]; }
+- (void)setPrinterControl:(NSString *)control on:(BOOL)on {
+    [self send:cu59::commands::kSetControl args:{{"peripheral", kPC100COwner}, {"control", cpp(control)}, {"on", on == YES}}];
+}
 
 // ── Card reader ──────────────────────────────────────────────────────────────
 
@@ -596,24 +682,32 @@ static cu59::SessionThread::ReplyHandler flagReply(void (^done)(BOOL)) {
 
 - (void)setLiveDebugEnabled:(BOOL)on { [self send:cu59::commands::kLiveDebug args:{{"on", on == YES}}]; }
 - (void)setCpuDebugEnabled:(BOOL)on { [self send:cu59::commands::kCpuDebug args:{{"on", on == YES}}]; }
-- (BOOL)frozen { const auto* r = [self run]; return r && r->debug.frozen; }
+- (BOOL)frozen { const auto* r = [self runControl]; return r && r->paused; }
 - (TIFreezeOwner)freezeOwner {
-    const auto* r = [self run];
-    if (!r || !r->debug.owner) return TIFreezeOwnerNone;
-    return *r->debug.owner == cu59::FreezeOwner::Cpu ? TIFreezeOwnerCpu : TIFreezeOwnerCalculator;
+    const auto* r = [self runControl];
+    if (!r || !r->paused || !r->owner) return TIFreezeOwnerNone;
+    return *r->owner == calcu::debugger::kCpu ? TIFreezeOwnerCpu : TIFreezeOwnerCalculator;
 }
-- (BOOL)pcChangeArmed { const auto* r = [self run]; return r && r->debug.pcChangeArmed; }
-- (BOOL)scanLoopExitArmed { const auto* r = [self run]; return r && r->debug.scanLoopExitArmed; }
-- (void)freeze:(TIFreezeOwner)owner {
-    if (owner != TIFreezeOwnerNone) [self send:cu59::commands::kFreeze args:{{"owner", owner == TIFreezeOwnerCpu ? 0 : 1}}];
+- (BOOL)pcChangeArmed { const auto* r = [self runControl]; return r && r->armed == calcu::debugger::kProgram; }
+- (BOOL)scanLoopExitArmed { const auto* r = [self runControl]; return r && r->armed == calcu::debugger::kCpu; }
+- (TIButtonUse)buttonUseFor:(TIFreezeOwner)level {
+    return buttonUseOf(calcu::debugger::buttonUse(levelOf(level), [self runControl]));
 }
-- (void)resume { [self send:cu59::commands::kResume]; }
-- (void)armPcChange { [self send:cu59::commands::kArmPcChange]; }
-- (void)armScanLoopExit { [self send:cu59::commands::kArmScanLoopExit]; }
-- (void)disarmPcChange { [self send:cu59::commands::kDisarmPcChange]; }
-- (void)disarmScanLoopExit { [self send:cu59::commands::kDisarmScanLoopExit]; }
-- (void)stepKeycode { [self send:cu59::commands::kStepKeycode]; }
-- (void)stepInstruction { [self send:cu59::commands::kStepInstruction]; }
++ (TIButtonUse)buttonUseFor:(TIFreezeOwner)level hasState:(BOOL)hasState paused:(BOOL)paused owner:(TIFreezeOwner)owner {
+    calcu::debugger::RunState s;
+    s.paused = paused == YES;
+    if (owner != TIFreezeOwnerNone) s.owner = levelOf(owner);
+    return buttonUseOf(calcu::debugger::buttonUse(levelOf(level), hasState ? &s : nullptr));
+}
+- (void)pause:(TIFreezeOwner)level { [self send:calcu::debugger::kPauseCommand args:{{"level", levelOf(level).value}}]; }
+- (void)step:(TIFreezeOwner)level {
+    [self send:calcu::debugger::kStepCommand args:{{"level", levelOf(level).value}, {"count", 1}}];
+}
+- (void)resume { [self send:calcu::debugger::kResumeCommand]; }
+- (void)pauseOnStart:(TIFreezeOwner)level {
+    if (level == TIFreezeOwnerNone) [self send:calcu::debugger::kPauseOnStartCommand args:{{"off", true}}];
+    else [self send:calcu::debugger::kPauseOnStartCommand args:{{"level", levelOf(level).value}}];
+}
 - (TILiveDebugSnapshot *)liveSnapshot {
     const auto* l = [self live];
     return snapshotFrom(l ? l->live : cu59::LiveDebugSnapshot{});
@@ -642,10 +736,14 @@ static cu59::SessionThread::ReplyHandler flagReply(void (^done)(BOOL)) {
 - (void)dumpMemory { [self send:cu59::commands::kDumpMemory]; }
 
 - (BOOL)manualTrace {
-    const auto* t = _mirror.stateOf<cu59::TITraceState>(cu59::topics::kTrace);
-    return t && t->manualTrace;
+    const auto* t = _mirror.stateOf<calcu::debugger::TraceState>(calcu::debugger::kTraceTopic);
+    return t && t->running;
 }
-- (void)setManualTrace:(BOOL)on { [self send:cu59::commands::kManualTrace args:{{"on", on == YES}}]; }
+// The TRACE button (LIB-10 AC-23): the trace session's file of the button's name.
+- (void)setManualTrace:(BOOL)on {
+    if (on) [self send:calcu::debugger::kTraceCommand args:{{"button", true}}];
+    else [self send:calcu::debugger::kTraceCommand args:{{"off", true}}];
+}
 
 // ── ASM overlay ──────────────────────────────────────────────────────────────
 

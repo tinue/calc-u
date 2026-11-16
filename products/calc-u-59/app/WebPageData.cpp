@@ -3,7 +3,6 @@
 #include "KeyboardLayout.hpp"
 #include "LedGeometry.hpp"
 #include "MachineModelInfo.hpp"
-#include "PrinterFont.hpp"
 #include "RomHeatmap.hpp"
 #include "SevenSegment.hpp"
 
@@ -42,20 +41,6 @@ Value webStaticData(const std::vector<ModuleMetadata>& moduleList) {
                                   {"cardCorners", Value(std::move(corners))},
                                   {"keys", Value(std::move(keys))}});
 
-    using PG = PrinterGeometry;
-    Value::Array font;
-    for (int ch = 0; ch < 64; ++ch) {
-        Value::Array rows;
-        for (int r = 0; r < 7; ++r) rows.push_back(Value(kPC100CFont[ch][r]));
-        font.push_back(Value(std::move(rows)));
-    }
-    Value printer = Value::object({{"widthUnits", PG::widthUnits},
-                                   {"charStepUnits", PG::charStepUnits},
-                                   {"dotRadiusFraction", PG::dotRadiusFraction},
-                                   {"paddingX", PG::paperPaddingX},
-                                   {"paddingY", PG::paperPaddingY},
-                                   {"font", Value(std::move(font))}});
-
     Value::Array colors;   // [r, g, b] per heat step
     for (int i = 0; i < 6; ++i)
         colors.push_back(Value(Value::Array{Value(kHeatColors[i].r), Value(kHeatColors[i].g), Value(kHeatColors[i].b)}));
@@ -64,7 +49,6 @@ Value webStaticData(const std::vector<ModuleMetadata>& moduleList) {
     return Value::object({{"models", Value(std::move(models))},
                           {"modules", Value(std::move(modules))},
                           {"layout", std::move(layout)},
-                          {"printer", std::move(printer)},
                           {"heatmap", std::move(heat)}});
 }
 

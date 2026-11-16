@@ -32,7 +32,16 @@ Everything that isn't drawing: `reference/SharedArchitecture.md`.
    gets it too. `EmulatorController` is a thin QObject frontend of the
    library's app session (`cu59::makeAppSession`, LIB-3 AC-28): it calls the
    session at 60 Hz, sends `c59.*` commands, reads a `TopicMirror` and turns
-   its topic changes into Qt signals; notices are its alerts.
+   its topic changes into Qt signals; notices are its alerts. Since M-53 it
+   states and answers `clipboard-image` and `clipboard-text` with the
+   library's `ClipboardService` (LIB-8 adapter P-E6, until LIB-14's
+   `SessionHost` in M-57), and hands the library's `papers`, `paper …`,
+   `run-state` and `trace` topics to the widgets (`addMessageHandler`).
+   The paper is the library's paper panel (`PaperPane`; owner and controls
+   from `c59.printer`, adapter P-E1); FREEZE, STEP and RESUME are the
+   library's run-control buttons of the levels `program` (CALCULATOR) and
+   `cpu` (CPU), FREEZE ON START sends `pause-on-start`, TRACE sends
+   `trace {button: true}` (LIB-10).
 3. **One thread.** The session lives on the GUI thread; there is no
    emulation thread and no queue to hop. Qt6 sends neither suspend nor
    continue (LIB-3 AC-31; CTest `CalcU59NoOwnSession`).
@@ -50,7 +59,10 @@ Everything that isn't drawing: `reference/SharedArchitecture.md`.
    A build with the tests also has `--pacing-probe <s>` (LIB-17 AC-19, CTest
    `CalcU59QtPacingProbe`): emulated against wall time over `<s>` seconds, exit 0 or 1;
    run it offscreen with a temporary `HOME`, so no settings of the user's are touched.
-7. **Commit often, never push.**
+7. **Tests:** `CalcU59QtTests` (`frontends/qt6/tests/`, Frequent in a
+   tree with `CALCU_FRONTEND_QT=ON`; offscreen, a `HOME` of the build
+   tree's) builds the app's widgets on a real `EmulatorController`.
+8. **Commit often, never push.**
 
 ## Class map
 
@@ -63,12 +75,12 @@ Everything that isn't drawing: `reference/SharedArchitecture.md`.
 | `KeyboardWidget` | `KeyboardView` |
 | `LedRenderer` | `LEDDisplayView` |
 | `CueCardRenderer` | `CueCardView` |
-| `PrinterWidget` | `PrinterView` |
+| `PaperPane` (the library's `calcu::qt6::PaperPanel` with the PC-100C's connect toggle above it, LIB-8 since M-53) | `PrinterView` |
 | `CardPickerDialog` | `CardPickerView` |
 | `debug/DebugPanel`, `debug/AsmOverlayBox`, `debug/LogWidget` | `DebugView` (`ASMDebugContent`, `StaticDebugContent`) |
 | `debug/LiveDebugWidget` | `LiveDebugView` |
 | `debug/CpuInspectorWidget`, `debug/RomHeatmapWidget` | `CPUInspectorView` |
-| `HoldRepeatButton` | `HoldRepeatButton.swift` |
+| the library's `calcu::qt6::RunControlButtons` (FREEZE, STEP, RESUME of each debug tab, LIB-10 since M-53) | `HoldRepeatButton.swift` |
 | `ChromeStyle.hpp` | `ChromeControlStyles.swift` |
 | `SettingsDialog`, `AppSettings.hpp`, `AppPaths` | `SettingsView`, `AppSettings.swift`, `CardStorage.swift` |
 | `AboutDialog` | `AppInfo.swift` |

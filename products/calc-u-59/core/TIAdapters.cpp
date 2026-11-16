@@ -38,45 +38,30 @@ void TIMemoryAdapter::runInstructions(std::uint32_t n) {
     for (std::uint32_t i = 0; i < n; ++i) m_.stepOne();
 }
 
-// ── TIDebugTargetAdapter (M-53) ───────────────────────────────────────────────
-std::uint32_t TIDebugTargetAdapter::step() { return m_.stepOne(); }
-void TIDebugTargetAdapter::stepInstruction() {
-    const std::uint16_t prior = m_.m_hw.pc();
-    m_.stepOne();
-    // HOLD (WAIT Dn): the PC didn't advance — step until it does.
-    for (int limit = 32; m_.m_hw.pc() == prior && limit > 0; --limit) m_.stepOne();
+// ── TIDebugPanelAdapter (M-56) ────────────────────────────────────────────────
+std::uint16_t TIDebugPanelAdapter::pc() const { return m_.m_hw.pc(); }
+CpuFrame TIDebugPanelAdapter::snapshotCPU() const { return m_.m_hw.snapshotCPU(); }
+TIStepBoundary TIDebugPanelAdapter::lastStepBoundary() const { return m_.m_hw.lastStepBoundary(); }
+std::uint32_t TIDebugPanelAdapter::readCpuFrames(CpuFrame* out, std::uint32_t max) const {
+    return m_.m_hw.readCpuFrames(out, max);
 }
-std::uint32_t TIDebugTargetAdapter::stepUntilNextKeycode(std::uint32_t maxCycles) {
+std::uint8_t TIDebugPanelAdapter::readROMKeycode(int addr) const { return m_.m_hw.readROMKeycode(addr); }
+void TIDebugPanelAdapter::setPanelTrace(bool on) {
+    m_.m_panelTrace = on;
+    m_.applyTraceFlags();
+}
+std::uint32_t TIDebugPanelAdapter::stepUntilNextKeycode(std::uint32_t maxCycles) {
     std::uint32_t done = 0;
     while (done < maxCycles) {
         const std::uint32_t r = m_.stepOne();
         done += r & TI59Machine::kWeightMask;   // weight: 1 active, 4 IDLE
-        if (r & (TI59Machine::kBreakpointHit | TI59Machine::kStepBoundary)) break;
+        if (r & TI59Machine::kStepBoundary) break;
     }
     return done;
 }
-void TIDebugTargetAdapter::beginNextStep() { m_.m_hw.beginNextStep(); }
-CpuFrame TIDebugTargetAdapter::snapshotCPU() const { return m_.m_hw.snapshotCPU(); }
-TIStepBoundary TIDebugTargetAdapter::lastStepBoundary() const { return m_.m_hw.lastStepBoundary(); }
-std::uint16_t TIDebugTargetAdapter::pc() const { return m_.m_hw.pc(); }
-void TIDebugTargetAdapter::setTraceFlags(std::uint32_t f) { m_.m_hw.setTraceFlags(f); }
-std::uint32_t TIDebugTargetAdapter::traceFlags() const { return m_.m_hw.traceFlags(); }
-std::uint32_t TIDebugTargetAdapter::drainCpuFrames(CpuFrame* out, std::uint32_t max, std::uint32_t* outLost) {
-    return m_.m_hw.drainCpuFrames(out, max, outLost);
-}
-std::uint32_t TIDebugTargetAdapter::readCpuFrames(CpuFrame* out, std::uint32_t max) const {
-    return m_.m_hw.readCpuFrames(out, max);
-}
-void TIDebugTargetAdapter::addBreakpoint(std::uint16_t pc) { m_.m_hw.addBreakpoint(pc); }
-void TIDebugTargetAdapter::removeBreakpoint(std::uint16_t pc) { m_.m_hw.removeBreakpoint(pc); }
-void TIDebugTargetAdapter::clearBreakpoints() { m_.m_hw.clearBreakpoints(); }
-void TIDebugTargetAdapter::setRunControl(TIStepObserver* observer) { m_.m_observer = observer; }
-TIStop TIDebugTargetAdapter::takeStop() { return std::exchange(m_.m_stop, TIStop::None); }
-std::uint8_t TIDebugTargetAdapter::readROMKeycode(int addr) const { return m_.m_hw.readROMKeycode(addr); }
-std::string TIDebugTargetAdapter::disassemble(std::uint16_t pc, std::uint16_t op) { return TI59Machine::disassemble(pc, op); }
-double TIDebugTargetAdapter::decodeBCD(const std::uint8_t* n) { return TI59Machine::decodeBCD(n); }
-
-// ── TIDebugPanelAdapter (M-56) ────────────────────────────────────────────────
+void TIDebugPanelAdapter::beginNextStep() { m_.m_hw.beginNextStep(); }
+std::string TIDebugPanelAdapter::disassemble(std::uint16_t pc, std::uint16_t op) { return TI59Machine::disassemble(pc, op); }
+double TIDebugPanelAdapter::decodeBCD(const std::uint8_t* n) { return TI59Machine::decodeBCD(n); }
 bool TIDebugPanelAdapter::loadDebugOverlay(const std::uint16_t* data, std::size_t count) {
     return m_.m_hw.loadDebugOverlay(data, count);
 }
@@ -102,8 +87,7 @@ TIMachine* ti(Machine& m) { return m.descriptor().family == kTIFamily ? static_c
 } // namespace
 TICardReaderAdapter* cardReaderOf(Machine& m) { auto* t = ti(m); return t ? &t->m_cardReader : nullptr; }
 TIMemoryAdapter* memoryOf(Machine& m) { auto* t = ti(m); return t ? &t->m_memory : nullptr; }
-TIDebugTargetAdapter* debugTargetOf(Machine& m) { auto* t = ti(m); return t ? &t->m_debugTarget : nullptr; }
 TIDebugPanelAdapter* debugPanelOf(Machine& m) { auto* t = ti(m); return t ? &t->m_debugPanel : nullptr; }
 const TICardReaderAdapter* cardReaderOf(const Machine& m) { return cardReaderOf(const_cast<Machine&>(m)); }
 const TIMemoryAdapter* memoryOf(const Machine& m) { return memoryOf(const_cast<Machine&>(m)); }
-const TIDebugTargetAdapter* debugTargetOf(const Machine& m) { return debugTargetOf(const_cast<Machine&>(m)); }
+const TIDebugPanelAdapter* debugPanelOf(const Machine& m) { return debugPanelOf(const_cast<Machine&>(m)); }

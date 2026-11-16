@@ -52,8 +52,10 @@ struct PlaceState {
         bool isTemplate = false, unsaved = false, writeProtected = false;
         bool operator==(const Held&) const = default;
     };
-    std::optional<Held> holds;              // unsaved: a template written to (AC-15) or a started name not yet written (AC-20)
-    std::optional<std::string> armed;       // a pass-through place: the armed medium (AC-27)
+    // unsaved: a template written to (AC-15) or a started name not yet written (AC-20).
+    // A pass-through place: the fitted medium (C59-7 AC-11), `side` the one passing now.
+    std::optional<Held> holds;
+    std::optional<int> passing;             // a pass-through place: the side passing through now (C59-7 AC-12, AC-13)
     bool waits = false;                     // the machine waits for a medium now
     bool nameAndSave = false;               // AC-16, EC-9
     bool askWriteProtect = false;           // AC-16: the medium has a switch still off

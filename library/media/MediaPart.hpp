@@ -38,7 +38,9 @@ struct MediaSetup {
 
 // What the part keeps per place (§3.7): where the medium came from, whether
 // it is a template, the file it is saved to, the revision last written, the
-// time a change was first seen and whether the last write failed.
+// time a change was first seen and whether the last write failed. For a
+// pass-through place the binding is the fitted medium (glossary: Fit, Arm):
+// it stays after each pass and is fed again by a side (C59-7 AC-12).
 struct Binding {
     const KindDecl* kind = nullptr;
     std::string name, description;
@@ -50,7 +52,8 @@ struct Binding {
     bool hasWriteProtect = false, writeProtected = false;
     std::optional<int> side;
     std::string peripheral;                 // a module slot: the module it is
-    Content content;                        // a pass-through place: the medium as the part keeps it
+    Content content;                        // a pass-through place: the fitted medium as it is now (what it gave back last)
+    bool passed = false;                    // a pass-through place: it has passed since it was fitted (AC-27)
     std::uint64_t written = 0;              // the revision last written (or seen, for a template)
     bool pending = false;                   // A1: a change seen, not yet written
     pacing::WallTime dated{0};
@@ -102,13 +105,21 @@ public:
     std::optional<std::string> placeOfKind(sessions::SessionContext&, const KindDecl&);
     bool hasPlace(sessions::SessionContext&, const std::string& word);
     const Binding* bindingOf(const std::string& word) const;
-    // A medium in at once (holding) or pushed through (pass-through); the
-    // place's old medium written first and taken out (AC-13, EC-5). The
+    // A medium in at once (holding; the place's old medium written first and
+    // taken out, AC-13, EC-5) or fitted and fed by `side` (pass-through). The
     // refusal, or nullopt.
     std::optional<std::string> insert(sessions::SessionContext&, const std::string& word, Binding, Content, int side);
-    // AC-13 then out; an empty place: nothing (EC-6).
+    // AC-13 then out; an empty place: nothing (EC-6). A pass-through place:
+    // a medium passing is taken out and stays fitted (C59-7 AC-10, AC-25);
+    // none passing: the fitted medium goes.
     void eject(sessions::SessionContext&, const std::string& word);
-    void arm(sessions::SessionContext&, const std::string& word, Binding, Content);
+    // A pass-through place: the medium fitted (glossary: Arm), nothing
+    // inserted; it takes the place of the one fitted before. Refused while a
+    // medium passes (C59-7 AC-16). The refusal, or nullopt.
+    std::optional<std::string> arm(sessions::SessionContext&, const std::string& word, Binding, Content);
+    // A pass-through place: the fitted medium inserted by `side`; it stays
+    // fitted (C59-7 AC-12). Refused while one passes. The refusal, or nullopt.
+    std::optional<std::string> feed(sessions::SessionContext&, const std::string& word, int side);
     // A pass-through place: the medium it gave back, if one came since the
     // last ask (A3 done). For a step that waits for its card.
     bool takePassed(sessions::SessionContext&, const std::string& word);
@@ -181,10 +192,6 @@ private:
         bool passThrough = false;
         std::vector<int> sides;
     };
-    struct Armed {
-        Binding binding;
-        Content content;
-    };
     struct InFileItem {
         std::string kind, name;
         Content content;
@@ -209,6 +216,7 @@ private:
     void updateTopic(sessions::SessionContext&);
     std::vector<PickerEntry> picker(sessions::SessionContext&, const Place&) const;
     std::optional<std::string> inPlace(const std::string& path) const;
+    std::optional<std::string> passingNow(machine::Machine&, const Place&) const;   // the refusal while a medium passes
     // Command helpers.
     sessions::CommandOutcome choose(sessions::SessionContext&, const std::string& word, const std::string& entry);
     sessions::CommandOutcome changeSlot(sessions::SessionContext&, const Place&, std::optional<machine::PeripheralRequest>,
@@ -228,7 +236,6 @@ private:
     sessions::StateTopic* topic_ = nullptr;
     std::vector<Place> places_;
     std::map<std::string, Binding> bindings_;
-    std::map<std::string, Armed> armed_;
     std::map<std::string, Binding> pendingSlot_;   // media.choose: bound when the change has run
     std::vector<std::pair<std::weak_ptr<const machine::ProductData>, Binding>> registry_;
     std::vector<InFileItem> inFile_;

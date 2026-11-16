@@ -129,14 +129,6 @@ TEST(ac4_holding_place_inserted_after_eject) {
     CHECK(r.media.held["drive"] == "two.tdisk.yaml");
 }
 
-TEST(ac4_pass_through_follows_product) {
-    OpenRig r;
-    r.rig.build(mt::kSeg);
-    const auto* a = r.opened(file("c.tcard.yaml", "x", "/m/c.tcard.yaml"));
-    CHECK(a && a->done && isAs(r.replyOf(a), OpenedAs::Medium, "reader"));
-    CHECK(r.media.uses.size() == 1 && r.media.uses[0].place == "reader" && r.media.held.empty());
-}
-
 TEST(ac4_module_one_slot_plugged) {
     OpenRig r;
     r.rig.build(mt::kSeg);

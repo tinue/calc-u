@@ -1,7 +1,8 @@
 // LIB-13 L12, L13 (design §6): opening through the real parts of LIB-6 and
 // LIB-7 (LibraryOpeners), on LIB-7's media fixture (the media test catalogue,
-// the test kinds, a save folder of the test's own); EC-7, the folder of a
-// file dialog, on a session with a settings file.
+// the test kinds, a save folder of the test's own), AC-4's pass-through place
+// among them; EC-7, the folder of a file dialog, on a session with a settings
+// file.
 #include "MediaFixture.hpp"
 #include "TempFolder.hpp"
 #include "TestHarness.hpp"
@@ -113,6 +114,36 @@ TEST(open_medium_through_lib7_part) {
     outside.write("Old.testdisk.yaml", old.text());
     const auto* d = r.opened(r.onDisk(outside, "Old.testdisk.yaml"));
     CHECK(d && !d->done && d->reason.find("is outdated") != std::string::npos);
+}
+
+TEST(ac4_pass_through_follows_product) {
+    // A medium for a pass-through place is fitted (AC-4, AC-12; C59-7 AC-11),
+    // used where it lies, fed by a side and written back there.
+    RealOpen r("test-seg");
+    calcu::testing::TempFolder outside("calcu-open-outside");
+    outside.write("Away.testcard.yaml", card("Away", "a").text());
+    outside.write("Next.testcard.yaml", card("Next", "n").text());
+    const auto* a = r.opened(r.onDisk(outside, "Away.testcard.yaml"));
+    CHECK(a && a->done && replyOf(a) && replyOf(a)->as == OpenedAs::Medium && replyOf(a)->detail == "reader");
+    CHECK(r.fixture.place("reader")->holds && r.fixture.place("reader")->holds->name == "Away");
+    CHECK(!r.fixture.reader()->side() && r.fixture.reader()->inserts == 0);   // fitted, not fed
+    for (int side : {0, 1}) {
+        CHECK(r.fixture.ok("media.feed", Value::object({{"place", "reader"}, {"side", side}})));
+        r.fixture.reader()->writeOnPass = "pass " + std::to_string(side);
+        r.fixture.session->advanceUnpaced(calcu::machine::test::kPassTicks + 10);
+        CHECK_EQ(field(calcu::testing::readText(outside.path() / "Away.testcard.yaml"), "content"),
+                 "pass " + std::to_string(side));
+    }
+    CHECK(!r.fixture.exists("Away.testcard.yaml"));   // not copied
+    // EC-4: while a card passes, nothing else is opened into the reader.
+    CHECK(r.fixture.ok("media.feed", Value::object({{"place", "reader"}, {"side", 0}})));
+    const auto* b = r.opened(r.onDisk(outside, "Next.testcard.yaml"));
+    CHECK(b && !b->done && b->reason == "A test card is passing through reader now.");
+    r.fixture.session->advanceUnpaced(calcu::machine::test::kPassTicks + 10);
+    const auto* c = r.opened(r.onDisk(outside, "Next.testcard.yaml"));
+    CHECK(c && c->done);
+    r.fixture.ok("media.refresh");
+    CHECK(r.fixture.place("reader")->holds && r.fixture.place("reader")->holds->name == "Next");
 }
 
 TEST(ec7_no_way_in_changes_open_folders) {

@@ -121,7 +121,7 @@ public:
     CommandOutcome useWhereItLies(const OpenedFile& f, const std::string& place, SessionContext&) override {
         const MediumFile m = read(f);
         if (held.count(place)) ejected.push_back(held[place]);   // a holding place: the old medium out first
-        if (place != "reader") held[place] = f.name;
+        held[place] = f.name;
         uses.push_back(Use{"in-place", f.name, place, !m.isTemplate && f.path.has_value()});
         if (m.isModule) return StartOperation{ticksOp(50)};   // the attach of the slot's picker
         return Done{};
@@ -133,7 +133,7 @@ public:
         ++imports;
         if (place) {
             if (held.count(*place)) ejected.push_back(held[*place]);
-            if (*place != "reader") held[*place] = f.name;
+            held[*place] = f.name;
         }
         uses.push_back(Use{"imported", f.name, place.value_or(""), false});
         return Done{};

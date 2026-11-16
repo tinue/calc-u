@@ -127,17 +127,12 @@ void MediaPart::attach(sessions::SessionSetup& s) {
         if (!p || !p->passThrough) return Refused{"A medium is armed only for a pass-through place."};
         Resolved r = resolveEntry(*p, sessions::textArg(a, "entry"));
         if (r.refusal) return Refused{*r.refusal};
-        arm(c, word, std::move(r.binding), std::move(r.content));
+        if (auto e = arm(c, word, std::move(r.binding), std::move(r.content))) return Refused{*e};
         return done();
     });
     s.command(kFeedCommand, [this](const Value& a, SessionContext& c) -> CommandOutcome {
-        const std::string word = sessions::textArg(a, "place");
-        const auto it = armed_.find(word);
-        if (it == armed_.end()) return Refused{"Nothing is armed for " + word + "."};
-        Armed armed = it->second;
-        armed_.erase(it);
         const int side = static_cast<int>(sessions::truncatedIntegerArg(a, "side", 0));
-        if (auto r = insert(c, word, armed.binding, armed.content, side)) return Refused{*r};
+        if (auto r = feed(c, sessions::textArg(a, "place"), side)) return Refused{*r};
         return done();
     });
     s.command(kNameAndSaveCommand, [this](const Value& a, SessionContext& c) -> CommandOutcome {
@@ -182,8 +177,8 @@ void MediaPart::attach(sessions::SessionSetup& s) {
         b.origin = Origin::Saved;
         b.started = true;
         b.unsaved = true;
-        if (p->passThrough) {
-            arm(c, word, std::move(b), std::move(r.content));
+        if (p->passThrough) {   // fitted, for the user to feed (C59-7 AC-15)
+            if (auto e = arm(c, word, std::move(b), std::move(r.content))) return Refused{*e};
             return done();
         }
         if (auto e = insert(c, word, std::move(b), std::move(r.content), p->sides.empty() ? 0 : p->sides[0]))
@@ -449,11 +444,14 @@ void MediaPart::newMachine(SessionContext& c) {
     const std::uint64_t gen = c.machineSession().generation();
     if (gen == generation_) return;
     generation_ = gen;
-    // AC-27: an armed medium that never passed through.
-    for (const auto& [word, a] : armed_) c.log("The " + labelled(a.binding) + " was armed and never fed.");
-    armed_.clear();
-    passed_.clear();
     const auto origin = control_ && control_->lastBuild() ? std::optional(control_->lastBuild()->origin) : std::nullopt;
+    // AC-27: a fitted medium that never passed through, unless a variant
+    // switch carries it over (S-7a). `places_` are still the old machine's.
+    if (!origin || *origin != startup::BuildOrigin::VariantSwitch)
+        for (const auto& [word, b] : bindings_)
+            if (const Place* p = place(word); p && p->passThrough && !b.passed)
+                c.log("The " + labelled(b) + " was armed and never fed.");
+    passed_.clear();
     // D-10: in-file media go at a load and at a model switch.
     if (origin && *origin != startup::BuildOrigin::VariantSwitch) {
         inFile_.clear();
@@ -583,7 +581,8 @@ void MediaPart::givenBack(SessionContext& c, const Place& p, Binding& b) {
     auto g = cap->takeGivenBack();
     if (!g) return;
     passed_[p.word] = true;
-    if (g->content) b.content = g->content;
+    b.passed = true;
+    if (g->content) b.content = g->content;   // the fitted medium as it came back: the next feed inserts it
     if (!g->written) return;
     if (!b.inFile.empty())   // writes stay in the store (A6, AC-15)
         for (InFileItem& i : inFile_)
@@ -674,6 +673,10 @@ std::optional<std::string> MediaPart::insert(SessionContext& c, const std::strin
     if (!cap) return noPlace(word);
     if (!p->sides.empty() && std::find(p->sides.begin(), p->sides.end(), side) == p->sides.end())
         return "The " + p->kind->label + " has no side " + std::to_string(side) + ".";
+    if (p->passThrough) {   // fitted, then fed (a `card:` step; C59-7 AC-17)
+        if (auto e = arm(c, word, std::move(b), std::move(content))) return e;
+        return feed(c, word, side);
+    }
     if (cap->side()) cap->eject();
     bindings_.erase(word);
     passed_.erase(word);
@@ -692,13 +695,58 @@ void MediaPart::eject(SessionContext& c, const std::string& word) {
     const Place* p = place(word);
     Machine* m = c.machine();
     if (!p || !m) return;
-    if (MediaPlace* cap = placeCap(*m, *p); cap && cap->side()) cap->eject();
+    MediaPlace* cap = placeCap(*m, *p);
+    if (cap && cap->side()) {
+        cap->eject();
+        if (p->passThrough) return;   // out of the reader, still fitted (C59-7 AC-10, AC-25)
+    }
     bindings_.erase(word);   // EC-6: an empty place stays empty
 }
 
-void MediaPart::arm(SessionContext& c, const std::string& word, Binding b, Content content) {
-    sync(c);
-    armed_[word] = Armed{std::move(b), std::move(content)};
+std::optional<std::string> MediaPart::passingNow(Machine& m, const Place& p) const {
+    if (MediaPlace* cap = placeCap(m, p); cap && p.passThrough && cap->side())
+        return "A " + p.kind->label + " is passing through " + p.word + " now.";
+    return std::nullopt;
+}
+
+std::optional<std::string> MediaPart::arm(SessionContext& c, const std::string& word, Binding b, Content content) {
+    flush(c, word);   // A3: what the medium fitted before gave back
+    const Place* p = place(word);
+    Machine* m = c.machine();
+    if (!p || !p->passThrough) return "A medium is armed only for a pass-through place.";
+    MediaPlace* cap = m ? placeCap(*m, *p) : nullptr;
+    if (!cap) return noPlace(word);
+    if (auto why = passingNow(*m, *p)) return why;   // C59-7 AC-16
+    b.content = std::move(content);
+    b.side.reset();
+    b.passed = false;
+    b.pending = false;
+    b.written = cap->revision();
+    passed_.erase(word);
+    bindings_[word] = std::move(b);   // in the place of the one fitted before (C59-7 AC-16)
+    return std::nullopt;
+}
+
+std::optional<std::string> MediaPart::feed(SessionContext& c, const std::string& word, int side) {
+    flush(c, word);   // A3: what the last pass gave back first
+    const Place* p = place(word);
+    Machine* m = c.machine();
+    if (!p || !p->passThrough) return "A medium is fed only into a pass-through place.";
+    MediaPlace* cap = m ? placeCap(*m, *p) : nullptr;
+    if (!cap) return noPlace(word);
+    const auto it = bindings_.find(word);
+    if (it == bindings_.end()) return "Nothing is fitted for " + word + ".";
+    if (auto why = passingNow(*m, *p)) return why;
+    if (!p->sides.empty() && std::find(p->sides.begin(), p->sides.end(), side) == p->sides.end())
+        return "The " + p->kind->label + " has no side " + std::to_string(side) + ".";
+    Binding& b = it->second;
+    passed_.erase(word);
+    const MediaPlace::Inserted r = cap->insert(b.content, side);
+    if (!r.ok) return r.refusal.empty() ? "The " + labelled(b) + " was not taken." : r.refusal;
+    b.side = side;
+    b.written = cap->revision();
+    b.pending = false;
+    return std::nullopt;   // it stays fitted (C59-7 AC-12)
 }
 
 bool MediaPart::takePassed(SessionContext& c, const std::string& word) {
@@ -1004,10 +1052,7 @@ std::vector<std::string> MediaPart::placesInCatalogue(const OpenedMedium& o) con
 std::optional<std::string> MediaPart::refusesNow(const std::string& word, const Machine& cm) const {
     const Place* p = place(word);
     if (!p) return noPlace(word);
-    Machine& m = const_cast<Machine&>(cm);
-    if (MediaPlace* cap = placeCap(m, *p); cap && p->passThrough && cap->side())
-        return "A " + p->kind->label + " is passing through " + word + " now.";
-    return std::nullopt;
+    return passingNow(const_cast<Machine&>(cm), *p);
 }
 
 CommandOutcome MediaPart::openFile(const Value& a, SessionContext& c) {
@@ -1063,6 +1108,10 @@ CommandOutcome MediaPart::openFile(const Value& a, SessionContext& c) {
         if (!req) return Refused{"The " + k.label + " cannot be plugged in."};
         b.peripheral = req->peripheral.value;
         return changeSlot(c, *p, std::move(req), std::move(b));
+    }
+    if (p->passThrough) {   // fitted, not fed (LIB-13 AC-4, AC-12; C59-7 AC-11)
+        if (auto e = arm(c, word, std::move(b), std::move(content))) return Refused{*e};
+        return done();
     }
     if (auto e = insert(c, word, std::move(b), std::move(content), p->sides.empty() ? 0 : p->sides[0])) return Refused{*e};
     return done();
@@ -1160,6 +1209,8 @@ CommandOutcome MediaPart::choose(SessionContext& c, const std::string& word, con
     const Place* p = place(word);
     if (!p) return Refused{noPlace(word)};
     if (c.busy()) return Refused{sessions::kAnotherOperationRuns};
+    if (Machine* m = c.machine(); m && !entry.empty())   // C59-7 AC-16: nothing is fitted while a medium passes
+        if (auto why = passingNow(*m, *p)) return Refused{*why};
     flush(c, word);   // AC-10: what the old medium has to save first
     p = place(word);
     if (!p) return Refused{noPlace(word)};
@@ -1180,6 +1231,10 @@ CommandOutcome MediaPart::choose(SessionContext& c, const std::string& word, con
         std::optional<Binding> b;
         if (r.binding.kind) b = r.binding;
         return changeSlot(c, *p, std::move(r.module), std::move(b));
+    }
+    if (p->passThrough) {   // fitted, not fed (C59-7 AC-14)
+        if (auto e = arm(c, word, std::move(r.binding), std::move(r.content))) c.notice(*e);
+        return done();
     }
     if (auto e = insert(c, word, std::move(r.binding), std::move(r.content), p->sides.empty() ? 0 : p->sides[0])) {
         eject(c, word);
@@ -1308,10 +1363,12 @@ std::shared_ptr<const MediaState> MediaPart::state(SessionContext& c) {
         ps.slot = p.slot;
         ps.passThrough = p.passThrough;
         ps.sides = p.sides;
+        MediaPlace* cap = m ? placeCap(*m, p) : nullptr;
+        if (p.passThrough && cap) ps.passing = cap->side();
         const auto it = bindings_.find(p.word);
         if (it != bindings_.end()) {
             const Binding& b = it->second;
-            ps.holds = PlaceState::Held{b.name, b.side, b.isTemplate, b.unsaved, b.writeProtected};
+            ps.holds = PlaceState::Held{b.name, p.passThrough ? ps.passing : b.side, b.isTemplate, b.unsaved, b.writeProtected};
             ps.nameAndSave = !b.instance() && !b.writeProtected;   // AC-16, EC-9, D-18
             ps.askWriteProtect = ps.nameAndSave && b.hasWriteProtect;
         } else if (p.slot && m) {
@@ -1320,9 +1377,7 @@ std::shared_ptr<const MediaState> MediaPart::state(SessionContext& c) {
                 ps.holds = PlaceState::Held{d && !d->name.empty() ? d->name : plugged->value, std::nullopt, false, false, false};
             }
         }
-        if (const auto a = armed_.find(p.word); a != armed_.end()) ps.armed = a->second.binding.name;
-        if (m)
-            if (MediaPlace* cap = placeCap(*m, p)) ps.waits = cap->waitsForMedium();
+        if (cap) ps.waits = cap->waitsForMedium();
         ps.picker = picker(c, p);
         s->places.push_back(std::move(ps));
     }

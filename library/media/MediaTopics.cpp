@@ -58,7 +58,7 @@ Value MediaState::toValue() const {
             if (p.holds->side) h.push_back({"side", *p.holds->side});
             o.push_back({"holds", Value(std::move(h))});
         }
-        if (p.armed) o.push_back({"armed", *p.armed});
+        if (p.passing) o.push_back({"passing", *p.passing});
         o.push_back({"waits", p.waits});
         o.push_back({"nameAndSave", p.nameAndSave});
         o.push_back({"askWriteProtect", p.askWriteProtect});

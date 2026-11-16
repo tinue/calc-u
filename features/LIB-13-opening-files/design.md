@@ -207,7 +207,8 @@ protected: ~MediaOpening() = default;
 `useWhereItLies` and `useImported` do what LIB-7 says for the place:
 insert with the first side into a holding place after ejecting what was
 there (LIB-7 AC-26); for a pass-through place, what the product says
-follows (the TI-59 card: C59-7); for a module, the attach of the slot's
+follows: the medium is fitted, not fed (the TI-59 card: C59-7 AC-11;
+LIB-7 design D-22, Part D P-3); for a module, the attach of the slot's
 picker (LIB-7, LIB-18 AC-10). The file is the instance and is written
 back where it lies, unless it is a template (LIB-7 AC-1, AC-11, AC-12,
 AC-25).
@@ -363,12 +364,12 @@ places `card-1`, `card-2`), the stand-ins of `TestOpeners.hpp`
 | L4 | `looksLikePreset` | AC-2 | `classify_tests.cpp`: `ac2_model_line_in_first_column`, `ac2_indented_or_commented_model_not_a_preset`, `ac2_zero_byte_or_bad_utf8_not_a_preset`, `ac2_bom_allowed` (the cases of Calc-U-1600 `program_file_tests.cpp:199-242`, without product code) |
 | L5 | Limits per way in | AC-10 | `classify_tests.cpp`: `ac10_limit_per_way_in`, `ac10_way_without_limit_takes_any_size` |
 | L6 | The reply | AC-3 | `open_tests.cpp`: `ac3_reply_says_preset_medium_kind`, `ac3_reply_says_kept`, `ac3_reply_says_why_refused` |
-| L7 | A medium | AC-4, EC-2, EC-4, EC-6 | `open_tests.cpp`: `ac4_medium_checked_first_hint_passed_on`, `ac4_used_where_it_lies`, `ac4_template_not_written` (the stand-in records no write-back), `ac4_holding_place_inserted_after_eject`, `ac4_pass_through_follows_product`, `ac4_module_one_slot_plugged`, `ac4_module_two_slots_refused`, `ac4_no_place_now_refused_says_where`, `ac4_upload_imported_then_placed`, `ac4_upload_name_taken_asks_then_replace`, `ec2_no_drive_refused_in_place_imported_as_upload`, `ec4_place_passing_medium_refuses_nothing_imported`, `ec6_no_answer_nothing_imported_nothing_placed` |
+| L7 | A medium | AC-4, EC-2, EC-4, EC-6 | `open_tests.cpp`: `ac4_medium_checked_first_hint_passed_on`, `ac4_used_where_it_lies`, `ac4_template_not_written` (the stand-in records no write-back), `ac4_holding_place_inserted_after_eject`, `ac4_module_one_slot_plugged`, `ac4_module_two_slots_refused`, `ac4_no_place_now_refused_says_where`, `ac4_upload_imported_then_placed`, `ac4_upload_name_taken_asks_then_replace`, `ec2_no_drive_refused_in_place_imported_as_upload`, `ec4_place_passing_medium_refuses_nothing_imported`, `ec6_no_answer_nothing_imported_nothing_placed` |
 | L8 | Ways in | AC-5 | `ways_tests.cpp`: `ac5_every_way_in_same_outcome_but_limit` (one file through `drop`, `open-with`, `start`, `dialog`, `harness`) |
 | L9 | The drag | AC-6 | `ways_tests.cpp`: `ac6_would_take_by_tests_1_to_3_and_kind_names`, `ac6_would_take_ignores_content`, `ac6_size_at_drag_held_against_limit` |
 | L10 | Kept for later | AC-7 | `open_tests.cpp`: `ac7_kept_while_operation_runs_opened_when_free`, `ac7_kept_before_machine_built`, `ac7_second_replaces_first`, `ac7_kept_file_refused_later_is_a_notice` |
 | L11 | Several files | AC-8, EC-3 | `open_tests.cpp`: `ac8_several_files_one_folder_preset_found_by_path`, `ac8_first_preset_by_name`, `ac8_no_preset_first_file_alone`, `ec3_preset_alone_as_content_refused_when_it_names_files` |
-| L12 | Through the real parts | AC-1, AC-4 | `open_tests.cpp`: `open_preset_through_lib6_part`, `open_medium_through_lib7_part` (`LibraryOpeners`, with LIB-6's and LIB-7's test data) |
+| L12 | Through the real parts | AC-1, AC-4 | `real_parts_tests.cpp`: `open_preset_through_lib6_part`, `open_medium_through_lib7_part`, `ac4_pass_through_follows_product` (`LibraryOpeners`, with LIB-6's and LIB-7's test data; the last moved from L7's stand-ins in Part D P-3: a card is fitted, not fed) |
 | L13 | The folder of the dialog | EC-7 | `open_tests.cpp`: `ec7_no_way_in_changes_open_folders` (a session with a settings file; `[folders]` unchanged after `open` by every way) |
 | L14 | The harness | AC-9 | `library/harness/tests/commands_tests.cpp`: `ac9_open_path_replies_as_command` (the harness test product: a preset, a medium, a refused file) |
 

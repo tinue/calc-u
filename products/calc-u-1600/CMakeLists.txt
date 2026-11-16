@@ -164,6 +164,9 @@ if(CALCU_TESTS)
   # smoke builds in build/web itself (Emscripten).
   calcu_add_test(CalcU1600WebPlaywright longer COMMAND frontends/web/run-tests.sh)
   calcu_add_test(CalcU1600WasmSmoke longer COMMAND tools/build_wasm_check.sh)
+  # LIB-10 R-1 (design §10.11): full speed with a breakpoint set, printed for the qa-report.
+  calcu_add_test(CalcU1600DebuggerSpeed longer COMMAND CoreTests lib10_speed_pc1600_full_speed_with_a_breakpoint
+                 PROPERTIES ENVIRONMENT CALCU1600_SPEED=1)
   # LIB-12 (Technical Requirements, design Q5): a Web dist/ built from a
   # ROM folder without one file names it and starts no calculator.
   if(NOT WIN32)

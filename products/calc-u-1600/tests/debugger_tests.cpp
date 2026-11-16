@@ -4,7 +4,10 @@
 // `cpu` and pause-on-start (AC-38), the run control without a debugger
 // (AC-40), the trace format and its limit (AC-42, AC-43, AC-23).
 
+#include <algorithm>
+#include <chrono>
 #include <cstdint>
+#include <cstdlib>
 #include <cstdio>
 #include <fstream>
 #include <iterator>
@@ -353,6 +356,34 @@ TEST(lib10_ac43_button_trace_ends_at_the_limit_with_a_notice) {
     CHECK(fs::exists(path) && fs::file_size(path) <= 1024 * 1024);
     checkWellFormed(tracetest::readTrace(path));
     CHECK(limitNotice(f));
+}
+
+
+// R-1 (LIB-10 design §10.11; Longer, CalcU1600DebuggerSpeed): a PC-1600 at
+// full speed with a breakpoint set that is never reached, against the same
+// run without one; the numbers are for the qa-report.
+TEST(lib10_speed_pc1600_full_speed_with_a_breakpoint) {
+    if (!std::getenv("CALCU1600_SPEED")) return;
+    SKIP_UNLESS(romsPresent(), "no ROMs in roms/");
+    auto measure = [](bool breakpoint) {
+        const calcu::machine::Catalogue cat = sharp::sharpCatalogue();
+        auto m = sharptest::buildSharp(cat, "PC-1600");
+        m->coldBoot();
+        calcu::machine::Machine& machine = *m;
+        sharpdebugtest::Rig rig(std::move(m));
+        if (breakpoint) {
+            rig.rc().table().addBreakpoint("harness", rig.debugging(), calcu::machine::DebugTargetId{"SC7852"}, 0x3FFF, {});
+            rig.rc().table().apply(rig.debugging());
+        }
+        const calcu::machine::Ticks second = machine.descriptor().tickRate;
+        const auto t0 = std::chrono::steady_clock::now();
+        for (int i = 0; i < 20 * 60; ++i) rig.advance(second / 60);
+        return std::chrono::duration<double>(std::chrono::steady_clock::now() - t0).count();
+    };
+    const double plain = measure(false), withBreakpoint = measure(true);
+    std::printf("  PC-1600, 20 s emulated at full speed: %.2f s without, %.2f s with a breakpoint (%.1fx real time, %.1fx)\n",
+                plain, withBreakpoint, 20.0 / plain, 20.0 / withBreakpoint);
+    CHECK(withBreakpoint < plain * 3);
 }
 
 } // namespace

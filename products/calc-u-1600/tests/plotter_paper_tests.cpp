@@ -3,6 +3,7 @@
 // CE-1600P on the library's paper output kind.
 
 #include <cmath>
+#include <cstdlib>
 #include <cstdint>
 #include <optional>
 #include <string>

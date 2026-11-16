@@ -5,6 +5,7 @@
 // counts and log messages are dap_layer_tests.cpp's (C1600-3 AC-23).
 
 #include <cstdint>
+#include <cstdio>
 #include <vector>
 
 #include "MemtestRig.hpp"

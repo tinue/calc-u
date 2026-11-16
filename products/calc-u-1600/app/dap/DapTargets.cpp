@@ -1,5 +1,7 @@
 #include "app/dap/DapTargets.hpp"
 
+#include <utility>
+
 #include "Debug/SharpDebugging.hpp"
 
 namespace shared::dap {

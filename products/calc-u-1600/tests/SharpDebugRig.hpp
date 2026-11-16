@@ -1,6 +1,7 @@
 #pragma once
 #include <chrono>
 #include <memory>
+#include <string>
 
 #include "../app/SharpDebuggerSetup.hpp"
 #include "../core/Machine/SharpCatalogue.hpp"

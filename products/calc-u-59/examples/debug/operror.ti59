@@ -9,7 +9,7 @@
 # it when storing.
 # Real hardware does not show this behaviour.
 #
-# Root cause: not Op 01 itself. The REGISTERS: preset loader
+# Root cause: not Op 01 itself. The REGISTERS: loader of the 2.x presets
 # (encodeTI59BCD, then in App/StateFileLoader.swift) converted the decimal literal
 # to BCD via an iterative float digit-extraction loop (mantissa/pow, then
 # repeated subtract+multiply-by-10). That loop accumulates floating-point
@@ -21,33 +21,39 @@
 # step, so it never hit this. Fixed by using a correctly-rounded %.12e
 # string conversion instead of the manual loop.
 
-#MODEL: TI-59
+# model: TI-59
 
-REGISTERS:
-15 = 1731371735
+format-version: 2
+model: TI-59
+slot-1: { name: ML }
+printer: PC-100C
 
-KEYSTROKES:
-Trace: operror.bin
-43  RCL
-82  1
-73  5
-21  2nd
-64  Op
-92  0
-82  1
-Trace: opok.bin
-82  1
-62  7
-84  3
-82  1
-84  3
-62  7
-82  1
-62  7
-84  3
-73  5
-21  2nd
-64  Op
-92  0
-82  1
-Trace: Off
+data:
+  15: 1731371735
+
+keys:
+  - regular-speed:
+  - trace: operror.bin
+  - key: RCL
+  - key: 1
+  - key: 5
+  # 21  2nd
+  - key: Op
+  - key: 0
+  - key: 1
+  - trace: opok.bin
+  - key: 1
+  - key: 7
+  - key: 3
+  - key: 1
+  - key: 3
+  - key: 7
+  - key: 1
+  - key: 7
+  - key: 3
+  - key: 5
+  # 21  2nd
+  - key: Op
+  - key: 0
+  - key: 1
+  - trace: off

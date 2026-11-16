@@ -15,6 +15,13 @@ namespace calcu::typing {
 struct TypeOptions {
     Origin origin = Origin::Preset;
     bool firstPressAtOnce = false;   // LIB-6 AC-58: after `skip-wait:` the step's first press goes down at once
+    // Done when the last key is up, without the profile's wait for readiness
+    // after the release (TypingProfile::waitsForReadinessAfterRelease): a
+    // preset's `key:` (LIB-6 AC-58: carried out when its keys are pressed; the
+    // implicit wait for idle follows, except after the last item and before
+    // `skip-wait:`). Found in M-54: a last key that starts a program that never
+    // stops (life.ti59) never finished its item.
+    bool untilReleased = false;
 };
 
 sessions::Task<TypeResult> typeAndWait(sessions::OperationContext&, TypingEngine&, std::vector<Press>,

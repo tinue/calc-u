@@ -56,8 +56,9 @@ Never edit the calculator there — that copy is generated.
 7. **Assets have one source:** ROMs from `roms/` (in `dist/bundle/`: the
    library's worker fetches all 24 at init into `/bundle`, where the
    engine's ROM lookup finds them, LIB-12; the service worker caches them), artwork from
-   `frontends/swift/App/Assets.xcassets`, presets from `examples/` (listed in
-   `presets.json`), the icon from `frontends/qt6/resources/linux/` (derived from
+   `frontends/swift/App/Assets.xcassets`, presets from `examples/` (exactly the files
+   `examples/bundle.yaml` lists, into `dist/presets/`; the picker asks
+   `preset-list`), the icon from `frontends/qt6/resources/linux/` (derived from
    `frontends/swift/App/AppIcon.icon`). `build.sh` copies them; never commit copies.
 8. **Build and test before committing:** `frontends/web/build.sh && frontends/web/run-tests.sh`.
    Also after any `core/` or `app/` change (CLAUDE.md).

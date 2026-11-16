@@ -254,7 +254,8 @@ TEST(c59_5_ac8_continue_calls_again_and_session_got_continue) {
 // The real session on the thread: Calc-U-59 runs, and a key reaches it.
 TEST(c59_5_ac4_ti59_on_the_session_thread) {
     calcu::testing::TempFolder folder;
-    const TIAppSetup setup = testroms::appSetup(Model::TI59, folder.path());
+    static calcu::settings::SettingsFile settings = calcu::settings::SettingsFile::defaultsOnly(settings::settingsDecl());
+    const TIAppSetup setup = testroms::appSetup(settings, Model::TI59, folder.path());
     std::atomic<std::uint64_t> ticks{0};
     auto t = std::make_unique<SessionThread>(
         [setup] { return makeAppSession(setup, steadyWallTime).session; },

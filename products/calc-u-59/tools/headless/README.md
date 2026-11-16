@@ -46,5 +46,9 @@ snapshot, RAM, program, card and printer calls go through the adapters.
 `TI59HEADLESS_LIB` points `ti59.py` at a library built elsewhere (the CTest
 `CalcU59HeadlessSmoke`).
 
-For running, timing and profiling whole `.ti59` programs (rather than
-tracing the ROM), see `tools/agentic/`.
+For running, timing and profiling whole presets (rather than tracing the
+ROM), see `tools/agentic/`: since M-54 they load presets through the harness
+`calcu` (LIB-11); this tool reads no preset. Two of them, `stepcost.py` and
+`fastmode_matrix.py`, still drive this machine with the helpers `regbytes`,
+`press`, `settle` and `idle` of `ti59.py` (moved here from the agentic
+tools' `ti59file.py`, which went in M-54) until C59-9 (M-59).

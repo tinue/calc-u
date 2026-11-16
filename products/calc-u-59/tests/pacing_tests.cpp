@@ -22,7 +22,10 @@ double rateOver(SessionRig& r, std::chrono::milliseconds wall) {
 }
 
 void program(SessionRig& r, const std::string& keycodes) {
-    const CallId id = r.post(commands::kLoadState, Value::object({{"bytes", r.bytes("PROGRAM:\n" + keycodes + "\n")}}));
+    const CallId id = r.post(calcu::presets::kLoadPresetCommand,
+                             Value::object({{"content", "format-version: 2\nmodel: TI-59\nslot-1: { name: ML }\nprinter: PC-100C\n"
+                                                        "program:\n  keycodes: |\n    " + keycodes + "\n"},
+                                            {"name", "p.ti59"}}));
     r.until([&] { return r.reply(id) != nullptr; });
     r.until([&] { return r.machine().isKeyReady(); });
 }

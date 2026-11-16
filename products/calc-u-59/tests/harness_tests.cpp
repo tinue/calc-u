@@ -4,6 +4,7 @@
 #include "../app/HarnessProduct.hpp"
 #include "TestHarness.hpp"
 #include "harness/Run.hpp"
+#include "TIPresetRig.hpp"
 #include <filesystem>
 #include <string>
 
@@ -48,7 +49,7 @@ TEST(harness_switches_to_a_ti58) {
     auto reply = [&](const std::string& l) { return server->line(l).text; };
     CHECK_EQ(reply("model TI-58"), std::string("done\n"));
     CHECK(reply("lcd").rfind("done 2\n          0 \nindicators:", 0) == 0);   // ready for keys
-    CHECK(reply("capabilities").find("place printer PC-100C\n") != std::string::npos);   // the harness's default (D-17)
+    CHECK(reply("capabilities").find("place printer empty\n") != std::string::npos);   // the built-in default (LIB-18 AC-18)
     const auto* m = server->host().session().context().machine();
     CHECK(m && m->model().value == "TI-58");
     CHECK_EQ(reply("model ti-59"), std::string("done\n"));
@@ -88,6 +89,7 @@ TEST(lib8_ac23_harness_paper_text_of_the_pc100c) {
     CHECK(server != nullptr);
     if (!server) return;
     auto reply = [&](const std::string& l) { return server->line(l).text; };
+    CHECK_EQ(reply("attach printer PC-100C"), std::string("done\n"));   // the built-in default has none (LIB-18 AC-18)
     CHECK_EQ(reply("paper text"), std::string("done\n"));   // empty paper (EC-2)
     reply("key 7");
     reply("key 2nd Prt");
@@ -105,6 +107,7 @@ TEST(lib8_ac23_harness_paper_marks_and_png) {
     CHECK(server != nullptr);
     if (!server) return;
     auto reply = [&](const std::string& l) { return server->line(l).text; };
+    reply("attach printer PC-100C");
     reply("key 7");
     reply("key 2nd Prt");
     reply("wait 1s");
@@ -149,4 +152,83 @@ TEST(lib10_ac31_harness_breakpoint_pauses_the_ti) {
     if (state.find("breakpoint") == std::string::npos) std::fprintf(stderr, "%s\n", state.c_str());
     CHECK(reply("history TMC0501 3").rfind("done", 0) == 0);
     server->finish();
+}
+
+// LIB-18 design P59-6 (AC-18; D-17 of the harness is gone): the harness
+// starts the built-in default, the TI-59 with the Master Library module and
+// no printer.
+TEST(harness_starts_with_ml_and_no_printer) {
+    SKIP_UNLESS(tirig::haveRoms(), "the ROMs are not fetched (roms/fetch_roms.sh)");
+    tirig::Calcu c;
+    const std::string caps = c("capabilities");
+    CHECK(caps.find("place slot-1 ML\n") != std::string::npos);
+    CHECK(caps.find("place printer empty\n") != std::string::npos);
+    CHECK_EQ(c.machine()->model().value, std::string("TI-59"));
+}
+
+// C59-2 AC-9 (design §3.4, T8): `ti59 partition`, `ti59 program`, `ti59 registers`.
+TEST(c59_2_ac9_partition_program_registers_write_and_read) {
+    SKIP_UNLESS(tirig::haveRoms(), "the ROMs are not fetched (roms/fetch_roms.sh)");
+    tirig::Calcu c;
+    CHECK_EQ(c("ti59 partition"), std::string("done 1\n479\n"));
+    CHECK_EQ(c("ti59 partition 239.29"), std::string("done\n"));
+    CHECK_EQ(c("ti59 partition"), std::string("done 1\n239\n"));
+    CHECK_EQ(c("ti59 program 76 11 42"), std::string("done\n"));          // from 000
+    CHECK_EQ(c("ti59 program 010 85 01"), std::string("done\n"));         // from 010
+    CHECK_EQ(c("ti59 program 000 count=3"), std::string("done 3\n000 76\n001 11\n002 42\n"));
+    CHECK_EQ(c("ti59 program 010 count=2"), std::string("done 2\n010 85\n011 01\n"));
+    CHECK_EQ(c("ti59 registers 05=1.5e-3 06=-42"), std::string("done\n"));
+    CHECK_EQ(c("ti59 registers 05 06"), std::string("done 2\n05: 1.5e-3\n06: -4.2e1\n"));
+    CHECK_EQ(c("model TI-58C"), std::string("done\n"));
+    CHECK_EQ(c("ti59 registers H02=7"), std::string("done\n"));
+    CHECK_EQ(c("ti59 registers H02"), std::string("done 1\nH02: 7e0\n"));
+}
+
+TEST(c59_2_ac9_refused_where_the_section_refuses) {
+    SKIP_UNLESS(tirig::haveRoms(), "the ROMs are not fetched (roms/fetch_roms.sh)");
+    tirig::Calcu c;
+    CHECK(c("ti59 partition 960").rfind("refused: partition: 960 is beyond", 0) == 0);
+    CHECK(c("ti59 partition abc").rfind("refused: ", 0) == 0);
+    CHECK(c("ti59 program 76 LBL").rfind("refused: ", 0) == 0);
+    CHECK(c("ti59 program 1").rfind("refused: ", 0) == 0);
+    CHECK(c("ti59 program 959 76 11").rfind("refused: ", 0) == 0);   // past the last step
+    CHECK(c("ti59 registers H00=1").rfind("refused: ", 0) == 0);     // not a TI-58C
+    CHECK(c("ti59 registers 05=x").rfind("refused: ", 0) == 0);
+    CHECK_EQ(c("model TI-58"), std::string("done\n"));
+    CHECK(c("ti59 registers 60=1").rfind("refused: ", 0) == 0);
+    CHECK(c("ti59 partition 480").rfind("refused: ", 0) == 0);
+}
+
+TEST(c59_2_ac9_count_reads_keycodes) {
+    SKIP_UNLESS(tirig::haveRoms(), "the ROMs are not fetched (roms/fetch_roms.sh)");
+    tirig::Calcu c;
+    CHECK_EQ(c("ti59 program 010 05"), std::string("done\n"));   // a bare token is a keycode (Q-2)
+    CHECK_EQ(c("ti59 program 010 count=1"), std::string("done 1\n010 05\n"));
+    CHECK(c("ti59 program 010 count=0").rfind("refused: ", 0) == 0);
+    CHECK(c("ti59 program 010 count=1 05").rfind("refused: ", 0) == 0);
+}
+
+// LIB-6 design §11.6 P12 (AC-34): a preset, the bare wait, expect and
+// screenshot through `calcu --product 59`.
+TEST(lib6_ac34_preset_wait_expect_screenshot_on_ti59) {
+    SKIP_UNLESS(tirig::haveRoms(), "the ROMs are not fetched (roms/fetch_roms.sh)");
+    tirig::Calcu c;
+    CHECK_EQ(c("preset examples:sum.ti59"), std::string("done\n"));
+    CHECK_EQ(c("key 5 A"), std::string("done\n"));
+    CHECK(c("wait").rfind("done", 0) == 0);
+    CHECK_EQ(c("expect 15"), std::string("done\n"));
+    CHECK_EQ(c("screenshot sum.png"), std::string("done\n"));
+    CHECK(std::filesystem::exists(c.folder.path() / "sum.png"));
+    CHECK(c("preset examples:nothere.ti59").rfind("refused: ", 0) == 0);
+    CHECK(c("check-preset examples/diag.ti59").rfind("done", 0) == 0);
+    CHECK(c("preset-list").find("Sum of N numbers") != std::string::npos);
+}
+
+TEST(lib6_ac34_printer_trace_on_off) {
+    SKIP_UNLESS(tirig::haveRoms(), "the ROMs are not fetched (roms/fetch_roms.sh)");
+    tirig::Calcu c;
+    CHECK(c("printer-trace on").rfind("refused: ", 0) == 0);   // no PC-100C
+    CHECK_EQ(c("attach printer PC-100C"), std::string("done\n"));
+    CHECK_EQ(c("printer-trace on"), std::string("done\n"));
+    CHECK_EQ(c("printer-trace off"), std::string("done\n"));
 }

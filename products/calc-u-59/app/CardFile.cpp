@@ -336,40 +336,6 @@ CueCardContent freshCardCue(const std::string& fileName) {
     return cue;
 }
 
-std::vector<uint8_t> buildCardBank(const CardDefinition& card, int programRegs) {
-    if (card.partitionMaxStep) programRegs = (*card.partitionMaxStep + 1) / 8;
-    const int bank = card.bank;
-    const int firstReg = 30 * (bank - 1);
-    // The bank's 30 raw RAM registers. A step is two nibbles of register
-    // step / 8, units first (TIMemoryAdapter::writeProgram); data register n is
-    // raw register 119 − n.
-    std::vector<Nibbles16> regs(30, Nibbles16{});
-    for (const auto& s : card.programSteps) {
-        int reg = s.stepAddr / 8 - firstReg;
-        if (reg < 0 || reg >= 30) continue;
-        regs[reg][(s.stepAddr & 7) * 2] = s.keycode % 10;
-        regs[reg][(s.stepAddr & 7) * 2 + 1] = s.keycode / 10;
-    }
-    for (const auto& g : card.registers) {
-        int reg = 119 - g.regNum - firstReg;
-        if (!g.isHidden && reg >= 0 && reg < 30) regs[reg] = g.nibbles;
-    }
-
-    const int partition = programRegs / 10;
-    std::vector<uint8_t> d(kCardBankBytes, 0);
-    d[0] = static_cast<uint8_t>(0x10 | partition);
-    d[1] = static_cast<uint8_t>(0x10 | (partition >= 3 * bank ? 1 : 0));  // bank entirely in program memory
-    d[2] = pageByteOfBank(bank);
-    d[3] = card.protect ? 0x10 : 0x00;
-    unsigned sum = (d[0] & 0xF) + (d[1] & 0xF) + (d[2] & 0xF);
-    for (int r = 0; r < 30; ++r) {
-        auto bytes = encodeRegisterLine(regs[r]);
-        std::copy(bytes.begin(), bytes.end(), d.begin() + 4 + 8 * r);
-        for (int nibble : regs[r]) sum += nibble;
-    }
-    d[244] = d[245] = static_cast<uint8_t>(sum & 0xF);
-    return d;
-}
 
 CardDecodeResult decodeCardFile(const std::vector<uint8_t>& raw, const std::string& fileName) {
     CardDecodeResult r;

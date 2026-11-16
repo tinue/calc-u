@@ -34,8 +34,10 @@ example: `frontends/qt6/app/EmulatorController` is the whole adapter, about 300 
    once (`cu59::lookUpRoms` over a `calcu::roms::Bundle` of the ROM files of
    `roms/` as your packaging holds them, LIB-12) and make the session with
    `cu59::makeAppSession` (`app/TIAppPart.hpp`): the `RomSet`, the text of
-   `roms/solid-state/cuecards.txt`, the start model, your save folder
-   (cards, `ti58c.mem`) and trace folder (LIB-9's paths). Without the full
+   `roms/solid-state/cuecards.txt`, the settings file (the startup model,
+   LIB-9), the bundled `examples/`, your save folder (cards,
+   `ti58c.memory.yaml`) and trace folder (LIB-9's paths); `makeAppSession`
+   sends LIB-18's `start`. Without the full
    set make no session and show `describe(missing)`.
 2. **Listen to it** (`AppSession::listen`) with the host services you offer;
    keep a `calcu::sessions::TopicMirror` of what it sends: the library's

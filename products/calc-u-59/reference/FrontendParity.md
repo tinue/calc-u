@@ -20,8 +20,8 @@ the named one still to do (the Notes say why); `Swift only` / `Qt only` /
 
 | Feature | Swift | Qt | Web | Shared | Status | Notes |
 |---|---|---|---|---|---|---|
-| Model picker TI-59 / TI-58 / TI-58C | `CalculatorView` | `ControlBar` | `ControlBar` | `TIAppPart` startMachine, `MachineModelInfo` | All | |
-| Reset; clean reset (Cmd/Ctrl held, red "Clean") | `CalculatorView` | `ControlBar` | `ControlBar` | `TIAppPart`, `Machine::reset()`/`coldBoot()` (C59-1) | All | iOS and web touch: 1 s long press |
+| Model picker TI-59 / TI-58 / TI-58C | `CalculatorView` | `ControlBar` | `ControlBar` | LIB-18's `model {name}` (`TIProductMachines`), `MachineModelInfo` | All | |
+| Reset; clean reset (Cmd/Ctrl held, red "Clean") | `CalculatorView` | `ControlBar` | `ControlBar` | LIB-18's `reset` / `cold-boot`, `Machine::reset()`/`coldBoot()` (C59-1) | All | iOS and web touch: 1 s long press |
 | Calculator artwork, key hit test (widened rects) | `KeyboardView` | `KeyboardWidget` | `CalculatorFace`, `TIWebPart` (hit test) | `KeyboardLayout` | All | Web: transparent key buttons for assistive technology |
 | Pressed-key effect (blacked out, shifted 3 px) | `KeyboardView` | `KeyboardWidget` | `CalculatorFace` | — | All | |
 | One key at a time; release on focus loss / teardown | `KeyboardView` | `KeyboardWidget` | `CalculatorFace`, `TIWebPart` | — | All | |
@@ -31,23 +31,23 @@ the named one still to do (the Notes say why); `Swift only` / `Qt only` /
 | Digit and decimal-point brightness (persistence of vision), "C" indicator brightness | `LEDDisplayView` | `LedRenderer` | `painters.js`, `TIWebPart` | `FrameSampler`, `DisplayPov` | All | |
 | Cue card: 3 templates, `\blank` spans, shrink-to-fit, inks | `CueCardView` | `CueCardRenderer` | `painters.js`, `TIWebPart` (draw list) | `CueCard` (layout, geometry, inks) | All | |
 | Module program cards (SCOM[9]), user cards | `EmulatorViewModel` | `EmulatorController` | `TIWebPart` | `TIAppPart`, `CueCard` resolveCueCard | All | |
-| Solid State module selection | `SettingsView` | `SettingsDialog` | `Dialogs` (Settings) | `ModuleCatalog` | All | soft reset on change |
+| Solid State module selection | `SettingsView` | `SettingsDialog` | `Dialogs` (Settings) | `ModuleCatalog`, LIB-18's `attach`/`detach slot-1` | All | power cycle on change (row 59-11) |
 | Startup calculator (model / last used) | `SettingsView` | `SettingsDialog` | `Dialogs` (Settings) | `Settings` | All | `Calc-U-59.ini` everywhere; web: the file in the persistent file system (IndexedDB, since M-34); the `model` prop overrides it |
 
 ## Files
 
 | Feature | Swift | Qt | Web | Shared | Status | Notes |
 |---|---|---|---|---|---|---|
-| Open preset `.ti59` / `.ti58` / `.ti58c` | `CalculatorView` | `MainWindow` | `Dialogs` (preset picker: bundled, upload) | `TIAppPart` loadStateFile, `StateFile`, `StateApplier` | All | Web: bundled presets from `presets.json` |
-| KEYSTROKES playback (Wait, FullSpeed, Trace, elapse) | `EmulatorViewModel` | `EmulatorController` | `TIWebPart` | `EmulatorSession`, `TIKeystrokePlayback` | All | Web: `Trace:` lines write to MEMFS, downloadable from the LOG tab |
-| KEYSTROKES controls: `DebugPanel:` selects the tab (`the `c59.show-debug-panel` topic`) | `EmulatorViewModel` (`showDebugPanel`) | `EmulatorController` → `DebugPanel` (`debugPanelRequested`) | `engine.js` `debugPanel`, `Debugger.jsx` | `TIAppPart` applyControl | All | Paged layouts keep their page; web portrait has no debugger and remembers the tab |
-| Preset reloads, `CARD:` blocks, `ArmCard:` / `InsertCard:` | `EmulatorViewModel` (`cardFilePath`) | `EmulatorController` (`cardFilePath`) | `TIWebPart` (`cardFilePath`) | `StateFile`, `TIKeystrokePlayback`, `EmulatorSession`, `TIAppPart`, `CardFile` buildCardBank | All | Cards TI-59 only, reloads on every model; card files resolve in each GUI's card folder |
-| Drag-and-drop of presets and cards | `CalculatorView` (macOS) | `MainWindow` | `PlayCalculator`, `engine.js`, worker | `TIAppPart` dropAction, openDroppedFile | All | Not in the iOS build. A card is fitted (TI-59; ignored on the TI-58/58C). Web: a write goes to the session's copy |
-| Open-with of state files | — | `main.cpp` | — | — | Qt only | |
+| Open preset `.ti59` / `.ti58` / `.ti58c` | `CalculatorView` | `MainWindow` | `Dialogs` (preset picker: bundled, upload) | LIB-6's `load-preset` (`TIPresetRules`, `TIPresetKeys`) | All | Qt6 by its path, Swift and Web uploads by their content; Web: the bundled examples of `examples/bundle.yaml` (`preset-list`); Qt6 and Swift bundle the same files (their Examples menu: M-57, M-58) |
+| A preset's `keys:` steps (wait, full-speed, trace, elapsed-time, expect, screenshot) | — | — | — | LIB-6's loader, LIB-5's typing engine | All | Web: a `trace:` is handed over, downloadable from the LOG tab |
+| A preset's `debug-panel:` selects the tab (the `c59.show-debug-panel` topic) | `EmulatorViewModel` (`showDebugPanel`) | `EmulatorController` → `DebugPanel` (`debugPanelRequested`) | `engine.js` `debugPanel`, `Debugger.jsx` | `TIAppPart` showDebugPanelNamed (LIB-10's step) | All | Paged layouts keep their page; web portrait has no debugger and remembers the tab |
+| Sections after a `keys:` section (2.3.0's reloads); magnetic cards in presets | — | — | — | LIB-6's loader, `TIPresetKeys` | All | Cards in presets (`magnetic-cards:`, `card:`, `arm:`) come with C59-7 (M-55) |
+| Drag-and-drop of presets and cards | `CalculatorView` (macOS) | `MainWindow` | `PlayCalculator`, `engine.js`, worker | `TIAppPart` dropAction (a preset: `load-preset {content, name}`; a card: fitted) | All | Not in the iOS build. A card is fitted (TI-59; ignored on the TI-58/58C). Web: a write goes to the session's copy |
+| Open-with of presets | — | `main.cpp` | — | — | Qt only | |
 | Magnetic cards: fit, fresh card, feed by corner, lit corner, eject, auto-eject, replace confirmation | `CalculatorView`, `KeyboardView`, `CueCardView`, `CardPickerView` | `ControlBar`, `KeyboardWidget`, `CueCardRenderer`, `CardPickerDialog` | `ControlBar`, `CalculatorFace`, `painters.js`, `Dialogs` (card picker), `TIWebPart` | `TIAppPart` (card reader), `CardFile` (formats, listed names), `CueCard` cardCornerGeometry, `KeyboardLayout` cardCornerAt | All | TI-59 only; web: upload a card to fit it, download one to keep it |
-| Card and `ti58c.mem` location | iCloud Documents (`CardStorage`) | `~/Calc-U-59` (`AppPaths`) | the save folder in the persistent file system (IndexedDB `/persist-calc-u-59`, `TIWebPart`; since M-34) | — | Swift only / Qt only / Web only | Qt: card folder in Settings; web: cards and `ti58c.mem` are kept between visits; a second tab keeps nothing (LIB-15 AC-8, AC-21) |
+| Card and `ti58c.memory.yaml` location | iCloud Documents (`CardStorage`) | `~/Calc-U-59` (`AppPaths`) | the save folder in the persistent file system (IndexedDB `/persist-calc-u-59`, `TIWebPart`; since M-34) | — | Swift only / Qt only / Web only | Qt: card folder in Settings; web: cards and `ti58c.memory.yaml` are kept between visits; a second tab keeps nothing (LIB-15 AC-8, AC-21) |
 | Open Preset start folder | system file importer | last used, or fixed in Settings | — | — | Qt only | Calc-U-1600 layout |
-| TI-58C constant memory (save on change, restore) | `EmulatorViewModel` | `EmulatorController` | `TIAppPart` through `TIFileAccess` (the persistent file system) | `TIAppPart` (debounced persist), `ConstantMemory` | All | |
+| TI-58C constant memory (`ti58c.memory.yaml`: restored at a build without a preset, written on change, suspend, quit) | the bridge's `FileIO` | `TIFileAccess` (LIB-9's save folder) | `TIFileAccess` (the persistent file system) | `ConstantMemoryKeeper`, `ConstantMemoryFile`, the kind `c59.constant-memory` | All | The same file in all three frontends (C59-3 AC-13) |
 
 ## Printer
 

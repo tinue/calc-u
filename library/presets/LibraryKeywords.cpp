@@ -56,7 +56,7 @@ public:
         typing::TypingEngine* engine = run.typing();
         if (!engine) co_return failed("This product types no keys.");
         const typing::TypeResult r = co_await typing::typeAndWait(
-            run.op(), *engine, presses_, typing::TypeOptions{typing::Origin::Preset, run.firstPressAtOnce()});
+            run.op(), *engine, presses_, typing::TypeOptions{typing::Origin::Preset, run.firstPressAtOnce(), true});
         co_return r.done ? ItemResult{} : failed(r.reason);
     }
     After after() const override { return After::Idle; }

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Build and start the Qt6 app (local development). Extra arguments, e.g. a
-# .ti59 state file, are passed to the app.
+# .ti59 preset, are passed to the app.
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")" && pwd)"
 APP_DIR="$ROOT/../../build/app-59/products/calc-u-59/frontends/qt6"  # tools/build_qt.sh

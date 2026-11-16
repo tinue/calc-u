@@ -37,11 +37,11 @@ public:
     bool started() const { return m_app.session != nullptr; }
 
     // ── Machine ──────────────────────────────────────────────────────────────
+    /// The model switch (LIB-18 `model`); the start is makeAppSession's `start`.
     void start(cu59::Model model);
     cu59::Model model() const;
-    void resetMachine() { send(cu59::commands::kReset); }
-    void cleanResetMachine() { send(cu59::commands::kCleanReset); }
-    void persistConstantMemory() { send(cu59::commands::kPersistConstantMemory); }
+    void resetMachine();
+    void cleanResetMachine();
     QString moduleID() const;
     /// Swap to a different module and power-cycle (no-op if unchanged).
     void changeModule(const QString& moduleID);
@@ -68,7 +68,7 @@ public:
     /// The PC-100C's place and TRACE (`c59.printer`, adapter P-E1 until M-57).
     bool printerConnected() const;
     bool printerTrace() const;
-    void togglePrinterConnection() { send(cu59::commands::kTogglePrinterConnection); }
+    void togglePrinterConnection();
 
     // ── The library's widgets ───────────────────────────────────────────────
     /// A command of a widget of the component set (the paper panel, the
@@ -87,8 +87,8 @@ public:
     std::optional<int> litCardCorner() const;
     void ejectCard() { send(cu59::commands::kEjectCard); }
 
-    // ── State files ──────────────────────────────────────────────────────────
-    void loadStateFile(const QString& path);
+    // ── Presets: LIB-6 load-preset {ref: path} ───────────────────────────────
+    void loadPreset(const QString& path);
 
     // ── Dropped files ────────────────────────────────────────────────────────
     cu59::DropAction dropAction(const QString& path) const;
@@ -167,5 +167,4 @@ private:
     QTimer m_frameTimer;
     calcu::qt6::ClipboardService m_clipboard;
     std::vector<std::function<void(const calcu::sessions::Message&)>> m_handlers;
-    std::optional<cu59::Model> m_savedModel;
 };

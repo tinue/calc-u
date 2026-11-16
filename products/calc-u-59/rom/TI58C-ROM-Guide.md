@@ -402,8 +402,8 @@ Both are recorded here and not fixed in `Core/`:
    - In the first-power-up clear loop (`0372`, then `0376 C=C+1 DPT1`)
      only nibble 0 of each register is zeroed. On real hardware the ROM
      clearly intends a whole-register clear.
-   - With fresh RAM nothing shows. It shows when a state file has RAM
-     contents but no valid E000: the junk survives the "clear".
+   - With fresh RAM nothing shows. It shows when the RAM has
+     contents but no valid E000 (a constant memory file written so): the junk survives the "clear".
    - CMs/CP use `C=C-B ALL` after the `MEMWR` and are not affected.
 2. **A computed jump to address 0 is treated as no jump.** `if (PREG)` in
    `Core/TMC0501.cpp` makes the self-test's exit (`09DD`, KR := 0) fall

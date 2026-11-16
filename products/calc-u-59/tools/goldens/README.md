@@ -18,8 +18,10 @@ reference is the Swift code at the pinned commit, not the current tree.
 | Golden | Swift original (commit) | C++ port | Test |
 |---|---|---|---|
 | `keynames` | `frontends/swift/App/TI59KeyNames.swift` (66537d3) | `app/KeyNames.cpp` | `tests/shared_tables_tests.cpp` |
-| `formats` | `frontends/swift/App/StateFileLoader.swift`, `CueCardContent.swift`, `RegisterLineHelpers.swift`, `MachineModel.swift` (66537d3) | `app/StateFile.cpp`, `CardFile.cpp`, `CueCard.cpp`, `Bcd.cpp` | `tests/shared_formats_tests.cpp` |
+| `formats` | `frontends/swift/App/StateFileLoader.swift`, `CueCardContent.swift`, `RegisterLineHelpers.swift`, `MachineModel.swift` (66537d3) | `CardFile.cpp`, `CueCard.cpp`, `Bcd.cpp` (the state-file parser and its `STATE` records went in M-54) | `tests/shared_formats_tests.cpp` |
 
-The `formats` driver parses every example state file plus
-`tests/fixtures/{statefiles,cards}/` (edge cases), so adding an example adds
-a golden case — regenerate after adding one.
+The `formats` driver parses the card fixtures `tests/fixtures/cards/` (edge
+cases) and dumps the register-line and BCD records. The `STATE` records of
+2.3.0's state files went in M-54 (C59-2 §2): presets of format 2 are the
+library's, checked by `calcu_preset_check.CalcU59Presets` and the reference
+runs.

@@ -31,13 +31,14 @@ std::string TIFileAccess::cardFilePath(const std::string& fileName) const {
     return m_saveFolder + (last == '/' || last == '\\' ? "" : "/") + fileName;
 }
 
-std::optional<std::string> TIFileAccess::readConstantMemory() {
+std::optional<std::string> TIFileAccess::readConstantMemory(bool* unreadable) {
     auto r = m_io->read(cardFilePath(kConstantMemoryFile));
+    if (unreadable) *unreadable = r.unreadable;
     if (!r.raw) return std::nullopt;
     return std::string(r.raw->begin(), r.raw->end());
 }
 
-void TIFileAccess::writeConstantMemory(const std::string& text) { m_io->write(cardFilePath(kConstantMemoryFile), text); }
+bool TIFileAccess::writeConstantMemory(const std::string& text) { return m_io->write(cardFilePath(kConstantMemoryFile), text); }
 
 bool TIFileAccess::writeCard(const std::string& path, const std::string& text) { return m_io->write(path, text); }
 

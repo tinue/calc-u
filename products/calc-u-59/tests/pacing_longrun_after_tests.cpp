@@ -41,7 +41,8 @@ const char* nameOf(Model m) { return m == Model::TI59 ? "TI-59" : m == Model::TI
 
 calcu::sessions::ProductSession<TIAppPart> session(Model model, calcu::pacing::WallClock clock) {
     static const calcu::testing::TempFolder folder("calcu59-longrun");
-    return makeAppSession(testroms::appSetup(model, folder.path()), std::move(clock), 59u);
+    static calcu::settings::SettingsFile settings = calcu::settings::SettingsFile::defaultsOnly(settings::settingsDecl());
+    return makeAppSession(testroms::appSetup(settings, model, folder.path()), std::move(clock), 59u);
 }
 
 } // namespace

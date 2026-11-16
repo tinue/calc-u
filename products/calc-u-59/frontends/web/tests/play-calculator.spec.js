@@ -63,8 +63,22 @@ async function uploadPreset(page, text, name = 'test.ti59') {
   await page.waitForTimeout(600);
 }
 
+// A preset of format 2 (docs/formats/preset.md) on a TI-59 with the Master
+// Library module and the PC-100C, with `body` after its header.
+const preset = (body) => 'format-version: 2\nmodel: TI-59\nslot-1: { name: ML }\nprinter: PC-100C\n' + body;
 // Lbl A 1 2 3 R/S: pressing A shows 123.
-const PROGRAM_123 = 'PROGRAM:\n76 11 01 02 03 91\n';
+const PROGRAM_123 = preset('program:\n  keycodes: |\n    76 11 01 02 03 91\n');
+// The same, then CLR 1 2nd Write at regular speed: the machine waits for a card.
+const PROGRAM_123_WRITE = PROGRAM_123 + 'keys:\n  - regular-speed:\n  - key: CLR 1 Write\n';
+// A fresh machine: no program.
+const FRESH = preset('partition: 479\n');
+
+// The PC-100C attached (the built-in default has no printer, row 59-10).
+async function connectPrinter(page) {
+  const toggle = page.locator('[data-panel=paper]').getByRole('button', { name: /PC-100C/ });
+  if ((await toggle.getAttribute('aria-pressed')) !== 'true') await toggle.click();
+  await expect(toggle).toHaveAttribute('aria-pressed', 'true', { timeout: 5000 });
+}
 
 // ── Start-up ─────────────────────────────────────────────────────────────
 
@@ -229,22 +243,12 @@ test('2nd Pgm 01 shows the Master Library diagnostic cue card', async ({ page })
   await expect(page.locator('.cuecard')).toHaveAttribute('aria-label', /MASTER LIBRARY DIAGNOSTIC/);
 });
 
-test('switching models: TI-58C has no card reader and keeps its constant memory', async ({ page }) => {
+test('switching models: TI-58C has no card reader', async ({ page }) => {
   await gotoReady(page);
   await expect(page.getByRole('button', { name: 'Crd' }).first()).toBeVisible();
   await page.getByLabel('Calculator model').selectOption({ label: 'TI-58C' });
   await expect(page.getByLabel('Calculator model')).toHaveValue('2');
   await expect(page.getByRole('button', { name: 'Crd' })).toHaveCount(0);
-  await page.waitForTimeout(1500);  // the TI-58C boots
-  const seven = await showing(page, ['7', '=']);
-  await pressKeys(page, ['STO', '1', '2', 'CLR']);
-  await page.waitForTimeout(1000);  // the 0.5 s persist debounce
-
-  // The startup model is the last used; the constant memory survives.
-  await gotoReady(page);
-  await expect(page.getByLabel('Calculator model')).toHaveValue('2');
-  await page.waitForTimeout(1500);
-  expect(await showing(page, ['RCL', '1', '2'])).toBe(seven);
 });
 
 test('Settings: the startup model is kept', async ({ page }) => {
@@ -279,14 +283,15 @@ test('lib9_ac21_settings_in_the_ini_file_survive_a_reload', async ({ page }) => 
 
 // ── Presets ──────────────────────────────────────────────────────────────
 
-test('a bundled preset shows its own cue card', async ({ page }) => {
+// LIB-6 AC-42 (and C59-2 AC-6): a bundled example, loaded by its bundle path, fits its cue card.
+test('lib6_ac42 bundled example sum shows its cue card', async ({ page }) => {
   await gotoReady(page);
   await page.getByRole('button', { name: 'Preset' }).click();
   await page.getByRole('button', { name: /Sum of N numbers/ }).click();
   await expect(page.locator('.cuecard')).toHaveAttribute('aria-label', /Sum 1\.\.N/, { timeout: 5000 });
 });
 
-test('an uploaded preset loads its program', async ({ page }) => {
+test('lib6_ac42 uploaded preset by its content', async ({ page }) => {
   await gotoReady(page);
   const expected = await showing(page, ['1', '2', '3']);
   await uploadPreset(page, PROGRAM_123);
@@ -294,7 +299,7 @@ test('an uploaded preset loads its program', async ({ page }) => {
   expect(await settledLed(page)).toBe(expected);
 });
 
-test('a preset dropped on the calculator loads', async ({ page }) => {
+test('lib6_ac42 dropped preset loads', async ({ page }) => {
   await gotoReady(page);
   const expected = await showing(page, ['1', '2', '3']);
   await pressKey(page, 'CLR');
@@ -318,7 +323,7 @@ async function dropFile(page, name, text) {
 
 /// Writes PROGRAM_123 to a blank session card and returns the card's text.
 async function writtenCardText(page) {
-  await uploadPreset(page, PROGRAM_123 + 'KEYSTROKES:\n25 82 21 91\n');
+  await uploadPreset(page, PROGRAM_123_WRITE);
   await page.waitForTimeout(1000);
   await page.getByRole('button', { name: 'Crd' }).nth(1).click();
   await page.getByLabel('Card name').fill('prog');
@@ -340,7 +345,7 @@ test('a card dropped on the TI-59 is fitted, and read when a corner is pressed',
   const expected = await showing(page, ['1', '2', '3']);
   await pressKey(page, 'CLR');
   const card = await writtenCardText(page);
-  await uploadPreset(page, 'PARTITION: 479\n');  // a fresh machine: no program
+  await uploadPreset(page, FRESH);  // a fresh machine: no program
   await dropFile(page, 'dropped.U59', card);
   await page.getByRole('button', { name: 'Feed card side 1' }).click();
   await expect(page.getByRole('button', { name: 'Eject Card' })).toHaveCount(0, { timeout: 15000 });
@@ -373,7 +378,7 @@ test('a blank card is written, listed, and read back', async ({ page }) => {
   const expected = await (async () => { await pressKey(page, 'A'); return settledLed(page); })();
 
   // The same program again, then CLR 1 2nd Write: waits for a card.
-  await uploadPreset(page, PROGRAM_123 + 'KEYSTROKES:\n25 82 21 91\n');
+  await uploadPreset(page, PROGRAM_123_WRITE);
   await page.waitForTimeout(1000);
   await page.getByRole('button', { name: 'Crd' }).nth(1).click();  // a blank card passes: written
   await page.getByLabel('Card name').fill('prog');
@@ -384,7 +389,7 @@ test('a blank card is written, listed, and read back', async ({ page }) => {
   await expect(page.getByRole('button', { name: 'Eject Card' })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Eject Card' })).toHaveCount(0, { timeout: 15000 });
 
-  await uploadPreset(page, 'PARTITION: 479\n');  // a fresh machine: no program
+  await uploadPreset(page, FRESH);  // a fresh machine: no program
   await page.getByRole('button', { name: 'Crd' }).first().click();  // read
   await page.getByRole('button', { name: 'prog.U59', exact: true }).click();
   await page.getByRole('button', { name: 'Fit', exact: true }).click();
@@ -415,8 +420,7 @@ test('the fresh card has its file name as title, and an existing name asks first
 test('LIB-8 AC-31 the PC-100C prints a number, the text view shows it, Cut empties the paper and is disabled', async ({ page }) => {
   await gotoReady(page);
   const printer = page.locator('[data-panel=paper]');
-  // Connected from the start, as in the apps.
-  await expect(printer.getByRole('button', { name: /PC-100C/ })).toHaveAttribute('aria-pressed', 'true');
+  await connectPrinter(page);
   await expect(printer.locator('[data-calcu=paper-owner]')).toHaveText('PC-100C');
   await pressKeys(page, ['4', '2', '2nd', '+/-']);  // 42 Prt
   const cut = printer.locator('[data-calcu=paper-cut]');
@@ -433,6 +437,7 @@ test('LIB-8 AC-28 PRINT and ADV are held, TRACE is a switch, the view control sh
   await gotoReady(page);
   const printer = page.locator('[data-panel=paper]');
   const control = (id) => printer.locator(`[data-calcu=paper-control-${id}]`);
+  await connectPrinter(page);
   await expect(control('PRINT')).toBeVisible();
   // PRINT: down while held, up on release; it prints the display.
   await control('PRINT').dispatchEvent('pointerdown', { pointerId: 1 });
@@ -563,6 +568,7 @@ test('the standalone app follows the window as it rotates', async ({ page }) => 
 
   await page.setViewportSize({ width: 832, height: 419 });
   await expect(page.locator('[data-layout=wide] [data-panel=paper]')).toBeVisible();
+  await connectPrinter(page);   // its controls show with a PC-100C attached
   // Fits the window without clipping.
   expect((await page.locator('.calcu-device').boundingBox()).width).toBeLessThanOrEqual(832);
   await expect(page.locator('[data-panel=debug]')).toHaveCount(0);

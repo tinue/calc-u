@@ -65,6 +65,9 @@ struct PlaceKeyRule {
     bool bare = true;
     bool byName = true;
     bool byFile = true;
+    // The sentence for a `{ file: }` the place does not take (Calc-U-59's
+    // slot-1, LIB-6 D-42); empty: the reader's own.
+    std::string noFile;
 };
 
 class ModelRules {

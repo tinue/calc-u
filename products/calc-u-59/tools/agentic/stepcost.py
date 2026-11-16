@@ -12,8 +12,8 @@ R10-R12 = 2.000311000312, R22 = 98.99."""
 import os
 import sys
 import ctypes as C
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from ti59file import Machine, LIB, IDLE_LO, IDLE_HI, FLG_IDLE, INSTR_PER_SEC, regbytes, press, settle  # noqa: E402
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'headless'))
+from ti59 import Machine, LIB, IDLE_LO, IDLE_HI, FLG_IDLE, INSTR_PER_SEC, regbytes, press, settle  # noqa: E402
 
 FAST_ENTRY = ['82', '85', '83', '52', '82', '83', '94', '95', '61', '92', '92', '62', '41', '92', '42']
 NORMAL_ENTRY = ['61', '92', '92', '63', '91']        # GTO 008 R/S

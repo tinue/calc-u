@@ -1,7 +1,7 @@
-// Golden generator: dumps the Swift originals of the state-file parser,
+// Golden generator: dumps the Swift originals of the
 // card-file parser, cue-card model, register-line helpers and BCD encoders
 // so the C++ ports in Shared/ can be checked against them.
-// Arguments: state files and card files to parse. See tools/goldens/README.md.
+// Arguments: card files to parse. See tools/goldens/README.md.
 import Foundation
 
 func hex(_ b: [UInt8]) -> String { b.map { String(format: "%X", $0) }.joined() }
@@ -36,32 +36,8 @@ for path in CommandLine.arguments.dropFirst() {
         out += "END\n"
         continue
     }
-    for (maxStep, hidden) in [(479, false), (959, false), (479, true)] {
-        out += "STATE \(rel) \(maxStep) \(hidden ? 1 : 0)\n"
-        let r = parseStateFile(text, maxStepAddr: maxStep, allowHiddenRegisters: hidden)
-        out += "partition \(r.partitionMaxStep) \(r.partitionWasExplicit ? 1 : 0)\n"
-        for s in r.programSteps { out += "step \(s.stepAddr) \(s.keycode)\n" }
-        for g in r.registers { out += "reg \(g.regNum) \(g.isHidden ? 1 : 0) \(hex(g.nibbles))\n" }
-        for k in r.keystrokes {
-            switch k {
-            case .key(let c): out += "key \(c)\n"
-            case .toggleTrace: out += "toggleTrace\n"
-            case .wait(let t): out += "wait \(num(t))\n"
-            case .waitFullSpeed(let t): out += "waitFullSpeed \(num(t))\n"
-            case .trace(let n): out += "trace \(n ?? "-")\n"
-            case .fullSpeed: out += "fullSpeed\n"
-            case .regularSpeed: out += "regularSpeed\n"
-            case .zeroElapseTime: out += "zeroElapseTime\n"
-            case .reportElapseTime: out += "reportElapseTime\n"
-            }
-        }
-        if let c = r.cueCardContent { dumpCue(c, &out) }
-        out += "module \(r.solidStateModuleID ?? "-")\n"
-        out += "printer \(r.printerConnected.map { $0 ? "1" : "0" } ?? "-")\n"
-        out += "model \(r.model?.displayName ?? "-")\n"
-        for e in r.errors { out += "error \(e)\n" }
-        out += "END\n"
-    }
+    // The STATE records of 2.3.0's state files went in M-54 (C59-2 §2):
+    // presets of format 2 are read by the library's loader.
 }
 
 // BCD encoders over literals (text path) and doubles (Double path).

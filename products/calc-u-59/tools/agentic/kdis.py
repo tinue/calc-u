@@ -1,9 +1,11 @@
 """Disassemble a TI-59 keycode program into one line per instruction.
 
-CLI: kdis.py file.ti59
-  Prints the program as "step  mnemonic operands" (operand bytes folded into
-  their instruction; Ind, addresses and the Dsz/If flg register shown), then
-  the REGISTERS, the KEYSTROKES and the partition (total steps).
+CLI: kdis.py file.ti59 [--calcu PATH]
+  Loads the preset's sections through calcu (`preset`, then `ti59 program
+  000 count=<n>` up to the partition; tools/agentic/calcu59.py) and prints the
+  program as "step  mnemonic operands" (operand bytes folded into their
+  instruction; Ind, addresses and the Dsz/If flg register shown), then the
+  preset's key steps and the partition (total steps).
 Library: dis(keycodes, start=0, end=None) -> list of lines."""
 import os
 import sys
@@ -50,9 +52,19 @@ def dis(p, start=0, end=None):
 
 if __name__ == '__main__':
     sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-    from ti59file import parse
-    prog, regs, part, keys = parse(sys.argv[1])
+    from calcu59 import Run, calcu_path, key_steps, split_preset
+    args = sys.argv[1:]
+    program = calcu_path(args)
+    text, steps = split_preset(args[0])
+    run = Run(program)
+    try:
+        run.preset(text, os.path.basename(args[0]))   # its sections, not its keys
+        prog = run.program()
+        last = max((i for i, k in enumerate(prog) if k), default=-1)
+        prog = prog[:min(len(prog), last + 3)]   # the zeros after the program, but an address's
+        part = int(run.cmd('ti59 partition')[0]) + 1
+    finally:
+        run.close()
     for l in dis(prog):
         print(l)
-    print('REGISTERS', {k: v for k, v in sorted(regs.items())})
-    print('KEYS', keys, 'PARTITION', part)
+    print('KEYS', [v for _, v in key_steps(steps)], 'PARTITION', part)

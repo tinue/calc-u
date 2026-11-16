@@ -41,14 +41,17 @@ void runFor(int ms) {
 
 template <class W> W* named(QWidget& root, const char* name) { return root.findChild<W*>(QString::fromLatin1(name)); }
 
-// The controller started on a TI-59 with the PC-100C, at key readiness.
+// The controller started (LIB-18's start: the TI-59 with the Master Library
+// module and no printer, row 59-10), then the PC-100C attached, at key readiness.
 struct Started {
     EmulatorController controller;
     bool ok = false;
     Started() {
         if (!controller.started()) return;
-        controller.start(cu59::Model::TI59);
         runFor(1000);   // the ROM's start-up
+        if (!controller.printerConnected()) controller.togglePrinterConnection();
+        if (!waitUntil([&] { return controller.printerConnected(); })) return;
+        runFor(500);    // the power cycle the attach brings (row 59-11)
         ok = true;
     }
 };

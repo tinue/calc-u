@@ -52,7 +52,12 @@ struct KeyLog final : calcu::typing::KeyObserver {
 
 struct TIRig : testroms::PartRig {
     KeyLog log;
-    explicit TIRig(Model m = Model::TI59) : PartRig(m) { engine().setObserver(&log); }
+    // The PC-100C as 2.3.0's start had it (since M-54 the built-in default
+    // has none, LIB-18 AC-18): the print loops and Adv need it.
+    explicit TIRig(Model m = Model::TI59) : PartRig(m) {
+        attach("printer", "PC-100C");
+        engine().setObserver(&log);
+    }
     ~TIRig() { engine().setObserver(nullptr); }
     calcu::typing::TypingEngine& engine() { return part().typing()->engine(); }
     void down(const char* key, int pointer = 1) {
@@ -113,13 +118,20 @@ std::vector<std::string> ids(const std::optional<std::vector<Press>>& p) {
     return out;
 }
 
-const std::string kPrintLoop = "PROGRAM:\n76 11 99 61 11\n";   // Lbl A Prt GTO A
-const std::string kRunLoop = "PROGRAM:\n76 11 61 11\n";        // Lbl A GTO A
-const std::string kPauseLoop = "PROGRAM:\n76 11 66 61 11\n";   // Lbl A Pause GTO A
+const std::string kPrintLoop = "76 11 99 61 11";   // Lbl A Prt GTO A
+const std::string kRunLoop = "76 11 61 11";        // Lbl A GTO A
+const std::string kPauseLoop = "76 11 66 61 11";   // Lbl A Pause GTO A
+
+// A preset of format 2 with `keycodes` for the rig's model, the Master
+// Library module and the PC-100C.
+std::string programPreset(TIRig& r, const std::string& keycodes) {
+    return "format-version: 2\nmodel: " + modelId(r.part().model()).value +
+           "\nslot-1: { name: ML }\nprinter: PC-100C\nprogram:\n  keycodes: |\n    " + keycodes + "\n";
+}
 
 // A program loaded and started with A; true once it runs.
 bool startProgram(TIRig& r, const std::string& program) {
-    r.load(program);
+    r.load(programPreset(r, program));
     if (!r.idleWait()) return false;
     r.down("A");
     r.up("A");
@@ -140,7 +152,7 @@ Tap tapRsOnPrintLoop(Model model, bool full, std::uint32_t samples, std::chrono:
     TIRig r(model);
     if (full) r.post(calcu::sessions::kSpeedCommand, Value::object({{"full", true}}));
     Tap out;
-    r.load(kPrintLoop);
+    r.load(programPreset(r, kPrintLoop));
     if (!r.idleWait()) return out;
     r.engine().setMachine(r.session().machineSession().machine(), &p, nullptr);   // this rule from now on
     r.down("A");
@@ -272,7 +284,7 @@ TEST(lib5_ac25_rs_stops_printing_loop_every_phase) {
 TEST(lib5_ac25_gto_acted_on) {
     // At the prompt GTO A R/S runs the program from A (keyed live).
     TIRig r;
-    r.load(kRunLoop);
+    r.load(programPreset(r, kRunLoop));
     CHECK(r.idleWait());
     for (const char* k : {"GTO", "A", "R/S"}) {
         r.down(k);
@@ -576,11 +588,11 @@ TEST(lib5_ec5_reset_and_model_switch_release_held_keys) {
     CHECK(r.idleWait());
     r.host(produced('7', "Digit7"));
     CHECK_EQ(r.held().size(), std::size_t(1));
-    r.post(commands::kReset);
+    r.post(calcu::startup::kResetCommand);
     CHECK(r.log.keys() == (std::vector<std::string>{"7+", "7-"}));   // up at once (D-11)
     CHECK(r.held().empty());
     r.host(produced('8', "Digit8"));
-    r.post(commands::kStartMachine, Value::object({{"model", 1}}));
+    r.post(calcu::startup::kModelCommand, Value::object({{"name", "TI-58"}}));
     CHECK(r.held().empty());
     CHECK(r.part().typing()->engine().idle());
 }
@@ -601,24 +613,25 @@ std::string replaced(std::string text, const std::string& from, const std::strin
 std::vector<std::string> paperOf(const std::string& text) {
     testroms::SessionRig r;
     r.runFor(1s);
-    r.post(commands::kLoadState, Value::object({{"bytes", r.bytes(text)}}));
-    r.until([&] { return r.part().keystrokesPlaying(); }, 5s);
-    r.until([&] { return !r.part().keystrokesPlaying() && !r.busy(); }, 120s);
+    const auto reply = r.operation(calcu::presets::kLoadPresetCommand,
+                                   Value::object({{"content", text}, {"name", "printer-timing.ti59"}}), 120s);
+    CHECK(reply.done);
     r.runFor(2s);
     return r.printedText();
 }
 } // namespace
 
 TEST(lib5_exit_printer_timing_same_paper_at_regular_and_full_speed) {
-    // examples/debug/printer-timing.ti59 with every speed directive at
-    // regular speed, and at full speed: a KEYSTROKES key (Prt, Adv) is held
-    // 100 ms of emulated time and until read at every speed, so both give the
-    // same paper, and the paper of the file as it is (2.3.0's 104 lines).
+    // examples/debug/printer-timing.ti59 (format 2 since M-54) with every
+    // speed step at regular speed, and at full speed: a key of a preset (Prt,
+    // Adv) is held 100 ms of emulated time and until read at every speed, so
+    // both give the same paper, and the paper of the file as it is (2.3.0's
+    // 104 lines).
     const auto text = testroms::readFile("examples/debug/printer-timing.ti59");
     CHECK(text.has_value());
     if (!text) return;
-    const auto regular = paperOf(replaced(*text, "FullSpeed:", "RegularSpeed:"));
-    const auto full = paperOf(replaced(*text, "RegularSpeed:", "FullSpeed:"));
+    const auto regular = paperOf(replaced(*text, "- full-speed:", "- regular-speed:"));
+    const auto full = paperOf(replaced(*text, "- regular-speed:", "- full-speed:"));
     const auto asIs = paperOf(*text);
     std::printf("printer-timing: %zu lines at regular speed, %zu at full speed, %zu as it is\n", regular.size(),
                 full.size(), asIs.size());

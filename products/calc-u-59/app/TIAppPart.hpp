@@ -1,16 +1,21 @@
 #pragma once
 #include "CardFile.hpp"
+#include "ConstantMemoryKeeper.hpp"
 #include "CueCard.hpp"
 #include "DebugModel.hpp"
 #include "EmulatorSession.hpp"
 #include "ModuleCatalog.hpp"
 #include "ProductRoms.hpp"
-#include "StateFile.hpp"
 #include "TIFileAccess.hpp"
 #include "TILevelRules.hpp"
+#include "TIPresetCommands.hpp"
+#include "TIPresetRules.hpp"
+#include "TIProductMachines.hpp"
 #include "TITyping.hpp"
 #include "debugger/DebuggerPart.hpp"
 #include "paper/PaperPart.hpp"
+#include "parts/LibraryParts.hpp"
+#include "presets/Source.hpp"
 #include "sessions/AppSession.hpp"
 #include "sessions/MachineSession.hpp"
 #include "sessions/Payload.hpp"
@@ -32,27 +37,29 @@
 // calcu::sessions::AppSession made by makeAppSession(); everything they do
 // is a command or a request, everything they get is a message.
 //
-// The part holds the product's flows (2.3.0's SessionController, taken
-// apart in M-34 when the Web frontend moved onto the session too): starting
-// and switching machines, presets, the TI-58C constant memory, the card
-// reader, the PC-100C's place and controls, the cue card shown, the debug
-// panel's data, the ASM overlay and the LOG tab. Adapters (design §5): the
-// machine is the machine session's; KEYSTROKES playback runs at its slice
-// ends (TIKeystrokePlayback), the card wait is a WaitProbe
-// (TICardWaitAdapter). Since M-53 the paper is LIB-8's PaperPart and the
-// pause, the steps, breakpoints and traces are LIB-10's DebuggerPart (its run
-// control is the machine session's gate and the typing part's pause); the
-// part reaches both through setLibraryParts (adapters P-E1 to P-E5, L-E1 to
-// L-E5 of the LIB-8 and LIB-10 designs). Keys are the library's typing (LIB-5:
-// TypingPart goes in front of this part; host-key-down, screen-key-down, …,
-// held-keys). Errors are notices,
-// diagnostics log lines, the files TIFileAccess; what the EmulatorSession
-// reports waits in a queue of this part that runs on the session's thread
-// after the call. What 2.3.0's change flags announced arrives as the interim
-// product topics below (removed with their owners, design §5).
+// Since M-54 the part owns the library's parts of its session
+// (parts::LibraryParts; LIB-6 D-40, as Calc-U-1600's SharpAppPart): LIB-5's
+// typing, LIB-2's peripherals, LIB-6's presets on the TI rules and keywords
+// (app/TIPresetRules, app/TIPresetKeys; the bundle of examples/), LIB-18's
+// start, model switch, Reset, Cold boot, attach and detach on
+// app/TIProductMachines, LIB-8's paper, LIB-10's debugger; then the program
+// memory commands (app/TIPresetCommands, C59-2 AC-9) and this part. The
+// machine is built by LIB-18's machine control and held by the machine
+// session; the part follows each new machine (machineChanged): the runtime
+// around it (EmulatorSession: the frame sampler, the debug panel's reads),
+// the module and the printer read from what is plugged (LIB-18 D-26), the
+// own cue card, the TI-58C's constant memory file (ConstantMemoryKeeper,
+// C59-3). What stays the part's: the card reader (until M-55), the PC-100C's
+// TRACE position (C59-6 AC-6), the cue card shown, the debug panel's data,
+// the ASM overlay and the LOG tab. The card wait is a WaitProbe
+// (TICardWaitAdapter). Errors are notices, diagnostics log lines. What
+// 2.3.0's change flags announced arrives as the interim product topics below
+// (removed with their owners, design §5).
 
 namespace cu59 {
 
+/// A tab of the debug panel, as the step `debug-panel:` names it.
+enum class DebugPanel { Calculator, Cpu, Log };
 /// What the card reader does now.
 enum class CardState { NoCard, Swiping };
 /// The debug level of the LOG tab (cycled by c59.cycle-debug-level).
@@ -136,8 +143,9 @@ struct TICardReaderState final : TISnapshot<TICardReaderState> {
     std::optional<int> litCorner;
     calcu::sessions::Value toValue() const override;
 };
-/// What is no debugger state (LIB-10 adapter L-E5, until M-54 and M-57):
-/// the run state is the library's `run-state`.
+/// What no debugger state is (LIB-10 adapter L-E5, until M-57): the run
+/// state is the library's `run-state`; `keystrokes-playing` says that an
+/// operation runs (a preset, a build; LIB-6 replaced the KEYSTROKES playback).
 struct TIRunState final : TISnapshot<TIRunState> {
     static constexpr calcu::sessions::PayloadKind kKind{"c59.run-state"};
     bool fullSpeed = false;
@@ -209,15 +217,8 @@ NoticeParts splitNotice(const std::string& sentence);
 /// The commands of the part (`c59.` + name; arguments in the comments).
 namespace commands {
 using calcu::sessions::CommandName;
-inline const CommandName kStartMachine{"c59.start-machine"};     // {model: 0 TI-59, 1 TI-58, 2 TI-58C}
-inline const CommandName kReset{"c59.reset"};
-inline const CommandName kCleanReset{"c59.clean-reset"};
-inline const CommandName kPersistConstantMemory{"c59.persist-constant-memory"};
-inline const CommandName kChangeModule{"c59.change-module"};     // {id} (empty: the slot emptied); an operation
 inline const CommandName kFullSpeed{"c59.full-speed"};           // {on}
-inline const CommandName kPrinterConnected{"c59.printer-connected"};   // {on}; an operation
-inline const CommandName kTogglePrinterConnection{"c59.toggle-printer-connection"};   // an operation
-// LIB-8 P-E2 (until M-54): `set-control {peripheral: "PC-100C", control: PRINT|ADV|TRACE, on}`,
+// LIB-8 P-E2 (until M-57): `set-control {peripheral: "PC-100C", control: PRINT|ADV|TRACE, on}`,
 // the library's command, as the paper panel sends it.
 inline const CommandName kSetControl{"set-control"};
 inline const CommandName kFitCard{"c59.fit-card"};               // {bytes (absent: unreadable), path, name} → TIFlag
@@ -225,8 +226,7 @@ inline const CommandName kFitBlankCard{"c59.fit-blank-card"};    // {path, name}
 inline const CommandName kFeedSide{"c59.feed-side"};             // {side} → TIFlag
 inline const CommandName kTapCard{"c59.tap-card"};               // {x, y} → TIFlag
 inline const CommandName kEjectCard{"c59.eject-card"};
-inline const CommandName kLoadState{"c59.load-state"};           // {bytes (absent: unreadable)}; an operation
-inline const CommandName kOpenDropped{"c59.open-dropped"};       // {bytes, path, name} → TIFlag; a preset: an operation
+inline const CommandName kOpenDropped{"c59.open-dropped"};       // {bytes, path, name} → TIFlag; a preset: LIB-6's load-preset {content, name} (until M-56)
 inline const CommandName kLiveDebug{"c59.live-debug"};           // {on}
 inline const CommandName kCpuDebug{"c59.cpu-debug"};             // {on}
 inline const CommandName kClearHeatmap{"c59.clear-heatmap"};
@@ -246,12 +246,19 @@ inline const calcu::sessions::RequestName kDropAction{"c59.drop-action"};   // {
 struct TIAppSetup {
     std::shared_ptr<const calcu::roms::RomSet> roms;   ///< from lookUpRoms()
     std::string cuecards;                              ///< roms/solid-state/cuecards.txt
-    std::string moduleID = kStartModuleID;
-    Model startModel = Model::TI59;
-    std::string saveFolder;                            ///< cards, ti58c.mem (LIB-9 Paths)
+    std::string saveFolder;                            ///< cards, ti58c.memory.yaml (LIB-9 Paths)
     std::shared_ptr<FileIO> fileIO;                    ///< null: plain file I/O
     TraceTarget trace;                                 ///< LIB-9 Paths (traces), [trace] max-file-size
     std::function<bool()> traceAvailable;              ///< null: always
+    /// The product's settings (LIB-9; the startup model, `last-model`, the
+    /// startup presets [preset]); null: the defaults, kept in memory.
+    calcu::settings::SettingsFile* settings = nullptr;
+    /// The bundled examples (examples/ as bundle.yaml lists them; LIB-6
+    /// AC-31, AC-33); empty: none (a bundle path is refused).
+    std::string examplesFolder;
+    std::string home;                                  ///< `~/` of a preset (README §3)
+    std::function<std::optional<std::string>()> screenshotFolder;   ///< LIB-6 AC-25; unset: the save folder
+    calcu::sessions::Hosting hosting = calcu::sessions::Hosting::Paced;
 };
 
 class TIAppPart final : public calcu::sessions::SessionPart {
@@ -261,128 +268,98 @@ public:
     TIAppPart(const TIAppPart&) = delete;
     TIAppPart& operator=(const TIAppPart&) = delete;
 
-    // SessionPart. attach: the topics and commands, the gate, the hook and
-    // the probe on the machine session, then the first machine.
+    /// The library's parts (LIB-6 D-40: built by parts::LibraryParts), the
+    /// program memory commands (C59-2 AC-9), then this part, in the session's
+    /// order. The host builds its AppSessionSetup from them.
+    std::vector<calcu::sessions::SessionPart*> sessionParts();
+    calcu::parts::LibraryParts& libraryParts() { return m_lib; }
+
+    // SessionPart.
     void attach(calcu::sessions::SessionSetup&) override;
     void beforeCall(calcu::sessions::SessionContext&, calcu::pacing::WallTime) override;
     void afterCall(calcu::sessions::SessionContext&, calcu::pacing::WallTime) override;
     void suspending(calcu::sessions::SessionContext&) override;
+    void machineChanged(calcu::sessions::SessionContext&) override;
+    void machineRestarted(calcu::sessions::SessionContext&, calcu::sessions::Restart) override;
+    void operationEnded(calcu::sessions::SessionContext&) override;
+    void beforeMachineChange(calcu::sessions::SessionContext&) override;
+    void closing(calcu::sessions::SessionContext&) override;
 
     // ── The flows, as the commands run them. Public for the host's own
     // adapters and the tests (LIB-3 design §3.9); a frontend sends the
     // commands. A test that calls one directly runs the session after it.
 
-    // Machine
-    /// Build a fresh machine of `model` from the ROM set (it cannot fail for a
-    /// missing ROM, LIB-12 AC-6). Always true.
-    bool startMachine(Model model);
+    // Machine (built and held by LIB-18's machine control and the machine
+    // session; the start, the model switch, Reset, Cold boot, the module and
+    // the printer are LIB-18's commands: `start`, `model`, `reset`,
+    // `cold-boot`, `attach`, `detach`)
     bool hasMachine() const { return m_session != nullptr; }
     Model model() const { return m_model; }
-    /// The machine's runtime (freeze state, keys, traces); the machine itself
-    /// is the machine session's.
+    /// The machine's runtime (frames, the debug panel's reads); the machine
+    /// itself is the machine session's.
     EmulatorSession* emulator() { return m_session.get(); }
-    void resetMachine();
-    void cleanResetMachine();
-    /// TI-58C: write ti58c.mem now if its contents changed (also debounced in afterCall()).
-    void persistConstantMemory();
+    /// The module in `slot-1` (empty: none), as the machine says (D-26).
     const std::string& moduleID() const { return m_moduleID; }
-    /// The module of that ID into `slot-1` (a replace), then the power cycle
-    /// that follows (C59-6 AC-11; row 59-11); false for an ID that is no
-    /// module, or when the attach is refused (EC-1), and nothing changes.
-    bool selectModule(const std::string& moduleID);
-    /// The Settings choice: a different module (empty: the slot emptied),
-    /// then the power cycle.
-    void changeModule(const std::string& moduleID);
     /// The 14 modules from their module files, in menu order (C59-6 AC-8).
     std::vector<ModuleMetadata> allModules() const { return allModuleMetadata(*m_setup.roms); }
 
     // Display, keys, speed
     const LedFrame& display() const { return m_display; }
     double calcIndicatorOpacity() const { return m_calcOpacity; }
-    /// The library's typing part of the session (makeAppSession sets it
-    /// before the session is built): KEYSTROKES' keys go to its engine; its
-    /// pause is the machine session's, which the run control sets (LIB-10).
-    void setTyping(calcu::typing::TypingPart* typing);
-    calcu::typing::TypingPart* typing() const { return m_typing; }
+    calcu::typing::TypingPart* typing() { return m_lib.typing(); }
+    /// Full speed as the display's hold gesture asks (c59.full-speed): the
+    /// session's commanded speed.
     void setFullSpeed(bool on);
     bool fullSpeed() const { return m_fullSpeed; }
-    bool keystrokesPlaying() const { return m_keystrokesPlaying; }
-    /// The banks of the in-file (`mem:`) cards as they are now, by name
-    /// (read-only; the reference runs of M-9 record what an example wrote).
-    std::vector<std::pair<std::string, std::vector<uint8_t>>> memoryCardBanks() const {
-        std::vector<std::pair<std::string, std::vector<uint8_t>>> out;
-        for (const auto& [name, card] : m_memoryCards) out.emplace_back(name, card.bank);
-        return out;
-    }
+    /// An operation runs (a preset, a build, a plug change): the field the
+    /// interim topic `c59.run-state` names keystrokes-playing.
+    bool keystrokesPlaying() const { return m_operationRuns; }
 
     // Cue card
     const std::optional<CueCardContent>& cueCard() const { return m_cueCard; }
+    /// The machine's own card (a preset's `cue-card:`, the constant memory
+    /// file's; C59-2 AC-6, C59-3 AC-7), under a module program's card.
+    const std::optional<CueCardContent>& ownCueCard() const { return m_userCueCard; }
 
     // Printer (the paper: LIB-8's PaperPart)
     bool printerConnected() const { return m_printerConnected; }
-    /// TRACE's position: the app session keeps it from the start (off) to the
-    /// end, through reset, power cycle, cold boot, model switch and detach;
-    /// never saved (C59-6 AC-6; row 59-25). A state file sets it off.
+    /// TRACE's position: kept by the app session from the start (off) to the
+    /// end, through reset, power cycle, cold boot, detach and attach; never
+    /// saved (C59-6 AC-6; row 59-25); a preset's build sets it as the preset
+    /// says (LIB-18 D-27).
     bool printerTrace() const { return m_printerTrace; }
-    /// Attach or detach the PC-100C, then the power cycle that follows (row
-    /// 59-11). Its paper stays in the PaperPart (LIB-8 AC-8); a line cut by
-    /// the detach keeps its rows (EC-7).
-    void setPrinterConnected(bool connected);
-    void togglePrinterConnection();
     /// A control of the PC-100C as LIB-2 names it: PRINT, ADV (keys), TRACE
     /// (the switch the app session keeps). False: no such control.
     bool setPrinterControl(const std::string& control, bool on);
-    /// The library's parts of the session, which makeAppSession (or a test)
-    /// sets before the session is built: the PC-100C's paper (LIB-8) and the
-    /// run control and traces (LIB-10).
-    void setLibraryParts(calcu::paper::PaperPart* paper, calcu::debugger::DebuggerPart* debugger,
-                         TILevelRules* rules);
-    calcu::paper::PaperPart* paperPart() const { return m_paperPart; }
-    calcu::debugger::DebuggerPart* debuggerPart() const { return m_debugger; }
-    TILevelRules* levelRules() const { return m_rules; }
+    calcu::paper::PaperPart* paperPart() { return m_lib.paper(); }
+    calcu::debugger::DebuggerPart* debuggerPart() { return m_lib.debugger(); }
+    calcu::presets::PresetsPart* presetsPart() { return m_lib.presets(); }
+    TILevelRules* levelRules() { return &m_levelRules; }
     /// The debug panel's view by the name of `debug-panel:` (calculator, cpu, log).
     void showDebugPanelNamed(const std::string& view);
 
-    // Card reader (reference/SharedArchitecture.md § "Card Reader Flow")
+    // Card reader (reference/SharedArchitecture.md § "Card Reader Flow"; M-55: C59-7)
     CardState cardState() const { return m_pass ? CardState::Swiping : CardState::NoCard; }
     const std::string& cardFileName() const { return m_cardFileName; }
-    /// Fit a card file into the cutout, replacing the card there (nullopt bytes:
-    /// it could not be read). Nothing goes into the reader yet. Written data goes
-    /// back to `path`. False if it could not be fitted, or a card is in the reader.
     bool fitCard(const std::optional<std::vector<uint8_t>>& raw, const std::string& path, const std::string& fileName);
-    /// Fit a fresh card; `savePath` is created or replaced by its first write.
     bool fitBlankCard(const std::string& savePath, const std::string& fileName);
-    /// Feed a side (0 = top-left corner, 1 = top-right) of the fitted card into the reader.
     bool feedSide(int side);
-    /// A press at canvas position (nx, ny): feeds a side if it hits a corner of
-    /// the fitted card on show. True if the press hit such a corner.
     bool tapCard(double nx, double ny);
     bool cardFitted() const { return m_fitted.has_value(); }
-    /// A fitted card, not covered by a module's cue card: a tap on a corner feeds it.
     bool cardOnShow() const { return m_fitted && m_activeProgram <= 0; }
-    /// The corner to draw lit: the side of the fitted card in the reader, if that card is on show.
     std::optional<int> litCardCorner() const;
     void ejectCard();
 
-    // State files and dropped files
-    /// A preset's bytes (nullopt: it could not be read).
-    void loadStateFile(const std::optional<std::vector<uint8_t>>& raw);
+    // Dropped files
     /// By the file's name and the current model (dropActionFor).
     DropAction dropAction(const std::string& fileName) const { return dropActionFor(fileName, m_model); }
-    /// Load the preset or insert the card; false when nothing was done (a card
-    /// is already in the reader, the file could not be read, or dropAction
-    /// says no). A write to the card goes back to `path`.
-    bool openDroppedFile(const std::optional<std::vector<uint8_t>>& raw, const std::string& path,
-                         const std::string& fileName);
 
     // Debugger
     void setLiveDebugEnabled(bool on);
     void setCpuDebugEnabled(bool on);
     bool liveDebugEnabled() const { return m_liveDebugEnabled; }
     bool cpuDebugEnabled() const { return m_cpuDebugEnabled; }
-    /// The run control's state (LIB-10); none without a DebuggerPart.
     calcu::debugger::RunState runState() const;
-    /// Paused by the run control (2.3.0's "frozen").
     bool isFrozen() const;
     const DebugModel& debug() const { return m_debug; }
     void clearHeatmap();
@@ -396,7 +373,6 @@ public:
     void dumpMemory();
 
     // ASM overlay
-    /// An overlay file's text (nullopt: it could not be read).
     void loadAsm(const std::optional<std::string>& text, const std::string& fileName);
     void runAsm();
     void clearAsm();
@@ -412,7 +388,7 @@ public:
         CueCardChanged = 1u << 2,
         PrinterChanged = 1u << 3,   ///< connection, TRACE latch
         CardChanged = 1u << 5,      ///< card reader state or file name
-        RunStateChanged = 1u << 6,  ///< the run control's state, full speed, playback
+        RunStateChanged = 1u << 6,  ///< full speed, an operation runs
         LiveChanged = 1u << 7,      ///< CALCULATOR tab snapshot
         CpuChanged = 1u << 8,       ///< CPU tab history
         HeatmapChanged = 1u << 9,
@@ -424,10 +400,6 @@ public:
     /// session's thread: another part of the same session that draws its own
     /// form of them (the Web's TIWebPart, LIB-15 59).
     void setChangeObserver(std::function<void(uint32_t)> observer) { m_observer = std::move(observer); }
-    /// A preset's operation: it ends when its KEYSTROKES have played (AC-32);
-    /// for a part that loads a preset as the start (the Web's `start`).
-    /// The machine a load built joins the machine session first.
-    calcu::sessions::Operation presetOperation();
 
     // What the flows report (LIB-3 AC-30)
     /// An error: the notice "<title>: <message>" (today's alert).
@@ -436,109 +408,74 @@ public:
     void diagnostic(const std::string& message);
     /// The card and constant-memory files (TIFileAccess, on the save folder).
     TIFileAccess& files() { return m_files; }
+    ConstantMemoryKeeper& constantMemory() { return m_keeper; }
 
 private:
     static uint32_t changeIf(bool on, Change bit) { return on ? static_cast<uint32_t>(bit) : 0u; }
     void emitChanged(uint32_t c) { m_changes |= c; }
+    calcu::parts::LibraryPartsSetup librarySetup();   // the constructor's, on the members before m_lib
 
     struct Hooks;
-    struct Events;
     using Handler = std::function<calcu::sessions::CommandOutcome(const calcu::sessions::Value&)>;
     void add(calcu::sessions::SessionSetup&, const calcu::sessions::CommandName&, Handler);
     /// After everything a flow did: the queue, the machine, the speed, the topics.
     void settle();
-    void adoptMachine();
+    /// A new machine of the session (LIB-18 §11.3): the runtime around it, the
+    /// plugs read from it, the own cue card, the constant memory keeper.
+    void followMachine();
+    /// What is plugged now: the module (and its cards), the printer, TRACE.
+    void followPlugs(bool newMachine);
     void syncSpeed();
     void publish(uint32_t changes);
-    calcu::sessions::Operation untilIdle(bool keystrokes);
-    calcu::sessions::Task<calcu::sessions::OperationResult> runUntilIdle(calcu::sessions::OperationContext&, bool keystrokes);
-    /// The 60 Hz duties after a host call: display, printer, log, card
-    /// auto-eject, the debugger, traces, and the slower checks (cue-card
-    /// program 2 Hz, LOG text 1 Hz, TI-58C persist debounce 0.5 s).
+    /// The 60 Hz duties after a host call: display, log, card auto-eject, the
+    /// debugger, and the slower checks (cue-card program 2 Hz, LOG text 1 Hz).
     void frame(std::chrono::steady_clock::time_point now);
-    /// Run `f` after the call unless the EmulatorSession that asked has been replaced by then.
-    void later(uint64_t sessionGeneration, std::function<void()> f);
+    /// `cue-card:` of a preset (C59-2 AC-6): the machine's own card.
+    void fitOwnCueCard(const CueCardContent& card);
 
-    /// Shared start of both resets: stop playback, unfreeze, drop the overlay, card and cue card.
-    void beginReset();
-    void resetStopped();
     void refreshCueCard();
     void checkProgramNumber();
     void refreshLog();
     void log(const std::vector<std::string>& lines);
-    std::optional<std::vector<uint8_t>> loadConstantMemory();
-    void applyState(const LoadStateResult& parsed);
-    /// The run control's state since the last settle: the frozen view of a
-    /// pause or step that landed, the panel's frame ring (LIB-10 §12.3).
     void followRunState();
     void showDebugPanel(DebugPanel panel);
-    /// KEYSTROKES `Trace:` (L-E1): the library's trace session, as a preset's.
-    void scriptedTrace(const std::optional<std::string>& fileName);
-    /// The run control as a KEYSTROKES directive needs it: refused without a DebuggerPart.
     calcu::debugger::RunControl* runControl() const;
+    calcu::machine::Machine* machine() const;
     /// The card in the reader now.
     struct CardPass {
         int side = 0;          ///< of the fitted card
-        bool queued = false;   ///< a fitted card fed by ArmCard: / InsertCard:
-        std::optional<std::string> memoryKey;  ///< a mem: card: a written bank goes to m_memoryCards
     };
-    /// No card fitted or in the reader, no cue card, no program shown.
-    void clearCardAndCue();
-    /// A preset's cue card takes over the cutout, from any fitted card.
-    void adoptPresetCue(const std::optional<CueCardContent>& cue);
     bool canFit() const;
     void fit(const std::string& path, const std::string& fileName, CardDocument doc, bool fresh);
-    bool feed(int side, bool queued);
-    /// The machine wrote `written` to a side of the fitted card: merge and save it.
-    void writeFittedSide(int side, const std::vector<uint8_t>& written, bool queued);
-    /// What the cutout shows for the fitted card: its cue card with the corners' numbers.
+    bool feed(int side);
+    void writeFittedSide(int side, const std::vector<uint8_t>& written);
     CueCardContent fittedCueCard() const;
-    /// Put a bank image (empty: a blank card) into the reader.
     void startSwipe(const std::vector<uint8_t>& data, const CardPass& pass);
-    /// KEYSTROKES ArmCard: / InsertCard: — feed the next queued card when the machine takes it.
-    void feedQueuedCard();
-    /// A preset's card has left the reader (or never got in): tell playback if it waits.
-    void queuedCardDone();
-    /// A new preset or a reset: the previous preset's queued and mem: cards go (logged if unused).
-    void dropPresetCards();
-    void applyReloadStage(const ReloadStage& stage);
-    /// A KEYSTROKES GUI control (PrinterTrace:, Freeze:, …), as its button does.
-    void applyControl(const KeystrokeEvent& event);
-
-    /// What changing the places did (C59-6).
-    struct PlaceChange {
-        std::optional<std::string> refusal;
-        bool powerCycle = false;      ///< the pin-out says one follows
-        bool moduleChanged = false, printerChanged = false;
-    };
-    std::optional<std::string> currentModule() const;
-    /// The module and the printer as asked; stops at a refusal.
-    PlaceChange changePlacesNow(const std::optional<std::string>& module, bool printer);
-    /// The IDs, the cue cards, the debugger's module, the paper.
-    void adoptPlaces(const PlaceChange&, const std::optional<std::string>& module, bool printer);
-    /// The whole change: the places, the power cycle, the bookkeeping. False
-    /// on a refusal (nothing changed).
-    bool changePlaces(const std::optional<std::string>& module, bool printer);
 
     TIAppSetup m_setup;
     TIFileAccess m_files;
+    std::optional<calcu::settings::SettingsFile> m_ownSettings;
     calcu::sessions::SessionContext* m_ctx = nullptr;
     calcu::sessions::MachineSession* m_ms = nullptr;
     std::unique_ptr<Hooks> m_hooks;
-    calcu::paper::PaperPart* m_paperPart = nullptr;
-    calcu::debugger::DebuggerPart* m_debugger = nullptr;
-    TILevelRules* m_rules = nullptr;
-    calcu::typing::TypingPart* m_typing = nullptr;
+
+    // The product's data for the library's parts (before m_lib).
+    ConstantMemoryKeeper m_keeper;
+    TIProductMachines m_machines;
+    TIPresetRules m_rules;
+    std::unique_ptr<calcu::presets::PresetBundle> m_bundle;
+    TILevelRules m_levelRules;
+    ProgramMemoryPart m_memoryPart;
+    calcu::parts::LibraryParts m_lib;
+
     std::function<void(uint32_t)> m_observer;
-    std::deque<std::function<void()>> m_queue;
     uint32_t m_changes = 0;
-    bool m_lastFull = false;
-    calcu::pacing::Speed m_lastCommanded = calcu::pacing::Speed::Regular;
+    bool m_fullSpeed = false;
+    bool m_operationRuns = false;
     std::uint64_t m_serial = 0;
 
-    std::unique_ptr<Events> m_events;
     std::unique_ptr<EmulatorSession> m_session;
-    uint64_t m_sessionGeneration = 0;
+    std::uint64_t m_seenGeneration = 0;
     Model m_model = Model::TI59;
 
     std::string m_moduleID;
@@ -546,43 +483,31 @@ private:
     ModuleMetadata m_moduleMetadata;
     std::optional<CueCardContent> m_cueCard;
     std::optional<CueCardContent> m_userCueCard;
+    std::uint64_t m_userCueCardGeneration = 0;   ///< the machine it was fitted on (a preset's section)
     int m_activeProgram = 0;
 
     LedFrame m_display{};
     double m_calcOpacity = 0;
-    bool m_fullSpeed = false;
-    bool m_keystrokesPlaying = false;
 
-    bool m_printerConnected = true;
+    bool m_printerConnected = false;
     bool m_printerTrace = false;   ///< C59-6 AC-6
 
     std::string m_cardFileName = "card.U59";  ///< the fitted card's, or the last one's in the reader
-    /// The card in the cutout, while it is out of its sleeve.
     struct FittedCard {
         std::string path;
         CardDocument doc;
         bool fresh = false;  ///< no write yet: the first one replaces whatever is at `path`
     };
     std::optional<FittedCard> m_fitted;
-    std::optional<CueCardContent> m_presetCue;  ///< the preset's own cue card: goes onto cards it writes
     std::optional<CardPass> m_pass;
-    /// mem: cards of the loaded preset, by the name after "mem:": the bank
-    /// last written to it, and the cue card shown then.
-    struct MemoryCard { std::vector<uint8_t> bank; std::optional<CueCardContent> cueCard; };
-    std::map<std::string, MemoryCard> m_memoryCards;
-    bool m_queuedCardInReader = false;                ///< an InsertCard: card: playback waits for it
 
     bool m_liveDebugEnabled = false;
     bool m_cpuDebugEnabled = false;
     DebugModel m_debug;
     DebugLevel m_debugLevel = DebugLevel::Off;
     std::string m_logText;
-    /// The run state seen at the last settle, and the tick count of the
-    /// frozen view built (none: not paused, or not built yet).
     calcu::debugger::RunState m_seenRun;
     std::optional<calcu::machine::Ticks> m_frozenAt;
-    /// KEYSTROKES Freeze: / Step: wait for their pause to land (L-E1).
-    bool m_controlWaitsForPause = false;
 
     std::vector<uint16_t> m_asmWords;
     std::string m_asmFileName = "No file selected";
@@ -591,8 +516,6 @@ private:
 
     using Clock = std::chrono::steady_clock;
     Clock::time_point m_nextProgramCheck, m_nextLogRefresh;
-    std::optional<Clock::time_point> m_persistDue;
-    std::string m_persistedText;
 
     calcu::sessions::StateTopic* m_modelTopic = nullptr;
     calcu::sessions::StateTopic* m_led = nullptr;
@@ -608,19 +531,21 @@ private:
     calcu::sessions::StreamTopic* m_panel = nullptr;
 };
 
-/// The session of a native frontend (C59-5 D-12): the library's app session
-/// with the library's typing part (LIB-5), the part, the PaperPart (LIB-8)
-/// and the DebuggerPart (LIB-10), in that order (LIB-8 D-23; the move to
-/// LibraryParts is M-54's), which the session owns (AppSessionSetup::owned)
-/// and lets go first, paced on `clock` (the host's wall clock; the steady clock's time
-/// since its epoch in the apps). `before`: parts of the host's that go in
-/// front of the product's (tests); `after`: parts behind it (tests of
-/// TIWebPart; the Web engine builds its own, frontends/web/bindings.cpp).
-/// Single-threaded: built, called and destroyed on the host's session thread.
+/// The session of a native frontend (C59-5 D-12; LIB-6 D-40): the library's
+/// app session with TIAppPart::sessionParts() (the library's parts, the
+/// program memory commands, the part), which the session owns
+/// (AppSessionSetup::owned) and lets go first, paced on `clock` (the host's
+/// wall clock; the steady clock's time since its epoch in the apps), and
+/// LIB-18's `start` sent once (the startup model with its startup preset, or
+/// its built-in default). `before`: parts of the host's that go in front of
+/// the product's (tests); `after`: parts behind it (tests of TIWebPart; the
+/// Web engine builds its own, frontends/web/bindings.cpp). Single-threaded:
+/// built, called and destroyed on the host's session thread.
 calcu::sessions::ProductSession<TIAppPart> makeAppSession(TIAppSetup setup, calcu::pacing::WallClock clock,
                                                           std::optional<std::uint32_t> jitterSeed = std::nullopt,
                                                           std::vector<calcu::sessions::SessionPart*> before = {},
-                                                          std::vector<calcu::sessions::SessionPart*> after = {});
+                                                          std::vector<calcu::sessions::SessionPart*> after = {},
+                                                          bool start = true);
 
 /// The steady clock as the session's wall clock, and back (the library's).
 using calcu::pacing::steadyTimeOf;

@@ -337,3 +337,23 @@ shot fails (`11`); no product change was needed. Results: `build/qt`
 `CalcU1600Shots.lib5-ac33`, not an entry `CalcU1600QtTyping`.
 
 Every Calc-U-1600 criterion of LIB-5 passes: the column is **Done**.
+
+### Calc-U-59: the preset clauses (M-54, 2026-11-16, branch `m54-presets-59`)
+
+The KEYSTROKES lane is gone (`app/TIKeystrokePlayback.*`,
+`EmulatorSession`'s playback, `Hooks::act`); a preset's `key:` steps go
+through the engine (LIB-6's `KeyItem`).
+
+| ID | Result | Test case |
+|---|---|---|
+| AC-17 (in a preset) | Pass | `lib5_ac17_in_a_preset_key_finishes_at_idle` |
+| AC-26 (in a preset) | Pass | `lib5_ac26_names_of_8_1_in_a_preset` (every key ID, other spelling and printer name in a `key:` step), `lib5_ac26_2nd_before_second_function_once_in_a_preset`, `lib5_ac26_old_names_refused_when_read` |
+
+`SliceRequest::due` (D-16): the machine session still hands it to every
+`SliceHook::act`, a library interface, so it stays as the pacer's own
+field; §5's row is closed as no adapter. The finding of LIB-6's Calc-U-59
+section: a `key:` step finishes when its last key is up
+(`TypeOptions::untilReleased`), so a key whose program never returns no
+longer holds the preset (only the TI profile waits for readiness after a
+release). Column status: **In progress** until AC-22 and AC-24 are shown
+in Swift (M-58, D-15).

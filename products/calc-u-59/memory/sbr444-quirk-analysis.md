@@ -248,9 +248,9 @@ an error from a 0 ÷ 0 inside that garbage (`03D4`).
    with Pgm 51; see above). rs.txt had stopped too early to show them.
 
 New traces are easiest with the headless harness (`tools/headless/`), which
-replays a key sequence and prints the ROM trace directly. In the GUI, insert
-`Trace: <name>.bin` / `Trace: Off` around the key of interest in a scenario's
-`KEYSTROKES` (e.g. `examples/historic/printer-quirks.ti59`, whose `Trace:` line is
+replays a key sequence and prints the ROM trace directly. In a preset, put the
+steps `- trace: <name>.bin` / `- trace: off` around the key of interest in its
+`keys:` (e.g. `examples/historic/printer-quirks.ti59`, whose `trace:` step is
 commented out) and render with `tools/read_trace.py`.
 
 Headless replay (2026-10-17) also re-verified the rest of the chain: after P/R,

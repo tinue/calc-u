@@ -72,13 +72,12 @@ SettingsDialog::SettingsDialog(EmulatorController& controller, QWidget* parent) 
                  [] { return AppSettings::openStartDir(AppSettings::OpenFolder::Presets); },
                  [] { return !AppSettings::openDir(AppSettings::OpenFolder::Presets).isEmpty(); },
                  [](const QString& dir) { AppSettings::setOpenDir(AppSettings::OpenFolder::Presets, dir); });
-    addFolderRow(grid, QStringLiteral("Card Folder"), QStringLiteral("Folder for cards and ti58c.mem"),
+    // The new folder is used from the next start (the TI-58C's constant memory
+    // file is read once, at the build of the TI-58C; C59-3 TR).
+    addFolderRow(grid, QStringLiteral("Card Folder"), QStringLiteral("Folder for cards and ti58c.memory.yaml"),
                  [] { return AppPaths::displayPath(AppPaths::cardDir()); }, [] { return AppPaths::cardDir(); },
                  [] { return !AppSettings::saveFolderOverride().isEmpty(); },
-                 [this](const QString& dir) {
-                     AppSettings::setSaveFolderOverride(dir);
-                     m_controller.persistConstantMemory();  // the running TI-58C keeps its memory in the new folder
-                 });
+                 [](const QString& dir) { AppSettings::setSaveFolderOverride(dir); });
     addFolderRow(grid, QStringLiteral("Trace Folder"), QStringLiteral("Folder for CALCU59_TRACE.bin"),
                  [] { return AppPaths::displayPath(AppPaths::traceDir()); }, [] { return AppPaths::traceDir(); },
                  [] { return !AppSettings::traceFolderOverride().isEmpty(); },

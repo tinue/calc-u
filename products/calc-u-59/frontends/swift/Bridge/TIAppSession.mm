@@ -18,6 +18,9 @@
 #include "harness/attach/AttachPort.hpp"
 #endif
 #include "sessions/Args.hpp"
+#include "presets/PresetsPart.hpp"
+#include "settings/SettingsFile.hpp"
+#include "startup/StartupPart.hpp"
 #include "debugger/ButtonRule.hpp"
 #include "debugger/RunState.hpp"
 #include "paper/PaperTopics.hpp"
@@ -216,7 +219,7 @@ public:
         }];
         if (!ok || err) return false;
         __weak id<TIAppSessionDelegate> d = delegate_;
-        if (!url.path.lastPathComponent || ![url.lastPathComponent isEqualToString:@"ti58c.mem"])
+        if (!url.path.lastPathComponent || ![url.lastPathComponent isEqualToString:@"ti58c.memory.yaml"])
             dispatch_async(dispatch_get_main_queue(), ^{ [d cardWritten]; });
         return true;
     }
@@ -365,6 +368,7 @@ static cu59::SessionThread::ReplyHandler flagReply(void (^done)(BOOL)) {
 
 @implementation TIAppSession {
     __weak id<TIAppSessionDelegate> _delegate;
+    TISettings* _settings;   // the settings file the session reads (TIAppSetup::settings): kept alive with it
     std::unique_ptr<cu59::SessionThread> _thread;
     cs::TopicMirror _mirror;
     // The PC-100C's paper as the library's topic sent it (S-P1).
@@ -376,11 +380,15 @@ static cu59::SessionThread::ReplyHandler flagReply(void (^done)(BOOL)) {
 - (instancetype)initWithRoms:(TIRomSet *)roms start:(TISessionStart *)start delegate:(id<TIAppSessionDelegate>)delegate {
     if ((self = [super init])) {
         _delegate = delegate;
+        _settings = start.settings;
         cu59::TIAppSetup setup;
         setup.roms = roms->_set;
         setup.cuecards = cpp(start.cuecards);
-        setup.moduleID = cpp(start.moduleID);
-        setup.startModel = static_cast<cu59::Model>(start.model);
+        // LIB-18 AC-17: the settings file decides the startup model; the
+        // session's `start` (makeAppSession) builds it.
+        setup.settings = static_cast<calcu::settings::SettingsFile*>([_settings cppSettingsFile]);
+        setup.examplesFolder = cpp(start.examplesFolder);
+        setup.home = cpp(NSHomeDirectory());
         setup.saveFolder = cpp(start.saveFolder);
         setup.fileIO = std::make_shared<CoordinatedFiles>(delegate);
         setup.trace = {std::filesystem::path(start.traceDirectory.fileSystemRepresentation), start.traceMaxBytes};
@@ -551,12 +559,19 @@ static cu59::SessionThread::ReplyHandler flagReply(void (^done)(BOOL)) {
 
 // ── Machine ──────────────────────────────────────────────────────────────────
 
-- (void)startMachine:(NSInteger)model { [self send:cu59::commands::kStartMachine args:{{"model", static_cast<int>(model)}}]; }
+- (void)startMachine:(NSInteger)model {
+    if (model < 0 || model > 2) return;
+    [self send:calcu::startup::kModelCommand args:{{"name", cu59::modelId(static_cast<cu59::Model>(model)).value}}];
+}
 - (NSInteger)model { const auto* m = [self modelState]; return m ? static_cast<NSInteger>(m->model) : 0; }
-- (void)resetMachine { [self send:cu59::commands::kReset]; }
-- (void)cleanResetMachine { [self send:cu59::commands::kCleanReset]; }
+- (void)resetMachine { [self send:calcu::startup::kResetCommand]; }
+- (void)cleanResetMachine { [self send:calcu::startup::kColdBootCommand]; }
 - (NSString *)moduleID { const auto* m = [self modelState]; return m ? ns(m->moduleID) : @""; }
-- (void)changeModule:(NSString *)moduleID { [self send:cu59::commands::kChangeModule args:{{"id", cpp(moduleID)}}]; }
+- (void)changeModule:(NSString *)moduleID {
+    if ([moduleID isEqualToString:[self moduleID]]) return;
+    if (moduleID.length == 0) [self send:calcu::startup::kDetachCommand args:{{"place", "slot-1"}}];
+    else [self send:calcu::startup::kAttachCommand args:{{"place", "slot-1"}, {"peripheral", cpp(moduleID)}}];
+}
 - (NSArray<TIModuleMetadata *> *)allModules {
     NSMutableArray* out = [NSMutableArray array];
     if (const auto* m = [self modelState])
@@ -632,9 +647,12 @@ static cu59::SessionThread::ReplyHandler flagReply(void (^done)(BOOL)) {
 - (double)paperReachUnits { return _paperReach; }
 - (void)copyPaper { [self send:calcu::paper::kPaperCopyCommand args:{{"owner", kPC100COwner}}]; }
 - (void)cutPaper { [self send:calcu::paper::kPaperCutCommand args:{{"owner", kPC100COwner}, {"copy", true}}]; }
-- (BOOL)printerConnected { const auto* p = [self printer]; return !p || p->connected; }
+- (BOOL)printerConnected { const auto* p = [self printer]; return p && p->connected; }
 - (BOOL)printerTrace { const auto* p = [self printer]; return p && p->trace; }
-- (void)togglePrinterConnection { [self send:cu59::commands::kTogglePrinterConnection]; }
+- (void)togglePrinterConnection {
+    if ([self printerConnected]) [self send:calcu::startup::kDetachCommand args:{{"place", "printer"}}];
+    else [self send:calcu::startup::kAttachCommand args:{{"place", "printer"}, {"peripheral", "PC-100C"}}];
+}
 - (void)setPrinterControl:(NSString *)control on:(BOOL)on {
     [self send:cu59::commands::kSetControl args:{{"peripheral", kPC100COwner}, {"control", cpp(control)}, {"on", on == YES}}];
 }
@@ -662,9 +680,16 @@ static cu59::SessionThread::ReplyHandler flagReply(void (^done)(BOOL)) {
 }
 - (void)ejectCard { [self send:cu59::commands::kEjectCard]; }
 
-// ── State files ──────────────────────────────────────────────────────────────
+// ── Presets (LIB-6 AC-42, D-41: the content, on iOS and on macOS) ──────────
 
-- (void)loadStateFile:(NSData *)raw { [self send:cu59::commands::kLoadState args:argsWithBytes({}, raw)]; }
+- (void)loadPresetContent:(NSData *)raw name:(NSString *)name {
+    if (!raw) {
+        [self send:calcu::presets::kLoadPresetCommand args:{{"content", ""}, {"name", cpp(name)}}];
+        return;
+    }
+    const std::string text(static_cast<const char*>(raw.bytes), raw.length);
+    [self send:calcu::presets::kLoadPresetCommand args:{{"content", text}, {"name", cpp(name)}}];
+}
 
 // ── Dropped files ────────────────────────────────────────────────────────────
 

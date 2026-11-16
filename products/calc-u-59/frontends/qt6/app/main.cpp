@@ -67,12 +67,11 @@ int main(int argc, char* argv[]) {
     if (!controller.started()) return 1;   // the ROM files are missing (LIB-12 AC-10)
     MainWindow window(controller);
     app.window = &window;
-    controller.start(AppSettings::settings().startupModel());
     window.show();
 
     // Developer option: --grab <file.png> [--after <ms>] saves a screenshot of the
     // window and quits (run with QT_QPA_PLATFORM=offscreen to check rendering
-    // without showing a window). Any other argument is a state file to open.
+    // without showing a window). Any other argument is a preset to open.
     QStringList args = QApplication::arguments();
     QString grabPath;
     int grabAfter = 3000;

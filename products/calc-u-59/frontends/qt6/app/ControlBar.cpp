@@ -70,7 +70,7 @@ ControlBar::ControlBar(EmulatorController& controller, QWidget* parent) : QWidge
 
     auto* preset = new QToolButton(this);
     preset->setText(QStringLiteral("Preset"));
-    preset->setToolTip(QStringLiteral("Load a .ti59, .ti58 or .ti58c state file"));
+    preset->setToolTip(QStringLiteral("Load a .ti59, .ti58 or .ti58c preset"));
     connect(preset, &QToolButton::clicked, this, &ControlBar::openPresetRequested);
     row->addWidget(preset);
 

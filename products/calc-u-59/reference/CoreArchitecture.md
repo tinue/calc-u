@@ -384,19 +384,31 @@ raw RAM cells `RAM[60]`–`RAM[63]` outside that space. Do not call them
   PPC Notes V5N7) sets top = 119; the cells are then R59–R56 (RAM[119 − nn]),
   and the debugger shows them as such;
 - are read and written only by `MEMWR`/`MEMRD`, which address raw RAM;
-- persist with the 60 normal registers (`serialiseRAM`/`deserialiseRAM`,
-  `ti58c.mem`) and are loadable and saveable through state files and the
-  debugger.
+- persist with the 60 normal registers in the constant memory file
+  `ti58c.memory.yaml` (constant memory format 1, `docs/formats/media.md` §4;
+  `R060`–`R063`), which is read at a build before the processor starts
+  (`TIConstantMemory`, C59-3), and are written by a preset's `data:`
+  (`H00`–`H03`) and by the debugger.
 
 RAM[60] is the firmware's system register (signature, partition, Fix):
 `rom/TI58C-ROM-Guide.md` § "E000: the system register".
 
 **Naming:** **E000–E003** for the raw RAM cells (code comments about raw
-indices), **H00–H03** for the same cells as state-file or debugger variables
-(`reference/StateFileFormat.md`'s `HNN =`, the debugger's `H##` labels). The
+indices), **H00–H03** for the same cells as preset or debugger variables
+(a preset's `data:` keys `HNN`, `docs/formats/preset.md` §4.2; the debugger's
+`H##` labels). The
 raw base 60 is `cu59::kExtraRegisterBase` (`app/MachineModelInfo.hpp`);
-everywhere else tags extra registers explicitly (`isHidden`) instead of
-testing a register number ≥ 60, because normal TI-59 registers go up to 99.
+everywhere else tags extra registers explicitly (`DataKey::extra`,
+`ProgramMemory::writeExtra`) instead of testing a register number ≥ 60,
+because normal TI-59 registers go up to 99.
+
+**The product kinds of memory** (`core/TIProductKinds.hpp`, implemented in
+`core/TIMemoryKinds.*`; M-54): `c59.program-memory` (capability
+`RAM/c59.program-memory` on every model: program steps, data registers,
+H00–H03, the partition, raw registers; what a preset's sections and the
+`ti59` harness commands write, C59-2 AC-17) and `c59.constant-memory`
+(`RAM/c59.constant-memory`, TI-58C only: the 64 raw registers and a counter
+that changes with them, C59-3 AC-1).
 
 The ROM's own `MEMWR`/`MEMRD` addressing is uniform over 0–63, and the core
 models it that way (`RAM::setLimit(64)`, guarded only by
@@ -1029,7 +1041,7 @@ debug events".
 | Printer-present digit | 0 | 0 | 10 |
 | Printer BUSY (line / feed) | 4165 / 1370 cycles | same | same |
 | Library module | Yes | Yes | Yes |
-| Constant memory | No | No | Yes (`ti58c.mem` via `TIMemoryAdapter::serialiseRAM`; `TIConstantMemory` at build) |
+| Constant memory | No | No | Yes (`ti58c.memory.yaml` through the kind `c59.constant-memory`; `TIConstantMemory` at build) |
 | Reset | RAM and partition kept (restored at the scan loop) | same | a power cycle; constant memory kept |
 | Step dispatch / module fetch | `0837` / `082F` | same | `082B` / `0823` |
 

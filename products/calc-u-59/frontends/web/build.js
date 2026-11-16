@@ -7,9 +7,9 @@
 //   1. calc.js: the library's page side and src/*.jsx in one closure
 //      (AC-15); app/app.js from the library's app page with PlayCalculator.
 //   2. The library's worker, service worker template and app worker entry.
-//   3. The presets PlayCalculator offers (presets.json) from examples/ into
-//      dist/presets/, with their manifest (the Preset dialog's list; the
-//      engine finds a `preset` prop's file there).
+//   3. examples/bundle.yaml and exactly the files it lists into dist/presets/
+//      (the engine's bundled examples, preloaded at /presets: the preset
+//      list of LIB-6 AC-31 and the bundle paths `examples:<path>`).
 //   4. dist/files.json, the service worker's precache list and stamp, and
 //      dist/MANIFEST.json (the library's).
 //
@@ -68,11 +68,18 @@ dist.writeLibraryWorker(DIST);
 
 // ---- 3. Presets ---------------------------------------------------------
 
-fs.mkdirSync(path.join(DIST, "presets"), { recursive: true });
-const presets = JSON.parse(read(path.join(WEB, "presets.json")));
-for (const p of presets) fs.copyFileSync(path.join(REPO, "examples", p.file), path.join(DIST, "presets", p.file));
-fs.writeFileSync(path.join(DIST, "presets", "manifest.json"), JSON.stringify(presets, null, 2) + "\n");
-console.log(`presets: ${presets.map((p) => p.file).join(", ")}`);
+// C59-2 AC-13, AC-14, LIB-6 AC-31: the bundle file and exactly the files it
+// lists, each `{ file: ... }` (the presets; a TI preset names no other file).
+const bundleFile = path.join(REPO, "examples", "bundle.yaml");
+const presets = [...new Set([...read(bundleFile).matchAll(/\{\s*file:\s*([^\s}]+)\s*\}/g)].map((m) => m[1]))];
+for (const f of presets) {
+  const from = path.join(REPO, "examples", f);
+  if (!fs.existsSync(from)) throw new Error(`bundle.yaml: ${f} is not in examples/`);
+  fs.mkdirSync(path.join(DIST, "presets", path.dirname(f)), { recursive: true });
+  fs.copyFileSync(from, path.join(DIST, "presets", f));
+}
+fs.copyFileSync(bundleFile, path.join(DIST, "presets", "bundle.yaml"));
+console.log(`presets: ${presets.length} files of bundle.yaml`);
 
 // ---- 4. files.json, service worker, MANIFEST.json ------------------------
 

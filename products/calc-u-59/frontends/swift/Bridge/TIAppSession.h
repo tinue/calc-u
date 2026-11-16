@@ -1,6 +1,7 @@
 #import <Foundation/Foundation.h>
 #import "TITypes.h"
 #import "TIFileFormats.h"
+#import "TISettings.h"
 
 NS_ASSUME_NONNULL_BEGIN
 
@@ -74,9 +75,12 @@ typedef struct {
 /// What the session is built with (C59-5 D-12, A-12).
 @interface TISessionStart : NSObject
 @property (nonatomic, copy) NSString *cuecards;
-@property (nonatomic, copy) NSString *moduleID;
-@property (nonatomic) NSInteger model;                ///< MachineModel raw value
-@property (nonatomic, copy) NSString *saveFolder;     ///< cards and ti58c.mem (CardStorage)
+/// The app's settings (LIB-18 AC-17: the startup model, `last-model`, the
+/// startup presets); the session's `start` reads them. Kept alive by the caller.
+@property (nonatomic, strong) TISettings *settings;
+/// The bundled examples (the app's folder `examples`, bundle.yaml; LIB-6 AC-31).
+@property (nonatomic, copy) NSString *examplesFolder;
+@property (nonatomic, copy) NSString *saveFolder;     ///< cards and ti58c.memory.yaml (CardStorage)
 @property (nonatomic, copy) NSString *traceDirectory;
 @property (nonatomic) uint64_t traceMaxBytes;
 @property (nonatomic) BOOL traceAvailable;
@@ -179,13 +183,14 @@ typedef struct {
 @property (nonatomic, readonly) uint64_t hostCallCount;
 #endif
 
-// ── Machine (model = MachineModel raw value) ─────────────────────────────────
+// ── Machine (model = MachineModel raw value): LIB-18's commands ──────────────
+/// The model switch (`model {name}`); the start is the session's own `start`.
 - (void)startMachine:(NSInteger)model;
 @property (nonatomic, readonly) NSInteger model;
-- (void)resetMachine;
-- (void)cleanResetMachine;
+- (void)resetMachine;        ///< `reset`
+- (void)cleanResetMachine;   ///< `cold-boot`
 @property (nonatomic, readonly) NSString *moduleID;
-/// Swap to a different module and soft-reset (the Settings choice).
+/// Another module into slot-1 (`attach`), or none (`detach`); a power cycle follows (row 59-11).
 - (void)changeModule:(NSString *)moduleID;
 /// The 14 modules from their module files, in menu order (C59-6 AC-8).
 @property (nonatomic, readonly) NSArray<TIModuleMetadata *> *allModules;
@@ -206,6 +211,7 @@ typedef struct {
 /// The key drawn pressed (the last one live input holds, `held-keys`): row×5 + col, -1 none.
 @property (nonatomic, readonly) NSInteger heldKey;
 @property (nonatomic) BOOL fullSpeed;
+/// An operation runs (a preset, a build; the topic's `keystrokes-playing`).
 @property (nonatomic, readonly) BOOL keystrokesPlaying;
 
 // ── Cue card, printer ────────────────────────────────────────────────────────
@@ -246,8 +252,8 @@ typedef struct {
 - (BOOL)tapCardAtX:(double)x y:(double)y;
 - (void)ejectCard;
 
-// ── State files ──────────────────────────────────────────────────────────────
-- (void)loadStateFile:(nullable NSData *)raw;
+// ── Presets (LIB-6 `load-preset {content, name}`, D-41) ─────────────────────
+- (void)loadPresetContent:(nullable NSData *)raw name:(NSString *)name;
 
 // ── Dropped files ────────────────────────────────────────────────────────────
 /// dropAction: the file's name makes it a preset, or a card this model can fit.

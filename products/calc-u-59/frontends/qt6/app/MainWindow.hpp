@@ -7,7 +7,7 @@ class QSplitter;
 
 // The window: calculator | printer | debug side by side (the Swift app's Mac
 // layout, CalculatorView), menus for presets, cards, settings and About, and
-// drag-and-drop of state files.
+// drag-and-drop of presets and cards.
 class MainWindow : public QMainWindow {
     Q_OBJECT
 public:

@@ -371,7 +371,7 @@ struct CalculatorView: View {
                 let panel = NSOpenPanel()
                 panel.allowedContentTypes = Self.stateFileTypes
                 panel.allowsOtherFileTypes = true
-                panel.message = "Select a .ti59, .ti58, or .ti58c state file"
+                panel.message = "Select a .ti59, .ti58, or .ti58c preset"
                 if panel.runModal() == .OK, let url = panel.url {
                     viewModel.loadStateFile(url)
                 }

@@ -7,23 +7,32 @@
 // rewrites the components on the family's component set, they keep the
 // names they had (engine.call("startMachine", 1)), as Calc-U-1600's do.
 //
+// Since M-54 the start, the model switch, Reset, Cold boot, the module and
+// the printer are LIB-18's commands (`start`, `model`, `reset`, `cold-boot`,
+// `attach`, `detach`) and a preset is LIB-6's `load-preset` (a bundled
+// example by its bundle path `examples:<path>`, an uploaded one by its
+// content); the preset list is LIB-6's request `preset-list`.
+//
 // The LED canvas repaints from `frames` (the `c59.web.display` topic), once
 // per animation frame, without a React render. Created in an effect only (a
 // host page may prerender without a Worker). No entry of the page's storage (LIB-9 AC-23):
-// the settings, the cards and ti58c.mem are files of the persistent file
+// the settings, the cards and ti58c.memory.yaml are files of the persistent file
 // system the worker keeps (LIB-15 AC-5, AC-20).
 
 const PRODUCT = "Calc-U-59";
 
 const flagOf = (r) => !!(r.done && r.value);
+// The models by their index in 2.3.0's picker (0 TI-59, 1 TI-58, 2 TI-58C).
+const MODEL_NAMES = ["TI-59", "TI-58", "TI-58C"];
 const valueOf = (r) => r.value;
 
 // Each method of 2.3.0's engine: [kind, LIB-3 name, args → object, reply → result].
 const METHODS = {
-  startMachine: ["command", "c59.start-machine", (model) => ({ model })],
-  resetMachine: ["command", "c59.reset", () => null],
-  cleanResetMachine: ["command", "c59.clean-reset", () => null],
-  changeModule: ["command", "c59.change-module", (id) => ({ id })],
+  // LIB-18 (M-54): the library's machine control.
+  startMachine: ["command", "model", (model) => ({ name: MODEL_NAMES[model] || String(model) })],
+  resetMachine: ["command", "reset", () => null],
+  cleanResetMachine: ["command", "cold-boot", () => null],
+  changeModule: ["command", (id) => (id ? "attach" : "detach"), (id) => (id ? { place: "slot-1", peripheral: id } : { place: "slot-1" })],
   setStartupModel: ["command", "c59.web.set-startup-model", (model) => ({ model })],
   setTraceMaxMB: ["command", "c59.web.set-trace-max-mb", (mb) => ({ mb })],
   setKeyboardFeedback: ["command", "c59.web.set-keyboard-feedback", (mode) => ({ mode })],
@@ -42,7 +51,11 @@ const METHODS = {
   freshCardFileName: ["request", "c59.web.fresh-card-name", (name) => ({ name }), valueOf],
   feedSide: ["command", "c59.feed-side", (side) => ({ side })],
   ejectCard: ["command", "c59.eject-card", () => null],
-  togglePrinterConnection: ["command", "c59.toggle-printer-connection", () => null],
+  // LIB-18: the PC-100C attached or detached, as the printer topic says it is now.
+  togglePrinterConnection: ["command", (connected) => (connected ? "detach" : "attach"),
+    (connected) => (connected ? { place: "printer" } : { place: "printer", peripheral: "PC-100C" })],
+  // LIB-6 (M-54): the bundled presets (the Startup and Example entries of bundle.yaml).
+  presetList: ["request", "preset-list", () => null, (r) => (r.value && r.value.entries) || []],
   setLiveDebugEnabled: ["command", "c59.live-debug", (on) => ({ on: !!on })],
   setCpuDebugEnabled: ["command", "c59.cpu-debug", (on) => ({ on: !!on })],
   // LIB-10 (M-53): FREEZE ON START and ARMED as the run control's pause-on-start
@@ -85,14 +98,15 @@ const INITIAL_STATE = {
   traces: [],          // [{name, size}]: the traces handed over (keep-file), newest last (LIB-10 D-25)
   settings: { startupModel: -1, traceMaxMB: 50, keyboardFeedback: 0 },
   debugFont: 11,
-  debugPanel: { panel: 0, n: 0 },  // KEYSTROKES DebugPanel: the tab asked for, and how often
+  debugPanel: { panel: 0, n: 0 },  // the debug-panel: step, the tab asked for, and how often
   geometry: null,
 };
 
 const float32 = (bytes) => (bytes ? new Float32Array(bytes.buffer, bytes.byteOffset, bytes.byteLength / 4) : null);
 
-// model (its name, "TI-58C") and preset (a path under presets/) start the
-// session with them (the `start` command, LIB-15 N3).
+// model (its name, "TI-58C") and preset (a path of bundle.yaml, "sum.ti59")
+// start the session with them: LIB-18's `start {model, preset}`, the preset
+// as its bundle path `examples:<path>` (LIB-15 N3, AC-16).
 function createEngine({ model, preset, workerUrl }) {
   // The page's host services, with the traces it was handed kept by name for
   // the LOG tab's list (LIB-10 D-25; the worker keeps no copy).
@@ -111,7 +125,7 @@ function createEngine({ model, preset, workerUrl }) {
       return base.answer(name, args);
     },
   };
-  const shell = createShell({ product: PRODUCT, workerUrl, start: { model: model || "", preset: preset || "" }, services });
+  const shell = createShell({ product: PRODUCT, workerUrl, start: { model: model || "", preset: bundlePath(preset) }, services });
   let state = INITIAL_STATE;
   const listeners = new Set();
   const frames = { cells: null, onFrame: null };
@@ -201,7 +215,10 @@ function createEngine({ model, preset, workerUrl }) {
   const invoke = (method, args) => {
     const m = METHODS[method];
     if (!m) return Promise.reject(new Error(`unknown method ${method}`));
-    const [kind, name, toArgs, out] = m;
+    const [kind, nameOf, toArgs, out] = m;
+    // The printer toggle sends what the printer topic does not show now.
+    if (method === "togglePrinterConnection") args = [!!(state.printer && state.printer.connected)];
+    const name = typeof nameOf === "function" ? nameOf(...args) : nameOf;
     const p = kind === "command" ? shell.send(name, toArgs(...args)) : shell.request(name, toArgs(...args));
     return p.then((r) => (out ? out(r) : r));
   };
@@ -223,8 +240,10 @@ function createEngine({ model, preset, workerUrl }) {
     call: (method, ...args) => { invoke(method, args).catch(() => {}); },
     /// A command or request whose result is wanted.
     request: (method, ...args) => invoke(method, args),
-    /// A preset's text, as the Preset button loads it (an operation, LIB-3 AC-32).
-    loadState: (text) => shell.send("c59.load-state", { bytes: new TextEncoder().encode(text) }).then(showRefusal),
+    /// A preset handed over by its content (LIB-6 AC-42, EC-5: an upload), an operation.
+    loadPresetContent: (text, name) => shell.send("load-preset", { content: text, name: name || "the preset" }).then(showRefusal),
+    /// A bundled example by its bundle path (LIB-6 AC-33), an operation.
+    loadBundledPreset: (path) => shell.send("load-preset", { ref: path }).then(showRefusal),
     /// A file dropped on the calculator; the session decides what it does.
     dropFile: (file) => file.arrayBuffer()
       .then((b) => shell.send("c59.web.drop", { name: file.name, bytes: new Uint8Array(b) }))
@@ -248,10 +267,8 @@ function useEngine(engine, select) {
   return React.useSyncExternalStore(e.subscribe, () => select(e.getState()), () => select(INITIAL_STATE));
 }
 
-// Fetch a file next to calc.js (the preset list) as text.
-function fetchBesideCalc(path) {
-  return fetch(`${CALC_BASE}${path}`).then((r) => {
-    if (!r.ok) throw new Error(`${path}: ${r.status}`);
-    return r.text();
-  });
+// "sum.ti59" → "examples:sum.ti59" (a path of bundle.yaml as its bundle path); empty stays empty.
+function bundlePath(preset) {
+  if (!preset) return "";
+  return preset.startsWith("examples:") ? preset : `examples:${preset}`;
 }

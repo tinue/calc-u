@@ -4,6 +4,7 @@
 #include "TI59Machine.hpp"
 #include "TIAdapters.hpp"
 #include "TIDebugging.hpp"
+#include "TIMemoryKinds.hpp"
 #include "TICatalogue.hpp"
 #include "TIRomRanges.hpp"
 #include "TIRomText.hpp"
@@ -45,8 +46,9 @@ public:
     calcu::machine::DisplayOutput readDisplay() override;
     std::size_t takeSound(std::span<std::int16_t>) override { return 0; }
     calcu::machine::Plugged plugged() const override;
-    /// Always `TMC0501/typing-support` (LIB-5 §3.4) and
-    /// `TMC0501/c59.trace-records` (LIB-10 D-24); with the PC-100C:
+    /// Always `TMC0501/typing-support` (LIB-5 §3.4),
+    /// `TMC0501/c59.trace-records` (LIB-10 D-24) and `RAM/c59.program-memory`
+    /// (C59-2 AC-17); on the TI-58C `RAM/c59.constant-memory` (C59-3 AC-1); with the PC-100C:
     /// `printer/controls` (PRINT, ADV, TRACE) and
     /// `printer/paper-output` (C59-6 AC-1, AC-5; LIB-2 AC-26; LIB-8 AC-24). The card
     /// reader's media place comes in M-55 (LIB-1 D-1).
@@ -76,6 +78,8 @@ private:
     friend class TITraceRecords;
     friend class TIDebugPanelAdapter;
     friend class TITypingSupport;
+    friend class TIProgramMemory;
+    friend class TIConstantMemoryCapability;
     friend struct TIMachineTesting;
     friend TICardReaderAdapter* cardReaderOf(calcu::machine::Machine&);
     friend TIMemoryAdapter* memoryOf(calcu::machine::Machine&);
@@ -118,4 +122,6 @@ private:
     TIDebugging m_debugging{*this};
     TITraceRecords m_traceRecords{*this};
     TITypingSupport m_typing{*this};
+    TIProgramMemory m_programMemory{*this};          ///< C59-2 AC-17
+    TIConstantMemoryCapability m_constantMemory{*this};   ///< C59-3 AC-1 (TI-58C)
 };

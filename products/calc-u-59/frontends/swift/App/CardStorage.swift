@@ -1,7 +1,7 @@
 import Foundation
 
 /// Resolves the folder that holds the magnetic-card files (`.U59`) and
-/// `ti58c.mem`; reading and writing them is `Shared/CardFile` via the
+/// `ti58c.memory.yaml` (C59-3); reading and writing them is the app layer's via the
 /// app session (TIAppPart, TIFileAccess). `hasCard` reports whether the default card (`card.U59`)
 /// exists.
 ///

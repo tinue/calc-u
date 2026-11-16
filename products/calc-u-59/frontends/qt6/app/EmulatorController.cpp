@@ -6,6 +6,11 @@
 #include "ProductRoms.hpp"
 #include "QtResourceBundle.hpp"
 #include "sessions/LibraryTopics.hpp"
+#include "MachineModelInfo.hpp"
+#include "presets/PresetsPart.hpp"
+#include "startup/StartupPart.hpp"
+#include <QCoreApplication>
+#include <QDir>
 #include "debugger/RunState.hpp"
 #include "paper/PaperTopics.hpp"
 #include "typing/TypingTopics.hpp"
@@ -63,8 +68,14 @@ EmulatorController::EmulatorController(QObject* parent) : QObject(parent) {
     cu59::TIAppSetup setup;
     setup.roms = std::move(roms.set);
     setup.cuecards = readResource(QStringLiteral(":/roms/cuecards.txt")).value_or("");
-    setup.startModel = AppSettings::settings().startupModel();
-    setup.saveFolder = AppPaths::toFsPath(AppPaths::cardDir()).string();   // cards, ti58c.mem (LIB-9)
+    setup.saveFolder = AppPaths::toFsPath(AppPaths::cardDir()).string();   // cards, ti58c.memory.yaml (LIB-9)
+    // LIB-18: the startup model, `last-model` and the startup presets are the
+    // settings file's; makeAppSession sends `start` (the startup model with its
+    // startup preset, or its built-in default: ML, no printer).
+    setup.settings = &AppSettings::settings().file();
+    // LIB-6 AC-31, AC-33: the bundled examples beside the program (bundle.yaml).
+    setup.examplesFolder = AppPaths::toFsPath(AppPaths::bundledExamplesDir()).string();
+    setup.home = AppPaths::toFsPath(QDir::homePath()).string();
     setup.trace = {AppPaths::toFsPath(AppPaths::traceDir()),
                    static_cast<uint64_t>(AppSettings::settings().traceMaxFileSizeMB()) * 1'000'000};
     m_app = cu59::makeAppSession(std::move(setup), cu59::steadyWallTime);
@@ -82,6 +93,8 @@ EmulatorController::EmulatorController(QObject* parent) : QObject(parent) {
 
 EmulatorController::~EmulatorController() {
     m_frameTimer.stop();
+    // The parts' last duties (the TI-58C's constant memory file, C59-3 AC-6).
+    if (m_app.session) m_app.session->close();
     m_listener.stop();
     m_app = {};
 }
@@ -134,10 +147,7 @@ void EmulatorController::onMessage(const cs::Message& m) {
 void EmulatorController::topicChanged(const cs::TopicName& t) {
     namespace T = cu59::topics;
     if (t == T::kModel) {
-        // The last used model is a setting the frontend writes (LIB-9; C59-5 D-3).
-        const cu59::Model m = model();
-        if (m_savedModel != m) AppSettings::settings().setLastUsedModel(m);
-        m_savedModel = m;
+        // The last used model is LIB-18's StartupPart's ([startup] last-model).
         emit modelChanged();
         emit cardStateChanged();
     } else if (t == T::kLed) {
@@ -186,14 +196,23 @@ bool EmulatorController::sendFlag(const cs::CommandName& name, Value args) {
 
 // ── Machine ──────────────────────────────────────────────────────────────────
 
+// LIB-18: the model switch (`model {name}`), the module (`attach`/`detach`
+// slot-1) and the printer (`attach`/`detach` printer), each an operation.
 void EmulatorController::start(cu59::Model m) {
-    if (!m_savedModel || *m_savedModel != m || !state<cu59::TIModelState>(cu59::topics::kModel))
-        send(cu59::commands::kStartMachine, Value::object({{"model", static_cast<int>(m)}}));
+    send(calcu::startup::kModelCommand, Value::object({{"name", cu59::modelId(m).value}}));
+}
+void EmulatorController::resetMachine() { send(calcu::startup::kResetCommand); }
+void EmulatorController::cleanResetMachine() { send(calcu::startup::kColdBootCommand); }
+void EmulatorController::togglePrinterConnection() {
+    if (printerConnected()) send(calcu::startup::kDetachCommand, Value::object({{"place", "printer"}}));
+    else send(calcu::startup::kAttachCommand, Value::object({{"place", "printer"}, {"peripheral", "PC-100C"}}));
 }
 cu59::Model EmulatorController::model() const { return orNone(state<cu59::TIModelState>(cu59::topics::kModel), kNoModel).model; }
 QString EmulatorController::moduleID() const { return qs(orNone(state<cu59::TIModelState>(cu59::topics::kModel), kNoModel).moduleID); }
 void EmulatorController::changeModule(const QString& id) {
-    send(cu59::commands::kChangeModule, Value::object({{"id", id.toStdString()}}));
+    if (id == moduleID()) return;
+    if (id.isEmpty()) send(calcu::startup::kDetachCommand, Value::object({{"place", "slot-1"}}));
+    else send(calcu::startup::kAttachCommand, Value::object({{"place", "slot-1"}, {"peripheral", id.toStdString()}}));
 }
 QVector<cu59::ModuleMetadata> EmulatorController::allModules() const {
     const auto& all = orNone(state<cu59::TIModelState>(cu59::topics::kModel), kNoModel).modules;
@@ -278,10 +297,10 @@ std::optional<int> EmulatorController::litCardCorner() const {
     return orNone(state<cu59::TICardReaderState>(cu59::topics::kCardReader), kNoCard).litCorner;
 }
 
-// ── State files ──────────────────────────────────────────────────────────────
+// ── Presets (LIB-6 AC-42: a file in its folder) ──────────────────────────────
 
-void EmulatorController::loadStateFile(const QString& path) {
-    send(cu59::commands::kLoadState, withBytes(Value::object({}), path));
+void EmulatorController::loadPreset(const QString& path) {
+    send(calcu::presets::kLoadPresetCommand, Value::object({{"ref", path.toStdString()}}));   // UTF-8
 }
 
 cu59::DropAction EmulatorController::dropAction(const QString& path) const {
@@ -292,6 +311,10 @@ cu59::DropAction EmulatorController::dropAction(const QString& path) const {
 }
 
 void EmulatorController::openDroppedFile(const QString& path) {
+    if (dropAction(path) == cu59::DropAction::LoadPreset) {   // LIB-6 AC-42: by its path, in its folder
+        loadPreset(path);
+        return;
+    }
     send(cu59::commands::kOpenDropped,
          withBytes(Value::object({{"path", path.toStdString()}, {"name", QFileInfo(path).fileName().toStdString()}}), path));
 }

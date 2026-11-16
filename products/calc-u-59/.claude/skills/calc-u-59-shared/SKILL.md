@@ -1,6 +1,6 @@
 ---
 name: calc-u-59-shared
-description: Use this skill when working on the shared C++ layer of Calc-U-59 (app/, tests/, the product's CMakeLists.txt, tools/goldens/) — the non-GUI logic the Swift app, the Qt6 app and the web client use: file formats, state files, cue cards, the app session's product part (TIAppPart, makeAppSession; TIWebPart for the Web page), the Swift frontend's session thread (SessionThread), the emulator runtime (machine session, key sequencing, frame sampling), the TI's side of the library's paper (TIPrinters) and debugger (TILevelRules, TITraceRecorder, TIDebuggerSetup, the KEYSTROKES directives on the run control), the debugger model (DebugModel), debug snapshots, the trace records (TraceWriter), view rules. Also trigger when adding a frontends/swift/Bridge/ wrapper for a Shared module, or when logic is about to be written in frontends/swift/App/*.swift, frontends/qt6/app/ or frontends/web/ that isn't drawing.
+description: Use this skill when working on the shared C++ layer of Calc-U-59 (app/, tests/, the product's CMakeLists.txt, tools/goldens/) — the non-GUI logic the Swift app, the Qt6 app and the web client use: file formats, presets (the TI rules and keywords of the library's loader: TIPresetRules, TIPresetKeys, Keycodes, the ti59 commands), the TI-58C constant memory file (ConstantMemoryKeeper), cue cards, the app session's product part (TIAppPart, makeAppSession, the library's parts it owns, TIProductMachines; TIWebPart for the Web page), the Swift frontend's session thread (SessionThread), the emulator runtime (machine session, key sequencing, frame sampling), the TI's side of the library's paper (TIPrinters) and debugger (TILevelRules, TITraceRecorder, TIDebuggerSetup), the debugger model (DebugModel), debug snapshots, the trace records (TraceWriter), view rules. Also trigger when adding a frontends/swift/Bridge/ wrapper for a Shared module, or when logic is about to be written in frontends/swift/App/*.swift, frontends/qt6/app/ or frontends/web/ that isn't drawing.
 user-invocable: true
 ---
 
@@ -20,8 +20,9 @@ drawing rules: `reference/SharedArchitecture.md`. Don't restate them here.
    Documents, bundles or qrc. ROM files come only through the library's ROM
    lookup (LIB-12): a frontend makes a `calcu::roms::Bundle` of its packaging
    and calls `cu59::lookUpRoms` (`app/ProductRoms.hpp`) once at its start,
-   then `cu59::makeAppSession` (`app/TIAppPart.hpp`); the app layer then builds and
-   loads modules from the `RomSet` and reads no ROM file. Nothing else opens
+   then `cu59::makeAppSession` (`app/TIAppPart.hpp`); LIB-18's machine control
+   then builds every machine and loads modules from the `RomSet` and reads
+   no ROM file. Nothing else opens
    a ROM file (CTest `CalcU59NoOwnRomLookup`). Without the full set no
    session is made and the frontend shows the lookup's text.
 4. **All builds before every commit** (commands: CLAUDE.md § "Frontend Parity").
@@ -36,16 +37,24 @@ drawing rules: `reference/SharedArchitecture.md`. Don't restate them here.
    frontend does is a command (`cu59::commands`, the Web's `c59.web.*`),
    everything it gets a message (the interim `c59.*` topics,
    `app/TIAppPart.hpp`; the Web page's `c59.web.*`, `app/TIWebPart.hpp`).
-   The flows are `TIAppPart`'s own (`TIAppPartFlows.cpp`; 2.3.0's
-   `SessionController` was taken apart into it in M-34). The paper is
-   LIB-8's `PaperPart` and every pause, step, breakpoint and trace LIB-10's
-   `DebuggerPart` (M-53; `makeAppSession` owns both, after `TIAppPart`):
-   no freeze state, no printer lines and no trace writer in `app/` (rows of
-   the adapters P-E1 to P-E5, L-E1 to L-E5 in
-   `reference/SharedArchitecture.md`). Tests drive them
+   `TIAppPart` owns the library's parts of its session
+   (`parts::LibraryParts`, M-54; `sessionParts()`): typing, peripherals,
+   presets on `TIPresetRules` and the bundle of `examples/`
+   (`examples/bundle.yaml`), LIB-18's start, model switch, Reset, Cold boot,
+   attach and detach on `TIProductMachines`, LIB-8's `PaperPart`, LIB-10's
+   `DebuggerPart`; then `ProgramMemoryPart` (`c59.partition`,
+   `c59.program`, `c59.registers`) and the part. A frontend starts, switches,
+   resets and loads with the library's commands (`start`, `model`, `reset`,
+   `cold-boot`, `attach`, `detach`, `load-preset`), never with product
+   commands; the machine is the machine session's, and the part follows it
+   at `machineChanged` (a new `EmulatorSession`). No freeze state, no
+   printer lines, no trace writer and no preset reader in `app/`
+   (`reference/SharedArchitecture.md`). Tests drive them
    on the session (`tests/SessionRig.hpp`: `SessionRig`, and `PartRig` with
-   the card files in memory; on the library's `TestFrontend` and `Pump`,
-   `library/testing/`).
+   the card files in memory; `tests/AppRig.hpp` for the start and the
+   constant memory; `tests/TIPresetRig.hpp` for a preset read and the
+   harness entry in virtual time; on the library's `TestFrontend` and
+   `Pump`, `library/testing/`).
 6. **Test every module** in `tests/` (the repository's one runner,
    `library/testing/TestHarness.hpp`: `TEST`/`CHECK`/`SKIP_UNLESS`, ADR 0038;
    `TestRoms.hpp` boots machines from `roms/`). Tests run from the product

@@ -5,7 +5,7 @@
 #include "typing/TypingTopics.hpp"
 #include "RomHeatmap.hpp"
 #include "SevenSegment.hpp"
-#include "StateFile.hpp"
+#include "presets/PresetsPart.hpp"
 #include "WebPageData.hpp"
 #include "settings/AtomicFile.hpp"
 #include "sessions/Args.hpp"
@@ -57,8 +57,8 @@ bool plainName(const std::string& name) {
 
 sessions::PayloadPtr webPayload(std::string_view kind, Value v) { return sessions::valuePayload(kind, std::move(v)); }
 
-TIWebPart::TIWebPart(settings::Settings& settings, std::string presetsDir)
-    : m_settings(settings), m_presetsDir(std::move(presetsDir)) {}
+TIWebPart::TIWebPart(settings::Settings& settings)
+    : m_settings(settings) {}
 
 TIWebPart::~TIWebPart() {
     if (m_app) m_app->setChangeObserver(nullptr);
@@ -99,32 +99,9 @@ void TIWebPart::attach(sessions::SessionSetup& s) {
         };
     };
 
-    // LIB-15 N3: the start, with the model by its name and a bundled preset by
-    // its path in the bundle (spec AC-16); a name or path the product does
-    // not have is a notice, and the start goes on as without it (EC-4).
-    s.command(sessions::kStartCommand, [this](const Value& a, SessionContext& ctx) -> CommandOutcome {
-        if (!m_app) return Refused{"No machine is running."};
-        const std::string modelName = textArg(a, "model");
-        if (!modelName.empty()) {
-            if (auto m = modelFromName(modelName)) {
-                if (*m != m_app->model()) m_app->startMachine(*m);
-            } else {
-                ctx.notice("Calc-U-59 has no model " + modelName + ": it starts with the " +
-                           std::string(info(m_app->model()).displayName) + ".");
-            }
-        }
-        const std::string preset = textArg(a, "preset");
-        if (preset.empty()) return Done{};
-        const bool safe = preset.find("..") == std::string::npos && preset.front() != '/' && preset.find(':') == std::string::npos;
-        std::optional<std::string> file;
-        if (safe) file = calcu::settings::readWholeFile(m_presetsDir + "/" + preset);
-        if (!file) {
-            ctx.notice(preset + " is not a bundled preset: Calc-U-59 starts without it.");
-            return Done{};
-        }
-        m_app->loadStateFile(std::vector<uint8_t>(file->begin(), file->end()));
-        return StartOperation{m_app->presetOperation()};
-    });
+    // LIB-15 N3, AC-16: the start is LIB-18's `start {model, preset}` (the
+    // model by its name, the preset as a bundle path `examples:<path>`;
+    // LIB-18 §11.2, LIB-6 §11.2): the page sends it.
 
     // The pointer on the canvas (canvas-normalized, KeyboardLayout's
     // PointerTracker): keys go through the keyboard path, so a click shorter
@@ -193,21 +170,24 @@ void TIWebPart::attach(sessions::SessionSetup& s) {
     });
     // A dropped file: a preset loads as an operation (LIB-3 AC-32), a card is
     // fitted as an opened one; anything else is refused with today's sentence.
-    cmd("c59.web.drop", [this](const Value& a, SessionContext&) -> CommandOutcome {
+    cmd("c59.web.drop", [this](const Value& a, SessionContext& ctx) -> CommandOutcome {
         const std::string name = textArg(a, "name");
         if (!m_app) return Refused{"No machine is running."};
         switch (m_app->dropAction(name)) {
             case DropAction::NotAccepted: return Refused{name + ": not a .ti59, .ti58, .ti58c, .u59 or .bin file"};
             case DropAction::Ignore: return Done{};
-            case DropAction::LoadPreset:
-                m_app->loadStateFile(bytesArg(a, "bytes"));
-                return StartOperation{m_app->presetOperation()};
+            case DropAction::LoadPreset: {   // LIB-6 §11.2: load-preset {content, name}
+                const auto bytes = bytesArg(a, "bytes");
+                if (!bytes || !m_app->presetsPart()) return Refused{"Cannot read file."};
+                return m_app->presetsPart()->loadPreset(
+                    Value::object({{"content", std::string(bytes->begin(), bytes->end())}, {"name", name}}), ctx);
+            }
             case DropAction::FitCard: break;
         }
         if (!plainName(name)) return Refused{"Not a card file name."};
         const std::string path = m_app->files().cardFilePath(name);
         auto raw = bytesArg(a, "bytes");
-        if (m_app->openDroppedFile(raw, path, name) && raw) m_app->files().writeCard(path, std::string(raw->begin(), raw->end()));
+        if (m_app->fitCard(raw, path, name) && raw) m_app->files().writeCard(path, std::string(raw->begin(), raw->end()));
         m_cardsDirty = true;
         return Done{};
     });
@@ -287,10 +267,6 @@ void TIWebPart::drain(SessionContext&) {
     if (c & S::ModelChanged) {
         set(m_model, "c59.web.model", Value::object({{"model", static_cast<int>(m_app->model())}, {"moduleID", m_app->moduleID()}}));
         // The model used last (LIB-9: the startup model "last used").
-        if (m_savedModel != m_app->model()) {
-            m_savedModel = m_app->model();
-            m_settings.setLastUsedModel(m_app->model());
-        }
     }
     if (c & (S::DisplayChanged | S::ModelChanged)) {
         // Per cell (0 = rightmost) its segment mask, brightness and decimal

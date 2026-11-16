@@ -42,7 +42,7 @@
 #
 # KEYING IT IN (TI-59)
 #
-# 1. LRN, key the PROGRAM below (steps 000–051), LRN.
+# 1. LRN, key the program below (steps 000–051), LRN.
 # 2. Make the 1F at 008 (as examples/printer-interrupt.ti59):
 #      1 + 48 EE 12 +/- =     X := 1.000000000048
 #      GTO 012  SST  0  STO   Prg Src := 8, the run stops at 007
@@ -54,99 +54,103 @@
 #                  107070 STO 17   377070 STO 18   707070 STO 19
 # 4. Press A. It prints all 10 pairs; A again repeats them.
 
-MODEL: TI-59
-PRINTER: on
+format-version: 2
+model: TI-59
+slot-1: { name: ML }
+printer: PC-100C
 
-PROGRAM:
-000  92  RTN       # the interrupt continues here: return to 009
-001  76  Lbl
-002  11  A
-003  61  GTO
-004  00  0
-005  17  17        # A: GTO 017
-006  69  Op        # SBR 006: send the line …
-007  05  05
-008  23  lnx       # … becomes 1F: the interrupt
-009  53  (         # becomes 92 RTN
-010  00  0
-011  00  0
-012  86  St flg    # hack trigger (overwritten by the Ins)
-013  00  0         # swallowed by the hack
-014  00  0         # makes X displayable before the R/S
-015  91  R/S       # stops the hack's run (moves to 016)
-# From here on, each step moves up one during the Ins: 016 runs as 017.
-016  01  1
-017  00  0
-018  42  STO
-019  00  00        # R00 := 10, the first line value
-020  42  STO
-021  09  09        # R09 := 10 lines
-022  43  RCL       # 023: start of a line
-023  01  01
-024  69  Op
-025  01  01        # characters 1–5:   O _ = O =
-026  43  RCL
-027  02  02
-028  69  Op
-029  02  02        # characters 6–10:  O _ = _ _
-030  43  RCL
-031  04  04
-032  69  Op
-033  04  04        # characters 16–20: _ O _ = _
-034  73  RC*
-035  00  00
-036  69  Op
-037  03  03        # characters 11–15: this line's value
-038  69  Op
-039  05  05        # print the line in full
-040  25  CLR
-041  71  SBR
-042  00  0
-043  06  06        # print it again, cut short
-044  98  Adv
-045  69  Op
-046  20  20        # next line value
-047  97  Dsz
-048  09  09
-049  00  0
-050  23  23        # next line (023)
-051  91  R/S
+program:
+  keycodes: |
+    000 92 RTN  # the interrupt continues here: return to 009
+    001 76 Lbl
+    002 11 A
+    003 61 GTO
+    004 00 0
+    005 17 17  # A: GTO 017
+    006 69 Op  # SBR 006: send the line …
+    007 05 05
+    008 23 lnx  # … becomes 1F: the interrupt
+    009 53 (  # becomes 92 RTN
+    010 00 0
+    011 00 0
+    012 86 St flg  # hack trigger (overwritten by the Ins)
+    013 00 0  # swallowed by the hack
+    014 00 0  # makes X displayable before the R/S
+    015 91 R/S  # stops the hack's run (moves to 016)
+    # From here on, each step moves up one during the Ins: 016 runs as 017.
+    016 01 1
+    017 00 0
+    018 42 STO
+    019 00 00  # R00 := 10, the first line value
+    020 42 STO
+    021 09 09  # R09 := 10 lines
+    022 43 RCL  # 023: start of a line
+    023 01 01
+    024 69 Op
+    025 01 01  # characters 1–5:   O _ = O =
+    026 43 RCL
+    027 02 02
+    028 69 Op
+    029 02 02  # characters 6–10:  O _ = _ _
+    030 43 RCL
+    031 04 04
+    032 69 Op
+    033 04 04  # characters 16–20: _ O _ = _
+    034 73 RC*
+    035 00 00
+    036 69 Op
+    037 03 03  # characters 11–15: this line's value
+    038 69 Op
+    039 05 05  # print the line in full
+    040 25 CLR
+    041 71 SBR
+    042 00 0
+    043 06 06  # print it again, cut short
+    044 98 Adv
+    045 69 Op
+    046 20 20  # next line value
+    047 97 Dsz
+    048 09 09
+    049 00 0
+    050 23 23  # next line (023)
+    051 91 R/S
 
-REGISTERS:
-01 = 3200643264    # O _ = O =
-02 = 3200640000    # O _ = _ _
-04 = 32006400      # _ O _ = _
-10 = 0             # line 1:  0 bits
-11 = 10            # line 2:  "7"            1 bit
-12 = 37            # line 3:  "T"            2 bits
-13 = 70            # line 4:  "²"            3 bits
-14 = 1070          # line 5:  "7²"           4 bits
-15 = 3770          # line 6:  "T²"           5 bits
-16 = 7070          # line 7:  "²²"           6 bits
-17 = 107070        # line 8:  "7²²"          7 bits
-18 = 377070        # line 9:  "T²²"          8 bits
-19 = 707070        # line 10: "²²²"          9 bits
+data:
+  01: 3200643264  # O _ = O =
+  02: 3200640000  # O _ = _ _
+  04: 32006400  # _ O _ = _
+  10: 0  # line 1:  0 bits
+  11: 10  # line 2:  "7"            1 bit
+  12: 37  # line 3:  "T"            2 bits
+  13: 70  # line 4:  "²"            3 bits
+  14: 1070  # line 5:  "7²"           4 bits
+  15: 3770  # line 6:  "T²"           5 bits
+  16: 7070  # line 7:  "²²"           6 bits
+  17: 107070  # line 8:  "7²²"          7 bits
+  18: 377070  # line 9:  "T²²"          8 bits
+  19: 707070  # line 10: "²²²"          9 bits
 
-KEYSTROKES:
-82          # 1
-85          # +
-72          # 4
-63          # 8
-52          # EE
-82          # 1
-83          # 2
-94          # +/-
-95          # =      X = 1.000000000048
-61          # GTO
-92          # 0
-82          # 1
-83          # 2      → step 012
-41          # SST    St flg executes, operand pending
-92          # 0      first operand digit
-42          # STO    ends it: Prg Src 8, run stops at 007
-31          # LRN    008, buffer loaded from ROM row 17
-21 41       # Ins    008 := 1F, 009 := RTN
-31          # LRN
-25          # CLR
-81          # RST    Prg Src 0
-11          # A      print the 10 pairs
+keys:
+  - regular-speed:
+  - key: 1
+  - key: +
+  - key: 4
+  - key: 8
+  - key: EE
+  - key: 1
+  - key: 2
+  - key: +/-
+  - key: =  # X = 1.000000000048
+  - key: GTO
+  - key: 0
+  - key: 1
+  - key: 2  # → step 012
+  - key: SST  # St flg executes, operand pending
+  - key: 0  # first operand digit
+  - key: STO  # ends it: Prg Src 8, run stops at 007
+  - key: LRN  # 008, buffer loaded from ROM row 17
+  - key: Ins  # 008 := 1F, 009 := RTN
+  - key: LRN
+  - key: CLR
+  - key: RST  # Prg Src 0
+  - key: A  # print the 10 pairs

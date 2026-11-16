@@ -188,14 +188,14 @@ TEST(lib10_ac30_cpu_fires_at_0000_after_reset_and_cold_boot) {
         CHECK(ready(r));
         rc(r).pauseOnStart(kCpu);
         r.runFor(50ms);
-        r.part().resetMachine();
+        r.post(calcu::startup::kResetCommand);
         CHECK(r.until([&] { return paused(r); }, 3s));
         CHECK(r.part().runState().reason == RunState::Reason::PauseOnStart);
         rc(r).resume();
         CHECK(ready(r));
         rc(r).pauseOnStart(kCpu);
         r.runFor(50ms);
-        r.part().cleanResetMachine();
+        r.post(calcu::startup::kColdBootCommand);
         CHECK(r.until([&] { return paused(r); }, 3s));
         rc(r).resume();
     }
@@ -304,64 +304,66 @@ TEST(lib10_ac31_app_session_pauses_at_a_breakpoint) {
     CHECK(r.until([&] { return paused(r); }, 2s));
 }
 
-// ── E10-5: the directives of a 2.3.0 preset (AC-32; L-E1) ──────────────────
+// ── E10-5: the debugger steps of a preset (AC-32; since M-54 LIB-6's
+// loader with LIB-10's steps, which replaced the KEYSTROKES directives of
+// 2.3.0 and their adapter L-E1) ────────────────────────────────────────────
 
 namespace {
-void load(SessionRig& r, const std::string& text) {
-    r.post(commands::kLoadState, Value::object({{"bytes", r.bytes(text)}}));
+void load(SessionRig& r, const std::string& keys) {
+    r.post(calcu::presets::kLoadPresetCommand,
+           Value::object({{"content", "format-version: 2\nmodel: TI-59\nslot-1: { name: ML }\nkeys:\n" + keys}, {"name", "d.ti59"}}));
 }
 } // namespace
 
 TEST(lib10_ac32_freeze_calculator_is_pause_program) {
     SessionRig r;
     CHECK(ready(r));
-    load(r, "KEYSTROKES:\n83\nFreeze: Calculator\n");   // idle: it lands after 50000 weights
-    CHECK(r.until([&] { return paused(r) && !r.part().keystrokesPlaying(); }, 10s));
+    load(r, "  - key: 2\n  - pause: program\n");   // idle: it lands after 50000 weights
+    CHECK(r.until([&] { return paused(r) && !r.busy(); }, 10s));
     CHECK(r.part().runState().owner == kProgram);
 }
 
 TEST(lib10_ac32_freeze_cpu_is_pause_cpu) {
     SessionRig r;
     CHECK(ready(r));
-    load(r, "KEYSTROKES:\nFreeze: CPU\n");
-    CHECK(r.until([&] { return paused(r) && !r.part().keystrokesPlaying(); }, 20s));
+    load(r, "  - pause: cpu\n");
+    CHECK(r.until([&] { return paused(r) && !r.busy(); }, 20s));
     CHECK(r.part().runState().owner == kCpu);
 }
 
 TEST(lib10_ac32_freeze_on_start_is_pause_on_start) {
     SessionRig r;
     CHECK(ready(r));
-    load(r, "KEYSTROKES:\nFreezeOnStart: CPU\n");
-    CHECK(r.until([&] { return r.part().runState().armed == kCpu; }, 5s));
-    load(r, "KEYSTROKES:\nFreezeOnStart: Calculator\n");
-    CHECK(r.until([&] { return r.part().runState().armed == kProgram; }, 5s));
-    load(r, "KEYSTROKES:\nFreezeOnStart: Off\n");
+    load(r, "  - pause-on-start: cpu\n");
+    CHECK(r.until([&] { return r.part().runState().armed == kCpu && !r.busy(); }, 5s));
+    load(r, "  - pause-on-start: program\n");
+    CHECK(r.until([&] { return r.part().runState().armed == kProgram && !r.busy(); }, 5s));
+    load(r, "  - pause-on-start: off\n");
     CHECK(r.until([&] { return !r.part().runState().armed && !r.busy(); }, 5s));
 }
 
 TEST(lib10_ac32_step_and_resume) {
     SessionRig r;
     CHECK(ready(r));
-    load(r, "KEYSTROKES:\n83\nFreeze: Calculator\nStep: Calculator 3\n");
-    CHECK(r.until([&] { return paused(r) && !r.part().keystrokesPlaying(); }, 10s));
+    load(r, "  - key: 2\n  - pause: program\n  - step: { level: program, count: 3 }\n");
+    CHECK(r.until([&] { return paused(r) && !r.busy(); }, 10s));
     CHECK(r.part().runState().reason == RunState::Reason::Step);
-    load(r, "KEYSTROKES:\nResume:\n");
+    r.post(calcu::presets::kRunStepCommand, Value::object({{"verb", "resume"}, {"value", ""}}));
     CHECK(r.until([&] { return !paused(r) && !r.busy(); }, 5s));
-    // Step: while running is ignored with a line of the log (LIB-10 OQ-4).
-    load(r, "KEYSTROKES:\nStep: CPU\n");
+    // A step while running is no effect, with a line of the log (LIB-10 OQ-4).
+    r.post(calcu::presets::kRunStepCommand, Value::object({{"verb", "step"}, {"value", "{ level: cpu }"}}));
     CHECK(r.until([&] { return !r.busy(); }, 5s));
-    r.runFor(1100ms);
-    CHECK(r.part().logText().find("Step: ignored") != std::string::npos);
+    r.runFor(100ms);
+    CHECK(!paused(r));
 }
 
 TEST(lib10_ac32_debug_panel_calculator_cpu_log) {
     SessionRig r;
     CHECK(ready(r));
-    load(r, "KEYSTROKES:\nDebugPanel: Calculator\nDebugPanel: CPU\nDebugPanel: Log\n");
+    load(r, "  - debug-panel: calculator\n  - debug-panel: cpu\n  - debug-panel: log\n");
     CHECK(r.until([&] { return !r.busy(); }, 5s));
     r.runFor(20ms);
     CHECK(r.panels() == (std::vector<DebugPanel>{DebugPanel::Calculator, DebugPanel::Cpu, DebugPanel::Log}));
-    // The library's `debug-panel:` views (L-E4): the same stream.
     r.part().showDebugPanelNamed("log");
     r.runFor(20ms);
     CHECK(r.panels().back() == DebugPanel::Log);

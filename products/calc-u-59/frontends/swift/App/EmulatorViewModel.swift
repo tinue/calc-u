@@ -208,6 +208,7 @@ class EmulatorViewModel {
     @ObservationIgnored private let romSet: TIRomSet?
     private(set) var romsMissingText: String? = nil
     @ObservationIgnored private var session: TIAppSession?
+    @ObservationIgnored private var pendingStartModule: String?
     /// The session, made once the save folder is resolved (start(model:)).
     private var controller: TIAppSession { session! }
     fileprivate static var startModuleID: String {
@@ -240,8 +241,9 @@ class EmulatorViewModel {
         Task { await self.start(model: AppSettings.resolvedStartupModel()) }
     }
 
-    /// The session, once the save folder is resolved off the main thread (iCloud),
-    /// with a fresh machine of `model`; a later call switches the model.
+    /// The session, once the save folder is resolved off the main thread (iCloud);
+    /// its LIB-18 `start` builds the startup model of the settings (with its
+    /// startup preset, or the built-in default). A later call switches to `model`.
     func start(model: MachineModel) async {
         guard let romSet else { return }
         if let session {
@@ -256,13 +258,16 @@ class EmulatorViewModel {
         }
         let start = TISessionStart()
         start.cuecards = ROMLoader.cuecardsText
-        start.moduleID = EmulatorViewModel.startModuleID
-        start.model = model.rawValue
+        start.settings = SettingsModel.shared.file
+        start.examplesFolder = Bundle.main.url(forResource: "examples", withExtension: nil)?.path ?? ""
         start.saveFolder = CardStorage.directoryURL.path
         start.traceDirectory = AppSettings.traceDirectory().path
         start.traceMaxBytes = UInt64(AppSettings.resolvedTraceMaxMB()) * 1_000_000
         start.traceAvailable = AppSettings.traceLocationAvailable()
         session = TIAppSession(roms: romSet, start: start, delegate: platform)
+        // UI tests (--module XX): that module into slot-1 once the start has built
+        // the machine (the built-in default has ML; LIB-18 AC-18).
+        if EmulatorViewModel.startModuleID != "ML" { pendingStartModule = EmulatorViewModel.startModuleID }
         hasCardFile = CardStorage.hasCard
         #if DEBUG && (os(macOS) || targetEnvironment(simulator))
         // Harness attach (C59-5 AC-10): `calcu attach`, the port of --attach-port, else 59059.
@@ -412,12 +417,15 @@ class EmulatorViewModel {
     func runASMOverlay() { session?.runAsm() }
     func clearASMOverlay() { session?.clearAsm() }
 
-    // MARK: - State files
+    // MARK: - Presets
 
+    /// A preset by its content (LIB-6 `load-preset {content, name}`; D-41: the
+    /// picked file is readable only inside its security scope, so its content
+    /// goes over on macOS too).
     func loadStateFile(_ url: URL) {
         let scoped = url.startAccessingSecurityScopedResource()
         defer { if scoped { url.stopAccessingSecurityScopedResource() } }
-        session?.loadStateFile(try? Data(contentsOf: url))
+        session?.loadPresetContent(try? Data(contentsOf: url), name: url.lastPathComponent)
     }
 
     // MARK: - Dropped files
@@ -450,11 +458,14 @@ class EmulatorViewModel {
     /// Copy what changed into the observable properties. Each assignment is
     /// guarded: @Observable notifies on every write, even of an identical value.
     fileprivate func apply(_ c: TIChange) {
+        // UI tests (--module): once the start has ended, the module asked for.
+        if let id = pendingStartModule, !controller.moduleID.isEmpty, !controller.keystrokesPlaying {
+            pendingStartModule = nil
+            if controller.moduleID != id { controller.changeModule(id) }
+        }
         if c.contains(.model) {
-            if let m = MachineModel(rawValue: controller.model), m != model {
-                model = m
-                SettingsModel.shared.saveLastUsedModel(m.rawValue)   // a setting the frontend writes (LIB-9; C59-5 D-3)
-            }
+            // The last used model is LIB-18's StartupPart's ([startup] last-model).
+            if let m = MachineModel(rawValue: controller.model), m != model { model = m }
             if selectedModuleID != controller.moduleID { selectedModuleID = controller.moduleID }
         }
         if c.contains(.display) {

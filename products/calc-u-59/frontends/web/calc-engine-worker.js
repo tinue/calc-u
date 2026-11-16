@@ -7,7 +7,7 @@
 // bundled presets) from files.json, /uploads (files the user opened), and
 // /persist-calc-u-59, the persistent file system in IndexedDB: the settings
 // file (settings/Calc-U-59/Calc-U-59.ini) and the save folder (Calc-U-59/:
-// the magnetic cards and ti58c.mem). A mount of its own, so that it never
+// the magnetic cards and ti58c.memory.yaml). A mount of its own, so that it never
 // shares a store with Calc-U-1600 on one origin (LIB-15 AC-7). One tab at a
 // time writes it (Web Locks, `calcu59-storage`; AC-21).
 self.CALCU_PRODUCT = {

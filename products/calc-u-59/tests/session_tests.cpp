@@ -3,6 +3,8 @@
 
 #include "TestHarness.hpp"
 #include "SessionRig.hpp"
+#include "../app/Bcd.hpp"
+#include "../app/TIPresetKeys.hpp"
 #include <fstream>
 
 using namespace cu59;
@@ -67,12 +69,12 @@ TEST(lib3_ac29_mirror_holds_every_change_flag) {
         return serialOf(r, t) != before;
     };
     // ModelChanged
-    CHECK(moves(topics::kModel, [&] { r.send(commands::kStartMachine, Value::object({{"model", 1}})); }));
+    CHECK(moves(topics::kModel, [&] { r.model("TI-58"); }));
     CHECK(r.state<TIModelState>(topics::kModel)->model == Model::TI58);
     // DisplayChanged
     CHECK(moves(topics::kLed, [&] { r.tap(83); }));   // 5
     // CueCardChanged, CardChanged
-    CHECK(moves(topics::kCueCard, [&] { r.send(commands::kStartMachine, Value::object({{"model", 0}})); }));
+    CHECK(moves(topics::kCueCard, [&] { r.model("TI-59"); }));
     CHECK(moves(topics::kCardReader, [&] {
         r.send(commands::kFitBlankCard, Value::object({{"path", (r.folder.path() / "a.u59").string()}, {"name", "a.u59"}}));
     }));
@@ -111,10 +113,10 @@ TEST(lib3_ac29_mirror_holds_every_change_flag) {
 // AC-30: an error is a notice, a diagnostic a line of the log.
 TEST(lib3_ac30_error_is_notice_diagnostic_is_log) {
     SessionRig r;
-    r.send(commands::kLoadState, Value::object({}));   // no bytes: the file could not be read
-    CHECK(hasNotice(r, "State file load error: Cannot read file."));
-    const NoticeParts n = splitNotice("State file load error: Cannot read file.");
-    CHECK_EQ(n.title, std::string("State file load error"));
+    r.send(commands::kOpenDropped, Value::object({{"name", "p.ti59"}}));   // no bytes: the file could not be read
+    CHECK(hasNotice(r, "Preset load error: Cannot read file."));
+    const NoticeParts n = splitNotice("Preset load error: Cannot read file.");
+    CHECK_EQ(n.title, std::string("Preset load error"));
     CHECK_EQ(n.message, std::string("Cannot read file."));
     r.part().diagnostic("a developer line");
     r.frame();
@@ -124,10 +126,10 @@ TEST(lib3_ac30_error_is_notice_diagnostic_is_log) {
 // AC-30: the card and constant-memory files are the session's, in the save
 // folder, without a frontend.
 TEST(lib3_ac30_card_and_constant_memory_files_without_frontend) {
-    SessionRig r(Model::TI58C);
-    r.send(commands::kLoadState, Value::object({{"bytes", r.bytes("REGISTERS:\n03 = 7\n")}}));
-    r.until([&] { return !r.busy(); });
+    SessionRig r(Model::TI58C);   // built from the file (C59-3 AC-7): it writes it at the first change
+    r.runFor(1s);
     const auto mem = r.folder.path() / TIFileAccess::kConstantMemoryFile;
+    CHECK_EQ(std::string(TIFileAccess::kConstantMemoryFile), std::string("ti58c.memory.yaml"));
     CHECK(testroms::fs::exists(mem));
     TIFileAccess& p = r.part().files();
     CHECK_EQ(p.cardFilePath("x.u59"), (r.folder.path() / "x.u59").string());
@@ -139,16 +141,16 @@ TEST(lib3_ac30_card_and_constant_memory_files_without_frontend) {
 // AC-30: the module ID is no longer saved (row 59-9).
 TEST(lib3_ac30_module_id_not_saved) {
     SessionRig r;
-    r.send(commands::kChangeModule, Value::object({{"id", "LE"}}));
-    r.until([&] { return !r.busy(); });
+    CHECK(r.attach("slot-1", "LE").done);
     CHECK_EQ(r.state<TIModelState>(topics::kModel)->moduleID, std::string("LE"));
     CHECK(testroms::fs::is_empty(r.folder.path()));   // nothing written for it
 }
 
-// AC-30: KEYSTROKES DebugPanel: is a product message.
+// AC-30: the step debug-panel: is a product message.
 TEST(lib3_ac30_show_debug_panel_is_product_message) {
     SessionRig r;
-    r.send(commands::kLoadState, Value::object({{"bytes", r.bytes("KEYSTROKES:\nDebugPanel: CPU\n")}}));
+    r.post(calcu::presets::kLoadPresetCommand,
+           Value::object({{"content", "format-version: 2\nmodel: TI-59\nkeys:\n  - debug-panel: cpu\n"}, {"name", "p.ti59"}}));
     std::vector<PayloadPtr> got;
     CHECK(r.until([&] {
         for (auto& p : r.fe.mirror.takeAppended(topics::kShowDebugPanel)) got.push_back(p);
@@ -161,10 +163,13 @@ TEST(lib3_ac30_show_debug_panel_is_product_message) {
 TEST(lib3_ac32_preset_load_is_busy_and_refuses_second) {
     SessionRig r;
     CHECK(r.until([&] { return r.machine().isKeyReady(); }));
-    const CallId id = r.post(commands::kLoadState, Value::object({{"bytes", r.bytes("KEYSTROKES:\n82 85 82 95\n")}}));
+    const CallId id = r.post(calcu::presets::kLoadPresetCommand,
+                             Value::object({{"content", "format-version: 2\nmodel: TI-59\nkeys:\n  - key: 1 + 1 =\n  - let-it-finish:\n"},
+                                            {"name", "a.ti59"}}));
     CHECK(r.busy());
     CHECK(r.reply(id) == nullptr);
-    const ReplyMessage second = r.send(commands::kLoadState, Value::object({{"bytes", r.bytes("REGISTERS:\n01 = 1\n")}}));
+    const ReplyMessage second = r.send(calcu::presets::kLoadPresetCommand,
+                                       Value::object({{"content", "format-version: 2\nmodel: TI-59\n"}, {"name", "b.ti59"}}));
     CHECK(!second.done);
     CHECK_EQ(second.reason, std::string("Another operation is running."));
     CHECK(r.until([&] { return r.reply(id) != nullptr; }));
@@ -174,15 +179,17 @@ TEST(lib3_ac32_preset_load_is_busy_and_refuses_second) {
     CHECK_EQ(testroms::displayText(r.machine()), std::string("2"));   // 1 + 1 =
 }
 
-// AC-32: connecting or disconnecting the printer (a power cycle) is an operation.
-TEST(lib3_ac32_printer_toggle_is_operation) {
+// AC-32: connecting or disconnecting the printer (a power cycle) is an
+// operation: LIB-18's attach and detach (row 59-39).
+TEST(lib3_ac32_printer_attach_is_operation) {
     SessionRig r;
     CHECK(r.until([&] { return r.machine().isKeyReady(); }));
-    const CallId id = r.post(commands::kTogglePrinterConnection);
+    const CallId id = r.post(calcu::startup::kAttachCommand, Value::object({{"place", "printer"}, {"peripheral", "PC-100C"}}));
     CHECK(r.busy());
-    CHECK(!r.state<TIPrinterState>(topics::kPrinter)->connected);
     CHECK(r.until([&] { return r.reply(id) != nullptr; }));
     CHECK(r.reply(id)->done && !r.busy());
+    r.frame();
+    CHECK(r.state<TIPrinterState>(topics::kPrinter)->connected);
     CHECK(r.machine().isKeyReady());
 }
 
@@ -190,7 +197,10 @@ TEST(lib3_ac32_printer_toggle_is_operation) {
 TEST(lib3_ac32_updates_during_preset) {
     SessionRig r;
     CHECK(r.until([&] { return r.machine().isKeyReady(); }));
-    const CallId id = r.post(commands::kLoadState, Value::object({{"bytes", r.bytes("KEYSTROKES:\n82 21 94\n83 21 94\n")}}));
+    const CallId id = r.post(calcu::presets::kLoadPresetCommand,
+                             Value::object({{"content", "format-version: 2\nmodel: TI-59\nprinter: PC-100C\nkeys:\n"
+                                                        "  - regular-speed:\n  - key: 1 2nd Prt\n  - key: 2 2nd Prt\n  - let-it-finish:\n"},
+                                            {"name", "p.ti59"}}));
     int ledSetsWhileBusy = 0, paperWhileBusy = 0;
     std::uint64_t led = serialOf(r, topics::kLed);
     // The paper: the library's stream `paper PC-100C` (LIB-8, M-53).
@@ -227,14 +237,15 @@ TEST(lib3_ac33_no_sound_messages_and_no_sink_stated) {
     }
 }
 
-// C59-5 AC-8: suspend writes the TI-58C's memory and runs nothing; continue runs again.
+// C59-5 AC-8, C59-3 AC-6: suspend writes the TI-58C's memory at once and runs
+// nothing; continue runs again.
 TEST(c59_5_ac8_suspend_persists_and_stops_continue_runs) {
     SessionRig r(Model::TI58C);
     CHECK(r.until([&] { return r.machine().isKeyReady(); }));
+    r.runFor(1s);   // the first change written
     const auto mem = r.folder.path() / TIFileAccess::kConstantMemoryFile;
     testroms::fs::remove(mem);
-    r.part().emulator()->access().memory();   // the machine is there
-    r.tap(83);
+    cu59::programMemoryOf(r.machine())->writeRegister(1, *cu59::parseDecimal("42"));   // a change, no time passes
     r.send(kSuspendCommand);
     CHECK(testroms::fs::exists(mem));
     const auto t = r.ticks();

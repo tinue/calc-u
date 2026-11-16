@@ -3,13 +3,15 @@
 #include <memory>
 
 // Calc-U-59 in the harness `calcu` (LIB-11 design §4; M-28): the library's
-// app session on a TI machine through the machine interface. The product's
-// own session classes are not used; its app layer joins in M-33 (D-6).
-// Adapters (design §5): A-1, the start (TI-59 unless [startup] model names
-// another, its default variant, the PC-100C plugged in, no module, as
-// 2.3.0's core). The settings declaration and the ROM lookup are the
-// product's (app/Settings.hpp, app/ProductRoms.hpp). No product commands
-// until C59-9 (M-59).
+// app session on a TI machine through the machine interface, with the
+// library's parts the entry makes itself until M-59 (LIB-6 §11.5): typing,
+// paper, debugger, the presets on TIPresetRules and the bundle of the source
+// tree's examples/, and the program memory commands (ProgramMemoryPart). The
+// start is LIB-18's on TIProductMachines (the built-in default: the Master
+// Library module, no printer; M-54). The product commands `ti59 partition`,
+// `ti59 program`, `ti59 registers` (C59-2 AC-9); the rest of C59-9 in M-59.
+// The settings declaration and the ROM lookup are the product's
+// (app/Settings.hpp, app/ProductRoms.hpp).
 
 namespace cu59 {
 

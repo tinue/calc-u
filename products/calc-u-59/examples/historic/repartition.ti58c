@@ -93,44 +93,52 @@
 # ** Any keycode from 42 to 49 may be substituted for 41 with identical results.
 # *** Pseudo-59 partitions have the usual number of memories and program steps.
 
+format-version: 2
+model: TI-58C
+description: TI-58C Repartitioning Reference
+slot-1: { name: ML }
+printer: PC-100C
+
 # Be sure to have the default partition
-PARTITION: 239.29
+partition: 239.29
 
-PROGRAM:
-# The tiny program as outlined in the article
-000  76 LBL
-001  11  A
-002  58 FIX
-003  00  00
-004  91 R/S
+program:
+  keycodes: |
+    # The tiny program as outlined in the article
+    000 76 LBL
+    001 11 A
+    002 58 FIX
+    003 00 00
+    004 91 R/S
 
-KEYSTROKES:
-# The keystrokes as outlined in the article
-92  0
-93  .
-92  0
-92  0
-92  0
-92  0
-92  0
-92  0
-74  6
-92  0
-64  9
-85  +
-74  6
-92  0
-64  9
-95  =
-11  A
-21  2nd
-81  STF
-21  2nd
-45  IND
-62  7
-22  INV
-31  LRN
-21  2nd
-55  |x|
-43  RCL
-31  LRN
+keys:
+  - regular-speed:
+  # The keystrokes as outlined in the article
+  - key: 0
+  - key: .
+  - key: 0
+  - key: 0
+  - key: 0
+  - key: 0
+  - key: 0
+  - key: 0
+  - key: 6
+  - key: 0
+  - key: 9
+  - key: +
+  - key: 6
+  - key: 0
+  - key: 9
+  - key: =
+  - key: A
+  # 21  2nd
+  - key: STF
+  # 21  2nd
+  - key: Ind
+  - key: 7
+  - key: INV
+  - key: LRN
+  # 21  2nd
+  - key: IxI
+  - key: RCL
+  - key: LRN

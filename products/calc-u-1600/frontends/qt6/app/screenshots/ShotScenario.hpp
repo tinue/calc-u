@@ -32,12 +32,13 @@ struct ShotCaptureSpec {
 struct ShotStep {
     enum class Kind {
         Preset,       // text = absolute preset path
-        Reset,        // number = 1 for Cold boot
+        Reset,        // number = 1 for Cold boot (`cold-boot`)
+        WaitIdle,     // the bare `wait` of attach: until the machine is idle
         Key,          // text = key name: tap it
         HoldKey,      // text = key name: press (with faceplate overlay) and keep down
         ReleaseKeys,  // let go of a held key
         Type,         // text = line to type (ENTER appended)
-        Run,          // number = emulated seconds
+        Run,          // number = seconds: `wait <n>s` (the app runs at regular speed)
         Settle,       // number = wall-clock ms of UI event processing
         Click,        // text = objectName of a button
         Open,         // text = objectName of a combo box: show its popup

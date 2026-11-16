@@ -87,6 +87,7 @@ struct SessionFixture {
             const auto t = fixedTime;
             o.hostTime = [t] { return t; };
         }
+        o.canMountHostFolder = hostDirectories;   // LIB-4 AC-18
         app = shared::makeSharpSession(settings, *paths, std::move(o));
         listener.onMessage = [this](const sessions::Message& m) {
             messages.push_back(m);

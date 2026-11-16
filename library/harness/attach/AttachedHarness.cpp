@@ -2,6 +2,7 @@
 #include "formats/Duration.hpp"
 #include "harness/Protocol.hpp"
 #include "machine/Machine.hpp"
+#include "presets/PresetsPart.hpp"
 #include "sessions/LibraryTopics.hpp"
 
 namespace calcu::harness {
@@ -22,9 +23,17 @@ std::string escaped(const std::string& s) {
 
 } // namespace
 
-AttachedHarness::AttachedHarness(AppSession& s, HarnessProduct& p, AttachEndpoint& e, std::function<bool()> suspended)
+AttachedHarness::AttachedHarness(AppSession& s, HarnessProduct& p, AttachEndpoint& e, std::function<bool()> suspended,
+                                 SessionParts parts)
     : session_(s), product_(p), endpoint_(e), suspended_(std::move(suspended)) {
+    // D-27: the commands of `calcu serve` (Run.cpp, Server::start), in its order.
     addFirstCommands(registry_);
+    addStartupCommands(registry_);
+    addPresetCommands(registry_, parts.vocabulary);
+    addPaperCommands(registry_);
+    addDebugCommands(registry_);
+    addMediaCommands(registry_, parts.media);
+    addOpenCommand(registry_);
     product_.addCommands(registry_);
 }
 
@@ -136,7 +145,21 @@ void AttachedHarness::runLine(const std::string& text) {
         return reply(doneReply());
     }
     if (cl.path.size() == 1 && cl.path[0] == "wait") {   // AC-14: on the app's clock
-        if (cl.argText.empty()) return reply(refusedReply("usage: wait <duration>, as in 2s or 500ms"));
+        if (cl.argText.empty()) {   // D-27: until idle, the session's operation on the app's clock
+            const machine::MachineDescriptor* d = host_->descriptor();
+            const auto now = ticks();
+            if (!d || !now) return reply(refusedReply(kNoMachine));
+            const ReplyMessage r = host_->command(Command{presets::kWaitIdleCommand, {}});
+            if (r.done) return reply(timeReply(0, d->tickRate));
+            if (r.reason != HarnessHost::kPendingReply) return reply(refusedReply(r.reason));
+            Pending p;
+            p.idle = true;
+            p.start = *now;
+            p.rate = d->tickRate;
+            p.call = host_->lastCall();
+            pending_ = p;
+            return;
+        }
         std::string error;
         const auto us = formats::parseDuration(cl.argText, &error);
         if (!us) return reply(refusedReply(error));
@@ -176,8 +199,18 @@ void AttachedHarness::afterHostCall() {
     } else {
         auto r = host_->takeReplyIfAny(pending_->call);
         if (!r) return;
+        const Pending p = *pending_;
         pending_.reset();
-        reply(r->done ? doneReply() : refusedReply(r->reason));
+        if (p.idle && r->done) {
+            const auto now = ticks();
+            Reply out = timeReply(now && *now > p.start ? *now - p.start : 0, p.rate);
+            const bool hour = now && *now - p.start >= static_cast<machine::Ticks>(p.rate) * 3600;
+            out.result.set("hourReached", hour);
+            out.lines.push_back(std::string("hour reached: ") + (hour ? "yes" : "no"));
+            reply(out);
+        } else {
+            reply(r->done ? doneReply() : refusedReply(r->reason));
+        }
     }
     process();
 }

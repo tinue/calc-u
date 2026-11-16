@@ -372,6 +372,20 @@
 @keyframes calcu-spin { to { transform: rotate(360deg); } }
 
 /* NamedCombo (Dialogs.jsx): a combo button with a menu of long labels. */
-.calcu-client .calcu-namedcombo { position: relative; display: inline-block; }
-.calcu-client .calcu-namedcombo > .calcu-combo { text-align: left; white-space: nowrap; overflow: hidden; }
-.calcu-client .calcu-namedcombo-list { min-width: 100%; z-index: 10; }
+
+/* ── The shell of the React set in this page (LIB-14 Part D, M-49) ──── */
+/* The menu bar is as tall as the layout counts it (MENU_HEIGHT). */
+.calcu-client .calcu-shell-menubar { flex: none; height: 26px; align-items: center; padding: 0 4px; }
+@media (pointer: coarse) {
+  .calcu-client .calcu-shell-menubar { height: 40px; }
+  .calcu-client .calcu-shell-menu-title { padding: 0 14px; height: 40px; }
+  .calcu-client .calcu-shell-item { padding-top: 8px; padding-bottom: 8px; }
+}
+/* The shell's bar fills the page's 40 px row, on one line. */
+.calcu-client .calcu-controlbar > .calcu-shell-bar { flex: 1; flex-wrap: nowrap; padding: 0; gap: 10px; overflow: hidden; }
+.calcu-client .calcu-bar-fieldset {
+  display: inline-flex; align-items: center; gap: 4px; margin: 0; padding: 0; border: 0; min-width: 0;
+}
+.calcu-client .calcu-shell-panels { flex: 1; min-height: 0; gap: 6px; }
+.calcu-client .calcu-shell-panels > .calcu-inspector { flex: 2 1 0; }
+.calcu-client .calcu-shell-roms-missing { flex: 1; }

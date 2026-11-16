@@ -3,12 +3,13 @@ const { test, expect } = require('@playwright/test');
 // LIB-12 on the Calc-U-1600 web client (design §6, Q4, Q5): the worker
 // fetches the bundle (dist/files.json) at init and the engine looks the ROMs
 // up there. A bad or missing file of the full set stops the start: the page
-// shows the lookup's text and no calculator runs (AC-13; D-8: the text in
-// the page until LIB-14).
+// shows the lookup's text in place of the calculator and no calculator
+// runs (AC-13; LIB-14 AC-19: the shell's roms-missing, no control bar and no
+// Machine menu, Help and About work; ledger 1600-36: no "stopped" title).
 
 test.describe.configure({ timeout: 45000 });
 
-const fatal = (page) => page.locator('.calcu-modal-text');
+const fatal = (page) => page.locator('[data-calcu=roms-missing]');
 const ready = (page) => page.locator('.calcu-client[data-ready=true]');
 
 test('lib12_ac13_bad_rom_file_shows_the_text_and_no_calculator', async ({ page }) => {
@@ -22,6 +23,14 @@ test('lib12_ac13_bad_rom_file_shows_the_text_and_no_calculator', async ({ page }
   await expect(fatal(page)).toContainText('PC1600-P1-B4-CE1600P-old.bin: wrong size', { timeout: 30000 });
   await expect(fatal(page)).toContainText('The full set of ROM files is needed');
   await expect(ready(page)).toHaveCount(0);
+  // LIB-14 AC-19: no faceplate, no bar, no Machine menu; About works.
+  await expect(page.locator('.calcu-face')).toHaveCount(0);
+  await expect(page.locator('[data-calcu=control-bar]')).toHaveCount(0);
+  await expect(page.locator('[data-calcu=menu-machine]')).toHaveCount(0);
+  await expect(page.getByText('Calc-U-1600 stopped')).toHaveCount(0);
+  await page.locator('[data-calcu=menu-help]').click();
+  await page.locator('[data-calcu=item-about]').click();
+  await expect(page.locator('[data-calcu=about-dialog]')).toContainText('Calc-U-1600');
 });
 
 test('lib12_ac13_missing_rom_file_shows_the_text_and_no_calculator', async ({ page }) => {

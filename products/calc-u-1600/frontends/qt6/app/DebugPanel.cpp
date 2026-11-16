@@ -293,7 +293,7 @@ void DebugPanel::updateLogButtonAppearance() {
 
 void DebugPanel::fillMenu(QMenu* menu, bool dumps) {
     menu->clear();
-    const bool pc1500 = m_controller->currentModel() != Model::PC1600;
+    const bool pc1500 = !m_controller->app().isPC1600();
     for (const inspect::MenuEntry& e : m_controller->inspectorMenu(dumps)) {
         QAction* a = menu->addAction(QString::fromUtf8(inspect::viewTitle(e.view, pc1500)));
         a->setEnabled(e.enabled);

@@ -22,7 +22,7 @@ namespace {
 
 namespace fs = std::filesystem;
 namespace cs = calcu::settings;
-using shared::Model;
+using Model = calcu::machine::ModelId;
 using shared::OpenFolder;
 
 using calcu::testing::readText;
@@ -75,8 +75,8 @@ TEST(lib9_ac26_declaration) {
     CHECK(s.startupModelPreference() == "last");
     CHECK(s.instanceDirOverride().empty() && s.tapeDirOverride().empty() && s.traceDirOverride().empty() &&
           s.serialLinkDirOverride().empty());
-    for (Model m : {Model::PC1500, Model::PC1500A, Model::PC1600}) CHECK(s.defaultPresetPath(m).empty());
-    s.setDefaultPresetPath(Model::PC1600, "examples:basic/hanoi.pc1600");
+    for (Model m : {calcu::machine::ModelId{"PC-1500"}, calcu::machine::ModelId{"PC-1500A"}, calcu::machine::ModelId{"PC-1600"}}) CHECK(s.defaultPresetPath(m).empty());
+    s.setDefaultPresetPath(calcu::machine::ModelId{"PC-1600"}, "examples:basic/hanoi.pc1600");
     CHECK(t.file.text("preset", "PC-1600") == "examples:basic/hanoi.pc1600");
     s.setDapEnabled(true);
     CHECK(t.file.raw("debug", "dap-enabled") == std::optional<std::string>("true") && s.dapEnabled());
@@ -93,17 +93,17 @@ TEST(lib9_ac27_startup_last_without_last_model_is_pc1500a) {
     TestSettings t;
     shared::Settings& s = t.settings;
     CHECK(!s.lastUsedModel());
-    CHECK(s.startupModel() == Model::PC1500A);
-    s.setLastUsedModel(Model::PC1600);
+    CHECK(s.startupModel() == calcu::machine::ModelId{"PC-1500A"});
+    s.setLastUsedModel(calcu::machine::ModelId{"PC-1600"});
     CHECK(t.file.text("startup", "last-model") == "PC-1600");
-    CHECK(s.startupModel() == Model::PC1600);
+    CHECK(s.startupModel() == calcu::machine::ModelId{"PC-1600"});
     s.setStartupModelPreference("PC-1500");
-    CHECK(s.startupModel() == Model::PC1500);
+    CHECK(s.startupModel() == calcu::machine::ModelId{"PC-1500"});
     s.setStartupModelPreference("PC1500");  // not a model's name: counts as last (AC-9)
-    CHECK(s.startupModel() == Model::PC1600);
+    CHECK(s.startupModel() == calcu::machine::ModelId{"PC-1600"});
     s.setStartupModelPreference("last");
     t.file.set("startup", "last-model", "TI-59");  // EC-1
-    CHECK(s.startupModel() == Model::PC1500A);
+    CHECK(s.startupModel() == calcu::machine::ModelId{"PC-1500A"});
 }
 
 // AC-28: a port outside 1024 to 65535 is 32168.
@@ -192,7 +192,7 @@ TEST(lib9_ac31_first_start_defaults_and_writes_file) {
     CHECK(text.rfind("format-version = 1\n", 0) == 0);
 
     shared::Settings s(file);
-    CHECK(s.startupModel() == Model::PC1500A);
+    CHECK(s.startupModel() == calcu::machine::ModelId{"PC-1500A"});
     CHECK(s.windowWidth() == 900 && s.dapPort() == 32168 && s.traceMaxFileSizeMB() == 50);
 
     // The save folder is ~/Calc-U-1600 on Qt6 (LIB-9 AC-13).
@@ -248,7 +248,7 @@ TEST(lib9_ac32_web_keeps_and_ignores_dap_serial_window_folders) {
 
     // A change the Web makes keeps them.
     s.setStartupModelPreference("PC-1600");
-    s.setDefaultPresetPath(Model::PC1500, "examples:x.pc1500");
+    s.setDefaultPresetPath(calcu::machine::ModelId{"PC-1500"}, "examples:x.pc1500");
     const std::string after = readText(ini);
     for (const char* line : {"dap-enabled = true", "link-folder = /links", "save-folder = /elsewhere",
                              "width = 1200", "host-drive = fixed:/drive", "kept = yes", "model = PC-1600",

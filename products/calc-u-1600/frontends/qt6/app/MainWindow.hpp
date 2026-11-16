@@ -1,105 +1,75 @@
 #pragma once
 #include <QByteArray>
-#include <QMainWindow>
 #include <QElapsedTimer>
 #include <QHash>
 #include <QImage>
+#include <QMainWindow>
 #include <QString>
 #include <functional>
 #include <memory>
 #include <optional>
 #include <string>
-#include <vector>
 
-#include "MachineController.hpp" // Model, PC1500RomRevision
-#include "app/SharpTopics.hpp"
+#include "MachineController.hpp"
 #include "opening/OpenRequest.hpp"
+#include "qt6/Shell.hpp"
 #include "sessions/Value.hpp"
 
-class QTimer;
 class QKeyEvent;
 class QCloseEvent;
 class QDragEnterEvent;
 class QDragMoveEvent;
 class QDropEvent;
-class QMimeData;
-class QHBoxLayout;
-class QAction;
-class QActionGroup;
 class FaceplateWidget;
-class ControlBar;
 class DebugPanel;
-class Operations;
-namespace calcu::qt6 {
-class PaperPanel;
-}
+class DiskControl;
 class Ce158PrinterWidget;
 class AudioOutput;
-class EmulationPacer;
 
-// Top-level window: FaceplateWidget (stretch) over ControlBar (fixed) over
-// the debug row (fixed), all inside a central QWidget (QMainWindow requires
-// exactly one); the module pickers live in ControlBar itself. The debug row
-// is a QHBoxLayout (m_debugRow / m_debugRowLayout) holding DebugPanel at
-// stretch 2 and the library's paper panel at stretch 1, both always (a
-// fixed 2:1 split; LIB-8 AC-36), plus the CE-158's printer while it is
-// attached. Owns the MachineController and the single ~60Hz frame timer that
-// both advances emulation and repaints the LCD. Also owns physical-keyboard
-// capture -- see HostKeyEvents.hpp.
-//
-// The menu bar (buildMenuBar()) duplicates ControlBar's model picker,
-// peripheral toggles and Reset/Reset All as QActions; the ROM pickers and
-// the peripherals that aren't the model's own live in the Machine menu
-// only. It adds File/Help entries (Load Preset/Load BASIC Program/
-// Settings/Quit, About) -- see applyModelSelection() and the
-// syncMachineMenuFrom*() pair for how the two views of the same
-// MachineController state stay in sync without fighting each other.
+// The window of Calc-U-1600 (LIB-14 Part D, D.3): a QMainWindow put together
+// from the Qt6 component set's shell (calcu::qt6::Shell) over the session
+// host of MachineController. The shell draws the menus, the control bar,
+// the settings and About dialogs, the notices, "Loading…", "ROMs missing"
+// and the panel area from the session's topics, and the pointer on the
+// faceplate (the hit map of app/SharpShellProduct). The window keeps the
+// product's: the layout of AC-40 (the faceplate, below it the bar, below it
+// the row with the INSPECTOR, the paper panel and, while a CE-158 is
+// plugged in, its printer panel), the faceplate's art and LCD, the host
+// keys and the input method (LIB-5), the drop and Open With (LIB-13), the
+// program flows of File ▸ Load BASIC Program… and Load Machine Code…
+// (C1600-2), the host drive's items, Copy Screen (Copy Log Selection while
+// text of the INSPECTOR is selected) and the SHIFT tap (LIB-5 AC-33).
 class MainWindow : public QMainWindow {
     Q_OBJECT
 public:
     explicit MainWindow(QWidget* parent = nullptr);
-    ~MainWindow();
+    ~MainWindow() override;
 
-    // ── Scripted screenshots (screenshots/ShotRunner) ──────────────────
-    // The emulator normally runs off the pacer's ~60 Hz frame timer. A shot
-    // run freezes it, so every capture sees exactly the state its steps left
-    // behind (no cursor blink, no clock drift between runs), and advances
-    // it explicitly instead (see EmulationPacer).
-    EmulationPacer* pacer() const { return m_pacer; }
-    // Load Preset… without the file dialog, and with a failure reported
-    // through `error` instead of a blocking warning box.
-    bool loadPresetForShots(const QString& path, QString* error);
-    // Reset / Cold boot, as the Machine menu does.
-    void resetForShots(bool coldBoot) {
-        resetMachine(coldBoot);
-        refreshViewsAfterAdvance();
-    }
-    // True while a synchronous operation (SyncOperations) is running: it
-    // pumps the event loop (timers included), and nothing may drive the
-    // machine until it's done.
-    bool isLoading() const;
+    // The session starts (LIB-18): after the window is up.
+    void start();
+
+    calcu::qt6::Shell& shell() { return *m_shell; }
+    calcu::qt6::SessionHost& host() { return m_controller->host(); }
     MachineController* controller() const { return m_controller.get(); }
-    // `screen` (MachineController::currentScreenImage()) as a QImage at its
-    // physical size (dots per metre set), as Copy Screen puts it on the
-    // clipboard; null for an empty screen.
-    static QImage toQImage(const GrayImage& screen);
     FaceplateWidget* faceplate() const { return m_faceplate; }
-    calcu::qt6::PaperPanel* paperPanel() const { return m_paperPanel; }
+    DebugPanel* inspector() const { return m_inspector; }
+    // Copy Screen's picture (AC-41): the display at its physical size (dots
+    // per metre set); null for an empty screen.
+    QImage screenImage() const;
+    static QImage toQImage(const GrayImage& screen);
 
     // A file to open (LIB-13): a drop, Open With (the Dock icon, Finder), the
-    // file named at the start, the Load Preset… dialog. Sent as the session's
-    // `open` with the way it came; the session decides what it is, keeps it
-    // while an operation runs or the start is not over (AC-7), and refuses
-    // with a notice (shown as every notice). A program file comes back as
-    // the topic c1600.program-opened (onProgramOpened). Remembers no folder
-    // (EC-7): only the file dialogs do.
+    // file named at the start. Sent as the session's `open` with the way it
+    // came; a refusal is the session's notice. A program file comes back as
+    // the topic c1600.program-opened (onProgramOpened).
     void openFile(const QString& path, calcu::opening::Way way);
+    // The tests: Copy Screen's picture and text go here, not to the
+    // platform's clipboard.
+    void setClipboardSink(std::function<void(const QImage&, const QString&)> sink) { m_clipboardSink = std::move(sink); }
 
 protected:
     void keyPressEvent(QKeyEvent* event) override;
     void keyReleaseEvent(QKeyEvent* event) override;
-    // Composed text from the OS input method (dead keys: ¨ then U gives Ü,
-    // Linux compose): committed characters are typed as taps.
     void inputMethodEvent(QInputMethodEvent* event) override;
     QVariant inputMethodQuery(Qt::InputMethodQuery query) const override;
     void changeEvent(QEvent* event) override;
@@ -111,166 +81,47 @@ protected:
 
 private:
     std::unique_ptr<MachineController> m_controller;
+    calcu::qt6::Shell* m_shell = nullptr;
     FaceplateWidget* m_faceplate = nullptr;
-    ControlBar* m_controlBar = nullptr;
-    DebugPanel* m_debugPanel = nullptr;
-    calcu::qt6::PaperPanel* m_paperPanel = nullptr; // the library's paper panel, always in m_debugRowLayout (LIB-8 AC-36)
-    Ce158PrinterWidget* m_ce158Printer = nullptr; // added to m_debugRowLayout only while a CE-158 is attached
-    QWidget* m_debugRow = nullptr;
-    QHBoxLayout* m_debugRowLayout = nullptr;
+    DebugPanel* m_inspector = nullptr;
+    Ce158PrinterWidget* m_ce158Printer = nullptr;
+    DiskControl* m_disk = nullptr;
     AudioOutput* m_audio = nullptr;
-    EmulationPacer* m_pacer = nullptr; // owns the frame timer; calls refreshViewsAfterAdvance()
-    Operations* m_sync = nullptr;  // every operation: a load, a reset, a switch (see Operations)
+    std::function<void(const QImage&, const QString&)> m_clipboardSink;
+    std::string m_model;   // the control state's running model (the faceplate's art)
 
-    void buildMenuBar();
+    calcu::shell::ShellProduct product();
+    void onTopic(const QString& topic);
+    void followControlState();
+    void applyCopyLabel();
+    void copyScreen();
+    void refreshSerialStatus();
 
-    // Edit menu: Copy Screen puts a PNG of the LCD dot matrix (physical
-    // size, no annunciators) on the clipboard; Paste Text types the
-    // clipboard's text into the machine (MachineController::pasteText()).
-    void copyScreenToClipboard();
-    void pasteClipboardText();
-    QAction* m_pasteAction = nullptr;
-
-    // The model change is shared by ControlBar's combo box and the Machine
-    // menu's QActions, so either source drives the exact same rebuild +
-    // resync path; ROM-revision changes come from the menu only.
-    void applyModelSelection(Model model);
-    void applyRomRevisionSelection(PC1500RomRevision revision);
-    void applyPC1600RomVersionSelection(PC1600RomVersion version);
-    void applyCE1600PRomVersionSelection(CE1600PRomVersion version);
-    void showMachineCodeLoaded(const shared::CodeLoadedReply& loaded);
-
-    // Re-checks the Machine menu's model/ROM QActions to match `model`/
-    // `revision` without themselves triggering another applyModelSelection/
-    // applyRomRevisionSelection -- QAction::setChecked() doesn't emit
-    // triggered() on its own (only user activation does), so this is safe
-    // to call from applyModelSelection() itself and from every place that
-    // resyncs ControlBar (constructor, onPresetArmed()).
-    void syncMachineMenuFromModel(Model model);
-    void syncMachineMenuFromRomRevision(PC1500RomRevision revision);
-    void syncMachineMenuFromPC1600RomVersion(PC1600RomVersion version);
-    void syncMachineMenuFromCE1600PRomVersion(CE1600PRomVersion version);
-
-    QHash<Model, QAction*> m_modelActions;
-    QHash<PC1500RomRevision, QAction*> m_romActions;
-    QHash<PC1600RomVersion, QAction*> m_rom1600Actions;
-    QActionGroup* m_rom1600ActionGroup = nullptr;
-    QAction* m_rom1600MenuAction = nullptr; // Machine > ROM Version submenu (PC-1600 only)
-    QHash<CE1600PRomVersion, QAction*> m_ce1600pRomActions;
-    QActionGroup* m_ce1600pRomActionGroup = nullptr;
-    QAction* m_ce1600pRomMenuAction = nullptr; // Machine > CE-1600P ROM submenu (PC-1600 only)
-    QActionGroup* m_modelActionGroup = nullptr;
-    QActionGroup* m_romActionGroup = nullptr;
-    QAction* m_romMenuAction = nullptr; // Machine > ROM Revision submenu's own action, for show/hide
-    // Machine > Peripherals toggles, mirroring the control bar's buttons.
-    QAction* m_ce150Action = nullptr;
-    QAction* m_ce158Action = nullptr;
-    QAction* m_ce1600pAction = nullptr; // PC-1600 only
-    QAction* m_resumeAction = nullptr;  // Machine > Resume, while paused (LIB-10 AC-41)
-
-    // File/Help actions whose handlers are wired up in the constructor
-    // (alongside the equivalent ControlBar signal), not inside
-    // buildMenuBar() itself, so both share one closure over local
-    // constructor state (m_sync, m_pacer, ...).
-    QAction* m_openPresetAction = nullptr;
-    QAction* m_loadBasicProgramAction = nullptr;
-    QAction* m_loadMachineCodeAction = nullptr;
-    QAction* m_mountDirectoryAction = nullptr;   // File > Mount Directory… (PC-1600 host drive S3:)
-    QAction* m_unmountDirectoryAction = nullptr;
-    QAction* m_settingsAction = nullptr;
-    QAction* m_aboutAction = nullptr;
-
-    void syncUiFromController();
-    void refreshModuleCombos();
-    void refreshFloppyCombo();
-    void refreshMediaPickers();   // the three, from the media topic (LIB-7)
-    // The media topic's place `place` (slot-1, slot-2, floppy, tape), or nullptr.
-    const calcu::media::PlaceState* mediaPlace(const std::string& place) const;
-    // Name & Save of the medium in `place` (LIB-7 AC-16, AC-40): the library's dialog.
-    void nameAndSave(const std::string& place, const QString& prompt);
-
-    // Shows/hides the PC-1600-only control-bar widgets (slot 2, CE-1600P
-    // toggle) to match the current model. Called after every model switch
-    // (manual, module-driven rebuild, or preset load).
-    void syncControlBarForModel();
-
-    // After a peripheral toggle, a rebuild or a preset: reads the CE-150/
-    // CE-1600P/CE-158 attach states from MachineController and matches the
-    // control-bar buttons, the floppy picker and the docked panes to them.
-    void syncPeripherals();
-    // Attaches or detaches `p` inside the OFF/ON power cycle, then resyncs.
-    void togglePeripheral(shared::Peripheral p);
-    // Docks `pane` into (or takes it out of) the debug row.
-    void setDockedPane(QWidget* pane, bool show);
-
-    // MachineController::presetWasArmed handler: the preset has attached its
-    // model/cards/plotter but the machine is still powered off. Resyncs
-    // every GUI element that reflects that state (faceplate/control-bar
-    // model, plotter-paper visibility, slot selectors) and forces a repaint
-    // before the (possibly long) boot + preset script actually runs, so the
-    // user briefly sees the armed-but-off machine.
-    void onPresetArmed();
-
-    // File > Load Machine Code…: pick a .bin (Settings' Assembly folder),
-    // then loadMachineCode(name, bytes): the session's plan (`c1600.plan-code`,
-    // C1600-2), a start address asked only for headerless code
-    // (MachineCodeLoadDialog), the load (`c1600.load-code`), then the NEW
-    // that protects it and the CALL that starts it. Never runs the code.
-    void loadMachineCode();
-    // The two program flows, behind File ▸ Load BASIC Program… and Load
-    // Machine Code… (after their dialog, which remembers the folder) and an
-    // opened program file (onProgramOpened). `file`: the file of a cassette
-    // WAV already chosen (from 1); none: asked when it has several.
+    // C1600-2: the two program flows, behind File ▸ Load BASIC Program… and
+    // Load Machine Code… (after their dialog, which remembers the folder) and
+    // an opened program file (onProgramOpened). `file`: the file of a
+    // cassette WAV already chosen (from 1); none: asked when it has several.
+    void chooseProgram(bool code);
     void loadBasicProgram(const QString& name, const QByteArray& bytes, std::optional<int> file = std::nullopt);
     void loadMachineCode(const QString& name, const QByteArray& bytes, std::optional<int> file = std::nullopt);
-    // A file chosen in a loader's dialog, read; empty (after a warning) when
-    // it cannot be read.
     std::optional<QByteArray> readChosen(const QString& path, const QString& title);
-    // The arguments of a loader's command: the bytes and name, and for a
-    // cassette WAV with several files the one the user picks (`file`,
-    // C1600-2 AC-16). Empty if the user cancels.
     std::optional<calcu::sessions::Value::Object> programArgs(const QString& name, const QByteArray& bytes,
                                                               const QString& title, std::optional<int> file);
-    // LIB-13 AC-18 (D4.2): the flow of a program file the session opened. A
-    // WAV with several files asks which one; the file chosen goes to the
-    // flow of its own kind. One flow at a time: a topic that comes while one
-    // runs is dropped with a log line (design D8).
+    void showMachineCodeLoaded(const shared::CodeLoadedReply& loaded);
     void onProgramOpened(const QString& name, const QByteArray& bytes, const QString& kind);
     bool m_programFlow = false;
+    // File ▸ Mount Directory… / Unmount (the host drive, AC-9: its owner's items).
     void mountHostDirectory();
     void unmountHostDirectory();
-    // Control bar > Tape: the cassette (LIB-7 AC-42).
-    void refreshTapeCombo();
-    void selectTape(const QString& entry);
-    void saveTape();
-    void syncHostDriveActions(const shared::ControlState& state);
-    // Reset / Reset All (control bar, Machine menu): see resetMachine() in
-    // MainWindow.cpp.
-    void resetMachine(bool coldBoot);
 
-    // Physical host key (physicalKeyId()) -> the `physical` identity sent
-    // with its host-key-down, so the key-up always pairs with it even with
-    // multiple physical keys held (LIB-5 EC-1).
-    // Keyed by the physical key, not Qt::Key: key() follows the modifier
-    // state, so on e.g. a Swiss layout Shift+3 presses as Key_Asterisk but,
-    // with Shift let go first, releases as Key_3 -- the release would miss
-    // and leave "*" held in the machine's matrix.
+    // Host keys (LIB-5): the physical key -> the `physical` of its
+    // host-key-down, so the key-up pairs with it (LIB-5 EC-1).
     QHash<quint32, std::string> m_physicalKeysDown;
-    // Releases everything in m_physicalKeysDown. Used whenever the window
-    // stops receiving key events (deactivation, focus moving to another
-    // widget) -- the matching release would never reach us.
     void releaseHeldKeys();
-
-    // Host Shift tapped on its own (pressed and released within
-    // kShiftTapMaxMs, nothing else in between) taps the calculator's SHIFT,
-    // latching it for the next key. Armed on the Shift press; any other key
-    // press, a mouse press, or losing focus disarms it.
+    // A host Shift tapped on its own is one press of the machine's SHIFT
+    // (LIB-5 AC-33; the wall-time rule stays here, D-12).
     bool m_shiftTapArmed = false;
     QElapsedTimer m_shiftTapClock;
     void armShiftTap();
     void disarmShiftTap();
-
-    // The per-frame view refresh (LCD, debug log, paper, floppy lamp,
-    // persistence) -- run by the pacer after each advance.
-    void refreshViewsAfterAdvance();
 };

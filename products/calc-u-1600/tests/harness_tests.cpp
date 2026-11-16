@@ -393,3 +393,20 @@ TEST(lib13_ac18_harness_open_preset_bas_and_headered_bin) {
              std::string("done 1\npreset default-pc1500a.pc1500a\n"));
     server->finish();
 }
+
+// LIB-4 1600 T16-7 (AC-9 for this product): `state control-state` in the
+// harness has the paper panel owned by the plotter and the product entries.
+TEST(lib4_harness_state_control_state_has_paper_panel_and_product_entries) {
+    SKIP_UNLESS(std::filesystem::exists("roms/PC-1500_A04.ROM"), "the ROMs are not fetched (roms/fetch_roms.sh)");
+    auto product = shared::makeHarnessProduct();
+    std::string error;
+    auto server = Server::start(*product, {}, &error);
+    CHECK(server != nullptr);
+    if (!server) return;
+    CHECK(server->line("attach printer CE-150").text.rfind("done", 0) == 0);
+    const std::string s = server->line("state control-state").text;
+    CHECK(s.find("\"panels\":[{\"kind\":\"paper\",\"owner\":{\"place\":\"printer\",\"peripheral\":\"CE-150\"") != std::string::npos);
+    CHECK(s.find("c1600.disk-controls") != std::string::npos && s.find("c1600.ce158-printer-panel") != std::string::npos);
+    if (s.find("c1600.disk-controls") == std::string::npos) std::fprintf(stderr, "%s\n", s.c_str());
+    server->finish();
+}

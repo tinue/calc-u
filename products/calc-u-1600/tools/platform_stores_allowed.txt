@@ -10,5 +10,4 @@ qt6/app/MacAppSupport.mm: registerDefaults:@{@"ApplePersistenceIgnoreState" : @Y
 qt6/app/MacAppSupport.mm: registerDefaults:@{@"ApplePressAndHoldEnabled" : @NO}
 
 # The Playwright test that checks that no setting is in localStorage (AC-31).
-web/tests/play.spec.js: // file system, not localStorage; a reload keeps them.
-web/tests/play.spec.js: Object.keys(window.localStorage)
+web/tests/shell.spec.js: Object.keys(window.localStorage)

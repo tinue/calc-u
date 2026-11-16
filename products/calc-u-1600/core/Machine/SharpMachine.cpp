@@ -13,16 +13,6 @@ namespace {
 
 bool isSlot(const PlaceName& p) { return p.value == kSlot1 || p.value == kSlot2; }
 
-// The place each 60-pin peripheral goes in (C1600-1 §3.4): they all fit the
-// one pin-out of the connector, so the place is the product's rule.
-const char* placeOf(const PeripheralId& id) {
-    if (id.value == kCE150 || id.value == kCE1600P) return kPrinter;
-    if (id.value == kCE158) return kInterface;
-    if (id.value == kHostDrive) return kHostDrivePlace;
-    if (id.value == kBusRom) return kBusRomPlace;
-    return nullptr;   // a module: the slots' pin-outs decide
-}
-
 } // namespace
 
 const std::vector<std::uint8_t>* romImageOf(const PeripheralRequest& req, const PeripheralDescriptor& d, std::size_t index) {
@@ -167,9 +157,6 @@ const PlugEntry* SharpMachine::at(const char* place) const {
 
 std::optional<std::string> SharpMachine::productRefusal(const PeripheralRequest& req,
                                                         const std::optional<PeripheralId>& replacing) const {
-    const std::string place = req.place.steps.empty() ? std::string() : req.place.steps[0].value;
-    if (const char* own = placeOf(req.peripheral); own && place != own)
-        return "The " + req.peripheral.value + " goes in the place " + own + ".";
     if (req.peripheral.value == kBusRom) {   // C1600-4 D-5
         const auto* rom = dynamic_cast<const BusRomRequest*>(req.content.get());
         if (!rom) return std::string("A bus ROM is plugged in by a preset only.");

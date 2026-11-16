@@ -16,6 +16,7 @@
 #include <QStringList>
 #include <arpa/inet.h>
 #include <chrono>
+#include <cstdio>
 #include <memory>
 #include <netinet/in.h>
 #include <optional>
@@ -182,4 +183,30 @@ TEST(qt_attach_host_bind_fails_logs_and_runs) {
     for (const auto& l : second.log)
         logged = logged || l.rfind("Attach is not available on port " + std::to_string(port) + ": ", 0) == 0;
     CHECK(logged);
+}
+
+// LIB-14 D-27 (M-49): the serve form's commands through the Qt6 host: `key`
+// and `type` reply when their keys are up on the app's clock, the startup
+// commands and the preset steps are there (a session without LIB-6's part
+// refuses them with its reason; Calc-U-1600's scenarios load presets, its
+// CalcU1600QtTests lib14_ac44_scenario_through_attach).
+TEST(qt_attach_host_preset_key_type) {
+    QtApp app;
+    CHECK(app.host->openAttach(app.product, 0).empty());
+    Client c(app.host->attachPort());
+    c.send("wait 50ms");   // the app's first host calls: the typing part has its machine
+    auto r = c.reply();
+    for (const char* line : {"type 12", "key 1 2"}) {
+        c.send(line);
+        r = c.reply();
+        if (r.empty() || r[0] != "done") std::fprintf(stderr, "  %s: %s\n", line, r.empty() ? "-" : r[0].c_str());
+        CHECK(!r.empty() && r[0] == "done");
+    }
+    // Forwarded to the session's commands (this session has no LIB-6 or LIB-18 part).
+    c.send("preset examples:none.test");
+    r = c.reply();
+    CHECK(!r.empty() && r[0] == "refused: Unknown command: load-preset.");
+    c.send("cold-boot");
+    r = c.reply();
+    CHECK(!r.empty() && r[0] == "refused: Unknown command: cold-boot.");
 }

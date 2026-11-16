@@ -15,6 +15,7 @@ void MediaPicker::setPlace(const media::PlaceState& p) {
     ids_.clear();
     auto* model = qobject_cast<QStandardItemModel*>(this->model());
     int current = 0;
+    bool listed = !p.holds;
     for (const media::PickerEntry& e : p.picker) {
         QString label = e.group == media::PickerEntry::Group::Empty ? emptyLabel() : QString::fromStdString(e.label);
         const bool outdated = !e.canChoose && e.hint && e.hint->find("outdated") != std::string::npos;
@@ -27,7 +28,19 @@ void MediaPicker::setPlace(const media::PlaceState& p) {
         if (model && !e.canChoose) model->item(i)->setEnabled(false);
         const bool held = p.holds ? (e.group != media::PickerEntry::Group::Empty && e.label == p.holds->name)
                                   : e.group == media::PickerEntry::Group::Empty;
-        if (held && e.canChoose) current = i;
+        if (held && e.canChoose) {
+            current = i;
+            listed = true;
+        }
+    }
+    // A medium the place holds that no entry lists (a file opened from
+    // where it lies, LIB-13 AC-19; a tape started under a name before its
+    // first write, LIB-7 AC-20): shown as what the place holds, not a choice.
+    if (!listed) {
+        addItem(QString::fromStdString(p.holds->name));
+        ids_.push_back(std::string());
+        current = count() - 1;
+        if (model) model->item(current)->setEnabled(false);
     }
     setCurrentIndex(current);
     filling_ = false;

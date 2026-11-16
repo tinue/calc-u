@@ -44,6 +44,11 @@ QString bundledResourcesDir() {
 
 QString q(const std::string& s) { return QString::fromStdString(s); }
 
+std::optional<shared::BundleDirs>& chosenBundleDirs() {
+    static std::optional<shared::BundleDirs> dirs;
+    return dirs;
+}
+
 std::optional<calcu::settings::HostDirs>& chosenHostDirs() {
     static std::optional<calcu::settings::HostDirs> dirs;
     return dirs;
@@ -90,10 +95,12 @@ calcu::settings::HostDirs platformHostDirs() {
 }
 
 void useHostDirs(const calcu::settings::HostDirs& dirs) { chosenHostDirs() = dirs; }
+void useBundleDirs(const shared::BundleDirs& dirs) { chosenBundleDirs() = dirs; }
 
 shared::AppPaths& paths() {
     static shared::AppPaths p(AppSettings::settings(), hostDirs(),
-                              shared::BundleDirs{bundledResourcesDir().toStdString(), {}});
+                              chosenBundleDirs() ? *chosenBundleDirs()
+                                                 : shared::BundleDirs{bundledResourcesDir().toStdString(), {}});
     return p;
 }
 

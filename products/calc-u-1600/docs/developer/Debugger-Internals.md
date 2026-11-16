@@ -65,9 +65,9 @@ and [../background/plans/Debugger-Use-Cases-Plan.md](../background/plans/Debugge
   - `SharpAppPart`: the `DebuggerPart` among its parts; Reset and Cold boot tell the
     restart (`tellRestarted`, until LIB-18 1600);
   - `MachineController::typeCommand()` (the library's typing engine, `typeText` with ENTER);
-  - `frontends/qt6/app/Operations`: presets and resets from the debugger are the session's
-    operations; a DAP request waits for the reply in a nested event loop (`runAndWait`),
-    the frame timer goes on; the busy topic drives the DAP queue;
+  - `DebugController::runAndWait`: presets and resets from the debugger are the session's
+    operations; a DAP request waits for the reply in a nested event loop, the host's timer
+    (the shell's `SessionHost`) goes on; the busy topic drives the DAP queue (until M-50);
   - `main.cpp`: `--dap`, `macDisableWindowRestoration()`.
 - **`vscode/calcu1600-debug/`:** the extension. Install with `tools/install_vscode_extension.sh`.
 

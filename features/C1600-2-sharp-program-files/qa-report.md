@@ -68,12 +68,12 @@ The code:
 | AC-12 | Pass | `machine_code_file_tests.cpp`: `c1600_2_ac12_work_area_warning_loaded` |
 | AC-13 | Pass | `app/tests/loader_part_tests.cpp`: `c1600_2_ac13_run_types_start_and_waits_idle`, `_without_start_address_nothing_started`, `_bound_reached_done_with_log_line` (the bound set to 2 s, D-5). Within a preset the auto-run keeps today's `typeLine` and `waitUntilBasicIdle` with its hour until M-46 (design §3.6) |
 | AC-14 | Pass | `tests/loader_memory_tests.cpp`: `c1600_2_ac14_listed_by_every_sharp_model`, `_peek_without_effect`, `_peek_lh5803_view_pc1600`, `_mode_and_area_pc1600`, `_write_built_in_and_slot_any_bank_switched_in`, `_slot_ram_and_module_size_banks`, `_write_not_stored_says_so_writes_nothing` |
-| AC-15 | Waits for M-49 | The two items stay in today's menus on the new commands (design D-9). Web: `play.spec.js` `C1600-2 AC-15 the two File items and what they offer` passes (the items and the dialogs' `.bas,.bbin,.wav` / `.bin,.wav`); Qt6: built, the filters and start folders unchanged (`MainWindow.cpp`). The criterion names the File menu of the LIB-14 shell (AC-34, AC-35), which Calc-U-1600 gets in M-49 |
+| AC-15 | Pass (M-49) | The two items in the File menu of the LIB-14 shell, group FileKinds (`app/SharpShellProduct`): Qt6 `CalcU1600QtTests` `c1600_2_ac15_file_items_and_filters` (the items, the dialogs' filters `BASIC Programs (*.bas *.bbin *.wav)`, `Machine Code (*.bin *.wav)`, the start folder of `[folders]` remembered by kind), `lib14_ac34_qt_menus_in_family_order` (their place); Web `shell.spec.js` `c1600_2_ac15 the file items` |
 | AC-16 | Pass | Web: `C1600-2 AC-16 a WAV with several programs asks which one`; the list from `c1600.file-kind` (`loader_part_tests.cpp`: `c1600_2_ac22_two_files_listed`). Qt6: the same flow through `QInputDialog` (built; scenario in M-49, AC-20) |
 | AC-17 | Pass | Web: `C1600-2 AC-17 a BASIC program is loaded, a refusal is a notice`; Qt6: `Operations::run` shows the refusal (built) |
 | AC-18 | Pass | Web: `C1600-2 AC-18 headerless code asks the address, then NEW and CALL`; the plan per text (`loader_part_tests.cpp`: `c1600_2_ac22_address_checked_as_typed`); Qt6: `MachineCodeLoadDialog` asks `c1600.plan-code` on each change (built) |
 | AC-19 | Pass | Web: `C1600-2 AC-19 the loaded dialog and the CALL in the input line, not started`; Qt6: `showMachineCodeLoaded` then `pasteText` (built) |
-| AC-20 | Web passes; Qt6 waits for M-49 | Web: the two scenarios carry their IDs (`C1600-2 AC-18 …`, `C1600-2 AC-16 …`). The Qt6 scenarios are attach scenarios of M-49 (LIB-14 AC-44; design §1) |
+| AC-20 | Pass (M-49) | Web: the two scenarios carry their IDs (`C1600-2 AC-18 …`, `C1600-2 AC-16 …`). Qt6 (`CalcU1600QtTests`): `c1600_2_ac16_qt_wav_with_several_programs_asks_which_one` (a WAV with two files: the dialog lists two), `c1600_2_ac18_qt_headerless_code_asks_the_address` (a headerless `.bin`: the address dialog). They drive the real window's File items with the file dialog replaced, not attach: a dialog of the flow is a UI step, and nothing of the machine is stepped |
 | AC-21 | Pass | `tests/harness_tests.cpp`: `c1600_2_ac21_listed_under_pc1600` (and `--help`), `_file_kind`, `_load_basic_with_n`, `_type_basic_lines_not_stored`, `_load_code_options_and_run` |
 | AC-22 | Pass | The ported files pass: `program_file_tests.cpp`, `basic_fastloader_tests.cpp`, `pc1600_basicloader_tests.cpp`, `machine_code_file_tests.cpp`, `presetloader_trace_tests.cpp`; 0.8.1's app session cases in `loader_part_tests.cpp`: `c1600_2_ac22_one_wav_one_image`, `_two_files_listed`, `_address_checked_as_typed` |
 | AC-23 | Pass | `machine_code_file_tests.cpp`: `c1600_2_ac23_address_by_hand_else_header`, `_length_by_hand_else_payload`, `_bank_from_header_or_area`, `_headerless_no_bank` |
@@ -86,8 +86,8 @@ The code:
 | EC-5 | Pass | `basic_fastloader_tests.cpp`: `c1600_2_ec5_code_to_basic_loader_hint` |
 | EC-6 | Pass | `loader_part_tests.cpp`: `c1600_2_ec6_menu_and_harness_refused_while_busy` |
 
-Column status: In progress. Every criterion passes except AC-15 and the
-Qt6 half of AC-20, which pass in M-49 (plan §5.1: "Done in M-49").
+Column status: Done (M-49, 2026-11-16, branch `m49-shell-1600`: AC-15
+and the Qt6 half of AC-20 pass; until then In progress).
 
 ### Exit check: every loader through the harness
 

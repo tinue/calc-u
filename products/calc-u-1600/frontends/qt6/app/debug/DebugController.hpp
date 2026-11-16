@@ -23,7 +23,6 @@
 class DapServer;
 class DapSession;
 class MachineController;
-class Operations;
 class DebugController;
 
 namespace calcu::debugger {
@@ -118,10 +117,6 @@ public:
         m_entryPending = false;
     }
 
-    /// The window's operations: presets and resets from the debugger run
-    /// through them like the menu's, and DAP messages wait while any
-    /// operation runs.
-    void setOperations(Operations* ops);
     /// Loads a preset the way File > Load Preset does; `armOnly` stops
     /// before the boot (PresetFile::armOnly).
     bool loadPreset(const QString& path, QString* error, bool armOnly = false);
@@ -182,5 +177,9 @@ private:
     std::vector<QJsonObject> m_queued;
     bool m_teardownPending = false; // client gone, session not yet ended
     std::vector<std::unique_ptr<DapSession>> m_retiredSessions; // detached, maybe still on the stack
-    Operations* m_sync = nullptr; // not owned
+    /// A command of the session, waited for in a nested event loop while the
+    /// host's timer goes on calling the session (the DAP's requests answer
+    /// when the load is done; an adapter of M-45's that M-50 removes with the
+    /// DAP move). A failure goes to `error`.
+    bool runAndWait(const calcu::sessions::CommandName& name, calcu::sessions::Value args, QString* error);
 };

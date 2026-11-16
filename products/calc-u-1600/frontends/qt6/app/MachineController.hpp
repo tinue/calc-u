@@ -5,218 +5,134 @@
 #include <cstddef>
 #include <cstdint>
 #include <functional>
-#include <map>
 #include <memory>
 #include <string>
-#include <utility>
 #include <vector>
 
 #include "Debug/Inspect/Inspector.hpp"
 #include "Display/LcdScreenshot.hpp"
 #include "Display/LcdText.hpp"
-#include "Tape/TapeDeck.hpp"
-#include "TraceTypes.hpp"
 #include "app/AudioSink.hpp"
-#include "app/MachineModel.hpp"
 #include "app/SharpSession.hpp"
-#include "qt6/ClipboardService.hpp"
+#include "app/SharpTopics.hpp"
+#include "qt6/SessionHost.hpp"
 #include "sessions/AppSession.hpp"
-#include "sessions/Listener.hpp"
 #include "typing/HostKey.hpp"
 
 namespace calcu::media {
 struct MediaState;
-struct PlaceState;
 } // namespace calcu::media
+namespace calcu::shell {
+class SettingsPart;
+} // namespace calcu::shell
 
 class DebugController;
 
-using shared::Model;
-using shared::PC1600RomVersion;
-using shared::CE1600PRomVersion;
-
-inline QString modelSettingsKey(Model model) { return QString::fromLatin1(shared::modelKey(model)); }
-
-using shared::DisplayFrame;
-
-// Runs `op(std::string* error)` and copies a failure's message into the
-// optional `error` -- the Shared calls' error form, for the Qt widgets.
-template <class Op>
-bool withQtError(QString* error, Op&& op) {
-    std::string err;
-    const bool ok = op(&err);
-    if (!ok && error) *error = QString::fromStdString(err);
-    return ok;
-}
-
-// ── MachineController: the Qt6 frontend's host of the app session ────────
+// ── MachineController: the product's glue around the session host ─────────
 //
-// Hosts the library's app session on the GUI thread (LIB-3 AC-34; FE-3),
-// made by shared::makeSharpSession with Calc-U-1600's part
-// (app/SharpAppPart.hpp). It listens through a calcu::sessions::Listener,
-// which keeps the last message of each topic; it turns them into Qt signals; it sends commands (an operation's reply comes
-// later, LIB-3 AC-18); it feeds the sound to the audio sink (AC-37); and it
-// calls the session from the 60 Hz frame timer (EmulationPacer). It never
-// sends suspend: the Qt6 frontend keeps running in the background (AC-36).
-//
-// Until their steps, the widgets still reach the product's part directly
-// for what has no topic yet (the debug panel, the plotters, the
-// keys through SharpTypingHook; LIB-3 design §5).
+// LIB-14 Part D (D.3): makes Calc-U-1600's app session (makeSharpSession,
+// with LIB-14's SettingsPart) and the Qt6 component set's SessionHost over
+// it, which hosts it on the GUI thread (the 60 Hz timer, the listener, the
+// host services, harness attach). The shell draws from the host; this class
+// keeps what only the product needs: the sound feed (a message handler of
+// the host), the debugger's controller (until M-50), the typed keys of the
+// window's host keyboard and the SHIFT tap, and the product's reads (the
+// screen image, the INSPECTOR, the CE-158's printer). It never sends
+// suspend: the Qt6 frontend keeps running in the background (LIB-3 AC-36).
 class MachineController : public QObject {
     Q_OBJECT
 public:
     explicit MachineController(QObject* parent = nullptr);
     ~MachineController() override;
 
-    calcu::sessions::Listener& listener() { return m_listener; }
+    calcu::qt6::SessionHost& host() { return *m_host; }
     shared::SharpAppPart& app() { return *m_app.part; }
-    shared::SharpAppPart& session() { return *m_app.part; }
-    const shared::SharpAppPart& session() const { return *m_app.part; }
+    const shared::SharpAppPart& app() const { return *m_app.part; }
+    calcu::sessions::AppSession& session() { return *m_app.session; }
 
-    // ---- The session ----
-    // One host call (the frame timer).
-    void call();
-    // Host calls so far and the longest gap between two (the pacing probe).
-    std::uint64_t calls() const { return m_calls; }
-    double longestGapMs() const { return m_longestGapMs; }
-    double callMs() const { return m_callMs; }   // host time spent inside the calls
-    using Reply = std::function<void(const calcu::sessions::ReplyMessage&)>;
-    // Sends a command; `done` gets its reply -- at once for a command that
-    // starts no operation, at the operation's end otherwise (LIB-3 D-2).
+    // The start (LIB-18): the host's timer, then `start`. A missing ROM file
+    // gives the topic roms-missing; the shell shows it (LIB-14 AC-19).
+    void start();
+
+    using Reply = calcu::qt6::SessionHost::Reply;
     void send(const calcu::sessions::CommandName& name, calcu::sessions::Value args = {}, Reply done = {});
-    // An operation runs (the busy topic).
-    bool busy() const { return m_busy; }
-    // The busy topic says the running operation is at full speed now.
-    bool operationAtFullSpeed() const { return m_busy && m_busyFull; }
-    // Frozen (the --shots runner): no frame timer; emulated time moves only
-    // through runFor() / runUntilTyped() and the operations run to their end
-    // on a clock of their own, so a capture is the same run to run.
-    void setFrozen(bool frozen);
-    bool frozen() const { return m_frozen; }
-    // Frozen only: `seconds` of host calls at 60 Hz on the frozen clock.
-    void runFor(double seconds);
-    // Frozen only: until the typing hook has typed everything, at most
-    // `capSeconds`; false if it still types.
-    bool runUntilTyped(double capSeconds);
-    // Frozen only: host calls until no operation runs.
-    void finishOperation();
+    // A command waited for in a nested event loop while the host's timer
+    // goes on calling the session (a dialog that answers with the outcome:
+    // Name & Save, Save Tape).
+    calcu::sessions::ReplyMessage sendAndWait(const calcu::sessions::CommandName& name, calcu::sessions::Value args = {});
+    // A request, answered at once (requests do not wait, LIB-3).
+    calcu::sessions::ReplyMessage ask(const calcu::sessions::RequestName& name, calcu::sessions::Value args = {});
+    template <class P> const P* state(const calcu::sessions::TopicName& t) const {
+        const calcu::sessions::PayloadPtr* p = m_host->topics().state(t);
+        return p ? calcu::sessions::payloadAs<P>(*p) : nullptr;
+    }
+
+    bool busy() const;   // the busy topic: an operation runs
     // The sound messages go to `sink` from now on; the platform's audio
     // backend is started once now (its first start can block).
     void attachAudio(shared::AudioSink& sink);
 
-    // ---- Forwarded (SharpAppPart, its typing hook) ----
-    Model currentModel() const { return session().currentModel(); }
-    PC1500RomRevision pc1500RomRevision() const { return session().pc1500RomRevision(); }
-    PC1600RomVersion pc1600RomVersion() const { return session().pc1600RomVersion(); }
-    CE1600PRomVersion ce1600pRomVersion() const { return session().ce1600pRomVersion(); }
-
     // ---- Keys and typing: the library's typing part (LIB-5) ----
-    // A faceplate key by key ID (`on` too: the ON/BREAK line), one pointer.
     void pressKey(const std::string& name);
     void releaseKey(const std::string& name);
     void hostKeyDown(const calcu::typing::HostKeyEvent& e);
     void hostKeyUp(const std::string& physical);
     void hostText(const std::string& utf8);   // the input method's commit (EC-4)
     void focusLost();                         // AC-10
-    void pasteText(const std::string& text);  // Edit > Paste Text (AC-12, AC-34)
+    void pasteText(const std::string& text);
     // The debugger's auto-start: `line`, then ENTER, through the engine (not
-    // a user key: not dropped while busy; a character without a key is left out).
+    // a user key: not dropped while busy).
     void typeCommand(const std::string& line);
-    // What is still waiting goes (a reset from the debugger).
     void cancelPaste();
 
-    // The display as the `display` topic last sent it.
+    // ---- Reads ----
+    const calcu::machine::DisplayOutput* display() const;
     GrayImage currentScreenImage() const;
-    DisplayFrame currentDisplay() const { return m_frame; }
     bool lcdText(LcdText* out) const;
-
-    calcu::machine::Machine* machine() const { return session().machine(); }
-    bool hasLiveMachine() const { return session().hasLiveMachine(); }
-
-    std::vector<std::string> inspectorView(inspect::View view) const { return session().inspectorView(view); }
-    std::vector<inspect::MenuEntry> inspectorMenu(bool dumps) const { return session().inspectorMenu(dumps); }
-    // LIB-10: the library's trace session (the `trace` topic and command).
-    bool traceActive() const;
-    // The `run-state` topic: the machine is paused, whoever paused it.
-    bool machinePaused() const;
-
+    calcu::machine::Machine* machine() const { return app().machine(); }
+    bool hasLiveMachine() const { return app().hasLiveMachine(); }
+    std::vector<std::string> inspectorView(inspect::View view) const { return app().inspectorView(view); }
+    std::vector<inspect::MenuEntry> inspectorMenu(bool dumps) const { return app().inspectorMenu(dumps); }
+    bool traceActive() const;     // LIB-10's `trace` topic
+    bool machinePaused() const;   // LIB-10's `run-state` topic
     std::vector<std::uint8_t> drainCE158PrinterOutput() { return app().drainCE158PrinterOutput(); }
-    bool hostDriveAttached() const { return session().hostDriveAttached(); }
-    // The library's paper panel (LIB-8): every message of the session goes to
-    // `sink` too, first the `papers` state it has now (the panel is made
-    // after the session started).
-    void setPaperSink(std::function<void(const calcu::sessions::Message&)> sink);
-    shared::ControlState controlState() const;
-    // The tape counter and the floppy lamp (c1600.machine, LIB-7 AC-39, AC-42).
-    TapeDeck::Status tapeStatus() const;
-    bool floppyMotorOn() const;
-    // LIB-7: the media topic (the pickers, what each place holds), or
-    // nullptr before the first one came.
+    shared::LampsPayload lamps() const;   // the tape counter, the floppy lamp
     const calcu::media::MediaState* media() const;
-
-    // ---- QString translations ----
     void refreshSerialLinkDirectory() { app().refreshSerialLinkDirectory(); }
-    QString serialLinkStatus() const { return QString::fromStdString(session().serialLinkStatus()); }
-    QString ce158SerialLinkStatus() const { return QString::fromStdString(session().ce158SerialLinkStatus()); }
+    QString serialLinkStatus() const { return QString::fromStdString(app().serialLinkStatus()); }
+    QString ce158SerialLinkStatus() const { return QString::fromStdString(app().ce158SerialLinkStatus()); }
 
-    // ---- Qt side ----
+    // ---- The debugger (until M-50) ----
     DebugController* debugController() const { return m_debug.get(); }
     void refreshDebugServer();
 
+    // The pacing probe (LIB-17 §5): host calls so far and the longest gap.
+    std::uint64_t calls() const { return m_calls; }
+    double longestGapMs() const { return m_longestGapMs; }
+
 signals:
-    void modelChanged(Model model);
-    // The serial port files moved (c1600.serial-links).
-    void serialLinksMoved();
-    // The media topic changed (LIB-7): the pickers are filled again.
-    void mediaChanged();
-    // The control state changed while an operation runs (a preset armed
-    // its machine): the window shows it now (LIB-3 AC-15).
-    void presetWasArmed();
-    // An operation started / ended (the busy topic).
-    void appBusyChanged(bool busy);
-    // The busy topic's speed changed while an operation runs.
-    void operationSpeedChanged();
-    // A notice (LIB-3 AC-10): shown as it is.
-    void noticeShown(const QString& sentence);
-    // A program file was opened (a drop, Open With, the start argument, Load
-    // Preset…; LIB-13 D4.2): the window runs its program flow on it. `kind`:
+    // A program file was opened (a drop, Open With, the start argument;
+    // LIB-13 D4.2): the window runs its program flow on it. `kind`:
     // basic-program or machine-code-program.
     void programOpened(const QString& name, const QByteArray& bytes, const QString& kind);
-    // The display topic changed.
-    void displayChanged();
-    // The run-state topic changed (LIB-10: pause, step, resume from the DAP,
-    // the harness or Machine ▸ Resume).
-    void runStateChanged();
-    // The trace topic changed (a trace started or ended).
-    void traceStateChanged();
+    void appBusyChanged(bool busy);       // the busy topic, after the host call
+    void runStateChanged();               // LIB-10 `run-state`
+    void traceStateChanged();             // LIB-10 `trace`
+    void serialLinksMoved();              // c1600.serial-links
 
 private:
-
     void onMessage(const calcu::sessions::Message& message);
-    void onState(const calcu::sessions::TopicName& topic);
-    calcu::pacing::WallTime now();
 
+    std::unique_ptr<calcu::shell::SettingsPart> m_settingsPart;
     calcu::sessions::ProductSession<shared::SharpAppPart> m_app;
-    calcu::sessions::Listener m_listener;   // stops listening before the session goes
+    std::unique_ptr<calcu::qt6::SessionHost> m_host;   // stops listening before the session goes
     // Declared after the session so it goes first on destruction: its debug
     // target still refers to the live machine.
     std::unique_ptr<DebugController> m_debug;
     std::unique_ptr<shared::SoundFeed> m_sound;
-    // P-A3 (LIB-8 §10.5): `clipboard-image` and `clipboard-text` answered by
-    // the Qt6 component set's service, until LIB-14's SessionHost (M-49).
-    calcu::qt6::ClipboardService m_clipboard;
-    std::function<void(const calcu::sessions::Message&)> m_paperSink;
-    std::string m_lastNotice;   // a failed operation's notice; its reply is not shown again
-
-    DisplayFrame m_frame;
     bool m_busy = false;
-    bool m_busyFull = false;
-    shared::MachinePayload m_machine;
     std::uint64_t m_serialMoves = 0;
-    bool m_frozen = false;
-    calcu::pacing::WallTime m_frozenNow{0};
     std::uint64_t m_calls = 0;
     double m_longestGapMs = 0;
-    double m_callMs = 0;
     calcu::pacing::WallTime m_lastCall{0};
 };

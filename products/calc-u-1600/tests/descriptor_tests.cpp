@@ -81,11 +81,15 @@ TEST(lib1_ac36_connectors_pinouts_places_debug_targets) {
         CHECK(slot && slot->id.value == "PC-1500 memory slot");
         CHECK(d.place(PlaceName{"slot-1"}) && d.place(PlaceName{"slot-1"})->takesAtOnce == 1);
         CHECK(d.connector(ConnectorId{"40-pin"}) != nullptr);
+        // One pin-out per 60-pin place (LIB-4 D-11), each a chain: the places share
+        // the one bus connector, one peripheral each (takesAtOnce 1).
         for (const char* p : {"printer", "interface"}) {
             const PinOutDescriptor* bus = pinOutOf(d, p);
             CHECK(bus && bus->takes == Takes::Chain && bus->level == PinOutLevel::ContactLevel);
+            CHECK(bus && bus->id.value == std::string("pc1500-60-pin-") + p);
             CHECK(d.place(PlaceName{p})->connector.value == "60-pin");
         }
+        CHECK(pinOutOf(d, "bus-rom") && pinOutOf(d, "bus-rom")->takes == Takes::Chain);
         CHECK(d.place(PlaceName{"slot-2"}) == nullptr);
         CHECK(d.place(PlaceName{"host-drive"}) == nullptr);
         CHECK_EQ(d.places.size(), std::size_t{4});   // and bus-rom (C1600-4 AC-10)
@@ -100,8 +104,10 @@ TEST(lib1_ac36_connectors_pinouts_places_debug_targets) {
         CHECK(pinOutOf(d, p)->takes == Takes::One && pinOutOf(d, p)->level == PinOutLevel::ContactLevel);
     for (const char* p : {"printer", "interface", "host-drive"}) {
         CHECK(pinOutOf(d, p) && pinOutOf(d, p)->takes == Takes::Chain && pinOutOf(d, p)->level == PinOutLevel::ContactLevel);
+        CHECK(pinOutOf(d, p) && pinOutOf(d, p)->id.value == std::string("pc1600-60-pin-") + p);
         CHECK(d.place(PlaceName{p})->connector.value == "60-pin");
     }
+    CHECK(pinOutOf(d, "bus-rom") && pinOutOf(d, "bus-rom")->takes == Takes::Chain);
     CHECK_EQ(d.places.size(), std::size_t{6});   // and bus-rom (C1600-4 AC-10)
     CHECK(d.place(PlaceName{"bus-rom"}) && d.place(PlaceName{"bus-rom"})->connector.value == "60-pin");
     CHECK(d.connector(ConnectorId{"rs232c"}) != nullptr);
@@ -183,15 +189,16 @@ TEST(lib1_ac39_peripheral_descriptors) {
     const PeripheralDescriptor* ce150 = p("CE-150");
     CHECK(ce150 && ce150->roms.at(0).fileName == "CE-150.ROM");
     CHECK(ce150 && ce150->mediaPlaces.size() == 1 && ce150->mediaPlaces[0].mediumKind == "cassette");
-    CHECK(ce150 && ce150->fitsPinOut(PinOutId{"PC-1500 60-pin"}) && ce150->fitsPinOut(PinOutId{"PC-1600 60-pin"}));
+    CHECK(ce150 && ce150->fitsPinOut(PinOutId{"pc1500-60-pin-printer"}) && ce150->fitsPinOut(PinOutId{"pc1600-60-pin-printer"}));
+    CHECK(ce150 && !ce150->fitsPinOut(PinOutId{"pc1600-60-pin-interface"}));
     const PeripheralDescriptor* ce158 = p("CE-158");
     CHECK(ce158 && ce158->roms.at(0).fileName == "CE-158.ROM");
-    CHECK(ce158 && ce158->fitsPinOut(PinOutId{"PC-1500 60-pin"}) && ce158->fitsPinOut(PinOutId{"PC-1600 60-pin"}));
+    CHECK(ce158 && ce158->fitsPinOut(PinOutId{"pc1500-60-pin-interface"}) && ce158->fitsPinOut(PinOutId{"pc1600-60-pin-interface"}));
     const PeripheralDescriptor* ce1600p = p("CE-1600P");
     CHECK(ce1600p && variantIds(ce1600p->variants) == (std::vector<std::string>{"New", "Old"}));
     CHECK(ce1600p && ce1600p->defaultVariant && ce1600p->defaultVariant->value == "New");
     CHECK(ce1600p && ce1600p->romsFor(VariantId{"Old"}).size() == 2);
-    CHECK(ce1600p && !ce1600p->fitsPinOut(PinOutId{"PC-1500 60-pin"}));
+    CHECK(ce1600p && !ce1600p->fitsPinOut(PinOutId{"pc1500-60-pin-printer"}) && ce1600p->fitsPinOut(PinOutId{"pc1600-60-pin-printer"}));
     if (ce1600p) {
         const auto floppy = std::find_if(ce1600p->mediaPlaces.begin(), ce1600p->mediaPlaces.end(),
                                          [](const MediaPlaceDescriptor& m) { return m.id.value == "floppy"; });
@@ -209,7 +216,7 @@ TEST(lib1_ac39_peripheral_descriptors) {
     for (const char* m : {"CE-151", "CE-1600M"}) CHECK(p(m)->controls.empty());
     const PeripheralDescriptor* hd = p("host-drive");
     CHECK(hd && hd->roms.at(0).fileName == "PC1600-P1-B7-HOSTDRIVE.bin");
-    CHECK(hd && hd->fitsPinOut(PinOutId{"PC-1600 60-pin"}) && !hd->fitsPinOut(PinOutId{"PC-1500 60-pin"}));
+    CHECK(hd && hd->fitsPinOut(PinOutId{"pc1600-60-pin-host-drive"}) && !hd->fitsPinOut(PinOutId{"pc1600-60-pin-printer"}));
     CHECK(c.place(ModelId{"PC-1600"}, PlaceName{"host-drive"}).has_value());
 }
 

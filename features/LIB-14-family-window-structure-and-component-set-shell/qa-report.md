@@ -192,3 +192,117 @@ No user-visible change beyond the ledger's rows (59-5, 59-9, 59-14, 59-44,
 `calcu_qt6` is compiled on every Qt platform of both product workflows
 (design §8): this step changes platform code, so it needs one CI dispatch
 at its merge (not dispatched from the branch).
+
+## Calc-U-1600 (M-49, 2026-11-16, branch `m49-shell-1600`)
+
+Both frontends of Calc-U-1600 are put together from the shell. Qt6:
+`MainWindow` is a `calcu::qt6::Shell` over the `SessionHost` that
+`MachineController` makes (with LIB-14's `SettingsPart` in the session);
+`ControlBar`, `NamedComboBox`, `SettingsDialog`, `AboutDialog`,
+`Operations`, `EmulationPacer` are deleted; the product's data is
+`app/SharpShellProduct` (one source with the Web, D-32); the bar's media
+controls are `frontends/qt6/app/MediaControls` (LIB-7's `MediaPicker`).
+Web: `src/CalcU1600.jsx` on `useCalcuShell` and the React set's
+components; `engine.js`, `MenuBar.jsx`, `ControlBar.jsx` are deleted;
+`SharpWebPart` keeps the product's requests (`c1600.shell-product`,
+`c1600.faceplate-map`, …). The screenshot runner and the pacing probe are
+attach clients; the attached harness has the serve form's commands and the
+bare `wait` (D-27, a library change).
+
+Tests: `CalcU1600QtTests` (24 cases, `frontends/qt6/tests/`, the real
+window over the real ROMs on the real clock, offscreen; Longer, 25 s),
+`CalcU1600QtTests.romsMissing` and `CalcU1600ShotsThroughAttach`
+(Frequent), `CoreTests` (`app/tests/shell_product_tests.cpp`), the Web's
+`shell.spec.js` (Chromium and WebKit, in `CalcU1600WebPlaywright`), the
+library's `attach_registry_matches_serve`, `attach_bare_wait_ends_when_idle`,
+`qt_attach_host_preset_key_type`, and the screenshot scenarios through
+attach.
+
+| AC | Result | Evidence |
+|---|---|---|
+| AC-34 | Pass | `lib14_ac34_qt_menus_in_family_order` (File: Load Preset…, Examples ▸, Load BASIC Program…, Load Machine Code…, Mount Directory…, Unmount, Settings…, Quit; Edit: Copy Screen, Paste Text; Machine: Model ▸, ROM Revision ▸ on the PC-1500, ROM Version ▸ on the PC-1600, CE-1600P ROM ▸ while it is plugged in, Peripherals ▸, Reset, Cold boot, Resume; Help: Calc-U-1600 Help, About Calc-U-1600…; the platform's roles), `lib14_ac34_copy_log_selection_while_inspector_text_selected`, `lib14_ac34_shortcuts_ctrl_o_r_shift_r`; `lib14_ac34_shell_product_complete` (`checkShellProduct` against each model's control state). The macOS application menu: the shot `02-machine-menu` (Longer, needs Screen Recording) |
+| AC-35 | Pass | `lib14_ac35 the web menus` (no Mount Directory…, Unmount, Quit; Import Media…, Saved Media…; Load Preset… and Examples ▸ as two items), `lib14_ac35 no shortcut is bound` |
+| AC-36 | Pass | `lib14_ac36_bar_pc1500_pc1500a` (the model picker, `slot-1` with Name & Save, the buttons CE-150 and CE-158, the tape controls with the CE-150), `lib14_ac36_bar_pc1600` ("1:" and "2:", the printer picker None/CE-150/CE-1600P, the CE-158 button, the disk controls disabled with "The disk drive is in the CE-1600P." until the CE-1600P is plugged in, the tape controls with it); Web `lib14_ac36 the bar per model` |
+| AC-37 | Pass | `lib14_ac37_settings_sections_and_rows` (General: Startup model, by the model's name; Startup presets: three rows; Storage: Save folder, Tapes; Folders: Examples, Basic, Assembly, Host drive folder; Tracing; Serial ports with the link folder and the two status lines, not on Windows; Debugger with the server and its port, its status and Disconnect beside); Web `lib14_ac37 the web settings` (General, Startup presets, the sentence on saved media) |
+| AC-38 | Pass | `lib14_ac38_loading_after_500_ms_blocks_nothing` (a preset at full speed: nothing at 300 ms, "Loading…" by 800 ms; the model picker, Reset and Cold boot enabled, the variants not; Reset ends it), `lib14_ac38_notice_without_title` |
+| AC-39 | Pass | `lib14_ac39_help_opens_calc_u_org_1600`, `lib14_ac39_about_as_today`, `lib14_ac39_help_address_and_about_texts` (CoreTests); Web `lib14_ac39 help and about` |
+| AC-40 | Pass | `lib14_ac40_layout_faceplate_bar_panel_row` (the faceplate, the bar, the row: INSPECTOR, paper panel always, the CE-158's panel only with a CE-158); Web `lib14_ac40 panels only with room` (two viewport sizes). Pictures per layout: the shots `01-app-overview`, `02-control-bar-pc1600` |
+| AC-41 | Pass | `lib14_ac41_copy_screen_picture_and_text` (the picture with its physical size and `LcdText::plainText`, through the window's clipboard sink: the tests never touch the real clipboard); Web `lib14_ac41 copy screen` |
+| AC-44 | Pass | `lib14_ac44_scenario_through_attach` (two shots: `preset`, `key`, `type`, `wait-idle`, `expect-lcd`, `cold-boot` and two captures through the window's own attach endpoint); `CalcU1600ShotsThroughAttach`; the scenarios through attach, offscreen: `tests/gui/` all seven pass (`lib5-ac33`, `lib6-ac54`, `lib7-ac16-…`, `lib7-ac8-…`, `lib8-ac36`, `lib8-ac38`, `lib10-ac41`), guide `04` to `09` pass (19 images); `01` to `03` need the Screen Recording and Automation grants for their `method: system` shots and native menus, which this environment lacks (not a code failure) |
+| AC-19 (this product) | Pass | `lib14_ac19_roms_missing_in_window` (CTest `CalcU1600QtTests.romsMissing`: the text naming the file in place of the faceplate, no bar, menus File and Help, About and Help work, the window stays; ledger 1600-36); Web `rom-missing.spec.js` (the text in place of the calculator, no "stopped" title) |
+| AC-24 (this product) | Pass | `lib14_ac24_key_under_pointer_pc1500_pc1600` (a key's centre holds it in `held-keys` and lets go; a point in the gap below ENTER within 24 px finds ENTER; ledger 1600-37); Web `lib14_ac24 a key under the pointer` |
+| AC-43 (this product) | Pass | `lib14_ac43_display_hold_full_speed` (the pointer on the LCD: `busy`'s speed full, regular after) |
+| C1600-2 AC-15 | Pass | `c1600_2_ac15_file_items_and_filters` (the two items in FileKinds, their filters, the start folder remembered by kind); Web `c1600_2_ac15 the file items` |
+
+Golden runs: no core change but the catalogue's pin-outs; the replays
+pass unchanged. Frequent (`build/tests`): 35/35, `CoreTests` 59 s of the
+60 s budget (58 s before; the new cases cost about 1.5 s). The Qt tree's
+Frequent: 41/41.
+
+### Deviations from the design, chosen by the simpler structure
+
+- **`CalcU1600QtTests` is Longer, not Frequent** (D.8 says about 5 s). It
+  runs the real window on the real clock (presets load at full speed, a
+  window starts per case): 25 s, which the Frequent budget has no room
+  for. Its ROMs-missing case (0.8 s) and the attach check are Frequent.
+- **The real clock instead of a scripted wall clock** in
+  `CalcU1600QtTests`: `SessionHost` is made inside `MachineController`
+  with the steady clock; the tests wait for conditions with a bound.
+- **`placesWithoutControl` holds `bus-rom` too** (D.5 lists `host-drive`):
+  with one pin-out per place `bus-rom` lists the bus ROM alone and would
+  get a button, but a bus ROM is plugged in by a preset only.
+- **CE-1600P ROM ▸ only while it is plugged in** (AC-34 lists it on the
+  PC-1600): the shell's rule M5 offers a peripheral's variants while it is
+  plugged in; ledger 1600-45 (LIB-4 Part D deviations).
+- **The disk controls follow the tape controls** in the Media group: a
+  product control goes after the shell's control it names, or at the end
+  (B2); ledger 1600-45. `ShellControlBar` now leaves a product control's
+  visibility to its product (the disk controls hide on the PC-1500), a
+  library change.
+- **The serial status lines and the debug server's status** are added to
+  the shell's dialog by the window while it is open (`MainWindow::
+  refreshSerialStatus`), since a dialog row of the shell is a setting; the
+  Serial ports group is named `settings-serial` for the scenarios.
+- **The product's acts** (Load BASIC Program…, Load Machine Code…, Mount
+  Directory…, Unmount) use the shell's choosers and `startFolder` /
+  `rememberFolder` for the `[folders]` kinds, so the tests replace the
+  dialogs as the shell's own do. Unmount reads "Unmount "<folder>"" from
+  the product entry `c1600.host-drive-folder`.
+- **The indicator layout as data** (D-31): `app/LcdLayout`'s
+  `indicatorSlots()` is the table both the Qt6 painter and the Web's
+  `c1600.faceplate-map` use; `DisplayFrame` is gone, the LCD paints the
+  `display` topic's output.
+- **Attach in development builds**: the Qt6 app opens attach on
+  `attachPortFrom(arguments)` (59059 by default) in every `CALCU_ATTACH`
+  build, as C59-5's Swift app does; `--shots` and `--pacing-probe` open it
+  on port 0 for their client in the same process.
+- **The bare `wait` through attach** is the session's `wait-idle`
+  operation, replied with the time it took and `hour reached`, as the
+  serve form replies.
+- **The attached registry test** compares the commands by name; the
+  preset steps that come from a session's vocabulary are left out of the
+  comparison, since the library's attach test session has no LIB-6 part.
+  `qt_attach_host_preset_key_type` checks `key` and `type` through the Qt6
+  host and that `preset` and `cold-boot` are forwarded (that session has
+  no LIB-6 or LIB-18 part); the full `preset` through attach is
+  `lib14_ac44_scenario_through_attach`.
+- **Web** (agent report, branch `m49-web-1600`): an optional
+  `product.loadPreset` in `useCalcuShell` (the page sends picked files
+  through `open`, LIB-13 AC-8); `CalcuMediaPicker` shows a held medium no
+  entry lists (a tape before its first write); LIB-7's `KindDecl::
+  companionSuffixes` so Import Media… takes a tape's WAV with its
+  definition (library `ac30_file_picker_takes_a_companion_along`); the page
+  draws the paper panel itself in the INSPECTOR / paper / CE-158 order with
+  the room rules; notices of the page's own flows in the shell's notice;
+  `lib14_ac24` by a mouse click 3 px below a key.
+- **The screenshot run times** grow: `run:` is wall time, `04-basic`
+  alone takes about 90 s.
+
+### CI
+
+The Qt6 frontend's build changes (new target `CalcU1600QtTests`, files
+gone, `calcu1600_harness` linked into the app with `CALCU_ATTACH`), and
+library code of `calcu_qt6` and `harness/attach` changes: one CI dispatch
+at the merge.
+
+Column status: Done.

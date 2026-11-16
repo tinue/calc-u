@@ -220,7 +220,7 @@ bool DapSession::effectiveConfig(const QJsonObject& args, QJsonObject* out, QStr
     }
     // C1600-4 AC-12, §3.4: the block as the library's reader keeps it.
     const std::string path = debug::absolutePath(project.toStdString());
-    shared::SharpAppPart& part = m_controller->machines().session();
+    shared::SharpAppPart& part = m_controller->machines().app();
     const auto block = shared::debugBlockOf(path, part.presetsPart().readSetup(), &part.presetBundle());
     if (const auto* why = std::get_if<std::string>(&block)) {
         *error = QStringLiteral("Project %1: %2").arg(project, QString::fromStdString(*why));

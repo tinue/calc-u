@@ -18,7 +18,7 @@ namespace {
 // LIB-17 AC-20: the PC-1500, PC-1500A and PC-1600 each have a profile whose
 // slice is the call, with no jitter, and full speed never paced.
 TEST(lib17_ac20_pacing_profiles_sharp) {
-    for (shared::Model m : {shared::Model::PC1500, shared::Model::PC1500A, shared::Model::PC1600}) {
+    for (calcu::machine::ModelId m : {calcu::machine::ModelId{"PC-1500"}, calcu::machine::ModelId{"PC-1500A"}, calcu::machine::ModelId{"PC-1600"}}) {
         const calcu::pacing::PacingProfile p = shared::pacingProfile(m);
         CHECK(!p.slice.has_value());
         CHECK(!p.jitter);

@@ -6,7 +6,7 @@ shots:
   - name: 09-settings
     preset: ../presets/pc1500a-ready.pc1500a
     steps:
-      - action: Edit > Settings…
+      - action: File > Settings…
     capture: { target: dialog, file: 09-settings.png }
 
   - name: 09-debug-panel

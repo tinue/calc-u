@@ -3,6 +3,8 @@
 // through what changes the machine, and the plotters' Copy.
 
 #include <algorithm>
+
+#include "control/ControlState.hpp"
 #include <cstdint>
 #include <cstdio>
 #include <string>
@@ -51,8 +53,8 @@ TEST(lib8_ac36_papers_topic_lists_both_plotters_without_any_plugged) {
     if (!list) return;
     CHECK_EQ(list->papers.size(), std::size_t{2});
     CHECK(list->papers.size() == 2 && list->papers[0].owner == "CE-150" && list->papers[1].owner == "CE-1600P");
-    const auto s = f.state<shared::ControlStatePayload>(shared::topics::kControlState)->state;
-    CHECK(!s.paperOwner);   // the panel shows no name without a plotter
+    const auto* s = f.state<calcu::control::ControlState>(calcu::control::kControlStateTopic);
+    CHECK(s && s->panels.size() == 1 && !s->panels[0].owner);   // the panel shows no name without a plotter
 }
 
 TEST(lib8_ac36_ce150_paper_kept_through_detach_rom_module_and_model_switch) {

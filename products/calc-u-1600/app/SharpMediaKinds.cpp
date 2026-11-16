@@ -330,6 +330,7 @@ std::vector<media::KindDecl> mediaKinds(const std::string& bundledDir, calcu::ma
     tape.id = kTapeKind;
     tape.label = "cassette tape";
     tape.suffix = kTapeFileSuffix;
+    tape.companionSuffixes = {".wav"};   // its sound, beside it (LIB-7 AC-43)
     tape.folder = calcu::settings::Folder::Tapes;
     tape.bundledFolder = bundledDir;
     tape.codec = &tapeCodec;

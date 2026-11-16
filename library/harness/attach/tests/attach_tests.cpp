@@ -10,9 +10,13 @@
 #include "harness/attach/AttachEndpoint.hpp"
 #include "harness/attach/AttachPort.hpp"
 #include "harness/attach/AttachedHarness.hpp"
+#include "harness/Run.hpp"
+#include "presets/PresetsPart.hpp"
+#include "sessions/Operation.hpp"
 #include "sessions/AppSession.hpp"
 #include "sessions/MachineSession.hpp"
 #include "sessions/TopicMirror.hpp"
+#include <algorithm>
 #include <arpa/inet.h>
 #include <atomic>
 #include <chrono>
@@ -36,9 +40,25 @@ pacing::WallTime wallNow() {
     return std::chrono::duration_cast<pacing::WallTime>(std::chrono::steady_clock::now().time_since_epoch());
 }
 
+sessions::Task<sessions::OperationResult> runTicks(sessions::OperationContext& c, machine::Ticks n) {
+    co_await c.run(n);
+    co_return sessions::OperationResult{};
+}
+
+// LIB-6's `wait-idle` as the app's session has it (an operation until the
+// machine is idle): here 20,000 ticks of the test machine (LIB-14 D-27).
+struct WaitIdlePart final : sessions::SessionPart {
+    void attach(sessions::SessionSetup& s) override {
+        s.command(presets::kWaitIdleCommand, [](const sessions::Value&, sessions::SessionContext&) -> sessions::CommandOutcome {
+            return sessions::StartOperation{[](sessions::OperationContext& c) { return runTicks(c, 20'000); }};
+        });
+    }
+};
+
 // The app: its own frontend listening, the session called on a thread of its own.
 struct TestApp final : AttachInbox, sessions::MessageSink {
     test::TestProduct product;
+    WaitIdlePart waitIdle;
     std::unique_ptr<sessions::AppSession> session;
     std::unique_ptr<AttachEndpoint> endpoint;
     std::unique_ptr<AttachedHarness> harness;
@@ -58,6 +78,7 @@ struct TestApp final : AttachInbox, sessions::MessageSink {
         s.clock = wallNow;
         s.hostTime = [] { return std::chrono::system_clock::now(); };
         for (auto* p : product.sessionParts()) s.parts.push_back(p);
+        s.parts.push_back(&waitIdle);
         session = std::make_unique<sessions::AppSession>(std::move(s));
         sessions::HostServices fe;
         fe.offered = {sessions::HostService::ClipboardText};
@@ -481,4 +502,57 @@ TEST(c59_5_operation_reply_when_it_ends) {
     const auto r = c.reply(nullptr, 5000ms);
     CHECK(!r.empty() && r[0] == "done");
     CHECK(std::chrono::steady_clock::now() - w0 < 3s);
+}
+
+// LIB-14 D-27: the attached harness has the commands of `calcu serve`, in
+// the same order (the attach's own `json` aside).
+TEST(attach_registry_matches_serve) {
+    TestApp app;
+    test::TestProduct serveProduct;
+    std::string error;
+    auto server = Server::start(serveProduct, {}, &error);
+    CHECK(server != nullptr);
+    if (!server) return;
+    // By name. The preset steps as commands come from the session's
+    // vocabulary (SessionParts); this app has none, so serve's steps that
+    // are only steps are left out.
+    auto name = [](const std::string& u) { return u.substr(0, u.find(' ')); };
+    std::vector<std::string> attached, served;
+    for (const auto& u : app.harness->commands().usage()) attached.push_back(name(u));
+    for (const auto& u : server->commands().usage()) {
+        served.push_back(name(u));
+        if (u.find("the preset step") != std::string::npos) continue;
+        const bool in = std::find(attached.begin(), attached.end(), name(u)) != attached.end();
+        if (!in) std::fprintf(stderr, "  serve only: %s\n", u.c_str());
+        CHECK(in);
+    }
+    for (const auto& a : attached) {
+        const bool in = std::find(served.begin(), served.end(), a) != served.end();
+        if (!in) std::fprintf(stderr, "  attach only: %s\n", a.c_str());
+        CHECK(in);
+    }
+    for (const char* c : {"preset", "key", "type", "reset", "cold-boot", "wait", "attach", "paper", "media", "open"}) {
+        bool found = false;
+        for (const auto& u : app.harness->commands().usage()) found = found || u.rfind(c, 0) == 0;
+        if (!found) std::fprintf(stderr, "  no %s\n", c);
+        CHECK(found);
+    }
+    server->finish();
+}
+
+// LIB-6 AC-34 through attach (D-27): the bare `wait` is the session's
+// `wait-idle` on the app's clock; its reply is the time it took.
+TEST(attach_bare_wait_ends_when_idle) {
+    TestApp app;
+    CHECK(app.open().ok);
+    app.start();
+    Client c(app.endpoint->port());
+    c.send("wait");
+    const auto r = c.reply(nullptr, 5000ms);
+    CHECK(r.size() == 4 && r[0] == "done 3");
+    if (r.size() == 4) {
+        const long long t = std::atoll(r[1].c_str() + 7);   // "ticks: N"
+        CHECK(t >= 20'000 && t < 20'000 + 4'000);
+        CHECK(r[3] == "hour reached: no");
+    }
 }

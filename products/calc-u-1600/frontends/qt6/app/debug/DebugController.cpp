@@ -14,7 +14,7 @@
 #include "Machine/LegacyCalls.hpp"
 #include "debugger/RunControl.hpp"
 #include "MachineController.hpp"
-#include "Operations.hpp"
+#include <QEventLoop>
 
 DebugController::DebugController(MachineController* machines, QObject* parent)
     : QObject(parent), m_machines(machines) {
@@ -156,7 +156,7 @@ bool DebugController::beginSession() {
     m_lastMachine = m_machines->machine();
     m_sessionActive = m_lastMachine != nullptr;
     if (m_sessionActive) applyBreakpoints();
-    const auto* s = m_machines->listener().state<calcu::debugger::RunState>(calcu::debugger::kRunStateTopic);
+    const auto* s = m_machines->state<calcu::debugger::RunState>(calcu::debugger::kRunStateTopic);
     m_lastPaused = s && s->paused;
     return m_sessionActive;
 }
@@ -197,7 +197,7 @@ void DebugController::afterCall() {
         e.text = std::move(line);
         events.push_back(std::move(e));
     }
-    const auto* s = m_machines->listener().state<calcu::debugger::RunState>(calcu::debugger::kRunStateTopic);
+    const auto* s = m_machines->state<calcu::debugger::RunState>(calcu::debugger::kRunStateTopic);
     const bool paused = s && s->paused;
     if (paused && !m_lastPaused && s->reason) {
         using R = calcu::debugger::RunState::Reason;
@@ -232,17 +232,21 @@ std::vector<shared::dap::BreakpointStatus> DebugController::rebindListings() {
     return changed;
 }
 
-void DebugController::setOperations(Operations* ops) {
-    m_sync = ops;
+bool DebugController::runAndWait(const calcu::sessions::CommandName& name, calcu::sessions::Value args, QString* error) {
+    QEventLoop loop;
+    std::optional<calcu::sessions::ReplyMessage> got;
+    m_machines->send(name, std::move(args), [&](const calcu::sessions::ReplyMessage& r) {
+        got = r;
+        loop.quit();
+    });
+    if (!got) loop.exec();
+    if (!got->done && error) *error = QString::fromStdString(got->reason);
+    return got->done;
 }
 
 bool DebugController::loadPreset(const QString& path, QString* error, bool armOnly) {
-    if (!m_sync) {
-        *error = tr("Presets can't be loaded from the debugger here");
-        return false;
-    }
     // LIB-6 AC-55: `buildOnly` builds the machine and starts nothing.
-    const bool ok = m_sync->runAndWait(tr("Load Preset"), calcu::presets::kLoadPresetCommand,
+    const bool ok = runAndWait(calcu::presets::kLoadPresetCommand,
                                        calcu::sessions::Value::object({{"ref", path.toStdString()}, {"buildOnly", armOnly}}), error);
     // The preset rebuilt the machine; the caller re-binds the listings.
     m_lastMachine = m_machines->machine();
@@ -251,25 +255,21 @@ bool DebugController::loadPreset(const QString& path, QString* error, bool armOn
 }
 
 bool DebugController::cleanStart(const QString& preset, QString* how, QString* error) {
-    if (!m_sync) {
-        *error = tr("The machine can't be set up from the debugger here");
-        return false;
-    }
     bool ok = false;
     if (!preset.isEmpty()) {
         *how = tr("preset %1").arg(preset);
-        ok = m_sync->runAndWait(tr("Load Preset"), calcu::presets::kLoadPresetCommand,
+        ok = runAndWait(calcu::presets::kLoadPresetCommand,
                                 calcu::sessions::Value::object({{"ref", preset.toStdString()}}), error);
-    } else if (const QString path = AppSettings::defaultPresetPath(m_machines->currentModel());
+    } else if (const QString path = AppSettings::defaultPresetPath(m_machines->app().model());
                !path.isEmpty()) {
         // The model's startup preset, as LIB-18 loads it.
         *how = tr("startup preset %1").arg(path);
-        ok = m_sync->runAndWait(tr("Startup Preset"), calcu::presets::kLoadPresetCommand,
+        ok = runAndWait(calcu::presets::kLoadPresetCommand,
                                 calcu::sessions::Value::object({{"ref", path.toStdString()}}), error);
     } else {
         // No preset: the machine as Cold boot leaves it, at key readiness.
         *how = tr("Cold boot (no startup preset for this model)");
-        ok = m_sync->runAndWait(tr("Cold boot"), calcu::startup::kColdBootCommand, {}, error);
+        ok = runAndWait(calcu::startup::kColdBootCommand, {}, error);
     }
     // The caller re-binds the listings.
     m_lastMachine = m_machines->machine();
@@ -280,7 +280,7 @@ bool DebugController::cleanStart(const QString& preset, QString* how, QString* e
 debug::LoadResult DebugController::loadProgram(const debug::LoadRequest& request, After after,
                                                const std::string& command) {
     debug::LoadResult r;
-    if (!target() || !m_sync) {
+    if (!target()) {
         r.error = "no machine";
         return r;
     }
@@ -311,7 +311,7 @@ bool DebugController::lcdText(LcdText* out) const { return m_machines->lcdText(o
 
 bool DebugController::resetMachine(bool allReset, bool stop, QString* error) {
     calcu::machine::Machine* machine = m_machines->machine();
-    if (!machine || !m_sync) {
+    if (!machine) {
         *error = tr("No machine is running");
         return false;
     }

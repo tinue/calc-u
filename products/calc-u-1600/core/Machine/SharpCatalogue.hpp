@@ -47,6 +47,16 @@ inline constexpr const char* kPC1600Slot1PinOut = "PC-1600 Slot 1";
 inline constexpr const char* kPC1600Slot2PinOut = "PC-1600 Slot 2";
 inline constexpr const char* kPC1500BusPinOut = "PC-1500 60-pin";
 inline constexpr const char* kPC1600BusPinOut = "PC-1600 60-pin";
+// One pin-out per 60-pin place (LIB-4 Part D, D-11, O-2): names of places on
+// the one connector, so that each place lists exactly what fits it; each a
+// chain (Takes::One would keep the other places of the connector empty,
+// LIB-2 AC-7), one peripheral per place by takesAtOnce. The bus
+// pin-outs above stay for the place bus-rom (a chain).
+inline constexpr const char* kPC1500PrinterPinOut = "pc1500-60-pin-printer";
+inline constexpr const char* kPC1500InterfacePinOut = "pc1500-60-pin-interface";
+inline constexpr const char* kPC1600PrinterPinOut = "pc1600-60-pin-printer";
+inline constexpr const char* kPC1600InterfacePinOut = "pc1600-60-pin-interface";
+inline constexpr const char* kPC1600HostDrivePinOut = "pc1600-60-pin-host-drive";
 
 // Component IDs (design D-10).
 inline constexpr const char* kRtcComponent = "rtc";

@@ -32,8 +32,8 @@ inline void rememberOpenFile(OpenFolder folder, const QString& filePath) {
 }
 inline QString openStartDir(OpenFolder folder) { return q(settings().openStartDir(folder, s(QDir::homePath()))); }
 
-inline QString defaultPresetPath(shared::Model model) { return q(settings().defaultPresetPath(model)); }
-inline void setDefaultPresetPath(shared::Model model, const QString& path) {
+inline QString defaultPresetPath(const calcu::machine::ModelId& model) { return q(settings().defaultPresetPath(model)); }
+inline void setDefaultPresetPath(const calcu::machine::ModelId& model, const QString& path) {
     settings().setDefaultPresetPath(model, s(path));
 }
 

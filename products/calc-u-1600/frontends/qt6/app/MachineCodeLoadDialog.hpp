@@ -2,7 +2,8 @@
 #include <QDialog>
 
 #include "app/SharpTopics.hpp"
-#include "sessions/Listener.hpp"
+#include "sessions/Messages.hpp"
+#include <functional>
 
 class QDialogButtonBox;
 class QLabel;
@@ -18,7 +19,8 @@ class QLineEdit;
 class MachineCodeLoadDialog : public QDialog {
     Q_OBJECT
 public:
-    MachineCodeLoadDialog(QWidget* parent, calcu::sessions::Listener& listener, calcu::sessions::Value args,
+    using Ask = std::function<calcu::sessions::ReplyMessage(const calcu::sessions::RequestName&, calcu::sessions::Value)>;
+    MachineCodeLoadDialog(QWidget* parent, Ask ask, calcu::sessions::Value args,
                           const shared::CodePlanReply& plan);
 
     // The address as the user typed it.
@@ -27,7 +29,7 @@ public:
 private:
     void refresh();
 
-    calcu::sessions::Listener& m_listener;
+    Ask m_ask;
     calcu::sessions::Value m_args;
     QLineEdit* m_addressField = nullptr;
     QLabel* m_hint = nullptr;

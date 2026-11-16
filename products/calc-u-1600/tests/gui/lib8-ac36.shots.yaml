@@ -9,22 +9,22 @@ shots:
   - name: lib8-ac36
     steps:
       # The start: a PC-1500A without a plotter, the panel there and unnamed.
-      - expect-panel: { name: paper, title: "", empty: true }
+      - expect-panel: { name: paper-panel, title: "", empty: true }
       - action: Machine > Peripherals > CE-150
       - settle: 300
       # The attach replies when the machine is ready for keys (LIB-18): by
       # then the CE-150's power-on has fed the paper, so it is not empty.
-      - expect-panel: { name: paper, title: CE-150 }
+      - expect-panel: { name: paper-panel, title: CE-150 }
       - key: cl
       - type: NEW0
       - type: LPRINT 123
       - run: 4
-      - expect-panel: { name: paper, title: CE-150, empty: false }
+      - expect-panel: { name: paper-panel, title: CE-150, empty: false }
       # A detach: the panel stays, without a name; the paper is kept.
       - action: Machine > Peripherals > CE-150
       - settle: 300
-      - expect-panel: { name: paper, title: "" }
+      - expect-panel: { name: paper-panel, title: "" }
       - action: Machine > Peripherals > CE-150
       - settle: 300
-      - expect-panel: { name: paper, title: CE-150, empty: false }
-      - capture: { target: paper, file: lib8-ac36-paper.png }
+      - expect-panel: { name: paper-panel, title: CE-150, empty: false }
+      - capture: { target: paper-panel, file: lib8-ac36-paper.png }

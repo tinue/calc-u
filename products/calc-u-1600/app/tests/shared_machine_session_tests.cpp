@@ -8,30 +8,32 @@
 #include <string>
 
 #include "SessionFixture.hpp"
+#include "control/ControlState.hpp"
 #include "TestHarness.hpp"
 
 namespace {
 
 using sessionfixture::SessionFixture;
 using sessionfixture::romsPresent;
-using shared::Model;
+using Model = calcu::machine::ModelId;
+
 namespace c = shared::commands;
 
-const char* settingsName(Model m) { return shared::settingsModelName(m); }
+const char* settingsName(Model m) { return m.value.c_str(); }
 
 void test_switch_and_paste(Model model) {
     SessionFixture f;
     CHECK(f.start(settingsName(model)));
-    CHECK(f.part().currentModel() == model);
-    const auto* machine = f.state<shared::MachinePayload>(shared::topics::kMachine);
-    CHECK(machine && machine->model == model && machine->builds == 1 && machine->modelSwitches == 1);
+    CHECK(f.part().model() == model);
+    const auto* cs = f.state<calcu::control::ControlState>(calcu::control::kControlStateTopic);
+    CHECK(cs && cs->model == model && f.session().machineSession().generation() == 1);
     CHECK(f.settings.lastUsedModel() == model);
     CHECK(f.listener.display() && f.listener.display()->on);
-    CHECK(f.part().slotCount() == (model == Model::PC1600 ? 2 : 1));
+    CHECK(f.part().slotCount() == (model == calcu::machine::ModelId{"PC-1600"} ? 2 : 1));
     CHECK(f.part().slotCard(1) == nullptr && f.part().slotCard(2) == nullptr && f.part().slotCard(3) == nullptr);
 
     // A cold PC-1500 shows "NEW0? :CHECK": CL, then NEW0.
-    if (model != Model::PC1600) {
+    if (model != calcu::machine::ModelId{"PC-1600"}) {
         f.tap("cl");
         f.runFor(0.5);
         f.typeLine("NEW0");
@@ -74,7 +76,7 @@ TEST(test_timed_tap_pc1600) {
 void test_minimum_key_hold(Model model) {
     SessionFixture f;
     CHECK(f.start(settingsName(model)));
-    if (model != Model::PC1600) {
+    if (model != calcu::machine::ModelId{"PC-1600"}) {
         f.tap("cl");
         f.runFor(0.5);
     }
@@ -161,9 +163,9 @@ TEST(test_rebuild_keeps_plotter) {
     CHECK(f.toggle("CE-150"));
     CHECK(f.toggle("CE-158"));
     CHECK(f.part().ce150Attached() && f.part().ce158Attached());
-    const auto builds = f.state<shared::MachinePayload>(shared::topics::kMachine)->builds;
+    const auto builds = f.session().machineSession().generation();
     CHECK(f.ok(calcu::startup::kVariantCommand, calcu::sessions::Value::object({{"name", "A03"}})));   // a rebuild
-    CHECK(f.state<shared::MachinePayload>(shared::topics::kMachine)->builds == builds + 1);
+    CHECK(f.session().machineSession().generation() == builds + 1);
     CHECK(f.part().ce150Attached() && f.part().ce158Attached());
     CHECK(f.model("PC-1600"));   // a model switch starts bare
     CHECK(!f.part().ce150Attached() && !f.part().ce158Attached());
@@ -176,7 +178,7 @@ TEST(test_rebuild_keeps_plotter) {
 
 } // namespace
 
-TEST(test_switch_and_paste_pc1500a) { SKIP_UNLESS(romsPresent(), "no ROMs in roms/"); test_switch_and_paste(Model::PC1500A); }
-TEST(test_switch_and_paste_pc1600) { SKIP_UNLESS(romsPresent(), "no ROMs in roms/"); test_switch_and_paste(Model::PC1600); }
-TEST(test_minimum_key_hold_pc1500a) { SKIP_UNLESS(romsPresent(), "no ROMs in roms/"); test_minimum_key_hold(Model::PC1500A); }
-TEST(test_minimum_key_hold_pc1600) { SKIP_UNLESS(romsPresent(), "no ROMs in roms/"); test_minimum_key_hold(Model::PC1600); }
+TEST(test_switch_and_paste_pc1500a) { SKIP_UNLESS(romsPresent(), "no ROMs in roms/"); test_switch_and_paste(calcu::machine::ModelId{"PC-1500A"}); }
+TEST(test_switch_and_paste_pc1600) { SKIP_UNLESS(romsPresent(), "no ROMs in roms/"); test_switch_and_paste(calcu::machine::ModelId{"PC-1600"}); }
+TEST(test_minimum_key_hold_pc1500a) { SKIP_UNLESS(romsPresent(), "no ROMs in roms/"); test_minimum_key_hold(calcu::machine::ModelId{"PC-1500A"}); }
+TEST(test_minimum_key_hold_pc1600) { SKIP_UNLESS(romsPresent(), "no ROMs in roms/"); test_minimum_key_hold(calcu::machine::ModelId{"PC-1600"}); }

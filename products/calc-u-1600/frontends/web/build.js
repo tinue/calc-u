@@ -35,11 +35,10 @@ const outside = dist.checkScopedCss(css);
 if (outside.length) throw new Error(`calc.css: selectors outside .calcu-client (LIB-15 AC-17): ${outside.join(", ")}`);
 
 // In load order; one closure, so nothing but CalcU1600 reaches the page.
-const SOURCES = ["engine.js", "painters.js", "Faceplate.jsx", "MenuBar.jsx", "ControlBar.jsx", "Panels.jsx", "Dialogs.jsx",
+const SOURCES = ["painters.js", "Faceplate.jsx", "Panels.jsx", "Dialogs.jsx",
   "CalcU1600.jsx"].map((n) => path.join(WEB, "src", n));
-// LIB-8 (M-45): the React component set comes with the paper panel (LIB-14
-// D-17: a product takes the set in its column; the shell's components come
-// along unused until M-49).
+// The React component set (LIB-14 D-17): the page is put together from its
+// shell (M-49), with LIB-7's media and LIB-8's paper components.
 dist.compileCalcJs({
   vendor: VENDOR,
   librarySources: [...dist.LIBRARY_SOURCES, ...dist.COMPONENT_SOURCES],

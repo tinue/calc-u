@@ -2,7 +2,7 @@
 #include <vector>
 
 #include "app/KeyLayout/KeyLayoutTypes.hpp"
-#include "app/MachineModel.hpp"
+#include "machine/Ids.hpp"
 
 // Where the faceplate art, its key hit-regions and the LCD land in a pane
 // of a given size: the art letterbox-fitted (aspect kept, centred), each
@@ -10,7 +10,8 @@
 // pane coordinates, truncated exactly as the Qt widget always did.
 namespace KeyLayout {
 
-const Layout& layoutFor(shared::Model model);
+// The art of the model: the PC-1600 has its own, the PC-1500 and PC-1500A share one.
+const Layout& layoutFor(const calcu::machine::ModelId& model);
 
 struct PaneRect {
     int x = 0, y = 0, w = 0, h = 0;

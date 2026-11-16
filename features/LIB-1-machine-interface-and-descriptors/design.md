@@ -132,6 +132,10 @@ not named here adds a folder in the same pattern.
   - the attach endpoint `library/harness/attach/` (C59-5) is compiled
     into `calcu_library` only with the CMake option `CALCU_ATTACH`
     (default OFF; on in Debug builds of the Swift app);
+    `harness/attach` includes the other command areas of `harness` (the
+    attached registry is the serve form's, LIB-14 D-27, M-49) and names
+    the session's parts it uses in `harness/attach/SessionParts.hpp`,
+    which `qt6/SessionHost.hpp` includes in every build;
   - `calcu_qt6`, the Qt6 component set in `library/qt6/` (namespace
     `calcu::qt6`; LIB-8 D-1, LIB-14 D-1, D-16; created in M-39): a static
     library on `Qt6::Widgets` and `calcu_library`, defined only with

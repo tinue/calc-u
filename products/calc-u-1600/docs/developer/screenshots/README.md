@@ -28,12 +28,27 @@ shot or image to stderr, and quits. The exit code is:
 
 That makes the same scenarios usable as a GUI smoke test.
 
+`--shots` (and `--pacing-probe`) exist in development and test builds only
+(`CALCU_ATTACH`: a POSIX tree with the tests, as `tools/build_app.sh`
+makes it); release builds and Windows have neither.
+
+**A client of harness attach** (LIB-14 AC-44). The app opens harness
+attach on a port the system picks and the runner talks to it as a line
+client (`app/screenshots/AttachLineClient`, LIB-11's serve protocol): every
+step that loads a preset, lets time pass, presses keys or types is the
+harness's `preset`, `wait`, `key`, `type`, `reset`, `cold-boot` (and
+`expect`, `pause`, `resume`), so the runner never steps the machine
+itself (the Frequent CTest `CalcU1600ShotsThroughAttach` checks
+`ShotRunner.cpp` for it). UI steps find the shell's widgets by their
+object names (`library/shell/ObjectNames.hpp`).
+
 ## What a run guarantees
 
-- **Frozen emulation.** Between steps the emulator doesn't run, so the LCD
-  cursor, the clock and so on never drift. Only preset loads and the `key:`,
-  `type:` and `run:` steps advance it, in emulated time. Qt-method images
-  are byte-identical from run to run.
+- **Captures after the machine is idle.** The app runs on its own clock
+  between steps, as it does for a user (a preset at full speed, `run:` in
+  wall time). Put `wait-idle` before a capture that must show the end of
+  what the steps started; a cursor that blinks or a clock that runs may
+  differ from run to run, so the pictures are no longer byte-identical.
 - **Isolated settings.** A run uses a throwaway settings file and an empty
   card/disk folder. Your startup presets, last model, folders and saved
   cards never show up in the images, and the run never changes them. The
@@ -59,8 +74,8 @@ shots:
     window: 900x1000                           # optional: this shot's size (default: the scenario's)
     preset: ../presets/pc1500a-ready.pc1500a   # optional: load it first
     steps:                                     # optional
-      - open: controlbar.model
-    capture: { target: controlbar, file: model-dropdown.png, padding: 4 }
+      - open: bar-model
+    capture: { target: control-bar, file: model-dropdown.png, padding: 4 }
 ```
 
 A shot without `preset:` continues from where the previous one left off.
@@ -80,14 +95,15 @@ captures the whole window. More captures can go in `steps:` as
 
 | Step | What it does |
 |---|---|
-| `preset: <file>` | Load a preset, as File ▸ Load Preset… does: the step sends `load-preset` with a file path, or with a bundled example's path `examples:<path>`. |
-| `reset` / `reset: all` | Machine ▸ Reset / Cold boot. |
-| `key: <name>` | Tap a calculator key, as a click on the faceplate does. Key names are the preset `key:` names. |
-| `hold-key: <name>` | Press a key and keep it down. The faceplate shows the press highlight. |
+| `preset: <file>` | Load a preset: attach's `preset` with a file path, or with a bundled example's path `examples:<path>`; the next step follows when it is loaded. |
+| `reset` / `cold-boot` | Machine ▸ Reset / Cold boot: attach's `reset`, `cold-boot` (`reset: all` was renamed `cold-boot` in M-49). |
+| `key: <name>` | Tap a calculator key: attach's `key`. Key names are the preset `key:` names. |
+| `hold-key: <name>` | Press a key and keep it down: a pointer down on the faceplate at the key's centre (the shell's live input), then attach's `wait 100ms`. The faceplate shows the press highlight. |
 | `release` | Let go of the held key. |
-| `type: <text>` | Type one line the way Edit ▸ Paste Text does, then press ENTER. |
-| `run: <seconds>` | Run that much emulated time. |
-| `settle: <ms>` | Wait wall-clock time, with the emulator still frozen. |
+| `type: <text>` | Type one line and ENTER: attach's `type`. |
+| `run: <seconds>` | Let that much time pass: attach's `wait <s>` (the app runs at regular speed, so as much wall time). |
+| `wait-idle` | Until the machine is idle: attach's bare `wait` (at most an hour). Use it before a capture. |
+| `settle: <ms>` | Wait wall-clock time for the UI; the app runs on. |
 | `click: <objectName>` | Click a button. |
 | `open: <objectName>` | Open a combo box's drop-down, or click a button. |
 | `select: <objectName> = <item>` | Pick a combo-box item by its text. |
@@ -100,9 +116,9 @@ captures the whole window. More captures can go in `steps:` as
 | `capture: …` | Write an image; see below. |
 | `expect-panel: { name, title, empty }` | Check a paper panel (by objectName): shown, with that title (the plotter's name; `""` none), empty or not; the shot fails otherwise. For the check scenarios in `tests/gui/`. |
 | `expect-title: <text>` | Check the window's title. |
-| `command: <name>` | Send a session command without arguments (`pause`, `resume`), as the harness would. |
+| `command: <name>` | A harness command through attach (`pause`, `resume`). |
 | `host-key-down: <key>` / `host-key-up: <key>` | A key of the host's keyboard goes down / up, as the window gets it from the keyboard: `shift` or one character (sent with Shift while `shift` is down). No settle follows, so a down and an up in a row are a tap. For LIB-5 AC-33's check scenario. |
-| `expect-lcd: <text>` / `expect-no-lcd: <text>` | Check that the text is in one row of the LCD (`--lcd-text`'s rows), or in none; the shot fails otherwise. |
+| `expect-lcd: <text>` / `expect-no-lcd: <text>` | Attach's `expect` / `not-expect`: the text is in one row of the LCD, or in none; the shot fails otherwise. |
 
 A dialog opened by `action:` or `click:` stays open and scriptable: the
 script carries on inside it, captures it, then `close`s it. Anything still
@@ -167,17 +183,18 @@ Two macOS details:
 | objectName | Widget |
 |---|---|
 | `faceplate`, `lcd` | calculator face / its LCD |
-| `controlbar` | the whole control bar |
-| `controlbar.model` | model picker |
-| `controlbar.slot1`, `controlbar.slot2`, `controlbar.slot1.save`, `controlbar.slot2.save` | module pickers and their Name & Save buttons |
-| `controlbar.ce150`, `controlbar.ce158`, `controlbar.ce1600p` | peripheral toggles (CE-150/CE-158 on PC-1500/1500A, CE-1600P on PC-1600) |
-| `controlbar.floppy`, `controlbar.floppy.side`, `controlbar.floppy.save`, `controlbar.floppy.lamp` | CE-1600F disk row |
-| `controlbar.tape`, `controlbar.tape.save`, `controlbar.tape.counter` | cassette bay: tape picker, Save, counter (green while the motor runs; with a CE-150 or CE-1600P) |
+| `menu-bar`, `menu-file`, `menu-edit`, `menu-machine`, `menu-help`, `item-<id>` | the shell's menus and items (`item-load-preset`, `item-settings`, `item-reset`, `item-cold-boot`, `item-resume`, `item-help`, `item-about`, `item-load-basic-program`, `item-load-machine-code`, `item-mount-directory`, `item-unmount-directory`, …) |
+| `control-bar` | the whole control bar (the shell's) |
+| `bar-model` | model picker |
+| `bar-slot-slot-1`, `bar-slot-slot-2` | a module slot's control; in it `media-picker-slot-1`, `media-save-slot-1` (Name & Save), and the same for `slot-2` |
+| `bar-place-printer`, `bar-place-interface` | the button (one peripheral fits: CE-150, CE-158 on a PC-1500/1500A; CE-158 on a PC-1600) or picker (several: the PC-1600's printer, None, CE-150, CE-1600P) of a place |
+| `bar-disk`; `media-picker-floppy`, `media-side-floppy`, `media-save-floppy`, `media-lamp-floppy` | the CE-1600F's controls (every PC-1600; usable with the CE-1600P) |
+| `bar-media-cassette`; `media-picker-tape`, `media-save-tape`, `media-counter-tape` | the cassette's controls (with a CE-150 or CE-1600P) |
 | `debugpanel`, `debugpanel.pointers`, `debugpanel.memory`, `debugpanel.dump`, `debugpanel.card`, `debugpanel.clear`, `debugpanel.trace` | Inspector panel and its buttons (`open:` on `debugpanel.memory` / `debugpanel.dump` shows the menu) |
-| `paper`, `paper-copy`, `paper-cut` | the paper panel (the library's `PaperPanel`, always there) and its buttons |
+| `panel-area`, `paper-panel`, `paper-copy`, `paper-cut` | the shell's panel area, the paper panel (the library's `PaperPanel`, always there) and its buttons |
 | `ce158printer`, `ce158printer.save`, `ce158printer.clear` | CE-158 printer panel |
-| `dialog.settings`, `dialog.about`, `dialog.machinecode` | dialogs |
-| `dialog.settings.general`, `.presets`, `.storage`, `.tracing`, `.serial`, `.debugger` | one section of Settings |
+| `settings-dialog`, `setting-<section>-<key>`, `settings-close`, `settings-serial` | the shell's Settings dialog, a row, Close, the Serial ports section |
+| `about-dialog`, `notice`, `notice-ok`, `loading`, `roms-missing` | the shell's About, a notice, "Loading…", the ROMs-missing text |
 
 ## Check scenarios
 
@@ -186,7 +203,9 @@ criteria of the GUI say (ADR 0032): LIB-8 AC-36 (`lib8-ac36`), AC-38
 (`lib8-ac38`), LIB-10 AC-41 (`lib10-ac41`). They run as the CTests
 `CalcU1600Shots.<name>` (Longer) with the guide's scenarios, write their
 pictures into the build tree, and use `expect-panel`, `expect-title` and
-`command`. M-49 turns them into an attach client.
+`command`. Since M-49 they run through attach like the guide's; LIB-5
+AC-33 (`lib5-ac33`), LIB-6 AC-54 (`lib6-ac54`) and LIB-7 AC-8, AC-16 are
+checked the same way.
 
 ## Presets
 

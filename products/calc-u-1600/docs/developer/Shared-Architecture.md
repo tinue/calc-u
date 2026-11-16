@@ -60,25 +60,24 @@ WebAssembly check.
 
 | File | What it is |
 |---|---|
-| `SharpAppPart` | Calc-U-1600's part of the library's app session (a `calcu::sessions::SessionPart`): the live PC-1500/1500A/1600 as one `calcu::machine::Machine` handed to the machine session, memory-module slots, peripherals, tape, host drive, trace, inspector; the library's parts it hosts: `MediaPart` (LIB-7, the media); `PresetsPart` (LIB-6: `load-preset {ref \| content,name; buildOnly}`, `check-preset`, `preset-list`, `run-step`, `wait-idle`) and `StartupPart` (LIB-18: `start`, `model {name}`, `variant {name}`, `attach {place, peripheral, variant?}`, `detach {place}`, `reset`, `cold-boot`, `power-cycle`); the media commands of LIB-7 (`media.choose`, … since M-47), the product commands `c1600.mount-host-drive`, `c1600.ce1600p-rom` (each a LIB-18 plug change); the interim topics `c1600.control-state`, `c1600.machine`, `c1600.tapes`, `c1600.serial-links` and LIB-12's `roms-missing` (`SharpTopics.hpp`; see "The machine" below) |
+| `SharpAppPart` | Calc-U-1600's part of the library's app session (a `calcu::sessions::SessionPart`): the live PC-1500/1500A/1600 as one `calcu::machine::Machine` handed to the machine session, memory-module slots, peripherals, tape, host drive, trace, inspector; the library's parts it hosts: `MediaPart` (LIB-7, the media); `PresetsPart` (LIB-6: `load-preset {ref \| content,name; buildOnly}`, `check-preset`, `preset-list`, `run-step`, `wait-idle`) and `StartupPart` (LIB-18: `start`, `model {name}`, `variant {name}`, `attach {place, peripheral, variant?}`, `detach {place}`, `reset`, `cold-boot`, `power-cycle`); the media commands of LIB-7 (`media.choose`, … since M-47), the product commands `c1600.mount-host-drive`, `c1600.ce1600p-rom` (each a LIB-18 plug change); the product topics `c1600.lamps` (the tape counter, the floppy lamp) and `c1600.serial-links`, LIB-12's `roms-missing` (`SharpTopics.hpp`); the rules of the control state (`SharpControlRules`) and LIB-4's `ControlPart` that the session builders put among the library's parts (`controlPart()`; see "The machine" below). `SharpAppPartOptions{canMountHostFolder}`: the Web says no (LIB-4 AC-18) |
 | `SharpDebuggerSetup`, `SharpTraceRecorder`, `SharpSymbolReaders` | The library's debugger for the Sharp models (LIB-10): the `DebuggerPart`'s set-up (`cpu` only, the trace session on the core's records, no run-control steps), the trace records into the trace file, the symbols of the Sharp listings |
 | `SharpPrinters` | The CE-150's and the CE-1600P's papers for the library's `PaperPart` (LIB-8) |
 | `dap/` | The DAP's layer (C1600-3): its targets, breakpoints and steps on the library's debugger; the server is in the Qt frontend until M-50 |
 | `SharpTyping` | Typing on the library's typing engine (LIB-5, `library/typing/`): the typing profile per model (`typingProfile`: 4 + 4 frames, 6 more after SHIFT and KBII on the PC-1600, readiness rules, the characters, the `key` names), the keyboard map per model (`SharpKeyboardMap`), `typingProduct()` for the session's `TypingPart` |
-| `SharpSession` | `makeSharpSession()`: the library's app session with the part, which the session owns (Qt6, tests, `tools/wasm_smoke`); a host talks to it through the library's `calcu::sessions::Listener` |
-| `SharpWebPart` | What the Web page draws, as product topics, commands and requests (`c1600.ui`, `c1600.lcd`, …; LIB-15 1600) |
+| `SharpSession` | `makeSharpSession()`: the library's app session with the control part and the part, which the session owns (Qt6 with LIB-14's `SettingsPart` in `moreParts`, tests, `tools/wasm_smoke`); a host talks to it through the library's `calcu::sessions::Listener` (Qt6: the Qt6 component set's `SessionHost`) |
+| `SharpControlRules` | The product's side of LIB-4's control state (M-49): the place `host-drive` not available where no folder can be mounted, and the product entries `c1600.disk-controls`, `c1600.ce158-printer-panel`, `c1600.host-drive-folder`, `c1600.mount-directory`, `c1600.ce1600p-next-variant`; `sharpControlSetup()` gives the `ControlPart` its catalogue, printers (CE-150, CE-1600P) and rules. Everything else of the old `ControlState` is the library's generic entries, from the descriptors (one pin-out per 60-pin place) |
+| `SharpShellProduct` | What the product gives LIB-14's shell (M-49), one source for Qt6 and the Web: `shellProduct()` (name, help address, About texts, variant labels, the product's File items), `faceplateHitMap()` (the hit map of `KeyLayout`, distance 24), `settingsSpec()` (the dialog's sections, the product's Folders labels, Serial ports, Debugger), and their Value forms for the page |
+| `SharpWebPart` | What only the Web page asks for (M-49: the page is the React set's shell): `c1600.shell-product`, `c1600.faceplate-map`, the INSPECTOR's requests, Copy Screen's picture, `c1600.upload`, the stream `c1600.printer` |
 | `SharpMediaKinds` | The three kinds of medium of LIB-7's `MediaPart` (since M-47; it replaced `ModuleBay`, `FloppyBay`, `TapeBay`, `MediaLibrary`): the battery-backed module (`.card.yaml`), the floppy disk (`.floppy.yaml`, version 2) and the cassette tape (`.tape.yaml` with its WAV), their codecs, which module fits which slot; the media part keeps the pickers, Name & Save, `saveas:`, autosave and the saved media |
 | `SharpPresetRules`, `SharpPresetKeys`, `SharpDebugBlock` | The product's part of LIB-6's preset loader: its rules per model (when the machine is idle, what `expect:` reads, what `screenshot:` writes), its keys and sections (`program:`, `host-drive:`, `slot-N-rom:`, `bus-rom:`, `debug:`), and the reader of the `debug:` block (`debugBlockOf`). The bundled presets are LIB-6's preset list from `examples/bundle.yaml` (`SharpAppPart::presetEntries()`, the `preset-list` request); a bundled example is addressed as `examples:<path>` |
 | `SharpProductMachines` | The machines for LIB-18's start, model and variant switches and plug changes |
 | `PacingProfiles`, `AudioSink` | The Sharp pacing profiles (LIB-17 AC-20: the slice is the call, no jitter, full speed never paced); the host's audio output and `SoundFeed`, which plays the session's sound messages into it |
 | `Settings`, `AppPaths`, `Utf8Path` | Every settings key with its default (the declaration of `Calc-U-1600.ini`); the save/tapes/bundle folders and by-name save paths |
-| `KeyLayout/`, `LcdLayout`, `Rgb` | Key hit-regions and the faceplate fit; LCD geometry, colours and status indicators (`lcd::indicators()`) |
-| `MachineModel` | The `Model` and ROM-version enums |
-| `ControlState` | What the pickers, menus and panels offer right now: every rule about which control a model has and which peripheral excludes which |
+| `KeyLayout/`, `LcdLayout`, `Rgb` | Key hit-regions and the faceplate fit, by `ModelId`; LCD geometry, colours and status indicators (`lcd::indicatorSlots()`, the table the Web lays out by too, and `lcd::indicators()` of a display output) |
 | `SharpLoaderPart` | The loaders in the session (C1600-2): `c1600.file-kind` (what a file is, a WAV's files), `c1600.load-basic`, `c1600.type-basic` (an operation), `c1600.plan-code` (the one plan, asked again as the address is typed), `c1600.load-code` (the load and its advice; an operation with `run`); stateless, each call carries the file. The harness has it too (`pc1600 file-kind`, `load-basic`, `type-basic`, `load-code`) |
 | `SharpFileKinds`, `StartFile` | Opening a file (LIB-13, M-48; it replaced `core/DropFile` and `c1600.drop-target`): a drop, Open With, the file named at the start and Load Preset… send the library's `open` (the `OpenPart` that `SharpAppPart` owns, after the loaders among the parts), and the drag `open-would-take`. The library tells presets (`.pc1500`, `.pc1500a`, `.pc1600`, a `model:` line) and media by their names; `BasicProgramKind` and `MachineCodeKind` take the rest by C1600-2's classifier (headerless code only in a `.bin`). A program file opened by a way with a window is the stream topic `c1600.program-opened`, on which the frontend runs its program flow; in the harness it is loaded at once. The limit is 1 MiB for a drop, Open With and the start argument. `startFile` picks the file named when the Qt6 program starts |
 | `CardYamlDump` | The INSPECTOR's Card YAML: each slot's module RAM as an `initial-content:` block |
-| `DisplayFrame` | One model-agnostic LCD frame a renderer paints from, made from the machine's display output (`toDisplayFrame`, an adapter until M-49) |
 | `Text` | Small string helpers |
 
 ## The machine
@@ -167,12 +166,18 @@ messages: it sends commands and requests, and keeps what the topics send.
    topic says it runs and whether at full speed ("Loading…"). A failure is
    also a notice. Reset, Cold boot and a model switch stop a running one.
 
-The Qt app does this: `MachineController` hosts the session on the GUI
-thread, listens through a `Listener` and turns its messages into signals,
-`EmulationPacer` makes the host call from a QTimer, `Operations` sends the
-commands and shows "Loading…" from the busy topic, `AudioOutput` is the
-QAudioSink behind a `SoundFeed`, and `MainWindow` keeps only the
-physical-key map and the Shift-tap timer. The Web engine does it in the
+The Qt app does this through the Qt6 component set (LIB-14, M-49):
+`MachineController` makes the session and a `calcu::qt6::SessionHost` over
+it, which hosts it on the GUI thread (a 60 Hz timer, one host call per
+tick, the listener, the host services, harness attach in development
+builds); `MainWindow` is put together from `calcu::qt6::Shell`, which draws
+the menus, the control bar, Settings, About, the notices, "Loading…" and
+"ROMs missing" from the topics and sends the library's commands, and keeps
+the product's: the faceplate and LCD, the media controls of the bar
+(`MediaControls`), the INSPECTOR and the CE-158 panel, the program flows,
+the physical-key map and the Shift-tap timer. `AudioOutput` is the
+QAudioSink behind a `SoundFeed`. The `--shots` runner and the pacing probe
+are clients of attach. The Web engine does it in the
 library's worker ([Web-Client.md](Web-Client.md)). The harness `calcu`
 runs the library's app session on the product's machine (LIB-11).
 

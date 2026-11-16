@@ -9,15 +9,6 @@ namespace shared {
 
 using namespace calcu::machine;
 
-namespace {
-
-Model modelOf(const ModelId& id) {
-    if (id.value == sharp::kPC1500) return Model::PC1500;
-    if (id.value == sharp::kPC1600) return Model::PC1600;
-    return Model::PC1500A;
-}
-
-} // namespace
 
 SharpProductMachines::SharpProductMachines(const Catalogue& catalogue,
                                            std::shared_ptr<const std::vector<std::uint8_t>> hostDriveRom)
@@ -29,13 +20,13 @@ calcu::startup::MachinePlan SharpProductMachines::builtInDefault(const ModelId& 
 }
 
 calcu::pacing::PacingProfile SharpProductMachines::pacingProfile(const ModelId& model) const {
-    return shared::pacingProfile(modelOf(model));
+    return shared::pacingProfile(model);
 }
 
 int SharpProductMachines::soundRate(const ModelId&) const { return sharp::kSoundRate; }
 
 Seconds SharpProductMachines::readinessBound(const ModelId& model) const {
-    return Seconds(modelOf(model) == Model::PC1600 ? 27.0 : 7.0);   // LIB-18 EC-7
+    return Seconds(model.value == sharp::kPC1600 ? 27.0 : 7.0);   // LIB-18 EC-7
 }
 
 PeripheralRequest SharpProductMachines::carried(const PlugEntry& entry, Machine& m) {

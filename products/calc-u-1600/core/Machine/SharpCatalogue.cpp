@@ -78,10 +78,10 @@ MachineDescriptor pc1500Descriptor(bool pc1500a) {
     d.hasSound = true;
     for (const auto& k : pc1500KeyIds()) d.keys.push_back({KeyId{k}, {}});
     d.connectors = {{ConnectorId{"40-pin"}, "40-pin memory slot", {contactLevel(kPC1500SlotPinOut, Takes::One)}},
-                    {ConnectorId{"60-pin"}, "60-pin system bus", {contactLevel(kPC1500BusPinOut, Takes::Chain)}}};
+                    {ConnectorId{"60-pin"}, "60-pin system bus", {contactLevel(kPC1500BusPinOut, Takes::Chain), contactLevel(kPC1500PrinterPinOut, Takes::Chain), contactLevel(kPC1500InterfacePinOut, Takes::Chain)}}};
     d.places = {{PlaceName{kSlot1}, ConnectorId{"40-pin"}, PinOutId{kPC1500SlotPinOut}, 1},
-                {PlaceName{kPrinter}, ConnectorId{"60-pin"}, PinOutId{kPC1500BusPinOut}, 1},
-                {PlaceName{kInterface}, ConnectorId{"60-pin"}, PinOutId{kPC1500BusPinOut}, 1},
+                {PlaceName{kPrinter}, ConnectorId{"60-pin"}, PinOutId{kPC1500PrinterPinOut}, 1},
+                {PlaceName{kInterface}, ConnectorId{"60-pin"}, PinOutId{kPC1500InterfacePinOut}, 1},
                 {PlaceName{kBusRomPlace}, ConnectorId{"60-pin"}, PinOutId{kPC1500BusPinOut}, kBusRomsAtOnce}};
     // Depth as the machine is built (machine.md, fit table, "Depth today").
     const ComponentId memory{"memory"};
@@ -110,13 +110,13 @@ MachineDescriptor pc1600Descriptor() {
     for (const auto& k : pc1600KeyIds()) d.keys.push_back({KeyId{k}, {}});
     d.connectors = {{ConnectorId{"40-pin-1"}, "40-pin memory slot", {contactLevel(kPC1600Slot1PinOut, Takes::One)}},
                     {ConnectorId{"40-pin-2"}, "40-pin memory slot", {contactLevel(kPC1600Slot2PinOut, Takes::One)}},
-                    {ConnectorId{"60-pin"}, "60-pin system bus", {contactLevel(kPC1600BusPinOut, Takes::Chain)}},
+                    {ConnectorId{"60-pin"}, "60-pin system bus", {contactLevel(kPC1600BusPinOut, Takes::Chain), contactLevel(kPC1600PrinterPinOut, Takes::Chain), contactLevel(kPC1600InterfacePinOut, Takes::Chain), contactLevel(kPC1600HostDrivePinOut, Takes::Chain)}},
                     {ConnectorId{"rs232c"}, "RS-232C", {}}};
     d.places = {{PlaceName{kSlot1}, ConnectorId{"40-pin-1"}, PinOutId{kPC1600Slot1PinOut}, 1},
                 {PlaceName{kSlot2}, ConnectorId{"40-pin-2"}, PinOutId{kPC1600Slot2PinOut}, 1},
-                {PlaceName{kPrinter}, ConnectorId{"60-pin"}, PinOutId{kPC1600BusPinOut}, 1},
-                {PlaceName{kInterface}, ConnectorId{"60-pin"}, PinOutId{kPC1600BusPinOut}, 1},
-                {PlaceName{kHostDrivePlace}, ConnectorId{"60-pin"}, PinOutId{kPC1600BusPinOut}, 1},
+                {PlaceName{kPrinter}, ConnectorId{"60-pin"}, PinOutId{kPC1600PrinterPinOut}, 1},
+                {PlaceName{kInterface}, ConnectorId{"60-pin"}, PinOutId{kPC1600InterfacePinOut}, 1},
+                {PlaceName{kHostDrivePlace}, ConnectorId{"60-pin"}, PinOutId{kPC1600HostDrivePinOut}, 1},
                 {PlaceName{kBusRomPlace}, ConnectorId{"60-pin"}, PinOutId{kPC1600BusPinOut}, kBusRomsAtOnce}};
     const ComponentId memory{"memory"};
     const ComponentId subCpu{"sub-cpu"};
@@ -141,7 +141,7 @@ std::vector<PeripheralDescriptor> peripherals() {
     ce150.id = PeripheralId{kCE150};
     ce150.name = "CE-150";
     ce150.roms = {rom("CE-150.ROM", 8192, "eb9aa5156c6849890b137799efc50a4b")};
-    ce150.fits = {PinOutId{kPC1500BusPinOut}, PinOutId{kPC1600BusPinOut}};
+    ce150.fits = {PinOutId{kPC1500PrinterPinOut}, PinOutId{kPC1600PrinterPinOut}};
     ce150.mediaPlaces = {{MediaPlaceId{"cassette"}, "cassette", MediaPassage::Holding, {}}};
     ce150.components = {{ComponentId{"plotter"}, "ALPS plotter mechanism and its paper", Depth::Functional, std::nullopt}};
 
@@ -149,7 +149,7 @@ std::vector<PeripheralDescriptor> peripherals() {
     ce158.id = PeripheralId{kCE158};
     ce158.name = "CE-158";
     ce158.roms = {rom("CE-158.ROM", 16384, "aa952878fb29da4844791d95185649ca")};
-    ce158.fits = {PinOutId{kPC1500BusPinOut}, PinOutId{kPC1600BusPinOut}};
+    ce158.fits = {PinOutId{kPC1500InterfacePinOut}, PinOutId{kPC1600InterfacePinOut}};
     ce158.components = {{ComponentId{"uart"}, "CE-158 UART", Depth::Separate, std::nullopt},
                         {ComponentId{"printer-port"}, "Centronics printer port", Depth::Functional, std::nullopt}};
 
@@ -163,7 +163,7 @@ std::vector<PeripheralDescriptor> peripherals() {
                          {rom("PC1600-P1-B4-CE1600P-old.bin", 16384, "df41b050acbc29c83214cbaaf29bee91"),
                           rom("PC1600-P1-B5-CE1600P-OR-F-old.bin", 16384, "33f3ef7207eac06587cc4c6d70c6cbd0")}}};
     ce1600p.defaultVariant = VariantId{"New"};
-    ce1600p.fits = {PinOutId{kPC1600BusPinOut}};
+    ce1600p.fits = {PinOutId{kPC1600PrinterPinOut}};
     // The CE-1600F is described with it, as today (P-3; LIB-1 AC-39).
     ce1600p.mediaPlaces = {{MediaPlaceId{"cassette"}, "cassette", MediaPassage::Holding, {}},
                            {MediaPlaceId{"floppy"}, "floppy-disk", MediaPassage::Holding, {0, 1}}};
@@ -177,7 +177,7 @@ std::vector<PeripheralDescriptor> peripherals() {
     // Calc-U-1600's own ROM (firmware/pc1600-hostdrive/), always bundled
     // (roms.md Q-1).
     hostDrive.roms = {rom("PC1600-P1-B7-HOSTDRIVE.bin", 16384, "2aa388667706bf9bf5a707dc7b36416d")};
-    hostDrive.fits = {PinOutId{kPC1600BusPinOut}};
+    hostDrive.fits = {PinOutId{kPC1600HostDrivePinOut}};
 
     // C1600-4 AC-10, D-5: no ROM entry of its own; its bytes come with the
     // request (BusRomRequest), so only a preset can plug one in.

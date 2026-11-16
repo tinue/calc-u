@@ -1,7 +1,9 @@
-// Canvas painters: the LCD (Qt6/app/LcdWidget.cpp's algorithm, with the
-// constants and colours of Shared/LcdLayout.hpp from the engine). Drawing
-// only -- what is lit comes from the worker. The plotters' paper is the
-// library's paper panel (LIB-8, M-45).
+// Canvas painters: the LCD (Qt6/app/LcdWidget.cpp's algorithm). What is lit
+// is the library's `display` topic ({on, frame: {width, height, dots},
+// indicators: [{name, on}]}); where each indicator goes and the colours are
+// the `lcd` part of the request `c1600.faceplate-map` (app/LcdLayout: the
+// same table the Qt6 LCD draws with, LIB-14 D-31). Drawing only. The
+// plotters' paper is the library's paper panel (LIB-8).
 
 const MONO_FONT = '"SF Mono", Menlo, Consolas, "DejaVu Sans Mono", "Liberation Mono", monospace';
 
@@ -35,16 +37,39 @@ function calcImage(name, onLoad) {
   return null;
 }
 
-function paintDotMatrix(ctx, frame, x, y, w, h, ink) {
-  if (!frame || frame.cols <= 0 || frame.rows <= 0 || !frame.poweredOn) return;
-  const dotSpacing = w / frame.cols;
-  const rowSpacing = h / frame.rows;
+// The indicators lit in `display`, laid out by the model's slots
+// (lcd::indicators of app/LcdLayout.cpp, kind by kind): [{text, x, scale, style}].
+function lcdIndicators(slots, display) {
+  const lit = (name) => ((display && display.indicators) || []).some((i) => i.name === name && i.on);
+  const out = [];
+  for (const s of slots || []) {
+    const at = { x: s.x, scale: s.scale, style: s.style };
+    if (s.kind === "flag") {
+      if (lit(s.names[0])) out.push({ text: s.caption, ...at });
+    } else if (s.kind === "join") {
+      const text = s.names.filter(lit).join("");
+      if (text) out.push({ text, ...at });
+    } else if (s.kind === "first") {
+      const first = s.names.find(lit);
+      if (first) out.push({ text: first, ...at });
+    } else if (s.kind === "always") {
+      out.push({ text: s.caption, ...at });
+    }
+  }
+  return out;
+}
+
+function paintDotMatrix(ctx, display, x, y, w, h, ink) {
+  const f = display && display.frame;
+  if (!f || f.width <= 0 || f.height <= 0 || !display.on) return;
+  const dotSpacing = w / f.width;
+  const rowSpacing = h / f.height;
   const dot = Math.min(dotSpacing, rowSpacing) * 0.9;
   ctx.fillStyle = ink;
-  const dots = frame.dots;
-  for (let row = 0; row < frame.rows; row++) {
-    for (let col = 0; col < frame.cols; col++) {
-      if (!dots[row * frame.cols + col]) continue;
+  const dots = f.dots;
+  for (let row = 0; row < f.height; row++) {
+    for (let col = 0; col < f.width; col++) {
+      if (!dots[row * f.width + col]) continue;
       const cx = x + (col + 0.5) * dotSpacing;
       const cy = y + (row + 0.5) * rowSpacing;
       ctx.fillRect(cx - dot / 2, cy - dot / 2, dot, dot);
@@ -52,11 +77,11 @@ function paintDotMatrix(ctx, frame, x, y, w, h, ink) {
   }
 }
 
-function paintLcdPC1500(ctx, frame, width, height, L) {
-  const background = rgb(L.p15Background), ink = rgb(L.ink);
+function paintLcdPC1500(ctx, display, width, height, L) {
+  const background = rgb(L.background), ink = rgb(L.ink);
   ctx.fillStyle = background;
   ctx.fillRect(0, 0, width, height);
-  if (!frame || !frame.poweredOn) return;
+  if (!display || !display.on) return;
   // 4 px horizontal padding on the whole panel.
   const left = 4, totalWidth = width - 8, totalHeight = height;
   const effectiveHeight = totalHeight * L.p15ContentScale;
@@ -70,7 +95,7 @@ function paintLcdPC1500(ctx, frame, width, height, L) {
   ctx.textBaseline = "top";
   ctx.fillStyle = ink;
   const y = topInset;
-  for (const ind of frame.indicators) {
+  for (const ind of lcdIndicators(L.indicators, display)) {
     const x = left + ind.x * totalWidth;
     if (ind.style === "dot") {
       const d = fontSize * 0.4;
@@ -81,19 +106,19 @@ function paintLcdPC1500(ctx, frame, width, height, L) {
     }
     ctx.fillText(ind.text, x, y);
   }
-  paintDotMatrix(ctx, frame, left, barHeight + matrixTopGap, totalWidth, canvasHeight, ink);
+  paintDotMatrix(ctx, display, left, barHeight + matrixTopGap, totalWidth, canvasHeight, ink);
 }
 
-function paintLcdPC1600(ctx, frame, width, height, L) {
-  const background = rgb(L.p16Background), ink = rgb(L.ink);
+function paintLcdPC1600(ctx, display, width, height, L) {
+  const background = rgb(L.background), ink = rgb(L.ink);
   ctx.fillStyle = background;
   ctx.fillRect(0, 0, width, height);
-  if (!frame || !frame.poweredOn) return;
+  if (!display || !display.on) return;
   const fontSize = height * L.p16LabelFontHeightFraction;
   const rowHeight = height * L.p16RowHeightFraction;
   const rowTop = height * L.p16IndicatorRowTop;
   ctx.textBaseline = "middle";
-  for (const ind of frame.indicators) {
+  for (const ind of lcdIndicators(L.indicators, display)) {
     const x = ind.x * width;
     const size = Math.max(1, Math.floor(fontSize * (ind.scale || 1)));
     ctx.font = `500 ${size}px ${MONO_FONT}`;
@@ -113,18 +138,17 @@ function paintLcdPC1600(ctx, frame, width, height, L) {
     }
     ctx.fillText(ind.text, x, cy);
   }
-  paintDotMatrix(ctx, frame, L.p16MatrixLeft * width, L.p16MatrixTop * height,
+  paintDotMatrix(ctx, display, L.p16MatrixLeft * width, L.p16MatrixTop * height,
     (L.p16MatrixRight - L.p16MatrixLeft) * width, (L.p16MatrixBottom - L.p16MatrixTop) * height, ink);
 }
 
-// The LCD for `model` (0 PC-1500, 1 PC-1500A, 2 PC-1600); `frame` the
-// worker's display message (null: blank panel).
-function paintLcd(ctx, model, frame, width, height, L) {
+// The LCD of the model whose faceplate map's `lcd` is `L`; `display` the
+// `display` topic's value (null: a blank panel).
+function paintLcd(ctx, L, display, width, height) {
   if (!L) return;
-  if (model === 2) paintLcdPC1600(ctx, frame, width, height, L);
-  else paintLcdPC1500(ctx, frame, width, height, L);
+  if (L.pc1600) paintLcdPC1600(ctx, display, width, height, L);
+  else paintLcdPC1500(ctx, display, width, height, L);
 }
-
 // A PNG Blob of a canvas.
 function canvasPng(canvas) {
   return new Promise((resolve) => canvas.toBlob(resolve, "image/png"));
@@ -157,4 +181,12 @@ async function copyImageOrDownload(fileName, items) {
   if (await writeClipboard(items)) return;
   const png = await items["image/png"];
   if (png) downloadBytes(fileName, png, "image/png");
+}
+
+// A file or blob for the user to keep (the library's download).
+function downloadBytes(name, bytes, type) { calcuDownload(name, bytes, type); }
+
+// A picked/dropped File's bytes.
+function fileBytes(file) {
+  return file.arrayBuffer().then((b) => new Uint8Array(b));
 }

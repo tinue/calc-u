@@ -2,7 +2,7 @@
 
 namespace shared {
 
-calcu::pacing::PacingProfile pacingProfile(Model) {
+calcu::pacing::PacingProfile pacingProfile(const calcu::machine::ModelId&) {
     calcu::pacing::PacingProfile p;
     p.slice = std::nullopt;                 // the call
     p.jitter = false;

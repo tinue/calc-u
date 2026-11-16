@@ -11,11 +11,11 @@ shots:
   - name: lib7-ac16
     preset: ../../docs/developer/screenshots/presets/pc1600-ready.pc1600
     steps:
-      - select: controlbar.slot1 = CE-1600M
+      - select: media-picker-slot-1 = CE-1600M
       - run: 2
-      - click: controlbar.slot1.save
+      - click: media-save-slot-1
       - enter-text: My programs
       - accept
       - run: 1
-      - select: controlbar.slot1 = My programs
-    capture: { target: controlbar, file: lib7-ac16-saved.png, padding: 4 }
+      - select: media-picker-slot-1 = My programs
+    capture: { target: control-bar, file: lib7-ac16-saved.png, padding: 4 }

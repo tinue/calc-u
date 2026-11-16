@@ -18,6 +18,7 @@
 #include "sessions/SessionPart.hpp"
 #include "app/PacingProfiles.hpp"
 #include "MachineCodeFile.hpp"
+#include "app/SharpControlRules.hpp"
 #include "app/SharpDebuggerSetup.hpp"
 #include "app/SharpFileKinds.hpp"
 #include "app/SharpLoaderPart.hpp"
@@ -288,6 +289,9 @@ public:
     std::vector<std::string> presetExtensions() const override { return shared::presetExtensions(); }
     std::vector<opening::FileKind*> fileKinds() override { return {&basicKind_, &codeKind_}; }
     debugger::DebuggerPart* debuggerPart() override { return &debugger_; }
+    // LIB-4 (Part D, T16-7): the printers that own the paper panel and the
+    // product's rules; the harness can mount a host folder (C1600-5 AC-11).
+    control::ControlSetup controlSetup() const override { return sharpControlSetup(catalogue_, controlRules_); }
 
     // C1600-2 AC-21: the loaders under the product's word (LIB-11 AC-13).
     void addCommands(harness::CommandRegistry& r) override {
@@ -311,6 +315,7 @@ private:
     MachineCodeKind codeKind_;
     paper::PaperPart paper_{catalogue_, sharpPrinterPapers()};
     debugger::DebuggerPart debugger_{sharpDebuggerSetup(nullptr, nullptr, /*hasTraceFolder=*/false)};
+    SharpControlRules controlRules_{SharpControlRules::Inputs{true, {}}};
 };
 
 } // namespace

@@ -13,20 +13,20 @@
 #include "Display/LcdScreenshot.hpp"
 #include "Display/LcdText.hpp"
 #include "Job.hpp"
+#include "Machine/SharpCatalogue.hpp"
 #include "Machine/SharpProductKinds.hpp"
 #include "PC1500/PC1500Variant.hpp"
 #include "Tape/TapeDeck.hpp"
 #include "TraceTypes.hpp"
 #include "app/AppPaths.hpp"
-#include "app/ControlState.hpp"
-#include "app/DisplayFrame.hpp"
-#include "app/MachineModel.hpp"
 #include "app/PacingProfiles.hpp"
 #include "app/Settings.hpp"
+#include "app/SharpControlRules.hpp"
 #include "app/SharpFileKinds.hpp"
 #include "app/SharpLoaderPart.hpp"
 #include "app/SharpPresetRules.hpp"
 #include "app/SharpProductMachines.hpp"
+#include "control/ControlPart.hpp"
 #include "debugger/DebuggerPart.hpp"
 #include "app/SharpTopics.hpp"
 #include "app/SharpTyping.hpp"
@@ -57,9 +57,11 @@ struct OpResult {
     static OpResult fail(std::string why) { return OpResult{false, std::move(why)}; }
 };
 
-// The display output as the frontends draw it today (adapter until M-49,
-// LIB-14): every status symbol in kStatusSymbolNames order.
-DisplayFrame displayFrameOf(const calcu::machine::DisplayOutput& output);
+// What differs by frontend (LIB-4 AC-18, D-12): a browser cannot mount a
+// host folder.
+struct SharpAppPartOptions {
+    bool canMountHostFolder = true;
+};
 
 // ── SharpAppPart: Calc-U-1600's app layer in the library's app session ───
 //
@@ -82,15 +84,19 @@ DisplayFrame displayFrameOf(const calcu::machine::DisplayOutput& output);
 // - the product's commands that need its own data, each one
 //   MachineControl::change (LIB-18 D-22):
 //   `c1600.mount-host-drive`, `c1600.ce1600p-rom` (SharpTopics.hpp);
-// - the interim product topics (control state, machine, serial
-//   links) and LIB-12's `roms-missing`.
+// - the product's topics (`c1600.lamps`, `c1600.serial-links`) and
+//   LIB-12's `roms-missing`;
+// - the product's rules of the control state (app/SharpControlRules) for
+//   the library's ControlPart, which the session builders add among the
+//   library's parts (controlPart(); LIB-4 D-13), not sessionParts().
 //
-// The host builds it, hands sessionParts() to its AppSessionSetup (and the
-// part to AppSessionSetup::owned), then sends `start`. Single-threaded: on
+// The host builds it, hands the control part and sessionParts() to its
+// AppSessionSetup (and the part to AppSessionSetup::owned), then sends
+// `start`. Single-threaded: on
 // the session's thread.
 class SharpAppPart final : public calcu::sessions::SessionPart {
 public:
-    SharpAppPart(Settings& settings, AppPaths& paths);
+    SharpAppPart(Settings& settings, AppPaths& paths, SharpAppPartOptions options = {});
     ~SharpAppPart();
     SharpAppPart(const SharpAppPart&) = delete;
     SharpAppPart& operator=(const SharpAppPart&) = delete;
@@ -128,12 +134,10 @@ public:
     // LIB-18: the machine control (builds, plug changes).
     calcu::startup::MachineControl& machineControl() { return m_startup.control(); }
 
-    // File ▸ Mount Directory is offered when the frontend states a folder
-    // picker (LIB-3 AC-38: 0.8.1's hostDirectories; a browser has none).
-    ControlState controlState() const {
-        return controlStateOf(*this, hostFolders());
-    }
-    bool hostFolders() const { return m_ctx && m_ctx->hostOffers(calcu::sessions::HostService::FolderPicker); }
+    // LIB-4: the library's control part with the product's rules (D-13).
+    calcu::control::ControlPart& controlPart() { return m_control; }
+    // The place host-drive can be used (AC-18, D-12): not in a browser.
+    bool canMountHostFolder() const { return m_options.canMountHostFolder; }
 
     // ---- SessionPart ----
     void attach(calcu::sessions::SessionSetup&) override;
@@ -144,12 +148,12 @@ public:
     // ---- The machine ----
     calcu::machine::Machine* machine() const { return m_ms ? m_ms->machine() : nullptr; }
     bool hasLiveMachine() const { return machine() != nullptr; }
-    Model currentModel() const { return m_model; }
-    // The variants of the running machine, and the CE-1600P's ROM: the
-    // plugged one's, else the choice kept for the next attach (AC-31, D-21).
-    PC1500RomRevision pc1500RomRevision() const;
-    PC1600RomVersion pc1600RomVersion() const;
-    CE1600PRomVersion ce1600pRomVersion() const;
+    // The running model (the startup model before the first build).
+    calcu::machine::ModelId model() const;
+    bool isPC1600() const { return model().value == sharp::kPC1600; }
+    // The CE-1600P's variant ("New", "Old"): the plugged one's, else the
+    // choice kept for the next attach (LIB-18 AC-31, D-21).
+    std::string ce1600pVariant() const;
     double clockHz() const;
     const calcu::machine::Catalogue& catalogue() const { return m_catalogue; }
     const std::shared_ptr<const calcu::roms::RomSet>& romSet() const { return m_roms; }
@@ -202,10 +206,11 @@ private:
     Settings& m_settings;
     AppPaths& m_paths;
 
-    Model m_model = Model::PC1500A;
+    SharpAppPartOptions m_options;
+    std::string m_lastModel;   // the model of the last build (followNewMachine)
     // AC-31, D-21: the CE-1600P's ROM chosen while none is plugged in, until
     // the product quits or the model is switched.
-    CE1600PRomVersion m_ce1600pChoice = CE1600PRomVersion::New;
+    std::string m_ce1600pChoice = "New";
 
     calcu::machine::Catalogue m_catalogue;
     // The one lookup, at the start (LIB-12 AC-4, AC-13): the whole full set
@@ -242,12 +247,14 @@ private:
     MachineCodeKind m_codeKind;
     std::unique_ptr<calcu::opening::OpenPart> m_open;
 
+    // LIB-4 (Part D): the product's rules and the library's part.
+    SharpControlRules m_controlRules;
+    calcu::control::ControlPart m_control;
+
     // The topics (attach).
-    calcu::sessions::StateTopic* m_controlTopic = nullptr;
-    calcu::sessions::StateTopic* m_machineTopic = nullptr;
+    calcu::sessions::StateTopic* m_lampsTopic = nullptr;
     calcu::sessions::StateTopic* m_serialTopic = nullptr;
     calcu::sessions::StateTopic* m_romsMissingTopic = nullptr;
-    MachinePayload m_machineState;
     std::uint64_t m_serialMoves = 0;
 };
 

@@ -13,7 +13,7 @@
 #include "FaceplateWidget.hpp"
 #include "FileOpenFilter.hpp"
 #include "app/SharpShellProduct.hpp"
-#include "app/StartFile.hpp"
+#include "opening/StartFile.hpp"
 #include "control/ControlState.hpp"
 #include "qt6/PanelArea.hpp"
 #include "qt6/Shell.hpp"
@@ -621,7 +621,7 @@ TEST(lib13_ac21_start_with_a_file_name) {
     SKIP_UNLESS_WINDOW();
     // main.cpp: the last argument that names a file, opened as the start's.
     const std::vector<std::string> args{"Calc-U-1600", "-NSDocumentRevisionsDebugMode", "YES", kExample.toStdString()};
-    const auto start = shared::startFile(args, [](const std::string& p) { return std::filesystem::exists(p); });
+    const auto start = calcu::opening::startFile(args, [](const std::string& p) { return std::filesystem::exists(p); });
     CHECK(start && *start == kExample.toStdString());
     Fixture f("PC-1500A", /*started=*/false);
     f.w().openFile(QString::fromStdString(*start), calcu::opening::Way::Start);

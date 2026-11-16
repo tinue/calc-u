@@ -8,6 +8,7 @@
 #include "app/LcdLayout.hpp"
 #include "app/Settings.hpp"
 #include "app/SharpControlRules.hpp"
+#include "shell/ValueForms.hpp"
 
 namespace shared {
 
@@ -91,21 +92,6 @@ Value strings(const std::vector<std::string>& v) {
     return Value(std::move(out));
 }
 
-const char* groupName(shell::MenuGroup g) {
-    switch (g) {
-        case shell::MenuGroup::FileOpen: return "FileOpen";
-        case shell::MenuGroup::FileKinds: return "FileKinds";
-        case shell::MenuGroup::FileMedia: return "FileMedia";
-        case shell::MenuGroup::FileEnd: return "FileEnd";
-        case shell::MenuGroup::Edit: return "Edit";
-        case shell::MenuGroup::MachineEnd: return "MachineEnd";
-        case shell::MenuGroup::Help: return "Help";
-    }
-    return "FileKinds";
-}
-
-Value rect(const shell::Rect& r) { return Value::object({{"x", r.x}, {"y", r.y}, {"w", r.w}, {"h", r.h}}); }
-
 Value rgb(Rgb c) { return Value(Value::Array{Value(c.r), Value(c.g), Value(c.b)}); }
 
 const char* styleName(lcd::Indicator::Style s) {
@@ -127,59 +113,10 @@ const char* kindName(lcd::IndicatorSlot::Kind k) {
     return "flag";
 }
 
-const char* widgetName(shell::DialogRow::Widget w) {
-    using W = shell::DialogRow::Widget;
-    switch (w) {
-        case W::StartupModel: return "startup-model";
-        case W::StartupPreset: return "startup-preset";
-        case W::Folder: return "folder";
-        case W::Integer: return "integer";
-        case W::Choice: return "choice";
-        case W::Note: return "note";
-        case W::Text: break;
-    }
-    return "text";
-}
-
 } // namespace
-
-Value dialogSpecValue(const shell::DialogSpec& spec) {
-    Value::Array sections;
-    for (const auto& s : spec.sections) {
-        Value::Array rows;
-        for (const auto& r : s.rows)
-            rows.push_back(Value::object(
-                {{"widget", widgetName(r.widget)}, {"section", r.section}, {"key", r.key}, {"label", r.label}}));
-        sections.push_back(Value::object({{"title", s.title}, {"rows", Value(std::move(rows))}}));
-    }
-    return Value(std::move(sections));
-}
-
-Value shellProductValue(const shell::ShellProduct& p) {
-    Value::Object variantLabels;
-    for (const auto& [id, label] : p.variantLabels) variantLabels.push_back({id, Value(label)});
-    Value::Array items;
-    for (const auto& i : p.items)
-        items.push_back(Value::object({{"group", groupName(i.group)}, {"id", i.id}, {"label", i.label}, {"entry", i.entry}}));
-    return Value::object({{"name", p.name},
-                          {"helpUrl", p.helpUrl},
-                          {"aboutLabel", p.aboutLabel},
-                          {"aboutLines", strings(p.aboutLines)},
-                          {"variantLabels", Value(std::move(variantLabels))},
-                          {"presetFilter", p.presetFilter},
-                          {"copyScreen", true},
-                          {"pasteText", p.pasteText},
-                          {"moduleSlotPinOuts", strings({p.moduleSlotPinOuts.begin(), p.moduleSlotPinOuts.end()})},
-                          {"placesWithoutControl", strings({p.placesWithoutControl.begin(), p.placesWithoutControl.end()})},
-                          {"items", Value(std::move(items))}});
-}
 
 Value faceplateMapValue(const calcu::machine::ModelId& model) {
     const KeyLayout::Layout& l = KeyLayout::layoutFor(model);
-    const shell::HitMap m = faceplateHitMap(model);
-    Value::Array keys;
-    for (const auto& [id, r] : m.keys)
-        keys.push_back(Value::object({{"name", id.value}, {"x", r.x}, {"y", r.y}, {"w", r.w}, {"h", r.h}}));
     Value::Array slots;
     for (const lcd::IndicatorSlot& s : lcd::indicatorSlots(model))
         slots.push_back(Value::object({{"kind", kindName(s.kind)},
@@ -206,13 +143,12 @@ Value faceplateMapValue(const calcu::machine::ModelId& model) {
                                     {"p16MatrixTop", kP16MatrixTop},
                                     {"p16MatrixBottom", kP16MatrixBottom},
                                     {"indicators", Value(std::move(slots))}});
-    return Value::object({{"model", model.value},
-                          {"width", l.imageWidth},
-                          {"height", l.imageHeight},
-                          {"distance", m.distance},
-                          {"display", rect(*m.display)},
-                          {"keys", Value(std::move(keys))},
-                          {"lcd", std::move(lcdValue)}});
+    // The art's size around the shell's form of the hit map (D-31).
+    Value::Object out{{"model", Value(model.value)}, {"width", Value(l.imageWidth)}, {"height", Value(l.imageHeight)}};
+    const Value hitMap = shell::toValue(faceplateHitMap(model));
+    for (const auto& member : *hitMap.members()) out.push_back(member);
+    out.push_back({"lcd", std::move(lcdValue)});
+    return Value(std::move(out));
 }
 
 } // namespace shared

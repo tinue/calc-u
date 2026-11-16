@@ -51,7 +51,7 @@ cp "$REPO/frontends/qt6/resources/linux/calc-u-1600.png" "$DIST/app/icon.png"
 
 cp "$WEB/index.html" "$WEB/calc.css" "$WEB/calc-engine-worker.js" "$DIST/"
 # React 18 for the app and the demo page; a host page brings its own.
-cp "$WEB/vendor/react.production.min.js" "$WEB/vendor/react-dom.production.min.js" "$DIST/vendor/"
+cp "$ROOT/library/web/vendor/react.production.min.js" "$ROOT/library/web/vendor/react-dom.production.min.js" "$DIST/vendor/"
 cp "$WEB/app/index.html" "$WEB/app/app.css" "$WEB/app/manifest.json" "$DIST/app/"
 # The service worker, the app's worker entry and the audio worklet are the
 # library's (library/web/; build.js copies them).

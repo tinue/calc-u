@@ -1,7 +1,6 @@
 #pragma once
 #include <QByteArray>
 #include <QElapsedTimer>
-#include <QHash>
 #include <QImage>
 #include <QMainWindow>
 #include <QString>
@@ -12,6 +11,7 @@
 
 #include "MachineController.hpp"
 #include "opening/OpenRequest.hpp"
+#include "qt6/HostKeys.hpp"
 #include "qt6/Shell.hpp"
 #include "sessions/Value.hpp"
 
@@ -114,9 +114,9 @@ private:
     void mountHostDirectory();
     void unmountHostDirectory();
 
-    // Host keys (LIB-5): the physical key -> the `physical` of its
-    // host-key-down, so the key-up pairs with it (LIB-5 EC-1).
-    QHash<quint32, std::string> m_physicalKeysDown;
+    // Host keys (LIB-5): the keys held down, so each key-up pairs with its
+    // host-key-down (LIB-5 EC-1).
+    calcu::qt6::HostKeys m_hostKeys;
     void releaseHeldKeys();
     // A host Shift tapped on its own is one press of the machine's SHIFT
     // (LIB-5 AC-33; the wall-time rule stays here, D-12).

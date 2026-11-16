@@ -22,32 +22,9 @@ const PANEL_MIN = 220;          // the least room below the faceplate worth a pa
 const INSPECTOR_MIN_WIDTH = 700; // narrower: the inspector only when no other panel is shown
 const SHIFT_TAP_MS = 400;
 const SHIFT_TAP_POINTER = 1000;   // the screen press a SHIFT tap is sent as (no pointer of the faceplate)
-const IS_MAC = typeof navigator !== "undefined" && /Mac|iPhone|iPad|iPod/.test(navigator.platform || navigator.userAgent);
+const IS_MAC = CALCU_HOST_IS_MAC;
 const MODEL_IDS = ["PC-1500", "PC-1500A", "PC-1600"];
 const DEFAULT_MODEL = "PC-1500A";
-
-// KeyboardEvent.code of the keys a keyboard map may name (calcu::typing::NamedKey).
-const NAMED_KEYS = {
-  Escape: "escape", Backspace: "backspace", Enter: "return", NumpadEnter: "enter", Tab: "tab", Delete: "delete",
-  ArrowUp: "up", ArrowDown: "down", ArrowLeft: "left", ArrowRight: "right",
-  F1: "f1", F2: "f2", F3: "f3", F4: "f4", F5: "f5", F6: "f6",
-  ScrollLock: "scroll-lock", Insert: "insert", Home: "home", End: "end", PageUp: "page-up", PageDown: "page-down",
-};
-
-// The command `host-key-down` of a browser key event (LIB-5 AC-7, AC-29):
-// which key, which modifiers, the one character it produced (0: none or more).
-function hostKeyEvent(e) {
-  const chars = [...(e.key || "")];
-  const produced = chars.length === 1 ? chars[0].codePointAt(0) : 0;
-  const letter = chars.length === 1 && chars[0].toLowerCase() !== chars[0].toUpperCase()
-    ? chars[0].toLowerCase().codePointAt(0) : 0;
-  return {
-    physical: e.code, named: NAMED_KEYS[e.code] || "", produced, carried: letter,
-    shift: !!e.shiftKey, alt: !!e.altKey, "mac-host": IS_MAC,
-    // By what the user pressed: on a Mac the browser's metaKey is Command.
-    command: IS_MAC ? !!e.metaKey : false, control: !!e.ctrlKey, meta: IS_MAC ? false : !!e.metaKey,
-  };
-}
 
 // A grey image (Copy Screen) as a PNG Blob.
 function grayPng(image) {
@@ -206,7 +183,8 @@ function CalcU1600(props) {
   const shell = useShell("Calc-U-1600", { ...embedded, model: modelProp,
     preset: embedded.preset ? `examples:${embedded.preset}` : "" });
   const rootRef = React.useRef(null);
-  const heldKeys = React.useRef(new Set());   // KeyboardEvent.code held
+  const hostKeys = React.useRef(null);        // the host keys held (the library's calcuHostKeys)
+  if (!hostKeys.current) hostKeys.current = calcuHostKeys();
   const shiftTap = React.useRef(null);        // time the bare Shift went down
   const programFlow = React.useRef(false);    // a program flow runs (one at a time)
   const dialogs = useDialogs();
@@ -421,8 +399,7 @@ function CalcU1600(props) {
 
   // ── Keyboard (MainWindow::keyPressEvent / keyReleaseEvent) ──────────
   const releaseHeldKeys = () => {
-    if (shell && heldKeys.current.size) send("focus-lost");   // LIB-5 AC-10: every held key comes up
-    heldKeys.current.clear();
+    if (hostKeys.current.focusLost() && shell) send("focus-lost");   // LIB-5 AC-10: every held key comes up
     shiftTap.current = null;
   };
   const onKeyDown = (e) => {
@@ -438,9 +415,8 @@ function CalcU1600(props) {
     // Function keys past F6 and the like stay the browser's.
     if (/^F([7-9]|1\d)$/.test(e.key)) return;
     e.preventDefault();
-    if (heldKeys.current.has(e.code)) return;
-    send("host-key-down", hostKeyEvent(e));
-    heldKeys.current.add(e.code);
+    const down = hostKeys.current.down(e);   // LIB-5 AC-7, AC-29; none while held
+    if (down) send("host-key-down", down);
   };
   const onKeyUp = (e) => {
     if (!shell) return;
@@ -454,10 +430,9 @@ function CalcU1600(props) {
         send("screen-key-up", { key: "shift", pointer: SHIFT_TAP_POINTER });
       }
     }
-    if (!heldKeys.current.has(e.code)) return;
-    heldKeys.current.delete(e.code);
     // The engine keeps a quick tap down long enough to be scanned (LIB-5 AC-1).
-    send("host-key-up", { physical: e.code });
+    const up = hostKeys.current.up(e);
+    if (up) send("host-key-up", up);
   };
 
   // ── Layout (AC-40) ──────────────────────────────────────────────────

@@ -23,8 +23,8 @@ const REPO = path.join(WEB, "..", "..");  // the product directory
 const ROOT = path.join(REPO, "..", "..");  // the repository
 // CALCU59_WEB_DIST: another output folder (build.sh, tests/rom_missing_build.sh).
 const DIST = process.env.CALCU59_WEB_DIST || path.join(WEB, "dist");
-const VENDOR = path.join(WEB, "vendor");
 const dist = require(path.join(ROOT, "library", "web", "build", "dist.js"));
+const VENDOR = dist.VENDOR;   // library/web/vendor/
 
 const read = (p) => fs.readFileSync(p, "utf8");
 

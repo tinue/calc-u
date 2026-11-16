@@ -6,7 +6,6 @@
 #include "Ce158PrinterWidget.hpp"
 #include "DebugPanel.hpp"
 #include "FaceplateWidget.hpp"
-#include "HostKeyEvents.hpp"
 #include "LcdWidget.hpp"
 #include "MachineCodeLoadDialog.hpp"
 #include "MediaControls.hpp"
@@ -456,23 +455,6 @@ void MainWindow::showMachineCodeLoaded(const shared::CodeLoadedReply& loaded) {
     m_controller->pasteText(loaded.callCommand);
 }
 
-namespace {
-
-// The physical key behind a key event, stable between its press and its
-// release whatever the modifiers did in between (unlike QKeyEvent::key()).
-quint32 physicalKeyId(const QKeyEvent* event) {
-#ifdef Q_OS_MACOS
-    // nativeScanCode() carries nothing on macOS; the virtual key code is
-    // the physical key position (kVK_*), independent of the layout.
-    return event->nativeVirtualKey();
-#else
-    if (event->nativeScanCode() != 0) return event->nativeScanCode();
-    return static_cast<quint32>(event->key());
-#endif
-}
-
-} // namespace
-
 void MainWindow::keyPressEvent(QKeyEvent* event) {
     if (event->isAutoRepeat()) {
         // Qt delivers OS auto-repeat as repeated .down events -- without
@@ -491,20 +473,17 @@ void MainWindow::keyPressEvent(QKeyEvent* event) {
     }
     disarmShiftTap();
 
-    // A bare modifier (the Cmd of a second Cmd-V, Cmd-Tab) is no key: it
-    // does not stop a paste.
-    const Qt::Key key = static_cast<Qt::Key>(event->key());
-    if (key == Qt::Key_Control || key == Qt::Key_Meta || key == Qt::Key_Alt || key == Qt::Key_AltGr) {
+    // The host key as Qt reports it; the product's keyboard map in the
+    // session decides what it types (LIB-5 AC-7, AC-29). A bare modifier
+    // (the Cmd of a second Cmd-V, Cmd-Tab) is no key: it does not stop a
+    // paste.
+    const auto down = m_hostKeys.press(*event);
+    if (!down) {
         QWidget::keyPressEvent(event);
         return;
     }
-    // The host key as Qt reports it; the product's keyboard map in the
-    // session decides what it types (LIB-5 AC-7, AC-29).
-    const std::string physical = std::to_string(physicalKeyId(event));
-    m_controller->hostKeyDown(QtHostKeys::hostKeyEvent(key, event->modifiers(), event->text(),
-                                                       event->nativeVirtualKey(), physical));
-    m_physicalKeysDown.insert(physicalKeyId(event), physical);   // its key-up goes to the session
-    if (QtHostKeys::commandModifier(event->modifiers())) {   // a shortcut no action claimed
+    m_controller->hostKeyDown(*down);
+    if (calcu::qt6::commandModifier(event->modifiers())) {   // a shortcut no action claimed
         QWidget::keyPressEvent(event);
         return;
     }
@@ -560,13 +539,12 @@ void MainWindow::keyReleaseEvent(QKeyEvent* event) {
         }
     }
 
-    auto it = m_physicalKeysDown.find(physicalKeyId(event));
-    if (it == m_physicalKeysDown.end()) {
+    const auto up = m_hostKeys.release(*event);
+    if (!up) {
         QWidget::keyReleaseEvent(event);
         return;
     }
-    m_controller->hostKeyUp(it.value());
-    m_physicalKeysDown.erase(it);
+    m_controller->hostKeyUp(*up);
     event->accept();
 }
 
@@ -577,7 +555,7 @@ void MainWindow::changeEvent(QEvent* event) {
 
 void MainWindow::releaseHeldKeys() {
     if (m_controller) m_controller->focusLost();   // LIB-5 AC-10: every held key comes up, what waits goes (none while the window is torn down)
-    m_physicalKeysDown.clear();
+    m_hostKeys.clear();
     disarmShiftTap(); // the Shift release may land elsewhere
 }
 

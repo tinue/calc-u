@@ -62,7 +62,7 @@ calc-engine-worker.js → library-worker.js ── wasm/ti59-core.{js,wasm} ◀�
 | `app/` | The installable PWA's own files: `index.html`, `app.css`, `manifest.json`; its page, service worker and worker entry are the library's (`library/web/app/`) |
 | `index.html` | Demo and test page, sized to the window: `?layout=wide|portrait`, also `width`, `height`, `model` (by its name), `preset` (a path in `presets/`) |
 | `presets.json` | The presets the preset picker offers (file name, title): every file directly in `examples/`, none from its subdirectories. A new example there needs a line here. `build.js` copies them at build time to `dist/presets/` |
-| `vendor/` | React 18 and ReactDOM (shipped), Babel (build only), ReactDOMServer (tests only) |
+| `library/web/vendor/` (the repository's) | React 18 and ReactDOM (shipped), Babel (build only), ReactDOMServer (tests only); one copy for both products |
 | `build.sh`, `build.js` | The build (below) |
 | `tests/`, `run-tests.sh`, `playwright.config.js`, `package.json` | Playwright tests |
 

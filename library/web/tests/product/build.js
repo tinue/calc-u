@@ -9,9 +9,8 @@
 // product's name gives its component's text, its store (mount
 // /persist-<name>) and its lock; the version goes into calc.js and into
 // bundle/version.txt, which the worker loads (AC-11: all files of one
-// release). React and Babel are the vendored copies of the products'
-// frontends/web/vendor/ (identical in both); the library has none of its own
-// until the products move onto the shell (M-31, M-34).
+// release). React and Babel are the library's one vendored copy
+// (library/web/vendor/, dist.VENDOR), which both products use.
 
 const fs = require("fs");
 const path = require("path");
@@ -23,8 +22,7 @@ for (const k of ["name", "version", "wasm", "out"])
   if (!args[k]) throw new Error(`build.js: --${k} is missing`);
 
 const HERE = __dirname;
-const REPO = path.join(HERE, "..", "..", "..", "..");
-const VENDOR = path.join(REPO, "products", "calc-u-1600", "frontends", "web", "vendor");
+const VENDOR = dist.VENDOR;
 const OUT = path.resolve(args.out);
 const NAME = args.name;
 const ID = NAME.toLowerCase().replace(/[^a-z0-9]+/g, "-");

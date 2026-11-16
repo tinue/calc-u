@@ -45,11 +45,12 @@ calcu::shell::DialogSpec settingsSpec(bool qt6, bool serialPorts);
 inline constexpr const char* kSavedMediaNote =
     "Saved media (modules, disks and tapes) are kept in this browser's storage for this page.";
 
-// The page's forms (the replies of `c1600.shell-product`, `c1600.faceplate-map`).
-calcu::sessions::Value shellProductValue(const calcu::shell::ShellProduct&);
-calcu::sessions::Value dialogSpecValue(const calcu::shell::DialogSpec&);   // shellModel.js's form
-// {width, height, distance, display: {x,y,w,h}, keys: [{name, x, y, w, h}],
-// lcd: the colours and fractions of app/LcdLayout}.
+// The page's form of the faceplate (the reply of `c1600.faceplate-map`):
+// {model, width, height, then the library's form of the hit map (distance,
+// display: {x,y,w,h}, keys: [{name, x, y, w, h}]; shell/ValueForms), lcd:
+// the colours and fractions of app/LcdLayout}. The reply of
+// `c1600.shell-product` is the library's forms of shellProduct() and
+// settingsSpec().
 calcu::sessions::Value faceplateMapValue(const calcu::machine::ModelId&);
 
 } // namespace shared

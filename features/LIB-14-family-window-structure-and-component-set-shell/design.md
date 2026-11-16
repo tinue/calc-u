@@ -876,6 +876,16 @@ product items; the page gets the data through the request
 
 `checkShellProduct()` runs in `lib14_ac34_shell_product_complete` (D.8).
 
+Departure (Part D simplification S-5 (2026-11-16)): the Value forms the page reads are the
+library's, `library/shell/ValueForms.hpp/.cpp` (`calcu::shell::toValue` of
+`ShellProduct`, `DialogSpec`, `HitMap` and `Rect`; tests
+`library/shell/tests/value_forms_tests.cpp`), so Calc-U-59's Web part need
+not write them again. `SharpShellProduct` keeps the data and the product's
+part of `c1600.faceplate-map` (the art's size, the LCD layout) around the
+library's hit-map form; the replies are unchanged byte for byte. The form
+of `ShellProduct` leaves out `version`, `build` and `aboutLinks` and
+always says `copyScreen: true`, as `shellProductValue` did.
+
 ### D.6 Harness attach and the screenshot scenarios (AC-44)
 
 **The attached registry (library; D-27).** `AttachedHarness` registers

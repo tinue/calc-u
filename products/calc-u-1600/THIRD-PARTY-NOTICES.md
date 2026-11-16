@@ -26,8 +26,8 @@ exact Qt version installed for that build in the GitHub Actions run log
 ## Web client (`Web/`)
 
 The web client bundles [React and ReactDOM](https://react.dev/) 18 (MIT
-license, (c) Meta Platforms, Inc. and affiliates) in `Web/vendor/`, which
-`Web/dist/` ships. `Web/vendor/` also holds ReactDOMServer (MIT, tests
+license, (c) Meta Platforms, Inc. and affiliates) from the repository's
+`library/web/vendor/`, which `Web/dist/vendor/` ships. That folder also holds ReactDOMServer (MIT, tests
 only) and [Babel standalone](https://babeljs.io/) (MIT, (c) Sebastian
 McKenzie and contributors), used only at build time to compile the JSX.
 The tests use [Playwright](https://playwright.dev/) (Apache License 2.0),

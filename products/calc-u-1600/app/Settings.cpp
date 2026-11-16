@@ -1,28 +1,12 @@
 #include "app/Settings.hpp"
 
-#include <filesystem>
-#include <system_error>
-
-#include "app/Utf8Path.hpp"
-#include "settings/OpenFolders.hpp"
 #include "settings/Startup.hpp"
 
 namespace shared {
 
-namespace fs = std::filesystem;
 namespace cs = calcu::settings;
 
 namespace {
-
-std::string absolutePath(const std::string& path) {
-    std::error_code ec;
-    fs::path abs = fs::absolute(toPath(path), ec);
-    if (ec) return path;
-    abs = abs.lexically_normal();
-    // No trailing separator ("/a/b/" -> "/a/b"), like QDir::absolutePath().
-    if (!abs.has_filename() && abs.has_relative_path()) abs = abs.parent_path();
-    return fromPath(abs);
-}
 
 cs::ProductDecl makeDecl() {
     cs::ProductDecl d;
@@ -90,29 +74,6 @@ const char* openFolderKind(OpenFolder folder) {
         case OpenFolder::HostDrive: return "host-drive";
     }
     return "presets";
-}
-
-std::string Settings::openDir(OpenFolder folder) const { return cs::fixedOpenFolder(m_file, openFolderKind(folder)); }
-
-void Settings::setOpenDir(OpenFolder folder, const std::string& dir) {
-    cs::setFixedOpenFolder(m_file, openFolderKind(folder), dir);   // "": back to the folder last used
-}
-
-std::string Settings::lastOpenDir(OpenFolder folder) const {
-    if (cs::hasFixedOpenFolder(m_file, openFolderKind(folder))) return {};
-    return m_file.text("folders", openFolderKind(folder));
-}
-
-void Settings::rememberOpenDir(OpenFolder folder, const std::string& dir) {
-    cs::rememberOpenFolder(m_file, openFolderKind(folder), absolutePath(dir));
-}
-
-void Settings::rememberOpenFile(OpenFolder folder, const std::string& filePath) {
-    rememberOpenDir(folder, fromPath(toPath(absolutePath(filePath)).parent_path()));
-}
-
-std::string Settings::openStartDir(OpenFolder folder, const std::string& homeDir) const {
-    return cs::openStartFolder(m_file, openFolderKind(folder), homeDir);
 }
 
 calcu::machine::ModelId Settings::startupModel() const {

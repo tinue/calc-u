@@ -1,6 +1,6 @@
-#include "app/StartFile.hpp"
+#include "opening/StartFile.hpp"
 
-namespace shared {
+namespace calcu::opening {
 
 std::optional<std::string> startFile(const std::vector<std::string>& arguments,
                                      const std::function<bool(const std::string&)>& isFile) {
@@ -11,4 +11,4 @@ std::optional<std::string> startFile(const std::vector<std::string>& arguments,
     return std::nullopt;
 }
 
-} // namespace shared
+} // namespace calcu::opening

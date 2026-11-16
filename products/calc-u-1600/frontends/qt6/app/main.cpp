@@ -20,7 +20,7 @@
 #include "FileOpenFilter.hpp"
 #include "MainWindow.hpp"
 #include "MachineController.hpp"
-#include "app/StartFile.hpp"
+#include "opening/StartFile.hpp"
 #include "opening/OpenRequest.hpp"
 #ifdef CALCU_ATTACH
 #include "app/HarnessProduct.hpp"
@@ -122,7 +122,7 @@ int main(int argc, char** argv) {
         // opened; the session keeps it until the start is over (AC-7).
         std::vector<std::string> arguments;
         for (const QString& a : QCoreApplication::arguments()) arguments.push_back(a.toStdString());
-        if (const auto start = shared::startFile(arguments, [](const std::string& p) {
+        if (const auto start = calcu::opening::startFile(arguments, [](const std::string& p) {
                 return QFileInfo(QString::fromStdString(p)).isFile();
             }))
             window.openFile(QString::fromStdString(*start), calcu::opening::Way::Start);

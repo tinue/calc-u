@@ -48,7 +48,7 @@ inline cu59::TIAppSetup appSetup(calcu::settings::SettingsFile& settings, cu59::
 
 /// The files of the save folder, in memory (a FileIO of the test's).
 struct MapFileIO final : cu59::FileIO {
-    std::map<std::string, std::string> cards;   ///< by path; ti58c.mem is "cards/ti58c.mem"
+    std::map<std::string, std::string> cards;   ///< by path; the constant memory is "cards/ti58c.memory.yaml"
     std::set<std::string> unreadableCards;      ///< paths that are there but can't be read
     std::map<std::string, int> writes;          ///< how often each path was written
     Read read(const std::string& path) override {
@@ -74,6 +74,9 @@ struct RigOptions {
     fs::path traceFolder;                                ///< empty: the rig's folder
     bool noTraceFolder = false;                          ///< the Web: none, traces handed over (LIB-10 AC-26)
     std::uint64_t traceMaxBytes = 0;                     ///< 0: the apps' default
+    calcu::settings::SettingsFile* settings = nullptr;   ///< null: the rig's own (defaults, in memory)
+    std::string examplesFolder;                          ///< empty: examples/
+    bool start = true;                                   ///< makeAppSession sends LIB-18's start (the Web's page sends its own)
 };
 
 struct SessionRig {
@@ -86,17 +89,18 @@ struct SessionRig {
     calcu::sessions::ListenerId me = 0;
 
     explicit SessionRig(RigOptions o) {
-        cu59::TIAppSetup s = appSetup(settings, o.model, folder.path());
+        cu59::TIAppSetup s = appSetup(o.settings ? *o.settings : settings, o.model, folder.path());
+        if (!o.examplesFolder.empty()) s.examplesFolder = o.examplesFolder;
         if (!o.saveFolder.empty()) s.saveFolder = o.saveFolder;
         if (!o.traceFolder.empty()) s.trace.dir = o.traceFolder;
         if (o.noTraceFolder) s.trace.dir.clear();
         if (o.traceMaxBytes) s.trace.maxBytes = o.traceMaxBytes;
         s.fileIO = std::move(o.fileIO);
         app = cu59::makeAppSession(std::move(s), [this] { return now += std::chrono::milliseconds(1); }, 59u,
-                                   std::move(o.before), std::move(o.after));
+                                   std::move(o.before), std::move(o.after), o.start);
         me = session().listen(fe, std::move(o.services));
         // LIB-18's start (makeAppSession sent it): until the machine is ready for keys.
-        until([this] { return session().machineSession().machine() && !session().context().busy(); });
+        if (o.start) until([this] { return session().machineSession().machine() && !session().context().busy(); });
     }
     explicit SessionRig(cu59::Model model = cu59::Model::TI59, calcu::sessions::HostServices services = {},
                         std::vector<calcu::sessions::SessionPart*> before = {})
@@ -117,6 +121,33 @@ struct SessionRig {
         if (const auto* r = reply(id)) return *r;
         return calcu::sessions::ReplyMessage{id, false, "no reply yet", nullptr};
     }
+    /// A command that may start an operation (LIB-18's model, reset, attach,
+    /// …; LIB-6's run-step): sent, then host calls until its reply came, at
+    /// most `limit` of wall time.
+    calcu::sessions::ReplyMessage operation(const calcu::sessions::CommandName& name, Value args = Value::object({}),
+                                            std::chrono::milliseconds limit = std::chrono::minutes(2)) {
+        const auto id = post(name, std::move(args));
+        until([&] { return reply(id) != nullptr; }, limit);
+        if (const auto* r = reply(id)) return *r;
+        return calcu::sessions::ReplyMessage{id, false, "no reply", nullptr};
+    }
+    /// One preset step on the running machine (LIB-6's run-step): `step("key", "1 2nd Prt")`.
+    calcu::sessions::ReplyMessage step(const std::string& verb, const std::string& value = {},
+                                       std::chrono::milliseconds limit = std::chrono::minutes(2)) {
+        return operation(calcu::presets::kRunStepCommand, Value::object({{"verb", verb}, {"value", value}}), limit);
+    }
+    /// LIB-18's commands (LIB-18 §11.2: the library's start, model, resets, attach, detach).
+    calcu::sessions::ReplyMessage model(const std::string& name) {
+        return operation(calcu::startup::kModelCommand, Value::object({{"name", name}}));
+    }
+    calcu::sessions::ReplyMessage attach(const std::string& place, const std::string& peripheral) {
+        return operation(calcu::startup::kAttachCommand, Value::object({{"place", place}, {"peripheral", peripheral}}));
+    }
+    calcu::sessions::ReplyMessage detach(const std::string& place) {
+        return operation(calcu::startup::kDetachCommand, Value::object({{"place", place}}));
+    }
+    calcu::sessions::ReplyMessage reset() { return operation(calcu::startup::kResetCommand); }
+    calcu::sessions::ReplyMessage coldBoot() { return operation(calcu::startup::kColdBootCommand); }
 
     /// One host call, a 60th of a second after the last.
     void frame() { calcu::testing::pumpFrame(session(), now); }

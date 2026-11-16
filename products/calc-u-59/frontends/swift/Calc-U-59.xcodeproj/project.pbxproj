@@ -30,6 +30,7 @@
 		B87F745B7F9EC349D0ECBF2F /* roms/CD2400.txt in Resources */ = {isa = PBXBuildFile; fileRef = 5193840AC3BCB5AC128C8565 /* roms/CD2400.txt */; };
 		D2A2B3C4E5F6A7B8C9D0E1F1 /* roms/solid-state/cuecards.txt in Resources */ = {isa = PBXBuildFile; fileRef = D1A2B3C4E5F6A7B8C9D0E1F1 /* roms/solid-state/cuecards.txt */; };
 		D2A2B3C4E5F6A7B8C9D0E1F2 /* roms/ML.rom.yaml in Resources */ = {isa = PBXBuildFile; fileRef = D1A2B3C4E5F6A7B8C9D0E1F2 /* roms/ML.rom.yaml */; };
+		D2A2B3C4E5F6A7B8C9D0E200 /* examples in Resources */ = {isa = PBXBuildFile; fileRef = D1A2B3C4E5F6A7B8C9D0E200 /* examples */; };
 		D2A2B3C4E5F6A7B8C9D0E1F3 /* roms/ST.rom.yaml in Resources */ = {isa = PBXBuildFile; fileRef = D1A2B3C4E5F6A7B8C9D0E1F3 /* roms/ST.rom.yaml */; };
 		D2A2B3C4E5F6A7B8C9D0E1F4 /* roms/RE.rom.yaml in Resources */ = {isa = PBXBuildFile; fileRef = D1A2B3C4E5F6A7B8C9D0E1F4 /* roms/RE.rom.yaml */; };
 		D2A2B3C4E5F6A7B8C9D0E1F5 /* roms/SY.rom.yaml in Resources */ = {isa = PBXBuildFile; fileRef = D1A2B3C4E5F6A7B8C9D0E1F5 /* roms/SY.rom.yaml */; };
@@ -88,6 +89,7 @@
 		A03FEEC869500F2ED42C8381 /* roms/CD2400-CONST-K.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = "../../roms/CD2400-CONST-K.txt"; sourceTree = "<group>"; };
 		D1A2B3C4E5F6A7B8C9D0E1F1 /* roms/solid-state/cuecards.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = "../../roms/solid-state/cuecards.txt"; sourceTree = "<group>"; };
 		D1A2B3C4E5F6A7B8C9D0E1F2 /* roms/ML.rom.yaml */ = {isa = PBXFileReference; lastKnownFileType = text; path = "../../roms/ML.rom.yaml"; sourceTree = "<group>"; };
+		D1A2B3C4E5F6A7B8C9D0E200 /* examples */ = {isa = PBXFileReference; lastKnownFileType = folder; name = examples; path = "../../../../build/bundle-59/examples"; sourceTree = SOURCE_ROOT; };
 		D1A2B3C4E5F6A7B8C9D0E1F3 /* roms/ST.rom.yaml */ = {isa = PBXFileReference; lastKnownFileType = text; path = "../../roms/ST.rom.yaml"; sourceTree = "<group>"; };
 		D1A2B3C4E5F6A7B8C9D0E1F4 /* roms/RE.rom.yaml */ = {isa = PBXFileReference; lastKnownFileType = text; path = "../../roms/RE.rom.yaml"; sourceTree = "<group>"; };
 		D1A2B3C4E5F6A7B8C9D0E1F5 /* roms/SY.rom.yaml */ = {isa = PBXFileReference; lastKnownFileType = text; path = "../../roms/SY.rom.yaml"; sourceTree = "<group>"; };
@@ -183,6 +185,7 @@
 				5E899B70D779E3C3D40E77C0 /* roms/CD2401-CONST-K.txt */,
 				D1A2B3C4E5F6A7B8C9D0E1F1 /* roms/solid-state/cuecards.txt */,
 				D1A2B3C4E5F6A7B8C9D0E1F2 /* roms/ML.rom.yaml */,
+				D1A2B3C4E5F6A7B8C9D0E200 /* examples */,
 				D1A2B3C4E5F6A7B8C9D0E1F3 /* roms/ST.rom.yaml */,
 				D1A2B3C4E5F6A7B8C9D0E1F4 /* roms/RE.rom.yaml */,
 				D1A2B3C4E5F6A7B8C9D0E1F5 /* roms/SY.rom.yaml */,
@@ -349,6 +352,7 @@
 				D33A7AEB1F005859A35CAB9E /* roms/CD2401-CONST-K.txt in Resources */,
 				D2A2B3C4E5F6A7B8C9D0E1F1 /* roms/solid-state/cuecards.txt in Resources */,
 				D2A2B3C4E5F6A7B8C9D0E1F2 /* roms/ML.rom.yaml in Resources */,
+				D2A2B3C4E5F6A7B8C9D0E200 /* examples in Resources */,
 				D2A2B3C4E5F6A7B8C9D0E1F3 /* roms/ST.rom.yaml in Resources */,
 				D2A2B3C4E5F6A7B8C9D0E1F4 /* roms/RE.rom.yaml in Resources */,
 				D2A2B3C4E5F6A7B8C9D0E1F5 /* roms/SY.rom.yaml in Resources */,
@@ -421,10 +425,11 @@
 			);
 			outputPaths = (
 				"$(SRCROOT)/../../../../build/xcframework-59/CalcU59.xcframework",
+				"$(SRCROOT)/../../../../build/bundle-59/examples",
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "# The library, core and app layer through the root CMake project (ADR 0013).\n\"$SRCROOT/build_xcframework.sh\" \"$CONFIGURATION\"\n";
+			shellScript = "# The library, core and app layer through the root CMake project (ADR 0013).\n\"$SRCROOT/build_xcframework.sh\" \"$CONFIGURATION\"\n# The bundled examples of examples/bundle.yaml (C59-2 AC-14), the app's folder examples.\n\"$SRCROOT/copy_examples.sh\"\n";
 		};
 		CA1C5900000000000000B00D /* Check no attach (C59-5 AC-13) */ = {
 			isa = PBXShellScriptBuildPhase;

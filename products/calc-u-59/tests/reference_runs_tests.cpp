@@ -52,10 +52,33 @@ const std::map<std::string, std::string> kFindings = {
     {"debug/example-brief.ti59",
      "C59-2 AC-10's correction of line 16 (`002 11. A` → `002 11 A`): the M-9 record was made from the "
      "uncorrected file (2.3.0 skipped the step), so step 002 holds 11 and the label A runs; design §8"},
-    {"historic/fast-grafik-3d-plot.ti59",
-     "the printed lines (`paper text`) are the record's; `paper marks` differ in their reach (1244.2 against "
-     "1738.6): the `.paper-marks` of M-39 were drawn from the record's text lines (LIB-8 AC-39), and this "
-     "example prints plot rows that are no text line (finding for the user)"},
+    // The printed pictures: their `paper text` is the record's, line for line;
+    // their `.paper-marks` (M-39, LIB-8 AC-39) were drawn from those text lines,
+    // one character row per line, but these programs print with the printer
+    // interrupt or plot rows, so the paper's dots and reach are not text rows
+    // (as the three of LIB-8 D-13 that have no `.paper-marks`).
+    {"historic/fast-grafik-3d-plot.ti59", "paper marks of a plot, not of text lines (the text is the record's)"},
+    {"historic/printer-quirks.ti59", "paper marks of printer-interrupt rows, not of text lines (the text is the record's)"},
+    {"historic/texas-print.ti59", "paper marks of a printer-interrupt picture, not of text lines (the text is the record's)"},
+    {"screentest/test_texas.ti59", "paper marks of a printer-interrupt picture, not of text lines (the text is the record's)"},
+    {"picard.ti59", "paper marks of a printer-interrupt picture, not of text lines (the text is the record's)"},
+    {"switzerland.ti59", "paper marks of a printer-interrupt picture, not of text lines (the text is the record's)"},
+    // A screen test that ends paused in the error blink: `wait: 400ms` now
+    // counts emulated time (LIB-6 AC-20) and the pause lands by LIB-10's rules,
+    // so the display is caught at another phase of the blink; RAM, partition
+    // and paper are the record's.
+    {"screentest/test_58_glyphs.ti58", "the display at the pause is another phase of the blink (RAM and partition are the record's)"},
+};
+// Only these parts may differ for a finding: the rest still has to match.
+const std::map<std::string, std::string> kFindingParts = {
+    {"debug/example-brief.ti59", "display ram"},
+    {"historic/fast-grafik-3d-plot.ti59", "marks"},
+    {"historic/printer-quirks.ti59", "marks"},
+    {"historic/texas-print.ti59", "marks"},
+    {"screentest/test_texas.ti59", "marks"},
+    {"picard.ti59", "marks"},
+    {"switzerland.ti59", "marks"},
+    {"screentest/test_58_glyphs.ti58", "display"},
 };
 
 std::string hexNibbles(const cu59::RegisterNibbles& n) {
@@ -174,26 +197,29 @@ TEST(c59_2_ac11_reference_runs_of_the_examples) {
         std::printf("  ... %s\n", rel.c_str());
         std::fflush(stdout);
         const Run r = run(examples / rel);
-        std::vector<std::string> diffs;
-        if (!r.failure.empty()) diffs.push_back("the preset: " + r.failure);
+        std::vector<std::string> diffs, parts;   // what differs, and which part (display, partition, ram, text, marks, load)
+        if (!r.failure.empty()) parts.push_back("load"), diffs.push_back("the preset: " + r.failure);
         if (rel != kNeverStops && r.failure.empty()) {
             const std::string base = referenceName(rel);
             const Record want = fromReference(testroms::readFile((refDir / (base + ".txt")).string()).value_or(""));
-            if (want.display != r.record.display) diffs.push_back("recorded " + want.display + ", now " + r.record.display);
-            if (want.partition != r.record.partition) diffs.push_back("recorded " + want.partition + ", now " + r.record.partition);
-            if (want.ram != r.record.ram) diffs.push_back("ram " + firstDifference(want.ram, r.record.ram));
+            if (want.display != r.record.display) parts.push_back("display"), diffs.push_back("recorded " + want.display + ", now " + r.record.display);
+            if (want.partition != r.record.partition) parts.push_back("partition"), diffs.push_back("recorded " + want.partition + ", now " + r.record.partition);
+            if (want.ram != r.record.ram) parts.push_back("ram"), diffs.push_back("ram " + firstDifference(want.ram, r.record.ram));
             const auto text = testroms::readFile((refDir / (base + ".paper-text")).string());
             if (text ? *text != r.paperText : !r.paperText.empty())
-                diffs.push_back("paper text " + firstDifference(linesOf(text.value_or("")), linesOf(r.paperText)));
+                parts.push_back("text"), diffs.push_back("paper text " + firstDifference(linesOf(text.value_or("")), linesOf(r.paperText)));
             const auto marks = testroms::readFile((refDir / (base + ".paper-marks")).string());
             if (marks && *marks != r.paperMarks)
-                diffs.push_back("paper marks " + firstDifference(linesOf(*marks), linesOf(r.paperMarks)));
+                parts.push_back("marks"), diffs.push_back("paper marks " + firstDifference(linesOf(*marks), linesOf(r.paperMarks)));
         }
         if (diffs.empty()) {
             std::printf("  same %s\n", rel.c_str());
             continue;
         }
-        if (const auto it = kFindings.find(rel); it != kFindings.end()) {
+        bool named = kFindings.count(rel) > 0;
+        for (const std::string& part : parts)
+            named = named && (" " + kFindingParts.at(rel) + " ").find(" " + part + " ") != std::string::npos;
+        if (const auto it = kFindings.find(rel); named) {
             ++found;
             std::printf("  finding %s: %s\n", rel.c_str(), it->second.c_str());
             for (const auto& d : diffs) std::printf("    %s\n", d.c_str());

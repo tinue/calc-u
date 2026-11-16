@@ -13,15 +13,18 @@ final class FrameGapTests: XCTestCase {
 
     /// An endless loop, started with the A key (the spike's busy-loop.ti59).
     private static let busyLoop = """
-        MODEL: TI-59
-        PROGRAM:
-        000 76 LBL
-        001 11 A
-        002 01 1
-        003 44 SUM
-        004 00 00
-        005 61 GTO
-        006 11 A
+        format-version: 2
+        model: TI-59
+        slot-1: { name: ML }
+        program:
+          keycodes: |
+            000 76 LBL
+            001 11 A
+            002 01 1
+            003 44 SUM
+            004 00 00
+            005 61 GTO
+            006 11 A
         """
 
     private final class Probe: NSObject {
@@ -72,7 +75,7 @@ final class FrameGapTests: XCTestCase {
         TestSession.run(1)
         let idle = measure("idle", seconds: 2)
 
-        t.session.loadStateFile(Data(Self.busyLoop.utf8))
+        t.session.loadPresetContent(Data(Self.busyLoop.utf8), name: "busy-loop.ti59")
         TestSession.run(1)
         let a = TISharedTables.matrixCode(row: 0, col: 0)   // A: starts the loop
         t.session.rawKeyDown(a) { _ in }

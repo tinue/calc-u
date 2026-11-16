@@ -33,20 +33,25 @@ struct WebPieces {
         dirs.settingsBase = (webFolder.path() / "settings").string();
         dirs.saveFolder = (webFolder.path() / "Calc-U-59").string();
         fs::create_directories(dirs.saveFolder);
-        webFolder.write("presets/one.ti59", "MODEL: TI-58\nREGISTERS:\n05 = 3.25\n");
+        webFolder.write("presets/one.ti59", "format-version: 2\nmodel: TI-58\ndata:\n  05: 3.25\n");
         file = std::make_unique<calcu::settings::SettingsFile>(calcu::settings::SettingsFile::open(
             settings::settingsDecl(), calcu::settings::settingsFilePath(settings::settingsDecl(), dirs)));
         settings = std::make_unique<settings::Settings>(*file);
-        web = std::make_unique<TIWebPart>(*settings, (webFolder.path() / "presets").string());
+        web = std::make_unique<TIWebPart>(*settings);
     }
 };
 
 // The Web engine's session, natively: the Web part behind the product's.
 struct WebRig : WebPieces, testroms::SessionRig {
-    WebRig()
-        : SessionRig(testroms::RigOptions{.model = settings->startupModel(), .after = {web.get()},
-                                          .saveFolder = dirs.saveFolder, .noTraceFolder = true}) {
+    explicit WebRig(bool started = true)
+        : SessionRig(testroms::RigOptions{.model = WebPieces::settings->startupModel(), .after = {web.get()},
+                                          .saveFolder = dirs.saveFolder, .noTraceFolder = true, .settings = file.get(),
+                                          .examplesFolder = (webFolder.path() / "presets").string(), .start = false}) {
         web->bind(part());
+        if (started) {   // the page's start (LIB-18's, LIB-15 N3)
+            post(CommandName{"start"}, Value::object({}));
+            until([this] { return session().machineSession().machine() && !busy(); });
+        }
     }
     ~WebRig() { web.reset(); }   // first: it tells the part it goes
     void send(const char* name, Value args = Value::object({})) {
@@ -62,26 +67,34 @@ struct WebRig : WebPieces, testroms::SessionRig {
 
 } // namespace
 
+// LIB-15 AC-16 (LIB-6 §11.6 P11): the page's start is LIB-18's `start
+// {model, preset}`, the model by its name and the preset by its bundle path.
 TEST(lib15_ac16_start_takes_the_model_by_name_and_a_bundled_preset) {
-    WebRig r;
-    r.send("start", Value::object({{"model", "TI-58C"}, {"preset", ""}}));
-    CHECK(r.part().model() == Model::TI58C);
-    r.send("start", Value::object({{"model", ""}, {"preset", "one.ti59"}}));
-    r.run(500ms);
+    {
+        WebRig r(false);
+        r.send("start", Value::object({{"model", "TI-58C"}, {"preset", ""}}));
+        r.run(2s);
+        CHECK(r.part().model() == Model::TI58C);
+    }
+    WebRig r(false);
+    r.send("start", Value::object({{"model", ""}, {"preset", "examples:one.ti59"}}));
+    r.run(2s);
     CHECK(r.part().model() == Model::TI58);
     CHECK_EQ(testroms::mem(r.part().emulator()->machine()).readDataReg(5), 3.25);
     CHECK(r.notices().empty());
 }
 
+// LIB-15 EC-4: a model or a preset the product does not have is a notice;
+// the start goes on with the startup model's built-in default.
 TEST(lib15_ec4_unknown_model_and_preset_are_notices) {
-    WebRig r;
-    r.send("start", Value::object({{"model", "TI-99"}, {"preset", "../one.ti59"}}));
-    r.run(100ms);
+    WebRig r(false);
+    r.send("start", Value::object({{"model", "TI-99"}, {"preset", "examples:../one.ti59"}}));
+    r.run(2s);
     CHECK(r.part().model() == Model::TI59);
     CHECK_EQ(r.notices().size(), size_t{2});
     if (r.notices().size() == 2) {
-        CHECK(r.notices()[0].find("has no model TI-99") != std::string::npos);
-        CHECK(r.notices()[1].find("../one.ti59 is not a bundled preset") != std::string::npos);
+        CHECK(r.notices()[0].find("no model \"TI-99\"") != std::string::npos);
+        CHECK(r.notices()[1].find("could not be loaded") != std::string::npos);
     }
 }
 

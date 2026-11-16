@@ -1,5 +1,6 @@
 #include "AppPaths.hpp"
 #include "AppSettings.hpp"
+#include <QCoreApplication>
 #include <QDir>
 #include <QtGlobal>
 #include <optional>
@@ -83,7 +84,13 @@ QString defaultDir() {
 
 QString cardDir() { return ensured(cs::Folder::Save); }
 
-QString constantMemoryFile() { return q(paths().saveFolderFile("ti58c.mem")); }
+QString bundledExamplesDir() {
+#if defined(Q_OS_MACOS)
+    return QCoreApplication::applicationDirPath() + QStringLiteral("/../Resources/examples");
+#else
+    return QCoreApplication::applicationDirPath() + QStringLiteral("/resources/examples");
+#endif
+}
 
 QString traceDir() { return ensured(cs::Folder::Traces); }
 

@@ -51,9 +51,7 @@ namespace s59 = cu59::settings;
                                                           : std::nullopt);
 }
 - (NSInteger)startupModel { return static_cast<NSInteger>(_settings->startupModel()); }
-- (void)setLastUsedModel:(NSInteger)raw {
-    if (raw >= 0 && raw <= 2) _settings->setLastUsedModel(static_cast<cu59::Model>(raw));
-}
+- (void *)cppSettingsFile { return _file.get(); }
 
 - (NSInteger)traceMaxFileSizeMB { return _settings->traceMaxFileSizeMB(); }
 - (void)setTraceMaxFileSizeMB:(NSInteger)mb { _settings->setTraceMaxFileSizeMB(static_cast<int>(mb)); }

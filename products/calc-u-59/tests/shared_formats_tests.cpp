@@ -1,14 +1,14 @@
 // Shared/ file formats against the Swift originals (tests/golden/formats.txt,
-// produced by tools/goldens/formats_main.swift): state files, card files,
-// cue cards, BCD encoders, register lines and math tokens. Also round trips
-// for the card and ti58c.mem encoders.
+// produced by tools/goldens/formats_main.swift): card files, cue cards, BCD
+// encoders, register lines and math tokens. Also round trips for the card
+// encoders and the constant memory file (C59-3). The state files of 2.3.0
+// and their records went in M-54 (C59-2 TR; LIB-6 §11).
 
 #include "TestHarness.hpp"
 #include "TestRoms.hpp"
 #include "../app/CardFile.hpp"
-#include "../app/ConstantMemory.hpp"
+#include "../app/ConstantMemoryFile.hpp"
 #include "../app/ModuleCatalog.hpp"
-#include "../app/StateFile.hpp"
 #include "../app/TextUtil.hpp"
 #include <cstdio>
 #include <map>
@@ -48,52 +48,6 @@ void dumpCue(const CueCardContent& c, std::string& out) {
     for (auto& l : c.encodeToLines()) out += "enc0 " + l + "\n";
 }
 
-std::string dumpState(const LoadStateResult& r) {
-    std::string out;
-    out += "partition " + std::to_string(r.partitionMaxStep) + " " + (r.partitionWasExplicit ? "1" : "0") + "\n";
-    for (auto& s : r.programSteps) out += "step " + std::to_string(s.stepAddr) + " " + std::to_string(s.keycode) + "\n";
-    for (auto& g : r.registers)
-        out += "reg " + std::to_string(g.regNum) + " " + (g.isHidden ? "1" : "0") + " " + hexNib(g.nibbles.data(), 16) + "\n";
-    using K = KeystrokeEvent::Kind;
-    for (auto& k : r.keystrokes) {
-        switch (k.kind) {
-        case K::Key: out += "key " + std::to_string(k.code) + "\n"; break;
-        case K::Wait: out += "wait " + num(k.seconds) + "\n"; break;
-        case K::Trace: out += "trace " + k.traceName.value_or("-") + "\n"; break;
-        case K::FullSpeed: out += "fullSpeed\n"; break;
-        case K::RegularSpeed: out += "regularSpeed\n"; break;
-        case K::ZeroElapseTime: out += "zeroElapseTime\n"; break;
-        case K::ReportElapseTime: out += "reportElapseTime\n"; break;
-        case K::Reload: {
-            const ReloadStage& st = *k.reload;
-            out += "reload partition " + (st.partitionMaxStep ? std::to_string(*st.partitionMaxStep) : "-") + "\n";
-            for (auto& s : st.programSteps)
-                out += "reload step " + std::to_string(s.stepAddr) + " " + std::to_string(s.keycode) + "\n";
-            for (auto& g : st.registers)
-                out += "reload reg " + std::to_string(g.regNum) + " " + hexNib(g.nibbles.data(), 16) + "\n";
-            if (st.cueCard) out += "reload cue " + st.cueCard->title + "\n";
-            break;
-        }
-        case K::ArmCard: out += "armCard " + k.cardName + (k.card ? " defined" : "") + "\n"; break;
-        case K::InsertCard: out += "insertCard " + k.cardName + (k.card ? " defined" : "") + "\n"; break;
-        case K::PrinterTrace: out += std::string("printerTrace ") + (k.on ? "on" : "off") + "\n"; break;
-        case K::CutPaper: out += "cutPaper\n"; break;
-        case K::ShowPanel: out += "debugPanel " + std::to_string(int(k.panel)) + "\n"; break;
-        case K::Freeze: out += "freeze " + std::to_string(int(k.panel)) + "\n"; break;
-        case K::FreezeOnStart:
-            out += "freezeOnStart " + (k.on ? std::to_string(int(k.panel)) : std::string("off")) + "\n";
-            break;
-        case K::Step: out += "step " + std::to_string(int(k.panel)) + " " + std::to_string(k.count) + "\n"; break;
-        case K::Resume: out += "resume\n"; break;
-        }
-    }
-    if (r.cueCard) dumpCue(*r.cueCard, out);
-    out += "module " + r.solidStateModuleID.value_or("-") + "\n";
-    out += std::string("printer ") + (r.printerConnected ? (*r.printerConnected ? "1" : "0") : "-") + "\n";
-    out += std::string("model ") + (r.model ? info(*r.model).displayName : "-") + "\n";
-    for (auto& e : r.errors) out += "error " + e + "\n";
-    return out;
-}
 
 /// Golden records: header line → body (lines up to END).
 struct Record { std::string header, body; };
@@ -101,13 +55,22 @@ struct Record { std::string header, body; };
 std::vector<Record> records(const std::string& golden, std::vector<std::string>& singles) {
     std::vector<Record> out;
     Record* cur = nullptr;
+    bool skipping = false;   // a STATE record of 2.3.0 (gone in M-54), until its END
     for (std::string_view line : splitLines(golden)) {
+        if (skipping) {
+            skipping = line != "END";
+            continue;
+        }
+        if (startsWith(line, "STATE ")) {
+            skipping = true;
+            continue;
+        }
         if (cur) {
             if (line == "END") { cur = nullptr; continue; }
             cur->body += std::string(line) + "\n";
             continue;
         }
-        if (startsWith(line, "STATE ") || startsWith(line, "CARD ")) {
+        if (startsWith(line, "CARD ")) {
             out.push_back({std::string(line), ""});
             cur = &out.back();
         } else if (!line.empty()) {
@@ -128,43 +91,30 @@ TEST(formats_golden_present) {
     CHECK(!golden().empty());
 }
 
-TEST(state_and_card_files_match_swift) {
+TEST(card_files_match_swift) {
     std::vector<std::string> singles;
-    int states = 0, cards = 0;
+    int cards = 0;
     for (auto& rec : records(golden(), singles)) {
         auto w = splitWords(rec.header);
         auto text = testroms::readFile(std::string(w[1]));
         CHECK(text.has_value());
         if (!text) continue;
         std::string got;
-        if (w[0] == "STATE") {
-            ++states;
-            got = dumpState(parseStateFile(*text, static_cast<int>(*parseDec(w[2])), w[3] == "1"));
-        } else {
-            ++cards;
-            auto r = parseCardText(*text);
-            if (!r) got = "nil\n";
-            else {
-                got = "data " + hexNib(r->data.data(), r->data.size()) + "\n";
-                if (r->cueCard) dumpCue(*r->cueCard, got);
-            }
+        ++cards;
+        auto r = parseCardText(*text);
+        if (!r) got = "nil\n";
+        else {
+            got = "data " + hexNib(r->data.data(), r->data.size()) + "\n";
+            if (r->cueCard) dumpCue(*r->cueCard, got);
         }
         if (got != rec.body) {
             std::fprintf(stderr, "MISMATCH %s\n--- swift\n%s--- c++\n%s", rec.header.c_str(), rec.body.c_str(), got.c_str());
         }
         CHECK(got == rec.body);
     }
-    CHECK(states >= 140);
     CHECK(cards >= 5);
 }
 
-TEST(keystroke_directives_unknown_or_without_unit_are_errors) {
-    auto r = parseStateFile("KEYSTROKES:\nWait: 15\nWaitFullSpeed: 2s\nFoo-Bar: 1\nWait: 2s\n11\n");
-    CHECK_EQ(r.errors.size(), size_t{3});
-    CHECK(r.errors.size() == 3 && r.errors[1].find("FullSpeed:") != std::string::npos);
-    CHECK_EQ(r.keystrokes.size(), size_t{2});  // Wait: 2s and key 11; "Wait: 15" is not key 15
-    CHECK(r.keystrokes.size() == 2 && r.keystrokes[0].kind == KeystrokeEvent::Kind::Wait);
-}
 
 TEST(bcd_regline_math_match_swift) {
     std::vector<std::string> singles;
@@ -349,85 +299,34 @@ TEST(fresh_card_cue_is_the_file_name) {
     CHECK(freshCardCue("x.U59").template_ == CueCardTemplate::MagnetCard);
 }
 
-TEST(card_directive_reads_a_side) {
-    auto first = [](const std::string& line) { return parseStateFile("KEYSTROKES:\n" + line + "\n"); };
-    auto r = first("InsertCard: Diagnose:2");
-    CHECK(r.errors.empty());
-    CHECK_EQ(r.keystrokes[0].cardName, std::string("Diagnose"));
-    CHECK_EQ(r.keystrokes[0].cardSide, 1);
-    r = first("ArmCard: Diagnose:1");
-    CHECK_EQ(r.keystrokes[0].cardName, std::string("Diagnose"));
-    CHECK_EQ(r.keystrokes[0].cardSide, 0);
-    r = first("ArmCard: Diagnose");
-    CHECK_EQ(r.keystrokes[0].cardSide, 0);
-    r = first("ArmCard: A:1.U59");                    // not a side: part of the name
-    CHECK_EQ(r.keystrokes[0].cardName, std::string("A:1.U59"));
-    r = first("InsertCard: A.U59:2");
-    CHECK_EQ(r.keystrokes[0].cardName, std::string("A.U59"));
-    CHECK_EQ(r.keystrokes[0].cardSide, 1);
-    r = first("ArmCard: mem:A:2");                    // memory cards have no side
-    CHECK_EQ(r.keystrokes[0].cardName, std::string("mem:A:2"));
-    CHECK(!first("ArmCard: Diagnose:3").errors.empty());
-    CHECK(!first("ArmCard: :2").errors.empty());
-}
 
-TEST(constant_memory_round_trip) {
-    std::vector<uint8_t> ram(kConstantMemoryBytes, 0);
-    for (size_t i = 16 * 5; i < 16 * 6; ++i) ram[i] = static_cast<uint8_t>(i % 10);
-    for (size_t i = 16 * 63; i < 16 * 64; ++i) ram[i] = 9;
+// C59-3 AC-14 (design T7; was constant_memory_round_trip): the content
+// survives a round trip through constant memory format 1; zero registers are
+// left out; a register above R063 or a short line refuses the file.
+TEST(c59_3_ac14_round_trip_zero_registers_left_out) {
+    ConstantMemoryContents c;
+    for (std::size_t i = 0; i < 16; ++i) c.ram[5][i] = static_cast<uint8_t>(i % 10);
+    for (std::size_t i = 0; i < 16; ++i) c.ram[63][i] = 9;
     CueCardContent cue;
     cue.title = "MEM";
     cue.row1 = "R: line starting with R";
-    std::string text = encodeConstantMemory(ram, &cue);
+    c.cueCard = cue;
+    const std::string text = writeConstantMemoryFile(c);
     CHECK(text.find("R005: ") != std::string::npos);
     CHECK(text.find("R000") == std::string::npos);  // zero registers are omitted
-    auto back = decodeConstantMemory(text);
-    CHECK(back.has_value());
-    if (!back) return;
-    CHECK(back->ram == ram);
-    CHECK(back->cueCard && back->cueCard->row1 == "R: line starting with R");
-    CHECK(!decodeConstantMemory("R999: 00 00 00 00 00 00 00 00").has_value());
-    CHECK(!decodeConstantMemory("R001: 00 00").has_value());
+    auto back = readConstantMemoryFile(text);
+    CHECK(std::holds_alternative<ConstantMemoryContents>(back));
+    if (!std::holds_alternative<ConstantMemoryContents>(back)) return;
+    const auto& got = std::get<ConstantMemoryContents>(back);
+    CHECK(got.ram == c.ram);
+    CHECK(got.cueCard && got.cueCard->row1 == "R: line starting with R");
+    const std::string head = "format: ti58c-constant-memory\nformat-version: 1\nram:\n  encoding: register-hex\n  bytes: |\n";
+    CHECK(std::holds_alternative<ConstantMemoryProblem>(readConstantMemoryFile(head + "    R064: 00 00 00 00 00 00 00 00\n")));
+    CHECK(std::holds_alternative<ConstantMemoryProblem>(readConstantMemoryFile(head + "    R001: 00 00\n")));
 }
 
-TEST(state_file_model) {
-    CHECK(stateFileModel("MODEL: TI-58C\nPROGRAM:\n1 2\n", Model::TI59) == Model::TI58C);
-    CHECK(stateFileModel("PROGRAM:\n1 2\n", Model::TI58) == Model::TI58);
-    CHECK(stateFileModel("MODEL: TI-57\n", Model::TI58) == Model::TI58);
-}
 
-TEST(retired_skip_reset_and_key_99_are_errors) {
-    auto r = parseStateFile("SKIP-RESET: on\nREGISTERS:\n01 = 1\nKEYSTROKES:\n99 82\n");
-    CHECK_EQ(r.errors.size(), size_t{2});
-    CHECK(r.errors.size() == 2 && r.errors[0].find("reload") != std::string::npos);
-    CHECK(r.errors.size() == 2 && r.errors[1].find("PrinterTrace:") != std::string::npos);
-    CHECK_EQ(r.registers.size(), size_t{1});   // the rest still loads
-    CHECK_EQ(r.keystrokes.size(), size_t{1});  // key 82
-}
 
-TEST(control_directives) {
-    using K = KeystrokeEvent::Kind;
-    auto r = parseStateFile("KEYSTROKES:\nPrinterTrace: on\nPrinterTrace: OFF\nCutPaper:\nDebugPanel: log\n"
-                            "Freeze: CPU\nFreezeOnStart: Calculator\nFreezeOnStart: off\nStep: cpu 3\nStep: Calculator\n"
-                            "Resume:\n");
-    CHECK(r.errors.empty());
-    std::vector<K> kinds;
-    for (auto& e : r.keystrokes) kinds.push_back(e.kind);
-    CHECK(kinds == (std::vector<K>{K::PrinterTrace, K::PrinterTrace, K::CutPaper, K::ShowPanel, K::Freeze,
-                                   K::FreezeOnStart, K::FreezeOnStart, K::Step, K::Step, K::Resume}));
-    if (r.keystrokes.size() == 10) {
-        CHECK(r.keystrokes[0].on && !r.keystrokes[1].on);
-        CHECK(r.keystrokes[3].panel == DebugPanel::Log);
-        CHECK(r.keystrokes[4].panel == DebugPanel::Cpu);
-        CHECK(r.keystrokes[5].on && r.keystrokes[5].panel == DebugPanel::Calculator);
-        CHECK(!r.keystrokes[6].on);
-        CHECK(r.keystrokes[7].panel == DebugPanel::Cpu && r.keystrokes[7].count == 3);
-        CHECK(r.keystrokes[8].count == 1);
-    }
-    auto bad = parseStateFile("KEYSTROKES:\nPrinterTrace:\nDebugPanel: ASM\nFreeze: Log\nStep: CPU 0\nResume: now\n");
-    CHECK_EQ(bad.errors.size(), size_t{5});
-    CHECK(bad.keystrokes.empty());
-}
 
 TEST(module_catalog_from_cuecards_txt) {
     auto text = testroms::readFile("roms/solid-state/cuecards.txt");

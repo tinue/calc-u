@@ -45,5 +45,14 @@ n=$(/usr/bin/grep -c 'ENABLE_INCOMING_NETWORK_CONNECTIONS = YES;' "$PBX")
 /usr/bin/grep -A3 'outputPaths = (' "$PBX" | /usr/bin/grep -q 'build/xcframework-59/CalcU59.xcframework"' ||
   fail "$PBX: the phase 'Build CalcU59.xcframework' does not declare the XCFramework as its output"
 
-[ $status = 0 ] && echo "ok: the Xcode project compiles only Swift and the bridge, links CalcU59.xcframework and bundles the 24 ROM files"
+# C59-2 AC-14 (M-54): the app bundles the files of examples/bundle.yaml as
+# its folder `examples`, which copy_examples.sh fills in the phase that
+# builds the XCFramework.
+/usr/bin/grep -q 'path = "../../../../build/bundle-59/examples"; sourceTree = SOURCE_ROOT;' "$PBX" ||
+  fail "$PBX does not bundle the folder examples (build/bundle-59/examples)"
+/usr/bin/grep -q '/\* examples in Resources \*/,' "$PBX" || fail "$PBX: the folder examples is not among the app's Resources"
+/usr/bin/grep -q 'copy_examples.sh' "$PBX" || fail "$PBX: no phase runs copy_examples.sh"
+[ -x copy_examples.sh ] || fail "copy_examples.sh is missing or not executable"
+
+[ $status = 0 ] && echo "ok: the Xcode project compiles only Swift and the bridge, links CalcU59.xcframework, bundles the 24 ROM files and the examples of bundle.yaml"
 exit $status

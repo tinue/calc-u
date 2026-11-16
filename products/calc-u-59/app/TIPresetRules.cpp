@@ -65,16 +65,26 @@ std::optional<RegisterNibbles> displayRegisterX(calcu::machine::Machine& m, cons
     const TIDebugPanelAdapter* panel = debugPanelOf(m);
     if (panel) {
         const CpuFrame cpu = panel->snapshotCPU();
-        if (cpu.fB & (1u << 5)) {   // a result on display: X normalized in C (rom/TI59-ROM-Guide.md, fB[5])
-            const std::uint8_t* c = cpu.C;
+        // X between two steps (app/DebugSnapshots.cpp decodeX; rom/TI59-ROM-Guide.md,
+        // "Number formats"): a result on display (fB[5]) normalized in C with its
+        // signs in fB[2]/fB[3]; else normalized in A with its signs in fA[2]/fA[3]
+        // (an error's clamp, a keycode sub-program's launch); else the number
+        // being keyed in, as the display shows it.
+        auto normalized = [](const std::uint8_t* n, std::uint16_t flags) -> std::optional<RegisterNibbles> {
             bool digits = true;
-            for (int i = 1; i < 16; ++i) digits = digits && c[i] <= 9;
-            if (c[0] == 0xC && digits) {
-                RegisterNibbles r{};
-                for (int i = 1; i < 16; ++i) r[static_cast<std::size_t>(i)] = c[i];
-                r[0] = static_cast<std::uint8_t>(((cpu.fB & (1u << 2)) ? 2 : 0) | ((cpu.fB & (1u << 3)) ? 4 : 0));
-                return r;
-            }
+            for (int i = 1; i < 16; ++i) digits = digits && n[i] <= 9;
+            bool zero = true;
+            for (int i = 3; i < 16; ++i) zero = zero && n[i] == 0;
+            if (n[0] != 0xC || !digits || (n[15] == 0 && !zero)) return std::nullopt;   // normalized: MSD first
+            RegisterNibbles r{};
+            for (int i = 1; i < 16; ++i) r[static_cast<std::size_t>(i)] = n[i];
+            r[0] = static_cast<std::uint8_t>(((flags & (1u << 2)) ? 2 : 0) | ((flags & (1u << 3)) ? 4 : 0));
+            return r;
+        };
+        if (cpu.fB & (1u << 5)) {
+            if (auto r = normalized(cpu.C, cpu.fB)) return r;
+        } else if (auto r = normalized(cpu.A, cpu.fA)) {
+            return r;
         }
     }
     return fromDisplay(tiDisplayText(o));

@@ -169,18 +169,4 @@ TEST(display_pov_error_blink_is_steady) {
     }
 }
 
-// KEYSTROKES need the typing engine for their keys (LIB-5): on the
-// product's session, as a frontend hosts it.
-TEST(session_plays_keystrokes_in_real_time) {
-    testroms::SessionRig r;
-    using Value = calcu::sessions::Value;
-    CHECK(r.until([&] { return r.machine().isKeyReady(); }));
-    r.post(commands::kLoadState,
-           Value::object({{"bytes", r.bytes("KEYSTROKES:\n25 83 85 84 95\nZeroElapseTime:\nWait: 50ms\nReportElapseTime:\n")}}));
-    CHECK(r.until([&] { return !r.busy(); }, 8s));
-    r.runFor(100ms);
-    CHECK_EQ(testroms::displayText(r.machine()), std::string("5"));
-    CHECK(r.part().logText().find("Elapsed: 0:00.") != std::string::npos);
-    CHECK(!r.part().fullSpeed());
-}
 

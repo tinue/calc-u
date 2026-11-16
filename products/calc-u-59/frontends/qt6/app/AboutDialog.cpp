@@ -21,7 +21,7 @@ AboutDialog::AboutDialog(QWidget* parent) : QDialog(parent) {
         "<p>Version " APP_VERSION " (" APP_BUILD_ID ")</p>"
         "<p><b>Calc-U-59 Calculator Emulation</b></p>"
         "<p>Cycle-accurate TI-59, TI-58, and TI-58C emulation with magnetic cards,<br>"
-        "paper tape printer, preset state files, and debugger tools.</p>"
+        "paper tape printer, presets, and debugger tools.</p>"
         "<p><a href='https://github.com/tinue/Calc-U-59'>GitHub</a> &nbsp;·&nbsp; "
         "<a href='https://github.com/tinue/Calc-U-59/issues'>Support</a> &nbsp;·&nbsp; "
         "<a href='https://github.com/tinue/Calc-U-59/blob/main/PRIVACY.md'>Privacy</a></p>"

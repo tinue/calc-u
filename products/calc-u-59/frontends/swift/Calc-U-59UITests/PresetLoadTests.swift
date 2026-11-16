@@ -33,6 +33,11 @@ final class PresetLoadTests: XCTestCase {
     /// "playing" — that is the proof of a successful load.
     @MainActor
     func testLoadDiagPreset() throws {
+        // LIB-6 D-46 (M-54): it waits for the keystroke-playback-status element
+        // of 2.3.0's KEYSTROKES playback and loads a file through the document
+        // picker; C59-8's scenario of LIB-6 AC-42 (a bundled example loaded,
+        // its cue card shown) replaces it in M-58.
+        throw XCTSkip("Replaced by C59-8's LIB-6 AC-42 scenario (M-58); LIB-6 D-46.")
         let orientation: UIDeviceOrientation = UIDevice.current.userInterfaceIdiom == .pad
             ? .landscapeLeft : .portrait
         let app = launchApp(orientation: orientation)

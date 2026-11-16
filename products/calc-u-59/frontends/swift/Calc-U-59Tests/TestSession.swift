@@ -4,7 +4,7 @@ import XCTest
 /// A second app session of the Swift frontend, made through the real bridge
 /// (`TIAppSession` over `cu59::SessionThread`) in the app the tests are loaded
 /// into: the ROM files of the app's bundle, a TI-59, a temporary save and
-/// trace folder (nothing of the user's is read or written). The test plan
+/// trace folder, the settings' defaults in memory (nothing of the user's is read or written). The test plan
 /// launches the host app with `--UITesting`, so its own settings stay in memory.
 final class TestSession {
     let session: TIAppSession
@@ -21,8 +21,9 @@ final class TestSession {
                                  "no ROM set in the host app: \(String(describing: missing))", file: file, line: line)
         let start = TISessionStart()
         start.cuecards = ""
-        start.moduleID = "ML"
-        start.model = 0   // TI-59
+        // The defaults in memory: LIB-18's start builds a TI-59 with the
+        // Master Library module and no printer (LIB-18 AC-17, AC-18).
+        start.settings = TISettings(defaultsOnlyWithLaunchSettings: [])
         start.saveFolder = folder.path
         start.traceDirectory = folder.path
         start.traceMaxBytes = 1_000_000

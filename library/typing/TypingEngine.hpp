@@ -100,7 +100,8 @@ public:
 
     // EC-5 (LIB-18 §3.4, D-12): every key the engine holds up now, nothing waits.
     void drop() override;
-    bool idle() const;              // nothing down, nothing waiting, the machine ready again where the profile asks
+    bool idle() const;
+    bool released() const { return down_.empty() && queue_.empty(); }   // nothing down, nothing waiting              // nothing down, nothing waiting, the machine ready again where the profile asks
     std::size_t waiting() const { return queue_.size(); }
     std::vector<machine::KeyId> liveHeld() const;   // AC-19
     std::vector<machine::KeyId> down() const;       // every key the engine holds down

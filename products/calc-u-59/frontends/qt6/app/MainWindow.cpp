@@ -76,15 +76,15 @@ void MainWindow::buildMenus() {
 }
 
 void MainWindow::openPreset() {
-    QString path = QFileDialog::getOpenFileName(this, QStringLiteral("Select a .ti59, .ti58, or .ti58c state file"),
+    QString path = QFileDialog::getOpenFileName(this, QStringLiteral("Select a .ti59, .ti58, or .ti58c preset"),
                                                 AppSettings::openStartDir(AppSettings::OpenFolder::Presets),
-                                                QStringLiteral("State files (*.ti59 *.ti58 *.ti58c);;All files (*)"));
+                                                QStringLiteral("Presets (*.ti59 *.ti58 *.ti58c);;All files (*)"));
     if (path.isEmpty()) return;
     AppSettings::rememberOpenFile(AppSettings::OpenFolder::Presets, path);
     openStateFile(path);
 }
 
-void MainWindow::openStateFile(const QString& path) { m_controller.loadStateFile(path); }
+void MainWindow::openStateFile(const QString& path) { m_controller.loadPreset(path); }
 
 void MainWindow::loadCard() {
     if (!cu59::info(m_controller.model()).hasCardReader) return;
@@ -108,8 +108,7 @@ void MainWindow::selectAsmFile() {
 }
 
 void MainWindow::closeEvent(QCloseEvent* e) {
-    saveWindowState();
-    m_controller.persistConstantMemory();
+    saveWindowState();   // the constant memory: the session's closing (EmulatorController's end)
     QMainWindow::closeEvent(e);
 }
 

@@ -71,6 +71,7 @@ set(CORE_SOURCES
   ${CORE_ROOT}/TICatalogue.cpp
   ${CORE_ROOT}/TIKeys.cpp
   ${CORE_ROOT}/TIMachine.cpp
+  ${CORE_ROOT}/TIMemoryKinds.cpp
   ${CORE_ROOT}/TIRomText.cpp
   ${CORE_ROOT}/TIRomReader.cpp
   ${CORE_ROOT}/ModuleFile.cpp
@@ -174,6 +175,47 @@ if(APPLE)
 endif()
 
 set_target_properties(CalcU59Qt PROPERTIES OUTPUT_NAME "Calc-U-59")
+
+# ---- Bundled example presets (C59-2 AC-13, AC-14; LIB-6 AC-31): the bundle
+# file examples/bundle.yaml and exactly the files it lists, each `{ file: … }`,
+# under Resources/examples in the macOS bundle, else resources/examples beside
+# the program (AppPaths::bundledExamplesDir(); the preset list and the bundle
+# paths `examples:<path>` read them). The Web build (frontends/web/build.js)
+# and the Swift app take the same list. ----
+set(EXAMPLES_SRC_DIR ${REPO_ROOT}/examples)
+set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS ${EXAMPLES_SRC_DIR}/bundle.yaml)
+file(STRINGS ${EXAMPLES_SRC_DIR}/bundle.yaml EXAMPLE_FILE_LINES REGEX "{ *file: ")
+set(EXAMPLE_FILES "")
+foreach(line IN LISTS EXAMPLE_FILE_LINES)
+  string(REGEX REPLACE ".*{ *file: *([^ }]+) *}.*" "\\1" example_file "${line}")
+  list(APPEND EXAMPLE_FILES "${example_file}")
+endforeach()
+list(REMOVE_DUPLICATES EXAMPLE_FILES)
+if(APPLE)
+  set_source_files_properties(${EXAMPLES_SRC_DIR}/bundle.yaml PROPERTIES MACOSX_PACKAGE_LOCATION "Resources/examples")
+  target_sources(CalcU59Qt PRIVATE ${EXAMPLES_SRC_DIR}/bundle.yaml)
+endif()
+foreach(example_file IN LISTS EXAMPLE_FILES)
+  get_filename_component(example_dir "${example_file}" DIRECTORY)
+  set(source ${EXAMPLES_SRC_DIR}/${example_file})
+  if(APPLE)
+    set_source_files_properties(${source} PROPERTIES MACOSX_PACKAGE_LOCATION "Resources/examples/${example_dir}")
+    target_sources(CalcU59Qt PRIVATE ${source})
+  else()
+    add_custom_command(TARGET CalcU59Qt POST_BUILD
+      COMMAND ${CMAKE_COMMAND} -E make_directory "$<TARGET_FILE_DIR:CalcU59Qt>/resources/examples/${example_dir}"
+      COMMAND ${CMAKE_COMMAND} -E copy_if_different ${source}
+              "$<TARGET_FILE_DIR:CalcU59Qt>/resources/examples/${example_dir}"
+      COMMENT "Copying the bundled example ${example_file}")
+    install(FILES ${source} DESTINATION bin/resources/examples/${example_dir})
+  endif()
+endforeach()
+if(NOT APPLE)
+  add_custom_command(TARGET CalcU59Qt POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different ${EXAMPLES_SRC_DIR}/bundle.yaml
+            "$<TARGET_FILE_DIR:CalcU59Qt>/resources/examples")
+  install(FILES ${EXAMPLES_SRC_DIR}/bundle.yaml DESTINATION bin/resources/examples)
+endif()
 
 # CalcU59QtTests (M-53; LIB-8 E8-8, E8-9; LIB-10 E10-7): the app's widgets
 # on its EmulatorController, the session on the real ROMs (compiled in as

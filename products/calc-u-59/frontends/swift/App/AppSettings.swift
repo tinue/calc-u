@@ -85,8 +85,6 @@ final class SettingsModel {
     var traceLocationRaw: Int { didSet { file.traceLocation = traceLocationRaw } }
     var traceCustomPath: String { didSet { file.traceFolder = traceCustomPath } }
     var portraitDebugPage: Bool { didSet { file.portraitDebugPage = portraitDebugPage } }
-
-    func saveLastUsedModel(_ raw: Int) { file.setLastUsedModel(raw) }
 }
 
 /// The one platform-store key: the security-scoped bookmark macOS grants for a

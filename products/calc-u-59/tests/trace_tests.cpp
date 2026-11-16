@@ -159,8 +159,9 @@ TEST(lib10_ac33_exit_check_preset_and_button_traces_are_one_session) {
     CHECK(r.until([&] { return r.machine().isKeyReady(); }));
     r.send(calcu::debugger::kTraceCommand, Value::object({{"button", true}}));
     CHECK(r.state<calcu::debugger::TraceState>(calcu::debugger::kTraceTopic)->fileName == "CALCU59_TRACE.bin");
-    const std::string preset = "KEYSTROKES:\nTrace: preset.bin\n83\nWait: 200ms\n";
-    r.post(commands::kLoadState, Value::object({{"bytes", r.bytes(preset)}}));
+    const std::string preset =
+        "format-version: 2\nmodel: TI-59\nslot-1: { name: ML }\nkeys:\n  - trace: preset.bin\n  - key: 2\n  - wait: 200ms\n";
+    r.post(calcu::presets::kLoadPresetCommand, Value::object({{"content", preset}, {"name", "t.ti59"}}));
     CHECK(r.until([&] {
         const auto* t = r.state<calcu::debugger::TraceState>(calcu::debugger::kTraceTopic);
         return t && t->running && t->fileName == "preset.bin";

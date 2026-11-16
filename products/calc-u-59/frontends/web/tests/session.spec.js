@@ -57,17 +57,19 @@ test('ac19 PlayCalculator props, layout and settings, no module', async ({ page 
   await expect.poll(() => second.evaluate((e) => (e.calcuEngine.getState().model || {}).moduleID)).toBe('ML');
 });
 
-test('ac19 a bundled preset by its path', async ({ page }) => {
+// LIB-15 AC-16 (LIB-6 §11.6 P11): the `preset` prop is a path of
+// bundle.yaml, which the page hands LIB-18's start as its bundle path.
+test('lib15_ac16 preset prop takes a path of bundle.yaml', async ({ page }) => {
   await gotoReady(page, 'layout=wide&preset=sum.ti59');
   await expect(page.locator('.cuecard')).toHaveAttribute('aria-label', /Sum 1\.\.N/, { timeout: 10000 });
 });
 
 test('ec4 an unknown model or preset gives a notice and starts without it', async ({ page }) => {
   await gotoReady(page, 'layout=wide&model=TI-99');
-  await expect(page.locator('.calcu-status')).toContainText('has no model TI-99');
+  await expect(page.locator('.calcu-status')).toContainText('There is no model "TI-99"');
   await expect(page.getByLabel('Calculator model')).toHaveValue('0');
   await gotoReady(page, 'layout=wide&preset=nothing.ti59');
-  await expect(page.locator('.calcu-status')).toContainText('nothing.ti59 is not a bundled preset');
+  await expect(page.locator('.calcu-status')).toContainText('could not be loaded');
 });
 
 test('ac22 no message of the old protocol', async ({ page }) => {

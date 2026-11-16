@@ -7,9 +7,11 @@
 //
 // File system (the library's worker writes it before the session is made):
 // /bundle the ROM full set and cuecards.txt (files.json; LIB-12: looked up
-// once, here), /presets the bundled presets, /persist-calc-u-59 the
-// persistent file system: settings/Calc-U-59/Calc-U-59.ini (LIB-9 AC-23) and
-// the save folder Calc-U-59/ (cards, ti58c.mem; LIB-15 AC-20). No trace
+// once, here), /presets the bundled examples (examples/bundle.yaml and the
+// files it lists; LIB-6 AC-31, AC-33: the bundle paths `examples:<path>`),
+// /persist-calc-u-59 the persistent file system:
+// settings/Calc-U-59/Calc-U-59.ini (LIB-9 AC-23) and the save folder
+// Calc-U-59/ (cards, ti58c.memory.yaml; LIB-15 AC-20, C59-3 AC-13). No trace
 // folder: a trace is kept in memory and handed over with KeepFile when it
 // ends (LIB-10 AC-26, D-10; the MEMFS /traces of LIB-9 A-3 went in M-53).
 
@@ -20,9 +22,6 @@
 #include <string>
 
 #include "../../app/ProductRoms.hpp"
-#include "../../app/TIDebuggerSetup.hpp"
-#include "../../app/TIPrinters.hpp"
-#include "../../core/TICatalogue.hpp"
 #include "../../app/Settings.hpp"
 #include "../../app/TIAppPart.hpp"
 #include "../../app/TIWebPart.hpp"
@@ -37,18 +36,14 @@ namespace {
 namespace s59 = cu59::settings;
 
 // The parts of one worker's session and what they need; the session owns it
-// (AppSessionSetup::owned) and lets it go first. The library's typing part
-// goes before the product's (LIB-5); the PaperPart (LIB-8) and the
-// DebuggerPart (LIB-10) after it, as makeAppSession has them (M-53); the Web
-// part last.
+// (AppSessionSetup::owned) and lets it go first. TIAppPart brings the
+// library's parts (LIB-6 D-40: typing, peripherals, presets, startup, paper,
+// debugger, in the library's order), the program memory commands and itself
+// (sessionParts()); the shell's part goes first, the Web part last.
 struct WebParts {
     calcu::settings::SettingsFile file;
     s59::Settings settings{file};
-    calcu::typing::TypingPart typing{cu59::typingProduct()};
-    cu59::TILevelRules rules;
     std::unique_ptr<cu59::TIAppPart> app;
-    calcu::paper::PaperPart paper{tiCatalogue(), cu59::tiPrinterPapers()};
-    std::unique_ptr<calcu::debugger::DebuggerPart> debugger;
     std::unique_ptr<cu59::TIWebPart> web;
     explicit WebParts(calcu::settings::SettingsFile f) : file(std::move(f)) {}
 };
@@ -66,24 +61,22 @@ std::unique_ptr<calcu::sessions::AppSession> makeWebAppSession(const calcu::web:
     cu59::TIAppSetup setup;
     setup.roms = roms.set;
     setup.cuecards = calcu::settings::readWholeFile(start.bundleDir + "/cuecards.txt").value_or("");
-    setup.startModel = parts->settings.startupModel();
     setup.saveFolder = start.dirs.saveFolder;
-    WebParts* p = parts.get();
-    cu59::TIDebuggerOptions debug;
-    debug.traceLimitMb = [p] { return static_cast<long>(p->settings.traceMaxFileSizeMB()); };
-    debug.handOver = true;   // no trace folder: KeepFile (LIB-10 AC-26)
-    debug.showPanel = [p](calcu::sessions::SessionContext&, const std::string& view) { p->app->showDebugPanelNamed(view); };
-    parts->debugger = std::make_unique<calcu::debugger::DebuggerPart>(cu59::tiDebuggerSetup(parts->rules, std::move(debug)));
+    setup.settings = &parts->file;          // [startup] model, last-model, [preset] (LIB-18 AC-17)
+    setup.examplesFolder = start.presetsDir;   // the bundle (LIB-15 AC-16)
+    // No trace folder: a trace is handed over with KeepFile (LIB-10 AC-26);
+    // [trace] max-file-size-mb sets its limit.
+    setup.trace.maxBytes = static_cast<std::uint64_t>(parts->settings.traceMaxFileSizeMB()) * 1'000'000;
     parts->app = std::make_unique<cu59::TIAppPart>(std::move(setup));
-    parts->app->setTyping(&parts->typing);
-    parts->app->setLibraryParts(&parts->paper, parts->debugger.get(), &parts->rules);
-    parts->web = std::make_unique<cu59::TIWebPart>(parts->settings, start.presetsDir);
+    parts->web = std::make_unique<cu59::TIWebPart>(parts->settings);
     parts->web->bind(*parts->app);
 
     calcu::sessions::AppSessionSetup s;
     s.clock = &calcu::web::wallTimeNow;
     s.hostTime = [] { return std::chrono::system_clock::now(); };
-    s.parts = {start.shellPart, &parts->typing, parts->app.get(), &parts->paper, parts->debugger.get(), parts->web.get()};
+    s.parts = {start.shellPart};
+    for (calcu::sessions::SessionPart* p : parts->app->sessionParts()) s.parts.push_back(p);
+    s.parts.push_back(parts->web.get());
     const std::string problem = parts->file.problem();
     s.owned = std::move(parts);
     auto session = std::make_unique<calcu::sessions::AppSession>(std::move(s));

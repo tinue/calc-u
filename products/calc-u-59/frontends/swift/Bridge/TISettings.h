@@ -27,7 +27,9 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic) NSInteger startupModelChoice;
 /// The model to start (the chosen one, else the last used, else TI-59).
 @property (readonly) NSInteger startupModel;
-- (void)setLastUsedModel:(NSInteger)model;
+/// The library's settings file (calcu::settings::SettingsFile *), for the
+/// bridge's session set-up (TIAppSession.mm) only; opaque to Swift.
+- (void *)cppSettingsFile NS_SWIFT_UNAVAILABLE("bridge only");
 
 @property (nonatomic) NSInteger traceMaxFileSizeMB;
 @property (nonatomic) NSInteger ledStyle;

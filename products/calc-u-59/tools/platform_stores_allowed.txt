@@ -13,3 +13,10 @@ swift/App/AppSettings.swift: forKey: traceFolderBookmarkKey
 # LIB-9 AC-23, LIB-15 59).
 web/tests/play-calculator.spec.js: window.localStorage.clear();
 web/tests/play-calculator.spec.js: window.localStorage.setItem('calcu59/
+
+# C59-3 EC-8 (M-54): 2.3.0's constant memory in localStorage is not read;
+# the test puts one there and takes it away.
+web/tests/storage.spec.js: // C59-3 EC-8: 2.3.0 kept the constant memory in localStorage
+web/tests/storage.spec.js: test("c59_3_ec8 2.3.0's localStorage memory is not read", async ({ page }) => {
+web/tests/storage.spec.js: window.localStorage.setItem('calcu59/ti58c.mem',
+web/tests/storage.spec.js: await page.evaluate(() => window.localStorage.removeItem('calcu59/ti58c.mem'));

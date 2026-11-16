@@ -109,28 +109,31 @@ function CardPicker({ engine, mode, onClose }) {
 
 function PresetPicker({ engine, onClose }) {
   const [presets, setPresets] = React.useState(null);
+  // LIB-6 AC-31, AC-42: the Example entries of the preset list, in their
+  // groups and order; one loads by its bundle path, an upload by its content.
   React.useEffect(() => {
-    fetchBesideCalc("presets/manifest.json").then((t) => setPresets(JSON.parse(t))).catch(() => setPresets([]));
-  }, []);
-  const pick = (file) => {
+    engine.request("presetList").then((all) => setPresets(all.filter((p) => p.kind === "example")))
+      .catch(() => setPresets([]));
+  }, [engine]);
+  const pick = (path) => {
     onClose();
-    fetchBesideCalc(`presets/${file}`).then((text) => engine.loadState(text))
-      .catch((err) => engine.setStatus(String(err.message || err)));
+    engine.loadBundledPreset(path);
   };
   const upload = (e) => readFileInput(e, "text").then((f) => {
     if (!f) return;
     onClose();
-    engine.loadState(f.content);
+    engine.loadPresetContent(f.content, f.name);
   });
   return (
     <Dialog title="Load Preset" onClose={onClose}
       footer={<button type="button" onClick={onClose}>Cancel</button>}>
       <ul className="calcu-list" aria-label="Presets">
         {presets === null && <li className="calcu-empty">Loading…</li>}
-        {(presets || []).map((p) => (
-          <li key={p.file}>
-            <button type="button" className="calcu-listitem" onClick={() => pick(p.file)}>
-              {p.title}<span className="calcu-filename">{p.file}</span>
+        {(presets || []).map((p, i) => (
+          <li key={p.bundlePath}>
+            {(i === 0 || presets[i - 1].group !== p.group) && <div className="calcu-group">{p.group}</div>}
+            <button type="button" className="calcu-listitem" onClick={() => pick(p.bundlePath)}>
+              {p.description || p.name}<span className="calcu-filename">{p.bundlePath.replace(/^examples:/, "")}</span>
             </button>
           </li>
         ))}

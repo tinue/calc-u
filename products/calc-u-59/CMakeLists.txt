@@ -165,6 +165,15 @@ if(CALCU_TESTS)
     calcu_add_test(CalcU59HeadlessRomMissing frequent COMMAND ${Python3_EXECUTABLE} tests/headless_rom_tests.py
                    PROPERTIES ENVIRONMENT TI59HEADLESS_LIB=$<TARGET_FILE:ti59headless> DEPENDS CalcU59Tests)
   endif()
+  # LIB-6 AC-43 (design §11.6 P8; C59-2 T9): `calcu --product 59 check-preset`
+  # over the examples and the startup presets; the four with magnetic cards
+  # wait for C59-7 (M-55), excluded by name (C59-2 design §1, D-13).
+  set(CALCU59_PRESET_GLOBS)
+  foreach(ext ti59 ti58 ti58c)
+    list(APPEND CALCU59_PRESET_GLOBS examples/*.${ext} examples/*/*.${ext})
+  endforeach()
+  calcu_add_preset_check(CalcU59Presets PRODUCT 59 FILES ${CALCU59_PRESET_GLOBS}
+                         EXCLUDE globe-print.ti59 characters-fastmode.ti59 pdcm-card-tricks.ti59 pdcm-make-cards.ti59)
   # The Xcode project compiles only Swift and the bridge (C59-5, ADR 0013).
   calcu_add_test(CalcU59XcodeProjectCheck frequent COMMAND frontends/swift/check_xcode_project.sh)
   # C59-5 AC-13 (design B1): attach only in Debug builds for macOS and the
@@ -174,9 +183,10 @@ if(CALCU_TESTS)
   # Longer: run locally before merging into main and at the end of a part.
   # Against frontends/web/dist/ (frontends/web/build.sh first).
   calcu_add_test(CalcU59WebPlaywright longer COMMAND frontends/web/run-tests.sh)
-  # The reference runs of M-9 on the app session (tests/reference_runs_tests.cpp):
-  # each example compared with its 2.3.0 recording; a difference is a finding.
-  calcu_add_test(CalcU59ReferenceRuns longer COMMAND CalcU59Tests reference_runs
+  # C59-2 AC-11 (design §6 T10): each upgraded example through the harness
+  # entry against the reference run of its 2.3.0 file (M-9); a difference is
+  # a finding (tests/reference_runs_tests.cpp).
+  calcu_add_test(CalcU59ReferenceRuns longer COMMAND CalcU59Tests c59_2_ac11
                  PROPERTIES ENVIRONMENT CALCU59_REFERENCE_COMPARE=1)
   # LIB-12, Technical Requirements (design P6): a build with one ROM file
   # taken away starts in neither headless nor the web client, naming it.

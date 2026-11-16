@@ -1,10 +1,11 @@
 // The product's flows in cu59::TIAppPart on the library's app session: model
-// switches, presets, the TI-58C memory file, freezes, the ASM overlay, the
-// places of C59-6, cards and cue cards. Ported in M-34 from 2.3.0's
-// SessionController tests (shared_controller_tests.cpp and the controller
-// half of shared_cooperative_tests.cpp, a FakePlatform and the controller's
-// cooperative batches): the same checks, on the part as every frontend hosts
-// it (SessionRig.hpp, PartRig), paced by the library's pacer.
+// switches, presets, freezes, the ASM overlay, the places of C59-6, cards
+// and cue cards. Ported in M-34 from 2.3.0's SessionController tests; since
+// M-54 on the library's commands (LIB-18: model, reset, cold-boot, attach,
+// detach; LIB-6: load-preset {content}, run-step) and presets of format 2.
+// The 2.3.0 preset-card cases (ArmCard:, InsertCard:, CARD: blocks) went with
+// the reader of 2.3.0 (LIB-6 D-47); C59-7 (M-55) writes them anew on
+// magnetic-cards:, card:, arm:.
 
 #include "TestHarness.hpp"
 #include "SessionRig.hpp"
@@ -30,39 +31,93 @@ namespace {
 std::vector<uint8_t> bytes(const std::string& s) { return std::vector<uint8_t>(s.begin(), s.end()); }
 
 bool waitForScanLoop(PartRig& r) {
-    return r.runUntil([&] { return r.part().emulator()->access().machine().isKeyReady(); }, 3000ms);
+    return r.runUntil([&] { return !r.busy() && r.part().emulator()->access().machine().isKeyReady(); }, 3000ms);
 }
 
 bool cardIdle(PartRig& r) { return r.part().cardState() == CardState::NoCard; }
 
-// The run control of the part's session (LIB-10; the freeze until M-53).
+// The run control of the part's session (LIB-10).
 calcu::debugger::RunControl& rc(PartRig& r) { return r.part().debuggerPart()->runControl(); }
 using calcu::debugger::kCpu;
 using calcu::debugger::kProgram;
 
-const std::string kMem = "cards/ti58c.mem";
+// A preset of format 2 for `model`, with the Master Library module and,
+// unless `printer` is false, the PC-100C; `body` its sections.
+std::string preset(const std::string& body, const std::string& model = "TI-59", bool printer = true) {
+    return "format-version: 2\nmodel: " + model + "\nslot-1: { name: ML }\n" + (printer ? "printer: PC-100C\n" : "") + body;
+}
+
+// A file dropped on the calculator (c59.open-dropped): its TIFlag, true for a preset that loads.
+bool drop(PartRig& r, const std::optional<std::string>& content, const std::string& path, const std::string& name) {
+    using calcu::sessions::Value;
+    Value::Object o{{"path", path}, {"name", name}};
+    if (content) o.push_back({"bytes", Value(Value::Bytes(content->begin(), content->end()))});
+    const auto reply = r.operation(commands::kOpenDropped, Value(std::move(o)));
+    if (!reply.done) return false;
+    if (const auto* f = calcu::sessions::payloadAs<TIFlag>(reply.result)) return f->value;
+    return true;   // an operation's reply: the preset was loaded
+}
+
+// `n 2nd Write` through LIB-5's `key` command (as the harness's `key`): the
+// reply comes when the keys are up; the ROM then waits for a card. (A
+// preset's or run-step's `key: n Write` does not end in the card wait in
+// M-54's first run: reported to the parent.)
+// Keys at regular speed through LIB-5's `key` command (a user's keys, as
+// 2.3.0's KEYSTROKES pressed them at regular speed; LIB-6's run-step runs at
+// full speed); the reply comes when the last key is up.
+bool keys(PartRig& r, std::initializer_list<const char*> names) {
+    using calcu::sessions::Value;
+    Value::Array a;
+    for (const char* n : names) a.emplace_back(n);
+    const auto reply = r.operation(calcu::typing::kKey, Value::object({{"names", Value(std::move(a))}}), 30000ms);
+    return reply.done;
+}
+
+bool write(PartRig& r, const std::string& bank) {
+    using calcu::sessions::Value;
+    Value::Array names{Value(bank), Value("Write")};
+    const auto reply = r.operation(calcu::typing::kKey, Value::object({{"names", Value(std::move(names))}}), 30000ms);
+    r.run(500ms);
+    return reply.done && testroms::card(r.part().emulator()->machine()).isInCardWait();
+}
+
+const std::string kProgramA = "program:\n  keycodes: |\n    76 11 01 02 03 91\n";   // Lbl A 1 2 3 R/S
+
+double reg(PartRig& r, int n) { return testroms::mem(r.part().emulator()->machine()).readDataReg(n); }
+int step(PartRig& r, int s) { return int(testroms::mem(r.part().emulator()->machine()).readProgramStep(s)); }
 
 } // namespace
 
-TEST(part_loads_a_preset_for_another_model) {
+// LIB-18 AC-24 (design P59-3): a preset that names another model builds it;
+// `[startup] last-model` follows (AC-9).
+TEST(lib18_ac24_preset_for_another_model_builds_it_last_model_follows) {
     PartRig r;
     auto& c = r.part();
-    c.loadStateFile(bytes("MODEL: TI-58\nREGISTERS:\n05 = 3.25\n"));
+    const auto reply = r.load(preset("data:\n  05: 3.25\n", "TI-58"));
+    CHECK(reply.done);
     CHECK(c.model() == Model::TI58);
     CHECK(!c.isFrozen());
-    CHECK_EQ(testroms::mem(c.emulator()->access().machine()).readDataReg(5), 3.25);
+    CHECK_EQ(reg(r, 5), 3.25);
+    CHECK_EQ(r.settings.text("startup", "last-model"), std::string("TI-58"));
     CHECK(r.errors().empty());
 }
 
-TEST(part_reports_parse_errors_and_partition_errors) {
+// LIB-6 AC-38 (design P3; was part_reports_parse_errors_and_partition_errors):
+// any error refuses the file whole, with its first error and its line; the
+// machine stays as it was.
+TEST(lib6_ac38_first_error_refuses_the_file_machine_untouched) {
     PartRig r(Model::TI58);
     auto& c = r.part();
-    c.loadStateFile(bytes("PARTITION: 959\n"));  // beyond the TI-58's 479
-    CHECK_EQ(r.errors().size(), size_t{1});
-    c.loadStateFile(std::nullopt);
-    CHECK_EQ(r.errors().back(), std::string("State file load error: Cannot read file."));
-    c.loadStateFile(bytes("\xff\xfe"));
-    CHECK(r.errors().back().find("not valid UTF-8") != std::string::npos);
+    const auto ticksBefore = r.ticks();
+    auto reply = r.load(preset("partition: 959\ndata:\n  77: 1\n", "TI-58"));   // beyond the TI-58's 479; R77 too
+    CHECK(!reply.done);
+    CHECK(reply.reason.find("line 5") != std::string::npos);   // the first error only
+    CHECK(reply.reason.find("line 7") == std::string::npos);
+    CHECK(c.model() == Model::TI58 && r.ticks() >= ticksBefore);
+    reply = r.load("\xff\xfe");
+    CHECK(!reply.done && reply.reason.find("UTF-8") != std::string::npos);
+    reply = r.load("PARTITION: 479\n");   // 2.3.0: outdated, with the hint (row 59-1)
+    CHECK(!reply.done && reply.reason.find("Calc-U-59") != std::string::npos);
 }
 
 TEST(part_load_while_frozen_ends_running_without_tracing) {
@@ -70,52 +125,24 @@ TEST(part_load_while_frozen_ends_running_without_tracing) {
     auto& c = r.part();
     rc(r).pause(kProgram);
     CHECK(r.runUntil([&] { return c.isFrozen() && !c.debug().cpuHistory().empty(); }, 3000ms));
-    c.loadStateFile(bytes("REGISTERS:\n01 = 7\n"));
+    CHECK(r.load(preset("data:\n  01: 7\n")).done);
     CHECK(!c.isFrozen());
     r.run(20ms);
     CHECK_EQ(testroms::hw(c.emulator()->access().machine()).traceFlags(), static_cast<uint32_t>(TRACE_NONE));
 }
 
-TEST(part_keystroke_controls_drive_the_gui) {
+// LIB-10 AC-35 (G11): a new machine disarms pause-on-start. LIB-18 AC-20: a
+// model switch builds the built-in default (Master Library, no printer).
+TEST(lib10_ac35_part_model_switch_keeps_log_resets_freeze) {
     PartRig r;
     auto& c = r.part();
-    // Lbl A 1 + 1 = R/S, armed FREEZE ON START: A freezes before the program's first step.
-    c.loadStateFile(bytes("PROGRAM:\n76 11 01 85 01 95 91\n"
-                          "KEYSTROKES:\nPrinterTrace: on\nCutPaper:\nDebugPanel: CPU\n"
-                          "FreezeOnStart: Calculator\n11\n"));
-    CHECK(r.runUntil([&] { return c.isFrozen(); }, 10000ms));
-    CHECK(c.printerTrace());
-    r.run(20ms);
-    CHECK(r.panels() == (std::vector<DebugPanel>{DebugPanel::Cpu}));
-    CHECK(r.runUntil([&] { return !c.keystrokesPlaying(); }, 10000ms));
-    c.loadStateFile(bytes("SKIP-RESET: on\n"));  // retired: an error, then a normal load
-    CHECK(!r.errors().empty() && r.errors().back().find("SKIP-RESET: no longer exists") != std::string::npos);
-    CHECK(!c.isFrozen());
-}
-
-TEST(part_constant_memory_keeps_the_loaded_card) {
-    PartRig r(Model::TI58C);
-    auto& c = r.part();
-    c.loadStateFile(bytes("CUECARD:\nTemplate: MagnetCard\nTitle: KEEP ME\nREGISTERS:\n03 = 1\n"));
-    CHECK(r.p.cards.count(kMem) && r.p.cards[kMem].find("KEEP ME") != std::string::npos);
-    // Unchanged RAM: the debounced persist does not write again.
-    const int writes = r.p.writes[kMem];
-    rc(r).pause(kCpu);
-    CHECK(r.runUntil([&] { return c.isFrozen(); }, 3000ms));
-    r.run(700ms);
-    CHECK_EQ(r.p.writes[kMem], writes);
-}
-
-// LIB-10 AC-35 (G11): a new machine disarms pause-on-start.
-TEST(lib10_ac35_part_model_switch_keeps_printer_and_log_resets_freeze) {
-    PartRig r;
-    auto& c = r.part();
-    c.setPrinterConnected(false);
+    CHECK(r.attach("printer", "PC-100C").done);
     c.dumpVars();
     rc(r).pauseOnStart(kProgram);
     CHECK(c.runState().armed == kProgram);
-    CHECK(c.startMachine(Model::TI58));
-    CHECK(!c.printerConnected());
+    CHECK(r.model("TI-58").done);
+    CHECK(c.model() == Model::TI58);
+    CHECK(!c.printerConnected());   // nothing of the old machine is carried
     CHECK(testroms::moduleIn(c.emulator()->access().machine()) == "ML");
     CHECK_EQ(c.emulator()->access().machine().plugged().byPlace.size(), size_t{1});   // the module only
     r.run(20ms);
@@ -129,17 +156,15 @@ TEST(part_reset_keeps_the_memory_and_clean_reset_clears_it) {
     auto& c = r.part();
     CHECK(waitForScanLoop(r));
     const uint8_t marked[16] = {1, 2, 3};
-    uint8_t reg[16];
+    uint8_t regs[16];
     c.emulator()->access().memory().writeRAMReg(90, marked);
-    c.resetMachine();
+    CHECK(r.reset().done);
     CHECK(waitForScanLoop(r));
-    c.emulator()->access().memory().copyRAMReg(90, reg);
-    CHECK(std::equal(std::begin(marked), std::end(marked), reg));
-    c.cleanResetMachine();
-    CHECK(r.runUntil([&] {
-        c.emulator()->access().memory().copyRAMReg(90, reg);
-        return reg[0] == 0;
-    }, 3000ms));
+    c.emulator()->access().memory().copyRAMReg(90, regs);
+    CHECK(std::equal(std::begin(marked), std::end(marked), regs));
+    CHECK(r.coldBoot().done);
+    c.emulator()->access().memory().copyRAMReg(90, regs);
+    CHECK_EQ(int(regs[0]), 0);
 }
 
 // 2.3.0 ran a plain Reset's reset routine with the run loop stopped, so only a
@@ -147,7 +172,8 @@ TEST(part_reset_keeps_the_memory_and_clean_reset_clears_it) {
 // return at once and the ROM's start-up runs in the run loop, so an armed
 // FREEZE ON START fires on either (ledger row 59-34; LIB-10 Q-1, user
 // 2026-11-16: it replaces AC-30's Reset clause for Calc-U-59). Since M-53 the
-// run control's pause-on-start cpu (TILevelRules).
+// run control's pause-on-start cpu (TILevelRules); since M-54 LIB-18's
+// `reset` and `cold-boot`.
 TEST(lib10_ac30_part_cpu_freeze_on_start_sees_reset_and_clean_reset) {
     PartRig r;
     auto& c = r.part();
@@ -155,7 +181,7 @@ TEST(lib10_ac30_part_cpu_freeze_on_start_sees_reset_and_clean_reset) {
     for (bool clean : {false, true}) {
         rc(r).pauseOnStart(kCpu);
         r.run(50ms);  // the armed start sees the scan loop
-        if (clean) c.cleanResetMachine(); else c.resetMachine();
+        r.post(clean ? calcu::startup::kColdBootCommand : calcu::startup::kResetCommand);
         CHECK(r.runUntil([&] { return c.isFrozen(); }, 3000ms));
         CHECK(c.runState().owner == kCpu);
         CHECK(c.runState().reason == calcu::debugger::RunState::Reason::PauseOnStart);
@@ -167,9 +193,9 @@ TEST(lib10_ac30_part_cpu_freeze_on_start_sees_reset_and_clean_reset) {
 TEST(part_bad_module_changes_nothing) {
     PartRig r;
     auto& c = r.part();
-    CHECK(!c.selectModule("ZZ"));
+    CHECK(!r.attach("slot-1", "ZZ").done);
     CHECK_EQ(c.moduleID(), std::string("ML"));
-    CHECK(r.errors().empty());   // not a ROM error: cuecards.txt lists no module ZZ (LIB-12 AC-10)
+    CHECK(r.errors().empty());   // a refusal, no notice (LIB-12 AC-10)
 }
 
 // LIB-10 AC-35: a resume before the pause landed: no pause, no frozen view.
@@ -187,19 +213,19 @@ TEST(lib10_ac35_part_resume_before_the_frozen_view_drops_it) {
     CHECK(std::find(sets.begin(), sets.end(), topics::kDebugCpu) == sets.end());
 }
 
-TEST(part_events_of_a_replaced_machine_are_ignored) {
+TEST(part_pause_of_a_replaced_machine_is_dropped) {
     PartRig r;
     auto& c = r.part();
     rc(r).pause(kProgram);
     r.run(20ms);
-    CHECK(c.startMachine(Model::TI58));
+    CHECK(r.model("TI-58").done);
     r.run(20ms);
     CHECK(!c.isFrozen());
     CHECK(c.debug().cpuHistory().empty());
 }
 
-// The session always has a machine (makeAppSession starts one), so 2.3.0's
-// "Machine not initialized yet." before the first machine has no case here.
+// The session always has a machine (the rig waits for LIB-18's start), so
+// 2.3.0's "Machine not initialized yet." before the first machine has no case here.
 TEST(part_asm_overlay) {
     PartRig r;
     auto& c = r.part();
@@ -221,23 +247,7 @@ TEST(part_asm_overlay) {
     CHECK_EQ(c.asmStatus(), std::string("ASM overlay cleared."));
 }
 
-TEST(part_reload_and_memory_card) {
-    PartRig r;
-    auto& c = r.part();
-    // Part 1 writes R00 to a memory card; part 2, reloaded after it, reads it back.
-    c.loadStateFile(bytes("PROGRAM:\n76 11 04 96 91\nREGISTERS:\n00 = 42\n"  // Lbl A 4 Write R/S
-                          "KEYSTROKES:\nArmCard: mem:M\n11\n"
-                          "PROGRAM:\n76 11 47 04 22 96 43 00 91\n"           // Lbl A CMs 4 INV Write RCL 00 R/S
-                          "KEYSTROKES:\nArmCard: mem:M\n11\n"));
-    CHECK(r.runUntil([&] { return c.keystrokesPlaying(); }));
-    CHECK(r.runUntil([&] { return !c.keystrokesPlaying(); }));
-    CHECK(waitForScanLoop(r));
-    CHECK_EQ(testroms::mem(c.emulator()->access().machine()).readDataReg(0), 42.0);
-    CHECK_EQ(int(testroms::mem(c.emulator()->access().machine()).readProgramStep(2)), 47);  // part 2 is in
-    CHECK(r.errors().empty());
-}
-
-// ── C59-6 (design T7, T10): the app session's part of the places ────────────
+// ── C59-6 (design T7, T10) and LIB-18 AC-21: the app session's part of the places ──
 
 namespace {
 // TRACE as the PC-100C in the machine has it; nullopt without a PC-100C.
@@ -251,170 +261,186 @@ std::optional<bool> traceSwitch(TIAppPart& c) {
 }
 } // namespace
 
-TEST(c59_6_ac6_trace_kept_by_app_session) {
+// LIB-18 AC-21, AC-23 (design P59-4, D-27; was c59_6_ac6_trace_kept_by_app_session):
+// TRACE keeps its position through Reset, Cold boot, a model switch and a
+// detach; an attach puts it into the new PC-100C.
+TEST(lib18_ac21_trace_kept_through_detach_and_attach) {
     PartRig r;
     auto& c = r.part();
+    CHECK(r.attach("printer", "PC-100C").done);
     CHECK(!c.printerTrace());                       // off when the product starts
     CHECK(traceSwitch(c) == std::optional<bool>(false));
     c.setPrinterControl("TRACE", true);
     CHECK(c.printerTrace() && traceSwitch(c) == std::optional<bool>(true));
-    c.resetMachine();
+    CHECK(r.reset().done);
     CHECK(c.printerTrace() && traceSwitch(c) == std::optional<bool>(true));
-    c.cleanResetMachine();
+    CHECK(r.coldBoot().done);
     CHECK(c.printerTrace() && traceSwitch(c) == std::optional<bool>(true));
-    CHECK(c.startMachine(Model::TI58C));           // a model switch: a new machine, the same switch
-    CHECK(c.printerTrace() && traceSwitch(c) == std::optional<bool>(true));
-    c.setPrinterConnected(false);                  // detached: the position stays with the PC-100C
+    CHECK(r.model("TI-58C").done);                 // a new machine, without a printer (AC-18)
     CHECK(c.printerTrace() && !traceSwitch(c));
-    c.setPrinterConnected(true);
+    CHECK(r.attach("printer", "PC-100C").done);     // the remembered position goes into it
+    CHECK(c.printerTrace() && traceSwitch(c) == std::optional<bool>(true));
+    CHECK(r.detach("printer").done);                // detached: the position stays the session's
+    CHECK(c.printerTrace() && !traceSwitch(c));
+    CHECK(r.attach("printer", "PC-100C").done);
     CHECK(c.printerTrace() && traceSwitch(c) == std::optional<bool>(true));
     // Not saved: nothing holds it; a new app session starts off.
     PartRig again;
     CHECK(!again.part().printerTrace());
 }
 
-TEST(c59_6_ac6_state_file_sets_trace_off_unless_it_sets_it) {
+// C59-6 AC-6, row 59-25 (was c59_6_ac6_state_file_sets_trace_off_unless_it_sets_it):
+// a preset's build has TRACE off unless it says `printer-trace: on`.
+TEST(c59_6_ac6_preset_sets_trace_off_unless_printer_trace_on) {
     PartRig r;
     auto& c = r.part();
+    CHECK(r.attach("printer", "PC-100C").done);
     c.setPrinterControl("TRACE", true);
     CHECK(c.printerTrace());
-    c.loadStateFile(bytes("REGISTERS:\n01 = 1\n"));
+    CHECK(r.load(preset("data:\n  01: 1\n")).done);
+    r.run(20ms);
     CHECK(!c.printerTrace() && traceSwitch(c) == std::optional<bool>(false));
-    c.loadStateFile(bytes("KEYSTROKES:\nPrinterTrace: on\n"));
-    CHECK(r.runUntil([&] { return c.printerTrace(); }, 5000ms));
-    CHECK(traceSwitch(c) == std::optional<bool>(true));
+    CHECK(r.load(preset("keys:\n  - printer-trace: on\n")).done);
+    r.run(20ms);
+    CHECK(c.printerTrace() && traceSwitch(c) == std::optional<bool>(true));
 }
 
 // LIB-8 AC-29 (C59-6 AC-1): the PC-100C's paper stays the PaperPart's while
 // it is detached, and it is back, printed on below, when it is attached
-// again on another model (was c59_6_ac1_paper_kept_across_detach_and_attach).
+// again on another model.
 TEST(lib8_ac29_paper_back_on_attach_on_any_model) {
     PartRig r;
     auto& c = r.part();
+    CHECK(r.attach("printer", "PC-100C").done);
     CHECK(c.printerConnected());
-    c.loadStateFile(bytes("KEYSTROKES:\n82 21 94\n"));   // 1 2nd Prt
-    CHECK(r.runUntil([&] { return !r.printedText().empty() && !c.keystrokesPlaying(); }, 5000ms));
+    CHECK(keys(r, {"1", "2nd", "Prt"}));
+    CHECK(r.runUntil([&] { return !r.printedText().empty(); }, 5000ms));
+    CHECK(waitForScanLoop(r));   // the line printed and fed
     const auto lines = r.printedText();
     CHECK(lines.size() == 1 && lines[0] == "          1.        ");
     r.run(100ms);
     const calcu::paper::Reach reach = r.pc100cPaper()->reach();
     CHECK_EQ(reach.to, pc100cpaper::kLine);
-    c.setPrinterConnected(false);
+    CHECK(r.detach("printer").done);
     CHECK(!c.printerConnected());
     CHECK(testroms::paper(c.emulator()->access().machine()) == nullptr);
     r.run(20ms);
     CHECK(r.printedText() == lines);
-    CHECK(c.startMachine(Model::TI58C));
-    c.setPrinterConnected(true);
+    CHECK(r.model("TI-58C").done);
+    CHECK(r.attach("printer", "PC-100C").done);
     CHECK(testroms::paper(c.emulator()->access().machine()) != nullptr);
     CHECK(r.printedText() == lines);              // the paper is back with the PC-100C
     CHECK(waitForScanLoop(r));
-    c.loadStateFile(bytes("KEYSTROKES:\n83 21 94\n"));   // 2 2nd Prt; no PRINTER: line, the paper stays
-    CHECK(r.runUntil([&] { return r.printedText().size() == 2 && !c.keystrokesPlaying(); }, 5000ms));
+    CHECK(keys(r, {"2", "2nd", "Prt"}));
+    CHECK(r.runUntil([&] { return r.printedText().size() == 2; }, 5000ms));
+    CHECK(waitForScanLoop(r));
     r.run(100ms);
     const auto& text = r.pc100cPaper()->text();
     CHECK(text.size() == 2 && text[1].text == "          2.        ");
     CHECK_EQ(text[1].at.y, pc100cpaper::kLine);   // printed on below the first line
 }
 
+// C59-6 AC-11, row 59-11 (LIB-18 AC-21, design P59-4): a module change and
+// the printer power-cycle the machine, now through `attach` and `detach`.
 TEST(c59_6_ac11_change_module_power_cycles) {
     PartRig r;
     auto& c = r.part();
+    CHECK(r.attach("printer", "PC-100C").done);
     CHECK(waitForScanLoop(r));
     const uint8_t marked[16] = {1, 2, 3};
-    uint8_t reg[16];
+    uint8_t regs[16];
     c.emulator()->access().memory().writeRAMReg(90, marked);
-    c.changeModule("LE");
+    CHECK(r.attach("slot-1", "LE").done);   // a replace
     CHECK_EQ(c.moduleID(), std::string("LE"));
     CHECK(testroms::moduleIn(c.emulator()->access().machine()) == "LE");
     CHECK(c.emulator()->moduleImage() == *cu59::moduleImage(*testroms::romSet(), "LE.rom.yaml"));
     // The power cycle: the TI-59 loses its program and registers (row 59-11).
     CHECK(waitForScanLoop(r));
-    c.emulator()->access().memory().copyRAMReg(90, reg);
-    CHECK_EQ(int(reg[0]), 0);
+    c.emulator()->access().memory().copyRAMReg(90, regs);
+    CHECK_EQ(int(regs[0]), 0);
     // The printer too.
     c.emulator()->access().memory().writeRAMReg(90, marked);
-    c.setPrinterConnected(false);
+    CHECK(r.detach("printer").done);
     CHECK(waitForScanLoop(r));
-    c.emulator()->access().memory().copyRAMReg(90, reg);
-    CHECK_EQ(int(reg[0]), 0);
+    c.emulator()->access().memory().copyRAMReg(90, regs);
+    CHECK_EQ(int(regs[0]), 0);
     // An empty slot.
-    c.changeModule("");
+    CHECK(r.detach("slot-1").done);
     CHECK(c.moduleID().empty() && testroms::moduleIn(c.emulator()->access().machine()).empty());
     CHECK(c.emulator()->moduleImage().empty());
     CHECK(waitForScanLoop(r));
     CHECK(r.errors().empty());
 }
 
-// ── Presets, cards, cue cards (from 2.3.0's cooperative SessionController tests) ──
+// ── Presets, cards, cue cards ────────────────────────────────────────────────
 
-TEST(part_plays_a_preset) {
+// C59-2 AC-7 (was part_plays_a_preset): a preset's keys and its elapsed time.
+TEST(c59_2_ac7_preset_plays_its_keys) {
     PartRig r;
-    r.run(1s);
-    CHECK(r.part().emulator()->machine().isKeyReady());
-    r.load("KEYSTROKES:\n25 83 85 84 95\nZeroElapseTime:\nWait: 50ms\nReportElapseTime:\n");
-    CHECK(r.runUntil([&] { return r.part().keystrokesPlaying(); }));
-    CHECK(r.runUntil([&] { return !r.part().keystrokesPlaying(); }));
+    const auto reply = r.load(preset("keys:\n  - regular-speed:\n  - key: CLR 2 + 3 =\n  - elapsed-time: start\n"
+                                     "  - wait: 50ms\n  - elapsed-time: report\n"));
+    CHECK(reply.done);
     r.run(500ms);
     CHECK_EQ(testroms::displayText(r.part().emulator()->machine()), std::string("5"));
-    CHECK(r.part().logText().find("Elapsed: 0:00.0") != std::string::npos);
+    bool elapsed = false;   // elapsed-time report: a line of the session's log (LIB-6 AC-23)
+    for (const auto& m : r.fe.log)
+        if (const auto* s = std::get_if<calcu::sessions::StreamMessage>(&m); s && s->topic == calcu::sessions::kLogTopic)
+            for (const auto& p : s->appended)
+                if (const auto* l = calcu::sessions::payloadAs<calcu::sessions::LogLine>(p))
+                    elapsed = elapsed || l->text.find("0:00.05") != std::string::npos;
+    CHECK(elapsed);
     CHECK(r.errors().empty());
 }
 
-TEST(part_reload_keeps_the_program) {
+// C59-2 AC-7 (was part_reload_keeps_the_program): sections after keys change
+// only what they list.
+TEST(c59_2_ac7_reload_keeps_the_program) {
     PartRig r;
-    r.load("PROGRAM:\n85 01\nKEYSTROKES:\n25\nREGISTERS:\n05 = 3.25\n");  // CLR, then a reload
-    CHECK(r.runUntil([&] { return r.part().keystrokesPlaying(); }));
-    CHECK(r.runUntil([&] { return !r.part().keystrokesPlaying(); }));
-    CHECK_EQ(int(testroms::mem(r.part().emulator()->machine()).readProgramStep(1)), 1);
-    CHECK_EQ(testroms::mem(r.part().emulator()->machine()).readDataReg(5), 3.25);
+    CHECK(r.load(preset("program:\n  keycodes: |\n    85 01\nkeys:\n  - key: CLR\ndata:\n  05: 3.25\n")).done);
+    CHECK_EQ(step(r, 1), 1);
+    CHECK_EQ(reg(r, 5), 3.25);
 }
 
 TEST(part_writes_and_reads_a_card) {
     PartRig r;
-    r.load("PROGRAM:\n76 11 01 02 03 91\nKEYSTROKES:\n82 21 91\n");  // Lbl A 1 2 3 R/S; 1 2nd Write
-    CHECK(r.runUntil([&] { return r.part().keystrokesPlaying(); }));
-    r.run(2s);  // the ROM waits for a card; playback waits with it
-    CHECK(r.part().keystrokesPlaying());
+    // Lbl A 1 2 3 R/S; 1 2nd Write, the last item: the ROM waits for a card.
+    CHECK(r.load(preset(kProgramA)).done);
+    CHECK(write(r, "1"));
+    r.run(2s);
     CHECK(r.part().fitBlankCard("web:card", "card.U59"));
     CHECK(r.part().feedSide(0));
     CHECK(r.runUntil([&] { return cardIdle(r); }));
-    CHECK(r.runUntil([&] { return !r.part().keystrokesPlaying(); }));
     CHECK_EQ(r.p.cards.count("web:card"), size_t{1});
-    r.load("PARTITION: 479\n");  // a fresh machine: no program
+    CHECK(r.load(preset("")).done);  // a fresh machine: no program
     r.run(1s);
-    CHECK_EQ(int(testroms::mem(r.part().emulator()->machine()).readProgramStep(1)), 0);
+    CHECK_EQ(step(r, 1), 0);
     const std::string& card = r.p.cards["web:card"];
     CHECK(r.part().fitCard(std::vector<uint8_t>(card.begin(), card.end()), "web:card", "card.U59"));
     CHECK(r.part().feedSide(0));
     CHECK(r.runUntil([&] { return cardIdle(r); }));
     r.run(1s);
-    CHECK_EQ(int(testroms::mem(r.part().emulator()->machine()).readProgramStep(1)), 11);
+    CHECK_EQ(step(r, 1), 11);
     CHECK(r.errors().empty());
 }
 
 TEST(part_shows_the_library_program_card) {
     PartRig r;
     r.run(50ms);
-    r.load("KEYSTROKES:\n21 31 92 82\n");  // 2nd Pgm 01
-    CHECK(r.runUntil([&] { return !r.part().keystrokesPlaying(); }));
+    CHECK(r.step("key", "Pgm 0 1").done);
     r.run(1s);
     CHECK(r.part().cueCard().has_value());
     if (r.part().cueCard()) CHECK_EQ(r.part().cueCard()->id, std::string("ML-01"));
 }
 
-
-
-
-TEST(part_reload_after_the_first_run) {
+// C59-2 AC-7 (was part_reload_after_the_first_run): the second stage uses the
+// first one's register and fits its cue card.
+TEST(c59_2_ac7_reload_after_the_first_run) {
     PartRig r;
-    r.load("PROGRAM:\n76 11 01 02 03 42 08 91\n"  // Lbl A 123 STO 08 R/S
-           "KEYSTROKES:\n11\n"
-           "PROGRAM:\n76 11 43 08 85 01 95 91\n"  // Lbl A RCL 08 + 1 = R/S
-           "REGISTERS:\n07 = 9\nCUECARD:\nTitle: Part 2\n"
-           "KEYSTROKES:\n11\n");
-    CHECK(r.runUntil([&] { return r.part().keystrokesPlaying(); }));
-    CHECK(r.runUntil([&] { return !r.part().keystrokesPlaying(); }));
+    CHECK(r.load(preset("program:\n  keycodes: |\n    76 11 01 02 03 42 08 91\n"   // Lbl A 123 STO 08 R/S
+                        "keys:\n  - key: A\n"
+                        "program:\n  keycodes: |\n    76 11 43 08 85 01 95 91\n"      // Lbl A RCL 08 + 1 = R/S
+                        "data:\n  07: 9\ncue-card:\n  title: Part 2\n"
+                        "keys:\n  - key: A\n  - let-it-finish:\n")).done);
     r.run(300ms);
     calcu::machine::Machine& m = r.part().emulator()->machine();
     CHECK_EQ(testroms::displayText(m), std::string("124"));  // part 2 used part 1's R08
@@ -423,93 +449,14 @@ TEST(part_reload_after_the_first_run) {
     CHECK(r.errors().empty());
 }
 
-TEST(part_program_writes_and_reads_a_memory_card) {
-    PartRig r;
-    r.load("PROGRAM:\n76 11 04 96 25 47 04 22 96 43 00 91\n"  // Lbl A 4 Write CLR CMs 4 INV Write RCL 00 R/S
-           "REGISTERS:\n00 = 42\n"
-           "KEYSTROKES:\nArmCard: mem:Scratch\nArmCard: mem:Scratch\n11\n");
-    CHECK(r.runUntil([&] { return r.part().keystrokesPlaying(); }));
-    CHECK(r.runUntil([&] { return !r.part().keystrokesPlaying(); }, 60s));
-    r.run(300ms);
-    CHECK_EQ(testroms::displayText(r.part().emulator()->machine()), std::string("42"));
-    CHECK(r.p.cards.empty());  // a memory card never reaches the card folder
-    CHECK(r.errors().empty());
-}
-
-TEST(part_program_reads_a_defined_card) {
-    PartRig r;
-    r.load("CARD: mem:Vars\nBank: 4\nREGISTERS:\n05 = 2.5\nCUECARD:\nTitle: Vars\nEND-CARD\n"
-           "PROGRAM:\n76 11 04 22 96 43 05 91\n"  // Lbl A 4 INV Write RCL 05 R/S
-           "KEYSTROKES:\nArmCard: mem:Vars\n11\n");
-    CHECK(r.runUntil([&] { return r.part().keystrokesPlaying(); }));
-    CHECK(r.runUntil([&] { return !r.part().keystrokesPlaying(); }, 60s));
-    r.run(300ms);
-    CHECK_EQ(testroms::mem(r.part().emulator()->machine()).readDataReg(5), 2.5);  // the full load cleared it; the card set it
-    CHECK(r.part().cueCard() && r.part().cueCard()->title == "Vars");
-    CHECK(r.errors().empty());
-}
-
-TEST(part_card_file_written_then_inserted) {
-    PartRig r;
-    r.load("PROGRAM:\n76 11 04 96 91\nREGISTERS:\n03 = 7\n"  // Lbl A 4 Write R/S
-           "KEYSTROKES:\nArmCard: Results\n11\n");
-    CHECK(r.runUntil([&] { return r.p.cards.count("cards/Results.U59") == 1; }, 60s));
-    CHECK(r.part().logText().find("no card file Results.U59") != std::string::npos);
-    r.load("REGISTERS:\n03 = 0\nKEYSTROKES:\nInsertCard: Results\n");
-    CHECK(r.runUntil([&] { return r.part().keystrokesPlaying(); }));
-    CHECK(r.runUntil([&] { return !r.part().keystrokesPlaying(); }, 60s));
-    CHECK(cardIdle(r));  // playback waited for the card
-    CHECK_EQ(testroms::mem(r.part().emulator()->machine()).readDataReg(3), 7.0);
-    CHECK(r.errors().empty());
-}
-
-// Meusch's recipe (TI PPC Notes V5N9-10): card, RST R/S, card. The entry clears the
-// RAM, so the table can only print if the second reading brought the program back.
-TEST(part_fast_mode_entry_then_card_prints_the_table) {
-    PartRig r;
-    r.load(testroms::readFile("examples/historic/characters-fastmode.ti59").value());
-    CHECK(r.runUntil([&] { return r.printedText().size() >= 8; }, 120s));
-    CHECK(r.errors().empty());
-    CHECK(testroms::mem(r.part().emulator()->machine()).readProgramStep(5) == 36);  // from the card, not the load
-}
-
-TEST(part_unused_card_is_logged_on_the_next_load) {
-    PartRig r;
-    r.load("KEYSTROKES:\nArmCard: mem:Never\n");
-    CHECK(r.runUntil([&] { return !r.part().keystrokesPlaying(); }));
-    r.run(100ms);
-    CHECK(r.part().logText().find("mem:Never") == std::string::npos);  // still armed after the script
-    r.load("REGISTERS:\n01 = 1\n");
-    r.run(1100ms);  // the LOG text refreshes at 1 Hz
-    CHECK(r.part().logText().find("card mem:Never was never read or written") != std::string::npos);
-}
-
-TEST(part_cards_need_a_card_reader) {
-    PartRig r;
-    CHECK(r.part().startMachine(Model::TI58));
-    r.load("KEYSTROKES:\nArmCard: Results\n");
-    CHECK(!r.errors().empty() && r.errors().back().find("need a card reader") != std::string::npos);
-}
-
-TEST(part_insert_card_passes_an_unused_armed_card) {
-    PartRig r;
-    r.load("CARD: mem:Data\nBank: 4\nREGISTERS:\n03 = 7\nEND-CARD\n"
-           "KEYSTROKES:\nArmCard: mem:NeverAsked\nInsertCard: mem:Data\n");
-    CHECK(r.runUntil([&] { return r.part().keystrokesPlaying(); }));
-    CHECK(r.runUntil([&] { return !r.part().keystrokesPlaying(); }, 30s));
-    CHECK_EQ(testroms::mem(r.part().emulator()->machine()).readDataReg(3), 7.0);  // read at idle, as pushed in by hand
-}
-
 namespace {
 /// A card holding the program Lbl A 1 2 3 R/S, as a blank card written by the machine.
 std::string writtenCard(PartRig& r) {
-    r.load("PROGRAM:\n76 11 01 02 03 91\nKEYSTROKES:\n82 21 91\n");  // 1 2nd Write
-    CHECK(r.runUntil([&] { return r.part().keystrokesPlaying(); }));
-    r.run(2s);
+    CHECK(r.load(preset(kProgramA)).done);
+    CHECK(write(r, "1"));
     CHECK(r.part().fitBlankCard("first", "first.U59"));
     CHECK(r.part().feedSide(0));
     CHECK(r.runUntil([&] { return cardIdle(r); }));
-    CHECK(r.runUntil([&] { return !r.part().keystrokesPlaying(); }));
     return r.p.cards["first"];
 }
 }  // namespace
@@ -523,11 +470,10 @@ TEST(drop_action_goes_by_name_and_model) {
     CHECK(r.part().dropAction("a.U59") == A::FitCard);
     CHECK(r.part().dropAction("a.bin") == A::FitCard);
     CHECK(r.part().dropAction(".a.u59") == A::NotAccepted);
-    CHECK(r.part().dropAction(".a.ti59") == A::NotAccepted);
     CHECK(r.part().dropAction("a.txt") == A::NotAccepted);
     CHECK(r.part().dropAction("ti59") == A::NotAccepted);
-    for (Model m : {Model::TI58, Model::TI58C}) {
-        CHECK(r.part().startMachine(m));
+    for (const char* m : {"TI-58", "TI-58C"}) {
+        CHECK(r.model(m).done);
         CHECK(r.part().dropAction("a.U59") == A::Ignore);
         CHECK(r.part().dropAction("a.ti59") == A::LoadPreset);
     }
@@ -536,20 +482,20 @@ TEST(drop_action_goes_by_name_and_model) {
 TEST(dropped_card_is_fitted_and_read_at_idle) {
     PartRig r;
     const std::string card = writtenCard(r);
-    r.load("PARTITION: 479\n");  // a fresh machine: no program
+    CHECK(r.load(preset("")).done);  // a fresh machine: no program
     r.run(1s);
-    CHECK_EQ(int(testroms::mem(r.part().emulator()->machine()).readProgramStep(1)), 0);
-    CHECK(r.part().openDroppedFile(bytes(card), "dropped", "dropped.U59"));
+    CHECK_EQ(step(r, 1), 0);
+    CHECK(drop(r, card, "dropped", "dropped.U59"));
     CHECK(r.part().cardFitted());
     CHECK(cardIdle(r));  // not fed until a corner is tapped
     r.run(500ms);
-    CHECK_EQ(int(testroms::mem(r.part().emulator()->machine()).readProgramStep(1)), 0);
+    CHECK_EQ(step(r, 1), 0);
     CHECK(r.part().feedSide(0));
     CHECK(r.part().cardState() == CardState::Swiping);
     CHECK(r.part().litCardCorner() == 0);
     CHECK(r.runUntil([&] { return cardIdle(r); }));
     r.run(1s);
-    CHECK_EQ(int(testroms::mem(r.part().emulator()->machine()).readProgramStep(1)), 11);
+    CHECK_EQ(step(r, 1), 11);
     CHECK_EQ(r.p.cards.count("dropped"), size_t{0});  // read, not written
     CHECK(r.errors().empty());
 }
@@ -557,33 +503,31 @@ TEST(dropped_card_is_fitted_and_read_at_idle) {
 TEST(dropped_card_is_overwritten_after_write) {
     PartRig r;
     const std::string card = writtenCard(r);
-    r.load("PROGRAM:\n76 12 04 05 06 91\nKEYSTROKES:\n82 21 91\n");  // Lbl B …; 1 2nd Write
-    CHECK(r.runUntil([&] { return r.part().keystrokesPlaying(); }));
-    r.run(2s);
+    CHECK(r.load(preset("program:\n  keycodes: |\n    76 12 04 05 06 91\n")).done);   // Lbl B …
+    CHECK(write(r, "1"));
     r.p.cards["dropped"] = card;
-    CHECK(r.part().openDroppedFile(bytes(card), "dropped", "dropped.U59"));
+    CHECK(drop(r, card, "dropped", "dropped.U59"));
     CHECK(r.part().feedSide(0));
     CHECK(r.runUntil([&] { return cardIdle(r); }));
-    CHECK(r.runUntil([&] { return !r.part().keystrokesPlaying(); }));
     CHECK_EQ(r.p.cards.count("dropped"), size_t{1});
     CHECK(r.p.cards["dropped"] != card);
 
-    r.load("PARTITION: 479\n");
+    CHECK(r.load(preset("")).done);
     r.run(1s);
     const std::string overwritten = r.p.cards["dropped"];
-    CHECK(r.part().openDroppedFile(bytes(overwritten), "dropped", "dropped.U59"));
+    CHECK(drop(r, overwritten, "dropped", "dropped.U59"));
     CHECK(r.part().feedSide(0));
     CHECK(r.runUntil([&] { return cardIdle(r); }));
     r.run(1s);
-    CHECK_EQ(int(testroms::mem(r.part().emulator()->machine()).readProgramStep(1)), 12);
+    CHECK_EQ(step(r, 1), 12);
 }
 
 TEST(dropped_card_is_ignored_without_a_reader) {
     PartRig r;
     const std::string card = writtenCard(r);
-    for (Model m : {Model::TI58, Model::TI58C}) {
-        CHECK(r.part().startMachine(m));
-        CHECK(!r.part().openDroppedFile(bytes(card), "dropped", "dropped.U59"));
+    for (const char* m : {"TI-58", "TI-58C"}) {
+        CHECK(r.model(m).done);
+        CHECK(!drop(r, card, "dropped", "dropped.U59"));
         r.run(500ms);
         CHECK(cardIdle(r));
     }
@@ -593,33 +537,32 @@ TEST(dropped_card_is_ignored_without_a_reader) {
 TEST(dropped_card_replaces_the_fitted_one_but_not_during_a_pass) {
     PartRig r;
     const std::string card = writtenCard(r);
-    CHECK(r.part().openDroppedFile(bytes(card), "one", "one.U59"));
-    CHECK(r.part().openDroppedFile(bytes(card), "two", "two.U59"));
+    CHECK(drop(r, card, "one", "one.U59"));
+    CHECK(drop(r, card, "two", "two.U59"));
     CHECK_EQ(r.part().cardFileName(), std::string("two.U59"));
     CHECK(r.part().feedSide(0));
-    CHECK(!r.part().openDroppedFile(bytes(card), "three", "three.U59"));
+    CHECK(!drop(r, card, "three", "three.U59"));
     CHECK_EQ(r.part().cardFileName(), std::string("two.U59"));
 }
 
 namespace {
-const char* const kTwoWrites = "PROGRAM:\n76 11 01 02 03 91\nKEYSTROKES:\n82 21 91\n83 21 91\n";  // 1 2nd Write; 2 2nd Write
-/// Run a preset's two key-driven writes, feeding `first` then `second` as the ROM waits.
+/// Two writes, 1 2nd Write then 2 2nd Write (run-step: each ends at the card
+/// wait, which counts as idle), feeding `first` then `second`.
 void feedTwoWrites(PartRig& r, int first, int second) {
-    CHECK(r.runUntil([&] { return r.part().keystrokesPlaying(); }));
-    r.run(2s);
+    CHECK(write(r, "1"));
     CHECK(r.part().feedSide(first));
     CHECK(r.runUntil([&] { return cardIdle(r); }));
-    r.run(2s);
+    CHECK(waitForScanLoop(r));
+    CHECK(write(r, "2"));
     CHECK(r.part().feedSide(second));
     CHECK(r.runUntil([&] { return cardIdle(r); }));
-    CHECK(r.runUntil([&] { return !r.part().keystrokesPlaying(); }));
+    CHECK(waitForScanLoop(r));
 }
 }  // namespace
 
 TEST(fresh_card_writes_both_sides_into_one_file) {
     PartRig r;
-    // Loading a preset removes a fitted card, so fit it once the preset runs.
-    r.load(kTwoWrites);
+    CHECK(r.load(preset(kProgramA)).done);
     CHECK(r.part().fitBlankCard("cards/Fresh.U59", "Fresh.U59"));
     CHECK(r.part().cueCard() && r.part().cueCard()->title == "Fresh");
     CHECK(r.part().cueCard() && !r.part().cueCard()->bankLeft && !r.part().cueCard()->bankRight);
@@ -634,7 +577,7 @@ TEST(fresh_card_writes_both_sides_into_one_file) {
 
     // Side 2 reads bank 2; the card stays fitted after the pass.
     const std::string saved = text;
-    r.load("PARTITION: 479\n");
+    CHECK(r.load(preset("")).done);
     r.run(1s);
     CHECK(!r.part().cardFitted());
     CHECK(r.part().fitCard(bytes(saved), "cards/Fresh.U59", "Fresh.U59"));
@@ -648,9 +591,15 @@ TEST(fresh_card_writes_both_sides_into_one_file) {
 
 TEST(a_side_can_hold_any_bank_and_the_corner_follows) {
     PartRig r;
-    r.load("PROGRAM:\n76 11 01 02 03 91\nKEYSTROKES:\n82 21 91\n82 21 91\n");  // bank 1 twice
+    CHECK(r.load(preset(kProgramA)).done);
     CHECK(r.part().fitBlankCard("c", "c.U59"));
-    feedTwoWrites(r, 1, 0);
+    CHECK(write(r, "1"));   // bank 1 twice
+    CHECK(r.part().feedSide(1));
+    CHECK(r.runUntil([&] { return cardIdle(r); }));
+    CHECK(waitForScanLoop(r));
+    CHECK(write(r, "1"));
+    CHECK(r.part().feedSide(0));
+    CHECK(r.runUntil([&] { return cardIdle(r); }));
     CHECK(r.part().cueCard() && r.part().cueCard()->bankLeft == 1 && r.part().cueCard()->bankRight == 1);
     CHECK(r.errors().empty());
 }
@@ -666,14 +615,12 @@ TEST(version_1_card_stays_version_1_on_a_write) {
     cue.bankRight = 2;
     const std::string v1 = encodeCardText(*oldDoc.card->sides[0], &cue);
     r.p.cards["v1"] = v1;
-    r.load("PROGRAM:\n76 12 04 05 06 91\nKEYSTROKES:\n82 21 91\n");
+    CHECK(r.load(preset("program:\n  keycodes: |\n    76 12 04 05 06 91\n")).done);
     CHECK(r.part().fitCard(bytes(v1), "v1", "v1.U59"));
     CHECK(r.part().cueCard() && r.part().cueCard()->bankLeft == 1 && r.part().cueCard()->bankRight == 2);
-    CHECK(r.runUntil([&] { return r.part().keystrokesPlaying(); }));
-    r.run(2s);
+    CHECK(write(r, "1"));
     CHECK(r.part().feedSide(1));  // either corner: the one side
     CHECK(r.runUntil([&] { return cardIdle(r); }));
-    CHECK(r.runUntil([&] { return !r.part().keystrokesPlaying(); }));
     const std::string& text = r.p.cards["v1"];
     CHECK(text != v1);
     CHECK(startsWith(text, "Calc-U-59 Card 1.0\n"));
@@ -692,20 +639,19 @@ TEST(write_keeps_the_side_changed_elsewhere_and_refuses_a_broken_file) {
 
     CardDocument mine;
     mine.cueCard = freshCardCue("Shared.U59");
-    r.load("PROGRAM:\n76 12 04 05 06 91\nKEYSTROKES:\n82 21 91\n");
+    const std::string programB = preset("program:\n  keycodes: |\n    76 12 04 05 06 91\n");
+    CHECK(r.load(programB).done);
     CHECK(r.part().fitCard(bytes(encodeCardDocument(mine)), "s", "Shared.U59"));  // fitted before side 2 appeared
-    CHECK(r.runUntil([&] { return r.part().keystrokesPlaying(); }));
-    r.run(2s);
+    CHECK(write(r, "1"));
     CHECK(r.part().feedSide(0));
     CHECK(r.runUntil([&] { return cardIdle(r); }));
     auto merged = decodeCardFile(bytes(r.p.cards["s"]), "Shared.U59");
     CHECK(merged.card && merged.card->sides[0] && merged.card->sides[1]);
 
-    r.load("PROGRAM:\n76 12 04 05 06 91\nKEYSTROKES:\n82 21 91\n");
+    CHECK(r.load(programB).done);
     CHECK(r.part().fitCard(bytes(r.p.cards["s"]), "s", "Shared.U59"));
     r.p.cards["s"] = "Calc-U-59 Card 2.0\nbroken";
-    CHECK(r.runUntil([&] { return r.part().keystrokesPlaying(); }));
-    r.run(2s);
+    CHECK(write(r, "1"));
     CHECK(r.part().feedSide(0));
     CHECK(r.runUntil([&] { return cardIdle(r); }));
     CHECK_EQ(r.p.cards["s"], std::string("Calc-U-59 Card 2.0\nbroken"));  // left alone, reported
@@ -715,7 +661,7 @@ TEST(write_keeps_the_side_changed_elsewhere_and_refuses_a_broken_file) {
 TEST(fresh_card_replaces_the_file_of_that_name_at_its_first_write_only) {
     PartRig r;
     r.p.cards["same"] = "Calc-U-59 Card 2.0\nwhatever was here";
-    r.load(kTwoWrites);
+    CHECK(r.load(preset(kProgramA)).done);
     CHECK(r.part().fitBlankCard("same", "same.U59"));
     CHECK_EQ(r.p.cards["same"], std::string("Calc-U-59 Card 2.0\nwhatever was here"));  // still there
     feedTwoWrites(r, 0, 1);
@@ -725,7 +671,7 @@ TEST(fresh_card_replaces_the_file_of_that_name_at_its_first_write_only) {
 
 TEST(blank_side_fed_at_idle_writes_nothing) {
     PartRig r;
-    r.load("PARTITION: 479\n");
+    CHECK(r.load(preset("")).done);
     r.run(1s);
     CHECK(r.part().fitBlankCard("blank", "blank.U59"));
     CHECK(r.part().feedSide(0));
@@ -739,9 +685,7 @@ TEST(blank_side_fed_at_idle_writes_nothing) {
 
 TEST(blank_side_fed_at_partition_0_writes_nothing) {
     PartRig r;
-    r.load("KEYSTROKES:\n92 21 64 82 62\n");  // 0 2nd Op 17
-    CHECK(r.runUntil([&] { return r.part().keystrokesPlaying(); }));
-    CHECK(r.runUntil([&] { return !r.part().keystrokesPlaying(); }));
+    CHECK(r.step("key", "0 Op 1 7").done);
     r.run(1s);
     CHECK(r.part().fitBlankCard("blank", "blank.U59"));
     CHECK(r.part().feedSide(0));
@@ -754,14 +698,15 @@ TEST(blank_side_fed_at_partition_0_writes_nothing) {
 
 TEST(module_cue_card_covers_the_fitted_card_and_it_comes_back) {
     PartRig r;
-    r.load("KEYSTROKES:\nWait: 1s\n21 31 92 82\nWait: 3s\n21 31 92 92\n");  // Pgm 01, later Pgm 00
     CHECK(r.part().fitBlankCard("c", "Mine.U59"));
     auto mine = [&] { return r.part().cueCard() && r.part().cueCard()->title == "Mine"; };
     CHECK(mine());
+    CHECK(r.step("key", "Pgm 0 1").done);
     CHECK(r.runUntil([&] { return !mine(); }));
     CHECK(!r.part().tapCard(0.1, kCardRect.y + 0.1 * kCardRect.h));  // not on show
     CHECK(cardIdle(r));
     CHECK(r.part().cardFitted());
+    CHECK(r.step("key", "Pgm 0 0").done);
     CHECK(r.runUntil(mine));
     CHECK(r.errors().empty());
 }
@@ -776,61 +721,16 @@ TEST(card_corners_hit_only_the_top_corners) {
     CHECK(!cardCornerAt(0.21, top));
 }
 
-TEST(preset_creates_a_full_two_sided_card) {
-    for (const std::string& arms : {std::string("ArmCard: Results:1\nArmCard: Results:2\n"),
-                                   std::string("ArmCard: Results:2\nArmCard: Results:1\n")}) {
-        PartRig r;
-        r.load("PROGRAM:\n76 11 01 96 02 96 91\n"  // Lbl A 1 Write 2 Write R/S
-               "CUECARD:\nTitle: My Program\nA: run\nBanks: 3, 4\n"
-               "KEYSTROKES:\n" + arms + "11\n");
-        CHECK(r.runUntil([&] { return r.part().keystrokesPlaying(); }));
-        CHECK(r.runUntil([&] { return !r.part().keystrokesPlaying() && r.p.cards.count("cards/Results.U59"); }, 60s));
-        r.run(1s);
-        const std::string& text = r.p.cards["cards/Results.U59"];
-        CHECK(startsWith(text, "Calc-U-59 Card 2.0\n"));
-        CHECK(text.find("Banks:") == std::string::npos);
-        auto doc = decodeCardFile(bytes(text), "Results.U59");
-        CHECK(doc.card && doc.card->sides[0] && doc.card->sides[1]);
-        if (doc.card && doc.card->cueCard) {
-            CHECK_EQ(doc.card->cueCard->title, std::string("My Program"));
-            CHECK_EQ(doc.card->cueCard->labels[5], std::string("run"));
-        }
-        CHECK(r.part().cardFitted());
-        CHECK(r.errors().empty());
-    }
-}
-
-TEST(preset_cannot_feed_an_unreadable_file) {
+// LIB-6 §11.2 (until LIB-13 59's `open`, M-56): a dropped preset is LIB-6's
+// load-preset by its content.
+TEST(dropped_preset_loads_by_its_content) {
     PartRig r;
-    r.p.unreadableCards.insert("cards/Gone.U59");
-    r.load("KEYSTROKES:\nInsertCard: Gone\n25\n");
-    CHECK(r.runUntil([&] { return r.part().keystrokesPlaying(); }));
-    CHECK(r.runUntil([&] { return !r.part().keystrokesPlaying(); }));
-    CHECK(!r.errors().empty());
-    CHECK(!r.part().cardFitted());
-    CHECK_EQ(r.p.cards.count("cards/Gone.U59"), size_t{0});
-}
-
-TEST(preset_side_on_a_version_1_file_feeds_its_one_side) {
-    PartRig r;
-    const std::string card = writtenCard(r);
-    r.p.cards["cards/Old.U59"] = encodeCardText(*decodeCardFile(bytes(card), "x").card->sides[0], nullptr);
-    r.load("KEYSTROKES:\nInsertCard: Old:2\n");
-    CHECK(r.runUntil([&] { return r.part().keystrokesPlaying(); }));
-    CHECK(r.runUntil([&] { return !r.part().keystrokesPlaying(); }));
-    r.run(1s);
-    CHECK_EQ(int(testroms::mem(r.part().emulator()->machine()).readProgramStep(1)), 11);
-    CHECK(r.errors().empty());
-}
-
-TEST(dropped_preset_loads_as_the_button_does) {
-    PartRig r;
-    CHECK(r.part().openDroppedFile(bytes("MODEL: TI-58\nPROGRAM:\n76 11\nKEYSTROKES:\n25\n"), "p", "p.ti58"));
+    CHECK(drop(r, preset("program:\n  keycodes: |\n    76 11\nkeys:\n  - key: CLR\n", "TI-58"), "p", "p.ti58"));
+    CHECK(r.runUntil([&] { return !r.busy(); }));
     CHECK(r.part().model() == Model::TI58);
-    CHECK_EQ(int(testroms::mem(r.part().emulator()->machine()).readProgramStep(1)), 11);
-    CHECK(r.runUntil([&] { return r.part().keystrokesPlaying(); }));
+    CHECK_EQ(step(r, 1), 11);
     CHECK(r.errors().empty());
-    CHECK(!r.part().openDroppedFile(std::nullopt, "p", "p.ti58"));
+    CHECK(!drop(r, std::nullopt, "p", "p.ti58"));
     CHECK(!r.errors().empty());  // reported, as a failed Open is
 }
 
@@ -842,10 +742,10 @@ TEST(dropped_preset_loads_as_the_button_does) {
 // of nothing it had.
 TEST(lib8_ac29_detached_panel_owner_empty) {
     PartRig r;
-    auto& c = r.part();
-    c.loadStateFile(bytes("KEYSTROKES:\n82 21 94\n"));   // 1 2nd Prt
-    CHECK(r.runUntil([&] { return !r.printedText().empty() && !c.keystrokesPlaying(); }, 5000ms));
-    c.setPrinterConnected(false);
+    CHECK(r.attach("printer", "PC-100C").done);
+    CHECK(r.step("key", "1 2nd Prt").done);
+    CHECK(r.runUntil([&] { return !r.printedText().empty(); }, 5000ms));
+    CHECK(r.detach("printer").done);
     r.run(50ms);
     const auto* printer = r.state<TIPrinterState>(topics::kPrinter);
     CHECK(printer && !printer->connected);
@@ -857,37 +757,24 @@ TEST(lib8_ac29_detached_panel_owner_empty) {
     CHECK(!reply.done && reply.reason == calcu::paper::kNoPrinterPlugged);
 }
 
-// AC-8 (P-E4): a preset that names the printer starts with empty paper.
+// AC-8, LIB-6 AC-41: a user's load of a preset that names the printer starts
+// with empty paper.
 TEST(lib8_ac8_preset_naming_printer_starts_empty) {
     PartRig r;
-    auto& c = r.part();
-    c.loadStateFile(bytes("KEYSTROKES:\n82 21 94\n"));
-    CHECK(r.runUntil([&] { return !r.printedText().empty() && !c.keystrokesPlaying(); }, 5000ms));
-    c.loadStateFile(bytes("PRINTER: on\nREGISTERS:\n01 = 1\n"));
+    CHECK(r.attach("printer", "PC-100C").done);
+    CHECK(r.step("key", "1 2nd Prt").done);
+    CHECK(r.runUntil([&] { return !r.printedText().empty(); }, 5000ms));
+    CHECK(r.load(preset("data:\n  01: 1\n")).done);
     r.run(50ms);
     CHECK(r.printedText().empty());
     CHECK(r.pc100cPaper()->empty());
 }
 
-// AC-8 (D-29): a 2.3.0 preset without a PRINTER: line keeps the paper (ledger 59-48).
-TEST(lib8_ac8_preset_without_printer_line_keeps_paper) {
+// AC-22: the step cut-paper: cuts the paper of the printer plugged in, without a copy.
+TEST(lib8_ac22_preset_cut_paper) {
     PartRig r;
-    auto& c = r.part();
-    c.loadStateFile(bytes("KEYSTROKES:\n82 21 94\n"));
-    CHECK(r.runUntil([&] { return !r.printedText().empty() && !c.keystrokesPlaying(); }, 5000ms));
-    c.loadStateFile(bytes("REGISTERS:\n01 = 1\n"));
-    r.run(50ms);
-    CHECK_EQ(r.printedText().size(), std::size_t{1});
-}
-
-// AC-22 (P-E5): KEYSTROKES CutPaper: is the step cut-paper: the paper of
-// the printer plugged in, without a copy.
-TEST(lib8_ac22_keystrokes_cut_paper) {
-    PartRig r;
-    auto& c = r.part();
-    c.loadStateFile(bytes("KEYSTROKES:\n82 21 94\nWait: 1s\nCutPaper:\n83 21 94\nWait: 1s\n"));
-    CHECK(r.runUntil([&] { return c.keystrokesPlaying(); }, 2000ms));
-    CHECK(r.runUntil([&] { return !c.keystrokesPlaying(); }, 8000ms));
+    CHECK(r.load(preset("keys:\n  - regular-speed:\n  - key: 1 2nd Prt\n  - cut-paper:\n  - key: 2 2nd Prt\n"
+                        "  - let-it-finish:\n")).done);
     r.run(300ms);
     CHECK(r.errors().empty());
     const auto text = r.printedText();

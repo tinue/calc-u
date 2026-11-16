@@ -14,6 +14,7 @@
 #include "../core/TIRomReader.hpp"
 #include "../core/TIRomText.hpp"
 #include "roms/Bundle.hpp"
+#include "sessions/Listener.hpp"
 #include <algorithm>
 #include <cctype>
 #include <chrono>
@@ -322,6 +323,21 @@ TEST(lib12_ac14_unknown_format_version_is_bad) {
 // its bundle, and the app session only with the full set (2.3.0's
 // SessionController::create did both until M-34).
 namespace {
+// Host calls until no operation runs and there is a machine (LIB-18's start,
+// model, attach are operations).
+void settle(calcu::sessions::AppSession& s) {
+    calcu::pacing::WallTime now = std::chrono::hours(2);
+    for (int i = 0; i < 6000; ++i) {
+        s.call(now += std::chrono::milliseconds(16));
+        if (s.machineSession().machine() && !s.context().busy()) return;
+    }
+}
+void command(calcu::sessions::AppSession& s, const calcu::sessions::CommandName& name, calcu::sessions::Value args) {
+    calcu::sessions::Listener l;
+    l.listen(s);
+    l.send(name, std::move(args));
+    settle(s);
+}
 std::optional<calcu::sessions::ProductSession<cu59::TIAppPart>> startFrom(const Bundle& bundle,
                                                                        std::vector<std::string>& missingTexts) {
     auto roms = cu59::lookUpRoms(bundle);
@@ -330,11 +346,14 @@ std::optional<calcu::sessions::ProductSession<cu59::TIAppPart>> startFrom(const 
         return std::nullopt;
     }
     static const calcu::testing::TempFolder folder("calcu59-romlookup");
-    cu59::TIAppSetup s = testroms::appSetup(cu59::Model::TI59, folder.path());
+    static calcu::settings::SettingsFile settings = calcu::settings::SettingsFile::defaultsOnly(cu59::settings::settingsDecl());
+    cu59::TIAppSetup s = testroms::appSetup(settings, cu59::Model::TI59, folder.path());
     s.roms = roms.set;
     s.cuecards = cuecards();
     auto t = std::make_shared<calcu::pacing::WallTime>(std::chrono::hours(1));
-    return cu59::makeAppSession(std::move(s), [t] { return *t += std::chrono::milliseconds(1); }, 59u);
+    auto app = cu59::makeAppSession(std::move(s), [t] { return *t += std::chrono::milliseconds(1); }, 59u);
+    settle(*app.session);   // LIB-18's start
+    return app;
 }
 } // namespace
 
@@ -385,12 +404,13 @@ TEST(lib12_ac6_model_and_module_changes_read_no_file) {
     if (!app) return;
     cu59::TIAppPart& c = *app->part;
     for (auto model : {cu59::Model::TI59, cu59::Model::TI58, cu59::Model::TI58C, cu59::Model::TI59}) {
-        CHECK(c.startMachine(model));
+        command(*app->session, calcu::startup::kModelCommand, calcu::sessions::Value::object({{"name", cu59::modelId(model).value}}));
         CHECK(c.hasMachine() && c.model() == model);
         CHECK_EQ(c.emulator()->moduleImage().size(), size_t{5000});
     }
     for (const auto& id : moduleIds()) {
-        CHECK(c.selectModule(id));
+        command(*app->session, calcu::startup::kAttachCommand,
+                calcu::sessions::Value::object({{"place", "slot-1"}, {"peripheral", id}}));
         CHECK_EQ(c.moduleID(), id);
         CHECK(c.emulator()->moduleImage() == *cu59::moduleImage(*testroms::romSet(), id + ".rom.yaml"));
     }

@@ -38,7 +38,6 @@ keys:
   - debug-panel: calculator
   - pause-on-start: program
   - key: SBR  # SBR
-  - key: =  # =    → re-enter program; FREEZE ON START fires at its first step
-  - wait: 1.5s  # not for the calculator — the freeze is instant — but XCUITest polls
-  # keystroke-playback-status roughly once per second, so give it a
-  # window to observe "playing" before this flips back to "idle"
+  - key: =  # =    → re-enter program; pause-on-start fires at its first step
+  # The last item: the preset ends here and the machine stays paused (a paused
+  # machine is never idle, so nothing may wait after this key; preset.md §5.6).

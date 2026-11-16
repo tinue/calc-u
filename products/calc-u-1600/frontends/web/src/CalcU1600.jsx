@@ -194,44 +194,44 @@ function CalcU1600(props) {
     }
   }, [busy]);
 
+  // File ▸ Import Media… (LIB-7 AC-30, AC-43): module files, disk files and
+  // tape definitions with their WAV, chosen in one picker. Each file goes up
+  // into the uploads folder (c1600.upload), so a tape finds its WAV beside
+  // it; the media files are imported from there (`media.import`).
   const importFiles = async () => {
     const files = await pickFiles(".yaml,.wav", true);
-    const errors = [];
+    if (!files.length) return "";
+    const paths = [];
     for (const f of files) {
-      const err = await engine.request("importMedia", f.name, await fileBytes(f));
-      if (err) errors.push(err);
+      const p = await engine.request("upload", f.name, await fileBytes(f));
+      if (p && !/\.wav$/i.test(f.name)) paths.push(p);
     }
-    return errors.join("\n");
+    if (!paths.length) return "A WAV on its own is no tape: choose its tape definition (.tape.yaml) with it.";
+    return engine.request("importMediaPaths", paths);
   };
 
+  const mediaPlaceOf = (word) => (((engine && engine.getState().media) || {}).places || []).find((p) => p.place === word);
   const actions = {
-    nameAndSaveCard: async (slot) => {
-      // A card with a write-protect switch (CE-161) may be saved read-only, for good.
-      const checkbox = ui.slots[slot - 1]?.canWriteProtect
-        ? "Write-protect (switch to read-only, can't be undone)" : undefined;
-      const answer = await dialogs.ask("prompt", { title: "Name & Save", label: "Instance name:", checkbox });
-      if (answer === null) return;
-      const { text: name, checked } = typeof answer === "string" ? { text: answer, checked: false } : answer;
-      const err = await engine.request("nameAndSaveCard", slot, name, checked);
-      if (err) tell("Name & Save", err);
+    // Name & Save of a module, a disk or a tape (LIB-7 AC-16, AC-40; D-25).
+    nameAndSave: async (word) => {
+      const place = mediaPlaceOf(word);
+      if (!place) return;
+      const prompt = word === "floppy" ? "Disk name:" : word === "tape" ? "Tape name:" : "Instance name:";
+      await dialogs.ask("nameAndSave", { engine, place, prompt });
     },
-    nameAndSaveDisk: async () => {
-      const name = await dialogs.ask("prompt", { title: "Name & Save", label: "Disk name:" });
-      if (name === null) return;
-      const err = await engine.request("nameAndSaveDisk", name);
-      if (err) tell("Name & Save", err);
-    },
-    selectTape: async (name) => {
-      const err = await engine.request("selectTape", name);
-      if (err) tell("Tape", err);
-    },
+    // The record button: a new tape under a name, on the empty tape (LIB-7
+    // AC-20, D-24): the name first, asked before an instance is replaced;
+    // its files at the first motor stop.
     recordTape: async () => {
+      const place = mediaPlaceOf("tape");
+      const empty = place && (place.picker || []).find((e) => e.group === "bundled-template" && e.label === "Empty");
+      if (!empty) return;
       const name = await dialogs.ask("prompt", { title: "Save Tape", label: "Tape name:" });
       if (name === null) return;
-      if (await engine.request("tapeExists", name) &&
-          !(await dialogs.ask("confirm", { title: "Save Tape", text: `A tape named "${name}" exists. Replace it?` }))) return;
-      const err = await engine.request("recordTape", name);
-      if (err) tell("Save Tape", err);
+      const reply = await calcuMediaSendAsking((c, a) => engine.send(c, a),
+        (q) => dialogs.ask("confirm", { title: "Save Tape", text: q }).then((y) => !!y),
+        "media.start-new", { place: "tape", template: empty.id, name });
+      if (reply && !reply.done && reply.reason) tell("Save Tape", reply.reason);
     },
   };
 
@@ -277,7 +277,7 @@ function CalcU1600(props) {
         { label: "Load BASIC Program…", disabled: !ok, onClick: async () => { const [f] = await pickFiles(".bas,.bbin,.wav"); if (f) openProgram("basic", f); } },
         { label: "Load Machine Code…", disabled: !ok, onClick: async () => { const [f] = await pickFiles(".bin,.wav"); if (f) openProgram("code", f); } },
         { separator: true },
-        { label: "Import Card, Disk or Tape…", disabled: !ok, onClick: async () => { const err = await importFiles(); if (err) tell("Import", err); } },
+        { label: "Import Media…", disabled: !ok, onClick: async () => { const err = await importFiles(); if (err) tell("Import", err); } },
         { label: "Saved Media…", disabled: !ok, onClick: () => dialogs.ask("media", { engine, importFiles }) },
       ],
     },

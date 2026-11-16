@@ -250,52 +250,31 @@ function AboutDialog({ done }) {
   );
 }
 
-const MEDIA_GROUPS = [["card", "Memory cards"], ["disk", "Floppy disks"], ["tape", "Tapes"]];
-
-// File ▸ Saved Media…: what the browser keeps for the save folder (Shared
-// MediaLibrary), each item downloadable and deletable, plus Import.
+// File ▸ Saved Media… (LIB-7 AC-31, AC-43): the library's saved media list
+// over the topic `media` -- a template and a medium in a place marked,
+// Download hands the files to the browser (`media.export`), Delete asks
+// first (`media.delete`, OQ-4) -- plus Import.
 function MediaDialog({ engine, importFiles, done }) {
-  const [items, setItems] = React.useState(null);
+  const media = useEngine(engine, (s) => s.media);
   const [error, setError] = React.useState("");
-  const refresh = () => engine.request("mediaItems").then(setItems);
-  React.useEffect(() => { refresh(); }, []);
-  const download = async (item) => {
-    const bytes = await engine.request("exportMedia", item.path);
-    if (bytes) downloadBytes(item.fileName, bytes);
-  };
-  const remove = async (item) => {
-    const err = await engine.request("removeMedia", item.path);
-    setError(err);
-    refresh();
-  };
   return (
     <Modal title="Saved Media" name="media" onCancel={() => done(true)} className="calcu-media"
-      buttons={
-        <React.Fragment>
-          <button type="button" className="calcu-button" onClick={async () => { setError(await importFiles()); refresh(); }}>Import…</button>
-          <span className="calcu-bar-stretch" />
-          <button type="button" className="calcu-button default" onClick={() => done(true)}>Close</button>
-        </React.Fragment>
-      }>
-      {items && items.length === 0 && <p className="calcu-modal-text">Nothing saved yet. Name & Save a card or disk, or record a tape.</p>}
-      {items && MEDIA_GROUPS.map(([type, heading]) => {
-        const group = items.filter((i) => i.type === type);
-        if (!group.length) return null;
-        return (
-          <div key={type} className="calcu-media-group">
-            <h3 className="calcu-settings-section">{heading}</h3>
-            {group.map((item) => (
-              <div key={item.path} className="calcu-media-row" data-media={item.name}>
-                <span className="calcu-media-name" title={item.description || undefined}>{item.name}{item.isTemplate ? " (template)" : ""}</span>
-                {item.inUse && <span className="calcu-media-inuse">in use</span>}
-                <button type="button" className="calcu-button" onClick={() => download(item)}>Download</button>
-                <button type="button" className="calcu-button" disabled={item.inUse} onClick={() => remove(item)}>Delete</button>
-              </div>
-            ))}
-          </div>
-        );
-      })}
+      buttons={<button type="button" className="calcu-button" onClick={async () => { setError(await importFiles()); }}>Import…</button>}>
+      <CalcuSavedMediaDialog media={media} send={(c, a) => engine.send(c, a)} onClose={() => done(true)} />
       {error && <p className="calcu-modal-text calcu-hint">{error}</p>}
+    </Modal>
+  );
+}
+
+// Name & Save (LIB-7 AC-16, AC-40; design D-25): the library's dialog with
+// today's prompt ("Instance name:" with the write-protect switch where the
+// module has one still off, "Disk name:", "Tape name:"); a name an instance
+// has asks before it is replaced.
+function NameAndSaveDialog({ engine, place, prompt, done }) {
+  return (
+    <Modal title="Name & Save" name="name-and-save" onCancel={() => done(null)}>
+      <CalcuNameAndSaveDialog place={place} prompt={prompt} send={(c, a) => engine.send(c, a)}
+        onClose={(saved) => done(saved ? true : null)} />
     </Modal>
   );
 }
@@ -317,6 +296,7 @@ function BusyPopup({ engine }) {
 const DIALOGS = {
   notice: NoticeDialog, confirm: ConfirmDialog, prompt: PromptDialog, choice: ChoiceDialog,
   address: AddressDialog, loaded: LoadedDialog, settings: SettingsDialog, about: AboutDialog, media: MediaDialog,
+  nameAndSave: NameAndSaveDialog,
 };
 
 // ask(kind, props) shows one dialog and resolves with its answer.

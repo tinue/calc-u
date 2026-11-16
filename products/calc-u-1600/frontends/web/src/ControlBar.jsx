@@ -2,8 +2,10 @@
 // picker, the memory-slot pickers with their Name & Save buttons, the
 // model's own peripheral toggles, the CE-1600F disk group (picker, side,
 // save, motor lamp) and the tape group (picker, new tape, counter). What is
-// shown, enabled and listed comes from the engine (Shared/ControlState and
-// the bays); the actions go back as WebController calls.
+// shown and enabled comes from the engine's control state (c1600.ui); the
+// pickers are the places of LIB-7's topic `media` (M-47), drawn in today's
+// widgets until LIB-14 1600 (M-49, design D-25), and choosing sends
+// `media.choose`.
 
 const MODEL_NAMES = ["PC-1500", "PC-1500A", "PC-1600"];
 const EMPTY_LABEL = "–empty–";
@@ -21,22 +23,48 @@ function SaveIcon() {
   );
 }
 
-// A picker: "–empty–", then the groups, a separator between non-empty ones.
-// `descriptions` (name -> the card's / disk's `description:`) are the
-// tooltips, of each option and of the picker for its current one.
-function Picker({ groups, selected, onChange, disabled, label, name, minWidth, descriptions }) {
-  const tip = (n) => (descriptions && descriptions[n]) || undefined;
-  const options = [<option key="empty" value="">{EMPTY_LABEL}</option>];
-  let first = true;
-  groups.forEach((group, g) => {
-    if (!group || !group.length) return;
-    if (!first) options.push(<option key={`sep${g}`} disabled value={`\u0000${g}`}>{SEPARATOR_LABEL}</option>);
-    first = false;
-    group.forEach((n) => options.push(<option key={`${g}:${n}`} value={n} title={tip(n)}>{n}</option>));
+// The place of the topic `media` named `word` ("slot-1", "floppy", "tape").
+function mediaPlace(media, word) {
+  return ((media && media.places) || []).find((p) => p.place === word) || null;
+}
+
+// A place's picker (LIB-7 AC-8, AC-9): "–empty–", then the entries of the
+// topic in its order, a separator between groups; an entry's description is
+// its tooltip, an outdated one disabled with its hint. The options' values
+// are the labels (one per picker); choosing sends `media.choose`.
+function MediaPickerSelect({ engine, place, disabled, label, name, minWidth }) {
+  const entries = (place && place.picker) || [];
+  const held = place && place.holds ? place.holds.name : "";
+  const options = [];
+  let group = null;
+  entries.forEach((e, i) => {
+    if (e.group === "empty") {
+      options.push(<option key="empty" value="">{EMPTY_LABEL}</option>);
+      return;
+    }
+    if (group !== null && group !== e.group && group !== "empty")
+      options.push(<option key={`sep${i}`} disabled value={`\u0000${i}`}>{SEPARATOR_LABEL}</option>);
+    group = e.group;
+    const outdated = !e.canChoose && e.hint && e.hint.indexOf("outdated") >= 0;
+    options.push(
+      <option key={`${i}:${e.id}`} value={e.label} disabled={!e.canChoose}
+        title={(e.canChoose ? e.tooltip : e.hint) || undefined}>
+        {outdated ? `${e.label} (outdated)` : e.label}
+      </option>);
   });
+  const selected = entries.find((e) => e.label === held && e.group !== "empty");
+  // A medium the place holds that no entry lists (a tape started under a
+  // name, its file written at the first motor stop, LIB-7 AC-20): shown
+  // as today's tape picker showed the tape in the deck.
+  if (held && !selected) options.push(<option key="held" value={held}>{held}</option>);
   return (
-    <select className="calcu-combo" value={selected || ""} disabled={disabled} aria-label={label} name={name}
-      title={tip(selected)} style={minWidth ? { minWidth } : undefined} onChange={(e) => onChange(e.target.value)}>
+    <select className="calcu-combo" value={held} disabled={disabled || !place} aria-label={label} name={name}
+      title={(selected && selected.tooltip) || undefined} style={minWidth ? { minWidth } : undefined}
+      onChange={(ev) => {
+        const v = ev.target.value;
+        const e = v === "" ? entries.find((x) => x.group === "empty") : entries.find((x) => x.label === v && x.group !== "empty");
+        if (e && place) engine.send("media.choose", { place: place.place, entry: e.id });
+      }}>
       {options}
     </select>
   );
@@ -64,27 +92,27 @@ function tapeCounter(lamps) {
 
 function ControlBar({ engine, actions }) {
   const ui = useEngine(engine, (s) => s.ui);
+  const media = useEngine(engine, (s) => s.media);
   const lamps = useEngine(engine, (s) => s.lamps);
   const busy = useEngine(engine, (s) => s.busy);
   if (!ui) return <div className="calcu-controlbar" />;
 
   const slot = (n) => {
-    const s = ui.slots[n - 1];
-    if (!s) return null;
+    const place = mediaPlace(media, `slot-${n}`);
     return (
       <React.Fragment key={n}>
         <span className="calcu-bar-label">{n}:</span>
-        <Picker groups={[s.templates, s.instances, s.roms]} selected={s.selected} disabled={busy}
-          descriptions={s.descriptions}
-          label={`Slot ${n}`} name={`slot${n}`} minWidth="11em"
-          onChange={(name) => engine.call("selectModule", n, name)} />
-        <button type="button" className="calcu-iconbutton" disabled={!s.canSave} title="Name & Save"
-          aria-label={`Name & Save slot ${n}`} onClick={() => actions.nameAndSaveCard(n)}>
+        <MediaPickerSelect engine={engine} place={place} disabled={busy} label={`Slot ${n}`} name={`slot${n}`} minWidth="11em" />
+        <button type="button" className="calcu-iconbutton" disabled={!place || !place.nameAndSave} title="Name & Save"
+          aria-label={`Name & Save slot ${n}`} onClick={() => actions.nameAndSave(`slot-${n}`)}>
           <SaveIcon />
         </button>
       </React.Fragment>
     );
   };
+  const floppy = mediaPlace(media, "floppy");
+  const tape = mediaPlace(media, "tape");
+  const side = floppy && floppy.holds && floppy.holds.side ? 1 : 0;
 
   return (
     <div className="calcu-controlbar" role="toolbar">
@@ -101,37 +129,38 @@ function ControlBar({ engine, actions }) {
       <PeripheralToggle label="CE-150" state={ui.ce150} onToggle={() => engine.call("togglePeripheral", 0)} />
       <PeripheralToggle label="CE-158" state={ui.ce158} onToggle={() => engine.call("togglePeripheral", 2)} />
       <PeripheralToggle label="CE-1600P" state={ui.ce1600p} onToggle={() => engine.call("togglePeripheral", 1)} />
-      {ui.floppy && (
+      {ui.floppyShown && (
         <React.Fragment>
           <span className="calcu-bar-label">Disk:</span>
-          <Picker groups={[ui.floppy.templates, ui.floppy.instances]} selected={ui.floppy.selected}
-            descriptions={ui.floppy.descriptions}
-            disabled={!ui.floppyEnabled} label="Disk" name="disk" minWidth="8em"
-            onChange={(name) => engine.call("selectDisk", name)} />
-          <button type="button" className="calcu-button calcu-compact" disabled={!ui.floppyEnabled}
-            title="Eject and turn the disk over" aria-label="Disk side" onClick={() => engine.call("toggleDiskSide")}>
-            {ui.floppy.side ? "B" : "A"}
+          <MediaPickerSelect engine={engine} place={floppy} disabled={!ui.floppyEnabled || busy} label="Disk" name="disk" minWidth="8em" />
+          <button type="button" className="calcu-button calcu-compact" disabled={!ui.floppyEnabled || !floppy || !floppy.holds}
+            title="Eject and turn the disk over" aria-label="Disk side"
+            onClick={() => engine.send("media.turn", { place: "floppy" })}>
+            {String(side)}
           </button>
-          <button type="button" className="calcu-iconbutton" disabled={!ui.floppy.canSave} title="Name & Save"
-            aria-label="Name & Save disk" onClick={() => actions.nameAndSaveDisk()}>
+          <button type="button" className="calcu-iconbutton" disabled={!floppy || !floppy.nameAndSave} title="Name & Save"
+            aria-label="Name & Save disk" onClick={() => actions.nameAndSave("floppy")}>
             <SaveIcon />
           </button>
           <span className={`calcu-lamp${lamps.floppyMotor ? " on" : ""}`} data-lamp="floppy"
             title="Drive active -- wait for this to go dark before turning the disk over">●</span>
         </React.Fragment>
       )}
-      {ui.tape && (
+      {ui.tapeShown && (
         <React.Fragment>
           <BarSeparator />
           <span className="calcu-bar-label">Tape:</span>
-          <Picker groups={[ui.tape.names]} selected={ui.tape.current} label="Tape" name="tape" minWidth="8em"
-            onChange={(name) => actions.selectTape(name)} />
+          <MediaPickerSelect engine={engine} place={tape} disabled={busy} label="Tape" name="tape" minWidth="8em" />
           <button type="button" className="calcu-iconbutton" title="A new tape to record onto (CSAVE)"
             aria-label="New tape" onClick={() => actions.recordTape()}>
             <SaveIcon />
           </button>
+          <button type="button" className="calcu-iconbutton" disabled={!tape || !tape.nameAndSave} title="Name & Save"
+            aria-label="Name & Save tape" onClick={() => actions.nameAndSave("tape")}>
+            <SaveIcon />
+          </button>
           <span className={`calcu-tape-counter${lamps.tapeMotor ? " on" : ""}`} data-lamp="tape"
-            title={lamps.tapeMode === "play" ? `Playing ${lamps.tapeFile}` : lamps.tapeMode === "record" ? `Recording into ${lamps.tapeFile}` : "No tape"}>
+            title={lamps.tapeMode === "play" ? `Playing ${lamps.tapeFile}` : lamps.tapeMode === "record" ? `Recording onto ${lamps.tapeFile}` : "No tape"}>
             {tapeCounter(lamps)}
           </span>
         </React.Fragment>

@@ -32,7 +32,7 @@ flowchart LR
 |---|---|
 | `bindings.cpp` | The product's factory of the library's app session (`CALCU_WEB_PRODUCT(CalcU1600Host, …)`): `SharpAppPart`, `SharpWebPart` (app layer) and the session; the library's `WorkerHost` translates its messages |
 | `calc-engine-worker.js` | The product's entry to the library's worker (`library/web/src/worker.js`, `dist/library-worker.js`): name, wasm, mount `/persist`, lock `calcu1600-storage` |
-| `src/engine.js` | Translates the components' calls to the session's commands and requests, and its topics to their slices, over the library's `createShell()` (until LIB-14 1600, M-49) |
+| `src/engine.js` | Translates the components' calls to the session's commands and requests, and its topics to their slices, over the library's `createShell()` (until LIB-14 1600, M-49). The loaders (C1600-2): `fileKind`, `loadBasic`, `planCode` (asked again per keystroke in the address dialog), `loadCode`, each carrying the file's bytes (`app/SharpLoaderPart`) |
 | `src/*.jsx`, `src/*.js` | The client, compiled with the library's page side (`library/web/src/`) into one `dist/calc.js` (one global, `CalcU1600`) |
 | `calc.css` | Styles, all under `.calcu-client`, light and dark |
 | `app/` | The installable app's page, manifest and stylesheet; its app page, service worker and worker entry are the library's (`library/web/app/`) |

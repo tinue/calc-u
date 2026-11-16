@@ -2,8 +2,7 @@
 
 #include <cstdio>
 
-#include "../Basic/BasicProgramSource.hpp"
-#include "PC1500Machine.hpp"
+#include "../Machine/SharpProductKinds.hpp"
 #include "PC1500MachineCodeLoader.hpp"
 
 namespace {
@@ -13,14 +12,13 @@ constexpr uint16_t kBasPrgSt = 0x7865;
 constexpr uint16_t kBasPrgEnd = 0x7867;
 constexpr uint16_t kVarStart = 0x7899;
 
-uint16_t readBE16(PC1500Machine& m, uint16_t addr) {
-    return static_cast<uint16_t>((m.memory().peek(addr) << 8) |
-                                 m.memory().peek(static_cast<uint16_t>(addr + 1)));
+uint16_t readBE16(const sharp::LoaderMemory& m, uint16_t addr) {
+    return static_cast<uint16_t>((m.peek(addr) << 8) | m.peek(static_cast<uint16_t>(addr + 1)));
 }
 
-void writeBE16(PC1500Machine& m, uint16_t addr, uint16_t value) {
-    m.memory().poke(addr, static_cast<uint8_t>(value >> 8));
-    m.memory().poke(static_cast<uint16_t>(addr + 1), static_cast<uint8_t>(value & 0xFF));
+void writeBE16(sharp::LoaderMemory& m, uint16_t addr, uint16_t value) {
+    const uint8_t b[2] = {static_cast<uint8_t>(value >> 8), static_cast<uint8_t>(value & 0xFF)};
+    m.writeBuiltIn(addr, b, 2);
 }
 
 BasicLoadResult fail(const std::string& msg) {
@@ -32,27 +30,7 @@ BasicLoadResult fail(const std::string& msg) {
 
 }  // namespace
 
-namespace {
-
-BasicLoadResult loadSource(PC1500Machine& machine, const basic::BasicProgramSource& src) {
-    if (!src.ok) return fail(src.error);
-    if (src.source != basic::TransferModel::PC1500)
-        return fail("this is a PC-1600 tokenized BASIC program -- load it on a PC-1600");
-    return loadBasicBinaryPayload(machine, src.payload);
-}
-
-}  // namespace
-
-BasicLoadResult loadBasicProgram(PC1500Machine& machine, const std::vector<uint8_t>& file) {
-    return loadSource(machine, basic::readBasicProgram(file, basic::TransferModel::PC1500));
-}
-
-BasicLoadResult loadBasicProgramFile(PC1500Machine& machine, const std::string& path) {
-    return loadSource(machine, basic::readBasicProgramFile(path, basic::TransferModel::PC1500));
-}
-
-BasicLoadResult loadBasicBinaryPayload(PC1500Machine& machine,
-                                       const std::vector<uint8_t>& payload) {
+BasicLoadResult pc1500LoadBasicPayload(sharp::LoaderMemory& machine, const std::vector<uint8_t>& payload) {
     // LOAD semantics: this works off whatever BASPRG_ST/BASPRG_END are
     // currently live -- there is no NEW0 precondition. The caller (the user,
     // via the menu, or a preset's own `- type: NEW0` step) is responsible for
@@ -100,12 +78,19 @@ BasicLoadResult loadBasicBinaryPayload(PC1500Machine& machine,
     }
 
     // Erase the resident program (whatever was there before) so a shorter
-    // reload doesn't leave stale tokens dangling past the new BASPRG_END.
-    for (uint16_t addr = base; addr <= oldEnd; ++addr) machine.memory().poke(addr, 0x00);
-
-    uint16_t addr = base;
-    for (uint8_t b : payload) machine.memory().poke(addr++, b);
-    machine.memory().poke(addr, 0xFF);  // program-end marker
+    // reload doesn't leave stale tokens dangling past the new BASPRG_END:
+    // the new program, its end marker and zeros up to the old end, in one
+    // write that stores all or nothing.
+    std::vector<uint8_t> image(payload);
+    image.push_back(0xFF);  // program-end marker
+    if (image.size() < static_cast<size_t>(oldEnd - base) + 1) image.resize(static_cast<size_t>(oldEnd - base) + 1, 0x00);
+    const sharp::LoaderMemory::Write w = machine.writeBuiltIn(base, image.data(), image.size());
+    if (!w.stored) {
+        char buf[128];
+        std::snprintf(buf, sizeof(buf), "$%04X is not RAM -- the program could not be written",
+                      static_cast<unsigned>(w.firstMiss));
+        return fail(buf);
+    }
 
     writeBE16(machine, kBasPrgEnd, static_cast<uint16_t>(end));
 

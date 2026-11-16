@@ -336,7 +336,7 @@ TEST(test_binary_program_ce158_header) {
     CHECK(bytes[0] == 0x11 && bytes[1] == 0x44);
     auto [headerless, unused] = run("raw.bin");
     (void)unused;
-    CHECK(!headerless.ok && headerless.error.find("'address' is required") != std::string::npos);
+    CHECK(!headerless.ok && headerless.error.find("raw.bin: The file has no machine-code header, so it needs an address") != std::string::npos);
 }
 
 } // namespace

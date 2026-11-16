@@ -6,15 +6,14 @@
 #include <string>
 #include <vector>
 
-// ── Machine-code `.bin` files for the GUI's "Load Machine Code…" ────────
+// ── Machine-code files: the one plan (C1600-2 AC-8, AC-9, AC-23) ───────
 //
-// Qt-free decision logic behind the dialog, kept here so it is unit-
-// testable: recognise the file (CE-158 header, PC-1600 header, or none),
-// decide what still has to be asked (the start address of a raw file) and
-// where PC-1600 code goes (always BASIC's program area, "S0"), and
-// work out the advice shown after loading (the NEW that protects the code,
-// the CALL that starts it). The writes themselves live in
-// PC1500MachineCodeLoader / PC1600MachineCodeLoader.
+// Recognise the file (CE-158 header, PC-1600 header, or none), plan where
+// the code goes and refuse what cannot load, and work out the advice shown
+// after loading (the NEW that protects the code, the CALL that starts it).
+// Every caller -- the menu, a preset, the debugger, the harness -- plans
+// through sharp::loaders::planCode (core/Loaders.hpp). The writes
+// themselves live in PC1500MachineCodeLoader / PC1600MachineCodeLoader.
 //
 // What a file is comes from programfile::classify() (libsharpdx).
 
@@ -118,16 +117,6 @@ uint32_t pc1600DefaultAddress(const PC1600State& state);
 // for LH5801 code). Empty: nothing to say.
 std::string pc1600WorkAreaWarning(uint32_t busAddr, size_t len, Cpu cpu);
 
-struct Plan {
-    std::string error;          // non-empty => refuse to load
-    bool needsAddress = false;  // headerless: ask for the start address
-    uint32_t defaultAddr = 0;   // headerless PC-1600: proposed start address in `cpu`'s space (0 = none)
-    Cpu cpu = Cpu::Z80;         // PC-1600: the address space of the file's addresses
-    Slot slot = Slot::S0;       // PC-1600 with a header: where the code goes
-    int bank = 0;               // PC-1600 with a header: the global bank behind $8000-$BFFF (see LoadPlan)
-    uint32_t busAddr = 0;       // PC-1600 with a header: the Z-80 address it goes to
-};
-
 // ── One load pipeline ─────────────────────────────────────────────────────
 //
 // Every machine-code load -- Load Machine Code…, a preset's machine-code
@@ -143,14 +132,13 @@ struct Plan {
 
 struct LoadOptions {
     Target target = Target::PC1500;
-    bool acceptLengthMismatch = false;  // load a header whose length disagrees with the file
     bool hasAddress = false;            // overrides the header's load address (in the CPU's space)
     uint32_t address = 0;
-    bool hasLength = false;             // overrides the payload size (at most the payload)
+    bool hasLength = false;             // overrides the payload size (at most the payload); also takes a
+                                        // header whose length disagrees with the file (AC-8 row 2)
     size_t length = 0;
     bool hasCpu = false;                // PC-1600: the caller knows the CPU (the debugger); else the file / MODE decide
     Cpu cpu = Cpu::Z80;
-    bool checkRange = true;             // refuse a range past $FFFF here (else the writer does)
 };
 
 enum class LoadError {
@@ -160,7 +148,6 @@ enum class LoadError {
     Empty,          // no bytes to load
     NeedsAddress,   // headerless and no address given (defaultAddr: a PC-1600 proposal)
     LengthExceeds,  // `length` is more than the payload
-    OutsideBank0,   // the address is above $FFFF
     LhRange,        // LH5803 code outside its 0000-7FFF
     NoSlot,         // detail: pc1600TargetFor()'s reason, or why the header's bank can't take the code
     PastEnd,        // the code runs past $FFFF
@@ -184,10 +171,10 @@ struct LoadPlan {
 // `state`: PC-1600 only (see pc1600LoadState()).
 LoadPlan planLoad(const File& file, const LoadOptions& options, const PC1600State& state);
 
-// What to do with `file` on the running `target` (Load Machine Code…):
-// header errors, whether an address must be asked, and for a header file
-// the CPU, target and Z-80 address. `state`: PC-1600 only.
-Plan plan(Target target, const File& file, const PC1600State& state);
+// The one sentence of a refused plan (C1600-2 AC-25, design §3.8): the menu's
+// words of today; the caller puts the file's name (and a preset its line)
+// before it. Empty when the plan holds.
+std::string refusal(const LoadPlan& plan, const File& file, const LoadOptions& options);
 
 // Shown after a successful load.
 struct Advice {

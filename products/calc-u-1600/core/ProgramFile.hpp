@@ -57,6 +57,8 @@ struct ProgramFile {
     /// above then describes the first file on it that decodes safely; with
     /// none, the kind is Other and `token` says why.
     bool fromTape = false;
+    /// The name a header carries (a CE-158 header's file name); may be empty.
+    std::string name;
 };
 
 ProgramFile classify(const std::vector<uint8_t>& bytes);
@@ -75,6 +77,17 @@ std::vector<TapeFile> tapeFiles(const std::vector<uint8_t>& bytes, std::string* 
 
 /// A Kind::Other file's token in words ("plain text", "a Reserve Area as text", ...).
 std::string describe(const std::string& token);
+
+/// What a loader wants of a file.
+enum class Wanted { Basic, Code };
+
+/// The one sentence that refuses `f` for a loader that wants `wanted`
+/// (C1600-2 AC-25, EC-1, EC-2, EC-5; design §3.8), or "" when `f` is such a
+/// file and sound. Every loader asks it first: an empty file is refused as
+/// empty by each. Machine code: a header whose length disagrees with the
+/// bytes is refused here too (the caller may accept it when a length is
+/// given by hand).
+std::string refusal(const ProgramFile& f, Wanted wanted);
 
 /// "CE-158" or "PC-1600" for a headered kind.
 inline const char* headerName(Kind kind) {

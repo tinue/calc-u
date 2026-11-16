@@ -2,13 +2,9 @@
 
 #include "../Debug/MachineDebugTargets.hpp"
 #include "../PC1600/PC1600PresetMedia.hpp"
-#include "../PC1500/PC1500BasicLoader.hpp"
 #include "../PC1500/PC1500BasicTyper.hpp"
-#include "../PC1500/PC1500MachineCodeLoader.hpp"
 #include "../PC1500/PC1500PresetLoader.hpp"
-#include "../PC1600/PC1600BasicLoader.hpp"
 #include "../PC1600/PC1600BasicTyper.hpp"
-#include "../PC1600/PC1600MachineCodeLoader.hpp"
 #include "../PC1600/PC1600PresetLoader.hpp"
 #include "../PC1600/PC1600TypedInput.hpp"
 #include "Machine/SharpCores.hpp"
@@ -16,33 +12,6 @@
 using calcu::machine::Machine;
 
 namespace sharp::legacy {
-
-BasicLoadResult loadBasicProgram(Machine& m, const std::vector<std::uint8_t>& file) {
-    if (PC1600Machine* p = pc1600Of(m)) return ::loadBasicProgram(*p, file);
-    if (PC1500Machine* p = pc1500Of(m)) return ::loadBasicProgram(*p, file);
-    BasicLoadResult r;
-    r.error = "No machine is running.";
-    return r;
-}
-
-bool loadMachineCode(Machine& m, int slot, std::uint32_t addr, const std::uint8_t* data, std::size_t len,
-                     std::string* error, int bank) {
-    if (PC1600Machine* p = pc1600Of(m)) return loadPC1600MachineCode(*p, slot, addr, data, len, error, bank);
-    if (PC1500Machine* p = pc1500Of(m)) return loadPC1500MachineCode(*p, addr, data, len, error);
-    return false;
-}
-
-machinecode::PC1600State machineCodeLoadState(Machine& m) {
-    if (PC1600Machine* p = pc1600Of(m)) return pc1600LoadState(*p);
-    return {};
-}
-
-bool userRam(Machine& m, std::uint32_t* start, std::uint32_t* end) {
-    PC1500Machine* p = pc1500Of(m);
-    if (!p) return false;
-    pc1500UserRam(*p, start, end);
-    return true;
-}
 
 std::unique_ptr<debug::DebugTarget> makeDebugTarget(Machine& m) {
     if (PC1600Machine* p = pc1600Of(m)) return debug::makeDebugTarget(*p);
@@ -52,24 +21,26 @@ std::unique_ptr<debug::DebugTarget> makeDebugTarget(Machine& m) {
 
 debug::LoadResult loadProgram(Machine& m, const debug::LoadRequest& request, debug::SourceMap& map,
                               const debug::DebugTarget& target) {
-    return debug::loadProgram(pc1500Of(m), pc1600Of(m), request, map, target);
+    return debug::loadProgram(m, request, map, target);
 }
 
 job::Task<PresetLoadResult> applyPresetJob(Machine& m, PresetFile preset, PresetLogFn log, std::string traceDir,
                                            std::string moduleDir, PresetBootedFn onBooted,
                                            PresetRoms presetRoms, std::vector<std::string> extraModuleDirs,
-                                           PresetArmedFn onArmed, PresetSaveAsFn onSaveAs) {
+                                           PresetArmedFn onArmed, PresetSaveAsFn onSaveAs,
+                                           calcu::sessions::OperationContext* ctx, calcu::typing::TypingEngine* engine) {
     PresetLoadResult result;
+    const PresetTyping typing{ctx, engine, &m};
     if (PC1600Machine* p = pc1600Of(m)) {
         static_cast<PC1600InterfaceMachine&>(m).notePresetCe1600pVariant(
             calcu::machine::VariantId{preset.ce1600pRomVariant == "old" ? "Old" : "New"});
         result = co_await applyPC1600PresetJob(*p, std::move(preset), std::move(log), std::move(traceDir),
                                                std::move(moduleDir), std::move(onBooted), std::move(presetRoms),
-                                               std::move(extraModuleDirs), std::move(onArmed), std::move(onSaveAs));
+                                               std::move(extraModuleDirs), std::move(onArmed), std::move(onSaveAs), typing);
     } else if (PC1500Machine* p = pc1500Of(m)) {
         result = co_await applyPC1500PresetJob(*p, std::move(preset), std::move(log), std::move(traceDir),
                                                std::move(moduleDir), std::move(onBooted), std::move(presetRoms),
-                                               std::move(extraModuleDirs), std::move(onArmed), std::move(onSaveAs));
+                                               std::move(extraModuleDirs), std::move(onArmed), std::move(onSaveAs), typing);
     } else {
         result.error = "not a Sharp machine";
     }

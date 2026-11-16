@@ -35,7 +35,7 @@ BasicProgramSource tokenize(const std::vector<uint8_t>& bytes, TransferModel mod
     if (rc != SDE_OK) {
         std::string msg = sde_last_error();
         if (msg.empty()) msg = "tokenizer error " + std::to_string(rc);
-        BasicProgramSource s = fail("tokenizing failed: " + msg);
+        BasicProgramSource s = fail("Tokenizing failed: " + msg);
         s.listing = true;
         return s;
     }
@@ -53,34 +53,9 @@ BasicProgramSource tokenize(const std::vector<uint8_t>& bytes, TransferModel mod
 BasicProgramSource readBasicProgram(const std::vector<uint8_t>& bytes, TransferModel listingModel) {
     using programfile::Kind;
     const programfile::ProgramFile pf = programfile::classify(bytes);
-    switch (pf.kind) {
-        case Kind::Empty:
-            return fail("the file is empty");
-        case Kind::BasicListing:
-            return tokenize(bytes, listingModel);
-        case Kind::BasicPC1500:
-        case Kind::BasicPC1600:
-            break;
-        case Kind::CodeLH5801:
-        case Kind::CodeZ80:
-            return fail(std::string("this is machine code (") + programfile::headerName(pf.kind) +
-                        " header), not a BASIC program -- use Load Machine Code");
-        case Kind::Headerless:
-            if (pf.damaged)
-                return fail("the file starts like a CE-158 or PC-1600 header, but has no complete header of a "
-                            "known type");
-            return fail("this is neither a BASIC listing nor tokenized BASIC with a CE-158 or PC-1600 header");
-        case Kind::Other:
-            return fail("this file holds " + programfile::describe(pf.token) + ", not a BASIC program");
-    }
-    const char* header = programfile::headerName(pf.kind);
-    if (pf.truncated)
-        return fail(std::string("the ") + header + " header promises more than the " +
-                    std::to_string(pf.payload.size()) + " bytes that follow it");
-    if (pf.lengthMismatch)
-        return fail(std::string("the ") + header + " header says " + std::to_string(pf.headerPayloadLen) +
-                    " bytes of program, but " + std::to_string(pf.payload.size()) + " follow it");
-    if (pf.damaged) return fail(std::string("the tokenized BASIC behind the ") + header + " header is damaged");
+    // One sentence per case (C1600-2 AC-25): the classifier's.
+    if (const std::string why = programfile::refusal(pf, programfile::Wanted::Basic); !why.empty()) return fail(why);
+    if (pf.kind == Kind::BasicListing) return tokenize(bytes, listingModel);
     BasicProgramSource s;
     s.ok = true;
     s.source = pf.kind == Kind::BasicPC1600 ? TransferModel::PC1600 : TransferModel::PC1500;

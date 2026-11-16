@@ -1361,6 +1361,7 @@ their specs and are placed by what they are about (§2.3).
 | 1600-12, 1600-14 | M-45 (1600-14's "Copied" and Resume: with M-49) |
 | 1600-32, 1600-34 | M-45 |
 | 1600-15 | M-44 (loaders), M-48 (opening) |
+| 1600-38 | M-44 |
 | 1600-20 | M-50 |
 
 ### 5.3 Backlog items targeted at design input or done

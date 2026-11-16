@@ -6,11 +6,9 @@
 #include <string>
 #include <vector>
 
-#include "../Basic/BasicLoadResults.hpp"
 #include "../Connector/ExpansionCard.hpp"
 #include "../Debug/ProgramLoader.hpp"
 #include "../Job.hpp"
-#include "../MachineCodeFile.hpp"
 #include "../Preset/PresetRunner.hpp"
 #include "machine/Machine.hpp"
 
@@ -32,15 +30,6 @@ struct PresetMedia;
 
 namespace sharp::legacy {
 
-// ---- Loaders (M-44, C1600-2) ----
-BasicLoadResult loadBasicProgram(calcu::machine::Machine&, const std::vector<std::uint8_t>& file);
-// PC-1600: `slot`, `bank` as loadPC1600MachineCode(); the PC-1500 ignores them.
-bool loadMachineCode(calcu::machine::Machine&, int slot, std::uint32_t addr, const std::uint8_t* data, std::size_t len,
-                     std::string* error, int bank);
-machinecode::PC1600State machineCodeLoadState(calcu::machine::Machine&);   // PC-1600 only; {} otherwise
-// The PC-1500's user RAM; false on the PC-1600.
-bool userRam(calcu::machine::Machine&, std::uint32_t* start, std::uint32_t* end);
-
 // ---- Debugger (M-45, LIB-10 1600) ----
 std::unique_ptr<debug::DebugTarget> makeDebugTarget(calcu::machine::Machine&);
 debug::LoadResult loadProgram(calcu::machine::Machine&, const debug::LoadRequest&, debug::SourceMap&,
@@ -48,11 +37,16 @@ debug::LoadResult loadProgram(calcu::machine::Machine&, const debug::LoadRequest
 
 // ---- Presets (M-46, LIB-6 1600 and C1600-4) ----
 // The model's preset loader on a machine just built for the preset; what it
-// plugs in is read back into plugged() when it is done.
+// plugs in is read back into plugged() when it is done. `ctx` and `engine`:
+// the typing hand-off of C1600-2 (design §3.10; removed with this adapter in
+// M-46): a typed `program:` goes through the session's typing engine inside
+// the preset's operation; without them (a CLI, a probe) the old typer.
 job::Task<PresetLoadResult> applyPresetJob(calcu::machine::Machine&, PresetFile preset, PresetLogFn log,
                                            std::string traceDir, std::string moduleDir, PresetBootedFn onBooted,
                                            PresetRoms presetRoms, std::vector<std::string> extraModuleDirs,
-                                           PresetArmedFn onArmed, PresetSaveAsFn onSaveAs);
+                                           PresetArmedFn onArmed, PresetSaveAsFn onSaveAs,
+                                           calcu::sessions::OperationContext* ctx = nullptr,
+                                           calcu::typing::TypingEngine* engine = nullptr);
 // What the preset loader plugged in so far, read back into plugged() (from
 // its onArmed, so that the armed machine's peripherals -- a plotter's paper
 // -- are seen while the preset still runs; LIB-3 AC-35, M-31).

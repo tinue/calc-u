@@ -72,7 +72,7 @@ WebAssembly check.
 | `MachineModel` | The `Model` and ROM-version enums |
 | `ControlState` | What the pickers, menus and panels offer right now: every rule about which control a model has and which peripheral excludes which |
 | `MediaLibrary` | The save folder's cards, disks and tapes as items to list, export, import and delete (the web's Saved Media…) |
-| `MachineCodeLoad` | Load BASIC Program… / Load Machine Code…: a WAV's files to pick from, then the load and its advice |
+| `SharpLoaderPart` | The loaders in the session (C1600-2): `c1600.file-kind` (what a file is, a WAV's files), `c1600.load-basic`, `c1600.type-basic` (an operation), `c1600.plan-code` (the one plan, asked again as the address is typed), `c1600.load-code` (the load and its advice; an operation with `run`); stateless, each call carries the file. The harness has it too (`pc1600 file-kind`, `load-basic`, `type-basic`, `load-code`) |
 | `CardYamlDump` | The INSPECTOR's Card YAML: each slot's module RAM as an `initial-content:` block |
 | `DisplayFrame` | One model-agnostic LCD frame a renderer paints from, made from the machine's display output (`toDisplayFrame`, an adapter until M-49) |
 | `DirectoryScanCache`, `Text` | A media folder's last parse, reused while its files are unchanged; small string helpers |
@@ -115,7 +115,8 @@ file in `app/`, `frontends/`, `tools/` or `dev/` includes or names one.
   `c1600.trace`, `c1600.tape-deck`, `c1600.floppy-drive`
   (`core/Machine/SharpProductKinds.hpp`); the library's `serial-port`,
   `real-time-clock` and `controls` (the CE-161's write-protect switch).
-  What has no seam yet (loaders, preset loaders, the debug target, the
+  The program loaders reach memory only through `c1600.loader-memory`
+  (`core/Loaders.hpp`, C1600-2). What has no seam yet (preset loaders, the debug target, the
   PC-1600's typing latches, the card in a slot) goes through
   `core/Machine/LegacyCalls.hpp`, each call with the step that removes it.
 - **Serial ports and clock.** LIB-2's session part

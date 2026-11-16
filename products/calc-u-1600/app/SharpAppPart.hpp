@@ -29,6 +29,7 @@
 #include "app/PacingProfiles.hpp"
 #include "app/PlotterPaper.hpp"
 #include "app/Settings.hpp"
+#include "app/SharpLoaderPart.hpp"
 #include "app/SharpMachineParts.hpp"
 #include "app/SharpTopics.hpp"
 #include "app/SharpTyping.hpp"
@@ -50,14 +51,6 @@ struct OpResult {
     bool ok = true;
     std::string error;
     static OpResult fail(std::string why) { return OpResult{false, std::move(why)}; }
-};
-
-// File > Load Machine Code…: the bytes and where they go.
-struct MachineCodeLoadRequest {
-    std::vector<std::uint8_t> payload;
-    std::uint32_t addr = 0;  // the Z-80 / LH5801 bus address
-    int slot = 0;            // PC-1600: machinecode::Slot (0 = S0, 1 / 2 = memory slots)
-    int bank = 0;            // PC-1600 slots: the global bank
 };
 
 // The display output as the frontends draw it today (adapter until M-49,
@@ -93,8 +86,9 @@ public:
     SharpAppPart(const SharpAppPart&) = delete;
     SharpAppPart& operator=(const SharpAppPart&) = delete;
 
-    // The parts of the session, in order: LIB-2's peripherals part (the
-    // host links of the serial ports, the real-time clocks) and this one.
+    // The parts of the session, in order: the typing part, LIB-2's
+    // peripherals part (the host links of the serial ports, the real-time
+    // clocks), the loaders' part (C1600-2) and this one.
     std::vector<calcu::sessions::SessionPart*> sessionParts();
     // The real-time clocks of a machine built inside the start or an
     // operation are set from this; tests pin it.
@@ -108,6 +102,7 @@ public:
     const ModuleBay& modules() const { return *m_modules; }
     const FloppyBay& floppy() const { return *m_floppy; }
     const TapeBay& tapes() const { return *m_tapes; }
+    SharpLoaderPart& loaderPart() { return m_loaderPart; }
     // The typing part (LIB-5): frontends send its commands (host-key-down,
     // screen-key-down, paste, ...); the debugger's auto-start types its line
     // through the engine directly (not a user key, so not dropped while busy).
@@ -141,10 +136,6 @@ public:
     job::Task<OpResult> selectCE1600PRomJob(CE1600PRomVersion version);
     job::Task<OpResult> togglePeripheralJob(Peripheral p);
     job::Task<OpResult> mountHostDriveJob(std::string dirOrEmpty);
-
-    // Instant loads into the running machine (no reset, like LOAD).
-    OpResult loadBasicProgram(const std::vector<std::uint8_t>& file, const std::string& path);
-    OpResult loadMachineCode(const MachineCodeLoadRequest& request);
 
     // ---- The machine ----
     calcu::machine::Machine* machine() const { return m_ms ? m_ms->machine() : nullptr; }
@@ -235,6 +226,7 @@ private:
     // writes go first; the session replies at its end (LIB-3 AC-18).
     CommandOutcome operation(std::function<job::Task<OpResult>()> make);
     static calcu::sessions::Task<calcu::sessions::OperationResult> runOperation(SharpAppPart* self,
+                                                                               calcu::sessions::OperationContext* ctx,
                                                                                std::function<job::Task<OpResult>()> make);
     void refreshTopics();
     void frameDuties();
@@ -292,6 +284,11 @@ private:
     calcu::sessions::SessionContext* m_ctx = nullptr;
     calcu::sessions::MachineSession* m_ms = nullptr;
     calcu::typing::TypingPart m_typingPart{typingProduct()};
+    // C1600-2: the loaders' commands (app/SharpLoaderPart).
+    SharpLoaderPart m_loaderPart{m_typingPart};
+    // The context of the operation that runs now (runOperation), for the
+    // typing hand-off of a preset's typed program (C1600-2 design §3.10).
+    calcu::sessions::OperationContext* m_opCtx = nullptr;
     SharpDebuggerGate m_gate;
     bool m_powerCycleFollows = false;
 

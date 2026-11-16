@@ -18,6 +18,7 @@
 #include "../core/PC1500/PC1500BasicTyper.hpp"
 #include "../core/PC1500/PC1500Machine.hpp"
 #include "TestHarness.hpp"
+#include "LoaderTestSupport.hpp"
 
 namespace {
 
@@ -144,7 +145,7 @@ TEST(test_typebasicprogram_long_data_then_short_line_tail) {
                 " DATA 6809AE15552EFD8A0E38BEE45189030799099AB5AAAE6809AE1555B555AE6808\n";
     }
     CHECK(typeFreshProgram(machine, "").ok);
-    CHECK(loadBasicProgram(machine, std::vector<uint8_t>(prog.begin(), prog.end())).ok);
+    CHECK(loadertest::loadBasic(machine, std::vector<uint8_t>(prog.begin(), prog.end())).ok);
     BasicTypeResult result = typeBasicProgramText(
         machine,
         "340 DATA AE2AAA9AFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF\n"
@@ -216,7 +217,7 @@ TEST(test_typeline_waits_for_run_to_finish) {
                 std::to_string(0x41 + i) + "\n";
     }
     CHECK(typeFreshProgram(machine, "").ok);  // CL + NEW0; the program itself isn't under test
-    CHECK(loadBasicProgram(machine, std::vector<uint8_t>(prog.begin(), prog.end())).ok);
+    CHECK(loadertest::loadBasic(machine, std::vector<uint8_t>(prog.begin(), prog.end())).ok);
 
     tapKey(machine, "mode"); // PRO -> RUN
     // Run it, then immediately (no manual settle) issue a direct command.

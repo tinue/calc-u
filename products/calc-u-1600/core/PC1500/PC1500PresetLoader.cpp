@@ -5,11 +5,10 @@
 
 #include "../Preset/PresetInterface.hpp"
 #include "../Preset/PresetRoms.hpp"
-#include "PC1500BasicLoader.hpp"
+#include "../Machine/SharpLoaderMemory.hpp"
 #include "PC1500BasicTyper.hpp"
 #include "PC1500LcdText.hpp"
 #include "PC1500Machine.hpp"
-#include "PC1500MachineCodeLoader.hpp"
 #include "PC1500Screenshot.hpp"
 
 namespace {
@@ -65,18 +64,13 @@ public:
     }
     LcdText lcdText() override { return pc1500LcdText(m_machine); }
 
-    job::Task<BasicTypeResult> typeBasicProgram(std::string text) override {
+    sharp::LoaderMemory& loaderMemory() override { return m_memory; }
+    job::Task<BasicTypeResult> typeBasicProgramWithoutSession(std::string text) override {
         co_return co_await typeBasicProgramTextJob(m_machine, text);
     }
-    BasicLoadResult loadBasicFile(const std::string& path) override {
-        return loadBasicProgramFile(m_machine, path);
-    }
 
-    machinecode::Target codeTarget() const override { return machinecode::Target::PC1500; }
-    bool loadMachineCode(machinecode::Slot, int, uint32_t busAddr, const uint8_t* data, size_t len,
-                         std::string* error) override {
-        return loadPC1500MachineCode(m_machine, busAddr, data, len, error);
-    }
+private:
+    sharp::PC1500LoaderMemory m_memory{m_machine};
 };
 
 } // namespace
@@ -85,7 +79,7 @@ job::Task<PresetLoadResult> applyPC1500PresetJob(PC1500Machine& machine, PresetF
                                                  std::string traceDir, std::string moduleDir, PresetBootedFn onBooted,
                                                  PresetRoms presetRoms,
                                                  std::vector<std::string> extraModuleDirs, PresetArmedFn onArmed,
-                                                 PresetSaveAsFn onSaveAs) {
+                                                 PresetSaveAsFn onSaveAs, PresetTyping typing) {
     PresetLoadResult result;
     PC1500PresetMachine adapter(machine);
 
@@ -171,7 +165,7 @@ job::Task<PresetLoadResult> applyPC1500PresetJob(PC1500Machine& machine, PresetF
     if (log) log("reset + boot settle done" + adapter.stepTag());
     if (onBooted) onBooted();
 
-    co_await runPresetSectionsJob(adapter, preset, &result, log, traceDir, onSaveAs);
+    co_await runPresetSectionsJob(adapter, preset, &result, log, traceDir, onSaveAs, typing);
     co_return result;
 }
 

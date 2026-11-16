@@ -5,6 +5,7 @@
 #include "../Debug/Inspect/PC1600Inspector.hpp"
 #include "../Machine/SharpCatalogue.hpp"
 #include "../Machine/SharpDisplayOutput.hpp"
+#include "../Machine/SharpLoaderMemory.hpp"
 #include "PC1600TypedInput.hpp"
 #include "peripherals/RealTimeClock.hpp"
 #include "typing/TypingSupport.hpp"
@@ -26,17 +27,7 @@ struct PC1600InterfaceMachine::Kinds {
         : memory(m), inspector(m), support(m), trace(m), tape(m), clock(m), ce150Paper(m), ce1600pPaper(m), floppy(m), printerPort(m),
           hostDrive(m) {}
 
-    struct Memory final : sharp::LoaderMemory {
-        explicit Memory(PC1600Machine& m) : m(m) {}
-        std::uint8_t peek(std::uint16_t a) const override { return m.memory().peek(a); }
-        bool poke(std::uint16_t a, const std::uint8_t* data, std::size_t n) override { return m.pokeMemory(a, data, n); }
-        std::vector<std::uint8_t> internalRam() const override {
-            std::vector<std::uint8_t> ram(PC1600Machine::kInternalRamSize);
-            m.debugCopyInternalRam(ram.data());
-            return ram;
-        }
-        PC1600Machine& m;
-    } memory;
+    sharp::PC1600LoaderMemory memory;
     struct Inspector final : sharp::InspectorViews {
         explicit Inspector(PC1600Machine& m) : m(m) {}
         std::vector<std::string> view(inspect::View v) const override { return inspect::pc1600View(m, v); }

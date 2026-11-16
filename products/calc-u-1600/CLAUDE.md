@@ -24,7 +24,8 @@ A test file registers its tests with `TEST(name)` of the repository's one runner
 - First commands: `wait <2s|500ms>`, `key-down`/`key-up <key ID>`, `lcd` (rows of text, `indicators:`, `not text:`; no cursor cell yet), `display`, `state <topic>`, `capabilities`, `ticks`, `audio <file.wav>`, `quit` (`calcu --help`).
 - Machine control (LIB-18): `model <PC-1500|PC-1500A|PC-1600>`, `variant <A01|A03|A04|New|Old>`, `attach <place> <peripheral>[:<variant>]` (`attach printer CE-1600P:old`), `detach <place>`, `reset`, `cold-boot`, `power-cycle`; each replies when the machine is ready for keys again. No settings or save folder of yours is touched unless `--settings`, `--save-folder`, `--output-folder` name them.
 - Typing (LIB-5): `key <name> ...` (key IDs and `break` for `on`, any case; replies when the last key is up) and `type <text>` (the text and ENTER; replies when ENTER is up). Neither waits until the machine is idle: `wait` does.
-- Not yet: `pc1600 …` commands, presets, media, memory dumps (later features). Until M-51, `pc1500_cli`, `pc1600_cli` and the probes stay the tools for those.
+- Program files (C1600-2): `pc1600 file-kind <file>` (what it is; a WAV's files), `pc1600 load-basic <file> [<n>]`, `pc1600 type-basic <file>` (typed through the ROM's editor; program mode first), `pc1600 load-code <file> [<n>] [address=<a>] [length=<l>] [cpu=<lh5803|z80>] [run]` (the reply: range, area, bank, NEW, the starting command, warnings). Refusals are `refused: <file>: <reason>`.
+- Not yet: the other `pc1600 …` commands, presets, media, memory dumps (later features). Until M-51, `pc1500_cli`, `pc1600_cli` and the probes stay the tools for those.
 
 ## Core, Shared, frontends
 

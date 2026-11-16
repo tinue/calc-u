@@ -6,10 +6,13 @@
 #include <fstream>
 #include <iterator>
 #include <optional>
+#include <variant>
 
 #include "../Connector/MemoryCardCatalog.hpp"
 #include "../Connector/SoftwareDefinedCard.hpp"
+#include "../BasicTyping.hpp"
 #include "../FileIO.hpp"
+#include "../Loaders.hpp"
 #include "../Machine/SharpRoms.hpp"
 #include "../TraceTypes.hpp"
 
@@ -167,18 +170,9 @@ job::Task<bool> runSteps(PresetMachine& machine, const std::vector<PresetStep>& 
     co_return true;
 }
 
-// A machine-code `program:` block. The file may carry a CE-158
-// (PC-1500) or PC-1600 header (machinecode::readFile()) giving the load
-// address, length and an auto-run address; the preset's `address:` /
-// `length:` override the header's fields, and a headerless file needs
-// `address:` (its length defaults to the whole file). On the PC-1600 the
-// machine's MODE and TITLE decide the CPU and the target, as for Load
-// Machine Code (in MODE 1 a headerless file's `address:` is an LH5803
-// address); the preset switches MODE / TITLE itself. A non-zero auto-run
-// address makes the loader type `CALL &<addr>` afterwards and wait for the
-// interpreter to come back -- the machine must be in RUN mode by then.
-job::Task<bool> loadBinaryProgram(PresetMachine& machine, const PresetProgram& program, std::string tag,
-                                  const PresetLogFn& log, std::string* error) {
+// The bytes of a program file, or false with `error` (tag-prefixed).
+bool readProgramFile(const PresetProgram& program, const std::string& tag, std::vector<uint8_t>* bytes,
+                     std::string* error) {
     errno = 0;
     std::ifstream in(program.path, std::ios::binary);
     if (!in) {
@@ -187,74 +181,54 @@ job::Task<bool> loadBinaryProgram(PresetMachine& machine, const PresetProgram& p
         // and "No such file or directory" (a genuinely missing/mistyped
         // path) look identical from `!in` alone otherwise.
         *error = tag + "could not read program file: " + program.path + " (" + std::strerror(errno) + ")";
-        co_return false;
+        return false;
     }
-    const std::vector<uint8_t> bytes((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>());
+    bytes->assign(std::istreambuf_iterator<char>(in), std::istreambuf_iterator<char>());
+    // EC-4: a WAV gives its first file.
+    if (auto first = sharp::loaders::image(*bytes, 0, nullptr)) *bytes = std::move(*first);
+    return true;
+}
 
-    const machinecode::File file = machinecode::readFile(bytes);
-    // A preset's rules: `address:` / `length:` override the header (a
-    // `length:` also accepts a header whose length disagrees), the target
-    // follows the machine's MODE / TITLE, and the writer checks the range.
-    const machinecode::PC1600State state = machine.codeState();
-    machinecode::LoadOptions options;
-    options.target = machine.codeTarget();
-    options.acceptLengthMismatch = program.hasLength;
-    options.hasAddress = program.hasAddress;
-    options.address = program.address;
-    options.hasLength = program.hasLength;
-    options.length = program.length;
-    options.checkRange = false;
-    const machinecode::LoadPlan plan = machinecode::planLoad(file, options, state);
-    switch (plan.error) {
-        case machinecode::LoadError::None: break;
-        case machinecode::LoadError::BadFile:
-            *error = tag + program.path + ": " + file.error;
-            if (file.lengthMismatch) *error += " Add an explicit 'length:' to override.";
-            co_return false;
-        case machinecode::LoadError::NeedsAddress:
-            *error = tag + program.path + " has no machine-code header: 'address' is required";
-            co_return false;
-        case machinecode::LoadError::Empty:
-            *error = tag + "program is empty (length 0)";
-            co_return false;
-        case machinecode::LoadError::LengthExceeds:
-            *error = tag + "'length' " + std::to_string(program.length) + " exceeds the " +
-                     std::to_string(file.payload.size()) + " program bytes available in " + program.path;
-            co_return false;
-        case machinecode::LoadError::LhRange:
-            *error = tag + program.path + ": LH5803 code must sit in &0000-&7FFF";
-            co_return false;
-        default: // HeaderMismatch, NoSlot
-            *error = tag + program.path + ": " + plan.detail;
-            co_return false;
-    }
-    const bool hasHeader = file.header != machinecode::File::Header::None;
-    const uint32_t addr = plan.addr;
-    const size_t len = plan.len;
-    std::string loadError;
-    if (!machine.loadMachineCode(plan.slot, plan.bank, plan.busAddr, file.payload.data(), len, &loadError)) {
-        *error = tag + "binary " + program.path + ": " + loadError;
+// A machine-code `program:` block, through the one plan and writer of
+// C1600-2 (sharp::loaders::loadCode): the file may carry a CE-158 or PC-1600
+// header (load address, length, an auto-run address); the preset's
+// `address:` / `length:` are given by hand and override the header's
+// fields; a headerless file needs `address:`. On the PC-1600 the machine's
+// MODE and TITLE decide the CPU and the target. A refusal is the menu's
+// sentence after the section's tag and the file (AC-25). A non-zero
+// auto-run address makes the loader type the starting command afterwards
+// and wait for the interpreter to come back (C1600-2 AC-13; today's
+// typeLine and waitUntilBasicIdle until M-46).
+job::Task<bool> loadBinaryProgram(PresetMachine& machine, const PresetProgram& program, std::string tag,
+                                  const PresetLogFn& log, std::string* error) {
+    std::vector<uint8_t> bytes;
+    if (!readProgramFile(program, tag, &bytes, error)) co_return false;
+    sharp::loaders::CodeRequest request;
+    if (program.hasAddress) request.address = program.address;
+    if (program.hasLength) request.length = program.length;
+    auto loaded = sharp::loaders::loadCode(machine.loaderMemory(), bytes, request);
+    if (const std::string* refused = std::get_if<std::string>(&loaded)) {
+        *error = tag + sharp::loaders::refusal(program.path, *refused);
         co_return false;
     }
+    const sharp::loaders::CodeLoaded& code = std::get<sharp::loaders::CodeLoaded>(loaded);
     if (log) {
-        const bool pc1600 = machine.codeTarget() == machinecode::Target::PC1600;
-        const std::string slot = pc1600 ? std::string(", ") + machinecode::slotName(plan.slot) +
-                                              (plan.bank != 0 ? ", bank " + std::to_string(plan.bank) : "") +
-                                              (plan.cpu == machinecode::Cpu::LH5803 ? ", LH5803 address" : "")
+        const bool pc1600 = !code.area.empty();
+        const std::string slot = pc1600 ? ", " + code.area + (code.bank != 0 ? ", bank " + std::to_string(code.bank) : "") +
+                                              (code.cpu == machinecode::Cpu::LH5803 ? ", LH5803 address" : "")
                                         : "";
         char range[40];
-        std::snprintf(range, sizeof(range), "$%04X..$%04X", addr, static_cast<uint32_t>(addr + len - 1));
-        log(tag + "binary " + program.path + " (" + std::to_string(len) + " bytes" + (hasHeader ? ", header" : "") +
-            slot + ") -> " + range + machine.stepTag());
+        std::snprintf(range, sizeof(range), "$%04X..$%04X", code.address,
+                      static_cast<uint32_t>(code.address + code.length - 1));
+        log(tag + "binary " + program.path + " (" + std::to_string(code.length) + " bytes" +
+            (code.header ? ", header" : "") + slot + ") -> " + range + machine.stepTag());
     }
 
-    if (file.autorunAddr != 0) {
-        // The same CALL Load Machine Code proposes: `CALL #<bank>,&<addr>`
-        // for code in banks 1-3 (slot 2, or a header bank), `XCALL` for
-        // LH5801 code, `CALL &<addr>` otherwise.
-        const std::string line = machinecode::advice(machine.codeTarget(), plan.slot, plan.bank, addr, len,
-                                                     file.autorunAddr, 0, 0, state, plan.cpu)
-                                     .callCommand;
+    if (code.headerStart) {
+        // The starting command of the reply (AC-11): `CALL #<bank>,&<addr>`
+        // for code in banks 1-3, `XCALL` for LH5801 code, `CALL &<addr>`
+        // otherwise.
+        const std::string line = code.advice.callCommand;
         std::string typeError;
         if (!co_await machine.typeLine(line, &typeError)) {
             *error = tag + "auto-run '" + line + "' failed: " + typeError;
@@ -267,11 +241,16 @@ job::Task<bool> loadBinaryProgram(PresetMachine& machine, const PresetProgram& p
 }
 
 job::Task<bool> runProgram(PresetMachine& machine, const PresetProgram& program, std::string tag,
-                           PresetLoadResult* result, const PresetLogFn& log) {
+                           PresetLoadResult* result, const PresetLogFn& log, PresetTyping typing) {
     switch (program.format) {
         case PresetProgram::Format::BasicText: {
             if (log) log(tag + "program (typed, " + std::to_string(countLines(program.text)) + " lines)");
-            BasicTypeResult typed = co_await machine.typeBasicProgram(program.text);
+            // C1600-2 AC-7: through the typing engine inside the preset's
+            // operation; without a session the old typer (until M-46).
+            BasicTypeResult typed =
+                typing.present()
+                    ? co_await sharp::loaders::typeProgram(*typing.ctx, *typing.engine, *typing.machine, program.text)
+                    : co_await machine.typeBasicProgramWithoutSession(program.text);
             for (const std::string& rejected : typed.rejectedLines) {
                 result->rejectedBasicLines.push_back(rejected);
                 if (log) log("  REJECTED: " + rejected);
@@ -286,15 +265,20 @@ job::Task<bool> runProgram(PresetMachine& machine, const PresetProgram& program,
         }
         case PresetProgram::Format::BasicBinary: {
             if (log) log(tag + "program (BASIC, " + program.path + ")");
-            BasicLoadResult loaded = machine.loadBasicFile(program.path);
+            std::vector<uint8_t> bytes;
+            if (!readProgramFile(program, tag, &bytes, &result->error)) {
+                if (log) log("  " + result->error);
+                co_return false;
+            }
+            const sharp::loaders::BasicLoaded loaded = sharp::loaders::loadBasic(machine.loaderMemory(), bytes);
             if (!loaded.ok) {
-                result->error = tag + "BASIC load failed: " + loaded.error;
+                result->error = tag + sharp::loaders::refusal(program.path, loaded.refusal);
                 if (log) log("  " + result->error);
                 co_return false;
             }
             if (log) {
                 char n[96];
-                std::snprintf(n, sizeof(n), "  program loaded OK: $%04X..$%04X", loaded.baseAddr, loaded.endAddr);
+                std::snprintf(n, sizeof(n), "  program loaded OK: $%04X..$%04X", loaded.start, loaded.end);
                 log(std::string(n) + machine.stepTag());
             }
             co_return true;
@@ -312,7 +296,8 @@ job::Task<bool> runProgram(PresetMachine& machine, const PresetProgram& program,
 }  // namespace
 
 job::Task<void> runPresetSectionsJob(PresetMachine& machine, const PresetFile& preset, PresetLoadResult* result,
-                                     PresetLogFn log, std::string traceDir, PresetSaveAsFn onSaveAs) {
+                                     PresetLogFn log, std::string traceDir, PresetSaveAsFn onSaveAs,
+                                     PresetTyping typing) {
     // A trace started by a `- trace:` step and never explicitly stopped is
     // closed (SESSION_END written, file closed) when the sections are done,
     // by ANY path.
@@ -341,7 +326,7 @@ job::Task<void> runPresetSectionsJob(PresetMachine& machine, const PresetFile& p
         // finish before this section types or pokes a program into memory
         // underneath it.
         co_await machine.waitUntilBasicIdle(programIdleCap);
-        if (!co_await runProgram(machine, section.program, tag, result, log)) co_return;
+        if (!co_await runProgram(machine, section.program, tag, result, log, typing)) co_return;
     }
 
     result->ok = true;

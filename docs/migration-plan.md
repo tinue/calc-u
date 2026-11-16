@@ -52,10 +52,17 @@ At a boundary the user reviews the part that ends (a summary, its
 status) and approves the designs of the part that starts: one
 `design.md` per feature, covering every column the part works on. The
 Longer group and CI run at the end of a part and before a release;
-Frequent at every merge. CI runs in between only when a step changes
-the workflows, packaging or platform-specific code (user, 2026-11-15:
-CI runs are slow); a CI failure at the end of a part is fixed on `main`
-before the boundary review. Between boundaries the user is asked only what
+Frequent at every merge, and after it on `main` the local Linux CI
+(`ci/linux/run.sh`, ADR 0039: the Linux jobs with GCC 13 in Podman; its
+web jobs when the step touched a Web frontend or `library/web/`; one run
+at a time, so the merging session runs it, not the step's agents). A
+failure there is fixed on `main` before the next merge. CI runs in
+between only when a step changes the workflows, packaging or
+platform-specific code, and is dispatched only after the local Linux CI
+passed (user, 2026-11-15: CI runs are slow; 2026-11-16: local Linux CI);
+a CI failure at the end of a part is fixed on `main` before the boundary
+review; one caused by an outside service (Apple's notarization) is not
+rerun. Between boundaries the user is asked only what
 cannot wait: a first step that turns out the other way, a spec that
 reads two ways, a user-visible change not in the ledger.
 

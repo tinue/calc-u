@@ -10,10 +10,13 @@ One repository for the Calc-U products, released separately
 
 - Work follows `docs/migration-plan.md` in its order of steps (`M-n`).
   A step is a merge into `main` that is green by the local checks
-  (build, Frequent tests); no approval is asked between steps. CI runs
+  (build, Frequent tests); no approval is asked between steps. After
+  each merge the local Linux CI (`ci/linux/run.sh`, ADR 0039; the web
+  jobs when a step touched a Web frontend) runs on `main`. GitHub CI runs
   are slow: dispatch them only at the end of a part, before a release,
   or when a step changes the workflows, packaging or platform-specific
-  code (user, 2026-11-15; plan §1). The
+  code, and only after the local Linux CI passed (user, 2026-11-15,
+  2026-11-16; plan §1). The
   user approves at the part boundaries only (A, B, C1, C2, D, E; plan
   §1): the review of the part that ends and the `design.md` files of the
   part that starts. Between boundaries ask only what cannot wait (a first

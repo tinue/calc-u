@@ -645,3 +645,187 @@ catalogue (it gave the running model alone): every caller passes one
 (`LibraryParts`, Calc-U-1600's `sharpControlSetup`, the tests), so the
 catalogue is required. `ControlSetup::rules` stays a list (two rules are
 asked in order by a test).
+
+## 10. Part E: the Calc-U-59 column
+
+Status: Draft for the Part D/E boundary (2026-11-16)
+
+The control state's product side for Calc-U-59. Its drawing is LIB-14's
+Part E section (Qt6, Web, M-57) and C59-8's design (Swift, M-58); this
+section holds the printers, the product's rules and entries, what goes,
+and the tests of AC-10 to AC-15. Paths are in today's tree at `7bdd51c`
+under `products/calc-u-59/`, unless named otherwise.
+
+### 10.1 Scope, and what the earlier Part E steps leave
+
+| Column | Step | Tests from (plan §3) | Done in (plan §5.1) |
+|---|---|---|---|
+| Calc-U-59 | M-57 (Qt6, Web, with LIB-14 59), M-58 (Swift, with C59-8) | AC-10 to AC-15 | M-58 |
+
+M-57 comes after M-53 to M-56 and takes what their designs say as done:
+
+| Step | What M-57 finds | What this column uses it for |
+|---|---|---|
+| M-53 (LIB-8, LIB-10 59) | the PC-100C's paper on the paper output kind, the topic `paper` and the paper panel in Qt6 and the Web; `run-state` and the run control | the paper panel's owner (AC-13) |
+| M-54 (LIB-6, LIB-18, C59-2, C59-3) | `TIAppPart` fills a `parts::LibraryPartsSetup` (`docs/reviews/d-simplification.md` §9, M-54), so the session has the library's `ControlPart` (`library/parts/LibraryParts.hpp:102`) on `tiCatalogue()`; the commands `model`, `attach`, `detach`, `reset`, `cold-boot`, `load-preset` and the request `preset-list` | the choices send the library's commands; the actions `reset`, `cold-boot`, `load-preset` have their commands |
+| M-55 (LIB-7 59, C59-7) | the topic `media` with the kind `magnetic-card`; the media place `card-reader` of the TI-59 (C59-1 design, the descriptors) as a pass-through place; the module listing of LIB-7 AC-8 (`library/media/Kind.hpp:117-121`) | the media place entry of AC-12 |
+| M-56 (LIB-13 59, C59-4) | the command `open`; the debug panel and what it offers now, as C59-4's design names it | the action `open`; the product entries of AC-14 |
+
+If M-54 already sets `printers` and `controlRules` in the setup, M-57
+only checks them. If a step of M-53 to M-56 leaves a piece of this
+column undone, M-57 takes it over and the qa-report says so (as LIB-14
+D-25).
+
+### 10.2 The code of C2 and D against the approved text
+
+What this column relies on that differs from §2 to §9 and the Part D
+section:
+- The library's parts are built in one place since the Part D
+  simplification (P-2): `ControlPart` is `LibraryParts::controlPart()`,
+  made from `LibraryPartsSetup::printers` and `controlRules`
+  (`library/parts/LibraryParts.hpp:86-88`). D-13's "added by the session
+  builders" and `HarnessProduct::controlSetup()` (D-9, Part D D.3) are
+  superseded: the harness's Calc-U-59 entry gets the control state from
+  the app layer's `LibraryParts` (M-59, LIB-11 59) and, until then, from
+  whatever M-54 left it.
+- `computeControlState` requires the catalogue (Part D simplification
+  P-6).
+- The lookups `place`, `action`, `mediaPlace`, `productEntry` and
+  `choice` of `ControlState` (Part D D.2) are what the tests below use.
+
+### 10.3 Files
+
+| File | Change |
+|---|---|
+| `app/TIAppPart.cpp` (the `LibraryPartsSetup` M-54 fills) | `printers = {PC-100C}`; `controlRules = {&m_controlRules}` |
+| `app/TIControlRules.hpp/.cpp` (new, or M-56's if C59-4's design made it) | `cu59::TIControlRules : calcu::control::ControlRules`: the product entries of C59-4 (AC-14); no refusal of its own (D-16) |
+| `app/TIAppPart.hpp:71, 93-99`, `TIAppPart.cpp` | the interim topic `c59.model` (`TIModelState`: model, module ID, module list) stays until M-58, read by the Swift frontend only; M-58 deletes it (D-17) |
+| `app/TIWebPart.hpp:42`, `TIWebPart.cpp` | the interim topic `c59.web.model` goes in M-57 |
+| `app/TIAppPart.hpp:208-215` | the commands `c59.start-machine`, `c59.change-module`, `c59.printer-connected`, `c59.toggle-printer-connection`, `c59.reset`, `c59.clean-reset`, as far as M-54 left them: Qt6 and the Web stop sending them in M-57; they go in M-58 with the Swift frontend's last use |
+| `app/MachineModelInfo.hpp` | `info(model).hasCardReader` is read by no frontend after M-58 (today `frontends/qt6/app/MainWindow.cpp:90, 96`, `ControlBar.cpp:95`); the app layer keeps what it uses (D-18) |
+| `tests/control_state_tests.cpp` (new) | the cases of 10.6, in `CalcU59Tests` |
+| `tests/check_frontends_draw_control_state.sh` (new) | AC-15's check (10.6, D-19) |
+| `CMakeLists.txt` | the new test file; the CTest entry `CalcU59FrontendsDrawControlState` (Frequent) |
+
+### 10.4 The product's side (AC-10 to AC-14)
+
+What the generic payload holds for Calc-U-59; none of it is a product
+rule:
+
+| Entry | Content | AC |
+|---|---|---|
+| models | TI-59, TI-58, TI-58C, in the catalogue's order; the running one | AC-10 |
+| variants | none on any model | AC-10 |
+| place `slot-1` | connector and pin-out `module-slot` (`core/TICatalogue.cpp:67, 71`); the empty choice; the 14 Solid State ROM modules (C59-6), each without variants | AC-11 |
+| place `printer` | pin-out `printer-connector` (`core/TICatalogue.cpp:69, 72`); the empty choice; the PC-100C | AC-11 |
+| media place `card-reader` | TI-59 only, owner the machine, kind `magnetic-card`, pass-through, sides 0 and 1 (row 59-24) | AC-12 |
+| panel `paper` | always; owner the PC-100C while it is in `printer`, else none | AC-13 |
+| actions | `reset`, `cold-boot`, `load-preset`, `open` | AC-1 |
+| product entries | C59-4's, from `TIControlRules` | AC-14 |
+
+The order the module picker shows (by `menu-sort`, the description as
+label) is LIB-7 AC-8's, done in the picker over the `media` topic's
+listing (M-55); the control state keeps the catalogue's order (AC-1).
+
+Today's code and where it goes:
+
+| Today | After |
+|---|---|
+| `c59.model`: model, module ID, module list (`app/TIAppPart.hpp:93-99`) | models; `slot-1` with what is plugged in and what fits (M-57 for Qt6 and Web, M-58 for Swift) |
+| `c59.web.model` (`app/TIWebPart.hpp:42`) and the models and modules of `c59.static-data` (`app/WebPageData.hpp:15-17`) | the same (M-57) |
+| Qt6 model combo (`frontends/qt6/app/ControlBar.cpp:46-50`), card buttons by `hasCardReader` (`:93-100`), "Fit Card…" on every model (`MainWindow.cpp:56-57, 89-99`) | the model picker, the media place `card-reader`, and C59-7's items for it (LIB-14 §10) |
+| the module row of the settings (`frontends/qt6/app/SettingsDialog.cpp:41-45, 136-140`; `frontends/web/src/Dialogs.jsx:152-176`; `frontends/swift/App/Views/SettingsView.swift:64`) | the picker of `slot-1` with the empty slot (spec OQ-5; row 59-9) |
+| the printer connected by a toggle (`c59.toggle-printer-connection`, `app/TIAppPart.hpp:215`; `frontends/qt6/app/EmulatorController.hpp:65`), as far as M-53 left it | the button "PC-100C" for `printer` (LIB-14 AC-9, AC-27) |
+| Web bar (`frontends/web/src/ControlBar.jsx:82-111`) | LIB-14 §10 |
+| Swift `App/MachineModel.swift:9-34`, `App/Views/CalculatorView.swift:347, 406-418` | C59-8 (M-58) |
+
+### 10.5 The frontends
+
+Qt6 and Web: LIB-14 §10 (the shell's bar, menus and More button draw
+from the control state). Swift: C59-8's design (the bridge computes the
+same shell models from the same control state). AC-15 is complete in
+M-58, when `App/MachineModel.swift` is gone.
+
+### 10.6 Tasks
+
+Tests before the code. `CalcU59Tests` (`tests/control_state_tests.cpp`,
+Frequent) on `tests/SessionRig.hpp`'s session with the real ROMs
+(`SKIP_UNLESS` they are there); names `lib4_acN_…`.
+
+| Task | What | ACs | Test |
+|---|---|---|---|
+| T59-1 | Models | AC-10 | `lib4_ac10_models_ti59_ti58_ti58c_without_variants` |
+| T59-2 | The two places | AC-11 | `lib4_ac11_slot_1_lists_14_modules_and_the_empty_slot`, `lib4_ac11_printer_lists_pc100c_and_the_empty_place`, `lib4_ac11_choices_refused_while_a_preset_loads` (AC-3 for these entries; row 59-45) |
+| T59-3 | The card reader | AC-12 | `lib4_ac12_card_reader_on_the_ti59_only` (each model; kind, pass-through, sides 0 and 1); the drawing: LIB-14 §10.9 Q4 (`lib14_ac27_…` on the TI-58: no card controls), C59-8 EC-3 |
+| T59-4 | The paper panel | AC-13 | `lib4_ac13_paper_panel_owned_by_pc100c_or_none` (attach, detach, model switch) |
+| T59-5 | Product entries | AC-14 | `lib4_ac14_debug_panel_entries_carried` (the entries C59-4 names, present and read back through `productEntry`) |
+| T59-6 | No frontend decides | AC-15 | `CalcU59FrontendsDrawControlState` (`tests/check_frontends_draw_control_state.sh`, Frequent): no file under `frontends/` reads `hasCardReader`, `cu59::info(`, `c59.model`, `c59.web.model` or `allModules`; from M-58 also: `App/MachineModel.swift` does not exist. The drawing: LIB-14 §10.9 Q4, C59-8 T3 |
+| T59-7 | The harness | AC-9 for this product | `harness_tests.cpp`: `lib4_harness_state_control_state_has_paper_panel_and_card_reader` |
+
+Coverage: AC-10 to AC-15 (6 of 6); AC-15's Swift half in M-58.
+
+### 10.7 Adapters removed
+
+| Adapter | Where | Removed in |
+|---|---|---|
+| interim topic `c59.web.model` | `app/TIWebPart.*` | M-57 (§5) |
+| interim topic `c59.model` | `app/TIAppPart.*` | M-58 (§5; Qt6 stops reading it in M-57) |
+| the commands of 10.3 that M-54 left | `app/TIAppPart.*` | M-57 (Qt6, Web), M-58 (Swift) |
+
+### 10.8 Tools and agent knowledge (changed in the same step)
+
+| Step | Files |
+|---|---|
+| M-57 | `reference/SharedArchitecture.md` (`c59.model`, `c59.web.model`, `TIControlRules`, the control state); `reference/FrontendParity.md` (the bar from the control state); the skills `calc-u-59-qt`, `calc-u-59-web`, `calc-u-59-shared` where they name `c59.model`, `ControlBar` or the module setting; `docs/test-groups.md` (the new cases, `CalcU59FrontendsDrawControlState`) |
+| M-58 | the skill `calc-u-59-swift` (`MachineModel.swift` gone); `reference/AppArchitecture.md` |
+
+`calcu` reads `state control-state` on Calc-U-59 with the paper panel
+and the card reader from M-57 (T59-7). No other tool reads the model
+topics.
+
+### 10.9 Golden runs and risks
+
+- Golden runs read no control state; nothing to compare. A difference
+  is a finding.
+- **Cost per flush.** The TI-59 asks 14 `canReplace` for the modules and
+  one for the PC-100C, at about 60 flushes a second (§8). Measured in
+  M-57 with the Frequent timing; the cache of D-1 only if it shows.
+- **Two readers until M-58.** Between M-57 and M-58 the Swift frontend
+  still reads `c59.model` while Qt6 and the Web read `control-state`.
+  Both come from the same machine, so they cannot disagree, but the
+  Swift frontend still offers the module in its settings until M-58
+  (row 59-9 is in effect for Qt6 and the Web first).
+
+### 10.10 Decided (best guess)
+
+- **D-15 (AC-13).** The paper panel's owner is the PC-100C, named in
+  `LibraryPartsSetup::printers`, as Calc-U-1600 names its two.
+- **D-16 (AC-7, AC-11).** Calc-U-59 refuses no generic entry with a
+  reason of its own: the catalogue's fit rule and LIB-18's operation
+  rule say all of today's (the card buttons hidden on the TI-58 are the
+  media place's absence, AC-5). `TIControlRules` holds only C59-4's
+  product entries.
+- **D-17.** `c59.model` stays until M-58 because the Swift frontend
+  reads it until C59-8; Qt6 and the Web stop reading it in M-57. Its
+  module list is not copied anywhere else.
+- **D-18.** `MachineModelInfo` stays an app-layer table as far as the
+  app layer uses it; only the frontends' reading of it goes (AC-15 asks
+  that no frontend decide).
+- **D-19 (AC-15).** AC-15 is checked by the drawing tests of LIB-14 §10
+  and C59-8 and by a source check that no frontend reads the model facts
+  or the interim topics, as the deletion of Calc-U-1600's
+  `app/ControlState.*` was the check in M-49.
+
+### 10.11 Ledger rows and plan notes
+
+- **Ledger.** 59-9 (the module on the bar, the empty slot) and 59-45
+  (disabled with a reason) become visible with LIB-14 59 in Qt6 and the
+  Web (M-57), and in Swift with C59-8 (M-58). No new row.
+- **Plan notes (proposals; the plan is not edited).** M-57 "Waits for"
+  should also name M-53 (the paper panel and its owner); M-57
+  "Knowledge, ledger" gains `CalcU59FrontendsDrawControlState` in
+  `docs/test-groups.md`.
+
+### 10.12 Questions for the user
+
+None that split the design.

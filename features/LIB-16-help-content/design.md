@@ -431,3 +431,252 @@ Part D's simplification (`docs/reviews/d-simplification.md` S-6, P-9):
   `test_asset.py` `test_d9_version_of_the_xcode_preset`,
   `test_d9_version_of_the_cargo_and_regex_presets_and_an_unknown_one`.
   Calc-U-59's `release.yaml` (`preset: xcode`) reads 3.0.0.
+
+## 13. Part E: the Calc-U-59 column
+
+Status: Draft for the Part D/E boundary (2026-11-16)
+
+Completes §4.3. Product paths are under `products/calc-u-59/`; site
+paths are calc-u-site's at `acd629c`.
+
+### 13.1 Scope
+
+| Column | Step | Tests from (plan §3) | Done in (plan §5.1) |
+|---|---|---|---|
+| Calc-U-59 | M-60 | AC-9, AC-10, AC-16 (and AC-2, AC-14 for this product) | M-64 (the asset in the release) |
+| Library | M-60 (its last part) | AC-8's second asset | M-60 (§10) |
+
+- **The source.** calc-u-site is checked out at
+  `/Users/me/Development/public/calc-u-site`; its `HEAD` is `acd629c`
+  ("Merge branch '59/2.3.0'", checked 2026-11-16). M-60 reads it at that
+  commit (`git show acd629c:59/…`) and changes nothing there: `59/Pages.jsx`
+  (2241 lines, the pages' text), `59/routes.js:24-39` (the routes of
+  AC-9), `59/assets/` (eight pictures), `59/tutorial-files/` (the six
+  presets of the tutorial), `59/articles/`.
+- **Also in M-60:** the user's ruling Q-3 (`docs/reviews/d-simplification.md`
+  §10; LIB-16 decision log 2026-11-16): the shared chapter 2 keeps only
+  what both products have (13.5).
+- M-60 waits for M-52 (the tool, the shared parts) and M-54 to M-59 (the
+  chapters describe what those steps build: presets of version 2,
+  cards, the debugger, the family window, the Swift frontend). It
+  touches no core and no app code.
+- Not here: the site that renders the asset (LIB-19 59, M-65); the
+  software pages, articles and the web calculator's page, which stay the
+  site's (OQ-1).
+
+### 13.2 Modules and files
+
+| File | Holds |
+|---|---|
+| `products/calc-u-59/help/help.yaml` (new) | the product's manifest: `product: Calc-U-59`, `short: "59"`, `site: https://calc-u.org/59/`, `version-from: ../release.yaml` (the `xcode` preset, 3.0.0; §12), `names:` (13.6), `chapters:` (13.3), `downloads:` (13.4) |
+| `products/calc-u-59/help/*.md` (new) | the product parts (13.3) |
+| `products/calc-u-59/help/images/` | the pictures (13.7) |
+| `products/calc-u-59/help/downloads/` | the six tutorial presets, version 2 (13.4) |
+| `products/calc-u-59/help/settings-keys.txt` | written and checked by `lib16_ac14_settings_keys_file_matches_declaration` (C7) |
+| `products/calc-u-59/tests/help_tests.cpp` (new) | the product's help tests, in `CalcU59Tests` (D-13) |
+| `products/calc-u-59/CMakeLists.txt` | `CalcU59HelpCheck` (`tools/help check calc-u-59`) and `CalcU59HelpBuild` (`tools/help build calc-u-59 --out <build tree>/help`), both Frequent, beside Calc-U-1600's (`products/calc-u-1600/CMakeLists.txt:206-208`) |
+| `.github/workflows/calc-u-59.yml` | a job `help` (ubuntu, Python 3) that builds the asset and uploads the artifact `Calc-U-59-help`, as Calc-U-1600's (`.github/workflows/calc-u-1600.yml:197-201`) |
+| `products/calc-u-59/release.yaml` | the artifact `{ artifact: Calc-U-59-help, file: Calc-U-59-help.zip, as: Calc-U-59-help.zip }` (AC-8) |
+| `library/help/02-getting-started.md`, `products/calc-u-1600/help/02-getting-started.md` | Q-3 (13.5) |
+| `products/calc-u-59/reference/StateFileFormat.md` | moved into the help with `git mv` and rewritten as `10-preset-sections.md` (AC-9's last row; D-18) |
+
+### 13.3 The product parts (AC-9, AC-10)
+
+Converted once, by hand, from the JSX text of `59/Pages.jsx` to
+Markdown (D-11); rewritten where Parts C to E changed what they
+describe (the rows 59-1 to 59-47 of the ledger and the rows M-57 and
+M-58 add are the list of such places), in the glossary's terms and with
+the visible renames of `docs/glossary-mapping.md` ("Clean" → Cold boot,
+"Open Preset…" → Load Preset…, "Startup Calculator" → Startup model,
+"Card Folder" → Save folder, "state file" → preset).
+
+| Today (calc-u-site `59/`) | Goes to |
+|---|---|
+| `/` `HomePage` (`Pages.jsx:65-173`); `/what-is-a-ti-59/` `AboutTi59Page` with `CardBankTable` (`:174-408`) | `01-introduction.md` (the product, the three models, what is emulated) |
+| `/getting-started/` overview (`:410-430`); `/reference/` "The calculator" (`:1556-1574`) | `02-getting-started.md` (the faceplate, the keyboard in short, the window on each system, the More button on the iPhone and in the browser's portrait layout) |
+| `/install/…`, four pages (`InstallMobilePage` to `InstallAndroidPage`, `:517-672`) | `02-installing.md` (product part of chapter 2; OQ-1) |
+| `/getting-started/printer/` (`:431-498`): the magnetic cards (`:450-498`) | `04-magnetic-cards.md` (with C59-7's controls and the saved media on the Web) |
+| `/getting-started/printer/` (`:431-449`): the printer; `/reference/` "The printer" (`:1575-1584`) | `05-printer.md` (the PC-100C, its PRINT, ADV and TRACE, the button on the bar) |
+| `/presets/` `PresetsPage` (`:673-941`) | `06-presets.md` (the TI sections, examples, startup presets, labelling cue cards) |
+| `/presets/tutorial/` `PresetTutorialPage` (`:942-1374`) and its six files | `06-preset-tutorial.md` and `downloads/` (13.4) |
+| `/debugger/` `DebuggerPage` (`:1375-1547`); `/reference/` "The debug pane" (`:1585-1599`) | `07-debugger.md` (the CALCULATOR, CPU and LOG tabs, FREEZE, STEP, RESUME as the run-control buttons, traces, the ASM overlay) |
+| `/reference/` "Settings" (`:1600-1655`) | `08-settings.md` (the product's keys, C7) |
+| `/modules/` `ModulesPage` (`:1777-1856`) | `09-modules.md` |
+| `/faq/` (`FAQS`, `:1656-1776`) | `09-faq.md` (OQ-1) |
+| (new; AC-9's chapter 9) | `09-product-topics.md` (the chapter's opening page, a list of its files); `09-cue-cards.md`; `09-constant-memory.md` (the TI-58C's constant memory, C59-3); `09-fast-mode.md` (a user's summary of `59/articles/fast-mode.md`, which stays on the site and is linked); `09-models.md` (what differs by model: what Reset, Cold boot and a power cycle keep, the card reader on the TI-59 only, the partition (row 59-22); EC-3) |
+| `KeyboardLegend` of the play page (`:2178-…`) | `10-keyboard-map.md` (the keyboard map of LIB-5 AC-21) |
+| `reference/StateFileFormat.md` (product) | `10-preset-sections.md` (the TI sections of the preset format, version 2; LIB-6, C59-2) |
+| (new; AC-10) | `10-reference.md` (the list of the formats with their versions, the settings file of this product, links to the shared reference); `10-keystroke-programs.md` (`.keystrokes.yaml`, `docs/formats/preset.md` §4.1.1); `10-media-files.md` (the magnetic card, `docs/formats/media.md`; the constant memory file `ti58c.memory.yaml`, C59-3; the Solid State ROM module file `.rom.yaml`, `docs/formats/modules.md` §2); `10-asm-overlay.md` (C59-4) |
+
+The manifest's chapters:
+
+```yaml
+chapters:
+  1: [01-introduction.md]
+  2: [02-getting-started.md, 02-installing.md]
+  4: [04-magnetic-cards.md]
+  5: [05-printer.md]
+  6: [06-presets.md, 06-preset-tutorial.md]
+  7: [07-debugger.md]
+  8: [08-settings.md]
+  9: [09-product-topics.md, 09-models.md, 09-modules.md, 09-cue-cards.md, 09-constant-memory.md, 09-fast-mode.md, 09-faq.md]
+  10: [10-reference.md, 10-preset-sections.md, 10-keystroke-programs.md, 10-media-files.md, 10-asm-overlay.md, 10-keyboard-map.md]
+```
+
+A link of today's pages to a site page that stays the site's (the
+software pages, the articles, `/play/`) becomes a full `https://calc-u.org/59/…`
+address (AC-15, EC-2).
+
+### 13.4 The six tutorial presets
+
+`59/tutorial-files/` at `acd629c`: `tutorial-1-setup.ti59`,
+`tutorial-2-partition.ti59`, `tutorial-3-cuecard.ti59`,
+`tutorial-4-program.ti59`, `tutorial-5-registers.ti59`, `tutorial.ti59`.
+They are presets of 2.3.0 (`tutorial-1-setup.ti59:9-11`: `MODEL:`,
+`SOLID-STATE-MODULE:`, `PRINTER:`), which version 2 refuses (LIB-6
+AC-8; row 59-1). M-60 upgrades them by the rules M-54 upgrades the 57
+examples with (`docs/formats/preset.md` §9.1; C59-2 AC-10, its decision
+log), into `help/downloads/` under the same names with the new
+extension the upgrade gives, and rewrites the tutorial's text, which
+teaches the old keywords step by step, for version 2. Checked by
+`lib16_ac9_tutorial_presets_load` (D-15).
+
+### 13.5 The shared chapter 2 (Q-3)
+
+`library/help/02-getting-started.md` keeps only what both products have:
+
+| Today | After M-60 |
+|---|---|
+| "the menus File, Edit, Machine and Help" (`:7`), the diagram's "Menus: File · Edit · Machine · Help" (`:16`) | "the menus File, Machine and Help, and Edit where the product has it"; the diagram's box reads "Menus: File · Edit · Machine · Help, or the More button" |
+| the table's row Edit (`:41`) and the bullet on Copy Screen and Paste Text (`:50-52`) | move to Calc-U-1600's part, into its section "Copy Screen and Paste Text" (`products/calc-u-1600/help/02-getting-started.md:91-…`) |
+| "By typing text" (`:145`) and the section "Typing text" (`:161-170`) | move to the same section of Calc-U-1600's part; what it already says there is not said twice |
+| (new, after "On macOS, Settings…, About and Quit…", `:62-63`) | a section "Without a menu bar": a window without a menu bar (a phone, a tablet, the browser's portrait layout) keeps Reset, Preset and Settings as buttons on the control bar and has a More button (⋯) with every other item: Examples, the items for media, Cold boot (which asks first), Resume, Help, and About where the system has one; an item that cannot be used now is greyed out there too (LIB-14 AC-29, M13 to M18) |
+
+The shortcuts (`:65-77`) stay: both products' desktop frontends have
+them. The links `#typing-text` (`:52`, `:145`) leave the shared part
+with the text. No other shared file links there (checked with `grep`
+on `7bdd51c`). `CalcU1600HelpCheck` and `CalcU59HelpCheck` both pass on
+the result.
+
+### 13.6 The names of AC-2
+
+`names:` lists the product, its models and every peripheral of its
+catalogue by the descriptor's name: `Calc-U-59`, `TI-59`, `TI-58`,
+`TI-58C`, `PC-100C`, the 14 Solid State ROM modules by their names
+(`core/TICatalogue.cpp:111-121`, `p.name = m.name`), and `TMC0501`.
+`lib16_ac2_help_names_cover_the_catalogue` fails when a model or
+peripheral of `tiCatalogue()` is missing from it (D-14).
+
+### 13.7 The pictures (AC-16)
+
+| Picture (`59/assets/`) | Used today | Decision |
+|---|---|---|
+| `app-icon.png` | `Pages.jsx:144` | moved as it is |
+| `app-screenshot.png` | `:84`, `:1619` | taken anew by hand: it shows the window, its bar and no menus |
+| `cuecard-single-label.png`, `cuecard-key-grid.png` | `:769`, `:916` | moved as they are (the cue card above the keys, which did not change) |
+| `iphone-debug.png`, `ipad-13-2752x2064.png`, `iphone-duo-2852x2006.png`, `ipad-2752x2064-asm.png` | `:1507-1531` | moved as they are where they show no control bar; a picture that shows the bar is taken anew (seen when it is moved; D-17) |
+| (new) | — | two pictures by hand: the macOS window with its menus, the iPhone's bar with the More menu open |
+
+Pictures by hand are taken from the Swift app, which builds from the
+main checkout only (handover, "Findings not raised yet"); the
+`calc-u-59/screenshot_convention.md` memory names the devices.
+
+### 13.8 Adapters
+
+None: no old call is wrapped. `reference/StateFileFormat.md` is moved,
+not kept beside the help (D-8).
+
+### 13.9 Tasks
+
+Tests before the content where a test can say it. `CalcU59Tests`
+(`tests/help_tests.cpp`, Frequent); the CTest entries of 13.2.
+
+| Task | What | ACs | Test |
+|---|---|---|---|
+| P59-1 | The product parts | AC-9, AC-3 | `CalcU59HelpCheck`; the qa-report's table of AC-9, row by row: where each page and section of 13.3 went |
+| P59-2 | The tutorial presets | AC-9 | `lib16_ac9_tutorial_presets_load` (each of the six from `help/downloads/` is read and built on its model without a refusal; where the tutorial's text states what the calculator shows after a step, the test checks it, in the test, not in the file) |
+| P59-3 | The reference chapter | AC-10 | `CalcU59HelpCheck`; the qa-report lists each format of AC-10 with its file and version |
+| P59-4 | Pictures | AC-16 | `CalcU59HelpCheck` (every picture used, every use a file); the qa-report lists each picture as moved or taken anew |
+| P59-5 | Settings keys | AC-14 | `lib16_ac14_settings_keys_file_matches_declaration` (`help/settings-keys.txt` against `cu59::settings::settingsDecl()`, `app/Settings.cpp:87`) |
+| P59-6 | Product names | AC-2 | `lib16_ac2_help_names_cover_the_catalogue` |
+| P59-7 | Both assets | AC-8 | `CalcU59HelpBuild` beside `CalcU1600HelpBuild`; the workflow's `help` job and `release.yaml`'s artifact; one CI dispatch at the merge |
+| P59-8 | Q-3 | AC-1, AC-2, AC-3 | `CalcU1600HelpCheck` and `CalcU59HelpCheck` pass; the qa-report's content review of the shared parts against Calc-U-59 (each shared file: a sentence that does not hold for Calc-U-59 is moved to Calc-U-1600's part, as 13.5 does) |
+
+Coverage: AC-9, AC-10, AC-16 (3 of 3), with AC-2, AC-8 and AC-14 for
+this product.
+
+### 13.10 Tools and agent knowledge (changed in the same step)
+
+| File | Change |
+|---|---|
+| `products/calc-u-59/.claude/skills/calc-u-59-docs/SKILL.md` | the user guide is `help/` (product parts) and `library/help/` (shared parts), checked by `tools/help check calc-u-59`, no longer calc-u-site's `59/Pages.jsx` (`SKILL.md:3, 15, 41-45, 71`); step 5 of the Release Documentation Update Workflow (`:118`) updates the help here instead of the site's pages; the software pages and articles stay the site's (D-19) |
+| `products/calc-u-59/CLAUDE.md` | one line, as Calc-U-1600's: user help is `help/` and `library/help/`, checked in Frequent; a user-visible change updates its chapter in the same step |
+| `products/calc-u-59/README.md` | the user guide is at `https://calc-u.org/59/` and in `help/` |
+| the files that link to `reference/StateFileFormat.md` | point at `help/10-preset-sections.md` (the skill `calc-u-59-statefiles`, `reference/*.md`; found with `grep` in M-60) |
+| `docs/test-groups.md` | `CalcU59HelpCheck`, `CalcU59HelpBuild`, the new cases of `CalcU59Tests` |
+| `tools/README.md` | the examples name `calc-u-59` beside `calc-u-1600` |
+
+No memory file of the Calc-U-59 index names the site's guide (its
+descriptions, checked 2026-11-16).
+
+### 13.11 Golden runs and risks
+
+- **Golden runs** are not touched: no core, no app code.
+- **The amount of writing.** About 2000 lines of JSX text become
+  Markdown, and most pages describe 2.3.0's bar, the long press for
+  "Clean" and version-1 presets. The checks catch structure; the
+  content review (P59-1, P59-8) is the check of AC-3 and AC-9.
+- **The tutorial** teaches the format step by step; its version-2 text
+  is new writing, checked by P59-2 and the review.
+- **Pictures by hand** need the Swift app on macOS and a simulator, from
+  the main checkout, not a `.claude/worktrees/` worktree.
+- **CI.** The workflow gets a job and `release.yaml` an artifact: one CI
+  dispatch at the merge (plan §1).
+
+### 13.12 Decided (best guess)
+
+- **D-11.** The source is calc-u-site at `acd629c`, found at
+  `/Users/me/Development/public/calc-u-site` with that commit as its
+  `HEAD`; it is read with `git show acd629c:…` and converted by hand
+  once (ADR 0036), with no converter tool.
+- **D-12.** The product parts are split by topic into several files per
+  chapter (13.3), as Calc-U-1600's are; chapter 3 has no product part
+  (it is shared only), and what differs by model is `09-models.md`
+  (EC-3).
+- **D-13.** The product's help tests run in `CalcU59Tests` (about 8 s of
+  its 60 s budget, `docs/reviews/d-simplification.md` §11), not in a
+  program of their own as Calc-U-1600's had to.
+- **D-14 (AC-2).** `names:` holds the descriptors' names, not the
+  modules' two-letter IDs, which are no words a shared part would use.
+- **D-15 (AC-9).** The tutorial presets are upgraded by M-54's rules and
+  checked by loading each and by the results the tutorial's text
+  states; no reference run, since they are not among the 57 examples
+  of M-9.
+- **D-16 (Q-3).** The Edit menu and "Typing text" move into Calc-U-1600's
+  existing section "Copy Screen and Paste Text"; the shared part gains
+  the section "Without a menu bar".
+- **D-17 (AC-16, OQ-4).** A picture is taken anew when it shows the
+  control bar or the menus; the others move as they are. Two new
+  pictures show the menus and the More menu.
+- **D-18.** `reference/StateFileFormat.md` moves into the help (history
+  kept), as Calc-U-1600's user documents did (D-8); the developer
+  references point at it.
+- **D-19.** From M-60 the user guide's source is the help in this
+  repository; calc-u-site's `59/` pages stay as they are at `acd629c`
+  until LIB-19 59 (M-65) renders the asset.
+- **D-20 (OQ-1).** The four install pages are one file of chapter 2's
+  product part, `02-installing.md`.
+
+### 13.13 Ledger rows and plan notes
+
+- **Ledger.** None: the help changes no behaviour. The Help item's
+  address is row 59-14's.
+- **Plan notes (proposals; the plan is not edited).** M-60 "Does" gains
+  the ruling Q-3 (13.5); it changes the workflow and `release.yaml`, so
+  it dispatches CI at its merge; "Knowledge, ledger" gains the files of
+  13.10. §5.1's LIB-16 row reads "1–8, 14–15: M-52 / M-60" (§10, already
+  proposed).
+
+### 13.14 Questions for the user
+
+None that split the design.

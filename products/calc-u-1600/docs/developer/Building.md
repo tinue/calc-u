@@ -189,7 +189,7 @@ configurations committed in the repository's `.run/`:
 |---|---|---|
 | `Calc-U-1600` | `CalcU1600Qt` | The Qt6 GUI app |
 | `CoreTests` | `CoreTests` | Headless test suite, also runnable via CTest |
-| `pc1500_cli`, `pc1600_cli` | same | Headless CLI harnesses; they build the machine from `sharp::sharpCatalogue()` and drive it through `calcu::machine::Machine` (presets through `sharp::legacy::applyPresetJob` until M-46) |
+| `pc1500_cli`, `pc1600_cli` | same | Headless CLI harnesses; they build the machine from `sharp::sharpCatalogue()` and drive it through `calcu::machine::Machine`; they load presets through the library's loader (`tools/CliPresetRun.hpp`, until M-51) and wait until the machine is idle. `--check-preset` is gone; `--rom`/`--ce1600p-rom` other than `new` are refused (the preset names its variants) |
 | `pc1600_plotter_probe`, `pc1600_power_probe`, `pc1600_uart_probe` | same | Hardware diagnostic probes, on the machine interface too; CPU and bank state through the `c1600.inspector` and `c1600.loader-memory` kinds |
 
 All of them run and debug interactively (breakpoints, variable
@@ -261,7 +261,8 @@ cmake --build ../../build/debug --target CoreTests
 ### Test groups
 
 Every CTest entry carries a group label (ADR 0031): `frequent` (on every
-change, ≤ 60 s: `CoreTests`, `CalcU1600CheckPresets`), `longer` (before
+change, ≤ 60 s: `CoreTests`, `calcu_preset_check.CalcU1600Presets`,
+`calcu_preset_check.CalcU1600Templates`), `longer` (before
 merging into `main`, ≤ 10 min: Playwright, the WebAssembly check, the
 screenshot scenarios run as checks into the build tree, `tools/dap_smoke.py`)
 and `checkpoint` (before a release: the User Guide screenshots, the
@@ -279,6 +280,13 @@ ctest --test-dir ../../build/groups/products/calc-u-1600 -L longer
 
 `docs/test-groups.md` at the repository root lists every test of both
 products and its group.
+
+**Checking presets.** `calcu_preset_check.CalcU1600Presets` runs
+`calcu --product 1600 check-preset` over every preset of the repository
+(six that wait for the media update are excluded by name);
+`calcu_preset_check.CalcU1600Templates` checks the VS Code templates, filled
+in by `tests/fill_vscode_templates.cmake`. By hand:
+`calcu --product 1600 check-preset <file>…`.
 
 ## WebAssembly check
 

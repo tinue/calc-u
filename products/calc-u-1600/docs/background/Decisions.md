@@ -332,7 +332,9 @@ authentic speed for the span that matters.
 ### Preset loading
 - **Fix the loader, not the preset.** If an existing preset breaks after a
   loader or emulator change, fix the Core loader. Don't add `- wait:` or other
-  workaround steps to the preset.
+  workaround steps to the preset. (M-46: the bare `- wait:` is gone. Every
+  item but the last waits until the machine is idle, and
+  `- let-it-finish:` as the last item waits for it.)
 - **The preset owns `NEW0` and the mode.** The BASIC loaders don't run `NEW0`
   or switch RUN/PRO. They only validate BASPRG_ST, and the error message says
   "run NEW0 first".
@@ -404,7 +406,9 @@ authentic speed for the span that matters.
   have two rules); bare hex is refused, not guessed. Leaving a key out means
   "none"; there is no `none` value. (`after: none` in `debug:` is not an
   exception: it names an action, load without starting, next to `call`
-  and `stopOnEntry`.)
+  and `stopOnEntry`.) (M-46: format 2 writes a device as `{ name: … }` or
+  `{ file: … }`, a host drive as `{ folder: … }`, and a disk is a
+  `floppy:` step; see `docs/formats/preset.md` §9.2.)
 - **`debug:` keeps camelCase** (`stopOnEntry`, `cleanStart`) against the
   rest's kebab-case. They are the launch-configuration keys (below), and
   `stopOnEntry` is the DAP name.
@@ -413,7 +417,8 @@ authentic speed for the span that matters.
   types a listing in. Unlike a drop, headerless code needs no `.bin` name:
   the author named the file on purpose.
 - **Old forms just fail** as unrecognized (pre-1.0), without pointing at
-  the new form. `slot:` in a program block is the exception above.
+  the new form. `slot:` in a program block is the exception above. (M-46:
+  a version 1 preset is refused with a hint to upgrade it by hand.)
 - **The extension matches the model** (`.pc1500`, `.pc1500a`, `.pc1600`).
   The parser goes by `model:` alone; the extension is for people and the
   file dialog.
@@ -430,6 +435,10 @@ authentic speed for the span that matters.
   them still loads (the file name stands in); every preset `bundled.yaml`
   lists must have both, short names at most 18 characters and unique per
   model within a list (`presetNameProblems()`, checked by the tests).
+  (M-46: `bundled.yaml` became `examples/bundle.yaml`,
+  `docs/formats/bundle.md` at the repository root; its `defaults` are the
+  `startup` entries, under Settings ▸ Startup presets, and only the files
+  it lists are bundled.)
 - **Two lists, not one.** `defaults` are offered only in Settings ▸ Default
   presets, `examples` only in File ▸ Examples: a startup setup isn't
   something to load from a menu, and a demo isn't a startup setup.

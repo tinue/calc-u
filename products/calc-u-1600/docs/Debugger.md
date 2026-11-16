@@ -106,7 +106,7 @@ You work in the program's own folder. *Create Debug Project…* sets it up once,
 The project preset is an ordinary preset, so you can also open it in the app (**File ▸ Load Preset**). The app ignores the `debug:` block when loading it. The PC-1600 one looks like this:
 
 ```yaml
-format-version: 1
+format-version: 2
 model: PC-1600
 
 keys:
@@ -190,7 +190,7 @@ A ROM extension (like Calc-U-1600's own host-drive ROM) isn't loaded into RAM an
 **Plugging the ROM in.** The project preset's `bus-rom:` puts your `.bin` on the bus:
 
 ```yaml
-format-version: 1
+format-version: 2
 model: PC-1600
 
 bus-rom:
@@ -210,9 +210,9 @@ On the PC-1500 (or the PC-1600's LH5803 side), a bus ROM has an `address:` inste
 **Replacing a bundled ROM.** A bus ROM takes precedence over a built-in device's ROM at the same place. To work on a new version of the host-drive ROM, for example:
 
 ```yaml
-format-version: 1
+format-version: 2
 model: PC-1600
-host-drive: files           # the drive itself: its I/O stays the app's
+host-drive: { folder: files }   # the drive itself: its I/O stays the app's
 bus-rom:
   - file: build/hostdrive.bin
     bank: 7                 # your build replaces the bundled bank-7 ROM
@@ -262,9 +262,11 @@ How the firmware finds a keyword module, and what each field of the table does, 
 The project preset plugs the card in and puts your build into its ROM:
 
 ```yaml
-slot-1-file: module.card.yaml   # or slot-2-file: on the PC-1600
-slot-1-rom: build/module.bin    # read at every clean start
+slot-1: { file: module.card.yaml }     # or slot-2: on the PC-1600
+slot-1-rom: { file: build/module.bin } # read at every clean start
 ```
+
+A module file in a preset comes with the media update; it is not available in this build.
 
 The `.bin` must be exactly the ROM's size, so pad it to the full size. The app never saves such a card back. There is no template for slot modules yet.
 
@@ -369,13 +371,13 @@ Numbers (`address`, `entry`, `bank`, `me`, `pu`, `pv`) follow the preset rule in
 | Key | Meaning |
 |---|---|
 | `project` | (launch configuration only) a project preset: it sets the machine up, and its `debug:` block gives the rest |
-| `preset` | a preset for the clean start; default: the model's default preset from Settings, else All Reset |
-| `program` | the program to load: `bin`, `listing`, `source` (if the main source isn't `<listing>.asm`), `symbols`, `cpu` (`lh5801` / `z80` / `lh5803`), `address`, `entry`, `after` (`stopOnEntry` / `call` / `none`), `cleanStart` (default `true`), bank qualifiers |
+| `preset` | a preset for the clean start; default: the model's startup preset from Settings, else Cold boot |
+| `program` | the program to load: `bin`, `listing`, `source` (if the main source isn't `<listing>.asm`), `symbols`, `cpu` (`lh5801` / `z80` / `lh5803`), `address`, `entry`, `after` (`stopOnEntry` / `call` / `none`; default `none`), `cleanStart` (default `true`), bank qualifiers |
 | `listings` | listings of code that isn't loaded (ROM): a path, or `{path, source, cpu, bank, me, pu, pv}` |
 | `symbols` | `.SYMBOLS:` tables: a path, or `{path, cpu, bank, me, pu, pv}` |
 | `command` | a BASIC line typed to start the code: in place of the program's `CALL`, or, without a program, once the machine is set up |
 | `boot` | `debug`: run the power-on under the debugger (the preset's hardware only; no `program` or `command`) |
-| `reset` | `reset` / `allReset`: reset without the boot, and start at the reset vector |
+| `reset` | `none` (default) / `reset` / `allReset`: a Reset or a Cold boot without the boot, starting at the reset vector |
 | `stopOnEntry` | stop right after attaching (after a reset: before the first instruction) |
 
 The VS Code extension adds these keys:

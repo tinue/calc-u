@@ -56,9 +56,11 @@ built in its `build/web` tree
 (`calcu1600-core.js` / `.wasm`): no `-pthread`, native wasm exceptions,
 `IDBFS`. `build.js` uses the library's build steps (`library/web/build/dist.js`):
 it compiles the JSX with the vendored Babel (no npm
-runtime dependencies), fails on a `calc.css` selector outside `.calcu-client`, copies the presets that
-[`examples/bundled.yaml`](../../examples/bundled.yaml) lists (each with its
-`examples/` folder, and the list itself) into `presets/`, writes `files.json`, stamps
+runtime dependencies), fails on a `calc.css` selector outside `.calcu-client`, copies
+[`examples/bundle.yaml`](../../examples/bundle.yaml) and exactly the files it
+lists (each preset and the files it names; nothing else of `examples/`) into
+`presets/` (the page's Examples come from the session's `preset-list`
+request), writes `files.json`, stamps
 the service worker's precache list and writes `MANIFEST.json`. CI's `web`
 job builds, tests and uploads `Calc-U-1600-web-<version>.zip`; a release
 attaches it as `Calc-U-1600-web.zip`.
@@ -77,7 +79,7 @@ attaches it as `Calc-U-1600-web.zip`.
   | `width`, `height` | The client's size in CSS pixels (default: its parent's size) |
   | `keyboard` | Take the physical keyboard while focused (default true) |
   | `model` | A model's name (`PC-1500`, `PC-1500A`, `PC-1600`; 0-2 still taken): start with it (read once, at mount) |
-  | `preset` | A bundled preset to load at start (`plotter/lissajou-1600.pc1600`) |
+  | `preset` | A bundled preset to load at start, by its path in `bundle.yaml` (`plotter/lissajou-1600.pc1600`; started as `examples:<path>`) |
   | `workerUrl` | Another worker entry (the app uses `app/engine-worker.js`) |
 
 - **Prerender-safe.** Rendering has no side effects: the worker, fetches

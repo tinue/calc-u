@@ -246,3 +246,14 @@ prints on below its first printout.
   the machine it ran on.
 - CI should be dispatched at the merge: the macOS clipboard path is
   platform code (§10.10), and the Qt6 component set now links Cocoa.
+
+### Calc-U-1600: AC-36 on format 2 (M-46, 2026-11-16, branch `m46-presets-1600`)
+
+| ID | Result | Test case |
+|---|---|---|
+| AC-36 (the preset clause) | Pass | `lib8_ac36_user_preset_naming_a_plotter_starts_it_empty` (a format 2 preset naming `printer: CE-150` starts with empty paper), `paper_session_tests.cpp` on the library's loader; Web `play.spec.js` `lib8_ac38 …` on the format 2 example; Qt6 `CalcU1600Shots.lib8-ac36`, `lib8-ac38` |
+
+`tests/gui/lib8-ac36.shots.yaml` no longer expects the paper empty right
+after the CE-150 is attached: the attach replies when the machine is ready
+for keys (LIB-18), and by then the CE-150's power-on has fed the paper.
+Every criterion of the column passes: **Done**.

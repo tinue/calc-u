@@ -1,5 +1,36 @@
 # Changelog
 
+## Unreleased
+
+### Changed
+
+- **Presets are format 2.** A preset of version 1 is refused with a hint
+  to upgrade it by hand (no pop-up, nothing loaded). The changes
+  (`docs/formats/preset.md` §9.2 at the repository root):
+  `format-version: 2`; `plotter:` is `printer:`; `slot-1: CE-1600M` is
+  `slot-1: { name: CE-1600M }`; `slot-1-rom: x.bin` is
+  `slot-1-rom: { file: x.bin }`; `host-drive: dir` is
+  `host-drive: { folder: dir }`; `- wait: 2` is `- wait: 2s` (a unit is
+  required); `- key: ent` is `- key: enter`.
+- **Waiting in presets.** The bare `- wait:` is gone: every item but the
+  last waits until the machine is idle, at most `timeout:` (a header key,
+  default 3600 s of emulated time). `- let-it-finish:` as the last item
+  waits for it; `- skip-wait:` drops the wait after the item before it.
+  `expect:` checks once the item before has finished (after `type: RUN`,
+  when the program has ended). A preset always ends at regular speed.
+- **New in presets:** `not-expect:`, and regular expressions `/…/` for
+  `expect:` and `not-expect:`. `screenshot:` writes Copy Screen's picture
+  into the save folder (in the Web version, a download).
+- **Not in presets:** the keys `ctrl`, `kbii` and `bs` can't be pressed.
+  Disks and module files (`floppy:`, `slot-N: { file: … }`, `saveas:`)
+  come with the media update and are not available in this build.
+- **Renamed:** Machine ▸ Reset All is **Cold boot** (⇧⌘R / Ctrl-Shift-R);
+  Settings ▸ Default presets is **Startup presets** (one per model, loaded
+  when the model starts or is switched to; one that can't be loaded gives
+  the built-in default machine and a notice).
+- **Bundled examples:** the desktop and Web versions bundle exactly the
+  files `examples/bundle.yaml` lists, not whole folders.
+
 ## [0.8.1] - 2026-11-14
 
 ### New

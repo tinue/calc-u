@@ -304,11 +304,11 @@ public:
 
     // C1600-2 AC-21: the loaders under the product's word (LIB-11 AC-13).
     void addCommands(harness::CommandRegistry& r) override {
-        r.addProduct("pc1600", "file-kind", fileKindCmd, "pc1600 file-kind <file>  what the file is");
-        r.addProduct("pc1600", "load-basic", loadBasicCmd, "pc1600 load-basic <file> [<n>]  load a BASIC program");
-        r.addProduct("pc1600", "type-basic", typeBasicCmd, "pc1600 type-basic <file>  type a BASIC listing in (PRO mode)");
+        r.addProduct("pc1600", "file-kind", fileKindCmd, "file-kind <file>  what the file is");
+        r.addProduct("pc1600", "load-basic", loadBasicCmd, "load-basic <file> [<n>]  load a BASIC program");
+        r.addProduct("pc1600", "type-basic", typeBasicCmd, "type-basic <file>  type a BASIC listing in (PRO mode)");
         r.addProduct("pc1600", "load-code", loadCodeCmd,
-                     "pc1600 load-code <file> [<n>] [address=<a>] [length=<l>] [cpu=<lh5803|z80>] [run]  load machine code");
+                     "load-code <file> [<n>] [address=<a>] [length=<l>] [cpu=<lh5803|z80>] [run]  load machine code");
     }
 
 private:

@@ -20,7 +20,6 @@
 #include "AppSettings.hpp"
 #include "MacClipboardImage.h"
 #include "DropFile.hpp"
-#include "app/MachineCodeLoad.hpp"
 #include "app/PresetCatalog.hpp"
 #include "AppPaths.hpp"
 
@@ -400,81 +399,94 @@ void MainWindow::loadPresetFile(const QString& path) {
     m_sync->loadPreset(path);
 }
 
-std::optional<std::vector<uint8_t>> MainWindow::readProgramFile(const QString& path, const QString& title) {
+std::optional<calcu::sessions::Value::Object> MainWindow::programArgs(const QString& path, const QString& title) {
+    namespace sessions = calcu::sessions;
     QFile file(path);
     if (!file.open(QIODevice::ReadOnly)) {
         QMessageBox::warning(this, title, tr("Could not read %1: %2").arg(path, file.errorString()));
         return std::nullopt;
     }
     const QByteArray raw = file.readAll();
-    shared::ProgramChoice choice = shared::programChoice(std::vector<uint8_t>(raw.begin(), raw.end()));
-    if (!choice.needsChoice()) return std::move(choice.images.front());
-
-    QStringList names;
-    for (const std::string& name : choice.names) names << QString::fromStdString(name);
-    bool ok = false;
-    const QString picked = QInputDialog::getItem(this, title,
-                                                 tr("%1 holds %2 files. Load which one?")
-                                                     .arg(QFileInfo(path).fileName())
-                                                     .arg(choice.images.size()),
-                                                 names, 0, false, &ok);
-    if (!ok) return std::nullopt;
-    return std::move(choice.images[static_cast<size_t>(names.indexOf(picked))]);
+    sessions::Value::Object args{{"bytes", sessions::Value(sessions::Value::Bytes(raw.begin(), raw.end()))},
+                                 {"name", sessions::Value(QFileInfo(path).fileName().toStdString())}};
+    // C1600-2 AC-16: a WAV with several files asks which one.
+    const sessions::ReplyMessage kind = m_controller->listener().ask(
+        shared::requests::kFileKind, sessions::Value::object({{"bytes", args.front().value}}));
+    const auto* k = sessions::payloadAs<shared::FileKindReply>(kind.result);
+    if (k && k->tapeFiles.size() > 1) {
+        QStringList names;
+        for (std::size_t i = 0; i < k->tapeFiles.size(); ++i)
+            names << QStringLiteral("%1. %2").arg(i + 1).arg(QString::fromStdString(k->tapeFiles[i]));
+        bool ok = false;
+        const QString picked = QInputDialog::getItem(
+            this, title, tr("%1 holds %2 files. Load which one?").arg(QFileInfo(path).fileName()).arg(names.size()), names,
+            0, false, &ok);
+        if (!ok) return std::nullopt;
+        args.push_back({"file", sessions::Value(names.indexOf(picked) + 1)});
+    }
+    return args;
 }
 
 void MainWindow::loadBasicProgramFile(const QString& path) {
     const QString title = tr("Load BASIC Program");
     AppSettings::rememberOpenFile(AppSettings::OpenFolder::Basic, path);
-    std::optional<std::vector<uint8_t>> bytes = readProgramFile(path, title);
-    if (!bytes) return;
-    m_sync->run(title, shared::commands::kLoadBasic,
-                calcu::sessions::Value::object({{"bytes", calcu::sessions::Value::Bytes(*bytes)}, {"path", path.toStdString()}}));
+    std::optional<calcu::sessions::Value::Object> args = programArgs(path, title);
+    if (!args) return;
+    m_sync->run(title, shared::commands::kLoadBasic, calcu::sessions::Value(std::move(*args)));
 }
 
 void MainWindow::loadMachineCodeFile(const QString& path) {
+    namespace sessions = calcu::sessions;
     const QString title = tr("Load Machine Code");
     AppSettings::rememberOpenFile(AppSettings::OpenFolder::Assembly, path);
-
-    const std::optional<std::vector<uint8_t>> bytes = readProgramFile(path, title);
-    if (!bytes) return;
-    shared::MachineCodeLoad load = shared::MachineCodeLoad::plan(m_controller->session(), *bytes);
-    if (!load.error().empty()) {
-        QMessageBox::warning(this, title, QString::fromStdString(load.error()));
+    std::optional<sessions::Value::Object> args = programArgs(path, title);
+    if (!args) return;
+    // The one plan (C1600-2 AC-8): a refusal is the notice; headerless code
+    // asks the address (AC-18).
+    const sessions::ReplyMessage planned = m_controller->listener().ask(shared::requests::kPlanCode, sessions::Value(*args));
+    const auto* plan = sessions::payloadAs<shared::CodePlanReply>(planned.result);
+    if (!planned.done || !plan) {
+        QMessageBox::warning(this, title, QString::fromStdString(planned.reason));
         return;
     }
-    if (load.needsAddress()) {
-        MachineCodeLoadDialog dialog(this, load);
+    if (plan->needsAddress) {
+        sessions::Value::Object base = *args;
+        MachineCodeLoadDialog dialog(this, m_controller->listener(), sessions::Value(std::move(base)), *plan);
         if (dialog.exec() != QDialog::Accepted) return;
+        args->push_back({"address", sessions::Value(dialog.address().toStdString())});
+    } else if (!plan->refusal.empty()) {
+        QMessageBox::warning(this, title, QFileInfo(path).fileName() + QStringLiteral(": ") + QString::fromStdString(plan->refusal));
+        return;
     }
-    const shared::MachineCodeLoadRequest& request = load.request();
-    const calcu::sessions::Value args = calcu::sessions::Value::object(
-        {{"bytes", calcu::sessions::Value::Bytes(request.payload)}, {"addr", static_cast<std::int64_t>(request.addr)},
-         {"slot", request.slot}, {"bank", request.bank}});
-    m_sync->run(title, shared::commands::kLoadMachineCode, args, [this, load](bool ok, const QString&) {
-        if (ok) showMachineCodeLoaded(load);
-    });
+    m_controller->send(shared::commands::kLoadCode, sessions::Value(std::move(*args)),
+                       [this, title](const sessions::ReplyMessage& r) {
+                           const auto* loaded = sessions::payloadAs<shared::CodeLoadedReply>(r.result);
+                           if (!r.done || !loaded) {
+                               QMessageBox::warning(this, title, QString::fromStdString(r.reason));
+                               return;
+                           }
+                           showMachineCodeLoaded(*loaded);
+                       });
 }
 
-void MainWindow::showMachineCodeLoaded(const shared::MachineCodeLoad& load) {
-    const shared::MachineCodeLoad::Loaded loaded = load.loaded(m_controller->session());
-    const machinecode::Advice& advice = loaded.advice;
+void MainWindow::showMachineCodeLoaded(const shared::CodeLoadedReply& loaded) {
     QString html = QStringLiteral("<p>%1.</p>").arg(QString::fromStdString(loaded.summary).toHtmlEscaped());
     html += QStringLiteral("<p>%1<br>").arg(tr("Keep BASIC from overwriting it:").toHtmlEscaped());
-    if (!advice.newCommand.empty())
-        html += QStringLiteral("<b><tt>%1</tt></b><br>").arg(QString::fromStdString(advice.newCommand).toHtmlEscaped());
-    html += QStringLiteral("<small>%1</small></p>").arg(QString::fromStdString(advice.newNote).toHtmlEscaped());
+    if (!loaded.newCommand.empty())
+        html += QStringLiteral("<b><tt>%1</tt></b><br>").arg(QString::fromStdString(loaded.newCommand).toHtmlEscaped());
+    html += QStringLiteral("<small>%1</small></p>").arg(QString::fromStdString(loaded.newNote).toHtmlEscaped());
     html += QStringLiteral("<p>%1<br><b><tt>%2</tt></b><br><small>%3</small></p>")
                 .arg(tr("Start it:").toHtmlEscaped(),
-                     QString::fromStdString(advice.callCommand).toHtmlEscaped(),
-                     QString::fromStdString(advice.callNote).toHtmlEscaped());
+                     QString::fromStdString(loaded.callCommand).toHtmlEscaped(),
+                     QString::fromStdString(loaded.callNote).toHtmlEscaped());
 
     QMessageBox box(QMessageBox::Information, tr("Machine Code Loaded"), html, QMessageBox::Ok, this);
     box.setTextFormat(Qt::RichText);
     box.setTextInteractionFlags(Qt::TextSelectableByMouse);
     box.exec();
 
-    // Type the proposed CALL, ready to run: the user presses ENTER.
-    m_controller->pasteText(advice.callCommand);
+    // Type the proposed CALL, ready to run: the user presses ENTER (AC-19).
+    m_controller->pasteText(loaded.callCommand);
 }
 
 void MainWindow::togglePeripheral(shared::Peripheral p) {

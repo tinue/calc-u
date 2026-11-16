@@ -88,7 +88,7 @@ uint16_t runAndReadVarPtr(PC1600Machine& m) {
 // program area into the module window. The fast loader must scatter the
 // tokenised image into the module's backing store byte-for-byte the way
 // the keystroke typer's stored program looks, and the result must RUN.
-TEST(test_ce1600m_module_equivalence_and_run) {
+TEST(c1600_2_ac6_s0_parts_in_table_order_line_not_split) {
     const char* src = "10 A=42\n20 B=A+1\n30 END\n";
 
     // Oracle: type the program with the module fitted; read the stored
@@ -191,7 +191,7 @@ TEST(test_reload_over_shorter_program_clears_tail_stock) {
 
 // A live BASPRG_END that doesn't sit at/after BASPRG_ST must be rejected --
 // the loader relies on it to know how much of the resident program to erase.
-TEST(test_rejects_invalid_basprg_end) {
+TEST(c1600_2_ac6_refused_names_pointer_or_room_nothing_written) {
     PC1600Machine m;
     SKIP_UNLESS(bootIntoProNew0(m), "PC-1600 ROM set not found");
     uint16_t st = be16(m, 0xF865);
@@ -259,6 +259,7 @@ TEST(test_rejects_pc1500_transfer_file) {
     CHECK(!r.ok);
     CHECK(r.error.find("PC-1500") != std::string::npos);
 }
+
 
 }  // namespace
 
@@ -397,7 +398,7 @@ void checkTypedVsFast(const char* label, size_t slot1Ram, size_t slot2Ram, const
     CHECK(m.memory().peek(0xFF80) == 77);
 }
 
-TEST(test_work_area_matches_typed) {
+TEST(c1600_2_ac4_same_memory_as_typed_pc1600) {
     const std::vector<uint8_t> shortPayload = programPayload(kShortProgram);
     SKIP_UNLESS(!shortPayload.empty(), "PC-1600 ROM set not found");
     const std::vector<uint8_t> longPayload = programPayload(kLongProgram);
@@ -439,7 +440,7 @@ bool bootMode(PC1600Machine& m, bool mode1) {
 // A listing is tokenized with the table of the current MODE: CALL is the
 // PC-1600's Z-80 CALL (F282H) in MODE 0 and the PC-1500's CALL (F18AH, which
 // the PC-1600 lists as XCALL) in MODE 1.
-TEST(test_listing_follows_mode) {
+TEST(c1600_2_ac5_listing_tokenized_per_model_and_mode) {
     const std::string path = writeTempListing("pc1600_mode_call.bas", "10 CALL &4000\n");
     for (bool mode1 : {false, true}) {
         PC1600Machine m;
@@ -454,7 +455,7 @@ TEST(test_listing_follows_mode) {
 }
 
 // Text the PC-1500 can't hold is refused in MODE 1, and nothing is written.
-TEST(test_mode1_refuses_non_ascii) {
+TEST(c1600_2_ac5_mode1_non_ascii_refused) {
     const std::string path = writeTempListing("pc1600_mode_umlaut.bas", "10 PRINT \"\xC3\xA4\xC3\xB6\xC3\xBC\"\n");
     {
         PC1600Machine m;
@@ -475,7 +476,7 @@ TEST(test_mode1_refuses_non_ascii) {
 }
 
 // A CE-158 (PC-1500) transfer file: refused in MODE 0, loaded in MODE 1.
-TEST(test_pc1500_transfer_file_in_mode1) {
+TEST(c1600_2_ac5_tokenized_file_per_machine_and_mode) {
     std::vector<uint8_t> payload = {0x00, 0x0A, 0x03, 0xF1, 0x8E, 0x0D};
     std::vector<uint8_t> f(27, 0x00);
     f[0] = 0x01; f[1] = 0x40; f[2] = 'C'; f[3] = 'O'; f[4] = 'M';
@@ -529,3 +530,57 @@ TEST(test_mode_and_title_queries) {
     waitIdle(m, static_cast<uint64_t>(PC1600Machine::kTStateHz));
     CHECK(!m.mode1());
 }
+
+// AC-4: no reset, no NEW, MODE and the selected program area as before.
+TEST(c1600_2_ac4_nothing_else_changes_mode_area_kept) {
+    for (bool mode1 : {false, true}) {
+        PC1600Machine m;
+        if (!bootMode(m, mode1)) return;
+        const bool modeBefore = m.mode1();
+        const int areaBefore = m.programAreaTitle();
+        const std::string listing = "10 PRINT 1\n";
+        CHECK(loadertest::loadBasic(m, std::vector<uint8_t>(listing.begin(), listing.end())).ok);
+        CHECK(m.mode1() == modeBefore && m.programAreaTitle() == areaBefore);
+    }
+}
+
+// AC-6: S1 / S2 in a memory module; a selected slot without a program
+// module is refused, naming the area, and nothing is written.
+TEST(c1600_2_ac6_s1_s2_in_module) {
+    PC1600Machine m;
+    if (!prepare(m, 0, 0x8000, {"NEW0", "INIT\"S2:\",\"P\"", "TITLE\"S2:\""})) return;
+    CHECK(m.programAreaTitle() == 2);
+    const std::string listing = "10 PRINT 1\n";
+    BasicLoadResult r = loadertest::loadBasic(m, std::vector<uint8_t>(listing.begin(), listing.end()));
+    CHECK(r.ok);
+    if (!r.ok) std::fprintf(stderr, "  loader error: %s\n", r.error.c_str());
+    CHECK(r.baseAddr >= 0x8000 && r.baseAddr < 0xC000);   // in the slot window
+}
+
+TEST(c1600_2_ac6_slot_without_program_module_refused) {
+    PC1600Machine m;
+    if (!bootIntoProNew0(m)) return;
+    const uint8_t s1 = 1;
+    m.pokeMemory(0xF1D5, &s1, 1);   // TITLE "S1:" with nothing in slot 1
+    const WorkAreaSnapshot before = snapshot(m);
+    const std::string listing = "10 PRINT 1\n";
+    BasicLoadResult r = loadertest::loadBasic(m, std::vector<uint8_t>(listing.begin(), listing.end()));
+    CHECK(!r.ok && r.error.find("S1") != std::string::npos);
+    const WorkAreaSnapshot after = snapshot(m);
+    bool same = true;
+    for (size_t i = 0; i < before.bytes.size(); ++i)
+        if (before.bytes[i].second != after.bytes[i].second) same = false;
+    CHECK(same);
+}
+
+// EC-3: no program area set up: the hint to run NEW first.
+TEST(c1600_2_ec3_uninitialised_pointer_hint_pc1600) {
+    PC1600Machine m;
+    if (!bootIntoProNew0(m)) return;
+    const uint8_t bad[2] = {0xFF, 0xFF};
+    m.pokeMemory(0xF865, bad, 2);   // BASPRG_ST as a fresh RAM leaves it
+    const std::string listing = "10 PRINT 1\n";
+    BasicLoadResult r = loadertest::loadBasic(m, std::vector<uint8_t>(listing.begin(), listing.end()));
+    CHECK(!r.ok && r.error.find("run NEW") != std::string::npos);
+}
+

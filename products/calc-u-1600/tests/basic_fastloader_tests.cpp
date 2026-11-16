@@ -116,7 +116,7 @@ void runEquivalenceCase(const char* label, const std::string& src) {
     CHECK(fast == want);
 }
 
-TEST(test_equivalence_small) {
+TEST(c1600_2_ac4_same_memory_as_typed_pc1500) {
     runEquivalenceCase("small", "10 PRINT \"AB\"\n20 GOTO 10\n");
 }
 
@@ -131,7 +131,7 @@ TEST(test_equivalence_rem_and_data) {
                        "70 END\n");
 }
 
-TEST(test_rejects_pc1600_transfer_file) {
+TEST(c1600_2_ac5_pc1500_refuses_pc1600_file) {
     PC1500Machine m;
     SKIP_UNLESS(bootMachine(m), "roms/PC-1500_A04.ROM not found");
     // Minimal PC-1600 header (FF 10 00 00, type 0x21) + a one-line payload.
@@ -154,7 +154,7 @@ TEST(test_rejects_pc1600_transfer_file) {
 // live BASPRG_ST value a `NEW &nnnn` might leave behind -- the loader has no
 // notion of "the" expected NEW0 target, only of "is the current pointer
 // plausible."
-TEST(test_rejects_uninitialized_basprg_st) {
+TEST(c1600_2_ec3_new0_check_hint_to_run_new) {
     std::vector<uint8_t> payload;
     uint16_t st = 0, end = 0;
     uint8_t marker = 0;
@@ -170,7 +170,7 @@ TEST(test_rejects_uninitialized_basprg_st) {
 // A live BASPRG_END that doesn't sit at/after BASPRG_ST (corrupted or
 // otherwise implausible) must be rejected too -- it's the pointer the
 // loader relies on to know how much of the resident program to erase.
-TEST(test_rejects_invalid_basprg_end) {
+TEST(c1600_2_ac6_refused_names_pointer_pc1500) {
     PC1500Machine m;
     SKIP_UNLESS(bootMachine(m), "roms/PC-1500_A04.ROM not found");
     primeNew0(m);
@@ -245,6 +245,58 @@ TEST(test_bbin_file_equals_listing) {
     }
     CHECK(!fromListing.empty());
     CHECK(fromBbin == fromListing);
+}
+
+// AC-6: the program goes where BASIC's program starts (BASPRG_ST), and a
+// program that does not fit is refused with the room, writing nothing.
+TEST(c1600_2_ac6_pc1500_program_start) {
+    PC1500Machine m;
+    SKIP_UNLESS(bootMachine(m), "roms/PC-1500_A04.ROM not found");
+    primeNew0(m);
+    const uint16_t st = be16(m, 0x7865);
+    const std::string listing = "10 PRINT 1\n";
+    BasicLoadResult r = loadertest::loadBasic(m, std::vector<uint8_t>(listing.begin(), listing.end()));
+    CHECK(r.ok && r.baseAddr == st);
+}
+
+TEST(c1600_2_ac6_refused_room_nothing_written_pc1500) {
+    PC1500Machine m;
+    SKIP_UNLESS(bootMachine(m), "roms/PC-1500_A04.ROM not found");
+    primeNew0(m);
+    const uint16_t st = be16(m, 0x7865);
+    const std::vector<uint8_t> before = readRange(m, st, static_cast<uint16_t>(st + 64));
+    std::vector<uint8_t> big;   // 36 000 bytes of `10 END` records: more than any user RAM
+    for (int i = 0; i < 6000; ++i) big.insert(big.end(), {0x00, 0x0A, 0x03, 0xF1, 0x8E, 0x0D});
+    BasicLoadResult r = loadertest::loadBasic(m, wrapCe158(big));
+    CHECK(!r.ok && r.error.find("too large") != std::string::npos);
+    CHECK(readRange(m, st, static_cast<uint16_t>(st + 64)) == before);
+}
+
+// AC-4: no reset, no NEW: the machine goes on where it was.
+TEST(c1600_2_ac4_nothing_else_changes_pc1500) {
+    PC1500Machine m;
+    SKIP_UNLESS(bootMachine(m), "roms/PC-1500_A04.ROM not found");
+    primeNew0(m);
+    const uint64_t cycles = m.elapsedCycles();
+    const uint8_t ramSt = m.memory().peek(0x7863), ramEnd = m.memory().peek(0x7864);
+    const std::string listing = "10 PRINT 1\n";
+    CHECK(loadertest::loadBasic(m, std::vector<uint8_t>(listing.begin(), listing.end())).ok);
+    CHECK(m.elapsedCycles() == cycles);   // nothing ran
+    CHECK(m.memory().peek(0x7863) == ramSt && m.memory().peek(0x7864) == ramEnd);
+}
+
+// EC-5: machine code given to the BASIC loader: the hint to load it as machine code.
+TEST(c1600_2_ec5_code_to_basic_loader_hint) {
+    PC1500Machine m;
+    SKIP_UNLESS(bootMachine(m), "roms/PC-1500_A04.ROM not found");
+    primeNew0(m);
+    std::vector<uint8_t> f(27, 0x00);
+    f[0] = 0x01; f[1] = 0x42; f[2] = 'C'; f[3] = 'O'; f[4] = 'M';
+    f[0x15] = 0x7C; f[0x16] = 0x01;   // load &7C01
+    f[0x18] = 0x01;                   // 2 bytes
+    f.insert(f.end(), {0x9A, 0x9A});
+    BasicLoadResult r = loadertest::loadBasic(m, f);
+    CHECK(!r.ok && r.error.find("machine code") != std::string::npos && r.error.find("Load Machine Code") != std::string::npos);
 }
 
 }  // namespace

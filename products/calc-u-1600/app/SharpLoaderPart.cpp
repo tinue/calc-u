@@ -195,9 +195,13 @@ void SharpLoaderPart::attach(calcu::sessions::SessionSetup& setup) {
         const std::string name = calcu::sessions::textArg(a, "name");
         const std::vector<std::uint8_t> bytes = bytesOf(a);
         const sharp::loaders::FileKind k = sharp::loaders::fileKind(bytes);
-        if (k.kind != programfile::Kind::BasicListing) {
+        // A listing, or text the classifier calls plain (a line without a
+        // number is still typed, and then not stored: AC-7).
+        const bool text = k.kind == programfile::Kind::BasicListing ||
+                          (k.kind == programfile::Kind::Other && k.words == "plain text");
+        if (!text) {
             const std::string why = k.kind == programfile::Kind::Empty ? "The file is empty."
-                                                                     : "Only a BASIC listing can be typed in.";
+                                                                     : "Only a BASIC listing (text) can be typed in.";
             return Refused{sharp::loaders::refusal(name, why)};
         }
         std::string listing(bytes.begin(), bytes.end());

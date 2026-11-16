@@ -32,7 +32,7 @@ const request = (page, method, ...args) =>
   page.evaluate(([m, a]) => document.querySelector('.calcu-client').calcuEngine.request(m, ...a), [method, args]);
 const engineState = (page) => page.evaluate(() => {
   const s = document.querySelector('.calcu-client').calcuEngine.getState();
-  return { busy: s.busy, ui: s.ui, log: s.log };
+  return { busy: s.busy, ui: s.ui, media: s.media, log: s.log };
 });
 // ENTER after the typed line, once the paste is through.
 async function typedEnter(page) {
@@ -52,9 +52,10 @@ test('ac25 settings in Calc-U-1600.ini, media in the save folder of 0.8.x', asyn
   await gotoReady(page, '?model=PC-1600');
   await request(page, 'setStartupModel', 'PC-1600');
   await notBusy(page);
-  await request(page, 'selectModule', 1, 'CE-1600M');
+  const send = (c, a) => page.evaluate(([cc, aa]) => document.querySelector('.calcu-client').calcuEngine.send(cc, aa), [c, a]);
+  expect((await send('media.choose', { place: 'slot-1', entry: 'bundled:ce1600m.card.yaml' })).done).toBe(true);   // LIB-7 (M-47)
   await notBusy(page);
-  expect(await request(page, 'nameAndSaveCard', 1, 'Kept', false)).toBe('');
+  expect((await send('media.name-and-save', { place: 'slot-1', name: 'Kept' })).done).toBe(true);
   // The persistent file system is IndexedDB "/persist", as 0.8.x's.
   await expect.poll(() => page.evaluate(() => new Promise((resolve) => {
     const open = indexedDB.open('/persist');
@@ -70,8 +71,8 @@ test('ac25 settings in Calc-U-1600.ini, media in the save folder of 0.8.x', asyn
     '/persist/Calc-U-1600/Kept.card.yaml',
   ]));
   await gotoReady(page);
-  const items = await request(page, 'mediaItems');
-  expect(items.map((i) => i.path)).toContain('/persist/Calc-U-1600/Kept.card.yaml');
+  await expect.poll(async () => ((await engineState(page)).media || { kinds: [] }).kinds
+    .flatMap((k) => k.instances).map((i) => i.fileName), { timeout: 10000 }).toContain('Kept.card.yaml');
   expect((await request(page, 'settingsState')).startupModel).toBe('PC-1600');
 });
 

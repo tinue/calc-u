@@ -260,18 +260,26 @@ Tests: `tests/sharp_presets_tests.cpp`, the `lib6_` cases of
 | AC-44 | Pass | `lib6_ac44_extensions_models_variants_any_case`, `lib6_ac44_place_keys_per_model`, `lib6_ac44_floppy_and_tape_not_header_keys`, `lib6_ac44_plotter_key_unknown`, `lib6_ac44_ctrl_kbii_bs_refused_in_key` |
 | AC-45 | Pass (with a finding) | `lib6_ac45_idle_at_prompt_input_and_reserve` (the prompt, `INPUT`, the RESERVE mode, MODE 1), `lib6_ac45_running_program_not_idle` (PC-1500A; on the PC-1600 machine code with the interrupts off) |
 | AC-46 | Pass | `lib6_ac46_cl_at_new0_check_at_most_five_pc1500a`, `lib6_ac46_pc1600_presses_nothing` |
-| AC-47 | Pass, but the `floppy:` clause (M-47, LIB-7 1600) | `lib6_ac47_ce1600p_on_pc1500_refused`, `lib6_ac47_ce158_with_ce1600p_names_both`, `lib6_ac47_slot2_on_pc1500_not_available` |
+| AC-47 | Pass (the `floppy:` clause since M-47) | `lib6_ac47_ce1600p_on_pc1500_refused`, `lib6_ac47_ce158_with_ce1600p_names_both`, `lib6_ac47_slot2_on_pc1500_not_available`; M-47: `lib6_ac47_floppy_without_ce1600p_refused` (`floppy:` on a PC-1600 without the CE-1600P and `tape:` without a CE-150 or CE-1600P refused at read with the peripherals that have the place; `floppy:` on a PC-1500 not available) |
 | AC-48 | Pass | `lib6_ac48_screenshot_is_copy_screen_picture`, `lib6_ac48_expect_one_line_case_and_spaces`, `lib6_ac48_backslash_and_xhh` |
 | AC-49 | Pass | `lib6_ac49_log_lines_on_log_topic`; Web `session.spec.js` `lib6_ac49 preset log in the log stream`; Qt6: the log topic in `MachineController` |
 | AC-50 | Pass | `lib6_ac50_test_inline_comment_and_raw_values`, `lib6_ac50_test_keys_given_twice_and_names_any_case`, `lib6_ac50_test_wait_step_value`, `lib6_ac50_test_syncclock_step`, `lib6_ac50_test_preset_screenshot_parse`, `lib6_ac50_in_parts_against_in_one_go` |
-| AC-51 | Pass (six files wait for M-47) | `calcu_preset_check.CalcU1600Presets`, `calcu_preset_check.CalcU1600Templates` (Frequent); left out by name: `DiskWorks`, `make_diskworks_media`, `pc1500-maxed-out`, `default-pc1600`, `startup-pc1600`, `pc1600-modules` (all need LIB-7's media) |
+| AC-51 | Pass (the six files since M-47) | `calcu_preset_check.CalcU1600Presets` (without exclusions since M-47), `calcu_preset_check.CalcU1600Templates` (Frequent) |
 | AC-53 (Calc-U-1600) | Pass | `lib6_ac53_sharp_idle_rule_values`; C1600-4 AC-13 |
 | AC-54 | Pass | Qt6 `CalcU1600Shots.lib6-ac54` (`examples:plotter/lissajou-1600.pc1600`, the paper shows); Web `play.spec.js` `lib6_ac54 bundled example loads and its result shows`, `session.spec.js` `lib6_ac54 uploaded preset is loaded` |
 | AC-67 | Pass | `lib6_ac67_regex_error_1_not_error_10`, `lib6_ac67_bad_regex_refused_at_read`, `lib6_ac67_leading_slash_escaped_literal` |
 | AC-24, AC-25, AC-31, AC-34 (Calc-U-1600) | Pass | C1600-4 AC-13, AC-17; `lib6_ac25_screenshot_into_save_folder`, `lib6_ac34_preset_wait_expect_screenshot_on_pc1600` |
 
-Column status: AC-47's `floppy:` clause and the six presets of AC-51 wait
-for LIB-7 1600 (M-47); the column stays **In progress** and is Done there.
+Column status: AC-47's `floppy:` clause and the six presets of AC-51
+waited for LIB-7 1600; *both pass since M-47 (2026-11-16, branch
+`m47-media-1600`): every AC of the column passes, the column is **Done**.*
+M-47 also changed `lib6_ac53_sharp_idle_rule_values`: on the PC-1600 the
+idle rule asks that the CE-1600F's motor be off too (C1600-4 qa-report,
+M-47 findings; ledger row 1600-43). The `floppy:` clause is checked by the
+library's media steps (`library/media/PresetMedia.cpp`, `placeFor`): a
+medium step needs a place of its kind, the model's own or one of a
+peripheral the header plugs in, not `ModelRules::applies`, which knows no
+header.
 
 ### Deviations (Calc-U-1600)
 

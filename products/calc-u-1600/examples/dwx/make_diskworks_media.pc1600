@@ -3,19 +3,19 @@
 # Both are saved as templates next to this preset -- "CE-1601M - Progs.card.yaml"
 # and "Progs.floppy.yaml" -- so DiskWorks.pc1600 always starts from them.
 
-format-version: 1
+format-version: 2
 preset-name: DiskWorks media
 description: Makes the RAM card and floppy DiskWorks starts from
 model: PC-1600
-plotter: CE-1600P
-floppy: Formatted
+printer: CE-1600P
 
-slot-1: CE-1600M
-slot-2: CE-1601M
+slot-1: { name: CE-1600M }
+slot-2: { name: CE-1601M }
 
 # Set the power-on title, format + split the CE-1601M as a RAM disk,
 # then initialize the floppy
 keys:
+  - floppy: { name: Formatted }
   - type: TITLE
   - type: INIT"S2:","F"
   - type: INIT"S2:","M"
@@ -77,5 +77,5 @@ keys:
 
 # Save both as templates next to this preset, for DiskWorks.pc1600
 keys:
-  - saveas: template slot-2:file:CE-1601M - Progs.card.yaml
-  - saveas: template floppy:file:Progs.floppy.yaml
+  - saveas: { place: slot-2, as: template, file: CE-1601M - Progs.card.yaml }
+  - saveas: { place: floppy, as: template, file: Progs.floppy.yaml }

@@ -268,7 +268,7 @@ SettingsDialog::SettingsDialog(MachineController* controller, QWidget* parent)
     // ── Storage ──────────────────────────────────────────────────────────
     QGridLayout* storage = addSection(layout, this, sections, tr("Storage"), QStringLiteral("dialog.settings.storage"));
     {
-        PathRowSpec spec = directorySpec(this, tr("Battery-card saves:"), tr("Choose Save Directory"),
+        PathRowSpec spec = directorySpec(this, tr("Save folder:"), tr("Choose Save Directory"),
                                          [] { return AppPaths::instanceDir(); });
         spec.display = [] { return AppPaths::displayPath(AppPaths::instanceDir()); };
         spec.isOverridden = [] { return !AppSettings::instanceDirOverride().isEmpty(); };

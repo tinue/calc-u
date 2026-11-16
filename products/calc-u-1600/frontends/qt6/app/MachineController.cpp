@@ -14,6 +14,7 @@
 #include "debug/DebugController.hpp"
 #include "Machine/SharpBuilder.hpp"
 #include "debugger/RunState.hpp"
+#include "media/MediaTopics.hpp"
 #include "paper/PaperTopics.hpp"
 #include "sessions/LibraryTopics.hpp"
 
@@ -58,6 +59,9 @@ MachineController::MachineController(QObject* parent) : QObject(parent) {
 MachineController::~MachineController() {
     // The DAP's controller goes first: its session works on the live machine.
     m_debug.reset();
+    // The product quits: what a medium still has to save is written (LIB-7
+    // AC-13; the parts' `closing`, LIB-3). No message goes out after it.
+    if (m_app.session) m_app.session->close();
     m_listener.stop();
     m_app = {};
 }
@@ -226,15 +230,9 @@ void MachineController::onState(const sessions::TopicName& topic) {
         const shared::MachinePayload before = m_machine;
         m_machine = *p;
         if (before.model != p->model || before.modelSwitches != p->modelSwitches) emit modelChanged(p->model);
-        for (std::size_t slot = 1; slot < p->moduleChanges.size(); ++slot)
-            if (slot < before.moduleChanges.size() && before.moduleChanges[slot] != p->moduleChanges[slot])
-                emit bayModuleChanged(static_cast<int>(slot));
-    } else if (topic == shared::topics::kTapes) {
-        const auto* p = m_listener.state<shared::TapesPayload>(topic);
-        if (p && p->listChanges != m_tapeListChanges) {
-            m_tapeListChanges = p->listChanges;
-            emit tapeListChanged();
-        }
+    } else if (topic == calcu::media::kMediaTopic) {
+        // Queued: the pickers are filled after the host call it came in.
+        QTimer::singleShot(0, this, [this] { emit mediaChanged(); });
     } else if (topic == shared::topics::kSerialLinks) {
         const auto* p = m_listener.state<shared::SerialLinksPayload>(topic);
         if (p && p->moves != m_serialMoves) {
@@ -256,8 +254,17 @@ shared::ControlState MachineController::controlState() const {
 }
 
 TapeDeck::Status MachineController::tapeStatus() const {
-    const auto* p = m_listener.state<shared::TapesPayload>(shared::topics::kTapes);
-    return p ? p->status : TapeDeck::Status{};
+    const auto* p = m_listener.state<shared::MachinePayload>(shared::topics::kMachine);
+    return p ? p->tape : TapeDeck::Status{};
+}
+
+bool MachineController::floppyMotorOn() const {
+    const auto* p = m_listener.state<shared::MachinePayload>(shared::topics::kMachine);
+    return p && p->floppyMotor;
+}
+
+const calcu::media::MediaState* MachineController::media() const {
+    return m_listener.state<calcu::media::MediaState>(calcu::media::kMediaTopic);
 }
 
 GrayImage MachineController::currentScreenImage() const {
@@ -281,7 +288,3 @@ bool MachineController::machinePaused() const {
 }
 
 void MachineController::refreshDebugServer() { m_debug->refreshServer(); }
-
-bool MachineController::tapeEject(QString* error) {
-    return withQtError(error, [this](std::string* err) { return app().tapeEject(err); });
-}

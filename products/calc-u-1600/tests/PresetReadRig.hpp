@@ -4,11 +4,14 @@
 #include <string>
 #include <variant>
 
+#include "../app/SharpMediaKinds.hpp"
 #include "../app/SharpPresetRules.hpp"
 #include "../app/SharpTyping.hpp"
 #include "../core/Machine/SharpCatalogue.hpp"
 #include "TempFolder.hpp"
 #include "debugger/DebuggerPart.hpp"
+#include "media/PresetMedia.hpp"
+#include <memory>
 #include "paper/PaperPart.hpp"
 #include "presets/Reader.hpp"
 #include "presets/Source.hpp"
@@ -26,11 +29,18 @@ struct PresetReadRig {
     calcu::machine::Catalogue catalogue = sharp::sharpCatalogue();
     shared::SharpPresetRules rules;
     calcu::presets::Vocabulary vocabulary;
+    std::unique_ptr<calcu::media::MediaPart> media;   // LIB-7: the media steps and the slot keys (M-47)
 
     explicit PresetReadRig(shared::SharpKeywordSetup setup = {}) : rules(std::move(setup)) {
         sharp::addModuleDefinitions(catalogue, "frontends/qt6/resources/cards");
         calcu::presets::addLibraryKeywords(vocabulary);
         rules.addKeywords(vocabulary);
+        calcu::media::MediaSetup ms;
+        ms.kinds = shared::mediaKinds("frontends/qt6/resources/cards", catalogue);
+        ms.listing = shared::moduleListing();
+        ms.catalogue = &catalogue;
+        media = std::make_unique<calcu::media::MediaPart>(std::move(ms));
+        calcu::media::addMediaToPresets(vocabulary, *media);
     }
     calcu::presets::ReadSetup setup() {
         return calcu::presets::ReadSetup{vocabulary, rules, catalogue, &shared::typingProduct()};

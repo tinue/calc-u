@@ -266,15 +266,7 @@ TEST(test_app_paths) {
 
     CHECK(paths.instanceDir() == home + "/Calc-U-1600");
     CHECK(fs::is_directory(home + "/Calc-U-1600"));
-    CHECK(paths.instancePathFor("My Card") == home + "/Calc-U-1600/My Card.card.yaml");
-    // A separator in the name can't escape the save folder.
-    const std::string floppy = paths.floppyInstancePathFor("a/b");
-    const std::string dir = home + "/Calc-U-1600/";
-    CHECK(floppy.compare(0, dir.size(), dir) == 0);
-    CHECK(floppy.find('/', dir.size()) == std::string::npos);
-    CHECK(floppy.size() > 12 && floppy.compare(floppy.size() - 12, 12, ".floppy.yaml") == 0);
     CHECK(paths.tapeDir() == home + "/Calc-U-1600/Tapes");
-    CHECK(paths.tapePathFor("Side A") == home + "/Calc-U-1600/Tapes/Side A.wav");
     CHECK(paths.traceDir() == home + "/Calc-U-1600");
     CHECK(paths.serialLinkDir() == home + "/Calc-U-1600");
     CHECK(paths.displayPath(home + "/Calc-U-1600/x.card.yaml") == "~/Calc-U-1600/x.card.yaml");
@@ -291,10 +283,6 @@ TEST(test_app_paths) {
     s.setTraceDirOverride((root / "traces").generic_string());
     CHECK(paths.traceDir() == (root / "traces").generic_string());
 
-    std::string planned;
-    CHECK(paths.planNamedSave(MediaKind::Card, "", "", false, &planned) == MediaSaveRefusal::EmptyName);
-    CHECK(paths.planNamedSave(MediaKind::Card, "Disk One", "", false, &planned) == MediaSaveRefusal::None);
-    CHECK(planned == (root / "saves" / "Disk One.card.yaml").generic_string());
 
     std::ofstream((root / "saves" / "f.txt").string()) << "x";
     CHECK(shared::isUnderDir((root / "saves" / "f.txt").generic_string(), (root / "saves").generic_string()));

@@ -10,19 +10,19 @@
 #
 # BLOAD starts DiskWorks by itself: DWX.BIN's header runs it at $D000.
 
-format-version: 1
+format-version: 2
 preset-name: DiskWorks
 description: DiskWorks v3 (KiKiSoft), from a mounted folder
 model: PC-1600
-plotter: CE-1600P
-floppy-file: Progs.floppy.yaml
-host-drive: S3
+printer: CE-1600P
+host-drive: { folder: S3 }
 
-slot-1: CE-1600M
-slot-2-file: CE-1601M - Progs.card.yaml
+slot-1: { name: CE-1600M }
+slot-2: { file: CE-1601M - Progs.card.yaml }
 
 # The card is pre-populated, only reserve the machine-code area in S0:
 keys:
+  - floppy: { file: Progs.floppy.yaml }
   - key: mode
   - type: NEW"S0:",&E900
   - key: mode

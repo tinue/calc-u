@@ -32,9 +32,6 @@ namespace calcu::qt6 {
 class PaperPanel;
 }
 class Ce158PrinterWidget;
-class MemoryModuleManager;
-class FloppyDiskManager;
-class TapeManager;
 class AudioOutput;
 class EmulationPacer;
 
@@ -110,9 +107,6 @@ protected:
 
 private:
     std::unique_ptr<MachineController> m_controller;
-    std::unique_ptr<MemoryModuleManager> m_moduleManager;
-    std::unique_ptr<FloppyDiskManager> m_floppyManager;
-    std::unique_ptr<TapeManager> m_tapeManager;
     FaceplateWidget* m_faceplate = nullptr;
     ControlBar* m_controlBar = nullptr;
     DebugPanel* m_debugPanel = nullptr;
@@ -185,6 +179,11 @@ private:
     void syncUiFromController();
     void refreshModuleCombos();
     void refreshFloppyCombo();
+    void refreshMediaPickers();   // the three, from the media topic (LIB-7)
+    // The media topic's place `place` (slot-1, slot-2, floppy, tape), or nullptr.
+    const calcu::media::PlaceState* mediaPlace(const std::string& place) const;
+    // Name & Save of the medium in `place` (LIB-7 AC-16, AC-40): the library's dialog.
+    void nameAndSave(const std::string& place, const QString& prompt);
 
     // Shows/hides the PC-1600-only control-bar widgets (slot 2, CE-1600P
     // toggle) to match the current model. Called after every model switch
@@ -232,9 +231,9 @@ private:
     bool m_startupDone = false;  // the startup preset (if any) has run
     void mountHostDirectory();
     void unmountHostDirectory();
-    // Control bar > Tape: the cassette bay (TapeManager).
+    // Control bar > Tape: the cassette (LIB-7 AC-42).
     void refreshTapeCombo();
-    void selectTape(const QString& nameOrEmpty);
+    void selectTape(const QString& entry);
     void saveTape();
     void syncHostDriveActions(const shared::ControlState& state);
     // Reset / Reset All (control bar, Machine menu): see resetMachine() in

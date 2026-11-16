@@ -42,6 +42,12 @@ public:
     virtual std::optional<GivenBack> takeGivenBack() { return std::nullopt; }
     // Holding: the machine set the moment of a write (a tape: the motor stopped, D-11).
     virtual bool takeWriteNow() { return false; }
+    // Holding: true when an instance is written only at the moments
+    // takeWriteNow() sets and at the writes that do not wait (A2, A5), not
+    // half a second after each change (A1): a tape, whose recording is
+    // written each time the motor stops and at eject (M-47; Calc-U-1600
+    // AC-42, D-11).
+    virtual bool writesWhenAsked() const { return false; }
 };
 
 class ModuleMedium : public machine::Capability {

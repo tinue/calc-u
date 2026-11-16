@@ -5,6 +5,7 @@
 #include "media/MediaTopics.hpp"
 #include "qt6/MediaPicker.hpp"
 #include "qt6/NameAndSaveDialog.hpp"
+#include <QCheckBox>
 #include <QLineEdit>
 #include <string>
 #include <vector>
@@ -98,4 +99,33 @@ TEST(ac16_name_and_save_dialog_asks_name_and_switch) {
     CHECK(sent[0].find("\"name\":\"Bank\"") != std::string::npos && sent[0].find("confirmed") == std::string::npos);
     CHECK(sent[1].find("\"confirmed\":true") != std::string::npos);
     CHECK(dialog.result() == QDialog::Accepted);
+}
+
+// Calc-U-1600 AC-40 (LIB-7 design §10.6 P4, D-25): the product's two Name & Save
+// dialogs are this one with today's prompts -- "Instance name:" for a module,
+// with the switch "Write-protect (switch to read-only, can't be undone)" where
+// the module has one still off, and "Disk name:" for a floppy disk.
+TEST(lib7_ac40_qt6_prompts_instance_and_disk_name) {
+    qt6::NameAndSaveDialog module;
+    PlaceState p = slot();
+    p.nameAndSave = true;
+    p.askWriteProtect = true;
+    module.setPlace(p);
+    module.setPrompt(QStringLiteral("Instance name:"));
+    CHECK_EQ(module.prompt().toStdString(), std::string("Instance name:"));
+    CHECK(module.asksWriteProtect());
+    const auto* box = module.findChild<QCheckBox*>(QStringLiteral("media-protect"));
+    CHECK(box && box->text().toStdString() == "Write-protect (switch to read-only, can't be undone)");
+    qt6::NameAndSaveDialog disk;
+    PlaceState d;
+    d.place = "floppy";
+    d.kind = "floppy-disk";
+    d.sides = {0, 1};
+    d.nameAndSave = true;
+    disk.setPlace(d);
+    disk.setPrompt(QStringLiteral("Disk name:"));
+    CHECK_EQ(disk.prompt().toStdString(), std::string("Disk name:"));
+    CHECK(!disk.asksWriteProtect());
+    disk.findChild<QLineEdit*>(QStringLiteral("media-name"))->setText(QStringLiteral("Work"));
+    CHECK(sessions::toText(disk.args()).find("\"place\":\"floppy\"") != std::string::npos);
 }

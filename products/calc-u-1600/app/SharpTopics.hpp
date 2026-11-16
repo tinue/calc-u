@@ -14,8 +14,9 @@
 // (LIB-3 design §4, §5: the interim product topics; spec AC-38). Each is
 // carried by the library unread (AC-12) and re-pointed at its owner's topic
 // in the owner's step: `c1600.control-state` LIB-4 1600 (M-49);
-// `c1600.machine` LIB-4 / LIB-18 1600 (M-49 / M-46); `c1600.tapes` LIB-7
-// 1600 (M-47); `c1600.serial-links` LIB-2 1600 (M-47). `roms-missing` is
+// `c1600.machine` LIB-4 / LIB-18 1600 (M-49 / M-46; since M-47 with the
+// tape counter and the floppy lamp, LIB-7 1600: `c1600.tapes` went);
+// `c1600.serial-links` LIB-2 1600. `roms-missing` is
 // LIB-12's topic (LIB-12 design §3.5); its payload lives here until a
 // second product sends it.
 
@@ -24,7 +25,6 @@ namespace shared {
 namespace topics {
 inline const calcu::sessions::TopicName kControlState{"c1600.control-state"};
 inline const calcu::sessions::TopicName kMachine{"c1600.machine"};
-inline const calcu::sessions::TopicName kTapes{"c1600.tapes"};
 inline const calcu::sessions::TopicName kSerialLinks{"c1600.serial-links"};
 inline const calcu::sessions::TopicName kRomsMissing{"roms-missing"};
 } // namespace topics
@@ -37,7 +37,6 @@ inline const calcu::sessions::TopicName kRomsMissing{"roms-missing"};
 // product's data (LIB-18 D-22), each one plug change:
 namespace commands {
 inline const calcu::sessions::CommandName& kStart = calcu::sessions::kStartCommand;                       // (op) {model?, preset?} LIB-15 N3
-inline const calcu::sessions::CommandName kSelectModule{"c1600.select-module"};  // (op) {slot, name}; until M-47
 inline const calcu::sessions::CommandName kCE1600PRom{"c1600.ce1600p-rom"};      // (op) {version: old|new}
 inline const calcu::sessions::CommandName kMountHostDrive{"c1600.mount-host-drive"};      // (op) {dir}
 // C1600-2 (app/SharpLoaderPart, design §3.7): stateless, each carries the
@@ -111,29 +110,20 @@ struct ControlStatePayload final : calcu::sessions::PayloadOf<ControlStatePayloa
 };
 
 // The machine: its model and how often it was rebuilt (0.8.1's
-// machineReplaced, modelSwitched) and a module bay changed a slot
-// (moduleChanged).
+// machineReplaced, modelSwitched); the tape counter (0.8.1's tapeStatus)
+// and the CE-1600F's lamp (LIB-7 AC-39, AC-42). The media themselves are
+// LIB-7's topic `media`.
 struct MachinePayload final : calcu::sessions::PayloadOf<MachinePayload> {
     static constexpr calcu::sessions::PayloadKind kKind{"c1600.machine"};
     Model model = Model::PC1500A;
     std::uint64_t builds = 0;          // grows with every machine built
     std::uint64_t modelSwitches = 0;   // grows with every model switch and preset load
-    std::vector<std::uint64_t> moduleChanges = {0, 0, 0};   // per slot (1, 2)
+    TapeDeck::Status tape;             // the counter: position while playing, length while recording
+    bool floppyMotor = false;          // the drive's motor runs: the green lamp
     bool same(const MachinePayload& o) const {
         return model == o.model && builds == o.builds && modelSwitches == o.modelSwitches &&
-               moduleChanges == o.moduleChanges;
-    }
-    calcu::sessions::Value toValue() const override;
-};
-
-// The tape deck and the tape list (0.8.1's tapesChanged, tapeStatus).
-struct TapesPayload final : calcu::sessions::PayloadOf<TapesPayload> {
-    static constexpr calcu::sessions::PayloadKind kKind{"c1600.tapes"};
-    TapeDeck::Status status;
-    std::uint64_t listChanges = 0;
-    bool same(const TapesPayload& o) const {
-        return status.mode == o.status.mode && status.motor == o.status.motor && status.position == o.status.position &&
-               status.length == o.status.length && status.path == o.status.path && listChanges == o.listChanges;
+               tape.mode == o.tape.mode && tape.motor == o.tape.motor && tape.position == o.tape.position &&
+               tape.length == o.tape.length && floppyMotor == o.floppyMotor;
     }
     calcu::sessions::Value toValue() const override;
 };

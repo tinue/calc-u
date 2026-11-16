@@ -7,7 +7,6 @@
 #include <vector>
 
 #include "app/AppPaths.hpp"
-#include "app/MediaLibrary.hpp"
 #include "app/Settings.hpp"
 #include "app/SharpAppPart.hpp"
 #include "sessions/Payload.hpp"
@@ -52,9 +51,7 @@ private:
 
     SharpAppPart& m_app;
     Settings& m_settings;
-    AppPaths& m_paths;
     std::string m_uploadsDir;
-    std::unique_ptr<MediaLibrary> m_library;
 
     calcu::sessions::StateTopic* m_ui = nullptr;
     calcu::sessions::StateTopic* m_lcd = nullptr;

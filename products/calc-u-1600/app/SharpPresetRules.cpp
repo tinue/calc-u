@@ -3,6 +3,7 @@
 #include "Display/DisplayOutputText.hpp"
 #include "Display/LcdScreenshot.hpp"
 #include "Machine/SharpCatalogue.hpp"
+#include "Machine/SharpProductKinds.hpp"
 #include "app/SharpDisplayLines.hpp"
 #include "formats/Png.hpp"
 #include "presets/Engine.hpp"
@@ -42,6 +43,16 @@ calcu::presets::IdleRule SharpModelRules::idle() const {
     // does not wait for the user counts as idle there too (M-46 finding,
     // LIB-6 qa-report): it cannot be told from a program that waits with
     // INKEY$, which must count as idle.
+    // While the CE-1600F's motor runs (INIT"X:", SAVE"X:…" write for seconds
+    // and read the keyboard meanwhile) the machine is not idle (M-47: the
+    // disk steps of make_diskworks_media).
+    if (pc1600())
+        r.readyNow = [](const calcu::machine::Machine& cm) {
+            auto& m = const_cast<calcu::machine::Machine&>(cm);   // capability() reads only
+            if (!m.isKeyReady()) return false;
+            const sharp::FloppyDriveAccess* drive = sharp::firstOf<sharp::FloppyDriveAccess>(m);
+            return !drive || !drive->motorOn();
+        };
     r.stretch = calcu::machine::Seconds(20.0 / 60.0);
     const calcu::machine::TickRate rate = sharp::sharpCatalogue().model(calcu::machine::ModelId{m_model})->tickRate;
     r.sample = rate / 60;

@@ -162,7 +162,7 @@ until then.
 | AC-37 | Pass | `lib1_ac37_module_slots_and_components` (each module slot a holding media place in the descriptor; components and depth) |
 | AC-38 | Pass | `lib1_ac38_rom_entries_per_variant` |
 | AC-39 | Pass | `lib1_ac39_peripheral_descriptors` (nine modules, CE-150, CE-158, CE-1600P New/Old with the CE-1600F, host drive; the CE-161's switch as a control) |
-| AC-40 | Pass (without the media place clause) | `lib1_ac40_machines_conform` (`checkAgainstDescriptor` empty for each model and variant, bare and with each peripheral of AC-39 plugged in where it fits; the media place capabilities come with LIB-7, M-47, D-1) |
+| AC-40 | Pass (the media place clause since M-47) | `lib1_ac40_machines_conform` (`checkAgainstDescriptor` empty for each model and variant, bare and with each peripheral of AC-39 plugged in where it fits); M-47: `lib1_ac40_one_media_place_capability_per_media_place` |
 | AC-41 | Pass | `lib1_ac41_module_fit_table` |
 
 ### M-41 (LIB-7): the media place check (D-1)
@@ -175,3 +175,19 @@ kind; LIB-1 design §3.10), tested on the test machines by
 (`library/media/tests/place_tests.cpp`). The products call it beside
 `checkAgainstDescriptor` when their media places offer the kind (AC-40's
 media place clause, M-47 and M-55).
+
+## Calc-U-1600, the M-47 part (2026-11-16, branch `m47-media-1600`)
+
+With LIB-7 1600 (its qa-report has the run). Tests in
+`products/calc-u-1600/tests/descriptor_tests.cpp` (`CoreTests`, Frequent).
+
+| ID | Result | Test case |
+|---|---|---|
+| AC-37 | Pass (read with LIB-7 D-1, D-22) | `lib1_ac37_module_slots_and_components`: each module slot takes battery-backed modules, a kind of medium held by a module slot (LIB-7's `battery-backed-module`, `HeldBy::ModuleSlot`; CE-1600M a medium, CE-151 not); the slots are no media places of the descriptors any more (D-22: the module is a peripheral in its slot, D-1) |
+| AC-40 | Pass | `lib1_ac40_one_media_place_capability_per_media_place`: `media::checkMediaPlaces` empty on each model bare, with the CE-150 (its cassette), the CE-1600P New and Old (its cassette and its CE-1600F drive), a CE-150 on the PC-1600 and modules; one `MediaPlace` per media place, one `ModuleMedium` per battery-backed module in a slot |
+
+Deviation: AC-37's text says "lists each module slot as a holding media
+place"; the approved LIB-7 design (§10.1, D-22, Part C2/D boundary,
+2026-11-16) takes the slots out of `mediaPlaces`, since a module slot is a
+place of a kind, not a media place (D-1). The spec's decision log has a row
+for it. Every AC of the Calc-U-1600 column passes: the column is **Done**.

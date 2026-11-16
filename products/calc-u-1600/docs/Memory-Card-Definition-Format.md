@@ -360,7 +360,7 @@ slot-1-file: ../cards/prototype.card.yaml
   `.card.yaml` whose `module-name:` matches. WHERE those directories are is
   environment-specific, like the ROM path:
   - the **app** searches its bundled resources first, then the
-    **Settings ▸ Storage ▸ Battery-card saves** folder — so a preset can
+    **Settings ▸ Storage ▸ Save folder** — so a preset can
     name a user's own saved battery-card instance (matched by the `module-name:` written into it,
     e.g. `slot-2: CE-1601M - Programs`; the on-disk filename, blanks
     and all, is not consulted);

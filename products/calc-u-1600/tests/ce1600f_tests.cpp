@@ -248,7 +248,7 @@ TEST(test_port_0x81_reset_clears_motor_and_command_state) {
 }
 
 // loadImage()/insertBlankDisk() bump the revision -- the change counter
-// FloppyDiskManager polls on each frame tick to decide on autosave.
+// the media part reads (the drive's media place) after each call to decide on autosave.
 TEST(test_load_image_and_insert_blank_bump_revision) {
     CE1600FCard card;
     card.insertBlankDisk();
@@ -408,7 +408,8 @@ size_t countLines(const std::string& s) {
 TEST(test_floppy_file_round_trips_both_sides) {
     const auto image = patternedImage();
     const std::string text = formatFloppyFile("My Disk", image);
-    CHECK(text.find("format-version: 1\n") != std::string::npos);
+    CHECK(text.find("format-version: 2\n") != std::string::npos);   // LIB-7 AC-37: version 2, sides 0 and 1
+    CHECK(text.find("\n  0:\n") != std::string::npos && text.find("\n  1:\n") != std::string::npos);
     FloppyFile f;
     std::string err;
     CHECK(parseFloppyFile(text, &f, &err));
@@ -448,13 +449,13 @@ TEST(test_floppy_file_rejects_missing_or_unknown_version) {
     FloppyFile f;
     std::string err;
 
-    std::string v2 = good;
-    v2.replace(v2.find("format-version: 1"), 17, "format-version: 2");
-    CHECK(!parseFloppyFile(v2, &f, &err));
-    CHECK(err == "unsupported floppy format-version 2 (this build reads 1)");
+    std::string v1 = good;   // 0.8.x: outdated (the codec says so, app/SharpMediaKinds)
+    v1.replace(v1.find("format-version: 2"), 17, "format-version: 1");
+    CHECK(!parseFloppyFile(v1, &f, &err));
+    CHECK(err == "unsupported floppy format-version 1 (this build reads 2)");
 
     std::string noVersion = good;
-    noVersion.erase(noVersion.find("format-version: 1\n"), 18);
+    noVersion.erase(noVersion.find("format-version: 2\n"), 18);
     err.clear();
     CHECK(!parseFloppyFile(noVersion, &f, &err));
     CHECK(err == "missing 'format-version'");
@@ -466,15 +467,15 @@ TEST(test_floppy_file_rejects_missing_or_unknown_version) {
 
 TEST(test_floppy_file_rejects_wrong_side_size) {
     const std::string good = formatFloppyFile("S", std::vector<uint8_t>(CE1600FCard::kImageSize, 0));
-    // Side B cut short: one explicit 16-byte row instead of a run to $10000.
+    // Side 1 cut short: one explicit 16-byte row instead of a run to $10000.
     std::string shortSide = good;
-    const size_t b = shortSide.find("  b:");
+    const size_t b = shortSide.find("  1:");
     const size_t run = shortSide.find("$0000: 00...", b);
     shortSide.replace(run, 12, "$0000: 00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00");
     FloppyFile f;
     std::string err;
     CHECK(!parseFloppyFile(shortSide, &f, &err));
-    CHECK(err.find("side 'b'") != std::string::npos);
+    CHECK(err.find("side '1'") != std::string::npos);
 
     std::string noB = good.substr(0, b);
     CHECK(!parseFloppyFile(noB, &f, &err));

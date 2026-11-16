@@ -42,21 +42,6 @@ Value strings(const std::vector<std::string>& items) {
 
 Value rgb(Rgb c) { return Value(Value::Array{Value(c.r), Value(c.g), Value(c.b)}); }
 
-// A picker's groups plus `descriptions` (name -> description) for its tooltips.
-template <typename Entry>
-void pickerGroups(Value::Object& v, std::initializer_list<std::pair<const char*, const std::vector<Entry>*>> groups,
-                  std::string Entry::*name) {
-    Value::Object descriptions;
-    for (const auto& [key, entries] : groups) {
-        Value::Array names;
-        for (const Entry& e : *entries) {
-            names.emplace_back(e.*name);
-            if (!e.description.empty()) descriptions.push_back({e.*name, Value(e.description)});
-        }
-        v.push_back({key, Value(std::move(names))});
-    }
-    v.push_back({"descriptions", Value(std::move(descriptions))});
-}
 
 Value presetEntry(const calcu::presets::PresetListEntry& e) {
     return Value::object({{"group", e.group},
@@ -101,9 +86,8 @@ Value lcdConstants() {
 
 } // namespace
 
-SharpWebPart::SharpWebPart(SharpAppPart& app, Settings& settings, AppPaths& paths, std::string uploadsDir)
-    : m_app(app), m_settings(settings), m_paths(paths), m_uploadsDir(std::move(uploadsDir)),
-      m_library(std::make_unique<MediaLibrary>(app)) {}
+SharpWebPart::SharpWebPart(SharpAppPart& app, Settings& settings, AppPaths&, std::string uploadsDir)
+    : m_app(app), m_settings(settings), m_uploadsDir(std::move(uploadsDir)) {}
 
 SharpWebPart::~SharpWebPart() = default;
 
@@ -117,15 +101,6 @@ void SharpWebPart::attach(sessions::SessionSetup& setup) {
     auto cmd = [&setup](const char* name, H h) { setup.command(sessions::CommandName{name}, std::move(h)); };
     auto req = [&setup](const char* name, sessions::SessionSetup::RequestHandler h) {
         setup.request(sessions::RequestName{name}, std::move(h));
-    };
-    // Every command that changes what the page shows refreshes the topics.
-    auto refreshed = [this](CommandOutcome o, SessionContext& c) {
-        refresh(c);
-        return o;
-    };
-    auto errorOutcome = [](const std::string& error) -> CommandOutcome {
-        if (error.empty()) return Done{};
-        return Refused{error};
     };
 
     // Keys and typing are the library's typing part's commands (LIB-5:
@@ -157,68 +132,13 @@ void SharpWebPart::attach(sessions::SessionSetup& setup) {
     // Load BASIC Program / Load Machine Code: the page sends the loaders'
     // own commands (app/SharpLoaderPart, C1600-2 design §3.7).
 
-    // ── Bays ────────────────────────────────────────────────────────────
-    cmd("c1600.name-save-card", [this, refreshed, errorOutcome](const Value& a, SessionContext& c) -> CommandOutcome {
-        std::string error;
-        m_app.modules().nameAndSave(static_cast<int>(truncatedIntegerArg(a, "slot", 1)), textArg(a, "name"), &error, flagArg(a, "writeProtect"));
-        return refreshed(errorOutcome(error), c);
-    });
-    cmd("c1600.select-disk", [this, refreshed](const Value& a, SessionContext& c) -> CommandOutcome {
-        m_app.floppy().selectDisk(textArg(a, "name"));
-        return refreshed(Done{}, c);
-    });
-    cmd("c1600.toggle-disk-side", [this, refreshed](const Value&, SessionContext& c) -> CommandOutcome {
-        m_app.floppy().toggleSide();
-        return refreshed(Done{}, c);
-    });
-    cmd("c1600.name-save-disk", [this, refreshed, errorOutcome](const Value& a, SessionContext& c) -> CommandOutcome {
-        std::string error;
-        m_app.floppy().nameAndSave(textArg(a, "name"), &error);
-        return refreshed(errorOutcome(error), c);
-    });
-    cmd("c1600.select-tape", [this, refreshed, errorOutcome](const Value& a, SessionContext& c) -> CommandOutcome {
-        std::string error;
-        m_app.tapes().selectForPlay(textArg(a, "name"), &error);
-        return refreshed(errorOutcome(error), c);
-    });
-    req("c1600.tape-exists", [this](const Value& a, SessionContext&) {
-        return sessions::replyGiven(sessions::valuePayload("c1600.exists", Value(m_app.tapes().exists(textArg(a, "name")))));
-    });
-    cmd("c1600.record-tape", [this, refreshed, errorOutcome](const Value& a, SessionContext& c) -> CommandOutcome {
-        std::string error;
-        m_app.tapes().recordNew(textArg(a, "name"), &error);
-        return refreshed(errorOutcome(error), c);
-    });
-
-    // ── Saved media ─────────────────────────────────────────────────────
-    req("c1600.media-items", [this](const Value&, SessionContext&) {
-        Value::Array items;
-        for (const MediaItem& item : m_library->items())
-            items.push_back(Value::object({{"type", item.type == MediaType::Card   ? "card"
-                                                    : item.type == MediaType::Disk ? "disk"
-                                                                                   : "tape"},
-                                           {"name", item.name},
-                                           {"description", item.description},
-                                           {"fileName", item.fileName},
-                                           {"path", item.path},
-                                           {"isTemplate", item.isTemplate},
-                                           {"inUse", item.inUse}}));
-        return sessions::replyGiven(sessions::valuePayload("c1600.media", Value(std::move(items))));
-    });
-    req("c1600.export-media", [this](const Value& a, SessionContext&) {
-        std::vector<std::uint8_t> b;
-        if (!m_library->exportBytes(textArg(a, "path"), &b)) return sessions::replyRefused("The file could not be read.");
-        return sessions::replyGiven(sessions::valuePayload("c1600.bytes", Value(std::move(b))));
-    });
-    cmd("c1600.import-media", [this, refreshed](const Value& a, SessionContext& c) -> CommandOutcome {
-        const OpResult r = m_library->importFile(textArg(a, "name"), bytesArg(a, "bytes").value_or(std::vector<std::uint8_t>{}));
-        return refreshed(r.ok ? CommandOutcome(Done{}) : CommandOutcome(Refused{r.error}), c);
-    });
-    cmd("c1600.remove-media", [this, refreshed](const Value& a, SessionContext& c) -> CommandOutcome {
-        const OpResult r = m_library->remove(textArg(a, "path"));
-        return refreshed(r.ok ? CommandOutcome(Done{}) : CommandOutcome(Refused{r.error}), c);
-    });
-
+    // ── Media ───────────────────────────────────────────────────────────
+    // The pickers, Name & Save, the side, the tapes, the import and the
+    // saved media are LIB-7's commands (`media.choose`, `media.turn`,
+    // `media.name-and-save`, `media.start-new`, `media.import`,
+    // `media.export`, `media.delete`; AC-43), drawn by the library's
+    // components (CalcuMediaPicker, CalcuNameAndSaveDialog,
+    // CalcuSavedMediaDialog).
     // ── Inspector ───────────────────────────────────────────────────────
     req("c1600.inspector-menu", [this](const Value& a, SessionContext&) {
         const bool pc1500 = m_app.currentModel() != Model::PC1600;
@@ -340,30 +260,11 @@ Value SharpWebPart::ui() const {
                      {"pc1500Rom", Value(static_cast<int>(m_app.pc1500RomRevision()))},
                      {"pc1600Rom", Value(static_cast<int>(m_app.pc1600RomVersion()))},
                      {"ce1600pRom", Value(static_cast<int>(m_app.ce1600pRomVersion()))}};
-    Value::Array slots;
-    for (int slot = 1; slot <= s.slotCount; ++slot) {
-        const auto lists = m_app.modules().moduleLists(ModuleBay::hostForModel(slot, s.model));
-        Value::Object v;
-        pickerGroups(v, {{"templates", &lists.templates}, {"instances", &lists.instances}, {"roms", &lists.roms}},
-                     &ModuleBay::ModuleEntry::moduleName);
-        v.push_back({"selected", Value(m_app.modules().selectedModuleName(slot))});
-        v.push_back({"canSave", Value(m_app.modules().canNameAndSave(slot))});
-        v.push_back({"canWriteProtect", Value(m_app.modules().canWriteProtect(slot))});
-        slots.emplace_back(std::move(v));
-    }
-    ui.push_back({"slots", Value(std::move(slots))});
-    if (s.floppyShown) {
-        const auto disks = m_app.floppy().diskLists();
-        Value::Object v;
-        pickerGroups(v, {{"templates", &disks.templates}, {"instances", &disks.instances}}, &FloppyBay::DiskEntry::diskName);
-        v.push_back({"selected", Value(m_app.floppy().selectedDiskName())});
-        v.push_back({"side", Value(m_app.floppy().side())});
-        v.push_back({"canSave", Value(m_app.floppy().canNameAndSave())});
-        ui.push_back({"floppy", Value(std::move(v))});
-    }
-    if (s.tapeShown)
-        ui.push_back({"tape", Value::object({{"names", strings(m_app.tapes().pickerNames())},
-                                            {"current", m_app.tapes().currentName()}})});
+    // The pickers of the slots, the drive and the cassette are the media
+    // part's (LIB-7: the topic `media`, the commands `media.*`); here only
+    // which of them the control bar shows.
+    ui.push_back({"floppyShown", Value(s.floppyShown)});
+    ui.push_back({"tapeShown", Value(s.tapeShown)});
     return Value(std::move(ui));
 }
 
@@ -396,13 +297,15 @@ void SharpWebPart::lcd(SessionContext& c) {
 void SharpWebPart::lamps() {
     const ControlState state = m_app.controlState();
     const TapeDeck::Status tape = m_app.tapeStatus();
+    const calcu::media::Binding* held = m_app.mediaPart().bindingOf("tape");
+    const std::string tapeName = held ? held->name : std::string();
     m_lamps->set(sessions::valuePayload(
         "c1600.lamps",
-        Value::object({{"floppyMotor", state.floppyShown && m_app.floppy().motorOn()},
+        Value::object({{"floppyMotor", state.floppyShown && m_app.floppyMotorOn()},
                        {"tapeMode", tape.mode == TapeDeck::Mode::Play ? "play" : tape.mode == TapeDeck::Mode::Record ? "record" : ""},
                        {"tapeMotor", tape.motor},
                        {"tapeSeconds", static_cast<int>(tape.position)},
-                       {"tapeFile", fromPath(toPath(tape.path).filename())}})));
+                       {"tapeFile", tapeName}})));
 }
 
 void SharpWebPart::printer() {

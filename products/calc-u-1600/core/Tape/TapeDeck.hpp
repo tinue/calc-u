@@ -62,6 +62,14 @@ public:
         return true;
     }
 
+    /// Same, from the bytes of a WAV file (a tape's sound, LIB-7 M-47).
+    bool loadForPlayBytes(const std::vector<uint8_t>& wavBytes, std::string& error) {
+        WavData wav;
+        if (!readWavBytes(wavBytes, wav, error)) return false;
+        loadForPlay(wav.samples, wav.sampleRate);
+        return true;
+    }
+
     /// Same, from samples in -1..+1 (tests).
     void loadForPlay(const std::vector<float>& samples, int sampleRate) {
         eject();
@@ -78,6 +86,8 @@ public:
         eject();
         m_recording.clear();
         m_savedSamples = 0;
+        m_stopped = false;
+        m_stoppedSamples = 0;
         m_mode = Mode::Record;
         m_rate = kRecordSampleRate;
         m_path = path;
@@ -118,6 +128,10 @@ public:
     /// is no one to return it to.
     std::string takeLastError() { return std::exchange(m_lastError, std::string()); }
 
+    /// True once after the motor stopped on a recording that grew: the
+    /// moment its sound is written (the cassette's media place, LIB-7 D-11).
+    bool takeStopped() { return std::exchange(m_stopped, false); }
+
     Mode mode() const { return m_mode; }
     const std::vector<int16_t>& recording() const { return m_recording; }
 
@@ -128,6 +142,8 @@ public:
     /// disk at once; a later CSAVE on the same tape appends and saves again.
     void setMotor(bool on) {
         if (m_motor && !on && m_mode == Mode::Record) {
+            m_stopped = m_stopped || m_recording.size() != m_stoppedSamples;
+            m_stoppedSamples = m_recording.size();
             std::string error;
             if (!saveRecording(&error)) m_lastError = error;
         }
@@ -184,6 +200,8 @@ private:
     std::vector<int16_t> m_recording;
     size_t m_savedSamples = 0; // how much of m_recording is on disk
     std::string m_lastError;   // see takeLastError()
+    bool m_stopped = false;    // see takeStopped()
+    size_t m_stoppedSamples = 0;
 
     // Writes the recording if it has samples not on disk yet; true if there
     // was nothing to do.

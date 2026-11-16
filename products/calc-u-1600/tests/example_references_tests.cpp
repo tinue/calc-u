@@ -10,7 +10,9 @@
 // clock and the tick counts (none of the compared ranges holds them), the
 // paper's reach (the converted references hold no feeds, LIB-8 D-14).
 // The intended differences are named below with their reason; the presets
-// that wait for LIB-7's media (C1600-4 design §1) are listed as waiting.
+// that waited for LIB-7's media (C1600-4 design §1) are compared since M-47;
+// for make_diskworks_media also the files its `saveas:` wrote, against the
+// ones of examples/dwx/ it made with 0.8.1, without their time stamps.
 //
 // Longer (`CalcU1600ExampleReferences`, CALCU1600_REFERENCES=1): about
 // 80 s of runs at full speed in emulated time.
@@ -37,12 +39,8 @@ namespace {
 
 const fs::path kRef = "tests/reference/v0.8.1-examples";
 
-// The presets that wait for LIB-7's Calc-U-1600 kinds (M-47; C1600-4 D-3).
+// The presets that wait for a later step (none since M-47, LIB-7 1600).
 const std::map<std::string, std::string> kWaiting = {
-    {"dwx_DiskWorks.pc1600", "floppy-file:, slot-2-file: (LIB-7, M-47)"},
-    {"dwx_make_diskworks_media.pc1600", "floppy:, saveas: (LIB-7, M-47)"},
-    {"memory_memory-cards_pc1500-maxed-out.pc1500", "slot-1-file: (LIB-7, M-47)"},
-    {"startup_default-pc1600.pc1600", "floppy: Formatted (LIB-7, M-47)"},
 };
 
 // The intended differences (AC-16: "excepted by name"), what each leaves
@@ -55,6 +53,11 @@ struct Excepted {
     const char* why;
 };
 const std::map<std::string, Excepted> kExcepted = {
+    // M-47 finding: the last item, BLOAD, is not waited for (LIB-6 AC-60)
+    // and the harness's `wait` finds the PC-1600 idle (key readiness) while
+    // DWX.BIN still comes from the host drive, before DiskWorks draws the
+    // banner of the reference; seconds later it shows its file list.
+    {"dwx_DiskWorks.pc1600", {true, -1, false, false, "DiskWorks: idle before its banner is drawn (M-47 finding)"}},
     // conversion check §4: the program never returns to BASIC; version 1
     // ran it at full speed up to an hour, version 2 hands it over at once.
     {"machine-code_Calculat.pc1600", {true, -1, false, true, "Calculat: its program never returns to BASIC (conversion check §4)"}},
@@ -254,6 +257,37 @@ std::vector<std::string> compare(const std::string& base, const fs::path& copy, 
         }
     }
     server->finish();
+    // The media make_diskworks_media saves next to itself (LIB-7 1600, M-47):
+    // the module and the disk as the ones of examples/dwx/ (made with 0.8.1,
+    // the disk since upgraded to version 2), but their time stamps.
+    if (base == "dwx_make_diskworks_media.pc1600")
+        for (const char* file : {"CE-1601M - Progs.card.yaml", "Progs.floppy.yaml"}) {
+            // Left out besides the time stamps: the comments (a module file
+            // keeps those of the bundled CE-1601M it was spliced into, which
+            // were edited since) and the disk's description, which a save now
+            // keeps (LIB-7 AC-41; 0.8.1's preset save dropped it).
+            auto stamped = [](const std::string& l) {
+                return l.rfind("saved:", 0) == 0 || l.rfind("#", 0) == 0 || l.rfind("description:", 0) == 0;
+            };
+            std::vector<std::string> want, got;
+            for (const std::string& l : linesOf(slurp(fs::path("examples/dwx") / file)))
+                if (!stamped(l)) want.push_back(rtrim(l));
+            for (const std::string& l : linesOf(slurp(copy / "examples/dwx" / file)))
+                if (!stamped(l)) got.push_back(rtrim(l));
+            // The content holds time stamps of its own (the directory entries
+            // of the files SAVE wrote: the harness's clock is not the CLI's of
+            // 0.8.1): rows of bytes may differ, nothing else.
+            const auto isRow = [](const std::string& l) { return l.find("$") != std::string::npos && l.find(": ") != std::string::npos; };
+            int rows = 0;
+            bool same = got.size() == want.size();
+            for (std::size_t i = 0; same && i < got.size(); ++i)
+                if (got[i] != want[i]) {
+                    same = isRow(got[i]) && isRow(want[i]) && got[i].substr(0, got[i].find(": ")) == want[i].substr(0, want[i].find(": "));
+                    ++rows;
+                }
+            std::printf("  %s: saved %s, %d rows of bytes differ (time stamps)\n", base.c_str(), file, rows);
+            if (!same) d.push_back(std::string("saved ") + file + ": differs from examples/dwx beyond rows of bytes");
+        }
     return d;
 }
 
@@ -274,7 +308,7 @@ TEST(c1600_4_ac16_examples_match_their_references) {
         const std::string base = name.substr(0, name.size() - 5);
         if (only && base.find(only) == std::string::npos) continue;
         if (const auto w = kWaiting.find(base); w != kWaiting.end()) {
-            std::printf("  %s: waits for M-47: %s\n", base.c_str(), w->second.c_str());
+            std::printf("  %s: waits: %s\n", base.c_str(), w->second.c_str());
             continue;
         }
         std::size_t bytes = 0;

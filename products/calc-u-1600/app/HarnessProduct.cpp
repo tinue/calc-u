@@ -1,4 +1,5 @@
 #include "app/HarnessProduct.hpp"
+#include "app/SharpMediaKinds.hpp"
 
 #include <cctype>
 #include <cstdio>
@@ -255,6 +256,13 @@ public:
     }
 
     startup::ProductMachines& machines() override { return machines_; }
+
+    // LIB-7 (§10.5): the modules, disks and tapes; the bundled templates
+    // beside the module definitions.
+    std::vector<calcu::media::KindDecl> mediaKinds() override {
+        return shared::mediaKinds(std::string(CALCU1600_DIR) + "/frontends/qt6/resources/cards", catalogue_);
+    }
+    calcu::media::ModuleListing moduleListing() const override { return shared::moduleListing(); }
 
     harness::DisplayText readDisplay(const machine::DisplayOutput& o, const machine::MachineDescriptor& d) override {
         return displayLines(o, d, font_.font);

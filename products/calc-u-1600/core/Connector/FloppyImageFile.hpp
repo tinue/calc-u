@@ -21,15 +21,15 @@
 // run collapses to one line:
 //
 //   format: ce1600f-floppy
-//   format-version: 1
+//   format-version: 2
 //   disk-name: "Progs"
 //   saved: 2026-09-19T12:34:56Z
 //   sides:
-//     a:
+//     0:
 //       encoding: addressed-hex
 //       bytes: |
 //         $0000: ...
-//     b:
+//     1:
 //       ...
 //
 // `format-version` is mandatory; a reader rejects any version it doesn't
@@ -42,7 +42,7 @@
 // file that declares it.
 
 constexpr const char* kFloppyFileSuffix = ".floppy.yaml";
-constexpr long kFloppyFormatVersion = 1;
+constexpr long kFloppyFormatVersion = 2;   // version 1 (0.8.x) named the sides a and b (outdated, preset.md §9.4)
 
 struct FloppyFile {
     std::string diskName;
@@ -52,13 +52,13 @@ struct FloppyFile {
     // (formatFloppyFile() writes the key only when asked to). No key = an instance,
     // autosaved in place.
     bool isTemplate = false;
-    std::vector<uint8_t> image;  // CE1600FCard::kImageSize bytes, side A then side B
+    std::vector<uint8_t> image;  // CE1600FCard::kImageSize bytes, side 0 then side 1
 };
 
 namespace floppy_detail {
 
 constexpr const char* kFormatTag = "ce1600f-floppy";
-constexpr const char* kSideKeys[2] = {"a", "b"};
+constexpr const char* kSideKeys[2] = {"0", "1"};
 
 // Checks `format`/`format-version` and reads `disk-name`, `description`
 // and `template` from a parsed file.
@@ -101,13 +101,14 @@ inline bool readHeader(const calcu::formats::YamlNode& root, std::string* diskNa
 }  // namespace floppy_detail
 
 // Serializes `image` (must be CE1600FCard::kImageSize bytes) as a complete
-// version-1 file. `diskName` is written double-quoted verbatim (the YAML
+// version-2 file. `diskName` is written double-quoted verbatim (the YAML
 // reader does no escape processing), so it must not contain '"' or a newline.
 // `asTemplate` writes `template: true` (a preset's `saveas: template
 // floppy:...`); the app itself only ever writes instances. A non-empty
 // `description` is written too (single-quoted if it holds a '"').
 inline std::string formatFloppyFile(const std::string& diskName, const std::vector<uint8_t>& image,
-                                    bool asTemplate = false, const std::string& description = {}) {
+                                    bool asTemplate = false, const std::string& description = {},
+                                    const std::string& saved = {}) {
     std::string out;
     out.reserve(4096);
     out += "# Calc-U-1600 CE-1600F floppy disk image\n";
@@ -119,7 +120,7 @@ inline std::string formatFloppyFile(const std::string& diskName, const std::vect
         out += std::string("description: ") + quote + description + quote + "\n";
     }
     if (asTemplate) out += "template: true\n";
-    out += "saved: " + currentIso8601Timestamp() + "\n";
+    out += "saved: " + (saved.empty() ? currentIso8601Timestamp() : saved) + "\n";
     out += "sides:\n";
     for (size_t side = 0; side < 2; ++side) {
         const auto first = image.begin() + static_cast<std::ptrdiff_t>(side * CE1600FCard::kSideSize);
@@ -145,7 +146,7 @@ inline bool parseFloppyFile(const std::string& text, FloppyFile* out, std::strin
         *error = "missing 'sides' mapping";
         return false;
     }
-    if (!sides->requireOnlyKeys({"a", "b"}, error)) return false;
+    if (!sides->requireOnlyKeys({"0", "1"}, error)) return false;
     out->image.clear();
     out->image.reserve(CE1600FCard::kImageSize);
     for (const char* key : floppy_detail::kSideKeys) {

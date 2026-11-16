@@ -8,6 +8,7 @@ format-version: 1
 startup:
   - preset: { file: startup/default-pc1500.pc1500 }
   - preset: { file: startup/default-pc1500a.pc1500a }
+  - preset: { file: startup/default-pc1600.pc1600 }
 groups:
   - group: BASIC
     examples:

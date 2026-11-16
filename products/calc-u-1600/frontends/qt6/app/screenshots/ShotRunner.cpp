@@ -15,6 +15,8 @@
 #include <QApplication>
 #include <QComboBox>
 #include <QDialog>
+#include <QDialogButtonBox>
+#include <QPushButton>
 #include <QDir>
 #include <QFileDialog>
 #include <QFileInfo>
@@ -386,7 +388,13 @@ bool ShotRunner::runStep(const ShotStep& step, int* delayMs, std::function<void(
         }
         // Deferred, as for choose-file: accepting returns from the
         // dialog's exec(), and the code after it may open another dialog.
-        *deferred = [dialog] { dialog->accept(); };
+        // A dialog with an OK button is accepted by clicking it, as a user
+        // does: the library's Name & Save dialog saves on its button box's
+        // `accepted` (LIB-7), not on QDialog::accept().
+        QPushButton* ok = nullptr;
+        if (auto* box = dialog->findChild<QDialogButtonBox*>()) ok = box->button(QDialogButtonBox::Ok);
+        if (ok) *deferred = [ok] { ok->click(); };
+        else *deferred = [dialog] { dialog->accept(); };
         *delayMs = settle;
         return true;
     }

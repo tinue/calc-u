@@ -14,7 +14,6 @@
 #include "../core/Connector/BatteryCardInstance.hpp"
 #include "../core/Connector/FloppyImageFile.hpp"
 #include "../core/Connector/MemoryCardCatalog.hpp"
-#include "../core/Connector/MediaSave.hpp"
 #include "../core/Connector/MemoryCardDefinition.hpp"
 #include "../core/Connector/SoftwareDefinedCard.hpp"
 
@@ -418,49 +417,5 @@ TEST(test_splice_roundtrip_through_real_bundled_file_if_present) {
     CHECK(spliced.find("\nformat-version: 1\n") != std::string::npos);
 }
 
-// ── saving under a name (Core/Connector/MediaSave.hpp) ──
-
-std::string cardText(const std::string& name, bool isTemplate) {
-    return "format-version: 1\nmodule-name: \"" + name + "\"\n" + (isTemplate ? "template: true\n" : "") +
-           "compatible-hosts: [PC-1500]\ndefinition-terminology: PC-1500\nregions:\n"
-           "  - name: r\n    capacity: 0x10\n    banking: none\n    content: regular\n"
-           "    addressing: { chip-select: Y0, span: 0x10 }\n";
-}
-
-// Where a save goes, and every refusal -- the same for a card and a disk.
-TEST(test_plan_media_save) {
-    const calcu::testing::TempFolder tmp("calcu1600-media-save");
-    const std::string d = tmp.str();
-    const MediaSaveFolders folders{d + "/bundled", d + "/saves"};
-    std::filesystem::create_directories(folders.bundled);
-    std::filesystem::create_directories(folders.saves);
-    std::ofstream(folders.bundled + "/b.card.yaml") << cardText("Bundled", true);
-    std::ofstream(folders.saves + "/t.card.yaml") << cardText("Mine", true);
-    std::ofstream(folders.saves + "/Odd.card.yaml") << cardText("Other", true);  // file name != module-name
-    std::ofstream(folders.bundled + "/f.floppy.yaml") << formatFloppyFile("Disk", std::vector<uint8_t>(0x20000, 0), true);
-
-    std::string path;
-    const auto plan = [&](MediaKind kind, const std::string& name, bool asTemplate, const std::string& file = {}) {
-        path.clear();
-        return planMediaSave(kind, name, file, asTemplate, folders, &path);
-    };
-    CHECK(plan(MediaKind::Card, "", false) == MediaSaveRefusal::EmptyName);
-    CHECK(plan(MediaKind::Card, "a\"b", false) == MediaSaveRefusal::QuoteInName);
-    CHECK(planMediaSave(MediaKind::Card, "X", "", false, {folders.bundled, ""}, &path) ==
-          MediaSaveRefusal::NoSaveFolder);
-    CHECK(plan(MediaKind::Card, "Bundled", false) == MediaSaveRefusal::TemplateName);
-    CHECK(plan(MediaKind::Card, "Bundled", true) == MediaSaveRefusal::TemplateName);
-    CHECK(plan(MediaKind::Card, "Mine", false) == MediaSaveRefusal::TemplateName);
-    CHECK(plan(MediaKind::Card, "Mine", true) == MediaSaveRefusal::None);  // a preset re-making its template
-    CHECK(plan(MediaKind::Card, "Odd", false) == MediaSaveRefusal::TemplateFile);
-    CHECK(plan(MediaKind::Card, "My/card", false) == MediaSaveRefusal::None);
-    CHECK(path == folders.saves + "/My-card.card.yaml");
-    CHECK(plan(MediaKind::Card, "Bundled", false, "/x/y.card.yaml") == MediaSaveRefusal::None);  // file: form
-    CHECK(path == "/x/y.card.yaml");
-    CHECK(plan(MediaKind::Floppy, "Disk", false) == MediaSaveRefusal::TemplateName);
-    CHECK(plan(MediaKind::Floppy, "Bundled", false) == MediaSaveRefusal::None);  // a card's name, not a disk's
-    CHECK(path == folders.saves + "/Bundled.floppy.yaml");
-    std::filesystem::remove_all(d);
-}
 
 }  // namespace

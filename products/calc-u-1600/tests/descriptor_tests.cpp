@@ -5,6 +5,9 @@
 #include <set>
 
 #include "machine/Conformance.hpp"
+#include "media/Conformance.hpp"
+#include "media/MediaPlace.hpp"
+#include "../app/SharpMediaKinds.hpp"
 
 #include "SharpTestSupport.hpp"
 
@@ -108,17 +111,30 @@ TEST(lib1_ac36_connectors_pinouts_places_debug_targets) {
 TEST(lib1_ac37_module_slots_and_components) {
     for (const char* id : {"PC-1500", "PC-1500A", "PC-1600"}) {
         const MachineDescriptor& d = model(id);
-        // Each module slot is a holding media place for battery-backed modules.
+        // Each module slot takes battery-backed modules, a kind of medium
+        // held by a module slot (LIB-7 D-1, D-22): the module is a
+        // peripheral there, so the slot is no media place of the descriptor.
+        bool slots = false;
         for (const auto& p : d.places) {
             if (p.name.value.rfind("slot-", 0) != 0) continue;
-            const auto it = std::find_if(d.mediaPlaces.begin(), d.mediaPlaces.end(),
-                                         [&](const MediaPlaceDescriptor& m) { return m.id.value == p.name.value; });
-            CHECK(it != d.mediaPlaces.end());
-            if (it != d.mediaPlaces.end()) CHECK(it->passage == MediaPassage::Holding);
+            slots = true;
+            CHECK(std::none_of(d.mediaPlaces.begin(), d.mediaPlaces.end(),
+                               [&](const MediaPlaceDescriptor& m) { return m.id.value == p.name.value; }));
         }
+        CHECK(slots);
         CHECK(hasComponent(d, "rtc", std::string(id) == "PC-1600" ? Depth::Folded : Depth::Separate));
         for (const auto& c : d.components)
             if (c.depth == Depth::Folded) CHECK(c.foldedInto.has_value());
+    }
+    // The battery-backed modules are media of that kind (LIB-7 AC-37).
+    const Catalogue c = catalogueWithModules();
+    calcu::machine::Catalogue copy = c;
+    const auto kinds = shared::mediaKinds("frontends/qt6/resources/cards", copy);
+    const auto module = std::find_if(kinds.begin(), kinds.end(), [](const auto& k) { return k.id == shared::kModuleKind; });
+    CHECK(module != kinds.end() && module->heldBy == calcu::media::HeldBy::ModuleSlot);
+    if (module != kinds.end()) {
+        CHECK(module->isMedium(*c.peripheral(PeripheralId{"CE-1600M"})));
+        CHECK(!module->isMedium(*c.peripheral(PeripheralId{"CE-151"})));
     }
     // machine.md, fit table, "Depth today".
     const MachineDescriptor& p15 = model("PC-1500");
@@ -258,5 +274,40 @@ TEST(lib1_ac40_machines_conform) {
         for (const auto& d : diff) std::fprintf(stderr, "  %s: %s\n", pl.model, d.c_str());
         CHECK(diff.empty());
     }
-    // The media place clause of AC-40 is LIB-7's (M-47, LIB-1 D-1).
+    // The media place clause (M-47, LIB-1 D-1): one MediaPlace per media place
+    // of the descriptors, checked in lib1_ac40_one_media_place_capability_per_media_place.
+}
+
+// LIB-1 AC-40's media place clause (LIB-7 design §10.6 P10, D-1):
+// media::checkMediaPlaces on each model, bare and with each peripheral
+// that has media places (the CE-150's cassette; the CE-1600P's cassette
+// and floppy drive); a battery-backed module in a slot is a module medium.
+TEST(lib1_ac40_one_media_place_capability_per_media_place) {
+    const Catalogue c = catalogueWithModules();
+    struct Plug { const char* model; std::vector<PeripheralRequest> peripherals; std::size_t places; };
+    std::vector<Plug> plugs;
+    for (const char* model : {"PC-1500", "PC-1500A", "PC-1600"}) plugs.push_back({model, {}, 0});
+    plugs.push_back({"PC-1500", {request(c, "CE-150", "printer"), moduleRequest("CE-161", "slot-1")}, 1});
+    plugs.push_back({"PC-1500A", {request(c, "CE-150", "printer"), request(c, "CE-158", "interface")}, 1});
+    plugs.push_back({"PC-1600", {request(c, "CE-1600P", "printer", VariantId{"Old"}), moduleRequest("CE-1600M", "slot-1"),
+                                 moduleRequest("CE-1601M", "slot-2")}, 2});
+    plugs.push_back({"PC-1600", {request(c, "CE-1600P", "printer", VariantId{"New"})}, 2});
+    plugs.push_back({"PC-1600", {request(c, "CE-150", "printer"), moduleRequest("CE-151", "slot-1")}, 1});
+    int built = 0;
+    for (auto& pl : plugs) {
+        std::vector<PeripheralRequest> requests = pl.peripherals;
+        std::size_t modules = 0;
+        for (const auto& r : requests)
+            if (r.place.steps.front().value.rfind("slot-", 0) == 0 && r.peripheral.value != "CE-151") ++modules;
+        std::string refusal;
+        auto m = buildSharp(c, pl.model, std::nullopt, std::move(requests), &refusal);
+        if (!m) { std::fprintf(stderr, "  SKIP %s: %s\n", pl.model, refusal.c_str()); continue; }
+        ++built;
+        const auto diff = calcu::media::checkMediaPlaces(*m, c);
+        for (const auto& d : diff) std::fprintf(stderr, "  %s: %s\n", pl.model, d.c_str());
+        CHECK(diff.empty());
+        CHECK_EQ(m->capabilities(calcu::media::MediaPlace::kKind).size(), pl.places);
+        CHECK_EQ(m->capabilities(calcu::media::ModuleMedium::kKind).size(), modules);
+    }
+    SKIP_UNLESS(built > 0, "no Sharp ROM");
 }

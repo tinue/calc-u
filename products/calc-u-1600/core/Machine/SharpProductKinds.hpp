@@ -19,9 +19,9 @@
 //   c1600.ce158-printer-port   bytes sent to the CE-158's printer port (owner: the CE-158)
 //   c1600.host-drive-folder    the host drive's folder (owner: the host drive)
 //   c1600.trace-records        the records of a CPU trace (owner: the main CPU; LIB-10 D-18)
-// Adapter kinds, each removed by the step named (design §5):
-//   c1600.tape-deck      the cassette recorder (M-47, LIB-7)
-//   c1600.floppy-drive   the CE-1600F (M-47, LIB-7)
+//   c1600.tape-deck      the cassette's counter and motor (owner: the CE-150 or CE-1600P)
+//   c1600.floppy-drive   the CE-1600F's lamp (owner: the CE-1600P)
+// The media themselves are LIB-7's kinds since M-47 (SharpMediaPlaces.hpp).
 //
 // The owner "the main CPU" (LH5801, SC7852) stands for the machine itself
 // (design D-1).
@@ -123,16 +123,16 @@ public:
 // ---- Adapter kinds ----
 
 
+// Since M-47 (LIB-7 §10.2) the tape and the disk themselves are the media
+// places `cassette` and `floppy` (core/Machine/SharpMediaPlaces.hpp); these
+// two keep what the control bar shows: the tape counter, its motor and
+// whether it plays or records (AC-42), and the drive's lamp (AC-39).
 class TapeDeckAccess : public calcu::machine::Capability {
 public:
     static constexpr calcu::machine::KindId kKind{"c1600.tape-deck"};
     calcu::machine::KindId kind() const override { return kKind; }
 
-    virtual bool play(const std::string& path, std::string& error) = 0;
-    virtual void record(const std::string& path) = 0;
-    virtual bool eject(std::string* error) = 0;
     virtual TapeDeck::Status status() const = 0;
-    virtual std::string takeLastError() = 0;
 };
 
 class FloppyDriveAccess : public calcu::machine::Capability {
@@ -140,13 +140,6 @@ public:
     static constexpr calcu::machine::KindId kKind{"c1600.floppy-drive"};
     calcu::machine::KindId kind() const override { return kKind; }
 
-    virtual std::vector<std::uint8_t> diskImage() const = 0;
-    virtual std::uint64_t revision() const = 0;
-    virtual void eject() = 0;
-    virtual bool hasDisk() const = 0;
-    virtual bool loadImage(const std::uint8_t* data, std::size_t size) = 0;
-    virtual int side() const = 0;
-    virtual void setSide(int side) = 0;
     virtual bool motorOn() const = 0;
 };
 

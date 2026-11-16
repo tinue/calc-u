@@ -589,6 +589,7 @@ void MediaPart::autosave(SessionContext& c, bool atOnce, pacing::WallTime now) {
             changed(c, p, b, rev, nullptr);
             continue;
         }
+        if (cap && cap->writesWhenAsked() && !atOnce && !now4) continue;   // only at its moments (a tape)
         if (!b.pending) {   // A1, D-5
             b.pending = true;
             b.dated = callStart_;
@@ -937,7 +938,7 @@ MediaPart::OpenedMedium MediaPart::readOpened(std::string_view name, const std::
         return out;
     }
     const ReadOutcome r = out.kind->codec->read(bytes, {});
-    if (r.status == ReadOutcome::Status::Unreadable)
+    if (r.unreadable())
         out.refusal = "The " + out.kind->label + " file " + baseName(name) + " cannot be read" +
                       (r.problem.empty() ? "." : ": " + r.problem);
     else if (r.status == ReadOutcome::Status::Outdated)
@@ -1168,7 +1169,14 @@ std::vector<PickerEntry> MediaPart::picker(SessionContext& c, const Place& p) co
     empty.push_back(PickerEntry{PickerEntry::Group::Empty, "", "", std::nullopt, true, std::nullopt});
     const KindDecl& k = *p.kind;
     auto tip = [](const std::string& d) { return d.empty() ? std::nullopt : std::optional<std::string>(d); };
+    Machine* atMachine = c.machine();
+    const machine::PlaceDescriptor* slotPlace =
+        p.slot && atMachine ? atMachine->descriptor().place(p.path.steps.front()) : nullptr;
+    std::vector<std::string> shelfNames;   // a catalogue module of that name is the same template
     for (const ShelfEntry* e : shelf_.entries(k)) {
+        // A module slot lists the media that fit it (AC-8; Calc-U-1600 AC-38).
+        if (slotPlace && k.fitsPinOut && !e->outdatedHint && !k.fitsPinOut(e->info, slotPlace->pinOut)) continue;
+        shelfNames.push_back(foldName(e->name));
         PickerEntry x;
         x.label = e->name;
         x.tooltip = tip(e->description);
@@ -1204,7 +1212,9 @@ std::vector<PickerEntry> MediaPart::picker(SessionContext& c, const Place& p) co
                 for (const KindDecl& kk : kinds())
                     medium = medium || (kk.heldBy == HeldBy::ModuleSlot && kk.isMedium && kk.isMedium(*d));
                 if (medium) {
-                    if (k.isMedium && k.isMedium(*d))
+                    const std::string name = foldName(d->name.empty() ? d->id.value : d->name);
+                    const bool onShelf = std::find(shelfNames.begin(), shelfNames.end(), name) != shelfNames.end();
+                    if (k.isMedium && k.isMedium(*d) && !onShelf)
                         bundled.push_back(PickerEntry{PickerEntry::Group::BundledTemplate, "module:" + d->id.value,
                                                       d->name.empty() ? d->id.value : d->name, std::nullopt, true, std::nullopt});
                 } else {

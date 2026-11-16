@@ -447,7 +447,7 @@ wildcards, the interrupt mask/pending bits and INT6, the password, the reset
   latch, two-sided media, real motor-startup/access timing. CE-1600F
   attaches as a union with CE-1600P (there is no separate floppy
   attach/detach); persistence is a versioned `<name>.floppy.yaml`
-  (`Connector/FloppyImageFile.hpp`) via `shared::FloppyBay`.
+  (`Connector/FloppyImageFile.hpp`, version 2) through LIB-7's media part (`app/SharpMediaKinds`, the media place in `core/Machine/SharpMediaPlaces`; M-47).
 - **Not modeled**: GCR (4/5) encoding (sector bytes are stored decoded,
   per the Service Manual's own note that this only matters at the
   flux/bitstream level), the FDU-250's solenoid/cam seek mechanics,

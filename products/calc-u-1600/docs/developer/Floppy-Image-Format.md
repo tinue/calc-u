@@ -42,18 +42,22 @@ Keys may appear in any order. Unknown keys are an error at every level.
 | Key | Required | Value |
 |---|---|---|
 | `format` | yes | `ce1600f-floppy` |
-| `format-version` | yes | integer; this document is version **1** |
+| `format-version` | yes | integer; this document is version **2** (version 1, Calc-U-1600 0.8.x, named the sides `a` and `b`) |
 | `disk-name` | yes | non-empty string. Writers double-quote it; it therefore must not contain `"` or a newline |
 | `description` | no | one line about the disk, the picker's tooltip for it. Written double-quoted, or single-quoted when it holds a `"`. Name & Save and the autosave keep it |
 | `template` | no | `true` = read-only template (see §2); absent or `false` = instance. Written only by a preset's `saveas: template …`; Name & Save never writes it |
 | `saved` | no | ISO-8601 UTC timestamp `YYYY-MM-DDTHH:MM:SSZ` of the last write (informational) |
-| `sides` | yes | mapping with exactly the keys `a` and `b` |
-| `sides.a`, `sides.b` | yes | mapping with exactly `encoding` and `bytes` |
+| `sides` | yes | mapping with exactly the keys `0` and `1` |
+| `sides.0`, `sides.1` | yes | mapping with exactly `encoding` and `bytes` |
 | `…encoding` | yes | `addressed-hex` |
 | `…bytes` | yes | `|` block scalar in `addressed-hex` covering exactly `0x10000` bytes |
 
 **Versioning.** A reader must reject any `format-version` it does not know rather than
-guess. Any change a version-1 reader would misread requires a new version number.
+guess. Any change an older reader would misread requires a new version number.
+Calc-U-1600 lists a disk of version 1 (0.8.x) as outdated, with a hint, and does not
+use it (`docs/formats/media.md` §2; ledger rows 1600-6, 1600-19). **Upgrading a
+version 1 disk by hand:** set `format-version: 2` and rename the keys `a:` and `b:`
+under `sides:` to `0:` and `1:`; the bytes stay as they are.
 
 ## 5. Sides and byte order
 
@@ -83,7 +87,7 @@ so that files diff cleanly whichever tool saved them:
   `format-version`, `disk-name`, `description` (only when set), `template` (only when
   true), `saved`, `sides`
   in that order;
-- 2-space indent per level (`  a:`, `    encoding:`, `      $0000: …`), `\n` line endings;
+- 2-space indent per level (`  0:`, `    encoding:`, `      $0000: …`), `\n` line endings;
 - rows of 16 bytes, uppercase hex, `$` plus a 4-digit uppercase address, one space between
   bytes and **two** before the 9th;
 - a row whose 16 bytes are identical starts a run `$XXXX: XX...`, which absorbs every
@@ -96,13 +100,13 @@ so that files diff cleanly whichever tool saved them:
 ```yaml
 # Calc-U-1600 CE-1600F floppy disk image
 format: ce1600f-floppy
-format-version: 1
+format-version: 2
 disk-name: "Formatted"
 description: "Formatted, both sides empty"
 template: true
 saved: 2026-09-19T10:17:46Z
 sides:
-  a:
+  0:
     encoding: addressed-hex
     bytes: |
       $0000: 00...
@@ -110,13 +114,13 @@ sides:
       $0210: 00...
       $0400: F2 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00
       $0410: 00...
-  b:
+  1:
     encoding: addressed-hex
     bytes: |
       $0000: 00...
 ```
 
-(Side B here is unformatted; side A has just been through `INIT`.)
+(Side 1 here is unformatted; side 0 has just been through `INIT`.)
 
 ## 8. Editing an image with another tool
 

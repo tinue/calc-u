@@ -23,9 +23,12 @@
 #include "sessions/Listener.hpp"
 #include "typing/HostKey.hpp"
 
-class MemoryModuleManager;
+namespace calcu::media {
+struct MediaState;
+struct PlaceState;
+} // namespace calcu::media
+
 class DebugController;
-class FloppyDiskManager;
 
 using shared::Model;
 using shared::PC1600RomVersion;
@@ -56,7 +59,7 @@ bool withQtError(QString* error, Op&& op) {
 // sends suspend: the Qt6 frontend keeps running in the background (AC-36).
 //
 // Until their steps, the widgets still reach the product's part directly
-// for what has no topic yet (the bays, the debug panel, the plotters, the
+// for what has no topic yet (the debug panel, the plotters, the
 // keys through SharpTypingHook; LIB-3 design §5).
 class MachineController : public QObject {
     Q_OBJECT
@@ -143,10 +146,14 @@ public:
     // after the session started).
     void setPaperSink(std::function<void(const calcu::sessions::Message&)> sink);
     shared::ControlState controlState() const;
+    // The tape counter and the floppy lamp (c1600.machine, LIB-7 AC-39, AC-42).
     TapeDeck::Status tapeStatus() const;
+    bool floppyMotorOn() const;
+    // LIB-7: the media topic (the pickers, what each place holds), or
+    // nullptr before the first one came.
+    const calcu::media::MediaState* media() const;
 
     // ---- QString translations ----
-    bool tapeEject(QString* error = nullptr);
     void refreshSerialLinkDirectory() { app().refreshSerialLinkDirectory(); }
     QString serialLinkStatus() const { return QString::fromStdString(session().serialLinkStatus()); }
     QString ce158SerialLinkStatus() const { return QString::fromStdString(session().ce158SerialLinkStatus()); }
@@ -159,10 +166,8 @@ signals:
     void modelChanged(Model model);
     // The serial port files moved (c1600.serial-links).
     void serialLinksMoved();
-    // A bay changed a slot outside the picker (c1600.machine).
-    void bayModuleChanged(int slot);
-    // A recording was saved: the tape list changed (c1600.tapes).
-    void tapeListChanged();
+    // The media topic changed (LIB-7): the pickers are filled again.
+    void mediaChanged();
     // The control state changed while an operation runs (a preset armed
     // its machine): the window shows it now (LIB-3 AC-15).
     void presetWasArmed();
@@ -202,7 +207,6 @@ private:
     bool m_busy = false;
     bool m_busyFull = false;
     shared::MachinePayload m_machine;
-    std::uint64_t m_tapeListChanges = 0;
     std::uint64_t m_serialMoves = 0;
     bool m_frozen = false;
     calcu::pacing::WallTime m_frozenNow{0};

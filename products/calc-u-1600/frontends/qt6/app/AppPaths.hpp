@@ -47,9 +47,9 @@ QString displayPath(const QString& path);
 // to find "where battery-card instances live right now".
 QString instanceDir();
 
-// Cassette tapes (TapeManager): AppSettings::tapeDirOverride() if
-// non-empty, else "Tapes" inside instanceDir(); created on demand. A tape
-// named `tapeName` is "<tapeName>.wav" there (namedFileName()'s rules).
+// Cassette tapes: AppSettings::tapeDirOverride() if
+// non-empty, else "Tapes" inside instanceDir(); created on demand. A tape's
+// definition and its sound lie there (LIB-7 AC-42; LIB-9 AC-16).
 QString tapeDir();
 
 // shared::AppPaths::traceDir() / serialLinkDir(): the Settings override,

@@ -9,6 +9,7 @@
 #include "../Connector/ExpansionCard.hpp"
 #include "../Debug/SharpDebugging.hpp"
 #include "Machine/PowerCycleSequence.hpp"
+#include "Machine/SharpMediaPlaces.hpp"
 #include "machine/Machine.hpp"
 #include "machine/ProductData.hpp"
 #include "peripherals/Controls.hpp"
@@ -114,7 +115,9 @@ public:
 
 protected:
     SharpMachine(calcu::machine::MachineDescriptor d, std::optional<calcu::machine::VariantId> v)
-        : m_descriptor(std::move(d)), m_variant(std::move(v)) {}
+        : m_descriptor(std::move(d)), m_variant(std::move(v)),
+          m_slotMedia{SlotModuleMedium([this] { return moduleNow(calcu::machine::PlaceName{"slot-1"}); }),
+                      SlotModuleMedium([this] { return moduleNow(calcu::machine::PlaceName{"slot-2"}); })} {}
 
     // ---- The model's part ----
     virtual calcu::machine::Ticks runCore(calcu::machine::Ticks) = 0;   // the core's own path, all checks off
@@ -157,6 +160,8 @@ protected:
     static Offered byComponent(const char* component, calcu::machine::Capability& c);
     // A capability owned by the peripheral at `place`: ID "<place>/<kind>".
     static Offered byPeripheral(const calcu::machine::PlugEntry& e, calcu::machine::Capability& c);
+    // One of several of a kind there (the media places): ID "<place>/<kind>/<name>".
+    static Offered byPeripheral(const calcu::machine::PlugEntry& e, calcu::machine::Capability& c, const std::string& name);
     // The write-protect switch of the module at a slot (LIB-2 AC-32), made
     // when the module is plugged in.
     calcu::peripherals::ControlTable* switchesAt(const calcu::machine::PlaceName&);
@@ -187,6 +192,11 @@ private:
     // The modules of the waiting changes, by slot (nullptr: one comes out).
     std::vector<std::pair<calcu::machine::PlaceName, ExpansionCard*>> m_waitingModules;
     std::vector<std::pair<calcu::machine::PlaceName, std::unique_ptr<calcu::peripherals::ControlTable>>> m_switches;
+    // LIB-7 D-1: a battery-backed module in slot 1 or 2 is a module medium.
+    SlotModuleMedium m_slotMedia[2];
+    // The capabilities every Sharp machine offers besides the model's: the
+    // write-protect switches and the module media.
+    void offerCommon(std::vector<Offered>&);
 };
 
 } // namespace sharp

@@ -2,8 +2,6 @@
 #include <QWidget>
 #include <QVector>
 #include "MachineController.hpp"
-#include "MemoryModuleManager.hpp"
-#include "FloppyDiskManager.hpp"
 
 class QComboBox;
 class QLabel;
@@ -11,6 +9,15 @@ class QPushButton;
 
 // Model picker + per-slot memory-module pickers,
 // directly under the faceplate.
+//
+// The module, disk and tape pickers are filled from LIB-7's media topic
+// (the place's PlaceState::picker, AC-8, AC-9): the empty entry, the
+// templates, the instances, then the modules that are not media, with a
+// separator between groups; an entry that cannot be chosen (an outdated
+// file) is disabled, its hint its tooltip; an entry's description is its
+// tooltip. Picking one emits the entry's ID, which `media.choose` takes.
+// The library's MediaPicker replaces these combo boxes with LIB-14 1600
+// (M-49, LIB-7 D-25).
 class ControlBar : public QWidget {
     Q_OBJECT
 public:
@@ -18,13 +25,12 @@ public:
 
     void setModel(Model model); // reflect an externally-driven model change
 
-    // Resyncs slot `slot`'s (1 or 2) combo box: template entries (RAM),
-    // then a separator, then instance entries, then the ROM templates,
-    // with a leading "-empty-" item;
-    // `selectedOrEmpty` picks the current item without re-emitting
-    // moduleSelected (QSignalBlocker'd, like setModel()).
-    void setModuleCombos(int slot, const MemoryModuleManager::ModuleLists& lists, const QString& selectedOrEmpty);
-    void setSlotSaveEnabled(int slot, bool enabled);   // Name & Save offered (battery-backed template)
+    // Resyncs slot `slot`'s (1 or 2) combo box from the place's picker
+    // (nullptr: only "–empty–"); the current item is the medium or module
+    // the place holds, picked without re-emitting moduleSelected
+    // (QSignalBlocker'd, like setModel()).
+    void setModulePicker(int slot, const calcu::media::PlaceState* place);
+    void setSlotSaveEnabled(int slot, bool enabled);   // Name & Save offered (a template that can change)
     void setSlot2Visible(bool visible);                // PC1600 vs PC1500/1500A
 
     // Plotter toggle buttons -- checked state reflects live attachment,
@@ -49,38 +55,37 @@ public:
     // jump around as the CE-1600P attaches/detaches -- setFloppyEnabled
     // grays the row out instead while the floppy (which attaches as a
     // union with the CE-1600P) isn't actually present.
-    void setFloppyCombo(const QVector<FloppyDiskManager::DiskEntry>& templates,
-                        const QVector<FloppyDiskManager::DiskEntry>& instances, const QString& selectedOrEmpty);
+    void setFloppyPicker(const calcu::media::PlaceState* place);
     void setFloppyVisible(bool visible);   // PC-1600 vs PC-1500/1500A
     void setFloppyEnabled(bool enabled);   // CE-1600P attached vs not
     void setFloppySaveEnabled(bool enabled); // Name & Save offered (a template disk in the drive)
-    // "A"/"B" -- the side currently facing the head (CE1600FCard::side()).
+    // "0"/"1" -- the side up (LIB-7 AC-39; sides 0 and 1 since M-47).
     void setFloppySide(int side);
     // The "green lamp": true while the drive motor is spinning -- the user
     // manual's own cue for when it's safe to eject and flip the disk.
     void setFloppyMotorOn(bool on);
 
-    // Cassette bay (CE-150 / CE-1600P jacks, TapeManager): the tape picker
-    // ("–empty–", then the tape folder's WAVs; picking one plays it), the
-    // Save button (a blank tape to record onto), the tape counter (green
-    // while the motor runs). Shown only while a tape interface is attached.
-    // setTapeCombo() lists `names` (TapeBay::pickerNames()). setTapeStatus() is
-    // polled every frame; it only touches widgets whose text changed.
-    void setTapeCombo(const QStringList& names, const QString& selectedOrEmpty);
+    // The cassette (CE-150 / CE-1600P jacks; LIB-7 AC-42): the tape picker
+    // ("–empty–", then the tape definitions; picking one puts it in), the
+    // Save button (a new tape to record onto: a name, then the empty tape),
+    // the tape counter (green while the motor runs). Shown only while a
+    // tape interface is attached. setTapeStatus() is polled every frame; it
+    // only touches widgets whose text changed; `name` is the tape's name.
+    void setTapePicker(const calcu::media::PlaceState* place);
     void setTapeVisible(bool visible);
-    void setTapeStatus(const TapeDeck::Status& status);
+    void setTapeStatus(const TapeDeck::Status& status, const QString& name);
 
 signals:
     void modelSelected(Model model);
-    void moduleSelected(int slot, QString moduleNameOrEmpty); // "" => -empty-
+    void moduleSelected(int slot, QString entry); // the picker entry's ID; "" => -empty-
     void nameAndSaveRequested(int slot);
     void ce150ToggleRequested();
     void ce1600pToggleRequested();
     void ce158ToggleRequested();
-    void floppyDiskSelected(QString diskNameOrEmpty); // "" => no disk
+    void floppyDiskSelected(QString entry); // the picker entry's ID; "" => no disk
     void floppyNameAndSaveRequested();
     void floppySideToggleRequested();
-    void tapeSelected(QString tapeNameOrEmpty); // "" => take the tape out
+    void tapeSelected(QString entry); // the picker entry's ID; "" => take the tape out
     void tapeSaveRequested();
 
 private:

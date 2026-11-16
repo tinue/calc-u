@@ -6,6 +6,8 @@
 #include <set>
 
 #include "../core/Connector/FloppyImageFile.hpp"
+#include "../core/Machine/SharpMediaPlaces.hpp"
+#include "media/MediaPlace.hpp"
 #include "../core/PC1500/PC1500Keyboard.hpp"
 #include "../core/PC1600/PC1600BasicTyper.hpp"
 #include "../core/PC1600/PC1600Keyboard.hpp"
@@ -652,17 +654,26 @@ TEST(c1600_1_ac18_ce1600p_variant_keeps_memory_and_disk_side) {
     FloppyFile disk;
     std::string err;
     CHECK(readFloppyFile(std::string(cardsDir()) + "/formatted.floppy.yaml", &disk, &err));
-    auto* drive = sharp::firstOf<sharp::FloppyDriveAccess>(*m);
-    CHECK(drive && drive->loadImage(disk.image.data(), disk.image.size()));
-    drive->setSide(1);
+    auto floppyPlace = [&]() -> calcu::media::MediaPlace* {   // LIB-7: the CE-1600F's media place
+        for (const auto& e : m->capabilities(calcu::media::MediaPlace::kKind))
+            if (auto* p = calcu::machine::capabilityAs<calcu::media::MediaPlace>(*m, e.id); p && p->id().value == "floppy")
+                return p;
+        return nullptr;
+    };
+    auto imageOf = [](calcu::media::MediaPlace* p) {
+        const auto c = p ? std::dynamic_pointer_cast<const sharp::FloppyContent>(p->content()) : nullptr;
+        return c ? c->image : std::vector<std::uint8_t>{};
+    };
+    calcu::media::MediaPlace* drive = floppyPlace();
+    CHECK(drive && drive->insert(std::make_shared<sharp::FloppyContent>(disk.image), 1).ok);
     const std::uint16_t a = freeRam(*m);
     CHECK(pokePattern(*m, a));
 
     // The variant change: one replace, then its power cycle. The disk goes
     // into the new drive at the off point, the same side up, as the session
     // does it (swapCE1600PRom today).
-    const std::vector<std::uint8_t> image = drive->diskImage();
-    const int side = drive->side();
+    const std::vector<std::uint8_t> image = imageOf(drive);
+    const int side = drive ? drive->side().value_or(0) : 0;
     const ChangeResult r = m->replace(PeripheralId{"CE-1600P"}, request(c, "CE-1600P", "printer", VariantId{"Old"}, &ok), c);
     CHECK(ok && !r.refused);
     CHECK(r.follows == AfterChange::PowerCycle);
@@ -670,17 +681,14 @@ TEST(c1600_1_ac18_ce1600p_variant_keeps_memory_and_disk_side) {
         const PlugEntry* e = pluggedAt(now, "printer");
     CHECK(e && e->variant && e->variant->value == "Old");   // shows at once (D-2)
     sharp::legacy::atOffPoint(*m, [&] {
-        auto* d = sharp::firstOf<sharp::FloppyDriveAccess>(*m);
-        d->loadImage(image.data(), image.size());
-        d->setSide(side);
+        if (auto* d = floppyPlace()) d->insert(std::make_shared<sharp::FloppyContent>(image), side);
     });
     m->powerCycle();
     sharptest::bootRun(*m);
     CHECK(runUntilKeyReady(*m));
     CHECK(hasPattern(*m, a));
-    drive = sharp::firstOf<sharp::FloppyDriveAccess>(*m);
-    CHECK(drive && drive->hasDisk() && drive->side() == 1 && drive->diskImage() == image);
-    // The old ROM is the one on the bus: its bank 5 version byte (AC-18: "with the other variant").
+    drive = floppyPlace();
+    CHECK(drive && drive->side() == 1 && imageOf(drive) == image);
     CHECK_EQ(m->plugged().byPlace.size(), std::size_t{1});
 }
 
@@ -765,7 +773,7 @@ TEST(c1600_1_ac20_display_on_slots_cassette_one_way_on_every_model) {
         const PlugEntry* e = pluggedAt(now, "slot-1");   // the module in a slot: plugged()
         CHECK(e && e->peripheral.value == "CE-161");
         CHECK(sharp::legacy::moduleIn(*m, 1) != nullptr);
-        auto* tape = sharp::firstOf<sharp::TapeDeckAccess>(*m);   // the cassette: one kind on both
-        CHECK(tape && tape->status().mode == TapeDeck::Mode::Empty);
+        // The cassette is the CE-150's or CE-1600P's media place (LIB-7, M-47): none without one.
+        CHECK(sharp::firstOf<sharp::TapeDeckAccess>(*m) == nullptr);
     }
 }

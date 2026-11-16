@@ -146,6 +146,18 @@ TEST(ac46_content_handed_through_unread) {
     CHECK_EQ(field(f.saved("Work.testdisk.yaml"), "content"), std::string("new"));
 }
 
+// M-47: a file of the kind's suffix that is no medium of it (Calc-U-1600:
+// a module definition without a battery) is neither listed nor logged.
+TEST(ec3_not_a_medium_neither_listed_nor_logged) {
+    MediaFixture f(onDot([](auto& s, auto&) {
+        s.write("Plain.testdisk.yaml", "format: test-disk\nformat-version: 2\nname: Plain\nmedium: no\ncontent: x\n");
+        s.write("Good.testdisk.yaml", disk("Good", "g").text());
+    }));
+    const KindState* k = f.state()->kindState("test-disk");
+    CHECK(k && k->instances.size() == 1 && k->instances[0].name == "Good");
+    CHECK(!hasLine(f.logLines(), "Plain.testdisk.yaml"));
+}
+
 TEST(ec3_unreadable_not_listed_one_log_line_per_start) {
     MediaFixture f(onDot([](auto& s, auto&) {
         s.write("Broken.testdisk.yaml", "this is no medium\n");

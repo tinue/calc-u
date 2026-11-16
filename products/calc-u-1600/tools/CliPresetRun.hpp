@@ -25,11 +25,15 @@ class CliPresetRun {
 public:
     // nullptr with `error`: the harness did not start, or the preset was
     // refused or failed (its reason).
-    static std::unique_ptr<CliPresetRun> load(const std::string& presetPath, std::string* error) {
+    // `saveFolder` (--save-dir): where a by-name `saveas:` writes (LIB-7, the
+    // run's save folder, LIB-11 AC-8); empty: one of the run's own.
+    static std::unique_ptr<CliPresetRun> load(const std::string& presetPath, std::string* error,
+                                              const std::string& saveFolder = {}) {
         auto run = std::unique_ptr<CliPresetRun>(new CliPresetRun);
         run->product_ = shared::makeHarnessProduct("roms");   // relative to where the tool runs (LIB-11 AC-20)
         calcu::harness::RunOptions options;
         options.outputFolder = ".";
+        if (!saveFolder.empty()) options.saveFolder = saveFolder;
         run->server_ = calcu::harness::Server::start(*run->product_, options, error);
         if (!run->server_) return nullptr;
         for (const std::string& line : {"preset " + presetPath, std::string("wait")}) {

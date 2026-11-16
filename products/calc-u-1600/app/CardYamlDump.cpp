@@ -3,6 +3,7 @@
 #include <cstdint>
 
 #include "Connector/BatteryCardInstance.hpp"
+#include "Connector/ExpansionCard.hpp"
 #include "Debug/Inspect/HexDump.hpp"
 #include "app/SharpAppPart.hpp"
 #include "app/Text.hpp"
@@ -19,7 +20,9 @@ std::vector<std::string> cardYamlDump(SharpAppPart& app) {
         // bankCount <= 0 is an unbanked card (e.g. CE-1600M): one implicit
         // bank, written without a `bank:` key.
         if (image.empty() || (bankCount > 0 && image.size() % static_cast<std::size_t>(bankCount) != 0)) continue;
-        const std::string name = app.modules().selectedModuleName(slot);
+        const calcu::media::Binding* bound = app.mediaPart().bindingOf(slot == 2 ? "slot-2" : "slot-1");
+        const ExpansionCard* card = app.slotCard(slot);
+        const std::string name = bound ? bound->name : card ? card->moduleName() : std::string();
         const std::string label = name.empty() ? "attached module" : name;
         const std::string slotLabel = isPC1600 ? fmt(" (Slot %d)", slot) : "";
         const std::string layout =

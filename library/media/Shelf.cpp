@@ -91,6 +91,7 @@ std::vector<std::string> Shelf::reread() {
             const std::string path = joinFile(folder, file);
             std::string bytes;
             const auto r = readFile(k, path, &bytes);
+            if (r && r->status == ReadOutcome::Status::NotMedium) return;   // no medium of the kind
             if (!r || r->status == ReadOutcome::Status::Unreadable) {   // EC-3
                 lines.push_back("The " + k.label + " file " + file + " cannot be read" +
                                 (r && !r->problem.empty() ? ": " + r->problem : std::string(".")));

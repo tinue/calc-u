@@ -68,12 +68,10 @@ const METHODS = {
     (r) => (r.done ? r.value : { error: r.reason })],
   pasteText: ["command", "paste", (text) => ({ text }), null],   // LIB-5 AC-12, AC-34
   dropTarget: ["request", "c1600.drop-target", (name, bytes) => ({ name, bytes }), value],
-  importMedia: ["command", "c1600.import-media", (name, bytes) => ({ name, bytes }), errorText],
-  nameAndSaveCard: ["command", "c1600.name-save-card", (slot, name, writeProtect) => ({ slot, name, writeProtect: !!writeProtect }), errorText],
-  nameAndSaveDisk: ["command", "c1600.name-save-disk", (name) => ({ name }), errorText],
-  selectTape: ["command", "c1600.select-tape", (name) => ({ name }), errorText],
-  tapeExists: ["request", "c1600.tape-exists", (name) => ({ name }), value],
-  recordTape: ["command", "c1600.record-tape", (name) => ({ name }), errorText],
+  // LIB-7 (M-47): the media are the library's topic `media` and its
+  // commands; a picked file goes up (c1600.upload) and is imported where it
+  // lies, a tape's WAV beside its definition (AC-43).
+  importMediaPaths: ["command", "media.import", (paths) => ({ paths }), errorText],
   screenImage: ["request", "c1600.screen-image", () => null, value],
   lcdText: ["request", "c1600.lcd-text", () => null, value],
   ticks: ["request", "ticks", () => null, value],   // {ticks, seconds}: the machine's emulated time (LIB-3 AC-39)
@@ -90,15 +88,9 @@ const METHODS = {
   hostKeyDown: ["command", "host-key-down", hostKeyEvent, null],
   hostKeyUp: ["command", "host-key-up", (code) => ({ physical: code }), null],
   focusLost: ["command", "focus-lost", () => null, null],
-  selectModule: ["command", "c1600.select-module", (slot, name) => ({ slot, name }), null],
-  selectDisk: ["command", "c1600.select-disk", (name) => ({ name }), null],
-  toggleDiskSide: ["command", "c1600.toggle-disk-side", () => null, null],
   settingsState: ["request", "c1600.settings-state", () => null, value],
   setStartupModel: ["command", "c1600.set-startup-model", (model) => ({ model }), null],
   setDefaultPreset: ["command", "c1600.set-default-preset", (model, path) => ({ model, path }), null],
-  mediaItems: ["request", "c1600.media-items", () => null, value],
-  exportMedia: ["request", "c1600.export-media", (path) => ({ path }), (r) => (r.done ? r.value : null)],
-  removeMedia: ["command", "c1600.remove-media", (path) => ({ path }), errorText],
   inspectorView: ["request", "c1600.inspector-view", (view) => ({ view }), value],
   inspectorMenu: ["request", "c1600.inspector-menu", (dumps) => ({ dumps: !!dumps }), value],
   cardYaml: ["request", "c1600.card-yaml", () => null, value],
@@ -117,7 +109,8 @@ const INITIAL_STATE = {
   persistent: true,
   faceplates: null,   // per model: {width, height, lcd, keys} in art pixels
   lcd: null,          // LcdLayout constants and colours
-  ui: null,           // control state, pickers (c1600.ui)
+  ui: null,           // control state (c1600.ui)
+  media: null,        // the media, their places and pickers (LIB-7's topic `media`)
   lamps: { floppyMotor: false, tapeMode: "", tapeMotor: false, tapeSeconds: 0, tapeFile: "" },
   busy: false,
   paused: false,      // the run-state topic: the machine is paused (LIB-10)
@@ -166,6 +159,7 @@ function createEngine({ workerUrl, model, preset }) {
       faceplates: statics ? statics.faceplates : null,
       lcd: statics ? statics.lcd : null,
       ui: t["c1600.ui"] || null,
+      media: t.media || null,
       lamps: t["c1600.lamps"] || INITIAL_STATE.lamps,
       busy: !!(busyState && busyState.operationRuns),
       paused: !!(t["run-state"] && t["run-state"].paused),
@@ -208,11 +202,11 @@ function createEngine({ workerUrl, model, preset }) {
     // Only a change the components read renders them again.
     const topics = s.topics, streams = s.streams;
     const key = lastShell;
-    if (key && key.start === s.start && key.ui === topics["c1600.ui"] && key.lamps === topics["c1600.lamps"] &&
+    if (key && key.start === s.start && key.ui === topics["c1600.ui"] && key.media === topics.media && key.lamps === topics["c1600.lamps"] &&
         key.busy === topics.busy && key.runState === topics["run-state"] && key.notices === streams.notices &&
         key.printer === streams["c1600.printer"] && key.log === streams.log && key.missing === topics["roms-missing"] &&
         key.storage === topics["web.storage"]) return;
-    lastShell = { start: s.start, ui: topics["c1600.ui"], lamps: topics["c1600.lamps"], busy: topics.busy, runState: topics["run-state"],
+    lastShell = { start: s.start, ui: topics["c1600.ui"], media: topics.media, lamps: topics["c1600.lamps"], busy: topics.busy, runState: topics["run-state"],
       notices: streams.notices, printer: streams["c1600.printer"], log: streams.log,
       missing: topics["roms-missing"], storage: topics["web.storage"] };
     update();
@@ -250,6 +244,9 @@ function createEngine({ workerUrl, model, preset }) {
     call: (method, ...args) => { invoke(method, args).catch(() => {}); },
     /// A command or request whose result is wanted.
     request: (method, ...args) => invoke(method, args),
+    /// A library command as the React component set sends it (LIB-7's
+    /// media components): its reply {done, reason}.
+    send: (command, args) => shell.send(command, args || null),
     unlockAudio: shell.unlockAudio,
     dismissNotice: () => { seen = { ...seen, notices: seen.notices + 1 }; update(); },
     clearPrinter: () => {

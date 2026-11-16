@@ -10,22 +10,24 @@
 
 // Minimal RIFF/WAVE writer for PiezoSampler and TapeDeck output (mono,
 // 16-bit PCM) -- used by the headless CLIs' --wav flag to capture buzzer
-// audio for offline inspection, and for cassette recordings.
-inline bool writeWavMono16(const std::string& path, const std::vector<int16_t>& samples, int sampleRate) {
-    FILE* f = std::fopen(path.c_str(), "wb");
-    if (!f) return false;
-    auto u32 = [f](uint32_t v) {
-        const uint8_t b[4] = {uint8_t(v), uint8_t(v >> 8), uint8_t(v >> 16), uint8_t(v >> 24)};
-        std::fwrite(b, 1, 4, f);
+// audio for offline inspection, and for cassette recordings. The bytes of
+// such a file: what the tape codec writes as a tape's sound (LIB-7, M-47).
+inline std::vector<uint8_t> wavMono16Bytes(const std::vector<int16_t>& samples, int sampleRate) {
+    std::vector<uint8_t> out;
+    out.reserve(44 + samples.size() * 2);
+    auto raw = [&out](const char* s) { out.insert(out.end(), s, s + 4); };
+    auto u32 = [&out](uint32_t v) {
+        for (int i = 0; i < 4; ++i) out.push_back(uint8_t(v >> (8 * i)));
     };
-    auto u16 = [f](uint16_t v) {
-        const uint8_t b[2] = {uint8_t(v), uint8_t(v >> 8)};
-        std::fwrite(b, 1, 2, f);
+    auto u16 = [&out](uint16_t v) {
+        out.push_back(uint8_t(v));
+        out.push_back(uint8_t(v >> 8));
     };
     const uint32_t dataBytes = static_cast<uint32_t>(samples.size() * 2);
-    std::fwrite("RIFF", 1, 4, f);
+    raw("RIFF");
     u32(36 + dataBytes);
-    std::fwrite("WAVEfmt ", 1, 8, f);
+    raw("WAVE");
+    raw("fmt ");
     u32(16);                                     // fmt chunk size
     u16(1);                                      // PCM
     u16(1);                                      // mono
@@ -33,10 +35,18 @@ inline bool writeWavMono16(const std::string& path, const std::vector<int16_t>& 
     u32(static_cast<uint32_t>(sampleRate) * 2);  // byte rate
     u16(2);                                      // block align
     u16(16);                                     // bits per sample
-    std::fwrite("data", 1, 4, f);
+    raw("data");
     u32(dataBytes);
-    std::fwrite(samples.data(), 2, samples.size(), f); // little-endian host, as readWav assumes
-    return std::fclose(f) == 0;
+    for (int16_t s : samples) u16(static_cast<uint16_t>(s));
+    return out;
+}
+
+inline bool writeWavMono16(const std::string& path, const std::vector<int16_t>& samples, int sampleRate) {
+    FILE* f = std::fopen(path.c_str(), "wb");
+    if (!f) return false;
+    const std::vector<uint8_t> bytes = wavMono16Bytes(samples, sampleRate);
+    const bool ok = std::fwrite(bytes.data(), 1, bytes.size(), f) == bytes.size();
+    return std::fclose(f) == 0 && ok;
 }
 
 // Decoded WAV contents: the channels mixed down to mono, each sample
@@ -50,10 +60,7 @@ struct WavData {
 // or 32 bits and 32-bit float, any rate and channel count (also
 // WAVE_FORMAT_EXTENSIBLE with a PCM or float subformat). Returns false
 // with a reason in `error` for anything else.
-inline bool readWav(const std::string& path, WavData& out, std::string& error) {
-    std::vector<uint8_t> bytes;
-    if (!readWholeFile(path, &bytes)) { error = "cannot open " + path; return false; }
-
+inline bool readWavBytes(const std::vector<uint8_t>& bytes, WavData& out, std::string& error) {
     auto u16 = [&](size_t at) { return uint16_t(bytes[at] | bytes[at + 1] << 8); };
     auto u32 = [&](size_t at) { return uint32_t(u16(at)) | uint32_t(u16(at + 2)) << 16; };
     if (bytes.size() < 12 || std::memcmp(&bytes[0], "RIFF", 4) != 0 || std::memcmp(&bytes[8], "WAVE", 4) != 0) {
@@ -109,4 +116,10 @@ inline bool readWav(const std::string& path, WavData& out, std::string& error) {
         out.samples[i] = sum / float(channels);
     }
     return true;
+}
+
+inline bool readWav(const std::string& path, WavData& out, std::string& error) {
+    std::vector<uint8_t> bytes;
+    if (!readWholeFile(path, &bytes)) { error = "cannot open " + path; return false; }
+    return readWavBytes(bytes, out, error);
 }

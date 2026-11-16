@@ -1,0 +1,8 @@
+# Calc-U-1600 cassette tape
+format: cassette-tape
+format-version: 1
+tape-name: "Empty"
+description: "A blank cassette"
+template: true
+audio: { file: "empty.wav" }
+position: 0

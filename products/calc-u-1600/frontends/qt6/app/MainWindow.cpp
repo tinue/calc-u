@@ -5,9 +5,6 @@
 #include "ControlBar.hpp"
 #include "DebugPanel.hpp"
 #include "MachineController.hpp"
-#include "MemoryModuleManager.hpp"
-#include "FloppyDiskManager.hpp"
-#include "TapeManager.hpp"
 #include "HostKeyEvents.hpp"
 #include "Ce158PrinterWidget.hpp"
 #include "SettingsDialog.hpp"
@@ -24,6 +21,9 @@
 #include "presets/PresetsPart.hpp"
 #include "startup/StartupPart.hpp"
 #include "AppPaths.hpp"
+#include "media/MediaTopics.hpp"
+#include "media/SaveRules.hpp"
+#include "qt6/NameAndSaveDialog.hpp"
 
 #include <QHBoxLayout>
 #include <QInputMethodEvent>
@@ -81,9 +81,6 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
     setAttribute(Qt::WA_InputMethodEnabled);
 
     m_controller = std::make_unique<MachineController>(this);
-    m_moduleManager = std::make_unique<MemoryModuleManager>(m_controller.get(), this);
-    m_floppyManager = std::make_unique<FloppyDiskManager>(m_controller.get(), this);
-    m_tapeManager = std::make_unique<TapeManager>(m_controller.get(), this);
 
     // QMainWindow takes exactly one central widget; the faceplate, control
     // bar and debug panel live in this wrapper.
@@ -132,37 +129,16 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
     buildMenuBar();
 
     connect(m_controlBar, &ControlBar::modelSelected, this, &MainWindow::applyModelSelection);
-    connect(m_controlBar, &ControlBar::moduleSelected, this, [this](int slot, QString moduleNameOrEmpty) {
-        m_sync->run(tr("Memory Module"), shared::commands::kSelectModule,
-                    calcu::sessions::Value::object({{"slot", slot}, {"name", moduleNameOrEmpty.toStdString()}}));
+    // LIB-7: a module chosen in a slot's picker is `media.choose` (a
+    // replace with its power cycle, AC-38); Name & Save is the library's
+    // dialog (AC-16, AC-40).
+    connect(m_controlBar, &ControlBar::moduleSelected, this, [this](int slot, QString entry) {
+        m_sync->run(tr("Memory Module"), calcu::media::kChooseCommand,
+                    calcu::sessions::Value::object({{"place", slot == 2 ? "slot-2" : "slot-1"}, {"entry", entry.toStdString()}}));
     });
-    connect(m_controlBar, &ControlBar::nameAndSaveRequested, this, [this](int slot) {
-        // The name, plus -- for a card with a write-protect switch (CE-161)
-        // -- whether to save it with the switch on. That is final: the
-        // saved card stays read-only.
-        QDialog dialog(this);
-        dialog.setWindowTitle(tr("Name & Save"));
-        auto* form = new QFormLayout(&dialog);
-        auto* nameEdit = new QLineEdit(&dialog);
-        form->addRow(tr("Instance name:"), nameEdit);
-        QCheckBox* protectBox = nullptr;
-        if (m_moduleManager->canWriteProtect(slot)) {
-            protectBox = new QCheckBox(tr("Write-protect (switch to read-only, can't be undone)"), &dialog);
-            form->addRow(protectBox);
-        }
-        auto* buttons = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel, &dialog);
-        connect(buttons, &QDialogButtonBox::accepted, &dialog, &QDialog::accept);
-        connect(buttons, &QDialogButtonBox::rejected, &dialog, &QDialog::reject);
-        form->addRow(buttons);
-        if (dialog.exec() != QDialog::Accepted) return;
-        const QString name = nameEdit->text();
-        QString error;
-        if (!m_moduleManager->nameAndSave(slot, name, &error, protectBox && protectBox->isChecked())) {
-            QMessageBox::warning(this, tr("Name & Save"), error);
-            return;
-        }
-        refreshModuleCombos();
-    });
+    connect(m_controlBar, &ControlBar::nameAndSaveRequested, this,
+            [this](int slot) { nameAndSave(slot == 2 ? "slot-2" : "slot-1", tr("Instance name:")); });
+    connect(m_controller.get(), &MachineController::mediaChanged, this, &MainWindow::refreshMediaPickers);
     auto openSettingsDialog = [this] {
         SettingsDialog dialog(m_controller.get(), this);
         dialog.exec();
@@ -191,35 +167,19 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
     connect(m_loadMachineCodeAction, &QAction::triggered, this, &MainWindow::loadMachineCode);
     connect(m_mountDirectoryAction, &QAction::triggered, this, &MainWindow::mountHostDirectory);
     connect(m_unmountDirectoryAction, &QAction::triggered, this, &MainWindow::unmountHostDirectory);
-    connect(m_moduleManager.get(), &MemoryModuleManager::errorMessage, this,
-            [this](const QString& text) { QMessageBox::warning(this, tr("Memory Module"), text); });
-    connect(m_controlBar, &ControlBar::floppyDiskSelected, this, [this](QString diskNameOrEmpty) {
-        m_floppyManager->selectDisk(diskNameOrEmpty);
-        refreshFloppyCombo();
+    // LIB-7: the disk and the tape in their places, the side turned over
+    // (AC-39), Name & Save of a disk (AC-40).
+    connect(m_controlBar, &ControlBar::floppyDiskSelected, this, [this](QString entry) {
+        m_sync->run(tr("Floppy Disk"), calcu::media::kChooseCommand,
+                    calcu::sessions::Value::object({{"place", "floppy"}, {"entry", entry.toStdString()}}));
     });
     connect(m_controlBar, &ControlBar::tapeSelected, this, &MainWindow::selectTape);
     connect(m_controlBar, &ControlBar::tapeSaveRequested, this, &MainWindow::saveTape);
-    connect(m_tapeManager.get(), &TapeManager::tapesChanged, this, &MainWindow::refreshTapeCombo);
-    connect(m_tapeManager.get(), &TapeManager::errorMessage, this,
-            [this](const QString& text) { QMessageBox::warning(this, tr("Tape"), text); });
     connect(m_controlBar, &ControlBar::floppySideToggleRequested, this, [this] {
-        m_floppyManager->toggleSide();
-        m_controlBar->setFloppySide(m_floppyManager->side());
+        m_sync->run(tr("Floppy Disk"), calcu::media::kTurnCommand, calcu::sessions::Value::object({{"place", "floppy"}}));
     });
-    connect(m_controlBar, &ControlBar::floppyNameAndSaveRequested, this, [this] {
-        bool ok = false;
-        const QString name = QInputDialog::getText(this, tr("Name & Save"), tr("Disk name:"),
-                                                   QLineEdit::Normal, QString(), &ok);
-        if (!ok) return;
-        QString error;
-        if (!m_floppyManager->nameAndSave(name, &error)) {
-            QMessageBox::warning(this, tr("Name & Save"), error);
-            return;
-        }
-        refreshFloppyCombo();
-    });
-    connect(m_floppyManager.get(), &FloppyDiskManager::errorMessage, this,
-            [this](const QString& text) { QMessageBox::warning(this, tr("Floppy Disk"), text); });
+    connect(m_controlBar, &ControlBar::floppyNameAndSaveRequested, this,
+            [this] { nameAndSave("floppy", tr("Disk name:")); });
     connect(m_controlBar, &ControlBar::ce150ToggleRequested, this,
             [this] { togglePeripheral(shared::Peripheral::CE150); });
     connect(m_controlBar, &ControlBar::ce1600pToggleRequested, this,
@@ -313,9 +273,8 @@ MainWindow::~MainWindow() {
 
 void MainWindow::closeEvent(QCloseEvent* event) {
     AppSettings::setWindowSize(size());
-    m_moduleManager->flushPendingPersist();
-    m_floppyManager->flushPendingPersist();
-    m_controller->tapeEject(); // writes anything a CSAVE still had running
+    // What a medium still has to save is written when the session closes
+    // (MachineController's destructor: AppSession::close(), LIB-7 AC-13).
     QMainWindow::closeEvent(event);
 }
 
@@ -361,35 +320,44 @@ void MainWindow::unmountHostDirectory() {
     m_sync->run(tr("Unmount Directory"), shared::commands::kMountHostDrive, calcu::sessions::Value::object({{"dir", ""}}));
 }
 
-// Control bar > Tape: picking a tape puts it in to play (CLOAD), rewound;
-// "–empty–" takes the tape out. A recording is already saved (at each motor
-// stop), so taking it out only un-arms it.
-void MainWindow::selectTape(const QString& nameOrEmpty) {
-    QString error;
-    if (!m_tapeManager->selectForPlay(nameOrEmpty, &error)) QMessageBox::warning(this, tr("Tape"), error);
-    refreshTapeCombo();
+// Control bar > Tape: picking a tape definition puts it in (LIB-7 AC-42): a
+// tape with sound plays (CLOAD), rewound; the empty tape records; "–empty–"
+// takes the tape out, its recording written first (AC-13).
+void MainWindow::selectTape(const QString& entry) {
+    m_sync->run(tr("Tape"), calcu::media::kChooseCommand,
+                calcu::sessions::Value::object({{"place", "tape"}, {"entry", entry.toStdString()}}));
 }
 
-// Control bar > Tape > Save: a blank tape to record onto (CSAVE), named like
-// a card or disk. It keeps recording -- each CSAVE appended -- until another
-// tape goes in.
+// Control bar > Tape > Save: a new tape to record onto (CSAVE), named first
+// (LIB-7 AC-20, D-24: `media.start-new` on the empty tape). It keeps
+// recording -- each CSAVE appended -- until another tape goes in; its files
+// are written at each motor stop. A tape of that name: asked before it is
+// replaced.
 void MainWindow::saveTape() {
     bool ok = false;
     const QString name = QInputDialog::getText(this, tr("Save Tape"), tr("Tape name:"), QLineEdit::Normal,
                                                QString(), &ok).trimmed();
     if (!ok) return;
-    if (m_tapeManager->exists(name) &&
-        QMessageBox::question(this, tr("Save Tape"), tr("A tape named \"%1\" exists. Replace it?").arg(name)) !=
-            QMessageBox::Yes)
-        return;
+    std::string empty;   // the bundled empty tape's entry
+    if (const calcu::media::PlaceState* p = mediaPlace("tape"))
+        for (const auto& e : p->picker)
+            if (e.group == calcu::media::PickerEntry::Group::BundledTemplate && e.label == "Empty") empty = e.id;
+    calcu::sessions::Value::Object args{{"place", calcu::sessions::Value("tape")},
+                                        {"template", calcu::sessions::Value(empty)},
+                                        {"name", calcu::sessions::Value(name.toStdString())}};
     QString error;
-    if (!m_tapeManager->recordNew(name, &error)) QMessageBox::warning(this, tr("Save Tape"), error);
-    refreshTapeCombo();
+    if (m_sync->runAndWait(tr("Save Tape"), calcu::media::kStartNewCommand, calcu::sessions::Value(args), &error)) return;
+    const QString asks = QString::fromLatin1(calcu::media::kAsks);
+    if (!error.startsWith(asks)) {
+        QMessageBox::warning(this, tr("Save Tape"), error);
+        return;
+    }
+    if (QMessageBox::question(this, tr("Save Tape"), error.mid(asks.size())) != QMessageBox::Yes) return;
+    args.push_back({"confirmed", calcu::sessions::Value(true)});
+    m_sync->runAndWait(tr("Save Tape"), calcu::media::kStartNewCommand, calcu::sessions::Value(std::move(args)));
 }
 
-void MainWindow::refreshTapeCombo() {
-    m_controlBar->setTapeCombo(m_tapeManager->pickerNames(), m_tapeManager->currentName());
-}
+void MainWindow::refreshTapeCombo() { m_controlBar->setTapePicker(mediaPlace("tape")); }
 
 void MainWindow::syncHostDriveActions(const shared::ControlState& state) {
     const QString dir = QString::fromStdString(state.hostDriveDir);
@@ -581,18 +549,45 @@ void MainWindow::syncUiFromController() {
 void MainWindow::refreshModuleCombos() {
     const int slotCount = m_controller->session().slotCount();
     for (int slot = 1; slot <= slotCount; ++slot) {
-        const CardHost host = MemoryModuleManager::hostForModel(slot, m_controller->currentModel());
-        const MemoryModuleManager::ModuleLists lists = m_moduleManager->moduleLists(host);
-        m_controlBar->setModuleCombos(slot, lists, m_moduleManager->selectedModuleName(slot));
-        m_controlBar->setSlotSaveEnabled(slot, m_moduleManager->canNameAndSave(slot));
+        const calcu::media::PlaceState* p = mediaPlace(slot == 2 ? "slot-2" : "slot-1");
+        m_controlBar->setModulePicker(slot, p);
+        m_controlBar->setSlotSaveEnabled(slot, p && p->nameAndSave);
     }
 }
 
 void MainWindow::refreshFloppyCombo() {
-    const FloppyDiskManager::DiskLists lists = m_floppyManager->diskLists();
-    m_controlBar->setFloppyCombo(lists.templates, lists.instances, m_floppyManager->selectedDiskName());
-    m_controlBar->setFloppySide(m_floppyManager->side());
-    m_controlBar->setFloppySaveEnabled(m_floppyManager->canNameAndSave());
+    const calcu::media::PlaceState* p = mediaPlace("floppy");
+    m_controlBar->setFloppyPicker(p);
+    m_controlBar->setFloppySide(p && p->holds && p->holds->side ? *p->holds->side : 0);
+    m_controlBar->setFloppySaveEnabled(p && p->nameAndSave);
+}
+
+void MainWindow::refreshMediaPickers() {
+    if (!m_controlBar) return;
+    refreshModuleCombos();
+    refreshFloppyCombo();
+    refreshTapeCombo();
+}
+
+const calcu::media::PlaceState* MainWindow::mediaPlace(const std::string& place) const {
+    const calcu::media::MediaState* s = m_controller->media();
+    if (!s) return nullptr;
+    for (const calcu::media::PlaceState& p : s->places)
+        if (p.place == place) return &p;
+    return nullptr;
+}
+
+void MainWindow::nameAndSave(const std::string& place, const QString& prompt) {
+    const calcu::media::PlaceState* p = mediaPlace(place);
+    if (!p) return;
+    calcu::qt6::NameAndSaveDialog dialog(this);
+    dialog.setPlace(*p);
+    dialog.setPrompt(prompt);   // AC-40: "Instance name:" (with the switch where it is off) or "Disk name:"
+    dialog.setSender([this](const calcu::sessions::CommandName& name, calcu::sessions::Value args) -> std::string {
+        QString error;   // the save with the switch on is an operation (its power cycle, AC-19)
+        return m_sync->runAndWait(tr("Name & Save"), name, std::move(args), &error) ? std::string() : error.toStdString();
+    });
+    dialog.exec();
 }
 
 namespace {
@@ -859,9 +854,11 @@ void MainWindow::refreshViewsAfterAdvance() {
     m_faceplate->lcdWidget()->setFrame(frame);
     m_faceplate->lcdWidget()->update();
 
-    // (Card/disk autosave and the tape bay run in SharpAppPart::afterCall().)
-    m_controlBar->setFloppyMotorOn(m_floppyManager->motorOn());
-    m_controlBar->setTapeStatus(m_controller->tapeStatus());
+    // (Autosave of modules, disks and tapes: the media part, LIB-7.)
+    m_controlBar->setFloppyMotorOn(m_controller->floppyMotorOn());
+    const calcu::media::PlaceState* tape = mediaPlace("tape");
+    m_controlBar->setTapeStatus(m_controller->tapeStatus(),
+                                tape && tape->holds ? QString::fromStdString(tape->holds->name) : QString());
     m_debugPanel->onFrameTick();
     if (m_debugRowLayout->indexOf(m_ce158Printer) >= 0) m_ce158Printer->onFrameTick();
 }

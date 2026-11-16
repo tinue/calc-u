@@ -62,6 +62,26 @@ TEST(ac11_not_written_while_nothing_changes) {
     CHECK_EQ(savedLines(f.logLines()), 1);
 }
 
+// M-47 (Calc-U-1600 AC-42, D-11): a place whose writes wait for its own
+// moments (a tape: the motor stopped) is not written half a second after a
+// change, but when it asks, and before it leaves its place (A5).
+TEST(ac11_writes_when_asked_wait_for_the_moment) {
+    MediaFixture f(dot());
+    CHECK(f.ok("media.choose", choose("disk", "saved:Work.testdisk.yaml")));
+    f.drive()->onlyWhenAsked = true;
+    f.drive()->write("recording");
+    for (int i = 0; i < 120; ++i) f.call(16'667us);
+    CHECK_EQ(content(f), std::string("w"));   // two seconds: not written
+    f.drive()->requestWriteNow();
+    f.call(16'667us);
+    CHECK_EQ(content(f), std::string("recording"));
+    f.drive()->write("more");
+    for (int i = 0; i < 60; ++i) f.call(16'667us);
+    CHECK_EQ(content(f), std::string("recording"));
+    CHECK(f.ok("media.eject", Value::object({{"place", "disk"}})));
+    CHECK_EQ(content(f), std::string("more"));   // A5: before it leaves its place
+}
+
 TEST(ac11_harness_written_at_end_of_command) {
     MediaFixture f(dot(sessions::Hosting::VirtualTime));
     CHECK(f.ok("media.choose", choose("disk", "saved:Work.testdisk.yaml")));

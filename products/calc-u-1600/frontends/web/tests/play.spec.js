@@ -274,66 +274,207 @@ test('lib8_ac36 paper panel always shown, named while a plotter is plugged in', 
   await expect(panel.locator('[data-calcu=paper-owner]')).toHaveText('');
 });
 
-test('Name & Save can write-protect a CE-161, and only a card with the switch', async ({ page }) => {
+// ── LIB-7 (M-47): the media of the topic `media` on the control bar ──────
+
+const PRODUCT = path.join(__dirname, '..', '..', '..');
+const CARDS = path.join(PRODUCT, 'frontends', 'qt6', 'resources', 'cards');
+const notBusy = (page) => expect.poll(() => page.evaluate(() => document.querySelector('.calcu-client').calcuEngine.getState().busy),
+  { timeout: 30000 }).toBe(false);
+const nameAndSave = (page) => page.locator('[data-dialog=name-and-save]');
+
+// A bundled template's file as an instance of another name (an import).
+function instanceOf(file, key, name) {
+  return fs.readFileSync(path.join(CARDS, file), 'utf8')
+    .replace(new RegExp(`^${key}: .*$`, 'm'), `${key}: "${name}"`)
+    .replace(/^template: true.*\n/m, '');
+}
+
+test('lib7_ac44 Name & Save can write-protect a CE-161, and only a card with the switch', async ({ page }) => {
   await gotoReady(page);
   await page.getByLabel('Slot 1', { exact: true }).selectOption('CE-161');
   await expect(page.getByRole('button', { name: 'Name & Save slot 1' })).toBeEnabled({ timeout: 30000 });
   await page.getByRole('button', { name: 'Name & Save slot 1' }).click();
-  const box = page.locator('[data-dialog=prompt] input[type=checkbox]');
+  await expect(nameAndSave(page)).toContainText('Instance name:');   // today's prompt (AC-40, D-25)
+  const box = nameAndSave(page).locator('[data-calcu=media-protect]');
   await expect(box).toHaveCount(1);
+  await expect(nameAndSave(page)).toContainText("Write-protect (switch to read-only, can't be undone)");
   const name = `Rom ${Date.now()}`;
-  await page.locator('[data-dialog=prompt] input[type=text]').fill(name);
+  await nameAndSave(page).locator('[data-calcu=media-name]').fill(name);
   await box.check();
-  await page.locator('[data-dialog=prompt] button', { hasText: 'OK' }).click();
-  await expect(page.getByLabel('Slot 1', { exact: true })).toHaveValue(name);
+  await nameAndSave(page).locator('[data-calcu=media-save]').click();
+  await expect(page.getByLabel('Slot 1', { exact: true })).toHaveValue(name, { timeout: 30000 });
+  await notBusy(page);
 
   await page.getByLabel('Slot 1', { exact: true }).selectOption('CE-1638');  // battery-backed, no switch
   await expect(page.getByRole('button', { name: 'Name & Save slot 1' })).toBeEnabled({ timeout: 30000 });
   await page.getByRole('button', { name: 'Name & Save slot 1' }).click();
-  await expect(page.locator('[data-dialog=prompt] input[type=checkbox]')).toHaveCount(0);
-  await page.locator('[data-dialog=prompt] button', { hasText: 'Cancel' }).click();
+  await expect(nameAndSave(page).locator('[data-calcu=media-protect]')).toHaveCount(0);
+  await nameAndSave(page).getByRole('button', { name: 'Cancel' }).click();
+  await expect(nameAndSave(page)).toHaveCount(0);
 });
 
-test('Name & Save keeps a card across a reload', async ({ page }) => {
+// AC-45 (ADR 0032): a module template is saved under a name and is an
+// instance afterwards (no Name & Save for it any more) ...
+test('lib7_ac16 module template saved under a name is an instance', async ({ page }) => {
   await gotoReady(page);
   await pickModel(page, 2);
   await page.getByLabel('Slot 1', { exact: true }).selectOption('CE-1600M');
   await expect(page.getByRole('button', { name: 'Name & Save slot 1' })).toBeEnabled({ timeout: 30000 });
   await page.getByRole('button', { name: 'Name & Save slot 1' }).click();
   const name = `Work ${Date.now()}`;
-  await page.locator('[data-dialog=prompt] input[type=text]').fill(name);
-  await page.locator('[data-dialog=prompt] button', { hasText: 'OK' }).click();
+  await nameAndSave(page).locator('[data-calcu=media-name]').fill(name);
+  await nameAndSave(page).locator('[data-calcu=media-save]').click();
+  await expect(page.getByLabel('Slot 1', { exact: true })).toHaveValue(name);
+  await expect(page.getByRole('button', { name: 'Name & Save slot 1' })).toBeDisabled();
+});
+
+// ... and the picker of that slot then lists it among the instances.
+test('lib7_ac8 picker lists it among the instances', async ({ page }) => {
+  await gotoReady(page);
+  await pickModel(page, 2);
+  await page.getByLabel('Slot 1', { exact: true }).selectOption('CE-1600M');
+  await expect(page.getByRole('button', { name: 'Name & Save slot 1' })).toBeEnabled({ timeout: 30000 });
+  await page.getByRole('button', { name: 'Name & Save slot 1' }).click();
+  const name = `Listed ${Date.now()}`;
+  await nameAndSave(page).locator('[data-calcu=media-name]').fill(name);
+  await nameAndSave(page).locator('[data-calcu=media-save]').click();
+  await expect(page.getByLabel('Slot 1', { exact: true })).toHaveValue(name);
+  // The order of AC-8: the empty slot, the templates, the instances, the
+  // modules that are not media; the instance after a separator, after the templates.
+  const labels = await page.getByLabel('Slot 1', { exact: true }).locator('option').allTextContents();
+  expect(labels[0]).toBe('–empty–');
+  expect(labels.indexOf(name)).toBeGreaterThan(labels.indexOf('CE-1600M'));
+  expect(labels.slice(labels.indexOf('CE-1600M'), labels.indexOf(name))).toContain('──────────');
+  expect(labels.indexOf(name)).toBeLessThan(labels.indexOf('CE-151'));
+  await expect(page.getByLabel('Slot 2', { exact: true }).locator('option', { hasText: name })).toHaveCount(1);
+});
+
+test('lib7_ac44 Name & Save keeps a card across a reload', async ({ page }) => {
+  await gotoReady(page);
+  await pickModel(page, 2);
+  await page.getByLabel('Slot 1', { exact: true }).selectOption('CE-1600M');
+  await expect(page.getByRole('button', { name: 'Name & Save slot 1' })).toBeEnabled({ timeout: 30000 });
+  await page.getByRole('button', { name: 'Name & Save slot 1' }).click();
+  const name = `Work ${Date.now()}`;
+  await nameAndSave(page).locator('[data-calcu=media-name]').fill(name);
+  await nameAndSave(page).locator('[data-calcu=media-save]').click();
   await expect(page.getByLabel('Slot 1', { exact: true })).toHaveValue(name);
   await page.waitForTimeout(500);  // IndexedDB write
 
   await page.reload();
   await expect(page.locator('.calcu-client[data-ready=true]')).toHaveCount(1, { timeout: 30000 });
   await expect(page.locator('.calcu-face[data-model="2"]')).toHaveCount(1);  // last used model
-  await expect(page.getByLabel('Slot 1', { exact: true }).locator('option', { hasText: name })).toHaveCount(1);
+  await expect(page.getByLabel('Slot 1', { exact: true }).locator('option', { hasText: name })).toHaveCount(1, { timeout: 30000 });
+});
 
-  // Saved Media lists it, in use it can't be deleted; out of the slot it can.
-  await page.getByLabel('Slot 1', { exact: true }).selectOption(name);
-  await expect(page.locator('.calcu-busy')).toHaveCount(0, { timeout: 30000 });
+// AC-43: the saved media list is today's: by kind and name, a template
+// and a medium in a place marked; one in a place cannot be deleted.
+test('lib7_ac43 saved media list', async ({ page }) => {
+  await gotoReady(page);
+  await pickModel(page, 2);
+  await page.getByLabel('Slot 1', { exact: true }).selectOption('CE-1600M');
+  await expect(page.getByRole('button', { name: 'Name & Save slot 1' })).toBeEnabled({ timeout: 30000 });
+  await page.getByRole('button', { name: 'Name & Save slot 1' }).click();
+  const name = `Kept ${Date.now()}`;
+  await nameAndSave(page).locator('[data-calcu=media-name]').fill(name);
+  await nameAndSave(page).locator('[data-calcu=media-save]').click();
+  await expect(page.getByLabel('Slot 1', { exact: true })).toHaveValue(name);
+  await notBusy(page);
   await menu(page, 'File', 'Saved Media…');
-  const row = page.locator(`[data-media="${name}"]`);
-  await expect(row).toContainText('in use');
+  const row = page.locator(`[data-calcu="media-saved-battery-backed-module-${name}"]`);
+  await expect(row).toContainText('memory module');
+  await expect(row).toContainText('in slot-1');
   await expect(row.getByRole('button', { name: 'Delete' })).toBeDisabled();
-  await page.locator('[data-dialog=media] button', { hasText: 'Close' }).click();
+  const download = page.waitForEvent('download');
+  await row.getByRole('button', { name: 'Download' }).click();
+  expect((await download).suggestedFilename()).toBe(`${name}.card.yaml`);
+  await page.locator('[data-dialog=media]').getByRole('button', { name: 'Close' }).click();
+});
+
+// AC-43, OQ-4: a delete asks first; no keeps it.
+test('lib7_ac43 delete asks first', async ({ page }) => {
+  await gotoReady(page);
+  await pickModel(page, 2);
+  await page.getByLabel('Slot 1', { exact: true }).selectOption('CE-1600M');
+  await expect(page.getByRole('button', { name: 'Name & Save slot 1' })).toBeEnabled({ timeout: 30000 });
+  await page.getByRole('button', { name: 'Name & Save slot 1' }).click();
+  const name = `Gone ${Date.now()}`;
+  await nameAndSave(page).locator('[data-calcu=media-name]').fill(name);
+  await nameAndSave(page).locator('[data-calcu=media-save]').click();
+  await expect(page.getByLabel('Slot 1', { exact: true })).toHaveValue(name);
   await page.getByLabel('Slot 1', { exact: true }).selectOption('');
-  await expect(page.locator('.calcu-busy')).toHaveCount(0, { timeout: 30000 });
+  await notBusy(page);
   await menu(page, 'File', 'Saved Media…');
+  const row = page.locator(`[data-calcu="media-saved-battery-backed-module-${name}"]`);
+  await expect(row.getByRole('button', { name: 'Delete' })).toBeEnabled();
+  let asked = '';
+  page.once('dialog', (d) => { asked = d.message(); d.dismiss(); });
+  await row.getByRole('button', { name: 'Delete' }).click();
+  await expect.poll(() => asked).toContain('Delete');
+  await page.waitForTimeout(300);
+  await expect(row).toHaveCount(1);
+  page.once('dialog', (d) => d.accept());
   await row.getByRole('button', { name: 'Delete' }).click();
   await expect(row).toHaveCount(0);
 });
 
-test('a tape imported as WAV shows in the tape picker', async ({ page }) => {
+// AC-43: Import Media… takes module files, disk files and a tape
+// definition with its WAV, chosen together; a WAV alone is no tape.
+test('lib7_ac43 import card disk and tape with wav', async ({ page }) => {
   await gotoReady(page);
+  const stamp = Date.now();
+  const files = [
+    { name: `Card ${stamp}.card.yaml`, mimeType: 'text/yaml', buffer: Buffer.from(instanceOf('ce1600m.card.yaml', 'module-name', `Card ${stamp}`)) },
+    { name: `Disk ${stamp}.floppy.yaml`, mimeType: 'text/yaml', buffer: Buffer.from(instanceOf('formatted.floppy.yaml', 'disk-name', `Disk ${stamp}`)) },
+    { name: `Tape ${stamp}.tape.yaml`, mimeType: 'text/yaml',
+      buffer: Buffer.from(`format: cassette-tape\nformat-version: 1\ntape-name: "Tape ${stamp}"\naudio: { file: "side${stamp}.wav" }\n`) },
+    { name: `side${stamp}.wav`, mimeType: 'audio/wav', buffer: fs.readFileSync(path.join(FIXTURES, 'pc1500_tape.wav')) },
+  ];
   const chooser = page.waitForEvent('filechooser');
-  await menu(page, 'File', 'Import Card, Disk or Tape…');
-  const name = `Side ${Date.now()}`;
-  await (await chooser).setFiles({ name: `${name}.wav`, mimeType: 'audio/wav', buffer: fs.readFileSync(path.join(FIXTURES, 'pc1500_tape.wav')) });
+  await menu(page, 'File', 'Import Media…');
+  await (await chooser).setFiles(files);
+  await notBusy(page);
+  await menu(page, 'File', 'Saved Media…');
+  await expect(page.locator(`[data-calcu="media-saved-battery-backed-module-Card ${stamp}"]`)).toHaveCount(1, { timeout: 30000 });
+  await expect(page.locator(`[data-calcu="media-saved-floppy-disk-Disk ${stamp}"]`)).toHaveCount(1);
+  await expect(page.locator(`[data-calcu="media-saved-cassette-Tape ${stamp}"]`)).toHaveCount(1);
+  await page.locator('[data-dialog=media]').getByRole('button', { name: 'Close' }).click();
+  // The tape plays from the picker of the CE-150's cassette.
   await page.getByRole('button', { name: 'CE-150' }).click();
-  await expect(page.getByLabel('Tape', { exact: true }).locator('option', { hasText: name })).toHaveCount(1, { timeout: 30000 });
+  await expect(page.getByLabel('Tape', { exact: true }).locator('option', { hasText: `Tape ${stamp}` })).toHaveCount(1, { timeout: 30000 });
+  // A WAV on its own: refused, with the reason.
+  const again = page.waitForEvent('filechooser');
+  await menu(page, 'File', 'Import Media…');
+  await (await again).setFiles({ name: 'alone.wav', mimeType: 'audio/wav', buffer: fs.readFileSync(path.join(FIXTURES, 'pc1500_tape.wav')) });
+  await expect(page.locator('[data-dialog=notice]')).toContainText('A WAV on its own is no tape');
+});
+
+// AC-39: the side button shows the side up, 0 or 1, and turns the disk over.
+test('lib7_ac44 the disk side button turns the disk over', async ({ page }) => {
+  await page.setViewportSize(TALL);
+  await gotoReady(page);
+  await pickModel(page, 2);
+  await page.getByRole('button', { name: 'CE-1600P' }).click();
+  await expect(page.getByLabel('Disk', { exact: true })).toBeEnabled({ timeout: 30000 });
+  await page.getByLabel('Disk', { exact: true }).selectOption('Formatted');
+  await expect(page.getByRole('button', { name: 'Disk side' })).toHaveText('0', { timeout: 30000 });
+  await page.getByRole('button', { name: 'Disk side' }).click();
+  await expect(page.getByRole('button', { name: 'Disk side' })).toHaveText('1');
+  await expect(page.getByLabel('Disk', { exact: true })).toHaveValue('Formatted');
+});
+
+// The record button: a name first, a new tape on the empty template (AC-20, D-24).
+test('lib7_ac44 a new tape is recorded under its name', async ({ page }) => {
+  await page.setViewportSize(TALL);
+  await gotoReady(page);
+  await page.getByRole('button', { name: 'CE-150' }).click();
+  await expect(page.getByLabel('Tape', { exact: true })).toBeVisible({ timeout: 30000 });
+  await page.getByRole('button', { name: 'New tape' }).click();
+  const name = `Rec ${Date.now()}`;
+  await page.locator('[data-dialog=prompt] input[type=text]').fill(name);
+  await page.locator('[data-dialog=prompt] button', { hasText: 'OK' }).click();
+  await expect(page.getByLabel('Tape', { exact: true })).toHaveValue(name, { timeout: 30000 });
+  await expect(page.locator('[data-lamp=tape]')).toContainText('●');
 });
 
 test('C1600-2 AC-18 headerless code asks the address, then NEW and CALL', async ({ page }) => {

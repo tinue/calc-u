@@ -457,7 +457,10 @@ C2 designs are their drafts. What each needs:
   changed after an earlier run's build looked older than its stale object.
   `ci/linux/run.sh` now copies by content and gives a copied file a fresh
   time (`--checksum --no-times`).
-- **GitHub CI**: GITHUB_CI_PLACEHOLDER
+- **GitHub CI**: both workflows on `bebeba3` green on every job
+  (Calc-U-1600 43928718095: core tests, library, help, Linux x86_64 and
+  aarch64, Windows x86_64 and arm64, macOS arm64 signed and notarised,
+  Web; Calc-U-59 43928724573: core tests, library, Linux, Windows, Web).
 
 Line counts by C1's method (`.cpp .hpp .h .swift .js .mm .py
 CMakeLists.txt .cmake`, without `node_modules`, `dist`, `build` and

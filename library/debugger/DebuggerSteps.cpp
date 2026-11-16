@@ -27,8 +27,6 @@ using sessions::Task;
 
 namespace {
 
-constexpr std::uint64_t kMaxCount = 100000;   // AC-19
-
 std::string scalarOf(const YamlNode& n) {
     if (n.rawLine) return n.scalar;
     std::string s, e;
@@ -221,7 +219,7 @@ void addDebuggerSteps(presets::Vocabulary& v, DebuggerPart& part) {
                                   level = value;
                               } else if (k == "count") {
                                   const auto c = formats::parseNumber(value);
-                                  if (!c || *c < 1 || static_cast<std::uint64_t>(*c) > kMaxCount) {
+                                  if (!c || *c < 1 || *c > kMaxStepCount) {
                                       ctx.error(line, "step: takes a count from 1 to 100000.");
                                       return nullptr;
                                   }

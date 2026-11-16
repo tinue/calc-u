@@ -2,7 +2,6 @@
 
 #include <cstdint>
 #include <limits>
-#include <span>
 #include <vector>
 
 #include "Machine/SharpProductKinds.hpp"
@@ -11,51 +10,32 @@ namespace shared {
 
 namespace {
 
+constexpr std::uint64_t kAll = std::numeric_limits<std::uint64_t>::max();
+
+// The core's records as they are; the library's TraceSession keeps the limit.
 class SharpTraceRecorder final : public calcu::debugger::TraceRecorder {
 public:
     explicit SharpTraceRecorder(sharp::TraceRecords& records) : records_(&records) {}
 
-    void begin(calcu::debugger::TraceFile& file) override {
-        if (!records_ || !records_->begin()) return;
-        move(file, std::numeric_limits<std::uint64_t>::max());
+    void begin(std::vector<std::uint8_t>& out) override {
+        if (records_ && records_->begin()) records_->take(out, kAll);
     }
-    bool pump(calcu::debugger::TraceFile& file, std::uint64_t budget) override {
-        if (!records_) return true;
-        const bool all = move(file, budget);
-        if (!all) full_ = true;
-        return all;
+    bool take(std::vector<std::uint8_t>& out, std::uint64_t budget) override {
+        return !records_ || records_->take(out, budget);
     }
     // SESSION_END: a record header (type, length) and the event count.
     std::uint64_t endBytes() const override { return 3 + 4; }
-    void end(calcu::debugger::TraceFile& file) override {
+    void end(std::vector<std::uint8_t>& out) override {
         if (!records_) return;
         records_->endRecord();
-        if (full_) {
-            // The limit ended it (AC-24, AC-43): of what waits, only the
-            // session's end goes in, within the bytes kept for it.
-            buffer_.clear();
-            records_->take(buffer_, std::numeric_limits<std::uint64_t>::max());
-            if (buffer_.size() >= endBytes())
-                file.write(std::span<const std::uint8_t>(buffer_).last(static_cast<std::size_t>(endBytes())));
-        } else {
-            move(file, std::numeric_limits<std::uint64_t>::max());
-        }
+        records_->take(out, kAll);
         records_->end();
     }
     std::string buttonFileName() const override { return "TRACE.bin"; }   // AC-23
     void machineGone() override { records_ = nullptr; }
 
 private:
-    bool move(calcu::debugger::TraceFile& file, std::uint64_t budget) {
-        buffer_.clear();
-        const bool all = records_->take(buffer_, budget);
-        if (!buffer_.empty()) file.write(buffer_);
-        return all;
-    }
-
     sharp::TraceRecords* records_;
-    std::vector<std::uint8_t> buffer_;
-    bool full_ = false;   // a pump had more than its budget
 };
 
 } // namespace

@@ -266,23 +266,17 @@ void checkReference(const char* model, int frames, const char* reference) {
     auto m = sharptest::buildSharp(cat, model);
     CHECK(m != nullptr);
     if (!m || want.empty()) return;
-    calcu::testing::TempFolder tmp("calcu1600-trace-ref");
-    const std::string path = tmp.str() + "/ref.bin";
-    std::string error;
-    auto file = dbg::TraceFile::open(path, &error);
     auto rec = shared::makeSharpTraceRecorder(*m);
-    CHECK(file && rec);
-    if (!file || !rec) return;
-    rec->begin(*file);
+    CHECK(rec != nullptr);
+    if (!rec) return;
+    std::vector<std::uint8_t> bytes;
+    rec->begin(bytes);
     m->coldBoot();
     for (int i = 0; i < frames; ++i) {
         m->advance(m->descriptor().tickRate / 60);
-        CHECK(rec->pump(*file, UINT64_MAX));
+        CHECK(rec->take(bytes, UINT64_MAX));
     }
-    rec->end(*file);
-    file->close();
-    std::ifstream got(path, std::ios::binary);
-    std::vector<std::uint8_t> bytes((std::istreambuf_iterator<char>(got)), std::istreambuf_iterator<char>());
+    rec->end(bytes);
     CHECK_EQ(bytes.size(), want.size());
     std::size_t diffs = 0, first = 0;
     for (std::size_t i = 0; i < std::min(bytes.size(), want.size()); ++i) {

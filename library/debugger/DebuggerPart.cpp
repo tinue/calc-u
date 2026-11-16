@@ -9,6 +9,7 @@
 #include <filesystem>
 #include <fstream>
 #include <iterator>
+#include <utility>
 
 namespace calcu::debugger {
 
@@ -112,6 +113,23 @@ Value cellValue(std::uint64_t address, const machine::CellRead& c) {
     return Value();
 }
 
+// The bank and vertical bank of a peek or poke into `bank`; the reason when
+// they are refused (AC-49: the range lies inside one bank window that has them).
+std::optional<std::string> bankOf(const Value& a, const machine::SpaceInfo& space, std::uint64_t address,
+                                  std::uint64_t count, machine::BankSelect* bank) {
+    if (auto b = numberOf(a.find("bank"))) bank->bank = static_cast<std::uint32_t>(*b);
+    if (auto v = numberOf(a.find("vbank"))) bank->vbank = static_cast<std::uint32_t>(*v);
+    if (!bank->bank && !bank->vbank) return std::nullopt;
+    const auto w = std::find_if(space.banked.begin(), space.banked.end(), [&](const machine::BankWindow& x) {
+        return address >= x.first && address + count <= x.first + x.count;
+    });
+    if (w == space.banked.end()) return "The range does not lie inside one bank of " + space.name + ".";
+    if (bank->bank && *bank->bank >= w->banks) return "The space " + space.name + " has no bank " + std::to_string(*bank->bank) + ".";
+    if (bank->vbank && *bank->vbank >= w->vbanks)
+        return "The space " + space.name + " has no vertical bank " + std::to_string(*bank->vbank) + ".";
+    return std::nullopt;
+}
+
 std::optional<std::vector<std::uint8_t>> readFileBytes(const std::string& path) {
     std::ifstream in(std::filesystem::path(std::u8string(path.begin(), path.end())), std::ios::binary);
     if (!in) return std::nullopt;
@@ -121,19 +139,14 @@ std::optional<std::vector<std::uint8_t>> readFileBytes(const std::string& path) 
 } // namespace
 
 DebuggerPart::DebuggerPart(DebuggerSetup s)
-    : setup_(std::move(s)), trace_(setup_.trace), control_(setup_.rules ? *setup_.rules : ownRules_, trace_) {}
+    : setup_(std::move(s)), trace_(std::exchange(setup_.trace, {})),
+      control_(setup_.rules ? *setup_.rules : ownRules_, trace_) {}
 
 DebuggerPart::~DebuggerPart() = default;
 
-void DebuggerPart::setTraceFolder(std::function<std::optional<settings::Paths::Ensured>()> f) {
-    setup_.trace.folder = f;
-    trace_.setFolder(std::move(f));
-}
+void DebuggerPart::setTraceFolder(std::function<std::optional<settings::Paths::Ensured>()> f) { trace_.setFolder(std::move(f)); }
 
-void DebuggerPart::setTraceLimit(std::function<long()> f) {
-    setup_.trace.limitMb = f;
-    trace_.setLimit(std::move(f));
-}
+void DebuggerPart::setTraceLimit(std::function<long()> f) { trace_.setLimit(std::move(f)); }
 
 const SymbolTable* DebuggerPart::symbols(const DebugTargetId& t) const {
     const auto it = symbols_.find(t);
@@ -196,7 +209,8 @@ void DebuggerPart::addCommands(sessions::SessionSetup& s) {
     });
     s.command(kStepCommand, [&rc, levelOf](const Value& a, SessionContext& c) -> CommandOutcome {
         const std::int64_t count = sessions::integerArg(a, "count", 1);
-        if (count < 1) return Refused{"A step needs a count of at least 1."};
+        if (count < 1 || count > kMaxStepCount)
+            return Refused{"step takes a count from 1 to " + std::to_string(kMaxStepCount) + "."};
         const std::string k = sessions::textArg(a, "kind");
         const StepKind kind = k == "over" ? StepKind::Over : k == "out" ? StepKind::Out : StepKind::In;
         const std::string t = sessions::textArg(a, "target");
@@ -323,17 +337,7 @@ void DebuggerPart::addCommands(sessions::SessionSetup& s) {
         if (*address >= space.size || count > space.size - *address)   // EC-9
             return Refused{"The address is outside the space " + space.name + "."};
         machine::BankSelect bank;
-        if (auto b = numberOf(a.find("bank"))) bank.bank = static_cast<std::uint32_t>(*b);
-        if (auto v = numberOf(a.find("vbank"))) bank.vbank = static_cast<std::uint32_t>(*v);
-        if (bank.bank || bank.vbank) {   // AC-49: inside one bank window
-            const auto w = std::find_if(space.banked.begin(), space.banked.end(), [&](const machine::BankWindow& x) {
-                return *address >= x.first && *address + count <= x.first + x.count;
-            });
-            if (w == space.banked.end()) return Refused{"The range does not lie inside one bank of " + space.name + "."};
-            if (bank.bank && *bank.bank >= w->banks) return Refused{"The space " + space.name + " has no bank " + std::to_string(*bank.bank) + "."};
-            if (bank.vbank && *bank.vbank >= w->vbanks)
-                return Refused{"The space " + space.name + " has no vertical bank " + std::to_string(*bank.vbank) + "."};
-        }
+        if (auto why = bankOf(a, space, *address, count, &bank)) return Refused{*why};
         std::vector<std::pair<std::uint64_t, machine::CellRead>> before;
         for (std::uint64_t i = 0; i < count; ++i) {
             const auto v = numberOf(&(*vs->elements())[i]);
@@ -457,18 +461,7 @@ void DebuggerPart::addRequests(sessions::SessionSetup& s) {
         if (*address >= space.size || count > space.size - *address)   // EC-9
             return sessions::replyRefused("The address is outside the space " + space.name + ".");
         machine::BankSelect bank;
-        if (auto b = numberOf(a.find("bank"))) bank.bank = static_cast<std::uint32_t>(*b);
-        if (auto v = numberOf(a.find("vbank"))) bank.vbank = static_cast<std::uint32_t>(*v);
-        if (bank.bank || bank.vbank) {   // AC-49
-            const auto w = std::find_if(space.banked.begin(), space.banked.end(), [&](const machine::BankWindow& x) {
-                return *address >= x.first && *address + count <= x.first + x.count;
-            });
-            if (w == space.banked.end()) return sessions::replyRefused("The range does not lie inside one bank of " + space.name + ".");
-            if (bank.bank && *bank.bank >= w->banks)
-                return sessions::replyRefused("The space " + space.name + " has no bank " + std::to_string(*bank.bank) + ".");
-            if (bank.vbank && *bank.vbank >= w->vbanks)
-                return sessions::replyRefused("The space " + space.name + " has no vertical bank " + std::to_string(*bank.vbank) + ".");
-        }
+        if (auto why = bankOf(a, space, *address, count, &bank)) return sessions::replyRefused(*why);
         Value::Array cells;
         for (std::uint64_t i = 0; i < count; ++i) cells.push_back(cellValue(*address + i, target.peek(*sp, *address + i, bank)));
         return sessions::replyGiven(sessions::valuePayload(

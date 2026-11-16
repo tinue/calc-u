@@ -377,23 +377,29 @@ with LIB-3's "No machine is running.".
 class TraceFile {                          // the library's: a file in the trace folder, or memory (Web)
 public: void write(std::span<const std::byte>); std::uint64_t bytes() const;
 };
-class TraceRecorder {                      // the product's, one per machine (ADR 0037)
+class TraceRecorder {                      // the product's record source, one per machine (ADR 0037)
 public:
-  virtual void begin(TraceFile&) = 0;      // header, session start; turns on the core's recording
-  // Whole records of what ran since the last pump, at most `budget` bytes;
-  // false: there was more than the budget (the limit is reached).
-  virtual bool pump(TraceFile&, std::uint64_t budget) = 0;
-  virtual std::uint64_t endBytes() const = 0;   // the size of what end() writes
-  virtual void end(TraceFile&) = 0;        // session end; turns the core's recording off
+  virtual void begin(std::vector<std::uint8_t>& out) = 0;   // turns on the core's recording; appends header, session start
+  // Appends whole records of what ran since the last call, at most `budget`
+  // bytes; false: more were waiting than the budget took.
+  virtual bool take(std::vector<std::uint8_t>& out, std::uint64_t budget) = 0;
+  virtual std::uint64_t endBytes() const = 0;   // the size of the session's end record
+  // Appends the records still waiting, then the end record (the last
+  // endBytes() bytes); turns the core's recording off.
+  virtual void end(std::vector<std::uint8_t>& out) = 0;
   virtual std::string buttonFileName() const = 0;   // AC-23: CALCU59_TRACE.bin, TRACE.bin
-protected: ~TraceRecorder() = default;
+  virtual void machineGone() {}            // the machine was replaced: the core is not touched again
 };
 ```
+
+The recorder only says what the bytes are; `TraceSession` writes them
+and alone keeps T2's limit, so a product writes no budget rule (§11,
+Part D simplification).
 
 | # | Rule | Serves |
 |---|---|---|
 | T1 | A start, by `trace:`, the command or a button: a name with `/` or `\` is refused. One trace at a time: a running one ends first. The place is `Paths::ensure(Folder::Traces)`; an existing file of that name is replaced. Where `Paths` gives no trace folder and a listener offers `KeepFile`, the file is kept in memory. Otherwise, and when the folder cannot be written, the start fails with the reason | AC-22, AC-23, EC-8 |
-| T2 | The gate pumps after each piece (G1) with a budget of the limit minus `bytes()` minus `endBytes()`. The limit is `[trace] max-file-size-mb` (LIB-9 AC-11) MiB. When `pump` says false, the trace ends and a notice says "The trace <name> reached the size limit of <n> MB and ended." | AC-24, AC-43 |
+| T2 | The gate pumps after each piece (G1): `take` with a budget of the limit minus `bytes()` minus `endBytes()`, its bytes into the file. The limit is `[trace] max-file-size-mb` (LIB-9 AC-11) MiB. When `take` says false, the trace ends: of what `end` gives, only the last `endBytes()` bytes (the end record) go into the file; and a notice says "The trace <name> reached the size limit of <n> MB and ended." | AC-24, AC-43 |
 | T3 | Ends: `trace: off`; the end of the load whose `trace:` step started it, whatever its result (the step marks the trace as the running operation's; LIB-3's `SessionPart::operationEnded` ends it); a new machine, with a log line "The trace <name> ended: a new machine was built."; T2. Each writes `end()` and closes the file | AC-22, AC-24 |
 | T4 | A trace that ended in memory is handed over with `askHost(KeepFile, {name, bytes, mediaType: "application/octet-stream"})` (LIB-15 N4) | AC-26 |
 | T5 | `trace` topic: running, the file name, whoever started it | AC-25 |
@@ -899,10 +905,11 @@ models since M-36 (LIB-5 AC-31). So `CpuOnlyRules` suffice (D-17).
   INSPECTOR's button (`TRACE.bin`, AC-23), and the version 1 preset key
   through L-A3. One trace at a time; a new machine ends it with a log line;
   the limit ends it with the library's notice (LIB-10 D-11).
-- **The records are the core's.** `SharpTraceRecorder::begin` writes the
-  header and the session start and turns the core's recording on; `pump`
-  moves whole records from the core's buffer, at most the budget; `end`
-  writes the session end. The bytes are those of today's file: header
+- **The records are the core's.** `SharpTraceRecorder::begin` gives the
+  header and the session start and turns the core's recording on; `take`
+  gives whole records from the core's buffer, at most the budget; `end`
+  gives what waits and the session end (since P-5, §11: the library's
+  `TraceSession` writes them and keeps the limit). The bytes are those of today's file: header
   `PC15` and version 3; the records of both CPUs of a PC-1600 in one file;
   gap records where a ring overflowed (`PC1500TraceFile.cpp:9-144`).
   `tools/read_trace.py` reads them unchanged.
@@ -1105,3 +1112,41 @@ Coverage: AC-36 to AC-44 and AC-52, 10 of 10; AC-40's and AC-43's format
    code, a step early), so M-50 only moves the server. Agreed?
    Recommendation: yes.
    Answered (user, 2026-11-16, with the approval of the Part D designs): yes.
+
+## 11. Part D simplification (P-5, 2026-11-16)
+
+Departures from the text above (`docs/reviews/d-simplification.md` S-4
+and S-8's debugger bullet). No spec change, no user-visible change.
+
+- **The trace budget is the library's (S-4).** §3.7's `TraceRecorder`
+  wrote into the `TraceFile` and kept the limit itself: `pump(file,
+  budget)`, and on the limit an `end` that wrote only the end record.
+  Calc-U-1600's recorder, the library tests' recorder and the Web test
+  product's each wrote that rule, and Calc-U-59 (M-53) would have written
+  it again. Now the recorder is a record source that appends to a byte
+  buffer: `begin(out)`, `take(out, budget)`, `endBytes()`, `end(out)`
+  (the records still waiting, then the end record), `buttonFileName()`,
+  `machineGone()`. `TraceSession` writes the bytes, computes T2's budget
+  and, when the limit ended the trace, keeps only the last `endBytes()`
+  bytes of what `end` gives. The files are byte for byte as before
+  (AC-42's references, AC-43's limit). Calc-U-59's recorder (M-53) is a
+  source over `drainCpuFrames` with no budget rule of its own.
+- **One step-count limit (S-8).** `kMaxStepCount` (`RunState.hpp`,
+  100000, AC-19) is the one constant. The session command `step` refuses a
+  count outside 1 to 100000 with "step takes a count from 1 to 100000."
+  (it refused only a count below 1, with other words, which no frontend
+  sends: the buttons and the DAP step by 1); the harness no longer checks
+  the range itself, only that the count is a number, in the same words.
+  The preset step `step:` keeps its check when the preset is read (LIB-6
+  AC-6) on the same constant.
+- **Peek and poke (S-8)** check the bank and vertical bank (AC-49) in one
+  helper of `DebuggerPart.cpp`; the refusals are unchanged.
+- **The trace folder and limit (S-8)** live only in the `TraceSession`:
+  `DebuggerPart` hands `DebuggerSetup::trace` over at construction, and
+  `setTraceFolder`/`setTraceLimit` only forward to it.
+- **Kept: `DebuggerSetup::runControlSteps` stays per model.** AC-19 makes
+  it a product property in the products (Calc-U-1600: none of its models;
+  Calc-U-59: every model), but the library's tests use one product with
+  both kinds of model (`test-dot` stands for a model without the steps,
+  `test-seg` has them; `DebugRig`, the harness's `TestProduct`), so a
+  per-product flag would need a second test product.

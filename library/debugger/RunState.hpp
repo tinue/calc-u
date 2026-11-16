@@ -3,6 +3,7 @@
 #include "debugger/Levels.hpp"
 #include "sessions/Messages.hpp"
 #include "sessions/Payload.hpp"
+#include <cstdint>
 #include <optional>
 #include <string>
 #include <vector>
@@ -18,6 +19,7 @@ inline const sessions::TopicName kTraceTopic{"trace"};          // state: TraceS
 inline const sessions::CommandName kPauseCommand{"pause"};                  // {level}
 inline const sessions::CommandName kResumeCommand{"resume"};
 inline const sessions::CommandName kStepCommand{"step"};                    // {level, count, target?, kind: in|over|out}
+inline constexpr std::int64_t kMaxStepCount = 100000;                       // a step's count is 1 to this (AC-19)
 inline const sessions::CommandName kPauseOnStartCommand{"pause-on-start"};  // {level} | {off: true}
 inline const sessions::CommandName kPauseAtStartCommand{"pause-at-start"};
 inline const sessions::CommandName kBreakCommand{"break"};                  // {setter, target, address, qualifier?}

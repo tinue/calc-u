@@ -98,7 +98,8 @@ std::optional<std::string> TraceSession::start(sessions::SessionContext& c, std:
     file_ = std::move(file);
     name_ = std::move(name);
     ofOperation_ = ofOperation;
-    recorder_->begin(*file_);
+    recorder_->begin(buffer_);
+    write();
     publish();
     return std::nullopt;
 }
@@ -108,7 +109,14 @@ void TraceSession::pump(sessions::SessionContext& c) {
     const std::uint64_t limit = limitBytes();
     const std::uint64_t used = file_->bytes() + recorder_->endBytes();
     const std::uint64_t budget = used >= limit ? 0 : limit - used;
-    if (!recorder_->pump(*file_, budget)) end(c, Ending::Limit);   // T2
+    const bool all = recorder_->take(buffer_, budget);
+    write();
+    if (!all) end(c, Ending::Limit);   // T2
+}
+
+void TraceSession::write() {
+    if (!buffer_.empty()) file_->write(buffer_);
+    buffer_.clear();
 }
 
 void TraceSession::end(sessions::SessionContext& c, Ending why) {
@@ -116,7 +124,15 @@ void TraceSession::end(sessions::SessionContext& c, Ending why) {
     if (why == Ending::NewMachine) recorder_->machineGone();
     else if (why != Ending::Limit) pump(c);   // what ran since the last piece
     if (!running()) return;                   // the pump reached the limit and ended it
-    recorder_->end(*file_);
+    recorder_->end(buffer_);
+    if (why == Ending::Limit) {
+        // AC-24, AC-43: of what waits, only the session's end goes in,
+        // within the bytes the budget kept for it.
+        const std::uint64_t n = recorder_->endBytes();
+        if (buffer_.size() >= n) buffer_.erase(buffer_.begin(), buffer_.end() - static_cast<std::ptrdiff_t>(n));
+        else buffer_.clear();
+    }
+    write();
     file_->close();
     const std::string name = name_;
     switch (why) {

@@ -53,10 +53,12 @@ public:
 
     RunControl& runControl() { return control_; }
     TraceSession& traceSession() { return trace_; }
+    // The setup as given, but for `trace`, which the trace session holds.
     const DebuggerSetup& setup() const { return setup_; }
     // The symbols loaded for a target (AC-51).
     const SymbolTable* symbols(const machine::DebugTargetId&) const;
-    // The trace folder, set later where the host makes it (the harness's run).
+    // The trace folder and limit, set later where the host makes them (the
+    // harness's run); the trace session keeps them.
     void setTraceFolder(std::function<std::optional<settings::Paths::Ensured>()>);
     void setTraceLimit(std::function<long()>);
 

@@ -1,4 +1,5 @@
 #pragma once
+#include "harness/attach/SessionParts.hpp"
 #include "pacing/WallClock.hpp"
 #include "sessions/AppSession.hpp"
 #include "sessions/HostServices.hpp"
@@ -69,7 +70,8 @@ public:
     // Builds with CALCU_ATTACH only (§3.9). Returns the problem; empty when
     // open. A port that cannot be bound gives a line in the session's log,
     // "Attach is not available on port N: <problem>.", and the app runs on.
-    std::string openAttach(harness::HarnessProduct&, std::uint16_t port);
+    // `parts`: the session's parts the attached commands use (LIB-14 D-27).
+    std::string openAttach(harness::HarnessProduct&, std::uint16_t port, harness::SessionParts parts = {});
     std::uint16_t attachPort() const;   // the bound port (port 0: the one the system picked)
     bool attachOpen() const;
     // `--attach-port N` (0: the system picks, for an in-process client),

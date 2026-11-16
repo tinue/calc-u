@@ -3,6 +3,7 @@
 #include "harness/HarnessHost.hpp"
 #include "harness/Product.hpp"
 #include "harness/attach/AttachEndpoint.hpp"
+#include "harness/attach/SessionParts.hpp"
 #include "sessions/AppSession.hpp"
 #include <cstdint>
 #include <deque>
@@ -18,8 +19,13 @@
 // its attached form, no host services) and runs LIB-11's commands on it as
 // `calcu serve` does, with one difference: time is the app's. `wait <d>`
 // replies when the app's own host calls have let d of emulated time pass;
-// the harness never advances the machine (AC-14). Replies and the
-// listener's messages go back as lines (LIB-11 design §3.9).
+// the harness never advances the machine (AC-14). The bare `wait` replies
+// when the app's machine is idle (LIB-6 AC-34; LIB-14 D-27: the session's
+// `wait-idle` operation, at most an hour). The commands are those of
+// `calcu serve` (D-27): the first, startup, preset, typing, paper, debug,
+// media and open commands, then the product's; the preset steps and the
+// media commands use the session's parts named in SessionParts. Replies and
+// the listener's messages go back as lines (LIB-11 design §3.9).
 
 namespace calcu::harness {
 
@@ -27,16 +33,19 @@ class AttachedHarness {
 public:
     static constexpr const char* kSuspended = "the app is suspended";
 
-    AttachedHarness(sessions::AppSession&, HarnessProduct&, AttachEndpoint&, std::function<bool()> callsSuspended);
+    AttachedHarness(sessions::AppSession&, HarnessProduct&, AttachEndpoint&, std::function<bool()> callsSuspended,
+                    SessionParts parts = {});
     ~AttachedHarness();
 
     void handle(const AttachEvent&);
     void afterHostCall();   // a pending `wait` or reply that is due goes out
     bool attached() const { return host_ != nullptr; }
+    const CommandRegistry& commands() const { return registry_; }   // D-27: the serve form's
 
 private:
     struct Pending {
         bool wait = false;
+        bool idle = false;   // the bare `wait`: the reply of `wait-idle` with the time it took
         machine::Ticks start = 0, target = 0;
         machine::TickRate rate = 1;
         sessions::CallId call = 0;

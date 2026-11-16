@@ -139,7 +139,7 @@ void SessionHost::defaultService(const sessions::ServiceAsk& a) {
     session_.answer(a.ask, std::move(answer));
 }
 
-std::string SessionHost::openAttach(harness::HarnessProduct& product, std::uint16_t port) {
+std::string SessionHost::openAttach(harness::HarnessProduct& product, std::uint16_t port, harness::SessionParts parts) {
 #ifdef CALCU_ATTACH
     attach_.reset();
     auto a = std::make_unique<Attach>();
@@ -151,12 +151,13 @@ std::string SessionHost::openAttach(harness::HarnessProduct& product, std::uint1
         return opened.problem;
     }
     // Qt6 sends no suspend (LIB-3 AC-36): calls are never suspended.
-    a->harness = std::make_unique<harness::AttachedHarness>(session_, product, *a->endpoint, [] { return false; });
+    a->harness = std::make_unique<harness::AttachedHarness>(session_, product, *a->endpoint, [] { return false; }, parts);
     attach_ = std::move(a);
     return {};
 #else
     (void)product;
     (void)port;
+    (void)parts;
     return "Attach is not built into this frontend.";
 #endif
 }

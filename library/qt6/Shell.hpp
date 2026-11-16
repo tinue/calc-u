@@ -74,13 +74,11 @@ public:
 
     // What the shell shows now (the tests, the scenarios).
     const shell::ShellInputs& inputs() const { return inputs_; }
-    const std::vector<shell::Menu>& menuModel() const { return menus_; }
     const shell::ShellProduct& product() const { return product_; }
     const shell::DialogSpec& dialogSpec() const { return spec_; }
     bool loadingShown() const;
     shell::NoticeQueue& notices() { return noticeQueue_; }
     ShellSettingsDialog* settingsDialog() const { return settings_; }
-    ShellAbout* aboutDialog() const { return about_; }
     SessionHost& host() { return host_; }
     QMainWindow& window() { return window_; }
 

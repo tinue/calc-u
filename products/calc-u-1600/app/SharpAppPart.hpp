@@ -136,11 +136,6 @@ public:
     calcu::presets::PresetsPart& presetsPart() { return m_presets; }
     const calcu::presets::PresetBundle& presetBundle() const { return m_bundle; }
     SharpPresetRules& presetRules() { return m_rules; }
-    // The preset list (LIB-6 AC-32): what `preset-list` replies, for the
-    // menus and the Settings of a frontend on the session's thread.
-    std::vector<calcu::presets::PresetListEntry> presetEntries() const {
-        return calcu::presets::presetList(m_bundle, m_rules, m_catalogue, nullptr);
-    }
     // C1600-3: the DAP server (app/dap/DapPart); nullptr in a Web build,
     // which has none (AC-1). The host hands it its socket (setTransport).
     dap::DapPart* dapPart() { return m_dap.get(); }

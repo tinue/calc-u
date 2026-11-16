@@ -193,8 +193,7 @@ public:
                                    }
                                }
                                ctx.keep("test-header", h);
-                           },
-                           false});
+                           }});
         v.add(SectionDef{"test-memory", [](const YamlNode& n, ReadContext& ctx) -> std::unique_ptr<Item> {
                              if (!n.isMap()) {
                                  ctx.error(n.line, "test-memory: is a block with at: and bytes: or file:.");

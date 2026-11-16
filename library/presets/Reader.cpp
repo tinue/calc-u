@@ -37,10 +37,6 @@ bool ReadContext::plugged(const machine::PlaceName& place, const machine::Periph
     return p && *p == id;
 }
 
-bool ReadContext::pluggedAny(const machine::PlaceName& place) const {
-    return plugged_ && plugged_(place).has_value();
-}
-
 std::optional<std::vector<std::uint8_t>> ReadContext::readFile(std::string_view path, int line) {
     auto r = source_.readNamed(path);
     if (auto* bytes = std::get_if<std::vector<std::uint8_t>>(&r)) return std::move(*bytes);
@@ -421,7 +417,6 @@ std::variant<LoadPlan, ReadError> readPreset(const PresetSource& source, const R
 
     // 3. The header keys, wherever they stand (AC-2, AC-14); each once.
     std::set<std::string> seen{"format-version", "model"};
-    std::vector<std::pair<const HeaderKeyDef*, const Chunk*>> later;
     auto once = [&](const Chunk& c) {
         if (seen.insert(c.key).second) return true;
         ctx.error(c.line, c.key + ": is given twice; a header key appears once.");
@@ -463,8 +458,7 @@ std::variant<LoadPlan, ReadError> readPreset(const PresetSource& source, const R
         // under a place's name (Calc-U-1600's `host-drive:`).
         if (const HeaderKeyDef* h = setup.vocabulary.header(c.key)) {
             if (!once(c) || !applies(ctx, c.key, c.line)) continue;
-            if (h->afterOtherHeaderKeys) later.emplace_back(h, &c);
-            else h->read(c.value, c.line, ctx);
+            h->read(c.value, c.line, ctx);
             continue;
         }
         if (desc->place(machine::PlaceName{c.key})) {
@@ -479,7 +473,6 @@ std::variant<LoadPlan, ReadError> readPreset(const PresetSource& source, const R
         }
         ctx.error(c.line, "Unknown key " + c.key + ".");   // AC-30
     }
-    for (const auto& [h, c] : later) h->read(c->value, c->line, ctx);
     if (!ctx.firstError()) ctx.rules().checkHeader(plan, ctx);   // D-32
 
     // 4. The sections and steps in file order (AC-4, AC-14, AC-15).

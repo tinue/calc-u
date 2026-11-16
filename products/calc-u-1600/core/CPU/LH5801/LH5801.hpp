@@ -105,7 +105,6 @@ public:
     bool     flagV() const { return (T & 0x08) != 0; }
     bool     flagH() const { return (T & 0x10) != 0; }
     void     setFlagC(bool v) { setFlagBit(0x01, v); }
-    void     setFlagZ(bool v) { setFlagBit(0x04, v); }
 
     /// Elapsed-cycle units credited toward the timer's tick divisor
     /// (LH5801TimerTable.hpp's kCyclesPerTick) per step() call made while

@@ -111,11 +111,10 @@ calcu::presets::ExpectReading SharpModelRules::compare(calcu::machine::Machine& 
 }
 
 Applies SharpModelRules::applies(std::string_view k) const {
-    // preset.md §7, the three Sharp columns.
-    if (k == "data" || k == "pause" || k == "pause-on-start" || k == "step" || k == "resume") return Applies::Undefined;
-    if (k == "magnetic-cards" || k == "partition" || k == "cue-card" || k == "card" || k == "arm" ||
-        k == "printer-trace" || k == "debug-panel")
-        return Applies::NotForThisModel;
+    // preset.md §7, the three Sharp columns, for the keywords Calc-U-1600's
+    // vocabulary has (the reader refuses the TI's as unknown before).
+    if (k == "pause" || k == "pause-on-start" || k == "step" || k == "resume") return Applies::Undefined;
+    if (k == "debug-panel") return Applies::NotForThisModel;
     if (!pc1600() && (k == "slot-2" || k == "host-drive" || k == "floppy" || k == "slot-2-rom"))
         return Applies::NotForThisModel;
     return Applies::Yes;

@@ -62,13 +62,6 @@ public:
         return true;
     }
 
-    /// Same, from the bytes of a WAV file (a tape's sound, LIB-7 M-47).
-    bool loadForPlayBytes(const std::vector<uint8_t>& wavBytes, std::string& error) {
-        WavData wav;
-        if (!readWavBytes(wavBytes, wav, error)) return false;
-        loadForPlay(wav.samples, wav.sampleRate);
-        return true;
-    }
 
     /// Same, from samples in -1..+1 (tests).
     void loadForPlay(const std::vector<float>& samples, int sampleRate) {

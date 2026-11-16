@@ -368,7 +368,4 @@ Tools and one-time checks, not tests that run again (the inventories,
 - Calc-U-59: the goldens generator `tools/goldens/` (regenerated when a
   driver changes), `tools/headless/`, `tools/agentic/` (harnesses),
   `tools/check_parity.sh` (a branch check), Qt `--grab` (by hand).
-- Calc-U-1600: the CLIs `pc1500_cli`, `pc1600_cli` and the probes
-  (harnesses and diagnostics), `dev/loader-matrix/`, `dev/tape-matrix/`
-  (one-time verifications), `dev/hardware-checks/` (programs for real
-  units).
+- Calc-U-1600: `dev/hardware-checks/` (programs for real units).

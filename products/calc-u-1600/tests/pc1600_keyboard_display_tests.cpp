@@ -25,7 +25,7 @@ namespace {
 
 // ── PC1600Keyboard ────────────────────────────────────────────────────
 
-TEST(test_keyboard_name_lookup) {
+TEST(test_pc1600_keyboard_name_lookup) {
     using K = PC1600Keyboard::Key;
     CHECK(PC1600Keyboard::keyFromName("5") == K::Digit5);
     CHECK(PC1600Keyboard::keyFromName("a") == K::A);

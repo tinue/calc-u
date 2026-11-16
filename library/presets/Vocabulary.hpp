@@ -48,7 +48,6 @@ struct ProductValue {
 struct HeaderKeyDef {
     std::string key;
     std::function<void(const formats::YamlNode&, int line, ReadContext&)> read;
-    bool afterOtherHeaderKeys = false;   // read once every header key is known (a key that needs the plugged peripherals)
 };
 
 struct SectionDef {

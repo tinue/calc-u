@@ -65,7 +65,6 @@ public:
     void markUsed() { used_ = true; }
 
     std::size_t sentWaiting() const { return sent_.size(); }
-    std::size_t receivedWaiting() const { return received_.size(); }
 
 private:
     std::deque<std::uint8_t> sent_, received_;

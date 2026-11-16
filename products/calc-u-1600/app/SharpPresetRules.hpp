@@ -38,7 +38,7 @@ class SharpPresetRules final : public calcu::presets::ProductRules {
 public:
     explicit SharpPresetRules(SharpKeywordSetup setup = {}) : m_setup(std::move(setup)) {}
     std::string_view productName() const override { return "Calc-U-1600"; }
-    // D-30: until M-52 gives the help topic's address.
+    // D-30: the hint of a refused preset (a user-visible sentence).
     std::string_view formatReference() const override { return "the chapter Presets of the User Guide"; }
     calcu::presets::ModelRules& forModel(const calcu::machine::ModelId&) override;
     void addKeywords(calcu::presets::Vocabulary& v) override { addSharpKeywords(v, m_setup); }

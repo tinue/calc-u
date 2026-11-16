@@ -1,15 +1,15 @@
-# The emulation core and the frontend-neutral Shared/ layer as two static
+# The emulation core and the frontend-neutral app layer as two static
 # libraries, for every CMake build in the repository:
 #
-#   calcu_core    Core/  -- the hardware (CPUs, machines, cards, loaders, presets)
-#   calcu_shared  Shared/ -- everything above Core that isn't drawing
+#   calcu_core    core/ -- the hardware (CPUs, machines, cards, loaders)
+#   calcu_shared  app/  -- everything above the core that isn't drawing
 #                 (docs/developer/Shared-Architecture.md); links calcu_core
 #
 # Included once, by the product's CMakeLists.txt (a subdirectory of the
 # repository's root CMake project, ADR 0003).
 #
-# The source lists are globbed: every core/**/*.cpp except core/tests/ and
-# every app/**/*.cpp except app/tests/.
+# The source lists are globbed: every core/**/*.cpp and every app/**/*.cpp
+# except app/tests/.
 #
 # calcu_core is compiled at -O1 in Debug unless
 # CALCU_TESTS_DEBUG is ON (calcu_debug_o1, the root CMakeLists.txt).
@@ -18,7 +18,7 @@ get_filename_component(CALCU_ROOT ${CMAKE_CURRENT_LIST_DIR} DIRECTORY)
 set(CALCU_CORE_ROOT ${CALCU_ROOT}/core)
 set(CALCU_SHARED_ROOT ${CALCU_ROOT}/app)
 
-# ---- libsharpdx: every program loader needs it (Core/Basic/vendor/sharpdx/README.md)
+# ---- libsharpdx: every program loader needs it (core/Basic/vendor/sharpdx/README.md)
 #  - macOS: libsharpdx.a is committed (tools/refresh_sharpdx.sh).
 #  - Linux/Windows: fetched by tools/fetch_sharpdx.sh into libsharpdx-linux.a
 #    / sharpdx.lib -- different names, so a fetch never dirties the
@@ -75,35 +75,28 @@ endif()
 
 # ---- calcu_core
 file(GLOB_RECURSE CALCU_CORE_SOURCES CONFIGURE_DEPENDS ${CALCU_CORE_ROOT}/*.cpp)
-list(FILTER CALCU_CORE_SOURCES EXCLUDE REGEX "^${CALCU_CORE_ROOT}/tests/")
-
-# calcu_add_core(<name>): a static library of every core/ source (calcu_core;
-# the probes' copy with PC1600_POWER_PROBE went with the probes in M-51).
-function(calcu_add_core name)
-  add_library(${name} STATIC ${CALCU_CORE_SOURCES})
-  target_include_directories(${name} PUBLIC ${CALCU_CORE_ROOT})
-  target_compile_features(${name} PUBLIC cxx_std_20)
-  target_link_libraries(${name} PRIVATE calcu_warnings)
-  # The sources are UTF-8 without a BOM (U'á' literals, PC1600TypedInput.hpp);
-  # MSVC would read them in the ANSI codepage (C2015). Targets linking Qt got
-  # /utf-8 from Qt6::Platform; core/ and app/ don't link Qt, so set it here --
-  # PUBLIC, since everything that includes core/'s headers needs it too.
-  if(MSVC)
-    target_compile_options(${name} PUBLIC /utf-8)
-  endif()
-  target_link_libraries(${name} PUBLIC calcu_sharpdx)
-  # The library (the root project's calcu_library): the machine interface,
-  # the settings file (LIB-9). Products do not configure on their own.
-  target_link_libraries(${name} PUBLIC calcu_library)
-  calcu_debug_o1(${name})
-endfunction()
-calcu_add_core(calcu_core)
+add_library(calcu_core STATIC ${CALCU_CORE_SOURCES})
+target_include_directories(calcu_core PUBLIC ${CALCU_CORE_ROOT})
+target_compile_features(calcu_core PUBLIC cxx_std_20)
+target_link_libraries(calcu_core PRIVATE calcu_warnings)
+# The sources are UTF-8 without a BOM (U'á' literals, PC1600TypedInput.hpp);
+# MSVC would read them in the ANSI codepage (C2015). Targets linking Qt got
+# /utf-8 from Qt6::Platform; core/ and app/ don't link Qt, so set it here --
+# PUBLIC, since everything that includes core/'s headers needs it too.
+if(MSVC)
+  target_compile_options(calcu_core PUBLIC /utf-8)
+endif()
+target_link_libraries(calcu_core PUBLIC calcu_sharpdx)
+# The library (the root project's calcu_library): the machine interface,
+# the settings file (LIB-9). Products do not configure on their own.
+target_link_libraries(calcu_core PUBLIC calcu_library)
+calcu_debug_o1(calcu_core)
 
 # ---- calcu_shared
-# Shared/ is C++20 and standard-library-only: no Qt, Cocoa or Emscripten
+# app/ is C++20 and standard-library-only: no Qt, Cocoa or Emscripten
 # headers, and single-threaded (docs/developer/Shared-Architecture.md).
-# Headers include their Core dependencies relative to Core/ ("PC1600/...")
-# and each other as "Shared/...".
+# Headers include their core dependencies relative to core/ ("PC1600/...")
+# and each other as "app/...".
 file(GLOB_RECURSE CALCU_SHARED_SOURCES CONFIGURE_DEPENDS ${CALCU_SHARED_ROOT}/*.cpp)
 list(FILTER CALCU_SHARED_SOURCES EXCLUDE REGEX "^${CALCU_SHARED_ROOT}/tests/")
 # The harness product entry (LIB-11, M-28) is a target of its own:

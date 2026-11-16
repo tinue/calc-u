@@ -41,7 +41,6 @@ public:
         std::vector<sessions::Command> commands;   // screen-key-down/up {key, pointer} (LIB-5), speed {full}
     };
     explicit PointerTracker(HitMap map = {}, std::function<double()> scale = {});
-    void setMap(HitMap map) { map_ = std::move(map); }
     const HitMap& map() const { return map_; }
 
     Out down(std::int64_t pointer, double px, double py);

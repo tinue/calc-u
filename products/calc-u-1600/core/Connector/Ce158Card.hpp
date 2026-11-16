@@ -180,7 +180,6 @@ public:
     }
 
     // ── Debug / test peek ───────────────────────────────────────────────
-    uint8_t uartStatus() const { return m_uartStatus; }
     uint8_t uartControl() const { return m_uartControl; }
     /// Decoded from PC0-4 + PA7; 0 when the code is not one the ROM uses.
     int baudRate() const { return decodeBaud(); }

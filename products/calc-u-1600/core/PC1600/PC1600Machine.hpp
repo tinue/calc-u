@@ -157,7 +157,6 @@ public:
     bool loadBank3bRom(const uint8_t* data, size_t size) { return m_z80Mem.loadBank3bRom(data, size); }
     bool loadBank6Rom(const uint8_t* data, size_t size) { return m_z80Mem.loadBank6Rom(data, size); }
     bool loadLH5803Rom(const uint8_t* data, size_t size) { return m_lh5803Mem.loadROM(data, size); }
-    bool loadLH5803RomFile(const std::string& path) { return m_lh5803Mem.loadROMFile(path); }
 
     // ── CE-1600P plotter (60-pin system bus) ─────────────────────────────
     //
@@ -177,9 +176,6 @@ public:
                         const uint8_t* rom2, size_t rom2Size);
     void detachCE1600P();
     bool ce1600pAttached() const { return m_ce1600pCard != nullptr; }
-    /// Direct access, like `keyboard()`/`memory()`; above the core the
-    /// paper is the card's paper-output capability (LIB-8).
-    CE1600PCard* ce1600pCard() { return m_ce1600pCard.get(); }
     /// The CE-1600P's paper output, nullptr while it is not plugged in.
     sharp::PlotterPaperOutput* ce1600pPaperOutput();
 

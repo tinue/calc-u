@@ -80,7 +80,7 @@ public:
     // instanceDir(): where traces go (the library's trace session) and where
     // the serial ports' PTY symlinks live. The Web has no trace folder
     // (traceDir() is empty, LIB-10 D-10); its serial link folder is the save
-    // folder (adapter A-4).
+    // folder.
     std::string traceDir() const;
     std::string serialLinkDir() const;
 

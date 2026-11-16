@@ -139,8 +139,7 @@ public:
                     defineInFile(ctx, *part->kind("test-card"), formats::scalarText(*n),
                                  contentFrom(c ? formats::scalarText(*c) : std::string()));
                 }
-            },
-            false});
+            }});
         control = std::make_unique<control::ControlPart>(control::ControlSetup{&mt::mediaTestCatalogue(), {}, {}});
         sessions::AppSessionSetup s;
         s.clock = clock.fn();

@@ -24,8 +24,6 @@ endif()
 # sources are the root project's. No find_package(Qt6) here: only
 # frontends/qt6/CMakeLists.txt needs Qt.
 
-set(TOOLS_ROOT ${CMAKE_CURRENT_SOURCE_DIR}/tools)
-
 # The suite runs ~3x faster at -O1 than at -O0, so a Debug build compiles
 # Core and the tests at -O1 (calcu_debug_o1; CI builds RelWithDebInfo). To
 # step through a failing test, configure a separate full-debug tree:
@@ -34,13 +32,13 @@ set(TOOLS_ROOT ${CMAKE_CURRENT_SOURCE_DIR}/tools)
 include(cmake/CalcU.cmake)
 
 # -----------------------------------------------------------------------------
-# WebAssembly (emcmake cmake on the repository root): only Core + Shared,
+# WebAssembly (emcmake cmake on the repository root): only core/ + app/,
 # the node smoke test (tools/build_wasm_check.sh) and the web client's
 # engine -- no Qt, no harness, no CoreTests. The smoke test proves the
 # frontend-neutral layers build and run for a web GUI.
 # -----------------------------------------------------------------------------
 if(EMSCRIPTEN)
-  # Shared/ reports with exceptions; Core's jobs rethrow through them.
+  # app/ reports with exceptions; the core's jobs rethrow through them.
   # Native wasm exception handling, as Rust's wasm32-unknown-emscripten std
   # in libsharpdx-wasm.a uses it (Emscripten's JS-based -fexceptions would
   # leave its __cpp_exception tag unresolved).
@@ -99,10 +97,18 @@ if(CALCU_TESTS)
   # The machine state's tests have a program of their own (below).
   list(REMOVE_ITEM TEST_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/tests/machine_state_tests.cpp)
 
-  add_executable(CoreTests ${TEST_SOURCES})
-  # The one test runner (ADR 0038): library/testing/, its main() included.
-  target_link_libraries(CoreTests PRIVATE calcu1600_harness calcu_test_runner calcu_warnings ZLIB::ZLIB)
-  calcu_debug_o1(CoreTests)
+  # calcu1600_test_program(<name> <sources>…): a test program on the
+  # harness entry and the one test runner (ADR 0038: library/testing/, its
+  # main() included), with tests/ and app/tests/ on its include path.
+  function(calcu1600_test_program name)
+    add_executable(${name} ${ARGN})
+    target_include_directories(${name} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/tests ${CMAKE_CURRENT_SOURCE_DIR}/app/tests)
+    target_link_libraries(${name} PRIVATE calcu1600_harness calcu_test_runner calcu_warnings)
+    calcu_debug_o1(${name})
+  endfunction()
+
+  calcu1600_test_program(CoreTests ${TEST_SOURCES})
+  target_link_libraries(CoreTests PRIVATE ZLIB::ZLIB)
 
   # Test groups (ADR 0031, docs/test-groups.md; calcu_add_test of the root
   # CMakeLists.txt): Frequent always, Longer and Checkpoint only with
@@ -150,10 +156,7 @@ if(CALCU_TESTS)
   # C1600-3 (design §6): the DAP server's cases, a program of their own so
   # that CoreTests' Frequent budget stays as it is (tests/dap/).
   file(GLOB DAP_TEST_SOURCES CONFIGURE_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/tests/dap/*.cpp)
-  add_executable(CalcU1600DapTests ${DAP_TEST_SOURCES})
-  target_include_directories(CalcU1600DapTests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/tests ${CMAKE_CURRENT_SOURCE_DIR}/app/tests)
-  target_link_libraries(CalcU1600DapTests PRIVATE calcu1600_harness calcu_test_runner calcu_warnings)
-  calcu_debug_o1(CalcU1600DapTests)
+  calcu1600_test_program(CalcU1600DapTests ${DAP_TEST_SOURCES})
   calcu_add_test(CalcU1600DapTests frequent COMMAND CalcU1600DapTests)
   # EC-1 under the harness (D-6): `serve --dap 80` ends with exit status 2.
   if(NOT WIN32)
@@ -174,8 +177,7 @@ if(CALCU_TESTS)
   # the catalogue (a program of its own, so that CoreTests' budget stays);
   # tools/help checks the help and builds Calc-U-1600-help.zip into the
   # tree (the test suite builds the asset, AC-8). Python 3, standard library.
-  add_executable(CalcU1600HelpTests ${CMAKE_CURRENT_SOURCE_DIR}/tests/help/help_tests.cpp)
-  target_link_libraries(CalcU1600HelpTests PRIVATE calcu1600_harness calcu_test_runner calcu_warnings)
+  calcu1600_test_program(CalcU1600HelpTests ${CMAKE_CURRENT_SOURCE_DIR}/tests/help/help_tests.cpp)
   calcu_add_test(CalcU1600HelpTests frequent COMMAND CalcU1600HelpTests)
   if(Python3_FOUND)
     calcu_add_test(CalcU1600HelpCheck frequent
@@ -190,19 +192,13 @@ if(CALCU_TESTS)
   # `calcu` run of its own; a program of its own, so that CoreTests' budget
   # stays (tests/harness/). About 10 s: Longer.
   file(GLOB HARNESS_TEST_SOURCES CONFIGURE_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/tests/harness/*.cpp)
-  add_executable(CalcU1600HarnessTests ${HARNESS_TEST_SOURCES})
-  target_include_directories(CalcU1600HarnessTests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/tests)
-  target_link_libraries(CalcU1600HarnessTests PRIVATE calcu1600_harness calcu_test_runner calcu_warnings)
-  calcu_debug_o1(CalcU1600HarnessTests)
+  calcu1600_test_program(CalcU1600HarnessTests ${HARNESS_TEST_SOURCES})
   calcu_add_test(CalcU1600HarnessTests longer COMMAND CalcU1600HarnessTests)
 
   # C1600-5 T8 (AC-13): the machine state, `state-save` / `state-restore` on
   # `calcu` runs (tests/machine_state_tests.cpp); a program of its own, so
   # that CoreTests' budget stays. Longer.
-  add_executable(CalcU1600MachineStateTests ${CMAKE_CURRENT_SOURCE_DIR}/tests/machine_state_tests.cpp)
-  target_include_directories(CalcU1600MachineStateTests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/tests)
-  target_link_libraries(CalcU1600MachineStateTests PRIVATE calcu1600_harness calcu_test_runner calcu_warnings)
-  calcu_debug_o1(CalcU1600MachineStateTests)
+  calcu1600_test_program(CalcU1600MachineStateTests ${CMAKE_CURRENT_SOURCE_DIR}/tests/machine_state_tests.cpp)
   calcu_add_test(CalcU1600MachineStateTests longer COMMAND CalcU1600MachineStateTests)
 
   # Longer: run locally before merging into main and at the end of a part.
@@ -247,7 +243,6 @@ if(CALCU_TESTS)
     endforeach()
     # C1600-3 T15: the scenarios of tools/dap_smoke.py against the Qt app
     # (and M-50's exit check, its vscode_session).
-    find_package(Python3 COMPONENTS Interpreter)
     if(Python3_FOUND)
       calcu_add_test(CalcU1600DapSmokeQt longer
                      COMMAND ${Python3_EXECUTABLE} tools/dap_smoke.py --port 32169 --app $<TARGET_FILE:CalcU1600Qt>

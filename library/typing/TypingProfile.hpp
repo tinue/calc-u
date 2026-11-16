@@ -76,8 +76,6 @@ struct TypingProfile {
     }
 };
 
-// n frames (1/60 s) at `rate`: n × rate / 60 (as Calc-U-1600 counts today).
-machine::Ticks frames(int n, machine::TickRate rate);
 // Seconds at `rate`, to the nearest tick.
 machine::Ticks ticksOf(double seconds, machine::TickRate rate);
 

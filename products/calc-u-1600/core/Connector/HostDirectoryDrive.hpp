@@ -489,11 +489,6 @@ private:
         a[off + 1] = static_cast<uint8_t>(v >> 8);
     }
 
-    static uint32_t fcbSize(const std::array<uint8_t, kFcbImageSize>& fcb) {
-        return static_cast<uint32_t>(fcb[kFcbSize]) | (static_cast<uint32_t>(fcb[kFcbSize + 1]) << 8) |
-               (static_cast<uint32_t>(fcb[kFcbSize + 2]) << 16) | (static_cast<uint32_t>(fcb[kFcbSize + 3]) << 24);
-    }
-
     static void setFcbSize(std::array<uint8_t, kFcbImageSize>& fcb, uint32_t size) {
         for (int i = 0; i < 4; ++i) fcb[kFcbSize + i] = static_cast<uint8_t>(size >> (8 * i));
     }

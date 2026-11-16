@@ -16,9 +16,8 @@
 // long piece of work (a preset, a load, a power cycle) written as a C++20
 // coroutine that the app session runs one part per host call.
 //
-// Task<T>, Job<T> and the run request are taken from Calc-U-1600's
-// `core/Job.hpp` (resumable machine jobs), which becomes a forwarding header
-// onto these in M-31 (adapter JobForward).
+// Task<T>, Job<T> and the run request were taken from Calc-U-1600's
+// resumable machine jobs.
 //
 // Equivalence by construction: a run request is never split. A Job hands the
 // machine exactly the calls the coroutine asked for, in the same order,

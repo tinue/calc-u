@@ -8,7 +8,7 @@
 // (ExpansionConnector on the PC-1500/1500A, MemorySlotConnector on the
 // PC-1600). The 60-pin plug has its own contacts: SystemBusCard.hpp.
 //
-// The governing principle (docs/Memory-Card-Definition-Spec.md §1/§4, and
+// The governing principle (help/09-module-definitions.md §1/§4, and
 // the project owner's own framing): a real module plugged into a slot wires
 // contact-for-contact -- pin 1 to pin 1, pin 2 to pin 2 -- and has no idea
 // what the host calls those pins. So a card decodes purely from `pin[]`,

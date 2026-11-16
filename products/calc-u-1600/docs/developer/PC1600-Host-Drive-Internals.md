@@ -1,7 +1,7 @@
 # PC-1600 host-directory drive — internals
 
 How the `S3:` / `Y:` host-directory drive is built. What it does for the
-user is in [../PC1600-Host-Drive.md](../PC1600-Host-Drive.md); the reasons
+user is in [help/09-host-drive.md](../../help/09-host-drive.md); the reasons
 behind its oddities are in [../background/Decisions.md](../background/Decisions.md).
 
 It has the same shape as the MEP rev3 module: a 60-pin bus module with a ROM

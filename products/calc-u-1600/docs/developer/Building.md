@@ -2,7 +2,7 @@
 
 This is the developer build guide: prerequisites, getting the ROMs, and
 building the Qt6 desktop app on macOS, Linux, and Windows. For how to
-*use* the emulator once it's built, see [User-Guide.md](../User-Guide.md).
+*use* the emulator once it's built, see [the help](../../help/).
 
 Everything here is derived from the project's own recipes — the
 repository's root [`CMakeLists.txt`](../../../../CMakeLists.txt) (ADR 0003),
@@ -262,7 +262,7 @@ merging into `main`, ≤ 10 min: Playwright, the WebAssembly check, the
 screenshot scenarios run as checks into the build tree, `tools/dap_smoke.py`
 against the harness, `--harness` (`CalcU1600DapSmoke`), and against the Qt
 app, `--app` (`CalcU1600DapSmokeQt`))
-and `checkpoint` (before a release: the User Guide screenshots, the
+and `checkpoint` (before a release: the help's pictures, the
 ten-minute pacing runs on the real clock). A tree has only the Frequent
 group unless it is configured with `-DCALCU_TESTS_LONGER=ON` or
 `-DCALCU_TESTS_CHECKPOINT=ON`; the screenshot entries and `CalcU1600DapSmokeQt`

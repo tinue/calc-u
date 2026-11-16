@@ -1,19 +1,26 @@
 # Scripted screenshots
 
-The pictures in [User-Guide.md](../../User-Guide.md) (`docs/images/guide/`)
-are generated, not hand-made. There is one scenario per guide chapter, in
-[guide/](guide/). A **scenario** (`*.shots.yaml`) walks the real
+The pictures of the help (LIB-16 AC-12; [help/](../../../help/), its
+pictures in `help/images/`) are generated, not hand-made. There is one
+scenario per help chapter that has pictures, in [guide/](guide/), named
+after the chapter (`02-getting-started`, `04-media`, `05-peripherals`,
+`06-presets`, `07-debugger`, `08-settings`, `09-product-topics`,
+`01-introduction`), each with `out: ../../../../help/images`. A
+**scenario** (`*.shots.yaml`) walks the real
 app through a list of shots: each starts from a **preset**, which sets up
 the emulator (model, cards, plotter, typed input). **Steps** then drive the
 Qt UI, for example opening a drop-down, triggering a menu item or holding a
-faceplate key, and a **capture** writes the PNG.
+faceplate key, and a **capture** writes the PNG. The pictures are taken
+again on purpose only (the Checkpoint entry `CalcU1600HelpPictures`, or by
+hand); the Longer entries `CalcU1600Shots.<scenario>` run the same
+scenarios as checks into the build tree.
 
 ```sh
 tools/make_screenshots.sh                    # every scenario in guide/
-tools/make_screenshots.sh 05-modules         # just one (name without .shots.yaml)
+tools/make_screenshots.sh 04-media           # just one (name without .shots.yaml)
 
 # or directly:
-Calc-U-1600.app/Contents/MacOS/Calc-U-1600 --shots docs/developer/screenshots/guide/05-modules.shots.yaml \
+Calc-U-1600.app/Contents/MacOS/Calc-U-1600 --shots docs/developer/screenshots/guide/04-media.shots.yaml \
     [--shots-out <dir>] [--shots-only name1,name2] [--shots-fail-fast]
 ```
 
@@ -63,7 +70,7 @@ object names (`library/shell/ObjectNames.hpp`).
 ## Scenario format
 
 ```yaml
-out: ../images          # output folder, relative to this file (default: this folder)
+out: ../../../../help/images   # output folder, relative to this file (default: this folder)
 window: 900x1000        # main-window size (default: leave as is)
 appearance: light       # light (default) | dark | system
 scale: 2                # device px per logical px for Qt captures (default 2)
@@ -223,5 +230,5 @@ and so on) are garbage:
   then `key: mode`.
 - The PC-1600 boots in RUN mode, and `NEW0` is only accepted in PRO mode,
   so use `key: mode`, `type: NEW0`, then `key: mode`. They are ordinary
-presets of format 2 (see [Presets](../../User-Guide.md#8-presets)) and may point at
+presets of format 2 (see [Presets](../../../help/06-presets.md)) and may point at
 files elsewhere in the repo, e.g. `../../../../examples/plotter/lissajou-1600.bas`.

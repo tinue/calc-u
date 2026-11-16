@@ -17,7 +17,7 @@
 // A saved CE-1600F diskette: an explicit `disk-name` (what the GUI picker
 // shows and a preset's `floppy:` key refers to -- the counterpart of a
 // card's `module-name`) plus both 64 KB sides as `addressed-hex` blocks
-// (docs/Memory-Card-Definition-Format.md §6), so an unused side or track
+// (help/10-module-definition-format.md §6), so an unused side or track
 // run collapses to one line:
 //
 //   format: ce1600f-floppy

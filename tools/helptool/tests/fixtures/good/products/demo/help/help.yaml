@@ -1,0 +1,13 @@
+format-version: 1
+product: Demo-Product
+short: "77"
+site: https://example.org/77/
+version-from: ../release.yaml
+names: [Demo-Product, DM-1, DM-Printer]
+chapters:
+  1: [01-introduction.md]
+  2: [02-getting-started.md]
+  8: [08-settings.md]
+  9: [09-product-topics.md, 09-models.md]
+  10: [10-reference.md]
+downloads: [downloads/tutorial.preset]

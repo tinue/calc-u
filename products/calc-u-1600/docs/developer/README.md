@@ -2,8 +2,7 @@
 
 For people who build Calc-U-1600 from source or work on the emulator
 itself. Using the emulator (including writing PC-1500 / PC-1600 programs
-with its debugger) is covered by the user documentation, starting at the
-[main README](../../README.md). Why things are the way they are — design
+with its debugger) is covered by the help (below, "The help"). Why things are the way they are — design
 decisions, plans, handoffs — is in [../background/README.md](../background/README.md).
 
 ## Build and test
@@ -74,14 +73,35 @@ cite it as `Ref/<path>`, a path inside that repository, e.g.
 
 - [Floppy-Image-Format.md](Floppy-Image-Format.md) — the `*.floppy.yaml`
   CE-1600F diskette format, for other tools that read or write it.
-- Memory cards (`*.card.yaml`) are user-level:
-  [Memory-Card-Definition-Spec.md](../Memory-Card-Definition-Spec.md) and
-  [Memory-Card-Definition-Format.md](../Memory-Card-Definition-Format.md).
-- Presets are described in the User Guide,
-  [8. Presets](../User-Guide.md#8-presets).
+- Memory modules (`*.card.yaml`) are user-level:
+  [09-module-definitions.md](../../help/09-module-definitions.md) and
+  [10-module-definition-format.md](../../help/10-module-definition-format.md).
+- Presets are described in the help,
+  [6 Presets](../../help/06-presets.md) and its
+  [Sharp sections](../../help/10-preset-sections.md).
 
-## User Guide screenshots
+## The help
 
-- [screenshots/README.md](screenshots/README.md) — the scripted screenshot
-  scenarios behind `docs/images/guide/`, and how to regenerate them with
-  `tools/make_screenshots.sh`.
+The user guide is the help (LIB-16, ADR 0036; on the web at
+<https://calc-u.org/1600/>), Markdown in the source repository:
+
+- [help/](../../help/) holds Calc-U-1600's product parts, chapter by
+  chapter (`help/help.yaml` lists them), with their pictures in
+  `help/images/`; the family's shared parts are in
+  [library/help/](../../../../library/help/) at the repository root.
+  The ten chapters are the family's (LIB-16 AC-1); developer documents
+  stay here in `docs/developer/` and are not help.
+- `tools/help check calc-u-1600` (at the repository root) checks it: the
+  chapters, every link and anchor, every picture used, no product word in
+  a shared part, every settings key described in chapter 8
+  (`help/settings-keys.txt`, written by `CalcU1600HelpTests` with
+  `CALCU1600_HELP_KEYS=1`). It runs in Frequent (`CalcU1600HelpCheck`,
+  `CalcU1600HelpBuild`); `tools/help build calc-u-1600` writes
+  `Calc-U-1600-help.zip` (`build/help/`), which the release carries (the
+  workflow's `help` job). The glossary's "Avoid" words are warnings
+  (`tools/help check calc-u-1600` without `--quiet-warnings` lists them).
+- A user-visible change updates its chapter in the same step.
+- [screenshots/README.md](screenshots/README.md): the scripted
+  scenarios, one per help chapter, behind `help/images/` (through harness
+  attach), and how to take them again with `tools/make_screenshots.sh`
+  (Checkpoint `CalcU1600HelpPictures`).

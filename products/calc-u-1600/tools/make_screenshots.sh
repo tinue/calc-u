@@ -1,13 +1,14 @@
 #!/usr/bin/env bash
-# Regenerates the user-guide screenshots (docs/images/) by playing the
-# scenarios in docs/developer/screenshots/ against the Qt app -- see
+# Regenerates the help's pictures (help/images/, LIB-16 AC-12) by playing
+# the scenarios in docs/developer/screenshots/guide/ (one per help chapter)
+# against the Qt app through harness attach -- see
 # docs/developer/screenshots/README.md. Builds the app first if needed.
 #
 #   tools/make_screenshots.sh                  # every docs/developer/screenshots/guide/*.shots.yaml
-#   tools/make_screenshots.sh 05-modules       # just these (names without .shots.yaml)
+#   tools/make_screenshots.sh 04-media          # just these (names without .shots.yaml)
 #
 # Extra --shots-* options can follow the names after `--`, e.g.
-#   tools/make_screenshots.sh 09-appendix -- --shots-only 09-settings
+#   tools/make_screenshots.sh 08-settings -- --shots-only 09-settings
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"

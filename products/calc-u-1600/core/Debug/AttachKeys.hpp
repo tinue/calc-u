@@ -9,7 +9,7 @@
 // ── The debugger's attach keys ───────────────────────────────────────────
 //
 // One table for the keys a launch configuration and a project preset's
-// `debug:` block share (docs/Debugger.md). The preset parser
+// `debug:` block share (help/07-debugger.md). The preset parser
 // (Core/Preset/PresetDebugBlock.hpp) takes exactly these keys, checks their
 // values and resolves the paths; the debug adapter (Qt6/app/debug/DapSession)
 // checks the same values in a launch configuration, which also carries the

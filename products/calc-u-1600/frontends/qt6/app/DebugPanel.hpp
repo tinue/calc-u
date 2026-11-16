@@ -20,7 +20,7 @@ class MachineController;
 // and Dump ▾ menus, Card YAML, Clear; then the TRACE / LOG pills). The
 // views themselves are built in Core (Core/Debug/Inspect, via
 // MachineController::inspectorView()); stepping and breakpoints are the
-// debugger's (docs/Debugger.md), not this panel's. Always visible under the
+// debugger's (help/07-debugger.md), not this panel's. Always visible under the
 // control bar (see MainWindow).
 //
 // A plain QWidget (not a QDialog, unlike SettingsDialog) so it docks inline

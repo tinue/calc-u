@@ -28,7 +28,7 @@
 // semantics follow the ROM's own file devices -- the CE-1600F module
 // (PC1600-P1-B5 FDFILEHND 4267H) and the RAM disk (PC1600-P1-B3 B3FILEHND
 // 49B2H) -- so BASIC's record layer (PC1600-P1-B3B 7A20H-7C64H) sees the
-// same FCB fields it gets from a real drive. docs/PC1600-Host-Drive.md has
+// same FCB fields it gets from a real drive. help/09-host-drive.md has
 // the full contract.
 //
 // Visible files: regular files whose name fits 8.3 using the characters the
@@ -36,7 +36,7 @@
 // "`@#$%^&()-_{}'"), upper-cased. Long names and dotfiles are not shown.
 // Subdirectories with such names are reachable the MEP rev3 way: a current
 // directory (CDIR) that every file call works in, and a directory mode in
-// which SEARCH FIRST/NEXT list subdirectories (docs/PC1600-Host-Drive.md). The year is not part of the PC-1600 clock: directory entries
+// which SEARCH FIRST/NEXT list subdirectories (help/09-host-drive.md). The year is not part of the PC-1600 clock: directory entries
 // carry year 1986 like the ROM's own FATTIME; the host file keeps its real
 // time stamp (the OS writes it on every change).
 //

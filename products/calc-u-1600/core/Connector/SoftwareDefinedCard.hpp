@@ -14,7 +14,7 @@
 //
 // The one general-purpose module, configured per-target via a table: an
 // ExpansionCard whose behaviour comes entirely from a parsed
-// MemoryCardDefinition (docs/Memory-Card-Definition-Format.md) -- every
+// MemoryCardDefinition (help/10-module-definition-format.md) -- every
 // memory module in this project is one of these, built from a .card.yaml.
 //
 // Regular, Flash (a JEDEC-style flash command decoder, see flashWrite())
@@ -418,7 +418,7 @@ inline std::unique_ptr<ExpansionCard> makeSoftwareDefinedCardFromText(const std:
 /// Build the universal card from a definition file for a specific target
 /// host. Returns nullptr and fills `error` on a read/parse failure or when
 /// the file's `compatible-hosts` does not list `targetHost`
-/// (Memory-Card-Definition-Spec.md §1/§2). The card reports its
+/// (help/09-module-definitions.md §1/§2). The card reports its
 /// `module-name:` via moduleName(). `romOverride`, if given, replaces the
 /// ROM of a ROM module (replaceRomContent()).
 inline std::unique_ptr<ExpansionCard> makeSoftwareDefinedCard(const std::string& specPath,

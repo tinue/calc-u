@@ -167,6 +167,22 @@ if(CALCU_TESTS)
                    PROPERTIES RUN_SERIAL TRUE)
   endif()
 
+  # LIB-16 (design §2.1, §3.5): the help. CalcU1600HelpTests compares
+  # help/settings-keys.txt with the declaration and help.yaml's names with
+  # the catalogue (a program of its own, so that CoreTests' budget stays);
+  # tools/help checks the help and builds Calc-U-1600-help.zip into the
+  # tree (the test suite builds the asset, AC-8). Python 3, standard library.
+  add_executable(CalcU1600HelpTests ${CMAKE_CURRENT_SOURCE_DIR}/tests/help/help_tests.cpp)
+  target_link_libraries(CalcU1600HelpTests PRIVATE calcu1600_harness calcu_test_runner calcu_warnings)
+  calcu_add_test(CalcU1600HelpTests frequent COMMAND CalcU1600HelpTests)
+  if(Python3_FOUND)
+    calcu_add_test(CalcU1600HelpCheck frequent
+                   COMMAND ${Python3_EXECUTABLE} -I -B ${CMAKE_SOURCE_DIR}/tools/help check calc-u-1600 --quiet-warnings)
+    calcu_add_test(CalcU1600HelpBuild frequent
+                   COMMAND ${Python3_EXECUTABLE} -I -B ${CMAKE_SOURCE_DIR}/tools/help build calc-u-1600 --quiet-warnings
+                           --out ${CMAKE_CURRENT_BINARY_DIR}/help)
+  endif()
+
   # C1600-5 (design §6) and LIB-11 Part D (D.6): the product commands under
   # `pc1600` and the harness entry through SharpAppPart, each test on a
   # `calcu` run of its own; a program of its own, so that CoreTests' budget
@@ -195,8 +211,8 @@ if(CALCU_TESTS)
     calcu_add_test(CalcU1600RomMissingBuild longer COMMAND sh tests/rom_missing_build.sh PROPERTIES RUN_SERIAL TRUE)
   endif()
   if(TARGET CalcU1600Qt)
-    # The screenshot scenarios run as checks: every shot is taken, into
-    # the build tree, not docs/images/.
+    # The screenshot scenarios (one per help chapter) run as checks: every
+    # shot is taken, into the build tree, not help/images/.
     # The check scenarios of the GUI criteria (tests/gui/, ADR 0032: LIB-8
     # AC-36, AC-38, LIB-10 AC-41) run the same way, under their IDs.
     file(GLOB CALCU1600_SCENARIOS ${CMAKE_CURRENT_SOURCE_DIR}/docs/developer/screenshots/guide/*.shots.yaml
@@ -237,8 +253,8 @@ if(CALCU_TESTS)
     # frontend (the --pacing-probe test hook of non-release builds).
     calcu_add_test(CalcU1600QtPacingProbe checkpoint COMMAND CalcU1600Qt --pacing-probe 60
                    PROPERTIES RUN_SERIAL TRUE TIMEOUT 300)
-    # The User Guide screenshots into docs/images/ (tools/make_screenshots.sh
-    # builds the app in build/app-1600).
-    calcu_add_test(CalcU1600GuideScreenshots checkpoint COMMAND tools/make_screenshots.sh PROPERTIES RUN_SERIAL TRUE)
+    # LIB-16 AC-12: the help's pictures into help/images/, one scenario per
+    # help chapter (tools/make_screenshots.sh builds the app in build/app-1600).
+    calcu_add_test(CalcU1600HelpPictures checkpoint COMMAND tools/make_screenshots.sh PROPERTIES RUN_SERIAL TRUE)
   endif()
 endif()

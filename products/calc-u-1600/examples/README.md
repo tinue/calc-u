@@ -5,7 +5,7 @@ Calc-U-1600. A preset (`.pc1500`, `.pc1500a`, `.pc1600`) builds a machine
 from a cold boot — model, modules, peripherals — and then types or loads a
 program; open one with **File ▸ Load Preset…**. A `.bas` file can also be
 loaded on its own with **File ▸ Load BASIC Program…**. See
-`docs/User-Guide.md` for the full preset format.
+`help/06-presets.md` and `help/10-preset-sections.md` for the full preset format.
 
 Each preset names itself with `preset-name:` (short) and `description:`
 (one line). The presets are in preset format 2 (`format-version: 2`,

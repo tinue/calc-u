@@ -451,7 +451,7 @@ Shared-Layer-Followup-Plan.md and Web-GUI-Plan.md.
   `launch.json` merge; Build & Load after an edit; the RENUM template
   (breakpoint in `RENFIX`, `boot: debug` stops in `INIT`); the manual
   checklist in docs/background/plans/DAP-Debugger-Plan.md ▸ Verification.
-  CLion: the recipe in docs/Debugger.md ▸ CLion is untried.
+  CLion: the recipe in help/07-debugger.md ▸ CLion is untried.
 - **BASIC-level debugger** (line breakpoints, step by statement,
   variables). Not started. First the ROM research (statement boundary,
   current line, variable/stack layout per interpreter, each confirmed by a
@@ -460,7 +460,7 @@ Shared-Layer-Followup-Plan.md and Web-GUI-Plan.md.
 - **Create Debug Project…: templates for slot-module ROMs** (PC-1500
   module, PC-1600 S1/S2): a placeholder `.card.yaml`, a preset with
   `slot-N-file:`/`slot-N-rom:` and a hello-world `.asm`. Needs the correct
-  module header per machine first (docs/Debugger.md, "ROM modules in a
+  module header per machine first (help/07-debugger.md, "ROM modules in a
   memory slot").
 - **PC-1600 auto power-off control.** No Settings toggle to suppress APO
   (the ROM's `KEYWK3` F07BH bit), and no OFF/ON control beyond the

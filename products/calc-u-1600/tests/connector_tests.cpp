@@ -27,7 +27,7 @@ namespace {
 
 // Test-only card: every behavior is supplied as a lambda so each test can
 // describe exactly the enable-condition shape it wants (mirroring
-// docs/Memory-Card-Definition-Spec.md §4's AND/OR addressing model) without
+// help/09-module-definitions.md §4's AND/OR addressing model) without
 // a new subclass per test.
 template <class Card, class Pins>
 class StubCardT : public Card, public InhibitSource {

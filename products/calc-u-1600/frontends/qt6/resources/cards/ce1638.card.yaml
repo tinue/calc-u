@@ -1,7 +1,7 @@
 # CE-1638 -- 128 KB banked SRAM module for the PC-1500 family.
 #
 # The real Sharp-compatible module. One banked 16 KB window at Y0 (&0000-&3FFF), 8 banks, 128 KB total, same
-# trigger-based mechanism as CE-163 (Memory-Card-Definition-Spec.md §6): a
+# trigger-based mechanism as CE-163 (help/09-module-definitions.md §6): a
 # write strobe on physical pin 18 (S3 on the PC-1500, S5 on the PC-1500A)
 # latches a bank number sampled from the *address* lines of that same
 # write, not the data bus.

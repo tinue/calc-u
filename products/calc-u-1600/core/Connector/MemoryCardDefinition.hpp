@@ -13,7 +13,7 @@
 
 // ── Parsed + validated memory-card definition ─────────────────────────
 //
-// The runtime model of a docs/Memory-Card-Definition-Format.md file, after
+// The runtime model of a help/10-module-definition-format.md file, after
 // YAML parsing, schema validation, and terminology→pin resolution. Built
 // by parseMemoryCardDefinition(); consumed by SoftwareDefinedCard.
 //

@@ -3,8 +3,8 @@
 The emulated PC-1600's RS-232C port (TC8576F) is backed by a host
 pseudo-terminal (macOS and Linux), so any serial application can talk to
 it directly — in particular SharpDataExchange's `sde`. This document is
-about the implementation; for using the port, see the User Guide,
-[7. COM ports](../User-Guide.md#7-com-ports).
+about the implementation; for using the port, see the help,
+[COM ports](../../help/09-com-ports.md).
 
 ## How it works
 
@@ -70,7 +70,7 @@ rest waits in the host link.
 ## Calculator-side settings
 
 How to set up the port and exchange programs with SharpDataExchange is in
-the User Guide, [7. COM ports](../User-Guide.md#7-com-ports). Why the guide
+the help, [COM ports](../../help/09-com-ports.md). Why the guide
 recommends those settings:
 
 - **No handshake** (`SETCOM …,N,N`), because XON/XOFF bytes pass straight

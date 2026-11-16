@@ -17,7 +17,7 @@ constexpr const char* kCardFileSuffix = ".card.yaml";
 
 // ── Catalogue of on-disk memory-card definition files ─────────────────
 //
-// Scans a directory of docs/Memory-Card-Definition-Format.md `.card.yaml`
+// Scans a directory of help/10-module-definition-format.md `.card.yaml`
 // files and indexes them by `module-name`. Two consumers:
 //   * the GUI lists every module whose `compatible-hosts` covers the open
 //     model / slot (see the control-bar module picker);

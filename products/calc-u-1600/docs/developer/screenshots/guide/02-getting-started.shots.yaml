@@ -1,5 +1,5 @@
-# User guide, 2 Getting started. Format: docs/developer/screenshots/README.md.
-out: ../../../images/guide
+# Help, chapter 2 Getting started. Format: docs/developer/screenshots/README.md.
+out: ../../../../help/images
 window: 900x1000
 
 shots:

@@ -10,7 +10,7 @@ The debug adapter runs inside the emulator, as a DAP server on 127.0.0.1. This e
 - **Commands:** *Build & Load* (`Cmd+Alt+L` / `Ctrl+Alt+L`), *Reset & Stop*, *All Reset & Stop* and *Create Debug Project…*; *Create Debug Project Here…* in the Explorer's context menu of a folder.
 - **Settings** for the assembler paths, the port, and ROM listings added to every session.
 
-The user manual is `docs/Debugger.md` in the Calc-U-1600 repository.
+The user manual is the help's Debugger chapter, `products/calc-u-1600/help/07-debugger.md` in the source repository (https://calc-u.org/1600/).
 
 ## Install
 

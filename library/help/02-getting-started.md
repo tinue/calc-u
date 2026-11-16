@@ -1,0 +1,170 @@
+<!-- follows: LIB-14, LIB-5 -->
+
+# Getting started
+
+Every product of the Calc-U family has the same window: the faceplate of
+the model you run, the control bar below it, a place for panels such as
+the paper, and the menus File, Edit, Machine and Help. This page shows
+the parts all products share. What the faceplate and the keyboard of
+your product look like is in [the product's part of this
+chapter](chapter:2).
+
+## The window
+
+```mermaid
+flowchart TB
+  menus["Menus: File · Edit · Machine · Help"]
+  faceplate["Faceplate: the display and the keys of the model"]
+  bar["Control bar: the model, then the module slots, peripherals and media"]
+  panels["Panels: the paper, and the product's own"]
+  menus --> faceplate --> bar
+  faceplate --- panels
+```
+
+- **The faceplate** is the model as you know it: its display and its
+  keys. Click or touch a key to press it.
+- **The control bar** below the faceplate holds the machine's hardware
+  (see [The control bar](#the-control-bar)).
+- **The panels** show what a peripheral puts out, such as the paper of
+  a printer ([Peripherals and paper](05-peripherals-and-paper.md)).
+
+## The menus
+
+The menus are the same in every product, in this order. An item for
+which the product has no function does not appear, and a menu without
+items does not appear. An item that cannot be used right now is shown
+greyed out; where the platform shows tooltips, its tooltip says why.
+
+| Menu | Items |
+|---|---|
+| File | Load Preset…; Examples ▸; the product's own kinds of files; the items for media (Import Media…, Saved Media… in the browser); Settings…; Quit |
+| Edit | Copy Screen; Paste Text |
+| Machine | Model ▸; a submenu for each thing that has variants; Peripherals ▸; Reset; Cold boot; Resume |
+| Help | `<Product>` Help; About `<Product>` |
+
+- **Load Preset…** opens a preset file, and **Examples ▸** lists the
+  examples that come with the product, one submenu per group
+  ([Presets](06-presets.md)).
+- **Settings…** opens the settings dialog
+  ([The settings dialog](#the-settings-dialog)).
+- **Copy Screen** puts a picture of the display on the clipboard.
+  **Paste Text** types the text of the clipboard
+  ([Typing text](#typing-text)).
+- **Model ▸**, the variant submenus, **Peripherals ▸**, **Reset** and
+  **Cold boot** are described in [Models and machine
+  control](03-models-and-machine-control.md).
+- **Resume** lets a paused machine run on
+  ([Debugger](07-debugger.md)).
+- **`<Product>` Help** opens this help on calc-u.org in your browser.
+  **About `<Product>`** shows the product's name, its version and its
+  build.
+
+On macOS, Settings…, About and Quit are in the application menu, as on
+every Mac program. In the browser there is no Quit.
+
+### Shortcuts
+
+On the desktop:
+
+| Item | Windows, Linux | macOS |
+|---|---|---|
+| Load Preset… | Ctrl+O | ⌘O |
+| Reset | Ctrl+R | ⌘R |
+| Cold boot | Ctrl+Shift+R | ⇧⌘R |
+
+A shortcut is taken before the key reaches the machine. In the browser
+the menu items have no shortcuts, because these keys are the browser's
+own.
+
+## The control bar
+
+The control bar holds the hardware of the running machine, from left to
+right:
+
+1. the model picker;
+2. one picker for each module slot, with the slot's number before it
+   when the model has more than one;
+3. a control for each other place where a peripheral can go: a button
+   with the peripheral's name when only one fits the place (press it to
+   attach or detach), or a picker with an empty choice when several fit;
+4. the controls of each media place, such as a disk drive or a cassette
+   ([Media](04-media.md)).
+
+A model without such a place has no control for it, and no gap where it
+would be. Which controls your product shows for each model is in
+[the product's part of chapter 5](chapter:5).
+
+## Loading…
+
+While the product works at full speed for longer than half a second,
+for example while it loads a preset, "Loading…" is shown with a sign
+that work is going on. It blocks nothing: the display, the paper and the
+control bar go on showing what changes, and the menus, the model picker,
+Reset and Cold boot can still be used. Controls that would start another
+operation are disabled until it is over.
+
+## Notices
+
+When something goes wrong or needs your attention, a notice tells you,
+in a dialog with an OK button. The machine and a running operation go on
+behind it. Several notices are shown one after the other, in the order
+they came.
+
+## The settings dialog
+
+**File ▸ Settings…** opens a dialog titled "Settings". A change is
+applied and kept at once; the only button is Close. You can change
+settings while an operation runs. The sections are:
+
+| Section | What you set |
+|---|---|
+| General | Startup model: "Last used" or one of the models |
+| Startup presets | for each model, a preset to build it from at a start |
+| Storage | the save folder, and further folders of the product |
+| Folders | the folder in which each file dialog starts |
+| Tracing | the trace folder and the largest trace file, in MB |
+| the product's sections | the product's own settings |
+
+A row of a folder shows the folder in use, with `~` for your home
+folder, a "Change…" button and a "Reset" button, which puts the setting
+back to its default. A section is shown only where the frontend has one
+of its settings. What each setting means is in [Settings](08-settings.md).
+
+## Keys
+
+You press the keys of the machine in three ways:
+
+- **On the faceplate.** Click or touch a key. A click near a key, in the
+  gap between two keys, presses the nearest one. You can hold several
+  keys at once with several fingers.
+- **On your keyboard.** A host key presses the key or keys the product's
+  keyboard map gives for it. A character that needs several keys on the
+  machine, such as a shifted character, is typed as those keys one
+  after the other. Your keyboard's auto-repeat is ignored. The keyboard
+  map of each model is in [the product's reference](chapter:10).
+- **By typing text** ([Typing text](#typing-text)).
+
+A key you press is held for at least the shortest time the machine
+needs to see it, also when you let go sooner. When you hold two keys at
+once, the machine sees both down together. When the window loses the
+focus, every key you hold is let go.
+
+While an operation runs (a preset loads, the machine is built), the keys
+you press are not passed on.
+
+### Speeding up
+
+Press and hold the pointer on the display of the faceplate: the machine
+runs at full speed while you hold it, and at regular speed again when
+you let go or leave the display.
+
+## Typing text
+
+**Edit ▸ Paste Text** types the text of the clipboard into the machine,
+character by character, as the keys the product gives for each
+character. Only the text up to the first line break is typed, a
+character for which the machine has no key is left out, and ENTER is not
+pressed at the end. A key you press while text is being typed stops it.
+
+Presets can type text too, with `type:` and `key:` steps
+([Presets](06-presets.md)).

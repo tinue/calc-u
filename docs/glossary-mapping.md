@@ -36,13 +36,13 @@ parenthesis is removed with it.
 | Medium, media | — | "media" (e.g. "Saved Media…"): unchanged |
 | Name & Save | — (cards written in place) | "Name & Save": unchanged |
 | Startup preset | — | done (M-46): "Startup presets" (Settings, Qt6 and Web); was "Default presets" |
-| Save folder | "Card Folder" (Settings, Qt6) | "Battery-card saves" (Settings ▸ Storage) |
+| Save folder | "Card Folder" (Settings, Qt6) | done (M-47): "Save folder:" (Settings ▸ Storage, Qt6); was "Battery-card saves:" |
 | Startup model | "Startup Calculator" (Settings) | "Startup device" (Settings) |
 | Load Preset… | "Open Preset…" (File menu, Qt6); the button "Preset" | "Load Preset…": unchanged |
 | Examples folder | — | "Samples folder" (Settings ▸ General) |
 | Host drive | — | "Mount Directory…", "Host drive folder": unchanged |
 | Arm | "Fit Card" → "Arm Card", "Fit Fresh Card" → "Arm Fresh Card" | — |
-| Side | sides 1 and 2 of a magnetic card → 0 and 1 | sides A and B of a floppy disk → 0 and 1 |
+| Side | sides 1 and 2 of a magnetic card → 0 and 1 | done (M-47): sides A and B of a floppy disk → 0 and 1 (the side button, the disk file `0:`/`1:`, `floppy: { side: }`) |
 | Insert / Eject | "Eject Card": unchanged | module picker, floppy insert/eject: unchanged |
 
 ## Code names
@@ -81,6 +81,7 @@ parenthesis is removed with it.
 | Loader memory access | — | done (M-44, C1600-2): the kind `c1600.loader-memory`, `sharp::LoaderMemory` (`peek`, `mode`, `programArea`, `writeBuiltIn`, `writeSlot`, `slotRam`, `module`; was `peek`/`poke`), over the core in `core/Machine/SharpLoaderMemory`; the adapters `legacy::loadBasicProgram`, `loadMachineCode`, `machineCodeLoadState`, `userRam` gone |
 | Feature ID | — | — (`KIT-n` in early docs, now `LIB-n`, `C59-n`, `C1600-n`) |
 | Harness | `tools/headless/`, `tools/agentic/` | `pc1500_cli`, `pc1600_cli`, probes |
+| Medium, kind of medium, media place | `CardFile`, `TIFileAccess` (M-55) | done (M-47): the library's `calcu::media::MediaPart` (topic `media`, commands `media.*`) with `app/SharpMediaKinds` (kinds `battery-backed-module`, `floppy-disk`, `cassette`) and `core/Machine/SharpMediaPlaces` (`FloppyPlace`, `CassettePlace`, `SlotModuleMedium`); was `ModuleBay`, `FloppyBay`, `TapeBay`, `MediaLibrary` ("bays"), `c1600.select-module`, `MediaSave.hpp` |
 
 ## Same word, different meaning (resolved)
 

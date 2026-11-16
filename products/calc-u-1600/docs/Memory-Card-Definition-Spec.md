@@ -142,7 +142,8 @@ address map, since there's no signal name to anchor the decision to.
   template's source text — the splicing itself is a shared Core function,
   `spliceBatteryCardInstance()` in `Core/Connector/BatteryCardInstance.hpp`;
   the GUI-side orchestration — naming, save triggers, the instance
-  directory — is `Shared/ModuleBay.cpp` + `Shared/AppPaths.cpp`)
+  directory — is the library's media part with the product's card codec,
+  `app/SharpMediaKinds.cpp`, since M-47)
   that keeps its contents durably up to date across reloads and app
   restarts. A card without `battery: true` stays purely volatile.
 

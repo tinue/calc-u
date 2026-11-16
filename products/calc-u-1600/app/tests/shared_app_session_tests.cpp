@@ -184,7 +184,7 @@ const calcu::media::KindState::Item* findItem(const calcu::media::MediaState& s,
 const calcu::media::KindDecl& kindOf(SessionFixture& f, const char* id) { return *f.part().mediaPart().kind(id); }
 
 // The saved media (LIB-7 AC-30, AC-31, AC-43; ported from 0.8.1's
-// MediaLibrary test): the save folder's modules, disks and tapes -- listed
+// MediaLibrary test, the class gone with M-47): the save folder's modules, disks and tapes -- listed
 // with the place they are in, exported, deleted after asking (not while in
 // a place), imported back.
 TEST(lib7_ac44_test_media_library) {

@@ -313,27 +313,30 @@ one. Recordings may be quiet, noisy, a little fast or slow, or at any sample
 rate; a file is only loaded when all of its checksums match, otherwise the
 message says what is damaged and where on the tape.
 
-This is not the cassette bay below: that plays the tape to the emulated
+This is not the cassette recorder below: that plays the tape to the emulated
 interface in real time, and the ROM's `CLOAD` reads it.
 
 ### Cassette tape: CLOAD and CSAVE
 
 The CE-150 (PC-1500/1500A) and the CE-1600P (PC-1600) have the jacks of a
-cassette recorder. In the app its tapes are WAV files in the tape folder
-(Settings ▸ Storage ▸ Tapes, `~/Calc-U-1600/Tapes` by default), and the
-cassette bay sits on the control bar while a CE-150 or CE-1600P is
-attached. It starts empty. You put a tape in, then type the command as on
-the real machine:
+cassette recorder. In the app a tape is a **tape definition**
+(`<name>.tape.yaml`: its name, a description, and the sound file it uses)
+with its sound, a WAV file beside it, in the tape folder (Settings ▸ Storage
+▸ Tapes, `~/Calc-U-1600/Tapes` by default). The cassette's row sits on the
+control bar while a CE-150 or a CE-1600P is attached, on every model. It
+starts empty. You put a tape in, then type the command as on the real
+machine:
 
 - **To load,** pick a tape from the **Tape** list. It goes in rewound.
   Type `CLOAD`, `CLOAD "name"`, `CLOAD M` or `CLOAD?`. A second `CLOAD`
   reads on from where the first one stopped, as on a real tape.
 - **To save,** click the save button next to the list and name the new
-  tape, as with Name & Save for cards and disks. Type `CSAVE "name"` (or
-  `CSAVE M`). The tape is written to `<name>.wav` each time the motor
-  stops, so a finished `CSAVE` is saved at once. Another `CSAVE` onto the
-  same tape goes after it. If a tape of that name exists, you're asked
-  before it is replaced.
+  tape. Type `CSAVE "name"` (or `CSAVE M`). The tape's definition and its
+  WAV are written each time the motor stops, so a finished `CSAVE` is
+  saved at once. Another `CSAVE` onto the same tape goes after it. If a
+  tape of that name exists, you're asked before it is replaced.
+- **The empty tape** in the list is a template: a `CSAVE` onto it stays in
+  the recorder until you Name & Save it (or take the tape out).
 
 ![Naming a new tape](images/guide/04-tape-save.png)
 
@@ -358,10 +361,20 @@ Good to know:
   you hear `CSAVE` (and see the counter) at the real speed. Pressing and
   holding the LCD runs everything faster as usual, sound off; the WAV comes
   out the same.
-- **Interchangeable WAVs.** The files are standard 48 kHz, 16-bit WAVs.
-  The app plays any PCM WAV, 8 to 32 bits, mono or stereo, that you put in
-  the tape folder: recordings of a real calculator, or files made with
-  Pocket Tools' `bin2wav` and read with its `wav2bin`.
+- **Interchangeable WAVs.** The sound files are standard 48 kHz, 16-bit
+  WAVs. The app plays any PCM WAV, 8 to 32 bits, mono or stereo:
+  recordings of a real calculator, or files made with Pocket Tools'
+  `bin2wav` and read with its `wav2bin`. A WAV on its own is not a tape:
+  write a small definition next to it, and it is listed —
+  ```yaml
+  format: cassette-tape
+  format-version: 1
+  tape-name: "Games"
+  description: "Three games saved with CSAVE"
+  audio: { file: games.wav }
+  ```
+  (`docs/formats/media.md` §3 in the source repository). Opened or dropped
+  on its own, a WAV is loaded as a program, as above.
 - **The buzzer sounds the tape** while saving and loading, as on the real
   machines.
 - **Leave a long lead-in.** After switching on the motor the calculator
@@ -458,7 +471,8 @@ attaches the drive. Its row in the control bar has:
 
 - **Disk:** –empty– (no disk), **Blank** (unformatted), **Formatted**
   (ready to use), then your saved disks.
-- **A/B** turns the disk over (eject, flip, reinsert).
+- **0/1** shows the side that is up and turns the disk over (eject, flip,
+  reinsert).
 - **Save** (disk icon): Name & Save, as for modules (see below).
 - **The lamp** lights while the drive is busy. Wait for it to go dark before
   turning the disk over.
@@ -521,8 +535,15 @@ stateDiagram-v2
   the calculator OFF and ON, and `NEW 0`. Details in
   [background/CE-161-Program-Module.md](background/CE-161-Program-Module.md).
 - **Where the files go.** Modules are saved as `<name>.card.yaml`, disks as
-  `<name>.floppy.yaml`, in **Settings ▸ Storage ▸ Battery-card saves**
-  (default `~/Calc-U-1600`). A `/` or `:` in the name becomes `-`.
+  `<name>.floppy.yaml`, tapes as `<name>.tape.yaml` with `<name>.wav` in the
+  tape folder; modules and disks in **Settings ▸ Storage ▸ Save folder**
+  (default `~/Calc-U-1600`). A name cannot hold `/ \ : * ? " < > |`; names
+  that differ only in upper and lower case are one name. If you give the
+  name of a copy you already have, you're asked before it is replaced.
+- **Disks of Calc-U-1600 0.8.** The disk files are version 2, whose sides
+  are `0:` and `1:`. A disk saved with 0.8 shows in the picker greyed out,
+  with a hint: open the file in a text editor, set `format-version: 2` and
+  rename `a:` and `b:` under `sides:` to `0:` and `1:`.
 - **Editing a saved disk file.** If you want to change a saved disk's file
   with another program, pick –empty– first, so the emulator doesn't
   overwrite your edit.
@@ -966,7 +987,7 @@ elsewhere. Changes apply immediately; there is only **Close**.
   - **Host drive folder:** where Mount Directory… opens. `<last used>` (the
     directory last mounted) by default.
 - **Startup presets:** one per model, see [Startup presets](#88-startup-presets).
-- **Storage ▸ Battery-card saves:** where saved modules and disks go.
+- **Storage ▸ Save folder:** where saved modules and disks go.
 - **Storage ▸ Tapes:** the cassette tapes' folder (see
   [Cassette tape](#cassette-tape-cload-and-csave)); `Tapes` inside the save
   folder by default.
@@ -1048,7 +1069,7 @@ why) and [Memory-Card-Definition-Format.md](Memory-Card-Definition-Format.md)
   shows every PC-1500 expansion pin in use, and its preset loads it with
   `slot-1: { file: … }` (with the media update).
 - **Make it appear in the pickers:** put a file with `format-version: 1`
-  and `template: true` in the Battery-card saves folder. Like the bundled cards it is never written
+  and `template: true` in the save folder. Like the bundled cards it is never written
   to, and Name & Save makes your own copy.
 - **A card with content already on it:**
   1. Prepare it with a preset (see [examples/setup/](../examples/setup/)).

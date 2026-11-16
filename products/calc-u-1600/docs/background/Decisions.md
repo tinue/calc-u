@@ -89,7 +89,8 @@ BEEP tones, because the user wants the actual square wave. New sound
 sources drive `PiezoSampler::setLevel` from their emulated signal.
 
 ### Tapes are fixed-role media, saved at each motor stop
-The cassette bay works like the card and disk pickers (TapeManager): a
+The cassette works like the card and disk pickers (since M-47 a tape
+definition with its WAV, a medium of LIB-7's media part; was TapeManager): a
 tape picked from the tape folder's list only plays; one named with the
 save button only records, and goes back in to play only by picking it from
 the list. That is deliberate: nothing records over a tape picked to load
@@ -801,7 +802,8 @@ authentic speed for the span that matters.
   starting the Shared job, which would do nothing: a started job would
   still blip the busy state, and a pick during another operation would
   say "Wait until ...".
-- **Media pickers cache by file stamps, not by invalidation calls**
+- *Superseded by M-47 (LIB-7: the shelf is read again when the product wrote
+  to a folder and when a picker opens).* **Media pickers cache by file stamps, not by invalidation calls**
   (`DirectoryScanCache`). Names, sizes and times are read with no file
   opened, so a file copied in from outside is noticed too, and no save
   path can forget to invalidate.

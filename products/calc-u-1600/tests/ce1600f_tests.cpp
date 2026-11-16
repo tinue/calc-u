@@ -248,7 +248,7 @@ TEST(test_port_0x81_reset_clears_motor_and_command_state) {
 }
 
 // loadImage()/insertBlankDisk() bump the revision -- the change counter
-// FloppyDiskManager polls on each frame tick to decide on autosave.
+// the media part reads (the drive's media place) after each call to decide on autosave.
 TEST(test_load_image_and_insert_blank_bump_revision) {
     CE1600FCard card;
     card.insertBlankDisk();

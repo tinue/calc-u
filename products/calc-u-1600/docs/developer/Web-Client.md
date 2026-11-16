@@ -113,8 +113,9 @@ attaches it as `Calc-U-1600-web.zip`.
   memory and shows a banner and the library's notice (`web.storage`).
 - Hidden, the page sends the session `suspend` and the worker stops
   calling it; shown again, `continue` (LIB-3 AC-36).
-- File ▸ Import / Saved Media… reach the save folder through
-  `shared::MediaLibrary`.
+- File ▸ Import Media… / Saved Media… reach the save folder through the
+  library's media part (`media.import`, `media.export`, `media.delete`; the
+  dialog is the library's `CalcuSavedMediaDialog`, LIB-7 AC-43).
 
 ## What the web client leaves out
 

@@ -115,11 +115,11 @@ TEST(lib18_ac20_switch_carries_no_module_no_printer) {
 TEST(lib18_ac20_log_and_debug_settings_stay) {
     SKIP_UNLESS(roms(), kSkip);
     Rig r("TI-59");
-    r.part().cycleDebugLevel();
-    r.part().setCpuDebugEnabled(true);
+    r.part().debugPart().setLogLevel(cu59::DebugLevel::Info);
+    r.part().debugPart().setCpuShown(true);
     CHECK(r.send(st::kModelCommand, Value::object({{"name", "TI-58C"}})).done);
-    CHECK(r.part().debugLevel() == cu59::DebugLevel::Info);
-    CHECK(r.part().cpuDebugEnabled());
+    CHECK(r.part().debugPart().logLevel() == cu59::DebugLevel::Info);
+    CHECK(r.part().debugPart().cpuShown());
     CHECK(r.part().hasMachine());
 }
 

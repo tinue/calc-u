@@ -1,19 +1,17 @@
 #pragma once
 #include "DebugLog.hpp"
 #include "DebugSnapshots.hpp"
-#include "EmulatorSession.hpp"
 #include "ModuleImage.hpp"
-#include "RomHeatmap.hpp"
 #include <optional>
 #include <string>
 #include <vector>
 
-// The debugger's state on the UI side, for the panels to draw: the
-// CALCULATOR tab's snapshot and program listing, the CPU tab's instruction
-// history and ROM heatmap, and the LOG tab's ring. Rebuilt at 60 Hz while
-// running (only for visible panels) and once per freeze / step while
-// frozen. On the session's thread; reads the machine between slices while
-// it runs (as the panels always have) or stopped. TIAppPart owns it.
+// The debug panel's data, for TIDebugPart's topics (C59-4 §3.1): the
+// CALCULATOR tab's snapshot and program listing and the CPU tab's
+// instruction history. Rebuilt at frame rate while running (only for tabs
+// shown) and once per pause / step while paused. On the session's thread;
+// reads the machine between two advances. The heatmap is the core's count
+// (c59.rom-heatmap) and the log LIB-3's `log` topic since M-56.
 
 namespace cu59 {
 
@@ -28,29 +26,26 @@ class DebugModel {
 public:
     /// What a call changed, for the panels to redraw.
     struct Update {
-        bool live = false, listing = false, cpu = false, heatmap = false;
+        bool live = false, listing = false, cpu = false;
         std::optional<std::string> diagnostic;  ///< developer log line
         Update& operator|=(const Update& o) {
             live |= o.live;
             listing |= o.listing;
             cpu |= o.cpu;
-            heatmap |= o.heatmap;
             if (o.diagnostic) diagnostic = o.diagnostic;
             return *this;
         }
     };
 
-    /// A new machine: its module program table, a fresh listing, history and
-    /// heatmap. The LOG is kept across machines.
-    void attach(const EmulatorSession& session);
-    /// The session's module changed (no reset).
-    void moduleChanged(const EmulatorSession& session);
+    /// A new machine: its module's image (empty: none), a fresh listing and history.
+    void attach(const std::vector<uint8_t>& moduleImage);
+    /// The module changed (no reset).
+    void moduleChanged(const std::vector<uint8_t>& moduleImage);
     /// Why the module's program table couldn't be read, or empty.
     const std::string& moduleImageError() const { return m_moduleError; }
 
-    /// The 60 Hz frame: the CALCULATOR snapshot while running and its panel
-    /// shows; the heatmap while the CPU panel shows or frozen (steps add
-    /// frames); the running CPU history.
+    /// The frame: the CALCULATOR snapshot while running and its panel
+    /// shows; the running CPU history while its panel shows.
     Update tick(const calcu::machine::Machine& m, bool livePanel, bool cpuPanel, bool frozen);
     /// The machine stopped at a point to show (freeze, armed freeze, step).
     Update frozenView(const calcu::machine::Machine& m, FrozenViewReason reason);
@@ -58,19 +53,20 @@ public:
     /// panel shows it).
     Update rebuildLive(const calcu::machine::Machine& m, bool frozen);
 
-    void resetHeatmapBaseline(const calcu::machine::Machine& m);
-    void clearHeatmap() { m_heatmap.clear(); }
-
-    RingLog& log() { return m_log; }
 
     const LiveDebugSnapshot& live() const { return m_live; }
     /// The whole program of the source at the last freeze (the frozen PROGRAM STEPS view).
     const std::vector<StepEntry>& listing() const { return m_listing; }
+    /// The machine runs again: no listing (C59-4 AC-4). True: it had one.
+    bool clearListing() {
+        const bool had = !m_listing.empty();
+        m_listing.clear();
+        return had;
+    }
     ProgramSource listingSource() const { return m_listingSource; }
     int listingCurrentIndex() const;
     /// Running: the newest 32 instructions; frozen: the trace ring plus the next.
     const std::vector<InspectorEntry>& cpuHistory() const { return m_cpuHistory; }
-    const std::vector<uint32_t>& heatmapCounts() const { return m_heatmap.counts(); }
 
 private:
     Update captureInspector(const calcu::machine::Machine& m);
@@ -78,8 +74,6 @@ private:
     ModuleImage m_module;
     std::string m_moduleError;
     std::vector<uint8_t> m_romCache;
-    RomHeatmap m_heatmap;
-    RingLog m_log;
     LiveDebugSnapshot m_live;
     std::vector<StepEntry> m_listing;
     ProgramSource m_listingSource = ProgramSource::UserProgram;

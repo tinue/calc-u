@@ -42,6 +42,7 @@ add_library(calcu59_core STATIC
   ${CORE_ROOT}/RAM.cpp
   ${CORE_ROOT}/TIAdapters.cpp
   ${CORE_ROOT}/TIDebugging.cpp
+  ${CORE_ROOT}/TIDebugKinds.cpp
   ${CORE_ROOT}/TICatalogue.cpp
   ${CORE_ROOT}/TIKeys.cpp
   ${CORE_ROOT}/TIMachine.cpp
@@ -145,6 +146,9 @@ if(CALCU_TESTS)
   endif()
   # C59-1 AC-17: the app layer reaches the machine through the interface only.
   calcu_add_test(CalcU59CoreSeam frequent COMMAND sh tests/check_core_seam.sh)
+  # LIB-13 AC-14 (design §10.6, E13-5): Open With offers today's three preset
+  # extensions on macOS, Windows and Linux.
+  calcu_add_test(CalcU59OpenWithTypes frequent COMMAND sh tools/check_open_with_types.sh)
   # LIB-3 AC-28, C59-5 AC-4 (design P59-1, B2): the Qt6 and Swift frontends use
   # none of the product's own session classes; no thread in app/ but the
   # session thread; the bridge only through it.

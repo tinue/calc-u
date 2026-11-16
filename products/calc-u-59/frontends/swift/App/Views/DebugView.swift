@@ -10,9 +10,11 @@ struct DebugView: View {
         VStack(spacing: 0) {
             // Tab bar
             HStack(spacing: 0) {
+                // The product entry c59.calculator-tab (C59-4 AC-18, AC-25):
+                // not while an ASM overlay runs.
                 tabButton("CALCULATOR", .live)
-                    .disabled(vm.asmOverlayActive)
-                    .opacity(vm.asmOverlayActive ? 0.35 : 1.0)
+                    .disabled(!vm.calculatorTabAvailable)
+                    .opacity(vm.calculatorTabAvailable ? 1.0 : 0.35)
                 tabButton("CPU", .cpu)
                 tabButton("LOG", .log)
                 Spacer()
@@ -145,20 +147,22 @@ private struct StaticDebugContent: View {
                     HStack(spacing: 4) {
                         Text("TRACE")
                         Circle()
-                            .fill(vm.isTraceAvailable
+                            .fill(vm.traceButtonAvailable
                                 ? (vm.cIndicatorDebug ? Color.orange : Color.gray.opacity(0.4))
                                 : Color.red.opacity(0.5))
                             .frame(width: 8, height: 8)
                     }
                     .font(.caption.bold())
-                    .foregroundStyle(vm.isTraceAvailable ? .white : .white.opacity(0.5))
+                    .foregroundStyle(vm.traceButtonAvailable ? .white : .white.opacity(0.5))
                     .padding(.horizontal, 8)
                     .padding(.vertical, 4)
-                    .background(Color(white: vm.isTraceAvailable ? 0.25 : 0.15))
+                    .background(Color(white: vm.traceButtonAvailable ? 0.25 : 0.15))
                     .clipShape(RoundedRectangle(cornerRadius: 6))
                 }
                 .buttonStyle(.plain)
-                .disabled(!vm.isTraceAvailable)
+                // The product entry c59.trace (C59-4 AC-12, AC-25).
+                .disabled(!vm.traceButtonAvailable)
+                .accessibilityIdentifier("btn-trace")
 
                 Button { vm.toggleDebug() } label: {
                     HStack(spacing: 4) {
@@ -210,13 +214,16 @@ private struct ASMDebugContent: View {
                 Text("File: \(vm.asmFileName)")
                     .font(.system(size: 11, design: .monospaced))
                     .foregroundStyle(Color(white: 0.85))
+                    .accessibilityIdentifier("asm-file")
                 Text("Words: \(vm.asmWordCount)")
                     .font(.system(size: 11, design: .monospaced))
                     .foregroundStyle(Color(white: 0.75))
+                    .accessibilityIdentifier("asm-words")
                 Text(vm.asmStatusMessage)
                     .font(.system(size: 11, design: .monospaced))
                     .foregroundStyle(Color(white: 0.7))
                     .fixedSize(horizontal: false, vertical: true)
+                    .accessibilityIdentifier("asm-status")   // C59-4 AC-24
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(10)

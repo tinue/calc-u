@@ -26,7 +26,6 @@ struct FrameUpdate {
     calcu::machine::DisplayOutput display;  ///< the machine's display output (C59-1 AC-13)
     LedFrame led;
     double calcIndicatorOpacity = 0;      ///< 0–1, see FrameSampler
-    std::vector<std::string> logLines;    ///< core debug messages at or below debugLevel
     /// The card was passing and the core ejected it (at CRD_OFF, as the real
     /// card leaves the reader after each pass): the frontend saves written data.
     bool cardAutoEjected = false;
@@ -34,11 +33,11 @@ struct FrameUpdate {
 
 class FrameSampler {
 public:
-    /// debugLevel: 0 off, 1 info, 2 debug. cardSwiping: the frontend's card
+    /// cardSwiping: the frontend's card
     /// state. The poll covers the emulated time since the previous tick (tick
     /// count difference over the tick rate). The only reader of the machine's
     /// display output (C59-1 OQ-7).
-    FrameUpdate tick(calcu::machine::Machine& m, int debugLevel, bool cardSwiping);
+    FrameUpdate tick(calcu::machine::Machine& m, bool cardSwiping);
 
     /// Forget the indicator history (new machine).
     void reset();

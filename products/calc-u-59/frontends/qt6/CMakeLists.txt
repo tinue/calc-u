@@ -68,6 +68,7 @@ set(CORE_SOURCES
   ${CORE_ROOT}/RAM.cpp
   ${CORE_ROOT}/TIAdapters.cpp
   ${CORE_ROOT}/TIDebugging.cpp
+  ${CORE_ROOT}/TIDebugKinds.cpp
   ${CORE_ROOT}/TICatalogue.cpp
   ${CORE_ROOT}/TIKeys.cpp
   ${CORE_ROOT}/TIMachine.cpp

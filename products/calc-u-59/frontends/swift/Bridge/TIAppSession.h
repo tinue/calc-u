@@ -15,7 +15,11 @@ NS_ASSUME_NONNULL_BEGIN
 /// The topics a batch of messages changed (the interim c59.* topics, LIB-3 59
 /// design §5, until their owners' steps; since M-53 also the library's
 /// `paper PC-100C` (printer: appended, paperCut: emptied), `run-state`
-/// (runState) and `trace` (trace)).
+/// (runState) and `trace` (trace); since M-56 the debug panel's product
+/// topics of C59-4 AC-25 (live: calculator-debug, listing: program-listing,
+/// cpu: cpu-debug, heatmap, asm: asm-overlay, log: LIB-3's `log` and
+/// debug-view's level) and LIB-4's `control-state` (control: the product
+/// entries c59.asm-run, c59.trace, c59.calculator-tab)).
 typedef NS_OPTIONS(uint32_t, TIChange) {
     TIChangeModel     NS_SWIFT_NAME(model)     = 1u << 0,
     TIChangeDisplay   NS_SWIFT_NAME(display)   = 1u << 1,
@@ -31,6 +35,7 @@ typedef NS_OPTIONS(uint32_t, TIChange) {
     TIChangeAsm       NS_SWIFT_NAME(asm)       = 1u << 11,
     TIChangeTrace     NS_SWIFT_NAME(trace)     = 1u << 12,
     TIChangeListing   NS_SWIFT_NAME(listing)   = 1u << 13,
+    TIChangeControl   NS_SWIFT_NAME(control)   = 1u << 14,
 };
 
 /// The level that owns a pause (LIB-10 RunState::owner; None when running).
@@ -49,6 +54,16 @@ typedef struct {
     bool resume;
 } TIButtonUse;
 
+/// FREEZE and FREEZE ON START of a tab (C59-4 AC-5, AC-7:
+/// cu59::freezeButtons, app/TIDebugPart.hpp): FREEZE while running and the
+/// tab's start not armed; FREEZE ON START while running, and as ARMED (which
+/// disarms) while armed.
+typedef struct {
+    bool freeze;
+    bool freezeOnStart;
+    bool armed;
+} TIFreezeButtons;
+
 /// One dot of the paper (LIB-8 S-P1, until C59-8): its centre in the
 /// printer's unit (the dot pitch), y down the paper from where it was last
 /// empty, and its ink 0–1 (the description's grey of its darkness).
@@ -59,7 +74,9 @@ typedef struct {
 } TIPaperDot;
 
 /// What the session's messages ask of the app (main thread): the notices
-/// (an alert, LIB-3 AC-30), KEYSTROKES DebugPanel:, the log, and a batch's changes.
+/// (an alert, LIB-3 AC-30), the tab a `debug-panel:` step asked for (the
+/// product topic debug-view, C59-4 AC-2: each time its count of requests
+/// grows), the log, and a batch's changes.
 @protocol TIAppSessionDelegate <NSObject>
 - (void)showDebugPanel:(NSInteger)panel;   ///< 0 CALCULATOR, 1 CPU, 2 LOG
 - (void)showErrorTitle:(NSString *)title message:(NSString *)message;
@@ -255,12 +272,16 @@ typedef struct {
 // ── Presets (LIB-6 `load-preset {content, name}`, D-41) ─────────────────────
 - (void)loadPresetContent:(nullable NSData *)raw name:(NSString *)name;
 
-// ── Dropped files ────────────────────────────────────────────────────────────
-/// dropAction: the file's name makes it a preset, or a card this model can fit.
-- (BOOL)acceptsDroppedFile:(NSString *)fileName;
-/// raw nil: the file could not be read. `done(NO)`: nothing was done.
-- (void)openDroppedFile:(nullable NSData *)raw path:(NSString *)path fileName:(NSString *)fileName
-             completion:(nullable void (^)(BOOL opened))done;
+// ── Opening a file (LIB-13: the library's `open`, M-56) ──────────────────────
+/// Whether the session would take a file of this name (`open-would-take`,
+/// LIB-13 AC-6), asked before a drag is taken; `done` on the main thread.
+- (void)wouldOpenFile:(NSString *)fileName completion:(void (^)(BOOL takes))done;
+/// `open {files: [{name, path, bytes}], way}`: way is "drop" or "dialog" (the
+/// Preset button's importer, D-21). raw nil: the file could not be read. The
+/// session finds out what the file is; a refusal is its notice (AC-15).
+/// `done(YES)` when it was opened (or kept, AC-7).
+- (void)openFile:(nullable NSData *)raw path:(nullable NSString *)path fileName:(NSString *)fileName
+             way:(NSString *)way completion:(nullable void (^)(BOOL opened))done;
 
 // ── Debugger ─────────────────────────────────────────────────────────────────
 - (void)setLiveDebugEnabled:(BOOL)on;
@@ -273,6 +294,14 @@ typedef struct {
 @property (nonatomic, readonly) BOOL scanLoopExitArmed; ///< pause-on-start cpu
 /// The buttons of a level by the library's rule (AC-18, AC-34).
 - (TIButtonUse)buttonUseFor:(TIFreezeOwner)level NS_SWIFT_NAME(buttonUse(for:));
+/// FREEZE and FREEZE ON START of a tab (C59-4 AC-5, AC-7).
+- (TIFreezeButtons)freezeButtonsFor:(TIFreezeOwner)level NS_SWIFT_NAME(freezeButtons(for:));
+// The product entries of the control state (C59-4 AC-25): whether Run, TRACE
+// and the CALCULATOR tab can be used, and why not.
+@property (nonatomic, readonly) BOOL asmRunAvailable;
+@property (nonatomic, readonly) BOOL traceButtonAvailable;
+@property (nonatomic, readonly) BOOL calculatorTabAvailable;
+@property (nonatomic, readonly) NSString *calculatorTabReason;
 /// The rule itself, for a run state given by its fields (the unit tests).
 + (TIButtonUse)buttonUseFor:(TIFreezeOwner)level hasState:(BOOL)hasState paused:(BOOL)paused
                       owner:(TIFreezeOwner)owner NS_SWIFT_NAME(buttonUse(for:hasState:paused:owner:));
@@ -286,11 +315,15 @@ typedef struct {
 @property (nonatomic, readonly) NSInteger programListingCurrentIndex;   ///< -1 none
 @property (nonatomic, readonly) NSArray<TIInspectorEntry *> *cpuHistory;
 @property (nonatomic, readonly) NSData *heatmapCounts;   ///< 0x1400 uint32 counts
-- (void)clearHeatmap;
+- (void)clearHeatmap;   ///< `c59.heatmap-reset` (AC-8)
 
+/// The level of the machine's own log lines (debug-view, C59-4 AC-11).
 @property (nonatomic, readonly) NSInteger debugLevel;   ///< 0 off, 1 info, 2 debug
+/// The LOG button: `c59.log-level` with the next of off, info, debug.
 - (void)cycleDebugLevel;
+/// The LOG tab's view of LIB-3's `log` (the last 2000 lines, cu59::RingLog, AC-9).
 @property (nonatomic, readonly) NSString *logText;
+/// Empties the tab's view, not the log (AC-9).
 - (void)clearLog;
 - (void)dumpVars;
 - (void)dumpScom;
@@ -301,8 +334,8 @@ typedef struct {
 @property (nonatomic, readonly) BOOL manualTrace;
 - (void)setManualTrace:(BOOL)on;
 
-// ── ASM overlay ──────────────────────────────────────────────────────────────
-/// text nil: the file could not be read.
+// ── ASM overlay (the product topic asm-overlay, C59-4 AC-16) ─────────────────
+/// `c59.asm-load {name, text}`; text nil: the file could not be read.
 - (void)loadAsm:(nullable NSString *)text fileName:(NSString *)fileName;
 - (void)runAsm;
 - (void)clearAsm;

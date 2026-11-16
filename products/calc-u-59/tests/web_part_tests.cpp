@@ -118,9 +118,6 @@ TEST(lib15_ac20_cards_are_files_of_the_save_folder) {
     r.send("c59.web.fit-blank-card", Value::object({{"name", "Mine.U59"}}));
     CHECK(r.part().cardFitted());
     r.send("c59.web.fit-blank-card", Value::object({{"name", "../x.U59"}}));   // never out of the folder
-    // A dropped card joins the folder once fitted.
-    const std::string text = "Calc-U-59 Card 2.0\n";
-    r.send("c59.web.drop", Value::object({{"name", "notes.txt"}, {"bytes", Value(Value::Bytes(text.begin(), text.end()))}}));
     r.run(50ms);
     const Value card = r.state(topics::kWebCard);
     CHECK(card.find("fitted") && card.find("fitted")->boolean() && *card.find("fitted")->boolean());
@@ -130,7 +127,7 @@ TEST(lib15_ac22_the_page_topics_are_there) {
     WebRig r;
     r.run(1s);
     for (const auto* t : {&topics::kWebModel, &topics::kWebDisplay, &topics::kWebRunState, &topics::kWebPrinter,
-                          &topics::kWebCard, &topics::kWebLog, &topics::kWebSettings})
+                          &topics::kWebCard, &topics::kDebugView, &topics::kWebSettings})
         CHECK(r.fe.mirror.state(*t) != nullptr);
     const Value display = r.state(topics::kWebDisplay);
     CHECK(display.bytes() && display.bytes()->size() == 36 * sizeof(float));

@@ -2,6 +2,7 @@
 #include "Bcd.hpp"
 #include "TIDisplayPicture.hpp"
 #include "../core/TIAdapters.hpp"
+#include "../core/TIDebugKinds.hpp"
 #include "../core/TICatalogue.hpp"
 #include "../core/TISegments.hpp"
 #include <sstream>
@@ -62,7 +63,7 @@ std::string tiDisplayText(const calcu::machine::DisplayOutput& o) {
 }
 
 std::optional<RegisterNibbles> displayRegisterX(calcu::machine::Machine& m, const calcu::machine::DisplayOutput& o) {
-    const TIDebugPanelAdapter* panel = debugPanelOf(m);
+    const CalculatorState* panel = kindOf<CalculatorState>(m);
     if (panel) {
         const CpuFrame cpu = panel->snapshotCPU();
         // X between two steps (app/DebugSnapshots.cpp decodeX; rom/TI59-ROM-Guide.md,

@@ -3,7 +3,9 @@
 #include "PacingProfiles.hpp"
 #include "ProductRoms.hpp"
 #include "Settings.hpp"
+#include "TIDebugPart.hpp"
 #include "TIDebuggerSetup.hpp"
+#include "TIFileKinds.hpp"
 #include "TIPrinters.hpp"
 #include "TITyping.hpp"
 #include "TIPresetCommands.hpp"
@@ -20,6 +22,9 @@
 #include "parts/LibraryParts.hpp"
 #include "roms/Bundle.hpp"
 #include "startup/ProductMachines.hpp"
+#include <filesystem>
+#include <fstream>
+#include <iterator>
 #include <memory>
 
 // The ROM folder the product's tests use (design §8, O-2), set by CMake.
@@ -106,6 +111,54 @@ void addTIHarnessCommands(harness::CommandRegistry& r) {
     }, "registers <NN>=<value>... | registers <NN>...  write data registers (H00-H03 on the TI-58C) or read them");
 }
 
+// C59-4 AC-22 (design §3.10): the debug panel's commands under `ti59`; no
+// preset steps for them.
+void addTIDebugCommands(harness::CommandRegistry& r) {
+    r.addProduct("ti59", "asm", [](harness::CommandContext& c) -> harness::Reply {
+        const auto w = words(c.line.argText);
+        if (w.empty()) return harness::refusedReply("usage: ti59 asm load <file> | run | clear");
+        if (w[0] == "load") {
+            std::string path = c.line.argText.substr(4);   // after "load"
+            path.erase(0, std::min(path.size(), path.find_first_not_of(" \t")));
+            if (path.empty()) return harness::refusedReply("usage: ti59 asm load <file>");
+            std::ifstream in(std::filesystem::path(std::u8string(path.begin(), path.end())), std::ios::binary);
+            std::optional<std::string> text;
+            if (in) text = std::string(std::istreambuf_iterator<char>(in), std::istreambuf_iterator<char>());
+            sessions::Value::Object o{{"name", sessions::Value(std::filesystem::path(path).filename().string())}};
+            if (text) o.push_back({"text", sessions::Value(*text)});
+            const sessions::ReplyMessage m = c.host.command(sessions::Command{commands::kAsmLoad, sessions::Value(std::move(o))});
+            if (!m.done) return harness::refusedReply(m.reason);
+            const sessions::Value v = m.result ? m.result->toValue() : sessions::Value();
+            const std::string n = std::to_string(v.integer() ? *v.integer() : 0);
+            return harness::doneReply(harness::Value(n + " instructions"), {n + " instructions"});
+        }
+        if (w[0] == "run") {
+            const sessions::ReplyMessage m = c.host.command(sessions::Command{commands::kAsmRun, sessions::Value::object({})});
+            if (!m.done) return harness::refusedReply(m.reason);
+            const auto v = m.result ? m.result->toValue() : sessions::Value();
+            const std::string status = v.string() ? *v.string() : std::string();
+            return harness::doneReply(harness::Value(status), {status});
+        }
+        if (w[0] == "clear") return linesReply(c.host.command(sessions::Command{commands::kAsmClear, sessions::Value::object({})}));
+        return harness::refusedReply("usage: ti59 asm load <file> | run | clear");
+    }, "asm load <file> | run | clear  the ASM overlay: put over the ROM, enter at 1800, take away");
+    r.addProduct("ti59", "dump", [](harness::CommandContext& c) {
+        const auto w = words(c.line.argText);
+        if (w.size() != 1) return harness::refusedReply("usage: ti59 dump scom|memory|prog|vars");
+        return linesReply(c.host.command(sessions::Command{commands::kDump, sessions::Value::object({{"what", w[0]}})}));
+    }, "dump scom|memory|prog|vars  the lines of a dump (also into the log)");
+    r.addProduct("ti59", "log-level", [](harness::CommandContext& c) {
+        const auto w = words(c.line.argText);
+        if (w.size() != 1) return harness::refusedReply("usage: ti59 log-level off|info|debug");
+        return linesReply(c.host.command(sessions::Command{commands::kLogLevel, sessions::Value::object({{"level", w[0]}})}));
+    }, "log-level off|info|debug  the level of the machine's own log lines");
+    r.addProduct("ti59", "heatmap", [](harness::CommandContext& c) {
+        const auto w = words(c.line.argText);
+        if (w.size() != 1 || w[0] != "reset") return harness::refusedReply("usage: ti59 heatmap reset");
+        return linesReply(c.host.command(sessions::Command{commands::kHeatmapReset, sessions::Value::object({})}));
+    }, "heatmap reset  set the ROM heatmap's counts to zero");
+}
+
 class TIHarnessProduct final : public harness::HarnessProduct {
 public:
     std::string_view name() const override { return "Calc-U-59"; }
@@ -133,20 +186,29 @@ public:
         s.typing = &typingProduct();
         s.papers = tiPrinterPapers();
         s.printers = {kPC100C};
-        s.debugger = tiDebuggerSetup(rules_, {});
+        TIDebuggerOptions debug;
+        debug.showPanel = [this](sessions::SessionContext& c, const std::string& view) { debug_.showView(c, view); };
+        s.debugger = tiDebuggerSetup(rules_, std::move(debug));
         s.presetRules = &presetRules_;
         s.bundle = &bundle_;
         s.productName = std::string(name());
-        s.presetExtensions = {".ti59", ".ti58", ".ti58c"};
+        s.presetExtensions = tiPresetExtensions();
+        s.fileKinds = kinds_.kinds();   // LIB-13 AC-9: `open <path>` takes every Calc-U-59 file
+        s.controlRules = {&debug_};      // C59-4 AC-25
         parts_ = std::make_unique<parts::LibraryParts>(std::move(s));
+        debug_.bindDebugger(parts_->debugger());
     }
     parts::LibraryParts& libraryParts() override { return *parts_; }
     std::vector<sessions::SessionPart*> sessionParts() override {
         std::vector<sessions::SessionPart*> p = parts_->sessionParts();
         p.push_back(&memory_);
+        p.push_back(&debug_);
         return p;
     }
-    void addCommands(harness::CommandRegistry& r) override { addTIHarnessCommands(r); }
+    void addCommands(harness::CommandRegistry& r) override {
+        addTIHarnessCommands(r);
+        addTIDebugCommands(r);
+    }
 
     harness::DisplayText readDisplay(const machine::DisplayOutput& o, const machine::MachineDescriptor& d) override {
         const auto* frame = std::get_if<machine::SegmentFrame>(&o.frame);
@@ -165,6 +227,10 @@ private:
     TIPresetRules presetRules_;
     presets::DirectoryPresetBundle bundle_{CALCU59_EXAMPLES_DIR};
     ProgramMemoryPart memory_;
+    // The debug panel's part (C59-4): its tabs computed as if shown, so that
+    // `state calculator-debug` reads them (design §3.1).
+    TIDebugPart debug_{TIDebugSetup{lookUpRoms().set, {}, true}};
+    TIFileKinds kinds_{debug_};
     std::unique_ptr<parts::LibraryParts> parts_;
 };
 

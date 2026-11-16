@@ -118,12 +118,16 @@ class EmulatorViewModel {
     var debugTab: DebugTab = .live   // persists tab selection across iPhone navigation
     var debugLevel: DebugLevel = .off
     var debugClearID: Int = 0              // incremented on clear to reset Text identity
-    var debugDisplayText: String = ""      // LOG pane text, refreshed at 1 Hz
+    var debugDisplayText: String = ""      // LOG pane text: the bridge's view of LIB-3's `log` (C59-4 AC-9)
     var asmFileName: String = "No file selected"
     var asmWordCount: Int = 0
     var asmStatusMessage: String = "Load a hex opcode file and press Run."
-    var canRunASM: Bool { asmWordCount > 0 }
     var asmOverlayActive: Bool = false
+    // The product entries of the control state (C59-4 AC-25): Run, TRACE and
+    // the CALCULATOR tab, each as the session says.
+    private(set) var canRunASM: Bool = false
+    private(set) var traceButtonAvailable: Bool = true
+    private(set) var calculatorTabAvailable: Bool = true
 
     // ── Live debug panels ────────────────────────────────────────────────────
     // Both flags track panel visibility (LiveDebugView / CPUInspectorView
@@ -150,6 +154,9 @@ class EmulatorViewModel {
     /// FREEZE, STEP, RESUME of each tab, by the library's rule (LIB-10 AC-18, AC-34).
     private(set) var calculatorButtons = TIButtonUse(pause: false, step: false, resume: false)
     private(set) var cpuButtons = TIButtonUse(pause: false, step: false, resume: false)
+    /// FREEZE and FREEZE ON START of each tab (C59-4 AC-5, AC-7: cu59::freezeButtons).
+    private(set) var calculatorFreeze = TIFreezeButtons(freeze: false, freezeOnStart: false, armed: false)
+    private(set) var cpuFreeze = TIFreezeButtons(freeze: false, freezeOnStart: false, armed: false)
 
     /// The whole program of the source last shown (frozen PROGRAM STEPS view).
     var programListing: [LiveDebugSnapshot.StepEntry] = []
@@ -392,13 +399,16 @@ class EmulatorViewModel {
     /// STEP in the CPU panel: one instruction, through a HOLD (`cpu`).
     func stepFrozen() { session?.step(.cpu) }
     func buttons(for panel: FreezePanel) -> TIButtonUse { panel == .cpu ? cpuButtons : calculatorButtons }
+    func freezeButtons(for panel: FreezePanel) -> TIFreezeButtons { panel == .cpu ? cpuFreeze : calculatorFreeze }
 
     func clearRomHeatmap() { session?.clearHeatmap() }
 
     func toggleDebug() { session?.cycleDebugLevel() }
 
+    /// Empties the LOG tab's view, not the log (C59-4 AC-9).
     func clearDebug() {
         session?.clearLog()
+        if !debugDisplayText.isEmpty { debugDisplayText = "" }
         debugClearID &+= 1
     }
 
@@ -417,41 +427,45 @@ class EmulatorViewModel {
     func runASMOverlay() { session?.runAsm() }
     func clearASMOverlay() { session?.clearAsm() }
 
-    // MARK: - Presets
+    // MARK: - Opening files (LIB-13: the session's `open`, M-56)
 
-    /// A preset by its content (LIB-6 `load-preset {content, name}`; D-41: the
-    /// picked file is readable only inside its security scope, so its content
-    /// goes over on macOS too).
-    func loadStateFile(_ url: URL) {
-        let scoped = url.startAccessingSecurityScopedResource()
-        defer { if scoped { url.stopAccessingSecurityScopedResource() } }
-        session?.loadPresetContent(try? Data(contentsOf: url), name: url.lastPathComponent)
-    }
-
-    // MARK: - Dropped files
+    /// The Preset button's file dialog (LIB-13 AC-5, D-21): any file, opened
+    /// as what it is (a preset, an ASM overlay, a keystroke program, a card);
+    /// its content goes over (D-41: the picked file is readable only inside
+    /// its security scope). A refusal is the session's notice (AC-15).
+    func loadStateFile(_ url: URL) { open(url, way: "dialog") }
 
     #if os(macOS)
-    /// A preset or card dropped on the window (reference/SharedArchitecture.md
-    /// § "Dropped Files"). A card can be anywhere on disk and is written back
-    /// while it is fitted, so its security scope stays open until it is replaced or gone.
+    /// A file dropped on the window (LIB-13 AC-1): `open {way: drop}`; the
+    /// session finds out what it is. SwiftUI's drop tells the file's name only
+    /// at the drop, so any one file is taken and a name the session does not
+    /// take gets its notice there (LIB-13 design §10.9; the bridge's
+    /// `wouldOpenFile`, `open-would-take`, is there for a drag that can tell).
+    /// A card can be anywhere on disk and is written back while it is
+    /// fitted, so its security scope stays open until it is replaced or gone.
     @discardableResult
     func openDroppedFile(_ url: URL) -> Bool {
-        guard session?.acceptsDroppedFile(url.lastPathComponent) == true else { return false }  // don't read it first
-        let scoped = url.startAccessingSecurityScopedResource()
-        // The security scope of a dropped card stays open until the reply and
-        // the card state say it is fitted (C59-5 design §3.4).
-        session?.openDroppedFile(try? Data(contentsOf: url), path: url.path, fileName: url.lastPathComponent) { [weak self] opened in
-            guard let self else { return }
-            if opened && self.controller.cardFitted {
-                self.releaseDroppedCardScope()
-                if scoped { self.droppedCardScope = url }
-            } else if scoped {
-                url.stopAccessingSecurityScopedResource()
-            }
-        }
+        open(url, way: "drop")
         return true
     }
     #endif
+
+    private func open(_ url: URL, way: String) {
+        let scoped = url.startAccessingSecurityScopedResource()
+        // The security scope of an opened card stays open until the reply and
+        // the card state say it is fitted (C59-5 design §3.4).
+        session?.openFile(try? Data(contentsOf: url), path: url.path, fileName: url.lastPathComponent, way: way) { [weak self] opened in
+            guard let self else { return }
+            #if os(macOS)
+            if opened && self.controller.cardFitted && self.controller.cardFileName == url.lastPathComponent {
+                self.releaseDroppedCardScope()
+                if scoped { self.droppedCardScope = url }
+                return
+            }
+            #endif
+            if scoped { url.stopAccessingSecurityScopedResource() }
+        }
+    }
 
     // MARK: - Changes from the controller
 
@@ -534,6 +548,9 @@ class EmulatorViewModel {
             let calc = controller.buttonUse(for: .calculator), cpu = controller.buttonUse(for: .cpu)
             if !Self.same(calculatorButtons, calc) { calculatorButtons = calc }
             if !Self.same(cpuButtons, cpu) { cpuButtons = cpu }
+            let calcFreeze = controller.freezeButtons(for: .calculator), cpuFreezeNow = controller.freezeButtons(for: .cpu)
+            if !Self.same(calculatorFreeze, calcFreeze) { calculatorFreeze = calcFreeze }
+            if !Self.same(cpuFreeze, cpuFreezeNow) { cpuFreeze = cpuFreezeNow }
             if isFullSpeedMode != controller.fullSpeed { isFullSpeedMode = controller.fullSpeed }
             if isKeystrokesPlaying != controller.keystrokesPlaying { isKeystrokesPlaying = controller.keystrokesPlaying }
             let held: Int? = controller.heldKey >= 0 ? controller.heldKey : nil
@@ -567,6 +584,11 @@ class EmulatorViewModel {
             if asmOverlayActive != controller.asmActive { asmOverlayActive = controller.asmActive }
         }
         if c.contains(.trace), cIndicatorDebug != controller.manualTrace { cIndicatorDebug = controller.manualTrace }
+        if c.contains(.control) || c.contains(.asm) {
+            if canRunASM != controller.asmRunAvailable { canRunASM = controller.asmRunAvailable }
+            if traceButtonAvailable != controller.traceButtonAvailable { traceButtonAvailable = controller.traceButtonAvailable }
+            if calculatorTabAvailable != controller.calculatorTabAvailable { calculatorTabAvailable = controller.calculatorTabAvailable }
+        }
     }
 
     fileprivate func showError(title: String, message: String) {
@@ -583,6 +605,9 @@ class EmulatorViewModel {
 
     private static func same(_ a: TIButtonUse, _ b: TIButtonUse) -> Bool {
         a.pause == b.pause && a.step == b.step && a.resume == b.resume
+    }
+    private static func same(_ a: TIFreezeButtons, _ b: TIFreezeButtons) -> Bool {
+        a.freeze == b.freeze && a.freezeOnStart == b.freezeOnStart && a.armed == b.armed
     }
 
     fileprivate static func diagnostic(_ message: String) {

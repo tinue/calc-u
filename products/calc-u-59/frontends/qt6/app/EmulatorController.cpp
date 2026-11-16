@@ -14,6 +14,7 @@
 #include "debugger/RunState.hpp"
 #include "paper/PaperTopics.hpp"
 #include "typing/TypingTopics.hpp"
+#include "control/ControlState.hpp"
 #include <QDebug>
 #include <QFile>
 #include <QFileInfo>
@@ -47,11 +48,12 @@ const cu59::TILedState kNoLed{};
 const cu59::TICueCardState kNoCue{};
 const cu59::TIPrinterState kNoPrinter{};
 const cu59::TICardReaderState kNoCard{};
-const cu59::TIDebugLiveState kNoLive{};
-const cu59::TIDebugCpuState kNoCpu{};
-const cu59::TIDebugHeatmapState kNoHeatmap{};
-const cu59::TIDebugLogState kNoLog{};
-const cu59::TIDebugAsmState kNoAsm{};
+const cu59::TICalculatorDebug kNoLive{};
+const cu59::TIProgramListing kNoListing{};
+const cu59::TICpuDebug kNoCpu{};
+const cu59::TIHeatmap kNoHeatmap{};
+const cu59::TIDebugView kNoView{};
+const cu59::TIAsmOverlayState kNoAsm{};
 
 template <class P> const P& orNone(const P* p, const P& none) { return p ? *p : none; }
 
@@ -89,6 +91,14 @@ EmulatorController::EmulatorController(QObject* parent) : QObject(parent) {
     m_frameTimer.setInterval(1000 / 60);
     connect(&m_frameTimer, &QTimer::timeout, this, [this] { m_app.session->call(cu59::steadyWallTime()); });
     m_frameTimer.start();
+    // The LOG tab's text at 1 Hz (AC-9; the paging of cu59::RingLog).
+    m_logTimer.setInterval(1000);
+    connect(&m_logTimer, &QTimer::timeout, this, [this] {
+        if (!std::exchange(m_logDirty, false)) return;
+        m_logText = QString::fromStdString(m_log.displayText());
+        emit logChanged();
+    });
+    m_logTimer.start();
 }
 
 EmulatorController::~EmulatorController() {
@@ -120,8 +130,7 @@ void EmulatorController::onMessage(const cs::Message& m) {
             (void)m_listener.mirror().takeReset(s->topic);
             return;
         }
-        const bool handled = s->topic == cs::kNoticesTopic || s->topic == cs::kLogTopic ||
-                             s->topic == cu59::topics::kShowDebugPanel;
+        const bool handled = s->topic == cs::kNoticesTopic || s->topic == cs::kLogTopic;
         if (handled) (void)m_listener.mirror().takeAppended(s->topic);
         if (s->topic == cs::kNoticesTopic) {   // an error alert (LIB-3 AC-30), as today until C59-8
             for (const auto& p : s->appended)
@@ -131,14 +140,18 @@ void EmulatorController::onMessage(const cs::Message& m) {
                 }
             return;
         }
-        if (s->topic == cs::kLogTopic) {   // diagnostics: the developer's, not shown
+        if (s->topic == cs::kLogTopic) {   // the LOG tab (C59-4 AC-9): the machine's and the product's lines
             for (const auto& p : s->appended)
-                if (const auto* l = cs::payloadAs<cs::LogLine>(p)) qDebug("%s", l->text.c_str());
-            return;
-        }
-        if (s->topic == cu59::topics::kShowDebugPanel) {
-            for (const auto& p : s->appended)
-                if (const auto* d = cs::payloadAs<cu59::TIShowDebugPanel>(p)) emit debugPanelRequested(static_cast<int>(d->panel));
+                if (const auto* l = cs::payloadAs<cs::LogLine>(p)) {
+                    std::size_t at = 0;
+                    for (;;) {   // a message may hold several lines (the machine's of one call)
+                        const std::size_t nl = l->text.find('\n', at);
+                        m_log.write(l->text.substr(at, nl == std::string::npos ? std::string::npos : nl - at));
+                        if (nl == std::string::npos) break;
+                        at = nl + 1;
+                    }
+                    m_logDirty = true;
+                }
             return;
         }
     }
@@ -160,16 +173,23 @@ void EmulatorController::topicChanged(const cs::TopicName& t) {
         emit cardStateChanged();
     } else if (t == T::kRunState || t == calcu::typing::kHeldKeysTopic || t == calcu::debugger::kRunStateTopic) {
         emit runStateChanged();
-    } else if (t == T::kDebugLive) {
+    } else if (t == T::kCalculatorDebug || t == T::kProgramListing) {
         emit liveSnapshotChanged();
-    } else if (t == T::kDebugCpu) {
+    } else if (t == T::kCpuDebug) {
         emit cpuChanged();
-    } else if (t == T::kDebugHeatmap) {
+    } else if (t == T::kHeatmap) {
         emit heatmapChanged();
-    } else if (t == T::kDebugLog) {
-        emit logChanged();
-    } else if (t == T::kDebugAsm) {
+    } else if (t == T::kDebugView) {
+        const auto& v = orNone(state<cu59::TIDebugView>(T::kDebugView), kNoView);
+        if (v.requests > m_viewRequests) {   // a `debug-panel:` step (AC-2), or Run (AC-18)
+            m_viewRequests = v.requests;
+            emit debugPanelRequested(static_cast<int>(v.view));
+        }
+        emit logChanged();   // the level shown
+    } else if (t == T::kAsmOverlay) {
         emit asmChanged();
+    } else if (t == calcu::control::kControlStateTopic) {
+        emit entriesChanged();
     } else if (t == calcu::debugger::kTraceTopic) {
         emit traceChanged();
     }
@@ -297,26 +317,28 @@ std::optional<int> EmulatorController::litCardCorner() const {
     return orNone(state<cu59::TICardReaderState>(cu59::topics::kCardReader), kNoCard).litCorner;
 }
 
-// ── Presets (LIB-6 AC-42: a file in its folder) ──────────────────────────────
+// ── Opening files (LIB-13, M-56) ─────────────────────────────────────────────
 
-void EmulatorController::loadPreset(const QString& path) {
-    send(calcu::presets::kLoadPresetCommand, Value::object({{"ref", path.toStdString()}}));   // UTF-8
-}
-
-cu59::DropAction EmulatorController::dropAction(const QString& path) const {
+bool EmulatorController::wouldTake(const QString& name) const {
     const cs::ReplyMessage r =
-        m_listener.ask(cu59::commands::kDropAction, Value::object({{"name", QFileInfo(path).fileName().toStdString()}}));
-    if (const auto* a = cs::payloadAs<cu59::TIDropAction>(r.result)) return a->action;
-    return cu59::DropAction::NotAccepted;
+        m_listener.ask(calcu::opening::kWouldTakeRequest, Value::object({{"name", name.toStdString()}}));
+    const auto* w = cs::payloadAs<calcu::opening::WouldTake>(r.result);
+    return w && w->takes;
 }
 
-void EmulatorController::openDroppedFile(const QString& path) {
-    if (dropAction(path) == cu59::DropAction::LoadPreset) {   // LIB-6 AC-42: by its path, in its folder
-        loadPreset(path);
-        return;
+void EmulatorController::openFile(const QString& path, calcu::opening::Way way) {
+    calcu::opening::OpenedFile f;
+    f.name = QFileInfo(path).fileName().toStdString();
+    f.path = path.toStdString();   // UTF-8: a preset is loaded from its folder (LIB-6 AC-42)
+    QFile file(path);
+    if (file.open(QIODevice::ReadOnly)) {
+        const QByteArray b = file.readAll();
+        f.bytes = std::vector<std::uint8_t>(b.begin(), b.end());
     }
-    send(cu59::commands::kOpenDropped,
-         withBytes(Value::object({{"path", path.toStdString()}, {"name", QFileInfo(path).fileName().toStdString()}}), path));
+    calcu::opening::OpenRequest q;
+    q.files = {std::move(f)};
+    q.way = way;
+    send(calcu::opening::kOpenCommand, q.toValue());
 }
 
 // ── Debugger ─────────────────────────────────────────────────────────────────
@@ -338,25 +360,50 @@ void EmulatorController::armStart(const calcu::debugger::LevelName& level) {
     send(calcu::debugger::kPauseOnStartCommand, Value::object({{"level", level.value}}));
 }
 void EmulatorController::disarmStart() { send(calcu::debugger::kPauseOnStartCommand, Value::object({{"off", true}})); }
+bool EmulatorController::entryAvailable(const char* name) const {
+    const auto* c = state<calcu::control::ControlState>(calcu::control::kControlStateTopic);
+    const auto* e = c ? c->productEntry(name) : nullptr;
+    if (!e || !e->value) return true;
+    const Value v = e->value->toValue();
+    const Value* a = v.find("available");
+    return !a || !a->boolean() || *a->boolean();
+}
+QString EmulatorController::entryReason(const char* name) const {
+    const auto* c = state<calcu::control::ControlState>(calcu::control::kControlStateTopic);
+    const auto* e = c ? c->productEntry(name) : nullptr;
+    if (!e || !e->value) return {};
+    const Value v = e->value->toValue();
+    const Value* r = v.find("reason");
+    return r && r->string() ? qs(*r->string()) : QString();
+}
 const cu59::LiveDebugSnapshot& EmulatorController::liveSnapshot() const {
-    return orNone(state<cu59::TIDebugLiveState>(cu59::topics::kDebugLive), kNoLive).live;
+    return orNone(state<cu59::TICalculatorDebug>(cu59::topics::kCalculatorDebug), kNoLive).live;
 }
 const std::vector<cu59::StepEntry>& EmulatorController::programListing() const {
-    return orNone(state<cu59::TIDebugLiveState>(cu59::topics::kDebugLive), kNoLive).listing;
+    return orNone(state<cu59::TIProgramListing>(cu59::topics::kProgramListing), kNoListing).steps;
 }
 cu59::ProgramSource EmulatorController::programListingSource() const {
-    return orNone(state<cu59::TIDebugLiveState>(cu59::topics::kDebugLive), kNoLive).listingSource;
+    return orNone(state<cu59::TIProgramListing>(cu59::topics::kProgramListing), kNoListing).source;
 }
 const std::vector<cu59::InspectorEntry>& EmulatorController::cpuHistory() const {
-    return orNone(state<cu59::TIDebugCpuState>(cu59::topics::kDebugCpu), kNoCpu).history;
+    return orNone(state<cu59::TICpuDebug>(cu59::topics::kCpuDebug), kNoCpu).entries;
 }
 const std::vector<uint32_t>& EmulatorController::heatmapCounts() const {
-    return orNone(state<cu59::TIDebugHeatmapState>(cu59::topics::kDebugHeatmap), kNoHeatmap).counts;
+    return orNone(state<cu59::TIHeatmap>(cu59::topics::kHeatmap), kNoHeatmap).counts;
 }
 EmulatorController::DebugLevel EmulatorController::debugLevel() const {
-    return orNone(state<cu59::TIDebugLogState>(cu59::topics::kDebugLog), kNoLog).level;
+    return orNone(state<cu59::TIDebugView>(cu59::topics::kDebugView), kNoView).logLevel;
 }
-QString EmulatorController::logText() const { return qs(orNone(state<cu59::TIDebugLogState>(cu59::topics::kDebugLog), kNoLog).text); }
+void EmulatorController::cycleDebugLevel() {
+    const auto next = static_cast<DebugLevel>((static_cast<int>(debugLevel()) + 1) % 3);
+    send(cu59::commands::kLogLevel, Value::object({{"level", std::string(cu59::debugLevelName(next))}}));
+}
+void EmulatorController::clearLog() {
+    m_log.clear();
+    m_logText.clear();
+    m_logDirty = false;
+    emit logChanged();
+}
 bool EmulatorController::traceRunning() const {
     const auto* t = state<calcu::debugger::TraceState>(calcu::debugger::kTraceTopic);
     return t && t->running;
@@ -364,10 +411,10 @@ bool EmulatorController::traceRunning() const {
 void EmulatorController::setTrace(bool on) {
     send(calcu::debugger::kTraceCommand, on ? Value::object({{"button", true}}) : Value::object({{"off", true}}));
 }
-QString EmulatorController::asmFileName() const { return qs(orNone(state<cu59::TIDebugAsmState>(cu59::topics::kDebugAsm), kNoAsm).fileName); }
-int EmulatorController::asmWordCount() const { return orNone(state<cu59::TIDebugAsmState>(cu59::topics::kDebugAsm), kNoAsm).wordCount; }
-QString EmulatorController::asmStatus() const { return qs(orNone(state<cu59::TIDebugAsmState>(cu59::topics::kDebugAsm), kNoAsm).status); }
-bool EmulatorController::asmOverlayActive() const { return orNone(state<cu59::TIDebugAsmState>(cu59::topics::kDebugAsm), kNoAsm).active; }
+QString EmulatorController::asmFileName() const { return qs(orNone(state<cu59::TIAsmOverlayState>(cu59::topics::kAsmOverlay), kNoAsm).fileName); }
+int EmulatorController::asmWordCount() const { return orNone(state<cu59::TIAsmOverlayState>(cu59::topics::kAsmOverlay), kNoAsm).instructions; }
+QString EmulatorController::asmStatus() const { return qs(orNone(state<cu59::TIAsmOverlayState>(cu59::topics::kAsmOverlay), kNoAsm).status); }
+bool EmulatorController::asmOverlayActive() const { return orNone(state<cu59::TIAsmOverlayState>(cu59::topics::kAsmOverlay), kNoAsm).running; }
 void EmulatorController::loadAsmFile(const QString& path) {
     Value args = Value::object({{"name", QFileInfo(path).fileName().toStdString()}});
     if (auto text = readResource(path)) {
@@ -375,5 +422,5 @@ void EmulatorController::loadAsmFile(const QString& path) {
         members.push_back({"text", Value(*text)});
         args = Value(std::move(members));
     }
-    send(cu59::commands::kLoadAsm, std::move(args));
+    send(cu59::commands::kAsmLoad, std::move(args));   // Select File (AC-16); a refusal is a notice
 }

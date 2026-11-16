@@ -18,7 +18,8 @@ This skill covers all work inside `frontends/swift/Calc-U-59UITests/`.
 | `LayoutTests.swift` | Button visibility, label-wrapping, portrait/landscape screenshots |
 | `FilePickerTests.swift` | File picker opens; reopens after cancel (regression for iPad popover dismiss bug) |
 | `PresetLoadTests.swift` | End-to-end load of `test_diag.ti59` via the file picker; skipped since M-54 (LIB-6 D-46), replaced by C59-8's scenario in M-58 |
-| `ScreenshotTests.swift` | App Store screenshot capture (driven by `bin/run-screenshots`); writes PNGs to the dir named in `/tmp/calc-u-59-screenshot-dir` |
+| `ScreenshotTests.swift` | App Store screenshot capture (driven by `bin/run-screenshots`); writes PNGs to the dir named in `/tmp/calc-u-59-screenshot-dir`. Its overlay shot is C59-4 AC-24's scenario `testC59_4_AC16AsmOverlay` (`test_stopwatch.asm`, ASM format 2.0, from `1-Testfiles`) |
+| `DebugPanelTests.swift` | C59-4 AC-24/AC-21 scenarios (M-56): `testC59_4_AC5CalculatorFreezeStepResume` (FREEZE, `btn-step`, RESUME on the CALCULATOR tab), `testC59_4_AC21TabsAndLabels`; in `UIRegressionTests`, iOS |
 | `HarnessClient.swift` | A line client for harness attach: `connect(port:)`, `command(_:)` (message lines skipped), `closedByPeer()` (C59-5) |
 | `AttachTests.swift` | Harness attach in the simulator: launch with `--attach-port 59160`, drive keys, read `lcd`, `wait` on the app's clock, `quit` (C59-5 S3); Home and back, a command refused while suspended (S4); a press on `led-display` for full speed while a program runs, R/S through `btn-key-rs` (S5). In `UIRegressionTests`; S4, S5 iOS only |
 | `PacingTests.swift` | LIB-17 AC-19: a TI-59 keeps one minute, `ticks` over attach on port 59161. Checkpoint: only in the plan `PacingCheckpoint`, skipped by `UIRegressionTests` |
@@ -141,7 +142,10 @@ a FREEZE lands at the next program step boundary (CALCULATOR) or within
 the same host call, so the button states follow the `run-state` topic
 (`calcu::debugger::buttonUse`); TRACE starts the library's trace session
 (one at a time; the file `CALCU59_TRACE.bin` and its siblings by model,
-with no key or card records). The identifiers below are unchanged.
+with no key or card records). Since M-56 (C59-4) the panel draws the
+session's product topics; Run, TRACE and the CALCULATOR tab follow the
+control state's entries (the tab is disabled while an overlay runs).
+The CALCULATOR tab's STEP is `btn-step`.
 
 On iPhone portrait the pages are calculator → printer → debug (`btn-page-right`), and `btn-page-left` on the calculator page goes straight to debug. The debug page (`DebugView`, holding `btn-tab-calculator`/`btn-tab-cpu`/`btn-tab-log`) exists only when Settings → "Debug Page in Portrait" is on (`[window] portrait-debug-page`, default `false`). Under `--UITesting` the app's settings file is in memory only, at its defaults (LIB-9 AC-18), so a test turns the setting on through the Settings screen or with the launch arguments `--setting window.portrait-debug-page=true`. `ScreenshotTests` passes it, and the other settings its shots show, as `--setting <section>.<key>=<value>` arguments (`settingsArguments`; the module, which is no setting, as `--module <id>`), so they need no setup on a new simulator.
 
@@ -165,10 +169,13 @@ The iPad layout in landscape (and the iPhone Duo opened flat) shows the debug pa
 | `btn-tab-cpu` | Button | CPU tab in debug panel (`DebugView`) |
 | `btn-tab-log` | Button | LOG tab in debug panel (`DebugView`) |
 | `btn-cpu-freeze-on-start` | Button | "FREEZE ON START" in CPU tab (`CPUInspectorView`) |
-| `btn-cpu-step` | Button | "STEP" in CPU tab (`CPUInspectorView`); tap to single-step, hold to auto-step. The CALCULATOR tab's STEP and the CPU tab's ARMED have no identifier |
+| `btn-cpu-step` | Button | "STEP" in CPU tab (`CPUInspectorView`); tap to single-step, hold to auto-step. The CPU tab's ARMED has no identifier |
+| `btn-step` | Button | "STEP" in CALCULATOR tab (`LiveDebugView`); tap to step one program step, hold to auto-step (C59-4 AC-24) |
+| `btn-trace` | Button | "TRACE" in LOG tab; disabled when the control state's `c59.trace` says no |
+| `asm-file`, `asm-words`, `asm-status` | StaticText | The ASM OVERLAY box's file name, count and status ("ASM entered at 0x1800 (n step(s)).") |
 | `btn-key-rs` | Button | 10×10 pt automation-only R/S key (`--UITesting`, iOS only): pressed on touch-down, released on touch-up, so `press(forDuration:)` works |
 | `btn-asm-select` | Button | "Select File" in ASM overlay (`ASMDebugContent` in `DebugView`); opens `.asm` file picker |
-| `btn-asm-run` | Button | "Run" in ASM overlay; disabled until a file is loaded (`vm.canRunASM`) |
+| `btn-asm-run` | Button | "Run" in ASM overlay; disabled until a file is loaded (`vm.canRunASM`: the control state's `c59.asm-run`) |
 | `btn-freeze` | Button | "FREEZE" in CALCULATOR debug tab (`LiveDebugView`) |
 | `btn-resume` | Button | "RESUME" in CALCULATOR debug tab (`LiveDebugView`); left of FREEZE |
 | `led-display` | Any | The LED display (`KeyboardView`); a press there is full speed while it lasts |

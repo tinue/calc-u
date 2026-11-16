@@ -262,13 +262,15 @@ function PlayCalculator(props) {
     rootRef.current.focus({ preventScroll: true });
   };
 
-  // ── Drag and drop a preset or a card ─────────────────────────────────
+  // ── Drag and drop any file: LIB-13's `open {way: drop, upload}` ──────
+  // (a preset, a card, a keystroke program, an ASM overlay, …); the session
+  // decides what it is, a refusal is its notice (LIB-13 AC-1, AC-5).
   const onDragOver = (e) => { if (e.dataTransfer.types.includes("Files")) e.preventDefault(); };
   const onDrop = (e) => {
     const file = e.dataTransfer.files && e.dataTransfer.files[0];
     if (!file || !engine) return;
     e.preventDefault();
-    engine.dropFile(file);
+    engine.openFiles([file], "drop");
   };
 
   const Layout = portrait ? PortraitLayout : WideLayout;

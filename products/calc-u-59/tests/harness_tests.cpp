@@ -232,3 +232,77 @@ TEST(lib6_ac34_printer_trace_on_off) {
     CHECK_EQ(c("printer-trace on"), std::string("done\n"));
     CHECK_EQ(c("printer-trace off"), std::string("done\n"));
 }
+
+// ── C59-4 AC-22 (design §3.10, T16) and LIB-13 AC-9 on Calc-U-59 ─────────────
+
+TEST(c59_4_ac22_asm_load_run_clear) {
+    SKIP_UNLESS(tirig::haveRoms(), "the ROMs are not fetched (roms/fetch_roms.sh)");
+    tirig::Calcu c;
+    CHECK_EQ(c("ti59 asm run"), std::string("refused: No ASM overlay loaded.\n"));
+    CHECK_EQ(c("ti59 asm load examples/assembly/simple_count.asm"), std::string("done 1\n6 instructions\n"));
+    const std::string run = c("ti59 asm run");
+    CHECK(run.rfind("done 1\nASM entered at 0x1800 (", 0) == 0);
+    CHECK(c("state asm-overlay").find("simple_count.asm") != std::string::npos);
+    CHECK_EQ(c("ti59 asm clear"), std::string("done\n"));
+    CHECK(c("ti59 asm load examples/assembly/README.md").rfind("refused: README.md is an ASM overlay in an older format.", 0) == 0);
+    CHECK(c("ti59 asm load /no/such.asm").rfind("refused: such.asm could not be read.", 0) == 0);
+    CHECK(c("ti59 asm").rfind("refused: usage:", 0) == 0);
+}
+
+TEST(c59_4_ac22_dump_replies_lines) {
+    SKIP_UNLESS(tirig::haveRoms(), "the ROMs are not fetched (roms/fetch_roms.sh)");
+    tirig::Calcu c;
+    CHECK(c("ti59 dump scom").rfind("done 17\n── SCOM ──\nS00 ", 0) == 0);
+    CHECK(c("ti59 dump prog").rfind("done ", 0) == 0);
+    CHECK(c("ti59 dump vars").rfind("done ", 0) == 0);
+    CHECK(c("ti59 dump memory").rfind("done ", 0) == 0);
+    CHECK(c("ti59 dump all").rfind("refused: ", 0) == 0);
+}
+
+TEST(c59_4_ac22_log_level) {
+    SKIP_UNLESS(tirig::haveRoms(), "the ROMs are not fetched (roms/fetch_roms.sh)");
+    tirig::Calcu c;
+    CHECK_EQ(c("ti59 log-level debug"), std::string("done\n"));
+    CHECK(c("state debug-view").find("debug") != std::string::npos);
+    CHECK_EQ(c("ti59 log-level off"), std::string("done\n"));
+    CHECK(c("ti59 log-level loud").rfind("refused: ", 0) == 0);
+}
+
+TEST(c59_4_ac22_heatmap_reset) {
+    SKIP_UNLESS(tirig::haveRoms(), "the ROMs are not fetched (roms/fetch_roms.sh)");
+    tirig::Calcu c;
+    CHECK_EQ(c("ti59 heatmap reset"), std::string("done\n"));
+    CHECK(c("ti59 heatmap").rfind("refused: ", 0) == 0);
+    // The CALCULATOR and CPU tabs are read with `state` (AC-25, design §3.1).
+    c("wait 200ms");
+    CHECK(c("state calculator-debug").find("partition") != std::string::npos);
+    CHECK(c("state cpu-debug").rfind("done", 0) == 0);
+}
+
+// They are commands only: a preset has no steps for them.
+TEST(c59_4_ac22_no_preset_steps_for_them) {
+    SKIP_UNLESS(tirig::haveRoms(), "the ROMs are not fetched (roms/fetch_roms.sh)");
+    tirig::Calcu c;
+    calcu::testing::TempFolder dir("calcu59-steps");
+    for (const char* step : {"asm: run", "dump: scom", "log-level: debug", "heatmap: reset"}) {
+        dir.write("p.ti59", std::string("format-version: 2\nmodel: TI-59\nkeys:\n  - ") + step + "\n");
+        const std::string r = c("preset " + (dir.path() / "p.ti59").string());
+        CHECK(r.rfind("refused: ", 0) == 0);
+    }
+}
+
+// LIB-13 AC-9 (§10.3): `open <path>` takes every Calc-U-59 file.
+TEST(lib13_ac9_open_takes_every_calc_u_59_file) {
+    SKIP_UNLESS(tirig::haveRoms(), "the ROMs are not fetched (roms/fetch_roms.sh)");
+    tirig::Calcu c;
+    calcu::testing::TempFolder dir("calcu59-open");
+    dir.write("p.ti59", "format-version: 2\nmodel: TI-59\n");
+    dir.write("two.keystrokes.yaml",
+              "format: ti-keystroke-program\nformat-version: 1\nprogram-name: Two\nkeycodes: |\n  000 76 LBL\n  001 11 A\n");
+    dir.write("ML.rom.yaml", "x\n");
+    CHECK(c("open " + (dir.path() / "p.ti59").string()).find("preset") != std::string::npos);
+    CHECK(c("open examples/assembly/DPT.asm").find("asm-overlay") != std::string::npos);
+    CHECK(c("open " + (dir.path() / "two.keystrokes.yaml").string()).find("keystroke-program") != std::string::npos);
+    CHECK_EQ(c("ti59 program 000 count=2"), std::string("done 2\n000 76\n001 11\n"));
+    CHECK(c("open " + (dir.path() / "ML.rom.yaml").string()).rfind("refused: ML.rom.yaml was not opened: ", 0) == 0);
+}

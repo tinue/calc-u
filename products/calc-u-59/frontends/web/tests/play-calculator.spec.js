@@ -299,7 +299,7 @@ test('lib6_ac42 uploaded preset by its content', async ({ page }) => {
   expect(await settledLed(page)).toBe(expected);
 });
 
-test('lib6_ac42 dropped preset loads', async ({ page }) => {
+test('LIB-13 AC-16 a dropped preset loads like one from the dialog', async ({ page }) => {
   await gotoReady(page);
   const expected = await showing(page, ['1', '2', '3']);
   await pressKey(page, 'CLR');
@@ -340,7 +340,7 @@ async function writtenCardText(page) {
   return Buffer.concat(chunks).toString();
 }
 
-test('a card dropped on the TI-59 is fitted, and read when a corner is pressed', async ({ page }) => {
+test('LIB-13 AC-12 a dropped card is imported and fitted', async ({ page }) => {
   await gotoReady(page);
   const expected = await showing(page, ['1', '2', '3']);
   await pressKey(page, 'CLR');
@@ -355,21 +355,21 @@ test('a card dropped on the TI-59 is fitted, and read when a corner is pressed',
   expect(await settledLed(page)).toBe(expected);
 });
 
-test('a card dropped on the TI-58 is ignored', async ({ page }) => {
+// A TI-58 has no card reader: refused with a notice (today nothing was said).
+test('LIB-13 AC-12 a card dropped on the TI-58 is refused with a notice', async ({ page }) => {
   await gotoReady(page);
   const card = await writtenCardText(page);
   await page.getByLabel('Calculator model').selectOption({ label: 'TI-58' });
   await page.waitForTimeout(600);
   await dropFile(page, 'dropped.U59', card);
-  await page.waitForTimeout(600);
-  await expect(page.locator('.calcu-status')).toHaveCount(0);
+  await expect(page.locator('.calcu-status')).toContainText('dropped.U59 was not opened');
   await expect(page.getByRole('button', { name: 'Eject Card' })).toHaveCount(0);
 });
 
-test('a dropped file that is neither preset nor card is refused', async ({ page }) => {
+test('LIB-13 AC-15 a dropped file that is nothing Calc-U-59 opens is refused with a notice', async ({ page }) => {
   await gotoReady(page);
   await dropFile(page, 'notes.txt', 'hello');
-  await expect(page.locator('.calcu-status')).toContainText('notes.txt: not a');
+  await expect(page.locator('.calcu-status')).toContainText('Calc-U-59 cannot open notes.txt.');
 });
 
 test('a blank card is written, listed, and read back', async ({ page }) => {
@@ -502,14 +502,84 @@ test('portrait: the chevron switches to the printer page and back', async ({ pag
 
 // ── Debugger (wide) ──────────────────────────────────────────────────────
 
-test('FREEZE, STEP and RESUME on the CALCULATOR tab', async ({ page }) => {
+test('C59-4 AC-5 FREEZE, STEP and RESUME on the CALCULATOR tab', async ({ page }) => {
   await gotoReady(page);
+  // Lbl A 1 2 3 R/S, run with A: FREEZE lands on a program step.
+  await uploadPreset(page, preset('program:\n  keycodes: |\n    76 11 01 02 03 85 01 95 61 00 02\n'));
+  await pressKey(page, 'A');
   const debug = page.locator('[data-panel=debug]');
   await debug.getByRole('button', { name: 'FREEZE', exact: true }).click();
-  await expect(debug.getByRole('button', { name: 'RESUME' })).toBeEnabled();
-  await expect(debug.getByText(/← next/)).toBeVisible();
+  await expect(debug.getByRole('button', { name: 'RESUME' })).toBeEnabled({ timeout: 5000 });
+  const next = debug.getByText(/← next/);
+  await expect(next).toBeVisible();
+  const before = await next.textContent();
+  // STEP: the next program step is marked next.
+  const step = debug.locator('[data-calcu=run-control-step]');
+  await step.dispatchEvent('pointerdown', { pointerId: 3 });
+  await step.dispatchEvent('pointerup', { pointerId: 3 });
+  await expect(debug.getByText(/← next/)).not.toHaveText(before, { timeout: 5000 });
   await debug.getByRole('button', { name: 'RESUME' }).click();
   await expect(debug.getByRole('button', { name: 'RESUME' })).toBeDisabled();
+});
+
+// The ASM overlay (C59-4 AC-16, AC-18): chosen with Select File, run, and the
+// CPU tab shows it running; the CALCULATOR tab cannot be chosen meanwhile.
+const SIMPLE_COUNT = 'Calc-U-59 ASM 2.0\nPROGRAM:\n; a counter\nHEX:\n01D8 01DB 0D00 0A37 1805 1007\n';
+
+test('C59-4 AC-16 an overlay is chosen and run and the CPU tab shows it', async ({ page }) => {
+  await gotoReady(page);
+  const debug = page.locator('[data-panel=debug]');
+  await debug.getByRole('tab', { name: 'CPU', exact: true }).click();
+  await debug.locator('.calcu-filebutton-inline input[type=file]').setInputFiles({
+    name: 'simple_count.asm', mimeType: 'text/plain', buffer: Buffer.from(SIMPLE_COUNT),
+  });
+  await expect(debug.getByText('File: simple_count.asm')).toBeVisible({ timeout: 5000 });
+  await expect(debug.getByText('Words: 6')).toBeVisible();
+  await debug.getByRole('button', { name: 'Run', exact: true }).click();
+  await expect(debug.getByText(/Status: ASM entered at 0x1800/)).toBeVisible({ timeout: 5000 });
+  await expect(debug.getByRole('tab', { name: 'CPU', exact: true })).toHaveAttribute('aria-selected', 'true');
+  await expect(debug.getByRole('tab', { name: 'CALCULATOR', exact: true })).toBeDisabled();
+  await expect(debug.locator('.calcu-cpu-list')).toContainText(/^18/m, { timeout: 5000 });
+  // An overlay in the 2.3.0 format is refused with a notice; the loaded one stays.
+  await debug.locator('.calcu-filebutton-inline input[type=file]').setInputFiles({
+    name: 'old.asm', mimeType: 'text/plain', buffer: Buffer.from('HEX:\n0A01\n'),
+  });
+  await expect(page.locator('.calcu-status')).toContainText('old.asm is an ASM overlay in an older format');
+  await expect(debug.getByText('File: simple_count.asm')).toBeVisible();
+  await debug.getByRole('button', { name: 'Clear', exact: true }).click();
+  await expect(debug.getByRole('tab', { name: 'CALCULATOR', exact: true })).toBeEnabled({ timeout: 5000 });
+});
+
+test('C59-4 AC-21 the three tabs, labels and short forms', async ({ page }) => {
+  await gotoReady(page);
+  const debug = page.locator('[data-panel=debug]');
+  for (const name of ['CALCULATOR', 'CPU', 'LOG']) await expect(debug.getByRole('tab', { name, exact: true })).toBeVisible();
+  await debug.getByRole('tab', { name: 'CALCULATOR', exact: true }).click();
+  await expect(debug.locator('.calcu-debug-title')).toHaveText(/^(CALCULATOR DEBUG|DEBUG)$/);
+  await expect(debug.getByRole('button', { name: /^(FREEZE ON START|F\.START)$/ })).toBeVisible();
+  await expect(debug.getByRole('button', { name: 'ARMED' })).toBeVisible();
+  // FREEZE ON START arms, ARMED disarms (AC-5).
+  await debug.getByRole('button', { name: /^(FREEZE ON START|F\.START)$/ }).click();
+  await expect(debug.getByRole('button', { name: 'ARMED' })).toBeEnabled({ timeout: 5000 });
+  await debug.getByRole('button', { name: 'ARMED' }).click();
+  await expect(debug.getByRole('button', { name: 'ARMED' })).toBeDisabled({ timeout: 5000 });
+  await debug.getByRole('tab', { name: 'CPU', exact: true }).click();
+  await expect(debug.locator('.calcu-debug-title')).toHaveText(/^(CPU DEBUG|CPU)$/);
+  await expect(debug.getByText('ROM HEATMAP')).toBeVisible();
+  await expect(debug.getByText('ASM OVERLAY')).toBeVisible();
+  // LOG: a dump into the log, the level button cycles, clear empties the view.
+  await debug.getByRole('tab', { name: 'LOG', exact: true }).click();
+  await debug.getByRole('button', { name: 'SCOM', exact: true }).click();
+  await expect(debug.getByLabel('Debug log')).toHaveValue(/── SCOM ──/, { timeout: 5000 });
+  const level = debug.getByRole('button', { name: /^LOG / });
+  await expect(level).toHaveText('LOG ○');
+  await level.click();
+  await expect(level).toHaveText('LOG ●');
+  await level.click();
+  await level.click();
+  await expect(level).toHaveText('LOG ○');
+  await debug.getByRole('button', { name: 'Clear the log' }).click();
+  await expect(debug.getByLabel('Debug log')).toHaveValue('');
 });
 
 test('LIB-10 AC-34 FREEZE STEP RESUME of both tabs follow the run state', async ({ page }) => {

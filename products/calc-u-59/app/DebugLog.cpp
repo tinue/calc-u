@@ -66,7 +66,7 @@ std::vector<std::string> dumpVars(const calcu::machine::Machine& m) {
 }
 
 std::vector<std::string> dumpScom(const calcu::machine::Machine& m) {
-    CpuFrame cpu = debugPanelOf(m)->snapshotCPU();
+    CpuFrame cpu = kindOf<CalculatorState>(m)->snapshotCPU();
     std::vector<std::string> lines{"── SCOM ──"};
     char buf[32];
     for (int s = 0; s < 16; ++s) {

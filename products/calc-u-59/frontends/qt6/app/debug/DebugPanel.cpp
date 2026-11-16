@@ -53,12 +53,17 @@ DebugPanel::DebugPanel(EmulatorController& controller, QWidget* parent) : QWidge
     m_stack->addWidget(new LogWidget(controller, m_stack));
     col->addWidget(m_stack, 1);
 
-    // A running ASM overlay belongs to the CPU tab; CALCULATOR is disabled meanwhile.
-    connect(&m_controller, &EmulatorController::asmChanged, this, [this] {
-        bool active = m_controller.asmOverlayActive();
-        m_tabs[0]->setEnabled(!active);
-        if (active) select(1);
-    });
+    // A running ASM overlay belongs to the CPU tab (C59-4 AC-18): the product
+    // entry c59.calculator-tab says no meanwhile; Run asks for the CPU tab
+    // through debug-view.
+    auto calculatorTab = [this] {
+        const bool can = m_controller.entryAvailable(cu59::entries::kCalculatorTab);
+        m_tabs[0]->setEnabled(can);
+        m_tabs[0]->setToolTip(m_controller.entryReason(cu59::entries::kCalculatorTab));
+        if (!can && m_tab == 0) select(1);
+    };
+    connect(&m_controller, &EmulatorController::entriesChanged, this, calculatorTab);
+    connect(&m_controller, &EmulatorController::asmChanged, this, calculatorTab);
     connect(&m_controller, &EmulatorController::debugPanelRequested, this, [this](int tab) { select(tab); });
     select(0);
 }

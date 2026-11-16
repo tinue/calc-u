@@ -33,11 +33,18 @@ final class TestSession {
 
     deinit { try? FileManager.default.removeItem(at: folder) }
 
-    /// The bridge holds its delegate weakly; what it is told is not what these
-    /// tests look at.
+    /// The notices the bridge showed so far, as "<title>: <message>".
+    var notices: [String] { delegate.notices }
+
+    /// The bridge holds its delegate weakly; it keeps the notices (LIB-13
+    /// AC-15), the rest is not what these tests look at.
     private final class Forward: NSObject, TIAppSessionDelegate {
+        var notices: [String] = []
         func showDebugPanel(_ panel: Int) {}
-        func showErrorTitle(_ title: String, message: String) { print("[TestSession] notice: \(title): \(message)") }
+        func showErrorTitle(_ title: String, message: String) {
+            print("[TestSession] notice: \(title): \(message)")
+            notices.append("\(title): \(message)")
+        }
         func diagnostic(_ message: String) { print("[TestSession] log: \(message)") }
         func changed(_ changes: TIChange) {}
         func cardWritten() {}

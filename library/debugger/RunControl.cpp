@@ -361,6 +361,13 @@ RunControl::Result RunControl::pauseOnStart(std::optional<LevelName> level) {
     return Result{};
 }
 
+bool RunControl::fireStart(const LevelName& level) {
+    sync();
+    if (!ctx_ || !armed_ || *armed_ != level || mode_ != Mode::Running) return false;
+    enterPaused(level, RunState::Reason::PauseOnStart);
+    return true;
+}
+
 void RunControl::pauseAtStart() {
     sync();
     pauseAtStart_ = true;

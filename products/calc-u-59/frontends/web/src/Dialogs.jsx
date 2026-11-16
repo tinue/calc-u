@@ -119,11 +119,15 @@ function PresetPicker({ engine, onClose }) {
     onClose();
     engine.loadBundledPreset(path);
   };
-  const upload = (e) => readFileInput(e, "text").then((f) => {
-    if (!f) return;
+  // LIB-13 AC-5, AC-8 (D-22): the upload is `open {way: dialog, upload}`;
+  // several files are one folder, the preset among them is opened.
+  const upload = (e) => {
+    const files = Array.from(e.target.files || []);
+    e.target.value = "";
+    if (!files.length) return;
     onClose();
-    engine.loadPresetContent(f.content, f.name);
-  });
+    engine.openFiles(files, "dialog");
+  };
   return (
     <Dialog title="Load Preset" onClose={onClose}
       footer={<button type="button" onClick={onClose}>Cancel</button>}>
@@ -140,7 +144,8 @@ function PresetPicker({ engine, onClose }) {
       </ul>
       <label className="calcu-filebutton">
         Open file…
-        <input type="file" accept=".ti59,.ti58,.ti58c" onChange={upload} />
+        {/* The preset extensions and all files (LIB-13 AC-5): no accept filter. */}
+        <input type="file" multiple onChange={upload} aria-label="Open file" />
       </label>
     </Dialog>
   );

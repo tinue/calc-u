@@ -165,9 +165,9 @@ void CpuInspectorWidget::refreshHeader() {
     bool narrow = baseFontSize() < 13;
     m_freezeOnStart->setText(narrow ? QStringLiteral("F.START") : QStringLiteral("FREEZE ON START"));
     m_run->setRunState(m_controller.runState());
-    const bool armed = m_controller.startArmed(calcu::debugger::kCpu);
-    m_freezeOnStart->setEnabled(!m_controller.isFrozen() && !armed);
-    m_armed->setEnabled(armed);
+    const cu59::FreezeButtons b = m_controller.freezeButtons(calcu::debugger::kCpu);   // C59-4 AC-7
+    m_freezeOnStart->setEnabled(b.freezeOnStart);
+    m_armed->setEnabled(b.armed);
 }
 
 void CpuInspectorWidget::refreshList() {

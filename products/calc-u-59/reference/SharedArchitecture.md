@@ -45,20 +45,22 @@ wrappers in `frontends/swift/Bridge/`, which only translate types (`AppArchitect
 | `TIWebPart`, `WebPageData` | What the Web page draws, as `c59.web.*` topics, commands and requests; the static page data (adapter W59-1) (LIB-15 59, M-34) |
 | `EmulatorSession` | The runtime around the machine LIB-18 built and the machine session holds (one per machine, made at `machineChanged`): frame sampler, the PC-100C's controls, the module's image, the adapters' reads |
 | `SessionThread` | The Swift frontend's session thread and its two queues (C59-5) |
-| `TILevelRules` | The levels `program` and `cpu` of the run control (LIB-10 AC-29, AC-30): where a pause lands (a step boundary, or 50000 weights), one step, pause-on-start; the ASM overlay's pause in place |
+| `TILevelRules` | The levels `program` and `cpu` of the run control (LIB-10 AC-29, AC-30): where a pause lands (a step boundary, or 50000 weights), one step, pause-on-start |
 | `TIDebuggerSetup` | The `DebuggerPart`'s set-up: the rules, the trace session on `TITraceRecorder`, the trace folder (none on the Web: hand-over), the panel views (M-53) |
 | `TIPrinters` | The PC-100C with its paper description, for the `PaperPart` (M-53) |
 | `TITyping` | The TI typing profile per model (100 ms of emulated time, held until the ROM read it), the keyboard map (`TIKeyboardMap`), the names `key` takes; handed to the library's `TypingPart` (LIB-5) |
-| `FrameSampler` | The 60 Hz frame: display, C indicator, log, card auto-eject |
+| `FrameSampler` | The 60 Hz frame: display, C indicator, card auto-eject |
 | `DisplayPov` | LED brightness per position from the core's duty cycles (persistence of vision) |
 | **Debugger** | |
-| `DebugModel` | The panels' data: CALCULATOR snapshot and listing, CPU history, ROM heatmap, LOG ring |
+| `TIDebugPart` | The debug panel below the frontends (C59-4, M-56): a session part with the six product topics `calculator-debug`, `program-listing`, `cpu-debug`, `heatmap`, `asm-overlay`, `debug-view`, the commands `c59.live-debug`, `c59.cpu-debug`, `c59.heatmap-reset`, `c59.log-level`, `c59.dump`, `c59.asm-load`, `c59.asm-run`, `c59.asm-clear`, and LIB-4 control rules (the product entries `c59.asm-run`, `c59.trace`, `c59.calculator-tab`); `freezeButtons` (FREEZE and FREEZE ON START of a tab) |
+| `TIFileKinds` | Calc-U-59's file kinds of LIB-13's `open` (M-56): `asm-overlay`, `keystroke-program`, `rom-module-file`, `constant-memory-file` (and, until M-55, the card files of today as `magnetic-card`); `tiPresetExtensions`, `programArguments` (the Qt6 start file) |
+| `DebugModel` | The panels' data: CALCULATOR snapshot and listing, CPU history (TIDebugPart owns it) |
 | `DebugSnapshots` | Builds the CALCULATOR snapshot and listing and the CPU history entries |
 | `DebugText` | The panels' shared text and colours; `mobileLayout`, which panels an iOS window shows, `mobilePrinterWidth`, `compactPrinterBar` and `mobileTopMargin` |
-| `DebugLog` | LOG ring buffer and the Vars / SCOM / Prog / Memory dumps |
-| `RomHeatmap` | Execution counts per ROM address, heat steps and colours |
+| `DebugLog` | The LOG tab's view (`RingLog`, the last 2000 lines; kept by each frontend) and the Vars / SCOM / Prog / Memory dumps |
+| `RomHeatmap` | How the heatmap is drawn: the grid, heat steps and colours (the counts are the core's `c59.rom-heatmap`) |
 | `ModuleImage` | PRG SOURCE decoding, the module's program table, source labels |
-| `AsmOverlay` | ASM overlay file parser and entry |
+| `AsmOverlay` | The reader of the ASM overlay format 2.0 (`readAsmOverlay`; C59-4 AC-14, AC-15) |
 | `TraceWriter` | The records of the binary trace format v2 (`DebugAPI.md`), encoded into a buffer |
 | `TITraceRecorder` | The trace session's records of a TI machine: the frames of `c59.trace-records` as `TraceWriter` records, no key or card records (LIB-10 AC-33) |
 | **Files** | |
@@ -106,8 +108,9 @@ messages: the library's topics (`display`, `busy`, `notices`, `log`,
 `papers`, `paper PC-100C`, `run-state`, `trace`, …) and the interim
 `c59.*` topics (`c59.model`, `c59.led`, `c59.printer` (connected and TRACE
 only), `c59.card-reader`, `c59.run-state` (full speed and whether an
-operation runs), `c59.debug.*`, …; each the snapshot of one of 2.3.0's
-change flags, until the feature that owns it, LIB-3 59 design §5). Qt6
+operation runs), …; each the snapshot of one of 2.3.0's change flags,
+until the feature that owns it, LIB-3 59 design §5) and the debug panel's
+product topics (`TIDebugPart`, C59-4 AC-25). Qt6
 calls the session on its GUI thread, Swift on `cu59::SessionThread`, the
 Web in its worker (§ "Threads"); each talks to it through the library's
 `calcu::sessions::Listener`. The session owns the parts
@@ -115,13 +118,13 @@ Web in its worker (§ "Threads"); each talks to it through the library's
 
 The machine is built by LIB-18's machine control and held by the machine
 session; `TIAppPart` never builds or owns one. At `machineChanged` it
-makes a new `EmulatorSession` around the session's machine, binds the
-`DebugModel` to it, reads the module and the printer from
+makes a new `EmulatorSession` around the session's machine, reads the module and the printer from
 `Machine::plugged()` (no copies of its own, LIB-18 D-26), fits the own cue
 card the build gives (a preset's `cue-card:`, or the constant memory
 file's) and tells `ConstantMemoryKeeper` the build. What stays the part's:
 the card reader (until M-55), the PC-100C's TRACE position, the cue card
-shown, the debug panel's data, the ASM overlay and the LOG tab. Every
+shown. The debug panel's data, the ASM overlay and the log level are
+`TIDebugPart`'s, a part of the same session (C59-4, M-56). Every
 pause, step, breakpoint and trace is the `DebuggerPart`'s, the paper the
 `PaperPart`'s. An error is a notice ("title: message"), a diagnostic a log
 line, the card and `ti58c.memory.yaml` files go through `TIFileAccess` in
@@ -342,15 +345,22 @@ Presets feed no cards until C59-7 (M-55: `card:`, `arm:`); `TIFileAccess::cardFi
 name in the frontend's card folder. `unreadable` from `TIFileAccess::readCard` means
 the file exists but can't be read now, so no blank card goes in to overwrite it.
 
-### Dropped Files
+### Opened Files
 
-`dropAction(name)` says what a file dropped on the window does, by its name
-and the model: a preset (`isPresetFileName`) goes to LIB-6's
-`load-preset {content, name}` (the command `c59.open-dropped`, until LIB-13
-59's `open` in M-56); a card (`isCardFileName`) is fitted on the TI-59 and
-ignored on the TI-58/58C. Nothing is fitted while a card is
-in the reader. On the Mac, the file's security scope stays open while it is
-fitted, because a write goes back to it.
+Every way a file reaches Calc-U-59 (a drop, Open With, a file named at the
+start of the Qt6 program, File ▸ Load Preset…'s dialog, the harness's
+`open <path>`) sends LIB-13's `open {files, way}`; a drag first asks
+`open-would-take {name}`. The library tells presets (`.ti59`, `.ti58`,
+`.ti58c`, or a top-level `model:` line) and media; then the product's file
+kinds (`app/TIFileKinds`, in this order): an `.asm` file is an ASM overlay
+(read as by Select File), a `.keystrokes.yaml` file's program is written
+into the running machine from step 000 (no cold boot), a `.rom.yaml` and
+`ti58c.memory.yaml` are refused with a notice. Until M-55 the card files of
+today (`.u59`, `.bin`) are the kind `magnetic-card`: fitted where they lie
+on the TI-59 and written back there (an upload on the Web goes into the
+save folder), refused with a notice on the TI-58/58C and while a card
+passes. A refusal is the session's notice. On the Mac, the file's security
+scope stays open while a card is fitted, because a write goes back to it.
 
 Card file formats: `app/CardFile.hpp` (2.3.0's, until C59-7 in M-55).
 

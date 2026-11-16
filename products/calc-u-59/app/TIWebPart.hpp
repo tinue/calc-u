@@ -19,13 +19,13 @@
 // Calc-U-1600's SharpWebPart does for its page:
 // - state topics `c59.web.*`: model, display (the LED cells), cue-card (a
 //   draw list at the page's card size), run-state, printer (connected and
-//   TRACE; the paper is the library's `paper PC-100C`, M-53), card, live,
-//   cpu, heatmap, log, asm, settings, debug-font;
-//   the debugger tab KEYSTROKES asks for is TIAppPart's `c59.show-debug-panel`;
+//   TRACE; the paper is the library's `paper PC-100C`, M-53), card,
+//   settings, debug-font; the debug panel's data are TIDebugPart's product
+//   topics (C59-4 AC-25), whose values are the page's forms (M-56);
 // - the command `start` (LIB-15 N3: {model, preset}); commands `c59.web.*` for
 //   the pointer and the page's key grid (KeyboardLayout's PointerTracker; on-
 //   screen keys of the library's typing, LIB-5), the three settings the page offers, cards from the save
-//   folder, a dropped file, the sizes the page draws at; every other command
+//   folder, the sizes the page draws at (a dropped file is LIB-13's `open`, M-56); every other command
 //   is TIAppPart's (`c59.*`);
 // - requests for card files (downloads) and the fresh card name;
 //   adapter W59-1 (WebPageData.hpp): `c59.static-data`, `c59.led-geometry`,
@@ -46,11 +46,6 @@ inline const calcu::sessions::TopicName kWebCueCard{"c59.web.cue-card"};
 inline const calcu::sessions::TopicName kWebRunState{"c59.web.run-state"};
 inline const calcu::sessions::TopicName kWebPrinter{"c59.web.printer"};
 inline const calcu::sessions::TopicName kWebCard{"c59.web.card"};
-inline const calcu::sessions::TopicName kWebLive{"c59.web.live"};
-inline const calcu::sessions::TopicName kWebCpu{"c59.web.cpu"};
-inline const calcu::sessions::TopicName kWebHeatmap{"c59.web.heatmap"};
-inline const calcu::sessions::TopicName kWebLog{"c59.web.log"};
-inline const calcu::sessions::TopicName kWebAsm{"c59.web.asm"};
 inline const calcu::sessions::TopicName kWebSettings{"c59.web.settings"};
 inline const calcu::sessions::TopicName kWebDebugFont{"c59.web.debug-font"};
 } // namespace topics
@@ -77,10 +72,6 @@ private:
     int heldKey() const;   ///< the last key live input holds (row × 5 + col), -1 none
     static constexpr std::uint32_t kCanvasPointer = 1, kButtonPointer = 2;
     Value cueCard() const;
-    Value live() const;
-    Value cpu() const;
-    Value heatmap() const;
-    Value log() const;
     Value card() const;
     Value settingsValue() const;
     Value runState() const;
@@ -92,7 +83,6 @@ private:
     int m_lastHeld = -1;
     uint32_t m_changes = 0;
     bool m_settingsDirty = true, m_cardsDirty = true, m_cueDirty = true, m_debugFontDirty = false;
-    bool m_liveWasOn = false, m_cpuWasOn = false, m_postedFrozen = false;
     int m_debugFont = 11;
     PointerTracker m_pointer;
     double m_cardW = 0, m_cardH = 0;
@@ -103,11 +93,6 @@ private:
     calcu::sessions::StateTopic* m_run = nullptr;
     calcu::sessions::StateTopic* m_printer = nullptr;
     calcu::sessions::StateTopic* m_card = nullptr;
-    calcu::sessions::StateTopic* m_live = nullptr;
-    calcu::sessions::StateTopic* m_cpu = nullptr;
-    calcu::sessions::StateTopic* m_heatmap = nullptr;
-    calcu::sessions::StateTopic* m_log = nullptr;
-    calcu::sessions::StateTopic* m_asm = nullptr;
     calcu::sessions::StateTopic* m_settingsTopic = nullptr;
     calcu::sessions::StateTopic* m_font = nullptr;
 };

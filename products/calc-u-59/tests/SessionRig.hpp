@@ -170,15 +170,20 @@ struct SessionRig {
                     if (const auto* x = calcu::sessions::payloadAs<calcu::sessions::Notice>(n)) out.push_back(x->sentence);
         return out;
     }
-    /// KEYSTROKES DebugPanel: (c59.show-debug-panel), in order.
+    /// The tabs `debug-panel:` asked for (the topic debug-view, C59-4 AC-2), in order.
     std::vector<cu59::DebugPanel> panels() const {
         std::vector<cu59::DebugPanel> out;
+        std::uint64_t seen = 0;
         for (const auto& m : fe.log)
-            if (const auto* s = std::get_if<calcu::sessions::StreamMessage>(&m); s && s->topic == cu59::topics::kShowDebugPanel)
-                for (const auto& n : s->appended)
-                    if (const auto* x = calcu::sessions::payloadAs<cu59::TIShowDebugPanel>(n)) out.push_back(x->panel);
+            if (const auto* s = std::get_if<calcu::sessions::StateMessage>(&m); s && s->topic == cu59::topics::kDebugView)
+                if (const auto* v = calcu::sessions::payloadAs<cu59::TIDebugView>(s->state); v && v->requests > seen) {
+                    seen = v->requests;
+                    out.push_back(v->view);
+                }
         return out;
     }
+    /// The debug panel's part (C59-4).
+    cu59::TIDebugPart& debug() { return part().debugPart(); }
     /// Every state topic sent from position `from` of the log on, in order.
     std::vector<calcu::sessions::TopicName> stateSets(std::size_t from = 0) const {
         std::vector<calcu::sessions::TopicName> out;

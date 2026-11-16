@@ -293,9 +293,11 @@ struct CPUInspectorView: View {
 
     private func cpuHeader(baseFontSize: CGFloat) -> some View {
         // FREEZE, STEP, RESUME: the run-control buttons of `cpu` (LIB-10 AC-18, AC-34).
+        // FREEZE and FREEZE ON START: cu59::freezeButtons (C59-4 AC-7).
         let use = vm.buttons(for: .cpu)
-        let freezeEnabled = use.pause && !vm.pendingCPUScanLoopFreeze
-        let freezeOnStartEnabled = freezeEnabled
+        let freeze = vm.freezeButtons(for: .cpu)
+        let freezeEnabled = freeze.freeze
+        let freezeOnStartEnabled = freeze.freezeOnStart && !freeze.armed
         let narrow = baseFontSize < 13
 
         return HStack(spacing: 8) {
@@ -329,8 +331,8 @@ struct CPUInspectorView: View {
             Button("ARMED") { vm.disarmCPUScanLoopFreeze() }
                 .font(.system(size: baseFontSize, weight: .bold, design: .monospaced))
                 .foregroundStyle(Color.yellow)
-                .opacity(vm.pendingCPUScanLoopFreeze ? 1 : 0.4)
-                .disabled(!vm.pendingCPUScanLoopFreeze)
+                .opacity(freeze.armed ? 1 : 0.4)
+                .disabled(!freeze.armed)
 
             // Tap to single-step; hold to auto-step at 2 steps/second.
             HoldRepeatButton(title: "STEP", color: .cyan, baseFontSize: baseFontSize,

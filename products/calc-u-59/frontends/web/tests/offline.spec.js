@@ -55,10 +55,15 @@ test('the installed app starts without a connection and runs every model', async
   // The closed page's worker lets go of the save folder's lock a little
   // later (slow WebKit runners: seconds). A page started before that is a
   // second copy (row 59-8) and says so, which is right but not this test.
+  // The probe is a file of the origin that starts no calculator: the demo
+  // page (PREFIX itself) starts a worker of its own, which takes the lock
+  // when the closed page's worker let go of it first, and the wait never
+  // ends (a race; Linux WebKit lost it about every other run).
   const probe = await context.newPage();
-  await probe.goto(`http://localhost:${server.address().port}${PREFIX}`);
+  await probe.goto(`http://localhost:${server.address().port}${PREFIX}MANIFEST.json`);
   await expect.poll(() => probe.evaluate(async () =>
     navigator.locks ? (await navigator.locks.query()).held.length : 0), { timeout: 30000 }).toBe(0);
+  expect(probe.workers()).toEqual([]);
   await probe.close();
   await stop(server);
 

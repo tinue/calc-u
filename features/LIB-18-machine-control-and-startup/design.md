@@ -1,5 +1,5 @@
 # LIB-18 Machine control and startup: design
-Status: Library column approved at the Part C1/C2 boundary (2026-11-15); Calc-U-1600 column approved at the Part C2/D boundary (2026-11-16)
+Status: Library column approved at the Part C1/C2 boundary (2026-11-15); Calc-U-1600 column approved at the Part C2/D boundary (2026-11-16); Calc-U-59 column (§11): Draft for the Part D/E boundary (2026-11-16)
 
 ## 1. Scope
 
@@ -789,3 +789,247 @@ reader uses too; `StartupPart` keeps no copy. An `attach` of a peripheral
 name the catalogue does not know still goes to the machine as written,
 which refuses it with its reason. Names are lowered A to Z only
 (`machine::lowerAscii`; before `std::tolower`, the same for ASCII).
+
+## 11. Part E: the Calc-U-59 column
+
+Draft for the Part D/E boundary (2026-11-16). Paths without a prefix are
+under `products/calc-u-59/`; line numbers at `7bdd51c`.
+
+### 11.1 Scope
+
+| Column | Step | Tests from (plan §3) | Done in |
+|---|---|---|---|
+| Calc-U-59 | M-54, with LIB-6 59 (§11 of its design), C59-2 and C59-3 | AC-17–24 | M-54 (plan §5.1) |
+
+- M-54 replaces §4's two Calc-U-59 rows: Calc-U-59's own start, model
+  switch, resets, module change and printer connection become the
+  library's commands, the app layer gets its `ProductMachines`, and the
+  harness entry uses it instead of `HarnessMachines`.
+- The machine is built by `MachineControl` and held by the machine
+  session; `TIAppPart` no longer builds one. Its runtime around a machine
+  (`EmulatorSession`: the debugger model, the traces, the frame sampler)
+  follows the session's machine at `machineChanged`, as Calc-U-1600's
+  `SharpAppPart` does (§10.2).
+- Clauses that pass with other steps: AC-20's "the paper is kept per
+  printer" is LIB-8 AC-8 through LIB-8 59's paper (M-53); AC-23's fitted
+  magnetic card (C59-7 AC-25) is M-55's; AC-23's "the fitted cue card"
+  of a stand-alone card passes here.
+- The code built in C2 and D differs from §2–§9 as the qa-report's
+  "Deviations" and the Part D simplification say: `StartupSetup{control,
+  settings, loader, romsMissing}`, the parts made and ordered by
+  `parts::LibraryParts` (`library/parts/LibraryParts.hpp:51-134`); a
+  build sets regular speed when the operation ends. Calc-U-59 relies on
+  nothing beyond §3 and those.
+
+### 11.2 Modules and files
+
+**New**
+
+| File | Holds |
+|---|---|
+| `app/TIProductMachines.hpp/.cpp` | `cu59::TIProductMachines : startup::ProductMachines` (§11.3): `tiCatalogue()`, `TIMachineBuilder`, `builtInDefault` (AC-18, AC-19), `pacingProfile` (`app/PacingProfiles.hpp`), `soundRate` 0 (no sound, LIB-3 AC-33), `readinessBound` 25 s (as the harness entry has it, `app/HarnessProduct.cpp:46`), `carried` the default (no variants) |
+| `tests/machine_control_tests.cpp` | AC-17–24 (§11.6) |
+
+**Changed**
+
+| File | Change |
+|---|---|
+| `app/TIAppPart.hpp/.cpp` | the commands `c59.start-machine`, `c59.reset`, `c59.clean-reset`, `c59.change-module`, `c59.printer-connected`, `c59.toggle-printer-connection` (`app/TIAppPart.hpp:208-215`; registered `app/TIAppPart.cpp:127-153`) go: LIB-18's `start`, `model`, `reset`, `cold-boot`, `attach`, `detach` replace them. `TIAppSetup::startModel` and `moduleID` (`app/TIAppPart.hpp:255-256`) go: the startup model is LIB-9's, the module the build's. `machineChanged` makes the `EmulatorSession` around the session's machine (§11.3); `machineRestarted` (LIB-10 §3.11) does what `beginReset` did beside the machine (§11.3, AC-23); `TIAppPart::m_ms->setMachine` (`app/TIAppPart.cpp:300`) goes |
+| `app/TIAppPartFlows.cpp` | `startMachine` (31-87), `resetMachine` (116-125), `resetStopped`, `cleanResetMachine` (134-141), `changePlacesNow`, `adoptPlaces`, `changePlaces` (150-215), `selectModule`, `changeModule` (217-227), `setPrinterConnected` (342) go; what each did beside the machine moves to `machineChanged`, `machineRestarted` and `operationEnded` (§11.3) |
+| `app/EmulatorSession.hpp/.cpp` | `EmulatorSession(Model, const RomSet&, MachinePeripherals, Listener&)` (`app/EmulatorSession.hpp:118`) becomes `EmulatorSession(machine::Machine&, Listener&)`: it no longer builds; `releaseMachine` (142), `setModule` (154), `setPrinter` (163) go (D-26) |
+| `app/ProductRoms.hpp:31-40` | `MachinePeripherals` and its requests serve `TIProductMachines::builtInDefault` only (the module's request with its file from the set) |
+| `app/Settings.hpp/.cpp` | `setLastUsedModel`, `lastUsedModel` (`app/Settings.hpp:69-70`; `.cpp:117-119`) go: `StartupPart::machineChanged` writes `[startup] last-model` (AC-9); `startupPreset` (`:73`) goes for `settings::startupPreset` |
+| `app/TIWebPart.cpp` | `start` (113-135) goes: the library's `start {model, preset}` takes the model by name and the preset as a bundle path (LIB-15 AC-16, EC-4; LIB-6 §11.2); the `setLastUsedModel` call (300-307) goes |
+| `app/HarnessProduct.cpp` | `HarnessMachines` (26-50) goes; `machines()` returns a `TIProductMachines`, whose constant memory keeper has no file (the run's save folder is empty unless `--save-folder` names one) |
+| `frontends/qt6/app/EmulatorController.hpp:34-35`, `EmulatorController.cpp:115-121, 170-179`, `main.cpp:70` | Reset and Clean send `reset` and `cold-boot`; the model picker sends `model {name}`; the module picker `attach {place: "slot-1", peripheral}` or `detach {place: "slot-1"}`; the printer toggle `attach`/`detach` of `printer`; the start is the library's `start` (once); the last model is no longer written by the frontend |
+| `frontends/swift/Bridge/TIAppSession.mm:454-459`, `App/AppSettings.swift:89`, `Bridge/TISettings.mm:53-56` | the same commands; `saveLastUsedModel` and `setLastUsedModel` go |
+| `frontends/web/src/engine.js:23-26, 45` | the same commands |
+
+The visible labels ("Clean" for Cold boot, "Startup Calculator", the
+module in the Settings) are renamed with the shell in M-57 and M-58
+(`docs/glossary-mapping.md`, rows "Cold boot", "Startup model"; plan
+M-57: "visible renames"); M-54 changes only what the controls send.
+
+### 11.3 The product's machines (AC-17–24)
+
+- **AC-17.** The startup model is LIB-9's (`[startup] model`, `last`,
+  `ProductDecl::fallbackModel` "TI-59", `app/Settings.cpp:41`). A start
+  without settings builds a TI-59.
+- **AC-18.** `builtInDefault(model)` is `{model, slot-1: the Master
+  Library module, no printer}` on each model (ADR 0021; row 59-10;
+  today the printer is connected at every start and the harness builds
+  the PC-100C and no module, `app/HarnessProduct.cpp:35-41`).
+- **AC-19.** `builtInDefault(TI-58C)` puts the constant memory of
+  `ti58c.memory.yaml` into `MachinePlan::content` (C59-3 §3.3:
+  `ConstantMemoryKeeper::contentForBuild()`); the core puts it into the
+  RAM before the processor starts (`core/TIMachine.cpp:14-21`). A build
+  from a preset or a startup preset has no content: a cold boot (ADR
+  0016). The start and the model switch reach `builtInDefault` without a
+  startup preset, or when it cannot be loaded (EC-1; C59-3 EC-6).
+- **AC-20.** `model` builds the startup preset or the built-in default;
+  nothing of the old machine is carried. `TIAppPart` keeps beside the
+  machine what the spec keeps: the log text and level, the debug
+  settings (`m_debugLevel`, the panels' switches), the ASM overlay's
+  words where the new model takes them (as `app/TIAppPartFlows.cpp:73-77`
+  today); the paper is LIB-8's per printer.
+- **AC-21.** A module change is `attach slot-1 <ID>` (a `replace` of the
+  module there, LIB-18 D-15) or `detach slot-1`; the printer is `attach
+  printer PC-100C` or `detach printer`. What follows is the machine's
+  (`ChangeResult::follows`, a power cycle: C59-6 AC-11, row 59-11): the
+  TI-59 and TI-58 lose program and data, the TI-58C keeps its constant
+  memory. The TRACE switch keeps its position through a detach and an
+  attach (C59-6 AC-6, row 59-25): `TIAppPart` remembers the PC-100C's
+  TRACE position and sets it through the controls capability
+  (`printer/controls`) when an `attach` puts a PC-100C in the running
+  machine (`operationEnded` after `attach`) (D-27). The paper the
+  detach hands back is LIB-8's (C59-6 EC-2; M-53).
+- **AC-22.** `reset` is `Machine::reset()`: the TI-59 and TI-58 keep
+  program and data registers (the core's restore, `core/TIMachine.cpp:24-33`),
+  the TI-58C power-cycles (C59-1 AC-6); `cold-boot` is
+  `Machine::coldBoot()`: all memory zeroed, the constant memory too
+  (`core/TIMachine.cpp:159-164`). Both end at key readiness
+  (`untilKeyReady`), no longer when the call returns.
+- **AC-23.** Reset, Cold boot and a power cycle keep the paper (LIB-8),
+  the module and the printer (the plugs stay, LIB-2 AC-10), the TRACE
+  position (the PC-100C in its place keeps its switch), and the fitted
+  own cue card: `machineRestarted` no longer clears it, as `beginReset`
+  did (`clearCardAndCue`, `app/TIAppPartFlows.cpp:89-106`; row 59-17).
+  The ASM overlay is switched off and a pause ended, as today
+  (`beginReset`).
+- **AC-24.** A preset that names another model builds that model through
+  LIB-6's load (`MachineControl::build`, `BuildOrigin::Preset`); AC-9's
+  `last-model` follows from `machineChanged`.
+- **AC-16.** `reset`, `cold-boot` and `model` stop a running preset
+  (row 59-39 in the ledger since the C2 review).
+- **The runtime around the machine.** `TIAppPart::machineChanged` makes a
+  new `EmulatorSession` around `MachineSession::machine()`, binds the
+  debugger model and the traces to it, reads the module ID and whether a
+  PC-100C is plugged from `Machine::plugged()` (no copies of its own,
+  D-26), fits the own cue card the build gives (C59-2's `cue-card:` or
+  C59-3's file), and tells C59-3's keeper the build (`lastBuild()`).
+  The keys the engine holds and the text waiting were dropped by
+  `MachineControl::build` (`dropInput`, AC-2), as `startMachine` did
+  (`app/TIAppPartFlows.cpp:34`).
+
+**Startup presets.** `StartupPart` loads `settings::startupPreset(settings,
+model)` (`[preset] <model>`, declared by `app/Settings.cpp:44`) through
+LIB-6's `PresetsPart`. A 2.3.0 file there is `CannotLoad` (the outdated
+hint, LIB-6 AC-8): the built-in default and the notice of EC-1 (row
+59-1). The bundled startup presets are the `Startup` entries of
+`preset-list` (C59-2 §4). No frontend of Calc-U-59 offers the choice
+today; the Settings rows that set it come with the shell (LIB-14 59, M-57;
+C59-8, M-58), and until then the key is set in `Calc-U-59.ini` (D-28).
+
+### 11.4 Frontends
+
+Each frontend sends the library's commands of §11.2 and sends `start`
+once when its session is up; the Web's `start` keeps its arguments
+(LIB-15 AC-16). Nothing of a build, a reset or a plug change is in a
+frontend.
+
+### 11.5 Adapters
+
+| Adapter | Removed here | Was |
+|---|---|---|
+| `HarnessMachines` | yes | §5 |
+| the products' machine-control commands (the Calc-U-59 rows of §4) | yes | §5 |
+| `TIKeystrokePlayback`'s own cancel at a reset | yes (with LIB-5 §10) | §3.4, "Input" |
+
+New: none. The harness entry still makes its own `LibraryParts` and
+`TIProductMachines` until M-59 (plan M-59).
+
+### 11.6 Tasks
+
+Tests come before the code. `CalcU59Tests` (Frequent); ROM-gated cases
+`SKIP_UNLESS` the ROMs. The cases run the app session of
+`tests/SessionRig.hpp` with the library's parts (paced and in virtual
+time where the operation matters) or the harness entry. Names
+`lib18_acN_…`.
+
+| Task | What | ACs | Test (file: cases) |
+|---|---|---|---|
+| P59-1 | Start, built-in default | AC-17, AC-18 | `machine_control_tests.cpp`: `lib18_ac17_no_settings_ti59`, `lib18_ac18_builtin_default_ml_no_printer` (each model), `lib18_ac18_2_3_0_startup_preset_gives_default_and_notice` |
+| P59-2 | Constant memory at a build | AC-19 | `lib18_ac19_ti58c_without_startup_preset_gets_the_file_at_start_and_switch`, `lib18_ac19_ti58c_from_preset_cold_booted` (C59-3 T5 holds the file's cases) |
+| P59-3 | Model switch | AC-20, AC-24 | `lib18_ac20_switch_carries_no_module_no_printer`, `lib18_ac20_log_and_debug_settings_stay`, `lib18_ac24_preset_for_another_model_builds_it_last_model_follows` (ports `part_loads_a_preset_for_another_model`, `tests/part_flows_tests.cpp:42`) |
+| P59-4 | Module and printer | AC-21 | `lib18_ac21_module_attach_detach_power_cycle_ti59_loses_ti58c_keeps`, `lib18_ac21_printer_attach_detach_power_cycle`, `lib18_ac21_trace_kept_through_detach_and_attach` (ports `c59_6_ac6_trace_kept_by_app_session`, `:245`), `c59_6_ac11_change_module_power_cycles` (`:298`) on `attach` |
+| P59-5 | Reset, Cold boot | AC-22, AC-23, AC-16 | `lib18_ac22_reset_keeps_program_and_data_ti58c_power_cycle`, `lib18_ac22_cold_boot_empties_all_constant_memory_too`, `lib18_ac23_paper_module_printer_trace_own_card_kept`, `lib18_ac23_power_cycle_keeps_own_card`, `ledger_59_39_reset_and_model_switch_stop_a_preset`; `part_reset_keeps_the_memory_and_clean_reset_clears_it` (`:122`), `part_cpu_freeze_on_start_sees_reset_and_clean_reset` (`:144`), `lib5_ec5_reset_and_model_switch_release_held_keys` on the library's commands |
+| P59-6 | Harness entry | (LIB-11 AC-2) | `harness_tests.cpp`: `harness_switches_to_a_ti58` unchanged; `harness_starts_with_ml_and_no_printer` (the built-in default of AC-18; the harness's start had the PC-100C and no module, D-17) |
+| P59-7 | Frontends | AC-17, AC-22 | Web `play-calculator.spec.js:232` (the TI-58C switch keeps its constant memory) and the start's model unchanged (Longer); Qt6 and Swift by their build and C59-3 T7 |
+
+Coverage: P59-1 to P59-5 cover AC-17 to AC-24.
+
+### 11.7 Tools and agent knowledge (M-54)
+
+| File | Change |
+|---|---|
+| `products/calc-u-59/CLAUDE.md` | the Harness section: "starts the startup model (the TI-59 under the default settings) with the PC-100C" → "with its startup preset or its built-in default: the Master Library module, no printer" (LIB-6 §11.7 names the rest of that section) |
+| `products/calc-u-59/reference/SharedArchitecture.md`, `WebClient.md` | the start, the switches and the resets as the library's commands; `TIProductMachines`; `EmulatorSession` around the session's machine |
+| skills `calc-u-59-shared`, `calc-u-59-qt`, `calc-u-59-web`, `calc-u-59-swift` | the commands they name (`c59.start-machine`, `c59.reset`, `c59.clean-reset`, `c59.change-module`, `c59.printer-connected`) → the library's |
+| `docs/glossary-mapping.md` | row "Cold boot", Calc-U-59 column: the library's `cold-boot` command (was `c59.clean-reset`, `cleanResetMachine`); the visible label stays "Clean" until M-57; row "Startup model": `startupModel`, `lastUsedModel` → LIB-9's `[startup]` keys, written by `StartupPart` |
+| `docs/test-groups.md` | `machine_control_tests.cpp` in `CalcU59Tests` |
+
+**Ledger rows that become visible in M-54:** 59-10 (no printer at the
+start), 59-11 (a module change or the printer power-cycles: in effect
+since M-25 through `changePlaces`, now through LIB-18), 59-12, 59-17,
+59-39 (Reset, Cold boot, a model switch, a module change and the printer
+as operations). No new row (D-29).
+
+### 11.8 Golden runs and risks
+
+- **Golden runs** (`tests/golden_runs_tests.cpp`, `tests/golden-runs/`)
+  build through `TIMachineBuilder` and drive the core directly; M-54
+  changes no path they use. A difference is a finding.
+- **The start moves.** Today a TI-58C start ran 300,000 instructions of
+  start-up and then wrote the saved RAM (`app/StateApplier.cpp:87-91`);
+  now the RAM is in place before the processor and the build ends at key
+  readiness (C59-3 AC-2, row 59-15). The harness's start since M-35
+  already ends at key readiness; its built-in default changes (AC-18):
+  LIB-11's and C59-6's harness tests that assume the PC-100C at the start
+  name it with `attach printer PC-100C` (`harness_tests.cpp`).
+- **The runtime follows the session's machine.** `EmulatorSession` held
+  the machine's ownership until it was handed to the session
+  (`app/TIAppPart.cpp:300`); now it never owns it. A missed rebind at
+  `machineChanged` would leave the debugger or the traces on the old
+  machine; P59-3 and P59-5 read the debugger's view after each switch.
+- **M-53 changes the same part** (the freeze as the session's pause, the
+  paper as LIB-8's, the trace recorder): this design assumes M-53 has
+  merged and adds to its `TIAppPart`; where M-53 already brought
+  `LibraryParts` into the part, M-54 adds the rules, the bundle and the
+  machines to its setup (LIB-6 D-40).
+
+### 11.9 Decided (best guess)
+
+- **D-25 (`TIProductMachines` in the app layer).** As
+  `SharpProductMachines`; the harness entry uses the same class.
+- **D-26 (no copies of the plugs).** The module ID and the printer's
+  presence are read from `Machine::plugged()`, so a preset, a command
+  and the frontends see one truth; `EmulatorSession` becomes the runtime
+  around a machine it does not build or own.
+- **D-27 (TRACE through an attach).** The PC-100C's TRACE position is
+  product state of the run, set again through the controls capability
+  after an `attach`; a preset's build sets it as the preset says (off
+  unless `printer-trace: on`, row 59-25), and the remembered position
+  follows what the machine's PC-100C shows.
+- **D-28 (the startup preset's choice).** No frontend of Calc-U-59 has a
+  control for `[preset] <model>` today, so none is added in M-54; the
+  shell's Settings (M-57, M-58) add it with the Startup entries of
+  `preset-list`, as Calc-U-1600's did in M-46/M-49 (Plan note P-4).
+- **D-29 (no new ledger row).** Every user-visible change of this column
+  is in rows 59-10, 59-11, 59-12, 59-17, 59-39; the visible renames are
+  `docs/glossary-mapping.md`'s, done in M-57/M-58.
+- **D-30 (readiness bound).** 25 s of emulated time for each TI model, as
+  the harness has used since M-35 (`app/HarnessProduct.cpp:46`); a bound
+  hit is a log line (D-5).
+
+### 11.10 Questions for the user
+
+None that splits this column.
+
+### 11.11 Proposed ledger rows and plan notes
+
+**Ledger rows:** none new (D-29).
+
+**Plan note P-4.** M-57 (LIB-14 59) and M-58 (C59-8): the Settings gain
+the startup preset per model (the `Startup` entries of `preset-list`),
+which M-54 does not add (D-28); until then a startup preset is set in
+`Calc-U-59.ini`.

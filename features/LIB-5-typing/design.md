@@ -1,5 +1,5 @@
 # LIB-5 Typing: design
-Status: approved by the user at the Part C1/C2 boundary (2026-11-15)
+Status: approved by the user at the Part C1/C2 boundary (2026-11-15); §10 (Calc-U-59 preset clauses): Draft for the Part D/E boundary (2026-11-16)
 
 ## 1. Scope
 
@@ -653,3 +653,113 @@ change, every sentence as before):
   all (D-8), so `type` without a machine is "Unknown command: type."
   there and "No machine is running." on Calc-U-1600; a profile cannot
   say that without a machine.
+
+## 10. Part E: the Calc-U-59 column's preset clauses
+
+Draft for the Part D/E boundary (2026-11-16). Paths without a prefix are
+under `products/calc-u-59/`; line numbers at `7bdd51c`. This design has
+no Part D section of its own: Calc-U-1600's preset clauses were worked
+by LIB-6 §10 (M-46) and reported in the qa-report ("Calc-U-1600: the
+preset clauses"); this section names the Calc-U-59 counterpart, with the
+sub-sections LIB-6 §11 and LIB-18 §11 use.
+
+### 10.1 Scope
+
+| Column | Step | Tests from | Done in |
+|---|---|---|---|
+| Calc-U-59 | M-54, with LIB-6 59 (`features/LIB-6-presets/design.md` §11) | AC-17 and AC-26 "in a preset" (the rest tested in M-36) | M-58 by the rule of plan §1 (D-15); plan §5.1 says M-54 |
+
+- AC-17 and AC-26 passed in M-36 through the harness and the commands;
+  their "in a preset" clauses need LIB-6 59's loader (D-1). They pass
+  here, in LIB-6 §11.6 P10.
+- AC-22 and AC-24 are not shown in the Swift frontend (qa-report, Calc-U-59
+  column status: "Swift untested"; the XCFramework build did not run in
+  M-36). Swift's host keys and on-screen keys are C59-8's (M-58), whose
+  scenarios run on the iPhone simulator; they pass there (D-15).
+
+### 10.2 Modules and files
+
+No file of `library/typing/` changes. In the product:
+
+| File | Change |
+|---|---|
+| `app/TIKeystrokePlayback.hpp/.cpp` | deleted: the KEYSTROKES lane of format 1 (§5), with LIB-6 59's reader |
+| `app/EmulatorSession.hpp/.cpp` | `sliceEnded` (`app/EmulatorSession.hpp:189`), `playKeystrokes`, `cancelKeystrokes`, `keystrokesPending` (227-231) and the `TIKeystrokePlayback::Host` base go (LIB-6 §11.2) |
+| `app/TIAppPartInternal.hpp` | `Hooks::act` no longer advances a playback with `SliceRequest::due` |
+| `library/pacing/Pacer.hpp:23` | `SliceRequest::due` goes when no reader is left (§5: "now read only by `TIKeystrokePlayback`'s `Wait:`"); the step searches its readers (`library/pacing/Pacer.cpp:44-45`, `library/sessions/MachineSession.*`) and keeps it, as a field of the pacer and not an adapter, if the pacer or the machine session still reads it (D-16) |
+
+### 10.3 The product's rules
+
+None of their own: the `key:` step is LIB-6's, over `typeAndWait` with
+the TI profile (`cu59::typingProfile`, `app/TITyping.hpp`) and
+`typing::pressesOfNames` (Part D simplification P-6). `TypingProduct`
+gives no `type` on a TI model (D-8), and LIB-6's TI rules say
+`NotForThisModel` for `type:` (LIB-6 §11.3).
+
+### 10.4 Frontends
+
+Nothing: a preset is the session's in every frontend (LIB-6 §11.4).
+
+### 10.5 Adapters
+
+| Adapter | Removed here |
+|---|---|
+| `TIKeystrokePlayback` | yes |
+| `SliceRequest::due` | yes, or closed as no adapter (D-16) |
+
+`TIFreezeProbe` and `TIKeyTraceObserver` are M-53's (§5).
+
+### 10.6 Tasks
+
+LIB-6 §11.6 P10, in `tests/ti_presets_tests.cpp` (`CalcU59Tests`,
+Frequent): `lib5_ac17_in_a_preset_key_finishes_at_idle` (a `- key: 5 A`
+whose program runs for seconds: the next item starts after the last
+press is up and the machine is idle), `lib5_ac26_names_of_8_1_in_a_preset`
+(every name of `tests/golden/keynames.txt` in a `key:` step reads),
+`lib5_ac26_2nd_before_second_function_once_in_a_preset`,
+`lib5_ac26_old_names_refused_when_read` (`2ndCLR`, `P>R`, `S+`, `mean`,
+`StFlg`, `IfFlg` refused with the step's line). The reference runs of
+C59-2 AC-11 run every upgraded example's keys through this path.
+
+### 10.7 Tools and agent knowledge
+
+`docs/glossary-mapping.md`, row "Typing engine", Calc-U-59 column: "its
+KEYSTROKES lane is the adapter `TIKeystrokePlayback` until M-54" → done
+(M-54): the `key:` steps of presets go through the engine. Row "Machine
+session": `TIKeystrokePlayback` no longer named. The memory
+`calc-u-59/headless_printer_lines.md` (it names `TIKeystrokePlayback`)
+changes with LIB-6 §11.7.
+
+**Ledger rows:** 59-23 and 59-40 are in effect since M-36; none new.
+
+### 10.8 Golden and reference runs, risks
+
+- The golden runs press keys through the core; unchanged.
+- The reference runs of the examples (C59-2 T10) now type every key of a
+  preset through `typeAndWait` and wait for idle after each step, where
+  `TIKeystrokePlayback` waited for the engine and the scan loop: row
+  59-42's waits. `debug/printer-timing.ti59`'s paper (104 lines) is
+  compared as paper; its `Elapsed:` lines are no longer compared (C59-2
+  AC-11), and its reference is never recorded anew (user, 2026-11-15).
+
+### 10.9 Decided (best guess)
+
+- **D-15 (Done in).** The Calc-U-59 column is Done when AC-22 and AC-24
+  are shown in Swift, which is C59-8's frontend work (M-58); the preset
+  clauses pass in M-54 (Plan note P-5).
+- **D-16 (`SliceRequest::due`).** Removed only when nothing reads it;
+  otherwise it stays as the pacer's own field and §5's row is closed as
+  "not an adapter", since a field that pacing itself uses is not an old
+  call kept behind a seam.
+
+### 10.10 Questions for the user
+
+None.
+
+### 10.11 Proposed ledger rows and plan notes
+
+**Ledger rows:** none.
+
+**Plan note P-5.** §5.1: LIB-5's Calc-U-59 column is tested in M-36 and
+M-54 and Done in M-58 (D-15): AC-22 and AC-24 in the Swift frontend pass
+with C59-8; M-58's "Tests from" gains LIB-5 AC-22, AC-24 (Swift).

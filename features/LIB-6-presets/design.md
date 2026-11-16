@@ -1,5 +1,5 @@
 # LIB-6 Presets: design
-Status: Library column approved at the Part C1/C2 boundary (2026-11-15); Calc-U-1600 column approved at the Part C2/D boundary (2026-11-16)
+Status: Library column approved at the Part C1/C2 boundary (2026-11-15); Calc-U-1600 column approved at the Part C2/D boundary (2026-11-16); Calc-U-59 column (§11): Draft for the Part D/E boundary (2026-11-16)
 
 ## 1. Scope
 
@@ -1012,3 +1012,349 @@ no user-visible change, every sentence as before):
    `pc1500a-ce150` anew as the accepted difference?*
    Answered (user, 2026-11-16, with the approval of the Part D designs): the driver
    stays on 0.8.1's timing; no reference is recorded anew.
+
+## 11. Part E: the Calc-U-59 column
+
+Draft for the Part D/E boundary (2026-11-16). Paths without a prefix are
+under `products/calc-u-59/`; line numbers at `7bdd51c`.
+
+### 11.1 Scope
+
+| Column | Step | Tests from (plan §3) | Done in |
+|---|---|---|---|
+| Calc-U-59 | M-54, with C59-2 (`features/C59-2-ti-preset-content/design.md`), LIB-18 59 (§11 of its design) and C59-3 (`features/C59-3-ti-58c-constant-memory/design.md`) | AC-35–43, AC-68 | M-58 by the rule of plan §1 (D-36): AC-42's GUI scenario needs the Examples menu of LIB-14 59 (Qt6, M-57) and C59-8 (Swift, M-58); plan §5.1 says M-54 |
+
+- Clauses of the Library column that are a product's and pass here (§1's
+  table): AC-24, AC-40 and AC-66 the TI comparison; AC-53 the TI idle, no
+  after-build step and the segment picture; AC-25 the save folder in
+  Qt6 and Swift (Swift: the iCloud Drive folder, OQ-4) and the download
+  on the Web; AC-31 "every distribution is built from it"; AC-34 through
+  `calcu --product 59`, `printer-trace` included.
+- Clauses of other columns that need presets of version 2 and pass here:
+  LIB-5 59 AC-17 and AC-26 "in a preset" (LIB-5 §10); LIB-15 59 AC-16's
+  bundle path and AC-20's constant memory clause (LIB-15 59 becomes Done
+  in M-55 with the cards, plan §3 M-34); the LIB-8 59 and LIB-10 59
+  criteria that name upgraded presets (their M-53 designs).
+- The presets that wait for M-55 and the rule: C59-2 design §1 (the four
+  card examples, named by AC-10). AC-43 passes in M-54 with them left out
+  by name, as it says.
+- The code built in C2 and D differs from §2–§9 as the qa-report's
+  "Deviations" say (M-38, M-41, M-46) and as §10.9a says (P-6): `LoadPlan`
+  holds `PlannedItem`s; `ModelRules::checkExpect` refuses a text when the
+  preset is read (`library/presets/ProductRules.hpp:80-86`);
+  `ReadContext::addPeripheral`; the library's parts are built and ordered
+  by `parts::LibraryParts` (`library/parts/LibraryParts.hpp:51-134`),
+  which a product fills through `LibraryPartsSetup` (`presetRules`,
+  `bundle`, `home`, `screenshotFolder`). This column builds on those
+  shapes and adds nothing to `library/presets/` (D-37).
+
+### 11.2 Modules and files
+
+**New**
+
+| File | Holds |
+|---|---|
+| `app/TIPresetRules.hpp/.cpp` | `cu59::TIPresetRules : presets::ProductRules` and one `TIModelRules : ModelRules` per model (§11.3); `productName()` "Calc-U-59", `formatReference()` (D-38); `addKeywords` calls C59-2's `addTIKeywords` |
+| `app/TIDisplayPicture.hpp/.cpp` | `cu59::displayPicture(const DisplayOutput&, const MachineDescriptor&) -> std::vector<std::uint8_t>`: the twelve positions and the indicator in the classic segment style (`app/LedGeometry.hpp`, `LedStyle::Classic`; `app/SevenSegment.hpp`), written by `formats::PngWriter` (`library/formats/Png.hpp:15`) (C59-2 AC-8; OQ-3; D-39) |
+| `tests/ti_presets_tests.cpp` | AC-35–43, AC-68 and the LIB-5 clauses (§11.6) |
+| `tests/reference/display/` | the reference pictures of AC-40's `screenshot:` (one per model; D-39) |
+
+**Changed**
+
+| File | Change |
+|---|---|
+| `app/TIAppPart.hpp/.cpp` | `TIAppPart` owns a `parts::LibraryParts` built from `librarySetup()` (as Calc-U-1600's `app/SharpAppPart.cpp:103-146`): the catalogue, `TIProductMachines` (LIB-18 §11), the settings, the ROM set, `typingProduct()`, the rules of §11.3, the bundle (`DirectoryPresetBundle` over the bundled `examples/`), `home`, `screenshotFolder` (LIB-9 `Paths::screenshotFolder()`), and what M-53 adds (papers, debugger); `sessionParts()` gives them in the library's order with the part last (D-40). The command `c59.load-state` (`app/TIAppPart.hpp:225`, `app/TIAppPart.cpp:168-172`) goes: LIB-6's `load-preset` replaces it. `c59.open-dropped` (`:173`) hands a preset to `load-preset {content, name}` until LIB-13 59's `open` (M-56). `presetOperation`, `untilIdle(true)` and `runUntilIdle`'s preset branch (`app/TIAppPart.cpp:237-261`) go. `makeAppSession` (`:424-449`) builds the session from `sessionParts()` (its own `TypingPart` goes: it is among the library's parts) |
+| `app/TIAppPartFlows.cpp` | `loadStateFile` (565-595), `applyState` (620-654), `applyControl` (656-694), `applyReloadStage` (696-715), `dropPresetCards`, the `KeystrokeEvent` controls and the preset half of `openDroppedFile` (605-619) go; C59-2 and C59-3 name what replaces the memory writes and the constant memory calls |
+| `app/TIAppPartInternal.hpp` | `Hooks::act`'s call of `EmulatorSession::sliceEnded` (`app/EmulatorSession.hpp:189`) goes with `TIKeystrokePlayback` (LIB-5 §10) |
+| `app/EmulatorSession.hpp/.cpp` | `playKeystrokes`, `cancelKeystrokes`, `keystrokesPending`, `sliceEnded`, the `TIKeystrokePlayback::Host` base and the `Listener` calls `playbackStarted`, `playbackFinished`, `reloadRequested`, `controlRequested` (`app/EmulatorSession.hpp:95-112, 189-231`) go |
+| `app/TIWebPart.hpp/.cpp` | the preset half of `start` (`app/TIWebPart.cpp:113-135`) goes to LIB-18's `start {model, preset}` with the preset as a bundle path `examples:<path>` (LIB-15 AC-16); `m_presetsDir` goes; `c59.web.drop` (199-213) hands a preset to `load-preset {content, name}` |
+| `app/HarnessProduct.cpp` | `prepare` (66-75) sets `presetRules` and `bundle` in the `LibraryPartsSetup` (a `DirectoryPresetBundle` over the source tree's `examples/`); `HarnessMachines` goes (LIB-18 §11) |
+| `frontends/web/bindings.cpp:31-79` | the session from `TIAppPart::sessionParts()`, `start.shellPart` first; the bundle is the preloaded `examples/` of `dist/` |
+| `frontends/web/src/engine.js:225`, `src/Dialogs.jsx:113-117` | the preset list from the request `preset-list` (the `Example` entries in their groups); a bundled example by `load-preset {ref: "examples:<path>"}`; an uploaded or dropped preset by `load-preset {content, name}` (AC-42, EC-5) |
+| `frontends/web/build.js:66-71`, `frontends/web/presets.json` (deleted) | the files of `examples/bundle.yaml` into `dist/examples/` (C59-2 §4) |
+| `frontends/qt6/app/EmulatorController.cpp:260-262`, `MainWindow.cpp:87` | Open Preset… and a dropped preset send `load-preset {ref: path}` (AC-42: a file in its folder) |
+| `frontends/qt6/CMakeLists.txt` | the files of `bundle.yaml` beside the program, the folder of the `DirectoryPresetBundle` (as `products/calc-u-1600/frontends/qt6/CMakeLists.txt:219-252`) |
+| `frontends/swift/App/EmulatorViewModel.swift:394-398`, `Bridge/TIAppSession.mm:581` | `loadStateFile` sends `load-preset {content, name}` (D-41); a build phase copies the files of `bundle.yaml` into the app's `examples/` (C59-2 §4) |
+| `CMakeLists.txt` (the product's) | `calcu_add_preset_check(CalcU59Presets PRODUCT 59 FILES … EXCLUDE …)` (AC-43; D-20); `CalcU59BundledFiles` (Longer; C59-2 T11) |
+| `docs/test-groups.md` | the new entries; `CalcU59ReferenceRuns` described anew (C59-2 §6 T10) |
+
+**Deleted:** `app/StateFile.hpp/.cpp`, `app/StateApplier.hpp/.cpp`
+(C59-2 §2), `app/TIKeystrokePlayback.hpp/.cpp` (LIB-5 §10), the preset
+cases of the tests listed in §11.6 P7 once ported, and the preset-card
+cases listed there for M-55.
+
+### 11.3 The product's rules (AC-35–40, AC-53, AC-62, AC-68)
+
+```cpp
+namespace cu59 {
+class TIModelRules final : public calcu::presets::ModelRules {
+public:
+    IdleRule idle() const override;                       // AC-36: key ready, or waiting for a card, 100 ms, asked every 1 ms
+    std::optional<std::vector<std::uint8_t>> screenshot(Machine&, const DisplayOutput&) override;   // AC-40, C59-2 AC-8
+    ExpectReading compare(Machine&, const DisplayOutput&, const ExpectText&) override;          // AC-40
+    std::optional<std::string> checkExpect(const ExpectText&, std::string_view keyword) const override;   // AC-40, AC-68
+    Applies applies(std::string_view keyword) const override;   // preset.md §7, the three TI columns
+    PlaceKeyRule placeKey(const PlaceName&) const override;      // AC-35: slot-1 by name: only
+};
+class TIPresetRules final : public calcu::presets::ProductRules { /* a TIModelRules per model; addKeywords */ };
+}
+```
+
+- **AC-35.** The extensions and models are the catalogue's (`.ti59`,
+  `.ti58`, `.ti58c`; `core/TICatalogue.cpp`), no variant; the model comes
+  from `model:` only (AC-5). The place keys are the descriptors'
+  `slot-1` and `printer` (C59-6). `placeKey(slot-1)` is `{bare = false,
+  byName = true, byFile = false}`: `slot-1: ML` and `slot-1: { file: … }`
+  are refused, the latter with "A Solid State ROM module is named by
+  `name:` in this release." (OQ-8; C59-6 AC-8; D-42). `printer: PC-100C`
+  takes the bare form.
+- **AC-36, AC-53 idle.** `readyNow` is `Machine::isKeyReady()` (C59-1
+  AC-18; `core/TIMachine.cpp:166`) or the card wait of `Write`/`INV
+  Write` (`TICardReaderAdapter::isInCardWait`, `core/TIAdapters.hpp:53`);
+  `stretch` 100 ms of emulated time (LIB-5 AC-20's minimum hold), `sample`
+  1 ms of emulated time (D-43). First step FS 5 (M-3) showed that key
+  readiness tells a stopped machine from a running program
+  (`docs/walkthroughs/first-steps.md` §5), as the column waited for (OQ-1).
+- **After the build** nothing is pressed (C59-2 AC-8): `afterBuild` is
+  the library's default.
+- **AC-37.** A place no key names is empty (the library's AC-3, AC-65);
+  the upgraded examples name what a fresh 2.3.0 had (C59-2 §4).
+- **AC-38.** A file without `format-version` is outdated (the library's
+  AC-8) with "Calc-U-59" and `formatReference()`; any error refuses the
+  file whole (the library's AC-6).
+- **AC-39.** The library's AC-16, AC-12 and AC-61: full speed unless a
+  `regular-speed:` comes first; live input dropped; a second load
+  refused.
+- **AC-40.** `applies("type")` and `applies("syncclock")` are
+  `NotForThisModel` ([1600]); `printer-trace:` is C59-2's step;
+  `elapsed-time:` the library's; `screenshot` is `displayPicture` (D-39);
+  `compare` reads X, the value in the display register, in its 13 digits
+  and its exponent, not rounded and whatever the display format or
+  blinking, and finds the text when its value, read as C59-2's `data:`
+  reads a value (13 significant digits, a whole number cut after the
+  13th), equals X (D-44). Where the ROM keeps X is the ROM's
+  (`rom/TI59-ROM-Guide.md:177`: in register C while a result is shown,
+  `fB[5]`); the first task reads it through the core's CPU snapshot
+  (`TIDebugTargetAdapter::snapshotCPU`, or LIB-10 59's debug target after
+  M-53) for a result and for a number being keyed in, and the test of
+  AC-40 (`π`: `3.14159265359` passes, `3.141592654` fails) fixes it.
+  `ExpectReading::shows` is the display text as the harness's `lcd`
+  gives it (`HarnessProduct::readDisplay`, `app/HarnessProduct.cpp:79-88`),
+  so the reason holds what the user sees. A display that is off: EC-7.
+- **AC-68, AC-40 when read.** `checkExpect` refuses a regular expression
+  ("A TI model compares expect: with a number; a regular expression is
+  not taken.") and a text that is not a number by C59-2's
+  `parseDecimal` ("A TI model compares expect: with a number."), each
+  with the step's line (D-45).
+- **AC-62 markers.** `applies` gives `NotForThisModel` for `type` and
+  `syncclock` on every TI model and for `magnetic-cards`, `card`, `arm`
+  on the TI-58 and TI-58C (registered from M-55); `Undefined` for none
+  (`preset.md` §7 marks `data` undefined only on the Sharp models). The
+  Sharp keys (`slot-2`, `host-drive`, `bus-rom`, `debug`, …) are not
+  registered in Calc-U-59 and are "unknown" (D-7).
+- **AC-41.** The paper of the PC-100C is emptied at a user's load and
+  kept at a startup preset's (LIB-8 AC-8, `BuildOrigin`; LIB-8 59, M-53).
+
+### 11.4 Frontends (AC-42)
+
+- **AC-42.** Qt6 hands a file in its folder (`load-preset {ref: path}`,
+  `folderSource`); the Web hands a bundled example by its bundle path and
+  an uploaded or dropped file by its content (`contentSource`; EC-5);
+  Swift hands the content on iOS and on macOS (D-41). Nothing else of a
+  load is in a frontend.
+- **The GUI scenario of AC-42** (a bundled example is loaded and its cue
+  card "Sum 1..N" shows): the Web in this step
+  (`frontends/web/tests/play-calculator.spec.js:282`, renamed `lib6_ac42
+  bundled example sum shows its cue card`, Longer); Qt6 with LIB-14 59
+  (M-57), whose Examples menu (LIB-14 AC-26) is the way to a bundled
+  example and whose step brings Calc-U-59's first Qt6 scenarios; Swift
+  with C59-8 (M-58), which replaces `PresetLoadTests.testLoadDiagPreset`
+  (`frontends/swift/Calc-U-59UITests/PresetLoadTests.swift:34-60`; it
+  waits for the `keystroke-playback-status` element, which FS 4 and
+  M-58 remove). Until then `PresetLoadTests` is skipped (D-46).
+- **The start** and the startup presets are LIB-18's (§11 of its design).
+
+### 11.5 Adapters
+
+| Adapter | Removed here | Was |
+|---|---|---|
+| `TIPresetOperation` (the load as one product operation, `presetOperation`) | yes | LIB-3 §5; §5 above |
+| `TIKeystrokePlayback` and `SliceRequest::due` | yes | LIB-5 §5 (LIB-5 §10) |
+| the reader of 2.3.0 (`app/StateFile.*`, `app/StateApplier.*`) | yes | §4 |
+| `HarnessMachines` | yes | LIB-18 §5 (LIB-18 §11) |
+| `c59.open-dropped`'s preset half | M-56 (LIB-13 59: `open`) | — |
+
+New: none. Calc-U-59's harness entry still makes its own
+`LibraryParts` until M-59 (plan M-59: "the entry's other duties go"),
+with the rules and the bundle the app layer uses.
+
+### 11.6 Tasks
+
+Tests come before the code. `CalcU59Tests` (Frequent) unless the row
+says otherwise; ROM-gated cases `SKIP_UNLESS` the ROMs. The cases run the
+product's harness entry in virtual time, the app session with
+`tests/SessionRig.hpp`, or `presets::readPreset` with `TIPresetRules`.
+Names `lib6_acN_…`, `lib5_acN_…`, `lib15_acN_…`.
+
+| Task | What | ACs | Test (file: cases) |
+|---|---|---|---|
+| P1 | Models, places | AC-35, AC-37 | `ti_presets_tests.cpp`: `lib6_ac35_extensions_models_any_case_no_variant`, `lib6_ac35_slot1_by_name_only_file_refused_with_notice`, `lib6_ac35_printer_pc100c`, `lib6_ac37_no_slot1_no_printer_means_none` |
+| P2 | Idle | AC-36, AC-53 | `lib6_ac36_running_program_not_idle_each_model_with_and_without_printer`, `lib6_ac36_idle_after_100ms_of_key_readiness`, `lib6_ac36_card_wait_after_write_is_idle` (TI-59), `lib6_ac53_ti_idle_rule_values` |
+| P3 | Outdated, all or nothing | AC-38 | `lib6_ac38_2_3_0_file_refused_as_outdated_with_hint` (a 2.3.0 example's text kept as a fixture), `lib6_ac38_any_error_refuses_whole_machine_untouched` |
+| P4 | Speed, input | AC-39 | `lib6_ac39_full_speed_unless_regular_speed_first`, `lib6_ac39_user_keys_dropped_second_load_refused` |
+| P5 | The TI steps | AC-40, AC-68, AC-24, AC-25, AC-66, EC-7 | `lib6_ac40_type_and_syncclock_refused_when_read`, `lib6_ac40_printer_trace_sets_trace_refused_without_pc100c`, `lib6_ac40_elapsed_counts_emulated_time`, `lib6_ac40_screenshot_is_the_classic_segment_picture` (byte-equal with `tests/reference/display/`), `lib6_ac40_expect_pi_13_digits_passes_10_digits_fails`, `lib6_ac40_expect_any_display_format_and_blinking`, `lib6_ac40_not_expect_by_the_same_comparison`, `lib6_ac40_expect_not_a_number_refused_when_read`, `lib6_ac68_regex_refused_when_read`, `lib6_ac25_screenshot_into_save_folder`, `lib6_ec7_expect_display_off_fails` |
+| P6 | Paper at a load | AC-41 | `lib6_ac41_user_load_empties_paper_startup_preset_keeps_it` (with LIB-8 59's paper, M-53) |
+| P7 | Today's tests | (AC-38, AC-39, AC-43 as today checks them) | `tests/part_flows_tests.cpp`, `tests/session_tests.cpp`, `tests/typing_tests.cpp` and every other test that writes a 2.3.0 preset as text write version 2: `part_loads_a_preset_for_another_model` → `lib18_ac24_…` (LIB-18 §11.6), `part_reports_parse_errors_and_partition_errors` → `lib6_ac38_…`, `part_plays_a_preset`, `part_reload_keeps_the_program`, `part_reload_after_the_first_run` → `c59_2_ac7_…`, `c59_6_ac6_state_file_sets_trace_off_unless_it_sets_it` → `c59_6_ac6_preset_sets_trace_off_unless_printer_trace_on`, `lib3_ac32_preset_load_is_busy_and_refuses_second` and `lib3_ac32_updates_during_preset` on `load-preset`, `lib5_exit_printer_timing_same_paper_at_regular_and_full_speed` on the version 2 `printer-timing.ti59`. `keys_script_waits_out_a_freeze_but_runs_its_directives`, `session_plays_keystrokes_in_real_time` and `part_keystroke_controls_drive_the_gui` go with `TIKeystrokePlayback` (LIB-6 AC-19 and LIB-10 59's steps cover them). The cases whose subject is a preset's magnetic card (`part_card_file_written_then_inserted`, `part_cards_need_a_card_reader`, `part_insert_card_passes_an_unused_armed_card`, `part_program_reads_a_defined_card`, `part_program_writes_and_reads_a_memory_card`, `part_reload_and_memory_card`, `part_unused_card_is_logged_on_the_next_load`, `preset_cannot_feed_an_unreadable_file`, `preset_creates_a_full_two_sided_card`, `preset_side_on_a_version_1_file_feeds_its_one_side`, and `tests/shared_preset_stages_tests.cpp`'s `stages_card_*`, `card_bank_matches_the_rom_*`) go with the reader and are listed for C59-7 (M-55) to write anew on `magnetic-cards:`, `card:`, `arm:` (D-47) |
+| P8 | The suite check | AC-43 | `calcu_preset_check.CalcU59Presets` (Frequent): the 53 examples and the three startup presets, `EXCLUDE` the four card examples (C59-2 §1); `checkBundle` over `examples/bundle.yaml` in the same entry; the release checklist's Checkpoint entry over calc-u.org's hosted presets (`59/software-files/`, `59/calc/presets/`) is M-64's (§4) |
+| P9 | Frontends | AC-42 | Web: `play-calculator.spec.js` `lib6_ac42 bundled example sum shows its cue card` (`:282`), `lib6_ac42 uploaded preset by its content` (`:289`), `lib6_ac42 dropped preset loads` (`:297`) (Longer); Qt6 (M-57) and Swift (M-58): §11.4 |
+| P10 | Typing in a preset | LIB-5 AC-17, AC-26 | `lib5_ac17_in_a_preset_key_finishes_at_idle`, `lib5_ac26_names_of_8_1_in_a_preset`, `lib5_ac26_2nd_before_second_function_once_in_a_preset`, `lib5_ac26_old_names_refused_when_read` |
+| P11 | Bundle path on the Web | LIB-15 AC-16 | `web_part_tests.cpp:65` `lib15_ac16_start_takes_the_model_by_name_and_a_bundled_preset` on `start {preset: "sum.ti59"}` as the bundle path `examples:sum.ti59`; `:76` `lib15_ec4_…` unchanged; Web `session.spec.js` `lib15_ac16 preset prop takes a path of bundle.yaml` (Longer) |
+| P12 | Harness | AC-34 | `harness_tests.cpp`: `lib6_ac34_preset_wait_expect_screenshot_on_ti59` (`calcu --product 59 preset examples:sum.ti59 then key 5 A then wait then expect 15 then screenshot sum.png`), `lib6_ac34_printer_trace_on_off` |
+
+Coverage: P1–P9 cover AC-35 to AC-43 and AC-68 (AC-42's Qt6 and Swift
+scenarios in M-57, M-58).
+
+### 11.7 Tools and agent knowledge (M-54)
+
+**Tools.**
+
+- `tools/agentic/ti59file.py` goes (plan M-54): its reader of 2.3.0
+  (`parse`, `load`, `tools/agentic/ti59file.py:43-151`) and its key
+  playback. The scripts that loaded a preset through it run `calcu
+  --product 59 serve` through `library/harness/python/calcu_serve.py`:
+  `preset <file>` loads it (the keys of its `keys:` included), `wait`
+  waits for idle, `paper text` gives the printout, `ti59 program`
+  (C59-2 AC-9) the keycodes:
+  - `kdis.py` (`:53`) lists the keycodes of a preset by `preset <file>`
+    and `ti59 program 000 count=<n>`;
+  - `runtime.py` times keys given with `--keys` (key IDs now, not matrix
+    codes) after the preset is loaded, each by `dark_time`'s rule
+    (memory `run_time_measurement`: the display lit again and no program
+    running, never idle settling), sampled through `calcu` by
+    `wait 10ms then lcd` (D-48);
+  - `linetimes.py` and `calendar/compare.py`, `calendar/years.py` time
+    the printed lines and the last key the same way, with `paper text`
+    after each sample;
+  - `stepcost.py` and `fastmode_matrix.py` use only the headless machine
+    and the helpers `regbytes`, `press`, `settle`, `idle`, which move
+    into `tools/headless/ti59.py` until M-59 replaces both scripts
+    (C59-9; plan M-59).
+  The calendar project's numbers (`calendar-09` 76.1 s for 2026, memory
+  `calendar_speed_project`) are measured once with the old tool and the
+  new before `ti59file.py` goes; a difference is a finding of the step.
+- `tools/headless/capi.cpp` reads no preset (§4's table named it); it is
+  unchanged until M-59.
+- `tools/agentic/README.md`, `tools/headless/README.md:49`: the presets
+  are loaded through `calcu`.
+
+**Agent knowledge.**
+
+| File | Change |
+|---|---|
+| `products/calc-u-59/CLAUDE.md` | the Harness section: "Not yet: `ti59 …` commands, presets" goes; `preset`, `check-preset`, `preset-list`, `wait` without a duration, `expect`, `not-expect`, `screenshot`, `printer-trace`, `elapsed-time`, `ti59 partition`, `ti59 program`, `ti59 registers` listed; the start is "the startup model with its startup preset or its built-in default (the TI-59 with the Master Library module, no printer)" (LIB-18 AC-18); the skill table and the architecture list as C59-2 §7 says; "Agentic tools" says the tools load presets through `calcu` |
+| `products/calc-u-59/reference/SharedArchitecture.md` | § "State File Loading" and § "Dropped Files": the load is LIB-6's `load-preset` with `TIPresetRules`; `KeySequencer`/`TIKeystrokePlayback` gone |
+| `products/calc-u-59/reference/WebClient.md`, `FrontendParity.md` | the preset list from `examples/bundle.yaml`; `presets.json` gone |
+| skills `calc-u-59-shared`, `calc-u-59-web` (`products/calc-u-59/.claude/skills/`) | the load path and the bundle file where they name `StateFile`, `loadStateFile`, `presets.json` |
+| `docs/test-groups.md` | `calcu_preset_check.CalcU59Presets`, `CalcU59BundledFiles`, `CalcU59CalendarScripts` in; `CalcU59ReferenceRuns` described anew; the new `CalcU59Tests` files |
+| memory `calc-u-59/run_time_measurement.md` | `dark_time` is now the tools' rule over `calcu` (no longer `ti59file.py`); the rule stays |
+| memory `calc-u-59/headless_printer_lines.md` | "replay KEYSTROKES like the app" → load the preset through `calcu` |
+| memory `calc-u-59/fullspeed_scanloop_range_fix.md` | `FullSpeed:` and `Trace:` directives → the steps `full-speed:`, `trace:` |
+| memory `calc-u-59/file_importer_architecture.md` | `loadStateFile` sends `load-preset` |
+| `calc-u-59-memories.md` (the index) | the descriptions of the entries above |
+
+**Ledger rows that become visible in M-54** (with C59-2, LIB-18 59 and
+C59-3): 59-1 (presets, constant memory), 59-3, 59-4, 59-5, 59-26 and
+59-42 (the waits, the first error only, `expect:`, `not-expect:`,
+`screenshot:`). New rows: §11.11.
+
+### 11.8 Golden and reference runs, risks
+
+- **Golden runs** (`tests/golden_runs_tests.cpp`) drive the core
+  directly; this column changes no path they use.
+- **Reference runs.** C59-2 AC-11 (its design §6 T10, §8) is the check
+  of this column as well: the 53 examples upgraded in M-54 go through
+  this loader; the four card examples wait for M-55.
+- **Waits.** Every item now waits until idle (row 59-42); a `Wait:` of
+  2.3.0 that covered a run in wall time now counts emulated time, and an
+  item that 2.3.0 played on while a program still ran now waits for it.
+  The reference runs compare at the idle machine.
+- **`dark_time` over `calcu`** samples every 10 ms of emulated time where
+  the old tool sampled every 100 instructions; the measured times move by
+  at most one sample. The one-time comparison of §11.7 shows it.
+- **The Swift app** may not be testable beyond its build (LIB-5
+  qa-report: the XCFramework build did not run for the agent in M-36);
+  its load path is two lines of the bridge.
+
+### 11.9 Decided (best guess)
+
+- **D-36 (Done in).** AC-42's GUI scenario needs a way to a bundled
+  example in each frontend; Qt6 and Swift get it with LIB-14 59 (M-57)
+  and C59-8 (M-58). By plan §1 the column is then Done in M-58, not M-54
+  (Plan note P-2).
+- **D-37 (no library change).** The column needs nothing new of
+  `library/presets/`: `checkExpect`, `placeKey`, `applies`, `IdleRule`
+  and the section value form cover the TI.
+- **D-38 (`formatReference`).** "the preset format in the User Guide,
+  chapter Presets" until M-60 gives the help topic's address (as D-30).
+- **D-39 (the TI picture).** Drawn in the app layer from the frontends'
+  segment geometry in the classic style, flat (no glow, which each
+  frontend paints its own way), at one pixel per unit of `LedGeometry`'s
+  cell; the reference pictures are made by this code in the step and
+  reviewed by the user at the E/F boundary (as LIB-8's reference
+  pictures). LIB-14 59's Copy Screen (M-57) can take the same function.
+- **D-40 (the app part holds the library's parts).** As Calc-U-1600's
+  `SharpAppPart`: one `LibraryParts` per app session, owned by
+  `TIAppPart`, which every host and the tests use; `makeAppSession` and
+  the Web bindings stop adding a `TypingPart` of their own.
+- **D-41 (Swift hands content).** The picked file is readable only
+  inside its security scope and its folder is not granted, so Swift
+  hands the content on macOS too; a preset that names a relative file is
+  then refused with EC-5's notice (no TI preset of today names one).
+- **D-42 (`slot-1` sentence).** "A Solid State ROM module is named by
+  `name:` in this release." for `{ file: }`; a bare ID gets the reader's
+  sentence for a form the place does not take.
+- **D-43 (sampling).** 1 ms of emulated time between two questions of
+  `readyNow`, short beside the 100 ms stretch, so a break in readiness of
+  a running program is seen.
+- **D-44 (the number compared).** The text is read as `data:` reads a
+  value, so `expect:` and `data:` agree on what "13 digits" means; equal
+  means the same sign, 13 mantissa digits and exponent.
+- **D-45 (a non-number refused when read).** `checkExpect` refuses any
+  text `parseDecimal` does not take (`docs/reviews/d-simplification.md`
+  §9: "say whether a non-number is refused when read"): AC-40 says
+  `expect:` takes a number.
+- **D-46 (Swift's preset test).** `PresetLoadTests.testLoadDiagPreset`
+  waits for an element FS 4 removes and loads a file through the
+  document picker, not a bundled example; it is skipped from M-54 and
+  replaced by C59-8's scenario (M-58).
+- **D-47 (the preset-card tests).** They test behaviour of the 2.3.0
+  reader (`CARD:`, `ArmCard:`, `InsertCard:`) that goes in M-54 and comes
+  back in a new form in M-55; their names are listed (P7) so that M-55's
+  tests cover each.
+- **D-48 (`dark_time` over `calcu`).** The tools keep the user's timing
+  rule and get it from the harness by sampling the display every 10 ms of
+  emulated time, until C59-9's `ti59 run-time` and `ti59 line-times`
+  (M-59) measure inside the product.
+
+### 11.10 Questions for the user
+
+None that splits this column. (C59-2 §10 asks how `ti59 program` tells a
+count from a keycode.)
+
+### 11.11 Proposed ledger rows and plan notes
+
+**Ledger rows:** none new. Checked and not proposed: the nine examples
+the Web offers between M-54 and M-55 (no release in between, plan §4);
+`expect:` taking a number only (row 59-42 and the spec, AC-40, AC-68);
+the agent tools taking key IDs (`runtime.py --keys`) and loading through
+`calcu` (developer tools, not user-visible).
+
+**Plan note P-2.** §5.1: LIB-6's Calc-U-59 column is tested in M-54 and
+Done in M-58 (D-36): AC-42's scenario passes on the Web in M-54, in Qt6
+in M-57 and in Swift in M-58. M-57's "Tests from" gains LIB-6 AC-42
+(Qt6), M-58's LIB-6 AC-42 (Swift).
+
+**Plan note P-3.** M-54's "Knowledge, ledger" names the skill
+`calc-u-59-statefiles`: it is renamed `calc-u-59-presets` in the step
+(C59-2 §7, D-18 there); M-55's line "`calc-u-59-statefiles` skill
+(cards)" reads `calc-u-59-presets`.

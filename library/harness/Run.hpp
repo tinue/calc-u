@@ -3,6 +3,7 @@
 #include "harness/Commands.hpp"
 #include "harness/HarnessHost.hpp"
 #include "harness/Product.hpp"
+#include "harness/ServeAddOn.hpp"
 #include "media/MediaPart.hpp"
 #include "opening/LibraryOpeners.hpp"
 #include "opening/OpenPart.hpp"
@@ -103,6 +104,15 @@ public:
     // Returns the exit status (0).
     int serve(const std::function<std::optional<std::string>()>& readLine,
               const std::function<void(const std::string&)>& write);
+    // C1600-3 AC-22 (design §3.5): `serve` with a product's add-ons started
+    // (with serveLoop()): standard input is read by a thread of its own; its
+    // lines and the add-ons' tasks are taken in order on this thread; while
+    // none waits and an add-on wants time, emulated time passes unpaced in
+    // pieces of 1/60 s. Without add-ons it is serve().
+    int serveWith(const std::vector<ServeAddOn*>& addOns, std::function<std::optional<std::string>()> readLine,
+                  const std::function<void(const std::string&)>& write);
+    // What an add-on gets at its start: the loop's inbox and its end.
+    ServeLoop serveLoop();
     // AC-2: the lines in order until the first refusal; 0 or 1.
     int oneShot(const std::vector<std::string>& lines, const std::function<void(const std::string&)>& write);
     // Completes the files of the run and removes the run folder (EC-3, AC-8).
@@ -134,6 +144,8 @@ private:
     std::unique_ptr<HarnessHost> host_;
     CommandRegistry registry_;
     bool finished_ = false;
+    struct Inbox;
+    std::shared_ptr<Inbox> inbox_;
 };
 
 // The products of a build matched by name or short form, any case (AC-1).

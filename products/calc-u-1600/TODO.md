@@ -388,10 +388,6 @@ Shared-Layer-Followup-Plan.md and Web-GUI-Plan.md.
   parity table (Calc-U-59 style).
 - **Web client: check on a real iPad** -- touch, two-finger SHIFT + key,
   install from Safari, persistence after closing the app, audio.
-- **The DAP debugger to Shared.** `Qt6/app/debug/DapSession` (~1100 lines)
-  and `DebugController` are protocol logic over Core's debug objects, but
-  written against QJson; they need a JSON value type in Shared first
-  (vendored, header-only). `DapServer` (TCP framing) stays per frontend.
 - **CLIs on Shared.** `tools/pc1500_cli.cpp` / `pc1600_cli.cpp` build their
   own preset environment and both copy the `drainWav` yield hook; they could
   run presets through the library's app session (the harness, LIB-11) instead.

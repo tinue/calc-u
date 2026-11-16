@@ -90,9 +90,7 @@ set(CALCU1600_QT_SOURCES
   app/AppLogging.cpp
   app/MachineCodeLoadDialog.cpp
   app/AudioOutput.cpp
-  app/debug/DapServer.cpp
-  app/debug/DapSession.cpp
-  app/debug/DebugController.cpp
+  app/debug/DapSocket.cpp
   resources/calc-u-1600.qrc)
 if(APPLE)
   list(APPEND CALCU1600_QT_SOURCES app/MacAppSupport.mm)

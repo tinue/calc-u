@@ -27,7 +27,8 @@ else()
 endif()
 option(CALCU_ATTACH "Harness attach in calcu_library (C59-5; POSIX, development builds)" ${CALCU_ATTACH_DEFAULT})
 if(CALCU_ATTACH)
-  list(APPEND CALCU_LIBRARY_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/harness/attach/AttachEndpoint.cpp
+  list(APPEND CALCU_LIBRARY_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/harness/attach/LocalStream.cpp
+                                    ${CMAKE_CURRENT_SOURCE_DIR}/harness/attach/AttachEndpoint.cpp
                                     ${CMAKE_CURRENT_SOURCE_DIR}/harness/attach/AttachedHarness.cpp)
 endif()
 # LIB-2: a host link of a serial port is a pseudo-terminal on macOS and Linux

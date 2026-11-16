@@ -1,6 +1,8 @@
 #include "Cli.hpp"
 #include "harness/Commands.hpp"
 #include "harness/Run.hpp"
+#include "harness/ServeAddOn.hpp"
+#include <utility>
 #include "harness/attach/AttachClient.hpp"
 
 namespace calcu::harness::cli {
@@ -33,6 +35,13 @@ std::string usageText(const std::vector<std::unique_ptr<HarnessProduct>>& produc
     addPresetCommands(reg, nullptr);
     for (const auto& p : products) p->addCommands(reg);
     for (const auto& u : reg.usage()) s += "  " + u + "\n";
+    // C1600-3 §3.5: the products' options of `serve`.
+    std::string addOns;
+    for (const auto& p : products)
+        for (ServeAddOn* a : p->serveAddOns())
+            addOns += "  " + std::string(a->option()) + " <value>  (" + std::string(p->shortName()) + ", serve) " +
+                      std::string(a->help()) + "\n";
+    if (!addOns.empty()) s += "serve options of the products:\n" + addOns;
     return s + productList(products);
 }
 
@@ -44,9 +53,13 @@ int run(const std::vector<std::string>& args, const Io& io, std::vector<std::uni
     RunOptions options;
     std::optional<std::string> productName;
     std::vector<std::string> words;
+    std::vector<std::pair<std::string, std::string>> addOnOptions;   // a product's options of serve (C1600-3)
     for (std::size_t i = 0; i < args.size(); ++i) {
         const std::string& a = args[i];
-        if (!words.empty()) {   // the commands start: everything after belongs to them
+        // The commands start: everything after belongs to them; options may
+        // follow `serve` (`serve --dap <port>`, C1600-3).
+        const bool afterServe = words.size() == 1 && words[0] == "serve" && a.rfind("--", 0) == 0;
+        if (!words.empty() && !afterServe) {
             words.push_back(a);
             continue;
         }
@@ -83,8 +96,16 @@ int run(const std::vector<std::string>& args, const Io& io, std::vector<std::uni
                 return 2;
             }
         } else if (a.rfind("--", 0) == 0) {
-            io.err("Unknown option " + a + ".\n" + usageText(products));
-            return 2;
+            bool known = false;   // a product's option of serve: checked once the product is known
+            for (const auto& p : products)
+                for (ServeAddOn* addOn : p->serveAddOns()) known = known || addOn->option() == a;
+            if (!known) {
+                io.err("Unknown option " + a + ".\n" + usageText(products));
+                return 2;
+            }
+            auto v = value(a.c_str());
+            if (!v) return 2;
+            addOnOptions.emplace_back(a, *v);
         } else {
             words.push_back(a);
         }
@@ -104,11 +125,38 @@ int run(const std::vector<std::string>& args, const Io& io, std::vector<std::uni
         io.err("calcu needs a command, or serve.\n" + usageText(products));
         return 2;
     }
+    std::vector<std::pair<ServeAddOn*, std::string>> wanted;
+    for (const auto& [option, v] : addOnOptions) {
+        ServeAddOn* found = nullptr;
+        for (ServeAddOn* addOn : product->serveAddOns())
+            if (addOn->option() == option) found = addOn;
+        if (!found) {
+            io.err(std::string(product->name()) + " has no option " + option + ".\n");
+            return 2;
+        }
+        if (!serve) {
+            io.err(option + " is an option of serve.\n");
+            return 2;
+        }
+        wanted.emplace_back(found, v);
+    }
     std::string error;
     std::unique_ptr<Server> server = Server::start(*product, options, &error);   // EC-1
     if (!server) {
         io.err(error + (error.empty() || error.back() == '\n' ? "" : "\n"));
         return 2;
+    }
+    if (serve && !wanted.empty()) {
+        std::vector<ServeAddOn*> started;
+        for (const auto& [addOn, v] : wanted) {
+            if (std::optional<std::string> refused = addOn->start(v, server->host().session(), server->serveLoop())) {
+                for (ServeAddOn* a : started) a->stop();
+                io.err(*refused + "\n");   // C1600-3 EC-1, D-6: it cannot start
+                return 2;
+            }
+            started.push_back(addOn);
+        }
+        return server->serveWith(started, io.readLine, io.out);
     }
     if (serve) return server->serve(io.readLine, io.out);
     return server->oneShot(splitOneShot(words), io.out);

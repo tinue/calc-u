@@ -213,6 +213,9 @@ void TypingPart::afterCall(SessionContext& c, pacing::WallTime now) {
 void TypingPart::machineChanged(SessionContext& c) {
     ctx_ = &c;
     machine::Machine* m = c.machineSession().machine();
+    const std::uint64_t generation = c.machineSession().generation();
+    if (engineGeneration_ == generation) return;
+    engineGeneration_ = generation;
     engine_.setMachine(m, m ? product_.profile(m->model()) : nullptr, m ? product_.keyboardMap(m->model()) : nullptr);
     heldChanged();
 }

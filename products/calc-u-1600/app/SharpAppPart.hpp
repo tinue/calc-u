@@ -47,6 +47,10 @@
 
 class ExpansionCard;
 
+namespace shared::dap {
+class DapPart;
+}
+
 namespace shared {
 
 
@@ -131,6 +135,9 @@ public:
     std::vector<calcu::presets::PresetListEntry> presetEntries() const {
         return calcu::presets::presetList(m_bundle, m_rules, m_catalogue, nullptr);
     }
+    // C1600-3: the DAP server (app/dap/DapPart); nullptr in a Web build,
+    // which has none (AC-1). The host hands it its socket (setTransport).
+    dap::DapPart* dapPart() { return m_dap.get(); }
     // LIB-18: the machine control (builds, plug changes).
     calcu::startup::MachineControl& machineControl() { return m_startup.control(); }
 
@@ -246,6 +253,9 @@ private:
     BasicProgramKind m_basicKind;
     MachineCodeKind m_codeKind;
     std::unique_ptr<calcu::opening::OpenPart> m_open;
+    // C1600-3: the DAP server, after the debugger among the parts; not in
+    // an Emscripten build.
+    std::shared_ptr<dap::DapPart> m_dap;   // shared: no complete type where Emscripten leaves it out
 
     // LIB-4 (Part D): the product's rules and the library's part.
     SharpControlRules m_controlRules;

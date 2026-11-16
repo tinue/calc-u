@@ -12,6 +12,8 @@
 
 #include <QAbstractButton>
 #include <QAction>
+#include <QHostAddress>
+#include <QLabel>
 #include <QApplication>
 #include <QComboBox>
 #include <QDialog>
@@ -468,6 +470,36 @@ bool ShotRunner::runStep(const ShotStep& step, int* delayMs, std::function<void(
         }
         if (step.number >= 0 && panel->paperEmpty() != (step.number == 1)) {
             *error = QStringLiteral("the paper of '%1' is %2").arg(step.text, panel->paperEmpty() ? "empty" : "not empty");
+            return false;
+        }
+        return true;
+    }
+    case K::ExpectWidget: {
+        QWidget* w = findWidget(step.text, error);
+        if (!w) return false;
+        QString text;
+        if (auto* label = qobject_cast<QLabel*>(w)) text = label->text();
+        else if (auto* button = qobject_cast<QAbstractButton*>(w)) text = button->text();
+        if (step.text2 != QStringLiteral("\x01") && text != step.text2) {
+            *error = QStringLiteral("'%1' shows '%2', not '%3'").arg(step.text, text, step.text2);
+            return false;
+        }
+        if (step.number >= 0 && w->isEnabled() != (step.number == 1)) {
+            *error = QStringLiteral("'%1' is %2").arg(step.text, w->isEnabled() ? "enabled" : "disabled");
+            return false;
+        }
+        return true;
+    }
+    case K::DapClient: {
+        if (step.text == QLatin1String("disconnect")) {
+            if (m_dapClient) m_dapClient->abort();
+            delete m_dapClient;
+            return true;
+        }
+        m_dapClient = new QTcpSocket(this);   // the port of `--dap` (the UI's side only: no machine step)
+        m_dapClient->connectToHost(QHostAddress::LocalHost, static_cast<quint16>(step.text.toUInt()));
+        if (!m_dapClient->waitForConnected(3000)) {
+            *error = QStringLiteral("no DAP connection: %1").arg(m_dapClient->errorString());
             return false;
         }
         return true;

@@ -116,6 +116,8 @@ captures the whole window. More captures can go in `steps:` as
 | `capture: …` | Write an image; see below. |
 | `expect-panel: { name, title, empty }` | Check a paper panel (by objectName): shown, with that title (the plotter's name; `""` none), empty or not; the shot fails otherwise. For the check scenarios in `tests/gui/`. |
 | `expect-title: <text>` | Check the window's title. |
+| `expect-widget: { name, text, enabled }` | Check a label or button (by objectName): its text, and whether it can be used; the shot fails otherwise (C1600-3 AC-18). |
+| `dap-client: <port>\|disconnect` | A DAP client of this process connects to 127.0.0.1:`<port>` (the app started with `--dap <port>`), or goes (C1600-3 AC-18). |
 | `command: <name>` | A harness command through attach (`pause`, `resume`). |
 | `host-key-down: <key>` / `host-key-up: <key>` | A key of the host's keyboard goes down / up, as the window gets it from the keyboard: `shift` or one character (sent with Shift while `shift` is down). No settle follows, so a down and an up in a row are a tap. For LIB-5 AC-33's check scenario. |
 | `expect-lcd: <text>` / `expect-no-lcd: <text>` | Attach's `expect` / `not-expect`: the text is in one row of the LCD, or in none; the shot fails otherwise. |

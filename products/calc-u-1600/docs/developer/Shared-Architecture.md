@@ -6,7 +6,7 @@ and the same app logic:
 
 ```mermaid
 flowchart TB
-    Qt["frontends/qt6/app/ — desktop GUI<br/>(widgets, dialogs, menus, QAudioSink, DAP server)"]
+    Qt["frontends/qt6/app/ — desktop GUI<br/>(widgets, dialogs, menus, QAudioSink, the DAP's socket)"]
     Web["frontends/web/ — web client<br/>(React, canvas, IndexedDB, AudioWorklet)"]
     Shared["app/ — app logic, no GUI<br/>SharpAppPart on the library's app session, media kinds, settings, paths, layouts"]
     Core["core/ — the hardware<br/>CPUs, machines, cards, loaders, jobs"]
@@ -63,7 +63,7 @@ WebAssembly check.
 | `SharpAppPart` | Calc-U-1600's part of the library's app session (a `calcu::sessions::SessionPart`): the live PC-1500/1500A/1600 as one `calcu::machine::Machine` handed to the machine session, memory-module slots, peripherals, tape, host drive, trace, inspector; the library's parts it hosts: `MediaPart` (LIB-7, the media); `PresetsPart` (LIB-6: `load-preset {ref \| content,name; buildOnly}`, `check-preset`, `preset-list`, `run-step`, `wait-idle`) and `StartupPart` (LIB-18: `start`, `model {name}`, `variant {name}`, `attach {place, peripheral, variant?}`, `detach {place}`, `reset`, `cold-boot`, `power-cycle`); the media commands of LIB-7 (`media.choose`, … since M-47), the product commands `c1600.mount-host-drive`, `c1600.ce1600p-rom` (each a LIB-18 plug change); the product topics `c1600.lamps` (the tape counter, the floppy lamp) and `c1600.serial-links`, LIB-12's `roms-missing` (`SharpTopics.hpp`); the rules of the control state (`SharpControlRules`) and LIB-4's `ControlPart` that the session builders put among the library's parts (`controlPart()`; see "The machine" below). `SharpAppPartOptions{canMountHostFolder}`: the Web says no (LIB-4 AC-18) |
 | `SharpDebuggerSetup`, `SharpTraceRecorder`, `SharpSymbolReaders` | The library's debugger for the Sharp models (LIB-10): the `DebuggerPart`'s set-up (`cpu` only, the trace session on the core's records, no run-control steps), the trace records into the trace file, the symbols of the Sharp listings |
 | `SharpPrinters` | The CE-150's and the CE-1600P's papers for the library's `PaperPart` (LIB-8) |
-| `dap/` | The DAP's layer (C1600-3): its targets, breakpoints and steps on the library's debugger; the server is in the Qt frontend until M-50 |
+| `dap/` | The DAP server (C1600-3, `shared::dap`; every native tree, not Emscripten): `DapPart` (a session part: listening, the topic `c1600.dap`, held messages), `DapSession` and `DapSetup.cpp` (the requests, the set-up as operations, the events), its targets, breakpoints and steps on the library's debugger; JSON, framing and `DapTransport`, which a host fills (Qt6: `frontends/qt6/app/debug/DapSocket`; the harness: `serve --dap` on `library/harness/attach/LocalStream`) |
 | `SharpTyping` | Typing on the library's typing engine (LIB-5, `library/typing/`): the typing profile per model (`typingProfile`: 4 + 4 frames, 6 more after SHIFT and KBII on the PC-1600, readiness rules, the characters, the `key` names), the keyboard map per model (`SharpKeyboardMap`), `typingProduct()` for the session's `TypingPart` |
 | `SharpSession` | `makeSharpSession()`: the library's app session with the control part and the part, which the session owns (Qt6 with LIB-14's `SettingsPart` in `moreParts`, tests, `tools/wasm_smoke`); a host talks to it through the library's `calcu::sessions::Listener` (Qt6: the Qt6 component set's `SessionHost`) |
 | `SharpControlRules` | The product's side of LIB-4's control state (M-49): the place `host-drive` not available where no folder can be mounted, and the product entries `c1600.disk-controls`, `c1600.ce158-printer-panel`, `c1600.host-drive-folder`, `c1600.mount-directory`, `c1600.ce1600p-next-variant`; `sharpControlSetup()` gives the `ControlPart` its catalogue, printers (CE-150, CE-1600P) and rules. Everything else of the old `ControlState` is the library's generic entries, from the descriptors (one pin-out per 60-pin place) |
@@ -215,8 +215,6 @@ target ([Web-Client.md](Web-Client.md)).
 
 ## Not in Shared yet
 
-- The DAP debugger (`frontends/qt6/app/debug/`): its protocol logic is written
-  against QJson and needs a JSON value type in Shared first.
 - The CLIs don't use the app session; they load presets through the
   library's loader (adapter `tools/CliPresetRun.hpp`, until LIB-11's
   harness replaces them, M-51).

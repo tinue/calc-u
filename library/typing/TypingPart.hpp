@@ -75,6 +75,11 @@ private:
     TypingEngine engine_;
     const PauseProbe* probe_ = nullptr;
     sessions::SessionContext* ctx_ = nullptr;
+    // The machine generation the engine was last set to: a second
+    // machineChanged for the same machine (a session in virtual time tells
+    // the parts after an operation that built it, when the engine has
+    // followed it already) keeps what is typed (C1600-3: the DAP's set-up).
+    std::optional<std::uint64_t> engineGeneration_;
     sessions::StateTopic* held_ = nullptr;
     std::map<Token, sessions::CallId> calls_;
     pacing::WallTime wall_{0};

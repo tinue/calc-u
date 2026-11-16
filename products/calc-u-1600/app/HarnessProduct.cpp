@@ -34,6 +34,12 @@
 #include "app/SharpProductMachines.hpp"
 #include "presets/Source.hpp"
 #include "startup/ProductMachines.hpp"
+#include "app/dap/DapPart.hpp"
+#include "harness/ServeAddOn.hpp"
+#include "presets/PresetsPart.hpp"
+#ifdef CALCU_ATTACH
+#include "harness/attach/LocalStream.hpp"
+#endif
 
 // The product folder (design §8, O-2), set by CMake.
 #ifndef CALCU1600_DIR
@@ -227,6 +233,110 @@ harness::Reply loadCodeCmd(harness::CommandContext& c) {
     return harness::doneReply(std::move(v), std::move(lines));
 }
 
+// ---- C1600-3 AC-22 (design §3.5): `serve --dap <port>` ----
+//
+// The DAP server of the harness's session on attach's one-client listener
+// (LocalStream; D-3: built where attach is). What the stream's I/O thread
+// gets is posted into the serve loop and handed to the part there.
+class DapServeAddOn final : public harness::ServeAddOn
+#ifdef CALCU_ATTACH
+    ,
+                            public dap::DapTransport
+#endif
+{
+public:
+    explicit DapServeAddOn(dap::DapPart& part) : part_(part) {}
+    std::string_view option() const override { return "--dap"; }
+    std::string_view help() const override {
+        return "accept a debugger (DAP, VS Code) on 127.0.0.1:<port>; emulated time passes, unpaced, while it has "
+               "the machine running. A scenario that pauses by a breakpoint repeats exactly, one that pauses by hand "
+               "does not.";
+    }
+    std::optional<std::string> start(std::string_view value, sessions::AppSession&, harness::ServeLoop loop) override {
+#ifdef CALCU_ATTACH
+        const std::string text(value);
+        long port = -1;
+        if (!text.empty() && text.size() <= 6 && text.find_first_not_of("0123456789") == std::string::npos) port = std::stol(text);
+        if (std::optional<std::string> refused = part_.setRunPort(port)) return *refused;   // EC-1
+        loop_ = std::move(loop);
+        part_.setTransport(this);
+        if (!part_.status().client && part_.status().status.rfind("Listening", 0) != 0) {
+            const std::string why = part_.status().status;
+            part_.setTransport(nullptr);
+            return why;   // "Port <port> not available: <why>" (AC-2)
+        }
+        return std::nullopt;
+#else
+        (void)value;
+        (void)loop;
+        return std::string("The DAP server is not in this build.");   // D-3
+#endif
+    }
+    bool wantsTime() const override { return part_.wantsTime(); }
+    void stop() override {
+#ifdef CALCU_ATTACH
+        part_.setTransport(nullptr);
+#endif
+    }
+
+#ifdef CALCU_ATTACH
+    // ---- dap::DapTransport, on the loop's thread ----
+    std::optional<std::string> listen(std::uint16_t port, std::string busy) override {
+        close();
+        stream_ = std::make_unique<harness::LocalStream>(
+            [this](harness::StreamEvent e) {
+                if (loop_.post) loop_.post([this, e = std::move(e)]() mutable { arrived(std::move(e)); });
+            },
+            port, std::move(busy));
+        const harness::LocalStream::Opened o = stream_->open();
+        if (!o.ok) {
+            stream_.reset();
+            return o.problem;
+        }
+        return std::nullopt;
+    }
+    void close() override {
+        stream_.reset();
+        client_ = 0;
+    }
+    void send(std::string bytes) override {
+        if (stream_ && client_) stream_->write(client_, std::move(bytes));
+    }
+    void dropClient() override {
+        if (stream_ && client_) stream_->close(client_);
+        client_ = 0;
+    }
+    void quitProgram() override {
+        if (loop_.quit) loop_.quit();   // the run ends after this request (exit 0)
+    }
+
+private:
+    void arrived(harness::StreamEvent e) {
+        switch (e.kind) {
+        case harness::StreamEvent::Kind::Connected:
+            client_ = e.client;
+            part_.take(dap::DapInput{dap::DapInput::Kind::Connected, {}});
+            break;
+        case harness::StreamEvent::Kind::Bytes:
+            if (e.client == client_) part_.take(dap::DapInput{dap::DapInput::Kind::Bytes, std::move(e.bytes)});
+            break;
+        case harness::StreamEvent::Kind::Disconnected:
+            if (e.client != client_) break;   // one the part sent away already
+            client_ = 0;
+            part_.take(dap::DapInput{dap::DapInput::Kind::Disconnected, {}});
+            break;
+        }
+    }
+
+    harness::ServeLoop loop_;
+    std::unique_ptr<harness::LocalStream> stream_;
+    std::uint64_t client_ = 0;
+#endif
+
+private:
+    dap::DapPart& part_;
+};
+
 std::shared_ptr<const std::vector<std::uint8_t>> harnessHostDriveRom() {
     auto rom = sharp::readHostDriveRom({std::string(CALCU1600_DIR) + "/firmware/pc1600-hostdrive"});
     return rom ? std::make_shared<const std::vector<std::uint8_t>>(std::move(*rom)) : nullptr;
@@ -280,7 +390,16 @@ public:
     // ...`, `cut-paper`; the run hands the part its machine control, A-3) and
     // LIB-10's debugger (pause, step, break, watch, trace, symbols, ...; the
     // run hands it its trace folder and limit).
-    std::vector<sessions::SessionPart*> sessionParts() override { return {&typing_, &loaders_, &font_, &paper_, &debugger_}; }
+    // C1600-3: the DAP server after the debugger, on the run's parts.
+    std::vector<sessions::SessionPart*> sessionParts() override {
+        return {&typing_, &loaders_, &font_, &paper_, &debugger_, &dap_};
+    }
+    void runParts(const harness::RunParts& r) override {
+        dap_.deps().presets = r.presets;
+        dap_.deps().control = r.control;
+        dap_.deps().settings = r.settings;
+    }
+    std::vector<harness::ServeAddOn*> serveAddOns() override { return {&dapAddOn_}; }
     paper::PaperPart* paperPart() override { return &paper_; }
 
     // LIB-13 (Part D, D4.2): `open` takes the presets by their extensions,
@@ -316,6 +435,8 @@ private:
     paper::PaperPart paper_{catalogue_, sharpPrinterPapers()};
     debugger::DebuggerPart debugger_{sharpDebuggerSetup(nullptr, nullptr, /*hasTraceFolder=*/false)};
     SharpControlRules controlRules_{SharpControlRules::Inputs{true, {}}};
+    dap::DapPart dap_{dap::DapDeps{&debugger_, &typing_, nullptr, nullptr, nullptr, &bundle_}};
+    DapServeAddOn dapAddOn_{dap_};
 };
 
 } // namespace

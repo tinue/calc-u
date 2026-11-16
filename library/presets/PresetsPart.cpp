@@ -87,6 +87,20 @@ Task<startup::PresetLoad> PresetsPart::load(std::string ref, std::optional<machi
     co_return PresetLoad{};
 }
 
+Task<OperationResult> PresetsPart::loadWithin(OperationContext& op, std::string ref, bool buildOnly,
+                                             std::optional<machine::ModelId> forModel) {
+    if (!setup_.rules || !setup_.catalogue) co_return OperationResult{false, "This build reads no presets of format 2 yet."};
+    const auto source = sourceFor(ref, setup_.bundle, setup_.home);
+    auto read = readPreset(*source, readSetup());
+    if (auto* e = std::get_if<ReadError>(&read)) co_return OperationResult{false, e->message};
+    auto plan = std::make_shared<const LoadPlan>(std::get<LoadPlan>(std::move(read)));
+    if (forModel && plan->model != *forModel)
+        co_return OperationResult{false, source->name() + " is a preset for the " + plan->model.value};
+    const LoadOptions options{buildOnly, false};
+    OperationResult r = co_await runLoad(op, plan, options);
+    co_return r;
+}
+
 namespace {
 
 Task<OperationResult> runItem(OperationContext& op, std::shared_ptr<Item> item, ModelRules* rules, EngineDeps* deps) {

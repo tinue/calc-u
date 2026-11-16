@@ -2,14 +2,15 @@
 """DAP smoke test for Calc-U-1600's debug server.
 
 Connects to a running app (started with `--dap <port>`, or with the debug
-server enabled in Settings), attaches, and drives the requests VS Code
+server enabled in Settings) or to the harness, attaches, and drives the requests VS Code
 uses: threads, pause, stackTrace/scopes/variables, disassemble, readMemory,
 evaluate, instruction and data breakpoints, stepping, continue, disconnect,
 and the calcu1600/screen text read-out.
 
-Stdlib only:  uv run tools/dap_smoke.py [--port 32168] [--app PATH]
-With --app the script starts the app itself (with --dap) and quits it
-through the calcu1600/quit request.
+Stdlib only:  uv run tools/dap_smoke.py [--port 32168] [--app PATH | --harness PATH]
+With --app the script starts the app itself (with --dap), with --harness
+the harness `calcu --product 1600 serve --dap <port>` (no window; the
+CTest CalcU1600DapSmoke), and quits it through the calcu1600/quit request.
 """
 
 import argparse
@@ -39,6 +40,7 @@ class Dap:
         self.buf = b""
         self.seq = 1
         self.events = []
+        self.responses = {}
 
     def _read_message(self):
         while b"\r\n\r\n" not in self.buf:
@@ -71,6 +73,18 @@ class Dap:
                 if not msg["success"]:
                     raise RuntimeError(f"{command} failed: {msg.get('message')}")
                 return msg.get("body", {})
+            elif msg["type"] == "response":
+                self.responses[msg["request_seq"]] = msg   # one sent without waiting (send())
+
+    def response(self, seq):
+        """The response to a request sent with send(), when it comes."""
+        while seq not in self.responses:
+            msg = self._read_message()
+            if msg["type"] == "event":
+                self.events.append(msg)
+            elif msg["type"] == "response":
+                self.responses[msg["request_seq"]] = msg
+        return self.responses.pop(seq)
 
     def wait_event(self, name, timeout=10.0, match=None):
         deadline = time.time() + timeout
@@ -365,27 +379,18 @@ def bus_rom_run(port):
 
 
 def renum_template_run(port):
-    """The PC-1500 ROM extension template: RENUM built as the extension builds it, stopped in, and run."""
+    """The PC-1500 ROM extension template: RENUM, stopped in, and run (C1600-3 AC-19).
+
+    The ROM is the template built once with sdaslh5801 as the extension
+    builds it (extension.js, assembleCommand) and kept as a fixture,
+    tests/fixtures/dap/pc1500-bus-rom/ (rom.asm and debug.pc1500a are the
+    template's files with {{name}} = rom), so no assembler is needed.
+    """
     print("RENUM template run:")
-    sdcc = os.environ.get("CALCU_SDCC_BIN") or os.path.dirname(shutil.which("sdaslh5801") or "")
-    if not sdcc or not os.path.exists(os.path.join(sdcc, "sdaslh5801")):
-        print("  skip: no sdaslh5801 (set CALCU_SDCC_BIN)")
-        return
-    template = os.path.join(REPO, "vscode/calcu1600-debug/templates/pc1500-bus-rom")
+    fixture = os.path.join(REPO, "tests/fixtures/dap/pc1500-bus-rom")
     with tempfile.TemporaryDirectory() as tmp:
-        for name in ("NAME.asm", "debug.pc1500a"):
-            with open(os.path.join(template, name)) as f:
-                text = f.read().replace("{{name}}", "rom")
-            with open(os.path.join(tmp, name.replace("NAME", "rom")), "w") as f:
-                f.write(text)
-        # The VS Code extension's recipe (extension.js, assembleCommand).
-        build = subprocess.run(
-            f"'{sdcc}/sdaslh5801' -plosgff rom.asm"
-            " && printf -- '-muwx\\n-i rom\\nrom.rel\\n\\n-e\\n' > rom.lnk"
-            f" && '{sdcc}/sdld' -nf rom"
-            f" && '{sdcc}/makebin' -p -s 65536 -o 0x$(head -1 rom.ihx | cut -c4-7) rom.ihx rom.bin",
-            shell=True, cwd=tmp, capture_output=True, text=True)
-        check(build.returncode == 0 and not build.stdout.strip(), f"RENUM template builds {build.stdout.strip()}")
+        for name in ("rom.asm", "rom.bin", "rom.rst", "debug.pc1500a"):
+            shutil.copy(os.path.join(fixture, name), os.path.join(tmp, name))
         dap = Dap(port)
         dap.request("initialize", adapterID="calcu1600")
         dap.wait_event("initialized")
@@ -528,10 +533,75 @@ def screen_run(port):
     dap.sock.close()
 
 
+def vscode_session(port):
+    """M-50's exit check, "VS Code debugs a program as before": the requests in
+    the order VS Code sends them for a launch configuration of the extension
+    (initialize, launch, setBreakpoints, setFunctionBreakpoints,
+    setExceptionBreakpoints, configurationDone; threads, stackTrace, scopes,
+    variables at each stop; next; continue; disconnect)."""
+    print("VS Code session:")
+    dap = Dap(port)
+    caps = dap.request("initialize", clientID="vscode", clientName="Visual Studio Code", adapterID="calcu1600",
+                       pathFormat="path", linesStartAt1=True, columnsStartAt1=True, supportsVariableType=True,
+                       supportsVariablePaging=True, supportsRunInTerminalRequest=True, locale="en",
+                       supportsProgressReporting=True, supportsInvalidatedEvent=True, supportsMemoryReferences=True,
+                       supportsMemoryEvent=True)
+    check(caps.get("supportsConfigurationDoneRequest") and caps.get("supportsRestartRequest"), "initialize: capabilities")
+    dap.wait_event("initialized")
+    bin_ = os.path.join(REPO, "tests/fixtures/listings/sdas-lh5801/memtest_stock.bin")
+    rst = os.path.join(REPO, "tests/fixtures/listings/sdas-lh5801/memtest.rst")
+    # launch: VS Code sends the configuration with its own keys besides ours.
+    seq = dap.send("launch", type="calcu1600", request="launch", name="Debug memtest", __sessionId="x",
+                   preset=os.path.join(REPO, "examples/startup/default-pc1500.pc1500"),
+                   program={"bin": bin_, "listing": rst, "address": "0x40C5", "after": "call"},
+                   listings=[], symbols=[])
+    # The breakpoints follow at once, before the launch is answered.
+    bps = dap.request("setBreakpoints", source={"name": "memtest.asm", "path": MEMTEST_ASM},
+                      lines=[88], breakpoints=[{"line": 88}], sourceModified=False)["breakpoints"]
+    dap.request("setFunctionBreakpoints", breakpoints=[])
+    dap.request("setExceptionBreakpoints", filters=[])
+    launched = dap.response(seq)
+    check(launched["success"], f"launch answered ({launched.get('message')})")
+    check(bps and bps[0]["verified"] and bps[0]["line"] == 89, f"breakpoint 88 -> {bps and bps[0].get('line')}")
+    dap.request("configurationDone")
+    stop = dap.wait_event("stopped", timeout=30)
+    tid = stop["threadId"]
+
+    def look():
+        threads = dap.request("threads")["threads"]
+        frames = dap.request("stackTrace", threadId=tid, startFrame=0, levels=20)["stackFrames"]
+        scopes = dap.request("scopes", frameId=frames[0]["id"])["scopes"]
+        regs = dap.request("variables", variablesReference=scopes[0]["variablesReference"])["variables"]
+        return threads, frames[0], regs
+
+    threads, top, regs = look()
+    check(stop.get("reason") == "breakpoint" and top.get("line") == 89 and top.get("source", {}).get("path") == MEMTEST_ASM,
+          f"stopped at the breakpoint: {stop.get('reason')} {top.get('source', {}).get('name')}:{top.get('line')}")
+    check(len(threads) == 1 and any(v["name"] == "P" for v in regs), "threads and registers read")
+    dap.request("next", threadId=tid)
+    dap.wait_event("stopped")
+    _, top, regs = look()
+    check(top.get("line") == 90, f"next: line {top.get('line')}")
+    dap.request("setBreakpoints", source={"name": "memtest.asm", "path": MEMTEST_ASM}, lines=[], breakpoints=[])
+    dap.request("continue", threadId=tid)
+    time.sleep(0.5)
+    dap.request("pause", threadId=tid)
+    check(dap.wait_event("stopped").get("reason") == "pause", "continue, then pause")
+    dap.request("disconnect", restart=False, terminateDebuggee=False)
+    dap.sock.close()
+
+
+def named(scenario, failures):
+    prefix = "m50_exit_" if scenario == "vscode_session" else "c1600_3_ac20_"
+    print(f"{prefix}{scenario}: " + ("passed" if failures == 0 else f"{failures} failed"))
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--port", type=int, default=32168)
     ap.add_argument("--app", help="start this app binary with --dap <port> and quit it afterwards")
+    ap.add_argument("--harness", help="start the harness `calcu --product 1600 serve --dap <port>` (C1600-3 AC-20, "
+                                      "AC-22) and quit it afterwards")
     args = ap.parse_args()
 
     proc = None
@@ -539,6 +609,11 @@ def main():
         # -ApplePersistenceIgnoreState: no macOS window restoration for this run.
         proc = subprocess.Popen([args.app, "--dap", str(args.port), "-ApplePersistenceIgnoreState", "YES"],
                                 stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    elif args.harness:
+        # No window: emulated time passes while the session has the machine
+        # running. Standard input stays open; calcu1600/quit ends the run.
+        proc = subprocess.Popen([args.harness, "--product", "1600", "serve", "--dap", str(args.port)],
+                                stdin=subprocess.PIPE, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, cwd=REPO)
     try:
         dap = Dap(args.port, timeout=20.0)
         caps = dap.request("initialize", adapterID="calcu1600", linesStartAt1=True, columnsStartAt1=True)
@@ -605,15 +680,13 @@ def main():
         dap.request("disconnect")
         dap.sock.close()
 
-        program_run(args.port)
-        pc1600_run(args.port)
-        project_run(args.port)
-        bus_rom_run(args.port)
-        renum_template_run(args.port)
-        rom_run(args.port)
-        reset_run(args.port)
-        lh5803_run(args.port)
-        screen_run(args.port)
+        named("main", check.failures)
+        # Each scenario under its test name (C1600-3 AC-20, design T14).
+        for scenario in (program_run, pc1600_run, project_run, bus_rom_run, renum_template_run, rom_run, reset_run,
+                         lh5803_run, screen_run, vscode_session):
+            before = check.failures
+            scenario(args.port)
+            named(scenario.__name__, check.failures - before)
         print("done:", "all passed" if check.failures == 0 else f"{check.failures} failed")
     finally:
         if proc:

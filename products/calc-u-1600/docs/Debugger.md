@@ -38,7 +38,9 @@ flowchart LR
 
 ## One-time installation
 
-**1. Turn the debug server on in the app.** Tick **Settings ▸ Debugger ▸ Accept a debugger**. The default port is 32168, and the dialog shows whether the server is listening. Alternatively, start the app with `--dap 32168`: that turns the server on for that run only.
+**1. Turn the debug server on in the app.** Tick **Settings ▸ Debugger ▸ Accept a debugger**. The default port is 32168, and the dialog shows whether the server is listening. Alternatively, start the app with `--dap 32168`: that turns the server on for that run only. The port must be from 1024 to 65535; another one is reported, and the server stays off for that run.
+
+**Without a window.** The harness serves a debugger too: `calcu --product 1600 serve --dap 32168` (see `CLAUDE.md`, Harness). It has no wall clock: while VS Code has the machine running, emulated time passes as fast as the computer allows. A session that stops at breakpoints repeats exactly; a pause by hand lands wherever the machine got to.
 
 **2. Install the assemblers.**
 - **zasm** ([github.com/Megatokio/zasm](https://github.com/Megatokio/zasm)) for PC-1600 (Z80) code.
@@ -148,7 +150,7 @@ sequenceDiagram
 **Starting it differently.** In the `debug:` block:
 - `entry: START` starts at a symbol (or an address) instead of the default;
 - `command: CALL &C0C5,X` types that line instead of the plain `CALL`, e.g. to pass a variable to the program;
-- `after: call` starts the program without stopping; `after: none` only loads it.
+- `after: call` starts the program without stopping; `after: none`, the default, only loads it. When a debug session starts, the program starts only once VS Code has set your breakpoints, so a breakpoint at its first lines is not missed.
 
 ---
 

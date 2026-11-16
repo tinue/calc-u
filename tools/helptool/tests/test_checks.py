@@ -8,8 +8,9 @@ from helptool.tests.support import HelpTestCase
 class CheckTests(HelpTestCase):
     def test_ac7_missing_chapter_fails(self):
         self.replace(self.shared / "help.yaml",
-                     "  - { number: 6, title: Presets, parts: [shared, product], shared: [06-presets.md] }\n", "")
-        self.assertFailsWith(self.tool("check", "demo"), "library/help/help.yaml", "chapter 6 (Presets) is missing")
+                     "  - { number: 6, title: Presets, parts: [shared, product], shared: [06-presets.md],"
+                     " follows: [LIB-6] }\n", "")
+        self.assertFailsWith(self.tool("check", "demo"), "library/help/help.yaml", "chapter 6 is missing")
 
     def test_ac7_missing_product_only_chapter_fails(self):
         self.replace(self.product / "help.yaml", "  9: [09-product-topics.md, 09-models.md]\n", "")

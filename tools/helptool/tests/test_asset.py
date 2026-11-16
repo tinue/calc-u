@@ -42,6 +42,33 @@ class AssetTests(HelpTestCase):
         with zipfile.ZipFile(self.build("--version", "9.9.9")) as z:
             self.assertEqual(json.loads(z.read("toc.json"))["version"], "9.9.9")
 
+    def test_d9_version_of_the_xcode_preset(self):
+        # As ReleaseIt reads it: the first MARKETING_VERSION is the app's; the
+        # test targets after it sit at 1.0.
+        self.write(self.root / "products/demo/release.yaml",
+                   "name: Demo-Product\nversion:\n  preset: xcode\n  file: App.xcodeproj/project.pbxproj\n"
+                   "release:\n  latest: false\n")
+        self.write(self.root / "products/demo/App.xcodeproj/project.pbxproj",
+                   "\t\t\t\tMARKETING_VERSION = 2.4.0;\n\t\t\t\tMARKETING_VERSION = 2.4.0;\n"
+                   "\t\t\t\tMARKETING_VERSION = 1.0;\n")
+        with zipfile.ZipFile(self.build()) as z:
+            self.assertEqual(json.loads(z.read("toc.json"))["version"], "2.4.0")
+
+    def test_d9_version_of_the_cargo_and_regex_presets_and_an_unknown_one(self):
+        release = self.root / "products/demo/release.yaml"
+        self.write(release, "version:\n  preset: cargo\n")
+        self.write(self.root / "products/demo/Cargo.toml", '[package]\nname = "demo"\nversion = "0.3.1"\n')
+        with zipfile.ZipFile(self.build()) as z:
+            self.assertEqual(json.loads(z.read("toc.json"))["version"], "0.3.1")
+        self.write(release, "version:\n  preset: regex\n  file: VERSION.txt\n  regex: '^v=(\\S+)'\n")
+        self.write(self.root / "products/demo/VERSION.txt", "v=4.5.6\n")
+        with zipfile.ZipFile(self.build()) as z:
+            self.assertEqual(json.loads(z.read("toc.json"))["version"], "4.5.6")
+        self.write(release, "version:\n  preset: gradle\n  file: VERSION.txt\n")
+        run = self.tool("build", "demo", "--out", str(self.root / "out"))
+        self.assertEqual(run.status, 1)
+        self.assertIn("the version preset 'gradle' is not one ReleaseIt has", run.err)
+
     def test_ac6_two_builds_same_bytes(self):
         first = self.build().read_bytes()
         second = self.build().read_bytes()

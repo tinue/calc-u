@@ -168,20 +168,24 @@ before; 10 of them the new LIB-13 cases on the root and the sub-path),
 | ID | Result | Test case (`app/tests/opening_tests.cpp` unless named) |
 |---|---|---|
 | AC-17 | Pass | `lib13_ac17_preset_extensions_media_suffixes`, `_kinds_asked_basic_then_code`, `_listing_and_tokenized_are_basic`, `_headered_code_is_code`, `_headerless_code_only_with_bin`, `_rom_is_not_code`, `_wav_goes_to_first_files_kind`, `_unreadable_wav_goes_to_basic_loader_which_says_why`, `_empty_and_other_taken_by_neither` |
-| AC-18 | Pass (session, harness, Web); Qt6 by hand: waiting | `lib13_ac18_gui_way_sends_program_opened_topic`, `lib13_ac18_kept_file_also_sends_topic`; `tests/harness_tests.cpp`: `lib13_ac18_harness_open_loads_first_wav_file`, `_harness_open_refuses_headerless` (also `.rom` refused), `_harness_open_preset_bas_and_headered_bin`; Web: `LIB-13 AC-18 a dropped WAV with several programs asks which one, then loads by its kind`, `LIB-13 AC-18 a dropped headerless .bin asks the address` |
-| AC-19 | Pass (session, Web); Qt6 by hand: waiting | `lib13_ac19_disk_used_where_it_lies_written_back`, `lib13_ac19_upload_disk_imported_then_inserted`, `lib13_ac19_module_one_place_plugged_pc1500_two_places_refused_pc1600`, `lib13_ac19_tape_definition_into_cassette_wav_is_never_a_tape`; Web: `LIB-13 AC-19 a dropped disk file is imported and inserted` |
+| AC-18 | Pass | `lib13_ac18_gui_way_sends_program_opened_topic`, `lib13_ac18_kept_file_also_sends_topic`; `tests/harness_tests.cpp`: `lib13_ac18_harness_open_loads_first_wav_file`, `_harness_open_refuses_headerless` (also `.rom` refused), `_harness_open_preset_bas_and_headered_bin`; Web: `LIB-13 AC-18 a dropped WAV with several programs asks which one, then loads by its kind`, `LIB-13 AC-18 a dropped headerless .bin asks the address`; Qt6 (M-49, `CalcU1600QtTests`): `lib13_ac21_open_with_bin_runs_the_machine_code_flow` (a `.bin` opened as Open With runs the machine-code flow to its end), `c1600_2_ac16_qt_wav_with_several_programs_asks_which_one`, `c1600_2_ac18_qt_headerless_code_asks_the_address` (the flows the topic starts) |
+| AC-19 | Pass | `lib13_ac19_disk_used_where_it_lies_written_back`, `lib13_ac19_upload_disk_imported_then_inserted`, `lib13_ac19_module_one_place_plugged_pc1500_two_places_refused_pc1600`, `lib13_ac19_tape_definition_into_cassette_wav_is_never_a_tape`; Web: `LIB-13 AC-19 a dropped disk file is imported and inserted`; Qt6 (M-49): `lib13_ac19_drop_onto_window_opens_preset` (a drag of a preset is taken, its drop loads it), `lib13_ac19_drop_disk_file_used_where_it_lies` (a `.floppy.yaml` dropped on a PC-1600 with the CE-1600P is in the drive; a file of no kind is not taken by the drag) |
 | AC-20 | Pass (session, Web) | `lib13_ac20_over_1mib_refused_drop_openwith_start_not_dialog_harness`; Web: `LIB-13 AC-20 a dropped file over 1 MiB is refused with a notice` |
-| AC-21 | Pass (automated parts); Qt6 by hand: waiting | `lib13_ac21_start_file_is_last_file_argument`; CTest `CalcU1600OpenWithTypes` (the three preset extensions Owner, `bas`, `bbin`, `bin` Alternate, no `rom`; fails on the old list); Web: `LIB-13 AC-8 Upload Preset opens the preset among its files`. The Qt6 wiring (a drop, the Dock icon, Finder's Open With, a start argument) builds and is not yet checked by hand (design T16-5): the agent has no screen |
+| AC-21 | Pass | `lib13_ac21_start_file_is_last_file_argument`; CTest `CalcU1600OpenWithTypes` (the three preset extensions Owner, `bas`, `bbin`, `bin` Alternate, no `rom`; fails on the old list); Web: `LIB-13 AC-8 Upload Preset opens the preset among its files`; Qt6 (M-49): `lib13_ac21_open_with_and_dock_drop_open_preset` (a `QFileOpenEvent`, as macOS sends for the Dock icon and Finder's Open With, through the app's `FileOpenFilter` to `open` with the way Open With), `lib13_ac21_open_with_bin_runs_the_machine_code_flow`, `lib13_ac21_start_with_a_file_name` (main's rule on the arguments, then `open` with the way Start before the start is over) |
 | AC-22 | Pass | `lib13_ac22_drop_targets` (every case of the old `test_drop_targets` and the WAV cases, through the product's open part; `CODE.ROM` now refused, AC-17; "ignored" is now "refused") |
 | EC-2 (product) | Pass | `lib13_ec2_disk_without_drive_refused_with_notice` |
 | EC-7 (product) | Pass | `lib13_ec7_open_by_any_way_keeps_dialog_folders` (the remembered folders of the settings unchanged after `open` by drop, Open With, start and dialog); in Qt6 only the dialogs call `rememberOpenFile` |
 
 Coverage: AC-17 to AC-22 have their tests and pass where they run without a
-screen. The column stays **In progress** in `features/INDEX.md` until the
-Qt6 hand checks of T16-5 are done (or M-49's attach scenarios take them
-over): drag a `.bas` and a `.floppy.yaml` onto the window, drop a file on
-the Dock icon, Finder ▸ Open With on a `.bin`, and
-`CalcU1600Qt.app/Contents/MacOS/CalcU1600Qt <file>`.
+screen. The Qt6 hand checks of T16-5 went into M-49's tests on the real
+window (user, 2026-11-16), see the rows above; the Open With event moved
+from a `QApplication` subclass to an event filter on the application
+(`frontends/qt6/app/FileOpenFilter.hpp`) so the tests send it the same
+event. What stays untested: macOS itself (LaunchServices handing a Finder
+drag, a Dock drop or Open With to the app, and the drag of a real Finder
+window: the tests send the Qt events these become; the document types are
+checked by `CalcU1600OpenWithTypes`), which needs a screen and a user
+session. Column status: Done (M-49, 2026-11-16).
 
 ### Deviations from the design, chosen by the simpler structure
 

@@ -32,9 +32,9 @@ flowchart LR
 
 | File | What it is |
 |---|---|
-| `bindings.cpp` | The product's factory of the library's app session (`CALCU_WEB_PRODUCT(CalcU1600Host, …)`): `SharpAppPart`, `SharpWebPart` (app layer) and the session; the library's `WorkerHost` translates its messages |
+| `bindings.cpp` | The product's factory of the library's app session (`CALCU_WEB_PRODUCT(CalcU1600Host, …)`): LIB-14's `SettingsPart`, LIB-4's `ControlPart` (no host folder in a browser, `SharpAppPartOptions{false}`), `SharpAppPart`, `SharpWebPart` (app layer) and the session; the library's `WorkerHost` translates its messages |
 | `calc-engine-worker.js` | The product's entry to the library's worker (`library/web/src/worker.js`, `dist/library-worker.js`): name, wasm, mount `/persist`, lock `calcu1600-storage` |
-| `src/engine.js` | Translates the components' calls to the session's commands and requests, and its topics to their slices, over the library's `createShell()` (until LIB-14 1600, M-49). The loaders (C1600-2): `fileKind`, `loadBasic`, `planCode` (asked again per keystroke in the address dialog), `loadCode`, each carrying the file's bytes (`app/SharpLoaderPart`) |
+| `src/CalcU1600.jsx` | The page, put together from the React set's shell (LIB-14 1600, M-49): `useCalcuShell` over the library's `createShell()`, `ShellMenuBar`, `ShellControlBar` (the disk controls in its `extra`), the shell's dialogs, notices, "Loading…" and "ROMs missing"; the product's data from the request `c1600.shell-product` (`app/SharpShellProduct`: items, labels, the settings spec), the faceplate's hit map and LCD layout from `c1600.faceplate-map {model}`. The loaders (C1600-2): `c1600.file-kind`, `c1600.load-basic`, `c1600.plan-code` (asked again per keystroke in the address dialog), `c1600.load-code`, each carrying the file's bytes (`app/SharpLoaderPart`); `engine.js`, `MenuBar.jsx`, `ControlBar.jsx` are gone |
 | `src/*.jsx`, `src/*.js` | The client, compiled with the library's page side (`library/web/src/`) into one `dist/calc.js` (one global, `CalcU1600`) |
 | `calc.css` | Styles, all under `.calcu-client`, light and dark |
 | `app/` | The installable app's page, manifest and stylesheet; its app page, service worker and worker entry are the library's (`library/web/app/`) |
@@ -87,14 +87,18 @@ attaches it as `Calc-U-1600-web.zip`.
 - **Scoped.** Styles are scoped to `.calcu-client`; `calc.js` adds only
   the `CalcU1600` global.
 - **Test hooks.** `.calcu-client[data-ready=true]` once the session's
-  start is over; its `calcuEngine.request(method, ...args)` sends the
-  command or request `src/engine.js` maps the method to (`lcdText` reads
-  the screen, `ticks` the emulated time); `.calcu-face[data-model]`,
+  start is over; the root element's `calcuShell` is the library's shell
+  (`createShell`: `send`, `request` by the session's names, e.g. the
+  request `c1600.lcd-text`, `ticks`); `.calcu-face[data-model=<model ID>]`
+  (`PC-1600`), the shell's `data-calcu` names (`menu-file`,
+  `item-<id>`, `control-bar`, `bar-model`, `bar-place-<place>`,
+  `settings-dialog`, `notice`, `loading`, `roms-missing`; library
+  `shell/ObjectNames.hpp`), helpers in `tests/helpers.js`,
   `.calcu-key[aria-label=<key>]`, `[data-panel=inspector|paper|printer]`
   (`data-empty`; the paper panel's own names are `[data-calcu=paper-owner]`,
   `paper-copy`, `paper-cut`, … of `library/web/components/PaperPanel.jsx`),
-  `[data-dialog=...]`. The engine's `pause` and `resume` are the library's
-  run control (LIB-10); `getState().paused` follows the `run-state` topic.
+  `[data-dialog=...]`. `pause` and `resume` are the library's run control
+  (LIB-10); the title follows the `run-state` topic.
 - **Same origin.** The worker and the service worker must come from the
   page's origin.
 
@@ -132,7 +136,7 @@ Things that are only in the Qt app, or that a browser can't do:
 - **Pointer.** One key per pointer, so a tablet can hold SHIFT and a
   key with two fingers. Holding the LCD runs turbo.
 - **Keyboard.** `KeyboardEvent.code` / `.key` go to
-  the library's `host-key-down` / `host-key-up` (src/engine.js turns the
+  the library's `host-key-down` / `host-key-up` (src/CalcU1600.jsx turns the
   event into the command's fields; the product's keyboard map in the
   engine decides). A bare Shift tapped within 400 ms is one screen press
   of SHIFT.

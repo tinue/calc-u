@@ -104,3 +104,58 @@ machine. Both products' golden replays pass unchanged in Frequent.
   setup by value.
 - No `docs/behaviour-changes.md` row: no frontend draws from the control
   state before M-49, so nothing visible to a user changes in M-37.
+
+## Calc-U-1600 (M-49, 2026-11-16, branch `m49-shell-1600`)
+
+The product's session has the library's `ControlPart` with
+`app/SharpControlRules` (`makeSharpSession`, `frontends/web/bindings.cpp`,
+the harness product's `controlSetup()`); the 60-pin places have one
+pin-out each (`core/Machine/SharpCatalogue`); `app/ControlState.*`, the
+topics `c1600.control-state` and `c1600.machine` (its lamps are the
+product's `c1600.lamps`) and the Web's `c1600.ui` are gone. Both frontends
+draw from `control-state` (LIB-14 1600). Tests: `CoreTests`
+(`tests/control_state_tests.cpp`, `tests/descriptor_tests.cpp`,
+`tests/harness_tests.cpp`), `CalcU1600QtTests` (Qt6), `shell.spec.js`
+(Web, Chromium and WebKit).
+
+| AC | Result | Evidence |
+|---|---|---|
+| AC-16 | Pass | `lib4_ac16_ac17_pc1500_models_variants_and_fields` (the three models; A01, A03, A04 on the PC-1500, A04 running; the PC-1500A's one variant), `lib4_ac16_ac17_pc1600_fields_ce1600p_variants_and_next_variant` (New, Old) |
+| AC-17 | Pass | the same two cases, one block per row of the table: the slots, `printer` and `interface` with what fits and what is plugged in (EC-1), the CE-1600P's variants in `printer` and `c1600.ce1600p-next-variant` while unplugged, the media places `cassette` and `floppy` with their owner, `c1600.disk-controls` (shown on the PC-1600, available with the CE-1600P, else "The disk drive is in the CE-1600P."), `c1600.ce158-printer-panel`, `c1600.host-drive-folder` (the folder mounted), the paper panel's owner; `lib4_ac17_each_60_pin_place_lists_only_what_fits` (the catalogue: CE-150 in `printer`, CE-158 in `interface`, CE-150 and CE-1600P in the PC-1600's `printer`, the host drive in `host-drive`, the bus ROM in `bus-rom`); `lib1_ac36_connectors_pinouts_places_debug_targets`, `lib1_ac36_…` peripherals' fits updated |
+| AC-18 | Pass | `lib4_ac18_host_drive_refused_where_no_folder_can_be_mounted` (two sessions on a PC-1600: `host-drive` and its choices refused with "A host folder cannot be mounted here.", every other place, the models, variants, media places, panels and actions equal); `lib3_ac38_mirror_holds_every_callback` (the same through the fixture) |
+| AC-19 | Pass | Qt6: `lib14_ac36_bar_pc1500_pc1500a`, `lib14_ac36_bar_pc1600`, `lib14_ac34_qt_menus_in_family_order` draw the models, variants, places, media places and product entries from `control-state`; Web: `lib14_ac36 the bar per model`, `lib14_ac35 the web menus`; `app/ControlState.*` and `c1600.ui` deleted |
+| AC-20 | Pass | `lib4_ac20_operation_refuses_model_variant_and_place_choices` (a preset loading: variants, every place's choices and the inserts refused with "Another operation is running."; models, `reset`, `cold-boot` available, `load-preset` not); Qt6 `lib4_ac20_qt_controls_disabled_while_loading`, `lib14_ac38_loading_after_500_ms_blocks_nothing`; Web `lib4_ac20 peripheral buttons, disk picker and tape controls disabled while loading` |
+| T16-7 (AC-9 for this product) | Pass | `harness_tests.cpp` `lib4_harness_state_control_state_has_paper_panel_and_product_entries` |
+
+Golden runs: `c1600_1_ac4_golden_runs_through_the_interface` passes
+unchanged (the pin-out change is descriptor data; the core's bus is not
+touched). Cost per flush: not visible; `CoreTests` grew by the new cases
+only (about 1.4 s).
+
+### Deviations from the design, chosen by the simpler structure
+
+- **The new 60-pin pin-outs are chains, not `Takes::One`** (design D.5).
+  The places share the one connector `60-pin`; with `Takes::One` LIB-2's
+  rule (AC-7) keeps every other place of that connector empty, so the
+  CE-158 could not go beside a CE-150. One peripheral per place comes from
+  the places' `takesAtOnce` 1, as before. `productRefusal`'s place rule is
+  gone as the design says; the bus ROM's rule and ledger 1600-22 stay.
+- **Two more product entries** (D.4 lists four): `c1600.mount-directory`
+  `{available, reason}` for File ▸ Mount Directory… (a PC-1600 in a
+  frontend that can mount a folder), and `c1600.host-drive-folder` carries
+  `available`/`reason` beside `folder` for Unmount, because a product item
+  follows its entry's availability (LIB-14 M9).
+- **`c1600.lamps` moved to `SharpAppPart`** (D.7 removes what was left of
+  `c1600.machine`): the tape counter and the floppy lamp, which both
+  frontends draw, are a product topic of their own; the model and the
+  build counters of `c1600.machine` went (the control state's model, the
+  machine session's generation).
+- **The CE-1600P's variant while unplugged** is still a product setting
+  of the run (`c1600.ce1600p-rom`, the entry `c1600.ce1600p-next-variant`),
+  but no menu sets it any more: the shell offers a peripheral's variants
+  while it is plugged in (LIB-14 AC-2, M5), and an attach from the menus
+  or the bar uses the default variant. Ledger 1600-45.
+- `SharpAppPart::model()` (a `ModelId`) and `ce1600pVariant()` ("New",
+  "Old") replace `currentModel()` and the ROM enums (LIB-14 D-28).
+
+Column status: Done.

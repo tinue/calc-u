@@ -271,7 +271,7 @@ builds it for the library's `WorkerHost` (LIB-15 1600).
 | AC-35 | Pass | `tests/session_tests.cpp` `lib3_ac35_preset_in_parts_busy_display_and_paper_update`: the Lissajous example, 474 busy host calls, 30 display messages and the armed control state during it, the paper grows while it runs, every call ≤ 17 ms (the 14 ms allowance plus the slice that crosses it); Qt6 exit check below |
 | AC-36 | Pass | Web: `frontends/web/tests/session.spec.js` `lib3_ac36 hidden tab suspends, shown continues` (Longer); Qt6: `CalcU1600NoOwnSession` (no suspend sent) |
 | AC-37 | Pass | `session_tests.cpp` `lib3_ac37_buzzer_heard_at_regular_speed_only` (SoundStart at 48,000, samples at regular speed, none at full speed or in a reset); Web: `session.spec.js` `ac26` |
-| AC-38 | Pass (against the interim names) | `session_tests.cpp` `lib3_ac38_mirror_holds_every_callback`: `romMissing` → `roms-missing` and a refused `start`; `notice`, `attachFailed`, `bayError` → notices; `machineReplaced`, `modelSwitched`, `moduleChanged` → `c1600.machine`; `tapesChanged` → `c1600.tapes`; `presetArmed` → control state during the operation; `presetLog` → log; `busyChanged` → busy; `hostDirectories` → the folder picker stated (AC-26); `serialLinksRelinked` → `c1600.serial-links`; `machineAboutToChange`, `runDebuggerSlice` → no message (the gate). Re-pointed in M-45 to M-49 |
+| AC-38 | Pass (re-pointed to the owners' names in M-49) | `session_tests.cpp` `lib3_ac38_mirror_holds_every_callback`: `romMissing` → LIB-12's `roms-missing` and a refused `start`; `notice`, `attachFailed`, `bayError` → `notices`; `machineReplaced`, `modelSwitched` → LIB-4's `control-state` (its model) and a new machine session generation (LIB-18); `moduleChanged`, `tapesChanged` → LIB-7's `media`, the tape counter → the product's `c1600.lamps`; `presetArmed` → `control-state` during the operation (the CE-1600P plugged in its `printer` place); `presetLog` → `log`; `busyChanged` → `busy`; `hostDirectories` → the place `host-drive` available or not (LIB-4 AC-18); `serialLinksRelinked` → `c1600.serial-links` (LIB-2's serial link files); `machineAboutToChange`, `runDebuggerSlice` → LIB-10's `run-state` and the run control's gate. The interim topics `c1600.control-state`, `c1600.machine`, `c1600.tapes` are gone (M-47, M-49) |
 | ledger 1600-9 | Pass | `session_tests.cpp` `ledger_1600_9_keys_dropped_and_reset_stops_an_operation` |
 
 Ported to the library session (scripted clock, `app/tests/SessionFixture.hpp`):
@@ -336,3 +336,9 @@ WebKit, prerender, ROMs missing), with the new `session.spec.js`.
   whose loads now wait in a nested loop; to run at the Part C1 boundary.
 - AC-38's interim topics are re-pointed in M-45 to M-49; the column is Done
   in M-49 (design §1).
+
+### M-49 (2026-11-16, branch `m49-shell-1600`)
+
+AC-38 re-pointed (above); `tools/dap_smoke.py` (`CalcU1600DapSmoke`,
+Longer) passes on the Qt6 frontend on the shell. Every criterion of the
+column passes. Column status: Done.

@@ -10,7 +10,7 @@
 #include "../Machine/SharpProductKinds.hpp"
 #include "../MachineCodeFile.hpp"
 #include "../PC1500/PC1500MachineCodeLoader.hpp"
-#include "../Preset/PresetFile.hpp"
+#include "formats/Number.hpp"
 #include "Listing/Listing.hpp"
 
 namespace debug {
@@ -85,12 +85,12 @@ LoadResult loadProgram(calcu::machine::Machine& machine, const LoadRequest& req,
         return true;
     };
     uint16_t entry = 0;
-    uint32_t parsed = 0;
     if (req.hasEntry) {
         r.entry = req.entry;
     } else if (!req.entrySymbol.empty()) {
+        const auto parsed = calcu::formats::parseNumber(req.entrySymbol);
         if (symbol(req.entrySymbol, &entry)) r.entry = entry;
-        else if (parseNumber(req.entrySymbol, &parsed) && parsed <= 0xFFFF) r.entry = uint16_t(parsed);
+        else if (parsed && *parsed >= 0 && *parsed <= 0xFFFF) r.entry = uint16_t(*parsed);
         else {
             r.error = "\"entry\": " + req.entrySymbol + " is neither a symbol of the listing nor an address";
             return r;

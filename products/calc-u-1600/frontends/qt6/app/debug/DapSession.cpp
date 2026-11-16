@@ -11,7 +11,10 @@
 #include "DebugController.hpp"
 #include "Debug/AttachKeys.hpp"
 #include "Debug/Listing/Listing.hpp"
-#include "Preset/PresetFile.hpp"
+#include "MachineController.hpp"
+#include "app/SharpAppPart.hpp"
+#include "formats/Number.hpp"
+#include "app/SharpDebugBlock.hpp"
 
 namespace {
 
@@ -215,18 +218,20 @@ bool DapSession::effectiveConfig(const QJsonObject& args, QJsonObject* out, QStr
         *out = args;
         return true;
     }
-    PresetFile preset;
-    std::string parseError;
+    // C1600-4 AC-12, §3.4: the block as the library's reader keeps it.
     const std::string path = debug::absolutePath(project.toStdString());
-    if (!parsePresetFile(path, &preset, &parseError)) {
-        *error = QStringLiteral("Project %1: %2").arg(project, QString::fromStdString(parseError));
+    shared::SharpAppPart& part = m_controller->machines().session();
+    const auto block = shared::debugBlockOf(path, part.presetsPart().readSetup(), &part.presetBundle());
+    if (const auto* why = std::get_if<std::string>(&block)) {
+        *error = QStringLiteral("Project %1: %2").arg(project, QString::fromStdString(*why));
         return false;
     }
+    const auto& debugBlock = std::get<std::shared_ptr<const shared::DebugBlock>>(block);
     // The project preset sets the machine up; its `debug:` block gives the
     // rest. Keys of the launch configuration win; `program` merges key by
     // key, and `listings` / `symbols` add to the block's (the VS Code
     // extension always sends both, with the user's ROM listings).
-    QJsonObject merged = preset.debug.isMap() ? toJson(preset.debug).toObject() : QJsonObject();
+    QJsonObject merged = debugBlock && debugBlock->node.isMap() ? toJson(debugBlock->node).toObject() : QJsonObject();
     merged.insert(QStringLiteral("preset"), QString::fromStdString(path));
     for (auto it = args.begin(); it != args.end(); ++it) {
         if ((it.key() == QLatin1String("listings") || it.key() == QLatin1String("symbols")) &&
@@ -258,8 +263,10 @@ bool numberOf(const QJsonValue& v, uint32_t max, uint32_t* out) {
         const double d = v.toDouble();
         if (d < 0 || d != double(uint32_t(d))) return false;
         n = uint32_t(d);
-    } else if (!v.isString() || !parseNumber(v.toString().toStdString(), &n)) {
-        return false;
+    } else {
+        const auto parsed = v.isString() ? calcu::formats::parseNumber(v.toString().toStdString()) : std::nullopt;
+        if (!parsed || *parsed < 0 || *parsed > 0xFFFFFFFFLL) return false;
+        n = static_cast<uint32_t>(*parsed);
     }
     if (n > max) return false;
     *out = n;

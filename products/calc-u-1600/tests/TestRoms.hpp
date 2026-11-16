@@ -10,7 +10,7 @@
 #include "../core/Machine/SharpRoms.hpp"
 #include "../core/PC1600/PC1600BasicTyper.hpp"
 #include "../core/PC1600/PC1600Machine.hpp"
-#include "../core/Preset/PresetRoms.hpp"
+#include "TestPresetRoms.hpp"
 
 // ROM loading for the ROM-gated tests. Run from the product folder
 // (CoreTests' working directory): the images live in roms/. Every ROM a

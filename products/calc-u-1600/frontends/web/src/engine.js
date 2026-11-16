@@ -50,9 +50,14 @@ const value = (r) => r.value;
 
 // Each method of 0.8.1's engine: [kind, LIB-3 name, args → object, reply → result].
 const METHODS = {
-  presetExamples: ["request", "c1600.preset-examples", () => null, value],
+  // LIB-6 AC-32: the examples of the preset list (examples/bundle.yaml), each
+  // loaded by its bundle path.
+  presetExamples: ["request", "preset-list", () => null, (r) => ((r.value && r.value.entries) || [])
+    .filter((e) => e.kind === "example")
+    .map((e) => ({ group: e.group, ref: e.bundlePath, name: e.name, description: e.description,
+      label: e.description || e.name }))],
   upload: ["command", "c1600.upload", (name, bytes) => ({ name, bytes }), value],
-  loadPreset: ["command", "c1600.load-preset", (path) => ({ path }), null],
+  loadPreset: ["command", "load-preset", (ref) => ({ ref }), null],
   // C1600-2 (app/SharpLoaderPart): stateless, each carries the file; `file`
   // picks a file of a cassette WAV (from 1; 0 = the first).
   fileKind: ["request", "c1600.file-kind", (bytes) => ({ bytes }), value],
@@ -72,12 +77,14 @@ const METHODS = {
   screenImage: ["request", "c1600.screen-image", () => null, value],
   lcdText: ["request", "c1600.lcd-text", () => null, value],
   ticks: ["request", "ticks", () => null, value],   // {ticks, seconds}: the machine's emulated time (LIB-3 AC-39)
-  togglePeripheral: ["command", "c1600.toggle-peripheral", (p) => ({ peripheral: PERIPHERALS[p] }), null],
-  pickModel: ["command", "c1600.pick-model", (m) => ({ model: MODEL_IDS[m] }), null],
-  selectPC1500Rom: ["command", "c1600.pc1500-rom", (i) => ({ revision: ["A01", "A03", "A04"][i] }), null],
-  selectPC1600Rom: ["command", "c1600.pc1600-rom", (i) => ({ version: ROM_VERSIONS[i] }), null],
+  // LIB-18: the library's machine control (togglePeripheral: attach or
+  // detach, see invoke()).
+  pickModel: ["command", "model", (m) => ({ name: MODEL_IDS[m] }), null],
+  selectPC1500Rom: ["command", "variant", (i) => ({ name: ["A01", "A03", "A04"][i] }), null],
+  selectPC1600Rom: ["command", "variant", (i) => ({ name: ["New", "Old"][i] }), null],
   selectCE1600PRom: ["command", "c1600.ce1600p-rom", (i) => ({ version: ROM_VERSIONS[i] }), null],
-  reset: ["command", "c1600.reset", (all) => ({ all: !!all }), null],
+  reset: ["command", "reset", () => null, null],
+  coldBoot: ["command", "cold-boot", () => null, null],
   // LIB-5 (AC-7, AC-29): the host key as the browser reports it; the
   // product's keyboard map in the engine decides what it types.
   hostKeyDown: ["command", "host-key-down", hostKeyEvent, null],
@@ -211,7 +218,20 @@ function createEngine({ workerUrl, model, preset }) {
     update();
   });
 
+  // A peripheral's button (LIB-18 AC-30): detach what is plugged in, or
+  // attach it; the CE-1600P with the ROM the menu shows (AC-31).
+  const togglePeripheral = (p) => {
+    const ui = state.ui || {};
+    const st = ui[["ce150", "ce1600p", "ce158"][p]];
+    const place = p === 2 ? "interface" : "printer";
+    if (st && st.attached) return shell.send("detach", { place });
+    const args = { place, peripheral: PERIPHERALS[p] };
+    if (p === 1) args.variant = ui.ce1600pRom === 1 ? "Old" : "New";
+    return shell.send("attach", args);
+  };
+
   const invoke = (method, args) => {
+    if (method === "togglePeripheral") return togglePeripheral(args[0]);
     const m = METHODS[method];
     if (!m) return Promise.reject(new Error(`unknown method ${method}`));
     const [kind, name, toArgs, out] = m;

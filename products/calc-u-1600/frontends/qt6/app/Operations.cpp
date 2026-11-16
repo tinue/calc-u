@@ -6,6 +6,8 @@
 #include <QTimer>
 #include <QWidget>
 
+#include "presets/PresetsPart.hpp"
+
 namespace sessions = calcu::sessions;
 
 namespace {
@@ -62,7 +64,8 @@ bool Operations::runAndWait(const QString& title, const sessions::CommandName& n
 }
 
 void Operations::loadPreset(const QString& path) {
-    run(tr("Load Preset"), shared::commands::kLoadPreset, sessions::Value::object({{"path", path.toStdString()}}));
+    // LIB-6 AC-54: a file in its folder, or a bundle path (`examples:…`).
+    run(tr("Load Preset"), calcu::presets::kLoadPresetCommand, sessions::Value::object({{"ref", path.toStdString()}}));
 }
 
 void Operations::onBusy(bool busy) {

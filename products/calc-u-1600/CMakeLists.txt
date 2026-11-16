@@ -74,11 +74,11 @@ endif()
 # -----------------------------------------------------------------------------
 # pc1500_cli
 add_executable(pc1500_cli ${TOOLS_ROOT}/pc1500_cli.cpp)
-target_link_libraries(pc1500_cli PRIVATE calcu_core)
+target_link_libraries(pc1500_cli PRIVATE calcu1600_harness)
 
 # pc1600_cli
 add_executable(pc1600_cli ${TOOLS_ROOT}/pc1600_cli.cpp)
-target_link_libraries(pc1600_cli PRIVATE calcu_core)
+target_link_libraries(pc1600_cli PRIVATE calcu1600_harness)
 
 # pc1600_power_probe, pc1600_uart_probe: the throw-away ROM-path probes.
 # They need the instrumentation hooks PC1600_POWER_PROBE lights up in
@@ -95,7 +95,7 @@ target_link_libraries(pc1600_uart_probe PRIVATE calcu_core_probe)
 
 # pc1600_plotter_probe
 add_executable(pc1600_plotter_probe ${TOOLS_ROOT}/pc1600_plotter_probe.cpp)
-target_link_libraries(pc1600_plotter_probe PRIVATE calcu_core)
+target_link_libraries(pc1600_plotter_probe PRIVATE calcu1600_harness)
 
 # The product entry of the harness `calcu` (LIB-11, M-28; library/harness/cli/).
 # It finds the ROMs and the module definitions in the folders the tests use

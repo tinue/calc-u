@@ -117,6 +117,11 @@ public:
     // LIB-6: the preset loader (load-preset, check-preset, preset-list).
     calcu::presets::PresetsPart& presetsPart() { return m_presets; }
     const calcu::presets::PresetBundle& presetBundle() const { return m_bundle; }
+    // The preset list (LIB-6 AC-32): what `preset-list` replies, for the
+    // menus and the Settings of a frontend on the session's thread.
+    std::vector<calcu::presets::PresetListEntry> presetEntries() const {
+        return calcu::presets::presetList(m_bundle, m_rules, m_catalogue, nullptr);
+    }
     // LIB-18: the machine control (builds, plug changes).
     calcu::startup::MachineControl& machineControl() { return m_startup.control(); }
 

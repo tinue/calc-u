@@ -17,9 +17,9 @@
 #include "../core/Display/LcdScreenshot.hpp"
 #include "../core/Display/PngWriter.hpp"
 #include "../core/PC1500/PC1500Machine.hpp"
-#include "../core/PC1500/PC1500PresetLoader.hpp"
+#include "../core/PC1500/PC1500BasicTyper.hpp"
 #include "../core/PC1500/PC1500Screenshot.hpp"
-#include "PresetTestSupport.hpp"
+#include "TestRoms.hpp"
 #include "TempFolder.hpp"
 #include "TestHarness.hpp"
 #include "TestRoms.hpp"
@@ -134,43 +134,6 @@ TEST(test_png_roundtrip) {
     for (auto& v : noise) { x = x * 1103515245u + 12345u; v = static_cast<uint8_t>(x >> 16); }
     const DecodedPng dn = decodePng(encodePngGray8(noise, 37, 5, 0));
     CHECK(dn.ok && dn.pixels == noise && dn.ppmX == 0);
-}
-
-TEST(test_preset_screenshot_parse) {
-    PresetFile p;
-    std::string err;
-    CHECK(parsePresetString("format-version: 1\nmodel: PC-1500A\nkeys:\n  - screenshot: shot.png\n",
-                            "/tmp/lcd_screenshot_tests_scratch.pc1500a", &p, &err));
-    CHECK(!p.sections.empty() && !p.sections[0].keys.empty() &&
-          p.sections[0].keys[0].kind == PresetStep::Kind::Screenshot && p.sections[0].keys[0].text == "shot.png");
-
-    PresetFile bad;
-    CHECK(!parsePresetString("format-version: 1\nmodel: PC-1500A\nkeys:\n  - screenshot: sub/shot.png\n",
-                             "/tmp/lcd_screenshot_tests_scratch.pc1500a", &bad, &err));
-    CHECK(err.find("path separator") != std::string::npos);
-}
-
-// ROM-gated: the step writes a decodable, correctly sized PNG into traceDir
-// that matches a direct render of the same display.
-TEST(test_preset_screenshot_writes_png) {
-    PC1500Machine m;
-    PresetFile p;
-    std::string err;
-    CHECK(parsePresetString("format-version: 1\nmodel: PC-1500A\nkeys:\n  - type: PRINT 12345\n  - screenshot: lcd_shot.png\n",
-                            "/tmp/lcd_screenshot_tests_scratch.pc1500a", &p, &err));
-    const calcu::testing::TempFolder tmp("calcu1600-lcd-shot");
-    const PresetLoadResult r = applyPC1500Preset(m, p, {}, tmp.str(), ".", {}, testPresetRoms());
-    SKIP_UNLESS(r.ok || r.error.find("ROM") == std::string::npos, r.error.c_str());
-    CHECK(r.ok);
-    std::ifstream in(tmp.path() / "lcd_shot.png", std::ios::binary);
-    const std::vector<uint8_t> png((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>());
-    const DecodedPng d = decodePng(png);
-    CHECK(d.ok && d.width == 2457 && d.height == 118);
-    const GrayImage direct = renderLcdImage(pc1500LcdBitmap(m), kPC1500ScreenMm);
-    CHECK(d.pixels == direct.pixels);
-    bool anyInk = false;
-    for (uint8_t v : d.pixels) anyInk = anyInk || v < 128;
-    CHECK(anyInk); // "12345" is on screen
 }
 
 } // namespace

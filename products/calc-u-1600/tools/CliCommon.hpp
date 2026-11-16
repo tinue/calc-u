@@ -30,7 +30,6 @@
 #include "../core/Machine/SharpCatalogue.hpp"
 #include "../core/Machine/SharpProductKinds.hpp"
 #include "../core/Machine/SharpRoms.hpp"
-#include "../core/Preset/PresetRomSet.hpp"
 #include "machine/Build.hpp"
 #include "machine/Machine.hpp"
 
@@ -52,16 +51,6 @@ inline std::shared_ptr<const calcu::roms::RomSet> romSet(const std::string& romF
     }
     if (!found.ok() && error) *error = calcu::roms::describe(found.missing);
     return found.set;
-}
-
-/// What the preset loaders get: the set of `romFolder` and the host drive's
-/// own ROM from the first of `hostDriveFolders` that has it (roms.md Q-1).
-inline PresetRoms presetRoms(const std::string& romFolder, const std::vector<std::string>& hostDriveFolders) {
-    PresetRoms roms;
-    roms.set = romSet(romFolder, nullptr);
-    if (auto rom = sharp::readHostDriveRom(hostDriveFolders))
-        roms.hostDrive = std::make_shared<const std::vector<uint8_t>>(std::move(*rom));
-    return roms;
 }
 
 /// A machine of `model` ("PC-1500", "PC-1500A", "PC-1600") and `variant`

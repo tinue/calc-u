@@ -21,7 +21,8 @@
 #include "qt6/PaperPanel.hpp"
 #include "debugger/RunState.hpp"
 #include "DropFile.hpp"
-#include "app/PresetCatalog.hpp"
+#include "presets/PresetsPart.hpp"
+#include "startup/StartupPart.hpp"
 #include "AppPaths.hpp"
 
 #include <QHBoxLayout>
@@ -332,11 +333,10 @@ void MainWindow::syncControlBarForModel() {
     syncHostDriveActions(state);
 }
 
-void MainWindow::resetMachine(bool allReset) {
-    // Boot flat out to the prompt (incl. a plotter's power-on init); the
-    // clock is set from the host after.
-    m_sync->run(allReset ? tr("Reset All") : tr("Reset"), shared::commands::kReset,
-                calcu::sessions::Value::object({{"all", allReset}}));
+void MainWindow::resetMachine(bool coldBoot) {
+    // LIB-18 AC-13: to key readiness; the clock is set from the host after.
+    m_sync->run(coldBoot ? tr("Cold boot") : tr("Reset"),
+                coldBoot ? calcu::startup::kColdBootCommand : calcu::startup::kResetCommand);
 }
 
 bool MainWindow::isLoading() const { return m_sync && m_sync->busy(); }
@@ -506,8 +506,22 @@ void MainWindow::showMachineCodeLoaded(const shared::CodeLoadedReply& loaded) {
 void MainWindow::togglePeripheral(shared::Peripheral p) {
     // Flat out, like Reset: the pin header's power-on rotation isn't worth
     // watching, and the clock is re-injected afterwards.
+    // LIB-18 AC-30: attach, or detach what is plugged in; the CE-1600P with
+    // the ROM chosen in the menu (AC-31).
+    const shared::ControlState state = m_controller->controlState();
     const char* name = p == shared::Peripheral::CE150 ? "CE-150" : p == shared::Peripheral::CE1600P ? "CE-1600P" : "CE-158";
-    m_sync->run(tr("Plotter"), shared::commands::kTogglePeripheral, calcu::sessions::Value::object({{"peripheral", name}}));
+    const char* place = p == shared::Peripheral::CE158 ? "interface" : "printer";
+    const bool attached = p == shared::Peripheral::CE150    ? state.ce150.attached
+                          : p == shared::Peripheral::CE1600P ? state.ce1600p.attached
+                                                              : state.ce158.attached;
+    if (attached) {
+        m_sync->run(tr("Plotter"), calcu::startup::kDetachCommand, calcu::sessions::Value::object({{"place", place}}));
+        return;
+    }
+    calcu::sessions::Value::Object args{{"place", calcu::sessions::Value(place)}, {"peripheral", calcu::sessions::Value(name)}};
+    if (p == shared::Peripheral::CE1600P)
+        args.push_back({"variant", calcu::sessions::Value(m_controller->ce1600pRomVersion() == CE1600PRomVersion::Old ? "Old" : "New")});
+    m_sync->run(tr("Plotter"), calcu::startup::kAttachCommand, calcu::sessions::Value(std::move(args)));
 }
 
 void MainWindow::syncPeripherals() {
@@ -853,8 +867,8 @@ void MainWindow::refreshViewsAfterAdvance() {
 }
 
 bool MainWindow::loadPresetForShots(const QString& path, QString* error) {
-    const bool ok = m_sync->runAndWait(tr("Load Preset"), shared::commands::kLoadPreset,
-                                       calcu::sessions::Value::object({{"path", path.toStdString()}}), error);
+    const bool ok = m_sync->runAndWait(tr("Load Preset"), calcu::presets::kLoadPresetCommand,
+                                       calcu::sessions::Value::object({{"ref", path.toStdString()}}), error);
     // Frozen emulation means no frame tick will show the end state -- the
     // LCD would keep the load's last throttled repaint, the paper its
     // pre-plot points.
@@ -867,17 +881,19 @@ void MainWindow::buildMenuBar() {
     // are connected by the constructor, next to their handler closures.
     QMenu* fileMenu = menuBar()->addMenu(tr("&File"));
     m_openPresetAction = fileMenu->addAction(tr("Load Preset…"));
-    // Examples: the bundled presets (examples/bundled.yaml's `examples`),
-    // grouped, each by its description. The default presets are offered in
+    // Examples: the examples of the preset list (LIB-6 AC-32, the bundle
+    // file examples/bundle.yaml), grouped, each by its name and description;
+    // each loads by its bundle path. The startup presets are offered in
     // Settings instead.
     QMenu* examplesMenu = fileMenu->addMenu(tr("Examples"));
     QMap<QString, QMenu*> groupMenus;
-    for (const shared::PresetEntry& e : shared::PresetCatalog(AppPaths::paths()).examples()) {
+    for (const calcu::presets::PresetListEntry& e : m_controller->session().presetEntries()) {
+        if (e.kind != calcu::presets::PresetListEntry::Kind::Example) continue;
         const QString group = QString::fromStdString(e.group);
         QMenu*& groupMenu = groupMenus[group];
         if (!groupMenu) groupMenu = examplesMenu->addMenu(group);
-        const QString label = QString::fromStdString(e.label());
-        const QString ref = QString::fromStdString(e.ref);
+        const QString label = QString::fromStdString(e.description.empty() ? e.name : e.name + " -- " + e.description);
+        const QString ref = QString::fromStdString(e.bundlePath);
         connect(groupMenu->addAction(label), &QAction::triggered, this, [this, ref] { m_sync->loadPreset(ref); });
     }
     examplesMenu->setEnabled(!groupMenus.isEmpty());
@@ -1014,7 +1030,7 @@ void MainWindow::buildMenuBar() {
     QAction* resetAction = machineMenu->addAction(tr("Reset"));
     resetAction->setShortcut(QKeySequence(Qt::ControlModifier | Qt::Key_R));
     connect(resetAction, &QAction::triggered, this, [this] { resetMachine(false); });
-    QAction* resetAllAction = machineMenu->addAction(tr("Reset All"));
+    QAction* resetAllAction = machineMenu->addAction(tr("Cold boot"));
     resetAllAction->setShortcut(QKeySequence(Qt::ControlModifier | Qt::ShiftModifier | Qt::Key_R));
     connect(resetAllAction, &QAction::triggered, this, [this] { resetMachine(true); });
     // LIB-10 AC-41 (L-A4): Resume, while the run control says paused.
@@ -1033,27 +1049,22 @@ void MainWindow::applyModelSelection(Model model) {
     // The Machine menu's QActionGroup re-emits triggered() for the item
     // that is already checked; re-picking it must not cold-rebuild.
     if (model == m_controller->currentModel()) return;
-    // A fresh default machine; its default preset customises it.
-    m_sync->run(tr("Machine"), shared::commands::kPickModel,
-                calcu::sessions::Value::object({{"model", shared::settingsModelName(model)}}));
-}
-
-void MainWindow::applyDefaultPreset() {
-    if (AppSettings::defaultPresetPath(m_controller->currentModel()).isEmpty()) return;
-    m_sync->run(tr("Default Preset"), shared::commands::kDefaultPreset);
+    // LIB-18 AC-6: its startup preset, or its built-in default machine.
+    m_sync->run(tr("Machine"), calcu::startup::kModelCommand,
+                calcu::sessions::Value::object({{"name", shared::settingsModelName(model)}}));
 }
 
 void MainWindow::applyRomRevisionSelection(PC1500RomRevision revision) {
     if (revision == m_controller->pc1500RomRevision()) return; // see applyModelSelection()
     const char* rev = revision == PC1500RomRevision::A01 ? "A01" : revision == PC1500RomRevision::A03 ? "A03" : "A04";
-    m_sync->run(tr("ROM"), shared::commands::kPC1500Rom, calcu::sessions::Value::object({{"revision", rev}}));   // rebuilds the machine
+    m_sync->run(tr("ROM"), calcu::startup::kVariantCommand, calcu::sessions::Value::object({{"name", rev}}));   // LIB-18 AC-7
 }
 
 void MainWindow::applyPC1600RomVersionSelection(PC1600RomVersion version) {
     if (version == m_controller->pc1600RomVersion()) return; // see applyModelSelection()
     // Rebuilds a PC-1600; the menu shows New if the old ROM failed to load.
-    m_sync->run(tr("ROM"), shared::commands::kPC1600Rom,
-                calcu::sessions::Value::object({{"version", version == PC1600RomVersion::Old ? "old" : "new"}}));
+    m_sync->run(tr("ROM"), calcu::startup::kVariantCommand,
+                calcu::sessions::Value::object({{"name", version == PC1600RomVersion::Old ? "Old" : "New"}}));
 }
 
 void MainWindow::applyCE1600PRomVersionSelection(CE1600PRomVersion version) {

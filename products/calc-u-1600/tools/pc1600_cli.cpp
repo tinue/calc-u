@@ -5,19 +5,19 @@
 // small repeating loop, like pc1500_cli.
 //
 // Usage: pc1600_cli <romI-0-file> <romII-0-file> [maxCycles]
-//        pc1600_cli --check-preset <preset-file>...
 //        pc1600_cli --preset <preset-file.pc1600> [maxCycles] [--dump-basic] [--modules-dir <dir>] [--save-dir <dir>] [--wav <out.wav>] [--tape-in <in.wav>] [--tape-out <out.wav>] [--dump-mem <addr>,<len>] [--inspect <view>] [--rom new|old] [--ce1600p-rom new|old] [--lcd-png <out.png>] [--lcd-text <out.txt|->]
 //
-// --check-preset parses each preset (any model) and reports ok / the error,
-// without booting anything; tools/check_presets.sh runs it over the repo.
+// A preset is checked with `calcu --product 1600 check-preset` (LIB-6).
 //
 // The --preset form loads the confirmed PC-1600 ROM set from roms/ (same
 // names pc1600_preset_tests.cpp uses), builds a PC-1600 from the catalogue, and
-// applies a `.pc1600` scenario via the core's preset loader -- the SC7852-only
+// applies a `.pc1600` preset via the library's loader (CliPresetRun) -- the SC7852-only
 // histogram mode below is skipped. --dump-basic then prints the BASIC
 // program pointers and the raw program-area bytes (read-only), the oracle
 // the fast BASIC loader is checked against.
 //
+// --rom and --ce1600p-rom: from M-46 the preset names its variants (model:
+// PC-1600:old, printer: CE-1600P:old); only `new` is taken here. Formerly:
 // --rom new|old (--preset only) overrides the preset's PC-1600 ROM version
 // (`model: PC-1600:new|old`, default new).
 // --ce1600p-rom new|old (--preset only) overrides the preset's CE-1600P ROM
@@ -70,15 +70,13 @@
 #include "../core/Machine/LegacyCalls.hpp"
 #include "../core/PC1600/PC1600Bank.hpp"
 #include "../core/PC1600/PC1600Memory.hpp"
-#include "../core/Preset/PresetFile.hpp"
-#include "../core/Preset/PresetMedia.hpp"
 #include "Ce158CliPeer.hpp"
 #include "CliCommon.hpp"
+#include "CliPresetRun.hpp"
 
 namespace {
-// --preset: a PC-1600 built through the machine interface (sharpCatalogue(),
-// SharpMachineBuilder; C1600-1 design §7), the preset applied by the core's
-// loader through sharp::legacy::applyPresetJob until M-46.
+// --preset: the preset loaded by the library's loader (CliPresetRun), then
+// the tool's own dumps of the machine it built.
 int runPreset(const std::string& presetPath, uint64_t maxCycles, bool dumpBasic,
               const std::string& moduleDir, const std::vector<std::string>& extraModuleDirs,
               const std::string& wavPath, const std::string& romOverride,
@@ -87,37 +85,32 @@ int runPreset(const std::string& presetPath, uint64_t maxCycles, bool dumpBasic,
               const std::string& lcdTextPath, const cli::TapeOptions& tape, const cli::MemDumps& memDumps,
               const cli::InspectViews& inspectViews) {
     (void)maxCycles;
-    PresetFile preset;
-    std::string error;
-    if (!parsePresetFile(presetPath, &preset, &error)) {
-        std::fprintf(stderr, "failed to parse preset '%s': %s\n", presetPath.c_str(), error.c_str());
+    (void)moduleDir;
+    (void)extraModuleDirs;
+    (void)saveDir;
+    // The ROMs are the preset's own (`model: PC-1600:old`, `printer:
+    // CE-1600P:old`): an override other than the default is refused (M-46).
+    if ((!romOverride.empty() && romOverride != "new") || (!ce1600pRomOverride.empty() && ce1600pRomOverride != "new")) {
+        std::fprintf(stderr, "--rom and --ce1600p-rom are no longer taken: name the variant in the preset "
+                             "(model: PC-1600:old, printer: CE-1600P:old)\n");
         return 1;
     }
-    if (!preset.isPC1600()) {
+    // --preset: through the library's loader in the harness (adapter
+    // CliPresetRun, until M-51), to the idle machine.
+    std::string error;
+    std::unique_ptr<cli::CliPresetRun> run = cli::CliPresetRun::load(presetPath, &error);
+    if (!run) {
+        std::fprintf(stderr, "failed to apply preset '%s': %s\n", presetPath.c_str(), error.c_str());
+        return 1;
+    }
+    cli::Machine* loadedMachine = run->machine();
+    if (!loadedMachine || loadedMachine->model().value != sharp::kPC1600) {
         std::fprintf(stderr, "preset '%s' is not a PC-1600 preset\n", presetPath.c_str());
         return 1;
     }
-    if (!ce1600pRomOverride.empty()) {
-        if (ce1600pRomOverride != "new" && ce1600pRomOverride != "old") {
-            std::fprintf(stderr, "--ce1600p-rom must be new or old\n");
-            return 1;
-        }
-        preset.ce1600pRomVariant = ce1600pRomOverride;
-    }
-    const std::string romVersion = romOverride.empty() ? preset.romVariant : romOverride;
-    std::string romSetError;
-    std::unique_ptr<cli::Machine> built;
-    if (romVersion != "new" && romVersion != "old")
-        romSetError = "unknown PC-1600 ROM version '" + romVersion + "' (expected new or old)";
-    else
-        built = cli::buildMachine(sharp::kPC1600, romVersion == "old" ? "Old" : "New", "roms", &romSetError);
-    if (!built) {
-        std::fprintf(stderr, "could not load the PC-1600 ROM set (run from products/calc-u-1600): %s\n", romSetError.c_str());
-        return 1;
-    }
-    cli::Machine& machine = *built;
+    cli::Machine& machine = *loadedMachine;
     // --wav: the sampler only buffers ~1 s, so drain it from the core's
-    // yield hook while the preset's long runs go on (sharp::legacy).
+    // yield hook while the run after the load goes on (sharp::legacy).
     std::vector<int16_t> wav;
     auto drainWav = [&] {
         int16_t chunk[4096];
@@ -127,49 +120,10 @@ int runPreset(const std::string& presetPath, uint64_t maxCycles, bool dumpBasic,
     if (!wavPath.empty()) sharp::legacy::setYieldHook(machine, drainWav, machine.descriptor().tickRate / 20);
     if (!ce158Peer.open()) return 1;
     if (!tape.arm(machine)) return 1;
-    // `saveas:` -- the file form always works; a by-name save needs
-    // --save-dir. Cards splice into the file the loader attached them from
-    // (reported by onArmed, before any step runs).
-    PresetLoadResult armedResult;
-    const auto onArmed = [&armedResult](const PresetLoadResult& r) { armedResult = r; };
-    const PresetSaveAsFn onSaveAs = [&machine, &moduleDir, &saveDir, &armedResult](const PresetSaveAsRequest& request,
-                                                                       std::string* err) {
-        return savePresetMedia(request, {moduleDir, saveDir}, sharp::legacy::presetMedia(machine, armedResult, request),
-                               err);
-    };
-    // The CE-158's peer is pumped between slices of the preset's run.
+    // The CE-158's peer is pumped between slices of the run after the load.
     const uint64_t slice = machine.descriptor().tickRate / 100;
     const auto pump = [&] { ce158Peer.pump(machine); };
-    PresetLoadResult loaded = cli::runSliced(
-        sharp::legacy::applyPresetJob(
-            machine, preset, [](const std::string& line) { std::fprintf(stderr, "[preset] %s\n", line.c_str()); },
-            ".", moduleDir,
-            /*onBooted=*/{}, cli::presetRoms("roms", {"roms", "firmware/pc1600-hostdrive"}), extraModuleDirs, onArmed, onSaveAs),
-        slice, pump);
-    for (const std::string& r : loaded.rejectedBasicLines)
-        std::fprintf(stderr, "preset: rejected BASIC line: %s\n", r.c_str());
     auto pk = [&](uint16_t a) { return cli::peek(machine, a); };
-    if (!loaded.ok && dumpBasic) {
-        // Dump the pointer state even on failure so a load error can be
-        // diagnosed (e.g. an unexpected BASPRG_ST with an expansion module).
-        std::fprintf(stderr,
-                     "[pointers] F865(BE)=$%02X%02X F867(BE)=$%02X%02X F5CF(LE)=$%02X%02X "
-                     "F89E(BE)=$%02X%02X\n",
-                     pk(0xF865), pk(0xF866), pk(0xF867), pk(0xF868), pk(0xF5D0), pk(0xF5CF),
-                     pk(0xF89E), pk(0xF89F));
-        // The scattered-placement work-area bytes (PC-1600-BASIC-Program-
-        // Placement.md): S0MTb + the five ADTBL bank descriptors say how
-        // the firmware spread S0 across module banks + internal RAM.
-        std::fprintf(stderr,
-                     "[adtbl] S0MTb F02A=$%02X  S1MTb/MBb F016/F018=$%02X/$%02X  "
-                     "S2MTb/MBb F020/F022=$%02X/$%02X  ADTBL F1D6..F1DA=%02X %02X %02X %02X %02X\n",
-                     pk(0xF02A), pk(0xF016), pk(0xF018), pk(0xF020), pk(0xF022), pk(0xF1D6),
-                     pk(0xF1D7), pk(0xF1D8), pk(0xF1D9), pk(0xF1DA));
-    }
-    if (!loaded.ok) {
-        std::fprintf(stderr, "failed to apply preset '%s': %s\n", presetPath.c_str(), loaded.error.c_str());
-        return 1;
-    }
     std::printf("Preset '%s' applied successfully.\n", presetPath.c_str());
     if (runAfter) cli::advanceSliced(machine, runAfter, slice, pump);
     if (!lcdPng.empty()) {
@@ -241,22 +195,6 @@ int runPreset(const std::string& presetPath, uint64_t maxCycles, bool dumpBasic,
 } // namespace
 
 int main(int argc, char** argv) {
-    // --check-preset: parse only (parsePresetFile is model-agnostic, so
-    // this covers PC-1500 presets too); nothing is booted.
-    if (argc >= 3 && std::strcmp(argv[1], "--check-preset") == 0) {
-        int failed = 0;
-        for (int i = 2; i < argc; ++i) {
-            PresetFile preset;
-            std::string error;
-            if (parsePresetFile(argv[i], &preset, &error)) {
-                std::printf("ok    %s\n", argv[i]);
-            } else {
-                std::printf("FAIL  %s: %s\n", argv[i], error.c_str());
-                failed++;
-            }
-        }
-        return failed == 0 ? 0 : 1;
-    }
     if (argc >= 3 && std::strcmp(argv[1], "--preset") == 0) {
         uint64_t maxCycles = 2'000'000ull;
         bool dumpBasic = false;

@@ -16,8 +16,7 @@
 #include "../core/Connector/PC1500SignalDecode.hpp"
 #include "../core/Connector/PlotterPaperOutput.hpp"
 #include "../core/PC1500/PC1500Machine.hpp"
-#include "../core/PC1500/PC1500PresetLoader.hpp"
-#include "../core/Preset/PresetFile.hpp"
+#include "ScriptedSetup.hpp"
 #include "TestHarness.hpp"
 #include "TestRoms.hpp"
 #include "paper/Paper.hpp"
@@ -299,21 +298,15 @@ bool writeScratchPreset(const std::string& path, const std::string& body) {
     return f.good();
 }
 
+// The CE-150 on the bus before the cold boot (a preset's `printer: CE-150`,
+// built by LIB-18 from M-46; here on the old class with its ROMs).
 TEST(test_preset_plotter_ce150_attaches_before_reset) {
-    SKIP_UNLESS(fileExists(kSysRom) && fileExists(kCe150Rom), (std::string("run from the repo root (needs ") + kSysRom + " + " + kCe150Rom + ")").c_str());
-    const std::string presetPath = "/tmp/calcu1600_ce150_scratch.pc1500a";
-    CHECK(writeScratchPreset(presetPath,
-        "format-version: 1\nmodel: PC-1500A\nplotter: CE-150\n"));
-
-    PresetFile preset;
+    SKIP_UNLESS(testRomSet() != nullptr, "the ROMs are not fetched (roms/fetch_roms.sh)");
+    PC1500Machine machine(PC1500Variant::PC1500A);
     std::string err;
-    CHECK(parsePresetFile(presetPath, &preset, &err));
-    CHECK(preset.plotter == "ce150");
-
-    PC1500Machine machine(preset.variant);
-    PresetLoadResult res = applyPC1500Preset(machine, preset, {}, ".", ".", {}, testPresetRoms());
-    CHECK(res.ok);
-    CHECK(res.ce150Attached);
+    CHECK(presetroms::loadPC1500Rom(machine, "A04", testPresetRoms(), &err));
+    CHECK(presetroms::attachCE150(machine, testPresetRoms(), &err));
+    scripted::bootPC1500(machine);
     CHECK(machine.ce150Attached());
 
     // The CE-150 ROM in 0x8000-0xBFFF is only visible with PV = 0: the
@@ -325,16 +318,6 @@ TEST(test_preset_plotter_ce150_attaches_before_reset) {
     CHECK(machine.memory().peek(0xA000) == 0xFF);
     machine.memory().updatePUPV(machine.cpu().pu(), /*pv=*/false);
     CHECK(machine.memory().peek(0xA000) != 0xFF);
-
-    // Same preset, no ROM set -> a clean, specific failure. Main and
-    // plotter ROMs come from one set (PresetRoms), so this
-    // fails on the main ROM itself rather than reaching the plotter
-    // step at all -- still a clean failure, not a crash.
-    PC1500Machine machine2(preset.variant);
-    PresetLoadResult res2 = applyPC1500Preset(machine2, preset);
-    CHECK(!res2.ok);
-    CHECK(res2.error.find("not found") != std::string::npos);
-    CHECK(!machine2.ce150Attached());
 }
 
 } // namespace

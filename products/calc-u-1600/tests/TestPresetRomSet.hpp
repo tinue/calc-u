@@ -5,8 +5,8 @@
 
 #include "roms/RomSet.hpp"
 
-// The ROMs a preset loader is handed (LIB-12 design §2: the preset loaders
-// take the RomSet in place of folders to search). Every image comes from
+// The ROMs the core tests hand the old machine classes (the preset loaders'
+// until M-46; LIB-12 design §2). Every image comes from
 // the set the lookup made at the start (AC-6); the host drive's own ROM,
 // which is not looked up (roms.md Q-1), comes along beside it. A preset
 // names WHAT it wants ("ce150", "A04", "old"); the catalogue says which

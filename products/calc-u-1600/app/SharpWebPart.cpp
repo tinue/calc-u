@@ -11,7 +11,8 @@
 #include "app/CardYamlDump.hpp"
 #include "app/KeyLayout/FaceplateLayout.hpp"
 #include "app/LcdLayout.hpp"
-#include "app/PresetCatalog.hpp"
+#include "presets/BundleFile.hpp"
+#include "presets/Source.hpp"
 #include "app/Text.hpp"
 #include "app/Utf8Path.hpp"
 #include "sessions/Args.hpp"
@@ -57,13 +58,13 @@ void pickerGroups(Value::Object& v, std::initializer_list<std::pair<const char*,
     v.push_back({"descriptions", Value(std::move(descriptions))});
 }
 
-Value presetEntry(const PresetEntry& e) {
+Value presetEntry(const calcu::presets::PresetListEntry& e) {
     return Value::object({{"group", e.group},
-                          {"ref", e.ref},
-                          {"model", std::string(modelKey(e.model))},
+                          {"ref", e.bundlePath},
+                          {"model", e.model.value},
                           {"name", e.name},
                           {"description", e.description},
-                          {"label", e.label()}});
+                          {"label", e.description.empty() ? e.name : e.description}});
 }
 
 Value faceplate(int model) {
@@ -257,24 +258,32 @@ void SharpWebPart::attach(sessions::SessionSetup& setup) {
 
     // ── Settings ────────────────────────────────────────────────────────
     req("c1600.settings-state", [this](const Value&, SessionContext&) {
-        const PresetCatalog catalog(m_paths);
+        // The startup presets of the preset list per model (LIB-18 §10.4),
+        // and the setting's own value when it is none of them.
+        const std::vector<calcu::presets::PresetListEntry> entries = m_app.presetEntries();
         Value::Object presets, choices;
         for (Model m : {Model::PC1500, Model::PC1500A, Model::PC1600}) {
             const std::string current = m_settings.defaultPresetPath(m);
             presets.push_back({modelKey(m), Value(current)});
             Value::Array list;
-            for (const auto& e : catalog.defaultChoices(m, current)) list.push_back(presetEntry(e));
+            bool listed = current.empty();
+            for (const auto& e : entries) {
+                if (e.kind != calcu::presets::PresetListEntry::Kind::Startup || e.model.value != settingsModelName(m)) continue;
+                listed = listed || e.bundlePath == current;
+                list.push_back(presetEntry(e));
+            }
+            if (!listed) {
+                calcu::presets::PresetListEntry own;
+                own.bundlePath = current;
+                own.name = calcu::presets::stemOf(current);
+                list.push_back(presetEntry(own));
+            }
             choices.push_back({modelKey(m), Value(std::move(list))});
         }
         return sessions::replyGiven(sessions::valuePayload("c1600.settings",
                                             Value::object({{"startupModel", m_settings.startupModelPreference()},
                                                            {"defaultPresets", Value(std::move(presets))},
                                                            {"presetChoices", Value(std::move(choices))}})));
-    });
-    req("c1600.preset-examples", [this](const Value&, SessionContext&) {
-        Value::Array out;
-        for (const auto& e : PresetCatalog(m_paths).examples()) out.push_back(presetEntry(e));
-        return sessions::replyGiven(sessions::valuePayload("c1600.examples", Value(std::move(out))));
     });
     cmd("c1600.set-startup-model", [this](const Value& a, SessionContext&) -> CommandOutcome {
         m_settings.setStartupModelPreference(textArg(a, "model"));

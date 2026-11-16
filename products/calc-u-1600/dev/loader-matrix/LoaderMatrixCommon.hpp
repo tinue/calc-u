@@ -1,7 +1,7 @@
 #pragma once
 // Shared by pc1500_loader_matrix and pc1600_loader_matrix: the machine built
-// through the machine interface (C1600-1 design §7), the preset applied by
-// the core's loader (sharp::legacy::applyPresetJob until M-46), and the
+// through the machine interface (C1600-1 design §7), the preset loaded by
+// the library's loader (adapter CliPresetRun, until M-51), and the
 // serial peer that sends what `sde put` sends, on a serial port capability.
 
 #include <cstdint>
@@ -14,8 +14,8 @@
 
 #include "../../core/Display/DisplayOutputText.hpp"
 #include "../../core/Machine/LegacyCalls.hpp"
-#include "../../core/Preset/PresetFile.hpp"
 #include "../../tools/CliCommon.hpp"
+#include "../../tools/CliPresetRun.hpp"
 #include "peripherals/SerialPort.hpp"
 
 namespace matrix {
@@ -80,35 +80,33 @@ struct SdeFeeder {
     }
 };
 
-// Builds the preset's model and applies the preset. `takeRs232c`: the
-// PC-1600's RS-232C gets its peer before the preset runs (the old
-// harnesses' setSerialLink()).
-inline std::unique_ptr<Machine> applyPreset(const std::string& presetPath, bool takeRs232c, PresetLoadResult* res) {
-    PresetFile preset;
+// What a load gave: ok, or the reason.
+struct PresetLoadResult {
+    bool ok = false;
+    std::string error;
+};
+
+// The machine of a loaded preset: it stays the harness session's.
+struct Loaded {
+    std::unique_ptr<cli::CliPresetRun> run;
+    Machine* operator->() const { return run->machine(); }
+    Machine& operator*() const { return *run->machine(); }
+    explicit operator bool() const { return run && run->machine(); }
+};
+
+// Loads the preset through the library's loader (to the idle machine).
+// `takeRs232c`: the PC-1600's RS-232C gets its peer once the load is over
+// (from M-46; before, before the preset ran).
+inline Loaded applyPreset(const std::string& presetPath, bool takeRs232c, PresetLoadResult* res) {
+    Loaded out;
     std::string err;
-    if (!parsePresetFile(presetPath, &preset, &err)) {
-        res->ok = false;
-        res->error = "preset: " + err;
-        return nullptr;
-    }
-    std::optional<std::string> variant;
-    std::string model;
-    if (preset.isPC1600()) {
-        model = sharp::kPC1600;
-        variant = preset.romVariant == "old" ? "Old" : "New";
-    } else {
-        model = preset.variant == PC1500Variant::PC1500A ? sharp::kPC1500A : sharp::kPC1500;
-    }
-    std::unique_ptr<Machine> m = cli::buildMachine(model, variant, "roms", &err);
-    if (!m) {
-        res->ok = false;
-        res->error = "ROM set: " + err;
-        return nullptr;
-    }
-    if (takeRs232c) serialPort(*m, "rs232c", nullptr);
-    *res = job::runToCompletion(sharp::legacy::applyPresetJob(*m, preset, {}, ".", "frontends/qt6/resources/cards", {},
-                                                              cli::presetRoms("roms", {}), {}, {}, {}));
-    return m;
+    out.run = cli::CliPresetRun::load(presetPath, &err);
+    res->ok = out.run != nullptr;
+    res->error = err;
+    if (out && takeRs232c) serialPort(*out, "rs232c", nullptr);
+    return out;
 }
 
 } // namespace matrix
+
+using matrix::PresetLoadResult;

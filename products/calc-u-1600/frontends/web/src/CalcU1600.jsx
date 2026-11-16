@@ -77,7 +77,7 @@ function CalcU1600(props) {
   }, []);
 
   const ready = useEngine(engine, (s) => s.ready);
-  // File ▸ Load Preset: examples/bundled.yaml's `examples`, from the engine.
+  // File ▸ Load Preset: the examples of the preset list (examples/bundle.yaml).
   React.useEffect(() => {
     if (ready) engine.request("presetExamples").then(setPresets).catch(() => {});
   }, [ready]);
@@ -300,7 +300,7 @@ function CalcU1600(props) {
         { label: "Peripherals", disabled: !ok, submenu: [peripheral("CE-150", s.ce150, 0), peripheral("CE-158", s.ce158, 2), peripheral("CE-1600P", s.ce1600p, 1)] },
         { separator: true },
         { label: "Reset", shortcut: `${mod}R`, disabled: !ok, onClick: () => engine.call("reset", false) },
-        { label: "Reset All", shortcut: `${IS_MAC ? "⇧⌘" : "Ctrl+Shift+"}R`, disabled: !ok, onClick: () => engine.call("reset", true) },
+        { label: "Cold boot", shortcut: `${IS_MAC ? "⇧⌘" : "Ctrl+Shift+"}R`, disabled: !ok, onClick: () => engine.call("coldBoot") },
         // LIB-10 AC-41 (adapter L-A4 until LIB-14's shell, M-49).
         { separator: true },
         { label: "Resume", disabled: !paused, onClick: () => engine.call("resume") },
@@ -324,7 +324,7 @@ function CalcU1600(props) {
       shiftTap.current = null;
       const k = e.key.toLowerCase();
       if (k === "c" && !e.shiftKey) { e.preventDefault(); copyScreen(); }
-      else if (k === "r") { e.preventDefault(); if (!busy) engine.call("reset", e.shiftKey); }
+      else if (k === "r") { e.preventDefault(); if (!busy) engine.call(e.shiftKey ? "coldBoot" : "reset"); }
       else if (k === ",") { e.preventDefault(); dialogs.ask("settings", { engine }); }
       // ⌘V / Ctrl+V: the browser's paste event (onPaste) brings the text.
       return;

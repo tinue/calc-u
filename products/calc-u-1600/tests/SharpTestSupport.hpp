@@ -12,6 +12,7 @@
 #include "../core/Machine/SharpCatalogue.hpp"
 #include "../core/Machine/SharpCores.hpp"
 #include "../core/Machine/SharpProductKinds.hpp"
+#include "BootRun.hpp"
 #include "TestCards.hpp"
 #include "TestRoms.hpp"
 #include "TestHarness.hpp"
@@ -124,7 +125,7 @@ inline std::unique_ptr<Machine> buildSharp(const Catalogue& cat, const char* mod
 // Cold boot and the boot run to the prompt (today's flow, LegacyCalls).
 inline void boot(Machine& m) {
     m.coldBoot();
-    sharp::legacy::runToPrompt(m);
+    sharptest::bootRun(m);
 }
 
 inline void tap(Machine& m, const std::string& id);

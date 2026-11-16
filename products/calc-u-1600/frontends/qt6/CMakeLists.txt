@@ -209,45 +209,45 @@ else()
   install(FILES ${BUNDLED_RESOURCE_FILES} DESTINATION resources)
 endif()
 
-# ---- Bundled example presets: examples/bundled.yaml and the folder of
-# every preset it lists (each folder's files, not its subfolders -- the
-# web build takes the same), loose under Resources/examples
-# (AppPaths::bundledExamplesDir(); Shared/PresetCatalog reads them) ----
+# ---- Bundled example presets (C1600-4 AC-17, LIB-6 AC-31; row 1600-21):
+# the bundle file examples/bundle.yaml and exactly the files it lists, each
+# `{ file: … }` (the presets and their files), loose under Resources/examples
+# (AppPaths::bundledExamplesDir(); the preset list reads them). The Web build
+# (frontends/web/build.js) takes the same list. ----
 set(EXAMPLES_SRC_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../../examples)
-set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS ${EXAMPLES_SRC_DIR}/bundled.yaml)
-file(STRINGS ${EXAMPLES_SRC_DIR}/bundled.yaml EXAMPLE_FILE_LINES REGEX "^ *(- )?file: ")
-set(EXAMPLE_DIRS "")
+set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS ${EXAMPLES_SRC_DIR}/bundle.yaml)
+file(STRINGS ${EXAMPLES_SRC_DIR}/bundle.yaml EXAMPLE_FILE_LINES REGEX "{ *file: ")
+set(EXAMPLE_FILES "")
 foreach(line IN LISTS EXAMPLE_FILE_LINES)
-  string(REGEX REPLACE "^ *(- )?file: *" "" example_file "${line}")
-  get_filename_component(example_dir "${example_file}" DIRECTORY)
-  list(APPEND EXAMPLE_DIRS "${example_dir}")
+  string(REGEX REPLACE ".*{ *file: *([^ }]+) *}.*" "\\1" example_file "${line}")
+  list(APPEND EXAMPLE_FILES "${example_file}")
 endforeach()
-list(REMOVE_DUPLICATES EXAMPLE_DIRS)
+list(REMOVE_DUPLICATES EXAMPLE_FILES)
 
 if(APPLE)
-  set_source_files_properties(${EXAMPLES_SRC_DIR}/bundled.yaml PROPERTIES MACOSX_PACKAGE_LOCATION "Resources/examples")
-  target_sources(CalcU1600Qt PRIVATE ${EXAMPLES_SRC_DIR}/bundled.yaml)
+  set_source_files_properties(${EXAMPLES_SRC_DIR}/bundle.yaml PROPERTIES MACOSX_PACKAGE_LOCATION "Resources/examples")
+  target_sources(CalcU1600Qt PRIVATE ${EXAMPLES_SRC_DIR}/bundle.yaml)
 endif()
-foreach(example_dir IN LISTS EXAMPLE_DIRS)
-  file(GLOB example_dir_files LIST_DIRECTORIES false CONFIGURE_DEPENDS ${EXAMPLES_SRC_DIR}/${example_dir}/*)
+foreach(example_file IN LISTS EXAMPLE_FILES)
+  get_filename_component(example_dir "${example_file}" DIRECTORY)
+  set(source ${EXAMPLES_SRC_DIR}/${example_file})
   if(APPLE)
-    set_source_files_properties(${example_dir_files} PROPERTIES
-      MACOSX_PACKAGE_LOCATION "Resources/examples/${example_dir}")
-    target_sources(CalcU1600Qt PRIVATE ${example_dir_files})
+    set_source_files_properties(${source} PROPERTIES MACOSX_PACKAGE_LOCATION "Resources/examples/${example_dir}")
+    target_sources(CalcU1600Qt PRIVATE ${source})
   else()
     add_custom_command(TARGET CalcU1600Qt POST_BUILD
       COMMAND ${CMAKE_COMMAND} -E make_directory "$<TARGET_FILE_DIR:CalcU1600Qt>/resources/examples/${example_dir}"
-      COMMAND ${CMAKE_COMMAND} -E copy_if_different ${example_dir_files}
+      COMMAND ${CMAKE_COMMAND} -E copy_if_different ${source}
               "$<TARGET_FILE_DIR:CalcU1600Qt>/resources/examples/${example_dir}"
-      COMMENT "Copying the bundled examples in ${example_dir}/")
-    install(FILES ${example_dir_files} DESTINATION resources/examples/${example_dir})
+      COMMENT "Copying the bundled example ${example_file}")
+    install(FILES ${source} DESTINATION resources/examples/${example_dir})
   endif()
 endforeach()
 if(NOT APPLE)
   add_custom_command(TARGET CalcU1600Qt POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy_if_different ${EXAMPLES_SRC_DIR}/bundled.yaml
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different ${EXAMPLES_SRC_DIR}/bundle.yaml
             "$<TARGET_FILE_DIR:CalcU1600Qt>/resources/examples")
-  install(FILES ${EXAMPLES_SRC_DIR}/bundled.yaml DESTINATION resources/examples)
+  install(FILES ${EXAMPLES_SRC_DIR}/bundle.yaml DESTINATION resources/examples)
 endif()
 
 # ---- License / third-party-notice files -- ships GPLv3 (this project)

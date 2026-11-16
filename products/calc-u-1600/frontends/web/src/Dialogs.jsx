@@ -188,8 +188,8 @@ function NamedCombo({ value, choices, onChange, label }) {
 }
 
 // Settings (Qt6/app/SettingsDialog), the parts a browser has: the startup
-// device and each model's default preset (the bundled defaults of
-// examples/bundled.yaml, by short name). The save folder is this browser's
+// device and each model's startup preset (the startup presets of
+// examples/bundle.yaml, by short name). The save folder is this browser's
 // storage; serial ports, tracing and the debugger aren't there.
 function SettingsDialog({ engine, done }) {
   const [state, setState] = React.useState(null);
@@ -212,11 +212,11 @@ function SettingsDialog({ engine, done }) {
           {STARTUP_CHOICES.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
         </select>
       </label>
-      <h3 className="calcu-settings-section">Default presets</h3>
+      <h3 className="calcu-settings-section">Startup presets</h3>
       {MODEL_KEYS.map((key, model) => (
         <div key={key} className="calcu-form-row" data-default-preset={key}>
           <span>{MODEL_NAMES[model]}:</span>
-          <NamedCombo label={`${MODEL_NAMES[model]} default preset`} value={state.defaultPresets[key] || ""}
+          <NamedCombo label={`${MODEL_NAMES[model]} startup preset`} value={state.defaultPresets[key] || ""}
             choices={choices(key)}
             onChange={(ref) => {
               engine.call("setDefaultPreset", model, ref);

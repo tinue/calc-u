@@ -127,13 +127,16 @@ def program():
 
 
 def write_ti59(path):
+    """A preset of format 2 (docs/formats/preset.md; M-54)."""
     code, labels = program()
     regs = registers()
-    out = ['MODEL: TI-59', 'SOLID-STATE-MODULE: ML', 'PRINTER: on', 'PARTITION: 399.69', '', 'PROGRAM:']
+    out = ['format-version: 2', 'model: TI-59', 'slot-1: { name: ML }', 'printer: PC-100C', '',
+           'partition: 399.69', '', 'program:', '  keycodes: |']
     for i in range(0, len(code), 20):
-        out.append(' '.join('%02d' % k for k in code[i:i+20]) + '   # %03d-%03d' % (i, min(i+19, len(code)-1)))
-    out += ['', 'REGISTERS:'] + ['%02d = %s' % (k, v) for k, v in sorted(regs.items())]
-    out += ['', 'KEYSTROKES:', '83', '92', '83', '74', '11', '82', '85', '72', '52', '82', '83', '94', '95', '61', '92', '92', '62', '41', '92', '42']
+        out.append('    ' + ' '.join('%02d' % k for k in code[i:i+20]) + '  # %03d-%03d' % (i, min(i+19, len(code)-1)))
+    out += ['', 'data:'] + ['  %02d: %s' % (k, v) for k, v in sorted(regs.items())]
+    out += ['', 'keys:', '  - regular-speed:'] + ['  - key: ' + k for k in
+            ['2', '0', '2', '6', 'A', '1', '+', '2', 'EE', '1', '2', '+/-', '=', 'GTO', '0', '0', '7', 'SST', '0', 'STO']]
     open(path, 'w').write('\n'.join(out) + '\n')
     return code, labels
 

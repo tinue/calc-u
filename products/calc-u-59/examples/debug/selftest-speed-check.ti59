@@ -3,7 +3,7 @@
 # Runs the TI-59 ROM self-test (ML solid-state module, program 01 — the
 # "2nd Pgm 01 SBR =" sequence) twice: once at regular speed, once at full
 # speed, reporting the elapsed hardware-equivalent time for each via the
-# ZeroElapseTime/ReportElapseTime KEYSTROKES directives.
+# steps elapsed-time: start and elapsed-time: report.
 #
 # Real hardware takes ~15s for SBR = on this self-test. Load this file and
 # check the LOG tab (DEBUG panel) for the two "Elapsed:" lines — both should
@@ -16,15 +16,15 @@ printer: PC-100C
 
 keys:
   - regular-speed:
-  - key: Pgm  # 2nd Pgm
-  - key: 0  # 0
-  - key: 1  # 1        → Pgm 01 selected
-  - key: SBR  # SBR
+  - key: Pgm
+  - key: 0
+  - key: 1  # → Pgm 01 selected
+  - key: SBR
   - elapsed-time: start
-  - key: =  # =        → run program 01 at regular speed
+  - key: =  # → run program 01 at regular speed
   - elapsed-time: report
   - full-speed:
-  - key: SBR  # SBR      → re-enter program 01 (still selected)
+  - key: SBR  # → re-enter program 01 (still selected)
   - elapsed-time: start
-  - key: =  # =        → run program 01 again, at full speed
+  - key: =  # → run program 01 again, at full speed
   - elapsed-time: report

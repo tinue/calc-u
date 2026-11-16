@@ -344,3 +344,71 @@ c1600_4_ac16` compares its 32 examples as before the step.
   library has tests of the same parses (`ac20_wait_without_unit_refused`,
   `ac1_header_key_once_sections_repeat`): the row names them for this
   criterion, which is about what Calc-U-1600's tests check.
+
+## Calc-U-59 (M-54, 2026-11-16, branch `m54-presets-59`)
+
+Built and run as C59-2's M-54 section says (`build/tests`, `build/qt`, the
+Web `dist/` and Playwright; Swift type-checked only).
+
+The code (design §11.2, §11.3): `app/TIPresetRules.*` (`TIModelRules`,
+`TIPresetRules`; `tiDisplayText`, `displayRegisterX`), `app/TIDisplayPicture.*`,
+C59-2's `app/TIPresetKeys.*`; `TIAppPart` owns the library's parts with the
+rules and the bundle of `examples/` (`TIAppSetup::examplesFolder`); the
+harness entry adds the rules, the bundle of the source tree's `examples/`
+and `ProgramMemoryPart`. The reader of 2.3.0, `c59.load-state`,
+`presetOperation` and the KEYSTROKES lane are gone; a dropped preset goes to
+`load-preset {content, name}` (`c59.open-dropped`, `c59.web.drop`, until
+M-56). Frontends: Qt6 sends `load-preset {ref: path}`, Swift
+`load-preset {content, name}`, the Web a bundled example by
+`examples:<path>` and an upload by its content; `presets.json` is gone,
+the Web's list is the request `preset-list`. Tests:
+`tests/ti_presets_tests.cpp`, `tests/harness_tests.cpp`,
+`tests/preset_content_tests.cpp`, `tests/reference_runs_tests.cpp`, Web
+`play-calculator.spec.js`, `session.spec.js`.
+
+| ID | Result | Test case |
+|---|---|---|
+| AC-35 | Pass | `lib6_ac35_extensions_models_any_case_no_variant`, `lib6_ac35_slot1_by_name_only_file_refused_with_notice`, `lib6_ac35_printer_pc100c` |
+| AC-36 | Pass | `lib6_ac36_running_program_not_idle_each_model_with_and_without_printer`, `lib6_ac36_idle_after_100ms_of_key_readiness`, `lib6_ac36_card_wait_after_write_is_idle` |
+| AC-37 | Pass | `lib6_ac37_no_slot1_no_printer_means_none` |
+| AC-38 | Pass | `lib6_ac38_2_3_0_file_refused_as_outdated_with_hint`, `lib6_ac38_any_error_refuses_whole_machine_untouched`, `lib6_ac38_first_error_refuses_the_file_machine_untouched` |
+| AC-39 | Pass | `lib6_ac39_full_speed_unless_regular_speed_first`, `lib6_ac39_user_keys_dropped_second_load_refused`, `lib3_ac32_preset_load_is_busy_and_refuses_second` |
+| AC-40 | Pass | `lib6_ac40_type_and_syncclock_refused_when_read`, `lib6_ac40_printer_trace_sets_trace_refused_without_pc100c`, `lib6_ac40_elapsed_counts_emulated_time`, `lib6_ac40_screenshot_is_the_classic_segment_picture`, `lib6_ac40_expect_pi_13_digits_passes_10_digits_fails`, `lib6_ac40_expect_any_display_format_and_blinking`, `lib6_ac40_not_expect_by_the_same_comparison`, `lib6_ac40_expect_not_a_number_refused_when_read`, `c59_6_ac6_preset_sets_trace_off_unless_printer_trace_on` |
+| AC-41 | Pass | `lib6_ac41_user_load_empties_paper_startup_preset_keeps_it` |
+| AC-42 | Pass on the Web; Qt6 in M-57, Swift in M-58 (D-36) | Web `lib6_ac42 bundled example sum shows its cue card`, `lib6_ac42 uploaded preset by its content`, `lib6_ac42 dropped preset loads` (Playwright); Swift's `PresetLoadTests` skipped (D-46) |
+| AC-43 | Pass (the four card examples excluded by name until M-55) | `calcu_preset_check.CalcU59Presets` (Frequent: 53 examples and the three startup presets), `c59_2_ac15_names_short_described_once_unique_per_model` (`checkBundle`) |
+| AC-68 | Pass | `lib6_ac68_regex_refused_when_read` |
+| AC-24, AC-66 (TI) | Pass | the AC-40 cases of `expect:`, `not-expect:` |
+| AC-25 (TI) | Pass (the save folder of the app; Swift's iCloud folder by its build only) | `lib6_ac25_screenshot_into_save_folder`, `lib6_ac34_preset_wait_expect_screenshot_on_ti59` |
+| AC-34 (TI) | Pass | `lib6_ac34_preset_wait_expect_screenshot_on_ti59`, `lib6_ac34_printer_trace_on_off` |
+| AC-53 (TI) | Pass | `lib6_ac53_ti_idle_rule_values` |
+| EC-7 (TI) | Pass | `lib6_ec7_expect_display_off_fails` |
+
+Column status: tested in M-54; **In progress** until AC-42's Qt6 (M-57)
+and Swift (M-58) scenarios (D-36).
+
+### Deviations and findings (Calc-U-59)
+
+- **Finding, fixed in the library** (`library/typing/Awaitable.*`,
+  `library/presets/LibraryKeywords.cpp`): a preset's `key:` step was
+  carried out only when the typing engine was idle, and the TI profile's
+  engine is idle only once the machine is ready for keys again
+  (`waitsForReadinessAfterRelease`). So a last `key:` that starts a program
+  that never stops (`historic/life.ti59`) never finished its item, the
+  preset never ended and every other load was refused; and `- key: 1 Write`
+  waited for readiness that the card wait never gives (the other fork's
+  report). A `key:` step now finishes when its last key is up
+  (`TypeOptions::untilReleased`); the implicit wait for idle follows as
+  AC-56 says, except after the last item and before `skip-wait:` (AC-58,
+  AC-60). Only the TI profile waits for readiness after a release, so
+  Calc-U-1600 is unchanged. Tests: the reference runs (`life.ti59`),
+  `lib6_ac36_card_wait_after_write_is_idle`.
+- `PlaceKeyRule::noFile` (`library/presets/ProductRules.hpp`): the sentence
+  for a `{ file: }` the place does not take, so `slot-1` gets D-42's
+  sentence. D-37 said no library change; this is one field.
+- AC-40's X: read from C while a result is shown (fB[5]), else from A when
+  it is normalized (an error's clamp: 1 ÷ 0 gives 9.999999999999e99 while
+  the display shows 9.9999999 99), else from the number the display shows
+  (being keyed in), as `app/DebugSnapshots.cpp`'s `decodeX` reads it.
+- EC-7: a TI display is never "off" in the machine's output; a display
+  with no position lit counts as dark.

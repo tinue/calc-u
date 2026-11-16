@@ -164,6 +164,10 @@ if(CALCU_TESTS)
     # LIB-12 AC-7, AC-10 (design P5): ti59.py without one ROM file ends naming it.
     calcu_add_test(CalcU59HeadlessRomMissing frequent COMMAND ${Python3_EXECUTABLE} tests/headless_rom_tests.py
                    PROPERTIES ENVIRONMENT TI59HEADLESS_LIB=$<TARGET_FILE:ti59headless> DEPENDS CalcU59Tests)
+    # C59-2 AC-18 (design T12): fastcal.py writes the tracked calendar-09, and
+    # years.py runs it for 2026 through calcu (tools/agentic/calcu59.py).
+    calcu_add_test(CalcU59CalendarScripts frequent
+                   COMMAND ${Python3_EXECUTABLE} tools/agentic/calendar/selftest.py --calcu $<TARGET_FILE:calcu>)
   endif()
   # LIB-6 AC-43 (design §11.6 P8; C59-2 T9): `calcu --product 59 check-preset`
   # over the examples and the startup presets; the four with magnetic cards

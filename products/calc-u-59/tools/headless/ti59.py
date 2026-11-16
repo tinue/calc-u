@@ -389,6 +389,51 @@ class Machine:
         return "\n".join(lines)
 
 
+# ── Helpers of tools/agentic/stepcost.py and fastmode_matrix.py ──────────────
+# (moved from tools/agentic/ti59file.py when it went in M-54; LIB-6 design
+# §11.7: these two scripts run on the headless machine until C59-9, M-59).
+
+FLG_BUSY = 0x8000              # printer busy
+
+
+def regbytes(v) -> bytes:
+    """16-nibble register image of a decimal value (13-digit mantissa)"""
+    from decimal import Decimal
+    d = Decimal(v); neg = d < 0; d = abs(d)
+    if d == 0:
+        return bytes(16)
+    e = d.adjusted()
+    digs = (format(d.scaleb(-e), 'f').replace('.', '') + '0' * 13)[:13]
+    nib = [0] * 16
+    for i, ch in enumerate(digs):
+        nib[15 - i] = int(ch)
+    ae = abs(e); nib[2] = ae // 10; nib[1] = ae % 10
+    nib[0] = (2 if neg else 0) | (4 if e < 0 else 0)
+    return bytes(nib)
+
+
+def press(m: "Machine", code: str, hold: int = 6000) -> None:
+    """press and release a key (matrix code), holding it for `hold` instructions"""
+    m.press(code); LIB.h_stepn(m.h, hold); m.release(code)
+
+
+def idle(m: "Machine") -> bool:
+    """program stopped, printer idle, CPU in the keyboard idle loop"""
+    s = m.snapshot()
+    return (not s.fB & 1) and not (s.flags & FLG_BUSY) and IDLE_LO <= s.pc <= IDLE_HI and bool(s.flags & FLG_IDLE)
+
+
+def settle(m: "Machine", limit_s: float = 4000, chunk: int = 20000) -> bool:
+    """Run until idle (three checks in a row) or limit_s emulated seconds."""
+    start = m.elapsed(); quiet = 0
+    while (m.elapsed() - start) / INSTR_PER_SEC < limit_s:
+        LIB.h_stepn(m.h, chunk)
+        quiet = quiet + 1 if idle(m) else 0
+        if quiet >= 3:
+            return True
+    return False
+
+
 def summary(recs: list[HRec], labels: dict[int, str] | None = None, variant: str = "TI59") -> str:
     """Each distinct non-idle PC once, in first-execution order, with its hit
     count — a compact map of the code a keystroke runs, loops folded."""

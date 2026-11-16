@@ -1,15 +1,23 @@
 # Agentic tools
 
 Command-line tools for interactive work by a coding agent (or a person at a
-terminal) on TI-59 programs: run a `.ti59` file headless, time it, see where
-the time goes, measure what single steps cost, disassemble and assemble
-keycode programs. Each tool prints a few plain lines that are easy to read
-back in a conversation; none of them opens a window or needs the app.
+terminal) on TI-59 programs: run a preset (`.ti59`, format 2,
+`docs/formats/preset.md` at the repository root) without a window, time it,
+see where the time goes, measure what single steps cost, disassemble and
+assemble keycode programs. Each tool prints a few plain lines that are easy
+to read back in a conversation; none of them opens a window or needs the app.
 
-They sit on top of the headless harness in `tools/headless/` (the
-unmodified `core/` emulator driven from Python via ctypes). That harness is
-for ROM-level traces; these tools work at the level of a user program and
-its printout.
+Since M-54 they load presets through the family's harness `calcu`
+(`calcu --product 59 serve`, LIB-11; `calcu59.py` here, over
+`library/harness/python/calcu_serve.py`): `preset <file>`, the bare `wait`
+(until idle), `paper text`, `ti59 program 000 count=<n>`, `lcd`,
+`registers`, `peek TMC0501 scom`. The calcu program: `--calcu PATH` on a
+tool's command line, else `CALCU59_CALCU`, else
+`build/tests/library/harness/cli/calcu` of the repository (`cmake --build
+build/tests --target calcu`). `stepcost.py` and `fastmode_matrix.py` still
+drive the headless machine of `tools/headless/` (the `core/` emulator from
+Python via ctypes, with the helpers `regbytes`, `press`, `settle`, `idle`
+there) until C59-9 (M-59); `tools/headless/` is for ROM-level traces.
 
 ## Running
 
@@ -21,8 +29,9 @@ uv run python tools/agentic/<tool>.py <args>
 
 - Paths inside the tools are resolved from their own location, so they also
   work from another directory.
-- The headless library builds itself on first import
-  (`tools/headless/build.sh`). After changes to `core/` or
+- Build `calcu` after changes to `core/` or `app/`. The headless library
+  (`stepcost.py`, `fastmode_matrix.py`) builds itself on first import
+  (`tools/headless/build.sh`); after changes to `core/` or
   `tools/headless/capi.cpp`, rebuild it.
 - In zsh, `uv` may be aliased with `noglob`, so `examples/calendar/calendar-0*.ti59`
   is passed on literally. Expand globs with `$(ls examples/calendar/calendar-0*.ti59)`.
@@ -31,23 +40,25 @@ uv run python tools/agentic/<tool>.py <args>
 
 ## Time base
 
-All times are **emulated seconds**: weighted CPU instructions (an idle-loop
-instruction counts 4) divided by `INSTR_PER_SEC` = 455 kHz / 32 = 14219
-(`tools/headless/ti59.py`, `Machine.elapsed()`). They match the published
-real-hardware times of the calendar programs within a few seconds.
+All times are **emulated seconds** (calcu's `ticks`: weighted CPU
+instructions, an idle-loop instruction counting 4, at 455 kHz / 32 = 14219
+a second). They match the published real-hardware times of the calendar
+programs within a few seconds.
 
 A run time is what a stopwatch on a filmed calculator shows: from the key
-press until the display lights up again (`dark_time` in `ti59file.py`, which
-reads the display duty the GUI draws). A Pause flash doesn't end it, and the
-blinking of an error display after the stop doesn't move it. The GUI's
-`ZeroElapseTime:`/`ReportElapseTime:` figure measures the same interval,
-within a few hundredths of a second.
+press until the display lights up again and no program runs (`dark_time` in
+`calcu59.py`: `lcd` and fB[0] of `registers`, sampled every 10 ms of emulated
+time with `wait 10ms`; the headless tool before M-54 sampled every 100
+instructions, so a time moves by at most one sample). A Pause flash doesn't
+end it, and the blinking of an error display after the stop doesn't move it.
+A preset's `elapsed-time: start` / `elapsed-time: report` measures the same
+interval, within a few hundredths of a second.
 
 ## The tools
 
 | Tool | What it answers |
 |---|---|
-| `ti59file.py` | Does the file run, how long from the start key, what did it print? Also the shared library for the other tools. |
+| `calcu59.py` | Does the preset run, how long from the start key, what did it print? Also the shared library for the other tools. |
 | `linetimes.py` | When did each printer line appear? Which lines are slow? |
 | `runtime.py` | How much program run time does each key cost, including preparation keys before the start key? |
 | `hotsteps.py` | Which program steps are hot; is the printer the bottleneck; is fast mode on; what runs between two lines? |
@@ -57,31 +68,31 @@ within a few hundredths of a second.
 | `asm59.py` | Library: write a keycode program with mnemonics and labels instead of numbers. |
 | `calendar/` | Tools for the calendar-printer programs (see below). |
 
-### ti59file.py — load and run
+### calcu59.py — load and run
 
 ```bash
-uv run python tools/agentic/ti59file.py examples/calendar/calendar-09-dispatch.ti59 [--lines]
-# examples/calendar/calendar-09-dispatch.ti59:    75.9 s  finished=True  lines=113 (non-blank 85)  printer floor  27.6 s
+uv run python tools/agentic/calcu59.py examples/calendar/calendar-09-dispatch.ti59 [--lines]
+# examples/calendar/calendar-09-dispatch.ti59:   75.94 s  finished=True  lines=113 (non-blank 85)
 ```
 
-Loads the file (PARTITION via `n Op 17`, PROGRAM, REGISTERS), plays its
-KEYSTROKES, each key to idle, and times the **last** key until the display
-lights up again. `printer floor` = the printer's own minimum: 4165
-instruction cycles per printed line, 1370 per blank (PRT.FEED) line. `--lines` appends the printout.
+Loads the preset without its `keys:` sections (its partition, program, data,
+cue card and machine), presses its key steps but the last, each until idle,
+and times the **last** key step until the display lights up again.
+`--lines` appends the printout (`paper text`).
 
 Library use (`sys.path.insert(0, 'tools/agentic')`):
 
-- `parse(path)` → `(keycodes, {reg: value}, steps, keys)`
-- `load(path, extra_regs=None)` → `(Machine, keys)`
-- `run(path, keys=None)` → `(seconds, lines, finished, Machine)`
-- `dark_time(m, code)` → `(seconds, finished, ran)`: press one key, time it
-  until the display lights up again; `ran` = it ran a program
-- `press`, `settle`, `idle`, `lit`, `play_until_last`, `real_keys`, `regbytes`,
-  `DIGIT` (digit → KEYSTROKES matrix code)
+- `split_preset(path)` → `(text without keys:, [(verb, value)])`
+- `Run(program)`: one `calcu serve`, with `cmd`, `preset`, `step`,
+  `wait_idle`, `seconds`, `lit`, `running`, `registers`, `scom0`, `paper`,
+  `program`
+- `run_preset(path, steps=None)` → `(seconds, lines, finished)`
+- `dark_time(run, value)` → `(seconds, finished, ran)`: press one key step,
+  time it until the display lights up again; `ran` = it ran a program
+- `play_until_last(path, steps=None)` → `(Run, last key step)`
 
-The machine always gets the printer and the ML module, whatever the file
-says. `ZeroElapseTime:`, `FullSpeed:` and the other directive lines are
-kept in `keys` as `'Name:'` entries and skipped when keys are played.
+The machine is the preset's (its `slot-1`, its `printer`); sections after
+its keys are loaded with the rest, before the keys.
 
 ### linetimes.py — time of each printed line
 
@@ -102,8 +113,8 @@ last printed line, a little before the display lights up again.
 ### runtime.py — program run time per key
 
 ```bash
-uv run python tools/agentic/runtime.py file.ti59 [--keys "83 92 83 74 11 ..."]
-# 11:0.16 42:75.93  total 76.1 s
+uv run python tools/agentic/runtime.py file.ti59 [--keys "2 0 2 6 A ..."]
+# A:0.17 STO:75.95  total 76.1 s
 ```
 
 Times every key that runs a program (`fB[0]` set) until the display lights
@@ -113,7 +124,7 @@ counted too.
 Timing only from the start key can hide seconds of preparation: a version of
 the calendar-09 program whose `A` key called ML-20 looked 4 s faster than
 Acosta's from the start key, but was 1.5 s slower in total. `--keys`
-replaces the file's KEYSTROKES (matrix codes).
+replaces the preset's key steps (key IDs, one step each).
 
 ### hotsteps.py — where the time goes
 
@@ -125,7 +136,8 @@ uv run python tools/agentic/hotsteps.py file.ti59 --window A B
 # 049:2 050:11 051:29 ... 018:14 019:20 ...
 ```
 
-The default mode samples the run every 97 instructions:
+The default mode samples the run every millisecond of emulated time
+(`registers` and `peek TMC0501 scom 0 1` after each `wait 1ms`):
 - **Printer busy:** when this is low, the program is limited by its own
   calculation, not by the printer.
 - **Print-wait spin:** time in the ROM loops that wait for the printer.
@@ -134,7 +146,7 @@ The default mode samples the run every 97 instructions:
 - **Hottest steps:** the 25 program steps with the most samples.
 
 `--window A B` lists the program steps executed between A and B seconds as
-`step:samples` (one sample per 20 instructions, about 1.4 ms). Take A and B
+`step:samples` (one sample per millisecond). Take A and B
 from `linetimes.py --lines` to see exactly what runs before a slow line.
 
 ### stepcost.py — cost of single steps
@@ -179,8 +191,9 @@ uv run python tools/agentic/kdis.py file.ti59
 # 003  STO 69
 ```
 
-One line per instruction with its operands folded in. Then come the
-registers, the keys and the number of steps. `dis(keycodes)` is the library
+One line per instruction with its operands folded in (the preset's program
+as calcu wrote it, read back with `ti59 program 000 count=<n>`). Then come
+the key steps and the number of steps of the partition. `dis(keycodes)` is the library
 form.
 
 ### asm59.py — assembler (library)
@@ -198,7 +211,7 @@ Tokens:
 - `('N', text)` attaches a comment to the next step.
 
 `assemble(tokens, listing={})` fills `listing` with step → (shown text,
-notes) for writing an annotated `PROGRAM:` section (see
+notes) for writing an annotated `program:` section (see
 `calendar/fastcal.py`). Add missing mnemonics to `KC` as needed.
 
 ## Calendar tools (`calendar/`)
@@ -209,9 +222,9 @@ For the 1978–1981 calendar-printer programs (`examples/calendar/calendar-0*.ti
 | Tool | Use |
 |---|---|
 | `check.py printout.txt year` | Day rows against Python's `calendar` (Sunday first). Library: `check(lines, year)`. |
-| `years.py file.ti59 year…` | Runs the file for each year (replaces the 4 digit keys before the first `A`), checks the dates, and compares line by line with Acosta's program for the same year. Library: `with_year(path, year)`, e.g. for `runtime.py`'s `key_runtimes`. |
-| `compare.py file.ti59…` | Steps, time of the last printed line, and date check for each program with its own KEYSTROKES. |
-| `fastcal.py out.ti59` | Generator of `examples/calendar/calendar-09-dispatch.ti59` (program, registers, annotated listing; header text from `calendar-09-header.txt`). Edit the generator, not the example. |
+| `years.py file.ti59 year… [--no-acosta] [--write FOLDER]` | Runs the preset for each year (replaces the 4 digit key steps before the first step that names `A`), checks the dates, and compares line by line with Acosta's program for the same year; `--write` writes a copy of the preset per year. Library: `with_year(path, year)`, e.g. for `runtime.py`'s `key_runtimes`. |
+| `compare.py file.ti59…` | Steps, time of the last printed line, and date check for each program with its own keys. |
+| `fastcal.py out.ti59` | Generator of `examples/calendar/calendar-09-dispatch.ti59`, a preset of format 2 (program in the listing notation, registers, cue card, keys; header text from `calendar-09-header.txt`). Edit the generator, not the example; the CTest `CalcU59CalendarScripts` checks that it writes the tracked file. |
 | `swapcal.py out.ti59` | Generator of the earlier swap design (correct but 92.6 s), kept for reference. |
 
 Typical check after changing `fastcal.py`:
@@ -224,14 +237,15 @@ uv run python tools/agentic/runtime.py examples/calendar/calendar-09-dispatch.ti
 
 ## Pitfalls
 
-- **Two numbering systems.** KEYSTROKES and `press()` use key matrix codes
-  (row × 10 + column: `2` is 83, `A` is 11). PROGRAM uses keycodes (`2` is 02,
-  `A` is 11). See `reference/StateFileFormat.md`.
-- **Program longer than the partition.** `write_program` silently writes
-  past the partition into the top registers and corrupts them. Check that the
-  step count fits.
+- **Two numbering systems.** Key steps name keys by their key IDs
+  (`docs/formats/preset.md` §8.1: `2`, `A`, `Pgm`); `program:` holds keycodes
+  (`2` is 02, `Pgm` is 36). The headless helpers' `press()` still takes key
+  matrix codes (row × 10 + column: `2` is 83, `A` is 11).
+- **Program longer than the partition.** A `program:` section writes past
+  the partition into the top registers, as the calculator keeps them. Check
+  that the step count fits.
 - **Op 2x / Op 3x** increment or decrement only R00–R09.
-- **Values in REGISTERS** are written with 13 significant digits. For print
+- **Values in `data:`** are written with 13 significant digits. For print
   codes, the position of the digits within the 13-digit mantissa matters (a
   2-digit vs 3-digit integer part shifts them).
 - **Fast mode:** the rules (no SBR, no labels as targets, safe endings) are
@@ -241,15 +255,12 @@ uv run python tools/agentic/runtime.py examples/calendar/calendar-09-dispatch.ti
   loop forever. `measure()` gives up after 300 emulated seconds with an
   error. Measure a jump with a target that moves along with each
   repetition instead.
-- **Settle overhead.** Key handling plus the idle checks cost ~1.6 s of
-  emulated time per key. Don't sum the per-key times of `ti59file.run`;
-  use `runtime.py`.
-- **Harness requirements.** The tools need `h_elapsed` in
-  `tools/headless/capi.cpp` and `Machine.elapsed()` / `INSTR_PER_SEC` in
-  `tools/headless/ti59.py`.
-- **No reloads or preset cards.** `ti59file.py` has its own parser, which
-  merges all sections of one kind into one load and plays all keys after it.
-  A preset with reloads (sections after `KEYSTROKES:`), `CARD:` blocks or
-  `ArmCard:`/`InsertCard:` (`reference/StateFileFormat.md` § "Reloads",
-  § "CARD") does not run correctly here. (Follow-up: teach it reloads and
-  cards; the harness has `card_insert`, `card_eject` and `card_waiting`.)
+- **Settle overhead.** Waiting for idle after each key costs time. Don't
+  sum per-key times of `run_preset`; use `runtime.py`.
+- **Headless requirements.** `stepcost.py` and `fastmode_matrix.py` need
+  `h_elapsed` in `tools/headless/capi.cpp` and `Machine.elapsed()` /
+  `INSTR_PER_SEC` in `tools/headless/ti59.py`.
+- **Sections after the keys.** The tools load a preset without its `keys:`
+  sections and press the keys themselves, so a section after a `keys:`
+  section (a reload, `preset.md` §4) is loaded before the keys. Magnetic cards
+  in presets come with C59-7 (M-55).

@@ -114,31 +114,31 @@ program:
 keys:
   - regular-speed:
   # The keystrokes as outlined in the article
-  - key: 0  # 0
-  - key: .  # .
-  - key: 0  # 0
-  - key: 0  # 0
-  - key: 0  # 0
-  - key: 0  # 0
-  - key: 0  # 0
-  - key: 0  # 0
-  - key: 6  # 6
-  - key: 0  # 0
-  - key: 9  # 9
-  - key: +  # +
-  - key: 6  # 6
-  - key: 0  # 0
-  - key: 9  # 9
-  - key: =  # =
-  - key: A  # A
+  - key: 0
+  - key: .
+  - key: 0
+  - key: 0
+  - key: 0
+  - key: 0
+  - key: 0
+  - key: 0
+  - key: 6
+  - key: 0
+  - key: 9
+  - key: +
+  - key: 6
+  - key: 0
+  - key: 9
+  - key: =
+  - key: A
   # 21  2nd
-  - key: STF  # STF
+  - key: STF
   # 21  2nd
-  - key: Ind  # IND
-  - key: 7  # 7
-  - key: INV  # INV
-  - key: LRN  # LRN
+  - key: Ind
+  - key: 7
+  - key: INV
+  - key: LRN
   # 21  2nd
-  - key: IxI  # |x|
-  - key: RCL  # RCL
-  - key: LRN  # LRN
+  - key: IxI
+  - key: RCL
+  - key: LRN

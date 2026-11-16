@@ -5,8 +5,8 @@ format-version: 2
 model: TI-59
 description: TI-59 calculator diagnostic magnet card, both sides
 # Needs TI-59 due to partitioning
-# Print output requires the printer to be active
 slot-1: { name: ML }
+# Print output requires the printer to be active
 printer: PC-100C
 
 # Default partitioning
@@ -343,14 +343,14 @@ program:
     478 77 GE
     479 77 GE
 
-# Prepare the magnet card inlay
+# The cue card
 cue-card:
   title: CALCULATOR DIAGNOSTIC - Consult Owner's Manual
   E: EXECUTE
 
 keys:
   - full-speed:  # E below runs the diagnostic, which takes a while — race through it
-  - key: E  # E — start diagnostic
+  - key: E  # start diagnostic
   - wait: 1.5s  # not for the calculator — full speed finishes almost instantly —
   # but XCUITest polls keystroke-playback-status roughly once per
   # second, so give it a window to observe "playing" before this

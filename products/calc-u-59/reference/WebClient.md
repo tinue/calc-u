@@ -25,7 +25,7 @@ it keeps are in the browser's IndexedDB, the persistent file system of the
 library's shell (database `/persist-calc-u-59`, LIB-15 AC-5, AC-20): the
 settings file `settings/Calc-U-59/Calc-U-59.ini` (LIB-9 AC-23) and the save
 folder `Calc-U-59/` with the magnetic cards (upload one to fit it, download
-one to keep a copy) and `ti58c.mem`; nothing is in `localStorage`. Only the
+one to keep a copy) and `ti58c.memory.yaml`; nothing is in `localStorage`. Only the
 first copy of the client in a browser writes them; a second tab (or a
 second client on one page) works in memory and says so (AC-8, AC-21; ledger
 59-8). There is no trace folder: a trace (the TRACE button's or a preset's)
@@ -60,12 +60,12 @@ calc-engine-worker.js → library-worker.js ── wasm/ti59-core.{js,wasm} ◀�
 | `src/Debugger.jsx` | CALCULATOR / CPU / LOG tabs, heatmap, ASM overlay (`debug/*`); FREEZE, STEP and RESUME of each tab are the component set's `CalcuRunControlButtons` for the levels `program` and `cpu` on the library's `run-state`, FREEZE ON START / ARMED its `pause-on-start`, TRACE the library's `trace` (LIB-10, M-53) |
 | `src/PlayCalculator.jsx` | The component: the two layouts, focus and physical keyboard, drag and drop, keyboard feedback (`MainWindow`) |
 | `calc-engine-worker.js` | The product's configuration of the library's Web Worker (`library/web/src/worker.js`): the engine's name, its factory, the persistent mount `/persist-calc-u-59` and the lock `calcu59-storage` |
-| `bindings.cpp` | The factory of the app session (`CALCU_WEB_PRODUCT(CalcU59Host, …)`): the ROM lookup over `/bundle`, the settings file, `TIAppPart`, LIB-8's `PaperPart` and LIB-10's `DebuggerPart` (as `makeAppSession` has them; no trace folder: the hand-over) and `TIWebPart`; the library's `WorkerHost` translates the messages |
+| `bindings.cpp` | The factory of the app session (`CALCU_WEB_PRODUCT(CalcU59Host, …)`): the ROM lookup over `/bundle`, the settings file, the shell's part, `TIAppPart::sessionParts()` (the library's parts with the TI rules, the bundle of `/presets`; no trace folder: the hand-over) and `TIWebPart`; the library's `WorkerHost` translates the messages |
 | `calc.css` | Tokens, fonts and every rule the client needs |
 | `fonts/` | Archivo (WOFF2, SIL OFL 1.1), for the cue card, as the family `Calc-U Archivo` |
 | `app/` | The installable PWA's own files: `index.html`, `app.css`, `manifest.json`; its page, service worker and worker entry are the library's (`library/web/app/`) |
-| `index.html` | Demo and test page, sized to the window: `?layout=wide|portrait`, also `width`, `height`, `model` (by its name), `preset` (a path in `presets/`) |
-| `presets.json` | The presets the preset picker offers (file name, title): every file directly in `examples/`, none from its subdirectories. A new example there needs a line here. `build.js` copies them at build time to `dist/presets/` |
+| `index.html` | Demo and test page, sized to the window: `?layout=wide|portrait`, also `width`, `height`, `model` (by its name), `preset` (a path of `examples/bundle.yaml`, sent as the bundle path `examples:<path>` with LIB-18's `start`) |
+| `examples/bundle.yaml` (the product's) | What the preset picker offers: the request `preset-list` gives its examples in their groups (LIB-6 AC-31; C59-2 AC-13). `build.js` copies exactly the files it lists, and the file itself, to `dist/presets/` (`presets.json` went in M-54) |
 | `library/web/vendor/` (the repository's) | React 18 and ReactDOM (shipped), Babel (build only), ReactDOMServer (tests only); one copy for both products |
 | `build.sh`, `build.js` | The build (below) |
 | `tests/`, `run-tests.sh`, `playwright.config.js`, `package.json` | Playwright tests |

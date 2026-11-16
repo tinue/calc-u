@@ -69,7 +69,7 @@ EmulatorViewModel (@Observable, main thread)
 | Thread | What runs there |
 |---|---|
 | Main | SwiftUI, every `TIAppSession` call (each posts a command and returns at once), `SessionDelegate` callbacks, all `@Observable` writes |
-| Session thread (`cu59::SessionThread`) | The app session: built, called about 60 times a second, destroyed there; the machine, the presets, the card and `ti58c.mem` files (through `NSFileCoordinator`) — C59-5 |
+| Session thread (`cu59::SessionThread`) | The app session: built, called about 60 times a second, destroyed there; the machine, the presets, the card and `ti58c.memory.yaml` files (through `NSFileCoordinator`) — C59-5 |
 | Attach I/O thread (Debug, macOS and simulator) | `calcu::harness::AttachEndpoint`: the socket on 127.0.0.1; lines go to the session thread |
 | Global utility queue | `CardStorage.warmUp()` before the session is made — `url(forUbiquityContainerIdentifier:)` blocks and returns nil on the main thread |
 
@@ -176,8 +176,8 @@ run control's level `program`, those of the CPU tab `cpu` (LIB-10 AC-34);
 which can be used is the library's rule (`buttonUseFor:`), FREEZE ON START
 is `pause-on-start`, the LOG tab's TRACE the trace session's button trace.
 
-**Storage.** Cards and `ti58c.mem` live in the `CardStorage` folder (iCloud
-Documents when available); reading `ti58c.mem`, and reading and writing cards,
+**Storage.** Cards and `ti58c.memory.yaml` live in the `CardStorage` folder (iCloud
+Documents when available); reading `ti58c.memory.yaml`, and reading and writing cards,
 go through `NSFileCoordinator`. Traces go to the trace location from Settings: Local
 (`~/Library/Application Support/Calc-U-59`), iCloud (the card folder) or a
 custom folder (macOS, security-scoped bookmark).

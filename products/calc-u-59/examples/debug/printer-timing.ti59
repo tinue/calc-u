@@ -15,9 +15,9 @@ keys:
   - regular-speed:
   # --- Via program first, regular speed ---
   - regular-speed:
-  - key: CLR  # CLR
+  - key: CLR
   - elapsed-time: start
-  - key: A  # A
+  - key: A
   - elapsed-time: report
 
   # --- Intra-test Adv ---
@@ -25,12 +25,12 @@ keys:
   - key: B
 
   # --- Via program, full speed ---
-  - key: CLR  # CLR
-  - key: 8  # 8
-  - key: 8  # 8
+  - key: CLR
+  - key: 8
+  - key: 8
   - full-speed:
   - elapsed-time: start
-  - key: A  # A
+  - key: A
   - elapsed-time: report
 
   # --- Intra-test Adv ---
@@ -39,13 +39,13 @@ keys:
 
   # --- Regular speed via keypress ---
   - regular-speed:
-  - key: CLR  # CLR
+  - key: CLR
   - elapsed-time: start
-  - key: Prt  # Prt
-  - key: Adv  # Adv
-  - key: Prt  # Prt
-  - key: Adv  # Adv
-  - key: Prt  # Prt
+  - key: Prt
+  - key: Adv
+  - key: Prt
+  - key: Adv
+  - key: Prt
   - elapsed-time: report
 
   # --- Intra-test Adv ---
@@ -54,17 +54,17 @@ keys:
 
   # --- Full speed via keypress ---
   - full-speed:
-  - key: CLR  # CLR
-  - key: 8  # 8
-  - key: 8  # 8
+  - key: CLR
+  - key: 8
+  - key: 8
   - elapsed-time: start
-  - key: Prt  # Prt
+  - key: Prt
   - regular-speed:
-  - key: Adv  # Adv
+  - key: Adv
   - full-speed:
-  - key: Prt  # Prt
+  - key: Prt
   - regular-speed:
-  - key: Adv  # Adv
+  - key: Adv
   - full-speed:
-  - key: Prt  # Prt
+  - key: Prt
   - elapsed-time: report

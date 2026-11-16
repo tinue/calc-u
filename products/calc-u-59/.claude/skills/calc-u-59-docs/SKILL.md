@@ -32,9 +32,9 @@ This skill covers the reference architecture docs (`reference/`) and root markdo
   that already has a home in a developer-accessible markdown file.** A human
   developer reads `reference/*.md`; only the agent reads skill files. If a
   skill and a reference doc say the same thing, delete it from the skill and
-  link to the doc instead — see `calc-u-59-statefiles/SKILL.md` for the
+  link to the doc instead — see `calc-u-59-presets/SKILL.md` for the
   pattern (a few navigation aids, everything else is one link to
-  `reference/StateFileFormat.md`).
+  `docs/formats/preset.md`).
 
 ---
 
@@ -113,7 +113,7 @@ Triggered by the user saying **"update documentation"** (or similar) after finis
 
 3. **Update `CHANGELOG.md`.** Confirm every user-facing change from step 2 has an entry under the current `[X.Y.Z] - work in progress` heading, in the existing style (bold **Area** prefix, `### Fixes` subsection for bug fixes). Don't add a release date — that happens at release time.
 
-4. **Update reference docs** (`reference/CoreArchitecture.md`, `reference/SharedArchitecture.md`, `reference/AppArchitecture.md`, `reference/DebugAPI.md`, `reference/StateFileFormat.md`, `reference/FrontendParity.md`, `reference/WebClient.md`, `reference/NewGUIGuide.md`, and `rom/*.md`) for anything the diff invalidated: register model, SCOM layout, PC encoding, machine variants, bridge/debug API surface, settings, file formats. Keep each file's provenance notice intact.
+4. **Update reference docs** (`reference/CoreArchitecture.md`, `reference/SharedArchitecture.md`, `reference/AppArchitecture.md`, `reference/DebugAPI.md`, `reference/FrontendParity.md`, `reference/WebClient.md`, `reference/NewGUIGuide.md`, and `rom/*.md`) for anything the diff invalidated: register model, SCOM layout, PC encoding, machine variants, bridge/debug API surface, settings, file formats. Keep each file's provenance notice intact.
 
 5. **Update the user guide in `../calc-u-site` too.** Every documentation update covers both repositories. Invoke the site's `site-59` skill and follow that repository's `CLAUDE.md`. Update its pages for anything user-facing in any GUI: new settings, module behavior, install steps (Mac, iOS, Windows, Linux), state-file directives, speed or accuracy. Also update the site's copies of files that came from here: articles derived from `rom/*.md` and the example files under `59/software-files/` (its software sync check finds the drift). Build, check and test the site as its skill says, and commit there. Leave the web client alone: the site fetches `59/calc/` from a release by its own rules (`site-59`, § "After a Calc-U-59 release", step 1), so pinning a build is not part of this step. A change that only needs a website update, with nothing in `core/`/`app/`/`frontends/swift/App/`/`frontends/qt6/`/`frontends/web/`/`roms/`, needs no `CHANGELOG.md` entry.
 

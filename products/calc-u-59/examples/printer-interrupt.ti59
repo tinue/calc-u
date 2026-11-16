@@ -6,7 +6,7 @@
 # examples/historic/texas-print.ti59 and examples/historic/printer-quirks.ti59 are the 1982
 # PPX Exchange programs that use it.
 #
-# Loading the file runs everything automatically (KEYSTROKES below). By hand:
+# Loading the file runs everything automatically (the keys: below). By hand:
 #
 #   1 + 48 EE 12 +/- =     X := 1.000000000048 exactly
 #   GTO 012  SST  0  STO   fast-mode hack: Prg Src := 8, stop at step 007
@@ -96,29 +96,29 @@ program:
 
 keys:
   - regular-speed:
-  - key: 1  # 1
-  - key: +  # +
-  - key: 4  # 4
-  - key: 8  # 8
-  - key: EE  # EE
-  - key: 1  # 1
-  - key: 2  # 2
-  - key: +/-  # +/-
-  - key: =  # =      X = 1.000000000048
-  - key: GTO  # GTO
-  - key: 0  # 0
-  - key: 1  # 1
-  - key: 2  # 2      → step 012
-  - key: SST  # SST    St flg executes, operand pending
-  - key: 0  # 0      first operand digit
-  - key: STO  # STO    ends it: Prg Src 8, run stops at 007
-  - key: LRN  # LRN    008, buffer loaded from ROM row 17
-  - key: Ins  # Ins    008 := 1F, 009 := RTN
-  - key: LRN  # LRN
-  - key: CLR  # CLR
-  - key: RST  # RST    Prg Src 0
-  - key: GTO  # GTO
-  - key: 0  # 0
-  - key: 1  # 1
-  - key: 7  # 7      → step 017
-  - key: R/S  # R/S    print both lines
+  - key: 1
+  - key: +
+  - key: 4
+  - key: 8
+  - key: EE
+  - key: 1
+  - key: 2
+  - key: +/-
+  - key: =  # X = 1.000000000048
+  - key: GTO
+  - key: 0
+  - key: 1
+  - key: 2  # → step 012
+  - key: SST  # St flg executes, operand pending
+  - key: 0  # first operand digit
+  - key: STO  # ends it: Prg Src 8, run stops at 007
+  - key: LRN  # 008, buffer loaded from ROM row 17
+  - key: Ins  # 008 := 1F, 009 := RTN
+  - key: LRN
+  - key: CLR
+  - key: RST  # Prg Src 0
+  - key: GTO
+  - key: 0
+  - key: 1
+  - key: 7  # → step 017
+  - key: R/S  # print both lines

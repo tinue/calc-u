@@ -31,8 +31,8 @@
 format-version: 2
 model: TI-59
 description: Reproduce bug with lost return address
-# Print output requires the printer to be active
 slot-1: { name: ML }
+# Print output requires the printer to be active
 printer: PC-100C
 
 program:
@@ -73,7 +73,7 @@ program:
     033 99 PRT
     034 92 RTN
 
-# Prepare the magnet card inlay
+# The cue card
 cue-card:
   title: Regression test for SBR issue
   A: Press R/S

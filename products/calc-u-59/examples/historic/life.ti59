@@ -603,7 +603,7 @@ cue-card:
 
 keys:
   - regular-speed:
-  - key: E  # E: clear, print the headline
+  - key: E  # clear, print the headline
   - key: 1 A  # row 1
   - key: 2 B  # column 2
   - key: 2 A  # row 2
@@ -612,4 +612,4 @@ keys:
   - key: 1 B  # column 1
   - key: 2 B  # column 2
   - key: 3 B  # column 3
-  - key: C  # C: run
+  - key: C  # run

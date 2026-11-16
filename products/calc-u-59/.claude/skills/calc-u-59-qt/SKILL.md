@@ -10,7 +10,7 @@ user-invocable: true
 by the repository's `.github/workflows/calc-u-59.yml` and attached to releases by the root
 `release.yaml`. The **macOS Qt build is local and for development only** —
 never shipped, never built in CI, never signed. On the Mac the Swift app is
-the product. The Qt app has no iCloud: cards, `ti58c.mem` and traces live in
+the product. The Qt app has no iCloud: cards, `ti58c.memory.yaml` and traces live in
 `~/Calc-U-59`, each folder (and where Open Preset starts) set in Settings, as
 in Calc-U-1600 (`AppPaths`, `AppSettings::OpenFolder`).
 
@@ -54,7 +54,7 @@ Everything that isn't drawing: `reference/SharedArchitecture.md`.
    folder from `calcu::settings::Paths`. No QSettings. The window is
    `[window]` numbers (`cu59::settings::WindowState`).
 6. **Compile, don't run.** Build with the commands below. To check rendering
-   without showing a window: `QT_QPA_PLATFORM=offscreen ../../build/app-59/products/calc-u-59/frontends/qt6/Calc-U-59.app/Contents/MacOS/Calc-U-59 [state-file] --grab out.png --after 3000`
+   without showing a window: `QT_QPA_PLATFORM=offscreen ../../build/app-59/products/calc-u-59/frontends/qt6/Calc-U-59.app/Contents/MacOS/Calc-U-59 [preset] --grab out.png --after 3000`
    (an offscreen screen may clamp the window size). Ask the user to try the app itself.
    A build with the tests also has `--pacing-probe <s>` (LIB-17 AC-19, CTest
    `CalcU59QtPacingProbe`): emulated against wall time over `<s>` seconds, exit 0 or 1;
@@ -107,7 +107,7 @@ The version is read from the Xcode project's `MARKETING_VERSION`.
 - **Linux** x86_64 / aarch64: linuxdeploy + Qt plugin → AppImage, with the
   Wayland and platform-theme plugins and a GTK-theme `AppRun` wrapper.
 - **Windows** x86_64 / arm64: windeployqt → Inno Setup
-  (`frontends/qt6/resources/windows/calc-u-59.iss`, state-file associations).
+  (`frontends/qt6/resources/windows/calc-u-59.iss`, preset associations).
 - `LICENSE`, `NOTICE`, `THIRD-PARTY-NOTICES.md` and `licenses/` (Qt LGPLv3)
   ship in both packages: next to the Windows executable, and in
   `usr/share/doc/calc-u-59/` inside the AppImage.

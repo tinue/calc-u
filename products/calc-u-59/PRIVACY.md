@@ -15,7 +15,7 @@ Calc-U-59 does not collect, transmit, or share any personal data. Specifically:
 
 ## iCloud
 
-If you have iCloud Drive enabled on your device, iOS and macOS may sync calculator card files (`.U59`) and the TI-58C constant memory file (`ti58c.mem`), stored in the app's iCloud container, to your other devices. This sync happens entirely between your devices via your personal iCloud account. The developer has no access to these files.
+If you have iCloud Drive enabled on your device, iOS and macOS may sync calculator card files (`.U59`) and the TI-58C constant memory file (`ti58c.memory.yaml`), stored in the app's iCloud container, to your other devices. This sync happens entirely between your devices via your personal iCloud account. The developer has no access to these files.
 
 You can disable iCloud sync for Calc-U-59 at any time in **Settings → [your name] → iCloud → Apps Using iCloud**.
 

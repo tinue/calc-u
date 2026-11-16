@@ -14,7 +14,7 @@
 #   The year prints at once. The run ends with 0 in the display. For another
 #   year repeat both steps. No module is needed.
 #
-#   Loading this file prints 2026 (KEYSTROKES below).
+#   Loading this file prints 2026 (its keys below).
 #
 # TIMING
 #

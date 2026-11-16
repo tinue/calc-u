@@ -24,9 +24,9 @@ https://calc-u.org/59/.
 
 ## Calculator-level machine access
 
-The adapter calls (`core/TIAdapters.hpp`) the debugger and the state loader use. Writes are made
-on the session's thread between two advances, as `app/StateApplier.cpp`
-is used. The debugger itself goes through the debug target `TMC0501`
+The adapter calls (`core/TIAdapters.hpp`) the debugger and the golden runs use (a preset
+writes through the kind `c59.program-memory` since M-54, `core/TIProductKinds.hpp`). Writes are made
+on the session's thread between two advances. The debugger itself goes through the debug target `TMC0501`
 (`core/TIDebugging.hpp`) and the run control (§ "Freeze / Step Controls").
 
 | Call | Effect |
@@ -345,7 +345,7 @@ Qt `logText()`).
 | `dumpVars()` | `debugDumpVars()` | Non-zero data registers of the partition, sorted: `V05 = 2.5`, TI-58C extras as `H01` |
 | `dumpScom()` | `debugDumpSCOM()` | 16 rows, nibble 15 first: `S00 0000000000000000` |
 | `dumpProg()` | `debugDumpProg()` | Non-zero program registers as their 8 keycodes in step order: `P000: 76 11 …` |
-| `dumpMemory()` | `debugDumpMemory()` | Every non-zero RAM register by physical index, in the `ti58c.mem` register-line format |
+| `dumpMemory()` | `debugDumpMemory()` | Every non-zero RAM register by physical index, in the register-line format of `ti58c.memory.yaml` |
 | `cycleDebugLevel()`, `clearLog()` | `toggleDebug()`, `clearDebug()` | Level Off → Info → Debug → Off; clear |
 
 Qt and the web client have the same names as `TIAppPart` for the
@@ -518,27 +518,30 @@ run control's advance.
 
 ---
 
-## TI-58C Constant Memory File (`ti58c.mem`)
+## TI-58C Constant Memory File (`ti58c.memory.yaml`)
 
-`TIAppPart` reads it when a TI-58C starts and writes it when RAM or
-the user's cue card changed (`app/ConstantMemory`), through
-`Platform::readConstantMemory` / `writeConstantMemory`; each app chooses
-the location. When it is written: `SharedArchitecture.md`.
+Constant memory format 1 (`docs/formats/media.md` §4; C59-3), read when a
+TI-58C is built without a preset and written while that machine runs
+(`app/ConstantMemoryKeeper`, `app/ConstantMemoryFile`; when:
+`SharedArchitecture.md` § "TI-58C Constant Memory"), through `TIFileAccess`
+in the save folder each host names.
 
+```yaml
+format: ti58c-constant-memory
+format-version: 1
+cue-card:
+  title: Loan
+ram:
+  encoding: register-hex
+  bytes: |
+    R000: 67 11 96 00 10 00 00 96
+    R063: 24 00 79 10 21 19 00 00
 ```
-CUECARD:
-Template: CueCard
-Title: …
 
-── Registers (raw values) ──
-R000: 67 11 96 00 10 00 00 96
-R063: 24 00 79 10 21 19 00 00
-```
-
-- The `CUECARD:` block is optional (grammar: `StateFileFormat.md`
-  § "CUECARD: Field Grammar"); it ends at the `──` line.
-- One line per non-zero register, `Rnnn` = physical index 000–119, eight
-  hex bytes (`app/Bcd.hpp` `registerLineHex`). Missing registers are
-  zero.
-- A malformed register line makes the whole file invalid; RAM then starts
-  zeroed.
+- `cue-card` is optional: the own card, a stand-alone cue card
+  (`docs/formats/cue-card.md`).
+- One line per non-zero register, `Rnnn` = raw index 000–063 (H00–H03 are
+  R060–R063), eight hex bytes (`app/Bcd.hpp` `registerLineHex`). Missing
+  registers are zero.
+- A damaged file is not used (zeroed memory and a notice); an outdated one
+  is replaced at the first change. 2.3.0's `ti58c.mem` is ignored.

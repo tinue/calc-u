@@ -10,7 +10,7 @@
 # Start the program with "A". A blinking "1" appears. Then press 7 and EE -> Calculation starts
 # The result is in register 00
 #
-# HOW IT WORKS (ROM trace, headless harness tools/headless/, 2026-10-17)
+# HOW IT WORKS (ROM trace, headless harness tools/headless/ then, 2026-10-17)
 #
 # 1. [A] runs steps 311-319. tan 45 in DEG with guard digits is 1.000000000001; squared, X is
 #    1.000000000002, held in C as the digit image 1000000000002000 (nibble 3 = the "2").

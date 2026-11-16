@@ -18,26 +18,24 @@ printer: PC-100C
 
 keys:
   - regular-speed:
-  # 21
-  - key: Pgm  # Pgm  (LRN key — selects program page)
-  - key: 0  # 0
-  - key: 1  # 1    → Pgm 01 selected
-  - key: SBR  # SBR
+  - key: Pgm  # (LRN key — selects program page)
+  - key: 0
+  - key: 1  # → Pgm 01 selected
+  - key: SBR
   - full-speed:  # = below runs the diagnostic, which takes a while — race through it
-  - key: =  # =    → run Leisure Library diagnostic program
+  - key: =  # → run Leisure Library diagnostic program
   - regular-speed:
 
   - printer-trace: on
-  # 21
-  - key: π  # π
-  - key: ×  # ×
-  - key: 4  # 4
-  - key: =  # =    → π × 4 = 12.566... (printed to tape while TRACE is on)
+  - key: π
+  - key: ×
+  - key: 4
+  - key: =  # → π × 4 = 12.566... (printed to tape while TRACE is on)
   - printer-trace: off
 
   - debug-panel: calculator
   - pause-on-start: program
-  - key: SBR  # SBR
-  - key: =  # =    → re-enter program; pause-on-start fires at its first step
+  - key: SBR
+  - key: =  # → re-enter program; pause-on-start fires at its first step
   # The last item: the preset ends here and the machine stays paused (a paused
   # machine is never idle, so nothing may wait after this key; preset.md §5.6).

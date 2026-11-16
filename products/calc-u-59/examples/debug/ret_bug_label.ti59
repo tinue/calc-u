@@ -21,7 +21,7 @@ program:
     009 00 00
     010 91 R/S
 
-# Prepare the magnet card inlay
+# The cue card
 cue-card:
   title: Regression test for SBR issue
   A: Start

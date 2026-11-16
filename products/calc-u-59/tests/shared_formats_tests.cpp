@@ -55,16 +55,7 @@ struct Record { std::string header, body; };
 std::vector<Record> records(const std::string& golden, std::vector<std::string>& singles) {
     std::vector<Record> out;
     Record* cur = nullptr;
-    bool skipping = false;   // a STATE record of 2.3.0 (gone in M-54), until its END
     for (std::string_view line : splitLines(golden)) {
-        if (skipping) {
-            skipping = line != "END";
-            continue;
-        }
-        if (startsWith(line, "STATE ")) {
-            skipping = true;
-            continue;
-        }
         if (cur) {
             if (line == "END") { cur = nullptr; continue; }
             cur->body += std::string(line) + "\n";

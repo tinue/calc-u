@@ -6,8 +6,8 @@ format-version: 2
 model: TI-59
 preset-name: TI-59 diagnostic
 description: TI-59 calculator diagnostic
-# Print output requires the printer to be active
 slot-1: { name: ML }
+# Print output requires the printer to be active
 printer: PC-100C
 
 # Default partitioning
@@ -344,11 +344,11 @@ program:
     478 77 GE
     479 77 GE
 
-# Prepare the magnet card inlay
+# The cue card
 cue-card:
   title: CALCULATOR DIAGNOSTIC - Consult Owner's Manual
   E: EXECUTE
 
 keys:
   - regular-speed:
-  - key: E  # E — start diagnostic
+  - key: E  # start diagnostic

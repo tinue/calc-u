@@ -41,8 +41,8 @@
 format-version: 2
 model: TI-59
 description: Full RAM test for TI-59 with PC-100A printer output
-# Print output requires the printer to be active
 slot-1: { name: ML }
+# Print output requires the printer to be active
 printer: PC-100C
 
 partition: 159.99  # 160 steps (000–159), 100 data registers (R00–R99)

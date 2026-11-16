@@ -198,7 +198,7 @@ program:
     24 36 19 71 00 45 37 31 46 31 81 25 05 69 17 61 00 17 31 68
     61 02 65 25 69 05 31 61 04 73 31 53 00 00 00 54 61 02 88 31
 
-# Prepare the magnet card inlay
+# The cue card
 cue-card:
   title: Fast Grafik 3D Plot - Part 1
   A: Start
@@ -211,51 +211,51 @@ keys:
   # program has stopped, and speed returns to regular when the script ends.
   - full-speed:
   # Launch
-  - key: A  # A
+  - key: A
   # X-MAX
-  - key: 4  # 4
-  - key: R/S  # R/S
+  - key: 4
+  - key: R/S
   # X-MIN
-  - key: 4  # 4
-  - key: +/-  # +/-
-  - key: R/S  # R/S
+  - key: 4
+  - key: +/-
+  - key: R/S
   # Y-MAX
-  - key: 4  # 4
-  - key: R/S  # R/S
+  - key: 4
+  - key: R/S
   # Y-MIN
-  - key: 4  # 4
-  - key: +/-  # +/-
-  - key: R/S  # R/S
+  - key: 4
+  - key: +/-
+  - key: R/S
   # Z-MAX
-  - key: 1  # 1
-  - key: 2  # 2
-  - key: R/S  # R/S
+  - key: 1
+  - key: 2
+  - key: R/S
   # Z-MIN
-  - key: 0  # 0
-  - key: R/S  # R/S
+  - key: 0
+  - key: R/S
   # DIF-X
-  - key: 1  # 1
-  - key: R/S  # R/S
+  - key: 1
+  - key: R/S
   # DIF-Y
-  - key: 1  # 1
-  - key: R/S  # R/S
+  - key: 1
+  - key: R/S
   # ZEILEN
-  - key: 8  # 8
-  - key: 0  # 0
-  - key: R/S  # R/S
+  - key: 8
+  - key: 0
+  - key: R/S
   # STREIFEN
-  - key: 1  # 1
-  - key: R/S  # R/S
+  - key: 1
+  - key: R/S
   # X-Y-WINKEL
-  - key: 6  # 6
-  - key: 5  # 5
-  - key: R/S  # R/S
+  - key: 6
+  - key: 5
+  - key: R/S
   # VERDECKT
-  - key: 1  # 1
-  - key: R/S  # R/S
+  - key: 1
+  - key: R/S
 
 # ── Part 2 ──────────────────────────────────────────────────────────────────
-# Everything below follows part 1's KEYSTROKES, so it is a reload: once part 1
+# Everything below follows part 1's keys:, so it changes the machine in the middle of the preset: once part 1
 # has stopped, part 2 replaces the program and the cue card as if its cards
 # had been read. Part 1's registers stay; part 2 needs them.
 partition: 639.39
@@ -309,7 +309,7 @@ program:
     490 02 02
     491 88 88
     492 00 0
-    # The rest of the function space is zero. A reload writes only the steps it
+    # The rest of the function space is zero. A program: section writes only the steps it
     # lists, so the zeros are written out.
     00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  # 493 - 512
     00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  # 513 - 532
@@ -319,7 +319,7 @@ program:
     21 54 52 22 52 59 85 01 54 65 32 43 21 94 85 43 07 95 44 28  # 580 - 599
     32 65 43 19 95 44 29 61 01 02  # 600 - 609
 
-# Prepare the magnet card inlay
+# The cue card
 cue-card:
   title: Fast Grafik 3D Plot - Part 2
 
@@ -328,79 +328,69 @@ cue-card:
 # the original manual entry then comment this section
 keys:
   - regular-speed:  # part 1 ran at full speed
-  - key: GTO  # GTO
-  - key: 0  # 0
-  - key: 1  # 1
-  - key: 6  # 6
-  - key: 1  # 1
-  - key: 0  # 0
-  # 21
-  - key: Op  # Op
-  - key: 1  # 1
-  - key: 7  # 7
-  - key: CLR  # CLR
-  # 21
-  - key: Pgm  # Pgm
-  - key: 1  # 1
-  - key: 9  # 9
-  - key: SBR  # SBR
-  - key: 0  # 0
-  - key: 4  # 4
-  - key: 5  # 5
-  # 21
-  - key: P/R  # P->R
-  - key: LRN  # LRN
-  # 21
-  - key: Ins  # Ins
-  - key: LRN  # LRN
-  - key: RST  # RST
-  - key: CLR  # CLR
-  - key: GTO  # GTO
-  - key: 0  # 0
-  - key: 2  # 2
-  - key: 4  # 4
-  # 21
-  - key: Pgm  # Pgm
-  - key: 1  # 1
-  - key: 9  # 9
-  - key: SBR  # SBR
-  - key: 0  # 0
-  - key: 4  # 4
-  - key: 5  # 5
-  # 21
-  - key: P/R  # P->R
-  - key: LRN  # LRN
-  # 21
-  - key: Ins  # Ins
-  - key: LRN  # LRN
-  - key: RST  # RST
-  - key: CLR  # CLR
-  - key: 5  # 5
-  # 21
-  - key: Op  # Op
-  - key: 1  # 1
-  - key: 7  # 7
-  - key: GTO  # GTO
-  - key: 0  # 0
-  - key: 1  # 1
-  - key: 7  # 7
-  - key: LRN  # LRN
-  # 21
-  - key: Nop  # Nop
-  - key: GTO  # GTO
-  - key: 2  # 2
-  - key: 6  # 6
-  - key: 5  # 5
-  - key: CLR  # CLR
-  # 21
-  - key: Op  # Op
-  - key: 0  # 0
-  - key: 5  # 5
-  - key: LRN  # LRN
-  - key: GTO  # GTO
-  - key: 4  # 4
-  - key: 7  # 7
-  - key: 3  # 3
+  - key: GTO
+  - key: 0
+  - key: 1
+  - key: 6
+  - key: 1
+  - key: 0
+  - key: Op
+  - key: 1
+  - key: 7
+  - key: CLR
+  - key: Pgm
+  - key: 1
+  - key: 9
+  - key: SBR
+  - key: 0
+  - key: 4
+  - key: 5
+  - key: P/R
+  - key: LRN
+  - key: Ins
+  - key: LRN
+  - key: RST
+  - key: CLR
+  - key: GTO
+  - key: 0
+  - key: 2
+  - key: 4
+  - key: Pgm
+  - key: 1
+  - key: 9
+  - key: SBR
+  - key: 0
+  - key: 4
+  - key: 5
+  - key: P/R
+  - key: LRN
+  - key: Ins
+  - key: LRN
+  - key: RST
+  - key: CLR
+  - key: 5
+  - key: Op
+  - key: 1
+  - key: 7
+  - key: GTO
+  - key: 0
+  - key: 1
+  - key: 7
+  - key: LRN
+  - key: Nop
+  - key: GTO
+  - key: 2
+  - key: 6
+  - key: 5
+  - key: CLR
+  - key: Op
+  - key: 0
+  - key: 5
+  - key: LRN
+  - key: GTO
+  - key: 4
+  - key: 7
+  - key: 3
   # The article wants you to key in the function to be plotted here. Keep the parantheses,
   # and replace the zeroes with the function. Note that this statefile already contains a
   # ready made function, the therefore these lines are commented here.
@@ -419,5 +409,5 @@ keys:
   # Program entry finished, now launch the plot. It takes about an hour at
   # regular speed, so it runs at full speed; speed returns to regular after.
   - full-speed:
-  - key: A  # A
+  - key: A
   - let-it-finish:

@@ -193,3 +193,55 @@ Column status: every criterion of the column passes: **Done**.
   when the machine is ready for keys, so the paper panel is no longer empty
   right after the attach. `tests/gui/lib8-ac36.shots.yaml` checks the name
   only at that point.
+
+## Calc-U-59 (M-54, 2026-11-16, branch `m54-presets-59`)
+
+Built and run as C59-2's M-54 section says (`build/tests`, `build/qt`, the
+Web `dist/`; Swift type-checked only).
+
+The code (design §11.2, §11.3): `app/TIProductMachines.*` (the TI
+catalogue and builder, the built-in default of each model: the Master
+Library module, no printer; the TI-58C's constant memory as build content;
+the TI pacing profile, no sound, 25 s readiness bound). `TIAppPart` owns
+the library's parts (`parts::LibraryParts`, LIB-6 D-40) and follows each
+new machine at `machineChanged` (a new `EmulatorSession` around the
+session's machine, which neither builds nor owns it any more; the module
+and the printer read from `Machine::plugged()`, D-26; the own cue card;
+the constant memory keeper). `c59.start-machine`, `c59.reset`,
+`c59.clean-reset`, `c59.change-module`, `c59.printer-connected`,
+`c59.toggle-printer-connection` are gone: the frontends send `start`
+(`makeAppSession` sends it for the native hosts), `model`, `reset`,
+`cold-boot`, `attach`, `detach`. The harness entry's `HarnessMachines` is
+gone: it uses `TIProductMachines`. Tests: `tests/machine_control_tests.cpp`
+(on `tests/AppRig.hpp`), the ported cases of `tests/part_flows_tests.cpp`,
+`tests/typing_tests.cpp`, `tests/harness_tests.cpp`.
+
+| ID | Result | Test case |
+|---|---|---|
+| AC-17 | Pass | `lib18_ac17_no_settings_ti59`; the Web's start (`lib15_ac16 …`, Playwright) |
+| AC-18 | Pass | `lib18_ac18_builtin_default_ml_no_printer` (each model), `lib18_ac18_2_3_0_startup_preset_gives_default_and_notice`, `lib18_ac18_startup_preset_builds_its_machine`, `harness_starts_with_ml_and_no_printer` |
+| AC-19 | Pass | `lib18_ac19_ti58c_without_startup_preset_gets_the_file_at_start_and_switch`, `lib18_ac19_ti58c_from_preset_cold_booted`; C59-3 T5 |
+| AC-20 | Pass | `lib18_ac20_switch_carries_no_module_no_printer`, `lib18_ac20_log_and_debug_settings_stay`; the paper per printer: LIB-8 59 (M-53) |
+| AC-21 | Pass | `lib18_ac21_module_attach_detach_power_cycle_ti59_loses_ti58c_keeps`, `lib18_ac21_printer_attach_detach_power_cycle`, `lib18_ac21_trace_kept_through_detach_and_attach`, `lib18_ac21_trace_set_again_in_the_attached_pc100c`, `c59_6_ac11_change_module_power_cycles` |
+| AC-22 | Pass | `lib18_ac22_reset_keeps_program_and_data_ti58c_power_cycle`, `lib18_ac22_cold_boot_empties_all_constant_memory_too`, `part_reset_keeps_the_memory_and_clean_reset_clears_it` |
+| AC-23 | Pass (the stand-alone card; the fitted magnetic card in M-55, C59-7 AC-25) | `lib18_ac23_paper_module_printer_trace_own_card_kept`, `lib18_ac23_power_cycle_keeps_own_card` |
+| AC-24 | Pass | `lib18_ac24_preset_for_another_model_builds_it_last_model_follows`, `lib18_ac24_last_model_follows_a_preset_build` |
+| AC-16 (row 59-39) | Pass | `ledger_59_39_reset_and_model_switch_stop_a_preset`, `lib5_ec5_reset_and_model_switch_release_held_keys`, `lib10_ac30_part_cpu_freeze_on_start_sees_reset_and_clean_reset` |
+
+Column status: every criterion of the column passes: **Done**.
+
+### Deviations and findings (Calc-U-59)
+
+- `makeAppSession(…, start = true)` sends `start` for the native hosts
+  (Qt6, Swift, the tests' SessionRig); a host that wants its notices
+  listens first and passes `start = false` (tests/AppRig.hpp). The Web
+  engine builds its own session and its page sends `start`.
+- `Settings::setLastUsedModel`, `lastUsedModel` and `startupPreset` stay
+  in `app/Settings.*` (the settings tests read them); no frontend calls
+  `setLastUsedModel` any more: `StartupPart` writes `[startup] last-model`.
+- No Settings row sets the startup preset yet (D-28): `[preset] TI-59`
+  (`TI-58`, `TI-58C`) in `Calc-U-59.ini`, e.g.
+  `examples:startup/default-ti59.ti59`; M-57 and M-58 add the rows.
+- The TRACE position follows the PC-100C's switch after every call and is
+  put into a PC-100C that an `attach` plugs into the running machine
+  (D-27), not into one a build makes.

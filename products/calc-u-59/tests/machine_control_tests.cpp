@@ -123,7 +123,7 @@ TEST(lib18_ac20_log_and_debug_settings_stay) {
     CHECK(r.part().hasMachine());
 }
 
-TEST(lib18_ac24_preset_for_another_model_builds_it_last_model_follows) {
+TEST(lib18_ac24_last_model_follows_a_preset_build) {
     SKIP_UNLESS(roms(), kSkip);
     Rig r("TI-59");
     CHECK(r.load(head("TI-58") + "data:\n  00: 1\n", "x.ti58").done);
@@ -162,7 +162,7 @@ TEST(lib18_ac21_printer_attach_detach_power_cycle) {
     CHECK(!r.part().printerConnected());
 }
 
-TEST(lib18_ac21_trace_kept_through_detach_and_attach) {
+TEST(lib18_ac21_trace_set_again_in_the_attached_pc100c) {
     SKIP_UNLESS(roms(), kSkip);
     Rig r("TI-59");
     CHECK(r.send(st::kAttachCommand, attach("printer", "PC-100C")).done);

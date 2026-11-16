@@ -3,7 +3,7 @@
 
 bin/simulators.yaml is the single source of truth for which devices exist and
 which iOS version each one runs. This script realises that file: it
-creates the devices, provisions them with example state files, reports drift,
+creates the devices, provisions them with example presets, reports drift,
 and cleans up everything that is not in the config.
 
 Python 3 stdlib only — no PyYAML, no third-party packages.
@@ -1043,7 +1043,7 @@ def build_parser():
         net=True, download=True, dry=True, yes=True)
     add("setup", cmd_setup, "Create missing simulators and provision them with example files.",
         only=True, net=True, download=True, setup_flags=True, dry=True, yes=True)
-    add("files", cmd_files, "Reinstall the example state files only.", only=True, dry=True)
+    add("files", cmd_files, "Reinstall the example presets only.", only=True, dry=True)
     add("cleanup", cmd_cleanup, "Delete simulators, stale records and orphans not in the config.",
         cleanup_flags=True, yes=True)
     add("update", cmd_update, "Refresh runtimes, recreate devices on them, then clean up.",

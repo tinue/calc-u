@@ -13,7 +13,7 @@
 
 format-version: 2
 model: TI-59
-#MODEL: TI-59
+# model: TI-59
 slot-1: { name: ML }
 printer: PC-100C
 
@@ -33,36 +33,36 @@ program:
 # key code will be in memory. Uncomment the Trace when needed.
 keys:
   - regular-speed:
-  - key: GTO  # GTO
-  - key: 0  # 0
-  - key: 0  # 0
-  - key: 8  # 8
-  - key: 9  # 9
+  - key: GTO
+  - key: 0
+  - key: 0
+  - key: 8
+  - key: 9
   # 21  2nd
-  - key: Op  # OP
-  - key: 1  # 1
-  - key: 7  # 7
+  - key: Op
+  - key: 1
+  - key: 7
   # 21  2nd
-  - key: Pgm  # Pgm
-  - key: 1  # 1
-  - key: 2  # 2
+  - key: Pgm
+  - key: 1
+  - key: 2
   # - trace: printhack.bin
-  - key: SBR  # SBR
-  - key: 3  # 4
-  - key: 3  # 4
-  - key: 3  # 4
+  - key: SBR
+  - key: 3
+  - key: 3
+  - key: 3
   - wait: 1s
-  - key: R/S  # R/S
+  - key: R/S
   # 21  2nd
-  - key: P/R  # P/R
+  - key: P/R
   - wait: 2s
-  - key: LRN  # LRN
+  - key: LRN
   # 21  2nd
-  - key: Ins  # Ins
+  - key: Ins
   - trace: off
-  - key: LRN  # LRN
-  - key: CLR  # CLR
-  - key: RST  # RST
+  - key: LRN
+  - key: CLR
+  - key: RST
   - full-speed:
-  - key: A  # A
+  - key: A
   - let-it-finish:

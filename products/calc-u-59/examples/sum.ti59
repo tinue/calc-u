@@ -35,7 +35,7 @@ program:
     019 00 0
     020 00 00
 
-# Prepare the magnet card inlay
+# The cue card
 cue-card:
   title: Sum 1..N
   A: Sum

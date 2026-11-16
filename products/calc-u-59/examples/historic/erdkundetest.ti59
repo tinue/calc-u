@@ -20,7 +20,7 @@
 # Anzeige an. RST R/S beginnt ein neues Spiel.
 #
 # Eigene Fragen (laut Artikel): Fragen in R20-R23 und R43-R46, Antworten in
-# R24-R35 und R47-R50, als Druckcodes (StateFileFormat.md). Die richtigen
+# R24-R35 und R47-R50, als Druckcodes (die Tabelle der Druckcodes: Skill calc-u-59-presets). Die richtigen
 # Antworten stehen im Programm: 1 in den Schritten 100-101, 3 in Schritt 230.
 #
 # Die Texte stehen wie im Heft da, auch die Abkürzungen:
@@ -566,4 +566,4 @@ cue-card:
 
 keys:
   - regular-speed:
-  - key: RST R/S  # RST R/S: die Begrüßung
+  - key: RST R/S  # die Begrüßung

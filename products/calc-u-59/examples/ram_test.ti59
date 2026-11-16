@@ -17,8 +17,8 @@ format-version: 2
 model: TI-59
 preset-name: RAM test
 description: RAM test
-# Print output requires the printer to be active
 slot-1: { name: ML }
+# Print output requires the printer to be active
 printer: PC-100C
 
 program:

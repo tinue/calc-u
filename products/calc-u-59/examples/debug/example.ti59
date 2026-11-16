@@ -1,11 +1,11 @@
-# example.ti59 — TI-59 state file validation example
-# Demonstrates PARTITION, all three PROGRAM formats, REGISTERS and KEYSTROKES section.
+# example.ti59 — TI-59 preset validation example
+# Demonstrates partition:, the two notations of program: (compact and listing), data: and a keys: section.
 # Program: LBL A  *  π  =  R/S RST
 # Running: press A with x=2 → should display 6.28618...  (2π)
 
 format-version: 2
 model: TI-59
-description: TI-59 state file validation example
+description: TI-59 preset validation example
 slot-1: { name: ML }
 printer: PC-100C
 
@@ -13,16 +13,16 @@ partition: 799.19  # 800 steps, 19 data registers (R00–R19) — "2 OP 17"
 
 program:
   keycodes: |
-    # --- Format 1: bare keycodes (no step numbers) ---
+    # --- Compact: two-digit keycodes, from step 000 ---
     76 11  # LBL A
-    # --- Format 2: step-number prefix (3-digit prefix stripped) ---
+    # --- Listing: the step number places the keycode ---
     002 65  # x
-    # --- Format 3: full printer-trace listing (mnemonic text stripped) ---
+    # --- Listing as the PC-100C prints it: the mnemonic is not read ---
     003 89 π
     004 95 =
     005 91 R/S
     006 81 RST
-    # --- Gap marker: steps 007-109 are zero (omitted from file) ---
+    # --- No gap marker: steps 007-109 are not listed and stay 00 ---
     # ...
     110 76 11  # LBL B (a second sub-routine at step 110)
 
@@ -32,31 +32,31 @@ data:
   12: -1.5e-3  # small negative  (verify RCL 12 → -0.0015)
   15: 0  # zero            (verify RCL 15 →  0.)
 
-# Prepare the magnet card inlay
+# The cue card
 cue-card:
   title: Example
   A: Start
 
-# The keystrokes run the program, wait 2 seconds, show the three loaded registers, and then clear the display.
+# The keys run the program, wait 2 seconds, show the three loaded registers, and then clear the display.
 keys:
   - regular-speed:
-  - key: 3  # 3
-  - key: A  # A
+  - key: 3
+  - key: A
   - wait: 2s
-  - key: RCL  # RCL
-  - key: 0  # 0
-  - key: 0  # 0
+  - key: RCL
+  - key: 0
+  - key: 0
   - wait: 1s
-  - key: RCL  # RCL
-  - key: 0  # 0
-  - key: 5  # 5
+  - key: RCL
+  - key: 0
+  - key: 5
   - wait: 1s
-  - key: RCL  # RCL
-  - key: 1  # 1
-  - key: 2  # 2
+  - key: RCL
+  - key: 1
+  - key: 2
   - wait: 1s
-  - key: RCL  # RCL
-  - key: 1  # 1
-  - key: 5  # 5
+  - key: RCL
+  - key: 1
+  - key: 5
   - wait: 1s
-  - key: CLR  # CLR
+  - key: CLR

@@ -322,7 +322,7 @@ program:
     03 11 05 06 00 00 06 03 69 03 11 05 03 00 00 05 03 69 03 11  # 740-759
     06 07 06 07 69 03 11 58 09 98 98 98 98 92 61 00 17 00 00 00  # 760-779
 
-# Prepare the magnet card inlay
+# The cue card
 cue-card:
   title: TI Logo
   row-1: See PPX Exchange March/April 1982
@@ -335,45 +335,45 @@ cue-card:
 # is visible on the printer tape immediately.
 keys:
   - regular-speed:
-  - key: GTO  # GTO
-  - key: 0  # 0
-  - key: 0  # 0
-  - key: 8  # 8
-  - key: 9  # 9
+  - key: GTO
+  - key: 0
+  - key: 0
+  - key: 8
+  - key: 9
   # 21  2nd
-  - key: Op  # OP
-  - key: 1  # 1
-  - key: 7  # 7
+  - key: Op
+  - key: 1
+  - key: 7
   # 21  2nd
-  - key: Pgm  # Pgm
-  - key: 1  # 1
-  - key: 2  # 2
-  - key: SBR  # SBR
-  - key: 4  # 4
-  - key: 4  # 4
-  - key: 4  # 4
+  - key: Pgm
+  - key: 1
+  - key: 2
+  - key: SBR
+  - key: 4
+  - key: 4
+  - key: 4
   - wait: 1s
-  - key: R/S  # R/S
+  - key: R/S
   # 21  2nd
-  - key: P/R  # P/R
-  - key: LRN  # LRN
+  - key: P/R
+  - key: LRN
   # 21  2nd
-  - key: Ins  # Ins
-  - key: LRN  # LRN
-  - key: CLR  # CLR
-  - key: RST  # RST
-  - key: 0  # 0
+  - key: Ins
+  - key: LRN
+  - key: CLR
+  - key: RST
+  - key: 0
   # 21  2nd
-  - key: Op  # OP
-  - key: 1  # 1
-  - key: 7  # 7
+  - key: Op
+  - key: 1
+  - key: 7
   - wait: 1s
-  - key: GTO  # GTO
-  - key: 0  # 0
-  - key: 1  # 1
-  - key: 7  # 7
+  - key: GTO
+  - key: 0
+  - key: 1
+  - key: 7
   # Full speed through the whole printout: playback waits after R/S until the
   # program has stopped, and speed returns to regular when the script ends.
   - full-speed:
-  - key: R/S  # R/S
+  - key: R/S
   - let-it-finish:

@@ -35,7 +35,7 @@ program:
     003 00 00
     004 91 R/S
 
-# Prepare the magnet card inlay
+# The cue card
 cue-card:
   title: Trace Quirk
   row-1: From Magatzine "TI PPC NOTES", V6N4-5P17, 1981
@@ -44,25 +44,25 @@ cue-card:
 # Brings the display to the described state:
 keys:
   - regular-speed:
-  - key: 9  # 9
-  - key: 9  # 9
-  - key: 9  # 9
-  - key: +  # +
+  - key: 9
+  - key: 9
+  - key: 9
+  - key: +
   - key: .  # ,
-  - key: 0  # 0
-  - key: 0  # 0
-  - key: 0  # 0
-  - key: 0  # 0
-  - key: 0  # 0
-  - key: 9  # 9
-  - key: 9  # 9
-  - key: 9  # 9
-  - key: =  # =
-  - key: A  # A
+  - key: 0
+  - key: 0
+  - key: 0
+  - key: 0
+  - key: 0
+  - key: 9
+  - key: 9
+  - key: 9
+  - key: =
+  - key: A
   # 21 2nd
   - key: STF  # St flg
   # 21 2nd
-  - key: Ind  # Ind
-  - key: 7  # 7
-  - key: INV  # INV
-  - key: LRN  # LRN
+  - key: Ind
+  - key: 7
+  - key: INV
+  - key: LRN

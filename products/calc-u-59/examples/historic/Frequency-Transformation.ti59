@@ -7,8 +7,8 @@
 format-version: 2
 model: TI-59
 # This program needs the Master Library module
-# Print output requires the printer to be active
 slot-1: { name: ML }
+# Print output requires the printer to be active
 printer: PC-100C
 
 partition: 559.49
@@ -508,7 +508,7 @@ program:
     490 95 =
     491 91 R/S
 
-# Prepare the magnet card inlay
+# The cue card
 cue-card:
   title: Frequency Transformation
   A: fₚ

@@ -83,6 +83,6 @@ program:
     068 55 ÷
     069 55 ÷
 
-# Prepare the cue card inlay
+# The cue card
 cue-card:
   title: Reproduce lost nibble problem

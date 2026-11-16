@@ -12,7 +12,7 @@ Invoke the right skill before starting work in each area:
 | `calc-u-59-qt` | Qt6 desktop app (`frontends/qt6/`, the repository's `.github/workflows/calc-u-59.yml`, Qt packaging) |
 | `calc-u-59-web` | Web client (`frontends/web/`: React + WASM engine, PWA, `frontends/web/build.sh`, `frontends/web/dist/`, the `web` CI job) |
 | `calc-u-59-docs` | Documentation (`reference/`, root markdown files); the user guide lives in `../calc-u-site` and is updated with them |
-| `calc-u-59-statefiles` | Writing `.ti59`/`.ti58`/`.ti58c` state files — format, matrix codes, KEYSTROKES sequences |
+| `calc-u-59-presets` | Writing `.ti59`/`.ti58`/`.ti58c` presets of format 2, keystroke program files, `examples/bundle.yaml` — the TI sections, key IDs, checking a preset with `calcu` |
 | `calc-u-59-uitesting` | XCUITest UI tests (`frontends/swift/Calc-U-59UITests/`) — file picker navigation, accessibility identifiers, orientation |
 
 ## Branches
@@ -33,7 +33,7 @@ Architecture facts (register model, SCOM layout, PC encoding, machine variants, 
 - `reference/DebugAPI.md` — debug panel and bridge API
 - `reference/FrontendParity.md` — which feature lives where in the three GUIs
 - `reference/WebClient.md` — the web client and its `dist/` contract
-- `reference/StateFileFormat.md` — the `.ti59`/`.ti58`/`.ti58c` file format
+- `docs/formats/preset.md`, `docs/formats/cue-card.md` (repository root) — the preset format 2 (`.ti59`/`.ti58`/`.ti58c`) and the cue card block
 - `rom/TI59-ROM-Guide.md`, `rom/TI58C-ROM-Guide.md` — how the ROMs work
 
 Do not restate these facts in CLAUDE.md, skills, or memory files — link to the reference doc instead.
@@ -41,8 +41,9 @@ Do not restate these facts in CLAUDE.md, skills, or memory files — link to the
 ## Agentic tools
 
 `tools/agentic/` holds command-line tools for running, timing and profiling
-`.ti59` programs headless (run a file, per-line print times, run time per
-key, hot steps, step costs, keycode disassembler/assembler). Read
+`.ti59` presets (run a file, per-line print times, run time per key, hot
+steps, step costs, keycode disassembler/assembler); they load presets
+through `calcu` (`calcu --product 59 serve`, the harness below). Read
 `tools/agentic/README.md` before measuring or comparing program speed.
 ROM-level traces of key sequences come from `tools/headless/` (its README).
 
@@ -53,8 +54,10 @@ repository root): the product without a window, on the library's app
 session, in emulated time only, so two runs give the same replies. Build
 the target `calcu` of a root tree (`cmake --build ../../build/tests --target
 calcu`; the program is `build/tests/library/harness/cli/calcu`). It finds the
-ROMs in `roms/` (`roms/fetch_roms.sh`) and starts the startup model (the
-TI-59 under the default settings) with the PC-100C, at key readiness (LIB-18).
+ROMs in `roms/` (`roms/fetch_roms.sh`), the bundled presets in `examples/`
+(`examples/bundle.yaml`), and starts the startup model (the TI-59 under the
+default settings) with its startup preset or its built-in default: the
+Master Library module, no printer (LIB-18 AC-18), at key readiness.
 
 - One-shot: `calcu --product 59 wait 2s then key-down 7 then wait 100ms then key-up 7 then wait 500ms then lcd`
   (commands parted by `then`; exit status 0, 1 at the first refusal, 2 when
@@ -74,9 +77,21 @@ TI-59 under the default settings) with the PC-100C, at key readiness (LIB-18).
   `cold-boot`, `power-cycle`; each replies when the machine is ready for keys
   again. No settings or save folder of yours is
   touched unless `--settings`, `--save-folder`, `--output-folder` name them.
-- Not yet: `ti59 …` commands, presets, traces, memory (later
-  features). Until M-59, `tools/headless/` and `tools/agentic/` stay the
-  tools for those.
+- Presets (LIB-6, C59-2): `preset <file>|examples:<path>` (format 2 only;
+  a 2.3.0 file is refused with the hint), `check-preset <file>…`,
+  `preset-list`, `wait` without a duration (until idle), `expect <number>` /
+  `not-expect <number>` (X in 13 digits), `screenshot <name>` (the classic
+  segment picture, into `--output-folder`), and the steps as commands
+  (`printer-trace on|off`, `elapsed-time start|report`, `full-speed`, …).
+  The product's sections and rules: `app/TIPresetKeys`, `app/TIPresetRules`.
+- Program memory (C59-2 AC-9): `ti59 partition [<value>]`, `ti59 program
+  [<step>] <keycode>…` (write) and `ti59 program <step> count=<n>` (read),
+  `ti59 registers <NN>=<value>…` (write; `H00`–`H03` on the TI-58C) and
+  `ti59 registers <NN>…` (read).
+- Paper (LIB-8): `paper text|marks|png <path>`, `cut-paper`; debugger
+  (LIB-10): `pause`, `step`, `resume`, `registers`, `break`, `trace <file>|off`, ….
+- Not yet: the product commands of C59-9 (M-59). Until then
+  `tools/headless/` stays the tool for ROM traces.
 
 ## Frontend Parity (Swift app ↔ Qt6 app ↔ web client)
 
@@ -128,7 +143,7 @@ landscape on a large screen) — its column in
   `tools/platform_stores_allowed.txt`).
 - **Assets have one source:** ROMs in `roms/`, artwork in `frontends/swift/App/Assets.xcassets`,
   the icon in `frontends/swift/App/AppIcon.icon` (`tools/gen_qt_icons.sh` derives the Qt icons;
-  `frontends/web/build.sh` copies the Linux one), presets the web offers in `examples/`.
+  `frontends/web/build.sh` copies the Linux one), the bundled presets in `examples/`, exactly the files `examples/bundle.yaml` lists (all three frontends bundle them).
 - **Version:** `MARKETING_VERSION` in the Xcode project is the only version;
   the Qt build and the web build read it.
 

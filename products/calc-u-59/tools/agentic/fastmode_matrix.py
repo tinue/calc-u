@@ -21,8 +21,8 @@ import os
 import sys
 import ctypes as C
 from collections import Counter
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from ti59file import Machine, LIB, INSTR_PER_SEC, regbytes, press, settle, idle  # noqa: E402
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'headless'))
+from ti59 import Machine, LIB, INSTR_PER_SEC, regbytes, press, settle, idle  # noqa: E402
 
 FAST_ENTRY = ['82', '85', '83', '52', '82', '83', '94', '95', '61', '92', '92', '62', '41', '92', '42']
 NORMAL_ENTRY = ['21', '81', '72', '61', '92', '92', '63', '91']   # St flg 4, GTO 008 R/S

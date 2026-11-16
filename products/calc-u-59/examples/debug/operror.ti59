@@ -9,7 +9,7 @@
 # it when storing.
 # Real hardware does not show this behaviour.
 #
-# Root cause: not Op 01 itself. The REGISTERS: preset loader
+# Root cause: not Op 01 itself. The REGISTERS: loader of the 2.x presets
 # (encodeTI59BCD, then in App/StateFileLoader.swift) converted the decimal literal
 # to BCD via an iterative float digit-extraction loop (mantissa/pow, then
 # repeated subtract+multiply-by-10). That loop accumulates floating-point
@@ -34,26 +34,26 @@ data:
 keys:
   - regular-speed:
   - trace: operror.bin
-  - key: RCL  # RCL
-  - key: 1  # 1
-  - key: 5  # 5
+  - key: RCL
+  - key: 1
+  - key: 5
   # 21  2nd
-  - key: Op  # Op
-  - key: 0  # 0
-  - key: 1  # 1
+  - key: Op
+  - key: 0
+  - key: 1
   - trace: opok.bin
-  - key: 1  # 1
-  - key: 7  # 7
-  - key: 3  # 3
-  - key: 1  # 1
-  - key: 3  # 3
-  - key: 7  # 7
-  - key: 1  # 1
-  - key: 7  # 7
-  - key: 3  # 3
-  - key: 5  # 5
+  - key: 1
+  - key: 7
+  - key: 3
+  - key: 1
+  - key: 3
+  - key: 7
+  - key: 1
+  - key: 7
+  - key: 3
+  - key: 5
   # 21  2nd
-  - key: Op  # Op
-  - key: 0  # 0
-  - key: 1  # 1
+  - key: Op
+  - key: 0
+  - key: 1
   - trace: off

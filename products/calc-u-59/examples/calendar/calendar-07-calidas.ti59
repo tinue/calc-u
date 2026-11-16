@@ -3,7 +3,7 @@
 # This is one of a series of calendar programs that appeared in the magazine
 # "52-Notes", starting with issue Volume 3 Number 5 from May 1978. It was
 # a competition to write faster and faster programs to print a calendar.
-# Our goal is to collect and preserve them here in the form of preload files.
+# Our goal is to collect and preserve them here in the form of presets.
 #
 # This is the documentation given for this program in the original article:
 #
@@ -132,12 +132,12 @@ keys:
   # press B, for 1 whole year). Data entry (keying the year) is left at
   # regular speed and outside the elapsed-time measurement; only the print
   # itself (triggered by B) is timed, and run at full speed.
-  - key: 2  # 2
-  - key: 0  # 0
-  - key: 2  # 2
-  - key: 6  # 6
+  - key: 2
+  - key: 0
+  - key: 2
+  - key: 6
   - elapsed-time: start
   - full-speed:
-  - key: B  # B — store year and print the whole year
+  - key: B  # store year and print the whole year
   - regular-speed:
   - elapsed-time: report

@@ -2,7 +2,7 @@
 
 CLI: check.py printout.txt year
   printout.txt is any text with the printer lines (e.g. from
-  ti59file.py --lines); only 20-character lines of digits and spaces count
+  calcu59.py --lines or linetimes.py --lines); only 20-character lines of digits and spaces count
   as day rows. Prints (rows found, rows expected, first mismatches).
 Library: check(lines, year)."""
 import sys, re, calendar

@@ -125,7 +125,7 @@ program:
     104 28 LOG
     105 92 RTN
 
-# Prepare the magnet card inlay
+# The cue card
 cue-card:
   title: Base Conversion
   A: From

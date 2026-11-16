@@ -66,7 +66,7 @@ data:
   17: 26174514  # KEYB
   18: 3213351662  # OARD⇄
 
-# Prepare the magnet card inlay
+# The cue card
 cue-card:
   title: Stars & Stripes
   E: Instructions
@@ -75,5 +75,5 @@ cue-card:
 # instead and then let the user follow them.
 keys:
   - full-speed:
-  - key: E  # E
+  - key: E
   - let-it-finish:

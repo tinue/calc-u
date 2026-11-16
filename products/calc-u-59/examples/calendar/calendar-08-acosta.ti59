@@ -3,7 +3,7 @@
 # This is one of a series of calendar programs that appeared in the magazine
 # "52-Notes", starting with issue Volume 3 Number 5 from May 1978. It was
 # a competition to write faster and faster programs to print a calendar.
-# Our goal is to collect and preserve them here in the form of preload files.
+# Our goal is to collect and preserve them here in the form of presets.
 #
 # This is the documentation given for this program in the original article:
 #
@@ -230,52 +230,47 @@ keys:
   # location 136. Do not clear the flashing displays as they occur.
 
   # 10-Op-17        -> 159.99
-  - key: 1  # 1
-  - key: 0  # 0
-  # 21
-  - key: Op  # Op (2nd+9)
-  - key: 1  # 1
-  - key: 7  # 7
+  - key: 1
+  - key: 0
+  - key: Op  # (2nd+9)
+  - key: 1
+  - key: 7
 
   # GTO-136-CLR     -> 0
-  - key: GTO  # GTO
-  - key: 1  # 1
-  - key: 3  # 3
-  - key: 6  # 6
-  - key: CLR  # CLR
+  - key: GTO
+  - key: 1
+  - key: 3
+  - key: 6
+  - key: CLR
 
   # Pgm-12-SBR-999  -> Flashing 0.
-  # 21
-  - key: Pgm  # Pgm
-  - key: 1  # 1
-  - key: 2  # 2
-  - key: SBR  # SBR
-  - key: 9  # 9
-  - key: 9  # 9
-  - key: 9  # 9
+  - key: Pgm
+  - key: 1
+  - key: 2
+  - key: SBR
+  - key: 9
+  - key: 9
+  - key: 9
 
   # R/S             -> Flashing 0.00
-  - key: R/S  # R/S
+  - key: R/S
 
   # DMS             -> Flashing 0
-  # 21
-  - key: D.MS  # D.MS (2nd+2)
+  - key: D.MS  # (2nd+2)
 
   # LRN             -> 136 43
-  - key: LRN  # LRN
+  - key: LRN
 
   # Ins             -> 136 43
-  # 21
-  - key: Ins  # Ins (2nd+SST)
+  - key: Ins  # (2nd+SST)
 
   # Ins             -> 136 43
-  # 21
-  - key: Ins  # Ins (2nd+SST)
+  - key: Ins  # (2nd+SST)
 
   # LRN-RST-CLR     -> 0
-  - key: LRN  # LRN
-  - key: RST  # RST
-  - key: CLR  # CLR
+  - key: LRN
+  - key: RST
+  - key: CLR
 
   # Whole-year print for 2026 (per the User Instructions above and the B-row
   # cue-card example: key year, press A, key months, R/S, key start month,
@@ -290,16 +285,16 @@ keys:
   # startEmulationLoop()) — full speed now reports the same elapsed time as
   # regular speed for this print job.
   - full-speed:
-  - key: 2  # 2
-  - key: 0  # 0
-  - key: 2  # 2
-  - key: 6  # 6
-  - key: A  # A — store starting year 2026
-  - key: 1  # 1
-  - key: 2  # 2              → 12 months
-  - key: R/S  # R/S
-  - key: 1  # 1              → start month 1
+  - key: 2
+  - key: 0
+  - key: 2
+  - key: 6
+  - key: A  # store starting year 2026
+  - key: 1
+  - key: 2  # → 12 months
+  - key: R/S
+  - key: 1  # → start month 1
   - elapsed-time: start
-  - key: R/S  # R/S — print the whole year, full speed
+  - key: R/S  # print the whole year, full speed
   - elapsed-time: report
   - regular-speed:

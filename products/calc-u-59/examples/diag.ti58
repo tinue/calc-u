@@ -6,8 +6,8 @@ format-version: 2
 model: TI-58
 preset-name: TI-58 diagnostic
 description: TI-58 calculator diagnostic
-# Print output requires the printer to be active
 slot-1: { name: ML }
+# Print output requires the printer to be active
 printer: PC-100C
 
 # Default partitioning
@@ -103,7 +103,7 @@ program:
     176 98 ADV
     177 92 RTN
 
-# Prepare the cue card inlay
+# The cue card
 cue-card:
   title: CALCULATOR DIAGNOSTIC - Consult Owner's Manual
   E: EXECUTE

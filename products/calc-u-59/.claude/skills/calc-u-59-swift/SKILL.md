@@ -1,6 +1,6 @@
 ---
 name: calc-u-59-swift
-description: Use this skill when working on the Swift/SwiftUI code of Calc-U-59 (frontends/swift/App/, frontends/swift/App/Views/, frontends/swift/Bridge/). Covers EmulatorViewModel, the ObjC++ bridge, display, keyboard, debug panels, printer, card reader, settings, and state file I/O. Trigger on any task that touches frontends/swift/App/*.swift, frontends/swift/App/Views/*.swift, frontends/swift/Bridge/, or the Xcode project.
+description: Use this skill when working on the Swift/SwiftUI code of Calc-U-59 (frontends/swift/App/, frontends/swift/App/Views/, frontends/swift/Bridge/). Covers EmulatorViewModel, the ObjC++ bridge, display, keyboard, debug panels, printer, card reader, settings, and preset loading (load-preset by content). Trigger on any task that touches frontends/swift/App/*.swift, frontends/swift/App/Views/*.swift, frontends/swift/Bridge/, or the Xcode project.
 user-invocable: true
 ---
 

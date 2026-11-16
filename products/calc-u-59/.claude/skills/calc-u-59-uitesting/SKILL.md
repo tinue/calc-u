@@ -14,10 +14,10 @@ This skill covers all work inside `frontends/swift/Calc-U-59UITests/`.
 
 | File | Purpose |
 |------|---------|
-| `AppHelpers.swift` | Shared helpers: `launchApp()`, `launchApp(orientation:)`, `navigateToOnMyIPhone(_:targetFile:)`, `loadPreset(_:file:idleTimeout:)` (Preset button → picker → wait for KEYSTROKES to finish), `attachScreenshot()` |
+| `AppHelpers.swift` | Shared helpers: `launchApp()`, `launchApp(orientation:)`, `navigateToOnMyIPhone(_:targetFile:)`, `loadPreset(_:file:idleTimeout:)` (Preset button → picker → wait while the load runs), `attachScreenshot()` |
 | `LayoutTests.swift` | Button visibility, label-wrapping, portrait/landscape screenshots |
 | `FilePickerTests.swift` | File picker opens; reopens after cancel (regression for iPad popover dismiss bug) |
-| `PresetLoadTests.swift` | End-to-end load of `test_diag.ti59` via the file picker; verifies keystroke playback starts |
+| `PresetLoadTests.swift` | End-to-end load of `test_diag.ti59` via the file picker; skipped since M-54 (LIB-6 D-46), replaced by C59-8's scenario in M-58 |
 | `ScreenshotTests.swift` | App Store screenshot capture (driven by `bin/run-screenshots`); writes PNGs to the dir named in `/tmp/calc-u-59-screenshot-dir` |
 | `HarnessClient.swift` | A line client for harness attach: `connect(port:)`, `command(_:)` (message lines skipped), `closedByPeer()` (C59-5) |
 | `AttachTests.swift` | Harness attach in the simulator: launch with `--attach-port 59160`, drive keys, read `lcd`, `wait` on the app's clock, `quit` (C59-5 S3); Home and back, a command refused while suspended (S4); a press on `led-display` for full speed while a program runs, R/S through `btn-key-rs` (S5). In `UIRegressionTests`; S4, S5 iOS only |
@@ -127,9 +127,9 @@ override class func tearDown() {
 
 ---
 
-## State File Prerequisites
+## Preset Prerequisites
 
-Screenshot tests that load `.ti59` files require those files to be present on the simulator's local storage. Run `bin/simulators setup` once before running tests — it ensures the target simulators from `bin/simulators.yaml` exist and installs state files into each one: an explicit list of files from `examples/` goes to the storage root, and everything from `examples/screentest/` goes into a `1-Testfiles/` folder (sorted first by name) in the simulator's "On My iPhone/iPad" storage. It also boots each new simulator once and launches the Files app, which is what initialises the AppGroup storage in the first place. `bin/simulators status` reports whether a machine is fully provisioned; `bin/simulators` alone prints the full command reference.
+Screenshot tests that load `.ti59` files require those files to be present on the simulator's local storage. Run `bin/simulators setup` once before running tests — it ensures the target simulators from `bin/simulators.yaml` exist and installs presets into each one: an explicit list of files from `examples/` goes to the storage root, and everything from `examples/screentest/` goes into a `1-Testfiles/` folder (sorted first by name) in the simulator's "On My iPhone/iPad" storage. It also boots each new simulator once and launches the Files app, which is what initialises the AppGroup storage in the first place. `bin/simulators status` reports whether a machine is fully provisioned; `bin/simulators` alone prints the full command reference.
 
 ---
 
@@ -145,7 +145,7 @@ with no key or card records). The identifiers below are unchanged.
 
 On iPhone portrait the pages are calculator → printer → debug (`btn-page-right`), and `btn-page-left` on the calculator page goes straight to debug. The debug page (`DebugView`, holding `btn-tab-calculator`/`btn-tab-cpu`/`btn-tab-log`) exists only when Settings → "Debug Page in Portrait" is on (`[window] portrait-debug-page`, default `false`). Under `--UITesting` the app's settings file is in memory only, at its defaults (LIB-9 AC-18), so a test turns the setting on through the Settings screen or with the launch arguments `--setting window.portrait-debug-page=true`. `ScreenshotTests` passes it, and the other settings its shots show, as `--setting <section>.<key>=<value>` arguments (`settingsArguments`; the module, which is no setting, as `--module <id>`), so they need no setup on a new simulator.
 
-The iPad layout in landscape (and the iPhone Duo opened flat) shows the debug panel side-by-side with the calculator — no paging, no setting to flip. Which layout a window gets is Shared `mobileLayout` (by size, not idiom); `LayoutTests.testWideWindowShowsDebugger` checks it. When a test only needs to reach the debug tabs (e.g. checking the LOG tab's content after a KEYSTROKES script runs), prefer running it on an iPad simulator destination to skip this whole prerequisite.
+The iPad layout in landscape (and the iPhone Duo opened flat) shows the debug panel side-by-side with the calculator — no paging, no setting to flip. Which layout a window gets is Shared `mobileLayout` (by size, not idiom); `LayoutTests.testWideWindowShowsDebugger` checks it. When a test only needs to reach the debug tabs (e.g. checking the LOG tab's content after a preset runs), prefer running it on an iPad simulator destination to skip this whole prerequisite.
 
 ---
 
@@ -156,7 +156,7 @@ The iPad layout in landscape (and the iPhone Duo opened flat) shows the debug pa
 | `btn-preset` | Button | Preset toolbar button |
 | `btn-reset` | Button | Reset toolbar button |
 | `btn-settings` | Button | Settings toolbar button |
-| `keystroke-playback-status` | OtherElement | `.accessibilityValue` = `"playing"` or `"idle"` |
+| `keystroke-playback-status` | OtherElement | `.accessibilityValue` = `"playing"` (an operation runs: a preset, a build) or `"idle"` |
 | `btn-freeze-on-start` | Button | "FREEZE ON START" in CALCULATOR debug panel (`LiveDebugView`); label shows "F.START" in narrow layout |
 | `btn-freeze-armed` | Button | "ARMED" in CALCULATOR debug tab; always present, enabled only while FREEZE ON START is pending; tap to disarm |
 | `btn-page-left` | Button | Chevron-left page arrow (iPhone portrait only); destination depends on current page |
@@ -226,29 +226,13 @@ print(app.debugDescription)
 
 ## Verifying a Successful Preset Load
 
-`keystroke-playback-status` (an `OtherElement` overlay in `CalculatorView`) exposes `isKeystrokesPlaying` as its accessibility value (`"playing"` / `"idle"`). Use it to confirm that a state file with a `KEYSTROKES:` section was actually loaded and the keystrokes started.
-
-**Important:** register the predicate expectation *before* tapping the file, so the poll is already running when the transition happens. A short script can finish before an expectation registered after the tap starts polling.
-
-```swift
-let statusEl = app.otherElements["keystroke-playback-status"]
-let playing = NSPredicate(format: "value == 'playing'")
-let playbackStarted = XCTNSPredicateExpectation(predicate: playing, object: statusEl)
-
-cell.tap()   // load the file
-
-let result = XCTWaiter.wait(for: [playbackStarted], timeout: 8)
-XCTAssertEqual(result, .completed, "File did not load — keystroke playback never started")
-```
-
-To keep the playing window wide enough to catch, end the script with a `Wait:` (playback counts as playing until the script ends), as `examples/screentest/test_diag.ti59` does:
-
-```
-KEYSTROKES:
-FullSpeed:
-15              # E — start
-Wait: 1.5s
-```
+Since M-54 a preset is LIB-6's `load-preset` (one operation of the session);
+the `keystroke-playback-status` element (`isKeystrokesPlaying`, now "an
+operation runs") and the 2.3.0 `KEYSTROKES:` scripts it watched are gone
+with FS 4. `PresetLoadTests.testLoadDiagPreset` is skipped (LIB-6 D-46);
+C59-8 (M-58) brings the scenario that loads a bundled example and checks
+its cue card. Until then verify a load by what the preset leaves: the
+display, or the cue card title.
 
 ---
 
@@ -263,5 +247,4 @@ The system document picker is the most fragile part of the test suite. Things th
 
 Things that are stable:
 - Filenames (e.g. `"test_diag.ti59"`) — always your primary locator
-- `keystroke-playback-status` — our own element, won't change
 - `btn-preset`, `btn-reset`, `btn-settings` — our own identifiers

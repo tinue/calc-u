@@ -19,7 +19,7 @@
 // | Adapter               | Removed in                         |
 // |-----------------------|------------------------------------|
 // | TICardReaderAdapter   | M-55 (C59-7)                       |
-// | TIMemoryAdapter       | M-54 (C59-2, C59-3)                |
+// | TIMemoryAdapter       | M-59 (C59-9): its readers           |
 // | TIDebugPanelAdapter   | M-56 (C59-4)                       |
 //
 // The core types still reachable here (CpuFrame, DebugEvent, TIStepBoundary)
@@ -51,8 +51,12 @@ private:
     TIMachine& m_;
 };
 
-/// Program steps, registers and the partition until the keystroke program
-/// memory kind and the constant memory (C59-2, C59-3; M-54).
+/// Program steps, registers and the partition. Since M-54 the app layer writes
+/// and reads memory through the product kinds c59.program-memory and
+/// c59.constant-memory (TIProductKinds.hpp; C59-2, C59-3); what is left here
+/// is read by the debug log and snapshots (until M-56), the card files (until
+/// M-55) and tools/headless (until M-59), and the writes by the core tests
+/// and the golden runs' replay of 2.3.0 (C59-2 design §5).
 class TIMemoryAdapter {
 public:
     explicit TIMemoryAdapter(TIMachine& m) : m_(m) {}
@@ -69,7 +73,7 @@ public:
     int ramRegCount() const;
     void serialiseRAM(std::uint8_t* dst) const;     ///< 120 × 16 bytes
     void deserialiseRAM(const std::uint8_t* src);
-    /// n instructions (app/StateApplier.cpp's start-up of 2.3.0), no run control.
+    /// n instructions, no run control (the golden runs' replay of 2.3.0's start-up).
     void runInstructions(std::uint32_t n);
 
 private:

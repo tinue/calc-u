@@ -7,7 +7,8 @@ and jumps to its routine, which copies the right day pairs into P28..P31,
 sets t to the row-end threshold and falls into the header code. A 13th
 record holds the address of the end of the run, so there is no month
 counter. February enters the second row copy after its own copy of the
-header code. Usage: fastcal.py out.ti59   (e.g. examples/calendar/calendar-09-dispatch.ti59)"""
+header code. Usage: fastcal.py out.ti59   (e.g. examples/calendar/calendar-09-dispatch.ti59);
+the file is a preset of format 2 (C59-2 AC-18)."""
 import os
 import sys
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -160,46 +161,51 @@ def program():
 
 HEADER = open(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'calendar-09-header.txt')).read()
 
-KEYSTROKES = """KEYSTROKES:
-FullSpeed:
-83              # 2
-92              # 0
-83              # 2
-74              # 6
-11              # A      store the year
-82              # 1
-85              # +
-83              # 2
-52              # EE
-82              # 1
-83              # 2
-94              # +/-
-95              # =      X = 1.000000000002
-61              # GTO
-92              # 0
-92              # 0
-62              # 7      step 007, the St flg
-41              # SST    St flg executes, its operand is pending
-92              # 0      first operand digit
-ZeroElapseTime:
-42              # STO    fast mode starts: print the year
-ReportElapseTime:
+# The keys a load presses (C59-2 AC-18): the year, A, then the fast-mode
+# entry by SST; the elapsed time of the run is logged (elapsed-time:).
+KEYS = """keys:
+  - full-speed:
+  - key: 2  # 2
+  - key: 0  # 0
+  - key: 2  # 2
+  - key: 6  # 6
+  - key: A  # A      store the year
+  - key: 1  # 1
+  - key: +  # +
+  - key: 2  # 2
+  - key: EE  # EE
+  - key: 1  # 1
+  - key: 2  # 2
+  - key: +/-  # +/-
+  - key: =  # =      X = 1.000000000002
+  - key: GTO  # GTO
+  - key: 0  # 0
+  - key: 0  # 0
+  - key: 7  # 7      step 007, the St flg
+  - key: SST  # SST    St flg executes, its operand is pending
+  - key: 0  # 0      first operand digit
+  - elapsed-time: start
+  - key: STO  # STO    fast mode starts: print the year
+  - elapsed-time: report
 """
 
 
 def write_ti59(path):
+    """The preset of format 2 (docs/formats/preset.md): the header, the
+    partition, the program in the listing notation, the registers, the cue
+    card and the keys."""
     code, labels, listing = program()
     regs = registers(labels)
-    out = [HEADER.rstrip('\n'), '', 'MODEL: TI-59', 'PRINTER: on', 'PARTITION: 399.69', '',
-           'CUECARD:', 'Template: MagnetCard', 'Title: Calendar - fast mode, dispatch version', 'Banks: 1,2',
-           'Row1: Key year, A; then 1 + 2 EE 12 +/- = GTO 007 SST 0 STO', 'Row1Align: left',
-           'A: YEAR', '', 'PROGRAM:']
+    out = [HEADER.rstrip('\n'), '', 'format-version: 2', 'model: TI-59', 'slot-1: { name: ML }', 'printer: PC-100C',
+           '', 'partition: 399.69', '', 'program:', '  keycodes: |']
     for a, k in enumerate(code):
         text, notes = listing.get(a, ('', []))
-        out += ['# ' + t for t in notes]
-        out.append(f'{a:03d}  {k:02d} {text}'.rstrip())
-    out += ['', 'REGISTERS:'] + [f'{k:02d} = {v:<16} # {c}' for k, (v, c) in sorted(regs.items())]
-    out += ['', KEYSTROKES]
+        out += ['    # ' + t for t in notes]
+        out.append(f'    {a:03d} {k:02d} {text}'.rstrip())
+    out += ['', 'data:'] + [f'  {k:02d}: {v}  # {c}' for k, (v, c) in sorted(regs.items())]
+    out += ['', 'cue-card:', '  title: Calendar - fast mode, dispatch version',
+            '  row-1: Key year, A; then 1 + 2 EE 12 +/- = GTO 007 SST 0 STO', '  row-1-align: left', '  A: YEAR',
+            '', KEYS]
     open(path, 'w').write('\n'.join(out))
     return code, labels
 

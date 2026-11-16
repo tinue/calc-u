@@ -11,7 +11,7 @@ namespace {
 std::string text(const OpenedFile& f) { return f.bytes ? std::string(f.bytes->begin(), f.bytes->end()) : std::string(); }
 
 media::MediaPart::OpenedMedium opened(const media::MediaPart& m, const OpenedFile& f) {
-    return m.readOpened(fileNameOf(f), text(f));
+    return m.readOpened(fileNameOf(f), text(f), f.path.value_or(std::string()));
 }
 
 Value fileArgs(const OpenedFile& f) {

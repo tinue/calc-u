@@ -18,7 +18,7 @@
 // the CPU -- all of them are Headerless, and the MODE (or the debugger's
 // `cpu`) decides.
 // The guess survives only as `looksLikeCode`, which decides whether a
-// dropped file is accepted at all (Core/DropFile).
+// dropped or opened file is a machine-code program (app/SharpFileKinds).
 
 namespace programfile {
 

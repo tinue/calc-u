@@ -14,7 +14,6 @@ const PANEL_MIN = 220;          // the least room below the faceplate worth a pa
 const INSPECTOR_MIN_WIDTH = 700; // narrower: the inspector only when no other panel is shown
 const SHIFT_TAP_MS = 400;
 const SHIFT_TAP_POINTER = 1000;   // the screen press a SHIFT tap is sent as (no pointer of the faceplate)
-const MAX_DROP_BYTES = 1 << 20;
 const IS_MAC = typeof navigator !== "undefined" && /Mac|iPhone|iPad|iPod/.test(navigator.platform || navigator.userAgent);
 
 // <input type=file> once; resolves with the picked Files ([] if cancelled).
@@ -65,7 +64,7 @@ function CalcU1600(props) {
   const rootRef = React.useRef(null);
   const heldKeys = React.useRef(new Map());   // KeyboardEvent.code -> {base: Promise of the key to release}
   const shiftTap = React.useRef(null);        // time the bare Shift went down
-  const pendingDrop = React.useRef(null);
+  const programFlow = React.useRef(false);   // a program flow runs (one at a time)
 
   React.useEffect(() => {
     const e = createEngine({ workerUrl, model: modelProp, preset: presetProp });
@@ -85,6 +84,7 @@ function CalcU1600(props) {
   const busy = useEngine(engine, (s) => s.busy);
   const paused = useEngine(engine, (s) => s.paused);
   const notices = useEngine(engine, (s) => s.notices);
+  const programs = useEngine(engine, (s) => s.programs);
   const fatal = useEngine(engine, (s) => s.fatal);
   const persistent = useEngine(engine, (s) => s.persistent);
   const model = ui ? ui.model : (modelProp === undefined ? 1 : modelProp);
@@ -136,25 +136,29 @@ function CalcU1600(props) {
   // ── Flows (MainWindow's) ────────────────────────────────────────────
   const tell = (title, text) => dialogs.ask("notice", { title, text });
 
-  const loadPresetFiles = async (files) => {
+  // LIB-13: a drop and Upload Preset… are the session's `open`: it decides
+  // what the files are (several are one folder in /uploads, its preset
+  // opened, AC-8), keeps them while busy (AC-7), refuses with a notice and
+  // asks before a medium of the same name is replaced (AC-4). A program file
+  // comes back as the topic c1600.program-opened (below).
+  const openFiles = async (files, way) => {
     if (!files.length) return;
-    // The preset and the files it names, side by side in /uploads.
-    const presetFile = files.find((f) => /\.pc1500a?$|\.pc1600$/i.test(f.name)) || files[0];
-    let path = "";
-    for (const f of files) {
-      const p = await engine.request("upload", f.name, await fileBytes(f));
-      if (f === presetFile) path = p;
-    }
-    engine.call("loadPreset", path);
+    const list = [];
+    for (const f of files) list.push({ name: f.name, bytes: await fileBytes(f) });
+    await calcuMediaSendAsking((c, a) => engine.send(c, a),
+      (q) => dialogs.ask("confirm", { title: "Open", text: q }).then((y) => !!y),
+      "open", { files: list, way, upload: true });
   };
 
   // Load BASIC Program / Load Machine Code on a File (C1600-2 AC-16 to
   // AC-19): the session's file kind, the WAV's choice, then the load.
-  const openProgram = async (kind, file) => {
+  // `index`: the file of a WAV already chosen (from 1); otherwise asked when
+  // it holds several.
+  const openProgram = async (kind, file, bytes, index) => {
     const title = kind === "basic" ? "Load BASIC Program" : "Load Machine Code";
-    const bytes = await fileBytes(file);
-    const { tapeFiles } = await engine.request("fileKind", bytes);
-    let index = 0;
+    if (bytes === undefined) bytes = await fileBytes(file);
+    const { tapeFiles } = index ? { tapeFiles: null } : await engine.request("fileKind", bytes);
+    index = index || 0;
     if (tapeFiles && tapeFiles.length > 1) {
       const names = tapeFiles.map((n, i) => `${i + 1}. ${n}`);
       const picked = await dialogs.ask("choice", { title, text: `${file.name} holds ${names.length} files. Load which one?`, options: names });
@@ -179,20 +183,32 @@ function CalcU1600(props) {
     engine.call("pasteText", result.callCommand);
   };
 
-  const openDropped = async (file) => {
-    if (busy) { pendingDrop.current = file; return; }
-    if (file.size > MAX_DROP_BYTES) return;
-    const target = await engine.request("dropTarget", file.name, await fileBytes(file));
-    if (target === "preset") loadPresetFiles([file]);
-    else if (target === "basic" || target === "code") openProgram(target, file);
+  // LIB-13 AC-18 (D4.2): a program file the session opened runs the flow
+  // of Load BASIC Program… or Load Machine Code… without its file dialog.
+  // A WAV with several files asks which one; the file chosen goes to the
+  // flow of its own kind. One flow at a time: one that comes meanwhile is
+  // dropped with a log line (design D8).
+  const runOpenedProgram = async ({ name, bytes, kind }) => {
+    let flow = kind === "machine-code-program" ? "code" : "basic";
+    let index = 0;
+    const { tapeFiles, tapeKinds } = await engine.request("fileKind", bytes);
+    if (tapeFiles && tapeFiles.length > 1) {
+      const names = tapeFiles.map((n, i) => `${i + 1}. ${n}`);
+      const picked = await dialogs.ask("choice", { title: "Open", text: `${name} holds ${names.length} files. Load which one?`, options: names });
+      if (picked === null) return;
+      index = picked + 1;
+      if (tapeKinds && tapeKinds[picked]) flow = tapeKinds[picked].startsWith("code-") ? "code" : "basic";
+    }
+    await openProgram(flow, { name }, bytes, index);
   };
   React.useEffect(() => {
-    if (!busy && pendingDrop.current) {
-      const f = pendingDrop.current;
-      pendingDrop.current = null;
-      openDropped(f);
-    }
-  }, [busy]);
+    if (!engine || !programs.length || dialogs.open) return;
+    const p = programs[0];
+    engine.dismissProgram();
+    if (programFlow.current) { console.log(`[open] a program flow runs; dropped ${p.name}`); return; }
+    programFlow.current = true;
+    runOpenedProgram(p).finally(() => { programFlow.current = false; });
+  }, [engine, programs, dialogs.open]);
 
   // File ▸ Import Media… (LIB-7 AC-30, AC-43): module files, disk files and
   // tape definitions with their WAV, chosen in one picker. Each file goes up
@@ -260,7 +276,7 @@ function CalcU1600(props) {
       items.push({ label: p.label, onClick: () => engine.call("loadPreset", p.ref) });
     }
     items.push({ separator: true });
-    items.push({ label: "Upload Preset…", onClick: async () => loadPresetFiles(await pickFiles(".pc1500,.pc1500a,.pc1600,.bas,.bbin,.bin,.wav,.yaml", true)) });
+    items.push({ label: "Upload Preset…", onClick: async () => openFiles(await pickFiles(".pc1500,.pc1500a,.pc1600,.bas,.bbin,.bin,.wav,.yaml", true), "dialog") });
     return items;
   };
   const mod = IS_MAC ? "⌘" : "Ctrl+";
@@ -404,7 +420,7 @@ function CalcU1600(props) {
       onDrop={(e) => {
         e.preventDefault();
         const files = [...e.dataTransfer.files];
-        if (files.length === 1 && engine) openDropped(files[0]);
+        if (files.length === 1 && engine) openFiles(files, "drop");
       }}>
       <MenuBar menus={menus} />
       {!persistent && (

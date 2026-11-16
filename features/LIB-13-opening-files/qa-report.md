@@ -114,3 +114,119 @@ Library column is **Done** (`features/INDEX.md`).
   `docs/behaviour-changes.md`.
 - Agent knowledge: `docs/test-groups.md` (the new cases), LIB-1 design §2a;
   no rename.
+
+
+## Calc-U-1600 (M-48, 2026-11-16, branch `m48-opening-1600`)
+
+Built and run on an M4 Pro, macOS 27.2, Apple clang, CMake, Ninja,
+RelWithDebInfo, in `build/tests` (`-DCALCU_FRONTEND_QT=OFF`) and `build/qt`
+(`-DCALCU_FRONTEND_QT=ON`, Homebrew Qt 6); the Web `dist/` with Homebrew
+Emscripten in `build/web`.
+
+The code (all under `products/calc-u-1600/` unless named):
+- `app/SharpFileKinds.*` (new): the preset extensions, the limits (1 MiB for
+  drop, Open With and the start argument, D-15), `programKindOf` (AC-17's
+  rows: today's `dropfile::classify` without its preset test and without
+  `.rom`), the kinds `BasicProgramKind` and `MachineCodeKind`, the stream
+  topic `c1600.program-opened` and its payload (D4.2, D-11);
+- `app/StartFile.*` (new): the file named at the start (D-14);
+- `app/SharpAppPart.*`: owns the open part (over its `PresetsPart` and
+  `MediaPart`, the two kinds, BASIC first) after the loaders among the
+  parts, and the topic; `app/SharpWebPart.cpp`: `c1600.drop-target` gone, the
+  open part's upload folder is `/uploads`; `app/HarnessProduct.cpp`:
+  `presetExtensions()`, `fileKinds()`;
+- `core/DropFile.*` deleted (the adapter of design §5 and D5);
+  `core/Loaders.*`, `app/SharpLoaderPart.cpp`, `app/SharpTopics.hpp`: the
+  file-kind reply names each WAV file's kind (`tapeKinds`);
+- Qt6 `frontends/qt6/app/MainWindow.*`, `MachineController.*`, `main.cpp`:
+  the drag asks `open-would-take`, the drop, Open With, the start argument
+  and the Load Preset… dialog send `open` with their way; the program flows
+  take bytes and run on the topic; `kMaxDropBytes`, `dropTargetOf`,
+  `droppableFile`, `openDroppedFile`, `drainPendingDrop`, `m_pendingDrop`,
+  `m_startupDone` gone; only the dialogs remember a folder (EC-7);
+  `resources/macos/Info.plist.in` without `rom`;
+- Web `frontends/web/src/CalcU1600.jsx`, `src/engine.js`: the drop and
+  Upload Preset… send `open` (`upload: true`; `asks:` asked and sent again
+  with `confirmed`), the program flow runs on the topic; `MAX_DROP_BYTES`,
+  `pendingDrop`, `openDropped`, `loadPresetFiles`, `dropTarget` gone;
+- `tools/check_open_with_types.sh` (new) and the CTest
+  `CalcU1600OpenWithTypes` (Frequent);
+- library: `MediaPart::readOpened` takes the path of the opened file and
+  reads its companions beside it (see Deviations); `LibraryOpeners.cpp`
+  passes it;
+- tests: `app/tests/opening_tests.cpp` (new, 20 cases), the three
+  `lib13_ac18_harness_open_…` cases of `tests/harness_tests.cpp`,
+  `tests/program_file_tests.cpp` without `test_drop_targets` (moved, AC-22),
+  five cases in `frontends/web/tests/play.spec.js`.
+
+Result of the run: `build/tests` Frequent 35 of 35 CTest entries passed
+(CoreTests 56.5 s with `-j4`, see Findings), `build/qt` Frequent 37 of 37
+(offscreen); Longer: `CalcU1600WebPlaywright` 96 passed, 2 skipped (as
+before; 10 of them the new LIB-13 cases on the root and the sub-path),
+`CalcU1600WasmSmoke` passed. CI was not dispatched (plan §1).
+
+| ID | Result | Test case (`app/tests/opening_tests.cpp` unless named) |
+|---|---|---|
+| AC-17 | Pass | `lib13_ac17_preset_extensions_media_suffixes`, `_kinds_asked_basic_then_code`, `_listing_and_tokenized_are_basic`, `_headered_code_is_code`, `_headerless_code_only_with_bin`, `_rom_is_not_code`, `_wav_goes_to_first_files_kind`, `_unreadable_wav_goes_to_basic_loader_which_says_why`, `_empty_and_other_taken_by_neither` |
+| AC-18 | Pass (session, harness, Web); Qt6 by hand: waiting | `lib13_ac18_gui_way_sends_program_opened_topic`, `lib13_ac18_kept_file_also_sends_topic`; `tests/harness_tests.cpp`: `lib13_ac18_harness_open_loads_first_wav_file`, `_harness_open_refuses_headerless` (also `.rom` refused), `_harness_open_preset_bas_and_headered_bin`; Web: `LIB-13 AC-18 a dropped WAV with several programs asks which one, then loads by its kind`, `LIB-13 AC-18 a dropped headerless .bin asks the address` |
+| AC-19 | Pass (session, Web); Qt6 by hand: waiting | `lib13_ac19_disk_used_where_it_lies_written_back`, `lib13_ac19_upload_disk_imported_then_inserted`, `lib13_ac19_module_one_place_plugged_pc1500_two_places_refused_pc1600`, `lib13_ac19_tape_definition_into_cassette_wav_is_never_a_tape`; Web: `LIB-13 AC-19 a dropped disk file is imported and inserted` |
+| AC-20 | Pass (session, Web) | `lib13_ac20_over_1mib_refused_drop_openwith_start_not_dialog_harness`; Web: `LIB-13 AC-20 a dropped file over 1 MiB is refused with a notice` |
+| AC-21 | Pass (automated parts); Qt6 by hand: waiting | `lib13_ac21_start_file_is_last_file_argument`; CTest `CalcU1600OpenWithTypes` (the three preset extensions Owner, `bas`, `bbin`, `bin` Alternate, no `rom`; fails on the old list); Web: `LIB-13 AC-8 Upload Preset opens the preset among its files`. The Qt6 wiring (a drop, the Dock icon, Finder's Open With, a start argument) builds and is not yet checked by hand (design T16-5): the agent has no screen |
+| AC-22 | Pass | `lib13_ac22_drop_targets` (every case of the old `test_drop_targets` and the WAV cases, through the product's open part; `CODE.ROM` now refused, AC-17; "ignored" is now "refused") |
+| EC-2 (product) | Pass | `lib13_ec2_disk_without_drive_refused_with_notice` |
+| EC-7 (product) | Pass | `lib13_ec7_open_by_any_way_keeps_dialog_folders` (the remembered folders of the settings unchanged after `open` by drop, Open With, start and dialog); in Qt6 only the dialogs call `rememberOpenFile` |
+
+Coverage: AC-17 to AC-22 have their tests and pass where they run without a
+screen. The column stays **In progress** in `features/INDEX.md` until the
+Qt6 hand checks of T16-5 are done (or M-49's attach scenarios take them
+over): drag a `.bas` and a `.floppy.yaml` onto the window, drop a file on
+the Dock icon, Finder ▸ Open With on a `.bin`, and
+`CalcU1600Qt.app/Contents/MacOS/CalcU1600Qt <file>`.
+
+### Deviations from the design, chosen by the simpler structure
+
+- **The kinds load through `sharp::loaders` directly** (the same calls as
+  `c1600.load-basic` and `c1600.load-code`), not through a
+  `SharpLoaderPart&`; they share one base, `ProgramFileKind`, and take the
+  topic from `SharpAppPart::attach`. Without a topic (the harness) or with
+  the way `harness` they load at once.
+- **`c1600.upload` stays, for File ▸ Import Media… only** (design D5 had it
+  go): the import puts a tape definition and its WAV side by side in
+  `/uploads` before `media.import`, which `open` does not do. The drop and
+  Upload Preset… no longer use it.
+- **The file-kind reply names each WAV file's kind** (`tapeKinds`,
+  C1600-2's reply): a WAV's chosen file goes to the flow of its own kind
+  (AC-18), which the frontends could not tell otherwise.
+- **A library change: an opened medium is read with its companions beside
+  it** (`MediaPart::readOpened(name, bytes, path)`). Without it the check
+  of AC-4 ("everything is checked first") refused every opened
+  `.tape.yaml` ("its sound file … is missing") although `media.open-file`
+  reads the WAV beside it. An upload has no path and is read as before.
+- **The Qt6 drag sends the size** with `open-would-take`, and Qt reads at
+  most 1 MiB + 1 byte of a file opened by a limited way, so a large file is
+  refused by size without being read whole.
+- **Two more visible changes got a ledger row** (1600-44): Load Preset…'s
+  dialog and Upload Preset… open the chosen file as what it is (AC-5), and a
+  WAV's chosen file goes to its own kind's flow (AC-18). Row 1600-15 is in
+  effect from M-48.
+
+### Findings
+
+- **A `.tape.yaml` dropped alone in the Web frontend is refused** ("its
+  sound file … is missing"): an upload carries no WAV, and a drag of two
+  files is not taken (AC-6). Import Media… with both files is the way, as
+  before M-48 (a tape could not be dropped at all then).
+- **CoreTests is at 56.5–57.6 s in a `-j4` Frequent run** (54 s in M-47;
+  the new cases take 1.6 s alone), close to the 60 s budget.
+
+### Not changed here
+
+- Golden runs and example references: not touched (design D8).
+- Agent knowledge: `products/calc-u-1600/CLAUDE.md` (Harness: `open`; the
+  open part among the parts), `docs/developer/Shared-Architecture.md`
+  (`SharpFileKinds`, `StartFile`), `docs/developer/Web-Client.md` (Drag and
+  drop), `docs/background/Decisions.md` (the two entries that named
+  `core/DropFile` and `dropfile::classify`), `TODO.md`, `docs/User-Guide.md`
+  (Dropping files), `docs/test-groups.md`, `docs/glossary-mapping.md` (row
+  "Open (a file), file kind"). `Drag-And-Drop-Plan.md` stays history. No
+  memory file named the old classes (checked); none changed.

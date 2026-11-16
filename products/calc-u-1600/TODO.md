@@ -669,8 +669,8 @@ somewhere else doesn't count (see docs/background/plans/Code-Cleanup-Plan.md).
   - `--lcd-png` and `--lcd-text` write-and-error blocks are the same in
     `pc1500_cli.cpp` and `pc1600_cli.cpp`: a `cli::writeLcdPng(bitmap, mm,
     path)` (and a text twin) in `tools/CliCommon.hpp`.
-  - `DropFile.cpp` `classify` and `PresetFile.cpp`'s `program:` switch
-    both sort `programfile::Kind` into BASIC / code: `isBasic(Kind)` /
+  - `app/SharpFileKinds.cpp` `programKindOf` (was `DropFile.cpp`
+    `classify`) and `PresetFile.cpp`'s `program:` switch both sort `programfile::Kind` into BASIC / code: `isBasic(Kind)` /
     `isCode(Kind)` next to `headerName()` in `ProgramFile.hpp` (the
     headerless rules stay with the callers).
   - `parsePresetFile` spells the top-level keys three times (`kKeys`, the

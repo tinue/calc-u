@@ -10,6 +10,7 @@
 #include <cstdlib>
 
 #include "AppPaths.hpp"
+#include "app/SharpFileKinds.hpp"
 #include "AppSettings.hpp"
 #include "debug/DebugController.hpp"
 #include "Machine/SharpBuilder.hpp"
@@ -198,6 +199,12 @@ void MachineController::onMessage(const sessions::Message& m) {
                 // Queued: a notice from inside a host call is shown once the
                 // call is over, not while it runs.
                 QTimer::singleShot(0, this, [this, text = QString::fromStdString(n->sentence)] { emit noticeShown(text); });
+            } else if (const auto* o = sessions::payloadAs<shared::ProgramOpenedPayload>(p)) {
+                // Queued: the flow's dialogs open after the host call.
+                QTimer::singleShot(0, this, [this, name = QString::fromStdString(o->name),
+                                             bytes = QByteArray(reinterpret_cast<const char*>(o->bytes.data()),
+                                                                static_cast<qsizetype>(o->bytes.size())),
+                                             kind = QString::fromStdString(o->kind)] { emit programOpened(name, bytes, kind); });
             } else if (const auto* l = sessions::payloadAs<sessions::LogLine>(p)) {
                 qDebug().noquote() << "[log]" << QString::fromStdString(l->text);
             }

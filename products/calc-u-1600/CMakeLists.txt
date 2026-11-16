@@ -157,6 +157,10 @@ if(CALCU_TESTS)
   # product's own; the Qt6 frontend hosts the library's app session and
   # sends no suspend.
   calcu_add_test(CalcU1600NoOwnSession frequent COMMAND ${CMAKE_COMMAND} -P tools/check_no_own_session.cmake)
+  # LIB-13 AC-21 (design Part D, T16-5): the macOS Open With types: the
+  # preset extensions as the product's own, .bas, .bbin, .bin as Alternate,
+  # no .rom.
+  calcu_add_test(CalcU1600OpenWithTypes frequent COMMAND sh tools/check_open_with_types.sh)
   # LIB-12 AC-13 (design Q2): pc1600_cli with a roms/ that lacks one file
   # exits 1 naming it; with the full set it runs.
   calcu_add_test(CalcU1600CliRomLookup frequent COMMAND sh tests/cli_rom_tests.sh

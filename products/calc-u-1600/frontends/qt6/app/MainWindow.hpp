@@ -1,4 +1,5 @@
 #pragma once
+#include <QByteArray>
 #include <QMainWindow>
 #include <QElapsedTimer>
 #include <QHash>
@@ -12,6 +13,7 @@
 
 #include "MachineController.hpp" // Model, PC1500RomRevision
 #include "app/SharpTopics.hpp"
+#include "opening/OpenRequest.hpp"
 #include "sessions/Value.hpp"
 
 class QTimer;
@@ -84,12 +86,14 @@ public:
     FaceplateWidget* faceplate() const { return m_faceplate; }
     calcu::qt6::PaperPanel* paperPanel() const { return m_paperPanel; }
 
-    // A file dropped onto the window, or (macOS) onto the Dock icon / opened
-    // from Finder: its content picks the loader (Core/DropFile) -- Load
-    // Preset, Load BASIC Program or Load Machine Code, as from the menu.
-    // Anything else is ignored silently. Held back until the startup preset
-    // is done and while a synchronous operation runs (the last one wins).
-    void openDroppedFile(const QString& path);
+    // A file to open (LIB-13): a drop, Open With (the Dock icon, Finder), the
+    // file named at the start, the Load Preset… dialog. Sent as the session's
+    // `open` with the way it came; the session decides what it is, keeps it
+    // while an operation runs or the start is not over (AC-7), and refuses
+    // with a notice (shown as every notice). A program file comes back as
+    // the topic c1600.program-opened (onProgramOpened). Remembers no folder
+    // (EC-7): only the file dialogs do.
+    void openFile(const QString& path, calcu::opening::Way way);
 
 protected:
     void keyPressEvent(QKeyEvent* event) override;
@@ -208,27 +212,31 @@ private:
     void onPresetArmed();
 
     // File > Load Machine Code…: pick a .bin (Settings' Assembly folder),
-    // then loadMachineCodeFile(): the session's plan (`c1600.plan-code`,
+    // then loadMachineCode(name, bytes): the session's plan (`c1600.plan-code`,
     // C1600-2), a start address asked only for headerless code
     // (MachineCodeLoadDialog), the load (`c1600.load-code`), then the NEW
     // that protects it and the CALL that starts it. Never runs the code.
     void loadMachineCode();
-    // The three loaders behind the File menu's dialogs and a drop. Each
-    // remembers the file's folder for its dialog.
-    void loadPresetFile(const QString& path);
-    void loadBasicProgramFile(const QString& path);
-    void loadMachineCodeFile(const QString& path);
-    // The arguments of a loader's command for `path`: its bytes and name, and
-    // for a cassette WAV with several files the one the user picks (`file`,
-    // C1600-2 AC-16). Empty if it can't be read (after a warning titled
-    // `title`) or the user cancels.
-    std::optional<calcu::sessions::Value::Object> programArgs(const QString& path, const QString& title);
-    // The one local file a drag carries, if its content is something to
-    // load (openDroppedFile()); empty otherwise.
-    QString droppableFile(const QMimeData* mime) const;
-    void drainPendingDrop();
-    QString m_pendingDrop;       // a drop that arrived while loading / before startup finished
-    bool m_startupDone = false;  // the startup preset (if any) has run
+    // The two program flows, behind File ▸ Load BASIC Program… and Load
+    // Machine Code… (after their dialog, which remembers the folder) and an
+    // opened program file (onProgramOpened). `file`: the file of a cassette
+    // WAV already chosen (from 1); none: asked when it has several.
+    void loadBasicProgram(const QString& name, const QByteArray& bytes, std::optional<int> file = std::nullopt);
+    void loadMachineCode(const QString& name, const QByteArray& bytes, std::optional<int> file = std::nullopt);
+    // A file chosen in a loader's dialog, read; empty (after a warning) when
+    // it cannot be read.
+    std::optional<QByteArray> readChosen(const QString& path, const QString& title);
+    // The arguments of a loader's command: the bytes and name, and for a
+    // cassette WAV with several files the one the user picks (`file`,
+    // C1600-2 AC-16). Empty if the user cancels.
+    std::optional<calcu::sessions::Value::Object> programArgs(const QString& name, const QByteArray& bytes,
+                                                              const QString& title, std::optional<int> file);
+    // LIB-13 AC-18 (D4.2): the flow of a program file the session opened. A
+    // WAV with several files asks which one; the file chosen goes to the
+    // flow of its own kind. One flow at a time: a topic that comes while one
+    // runs is dropped with a log line (design D8).
+    void onProgramOpened(const QString& name, const QByteArray& bytes, const QString& kind);
+    bool m_programFlow = false;
     void mountHostDirectory();
     void unmountHostDirectory();
     // Control bar > Tape: the cassette (LIB-7 AC-42).

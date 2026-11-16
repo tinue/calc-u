@@ -143,8 +143,13 @@ Things that are only in the Qt app, or that a browser can't do:
   `screen-key-down` / `screen-key-up`.
 - **Clipboard.** ⌘/Ctrl+C copies the screen; ⌘/Ctrl+V pastes text (the
   browser's paste event).
-- **Drag and drop.** One file of up to 1 MB, routed by
-  `dropfile::classify`.
+- **Drag and drop.** One file, sent as the session's `open` (LIB-13, way
+  `drop`, an upload): the session refuses a file over 1 MiB, decides what
+  it is, imports a medium first and keeps a file that comes while busy; a
+  program file comes back as the topic `c1600.program-opened` and runs the
+  flow of Load BASIC Program… or Load Machine Code…. Upload Preset… sends
+  its files the same way (way `dialog`; several are one folder in
+  `/uploads`, AC-8).
 - **Audio.** The AudioContext starts on the first key or click (a browser
   rule); the session sends the sound at regular speed only (LIB-3 AC-37),
   and the library's `audio.js` plays it through its AudioWorklet.

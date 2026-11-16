@@ -45,7 +45,9 @@
 	<!-- Drag and drop / Finder (docs/background/plans/Drag-And-Drop-Plan.md):
 	     the Dock icon takes these files, and Finder offers "Open With".
 	     Presets are ours (double-click opens them here); for program files
-	     the app is only an alternative. Past the extension, the content decides (Core/DropFile). -->
+	     the app is only an alternative. Past the extension, the content decides
+	     (the session's `open`, LIB-13; app/SharpFileKinds). `.rom` is no name of a
+	     program file (LIB-13 AC-21); tools/check_open_with_types.sh checks this list. -->
 	<key>UTExportedTypeDeclarations</key>
 	<array>
 		<dict>
@@ -94,7 +96,6 @@
 				<string>bas</string>
 				<string>bbin</string>
 				<string>bin</string>
-				<string>rom</string>
 			</array>
 		</dict>
 	</array>

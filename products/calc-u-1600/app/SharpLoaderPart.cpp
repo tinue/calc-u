@@ -127,7 +127,8 @@ Value FileKindReply::toValue() const {
                           {"bank", bank},
                           {"length", static_cast<std::int64_t>(length)},
                           {"start", static_cast<std::int64_t>(start)},
-                          {"tapeFiles", strings(tapeFiles)}});
+                          {"tapeFiles", strings(tapeFiles)},
+                          {"tapeKinds", strings(tapeKinds)}});
 }
 
 Value CodePlanReply::toValue() const {
@@ -176,6 +177,7 @@ void SharpLoaderPart::attach(calcu::sessions::SessionSetup& setup) {
             r->start = k.header->start.value_or(0);
         }
         r->tapeFiles = k.tapeFiles;
+        for (programfile::Kind t : k.tapeKinds) r->tapeKinds.push_back(kindName(t));
         return calcu::sessions::replyGiven(std::move(r));
     });
 

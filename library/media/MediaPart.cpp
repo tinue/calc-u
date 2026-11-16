@@ -930,14 +930,15 @@ MediaPart::Outcome MediaPart::remove(SessionContext& c, const KindDecl& k, const
 
 // ── Opened files (AC-1; LIB-13 AC-4) ────────────────────────────────────
 
-MediaPart::OpenedMedium MediaPart::readOpened(std::string_view name, const std::string& bytes) const {
+MediaPart::OpenedMedium MediaPart::readOpened(std::string_view name, const std::string& bytes,
+                                              const std::string& path) const {
     OpenedMedium out;
     out.kind = shelf_.kindOfFile(baseName(name));
     if (!out.kind || !out.kind->codec) {
         out.refusal = "The file " + baseName(name) + " is not a medium of this product.";
         return out;
     }
-    const ReadOutcome r = out.kind->codec->read(bytes, {});
+    const ReadOutcome r = out.kind->codec->read(bytes, path.empty() ? MediumCodec::Companion{} : companionsBeside(path));
     if (r.unreadable())
         out.refusal = "The " + out.kind->label + " file " + baseName(name) + " cannot be read" +
                       (r.problem.empty() ? "." : ": " + r.problem);
@@ -992,7 +993,7 @@ CommandOutcome MediaPart::openFile(const Value& a, SessionContext& c) {
     else if (const auto f = settings::readWholeFile(path)) bytes = *f;
     else return Refused{"The file " + baseName(name.empty() ? path : name) + " cannot be read."};
     const std::string fileName = baseName(name.empty() ? path : name);
-    const OpenedMedium o = readOpened(fileName, bytes);
+    const OpenedMedium o = readOpened(fileName, bytes, sessions::flagArg(a, "upload") ? std::string() : path);
     if (o.refusal) return Refused{*o.refusal};
     const KindDecl& k = *o.kind;
     Binding b;

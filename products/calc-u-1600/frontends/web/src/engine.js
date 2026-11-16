@@ -56,6 +56,8 @@ const METHODS = {
     .filter((e) => e.kind === "example")
     .map((e) => ({ group: e.group, ref: e.bundlePath, name: e.name, description: e.description,
       label: e.description || e.name }))],
+  // Import Media… only (a tape's WAV beside its definition); a drop and
+  // Upload Preset… are the library's `open` (LIB-13), sent with send().
   upload: ["command", "c1600.upload", (name, bytes) => ({ name, bytes }), value],
   loadPreset: ["command", "load-preset", (ref) => ({ ref }), null],
   // C1600-2 (app/SharpLoaderPart): stateless, each carries the file; `file`
@@ -67,7 +69,6 @@ const METHODS = {
   loadCode: ["command", "c1600.load-code", (name, bytes, file, address) => ({ name, bytes, file: file || 0, address: address || "" }),
     (r) => (r.done ? r.value : { error: r.reason })],
   pasteText: ["command", "paste", (text) => ({ text }), null],   // LIB-5 AC-12, AC-34
-  dropTarget: ["request", "c1600.drop-target", (name, bytes) => ({ name, bytes }), value],
   // LIB-7 (M-47): the media are the library's topic `media` and its
   // commands; a picked file goes up (c1600.upload) and is imported where it
   // lies, a tape's WAV beside its definition (AC-43).
@@ -115,6 +116,7 @@ const INITIAL_STATE = {
   busy: false,
   paused: false,      // the run-state topic: the machine is paused (LIB-10)
   notices: [],        // [{title, text}], shown one at a time
+  programs: [],       // program files the session opened (c1600.program-opened, LIB-13): {name, bytes, kind}
   printer: { text: "", chunks: [] },
   log: [],            // preset step lines, for the inspector
 };
@@ -136,7 +138,7 @@ function createEngine({ workerUrl, model, preset }) {
   let statics = null;          // {faceplates, lcd}
   let staticsAsked = false;
   let started = false;
-  let seen = { notices: 0, printer: 0 };   // what the page dismissed or cleared
+  let seen = { notices: 0, printer: 0, programs: 0 };   // what the page dismissed or cleared
   let lastShell = null;
 
   const derive = () => {
@@ -148,6 +150,7 @@ function createEngine({ workerUrl, model, preset }) {
     const notices = (streams.notices || []).slice(seen.notices)
       .map((n) => ({ title: "Calc-U-1600", text: n.sentence }));
     const printed = (streams["c1600.printer"] || []).slice(seen.printer);
+    const programs = (streams["c1600.program-opened"] || []).slice(seen.programs);
     const busyState = t.busy;
     // Ready once the start (an operation: the model, then its preset) is
     // over: keys pressed while an operation runs are dropped (ledger 1600-9).
@@ -164,6 +167,7 @@ function createEngine({ workerUrl, model, preset }) {
       busy: !!(busyState && busyState.operationRuns),
       paused: !!(t["run-state"] && t["run-state"].paused),
       notices,
+      programs,
       printer: { text: printed.map((p) => p.text).join(""), chunks: printed.map((p) => p.bytes) },
       log: (streams.log || []).map((l) => l.text),
     };
@@ -204,10 +208,10 @@ function createEngine({ workerUrl, model, preset }) {
     const key = lastShell;
     if (key && key.start === s.start && key.ui === topics["c1600.ui"] && key.media === topics.media && key.lamps === topics["c1600.lamps"] &&
         key.busy === topics.busy && key.runState === topics["run-state"] && key.notices === streams.notices &&
-        key.printer === streams["c1600.printer"] && key.log === streams.log && key.missing === topics["roms-missing"] &&
+        key.printer === streams["c1600.printer"] && key.programs === streams["c1600.program-opened"] && key.log === streams.log && key.missing === topics["roms-missing"] &&
         key.storage === topics["web.storage"]) return;
     lastShell = { start: s.start, ui: topics["c1600.ui"], media: topics.media, lamps: topics["c1600.lamps"], busy: topics.busy, runState: topics["run-state"],
-      notices: streams.notices, printer: streams["c1600.printer"], log: streams.log,
+      notices: streams.notices, printer: streams["c1600.printer"], programs: streams["c1600.program-opened"], log: streams.log,
       missing: topics["roms-missing"], storage: topics["web.storage"] };
     update();
   });
@@ -249,6 +253,7 @@ function createEngine({ workerUrl, model, preset }) {
     send: (command, args) => shell.send(command, args || null),
     unlockAudio: shell.unlockAudio,
     dismissNotice: () => { seen = { ...seen, notices: seen.notices + 1 }; update(); },
+    dismissProgram: () => { seen = { ...seen, programs: seen.programs + 1 }; update(); },
     clearPrinter: () => {
       seen = { ...seen, printer: (shell.getState().streams["c1600.printer"] || []).length };
       update();

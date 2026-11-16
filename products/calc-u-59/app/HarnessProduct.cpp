@@ -6,8 +6,11 @@
 #include "TITyping.hpp"
 #include "../core/TICatalogue.hpp"
 #include "../core/TISegments.hpp"
+#include "harness/Run.hpp"
+#include "parts/LibraryParts.hpp"
 #include "roms/Bundle.hpp"
 #include "startup/ProductMachines.hpp"
+#include <memory>
 
 // The ROM folder the product's tests use (design §8, O-2), set by CMake.
 #ifndef CALCU59_ROM_DIR
@@ -60,9 +63,18 @@ public:
     roms::LookupResult lookUpRoms() const override { return cu59::lookUpRoms(roms::DirectoryBundle(CALCU59_ROM_DIR)); }
 
     startup::ProductMachines& machines() override { return machines_; }
-    // LIB-5: the library's typing with the TI profiles and map (`key`; no
-    // `type` on a TI model, D-8), in virtual time.
-    std::vector<sessions::SessionPart*> sessionParts() override { return {&typing_}; }
+    // The library's parts of the run: LIB-5's typing with the TI profiles and
+    // map (`key`; no `type` on a TI model, D-8), in virtual time; no presets,
+    // printers' paper, debugger or media until Calc-U-59's columns (Part E).
+    void prepare(harness::RunSetup& r) override {
+        parts_.reset();
+        parts::LibraryPartsSetup s = r.partsSetup(tiCatalogue(), machines_, lookUpRoms());
+        s.typing = &typingProduct();
+        s.productName = std::string(name());
+        parts_ = std::make_unique<parts::LibraryParts>(std::move(s));
+    }
+    parts::LibraryParts& libraryParts() override { return *parts_; }
+    std::vector<sessions::SessionPart*> sessionParts() override { return parts_->sessionParts(); }
 
     harness::DisplayText readDisplay(const machine::DisplayOutput& o, const machine::MachineDescriptor& d) override {
         const auto* frame = std::get_if<machine::SegmentFrame>(&o.frame);
@@ -77,7 +89,7 @@ public:
 
 private:
     HarnessMachines machines_;
-    typing::TypingPart typing_{typingProduct(), sessions::Hosting::VirtualTime};
+    std::unique_ptr<parts::LibraryParts> parts_;
 };
 
 } // namespace

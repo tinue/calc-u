@@ -80,12 +80,8 @@ struct TestProduct::Part final : SessionPart {
 struct TestProduct::Typing final : typing::TypingProduct, typing::PauseProbe {
     TestProduct& product;
     typing::TypingProfile seg, dot;
-    typing::TypingPart part;
     explicit Typing(TestProduct& p) : product(p), seg(profileFor(machine::test::kSegRate, '3', "clr")),
-                                      dot(profileFor(machine::test::kDotRate, 'c', "on")),
-                                      part(*this, sessions::Hosting::VirtualTime) {
-        part.setPauseProbe(this);
-    }
+                                      dot(profileFor(machine::test::kDotRate, 'c', "on")) {}
     static typing::TypingProfile profileFor(TickRate rate, char last, const char* enter) {
         typing::TypingProfile p;
         p.minHold = typing::ticksOf(0.010, rate);
@@ -113,8 +109,6 @@ struct TestProduct::Typing final : typing::TypingProduct, typing::PauseProbe {
 struct TestProduct::Debug {
     debugger::test::TestLevelRules rules;
     debugger::test::TestSymbols symbols;
-    debugger::DebuggerPart part;
-    Debug() : part(setup()) {}
     debugger::DebuggerSetup setup() {
         debugger::DebuggerSetup d;
         d.rules = &rules;
@@ -142,12 +136,8 @@ GlyphFont testFont() {
 }
 
 TestProduct::TestProduct()
-    : part_(std::make_unique<Part>()), typing_(std::make_unique<Typing>(*this)),
-      paper_(std::make_unique<paper::PaperPart>(
-          machine::test::paperTestCatalogue(),
-          std::vector<paper::PrinterPaper>{{machine::test::kDotter, machine::test::td20Description()},
-                                           {machine::test::kPlotter, machine::test::tp4Description()}})),
-      debug_(std::make_unique<Debug>()), presetRules_(std::make_unique<presets::test::TestPresetRules>()) {
+    : part_(std::make_unique<Part>()), typing_(std::make_unique<Typing>(*this)), debug_(std::make_unique<Debug>()),
+      presetRules_(std::make_unique<presets::test::TestPresetRules>()) {
     roms::test::writeFullSet(roms_, roms::fullSet(catalogue()));
     // LIB-6: the bundled presets of the test product.
     presetFolder_.write("bundle.yaml", "format: example-bundle\nformat-version: 1\n"
@@ -158,11 +148,36 @@ TestProduct::TestProduct()
     presetFolder_.write("basic/two.test-seg", "format-version: 2\nmodel: test-seg\npreset-name: Two\n"
                                               "description: Presses 2\nkeys:\n  - key: 2\n");
     bundle_ = std::make_unique<presets::DirectoryPresetBundle>(presetFolder_.path());
+    // Outside a run: typing, the printers' paper and the debugger on the
+    // defaults, as before a frontend's start (no presets, no media).
+    ownSettings_ = std::make_unique<settings::SettingsFile>(settings::SettingsFile::defaultsOnly(settingsDecl()));
+    parts::LibraryPartsSetup s;
+    s.catalogue = &catalogue();
+    s.machines = &machines_;
+    s.settings = ownSettings_.get();
+    s.roms = lookUp().set;
+    s.hosting = sessions::Hosting::VirtualTime;
+    s = partsSetup(std::move(s));
+    s.presetRules = nullptr;
+    parts_ = std::make_unique<parts::LibraryParts>(std::move(s));
+    parts_->typing()->setPauseProbe(typing_.get());
+}
+
+parts::LibraryPartsSetup TestProduct::partsSetup(parts::LibraryPartsSetup s) {
+    s.typing = typing_.get();
+    s.presetRules = presetRules_.get();
+    s.bundle = bundle_.get();
+    // LIB-8: the test printers TD-20 and TP-4.
+    s.papers = {{machine::test::kDotter, machine::test::td20Description()},
+                {machine::test::kPlotter, machine::test::tp4Description()}};
+    s.debugger = debug_->setup();
+    s.mediaKinds = mediaKinds();
+    s.productName = std::string(name());
+    s.presetExtensions = {".test-seg", ".test-dot"};   // LIB-13: the bundled presets'
+    return s;
 }
 
 presets::ProductRules* TestProduct::presetRules() { return presetRules_.get(); }
-
-typing::TypingPart* TestProduct::typingPart() { return &typing_->part; }
 
 TestProduct::~TestProduct() = default;
 
@@ -177,12 +192,21 @@ const settings::ProductDecl& TestProduct::settingsDecl() const {
     return decl_;
 }
 
-void TestProduct::prepare(RunSetup& r) { asked.push_back("prepare " + r.saveFolder()); }
+void TestProduct::prepare(RunSetup& r) {
+    asked.push_back("prepare " + r.saveFolder());
+    parts_.reset();
+    parts_ = std::make_unique<parts::LibraryParts>(partsSetup(r.partsSetup(catalogue(), machines_, lookUp())));
+    parts_->typing()->setPauseProbe(typing_.get());
+}
+
+roms::LookupResult TestProduct::lookUp() const {
+    static const roms::FullSet set = roms::fullSet(machine::test::testCatalogue());
+    return roms::lookUp(set, roms::DirectoryBundle(roms_.path()), &reader_);
+}
 
 roms::LookupResult TestProduct::lookUpRoms() const {
     asked.push_back("lookUpRoms");
-    static const roms::FullSet set = roms::fullSet(machine::test::testCatalogue());
-    return roms::lookUp(set, roms::DirectoryBundle(roms_.path()), &reader_);
+    return lookUp();
 }
 
 std::vector<media::KindDecl> TestProduct::mediaKinds() {
@@ -251,10 +275,10 @@ void TestProduct::addCommands(CommandRegistry& r) {
 
 std::vector<SessionPart*> TestProduct::sessionParts() {
     asked.push_back("sessionParts");
-    return {&typing_->part, part_.get(), paper_.get(), &debug_->part};
+    std::vector<SessionPart*> parts = parts_->sessionParts();
+    parts.push_back(part_.get());
+    return parts;
 }
-
-debugger::DebuggerPart* TestProduct::debuggerPart() { return &debug_->part; }
 
 std::unique_ptr<HarnessProduct> makeTestProduct() { return std::make_unique<TestProduct>(); }
 

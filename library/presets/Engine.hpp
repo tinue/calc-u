@@ -78,7 +78,6 @@ private:
     EngineDeps& deps_;
     bool firstPressAtOnce_ = false;
     std::optional<machine::Ticks> deadline_;
-    ElapsedBase ownElapsed_;
 };
 
 sessions::Task<LoadOutcome> carryOut(sessions::OperationContext&, std::shared_ptr<const LoadPlan>, LoadOptions,

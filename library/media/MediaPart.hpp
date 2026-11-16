@@ -34,6 +34,9 @@ struct MediaSetup {
     const settings::Paths* paths = nullptr;          // the save folder and the tape folder (LIB-9)
     ModuleListing listing;
     const machine::Catalogue* catalogue = nullptr;   // module slots: what fits, the modules that are not media
+    // LIB-18's machine control (module slots, the power cycle of AC-19, the
+    // variant carry of S-7a).
+    startup::MachineControl* control = nullptr;
 };
 
 // What the part keeps per place (§3.7): where the medium came from, whether
@@ -76,9 +79,6 @@ struct InFileDefs {
 class MediaPart final : public sessions::SessionPart, public sessions::WaitProbe {
 public:
     explicit MediaPart(MediaSetup);
-    // LIB-18's machine control (module slots, the power cycle of AC-19, the
-    // variant carry of S-7a); set when it is made.
-    void setControl(startup::MachineControl*);
 
     void attach(sessions::SessionSetup&) override;
     void afterCall(sessions::SessionContext&, pacing::WallTime) override;

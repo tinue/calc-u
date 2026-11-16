@@ -37,11 +37,10 @@ inline const sessions::CommandName kPowerCycleCommand{"power-cycle"};
 inline constexpr const char* kStartedAlready = "The product has started already.";   // D-8
 
 struct StartupSetup {
-    ProductMachines& product;
-    std::shared_ptr<const roms::RomSet> roms;   // the full set (LIB-12); the caller does not start without it
-    settings::SettingsFile& settings;           // [startup] model, last-model; [preset]
-    PresetLoader* loader = nullptr;             // nullptr until LIB-6 (D-9)
-    // LIB-12 AC-5 (M-46): without `roms` the start is refused with this
+    MachineControl& control;              // the product's machines and the full ROM set (LIB-12)
+    settings::SettingsFile& settings;     // [startup] model, last-model; [preset]
+    PresetLoader* loader = nullptr;       // LIB-6's PresetsPart; none: [preset] is not read (D-9)
+    // LIB-12 AC-5 (M-46): without the ROM set the start is refused with this
     // sentence (the files that are missing); a frontend shows them.
     std::string romsMissing;
 };
@@ -49,7 +48,7 @@ struct StartupSetup {
 class StartupPart final : public sessions::SessionPart {
 public:
     explicit StartupPart(StartupSetup);
-    MachineControl& control() { return control_; }
+    MachineControl& control() { return setup_.control; }
 
     void attach(sessions::SessionSetup&) override;
     void machineChanged(sessions::SessionContext&) override;   // AC-9: [startup] last-model
@@ -67,7 +66,6 @@ private:
                                                              BuildOrigin);
 
     StartupSetup setup_;
-    MachineControl control_;
     bool started_ = false;
 };
 

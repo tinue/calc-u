@@ -43,11 +43,8 @@ std::string refOf(const std::string& written) {
     return ec ? written : std::string(abs.begin(), abs.end());
 }
 
-bool hasPresets(CommandContext& c) { return c.host.product().presetRules() != nullptr; }
-
 Reply presetCmd(CommandContext& c) {
     if (c.line.argText.empty()) return refusedReply("usage: preset <path or examples:path>");
-    if (!hasPresets(c)) return refusedReply(kNoPresets);
     sessions::Value a = sessions::Value::object({{"ref", refOf(c.line.argText)}});
     return fromSessionReply(c.host.command(sessions::Command{presets::kLoadPresetCommand, std::move(a)}));
 }
@@ -55,7 +52,6 @@ Reply presetCmd(CommandContext& c) {
 Reply checkPresetCmd(CommandContext& c) {
     const auto files = words(c.line.argText);
     if (files.empty()) return refusedReply("usage: check-preset <file> [<file> ...]");
-    if (!hasPresets(c)) return refusedReply(kNoPresets);
     Value result = Value::array();
     std::vector<std::string> lines;
     bool failed = false;
@@ -76,7 +72,6 @@ Reply checkPresetCmd(CommandContext& c) {
 }
 
 Reply presetListCmd(CommandContext& c) {
-    if (!hasPresets(c)) return refusedReply(kNoPresets);
     const sessions::ReplyMessage r = c.host.ask(sessions::Request{presets::kPresetListRequest, {}});
     if (!r.done) return refusedReply(r.reason);
     const auto* l = sessions::payloadAs<presets::PresetListReply>(r.result);
@@ -109,8 +104,7 @@ Reply switchCmd(CommandContext& c) {
 // A step of the vocabulary as a command: `run-step {verb, value}`.
 Handler stepCmd(std::string verb) {
     return [verb](CommandContext& c) {
-        if (!hasPresets(c)) return refusedReply(kNoPresets);
-        sessions::Value a = sessions::Value::object({{"verb", verb}, {"value", c.line.argText}});
+            sessions::Value a = sessions::Value::object({{"verb", verb}, {"value", c.line.argText}});
         const sessions::ReplyMessage r = c.host.command(sessions::Command{presets::kRunStepCommand, std::move(a)});
         if (!r.done) return refusedReply(r.reason);
         if (r.result) {   // a step's result: `elapsed-time report`
@@ -140,9 +134,14 @@ std::string usageOf(const presets::StepDef& d) {
 } // namespace
 
 void addPresetCommands(CommandRegistry& r, const presets::Vocabulary* v) {
-    r.add("preset", presetCmd, "preset <path>            load a preset (or examples:<path>, a bundled one)");
-    r.add("check-preset", checkPresetCmd, "check-preset <file> ...  read and check presets, build nothing");
-    r.add("preset-list", presetListCmd, "preset-list              the bundled presets");
+    // Without a vocabulary the product reads no presets: these are refused.
+    auto withPresets = [v](Handler h) -> Handler {
+        if (v) return h;
+        return [](CommandContext&) { return refusedReply(kNoPresets); };
+    };
+    r.add("preset", withPresets(presetCmd), "preset <path>            load a preset (or examples:<path>, a bundled one)");
+    r.add("check-preset", withPresets(checkPresetCmd), "check-preset <file> ...  read and check presets, build nothing");
+    r.add("preset-list", withPresets(presetListCmd), "preset-list              the bundled presets");
     r.add("full-speed", speedCmd(true), "full-speed               the machine at full speed");
     r.add("regular-speed", speedCmd(false), "regular-speed            the machine at regular speed");
     r.add("switch", switchCmd, "switch <peripheral> <control> on|off  a switch set, or a key pressed or let up");
@@ -158,7 +157,7 @@ void addPresetCommands(CommandRegistry& r, const presets::Vocabulary* v) {
         {"screenshot", "screenshot <file name>   a picture of the display into the output folder"},
         {"syncclock", "syncclock                the real-time clocks set from the run's clock"}};
     for (const auto& [verb, usage] : fixed)
-        if (!r.isCommand(verb)) r.add(verb, stepCmd(verb), usage);
+        if (!r.isCommand(verb)) r.add(verb, withPresets(stepCmd(verb)), usage);
 }
 
 } // namespace calcu::harness

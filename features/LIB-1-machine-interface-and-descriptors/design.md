@@ -112,6 +112,12 @@ not named here adds a folder in the same pattern.
     `media`). Its harness command lives in `harness`, so `opening` does
     not include `harness`; nothing includes it but `harness`, `qt6` and
     the products;
+  - `parts`: `machine`, `sessions`, `settings`, `roms`, `peripherals`,
+    `typing`, `presets`, `startup`, `paper`, `debugger`, `media`,
+    `opening`, `control` (Part D simplification P-2,
+    `docs/reviews/d-simplification.md`): `LibraryParts`, the library's
+    session parts of a product built, wired and ordered once; nothing
+    includes it but `harness` and the products;
   - `harness`: any area but `web`, `qt6` and `shell`;
   - `shell`: `machine`, `pacing`, `sessions`, `settings` (LIB-14 design
     §2.1; M-43). It reads the topics of LIB-4, LIB-6, LIB-7, LIB-10 and

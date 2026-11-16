@@ -655,6 +655,20 @@ through the part's catalogue, as the frontends find them (the folder of
 the source tree is the bundle of a build tree, §8 "Finding bundled
 files"), and the run is the app session with the product's app layer.
 
+**Superseded by the Part D simplification (P-2, 2026-11-16,
+`docs/reviews/d-simplification.md`):** the per-part members of the table
+above (`typingPart()` to `controlSetup()`), `appLayerParts()`, `runParts()`
+and the run's own parts are gone. Every product builds the library's parts
+of its run in `prepare()` as one `parts::LibraryParts`
+(`library/parts/`), on what `RunSetup::partsSetup()` gives from the run
+(settings, typing in emulated time, home, screenshot and media folders),
+and returns it from `libraryParts()`; `Server::start` puts its control part
+first, the state part next, then the product's `sessionParts()`.
+Calc-U-1600's comes from its `SharpAppPart`, Calc-U-59's adapter and the
+library's test product build one each. `serve` and attach list their
+commands through one `addServeCommands()`; the preset commands are refused
+when the run has no preset vocabulary (no `presetRules()` any more).
+
 ### D.4 `lcd` on a Sharp machine (AC-19; D-7)
 
 The `FontPart` becomes `shared::LcdTextPart` (`app/LcdTextPart.hpp/.cpp`,

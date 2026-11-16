@@ -26,15 +26,8 @@ std::string escaped(const std::string& s) {
 AttachedHarness::AttachedHarness(AppSession& s, HarnessProduct& p, AttachEndpoint& e, std::function<bool()> suspended,
                                  SessionParts parts)
     : session_(s), product_(p), endpoint_(e), suspended_(std::move(suspended)) {
-    // D-27: the commands of `calcu serve` (Run.cpp, Server::start), in its order.
-    addFirstCommands(registry_);
-    addStartupCommands(registry_);
-    addPresetCommands(registry_, parts.vocabulary);
-    addPaperCommands(registry_);
-    addDebugCommands(registry_);
-    addMediaCommands(registry_, parts.media);
-    addOpenCommand(registry_);
-    product_.addCommands(registry_);
+    // D-27: the commands of `calcu serve`, in its order.
+    addServeCommands(registry_, parts.vocabulary, parts.media, product_);
 }
 
 AttachedHarness::~AttachedHarness() { detach(); }

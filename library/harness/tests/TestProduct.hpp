@@ -5,6 +5,7 @@
 #include "harness/Product.hpp"
 #include "harness/Run.hpp"
 #include "paper/PaperPart.hpp"
+#include "parts/LibraryParts.hpp"
 #include "presets/Source.hpp"
 #include "sessions/SessionPart.hpp"
 #include <memory>
@@ -62,18 +63,16 @@ public:
     DisplayText readDisplay(const machine::DisplayOutput&, const machine::MachineDescriptor&) override;
     void addCommands(CommandRegistry&) override;
     std::vector<sessions::SessionPart*> sessionParts() override;
-    presets::ProductRules* presetRules() override;
-    const presets::PresetBundle* presetBundle() const override { return bundle_.get(); }
-    typing::TypingPart* typingPart() override;
-    paper::PaperPart* paperPart() override { return paper_.get(); }
-    debugger::DebuggerPart* debuggerPart() override;
+    parts::LibraryParts& libraryParts() override { return *parts_; }
+    // The run's parts (after prepare()), for the tests.
+    presets::ProductRules* presetRules();
+    typing::TypingPart* typingPart() { return parts_->typing(); }
+    paper::PaperPart* paperPart() { return parts_->paper(); }
+    debugger::DebuggerPart* debuggerPart() { return parts_->debugger(); }
     // LIB-7 (M-41): with `media`, the kinds of library/media/tests/TestKinds.hpp
     // (a bundled disk template `Formatted`) and machines that offer their
     // media places; off by default, so that the other tests' lists stay.
-    std::vector<media::KindDecl> mediaKinds() override;
     bool media = false;
-    // LIB-13 (M-42): `open` takes the extensions of the bundled presets.
-    std::vector<std::string> presetExtensions() const override { return {".test-seg", ".test-dot"}; }
 
     // For the tests: the bundle folder (a file can be removed: EC-1), the
     // model to start with under the default settings (the fallback model of
@@ -117,14 +116,20 @@ private:
     roms::test::TestTextReader reader_;
     Builder builder_;
     Machines machines_{*this};
+    std::vector<media::KindDecl> mediaKinds();
+    roms::LookupResult lookUp() const;
     std::unique_ptr<Part> part_;
     std::unique_ptr<Typing> typing_;
-    std::unique_ptr<paper::PaperPart> paper_;
     std::unique_ptr<Debug> debug_;
     std::unique_ptr<presets::test::TestPresetRules> presetRules_;
     roms::test::TempFolder presetFolder_{"calcu-test-presets"};
     roms::test::TempFolder mediaFolder_{"calcu-test-media"};   // LIB-7: the bundled media
     std::unique_ptr<presets::DirectoryPresetBundle> bundle_;
+    // The parts outside a run (a frontend's, the attach tests) on the
+    // defaults; prepare() replaces them with the run's.
+    std::unique_ptr<settings::SettingsFile> ownSettings_;
+    std::unique_ptr<parts::LibraryParts> parts_;
+    parts::LibraryPartsSetup partsSetup(parts::LibraryPartsSetup);
 };
 
 // The test product as the CLI's factory gives it.

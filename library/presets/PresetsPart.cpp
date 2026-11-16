@@ -67,7 +67,7 @@ Task<OperationResult> PresetsPart::runLoad(OperationContext& op, std::shared_ptr
 }
 
 Task<startup::PresetLoad> PresetsPart::load(std::string ref, std::optional<machine::ModelId> forModel,
-                                            startup::MachineControl& control, OperationContext& op) {
+                                            startup::MachineControl&, OperationContext& op) {
     using startup::PresetLoad;
     const auto source = sourceFor(ref, setup_.bundle, setup_.home);
     auto read = readPreset(*source, readSetup());
@@ -76,7 +76,6 @@ Task<startup::PresetLoad> PresetsPart::load(std::string ref, std::optional<machi
     if (forModel && plan->model != *forModel)
         co_return PresetLoad{PresetLoad::Outcome::CannotLoad,
                              source->name() + " is a preset for the " + plan->model.value};
-    if (!setup_.control) setup_.control = &control;
     regularDue_ = true;
     const LoadOutcome out = co_await carryOut(op, plan, LoadOptions{false, true}, deps());
     switch (out.kind) {
@@ -89,7 +88,6 @@ Task<startup::PresetLoad> PresetsPart::load(std::string ref, std::optional<machi
 
 Task<OperationResult> PresetsPart::loadWithin(OperationContext& op, std::string ref, bool buildOnly,
                                              std::optional<machine::ModelId> forModel) {
-    if (!setup_.rules || !setup_.catalogue) co_return OperationResult{false, "This build reads no presets of format 2 yet."};
     const auto source = sourceFor(ref, setup_.bundle, setup_.home);
     auto read = readPreset(*source, readSetup());
     if (auto* e = std::get_if<ReadError>(&read)) co_return OperationResult{false, e->message};
@@ -128,7 +126,6 @@ Task<OperationResult> waitIdle(OperationContext& op, IdleRule rule) {
 CommandOutcome PresetsPart::loadPreset(const Value& args, SessionContext& c) {
     readRefusal_ = false;
     if (c.busy()) return Refused{sessions::kAnotherOperationRuns};
-    if (!setup_.rules || !setup_.catalogue) return Refused{"This build reads no presets of format 2 yet."};
     const auto source = sourceOf(args);
     auto read = readPreset(*source, readSetup());
     if (auto* e = std::get_if<ReadError>(&read)) {
@@ -136,7 +133,7 @@ CommandOutcome PresetsPart::loadPreset(const Value& args, SessionContext& c) {
         return Refused{e->message};
     }
     auto plan = std::make_shared<const LoadPlan>(std::get<LoadPlan>(std::move(read)));
-    const LoadOptions o{sessions::flagArg(args, "buildOnly"), sessions::textArg(args, "cause") == "startup"};
+    const LoadOptions o{sessions::flagArg(args, "buildOnly")};
     return StartOperation{[this, plan, o](OperationContext& op) { return runLoad(op, plan, o); }};
 }
 
@@ -156,7 +153,6 @@ void PresetsPart::attach(sessions::SessionSetup& s) {
         if (c.busy()) return Refused{sessions::kAnotherOperationRuns};
         machine::Machine* m = c.machine();
         if (!m) return Refused{sessions::kNoMachine};
-        if (!setup_.rules || !setup_.catalogue) return Refused{"This build reads no presets of format 2 yet."};
         const std::string verb = sessions::textArg(args, "verb");
         const std::string text = sessions::textArg(args, "value");
         formats::YamlNode node;
@@ -190,13 +186,11 @@ void PresetsPart::attach(sessions::SessionSetup& s) {
         if (c.busy()) return Refused{sessions::kAnotherOperationRuns};
         const machine::Machine* m = c.machine();
         if (!m) return Refused{sessions::kNoMachine};
-        if (!setup_.rules) return Refused{"This build reads no presets of format 2 yet."};
         IdleRule rule = setup_.rules->forModel(m->model()).idle();
         return StartOperation{[rule](OperationContext& op) { return waitIdle(op, rule); }};
     });
 
     s.request(kCheckPresetRequest, [this](const Value& args, SessionContext&) {
-        if (!setup_.rules || !setup_.catalogue) return sessions::replyRefused("This build reads no presets of format 2 yet.");
         const auto source = sourceOf(args);
         auto read = readPreset(*source, readSetup());
         if (auto* e = std::get_if<ReadError>(&read)) return sessions::replyRefused(e->message);
@@ -204,7 +198,7 @@ void PresetsPart::attach(sessions::SessionSetup& s) {
     });
 
     s.request(kPresetListRequest, [this](const Value&, SessionContext& c) {
-        if (!setup_.rules || !setup_.catalogue || !setup_.bundle)
+        if (!setup_.bundle)
             return sessions::replyRefused("This product bundles no presets of format 2 yet.");
         std::vector<std::string> left;
         auto reply = std::make_shared<PresetListReply>();

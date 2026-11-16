@@ -38,10 +38,11 @@ inline const sessions::CommandName kWaitIdleCommand{"wait-idle"};
 inline const sessions::RequestName kCheckPresetRequest{"check-preset"};
 inline const sessions::RequestName kPresetListRequest{"preset-list"};
 
+// Every pointer but `typing` and `bundle` is set (parts/LibraryParts builds it).
 struct PresetsSetup {
     const machine::Catalogue* catalogue = nullptr;
     ProductRules* rules = nullptr;
-    startup::MachineControl* control = nullptr;   // LIB-18's StartupPart::control(); setControl() when made later
+    startup::MachineControl* control = nullptr;   // LIB-18's machine control
     typing::TypingPart* typing = nullptr;         // LIB-5's part: its engine and TypingProduct
     const PresetBundle* bundle = nullptr;         // the product's bundled presets (AC-33)
     std::string home;                             // `~/` (README §3)
@@ -65,8 +66,6 @@ public:
     // Library keywords, then the product's; a later feature adds its own
     // before the session is built.
     Vocabulary& vocabulary() { return vocabulary_; }
-    void setControl(startup::MachineControl* c) { setup_.control = c; }
-    void setTyping(typing::TypingPart* t) { setup_.typing = t; }
     ReadSetup readSetup() const;
 
     void attach(sessions::SessionSetup&) override;

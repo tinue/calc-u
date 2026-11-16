@@ -51,6 +51,15 @@ std::optional<std::string> folderOrNone(const std::string& dir) {
 
 
 
+// The catalogue with the module definitions: the bundled ones and the ROM
+// modules of the set (the CE-502B; LIB-12 AC-14).
+calcu::machine::Catalogue catalogueOf(const AppPaths& paths, const calcu::roms::RomSet* roms) {
+    calcu::machine::Catalogue c = sharp::sharpCatalogue();
+    sharp::addModuleDefinitions(c, paths.bundledModulesDir());
+    if (roms) sharp::addModuleDefinitions(c, *roms);
+    return c;
+}
+
 calcu::roms::LookupResult lookUp(const AppPaths& paths) {
     return sharp::lookUpRoms(calcu::roms::DirectoryBundle(toPath(paths.bundledRomsDir())));
 }
@@ -68,96 +77,83 @@ SharpAppPart::SharpAppPart(Settings& settings, AppPaths& paths, SharpAppPartOpti
     : m_settings(settings),
       m_paths(paths),
       m_options(options),
-      m_catalogue(sharp::sharpCatalogue()),
       m_found(lookUp(paths)),
       m_roms(m_found.set),
       m_romsMissing(m_found.missing),
       m_hostDriveRom(hostDriveRomOf(paths)),
-      m_paper(m_catalogue, sharpPrinterPapers()),
-      m_debugger(sharpDebuggerSetup(&paths, &settings, /*hasTraceFolder=*/true)),
-      m_peripherals(
-          [this](const CapabilityEntry& e) -> std::optional<calcu::peripherals::HostLinkRule> {
-              std::optional<calcu::peripherals::HostLinkRule> rule = serialFileFor(e);
-              if (!rule || !m_options.serialLinksOnRequest) return rule;
-              // C1600-5 AC-9: only a file asked for, made at once.
-              if (std::find(m_requestedLinks.begin(), m_requestedLinks.end(), rule->fileName) == m_requestedLinks.end())
-                  return std::nullopt;
-              rule->openAtOnce = true;
-              return rule;
-          },
-          folderOrNone(paths.serialLinkDir())),
-      m_typingPart(typingProduct(), options.hosting),
+      m_catalogue(catalogueOf(paths, m_roms.get())),
       m_machines(m_catalogue, m_hostDriveRom),
       m_rules(SharpKeywordSetup{[this] { return canMountHostFolder(); }}),
       m_bundle(toPath(paths.bundledExamplesDir())),
-      m_presets(calcu::presets::PresetsSetup{&m_catalogue, &m_rules, nullptr, &m_typingPart, &m_bundle,
-                                             paths.homeDir(),
-                                             [this, &paths]() -> std::optional<std::string> {
-                                                 // LIB-6 AC-25: the save folder, made when a step needs it.
-                                                 auto folder = m_options.screenshotFolder ? m_options.screenshotFolder()
-                                                                                          : paths.places().screenshotFolder();
-                                                 std::error_code ec;
-                                                 if (folder) std::filesystem::create_directories(toPath(*folder), ec);
-                                                 return folder;
-                                             }}),
-      m_startup(calcu::startup::StartupSetup{m_machines, m_roms, settings.file(), &m_presets,
-                                             m_roms ? std::string() : calcu::roms::describe(m_romsMissing)}),
       m_controlRules(SharpControlRules::Inputs{options.canMountHostFolder, [this] { return ce1600pVariant(); }}),
-      m_control(sharpControlSetup(m_catalogue, m_controlRules)) {
-    // The module definitions: the bundled ones and the ROM modules of the set
-    // (the CE-502B; LIB-12 AC-14).
-    sharp::addModuleDefinitions(m_catalogue, paths.bundledModulesDir());
-    if (m_roms) sharp::addModuleDefinitions(m_catalogue, *m_roms);
-    m_presets.setControl(&m_startup.control());
-    m_paper.setControl(&m_startup.control());   // the origin of a build (LIB-8 A-3)
-    calcu::paper::addPaperStep(m_presets.vocabulary(), m_paper);
-    calcu::debugger::addDebuggerSteps(m_presets.vocabulary(), m_debugger);
-
-    // LIB-7 (§10.2): the media part on the save folder and the tape folder,
-    // the bundled templates beside the module definitions; a variant switch
-    // carries a module's content over (S-7a), the disk and the tape too.
-    calcu::media::MediaSetup media;
-    media.kinds = mediaKinds(paths.bundledModulesDir(), m_catalogue);
-    media.paths = &paths.places();
-    media.listing = moduleListing();
-    media.catalogue = &m_catalogue;
-    m_media = std::make_unique<calcu::media::MediaPart>(std::move(media));
-    m_media->setControl(&m_startup.control());
-    calcu::media::addMediaToPresets(m_presets.vocabulary(), *m_media);
-
-    // LIB-13 (Part D, D3): the product's open setup.
-    m_presetsOpener = std::make_unique<calcu::opening::PresetsOpener>(m_presets, presetExtensions());
-    m_mediaOpener = std::make_unique<calcu::opening::MediaOpener>(*m_media);
-    calcu::opening::OpenSetup open;
-    open.productName = "Calc-U-1600";
-    open.presets = m_presetsOpener.get();
-    open.media = m_mediaOpener.get();
-    open.kinds = {&m_basicKind, &m_codeKind};   // AC-17: BASIC first
-    open.maxBytes = openLimits();
-    m_open = std::make_unique<calcu::opening::OpenPart>(std::move(open));
-
+      m_lib(librarySetup()) {
 #ifndef __EMSCRIPTEN__
     // C1600-3 (design §3.3): the DAP server on the library's parts.
     dap::DapDeps deps;
-    deps.debugger = &m_debugger;
-    deps.typing = &m_typingPart;
-    deps.presets = &m_presets;
-    deps.control = &m_startup.control();
+    deps.debugger = m_lib.debugger();
+    deps.typing = m_lib.typing();
+    deps.presets = m_lib.presets();
+    deps.control = &m_lib.control();
     deps.settings = &settings.file();
     deps.bundle = &m_bundle;
     m_dap = std::make_shared<dap::DapPart>(deps);
 #endif
 }
 
+calcu::parts::LibraryPartsSetup SharpAppPart::librarySetup() {
+    calcu::parts::LibraryPartsSetup s;
+    s.catalogue = &m_catalogue;
+    s.machines = &m_machines;
+    s.settings = &m_settings.file();
+    s.roms = m_roms;
+    if (!m_roms) s.romsMissing = calcu::roms::describe(m_romsMissing);
+    s.typing = &typingProduct();
+    s.hosting = m_options.hosting;
+    s.hostLinks = [this](const CapabilityEntry& e) -> std::optional<calcu::peripherals::HostLinkRule> {
+        std::optional<calcu::peripherals::HostLinkRule> rule = serialFileFor(e);
+        if (!rule || !m_options.serialLinksOnRequest) return rule;
+        // C1600-5 AC-9: only a file asked for, made at once.
+        if (std::find(m_requestedLinks.begin(), m_requestedLinks.end(), rule->fileName) == m_requestedLinks.end())
+            return std::nullopt;
+        rule->openAtOnce = true;
+        return rule;
+    };
+    s.serialLinkFolder = folderOrNone(m_paths.serialLinkDir());
+    s.presetRules = &m_rules;
+    s.bundle = &m_bundle;
+    s.home = m_paths.homeDir();
+    s.screenshotFolder = [this]() -> std::optional<std::string> {
+        // LIB-6 AC-25: the save folder, made when a step needs it.
+        auto folder = m_options.screenshotFolder ? m_options.screenshotFolder() : m_paths.places().screenshotFolder();
+        std::error_code ec;
+        if (folder) std::filesystem::create_directories(toPath(*folder), ec);
+        return folder;
+    };
+    s.papers = sharpPrinterPapers();
+    s.debugger = sharpDebuggerSetup(&m_paths, &m_settings, /*hasTraceFolder=*/true);
+    // LIB-7 (§10.2): the save folder and the tape folder, the bundled
+    // templates beside the module definitions.
+    s.mediaKinds = mediaKinds(m_paths.bundledModulesDir(), m_catalogue);
+    s.mediaPaths = &m_paths.places();
+    s.moduleListing = moduleListing();
+    // LIB-13 (Part D, D3).
+    s.productName = "Calc-U-1600";
+    s.presetExtensions = presetExtensions();
+    s.fileKinds = {&m_basicKind, &m_codeKind};   // AC-17: BASIC first
+    s.openLimits = openLimits();
+    const calcu::control::ControlSetup control = sharpControlSetup(m_catalogue, m_controlRules);
+    s.printers = control.printers;
+    s.controlRules = control.rules;
+    return s;
+}
+
 SharpAppPart::~SharpAppPart() = default;
 
 std::vector<sessions::SessionPart*> SharpAppPart::sessionParts() {
-    // PeripheralsPart before StartupPart (the clocks at a build, LIB-18
-    // §3.5), PresetsPart before StartupPart (LIB-6 §3.8), MediaPart after
-    // StartupPart (LIB-7 §3.7). The host calls AppSession::close() before
+    // The library's parts in their order, the loaders before the open part
+    // (its file kinds use them). The host calls AppSession::close() before
     // it ends the session: the media part writes what is pending (AC-13).
-    std::vector<sessions::SessionPart*> parts{&m_typingPart, &m_peripherals, &m_presets,  &m_startup, m_media.get(),
-                                              &m_loaderPart, m_open.get(),   &m_paper,    &m_debugger};
+    std::vector<sessions::SessionPart*> parts = m_lib.sessionParts({&m_loaderPart});
     // C1600-3: the DAP server after the debugger (it reads the run control
     // after the debugger's own machineChanged).
 #ifndef __EMSCRIPTEN__
@@ -245,8 +241,8 @@ void SharpAppPart::attach(sessions::SessionSetup& setup) {
         };
         auto held = std::make_shared<std::vector<Held>>();
         for (const char* word : {"floppy", "tape"}) {
-            m_media->flush(s, word);
-            const calcu::media::Binding* b = m_media->bindingOf(word);
+            m_lib.media()->flush(s, word);
+            const calcu::media::Binding* b = m_lib.media()->bindingOf(word);
             if (!b) continue;
             calcu::media::Content content = b->content;
             for (const auto& e : m->capabilities(calcu::media::MediaPlace::kKind))
@@ -257,7 +253,7 @@ void SharpAppPart::attach(sessions::SessionSetup& setup) {
         }
         return change(std::move(ch), [this, held] {
             for (Held& h : *held)
-                if (h.content && m_ctx) m_media->insert(*m_ctx, h.word, h.binding, h.content, h.binding.side.value_or(0));
+                if (h.content && m_ctx) m_lib.media()->insert(*m_ctx, h.word, h.binding, h.content, h.binding.side.value_or(0));
         });
     });
 }
@@ -303,7 +299,7 @@ void SharpAppPart::followNewMachine() {
 }
 
 void SharpAppPart::operationEnded(sessions::SessionContext&) {
-    if (Machine* m = machine()) m_peripherals.hostLinks().machineChanged(*m);   // a CE-158 plugged in
+    if (Machine* m = machine()) m_lib.peripherals().hostLinks().machineChanged(*m);   // a CE-158 plugged in
     refreshTopics();
 }
 
@@ -311,7 +307,7 @@ void SharpAppPart::refreshTopics() {
     if (!m_lampsTopic) return;
     auto lamps = std::make_shared<LampsPayload>();
     lamps->tape = tapeStatus();
-    const calcu::media::Binding* tape = m_media->bindingOf("tape");
+    const calcu::media::Binding* tape = m_lib.media()->bindingOf("tape");
     lamps->tapeName = tape ? tape->name : std::string();
     lamps->floppyMotor = floppyMotorOn();
     m_lampsTopic->set(std::move(lamps));
@@ -339,8 +335,8 @@ std::string SharpAppPart::ce1600pVariant() const {
 std::string SharpAppPart::requestSerialLink(const std::string& fileName) {
     if (std::find(m_requestedLinks.begin(), m_requestedLinks.end(), fileName) == m_requestedLinks.end())
         m_requestedLinks.push_back(fileName);
-    if (Machine* m = machine()) m_peripherals.hostLinks().machineChanged(*m);
-    for (const auto& st : m_peripherals.hostLinks().status())
+    if (Machine* m = machine()) m_lib.peripherals().hostLinks().machineChanged(*m);
+    for (const auto& st : m_lib.peripherals().hostLinks().status())
         if (st.fileName == fileName) return st.path;
     return {};
 }
@@ -349,13 +345,13 @@ bool SharpAppPart::serialLinked(const std::string& fileName) const {
     if (m_options.serialLinksOnRequest &&
         std::find(m_requestedLinks.begin(), m_requestedLinks.end(), fileName) == m_requestedLinks.end())
         return false;
-    for (const auto& st : m_peripherals.hostLinks().status())
+    for (const auto& st : m_lib.peripherals().hostLinks().status())
         if (st.fileName == fileName) return st.connected;
     return false;
 }
 
 void SharpAppPart::refreshSerialLinkDirectory() {
-    m_peripherals.hostLinks().moveTo(folderOrNone(m_paths.serialLinkDir()));
+    m_lib.peripherals().hostLinks().moveTo(folderOrNone(m_paths.serialLinkDir()));
     ++m_serialMoves;
     refreshTopics();
 }
@@ -371,11 +367,11 @@ std::string linkPath(const calcu::peripherals::HostLinks& links, const char* fil
 } // namespace
 
 std::string SharpAppPart::serialLinkStatus() const {
-    return linkPath(const_cast<SharpAppPart*>(this)->m_peripherals.hostLinks(), "calcu1600-rs232c.serial");
+    return linkPath(const_cast<SharpAppPart*>(this)->m_lib.peripherals().hostLinks(), "calcu1600-rs232c.serial");
 }
 
 std::string SharpAppPart::ce158SerialLinkStatus() const {
-    return linkPath(const_cast<SharpAppPart*>(this)->m_peripherals.hostLinks(), "calcu1600-ce158.serial");
+    return linkPath(const_cast<SharpAppPart*>(this)->m_lib.peripherals().hostLinks(), "calcu1600-ce158.serial");
 }
 
 double SharpAppPart::clockHz() const {

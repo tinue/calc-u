@@ -1,18 +1,13 @@
 #pragma once
-#include "control/ControlPart.hpp"
 #include "harness/Commands.hpp"
 #include "harness/HarnessHost.hpp"
 #include "harness/Product.hpp"
 #include "harness/ServeAddOn.hpp"
-#include "media/MediaPart.hpp"
-#include "opening/LibraryOpeners.hpp"
-#include "opening/OpenPart.hpp"
-#include "peripherals/PeripheralsPart.hpp"
-#include "presets/PresetsPart.hpp"
+#include "parts/LibraryParts.hpp"
 #include "sessions/AppSession.hpp"
 #include "settings/HostDirs.hpp"
+#include "settings/Paths.hpp"
 #include "settings/SettingsFile.hpp"
-#include "startup/StartupPart.hpp"
 #include <chrono>
 #include <functional>
 #include <memory>
@@ -71,6 +66,12 @@ public:
     // The text with the save folder's path written `<save folder>`, and the
     // run folder's `<run folder>` (AC-8: the path appears in no reply).
     std::string scrub(std::string) const;
+    // LIB-11 D-6, D-11: what every product's library parts take from the run:
+    // its settings, typing in emulated time, its home, its folders for
+    // screenshots (AC-8) and media (the save folder as the run passes it;
+    // LIB-7 §3.11); the product adds its own data.
+    parts::LibraryPartsSetup partsSetup(const machine::Catalogue&, startup::ProductMachines&,
+                                        const roms::LookupResult&);
 
 private:
     RunSetup() = default;
@@ -78,6 +79,7 @@ private:
     std::string runFolder_, saveFolder_, outputFolder_;
     std::unique_ptr<settings::SettingsFile> settings_;
     settings::HostDirs dirs_;
+    std::unique_ptr<settings::Paths> mediaPaths_;   // partsSetup
 };
 
 // What carries the session's machine state for state-save and
@@ -130,23 +132,6 @@ private:
     HarnessProduct* product_ = nullptr;
     std::unique_ptr<RunSetup> setup_;
     std::shared_ptr<int> clockReads_ = std::make_shared<int>(0);
-    // The library's parts: the run's own (own*), or the product's app layer's
-    // (HarnessProduct::appLayerParts, D-6).
-    std::unique_ptr<peripherals::PeripheralsPart> ownPeripherals_;
-    std::unique_ptr<presets::PresetsPart> ownPresets_;   // LIB-6: when the product has preset rules
-    std::unique_ptr<startup::StartupPart> ownStartup_;
-    std::unique_ptr<control::ControlPart> ownControl_;
-    std::unique_ptr<settings::Paths> mediaPaths_;    // LIB-7: the run's save folder
-    std::unique_ptr<media::MediaPart> ownMedia_;     // LIB-7: when the product has kinds of medium
-    std::unique_ptr<opening::PresetsOpener> presetsOpener_;   // LIB-13: over presets_
-    std::unique_ptr<opening::MediaOpener> mediaOpener_;       // LIB-13: over media_
-    std::unique_ptr<opening::OpenPart> ownOpen_;              // LIB-13: `open` (AC-9)
-    peripherals::PeripheralsPart* peripherals_ = nullptr;
-    presets::PresetsPart* presets_ = nullptr;
-    startup::StartupPart* startup_ = nullptr;
-    control::ControlPart* control_ = nullptr;
-    media::MediaPart* media_ = nullptr;
-    opening::OpenPart* open_ = nullptr;
     std::unique_ptr<MachineStatePart> state_;
     std::unique_ptr<sessions::AppSession> session_;
     std::unique_ptr<HarnessHost> host_;

@@ -50,8 +50,8 @@ class SettingsFile;
 namespace shared::dap {
 
 // What the server reaches the machine through (§3.3): the library's parts
-// and the product's settings. The harness hands presets, control and
-// settings in when its run has made them (HarnessProduct::runParts).
+// and the product's settings, from SharpAppPart's library parts (the
+// harness's run builds a SharpAppPart of its own, LIB-11 D-6).
 struct DapDeps {
     calcu::debugger::DebuggerPart* debugger = nullptr;
     calcu::typing::TypingPart* typing = nullptr;

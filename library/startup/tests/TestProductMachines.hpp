@@ -136,7 +136,7 @@ public:
         } else {
             settings = std::make_unique<settings::SettingsFile>(settings::SettingsFile::defaultsOnly(testDecl()));
         }
-        startup = std::make_unique<StartupPart>(StartupSetup{product, testRoms(), *settings, o.loader});
+        startup = std::make_unique<StartupPart>(StartupSetup{control, *settings, o.loader});
         sessions::AppSessionSetup s;
         s.clock = clock.fn();
         s.hostTime = [] { return std::chrono::system_clock::time_point(std::chrono::hours(24 * 365 * 50)); };
@@ -182,6 +182,7 @@ public:
     calcu::testing::TempFolder folder_;
     std::string iniPath;
     TestProductMachines product;
+    MachineControl control{product, testRoms()};
     std::unique_ptr<settings::SettingsFile> settings;
     peripherals::PeripheralsPart peripherals;
     sessions::test::TestPart part;

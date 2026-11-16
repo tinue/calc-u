@@ -110,16 +110,16 @@ public:
         ms.paths = paths.get();
         ms.catalogue = &mt::mediaTestCatalogue();
         ms.listing = o.listing;
+        ms.control = &machineControl;
         media = std::make_unique<MediaPart>(std::move(ms));
         presets::PresetsSetup ps;
         ps.catalogue = &mt::mediaTestCatalogue();
         ps.rules = &rules;
         ps.home = saveRoot / "home";
+        ps.control = &machineControl;
         presetsPart = std::make_unique<presets::PresetsPart>(ps);
         startupPart = std::make_unique<startup::StartupPart>(
-            startup::StartupSetup{machines, startup::test::testRoms(), *settings, presetsPart.get()});
-        presetsPart->setControl(&startupPart->control());
-        media->setControl(&startupPart->control());
+            startup::StartupSetup{machineControl, *settings, presetsPart.get()});
         addMediaToPresets(presetsPart->vocabulary(), *media);
         MediaPart* part = media.get();
         presetsPart->vocabulary().add(presets::HeaderKeyDef{
@@ -235,6 +235,7 @@ public:
     std::unique_ptr<settings::Paths> paths;
     presets::test::TestPresetRules rules;
     peripherals::PeripheralsPart peripherals;
+    startup::MachineControl machineControl{machines, startup::test::testRoms()};
     std::unique_ptr<presets::PresetsPart> presetsPart;
     std::unique_ptr<startup::StartupPart> startupPart;
     std::unique_ptr<control::ControlPart> control;

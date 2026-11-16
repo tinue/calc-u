@@ -1,5 +1,5 @@
 # LIB-12 ROM lookup: design
-Status: approved by the user at the Part B/C1 boundary (2026-11-14)
+Status: approved by the user at the Part B/C1 boundary (2026-11-14); §10 (Calc-U-59 cue cards, M-55): Draft for the Part D/E boundary (2026-11-16)
 
 ## 1. Scope
 
@@ -484,3 +484,49 @@ and Q5.
     `description` and `menu-sort` for `moduleDescriptors()`.
   - LIB-15 (M-29): EC-3's failed start.
   - LIB-14, C59-8: draw `RomsMissing`.
+
+## 10. Part E: `cuecards.txt` leaves the source repository (M-55)
+
+Draft for the Part D/E boundary (2026-11-16). Paths without a prefix are
+under `products/calc-u-59/`; line numbers at `7bdd51c`.
+
+### 10.1 Scope
+
+| Column | Step | Clause | Done in |
+|---|---|---|---|
+| Calc-U-59 | M-55 (C59-7 AC-22, AC-23) | AC-14: the module files are "made once from … the cue cards of today's `roms/solid-state/cuecards.txt`, which then leaves the source repository" | M-24 (unchanged; the column stays Done) |
+
+The 14 `.rom.yaml` files with their `cue-cards:` were made in the ROM
+repository before the plan (plan §1.2) and are fetched and checked since
+M-24. What is left of AC-14 is the product's side: `cuecards.txt` is
+still read for the cue cards (§4, "Kept until M-55";
+`app/ModuleCatalog.hpp:10-16`, `core/ModuleFile.hpp:7-12`). C59-7's
+design (§3.5) reads them from the module files; this section names what
+leaves with the file, so that LIB-12's claim holds. No new criterion is
+tested here; the column does not reopen.
+
+### 10.2 Files
+
+| File | Change |
+|---|---|
+| `roms/solid-state/cuecards.txt` | deleted (with the folder `roms/solid-state/`) |
+| `roms/fetch_roms.sh:26`, `roms/README.md:25-31` | the lines on `cuecards.txt` go |
+| `frontends/qt6/CMakeLists.txt:107-111` | the glob takes `roms/*.txt` and `roms/*.rom.yaml` only |
+| `frontends/web/build.sh:43-48`, `calc-engine-worker.js:6`, `bindings.cpp:9, 60` | `bundle/` without `cuecards.txt` |
+| `frontends/swift/Calc-U-59.xcodeproj/project.pbxproj:31, 89, 184`, `App/ROMLoader.swift:10, 36-41` | the resource and `cuecardsText` go; `bundleReader` (§4, M-24 row) has no other reader and goes |
+| `tests/rom_missing_build.sh:22` | no copy of `cuecards.txt` |
+| `app/ModuleCatalog.hpp:10-16` | the comment on `cuecards.txt` goes |
+
+### 10.3 Task
+
+| Task | What | Test |
+|---|---|---|
+| P10 | AC-14's last clause | before the file is deleted, a one-time check in M-55: each module file's `cue-cards:` equals `cuecards.txt`'s cards of that module field by field, plus the stand-ins (`modules.md` §2.3); the result goes into C59-7's qa-report. The lasting test is C59-7's T4. `CalcU59RomMissingBuild` and the Swift and Web builds run without the file |
+
+### 10.4 Decided (best guess)
+
+- **D-11 (AC-14).** The clause "which then leaves the source repository"
+  is carried out in M-55, with C59-7 AC-22 and AC-23, the step that
+  stops reading the file; LIB-12 Calc-U-59 stays Done (M-24), since
+  every criterion of the column passed there and the file's last reader
+  is a C59-7 matter.

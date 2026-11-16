@@ -1,5 +1,5 @@
 # LIB-11 Harness: design
-Status: Library column approved at the Part B/C1 boundary (2026-11-14); Calc-U-1600 column approved at the Part C2/D boundary (2026-11-16)
+Status: Library column approved at the Part B/C1 boundary (2026-11-14); Calc-U-1600 column approved at the Part C2/D boundary (2026-11-16); Calc-U-59 column (§11): Draft for the Part D/E boundary (2026-11-16)
 
 ## 1. Scope
 
@@ -834,3 +834,214 @@ product's `CHANGELOG.md` for the release (M-61).
   keep the loaders), or be moved onto `calcu serve` as a script?
   Answered (user, 2026-11-16, with the approval of the Part D designs): it goes in M-51, like the tape
   matrix.
+
+## 11. Part E: the Calc-U-59 column
+
+Draft for the Part D/E boundary (2026-11-16). Step M-59, with C59-9 (its
+design holds the `ti59` commands and, in its §4, the table of every
+function of today's Calc-U-59 tools). Tests from AC-14 to AC-17; Done in
+M-59 (plan §5.1). Paths without a prefix are under `products/calc-u-59/`;
+line numbers at `7bdd51c`. (This design's Part D section has no number;
+this one is numbered after it, as 11.)
+
+### 11.1 Scope and order
+
+| Column | Step | Tests from (plan §3) | Done in |
+|---|---|---|---|
+| Calc-U-59 | M-59 (with C59-9) | AC-14–17 | M-59 |
+
+M-59 has three parts, each its own commit on short branches (C59-9
+design §1):
+1. the `ti59` commands (C59-9);
+2. the harness's Calc-U-59 entry through the app layer (11.3), `lcd` and
+   `wait` against today's tools (AC-16, AC-17), today's tools removed and
+   the scripts that stay moved onto the harness (11.7);
+3. the adapter check of plan §1 over Calc-U-59 and the library (11.5).
+
+M-59 waits for M-54, M-55 and M-56 (plan) and uses everything of M-53 to
+M-58: by then `preset`, `check-preset`, `model`, `attach`, `key`,
+`peek`, `registers`, `history`, `profile`, `trace`, `paper`, `card`,
+`arm`, `saveas`, `media` and C59-2's and C59-4's `ti59` commands work on
+Calc-U-59 through the harness, each from its feature's step. What is
+left is to show the whole table of AC-14 through `calcu` and to take the
+old tools away.
+
+### 11.2 Modules and files
+
+| File | Change |
+|---|---|
+| `app/HarnessProduct.hpp/.cpp` | the entry of 11.3; `addCommands()` (C59-9); the comment on "no product commands until C59-9" goes |
+| `app/TIHarnessCommands.*`, `app/TIMnemonics.*`, `app/TIRunProbe.*`, `core/TIMachineState.*` (new) | C59-9 §2 |
+| `core/TIAdapters.hpp/.cpp` | renamed `core/TITypingSupport.hpp/.cpp`: what is left after M-53 to M-56 (`TITypingSupport`, `idleAndKeyDetectRange`), no adapter (D-17) |
+| `tools/read_trace.py` | `--labels <file>` and `--changes` (C59-9 D-9) |
+| `tools/coverage.py`, `tools/fastmode_matrix.py`, `tools/calendar/` (with `asm59.py`), `tools/calcu59.py` (new) | moved from `tools/headless/` and `tools/agentic/`, on `calcu serve` (C59-9 §4) |
+| `tools/check_no_old_tools.cmake` (new) | the CTest `CalcU59NoOldTools` (11.6, H4), as Calc-U-1600's |
+| `CMakeLists.txt:96-100, 154-162, 176-182` | the target `ti59headless` and the CTests `CalcU59HeadlessSmoke`, `CalcU59HeadlessRomMissing` go; `CalcU59RomMissingBuild` runs `calcu`; `CalcU59NoOldTools` (Frequent) and `CalcU59Scripts` (Longer, C59-9 T11) join |
+| `tests/rom_missing_build.sh:4-35` | the harness instead of `tools/headless/ti59.py` (LIB-12, Technical Requirements: "starts in neither the harness nor the web client, naming it") |
+| `tests/harness_tests.cpp` | the cases of 11.6 |
+| `reference/Harness.md` (new) | C59-9 §7 |
+| `.run/calcu-59.run.xml` (new, repository root) | `calcu --product 59 serve`, as `calcu-1600.run.xml` |
+
+**Deleted:** `tools/headless/` (`build.sh`, `capi.cpp`, `ti59.py`,
+`README.md`; `coverage.py` moves), `tools/agentic/` (`README.md`,
+`hotsteps.py`, `kdis.py`, `linetimes.py`, `runtime.py`, `stepcost.py`;
+`asm59.py`, `fastmode_matrix.py`, `calendar/` move; `ti59file.py` went in
+M-54), `tests/headless_rom_tests.py`.
+
+### 11.3 The entry through the app layer (AC-14; Part D simplification §9)
+
+Today the entry builds its own `parts::LibraryParts` with typing only
+(`app/HarnessProduct.cpp:89-95`) and keeps the adapter `HarnessMachines`
+(`:23-57`, removed in M-54). After M-59 it is the app layer's, as
+Calc-U-1600's since M-51 (D.3, superseded paragraph):
+
+| Member | After M-59 |
+|---|---|
+| `prepare(RunSetup&)` | builds `TIAppPart` on the run's settings and folders (`RunSetup::partsSetup()`: settings, typing in emulated time, the save folder, traces and screenshots), the ROM set of `lookUpRoms()`, and the plain `FileAccess` (LIB-7 §11) |
+| `machines()` | the app layer's `ProductMachines` (M-54) |
+| `libraryParts()` | the `LibraryParts` the app layer filled (M-54: rules, bundle, typing, papers, debugger, kinds, file kinds, control rules; M-55: media) |
+| `sessionParts()` | the app layer's parts and `TIAppPart` |
+| `addCommands()` | C59-2's, C59-4's and C59-9's `ti59` commands |
+| `readDisplay()` | `tiPositionText` (11.4) |
+
+If M-54 already made the entry so, part 2 only checks it
+(`lib11_ac14_entry_runs_ti_app_part`). No part is in the session twice.
+
+### 11.4 `lcd`, `wait` and the platforms (AC-15 to AC-17)
+
+- **AC-15.** `calcu` with Calc-U-59 builds and runs on macOS, Linux and
+  Windows: the workflow jobs build `calcu` already (M-28;
+  `.github/workflows/calc-u-59.yml:160, 252`) and now run
+  `lib11_ac15_calcu_runs_calc_u_59` (a process test: `calcu --product 59
+  wait 1s then lcd`, exit status 0 and the display). Removing the
+  `ti59headless` target changes what the workflow builds only if a job
+  names it (none does today); the CI dispatch at the end of Part E covers
+  it (plan §1).
+- **AC-16.** `lcd` on a TI machine: twelve positions, leftmost first,
+  each a digit, `-`, `°`, `"`, `'` or a blank, followed by `.` when the
+  point is lit (`tiPositionText`, `app/HarnessProduct.cpp:98-114`, the
+  table of `core/TISegments.hpp:15-31` that `tools/headless/ti59.py:76-78`
+  mirrors); then `indicators: C` when the indicator C is on, on its own
+  line; with `--json` its brightness (LIB-11 §3.1, three decimals). The
+  check of §4's M-28 row ("checked in M-59") is a test over every pattern
+  of the table and a run (11.6, H2). `ti59.py` prints no hexadecimal
+  digits: its table has none (`:76-78`), so none is added (D-15).
+- **AC-17.** `wait` reports ticks; one instruction is 32 ticks, and an
+  instruction in the ROM's idle state weighs four on the TI-59 and TI-58
+  (C59-1 AC-1), so ticks ÷ 32 is `h_elapsed` of today's tools
+  (`tools/headless/capi.cpp:188-190`). On the TI-58C every instruction is
+  32 ticks (C59-9 EC-5).
+
+### 11.5 The adapter check (plan §1)
+
+After parts 1 and 2: every adapter row of every approved design whose
+"Removed in" is M-59 or earlier and is about Calc-U-59 or the library is
+looked up in the code: the §5 tables of LIB-1 to LIB-18, C59-1 to C59-9,
+the Part E sections. Each must be gone; a row still in the code is a
+finding, fixed in M-59 or written into the qa-report with the step that
+removes it. The rows known now (each "gone" is expected):
+
+| Rows (design) | Removed in |
+|---|---|
+| `TIDebugTargetAdapter`, `TIFreezeGate`, `TIFreezeProbe`, `TIKeyTraceObserver`, `typing::PauseProbe`, the interim topics `c59.run-state`, `c59.trace`, `c59.printer`, `c59.printer-output` kind, `c59.cut-paper`, `EmulatorSession::moduleImage()`, LIB-9 A-3 (Web traces) (C59-1, LIB-3, LIB-5, LIB-8, LIB-10, C59-6) | M-53 |
+| `TIMemoryAdapter`, the TI-58C start of 2.3.0, `TIKeySequencerHook`, `TIKeystrokePlayback`, `SliceRequest::due`, `TIPresetOperation`, `StateFile`, `StateApplier`, the 2.3.0 directives on places, the machine-control commands of `TIAppPart`/`TIWebPart`, `HarnessMachines`, printer connect and module change, `TIFileAccess`'s constant memory, the restart call (C59-1, C59-6, LIB-2, LIB-3, LIB-5, LIB-6, LIB-10, LIB-18) | M-54 |
+| LIB-7 A-4 to A-7, `TICardReaderAdapter`, `TICardWaitAdapter`, the module list for today's menus, LIB-1's card reader row, `cuecards.txt` (LIB-7, LIB-17, C59-6, LIB-1, LIB-12) | M-55 |
+| `TIDebugPanelAdapter`, the drop flow (`c59.open-dropped`, `c59.drop-action`) (C59-1, LIB-13) | M-56 |
+| PC-100C buttons, `c59.model`, `c59.web.model`, `--pacing-probe` (59), the settings commands of `TIWebPart`, `c59.web.pointer-*`, A-4 drawing of "ROMs missing" (LIB-2, LIB-4, LIB-14) | M-57 |
+| `MachineModel.swift`, the Swift test aids in `CalculatorView.swift:84-147`, the Swift copy of the model facts (LIB-4, C59-5, C59-8) | M-58 |
+| `tools/headless/`, `tools/agentic/` and their CTests (plan §1, "Today's tools") | M-59 |
+
+A source search goes with it: `TIAdapters`, `cardReaderOf`, `memoryOf`,
+`debugTargetOf`, `debugPanelOf`, `TIFreezeGate`, `TIKeySequencerHook`,
+`TIPresetOperation`, `TIFileAccess`, `TICardWaitAdapter`,
+`HarnessMachines`, `SessionController`, `StateFile`, `CardFile`,
+`cuecards`, the interim topics `c59.card-reader`, `c59.model`,
+`c59.printer`, `c59.run-state`, `c59.trace`, `c59.web.model`,
+`c59.web.card`, and `ti59headless`, `TI59HEADLESS_LIB`, `tools/headless`,
+`tools/agentic` outside `docs/` and the feature files. The result is a
+table in the qa-report (C59-9 and LIB-11 59), per row: gone, or the
+finding. With M-51's check this closes plan §1's adapter rule for both
+products (Briefing §7).
+
+### 11.6 Tasks
+
+Tests before the code. `CalcU59Tests`, Frequent; names `lib11_acN_…`;
+`SKIP_UNLESS` the ROMs are there.
+
+| Task | What | ACs | Test |
+|---|---|---|---|
+| H1 | The entry through the app layer | AC-14 | `tests/harness_tests.cpp`: `lib11_ac14_entry_runs_ti_app_part` (the app layer's topics and commands in the run: `state c59.cue-card`, `media`, `control-state`; `ti59 partition`) |
+| H2 | `lcd` | AC-16 | `lib11_ac16_every_segment_pattern_gives_its_character` (the rule over each pattern of `TISegments.hpp`, with and without the point), `lib11_ac16_lcd_twelve_positions_with_points` (a number with a point and a minus typed with `key`, the line written out), `lib11_ac16_indicator_c_line_and_brightness_in_json` (a display output with C on) |
+| H3 | `wait` | AC-17 | `lib11_ac17_idle_instruction_weighs_four_on_ti59_and_ti58` (`profile on`, `wait 1s` at key readiness: the instructions counted × 4 × 32 equal the ticks within one instruction), `lib11_ac17_ti58c_instruction_weighs_one` |
+| H4 | The table of AC-14; the old tools gone | AC-14 | `lib11_ac14_every_function_of_the_table`: one block per row of C59-9 §4, each the commands and their expected reply, on the model the row needs (the exit check of M-59); the CTest `CalcU59NoOldTools` (`cmake -P tools/check_no_old_tools.cmake`: no `tools/headless/`, `tools/agentic/`, `ti59headless`, `TI59HEADLESS_LIB`, no `core/TIAdapters.hpp`); Frequent |
+| H5 | The platforms | AC-15 | `lib11_ac15_calcu_runs_calc_u_59` (process test, `library/harness/tests/cli/` form, with `calcu`; run in every desktop job of `calc-u-59.yml`) |
+| H6 | `docs/test-groups.md` | — | the entries above; `CalcU59HeadlessSmoke`, `CalcU59HeadlessRomMissing` gone; `CalcU59Scripts` (Longer) |
+
+Coverage: AC-14 to AC-17 (4 of 4).
+
+### 11.7 Tools and agent knowledge (changed in the same step)
+
+| File | Change |
+|---|---|
+| `products/calc-u-59/CLAUDE.md:43-47, 78` | the Harness section (C59-9 §7); "Until M-59, `tools/headless/` and `tools/agentic/` stay" goes |
+| `products/calc-u-59/.claude/skills/calc-u-59-core/SKILL.md:63, 113-115, 131-132` | the tool rows become `calcu --product 59` with `trace` and `read_trace.py`, `ti59 coverage` and `tools/coverage.py`, the `ti59` timing commands; "headless runs" are harness runs |
+| `products/calc-u-59/.claude/skills/calc-u-59-statefiles/SKILL.md:32-33` | a preset is checked with `calcu --product 59 check-preset` and run with `preset` |
+| `products/calc-u-59/README.md:40, 178-179`, `TODO.md:20, 31`, `reference/DebugAPI.md:311, 316`, `reference/CoreArchitecture.md:48`, `reference/SharedArchitecture.md:180` | the headless tools become the harness (breakpoints: LIB-10's `break`) |
+| `products/calc-u-59/rom/TI59-ROM-Guide.md:7, 18-20, 213`, `rom/TI58C-ROM-Guide.md:10-16`, `rom/fastmode.md:293` | the commands of the recipes: `calcu --product 59 trace … then key … then trace off` and `read_trace.py --labels --changes`; `tools/coverage.py`; `tools/fastmode_matrix.py`. Statements that say "measured with the headless harness" keep their history ("the headless harness of 2.3.0") |
+| `products/calc-u-59/examples/calendar/CALENDAR_PROGRAMS.md:36, 61` | the times are the harness's; the tools are `tools/calendar/` and `ti59 run-time` |
+| `products/calc-u-59/ideas/PresetConvergence.md:83`, `ideas/CardSound.md:82` | the tool names |
+| `products/calc-u-59/memory/sbr444-quirk-analysis.md:82-83, 250` | "new traces are easiest with the harness's `trace`"; the dated corrections keep their history |
+| `docs/glossary-mapping.md:87` | row "Harness", Calc-U-59: done (M-59): `calcu --product 59` with the product commands under `ti59`; was `tools/headless/`, `tools/agentic/` |
+| `docs/test-groups.md` | 11.6, H6 |
+| memory `calc-u-59/headless.md` | the harness `calcu --product 59` (C59-9); the ctypes library is gone; the ROM trace recipe of `reference/Harness.md` (plan M-59) |
+| memory `calc-u-59/headless_printer_lines.md` | the printer's lines are read with `paper text` as LIB-8 gives them; the note on replaying KEYSTROKES goes (presets run through `preset`) (plan M-59) |
+| memory `calc-u-59/run_time_measurement.md` | `ti59 run-time` is the stopwatch measure (`dark_time` gone) (plan M-59) |
+| memory `calc-u-59/calendar_speed_project.md`, `rom_documentation_effort.md`, `real_hardware_timing.md`, `printer_timing_audio.md` | the tool names where they tell how to measure now; dated findings keep their history |
+| `calc-u-59-memories.md` (index) | the descriptions of "Headless Runner", "Headless printer_lines drains", "Run-time measurement" |
+| `ti59-research` memory (`~/.claude/projects/-Users-me-Development-ti59-research/memory/`) | no file names the tools (checked 2026-11-16); nothing to change unless one is added before M-59 |
+
+### 11.8 Golden runs and risks
+
+- **Golden runs.** M-59 removes tools that the golden replays do not use
+  and adds C59-9's machine state (saving only reads). The replays pass
+  unchanged; a difference is a finding.
+- **The numbers of the scripts** that move (`coverage.py`,
+  `fastmode_matrix.py`, the calendar's times) are compared with today's
+  before the old library goes (C59-9 §6, T11); `rom/fastmode.md` and the
+  ROM guides cite them.
+- **`read_trace.py`** gets two options; its existing options and the
+  CTest that reads a trace (LIB-10's) stay as they are.
+- **Windows and Linux.** `calcu` with Calc-U-59 was built in every
+  workflow since M-28 but not run there; H5 runs it. A failure there is a
+  platform finding, fixed in M-59 (one CI dispatch at the merge, plan
+  §1: the step changes platform-specific tests).
+
+### 11.9 Decided (best guess)
+
+- **D-15 (AC-16).** `lcd` on a TI machine shows the characters of the
+  segment table and no hexadecimal digits: today's tool has none
+  (`tools/headless/ti59.py:76-78`), so §4's "hex digits" is not carried
+  over.
+- **D-16 (AC-14).** The scripts that stay live directly in
+  `products/calc-u-59/tools/` (`coverage.py`, `fastmode_matrix.py`,
+  `calcu59.py`) and `tools/calendar/` (with `asm59.py`, its only users'
+  library); their output goes to `tools/build/` (ignored).
+- **D-17.** With the adapters of C59-1 gone, `core/TIAdapters.*` keeps
+  only the typing support and the key-detect range; the file is renamed
+  `core/TITypingSupport.*`, so the check finds no file named for
+  adapters.
+- **D-18 (plan M-59).** `tools/agentic/README.md` and
+  `tools/headless/README.md` are replaced by one developer document,
+  `reference/Harness.md`, where Calc-U-59 keeps its developer reference.
+
+### 11.10 Proposed ledger rows and plan notes
+
+- **Ledger:** none; the tools are not used by end users. Their removal
+  goes into the product's `CHANGELOG.md` for the release (M-64).
+- **Plan notes** (for the orchestrator): M-59 "Waits for" also M-57 and
+  M-58 (the adapter check expects their rows gone); M-59 "Green after":
+  the CI dispatch of the end of Part E covers H5 on Linux and Windows.
+
+### 11.11 Questions for the user
+
+None that splits this column.

@@ -201,15 +201,22 @@ TEST(ac20_started_name_asked_first_file_at_first_write) {
     f.ok("media.refresh");
     CHECK_EQ(field(f.saved("Free.testdisk.yaml"), "content"), std::string("first write"));
     CHECK_EQ(field(calcu::testing::readText(f.bundled.path() / "disks/Formatted.testdisk.yaml"), "content"), std::string("f"));
-    // On a pass-through place the started medium is armed: the card a user feeds (a fresh card).
+    // On a pass-through place the started medium is fitted: the card a user
+    // feeds (Fit Fresh Card, C59-7 AC-15), side 0 then side 1, and it stays fitted.
     MediaFixture s;
     CHECK(s.ok("media.start-new", Value::object({{"place", "reader"}, {"template", "implicit:Fresh"}, {"name", "Recorded"}})));
-    CHECK(s.place("reader")->armed == std::optional<std::string>("Recorded"));
+    CHECK(s.place("reader")->holds && s.place("reader")->holds->name == "Recorded" && !s.reader()->side());
     CHECK(!s.exists("Recorded.testcard.yaml"));
     CHECK(s.ok("media.feed", Value::object({{"place", "reader"}, {"side", 0}})));
     s.reader()->writeOnPass = "recorded";
     s.session->advanceUnpaced(mt::kPassTicks + 10);
     CHECK_EQ(field(s.saved("Recorded.testcard.yaml"), "content"), std::string("recorded"));
+    CHECK(s.place("reader")->holds && s.place("reader")->holds->name == "Recorded");
+    CHECK(s.ok("media.feed", Value::object({{"place", "reader"}, {"side", 1}})));
+    CHECK_EQ(s.reader()->bytes(), std::string("recorded"));   // what the first pass wrote
+    s.reader()->writeOnPass = "both sides";
+    s.session->advanceUnpaced(mt::kPassTicks + 10);
+    CHECK_EQ(field(s.saved("Recorded.testcard.yaml"), "content"), std::string("both sides"));
 }
 
 TEST(ec7_saveas_protected_without_switch_fails) {

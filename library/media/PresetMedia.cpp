@@ -205,13 +205,14 @@ public:
         }
         const auto word = part_.placeOfKind(s, kind_);
         if (!word) co_return failed("There is no place for a " + kind_.label + " now.");
-        if (does_ == Does::Arm) {
-            part_.arm(s, *word, std::move(b), std::move(content));
+        if (does_ == Does::Arm) {   // fitted for the user to feed (C59-7 AC-17)
+            if (auto r = part_.arm(s, *word, std::move(b), std::move(content))) co_return failed(*r);
             co_return ItemResult{};
         }
         if (auto r = part_.insert(s, *word, std::move(b), std::move(content), ref_.side)) co_return failed(*r);
         if (!kind_.words.insertNeedsTime) co_return ItemResult{};
-        // A pass-through place: until the medium has passed, within timeout: (AC-26; LIB-6 AC-57).
+        // A pass-through place: fitted and fed; until the medium has passed (and
+        // stays fitted), within timeout: (AC-26; LIB-6 AC-57).
         machine::Machine* m = s.machine();
         if (!m) co_return failed(sessions::kNoMachine);
         const machine::TickRate rate = m->descriptor().tickRate;

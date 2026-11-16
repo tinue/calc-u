@@ -60,7 +60,7 @@ check clean. CI was not dispatched (plan §1).
 | AC-9 | Pass | `ac9_outdated_entry_disabled_with_hint`, `ac9_outdated_logged_once_per_start` (`picker_tests.cpp`); drawn: `ac9_outdated_entry_disabled_with_hint_tooltip` (Qt6); `ac9 outdated entry disabled with hint` (`media.spec.js`, M-42) |
 | AC-10 | Pass | `ac10_old_medium_written_first`, `ac10_holding_place_new_medium_in_at_once`, `ac10_module_slot_is_a_replace_by_lib18` (one replace, the slot's power cycle), `ac10_unreadable_leaves_place_empty_with_notice` (`picker_tests.cpp`) |
 | AC-11 | Pass | `ac11_written_within_half_a_second_at_60_hz` (the change at five points of the 60 Hz rhythm: written after 0.4 to 0.5 s), `ac11_not_written_while_nothing_changes`, `ac11_harness_written_at_end_of_command` (`autosave_tests.cpp`) |
-| AC-12 | Pass | `ac12_pass_through_written_when_given_back_if_written` (`autosave_tests.cpp`) |
+| AC-12 | Pass | `ac12_pass_through_written_when_given_back_if_written`, `ac12_fed_again_inserts_what_the_last_pass_wrote` (the fitted card fed again is what the last pass wrote; a template's writes stay with it) (`autosave_tests.cpp`) |
 | AC-13 | Pass | `ac13_written_before_leaving_place`, `ac13_written_before_operation` (written when Reset has started, before its end), `ac13_written_before_machine_change` (`takeMachine`, and an attach through LIB-18), `ac13_written_on_suspend`, `ac13_written_on_close` (`AppSession::close()`) (`autosave_tests.cpp`) |
 | AC-14 | Pass | `ac14_failed_write_one_notice_until_success`, `ac14_next_change_tries_again` (`settings::testing::failBeforeRename`) (`autosave_tests.cpp`) |
 | AC-15 | Pass | `ac15_picker_template_not_written_lives_in_place`, `ac15_preset_named_template_not_written` (by file and by name, a bundled one too), `ac15_in_file_medium_not_written_unless_saveas` (`as: live`: that instance from then on) (`autosave_tests.cpp`) |
@@ -68,14 +68,14 @@ check clean. CI was not dispatched (plan §1).
 | AC-17 | Pass | `ac17_rules_table` (every row × column on `planSave`), `ac17_file_form_writes_that_file`, `ac17_file_form_refused_for_bundled_and_user_template`, `ac17_name_and_save_asks_before_replacing` (`save_tests.cpp`) |
 | AC-18 | Pass | `ac18_place_holds_saved_medium_no_power_cycle`, `ac18_live_autosaved_template_not` (`save_tests.cpp`) |
 | AC-19 | Pass | `ac19_protect_in_file_at_once_and_power_cycle`, `ac19_no_command_switches_it_off` (`save_tests.cpp`) |
-| AC-20 | Pass | `ac20_started_name_asked_first_file_at_first_write` (a holding place; on the pass-through reader the started card is armed and its file written when it has passed) (`save_tests.cpp`) |
+| AC-20 | Pass | `ac20_started_name_asked_first_file_at_first_write` (a holding place; on the pass-through reader the started card is fitted, fed by side 0 then side 1, and its file written each time it has passed) (`save_tests.cpp`) |
 | AC-21 | Pass | `ac21_reference_mapping_name_file_mem_side`, `ac21_bare_value_refused`, `ac21_old_file_keys_refused` (`preset_media_tests.cpp`) |
 | AC-22 | Pass | `ac22_in_file_media_from_header_key_saved_only_by_saveas` (the test header key `test-cards:` through `defineInFile`; gone with the next load, D-10) (`preset_media_tests.cpp`) |
 | AC-23 | Pass | `ac23_missing_outdated_unreadable_refused_at_read`, `ac23_undefined_mem_is_fresh` (`preset_media_tests.cpp`) |
 | AC-24 | Pass | `ac24_slot_instance_fitted_before_start_and_autosaved`, `ac24_step_inserts_instance` (`preset_media_tests.cpp`) |
 | AC-25 | Pass | `ac25_template_file_never_written_wherever`, `ac25_instance_by_file_written_in_place_rerun_starts_from_it`, `ac25_log_names_kind_and_name_tag` (`preset_media_tests.cpp`) |
-| AC-26 | Pass | `ac26_steps_table`, `ac26_pass_through_step_finishes_when_passed_within_timeout` (`preset_media_tests.cpp`); as commands: `ac26_steps_as_commands`, `ac26_mapping_line_as_step` (`library/harness/tests/media_commands_tests.cpp`) |
-| AC-27 | Pass | `ac27_armed_never_fed_logged_at_next_build` (`preset_media_tests.cpp`) |
+| AC-26 | Pass | `ac26_steps_table` (the arm step fits; a card step fits, feeds and leaves the card fitted; not while one passes), `ac26_pass_through_step_finishes_when_passed_within_timeout` (`preset_media_tests.cpp`); `ac26_fitted_card_fed_by_each_side_stays_fitted`, `ac26_nothing_fitted_or_fed_while_a_card_passes`, `ac26_eject_takes_passing_card_out_still_fitted`, `ac26_choose_fits_does_not_feed` (`media.arm`, `media.feed`, `media.choose`, `media.eject` on the reader; design D-22) (`place_tests.cpp`); as commands: `ac26_steps_as_commands`, `ac26_mapping_line_as_step` (`library/harness/tests/media_commands_tests.cpp`) |
+| AC-27 | Pass | `ac27_armed_never_fed_logged_at_next_build` (a card that passed and stays fitted gives no line) (`preset_media_tests.cpp`) |
 | AC-28 | Pass | `ac28_media_reads_topic`, `ac28_import_export_delete`, `ac28_run_has_empty_save_folder_and_bundled_media` (LIB-11 AC-8) (`media_commands_tests.cpp`) |
 | AC-29 | Pass (M-42) | The items: LIB-14's menu model, `menu_model_tests.cpp` (Web with kinds: Import Media…, Saved Media…; Qt6 none, OQ-4; M-43) and `shell.spec.js` `ac29 file menu has import and saved media` (scripted topic; M-43). On the Web test product `Test-M` with LIB-7's MediaPart (`library/web/tests/media.spec.js`, Chromium and WebKit): `ac29 file menu has import and saved media` (the items there, Import Media… through the file picker into the save folder, the medium in Saved Media…), `ac29 media in persistent file system after reload` (LIB-15 AC-5). Qt6: `lib7_ac29_qt6_file_menu_without_media_items` (`library/qt6/tests/shell_widgets_tests.cpp`: no media items, also with kinds of medium) |
 | AC-30 | Pass | `ac30_import_current_medium_under_inner_name`, `ac30_import_refused_name_taken_outdated_unreadable`, `ac30_import_with_companion_file`, `ac30_import_through_the_file_picker` (`saved_media_tests.cpp`) |
@@ -350,3 +350,13 @@ Every AC of the Calc-U-1600 column passes: the column is **Done**
   groups; a preset waits for the disk motor).
 - **CoreTests at 54 s** of the 60 s Frequent budget (51 s in M-46); the
   new media tests take about 3 s.
+
+## Library, Part D simplification P-3 (2026-11-16, branch `ds-pass-through`)
+
+A pass-through place's binding is the fitted medium (design D-22, which
+lists the departures from the design before it; review
+`docs/reviews/d-simplification.md` S-2). Rows AC-12, AC-20, AC-26 and
+AC-27 above name the tests added and changed. Calc-U-1600 has no
+pass-through place: nothing of it changed. No client read the topic's
+`armed`, which is gone (`library/web/components`, `library/qt6`, the
+products' frontends checked).

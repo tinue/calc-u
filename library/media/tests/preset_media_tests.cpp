@@ -177,9 +177,16 @@ TEST(ac26_steps_table) {
     CHECK(hasLine({f.readError(keys("test-dot", "  - saveas: { place: disk, as: live }\n"))}, "exactly one of name: and file:"));
     MediaFixture s(seg());
     CHECK(s.done(s.load(keys("test-seg", "  - test-arm: { name: Prog }\n"))));
-    CHECK(s.place("reader")->armed == std::optional<std::string>("Prog") && !s.reader()->side());   // armed, not inserted
+    CHECK(s.place("reader")->holds && s.place("reader")->holds->name == "Prog" && !s.reader()->side());   // fitted, not inserted
+    CHECK(!s.place("reader")->passing);
     CHECK(s.ok("media.feed", Value::object({{"place", "reader"}, {"side", 1}})));
-    CHECK(s.reader()->side() == std::optional<int>(1));
+    CHECK(s.reader()->side() == std::optional<int>(1) && s.place("reader")->passing == std::optional<int>(1));
+    // test-card: fits the card, pushes the side through; it is fitted afterwards (C59-7 AC-17).
+    CHECK(!s.done(s.step("test-card", "{ name: Prog, side: 0 }")));   // not while one passes (C59-7 AC-16)
+    s.session->advanceUnpaced(mt::kPassTicks + 10);
+    CHECK(s.done(s.step("test-card", "{ name: Prog, side: 0 }")));
+    CHECK(!s.reader()->side() && !s.place("reader")->passing && s.place("reader")->holds->name == "Prog");
+    CHECK(s.ok("media.feed", Value::object({{"place", "reader"}, {"side", 0}})));   // fed again by a corner
 }
 
 TEST(ac26_pass_through_step_finishes_when_passed_within_timeout) {
@@ -202,7 +209,12 @@ TEST(ac27_armed_never_fed_logged_at_next_build) {
     f.logLines();
     CHECK(f.done(f.load(header())));
     CHECK(hasLine(f.logLines(), "The test card “Prog” was armed and never fed."));
-    CHECK(!f.place("reader")->armed);
+    CHECK(!f.place("reader")->holds);   // nothing is fitted on a new machine (C59-7 AC-25)
+    // A card that passed and stays fitted has been fed: no line.
+    CHECK(f.done(f.step("test-card", "{ name: Prog }")));
+    f.logLines();
+    CHECK(f.done(f.load(header())));
+    CHECK(!hasLine(f.logLines(), "was armed and never fed"));
 }
 
 TEST(ec5_insert_ejects_held_first) {

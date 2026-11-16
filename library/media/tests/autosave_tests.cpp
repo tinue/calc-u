@@ -108,6 +108,35 @@ TEST(ac12_pass_through_written_when_given_back_if_written) {
     CHECK(f.place("reader")->holds && f.place("reader")->holds->name == "Prog");
 }
 
+TEST(ac12_fed_again_inserts_what_the_last_pass_wrote) {
+    FixtureOptions o;
+    o.prepare = [](auto& s, auto&) {
+        s.write("Prog.testcard.yaml", card("Prog", "p").text());
+        s.write("Blank.testcard.yaml", card("Blank", "", true).text());
+    };
+    MediaFixture f(o);
+    const Value side0 = Value::object({{"place", "reader"}, {"side", 0}});
+    // An instance: written at each give-back, and the fitted card is what was written.
+    CHECK(f.ok("media.arm", Value::object({{"place", "reader"}, {"entry", "saved:Prog.testcard.yaml"}})));
+    CHECK(f.ok("media.feed", side0));
+    f.reader()->writeOnPass = "first";
+    f.session->advanceUnpaced(mt::kPassTicks + 10);
+    CHECK_EQ(field(f.saved("Prog.testcard.yaml"), "content"), std::string("first"));
+    CHECK(f.ok("media.feed", side0));
+    CHECK_EQ(f.reader()->bytes(), std::string("first"));
+    f.session->advanceUnpaced(mt::kPassTicks + 10);
+    // A template: never written; what was written stays with the fitted card (AC-15).
+    CHECK(f.ok("media.arm", Value::object({{"place", "reader"}, {"entry", "saved:Blank.testcard.yaml"}})));
+    CHECK(f.ok("media.feed", side0));
+    f.reader()->writeOnPass = "on the template";
+    f.session->advanceUnpaced(mt::kPassTicks + 10);
+    CHECK(f.ok("media.refresh"));
+    CHECK(f.place("reader")->holds && f.place("reader")->holds->unsaved);
+    CHECK_EQ(field(f.saved("Blank.testcard.yaml"), "content"), std::string(""));
+    CHECK(f.ok("media.feed", Value::object({{"place", "reader"}, {"side", 1}})));
+    CHECK_EQ(f.reader()->bytes(), std::string("on the template"));
+}
+
 TEST(ac13_written_before_leaving_place) {
     MediaFixture f(dot());
     CHECK(f.ok("media.choose", choose("disk", "saved:Work.testdisk.yaml")));

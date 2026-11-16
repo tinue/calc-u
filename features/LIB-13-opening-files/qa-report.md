@@ -52,7 +52,7 @@ not dispatched (plan §1).
 | AC-1 | Pass | `ac1_unreadable_large_hidden_refused_first`, `ac1_preset_extension_before_medium_and_kinds`, `ac1_medium_suffix_before_kinds`, `ac1_kinds_in_product_order`, `ac1_model_line_after_kinds`, `ac1_nothing_refused_with_notice_naming_file`, `ac1_names_compared_without_case` (`classify_tests.cpp`); through the real parts: `open_preset_through_lib6_part` (an extension in another case, a model line as an upload), `open_medium_through_lib7_part` (`real_parts_tests.cpp`) |
 | AC-2 | Pass | `ac2_model_line_in_first_column`, `ac2_indented_or_commented_model_not_a_preset`, `ac2_zero_byte_or_bad_utf8_not_a_preset`, `ac2_bom_allowed` (`classify_tests.cpp`; the cases of Calc-U-1600 `tests/program_file_tests.cpp:198-208`, which still pass through the adapter) |
 | AC-3 | Pass | `ac3_reply_says_preset_medium_kind` (a preset from its folder, an upload and a file without a path as content; a medium with its place; a kind, also one whose open is an operation, replied at its end), `ac3_reply_says_kept`, `ac3_reply_says_why_refused` (`open_tests.cpp`) |
-| AC-4 | Pass | `ac4_medium_checked_first_hint_passed_on`, `ac4_used_where_it_lies`, `ac4_template_not_written`, `ac4_holding_place_inserted_after_eject`, `ac4_pass_through_follows_product`, `ac4_module_one_slot_plugged`, `ac4_module_two_slots_refused`, `ac4_no_place_now_refused_says_where`, `ac4_upload_imported_then_placed`, `ac4_upload_name_taken_asks_then_replace` (`open_tests.cpp`, stand-ins); `open_medium_through_lib7_part` (LIB-7's part: inserted in `disk` from where it lies and written back there, not copied; an upload imported then inserted, the name taken asks; a card on the test-dot refused saying where it goes; an outdated disk with LIB-7's hint) (`real_parts_tests.cpp`) |
+| AC-4 | Pass | `ac4_medium_checked_first_hint_passed_on`, `ac4_used_where_it_lies`, `ac4_template_not_written`, `ac4_holding_place_inserted_after_eject`, `ac4_module_one_slot_plugged`, `ac4_module_two_slots_refused`, `ac4_no_place_now_refused_says_where`, `ac4_upload_imported_then_placed`, `ac4_upload_name_taken_asks_then_replace` (`open_tests.cpp`, stand-ins); `open_medium_through_lib7_part` (LIB-7's part: inserted in `disk` from where it lies and written back there, not copied; an upload imported then inserted, the name taken asks; a card on the test-dot refused saying where it goes; an outdated disk with LIB-7's hint), `ac4_pass_through_follows_product` (Part D P-3: a card on the test-seg fitted, not fed; fed by each side and written back where it lies; another refused while it passes) (`real_parts_tests.cpp`) |
 | AC-5 | Pass (at the session) | `ac5_every_way_in_same_outcome_but_limit` (`ways_tests.cpp`: a kind, a medium and a refused file by drop, open-with, start, dialog and harness; only the limit differs). The wiring of each frontend's ways in is a product criterion (AC-14, AC-21; design §1) |
 | AC-6 | Pass (at the session) | `ac6_would_take_by_tests_1_to_3_and_kind_names`, `ac6_would_take_ignores_content`, `ac6_size_at_drag_held_against_limit` (`ways_tests.cpp`) |
 | AC-7 | Pass | `ac7_kept_while_operation_runs_opened_when_free`, `ac7_kept_before_machine_built`, `ac7_second_replaces_first` (a log line names the one replaced, D-6), `ac7_kept_file_refused_later_is_a_notice` (`open_tests.cpp`); `part_starts_operation_without_command`, `part_operation_refused_while_one_runs` (`library/sessions/tests/operation_tests.cpp`) |
@@ -234,3 +234,14 @@ session. Column status: Done (M-49, 2026-11-16).
   (Dropping files), `docs/test-groups.md`, `docs/glossary-mapping.md` (row
   "Open (a file), file kind"). `Drag-And-Drop-Plan.md` stays history. No
   memory file named the old classes (checked); none changed.
+
+## Library, Part D simplification P-3 (2026-11-16, branch `ds-pass-through`)
+
+- `ac4_pass_through_follows_product` moved from `open_tests.cpp`, where it
+  passed only because the stand-in skipped the reader, to
+  `real_parts_tests.cpp` on LIB-7's real part: a card opened on the
+  test-seg is fitted, not fed (AC-4, AC-12; LIB-7 design D-22), fed by
+  side 0 and side 1 and written back where it lies each time; while it
+  passes another card is refused (EC-4). The stand-in `TestMedia` no
+  longer treats `reader` apart. Row AC-4 above says so; AC-12 itself is
+  Calc-U-59's column (M-55).

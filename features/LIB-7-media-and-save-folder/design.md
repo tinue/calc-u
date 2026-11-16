@@ -365,8 +365,9 @@ struct PlaceState {
     bool passThrough = false;
     std::vector<int> sides;
     struct Held { std::string name; std::optional<int> side; bool isTemplate, unsaved, writeProtected; };
-    std::optional<Held> holds;  // unsaved: a template written to (AC-15) or a started name not yet written (AC-20)
-    std::optional<std::string> armed;     // a pass-through place: the armed medium (AC-27)
+    std::optional<Held> holds;  // unsaved: a template written to (AC-15) or a started name not yet written (AC-20);
+                                // a pass-through place: the fitted medium, `side` the one passing now (D-22)
+    std::optional<int> passing;           // a pass-through place: the side passing through now (C59-7 AC-12, AC-13)
     bool waits = false;         // the machine waits for a medium now
     bool nameAndSave = false;   // AC-16, EC-9
     bool askWriteProtect = false;         // AC-16: the medium has a switch still off
@@ -390,11 +391,11 @@ braces; (op) starts an operation):
 | Command | Arguments | Does | ACs |
 |---|---|---|---|
 | `media.refresh` | — | the shelf read again (a picker or the list opened) | AC-7 |
-| `media.choose` | `{place, entry}` | writes what the old medium has to save (AC-13); media place: eject, insert; module slot: (op) LIB-18's attach or replace with the medium's request, what follows as LIB-18 says; unreadable: the place empty and a notice | AC-8, AC-10 |
-| `media.eject` | `{place}` | AC-13, then eject or (op) detach; an empty place: nothing (EC-6) | AC-13, EC-6 |
+| `media.choose` | `{place, entry}` | writes what the old medium has to save (AC-13); holding place: eject, insert; pass-through place: fitted, not fed, refused while a medium passes (D-22); module slot: (op) LIB-18's attach or replace with the medium's request, what follows as LIB-18 says; unreadable: the place empty and a notice | AC-8, AC-10 |
+| `media.eject` | `{place}` | AC-13, then eject or (op) detach; an empty place: nothing (EC-6); a pass-through place: a medium passing is taken out and stays fitted, else the fitted medium goes (D-22) | AC-13, EC-6 |
 | `media.turn` | `{place}` | eject, insert the other side | AC-6 (Calc-U-1600 AC-39) |
-| `media.arm` | `{place, entry}` | a pass-through place: the medium armed, not inserted | AC-26 |
-| `media.feed` | `{place, side}` | the armed medium inserted with that side (the corner tap of C59-7 sends it) | AC-26 |
+| `media.arm` | `{place, entry}` | a pass-through place: the medium fitted (armed), not inserted; it takes the place of the one fitted before; refused while a medium passes (D-22) | AC-26 |
+| `media.feed` | `{place, side}` | the fitted medium inserted with that side (the corner tap of C59-7 sends it); it stays fitted; refused while a medium passes (D-22) | AC-26 |
 | `media.name-and-save` | `{place, name, protect?, confirmed?}` | AC-16–19; reply `asks:` with the question when an instance has the name and `confirmed` is not set (D-6); with `protect`: (op), the power cycle of AC-19 | AC-16–19, EC-9 |
 | `media.start-new` | `{place, template, name, confirmed?}` | AC-20: Name & Save done up front, `asks:` as above; the file at the first write | AC-20 |
 | `media.open-file` | `{name, place?, path?, bytes?, upload?, confirmed?}` | AC-1: a medium opened from elsewhere, put into `place` (a media place word or a module slot). With `upload` (the host cannot write it back, a Web frontend) it is imported first by AC-30, `asks:` when its name is taken and `confirmed` is not set; else used and written where it lies (`path`). Without `place` (an upload that has no place now, LIB-13 D-8) it is only imported. A template is not written. For LIB-13 (§3.7, "Opened files") | AC-1, AC-30 |
@@ -481,12 +482,21 @@ write-protect, true)`, then the power cycle that follows an attach
 opened medium goes into, from `readOpened`, `placesFor`,
 `placesInCatalogue` and `refusesNow`, and then sends `media.open-file`
 with that place. The command does what LIB-7 says for the place (§3.10
-for a module slot) and binds it to the file where it lies, or to the
-imported instance.
+for a module slot; a pass-through place: fitted, not fed, D-22) and
+binds it to the file where it lies, or to the imported instance.
+
+**A pass-through place** (D-22): its binding is the fitted medium, one
+state. `media.arm`, `media.start-new`, `media.choose`, `media.open-file`
+and the arm step fit it (the binding, with its content, nothing
+inserted); `media.feed` inserts a side of it, and it stays fitted; A3
+keeps its content as the place gave it back, so the next feed inserts
+what the last pass wrote. Nothing is fitted or fed while a medium
+passes (C59-7 AC-16). The topic's `holds` is the fitted medium and
+`passing` the side in the place now.
 
 **Started under a name** (AC-20): `media.start-new` runs `planSave`
 for Name & Save (asking before an instance is replaced), inserts the
-template's content, and binds the place to the instance file to come;
+template's content (a pass-through place: fits it, D-22), and binds the place to the instance file to come;
 the template is not written, and the file is replaced at the first
 write (A1, A3).
 
@@ -525,8 +535,8 @@ What the steps do:
 | Step | Carried out (an operation step of LIB-6) | Finished (LIB-6 AC-56) |
 |---|---|---|
 | `<insertStep>` holding | A5 for the place; eject (EC-5); insert; bind | at once |
-| `<insertStep>` pass-through | insert with the side; waits within `timeout:` (LIB-6 AC-57) until the place gives the medium back; A3; bind | when given back (and fitted, C59-7) |
-| `<armStep>` | the medium armed for the place; nothing inserted | at once |
+| `<insertStep>` pass-through | fit (bind), feed the side; waits within `timeout:` (LIB-6 AC-57) until the place gives the medium back; A3; it stays fitted (D-22) | when given back (and fitted, C59-7) |
+| `<armStep>` | the medium fitted for the place (bind); nothing inserted; fails while a medium passes | at once |
 | `eject` | A5; eject; an empty place: nothing (EC-6) | at once |
 | `saveas` | `planSave` with `SaveasLive`/`SaveasTemplate`; `protected:` on a medium without a switch fails with that reason (EC-7); any refusal fails the preset (LIB-6 AC-17) | at once (AC-19's power cycle: when ready) |
 
@@ -536,9 +546,10 @@ What the steps do:
   the last run left.
 - Each step logs one line with the kind's label and the name tag
   (AC-25; LIB-6 AC-18).
-- AC-27: in `beforeMachineChange`, an armed medium of a pass-through
-  place that never passed gives one log line "<label> “<name>” was armed
-  and never fed."
+- AC-27: when the next machine is built, a fitted medium of a
+  pass-through place that has not passed since it was fitted gives one
+  log line "<label> “<name>” was armed and never fed."; a variant switch,
+  which carries the fitted medium over (S-7a), gives none (D-22).
 
 ### 3.9 The pickers and the control state (AC-8, AC-9; LIB-4 AC-1, AC-7)
 
@@ -672,10 +683,10 @@ of `TestKinds` and folders of the test's own. Case names follow LIB-1
 |---|---|---|---|
 | L1 | `Names` | AC-2, AC-3, AC-4 | `names_tests.cpp`: `ac2_inner_name_wins`, `ac2_file_name_counts_only_without_inner_name`, `ac3_spaces_trimmed_and_runs_collapsed`, `ac3_refused_characters_and_control_characters`, `ac3_empty_refused`, `ac3_names_differing_in_case_are_one`, `ac4_file_is_name_and_suffix_in_save_folder`, `ac4_numbered_when_file_holds_another_name`; Frequent |
 | L2 | `Kind`, `Shelf` | AC-1, AC-5, AC-46, EC-3 | `shelf_tests.cpp`: `ac1_bundled_is_template_and_never_written`, `ac1_user_template_by_its_file`, `ac1_instance_in_save_folder`, `ac5_bundled_first_then_save_folder`, `ac5_two_files_one_name_both_listed_and_found_by_rule`, `ac5_saved_file_with_bundled_name_not_listed_and_logged`, `ac5_module_slot_one_list_of_names`, `ac46_codec_gives_all_the_library_knows`, `ac46_content_handed_through_unread`, `ec3_unreadable_not_listed_one_log_line_per_start`; Frequent |
-| L3 | `MediaPlace`, `ModuleMedium`, test machine, conformance | AC-6 | `place_tests.cpp`: `ac6_place_states_kind_passage_sides`, `ac6_insert_eject_side_content_revision`, `ac6_waits_for_medium`, `ac6_write_protect_where_the_medium_has_one`; `library/machine/tests/conformance_tests.cpp`: `ac40_media_place_capability_per_media_place` (LIB-1 D-1); Frequent |
+| L3 | `MediaPlace`, `ModuleMedium`, test machine, conformance; the fitted medium of a pass-through place | AC-6, AC-26 | `place_tests.cpp`: `ac6_place_states_kind_passage_sides`, `ac6_insert_eject_side_content_revision`, `ac6_waits_for_medium`, `ac6_write_protect_where_the_medium_has_one`, `ac26_fitted_card_fed_by_each_side_stays_fitted`, `ac26_nothing_fitted_or_fed_while_a_card_passes`, `ac26_eject_takes_passing_card_out_still_fitted`, `ac26_choose_fits_does_not_feed` (D-22); `library/machine/tests/conformance_tests.cpp`: `ac40_media_place_capability_per_media_place` (LIB-1 D-1); Frequent |
 | L4 | topic `media` | AC-7 | `topic_tests.cpp`: `ac7_kinds_templates_instances_with_place`, `ac7_place_holds_and_waits`, `ac7_reread_after_own_write_and_on_refresh`, `ac7_outside_change_not_seen_until_refresh`; Frequent |
 | L5 | pickers, choose | AC-8, AC-9, AC-10 | `picker_tests.cpp`: `ac8_order_empty_templates_instances_modules`, `ac8_tooltip_is_description`, `ac8_listing_label_and_sort_key` (a `ModuleListing` that labels by description in `menu-sort` order), `ac9_outdated_entry_disabled_with_hint`, `ac9_outdated_logged_once_per_start`, `ac10_old_medium_written_first`, `ac10_holding_place_new_medium_in_at_once`, `ac10_module_slot_is_a_replace_by_lib18`, `ac10_unreadable_leaves_place_empty_with_notice`; Frequent |
-| L6 | autosave | AC-11–15, EC-1, EC-2, EC-8 | `autosave_tests.cpp`: `ac11_written_within_half_a_second_at_60_hz`, `ac11_not_written_while_nothing_changes`, `ac11_harness_written_at_end_of_command`, `ac12_pass_through_written_when_given_back_if_written`, `ac13_written_before_leaving_place`, `ac13_written_before_operation`, `ac13_written_before_machine_change`, `ac13_written_on_suspend`, `ac13_written_on_close`, `ac14_failed_write_one_notice_until_success`, `ac14_next_change_tries_again`, `ac15_picker_template_not_written_lives_in_place`, `ac15_preset_named_template_not_written`, `ac15_in_file_medium_not_written_unless_saveas`, `ec1_save_folder_made_at_first_write`, `ec2_outside_change_overwritten_not_merged`, `ec8_suspend_writes_every_pending_change`; Frequent |
+| L6 | autosave | AC-11–15, EC-1, EC-2, EC-8 | `autosave_tests.cpp`: `ac11_written_within_half_a_second_at_60_hz`, `ac11_not_written_while_nothing_changes`, `ac11_harness_written_at_end_of_command`, `ac12_pass_through_written_when_given_back_if_written`, `ac12_fed_again_inserts_what_the_last_pass_wrote`, `ac13_written_before_leaving_place`, `ac13_written_before_operation`, `ac13_written_before_machine_change`, `ac13_written_on_suspend`, `ac13_written_on_close`, `ac14_failed_write_one_notice_until_success`, `ac14_next_change_tries_again`, `ac15_picker_template_not_written_lives_in_place`, `ac15_preset_named_template_not_written`, `ac15_in_file_medium_not_written_unless_saveas`, `ec1_save_folder_made_at_first_write`, `ec2_outside_change_overwritten_not_merged`, `ec8_suspend_writes_every_pending_change`; Frequent |
 | L7 | Name & Save, rules | AC-16–20, EC-7, EC-9 | `save_tests.cpp`: `ac16_offered_for_template_that_can_change`, `ac16_asks_write_protect_only_when_switch_off`, `ac17_rules_table` (each row × column), `ac17_file_form_writes_that_file`, `ac17_file_form_refused_for_bundled_and_user_template`, `ac17_name_and_save_asks_before_replacing`, `ac18_place_holds_saved_medium_no_power_cycle`, `ac18_live_autosaved_template_not`, `ac19_protect_in_file_at_once_and_power_cycle`, `ac19_no_command_switches_it_off`, `ac20_started_name_asked_first_file_at_first_write`, `ec7_saveas_protected_without_switch_fails`, `ec9_name_and_save_not_for_instance`; Frequent |
 | L8 | presets | AC-21–27, EC-5, EC-6 | `preset_media_tests.cpp` (a test product's sections and the test kinds' steps `test-card:`, `test-arm:`, `test-disk:`): `ac21_reference_mapping_name_file_mem_side`, `ac21_bare_value_refused`, `ac21_old_file_keys_refused`, `ac22_in_file_media_from_header_key_saved_only_by_saveas`, `ac23_missing_outdated_unreadable_refused_at_read`, `ac23_undefined_mem_is_fresh`, `ac24_slot_instance_fitted_before_start_and_autosaved`, `ac24_step_inserts_instance`, `ac25_template_file_never_written_wherever`, `ac25_instance_by_file_written_in_place_rerun_starts_from_it`, `ac25_log_names_kind_and_name_tag`, `ac26_steps_table`, `ac26_pass_through_step_finishes_when_passed_within_timeout`, `ac27_armed_never_fed_logged_at_next_build`, `ec5_insert_ejects_held_first`, `ec6_eject_empty_place_nothing`; Frequent |
 | L9 | harness | AC-26, AC-28 | `library/harness/tests/media_commands_tests.cpp`: `ac26_steps_as_commands`, `ac28_media_reads_topic`, `ac28_import_export_delete`, `ac28_run_has_empty_save_folder_and_bundled_media` (LIB-11 AC-8), `ac26_mapping_line_as_step` (LIB-11 AC-22); Frequent |
@@ -809,6 +820,29 @@ EC-9 (9 of 9). AC-29 passes in M-43 (§1).
   place name or a media place's `ejectWord`.
 - **D-21 (open point).** No length limit for names and no check of names
   a host reserves: the spec names none (§8).
+- **D-22 (AC-12, AC-26, AC-27; C59-7 AC-10 to AC-17, AC-25; LIB-13
+  AC-4, AC-12; Part D simplification P-3, 2026-11-16).** A pass-through
+  place's binding is the fitted medium; there is no separate armed
+  medium. Departures from the design before it: (1) `media.feed` keeps
+  the medium fitted, so it can be fed again by either side (before: the
+  armed medium was used up by one feed); (2) the fitted medium's content
+  is what the place gave back last (before: the armed copy went stale
+  after a write); (3) `media.choose` and `media.open-file` fit a medium
+  for a pass-through place (before: they inserted side 0); (4) arming,
+  choosing, opening, starting new and feeding are refused while a medium
+  passes (before: an insert pulled the passing medium out); (5)
+  `media.eject` while a medium passes takes it out of the place and
+  leaves it fitted (C59-7 AC-10 with AC-25: "taken out as by Eject
+  Card" while "what is fitted stays fitted"); with none passing it
+  removes the fitted medium; (6) the topic's `armed` is gone (no client
+  read it): `holds` is the fitted medium, `holds.side` and the new
+  `passing` the side passing now; (7) AC-27's line is written when the
+  next machine is built for a fitted medium that has not passed since it
+  was fitted, not on a variant switch, which carries it over. Open for
+  M-55: the per-side bank numbers of C59-7 AC-11 are the product's, read
+  from the fitted content; a product whose `eject()` of a passing card
+  keeps a whole written bank (C59-7 AC-10) reports it through
+  `takeGivenBack()`.
 
 ## 10. Part D: the Calc-U-1600 column
 

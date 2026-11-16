@@ -721,3 +721,262 @@ product cannot open are refused with a notice.
   right? Recommendation: yes, and row 1600-15 gets the words "a drag
   over the window is taken for any one file".
   Answered (user, 2026-11-16, with the approval of the Part D designs): yes; row 1600-15 has the words.
+
+## 10. Part E: the Calc-U-59 column
+
+Status of this section: Draft for the Part D/E boundary (2026-11-16).
+§1 to §9 and Part D are approved and are not changed. This section
+replaces §4's Calc-U-59 sketch and §5's Calc-U-59 row. Paths are under
+`products/calc-u-59/` unless named, at `7bdd51c`.
+
+### 10.1 Scope
+
+| Column | Step | Tests from (plan §3) | Done in (plan §5.1) |
+|---|---|---|---|
+| Calc-U-59 | M-56 (with C59-4) | AC-11–16, AC-23 | M-56 |
+
+- M-56 waits for M-42 (the Library column), M-53 (LIB-10 59), M-54 and
+  M-55, and it builds on what those two steps leave (A-E1 to A-E3):
+  - **A-E1 (M-54).** `TIAppPart` fills a `parts::LibraryPartsSetup`
+    (`docs/reviews/d-simplification.md` §9), so the TI app session has
+    LIB-6's `PresetsPart` (the preset extensions `.ti59`, `.ti58`,
+    `.ti58c`), LIB-18's `StartupPart` and LIB-13's `OpenPart`.
+    `LibraryParts` makes the `OpenPart` always (`library/parts/LibraryParts.hpp:80-85`).
+    M-54 also brings C59-2's reader of the program section and the
+    keystroke program file (`docs/formats/preset.md` §4.1.1), and the
+    program memory product kind (C59-2).
+  - **A-E2 (M-55).** The magnetic card is LIB-7's medium
+    (`.magnetcard.yaml`, C59-7), so a card that is opened goes through
+    LIB-7's `MediaOpener`. Until M-56 the drop flow of `c59.open-dropped`
+    fits it (`app/TIAppPartFlows.cpp:599-618`, adapter of §5).
+  - **A-E3 (M-56, C59-4).** The ASM overlay's file kind, in the same step
+    (`features/C59-4-calc-u-59-debug-panel/design.md` §3.7).
+
+  If M-54's or M-55's designs give these seams another form, only
+  `app/TIFileKinds.cpp` and the setup's lines change.
+- The edge cases EC-1 to EC-7 are the Library column's (M-42). The tasks
+  show EC-4 (a card while one passes) and EC-7 (the dialog's folder) once
+  more on the product.
+- The rule for the start file is the user's ruling of 2026-11-16 (Q-1 of
+  `docs/reviews/d-simplification.md`; LIB-13 decision log; ledger 59-47).
+- Not here: what an ASM overlay does when it is opened (C59-4 AC-19,
+  same step); the File menu of the shell (LIB-14 59, M-57). Until M-57
+  the Load Preset items stay in today's menus and buttons and send `open`.
+
+### 10.2 What the code is today (`7bdd51c`)
+
+- **The rule by name.** `DropAction`, `dropActionFor`
+  (`app/TIAppPart.hpp:54-62`; `app/TIAppPartFlows.cpp:599-603`):
+  `isStateFileName` (`app/StateFile.cpp:554-557`) gives LoadPreset,
+  `isCardFileName` (`app/CardFile.cpp:411-414`, `.u59`, `.bin`) gives
+  FitCard or Ignore, and anything else is NotAccepted.
+  `openDroppedFile` is at `:605-618`. The payload `TIDropAction` is
+  `app/TIAppPart.hpp:191-198`, the command `c59.open-dropped` `:226`, the
+  request `c59.drop-action` `:248`, and the handlers
+  `app/TIAppPart.cpp:173-182, 211-216`. The Web's own command
+  `c59.web.drop` (`app/TIWebPart.cpp:201-221`) refuses with
+  "`<name>`: not a .ti59, .ti58, .ti58c, .u59 or .bin file".
+- **Qt6.**
+  - Drag and drop: `frontends/qt6/app/MainWindow.cpp:145-156` (one file,
+    LoadPreset or FitCard only).
+  - "Open Preset…": `:55, 78-87`, filter
+    `State files (*.ti59 *.ti58 *.ti58c);;All files (*)`.
+  - `EmulatorController.cpp:260-274`.
+  - `main.cpp:19-35`: `QEvent::FileOpen` always loads a preset.
+  - `main.cpp:76-90`: the start argument. `--grab x`, `--after n` and
+    `--pacing-probe s` take their value; the last other argument counts,
+    without a check.
+  - Document types: `resources/macos/Info.plist.in:30-44`,
+    `resources/windows/calc-u-59.iss:46-53`,
+    `resources/linux/calc-u-59.desktop:5, 8`, for the three preset
+    extensions only.
+- **Swift.** The macOS drop is `App/Views/CalculatorView.swift:209-213`.
+  The file importer's types are `:28-33, 182-208`. The Preset buttons are
+  `:369-384`. `EmulatorViewModel.swift:394-420` and
+  `Bridge/TIAppSession.mm:579-593` call `cu59::dropActionFor` directly.
+  There is no Open With: `Calc-U-59-Info.plist` declares no document
+  type.
+- **Web.** The drop is `frontends/web/src/PlayCalculator.jsx:265-272,
+  287-288`, which calls `engine.dropFile` (`engine.js:227-229`). The preset
+  picker is `src/Dialogs.jsx:110-142` (bundled presets and an upload with
+  `accept=".ti59,.ti58,.ti58c"`, `:140`).
+- **Not handled today:** `.keystrokes.yaml`, `.rom.yaml`,
+  `ti58c.memory.yaml`, `.magnetcard.yaml` and `.asm` on a drop, by Open
+  With or at the start.
+- **Tests:** `tests/part_flows_tests.cpp:495, 514, 535, 559, 571, 804`;
+  `frontends/web/tests/play-calculator.spec.js:297, 338`.
+- **The library.** `calcu::opening::startFile`
+  (`library/opening/StartFile.hpp:17-18`, `.cpp:5-12`) takes the last
+  argument that does not start with `-` and names an existing file. It does
+  not know a program's options, so the value of `--grab x` counts when `x`
+  exists. `FileKind` is `library/opening/FileKind.hpp:13-24`.
+
+### 10.3 Modules and files (M-56)
+
+| File | Change |
+|---|---|
+| `app/TIFileKinds.hpp/.cpp` (new) | The kinds of §10.4: `KeystrokesKind`, `RomModuleFileKind`, `ConstantMemoryFileKind`, and `AsmOverlayKind` (C59-4 §3.7) in the order the product asks them; `tiPresetExtensions()`; no limits (AC-11) |
+| `app/TIAppPart.hpp/.cpp`, `TIAppPartFlows.cpp` | `DropAction`, `dropActionFor`, `dropAction`, `openDroppedFile`, `TIDropAction`, `c59.open-dropped`, `c59.drop-action` and `kLoadState`'s use for a picked file go. The part owns the kinds and fills `presetExtensions`, `fileKinds` and `productName` of its `LibraryPartsSetup` (A-E1) |
+| `app/StateFile.cpp:554-557`, `app/CardFile.cpp:411-414` | `isStateFileName` and `isCardFileName` go if nothing else uses them; the preset extensions and the media suffix are the library's tests 2 and 3 |
+| `app/TIWebPart.cpp:201-221` | `c59.web.drop` goes |
+| `app/HarnessProduct.cpp` | `s.presetExtensions` and `s.fileKinds` (the kinds of §10.4 over the harness's parts), so `open <path>` takes every Calc-U-59 file |
+| `frontends/qt6/app/MainWindow.cpp:145-156` | The drag asks `open-would-take {name, size}`; the drop sends `open {way: drop}`; `dropAction` goes |
+| `frontends/qt6/app/MainWindow.cpp:55, 78-87` | Open Preset… sends the chosen file as `open {way: dialog}`; the filter becomes `Presets (*.ti59 *.ti58 *.ti58c);;All files (*)` (AC-5) |
+| `frontends/qt6/app/main.cpp:19-35, 76-90` | `QEvent::FileOpen` sends `open {way: open-with}`, also before the window is shown (the session keeps it, AC-7). The start file is `startFile(arguments without the program's own options and their values, QFileInfo::isFile)`, sent as `open {way: start}` (D-18). The old rule goes |
+| `frontends/qt6/app/EmulatorController.*:260-274` | `dropAction` and `openDroppedFile` go; `openFile(path, way)` reads the file and sends `open` |
+| `frontends/qt6/app/FileOpenFilter.hpp` (new, or the library's if M-57 moves it) | as Calc-U-1600's `frontends/qt6/app/FileOpenFilter.hpp:15-30` |
+| `frontends/swift/App/Views/CalculatorView.swift:28-33, 182-213, 369-384`, `App/EmulatorViewModel.swift:394-420`, `Bridge/TIAppSession.h/.mm:579-593` | The macOS drop asks `open-would-take` and sends `open {way: drop}`; the Preset buttons' importer offers the preset types and any file and sends `open {way: dialog}` (D-21). `acceptsDroppedFile` and `openDroppedFile` go. A refusal is shown as the session's notice (AC-15) |
+| `frontends/web/src/PlayCalculator.jsx:265-272`, `engine.js:225-229`, `Dialogs.jsx:110-142` | The drop sends `open {way: drop, upload: true}`. The preset picker's upload takes several files (`multiple`) and sends them as `open {way: dialog, upload: true}` (AC-8). `dropFile` and `loadState` for uploads go; the bundled presets keep their own load |
+| `tests/opening_tests.cpp` (new) | §10.6 |
+| `tools/check_open_with_types.sh` (Calc-U-1600's, made a shared script under `tools/` if M-57 has not), `products/calc-u-59/CMakeLists.txt` | CTest `CalcU59OpenWithTypes` (AC-14) |
+| `frontends/web/tests/play-calculator.spec.js:297, 338` | the Web cases of §10.6 |
+
+### 10.4 The file kinds (AC-11, AC-13, AC-23)
+
+| Kind (`name()`) | Taken by | What follows |
+|---|---|---|
+| `asm-overlay` | a name ending in `.asm` | read as by Select File (C59-4 AC-19; C59-4 design §3.7) |
+| `keystroke-program` | a name ending in `.keystrokes.yaml` | its program is written into the running machine's program memory from step 000, as a preset's `program:` writes it, without a cold boot. The partition, the data registers and the steps it does not list stay. A file that cannot be read, or a step beyond the model's last step (C59-2 AC-3), is refused with C59-2's reader's sentence |
+| `rom-module-file` | a name ending in `.rom.yaml` | refused: "`<name>` was not opened: this release takes a Solid State ROM module by its ID only." |
+| `constant-memory-file` | the name `ti58c.memory.yaml` (any case) | refused: "`<name>` was not opened: it is Calc-U-59's own constant memory file." |
+
+- The kinds are asked in this order. No two take the same name, so the
+  order only fixes the reply.
+- Each kind decides by the name alone, and `takesName` is the same rule
+  (AC-6). So the drag is taken for the two refused kinds too, and the drop
+  then gives the notice: one sentence instead of a pointer that silently
+  refuses (D-20).
+- The library's tests come first (AC-1). A preset by extension (2), and a
+  card by `.magnetcard.yaml` (3) through LIB-7, are decided before the
+  kinds. A file with a top-level `model:` line and another name is a
+  preset (5). `.u59` and `.bin` are nothing (6): ledger 59-1 ignores them.
+- **A card (AC-12).** It goes through LIB-7's `MediaOpener`: on a TI-59 it
+  is fitted from where it lies and written back there unless it is a
+  template; in the Web it is imported and fitted. A TI-58 or TI-58C has no
+  card reader, so LIB-13 AC-4 refuses the card with "where such a medium
+  is chosen". A card while another passes is EC-4.
+- **The keystroke program's write** is an operation of the session (a
+  program memory write between two instructions); no cold boot and no
+  build follow. It needs no running machine, so it is done while the
+  machine is paused too, and the machine stays paused (LIB-10 AC-5)
+  (D-23).
+
+### 10.5 The ways in (AC-14, AC-15)
+
+| Way | Qt6 | Swift | Web |
+|---|---|---|---|
+| drop | `dropEvent` reads the file and sends `open {way: drop}` | macOS: `.dropDestination`, one file, `open {way: drop}`; iOS: none (out of scope) | `open {way: drop, upload: true}` |
+| Open With | macOS `QFileOpenEvent`: `open {way: open-with}`. Windows and Linux hand the file as an argument: the start way | none | none |
+| start | `startFile(…)` once the window is shown; the session keeps the file until the start ends (AC-7) | none | none |
+| Load Preset… | Open Preset…'s dialog, `open {way: dialog}`; the folder it remembers changes (EC-7) | the Preset button's importer, `open {way: dialog}` | the picker's upload, `open {way: dialog, upload: true}`, several as one folder |
+| harness | `open <path>` | | |
+
+- **The start file (D-18).** `main.cpp` first takes out of the arguments
+  the program's own options and their values (`--grab x`, `--after n`,
+  `--pacing-probe s`), as it reads them today, and hands the rest to
+  `calcu::opening::startFile`. So the start file is "the last argument that
+  does not start with `-` and names an existing file" (ledger 59-47), and a
+  screenshot path given to `--grab` is never opened, even if it exists.
+- **Open With** keeps today's document types: the three preset extensions
+  on macOS, Windows and Linux (AC-14). A file opened that way is opened as
+  what it is (ledger 59-20).
+- **A refusal** after a hand-over is the session's notice in Qt6 and Swift
+  (AC-15): Qt6 shows the notices as today's alerts are shown, and Swift as
+  the bridge shows `error` notices (`splitNotice`).
+
+### 10.6 Tasks (AC → task → test)
+
+Unless named otherwise, cases are in `tests/opening_tests.cpp`, in
+`CalcU59Tests` (Frequent), on `tests/SessionRig.hpp` with the product's
+parts, a save folder of the test's own, and the real ROMs (`SKIP_UNLESS`).
+Web cases are in `CalcU59WebPlaywright` (Longer), titled with the ID.
+Names are `lib13_acN_…`. The tests come before the code.
+
+| Task | What | ACs/ECs | Test (file: cases) |
+|---|---|---|---|
+| E13-1 | The product's data | AC-11 | `lib13_ac11_preset_extensions_ti59_ti58_ti58c`, `_one_medium_magnetcard_yaml`, `_kinds_keystrokes_and_asm_in_order`, `_no_size_limit_any_way` (a file of 4 MiB by every way) |
+| E13-2 | A card | AC-12, EC-4 | `lib13_ac12_card_fitted_where_it_lies_written_back`, `_template_never_written`, `_refused_on_ti58_and_ti58c_with_notice`, `lib13_ec4_card_while_one_passes_refused_nothing_imported`; Web: `LIB-13 AC-12 a dropped card is imported and fitted` (renamed `:338`) |
+| E13-3 | The keystroke program and the refused kinds | AC-23 | `lib13_ac23_keystrokes_written_from_000_without_cold_boot`, `_partition_registers_other_steps_stay`, `_step_beyond_last_refused`, `_unreadable_refused`, `_rom_yaml_refused_by_id_only`, `_constant_memory_file_refused` |
+| E13-4 | `.asm` before and with C59-4 | AC-13 | `lib13_ac13_asm_is_c59_4s_kind` (the reply says `asm-overlay`); the "refused until then" half held from M-42 to M-56 by the old drop rule, without a test of its own |
+| E13-5 | The ways in | AC-14, EC-7 | `library/opening/tests/start_file_tests.cpp`: `lib13_ac14_options_taken_out_before_the_rule` (with the product's list of options; the helper is `cu59::programArguments` in `app/`, Qt-free); `opening_tests.cpp`: `lib13_ac14_open_with_and_start_open_as_what_it_is` (a card and a keystroke program by `open-with` and `start`), `lib13_ec7_open_by_any_way_keeps_dialog_folders`; CTest `CalcU59OpenWithTypes` (the three preset extensions in `Info.plist.in`, `calc-u-59.iss` and `calc-u-59.desktop`); Qt6: a drop, Finder's Open With and a start argument checked by hand on macOS and recorded in the qa-report (M-57's attach scenarios take them over) |
+| E13-6 | Refusal as a notice | AC-15 | `lib13_ac15_refusal_notice_names_the_file` (session); Swift: `Calc-U-59Tests/OpeningTests.swift` (new) `testLib13AC15RefusalIsANotice` (the bridge's notice for a refused `open`) |
+| E13-7 | Today's tests | AC-16 | `part_flows_tests.cpp:495-571, 804` through `open` instead of `dropActionFor`: `lib13_ac16_preset_by_extension_in_any_case`, `_card_on_the_ti59`, `_hidden_file_refused`, `_dropped_preset_loads_as_the_dialog`; Web: `play-calculator.spec.js:297` renamed `LIB-13 AC-16 a dropped preset loads like one from the dialog` |
+
+Coverage: AC-11 to AC-16 and AC-23 have a task, and the column is Done in
+M-56.
+
+### 10.7 Adapters
+
+| Adapter | File | Removed in |
+|---|---|---|
+| Calc-U-59's drop flow (§5) | `app/TIAppPart.*`, `TIAppPartFlows.cpp:599-618` (`c59.open-dropped`, `c59.drop-action`), `app/TIWebPart.cpp:201-221` (`c59.web.drop`), the three frontends' drops | M-56: all go |
+
+None is added. After M-56 nothing in Calc-U-59 tells a file's kind
+outside the open part and `app/TIFileKinds`.
+
+### 10.8 Tools and agent knowledge (in M-56)
+
+- `reference/SharedArchitecture.md:324-331` (§ "Dropped Files": the
+  session's `open`, `app/TIFileKinds`); `reference/FrontendParity.md:45`.
+- Skills `calc-u-59-shared`, `-qt`, `-swift`, `-web` where they name the
+  drop (§7); `calc-u-59-statefiles`: a keystroke program file can be
+  opened.
+- `docs/glossary-mapping.md:83`, the row "Open (a file), file kind":
+  `dropActionFor`, `c59.open-dropped`, `c59.drop-action` →
+  `open`, `open-would-take`, `cu59::KeystrokesKind`, `AsmOverlayKind`.
+- `docs/test-groups.md`: `opening_tests.cpp`, `CalcU59OpenWithTypes`,
+  `OpeningTests.swift`.
+- Memory: no Calc-U-59 memory file names the drop flow (checked
+  2026-11-16).
+
+### 10.9 Golden runs and risks
+
+- **Golden and reference runs** are not affected. Opening hands a file to
+  the preset loader, LIB-7's media and C59-2's program writer, whose steps
+  carry their runs.
+- **Risk: Swift's drag.** SwiftUI's `.dropDestination` gives the URL only
+  at the drop. If it cannot tell a drag's name in advance, the Swift drop
+  takes any one file and the notice comes at the drop, as D-20 does for
+  Qt6.
+- **Risk: Windows and Linux Open With.** These pass the file as an
+  argument. A file whose name starts with `-` is then passed over: today
+  it would be read as a preset.
+
+### 10.10 Decided (best guess)
+
+- **D-16 (AC-11, order of the kinds).** `asm-overlay`, `keystroke-program`,
+  `rom-module-file`, `constant-memory-file`. The names do not overlap, so
+  the order is only that of the reply.
+- **D-17 (AC-23, sentences).** The sentences of §10.4, in the form of LIB-13
+  Part D's "`<name>` was not opened: …".
+- **D-18 (AC-14, the start file).** The product takes its own options and
+  their values out first, then uses the library's rule unchanged. The
+  library's helper stays generic, and the user's ruling (59-47) holds
+  without opening a `--grab` path.
+- **D-19 (AC-14, Open With).** No new document types: the spec keeps
+  today's three. A card or a keystroke program reaches the program by a
+  drop, the dialog or a start argument.
+- **D-20 (AC-6, the drag).** A kind's `takesName` is its name rule, so a
+  `.rom.yaml` or `ti58c.memory.yaml` drag is taken and refused with a
+  notice at the drop, as Calc-U-1600's drag (Part D Q-1).
+- **D-21 (AC-5, the Swift dialog).** The Preset button's importer offers
+  the preset types and any file, as AC-5 asks of "the file dialog of File ▸
+  Load Preset…". The Swift app has no File menu, and its button is that
+  dialog (AC-14: "File ▸ Load Preset… in every frontend").
+- **D-22 (AC-8, the Web picker).** The picker's upload takes several files
+  at once; its bundled presets keep loading by name, since they are no
+  upload.
+- **D-23 (AC-23, paused).** A keystroke program is written into a paused
+  machine too, and the machine stays paused. The write is between two
+  instructions, as a preset's `program:`, and needs no emulated time.
+
+### 10.11 Ledger rows, plan notes, questions
+
+- **Ledger.** In effect in M-56: 59-20 (files), 59-28 (a keystroke
+  program, a module file and the constant memory file), 59-47 (the start
+  file), and 59-1's last sentence (an `.asm` can be dropped; C59-4). No new
+  row.
+- **Plan notes.** Plan M-56, "Waits for": add M-54 (A-E1: `LibraryParts`
+  in the TI app session, C59-2's keystroke program reader). "Knowledge,
+  ledger": add row 59-47 and `docs/glossary-mapping.md`'s "Open" row.
+- **Questions.** None that split this design.

@@ -1018,3 +1018,344 @@ library's tests, which held copies of both products' data:
   not LIB-8's paper output), so its test would need a copy of the
   description again. M-53 moves it to Calc-U-59's tests on the product's
   own description.
+
+## 11. Part E: the Calc-U-59 column
+
+Status of this section: Draft for the Part D/E boundary (2026-11-16).
+§1 to §10 above are approved and are not changed. This section replaces
+the Calc-U-59 outline of §4.2 and §5's Calc-U-59 rows, and closes D-15.
+Paths are under `products/calc-u-59/` unless named, at `7bdd51c`.
+
+### 11.1 Scope
+
+| Column | Step | Tests from (plan §3) | Done in (plan §5.1) |
+|---|---|---|---|
+| Calc-U-59 | M-53 (with LIB-10 59); the Swift paper panel is C59-8 (M-58) | AC-24–31 | M-53 |
+
+- M-53 waits for M-25 (C59-6: the PC-100C as a peripheral), M-34 (the
+  product on the library's sessions in every frontend), M-39 (the kind,
+  `PaperPart`, both panels) and M-40 (LIB-10 L, for the same step's other
+  half). It builds on `main` after the Part D simplification.
+- The Swift frontend is not a frontend of this column (spec, status
+  columns: "Qt6 and Web frontends … (Swift: C59-8)"). It must still build
+  and work after M-53, because the interim topic it reads goes: S-P1 in
+  §11.5.
+- AC-8's "a preset that names the printer" is a Library criterion. For
+  Calc-U-59 it rests on LIB-18 59's build origin (M-54). M-53 carries it
+  for the 2.3.0 presets through P-E4 (§11.5), and M-54 tests it again on
+  format 2. The column is Done in M-53, as plan §5.1 says, because the rule
+  passes there.
+- The edge cases EC-1 to EC-8 are the Library column's (M-39). The
+  product adds none. E8-6 shows EC-7 on the PC-100C once more.
+- Not here: the run control and traces (LIB-10 59, same step, LIB-10
+  design §12); the `paper` entry of the control state and where the panel
+  sits in the window (LIB-4 59, LIB-14 59, M-57); the comparison of the
+  examples' printouts with their replies (C59-2 AC-11, M-54).
+
+### 11.2 What the code is today (`7bdd51c`)
+
+- **Core.** The adapter kind `c59.printer-output`
+  (`core/PrinterOutput.hpp:7-25`: `takeLines`, `takeCodeLines`,
+  `endLineHere`) is offered as `printer/c59.printer-output`
+  (`core/TIMachine.cpp:69, 125, 133`). `PC100C` (`core/PC100C.hpp:22-83`)
+  keeps the text lines and the code lines (`m_lines`, `m_codeLines`,
+  `:81-82`):
+  - PRT.GO commits the text at once and leaves the code line pending
+    (`core/PC100C.cpp:160-179`).
+  - A feed gives an empty text line and a zero code line (`:180-190`).
+  - A pending line ends when the busy count runs out, or when it is cut
+    (`:194-216`).
+  - A detach ends a line where the head is (`TIMachine::unplug`,
+    `endLineHere`).
+
+  `PrinterCodeLine` (`core/TIPrinterTypes.hpp:17-22`) still reaches above
+  the core (C59-1 D-7).
+- **The font and the dot rules** are in the app layer:
+  `app/PrinterFont.hpp:18-108` (`PrinterGeometry`: pitch, widths,
+  `drawnRows`, `inkedColumns`, `faintColumns`, `inkAlpha`, `lineDots`,
+  `lineHeightUnits`, `copyPixelsPerUnit`) and the 5 × 7 font
+  `kPC100CFont` (`:110-175`).
+- **The app layer.** `FrameSampler::tick` takes the lines at 60 Hz
+  (`app/FrameSampler.cpp:18-25`). `TIAppPart` keeps the paper itself
+  (`m_printerLines`, `m_printerCodeLines`, `app/TIAppPart.hpp:563-566`;
+  accessors and flows `:327-344`). In `app/TIAppPartFlows.cpp`:
+  - `:177-196`: `adoptPlaces`, what a detach hands back;
+  - `:265-267`: the frame;
+  - `:340-374`: the printer flows, `printerStripHeightUnits`, `cutPaper`;
+  - `:633-645`: a loaded state cuts the strip;
+  - `:661-666`: KEYSTROKES `PrinterTrace:` and `CutPaper:`.
+
+  The interim topic is `c59.printer` (`TIPrinterState`,
+  `app/TIAppPart.hpp:74, 113-121`; set at `app/TIAppPart.cpp:346-353`).
+  The commands are `c59.printer-connected`, `toggle-printer-connection`,
+  `toggle-printer-trace`, `printer-print`, `printer-adv` and `cut-paper`
+  (`app/TIAppPart.hpp:214-219`, `app/TIAppPart.cpp:144-157`). The Web's
+  form of the paper is the topic `c59.web.printer` and the printer part of
+  `c59.static-data` (`app/TIWebPart.hpp:46`,
+  `app/TIWebPart.cpp:330, 521-555`).
+- **Frontends.**
+  - Qt6: `frontends/qt6/app/PrinterWidget.*` (`PaperView`
+    `PrinterWidget.cpp:26-93`; view control `:131-137`; PRINT, TRACE, ADV
+    `:177-184`; Copy and Cut `:185-193`; follow `:228-232`; its own
+    clipboard `:240-268`). It is the second pane of the splitter
+    (`MainWindow.cpp:27-38`) and reads the accessors of
+    `EmulatorController.cpp:127-130, 222-233`. Qt6 links `calcu_library`
+    only (`frontends/qt6/CMakeLists.txt:128`) and states no host service
+    (`EmulatorController.cpp:72`).
+  - Web: `frontends/web/src/Printer.jsx:14-150`, `painters.js:182-232`
+    (`paintStrip`, `stripTops`), `engine.js:45-49, 132, 146-151, 173-176`.
+    `build.js:44-52` takes no `COMPONENT_SOURCES`. `Printer.jsx:68-87`
+    writes the clipboard itself and bypasses `hostServices.js`.
+  - Swift: `App/Views/PrinterView.swift:9-359`,
+    `EmulatorViewModel.swift:86-88, 297-301, 453-468`,
+    `Bridge/TIAppSession.mm:338, 521-554`. It writes the pasteboard itself
+    (`PrinterView.swift:200-246`).
+- **Readers outside the app.**
+  - The golden-run driver prints `print |…|` and
+    `dots <codes> rows=… partial=…/…` from the adapter kind
+    (`tests/golden_runs_tests.cpp:12-14, 198-202`;
+    `tests/TestRoms.hpp:73-86`).
+  - The reference runs print `--- printed` from `printerLines()`
+    (`tests/reference_runs_tests.cpp:82-83`).
+  - The converter of AC-39 keeps a copy of the core's character table
+    (`tests/paper_replies_tests.cpp:37-43`) and includes
+    `app/PrinterFont.hpp` (`:19`).
+  - The headless tool reads the adapter kind
+    (`tools/headless/capi.cpp:69-70`, `ti59.py:335-350`).
+- **The library's stand-in.** `library/paper/tests/PaperFixtures.cpp:10-25`
+  (`pc100cDescription()`), the reference picture `pc100c.png` and its case
+  `picture_tests.cpp:116-120`. §10.14 moves them here in M-53.
+- **The harness** gives Calc-U-59 no papers
+  (`app/HarnessProduct.cpp:66-75`).
+
+### 11.3 Modules and files (M-53)
+
+| File | Change |
+|---|---|
+| `core/PC100CPaper.hpp/.cpp` (new) | Holds `pc100cPaperDescription()` (AC-24, D-20). Takes over from `app/PrinterFont.hpp` the 5 × 7 font and the dot rules (`kPC100CFont`, `drawnRows`, `inkedColumns`, `faintColumns`, the greys of `inkAlpha` for 0 to 20 heating cycles). Takes over `PRN_CODE` from `core/PC100C.cpp:13-29`, exported for the converter. Holds the placement of §11.4 |
+| `core/PC100C.hpp/.cpp` | Derives from `calcu::paper::PaperOutputBase` instead of `PrinterOutput`. `takeLines`, `takeCodeLines`, `m_lines` and `m_codeLines` go. PRT.GO, a feed, the end of a line and a detach emit marks and text (§11.4). `standing()` is the y where the paper stands. The pending code line stays a private member, and a record of the code lines stays for the tests only (P-E3) |
+| `core/PrinterOutput.hpp`, `core/TIPrinterTypes.hpp` | Deleted. `PrinterCodeLine` becomes `PC100C::CodeLine` (private), which closes C59-1 D-7 |
+| `core/TIMachine.cpp:69, 125, 133` | Offers `printer/paper-output` (owner: the printer, `byPeripheral`) instead of `printer/c59.printer-output` |
+| `core/TIMachineTesting.hpp` | `printedCodeLines(TIMachine&)`: the code lines the PC-100C ended since the last call, for the golden driver and the headless tool (P-E3) |
+| `app/PrinterFont.hpp` | Deleted. The on-screen strip's geometry (`paperPadding*`, `lineHeightUnits`, `copyPixelsPerUnit`) has no user left |
+| `app/TIPrinters.hpp/.cpp` (new) | `cu59::tiPrinterPapers()`: one `PrinterPaper`, the PC-100C with its description, for the app session and the harness |
+| `app/TIAppPart.hpp/.cpp`, `TIAppPartFlows.cpp` | These go: `printerLines`, `printerCodeLines`, `printerStripHeightUnits`, `cutPaper`, `m_printerLines`, `m_printerCodeLines`, `PlaceChange::lines/codeLines`, the command `c59.cut-paper` and the frame's printer lines. `TIPrinterState` keeps only `connected` and `trace` (P-E1). The part answers `set-control` for the PC-100C (P-E2). A 2.3.0 preset that names the printer cuts its paper through the `PaperPart` (P-E4). KEYSTROKES `CutPaper:` becomes `PaperPart::cutPlugged` (P-E5) |
+| `app/FrameSampler.hpp/.cpp` | `printerLines`, `printerCodeLines` and the read of the adapter kind go |
+| `app/TIAppPart.cpp` `makeAppSession` | The session owns a `calcu::paper::PaperPart` on `tiCatalogue()` and `tiPrinterPapers()`, placed after `TIAppPart` in the order of `library/parts/LibraryParts.hpp:40-47` (D-23) |
+| `app/TIWebPart.hpp/.cpp` | `c59.web.printer` and the printer part of `c59.static-data` go; the page reads the library's paper topics |
+| `app/HarnessProduct.cpp:66-75` | Sets `s.papers = tiPrinterPapers()` and `s.printers = {PC-100C}`, so the harness's `paper …` commands and `cut-paper` work for Calc-U-59 |
+| `frontends/qt6/CMakeLists.txt:128` | Links `calcu_qt6` (the paper panel and the clipboard service; LIB-10 §12 adds the buttons) |
+| `frontends/qt6/app/PrinterWidget.*` | Deleted. The splitter's second pane is a `calcu::qt6::PaperPanel` (object name `paper`), with the PC-100C's connect toggle above it until the bar's control in M-57 (P-E1). Its owner comes from `c59.printer`'s `connected`; its controls are the PC-100C's three |
+| `frontends/qt6/app/EmulatorController.*` | The printer accessors and `cutPaper` go, and the paper topics go to the panel. It answers and states `clipboard-image` and `clipboard-text` with `calcu::qt6::ClipboardService`, on macOS through `MacClipboard.mm` (D-17) (P-E6) |
+| `frontends/web/build.js:44-52` | `librarySources: [...dist.LIBRARY_SOURCES, ...dist.COMPONENT_SOURCES]` and `dist.COMPONENT_CSS`, as in Calc-U-1600's `build.js` |
+| `frontends/web/src/Printer.jsx`, `painters.js:182-232`, `engine.js` (the printer parts), `PlayCalculator.jsx:146, 175` | `Printer.jsx`, `paintStrip`, `stripTops` and the printer messages go. Both layouts show `CalcuPaperPanel` (`data-panel=paper`) with the connect toggle above it (P-E1). Copy and Cut are the panel's (`armClipboard`, `paper.copy`, `paper.cut`) |
+| `frontends/swift/Bridge/TIAppSession.h/.mm`, `App/EmulatorViewModel.swift`, `App/Views/PrinterView.swift` | S-P1 (§11.5): the bridge mirrors `paper PC-100C` and gives `PrinterView` the text lines and the dots. Cut and Copy send `paper.cut` and `paper.copy`. The bridge answers `clipboard-image` with `{bytes, text}` |
+| `tests/paper_replies_tests.cpp:19, 37-43` | Includes `core/PC100CPaper.hpp` for the font, the placement and the character table, instead of its own copy and `app/PrinterFont.hpp`. The committed reply files must come out unchanged |
+| `tests/pc100c_paper_tests.cpp` (new), `tests/fixtures/paper/pc100c.png` and `pc100c.marks` (moved from `library/paper/tests/fixtures/`) | §11.6 |
+| `library/paper/tests/PaperFixtures.*`, `picture_tests.cpp:116-120`, `replies_tests.cpp:58-62`, `fixtures/pc100c.*` | `pc100cDescription()` and `ac16_reference_picture_of_the_pc100c` go (§10.14's last bullet). `ac39_marks_reply_read_and_written_unchanged` reads a dot reply written in the test |
+| `tests/golden_runs_tests.cpp`, `tests/TestRoms.hpp:73-86` | The `print` lines come from the text layer of a `calcu::paper::Paper` connected to the capability, and the `dots` lines from `TIMachineTesting::printedCodeLines` (P-E3). The lines stay the same (§11.7) |
+| `tests/reference_runs_tests.cpp:82-83` | The `--- printed` lines come from the text layer of the `PaperPart`'s PC-100C paper. The `.txt` files stay as they are |
+| `tests/shared_tables_tests.cpp:67, 118`, `tests/core_tests.cpp:284, 329`, `tests/peripherals_tests.cpp:317-506`, `tests/part_flows_tests.cpp:106, 279`, `tests/session_tests.cpp:178` | Ported to the kind (§11.6, E8-5) |
+| `tools/headless/capi.cpp:69-70` | `printer_lines` reads a connected `Paper`'s text layer, and `printer_code_lines` reads `TIMachineTesting::printedCodeLines` (P-E3), until the tool goes (M-59) |
+| `frontends/web/tests/play-calculator.spec.js:414-426` | AC-31's scenario under its ID (§11.6) |
+
+### 11.4 How the PC-100C gives its paper (AC-24 to AC-26)
+
+- **Description (AC-24, D-20).**
+  - Unit: 430/1000 mm.
+  - Width: 129.07 units, all of it printable.
+  - Dots: 0.76 units wide (0.38 of the pitch as radius,
+    `PrinterGeometry::dotRadiusFraction`).
+  - Darkness: 21 levels, the greys of today's `inkAlpha` for 0 to 20
+    heating cycles.
+  - Pictures at 600 dpi (AC-27), and a text layer.
+
+  These are the numbers of `library/paper/tests/PaperFixtures.cpp:10-25`,
+  now the product's.
+- **A printed line (AC-25).** At PRT.GO the text layer gets the line's 20
+  positions at `(0, top)`, where `top` is where the paper stands. The
+  spaces count as positions, and each position is the `PRN_CODE` character
+  for its code. When the line ends (the busy count runs out, D-21):
+  1. Each dot of the 5 × 7 font is emitted with darkness 20. For character
+     i, column c and row r, the dot is at
+     `(i × 6.53 + c + 0.5, top + r + 0.5)`.
+  2. The paper is fed to `top + 10.18`.
+
+  These are the converter's rules (§4.1), so a complete line gives the same
+  reply as the conversion of the M-9 files.
+- **A feed.** An empty text line at `top`, then `fedTo(top + 7.09)`. One
+  ADV issues two feeds (`core/PC100C.cpp:180-190`).
+- **A line cut short (AC-26).** The rows that `inkedColumns` gives for the
+  cut are emitted as full dots at darkness 20, and the faint column at
+  darkness `min(partialHeat, 20)`. The line takes `drawnRows` units,
+  without the advance (`PrinterGeometry::lineHeightUnits`).
+- **A detach in a line (EC-7).** `unplug` ends the line where the head is,
+  as `endLineHere` does today, so its rows are emitted before the
+  capability goes. `PaperOutputBase` keeps them until the part binds
+  (§3.1).
+- **A Reset, power cycle or Cold boot** keeps the printer object
+  (`PC100C::operation()`), so `standing()` goes on (D-11).
+
+### 11.5 Adapters
+
+Removed in M-53 (§5's Calc-U-59 rows):
+
+| Old call | Where |
+|---|---|
+| `c59.printer-output` (`takeLines`, `takeCodeLines`, `endLineHere` as a kind); the printer lines of `FrameSampler` and `TIAppPart`; `c59.cut-paper`; `c59.web.printer` | `core/PrinterOutput.hpp`, `app/` |
+| `PrinterWidget`/`PaperView`; `Printer.jsx`, `paintStrip` | Qt6, Web |
+
+New in M-53, each with the step that removes it:
+
+| Adapter | Where | Wraps | Removed in |
+|---|---|---|---|
+| P-E1 owner and connect toggle | `TIPrinterState` (`connected`, `trace`); the toggle above the panel in Qt6 and Web | The panel's owner and the attach control come from the interim topic, instead of LIB-4's `paper` entry and the bar's printer control | M-57 (LIB-4 59, LIB-14 59) |
+| P-E2 `set-control` | `TIAppPart` | The panel's `set-control {owner, control, on}` for `PRINT`, `ADV` and `TRACE` goes to today's printer flows (the app session keeps TRACE, C59-6 AC-6) | M-54 (`LibraryParts` brings LIB-2's `PeripheralsPart`) |
+| P-E3 code lines for tests and tools | `core/TIMachineTesting.hpp`; the seam check `tests/check_core_seam.sh` allows `tools/headless/capi.cpp` | The PC-100C's code lines for the golden `dots` lines and for `printer_code_lines` | The tool's use goes in M-59; the golden driver keeps it, as a test inside the core |
+| P-E4 preset cuts | `TIAppPart::applyState` (`TIAppPartFlows.cpp:633-645`) | A 2.3.0 preset that names `PRINTER:` cuts the PC-100C's paper (AC-8), instead of today's cut on every load | M-54 (LIB-18 59: the build origin, A-3) |
+| P-E5 `CutPaper:` | `TIAppPart::applyControl` | KEYSTROKES `CutPaper:` as `PaperPart::cutPlugged` | M-54 (LIB-6 59: the step `cut-paper:`) |
+| P-E6 clipboard | `EmulatorController` | `clipboard-image` and `clipboard-text` answered by `ClipboardService` | M-57 (LIB-14's `SessionHost`) |
+| S-P1 Swift paper | `TIAppSession.mm`, `PrinterView.swift` | The Swift strip is drawn from the marks and text of the `paper PC-100C` topic; Copy and Cut are the library's commands | M-58 (C59-8: the Swift paper panel) |
+
+### 11.6 Tasks (AC → task → test)
+
+Unless named otherwise, cases in `products/calc-u-59/tests/` are in
+`CalcU59Tests` (Frequent). Session cases use `tests/SessionRig.hpp`
+(`PartRig`) and the real ROMs (`SKIP_UNLESS`). The tests of each task come
+before its code. Names are `lib8_acN_…` (LIB-1 §2a).
+
+| Task | What | AC | Test (file: cases; group) |
+|---|---|---|---|
+| E8-1 | The description | AC-24 | `pc100c_paper_tests.cpp`: `lib8_ac24_pc100c_states_its_paper` (`checkPaperOutput`: dots, a text layer, 430/1000 mm, 129.07 units, the whole width printable, 21 greys), on the TI-59, TI-58 and TI-58C |
+| E8-2 | A line and a feed | AC-25 | `pc100c_paper_tests.cpp`: `lib8_ac25_line_gives_20_positions_and_font_dots`, `_complete_line_takes_10_18`, `_feed_takes_7_09_and_an_empty_line`, `_adv_gives_two_feeds`, `_characters_of_today_for_every_code` (all 64 codes, `x̄` as two code points) |
+| E8-3 | Lines cut short | AC-26 | `pc100c_paper_tests.cpp`: `lib8_ac26_cut_short_rows_and_columns_with_their_darkness`, `_takes_only_the_paper_of_its_rows` (the cases of `core_tests.cpp:329`, on the marks) |
+| E8-4 | Copy | AC-27 | `pc100c_paper_tests.cpp`: `lib8_ac27_copy_is_600_dpi_about_1311_pixels_wide`, `lib8_ac16_reference_picture_of_the_pc100c` (moved from the library, on the product's description; byte for byte with `tests/fixtures/paper/pc100c.png`) |
+| E8-5 | Today's tests | AC-30 | `shared_tables_tests.cpp:67` `printer_font_shape` → `lib8_ac30_font_shape` (on `core/PC100CPaper.hpp`); `:118` `printer_strip_geometry` → `lib8_ac30_feed_complete_and_cut_short_heights` (on the reach); `core_tests.cpp:329` → `lib8_ac30_interrupt_rows_against_the_scan`; `core_tests.cpp:284` → `lib8_ac30_print_gives_a_line` (text layer and dots) |
+| E8-6 | Detached, kept, back | AC-29, EC-7 | session: `lib8_ac29_detached_panel_owner_empty`, and `lib8_ac29_paper_back_on_attach_on_any_model` (TI-59, detach, TI-58C, attach: it prints on below), which replaces `part_flows_tests.cpp:279` `c59_6_ac1_paper_kept_across_detach_and_attach`; `peripherals_tests.cpp:449` → `lib8_ec7_detach_mid_line_keeps_rows` |
+| E8-7 | The preset clause (P-E4), `CutPaper:` (P-E5), the harness | AC-8, AC-23 | session: `lib8_ac8_preset_naming_printer_starts_empty`, `lib8_ac8_preset_without_printer_line_keeps_paper`, `lib8_ac22_keystrokes_cut_paper`; `harness_tests.cpp`: `lib8_ac23_harness_paper_text_of_the_pc100c` (`attach printer PC-100C`, a number, `key PRINT`, then `paper text`), `lib8_ac23_harness_paper_marks_and_png` |
+| E8-8 | The panel in Qt6 and Web | AC-28 | Qt6: `frontends/qt6/tests/paper_tests.cpp` (new; `CalcU59QtTests`, offscreen, Frequent): `lib8_ac28_qt6_print_adv_held_trace_switch_view_control` (the panel built as `MainWindow` builds it, with the controls from the PC-100C's descriptor). Web: `play-calculator.spec.js` `LIB-8 AC-28 PRINT and ADV are held, TRACE is a switch, the view control shows the view that is on` (Longer) |
+| E8-9 | The GUI scenario | AC-31 | Web: `play-calculator.spec.js:414` renamed `LIB-8 AC-31 the PC-100C prints a number, the text view shows it, Cut empties the paper and is disabled`. Qt6: the same as a check of `CalcU59QtTests` (`lib8_ac31_qt6_print_text_cut`), until LIB-14's attach scenarios take it over (M-57) |
+| R-1 | Golden runs, reference runs, replies | §11.7 | `golden_runs_tests.cpp`, `reference_runs_tests.cpp` (the `--- printed` part), and `lib8_ac39_ti_printouts_turned_into_paper_replies` unchanged |
+
+Coverage: AC-24 to AC-31, 8 of 8. AC-8's preset clause is tested again on
+format 2 in M-54.
+
+### 11.7 Golden and reference runs
+
+- **Golden runs** (`tests/golden-runs/`). `ti58c-printer`,
+  `ti59-print-with-printer`, `ti59-print-without-printer` and the other
+  runs that print must replay unchanged. The `print` lines come from the
+  text layer and the `dots` lines from P-E3's code lines. A difference is a
+  finding.
+- **Reference runs** (57, M-9). The `--- printed` lines come from the text
+  layer, and the `.txt` files do not change.
+- **Replies (AC-39).** The converter now takes the font, the table and the
+  placement from the core. Its committed `.paper-text` and `.paper-marks`
+  files must come out byte for byte. M-54 compares them with the new
+  core's own marks of each printing example (C59-2 AC-11).
+- **Reference picture.** `pc100c.png` is moved unchanged, and the
+  product's description must draw it byte for byte (E8-4).
+
+### 11.8 Tools and agent knowledge (in M-53)
+
+- Reference files:
+  - `reference/CoreArchitecture.md:63-64, 96, 877-878`: `PrinterOutput` and
+    `c59.printer-output` become `paper-output` and `core/PC100CPaper`.
+  - `reference/SharedArchitecture.md:92, 456`: `c59.printer` keeps
+    `connected` and `trace`.
+  - `reference/NewGUIGuide.md:43`.
+  - `reference/FrontendParity.md:56-60`: `PrinterWidget` becomes the
+    library's paper panel.
+  - `reference/WebClient.md:51, 55`: `Printer.jsx` becomes
+    `CalcuPaperPanel`.
+  - `reference/AppArchitecture.md`, where it names the strip.
+- Skills:
+  - `calc-u-59-qt` (`SKILL.md:66`, `PrinterWidget`);
+  - `calc-u-59-core` (`SKILL.md:76`, `c59.printer-output`);
+  - `calc-u-59-web` (the printer messages);
+  - `calc-u-59-swift` (`PrinterView` on the topic, S-P1).
+- `docs/glossary-mapping.md`: `PrinterWidget`, `PaperView`, `Printer.jsx`
+  and "printer strip" map to paper panel and paper (§7).
+- `docs/test-groups.md`: `pc100c_paper_tests.cpp`, the renamed cases, and
+  `frontends/qt6/tests/paper_tests.cpp` if `CalcU59QtTests` is new.
+- Tools: `tools/headless/capi.cpp` (P-E3). `tools/agentic/` reads presets
+  and printouts through the headless tool and is otherwise unaffected.
+- Memory: no Calc-U-59 memory file names `PrinterWidget`,
+  `printerCodeLines` or `c59.printer` (checked 2026-11-16).
+
+### 11.9 Risks
+
+- **Who draws the panel.** The Qt6 panel's text view uses a fixed-width
+  font, in which `x̄` and the PC-100C's other two-code-point characters must
+  line up. If they do not, the product sets on the panel the font that
+  today's `PrinterWidget` uses (`PrinterWidget.cpp:145-165`).
+- **The Swift strip (S-P1)** draws from marks. A strip of thousands of
+  lines draws only what is in view, as `PrinterView` does today.
+- **Qt6 tests.** Calc-U-59's Qt6 frontend has no test program today. If
+  `CalcU59QtTests` costs more than a few seconds of the Frequent budget, it
+  runs in Longer, and the qa-report says so.
+- **The splitter.** The panel replaces the pane in place, so the saved
+  splitter widths (`MainWindow.cpp:119-143`) stay valid.
+
+### 11.10 Decided (best guess)
+
+- **D-20 (AC-24, closes D-15).** The printable part is the whole width. The
+  spec gives none, and today's strip draws from edge to edge with half a
+  pitch at each side, which the placement's `+ 0.5` keeps.
+- **D-21 (AC-2, AC-25).** A line's text goes onto the paper at PRT.GO,
+  because today's text is committed at once. Its dots go all at once, row
+  by row, when the line ends, because only then is it known how far the
+  head got. "In the order in which they were made" holds line by line.
+- **D-22 (font in the core).** The font, the table and the dot rules move
+  into `core/PC100CPaper`. The machine gives marks (TR), so it must know
+  them, and the converter and the core then share one copy.
+- **D-23 (the session's parts in M-53).** `makeAppSession` owns the
+  `PaperPart` (and LIB-10's `DebuggerPart`) itself. Making `TIAppPart` fill
+  a `parts::LibraryPartsSetup` is M-54's work
+  (`docs/reviews/d-simplification.md` §9): `LibraryParts` also builds
+  LIB-18's `StartupPart`, which before LIB-18 59 would start a second
+  machine beside the one of `TIAppPart`. The harness already uses
+  `LibraryParts` and only gets the field.
+- **D-24 (controls, P-E2).** The panel sends the library's `set-control`.
+  `TIAppPart` answers it until LIB-2's part joins the session in M-54, so
+  no frontend maps commands.
+- **D-25 (connect toggle, P-E1).** The PC-100C's attach control stays above
+  the panel until the bar has it (M-57). The panel itself shows no attach
+  control (§3.7).
+- **D-26 (code lines, P-E3).** The golden `dots` lines are kept from the
+  core's own record, not rebuilt from marks: a line of spaces has no dots,
+  so its rows and partial columns cannot be read back from the paper.
+- **D-27 (Swift until M-58, S-P1).** The Swift strip draws from the library
+  topic in M-53 because its interim topic goes. The panel itself is
+  C59-8's.
+- **D-28 (clipboard).** Every Calc-U-59 frontend copies through the
+  session's Copy (AC-16). Qt6 answers with `ClipboardService` (on macOS
+  through the Cocoa path of D-17), the Web with `hostServices.js`, and
+  Swift's bridge with `{bytes, text}`.
+- **D-29 (P-E4).** A 2.3.0 preset cuts the paper only when it names the
+  printer (`PRINTER:`), as AC-8 says; today every load cuts it. The
+  difference lasts from M-53 to M-54 only, since M-54 refuses 2.3.0
+  presets.
+
+### 11.11 Ledger rows
+
+- Visible in M-53: 59-18 (empty paper without a name while detached) and
+  59-46 (the Web's view control shows the view that is on).
+- Proposed new row **59-48**: "Qt6, Web: Copy of the paper gives a picture
+  without the white margin around the print, and 'Copied to clipboard' or
+  'Copy failed' shows in the panel; the Qt6 paper follows the newest line
+  only while the view is near the end (today it jumps to the end on every
+  line); a 2.3.0 preset without a `PRINTER:` line keeps the paper (until
+  M-54)." Sources: LIB-8 D-6, AC-13, AC-20 (OQ-3), D-29.
+
+### 11.12 Plan notes
+
+- Plan M-53, "Does": add "the Swift strip on the library's paper topic
+  until C59-8 (S-P1)". "Knowledge, ledger": add the reference files and
+  skills of §11.8 and the proposed row 59-48.
+- Plan M-53, "Green after": add "the Swift app builds and
+  `UIRegressionTests` pass", because S-P1 touches Swift.
+
+### 11.13 Questions for the user
+
+None that split this design.

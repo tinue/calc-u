@@ -20,10 +20,12 @@
 #include <variant>
 #include <vector>
 
-#include "../core/Connector/AlpsPlotterMechanism.hpp"
+#include "../core/Connector/Ce150Card.hpp"
+#include "../core/Connector/PlotterPaperOutput.hpp"
 #include "../core/Debug/Inspect/Inspector.hpp"
 #include "../core/FileIO.hpp"
 #include "../core/Job.hpp"
+#include "../core/Machine/LegacyCalls.hpp"
 #include "../core/Machine/SharpBuilder.hpp"
 #include "../core/Machine/SharpCatalogue.hpp"
 #include "../core/Machine/SharpProductKinds.hpp"
@@ -150,14 +152,20 @@ inline bool writeFile(const std::string& path, const std::vector<uint8_t>& bytes
     return writeFile(path, bytes.data(), bytes.size());
 }
 
-/// Prints the CE-150 plot summary (points, revision, first 60 events) when a
-/// CE-150 is attached (its c1600.plotter-paper). Works on either model.
+/// The plotter's paper in raw steps (sharp::rawPlotPoints): a paper is
+/// connected to its paper-output capability once and reads what the plotter
+/// kept until then (LIB-8 §10.3). Empty when that plotter is not plugged in.
+inline std::vector<sharp::RawPlotPoint> plotPointsOf(Machine& machine, const char* plotter) {
+    return sharp::takeRawPlotPoints(ofPeripheral<calcu::paper::PaperOutput>(machine, plotter));
+}
+
+/// Prints the CE-150 plot summary (points, first 60 events) when a CE-150 is
+/// attached. Works on either model.
 inline void printCe150Report(Machine& machine) {
-    sharp::PlotterPaper* paper = ofPeripheral<sharp::PlotterPaper>(machine, sharp::kCE150);
-    if (!paper) return;
-    std::printf("CE-150: attached, plot points=%zu revision=%llu\n", paper->points().size(),
-                static_cast<unsigned long long>(paper->revision()));
-    const auto events = paper->drainEvents();
+    Ce150Card* card = sharp::legacy::coreParts(machine).ce150;
+    if (!card) return;
+    std::printf("CE-150: attached, plot points=%zu\n", plotPointsOf(machine, sharp::kCE150).size());
+    const auto events = card->mechanism().drainEvents();
     std::printf("CE-150 events (%zu):\n", events.size());
     for (size_t i = 0; i < events.size() && i < 60; ++i) std::printf("  %s\n", events[i].c_str());
 }
@@ -211,8 +219,7 @@ using MemDumps = std::vector<std::pair<uint32_t, uint32_t>>;
 // CALCU_PAPER_OUT=<file>: the plotters' paper as points, one per line
 // ("x y color newStroke"), after a header per plotter -- the reference the
 // migration records once (M-8 of docs/migration-plan.md, LIB-8 AC-39).
-inline void appendPlotPoints(std::string* out, const char* plotter,
-                             const std::vector<AlpsPlotterMechanism::FlatPoint>& points) {
+inline void appendPlotPoints(std::string* out, const char* plotter, const std::vector<sharp::RawPlotPoint>& points) {
     *out += std::string("plotter ") + plotter + " points " + std::to_string(points.size()) + "\n";
     for (const auto& p : points)
         *out += std::to_string(p.x) + " " + std::to_string(p.y) + " " + std::to_string(p.color) + " " +
@@ -226,9 +233,10 @@ inline bool writePaperIfAsked(Machine& machine) {
     const char* paperPath = std::getenv("CALCU_PAPER_OUT");
     if (!paperPath) return true;
     std::string paper;
-    if (auto* p = ofPeripheral<sharp::PlotterPaper>(machine, sharp::kCE150)) appendPlotPoints(&paper, "CE-150", p->points());
-    if (auto* p = ofPeripheral<sharp::PlotterPaper>(machine, sharp::kCE1600P))
-        appendPlotPoints(&paper, "CE-1600P", p->points());
+    if (ofPeripheral<calcu::paper::PaperOutput>(machine, sharp::kCE150))
+        appendPlotPoints(&paper, "CE-150", plotPointsOf(machine, sharp::kCE150));
+    if (ofPeripheral<calcu::paper::PaperOutput>(machine, sharp::kCE1600P))
+        appendPlotPoints(&paper, "CE-1600P", plotPointsOf(machine, sharp::kCE1600P));
     return writeFile(paperPath, paper);
 }
 

@@ -5,6 +5,9 @@
 #include "../app/HarnessProduct.hpp"
 #include "TestHarness.hpp"
 #include "harness/Run.hpp"
+#include "TempFolder.hpp"
+#include <cstdio>
+#include <memory>
 #include <filesystem>
 #include <string>
 
@@ -80,4 +83,57 @@ TEST(harness_variant_switch_old) {
     CHECK(reply("lcd").find(">") != std::string::npos);
     CHECK_EQ(reply("variant Old"), std::string("done\n"));   // the running variant: nothing to do
     server->finish();
+}
+
+// LIB-8 design §10.6, P16-8 (AC-32 with LIB-8 AC-23): the harness's paper
+// commands on the CE-150 of a PC-1500A.
+namespace {
+struct PaperHarness {
+    std::unique_ptr<HarnessProduct> product = shared::makeHarnessProduct();
+    std::unique_ptr<Server> server;
+    PaperHarness() {
+        std::string error;
+        server = Server::start(*product, {}, &error);
+        if (!server) std::fprintf(stderr, "%s\n", error.c_str());
+    }
+    std::string reply(const std::string& l) { return server->line(l).text; }
+    // Clears the fresh RAM's NEW0? question, plugs the CE-150 in and prints.
+    void printOnCe150(const std::string& line) {
+        reply("key cl");
+        reply("type NEW0");
+        reply("wait 1s");
+        reply("attach printer CE-150");
+        reply("type " + line);
+        reply("wait 3s");
+    }
+};
+} // namespace
+
+TEST(lib8_ac32_harness_paper_marks_of_the_ce150) {
+    SKIP_UNLESS(std::filesystem::exists("roms/CE-150.ROM"), "the ROMs are not fetched (roms/fetch_roms.sh)");
+    PaperHarness h;
+    CHECK(h.server != nullptr);
+    if (!h.server) return;
+    h.printOnCe150("LPRINT 123");
+    const std::string marks = h.reply("paper marks CE-150");
+    CHECK(marks.rfind("done ", 0) == 0);
+    CHECK(marks.find("\nreach ") != std::string::npos);
+    CHECK(marks.find("\nstroke ") != std::string::npos);
+    CHECK_EQ(h.reply("paper text CE-150"), std::string("refused: The CE-150 has no text layer.\n"));
+    h.server->finish();
+}
+
+TEST(lib8_ac32_harness_cut_paper_and_png) {
+    SKIP_UNLESS(std::filesystem::exists("roms/CE-150.ROM"), "the ROMs are not fetched (roms/fetch_roms.sh)");
+    calcu::testing::TempFolder t("calcu-1600-paper-png");
+    PaperHarness h;
+    CHECK(h.server != nullptr);
+    if (!h.server) return;
+    h.printOnCe150("LPRINT 1");
+    const std::string png = (t.path() / "ce150.png").string();
+    CHECK_EQ(h.reply("paper png " + png), std::string("done\n"));
+    CHECK(std::filesystem::exists(png) && std::filesystem::file_size(png) > 100);
+    CHECK_EQ(h.reply("cut-paper"), std::string("done\n"));
+    CHECK_EQ(h.reply("paper png " + png), std::string("refused: The paper is empty.\n"));
+    h.server->finish();
 }

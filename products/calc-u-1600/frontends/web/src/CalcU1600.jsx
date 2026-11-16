@@ -367,7 +367,10 @@ function CalcU1600(props) {
   const faceRoom = H - MENU_HEIGHT - BAR_HEIGHT;
   const faceWidth = Math.max(200, Math.min(W, faceRoom * aspect));
   const panelRoom = faceRoom - W / aspect >= PANEL_MIN;
-  const showPaper = panelRoom && !!(ui && ui.paper);
+  // LIB-8 AC-36: the paper panel with or without a plotter (D-18). Where only
+  // one panel fits (a narrow window), it gives way to the inspector while no
+  // plotter is plugged in, as the panels give way today (D-18; qa-report).
+  const showPaper = panelRoom && (W >= INSPECTOR_MIN_WIDTH || !!(ui && ui.paper));
   const showPrinter = panelRoom && !!(ui && ui.printerShown);
   const showInspector = panelRoom && (W >= INSPECTOR_MIN_WIDTH || !(showPaper || showPrinter));
   const anyPanel = showInspector || showPaper || showPrinter;
@@ -405,7 +408,7 @@ function CalcU1600(props) {
       {anyPanel && (
         <div className="calcu-panels">
           {showInspector && <Inspector engine={engine} />}
-          {showPaper && <PlotterPaper engine={engine} />}
+          {showPaper && <PaperDock engine={engine} />}
           {showPrinter && <Ce158Printer engine={engine} />}
         </div>
       )}

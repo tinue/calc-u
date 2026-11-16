@@ -19,7 +19,7 @@ PC1500Variant modelOf(const MachineDescriptor& d) {
 
 // The capability objects, each over the core (C1600-1 §3.6; design §5).
 struct PC1500InterfaceMachine::Kinds {
-    explicit Kinds(PC1500Machine& m) : memory(m), inspector(m), support(m), trace(m), tape(m), clock(m), paper(m), printerPort(m) {}
+    explicit Kinds(PC1500Machine& m) : memory(m), inspector(m), support(m), trace(m), tape(m), clock(m), printerPort(m) {}
 
     struct Memory final : sharp::LoaderMemory {
         explicit Memory(PC1500Machine& m) : m(m) {}
@@ -79,14 +79,6 @@ struct PC1500InterfaceMachine::Kinds {
         }
         PC1500Machine& m;
     } clock;
-    struct Paper final : sharp::PlotterPaper {
-        explicit Paper(PC1500Machine& m) : m(m) {}
-        std::vector<AlpsPlotterMechanism::FlatPoint> points() const override { return m.ce150PlotPoints(); }
-        std::uint64_t revision() const override { return m.ce150PlotRevision(); }
-        std::vector<std::string> drainEvents() override { return m.drainCE150Events(); }
-        void clear() override { m.clearCE150Paper(); }
-        PC1500Machine& m;
-    } paper;
     struct PrinterPort final : sharp::Ce158PrinterPort {
         explicit PrinterPort(PC1500Machine& m) : m(m) {}
         std::vector<std::uint8_t> drain() override { return m.drainCE158ParallelOutput(); }
@@ -156,7 +148,9 @@ void PC1500InterfaceMachine::offer(std::vector<Offered>& out, const std::vector<
     out.push_back(byComponent("LH5801", k.trace));
     out.push_back(byComponent("LH5801", k.tape));
     out.push_back(byComponent(sharp::kRtcComponent, k.clock));
-    if (const PlugEntry* e = at(sharp::kPrinter); e && e->peripheral.value == sharp::kCE150) out.push_back(byPeripheral(*e, k.paper));
+    // LIB-8: the plotter's paper output, once its card is on the bus.
+    if (const PlugEntry* e = at(sharp::kPrinter); e && e->peripheral.value == sharp::kCE150)
+        if (calcu::paper::PaperOutput* paper = m_core->ce150PaperOutput()) out.push_back(byPeripheral(*e, *paper));
     if (const PlugEntry* e = at(sharp::kInterface)) {
         out.push_back(byPeripheral(*e, m_ce158Port.port()));
         out.push_back(byPeripheral(*e, k.printerPort));

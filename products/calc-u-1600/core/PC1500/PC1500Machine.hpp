@@ -180,15 +180,14 @@ public:
     bool attachCE150(const uint8_t* rom, size_t romSize);
     void detachCE150();
     bool ce150Attached() const { return m_ce150Card != nullptr; }
-    /// Direct access, like cpu()/memory(); above the core the plotter is
-    /// reached through PC1500InterfaceMachine's c1600.plotter-paper kind.
+    /// Direct access, like cpu()/memory(); above the core the plotter's
+    /// paper is the card's paper-output capability (LIB-8).
     Ce150Card* ce150Card() { return m_ce150Card.get(); }
+    /// The CE-150's paper output, nullptr while it is not plugged in.
+    sharp::PlotterPaperOutput* ce150PaperOutput();
 
-    /// Empty / 0 when no plotter is attached.
-    std::vector<AlpsPlotterMechanism::FlatPoint> ce150PlotPoints() const;
-    uint64_t ce150PlotRevision() const;
+    /// Empty when no plotter is attached.
     std::vector<std::string> drainCE150Events();
-    void clearCE150Paper();
 
     // ── Cassette recorder (CE-152 on the CE-150's jacks) ────────────────
     //

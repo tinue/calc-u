@@ -176,18 +176,13 @@ public:
     void detachCE1600P();
     bool ce1600pAttached() const { return m_ce1600pCard != nullptr; }
     /// Direct access, like `keyboard()`/`memory()`; above the core the
-    /// paper is reached through PC1600InterfaceMachine's
-    /// c1600.plotter-paper kind, over the accessors below.
+    /// paper is the card's paper-output capability (LIB-8).
     CE1600PCard* ce1600pCard() { return m_ce1600pCard.get(); }
+    /// The CE-1600P's paper output, nullptr while it is not plugged in.
+    sharp::PlotterPaperOutput* ce1600pPaperOutput();
 
     /// Empty when no plotter is attached.
-    std::vector<AlpsPlotterMechanism::FlatPoint> ce1600pPlotPoints() const;
-    /// O(1) change token for the plot geometry (0 when no plotter attached).
-    /// A GUI poll loop reads this every frame and only calls the copying
-    /// `ce1600pPlotPoints()` when it has moved (PlotterPaperWidget).
-    uint64_t ce1600pPlotRevision() const;
     std::vector<std::string> drainCE1600PEvents();
-    void clearCE1600PPaper();
 
     // ── CE-1600F floppy (attached as a union with CE-1600P, above) ──────
     //
@@ -262,10 +257,8 @@ public:
     bool ce150Attached() const { return m_ce150Card != nullptr; }
     Ce150Card* ce150Card() { return m_ce150Card.get(); } // direct access -- core and tests
 
-    std::vector<AlpsPlotterMechanism::FlatPoint> ce150PlotPoints() const;
-    uint64_t ce150PlotRevision() const;
+    sharp::PlotterPaperOutput* ce150PaperOutput();   // nullptr while not plugged in
     std::vector<std::string> drainCE150Events();
-    void clearCE150Paper();
 
     // ── CE-158 RS-232C / Centronics interface (LH5803 side, MODE 1) ──────
     //

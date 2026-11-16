@@ -24,6 +24,7 @@ class LH5803;
 class SC7852;
 class PC1600Bank;
 class PC1600BusArbiter;
+class Ce150Card;
 class Ce158Card;
 class CE1600PCard;
 // Not included: PresetMedia.hpp has a member `slots`, which Qt's macro of
@@ -85,6 +86,7 @@ struct CoreParts {
     const PC1600BusArbiter* arbiter = nullptr;   // PC-1600
     Ce158Card* ce158 = nullptr;
     CE1600PCard* ce1600p = nullptr;           // PC-1600, also during a preset load
+    Ce150Card* ce150 = nullptr;               // the CE-150's card, for the tools' event log (M-51)
 };
 CoreParts coreParts(calcu::machine::Machine&);
 // The core's yield hook (PC1500Machine/PC1600Machine::setYieldHook): called

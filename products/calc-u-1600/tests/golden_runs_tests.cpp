@@ -28,7 +28,8 @@
 //                                      the boot run (C1600-1 §3.3)
 // After every line the run records the display as text with its status
 // words (displayText of readDisplay()), the sound (takeSound: samples,
-// non-zero samples, a checksum), the plotters' paper (c1600.plotter-paper);
+// non-zero samples, a checksum), the plotters' paper (paper-output, read
+// back into raw steps: sharp::rawPlotPoints, LIB-8 §10.7);
 // at the end a checksum of the memory (c1600.loader-memory).
 //
 // Finding (M-26, for the user's ruling): the status words of a record taken
@@ -43,12 +44,14 @@
 #include <cstdlib>
 #include <filesystem>
 #include <fstream>
+#include <map>
 #include <memory>
 #include <sstream>
 #include <string>
 #include <vector>
 
 #include "../core/Connector/MemoryCardDefinition.hpp"
+#include "../core/Connector/PlotterPaperOutput.hpp"
 #include "../core/Display/DisplayOutputText.hpp"
 #include "../core/Machine/LegacyCalls.hpp"
 #include "../core/Machine/SharpBuilder.hpp"
@@ -82,7 +85,7 @@ std::string readText(const fs::path& p) {
     return ss.str();
 }
 
-std::string plotSummary(const std::string& name, const std::vector<AlpsPlotterMechanism::FlatPoint>& pts) {
+std::string plotSummary(const std::string& name, const std::vector<sharp::RawPlotPoint>& pts) {
     Fnv f;
     for (const auto& p : pts) { f.add(&p.x, 4); f.add(&p.y, 4); f.add(&p.color, 1); f.add(&p.newStroke, 1); }
     return "  paper " + name + " points=" + std::to_string(pts.size()) + " sum=" + f.hex() + "\n";
@@ -103,7 +106,10 @@ struct Run {
     std::unique_ptr<Machine> m;
     uint64_t cycles = 0;
     std::string out, error;
-    std::vector<size_t> statusWhileOff;   // 0-based lines of `out` (see the header)
+    std::vector<size_t> statusWhileOff;
+    // A paper per plotter, connected to its paper output when first seen
+    // (it reads what the plotter kept until then); a new card, a new paper.
+    std::map<std::string, std::unique_ptr<calcu::paper::Paper>> papers;   // 0-based lines of `out` (see the header)
 
     bool is1600() const { return model == "PC-1600"; }
 
@@ -218,9 +224,17 @@ struct Run {
         Fnv f;
         f.add(audio.data(), audio.size() * sizeof(int16_t));
         out += "  audio samples=" + std::to_string(audio.size()) + " nonzero=" + std::to_string(loud) + " sum=" + f.hex() + "\n";
-        for (const auto& e : m->capabilities(sharp::PlotterPaper::kKind))
-            if (auto* paper = capabilityAs<sharp::PlotterPaper>(*m, e.id))
-                out += plotSummary(std::get<PeripheralOwner>(e.owner).peripheral.value, paper->points());
+        for (const auto& e : m->capabilities(calcu::paper::PaperOutput::kKind))
+            if (auto* output = capabilityAs<calcu::paper::PaperOutput>(*m, e.id)) {
+                const std::string name = std::get<PeripheralOwner>(e.owner).peripheral.value;
+                std::unique_ptr<calcu::paper::Paper>& paper = papers[name];
+                if (!paper || output->connected() != paper.get()) {
+                    if (paper) paper->release();
+                    paper = std::make_unique<calcu::paper::Paper>(output->description());
+                    paper->bind(output);
+                }
+                out += plotSummary(name, sharp::rawPlotPoints(*paper));
+            }
     }
 
     void command(const std::string& line) {

@@ -10,7 +10,6 @@
 #include <utility>
 #include <vector>
 
-#include "Connector/AlpsPlotterMechanism.hpp"
 #include "Debug/Inspect/Inspector.hpp"
 #include "Display/LcdScreenshot.hpp"
 #include "Display/LcdText.hpp"
@@ -19,6 +18,7 @@
 #include "app/AudioSink.hpp"
 #include "app/MachineModel.hpp"
 #include "app/SharpSession.hpp"
+#include "qt6/ClipboardService.hpp"
 #include "sessions/AppSession.hpp"
 #include "sessions/Listener.hpp"
 #include "typing/HostKey.hpp"
@@ -137,11 +137,10 @@ public:
 
     std::vector<std::uint8_t> drainCE158PrinterOutput() { return app().drainCE158PrinterOutput(); }
     bool hostDriveAttached() const { return session().hostDriveAttached(); }
-    std::vector<AlpsPlotterMechanism::FlatPoint> plotPoints(shared::PaperKind kind) const {
-        return session().plotPoints(kind);
-    }
-    std::uint64_t plotRevision(shared::PaperKind kind) const { return session().plotRevision(kind); }
-    void clearPaper(shared::PaperKind kind) { app().clearPaper(kind); }
+    // The library's paper panel (LIB-8): every message of the session goes to
+    // `sink` too, first the `papers` state it has now (the panel is made
+    // after the session started).
+    void setPaperSink(std::function<void(const calcu::sessions::Message&)> sink);
     shared::ControlState controlState() const;
     TapeDeck::Status tapeStatus() const;
 
@@ -192,6 +191,10 @@ private:
     // target still refers to the live machine.
     std::unique_ptr<DebugController> m_debug;
     std::unique_ptr<shared::SoundFeed> m_sound;
+    // P-A3 (LIB-8 §10.5): `clipboard-image` and `clipboard-text` answered by
+    // the Qt6 component set's service, until LIB-14's SessionHost (M-49).
+    calcu::qt6::ClipboardService m_clipboard;
+    std::function<void(const calcu::sessions::Message&)> m_paperSink;
     std::string m_lastNotice;   // a failed operation's notice; its reply is not shown again
 
     DisplayFrame m_frame;

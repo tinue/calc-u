@@ -2,7 +2,11 @@
 #include <QImage>
 #include <QString>
 
+// The Qt6 component set's macOS clipboard path (LIB-8 design §10.11, D-17):
+// ClipboardService puts a paper's picture through it, and a product's own
+// Copy of the screen may too. Moved from Calc-U-1600's Qt6 frontend in M-45.
 #ifdef Q_OS_MACOS
+namespace calcu::qt6 {
 // Writes `source` to the general pasteboard as an NSImage sized to
 // widthPt x heightPt (Cocoa points, 1/72in). Needed because Qt's
 // cross-platform QClipboard::setImage()/setPixmap() silently ignore both
@@ -21,5 +25,13 @@
 //
 // Returns false (nothing written) if `source` is empty/invalid -- caller
 // should fall back to Qt's own clipboard path in that case.
-bool macSetClipboardImage(const QImage& source, double widthPt, double heightPt, const QString& text = {});
+//
+// `pasteboard`: the name of a pasteboard of its own (the tests, so that they
+// leave the user's clipboard alone); nullptr: the general pasteboard.
+bool macSetClipboardImage(const QImage& source, double widthPt, double heightPt, const QString& text = {},
+                          const char* pasteboard = nullptr);
+// The size in points and in pixels of the image on that pasteboard (the
+// tests); false without one.
+bool macPasteboardImageSize(const char* pasteboard, double* widthPt, double* heightPt, int* widthPx, int* heightPx);
+} // namespace calcu::qt6
 #endif

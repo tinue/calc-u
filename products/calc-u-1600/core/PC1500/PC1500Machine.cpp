@@ -105,26 +105,15 @@ std::vector<uint8_t> PC1500Machine::drainCE158ParallelOutput() {
     return m_ce158.drainParallelOutput();
 }
 
-// The four below read and clear the plotter mechanism, whose stroke and
-// event containers step()/runCycles() change on every motor write.
-
-std::vector<AlpsPlotterMechanism::FlatPoint> PC1500Machine::ce150PlotPoints() const {
-    if (!m_ce150Card) return {};
-    return m_ce150Card->mechanism().flatPoints();
+sharp::PlotterPaperOutput* PC1500Machine::ce150PaperOutput() {
+    return m_ce150Card ? &m_ce150Card->paperOutput() : nullptr;
 }
 
-uint64_t PC1500Machine::ce150PlotRevision() const {
-    if (!m_ce150Card) return 0;
-    return m_ce150Card->mechanism().revision();
-}
-
+// Reads and clears the plotter mechanism's event log, which step() and
+// runCycles() fill on every pen change.
 std::vector<std::string> PC1500Machine::drainCE150Events() {
     if (!m_ce150Card) return {};
     return m_ce150Card->mechanism().drainEvents();
-}
-
-void PC1500Machine::clearCE150Paper() {
-    if (m_ce150Card) m_ce150Card->mechanism().clearPaper();
 }
 
 void PC1500Machine::seedClock(int year, int month, int day, int hour, int minute, int second, int millisecond) {

@@ -60,6 +60,7 @@ public:
     std::string ownerName() const;               // "" without an owner
     bool showsText() const;                      // the text view is on
     void showText(bool on);                      // as the view control does
+    bool paperEmpty() const;                     // the paper shown has nothing on it (or there is none)
     PaperView* paperView() const { return view_; }
 
     struct Shown {

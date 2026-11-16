@@ -165,7 +165,10 @@ if(CALCU_TESTS)
   if(TARGET CalcU1600Qt)
     # The screenshot scenarios run as checks: every shot is taken, into
     # the build tree, not docs/images/.
-    file(GLOB CALCU1600_SCENARIOS ${CMAKE_CURRENT_SOURCE_DIR}/docs/developer/screenshots/guide/*.shots.yaml)
+    # The check scenarios of the GUI criteria (tests/gui/, ADR 0032: LIB-8
+    # AC-36, AC-38, LIB-10 AC-41) run the same way, under their IDs.
+    file(GLOB CALCU1600_SCENARIOS ${CMAKE_CURRENT_SOURCE_DIR}/docs/developer/screenshots/guide/*.shots.yaml
+                                  ${CMAKE_CURRENT_SOURCE_DIR}/tests/gui/*.shots.yaml)
     foreach(scenario ${CALCU1600_SCENARIOS})
       get_filename_component(name ${scenario} NAME_WE)
       calcu_add_test(CalcU1600Shots.${name} longer

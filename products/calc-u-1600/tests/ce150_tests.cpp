@@ -14,11 +14,13 @@
 
 #include "../core/Connector/Ce150Card.hpp"
 #include "../core/Connector/PC1500SignalDecode.hpp"
+#include "../core/Connector/PlotterPaperOutput.hpp"
 #include "../core/PC1500/PC1500Machine.hpp"
 #include "../core/PC1500/PC1500PresetLoader.hpp"
 #include "../core/Preset/PresetFile.hpp"
 #include "TestHarness.hpp"
 #include "TestRoms.hpp"
+#include "paper/Paper.hpp"
 
 namespace {
 
@@ -103,7 +105,18 @@ void writeOpc(Ce150Card& card, uint8_t value) {
     card.respondsToWrite(w, value);
 }
 
-TEST(test_opc_write_walks_x_and_y_steppers) {
+// LIB-8 AC-37: a paper connected to the card's paper output, as the
+// session connects one (the strokes are no longer the mechanism's).
+struct PaperOf {
+    Ce150Card& card;
+    calcu::paper::Paper paper{card.paperOutput().description()};
+    explicit PaperOf(Ce150Card& c) : card(c) { paper.bind(&card.paperOutput()); }
+    ~PaperOf() { paper.bind(nullptr); }
+    std::size_t strokes() const { return paper.marks().size(); }
+    const calcu::paper::Stroke& last() const { return std::get<calcu::paper::Stroke>(paper.marks().back()); }
+};
+
+TEST(lib8_ac37_ce150_stepper_steps_become_places) {
     Ce150Card card;
     // Anchor both motors at ring position 0 (phase 0x9 in both nibbles).
     writeOpc(card, 0x99);
@@ -133,8 +146,9 @@ TEST(test_opc_write_walks_x_and_y_steppers) {
 
 // ── pen up/down via OPB ───────────────────────────────────────────────
 
-TEST(test_pen_signals_trace_a_stroke) {
+TEST(lib8_ac37_ce150_a_stroke_per_pen_down) {
     Ce150Card card;
+    PaperOf p(card);
     writeOpc(card, 0x99); // anchor
 
     { SystemBusPins w = me1Write(0xB00D); card.respondsToWrite(w, 0x03); } // DDB: PB0/PB1 output
@@ -142,12 +156,12 @@ TEST(test_pen_signals_trace_a_stroke) {
 
     { SystemBusPins w = me1Write(0xB00F); card.respondsToWrite(w, 0x02); } // PB1 descending -> pen down
     CHECK(card.mechanism().penDown());
-    CHECK(card.mechanism().strokes().size() == 1);
+    CHECK(p.strokes() == 1);
 
     // move X while down -> stroke extends
     int pos = 0;
     for (int i = 0; i < 3; ++i) { pos = (pos + 1) % 8; writeOpc(card, uint8_t(0x90 | kRing[pos])); }
-    CHECK(card.mechanism().strokes().back().points.size() == 4); // pen-down point + 3 moves
+    CHECK(p.last().path.size() == 4); // pen-down point + 3 moves
 
     { SystemBusPins w = me1Write(0xB00F); card.respondsToWrite(w, 0x01); } // PB0 ascending -> pen up
     CHECK(!card.mechanism().penDown());
@@ -155,7 +169,7 @@ TEST(test_pen_signals_trace_a_stroke) {
 
 // ── colour turret at the carriage left stop ───────────────────────────
 
-TEST(test_left_stop_advances_colour_every_third_arrival) {
+TEST(lib8_ac37_ce150_colour_every_third_arrival) {
     Ce150Card card;
     writeOpc(card, 0x99); // anchor X at ring pos 0
 
@@ -195,20 +209,35 @@ TEST(test_left_stop_advances_colour_every_third_arrival) {
     CHECK(card.mechanism().penColor() == held);
 }
 
-TEST(test_reset_rehomes_but_keeps_ink) {
+TEST(lib8_ac37_reset_keeps_the_paper) {
     Ce150Card card;
+    PaperOf p(card);
     writeOpc(card, 0x99);
     { SystemBusPins w = me1Write(0xB00D); card.respondsToWrite(w, 0x03); }
     { SystemBusPins w = me1Write(0xB00F); card.respondsToWrite(w, 0x02); } // pen down -> opens a stroke
     int pos = 0;
     for (int i = 0; i < 5; ++i) { pos = (pos + 1) % 8; writeOpc(card, uint8_t(0x90 | kRing[pos])); }
     CHECK(card.mechanism().penX() == 5);
-    CHECK(card.mechanism().strokes().size() == 1);
+    CHECK(p.strokes() == 1);
+    // Feed 4 half steps with the pen down: the stroke goes down to y = 4.
+    int ypos = 0;
+    for (int i = 0; i < 4; ++i) { ypos = (ypos - 1 + 8) % 8; writeOpc(card, uint8_t((kRing[ypos] << 4) | kRing[pos])); }
+    CHECK(card.mechanism().penY() == 4);
 
     card.reset();
     CHECK(card.mechanism().penX() == 0);
+    CHECK(card.mechanism().penY() == 0);
     CHECK(!card.mechanism().penDown());
-    CHECK(card.mechanism().strokes().size() == 1); // ink stays on the paper
+    CHECK(p.strokes() == 1); // ink stays on the paper
+    CHECK(card.paperOutput().standing() == 4 * calcu::paper::kPerUnit);   // the paper stands where it stood
+
+    // D-11: the next plot goes on below what was drawn, not over it.
+    writeOpc(card, 0x99);
+    { SystemBusPins w = me1Write(0xB00D); card.respondsToWrite(w, 0x03); }
+    { SystemBusPins w = me1Write(0xB00F); card.respondsToWrite(w, 0x02); }
+    CHECK(p.strokes() == 2);
+    CHECK(p.last().path.front().y == 4 * calcu::paper::kPerUnit);
+    card.reset();
 
     uint8_t v = 0;
     SystemBusPins r = me1Read(0xB00D);

@@ -27,7 +27,9 @@ class FaceplateWidget;
 class ControlBar;
 class DebugPanel;
 class Operations;
-class PlotterPaperWidget;
+namespace calcu::qt6 {
+class PaperPanel;
+}
 class Ce158PrinterWidget;
 class MemoryModuleManager;
 class FloppyDiskManager;
@@ -39,9 +41,9 @@ class EmulationPacer;
 // the debug row (fixed), all inside a central QWidget (QMainWindow requires
 // exactly one); the module pickers live in ControlBar itself. The debug row
 // is a QHBoxLayout (m_debugRow / m_debugRowLayout) holding DebugPanel at
-// stretch 2 always, plus PlotterPaperWidget at stretch 1 whenever a plotter
-// is attached (a fixed 2:1 split, full width when the paper widget is
-// absent). Owns the MachineController and the single ~60Hz frame timer that
+// stretch 2 and the library's paper panel at stretch 1, both always (a
+// fixed 2:1 split; LIB-8 AC-36), plus the CE-158's printer while it is
+// attached. Owns the MachineController and the single ~60Hz frame timer that
 // both advances emulation and repaints the LCD. Also owns physical-keyboard
 // capture -- see HostKeyEvents.hpp.
 //
@@ -82,7 +84,7 @@ public:
     // clipboard; null for an empty screen.
     static QImage toQImage(const GrayImage& screen);
     FaceplateWidget* faceplate() const { return m_faceplate; }
-    PlotterPaperWidget* plotterPaper() const { return m_plotterPaper; }
+    calcu::qt6::PaperPanel* paperPanel() const { return m_paperPanel; }
 
     // A file dropped onto the window, or (macOS) onto the Dock icon / opened
     // from Finder: its content picks the loader (Core/DropFile) -- Load
@@ -113,7 +115,7 @@ private:
     FaceplateWidget* m_faceplate = nullptr;
     ControlBar* m_controlBar = nullptr;
     DebugPanel* m_debugPanel = nullptr;
-    PlotterPaperWidget* m_plotterPaper = nullptr; // added to m_debugRowLayout only while a plotter is attached
+    calcu::qt6::PaperPanel* m_paperPanel = nullptr; // the library's paper panel, always in m_debugRowLayout (LIB-8 AC-36)
     Ce158PrinterWidget* m_ce158Printer = nullptr; // added to m_debugRowLayout only while a CE-158 is attached
     QWidget* m_debugRow = nullptr;
     QHBoxLayout* m_debugRowLayout = nullptr;

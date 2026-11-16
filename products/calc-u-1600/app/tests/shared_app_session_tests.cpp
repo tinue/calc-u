@@ -138,11 +138,11 @@ TEST(test_control_state) {
     CHECK(s.ce150.enabled && s.ce158.enabled);
     CHECK(s.pc1500RomMenu && !s.pc1600RomMenu && !s.ce1600pRomMenu);
     CHECK(!s.floppyShown && !s.tapeShown && !s.hostDriveOffered);
-    CHECK(s.paper == shared::PaperKind::None && !s.printerShown);
+    CHECK(!s.paperOwner && !s.printerShown);
 
     CHECK(f.ok(c::kTogglePeripheral, toggle("CE-150")));
     s = state();
-    CHECK(s.ce150.attached && s.tapeShown && s.paper == shared::PaperKind::CE150);
+    CHECK(s.ce150.attached && s.tapeShown && s.paperOwner && s.paperOwner->value == "CE-150");
 
     CHECK(f.ok(c::kPickModel, Value::object({{"model", "PC-1600"}})));
     s = state();
@@ -153,7 +153,7 @@ TEST(test_control_state) {
 
     CHECK(f.ok(c::kTogglePeripheral, toggle("CE-1600P")));
     s = state();
-    CHECK(s.ce1600p.attached && s.floppyEnabled && s.tapeShown && s.paper == shared::PaperKind::CE1600P);
+    CHECK(s.ce1600p.attached && s.floppyEnabled && s.tapeShown && s.paperOwner && s.paperOwner->value == "CE-1600P");
     CHECK(!s.ce150.enabled && !s.ce158.enabled);
 }
 

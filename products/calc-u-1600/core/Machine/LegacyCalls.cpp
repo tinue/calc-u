@@ -114,9 +114,11 @@ CoreParts coreParts(Machine& m) {
         p.arbiter = &c->busArbiter();
         p.ce158 = c->ce158Card();
         p.ce1600p = c->ce1600pCard();
+        p.ce150 = c->ce150Card();
     } else if (PC1500Machine* c = pc1500Of(m)) {
         p.lh5801 = &c->cpu();
         p.ce158 = c->ce158Card();
+        p.ce150 = c->ce150Card();
     }
     return p;
 }

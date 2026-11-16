@@ -5,7 +5,6 @@
 #include <string>
 #include <vector>
 
-#include "../Connector/AlpsPlotterMechanism.hpp"
 #include "../Debug/Inspect/Inspector.hpp"
 #include "../Tape/TapeDeck.hpp"
 #include "machine/Capability.hpp"
@@ -20,7 +19,6 @@
 //   c1600.ce158-printer-port   bytes sent to the CE-158's printer port (owner: the CE-158)
 //   c1600.host-drive-folder    the host drive's folder (owner: the host drive)
 // Adapter kinds, each removed by the step named (design §5):
-//   c1600.plotter-paper  CE-150 / CE-1600P paper (M-45, LIB-8)
 //   c1600.trace          the CPU trace file (M-45, LIB-10)
 //   c1600.tape-deck      the cassette recorder (M-47, LIB-7)
 //   c1600.floppy-drive   the CE-1600F (M-47, LIB-7)
@@ -73,17 +71,6 @@ public:
 };
 
 // ---- Adapter kinds ----
-
-class PlotterPaper : public calcu::machine::Capability {
-public:
-    static constexpr calcu::machine::KindId kKind{"c1600.plotter-paper"};
-    calcu::machine::KindId kind() const override { return kKind; }
-
-    virtual std::vector<AlpsPlotterMechanism::FlatPoint> points() const = 0;
-    virtual std::uint64_t revision() const = 0;
-    virtual std::vector<std::string> drainEvents() = 0;
-    virtual void clear() = 0;
-};
 
 class CpuTrace : public calcu::machine::Capability {
 public:

@@ -11,6 +11,7 @@
 #include "../core/PC1600/PC1600Keyboard.hpp"
 #include "TestRoms.hpp"
 #include "SharpTestSupport.hpp"
+#include "paper/PaperOutput.hpp"
 #include "peripherals/RealTimeClock.hpp"
 
 using namespace calcu::machine;
@@ -633,7 +634,7 @@ TEST(c1600_1_ac17_first_peripheral_that_answers_wins_in_attach_order) {
         CHECK(p.byConnector[0].plugged.size() == 2 && p.byConnector[0].plugged[0].peripheral == first.peripheral);
         // Both answer their own cycles: the plotter's paper and the CE-158's printer port.
         boot(*m);
-        CHECK(hasKind(*m, sharp::PlotterPaper::kKind));
+        CHECK(hasKind(*m, calcu::paper::PaperOutput::kKind));
         CHECK(hasKind(*m, sharp::Ce158PrinterPort::kKind));
         CHECK(runUntilKeyReady(*m, 5) && !screen(*m).empty());
     }

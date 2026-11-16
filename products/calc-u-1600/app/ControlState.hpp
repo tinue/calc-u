@@ -1,8 +1,9 @@
 #pragma once
+#include <optional>
 #include <string>
 
 #include "app/MachineModel.hpp"
-#include "app/PlotterPaper.hpp"
+#include "machine/Ids.hpp"
 
 namespace shared {
 
@@ -51,8 +52,10 @@ struct ControlState {
     bool hostDriveOffered = false;
     std::string hostDriveDir;  // the mounted directory, empty = none
 
-    // The docked panels.
-    PaperKind paper = PaperKind::None;
+    // The docked panels. The paper panel is always shown (LIB-8 AC-36); its
+    // owner is the plotter plugged in, none without one (adapter P-A1 until
+    // LIB-4's `paper` panel entry, M-49).
+    std::optional<calcu::machine::PeripheralId> paperOwner;
     bool printerShown = false;  // CE-158 printer output
     bool operator==(const ControlState&) const = default;
 };

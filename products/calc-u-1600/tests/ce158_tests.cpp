@@ -336,7 +336,7 @@ TEST(test_rom_lprint_centronics_with_ce150_chained) {
     const std::string printed = text(machine.drainCE158ParallelOutput());
     // The parallel port's power-on end code is LF (CONSOLE 80,1).
     CHECK(printed == "HELLO CE-158\n");
-    CHECK(!machine.ce150PlotPoints().empty()); // "CE150" went to the plotter
+    CHECK(!sharp::takeRawPlotPoints(machine.ce150PaperOutput()).empty()); // "CE150" went to the plotter
 }
 
 // SETDEV PO sends LPRINT out of the serial port; SETDEV KI reads INPUT

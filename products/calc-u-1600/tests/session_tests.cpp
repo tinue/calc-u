@@ -14,6 +14,7 @@
 
 #include "../app/tests/SessionFixture.hpp"
 #include "Machine/SharpRoms.hpp"
+#include "../core/Connector/PlotterPaperOutput.hpp"
 #include "TestHarness.hpp"
 
 namespace {
@@ -70,7 +71,10 @@ TEST(lib3_ac35_preset_in_parts_busy_display_and_paper_update) {
         r.displayMessages = countState(f.messages, from, sessions::kDisplayTopic);
         r.controlMessages = countState(f.messages, from, t::kControlState);
         r.wallMs = std::chrono::duration<double, std::milli>(f.now - before).count();
-        r.plotRevision = f.part().plotRevision(shared::PaperKind::CE150);
+        // The CE-150's paper in the session (LIB-8): its marks so far.
+        r.plotRevision = 0;
+        for (const auto& [owner, paper] : f.part().paperPart().papers())
+            if (owner == "CE-150") r.plotRevision = sharp::rawPlotPoints(*paper).size();
         calls.push_back(r);
     }
     CHECK(reply && reply->done);

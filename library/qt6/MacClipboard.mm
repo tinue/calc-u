@@ -1,9 +1,12 @@
-#include "MacClipboardImage.h"
+#include "qt6/MacClipboard.h"
 
 #import <Cocoa/Cocoa.h>
 #include <cstring>
 
-bool macSetClipboardImage(const QImage& source, double widthPt, double heightPt, const QString& text) {
+namespace calcu::qt6 {
+
+bool macSetClipboardImage(const QImage& source, double widthPt, double heightPt, const QString& text,
+                          const char* pasteboardName) {
     if (source.isNull() || source.width() <= 0 || source.height() <= 0) return false;
     if (widthPt <= 0 || heightPt <= 0) return false;
 
@@ -38,7 +41,8 @@ bool macSetClipboardImage(const QImage& source, double widthPt, double heightPt,
     NSImage* nsImage = [[NSImage alloc] initWithSize:NSMakeSize(widthPt, heightPt)];
     [nsImage addRepresentation:rep];
 
-    NSPasteboard* pasteboard = [NSPasteboard generalPasteboard];
+    NSPasteboard* pasteboard = pasteboardName ? [NSPasteboard pasteboardWithName:@(pasteboardName)]
+                                              : [NSPasteboard generalPasteboard];
     [pasteboard clearContents];
     if ([pasteboard writeObjects:@[nsImage]] != YES) return false;
     // Also offer a real PNG (public.png) alongside the NSImage's TIFF, for
@@ -51,3 +55,20 @@ bool macSetClipboardImage(const QImage& source, double widthPt, double heightPt,
     if (!text.isEmpty()) [pasteboard setString:text.toNSString() forType:NSPasteboardTypeString];
     return true;
 }
+
+bool macPasteboardImageSize(const char* pasteboardName, double* widthPt, double* heightPt, int* widthPx, int* heightPx) {
+    NSPasteboard* pasteboard = [NSPasteboard pasteboardWithName:@(pasteboardName)];
+    NSArray* images = [pasteboard readObjectsForClasses:@[ [NSImage class] ] options:@{}];
+    if (images.count == 0) return false;
+    NSImage* image = images.firstObject;
+    NSImageRep* rep = image.representations.firstObject;
+    if (!rep) return false;
+    *widthPt = image.size.width;
+    *heightPt = image.size.height;
+    *widthPx = static_cast<int>(rep.pixelsWide);
+    *heightPx = static_cast<int>(rep.pixelsHigh);
+    [pasteboard releaseGlobally];
+    return true;
+}
+
+} // namespace calcu::qt6

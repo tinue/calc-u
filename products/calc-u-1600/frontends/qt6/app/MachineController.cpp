@@ -13,6 +13,7 @@
 #include "AppSettings.hpp"
 #include "debug/DebugController.hpp"
 #include "Machine/SharpBuilder.hpp"
+#include "paper/PaperTopics.hpp"
 #include "sessions/LibraryTopics.hpp"
 
 namespace sessions = calcu::sessions;
@@ -167,7 +168,23 @@ void MachineController::attachAudio(shared::AudioSink& sink) {
     m_sound->warmUp(sharp::kSoundRate);
 }
 
+void MachineController::setPaperSink(std::function<void(const sessions::Message&)> sink) {
+    m_paperSink = std::move(sink);
+    if (!m_paperSink) return;
+    if (const sessions::PayloadPtr* papers = m_listener.mirror().state(calcu::paper::kPapersTopic))
+        m_paperSink(sessions::StateMessage{calcu::paper::kPapersTopic, *papers});
+}
+
 void MachineController::onMessage(const sessions::Message& m) {
+    if (m_paperSink) m_paperSink(m);
+    if (const auto* ask = std::get_if<sessions::ServiceAsk>(&m)) {
+        // P-A3: the clipboard, answered after the host call it came in.
+        if (calcu::qt6::ClipboardService::handles(ask->service))
+            QTimer::singleShot(0, this, [this, a = *ask] {
+                if (m_app.session) m_app.session->answer(a.ask, m_clipboard.answer(a));
+            });
+        return;
+    }
     if (const auto* s = std::get_if<sessions::StateMessage>(&m)) {
         onState(s->topic);
     } else if (const auto* st = std::get_if<sessions::StreamMessage>(&m)) {
@@ -182,6 +199,7 @@ void MachineController::onMessage(const sessions::Message& m) {
             }
         }
         (void)m_listener.mirror().takeAppended(st->topic);   // kept here only
+        (void)m_listener.mirror().takeReset(st->topic);
     } else if (std::holds_alternative<sessions::ReplyMessage>(m)) {
         // every reply has its handler (send())
     } else if (m_sound) {

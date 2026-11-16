@@ -7,9 +7,26 @@
 #include <cstdio>
 
 #include "../core/Connector/AlpsPlotterMechanism.hpp"
+#include "../core/Connector/PlotterPaperOutput.hpp"
 #include "TestHarness.hpp"
+#include "paper/Paper.hpp"
 
 namespace {
+
+// LIB-8 AC-37: the mechanism with its paper output and a paper connected to
+// it, as the session connects one (the paper is no longer the mechanism's).
+struct Plotted {
+    AlpsPlotterMechanism m;
+    sharp::PlotterPaperOutput out{sharp::ce1600pPaperDescription()};
+    calcu::paper::Paper paper{out.description()};
+    Plotted() {
+        m.setListener(&out);
+        paper.bind(&out);
+    }
+    ~Plotted() { paper.bind(nullptr); }
+    std::size_t strokes() const { return paper.marks().size(); }
+    const calcu::paper::Stroke& last() const { return std::get<calcu::paper::Stroke>(paper.marks().back()); }
+};
 
 // cmotor.cpp's phaseList forms an 8-position ring over these phases: moving
 // from kRing[i] to kRing[i+1] is always a half-step ("_MID") in the X
@@ -37,7 +54,7 @@ int stepRing(void (AlpsPlotterMechanism::*write)(uint8_t), AlpsPlotterMechanism&
     return pos;
 }
 
-TEST(test_stepper_full_and_half_steps) {
+TEST(lib8_ac37_stepper_steps_become_places) {
     AlpsPlotterMechanism x;
     CHECK(x.penX() == 0);
     x.writeMotorX(0x9); // Stepper already starts at phase 9 (ring position 0); no move
@@ -54,7 +71,7 @@ TEST(test_stepper_full_and_half_steps) {
 // relocating the tracked motor phase, so deltaFor() has no row for 0xF and
 // the step immediately after a brake must land exactly where it would have
 // without the brake in between.
-TEST(test_brake_write_does_not_eat_the_next_step) {
+TEST(lib8_ac37_brake_write_does_not_eat_the_next_step) {
     AlpsPlotterMechanism x;
     x.writeMotorX(0x9); // anchor at ring position 0
     x.writeMotorX(0xf); // brake/hold -- must not move, must not relocate currentPhase
@@ -66,7 +83,7 @@ TEST(test_brake_write_does_not_eat_the_next_step) {
 // Y and Z apply the opposite sign to the same phase table as X (see
 // AlpsPlotterMechanism::stepXY()/stepZ()'s comments): a +1 step in X's own
 // convention moves Y/Z by -1 instead.
-TEST(test_y_applies_inverted_sign_from_x) {
+TEST(lib8_ac37_y_applies_inverted_sign_from_x) {
     AlpsPlotterMechanism m;
     m.writeMotorY(0x9); // establish, ring position 0
     stepRing(&AlpsPlotterMechanism::writeMotorY, m, 0, -5); // X-convention -5 -> Y +5
@@ -79,8 +96,9 @@ TEST(test_y_applies_inverted_sign_from_x) {
 // crossing 6 (already up, no-op) then landing on 0, which must fire the
 // false->true pen-down edge and start a stroke; a subsequent X move while
 // down must extend it; returning to 6 must end it.
-TEST(test_pen_down_traces_a_stroke_and_pen_up_ends_it) {
-    AlpsPlotterMechanism m;
+TEST(lib8_ac37_a_stroke_per_pen_down) {
+    Plotted p;
+    AlpsPlotterMechanism& m = p.m;
     CHECK(!m.penDown());
 
     m.writeMotorZ(0x9); // establish, ring position 0
@@ -91,23 +109,41 @@ TEST(test_pen_down_traces_a_stroke_and_pen_up_ends_it) {
     pos = stepRing(&AlpsPlotterMechanism::writeMotorZ, m, pos, 50); // Z: 50 -> 0
     CHECK(m.penZ() == 0);
     CHECK(m.penDown());
-    CHECK(m.strokes().size() == 1);
-    CHECK(m.strokes().back().points.size() == 1); // just the pen-down point so far
-    CHECK(m.strokes().back().color == AlpsPlotterMechanism::PenColor::Black);
+    CHECK(p.strokes() == 1);
+    CHECK(p.last().path.size() == 1); // just the pen-down point so far
+    CHECK(p.last().colour == sharp::kPenColours[0]);
 
     m.writeMotorX(0x9);
     m.writeMotorX(0xc); // +2 while pen is down -> extends the open stroke
-    CHECK(m.strokes().back().points.size() == 2);
-    CHECK(m.strokes().back().points.back().x == 2);
+    CHECK(p.last().path.size() == 2);
+    CHECK(p.last().path.back().x == sharp::ce1600pPaperDescription().printableLeft + 2 * calcu::paper::kPerUnit);
 
     stepRing(&AlpsPlotterMechanism::writeMotorZ, m, pos, -6); // Z: 0 -> 6, ends the stroke
     CHECK(m.penZ() == 6);
     CHECK(!m.penDown());
-    CHECK(m.strokes().size() == 1); // no new stroke opened just by lifting
+    CHECK(p.strokes() == 1); // no new stroke opened just by lifting
 
     // Moving X with the pen up must not extend the (now closed) stroke.
     m.writeMotorX(0x8); // c -> 8, half step
-    CHECK(m.strokes().back().points.size() == 2);
+    CHECK(p.last().path.size() == 2);
+}
+
+// LIB-8 AC-37: the CE-1600P's turret turns to the next colour after 8
+// arrivals at Z = 50, each armed on the way past Z = 20; the next stroke
+// is in that colour.
+TEST(lib8_ac37_ce1600p_colour_turret) {
+    Plotted p;
+    AlpsPlotterMechanism& m = p.m;
+    m.writeMotorZ(0x9);
+    int pos = 0;
+    for (int i = 0; i < 8; ++i) {
+        pos = stepRing(&AlpsPlotterMechanism::writeMotorZ, m, pos, -44); // Z: 6 -> 50, armed at 20
+        pos = stepRing(&AlpsPlotterMechanism::writeMotorZ, m, pos, 44);  // back to 6
+    }
+    CHECK(m.penColor() == AlpsPlotterMechanism::PenColor::Blue);
+    stepRing(&AlpsPlotterMechanism::writeMotorZ, m, pos, 6); // Z: 6 -> 0, pen down
+    CHECK(p.strokes() == 1);
+    CHECK(p.last().colour == sharp::kPenColours[1]);
 }
 
 // The mechanism's resting state (after AlpsPlotterMechanism's constructor,
@@ -120,8 +156,9 @@ TEST(test_pen_down_traces_a_stroke_and_pen_up_ends_it) {
 // silently reporting penZ==0 already, which would suppress the down edge
 // and, on the real CE-1600P TEST diagnostic, leave the black rectangle
 // (drawn first, right after power-on) empty while the others still draw.
-TEST(test_first_pen_down_from_rest_fires_immediately) {
-    AlpsPlotterMechanism m;
+TEST(lib8_ac37_first_pen_down_from_rest_fires_immediately) {
+    Plotted p;
+    AlpsPlotterMechanism& m = p.m;
     CHECK(!m.penDown());
     CHECK(m.penZ() == 6);
 
@@ -129,7 +166,7 @@ TEST(test_first_pen_down_from_rest_fires_immediately) {
     stepRing(&AlpsPlotterMechanism::writeMotorZ, m, 0, 6); // Z: 6 -> 0, straight down
     CHECK(m.penZ() == 0);
     CHECK(m.penDown());
-    CHECK(m.strokes().size() == 1);
+    CHECK(p.strokes() == 1);
 }
 
 } // namespace

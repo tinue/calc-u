@@ -5,6 +5,7 @@
 #include <vector>
 
 #include "AlpsPlotterMechanism.hpp"
+#include "PlotterPaperOutput.hpp"
 #include "SystemBusCard.hpp"
 #include "../Tape/TapeDeck.hpp"
 
@@ -71,6 +72,13 @@ public:
 
     AlpsPlotterMechanism&       mechanism() { return m_mechanism; }
     const AlpsPlotterMechanism& mechanism() const { return m_mechanism; }
+
+    // The paper output (LIB-8, design §10.3): made and gone with the card
+    // (D-16), the mechanism's pen listener.
+    CE1600PCard() { m_mechanism.setListener(&m_paperOutput); }
+    CE1600PCard(const CE1600PCard&) = delete;
+    CE1600PCard& operator=(const CE1600PCard&) = delete;
+    sharp::PlotterPaperOutput& paperOutput() { return m_paperOutput; }
 
     /// The whole loaded ROM (both 16 KB halves concatenated), for the GUI
     /// debug "Dump Mem" contents view -- empty if no ROM is loaded (should
@@ -153,6 +161,7 @@ private:
 
     std::array<uint8_t, kRomSize> m_rom{};
     bool m_romLoaded = false;
+    sharp::PlotterPaperOutput m_paperOutput{sharp::ce1600pPaperDescription()};
     AlpsPlotterMechanism m_mechanism;
     uint8_t m_port82 = 0;
     bool m_relayClosed = false;

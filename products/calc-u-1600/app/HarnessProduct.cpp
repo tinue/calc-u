@@ -10,7 +10,9 @@
 #include "app/Settings.hpp"
 #include "sessions/SessionPart.hpp"
 #include "app/PacingProfiles.hpp"
+#include "app/SharpPrinters.hpp"
 #include "app/SharpTyping.hpp"
+#include "paper/PaperPart.hpp"
 #include "startup/ProductMachines.hpp"
 
 // The product folder (design §8, O-2), set by CMake.
@@ -115,14 +117,18 @@ public:
         return harness::readDotMatrix(*f, font_.font, o.indicators, d.display.indicators);
     }
 
-    // LIB-5: the typing part (key, type; the Sharp profiles), then the font.
-    std::vector<sessions::SessionPart*> sessionParts() override { return {&typing_, &font_}; }
+    // LIB-5: the typing part (key, type; the Sharp profiles), the font, then
+    // LIB-8's papers of the two plotters (`paper ...`, `cut-paper`; the run
+    // hands the part its machine control, A-3).
+    std::vector<sessions::SessionPart*> sessionParts() override { return {&typing_, &font_, &paper_}; }
+    paper::PaperPart* paperPart() override { return &paper_; }
 
 private:
     machine::Catalogue catalogue_;
     HarnessMachines machines_;
     FontPart font_;
     calcu::typing::TypingPart typing_{typingProduct(), sessions::Hosting::VirtualTime};
+    paper::PaperPart paper_{catalogue_, sharpPrinterPapers()};
 };
 
 } // namespace

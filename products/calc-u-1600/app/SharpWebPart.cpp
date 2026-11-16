@@ -1,6 +1,5 @@
 #include "app/SharpWebPart.hpp"
 
-#include <cstring>
 #include <filesystem>
 #include <fstream>
 #include <map>
@@ -12,7 +11,6 @@
 #include "app/CardYamlDump.hpp"
 #include "app/KeyLayout/FaceplateLayout.hpp"
 #include "app/LcdLayout.hpp"
-#include "app/PlotterPaper.hpp"
 #include "app/PresetCatalog.hpp"
 #include "app/Text.hpp"
 #include "app/Utf8Path.hpp"
@@ -28,7 +26,6 @@ using sessions::SessionContext;
 using sessions::Value;
 using sessions::bytesArg;
 using sessions::flagArg;
-using sessions::realArg;
 using sessions::textArg;
 using sessions::truncatedIntegerArg;
 
@@ -60,31 +57,6 @@ void pickerGroups(Value::Object& v, std::initializer_list<std::pair<const char*,
     v.push_back({"descriptions", Value(std::move(descriptions))});
 }
 
-template <class T> Value::Bytes rawBytes(const std::vector<T>& v) {
-    Value::Bytes out(v.size() * sizeof(T));
-    if (!v.empty()) std::memcpy(out.data(), v.data(), out.size());
-    return out;
-}
-
-// Per pen: {coords: float32 x,y pairs as bytes, starts: uint32 polyline starts as bytes}.
-Value strokes(const PaperStrokes& s) {
-    Value::Array pens;
-    for (int i = 0; i < kPenCount; ++i) {
-        std::vector<float> coords;
-        std::vector<std::uint32_t> starts;
-        for (const Polyline& line : s[static_cast<std::size_t>(i)]) {
-            starts.push_back(static_cast<std::uint32_t>(coords.size() / 2));
-            for (const PaperPoint& p : line) {
-                coords.push_back(static_cast<float>(p.x));
-                coords.push_back(static_cast<float>(p.y));
-            }
-        }
-        starts.push_back(static_cast<std::uint32_t>(coords.size() / 2));
-        pens.push_back(Value::object({{"coords", Value(rawBytes(coords))}, {"starts", Value(rawBytes(starts))}}));
-    }
-    return Value(std::move(pens));
-}
-
 Value presetEntry(const PresetEntry& e) {
     return Value::object({{"group", e.group},
                           {"ref", e.ref},
@@ -109,8 +81,6 @@ Value faceplate(int model) {
 
 Value lcdConstants() {
     using namespace lcd;
-    Value::Array pens;
-    for (int i = 0; i < kPenCount; ++i) pens.push_back(rgb(kPenColors[static_cast<std::size_t>(i)]));
     return Value::object({{"p15Background", rgb(kP15BackgroundRgb)},
                           {"p16Background", rgb(kP16BackgroundRgb)},
                           {"ink", rgb(kInkRgb)},
@@ -125,9 +95,7 @@ Value lcdConstants() {
                           {"p16MatrixLeft", kP16MatrixLeft},
                           {"p16MatrixRight", kP16MatrixRight},
                           {"p16MatrixTop", kP16MatrixTop},
-                          {"p16MatrixBottom", kP16MatrixBottom},
-                          {"penColors", Value(std::move(pens))},
-                          {"penWidth", kPenWidthPt}});
+                          {"p16MatrixBottom", kP16MatrixBottom}});
 }
 
 } // namespace
@@ -142,7 +110,6 @@ void SharpWebPart::attach(sessions::SessionSetup& setup) {
     m_ui = &setup.stateTopic(topics::kWebUi);
     m_lcd = &setup.stateTopic(topics::kWebLcd);
     m_lamps = &setup.stateTopic(topics::kWebLamps);
-    m_paper = &setup.stateTopic(topics::kWebPaper);
     m_printer = &setup.streamTopic(topics::kWebPrinter, sessions::History::None);
 
     using H = sessions::SessionSetup::Handler;
@@ -330,39 +297,6 @@ void SharpWebPart::attach(sessions::SessionSetup& setup) {
         return sessions::replyGiven(sessions::valuePayload("c1600.lcd-text", Value(d && m_app.lcdText(*d, &t) ? t.text() : std::string())));
     });
 
-    // ── Plotter paper ───────────────────────────────────────────────────
-    // The pane width in CSS pixels the page draws the paper at.
-    cmd("c1600.paper-width", [this](const Value& a, SessionContext&) -> CommandOutcome {
-        const double w = realArg(a, "width");
-        if (w != m_paperWidth) {
-            m_paperWidth = w;
-            paper(true);
-        }
-        return Done{};
-    });
-    req("c1600.paper-export", [this](const Value&, SessionContext&) {
-        const PaperKind kind = m_app.controlState().paper;
-        const auto points = m_app.plotPoints(kind);
-        if (points.empty()) return sessions::replyGiven(sessions::valuePayload("c1600.paper-export", Value()));
-        const PaperGeometry geom = PaperGeometry::forKind(kind);
-        const auto [lower, upper] = penYRange(points);
-        const PaperExportSize size = paperExportSize(geom, lower, upper);
-        return sessions::replyGiven(sessions::valuePayload(
-            "c1600.paper-export",
-            Value::object({{"width", size.widthPx},
-                           {"height", size.heightPx},
-                           {"scale", size.scale},
-                           {"paneWidth", size.paneWidthPt},
-                           {"contentHeight", size.contentHeightPt},
-                           {"dotsPerMeter", size.dotsPerMeter},
-                           {"strokes", strokes(buildPaperStrokes(geom, size.paneWidthPt, points, lower))}})));
-    });
-    cmd("c1600.clear-paper", [this](const Value&, SessionContext&) -> CommandOutcome {
-        m_app.clearPaper(m_app.controlState().paper);
-        paper(true);
-        return Done{};
-    });
-
     // ── Settings ────────────────────────────────────────────────────────
     req("c1600.settings-state", [this](const Value&, SessionContext&) {
         const PresetCatalog catalog(m_paths);
@@ -405,7 +339,6 @@ void SharpWebPart::attach(sessions::SessionSetup& setup) {
 void SharpWebPart::afterCall(SessionContext& c, calcu::pacing::WallTime) {
     lcd(c);
     lamps();
-    paper(false);
     printer();
     // The pickers read folders: twice a second, as a bay's change (a
     // preset's save, a recording) shows up; at once after a command.
@@ -419,7 +352,6 @@ void SharpWebPart::refresh(SessionContext& c) {
     m_ui->set(sessions::valuePayload("c1600.ui", ui()));
     lcd(c);
     lamps();
-    paper(true);
 }
 
 Value SharpWebPart::ui() const {
@@ -436,7 +368,7 @@ Value SharpWebPart::ui() const {
                      {"pc1500RomMenu", Value(s.pc1500RomMenu)},
                      {"pc1600RomMenu", Value(s.pc1600RomMenu)},
                      {"ce1600pRomMenu", Value(s.ce1600pRomMenu)},
-                     {"paper", Value(paperName(s.paper))},
+                     {"paper", Value(s.paperOwner ? s.paperOwner->value : std::string())},   // P-A1
                      {"printerShown", Value(s.printerShown)},
                      {"pc1500Rom", Value(static_cast<int>(m_app.pc1500RomRevision()))},
                      {"pc1600Rom", Value(static_cast<int>(m_app.pc1600RomVersion()))},
@@ -504,25 +436,6 @@ void SharpWebPart::lamps() {
                        {"tapeMotor", tape.motor},
                        {"tapeSeconds", static_cast<int>(tape.position)},
                        {"tapeFile", fromPath(toPath(tape.path).filename())}})));
-}
-
-// The strokes at the page's pane width, when the plot changed.
-void SharpWebPart::paper(bool force) {
-    const PaperKind kind = m_app.controlState().paper;
-    if (kind == PaperKind::None || m_paperWidth <= 0) return;
-    const std::uint64_t rev = m_app.plotRevision(kind);
-    if (!force && rev == m_paperRevision && kind == m_paperKind) return;
-    m_paperRevision = rev;
-    m_paperKind = kind;
-    const auto points = m_app.plotPoints(kind);
-    const PaperGeometry geom = PaperGeometry::forKind(kind);
-    const auto [lower, upper] = penYRange(points);
-    m_paper->set(sessions::valuePayload("c1600.paper", Value::object({{"kind", paperName(kind)},
-                                                       {"empty", points.empty()},
-                                                       {"contentHeight", geom.contentHeight(0, lower, upper, m_paperWidth)},
-                                                       {"width", m_paperWidth},
-                                                       {"revision", static_cast<std::int64_t>(rev)},
-                                                       {"strokes", strokes(buildPaperStrokes(geom, m_paperWidth, points, lower))}})));
 }
 
 void SharpWebPart::printer() {

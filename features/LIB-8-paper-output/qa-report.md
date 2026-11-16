@@ -64,7 +64,7 @@ Results of the runs:
 | AC-13 | Pass | Qt6: `ac13_follows_within_64_points_stays_when_scrolled_back` (wheel events), `ac13_no_scroll_bar`; React: `ac13 follows near the end stays when scrolled back` |
 | AC-14 | Pass | Qt6: `ac14_view_control_shows_view_on_text_selectable_fixed_width`; React: `ac14 view control shows the view that is on` |
 | AC-15 | Pass | Qt6: `ac15_key_down_while_held_switch_shows_position`; React: `ac15 printer controls held and switched` (`set-control` sent) |
-| AC-16 | Pass | `ac16_copy_asks_clipboard_with_picture_and_text` (TD-20: picture, text joined by line ends, name, resolution; TP-4: picture only; `copy_cut_tests.cpp`); `ac16_full_width_all_it_reaches_at_stated_resolution`, `ac16_reference_pictures_of_the_test_printers`, `ac16_reference_pictures_of_the_three_printers` (`picture_tests.cpp`; 1311 pixels for the PC-100C, 9921 for a short CE-1600P paper, byte for byte against `fixtures/*.png`); `png_rgb_bands_and_phys` (`formats/tests/png_tests.cpp`); Qt6 `ac16_copy_puts_image_and_text_on_clipboard` (`ClipboardService`: image size, dots per metre, text; the offscreen clipboard works on macOS) |
+| AC-16 | Pass | `ac16_copy_asks_clipboard_with_picture_and_text` (TD-20: picture, text joined by line ends, name, resolution; TP-4: picture only; `copy_cut_tests.cpp`); `ac16_full_width_all_it_reaches_at_stated_resolution`, `ac16_reference_pictures_of_the_test_printers`, `ac16_reference_picture_of_the_pc100c` (`picture_tests.cpp`; 1311 pixels, byte for byte against `fixtures/pc100c.png`); the plotters' pictures in Calc-U-1600 since Part D: `lib8_ac16_reference_pictures_of_the_plotters` (`products/calc-u-1600/tests/plotter_paper_tests.cpp`; 2646 pixels for the CE-150, 9921 for a short CE-1600P paper, byte for byte against `tests/fixtures/paper/*.png`); `png_rgb_bands_and_phys` (`formats/tests/png_tests.cpp`); Qt6 `ac16_copy_puts_image_and_text_on_clipboard` (`ClipboardService`: image size, dots per metre, text; the offscreen clipboard works on macOS) |
 | AC-17 | Pass | `ac17_long_paper_lowered_to_16000_pixels_never_cropped`, `ac17_wide_long_paper_lowered_to_64_megapixels` |
 | AC-18 | Pass | `ac18_cut_copies_then_cuts_also_when_copy_failed` (answer not given; nobody offers the clipboard); Qt6 `ac18_cut_empties_and_disables` |
 | AC-19 | Pass | `ac19_empty_paper_copy_and_cut_refused`; Qt6 `ac19_empty_paper_copy_cut_disabled`; React `ac19 empty paper copy and cut disabled` |
@@ -89,7 +89,8 @@ passes: **Done**.
 
 ### Reference pictures
 
-The five pictures of `library/paper/tests/fixtures/` (`td20.png`,
+The five pictures of `library/paper/tests/fixtures/` (since Part D
+`ce150.png` and `ce1600p.png` are in `products/calc-u-1600/tests/fixtures/paper/`, unchanged; `td20.png`,
 `tp4.png`, `pc100c.png` 1311 × 246, `ce150.png` 2646 × 1700,
 `ce1600p.png` 9921 × 671) were made by `Picture.cpp` in this step and
 looked at once (2026-11-15): the PC-100C's characters in its 5 × 7 font
@@ -196,6 +197,7 @@ tools write `CALCU_PAPER_OUT` from a connected paper.
 | AC-35 | Pass | `paper_session_tests.cpp`: `lib8_ac35_copy_of_a_plotter_is_1200_dpi` (a CE-1600P printout: 9921 pixels wide, 1200 dpi), `lib8_ac35_long_roll_lowered_by_ac17`; macOS: `calcu_qt6_tests` `ac16_mac_clipboard_keeps_physical_size` (P16-9) |
 | AC-36 | Pass (M-45); again on format 2 in M-46 | `paper_session_tests.cpp`: `lib8_ac36_papers_topic_lists_both_plotters_without_any_plugged`, `lib8_ac36_ce150_paper_kept_through_detach_rom_module_and_model_switch` (PC-1500 A04 → A03, a CE-161, a PC-1600 with the CE-150 in MODE 1: it prints on below), `lib8_ac36_ce1600p_paper_kept_through_detach_and_its_rom_variant`, `lib8_ac36_user_preset_naming_a_plotter_starts_it_empty` (version 1, P-A2); Qt6 `CalcU1600Shots.lib8-ac36`; Web `play.spec.js` `lib8_ac36 paper panel always shown, named while a plotter is plugged in` |
 | AC-37 | Pass | `ce1600p_tests.cpp`, `ce150_tests.cpp`: the cases renamed `lib8_ac37_…` on a connected paper (`_stepper_steps_become_places`, `_a_stroke_per_pen_down`, `_ce150_colour_every_third_arrival`, `_ce1600p_colour_turret` (new: the CE-1600P had no turret case), `_reset_keeps_the_paper` (also: it plots on below, D-11)); `plotter_paper_tests.cpp`: `_places_map_to_the_panel`, `_strokes_split_by_colour`, `_copied_picture_size` (they replace `shared_geometry_tests.cpp`'s three); `ce158_tests.cpp` reads the CE-150's paper |
+| AC-16 (the plotters' reference pictures; Part D) | Pass | `plotter_paper_tests.cpp`: `lib8_ac16_reference_pictures_of_the_plotters` (moved from the library's `ac16_reference_pictures_of_the_three_printers`: the same pictures byte for byte, now on `sharp::ce150PaperDescription()` and `sharp::ce1600pPaperDescription()`; design §10.14) |
 | AC-38 | Pass | Qt6 `CalcU1600Shots.lib8-ac38` (`plotter/lissajou-1600.pc1600`; `expect-panel { name: paper, title: CE-1600P, empty: false }`; captures of the panel and of the copy); Web `play.spec.js` `lib8_ac38 plotter example shows the paper panel with marks` |
 
 Exit check of M-45 (the plotter's paper survives a model switch):

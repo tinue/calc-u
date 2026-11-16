@@ -1,10 +1,13 @@
 // LIB-8, the Calc-U-1600 column (design §10.6, P16-1 to P16-4, the ported
-// cases of P16-3 that were shared_geometry_tests.cpp): the CE-150 and the
-// CE-1600P on the library's paper output kind.
+// cases of P16-3 that were shared_geometry_tests.cpp; the plotters' reference
+// pictures of T5): the CE-150 and the CE-1600P on the library's paper output
+// kind.
 
 #include <cmath>
 #include <cstdlib>
 #include <cstdint>
+#include <fstream>
+#include <iterator>
 #include <optional>
 #include <string>
 #include <variant>
@@ -19,6 +22,7 @@
 #include "paper/Paper.hpp"
 #include "paper/PaperPart.hpp"
 #include "paper/Picture.hpp"
+#include "paper/Replies.hpp"
 
 namespace {
 
@@ -241,6 +245,88 @@ TEST(lib8_ac37_copied_picture_size) {
     CHECK(big.height <= calcu::paper::kMaxPictureSide);
     CHECK(static_cast<std::int64_t>(big.width) * big.height <= calcu::paper::kMaxPicturePixels);
     paper.bind(nullptr);
+}
+
+// ── LIB-8 AC-16 (design §6 T5): the plotters' reference pictures ─────────
+//
+// A `paper marks` reply drawn again on the product's description and its
+// picture compared byte for byte with a reference (D-7). The CE-150's reply
+// is the reference run's of plotter_ce150_demo (AC-39); the CE-1600P's is
+// the part of plotter_ascii's within 140 units (tests/fixtures/paper/), so
+// that its picture stays small. CALCU_PAPER_PICTURES=1 writes the pictures
+// anew.
+
+std::vector<std::string> fileLines(const std::string& path) {
+    std::ifstream in(path);
+    std::vector<std::string> out;
+    for (std::string l; std::getline(in, l);) out.push_back(l);
+    return out;
+}
+
+std::vector<std::uint8_t> fileBytes(const std::string& path) {
+    std::ifstream in(path, std::ios::binary);
+    return std::vector<std::uint8_t>(std::istreambuf_iterator<char>(in), std::istreambuf_iterator<char>());
+}
+
+// A printer that gives the marks of a reply again, as they were made.
+class Replay final : public calcu::paper::PaperOutputBase {
+public:
+    explicit Replay(calcu::paper::PaperDescription d) : d_(std::move(d)) {}
+    const calcu::paper::PaperDescription& description() const override { return d_; }
+    calcu::paper::Coord standing() const override { return standing_; }
+    void play(const calcu::paper::MarksRead& read) {
+        for (const calcu::paper::Mark& m : read.marks) {
+            if (const auto* dot = std::get_if<calcu::paper::Dot>(&m)) {
+                emitDot(dot->at, dot->darkness);
+                continue;
+            }
+            const auto& s = std::get<calcu::paper::Stroke>(m);
+            emitPenDown(s.colour, s.path.front());
+            for (std::size_t i = 1; i < s.path.size(); ++i) emitPenTo(s.path[i]);
+            emitPenUp();
+        }
+        emitFedTo(read.reach.to);
+        standing_ = read.reach.to;
+    }
+
+private:
+    calcu::paper::PaperDescription d_;
+    calcu::paper::Coord standing_ = 0;
+};
+
+void checkReferencePicture(const calcu::paper::PaperDescription& d, const std::string& marks,
+                           const std::string& picture, int width) {
+    const std::vector<std::string> lines = fileLines(marks);
+    std::string error;
+    const auto read = calcu::paper::readMarksReply(lines, &error);
+    CHECK_EQ(error, std::string());
+    if (!read) return;
+    CHECK(calcu::paper::marksReply(read->reach, read->marks) == lines);   // the reply form is fixed (AC-39)
+    Replay out(d);
+    calcu::paper::Paper paper(d);
+    paper.bind(&out);
+    out.play(*read);
+    CHECK(!paper.empty());
+    CHECK_EQ(calcu::paper::pictureSize(paper).width, width);
+    CHECK_EQ(calcu::paper::pictureSize(paper).dotsPerInch, 1200.0);
+    const std::vector<std::uint8_t> png = calcu::paper::picturePng(paper);
+    paper.bind(nullptr);
+    const char* env = std::getenv("CALCU_PAPER_PICTURES");
+    if (env && std::string(env) == "1")
+        std::ofstream(picture, std::ios::binary | std::ios::trunc)
+            .write(reinterpret_cast<const char*>(png.data()), static_cast<std::streamsize>(png.size()));
+    const bool same = png == fileBytes(picture);
+    CHECK(same);
+    if (!same) std::fprintf(stderr, "  %s differs from the reference picture (CALCU_PAPER_PICTURES=1 writes it)\n",
+                            picture.c_str());
+}
+
+TEST(lib8_ac16_reference_pictures_of_the_plotters) {
+    checkReferencePicture(sharp::ce150PaperDescription(),
+                          "tests/reference/v0.8.1-examples/plotter_ce150_demo.pc1500a.CE-150.paper-marks",
+                          "tests/fixtures/paper/ce150.png", 2646);   // 56 mm at 1200 dpi
+    checkReferencePicture(sharp::ce1600pPaperDescription(), "tests/fixtures/paper/ce1600p.marks",
+                          "tests/fixtures/paper/ce1600p.png", 9921);   // AC-35: a short CE-1600P paper at 1200 dpi
 }
 
 } // namespace

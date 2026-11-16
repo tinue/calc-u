@@ -157,7 +157,7 @@ Frequent):
 | `paper/tests/paper_kind_tests.cpp` | 3 (LIB-8 AC-1, the test printers; M-39) |
 | `paper/tests/paper_tests.cpp` | 5 (LIB-8 AC-2 to AC-5, EC-1; M-39) |
 | `paper/tests/replies_tests.cpp` | 5 (LIB-8 AC-23, AC-39, EC-2; M-39) |
-| `paper/tests/picture_tests.cpp` | 5 (LIB-8 AC-16, AC-17, the reference pictures; M-39) |
+| `paper/tests/picture_tests.cpp` | 5 (LIB-8 AC-16, AC-17, the reference pictures of the test printers and the PC-100C (until M-53); M-39) |
 | `paper/tests/paper_part_tests.cpp` | 16 (LIB-8 AC-6 to AC-9, EC-2 to EC-4, EC-7; M-39) |
 | `paper/tests/copy_cut_tests.cpp` | 5 (LIB-8 AC-16, AC-18 to AC-20, EC-5; M-39) |
 | `paper/tests/paper_step_tests.cpp` | 4 (LIB-8 AC-22; M-39) |
@@ -355,7 +355,7 @@ needs ROMs that are missing reports `SKIP`):
 | `pacing_longrun_tests.cpp` | 4, the "after" test of LIB-17 AC-21 (M-31): `lib17_ac21_pacing_longrun_scripted_pc1500a`, `_pc1600` Frequent; `lib17_ac21_pacing_longrun_real_clock_pc1500a`, `_pc1600` Checkpoint (return at once without `CALCU1600_PACING_LONGRUN`) | `app/tests/shared_preset_catalog_tests.cpp` | 4 |
 | `pc1500_tape_tests.cpp` | 2 | `app/tests/shared_settings_tests.cpp` | 8 (LIB-9 AC-26–32; M-30) |
 | `rom_lookup_tests.cpp` | 9 (LIB-12 AC-11–14, EC-1; M-27) | `typing_tests.cpp` | 15 (LIB-5, M-36) |
-| `paper_replies_tests.cpp` | 1 (`lib8_ac39_sharp_plots_turned_into_paper_replies`: the `.paper` files of M-8 turned into `paper marks` replies, compared with the committed `*.<plotter>.paper-marks`; `CALCU1600_PAPER_REPLIES=1` writes them; LIB-8 AC-39, M-39) | `plotter_paper_tests.cpp` | 9 (LIB-8 AC-32–34, AC-37; M-45) |
+| `paper_replies_tests.cpp` | 1 (`lib8_ac39_sharp_plots_turned_into_paper_replies`: the `.paper` files of M-8 turned into `paper marks` replies, compared with the committed `*.<plotter>.paper-marks`; `CALCU1600_PAPER_REPLIES=1` writes them; LIB-8 AC-39, M-39) | `plotter_paper_tests.cpp` | 10 (LIB-8 AC-32–34, AC-37; M-45; AC-16: the plotters' reference pictures, from the library in Part D) |
 | `paper_session_tests.cpp` | 6 (LIB-8 AC-35, AC-36 in the app session; M-45) | `media_kinds_tests.cpp` | 8 (LIB-7 1600 AC-37, AC-41, AC-42: the codecs, the cassette place, a tape through the harness; M-47) |
 
 ## Not in a group

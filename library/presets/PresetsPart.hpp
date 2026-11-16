@@ -73,6 +73,12 @@ public:
     // The command `load-preset` without its notice: a read error is the
     // refusal only (LIB-13's opener sends the notice; LIB-13 design §3.4).
     sessions::CommandOutcome loadPreset(const sessions::Value& args, sessions::SessionContext&);
+    // The load of `ref` inside another part's operation (C1600-3 design
+    // §3.4: the DAP's set-up and clean start), read and carried out as
+    // `load-preset {ref, buildOnly}` does; with `forModel`, a preset for
+    // another model is not loaded. Its failure is the result, no notice.
+    sessions::Task<sessions::OperationResult> loadWithin(sessions::OperationContext&, std::string ref, bool buildOnly,
+                                                         std::optional<machine::ModelId> forModel);
     void operationEnded(sessions::SessionContext&) override;   // AC-22, AC-60: regular speed at the end
 
     // startup::PresetLoader (LIB-18 §3.3): a read error, an outdated file,

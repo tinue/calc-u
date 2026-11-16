@@ -6,6 +6,7 @@
 #include <cstdint>
 #include <functional>
 #include <memory>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -26,7 +27,7 @@ namespace calcu::shell {
 class SettingsPart;
 } // namespace calcu::shell
 
-class DebugController;
+class DapSocket;
 
 // ── MachineController: the product's glue around the session host ─────────
 //
@@ -35,7 +36,7 @@ class DebugController;
 // it, which hosts it on the GUI thread (the 60 Hz timer, the listener, the
 // host services, harness attach). The shell draws from the host; this class
 // keeps what only the product needs: the sound feed (a message handler of
-// the host), the debugger's controller (until M-50), the typed keys of the
+// the host), the DAP server's socket (C1600-3), the typed keys of the
 // window's host keyboard and the SHIFT tap, and the product's reads (the
 // screen image, the INSPECTOR, the CE-158's printer). It never sends
 // suspend: the Qt6 frontend keeps running in the background (LIB-3 AC-36).
@@ -102,9 +103,13 @@ public:
     QString serialLinkStatus() const { return QString::fromStdString(app().serialLinkStatus()); }
     QString ce158SerialLinkStatus() const { return QString::fromStdString(app().ce158SerialLinkStatus()); }
 
-    // ---- The debugger (until M-50) ----
-    DebugController* debugController() const { return m_debug.get(); }
-    void refreshDebugServer();
+    // ---- The DAP server (C1600-3; app/dap/DapPart) ----
+    // `--dap <port>` for this run; the refusal (EC-1), also a notice.
+    std::optional<std::string> setDapRunPort(long port);
+    // The status line of Settings ▸ Debugger (the topic c1600.dap, AC-21).
+    QString dapStatus() const;
+    bool dapClient() const;
+    void disconnectDap();   // Settings ▸ Debugger ▸ Disconnect (AC-10, AC-18)
 
     // The pacing probe (LIB-17 §5): host calls so far and the longest gap.
     std::uint64_t calls() const { return m_calls; }
@@ -126,9 +131,8 @@ private:
     std::unique_ptr<calcu::shell::SettingsPart> m_settingsPart;
     calcu::sessions::ProductSession<shared::SharpAppPart> m_app;
     std::unique_ptr<calcu::qt6::SessionHost> m_host;   // stops listening before the session goes
-    // Declared after the session so it goes first on destruction: its debug
-    // target still refers to the live machine.
-    std::unique_ptr<DebugController> m_debug;
+    // Declared after the session so it goes first on destruction.
+    std::unique_ptr<DapSocket> m_dapSocket;
     std::unique_ptr<shared::SoundFeed> m_sound;
     bool m_busy = false;
     std::uint64_t m_serialMoves = 0;

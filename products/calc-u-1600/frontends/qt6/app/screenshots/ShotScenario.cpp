@@ -257,6 +257,48 @@ bool parseStep(const calcu::formats::YamlNode& node, const QDir& baseDir, const 
             return false;
         }
         if (!hasTitle) out->text2 = QStringLiteral("\x01");   // no title asked for
+    } else if (verb == QLatin1String("expect-widget")) {
+        // `expect-widget: { name: debug-status, text: "Listening on …", enabled: true }`
+        // (C1600-3 AC-18): a label's or a button's text, and whether it can be used.
+        out->kind = K::ExpectWidget;
+        out->number = -1;
+        out->text2 = QStringLiteral("\x01");
+        if (!hasValue || !value->isMap()) {
+            *error = lineError(node.line, QStringLiteral("'expect-widget' needs a map with 'name'"));
+            return false;
+        }
+        std::string err;
+        if (!value->requireOnlyKeys({"name", "text", "enabled"}, &err)) {
+            *error = QString::fromStdString(err);
+            return false;
+        }
+        for (const auto& [key, v] : value->map) {
+            QString text;
+            if (!scalarString(v, &text, error)) return false;
+            if (key == "name") out->text = text;
+            else if (key == "text") out->text2 = text;
+            else if (key == "enabled") {
+                if (text != QLatin1String("true") && text != QLatin1String("false")) {
+                    *error = lineError(v.line, QStringLiteral("'enabled' must be true or false"));
+                    return false;
+                }
+                out->number = text == QLatin1String("true") ? 1 : 0;
+            }
+        }
+        if (out->text.isEmpty()) {
+            *error = lineError(node.line, QStringLiteral("'expect-widget' needs a 'name'"));
+            return false;
+        }
+    } else if (verb == QLatin1String("dap-client")) {
+        // `dap-client: <port>` / `disconnect` (C1600-3 AC-18).
+        out->kind = K::DapClient;
+        if (!needText(&out->text)) return false;
+        bool port = false;
+        out->text.toUInt(&port);
+        if (!port && out->text != QLatin1String("disconnect")) {
+            *error = lineError(node.line, QStringLiteral("'dap-client' takes a port or disconnect"));
+            return false;
+        }
     } else if (verb == QLatin1String("expect-title")) {
         out->kind = K::ExpectTitle;
         if (!needText(&out->text)) return false;

@@ -16,6 +16,9 @@
 #include "app/SharpMediaKinds.hpp"
 #include "app/SharpPrinters.hpp"
 #include "app/Utf8Path.hpp"
+#ifndef __EMSCRIPTEN__
+#include "app/dap/DapPart.hpp"
+#endif
 #include "media/PresetMedia.hpp"
 #include "peripherals/Controls.hpp"
 #include "peripherals/RealTimeClock.hpp"
@@ -121,6 +124,18 @@ SharpAppPart::SharpAppPart(Settings& settings, AppPaths& paths, SharpAppPartOpti
     open.kinds = {&m_basicKind, &m_codeKind};   // AC-17: BASIC first
     open.maxBytes = openLimits();
     m_open = std::make_unique<calcu::opening::OpenPart>(std::move(open));
+
+#ifndef __EMSCRIPTEN__
+    // C1600-3 (design §3.3): the DAP server on the library's parts.
+    dap::DapDeps deps;
+    deps.debugger = &m_debugger;
+    deps.typing = &m_typingPart;
+    deps.presets = &m_presets;
+    deps.control = &m_startup.control();
+    deps.settings = &settings.file();
+    deps.bundle = &m_bundle;
+    m_dap = std::make_shared<dap::DapPart>(deps);
+#endif
 }
 
 SharpAppPart::~SharpAppPart() = default;
@@ -130,7 +145,15 @@ std::vector<sessions::SessionPart*> SharpAppPart::sessionParts() {
     // §3.5), PresetsPart before StartupPart (LIB-6 §3.8), MediaPart after
     // StartupPart (LIB-7 §3.7). The host calls AppSession::close() before
     // it ends the session: the media part writes what is pending (AC-13).
-    return {&m_typingPart, &m_peripherals, &m_presets, &m_startup, m_media.get(), &m_loaderPart, m_open.get(), &m_paper, &m_debugger, this};
+    std::vector<sessions::SessionPart*> parts{&m_typingPart, &m_peripherals, &m_presets,  &m_startup, m_media.get(),
+                                              &m_loaderPart, m_open.get(),   &m_paper,    &m_debugger};
+    // C1600-3: the DAP server after the debugger (it reads the run control
+    // after the debugger's own machineChanged).
+#ifndef __EMSCRIPTEN__
+    if (m_dap) parts.push_back(m_dap.get());
+#endif
+    parts.push_back(this);
+    return parts;
 }
 
 void SharpAppPart::notice(const std::string& sentence) {

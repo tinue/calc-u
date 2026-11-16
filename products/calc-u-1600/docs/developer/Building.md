@@ -262,14 +262,16 @@ cmake --build ../../build/debug --target CoreTests
 
 Every CTest entry carries a group label (ADR 0031): `frequent` (on every
 change, ≤ 60 s: `CoreTests`, `calcu_preset_check.CalcU1600Presets`,
-`calcu_preset_check.CalcU1600Templates`), `longer` (before
+`calcu_preset_check.CalcU1600Templates`, `CalcU1600DapTests`), `longer` (before
 merging into `main`, ≤ 10 min: Playwright, the WebAssembly check, the
-screenshot scenarios run as checks into the build tree, `tools/dap_smoke.py`)
+screenshot scenarios run as checks into the build tree, `tools/dap_smoke.py`
+against the harness, `--harness` (`CalcU1600DapSmoke`), and against the Qt
+app, `--app` (`CalcU1600DapSmokeQt`))
 and `checkpoint` (before a release: the User Guide screenshots, the
 ten-minute pacing runs on the real clock). A tree has only the Frequent
 group unless it is configured with `-DCALCU_TESTS_LONGER=ON` or
-`-DCALCU_TESTS_CHECKPOINT=ON`; the screenshot and DAP entries also need
-the Qt app in the tree, Playwright a built `frontends/web/dist/`:
+`-DCALCU_TESTS_CHECKPOINT=ON`; the screenshot entries and `CalcU1600DapSmokeQt`
+also need the Qt app in the tree, Playwright a built `frontends/web/dist/`:
 
 ```sh
 cmake -S ../.. -B ../../build/groups -G Ninja -DCMAKE_BUILD_TYPE=Release \

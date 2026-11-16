@@ -41,10 +41,26 @@ class DebuggerPart;
 namespace calcu::opening {
 class FileKind;
 }
+namespace calcu::presets {
+class PresetsPart;
+}
+namespace calcu::startup {
+class MachineControl;
+}
 
 namespace calcu::harness {
 
 class CommandRegistry;
+class ServeAddOn;
+
+// What a run makes of the library's parts, handed to the product before its
+// session is built (C1600-3 design §3.5: the DAP's set-up loads presets,
+// cold boots and reads the settings).
+struct RunParts {
+    presets::PresetsPart* presets = nullptr;     // when the product has preset rules
+    startup::MachineControl* control = nullptr;
+    settings::SettingsFile* settings = nullptr;  // the run's
+};
 
 class HarnessProduct {
 public:
@@ -105,6 +121,10 @@ public:
     virtual std::vector<std::string> presetExtensions() const { return {}; }
     virtual std::vector<opening::FileKind*> fileKinds() { return {}; }
     virtual std::map<opening::Way, std::uint64_t> openLimits() const { return {}; }
+    // C1600-3 (design §3.5): the run's library parts, before the session is
+    // built; and the product's options of `serve` (`--dap`), owned by it.
+    virtual void runParts(const RunParts&) {}
+    virtual std::vector<ServeAddOn*> serveAddOns() { return {}; }
 };
 
 using ProductFactory = std::unique_ptr<HarnessProduct> (*)();

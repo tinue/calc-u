@@ -173,6 +173,28 @@ if(CALCU_TESTS)
                    PROPERTIES ENVIRONMENT CALCU=$<TARGET_FILE:calcu>)
   endif()
 
+  # C1600-3 (design §6): the DAP server's cases, a program of their own so
+  # that CoreTests' Frequent budget stays as it is (tests/dap/).
+  file(GLOB DAP_TEST_SOURCES CONFIGURE_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/tests/dap/*.cpp)
+  add_executable(CalcU1600DapTests ${DAP_TEST_SOURCES})
+  target_include_directories(CalcU1600DapTests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/tests ${CMAKE_CURRENT_SOURCE_DIR}/app/tests)
+  target_link_libraries(CalcU1600DapTests PRIVATE calcu1600_harness calcu_test_runner calcu_warnings)
+  calcu_debug_o1(CalcU1600DapTests)
+  calcu_add_test(CalcU1600DapTests frequent COMMAND CalcU1600DapTests)
+  # EC-1 under the harness (D-6): `serve --dap 80` ends with exit status 2.
+  if(NOT WIN32)
+    calcu_add_test(CalcU1600DapPortCheck frequent COMMAND sh tests/dap/dap_port_check.sh
+                   PROPERTIES ENVIRONMENT CALCU=$<TARGET_FILE:calcu>)
+  endif()
+  # C1600-3 AC-20, AC-22 (T14): the scenarios of tools/dap_smoke.py against
+  # `calcu --product 1600 serve --dap` (no window; ~17 s with its pauses by hand:
+  # Longer, D-5). Where attach is built (D-3).
+  if(Python3_FOUND AND NOT WIN32 AND CALCU_ATTACH)
+    calcu_add_test(CalcU1600DapSmoke longer
+                   COMMAND ${Python3_EXECUTABLE} tools/dap_smoke.py --port 32170 --harness $<TARGET_FILE:calcu>
+                   PROPERTIES RUN_SERIAL TRUE)
+  endif()
+
   # Longer: run locally before merging into main and at the end of a part.
   # Against frontends/web/dist/ (frontends/web/build.sh first); the WASM
   # smoke builds in build/web itself (Emscripten).
@@ -204,14 +226,21 @@ if(CALCU_TESTS)
       if(name STREQUAL "lib5-ac33")
         set(shot_environment ENVIRONMENT QT_QPA_PLATFORM=offscreen)
       endif()
+      # C1600-3 AC-18: the Debugger section with the server listening.
+      set(shot_arguments)
+      if(name STREQUAL "c1600-3-ac18")
+        set(shot_arguments --dap 32177)
+      endif()
       calcu_add_test(CalcU1600Shots.${name} longer
-                     COMMAND CalcU1600Qt --shots ${scenario} --shots-out ${CMAKE_CURRENT_BINARY_DIR}/shots-check/${name}
+                     COMMAND CalcU1600Qt --shots ${scenario} --shots-out ${CMAKE_CURRENT_BINARY_DIR}/shots-check/${name} ${shot_arguments}
                      PROPERTIES RUN_SERIAL TRUE ${shot_environment})
     endforeach()
+    # C1600-3 T15: the scenarios of tools/dap_smoke.py against the Qt app
+    # (and M-50's exit check, its vscode_session).
     find_package(Python3 COMPONENTS Interpreter)
     if(Python3_FOUND)
-      calcu_add_test(CalcU1600DapSmoke longer
-                     COMMAND ${Python3_EXECUTABLE} tools/dap_smoke.py --app $<TARGET_FILE:CalcU1600Qt>
+      calcu_add_test(CalcU1600DapSmokeQt longer
+                     COMMAND ${Python3_EXECUTABLE} tools/dap_smoke.py --port 32169 --app $<TARGET_FILE:CalcU1600Qt>
                      PROPERTIES RUN_SERIAL TRUE)
     endif()
   endif()

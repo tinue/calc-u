@@ -1,5 +1,6 @@
 #include "typing/TypingEngine.hpp"
 #include "sessions/LibraryTopics.hpp"
+#include "sessions/MachineSession.hpp"
 #include "typing/TypingSupport.hpp"
 #include <algorithm>
 
@@ -93,6 +94,11 @@ void TypingEngine::setMachine(machine::Machine* m, const TypingProfile* p, const
     profile_ = m ? p : nullptr;
     map_ = m ? k : nullptr;
     if (ms_) gen_ = ms_->generation();
+    // A new machine runs unless the session says otherwise now: the paused
+    // state of the old one (told at the last host call) is not carried over,
+    // which matters inside an operation in virtual time, where no host call
+    // comes between the build and the keys (C1600-3: the DAP's clean start).
+    paused_ = ms_ && m ? ms_->paused() : false;
     for (Token t : open) finish(t, TypeResult{false, kStartedOver});
     heldChanged();
 }

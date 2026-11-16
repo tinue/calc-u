@@ -7,6 +7,7 @@
 #include <QTemporaryDir>
 #include <cstdio>
 #include <functional>
+#include <optional>
 #include <string>
 #include <utility>
 #include <vector>
@@ -18,7 +19,6 @@
 #endif
 #include "FileOpenFilter.hpp"
 #include "MainWindow.hpp"
-#include "debug/DebugController.hpp"
 #include "MachineController.hpp"
 #include "app/StartFile.hpp"
 #include "opening/OpenRequest.hpp"
@@ -85,7 +85,19 @@ int main(int argc, char** argv) {
     // arguments macOS or an IDE add (`-NSDocumentRevisionsDebugMode YES`).
     const bool parsed = parser.parse(QCoreApplication::arguments());
 
-    if (parser.isSet(dapOption)) DebugController::setCommandLinePort(parser.value(dapOption).toInt());
+    // C1600-3 AC-2, EC-1: --dap <port> for this run; a port out of range is
+    // said on standard error and in a notice, and the server is off.
+    std::optional<long> dapPort;
+    if (parser.isSet(dapOption)) {
+        bool number = false;
+        const long port = parser.value(dapOption).toLong(&number);
+        dapPort = number ? port : -1;
+    }
+    const auto applyDapPort = [&dapPort](MachineController* controller) {
+        if (!dapPort || !controller) return;
+        if (const std::optional<std::string> refused = controller->setDapRunPort(*dapPort))
+            std::fprintf(stderr, "--dap %ld: %s\n", *dapPort, refused->c_str());
+    };
 
 #ifdef CALCU_ATTACH
     const bool shots = parser.isSet(shotsOption);
@@ -96,6 +108,7 @@ int main(int argc, char** argv) {
 #endif
     if (!shots && !probe) {
         MainWindow window;
+        applyDapPort(window.controller());
         window.show();
 #ifdef CALCU_ATTACH
         std::unique_ptr<calcu::harness::HarnessProduct> attachProduct = shared::makeHarnessProduct();
@@ -149,6 +162,7 @@ int main(int argc, char** argv) {
     QApplication::setAttribute(Qt::AA_DontUseNativeDialogs);
 
     MainWindow window;
+    applyDapPort(window.controller());   // C1600-3 AC-18's scenario: a server to attach a client to
     // Attach on a port the system picks, for the client in this process.
     std::unique_ptr<calcu::harness::HarnessProduct> attachProduct = shared::makeHarnessProduct();
     const std::string problem = window.host().openAttach(

@@ -7,7 +7,6 @@
 #include <vector>
 
 #include "../Connector/ExpansionCard.hpp"
-#include "../Debug/ProgramLoader.hpp"
 #include "../Job.hpp"
 #include "sessions/Operation.hpp"
 #include "machine/Machine.hpp"
@@ -27,11 +26,6 @@ class Ce158Card;
 class CE1600PCard;
 
 namespace sharp::legacy {
-
-// ---- Build & Load (M-50, C1600-3 on C1600-2's loader) ----
-// The listing is verified through the machine's debug targets (thread n:
-// target n - 1).
-debug::LoadResult loadProgram(calcu::machine::Machine&, const debug::LoadRequest&, debug::SourceMap&);
 
 // ---- Media (M-47, LIB-7 1600) ----
 // The card in a module slot (from 1), or nullptr.

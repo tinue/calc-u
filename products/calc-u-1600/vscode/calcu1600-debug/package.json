@@ -231,7 +231,8 @@
                       "call",
                       "stopOnEntry"
                     ],
-                    "default": "stopOnEntry"
+                    "default": "none",
+                    "description": "After the load: none (the default) does nothing more; call types its BASIC call (or \"command\") and runs it; stopOnEntry does the same and stops at its entry"
                   },
                   "cleanStart": {
                     "type": "boolean",

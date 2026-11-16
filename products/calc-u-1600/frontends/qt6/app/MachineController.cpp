@@ -11,7 +11,8 @@
 #include "AppSettings.hpp"
 #include "Machine/SharpBuilder.hpp"
 #include "app/SharpFileKinds.hpp"
-#include "debug/DebugController.hpp"
+#include "app/dap/DapPart.hpp"
+#include "debug/DapSocket.hpp"
 #include "debugger/RunState.hpp"
 #include "media/MediaTopics.hpp"
 #include "sessions/LibraryTopics.hpp"
@@ -29,7 +30,6 @@ MachineController::MachineController(QObject* parent) : QObject(parent) {
     ss.frontend = calcu::settings::FrontendKind::Qt6;
     ss.changed = [this](std::string_view section, std::string_view) {
         if (section == "serial") app().refreshSerialLinkDirectory();
-        if (section == "debug" && m_debug) QTimer::singleShot(0, this, [this] { refreshDebugServer(); });
     };
     m_settingsPart = std::make_unique<calcu::shell::SettingsPart>(std::move(ss));
 
@@ -48,14 +48,16 @@ MachineController::MachineController(QObject* parent) : QObject(parent) {
         if (m_calls++ > 0)
             m_longestGapMs = std::max(m_longestGapMs, std::chrono::duration<double, std::milli>(t - m_lastCall).count());
         m_lastCall = t;
-        if (m_debug) m_debug->afterCall();   // stops and output reach a DAP client
     });
-    m_debug = std::make_unique<DebugController>(this);
+    // C1600-3: the DAP server's socket; the part listens when the settings
+    // or --dap say so.
+    if (shared::dap::DapPart* dap = app().dapPart()) m_dapSocket = std::make_unique<DapSocket>(*dap);
 }
 
 MachineController::~MachineController() {
-    // The DAP's controller goes first: its session works on the live machine.
-    m_debug.reset();
+    // The DAP's socket goes first: no message reaches the part after it.
+    if (m_dapSocket && app().dapPart()) app().dapPart()->setTransport(nullptr);
+    m_dapSocket.reset();
     // The product quits: what a medium still has to save is written (LIB-7
     // AC-13; the parts' `closing`, LIB-3). No message goes out after it.
     if (m_host) m_host->stop();
@@ -67,7 +69,7 @@ MachineController::~MachineController() {
 void MachineController::start() {
     m_host->start();
     send(shared::commands::kStart);
-    m_debug->refreshServer();
+    if (m_dapSocket) app().dapPart()->setTransport(m_dapSocket.get());
 }
 
 void MachineController::send(const sessions::CommandName& name, sessions::Value args, Reply done) {
@@ -196,4 +198,23 @@ const calcu::media::MediaState* MachineController::media() const {
     return state<calcu::media::MediaState>(calcu::media::kMediaTopic);
 }
 
-void MachineController::refreshDebugServer() { m_debug->refreshServer(); }
+std::optional<std::string> MachineController::setDapRunPort(long port) {
+    std::optional<std::string> refused;
+    send(shared::dap::kDapPortCommand, sessions::Value::object({{"port", static_cast<std::int64_t>(port)}}),
+         [&refused](const sessions::ReplyMessage& r) {
+             if (!r.done) refused = r.reason;
+         });
+    return refused;   // the command is carried out at once
+}
+
+QString MachineController::dapStatus() const {
+    const auto* s = state<shared::dap::DapStatus>(shared::dap::kDapTopic);
+    return s ? QString::fromStdString(s->status) : tr("Off");
+}
+
+bool MachineController::dapClient() const {
+    const auto* s = state<shared::dap::DapStatus>(shared::dap::kDapTopic);
+    return s && s->client;
+}
+
+void MachineController::disconnectDap() { send(shared::dap::kDapDisconnectCommand); }

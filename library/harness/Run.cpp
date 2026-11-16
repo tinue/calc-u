@@ -5,8 +5,13 @@
 #include "paper/PaperPart.hpp"
 #include "sessions/LibraryTopics.hpp"
 #include "sessions/MachineSession.hpp"
+#include "sessions/Operation.hpp"
 #include <atomic>
 #include <cctype>
+#include <condition_variable>
+#include <deque>
+#include <mutex>
+#include <thread>
 #include <ctime>
 #include <filesystem>
 
@@ -240,6 +245,8 @@ std::unique_ptr<Server> Server::start(HarnessProduct& product, const RunOptions&
         os.maxBytes = product.openLimits();
         s->open_ = std::make_unique<opening::OpenPart>(std::move(os));
     }
+    // C1600-3 §3.5: the run's parts, for a product part that needs them.
+    product.runParts(RunParts{s->presets_.get(), &s->startup_->control(), &s->setup_->settings()});
     setup.parts = {s->peripherals_.get(), s->state_.get()};
     if (s->presets_) setup.parts.push_back(s->presets_.get());
     for (sessions::SessionPart* p : {static_cast<sessions::SessionPart*>(s->startup_.get()),
@@ -309,6 +316,95 @@ int Server::serve(const std::function<std::optional<std::string>()>& readLine,
         if (!r.text.empty()) write(r.text);
     }
     finish();   // EC-3: as after quit
+    return 0;
+}
+
+// ── serve with add-ons (C1600-3 design §3.5) ──────────────────────────────
+
+struct Server::Inbox {
+    struct Item {
+        enum class Kind { Line, End, Task } kind = Kind::Line;
+        std::string line;
+        std::function<void()> task;
+    };
+    std::mutex mutex;
+    std::condition_variable ready;
+    std::deque<Item> items;
+    bool quit = false;   // the loop's thread only
+
+    void push(Item i) {
+        {
+            std::lock_guard<std::mutex> lock(mutex);
+            items.push_back(std::move(i));
+        }
+        ready.notify_one();
+    }
+};
+
+ServeLoop Server::serveLoop() {
+    if (!inbox_) inbox_ = std::make_shared<Inbox>();
+    std::weak_ptr<Inbox> weak = inbox_;
+    ServeLoop loop;
+    loop.post = [weak](std::function<void()> task) {
+        if (auto in = weak.lock()) in->push(Inbox::Item{Inbox::Item::Kind::Task, {}, std::move(task)});
+    };
+    loop.quit = [weak] {
+        if (auto in = weak.lock()) in->quit = true;
+    };
+    return loop;
+}
+
+int Server::serveWith(const std::vector<ServeAddOn*>& addOns, std::function<std::optional<std::string>()> readLine,
+                      const std::function<void(const std::string&)>& write) {
+    if (addOns.empty()) return serve(readLine, write);
+    if (!inbox_) inbox_ = std::make_shared<Inbox>();
+    std::shared_ptr<Inbox> inbox = inbox_;
+    auto readerDone = std::make_shared<std::atomic<bool>>(false);
+    std::thread reader([inbox, readLine, readerDone] {
+        while (std::optional<std::string> l = readLine()) inbox->push(Inbox::Item{Inbox::Item::Kind::Line, std::move(*l), {}});
+        inbox->push(Inbox::Item{Inbox::Item::Kind::End, {}, {}});
+        *readerDone = true;
+    });
+    const auto wantsTime = [&addOns] {
+        for (ServeAddOn* a : addOns)
+            if (a->wantsTime()) return true;
+        return false;
+    };
+    for (;;) {
+        std::optional<Inbox::Item> item;
+        {
+            std::lock_guard<std::mutex> lock(inbox->mutex);
+            if (!inbox->items.empty()) {
+                item = std::move(inbox->items.front());
+                inbox->items.pop_front();
+            }
+        }
+        if (!item) {   // an add-on may post from wantsTime(): asked without the lock
+            const machine::Machine* m = session_->machineSession().machine();
+            if (m && wantsTime()) {   // emulated time, no wall clock (LIB-11 AC-6)
+                host_->advance(sessions::OperationContext::runPiece(m->descriptor().tickRate));
+                continue;
+            }
+            std::unique_lock<std::mutex> lock(inbox->mutex);
+            inbox->ready.wait(lock, [&] { return !inbox->items.empty(); });
+            item = std::move(inbox->items.front());
+            inbox->items.pop_front();
+        }
+        if (item->kind == Inbox::Item::Kind::End) break;
+        if (item->kind == Inbox::Item::Kind::Task) {
+            item->task();
+            if (inbox->quit) break;
+            continue;
+        }
+        Result r = line(item->line);
+        if (r.quit) break;
+        if (!r.text.empty()) write(r.text);
+    }
+    for (ServeAddOn* a : addOns) a->stop();
+    finish();   // EC-3: as after quit
+    // Standard input may still be open: its reader is left to the end of the program.
+    if (*readerDone) reader.join();
+    else reader.detach();
     return 0;
 }
 

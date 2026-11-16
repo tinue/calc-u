@@ -2,6 +2,8 @@
 #include <QElapsedTimer>
 #include <QList>
 #include <QObject>
+#include <QPointer>
+#include <QTcpSocket>
 #include <QPoint>
 #include <QSize>
 #include <QString>
@@ -55,6 +57,7 @@ signals:
 
 private:
     MainWindow* m_window;
+    QPointer<QTcpSocket> m_dapClient;   // `dap-client: <port>` (C1600-3 AC-18)
     std::uint16_t m_attachPort = 0;
     AttachLineClient* m_client = nullptr;
     // A machine step's command went to attach: the next step waits for its reply.

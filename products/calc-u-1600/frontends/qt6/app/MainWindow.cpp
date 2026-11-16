@@ -15,7 +15,6 @@
 #include "app/SharpFileKinds.hpp"
 #include "app/SharpShellProduct.hpp"
 #include "control/ControlState.hpp"
-#include "debug/DebugController.hpp"
 #include "opening/OpenRequest.hpp"
 #include "qt6/MacClipboard.h"
 #include "qt6/PanelArea.hpp"
@@ -264,18 +263,19 @@ void MainWindow::refreshSerialStatus() {
             if (QLabel* l = line("serial-status-rs232c", tr("PC-1600 RS-232C:")); l->text() != rsText) l->setText(rsText);
             if (QLabel* l = line("serial-status-ce158", tr("CE-158 port:")); l->text() != ceText) l->setText(ceText);
         } else if (box->title() == QLatin1String("Debugger")) {
-            DebugController* debug = m_controller->debugController();
+            // C1600-3 AC-18, AC-21: the topic c1600.dap and its command.
             QLabel* status = line("debug-status", tr("Status:"));
-            if (status->text() != debug->serverStatus()) status->setText(debug->serverStatus());
+            const QString text = m_controller->dapStatus();
+            if (status->text() != text) status->setText(text);
             auto* disconnect = box->findChild<QPushButton*>(QStringLiteral("debug-disconnect"));
             if (!disconnect) {
                 disconnect = new QPushButton(tr("Disconnect"), box);
                 disconnect->setObjectName(QStringLiteral("debug-disconnect"));
                 disconnect->setToolTip(tr("Drop the attached debugger; the calculator runs on"));
-                connect(disconnect, &QPushButton::clicked, debug, &DebugController::disconnectClient);
+                connect(disconnect, &QPushButton::clicked, m_controller.get(), &MachineController::disconnectDap);
                 form->addRow(QString(), disconnect);
             }
-            disconnect->setEnabled(debug->hasClient());
+            disconnect->setEnabled(m_controller->dapClient());
         }
     }
 }

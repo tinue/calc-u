@@ -46,6 +46,8 @@ add_library(calcu59_core STATIC
   ${CORE_ROOT}/TIKeys.cpp
   ${CORE_ROOT}/TIMachine.cpp
   ${CORE_ROOT}/TIMemoryKinds.cpp
+  ${CORE_ROOT}/TIMagneticCard.cpp
+  ${CORE_ROOT}/TICardReaderPlace.cpp
   ${CORE_ROOT}/TIRomText.cpp
   ${CORE_ROOT}/TIRomReader.cpp
   ${CORE_ROOT}/ModuleFile.cpp

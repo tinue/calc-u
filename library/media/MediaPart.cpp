@@ -63,7 +63,7 @@ InFileDefs::InFileDefs() {
 }
 
 MediaPart::MediaPart(MediaSetup s)
-    : shelf_(s.kinds, s.paths), listing_(std::move(s.listing)), catalogue_(s.catalogue), control_(s.control) {
+    : shelf_(s.kinds, s.paths, std::move(s.files)), listing_(std::move(s.listing)), catalogue_(s.catalogue), control_(s.control) {
     startup::MachineControl* c = control_;
     if (!c) return;
     // S-7a: a variant switch carries a module medium's content over.
@@ -141,6 +141,8 @@ void MediaPart::attach(sessions::SessionSetup& s) {
         if (it->second.instance())   // EC-9
             return Refused{"The " + labelled(it->second) + " is saved already; Name & Save is for a medium that is not."};
         if (it->second.writeProtected) return Refused{"The " + labelled(it->second) + " is write-protected."};
+        if (!it->second.kind->offersNameAndSave)   // D-28
+            return Refused{"A " + it->second.kind->label + " is not saved by Name & Save."};
         if (c.busy()) return Refused{sessions::kAnotherOperationRuns};
         SaveRequest r;
         r.by = SaveBy::NameAndSave;
@@ -359,6 +361,15 @@ void MediaPart::computePlaces(const Machine& cm) {
             break;
         }
     }
+    // AC-47: a module slot that no kind of medium fits (Calc-U-59's slot-1).
+    for (const machine::PlaceName& name : listing_.slots) {
+        if (!m.descriptor().place(name) || place(name.value)) continue;
+        Place p;
+        p.word = name.value;
+        p.slot = true;
+        p.path = machine::PlacePath{{name}};
+        places_.push_back(std::move(p));
+    }
 }
 
 const MediaPart::Place* MediaPart::place(const std::string& word) const {
@@ -546,7 +557,13 @@ bool MediaPart::write(SessionContext& c, const Place*, Binding& b, Content conte
     w.content = std::move(content);
     w.source = b.source;
     w.savedAt = isoTime(c.hostTime());
-    const WriteResult r = writeMedium(*b.kind, w, b.path, shelf_);
+    WriteResult r;
+    if (b.kind->rereadBeforeWrite && !b.started) {   // D-27: what the file holds now
+        const FileAccess::Read now = shelf_.files().read(b.path);
+        if (now.unreadable) r.problem = "the file cannot be read.";
+        else w.source = now.bytes;
+    }
+    if (r.problem.empty()) r = writeMedium(*b.kind, w, b.path, shelf_);
     b.written = revision;
     b.pending = false;
     if (!r.ok) {   // A8, AC-14
@@ -718,6 +735,7 @@ std::optional<std::string> MediaPart::arm(SessionContext& c, const std::string& 
     b.content = std::move(content);
     b.side.reset();
     b.passed = false;
+    b.armed = ++armSerial_;
     b.pending = false;
     b.written = cap->revision();
     passed_.erase(word);
@@ -956,7 +974,7 @@ MediaPart::Outcome MediaPart::importBytes(SessionContext& c, const std::string& 
 }
 
 MediaPart::Outcome MediaPart::importFile(SessionContext& c, const std::string& path) {
-    const auto bytes = settings::readWholeFile(path);
+    const auto bytes = shelf_.files().read(path).bytes;
     if (!bytes) return Outcome{false, "The file " + baseName(path) + " cannot be read.", {}};
     return importBytes(c, baseName(path), *bytes, companionsBeside(path));
 }
@@ -1058,7 +1076,7 @@ CommandOutcome MediaPart::openFile(const Value& a, SessionContext& c) {
     const std::string path = sessions::textArg(a, "path");
     std::string bytes;
     if (const auto b = sessions::bytesArg(a, "bytes")) bytes.assign(b->begin(), b->end());
-    else if (const auto f = settings::readWholeFile(path)) bytes = *f;
+    else if (const auto f = shelf_.files().read(path).bytes) bytes = *f;
     else return Refused{"The file " + baseName(name.empty() ? path : name) + " cannot be read."};
     const std::string fileName = baseName(name.empty() ? path : name);
     const OpenedMedium o = readOpened(fileName, bytes, sessions::flagArg(a, "upload") ? std::string() : path);
@@ -1072,7 +1090,7 @@ CommandOutcome MediaPart::openFile(const Value& a, SessionContext& c) {
         const ReadOutcome r = k.codec->read(bytes, {});
         const ShelfEntry* same = shelf_.find(k, nameOf(r.info, fileName, k));
         if (same && same->origin == Origin::Saved && !sessions::flagArg(a, "confirmed"))
-            return Refused{std::string(kAsks) + "A " + k.label + " named " + inQuotes(same->name) + " exists. Replace it?"};
+            return Refused{std::string(kAsks) + replaceQuestionFor(k, same->name)};
         const Outcome imp = importBytes(c, fileName, bytes, {}, sessions::flagArg(a, "confirmed"));
         if (!imp.ok) return Refused{imp.reason};
         const ShelfEntry* e = shelf_.byPath(imp.path);
@@ -1099,7 +1117,7 @@ CommandOutcome MediaPart::openFile(const Value& a, SessionContext& c) {
     sync(c);
     const Place* p = place(word);
     if (!p) return Refused{noPlace(word)};
-    if (p->kind->id != k.id) return Refused{"The " + k.label + " does not go into " + word + "."};
+    if (!p->kind || p->kind->id != k.id) return Refused{"The " + k.label + " does not go into " + word + "."};
     if (p->slot) {
         if (!k.moduleRequest) return Refused{"The " + k.label + " cannot be plugged in."};
         auto req = k.moduleRequest(info, p->path);
@@ -1119,7 +1137,8 @@ CommandOutcome MediaPart::openFile(const Value& a, SessionContext& c) {
 
 MediaPart::Resolved MediaPart::resolveEntry(const Place& p, const std::string& entry) const {
     Resolved out;
-    const KindDecl& k = *p.kind;
+    static const KindDecl kNone;   // a slot that no kind of medium fits (AC-47)
+    const KindDecl& k = p.kind ? *p.kind : kNone;
     const std::size_t colon = entry.find(':');
     const std::string what = entry.substr(0, colon), rest = colon == std::string::npos ? std::string() : entry.substr(colon + 1);
     if (what == "implicit") {
@@ -1246,13 +1265,14 @@ CommandOutcome MediaPart::choose(SessionContext& c, const std::string& word, con
 std::vector<PickerEntry> MediaPart::picker(SessionContext& c, const Place& p) const {
     std::vector<PickerEntry> empty, bundled, user, instances, modules;
     empty.push_back(PickerEntry{PickerEntry::Group::Empty, "", "", std::nullopt, true, std::nullopt});
-    const KindDecl& k = *p.kind;
+    static const KindDecl kNone;   // a slot that no kind of medium fits (AC-47): no shelf entries
+    const KindDecl& k = p.kind ? *p.kind : kNone;
     auto tip = [](const std::string& d) { return d.empty() ? std::nullopt : std::optional<std::string>(d); };
     Machine* atMachine = c.machine();
     const machine::PlaceDescriptor* slotPlace =
         p.slot && atMachine ? atMachine->descriptor().place(p.path.steps.front()) : nullptr;
     std::vector<std::string> shelfNames;   // a catalogue module of that name is the same template
-    for (const ShelfEntry* e : shelf_.entries(k)) {
+    for (const ShelfEntry* e : p.kind ? shelf_.entries(k) : std::vector<const ShelfEntry*>{}) {
         // A module slot lists the media that fit it (AC-8; Calc-U-1600 AC-38).
         if (slotPlace && k.fitsPinOut && !e->outdatedHint && !k.fitsPinOut(e->info, slotPlace->pinOut)) continue;
         shelfNames.push_back(foldName(e->name));
@@ -1357,7 +1377,7 @@ std::shared_ptr<const MediaState> MediaPart::state(SessionContext& c) {
     for (const Place& p : places_) {
         PlaceState ps;
         ps.place = p.word;
-        ps.kind = p.kind->id;
+        ps.kind = p.kind ? p.kind->id : std::string();
         ps.slot = p.slot;
         ps.passThrough = p.passThrough;
         ps.sides = p.sides;
@@ -1367,7 +1387,7 @@ std::shared_ptr<const MediaState> MediaPart::state(SessionContext& c) {
         if (it != bindings_.end()) {
             const Binding& b = it->second;
             ps.holds = PlaceState::Held{b.name, p.passThrough ? ps.passing : b.side, b.isTemplate, b.unsaved, b.writeProtected};
-            ps.nameAndSave = !b.instance() && !b.writeProtected;   // AC-16, EC-9, D-18
+            ps.nameAndSave = b.kind->offersNameAndSave && !b.instance() && !b.writeProtected;   // AC-16, EC-9, D-18, D-28
             ps.askWriteProtect = ps.nameAndSave && b.hasWriteProtect;
         } else if (p.slot && m) {
             if (const auto plugged = pluggedAt(*m, p)) {   // a module that is not a medium

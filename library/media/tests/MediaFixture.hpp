@@ -84,6 +84,10 @@ struct FixtureOptions {
     // only), and parts after MediaPart, made once the fixture's parts are.
     std::string settingsIni;
     std::function<std::vector<sessions::SessionPart*>(MediaFixture&)> moreParts;
+    // LIB-7 §11 (M-55): the kinds changed before the part is made (the
+    // library additions of Calc-U-59), and the host's file access.
+    std::function<void(std::vector<KindDecl>&)> kinds;
+    std::shared_ptr<const FileAccess> files;
 };
 
 class MediaFixture {
@@ -107,6 +111,8 @@ public:
         TestKindFolders folders{bundled / "disks", bundled / "modules", ""};
         MediaSetup ms;
         ms.kinds = testKinds(folders);
+        if (o.kinds) o.kinds(ms.kinds);
+        ms.files = o.files;
         ms.paths = paths.get();
         ms.catalogue = &mt::mediaTestCatalogue();
         ms.listing = o.listing;

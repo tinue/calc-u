@@ -5,6 +5,8 @@
 // folder, a dropped file, and the topics the page reads (AC-22).
 
 #include "TestHarness.hpp"
+#include "../app/TIMagneticCardKind.hpp"
+#include "media/MediaTopics.hpp"
 #include "SessionRig.hpp"
 #include "../app/TIWebPart.hpp"
 #include "settings/AtomicFile.hpp"
@@ -111,26 +113,29 @@ TEST(lib9_ac23_web_settings_in_the_ini_file) {
     CHECK(s.find("traceMaxMB") && *s.find("traceMaxMB")->integer() == 7);
 }
 
+// LIB-15 AC-20 (M-55, LIB-7 59): the cards are the library's media of the
+// persistent save folder; a dropped card file is imported into it and fitted.
 TEST(lib15_ac20_cards_are_files_of_the_save_folder) {
     WebRig r;
     r.run(1s);
-    // A blank card fitted, written by the machine, listed by the card topic.
-    r.send("c59.web.fit-blank-card", Value::object({{"name", "Mine.U59"}}));
+    r.send("media.start-new", Value::object({{"place", "card-reader"}, {"template", "implicit:Fresh card"}, {"name", "Mine"}}));
     CHECK(r.part().cardFitted());
-    r.send("c59.web.fit-blank-card", Value::object({{"name", "../x.U59"}}));   // never out of the folder
-    // A dropped card joins the folder once fitted.
-    const std::string text = "Calc-U-59 Card 2.0\n";
-    r.send("c59.web.drop", Value::object({{"name", "notes.txt"}, {"bytes", Value(Value::Bytes(text.begin(), text.end()))}}));
+    auto card = std::make_shared<TIMagneticCardData>();
+    const std::string text = writeMagneticCardFile(*card, "Dropped", "", false, std::nullopt, "");
+    r.send("c59.web.drop", Value::object({{"name", "Dropped.magnetcard.yaml"}, {"bytes", Value(Value::Bytes(text.begin(), text.end()))}}));
     r.run(50ms);
-    const Value card = r.state(topics::kWebCard);
-    CHECK(card.find("fitted") && card.find("fitted")->boolean() && *card.find("fitted")->boolean());
+    CHECK(fs::exists(fs::path(r.part().files().saveFolder()) / "Dropped.magnetcard.yaml"));
+    const auto* media = r.part().mediaPart()->bindingOf("card-reader");
+    CHECK(media && media->name == "Dropped");
+    r.send("c59.web.drop", Value::object({{"name", "old.u59"}, {"bytes", Value(Value::Bytes(text.begin(), text.end()))}}));
+    CHECK(!fs::exists(fs::path(r.part().files().saveFolder()) / "old.u59"));   // C59-7 AC-4: no card
 }
 
 TEST(lib15_ac22_the_page_topics_are_there) {
     WebRig r;
     r.run(1s);
     for (const auto* t : {&topics::kWebModel, &topics::kWebDisplay, &topics::kWebRunState, &topics::kWebPrinter,
-                          &topics::kWebCard, &topics::kWebLog, &topics::kWebSettings})
+                          &calcu::media::kMediaTopic, &topics::kWebLog, &topics::kWebSettings})
         CHECK(r.fe.mirror.state(*t) != nullptr);
     const Value display = r.state(topics::kWebDisplay);
     CHECK(display.bytes() && display.bytes()->size() == 36 * sizeof(float));

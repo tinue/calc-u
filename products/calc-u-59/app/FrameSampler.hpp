@@ -7,7 +7,7 @@
 
 // What the UI picks up from the machine on each 60 Hz frame (the paper is
 // LIB-8's PaperPart since M-53):
-// core log messages, whether the card reader auto-ejected, and the display —
+// core log messages and the display —
 // each position's last glyph with its brightness as the eye sees it
 // (DisplayPov) — plus the smoothed "C" (calculating) indicator.
 
@@ -27,18 +27,14 @@ struct FrameUpdate {
     LedFrame led;
     double calcIndicatorOpacity = 0;      ///< 0–1, see FrameSampler
     std::vector<std::string> logLines;    ///< core debug messages at or below debugLevel
-    /// The card was passing and the core ejected it (at CRD_OFF, as the real
-    /// card leaves the reader after each pass): the frontend saves written data.
-    bool cardAutoEjected = false;
 };
 
 class FrameSampler {
 public:
-    /// debugLevel: 0 off, 1 info, 2 debug. cardSwiping: the frontend's card
-    /// state. The poll covers the emulated time since the previous tick (tick
+    /// debugLevel: 0 off, 1 info, 2 debug. The poll covers the emulated time since the previous tick (tick
     /// count difference over the tick rate). The only reader of the machine's
     /// display output (C59-1 OQ-7).
-    FrameUpdate tick(calcu::machine::Machine& m, int debugLevel, bool cardSwiping);
+    FrameUpdate tick(calcu::machine::Machine& m, int debugLevel);
 
     /// Forget the indicator history (new machine).
     void reset();

@@ -13,6 +13,8 @@
 #include "../../app/ModuleCatalog.hpp"
 #include "../../app/ProductRoms.hpp"
 #include "../../core/TIAdapters.hpp"
+#include "../../core/TIMagneticCard.hpp"
+#include "media/MediaPlace.hpp"
 #include "../../core/PC100C.hpp"
 #include "../../core/TIMachineTesting.hpp"   // LIB-8 P-E3: the PC-100C's code lines (until M-59)
 #include "paper/Paper.hpp"
@@ -92,7 +94,10 @@ void control(void* h, const calcu::machine::ControlId& id, bool on, bool isSwitc
         else c->release(id);
     }
 }
-TICardReaderAdapter& cards(void* h) { return *cardReaderOf(M(h)); }
+// The card reader's media place (C59-7, M-55); nullptr on a TI-58 or TI-58C.
+calcu::media::MediaPlace* cards(void* h) {
+    return calcu::machine::capabilityAs<calcu::media::MediaPlace>(M(h), calcu::machine::CapabilityId{"card-reader/media-place"});
+}
 
 const calcu::machine::MachineDescriptor& descriptorOf(int model) {
     return *tiCatalogue().model(cu59::modelId(static_cast<cu59::Model>(model)));
@@ -228,7 +233,7 @@ void h_snapshot(void* h, HRec* out) {
 void h_ram_read(void* h, int reg, uint8_t* out16)        { memory(h).copyRAMReg(reg, out16); }
 void h_ram_write(void* h, int reg, const uint8_t* in16)  { memory(h).writeRAMReg(reg, in16); }
 void h_write_program(void* h, const uint8_t* k, int n)   { memory(h).writeProgram(k, n); }
-uint16_t h_lib_exec_pc(void* h) { return cards(h).libExecPC(); }
+uint16_t h_lib_exec_pc(void* h) { return debug(h).libExecPC(); }
 
 // The display since the last call (Machine::readDisplay), index 0 rightmost:
 // per position the lit segments A–G as bits 0–6, the decimal point lit (0/1)
@@ -248,16 +253,30 @@ void h_display(void* h, uint8_t* segments12, uint8_t* dp12, float* brightness12)
 
 // Magnetic card: insert (count 0 = blank card for writing), eject (returns the
 // bytes written, up to cap), and the reader's state.
-void h_card_insert(void* h, const uint8_t* b, int n) { cards(h).insertCard(b, static_cast<size_t>(n)); }
-int  h_card_eject(void* h, uint8_t* out, int cap) {
-    std::vector<uint8_t> v = cards(h).cardEject();
-    int n = static_cast<int>(v.size()) < cap ? static_cast<int>(v.size()) : cap;
-    if (n) memcpy(out, v.data(), static_cast<size_t>(n));
-    return n;
+void h_card_insert(void* h, const uint8_t* b, int n) {
+    auto* place = cards(h);
+    if (!place) return;
+    auto card = std::make_shared<cu59::TIMagneticCardData>();
+    if (b && n > 0) card->sides[0] = std::vector<uint8_t>(b, b + n);
+    place->insert(card, 0);
 }
-int  h_card_present(void* h) { return cards(h).isCardPresent() ? 1 : 0; }
-int  h_card_mode(void* h)    { return cards(h).cardMode(); }
-int  h_card_waiting(void* h) { return cards(h).isWaitingForCard() ? 1 : 0; }
+int  h_card_eject(void* h, uint8_t* out, int cap) {
+    auto* place = cards(h);
+    if (!place) return 0;
+    place->eject();
+    const auto back = place->takeGivenBack();
+    if (!back || !back->written) return 0;
+    const auto* card = dynamic_cast<const cu59::TIMagneticCardData*>(back->content.get());
+    if (!card || !card->lastWritten) return 0;
+    const auto* v = std::get_if<std::vector<uint8_t>>(&card->sides[static_cast<size_t>(*card->lastWritten)]);
+    if (!v) return 0;
+    int k = static_cast<int>(v->size()) < cap ? static_cast<int>(v->size()) : cap;
+    if (k) memcpy(out, v->data(), static_cast<size_t>(k));
+    return k;
+}
+int  h_card_present(void* h) { return cards(h) && cards(h)->side() ? 1 : 0; }
+int  h_card_mode(void* h)    { return TIMachineTesting::hardware(static_cast<TIMachine&>(M(h))).cardMode(); }
+int  h_card_waiting(void* h) { return TIMachineTesting::hardware(static_cast<TIMachine&>(M(h))).isWaitingForCard() ? 1 : 0; }
 
 // Printer output lines, joined with '\n'. Returns bytes written (truncated to cap).
 int h_printer_lines(void* h, char* out, int cap) {

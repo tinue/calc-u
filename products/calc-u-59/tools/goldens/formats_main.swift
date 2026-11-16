@@ -1,44 +1,15 @@
 // Golden generator: dumps the Swift originals of the
-// card-file parser, cue-card model, register-line helpers and BCD encoders
-// so the C++ ports in Shared/ can be checked against them.
-// Arguments: card files to parse. See tools/goldens/README.md.
+// register-line helpers and BCD encoders so the C++ ports in Shared/ can be
+// checked against them. See tools/goldens/README.md.
 import Foundation
 
-func hex(_ b: [UInt8]) -> String { b.map { String(format: "%X", $0) }.joined() }
 func num(_ d: Double) -> String { String(format: "%.17g", d) }
 
-func dumpCue(_ c: CueCardContent, _ out: inout String) {
-    out += "cue template \(c.template.rawValue)\n"
-    out += "cue title \(c.title)\n"
-    out += "cue banks \(c.banks.0.map(String.init) ?? "-") \(c.banks.1.map(String.init) ?? "-")\n"
-    out += "cue id \(c.id)\n"
-    for (i, l) in c.labels.enumerated() { out += "cue label\(i) \(l)\n" }
-    out += "cue row1 \(c.row1)\ncue row1Align \(c.row1Align.rawValue)\n"
-    out += "cue row2 \(c.row2)\ncue row2Align \(c.row2Align.rawValue)\n"
-    out += "cue row2R \(c.row2R)\ncue row2RAlign \(c.row2RAlign.rawValue)\n"
-    out += "cue style \(c.style.rawValue)\ncue color \(c.color.rawValue)\n"
-    for line in c.encodeToLines(writeTemplate: .magnetCard) { out += "enc \(line)\n" }
-    for line in c.encodeToLines() { out += "enc0 \(line)\n" }
-}
+func hex(_ b: [UInt8]) -> String { b.map { String(format: "%X", $0) }.joined() }
 
 var out = ""
-for path in CommandLine.arguments.dropFirst() {
-    let text = try! String(contentsOfFile: path, encoding: .utf8)
-    let rel = path.components(separatedBy: "/Calc-U-59/").last!
-    if path.hasSuffix(".u59") {
-        out += "CARD \(rel)\n"
-        if let r = parseCardFile(text) {
-            out += "data \(hex(Array(r.data)))\n"
-            if let c = r.cueCard { dumpCue(c, &out) }
-        } else {
-            out += "nil\n"
-        }
-        out += "END\n"
-        continue
-    }
-    // The STATE records of 2.3.0's state files went in M-54 (C59-2 §2):
-    // presets of format 2 are read by the library's loader.
-}
+// The CARD records of 2.3.0's card files went in M-55 (C59-7 TR: magnetic
+// card format 3), the STATE records of its state files in M-54 (C59-2 §2).
 
 // BCD encoders over literals (text path) and doubles (Double path).
 let literals = ["0", "-0", "00", "1", "-1", "7", "10", "99", "100", "3641003032", "1234567890123", "12345678901234567",

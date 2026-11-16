@@ -38,13 +38,13 @@ WriteResult writeFiles(const KindDecl& k, const std::vector<FileOut>& files, con
     const std::string dir = folderOfPath(path);
     // Companions first: the medium's file, written last, names them.
     for (std::size_t i = files.size(); i-- > 1;) {
-        const auto w = settings::writeFileAtomically(joinFile(dir, files[i].relativePath), files[i].bytes);
+        const auto w = shelf.files().write(joinFile(dir, files[i].relativePath), files[i].bytes);
         if (!w.ok) {
             out.problem = w.problem;
             return out;
         }
     }
-    const auto w = settings::writeFileAtomically(path, files.front().bytes);
+    const auto w = shelf.files().write(path, files.front().bytes);
     if (!w.ok) {
         out.problem = w.problem;
         return out;

@@ -30,6 +30,7 @@ LibraryParts::LibraryParts(LibraryPartsSetup s)
         m.listing = setup_.moduleListing;
         m.catalogue = setup_.catalogue;
         m.control = &machineControl_;
+        m.files = setup_.mediaFiles;
         media_ = std::make_unique<media::MediaPart>(std::move(m));
         if (presets_) media::addMediaToPresets(presets_->vocabulary(), *media_);
     }

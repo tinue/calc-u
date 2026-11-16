@@ -195,7 +195,7 @@ public:
             content = found_->content;
             // Read again: what the file holds now (AC-25, a preset run again).
             if (!b.path.empty() && b.instance())
-                if (const auto bytes = settings::readWholeFile(b.path)) {
+                if (const auto bytes = part_.shelf().files().read(b.path).bytes) {
                     const ReadOutcome r = kind_.codec->read(*bytes, companionsBeside(b.path));
                     if (r.status == ReadOutcome::Status::Read) {
                         content = r.info.content;

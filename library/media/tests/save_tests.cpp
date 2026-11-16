@@ -234,3 +234,41 @@ TEST(ec9_name_and_save_not_for_instance) {
     CHECK(!f.done(c) && f.reason(c).find("is saved already") != std::string::npos);
     CHECK(!f.exists("Other.testdisk.yaml"));
 }
+
+// LIB-7 §11 E1 (M-55; D-31): a kind words the replace question itself (C59-7 AC-15).
+TEST(ac17_kind_replace_question_words) {
+    FixtureOptions o;
+    o.prepare = [](auto& s, auto&) { s.write("Taken.testcard.yaml", card("Taken", "t").text()); };
+    o.kinds = [](std::vector<KindDecl>& ks) {
+        for (KindDecl& k : ks)
+            if (k.id == "test-card") k.replaceQuestion = "Replace card “{name}”? Its first write replaces both sides.";
+    };
+    MediaFixture f(o);
+    const CallId c = f.send("media.start-new", Value::object({{"place", "reader"}, {"template", "implicit:Fresh"}, {"name", "taken"}}));
+    CHECK(!f.done(c));
+    CHECK_EQ(f.reason(c), std::string("asks: Replace card “Taken”? Its first write replaces both sides."));
+    // The other kinds keep the library's sentence.
+    MediaFixture d(dot());
+    CHECK(d.ok("media.choose", choose("disk", "bundled:Formatted.testdisk.yaml")));
+    const CallId e = d.send("media.name-and-save", nameAndSave("disk", "Free"));
+    CHECK_EQ(d.reason(e), std::string("asks: A test disk named “Free” exists. Replace it?"));
+}
+
+// LIB-7 §11 E1 (M-55; D-28): a kind without Name & Save never offers it (C59-7 AC-13, AC-20).
+TEST(ac16_kind_without_name_and_save_never_offers_it) {
+    FixtureOptions o;
+    o.kinds = [](std::vector<KindDecl>& ks) {
+        for (KindDecl& k : ks)
+            if (k.id == "test-card") k.offersNameAndSave = false;
+    };
+    MediaFixture f(o);
+    CHECK(f.ok("media.arm", Value::object({{"place", "reader"}, {"entry", "implicit:Fresh"}})));
+    CHECK(f.place("reader")->holds && f.place("reader")->holds->isTemplate);
+    CHECK(!f.place("reader")->nameAndSave);
+    const CallId c = f.send("media.name-and-save", nameAndSave("reader", "Mine"));
+    CHECK(!f.done(c) && f.reason(c).find("not saved by Name & Save") != std::string::npos);
+    CHECK(!f.exists("Mine.testcard.yaml"));
+    MediaFixture g;   // the default: offered
+    CHECK(g.ok("media.arm", Value::object({{"place", "reader"}, {"entry", "implicit:Fresh"}})));
+    CHECK(g.place("reader")->nameAndSave);
+}

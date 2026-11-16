@@ -1,5 +1,4 @@
 #include "TIWebPart.hpp"
-#include "CardFile.hpp"
 #include "DebugText.hpp"
 #include "KeyIds.hpp"
 #include "typing/TypingTopics.hpp"
@@ -47,12 +46,6 @@ ReplyMessage answer(std::string_view kind, Value v) {
     return r;
 }
 
-// A file name inside a folder, never a path out of it.
-bool plainName(const std::string& name) {
-    return !name.empty() && name.find('/') == std::string::npos && name.find('\\') == std::string::npos && name != "." &&
-           name != "..";
-}
-
 } // namespace
 
 sessions::PayloadPtr webPayload(std::string_view kind, Value v) { return sessions::valuePayload(kind, std::move(v)); }
@@ -79,7 +72,6 @@ void TIWebPart::attach(sessions::SessionSetup& s) {
     m_cue = &s.stateTopic(topics::kWebCueCard);
     m_run = &s.stateTopic(topics::kWebRunState);
     m_printer = &s.stateTopic(topics::kWebPrinter);
-    m_card = &s.stateTopic(topics::kWebCard);
     m_live = &s.stateTopic(topics::kWebLive);
     m_cpu = &s.stateTopic(topics::kWebCpu);
     m_heatmap = &s.stateTopic(topics::kWebHeatmap);
@@ -149,32 +141,13 @@ void TIWebPart::attach(sessions::SessionSetup& s) {
         m_settingsDirty = true;
     }));
 
-    // Cards: files in the save folder (TIFileAccess). A card opened from the
-    // user's disk joins the folder once it is fitted, so a bad file never
-    // replaces one there.
-    cmd("c59.web.fit-card", [this](const Value& a, SessionContext&) -> CommandOutcome {
-        const std::string name = textArg(a, "name");
-        if (!m_app || !plainName(name)) return Refused{"Not a card file name."};
-        const std::string path = m_app->files().cardFilePath(name);
-        auto uploaded = bytesArg(a, "bytes");
-        std::optional<std::vector<uint8_t>> raw = uploaded ? uploaded : m_app->files().readCard(path).raw;
-        const bool ok = m_app->fitCard(raw, path, name);
-        if (ok && uploaded) m_app->files().writeCard(path, std::string(uploaded->begin(), uploaded->end()));
-        m_cardsDirty = true;
-        return Done{webPayload("c59.flag", Value(ok))};
-    });
-    cmd("c59.web.fit-blank-card", [this](const Value& a, SessionContext&) -> CommandOutcome {
-        const std::string name = textArg(a, "name");
-        if (!m_app || !plainName(name)) return Refused{"Not a card file name."};
-        return Done{webPayload("c59.flag", Value(m_app->fitBlankCard(m_app->files().cardFilePath(name), name)))};
-    });
     // A dropped file: a preset loads as an operation (LIB-3 AC-32), a card is
     // fitted as an opened one; anything else is refused with today's sentence.
     cmd("c59.web.drop", [this](const Value& a, SessionContext& ctx) -> CommandOutcome {
         const std::string name = textArg(a, "name");
         if (!m_app) return Refused{"No machine is running."};
         switch (m_app->dropAction(name)) {
-            case DropAction::NotAccepted: return Refused{name + ": not a .ti59, .ti58, .ti58c, .u59 or .bin file"};
+            case DropAction::NotAccepted: return Refused{name + ": not a .ti59, .ti58, .ti58c or .magnetcard.yaml file"};
             case DropAction::Ignore: return Done{};
             case DropAction::LoadPreset: {   // LIB-6 §11.2: load-preset {content, name}
                 const auto bytes = bytesArg(a, "bytes");
@@ -184,11 +157,8 @@ void TIWebPart::attach(sessions::SessionSetup& s) {
             }
             case DropAction::FitCard: break;
         }
-        if (!plainName(name)) return Refused{"Not a card file name."};
-        const std::string path = m_app->files().cardFilePath(name);
-        auto raw = bytesArg(a, "bytes");
-        if (m_app->fitCard(raw, path, name) && raw) m_app->files().writeCard(path, std::string(raw->begin(), raw->end()));
-        m_cardsDirty = true;
+        // C59-7 §3.7: imported into the save folder and fitted (media.open-file, LIB-13 AC-4).
+        m_app->fitDroppedCard(name, {}, bytesArg(a, "bytes"));
         return Done{};
     });
 
@@ -206,14 +176,6 @@ void TIWebPart::attach(sessions::SessionSetup& s) {
     auto req = [&s](const char* name, std::function<ReplyMessage(const Value&)> f) {
         s.request(sessions::RequestName{name}, [f = std::move(f)](const Value& a, SessionContext&) { return f(a); });
     };
-    // A file the page offers as a download (AC-9): bytes, or null.
-    req("c59.web.card-bytes", [this](const Value& a) {
-        const std::string name = textArg(a, "name");
-        if (!m_app || !plainName(name)) return answer("c59.file", Value());
-        auto r = m_app->files().readCard(m_app->files().cardFilePath(name));
-        return answer("c59.file", r.raw ? Value(*r.raw) : Value());
-    });
-    req("c59.web.fresh-card-name", [](const Value& a) { return answer("c59.name", Value(withDefaultCardExtension(textArg(a, "name")))); });
     req("c59.static-data", [this](const Value&) {
         return answer("c59.static-data", webStaticData(m_app ? m_app->allModules() : std::vector<ModuleMetadata>{}));
     });
@@ -292,10 +254,6 @@ void TIWebPart::drain(SessionContext&) {
     if (c & (S::PrinterChanged | S::ModelChanged))   // LIB-8 P-E1: the paper is the library's `paper PC-100C`
         set(m_printer, "c59.web.printer",
             Value::object({{"connected", m_app->printerConnected()}, {"trace", m_app->printerTrace()}}));
-    if ((c & (S::CardChanged | S::ModelChanged)) || m_cardsDirty) {
-        m_cardsDirty = false;
-        set(m_card, "c59.web.card", card());
-    }
     // Freezing switches the step window to the full listing and the CPU rows
     // to every row's registers; a panel switched on gets its view at once.
     const bool freezeFlipped = m_app->isFrozen() != m_postedFrozen;
@@ -340,23 +298,6 @@ Value TIWebPart::runState() const {
                           {"fullSpeed", m_app->fullSpeed()},
                           {"heldKey", heldKey()},
                           {"asmActive", m_app->asmActive()}});
-}
-
-// The card files of the save folder, by name.
-Value TIWebPart::card() const {
-    Value::Array cards;
-    std::vector<std::string> names;
-    std::error_code ec;
-    for (const auto& e : fs::directory_iterator(saveFolder(), ec)) {
-        const std::string n = e.path().filename().string();
-        if (e.is_regular_file(ec) && isCardFileName(n)) names.push_back(n);
-    }
-    std::sort(names.begin(), names.end());
-    for (auto& n : names) cards.emplace_back(n);
-    return Value::object({{"swiping", m_app->cardState() == CardState::Swiping},
-                          {"fileName", m_app->cardFileName()},
-                          {"fitted", m_app->cardFitted()},
-                          {"cards", Value(std::move(cards))}});
 }
 
 Value TIWebPart::log() const {

@@ -1,6 +1,7 @@
 #include "TIPresetKeys.hpp"
 #include "Bcd.hpp"
 #include "CueCardYaml.hpp"
+#include "TIMagneticCardsKey.hpp"
 #include "../core/PC100C.hpp"
 #include "../core/TICatalogue.hpp"
 #include "formats/Flow.hpp"
@@ -305,6 +306,7 @@ public:
 } // namespace
 
 void addTIKeywords(calcu::presets::Vocabulary& v, const TIKeywordSetup& setup) {
+    addMagneticCardsKey(v);   // C59-7 AC-18 (the TI-59's in-file cards)
     v.add(calcu::presets::SectionDef{"partition", readPartition});
     v.add(calcu::presets::SectionDef{"program", readProgram});
     v.add(calcu::presets::SectionDef{"data", readData});

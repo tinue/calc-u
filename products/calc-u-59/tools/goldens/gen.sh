@@ -30,11 +30,9 @@ SEL="${1:-all}"
 GEN_ARGS=()
 want keynames && gen keynames keynames_main.swift 66537d3 App/TI59KeyNames.swift
 
-# Inputs: the card fixtures, sorted so the golden is stable (the STATE
-# records of 2.3.0's state files went in M-54, C59-2 §2).
+# No inputs: the STATE records of 2.3.0's state files went in M-54 (C59-2
+# §2), the CARD records of its card files in M-55 (C59-7 TR).
 GEN_ARGS=()
-while IFS= read -r f; do GEN_ARGS+=("$f"); done < <(
-    find "$ROOT/tests/fixtures/cards" -type f -name '*.u59' | LC_ALL=C sort)
 want formats && gen formats formats_main.swift 66537d3 \
     App/StateFileLoader.swift App/CueCardContent.swift App/RegisterLineHelpers.swift App/MachineModel.swift
 true

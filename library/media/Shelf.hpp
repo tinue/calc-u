@@ -1,5 +1,7 @@
 #pragma once
+#include "media/FileAccess.hpp"
 #include "media/Kind.hpp"
+#include <memory>
 #include "settings/Paths.hpp"
 #include <optional>
 #include <string>
@@ -30,7 +32,9 @@ struct ShelfEntry {
 
 class Shelf {
 public:
-    Shelf(const std::vector<KindDecl>&, const settings::Paths*);
+    // `files`: how the folders are listed and read (D-30); null: the plain access.
+    Shelf(const std::vector<KindDecl>&, const settings::Paths*, std::shared_ptr<const FileAccess> files = nullptr);
+    const FileAccess& files() const { return *files_; }
 
     // AC-7: the folders read again. The log lines (EC-3, AC-9, D-8: one per
     // file) come only from the first scan after the session started (D-12).
@@ -64,8 +68,10 @@ public:
 private:
     std::vector<KindDecl> kinds_;
     const settings::Paths* paths_;
+    std::shared_ptr<const FileAccess> files_access_;
+    const FileAccess* files_;
     std::vector<ShelfEntry> entries_;
-    std::vector<std::pair<std::string, std::string>> files_;   // kind id, folded file name
+    std::vector<std::pair<std::string, std::string>> fileNames_;   // kind id, folded file name
     bool scanned_ = false;
 };
 

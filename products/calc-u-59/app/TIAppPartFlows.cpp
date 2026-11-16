@@ -1,7 +1,8 @@
 #include "TIAppPart.hpp"
-#include "TIAppPartInternal.hpp"
 #include "AsmOverlay.hpp"
-#include "CardFile.hpp"
+#include "ModuleCueCards.hpp"
+#include "presets/Reader.hpp"
+#include "TIMagneticCardKind.hpp"
 #include "KeyboardLayout.hpp"
 #include "TextUtil.hpp"
 #include "../core/PC100C.hpp"
@@ -23,8 +24,9 @@ using namespace std::chrono_literals;
 void TIAppPart::followMachine() {
     calcu::machine::Machine* m = machine();
     m_frozenAt.reset();
-    m_pass.reset();
-    m_fitted.reset();
+    // C59-7 AC-25: a new machine has nothing fitted until the preset or the
+    // constant memory file fits something (the media part cleared its binding).
+    if (m_lastFit == Fitted::Card) m_lastFit = Fitted::None;
     m_activeProgram = 0;
     if (!m) {
         m_session.reset();
@@ -54,10 +56,10 @@ void TIAppPart::followMachine() {
         m_userCueCard.reset();
         if (m_keeper.fromFile()) m_userCueCard = m_keeper.fileCueCard();
     }
+    m_lastFit = m_userCueCard ? Fitted::Own : Fitted::None;
 
     m_moduleID.clear();
     m_moduleCards.clear();
-    m_moduleMetadata = {};
     m_debug.attach(*m_session);
     if (!m_debug.moduleImageError().empty()) diagnostic(m_debug.moduleImageError());
     {
@@ -89,9 +91,9 @@ void TIAppPart::followPlugs(bool newMachine) {
             m_debug.moduleChanged(*m_session);
             if (!m_debug.moduleImageError().empty()) diagnostic(m_debug.moduleImageError());
         }
-        auto cards = moduleCards(m_setup.cuecards, m_moduleID);
-        m_moduleCards = std::move(cards.cards);
-        m_moduleMetadata = cards.metadata;
+        // C59-7 AC-22, AC-23: the module cue cards from the module file.
+        m_moduleCards = m_setup.roms ? moduleCueCards(*m_setup.roms, m_moduleID, [this](const std::string& m) { diagnostic(m); })
+                                     : std::map<int, CueCardContent>{};
         refreshCueCard();
         emitChanged(ModelChanged);
     }
@@ -114,10 +116,10 @@ void TIAppPart::followPlugs(bool newMachine) {
 void TIAppPart::machineRestarted(calcu::sessions::SessionContext& ctx, calcu::sessions::Restart r) {
     m_ctx = &ctx;
     if (!m_session) return;
-    // LIB-18 AC-23: the paper, the plugs, TRACE and the fitted cards stay;
+    // LIB-18 AC-23: the paper, the plugs, TRACE and the fitted cards stay
+    // (C59-7 AC-25: a card in the reader was taken out by the core's place);
     // the ASM overlay stops, as 2.3.0's beginReset.
     m_asmActive = false;
-    m_pass.reset();
     m_activeProgram = 0;
     m_debug.resetHeatmapBaseline(m_session->access().machine());
     log({r == calcu::sessions::Restart::ColdBoot ? "Clean Reset — all registers cleared" : "Calculator Reset"});
@@ -128,7 +130,7 @@ void TIAppPart::machineRestarted(calcu::sessions::SessionContext& ctx, calcu::se
 void TIAppPart::fitOwnCueCard(const CueCardContent& card) {
     m_userCueCard = card;
     m_userCueCardGeneration = m_ms ? m_ms->generation() : 0;
-    m_fitted.reset();
+    m_lastFit = Fitted::Own;   // D-6: in the place of the card fitted before
     refreshCueCard();
     emitChanged(CardChanged | CueCardChanged);
 }
@@ -138,8 +140,7 @@ void TIAppPart::fitOwnCueCard(const CueCardContent& card) {
 void TIAppPart::frame(Clock::time_point now) {
     if (!m_session || !machine()) return;
     uint32_t changes = 0;
-    FrameUpdate f = m_session->tick(static_cast<int>(m_debugLevel), m_pass.has_value());
-    if (f.cardAutoEjected) ejectCard();  // the core ejected at CRD_OFF: save written data
+    FrameUpdate f = m_session->tick(static_cast<int>(m_debugLevel));
     if (!f.logLines.empty()) m_debug.log().writeAll(f.logLines);
 
     if (f.led != m_display) {
@@ -159,10 +160,7 @@ void TIAppPart::frame(Clock::time_point now) {
     if (u.heatmap) changes |= HeatmapChanged;
     if (u.diagnostic) diagnostic(*u.diagnostic);
 
-    if (now >= m_nextProgramCheck) {  // cue-card program detection, 2 Hz
-        m_nextProgramCheck = now + 500ms;
-        checkProgramNumber();
-    }
+    refreshCueCard();   // D-7: the library program and the fitted card at each call
     if (now >= m_nextLogRefresh) {  // LOG pane, 1 Hz
         m_nextLogRefresh = now + 1s;
         refreshLog();
@@ -170,19 +168,46 @@ void TIAppPart::frame(Clock::time_point now) {
     emitChanged(changes);
 }
 
-void TIAppPart::checkProgramNumber() {
-    int program = activeLibraryProgram(m_session->access().debugPanel().snapshotCPU().SCOM[9]);
-    if (program != m_activeProgram) {
-        m_activeProgram = program;
-        refreshCueCard();
-    }
-}
-
 void TIAppPart::refreshCueCard() {
-    auto card = resolveCueCard(m_activeProgram, m_moduleCards, m_moduleMetadata.title, m_moduleMetadata.id,
-                               m_fitted ? std::optional<CueCardContent>(fittedCueCard()) : m_userCueCard);
-    if (card != m_cueCard) {
+    // AC-21: the library program selected now, from the product kind.
+    int program = 0;
+    if (calcu::machine::Machine* m = machine())
+        for (const auto& e : m->capabilities(LibraryProgram::kKind))
+            if (auto* k = calcu::machine::capabilityAs<LibraryProgram>(*m, e.id)) program = k->selected().value_or(0);
+    m_activeProgram = program;
+    // The fitted magnetic card: the media part's binding of the card reader.
+    const calcu::media::Binding* b = nullptr;
+    std::optional<int> passing;
+    if (calcu::media::MediaPart* media = m_lib.media(); media && m_ctx) {
+        b = media->bindingOf("card-reader");
+        if (calcu::machine::Machine* m = machine(); b && m)
+            for (const auto& e : m->capabilities(calcu::media::MediaPlace::kKind))
+                if (auto* place = calcu::machine::capabilityAs<calcu::media::MediaPlace>(*m, e.id))
+                    passing = place->side();
+    }
+    if (b && b->armed != m_seenArm) {   // D-6: a card fitted takes the place of the card before
+        m_seenArm = b->armed;
+        m_lastFit = Fitted::Card;
+        m_userCueCard.reset();
+    }
+    if (!b && m_lastFit == Fitted::Card) m_lastFit = Fitted::None;
+    std::optional<CueCardContent> fitted;
+    if (m_lastFit == Fitted::Card && b) fitted = fittedCardCue(magneticCardOf(b->content).get(), b->name);
+    else if (m_lastFit == Fitted::Own) fitted = m_userCueCard;
+    // AC-22: the module cue card of the program selected, if the module file defines one.
+    std::optional<CueCardContent> card = fitted;
+    bool covered = false;
+    if (program > 0)
+        if (const auto it = m_moduleCards.find(program); it != m_moduleCards.end()) {
+            card = it->second;
+            covered = true;
+        }
+    const bool onShow = m_lastFit == Fitted::Card && b && !covered;
+    const std::optional<int> lit = onShow ? passing : std::nullopt;
+    if (card != m_cueCard || onShow != m_onShow || lit != m_litCorner) {
         m_cueCard = card;
+        m_onShow = onShow;
+        m_litCorner = lit;
         emitChanged(CueCardChanged);
     }
 }
@@ -203,125 +228,34 @@ bool TIAppPart::setPrinterControl(const std::string& control, bool on) {
     return false;
 }
 
-// ── Card reader ──────────────────────────────────────────────────────────────
+// ── Magnetic cards (C59-7; the library's media part) ─────────────────────────
 
-bool TIAppPart::canFit() const { return m_session && info(m_model).hasCardReader && !m_pass; }
-
-void TIAppPart::fit(const std::string& path, const std::string& fileName, CardDocument doc, bool fresh) {
-    m_fitted = FittedCard{path, std::move(doc), fresh};
-    m_cardFileName = fileName;
-    refreshCueCard();
-    emitChanged(CardChanged);
-}
-
-bool TIAppPart::fitCard(const std::optional<std::vector<uint8_t>>& raw, const std::string& path,
-                                const std::string& fileName) {
-    if (!canFit()) return false;
-    if (!raw) {
-        error("Card load error", "Could not read card file.");
-        return false;
-    }
-    auto decoded = decodeCardFile(*raw, fileName);
-    if (!decoded.card) {
-        error("Card load error", decoded.error);
-        return false;
-    }
-    fit(path, fileName, std::move(*decoded.card), false);
-    return true;
-}
-
-bool TIAppPart::fitBlankCard(const std::string& savePath, const std::string& fileName) {
-    if (!canFit()) return false;
-    CardDocument doc;
-    doc.cueCard = freshCardCue(fileName);
-    fit(savePath, fileName, std::move(doc), true);
-    return true;
-}
-
-bool TIAppPart::feedSide(int side) { return feed(side); }
-
-bool TIAppPart::feed(int side) {
-    if (!m_session || !m_fitted || side < 0 || side > 1 || m_pass) return false;
-    startSwipe(m_fitted->doc.bank(side), {side});
-    return true;
+bool TIAppPart::cardFitted() const {
+    auto* media = const_cast<TIAppPart*>(this)->m_lib.media();
+    return media && media->bindingOf("card-reader") != nullptr;
 }
 
 bool TIAppPart::tapCard(double nx, double ny) {
-    if (!cardOnShow()) return false;
-    auto side = cardCornerAt(nx, ny);
+    refreshCueCard();
+    if (!m_onShow || !m_ctx) return false;   // AC-24: covered by a module cue card
+    const auto side = cardCornerAt(nx, ny);
     if (!side) return false;
-    feedSide(*side);
+    calcu::media::MediaPart* media = m_lib.media();
+    if (!media) return false;
+    if (auto refused = media->feed(*m_ctx, "card-reader", *side)) return false;   // AC-16: one passing
+    refreshCueCard();
     return true;
-}
-
-std::optional<int> TIAppPart::litCardCorner() const {
-    if (!cardOnShow() || !m_pass) return std::nullopt;
-    return m_pass->side;
-}
-
-CueCardContent TIAppPart::fittedCueCard() const {
-    // A card without a cue card still needs something to show; never saved.
-    CueCardContent cue = m_fitted->doc.cueCard ? *m_fitted->doc.cueCard : freshCardCue(m_cardFileName);
-    cue.template_ = CueCardTemplate::MagnetCard;
-    if (m_fitted->doc.version == 2) {
-        cue.bankLeft = m_fitted->doc.sideBank(0);
-        cue.bankRight = m_fitted->doc.sideBank(1);
-    }
-    return cue;
-}
-
-void TIAppPart::startSwipe(const std::vector<uint8_t>& data, const CardPass& pass) {
-    m_pass = pass;
-    m_session->access().cardReader().insertCard(data.empty() ? nullptr : data.data(), data.size());
-    emitChanged(CardChanged);
-}
-
-void TIAppPart::ejectCard() {
-    if (!m_session || !m_pass) {
-        m_pass.reset();
-        emitChanged(CardChanged);
-        return;
-    }
-    std::vector<uint8_t> written = m_session->access().cardReader().cardEject();
-    const CardPass pass = *std::exchange(m_pass, std::nullopt);
-    if (!written.empty() && m_fitted) writeFittedSide(pass.side, written);
-    emitChanged(CardChanged);
-}
-
-void TIAppPart::writeFittedSide(int side, const std::vector<uint8_t>& written) {
-    const std::string saveFailed = "Card save failed: " + m_fitted->path;
-    CardDocument doc = m_fitted->doc;
-    if (!m_fitted->fresh) {
-        // The file may have changed since it was fitted (iCloud, another app): keep its other side.
-        FileIO::Read file = m_files.readCard(m_fitted->path);
-        if (file.unreadable) {
-            error("Card save error", saveFailed);
-            return;
-        }
-        if (file.raw) {
-            auto decoded = decodeCardFile(*file.raw, m_cardFileName);
-            if (!decoded.card) {
-                error("Card save error", decoded.error);
-                return;
-            }
-            doc = std::move(*decoded.card);
-        }
-    }
-    doc.setBank(side, written);
-    if (!m_files.writeCard(m_fitted->path, encodeCardDocument(doc))) {
-        error("Card save error", saveFailed);
-        return;
-    }
-    m_fitted->doc = std::move(doc);
-    m_fitted->fresh = false;
-    refreshCueCard();  // the corner shows the bank just written
 }
 
 // ── Dropped files (reference/SharedArchitecture.md § "Dropped Files") ──────────
 
 DropAction dropActionFor(const std::string& fileName, Model model) {
     if (isPresetFileName(fileName)) return DropAction::LoadPreset;
-    if (!isCardFileName(fileName)) return DropAction::NotAccepted;
+    // C59-7 AC-4: a card file ends in .magnetcard.yaml; a .u59 or .bin is no card.
+    const std::string suffix = magneticCardKind().suffix;
+    const bool card = fileName.size() > suffix.size() && fileName[0] != '.' &&
+                      calcu::presets::lowerAscii(fileName.substr(fileName.size() - suffix.size())) == suffix;
+    if (!card) return DropAction::NotAccepted;
     return info(model).hasCardReader ? DropAction::FitCard : DropAction::Ignore;
 }
 

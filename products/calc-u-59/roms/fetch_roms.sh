@@ -23,9 +23,6 @@
 #   ML.rom.yaml ... RP.rom.yaml (14 files)
 #     -- the Solid State ROM modules, from modules/ (docs/formats/modules.md
 #        §2: ROM bytes and cue cards in one file)
-# solid-state/cuecards.txt stays in the source repository: the module list and
-# the cue cards are still read from it (until M-25 and M-55 of
-# docs/migration-plan.md); it is not a ROM file.
 #
 #   TI59_ROM_BASE=<url> overrides the repository's base URL (its root, e.g.
 #   a file:// URL to a local checkout).

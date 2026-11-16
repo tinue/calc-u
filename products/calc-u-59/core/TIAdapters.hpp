@@ -18,12 +18,13 @@
 //
 // | Adapter               | Removed in                         |
 // |-----------------------|------------------------------------|
-// | TICardReaderAdapter   | M-55 (C59-7)                       |
 // | TIMemoryAdapter       | M-59 (C59-9): its readers           |
 // | TIDebugPanelAdapter   | M-56 (C59-4)                       |
 //
 // The core types still reachable here (CpuFrame, DebugEvent, TIStepBoundary)
-// go with their adapters (design D-7). TIDebugTargetAdapter went in M-53
+// go with their adapters (design D-7). TICardReaderAdapter went in M-55
+// (C59-7): the card reader is a media place (core/TICardReaderPlace.hpp);
+// its libExecPC moved to TIDebugPanelAdapter. TIDebugTargetAdapter went in M-53
 // (LIB-10 59): the debugger reaches the core through the debug target
 // (core/TIDebugging.hpp) and the panel's reads moved to TIDebugPanelAdapter
 // (adapter L-E3, until M-56). TIPeripheralsAdapter went in M-25
@@ -33,29 +34,10 @@
 
 class TIMachine;
 
-/// The card reader until it is a media place (C59-7, M-55).
-class TICardReaderAdapter {
-public:
-    explicit TICardReaderAdapter(TIMachine& m) : m_(m) {}
-    /// data/count non-zero: a read card; zero: a blank card for writing.
-    void insertCard(const std::uint8_t* data, std::size_t count);
-    std::vector<std::uint8_t> cardEject();
-    bool isCardPresent() const;
-    int cardMode() const;              ///< 0=none, 1=read, 2=write
-    bool isWaitingForCard() const;     ///< the ROM polls the card switch with no card in
-    bool isInCardWait() const;         ///< the PC is in the card wait of Write / INV Write
-    /// The latched module byte address of the running module program (cue card).
-    std::uint16_t libExecPC() const;
-
-private:
-    TIMachine& m_;
-};
-
 /// Program steps, registers and the partition. Since M-54 the app layer writes
 /// and reads memory through the product kinds c59.program-memory and
 /// c59.constant-memory (TIProductKinds.hpp; C59-2, C59-3); what is left here
-/// is read by the debug log and snapshots (until M-56), the card files (until
-/// M-55) and tools/headless (until M-59), and the writes by the core tests
+/// is read by the debug log and snapshots (until M-56) and tools/headless (until M-59), and the writes by the core tests
 /// and the golden runs' replay of 2.3.0 (C59-2 design §5).
 class TIMemoryAdapter {
 public:
@@ -88,6 +70,8 @@ public:
     explicit TIDebugPanelAdapter(TIMachine& m) : m_(m) {}
     std::uint16_t pc() const;
     CpuFrame snapshotCPU() const;
+    /// The latched module byte address of the running module program (0xFFFF: none).
+    std::uint16_t libExecPC() const;
     TIStepBoundary lastStepBoundary() const;
     /// The newest `max` frames of the ring, oldest first; not consumed.
     std::uint32_t readCpuFrames(CpuFrame* out, std::uint32_t max) const;
@@ -127,9 +111,7 @@ private:
 std::array<std::uint16_t, 4> idleAndKeyDetectRange(const calcu::machine::ModelId&);
 
 // The accessors (design §3.4): nullptr if `m` is not a TI machine.
-TICardReaderAdapter* cardReaderOf(calcu::machine::Machine&);
 TIMemoryAdapter* memoryOf(calcu::machine::Machine&);
 TIDebugPanelAdapter* debugPanelOf(calcu::machine::Machine&);
-const TICardReaderAdapter* cardReaderOf(const calcu::machine::Machine&);
 const TIMemoryAdapter* memoryOf(const calcu::machine::Machine&);
 const TIDebugPanelAdapter* debugPanelOf(const calcu::machine::Machine&);

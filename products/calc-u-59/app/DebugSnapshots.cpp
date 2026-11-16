@@ -158,7 +158,7 @@ std::vector<InspectorEntry> recentInstructions(const std::vector<CpuFrame>& fram
 TIStepBoundary calcViewState(const calcu::machine::Machine& m) {
     TIStepBoundary latched = debugPanelOf(m)->lastStepBoundary();
     if (latched.count != 0) return latched;
-    return {debugPanelOf(m)->snapshotCPU(), cardReaderOf(m)->libExecPC(), false, 0};
+    return {debugPanelOf(m)->snapshotCPU(), debugPanelOf(m)->libExecPC(), false, 0};
 }
 
 namespace {

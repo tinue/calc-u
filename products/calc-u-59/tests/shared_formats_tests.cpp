@@ -1,12 +1,13 @@
 // Shared/ file formats against the Swift originals (tests/golden/formats.txt,
-// produced by tools/goldens/formats_main.swift): card files, cue cards, BCD
-// encoders, register lines and math tokens. Also round trips for the card
-// encoders and the constant memory file (C59-3). The state files of 2.3.0
-// and their records went in M-54 (C59-2 TR; LIB-6 §11).
+// produced by tools/goldens/formats_main.swift): cue cards, BCD encoders,
+// register lines and math tokens. Also round trips for the constant memory
+// file (C59-3). The state files of 2.3.0 and their records went in M-54
+// (C59-2 TR; LIB-6 §11), the card files of 2.3.0 and their `CARD` records in
+// M-55 (C59-7 TR; magnetic card format 3: magnetic_card_tests.cpp).
 
 #include "TestHarness.hpp"
 #include "TestRoms.hpp"
-#include "../app/CardFile.hpp"
+#include "../app/Bcd.hpp"
 #include "../app/ConstantMemoryFile.hpp"
 #include "../app/ModuleCatalog.hpp"
 #include "../app/TextUtil.hpp"
@@ -33,22 +34,6 @@ std::string num(double d) {
     return b;
 }
 
-void dumpCue(const CueCardContent& c, std::string& out) {
-    auto opt = [](const std::optional<int>& v) { return v ? std::to_string(*v) : std::string("-"); };
-    out += std::string("cue template ") + toString(c.template_) + "\n";
-    out += "cue title " + c.title + "\n";
-    out += "cue banks " + opt(c.bankLeft) + " " + opt(c.bankRight) + "\n";
-    out += "cue id " + c.id + "\n";
-    for (size_t i = 0; i < 10; ++i) out += "cue label" + std::to_string(i) + " " + c.labels[i] + "\n";
-    out += "cue row1 " + c.row1 + "\ncue row1Align " + toString(c.row1Align) + "\n";
-    out += "cue row2 " + c.row2 + "\ncue row2Align " + toString(c.row2Align) + "\n";
-    out += "cue row2R " + c.row2R + "\ncue row2RAlign " + toString(c.row2RAlign) + "\n";
-    out += std::string("cue style ") + toString(c.style) + "\ncue color " + toString(c.color) + "\n";
-    for (auto& l : c.encodeToLines(CueCardTemplate::MagnetCard)) out += "enc " + l + "\n";
-    for (auto& l : c.encodeToLines()) out += "enc0 " + l + "\n";
-}
-
-
 /// Golden records: header line → body (lines up to END).
 struct Record { std::string header, body; };
 
@@ -61,10 +46,7 @@ std::vector<Record> records(const std::string& golden, std::vector<std::string>&
             cur->body += std::string(line) + "\n";
             continue;
         }
-        if (startsWith(line, "CARD ")) {
-            out.push_back({std::string(line), ""});
-            cur = &out.back();
-        } else if (!line.empty()) {
+        if (!line.empty()) {
             singles.emplace_back(line);
         }
     }
@@ -81,31 +63,6 @@ const std::string& golden() {
 TEST(formats_golden_present) {
     CHECK(!golden().empty());
 }
-
-TEST(card_files_match_swift) {
-    std::vector<std::string> singles;
-    int cards = 0;
-    for (auto& rec : records(golden(), singles)) {
-        auto w = splitWords(rec.header);
-        auto text = testroms::readFile(std::string(w[1]));
-        CHECK(text.has_value());
-        if (!text) continue;
-        std::string got;
-        ++cards;
-        auto r = parseCardText(*text);
-        if (!r) got = "nil\n";
-        else {
-            got = "data " + hexNib(r->data.data(), r->data.size()) + "\n";
-            if (r->cueCard) dumpCue(*r->cueCard, got);
-        }
-        if (got != rec.body) {
-            std::fprintf(stderr, "MISMATCH %s\n--- swift\n%s--- c++\n%s", rec.header.c_str(), rec.body.c_str(), got.c_str());
-        }
-        CHECK(got == rec.body);
-    }
-    CHECK(cards >= 5);
-}
-
 
 TEST(bcd_regline_math_match_swift) {
     std::vector<std::string> singles;
@@ -143,62 +100,6 @@ TEST(bcd_regline_math_match_swift) {
     CHECK(n > 400);
 }
 
-TEST(card_text_round_trip) {
-    std::vector<uint8_t> bank(246);
-    for (size_t i = 0; i < bank.size(); ++i) bank[i] = static_cast<uint8_t>((i * 37 + 11) & 0xFF);
-    bank[0] = 0x1C; bank[1] = 0x10; bank[2] = 0x16; bank[3] = 0x10; bank[245] = bank[244];
-    CueCardContent cue;
-    cue.title = "ROUND TRIP";
-    cue.labels[5] = kCueCardInvisibleMarker;
-    cue.bankLeft = 1;
-    cue.bankRight = 2;
-    std::string text = encodeCardText(bank, &cue);
-    auto back = parseCardText(text);
-    CHECK(back.has_value());
-    if (!back) return;
-    CHECK(back->data == bank);
-    CHECK(back->cueCard.has_value());
-    if (back->cueCard) {
-        CHECK_EQ(back->cueCard->title, std::string("ROUND TRIP"));
-        CHECK_EQ(back->cueCard->labels[5], std::string(kCueCardInvisibleMarker));
-        // The badges are the cue card's, whatever bank the header says (3 here).
-        CHECK(back->cueCard->bankLeft == 1);
-        CHECK(back->cueCard->bankRight == 2);
-    }
-}
-
-TEST(card_without_banks_line_has_blank_badges) {
-    std::vector<uint8_t> bank(246);
-    bank[2] = 0x16;  // bank 3
-    CueCardContent cue;
-    cue.title = "NO BADGES";
-    auto back = parseCardText(encodeCardText(bank, &cue));
-    CHECK(back.has_value());
-    if (!back || !back->cueCard) return;
-    CHECK(!back->cueCard->bankLeft);
-    CHECK(!back->cueCard->bankRight);
-}
-
-namespace {
-std::vector<uint8_t> asBytes(const std::string& s) { return {s.begin(), s.end()}; }
-}  // namespace
-
-TEST(card_decode_layouts) {
-    auto legacy = decodeCardFile(std::vector<uint8_t>(984, 7), "x.bin");
-    CHECK(legacy.card && legacy.card->version == 1 && legacy.card->singleSide.size() == 984);
-    auto headered = asBytes("Calc-U-59-CRD");
-    headered.resize(13 + 246, 1);
-    auto h = decodeCardFile(headered, "h.u59");
-    CHECK(h.card && h.card->version == 1 && h.card->singleSide.size() == 246 && h.card->singleSide[0] == 1);
-    headered.push_back(0);
-    CHECK_EQ(decodeCardFile(headered, "h.u59").error,
-             std::string("Card file \"h.u59\" has wrong size (247 bytes after header; expected 246)."));
-    CHECK_EQ(decodeCardFile(std::vector<uint8_t>(10), "s.u59").error,
-             std::string("Card file \"s.u59\" has unrecognised size (10 bytes)."));
-    auto badText = decodeCardFile(asBytes("Calc-U-59 Card 1.0\nHEADER:\n"), "t.u59");
-    CHECK(!badText.card);
-    CHECK_EQ(badText.error, std::string("Card file \"t.u59\" could not be parsed."));
-}
 
 namespace {
 std::vector<uint8_t> testBank(int bank) {
@@ -208,88 +109,6 @@ std::vector<uint8_t> testBank(int bank) {
     return b;
 }
 }  // namespace
-
-TEST(card_v2_round_trip) {
-    CardDocument doc;
-    CueCardContent cue;
-    cue.title = "TWO SIDES";
-    cue.labels[5] = "run";
-    cue.bankLeft = 3;  // not part of v2
-    doc.cueCard = cue;
-    doc.sides[0] = testBank(1);
-    doc.sides[1] = testBank(4);
-    std::string text = encodeCardDocument(doc);
-    CHECK(startsWith(text, "Calc-U-59 Card 2.0\n"));
-    CHECK(text.find("Banks") == std::string::npos);
-    CHECK(text.find("END-CARD") != std::string::npos);
-    auto back = decodeCardFile(asBytes(text), "t.U59");
-    CHECK(back.card.has_value());
-    if (!back.card) return;
-    CHECK_EQ(back.card->version, 2);
-    CHECK(back.card->sides[0] == doc.sides[0]);
-    CHECK(back.card->sides[1] == doc.sides[1]);
-    CHECK(back.card->sideBank(0) == 1);
-    CHECK(back.card->sideBank(1) == 4);
-    CHECK_EQ(back.card->cueCard->title, std::string("TWO SIDES"));
-    CHECK(!back.card->cueCard->bankLeft);
-    CHECK_EQ(encodeCardDocument(*back.card), text);
-}
-
-TEST(card_v2_one_side_only) {
-    CardDocument doc;
-    doc.sides[1] = testBank(2);
-    auto back = decodeCardFile(asBytes(encodeCardDocument(doc)), "t.U59");
-    CHECK(back.card && !back.card->sides[0] && back.card->sides[1] == doc.sides[1]);
-    CHECK(back.card && !back.card->sideBank(0) && !back.card->cueCard);
-}
-
-TEST(card_v2_refuses_a_damaged_file) {
-    CardDocument doc;
-    doc.sides[0] = testBank(1);
-    doc.sides[1] = testBank(2);
-    const std::string good = encodeCardDocument(doc);
-    CHECK(decodeCardFile(asBytes(good), "t").card.has_value());
-    auto broken = [&](const std::string& from, const std::string& to) {
-        std::string t = good;
-        size_t at = t.find(from);
-        CHECK(at != std::string::npos);
-        t.replace(at, from.size(), to);
-        return !decodeCardFile(asBytes(t), "t").card;
-    };
-    CHECK(broken("END-CARD", ""));                 // cut off
-    CHECK(broken("Bank: 1\n", ""));                // a header without its bank
-    CHECK(broken("Bank: 1", "Bank: 5"));
-    CHECK(broken("SIDE: 2", "SIDE: 3"));
-    CHECK(broken("SIDE: 2", "SIDE: 1"));           // the same side twice
-    CHECK(broken("R000: ", "X000: "));
-    CHECK(broken("Checksum: ", "Nonsense: "));
-    size_t lastRow = good.rfind("\nR059:");
-    CHECK(lastRow != std::string::npos);
-    std::string shortSide = good;
-    shortSide.erase(lastRow, good.find('\n', lastRow + 1) - lastRow);
-    CHECK(!decodeCardFile(asBytes(shortSide), "t").card);       // 29 rows
-}
-
-TEST(card_v1_reader_rejects_v2) {
-    // What an older app sees: its parser must not read a v2 card.
-    CardDocument doc;
-    doc.sides[0] = testBank(1);
-    std::string asV1 = encodeCardDocument(doc);
-    asV1.replace(asV1.find("Card 2.0"), 8, "Card 1.0");
-    auto noSideLine = asV1;
-    noSideLine.erase(noSideLine.find("SIDE: 1\n"), 8);
-    CHECK(!parseCardText(noSideLine));   // END-CARD stops it even if SIDE: is skipped as unknown
-    CHECK(!parseCardText(encodeCardDocument(doc)));  // this version's v1 parser refuses 2.0 outright
-}
-
-TEST(fresh_card_cue_is_the_file_name) {
-    CHECK_EQ(freshCardCue("Diagnose.U59").title, std::string("Diagnose"));
-    CHECK_EQ(freshCardCue("no-extension").title, std::string("no-extension"));
-    CHECK_EQ(freshCardCue("a.b.u59").title, std::string("a.b"));
-    CHECK_EQ(freshCardCue("Prog #1.U59").title, std::string("Prog  1"));
-    CHECK(freshCardCue("x.U59").template_ == CueCardTemplate::MagnetCard);
-}
-
 
 // C59-3 AC-14 (design T7; was constant_memory_round_trip): the content
 // survives a round trip through constant memory format 1; zero registers are
@@ -319,36 +138,12 @@ TEST(c59_3_ac14_round_trip_zero_registers_left_out) {
 
 
 
-TEST(module_catalog_from_cuecards_txt) {
-    auto text = testroms::readFile("roms/solid-state/cuecards.txt");
-    CHECK(text.has_value());
-    if (!text) return;
-    // The module list comes from the module files since M-25 (C59-6 AC-8,
-    // peripherals_tests.cpp); cuecards.txt keeps the cue cards.
+TEST(module_rom_file_names) {
+    // The module list and the cue cards come from the module files (C59-6
+    // AC-8; C59-7 AC-23, magnetic_card_tests.cpp).
     CHECK(moduleRomFile("ML") == std::optional<std::string>("ML.rom.yaml"));
     CHECK(moduleRomFile("RP") == std::optional<std::string>("RP.rom.yaml"));
     CHECK(!moduleRomFile("XX").has_value());
-
-    auto ml = moduleCards(*text, "ML");
-    CHECK_EQ(static_cast<int>(ml.cards.size()), 25);
-    CHECK_EQ(ml.metadata.title, std::string("MASTER LIBRARY MODULE -1-"));
-    CHECK(ml.cards.count(1) && ml.cards[1].id == "ML-01" && ml.cards[1].template_ == CueCardTemplate::SolidState);
-    CHECK(ml.cards.count(2) && ml.cards[2].labels[3] == kCueCardInvisibleMarker);
-    CHECK_EQ(ml.cards[2].labels[1], std::string("→ A⁻¹"));
-    auto le = moduleCards(*text, "LE");
-    CHECK(le.cards.count(1) && le.cards[1].id == "LE-01");
-    auto rp = moduleCards(*text, "RP");  // last module, no cue cards
-    CHECK(rp.cards.empty());
-    CHECK_EQ(rp.metadata.menuTitle, std::string("RPN Simulator"));
-    auto eof = moduleCards("MODULE-ID: Z\nCUECARD: 3\nTitle: LAST\n", "Z");  // flushed at end of text
-    CHECK(eof.cards.count(3) && eof.cards[3].title == "LAST");
-}
-
-TEST(card_file_names) {
-    CHECK(isCardFileName("a.u59") && isCardFileName("A.U59") && isCardFileName("b.BIN") && isCardFileName("c.Bin"));
-    CHECK(!isCardFileName("a.txt") && !isCardFileName("u59") && !isCardFileName(".a.u59.icloud") && !isCardFileName(".hidden.u59"));
-    CHECK_EQ(withDefaultCardExtension("prog"), std::string("prog.U59"));
-    CHECK_EQ(withDefaultCardExtension("prog.bin"), std::string("prog.bin"));
 }
 
 TEST(cue_card_geometry) {

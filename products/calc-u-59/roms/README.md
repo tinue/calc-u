@@ -28,7 +28,6 @@ their ROM images are byte for byte the 2.3.0 ones (test
 `lib12_ac14_module_images_equal_the_2_3_0_dumps`). Since M-24 the product
 reads the module ROMs from them; the 2.3.0 dumps are no longer fetched.
 
-`solid-state/cuecards.txt` is not a ROM file and stays in the source
-repository: the module list, names and cue cards are still read from it
-until M-25 (module names from the module files, C59-6) and M-55 (cue cards,
-C59-7); then it goes.
+2.3.0's `solid-state/cuecards.txt` left the source repository in M-55
+(LIB-12 AC-14, C59-7 AC-23): the module list, names and cue cards are read
+from the module files.

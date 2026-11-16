@@ -6,27 +6,14 @@
 
 namespace calcu::media {
 
-namespace fs = std::filesystem;
-
 namespace {
 
-fs::path pathOf(const std::string& s) { return fs::path(std::u8string(s.begin(), s.end())); }
-
-std::string textOf(const fs::path& p) {
-    const std::u8string u = p.generic_u8string();
-    return std::string(u.begin(), u.end());
-}
-
 // The file names of a folder of the kind's suffix, sorted by their fold.
-std::vector<std::string> filesOf(const std::string& folder, const KindDecl& k) {
+std::vector<std::string> filesOf(const FileAccess& files, const std::string& folder, const KindDecl& k) {
     std::vector<std::string> out;
     if (folder.empty()) return out;
-    std::error_code ec;
-    for (auto it = fs::directory_iterator(pathOf(folder), ec); !ec && it != fs::directory_iterator(); it.increment(ec)) {
-        if (!it->is_regular_file(ec)) continue;
-        const std::string name = textOf(it->path().filename());
-        if (hasSuffix(name, k)) out.push_back(name);
-    }
+    for (std::string& name : files.list(folder))
+        if (hasSuffix(name, k)) out.push_back(std::move(name));
     std::sort(out.begin(), out.end(), [](const std::string& a, const std::string& b) {
         const std::string fa = foldName(a), fb = foldName(b);
         return fa != fb ? fa < fb : a < b;
@@ -63,7 +50,8 @@ MediumCodec::Companion companionsBeside(const std::string& path) {
     return [dir](const std::string& rel) { return settings::readWholeFile(joinFile(dir, rel)); };
 }
 
-Shelf::Shelf(const std::vector<KindDecl>& kinds, const settings::Paths* paths) : kinds_(kinds), paths_(paths) {}
+Shelf::Shelf(const std::vector<KindDecl>& kinds, const settings::Paths* paths, std::shared_ptr<const FileAccess> files)
+    : kinds_(kinds), paths_(paths), files_access_(files ? std::move(files) : plainFileAccess()), files_(files_access_.get()) {}
 
 std::string Shelf::folderOf(const KindDecl& k) const {
     if (!paths_) return {};
@@ -76,7 +64,7 @@ std::string Shelf::outdatedHint(const KindDecl& k, int version) {
 }
 
 std::optional<ReadOutcome> Shelf::readFile(const KindDecl& k, const std::string& path, std::string* bytesOut) const {
-    const auto bytes = settings::readWholeFile(path);
+    const auto bytes = files_->read(path).bytes;
     if (!bytes || !k.codec) return std::nullopt;
     if (bytesOut) *bytesOut = *bytes;
     return k.codec->read(*bytes, companionsBeside(path));
@@ -85,7 +73,7 @@ std::optional<ReadOutcome> Shelf::readFile(const KindDecl& k, const std::string&
 std::vector<std::string> Shelf::reread() {
     std::vector<std::string> lines;
     entries_.clear();
-    files_.clear();
+    fileNames_.clear();
     for (const KindDecl& k : kinds_) {
         auto entry = [&](const std::string& folder, const std::string& file, Origin origin) {
             const std::string path = joinFile(folder, file);
@@ -115,7 +103,7 @@ std::vector<std::string> Shelf::reread() {
             }
             entries_.push_back(std::move(e));
         };
-        for (const std::string& f : filesOf(k.bundledFolder, k)) entry(k.bundledFolder, f, Origin::Bundled);
+        for (const std::string& f : filesOf(*files_, k.bundledFolder, k)) entry(k.bundledFolder, f, Origin::Bundled);
         for (const ImplicitTemplate& t : k.implicitTemplates) {
             ShelfEntry e;
             e.kind = &k;
@@ -130,8 +118,8 @@ std::vector<std::string> Shelf::reread() {
             entries_.push_back(std::move(e));
         }
         const std::string folder = folderOf(k);
-        for (const std::string& f : filesOf(folder, k)) {
-            files_.emplace_back(k.id, foldName(f));
+        for (const std::string& f : filesOf(*files_, folder, k)) {
+            fileNames_.emplace_back(k.id, foldName(f));
             const std::size_t before = entries_.size();
             entry(folder, f, Origin::Saved);
             if (entries_.size() == before) continue;
@@ -189,7 +177,7 @@ const ShelfEntry* Shelf::byPath(std::string_view path) const {
 
 bool Shelf::fileTaken(const KindDecl& k, std::string_view fileName) const {
     const std::string f = foldName(fileName);
-    return std::any_of(files_.begin(), files_.end(), [&](const auto& x) { return x.first == k.id && x.second == f; });
+    return std::any_of(fileNames_.begin(), fileNames_.end(), [&](const auto& x) { return x.first == k.id && x.second == f; });
 }
 
 const KindDecl* Shelf::kindOfFile(std::string_view fileName) const {

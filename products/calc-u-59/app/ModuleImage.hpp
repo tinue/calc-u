@@ -60,7 +60,7 @@ struct ModuleImage {
 
     struct LibStep { int program; int step; int begin; int end; };
 
-    /// Resolve the latched library execution address (TICardReaderAdapter::libExecPC)
+    /// Resolve the latched library execution address (TIDebugPanelAdapter::libExecPC)
     /// to its program: 1-based program number and program-relative step.
     std::optional<LibStep> libraryStep(uint16_t libExecPC) const;
 };

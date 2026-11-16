@@ -3,6 +3,3 @@
 !.gitignore
 !fetch_roms.sh
 !README.md
-!solid-state/
-solid-state/*
-!solid-state/cuecards.txt

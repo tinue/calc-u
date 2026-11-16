@@ -1,9 +1,10 @@
 #include "TIAppPart.hpp"
-#include "TIAppPartInternal.hpp"
 #include "PacingProfiles.hpp"
 #include "Settings.hpp"
 #include "../core/TIAdapters.hpp"
 #include "TIDebuggerSetup.hpp"
+#include "TIMagneticCardKind.hpp"
+#include "KeyboardLayout.hpp"
 #include "TIPrinters.hpp"
 #include "TITyping.hpp"
 #include "../core/TIDebugging.hpp"
@@ -36,15 +37,11 @@ Value TILedState::toValue() const {
 }
 Value TICueCardState::toValue() const {
     if (!card) return Value();
-    return Value::object({{"title", card->title}});
-}
-Value TIPrinterState::toValue() const { return Value::object({{"connected", connected}, {"trace", trace}}); }
-Value TICardReaderState::toValue() const {
-    return Value::object({{"swiping", state == CardState::Swiping},
-                          {"file", fileName},
-                          {"fitted", fitted},
+    return Value::object({{"title", card->title},
+                          {"on-show", onShow},
                           {"lit-corner", litCorner ? Value(*litCorner) : Value()}});
 }
+Value TIPrinterState::toValue() const { return Value::object({{"connected", connected}, {"trace", trace}}); }
 Value TIRunState::toValue() const {
     return Value::object({{"full-speed", fullSpeed},
                           {"keystrokes-playing", keystrokesPlaying}});
@@ -97,12 +94,32 @@ TIDebuggerOptions debuggerOptions(const TIAppSetup& s, std::function<void(const 
     return o;
 }
 
+// The host's file access of the save folder as the media part's (LIB-7 D-30;
+// C59-5 D-6): Swift's coordinated iCloud access, else the plain one.
+class FileIOAccess final : public calcu::media::FileAccess {
+public:
+    explicit FileIOAccess(std::shared_ptr<FileIO> io) : io_(std::move(io)) {}
+    Read read(const std::string& path) const override {
+        FileIO::Read r = io_->read(path);
+        if (r.unreadable) return {std::nullopt, true};
+        if (!r.raw) return {};
+        return {std::string(r.raw->begin(), r.raw->end()), false};
+    }
+    Written write(const std::string& path, const std::string& bytes) const override {
+        if (io_->write(path, bytes)) return {true, {}};
+        return {false, "the file cannot be written."};
+    }
+
+private:
+    std::shared_ptr<FileIO> io_;
+};
+
 } // namespace
 
 TIAppPart::TIAppPart(TIAppSetup setup)
     : m_setup(std::move(setup)),
       m_files(m_setup.saveFolder, m_setup.fileIO),
-      m_hooks(std::make_unique<Hooks>(*this)),
+      m_mediaFiles(std::make_shared<FileIOAccess>(m_setup.fileIO ? m_setup.fileIO : plainFileIO())),
       m_keeper(m_files, [this](std::string sentence) { if (m_ctx) m_ctx->notice(std::move(sentence)); }),
       m_machines([this] { return m_keeper.contentForBuild(); }),
       m_rules(TIKeywordSetup{[this](sessions::SessionContext& c, const CueCardContent& card) {
@@ -118,6 +135,10 @@ calcu::parts::LibraryPartsSetup TIAppPart::librarySetup() {
         m_ownSettings.emplace(calcu::settings::SettingsFile::defaultsOnly(settings::settingsDecl()));
         m_setup.settings = &*m_ownSettings;
     }
+    calcu::settings::HostDirs dirs;
+    dirs.frontend = calcu::settings::FrontendKind::Swift;   // the save folder as the host passed it (LIB-9 AC-14)
+    dirs.saveFolder = m_setup.saveFolder;
+    m_paths = std::make_unique<calcu::settings::Paths>(*m_setup.settings, dirs);
     calcu::parts::LibraryPartsSetup s;
     s.catalogue = &tiCatalogue();
     s.machines = &m_machines;
@@ -143,6 +164,11 @@ calcu::parts::LibraryPartsSetup TIAppPart::librarySetup() {
     s.productName = "Calc-U-59";
     s.presetExtensions = {".ti59", ".ti58", ".ti58c"};
     s.printers = {kPC100C};
+    // LIB-7 59 (M-55): the magnetic card in the save folder, slot-1's modules.
+    s.mediaKinds = {magneticCardKind()};
+    s.mediaPaths = m_paths.get();
+    s.mediaFiles = m_mediaFiles;
+    s.moduleListing = tiModuleListing(m_setup.roms);
     return s;
 }
 
@@ -183,7 +209,6 @@ void TIAppPart::attach(sessions::SessionSetup& s) {
     m_led = &s.stateTopic(topics::kLed);
     m_cue = &s.stateTopic(topics::kCueCard);
     m_printer = &s.stateTopic(topics::kPrinter);
-    m_card = &s.stateTopic(topics::kCardReader);
     m_run = &s.stateTopic(topics::kRunState);
     m_live = &s.stateTopic(topics::kDebugLive);
     m_cpu = &s.stateTopic(topics::kDebugCpu);
@@ -214,15 +239,7 @@ void TIAppPart::attach(sessions::SessionSetup& s) {
             return Refused{"The PC-100C has no control " + textArg(a, "control") + "."};
         return Done{};
     });
-    add(s, kFitCard, [&c, flag](const Value& a) {
-        return flag(c.fitCard(bytesArg(a, "bytes"), textArg(a, "path"), textArg(a, "name")));
-    });
-    add(s, kFitBlankCard, [&c, flag](const Value& a) {
-        return flag(c.fitBlankCard(textArg(a, "path"), textArg(a, "name")));
-    });
-    add(s, kFeedSide, [&c, flag](const Value& a) { return flag(c.feedSide(static_cast<int>(sessions::integerArg(a, "side")))); });
     add(s, kTapCard, [&c, flag](const Value& a) { return flag(c.tapCard(realArg(a, "x"), realArg(a, "y"))); });
-    add(s, kEjectCard, done([&c](const Value&) { c.ejectCard(); }));
     // Until LIB-13 59's `open` (M-56): a dropped preset goes to LIB-6's
     // load-preset by its content (LIB-6 §11.2); a card is fitted.
     add(s, kOpenDropped, [this, &c](const Value& a) -> CommandOutcome {
@@ -244,7 +261,7 @@ void TIAppPart::attach(sessions::SessionSetup& s) {
             }
             return out;
         }
-        case DropAction::FitCard: return Done{std::make_shared<TIFlag>(c.fitCard(bytes, textArg(a, "path"), name))};
+        case DropAction::FitCard: return Done{std::make_shared<TIFlag>(c.fitDroppedCard(name, textArg(a, "path"), bytes))};
         case DropAction::Ignore:
         case DropAction::NotAccepted: break;
         }
@@ -274,10 +291,26 @@ void TIAppPart::attach(sessions::SessionSetup& s) {
         return r;
     });
 
-    // The card wait (LIB-17 AC-16). The machine comes with LIB-18's `start`.
-    m_ms->addWaitProbe(*m_hooks);
+    // The machine comes with LIB-18's `start`; the card wait is the media part's (LIB-17 AC-16).
     m_changes = ~0u;
     settle();
+}
+
+bool TIAppPart::fitDroppedCard(const std::string& name, const std::string& path,
+                               const std::optional<std::vector<uint8_t>>& bytes) {
+    calcu::media::MediaPart* media = m_lib.media();
+    if (!media || !m_ctx) return false;
+    Value::Object o{{"name", name}, {"place", "card-reader"}};
+    if (bytes) o.push_back({"bytes", Value(Value::Bytes(bytes->begin(), bytes->end()))});
+    if (!path.empty()) o.push_back({"path", path});
+    else o.push_back({"upload", true});   // a Web frontend: imported into the save folder (LIB-13 AC-4)
+    CommandOutcome out = media->openFile(Value(std::move(o)), *m_ctx);
+    if (const auto* r = std::get_if<Refused>(&out)) {
+        m_ctx->notice(r->reason);
+        return false;
+    }
+    refreshCueCard();
+    return true;
 }
 
 void TIAppPart::add(sessions::SessionSetup& s, const sessions::CommandName& name, Handler h) {
@@ -379,6 +412,8 @@ void TIAppPart::publish(uint32_t c) {
     if (c & (S::CueCardChanged | S::CardChanged | S::ModelChanged)) {
         auto p = make(std::make_shared<TICueCardState>());
         p->card = k.cueCard();
+        p->onShow = k.cardOnShow();
+        p->litCorner = k.litCardCorner();
         m_cue->set(std::move(p));
     }
     if (c & S::PrinterChanged) {
@@ -386,15 +421,6 @@ void TIAppPart::publish(uint32_t c) {
         p->connected = k.printerConnected();
         p->trace = k.printerTrace();
         m_printer->set(std::move(p));
-    }
-    if (c & (S::CardChanged | S::ModelChanged | S::CueCardChanged)) {
-        auto p = make(std::make_shared<TICardReaderState>());
-        p->state = k.cardState();
-        p->fileName = k.cardFileName();
-        p->fitted = k.cardFitted();
-        p->onShow = k.cardOnShow();
-        p->litCorner = k.litCardCorner();
-        m_card->set(std::move(p));
     }
     if (c & S::RunStateChanged) {
         auto p = make(std::make_shared<TIRunState>());

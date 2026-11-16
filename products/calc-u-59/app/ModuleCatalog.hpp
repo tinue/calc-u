@@ -1,19 +1,18 @@
 #pragma once
 #include "CueCard.hpp"
+#include "media/Kind.hpp"
 #include "roms/RomSet.hpp"
+#include <memory>
 #include <map>
 #include <optional>
 #include <string>
 #include <string_view>
 #include <vector>
 
-// roms/solid-state/cuecards.txt: one section per Solid State Software module
-// (MODULE-ID first, then MODULE-TITLE / -SORT / -MENU-TITLE / -MENU-SORT /
-// -ROM), followed by "CUECARD: n" blocks — the cue card for library program n.
-// '#' starts a comment. It is still the cue cards (until M-55, migration plan
-// §2.3). The module list comes from the 14 module files of the ROM set since
-// M-25 (C59-6 AC-8; docs/formats/modules.md §2): the ID is `module-name`, the
-// picker shows `description` in `menu-sort` order. MODULE-ROM is not read.
+// The 14 Solid State ROM modules from their module files in the ROM set
+// (C59-6 AC-8; docs/formats/modules.md §2): the ID is `module-name`, the
+// picker shows `description` in `menu-sort` order. Their cue cards:
+// app/ModuleCueCards (C59-7 AC-22, AC-23).
 
 namespace cu59 {
 
@@ -26,7 +25,7 @@ struct ModuleMetadata {
 };
 
 /// Every module's metadata from its module file in the set, in menu order
-/// (`menu-sort`; ties keep the catalogue's order, today's cuecards.txt
+/// (`menu-sort`; ties keep the catalogue's order, 2.3.0's cuecards.txt
 /// order, so ST comes before RE: C59-6 design D-4). `menuTitle` is the
 /// file's `description`, `title` its `title`.
 std::vector<ModuleMetadata> allModuleMetadata(const calcu::roms::RomSet& roms);
@@ -39,12 +38,9 @@ inline constexpr const char* kStartModuleID = "ML";
 /// std::nullopt for another ID.
 std::optional<std::string> moduleRomFile(std::string_view moduleID);
 
-struct ModuleCards {
-    std::map<int, CueCardContent> cards;  ///< library program number → cue card
-    ModuleMetadata metadata;
-};
-
-/// Cue cards and metadata of one module.
-ModuleCards moduleCards(std::string_view cuecardsTxt, std::string_view moduleID);
+/// The listing of slot-1's modules for the library's media part (LIB-7
+/// AC-8, AC-47; C59-6 AC-8): the module file's `description` as the label,
+/// no tooltip, `menu-sort` order; slot-1 is a module slot without media.
+calcu::media::ModuleListing tiModuleListing(const std::shared_ptr<const calcu::roms::RomSet>& roms);
 
 } // namespace cu59

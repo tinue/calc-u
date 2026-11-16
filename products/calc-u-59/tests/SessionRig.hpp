@@ -29,15 +29,12 @@ namespace testroms {
 
 namespace fs = std::filesystem;
 
-inline std::string catalog() { return readFile("roms/solid-state/cuecards.txt").value_or(""); }
-
 /// What a frontend hands the part (C59-5 D-12): the ROM set, the cue cards,
 /// the settings (`[startup] model`: `model`, LIB-18 AC-17), the bundled
 /// examples, the save folder and the traces in `folder`.
 inline cu59::TIAppSetup appSetup(calcu::settings::SettingsFile& settings, cu59::Model model, const fs::path& folder) {
     cu59::TIAppSetup s;
     s.roms = romSet();
-    s.cuecards = catalog();
     settings.set("startup", "model", cu59::modelId(model).value);
     s.settings = &settings;
     s.examplesFolder = "examples";

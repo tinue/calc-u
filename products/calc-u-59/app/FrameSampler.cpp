@@ -11,9 +11,8 @@ bool LedFrame::operator==(const LedFrame& o) const {
            std::memcmp(dpLevel, o.dpLevel, sizeof dpLevel) == 0;
 }
 
-FrameUpdate FrameSampler::tick(calcu::machine::Machine& m, int debugLevel, bool cardSwiping) {
+FrameUpdate FrameSampler::tick(calcu::machine::Machine& m, int debugLevel) {
     FrameUpdate u;
-    u.cardAutoEjected = cardSwiping && !cardReaderOf(m)->isCardPresent();
     if (debugLevel > 0) {
         for (const auto& e : debugPanelOf(m)->drainDebugEvents())
             if (e.level <= debugLevel) u.logLines.emplace_back(e.msg);

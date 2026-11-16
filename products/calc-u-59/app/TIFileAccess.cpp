@@ -25,23 +25,20 @@ std::shared_ptr<FileIO> plainFileIO() { return std::make_shared<PlainFileIO>(); 
 TIFileAccess::TIFileAccess(std::string saveFolder, std::shared_ptr<FileIO> io)
     : m_saveFolder(std::move(saveFolder)), m_io(io ? std::move(io) : plainFileIO()) {}
 
-std::string TIFileAccess::cardFilePath(const std::string& fileName) const {
+std::string TIFileAccess::savePath(const std::string& fileName) const {
     if (m_saveFolder.empty()) return fileName;
     const char last = m_saveFolder.back();
     return m_saveFolder + (last == '/' || last == '\\' ? "" : "/") + fileName;
 }
 
 std::optional<std::string> TIFileAccess::readConstantMemory(bool* unreadable) {
-    auto r = m_io->read(cardFilePath(kConstantMemoryFile));
+    auto r = m_io->read(savePath(kConstantMemoryFile));
     if (unreadable) *unreadable = r.unreadable;
     if (!r.raw) return std::nullopt;
     return std::string(r.raw->begin(), r.raw->end());
 }
 
-bool TIFileAccess::writeConstantMemory(const std::string& text) { return m_io->write(cardFilePath(kConstantMemoryFile), text); }
+bool TIFileAccess::writeConstantMemory(const std::string& text) { return m_io->write(savePath(kConstantMemoryFile), text); }
 
-bool TIFileAccess::writeCard(const std::string& path, const std::string& text) { return m_io->write(path, text); }
-
-FileIO::Read TIFileAccess::readCard(const std::string& path) { return m_io->read(path); }
 
 } // namespace cu59

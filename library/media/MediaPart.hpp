@@ -1,6 +1,7 @@
 #pragma once
 #include "machine/Catalogue.hpp"
 #include "machine/Machine.hpp"
+#include "media/FileAccess.hpp"
 #include "media/Kind.hpp"
 #include "media/MediaPlace.hpp"
 #include "media/MediaTopics.hpp"
@@ -37,6 +38,8 @@ struct MediaSetup {
     // LIB-18's machine control (module slots, the power cycle of AC-19, the
     // variant carry of S-7a).
     startup::MachineControl* control = nullptr;
+    // How the save folder is listed, read and written (D-30); null: plain.
+    std::shared_ptr<const FileAccess> files;
 };
 
 // What the part keeps per place (§3.7): where the medium came from, whether
@@ -57,6 +60,7 @@ struct Binding {
     std::string peripheral;                 // a module slot: the module it is
     Content content;                        // a pass-through place: the fitted medium as it is now (what it gave back last)
     bool passed = false;                    // a pass-through place: it has passed since it was fitted (AC-27)
+    std::uint64_t armed = 0;                // a pass-through place: changes with each fit (C59-7 AC-22, D-6)
     std::uint64_t written = 0;              // the revision last written (or seen, for a template)
     bool pending = false;                   // A1: a change seen, not yet written
     pacing::WallTime dated{0};
@@ -244,6 +248,7 @@ private:
     std::map<std::string, bool> passed_;   // a pass-through place gave back since the last takePassed
     std::vector<std::pair<std::string, Binding>> carried_;   // a variant switch: the media of media places (S-7a)
     bool fromPlan_ = false;
+    std::uint64_t armSerial_ = 0;
     pacing::WallTime lastCall_{0}, gap_{0}, callStart_{0};
 };
 

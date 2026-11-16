@@ -102,7 +102,7 @@ TEST(lib17_ac16_card_wait_is_waiting) {
     r.tap(11);
     r.send(kSpeedCommand, Value::object({{"full", true}}));
     r.runFor(200ms);
-    CHECK(testroms::card(r.machine()).isInCardWait() && testroms::card(r.machine()).isWaitingForCard());
+    CHECK(testroms::cardPlace(r.machine()) && testroms::cardPlace(r.machine())->waitsForMedium());
     const double rate = rateOver(r, 1s);
     CHECK(rate > 0.95 && rate < 1.05);
 }

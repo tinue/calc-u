@@ -149,10 +149,12 @@ docs/developer/PC1600-Core-Limitations.md (LH5803 section).
   named after their connector"), carrying data only while PRIME selects
   SIO; `calcu1600-rs232c.serial` then carries RS-232C only.
 - Capture the exact on-wire `SAVE"COM1:"` framing from a real ROM trace
-  (`tools/pc1600_uart_probe.cpp`, `PC1600_SERIAL=1`), and do one live
-  round-trip against SharpDataExchange over the PTY. The `LOAD"COM1:"`
-  direction is covered by the loader matrix (dev/loader-matrix/, set 1,
-  fed the `sde convert` byte stream in-process).
+  (the harness: `pc1600 serial rs232c capture`, with `trace`; the UART
+  probe went in M-51), and do one live round-trip against
+  SharpDataExchange over the PTY (`pc1600 serial rs232c link`). The
+  `LOAD"COM1:"` direction was covered by the one-time loader matrix
+  (dev/loader-matrix/ until M-51, set 1, fed the `sde convert` byte
+  stream in-process).
 - Follow-on: a localhost-socket transport (`SocketSerialLink`) so
   `OUTSTAT 0-3` and buffer-full RTS become effective end-to-end, for
   serial-only tooling to bridge via `socat`.
@@ -167,8 +169,8 @@ The loaders follow MODE and `TITLE` (docs/background/plans/Loader-Mode-Plan.md, 
   `INPUT#-1` in MODE 1 through the CE-1600P (the ROM allows it,
   the TRM doesn't); `SAVE`/`LOAD "CAS:"` in MODE 1; CE-150/CE-158
   `PRINT#`/`INPUT#` in MODE 0. (The CE-158's own `SETDEV` is reachable in
-  MODE 1: the native `SETDEV` passes non-`COM` devices on, see loader-matrix
-  set 4 and `test_pc1600_rom_mode1_printing`; Ref §6 item 5 still lists it.)
+  MODE 1: the native `SETDEV` passes non-`COM` devices on, see the loader
+  matrix's set 4 (gone in M-51, git history) and `test_pc1600_rom_mode1_printing`; Ref §6 item 5 still lists it.)
 - **CE-158 on the PC-1600 (MODE 1): `SETDEV KI` + `INPUT` reads the
   keyboard, not the CE-158's UART** (`SETDEV PO` and `RINKEY$` work,
   `ce158_tests.cpp`). Trace where the PC-1600's `INPUT` picks its device
@@ -178,7 +180,7 @@ The loaders follow MODE and `TITLE` (docs/background/plans/Loader-Mode-Plan.md, 
   takes up to MEM + 1 (the end mark lands one byte past the user area, as
   on the PC-1500); the loader stops at MEM − 2, the native `LOAD` limit,
   so it refuses MEM − 1 and MEM. Decide whether a CE-158 file in MODE 1
-  gets `CLOAD`'s limit (dev/loader-matrix/README.md).
+  gets `CLOAD`'s limit (dev/loader-matrix/README.md in the history before M-51).
 
 ## Expansion connectors: one model on both machines
 
@@ -316,7 +318,8 @@ Decisions.md, "One 60-pin connector per machine".
 ## Cassette tape: still open
 
 CLOAD/CSAVE work on the PC-1500/1500A + CE-150 and the PC-1600 (MODE 0) +
-CE-1600P (docs/background/plans/Cassette-Tape-Plan.md, dev/tape-matrix/).
+CE-1600P (docs/background/plans/Cassette-Tape-Plan.md; the one-time
+dev/tape-matrix/ in the history before M-51).
 
 - **PC-1600 MODE 1: `CLOAD` of PC-1500 tapes through the CE-1600P.** The
   reader (`CM1500BIT`, bank 5 62BDH) writes F (17H) = 01H, resets the
@@ -388,9 +391,6 @@ Shared-Layer-Followup-Plan.md and Web-GUI-Plan.md.
   parity table (Calc-U-59 style).
 - **Web client: check on a real iPad** -- touch, two-finger SHIFT + key,
   install from Safari, persistence after closing the app, audio.
-- **CLIs on Shared.** `tools/pc1500_cli.cpp` / `pc1600_cli.cpp` build their
-  own preset environment and both copy the `drainWav` yield hook; they could
-  run presets through the library's app session (the harness, LIB-11) instead.
 
 ## Feature ideas
 
@@ -662,9 +662,6 @@ somewhere else doesn't count (see docs/background/plans/Code-Cleanup-Plan.md).
   `Operations` → the app session's `c1600.load-preset`).
 - **Small leftovers from the 2026-09-30 simplify pass.** Take them when
   the file is next touched:
-  - `--lcd-png` and `--lcd-text` write-and-error blocks are the same in
-    `pc1500_cli.cpp` and `pc1600_cli.cpp`: a `cli::writeLcdPng(bitmap, mm,
-    path)` (and a text twin) in `tools/CliCommon.hpp`.
   - `app/SharpFileKinds.cpp` `programKindOf` (was `DropFile.cpp`
     `classify`) and `PresetFile.cpp`'s `program:` switch both sort `programfile::Kind` into BASIC / code: `isBasic(Kind)` /
     `isCode(Kind)` next to `headerName()` in `ProgramFile.hpp` (the
@@ -707,13 +704,3 @@ somewhere else doesn't count (see docs/background/plans/Code-Cleanup-Plan.md).
   as the CPU would with page C = `bank` and page D = bank 0, so the
   boundary lives in one place (and a later page-D or SLOT1MAP change
   touches one spot).
-- **`dev/loader-matrix/` re-implements Core helpers.** Take it when the
-  matrix is next run:
-  - `readFile` in both harnesses: `readWholeFile` (`Core/FileIO.hpp`).
-  - `lcd()` and `screen.find("ERROR")`: `LcdText::logField()` /
-    `LcdText::contains()`.
-  - PC-1600 MEM is typed and parsed off the LCD:
-    `CoreDebug::readPC1600ProgramAreas(peek).memS0`
-    (`Core/Debug/BasicPointerTable.cpp`, add it to the build script).
-  - `snapshot()` peeks C000-FFFF byte by byte:
-    `PC1600Machine::debugCopyInternalRam()`.

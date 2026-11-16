@@ -4,9 +4,6 @@
 
 #include <cstring>
 
-#ifdef PC1600_POWER_PROBE
-#include "PC1600PowerProbe.hpp" // throw-away OFF-key trace instrumentation
-#endif
 
 bool PC1600Memory::loadBank0(const uint8_t* lower, size_t lowerSize,
                               const uint8_t* upper, size_t upperSize) {
@@ -218,17 +215,7 @@ bool PC1600Memory::slot1MapTarget(uint16_t addr, bool* pvoutHigh, uint16_t* offs
 }
 
 uint8_t PC1600Memory::read(uint16_t addr) const {
-#ifdef PC1600_POWER_PROBE
-    // Report which branch served the read, so a probe can tell a genuine
-    // card hit from a ROM/open-bus miss (see PC1600PowerProbe's onSlotRead).
-    const auto trace = [&](uint8_t v, int src) {
-        pc1600probe::onSlotRead(addr, v, src, m_bank.readPort31(),
-                                m_bank.slot2VerticalBank(), m_bank.readPort3C());
-        return v;
-    };
-#else
     const auto trace = [](uint8_t v, int) { return v; };
-#endif
     const SlotRemap r = resolveSlotRemap(addr);
     if (r.hit1) {
         // A Slot 1 card claims this SLOT1MAP-remapped access (or won the
@@ -267,14 +254,7 @@ uint8_t PC1600Memory::read(uint16_t addr) const {
 }
 
 bool PC1600Memory::writeImpl(uint16_t addr, uint8_t value, bool direct) {
-#ifdef PC1600_POWER_PROBE
-    const auto traceW = [&](int claimed) {
-        pc1600probe::onSlotWrite(addr, value, claimed, m_bank.readPort31(),
-                                 m_bank.slot2VerticalBank());
-    };
-#else
     const auto traceW = [](int) {};
-#endif
     const SlotRemap r = resolveSlotRemap(addr);
     if (r.hit1) {
         if (const WriteResult w = m_slot1Conn.writeRemapped(r.off1, r.pvoutHigh1, value, direct)) {
@@ -299,13 +279,6 @@ bool PC1600Memory::writeImpl(uint16_t addr, uint8_t value, bool direct) {
 }
 
 uint8_t PC1600Memory::readIO(uint8_t port) {
-#ifdef PC1600_POWER_PROBE
-    const uint8_t v = readIOImpl(port);
-    pc1600probe::onIoRead(port, v);
-    return v;
-}
-uint8_t PC1600Memory::readIOImpl(uint8_t port) {
-#endif
     if (port >= 0x50 && port <= 0x5B) return m_display.readIO(port);
     // 60-pin system bus: ports 0x70-0x9F -- 0x70-0x7F (CE1600FCard:
     // command/sector/motor/data registers), 0x80-0x8F (CE1600PCard: 0x81
@@ -372,9 +345,6 @@ uint8_t PC1600Memory::readIOImpl(uint8_t port) {
 }
 
 void PC1600Memory::writeIO(uint8_t port, uint8_t value) {
-#ifdef PC1600_POWER_PROBE
-    pc1600probe::onIoWrite(port, value);
-#endif
     if (port >= 0x50 && port <= 0x5B) { m_display.writeIO(port, value); return; }
     // 60-pin system bus: ports 0x70-0x9F -- 0x70-0x7F (CE1600FCard
     // registers), 0x80-0x8F (0x81 FD reset, 0x82 Z-motor, 0x83 X/Y-motor;

@@ -25,7 +25,7 @@ std::string utf8Of(const std::filesystem::path& p) {
 struct PC1600InterfaceMachine::Kinds {
     explicit Kinds(PC1600Machine& m)
         : memory(m), inspector(m), support(m), trace(m), tape(m), cassette(m.tapeDeck()), clock(m), floppy(m),
-          drive(driveOf(m)), printerPort(m), hostDrive(m) {}
+          drive(driveOf(m)), printerPort(m), hostDrive(m), call(m) {}
 
     static sharp::FloppyPlace::Drive driveOf(PC1600Machine& m) {
         sharp::FloppyPlace::Drive d;
@@ -115,6 +115,17 @@ struct PC1600InterfaceMachine::Kinds {
         void setFolder(const std::string& f) override { m.setHostDriveDirectory(pathOf(f)); }
         PC1600Machine& m;
     } hostDrive;
+    // C1600-5 AC-12: CALL on the Z-80, SJP on the LH5803.
+    struct Call final : sharp::RoutineCall {
+        explicit Call(PC1600Machine& m) : m(m) {}
+        bool call(const std::string& target, std::uint16_t address) override {
+            if (target == "SC7852") m.sc7852().callRoutine(address);
+            else if (target == "LH5803") m.lh5803().callRoutine(address);
+            else return false;
+            return true;
+        }
+        PC1600Machine& m;
+    } call;
 };
 
 PC1600InterfaceMachine::PC1600InterfaceMachine(const MachineDescriptor& d, const VariantId& v)
@@ -202,7 +213,6 @@ void PC1600InterfaceMachine::corePlug(const PeripheralRequest& req, const Periph
     } else if (id == sharp::kCE1600P) {
         if (const std::vector<std::uint8_t>* rom2 = sharp::romImageOf(req, d, 1))
             m_core->attachCE1600P(rom->data(), rom->size(), rom2->data(), rom2->size());
-        if (req.variant) m_presetCe1600pVariant = *req.variant;
     } else if (id == sharp::kCE158) {
         m_core->attachCE158(rom->data(), rom->size());
     } else if (id == sharp::kHostDrive) {
@@ -221,26 +231,13 @@ void PC1600InterfaceMachine::coreUnplug(const PlaceName& p, const PeripheralId& 
     else if (id.value == sharp::kBusRom) m_core->detachBusRoms();
 }
 
-std::vector<PlugEntry> PC1600InterfaceMachine::coreHasPlugged() const {
-    std::vector<PlugEntry> out;
-    auto add = [&](const char* place, const std::string& id, std::optional<VariantId> v = std::nullopt) {
-        out.push_back({PlacePath{{PlaceName{place}}}, PeripheralId{id}, std::move(v)});
-    };
-    if (const ExpansionCard* c = m_core->memory().slotCard(1)) add(sharp::kSlot1, c->moduleName());
-    if (const ExpansionCard* c = m_core->memory().slotCard(2)) add(sharp::kSlot2, c->moduleName());
-    if (m_core->ce150Attached()) add(sharp::kPrinter, sharp::kCE150);
-    if (m_core->ce1600pAttached()) add(sharp::kPrinter, sharp::kCE1600P, m_presetCe1600pVariant);
-    if (m_core->ce158Attached()) add(sharp::kInterface, sharp::kCE158);
-    if (m_core->hostDriveAttached()) add(sharp::kHostDrivePlace, sharp::kHostDrive);
-    return out;
-}
-
 void PC1600InterfaceMachine::offer(std::vector<Offered>& out, const std::vector<PlugEntry>&) {
     Kinds& k = *m_kinds;
     out.push_back(byComponent("SC7852", k.memory));
     out.push_back(byComponent("SC7852", k.inspector));
     out.push_back(byComponent("SC7852", k.support));
     out.push_back(byComponent("SC7852", k.trace));
+    out.push_back(byComponent("SC7852", k.call));
     out.push_back(byComponent(sharp::kRtcComponent, k.clock));
     out.push_back(byComponent(sharp::kRs232cComponent, m_rs232c.port()));
     if (const PlugEntry* e = at(sharp::kPrinter)) {

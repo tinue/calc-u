@@ -14,8 +14,7 @@
 //      is off (checked before each frame);
 //   3. the off point: the changes that wait for it are made (D-2);
 //   4. `on` down for kKeyHoldFrames frames, then released.
-// Running to the prompt is the caller's (LIB-18; until M-46
-// LegacyCalls::runToPromptJob).
+// Running to the prompt is the caller's (LIB-18).
 
 namespace sharp {
 

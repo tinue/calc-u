@@ -138,15 +138,6 @@ public:
         }
     }
 
-    /// Optional host callback invoked from inside runCycles() roughly every
-    /// `intervalTStates` T-states of emulated time (counted across calls, so many
-    /// short runCycles() calls still add up). Lets a caller that drives a
-    /// long synchronous preset/program load keep its event loop alive
-    /// (repaint, show a progress popup) without the loaders knowing about
-    /// it. The hook may read the display; it must not drive the machine. An
-    /// empty function (the default) removes it.
-    void setYieldHook(std::function<void()> hook, uint64_t intervalTStates);
-
     // ── ROM loading ────────────────────────────────────────────────────
     bool loadBank0(const uint8_t* lower, size_t lowerSize, const uint8_t* upper, size_t upperSize) {
         return m_z80Mem.loadBank0(lower, lowerSize, upper, upperSize);
@@ -514,10 +505,6 @@ public:
 
 private:
 
-    // See setYieldHook(). m_yieldCountdown only runs down while a hook is set.
-    std::function<void()> m_yieldHook;
-    uint64_t m_yieldInterval = 0;
-    uint64_t m_yieldCountdown = 0;
 
     /// Bodies of the public detach calls (the *Locked names are from when
     /// the class had a lock; it has none since M-26, ADR 0009).

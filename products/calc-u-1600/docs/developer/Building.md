@@ -83,8 +83,8 @@ at its start one ROM lookup (`sharp::lookUpRoms`, `core/Machine/SharpRoms`;
 the library's `calcu::roms::lookUp`) checks every file of the full set by
 its size, and if one is missing or bad, the Qt6 app shows a dialog naming
 each such file and exits, the Web client shows the same text instead of
-the calculator, and the CLIs and probes end with exit code 1 naming the
-files. No ROM set is used in place of another (the 0.8.x fallback from a
+the calculator, and the harness `calcu` ends at its start with exit status
+2 naming the files (LIB-11 EC-1). No ROM set is used in place of another (the 0.8.x fallback from a
 missing Old ROM set to the New one is gone, LIB-12 AC-13). Only the
 host-drive ROM (`firmware/pc1600-hostdrive/`, our own) is bundled and read
 outside the lookup (`roms.md` Q-1).
@@ -181,36 +181,31 @@ ARM64 machine, run the steps above from an ARM64 developer prompt
 ### CLion / IDE integration
 
 Open the repository root in CLion and it configures the root project
-with every product: the Qt6 apps, the headless CLI harnesses and probes,
-and the test suites as CTest targets. It picks up the shared run/debug
+with every product: the Qt6 apps, the harness `calcu`, and the test suites
+as CTest targets. It picks up the shared run/debug
 configurations committed in the repository's `.run/`:
 
 | Run configuration | CMake target | Notes |
 |---|---|---|
 | `Calc-U-1600` | `CalcU1600Qt` | The Qt6 GUI app |
 | `CoreTests` | `CoreTests` | Headless test suite, also runnable via CTest |
-| `pc1500_cli`, `pc1600_cli` | same | Headless CLI harnesses; they build the machine from `sharp::sharpCatalogue()` and drive it through `calcu::machine::Machine`; they load presets through the library's loader (`tools/CliPresetRun.hpp`, until M-51) and wait until the machine is idle. `--check-preset` is gone; `--rom`/`--ce1600p-rom` other than `new` are refused (the preset names its variants) |
-| `pc1600_plotter_probe`, `pc1600_power_probe`, `pc1600_uart_probe` | same | Hardware diagnostic probes, on the machine interface too; CPU and bank state through the `c1600.inspector` and `c1600.loader-memory` kinds |
+| `calcu-1600` | `calcu` | The harness, `calcu --product 1600 serve`: one command per line on standard input (LIB-11; the product's section Harness of `CLAUDE.md`). It replaced `pc1500_cli`, `pc1600_cli` and the three probes in M-51: every function of the CLIs is a `calcu` command (LIB-11 AC-18) |
 
 All of them run and debug interactively (breakpoints, variable
 inspection, stepping) — which is the main thing this build adds over
-`tools/build_*.sh` and `tools/run_tests.sh`.
+`tools/run_tests.sh`.
 
-Run `roms/fetch_roms.sh` (step 2 above) first: `CoreTests`, the CLIs and
-the probes look the ROMs up in `roms/` relative to their working
-directory (this directory) through the same lookup as the app, and ROMs
-aren't committed. A ROM test without the full set reports itself as
+Run `roms/fetch_roms.sh` (step 2 above) first: `CoreTests` looks the ROMs
+up in `roms/` relative to its working directory (this directory), the
+harness in this folder's `roms/` wherever it runs, both through the same
+lookup as the app, and ROMs aren't committed. A ROM test without the full set reports itself as
 skipped.
 
 `core/` and `app/` come from [`cmake/CalcU.cmake`](../../cmake/CalcU.cmake),
 which globs the sources into two static libraries: `calcu_core` and
-`calcu_shared` (the frontend-neutral layer above Core); `calcu_add_core()`
-makes a third, `calcu_core_probe`, with `PC1600_POWER_PROBE` for the two
-probes that need it. A new `.cpp` under either directory needs no list
-entry; re-run CMake (or let Ninja's glob check do it). No script lists
-sources: `tools/build_*.sh` build the CMake targets
-(`tools/build_tool.sh`, in the repository's `build/tools` tree) and copy
-them into `headless/`.
+`calcu_shared` (the frontend-neutral layer above Core). A new `.cpp` under
+either directory needs no list entry; re-run CMake (or let Ninja's glob
+check do it). No script lists sources.
 
 ## Running the tests
 

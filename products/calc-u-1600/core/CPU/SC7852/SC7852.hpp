@@ -134,6 +134,9 @@ public:
     void setIY(uint16_t v) { IY = v; }
     void setSP(uint16_t v) { SP = v; }
     void setPC(uint16_t v) { PC = v; }
+    /// A call from the current state as CALL makes it (C1600-5 AC-12): PC
+    /// pushed, PC = `address`; the routine's RET comes back here.
+    void callRoutine(uint16_t address) { pushWord(PC); PC = address; }
 
     // Alternate set and control registers (debugger).
     uint16_t af2() const { return uint16_t(A2 << 8) | F2; }

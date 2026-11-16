@@ -108,7 +108,7 @@ a CE-152 on the remote jack. The ROM waits ~0.6 s for the motor before it
 counts the leader, so a tape needs a long leader (`bin2wav -s 3` or
 `-l 0x400`); don't
 start the tape before the relay closes to make short leaders work. Because
-time is emulated, a recording is the same in real time, turbo or the CLI.
+time is emulated, a recording is the same in real time, turbo or the harness.
 
 ### Tape recordings are AC-coupled at 12 Hz, spikes included
 `TapeDeck` records the cassette line through a 12 Hz high-pass at 0.45 of
@@ -647,7 +647,7 @@ authentic speed for the span that matters.
 ### GUI
 - **The INSPECTOR's views are built in Core** (`core/Debug/Inspect`), from
   one locked snapshot (`debugInspect()`), not in the panel: they are tested
-  there and the CLIs print them (`--inspect`). Every read in them is free
+  there and the harness prints them (`pc1600 inspect`). Every read in them is free
   of side effects; a slot read uses `slotBusRead()` (no probe write), and a
   card register a read would disturb counts as "answers" without being read.
   A view goes into the log as one entry, so a long dump isn't cut to the
@@ -756,15 +756,14 @@ authentic speed for the span that matters.
   machines.** `co_await job::run(machine, n)` keeps each typer, boot and
   preset step exactly as the blocking code read, which is why the project
   is C++20. The blocking function names remain (they run the job to
-  completion), so the CLIs, probes and tests call the same API.
+  completion), so the core's tests call the same API.
 - **A job's run request is never split.** `job::Job::step()` may overshoot
   its budget by up to one request rather than cut a `runCycles()` call in
   two, so a sliced job and one run straight through leave the machine in
   the same state. `job_tests.cpp` checks this on real presets; keep it.
-- **The GUI no longer installs the machines' yield hook.** Operations run
-  through `AppSession::runNow()`, which steps the job in 10 ms slices and
-  pumps the Qt event loop between them. The hook stays in Core for the
-  CLIs (they drain WAV audio from it).
+- **The machines have no yield hook.** Operations run as the library's
+  operations, in slices between host calls. The hook stayed in Core for
+  the CLIs (they drained WAV audio from it) and went with them in M-51.
 - **The PC-1600's live key taps count emulated time.** `tapKey()` /
   `tapShiftedKey()` (30 ms hold, 100 ms gap) release on `advance()`'s
   budget, not on wall-clock QTimers, so they follow pause and turbo like

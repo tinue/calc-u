@@ -4,8 +4,8 @@
 #include "Machine/SharpCatalogue.hpp"
 
 // Inside the core only (the include check, CalcU1600MachineIncludeCheck):
-// the old class behind a Sharp machine, for the adapters of
-// LegacyCalls.hpp and the core's tests. By the descriptor's model and a
+// the old class behind a Sharp machine, for the core's own parts and the
+// core's tests (the adapters of LegacyCalls.hpp went in M-51). By the descriptor's model and a
 // static_cast; no RTTI (C1600-1 design §5).
 
 namespace sharp {

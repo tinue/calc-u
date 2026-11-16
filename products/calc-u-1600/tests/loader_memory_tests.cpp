@@ -88,7 +88,7 @@ TEST(c1600_2_ac14_write_built_in_and_slot_any_bank_switched_in) {
     // Both banks of the 32 KB module, whichever the window shows now.
     for (int bank : {0, 1}) {
         CHECK(mem.writeSlot(bank, 0x9000, pattern, 4).stored);
-        const auto image = sharp::legacy::moduleIn(*m, 1)->debugImage();
+        const auto image = sharptest::moduleIn(*m, 1)->debugImage();
         const std::size_t off = static_cast<std::size_t>(bank) * 0x4000 + 0x1000;
         CHECK(image.size() > off + 3 && image[off] == 0x11 && image[off + 3] == 0x44);
     }

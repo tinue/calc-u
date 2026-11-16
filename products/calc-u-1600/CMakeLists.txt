@@ -3,8 +3,9 @@ cmake_minimum_required(VERSION 3.21)
 # Calc-U-1600 in the repository's root CMake project (ADR 0003; option
 # CALCU_PRODUCT_1600): the calcu_core / calcu_shared libraries
 # (cmake/CalcU.cmake), the Qt6 GUI app (with CALCU_FRONTEND_QT, via
-# add_subdirectory(frontends/qt6)), the headless CLIs and probes, and the
-# core/ + app/ test suite as a CTest target (with CALCU_TESTS). Opening the
+# add_subdirectory(frontends/qt6)), the product's entry of the harness
+# `calcu` (LIB-11; the CLIs and probes went in M-51), and the core/ + app/
+# test suite as CTest targets (with CALCU_TESTS). Opening the
 # repository root in CLion (or any CMake-aware IDE) gives run/debug
 # configurations for all of them -- see the "CLion / IDE Integration"
 # section of docs/developer/Building.md. Under Emscripten only the Web
@@ -35,7 +36,7 @@ include(cmake/CalcU.cmake)
 # -----------------------------------------------------------------------------
 # WebAssembly (emcmake cmake on the repository root): only Core + Shared,
 # the node smoke test (tools/build_wasm_check.sh) and the web client's
-# engine -- no Qt, no CLIs, probes or CoreTests. The smoke test proves the
+# engine -- no Qt, no harness, no CoreTests. The smoke test proves the
 # frontend-neutral layers build and run for a web GUI.
 # -----------------------------------------------------------------------------
 if(EMSCRIPTEN)
@@ -69,37 +70,9 @@ if(CALCU_FRONTEND_QT)
   add_subdirectory(frontends/qt6)
 endif()
 
-# -----------------------------------------------------------------------------
-# Headless CLI tools & probes
-# -----------------------------------------------------------------------------
-# pc1500_cli
-add_executable(pc1500_cli ${TOOLS_ROOT}/pc1500_cli.cpp)
-target_link_libraries(pc1500_cli PRIVATE calcu1600_harness)
-
-# pc1600_cli
-add_executable(pc1600_cli ${TOOLS_ROOT}/pc1600_cli.cpp)
-target_link_libraries(pc1600_cli PRIVATE calcu1600_harness)
-
-# pc1600_power_probe, pc1600_uart_probe: the throw-away ROM-path probes.
-# They need the instrumentation hooks PC1600_POWER_PROBE lights up in
-# PC1600Memory and PC1600SubCpu, so they link a copy of the core built
-# with it (calcu_add_core, cmake/CalcU.cmake); no other target defines it.
-calcu_add_core(calcu_core_probe)
-target_compile_definitions(calcu_core_probe PUBLIC PC1600_POWER_PROBE)
-
-add_executable(pc1600_power_probe ${TOOLS_ROOT}/pc1600_power_probe.cpp)
-target_link_libraries(pc1600_power_probe PRIVATE calcu_core_probe)
-
-add_executable(pc1600_uart_probe ${TOOLS_ROOT}/pc1600_uart_probe.cpp)
-target_link_libraries(pc1600_uart_probe PRIVATE calcu_core_probe)
-
-# pc1600_plotter_probe
-add_executable(pc1600_plotter_probe ${TOOLS_ROOT}/pc1600_plotter_probe.cpp)
-target_link_libraries(pc1600_plotter_probe PRIVATE calcu1600_harness)
-
-# The product entry of the harness `calcu` (LIB-11, M-28; library/harness/cli/).
-# It finds the ROMs and the module definitions in the folders the tests use
-# (LIB-11 design §8).
+# The product entry of the harness `calcu` (LIB-11, M-28, M-51; library/harness/cli/).
+# It finds the ROMs and the module definitions in the folders of the source
+# tree, as the tests use them (LIB-11 design §8, AC-20).
 add_library(calcu1600_harness STATIC ${CMAKE_CURRENT_SOURCE_DIR}/app/HarnessProduct.cpp)
 target_link_libraries(calcu1600_harness PUBLIC calcu_shared)
 target_link_libraries(calcu1600_harness PRIVATE calcu_warnings)
@@ -161,10 +134,9 @@ if(CALCU_TESTS)
   # preset extensions as the product's own, .bas, .bbin, .bin as Alternate,
   # no .rom.
   calcu_add_test(CalcU1600OpenWithTypes frequent COMMAND sh tools/check_open_with_types.sh)
-  # LIB-12 AC-13 (design Q2): pc1600_cli with a roms/ that lacks one file
-  # exits 1 naming it; with the full set it runs.
-  calcu_add_test(CalcU1600CliRomLookup frequent COMMAND sh tests/cli_rom_tests.sh
-                 PROPERTIES ENVIRONMENT PC1600_CLI=$<TARGET_FILE:pc1600_cli>)
+  # LIB-11 Part D, D.6 H4 (M-51): the CLIs, the probes, the one-time checks
+  # and their run configurations are gone, and no PC1600_POWER_PROBE is left.
+  calcu_add_test(CalcU1600NoOldTools frequent COMMAND ${CMAKE_COMMAND} -P tools/check_no_old_tools.cmake)
   # LIB-10 AC-42 (design §10.10, D16-8): the harness writes a PC-1600 trace,
   # tools/read_trace.py reads it unchanged (well under 2 s: Frequent).
   find_package(Python3 COMPONENTS Interpreter)
@@ -194,6 +166,17 @@ if(CALCU_TESTS)
                    COMMAND ${Python3_EXECUTABLE} tools/dap_smoke.py --port 32170 --harness $<TARGET_FILE:calcu>
                    PROPERTIES RUN_SERIAL TRUE)
   endif()
+
+  # C1600-5 (design §6) and LIB-11 Part D (D.6): the product commands under
+  # `pc1600` and the harness entry through SharpAppPart, each test on a
+  # `calcu` run of its own; a program of its own, so that CoreTests' budget
+  # stays (tests/harness/). About 10 s: Longer.
+  file(GLOB HARNESS_TEST_SOURCES CONFIGURE_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/tests/harness/*.cpp)
+  add_executable(CalcU1600HarnessTests ${HARNESS_TEST_SOURCES})
+  target_include_directories(CalcU1600HarnessTests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/tests)
+  target_link_libraries(CalcU1600HarnessTests PRIVATE calcu1600_harness calcu_test_runner calcu_warnings)
+  calcu_debug_o1(CalcU1600HarnessTests)
+  calcu_add_test(CalcU1600HarnessTests longer COMMAND CalcU1600HarnessTests)
 
   # Longer: run locally before merging into main and at the end of a part.
   # Against frontends/web/dist/ (frontends/web/build.sh first); the WASM

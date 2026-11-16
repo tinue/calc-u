@@ -13,7 +13,7 @@
 // 0.9 of its cell (the on-screen LcdWidget's layout), antialiased by exact
 // per-pixel area coverage. A powered-off display renders blank white.
 //
-// Model-free on purpose (pc1500_cli doesn't link the PC-1600 sources): the
+// Model-free on purpose (a caller need not link both models' sources): the
 // per-model extraction lives in PC1500/PC1500Screenshot.hpp and
 // PC1600/PC1600Screenshot.hpp.
 

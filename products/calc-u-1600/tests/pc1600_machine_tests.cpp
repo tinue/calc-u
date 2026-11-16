@@ -159,28 +159,6 @@ TEST(test_runcycles_charges_halted_steps_at_the_halt_tick_rate) {
     CHECK(consumed % SC7852::kHaltTickCycles == 0);
 }
 
-TEST(test_yield_hook_fires_per_interval_across_runcycles_calls) {
-    PC1600Machine m;
-    std::vector<uint8_t> lower = makeBank(0x00);
-    std::vector<uint8_t> upper = makeBank(0x00);
-    lower[0] = 0x76; // HALT -- every step costs exactly one halt tick
-    CHECK(m.loadBank0(lower.data(), lower.size(), upper.data(), upper.size()));
-    m.reset();
-    m.step();
-
-    int calls = 0;
-    const uint64_t interval = 100 * SC7852::kHaltTickCycles;
-    m.setYieldHook([&calls] { calls++; }, interval);
-    // Ten short calls add up to five intervals: the countdown must carry
-    // over between runCycles() calls, not restart with each one.
-    for (int i = 0; i < 10; ++i) m.runCycles(50 * SC7852::kHaltTickCycles);
-    CHECK(calls == 5);
-
-    m.setYieldHook({}, 0);
-    m.runCycles(10 * interval);
-    CHECK(calls == 5);
-}
-
 TEST(test_half_second_tick_raises_srirq_bit1) {
     // The sub-CPU's 0.5 s tick raises SRIRQ (A2H) bit 1; step()'s 0.5 s
     // accumulator drives it, and the SRIRQ read clears it.

@@ -2,7 +2,7 @@
 #include "AppPaths.hpp"
 #include "ChromeColors.hpp"
 #include "MachineController.hpp"
-#include "Connector/Ce158Card.hpp"
+#include "Connector/PrintableBytes.hpp"
 #include <QEvent>
 #include <QFile>
 #include <QFileDialog>
@@ -119,7 +119,7 @@ void Ce158PrinterWidget::appendBytes(const QByteArray& bytes) {
     const bool wasEmpty = m_printed.isEmpty();
     m_printed.append(bytes);
     if (wasEmpty) updateButtons();
-    const QString text = QString::fromStdString(ce158PrintableText(
+    const QString text = QString::fromStdString(printableBytes(
         reinterpret_cast<const std::uint8_t*>(bytes.constData()), static_cast<std::size_t>(bytes.size())));
     QScrollBar* bar = m_output->verticalScrollBar();
     const bool follow = bar->value() >= bar->maximum() - 4;

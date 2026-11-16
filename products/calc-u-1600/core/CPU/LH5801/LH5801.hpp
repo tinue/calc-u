@@ -86,6 +86,9 @@ public:
 
     uint16_t pc() const { return P; }
     void     setPC(uint16_t v) { P = v; }
+    /// A call from the current state as SJP makes it (C1600-5 AC-12): P
+    /// pushed, P = `address`; the routine's RTN comes back here.
+    void     callRoutine(uint16_t address) { push16(P); P = address; }
     uint16_t sp() const { return S; }
     /// The internal 16-bit operand register (the "W register" of the PC-1500
     /// Service Manual's MPU block diagram, which nothing else documents).

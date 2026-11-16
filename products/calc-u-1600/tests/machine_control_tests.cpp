@@ -131,7 +131,7 @@ TEST(lib18_ac28_variant_switch_replugs_printer_interface_host_drive_modules) {
     CHECK(f.part().machine()->variant() && f.part().machine()->variant()->value == "Old");
     CHECK(plugged(f, "CE-150") && plugged(f, "CE-158") && plugged(f, "host-drive"));
     CHECK_EQ(f.part().hostDriveDirectory(), dir.generic_string());
-    CHECK(f.part().slotCard(2) && f.part().slotCard(2)->moduleName() == "CE-1601M");
+    CHECK(f.part().slotModuleName(2) == "CE-1601M");
     CHECK(f.held("slot-2") && f.held("slot-2")->name == "Disk RAM" && f.held("slot-2")->instance());
 }
 
@@ -170,12 +170,12 @@ TEST(lib18_ac29_module_replace_power_cycle_memory_kept_new0_check) {
     SessionFixture f;
     CHECK(f.start("PC-1500A"));
     CHECK(f.choose("slot-1", "CE-155").done);
-    CHECK(f.part().slotCard(1) && f.part().slotCard(1)->moduleName() == "CE-155");
+    CHECK(f.part().slotModuleName(1) == "CE-155");
     CHECK(screenHas(f, "NEW0?"));   // the ROM's check after the power cycle (row 1600-4)
     CHECK(f.choose("slot-1", "CE-151").done);   // a replace
-    CHECK(f.part().slotCard(1) && f.part().slotCard(1)->moduleName() == "CE-151");
+    CHECK(f.part().slotModuleName(1) == "CE-151");
     CHECK(f.choose("slot-1", "").done);
-    CHECK(f.part().slotCard(1) == nullptr);
+    CHECK(f.part().slotModuleName(1).empty());
 }
 
 TEST(lib18_ac30_printer_ce158_attach_detach_power_cycle_memory_kept) {
@@ -286,7 +286,7 @@ TEST(lib18_ac32_cold_boot_empties_memory_ce151_ce155_battery_module_kept) {
     for (const char* name : {"CE-151", "CE-1600M"}) {
         CHECK(f.choose("slot-1", name).done);
         CHECK(f.coldBoot());
-        CHECK(f.part().slotCard(1) && f.part().slotCard(1)->moduleName() == name);
+        CHECK(f.part().slotModuleName(1) == name);
     }
 }
 
@@ -319,7 +319,7 @@ TEST(c1600_4_ac8_module_with_slot_rom_never_saved) {
     const fs::path preset = f.root / "dev.pc1500";
     std::ofstream(preset) << "format-version: 2\nmodel: PC-1500\nslot-1: { name: CE-502B }\nslot-1-rom: { file: build/rom.bin }\n";
     CHECK(f.loadPreset(preset.generic_string()).done);
-    CHECK(f.part().slotCard(1) && f.part().slotCard(1)->moduleName() == "CE-502B");
+    CHECK(f.part().slotModuleName(1) == "CE-502B");
     CHECK(f.held("slot-1") == nullptr);   // never a medium (LIB-7 §10.5)
     const auto r = f.nameAndSave("slot-1", "Copy");
     CHECK(!r.done && r.reason.find("no medium") != std::string::npos);

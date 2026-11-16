@@ -238,20 +238,6 @@ calcu::peripherals::ControlTable* SharpMachine::switchesAt(const PlaceName& plac
     return nullptr;
 }
 
-void SharpMachine::syncFromCore() {
-    m_waiting.clear();
-    m_afterWaiting.clear();
-    m_waitingModules.clear();
-    m_plugged = coreHasPlugged();
-    m_switches.clear();
-    for (const PlugEntry& e : m_plugged) {
-        const PlaceName& place = e.place.steps.at(0);
-        if (!isSlot(place)) continue;
-        if (ExpansionCard* card = moduleIn(place); card && card->hasWriteProtectSwitch())
-            makeSwitches(place, {{ControlId{"write-protect"}, card->writeProtected()}});
-    }
-}
-
 // ---- Capabilities ----
 
 SharpMachine::Offered SharpMachine::byComponent(const char* component, Capability& c) {

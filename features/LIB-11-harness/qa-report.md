@@ -126,3 +126,127 @@ no core; no reference was re-recorded.
   checks that only `last-model` was added.
 - The harness has LIB-18's commands `model`, `variant`, `attach`,
   `detach`, `reset`, `cold-boot`, `power-cycle` (LIB-18 AC-15).
+
+## Calc-U-1600 (M-51, 2026-11-16, branch `m51-cli-1600`)
+
+Built and run on an M4 Pro, macOS 27.2, Apple clang, CMake, Ninja: the
+worktree's `build/tests` (Debug, the tests at `-O1`, Qt off) and
+`build/groups` (RelWithDebInfo, Qt on, Longer on). With C1600-5 (its
+qa-report has the commands).
+
+The code (Part D):
+- `library/harness/Product.hpp`: `prepare(RunSetup&)` (D-11) and
+  `appLayerParts()` (`AppLayerParts`: the library's parts a product's app
+  layer brings); `library/harness/Run.*`: `Server::start` calls `prepare`
+  first, then, with an app layer, takes its parts (the control part first,
+  as the frontends' session builders put it) and builds none of its own;
+  without one, as before (Calc-U-59, the test product).
+- `HarnessHost::command(…, within)`: a shorter wait for a deferred reply
+  (`pc1600 call`'s timeout).
+- `products/calc-u-1600/app/HarnessProduct.cpp`: the entry builds
+  `Settings`, `AppPaths` (the run's folders, the source tree's bundled
+  folders: `BundleDirs::roms`, `modules`, `hostDriveRom`) and `SharpAppPart`
+  in `prepare`; its library parts are the run's; `sessionParts()` are the
+  app layer's, then `LcdTextPart` and `SerialScriptsPart`. Before a run
+  (the CLI's options, harness attach to the Qt6 app) the entry keeps a
+  catalogue, `SharpProductMachines` and preset rules of its own.
+- `app/LcdTextPart.*` (was the `FontPart`, A-4): the ROM font at a new
+  machine, the cursor at each flush (`lcdCursorOf`, `uncoverCursor` in
+  `core/Display/DisplayOutputText`).
+
+Tests: `products/calc-u-1600/tests/harness/harness_entry_tests.cpp`, 5
+`TEST`s in `CalcU1600HarnessTests` (Longer; see C1600-5); the library's
+`prepare_runs_before_session_parts` in `run_tests.cpp`
+(`calcu_library_tests`); the CTest `CalcU1600NoOldTools` (Frequent).
+
+| ID | Result | Test case |
+|---|---|---|
+| AC-18 | Pass | `lib11_ac18_every_function_of_the_table`: one block per row of D.5 on one run (`--preset` → `preset`, `wait`, `expect`; `--check-preset` → `check-preset`; `--rom`, `--ce1600p-rom` → `variant Old`, `attach printer CE-1600P:old`; `--run-after` → `wait 1s`; `--lcd-text` → `lcd`; `--lcd-png` → `screenshot` into `--output-folder`; `--wav` → `audio` (complete at the end of the run); `--dump-mem` → `peek`; `--inspect` → `pc1600 inspect`; `--dump-basic` → `pc1600 dump-basic`; the summary → `registers`, `history`, `profile`; `--tape-in`/`--tape-out` → `pc1600 tape record`, `eject tape`, `tape { name: Empty }`, `pc1600 tape status`; `--save-dir`/`--modules-dir` → `--save-folder` (`saveas` of the tape there) and the bundled module definitions in `media`; `--ce158-*` → `pc1600 serial ce158 feed … hold=2`, `capture`, `report`, `link`). The probes: not taken over, the CTest `CalcU1600NoOldTools`; `read_trace.py`: `CalcU1600ReadTrace`; `dap_smoke.py`: `CalcU1600DapSmoke`; `--shots`: `CalcU1600Shots.*` through attach. With C1600-5's tests every command of the table has its own test too |
+| AC-19 | Pass | `lib11_ac19_lcd_rows_indicators_not_text_off` (`NEW0? :CHECK`, the indicators, `not text: 0`; `display off` after the off key; the PC-1600's prompt), `lib11_ac19_cursor_cell_read_as_text` (`ABC` typed, the cursor moved onto the B, sampled every 20 ms for a second on the PC-1500A and the PC-1600: while the ROM reports the cursor, `lcd` reads ABC though the display shows the cursor over the B; when it does not, `lcd` is the display read with the font alone, by the rule `--lcd-text` of the pin used) |
+| AC-20 | Pass | `lib11_ac20_entry_runs_sharp_app_part` (SharpAppPart's topics `c1600.serial-links`, `c1600.lamps`; LIB-4's `control-state` with the product's rules; LIB-7's `media`; the product command `c1600.mount-host-drive` through `pc1600 host-drive`), `lib11_ac20_roms_and_module_definitions_as_the_frontends` (the bundled modules, disks and the tape template; the ROM set's CE-502B, attached); `prepare_runs_before_session_parts` (library); every test of `CalcU1600HarnessTests` and `CoreTests`' `harness_tests.cpp` runs on this entry |
+
+Coverage of the Calc-U-1600 column: AC-18 to AC-20, 3 of 3. Column Done.
+
+### Exit check of M-51
+
+Every function of the table of AC-18 through `calcu`:
+`lib11_ac18_every_function_of_the_table` and C1600-5's tests pass.
+
+### Deviations from the design, chosen by the simpler structure
+
+- **The library's parts come from the app layer** (spec decision log).
+  D.3 assumed `SharpAppPart::sessionParts()` holds none of the library's
+  parts; it holds the peripherals, presets, startup, media and open parts
+  (and the control part beside them). The run takes them
+  (`appLayerParts()`) instead of building a second set; the paper and
+  debugger steps and the media steps are the app layer's. The harness's
+  serial port files come only when `link` asks (`SharpAppPartOptions::
+  serialLinksOnRequest`; C1600-5 AC-9), typing runs in emulated time
+  (`hosting`), screenshots go to the run's output folder.
+- **`prepare` takes `RunSetup&`**, not `const`: the app layer writes the
+  run's settings (LIB-18 AC-9, `last-model`).
+- **The entry's members before a run.** The CLI asks `serveAddOns()` and
+  harness attach asks `presetRules()` and `addCommands()` without a run:
+  the entry keeps its own catalogue, machines and preset rules for that;
+  the DAP add-on reaches the DAP part of the run it starts in.
+- **The tests** are the program `CalcU1600HarnessTests` (Longer), not
+  `CoreTests` (D.6): `CoreTests` uses nearly all of the Frequent budget.
+- **The cursor test** compares `lcd` with the display read with the font
+  alone at the same tick, not with rows of `--lcd-text` written out (the
+  CLI's ticks and the harness's do not meet); the rule is `--lcd-text`'s
+  (`parseLcdText`), now `uncoverCursor`.
+- **Removed beyond D.5**, code that only the tools or the preset loader of
+  the pin used: the yield hook of both machine classes (and its test), and
+  `SharpMachine::syncFromCore`/`coreHasPlugged` (the adapter
+  `applyPresetJob`'s); the library hook `ProductMachines::startUp` (adapter
+  `SharpBuildColdBoot`, which M-46 retired on the product side).
+- **`makeHarnessProduct(romFolder)`** (the CLIs' ROM folder) is gone.
+
+### The adapter check (plan §1; D.7)
+
+Every adapter row of the approved designs about Calc-U-1600 or the
+library, removed in M-51 or earlier, looked up in the code (the §5 tables
+of LIB-1 to LIB-18, C1600-1 to C1600-5, the Part D sections), and the
+source search of D.7 (`LegacyCalls`, `HarnessMachines`,
+`SharpBuildColdBoot`, `toDisplayFrame`, `modelIdOf`, `c1600.control-state`,
+`c1600.machine`, `c1600.tapes`, `c1600.plotter-paper`, `c1600.trace`,
+`c1600.tape-deck`, `c1600.floppy-drive`, `c1600.key-queue`).
+`CalcU1600NoOldTools` fails if `LegacyCalls.hpp` or the probes' hooks
+come back.
+
+| Row (design) | Removed in | Result |
+|---|---|---|
+| Model and ROM version enums, `MachineModel.hpp` (LIB-1; C1600-1 `modelIdOf`, `modelOf`, `variantIdOf`) | M-49 | Gone (`modelOf` in `PC1500InterfaceMachine.cpp` is the core's own function from a descriptor to `PC1500Variant`) |
+| Sharp peripheral calls, write-protect, product-held host links, clock seeding, `syncclock` (LIB-2) | M-26 to M-47 | Gone |
+| `SharpTypingHook`, `SharpDebuggerGate`, interim topics 1600, Sharp operations as product commands (LIB-3) | M-36 to M-49 | Gone |
+| `JobForward`, `core/Job.hpp` (LIB-3, LIB-6: "at the latest M-46") | M-46 | **Finding, stays**: `namespace job` is used by the Sharp typers of the core (`PC1500BasicTyper`, `PC1600BasicTyper`) and the core's tests (`BootRun.hpp`, `job_tests.cpp`); no file above the core uses it (M-51 took the last include out of `app/SharpAppPart.hpp`). It goes with the typers (next row) |
+| Sharp preset typers `tapKeyJob`, `typeLineJob`, `typeBasicProgramTextJob` (LIB-5; C1600-2) | M-44, M-46 | **Finding, stays**: their app and preset users are gone (M-44, M-46; the CLIs' last use went in M-51); they remain the core tests' way to type into a bare machine (25 test files use `typeBasicProgramText`, `typeLine`, `tapKey`). Moving those tests onto LIB-5's typing engine is a step of its own; until then the typers are test support, not an adapter of a caller. For the user at the part boundary |
+| `c1600.control-state` (LIB-4, LIB-14) | M-49 | Gone |
+| A-1 interim Sharp media, A-3 `planMediaSave`, `savePresetMedia` (LIB-7) | M-47 | Gone |
+| A-2 `AppPaths` folders (LIB-7), A-1 `AppPaths::instanceDir`, `tapeDir`, `traceDir`, `serialLinkDir` (LIB-9) | M-47 | **Stays, as M-47 recorded** (LIB-7 qa-report: the Settings dialog and LIB-9's tests read them): thin helpers over `calcu::settings::Paths` that make the folder; the old callers they wrapped (the bays, `AppSession`, `MachineSession`) are gone. No old call is left behind them |
+| `c1600.plotter-paper`, `PlotterPaper`, the paper panel widgets (LIB-8; C1600-1) | M-45 | Gone (`PlotterPaperOutput` is LIB-8's paper output) |
+| A-3, A-4 Web trace and screenshot folders (LIB-9) | M-45, M-46 | Gone |
+| `SharpDebuggerGate`, `makeDebugTarget`, `c1600.trace`, `DapRunControlBridge`, L-A1 Qt DAP, `loadProgram` (LIB-10; C1600-3) | M-45, M-50 | Gone |
+| A-1 `startupRequest`, A-3 minimal `ProductDecl` (LIB-11) | M-35, M-30 | Gone |
+| A-4 the font of `lcd` (LIB-11) | M-51 | Gone: `app/LcdTextPart` with the cursor (AC-19) |
+| A-5 `MachineSession::Listener::romMissing` (LIB-12) | M-31 | Gone |
+| `looksLikePreset` forward, `DropFile.*`, the drop flow (LIB-13; C1600-2) | M-48 | Gone |
+| Operations popup, `--pacing-probe` as its own stepper, frozen mode, W16-1 page data, `engine.js`, settings commands of `SharpWebPart`, A-4 drawing (LIB-14, LIB-15) | M-49 | Gone (`--pacing-probe` is an attach client) |
+| `HarnessMachines` (LIB-18) | M-46 | Gone (its name in a comment of `library/startup/ProductMachines.hpp` changed) |
+| `SharpBuildColdBoot` (LIB-18) | M-46 | The product side went in M-46; the library hook `ProductMachines::startUp`, which nothing overrode, removed in M-51 |
+| `SharpRomImages`, `c1600.key-queue`, `LegacyCalls::readLatches`, `loadBasicProgram`, `loadMachineCode`, `machineCodeLoadState`, `userRam`, `makeDebugTarget`, `loadProgram`, `applyPresetJob`, `runToPromptJob` (C1600-1) | M-27 to M-50 | Gone |
+| `c1600.tape-deck`, `c1600.floppy-drive` kinds (C1600-1) | M-47 | Stay as **product kinds**, not adapters: M-47 moved the tape and the disk to LIB-7's media places and kept the two kinds for the counter, the motor and the drive's lamp (LIB-7 design §10, qa-report); `SharpProductKinds.hpp` now lists them with the product kinds. C1600-5's `tape status` reads the counter |
+| `LegacyCalls::moduleIn`, `atOffPoint` (C1600-1; the LIB-7 qa-report kept them) | M-47 | Gone in M-51: `SharpAppPart::slotModuleName` (the module's name from `plugged()`) for the card dump and the tests; the tests' own `sharptest::moduleIn` and `SharpMachine::atOffPoint` inside `tests/` |
+| The CLIs and probes on `LegacyCalls` and the adapter kinds; `coreParts`, `setYieldHook`, `presetMedia`, `typeLine` (C1600-1 §7, D.5) | M-51 | Gone, with `core/Machine/LegacyCalls.*`, `PC1600_POWER_PROBE`, `calcu_core_probe` |
+| Calc-U-59's rows of the library (`TIFreezeGate`, `TIKeySequencerHook`, `CooperativePacing`, `SliceRequest::due`, `TICardWaitAdapter`, the `c59.*` interim topics, LIB-2's TI rows, LIB-9 A-2, A-5, A-6, …) | M-53 to M-59 | Listed and left (M-59's check) |
+
+So no adapter of Calc-U-1600 is left in the plan's sense (an old call
+kept behind a seam for a caller that has not moved): what remains is the
+typers with `JobForward`, as the core tests' support, and `AppPaths`'
+folder helpers, each with its reason above.
+
+### Golden runs
+
+`CoreTests` passes unchanged, the golden replays
+(`c1600_1_ac4_golden_runs_through_the_interface`) among them; no golden run
+differs.

@@ -16,6 +16,7 @@
 #include <cstdint>
 #include <map>
 #include <memory>
+#include <optional>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -46,12 +47,41 @@ class PresetsPart;
 }
 namespace calcu::startup {
 class MachineControl;
+class StartupPart;
+}
+namespace calcu::peripherals {
+class PeripheralsPart;
+}
+namespace calcu::control {
+class ControlPart;
+}
+namespace calcu::media {
+class MediaPart;
+}
+namespace calcu::opening {
+class OpenPart;
 }
 
 namespace calcu::harness {
 
 class CommandRegistry;
 class ServeAddOn;
+class RunSetup;
+
+// LIB-11 D-6 (Part D, D.3; D-15): the library's parts as a product's app
+// layer brings them, the same set its frontends host. A run whose product
+// gives them builds none of these itself, so no part is in the session twice.
+// The product has set them up (the paper and debugger steps, the media steps,
+// the machine control of each); the run hands the debugger its trace folder.
+// Every member is set.
+struct AppLayerParts {
+    peripherals::PeripheralsPart* peripherals = nullptr;
+    presets::PresetsPart* presets = nullptr;
+    startup::StartupPart* startup = nullptr;
+    control::ControlPart* control = nullptr;
+    media::MediaPart* media = nullptr;
+    opening::OpenPart* open = nullptr;
+};
 
 // What a run makes of the library's parts, handed to the product before its
 // session is built (C1600-3 design §3.5: the DAP's set-up loads presets,
@@ -125,6 +155,16 @@ public:
     // built; and the product's options of `serve` (`--dap`), owned by it.
     virtual void runParts(const RunParts&) {}
     virtual std::vector<ServeAddOn*> serveAddOns() { return {}; }
+    // LIB-11 D-11 (Part D, D.3): called by Server::start once the run's
+    // settings and folders exist and before any other member that reads the
+    // session's parts (lookUpRoms() included); the product builds its app
+    // layer on them here.
+    virtual void prepare(RunSetup&) {}
+    // LIB-11 D-6, D-15: the library's parts of the product's app layer, or
+    // none (the run builds its own). Asked after prepare(); the product's
+    // sessionParts() then holds them, in the order its frontends use, and the
+    // run puts its control part first, as the frontends' session builders do.
+    virtual std::optional<AppLayerParts> appLayerParts() { return std::nullopt; }
 };
 
 using ProductFactory = std::unique_ptr<HarnessProduct> (*)();

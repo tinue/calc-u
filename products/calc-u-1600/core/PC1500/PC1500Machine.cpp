@@ -164,29 +164,9 @@ void PC1500Machine::advancePeripherals(uint32_t cycles) {
     m_ce158.tick(cycles); // the UART's own clock keeps running
 }
 
-void PC1500Machine::setYieldHook(std::function<void()> hook, uint64_t intervalCycles) {
-    m_yieldHook = std::move(hook);
-    m_yieldInterval = intervalCycles;
-    m_yieldCountdown = intervalCycles;
-}
-
 uint64_t PC1500Machine::runCycles(uint64_t maxCycles) {
     uint64_t consumed = 0;
-    uint64_t yieldAccounted = 0;
     while (consumed < maxCycles) {
-        // See setYieldHook(). Checked at the top of the loop so the halted
-        // branch's `continue` below is covered too.
-        if (m_yieldHook) {
-            const uint64_t ran = consumed - yieldAccounted;
-            yieldAccounted = consumed;
-            if (ran >= m_yieldCountdown) {
-                m_yieldCountdown = m_yieldInterval;
-                const std::function<void()> hook = m_yieldHook;
-                hook();
-            } else {
-                m_yieldCountdown -= ran;
-            }
-        }
         int c = m_cpu.step();
         m_memory.updatePUPV(m_cpu.pu(), m_cpu.pv());
         if (c == 0) {
@@ -256,8 +236,8 @@ bool PC1500Machine::beginCpuTrace(std::FILE* handle, uint32_t flags) {
     m_cpu.setTraceFlags(flags);
     // Discard whatever is already in the ring (and its overflow
     // accounting) so the file starts clean even if tracing was already
-    // enabled before this call -- e.g. tools/pc1500_cli.cpp turns the
-    // trace flags on for its own ring demo before applying the preset.
+    // enabled before this call (as the CLIs of the pin did for their own ring
+    // demo before applying a preset).
     uint32_t staleLost = 0;
     m_cpu.drainTraceEvents(m_traceDrainBuf, kTraceDrainBufFrames, &staleLost);
     return true;

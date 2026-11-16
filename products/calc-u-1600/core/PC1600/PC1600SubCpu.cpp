@@ -4,9 +4,6 @@
 
 #include "../BcdCalendar.hpp"
 
-#ifdef PC1600_POWER_PROBE
-#include "PC1600PowerProbe.hpp" // throw-away OFF-key trace instrumentation
-#endif
 
 namespace {
 // The clock's wire layout (SubCpu §7.3), described once for both
@@ -121,9 +118,6 @@ void PC1600SubCpu::appendParam(uint8_t nibble) {
 }
 
 void PC1600SubCpu::strobe(uint8_t operand, int kiDelayTStates) {
-#ifdef PC1600_POWER_PROBE
-    pc1600probe::onSubCpuCommand(operand);
-#endif
     const bool answers = execute(operand);
     // KI arrives kiDelayTStates after the Z-80's write. The sub-CPU is busy
     // from then for its response time; Z9 pulses at the end for a command

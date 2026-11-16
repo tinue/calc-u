@@ -25,7 +25,7 @@ class LoaderMemory;
 // caller is responsible for having prepared the machine first (memory cards,
 // `NEW`, mode) exactly as on real hardware.
 //
-// Layout facts (cross-checked with tools/pc1500_cli --dump-basic against the
+// Layout facts (cross-checked with the CLIs' --dump-basic, now `pc1600 dump-basic`, against the
 // keystroke typer): the in-RAM line records are byte-identical to the
 // transfer-file payload, the program ends with one 0xFF at BASPRG_END
 // ($7867, big-endian), and BASPRG_ST ($7865) is the load address (stock

@@ -7,7 +7,6 @@
 #include <vector>
 
 #include "../core/Display/DisplayOutputText.hpp"
-#include "../core/Machine/LegacyCalls.hpp"
 #include "../core/Machine/SharpBuilder.hpp"
 #include "../core/Machine/SharpCatalogue.hpp"
 #include "../core/Machine/SharpCores.hpp"
@@ -216,12 +215,21 @@ inline void runProgram(Machine& m, const std::string& line) {
 
 inline sharp::LoaderMemory& memoryOf(Machine& m) { return *sharp::firstOf<sharp::LoaderMemory>(m); }
 
+// The card in a module slot (from 1) as plugged() shows it, or nullptr (the
+// PC-1500 has one slot). Was sharp::legacy::moduleIn until M-51.
+inline const ExpansionCard* moduleIn(Machine& m, int slot) {
+    if (slot == 2 && sharp::pc1500Of(m)) return nullptr;
+    sharp::SharpMachine* s = sharp::sharpOf(m);
+    if (!s || (slot != 1 && slot != 2)) return nullptr;
+    return s->moduleNow(PlaceName{slot == 2 ? sharp::kSlot2 : sharp::kSlot1});
+}
+
 // An address where a write lands in the module at `slot` (from 1), found by
 // writing and restoring a byte every 0x100 bytes in the CPU's view; -1 if
 // none.
 inline long moduleAddress(Machine& m, int slot) {
     sharp::LoaderMemory& mem = memoryOf(m);
-    const ExpansionCard* card = sharp::legacy::moduleIn(m, slot);
+    const ExpansionCard* card = moduleIn(m, slot);
     if (!card) return -1;
     for (std::uint32_t a = 0; a < 0x10000; a += 0x100) {
         const std::uint16_t addr = static_cast<std::uint16_t>(a + 0x40);
@@ -241,7 +249,7 @@ inline long moduleAddress(Machine& m, int slot) {
 // RAM is not in the Z-80's view at the prompt). True when the module's
 // content changed.
 inline bool scribbleModule(Machine& m, int slot) {
-    const ExpansionCard* card = sharp::legacy::moduleIn(m, slot);
+    const ExpansionCard* card = moduleIn(m, slot);
     if (!card) return false;
     const std::vector<std::uint8_t> before = card->debugImage();
     static std::uint8_t round = 0;   // another pattern each time, so a second write changes the content

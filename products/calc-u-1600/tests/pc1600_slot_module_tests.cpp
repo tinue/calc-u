@@ -216,7 +216,7 @@ TEST(test_boot_with_ce155_in_slot1_is_stable) {
     if (!ce155) return;
     m.attachSlot1Card(std::move(ce155));
     m.allReset();
-    // Past the boot sequence -- same bar as tools/pc1600_cli.cpp's own
+    // Past the boot sequence -- the CLIs' (until M-51) bar for
     // "converges to a stable PC set" (~2M T-states).
     m.runCycles(PC1600Machine::kTStateHz * 2);
 

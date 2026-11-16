@@ -23,7 +23,7 @@ public:
     MachineControl(ProductMachines&, std::shared_ptr<const roms::RomSet>);
 
     // AC-1, AC-2: fills the ROM images from the RomSet, builds through
-    // machine::build(catalogue, builder, request), calls startUp(), and hands
+    // machine::build(catalogue, builder, request) and hands
     // the machine to the machine session with the model's profile and sound
     // rate; the old machine is destroyed with its memory. Before that:
     // MachineSession::dropInput() (AC-2, EC-4) and the commanded speed back

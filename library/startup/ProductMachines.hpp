@@ -9,8 +9,8 @@
 // What a product hands LIB-18 (design §3.2; spec AC-3, AC-4, AC-7, EC-7):
 // its catalogue and builder, the built-in default machine per model, the
 // pacing profile, sound rate and readiness bound per model. Implemented by
-// the product's app layer; in M-35 by the harness entries (adapter
-// HarnessMachines). The fallback model, `last` and the startup preset's key
+// the product's app layer (the adapters HarnessMachines and
+// SharpBuildColdBoot went in M-46 and M-51). The fallback model, `last` and the startup preset's key
 // are LIB-9's (settings::startupModel, startupPreset).
 
 namespace calcu::startup {
@@ -40,9 +40,6 @@ public:
     // A ROM image the product bundles outside the RomSet (Calc-U-1600's host
     // drive, roms.md Q-1; M-46): added to a request's images after the set's.
     virtual void addRoms(machine::PeripheralRequest& request) const { (void)request; }
-    // Adapter SharpBuildColdBoot (§5): what the product does with a machine
-    // it has just built. Nothing by default (D-3).
-    virtual void startUp(machine::Machine&) {}
 
 protected:
     ~ProductMachines() = default;

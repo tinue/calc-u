@@ -12,11 +12,9 @@ only `examples/`). User-facing demos and learning material belong in
 - `presets/` — presets used while debugging or regression-checking the
   emulator itself: preset-loader / memory-card tests, the superRAM card
   setup, the Up/Down-key iterator, and the `- trace:` step demo.
-- `loader-matrix/` — a one-time verification of the fast BASIC and
-  machine-code loaders against the ROM's own serial loads: `CLOAD` over the
-  CE-158 on the PC-1500/1500A, `LOAD`/`BLOAD "COM1:"` and `CLOAD` over the
-  CE-158 on the PC-1600, all memory cards, sizes up to full memory. With
-  its harnesses, generators and results. It is not part of the test suite.
-- `tape-matrix/` — a one-time check of cassette `CLOAD`/`CSAVE` (BASIC and
-  machine code, PC-1500A and PC-1600) against Pocket Tools'
-  `bin2wav`/`wav2bin`, both directions, with its script and results.
+
+The one-time checks `loader-matrix/` (the fast loaders against the ROM's
+serial loads) and `tape-matrix/` (cassette `CLOAD`/`CSAVE` against Pocket
+Tools) went in M-51 with the CLIs they ran on (user, 2026-11-13 and
+2026-11-16); C1600-2's tests keep the loaders, LIB-7's and C1600-5's the
+cassette.

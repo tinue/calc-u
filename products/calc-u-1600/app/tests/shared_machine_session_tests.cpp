@@ -30,7 +30,7 @@ void test_switch_and_paste(Model model) {
     CHECK(f.settings.lastUsedModel() == model);
     CHECK(f.listener.display() && f.listener.display()->on);
     CHECK(f.part().slotCount() == (model == calcu::machine::ModelId{"PC-1600"} ? 2 : 1));
-    CHECK(f.part().slotCard(1) == nullptr && f.part().slotCard(2) == nullptr && f.part().slotCard(3) == nullptr);
+    CHECK(f.part().slotModuleName(1).empty() && f.part().slotModuleName(2).empty() && f.part().slotModuleName(3).empty());
 
     // A cold PC-1500 shows "NEW0? :CHECK": CL, then NEW0.
     if (model != calcu::machine::ModelId{"PC-1600"}) {

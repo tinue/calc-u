@@ -1,0 +1,33 @@
+#pragma once
+#include <optional>
+
+#include "Display/LcdText.hpp"
+#include "harness/DisplayText.hpp"
+#include "machine/Descriptor.hpp"
+#include "machine/Display.hpp"
+#include "sessions/SessionPart.hpp"
+
+// The harness's `lcd` on a Sharp machine (LIB-11 AC-10, AC-19; Part D, D.4,
+// D-7, D-12): the font of the model's ROM, read when the machine changes,
+// and the cursor the ROM reports through its RAM, read at each flush; the
+// cell under the cursor reads as the character the ROM saved there, as
+// `--lcd-text` of the CLIs did. Was the FontPart of app/HarnessProduct.cpp
+// (adapter A-4) until M-51.
+
+namespace shared {
+
+class LcdTextPart final : public calcu::sessions::SessionPart {
+public:
+    void attach(calcu::sessions::SessionSetup&) override {}
+    void machineChanged(calcu::sessions::SessionContext&) override;
+    void beforeFlush(calcu::sessions::SessionContext&) override;
+
+    calcu::harness::DisplayText read(const calcu::machine::DisplayOutput&, const calcu::machine::MachineDescriptor&) const;
+
+private:
+    LcdFont font_;
+    calcu::harness::GlyphFont glyphs_;
+    std::optional<LcdCursor> cursor_;
+};
+
+} // namespace shared

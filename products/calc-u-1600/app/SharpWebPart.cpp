@@ -3,7 +3,7 @@
 #include <filesystem>
 #include <fstream>
 
-#include "Connector/Ce158Card.hpp"
+#include "Connector/PrintableBytes.hpp"
 #include "Display/DisplayOutputText.hpp"
 #include "Utf8.hpp"
 #include "app/CardYamlDump.hpp"
@@ -131,7 +131,7 @@ void SharpWebPart::printer() {
     const std::vector<std::uint8_t> b = m_app.drainCE158PrinterOutput();
     if (b.empty()) return;
     m_printer->append(sessions::valuePayload("c1600.printer", Value::object({{"bytes", Value(Value::Bytes(b))},
-                                                              {"text", ce158PrintableText(b.data(), b.size())}})));
+                                                              {"text", printableBytes(b.data(), b.size())}})));
 }
 
 } // namespace shared

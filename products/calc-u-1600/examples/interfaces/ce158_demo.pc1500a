@@ -4,8 +4,10 @@
 #
 # Serial peer: the app opens a pseudo-terminal and links it as
 # calcu1600-ce158.serial in the serial-port symlink folder (Settings) --
-# e.g. `screen <folder>/calcu1600-ce158.serial 300`. Headless:
-#   ./headless/pc1500_cli --preset examples/interfaces/ce158_demo.pc1500a 30000000 --ce158-pty
+# e.g. `screen <folder>/calcu1600-ce158.serial 300`. Headless, with the
+# harness: `calcu --product 1600 serve`, then `preset <this file>`,
+# `pc1600 serial ce158 feed <file>` (or `link` for a pseudo-terminal),
+# `wait 3s`, `pc1600 serial ce158 report`.
 
 format-version: 2
 preset-name: CE-158 demo

@@ -177,7 +177,10 @@ const settings::ProductDecl& TestProduct::settingsDecl() const {
     return decl_;
 }
 
+void TestProduct::prepare(RunSetup& r) { asked.push_back("prepare " + r.saveFolder()); }
+
 roms::LookupResult TestProduct::lookUpRoms() const {
+    asked.push_back("lookUpRoms");
     static const roms::FullSet set = roms::fullSet(machine::test::testCatalogue());
     return roms::lookUp(set, roms::DirectoryBundle(roms_.path()), &reader_);
 }
@@ -247,6 +250,7 @@ void TestProduct::addCommands(CommandRegistry& r) {
 }
 
 std::vector<SessionPart*> TestProduct::sessionParts() {
+    asked.push_back("sessionParts");
     return {&typing_->part, part_.get(), paper_.get(), &debug_->part};
 }
 

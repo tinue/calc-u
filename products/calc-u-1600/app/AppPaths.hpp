@@ -20,10 +20,18 @@ namespace shared {
 
 // The bundled folders the frontend passes (LIB-12, LIB-6 own them later).
 struct BundleDirs {
+    BundleDirs(std::string resources = {}, std::string examples = {})
+        : bundledResources(std::move(resources)), bundledExamples(std::move(examples)) {}
     std::string bundledResources;
     // The bundled example presets (examples/bundled.yaml and its folders);
     // empty = "<bundledResources>/examples".
     std::string bundledExamples;
+    // Where the ROM set, the module definitions (and the media templates
+    // beside them) and the host drive's ROM lie when they are not all in
+    // bundledResources, as in the source tree the harness reads (LIB-11
+    // AC-20; roms/, frontends/qt6/resources/cards/, firmware/pc1600-hostdrive/);
+    // empty = bundledResources.
+    std::string roms, modules, hostDriveRom;
 };
 
 // A bundled preset as Settings stores it: "examples:basic/hanoi.pc1600",
@@ -36,6 +44,9 @@ public:
         : m_paths(settings.file(), std::move(host)), m_bundle(std::move(bundle)) {}
 
     const std::string& bundledResourcesDir() const { return m_bundle.bundledResources; }
+    const std::string& bundledRomsDir() const { return orResources(m_bundle.roms); }
+    const std::string& bundledModulesDir() const { return orResources(m_bundle.modules); }
+    const std::string& bundledHostDriveRomDir() const { return orResources(m_bundle.hostDriveRom); }
     const std::string& homeDir() const { return m_paths.hostDirs().home; }
     std::string bundledExamplesDir() const;
     // The library's places (settings file, save folder, ...).
@@ -75,6 +86,7 @@ public:
 
 
 private:
+    const std::string& orResources(const std::string& dir) const { return dir.empty() ? m_bundle.bundledResources : dir; }
     calcu::settings::Paths m_paths;
     BundleDirs m_bundle;
 };

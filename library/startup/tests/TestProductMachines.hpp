@@ -73,13 +73,12 @@ public:
         const auto it = bounds.find(m);
         return it == bounds.end() ? machine::Seconds(1.0) : it->second;
     }
-    void startUp(machine::Machine&) override { ++startUps; }
 
     int builds() const { return builder_.builds; }
 
     std::map<ModelId, MachinePlan> defaults;
     std::map<ModelId, machine::Seconds> bounds;
-    int defaultsAsked = 0, startUps = 0;
+    int defaultsAsked = 0;
 
 private:
     mt::TestBuilder builder_;

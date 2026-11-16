@@ -174,6 +174,20 @@ TEST(ac2_run_starts_with_the_startup_model_under_default_settings) {
     CHECK(dot.server && dot.machine().model() == mt::kDot && dot.machine().isKeyReady());
 }
 
+// LIB-11 Part D, D.6 H1 (D-11): the product is prepared on the run's
+// settings and folders before the run asks for its ROMs and its parts.
+TEST(prepare_runs_before_session_parts) {
+    TestRun run;
+    CHECK(run.server != nullptr);
+    if (!run.server) return;
+    const std::vector<std::string>& a = run.product.asked;
+    CHECK(a.size() >= 3);
+    if (a.size() < 3) return;
+    CHECK_EQ(a[0], "prepare " + run.server->setup().saveFolder());
+    CHECK_EQ(a[1], std::string("lookUpRoms"));
+    CHECK_EQ(a[2], std::string("sessionParts"));
+}
+
 TEST(ac8_bundled_roms_through_the_lookup) {
     TestRun run({}, mt::kDot);
     CHECK(run.server != nullptr);

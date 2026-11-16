@@ -18,7 +18,9 @@
 #include "SessionFixture.hpp"
 #include "app/CardYamlDump.hpp"
 #include "app/SharpMediaKinds.hpp"
+#include "peripherals/Controls.hpp"
 #include "peripherals/RealTimeClock.hpp"
+#include <variant>
 #include "TestHarness.hpp"
 #include "presets/PresetsPart.hpp"
 
@@ -31,6 +33,21 @@ using sessionfixture::SessionFixture;
 using sessionfixture::romsPresent;
 using sessions::Value;
 using Model = calcu::machine::ModelId;
+
+// The module in slot 1 has its write-protect switch on (LIB-2 AC-32: the
+// controls of the peripheral there).
+bool slot1Protected(shared::SharpAppPart& part) {
+    calcu::machine::Machine* m = part.machine();
+    if (!m) return false;
+    for (const auto& e : m->capabilities(calcu::peripherals::Controls::kKind)) {
+        const auto* o = std::get_if<calcu::machine::PeripheralOwner>(&e.owner);
+        auto* c = calcu::machine::capabilityAs<calcu::peripherals::Controls>(*m, e.id);
+        if (!o || !c || o->place.steps.empty() || o->place.steps[0].value != "slot-1") continue;
+        for (const auto& i : c->list())
+            if (i.id.value == "write-protect") return i.on;
+    }
+    return false;
+}
 
 Value toggle(const char* p) { return Value::object({{"peripheral", p}}); }
 Value preset(const char* path) { return Value::object({{"ref", path}}); }
@@ -215,8 +232,7 @@ TEST(lib7_ac40_write_protect_power_cycle) {
     p = f.mediaPlace("slot-1");
     CHECK(p && !p->askWriteProtect && !p->nameAndSave);
     m = sharp::firstOf<sharp::LoaderMemory>(*f.part().machine());
-    const ExpansionCard* card = f.part().slotCard(1);
-    CHECK(m && card && card->writeProtected());
+    CHECK(m && slot1Protected(f.part()));
     if (!m) return;
     CHECK(!m->writeBuiltIn(0x0000, &bAA, 1).stored);   // the switch blocks it
     CHECK(m->peek(0x0000) == 0x55);
@@ -227,8 +243,7 @@ TEST(lib7_ac40_write_protect_power_cycle) {
     CHECK(f.choose("slot-1", "").done);
     CHECK(f.choose("slot-1", "Rom").done);
     m = sharp::firstOf<sharp::LoaderMemory>(*f.part().machine());
-    card = f.part().slotCard(1);
-    CHECK(m && card && card->writeProtected());
+    CHECK(m && slot1Protected(f.part()));
     if (m) CHECK(m->peek(0x0000) == 0x55);
 
     CHECK(f.choose("slot-1", "CE-1638").done);   // battery-backed, no switch

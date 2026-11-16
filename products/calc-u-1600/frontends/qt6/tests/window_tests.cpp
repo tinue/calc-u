@@ -31,7 +31,9 @@
 #include <QDropEvent>
 #include <QFileOpenEvent>
 #include <QGroupBox>
+#include <QAbstractItemView>
 #include <QLabel>
+#include <QLineEdit>
 #include <QMenu>
 #include <QMenuBar>
 #include <QMessageBox>
@@ -625,4 +627,93 @@ TEST(lib13_ac21_start_with_a_file_name) {
     f.w().openFile(QString::fromStdString(*start), calcu::opening::Way::Start);
     CHECK(f.waitFor([&] { return f.model() == "PC-1600"; }, 15000));
     f.waitIdle();
+}
+
+// ── C1600-2 AC-20: the two Qt6 scenarios (AC-16, AC-18) ────────────────
+
+namespace {
+
+// Inspects the next modal dialog once it shows, then rejects it.
+void inspectNextModal(std::function<void(QWidget*)> inspect) {
+    QTimer::singleShot(50, [inspect = std::move(inspect)] {
+        for (int i = 0; i < 300; ++i) {
+            if (QWidget* m = QApplication::activeModalWidget()) {
+                inspect(m);
+                if (auto* d = qobject_cast<QDialog*>(m)) d->reject();
+                return;
+            }
+            QCoreApplication::processEvents(QEventLoop::AllEvents, 10);
+        }
+        inspect(nullptr);
+    });
+}
+
+std::vector<char> readFile(const std::string& path) {
+    std::ifstream in(path, std::ios::binary);
+    return std::vector<char>(std::istreambuf_iterator<char>(in), std::istreambuf_iterator<char>());
+}
+
+// The tape's data chunk twice: a WAV with two files (as loader_part_tests).
+std::vector<char> doubledTape(const std::vector<char>& wav) {
+    auto u8 = [&](std::size_t i) { return static_cast<std::uint32_t>(static_cast<unsigned char>(wav[i])); };
+    for (std::size_t i = 12; i + 8 <= wav.size();) {
+        const std::uint32_t size = u8(i + 4) | u8(i + 5) << 8 | u8(i + 6) << 16 | u8(i + 7) << 24;
+        if (std::equal(wav.begin() + static_cast<long>(i), wav.begin() + static_cast<long>(i) + 4, "data")) {
+            std::vector<char> out(wav.begin(), wav.begin() + static_cast<long>(i + 8 + size));
+            out.insert(out.end(), wav.begin() + static_cast<long>(i + 8), wav.begin() + static_cast<long>(i + 8 + size));
+            const std::uint32_t doubled = size * 2, riff = static_cast<std::uint32_t>(out.size() - 8);
+            for (int b = 0; b < 4; ++b) {
+                out[i + 4 + static_cast<std::size_t>(b)] = static_cast<char>(doubled >> (8 * b));
+                out[4 + static_cast<std::size_t>(b)] = static_cast<char>(riff >> (8 * b));
+            }
+            return out;
+        }
+        i += 8 + size + (size & 1);
+    }
+    return {};
+}
+
+} // namespace
+
+TEST(c1600_2_ac16_qt_wav_with_several_programs_asks_which_one) {
+    SKIP_UNLESS_WINDOW();
+    Fixture f("PC-1500A");
+    QTemporaryDir dir;
+    const QString wav = dir.filePath(QStringLiteral("two.wav"));
+    {
+        const std::vector<char> two = doubledTape(readFile(std::string(CALCU1600_DIR) + "/tests/fixtures/tape/pc1500_tape.wav"));
+        std::ofstream(wav.toStdString(), std::ios::binary).write(two.data(), static_cast<std::streamsize>(two.size()));
+    }
+    f.fileAnswer = wav;
+    int items = -1;
+    inspectNextModal([&items](QWidget* m) {
+        if (auto* box = m ? m->findChild<QComboBox*>() : nullptr) items = box->count();
+        else if (auto* list = m ? m->findChild<QAbstractItemView*>() : nullptr) items = list->model()->rowCount();
+    });
+    f.action(shared::kItemLoadBasic)->trigger();
+    f.run(100);
+    CHECK_EQ(items, 2);
+}
+
+TEST(c1600_2_ac18_qt_headerless_code_asks_the_address) {
+    SKIP_UNLESS_WINDOW();
+    Fixture f("PC-1500A");
+    QTemporaryDir dir;
+    const QString bin = dir.filePath(QStringLiteral("rtn.bin"));
+    {
+        const char code[] = {static_cast<char>(0xFD), static_cast<char>(0x88), static_cast<char>(0x9A), static_cast<char>(0x9A)};
+        std::ofstream(bin.toStdString(), std::ios::binary).write(code, sizeof code);
+    }
+    f.fileAnswer = bin;
+    QString title;
+    bool addressField = false;
+    inspectNextModal([&](QWidget* m) {
+        if (!m) return;
+        title = m->windowTitle();
+        addressField = m->findChild<QLineEdit*>() != nullptr;
+    });
+    f.action(shared::kItemLoadCode)->trigger();
+    f.run(100);
+    CHECK(addressField);
+    if (!addressField) std::fprintf(stderr, "  dialog: %s\n", qPrintable(title));
 }

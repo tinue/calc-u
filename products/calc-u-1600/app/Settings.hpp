@@ -31,7 +31,9 @@ const std::vector<calcu::machine::ModelId>& sharpModels();
 std::optional<calcu::machine::ModelId> sharpModel(const std::string& name);
 
 // The folders the file-open dialogs start in, one per kind of file, each
-// shown as its own row in Settings, and one key in [folders] (AC-29):
+// shown as its own row in Settings, and one key in [folders] (AC-29; the
+// rule -- a fixed folder, else the one last used -- is the library's,
+// settings/OpenFolders, which the shell's dialogs and SettingsPart use):
 //   Samples   -- "Load Preset…" (and Settings' default-preset pickers): presets
 //   Basic     -- "Load BASIC Program…" (.bas listings): basic-programs
 //   Assembly  -- "Load Machine Code…" (.bin files): machine-code
@@ -50,32 +52,10 @@ public:
     // (AppPaths::instanceDir()); there is no AppData/Application Support
     // fallback in this design at all.
     std::string instanceDirOverride() const { return m_file.text("storage", "save-folder"); }
-    void setInstanceDirOverride(const std::string& dir) { m_file.set("storage", "save-folder", dir); }
 
     // [storage] tape-folder -- the cassette tapes' folder; empty means
     // "Tapes" inside the save folder (AppPaths::tapeDir()).
     std::string tapeDirOverride() const { return m_file.text("storage", "tape-folder"); }
-    void setTapeDirOverride(const std::string& dir) { m_file.set("storage", "tape-folder", dir); }
-
-    // [folders] <kind> (design D-2): a fixed folder the dialog starts in,
-    // set via Settings and not changed by each Open, or, when none is set,
-    // the folder of the file last picked in that dialog (for HostDrive: the
-    // directory last mounted).
-    // openDir() is the fixed folder, empty when none is set; setOpenDir("")
-    // -- Settings' Reset -- goes back to "<last used>", starting from the
-    // folder that was fixed.
-    std::string openDir(OpenFolder folder) const;
-    void setOpenDir(OpenFolder folder, const std::string& dir);
-
-    // The folder last picked in that dialog while no fixed folder is set;
-    // empty when there is none. Stored absolute.
-    std::string lastOpenDir(OpenFolder folder) const;
-    void rememberOpenDir(OpenFolder folder, const std::string& dir);
-    void rememberOpenFile(OpenFolder folder, const std::string& filePath);
-
-    // The start directory for that dialog: the fixed openDir() if set, else
-    // the last-used folder, else `homeDir`.
-    std::string openStartDir(OpenFolder folder, const std::string& homeDir) const;
 
     // [preset] <model> -- the preset applied whenever that model gets
     // selected; empty means none (the model just boots bare).
@@ -87,7 +67,6 @@ public:
     // [trace] folder -- empty means "write TRACE.bin under
     // AppPaths::instanceDir()".
     std::string traceDirOverride() const { return m_file.text("trace", "folder"); }
-    void setTraceDirOverride(const std::string& dir) { m_file.set("trace", "folder", dir); }
 
     // [trace] max-file-size-mb -- the size the trace writer rolls TRACE.bin
     // over at, in megabytes; missing, zero, negative or not a number: 50

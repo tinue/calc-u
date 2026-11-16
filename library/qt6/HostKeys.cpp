@@ -1,12 +1,13 @@
-#include "HostKeyEvents.hpp"
+#include "qt6/HostKeys.hpp"
 
+#include <QKeyEvent>
 #include <QList>
 
-namespace QtHostKeys {
+namespace calcu::qt6 {
 
 namespace {
 
-using calcu::typing::NamedKey;
+using typing::NamedKey;
 
 NamedKey namedKey(Qt::Key key, quint32 nativeVirtualKey) {
 #ifdef Q_OS_MACOS
@@ -49,9 +50,9 @@ NamedKey namedKey(Qt::Key key, quint32 nativeVirtualKey) {
 
 } // namespace
 
-calcu::typing::HostKeyEvent hostKeyEvent(Qt::Key key, Qt::KeyboardModifiers modifiers, const QString& text,
-                                         quint32 nativeVirtualKey, const std::string& physical) {
-    calcu::typing::HostKeyEvent e;
+typing::HostKeyEvent hostKeyEvent(Qt::Key key, Qt::KeyboardModifiers modifiers, const QString& text,
+                                  quint32 nativeVirtualKey, const std::string& physical) {
+    typing::HostKeyEvent e;
     e.physical = physical;
     e.named = namedKey(key, nativeVirtualKey);
     e.mods.shift = modifiers & Qt::ShiftModifier;
@@ -83,4 +84,32 @@ bool commandModifier(Qt::KeyboardModifiers modifiers) {
 #endif
 }
 
-} // namespace QtHostKeys
+quint32 physicalKeyId(const QKeyEvent& event) {
+#ifdef Q_OS_MACOS
+    // nativeScanCode() carries nothing on macOS; the virtual key code is
+    // the physical key position (kVK_*), independent of the layout.
+    return event.nativeVirtualKey();
+#else
+    if (event.nativeScanCode() != 0) return event.nativeScanCode();
+    return static_cast<quint32>(event.key());
+#endif
+}
+
+std::optional<typing::HostKeyEvent> HostKeys::press(const QKeyEvent& event) {
+    const Qt::Key key = static_cast<Qt::Key>(event.key());
+    if (key == Qt::Key_Control || key == Qt::Key_Meta || key == Qt::Key_Alt || key == Qt::Key_AltGr) return std::nullopt;
+    const quint32 id = physicalKeyId(event);
+    const std::string physical = std::to_string(id);
+    down_.insert(id, physical);   // its key-up goes to the session
+    return hostKeyEvent(key, event.modifiers(), event.text(), event.nativeVirtualKey(), physical);
+}
+
+std::optional<std::string> HostKeys::release(const QKeyEvent& event) {
+    auto it = down_.find(physicalKeyId(event));
+    if (it == down_.end()) return std::nullopt;
+    std::string physical = it.value();
+    down_.erase(it);
+    return physical;
+}
+
+} // namespace calcu::qt6

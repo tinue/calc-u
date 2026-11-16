@@ -9,6 +9,7 @@ const vm = require('vm');
 // This renders dist/calc.js the same way, in Node; no browser involved.
 
 const WEB = path.join(__dirname, '..');
+const VENDOR = path.join(WEB, '..', '..', '..', '..', 'library', 'web', 'vendor');
 
 function sandbox() {
   const noop = () => {};
@@ -34,8 +35,8 @@ test('PlayCalculator renders server-side without fetch or Worker', async ({}, te
   test.skip(testInfo.project.name !== 'root', 'independent of the base URL');
   const ctx = sandbox();
   const run = (file) => vm.runInContext(fs.readFileSync(file, 'utf8'), ctx, { filename: file });
-  run(path.join(WEB, 'vendor', 'react.production.min.js'));
-  run(path.join(WEB, 'vendor', 'react-dom-server-legacy.browser.production.min.js'));
+  run(path.join(VENDOR, 'react.production.min.js'));
+  run(path.join(VENDOR, 'react-dom-server-legacy.browser.production.min.js'));
   run(path.join(WEB, 'dist', 'calc.js'));
 
   expect(Object.keys(ctx).filter((k) => /^(createEngine|useEngine|CalculatorFace|ControlBar|Printer|Debugger|paintLed)$/.test(k)),

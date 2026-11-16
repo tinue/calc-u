@@ -56,7 +56,7 @@ done
 cp "$WEB/index.html" "$WEB/calc.css" "$WEB/calc-engine-worker.js" "$DIST/"
 cp "$WEB"/fonts/* "$DIST/fonts/"
 # React 18 for the PWA and the demo page; a host page brings its own.
-cp "$WEB/vendor/react.production.min.js" "$WEB/vendor/react-dom.production.min.js" "$DIST/vendor/"
+cp "$ROOT/library/web/vendor/react.production.min.js" "$ROOT/library/web/vendor/react-dom.production.min.js" "$DIST/vendor/"
 cp "$WEB/app/index.html" "$WEB/app/app.css" "$WEB/app/manifest.json" "$DIST/app/"
 # The app page, its service worker and worker entry are the library's
 # (library/web/app/; build.js).

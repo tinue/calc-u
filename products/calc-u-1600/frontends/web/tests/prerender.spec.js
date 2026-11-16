@@ -9,6 +9,7 @@ const vm = require('vm');
 // dist/calc.js the same way, in Node.
 
 const WEB = path.join(__dirname, '..');
+const VENDOR = path.join(WEB, '..', '..', '..', '..', 'library', 'web', 'vendor');
 
 function sandbox() {
   const noop = () => {};
@@ -32,8 +33,8 @@ function sandbox() {
 test('CalcU1600 renders server-side without fetch or Worker', async () => {
   const ctx = sandbox();
   const run = (file) => vm.runInContext(fs.readFileSync(file, 'utf8'), ctx, { filename: file });
-  run(path.join(WEB, 'vendor', 'react.production.min.js'));
-  run(path.join(WEB, 'vendor', 'react-dom-server-legacy.browser.production.min.js'));
+  run(path.join(VENDOR, 'react.production.min.js'));
+  run(path.join(VENDOR, 'react-dom-server-legacy.browser.production.min.js'));
   run(path.join(WEB, 'dist', 'calc.js'));
 
   expect(Object.keys(ctx).filter((k) => /^(Faceplate|Inspector|paintLcd|DiskControls|TapeControls|useDialogs)$/.test(k)),

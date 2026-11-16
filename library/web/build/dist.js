@@ -14,6 +14,9 @@
 //   stampServiceWorker(dist, {id, core})       app/sw.js: id, list, hash (AC-10, AC-11)
 //   writeManifest(dist, {name, version, commit})   MANIFEST.json (AC-14)
 //   checkScopedCss(cssText) → [selectors outside .calcu-client] (AC-17)
+//   VENDOR                       library/web/vendor/: React 18, ReactDOM (shipped in
+//                                a dist/vendor/), Babel (build only), ReactDOMServer
+//                                (tests only); one copy for every product
 //   LIBRARY_SOURCES              the page side, in load order
 //   COMPONENT_SOURCES            the React component set (library/web/components/,
 //                                LIB-14 D-16, D-17; LIB-8 D-1), in load order after
@@ -31,6 +34,7 @@ const crypto = require("crypto");
 const { execFileSync } = require("child_process");
 
 const WEB = path.join(__dirname, "..");   // library/web
+const VENDOR = path.join(WEB, "vendor");
 const LIBRARY_SOURCES = ["base.js", "sentences.js", "audio.js", "hostServices.js", "shell.js", "embed.js"]
   .map((n) => path.join(WEB, "src", n));
 const COMPONENT_SOURCES = ["paper.js", "PaperPanel.jsx", "RunControlButtons.jsx", "MediaPicker.jsx", "NameAndSaveDialog.jsx", "SavedMediaDialog.jsx"].map((n) => path.join(WEB, "components", n));
@@ -40,6 +44,8 @@ COMPONENT_SOURCES.push(...["shellModel.js", "useShell.jsx", "ShellModal.jsx", "S
   "ShellSettings.jsx", "ShellAbout.jsx", "ShellNotice.jsx", "ShellLoading.jsx", "ShellPanelArea.jsx",
   "useShellFaceplate.jsx", "ShellRomsMissing.jsx"].map((n) => path.join(WEB, "components", n)));
 COMPONENT_CSS.push(path.join(WEB, "components", "shell.css"));
+// LIB-5 AC-7, AC-10: host keys to `host-key-down` and the keys held down.
+COMPONENT_SOURCES.push(path.join(WEB, "components", "hostKeys.js"));
 const WORKER_SOURCES =["sentences.js", "storage.js", "worker.js"].map((n) => path.join(WEB, "src", n));
 
 const read = (p) => fs.readFileSync(p, "utf8");
@@ -216,6 +222,6 @@ function checkScopedCss(cssText) {
 }
 
 module.exports = {
-  LIBRARY_SOURCES, COMPONENT_SOURCES, COMPONENT_CSS, WORKER_SOURCES, walk, compileCalcJs, compileApp, copyAppFiles, writeLibraryWorker,
+  VENDOR, LIBRARY_SOURCES, COMPONENT_SOURCES, COMPONENT_CSS, WORKER_SOURCES, walk, compileCalcJs, compileApp, copyAppFiles, writeLibraryWorker,
   writeFilesList, stampServiceWorker, writeManifest, checkScopedCss,
 };

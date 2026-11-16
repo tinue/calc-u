@@ -122,39 +122,16 @@ TEST(lib9_ac28_dap_port_outside_range_is_32168) {
     }
 }
 
-// AC-29: per kind a fixed folder, else the folder last used.
+// AC-29: the four kinds of folder and their keys in [folders] (the rule --
+// a fixed folder, else the one last used -- is the library's:
+// library/settings/tests/startup_tests.cpp,
+// ac29_open_folder_fixed_else_last_used_else_home).
 TEST(lib9_ac29_folders_four_kinds) {
-    TestSettings t;
-    shared::Settings& s = t.settings;
     const std::pair<OpenFolder, const char*> kinds[] = {{OpenFolder::Samples, "presets"},
                                                          {OpenFolder::Basic, "basic-programs"},
                                                          {OpenFolder::Assembly, "machine-code"},
                                                          {OpenFolder::HostDrive, "host-drive"}};
-    for (const auto& [folder, key] : kinds) {
-        CHECK_EQ(std::string(shared::openFolderKind(folder)), std::string(key));
-        CHECK(s.openStartDir(folder, "/home") == "/home");
-        s.rememberOpenFile(folder, "/a/b/prog.bas");
-        CHECK(s.lastOpenDir(folder) == "/a/b");
-        CHECK(t.file.text("folders", key) == "/a/b");
-        CHECK(s.openStartDir(folder, "/home") == "/a/b");
-        s.rememberOpenDir(folder, "/c/d/");
-        CHECK(s.lastOpenDir(folder) == "/c/d");
-        s.setOpenDir(folder, "/fixed");
-        CHECK(s.openDir(folder) == "/fixed");
-        CHECK(t.file.text("folders", key) == "fixed:/fixed");
-        CHECK(s.openStartDir(folder, "/home") == "/fixed");
-        s.rememberOpenFile(folder, "/e/f/x.bin");  // a fixed folder is not changed by a pick
-        CHECK(s.openStartDir(folder, "/home") == "/fixed");
-        CHECK(s.lastOpenDir(folder).empty());
-        s.setOpenDir(folder, "");  // Reset: the folder last used, from where the fixed one was
-        CHECK(s.openDir(folder).empty());
-        CHECK(s.openStartDir(folder, "/home") == "/fixed");
-        s.rememberOpenFile(folder, "/e/f/x.bin");
-        CHECK(s.openStartDir(folder, "/home") == "/e/f");
-    }
-    // One kind does not change another.
-    s.setOpenDir(OpenFolder::Basic, "/only-basic");
-    CHECK(s.openDir(OpenFolder::Samples).empty() && s.openDir(OpenFolder::Basic) == "/only-basic");
+    for (const auto& [folder, key] : kinds) CHECK_EQ(std::string(shared::openFolderKind(folder)), std::string(key));
 }
 
 // AC-30: [window] keeps the size the user gave; without it 900 x 500.
@@ -274,13 +251,13 @@ TEST(test_app_paths) {
     CHECK(paths.displayPath(home + "-other/y") == home + "-other/y");
     CHECK(paths.displayPath("/elsewhere") == "/elsewhere");
 
-    s.setInstanceDirOverride((root / "saves").generic_string());
+    t.file.set("storage", "save-folder", (root / "saves").generic_string());
     CHECK(paths.instanceDir() == (root / "saves").generic_string());
     CHECK(fs::is_directory(root / "saves"));
     CHECK(paths.tapeDir() == (root / "saves" / "Tapes").generic_string());  // LIB-9 EC-3
-    s.setTapeDirOverride((root / "tapes").generic_string());
+    t.file.set("storage", "tape-folder", (root / "tapes").generic_string());
     CHECK(paths.tapeDir() == (root / "tapes").generic_string());
-    s.setTraceDirOverride((root / "traces").generic_string());
+    t.file.set("trace", "folder", (root / "traces").generic_string());
     CHECK(paths.traceDir() == (root / "traces").generic_string());
 
 

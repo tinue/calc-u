@@ -9,7 +9,7 @@ const { DIST } = require('./helpers');
 // and Worker throw. Rendering has no side effects -- those belong in
 // effects, which a static render never runs.
 
-const VENDOR = path.join(__dirname, '..', '..', '..', 'products', 'calc-u-1600', 'frontends', 'web', 'vendor');
+const VENDOR = path.join(__dirname, '..', 'vendor');
 
 function sandbox() {
   const noop = () => {};

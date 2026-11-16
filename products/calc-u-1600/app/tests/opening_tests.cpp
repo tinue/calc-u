@@ -23,10 +23,10 @@
 #include "SessionFixture.hpp"
 #include "TestHarness.hpp"
 #include "app/SharpFileKinds.hpp"
-#include "app/StartFile.hpp"
 #include "media/MediaPlace.hpp"
 #include "opening/Classify.hpp"
 #include "opening/OpenPart.hpp"
+#include "settings/OpenFolders.hpp"
 
 namespace {
 
@@ -459,26 +459,18 @@ TEST(lib13_ac20_over_1mib_refused_drop_openwith_start_not_dialog_harness) {
     CHECK_EQ(takenAs(b.f, named("ok.bas", exact), Way::Drop), std::string("basic-program"));
 }
 
-// ---- T16-5: the ways in (AC-21, EC-7) ----
-
-TEST(lib13_ac21_start_file_is_last_file_argument) {
-    const auto exists = [](const std::string& s) { return s == "/a/one.bas" || s == "/a/two.pc1500" || s == "/a/app"; };
-    CHECK(!shared::startFile({"/a/app"}, exists));
-    CHECK(shared::startFile({"/a/app", "/a/one.bas"}, exists) == std::optional<std::string>("/a/one.bas"));
-    CHECK(shared::startFile({"/a/app", "/a/one.bas", "/a/two.pc1500"}, exists) == std::optional<std::string>("/a/two.pc1500"));
-    CHECK(shared::startFile({"/a/app", "/a/one.bas", "-NSDocumentRevisionsDebugMode", "YES"}, exists) ==
-          std::optional<std::string>("/a/one.bas"));
-    CHECK(!shared::startFile({"/a/app", "--dap", "4711", "/nowhere.bas"}, exists));
-}
+// ---- T16-5: the ways in (AC-21, EC-7; startFile's case is the library's,
+// library/opening/tests/start_file_tests.cpp) ----
 
 TEST(lib13_ec7_open_by_any_way_keeps_dialog_folders) {
     SKIP_UNLESS(sessionfixture::romsPresent(), "no ROMs in roms/");
     SessionFixture f("calcu-opening-test");
     CHECK(f.start("PC-1500A"));
     using shared::OpenFolder;
-    f.settings.rememberOpenDir(OpenFolder::Samples, "/before/presets");
-    f.settings.rememberOpenDir(OpenFolder::Basic, "/before/basic");
-    f.settings.rememberOpenDir(OpenFolder::Assembly, "/before/code");
+    using shared::openFolderKind;
+    calcu::settings::rememberOpenFolder(f.settings.file(), openFolderKind(OpenFolder::Samples), "/before/presets");
+    calcu::settings::rememberOpenFolder(f.settings.file(), openFolderKind(OpenFolder::Basic), "/before/basic");
+    calcu::settings::rememberOpenFolder(f.settings.file(), openFolderKind(OpenFolder::Assembly), "/before/code");
     const fs::path dir = f.root / "files";
     fs::create_directories(dir);
     std::ofstream(dir / "p.bas", std::ios::binary) << "10 PRINT 1\n";
@@ -486,9 +478,9 @@ TEST(lib13_ec7_open_by_any_way_keeps_dialog_folders) {
         CHECK(openFile(f, onDisk(dir / "p.bas"), w).done);
         CHECK(openFile(f, onDisk(fs::path(kCards) / "ce161.card.yaml"), w).done);
     }
-    CHECK_EQ(f.settings.lastOpenDir(OpenFolder::Samples), std::string("/before/presets"));
-    CHECK_EQ(f.settings.lastOpenDir(OpenFolder::Basic), std::string("/before/basic"));
-    CHECK_EQ(f.settings.lastOpenDir(OpenFolder::Assembly), std::string("/before/code"));
+    CHECK_EQ(f.settings.file().text("folders", openFolderKind(OpenFolder::Samples)), std::string("/before/presets"));
+    CHECK_EQ(f.settings.file().text("folders", openFolderKind(OpenFolder::Basic)), std::string("/before/basic"));
+    CHECK_EQ(f.settings.file().text("folders", openFolderKind(OpenFolder::Assembly)), std::string("/before/code"));
 }
 
 // ---- T16-6: today's tests of telling a dropped file (AC-22) ----

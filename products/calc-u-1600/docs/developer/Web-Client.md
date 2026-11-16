@@ -40,7 +40,6 @@ flowchart LR
 | `app/` | The installable app's page, manifest and stylesheet; its app page, service worker and worker entry are the library's (`library/web/app/`) |
 | `build.sh`, `build.js` | The build (below) |
 | `tests/`, `run-tests.sh` | Playwright tests |
-| `vendor/` | React 18, ReactDOM, ReactDOMServer (tests), Babel (build only) |
 
 ## Build and test
 
@@ -55,7 +54,7 @@ engine is the CMake target `calcu_web` of the repository's root project,
 built in its `build/web` tree
 (`calcu1600-core.js` / `.wasm`): no `-pthread`, native wasm exceptions,
 `IDBFS`. `build.js` uses the library's build steps (`library/web/build/dist.js`):
-it compiles the JSX with the vendored Babel (no npm
+it compiles the JSX with the library's vendored Babel (`library/web/vendor/`, also React 18, ReactDOM and ReactDOMServer; no npm
 runtime dependencies), fails on a `calc.css` selector outside `.calcu-client`, copies
 [`examples/bundle.yaml`](../../examples/bundle.yaml) and exactly the files it
 lists (each preset and the files it names; nothing else of `examples/`) into
@@ -136,8 +135,9 @@ Things that are only in the Qt app, or that a browser can't do:
 - **Pointer.** One key per pointer, so a tablet can hold SHIFT and a
   key with two fingers. Holding the LCD runs turbo.
 - **Keyboard.** `KeyboardEvent.code` / `.key` go to
-  the library's `host-key-down` / `host-key-up` (src/CalcU1600.jsx turns the
-  event into the command's fields; the product's keyboard map in the
+  the library's `host-key-down` / `host-key-up` (the library's
+  `components/hostKeys.js` turns the event into the command's fields and
+  keeps the keys held; the product's keyboard map in the
   engine decides). A bare Shift tapped within 400 ms is one screen press
   of SHIFT.
   Auto-repeat is ignored and held keys are released on blur. The web keeps

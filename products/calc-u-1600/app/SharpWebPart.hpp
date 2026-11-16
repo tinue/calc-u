@@ -25,8 +25,8 @@ namespace shared {
 //   `c1600.faceplate-map {model}` (the hit map, the LCD's layout; D-31),
 //   `c1600.inspector-menu`, `c1600.inspector-view`, `c1600.card-yaml`,
 //   `c1600.screen-image`, `c1600.lcd-text`;
-// - the command `c1600.upload` (Import Media… puts its files beside each
-//   other first).
+// - the command `c1600.upload` (a file into the uploads folder; the Web
+//   tests' way to hand over a preset, the page does not send it).
 // The tape counter and the floppy lamp are SharpAppPart's `c1600.lamps`.
 // It lives in the app layer so that it builds and is tested natively; the
 // Web engine (bindings.cpp) only adds it to the session.

@@ -44,12 +44,12 @@ QString defaultInstanceDir();
 // A screenshot run's throwaway home thus reads like a fresh install's.
 QString displayPath(const QString& path);
 
-// AppSettings::instanceDirOverride() if non-empty, else
+// The settings' instanceDirOverride() if non-empty, else
 // defaultInstanceDir(). The single source of truth every other class calls
 // to find "where battery-card instances live right now".
 QString instanceDir();
 
-// Cassette tapes: AppSettings::tapeDirOverride() if
+// Cassette tapes: the settings' tapeDirOverride() if
 // non-empty, else "Tapes" inside instanceDir(); created on demand. A tape's
 // definition and its sound lie there (LIB-7 AC-42; LIB-9 AC-16).
 QString tapeDir();

@@ -85,7 +85,6 @@ set(CALCU1600_QT_SOURCES
   app/DebugPanel.cpp
   app/MediaControls.cpp
   app/Ce158PrinterWidget.cpp
-  app/HostKeyEvents.cpp
   app/AppPaths.cpp
   app/AppLogging.cpp
   app/MachineCodeLoadDialog.cpp

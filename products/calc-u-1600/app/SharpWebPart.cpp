@@ -11,6 +11,7 @@
 #include "app/Text.hpp"
 #include "app/Utf8Path.hpp"
 #include "sessions/Args.hpp"
+#include "shell/ValueForms.hpp"
 
 namespace shared {
 
@@ -59,7 +60,8 @@ void SharpWebPart::attach(sessions::SessionSetup& setup) {
     // faceplate's hit map and LCD layout (D-31), from the tables Qt6 uses.
     req("c1600.shell-product", [this](const Value&, SessionContext&) {
         return sessions::replyGiven(
-            sessions::valuePayload("c1600.shell-product", Value::object({{"product", shellProductValue(shellProduct(m_version, "", false))}, {"settingsSpec", dialogSpecValue(settingsSpec(false, false))}})));
+            sessions::valuePayload("c1600.shell-product", Value::object({{"product", calcu::shell::toValue(shellProduct(m_version, "", false))},
+                                                         {"settingsSpec", calcu::shell::toValue(settingsSpec(false, false))}})));
     });
     req("c1600.faceplate-map", [](const Value& a, SessionContext&) {
         const auto model = sharpModel(textArg(a, "model"));
@@ -68,11 +70,12 @@ void SharpWebPart::attach(sessions::SessionSetup& setup) {
     });
 
     // ── Opening files ───────────────────────────────────────────────────
-    // A drop and Upload Preset… are the library's `open` (LIB-13, the open
-    // part of SharpAppPart, with the uploads folder for several files).
-    // Import Media… puts its files into the uploads folder first, so a tape
-    // finds its WAV beside its definition (LIB-7 AC-43); the result is the
-    // path.
+    // A drop, Upload Preset… and Import Media… go through the library
+    // (LIB-13's `open` with the uploads folder for several files, LIB-7's
+    // `media.import`); the page sends no `c1600.upload`. It writes one file
+    // into the uploads folder and replies its path; the Web tests hand a
+    // preset over with it (`session.spec.js`; LIB-13, LIB-7 and C1600-2's
+    // designs keep it).
     cmd("c1600.upload", [this](const Value& a, SessionContext&) -> CommandOutcome {
         const std::string path = m_uploadsDir + "/" + fromPath(toPath(textArg(a, "name")).filename());
         std::error_code ec;

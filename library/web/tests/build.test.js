@@ -10,7 +10,7 @@ const path = require("path");
 const vm = require("vm");
 const dist = require("../build/dist.js");
 
-const VENDOR = path.join(__dirname, "..", "..", "..", "products", "calc-u-1600", "frontends", "web", "vendor");
+const VENDOR = dist.VENDOR;
 
 function tempDist() {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), "calcu-dist-"));

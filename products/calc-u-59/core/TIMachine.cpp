@@ -3,6 +3,7 @@
 #include "TIKeys.hpp"
 #include "TISegments.hpp"
 #include "peripherals/Controls.hpp"
+#include <algorithm>
 
 using namespace calcu::machine;
 
@@ -23,6 +24,7 @@ TIMachine::TIMachine(const MachineDescriptor& d, MachineVariant v, const TIRoms&
 
 std::uint32_t TIMachine::stepOne() {
     const std::uint32_t r = m_hw.step();
+    ++m_retired;
     if (m_restore && m_ranges.scanLoop.contains(m_hw.pc())) {
         // AC-19: the ROM's start-up is over; the RAM and the partition go back
         // before key readiness is reported (D-5).
@@ -35,20 +37,48 @@ std::uint32_t TIMachine::stepOne() {
 
 Ticks TIMachine::advance(Ticks atLeast) {
     const Ticks start = tickCount();
-    while (tickCount() - start < atLeast) {
-        const std::uint32_t r = stepOne();
-        if (!m_observer) continue;
-        if (r & TI59Machine::kBreakpointHit) {
-            m_stop = TIStop::Breakpoint;
+    if (!m_debugging.active()) {   // the fast path: no check, no observer (golden runs, a running app)
+        while (tickCount() - start < atLeast) stepOne();
+        return tickCount() - start;
+    }
+    // LIB-10 §3.2, §12.4: a breakpoint stops before the instruction at its
+    // address (passed once after a pause there, AC-10); the observer is asked
+    // after every instruction with the marks of timarks::kMark....
+    const Checks& c = m_debugging.m_checks;
+    const auto& bps = m_debugging.m_target.breakpoints();
+    const bool runOn = c.observer && m_debugging.m_runOn && m_debugging.m_runOn();
+    constexpr Ticks kRunOnAtMost = Ticks{50'000} * 4 * kTicksPerWeight;   // TILevelRules lands it before
+    while (tickCount() - start < atLeast || (runOn && tickCount() - start < atLeast + kRunOnAtMost)) {
+        const std::uint16_t at = m_hw.pc();
+        if (c.breakpoints && !m_debugging.m_passOnce && std::binary_search(bps.begin(), bps.end(), at)) {
+            DebugStop stop;
+            stop.kind = DebugStop::Breakpoint;
+            stop.address = at;
+            m_debugging.m_stop = stop;
             break;
         }
-        const std::uint16_t pc = m_hw.pc();
-        if (m_observer->stopAfter(pc, (r & TI59Machine::kStepBoundary) != 0, m_ranges.scanLoop.contains(pc))) {
-            m_stop = TIStop::Observer;
+        m_debugging.m_passOnce = false;
+        const std::uint32_t r = stepOne();
+        if (!c.observer) continue;
+        const std::uint16_t next = m_hw.pc();
+        InstructionEvent ev;
+        ev.address = at;
+        ev.nextAddress = next;
+        ev.marks = ((r & TI59Machine::kStepBoundary) ? timarks::kMarkBoundary : 0u) |
+                   (m_ranges.scanLoop.contains(next) ? timarks::kMarkScanLoop : 0u) |
+                   ((r & TI59Machine::kWeightMask) << timarks::kMarkWeightShift);
+        if (c.observer->stopAfter(ev)) {
+            m_hw.beginNextStep();   // §12.4: the next step's state is what is read while paused
+            m_debugging.m_stop = DebugStop{};
             break;
         }
     }
     return tickCount() - start;
+}
+
+void TIMachine::applyTraceFlags() {
+    const std::uint32_t want = (m_panelTrace || m_recordTrace || m_checksTrace) ? (TRACE_PC | TRACE_REGS_FULL) : TRACE_NONE;
+    if (m_hw.traceFlags() != want) m_hw.setTraceFlags(want);
 }
 
 Ticks TIMachine::tickCount() const { return m_ticksBeforeReset + kTicksPerWeight * m_hw.elapsedTicks(); }
@@ -66,8 +96,9 @@ namespace {
 const PlacePath kPrinterPath{{kTIPrinterPlace}};
 const PlacePath kSlotPath{{kTIModulePlace}};
 const CapabilityId kControlsId{"printer/controls"};
-const CapabilityId kPaperId{"printer/c59.printer-output"};
+const CapabilityId kPaperId{"printer/paper-output"};
 const CapabilityId kTypingId{"TMC0501/typing-support"};
+const CapabilityId kTraceRecordsId{"TMC0501/c59.trace-records"};
 } // namespace
 
 void TIMachine::rewire() {
@@ -78,6 +109,7 @@ void TIMachine::rewire() {
 void TIMachine::plug(PeripheralRequest req, const PeripheralDescriptor& d, TickRate) {
     if (req.place == kPrinterPath) {
         m_printer = std::make_unique<PC100C>(req.switches);
+        m_printer->recordCodeLines(m_recordCodeLines);
     } else {
         // The module file as bundled (LIB-12 C-1): the attach checked that it
         // is there (rule 5), the lookup that it reads (LIB-12 AC-6).
@@ -96,7 +128,7 @@ void TIMachine::plug(PeripheralRequest req, const PeripheralDescriptor& d, TickR
 
 void TIMachine::unplug(const PlacePath& place, const PeripheralId&) {
     if (place == kPrinterPath) {
-        if (m_printer) m_printer->endLineHere();   // EC-2: the rows printed stay
+        if (m_printer) m_printer->endLineHere();   // LIB-8 EC-7: the rows printed go onto the paper first
         m_printer.reset();
     } else {
         m_module.reset();
@@ -118,19 +150,22 @@ Plugged TIMachine::plugged() const {
 }
 
 std::vector<CapabilityEntry> TIMachine::capabilities() const {
-    std::vector<CapabilityEntry> out{{calcu::typing::TypingSupport::kKind, kTypingId, ComponentOwner{ComponentId{"TMC0501"}}}};
+    const ComponentOwner cpu{ComponentId{"TMC0501"}};
+    std::vector<CapabilityEntry> out{{calcu::typing::TypingSupport::kKind, kTypingId, cpu},
+                                     {TraceRecords::kKind, kTraceRecordsId, cpu}};
     if (!m_printer) return out;
     const PeripheralOwner owner{kPC100C, kPrinterPath};
     out.push_back({calcu::peripherals::Controls::kKind, kControlsId, owner});
-    out.push_back({PrinterOutput::kKind, kPaperId, owner});
+    out.push_back({calcu::paper::PaperOutput::kKind, kPaperId, owner});
     return out;
 }
 
 Capability* TIMachine::capability(const CapabilityId& id) {
     if (id == kTypingId) return &m_typing;
+    if (id == kTraceRecordsId) return &m_traceRecords;
     if (!m_printer) return nullptr;
     if (id == kControlsId) return &m_printer->controls();
-    if (id == kPaperId) return static_cast<PrinterOutput*>(m_printer.get());
+    if (id == kPaperId) return static_cast<calcu::paper::PaperOutput*>(m_printer.get());
     return nullptr;
 }
 

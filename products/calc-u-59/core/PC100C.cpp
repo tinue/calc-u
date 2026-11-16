@@ -8,24 +8,15 @@ using calcu::machine::ControlId;
 
 namespace {
 
-// ── Printer character and function-code tables ────────────────────────────────
+// ── Printer function-code table ───────────────────────────────────────────────
 //
-// PRN_CODE[64]: maps a 6-bit code (KR bits 10:4) to a printable UTF-8 character.
+// The characters of the 6-bit codes are pc100cpaper::kCharacters (PC100CPaper.hpp).
 // PRN_STR[]:    maps a 7-bit function code to a 3-character mnemonic string.
 //               The strings are stored right-to-left in the buffer (hardware
 //               writes them reversed so that the print-buffer-reversal on output
 //               restores the correct reading order).
 
-const char* const PRN_CODE[64] = {
-    " ","0","1","2","3","4","5","6",
-    "7","8","9","A","B","C","D","E",
-    "-","F","G","H","I","J","K","L",
-    "M","N","O","P","Q","R","S","T",
-    ".","U","V","W","X","Y","Z","+",
-    "x","*","√","π","e","(",")",",",
-    "↑","%","⇄","/","=","'","ˣ","x̄",
-    "²","?","÷","!","Ⅱ","▴","∏","∑"
-};
+const char* const* const PRN_CODE = pc100cpaper::kCharacters;
 
 // Reverse-map a single ASCII character to its PRN_CODE index (0 = space/fallback).
 // Used to recover raw codes when function-mnemonic characters are stored in the buffer.
@@ -171,21 +162,22 @@ void PC100C::word(PrinterWord w, std::uint16_t kr) {
             std::string line;
             for (int i = 19; i >= 0; --i) {
                 line += m_buf[i];
-                m_pending.codes[19 - i] = m_codeBuf[i];
+                m_pending.codes[static_cast<std::size_t>(19 - i)] = m_codeBuf[i];
             }
             m_hasPending = true;
-            m_lines.push_back(std::move(line));
+            m_pendingTop = m_standing;
+            emitTextLine(std::move(line), calcu::paper::Position{0, m_standing});   // AC-25, D-21
             m_busy = kLineInstructions;
         }
         break;
     case PrinterWord::Feed:
         // Half a line of paper; Adv (key, button or program step) issues two.
         // Busy gates the rate. A line in progress (its code line pending) is
-        // flushed now, so that its code line lands at the same index as its
-        // text line and not at the feed's.
+        // ended now: its dots and its paper come before the feed's.
         flushPendingIfActive();
-        m_lines.emplace_back();
-        m_codeLines.emplace_back();   // zero-filled
+        emitTextLine(std::string(), calcu::paper::Position{0, m_standing});
+        feedTo(m_standing + pc100cpaper::kFeed);
+        if (m_recordCodes) m_codeLines.emplace_back();   // zero codes, rowCount 7 (as 2.3.0)
         m_busy = kFeedInstructions;
         break;
     }
@@ -206,8 +198,18 @@ void PC100C::flushPendingCodeLine(std::uint32_t elapsed) {
     m_pending.rowCount = static_cast<uint8_t>(std::min<uint32_t>(7, rows));
     m_pending.partialColumns = static_cast<uint8_t>(cols);
     m_pending.partialHeat = static_cast<uint8_t>(std::min<uint32_t>(255, heat));
-    m_codeLines.push_back(m_pending);
     m_hasPending = false;
+    // AC-25, AC-26: the dots of the rows printed, then the paper they take.
+    for (const auto& d : pc100cpaper::lineDots(m_pending.codes, m_pending.rowCount, m_pending.partialColumns,
+                                          m_pending.partialHeat, m_pendingTop))
+        emitDot(d.at, d.darkness);
+    feedTo(m_pendingTop + pc100cpaper::lineHeight(m_pending.rowCount, m_pending.partialColumns));
+    if (m_recordCodes) m_codeLines.push_back(m_pending);
+}
+
+void PC100C::feedTo(calcu::paper::Coord y) {
+    emitFedTo(y);   // before standing() moves (PaperOutputBase::keep)
+    m_standing = y;
 }
 
 void PC100C::flushPendingIfActive() {

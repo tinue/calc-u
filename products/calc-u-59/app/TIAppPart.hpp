@@ -7,7 +7,10 @@
 #include "ProductRoms.hpp"
 #include "StateFile.hpp"
 #include "TIFileAccess.hpp"
+#include "TILevelRules.hpp"
 #include "TITyping.hpp"
+#include "debugger/DebuggerPart.hpp"
+#include "paper/PaperPart.hpp"
 #include "sessions/AppSession.hpp"
 #include "sessions/MachineSession.hpp"
 #include "sessions/Payload.hpp"
@@ -32,12 +35,15 @@
 // The part holds the product's flows (2.3.0's SessionController, taken
 // apart in M-34 when the Web frontend moved onto the session too): starting
 // and switching machines, presets, the TI-58C constant memory, the card
-// reader, the printer strip, the cue card shown, freeze and step, traces,
-// the ASM overlay and the LOG tab. Adapters (design §5): the machine is the
-// machine session's; KEYSTROKES playback runs at its slice ends
-// (TIKeystrokePlayback), the freeze checks inside its advance (TIFreezeGate),
-// the card wait is a WaitProbe (TICardWaitAdapter), the freeze is the
-// typing part's pause (TIFreezeProbe). Keys are the library's typing (LIB-5:
+// reader, the PC-100C's place and controls, the cue card shown, the debug
+// panel's data, the ASM overlay and the LOG tab. Adapters (design §5): the
+// machine is the machine session's; KEYSTROKES playback runs at its slice
+// ends (TIKeystrokePlayback), the card wait is a WaitProbe
+// (TICardWaitAdapter). Since M-53 the paper is LIB-8's PaperPart and the
+// pause, the steps, breakpoints and traces are LIB-10's DebuggerPart (its run
+// control is the machine session's gate and the typing part's pause); the
+// part reaches both through setLibraryParts (adapters P-E1 to P-E5, L-E1 to
+// L-E5 of the LIB-8 and LIB-10 designs). Keys are the library's typing (LIB-5:
 // TypingPart goes in front of this part; host-key-down, screen-key-down, …,
 // held-keys). Errors are notices,
 // diagnostics log lines, the files TIFileAccess; what the EmulatorSession
@@ -61,6 +67,9 @@ enum class DropAction {
 /// The pure rule: by the file's name and the model (C59-5 D-5, a view rule).
 DropAction dropActionFor(const std::string& fileName, Model model);
 /// Where manual and scripted traces go (LIB-9 Paths), and the size limit per trace session.
+/// An empty dir: this host has no trace folder (the Web: traces are handed
+/// over with KeepFile, LIB-10 AC-26). maxBytes / 1'000'000: the limit in
+/// MiB of the library's trace session (LIB-10 T2).
 struct TraceTarget {
     std::filesystem::path dir;
     uint64_t maxBytes = 0;
@@ -74,7 +83,6 @@ inline const TopicName kCueCard{"c59.cue-card"};
 inline const TopicName kPrinter{"c59.printer"};
 inline const TopicName kCardReader{"c59.card-reader"};
 inline const TopicName kRunState{"c59.run-state"};
-inline const TopicName kTrace{"c59.trace"};
 inline const TopicName kDebugLive{"c59.debug.live"};
 inline const TopicName kDebugCpu{"c59.debug.cpu"};
 inline const TopicName kDebugHeatmap{"c59.debug.heatmap"};
@@ -110,11 +118,11 @@ struct TICueCardState final : TISnapshot<TICueCardState> {
     std::optional<CueCardContent> card;
     calcu::sessions::Value toValue() const override;
 };
+/// The PC-100C's place and TRACE (LIB-8 adapter P-E1, until M-57): the
+/// paper panel's owner and the connect toggle above it; the paper itself is
+/// the library's `paper PC-100C`.
 struct TIPrinterState final : TISnapshot<TIPrinterState> {
     static constexpr calcu::sessions::PayloadKind kKind{"c59.printer"};
-    std::vector<std::string> lines;
-    std::vector<PrinterCodeLine> codeLines;
-    double stripHeightUnits = 0;
     bool connected = true;
     bool trace = false;
     calcu::sessions::Value toValue() const override;
@@ -128,16 +136,12 @@ struct TICardReaderState final : TISnapshot<TICardReaderState> {
     std::optional<int> litCorner;
     calcu::sessions::Value toValue() const override;
 };
+/// What is no debugger state (LIB-10 adapter L-E5, until M-54 and M-57):
+/// the run state is the library's `run-state`.
 struct TIRunState final : TISnapshot<TIRunState> {
     static constexpr calcu::sessions::PayloadKind kKind{"c59.run-state"};
-    DebugState debug;
     bool fullSpeed = false;
     bool keystrokesPlaying = false;
-    calcu::sessions::Value toValue() const override;
-};
-struct TITraceState final : TISnapshot<TITraceState> {
-    static constexpr calcu::sessions::PayloadKind kKind{"c59.trace"};
-    bool manualTrace = false;
     calcu::sessions::Value toValue() const override;
 };
 struct TIDebugLiveState final : TISnapshot<TIDebugLiveState> {
@@ -213,10 +217,9 @@ inline const CommandName kChangeModule{"c59.change-module"};     // {id} (empty:
 inline const CommandName kFullSpeed{"c59.full-speed"};           // {on}
 inline const CommandName kPrinterConnected{"c59.printer-connected"};   // {on}; an operation
 inline const CommandName kTogglePrinterConnection{"c59.toggle-printer-connection"};   // an operation
-inline const CommandName kTogglePrinterTrace{"c59.toggle-printer-trace"};
-inline const CommandName kPrinterPrint{"c59.printer-print"};     // {pressed}
-inline const CommandName kPrinterAdv{"c59.printer-adv"};         // {pressed}
-inline const CommandName kCutPaper{"c59.cut-paper"};
+// LIB-8 P-E2 (until M-54): `set-control {peripheral: "PC-100C", control: PRINT|ADV|TRACE, on}`,
+// the library's command, as the paper panel sends it.
+inline const CommandName kSetControl{"set-control"};
 inline const CommandName kFitCard{"c59.fit-card"};               // {bytes (absent: unreadable), path, name} → TIFlag
 inline const CommandName kFitBlankCard{"c59.fit-blank-card"};    // {path, name} → TIFlag
 inline const CommandName kFeedSide{"c59.feed-side"};             // {side} → TIFlag
@@ -226,14 +229,6 @@ inline const CommandName kLoadState{"c59.load-state"};           // {bytes (abse
 inline const CommandName kOpenDropped{"c59.open-dropped"};       // {bytes, path, name} → TIFlag; a preset: an operation
 inline const CommandName kLiveDebug{"c59.live-debug"};           // {on}
 inline const CommandName kCpuDebug{"c59.cpu-debug"};             // {on}
-inline const CommandName kFreeze{"c59.freeze"};                  // {owner: 0 CPU, 1 CALCULATOR}
-inline const CommandName kResume{"c59.resume"};
-inline const CommandName kArmPcChange{"c59.arm-pc-change"};
-inline const CommandName kArmScanLoopExit{"c59.arm-scan-loop-exit"};
-inline const CommandName kDisarmPcChange{"c59.disarm-pc-change"};
-inline const CommandName kDisarmScanLoopExit{"c59.disarm-scan-loop-exit"};
-inline const CommandName kStepKeycode{"c59.step-keycode"};
-inline const CommandName kStepInstruction{"c59.step-instruction"};
 inline const CommandName kClearHeatmap{"c59.clear-heatmap"};
 inline const CommandName kCycleDebugLevel{"c59.cycle-debug-level"};
 inline const CommandName kClearLog{"c59.clear-log"};
@@ -241,7 +236,6 @@ inline const CommandName kDumpVars{"c59.dump-vars"};
 inline const CommandName kDumpScom{"c59.dump-scom"};
 inline const CommandName kDumpProg{"c59.dump-prog"};
 inline const CommandName kDumpMemory{"c59.dump-memory"};
-inline const CommandName kManualTrace{"c59.manual-trace"};       // {on}
 inline const CommandName kLoadAsm{"c59.load-asm"};               // {text (absent: unreadable), name}
 inline const CommandName kRunAsm{"c59.run-asm"};
 inline const CommandName kClearAsm{"c59.clear-asm"};
@@ -306,8 +300,8 @@ public:
     const LedFrame& display() const { return m_display; }
     double calcIndicatorOpacity() const { return m_calcOpacity; }
     /// The library's typing part of the session (makeAppSession sets it
-    /// before the session is built): KEYSTROKES' keys go to its engine, the
-    /// TI freeze is its pause, the manual trace records its keys.
+    /// before the session is built): KEYSTROKES' keys go to its engine; its
+    /// pause is the machine session's, which the run control sets (LIB-10).
     void setTyping(calcu::typing::TypingPart* typing);
     calcu::typing::TypingPart* typing() const { return m_typing; }
     void setFullSpeed(bool on);
@@ -324,24 +318,30 @@ public:
     // Cue card
     const std::optional<CueCardContent>& cueCard() const { return m_cueCard; }
 
-    // Printer
-    const std::vector<std::string>& printerLines() const { return m_printerLines; }
-    const std::vector<PrinterCodeLine>& printerCodeLines() const { return m_printerCodeLines; }
-    /// The strip's height in dot pitches (a text line without dot codes yet counts as complete).
-    double printerStripHeightUnits() const;
+    // Printer (the paper: LIB-8's PaperPart)
     bool printerConnected() const { return m_printerConnected; }
     /// TRACE's position: the app session keeps it from the start (off) to the
     /// end, through reset, power cycle, cold boot, model switch and detach;
     /// never saved (C59-6 AC-6; row 59-25). A state file sets it off.
     bool printerTrace() const { return m_printerTrace; }
     /// Attach or detach the PC-100C, then the power cycle that follows (row
-    /// 59-11). The paper stays (AC-1); a line cut by the detach keeps its rows (EC-2).
+    /// 59-11). Its paper stays in the PaperPart (LIB-8 AC-8); a line cut by
+    /// the detach keeps its rows (EC-7).
     void setPrinterConnected(bool connected);
     void togglePrinterConnection();
-    void togglePrinterTrace();
-    void pressPrinterPrint(bool pressed);
-    void pressPrinterAdv(bool pressed);
-    void cutPaper();
+    /// A control of the PC-100C as LIB-2 names it: PRINT, ADV (keys), TRACE
+    /// (the switch the app session keeps). False: no such control.
+    bool setPrinterControl(const std::string& control, bool on);
+    /// The library's parts of the session, which makeAppSession (or a test)
+    /// sets before the session is built: the PC-100C's paper (LIB-8) and the
+    /// run control and traces (LIB-10).
+    void setLibraryParts(calcu::paper::PaperPart* paper, calcu::debugger::DebuggerPart* debugger,
+                         TILevelRules* rules);
+    calcu::paper::PaperPart* paperPart() const { return m_paperPart; }
+    calcu::debugger::DebuggerPart* debuggerPart() const { return m_debugger; }
+    TILevelRules* levelRules() const { return m_rules; }
+    /// The debug panel's view by the name of `debug-panel:` (calculator, cpu, log).
+    void showDebugPanelNamed(const std::string& view);
 
     // Card reader (reference/SharedArchitecture.md § "Card Reader Flow")
     CardState cardState() const { return m_pass ? CardState::Swiping : CardState::NoCard; }
@@ -380,16 +380,10 @@ public:
     void setCpuDebugEnabled(bool on);
     bool liveDebugEnabled() const { return m_liveDebugEnabled; }
     bool cpuDebugEnabled() const { return m_cpuDebugEnabled; }
-    DebugState debugState() const { return m_debugState; }
-    bool isFrozen() const { return m_debugState.frozen; }
-    void freeze(FreezeOwner owner);
-    void resume();
-    void armPcChange();
-    void armScanLoopExit();
-    void disarmPcChange();
-    void disarmScanLoopExit();
-    void stepKeycode();
-    void stepInstruction();
+    /// The run control's state (LIB-10); none without a DebuggerPart.
+    calcu::debugger::RunState runState() const;
+    /// Paused by the run control (2.3.0's "frozen").
+    bool isFrozen() const;
     const DebugModel& debug() const { return m_debug; }
     void clearHeatmap();
     DebugLevel debugLevel() const { return m_debugLevel; }
@@ -400,8 +394,6 @@ public:
     void dumpScom();
     void dumpProg();
     void dumpMemory();
-    bool manualTrace() const { return m_manualTrace; }
-    void setManualTrace(bool on);
 
     // ASM overlay
     /// An overlay file's text (nullopt: it could not be read).
@@ -418,16 +410,14 @@ public:
         ModelChanged = 1u << 0,     ///< model, module, machine replaced or reset (card reader emptied)
         DisplayChanged = 1u << 1,   ///< display digits or the C indicator
         CueCardChanged = 1u << 2,
-        PrinterChanged = 1u << 3,   ///< lines, connection, TRACE latch
-        PaperCut = 1u << 4,         ///< the strip was cleared
+        PrinterChanged = 1u << 3,   ///< connection, TRACE latch
         CardChanged = 1u << 5,      ///< card reader state or file name
-        RunStateChanged = 1u << 6,  ///< freeze, armed freezes, full speed, playback
+        RunStateChanged = 1u << 6,  ///< the run control's state, full speed, playback
         LiveChanged = 1u << 7,      ///< CALCULATOR tab snapshot
         CpuChanged = 1u << 8,       ///< CPU tab history
         HeatmapChanged = 1u << 9,
         LogChanged = 1u << 10,
         AsmChanged = 1u << 11,
-        TraceChanged = 1u << 12,    ///< manual trace on/off
         ListingChanged = 1u << 13,  ///< CALCULATOR tab program listing (rebuilt when frozen)
     };
     /// Told the changes each time the interim topics are published, on the
@@ -453,7 +443,6 @@ private:
 
     struct Hooks;
     struct Events;
-    struct FreezeProbe;
     using Handler = std::function<calcu::sessions::CommandOutcome(const calcu::sessions::Value&)>;
     void add(calcu::sessions::SessionSetup&, const calcu::sessions::CommandName&, Handler);
     /// After everything a flow did: the queue, the machine, the speed, the topics.
@@ -479,10 +468,14 @@ private:
     void log(const std::vector<std::string>& lines);
     std::optional<std::vector<uint8_t>> loadConstantMemory();
     void applyState(const LoadStateResult& parsed);
-    void configureTraceLocation();
-    void onFrozenView(uint64_t freezeGeneration, FrozenViewReason reason);
-    void pullDebugState();
+    /// The run control's state since the last settle: the frozen view of a
+    /// pause or step that landed, the panel's frame ring (LIB-10 §12.3).
+    void followRunState();
     void showDebugPanel(DebugPanel panel);
+    /// KEYSTROKES `Trace:` (L-E1): the library's trace session, as a preset's.
+    void scriptedTrace(const std::optional<std::string>& fileName);
+    /// The run control as a KEYSTROKES directive needs it: refused without a DebuggerPart.
+    calcu::debugger::RunControl* runControl() const;
     /// The card in the reader now.
     struct CardPass {
         int side = 0;          ///< of the fitted card
@@ -517,8 +510,6 @@ private:
         std::optional<std::string> refusal;
         bool powerCycle = false;      ///< the pin-out says one follows
         bool moduleChanged = false, printerChanged = false;
-        std::vector<std::string> lines;
-        std::vector<PrinterCodeLine> codeLines;
     };
     std::optional<std::string> currentModule() const;
     /// The module and the printer as asked; stops at a refusal.
@@ -534,7 +525,9 @@ private:
     calcu::sessions::SessionContext* m_ctx = nullptr;
     calcu::sessions::MachineSession* m_ms = nullptr;
     std::unique_ptr<Hooks> m_hooks;
-    std::unique_ptr<FreezeProbe> m_freezeProbe;
+    calcu::paper::PaperPart* m_paperPart = nullptr;
+    calcu::debugger::DebuggerPart* m_debugger = nullptr;
+    TILevelRules* m_rules = nullptr;
     calcu::typing::TypingPart* m_typing = nullptr;
     std::function<void(uint32_t)> m_observer;
     std::deque<std::function<void()>> m_queue;
@@ -560,8 +553,6 @@ private:
     bool m_fullSpeed = false;
     bool m_keystrokesPlaying = false;
 
-    std::vector<std::string> m_printerLines;
-    std::vector<PrinterCodeLine> m_printerCodeLines;
     bool m_printerConnected = true;
     bool m_printerTrace = false;   ///< C59-6 AC-6
 
@@ -583,11 +574,15 @@ private:
 
     bool m_liveDebugEnabled = false;
     bool m_cpuDebugEnabled = false;
-    DebugState m_debugState;
     DebugModel m_debug;
     DebugLevel m_debugLevel = DebugLevel::Off;
     std::string m_logText;
-    bool m_manualTrace = false;
+    /// The run state seen at the last settle, and the tick count of the
+    /// frozen view built (none: not paused, or not built yet).
+    calcu::debugger::RunState m_seenRun;
+    std::optional<calcu::machine::Ticks> m_frozenAt;
+    /// KEYSTROKES Freeze: / Step: wait for their pause to land (L-E1).
+    bool m_controlWaitsForPause = false;
 
     std::vector<uint16_t> m_asmWords;
     std::string m_asmFileName = "No file selected";
@@ -605,7 +600,6 @@ private:
     calcu::sessions::StateTopic* m_printer = nullptr;
     calcu::sessions::StateTopic* m_card = nullptr;
     calcu::sessions::StateTopic* m_run = nullptr;
-    calcu::sessions::StateTopic* m_trace = nullptr;
     calcu::sessions::StateTopic* m_live = nullptr;
     calcu::sessions::StateTopic* m_cpu = nullptr;
     calcu::sessions::StateTopic* m_heatmap = nullptr;
@@ -615,8 +609,10 @@ private:
 };
 
 /// The session of a native frontend (C59-5 D-12): the library's app session
-/// with the library's typing part (LIB-5) and the part, which the session
-/// owns (AppSessionSetup::owned) and lets go first, paced on `clock` (the host's wall clock; the steady clock's time
+/// with the library's typing part (LIB-5), the part, the PaperPart (LIB-8)
+/// and the DebuggerPart (LIB-10), in that order (LIB-8 D-23; the move to
+/// LibraryParts is M-54's), which the session owns (AppSessionSetup::owned)
+/// and lets go first, paced on `clock` (the host's wall clock; the steady clock's time
 /// since its epoch in the apps). `before`: parts of the host's that go in
 /// front of the product's (tests); `after`: parts behind it (tests of
 /// TIWebPart; the Web engine builds its own, frontends/web/bindings.cpp).

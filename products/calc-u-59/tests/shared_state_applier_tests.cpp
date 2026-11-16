@@ -56,7 +56,7 @@ TEST(apply_state_ti58c_keeps_extra_registers) {
     testroms::mem(*m).copyRAMReg(60, after60);
     testroms::mem(*m).copyRAMReg(62, h2);
     CHECK(std::equal(before, before + 16, after60));
-    CHECK_EQ(TIDebugTargetAdapter::decodeBCD(h2), 9.0);
+    CHECK_EQ(TIDebugPanelAdapter::decodeBCD(h2), 9.0);
 }
 
 /// A parsed file's sections as a reload stage.
@@ -149,13 +149,13 @@ TEST(data_registers_match_the_rom) {
     CHECK_EQ(testroms::mem(*m).dataRegCount(), 120);
     for (int k : {kKey7, kSto, 73, 64, kClr}) testroms::tap(*m, Model::TI58C, k);  // 7 STO 59
     testroms::mem(*m).copyRAMReg(60, r60);
-    CHECK_EQ(TIDebugTargetAdapter::decodeBCD(r60), 7.0);
+    CHECK_EQ(TIDebugPanelAdapter::decodeBCD(r60), 7.0);
     CHECK_EQ(reg(*m, 59), 7.0);
     auto r = parseStateFile("REGISTERS:\n56 = 5\n", 479, true);
     applyReload(*m, stageOf(r), Model::TI58C);
     uint8_t r63[16];
     testroms::mem(*m).copyRAMReg(63, r63);
-    CHECK_EQ(TIDebugTargetAdapter::decodeBCD(r63), 5.0);
+    CHECK_EQ(TIDebugPanelAdapter::decodeBCD(r63), 5.0);
     CHECK_EQ(reg(*m, 0), 0.0);  // R00 would be RAM 119: no hardware
 }
 

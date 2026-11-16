@@ -7,6 +7,7 @@
 
 #include "TestHarness.hpp"
 #include "TestRoms.hpp"
+#include "paper/PaperOutput.hpp"
 #include "../app/ModuleCatalog.hpp"
 #include "../core/ModuleFile.hpp"
 #include "../core/PC100C.hpp"
@@ -31,7 +32,9 @@ void keys(Machine& m, Model model, std::initializer_list<int> codes) {
 }
 
 std::unique_ptr<Machine> build(Model model, std::optional<std::string> module, bool printer, bool trace = false) {
-    return cu59::buildMachine(model, *romSet(), cu59::MachinePeripherals{std::move(module), printer, trace});
+    auto m = cu59::buildMachine(model, *romSet(), cu59::MachinePeripherals{std::move(module), printer, trace});
+    testroms::freshMachine(*m);
+    return m;
 }
 
 bool hasCapability(const Machine& m, const KindId& kind) { return !m.capabilities(kind).empty(); }
@@ -247,6 +250,7 @@ TEST(c59_6_ac4_busy_counts_instructions_idle_once) {
     // The PC-100C alone: busy for exactly 4165 instructions after a line,
     // 1370 after a feed, one count per instruction cycle.
     PC100C p({});
+    p.recordCodeLines(true);
     p.word(PrinterWord::Clear, 0);
     p.word(PrinterWord::Go, 0);
     uint32_t n = 0;
@@ -317,9 +321,9 @@ TEST(c59_6_ec3_ti58c_key_readiness_with_and_without_printer) {
 TEST(c59_6_ac1_printer_plugged_and_removed) {
     for (Model model : kModels) {
         auto m = build(model, std::string("ML"), false);
-        CHECK(!hasCapability(*m, PrinterOutput::kKind) && !hasCapability(*m, calcu::peripherals::Controls::kKind));
+        CHECK(!hasCapability(*m, calcu::paper::PaperOutput::kKind) && !hasCapability(*m, calcu::peripherals::Controls::kKind));
         CHECK(!setPrinter(*m, true).refused);
-        CHECK(hasCapability(*m, PrinterOutput::kKind) && hasCapability(*m, calcu::peripherals::Controls::kKind));
+        CHECK(hasCapability(*m, calcu::paper::PaperOutput::kKind) && hasCapability(*m, calcu::peripherals::Controls::kKind));
         bool listed = false;
         for (const auto& e : m->plugged().byPlace) listed = listed || (e.place == kPrinterPlace && e.peripheral == kPC100C);
         CHECK(listed);
@@ -332,7 +336,7 @@ TEST(c59_6_ac1_printer_plugged_and_removed) {
         wrong.place = kPrinterPlace;
         CHECK(m->canAttach(wrong, tiCatalogue()).has_value());
         CHECK(!setPrinter(*m, false).refused);
-        CHECK(!hasCapability(*m, PrinterOutput::kKind) && !hasCapability(*m, calcu::peripherals::Controls::kKind));
+        CHECK(!hasCapability(*m, calcu::paper::PaperOutput::kKind) && !hasCapability(*m, calcu::peripherals::Controls::kKind));
         CHECK_EQ(m->plugged().byPlace.size(), size_t{1});
         m->powerCycle();
         CHECK(runToScanLoop(*m, model));
@@ -446,9 +450,13 @@ TEST(c59_6_ac6_trace_survives_reset_power_cycle_cold_boot) {
 
 // ── T8: a detach in the middle of a line ──────────────────────────────────
 
-TEST(c59_6_ec2_detach_mid_line_keeps_rows_then_power_cycle) {
+// LIB-8 EC-7 (C59-6 EC-2): the rows printed before a detach in the middle of
+// a line stay on its paper; the rest of the line is not printed (was
+// c59_6_ec2_detach_mid_line_keeps_rows_then_power_cycle).
+TEST(lib8_ec7_detach_mid_line_keeps_rows) {
     auto m = build(Model::TI59, std::string("ML"), true);
     runToScanLoop(*m, Model::TI59);
+    printedLines(*m);   // the tap bound from here on
     tap(*m, Model::TI59, kDigit[7]);
     tap(*m, Model::TI59, k2nd);
     press(*m, kPrtKey);
@@ -457,22 +465,26 @@ TEST(c59_6_ec2_detach_mid_line_keeps_rows_then_power_cycle) {
     std::vector<std::string> text;
     for (int i = 0; i < 40'000 && text.empty(); ++i) {
         m->advance(1);
-        text = paper(*m)->takeLines();
+        text = printedLines(*m);
     }
     CHECK_EQ(text.size(), size_t{1});
+    CHECK(testroms::paperTap(*m).paper.marks().empty());   // the dots come when the line ends
     for (int i = 0; i < 1200; ++i) m->advance(1);
     release(*m, kPrtKey);
-    // What the app session does before the detach: the line ends where the
-    // head is, and its rows are taken.
-    paper(*m)->endLineHere();
-    const auto codes = paper(*m)->takeCodeLines();
-    CHECK_EQ(codes.size(), size_t{1});
-    if (!codes.empty()) {
-        CHECK_EQ(int(codes[0].rowCount), 2);
-        CHECK(codes[0].partialColumns > 0);
-    }
-    auto r = setPrinter(*m, false);
+    auto r = setPrinter(*m, false);   // TIMachine::unplug ends the line where the head is
     CHECK(!r.refused && r.follows == AfterChange::PowerCycle);
+    const auto& sheet = testroms::paperTap(*m).paper;
+    calcu::paper::Coord lowest = 0;
+    bool thirdRow = false;
+    for (const auto& mk : sheet.marks()) {
+        const auto& d = std::get<calcu::paper::Dot>(mk);
+        lowest = std::max(lowest, d.at.y);
+        thirdRow = thirdRow || d.at.y / calcu::paper::kPerUnit == 2;
+    }
+    CHECK(!sheet.marks().empty());
+    CHECK(lowest < 3 * calcu::paper::kPerUnit);   // 2 rows and the columns of the third that fired
+    CHECK(thirdRow);
+    CHECK_EQ(sheet.reach().to, 3 * calcu::paper::kPerUnit);   // the line takes only its rows
     m->powerCycle();
     CHECK(runToScanLoop(*m, Model::TI59));
     CHECK(paper(*m) == nullptr);

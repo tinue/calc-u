@@ -145,14 +145,14 @@ Tap tapRsOnPrintLoop(Model model, bool full, std::uint32_t samples, std::chrono:
     r.engine().setMachine(r.session().machineSession().machine(), &p, nullptr);   // this rule from now on
     r.down("A");
     r.up("A");
-    if (!r.until([&] { return !r.part().printerLines().empty(); }, 10s)) return out;
+    if (!r.until([&] { return !r.printedText().empty(); }, 10s)) return out;
     r.runFor(phase);
     r.down("R/S");
     r.up("R/S");
     r.runFor(4s);
-    const auto lines = r.part().printerLines().size();
+    const auto lines = r.printedText().size();
     r.runFor(3s);
-    out.stopped = r.ready() && r.part().printerLines().size() == lines;
+    out.stopped = r.ready() && r.printedText().size() == lines;
     for (std::size_t i = 0; i < r.log.events.size(); ++i)
         if (r.log.events[i].key == "R/S" && !r.log.events[i].down && i > 0)
             out.heldMs = 1000.0 * double(r.log.events[i].tick - r.log.events[i - 1].tick) /
@@ -196,11 +196,11 @@ TEST(lib5_tr_idle_tap_stays_100ms_adv_as_without_the_rule) {
     r.runFor(300ms);
     CHECK(r.log.held(0) >= r.minHold() && r.log.held(0) < r.minHold() + r.minHold() / 20);
     CHECK_EQ(testroms::displayText(r.machine()), std::string("5"));
-    const auto before = r.part().printerLines().size();
+    const auto before = r.printedText().size();
     const auto c = r.key({"Adv"});
     CHECK(r.until([&] { return r.reply(c) != nullptr; }, 3s));
     r.runFor(2s);
-    CHECK_EQ(r.part().printerLines().size(), before + 2);
+    CHECK_EQ(r.printedText().size(), before + 2);
     CHECK(r.log.held(2) < r.minHold() + r.minHold() / 20);   // the . of 2nd . held 100 ms
 }
 
@@ -228,8 +228,9 @@ TEST(lib5_ac20_freeze_inside_hold_key_up_on_frozen_machine) {
     CHECK(r.idleWait());
     r.down("5");
     r.runFor(30ms);
-    r.part().emulator()->setHalted(true);   // a freeze where the machine stands (a pause-on-start firing)
-    r.part().emulator()->freezeInPlace(FreezeOwner::Cpu);
+    // A pause where the machine stands (as a pause-on-start firing): the run control's (LIB-10).
+    r.part().levelRules()->landNextPauseAtOnce();
+    r.part().debuggerPart()->runControl().pause(calcu::debugger::kCpu);
     r.frame();
     const Ticks frozenAt = r.ticks();
     r.up("5");
@@ -243,7 +244,7 @@ TEST(lib5_ac20_freeze_inside_hold_key_up_on_frozen_machine) {
     r.host(letter('a', true));   // 2nd, A: a sequence (presses that wait)
     r.runFor(300ms);
     CHECK_EQ(r.log.events.size(), std::size_t(2));
-    r.part().resume();
+    r.part().debuggerPart()->runControl().resume();
     r.runFor(1s);
     CHECK(r.log.keys().size() == 6 && r.log.keys()[2] == "2nd+" && r.log.keys()[4] == "A+");
 }
@@ -604,7 +605,7 @@ std::vector<std::string> paperOf(const std::string& text) {
     r.until([&] { return r.part().keystrokesPlaying(); }, 5s);
     r.until([&] { return !r.part().keystrokesPlaying() && !r.busy(); }, 120s);
     r.runFor(2s);
-    return r.part().printerLines();
+    return r.printedText();
 }
 } // namespace
 

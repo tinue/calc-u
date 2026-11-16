@@ -89,7 +89,7 @@ TEST(lib17_ac16_printer_wait_is_not_waiting) {
     r.runFor(200ms);
     const double full = rateOver(r, 1s);
     CHECK(full > 1.5);
-    CHECK(!r.state<TIPrinterState>(topics::kPrinter)->lines.empty());
+    CHECK(!r.printedText().empty());
 }
 
 TEST(lib17_ac16_card_wait_is_waiting) {

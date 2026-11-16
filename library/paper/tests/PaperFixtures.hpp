@@ -6,21 +6,16 @@
 #include <string>
 #include <vector>
 
-// The paper tests' data (LIB-8 design §2, §6): the PC-100C's description as
-// test data (AC-24; D-15: its printable part is its whole width until M-53
-// confirms it, its greys today's inkAlpha of app/PrinterFont.hpp for 0 to 20
-// heating cycles; it moves to Calc-U-59's tests with M-53, when Calc-U-59
-// has a description of its own), and the fixture files in
-// library/paper/tests/fixtures/:
-//   pc100c.marks    the converter's reply of diag.ti59 (Calc-U-59, AC-39)
-//   *.png           the reference pictures (§3.3, T5), made by Picture.cpp
-//                   in M-39; CALCU_PAPER_PICTURES=1 writes them anew.
-// The CE-150's and CE-1600P's reference pictures are Calc-U-1600's
-// (products/calc-u-1600/tests/plotter_paper_tests.cpp, on its descriptions).
+// The paper tests' data (LIB-8 design §2, §6): the fixture files in
+// library/paper/tests/fixtures/, the reference pictures of the test
+// printers (§3.3, T5), made by Picture.cpp in M-39; CALCU_PAPER_PICTURES=1
+// writes them anew. The PC-100C's description, its marks and its reference
+// picture are Calc-U-59's since M-53 (products/calc-u-59/tests/
+// pc100c_paper_tests.cpp, on core/PC100CPaper.hpp); the CE-150's and
+// CE-1600P's are Calc-U-1600's (products/calc-u-1600/tests/
+// plotter_paper_tests.cpp, on its descriptions).
 
 namespace calcu::paper::test {
-
-PaperDescription pc100cDescription();
 
 std::string fixturePath(const std::string& name);
 std::vector<std::string> fixtureLines(const std::string& name);

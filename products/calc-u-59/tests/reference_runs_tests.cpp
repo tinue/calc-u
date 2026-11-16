@@ -79,8 +79,9 @@ std::string record(const fs::path& example) {
     out += "display: |" + testroms::displayText(m) + "|\n";
     out += "partition: " + std::to_string(testroms::mem(m).partitionProgramRegs()) + " program registers\n";
     for (const auto& e : r.errors()) out += "error: " + e + "\n";
-    out += "--- printed (" + std::to_string(c.printerLines().size()) + " lines)\n";
-    for (const auto& l : c.printerLines()) out += "|" + l + "|\n";
+    const auto printed = r.printedText();   // the text layer of the PaperPart's PC-100C paper (LIB-8, M-53)
+    out += "--- printed (" + std::to_string(printed.size()) + " lines)\n";
+    for (const auto& l : printed) out += "|" + l + "|\n";
     std::map<std::string, std::string> cards = r.p.cards;
     cards.erase("cards/ti58c.mem");   // 2.3.0's Platform kept the constant memory apart from the cards
     out += "--- cards written (" + std::to_string(cards.size()) + ")\n";

@@ -1,17 +1,14 @@
 #pragma once
 #include "FrameSampler.hpp"
-#include "FreezeController.hpp"
 #include "TIKeystrokePlayback.hpp"
 #include "MachineModelInfo.hpp"
 #include "ProductRoms.hpp"
 #include "StateFile.hpp"
-#include "TraceWriter.hpp"
 #include "machine/Machine.hpp"
 #include "typing/TypingEngine.hpp"
 #include "peripherals/Controls.hpp"
 #include <chrono>
 #include <deque>
-#include <filesystem>
 #include <functional>
 #include <memory>
 #include <optional>
@@ -20,55 +17,18 @@
 #include <vector>
 
 // One running calculator: the machine plus the runtime around it that every
-// frontend shares — the halt flag and the debugger's queued steps, its
-// freeze state (frozen, owner, armed freezes, stepping), the trace flags,
-// timed key input and KEYSTROKES playback, the 60 Hz frame sampler and the
-// two binary trace writers (manual and scripted). One per machine (a model
-// switch builds a new one); cu59::TIAppPart owns it. The library's machine
-// session runs and owns the machine (releaseMachine()); this keeps using it
-// on the session's one thread (ADR 0009): advanceHosted() is the one advance
-// of the machine session's slices with the freeze checks inside it (adapter
-// TIFreezeGate, until M-53), sliceEnded() moves KEYSTROKES playback on
+// frontend shares — timed key input and KEYSTROKES playback and the 60 Hz
+// frame sampler. One per machine (a model switch builds a new one);
+// cu59::TIAppPart owns it. The library's machine session runs and owns the
+// machine (releaseMachine()); this keeps using it on the session's one
+// thread (ADR 0009): sliceEnded() moves KEYSTROKES playback on
 // (TIKeystrokePlayback, until M-54). Keys go through the library's typing
-// engine (LIB-5); the manual trace records them through TIKeyTraceObserver
-// (until M-53). See reference/SharedArchitecture.md.
+// engine (LIB-5). Since M-53 the pause, the steps and the traces are the
+// library's run control and trace session (LIB-10; TIAppPart wires the
+// KEYSTROKES directives to them, adapter L-E1). See
+// reference/SharedArchitecture.md.
 
 namespace cu59 {
-
-/// Which consumers currently need the core's trace ring (TRACE_* flags).
-struct TraceConsumers {
-    bool cpuPanelVisible = false;
-    bool frozen = false;
-    bool manualTrace = false;      ///< the "C" indicator / trace toggle
-    bool freezeArmed = false;      ///< FREEZE ON START or next-PC-change armed
-    bool scriptedTrace = false;
-};
-
-/// The debugger's freeze state. `generation` changes on every freeze, resume
-/// and clear, so a view built for an earlier freeze can be recognised.
-struct DebugState {
-    bool frozen = false;
-    std::optional<FreezeOwner> owner;   ///< the panel whose RESUME / STEP apply
-    bool pcChangeArmed = false;         ///< CALCULATOR: FREEZE ON START (next step boundary)
-    bool scanLoopExitArmed = false;     ///< CPU: FREEZE ON START (scan-loop exit)
-    uint64_t generation = 0;
-    bool operator==(const DebugState& o) const {
-        return frozen == o.frozen && owner == o.owner && pcChangeArmed == o.pcChangeArmed &&
-               scanLoopExitArmed == o.scanLoopExitArmed && generation == o.generation;
-    }
-};
-
-/// Why a frozen machine is ready to be shown.
-enum class FrozenViewReason {
-    Freeze,           ///< FREEZE: at the next keycode boundary
-    FreezeFired,      ///< an armed freeze fired
-    StepKeycode,      ///< STEP in the CALCULATOR panel
-    StepInstruction,  ///< STEP in the CPU panel
-};
-
-/// The trace flags for those consumers; with none active the core runs on its
-/// TRACE_NONE fast path.
-uint32_t traceFlagsFor(const TraceConsumers& c);
 
 /// A card queued by KEYSTROKES ArmCard: / InsertCard:, waiting to be fed.
 struct QueuedCard {
@@ -78,37 +38,22 @@ struct QueuedCard {
     int side = 0;                                     ///< side of a card file (0 or 1)
 };
 
-/// The manual trace's key records (LIB-5 adapter, design §5, D-13; removed in
-/// M-53, row 59-19): the typing engine's key-downs and key-ups as
-/// TraceWriter::writeKeyDown/Up.
-class TIKeyTraceObserver final : public calcu::typing::KeyObserver {
-public:
-    explicit TIKeyTraceObserver(TraceWriter& w) : m_w(w) {}
-    void keyChanged(const calcu::machine::KeyId&, bool down, calcu::machine::Ticks) override;
-
-private:
-    TraceWriter& m_w;
-};
-
 class EmulatorSession : private TIKeystrokePlayback::Host {
 public:
     struct Listener {
         virtual ~Listener() = default;
-        /// debugState() changed inside an advance (an armed freeze fired).
-        virtual void debugStateChanged() {}
-        /// The machine is stopped at a point to show (after beginNextStep).
-        /// Ignore it if debugState().generation moved on.
-        virtual void frozenViewReady(uint64_t /*generation*/, FrozenViewReason) {}
         virtual void fullSpeedChanged(bool) {}
         virtual void playbackStarted() {}
         virtual void playbackFinished() {}
         virtual void logLine(const std::string&) {}
-        /// A scripted "Trace:" file could not be created.
-        virtual void scriptedTraceFailed(const std::string& /*fileName*/) {}
+        /// KEYSTROKES `Trace:` (L-E1): start a trace of that file, or end it (nullopt).
+        virtual void traceRequested(const std::optional<std::string>&) {}
         /// KEYSTROKES reached a reload; call hostDone() once it is applied.
         virtual void reloadRequested(const std::shared_ptr<const ReloadStage>&) {}
         /// KEYSTROKES reached a GUI control; call hostDone() once it is done.
         virtual void controlRequested(const KeystrokeEvent&) {}
+        /// The machine is paused by the run control (playback and queued cards wait).
+        virtual bool paused() const { return false; }
     };
 
     /// Build the machine through the machine interface (calcu::machine::build,
@@ -129,7 +74,6 @@ public:
         calcu::machine::Machine& machine() { return m_m; }
         TICardReaderAdapter& cardReader() { return *cardReaderOf(m_m); }
         TIMemoryAdapter& memory() { return *memoryOf(m_m); }
-        TIDebugTargetAdapter& debugTarget() { return *debugTargetOf(m_m); }
         TIDebugPanelAdapter& debugPanel() { return *debugPanelOf(m_m); }
 
     private:
@@ -142,7 +86,7 @@ public:
     std::unique_ptr<calcu::machine::Machine> releaseMachine() { return std::move(m_machine); }
     bool ownsMachine() const { return m_machine != nullptr; }
     /// The bytes of the module plugged into `slot-1` (empty if none), kept for
-    /// the debugger (adapter until M-53, C59-6 design §5).
+    /// the debugger (adapter until M-56, C59-6 design §5).
     const std::vector<uint8_t>& moduleImage() const { return m_moduleImage; }
 
     // ── Places (C59-6; adapters until M-54, design §5) ───────────────────────
@@ -152,78 +96,32 @@ public:
     /// The module of that ID into `slot-1` (a replace if one is there), or
     /// the slot emptied (std::nullopt).
     calcu::machine::ChangeResult setModule(const std::optional<std::string>& moduleID, const calcu::roms::RomSet& roms);
-    /// The PC-100C attached with TRACE at `trace`, or detached. Before a
-    /// detach the line being printed ends where the head is, and what is on
-    /// the paper and not yet taken is handed back (EC-2).
-    struct PrinterChange {
-        calcu::machine::ChangeResult result;
-        std::vector<std::string> lines;
-        std::vector<PrinterCodeLine> codeLines;
-    };
-    PrinterChange setPrinter(bool connected, bool trace);
+    /// The PC-100C attached with TRACE at `trace`, or detached. A line being
+    /// printed at a detach ends where the head is and goes onto its paper
+    /// (LIB-8 EC-7, TIMachine::unplug).
+    calcu::machine::ChangeResult setPrinter(bool connected, bool trace);
     /// A control of the PC-100C: a key down or up, the switch
     /// on or off (C59-6 AC-5). False without a PC-100C.
     bool printerControl(const calcu::machine::ControlId& id, bool on);
 
-    // ── Halt and the debugger's steps ────────────────────────────────────────
-    /// Halted: the machine session is paused (TIAppPart::settle). A freeze or
-    /// a breakpoint halts; a flow that changes the machine halts it and lets
-    /// it run again afterwards. A machine starts halted.
-    void setHalted(bool halted) { m_halted = halted; }
-    bool halted() const { return m_halted; }
-    /// The steps a freeze or STEP queued (the machine is halted then) run at
-    /// the next pump(), after the host call; a flow that changes the machine
-    /// runs them first, so they step the machine as it was.
-    void runQueuedSteps();
     void setFullSpeed(bool on) override;
     bool isFullSpeed() const { return m_fullSpeed; }
-    /// After a host call: the queued steps, and the playback at `now` when no
-    /// slice ended since the last pump.
+    /// After a host call: the playback at `now` when no slice ended since the last pump.
     void pump(std::chrono::steady_clock::time_point now);
 
-    // ── The machine session's slices (TIFreezeGate, TIKeystrokePlayback) ──────
-    /// One advance of at least `atLeast` ticks with the freeze and breakpoint
-    /// checks inside it (C59-1 §4); a stop ends the run and sets `stopped`.
-    calcu::machine::Ticks advanceHosted(calcu::machine::Ticks atLeast, bool& stopped);
-    /// A slice ended at wall time `due`: playback advances to it.
+    /// A slice of the machine session ended at wall time `due`: playback advances to it.
     void sliceEnded(std::chrono::steady_clock::time_point due) {
         m_sliceRan = true;
+        m_ramDirty = true;   // TI-58C persist debounce
         m_playback.advance(due);
     }
 
-    /// Since the last call: a batch ran (TI-58C RAM may have changed).
+    /// Since the last call: a slice ran (TI-58C RAM may have changed).
     bool takeRamDirty() { return std::exchange(m_ramDirty, false); }
-
-    // ── Debugger: freeze and step ────────────────────────────────────────────
-    DebugState debugState() const;
-    bool frozen() const { return m_state.frozen; }
-    /// Stop, freeze for `owner`, disarm both armed freezes; the machine runs on
-    /// to the next keycode boundary, then frozenViewReady(Freeze).
-    void freeze(FreezeOwner owner);
-    /// Freeze where the machine stands (stopped already), no step.
-    void freezeInPlace(FreezeOwner owner);
-    /// Unfreeze and run.
-    void resume();
-    /// Unfreeze without starting (the caller has stopped the machine to change state).
-    void clearFreeze();
-    /// Freeze before the next program byte executes (CALCULATOR) or when the
-    /// keyboard scan loop exits (CPU); arming one disarms the other.
-    void armPcChange();
-    void armScanLoopExit();
-    void disarmPcChange();
-    void disarmScanLoopExit();
-    /// While frozen: one keycode (→ StepKeycode) or one instruction, stepping
-    /// through a HOLD (WAIT Dn) of up to 32 instructions (→ StepInstruction).
-    void stepKeycode();
-    void stepInstruction();
-    /// The CPU panel is visible (it needs the trace ring).
-    void setCpuPanelVisible(bool visible);
 
     // ── Keys ─────────────────────────────────────────────────────────────────
     /// The typing engine KEYSTROKES' keys go to (LIB-5); null: none.
     void setTyping(calcu::typing::TypingEngine* engine) { m_typing = engine; }
-    /// The manual trace's key records, for the typing engine's observer.
-    calcu::typing::KeyObserver& keyTrace() { return m_keyTrace; }
     void playKeystrokes(std::vector<KeystrokeEvent> events) { m_playback.play(std::move(events)); }
     void cancelKeystrokes() { m_playback.cancel(); }
     bool keystrokesPlaying() const { return m_playback.isPlaying(); }
@@ -233,28 +131,14 @@ public:
     /// InsertCard card in the idle scan loop, the first ArmCard card in the
     /// card wait of Write / INV Write (TICardReaderAdapter::isInCardWait).
     std::optional<QueuedCard> takeQueuedCard();
-    /// A reload has been applied, or an InsertCard card has passed (or failed).
+    /// A reload has been applied, a control is done, or an InsertCard card
+    /// has passed (or failed).
     void hostDone();
     /// Drop the queued cards (a new preset, a reset); returns their names.
     std::vector<std::string> clearQueuedCards();
 
     // ── Frames ───────────────────────────────────────────────────────────────
     FrameUpdate tick(int debugLevel, bool cardSwiping) { return m_sampler.tick(m_machineRef, debugLevel, cardSwiping); }
-
-    // ── Traces ───────────────────────────────────────────────────────────────
-    TraceWriter& manualTrace() { return m_manualTrace; }
-    /// The manual ("C" indicator) trace: a fresh file at `path`.
-    bool openManualTrace(const std::filesystem::path& path, uint64_t maxBytes);
-    /// Drain what is left and close it.
-    void closeManualTrace();
-    /// A trace writer is open: drainTrace() at 60 Hz.
-    bool needsDrain() const { return m_manualTrace.isOpen() || m_scriptedTrace.isOpen(); }
-    /// Where scripted "Trace:" files go, and the session size limit.
-    void setTraceLocation(const std::filesystem::path& dir, uint64_t maxBytes);
-    /// Move the core's trace ring into the open writers (both share the one
-    /// ring cursor). Returns which writers hit their size limit and closed.
-    struct DrainResult { bool manualLimit = false; bool scriptedLimit = false; };
-    DrainResult drainTrace();
 
     /// "Elapsed: m:ss.mmm" since the last zeroElapseTime (or reset).
     std::string elapsedReport() const;
@@ -264,13 +148,9 @@ private:
     bool typeKey(uint8_t matrixCode) override;
     bool typingIdle() override { return !m_typing || m_typing->idle(); }
     bool isKeyReady() override { return access().machine().isKeyReady(); }
-    bool isFrozen() override { return m_state.frozen; }
-    void scriptedTrace(const std::optional<std::string>& fileName) override;
+    bool isFrozen() override { return m_listener.paused(); }
+    void scriptedTrace(const std::optional<std::string>& fileName) override { m_listener.traceRequested(fileName); }
     void zeroElapseTime() override { m_elapseBaseline = access().machine().tickCount(); }
-    void onFreezeFired(FreezeOwner owner);
-    /// Set the frozen state (and owner, generation); disarms both armed freezes when freezing.
-    uint64_t setFrozenState(bool frozen, std::optional<FreezeOwner> owner);
-    void applyTraceFlags();
     void reportElapseTime() override { m_listener.logLine(elapsedReport()); }
     void playbackStarted() override { m_listener.playbackStarted(); }
     void playbackFinished() override;
@@ -287,25 +167,14 @@ private:
     std::unique_ptr<calcu::machine::Machine> m_machine;
     calcu::machine::Machine& m_machineRef{*m_machine};
     bool m_sliceRan = false;   ///< a slice ended since the last pump
-    bool m_halted = true;
     bool m_fullSpeed = false;
-    std::deque<std::function<void()>> m_steps;   ///< runQueuedSteps()
     std::vector<uint8_t> m_moduleImage;
-    FreezeController m_freeze;
     FrameSampler m_sampler;
-    TraceWriter m_manualTrace;
-    TraceWriter m_scriptedTrace;
-    std::filesystem::path m_traceDir;
-    uint64_t m_traceMaxBytes = 50'000'000;
-    std::vector<CpuFrame> m_drainBuf = std::vector<CpuFrame>(1024);  ///< drainTrace scratch
-    DebugState m_state;
-    bool m_cpuPanelVisible = false;
     bool m_ramDirty = false;
     uint64_t m_elapseBaseline = 0;
     std::deque<QueuedCard> m_queuedCards;
-    int m_hostPending = 0;   ///< reloads and InsertCard cards not done yet
+    int m_hostPending = 0;   ///< reloads, controls and InsertCard cards not done yet
     calcu::typing::TypingEngine* m_typing = nullptr;
-    TIKeyTraceObserver m_keyTrace{m_manualTrace};
     TIKeystrokePlayback m_playback{*this};
 };
 

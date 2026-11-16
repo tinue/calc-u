@@ -2,8 +2,10 @@
 #include "../app/KeyIds.hpp"
 #include "../app/ProductRoms.hpp"
 #include "../core/PC100C.hpp"
-#include "../core/PrinterOutput.hpp"
+#include "../core/PC100CPaper.hpp"
 #include "../core/TIAdapters.hpp"
+#include "../core/TIMachineTesting.hpp"
+#include "paper/Paper.hpp"
 #include "../core/TICatalogue.hpp"
 #include "../core/TISegments.hpp"
 #include "machine/Machine.hpp"
@@ -14,6 +16,8 @@
 #include <cstdlib>
 #include <filesystem>
 #include <fstream>
+#include <map>
+#include <functional>
 #include <memory>
 #include <sstream>
 
@@ -54,7 +58,10 @@ inline std::shared_ptr<const calcu::roms::RomSet> romSet() {
 
 // The adapters of a TI machine (C59-1 design §5).
 inline TIMemoryAdapter& mem(Machine& m) { return *memoryOf(m); }
-inline TIDebugTargetAdapter& dbg(Machine& m) { return *debugTargetOf(m); }
+/// The panel's reads of the core (LIB-10 L-E3; the debug target adapter went in M-53).
+inline TIDebugPanelAdapter& dbg(Machine& m) { return *debugPanelOf(m); }
+/// The core under the machine, for what only a test inside the core reads.
+inline TI59Machine& hw(Machine& m) { return TIMachineTesting::hardware(static_cast<TIMachine&>(m)); }
 inline TICardReaderAdapter& card(Machine& m) { return *cardReaderOf(m); }
 inline TIDebugPanelAdapter& panel(Machine& m) { return *debugPanelOf(m); }
 
@@ -63,27 +70,61 @@ inline double instructionHz(cu59::Model model) {
     return tiCatalogue().model(cu59::modelId(model))->tickRate / 32.0;
 }
 
+inline void freshMachine(Machine& m);
+
 /// Build a machine with ROM and constants, the Master Library and the
 /// PC-100C attached at the build, as 2.3.0's apps started (C59-6).
 inline std::unique_ptr<Machine> makeMachine(cu59::Model model, bool printer = true) {
-    return cu59::buildMachine(model, *romSet(), cu59::MachinePeripherals{std::string("ML"), printer, false});
+    auto m = cu59::buildMachine(model, *romSet(), cu59::MachinePeripherals{std::string("ML"), printer, false});
+    freshMachine(*m);
+    return m;
 }
 
 // The PC-100C and the module through their places and capabilities (C59-6).
-inline PrinterOutput* paper(Machine& m) {
-    return calcu::machine::capabilityAs<PrinterOutput>(m, calcu::machine::CapabilityId{"printer/c59.printer-output"});
+inline calcu::paper::PaperOutput* paper(Machine& m) {
+    return calcu::machine::capabilityAs<calcu::paper::PaperOutput>(m, calcu::machine::CapabilityId{"printer/paper-output"});
+}
+/// A paper of the PC-100C's description per machine, bound to its paper
+/// output whenever a new one is there (LIB-8 AC-24): what the tests read the
+/// printout from, as the PaperPart does in the app session.
+struct PaperTap {
+    calcu::paper::Paper paper{pc100cpaper::description()};
+    std::size_t linesTaken = 0;
+};
+inline std::map<const Machine*, PaperTap>& paperTaps() {
+    static std::map<const Machine*, PaperTap> taps;
+    return taps;
+}
+inline PaperTap& paperTap(Machine& m) {
+    PaperTap& t = paperTaps()[&m];
+    auto* out = paper(m);
+    if (!out) t.paper.release();
+    else if (out->connected() != &t.paper) {
+        t.paper.release();
+        t.paper.bind(out);
+    }
+    return t;
+}
+/// A machine just built: a fresh paper tap (a machine at the address of one
+/// gone gets none of its paper), and the PC-100C's code lines kept (P-E3).
+inline void freshMachine(Machine& m) {
+    paperTaps().erase(&m);
+    TIMachineTesting::printedCodeLines(static_cast<TIMachine&>(m));
 }
 inline calcu::peripherals::Controls* printerControls(Machine& m) {
     return calcu::machine::capabilityAs<calcu::peripherals::Controls>(m, calcu::machine::CapabilityId{"printer/controls"});
 }
 /// The lines printed since the last call (none without a PC-100C).
 inline std::vector<std::string> printedLines(Machine& m) {
-    auto* p = paper(m);
-    return p ? p->takeLines() : std::vector<std::string>{};
+    PaperTap& t = paperTap(m);
+    std::vector<std::string> out;
+    for (std::size_t i = t.linesTaken; i < t.paper.text().size(); ++i) out.push_back(t.paper.text()[i].text);
+    t.linesTaken = t.paper.text().size();
+    return out;
 }
-inline std::vector<PrinterCodeLine> printedCodeLines(Machine& m) {
-    auto* p = paper(m);
-    return p ? p->takeCodeLines() : std::vector<PrinterCodeLine>{};
+/// The code lines the PC-100C ended since the last call (P-E3).
+inline std::vector<PC100C::CodeLine> printedCodeLines(Machine& m) {
+    return TIMachineTesting::printedCodeLines(static_cast<TIMachine&>(m));
 }
 /// PRINT or ADV down/up, TRACE on/off.
 inline void printerControl(Machine& m, const calcu::machine::ControlId& id, bool on) {
@@ -108,9 +149,20 @@ inline std::string moduleIn(const Machine& m) {
     return {};
 }
 
+/// Called after every 256 instructions of run() and at its end, when set
+/// (a trace drained while a script runs, LIB-10 AC-33).
+inline std::function<void(Machine&)>& afterRun() {
+    static std::function<void(Machine&)> hook;
+    return hook;
+}
+
 /// `n` instructions.
 inline void run(Machine& m, uint32_t n) {
-    for (uint32_t i = 0; i < n; ++i) m.advance(1);
+    for (uint32_t i = 0; i < n; ++i) {
+        m.advance(1);
+        if ((i & 255) == 255 && afterRun()) afterRun()(m);
+    }
+    if (afterRun()) afterRun()(m);
 }
 
 /// Run until the machine reports key readiness (or give up).

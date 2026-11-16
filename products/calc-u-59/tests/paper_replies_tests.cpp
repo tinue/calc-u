@@ -9,16 +9,17 @@
 // 52-62): per printed line, the text between the bars is a text line at
 // (0, top). An empty line is a feed: 7.09 units, no mark. Any other line is
 // split into the 20 strings of the PC-100C's table (longest match), each
-// mapped to its code and drawn in the 5 × 7 font (app/PrinterFont.hpp
-// kPC100CFont): the dot of column c, row r of character i at
+// mapped to its code and drawn in the 5 × 7 font (core/PC100CPaper.hpp,
+// pc100cpaper::lineDots, the core's placement since M-53): the dot of column c, row r of character i at
 // (i × 6.53 + c + 0.5, top + r + 0.5), full darkness (20 heating cycles);
 // the line takes 10.18 units. The reach is 0 to the sum of the heights.
 // The three printer-interrupt examples print lines cut short whose rows the
 // M-9 files do not hold: they get a `.paper-text` only (D-13).
 #include "TestHarness.hpp"
-#include "../app/PrinterFont.hpp"
+#include "../core/PC100CPaper.hpp"
 #include "paper/Replies.hpp"
 #include <algorithm>
+#include <array>
 #include <cstdlib>
 #include <filesystem>
 #include <fstream>
@@ -34,19 +35,13 @@ namespace {
 
 const fs::path kDir = "tests/reference/v2.3.0-examples";
 
-// The PC-100C's characters by code, as core/PC100C.cpp's PRN_CODE (a table
-// of the core's own, not exported; copied here for the converter).
-const char* const kCodes[64] = {
-    " ", "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "A", "B", "C", "D", "E",
-    "-", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T",
-    ".", "U", "V", "W", "X", "Y", "Z", "+", "x", "*", "√", "π", "e", "(", ")", ",",
-    "↑", "%", "⇄", "/", "=", "'", "ˣ", "x̄", "²", "?", "÷", "!", "Ⅱ", "▴", "∏", "∑"};
+// The PC-100C's characters by code: the core's own table (M-53, LIB-8 D-22).
+const char* const* const kCodes = pc100cpaper::kCharacters;
 
 const std::set<std::string> kCutShort = {"debug_printer-interrupt-bits", "debug_printer-interrupt-sweep",
                                          "printer-interrupt"};
 
-constexpr Coord kFeed = 70'900, kLine = 101'800, kCharStep = 65'300;
-constexpr std::uint8_t kFull = 20;
+constexpr Coord kFeed = pc100cpaper::kFeed, kLine = pc100cpaper::kLine;
 
 // The 20 codes of a printed line, longest match first; empty when it does not split.
 std::vector<int> split(const std::string& text) {
@@ -95,13 +90,9 @@ Converted convert(const std::vector<std::string>& printed) {
             out.error = "does not split into the 20 characters of the PC-100C: |" + text + "|";
             return out;
         }
-        for (std::size_t i = 0; i < codes.size(); ++i)
-            for (int r = 0; r < 7; ++r)
-                for (int c = 0; c < 5; ++c)
-                    if (cu59::kPC100CFont[codes[i]][r] & (0x10 >> c))
-                        marks.push_back(Dot{Position{static_cast<Coord>(i) * kCharStep + c * kPerUnit + 5'000,
-                                                     top + r * kPerUnit + 5'000},
-                                            kFull});
+        std::array<std::uint8_t, 20> line{};
+        for (std::size_t i = 0; i < codes.size(); ++i) line[i] = static_cast<std::uint8_t>(codes[i]);
+        for (const Dot& d : pc100cpaper::lineDots(line, 7, 0, 0, top)) marks.push_back(d);   // the core's placement
         top += kLine;
     }
     out.text = textReply(lines);

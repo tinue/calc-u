@@ -55,11 +55,12 @@ TEST(ec2_empty_paper_replies_reach_0_0_and_no_lines) {
 }
 
 TEST(ac39_marks_reply_read_and_written_unchanged) {
-    // The PC-100C's dots (a fixture) and strokes; the Sharp plotters' files
-    // are read back in Calc-U-1600's plotter_paper_tests.cpp.
+    // Dots and strokes; the products' own files are read back in their tests
+    // (Calc-U-59's pc100c_paper_tests.cpp, Calc-U-1600's plotter_paper_tests.cpp).
+    const std::vector<std::string> dots{"reach 0 38.54", "dot 1.5 17.68 20", "dot 2.5 17.68 20", "dot 127.57 37.54 7"};
     const std::vector<std::string> strokes{"reach -3 9", "dot 1.5 2 1", "stroke #008000 100,-3 110.25,2",
                                            "stroke #ff0000 66.9474,0"};
-    for (const std::vector<std::string>& lines : {fixtureLines("pc100c.marks"), strokes}) {
+    for (const std::vector<std::string>& lines : {dots, strokes}) {
         CHECK(lines.size() >= 2);
         std::string error;
         const auto read = readMarksReply(lines, &error);

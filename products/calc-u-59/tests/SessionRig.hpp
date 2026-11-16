@@ -66,6 +66,7 @@ struct RigOptions {
     std::shared_ptr<cu59::FileIO> fileIO;                ///< null: plain files in the rig's folder
     std::string saveFolder;                              ///< empty: the rig's folder
     fs::path traceFolder;                                ///< empty: the rig's folder
+    bool noTraceFolder = false;                          ///< the Web: none, traces handed over (LIB-10 AC-26)
 };
 
 struct SessionRig {
@@ -80,6 +81,7 @@ struct SessionRig {
         cu59::TIAppSetup s = appSetup(o.model, folder.path());
         if (!o.saveFolder.empty()) s.saveFolder = o.saveFolder;
         if (!o.traceFolder.empty()) s.trace.dir = o.traceFolder;
+        if (o.noTraceFolder) s.trace.dir.clear();
         s.fileIO = std::move(o.fileIO);
         app = cu59::makeAppSession(std::move(s), [this] { return now += std::chrono::milliseconds(1); }, 59u,
                                    std::move(o.before), std::move(o.after));
@@ -151,6 +153,19 @@ struct SessionRig {
         runFor(std::chrono::milliseconds(150));
         post(calcu::typing::kScreenKeyUp, Value::object({{"key", key}, {"pointer", 1}}));
         runFor(std::chrono::milliseconds(150));
+    }
+    /// The PC-100C's paper as the PaperPart keeps it (LIB-8; empty paper: none).
+    const calcu::paper::Paper* pc100cPaper() const {
+        for (const auto& [owner, paper] : app.part->paperPart()->papers())
+            if (owner == "PC-100C") return paper;
+        return nullptr;
+    }
+    /// Its text lines (the printout).
+    std::vector<std::string> printedText() const {
+        std::vector<std::string> out;
+        if (const auto* p = pc100cPaper())
+            for (const auto& l : p->text()) out.push_back(l.text);
+        return out;
     }
     Value bytes(const std::string& s) { return Value(Value::Bytes(s.begin(), s.end())); }
     calcu::machine::Ticks ticks() { return machine().tickCount(); }

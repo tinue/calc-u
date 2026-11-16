@@ -9,7 +9,8 @@
 #include "TestRoms.hpp"
 #include "../core/TIKeys.hpp"
 #include "machine/Conformance.hpp"
-#include "../core/PrinterOutput.hpp"
+#include "paper/PaperOutput.hpp"
+#include "../core/TraceRecords.hpp"
 #include <algorithm>
 
 using namespace calcu::machine;
@@ -154,8 +155,10 @@ TEST(lib1_ac33_machine_conforms_without_peripherals) {
         CHECK(machine->model().value == m);
         CHECK(machine->descriptor().tickRate == model(m).tickRate);
         CHECK(machine->plugged().byPlace.empty());
-        // Typing support only (LIB-5 §3.4); the card reader's media place: M-55 (LIB-1 D-1).
-        CHECK_EQ(machine->capabilities().size(), std::size_t{1});
+        // Typing support (LIB-5 §3.4) and the trace records (LIB-10 D-24); the
+        // card reader's media place: M-55 (LIB-1 D-1).
+        CHECK_EQ(machine->capabilities().size(), std::size_t{2});
+        CHECK_EQ(machine->capabilities(TraceRecords::kKind).size(), std::size_t{1});
         CHECK_EQ(machine->capabilities(calcu::typing::TypingSupport::kKind).size(), std::size_t{1});
     }
 }
@@ -173,9 +176,9 @@ TEST(lib1_ac32_pc100c_and_14_modules) {
         CHECK(ids == (std::vector<std::string>{"PRINT:key", "ADV:key", "TRACE:switch"}));
         CHECK(!p->components.empty() && p->components[0].depth == Depth::Functional);
     }
-    // Its paper: the capability while it is plugged in (C59-6 design D-7).
+    // Its paper: the capability of the kind paper-output while it is plugged in (LIB-8 AC-24).
     auto with = cu59::buildMachine(cu59::Model::TI59, *testroms::romSet(), cu59::MachinePeripherals{std::nullopt, true, false});
-    CHECK_EQ(with->capabilities(PrinterOutput::kKind).size(), size_t{1});
+    CHECK_EQ(with->capabilities(calcu::paper::PaperOutput::kKind).size(), size_t{1});
     for (const auto& m : tiModules()) {
         const auto* d = c.peripheral(PeripheralId{m.id});
         CHECK(d != nullptr);
@@ -201,12 +204,17 @@ TEST(lib1_ac33_machine_conforms_with_printer_and_module) {
             for (const auto& d : diffs) std::printf("  %s: %s\n", m, d.c_str());
             CHECK(diffs.empty());
             CHECK_EQ(machine->plugged().byPlace.size(), size_t{with ? 2u : 0u});
-            CHECK_EQ(machine->capabilities().size(), size_t{with ? 3u : 1u});   // + typing support (LIB-5)
+            CHECK_EQ(machine->capabilities().size(), size_t{with ? 4u : 2u});   // + typing support (LIB-5), trace records (LIB-10)
             for (const auto& e : machine->capabilities()) {
                 CHECK(machine->capability(e.id) != nullptr && machine->capability(e.id)->kind() == e.kind);
                 if (e.kind == calcu::typing::TypingSupport::kKind) {
                     const auto* c = std::get_if<ComponentOwner>(&e.owner);
                     CHECK(c && c->component.value == "TMC0501" && e.id.value == "TMC0501/typing-support");
+                    continue;
+                }
+                if (e.kind == TraceRecords::kKind) {
+                    const auto* c = std::get_if<ComponentOwner>(&e.owner);
+                    CHECK(c && c->component.value == "TMC0501" && e.id.value == "TMC0501/c59.trace-records");
                     continue;
                 }
                 const auto* owner = std::get_if<PeripheralOwner>(&e.owner);

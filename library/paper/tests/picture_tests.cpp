@@ -113,13 +113,6 @@ TEST(ac16_reference_pictures_of_the_test_printers) {
     checkReference("tp4.png", picturePng(tp4Paper(pp)));
 }
 
-TEST(ac16_reference_picture_of_the_pc100c) {
-    const Paper pc = fromFixture(pc100cDescription(), "pc100c.marks");
-    CHECK(!pc.empty());
-    CHECK_EQ(pictureSize(pc).width, 1311);   // AC-27: 600 dpi, about 1311 pixels
-    checkReference("pc100c.png", picturePng(pc));
-}
-
 TEST(ac17_long_paper_lowered_to_16000_pixels_never_cropped) {
     FakePrinter pr(mt::tp4Description());
     Paper p(mt::tp4Description());

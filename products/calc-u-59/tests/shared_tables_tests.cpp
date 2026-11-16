@@ -6,7 +6,7 @@
 #include "TestRoms.hpp"
 #include "../app/KeyNames.hpp"
 #include "../app/KeyboardLayout.hpp"
-#include "../app/PrinterFont.hpp"
+#include "../core/PC100CPaper.hpp"
 #include "../app/SevenSegment.hpp"
 #include "../core/TIRomRanges.hpp"
 #include "../core/TISegments.hpp"
@@ -64,10 +64,12 @@ TEST(seven_segment_decode) {
     CHECK_EQ(ledCell(11, eight, 0, 0).segments, 0);                // dark: zero-suppressed
 }
 
-TEST(printer_font_shape) {
-    CHECK_EQ(kPC100CFont[0][3], 0x00);   // space
-    CHECK_EQ(kPC100CFont[1][0], 0x0E);   // 0
-    CHECK_EQ(kPC100CFont[63][6], 0x1F);  // Sigma
+// LIB-8 AC-30: the shape of the font (was printer_font_shape; the font is
+// the core's since M-53).
+TEST(lib8_ac30_font_shape) {
+    CHECK_EQ(pc100cpaper::kFont[0][3], 0x00);   // space
+    CHECK_EQ(pc100cpaper::kFont[1][0], 0x0E);   // 0
+    CHECK_EQ(pc100cpaper::kFont[63][6], 0x1F);  // Sigma
 }
 
 TEST(keyboard_layout_hit_test) {
@@ -115,42 +117,30 @@ TEST(model_info) {
     CHECK(!t.idleAndKeyDetect.contains(0x0661));
 }
 
-TEST(printer_strip_geometry) {
-    using G = PrinterGeometry;
-    auto cut = [](int rows, int cols, int heat = 20) {
-        PrinterCodeLine l;
-        l.rowCount = static_cast<uint8_t>(rows);
-        l.partialColumns = static_cast<uint8_t>(cols);
-        l.partialHeat = static_cast<uint8_t>(heat);
-        return l;
-    };
-    const PrinterCodeLine l70 = cut(7, 0), l30 = cut(3, 0), l32 = cut(3, 2), l65 = cut(6, 5), l00 = cut(0, 0);
-    CHECK_EQ(G::lineHeightUnits(true, &l70), G::feedHeightUnits);
-    CHECK_EQ(G::lineHeightUnits(false, &l70), G::heightUnits);
-    CHECK_EQ(G::lineHeightUnits(false, nullptr), G::heightUnits);  // no code line: complete
-    CHECK_EQ(G::lineHeightUnits(false, &l30), 3.0);   // cut short: rows only, no advance
-    CHECK_EQ(G::lineHeightUnits(false, &l32), 4.0);   // plus the row in progress
-    CHECK_EQ(G::lineHeightUnits(false, &l65), 7.0);   // 7 rows, but no advance
-    CHECK_EQ(G::lineHeightUnits(false, &l00), 1.0);   // at least 1 row
-    const PrinterCodeLine l42 = cut(4, 2, 5);
-    const auto d = G::lineDots(&l42);
-    CHECK(!d.complete && d.drawnRows == 5);
-    CHECK(d.inked[3] == 0x1F && d.inked[4] == 0x03 && d.inked[5] == 0);
-    CHECK(d.faint[4] == 0x02 && d.faint[3] == 0 && d.faintAlpha == G::inkAlpha(5));
+// LIB-8 AC-30: the heights of a feed, a complete and a cut-short line, and
+// the dot rules of a line cut short (was printer_strip_geometry; on the
+// core's paper since M-53: the heights are what the paper's reach grows by).
+TEST(lib8_ac30_feed_complete_and_cut_short_heights) {
+    namespace P = pc100cpaper;
+    using calcu::paper::kPerUnit;
+    CHECK_EQ(P::kFeed, 70'900);   // 7.09 units
+    CHECK_EQ(P::lineHeight(7, 0), P::kLine);          // complete: 10.18 units
+    CHECK_EQ(P::lineHeight(3, 0), 3 * kPerUnit);      // cut short: rows only, no advance
+    CHECK_EQ(P::lineHeight(3, 2), 4 * kPerUnit);      // plus the row in progress
+    CHECK_EQ(P::lineHeight(6, 5), 7 * kPerUnit);      // 7 rows, but no advance
+    CHECK_EQ(P::lineHeight(0, 0), 1 * kPerUnit);      // at least 1 row
+    CHECK_EQ(P::drawnRows(4, 2), 5);
     // The head fires right to left: 2 columns of row 4 are its 2 rightmost.
-    CHECK_EQ(G::inkedColumns(4, 2, 3), 0x1F);
-    CHECK_EQ(G::inkedColumns(4, 2, 4), 0x03);
-    CHECK_EQ(G::inkedColumns(4, 2, 5), 0);
-    CHECK_EQ(G::inkedColumns(4, 0, 4), 0);
-    CHECK_EQ(G::faintColumns(4, 2, 5, 4), 0x02);
-    CHECK_EQ(G::faintColumns(4, 2, 20, 4), 0);
-    CHECK_EQ(G::faintColumns(4, 2, 5, 3), 0);
+    CHECK_EQ(P::inkedColumns(4, 2, 3), 0x1F);
+    CHECK_EQ(P::inkedColumns(4, 2, 4), 0x03);
+    CHECK_EQ(P::inkedColumns(4, 2, 5), 0);
+    CHECK_EQ(P::inkedColumns(4, 0, 4), 0);
+    CHECK_EQ(P::faintColumns(4, 2, 5, 4), 0x02);
+    CHECK_EQ(P::faintColumns(4, 2, 20, 4), 0);
+    CHECK_EQ(P::faintColumns(4, 2, 5, 3), 0);
     // Ink grows with the heating time: faint at first, full from 20 cycles.
-    CHECK(G::inkAlpha(0) < 0.1 && G::inkAlpha(4) < 0.1);
-    CHECK(G::inkAlpha(12) > 0.25 && G::inkAlpha(12) < 0.35);
-    CHECK(G::inkAlpha(16) > G::inkAlpha(12));
-    CHECK_EQ(G::inkAlpha(20), 1.0);
-    double px = G::dotPitchMM / 25.4 * 600;
-    CHECK_EQ(G::copyPixelsPerUnit(100), px);
-    CHECK_EQ(G::copyPixelsPerUnit(10000), 16000.0 / 10000);
+    CHECK(P::inkAlpha(0) < 0.1 && P::inkAlpha(4) < 0.1);
+    CHECK(P::inkAlpha(12) > 0.25 && P::inkAlpha(12) < 0.35);
+    CHECK(P::inkAlpha(16) > P::inkAlpha(12));
+    CHECK_EQ(P::inkAlpha(20), 1.0);
 }

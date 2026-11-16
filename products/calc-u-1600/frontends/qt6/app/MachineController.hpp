@@ -1,4 +1,5 @@
 #pragma once
+#include <QByteArray>
 #include <QObject>
 #include <QString>
 #include <cstddef>
@@ -177,6 +178,10 @@ signals:
     void operationSpeedChanged();
     // A notice (LIB-3 AC-10): shown as it is.
     void noticeShown(const QString& sentence);
+    // A program file was opened (a drop, Open With, the start argument, Load
+    // Preset…; LIB-13 D4.2): the window runs its program flow on it. `kind`:
+    // basic-program or machine-code-program.
+    void programOpened(const QString& name, const QByteArray& bytes, const QString& kind);
     // The display topic changed.
     void displayChanged();
     // The run-state topic changed (LIB-10: pause, step, resume from the DAP,

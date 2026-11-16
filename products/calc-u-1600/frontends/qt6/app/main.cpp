@@ -1,12 +1,15 @@
 #include <QApplication>
 #include <QCommandLineParser>
 #include <QDir>
+#include <QFileInfo>
 #include <QFileOpenEvent>
 #include <QIcon>
 #include <QTemporaryDir>
 #include <cstdio>
 #include <functional>
+#include <string>
 #include <utility>
+#include <vector>
 #include "AppLogging.hpp"
 #include "AppPaths.hpp"
 #include "AppSettings.hpp"
@@ -18,6 +21,8 @@
 #include "screenshots/ShotRunner.hpp"
 #include "screenshots/ShotScenario.hpp"
 #include "MachineController.hpp"
+#include "app/StartFile.hpp"
+#include "opening/OpenRequest.hpp"
 #include "sessions/LibraryTopics.hpp"
 #include <QElapsedTimer>
 #include <QTimer>
@@ -27,7 +32,8 @@ namespace {
 
 // macOS hands a file dropped onto the Dock icon, or opened from Finder, to
 // the application object as a QFileOpenEvent -- at a cold launch before
-// there is a window. Kept until the window takes them (openDroppedFile()).
+// there is a window. Kept until the window takes them; each is the session's
+// `open` with the way Open With (LIB-13 AC-21; MainWindow::openFile).
 class Application : public QApplication {
 public:
     using QApplication::QApplication;
@@ -162,7 +168,15 @@ int main(int argc, char** argv) {
     if (!parser.isSet(shotsOption)) {
         MainWindow window;
         window.show();
-        app.setFileOpenHandler([&window](const QString& path) { window.openDroppedFile(path); });
+        app.setFileOpenHandler([&window](const QString& path) { window.openFile(path, calcu::opening::Way::OpenWith); });
+        // LIB-13 AC-21 (OQ-2, D-14): the last argument that names a file is
+        // opened; the session keeps it until the start is over (AC-7).
+        std::vector<std::string> arguments;
+        for (const QString& a : QCoreApplication::arguments()) arguments.push_back(a.toStdString());
+        if (const auto start = shared::startFile(arguments, [](const std::string& p) {
+                return QFileInfo(QString::fromStdString(p)).isFile();
+            }))
+            window.openFile(QString::fromStdString(*start), calcu::opening::Way::Start);
         const int result = app.exec();
         app.setFileOpenHandler({});
         return result;

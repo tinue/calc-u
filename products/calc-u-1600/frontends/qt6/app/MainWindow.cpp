@@ -17,7 +17,8 @@
 #include "qt6/MacClipboard.h"
 #include "qt6/PaperPanel.hpp"
 #include "debugger/RunState.hpp"
-#include "DropFile.hpp"
+#include "app/SharpFileKinds.hpp"
+#include "opening/OpenRequest.hpp"
 #include "presets/PresetsPart.hpp"
 #include "startup/StartupPart.hpp"
 #include "AppPaths.hpp"
@@ -148,7 +149,11 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
         const QString path = QFileDialog::getOpenFileName(this, tr("Load Preset"),
                                                             AppSettings::openStartDir(AppSettings::OpenFolder::Samples),
                                                             tr("Presets (*.pc1500 *.pc1500a *.pc1600);;All Files (*)"));
-        if (!path.isEmpty()) loadPresetFile(path);
+        if (path.isEmpty()) return;
+        // Only a file dialog remembers its folder (LIB-13 EC-7); what the
+        // file is, the session decides (AC-5).
+        AppSettings::rememberOpenFile(AppSettings::OpenFolder::Samples, path);
+        openFile(path, calcu::opening::Way::Dialog);
     };
     // Menu actions built in buildMenuBar() -- see its own doc comment.
     connect(m_openPresetAction, &QAction::triggered, this, openPresetDialog);
@@ -162,9 +167,11 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
         const QString path = QFileDialog::getOpenFileName(this, tr("Load BASIC Program"),
                                                             AppSettings::openStartDir(AppSettings::OpenFolder::Basic),
                                                             tr("BASIC Programs (*.bas *.bbin *.wav);;All Files (*)"));
-        if (!path.isEmpty()) loadBasicProgramFile(path);
+        if (path.isEmpty()) return;
+        AppSettings::rememberOpenFile(AppSettings::OpenFolder::Basic, path);
+        if (const auto bytes = readChosen(path, tr("Load BASIC Program"))) loadBasicProgram(QFileInfo(path).fileName(), *bytes);
     });
-    connect(m_loadMachineCodeAction, &QAction::triggered, this, &MainWindow::loadMachineCode);
+    connect(m_loadMachineCodeAction, &QAction::triggered, this, [this] { loadMachineCode(); });
     connect(m_mountDirectoryAction, &QAction::triggered, this, &MainWindow::mountHostDirectory);
     connect(m_unmountDirectoryAction, &QAction::triggered, this, &MainWindow::unmountHostDirectory);
     // LIB-7: the disk and the tape in their places, the side turned over
@@ -237,19 +244,15 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
     // The session's start (MachineController) boots the startup model and
     // then applies its default preset, as an operation: the window is
     // already up while a preset with long `wait:` steps plays out.
-    QTimer::singleShot(0, this, [this] {
-        m_startupDone = true;
-        drainPendingDrop();
-    });
     // Every operation (a menu, the control bar, the debugger, a preset --
     // also one that failed before arming) may have rebuilt the machine or
-    // changed what is attached: resync every surface once it ends. Then a
-    // drop that came in while the machine was being driven.
+    // changed what is attached: resync every surface once it ends. (A file
+    // opened meanwhile is kept by the session, LIB-13 AC-7.)
     connect(m_controller.get(), &MachineController::appBusyChanged, this, [this](bool busy) {
         if (busy) return;
         syncUiFromController();
-        QTimer::singleShot(0, this, &MainWindow::drainPendingDrop);
     });
+    connect(m_controller.get(), &MachineController::programOpened, this, &MainWindow::onProgramOpened);
     setAcceptDrops(true);
 }
 
@@ -373,24 +376,29 @@ void MainWindow::loadMachineCode() {
     const QString path = QFileDialog::getOpenFileName(this, title,
                                                       AppSettings::openStartDir(AppSettings::OpenFolder::Assembly),
                                                       tr("Machine Code (*.bin *.wav);;All Files (*)"));
-    if (!path.isEmpty()) loadMachineCodeFile(path);
+    if (path.isEmpty()) return;
+    AppSettings::rememberOpenFile(AppSettings::OpenFolder::Assembly, path);
+    if (const auto bytes = readChosen(path, title)) loadMachineCode(QFileInfo(path).fileName(), *bytes);
 }
 
-void MainWindow::loadPresetFile(const QString& path) {
-    AppSettings::rememberOpenFile(AppSettings::OpenFolder::Samples, path);
-    m_sync->loadPreset(path);
-}
-
-std::optional<calcu::sessions::Value::Object> MainWindow::programArgs(const QString& path, const QString& title) {
-    namespace sessions = calcu::sessions;
+std::optional<QByteArray> MainWindow::readChosen(const QString& path, const QString& title) {
     QFile file(path);
     if (!file.open(QIODevice::ReadOnly)) {
         QMessageBox::warning(this, title, tr("Could not read %1: %2").arg(path, file.errorString()));
         return std::nullopt;
     }
-    const QByteArray raw = file.readAll();
+    return file.readAll();
+}
+
+std::optional<calcu::sessions::Value::Object> MainWindow::programArgs(const QString& name, const QByteArray& raw,
+                                                                      const QString& title, std::optional<int> chosen) {
+    namespace sessions = calcu::sessions;
     sessions::Value::Object args{{"bytes", sessions::Value(sessions::Value::Bytes(raw.begin(), raw.end()))},
-                                 {"name", sessions::Value(QFileInfo(path).fileName().toStdString())}};
+                                 {"name", sessions::Value(name.toStdString())}};
+    if (chosen) {
+        args.push_back({"file", sessions::Value(*chosen)});
+        return args;
+    }
     // C1600-2 AC-16: a WAV with several files asks which one.
     const sessions::ReplyMessage kind = m_controller->listener().ask(
         shared::requests::kFileKind, sessions::Value::object({{"bytes", args.front().value}}));
@@ -401,7 +409,7 @@ std::optional<calcu::sessions::Value::Object> MainWindow::programArgs(const QStr
             names << QStringLiteral("%1. %2").arg(i + 1).arg(QString::fromStdString(k->tapeFiles[i]));
         bool ok = false;
         const QString picked = QInputDialog::getItem(
-            this, title, tr("%1 holds %2 files. Load which one?").arg(QFileInfo(path).fileName()).arg(names.size()), names,
+            this, title, tr("%1 holds %2 files. Load which one?").arg(name).arg(names.size()), names,
             0, false, &ok);
         if (!ok) return std::nullopt;
         args.push_back({"file", sessions::Value(names.indexOf(picked) + 1)});
@@ -409,19 +417,17 @@ std::optional<calcu::sessions::Value::Object> MainWindow::programArgs(const QStr
     return args;
 }
 
-void MainWindow::loadBasicProgramFile(const QString& path) {
+void MainWindow::loadBasicProgram(const QString& name, const QByteArray& bytes, std::optional<int> file) {
     const QString title = tr("Load BASIC Program");
-    AppSettings::rememberOpenFile(AppSettings::OpenFolder::Basic, path);
-    std::optional<calcu::sessions::Value::Object> args = programArgs(path, title);
+    std::optional<calcu::sessions::Value::Object> args = programArgs(name, bytes, title, file);
     if (!args) return;
     m_sync->run(title, shared::commands::kLoadBasic, calcu::sessions::Value(std::move(*args)));
 }
 
-void MainWindow::loadMachineCodeFile(const QString& path) {
+void MainWindow::loadMachineCode(const QString& name, const QByteArray& bytes, std::optional<int> file) {
     namespace sessions = calcu::sessions;
     const QString title = tr("Load Machine Code");
-    AppSettings::rememberOpenFile(AppSettings::OpenFolder::Assembly, path);
-    std::optional<sessions::Value::Object> args = programArgs(path, title);
+    std::optional<sessions::Value::Object> args = programArgs(name, bytes, title, file);
     if (!args) return;
     // The one plan (C1600-2 AC-8): a refusal is the notice; headerless code
     // asks the address (AC-18).
@@ -437,7 +443,7 @@ void MainWindow::loadMachineCodeFile(const QString& path) {
         if (dialog.exec() != QDialog::Accepted) return;
         args->push_back({"address", sessions::Value(dialog.address().toStdString())});
     } else if (!plan->refusal.empty()) {
-        QMessageBox::warning(this, title, QFileInfo(path).fileName() + QStringLiteral(": ") + QString::fromStdString(plan->refusal));
+        QMessageBox::warning(this, title, name + QStringLiteral(": ") + QString::fromStdString(plan->refusal));
         return;
     }
     m_controller->send(shared::commands::kLoadCode, sessions::Value(std::move(*args)),
@@ -777,22 +783,9 @@ bool MainWindow::eventFilter(QObject* watched, QEvent* event) {
     return QMainWindow::eventFilter(watched, event);
 }
 
-// ── Drag and drop ──────────────────────────────────────────────────────
+// ── Drag and drop, opening a file (LIB-13) ─────────────────────────────
 
 namespace {
-
-// No Sharp program comes near this; it keeps a hover over a large file from
-// reading all of it.
-constexpr qint64 kMaxDropBytes = 1 << 20;
-
-dropfile::Target dropTargetOf(const QString& path) {
-    const QFileInfo info(path);
-    if (!info.isFile() || info.size() > kMaxDropBytes) return dropfile::Target::None;
-    QFile file(path);
-    if (!file.open(QIODevice::ReadOnly)) return dropfile::Target::None;
-    const QByteArray raw = file.readAll();
-    return dropfile::classify(std::vector<uint8_t>(raw.begin(), raw.end()), info.fileName().toStdString());
-}
 
 // The one local file a drag carries, or "".
 QString draggedPath(const QMimeData* mime) {
@@ -802,51 +795,89 @@ QString draggedPath(const QMimeData* mime) {
 
 }  // namespace
 
-QString MainWindow::droppableFile(const QMimeData* mime) const {
-    if (m_sync->busy()) return {};
-    const QString path = draggedPath(mime);
-    return path.isEmpty() || dropTargetOf(path) == dropfile::Target::None ? QString() : path;
-}
-
 void MainWindow::dragEnterEvent(QDragEnterEvent* event) {
-    if (!droppableFile(event->mimeData()).isEmpty()) event->acceptProposedAction();
+    // AC-6, D4.3: one file, of a name and size the session would take; the
+    // drop itself goes through all of AC-1. More than one file is not taken.
+    const QString path = draggedPath(event->mimeData());
+    if (path.isEmpty()) return;
+    const QFileInfo info(path);
+    namespace sessions = calcu::sessions;
+    const sessions::ReplyMessage r = m_controller->listener().ask(
+        calcu::opening::kWouldTakeRequest,
+        sessions::Value::object({{"name", info.fileName().toStdString()}, {"size", static_cast<std::int64_t>(info.size())}}));
+    const auto* w = sessions::payloadAs<calcu::opening::WouldTake>(r.result);
+    if (w && w->takes) event->acceptProposedAction();
 }
 
-void MainWindow::dragMoveEvent(QDragMoveEvent* event) {
-    // The file was checked on enter; only a load that started since matters.
-    if (!m_sync->busy()) event->acceptProposedAction();
-}
+void MainWindow::dragMoveEvent(QDragMoveEvent* event) { event->acceptProposedAction(); }
 
 void MainWindow::dropEvent(QDropEvent* event) {
-    // Vetted on enter; openDroppedFile() classifies it once more to load it.
     const QString path = draggedPath(event->mimeData());
-    if (path.isEmpty() || m_sync->busy()) return;
+    if (path.isEmpty()) return;
     event->acceptProposedAction();
-    // Out of the drop handler: a load and its dialogs would keep the drag
+    // Out of the drop handler: a flow and its dialogs would keep the drag
     // source (Finder, Explorer) waiting.
-    QTimer::singleShot(0, this, [this, path] { openDroppedFile(path); });
+    QTimer::singleShot(0, this, [this, path] { openFile(path, calcu::opening::Way::Drop); });
 }
 
-void MainWindow::openDroppedFile(const QString& path) {
-    if (!m_startupDone || m_sync->busy()) {
-        m_pendingDrop = path;
+void MainWindow::openFile(const QString& path, calcu::opening::Way way) {
+    const QFileInfo info(path);
+    calcu::opening::OpenedFile file;
+    file.name = info.fileName().toStdString();
+    file.path = info.absoluteFilePath().toStdString();
+    // Unreadable: no bytes, and the session refuses naming the file (EC-5).
+    // Past a way's limit only one byte more is read: AC-20 refuses it by size.
+    QFile f(path);
+    if (info.isFile() && f.open(QIODevice::ReadOnly)) {
+        const bool limited = way != calcu::opening::Way::Dialog;
+        const QByteArray raw = limited ? f.read(static_cast<qint64>(shared::kMaxOpenBytes) + 1) : f.readAll();
+        file.bytes = std::vector<std::uint8_t>(raw.begin(), raw.end());
+    }
+    calcu::opening::OpenRequest request;
+    request.files.push_back(std::move(file));
+    request.way = way;
+    if (way != calcu::opening::Way::Start) {
+        raise();
+        activateWindow();
+    }
+    // A refusal is the session's notice already (AC-1).
+    m_controller->send(calcu::opening::kOpenCommand, request.toValue());
+}
+
+void MainWindow::onProgramOpened(const QString& name, const QByteArray& bytes, const QString& kind) {
+    namespace sessions = calcu::sessions;
+    if (m_programFlow) {
+        qDebug().noquote() << "[open] a program flow runs; dropped" << name;
         return;
     }
-    const dropfile::Target target = dropTargetOf(path);
-    if (target == dropfile::Target::None) return;
-    raise();
-    activateWindow();
-    switch (target) {
-        case dropfile::Target::Preset: loadPresetFile(path); break;
-        case dropfile::Target::BasicProgram: loadBasicProgramFile(path); break;
-        case dropfile::Target::MachineCode: loadMachineCodeFile(path); break;
-        case dropfile::Target::None: break;
+    m_programFlow = true;
+    bool code = kind == QStringLiteral("machine-code-program");
+    std::optional<int> chosen;
+    // C1600-2 AC-16: a WAV with several files asks which one; the file
+    // chosen goes to the flow of its own kind (LIB-13 AC-18).
+    const sessions::ReplyMessage r = m_controller->listener().ask(
+        shared::requests::kFileKind,
+        sessions::Value::object({{"bytes", sessions::Value(sessions::Value::Bytes(bytes.begin(), bytes.end()))}}));
+    const auto* k = sessions::payloadAs<shared::FileKindReply>(r.result);
+    if (k && k->tapeFiles.size() > 1) {
+        QStringList names;
+        for (std::size_t i = 0; i < k->tapeFiles.size(); ++i)
+            names << QStringLiteral("%1. %2").arg(i + 1).arg(QString::fromStdString(k->tapeFiles[i]));
+        bool ok = false;
+        const QString picked = QInputDialog::getItem(
+            this, tr("Open"), tr("%1 holds %2 files. Load which one?").arg(name).arg(names.size()), names, 0, false, &ok);
+        if (!ok) {
+            m_programFlow = false;
+            return;
+        }
+        const qsizetype n = names.indexOf(picked);
+        chosen = static_cast<int>(n) + 1;
+        if (n >= 0 && static_cast<std::size_t>(n) < k->tapeKinds.size())
+            code = k->tapeKinds[static_cast<std::size_t>(n)].rfind("code-", 0) == 0;
     }
-}
-
-void MainWindow::drainPendingDrop() {
-    // openDroppedFile() holds it back again if still not ready.
-    if (!m_pendingDrop.isEmpty()) openDroppedFile(std::exchange(m_pendingDrop, QString()));
+    if (code) loadMachineCode(name, bytes, chosen);
+    else loadBasicProgram(name, bytes, chosen);
+    m_programFlow = false;
 }
 
 void MainWindow::refreshViewsAfterAdvance() {

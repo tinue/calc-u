@@ -2,7 +2,9 @@
 #include <QWidget>
 
 class EmulatorController;
-class HoldRepeatButton;
+namespace calcu::qt6 {
+class RunControlButtons;
+}
 class QLabel;
 class QListWidget;
 class QToolButton;
@@ -28,11 +30,9 @@ private:
 
     EmulatorController& m_controller;
     QLabel* m_title;
-    QToolButton* m_resume;
-    QToolButton* m_freeze;
+    calcu::qt6::RunControlButtons* m_run;   ///< FREEZE, STEP, RESUME (LIB-10 AC-34)
     QToolButton* m_freezeOnStart;
     QToolButton* m_armed;
-    HoldRepeatButton* m_step;
     QListWidget* m_list;
     QLabel* m_registers;
     QLabel* m_control;

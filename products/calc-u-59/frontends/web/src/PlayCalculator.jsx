@@ -143,7 +143,7 @@ function WideLayout({ engine, width, height, showSettings, onDialog, feedback, r
       <CalculatorColumn engine={engine} faceWidth={faceWidth} width={columnWidth} compact={compact}
         showSettings={showSettings} onDialog={onDialog} feedback={feedback} />
       <div className="calcu-vline" />
-      <div style={{ width: pw, flex: "none", display: "flex" }}><Printer engine={engine} compactBar={rules.compactPrinterBar} /></div>
+      <div style={{ width: pw, flex: "none", display: "flex" }}><PaperPane engine={engine} /></div>
       {hasDebugger && <Divider onDrag={(dx) => setPrinterWidth(Math.max(printerMin, Math.min(printerMax, pw + dx)))} />}
       {hasDebugger && <Debugger engine={engine} />}
     </div>
@@ -172,7 +172,7 @@ function PortraitLayout({ engine, width, height, showSettings, onDialog, feedbac
           <CalculatorColumn engine={engine} faceWidth={faceWidth} compact={true} showSettings={showSettings}
             onDialog={onDialog} feedback={feedback} />
         </div>
-        {page === "printer" && <div className="calcu-page calcu-page-printer"><Printer engine={engine} /></div>}
+        {page === "printer" && <div className="calcu-page calcu-page-printer"><PaperPane engine={engine} /></div>}
         {page === "calc" ? chevron("right") : chevron("left")}
       </div>
     </div>

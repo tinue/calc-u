@@ -53,11 +53,11 @@ the named one still to do (the Notes say why); `Swift only` / `Qt only` /
 
 | Feature | Swift | Qt | Web | Shared | Status | Notes |
 |---|---|---|---|---|---|---|
-| PC-100C connect toggle (resets) | `PrinterView` | `PrinterWidget` | `Printer` | `TIAppPart` | All | |
-| Dot view at PC-100C proportions; text view | `PrinterView` | `PrinterWidget` | `Printer`, `painters.js` | `PrinterFont` PrinterGeometry | All | |
-| Printer interrupt: cut-short lines, the interrupted row's fired columns, faint dots | `PrinterView` (`PrinterDotLine`) | `PrinterWidget` | `painters.js` | `PrinterFont` PrinterGeometry (`lineDots`: `drawnRows`, `inkedColumns`, `faintColumns`, `inkAlpha`) | All | |
-| PRINT / ADV (hold), T (TRACE latch) | `PrinterView` | `PrinterWidget` | `Printer` | `TIAppPart` | All | |
-| Copy (text + 600 dpi image), cut | `PrinterView` | `PrinterWidget` | `Printer` | `TIAppPart` (strip, cut), `PrinterFont` PrinterGeometry (strip height, copy scale) | All | web: image where the browser's clipboard takes one, else text |
+| PC-100C connect toggle (resets) | `PrinterView` | toggle above the paper panel (`MainWindow`) | toggle above `CalcuPaperPanel` | `TIAppPart` (`c59.printer` connected; LIB-8 P-E1 until M-57) | All | |
+| Dot view at PC-100C proportions; text view | `PrinterView` (from the `paper PC-100C` marks, S-P1 until C59-8) | library `PaperPanel` | library `CalcuPaperPanel` | `core/PC100CPaper` (marks), LIB-8 `PaperPart` | All | |
+| Printer interrupt: cut-short lines, the interrupted row's fired columns, faint dots | `PrinterView` (the marks' darkness) | library `PaperPanel` | library `CalcuPaperPanel` | `core/PC100CPaper` (`lineDots`: `drawnRows`, `inkedColumns`, `faintColumns`; greys of `inkAlpha`) | All | |
+| PRINT / ADV (hold), T (TRACE switch) | `PrinterView` (`set-control`) | library `PaperPanel` (controls) | library `CalcuPaperPanel` (controls) | `TIAppPart` answers `set-control` (LIB-8 P-E2 until M-54) | All | |
+| Copy (text + 600 dpi image), cut | `PrinterView` (`paper.copy`, `paper.cut`; the bridge answers `clipboard-image`) | library `PaperPanel` (`ClipboardService`) | library `CalcuPaperPanel` (`hostServices.js`) | LIB-8 `PaperPart` (picture, cut) | All | web: image where the browser's clipboard takes one, else text |
 
 ## Debugger
 
@@ -65,16 +65,16 @@ the named one still to do (the Notes say why); `Swift only` / `Qt only` /
 |---|---|---|---|---|---|---|
 | CALCULATOR tab: registers, flags, HIR, T, return stack, partition, source | `LiveDebugView` | `LiveDebugWidget` | `Debugger` (`LiveDebug`) | `DebugModel`, `DebugSnapshots`, `DebugText`, `ModuleImage` | All | web: wide only |
 | Program steps ±5 running / full listing frozen | `LiveDebugView` | `LiveDebugWidget` | `Debugger` (`LiveDebug`) | `DebugModel` (listing, SolidStateReturn advance), `DebugSnapshots` | All | web: wide only |
-| FREEZE, FREEZE ON START (next step), ARMED, RESUME, STEP (hold to repeat) | `LiveDebugView` | `LiveDebugWidget` | `Debugger` (`FreezeHeader`) | `EmulatorSession` (DebugState, freeze/step), `TIAppPart`, `FreezeController` | All | web: wide only |
+| FREEZE, FREEZE ON START (next step), ARMED, RESUME, STEP (hold to repeat) | `LiveDebugView` (the bridge's `ButtonRule`) | `LiveDebugWidget` (library `RunControlButtons`, level `program`) | `Debugger` (`CalcuRunControlButtons`, level `program`) | LIB-10 run control (`pause`, `step`, `resume`, `pause-on-start`), `TILevelRules` | All | web: wide only |
 | CPU tab: history, registers, control registers, display state | `CPUInspectorView` | `CpuInspectorWidget` | `Debugger` (`CpuInspector`) | `DebugModel` (cpuHistory), `DebugSnapshots`, `DebugText` | All | web: wide only |
-| CPU FREEZE ON START (scan-loop exit), STEP | `CPUInspectorView` | `CpuInspectorWidget` | `Debugger` (`FreezeHeader`) | `EmulatorSession` (DebugState, stepInstruction), `TIAppPart`, `FreezeController` | All | web: wide only |
+| CPU FREEZE ON START (scan-loop exit), STEP | `CPUInspectorView` (the bridge's `ButtonRule`) | `CpuInspectorWidget` (library `RunControlButtons`, level `cpu`) | `Debugger` (`CalcuRunControlButtons`, level `cpu`) | LIB-10 run control, `TILevelRules` | All | web: wide only |
 | ROM heatmap with hover address, CLR | `CPUInspectorView` | `RomHeatmapWidget` | `Debugger` (`Heatmap`) | `DebugModel`, `RomHeatmap` | All | web: wide only |
 | ASM overlay: select, run, clear | `DebugView` | `AsmOverlayBox` | `Debugger` (`AsmOverlay`, upload) | `TIAppPart` loadAsm/runAsm/clearAsm, `AsmOverlay` | All | web: wide only |
 | LOG tab: dumps, clear, log level | `DebugView` | `LogWidget` | `Debugger` (`LogTab`) | `TIAppPart` (dumps, level), `DebugModel` (RingLog), `DebugLog` | All | web: wide only |
 | LOG kept across model switch | `DebugView` | `LogWidget` | `Debugger` (`LogTab`) | `DebugModel` (the LOG survives `attach`) | All | web: wide only |
-| Binary trace (TRACE toggle), size limit | `DebugView` | `LogWidget` | `Debugger` (`LogTab`), `TIWebPart` (MEMFS) | `TIAppPart` setManualTrace, `EmulatorSession` (manual / scripted writers), `TraceWriter` | All | web: wide only; downloaded when switched off |
-| Trace location | Local / iCloud / custom | card folder, or trace folder in Settings | MEMFS, downloads | — | Swift only / Qt only / Web only | iCloud: Swift only; web: no location to choose |
-| Breakpoints | — | — | — | Core API only (headless tools) | — | no UI in any GUI; the session ignores them |
+| Binary trace (TRACE toggle), size limit | `DebugView` (`trace {button}`) | `LogWidget` (`trace {button}`) | `Debugger` (`LogTab`; the list of the traces handed over) | LIB-10 trace session (one at a time), `TITraceRecorder`, `TraceWriter` | All | web: wide only; handed over (downloaded) when switched off |
+| Trace location | Local / iCloud / custom | card folder, or trace folder in Settings | none: `keep-file` downloads | — | Swift only / Qt only / Web only | iCloud: Swift only; web: no location to choose |
+| Breakpoints | — | — | — | LIB-10 run control (the harness's `break`) | — | no UI in any GUI (`debugger.md` DB-3); an app session pauses at one set through the harness (LIB-10 AC-31) |
 
 ## App
 

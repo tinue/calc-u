@@ -93,18 +93,14 @@ typedef struct {
 @property (class, readonly) CGFloat decimalGlowBlurPerDiameter;
 @property (class, readonly) CGFloat decimalGlowOpacity;
 
-// ── PC-100C paper (Shared/PrinterFont.hpp PrinterGeometry) ──────────────────
-@property (class, readonly) CGFloat printerCharGap;
-@property (class, readonly) CGFloat printerDotPitchMM;
+// ── PC-100C paper (core/PC100CPaper.hpp; LIB-8 S-P1 until C59-8) ──────────
+/// The paper's width in the unit (the dot pitch): 129.07.
 @property (class, readonly) CGFloat printerWidthUnits;
-@property (class, readonly) CGFloat printerHeightUnits;
-@property (class, readonly) CGFloat printerFeedHeightUnits;
-@property (class, readonly) CGFloat printerInterLineGap;
+/// A dot's radius, of the dot pitch.
 @property (class, readonly) CGFloat printerDotRadiusFraction;
+/// The on-screen paper's margins, in points.
 @property (class, readonly) CGFloat printerPaperPaddingX;
 @property (class, readonly) CGFloat printerPaperPaddingY;
-/// Copy-as-image pixels per dot pitch: 600 dpi, capped at 16000 px for the whole strip.
-+ (CGFloat)printerCopyPixelsPerUnit:(CGFloat)stripHeightUnits;
 
 // ── Heatmap (Shared/RomHeatmap.hpp) ──────────────────────────────────────────
 @property (class, readonly) NSInteger heatmapCols;

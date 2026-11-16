@@ -43,20 +43,11 @@ const METHODS = {
   feedSide: ["command", "c59.feed-side", (side) => ({ side })],
   ejectCard: ["command", "c59.eject-card", () => null],
   togglePrinterConnection: ["command", "c59.toggle-printer-connection", () => null],
-  togglePrinterTrace: ["command", "c59.toggle-printer-trace", () => null],
-  pressPrinterPrint: ["command", "c59.printer-print", (pressed) => ({ pressed: !!pressed })],
-  pressPrinterAdv: ["command", "c59.printer-adv", (pressed) => ({ pressed: !!pressed })],
-  cutPaper: ["command", "c59.cut-paper", () => null],
   setLiveDebugEnabled: ["command", "c59.live-debug", (on) => ({ on: !!on })],
   setCpuDebugEnabled: ["command", "c59.cpu-debug", (on) => ({ on: !!on })],
-  freeze: ["command", "c59.freeze", (cpu) => ({ owner: cpu ? 0 : 1 })],
-  resumeFrozen: ["command", "c59.resume", () => null],
-  armPcChange: ["command", "c59.arm-pc-change", () => null],
-  armScanLoopExit: ["command", "c59.arm-scan-loop-exit", () => null],
-  disarmPcChange: ["command", "c59.disarm-pc-change", () => null],
-  disarmScanLoopExit: ["command", "c59.disarm-scan-loop-exit", () => null],
-  stepKeycode: ["command", "c59.step-keycode", () => null],
-  stepInstruction: ["command", "c59.step-instruction", () => null],
+  // LIB-10 (M-53): FREEZE ON START and ARMED as the run control's pause-on-start
+  // ("program" for the CALCULATOR tab, "cpu" for the CPU tab, null: off).
+  pauseOnStart: ["command", "pause-on-start", (level) => (level ? { level } : { off: true })],
   clearHeatmap: ["command", "c59.clear-heatmap", () => null],
   cycleDebugLevel: ["command", "c59.cycle-debug-level", () => null],
   clearLog: ["command", "c59.clear-log", () => null],
@@ -64,7 +55,9 @@ const METHODS = {
   dumpScom: ["command", "c59.dump-scom", () => null],
   dumpProg: ["command", "c59.dump-prog", () => null],
   dumpMemory: ["command", "c59.dump-memory", () => null],
-  setManualTrace: ["command", "c59.manual-trace", (on) => ({ on: !!on })],
+  // LIB-10: the TRACE button is the trace session's button (AC-23); the trace
+  // is handed over with keep-file when it ends (AC-26).
+  setTrace: ["command", "trace", (on) => (on ? { button: true } : { off: true })],
   loadAsm: ["command", "c59.load-asm", (text, name) => ({ text, name })],
   runAsm: ["command", "c59.run-asm", () => null],
   clearAsm: ["command", "c59.clear-asm", () => null],
@@ -75,20 +68,21 @@ const METHODS = {
 };
 
 const INITIAL_STATE = {
-  data: null,          // c59.static-data: models, modules, layout, printer, heatmap
+  data: null,          // c59.static-data: models, modules, layout, heatmap
   status: CALCU_SENTENCES.starting(PRODUCT),
   persistent: true,    // the persistent file system keeps what is saved (web.storage)
   model: null,         // {model, moduleID}
   cueCard: null,       // draw list
   runState: { frozen: false, owner: null, pcArmed: false, scanArmed: false, fullSpeed: false, heldKey: -1, asmActive: false },
-  printer: { lines: [], connected: false, trace: false, heightUnits: 0, copyPixelsPerUnit: 1 },
+  printer: { connected: false, trace: false },   // the PC-100C's place and TRACE (the paper: CalcuPaperPanel)
   card: { swiping: false, fileName: "card.U59", cards: [] },
   live: null,
   cpu: [],
   heatmap: null,
-  log: { text: "", level: 0, trace: false },
+  log: { text: "", level: 0 },
+  trace: { running: false, fileName: "" },        // the library's `trace` topic
   asm: { fileName: "", words: 0, status: "", active: false },
-  traces: [],
+  traces: [],          // [{name, size}]: the traces handed over (keep-file), newest last (LIB-10 D-25)
   settings: { startupModel: -1, traceMaxMB: 50, keyboardFeedback: 0 },
   debugFont: 11,
   debugPanel: { panel: 0, n: 0 },  // KEYSTROKES DebugPanel: the tab asked for, and how often
@@ -100,18 +94,32 @@ const float32 = (bytes) => (bytes ? new Float32Array(bytes.buffer, bytes.byteOff
 // model (its name, "TI-58C") and preset (a path under presets/) start the
 // session with them (the `start` command, LIB-15 N3).
 function createEngine({ model, preset, workerUrl }) {
-  const shell = createShell({ product: PRODUCT, workerUrl, start: { model: model || "", preset: preset || "" } });
+  // The page's host services, with the traces it was handed kept by name for
+  // the LOG tab's list (LIB-10 D-25; the worker keeps no copy).
+  const kept = new Map();
+  let keptList = [];
+  const base = calcuWebHostServices();
+  const services = {
+    names: base.names,
+    answer: (name, args) => {
+      if (name === "keep-file" && args) {   // the session hands over traces only
+        const bytes = args.bytes || new Uint8Array(0);
+        kept.set(args.name, bytes);
+        keptList = keptList.filter((t) => t.name !== args.name).concat([{ name: args.name, size: bytes.length }]);
+        Promise.resolve().then(() => onShell());
+      }
+      return base.answer(name, args);
+    },
+  };
+  const shell = createShell({ product: PRODUCT, workerUrl, start: { model: model || "", preset: preset || "" }, services });
   let state = INITIAL_STATE;
   const listeners = new Set();
   const frames = { cells: null, onFrame: null };
   let framePending = false;
   let statusOverride = null;   // a sentence of the page's, or "" once dismissed
-  let seen = { notices: 0, panels: 0, traces: 0 };
-  let printerLines = [];
-  let lastPrinter = null;
+  let seen = { notices: 0, panels: 0 };
   let dataAsked = false;
   let data = null;
-  let printer = INITIAL_STATE.printer, printerFor = null;
   let debugPanel = INITIAL_STATE.debugPanel;
 
   const set = (patch) => {
@@ -120,8 +128,13 @@ function createEngine({ model, preset, workerUrl }) {
   };
 
   const download = (name, bytes) => { if (bytes) calcuDownload(name, bytes, "application/octet-stream"); };
-  const requestFile = (kind, name) =>
-    shell.request(kind === "card" ? "c59.web.card-bytes" : "c59.web.trace-bytes", { name }).then((r) => download(name, r.value));
+  const requestFile = (kind, name) => {
+    if (kind === "trace") {   // kept by the page (D-25)
+      download(name, kept.get(name));
+      return Promise.resolve();
+    }
+    return shell.request("c59.web.card-bytes", { name }).then((r) => download(name, r.value));
+  };
 
   const onShell = () => {
     const s = shell.getState();
@@ -143,16 +156,6 @@ function createEngine({ model, preset, workerUrl }) {
         });
       }
     }
-    // The printer topic carries the lines from the first one that changed.
-    const p = t["c59.web.printer"];
-    if (p && p !== lastPrinter) {
-      lastPrinter = p;
-      printerLines = printerLines.slice(0, p.from).concat(p.lines);
-    }
-    // A manual trace that ended is offered as a download.
-    const ready = streams["c59.web.trace-ready"] || [];
-    for (const r of ready.slice(seen.traces)) requestFile("trace", r.name);
-    seen.traces = ready.length;
 
     // The status line: a failed start (AC-3), else the newest notice (an
     // error, the storage sentence of AC-8) until it is dismissed, else
@@ -170,10 +173,6 @@ function createEngine({ model, preset, workerUrl }) {
       seen.panels = panels.length;
       debugPanel = panels.length ? { panel: panels[panels.length - 1], n: panels.length } : INITIAL_STATE.debugPanel;
     }
-    if (p !== printerFor) {
-      printerFor = p;
-      printer = p ? { ...p, lines: printerLines } : INITIAL_STATE.printer;
-    }
 
     const storage = t["web.storage"];
     set({
@@ -183,14 +182,15 @@ function createEngine({ model, preset, workerUrl }) {
       model: t["c59.web.model"] || null,
       cueCard: t["c59.web.cue-card"] === undefined ? null : t["c59.web.cue-card"],
       runState: t["c59.web.run-state"] || INITIAL_STATE.runState,
-      printer,
+      printer: t["c59.web.printer"] || INITIAL_STATE.printer,
       card: t["c59.web.card"] || INITIAL_STATE.card,
       live: t["c59.web.live"] || null,
       cpu: t["c59.web.cpu"] || INITIAL_STATE.cpu,
       heatmap: t["c59.web.heatmap"] || null,
       log: t["c59.web.log"] || INITIAL_STATE.log,
+      trace: t.trace || INITIAL_STATE.trace,
       asm: t["c59.web.asm"] || INITIAL_STATE.asm,
-      traces: t["c59.web.traces"] || INITIAL_STATE.traces,
+      traces: keptList,
       settings: t["c59.web.settings"] || INITIAL_STATE.settings,
       debugFont: t["c59.web.debug-font"] || INITIAL_STATE.debugFont,
       debugPanel,
@@ -215,6 +215,8 @@ function createEngine({ model, preset, workerUrl }) {
 
   return {
     frames,
+    /// The library's shell, for the component set (CalcuPaperPanel, CalcuRunControlButtons).
+    shell,
     getState: () => state,
     subscribe: (l) => { listeners.add(l); return () => listeners.delete(l); },
     /// A command or request, result not wanted.
@@ -229,7 +231,7 @@ function createEngine({ model, preset, workerUrl }) {
       .then(showRefusal),
     /// The LED shapes for a w × h digit cell (W59-1).
     geometry: (w, h) => shell.request("c59.led-geometry", { w, h }).then((r) => set({ geometry: r.value })),
-    /// A card or trace file as a download (LIB-15 AC-9).
+    /// A card file (from the save folder) or a trace the page was handed, as a download (LIB-15 AC-9).
     download: requestFile,
     setStatus: (status) => { statusOverride = status; onShell(); },
     destroy: () => {

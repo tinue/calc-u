@@ -73,7 +73,7 @@ test('both layouts load the engine with no console errors', async ({ page }) => 
   page.on('pageerror', (err) => errors.push(err.message));
   page.on('console', (msg) => { if (msg.type() === 'error') errors.push(msg.text()); });
   await gotoReady(page, 'layout=wide');
-  await expect(page.locator('[data-layout=wide] [data-panel=printer]')).toBeVisible();
+  await expect(page.locator('[data-layout=wide] [data-panel=paper]')).toBeVisible();
   await expect(page.locator('[data-panel=debug]')).toBeVisible();
   await gotoReady(page, 'layout=portrait');
   await expect(page.locator('[data-layout=portrait]')).toBeVisible();
@@ -411,18 +411,57 @@ test('the fresh card has its file name as title, and an existing name asks first
 
 // ── Printer ──────────────────────────────────────────────────────────────
 
-test('the printer prints, shows text, and cuts', async ({ page }) => {
+// The PC-100C's paper in the component set's paper panel (M-53; ADR 0032).
+test('LIB-8 AC-31 the PC-100C prints a number, the text view shows it, Cut empties the paper and is disabled', async ({ page }) => {
   await gotoReady(page);
-  const printer = page.locator('[data-panel=printer]');
+  const printer = page.locator('[data-panel=paper]');
   // Connected from the start, as in the apps.
   await expect(printer.getByRole('button', { name: /PC-100C/ })).toHaveAttribute('aria-pressed', 'true');
+  await expect(printer.locator('[data-calcu=paper-owner]')).toHaveText('PC-100C');
   await pressKeys(page, ['4', '2', '2nd', '+/-']);  // 42 Prt
-  await expect(printer.getByRole('button', { name: 'Cut' })).toBeEnabled({ timeout: 5000 });
-  await printer.getByRole('button', { name: 'Text view' }).click();
-  await expect(printer.locator('.calcu-paper-text')).toContainText('42.');
-  await page.context().grantPermissions(['clipboard-read', 'clipboard-write']);
-  await printer.getByRole('button', { name: 'Cut' }).click();
-  await expect(printer.getByRole('button', { name: 'Cut' })).toBeDisabled();
+  const cut = printer.locator('[data-calcu=paper-cut]');
+  await expect(cut).toBeEnabled({ timeout: 5000 });
+  await printer.locator('[data-calcu=paper-view]').click();
+  await expect(printer.locator('[data-calcu=paper-text]')).toContainText('42.');
+  await page.context().grantPermissions(['clipboard-read', 'clipboard-write']).catch(() => {});
+  await cut.click();
+  await expect(cut).toBeDisabled();
+  await expect(printer.locator('[data-calcu=paper-text]')).toHaveText('');
+});
+
+test('LIB-8 AC-28 PRINT and ADV are held, TRACE is a switch, the view control shows the view that is on', async ({ page }) => {
+  await gotoReady(page);
+  const printer = page.locator('[data-panel=paper]');
+  const control = (id) => printer.locator(`[data-calcu=paper-control-${id}]`);
+  await expect(control('PRINT')).toBeVisible();
+  // PRINT: down while held, up on release; it prints the display.
+  await control('PRINT').dispatchEvent('pointerdown', { pointerId: 1 });
+  await expect(control('PRINT')).toHaveAttribute('aria-pressed', 'true');
+  await page.waitForTimeout(150);
+  await control('PRINT').dispatchEvent('pointerup', { pointerId: 1 });
+  await expect(control('PRINT')).toHaveAttribute('aria-pressed', 'false');
+  await expect(printer.locator('[data-calcu=paper-cut]')).toBeEnabled({ timeout: 5000 });
+  // ADV is held too.
+  await control('ADV').dispatchEvent('pointerdown', { pointerId: 2 });
+  await expect(control('ADV')).toHaveAttribute('aria-pressed', 'true');
+  await control('ADV').dispatchEvent('pointerup', { pointerId: 2 });
+  await expect(control('ADV')).toHaveAttribute('aria-pressed', 'false');
+  // TRACE latches: on, then off.
+  await expect(control('TRACE')).toHaveAttribute('aria-pressed', 'false');
+  await control('TRACE').click();
+  await expect(control('TRACE')).toHaveAttribute('aria-pressed', 'true');
+  await control('TRACE').click();
+  await expect(control('TRACE')).toHaveAttribute('aria-pressed', 'false');
+  // The view control names the view that is on (row 59-46).
+  const view = printer.locator('[data-calcu=paper-view]');
+  await expect(view).toHaveText('Marks');
+  await view.click();
+  await expect(view).toHaveText('Text');
+  await expect(printer.locator('[data-calcu=paper-text]')).toBeVisible();
+  // Detached: the panel shows an empty paper without a name (AC-29).
+  await printer.getByRole('button', { name: /PC-100C/ }).click();
+  await expect(printer.locator('[data-calcu=paper-owner]')).toHaveText('');
+  await expect(control('PRINT')).toHaveCount(0);
 });
 
 test('the focus outline shows for the keyboard only, not after a tap', async ({ page }) => {
@@ -449,9 +488,9 @@ test('the focus outline shows for the keyboard only, not after a tap', async ({ 
 
 test('portrait: the chevron switches to the printer page and back', async ({ page }) => {
   await gotoReady(page, 'layout=portrait');
-  await expect(page.locator('[data-panel=printer]')).toHaveCount(0);
+  await expect(page.locator('[data-panel=paper]')).toHaveCount(0);
   await page.getByRole('button', { name: 'Printer' }).click();
-  await expect(page.locator('[data-panel=printer]')).toBeVisible();
+  await expect(page.locator('[data-panel=paper]')).toBeVisible();
   await page.getByRole('button', { name: 'Calculator' }).click();
   await expect(page.locator('canvas.calcu-keyboard')).toBeVisible();
 });
@@ -468,7 +507,39 @@ test('FREEZE, STEP and RESUME on the CALCULATOR tab', async ({ page }) => {
   await expect(debug.getByRole('button', { name: 'RESUME' })).toBeDisabled();
 });
 
-test('a manual trace is downloaded when switched off', async ({ page }) => {
+test('LIB-10 AC-34 FREEZE STEP RESUME of both tabs follow the run state', async ({ page }) => {
+  await gotoReady(page);
+  const debug = page.locator('[data-panel=debug]');
+  const tab = (name) => debug.getByRole('tab', { name, exact: true });
+  const button = (name) => debug.locator(`[data-calcu=run-control-${name}]`);
+  for (const [name, level, other] of [['CALCULATOR', 'program', 'CPU'], ['CPU', 'cpu', 'CALCULATOR']]) {
+    await tab(name).click();
+    await expect(debug.locator(`[data-calcu=run-control][data-level=${level}]`)).toBeVisible();
+    // Running: only FREEZE can be used.
+    await expect(button('pause')).toBeEnabled();
+    await expect(button('step')).toBeDisabled();
+    await expect(button('resume')).toBeDisabled();
+    await button('pause').click();
+    // Paused by this tab's level: STEP and RESUME, no FREEZE.
+    await expect(button('resume')).toBeEnabled({ timeout: 5000 });
+    await expect(button('step')).toBeEnabled();
+    await expect(button('pause')).toBeDisabled();
+    await button('step').dispatchEvent('pointerdown', { pointerId: 3 });
+    await button('step').dispatchEvent('pointerup', { pointerId: 3 });
+    await expect(button('resume')).toBeEnabled({ timeout: 5000 });
+    // The other tab's buttons: the pause is not its level's.
+    await tab(other).click();
+    await expect(button('step')).toBeDisabled();
+    await expect(button('resume')).toBeDisabled();
+    await expect(button('pause')).toBeDisabled();
+    await tab(name).click();
+    await button('resume').click();
+    await expect(button('pause')).toBeEnabled();
+    await expect(button('resume')).toBeDisabled();
+  }
+});
+
+test('LIB-10 AC-26 a trace is downloaded when switched off', async ({ page }) => {
   await gotoReady(page);
   const debug = page.locator('[data-panel=debug]');
   await debug.getByRole('tab', { name: 'LOG' }).click();
@@ -491,7 +562,7 @@ test('the standalone app follows the window as it rotates', async ({ page }) => 
   await expect(page.locator('[data-layout=portrait]')).toBeVisible();
 
   await page.setViewportSize({ width: 832, height: 419 });
-  await expect(page.locator('[data-layout=wide] [data-panel=printer]')).toBeVisible();
+  await expect(page.locator('[data-layout=wide] [data-panel=paper]')).toBeVisible();
   // Fits the window without clipping.
   expect((await page.locator('.calcu-device').boundingBox()).width).toBeLessThanOrEqual(832);
   await expect(page.locator('[data-panel=debug]')).toHaveCount(0);
@@ -504,9 +575,10 @@ test('the standalone app follows the window as it rotates', async ({ page }) => 
   // iPhone Duo open: the narrow tape's button bar fits it.
   await page.setViewportSize({ width: 880, height: 645 });
   await expect(page.locator('[data-panel=debug]')).toBeVisible();
-  await expect(page.locator('.calcu-printer-bar').getByText('PRN')).toBeVisible();
-  const printerBar = page.locator('.calcu-printer-bar');
-  expect(await printerBar.evaluate((e) => e.scrollWidth <= e.clientWidth)).toBe(true);
+  // The paper panel's header wraps in the narrow tape: nothing is cut off.
+  const paperHeader = page.locator('[data-panel=paper] .calcu-paper-header');
+  await expect(paperHeader.locator('[data-calcu=paper-control-PRINT]')).toBeVisible();
+  expect(await paperHeader.evaluate((e) => e.scrollWidth <= e.clientWidth)).toBe(true);
 
   // iPad mini: all three panels, icons only; iPad Pro: with labels.
   await page.setViewportSize({ width: 1133, height: 744 });

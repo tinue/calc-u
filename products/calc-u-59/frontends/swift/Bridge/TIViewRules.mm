@@ -6,7 +6,7 @@
 #include <calcu59/app/DebugText.hpp>
 #include <calcu59/app/LedGeometry.hpp>
 #include <calcu59/app/ModuleImage.hpp>
-#include <calcu59/app/PrinterFont.hpp>
+#include <calcu59/core/PC100CPaper.hpp>
 #include <calcu59/app/RomHeatmap.hpp>
 
 
@@ -189,18 +189,10 @@ static std::vector<cu59::LabelSpan> spansFrom(NSArray<TILabelSpan*>* spans) {
 + (CGFloat)decimalGlowBlurPerDiameter { return cu59::kDecimalGlowBlurPerDiameter; }
 + (CGFloat)decimalGlowOpacity { return cu59::kDecimalGlowOpacity; }
 
-+ (CGFloat)printerCharGap { return cu59::PrinterGeometry::charGap; }
-+ (CGFloat)printerDotPitchMM { return cu59::PrinterGeometry::dotPitchMM; }
-+ (CGFloat)printerWidthUnits { return cu59::PrinterGeometry::widthUnits; }
-+ (CGFloat)printerHeightUnits { return cu59::PrinterGeometry::heightUnits; }
-+ (CGFloat)printerFeedHeightUnits { return cu59::PrinterGeometry::feedHeightUnits; }
-+ (CGFloat)printerPaperPaddingX { return cu59::PrinterGeometry::paperPaddingX; }
-+ (CGFloat)printerPaperPaddingY { return cu59::PrinterGeometry::paperPaddingY; }
-+ (CGFloat)printerCopyPixelsPerUnit:(CGFloat)stripHeightUnits {
-    return cu59::PrinterGeometry::copyPixelsPerUnit(stripHeightUnits);
-}
-+ (CGFloat)printerInterLineGap { return cu59::PrinterGeometry::interLineGap; }
-+ (CGFloat)printerDotRadiusFraction { return cu59::PrinterGeometry::dotRadiusFraction; }
++ (CGFloat)printerWidthUnits { return pc100cpaper::kWidthUnits; }
++ (CGFloat)printerDotRadiusFraction { return pc100cpaper::kDotRadiusFraction; }
++ (CGFloat)printerPaperPaddingX { return 6; }
++ (CGFloat)printerPaperPaddingY { return 8; }
 
 + (NSInteger)heatmapCols { return cu59::kHeatmapCols; }
 + (NSInteger)heatmapRows { return cu59::kHeatmapRows; }

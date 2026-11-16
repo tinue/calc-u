@@ -60,12 +60,14 @@ file(GLOB SHARED_SOURCES CONFIGURE_DEPENDS ${SHARED_ROOT}/*.cpp)
 list(REMOVE_ITEM SHARED_SOURCES ${SHARED_ROOT}/HarnessProduct.cpp)   # the harness entry (calcu59_harness), not the app
 set(CORE_SOURCES
   ${CORE_ROOT}/PC100C.cpp
+  ${CORE_ROOT}/PC100CPaper.cpp
   ${CORE_ROOT}/SolidStateRomModule.cpp
   ${CORE_ROOT}/TI59Machine.cpp
   ${CORE_ROOT}/TMC0501.cpp
   ${CORE_ROOT}/ROM.cpp
   ${CORE_ROOT}/RAM.cpp
   ${CORE_ROOT}/TIAdapters.cpp
+  ${CORE_ROOT}/TIDebugging.cpp
   ${CORE_ROOT}/TICatalogue.cpp
   ${CORE_ROOT}/TIKeys.cpp
   ${CORE_ROOT}/TIMachine.cpp
@@ -74,10 +76,8 @@ set(CORE_SOURCES
   ${CORE_ROOT}/ModuleFile.cpp
 )
 
-qt_add_executable(CalcU59Qt
-  MACOSX_BUNDLE
-  WIN32
-  app/main.cpp
+# The app's own sources but main.cpp: also CalcU59QtTests' (M-53).
+set(CALCU59_QT_SOURCES
   app/MainWindow.cpp
   app/EmulatorController.cpp
   app/QtResourceBundle.cpp
@@ -86,9 +86,8 @@ qt_add_executable(CalcU59Qt
   app/LedRenderer.cpp
   app/CueCardRenderer.cpp
   app/ControlBar.cpp
-  app/PrinterWidget.cpp
+  app/PaperPane.cpp
   app/CardPickerDialog.cpp
-  app/HoldRepeatButton.cpp
   app/SettingsDialog.cpp
   app/AboutDialog.cpp
   app/AppPaths.cpp
@@ -100,6 +99,12 @@ qt_add_executable(CalcU59Qt
   app/debug/LogWidget.cpp
   ${CORE_SOURCES}
   ${SHARED_SOURCES}
+)
+qt_add_executable(CalcU59Qt
+  MACOSX_BUNDLE
+  WIN32
+  app/main.cpp
+  ${CALCU59_QT_SOURCES}
   resources/calc-u-59.qrc
 )
 
@@ -114,6 +119,7 @@ foreach(f ${ROM_TXT})
   set_source_files_properties(${f} PROPERTIES QT_RESOURCE_ALIAS ${name})
 endforeach()
 qt_add_resources(CalcU59Qt "roms" PREFIX "/roms" FILES ${ROM_TXT})
+set(CALCU59_QT_ROM_FILES ${ROM_TXT})
 
 set(ARTWORK)
 foreach(img ti59_base ti58_base CueCard MagnetCard SolidStateCard)
@@ -122,10 +128,14 @@ foreach(img ti59_base ti58_base CueCard MagnetCard SolidStateCard)
   list(APPEND ARTWORK ${f})
 endforeach()
 qt_add_resources(CalcU59Qt "artwork" PREFIX "/img" FILES ${ARTWORK})
+set(CALCU59_QT_ARTWORK ${ARTWORK})
 
 target_include_directories(CalcU59Qt PRIVATE ${CORE_ROOT} ${SHARED_ROOT} app ${CMAKE_CURRENT_BINARY_DIR}/generated)
 # The machine interface (C59-1; LIB-1 §2a): the core implements calcu::machine.
 target_link_libraries(CalcU59Qt PRIVATE Qt6::Widgets calcu_library)
+# The Qt6 component set (LIB-8, LIB-10; M-53): the paper panel, the
+# run-control buttons and the clipboard service.
+target_link_libraries(CalcU59Qt PRIVATE calcu_qt6)
 # LIB-17 AC-19 (design §5, P59-5): the test hook --pacing-probe <s> exists
 # in a build with the tests only, never in the release packaging
 # (build/release, CALCU_TESTS off). Checkpoint: CalcU59QtPacingProbe, one
@@ -164,6 +174,28 @@ if(APPLE)
 endif()
 
 set_target_properties(CalcU59Qt PROPERTIES OUTPUT_NAME "Calc-U-59")
+
+# CalcU59QtTests (M-53; LIB-8 E8-8, E8-9; LIB-10 E10-7): the app's widgets
+# on its EmulatorController, the session on the real ROMs (compiled in as
+# the app has them), offscreen, with a HOME of its own (no settings of the
+# user's are touched); the repository's one runner with a QApplication
+# (library/qt6/tests/QtTestMain.cpp). On the real clock.
+if(CALCU_TESTS)
+  file(GLOB CALCU59_QT_TEST_SOURCES CONFIGURE_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/tests/*_tests.cpp)
+  add_executable(CalcU59QtTests ${CALCU59_QT_SOURCES} ${CALCU59_QT_TEST_SOURCES}
+                 ${CMAKE_CURRENT_SOURCE_DIR}/../../../../library/qt6/tests/QtTestMain.cpp)
+  qt_add_resources(CalcU59QtTests "roms" PREFIX "/roms" FILES ${CALCU59_QT_ROM_FILES})
+  qt_add_resources(CalcU59QtTests "artwork" PREFIX "/img" FILES ${CALCU59_QT_ARTWORK})
+  set_target_properties(CalcU59QtTests PROPERTIES AUTOMOC ON)
+  calcu_qt6_moc_compat(CalcU59QtTests)
+  target_include_directories(CalcU59QtTests PRIVATE ${CORE_ROOT} ${SHARED_ROOT} app tests ${CMAKE_CURRENT_BINARY_DIR}/generated
+                             ${CMAKE_CURRENT_SOURCE_DIR}/../../../../library/testing)
+  target_link_libraries(CalcU59QtTests PRIVATE Qt6::Widgets calcu_library calcu_qt6 calcu_warnings)
+  set(QT_TEST_HOME ${CMAKE_CURRENT_BINARY_DIR}/qt-tests-home)
+  file(MAKE_DIRECTORY ${QT_TEST_HOME})
+  calcu_add_test(CalcU59QtTests frequent COMMAND CalcU59QtTests)
+  set_tests_properties(CalcU59QtTests PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen;HOME=${QT_TEST_HOME}")
+endif()
 
 # ---- Install (used by the Windows/Linux packaging jobs) ----
 install(TARGETS CalcU59Qt BUNDLE DESTINATION . RUNTIME DESTINATION bin)

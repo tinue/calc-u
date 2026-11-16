@@ -834,3 +834,63 @@ TEST(dropped_preset_loads_as_the_button_does) {
     CHECK(!r.errors().empty());  // reported, as a failed Open is
 }
 
+
+// ── LIB-8's Calc-U-59 column in the app session (design §11.6, E8-6, E8-7) ──
+
+// AC-29: detached, the panel's owner is none (P-E1: `c59.printer` says
+// not connected) and the papers topic still lists the PC-100C's paper, empty
+// of nothing it had.
+TEST(lib8_ac29_detached_panel_owner_empty) {
+    PartRig r;
+    auto& c = r.part();
+    c.loadStateFile(bytes("KEYSTROKES:\n82 21 94\n"));   // 1 2nd Prt
+    CHECK(r.runUntil([&] { return !r.printedText().empty() && !c.keystrokesPlaying(); }, 5000ms));
+    c.setPrinterConnected(false);
+    r.run(50ms);
+    const auto* printer = r.state<TIPrinterState>(topics::kPrinter);
+    CHECK(printer && !printer->connected);
+    const auto* papers = r.state<calcu::paper::PaperList>(calcu::paper::kPapersTopic);
+    CHECK(papers && papers->papers.size() == 1 && papers->papers[0].owner == "PC-100C");
+    CHECK_EQ(r.printedText().size(), std::size_t{1});   // kept while detached
+    // Without a name the paper commands mean the printer plugged in: none (EC-8).
+    const auto reply = r.send(calcu::paper::kPaperCutCommand, calcu::sessions::Value::object({{"copy", false}}));
+    CHECK(!reply.done && reply.reason == calcu::paper::kNoPrinterPlugged);
+}
+
+// AC-8 (P-E4): a preset that names the printer starts with empty paper.
+TEST(lib8_ac8_preset_naming_printer_starts_empty) {
+    PartRig r;
+    auto& c = r.part();
+    c.loadStateFile(bytes("KEYSTROKES:\n82 21 94\n"));
+    CHECK(r.runUntil([&] { return !r.printedText().empty() && !c.keystrokesPlaying(); }, 5000ms));
+    c.loadStateFile(bytes("PRINTER: on\nREGISTERS:\n01 = 1\n"));
+    r.run(50ms);
+    CHECK(r.printedText().empty());
+    CHECK(r.pc100cPaper()->empty());
+}
+
+// AC-8 (D-29): a 2.3.0 preset without a PRINTER: line keeps the paper (ledger 59-48).
+TEST(lib8_ac8_preset_without_printer_line_keeps_paper) {
+    PartRig r;
+    auto& c = r.part();
+    c.loadStateFile(bytes("KEYSTROKES:\n82 21 94\n"));
+    CHECK(r.runUntil([&] { return !r.printedText().empty() && !c.keystrokesPlaying(); }, 5000ms));
+    c.loadStateFile(bytes("REGISTERS:\n01 = 1\n"));
+    r.run(50ms);
+    CHECK_EQ(r.printedText().size(), std::size_t{1});
+}
+
+// AC-22 (P-E5): KEYSTROKES CutPaper: is the step cut-paper: the paper of
+// the printer plugged in, without a copy.
+TEST(lib8_ac22_keystrokes_cut_paper) {
+    PartRig r;
+    auto& c = r.part();
+    c.loadStateFile(bytes("KEYSTROKES:\n82 21 94\nWait: 1s\nCutPaper:\n83 21 94\nWait: 1s\n"));
+    CHECK(r.runUntil([&] { return c.keystrokesPlaying(); }, 2000ms));
+    CHECK(r.runUntil([&] { return !c.keystrokesPlaying(); }, 8000ms));
+    r.run(300ms);
+    CHECK(r.errors().empty());
+    const auto text = r.printedText();
+    CHECK(text.size() == 1 && text[0] == "          2.        ");
+    CHECK_EQ(r.pc100cPaper()->text()[0].at.y, calcu::paper::Coord{0});   // y counts from the cut
+}

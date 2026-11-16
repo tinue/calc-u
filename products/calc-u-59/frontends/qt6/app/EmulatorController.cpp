@@ -6,6 +6,8 @@
 #include "ProductRoms.hpp"
 #include "QtResourceBundle.hpp"
 #include "sessions/LibraryTopics.hpp"
+#include "debugger/RunState.hpp"
+#include "paper/PaperTopics.hpp"
 #include "typing/TypingTopics.hpp"
 #include <QDebug>
 #include <QFile>
@@ -40,7 +42,6 @@ const cu59::TILedState kNoLed{};
 const cu59::TICueCardState kNoCue{};
 const cu59::TIPrinterState kNoPrinter{};
 const cu59::TICardReaderState kNoCard{};
-const cu59::TIRunState kNoRun{};
 const cu59::TIDebugLiveState kNoLive{};
 const cu59::TIDebugCpuState kNoCpu{};
 const cu59::TIDebugHeatmapState kNoHeatmap{};
@@ -69,7 +70,10 @@ EmulatorController::EmulatorController(QObject* parent) : QObject(parent) {
     m_app = cu59::makeAppSession(std::move(setup), cu59::steadyWallTime);
     m_listener.mirror().onChange = [this](const cs::TopicName& t) { topicChanged(t); };
     m_listener.onMessage = [this](const cs::Message& m) { onMessage(m); };
-    m_listener.listen(*m_app.session);   // Qt states no host service yet (C59-8)
+    // LIB-8 P-E6: the clipboard for the paper panel's Copy (until M-57).
+    cs::HostServices services;
+    services.offered = {cs::HostService::ClipboardImage, cs::HostService::ClipboardText};
+    m_listener.listen(*m_app.session, services);
     m_frameTimer.setTimerType(Qt::PreciseTimer);
     m_frameTimer.setInterval(1000 / 60);
     connect(&m_frameTimer, &QTimer::timeout, this, [this] { m_app.session->call(cu59::steadyWallTime()); });
@@ -86,7 +90,23 @@ EmulatorController::~EmulatorController() {
 // panel requests, taken from it as they come. An operation's reply is not
 // waited for.
 void EmulatorController::onMessage(const cs::Message& m) {
+    if (const auto* a = std::get_if<cs::ServiceAsk>(&m)) {   // P-E6
+        cs::ServiceAnswer answer;
+        if (calcu::qt6::ClipboardService::handles(a->service)) answer = m_clipboard.answer(*a);
+        else answer.reason = "This frontend does not offer it.";
+        m_app.session->answer(a->ask, std::move(answer));
+        return;
+    }
+    if (std::holds_alternative<cs::StateMessage>(m) || std::holds_alternative<cs::StreamMessage>(m))
+        for (const auto& h : m_handlers) h(m);
     if (const auto* s = std::get_if<cs::StreamMessage>(&m)) {
+        // The paper streams are the panel's (it keeps the paper); the mirror keeps none once it listens.
+        if (s->topic.value.rfind("paper", 0) == 0) {
+            if (m_handlers.empty()) return;   // kept until the panel takes them (addMessageHandler)
+            (void)m_listener.mirror().takeAppended(s->topic);
+            (void)m_listener.mirror().takeReset(s->topic);
+            return;
+        }
         const bool handled = s->topic == cs::kNoticesTopic || s->topic == cs::kLogTopic ||
                              s->topic == cu59::topics::kShowDebugPanel;
         if (handled) (void)m_listener.mirror().takeAppended(s->topic);
@@ -125,12 +145,10 @@ void EmulatorController::topicChanged(const cs::TopicName& t) {
     } else if (t == T::kCueCard) {
         emit cueCardChanged();
     } else if (t == T::kPrinter) {
-        m_printerLines.clear();
-        for (const auto& l : orNone(state<cu59::TIPrinterState>(T::kPrinter), kNoPrinter).lines) m_printerLines << qs(l);
         emit printerChanged();
     } else if (t == T::kCardReader) {
         emit cardStateChanged();
-    } else if (t == T::kRunState || t == calcu::typing::kHeldKeysTopic) {
+    } else if (t == T::kRunState || t == calcu::typing::kHeldKeysTopic || t == calcu::debugger::kRunStateTopic) {
         emit runStateChanged();
     } else if (t == T::kDebugLive) {
         emit liveSnapshotChanged();
@@ -142,7 +160,7 @@ void EmulatorController::topicChanged(const cs::TopicName& t) {
         emit logChanged();
     } else if (t == T::kDebugAsm) {
         emit asmChanged();
-    } else if (t == T::kTrace) {
+    } else if (t == calcu::debugger::kTraceTopic) {
         emit traceChanged();
     }
 }
@@ -219,18 +237,23 @@ int EmulatorController::keyboardHeldKey() const {
 
 // ── Printer ──────────────────────────────────────────────────────────────────
 
-const std::vector<PrinterCodeLine>& EmulatorController::printerCodeLines() const {
-    return orNone(state<cu59::TIPrinterState>(cu59::topics::kPrinter), kNoPrinter).codeLines;
-}
-double EmulatorController::printerStripHeightUnits() const {
-    return orNone(state<cu59::TIPrinterState>(cu59::topics::kPrinter), kNoPrinter).stripHeightUnits;
-}
 bool EmulatorController::printerConnected() const {
     return orNone(state<cu59::TIPrinterState>(cu59::topics::kPrinter), kNoPrinter).connected;
 }
 bool EmulatorController::printerTrace() const { return orNone(state<cu59::TIPrinterState>(cu59::topics::kPrinter), kNoPrinter).trace; }
-void EmulatorController::pressPrinterPrint(bool pressed) { send(cu59::commands::kPrinterPrint, Value::object({{"pressed", pressed}})); }
-void EmulatorController::pressPrinterAdv(bool pressed) { send(cu59::commands::kPrinterAdv, Value::object({{"pressed", pressed}})); }
+
+void EmulatorController::addMessageHandler(std::function<void(const cs::Message&)> handler) {
+    // What the topics hold now, then every message as it comes.
+    for (const cs::TopicName& t : {calcu::paper::kPapersTopic, calcu::debugger::kRunStateTopic, calcu::debugger::kTraceTopic})
+        if (const cs::PayloadPtr* p = m_listener.mirror().state(t)) handler(cs::StateMessage{t, *p});
+    if (const auto* papers = state<calcu::paper::PaperList>(calcu::paper::kPapersTopic))
+        for (const auto& e : papers->papers) {
+            const cs::TopicName t = calcu::paper::paperTopic(e.owner);
+            cs::StreamMessage s{t, m_listener.mirror().takeReset(t), m_listener.mirror().takeAppended(t)};
+            if (s.reset || !s.appended.empty()) handler(s);
+        }
+    m_handlers.push_back(std::move(handler));
+}
 
 // ── Card reader ──────────────────────────────────────────────────────────────
 
@@ -277,19 +300,21 @@ void EmulatorController::openDroppedFile(const QString& path) {
 
 void EmulatorController::setLiveDebugEnabled(bool on) { send(cu59::commands::kLiveDebug, Value::object({{"on", on}})); }
 void EmulatorController::setCpuDebugEnabled(bool on) { send(cu59::commands::kCpuDebug, Value::object({{"on", on}})); }
-bool EmulatorController::isFrozen() const { return orNone(state<cu59::TIRunState>(cu59::topics::kRunState), kNoRun).debug.frozen; }
-std::optional<cu59::FreezeOwner> EmulatorController::freezeOwner() const {
-    return orNone(state<cu59::TIRunState>(cu59::topics::kRunState), kNoRun).debug.owner;
+const calcu::debugger::RunState* EmulatorController::runState() const {
+    return state<calcu::debugger::RunState>(calcu::debugger::kRunStateTopic);
 }
-bool EmulatorController::pendingFreezeOnPCChange() const {
-    return orNone(state<cu59::TIRunState>(cu59::topics::kRunState), kNoRun).debug.pcChangeArmed;
+bool EmulatorController::isFrozen() const {
+    const auto* r = runState();
+    return r && r->paused;
 }
-bool EmulatorController::pendingCpuScanLoopFreeze() const {
-    return orNone(state<cu59::TIRunState>(cu59::topics::kRunState), kNoRun).debug.scanLoopExitArmed;
+bool EmulatorController::startArmed(const calcu::debugger::LevelName& level) const {
+    const auto* r = runState();
+    return r && r->armed == level;
 }
-void EmulatorController::freeze(cu59::FreezeOwner owner) {
-    send(cu59::commands::kFreeze, Value::object({{"owner", owner == cu59::FreezeOwner::Calculator ? 1 : 0}}));
+void EmulatorController::armStart(const calcu::debugger::LevelName& level) {
+    send(calcu::debugger::kPauseOnStartCommand, Value::object({{"level", level.value}}));
 }
+void EmulatorController::disarmStart() { send(calcu::debugger::kPauseOnStartCommand, Value::object({{"off", true}})); }
 const cu59::LiveDebugSnapshot& EmulatorController::liveSnapshot() const {
     return orNone(state<cu59::TIDebugLiveState>(cu59::topics::kDebugLive), kNoLive).live;
 }
@@ -309,11 +334,13 @@ EmulatorController::DebugLevel EmulatorController::debugLevel() const {
     return orNone(state<cu59::TIDebugLogState>(cu59::topics::kDebugLog), kNoLog).level;
 }
 QString EmulatorController::logText() const { return qs(orNone(state<cu59::TIDebugLogState>(cu59::topics::kDebugLog), kNoLog).text); }
-bool EmulatorController::manualTrace() const {
-    const auto* t = state<cu59::TITraceState>(cu59::topics::kTrace);
-    return t && t->manualTrace;
+bool EmulatorController::traceRunning() const {
+    const auto* t = state<calcu::debugger::TraceState>(calcu::debugger::kTraceTopic);
+    return t && t->running;
 }
-void EmulatorController::setManualTrace(bool on) { send(cu59::commands::kManualTrace, Value::object({{"on", on}})); }
+void EmulatorController::setTrace(bool on) {
+    send(calcu::debugger::kTraceCommand, on ? Value::object({{"button", true}}) : Value::object({{"off", true}}));
+}
 QString EmulatorController::asmFileName() const { return qs(orNone(state<cu59::TIDebugAsmState>(cu59::topics::kDebugAsm), kNoAsm).fileName); }
 int EmulatorController::asmWordCount() const { return orNone(state<cu59::TIDebugAsmState>(cu59::topics::kDebugAsm), kNoAsm).wordCount; }
 QString EmulatorController::asmStatus() const { return qs(orNone(state<cu59::TIDebugAsmState>(cu59::topics::kDebugAsm), kNoAsm).status); }

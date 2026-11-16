@@ -4,7 +4,8 @@
 // ── Trace feature flags ───────────────────────────────────────────────────────
 //
 // Independently gated cost tiers for the instruction trace / debug API.
-// Set via TIDebugTargetAdapter::setTraceFlags().
+// Set by TIMachine alone (TIMachine::applyTraceFlags): on while the debug
+// panel, a trace or the run control's checks want the frame ring.
 
 enum : uint32_t {
     TRACE_NONE         = 0x0000,
@@ -59,7 +60,8 @@ struct DebugEvent {
 //
 // The CPU state at the last step boundary or idle entry, with the module fetch
 // latch of that moment and a count of boundaries (0 = none since reset). Read
-// through TIDebugTargetAdapter; goes with it in M-53 (C59-1 design D-7).
+// through TIDebugPanelAdapter (LIB-10 adapter L-E3); goes with it in M-56
+// (C59-1 design D-7).
 
 struct TIStepBoundary {
     CpuFrame cpu;

@@ -1,6 +1,6 @@
 ---
 name: calc-u-59-shared
-description: Use this skill when working on the shared C++ layer of Calc-U-59 (app/, tests/, the product's CMakeLists.txt, tools/goldens/) — the non-GUI logic the Swift app, the Qt6 app and the web client use: file formats, state files, cue cards, the app session's product part (TIAppPart, makeAppSession; TIWebPart for the Web page), the Swift frontend's session thread (SessionThread), the emulator runtime (machine session, freeze state, key sequencing, frame sampling), the debugger model (DebugModel), debug snapshots, trace writer, view rules. Also trigger when adding a frontends/swift/Bridge/ wrapper for a Shared module, or when logic is about to be written in frontends/swift/App/*.swift, frontends/qt6/app/ or frontends/web/ that isn't drawing.
+description: Use this skill when working on the shared C++ layer of Calc-U-59 (app/, tests/, the product's CMakeLists.txt, tools/goldens/) — the non-GUI logic the Swift app, the Qt6 app and the web client use: file formats, state files, cue cards, the app session's product part (TIAppPart, makeAppSession; TIWebPart for the Web page), the Swift frontend's session thread (SessionThread), the emulator runtime (machine session, key sequencing, frame sampling), the TI's side of the library's paper (TIPrinters) and debugger (TILevelRules, TITraceRecorder, TIDebuggerSetup, the KEYSTROKES directives on the run control), the debugger model (DebugModel), debug snapshots, the trace records (TraceWriter), view rules. Also trigger when adding a frontends/swift/Bridge/ wrapper for a Shared module, or when logic is about to be written in frontends/swift/App/*.swift, frontends/qt6/app/ or frontends/web/ that isn't drawing.
 user-invocable: true
 ---
 
@@ -37,7 +37,12 @@ drawing rules: `reference/SharedArchitecture.md`. Don't restate them here.
    everything it gets a message (the interim `c59.*` topics,
    `app/TIAppPart.hpp`; the Web page's `c59.web.*`, `app/TIWebPart.hpp`).
    The flows are `TIAppPart`'s own (`TIAppPartFlows.cpp`; 2.3.0's
-   `SessionController` was taken apart into it in M-34); tests drive them
+   `SessionController` was taken apart into it in M-34). The paper is
+   LIB-8's `PaperPart` and every pause, step, breakpoint and trace LIB-10's
+   `DebuggerPart` (M-53; `makeAppSession` owns both, after `TIAppPart`):
+   no freeze state, no printer lines and no trace writer in `app/` (rows of
+   the adapters P-E1 to P-E5, L-E1 to L-E5 in
+   `reference/SharedArchitecture.md`). Tests drive them
    on the session (`tests/SessionRig.hpp`: `SessionRig`, and `PartRig` with
    the card files in memory; on the library's `TestFrontend` and `Pump`,
    `library/testing/`).

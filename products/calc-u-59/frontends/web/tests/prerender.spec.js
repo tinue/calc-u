@@ -39,7 +39,7 @@ test('PlayCalculator renders server-side without fetch or Worker', async ({}, te
   run(path.join(VENDOR, 'react-dom-server-legacy.browser.production.min.js'));
   run(path.join(WEB, 'dist', 'calc.js'));
 
-  expect(Object.keys(ctx).filter((k) => /^(createEngine|useEngine|CalculatorFace|ControlBar|Printer|Debugger|paintLed)$/.test(k)),
+  expect(Object.keys(ctx).filter((k) => /^(createEngine|useEngine|CalculatorFace|ControlBar|PaperPane|Debugger|paintLed)$/.test(k)),
          'calc.js leaks its internals into the global scope').toEqual([]);
 
   for (const props of [{ layout: 'wide', keyboard: true }, { layout: 'portrait' }]) {

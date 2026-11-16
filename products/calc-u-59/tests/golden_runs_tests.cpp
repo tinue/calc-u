@@ -11,7 +11,10 @@
 // design §8) the module and the PC-100C are peripherals in their places:
 // `module` and `printer` before the first command go into the build request
 // (no power cycle is added), `trace`, `paper` and `print` are the PC-100C's
-// controls, and the printed lines come from its `c59.printer-output`.
+// controls. Since M-53 (LIB-8) the `print` lines are the text layer of a
+// calcu::paper::Paper bound to its `printer/paper-output` capability
+// (testroms::paperTap), and the `dots` lines its code lines
+// (TIMachineTesting::printedCodeLines, adapter P-E3); both as before.
 //
 // Each tests/golden-runs/<name>.run is a script; <name>.golden is what the
 // core did. A golden "display" line holds 2.3.0's control and digit nibbles;

@@ -149,7 +149,9 @@ constexpr Accepted kAccepted[] = {
     {"screentest_test_58_glyphs.ti58.txt", "playback: ",
      "finding, since M-34, the same before and after M-36: the preset ends frozen (its FreezeOnStart: fires), and "
      "the app session steps a running operation only while the machine runs, so the preset's operation never "
-     "ends (the freeze becomes the session's pause with LIB-10 59, M-53)"},
+     "ends (the freeze becomes the session's pause with LIB-10 59, M-53); still so after M-53: the preset's last "
+     "key (= after FreezeOnStart:) is held by the typing engine until the ROM is ready for keys again, which the "
+     "paused machine never is, so the playback waits in its key"},
     {"screentest_test_cdebug.ti59.txt", "playback: ",
      "finding, since M-34, the same before and after M-36: as screentest_test_58_glyphs.ti58 (FreezeOnStart: "
      "at the end of the preset)"},

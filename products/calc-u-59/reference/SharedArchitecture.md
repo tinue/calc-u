@@ -39,12 +39,14 @@ wrappers in `frontends/swift/Bridge/`, which only translate types (`AppArchitect
 | `TIAppPart` (`TIAppPart.cpp`, `TIAppPartFlows.cpp`) | Calc-U-59 in the library's app session: everything a frontend does with a calculator that isn't drawing (below); the interim topics and commands, `makeAppSession` (M-33; 2.3.0's `SessionController` taken apart into it in M-34) |
 | `TIFileAccess`, `PacingProfiles` | The card and `ti58c.mem` files on the save folder; the TI pacing profiles (M-33) |
 | `TIWebPart`, `WebPageData` | What the Web page draws, as `c59.web.*` topics, commands and requests; the static page data (adapter W59-1) (LIB-15 59, M-34) |
-| `EmulatorSession` | One running calculator around the machine the machine session owns: the halt flag and the debugger's queued steps, the freeze-checked advance of a slice, freeze state, key input, frame sampler, trace writers |
+| `EmulatorSession` | One running calculator around the machine the machine session owns: KEYSTROKES playback, key input, queued cards, frame sampler |
 | `SessionThread` | The Swift frontend's session thread and its two queues (C59-5) |
-| `FreezeController` | The two armed freezes, checked per instruction inside the advance |
+| `TILevelRules` | The levels `program` and `cpu` of the run control (LIB-10 AC-29, AC-30): where a pause lands (a step boundary, or 50000 weights), one step, pause-on-start; the ASM overlay's pause in place |
+| `TIDebuggerSetup` | The `DebuggerPart`'s set-up: the rules, the trace session on `TITraceRecorder`, the trace folder (none on the Web: hand-over), the panel views (M-53) |
+| `TIPrinters` | The PC-100C with its paper description, for the `PaperPart` (M-53) |
 | `TIKeystrokePlayback` | KEYSTROKES playback of format 1 (LIB-5 adapter until M-54): its keys go to the library's typing engine, its `Wait:` in wall time |
 | `TITyping` | The TI typing profile per model (100 ms of emulated time, held until the ROM read it), the keyboard map (`TIKeyboardMap`), the names `key` takes; handed to the library's `TypingPart` (LIB-5) |
-| `FrameSampler` | The 60 Hz frame: display, C indicator, printer, log, card auto-eject |
+| `FrameSampler` | The 60 Hz frame: display, C indicator, log, card auto-eject |
 | `DisplayPov` | LED brightness per position from the core's duty cycles (persistence of vision) |
 | **Debugger** | |
 | `DebugModel` | The panels' data: CALCULATOR snapshot and listing, CPU history, ROM heatmap, LOG ring |
@@ -54,7 +56,8 @@ wrappers in `frontends/swift/Bridge/`, which only translate types (`AppArchitect
 | `RomHeatmap` | Execution counts per ROM address, heat steps and colours |
 | `ModuleImage` | PRG SOURCE decoding, the module's program table, source labels |
 | `AsmOverlay` | ASM overlay file parser and entry |
-| `TraceWriter` | Binary trace format v2 (`DebugAPI.md`) |
+| `TraceWriter` | The records of the binary trace format v2 (`DebugAPI.md`), encoded into a buffer |
+| `TITraceRecorder` | The trace session's records of a TI machine: the frames of `c59.trace-records` as `TraceWriter` records, no key or card records (LIB-10 AC-33) |
 | **Files** | |
 | `StateFile` | `.ti59` parser and `stateFileModel` (`StateFileFormat.md`) |
 | `StateApplier` | Writes a parsed file into the machine; power-on, soft and clean reset |
@@ -70,7 +73,6 @@ wrappers in `frontends/swift/Bridge/`, which only translate types (`AppArchitect
 | `KeyNames` | Keycode mnemonics, operand-step grammar |
 | `SevenSegment` | 7-segment pattern of every display glyph |
 | `LedGeometry` | Segment polygons (modernized), dot grids (classic), decimal point, style parameters |
-| `PrinterFont` | PC-100C 5×7 font and paper geometry (`PrinterGeometry`) |
 | `Bcd` | Register BCD encoding, register lines |
 | `Settings` | The settings file `Calc-U-59.ini` (LIB-9): `settingsDecl()` with every key, default and accepted value, and typed calls over the library's `calcu::settings::SettingsFile` |
 | `TextUtil` | Foundation-compatible string helpers, so ported parsers keep their edge cases |
@@ -88,28 +90,35 @@ holds the machine session (the machine, LIB-17's pacer with the TI profiles
 of `app/PacingProfiles.hpp`) and Calc-U-59's part, `cu59::TIAppPart`. A
 frontend sends commands (`cu59::commands`, `c59.*`, and the library's
 `speed`, `suspend`, `continue`, …) and gets messages: the library's topics
-(`display`, `busy`, `notices`, `log`) and the interim `c59.*` topics
-(`c59.model`, `c59.led`, `c59.printer`, `c59.card-reader`, `c59.run-state`,
-`c59.debug.*`, …; each the snapshot of one of 2.3.0's change flags, until
-the feature that owns it, LIB-3 59 design §5). Qt6 calls the session on its
+(`display`, `busy`, `notices`, `log`; since M-53 also `papers`,
+`paper PC-100C`, `paper-copies` of LIB-8 and `run-state`, `trace` of
+LIB-10) and the interim `c59.*` topics (`c59.model`, `c59.led`,
+`c59.printer` (connected and TRACE only), `c59.card-reader`,
+`c59.run-state` (full speed and playback only), `c59.debug.*`, …; each the
+snapshot of one of 2.3.0's change flags, until the feature that owns it,
+LIB-3 59 design §5). Qt6 calls the session on its
 GUI thread, Swift on `cu59::SessionThread`, the Web in its worker (§ "Threads");
 each talks to it through the library's `calcu::sessions::Listener`. The
-session owns the part (`AppSessionSetup::owned`) and lets it go first.
+session owns the parts (`AppSessionSetup::owned`) and lets them go first:
+`makeAppSession` puts the library's `TypingPart` (LIB-5) first, then
+`TIAppPart`, LIB-8's `PaperPart` (on `tiPrinterPapers()`, `app/TIPrinters`)
+and LIB-10's `DebuggerPart` (on `tiDebuggerSetup()`, `app/TIDebuggerSetup`),
+in that order (LIB-8 D-23; the move to `LibraryParts` is M-54's).
 
 `TIAppPart` holds the flows all GUIs share (2.3.0's `SessionController`,
 taken apart in M-34): it owns the `EmulatorSession` (rebuilt on a model
 switch) and the `DebugModel`, and runs starting and switching machines,
 presets (an operation, LIB-3 AC-32), the TI-58C memory file, the card
-reader, the printer strip, the cue card shown, freeze and step, traces,
-the ASM overlay and the LOG tab. The `EmulatorSession` hands its machine to
-the machine session; its freeze checks run inside each slice's advance
-(`EmulatorSession::advanceHosted`, the `TIFreezeGate`), KEYSTROKES playback
-at each slice end with the slice's wall time (`TIKeystrokePlayback`), and a
-frozen machine pauses the machine session. Keys are the library's typing
-(`library/typing/`, LIB-5): its `TypingPart` goes in front of `TIAppPart` in
-every session, with `cu59::typingProduct()`; the TI freeze is its pause
-(`TIFreezeProbe`), and the manual trace records its keys
-(`TIKeyTraceObserver`, until M-53). An error is a notice ("title:
+reader, the PC-100C's place and controls, the cue card shown, the debug
+panel's data, the ASM overlay and the LOG tab. The `EmulatorSession` hands
+its machine to the machine session; KEYSTROKES playback runs at each slice
+end with the slice's wall time (`TIKeystrokePlayback`). Since M-53 the
+paper is the `PaperPart`'s and every pause, step, breakpoint and trace is
+the `DebuggerPart`'s: its run control is the machine session's gate, and
+the machine session's pause, which it sets, is the typing part's pause.
+Keys are the library's typing (`library/typing/`, LIB-5): its `TypingPart`
+goes in front of `TIAppPart` in every session, with
+`cu59::typingProduct()`. An error is a notice ("title:
 message"), a diagnostic a log line, the card and `ti58c.mem` files go
 through `TIFileAccess` in the save folder; what the `EmulatorSession`
 reports waits in the part's queue and runs on the session's thread after
@@ -121,13 +130,18 @@ After each host call (`TIAppPart::afterCall`):
 
 1. **Frame** (`FrameSampler`): each position's glyph and brightness
    (`DisplayPov`), the C indicator's opacity (it follows the core's drive at
-   once, holding only a single dark frame), printer text and dot lines, core
-   log lines, and card auto-eject (the core executed `CRD_OFF`; written data
+   once, holding only a single dark frame), core log lines, and card
+   auto-eject (the core executed `CRD_OFF`; written data
    is saved).
 2. **Debugger** (`DebugModel::tick`): the CALCULATOR snapshot while its panel
-   shows; the CPU history and heatmap while the CPU panel shows.
-3. **Traces**: the core's trace ring drained into the open writers.
-4. **Slower checks**: the cue card's library program (2 Hz), the LOG text
+   shows; the CPU history and heatmap while the CPU panel shows or the
+   machine is paused. At every settle `followRunState` reads the run
+   control: a pause or step that landed gets the frozen view of where the
+   machine stands (rebuilt when the tick count moved), and the core's frame
+   ring is on while the CPU tab shows, the machine is paused or a start is
+   armed. (The trace is pumped by the library's trace session inside the
+   gate, LIB-10 T2.)
+3. **Slower checks**: the cue card's library program (2 Hz), the LOG text
    (1 Hz), the TI-58C persist (0.5 s after a batch ran).
 
 Then only the interim topics of what changed are published.
@@ -143,7 +157,7 @@ The app layer has no thread of its own but one host adapter:
 | Web | the library's Web Worker (`library/web/src/worker.js`): a 60 Hz `setInterval` calls the session through the library's `WorkerHost` (LIB-15) |
 
 Nothing else in the app layer locks (ADR 0009): `EmulatorSession`,
-`TIAppPart`, `TIKeystrokePlayback`, `FreezeController` and `TraceWriter` are
+`TIAppPart`, `TIKeystrokePlayback`, `TILevelRules` and `TITraceRecorder` are
 single-threaded.
 
 ### Key input
@@ -155,11 +169,15 @@ harness's `key`. The engine is a slice hook of the machine session, so its
 holds and waits are counted in emulated time and land on their tick
 whatever the pacing. `TIKeystrokePlayback` scripts are resumable tasks that
 the `EmulatorSession` advances at the end of every slice (with no slice,
-frozen, at the time of the call); a `Key` event is one press of the engine
+paused, at the time of the call); a `Key` event is one press of the engine
 (origin Preset), and the script waits until the engine is idle again.
 
-The session owns the debugger's freeze state and the core's trace flags.
-Freeze, step and their threading: `DebugAPI.md` § "Freeze / Step Controls".
+The pause and the steps are the library's run control (LIB-10, M-53), the
+machine session's gate, with the TI's levels (`TILevelRules`). A pause or
+a program step waiting to land runs on inside the host call that asked for
+it (`TIDebugging::setRunOn`, at most 50000 weights), as 2.3.0's freeze and
+STEP did, not in paced emulated time. Details: `DebugAPI.md` § "Freeze /
+Step Controls".
 Core locking: `CoreArchitecture.md` § "Threading Model".
 
 ## Emulation Loop and Timing
@@ -174,12 +192,14 @@ does not count). A call drops a lag over 100 ms; full speed runs at most
 0.13 % / 0.10 % faster than 2.3.0 on the TI-59 / TI-58C, ledger 59-33).
 
 `step()` returns the cycle weight in the low 8 bits (`kWeightMask`). Bit 29
-marks a step boundary (the CALCULATOR freeze stops on it). Bit 30 marks a confirmed
+marks a step boundary (a `program` pause or step lands on it). Bit 30 marks a confirmed
 hardware poll (a key or card-switch wait; not a printer BUSY wait, which is
 counted in emulated cycles, so full speed speeds up printing). Bit 31 marks
-a breakpoint: core breakpoints are set only by the headless tools, and the
-loop just stops. An armed freeze that fires stops the batch, and the session
-applies it before reporting it.
+a breakpoint of the core's own (`TRACE_BREAKPOINTS`), set only by the
+headless tools. The run control's breakpoints (LIB-10 AC-31, set through
+the harness) stop the advance before the instruction (`TIDebugging`); an
+armed start that fires stops it after one, and the run control pauses
+there.
 
 ## Key Input Coordinate Systems
 
@@ -342,7 +362,7 @@ reference order: `StateFileFormat.md`.
    target model's limits. Parse errors are reported and the load continues.
 2. `MODEL:` names another model → `startMachine(target)` first. Then the
    partition check (`stateFilePartitionError`) aborts the load.
-3. `dropPresetCards`, stop the loop, unfreeze, and `applyState`
+3. `dropPresetCards`, resume a paused machine, and `applyState`
    (`StateApplier`). Then reset the heatmap baseline, start the loop, and
    apply the rest.
 4. Persist `ti58c.mem`, then play `KEYSTROKES:`.
@@ -357,9 +377,9 @@ into the keystroke events (`shared_ptr`). This is the order of operations:
 2. Playback waits until that count drops.
 3. A reload waits in the part's queue until after the call
    (`Listener::reloadRequested`). There
-   `TIAppPart::applyReloadStage` halts the machine, runs `applyReload`
+   `TIAppPart::applyReloadStage` runs `applyReload`
    (only the listed steps and registers)
-   on the session's thread, lets it run again (unless frozen), and updates
+   on the session's thread, between two advances, and updates
    the cue card. It then calls `hostDone()`.
 4. `ArmCard` and `InsertCard` queue their card in the session (`QueuedCard`).
 5. On each 60 Hz `tick()` with an empty reader, `takeQueuedCard()` hands out
@@ -384,9 +404,16 @@ into the keystroke events (`shared_ptr`). This is the order of operations:
 **Controls** (`PrinterTrace:`, `CutPaper:`, `DebugPanel:`, `Freeze:`,
 `FreezeOnStart:`, `Step:`, `Resume:`) take the
 same host-pending path. `Host::control` waits in the part's queue
-until after the call (`Listener::controlRequested`), where `TIAppPart::applyControl` calls
-what the GUI's button calls (`freeze`, `armPcChange`, `stepKeycode`, …), or
-the `c59.show-debug-panel` topic for the tab, which is GUI state. While frozen, a
+until after the call (`Listener::controlRequested`), where `TIAppPart::applyControl`
+(LIB-10 adapter L-E1, until M-54) calls the run control as the format-2
+steps will: `Freeze: Calculator` is `pause program`, `Freeze: CPU`
+`pause cpu`, `FreezeOnStart:` `pause-on-start`, `Step:` `step` (ignored
+with a log line while running), `Resume:` `resume`; `Freeze:` and `Step:`
+hold the playback until their pause has landed. `PrinterTrace:` sets TRACE,
+`CutPaper:` is `PaperPart::cutPlugged` (LIB-8 P-E5), `DebugPanel:` the
+`c59.show-debug-panel` topic for the tab, which is GUI state. `Trace:`
+starts or ends the library's trace session as a preset's trace (one at a
+time; one that cannot start ends the preset with a notice). While paused, a
 script's keys, reloads and inserted cards wait (`WaitingToPress` /
 `WaitingToApply`); a keyboard tap still goes in at once.
 
@@ -445,16 +472,19 @@ changes them under the guard (`setModule`, `setPrinter`,
 `printerControl`). `TIAppPart` owns what the app session keeps:
 the module ID, whether the printer is connected, TRACE's position
 (`m_printerTrace`: off at the start, never saved, kept across Reset, power
-cycle, Cold boot, a model switch and a detach; C59-6 AC-6, row 59-25) and
-the paper (`m_printerLines`, kept across a detach and a model switch,
-AC-1). `changeModule`/`selectModule` and `setPrinterConnected` run the
+cycle, Cold boot, a model switch and a detach; C59-6 AC-6, row 59-25); the
+paper is LIB-8's `PaperPart`'s (below). `changeModule`/`selectModule` and `setPrinterConnected` run the
 change, then the power cycle that follows (row 59-11). Before a detach the
-PC-100C ends the line it prints where the head is and hands its rows over
-(EC-2). A state file applies `SOLID-STATE-MODULE:` and `PRINTER:` first and
+PC-100C ends the line it prints where the head is, and its rows go onto
+the paper (LIB-8 EC-7). A state file applies `SOLID-STATE-MODULE:` and `PRINTER:` first and
 then the state, whose start-up is the power cycle; TRACE is off after a
-load unless its keystrokes set `PrinterTrace: on`. `FrameSampler` takes the
-paper from the `c59.printer-output` capability when a PC-100C is plugged
-in.
+load unless its keystrokes set `PrinterTrace: on`. The paper is LIB-8's
+`PaperPart`'s: it binds the `printer/paper-output` capability whenever a
+PC-100C is plugged in, keeps the paper while it is detached (the panel then
+has no owner) and gives it back on any model. A 2.3.0 preset that names
+`PRINTER:` starts with empty paper (P-E4, until M-54); the paper panel's
+`set-control {peripheral: PC-100C, control, on}` goes to the printer flows
+(P-E2, until M-54).
 
 ## Drawing Rules
 
@@ -504,14 +534,13 @@ these functions for the size the page reports, and paints it on a canvas
 
 ### Printer
 
-`PrinterFont` holds the PC-100C 5×7 font and the paper geometry measured
-from a real unit: dot pitch ≈ 0.430 mm, line heights including lines cut
-short, and the copy-as-image scale (600 dpi, capped for long strips).
-`PrinterGeometry::lineDots` turns a line cut short by the printer interrupt
-(Core's `PrinterCodeLine`) into the dot rows drawn and, per row, the inked
-and faint columns; `inkAlpha(heat)` gives a faint dot's ink (full from 20
-heating cycles), `lineHeightUnits` the line's height on the strip. All three
-renderers draw from these.
+Since M-53 the PC-100C gives its paper as marks (LIB-8): the font, the
+geometry measured from a real unit (dot pitch ≈ 0.430 mm, line heights
+including lines cut short) and the dot rules are the core's
+(`core/PC100CPaper.hpp`), the paper is the session's `PaperPart`, and the
+Qt6 and Web frontends draw it in the library's paper panel; the picture of
+Copy (600 dpi) is the library's (`library/paper/Picture`). The Swift strip
+draws from the same marks until C59-8 (S-P1).
 
 ## Solid-State Program Display
 
@@ -542,6 +571,7 @@ Snapshot fields and freeze semantics: `DebugAPI.md`.
 modules, with the ROMs from `roms/` (`LedGeometry` has no test of its own;
 `BatchJitter` is covered through the cooperative runner). A second target,
 `CalcU59TraceReader`, runs `tools/read_trace.py` on the trace the tests wrote
-(`build/trace-test.bin`), so the reader stays in step with `TraceWriter`. Ports of Swift code are checked against
+(`build/trace-test.bin`, `tests/trace_tests.cpp`), so the reader stays in
+step with `TraceWriter`. Ports of Swift code are checked against
 goldens produced by compiling the Swift original (`tools/goldens/`,
 `tests/golden/`).

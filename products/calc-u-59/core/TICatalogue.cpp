@@ -95,7 +95,7 @@ MachineDescriptor descriptor(const char* model, TickRate rate, bool ti59, bool t
 
 // The PC-100C (C59-6 AC-5; LIB-1 AC-32): fits the printer connector, the
 // keys PRINT and ADV and the switch TRACE, no ROM. Its paper is the
-// capability `c59.printer-output` while it is plugged in (design D-7).
+// capability `printer/paper-output` (LIB-8 AC-24) while it is plugged in.
 PeripheralDescriptor pc100c() {
     PeripheralDescriptor p;
     p.id = kPC100C;

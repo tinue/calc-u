@@ -2,10 +2,10 @@ import Foundation
 import os
 import SwiftUI
 
-/// Which debug panel owns the current freeze.
-/// RESUME and STEP are only enabled in the owning panel; the other panel's buttons are
-/// disabled while frozen to prevent cross-panel confusion (e.g. CALCULATOR STEP while
-/// frozen in CPU would silently resume until the next keycode boundary).
+/// Which debug panel owns the current freeze: the level of the library's run
+/// control (LIB-10 59): CPU is `cpu`, CALCULATOR `program`. RESUME and STEP
+/// are only enabled in the owning panel (the run-control buttons' rule,
+/// calcu::debugger::buttonUse, AC-18).
 enum FreezePanel { case cpu, calculator }
 
 /// Selected tab in the debug pane. Stored on EmulatorViewModel so the
@@ -83,9 +83,24 @@ class EmulatorViewModel {
     var isKeystrokesPlaying: Bool = false
 
     // ── Printer state ────────────────────────────────────────────────────────
+    // The PC-100C's paper: the library's `paper PC-100C` (LIB-8 S-P1, until
+    // C59-8's paper panel): its text lines and its dots, in the unit.
     var printerLines: [String] = []
-    var printerCodeLines: [PrinterCodeLine] = []  // parallel to printerLines
+    /// The dots by band of `paperBandUnits` down the paper (a dot near a band's
+    /// edge is in both), so that the strip draws only the bands in view.
+    var paperBands: [[TIPaperDot]] = []
+    private var paperDotsTaken = 0
+    static let paperBandUnits = 10.0
+    var paperReachUnits: Double = 0 {
+        didSet {
+            let n = Int((paperReachUnits / Self.paperBandUnits).rounded(.up))
+            if paperBands.count < n { paperBands.append(contentsOf: Array(repeating: [], count: n - paperBands.count)) }
+        }
+    }
     var printerClearID: Int = 0   // incremented on cut to reset Text identity and drop selection
+    /// The outcome of the last Copy (LIB-8 AC-20): "Copied to clipboard" or "Copy failed".
+    var paperCopyMessage: String? = nil
+    var paperCopySerial: Int = 0
     var printerTrace: Bool = false
     var printerConnected: Bool = true
 
@@ -126,12 +141,15 @@ class EmulatorViewModel {
     /// CALCULATOR "FREEZE ON START": freeze before the next program step. Setting it to
     /// false (the ARMED button) disarms it.
     var pendingFreezeOnPCChange: Bool = false {
-        didSet { if !pendingFreezeOnPCChange && session?.pcChangeArmed == true { session?.disarmPcChange() } }
+        didSet { if !pendingFreezeOnPCChange && session?.pcChangeArmed == true { session?.pause(onStart: .none) } }
     }
     /// CPU "FREEZE ON START": freeze when the keyboard scan loop exits.
     var pendingCPUScanLoopFreeze: Bool = false {
-        didSet { if !pendingCPUScanLoopFreeze && session?.scanLoopExitArmed == true { session?.disarmScanLoopExit() } }
+        didSet { if !pendingCPUScanLoopFreeze && session?.scanLoopExitArmed == true { session?.pause(onStart: .none) } }
     }
+    /// FREEZE, STEP, RESUME of each tab, by the library's rule (LIB-10 AC-18, AC-34).
+    private(set) var calculatorButtons = TIButtonUse(pause: false, step: false, resume: false)
+    private(set) var cpuButtons = TIButtonUse(pause: false, step: false, resume: false)
 
     /// The whole program of the source last shown (frozen PROGRAM STEPS view).
     var programListing: [LiveDebugSnapshot.StepEntry] = []
@@ -294,13 +312,15 @@ class EmulatorViewModel {
 
     // MARK: - Printer
 
-    func pressPrinterPrint(_ pressed: Bool) { session?.pressPrinterPrint(pressed) }
-    func pressPrinterAdv(_ pressed: Bool) { session?.pressPrinterAdv(pressed) }
-    func togglePrinterTrace() { session?.togglePrinterTrace() }
+    // The PC-100C's controls through the library's `set-control` (LIB-8 P-E2).
+    func pressPrinterPrint(_ pressed: Bool) { session?.setPrinterControl("PRINT", on: pressed) }
+    func pressPrinterAdv(_ pressed: Bool) { session?.setPrinterControl("ADV", on: pressed) }
+    func togglePrinterTrace() { session?.setPrinterControl("TRACE", on: !printerTrace) }
     func togglePrinterConnection() { session?.togglePrinterConnection() }
+    /// Copy and Cut are the session's (LIB-8 AC-16, AC-18): the picture is the
+    /// library's, the clipboard entry the bridge's.
+    func copyPaper() { session?.copyPaper() }
     func cutPaper() { session?.cutPaper() }
-    /// The strip's height in dot pitches (Shared pairs text and dot lines).
-    var printerStripHeightUnits: Double { session?.printerStripHeightUnits ?? 0 }
 
     // MARK: - Module, reset
 
@@ -355,15 +375,18 @@ class EmulatorViewModel {
 
     // MARK: - Debugger
 
-    func freeze(from panel: FreezePanel) { session?.freeze(panel == .cpu ? .cpu : .calculator) }
+    // The run control (LIB-10 59): FREEZE is `pause`, STEP `step`, RESUME
+    // `resume` of the tab's level; FREEZE ON START `pause-on-start`.
+    func freeze(from panel: FreezePanel) { session?.pause(panel == .cpu ? .cpu : .calculator) }
     func unfreeze() { session?.resume() }
-    func freezeOnNextPCChange() { session?.armPcChange() }
-    func freezeOnScanLoopExit() { session?.armScanLoopExit() }
-    func disarmCPUScanLoopFreeze() { session?.disarmScanLoopExit() }
-    /// STEP in the CALCULATOR panel: one keycode.
-    func stepKeycode() { session?.stepKeycode() }
-    /// STEP in the CPU panel: one instruction (through a HOLD).
-    func stepFrozen() { session?.stepInstruction() }
+    func freezeOnNextPCChange() { session?.pause(onStart: .calculator) }
+    func freezeOnScanLoopExit() { session?.pause(onStart: .cpu) }
+    func disarmCPUScanLoopFreeze() { session?.pause(onStart: .none) }
+    /// STEP in the CALCULATOR panel: one program step (`program`).
+    func stepKeycode() { session?.step(.calculator) }
+    /// STEP in the CPU panel: one instruction, through a HOLD (`cpu`).
+    func stepFrozen() { session?.step(.cpu) }
+    func buttons(for panel: FreezePanel) -> TIButtonUse { panel == .cpu ? cpuButtons : calculatorButtons }
 
     func clearRomHeatmap() { session?.clearHeatmap() }
 
@@ -452,16 +475,31 @@ class EmulatorViewModel {
         }
         if c.contains(.paperCut) {
             printerLines = []
-            printerCodeLines = []
+            paperBands = []
+            paperDotsTaken = 0
+            paperReachUnits = 0
             printerClearID &+= 1
         }
         if c.contains(.printer) {
-            // Append what's new (text and dot codes arrive independently; .paperCut cleared above).
-            if controller.printerLineCount > printerLines.count {
-                printerLines.append(contentsOf: controller.printerLines(from: printerLines.count))
+            // Append what's new (the bridge keeps the paper; .paperCut cleared above).
+            if controller.paperLineCount > printerLines.count {
+                printerLines.append(contentsOf: controller.paperLines(from: printerLines.count))
             }
-            if controller.printerCodeLineCount > printerCodeLines.count {
-                printerCodeLines.append(contentsOf: controller.printerCodeLines(from: printerCodeLines.count).map { PrinterCodeLine($0) })
+            if paperReachUnits != controller.paperReachUnits { paperReachUnits = controller.paperReachUnits }
+            if controller.paperDotCount > paperDotsTaken {
+                let data = controller.paperDots(from: paperDotsTaken)
+                let dots = data.withUnsafeBytes { Array($0.bindMemory(to: TIPaperDot.self)) }
+                paperDotsTaken += dots.count
+                var bands = paperBands
+                let r = TIViewRules.printerDotRadiusFraction
+                for d in dots {
+                    for y in [d.y - r, d.y + r] {
+                        let b = max(0, Int(y / Self.paperBandUnits))
+                        if bands.count <= b { bands.append(contentsOf: Array(repeating: [], count: b + 1 - bands.count)) }
+                        if bands[b].last.map({ $0.x == d.x && $0.y == d.y }) != true { bands[b].append(d) }
+                    }
+                }
+                paperBands = bands
             }
             if printerTrace != controller.printerTrace { printerTrace = controller.printerTrace }
             if printerConnected != controller.printerConnected { printerConnected = controller.printerConnected }
@@ -482,6 +520,9 @@ class EmulatorViewModel {
             if freezeOwner != owner { freezeOwner = owner }
             if pendingFreezeOnPCChange != controller.pcChangeArmed { pendingFreezeOnPCChange = controller.pcChangeArmed }
             if pendingCPUScanLoopFreeze != controller.scanLoopExitArmed { pendingCPUScanLoopFreeze = controller.scanLoopExitArmed }
+            let calc = controller.buttonUse(for: .calculator), cpu = controller.buttonUse(for: .cpu)
+            if !Self.same(calculatorButtons, calc) { calculatorButtons = calc }
+            if !Self.same(cpuButtons, cpu) { cpuButtons = cpu }
             if isFullSpeedMode != controller.fullSpeed { isFullSpeedMode = controller.fullSpeed }
             if isKeystrokesPlaying != controller.keystrokesPlaying { isKeystrokesPlaying = controller.keystrokesPlaying }
             let held: Int? = controller.heldKey >= 0 ? controller.heldKey : nil
@@ -524,6 +565,15 @@ class EmulatorViewModel {
 
     fileprivate func cardWritten() { hasCardFile = CardStorage.hasCard }
 
+    fileprivate func paperCopied(_ outcome: Int) {
+        paperCopyMessage = outcome == 2 ? "Copy failed" : "Copied to clipboard"
+        paperCopySerial &+= 1
+    }
+
+    private static func same(_ a: TIButtonUse, _ b: TIButtonUse) -> Bool {
+        a.pause == b.pause && a.step == b.step && a.resume == b.resume
+    }
+
     fileprivate static func diagnostic(_ message: String) {
         logger.debug("\(message, privacy: .public)")
     }
@@ -551,6 +601,7 @@ final class SessionDelegate: NSObject, TIAppSessionDelegate {
     func diagnostic(_ message: String) { EmulatorViewModel.diagnostic(message) }
     func changed(_ changes: TIChange) { target?.apply(changes) }
     func cardWritten() { target?.cardWritten() }
+    func paperCopied(_ outcome: Int) { target?.paperCopied(outcome) }
 }
 
 // ── Live Debug Snapshot ───────────────────────────────────────────────────────

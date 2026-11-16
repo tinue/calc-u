@@ -39,9 +39,13 @@ example: `frontends/qt6/app/EmulatorController` is the whole adapter, about 300 
    set make no session and show `describe(missing)`.
 2. **Listen to it** (`AppSession::listen`) with the host services you offer;
    keep a `calcu::sessions::TopicMirror` of what it sends: the library's
-   topics and the interim `c59.*` topics (`c59.model`, `c59.led`,
-   `c59.printer`, `c59.card-reader`, `c59.run-state`, `c59.debug.*`, …).
-   Show `notices` as alerts.
+   topics (among them LIB-8's `papers`, `paper <owner>`, `paper-copies` and
+   LIB-10's `run-state`, `trace`) and the interim `c59.*` topics
+   (`c59.model`, `c59.led`, `c59.printer` (the PC-100C connected and its
+   TRACE), `c59.card-reader`, `c59.run-state` (full speed, playback),
+   `c59.debug.*`, …). Show `notices` as alerts. Offer `clipboard-image` and
+   `clipboard-text` for Copy of the paper, and `keep-file` where a trace
+   cannot go into a folder (LIB-10 AC-26).
 3. **Call it about 60 times a second** (`AppSession::call(now)`); redraw
    only the topics that came.
 4. **Forward input**: keys as the library's typing commands (LIB-5,
@@ -55,13 +59,18 @@ example: `frontends/qt6/app/EmulatorController` is the whole adapter, about 300 
    {physical}`, `focus-lost` on focus loss; draw the pressed key from the
    `held-keys` topic. The rest as the `c59.*` commands (`cu59::commands`):
    `setFullSpeed` while the display is held, `tapCard` on a press (not a
-   drag) over a fitted card, and the file, printer and debugger actions.
+   drag) over a fitted card, and the file actions; the paper panel's
+   `paper.copy`, `paper.cut` and `set-control`, the run-control buttons'
+   `pause`, `step`, `resume` (levels `program` for the CALCULATOR tab, `cpu`
+   for the CPU tab), `pause-on-start` and `trace` are the library's.
 5. **Draw** with the shared rules (`SharedArchitecture.md` § "Drawing
    Rules"): `SevenSegment` + `LedGeometry` for the LED — never a font, no
    font reproduces the hardware's lit segments — `CueCard` for cue cards
    (with `litCardCorner` and `cardCornerGeometry` for the side being read),
-   `PrinterFont` for the strip, `DebugSnapshots`, `DebugText` and
-   `RomHeatmap` for the debugger.
+   the component set's paper panel and run-control buttons (`library/qt6/`,
+   `library/web/components/`; the paper's marks come from the
+   `paper PC-100C` topic), `DebugSnapshots`, `DebugText` and `RomHeatmap`
+   for the debugger.
 
 What stays per GUI: widgets and painting (glow, fonts), file dialogs and
 the host folders it passes to the library (the settings file and the save

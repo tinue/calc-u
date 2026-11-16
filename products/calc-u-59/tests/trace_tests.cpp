@@ -138,7 +138,7 @@ TEST(lib10_ac33_button_names_by_model) {
 
 // The size limit ends every trace with the library's notice (ledger 59-19).
 TEST(lib10_ac33_limit_ends_with_a_notice) {
-    testroms::SessionRig r;   // the rig's limit: 1'000'000 bytes, 1 MiB for the library
+    testroms::SessionRig r(testroms::RigOptions{.traceMaxBytes = 1'000'000});   // 1 MiB for the library
     CHECK(r.until([&] { return r.machine().isKeyReady(); }));
     r.send(calcu::debugger::kTraceCommand, Value::object({{"file", "limit.bin"}}));
     CHECK(r.state<calcu::debugger::TraceState>(calcu::debugger::kTraceTopic)->running);

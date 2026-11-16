@@ -292,7 +292,9 @@ struct CPUInspectorView: View {
     // MARK: - Header
 
     private func cpuHeader(baseFontSize: CGFloat) -> some View {
-        let freezeEnabled = !vm.isFrozen && !vm.pendingCPUScanLoopFreeze
+        // FREEZE, STEP, RESUME: the run-control buttons of `cpu` (LIB-10 AC-18, AC-34).
+        let use = vm.buttons(for: .cpu)
+        let freezeEnabled = use.pause && !vm.pendingCPUScanLoopFreeze
         let freezeOnStartEnabled = freezeEnabled
         let narrow = baseFontSize < 13
 
@@ -302,15 +304,14 @@ struct CPUInspectorView: View {
                 .foregroundStyle(.white.opacity(0.6))
             Spacer()
 
-            let cpuOwned = vm.isFrozen && vm.freezeOwner == .cpu
 
             // RESUME sits at the far left, away from STEP, to avoid accidental
             // taps while stepping.
             Button("RESUME") { vm.unfreeze() }
                 .font(.system(size: baseFontSize, weight: .bold, design: .monospaced))
                 .foregroundStyle(Color.orange)
-                .opacity(cpuOwned ? 1 : 0.4)
-                .disabled(!cpuOwned)
+                .opacity(use.resume ? 1 : 0.4)
+                .disabled(!use.resume)
 
             Button("FREEZE") { vm.freeze(from: .cpu) }
                 .font(.system(size: baseFontSize, weight: .bold, design: .monospaced))
@@ -333,7 +334,7 @@ struct CPUInspectorView: View {
 
             // Tap to single-step; hold to auto-step at 2 steps/second.
             HoldRepeatButton(title: "STEP", color: .cyan, baseFontSize: baseFontSize,
-                             enabled: cpuOwned) { vm.stepFrozen() }
+                             enabled: use.step) { vm.stepFrozen() }
                 .accessibilityIdentifier("btn-cpu-step")
         }
         .padding(.horizontal, 10)

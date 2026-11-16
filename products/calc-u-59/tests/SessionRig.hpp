@@ -36,7 +36,7 @@ inline cu59::TIAppSetup appSetup(cu59::Model model, const fs::path& folder) {
     s.cuecards = catalog();
     s.startModel = model;
     s.saveFolder = folder.string();
-    s.trace = {folder, 1'000'000};
+    s.trace = {folder, 50'000'000};   // the apps' default limit (50 MiB for the library's trace session)
     return s;
 }
 
@@ -67,6 +67,7 @@ struct RigOptions {
     std::string saveFolder;                              ///< empty: the rig's folder
     fs::path traceFolder;                                ///< empty: the rig's folder
     bool noTraceFolder = false;                          ///< the Web: none, traces handed over (LIB-10 AC-26)
+    std::uint64_t traceMaxBytes = 0;                     ///< 0: the apps' default
 };
 
 struct SessionRig {
@@ -82,6 +83,7 @@ struct SessionRig {
         if (!o.saveFolder.empty()) s.saveFolder = o.saveFolder;
         if (!o.traceFolder.empty()) s.trace.dir = o.traceFolder;
         if (o.noTraceFolder) s.trace.dir.clear();
+        if (o.traceMaxBytes) s.trace.maxBytes = o.traceMaxBytes;
         s.fileIO = std::move(o.fileIO);
         app = cu59::makeAppSession(std::move(s), [this] { return now += std::chrono::milliseconds(1); }, 59u,
                                    std::move(o.before), std::move(o.after));

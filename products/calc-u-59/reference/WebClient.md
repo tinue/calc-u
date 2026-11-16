@@ -28,8 +28,12 @@ folder `Calc-U-59/` with the magnetic cards (upload one to fit it, download
 one to keep a copy) and `ti58c.mem`; nothing is in `localStorage`. Only the
 first copy of the client in a browser writes them; a second tab (or a
 second client on one page) works in memory and says so (AC-8, AC-21; ledger
-59-8). Traces are written to Emscripten's MEMFS (`/traces`) and handed to
-the page as downloads. Like the apps, it starts with the PC-100C connected.
+59-8). There is no trace folder: a trace (the TRACE button's or a preset's)
+is kept in the worker's memory by the library's trace session and handed to
+the page with the host service `keep-file` when it ends (LIB-10 AC-26, M-53),
+which the page offers as a download and lists in the LOG tab (it keeps the
+bytes; the worker keeps no copy, LIB-10 D-25). Like the apps, it starts with
+the PC-100C connected.
 
 It is built into a self-contained folder, `frontends/web/dist/`, that does not know
 where it is hosted. The website (https://calc-u.org/59/, repository
@@ -48,15 +52,15 @@ calc-engine-worker.js → library-worker.js ── wasm/ti59-core.{js,wasm} ◀�
 | Path | Role (Qt counterpart) |
 |---|---|
 | `src/engine.js` | The components' view of the library's shell (`createShell()`): translates their calls to the session's commands and requests and its topics to the slices they read (`useEngine`), hands out downloads; decides nothing (`EmulatorController`) |
-| `src/painters.js` | Canvas painting: the LED (`LedRenderer`), the cue card's draw list (`CueCardRenderer`), the printer strip (`PrinterWidget::paintStrip`) |
+| `src/painters.js` | Canvas painting: the LED (`LedRenderer`), the cue card's draw list (`CueCardRenderer`) |
 | `src/CalculatorFace.jsx` | Artwork, LED and cue card overlays, pressed-key effect; pointer input; transparent key buttons for assistive technology (`KeyboardWidget`) |
 | `src/ControlBar.jsx` | Reset / clean reset, model picker, card buttons, Preset, Settings (`ControlBar`) |
 | `src/Dialogs.jsx` | Card picker, preset picker, Settings, About (`CardPickerDialog`, `SettingsDialog`, `AboutDialog`) |
-| `src/Printer.jsx` | The PC-100C panel (`PrinterWidget`) |
-| `src/Debugger.jsx` | CALCULATOR / CPU / LOG tabs, heatmap, ASM overlay (`debug/*`) |
+| `src/Paper.jsx` | The PC-100C's pane: its connect toggle (`c59.web.printer`, until M-57) above the component set's paper panel `CalcuPaperPanel` (`library/web/components/`), which draws the library's `paper PC-100C` from its marks; PRINT, ADV and TRACE are the panel's controls (`set-control`), Copy and Cut its `paper.copy` / `paper.cut` (LIB-8, M-53; Qt6: `calcu::qt6::PaperPanel`) |
+| `src/Debugger.jsx` | CALCULATOR / CPU / LOG tabs, heatmap, ASM overlay (`debug/*`); FREEZE, STEP and RESUME of each tab are the component set's `CalcuRunControlButtons` for the levels `program` and `cpu` on the library's `run-state`, FREEZE ON START / ARMED its `pause-on-start`, TRACE the library's `trace` (LIB-10, M-53) |
 | `src/PlayCalculator.jsx` | The component: the two layouts, focus and physical keyboard, drag and drop, keyboard feedback (`MainWindow`) |
 | `calc-engine-worker.js` | The product's configuration of the library's Web Worker (`library/web/src/worker.js`): the engine's name, its factory, the persistent mount `/persist-calc-u-59` and the lock `calcu59-storage` |
-| `bindings.cpp` | The factory of the app session (`CALCU_WEB_PRODUCT(CalcU59Host, …)`): the ROM lookup over `/bundle`, the settings file, `TIAppPart` and `TIWebPart`; the library's `WorkerHost` translates the messages |
+| `bindings.cpp` | The factory of the app session (`CALCU_WEB_PRODUCT(CalcU59Host, …)`): the ROM lookup over `/bundle`, the settings file, `TIAppPart`, LIB-8's `PaperPart` and LIB-10's `DebuggerPart` (as `makeAppSession` has them; no trace folder: the hand-over) and `TIWebPart`; the library's `WorkerHost` translates the messages |
 | `calc.css` | Tokens, fonts and every rule the client needs |
 | `fonts/` | Archivo (WOFF2, SIL OFL 1.1), for the cue card, as the family `Calc-U Archivo` |
 | `app/` | The installable PWA's own files: `index.html`, `app.css`, `manifest.json`; its page, service worker and worker entry are the library's (`library/web/app/`) |
@@ -73,14 +77,15 @@ JS form (commands, requests, replies, state and stream topics; LIB-15 AC-22).
 `app/TIWebPart` sends what changed as the `c59.web.*` topics, already in the
 form the page draws: LED cells (`ledCell`, as float32 bytes), the cue card as
 a draw list laid out by `cueCardGeometry` and friends for the size the page
-reports, printer lines with their heights (`PrinterGeometry::lineHeightUnits`)
-from the first one that changed, debug rows formatted by `DebugText`, heatmap
+reports, the PC-100C's place and TRACE (`c59.web.printer`), debug rows formatted by `DebugText`, heatmap
 steps (`heatStep`), the card files of the save folder, the settings. Static
-data — models, modules, `KeyboardLayout` rects, the printer geometry and
-font, the heatmap colours — is the request `c59.static-data`, the LED shapes
+data — models, modules, `KeyboardLayout` rects, the heatmap colours — is the request `c59.static-data`, the LED shapes
 `c59.led-geometry`, the PWA's layout rules `c59.mobile-rules` (adapter W59-1,
 `app/WebPageData`, until M-57). The start is the shell's `start` command with
-the `model` and `preset` props.
+the `model` and `preset` props. The paper, the run state and the trace are
+the library's topics (`papers`, `paper PC-100C`, `paper-copies`,
+`run-state`, `trace`; M-53), which the component set's panel and buttons
+read from the shell (`engine.shell`).
 The pointer is sent as canvas-normalized points; the hit test (widened
 rects, the display's full-speed hold, drag to another key) runs in C++ in
 `KeyboardLayout`'s `PointerTracker`, as in `frontends/qt6/app/KeyboardWidget`.
@@ -208,7 +213,7 @@ Stable hooks a host's tests may rely on: the root element's classes
 `canvas.cuecard` (its `aria-label` holds the card's text), a fitted card's
 corners as the buttons `Feed card side 1` and `Feed card side 2`, the key buttons
 named by their face labels (`2nd`, `−`, `R/S`, …) with `aria-pressed`, the
-panels `[data-panel=printer]` and `[data-panel=debug]`, and the control
+panels `[data-panel=paper]` and `[data-panel=debug]`, and the control
 bar's buttons by name (`Reset`, `Crd`, `Eject Card`, `Preset`, `Settings`)
 and the `Calculator model` select.
 

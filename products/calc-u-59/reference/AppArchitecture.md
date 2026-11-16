@@ -8,7 +8,7 @@
 The Swift app (`frontends/swift/App/`, `frontends/swift/Bridge/`) for macOS and iOS/iPadOS. It is a renderer
 over the library's app session with `app/TIAppPart` (through
 `frontends/swift/Bridge/TIAppSession` on `cu59::SessionThread`); everything that isn't drawing — the run
-loop, keys, presets, cards, the printer strip, the debugger, the rules the
+loop, keys, presets, cards, the printer's paper, the debugger, the rules the
 views draw with — is in `app/` and documented in `SharedArchitecture.md`.
 
 ---
@@ -21,7 +21,7 @@ CalcU59App                    (Calc-U-59App.swift: scene, background/active, mac
     ├─ KeyboardView           (calculator art, hit test, LED + cue-card overlays, physical keys)
     │   ├─ LEDDisplayView
     │   └─ CueCardView
-    ├─ PrinterView            (paper strip, PRINT / T / ADV, copy, cut)
+    ├─ PrinterView            (the PC-100C's paper, PRINT / T / ADV, copy, cut)
     ├─ CardPickerView         (fit card / fit fresh card sheet)
     ├─ DebugView              (CALCULATOR / CPU / LOG tabs)
     │   ├─ LiveDebugView      (CALCULATOR)
@@ -54,11 +54,11 @@ EmulatorViewModel (@Observable, main thread)
 | `Views/UIKitTouchTracking.swift` | iOS raw-touch tracker that replaces `DragGesture` for keys (iOS 27 fires `onEnded` early) |
 | `Views/LEDDisplayView.swift` | 12-digit LED in a SwiftUI `Canvas` |
 | `Views/CueCardView.swift` | Cue card on its template art |
-| `Views/PrinterView.swift` | Paper strip, dot or text view; copy and cut |
+| `Views/PrinterView.swift` | The PC-100C's paper (LIB-8 S-P1, until C59-8): dots by band (`PaperBand`) or text; Copy and Cut are the session's |
 | `Views/CardPickerView.swift` | Card files in the card folder |
 | `Views/DebugView.swift` | Debug tabs; `ASMDebugContent`; LOG tab (`StaticDebugContent`) |
 | `Views/LiveDebugView.swift`, `Views/CPUInspectorView.swift` | CALCULATOR and CPU tabs |
-| `Views/HoldRepeatButton.swift` | Fires on press, repeats every 0.25 s while held (STEP) |
+| `Views/HoldRepeatButton.swift` | Fires on press, repeats every 0.25 s while held and while step can be used (STEP; LIB-10 AC-18) |
 | `Views/ChromeControlStyles.swift` | Dark chrome button and menu styles |
 | `Views/SettingsView.swift` | Startup calculator, module, keyboard feedback, portrait debug page, segment style, trace location and size |
 
@@ -124,9 +124,9 @@ imports the public ones.
 
 | Wrapper | Wraps |
 |---|---|
-| `TIAppSession.{h,mm}` | The app session on `cu59::SessionThread`: commands (`c59.*`) out, messages in on the main thread (the last of each topic kept); `TIAppSessionDelegate` (alerts, `DebugPanel:`, diagnostics, `changed`), `TISessionStart`, `TIRomSet`; the coordinated card files (`cu59::FileIO`); value objects `TILiveDebugSnapshot`, `TIStepEntry`, `TIRegEntry`, `TIInspectorEntry`, `TIPrinterLine`, built when Swift reads them |
-| `TISharedTables.{h,mm}` | `SevenSegment`, `PrinterFont` (font rows), `KeyboardLayout`, `KeyIds` |
-| `TIViewRules.{h,mm}` | `CueCard` (spans, geometry, inks), `LedGeometry`, `PrinterFont` (`PrinterGeometry`), `RomHeatmap`, `ModuleImage` (program source), `DebugText` (incl. the iOS `mobileLayout`, `mobilePrinterWidth`, `compactPrinterBar`, `mobileTopMargin`) |
+| `TIAppSession.{h,mm}` | The app session on `cu59::SessionThread`: commands (`c59.*`) out, messages in on the main thread (the last of each topic kept); `TIAppSessionDelegate` (alerts, `DebugPanel:`, diagnostics, `changed`), `TISessionStart`, `TIRomSet`; the coordinated card files (`cu59::FileIO`); value objects `TILiveDebugSnapshot`, `TIStepEntry`, `TIRegEntry`, `TIInspectorEntry`, built when Swift reads them; since M-53 also the library's `paper PC-100C` (kept as text lines and `TIPaperDot`s), `paper-copies`, `run-state` (`buttonUseFor:`, calcu::debugger::buttonUse) and `trace`, the run control's commands, and the clipboard host services (`clipboard-image`, `clipboard-text`) answered on the pasteboard |
+| `TISharedTables.{h,mm}` | `SevenSegment`, `KeyboardLayout`, `KeyIds` |
+| `TIViewRules.{h,mm}` | `CueCard` (spans, geometry, inks), `LedGeometry`, the PC-100C's paper width and dot size (`core/PC100CPaper.hpp`), `RomHeatmap`, `ModuleImage` (program source), `DebugText` (incl. the iOS `mobileLayout`, `mobilePrinterWidth`, `compactPrinterBar`, `mobileTopMargin`) |
 | `TIFileFormats.{h,mm}` | `TICueCard`, card file names (`CardFile`), `cuecards.txt` module list (`ModuleCatalog`) |
 | `TISettings.{h,mm}` | `Settings` (`app/Settings.hpp`) over a `calcu::settings::SettingsFile`; the trace folder from `calcu::settings::Paths` |
 | `TITypes.h` | `TIDisplaySnapshot` (mirrors `LedFrame`: the glyph's segments A–G and brightness 0–255 per digit and decimal point) and `TICpuFrame` (mirrors `CpuFrame`) |
@@ -159,11 +159,22 @@ Rules: `SharedArchitecture.md` § "Cue Card Rendering". A press on the card goes
 first to `tapCard` (`KeyboardView`), and `CueCardView` draws the side being read
 from `litCardCorner`: `SharedArchitecture.md` § "Card Reader Flow".
 
-**Printer.** Dot view (`PrinterDotLine`, PC-100C proportions from
-`TIViewRules`) or selectable text. Copy renders the strip with
-`ImageRenderer` at the shared copy scale and puts text plus the image on the
-pasteboard (macOS: `NSImage`; iOS: PNG). Cut copies, then clears the strip;
-`printerClearID` resets the text view's identity to drop a selection.
+**Printer.** The PC-100C's paper is the library's (LIB-8, M-53; adapter
+S-P1 until C59-8's paper panel): the bridge keeps what the topic
+`paper PC-100C` sends (text lines, dots in the dot pitch with their ink; the
+reset marker empties it), the view model files the dots by band of 10 units,
+and `PrinterView` draws the bands in view (`PaperBand`) or the selectable
+text. Copy sends `paper.copy`: the library makes the picture at 600 dpi and
+asks for `clipboard-image`, which the bridge puts on the pasteboard
+(macOS: `NSImage` at its physical size; iOS: PNG) with the text; the toast
+follows `paper-copies` ("Copied to clipboard" / "Copy failed"). Cut sends
+`paper.cut {copy: true}`; `printerClearID` resets the text view's identity
+to drop a selection. PRINT, ADV and TRACE send `set-control`.
+
+**Debugger buttons.** FREEZE, STEP and RESUME of the CALCULATOR tab are the
+run control's level `program`, those of the CPU tab `cpu` (LIB-10 AC-34);
+which can be used is the library's rule (`buttonUseFor:`), FREEZE ON START
+is `pause-on-start`, the LOG tab's TRACE the trace session's button trace.
 
 **Storage.** Cards and `ti58c.mem` live in the `CardStorage` folder (iCloud
 Documents when available); reading `ti58c.mem`, and reading and writing cards,

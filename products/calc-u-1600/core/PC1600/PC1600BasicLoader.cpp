@@ -2,8 +2,7 @@
 
 #include <cstdio>
 
-#include "../Basic/BasicProgramSource.hpp"
-#include "PC1600Machine.hpp"
+#include "../Machine/SharpProductKinds.hpp"
 #include "PC1600MachineCodeLoader.hpp"
 #include "PC1600ProgramPlacement.hpp"
 
@@ -26,13 +25,11 @@ constexpr uint16_t kCurTop = 0xF89E;       // CURRENT TOP (BE, stored form)
 constexpr uint16_t kCurBank = 0xF1C1;      // CURRENT logical bank
 constexpr uint16_t kRamBaseLE = 0xF5CF;  // Z-80-native base right after NEW0; stack-region, cross-check only
 
-uint16_t readBE16(PC1600Machine& m, uint16_t addr) {
-    return static_cast<uint16_t>((m.debugPeek(addr) << 8) |
-                                 m.debugPeek(static_cast<uint16_t>(addr + 1)));
+uint16_t readBE16(const sharp::LoaderMemory& m, uint16_t addr) {
+    return static_cast<uint16_t>((m.peek(addr) << 8) | m.peek(static_cast<uint16_t>(addr + 1)));
 }
-uint16_t readLE16(PC1600Machine& m, uint16_t addr) {
-    return static_cast<uint16_t>(m.debugPeek(addr) |
-                                 (m.debugPeek(static_cast<uint16_t>(addr + 1)) << 8));
+uint16_t readLE16(const sharp::LoaderMemory& m, uint16_t addr) {
+    return static_cast<uint16_t>(m.peek(addr) | (m.peek(static_cast<uint16_t>(addr + 1)) << 8));
 }
 
 BasicLoadResult fail(const std::string& msg) {
@@ -44,53 +41,22 @@ BasicLoadResult fail(const std::string& msg) {
 
 // Internal RAM by its backing store; a module through its slot's pins in
 // the segment's bank, so the card's own wiring places the bytes.
-bool writeAt(PC1600Machine& machine, pc1600::ProgramSegment::Kind kind, int bank, uint16_t addr,
+bool writeAt(sharp::LoaderMemory& machine, pc1600::ProgramSegment::Kind kind, int bank, uint16_t addr,
              const uint8_t* src, size_t n) {
     return kind == pc1600::ProgramSegment::Kind::InternalRam
-               ? machine.debugWriteInternalRam(static_cast<size_t>(addr - 0xC000), src, n)
-               : machine.debugWriteSlotBus(bank, addr, src, n);
+               ? machine.writeBuiltIn(addr, src, n).stored
+               : machine.writeSlot(bank, addr, src, n).stored;
 }
 
 }  // namespace
 
-basic::TransferModel pc1600ListingModel(PC1600Machine& machine) {
-    return machine.mode1() ? basic::TransferModel::PC1500 : basic::TransferModel::PC1600;
-}
-
 namespace {
 
-BasicLoadResult loadSource(PC1600Machine& machine, const basic::BasicProgramSource& src) {
-    if (!src.ok) {
-        std::string error = src.error;
-        if (src.listing && machine.mode1())
-            error += " (MODE 1: the listing is read as PC-1500 BASIC)";
-        return fail(error);
-    }
-    // The ROM's LOAD takes a PC-1600 program in both MODEs; a PC-1500 one
-    // only in MODE 1 (docs/background/plans/Loader-Mode-Plan.md).
-    if (!src.listing && src.source == basic::TransferModel::PC1500 && !machine.mode1())
-        return fail("this is a PC-1500 (CE-158) tokenized BASIC program -- the PC-1600 takes it in MODE 1 "
-                    "only (type MODE1 first)");
-    return loadBasicBinaryPayload(machine, src.payload);
-}
+void pokeByte(sharp::LoaderMemory& m, uint16_t addr, uint8_t v) { m.writeBuiltIn(addr, &v, 1); }
 
-}  // namespace
-
-BasicLoadResult loadBasicProgram(PC1600Machine& machine, const std::vector<uint8_t>& file) {
-    return loadSource(machine, basic::readBasicProgram(file, pc1600ListingModel(machine)));
-}
-
-BasicLoadResult loadBasicProgramFile(PC1600Machine& machine, const std::string& path) {
-    return loadSource(machine, basic::readBasicProgramFile(path, pc1600ListingModel(machine)));
-}
-
-namespace {
-
-void pokeByte(PC1600Machine& m, uint16_t addr, uint8_t v) { m.pokeMemory(addr, &v, 1); }
-
-void pokeBE16(PC1600Machine& m, uint16_t addr, uint16_t v) {
+void pokeBE16(sharp::LoaderMemory& m, uint16_t addr, uint16_t v) {
     const uint8_t b[2] = {static_cast<uint8_t>(v >> 8), static_cast<uint8_t>(v & 0xFF)};
-    m.pokeMemory(addr, b, 2);
+    m.writeBuiltIn(addr, b, 2);
 }
 
 // The segment of `segs` that holds the program end `end` (Z-80 address)
@@ -105,7 +71,7 @@ int segmentOf(const std::vector<pc1600::ProgramSegment>& segs, uint16_t end, int
     return -1;
 }
 
-bool writeImage(PC1600Machine& machine, const pc1600::PlacementResult& plan, std::string* error) {
+bool writeImage(sharp::LoaderMemory& machine, const pc1600::PlacementResult& plan, std::string* error) {
     for (const pc1600::PlacementWrite& w : plan.writes) {
         if (!writeAt(machine, w.kind, w.bank, w.addr, w.data.data(), w.data.size())) {
             char buf[192];
@@ -124,7 +90,7 @@ bool writeImage(PC1600Machine& machine, const pc1600::PlacementResult& plan, std
 
 // Erase the resident program -- from the area's start through its end mark,
 // bank-end marks included -- so a shorter reload leaves no stale tokens.
-void eraseOld(PC1600Machine& machine, const std::vector<pc1600::ProgramSegment>& segs, int endSegment,
+void eraseOld(sharp::LoaderMemory& machine, const std::vector<pc1600::ProgramSegment>& segs, int endSegment,
               uint16_t end) {
     for (int i = 0; i <= endSegment; ++i) {
         const pc1600::ProgramSegment& sg = segs[i];
@@ -145,11 +111,10 @@ void eraseOld(PC1600Machine& machine, const std::vector<pc1600::ProgramSegment>&
 // slot's pins in the segment's bank); the pointers are then left exactly as
 // the ROM's own LOAD leaves them (LOADEND, rom3b 70E1H --
 // Ref/PC-1600/PC-1600-Work-Area-Map.md §3.5 / §4.5).
-BasicLoadResult loadBasicBinaryPayload(PC1600Machine& machine,
-                                       const std::vector<uint8_t>& payload) {
-    const int title = machine.programAreaTitle();
+BasicLoadResult pc1600LoadBasicPayload(sharp::LoaderMemory& machine, const std::vector<uint8_t>& payload) {
+    const int title = machine.programArea();
     pc1600::PlacementInput in;
-    in.peek = [&machine](uint16_t a) { return machine.debugPeek(a); };
+    in.peek = [&machine](uint16_t a) { return machine.peek(a); };
     in.slot1 = pc1600SlotGeometry(machine, 1);
     in.slot2 = pc1600SlotGeometry(machine, 2);
 
@@ -178,7 +143,7 @@ BasicLoadResult loadBasicBinaryPayload(PC1600Machine& machine,
         const pc1600::ProgramSegment& endSeg = plan.segments[plan.endSegment];
         const uint8_t endTriple[3] = {static_cast<uint8_t>(plan.endAddr & 0xFF), static_cast<uint8_t>(plan.endAddr >> 8),
                                       static_cast<uint8_t>(endSeg.adtblIndex)};
-        machine.pokeMemory(static_cast<uint16_t>(desc + 7), endTriple, 3);
+        machine.writeBuiltIn(static_cast<uint16_t>(desc + 7), endTriple, 3);
         // Module header +5/+6: the end as an offset from the base page, high
         // byte first; one bank further on counts from base 4000H (LOADEND 7134H).
         const pc1600::ProgramSegment& seg0 = plan.segments.front();
@@ -186,12 +151,12 @@ BasicLoadResult loadBasicBinaryPayload(PC1600Machine& machine,
                                                                    : 0x4000;
         const uint16_t offset = static_cast<uint16_t>((plan.endAddr - from) & 0x7FFF);
         const uint8_t hdr[2] = {static_cast<uint8_t>(offset >> 8), static_cast<uint8_t>(offset & 0xFF)};
-        if (!machine.debugWriteSlotBus(seg0.adtblBank, static_cast<uint16_t>(seg0.windowBase + 5), hdr, 2))
+        if (!machine.writeSlot(seg0.adtblBank, static_cast<uint16_t>(seg0.windowBase + 5), hdr, 2).stored)
             return fail("could not update the S" + std::to_string(title) + " module header");
         // PRGADR copies the descriptor's start/end triples to FE3C-FE41.
         uint8_t prgAdr[6];
-        for (int i = 0; i < 6; ++i) prgAdr[i] = machine.debugPeek(static_cast<uint16_t>(desc + 4 + i));
-        machine.pokeMemory(kPrgAdrStart, prgAdr, 6);
+        for (int i = 0; i < 6; ++i) prgAdr[i] = machine.peek(static_cast<uint16_t>(desc + 4 + i));
+        machine.writeBuiltIn(kPrgAdrStart, prgAdr, 6);
     } else {
         // ── S0 ───────────────────────────────────────────────────────────
         uint16_t stLh = readBE16(machine, kBasPrgSt);
@@ -204,7 +169,7 @@ BasicLoadResult loadBasicBinaryPayload(PC1600Machine& machine,
         if (!areaPlan.ok) return fail(areaPlan.error);
         const uint16_t endLhOld = readBE16(machine, kBasPrgEnd);
         const uint16_t oldEnd = pc1600::lh5803ToZ80(endLhOld);
-        const int oldEndSegment = endLhOld >= 0x8000 ? -1 : segmentOf(areaPlan.segments, oldEnd, machine.debugPeek(kPrgBankEnd));
+        const int oldEndSegment = endLhOld >= 0x8000 ? -1 : segmentOf(areaPlan.segments, oldEnd, machine.peek(kPrgBankEnd));
         if (oldEndSegment < 0 || (oldEndSegment == 0 && oldEnd < areaPlan.startAddr)) {
             char buf[192];
             std::snprintf(buf, sizeof(buf),
@@ -228,26 +193,26 @@ BasicLoadResult loadBasicBinaryPayload(PC1600Machine& machine,
         // VARIABLE POINTER := RAM_END:00.
         if (endSeg.kind == pc1600::ProgramSegment::Kind::InternalRam &&
             pc1600::lh5803ToZ80(readBE16(machine, kVarPtr)) <= plan.endAddr)
-            pokeBE16(machine, kVarPtr, static_cast<uint16_t>(machine.debugPeek(kRamEnd) << 8));
+            pokeBE16(machine, kVarPtr, static_cast<uint16_t>(machine.peek(kRamEnd) << 8));
         // PRGADR: the start and end as Z-80 addresses (low byte first) with
         // their ADTBL index each.
         const uint16_t startZ80 = pc1600::lh5803ToZ80(stLh);
         const uint8_t prgAdr[6] = {static_cast<uint8_t>(startZ80 & 0xFF), static_cast<uint8_t>(startZ80 >> 8),
-                                   machine.debugPeek(kPrgBankStart), static_cast<uint8_t>(plan.endAddr & 0xFF),
+                                   machine.peek(kPrgBankStart), static_cast<uint8_t>(plan.endAddr & 0xFF),
                                    static_cast<uint8_t>(plan.endAddr >> 8), static_cast<uint8_t>(endSeg.adtblIndex)};
-        machine.pokeMemory(kPrgAdrStart, prgAdr, 6);
+        machine.writeBuiltIn(kPrgAdrStart, prgAdr, 6);
     }
 
     // PRGRESET (7169H): CURRENT TOP := the start (stored form), CURRENT
     // bank := the start's ADTBL index.
-    const uint16_t startZ80 = static_cast<uint16_t>(machine.debugPeek(kPrgAdrStart) |
-                                                    (machine.debugPeek(kPrgAdrStart + 1) << 8));
+    const uint16_t startZ80 = static_cast<uint16_t>(machine.peek(kPrgAdrStart) |
+                                                    (machine.peek(kPrgAdrStart + 1) << 8));
     pokeBE16(machine, kCurTop, pc1600::z80ToLh5803(startZ80));
-    pokeByte(machine, kCurBank, machine.debugPeek(kPrgAdrStart + 2));
+    pokeByte(machine, kCurBank, machine.peek(kPrgAdrStart + 2));
 
     BasicLoadResult r;
     r.ok = true;
     r.baseAddr = startZ80;
-    r.endAddr = static_cast<uint16_t>(machine.debugPeek(kPrgAdrStart + 3) | (machine.debugPeek(kPrgAdrStart + 4) << 8));
+    r.endAddr = static_cast<uint16_t>(machine.peek(kPrgAdrStart + 3) | (machine.peek(kPrgAdrStart + 4) << 8));
     return r;
 }

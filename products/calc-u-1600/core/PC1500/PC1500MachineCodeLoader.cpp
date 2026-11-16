@@ -2,9 +2,9 @@
 
 #include <cstdio>
 
-#include "PC1500Machine.hpp"
+#include "../Machine/SharpProductKinds.hpp"
 
-bool loadPC1500MachineCode(PC1500Machine& machine, uint32_t addr, const uint8_t* data, size_t len,
+bool loadPC1500MachineCode(sharp::LoaderMemory& memory, uint32_t addr, const uint8_t* data, size_t len,
                            std::string* error) {
     if (static_cast<uint64_t>(addr) + len > 0x10000) {
         char b[96];
@@ -12,24 +12,16 @@ bool loadPC1500MachineCode(PC1500Machine& machine, uint32_t addr, const uint8_t*
         *error = b;
         return false;
     }
-    bool allStored = true;
-    uint16_t firstMiss = 0;
-    for (size_t i = 0; i < len; i++) {
-        const uint16_t at = static_cast<uint16_t>(addr + i);
-        if (!machine.memory().poke(at, data[i]) && allStored) {
-            allStored = false;
-            firstMiss = at;
-        }
-    }
-    if (allStored) return true;
+    const sharp::LoaderMemory::Write w = memory.writeBuiltIn(static_cast<uint16_t>(addr), data, len);
+    if (w.stored) return true;
     char b[160];
     std::snprintf(b, sizeof(b), "&%X is not RAM (ROM or no memory there) -- the code at &%X-&%X did not load",
-                  firstMiss, addr, static_cast<unsigned>(addr + len - 1));
+                  static_cast<unsigned>(w.firstMiss), addr, static_cast<unsigned>(addr + len - 1));
     *error = b;
     return false;
 }
 
-void pc1500UserRam(PC1500Machine& machine, uint32_t* start, uint32_t* end) {
-    *start = static_cast<uint32_t>(machine.memory().peek(kPc1500RamStPage)) << 8;
-    *end = static_cast<uint32_t>(machine.memory().peek(kPc1500RamEndPage)) << 8;
+void pc1500UserRam(const sharp::LoaderMemory& memory, uint32_t* start, uint32_t* end) {
+    *start = static_cast<uint32_t>(memory.peek(kPc1500RamStPage)) << 8;
+    *end = static_cast<uint32_t>(memory.peek(kPc1500RamEndPage)) << 8;
 }

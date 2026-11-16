@@ -17,7 +17,6 @@
 #include "Machine/SharpProductKinds.hpp"
 #include "SessionFixture.hpp"
 #include "app/CardYamlDump.hpp"
-#include "app/MachineCodeLoad.hpp"
 #include "app/MediaLibrary.hpp"
 #include "peripherals/RealTimeClock.hpp"
 #include "TestHarness.hpp"
@@ -171,82 +170,6 @@ std::vector<std::uint8_t> readBytes(const char* path) {
     return std::vector<std::uint8_t>(std::istreambuf_iterator<char>(in), std::istreambuf_iterator<char>());
 }
 
-// The same tape twice in one WAV: its data chunk's samples doubled.
-std::vector<std::uint8_t> doubledTape(const std::vector<std::uint8_t>& wav) {
-    for (std::size_t i = 12; i + 8 <= wav.size();) {
-        const std::uint32_t size = wav[i + 4] | wav[i + 5] << 8 | wav[i + 6] << 16 | std::uint32_t(wav[i + 7]) << 24;
-        if (std::equal(wav.begin() + i, wav.begin() + i + 4, "data")) {
-            std::vector<std::uint8_t> out(wav.begin(), wav.begin() + i + 8 + size);
-            out.insert(out.end(), wav.begin() + i + 8, wav.begin() + i + 8 + size);
-            const std::uint32_t doubled = size * 2, riff = static_cast<std::uint32_t>(out.size() - 8);
-            for (int b = 0; b < 4; ++b) {
-                out[i + 4 + b] = static_cast<std::uint8_t>(doubled >> (8 * b));
-                out[4 + b] = static_cast<std::uint8_t>(riff >> (8 * b));
-            }
-            return out;
-        }
-        i += 8 + size + (size & 1);
-    }
-    return {};
-}
-
-// programChoice(): a plain file is its own image, a one-file tape its
-// file, a several-file tape a list to pick from.
-TEST(test_program_choice) {
-    SKIP_UNLESS(romsPresent(), "no ROMs in roms/");
-    const std::vector<std::uint8_t> plain = {1, 2, 3};
-    shared::ProgramChoice ch = shared::programChoice(plain);
-    CHECK(!ch.needsChoice() && ch.images.size() == 1 && ch.images[0] == plain && ch.names.empty());
-
-    const std::vector<std::uint8_t> wav = readBytes("tests/fixtures/tape/pc1500_tape.wav");
-    ch = shared::programChoice(wav);
-    CHECK(!ch.needsChoice() && ch.images.size() == 1 && ch.images[0] != wav);
-
-    ch = shared::programChoice(doubledTape(wav));
-    CHECK(ch.needsChoice() && ch.names.size() == 2);
-    CHECK(ch.names.size() == 2 && ch.names[0].rfind("1. TAPEFIX", 0) == 0 && ch.names[1].rfind("2. ", 0) == 0);
-}
-
-Value machineCode(const shared::MachineCodeLoadRequest& r) {
-    return Value::object({{"bytes", Value::Bytes(r.payload)}, {"addr", static_cast<std::int64_t>(r.addr)}, {"slot", r.slot}, {"bank", r.bank}});
-}
-
-// MachineCodeLoad: a headerless file asks for an address, checked as
-// typed; the load (a product command) gives the summary and the advice.
-TEST(test_machine_code_load) {
-    SKIP_UNLESS(romsPresent(), "no ROMs in roms/");
-    SessionFixture f;
-    CHECK(f.start("PC-1500A"));
-    const std::vector<std::uint8_t> code = {0x9A, 0x9A, 0x9A, 0x9A};   // RTN x4
-    shared::MachineCodeLoad load = shared::MachineCodeLoad::plan(f.part(), code);
-    CHECK(load.error().empty() && load.needsAddress() && load.length() == 4);
-    CHECK(load.cpuNote().empty() && load.addressPlaceholder() == "hex, e.g. &7C01");
-    shared::MachineCodeLoad::AddressCheck check = load.setAddress("zz");
-    CHECK(!check.valid && check.hint == "Not a hex address (&0000-&FFFF).");
-    CHECK(!load.setAddress("").valid && load.setAddress("").hint.empty());
-    CHECK(!load.setAddress("&FFFE").valid);
-    CHECK(load.setAddress("&7C01").valid);
-    CHECK(load.request().addr == 0x7C01 && load.request().payload == code);
-    CHECK(f.ok(c::kLoadMachineCode, machineCode(load.request())));
-    shared::MachineCodeLoad::Loaded loaded = load.loaded(f.part());
-    CHECK(loaded.summary == "Loaded 4 bytes at &7C01–&7C04");
-    CHECK(loaded.advice.callCommand == "CALL &7C01");
-
-    CHECK(f.ok(c::kPickModel, Value::object({{"model", "PC-1600"}})));
-    load = shared::MachineCodeLoad::plan(f.part(), code);
-    CHECK(load.error().empty() && load.needsAddress());
-    CHECK(load.defaultAddressText() == "&C0C5" && !load.cpuNote().empty());
-    check = load.setAddress(load.defaultAddressText());
-    CHECK(check.valid && check.hint.empty());
-    CHECK(load.request().addr == 0xC0C5 && load.request().slot == 0 && load.request().bank == 0);
-    CHECK(f.ok(c::kLoadMachineCode, machineCode(load.request())));
-    loaded = load.loaded(f.part());
-    CHECK(loaded.summary == "Loaded 4 bytes at &C0C5–&C0C8 (S0)");
-    CHECK(loaded.advice.callCommand == "CALL &C0C5");
-    check = load.setAddress("&F800");   // into the work area: a warning, still loadable
-    CHECK(check.valid && !check.hint.empty());
-}
-
 const shared::MediaItem* findItem(const std::vector<shared::MediaItem>& items, const std::string& name) {
     for (const auto& item : items)
         if (item.name == name) return &item;
@@ -310,7 +233,7 @@ TEST(test_card_write_protect) {
     CHECK(m != nullptr);
     if (!m) return;
     const std::uint8_t b55 = 0x55, bAA = 0xAA;
-    CHECK(m->poke(0x0000, &b55, 1));
+    CHECK(m->writeBuiltIn(0x0000, &b55, 1).stored);
     CHECK(m->peek(0x0000) == 0x55);
 
     std::string error;
@@ -318,7 +241,7 @@ TEST(test_card_write_protect) {
     CHECK(!f.part().modules().canWriteProtect(1));
     const ExpansionCard* card = f.part().slotCard(1);
     CHECK(card && card->writeProtected());
-    CHECK(!m->poke(0x0000, &bAA, 1));   // the switch blocks it
+    CHECK(!m->writeBuiltIn(0x0000, &bAA, 1).stored);   // the switch blocks it
     CHECK(m->peek(0x0000) == 0x55);
     std::ifstream in(fs::path(f.paths->instanceDir()) / "Rom.card.yaml");
     const std::string text((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>());

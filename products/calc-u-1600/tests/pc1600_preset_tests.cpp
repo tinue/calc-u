@@ -227,7 +227,7 @@ TEST(test_loader_machine_binary_length_mismatch) {
                 &p, &err));
     PresetLoadResult r = applyPC1600Preset(m, p);
     CHECK(!r.ok);
-    CHECK(r.error.find("length") != std::string::npos);
+    CHECK(r.error.find("says 1 bytes of code, but 4 follow") != std::string::npos);   // C1600-2 AC-8 row 2, AC-25
 
     // Same file, explicit length: 4 -> loads all four bytes.
     PC1600Machine m2;
@@ -256,7 +256,7 @@ TEST(test_loader_machine_binary_headerless) {
                 &p, &err));
     PresetLoadResult r = applyPC1600Preset(m, p);
     CHECK(!r.ok);
-    CHECK(r.error.find("required") != std::string::npos);
+    CHECK(r.error.find("needs an address") != std::string::npos);   // C1600-2 AC-8 row 5, AC-25
 
     PC1600Machine m2;
     loadPC1600Roms(m2);

@@ -21,6 +21,7 @@
 #include "../core/PC1600/PC1600BasicLoader.hpp"
 #include "TestRoms.hpp"
 #include "TestHarness.hpp"
+#include "LoaderTestSupport.hpp"
 
 namespace {
 
@@ -62,7 +63,7 @@ void enterProgram(PC1600Machine& m, const std::string& loaded, const std::string
     tapKey(m, "mode");  // RUN -> PRO
     waitIdle(m, PC1600Machine::kTStateHz);
     type(m, "NEW");
-    if (!loaded.empty()) CHECK(loadBasicProgram(m, std::vector<uint8_t>(loaded.begin(), loaded.end())).ok);
+    if (!loaded.empty()) CHECK(loadertest::loadBasic(m, std::vector<uint8_t>(loaded.begin(), loaded.end())).ok);
     if (!typed.empty()) CHECK(typeBasicProgramText(m, typed).rejectedLines.empty());
     tapKey(m, "mode");  // PRO -> RUN
     waitIdle(m, PC1600Machine::kTStateHz);

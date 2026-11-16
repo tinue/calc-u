@@ -171,7 +171,7 @@ SharpAppPart::~SharpAppPart() {
     }
 }
 
-std::vector<sessions::SessionPart*> SharpAppPart::sessionParts() { return {&m_typingPart, &m_peripherals, this}; }
+std::vector<sessions::SessionPart*> SharpAppPart::sessionParts() { return {&m_typingPart, &m_peripherals, &m_loaderPart, this}; }
 
 void SharpAppPart::notice(const std::string& sentence) {
     if (m_ctx) m_ctx->notice(sentence);
@@ -280,23 +280,6 @@ void SharpAppPart::attach(sessions::SessionSetup& setup) {
         const std::string dir = textArg(args, "dir");
         return operation([this, dir] { return mountHostDriveJob(dir); });
     });
-    setup.command(c::kLoadBasic, [this](const Value& args, SessionContext&) -> CommandOutcome {
-        const OpResult r = loadBasicProgram(bytesArg(args, "bytes").value_or(std::vector<std::uint8_t>{}), textArg(args, "path"));
-        refreshTopics();
-        if (!r.ok) return Refused{r.error};
-        return Done{};
-    });
-    setup.command(c::kLoadMachineCode, [this](const Value& args, SessionContext&) -> CommandOutcome {
-        MachineCodeLoadRequest req;
-        req.payload = bytesArg(args, "bytes").value_or(std::vector<std::uint8_t>{});
-        req.addr = static_cast<std::uint32_t>(integerArg(args, "addr"));
-        req.slot = static_cast<int>(integerArg(args, "slot"));
-        req.bank = static_cast<int>(integerArg(args, "bank"));
-        const OpResult r = loadMachineCode(req);
-        refreshTopics();
-        if (!r.ok) return Refused{r.error};
-        return Done{};
-    });
 }
 
 void SharpAppPart::afterCall(sessions::SessionContext&, calcu::pacing::WallTime) {
@@ -344,15 +327,17 @@ void SharpAppPart::refreshTopics() {
 // ── Operations ──────────────────────────────────────────────────────────
 
 sessions::CommandOutcome SharpAppPart::operation(std::function<job::Task<OpResult>()> make) {
-    return sessions::StartOperation{[this, make](sessions::OperationContext&) { return runOperation(this, make); }};
+    return sessions::StartOperation{[this, make](sessions::OperationContext& ctx) { return runOperation(this, &ctx, make); }};
 }
 
-sessions::Task<sessions::OperationResult> SharpAppPart::runOperation(SharpAppPart* self,
+sessions::Task<sessions::OperationResult> SharpAppPart::runOperation(SharpAppPart* self, sessions::OperationContext* ctx,
                                                                     std::function<job::Task<OpResult>()> make) {
     // Before an operation: pending card and disk writes go first.
     self->m_modules->flushPendingPersist();
     self->m_floppy->flushPendingPersist();
+    self->m_opCtx = ctx;
     const OpResult r = co_await make();
+    self->m_opCtx = nullptr;
     co_return sessions::OperationResult{r.ok, r.error};
 }
 
@@ -414,7 +399,7 @@ job::Task<OpResult> SharpAppPart::loadPresetJob(std::string ref, bool armOnly) {
     // The model's preset loader on the old class (adapter until M-46).
     const PresetLoadResult result = co_await sharp::legacy::applyPresetJob(
         m, preset, presetLog, traceDir, bundled, [this] { seedClockFromHost(); }, presetRoms(), extraModuleDirs, onArmed,
-        onSaveAs);
+        onSaveAs, m_opCtx, &m_typingPart.engine());
     if (!result.ok) co_return OpResult::fail(result.error);
     co_return OpResult{};
 }
@@ -538,28 +523,6 @@ job::Task<OpResult> SharpAppPart::mountHostDriveJob(std::string dirOrEmpty) {
         [this, &attached, &error, dirOrEmpty] { attached = attachHostDrive(dirOrEmpty, &error); });
     if (!attached) co_return OpResult::fail(error);
     co_return OpResult{};
-}
-
-OpResult SharpAppPart::loadBasicProgram(const std::vector<std::uint8_t>& file, const std::string& path) {
-    // Live-machine LOAD, like LOAD on the real machine: no reset, MODE
-    // change or NEW0.
-    Machine* m = machine();
-    if (!m) return OpResult::fail("No machine is running.");
-    const BasicLoadResult loaded = sharp::legacy::loadBasicProgram(*m, file);
-    if (!loaded.ok) return OpResult::fail(path + ": " + loaded.error);
-    return OpResult{};
-}
-
-OpResult SharpAppPart::loadMachineCode(const MachineCodeLoadRequest& request) {
-    Machine* m = machine();
-    if (!m) {
-        return OpResult::fail(m_model == Model::PC1600 ? "No PC-1600 machine is running."
-                                                       : "No PC-1500 machine is running.");
-    }
-    std::string error;
-    const bool ok = sharp::legacy::loadMachineCode(*m, request.slot, request.addr, request.payload.data(),
-                                                   request.payload.size(), &error, request.bank);
-    return ok ? OpResult{} : OpResult::fail(error);
 }
 
 // ── The machine ─────────────────────────────────────────────────────────

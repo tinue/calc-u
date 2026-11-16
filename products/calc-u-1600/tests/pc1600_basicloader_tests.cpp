@@ -20,6 +20,7 @@
 #include "TestCards.hpp"
 #include "TestRoms.hpp"
 #include "TestHarness.hpp"
+#include "LoaderTestSupport.hpp"
 
 namespace {
 
@@ -120,7 +121,7 @@ TEST(test_ce1600m_module_equivalence_and_run) {
     // Fast path: load that payload into a fresh module machine.
     PC1600Machine m;
     if (!bootIntoProNew0Slot1Ram(m, 0x8000)) return;
-    BasicLoadResult r = loadBasicBinaryPayload(m, typedPayload);
+    BasicLoadResult r = loadertest::loadPayload(m, typedPayload);
     CHECK(r.ok);
     if (!r.ok) {
         std::fprintf(stderr, "  loader error: %s\n", r.error.c_str());
@@ -165,7 +166,7 @@ TEST(test_reload_over_shorter_program_clears_tail_stock) {
     std::vector<uint8_t> shortPayload = {0x00, 0x0A, 0x03, 0xF1, 0x30, 0x0D};
     CHECK(longPayload.size() > shortPayload.size());
 
-    BasicLoadResult first = loadBasicBinaryPayload(m, longPayload);
+    BasicLoadResult first = loadertest::loadPayload(m, longPayload);
     CHECK(first.ok);
     if (!first.ok) {
         std::fprintf(stderr, "  loader error: %s\n", first.error.c_str());
@@ -173,7 +174,7 @@ TEST(test_reload_over_shorter_program_clears_tail_stock) {
     }
     uint16_t oldEnd = first.endAddr;
 
-    BasicLoadResult second = loadBasicBinaryPayload(m, shortPayload);
+    BasicLoadResult second = loadertest::loadPayload(m, shortPayload);
     CHECK(second.ok);
     if (!second.ok) {
         std::fprintf(stderr, "  loader error: %s\n", second.error.c_str());
@@ -199,7 +200,7 @@ TEST(test_rejects_invalid_basprg_end) {
     m.memory().poke(0xF868, static_cast<uint8_t>(badEnd & 0xFF));
 
     std::vector<uint8_t> payload = {0x00, 0x0A, 0x03, 0xF1, 0x30, 0x0D};
-    BasicLoadResult r = loadBasicBinaryPayload(m, payload);
+    BasicLoadResult r = loadertest::loadPayload(m, payload);
     CHECK(!r.ok);
     CHECK(r.error.find("BASPRG_END") != std::string::npos);
 }
@@ -215,7 +216,7 @@ TEST(test_reload_over_shorter_program_clears_tail_module) {
                                        0x22, 0x0D};
     std::vector<uint8_t> shortPayload = {0x00, 0x0A, 0x03, 0xF1, 0x30, 0x0D};
 
-    BasicLoadResult first = loadBasicBinaryPayload(m, longPayload);
+    BasicLoadResult first = loadertest::loadPayload(m, longPayload);
     CHECK(first.ok);
     if (!first.ok) {
         std::fprintf(stderr, "  loader error: %s\n", first.error.c_str());
@@ -223,7 +224,7 @@ TEST(test_reload_over_shorter_program_clears_tail_module) {
     }
     uint16_t oldEndLh = be16(m, 0xF867);
 
-    BasicLoadResult second = loadBasicBinaryPayload(m, shortPayload);
+    BasicLoadResult second = loadertest::loadPayload(m, shortPayload);
     CHECK(second.ok);
     if (!second.ok) {
         std::fprintf(stderr, "  loader error: %s\n", second.error.c_str());
@@ -254,7 +255,7 @@ TEST(test_rejects_pc1500_transfer_file) {
     f[0x17] = static_cast<uint8_t>(wire >> 8);
     f[0x18] = static_cast<uint8_t>(wire & 0xFF);
     f.insert(f.end(), payload.begin(), payload.end());
-    BasicLoadResult r = loadBasicProgram(m, f);
+    BasicLoadResult r = loadertest::loadBasic(m, f);
     CHECK(!r.ok);
     CHECK(r.error.find("PC-1500") != std::string::npos);
 }
@@ -302,7 +303,7 @@ std::vector<uint8_t> programPayload(const char* program) {
     PC1600Machine m;
     if (!bootIntoProNew0(m)) return {};
     const std::string text(program);
-    if (!loadBasicProgram(m, std::vector<uint8_t>(text.begin(), text.end())).ok) return {};
+    if (!loadertest::loadBasic(m, std::vector<uint8_t>(text.begin(), text.end())).ok) return {};
     return readRange(m, toZ80(be16(m, 0xF865)), toZ80(be16(m, 0xF867)));
 }
 
@@ -381,7 +382,7 @@ void checkTypedVsFast(const char* label, size_t slot1Ram, size_t slot2Ram, const
     }
     PC1600Machine m;
     if (!prepare(m, slot1Ram, slot2Ram, setup)) return;
-    BasicLoadResult r = loadBasicBinaryPayload(m, payload);
+    BasicLoadResult r = loadertest::loadPayload(m, payload);
     CHECK(r.ok);
     if (!r.ok) {
         std::fprintf(stderr, "  %s: loader error: %s\n", label, r.error.c_str());
@@ -443,7 +444,7 @@ TEST(test_listing_follows_mode) {
     for (bool mode1 : {false, true}) {
         PC1600Machine m;
         if (!bootMode(m, mode1)) return;
-        BasicLoadResult r = loadBasicProgramFile(m, path);
+        BasicLoadResult r = loadertest::loadBasicFile(m, path);
         CHECK(r.ok);
         if (!r.ok) continue;
         const uint8_t hi = m.memory().peek(static_cast<uint16_t>(r.baseAddr + 3));
@@ -458,12 +459,12 @@ TEST(test_mode1_refuses_non_ascii) {
     {
         PC1600Machine m;
         if (!bootMode(m, false)) return;
-        CHECK(loadBasicProgramFile(m, path).ok);
+        CHECK(loadertest::loadBasicFile(m, path).ok);
     }
     PC1600Machine m;
     if (!bootMode(m, true)) return;
     const WorkAreaSnapshot before = snapshot(m);
-    BasicLoadResult r = loadBasicProgramFile(m, path);
+    BasicLoadResult r = loadertest::loadBasicFile(m, path);
     CHECK(!r.ok);
     CHECK(r.error.find("MODE 1") != std::string::npos);
     const WorkAreaSnapshot after = snapshot(m);
@@ -484,7 +485,7 @@ TEST(test_pc1500_transfer_file_in_mode1) {
     f.insert(f.end(), payload.begin(), payload.end());
     PC1600Machine m;
     if (!bootMode(m, true)) return;
-    BasicLoadResult r = loadBasicProgram(m, f);
+    BasicLoadResult r = loadertest::loadBasic(m, f);
     CHECK(r.ok);
     if (r.ok) CHECK(readRange(m, r.baseAddr, static_cast<uint16_t>(r.baseAddr + payload.size())) == payload);
 }
@@ -498,14 +499,14 @@ TEST(test_pc1600_bbin_file) {
     {
         PC1600Machine m;
         if (!bootMode(m, false)) return;
-        BasicLoadResult r = loadBasicProgramFile(m, bas);
+        BasicLoadResult r = loadertest::loadBasicFile(m, bas);
         CHECK(r.ok);
         if (r.ok) fromListing = readRange(m, r.baseAddr, r.endAddr);
     }
     for (bool mode1 : {false, true}) {
         PC1600Machine m;
         if (!bootMode(m, mode1)) return;
-        BasicLoadResult r = loadBasicProgramFile(m, bbin);
+        BasicLoadResult r = loadertest::loadBasicFile(m, bbin);
         CHECK(r.ok);
         if (!r.ok) std::fprintf(stderr, "  loader error: %s\n", r.error.c_str());
         if (r.ok && !mode1) CHECK(readRange(m, r.baseAddr, r.endAddr) == fromListing);

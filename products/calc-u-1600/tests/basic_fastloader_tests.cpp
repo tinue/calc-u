@@ -19,6 +19,7 @@
 #include "../core/PC1500/PC1500BasicTyper.hpp"
 #include "../core/PC1500/PC1500Machine.hpp"
 #include "TestHarness.hpp"
+#include "LoaderTestSupport.hpp"
 
 namespace {
 
@@ -96,7 +97,7 @@ void runEquivalenceCase(const char* label, const std::string& src) {
     PC1500Machine m;
     SKIP_UNLESS(bootMachine(m), (std::string(label) + ": roms/PC-1500_A04.ROM not found").c_str());
     primeNew0(m);
-    BasicLoadResult r = loadBasicProgram(m, wrapCe158(payload));
+    BasicLoadResult r = loadertest::loadBasic(m, wrapCe158(payload));
     CHECK(r.ok);
     if (!r.ok) {
         std::fprintf(stderr, "  (%s) loader error: %s\n", label, r.error.c_str());
@@ -140,7 +141,7 @@ TEST(test_rejects_pc1600_transfer_file) {
     f[5] = static_cast<uint8_t>(payload.size());
     f[0x0F] = 0x0F;
     f.insert(f.end(), payload.begin(), payload.end());
-    BasicLoadResult r = loadBasicProgram(m, f);
+    BasicLoadResult r = loadertest::loadBasic(m, f);
     CHECK(!r.ok);
     CHECK(r.error.find("PC-1600") != std::string::npos);
 }
@@ -161,7 +162,7 @@ TEST(test_rejects_uninitialized_basprg_st) {
     PC1500Machine m;
     SKIP_UNLESS(bootMachine(m), "roms/PC-1500_A04.ROM not found");
     // Deliberately do NOT primeNew0(m).
-    BasicLoadResult r = loadBasicProgram(m, wrapCe158(payload));
+    BasicLoadResult r = loadertest::loadBasic(m, wrapCe158(payload));
     CHECK(!r.ok);
     CHECK(r.error.find("BASPRG_ST") != std::string::npos);
 }
@@ -180,7 +181,7 @@ TEST(test_rejects_invalid_basprg_end) {
     m.memory().poke(0x7868, static_cast<uint8_t>(badEnd & 0xFF));
 
     std::vector<uint8_t> payload = {0x00, 0x0A, 0x03, 0xF1, 0x8E, 0x0D};  // 10 END
-    BasicLoadResult r = loadBasicProgram(m, wrapCe158(payload));
+    BasicLoadResult r = loadertest::loadBasic(m, wrapCe158(payload));
     CHECK(!r.ok);
     CHECK(r.error.find("BASPRG_END") != std::string::npos);
 }
@@ -198,12 +199,12 @@ TEST(test_reload_over_shorter_program_clears_tail) {
     PC1500Machine m;
     SKIP_UNLESS(bootMachine(m), "roms/PC-1500_A04.ROM not found");
     primeNew0(m);
-    BasicLoadResult first = loadBasicProgram(m, wrapCe158(longPayload));
+    BasicLoadResult first = loadertest::loadBasic(m, wrapCe158(longPayload));
     CHECK(first.ok);
     if (!first.ok) return;
     uint16_t oldEnd = first.endAddr;
 
-    BasicLoadResult second = loadBasicProgram(m, wrapCe158(shortPayload));
+    BasicLoadResult second = loadertest::loadBasic(m, wrapCe158(shortPayload));
     CHECK(second.ok);
     if (!second.ok) return;
 
@@ -222,7 +223,7 @@ TEST(test_rejects_garbage) {
     PC1500Machine m;
     if (!bootMachine(m)) return;
     std::vector<uint8_t> junk(40, 0xAB);
-    BasicLoadResult r = loadBasicProgram(m, junk);
+    BasicLoadResult r = loadertest::loadBasic(m, junk);
     CHECK(!r.ok);
 }
 
@@ -234,7 +235,7 @@ TEST(test_bbin_file_equals_listing) {
         PC1500Machine m;
         if (!bootMachine(m)) return;
         primeNew0(m);
-        BasicLoadResult r = loadBasicProgramFile(m, path);
+        BasicLoadResult r = loadertest::loadBasicFile(m, path);
         CHECK(r.ok);
         if (!r.ok) {
             std::fprintf(stderr, "  %s: loader error: %s\n", path, r.error.c_str());

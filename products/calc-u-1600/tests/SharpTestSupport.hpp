@@ -227,9 +227,9 @@ inline long moduleAddress(Machine& m, int slot) {
         const std::uint8_t old = mem.peek(addr);
         const std::vector<std::uint8_t> before = card->debugImage();
         const std::uint8_t probe = static_cast<std::uint8_t>(old ^ 0x5A);
-        if (!mem.poke(addr, &probe, 1)) continue;
+        if (!mem.writeBuiltIn(addr, &probe, 1).stored) continue;
         const bool inModule = card->debugImage() != before;
-        mem.poke(addr, &old, 1);
+        mem.writeBuiltIn(addr, &old, 1);
         if (inModule) return addr;
     }
     return -1;
@@ -256,7 +256,7 @@ inline bool scribbleModule(Machine& m, int slot) {
         return false;
     }
     const long at = moduleAddress(m, slot);
-    return at >= 0 && memoryOf(m).poke(static_cast<std::uint16_t>(at), pattern, 4) && card->debugImage() != before;
+    return at >= 0 && memoryOf(m).writeBuiltIn(static_cast<std::uint16_t>(at), pattern, 4).stored && card->debugImage() != before;
 }
 
 inline bool hasKind(Machine& m, KindId k) { return !m.capabilities(k).empty(); }

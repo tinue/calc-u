@@ -58,49 +58,21 @@ File readFile(const std::vector<uint8_t>& bytes) {
     using programfile::Kind;
     const programfile::ProgramFile pf = programfile::classify(bytes);
     File f;
-    switch (pf.kind) {
-        case Kind::Empty:
-        case Kind::Headerless:
-            if (pf.damaged) {
-                f.error = "The file starts like a CE-158 or PC-1600 header, but has no complete header of a known type.";
-                return f;
-            }
-            f.payload = bytes;
-            f.ok = true;
-            return f;
-        case Kind::BasicListing:
-            f.error = "This is a BASIC listing, not machine code -- use Load BASIC Program.";
-            return f;
-        case Kind::BasicPC1500:
-        case Kind::BasicPC1600:
-            f.header = pf.kind == Kind::BasicPC1600 ? File::Header::PC1600 : File::Header::CE158;
-            f.error = std::string("This is a tokenized ") + programfile::headerName(pf.kind) +
-                      " BASIC program, not machine code -- use Load BASIC Program.";
-            return f;
-        case Kind::Other:
-            f.error = "This file holds " + programfile::describe(pf.token) + ", not machine code.";
-            return f;
-        case Kind::CodeLH5801:
-        case Kind::CodeZ80:
-            break;
+    // One sentence per case (C1600-2 AC-25): the classifier's. An empty file
+    // is refused as empty (EC-1).
+    f.error = programfile::refusal(pf, programfile::Wanted::Code);
+    if (pf.kind == Kind::CodeLH5801 || pf.kind == Kind::CodeZ80) {
+        f.header = pf.kind == Kind::CodeZ80 ? File::Header::PC1600 : File::Header::CE158;
+        f.loadAddr = pf.loadAddr;
+        f.autorunAddr = pf.autorunAddr;
+        f.payload = pf.payload;
+        f.lengthMismatch = pf.lengthMismatch;
+    } else if (pf.kind == Kind::BasicPC1500 || pf.kind == Kind::BasicPC1600) {
+        f.header = pf.kind == Kind::BasicPC1600 ? File::Header::PC1600 : File::Header::CE158;
+    } else if (pf.kind == Kind::Headerless && f.error.empty()) {
+        f.payload = pf.payload;   // the whole file (or the tape file's image)
     }
-    f.header = pf.kind == Kind::CodeZ80 ? File::Header::PC1600 : File::Header::CE158;
-    f.loadAddr = pf.loadAddr;
-    f.autorunAddr = pf.autorunAddr;
-    f.payload = pf.payload;
-    if (pf.lengthMismatch) {
-        char b[160];
-        if (pf.truncated)
-            std::snprintf(b, sizeof(b), "The %s header promises more code than the %zu bytes that follow it.",
-                          programfile::headerName(pf.kind), f.payload.size());
-        else
-            std::snprintf(b, sizeof(b), "The %s header says %zu bytes of code, but %zu follow it.",
-                          programfile::headerName(pf.kind), pf.headerPayloadLen, f.payload.size());
-        f.error = b;
-        f.lengthMismatch = true;
-        return f;
-    }
-    f.ok = true;
+    f.ok = f.error.empty();
     return f;
 }
 
@@ -238,6 +210,8 @@ bool pc1600BankTarget(uint32_t addr, size_t len, int bank, const PC1600State& st
 }  // namespace
 
 LoadPlan planLoad(const File& file, const LoadOptions& o, const PC1600State& state) {
+    // C1600-2 AC-8: the refusals in the order of the spec's table, each
+    // before anything is written; AC-23 where the code goes; AC-9 the CPU.
     LoadPlan p;
     auto refuse = [&p](LoadError e, std::string detail = {}) {
         p.error = e;
@@ -245,31 +219,40 @@ LoadPlan planLoad(const File& file, const LoadOptions& o, const PC1600State& sta
         return p;
     };
     const bool pc1600 = o.target == Target::PC1600;
-    if (!file.ok && !(file.lengthMismatch && o.acceptLengthMismatch)) return refuse(LoadError::BadFile, file.error);
+    p.len = file.payload.size();
+    // Rows 1 and 2: what the file is; a length that disagrees with the
+    // header unless a length is given by hand.
+    if (!file.ok && !(file.lengthMismatch && o.hasLength)) return refuse(LoadError::BadFile, file.error);
+    // Row 3: which machine or mode takes it.
     const std::string mismatch = headerMismatch(o.target, file, state.mode1);
     if (!mismatch.empty()) return refuse(LoadError::HeaderMismatch, mismatch);
-    // The CPU: the header's, else the caller's, else the MODE's.
+    // AC-9 -- the CPU: the header's, else the caller's, else the MODE's.
     if (pc1600) {
         if (file.header == File::Header::PC1600) p.cpu = Cpu::Z80;
         else if (file.header == File::Header::CE158) p.cpu = Cpu::LH5803;
         else if (o.hasCpu) p.cpu = o.cpu;
         else p.cpu = state.mode1 ? Cpu::LH5803 : Cpu::Z80;
     }
-    if (file.payload.empty() && !o.hasLength) return refuse(LoadError::Empty);
+    // Row 4: no code.
+    if (o.hasLength ? o.length == 0 : file.payload.empty()) return refuse(LoadError::Empty);
+    // Row 5: headerless without an address; the PC-1600 proposes the start
+    // of the selected program area.
     if (file.header == File::Header::None && !o.hasAddress) {
-        if (pc1600) {
-            const uint32_t def = pc1600DefaultAddress(state);
-            p.defaultAddr = inCpu(def, p.cpu);
-        }
+        if (pc1600) p.defaultAddr = inCpu(pc1600DefaultAddress(state), p.cpu);
         return refuse(LoadError::NeedsAddress);
     }
+    // Row 6: a length by hand that the file does not hold.
+    if (o.hasLength && o.length > file.payload.size()) {
+        p.len = o.length;
+        return refuse(LoadError::LengthExceeds);
+    }
+    // AC-23: the address by hand, else the header's; the length by hand,
+    // else the bytes after the header.
     p.addr = o.hasAddress ? o.address : file.loadAddr;
     p.len = o.hasLength ? o.length : file.payload.size();
-    if (p.len == 0) return refuse(LoadError::Empty);
-    if (p.len > file.payload.size()) return refuse(LoadError::LengthExceeds);
-    // A PC-1600 header's bank (bits 16-23). Bank 0 is "none given", like
-    // BLOAD without `#bank`: the program area decides below -- so an &80C5
-    // file goes to slot 2 when slot 2 holds S0's first run.
+    // Row 7: a PC-1600 header's bank (bits 16-23). Bank 0 is "none given",
+    // like BLOAD without `#bank`: the program area decides below -- so an
+    // &80C5 file goes to slot 2 when slot 2 holds S0's first run.
     const int headerBank = pc1600 && file.header == File::Header::PC1600 && !o.hasAddress
                                ? static_cast<int>(file.loadAddr >> 16)
                                : 0;
@@ -281,53 +264,48 @@ LoadPlan planLoad(const File& file, const LoadOptions& o, const PC1600State& sta
         p.bank = headerBank;
         return p;
     }
-    if (o.checkRange && p.addr > 0xFFFF) return refuse(LoadError::OutsideBank0);
+    // Row 8: past &FFFF (in the CPU's space).
+    if (static_cast<uint64_t>(p.addr) + p.len > 0x10000) return refuse(LoadError::PastEnd);
     p.busAddr = p.addr;
+    // Row 9: LH5803 code outside its RAM.
     if (pc1600 && p.cpu == Cpu::LH5803) {
         if (p.addr + p.len > 0x8000) return refuse(LoadError::LhRange);
         p.busAddr = pc1600::lh5803ToZ80(static_cast<uint16_t>(p.addr));
     }
+    // Row 10: ROM, or a module that is not part of the selected program area.
     if (pc1600) {
         std::string why;
         if (!pc1600TargetFor(p.busAddr, p.len, state, &p.slot, &why, p.cpu)) return refuse(LoadError::NoSlot, why);
         p.bank = pc1600DefaultBank(p.slot);
     }
-    if (o.checkRange && static_cast<uint64_t>(p.busAddr) + p.len > 0x10000) return refuse(LoadError::PastEnd);
     return p;
 }
 
-Plan plan(Target target, const File& file, const PC1600State& state) {
-    // Load Machine Code…'s rules: the header decides, the machine's MODE and
-    // TITLE pick the rest; a headerless file asks for its address.
-    LoadOptions o;
-    o.target = target;
-    const LoadPlan lp = planLoad(file, o, state);
-    Plan p;
-    p.slot = lp.slot;
-    p.bank = lp.bank;
-    p.cpu = lp.cpu;
-    p.busAddr = lp.busAddr;
-    switch (lp.error) {
-        case LoadError::None: break;
-        case LoadError::NeedsAddress:
-            p.needsAddress = true;
-            p.defaultAddr = lp.defaultAddr;
-            break;
-        case LoadError::Empty: p.error = "The file contains no code."; break;
-        case LoadError::OutsideBank0:
-            p.error = "The header's load address " + hexAddress(file.loadAddr) + " is above &FFFF.";
-            break;
-        case LoadError::LhRange:
-            p.error = "The header's load address " + hexAddress(file.loadAddr) + " + " + std::to_string(file.payload.size()) +
-                      " bytes is outside the LH5803's RAM (&0000-&7FFF).";
-            break;
-        case LoadError::NoSlot: p.error = "The header's load address doesn't fit: " + lp.detail; break;
+std::string refusal(const LoadPlan& p, const File& file, const LoadOptions& o) {
+    switch (p.error) {
+        case LoadError::None: return {};
+        case LoadError::BadFile:
+        case LoadError::HeaderMismatch: return p.detail;
+        case LoadError::Empty: return "The file contains no code.";
+        case LoadError::NeedsAddress: {
+            std::string s = "The file has no machine-code header, so it needs an address to load at.";
+            if (p.defaultAddr != 0)
+                s += " The selected program area starts at " + hexAddress(p.defaultAddr) +
+                     (p.cpu == Cpu::LH5803 ? " (an LH5803 address)." : ".");
+            return s;
+        }
+        case LoadError::LengthExceeds:
+            return "The length " + std::to_string(p.len) + " is more than the " + std::to_string(file.payload.size()) +
+                   " bytes the file holds.";
+        case LoadError::NoSlot:
+            return o.hasAddress ? p.detail : "The header's load address doesn't fit: " + p.detail;
         case LoadError::PastEnd:
-            p.error = "The code (" + std::to_string(file.payload.size()) + " bytes at " + hexAddress(file.loadAddr) + ") runs past &FFFF.";
-            break;
-        default: p.error = lp.detail; break; // BadFile, HeaderMismatch
+            return "The code (" + std::to_string(p.len) + " bytes at " + hexAddress(p.addr) + ") runs past &FFFF.";
+        case LoadError::LhRange:
+            return "The load address " + hexAddress(p.addr) + " + " + std::to_string(p.len) +
+                   " bytes is outside the LH5803's RAM (&0000-&7FFF).";
     }
-    return p;
+    return p.detail;
 }
 
 namespace {

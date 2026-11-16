@@ -13,9 +13,21 @@
 #include "../Display/LcdText.hpp"
 #include "../HostClock.hpp"
 #include "../Job.hpp"
-#include "../MachineCodeFile.hpp"
 #include "PresetFile.hpp"
 #include "PresetRomSet.hpp"
+
+namespace sharp {
+class LoaderMemory;
+}
+namespace calcu::sessions {
+class OperationContext;
+}
+namespace calcu::typing {
+class TypingEngine;
+}
+namespace calcu::machine {
+class Machine;
+}
 
 // ── The model-independent half of applying a preset ─────────────────────
 //
@@ -92,6 +104,17 @@ struct PresetLoadResult {
 /// preset script run. Left unset (the default) costs nothing.
 using PresetArmedFn = std::function<void(const PresetLoadResult& armedSoFar)>;
 
+/// The typing hand-off (C1600-2 design §3.10; adapter until M-46): the
+/// preset operation's context, the session's typing engine and the machine
+/// it types on, for a typed `program:` (sharp::loaders::typeProgram). Empty
+/// where a preset runs without a session.
+struct PresetTyping {
+    calcu::sessions::OperationContext* ctx = nullptr;
+    calcu::typing::TypingEngine* engine = nullptr;
+    calcu::machine::Machine* machine = nullptr;
+    bool present() const { return ctx && engine && machine; }
+};
+
 /// What runPresetSections() needs from one machine. Each preset loader
 /// implements it over its own machine type (via PresetMachineBase below).
 class PresetMachine {
@@ -123,21 +146,13 @@ public:
     /// A `syncclock:` step: re-seed the RTC from the host; returns the time set.
     virtual std::tm syncClock() = 0;
 
-    /// A typed program (`text: |`, `typed: true`): type it in through the ROM's editor.
-    virtual job::Task<BasicTypeResult> typeBasicProgram(std::string text) = 0;
-    /// A BASIC `file:`: load the listing or tokenized file at `path`
-    /// (loadBasicProgramFile(): on the PC-1600 the MODE picks the keyword
-    /// table and the TITLE area is the target).
-    virtual BasicLoadResult loadBasicFile(const std::string& path) = 0;
-    /// A machine-code `file:`: which machine-code header family this machine
-    /// takes (machinecode::headerMismatch()), the PC-1600's MODE / TITLE /
-    /// program areas the placement follows (PC-1500: none), and the write
-    /// of `len` bytes at the Z-80 / LH5801 bus address `busAddr` -- on the
-    /// PC-1600 into the target `slot` and `bank` machinecode::planLoad() picked.
-    virtual machinecode::Target codeTarget() const = 0;
-    virtual machinecode::PC1600State codeState() { return {}; }
-    virtual bool loadMachineCode(machinecode::Slot slot, int bank, uint32_t busAddr, const uint8_t* data, size_t len,
-                                 std::string* error) = 0;
+    /// The loaders' memory access of this machine (C1600-2 AC-14): a
+    /// `program:` loads through sharp::loaders on it (design §3.10).
+    virtual sharp::LoaderMemory& loaderMemory() = 0;
+    /// A typed program without a session (PresetTyping empty: the CLIs, the
+    /// probes, the loader matrices): the model's old typer
+    /// (typeBasicProgramTextJob). Adapter until M-46 (C1600-2 qa-report).
+    virtual job::Task<BasicTypeResult> typeBasicProgramWithoutSession(std::string text) = 0;
 };
 
 /// The ROM's typed-input line buffer (80 bytes from `base`, up to its CR)
@@ -207,6 +222,7 @@ std::unique_ptr<ExpansionCard> makePresetModuleCard(const std::string& specFile,
 /// where `trace:` and `screenshot:` steps write; `onSaveAs` runs `saveas:`
 /// steps (see PresetSaveAsFn).
 job::Task<void> runPresetSectionsJob(PresetMachine& machine, const PresetFile& preset, PresetLoadResult* result,
-                                     PresetLogFn log, std::string traceDir, PresetSaveAsFn onSaveAs);
+                                     PresetLogFn log, std::string traceDir, PresetSaveAsFn onSaveAs,
+                                     PresetTyping typing = {});
 void runPresetSections(PresetMachine& machine, const PresetFile& preset, PresetLoadResult* result,
                        const PresetLogFn& log, const std::string& traceDir, const PresetSaveAsFn& onSaveAs);

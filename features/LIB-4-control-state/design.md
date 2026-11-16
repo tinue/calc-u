@@ -194,7 +194,7 @@ protected:
 
 ```cpp
 struct ControlSetup {
-    const machine::Catalogue* catalogue = nullptr;   // the product's (LIB-18's ProductMachines::catalogue()); read at each computation (EC-3)
+    const machine::Catalogue* catalogue = nullptr;   // the product's (LIB-18's ProductMachines::catalogue()), never null (P-6); read at each computation (EC-3)
     std::vector<machine::PeripheralId> printers;     // who can own the paper panel (D-3)
     std::vector<const ControlRules*> rules;          // asked in this order
 };
@@ -637,3 +637,11 @@ Coverage: AC-16 to AC-20 (5 of 5).
 ### D.10 Questions for the user
 
 None that split the design.
+
+## Part D simplification P-6 (2026-11-16, branch `ds-names`)
+
+`computeControlState` no longer has a path for a `ControlSetup` without a
+catalogue (it gave the running model alone): every caller passes one
+(`LibraryParts`, Calc-U-1600's `sharpControlSetup`, the tests), so the
+catalogue is required. `ControlSetup::rules` stays a list (two rules are
+asked in order by a test).

@@ -60,7 +60,7 @@ LIB-10's row of AC-15's table in M-46).
 
 | File | Holds |
 |---|---|
-| `app/SharpPresetKeys.hpp/.cpp` | `shared::addSharpKeywords(presets::Vocabulary&, const SharpKeywordSetup&)`: the section `program:` (AC-1–5), the header keys `host-drive:` (AC-6, AC-7), `slot-1-rom:`, `slot-2-rom:` (AC-8), `bus-rom:` (AC-9, AC-10), `debug:` (AC-11, AC-12, AC-20); their `ProductValue`s `HostDriveValue`, `SlotRomValue`, `BusRomList`, `DebugBlock` (§3) |
+| `app/SharpPresetKeys.hpp/.cpp` | `shared::addSharpKeywords(presets::Vocabulary&, const SharpKeywordSetup&)`: the section `program:` (AC-1–5), the header keys `host-drive:` (AC-6, AC-7), `slot-1-rom:`, `slot-2-rom:` (AC-8), `bus-rom:` (AC-9, AC-10), `debug:` (AC-11, AC-12, AC-20); their `ProductValue`s `SlotRomValue`, `DebugBlock` (§3; `HostDriveValue` and `BusRomList` went in Part D simplification P-6, §11) |
 | `app/SharpDebugBlock.hpp/.cpp` | `shared::readDebugBlock(const formats::YamlNode&, ReadContext&) -> std::shared_ptr<const DebugBlock>` (AC-11, AC-14 "starts with `debug:`") and `shared::debugBlockOf(path)` for the debugger (AC-12; §3.4) |
 | `tests/preset_content_tests.cpp` | AC-1–14, AC-19, AC-20, EC-1–6 (§6) |
 | `tests/example_references_tests.cpp`, program `CalcU1600ExampleReferences` | AC-16 (§6, §8) |
@@ -107,7 +107,7 @@ void addSharpKeywords(calcu::presets::Vocabulary&, const SharpKeywordSetup&);   
 | Keyword | Kind | Read checks (at read, with the line; AC-14) | Carried out | After |
 |---|---|---|---|---|
 | `program:` | section, a block | AC-1's fields once each; exactly one of `file:` / `text:`; `text:` not with `typed:`, `address:`, `length:`; the file read and its kind told by C1600-2's classifier (AC-2); the fields its kind takes; `text:` with no line (EC-1); no block, an unknown field (EC-2); a relative path without a folder (EC-5, LIB-6 EC-5) | the loader for the kind (AC-3); `text:` typed line by line by C1600-2's typing loader, which reports lines not stored (AC-4); the lines of `text:` as LIB-6 AC-1's block scalar (AC-5) | `Idle` (EC-3: the next item starts when the program has finished; a machine-code program that never returns fails at `timeout:`, LIB-6 AC-57) |
-| `host-drive:` | header key under the place name `host-drive` (D-1) | `{ folder: <path> }` only; the folder exists (relative to the preset's folder, `~/`); the model has the place (else LIB-6 AC-62's sentence); `hostFolders` false: "The host drive is not available in this frontend." (AC-7) | the request for the place `host-drive` with `HostDriveRequest{folder}` (`core/Machine/SharpMachine.hpp:41-45`), through `amendPlan` (D-2) | — |
+| `host-drive:` | header key under the place name `host-drive` (D-1) | `{ folder: <path> }` only; the folder exists (relative to the preset's folder, `~/`); the model has the place (else LIB-6 AC-62's sentence); `hostFolders` false: "The host drive is not available in this frontend." (AC-7) | the request for the place `host-drive` with `HostDriveRequest{folder}` (`core/Machine/SharpMachine.hpp:41-45`), through `ReadContext::addPeripheral` (D-2, §11) | — |
 | `slot-1-rom:`, `slot-2-rom:` | header key, read after the other header keys | `{ file: }` only; a module named for the slot (`ReadContext::pluggedAny`); that module a ROM module of one region (`preset.md` §3.2); the file's size that region's size; `slot-2-rom` on the PC-1600 only | the slot's request gets `SlotRomRequest{bytes}`, read anew at each load (TR) | — |
 | `bus-rom:` | header key, a list | each item `file:` and exactly one of `bank:` (4–7, PC-1600 only; EC-6 "the PC-1500 and PC-1500A take `address:`") or `address:` (&0000–&FFFF), with `address:` optionally `me:`, `pv:`, `pu:` (0 or 1); the file readable, not empty, not larger than its bank or than the room to &FFFF; numbers by `formats::parseNumber` | one request per item at the place `bus-rom`, in list order (the builder reverses it, §2) | — |
 | `debug:` | header key, a mapping | AC-11's keys in camelCase (`docs/formats/README.md` §1), their values and paths; an error starts "debug: " (AC-14) | nothing (AC-12); kept as `DebugBlock` for the debugger | — |
@@ -123,7 +123,9 @@ turns only the place keys into requests. M-46 adds one hook to LIB-6
 (LIB-6 §10.3): `ModelRules::amendPlan(const LoadPlan&, startup::MachinePlan&)`,
 empty by default, called at the end of `machinePlan`. Calc-U-1600's
 rules read their kept values (`LoadPlan::productHeader`) and add the
-host drive's and the bus ROMs' requests and the slot ROMs' bytes. A
+host drive's and the bus ROMs' requests and the slot ROMs' bytes.
+(Part D simplification P-6, §11: the header keys add them through
+`ReadContext` as they are read; `amendPlan` is gone.) A
 build refusal of such a request names no key's line; it is given at
 the line of `model:` (LIB-6 qa-report, deviation "AC-52"). Every check
 that can be made without a machine is made when the preset is read
@@ -304,7 +306,7 @@ media rows wait for M-47 (LIB-7 §10.7). No new row.
 - **D-2 (into the plan).** `ModelRules::amendPlan` (one hook) rather
   than header keys that write into the plan: the reader stays the only
   writer of `LoadPlan`, and the product's values are kept as LIB-6 keeps
-  `debug:`.
+  `debug:`. Superseded by Part D simplification P-6 (§11).
 - **D-3 (what waits).** A preset waits for M-47 when it names a
   removable medium or a module by file or saves one; that is AC-51's
   rule, which adds `default-pc1600` and the `startup-pc1600` fixture to
@@ -329,3 +331,17 @@ wait for M-47 too; `default-pc1600` is out of `bundle.yaml` until then.
 
 None that splits this design. (The golden-run question of M-36 is asked
 in LIB-6 §10.10.)
+
+## 11. Part D simplification P-6 (2026-11-16, branch `ds-names`)
+
+Departure from D-2 and §3.2 (`docs/reviews/d-simplification.md` S-8):
+`host-drive:` and `bus-rom:` hand their requests to the reader as they
+are read (`ReadContext::addPeripheral`), `slot-N-rom:` the content of
+its module's request (`ReadContext::setContentAt`); the reader writes
+them into the `LoadPlan` (`headerPeripherals`), and `machinePlan` puts
+them after the place keys' requests in the order of the model's places
+(the host drive before the bus ROMs, whatever the order in the file),
+the bus ROMs in list order: the order `amendSharpPlan` gave. `amendPlan`,
+`amendSharpPlan`, `HostDriveValue` and `BusRomList` are gone; the slot
+ROM is still kept for `checkSharpHeader` (D-32). LIB-6 design D-33,
+§10.9a; test `c1600_4_ac10_header_peripherals_in_plan_order`.

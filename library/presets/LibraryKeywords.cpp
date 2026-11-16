@@ -3,6 +3,8 @@
 // regular-speed, full-speed, elapsed-time, expect, not-expect, screenshot
 // and syncclock.
 #include "formats/Duration.hpp"
+#include "formats/Flow.hpp"
+#include "machine/Names.hpp"
 #include "peripherals/RealTimeClock.hpp"
 #include "presets/Engine.hpp"
 #include "presets/Expect.hpp"
@@ -11,6 +13,7 @@
 #include "sessions/LibraryTopics.hpp"
 #include "sessions/MachineSession.hpp"
 #include "typing/Awaitable.hpp"
+#include "typing/KeyNames.hpp"
 #include <chrono>
 #include <cstdio>
 #include <filesystem>
@@ -24,31 +27,13 @@ using sessions::Task;
 
 namespace {
 
-std::string scalarText(const YamlNode& n) {
-    if (n.rawLine) return n.scalar;
-    std::string s, e;
-    n.asString(&s, &e);
-    return s;
-}
+// The value of a raw step (`type`, `expect`, `not-expect`; D-4) as written,
+// quotes and `#` included; from a command (not raw), formats::scalarText.
+std::string rawOrScalarText(const YamlNode& n) { return n.rawLine ? n.scalar : formats::scalarText(n); }
 
 ItemResult failed(std::string why) { return ItemResult{false, std::move(why), {}}; }
 
 // ── key, type (LIB-5's; AC-28) ───────────────────────────────────────────
-
-// The presses of one name on a model, as TypingPart::pressesOf finds them.
-std::optional<std::vector<typing::Press>> pressesOfName(const typing::TypingProfile* p,
-                                                        const machine::MachineDescriptor& d, const std::string& name) {
-    if (p && p->name) return p->name(name);
-    for (const auto& k : d.keys)
-        if (k.id.value == name) return std::vector<typing::Press>{typing::Press{k.id}};
-    const std::string w = lowerAscii(name);
-    for (const auto& k : d.keys) {
-        if (lowerAscii(k.id.value) == w) return std::vector<typing::Press>{typing::Press{k.id}};
-        for (const auto& o : k.otherSpellings)
-            if (lowerAscii(o) == w) return std::vector<typing::Press>{typing::Press{k.id}};
-    }
-    return std::nullopt;
-}
 
 std::vector<std::string> words(const std::string& s) {
     std::vector<std::string> out;
@@ -84,31 +69,20 @@ private:
 };
 
 std::unique_ptr<Item> readKey(const YamlNode& v, ReadContext& ctx) {
-    const std::string written = scalarText(v);
+    const std::string written = formats::scalarText(v);
     const std::vector<std::string> names = words(written);
     if (names.empty()) {
         ctx.error(v.line, "key: needs one or more key names.");
         return nullptr;
     }
-    const typing::TypingProfile* p = ctx.typingProfile();
-    std::vector<typing::Press> presses;
-    for (const std::string& n : names) {   // LIB-5 AC-15: found when the preset is read
-        const auto one = pressesOfName(p, ctx.model(), n);
-        if (!one) {
-            ctx.error(v.line, n + " is not a key of the " + ctx.model().model.value + ".");
-            return nullptr;
-        }
-        presses.insert(presses.end(), one->begin(), one->end());
+    // LIB-5 AC-15: found when the preset is read
+    auto presses = typing::pressesOfNames(ctx.typingProfile(), ctx.model(), names);
+    if (const auto* no = std::get_if<typing::KeyNamesRefused>(&presses)) {
+        ctx.error(v.line, no->together ? "The keys " + written + " cannot be pressed on the " + ctx.model().model.value + "."
+                                       : no->name + " is not a key of the " + ctx.model().model.value + ".");
+        return nullptr;
     }
-    if (p && p->names) {
-        auto all = p->names(names);
-        if (!all) {
-            ctx.error(v.line, "The keys " + written + " cannot be pressed on the " + ctx.model().model.value + ".");
-            return nullptr;
-        }
-        presses = std::move(*all);
-    }
-    return std::make_unique<KeyItem>(std::move(presses), written);
+    return std::make_unique<KeyItem>(std::get<std::vector<typing::Press>>(std::move(presses)), written);
 }
 
 class TypeItem final : public Item {
@@ -135,7 +109,7 @@ std::unique_ptr<Item> readType(const YamlNode& v, ReadContext& ctx) {
         ctx.error(v.line, "type: is not available on the " + ctx.model().model.value + ".");
         return nullptr;
     }
-    const std::string text = scalarText(v);
+    const std::string text = rawOrScalarText(v);
     for (char32_t c : typing::decodeUtf8(text))
         if (!p->charKeys(c, nullptr)) {
             ctx.error(v.line, "No key types the character \"" + typing::encodeUtf8(c) + "\" on the " +
@@ -179,7 +153,7 @@ private:
 
 std::unique_ptr<Item> readWait(const YamlNode& v, ReadContext& ctx) {
     std::string error;
-    const std::string w = scalarText(v);
+    const std::string w = formats::scalarText(v);
     const auto us = formats::parseDuration(w, &error);   // AC-20: a unit
     if (!us) {
         ctx.error(v.line, error);
@@ -233,7 +207,7 @@ private:
 };
 
 std::unique_ptr<Item> readElapsed(const YamlNode& v, ReadContext& ctx) {
-    const std::string w = lowerAscii(scalarText(v));
+    const std::string w = machine::lowerAscii(formats::scalarText(v));
     if (w != "start" && w != "report") {
         ctx.error(v.line, "elapsed-time: takes start or report.");
         return nullptr;
@@ -268,15 +242,14 @@ private:
 
 std::function<std::unique_ptr<Item>(const YamlNode&, ReadContext&)> readExpect(bool negate) {
     return [negate](const YamlNode& v, ReadContext& ctx) -> std::unique_ptr<Item> {
-        auto parsed = parseExpectText(scalarText(v));
+        auto parsed = parseExpectText(rawOrScalarText(v));
         if (auto* why = std::get_if<std::string>(&parsed)) {
             ctx.error(v.line, *why);
             return nullptr;
         }
         ExpectText t = std::get<ExpectText>(std::move(parsed));
-        if (t.regex && !ctx.rules().takesRegex()) {   // AC-68
-            ctx.error(v.line, "The " + ctx.model().model.value + " takes no regular expression in " +
-                                  (negate ? "not-expect:" : "expect:") + ".");
+        if (auto why = ctx.rules().checkExpect(t, negate ? "not-expect:" : "expect:")) {   // AC-68
+            ctx.error(v.line, *why);
             return nullptr;
         }
         return std::make_unique<ExpectItem>(std::move(t), negate);
@@ -317,7 +290,7 @@ private:
 };
 
 std::unique_ptr<Item> readScreenshot(const YamlNode& v, ReadContext& ctx) {
-    const std::string n = scalarText(v);
+    const std::string n = formats::scalarText(v);
     if (n.empty() || n.find('/') != std::string::npos || n.find('\\') != std::string::npos) {
         ctx.error(v.line, "screenshot: takes a file name without a folder.");
         return nullptr;

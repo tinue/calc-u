@@ -1,4 +1,5 @@
 #include "paper/PaperPart.hpp"
+#include "machine/Names.hpp"
 #include "paper/Picture.hpp"
 #include "paper/Replies.hpp"
 #include "presets/Engine.hpp"
@@ -15,11 +16,6 @@ using namespace calcu::sessions;
 using machine::PeripheralId;
 
 namespace {
-
-std::string lower(std::string s) {
-    std::transform(s.begin(), s.end(), s.begin(), [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
-    return s;
-}
 
 std::optional<std::string> ownerArg(const sessions::Value& args) {
     const std::string o = textArg(args, "owner");
@@ -201,11 +197,11 @@ PaperPart::Found PaperPart::find(SessionContext& c, const std::optional<std::str
         f.owner = e->owner;
         return f;
     }
-    const std::string want = lower(*owner);
+    const std::string want = machine::lowerAscii(*owner);
     std::vector<std::string> owners;
     for (auto& e : entries_) {
         owners.push_back(e.owner);
-        if (lower(e.owner) == want) {
+        if (machine::lowerAscii(e.owner) == want) {
             f.paper = e.paper.get();
             f.owner = e.owner;
             return f;

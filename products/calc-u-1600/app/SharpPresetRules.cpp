@@ -133,10 +133,6 @@ void SharpModelRules::checkHeader(const calcu::presets::LoadPlan& plan, calcu::p
     checkSharpHeader(plan, ctx);
 }
 
-void SharpModelRules::amendPlan(const calcu::presets::LoadPlan& plan, calcu::startup::MachinePlan& out) const {
-    amendSharpPlan(plan, out);
-}
-
 calcu::presets::ModelRules& SharpPresetRules::forModel(const calcu::machine::ModelId& m) {
     if (m.value == sharp::kPC1500) return m_pc1500;
     if (m.value == sharp::kPC1600) return m_pc1600;

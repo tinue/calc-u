@@ -1,4 +1,5 @@
 #include "app/SharpTyping.hpp"
+#include "machine/Names.hpp"
 
 #include <cctype>
 
@@ -73,12 +74,6 @@ std::optional<std::vector<Press>> pc1600Char(char32_t c, const TypingSupport* s)
     return pressesOf(base, shift);
 }
 
-std::string lower(std::string_view s) {
-    std::string out(s);
-    for (char& ch : out) ch = static_cast<char>(std::tolower(static_cast<unsigned char>(ch)));
-    return out;
-}
-
 // AC-41: the model's key IDs in any case, `break` for `on`; nothing else
 // (`ent` is no longer a name). LIB-6 AC-44 (preset.md §5.1, §8.2): the
 // PC-1600's `ctrl`, `kbii` and `bs` cannot be pressed by name (a preset's
@@ -86,7 +81,7 @@ std::string lower(std::string_view s) {
 std::function<std::optional<std::vector<Press>>(std::string_view)> namesOf(const std::vector<std::string>& ids,
                                                                           bool pc1600) {
     return [&ids, pc1600](std::string_view n) -> std::optional<std::vector<Press>> {
-        const std::string w = lower(n);
+        const std::string w = calcu::machine::lowerAscii(n);
         if (w == "break") return std::vector<Press>{Press{KeyId{sharp::kOnKeyId}}};
         if (pc1600 && (w == "ctrl" || w == "kbii" || w == "bs")) return std::nullopt;
         for (const std::string& k : ids)

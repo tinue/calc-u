@@ -2,6 +2,7 @@
 #include "machine/Attach.hpp"
 #include "machine/Catalogue.hpp"
 #include "machine/Machine.hpp"
+#include "machine/Names.hpp"
 #include "presets/ProductRules.hpp"
 #include "presets/Source.hpp"
 #include "presets/Vocabulary.hpp"
@@ -53,6 +54,9 @@ struct LoadPlan {
     std::vector<PlaceRequest> places;   // AC-3, AC-10
     HeaderInfo header;
     std::map<std::string, std::shared_ptr<const ProductValue>> productHeader;   // a product's header keys
+    // What a product's header keys plug in (C1600-4: host-drive, bus-rom;
+    // ReadContext::addPeripheral), after the places in the machine plan.
+    std::vector<machine::PeripheralRequest> headerPeripherals;
     std::vector<PlannedItem> items;      // sections and steps in file order (AC-14)
     bool letItFinish = false;            // AC-59
     ModelRules* rules = nullptr;         // the model's (AC-53)
@@ -89,6 +93,13 @@ public:
         return it == kept_.end() ? nullptr : it->second;
     }
     void error(int line, std::string message);   // collected; the lowest line wins
+    // A header key's own peripheral (D-33; C1600-4 host-drive, bus-rom): a
+    // request of the machine plan after the place keys', in the order of the
+    // model's places, those of one place in the order added.
+    void addPeripheral(machine::PeripheralRequest);
+    // The content of what a place key plugs into `place` (D-33; C1600-4
+    // slot-N-rom), unless its reference gave one; set once the header is read.
+    void setContentAt(const machine::PlaceName&, std::shared_ptr<const machine::ProductData>);
 
     // The reader's and run-step's own.
     void setPlugged(std::function<std::optional<machine::PeripheralId>(const machine::PlaceName&)> f) {
@@ -96,6 +107,8 @@ public:
     }
     std::optional<ReadError> firstError() const;
     std::map<std::string, std::shared_ptr<const ProductValue>> takeKept() { return std::move(kept_); }
+    // addPeripheral's and setContentAt's into the plan.
+    void completePlan(LoadPlan&);
 
 private:
     const ReadSetup& setup_;
@@ -105,6 +118,8 @@ private:
     std::function<std::optional<machine::PeripheralId>(const machine::PlaceName&)> plugged_;
     std::vector<ReadError> errors_;
     std::map<std::string, std::shared_ptr<const ProductValue>> kept_;
+    std::vector<machine::PeripheralRequest> peripherals_;
+    std::vector<std::pair<machine::PlaceName, std::shared_ptr<const machine::ProductData>>> contents_;
 };
 
 std::variant<LoadPlan, ReadError> readPreset(const PresetSource&, const ReadSetup&);
@@ -124,8 +139,8 @@ std::unique_ptr<Item> readStep(std::string_view verb, const formats::YamlNode& v
 
 // The message of an error at `line` of the preset `name`.
 std::string errorText(const std::string& name, int line, const std::string& what);
-// Names of models, variants and peripherals are matched without regard to
-// case (AC-1); the catalogue's spelling back.
-std::string lowerAscii(std::string_view);
+// The library's one ASCII lower case (machine/Names.hpp), under the name
+// library/debugger still uses (Part D simplification P-6).
+using machine::lowerAscii;
 
 } // namespace calcu::presets

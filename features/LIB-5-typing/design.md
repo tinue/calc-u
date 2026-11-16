@@ -629,3 +629,27 @@ them uses `KeySequencer`, `SharpTypingHook` or the PC-1500 key queue
   key, so a preset is refused at read for exactly the characters that
   cannot be typed (LIB-6 §3.10). The first press "at once" after
   `skip-wait:` is `TypeOptions::firstPressAtOnce` (§3.6).
+
+## Part D simplification P-6 (2026-11-16, branch `ds-names`)
+
+Departures (`docs/reviews/d-simplification.md` S-8; no user-visible
+change, every sentence as before):
+
+- Key names to presses are written once, in `typing/KeyNames.hpp`:
+  `keyNamed` (the key ID, then an ID in any case, then another spelling
+  in any case), `pressesOfName` (the profile's `name`, else `keyNamed`)
+  and `pressesOfNames` (name by name, then the profile's `names`; the
+  name that failed, or that the names fail together). The `key` command
+  (`TypingPart`, which loses `pressesOf`), LIB-6's `key:` step and
+  LIB-11's `key-down`/`key-up` (an unknown name passed as written) use
+  them, each with its own refusal. Before, `TypingPart` and the step
+  tried a key's ID and its spellings key by key; no catalogue has a
+  spelling that is another key's ID in any case, so the order finds the
+  same key.
+- The lower-case copies (`TypingPart`, the products' `SharpTyping` and
+  `TITyping`, and others) are `machine::lowerAscii` (`machine/Names.hpp`):
+  A to Z only, as `TITyping`'s was.
+- `TypingProduct::typesText()` stays: Calc-U-59 has no `type` command at
+  all (D-8), so `type` without a machine is "Unknown command: type."
+  there and "No machine is running." on Calc-U-1600; a profile cannot
+  say that without a machine.

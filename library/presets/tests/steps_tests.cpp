@@ -1,4 +1,4 @@
-// LIB-6 L9: the steps of this feature (AC-20 to AC-28, AC-63, AC-66, EC-7).
+// LIB-6 L9: the steps of this feature (AC-20 to AC-28, AC-63, AC-66, AC-68, EC-7).
 #include "PresetRig.hpp"
 #include "TestHarness.hpp"
 #include <filesystem>
@@ -119,6 +119,21 @@ TEST(ec7_expect_display_off_fails) {
     CHECK(hasLine({r.reason(c)}, "line 5: Expected A, but the display is off."));
     // not-expect passes on a display that is off (D-14).
     CHECK(r.done(r.load(header("test-dot") + "keys:\n  - key: off\n  - not-expect: A\n  - key: on\n")));
+}
+
+// AC-68 through the hook (Part D simplification P-6): a text the model's
+// rules refuse is a read error at its line; the other model takes it.
+TEST(ac68_expect_text_refused_by_the_model_rules_when_read) {
+    Reading rd;
+    rd.rules.seg.expectCheck = [](const ExpectText& e, std::string_view keyword) -> std::optional<std::string> {
+        if (!e.regex) return std::nullopt;
+        return "The test-seg takes no regular expression in " + std::string(keyword) + ".";
+    };
+    CHECK_EQ(rd.error(header() + "keys:\n  - key: 1\n  - expect: /^1/\n"),
+             std::string("t.test-seg, line 5: The test-seg takes no regular expression in expect:."));
+    CHECK(hasLine({rd.error(header() + "keys:\n  - not-expect: /^1/\n")}, "regular expression in not-expect:."));
+    CHECK(rd.error(header() + "keys:\n  - expect: 1\n").empty());
+    CHECK(rd.error(header("test-dot") + "keys:\n  - expect: /^1/\n").empty());
 }
 
 TEST(ac25_screenshot_into_the_folder) {

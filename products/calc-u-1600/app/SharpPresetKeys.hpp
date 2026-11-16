@@ -18,8 +18,9 @@
 //   `slot-2-rom:` (AC-8), `bus-rom:` (AC-9, AC-10) and `debug:` (AC-11,
 //   AC-12; app/SharpDebugBlock).
 // Every check that needs no machine is made when the preset is read, with
-// the line (AC-14). The header values are kept (LoadPlan::productHeader) and
-// turned into requests of the machine plan by amendSharpPlan (D-2).
+// the line (AC-14). The host drive, the bus ROMs and the content of a slot
+// ROM go into the machine plan through ReadContext::addPeripheral and
+// setContentAt as they are read (D-2; LIB-6 D-33).
 
 namespace shared {
 
@@ -33,7 +34,5 @@ void addSharpKeywords(calcu::presets::Vocabulary&, const SharpKeywordSetup&);
 // D-32: the pairs of header keys that go together (`slot-N-rom:` and its
 // module; AC-8), at the line of the later key.
 void checkSharpHeader(const calcu::presets::LoadPlan&, calcu::presets::ReadContext&);
-// D-33: the host drive, the slot ROMs and the bus ROMs into the plan.
-void amendSharpPlan(const calcu::presets::LoadPlan&, calcu::startup::MachinePlan&);
 
 } // namespace shared

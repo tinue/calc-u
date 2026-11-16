@@ -214,7 +214,7 @@ public:
 };
 struct ItemResult { bool ok = true; std::string reason; };   // !ok: the preset stops here (AC-17)
 using Where = std::function<Applies(const machine::MachineDescriptor&)>;   // optional; the rules decide too
-struct HeaderKeyDef { std::string key; std::function<void(const formats::YamlNode&, int line, ReadContext&)> read; bool afterOtherHeaderKeys = false; };
+struct HeaderKeyDef { std::string key; std::function<void(const formats::YamlNode&, int line, ReadContext&)> read; };
 struct SectionDef   { std::string key; std::function<std::unique_ptr<Item>(const formats::YamlNode&, ReadContext&)> read; };   // a block, or a value where the owner says so (partition: 479)
 struct StepDef {
   std::string verb;
@@ -258,7 +258,7 @@ public:
   virtual Task<ItemResult> afterBuild(RunContext&) { co_return {}; }    // AC-46: `cl` at NEW0? :CHECK
   virtual std::optional<std::vector<std::uint8_t>> screenshot(machine::Machine&, const machine::DisplayOutput&) = 0;   // PNG bytes (AC-25)
   virtual ExpectReading compare(machine::Machine&, const machine::DisplayOutput&, const ExpectText&) = 0;          // AC-24, AC-66
-  virtual bool takesRegex() const { return true; }                       // AC-68: TI false
+  virtual std::optional<std::string> checkExpect(const ExpectText&, std::string_view keyword) const { return std::nullopt; }   // AC-68: the refusal when read; TI: a number only (P-6)
   virtual Applies applies(std::string_view keyword) const { return Applies::Yes; }   // AC-62, the markers of preset.md §7
   virtual PlaceKeyRule placeKey(const machine::PlaceName&) const { return {}; }
 };
@@ -294,7 +294,7 @@ public:
 | `regular-speed:`, `full-speed:` | step, none | in `keys:` only | `OperationContext::setSpeed` (AC-22) | TakenEffect |
 | `skip-wait:`, `let-it-finish:` | marker, none | places (AC-58, AC-59) | §3.6 | — |
 | `elapsed-time:` | step, scalar `start` / `report` | the two words | baseline = tick count; report logs `Elapsed: m:ss.mmm` (AC-23; D-10) | TakenEffect |
-| `expect:`, `not-expect:` | step, raw | not empty; `parseExpectText`; a regex where `takesRegex()` is false is refused (AC-68) | `ModelRules::compare`; fails with the text and `shows`; EC-7 | TakenEffect |
+| `expect:`, `not-expect:` | step, raw | not empty; `parseExpectText`; a text `ModelRules::checkExpect` refuses is refused with its sentence (AC-68) | `ModelRules::compare`; fails with the text and `shows`; EC-7 | TakenEffect |
 | `screenshot:` | step, scalar | not empty, no `/` or `\` | the product's picture into the folder, or `KeepFile` (AC-25; D-13) | TakenEffect |
 | `syncclock:` | step, none | `applies()` | `peripherals::setClocksFromHost(machine, hostDateTime(session.hostTime()))`; logs the time set (AC-27) | TakenEffect |
 | `switch:` | — | not registered: unknown (AC-26) | — | — |
@@ -512,7 +512,7 @@ plug in (designed with C1600-4 and C59-2):
 | Calc-U-1600 (M-46) | `core/Preset/PresetFile.*` (`parsePresetFile`, `readPresetHeader`, `kPresetFormatVersion` 1), `PresetRunner.*`, `PresetRoms.*`, `PresetMedia.hpp`, `PresetBusRomLoader.hpp`, `PresetDebugBlock.hpp`, `core/PC1500/PC1500PresetLoader.*`, `core/PC1600/PC1600PresetLoader.*`, `SharpAppPart::loadPresetJob` | `shared::SharpPresetRules : ProductRules` in `app/SharpPresetRules.*`: idle by AC-45, `cl` after the build by AC-46, the Copy Screen picture (AC-48, today `core/Display/LcdScreenshot`), the line comparison with `\\`, `\xHH` and the regex (AC-48, AC-67); C1600-4's keys and sections through `addKeywords`. `SharpAppPart` constructs `PresetsPart`; the readers of version 1 go |
 | Calc-U-1600 | `app/PresetCatalog.*`, `examples/bundled.yaml` | `examples/bundle.yaml`, `preset-list`; `presetNameProblems` into `library/presets/` |
 | Calc-U-1600 | `tools/pc1500_cli.cpp`, `tools/pc1600_cli.cpp` (`--check-preset`), `tools/check_presets.sh`, CTest `CalcU1600CheckPresets` | the CLIs load through the library's loader; `calcu_add_preset_check(CalcU1600Presets …)` over the files of AC-51 with the VS Code templates filled by the extension's rule (C1600-3 AC-19), the three waiting presets excluded by name; the script and the old entry go |
-| Calc-U-59 (M-54) | `app/StateFile.*`, `app/StateApplier.*`, `TIAppPart::loadStateFile`, `applyState`, `presetOperation`, `TIPresetOperation`, the `STATE` records of `tests/golden/formats.txt` | `cu59::TIPresetRules : ProductRules` in `app/TIPresetRules.*`: idle by AC-36 (100 ms ready, or a card wait), the segment picture (OQ-3), the X register comparison (AC-40), `takesRegex()` false, `slot-1` by `name:` only (AC-35), `type` and `syncclock` not for the TI; C59-2's sections and `printer-trace` through `addKeywords`. `TIAppPart` constructs `PresetsPart` |
+| Calc-U-59 (M-54) | `app/StateFile.*`, `app/StateApplier.*`, `TIAppPart::loadStateFile`, `applyState`, `presetOperation`, `TIPresetOperation`, the `STATE` records of `tests/golden/formats.txt` | `cu59::TIPresetRules : ProductRules` in `app/TIPresetRules.*`: idle by AC-36 (100 ms ready, or a card wait), the segment picture (OQ-3), the X register comparison (AC-40), `checkExpect` taking a number only, `slot-1` by `name:` only (AC-35), `type` and `syncclock` not for the TI; C59-2's sections and `printer-trace` through `addKeywords`. `TIAppPart` constructs `PresetsPart` |
 | Calc-U-59 | `frontends/web/presets.json` (read by `frontends/web/build.js`) | `examples/bundle.yaml` in all three frontends |
 | Calc-U-59 | `tools/headless/capi.cpp`, `tools/agentic/ti59file.py` | loads through `calcu`; `ti59file.py` goes (plan M-54); `calcu_add_preset_check(CalcU59Presets …)` over the shipped presets (AC-43); a Checkpoint entry over calc-u-site's hosted presets, named in the release checklist (M-64) |
 
@@ -670,7 +670,7 @@ M-54 (plan §1). Agent knowledge per step:
   added to `sessions` in M-38, is the only wall time a preset uses
   (`wait:` while paused); at once in the harness.
 - **D-18 (regex).** Parsed and compiled when read, in the library, for
-  both products; a product refuses it by `takesRegex()`. AC-67's tests
+  both products; a product refuses a text by `checkExpect()` (P-6). AC-67's tests
   are in M-46 with the Sharp comparison.
 - **D-19 (speed at the end).** Regular also after a failure: "the
   machine stays as it is" (AC-17) is its memory and display; the speed
@@ -782,7 +782,7 @@ place's name as a place key (`library/presets/Reader.cpp:462-472`);
 | `CMakeLists.txt:137-138` | CTest `CalcU1600CheckPresets` goes; `calcu_add_preset_check(CalcU1600Presets PRODUCT 1600 FILES … EXCLUDE … FILL tests/fill_vscode_templates.cmake)` |
 | `tools/pc1500_cli.cpp:150-240`, `tools/pc1600_cli.cpp:82-258`, `tools/pc1600_plotter_probe.cpp:24-73`, `dev/loader-matrix/LoaderMatrixCommon.hpp:86-112`, `tools/wasm_smoke.cpp:70-73` | presets through `CliPresetRun` (§10.5); `--check-preset` sends `check-preset` |
 | `library/presets/Reader.cpp:462-472` | a product header key under a place's name is read as the header key (D-31) |
-| `library/presets/ProductRules.hpp:67-84`, `Reader.cpp`, `Engine.cpp:26-32` | `ModelRules::checkHeader(ReadContext&) const`, called once every header key is read (D-32), and `ModelRules::amendPlan(const LoadPlan&, startup::MachinePlan&) const`, called at the end of `machinePlan` (D-33); both empty by default, so no other product and no library test changes |
+| `library/presets/ProductRules.hpp:67-84`, `Reader.cpp`, `Engine.cpp:26-32` | `ModelRules::checkHeader(ReadContext&) const`, called once every header key is read (D-32), and (P-6, D-33) `ReadContext::addPeripheral` / `setContentAt`, the header key's requests in `LoadPlan::headerPeripherals`, after the places in `machinePlan`; empty by default, so no other product and no library test changes |
 
 **Deleted** (the reader of version 1; C1600-4 §2 names its own parts):
 `core/Preset/PresetFile.hpp/.cpp`, `PresetRunner.hpp/.cpp`,
@@ -809,7 +809,6 @@ public:
     ExpectReading compare(Machine&, const DisplayOutput&, const ExpectText&) override;          // AC-48, AC-67
     Applies applies(std::string_view keyword) const override;        // preset.md §7, the three Sharp columns
     void checkHeader(ReadContext&) const override;                   // AC-47 (D-32)
-    void amendPlan(const LoadPlan&, startup::MachinePlan&) const override;   // C1600-4 §3.2 (D-33)
 };
 class SharpPresetRules final : public calcu::presets::ProductRules { /* a SharpModelRules per model; addKeywords */ };
 }
@@ -951,15 +950,54 @@ presets" → "Startup presets" is a visible rename of
 - **D-32 (`checkHeader`).** One product check after every header key is
   read, for AC-47's pairs, so that the error names both keys at the
   line of the later one.
-- **D-33 (`amendPlan`).** The product turns its kept header values into
-  requests (host drive, slot ROMs, bus ROMs; C1600-4 D-2); the reader
-  stays the only writer of a `LoadPlan`.
+- **D-33 (header keys into the plan; P-6).** A product's header key puts
+  its requests into the plan as it is read: `ReadContext::addPeripheral`
+  (host drive, bus ROMs; into `LoadPlan::headerPeripherals`, which
+  `machinePlan` puts after the places, in the order of the model's places
+  and, within a place, as added) and `ReadContext::setContentAt` (a slot
+  ROM: the content of the module's request unless its reference gave one);
+  the reader stays the only writer of a `LoadPlan`. Before P-6 the
+  product kept its values and turned them into requests in
+  `ModelRules::amendPlan` with a cast per value; the order of the requests
+  is the same (C1600-4 D-2).
 - **D-34 (waiting presets).** AC-51's rule decides which presets wait,
   not only the three names in its parenthesis (C1600-4 D-3, Plan note
   P-1 there).
 - **D-35 (tools).** The CLIs reach the loader through one adapter that
   hosts the product's session in virtual time, not through a copy of
   the engine; their `saveas:` stays old until M-47.
+
+### 10.9a Part D simplification P-6 (2026-11-16, branch `ds-names`)
+
+Departures from the text above (`docs/reviews/d-simplification.md` S-8;
+no user-visible change, every sentence as before):
+
+- `ModelRules::takesRegex()` is `checkExpect(const ExpectText&,
+  std::string_view keyword)`: the rules return the refusal sentence of an
+  `expect:` / `not-expect:` text when the preset is read, so a TI model
+  can refuse what is not a number (AC-40, AC-68) when the TI rules come
+  (Part E). Calc-U-1600's rules take every text, as before; the library's
+  test rules refuse what a test asks (`ac68_expect_text_refused_by_the_model_rules_when_read`).
+- `ModelRules::amendPlan` is gone (D-33 above): `ReadContext::addPeripheral`
+  and `setContentAt`, `LoadPlan::headerPeripherals`.
+- Key names to presses are `typing::pressesOfNames` (LIB-5 design, P-6);
+  the `key:` step keeps its two sentences.
+- Model, peripheral and variant names in any case are
+  `machine::modelNamed`, `peripheralNamed`, `variantNamed` and
+  `machine::lowerAscii` (`machine/Names.hpp`); `presets::lowerAscii` is
+  that function under its old name (library/debugger uses it). It lowers
+  A to Z only; the copies before used `std::tolower`, which is the same
+  for ASCII and under the "C" locale, and could change the bytes of a
+  UTF-8 name under a frontend's locale.
+- `scalarText`: the reader's and the bundle file's own copies went for
+  `formats::scalarText`; they differed only for a node that is not a
+  scalar, whose `scalar` the YAML reader leaves empty, so both give "".
+  `LibraryKeywords.cpp` keeps `rawOrScalarText` for the raw steps (D-4:
+  the text as written, quotes and `#` included).
+- `PresetsPart::load` and `loadWithin` read and check the model in one
+  private `readFor`.
+- `HeaderKeyDef::afterOtherHeaderKeys` (§3.5) had no user and was already
+  gone from the code; the text above no longer names it.
 
 ### 10.10 Questions for the user
 

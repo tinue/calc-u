@@ -262,10 +262,6 @@ std::unique_ptr<Item> readProgram(const YamlNode& n, ReadContext& ctx) {
 
 // ---- host-drive: (AC-6, AC-7) ----
 
-struct HostDriveValue final : calcu::presets::ProductValue {
-    std::string folder;
-};
-
 // `{ <key>: <text> }` with only that key; the text, or nullopt with the error.
 std::optional<std::string> referenceOf(const YamlNode& n, int line, const char* owner, const char* key, ReadContext& ctx) {
     if (!n.isMap() || n.map.size() != 1 || !n.find(key)) {
@@ -291,17 +287,13 @@ struct SlotRomValue final : calcu::presets::ProductValue {
 
 // ---- bus-rom: (AC-9, AC-10) ----
 
-struct BusRomList final : calcu::presets::ProductValue {
-    std::vector<sharp::BusRomRequest> roms;   // in list order
-};
-
 void readBusRoms(const YamlNode& n, int line, ReadContext& ctx) {
     const bool pc1600 = ctx.model().model.value == sharp::kPC1600;
     if (!n.isSeq() || n.seq.empty()) {
         ctx.error(line, "bus-rom: is a list of ROMs, each - file: with bank: or address:.");
         return;
     }
-    auto list = std::make_shared<BusRomList>();
+    std::vector<sharp::BusRomRequest> roms;   // in list order
     bool ok = true;
     auto fail = [&](int at, const std::string& what) {
         ctx.error(at, "bus-rom: " + what);
@@ -383,9 +375,16 @@ void readBusRoms(const YamlNode& n, int line, ReadContext& ctx) {
         }
         rom.bytes = std::move(*bytes);
         rom.name = fileNameOf(path);
-        list->roms.push_back(std::move(rom));
+        roms.push_back(std::move(rom));
     }
-    if (ok) ctx.keep(kBusRomKey, list);
+    if (!ok) return;
+    for (sharp::BusRomRequest& rom : roms) {   // D-33: after the places, in list order
+        calcu::machine::PeripheralRequest r;
+        r.place = calcu::machine::PlacePath{{calcu::machine::PlaceName{sharp::kBusRomPlace}}};
+        r.peripheral = calcu::machine::PeripheralId{sharp::kBusRom};
+        r.content = std::make_shared<sharp::BusRomRequest>(std::move(rom));
+        ctx.addPeripheral(std::move(r));
+    }
 }
 
 } // namespace
@@ -415,9 +414,11 @@ void addSharpKeywords(calcu::presets::Vocabulary& v, const SharpKeywordSetup& se
                 ctx.error(line, "host-drive: the folder " + resolved + " does not exist.");
                 return;
             }
-            auto value = std::make_shared<HostDriveValue>();
-            value->folder = resolved;
-            ctx.keep(kHostDriveKey, value);
+            calcu::machine::PeripheralRequest r;   // D-33
+            r.place = calcu::machine::PlacePath{{calcu::machine::PlaceName{sharp::kHostDrivePlace}}};
+            r.peripheral = calcu::machine::PeripheralId{sharp::kHostDrive};
+            r.content = std::make_shared<sharp::HostDriveRequest>(resolved);
+            ctx.addPeripheral(std::move(r));
         }});
 
     for (const char* slot : {sharp::kSlot1, sharp::kSlot2}) {
@@ -434,7 +435,8 @@ void addSharpKeywords(calcu::presets::Vocabulary& v, const SharpKeywordSetup& se
                 value->path = *path;
                 value->bytes = std::move(*bytes);
                 value->line = line;
-                ctx.keep(key, value);
+                ctx.setContentAt(calcu::machine::PlaceName{slot}, std::make_shared<sharp::SlotRomRequest>(value->bytes));   // D-33
+                ctx.keep(key, value);   // checkSharpHeader's
             }});
     }
 
@@ -470,37 +472,6 @@ void checkSharpHeader(const calcu::presets::LoadPlan& plan, ReadContext& ctx) {
         if (!replaceRomContent(&copy, rom->bytes, &why))
             ctx.error(std::max(rom->line, module->line), key + ": " + rom->path + ": " + why + ".");
     }
-}
-
-void amendSharpPlan(const calcu::presets::LoadPlan& plan, calcu::startup::MachinePlan& out) {
-    using calcu::machine::PeripheralId;
-    using calcu::machine::PeripheralRequest;
-    using calcu::machine::PlaceName;
-    using calcu::machine::PlacePath;
-    auto kept = [&](const std::string& key) -> const calcu::presets::ProductValue* {
-        const auto it = plan.productHeader.find(key);
-        return it == plan.productHeader.end() ? nullptr : it->second.get();
-    };
-    for (const char* slot : {sharp::kSlot1, sharp::kSlot2})
-        if (const auto* rom = dynamic_cast<const SlotRomValue*>(kept(std::string(slot) + "-rom")))
-            for (PeripheralRequest& r : out.peripherals)
-                if (r.place.steps.size() == 1 && r.place.steps[0].value == slot && !r.content)
-                    r.content = std::make_shared<sharp::SlotRomRequest>(rom->bytes);
-    if (const auto* hd = dynamic_cast<const HostDriveValue*>(kept(kHostDriveKey))) {
-        PeripheralRequest r;
-        r.place = PlacePath{{PlaceName{sharp::kHostDrivePlace}}};
-        r.peripheral = PeripheralId{sharp::kHostDrive};
-        r.content = std::make_shared<sharp::HostDriveRequest>(hd->folder);
-        out.peripherals.push_back(std::move(r));
-    }
-    if (const auto* list = dynamic_cast<const BusRomList*>(kept(kBusRomKey)))
-        for (const sharp::BusRomRequest& rom : list->roms) {
-            PeripheralRequest r;
-            r.place = PlacePath{{PlaceName{sharp::kBusRomPlace}}};
-            r.peripheral = PeripheralId{sharp::kBusRom};
-            r.content = std::make_shared<sharp::BusRomRequest>(rom);
-            out.peripherals.push_back(std::move(r));
-        }
 }
 
 } // namespace shared

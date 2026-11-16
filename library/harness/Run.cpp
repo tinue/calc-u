@@ -1,4 +1,5 @@
 #include "harness/Run.hpp"
+#include "machine/Names.hpp"
 #include "debugger/DebuggerPart.hpp"
 #include "media/PresetMedia.hpp"
 #include "harness/StatePart.hpp"
@@ -34,12 +35,6 @@ bool digits(std::string_view s, std::size_t at, std::size_t n, int* out) {
     }
     *out = v;
     return true;
-}
-
-std::string lower(std::string_view s) {
-    std::string out(s);
-    for (char& c : out) c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
-    return out;
 }
 
 void replaceAll(std::string& s, const std::string& what, const std::string& with) {
@@ -385,9 +380,9 @@ int Server::oneShot(const std::vector<std::string>& lines, const std::function<v
 }
 
 HarnessProduct* findProduct(const std::vector<std::unique_ptr<HarnessProduct>>& products, std::string_view name) {
-    const std::string want = lower(name);
+    const std::string want = machine::lowerAscii(name);
     for (const auto& p : products)
-        if (lower(p->name()) == want || lower(p->shortName()) == want) return p.get();
+        if (machine::lowerAscii(p->name()) == want || machine::lowerAscii(p->shortName()) == want) return p.get();
     return nullptr;
 }
 

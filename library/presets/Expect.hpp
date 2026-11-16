@@ -7,8 +7,8 @@
 // The text of `expect:` and `not-expect:` (LIB-6 design §2, D-18; spec
 // AC-24, AC-66, AC-67): a literal text, a literal that begins with `/`
 // written `\/`, or a regular expression between slashes (ECMAScript),
-// compiled when the preset is read. A product refuses the expression by
-// ModelRules::takesRegex() (AC-68).
+// compiled when the preset is read. A product refuses a text its comparison
+// cannot take by ModelRules::checkExpect() (AC-68).
 
 namespace calcu::presets {
 

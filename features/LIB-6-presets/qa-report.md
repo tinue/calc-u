@@ -324,3 +324,23 @@ match their M-4 references (display, BASIC area, machine-code area,
 paper); excepted as recorded in C1600-4's qa-report: `Calculat`,
 `ce150_demo` (the paper's prefix), biorhythmus' second row (the cursor's
 blink). No reference was re-recorded.
+
+## Library, Part D simplification P-6 (2026-11-16, branch `ds-names`)
+
+Design §10.9a. No sentence and no behaviour changed; Frequent green
+(golden replays included), and `CALCU1600_REFERENCES=1 CoreTests
+c1600_4_ac16` compares its 32 examples as before the step.
+
+- AC-68 (the hook; the TI rules are Part E): `ac68_expect_text_refused_by_the_model_rules_when_read`
+  (`library/presets/tests/steps_tests.cpp`): a text the model's rules
+  refuse through `ModelRules::checkExpect` is a read error with their
+  sentence at its line, for `expect:` and `not-expect:`; the other model
+  takes it.
+- D-33: `c1600_4_ac10_header_peripherals_in_plan_order` (Calc-U-1600,
+  `tests/preset_content_tests.cpp`): with `bus-rom:` before `host-drive:`
+  in the file, the machine plan holds the place keys' requests, then the
+  host drive, then the bus ROMs in list order, as `amendPlan` gave them.
+- AC-50: the Calc-U-1600 tests named in row AC-50 stay, though the
+  library has tests of the same parses (`ac20_wait_without_unit_refused`,
+  `ac1_header_key_once_sections_repeat`): the row names them for this
+  criterion, which is about what Calc-U-1600's tests check.

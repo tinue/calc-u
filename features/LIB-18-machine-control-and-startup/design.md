@@ -780,3 +780,12 @@ not visible (D-23); "Reset All" → "Cold boot" is a visible rename of
 
 None that splits this column. (The golden driver's key timing is LIB-6
 §10.10, question 1.)
+
+## Part D simplification P-6 (2026-11-16, branch `ds-names`)
+
+D-16's lookups are the library's one set, `machine::modelNamed`,
+`peripheralNamed` and `variantNamed` (`machine/Names.hpp`), which LIB-6's
+reader uses too; `StartupPart` keeps no copy. An `attach` of a peripheral
+name the catalogue does not know still goes to the machine as written,
+which refuses it with its reason. Names are lowered A to Z only
+(`machine::lowerAscii`; before `std::tolower`, the same for ASCII).

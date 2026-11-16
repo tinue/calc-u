@@ -15,6 +15,7 @@
 #include "TestHarness.hpp"
 #include "../app/tests/TestSettings.hpp"
 #include "presets/BundleFile.hpp"
+#include "presets/Engine.hpp"
 #include "formats/Flow.hpp"
 #include "TestRoms.hpp"
 
@@ -335,6 +336,31 @@ TEST(c1600_4_ac9_twice_refused) {
     r.write("b.bin", std::string(0x10, '\0'));
     CHECK(has(r.error(kPc1600 + "bus-rom:\n  - { file: b.bin, bank: 7 }\nbus-rom:\n  - { file: b.bin, bank: 6 }\n"),
               "bus-rom: is given twice"));
+}
+
+// LIB-6 D-33 (Part D simplification P-6): the header keys' peripherals come
+// after the places in the machine plan, the host drive before the bus ROMs
+// whatever their order in the file, the bus ROMs in list order; a slot ROM
+// is the content of its module's request.
+TEST(c1600_4_ac10_header_peripherals_in_plan_order) {
+    PresetReadRig r;
+    r.write("shared/x.txt", "");
+    r.write("a.bin", std::string(0x10, '\x01'));
+    r.write("b.bin", std::string(0x10, '\x02'));
+    const auto plan = r.read(kPc1600 + "bus-rom:\n  - { file: a.bin, bank: 7 }\n  - { file: b.bin, bank: 6 }\n"
+                                       "host-drive: { folder: shared }\nprinter: CE-1600P\n");
+    const auto* p = std::get_if<calcu::presets::LoadPlan>(&plan);
+    CHECK(p != nullptr);
+    if (!p) return;
+    const calcu::startup::MachinePlan m = calcu::presets::machinePlan(*p);
+    std::vector<std::string> order;
+    for (const auto& q : m.peripherals) order.push_back(calcu::machine::placeText(q.place) + "=" + q.peripheral.value);
+    CHECK(order == (std::vector<std::string>{"printer=CE-1600P", "host-drive=" + std::string(sharp::kHostDrive),
+                                             "bus-rom=" + std::string(sharp::kBusRom), "bus-rom=" + std::string(sharp::kBusRom)}));
+    if (m.peripherals.size() == 4) {
+        const auto* first = dynamic_cast<const sharp::BusRomRequest*>(m.peripherals[2].content.get());
+        CHECK(first && first->bank == 7);
+    }
 }
 
 TEST(c1600_4_ac10_later_rom_found_first_and_before_peripheral) {

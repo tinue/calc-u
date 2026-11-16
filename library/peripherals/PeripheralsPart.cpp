@@ -1,4 +1,5 @@
 #include "peripherals/PeripheralsPart.hpp"
+#include "machine/Names.hpp"
 #include "peripherals/Controls.hpp"
 #include "peripherals/RealTimeClock.hpp"
 #include "sessions/Args.hpp"
@@ -6,14 +7,6 @@
 #include <cctype>
 
 namespace calcu::peripherals {
-
-namespace {
-std::string lower(std::string_view s) {
-    std::string out(s);
-    for (char& c : out) c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
-    return out;
-}
-} // namespace
 
 PeripheralsPart::PeripheralsPart(HostLinkRules rules, std::optional<std::string> folder, HostLinkFactory factory)
     : links_(std::move(rules), std::move(folder), std::move(factory)) {}
@@ -30,7 +23,7 @@ void PeripheralsPart::attach(sessions::SessionSetup& s) {
         const machine::PlugEntry* at = nullptr;
         const machine::Plugged plugged = m->plugged();
         for (const auto& e : plugged.byPlace)
-            if (lower(e.peripheral.value) == lower(peripheral) && (place.empty() || machine::placeText(e.place) == place)) {
+            if (machine::sameIgnoringCase(e.peripheral.value, peripheral) && (place.empty() || machine::placeText(e.place) == place)) {
                 at = &e;
                 break;
             }
@@ -38,7 +31,7 @@ void PeripheralsPart::attach(sessions::SessionSetup& s) {
         Controls* controls = controlsCapability(*m, machine::PeripheralOwner{at->peripheral, at->place});
         if (!controls) return sessions::Refused{"The " + at->peripheral.value + " has no controls."};
         for (const auto& info : controls->list()) {
-            if (lower(info.id.value) != lower(control)) continue;
+            if (!machine::sameIgnoringCase(info.id.value, control)) continue;
             const ControlCall r = info.form == machine::ControlForm::Switch ? controls->set(info.id, on)
                                   : on                                       ? controls->press(info.id)
                                                                              : controls->release(info.id);

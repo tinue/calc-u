@@ -27,7 +27,6 @@ public:
                                           const calcu::presets::ExpectText&) override;
     calcu::presets::Applies applies(std::string_view keyword) const override;
     void checkHeader(const calcu::presets::LoadPlan&, calcu::presets::ReadContext&) const override;
-    void amendPlan(const calcu::presets::LoadPlan&, calcu::startup::MachinePlan&) const override;
 
 private:
     bool pc1600() const;

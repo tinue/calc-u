@@ -121,7 +121,9 @@ public:
         r.found = foundInLines(all, e);
         return r;
     }
-    bool takesRegex() const override { return regex; }
+    std::optional<std::string> checkExpect(const ExpectText& e, std::string_view keyword) const override {
+        return expectCheck ? expectCheck(e, keyword) : std::nullopt;
+    }
     Applies applies(std::string_view k) const override {
         const auto it = marks.find(std::string(k));
         return it == marks.end() ? Applies::Yes : it->second;
@@ -135,7 +137,7 @@ public:
     std::function<Task<ItemResult>(RunContext&)> after;
     std::map<std::string, Applies> marks;
     std::map<std::string, PlaceKeyRule> places;
-    bool regex = true;
+    std::function<std::optional<std::string>(const ExpectText&, std::string_view)> expectCheck;   // unset: every text
     mutable int idleAsked = 0;
     int afterBuilds = 0, pictures = 0;
 };

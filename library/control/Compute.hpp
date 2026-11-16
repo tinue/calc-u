@@ -26,7 +26,7 @@
 namespace calcu::control {
 
 struct ControlSetup {
-    const machine::Catalogue* catalogue = nullptr;   // the product's; read at each computation (EC-3)
+    const machine::Catalogue* catalogue = nullptr;   // the product's, never null; read at each computation (EC-3)
     std::vector<machine::PeripheralId> printers;     // who can own the paper panel (D-3)
     std::vector<const ControlRules*> rules;          // asked in this order
 };

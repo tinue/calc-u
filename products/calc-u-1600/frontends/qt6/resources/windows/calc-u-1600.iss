@@ -1,6 +1,6 @@
 ; Inno Setup script for Calc-U-1600. Compiled headlessly in CI via
-; ISCC.exe (see .github/workflows/build.yml's windows-x86_64 and
-; windows-arm64 jobs) against the already-staged Qt6\dist folder (exe +
+; ISCC.exe (see .github/workflows/calc-u-1600.yml's windows-x86_64 and
+; windows-arm64 jobs) against the already-staged frontends\qt6\dist folder (exe +
 ; Qt DLLs + MSVC runtime + resources\, produced by that job's "Stage
 ; standalone-runnable folder" step). Unsigned for now.
 ;
@@ -38,7 +38,7 @@ SolidCompression=yes
 [Files]
 Source: "..\..\dist\*"; DestDir: "{app}"; Flags: recursesubdirs ignoreversion
 
-; windeployqt --compiler-runtime (see build.yml's "Stage standalone-
+; windeployqt --compiler-runtime (see calc-u-1600.yml's "Stage standalone-
 ; runnable folder" step) no longer drops loose msvcp140.dll/vcruntime140.dll
 ; etc. into dist\ for this Qt/VS toolset -- it drops the vc_redist
 ; bootstrapper (vc_redist.x64.exe / vc_redist.arm64.exe) instead, copied

@@ -67,7 +67,7 @@ detect_platform() {
       # PROCESSOR_ARCHITECTURE is what the *shell process* sees, not the
       # build target: an x64 Git Bash under emulation on Windows ARM64
       # (as on GitHub's windows-11-arm image) reports AMD64. So the
-      # windows-arm64 job in .github/workflows/build.yml sets
+      # windows-arm64 job in .github/workflows/calc-u-1600.yml sets
       # SHARPDX_PLATFORM=windows-aarch64 explicitly; do the same when
       # cross-compiling.
       case "${PROCESSOR_ARCHITECTURE:-}${PROCESSOR_ARCHITEW6432:-}" in

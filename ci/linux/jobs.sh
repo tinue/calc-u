@@ -1,14 +1,15 @@
 #!/bin/bash
 # Runs inside the container (ci/linux/run.sh starts it): the Linux jobs of
-# .github/workflows/calc-u-59.yml and calc-u-1600.yml on the copy in /work.
+# .github/workflows/calc-u-59.yml, calc-u-1600.yml and library.yml (which
+# both call) on the copy in /work.
 # Each job is the workflow job's configure, build and test commands; the
 # build trees get one name per job (CI has one machine per job).
 #
-#   library     the `library` job (identical in both workflows)
+#   library     library.yml's `library` job (both workflows' `library`)
 #   core-59     calc-u-59.yml `core-tests`
 #   core-1600   calc-u-1600.yml `core-tests`
 #   qt-59       calc-u-59.yml `linux` up to the build (no AppImage)
-#   qt-1600     calc-u-1600.yml `linux-*` up to the build (no AppImage)
+#   qt-1600     calc-u-1600.yml `linux` up to the build (no AppImage)
 #   web-59      calc-u-59.yml `web` up to the tests (web image only)
 #   web-1600    calc-u-1600.yml `web` up to the tests (web image only)
 #   help-59     calc-u-59.yml `help`: the help asset (no upload)

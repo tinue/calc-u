@@ -136,7 +136,7 @@ struct Session {
     }
     // LIB-12's `roms-missing` topic, or nullptr.
     const RomsMissing* missing() const {
-        const auto* p = host.state<shared::RomsMissingPayload>(shared::topics::kRomsMissing);
+        const auto* p = host.state<calcu::startup::RomsMissingState>(calcu::startup::kRomsMissingTopic);
         return p ? &p->missing : nullptr;
     }
     bool noNotices() { return host.mirror().takeAppended(calcu::sessions::kNoticesTopic).empty(); }

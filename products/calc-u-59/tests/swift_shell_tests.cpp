@@ -52,7 +52,6 @@ struct SwiftRig {
         shell::SettingsPartSetup s;
         s.file = &file;
         s.paths = paths.get();
-        s.frontend = calcu::settings::FrontendKind::Swift;
         s.alsoShown = {cu59::kPortraitDebugPage};
         settingsPart = std::make_unique<shell::SettingsPart>(std::move(s));
         rig = std::make_unique<SessionRig>(

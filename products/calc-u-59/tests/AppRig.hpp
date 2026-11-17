@@ -5,6 +5,7 @@
 #include "Pump.hpp"
 #include "TempFolder.hpp"
 #include "TestFrontend.hpp"
+#include "SessionRig.hpp"
 #include "TestRoms.hpp"
 #include "presets/PresetsPart.hpp"
 #include "sessions/LibraryTopics.hpp"
@@ -52,6 +53,7 @@ struct Rig {
     calcu::settings::SettingsFile settings = calcu::settings::SettingsFile::defaultsOnly(cu59::settings::settingsDecl());
     calcu::pacing::WallTime now{std::chrono::hours(1)};
     calcu::sessions::test::TestFrontend fe;
+    std::unique_ptr<calcu::settings::Paths> paths = testroms::rigPaths(settings, "save", "");   // the save folder in `files`, no trace folder
     calcu::sessions::ProductSession<cu59::TIAppPart> app;
     calcu::sessions::ListenerId me = 0;
     std::shared_ptr<Files> files;
@@ -62,10 +64,10 @@ struct Rig {
         if (!model.empty()) settings.set("startup", "model", model);
         if (configure) configure(settings);
         cu59::TIAppSetup s;
-        s.roms = testroms::romSet();
+        s.roms.set = testroms::romSet();
         s.settings = &settings;
+        s.paths = paths.get();
         s.examplesFolder = "examples";
-        s.saveFolder = "save";
         s.fileIO = files;
         app = cu59::makeAppSession(std::move(s), [this] { return now += std::chrono::milliseconds(1); }, 59u, {}, {},
                                    /*start=*/false);

@@ -420,9 +420,9 @@ A frontend looks the ROM files up once at its start (LIB-12):
 it calls `cu59::lookUpRoms` (`app/ProductRoms.hpp`; Qt6, the Swift bridge,
 the Web's `bindings.cpp`), the library's `calcu::roms::lookUp` over the full
 set of 24 files with the core's `TIRomReader`. Without the full set the app
-session is made without ROMs (`TIAppSetup::romsMissing`, `describe(missing)`):
-it builds no machine, refuses `start`, and publishes LIB-12's `roms-missing
-{text}`, which LIB-14's shell shows in place of the faceplate while Help and
+session is made with the lookup's result and no ROMs (`TIAppSetup::roms`):
+it builds no machine, refuses `start`, and LIB-18's StartupPart publishes
+LIB-12's `roms-missing {text}`, which LIB-14's shell shows in place of the faceplate while Help and
 About still work (LIB-14 AC-19; Qt6 and the Web since M-57; row 59-54);
 there is no other ROM error. With it, every model switch and module change takes
 its files from the `RomSet` in memory and reads no file. The catalogue's ROM

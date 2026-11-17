@@ -76,7 +76,7 @@ struct CardRig : SessionRig {
         return ok;
     }
     bool untilKeyReady() { return until([&] { return !busy() && machine().isKeyReady(); }, std::chrono::seconds(5)); }
-    const calcu::media::Binding* fitted() { return part().mediaPart()->bindingOf(kPlace); }
+    const calcu::media::Binding* fitted() { return part().mediaPart().bindingOf(kPlace); }
     const calcu::media::MediaState* media() const { return state<calcu::media::MediaState>(calcu::media::kMediaTopic); }
     std::string cardFile(const std::string& name) const {
         return readFile((folder.path() / (name + ".magnetcard.yaml")).string()).value_or("");

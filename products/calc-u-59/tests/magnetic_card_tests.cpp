@@ -152,7 +152,7 @@ TEST(c59_7_ac4_u59_and_bin_not_listed_not_read_not_changed) {
     folder.write("new.magnetcard.yaml", fileOf(*card(bank(1, 0x12), std::nullopt), "New"));
     calcu::settings::SettingsFile s = calcu::settings::SettingsFile::defaultsOnly(cu59::settings::settingsDecl());
     calcu::settings::HostDirs dirs;
-    dirs.frontend = calcu::settings::FrontendKind::Swift;
+    dirs.frontend = calcu::settings::FrontendKind::Given;   // the save folder as passed
     dirs.saveFolder = folder.str();
     calcu::settings::Paths paths(s, dirs);
     calcu::media::Shelf shelf({k}, &paths);

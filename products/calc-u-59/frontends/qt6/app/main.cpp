@@ -158,7 +158,7 @@ int main(int argc, char* argv[]) {
     const std::uint16_t port = probeSeconds > 0 ? 0 : calcu::qt6::SessionHost::attachPortFrom(args);
     const std::string problem = window.host().openAttach(
         *attachProduct, port,
-        calcu::harness::SessionParts{&window.controller().app().presetsPart()->vocabulary(), window.controller().app().mediaPart()});
+        window.controller().app().libraryParts());
     if (probeSeconds > 0 && !problem.empty()) {
         std::fprintf(stderr, "pacing-probe: attach: %s\n", problem.c_str());
         return 2;

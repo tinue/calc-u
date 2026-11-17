@@ -166,7 +166,7 @@ void TIWebPart::attach(sessions::SessionSetup& s) {
 // engine; a press is dropped while an operation runs (LIB-5 E11), a release
 // always passes.
 void TIWebPart::screenKey(int index, bool down, std::uint32_t pointer) {
-    calcu::typing::TypingPart* t = m_app ? m_app->typing() : nullptr;
+    calcu::typing::TypingPart* t = m_app ? &m_app->typing() : nullptr;
     if (!t) return;
     if (!down) {
         t->engine().screenKeyUp(calcu::machine::KeyId{}, pointer);
@@ -177,7 +177,7 @@ void TIWebPart::screenKey(int index, bool down, std::uint32_t pointer) {
 }
 
 int TIWebPart::heldKey() const {
-    calcu::typing::TypingPart* t = m_app ? m_app->typing() : nullptr;
+    calcu::typing::TypingPart* t = m_app ? &m_app->typing() : nullptr;
     if (!t) return -1;
     const auto held = t->engine().liveHeld();
     if (held.empty()) return -1;

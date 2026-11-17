@@ -13,27 +13,6 @@ namespace calcu::harness {
 
 namespace {
 
-constexpr const char* kNoPresets = "This build reads no presets of format 2 yet.";
-
-Reply fromSessionReply(const sessions::ReplyMessage& r) {
-    if (!r.done) return refusedReply(r.reason);
-    return doneReply();
-}
-
-std::vector<std::string> words(const std::string& s) {
-    std::vector<std::string> out;
-    std::string w;
-    for (char c : s + " ") {
-        if (c == ' ' || c == '\t') {
-            if (!w.empty()) out.push_back(w);
-            w.clear();
-        } else {
-            w += c;
-        }
-    }
-    return out;
-}
-
 // A path relative to the working directory, or a bundle path as written.
 std::string refOf(const std::string& written) {
     if (written.rfind("examples:", 0) == 0) return written;
@@ -134,14 +113,9 @@ std::string usageOf(const presets::StepDef& d) {
 } // namespace
 
 void addPresetCommands(CommandRegistry& r, const presets::Vocabulary* v) {
-    // Without a vocabulary the product reads no presets: these are refused.
-    auto withPresets = [v](Handler h) -> Handler {
-        if (v) return h;
-        return [](CommandContext&) { return refusedReply(kNoPresets); };
-    };
-    r.add("preset", withPresets(presetCmd), "preset <path>            load a preset (or examples:<path>, a bundled one)");
-    r.add("check-preset", withPresets(checkPresetCmd), "check-preset <file> ...  read and check presets, build nothing");
-    r.add("preset-list", withPresets(presetListCmd), "preset-list              the bundled presets");
+    r.add("preset", presetCmd, "preset <path>            load a preset (or examples:<path>, a bundled one)");
+    r.add("check-preset", checkPresetCmd, "check-preset <file> ...  read and check presets, build nothing");
+    r.add("preset-list", presetListCmd, "preset-list              the bundled presets");
     r.add("full-speed", speedCmd(true), "full-speed               the machine at full speed");
     r.add("regular-speed", speedCmd(false), "regular-speed            the machine at regular speed");
     r.add("switch", switchCmd, "switch <peripheral> <control> on|off  a switch set, or a key pressed or let up");
@@ -150,6 +124,7 @@ void addPresetCommands(CommandRegistry& r, const presets::Vocabulary* v) {
             if (d.command && !r.isCommand(d.verb)) r.add(d.verb, stepCmd(d.verb), usageOf(d));
         return;
     }
+    // The usage text (--help): the steps of every product.
     const std::pair<const char*, const char*> fixed[] = {
         {"elapsed-time", "elapsed-time start|report the emulated time since start"},
         {"expect", "expect <text>            refused unless the display shows the text"},
@@ -157,7 +132,7 @@ void addPresetCommands(CommandRegistry& r, const presets::Vocabulary* v) {
         {"screenshot", "screenshot <file name>   a picture of the display into the output folder"},
         {"syncclock", "syncclock                the real-time clocks set from the run's clock"}};
     for (const auto& [verb, usage] : fixed)
-        if (!r.isCommand(verb)) r.add(verb, withPresets(stepCmd(verb)), usage);
+        if (!r.isCommand(verb)) r.add(verb, stepCmd(verb), usage);
 }
 
 } // namespace calcu::harness

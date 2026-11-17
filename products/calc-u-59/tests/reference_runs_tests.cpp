@@ -233,7 +233,7 @@ Run run(const fs::path& file, const Record& want) {
     if (file.generic_string().find(kNeverStops) == std::string::npos) server->line("wait");
     calcu::machine::Machine* m = server->host().session().context().machine();
     // C59-7 AC-30: the in-file cards the record names, and the cards written.
-    if (calcu::media::MediaPart* media = product->libraryParts().media()) {
+    if (calcu::media::MediaPart* media = &product->libraryParts().media()) {
         const auto& kind = cu59::magneticCardKind();
         for (const auto& [name, bank] : want.inFile) {
             const auto card = cu59::magneticCardOf(media->inFileContent(kind, name));

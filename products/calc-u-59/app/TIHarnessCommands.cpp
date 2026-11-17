@@ -38,12 +38,7 @@ using harness::doneReply;
 using harness::refusedReply;
 using machine::Ticks;
 
-std::vector<std::string> words(const std::string& t) {
-    std::vector<std::string> w;
-    std::istringstream in(t);
-    for (std::string s; in >> s;) w.push_back(s);
-    return w;
-}
+using harness::words;
 
 harness::Reply linesReply(const sessions::ReplyMessage& r) {
     if (!r.done) return refusedReply(r.reason);
@@ -235,7 +230,7 @@ Reply coverageCmd(CommandContext& c) {
     if (w.size() > 1 || (w.size() == 1 && w[0] != "all")) return refusedReply("usage: ti59 coverage [all]");
     machine::Machine* m = machineOf(c);
     if (!m) return refusedReply(kNoMachine);
-    debugger::DebuggerPart* d = c.host.product().libraryParts().debugger();
+    debugger::DebuggerPart* d = &c.host.product().libraryParts().debugger();
     if (!d || !d->runControl().profile().on()) return refusedReply("Profile is off: send `profile on` first.");
     const debugger::Profile& p = d->runControl().profile();
     machine::Debugging* dbg = m->debugging();

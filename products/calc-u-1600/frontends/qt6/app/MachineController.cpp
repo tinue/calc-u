@@ -27,7 +27,6 @@ MachineController::MachineController(QObject* parent) : QObject(parent) {
     calcu::shell::SettingsPartSetup ss;
     ss.file = &AppSettings::settings().file();
     ss.paths = &AppPaths::paths().places();
-    ss.frontend = calcu::settings::FrontendKind::Qt6;
     ss.changed = [this](std::string_view section, std::string_view) {
         if (section == "serial") app().refreshSerialLinkDirectory();
     };

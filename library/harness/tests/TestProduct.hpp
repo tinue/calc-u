@@ -52,23 +52,22 @@ public:
 
     std::string_view name() const override { return "Calc-U-Test"; }
     std::string_view shortName() const override { return "test"; }
-    std::string_view commandWord() const override { return "test"; }
     std::string_view version() const override { return version_; }
     // LIB-8: the test catalogue with the test printers TD-20 and TP-4.
-    const machine::Catalogue& catalogue() const override { return machine::test::paperTestCatalogue(); }
-    machine::MachineBuilder& builder() override { return builder_; }
+    const machine::Catalogue& catalogue() const { return machine::test::paperTestCatalogue(); }
     const settings::ProductDecl& settingsDecl() const override;
-    roms::LookupResult lookUpRoms() const override;
-    startup::ProductMachines& machines() override { return machines_; }
+    // The lookup over the test bundle (LIB-12), as prepare() makes it.
+    roms::LookupResult lookUpRoms() const;
+    startup::ProductMachines& machines() { return machines_; }
     DisplayText readDisplay(const machine::DisplayOutput&, const machine::MachineDescriptor&) override;
     void addCommands(CommandRegistry&) override;
-    std::vector<sessions::SessionPart*> sessionParts() override;
+    std::vector<sessions::SessionPart*> sessionParts(const std::vector<sessions::SessionPart*>& host) override;
     parts::LibraryParts& libraryParts() override { return *parts_; }
     // The run's parts (after prepare()), for the tests.
     presets::ProductRules* presetRules();
-    typing::TypingPart* typingPart() { return parts_->typing(); }
-    paper::PaperPart* paperPart() { return parts_->paper(); }
-    debugger::DebuggerPart* debuggerPart() { return parts_->debugger(); }
+    typing::TypingPart* typingPart() { return &parts_->typing(); }
+    paper::PaperPart* paperPart() { return &parts_->paper(); }
+    debugger::DebuggerPart* debuggerPart() { return &parts_->debugger(); }
     // LIB-7 (M-41): with `media`, the kinds of library/media/tests/TestKinds.hpp
     // (a bundled disk template `Formatted`) and machines that offer their
     // media places; off by default, so that the other tests' lists stay.
@@ -84,8 +83,8 @@ public:
     // never starts; the `key` command gives up after an hour).
     bool typingPaused = false;
     // LIB-11 D-11: the members the run asked, in order ("prepare <save
-    // folder>", "lookUpRoms", "sessionParts").
-    void prepare(RunSetup&) override;
+    // folder>", "sessionParts").
+    roms::LookupResult prepare(RunSetup&) override;
     mutable std::vector<std::string> asked;
     // LIB-10: the next machines' targets offer none of the optional parts.
     void setBareCpu(bool b) { builder_.bare = b; }
@@ -126,10 +125,13 @@ private:
     roms::test::TempFolder mediaFolder_{"calcu-test-media"};   // LIB-7: the bundled media
     std::unique_ptr<presets::DirectoryPresetBundle> bundle_;
     // The parts outside a run (a frontend's, the attach tests) on the
-    // defaults; prepare() replaces them with the run's.
+    // defaults and no folders; prepare() replaces them with the run's.
     std::unique_ptr<settings::SettingsFile> ownSettings_;
+    std::unique_ptr<settings::Paths> ownPaths_;
     std::unique_ptr<parts::LibraryParts> parts_;
-    parts::LibraryPartsSetup partsSetup(parts::LibraryPartsSetup);
+    // LIB-11 D-6, D-11: the library's parts on the settings and places of a
+    // run (or the own ones), typing in emulated time, the product's data.
+    parts::LibraryPartsSetup partsSetup(settings::SettingsFile&, const settings::Paths&);
 };
 
 // The test product as the CLI's factory gives it.

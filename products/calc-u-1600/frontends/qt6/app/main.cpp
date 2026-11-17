@@ -113,8 +113,7 @@ int main(int argc, char** argv) {
 #ifdef CALCU_ATTACH
         std::unique_ptr<calcu::harness::HarnessProduct> attachProduct = shared::makeHarnessProduct();
         window.host().openAttach(*attachProduct, calcu::qt6::SessionHost::attachPortFrom(QCoreApplication::arguments()),
-                                 calcu::harness::SessionParts{&window.controller()->app().presetsPart().vocabulary(),
-                                                              &window.controller()->app().mediaPart()});
+                                 window.controller()->app().libraryParts());
 #endif
         window.start();
         fileOpen.setHandler([&window](const QString& path) { window.openFile(path, calcu::opening::Way::OpenWith); });
@@ -167,8 +166,7 @@ int main(int argc, char** argv) {
     std::unique_ptr<calcu::harness::HarnessProduct> attachProduct = shared::makeHarnessProduct();
     const std::string problem = window.host().openAttach(
         *attachProduct, 0,
-        calcu::harness::SessionParts{&window.controller()->app().presetsPart().vocabulary(),
-                                     &window.controller()->app().mediaPart()});
+        window.controller()->app().libraryParts());
     if (!problem.empty()) {
         std::fprintf(stderr, "[shots] attach: %s\n", problem.c_str());
         return 2;

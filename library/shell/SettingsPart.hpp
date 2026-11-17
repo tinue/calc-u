@@ -37,7 +37,6 @@ inline const sessions::TopicName kSettingsTopic{"settings"};
 struct SettingsPartSetup {
     settings::SettingsFile* file = nullptr;     // the product's, on the session's thread (LIB-9: one owner)
     const settings::Paths* paths = nullptr;
-    settings::FrontendKind frontend = settings::FrontendKind::Qt6;
     // A product folder in use (Calc-U-1600's host drive folder): section,
     // key → the folder in use; nullopt: the library's rule.
     std::function<std::optional<std::string>(std::string_view, std::string_view)> inUse;

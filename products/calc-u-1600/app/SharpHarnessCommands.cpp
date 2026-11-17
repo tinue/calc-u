@@ -67,13 +67,6 @@ std::optional<std::vector<std::uint8_t>> readFile(const std::string& path) {
     return std::vector<std::uint8_t>(std::istreambuf_iterator<char>(in), std::istreambuf_iterator<char>());
 }
 
-std::vector<std::string> wordsOf(const std::string& text) {
-    std::vector<std::string> w;
-    std::istringstream in(text);
-    for (std::string s; in >> s;) w.push_back(s);
-    return w;
-}
-
 std::string hex(std::uint64_t v, int digits) {
     char b[24];
     std::snprintf(b, sizeof b, "%0*llx", digits, static_cast<unsigned long long>(v));
@@ -85,11 +78,6 @@ machine::Machine* machineOf(CommandContext& c) { return c.host.session().context
 Reply noMachine() { return refusedReply(sessions::kNoMachine); }
 Reply notInThisRun() { return refusedReply("This command needs a run of calcu; it is not offered through attach."); }
 
-Reply fromSession(const sessions::ReplyMessage& r) {
-    if (!r.done) return refusedReply(r.reason);
-    return doneReply();
-}
-
 // ── C1600-2 AC-21 (design §3.7): the loaders ─────────────────────────────
 
 // The file and its options: `<file> [<n>] [address=<a>] [length=<l>] [cpu=<name>] [run]`.
@@ -100,7 +88,7 @@ struct LoaderArgs {
 };
 LoaderArgs loaderArgs(const std::string& argText, bool codeOptions) {
     LoaderArgs out;
-    const std::vector<std::string> w = wordsOf(argText);
+    const std::vector<std::string> w = harness::words(argText);
     if (w.empty()) {
         out.error = codeOptions ? "usage: pc1600 load-code <file> [<n>] [address=<a>] [length=<l>] [cpu=<lh5803|z80>] [run]"
                                 : "usage: pc1600 load-basic <file> [<n>]";
@@ -146,7 +134,7 @@ LoaderArgs loaderArgs(const std::string& argText, bool codeOptions) {
 }
 
 Reply fileKindCmd(CommandContext& c) {
-    const std::vector<std::string> w = wordsOf(c.line.argText);
+    const std::vector<std::string> w = harness::words(c.line.argText);
     if (w.size() != 1) return refusedReply("usage: pc1600 file-kind <file>");
     const auto bytes = readFile(w[0]);
     if (!bytes) return refusedReply("The file " + w[0] + " cannot be read.");
@@ -192,15 +180,15 @@ Reply fileKindCmd(CommandContext& c) {
 Reply loadBasicCmd(CommandContext& c) {
     LoaderArgs a = loaderArgs(c.line.argText, false);
     if (!a.error.empty()) return refusedReply(a.error);
-    return fromSession(c.host.command(sessions::Command{commands::kLoadBasic, std::move(a.args)}));
+    return harness::fromSessionReply(c.host.command(sessions::Command{commands::kLoadBasic, std::move(a.args)}));
 }
 
 Reply typeBasicCmd(CommandContext& c) {
-    const std::vector<std::string> w = wordsOf(c.line.argText);
+    const std::vector<std::string> w = harness::words(c.line.argText);
     if (w.size() != 1) return refusedReply("usage: pc1600 type-basic <file>");
     const auto bytes = readFile(w[0]);
     if (!bytes) return refusedReply("The file " + w[0] + " cannot be read.");
-    return fromSession(c.host.command(
+    return harness::fromSessionReply(c.host.command(
         sessions::Command{commands::kTypeBasic, sessions::Value::object({{"bytes", *bytes}, {"name", w[0]}})}));
 }
 
@@ -283,7 +271,7 @@ constexpr inspect::View kViews[] = {
 };
 
 Reply inspectCmd(CommandContext& c) {
-    const std::vector<std::string> w = wordsOf(c.line.argText);
+    const std::vector<std::string> w = harness::words(c.line.argText);
     if (w.size() != 1) return refusedReply("usage: pc1600 inspect <view>");
     inspect::View view;
     if (!inspect::viewFromName(w[0], &view)) {
@@ -348,7 +336,7 @@ std::string seconds(double s) {
 }
 
 Reply tapeCmd(CommandContext& c, const SharpHarnessParts& parts) {
-    const std::vector<std::string> w = wordsOf(c.line.argText);
+    const std::vector<std::string> w = harness::words(c.line.argText);
     machine::Machine* m = machineOf(c);
     if (!m) return noMachine();
     if (!w.empty() && w[0] == "status" && w.size() == 1) {
@@ -409,7 +397,7 @@ void addText(std::vector<std::string>& lines, const std::string& title, const st
 }
 
 Reply serialCmd(CommandContext& c, const SharpHarnessParts& parts) {
-    std::vector<std::string> w = wordsOf(c.line.argText);
+    std::vector<std::string> w = harness::words(c.line.argText);
     const char* usage = "usage: pc1600 serial ce158|rs232c feed <file> [hold=<n>] | capture <file> | link | report";
     if (w.size() < 2 || (w[0] != "ce158" && w[0] != "rs232c")) return refusedReply(usage);
     SerialScriptsPart* serial = parts.serial ? parts.serial() : nullptr;
@@ -488,7 +476,7 @@ Reply hostDriveCmd(CommandContext& c) {
         if (!fs::is_directory(pathOf(arg), ec)) return refusedReply("The path " + arg + " is no folder.");   // EC-5
         dir = pathText(fs::absolute(pathOf(arg), ec));
     }
-    return fromSession(c.host.command(sessions::Command{commands::kMountHostDrive, sessions::Value::object({{"dir", dir}})}));
+    return harness::fromSessionReply(c.host.command(sessions::Command{commands::kMountHostDrive, sessions::Value::object({{"dir", dir}})}));
 }
 
 // ── C1600-5 AC-12 (§3.6, D-5): call ──────────────────────────────────────
@@ -516,7 +504,7 @@ std::vector<std::string> registerLines(CommandContext& c, const std::string& tar
 }
 
 Reply callCmd(CommandContext& c) {
-    const std::vector<std::string> w = wordsOf(c.line.argText);
+    const std::vector<std::string> w = harness::words(c.line.argText);
     const char* usage = "usage: pc1600 call <target> <address> [timeout=<duration>]";
     if (w.size() < 2 || w.size() > 3) return refusedReply(usage);
     machine::Machine* m = machineOf(c);

@@ -23,11 +23,6 @@ namespace {
 
 std::filesystem::path pathOf(const std::string& s) { return std::filesystem::path(std::u8string(s.begin(), s.end())); }
 
-Reply fromSessionReply(const ReplyMessage& r) {
-    if (!r.done) return refusedReply(r.reason);
-    return doneReply();
-}
-
 Reply needs(const char* usage) { return refusedReply(std::string("usage: ") + usage); }
 
 // The key as the `key` step resolves it (D-9): the key ID, then the ID in
@@ -52,10 +47,7 @@ Reply waitIdle(CommandContext& c) {
     const machine::Machine* m = c.host.session().machineSession().machine();
     const machine::Ticks t0 = m ? m->tickCount() : 0;
     const ReplyMessage r = c.host.command(Command{presets::kWaitIdleCommand, {}});
-    if (!r.done) {
-        if (r.reason == "Unknown command: wait-idle.") return refusedReply("This build reads no presets of format 2 yet.");
-        return refusedReply(r.reason);
-    }
+    if (!r.done) return refusedReply(r.reason);
     m = c.host.session().machineSession().machine();
     const machine::Ticks ran = m ? m->tickCount() - t0 : 0;
     const bool hour = ran >= static_cast<machine::Ticks>(d->tickRate) * 3600;

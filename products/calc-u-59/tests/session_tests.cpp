@@ -157,7 +157,7 @@ TEST(lib3_ac30_card_and_constant_memory_files_without_frontend) {
     // The cards: the library's media part on the same save folder (M-55).
     SessionRig c;
     const std::string text = writeMagneticCardFile(TIMagneticCardData{}, "x", "", false, std::nullopt, "");
-    const auto imported = c.part().mediaPart()->importBytes(c.session().context(), "x.magnetcard.yaml", text, {});
+    const auto imported = c.part().mediaPart().importBytes(c.session().context(), "x.magnetcard.yaml", text, {});
     CHECK(imported.ok);
     CHECK(testroms::fs::exists(c.folder.path() / "x.magnetcard.yaml"));
 }

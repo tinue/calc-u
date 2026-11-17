@@ -173,7 +173,7 @@ TEST(lib3_ac38_mirror_holds_every_callback) {
         f.open();
         const sessions::ReplyMessage r = f.run(c::kStart);
         CHECK(!r.done);
-        const auto* m = f.state<shared::RomsMissingPayload>(t::kRomsMissing);
+        const auto* m = f.state<calcu::startup::RomsMissingState>(calcu::startup::kRomsMissingTopic);
         CHECK(m && !m->missing.files.empty());
         // LIB-18's start builds nothing: its reason names the file (M-46).
         CHECK(r.reason.find("PC1600-P2-B6-new.bin") != std::string::npos);

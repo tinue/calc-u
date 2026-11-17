@@ -78,10 +78,8 @@ SharpAppPart::SharpAppPart(Settings& settings, AppPaths& paths, SharpAppPartOpti
       m_paths(paths),
       m_options(options),
       m_found(lookUp(paths)),
-      m_roms(m_found.set),
-      m_romsMissing(m_found.missing),
       m_hostDriveRom(hostDriveRomOf(paths)),
-      m_catalogue(catalogueOf(paths, m_roms.get())),
+      m_catalogue(catalogueOf(paths, m_found.set.get())),
       m_machines(m_catalogue, m_hostDriveRom),
       m_rules(SharpKeywordSetup{[this] { return canMountHostFolder(); }}),
       m_bundle(toPath(paths.bundledExamplesDir())),
@@ -90,9 +88,9 @@ SharpAppPart::SharpAppPart(Settings& settings, AppPaths& paths, SharpAppPartOpti
 #ifndef __EMSCRIPTEN__
     // C1600-3 (design §3.3): the DAP server on the library's parts.
     dap::DapDeps deps;
-    deps.debugger = m_lib.debugger();
-    deps.typing = m_lib.typing();
-    deps.presets = m_lib.presets();
+    deps.debugger = &m_lib.debugger();
+    deps.typing = &m_lib.typing();
+    deps.presets = &m_lib.presets();
     deps.control = &m_lib.control();
     deps.settings = &settings.file();
     deps.bundle = &m_bundle;
@@ -102,11 +100,10 @@ SharpAppPart::SharpAppPart(Settings& settings, AppPaths& paths, SharpAppPartOpti
 
 calcu::parts::LibraryPartsSetup SharpAppPart::librarySetup() {
     calcu::parts::LibraryPartsSetup s;
-    s.catalogue = &m_catalogue;
     s.machines = &m_machines;
     s.settings = &m_settings.file();
-    s.roms = m_roms;
-    if (!m_roms) s.romsMissing = calcu::roms::describe(m_romsMissing);
+    s.paths = &m_paths.places();
+    s.roms = m_found;
     s.typing = &typingProduct();
     s.hosting = m_options.hosting;
     s.hostLinks = [this](const CapabilityEntry& e) -> std::optional<calcu::peripherals::HostLinkRule> {
@@ -121,46 +118,38 @@ calcu::parts::LibraryPartsSetup SharpAppPart::librarySetup() {
     s.serialLinkFolder = folderOrNone(m_paths.serialLinkDir());
     s.presetRules = &m_rules;
     s.bundle = &m_bundle;
-    s.home = m_paths.homeDir();
-    s.screenshotFolder = [this]() -> std::optional<std::string> {
-        // LIB-6 AC-25: the save folder, made when a step needs it.
-        auto folder = m_options.screenshotFolder ? m_options.screenshotFolder() : m_paths.places().screenshotFolder();
-        std::error_code ec;
-        if (folder) std::filesystem::create_directories(toPath(*folder), ec);
-        return folder;
-    };
     s.papers = sharpPrinterPapers();
-    s.debugger = sharpDebuggerSetup(&m_paths, &m_settings, /*hasTraceFolder=*/true);
-    // LIB-7 (§10.2): the save folder and the tape folder, the bundled
-    // templates beside the module definitions.
+    s.debugger = sharpDebuggerSetup();
+    // LIB-7 (§10.2): the bundled templates beside the module definitions.
     s.mediaKinds = mediaKinds(m_paths.bundledModulesDir(), m_catalogue);
-    s.mediaPaths = &m_paths.places();
     s.moduleListing = moduleListing();
     // LIB-13 (Part D, D3).
     s.productName = "Calc-U-1600";
     s.presetExtensions = presetExtensions();
     s.fileKinds = {&m_basicKind, &m_codeKind};   // AC-17: BASIC first
     s.openLimits = openLimits();
-    const calcu::control::ControlSetup control = sharpControlSetup(m_catalogue, m_controlRules);
-    s.printers = control.printers;
-    s.controlRules = control.rules;
+    s.controlRules = sharpControlSetup(m_controlRules);
     return s;
 }
 
 SharpAppPart::~SharpAppPart() = default;
 
-std::vector<sessions::SessionPart*> SharpAppPart::sessionParts() {
-    // The library's parts in their order, the loaders before the open part
-    // (its file kinds use them). The host calls AppSession::close() before
-    // it ends the session: the media part writes what is pending (AC-13).
-    std::vector<sessions::SessionPart*> parts = m_lib.sessionParts({&m_loaderPart});
-    // C1600-3: the DAP server after the debugger (it reads the run control
-    // after the debugger's own machineChanged).
+std::vector<sessions::SessionPart*> SharpAppPart::sessionParts(std::vector<sessions::SessionPart*> host,
+                                                              std::vector<sessions::SessionPart*> after) {
+    // The loaders before the open part (its file kinds use them); C1600-3:
+    // the DAP server after the debugger (it reads the run control after the
+    // debugger's own machineChanged). The host calls AppSession::close()
+    // before it ends the session: the media part writes what is pending
+    // (AC-13).
+    calcu::parts::SessionSlots slots;
+    slots.host = std::move(host);
+    slots.fileKinds = {&m_loaderPart};
 #ifndef __EMSCRIPTEN__
-    if (m_dap) parts.push_back(m_dap.get());
+    if (m_dap) slots.product.push_back(m_dap.get());
 #endif
-    parts.push_back(this);
-    return parts;
+    slots.product.push_back(this);
+    slots.after = std::move(after);
+    return m_lib.sessionParts(slots);
 }
 
 void SharpAppPart::notice(const std::string& sentence) {
@@ -179,14 +168,10 @@ void SharpAppPart::attach(sessions::SessionSetup& setup) {
 
     m_lampsTopic = &setup.stateTopic(topics::kLamps);
     m_serialTopic = &setup.stateTopic(topics::kSerialLinks);
-    m_romsMissingTopic = &setup.stateTopic(topics::kRomsMissing);
     // LIB-13 D4.2: a program file opened by a way with a window.
     sessions::StreamTopic* opened = &setup.streamTopic(topics::kProgramOpened, sessions::History::None);
     m_basicKind.setTopic(opened);
     m_codeKind.setTopic(opened);
-    // LIB-12 AC-5: without the full set no machine is built; the frontends
-    // show the files.
-    if (!m_roms) m_romsMissingTopic->set(std::make_shared<RomsMissingPayload>(m_romsMissing));
 
     using sessions::Done;
     using sessions::Refused;
@@ -241,8 +226,8 @@ void SharpAppPart::attach(sessions::SessionSetup& setup) {
         };
         auto held = std::make_shared<std::vector<Held>>();
         for (const char* word : {"floppy", "tape"}) {
-            m_lib.media()->flush(s, word);
-            const calcu::media::Binding* b = m_lib.media()->bindingOf(word);
+            m_lib.media().flush(s, word);
+            const calcu::media::Binding* b = m_lib.media().bindingOf(word);
             if (!b) continue;
             calcu::media::Content content = b->content;
             for (const auto& e : m->capabilities(calcu::media::MediaPlace::kKind))
@@ -253,7 +238,7 @@ void SharpAppPart::attach(sessions::SessionSetup& setup) {
         }
         return change(std::move(ch), [this, held] {
             for (Held& h : *held)
-                if (h.content && m_ctx) m_lib.media()->insert(*m_ctx, h.word, h.binding, h.content, h.binding.side.value_or(0));
+                if (h.content && m_ctx) m_lib.media().insert(*m_ctx, h.word, h.binding, h.content, h.binding.side.value_or(0));
         });
     });
 }
@@ -307,7 +292,7 @@ void SharpAppPart::refreshTopics() {
     if (!m_lampsTopic) return;
     auto lamps = std::make_shared<LampsPayload>();
     lamps->tape = tapeStatus();
-    const calcu::media::Binding* tape = m_lib.media()->bindingOf("tape");
+    const calcu::media::Binding* tape = m_lib.media().bindingOf("tape");
     lamps->tapeName = tape ? tape->name : std::string();
     lamps->floppyMotor = floppyMotorOn();
     m_lampsTopic->set(std::move(lamps));
@@ -494,10 +479,6 @@ sessions::Value LampsPayload::toValue() const {
 }
 sessions::Value SerialLinksPayload::toValue() const {
     return sessions::Value::object({{"rs232c", rs232c}, {"ce158", ce158}, {"moves", static_cast<std::int64_t>(moves)}});
-}
-
-sessions::Value RomsMissingPayload::toValue() const {
-    return sessions::Value::object({{"text", calcu::roms::describe(missing)}});
 }
 
 } // namespace shared

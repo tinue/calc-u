@@ -1358,3 +1358,15 @@ in M-57 and in Swift in M-58. M-57's "Tests from" gains LIB-6 AC-42
 `calc-u-59-statefiles`: it is renamed `calc-u-59-presets` in the step
 (C59-2 §7, D-18 there); M-55's line "`calc-u-59-statefiles` skill
 (cards)" reads `calc-u-59-presets`.
+
+## Part E simplification E-1 (2026-11-17, branch `es-assembly`)
+
+`docs/reviews/e-simplification.md` §1 S-1. The PresetsPart is always made
+(`parts::LibraryParts`), so the harness's refusal "This build reads no
+presets of format 2 yet." went (LIB-11, this step). Its `home` and
+`screenshotFolder` come from the host's places (`Paths::hostDirs().home`,
+`Paths::screenshotFolder()`, made when a step needs it); the products'
+screenshot lambdas are gone. Calc-U-59's Web engine therefore hands a
+screenshot to KeepFile as Calc-U-1600's does (LIB-9 AC-17), instead of
+writing it into the save folder of its file system (ledger 59-58); its
+`~/` is the Web's home (`/persist`), as Calc-U-1600's, not empty.

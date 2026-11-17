@@ -33,12 +33,12 @@ example: `frontends/qt6/app/EmulatorController` is the whole adapter, about 300 
 1. **Host one app session** on one thread of yours: look the ROM files up
    once (`cu59::lookUpRoms` over a `calcu::roms::Bundle` of the ROM files of
    `roms/` as your packaging holds them, LIB-12) and make the session with
-   `cu59::makeAppSession` (`app/TIAppPart.hpp`): the `RomSet`, the settings file (the startup model,
-   LIB-9), the bundled `examples/`, your save folder (cards,
-   `ti58c.memory.yaml`) and trace folder (LIB-9's paths); `makeAppSession`
-   sends LIB-18's `start`. Without the full set pass
-   `TIAppSetup::romsMissing` (`describe(missing)`) and no `roms`: the
-   session runs without a machine and publishes `roms-missing {text}`,
+   `cu59::makeAppSession` (`app/TIAppPart.hpp`): the ROM lookup's result,
+   the settings file (the startup model, LIB-9), your `calcu::settings::Paths`
+   (the save folder: cards, `ti58c.memory.yaml`; the trace folder, the
+   screenshots, `~/`) and the bundled `examples/`; `makeAppSession` sends
+   LIB-18's `start`. Without the full set the session runs without a
+   machine and LIB-18's StartupPart publishes `roms-missing {text}`,
    which the shell shows in place of the faceplate (LIB-14 AC-19).
    Put the window together from LIB-14's shell (the Qt6 component set's
    `calcu::qt6::Shell` over a `SessionHost`, the React set's

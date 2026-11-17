@@ -2,6 +2,7 @@
 #include "harness/Protocol.hpp"
 #include "harness/Reply.hpp"
 #include "presets/Vocabulary.hpp"
+#include "sessions/Messages.hpp"
 #include <functional>
 #include <map>
 #include <string>
@@ -15,6 +16,9 @@
 
 namespace calcu::media {
 class MediaPart;
+}
+namespace calcu::parts {
+class LibraryParts;
 }
 
 namespace calcu::harness {
@@ -65,8 +69,8 @@ void addStartupCommands(CommandRegistry&);
 // regular-speed, switch, and every step of the vocabulary with
 // StepDef::command (elapsed-time, expect, not-expect, screenshot, syncclock,
 // a product's printer-trace; LIB-7's media steps from M-41), each sent as
-// `run-step`. Without a vocabulary (a product without preset rules yet) the
-// commands are refused. The bare `wait` is FirstCommands.cpp's.
+// `run-step`. The bare `wait` is FirstCommands.cpp's.
+// Null: for the usage text (--help), the steps every product has.
 void addPresetCommands(CommandRegistry&, const presets::Vocabulary*);
 
 // LIB-8 AC-23 (design §2): cut-paper and paper text, marks, png, copy, cut
@@ -80,18 +84,24 @@ void addPaperCommands(CommandRegistry&);
 // no debug target." in a product without a DebuggerPart.
 void addDebugCommands(CommandRegistry&);
 // LIB-7 AC-28 (design §3.11): media, media import, media export, media delete
-// (MediaCommands.cpp) on the run's media part; refused without one. The
-// media steps come with addPresetCommands.
-void addMediaCommands(CommandRegistry&, media::MediaPart*);
+// (MediaCommands.cpp) on the run's media part; refused where the product
+// has no kind of medium. The media steps come with addPresetCommands.
+void addMediaCommands(CommandRegistry&, media::MediaPart&);
 // LIB-13 AC-9 (design §7, D-10): `open <path>` (OpenCommands.cpp), the
 // session command `open` with the file's bytes and path, way `harness`; the
 // reply says what it was opened as (AC-3).
 void addOpenCommand(CommandRegistry&);
 
 // D-27: every command of `calcu serve` in its order (the first commands,
-// LIB-18's, LIB-6's on `vocabulary`, LIB-8's, LIB-10's, LIB-7's on `media`,
-// LIB-13's, then the product's); the attached harness has the same.
-void addServeCommands(CommandRegistry&, const presets::Vocabulary* vocabulary, media::MediaPart* media,
-                      HarnessProduct& product);
+// LIB-18's, LIB-6's on the parts' vocabulary, LIB-8's, LIB-10's, LIB-7's on
+// their media part, LIB-13's, then the product's); the attached harness has
+// the same, on the app's parts.
+void addServeCommands(CommandRegistry&, parts::LibraryParts& parts, HarnessProduct& product);
+
+// The words of a command's argument text, parted by white space.
+std::vector<std::string> words(const std::string& text);
+// A session's reply to a command as the harness's: done (nothing read) or
+// refused with its reason.
+Reply fromSessionReply(const sessions::ReplyMessage&);
 
 } // namespace calcu::harness

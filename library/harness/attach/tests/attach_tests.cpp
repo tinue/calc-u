@@ -77,7 +77,7 @@ struct TestApp final : AttachInbox, sessions::MessageSink {
         sessions::AppSessionSetup s;
         s.clock = wallNow;
         s.hostTime = [] { return std::chrono::system_clock::now(); };
-        for (auto* p : product.sessionParts()) s.parts.push_back(p);
+        s.parts = product.sessionParts({});
         s.parts.push_back(&waitIdle);
         session = std::make_unique<sessions::AppSession>(std::move(s));
         sessions::HostServices fe;
@@ -88,7 +88,8 @@ struct TestApp final : AttachInbox, sessions::MessageSink {
         profile.slice = std::chrono::microseconds(20'000);
         session->machineSession().setMachine(std::move(m), profile, 0);
         endpoint = std::make_unique<AttachEndpoint>(*this, port);
-        harness = std::make_unique<AttachedHarness>(*session, product, *endpoint, [this] { return suspended.load(); });
+        harness = std::make_unique<AttachedHarness>(*session, product, *endpoint, [this] { return suspended.load(); },
+                                                    product.libraryParts());
     }
     AttachEndpoint::Opened open() { return endpoint->open(); }
     void start() {

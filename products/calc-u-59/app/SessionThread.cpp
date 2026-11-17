@@ -104,7 +104,8 @@ void SessionThread::publish() {
 }
 
 std::string SessionThread::openAttach([[maybe_unused]] calcu::harness::HarnessProduct& product,
-                                      [[maybe_unused]] std::uint16_t port) {
+                                      [[maybe_unused]] std::uint16_t port,
+                                      [[maybe_unused]] std::function<calcu::parts::LibraryParts&()> parts) {
 #ifdef CALCU_ATTACH
     std::string problem = "the session is not there";
     std::mutex m;
@@ -116,7 +117,7 @@ std::string SessionThread::openAttach([[maybe_unused]] calcu::harness::HarnessPr
         const auto o = attach_->endpoint->open();
         if (o.ok) {
             attach_->harness = std::make_unique<calcu::harness::AttachedHarness>(
-                session, product, *attach_->endpoint, [this] { return suspended_.load(); });
+                session, product, *attach_->endpoint, [this] { return suspended_.load(); }, parts());
             problem.clear();
         } else {
             problem = o.problem;

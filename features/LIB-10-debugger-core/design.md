@@ -1509,3 +1509,28 @@ format 2 in M-54.
   AC-30's Reset clause is replaced by row 59-34.
   Answered (user, 2026-11-16, with the approval of the Part E designs): kept; the
   decision-log row is in the spec.
+
+## Part E simplification E-1 (2026-11-17, branch `es-assembly`)
+
+`docs/reviews/e-simplification.md` §1 S-1.
+
+- `parts::LibraryParts` sets the trace session's folder and limit of every
+  product: `debugger::traceFolderOf(paths, available)` on the host's places
+  and `[trace] max-file-size-mb` of the product's settings, read at each
+  trace as Calc-U-1600 read them. The products' debugger setups give the
+  recorder, the rules and `handOver` only (Calc-U-1600:
+  `sharpDebuggerSetup()` without arguments; Calc-U-59: `TIDebuggerOptions`
+  without folder and limit, `handOver` always true, which takes effect
+  only where the places have no trace folder, the Web).
+- `traceFolderOf` takes an optional `available` (Calc-U-59's Swift
+  frontend: the iCloud trace location, C59-4 AC-12): while it says no, the
+  folder is reported with "The trace location is not available." (the
+  sentence Calc-U-59's own lambda gave).
+- `DebuggerPart::setTraceFolder`/`setTraceLimit` and
+  `TraceSession::setFolder`/`setLimit` are gone (the harness's late patch,
+  LIB-11 this step). `DebuggerPart::runControl()` has a const overload.
+- Calc-U-59's `TraceTarget` (a folder and a byte count, divided back into
+  MiB) and its two folder lambdas are gone. Its trace folder now follows
+  the places at each trace, as Calc-U-1600's always did, not the folder of
+  the start; its limit reads the setting at each trace (a negative value
+  now gives 50 as AC-11 says).

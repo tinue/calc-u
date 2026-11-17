@@ -209,14 +209,14 @@ TEST(lib18_ac23_paper_module_printer_trace_own_card_kept) {
     Rig r("TI-59");
     CHECK(r.load(head() + "slot-1: { name: ST }\nprinter: PC-100C\ncue-card:\n  title: Mine\nkeys:\n  - printer-trace: on\n  - key: 5 Prt\n").done);
     r.runFor(std::chrono::seconds(1));
-    const auto paperBefore = r.part().paperPart()->papers().size();
+    const auto paperBefore = r.part().paperPart().papers().size();
     for (const auto& cmd : {st::kResetCommand, st::kColdBootCommand}) {
         CHECK(r.send(cmd).done);
         CHECK_EQ(r.plugged("slot-1"), std::string("ST"));
         CHECK_EQ(r.plugged("printer"), std::string("PC-100C"));
         CHECK(traceOn(*r.machine()));
         CHECK(r.part().ownCueCard() && r.part().ownCueCard()->title == "Mine");   // row 59-17
-        CHECK_EQ(r.part().paperPart()->papers().size(), paperBefore);
+        CHECK_EQ(r.part().paperPart().papers().size(), paperBefore);
     }
 }
 

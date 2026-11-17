@@ -53,12 +53,17 @@ std::optional<std::string> Paths::traceFolder() const {
         }
         return dirs_.applicationSupport;
     }
+    case FrontendKind::Given:
+        if (dirs_.traceFolder.empty()) return std::nullopt;
+        return dirs_.traceFolder;
     }
     return std::nullopt;
 }
 
 std::optional<std::string> Paths::screenshotFolder() const {
     if (dirs_.frontend == FrontendKind::Web) return std::nullopt;
+    if (dirs_.frontend == FrontendKind::Given)
+        return dirs_.screenshotFolder.empty() ? std::nullopt : std::optional<std::string>(dirs_.screenshotFolder);
     return saveFolder();
 }
 

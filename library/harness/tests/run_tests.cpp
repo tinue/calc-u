@@ -181,11 +181,10 @@ TEST(prepare_runs_before_session_parts) {
     CHECK(run.server != nullptr);
     if (!run.server) return;
     const std::vector<std::string>& a = run.product.asked;
-    CHECK(a.size() >= 3);
-    if (a.size() < 3) return;
+    CHECK(a.size() >= 2);
+    if (a.size() < 2) return;
     CHECK_EQ(a[0], "prepare " + run.server->setup().saveFolder());
-    CHECK_EQ(a[1], std::string("lookUpRoms"));
-    CHECK_EQ(a[2], std::string("sessionParts"));
+    CHECK_EQ(a[1], std::string("sessionParts"));
 }
 
 TEST(ac8_bundled_roms_through_the_lookup) {

@@ -148,22 +148,23 @@ TestProduct::TestProduct()
     presetFolder_.write("basic/two.test-seg", "format-version: 2\nmodel: test-seg\npreset-name: Two\n"
                                               "description: Presses 2\nkeys:\n  - key: 2\n");
     bundle_ = std::make_unique<presets::DirectoryPresetBundle>(presetFolder_.path());
-    // Outside a run: typing, the printers' paper and the debugger on the
-    // defaults, as before a frontend's start (no presets, no media).
+    // Outside a run: every part on the defaults and no folders, as before a
+    // frontend's start.
     ownSettings_ = std::make_unique<settings::SettingsFile>(settings::SettingsFile::defaultsOnly(settingsDecl()));
-    parts::LibraryPartsSetup s;
-    s.catalogue = &catalogue();
-    s.machines = &machines_;
-    s.settings = ownSettings_.get();
-    s.roms = lookUp().set;
-    s.hosting = sessions::Hosting::VirtualTime;
-    s = partsSetup(std::move(s));
-    s.presetRules = nullptr;
-    parts_ = std::make_unique<parts::LibraryParts>(std::move(s));
-    parts_->typing()->setPauseProbe(typing_.get());
+    settings::HostDirs dirs;
+    dirs.frontend = settings::FrontendKind::Given;
+    ownPaths_ = std::make_unique<settings::Paths>(*ownSettings_, dirs);
+    parts_ = std::make_unique<parts::LibraryParts>(partsSetup(*ownSettings_, *ownPaths_));
+    parts_->typing().setPauseProbe(typing_.get());
 }
 
-parts::LibraryPartsSetup TestProduct::partsSetup(parts::LibraryPartsSetup s) {
+parts::LibraryPartsSetup TestProduct::partsSetup(settings::SettingsFile& file, const settings::Paths& paths) {
+    parts::LibraryPartsSetup s;
+    s.machines = &machines_;
+    s.settings = &file;
+    s.paths = &paths;
+    s.roms = lookUp();
+    s.hosting = sessions::Hosting::VirtualTime;
     s.typing = typing_.get();
     s.presetRules = presetRules_.get();
     s.bundle = bundle_.get();
@@ -192,11 +193,12 @@ const settings::ProductDecl& TestProduct::settingsDecl() const {
     return decl_;
 }
 
-void TestProduct::prepare(RunSetup& r) {
+roms::LookupResult TestProduct::prepare(RunSetup& r) {
     asked.push_back("prepare " + r.saveFolder());
     parts_.reset();
-    parts_ = std::make_unique<parts::LibraryParts>(partsSetup(r.partsSetup(catalogue(), machines_, lookUp())));
-    parts_->typing()->setPauseProbe(typing_.get());
+    parts_ = std::make_unique<parts::LibraryParts>(partsSetup(r.settings(), r.paths()));
+    parts_->typing().setPauseProbe(typing_.get());
+    return lookUp();
 }
 
 roms::LookupResult TestProduct::lookUp() const {
@@ -204,10 +206,7 @@ roms::LookupResult TestProduct::lookUp() const {
     return roms::lookUp(set, roms::DirectoryBundle(roms_.path()), &reader_);
 }
 
-roms::LookupResult TestProduct::lookUpRoms() const {
-    asked.push_back("lookUpRoms");
-    return lookUp();
-}
+roms::LookupResult TestProduct::lookUpRoms() const { return lookUp(); }
 
 std::vector<media::KindDecl> TestProduct::mediaKinds() {
     if (!media) return {};
@@ -273,11 +272,9 @@ void TestProduct::addCommands(CommandRegistry& r) {
     }, "count                    the operations run");
 }
 
-std::vector<SessionPart*> TestProduct::sessionParts() {
+std::vector<SessionPart*> TestProduct::sessionParts(const std::vector<SessionPart*>& host) {
     asked.push_back("sessionParts");
-    std::vector<SessionPart*> parts = parts_->sessionParts();
-    parts.push_back(part_.get());
-    return parts;
+    return parts_->sessionParts(parts::SessionSlots{host, {}, {part_.get()}, {}});
 }
 
 std::unique_ptr<HarnessProduct> makeTestProduct() { return std::make_unique<TestProduct>(); }

@@ -110,11 +110,15 @@ std::unique_ptr<RunSetup> RunSetup::make(const RunOptions& o, const settings::Pr
     }
     r->settings_ = std::make_unique<settings::SettingsFile>(
         o.settingsFile ? settings::SettingsFile::open(decl, *o.settingsFile) : settings::SettingsFile::defaultsOnly(decl));
-    // LIB-9 AC-18, D-11: Qt6's rules on folders inside the run folder.
-    r->dirs_.frontend = settings::FrontendKind::Qt6;
+    // LIB-9 AC-18, D-11: the folders as the run passes them, the others
+    // inside the run folder.
+    r->dirs_.frontend = settings::FrontendKind::Given;
     r->dirs_.home = pathText(run / "home");
     r->dirs_.settingsBase = pathText(run / "settings");
     r->dirs_.saveFolder = r->saveFolder_;
+    r->dirs_.traceFolder = r->outputFolder_;
+    r->dirs_.screenshotFolder = r->outputFolder_;
+    r->paths_ = std::make_unique<settings::Paths>(*r->settings_, r->dirs_);
     return r;
 }
 
@@ -136,26 +140,6 @@ std::function<std::chrono::system_clock::time_point()> RunSetup::hostTime() cons
     return [t] { return t; };
 }
 
-parts::LibraryPartsSetup RunSetup::partsSetup(const machine::Catalogue& catalogue, startup::ProductMachines& machines,
-                                              const roms::LookupResult& roms) {
-    if (!mediaPaths_) {
-        settings::HostDirs dirs = dirs_;
-        dirs.frontend = settings::FrontendKind::Swift;   // the save folder as the run passes it
-        mediaPaths_ = std::make_unique<settings::Paths>(*settings_, dirs);
-    }
-    parts::LibraryPartsSetup p;
-    p.catalogue = &catalogue;
-    p.machines = &machines;
-    p.settings = settings_.get();
-    p.roms = roms.set;
-    if (!roms.set) p.romsMissing = roms::describe(roms.missing);
-    p.hosting = sessions::Hosting::VirtualTime;
-    p.home = dirs_.home;
-    p.screenshotFolder = [this]() -> std::optional<std::string> { return screenshotFolder(); };
-    p.mediaPaths = mediaPaths_.get();
-    return p;
-}
-
 std::string RunSetup::scrub(std::string s) const {
     replaceAll(s, saveFolder_, "<save folder>");
     replaceAll(s, runFolder_, "<run folder>");
@@ -169,11 +153,9 @@ std::unique_ptr<Server> Server::start(HarnessProduct& product, const RunOptions&
     s->product_ = &product;
     s->setup_ = RunSetup::make(options, product.settingsDecl(), error);
     if (!s->setup_) return nullptr;
-    // D-11: the product's app layer on the run's settings and folders.
-    product.prepare(*s->setup_);
-
+    // D-11: the product's app layer on the run's settings and folders;
     // EC-1 (LIB-12 AC-7): the full set, or no start.
-    roms::LookupResult roms = product.lookUpRoms();
+    const roms::LookupResult roms = product.prepare(*s->setup_);
     if (!roms.ok()) {
         *error = roms::describe(roms.missing);
         return nullptr;
@@ -189,23 +171,9 @@ std::unique_ptr<Server> Server::start(HarnessProduct& product, const RunOptions&
     };
     setup.hostTime = s->setup_->hostTime();   // AC-21 (LIB-3 A-7)
     setup.hosting = sessions::Hosting::VirtualTime;
-    parts::LibraryParts& lib = product.libraryParts();
-    // LIB-10: the debugger's trace folder (the run's, AC-8) and its limit
-    // ([trace] max-file-size-mb of the run's settings).
-    if (debugger::DebuggerPart* dp = lib.debugger()) {
-        RunSetup* run = s->setup_.get();
-        dp->setTraceFolder([run]() -> std::optional<settings::Paths::Ensured> {
-            std::error_code ec;
-            fs::create_directories(pathOf(run->traceFolder()), ec);
-            if (ec) return settings::Paths::Ensured{false, run->traceFolder(), ec.message()};
-            return settings::Paths::Ensured{true, run->traceFolder(), {}};
-        });
-        dp->setTraceLimit([run] { return run->settings().integer("trace", "max-file-size-mb"); });
-    }
-    // As the frontends' session builders: the control part first; the state
-    // part; then the product's parts (the library's among them).
-    setup.parts = {&lib.controlPart(), s->state_.get()};
-    for (sessions::SessionPart* p : product.sessionParts()) setup.parts.push_back(p);
+    // The one order (LibraryParts): the control part, the run's state part
+    // among the host's, the library's and the product's parts.
+    setup.parts = product.sessionParts({s->state_.get()});
     s->session_ = std::make_unique<sessions::AppSession>(std::move(setup));
     s->host_ = std::make_unique<HarnessHost>(*s->session_, product, *s->setup_);
     // LIB-11 AC-2: the machine the product starts with, at key readiness.
@@ -215,18 +183,17 @@ std::unique_ptr<Server> Server::start(HarnessProduct& product, const RunOptions&
         return nullptr;
     }
 
-    addServeCommands(s->registry_, lib.presets() ? &lib.presets()->vocabulary() : nullptr, lib.media(), product);
+    addServeCommands(s->registry_, product.libraryParts(), product);
     return s;
 }
 
-void addServeCommands(CommandRegistry& r, const presets::Vocabulary* vocabulary, media::MediaPart* media,
-                      HarnessProduct& product) {
+void addServeCommands(CommandRegistry& r, parts::LibraryParts& parts, HarnessProduct& product) {
     addFirstCommands(r);
     addStartupCommands(r);
-    addPresetCommands(r, vocabulary);
+    addPresetCommands(r, &parts.presets().vocabulary());
     addPaperCommands(r);
     addDebugCommands(r);
-    addMediaCommands(r, media);
+    addMediaCommands(r, parts.media());
     addOpenCommand(r);
     product.addCommands(r);
 }

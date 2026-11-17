@@ -25,7 +25,7 @@ using testroms::SessionRig;
 
 namespace {
 
-calcu::debugger::RunControl& rc(SessionRig& r) { return r.part().debuggerPart()->runControl(); }
+calcu::debugger::RunControl& rc(SessionRig& r) { return r.part().debuggerPart().runControl(); }
 bool paused(SessionRig& r) { return r.part().isFrozen(); }
 bool ready(SessionRig& r) { return r.until([&] { return r.machine().isKeyReady(); }); }
 cu59::CalculatorState& panel(SessionRig& r) { return testroms::dbg(r.machine()); }

@@ -17,24 +17,15 @@ namespace calcu::harness {
 
 namespace {
 
-std::vector<std::string> words(const std::string& text) {
-    std::vector<std::string> out;
-    std::istringstream in(text);
-    for (std::string w; in >> w;) out.push_back(w);
-    return out;
-}
-
 std::string joined(const std::vector<std::string>& w, std::size_t from, std::size_t to) {
     std::string out;
     for (std::size_t i = from; i < to && i < w.size(); ++i) out += (out.empty() ? "" : " ") + w[i];
     return out;
 }
 
-Reply fromCommand(const sessions::ReplyMessage& r) { return r.done ? doneReply() : refusedReply(r.reason); }
-
 Reply mediaCmd(CommandContext& c, media::MediaPart* part) {
     static const char* kUsage = "usage: media | media import <file> | media export <kind> <name> <path> | media delete <kind> <name>";
-    if (!part) return refusedReply(std::string(c.host.product().name()) + " has no media.");
+    if (part->kinds().empty()) return refusedReply(std::string(c.host.product().name()) + " has no media.");
     const auto w = words(c.line.argText);
     if (w.empty()) {   // AC-7: the topic, read again first
         c.host.command(sessions::Command{media::kRefreshCommand, {}});
@@ -48,11 +39,11 @@ Reply mediaCmd(CommandContext& c, media::MediaPart* part) {
     }
     if (w[0] == "import" && w.size() >= 2) {   // AC-30
         sessions::Value::Array paths{sessions::Value(joined(w, 1, w.size()))};
-        return fromCommand(c.host.command(
+        return fromSessionReply(c.host.command(
             sessions::Command{media::kImportCommand, sessions::Value::object({{"paths", sessions::Value(std::move(paths))}})}));
     }
     if (w[0] == "delete" && w.size() >= 3)   // AC-31: the command is the confirmation
-        return fromCommand(c.host.command(sessions::Command{
+        return fromSessionReply(c.host.command(sessions::Command{
             media::kDeleteCommand, sessions::Value::object({{"kind", w[1]}, {"name", joined(w, 2, w.size())}, {"confirmed", true}})}));
     if (w[0] == "export" && w.size() >= 4) {   // AC-31, D-13: its files side by side
         const media::KindDecl* k = part->kind(w[1]);
@@ -76,7 +67,8 @@ Reply mediaCmd(CommandContext& c, media::MediaPart* part) {
 
 } // namespace
 
-void addMediaCommands(CommandRegistry& r, media::MediaPart* part) {
+void addMediaCommands(CommandRegistry& r, media::MediaPart& media) {
+    media::MediaPart* part = &media;
     r.add("media", [part](CommandContext& c) { return mediaCmd(c, part); },
           "media [import|export|delete …]  the media topic; import a file; export or delete a saved medium");
 }

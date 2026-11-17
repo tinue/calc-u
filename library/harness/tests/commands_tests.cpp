@@ -155,14 +155,14 @@ TEST(ac9_capabilities_with_kind_id_owner_and_places) {
 
 // LIB-4 L12 (LIB-4 AC-9): the control state read like any other state topic.
 TEST(ac9_state_control_state_reads_the_topic) {
-    TestRun run;   // test-seg; HarnessProduct::controlSetup() by default: no printers, no rules
+    TestRun run;   // test-seg; the paper panel of its printers TD-20 and TP-4 (their papers), no rules
     CHECK(run.server != nullptr);
     if (!run.server) return;
     const std::string bare = run.line("state control-state");
     CHECK(bare.rfind("done 1\n{\"models\":[{\"id\":\"test-seg\",\"available\":true},{\"id\":\"test-dot\",\"available\":true}],"
                      "\"model\":\"test-seg\",",
                      0) == 0);
-    CHECK(bare.find("\"panels\":[]") != std::string::npos);
+    CHECK(bare.find("\"panels\":[{\"kind\":\"paper\"}]") != std::string::npos);
     CHECK(bare.find("\"product\":{}") != std::string::npos);
     CHECK_EQ(run.line("attach printer test-printer"), std::string("done\n"));
     const std::string after = run.line("state control-state");

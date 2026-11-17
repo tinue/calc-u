@@ -65,11 +65,9 @@ struct OpResult {
 struct SharpAppPartOptions {
     bool canMountHostFolder = true;
     // The harness (LIB-11 D-6): typing in emulated time, no serial port file
-    // unless asked for (requestSerialLink; C1600-5 AC-9), and its own folder
-    // for screenshots (LIB-11 AC-8); empty: the save folder.
+    // unless asked for (requestSerialLink; C1600-5 AC-9).
     calcu::sessions::Hosting hosting = calcu::sessions::Hosting::Paced;
     bool serialLinksOnRequest = false;
-    std::function<std::optional<std::string>()> screenshotFolder;
 };
 
 // ── SharpAppPart: Calc-U-1600's app layer in the library's app session ───
@@ -91,13 +89,11 @@ struct SharpAppPartOptions {
 // - the product's commands that need its own data, each one
 //   MachineControl::change (LIB-18 D-22):
 //   `c1600.mount-host-drive`, `c1600.ce1600p-rom` (SharpTopics.hpp);
-// - the product's topics (`c1600.lamps`, `c1600.serial-links`) and
-//   LIB-12's `roms-missing`;
-// - LIB-4's ControlPart (controlPart()), which the session builders put
-//   first (LIB-4 D-13), not among sessionParts().
+// - the product's topics (`c1600.lamps`, `c1600.serial-links`).
 //
-// The host builds it, hands the control part and sessionParts() to its
-// AppSessionSetup (and the part to AppSessionSetup::owned), then sends
+// The host builds it, hands sessionParts() (every part, LIB-4's ControlPart
+// first, its own among them) to its AppSessionSetup (and the part to
+// AppSessionSetup::owned), then sends
 // `start`. Single-threaded: on
 // the session's thread.
 class SharpAppPart final : public calcu::sessions::SessionPart {
@@ -107,13 +103,17 @@ public:
     SharpAppPart(const SharpAppPart&) = delete;
     SharpAppPart& operator=(const SharpAppPart&) = delete;
 
-    std::vector<calcu::sessions::SessionPart*> sessionParts();
+    // Every part of the session in the one order (parts::LibraryParts): the
+    // control part, the host's `host`, the library's with the loaders before
+    // the open part, the DAP server and this part, then the host's `after`.
+    std::vector<calcu::sessions::SessionPart*> sessionParts(std::vector<calcu::sessions::SessionPart*> host = {},
+                                                            std::vector<calcu::sessions::SessionPart*> after = {});
 
     Settings& settings() { return m_settings; }
     AppPaths& paths() { return m_paths; }
     // LIB-7: the media (modules, disks, tapes): the topic `media`, the
     // commands `media.*`, autosave (app/SharpMediaKinds for the formats).
-    calcu::media::MediaPart& mediaPart() { return *m_lib.media(); }
+    calcu::media::MediaPart& mediaPart() { return m_lib.media(); }
     SharpLoaderPart& loaderPart() { return m_loaderPart; }
     // LIB-13: `open`, `open-would-take`; a Web host sets its upload folder
     // (setup().uploadFolder) before the session is built.
@@ -121,15 +121,15 @@ public:
     // The typing part (LIB-5): frontends send its commands (host-key-down,
     // screen-key-down, paste, ...); the debugger's auto-start types its line
     // through the engine directly (not a user key, so not dropped while busy).
-    calcu::typing::TypingPart& typingPart() { return *m_lib.typing(); }
+    calcu::typing::TypingPart& typingPart() { return m_lib.typing(); }
     // The papers of the two plotters (LIB-8): kept from the start of the
     // session to its end, whatever machine runs.
-    calcu::paper::PaperPart& paperPart() { return *m_lib.paper(); }
+    calcu::paper::PaperPart& paperPart() { return m_lib.paper(); }
     // The library's debugger (LIB-10): the run control, the trace session,
     // the topics run-state and trace. The DAP's layer (app/dap/) works on it.
-    calcu::debugger::DebuggerPart& debuggerPart() { return *m_lib.debugger(); }
+    calcu::debugger::DebuggerPart& debuggerPart() { return m_lib.debugger(); }
     // LIB-6: the preset loader (load-preset, check-preset, preset-list).
-    calcu::presets::PresetsPart& presetsPart() { return *m_lib.presets(); }
+    calcu::presets::PresetsPart& presetsPart() { return m_lib.presets(); }
     const calcu::presets::PresetBundle& presetBundle() const { return m_bundle; }
     SharpPresetRules& presetRules() { return m_rules; }
     // C1600-3: the DAP server (app/dap/DapPart); nullptr in a Web build,
@@ -147,8 +147,6 @@ public:
     std::string requestSerialLink(const std::string& fileName);
     bool serialLinked(const std::string& fileName) const;
 
-    // LIB-4: the library's control part with the product's rules (D-13).
-    calcu::control::ControlPart& controlPart() { return m_lib.controlPart(); }
     // The place host-drive can be used (AC-18, D-12): not in a browser.
     bool canMountHostFolder() const { return m_options.canMountHostFolder; }
 
@@ -169,8 +167,9 @@ public:
     std::string ce1600pVariant() const;
     double clockHz() const;
     const calcu::machine::Catalogue& catalogue() const { return m_catalogue; }
-    const std::shared_ptr<const calcu::roms::RomSet>& romSet() const { return m_roms; }
-    const calcu::roms::RomsMissing& romsMissing() const { return m_romsMissing; }
+    const std::shared_ptr<const calcu::roms::RomSet>& romSet() const { return m_found.set; }
+    // The one lookup at the start (LIB-12).
+    const calcu::roms::LookupResult& romLookup() const { return m_found; }
 
     // The LCD as text and as a screen image, from a display output of the
     // `display` topic (the machine supplies the font and the cursor RAM).
@@ -230,8 +229,6 @@ private:
     // The one lookup, at the start (LIB-12 AC-4, AC-13): the whole full set
     // or nothing. The host drive's ROM is bundled beside it (roms.md Q-1).
     calcu::roms::LookupResult m_found;
-    std::shared_ptr<const calcu::roms::RomSet> m_roms;
-    calcu::roms::RomsMissing m_romsMissing;
     std::shared_ptr<const std::vector<std::uint8_t>> m_hostDriveRom;
     // The catalogue with the module definitions (the bundled ones and the
     // set's CE-502B; LIB-12 AC-14).
@@ -251,7 +248,7 @@ private:
     SharpControlRules m_controlRules;
     calcu::parts::LibraryParts m_lib;
     // C1600-2: the loaders' commands (app/SharpLoaderPart).
-    SharpLoaderPart m_loaderPart{*m_lib.typing()};
+    SharpLoaderPart m_loaderPart{m_lib.typing()};
     // C1600-3: the DAP server, after the debugger among the parts; not in
     // an Emscripten build.
     std::shared_ptr<dap::DapPart> m_dap;   // shared: no complete type where Emscripten leaves it out
@@ -259,7 +256,6 @@ private:
     // The topics (attach).
     calcu::sessions::StateTopic* m_lampsTopic = nullptr;
     calcu::sessions::StateTopic* m_serialTopic = nullptr;
-    calcu::sessions::StateTopic* m_romsMissingTopic = nullptr;
     std::uint64_t m_serialMoves = 0;
 };
 

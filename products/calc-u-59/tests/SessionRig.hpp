@@ -29,17 +29,30 @@ namespace testroms {
 
 namespace fs = std::filesystem;
 
+/// The host's places of a rig (LIB-9, FrontendKind::Given): the save folder,
+/// the screenshots in it, the traces in `traces` (empty: none, the Web's
+/// hand-over, LIB-10 AC-26). The limit is the settings' (50 MiB by default).
+inline std::unique_ptr<calcu::settings::Paths> rigPaths(const calcu::settings::SettingsFile& settings,
+                                                        const std::string& save, const std::string& traces) {
+    calcu::settings::HostDirs dirs;
+    dirs.frontend = calcu::settings::FrontendKind::Given;
+    dirs.saveFolder = save;
+    dirs.traceFolder = traces;
+    dirs.screenshotFolder = save;
+    return std::make_unique<calcu::settings::Paths>(settings, dirs);
+}
+
 /// What a frontend hands the part (C59-5 D-12): the ROM set, the cue cards,
 /// the settings (`[startup] model`: `model`, LIB-18 AC-17), the bundled
-/// examples, the save folder and the traces in `folder`.
-inline cu59::TIAppSetup appSetup(calcu::settings::SettingsFile& settings, cu59::Model model, const fs::path& folder) {
+/// examples and the places (`paths`: rigPaths of the save folder).
+inline cu59::TIAppSetup appSetup(calcu::settings::SettingsFile& settings, cu59::Model model,
+                                 const calcu::settings::Paths& paths) {
     cu59::TIAppSetup s;
-    s.roms = romSet();
+    s.roms.set = romSet();
     settings.set("startup", "model", cu59::modelId(model).value);
     s.settings = &settings;
+    s.paths = &paths;
     s.examplesFolder = "examples";
-    s.saveFolder = folder.string();
-    s.trace = {folder, 50'000'000};   // the apps' default limit (50 MiB for the library's trace session)
     return s;
 }
 
@@ -70,7 +83,7 @@ struct RigOptions {
     std::string saveFolder;                              ///< empty: the rig's folder
     fs::path traceFolder;                                ///< empty: the rig's folder
     bool noTraceFolder = false;                          ///< the Web: none, traces handed over (LIB-10 AC-26)
-    std::uint64_t traceMaxBytes = 0;                     ///< 0: the apps' default
+    int traceMaxMb = 0;                                  ///< [trace] max-file-size-mb; 0: the default
     calcu::settings::SettingsFile* settings = nullptr;   ///< null: the rig's own (defaults, in memory)
     std::string examplesFolder;                          ///< empty: examples/
     bool start = true;                                   ///< makeAppSession sends LIB-18's start (the Web's page sends its own)
@@ -82,16 +95,18 @@ struct SessionRig {
     calcu::pacing::WallTime now{std::chrono::hours(1)};
     calcu::settings::SettingsFile settings = calcu::settings::SettingsFile::defaultsOnly(cu59::settings::settingsDecl());
     calcu::sessions::test::TestFrontend fe;
+    std::unique_ptr<calcu::settings::Paths> paths;
     calcu::sessions::ProductSession<cu59::TIAppPart> app;
     calcu::sessions::ListenerId me = 0;
 
     explicit SessionRig(RigOptions o) {
-        cu59::TIAppSetup s = appSetup(o.settings ? *o.settings : settings, o.model, folder.path());
+        calcu::settings::SettingsFile& file = o.settings ? *o.settings : settings;
+        if (o.traceMaxMb) file.set("trace", "max-file-size-mb", std::to_string(o.traceMaxMb));
+        const std::string traces = o.noTraceFolder ? std::string()
+                                   : !o.traceFolder.empty() ? o.traceFolder.string() : folder.path().string();
+        paths = rigPaths(file, o.saveFolder.empty() ? folder.path().string() : o.saveFolder, traces);
+        cu59::TIAppSetup s = appSetup(file, o.model, *paths);
         if (!o.examplesFolder.empty()) s.examplesFolder = o.examplesFolder;
-        if (!o.saveFolder.empty()) s.saveFolder = o.saveFolder;
-        if (!o.traceFolder.empty()) s.trace.dir = o.traceFolder;
-        if (o.noTraceFolder) s.trace.dir.clear();
-        if (o.traceMaxBytes) s.trace.maxBytes = o.traceMaxBytes;
         s.fileIO = std::move(o.fileIO);
         app = cu59::makeAppSession(std::move(s), [this] { return now += std::chrono::milliseconds(1); }, 59u,
                                    std::move(o.before), std::move(o.after), o.start);
@@ -200,7 +215,7 @@ struct SessionRig {
     }
     /// The PC-100C's paper as the PaperPart keeps it (LIB-8; empty paper: none).
     const calcu::paper::Paper* pc100cPaper() const {
-        for (const auto& [owner, paper] : app.part->paperPart()->papers())
+        for (const auto& [owner, paper] : app.part->paperPart().papers())
             if (owner == "PC-100C") return paper;
         return nullptr;
     }

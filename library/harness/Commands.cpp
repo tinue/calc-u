@@ -1,7 +1,17 @@
 #include "harness/Commands.hpp"
 #include "harness/Protocol.hpp"
+#include <sstream>
 
 namespace calcu::harness {
+
+std::vector<std::string> words(const std::string& text) {
+    std::vector<std::string> out;
+    std::istringstream in(text);
+    for (std::string w; in >> w;) out.push_back(w);
+    return out;
+}
+
+Reply fromSessionReply(const sessions::ReplyMessage& r) { return r.done ? doneReply() : refusedReply(r.reason); }
 
 void CommandRegistry::add(std::string name, Handler h, std::string usage) {
     usage_.push_back(usage);

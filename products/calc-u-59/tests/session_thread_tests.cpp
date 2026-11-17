@@ -255,7 +255,9 @@ TEST(c59_5_ac8_continue_calls_again_and_session_got_continue) {
 TEST(c59_5_ac4_ti59_on_the_session_thread) {
     calcu::testing::TempFolder folder;
     static calcu::settings::SettingsFile settings = calcu::settings::SettingsFile::defaultsOnly(settings::settingsDecl());
-    const TIAppSetup setup = testroms::appSetup(settings, Model::TI59, folder.path());
+    static std::unique_ptr<calcu::settings::Paths> paths;
+    paths = testroms::rigPaths(settings, folder.path().string(), folder.path().string());
+    const TIAppSetup setup = testroms::appSetup(settings, Model::TI59, *paths);
     std::atomic<std::uint64_t> ticks{0};
     auto t = std::make_unique<SessionThread>(
         [setup] { return makeAppSession(setup, steadyWallTime).session; },

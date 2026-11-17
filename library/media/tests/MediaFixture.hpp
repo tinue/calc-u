@@ -100,7 +100,7 @@ public:
             o.settingsIni.empty() ? settings::SettingsFile::defaultsOnly(startup::test::testDecl())
                                   : settings::SettingsFile::open(startup::test::testDecl(), o.settingsIni));
         settings::HostDirs dirs;
-        dirs.frontend = settings::FrontendKind::Swift;   // the save folder as passed (LIB-9 AC-14)
+        dirs.frontend = settings::FrontendKind::Given;   // the save folder as passed (LIB-9 AC-18)
         dirs.home = saveRoot / "home";
         dirs.settingsBase = saveRoot / "settings";
         dirs.saveFolder = saveFolder;

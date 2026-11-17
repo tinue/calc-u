@@ -8,7 +8,7 @@
 #include "paper/PaperPart.hpp"
 #include "peripherals/PeripheralsPart.hpp"
 #include "presets/PresetsPart.hpp"
-#include "roms/RomSet.hpp"
+#include "roms/Lookup.hpp"
 #include "sessions/SessionPart.hpp"
 #include "settings/Paths.hpp"
 #include "settings/SettingsFile.hpp"
@@ -25,57 +25,63 @@
 #include <vector>
 
 // The library's session parts of a product's app session, built and wired
-// in one place (docs/reviews/d-simplification.md, P-2): every app layer
-// (Calc-U-1600's SharpAppPart, Calc-U-59's from Part E), the harness's
-// products and the library's test rigs get them from here instead of
-// putting them together themselves.
+// in one place (docs/reviews/d-simplification.md, P-2; Part E, E-1): every
+// app layer (Calc-U-1600's SharpAppPart, Calc-U-59's TIAppPart), the
+// harness's products and the library's test rigs get them from here instead
+// of putting them together themselves.
 //
 // What it wires: LIB-18's machine control is made first and handed to every
 // part that builds or reads a build (presets, startup, paper, media); the
 // steps of paper, debugger and media go into LIB-6's vocabulary; LIB-13's
-// `open` takes the presets and media parts it has. A part the product has no
-// data for is not made (no typing product, no preset rules, no printers, no
-// debugger, no kinds of medium).
+// `open` takes the presets and media parts. Every part is made: a product
+// without printers has an inert PaperPart, one without kinds of medium an
+// inert MediaPart. The host passes its LIB-9 places (`paths`) and LIB-12's
+// lookup (`roms`); from them come the trace folder and limit of the
+// debugger (LIB-10), the folder for screenshots (LIB-6 AC-25), the save and
+// tape folders of the media (LIB-7), `~/` of a preset, and LIB-12's topic
+// `roms-missing` (StartupPart publishes it).
 //
 // The order of the parts in the session (their designs' rules, in one
-// place): LIB-4's ControlPart first, before the host's own parts (LIB-4
-// D-13; controlPart()); then sessionParts(): LIB-5's TypingPart, LIB-2's
-// PeripheralsPart before StartupPart (the clocks at a build, LIB-18 §3.5),
-// LIB-6's PresetsPart before StartupPart (LIB-6 §3.8), StartupPart, LIB-7's
+// place; sessionParts()): LIB-4's ControlPart first, before the host's own
+// parts (LIB-4 D-13); then LIB-5's TypingPart, LIB-2's PeripheralsPart
+// before StartupPart (the clocks at a build, LIB-18 §3.5), LIB-6's
+// PresetsPart before StartupPart (LIB-6 §3.8), StartupPart, LIB-7's
 // MediaPart after it (LIB-7 §3.7), the product's parts the file kinds use,
-// LIB-13's OpenPart after them, LIB-8's PaperPart, LIB-10's DebuggerPart; the
-// product's own parts follow. Single-threaded, on the session's thread.
+// LIB-13's OpenPart after them, LIB-8's PaperPart, LIB-10's DebuggerPart;
+// then the product's own parts and the host's parts behind them.
+// Single-threaded, on the session's thread.
 
 namespace calcu::parts {
 
 struct LibraryPartsSetup {
-    // Always: the product's catalogue, machines (LIB-18) and settings (LIB-9).
-    const machine::Catalogue* catalogue = nullptr;
+    // Always: the product's machines (LIB-18; their catalogue is the
+    // session's), settings and places (LIB-9; both outlive the parts) and the
+    // ROM lookup (LIB-12: without the full set the start is refused, AC-5).
     startup::ProductMachines* machines = nullptr;
     settings::SettingsFile* settings = nullptr;
-    // LIB-12: the full ROM set; without it the start is refused with
-    // `romsMissing` (AC-5).
-    std::shared_ptr<const roms::RomSet> roms;
-    std::string romsMissing;
+    const settings::Paths* paths = nullptr;
+    roms::LookupResult roms;
+    // Whether the trace folder can be used now (the Swift frontend's iCloud,
+    // C59-4 AC-12); null: always.
+    std::function<bool()> traceAvailable;
 
-    // LIB-5: the product's typing; none: no TypingPart.
+    // LIB-5: the product's typing.
     const typing::TypingProduct* typing = nullptr;
     sessions::Hosting hosting = sessions::Hosting::Paced;
     // LIB-2: which serial port gets a serial port file, and their folder.
     peripherals::HostLinkRules hostLinks;
     std::optional<std::string> serialLinkFolder;
-    // LIB-6: the product's preset rules; none: no PresetsPart (and no steps).
+    // LIB-6: the product's preset rules and bundled presets.
     presets::ProductRules* presetRules = nullptr;
     const presets::PresetBundle* bundle = nullptr;
-    std::string home;                                                // `~/`
-    std::function<std::optional<std::string>()> screenshotFolder;   // AC-25
-    // LIB-8: the papers of the product's printers; none: no PaperPart.
+    // LIB-8: the papers of the product's printers; LIB-4: these printers may
+    // own the paper panel.
     std::vector<paper::PrinterPaper> papers;
-    // LIB-10: the product's debugger; none: no DebuggerPart.
-    std::optional<debugger::DebuggerSetup> debugger;
-    // LIB-7: the product's kinds of medium; none: no MediaPart.
+    // LIB-10: the product's debugger; its trace folder and limit come from
+    // `paths` and `settings` ([trace] max-file-size-mb).
+    debugger::DebuggerSetup debugger;
+    // LIB-7: the product's kinds of medium.
     std::vector<media::KindDecl> mediaKinds;
-    const settings::Paths* mediaPaths = nullptr;   // the save folder and the tape folder
     media::ModuleListing moduleListing;
     std::shared_ptr<const media::FileAccess> mediaFiles;   // null: plain (D-30)
     // LIB-13: `open` (the product's name for its sentences, preset
@@ -84,9 +90,16 @@ struct LibraryPartsSetup {
     std::vector<std::string> presetExtensions;
     std::vector<opening::FileKind*> fileKinds;
     std::map<opening::Way, std::uint64_t> openLimits;
-    // LIB-4: the printers that may own the paper panel and the product's rules.
-    std::vector<machine::PeripheralId> printers;
+    // LIB-4: the product's rules.
     std::vector<const control::ControlRules*> controlRules;
+};
+
+// The parts of others, in their places of the session's order (above).
+struct SessionSlots {
+    std::vector<sessions::SessionPart*> host;        // the host's own, after ControlPart
+    std::vector<sessions::SessionPart*> fileKinds;   // the product's parts its file kinds use, before OpenPart
+    std::vector<sessions::SessionPart*> product;     // the product's own, after DebuggerPart
+    std::vector<sessions::SessionPart*> after;       // the host's, behind the product's
 };
 
 class LibraryParts {
@@ -96,10 +109,8 @@ public:
     LibraryParts(const LibraryParts&) = delete;
     LibraryParts& operator=(const LibraryParts&) = delete;
 
-    // The parts in the session's order (above), `fileKindParts` (the
-    // product's parts its file kinds use) before OpenPart; ControlPart not
-    // among them.
-    std::vector<sessions::SessionPart*> sessionParts(const std::vector<sessions::SessionPart*>& fileKindParts = {});
+    // Every part of the session in its order (above), ControlPart first.
+    std::vector<sessions::SessionPart*> sessionParts(const SessionSlots&);
     control::ControlPart& controlPart() { return *control_; }
 
     startup::MachineControl& control() { return machineControl_; }
@@ -107,15 +118,20 @@ public:
     peripherals::PeripheralsPart& peripherals() { return *peripherals_; }
     const peripherals::PeripheralsPart& peripherals() const { return *peripherals_; }
     opening::OpenPart& open() { return *open_; }
-    // Null where the product has none (above).
-    typing::TypingPart* typing() { return typing_.get(); }
-    presets::PresetsPart* presets() { return presets_.get(); }
-    paper::PaperPart* paper() { return paper_.get(); }
-    debugger::DebuggerPart* debugger() { return debugger_.get(); }
-    media::MediaPart* media() { return media_.get(); }
+    typing::TypingPart& typing() { return *typing_; }
+    const typing::TypingPart& typing() const { return *typing_; }
+    presets::PresetsPart& presets() { return *presets_; }
+    const presets::PresetsPart& presets() const { return *presets_; }
+    paper::PaperPart& paper() { return *paper_; }
+    const paper::PaperPart& paper() const { return *paper_; }
+    debugger::DebuggerPart& debugger() { return *debugger_; }
+    const debugger::DebuggerPart& debugger() const { return *debugger_; }
+    media::MediaPart& media() { return *media_; }
+    const media::MediaPart& media() const { return *media_; }
 
-    const machine::Catalogue& catalogue() const { return *setup_.catalogue; }
+    const machine::Catalogue& catalogue() const { return setup_.machines->catalogue(); }
     settings::SettingsFile& settings() { return *setup_.settings; }
+    const settings::Paths& paths() const { return *setup_.paths; }
     const presets::PresetBundle* bundle() const { return setup_.bundle; }
 
 private:

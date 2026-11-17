@@ -73,7 +73,7 @@ TEST(lib13_ac11_one_medium_magnetic_card) {
     // the product (C59-7 AC-4).
     SessionRig r;
     CHECK(ready(r));
-    const auto* media = r.part().mediaPart();
+    const auto* media = &r.part().mediaPart();
     CHECK(media && media->kinds().size() == 1 && media->kinds()[0].id == "magnetic-card");
     CHECK(media && media->shelf().kindOfFile("x.magnetcard.yaml") && !media->shelf().kindOfFile("x.u59") &&
           !media->shelf().kindOfFile("x.bin"));
@@ -143,7 +143,7 @@ TEST(lib13_ac23_partition_registers_other_steps_stay) {
     CHECK_EQ(int(pm.readStep(10)), 42);
     CHECK(pm.readRegister(3) == v);
     // D-23: also into a paused machine, which stays paused.
-    auto& rc = r.part().debuggerPart()->runControl();
+    auto& rc = r.part().debuggerPart().runControl();
     rc.pause(calcu::debugger::kCpu);
     CHECK(r.until([&] { return r.part().isFrozen(); }, 2s));
     const std::string other =

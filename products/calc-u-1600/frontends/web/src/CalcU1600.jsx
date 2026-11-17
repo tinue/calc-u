@@ -146,9 +146,19 @@ const C1600_PANELS = { paper: () => null };
 // the product's yet.
 const C1600_NO_PRODUCT = { name: "Calc-U-1600", items: [], variantLabels: {}, moduleSlotPinOuts: [], placesWithoutControl: [] };
 
+// The props (LIB-15 AC-16, AC-24, AC-29): the shared ones of embedProps
+// (width, keyboard, layout, preset, height, model, workerUrl). One layout:
+// `layout` takes "auto" only (the default); another value is ignored with a
+// console warning.
+const C1600_LAYOUTS = ["auto"];
+
 function CalcU1600(props) {
   const embedded = embedProps(props);
-  const { width, height, keyboard } = embedded;
+  const { width, height, keyboard, layout } = embedded;
+  React.useEffect(() => {
+    if (layout !== undefined && !C1600_LAYOUTS.includes(layout))
+      console.warn(`CalcU1600: layout ${JSON.stringify(layout)} is not one of its layouts ("auto"); it is ignored.`);
+  }, [layout]);
   // ?model= takes the model's index or its name; ?preset= a path under presets/.
   const modelProp = embedded.model === undefined || embedded.model === null || embedded.model === "" ? ""
     : Number.isInteger(Number(embedded.model)) ? (MODEL_IDS[Number(embedded.model)] || "") : String(embedded.model);

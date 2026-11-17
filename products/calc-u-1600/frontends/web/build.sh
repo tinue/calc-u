@@ -8,7 +8,18 @@
 #
 # Needs emcmake/cmake (Homebrew `emscripten` or an activated emsdk; CI pins
 # the version), ninja, node, and ROMs in roms/ (roms/fetch_roms.sh).
+# --release: without the test-only commands (the CMake option
+# CALCU_WEB_TEST_AIDS off in build/web; LIB-15 AC-29), as the release's zip
+# is built; without it the test build the Playwright tests drive. Switching
+# compiles only the files the option changes again.
 set -euo pipefail
+AIDS=ON
+for arg in "$@"; do
+  case "$arg" in
+    --release) AIDS=OFF ;;
+    *) echo "usage: $0 [--release]" >&2; exit 2 ;;
+  esac
+done
 
 WEB="$(cd "$(dirname "$0")" && pwd)"
 REPO="$(cd "$WEB/../.." && pwd)"  # the product directory
@@ -28,7 +39,9 @@ if ! ls "${CALCU1600_ROMS_DIR:-$REPO/roms}"/*.bin >/dev/null 2>&1; then
 fi
 
 if [ ! -f "$BUILD/CMakeCache.txt" ]; then
-  emcmake cmake -S "$ROOT" -B "$BUILD" -G Ninja -DCMAKE_BUILD_TYPE=Release >/dev/null
+  emcmake cmake -S "$ROOT" -B "$BUILD" -G Ninja -DCMAKE_BUILD_TYPE=Release -DCALCU_WEB_TEST_AIDS=$AIDS >/dev/null
+elif ! grep -qx "CALCU_WEB_TEST_AIDS:BOOL=$AIDS" "$BUILD/CMakeCache.txt"; then
+  emcmake cmake -S "$ROOT" -B "$BUILD" -DCALCU_WEB_TEST_AIDS=$AIDS >/dev/null
 fi
 cmake --build "$BUILD" --target calcu_web
 

@@ -6,7 +6,8 @@
 <title>Calc-U-1600 — web client</title>
 <!-- The web client's demo and test page: CalcU1600 with the physical
      keyboard, sized to the window (?width=, ?height= fix either; ?model=<name>
-     (PC-1500, PC-1500A, PC-1600) and ?preset=<path under presets/> start with them). Every path is
+     (PC-1500, PC-1500A, PC-1600) and ?preset=<path under presets/> start with them; ?layout=
+     is handed on, "auto" the only one). Every path is
      relative, like the rest of dist/ (docs/developer/Web-Client.md). -->
 <link rel="stylesheet" href="calc.css">
 <style>
@@ -34,6 +35,7 @@
   function render() {
     reactRoot.render(React.createElement(CalcU1600, {
       keyboard: true,
+      layout: q.get("layout") || undefined,
       width: num("width") || Math.floor(root.clientWidth),
       height: num("height") || Math.floor(root.clientHeight),
       model: q.get("model") || undefined,

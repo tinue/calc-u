@@ -168,8 +168,9 @@ Embedding interface
 
 ### Calc-U-59
 - [ ] **AC-19** — Given the Web frontend of Calc-U-59, then its
-  component is `PlayCalculator`, with the props of AC-16 and its own:
-  `layout` (`portrait`, `wide`, `auto`) and `settings` (whether the
+  component is `CalcU59` (`PlayCalculator` until release prep 4, AC-29),
+  with the props of AC-16 and AC-29 (`layout`: `portrait`, `wide`,
+  `auto`) and its own `settings` (whether the
   settings control is shown) (`Web/src/PlayCalculator.jsx:179-189`,
   `reference/WebClient.md:146-156`). The prop `module` of today goes; a
   host page that wants another module names a preset (OQ-2).
@@ -198,7 +199,7 @@ Embedding interface
 
 ### Calc-U-1600
 - [ ] **AC-24** — Given the Web frontend of Calc-U-1600, then its
-  component is `CalcU1600`, with the props of AC-16
+  component is `CalcU1600`, with the props of AC-16 (and AC-29)
   (`Web/src/CalcU1600.jsx:60`, `docs/developer/Web-Client.md:71-77`).
 - [ ] **AC-25** — Given the Web frontend of Calc-U-1600, then its
   settings are in `Calc-U-1600.ini` in the persistent file system (LIB-9
@@ -220,6 +221,21 @@ Embedding interface
   notice; the installed app starts with the server gone; the component
   renders on a server (`Web/tests/play.spec.js:44, 236, 329, 337`,
   `Web/tests/offline.spec.js:40`, `Web/tests/prerender.spec.js:32`).
+
+### The family (release prep 4)
+- [ ] **AC-29** — Given the component of either product, then it is
+  `CalcU59` or `CalcU1600`, and the props AC-16 shares are, in this
+  order, `width`, `keyboard`, `layout`, `preset`, then `height`, `model`,
+  `workerUrl`, then the product's own; `layout` is shared: Calc-U-59 takes
+  `portrait` (its default), `wide` and `auto`, Calc-U-1600 has one layout
+  and takes `auto` only (its default), and another value is ignored with a
+  console warning. Given a release build of a Web frontend (each
+  product's `frontends/web/build.sh --release`, the CMake option
+  `CALCU_WEB_TEST_AIDS` off; the release's Web zip), then its session
+  answers no test-only command: not Calc-U-1600's `c1600.upload` and
+  `c1600.display-text` (a test build keeps them for the Playwright tests),
+  and Calc-U-59's `c59.web.key-button-down`/`-up` are gone (`frontend.md`
+  FE-7 as amended 2026-11-17; ledger 59-60, 1600-52).
 
 ## Edge Cases
 - **EC-1** — Given a page served over plain HTTP, or a browser without a
@@ -298,3 +314,4 @@ Embedding interface
 | The installed app without the server also loads a bundled example (AC-23) | user, 2026-11-13 (B-23 of `docs/walkthroughs/presets.md` §5.2); today's Playwright test checks it | 2026-11-13 |
 | `preset` and `?preset=` take a bundled preset's path inside the bundle; an unlisted path is refused with a notice (AC-16) | user, 2026-11-13 (B-27 (c) of `docs/walkthroughs/presets.md` §5.2); a name tag can repeat across models and change, a path stays stable for links | 2026-11-13 |
 | Aligned with `docs/formats/` after the Q&A round: `ti58c.memory.yaml` | user rulings of 2026-11-13 (`docs/walkthroughs/presets.md` §5.2, §5.4); `docs/formats/` | 2026-11-13 |
+| Components `CalcU59` (was `PlayCalculator`) and `CalcU1600`; the shared props in the order `width`, `keyboard`, `layout`, `preset`, then `height`, `model`, `workerUrl`, then the product's own; `layout` becomes shared (Calc-U-1600: `auto` only, another value ignored with a console warning); test-only commands not in a release build's handle: `c59.web.key-button-*` deleted, `c1600.upload` and `c1600.display-text` only with the CMake option `CALCU_WEB_TEST_AIDS` (default ON; `build.sh --release` and the release packaging OFF); AC-29 (new), AC-19 amended | user, 2026-11-17 (Q-6 of `docs/reviews/e-simplification.md` §10, the `PlayCalculator` bullet); `docs/reviews/release-prep-plan.md` §4 (the option, the order, `layout` decided there); `frontend.md` FE-7 amended | 2026-11-17 |

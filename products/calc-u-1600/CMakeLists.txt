@@ -248,6 +248,10 @@ if(CALCU_TESTS)
   # ROM folder without one file names it and starts no calculator.
   if(NOT WIN32)
     calcu_add_test(CalcU1600RomMissingBuild longer COMMAND sh tests/rom_missing_build.sh PROPERTIES RUN_SERIAL TRUE)
+    # LIB-15 AC-29 (release prep 4): a release Web dist/ (build.sh --release)
+    # has no c1600.upload and no c1600.display-text; CI checks the dist/ it
+    # zips the same way.
+    calcu_add_test(CalcU1600WebNoTestAids longer COMMAND sh tests/web_no_test_aids.sh PROPERTIES RUN_SERIAL TRUE)
   endif()
   if(TARGET CalcU1600Qt)
     # The screenshot scenarios (one per help chapter) run as checks: every

@@ -106,8 +106,10 @@ jobs:
   # threads, no blocking) -- keeps the frontend-neutral layers portable to
   # a web GUI. Both build in build/web of the root CMake project (ADR 0003).
   # Then the web client itself (frontends/web/build.sh), its Playwright
-  # tests in Chromium and WebKit (frontends/web/run-tests.sh), and dist/ zipped as the
-  # Calc-U-1600-web artifact (release.yaml attaches it). libsharpdx-wasm.a
+  # tests in Chromium and WebKit (frontends/web/run-tests.sh), then dist/
+  # built again with --release (without c1600.upload and c1600.display-text,
+  # LIB-15 AC-29; only SharpWebPart.cpp is compiled again), checked, and
+  # zipped as the Calc-U-1600-web artifact (release.yaml attaches it). libsharpdx-wasm.a
   # is committed (tools/build_sharpdx_wasm.sh), so no Rust toolchain is
   # needed here. Same Emscripten as it was built with: Rust's
   # wasm32-unknown-emscripten std uses native wasm exceptions.
@@ -162,6 +164,12 @@ jobs:
           npm ci --no-audit --no-fund
           npx playwright install --with-deps chromium webkit
           tests/run-tests.sh --reporter=line
+
+      - name: Build the release web client
+        shell: bash
+        run: |
+          frontends/web/build.sh --release
+          tests/web_no_test_aids.sh frontends/web/dist
 
       - name: Package the web client
         shell: bash

@@ -31,18 +31,18 @@ const request = (page, name, args) =>
   page.evaluate(([n, a]) => document.querySelector('.calcu-client').calcuShell.request(n, a).then((r) => r.value), [name, args || null]);
 const el = (page, name) => page.locator(`[data-calcu="${name}"]`);
 
-test('ac19 PlayCalculator props, layout and settings, no module', async ({ page }) => {
+test('ac19 CalcU59 props, layout and settings, no module', async ({ page }) => {
   // model by its name (AC-16).
   await gotoReady(page, 'layout=wide&model=TI-58C');
   await expect(el(page, 'bar-model')).toHaveValue('2');
-  // A second PlayCalculator without keyboard, with 2.3.0's module prop and
+  // A second CalcU59 without keyboard, with 2.3.0's module prop and
   // settings off: keyboard is on by default, module is not read.
   await page.evaluate(() => {
     const div = document.createElement('div');
     div.id = 'second';
     div.style.width = '400px';
     document.body.appendChild(div);
-    ReactDOM.createRoot(div).render(React.createElement(PlayCalculator,
+    ReactDOM.createRoot(div).render(React.createElement(CalcU59,
       { layout: 'portrait', width: 360, height: 640, module: 'ST', settings: false }));
   });
   const second = page.locator('#second .calcu-client');
@@ -64,6 +64,16 @@ test('ac19 PlayCalculator props, layout and settings, no module', async ({ page 
     const plugged = slot && slot.fitting.find((f) => f.plugged);
     return plugged ? plugged.id : '';
   })).toBe('ML');
+});
+
+// LIB-15 AC-29 (release prep 4): the component is CalcU59, the one global
+// of calc.js; 2.3.0's PlayCalculator is gone (ledger 59-60). The shared
+// props are AC-16's with layout among them; `portraitWidth` moved along.
+test('ac29 CalcU59 is the component, PlayCalculator is gone', async ({ page }) => {
+  await gotoReady(page, 'layout=portrait');
+  expect(await page.evaluate(() => [typeof window.CalcU59, typeof window.PlayCalculator,
+    typeof (window.CalcU59 && window.CalcU59.portraitWidth)])).toEqual(['function', 'undefined', 'function']);
+  await expect(page.locator('.calcu-client')).toHaveAttribute('data-layout', 'portrait');
 });
 
 // LIB-15 AC-16 (LIB-6 §11.6 P11): the `preset` prop is a path of

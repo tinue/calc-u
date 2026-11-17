@@ -39,7 +39,8 @@ build:
       - { artifact: Calc-U-1600-mac-aarch64,    file: Calc-U-1600.dmg,          as: Calc-U-1600-mac-aarch64.dmg }
       - { artifact: Calc-U-1600-windows-x86_64, file: Calc-U-1600-Setup.exe,    as: Calc-U-1600-windows-x86_64.exe }
       - { artifact: Calc-U-1600-windows-arm64,  file: Calc-U-1600-Setup-arm64.exe, as: Calc-U-1600-windows-arm64.exe }
-      # The web client's dist/ (frontends/web/build.sh): embed it in a page or install it as an app.
+      # The web client's dist/ (frontends/web/build.sh --release: without the
+      # test-only commands, LIB-15 AC-29): embed it in a page or install it as an app.
       - { artifact: Calc-U-1600-web,            file: "Calc-U-1600-web-*.zip",  as: Calc-U-1600-web.zip }
       # The help (LIB-16): the Markdown chapters, their pictures and toc.json
       # (tools/help build calc-u-1600); calc-u.org/1600/ renders it.

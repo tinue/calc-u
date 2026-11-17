@@ -60,6 +60,7 @@ if(CALCU_TESTS)
                    COMMAND ${CALCU_NODE} --test ${CMAKE_CURRENT_SOURCE_DIR}/tests/build.test.js
                            ${CMAKE_CURRENT_SOURCE_DIR}/tests/shell_model.test.js    # LIB-14: the shell's models
                            ${CMAKE_CURRENT_SOURCE_DIR}/tests/host_keys.test.js      # LIB-5: host keys
+                           ${CMAKE_CURRENT_SOURCE_DIR}/tests/embed_props.test.js    # LIB-15 AC-29: the shared props
                    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
   endif()
   if(NOT WIN32)

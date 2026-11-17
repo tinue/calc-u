@@ -65,9 +65,15 @@ the service worker's precache list and writes `MANIFEST.json`; the version
 is the one `release.yaml` names (the Qt app's `APP_VERSION`, as ReleaseIt
 and the help tool read it). `run-tests.sh` serves `dist/` with the
 library's `library/web/tools/serve.py`; the offline and prerender tests use
-`library/web/tests/dist-helpers.js`. CI's `web`
-job builds, tests and uploads `Calc-U-1600-web-<version>.zip`; a release
-attaches it as `Calc-U-1600-web.zip`.
+`library/web/tests/dist-helpers.js`. `build.sh` makes the test build (the
+CMake option `CALCU_WEB_TEST_AIDS` ON in `build/web`: the session answers
+the Web tests' `c1600.upload` and `c1600.display-text`); `build.sh
+--release` the release build, without them (the option OFF; only
+`app/SharpWebPart.cpp` is compiled again; LIB-15 AC-29). CI's `web` job
+builds the test build and tests it, then builds `--release`, checks it
+(`tests/web_no_test_aids.sh frontends/web/dist`) and uploads that one as
+`Calc-U-1600-web-<version>.zip`; a release attaches it as
+`Calc-U-1600-web.zip`.
 
 ## The `dist/` contract
 
@@ -80,11 +86,16 @@ attaches it as `Calc-U-1600-web.zip`.
 
   | Prop | Meaning |
   |---|---|
-  | `width`, `height` | The client's size in CSS pixels (default: its parent's size) |
+  | `width` | The client's width in CSS pixels (default: its parent's) |
   | `keyboard` | Take the physical keyboard while focused (default true) |
-  | `model` | A model's name (`PC-1500`, `PC-1500A`, `PC-1600`; 0-2 still taken): start with it (read once, at mount) |
+  | `layout` | `"auto"`, the only one and the default; another value is ignored with a console warning |
   | `preset` | A bundled preset to load at start, by its path in `bundle.yaml` (`plotter/lissajou-1600.pc1600`; started as `examples:<path>`) |
+  | `height` | The client's height in CSS pixels (default: its parent's) |
+  | `model` | A model's name (`PC-1500`, `PC-1500A`, `PC-1600`; 0-2 still taken): start with it (read once, at mount) |
   | `workerUrl` | Another worker entry (the app uses `app/engine-worker.js`) |
+
+  The family's shared props in their order (LIB-15 AC-16, AC-29,
+  `docs/contracts/frontend.md` FE-7); Calc-U-59's `CalcU59` takes the same.
 
 - **Prerender-safe.** Rendering has no side effects: the worker, fetches
   and listeners start in effects (`tests/prerender.spec.js`).
@@ -93,7 +104,7 @@ attaches it as `Calc-U-1600-web.zip`.
 - **Test hooks.** `.calcu-client[data-ready=true]` once the session's
   start is over; the root element's `calcuShell` is the library's shell
   (`createShell`: `send`, `request` by the session's names, e.g. the
-  request `c1600.display-text`, `ticks`); `.calcu-face[data-model=<model ID>]`
+  request `c1600.display-text` (test build only), `ticks`); `.calcu-face[data-model=<model ID>]`
   (`PC-1600`), the shell's `data-calcu` names (`menu-file`,
   `item-<id>`, `control-bar`, `bar-model`, `bar-place-<place>`,
   `settings-dialog`, `notice`, `loading`, `roms-missing`; library

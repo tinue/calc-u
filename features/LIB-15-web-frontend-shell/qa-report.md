@@ -228,3 +228,19 @@ Every criterion of the column passes: **Done**.
 | AC-20 | Pass (the cards) | `storage.spec.js` `ac20 cards survive a page load` (a card written by a program, the page reloaded, Arm Card lists it), `lib7_ac33 cards in the persistent save folder`; `web_part_tests.cpp` `lib15_ac20_cards_are_files_of_the_save_folder` (the library's media part on the persistent save folder; an upload imported) |
 
 Every criterion of the Calc-U-59 column passes: **Done**.
+
+## The family's embedding (release prep 4, 2026-11-17, branch `rp4-web-embed`)
+
+| ID | Result | Test case |
+|---|---|---|
+| AC-29 | Pass | `library/web/tests/embed_props.test.js` `lib15_ac29_shared_props_in_their_order`, `lib15_ac29_layout_has_no_library_default` (Frequent, `LibraryWebNodeTests`); Calc-U-59 `session.spec.js` `ac29 CalcU59 is the component, PlayCalculator is gone` (and `ac19`, `prerender.spec.js` on `CalcU59`); Calc-U-1600 `session.spec.js` `ac29 layout auto only, another value ignored with a warning`; `web_part_tests.cpp` `lib5_ac24_web_keys_through_the_typing_engine` (the key-button commands answer as unknown, the key grid's `screen-key-down`/`-up` press the key); `CalcU59WebNoTestAids` and `CalcU1600WebNoTestAids` on a `--release` dist/ (pass), and the Calc-U-1600 check fails on the test build's dist/ as it should |
+| AC-19 | Pass (amended) | `session.spec.js` `ac19 CalcU59 props, layout and settings, no module` |
+
+Runs: Frequent 51/51; Calc-U-59 Playwright 155 passed, 5 skipped;
+Calc-U-1600 Playwright 113 passed, 2 skipped; the library's Playwright 140
+passed, 2 skipped.
+
+Decided in the step: the two no-test-aids checks build a Web dist/
+(Emscripten), so they are Longer, not Frequent as `CalcU59NoTestAids` (a
+source grep); CI runs the same script on the dist/ it zips.
+

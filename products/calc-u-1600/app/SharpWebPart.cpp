@@ -72,7 +72,9 @@ void SharpWebPart::attach(sessions::SessionSetup& setup) {
     // `media.import`); the page sends no `c1600.upload`. It writes one file
     // into the uploads folder and replies its path; the Web tests hand a
     // preset over with it (`session.spec.js`; LIB-13, LIB-7 and C1600-2's
-    // designs keep it).
+    // designs keep it). A test aid: only with CALCU_WEB_TEST_AIDS, so a
+    // release Web build (`build.sh --release`) has none (LIB-15 AC-29).
+#ifdef CALCU_WEB_TEST_AIDS
     cmd("c1600.upload", [this](const Value& a, SessionContext&) -> CommandOutcome {
         const std::string path = m_uploadsDir + "/" + calcu::files::fromPath(calcu::files::toPath(textArg(a, "name")).filename());
         std::error_code ec;
@@ -83,6 +85,7 @@ void SharpWebPart::attach(sessions::SessionSetup& setup) {
         if (!out) return Refused{"The file could not be written: " + path};
         return result("c1600.path", Value(path));
     });
+#endif
     // Load BASIC Program / Load Machine Code: the page sends the loaders'
     // own commands (app/SharpLoaderPart, C1600-2 design §3.7).
 
@@ -117,11 +120,15 @@ void SharpWebPart::attach(sessions::SessionSetup& setup) {
                                                            {"pixels", Value(Value::Bytes(image.pixels))},
                                                            {"text", m_app.lcdText(*d, &t) ? t.plainText() : std::string()}})));
     });
+#ifdef CALCU_WEB_TEST_AIDS
+    // The display as text, for the Web tests (the harness's `display-text`);
+    // a test aid, as `c1600.upload`.
     req("c1600.display-text", [this](const Value&, SessionContext& c) {
         const calcu::machine::DisplayOutput* d = c.display();
         LcdText t;
         return sessions::replyGiven(sessions::valuePayload("c1600.display-text", Value(d && m_app.lcdText(*d, &t) ? t.text() : std::string())));
     });
+#endif
 }
 
 void SharpWebPart::afterCall(SessionContext&, calcu::pacing::WallTime) { printer(); }

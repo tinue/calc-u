@@ -110,6 +110,12 @@ if(EMSCRIPTEN)
   list(FILTER CALCU_SHARED_SOURCES EXCLUDE REGEX "/app/dap/")
 endif()
 add_library(calcu_shared STATIC ${CALCU_SHARED_SOURCES})
+# The Web page's test-only commands (library/CMakeLists.txt; LIB-15 AC-29):
+# a definition of the one file that holds them, so that switching the
+# option compiles only it again.
+if(CALCU_WEB_TEST_AIDS)
+  set_source_files_properties(${CALCU_SHARED_ROOT}/SharpWebPart.cpp PROPERTIES COMPILE_DEFINITIONS CALCU_WEB_TEST_AIDS)
+endif()
 target_include_directories(calcu_shared PUBLIC ${CALCU_ROOT})
 target_link_libraries(calcu_shared PRIVATE calcu_warnings)
 target_link_libraries(calcu_shared PUBLIC calcu_core)

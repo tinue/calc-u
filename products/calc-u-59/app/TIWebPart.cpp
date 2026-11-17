@@ -31,7 +31,6 @@ using sessions::bytesArg;
 using sessions::flagArg;
 using sessions::realArg;
 using sessions::textArg;
-using sessions::truncatedIntegerArg;
 
 namespace {
 
@@ -64,7 +63,6 @@ void TIWebPart::attach(sessions::SessionSetup& s) {
     m_display = &s.stateTopic(topics::kWebDisplay);
     m_cue = &s.stateTopic(topics::kWebCueCard);
     m_font = &s.stateTopic(topics::kWebDebugFont);
-    m_ctx = &s.context();
 
     auto cmd = [&s](const char* name, std::function<CommandOutcome(const Value&, SessionContext&)> f) {
         s.command(sessions::CommandName{name}, std::move(f));
@@ -80,14 +78,10 @@ void TIWebPart::attach(sessions::SessionSetup& s) {
     // model by its name, the preset as a bundle path `examples:<path>`;
     // LIB-18 §11.2, LIB-6 §11.2): the page sends it.
 
-    // The page's own key grid (the portrait layout's buttons): an on-screen
-    // key of the library's typing (LIB-5 AC-24). Host keys are the library's
-    // commands host-key-down / host-key-up, which the page sends itself.
-    cmd("c59.web.key-button-down", done([this](const Value& a) {
-        screenKey(static_cast<int>(truncatedIntegerArg(a, "row")) * 5 + static_cast<int>(truncatedIntegerArg(a, "col")), true,
-                  kButtonPointer);
-    }));
-    cmd("c59.web.key-button-up", done([this](const Value&) { screenKey(-1, false, kButtonPointer); }));
+    // The page's own key grid (the portrait layout's buttons) and the host
+    // keys are the library's typing commands (screen-key-down/-up,
+    // host-key-down/-up; LIB-5 AC-24), which the page sends itself; the
+    // test-only key-button commands went (release prep 4, LIB-15 AC-29).
     // The sizes the page draws at.
     cmd("c59.web.cue-card-size", done([this](const Value& a) {
         m_cardW = realArg(a, "width");
@@ -150,20 +144,6 @@ void TIWebPart::attach(sessions::SessionSetup& s) {
     });
     req("c59.led-geometry", [](const Value& a) { return answer("c59.led-geometry", webLedGeometry(realArg(a, "w"), realArg(a, "h"))); });
     req("c59.mobile-rules", [](const Value& a) { return answer("c59.mobile-rules", webMobileRules(realArg(a, "w"), realArg(a, "h"))); });
-}
-
-// An on-screen key by its index (row × 5 + column) through the typing
-// engine; a press is dropped while an operation runs (LIB-5 E11), a release
-// always passes.
-void TIWebPart::screenKey(int index, bool down, std::uint32_t pointer) {
-    calcu::typing::TypingPart* t = m_app ? &m_app->typing() : nullptr;
-    if (!t) return;
-    if (!down) {
-        t->engine().screenKeyUp(calcu::machine::KeyId{}, pointer);
-        return;
-    }
-    if (index < 0 || index >= 45 || (m_ctx && m_ctx->busy())) return;
-    if (const auto id = keyIdAt(matrixCode(index / 5, index % 5))) t->engine().screenKeyDown(*id, pointer);
 }
 
 void TIWebPart::afterCall(SessionContext&, calcu::pacing::WallTime) { drain(); }

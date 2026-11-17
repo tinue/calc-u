@@ -2,8 +2,10 @@
 // design §3.1; spec AC-16, EC-4, EC-5). React 18 is a global of the host
 // page (AC-15).
 //
-//   embedProps(props) → {width, height, keyboard (default true), model,
-//                        preset, workerUrl, rest}
+//   embedProps(props) → {width, keyboard (default true), layout, preset,
+//                        height, model, workerUrl, rest}: the shared props
+//                        in their order (AC-16, AC-29), then the product's
+//                        own in rest; layout has the product's default
 //   useFillParent(ref, {width, height}) → {width, height}: the props when
 //                        both are given, else the size of ref's parent
 //   useShell(product, embedded, services) → the shell (null until the effect
@@ -19,8 +21,8 @@
 // preset names something is the session's start (EC-4).
 
 function embedProps(props) {
-  const { width, height, keyboard = true, model, preset, workerUrl, ...rest } = props || {};
-  return { width, height, keyboard: keyboard !== false, model, preset, workerUrl, rest };
+  const { width, keyboard = true, layout, preset, height, model, workerUrl, ...rest } = props || {};
+  return { width, keyboard: keyboard !== false, layout, preset, height, model, workerUrl, rest };
 }
 
 function useFillParent(ref, { width, height }) {
